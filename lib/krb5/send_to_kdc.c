@@ -333,9 +333,15 @@ krb5_sendto (krb5_context context,
 		 continue;
 
 	     for (a = ai; a != NULL; a = a->ai_next) {
+		 int flag;
+
 		 fd = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
 		 if (fd < 0)
 		     continue;
+		 if (fcntl(fd, F_SETFL, O_NONBLOCK) < 0) {
+		     close(fd);
+		     continue;
+		 }
 		 if (connect (fd, a->ai_addr, a->ai_addrlen) < 0) {
 		     close (fd);
 		     continue;

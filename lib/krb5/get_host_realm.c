@@ -161,6 +161,8 @@ krb5_get_host_realm_int (krb5_context context,
     dns_locate_enable = krb5_config_get_bool_default(context, NULL, TRUE,
 	"libdefaults", "dns_lookup_realm", NULL);
     for (p = host; p != NULL; p = strchr (p + 1, '.')) {
+	if (strchr(p + 1, '.') == NULL) /* dont use if only one label left */
+	    break;
 	if(config_find_realm(context, p, realms) == 0) {
 	    if(strcasecmp(*realms[0], "dns_locate") == 0) {
 		if(use_dns)
