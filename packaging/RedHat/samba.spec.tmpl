@@ -96,9 +96,10 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
 	--with-utmp \
 	--with-sambabook=%{prefix}/share/swat/using_samba \
 	--with-swatdir=%{prefix}/share/swat \
+	--with-shared-modules=idmap_rid \
 	--with-libsmbclient 
 make -j${NUMCPU} proto
-make -j${NUMCPU} all nsswitch/libnss_wins.so 
+make -j${NUMCPU} all modules nsswitch/libnss_wins.so 
 make -j${NUMCPU} debug2html
 
 # Remove some permission bits to avoid to many dependencies
@@ -430,6 +431,7 @@ fi
 %attr(755,root,root) /lib/libnss_wins.s*
 %attr(755,root,root) %{prefix}/lib/samba/vfs/*.so
 %attr(755,root,root) %{prefix}/lib/samba/charset/*.so
+%attr(755,root,root) %{prefix}/lib/samba/idmap/*.so
 #%attr(755,root,root) %{prefix}/lib/samba/pdb/*.so
 %attr(755,root,root) %{prefix}/lib/samba/*.dat
 %attr(755,root,root) %{prefix}/lib/samba/*.msg
