@@ -58,6 +58,27 @@ static char get_winbind_separator(void)
 
 }
 
+static char *get_winbind_domain(void)
+{
+	struct winbindd_response response;
+	static fstring winbind_domain;
+
+	ZERO_STRUCT(response);
+
+	/* Send off request */
+
+	if (winbindd_request(WINBINDD_DOMAIN_NAME, NULL, &response) !=
+	    NSS_STATUS_SUCCESS) {
+		printf("could not obtain winbind domain name!\n");
+		exit(1);
+	}
+
+	fstrcpy(winbind_domain, response.data.domain_name);
+
+	return winbind_domain;
+
+}
+
 /* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
    form DOMAIN/user into a domain and a user */
 
@@ -68,7 +89,7 @@ static BOOL parse_wbinfo_domain_user(const char *domuser, fstring domain, fstrin
 
 	if (!p) {
 		fstrcpy(user, domuser);
-		domain[0]=0;
+		fstrcpy(domain, get_winbind_domain());
 		return True;
 	}
         
@@ -282,7 +303,7 @@ static BOOL wbinfo_lookupsid(char *sid)
 
 	/* Display response */
 
-	printf("%s %d\n", response.data.name.name, response.data.name.type);
+	printf("[%s]\\[%s] %d\n", response.data.name.dom_name, response.data.name.name, response.data.name.type);
 
 	return True;
 }
@@ -299,7 +320,8 @@ static BOOL wbinfo_lookupname(char *name)
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	fstrcpy(request.data.name, name);
+	parse_wbinfo_domain_user(name, request.data.name.dom_name, request.data.name.name);
+
 	if (winbindd_request(WINBINDD_LOOKUPNAME, &request, &response) !=
 	    NSS_STATUS_SUCCESS) {
 		return False;

@@ -37,7 +37,7 @@
 
 /* Update this when you change the interface.  */
 
-#define WINBIND_INTERFACE_VERSION 2
+#define WINBIND_INTERFACE_VERSION 3
 
 /* Socket commands */
 
@@ -91,6 +91,7 @@ enum winbindd_cmd {
 	WINBINDD_CHECK_MACHACC,     /* Check machine account pw works */
 	WINBINDD_PING,              /* Just tell me winbind is running */
 	WINBINDD_INFO,              /* Various bit of info.  Currently just tidbits */
+	WINBINDD_DOMAIN_NAME,       /* The domain this winbind server is a member of (lp_workgroup()) */
 
 	/* Placeholder for end of cmd list */
 
@@ -128,7 +129,10 @@ struct winbindd_request {
                     fstring newpass;
                 } chauthtok;         /* pam_winbind passwd module */
 		fstring sid;         /* lookupsid, sid_to_[ug]id */
-		fstring name;        /* lookupname */
+		struct {
+			fstring dom_name;       /* lookupname */
+			fstring name;       
+		} name;
 		uint32 num_entries;  /* getpwent, getgrent */
 	} data;
 	fstring domain;      /* {set,get,end}{pw,gr}ent() */
@@ -183,7 +187,8 @@ struct winbindd_response {
 			int type;
 		} sid;
 		struct winbindd_name {
-			fstring name;       /* lookupsid */
+			fstring dom_name;       /* lookupsid */
+			fstring name;       
 			int type;
 		} name;
 		uid_t uid;          /* sid_to_uid */
@@ -192,6 +197,7 @@ struct winbindd_response {
 			char winbind_separator;
 			fstring samba_version;
 		} info;
+		fstring domain_name;
 	} data;
 
 	/* Variable length return data */
