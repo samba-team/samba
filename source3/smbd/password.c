@@ -1384,7 +1384,7 @@ BOOL domain_client_validate( char *user, char *domain,
 {
   unsigned char local_challenge[8];
   unsigned char local_lm_response[24];
-  unsigned char local_nt_reponse[24];
+  unsigned char local_nt_response[24];
   unsigned char trust_passwd[16];
   fstring remote_machine;
   char *p, *pserver;
@@ -1422,11 +1422,11 @@ BOOL domain_client_validate( char *user, char *domain,
     DEBUG(3,("domain_client_validate: User passwords not in encrypted format.\n"));
     generate_random_buffer( local_challenge, 8, False);
     SMBencrypt( (uchar *)smb_apasswd, local_challenge, local_lm_response);
-    SMBNTencrypt((uchar *)smb_ntpasswd, local_challenge, local_nt_reponse);
+    SMBNTencrypt((uchar *)smb_ntpasswd, local_challenge, local_nt_response);
     smb_apasslen = 24;
     smb_ntpasslen = 24;
     smb_apasswd = (char *)local_lm_response;
-    smb_ntpasswd = (char *)local_nt_reponse;
+    smb_ntpasswd = (char *)local_nt_response;
   } else {
 
     /*
