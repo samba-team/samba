@@ -779,7 +779,10 @@ int reply_getatr(char *inbuf,char *outbuf)
   outsize = set_message(outbuf,10,0,True);
 
   SSVAL(outbuf,smb_vwv0,mode);
-  put_dos_date3(outbuf,smb_vwv1,mtime);
+  if(lp_dos_filetime_resolution(SNUM(cnum)) )
+    put_dos_date3(outbuf,smb_vwv1,mtime & ~1);
+  else
+    put_dos_date3(outbuf,smb_vwv1,mtime);
   SIVAL(outbuf,smb_vwv3,size);
 
   if (Protocol >= PROTOCOL_NT1) {
@@ -1231,7 +1234,10 @@ int reply_open(char *inbuf,char *outbuf)
   outsize = set_message(outbuf,7,0,True);
   SSVAL(outbuf,smb_vwv0,fnum);
   SSVAL(outbuf,smb_vwv1,fmode);
-  put_dos_date3(outbuf,smb_vwv2,mtime);
+  if(lp_dos_filetime_resolution(SNUM(cnum)) )
+    put_dos_date3(outbuf,smb_vwv2,mtime & ~1);
+  else
+    put_dos_date3(outbuf,smb_vwv2,mtime);
   SIVAL(outbuf,smb_vwv4,size);
   SSVAL(outbuf,smb_vwv6,rmode);
 
@@ -1357,7 +1363,10 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   set_message(outbuf,15,0,True);
   SSVAL(outbuf,smb_vwv2,fnum);
   SSVAL(outbuf,smb_vwv3,fmode);
-  put_dos_date3(outbuf,smb_vwv4,mtime);
+  if(lp_dos_filetime_resolution(SNUM(cnum)) )
+    put_dos_date3(outbuf,smb_vwv4,mtime & ~1);
+  else
+    put_dos_date3(outbuf,smb_vwv4,mtime);
   SIVAL(outbuf,smb_vwv6,size);
   SSVAL(outbuf,smb_vwv8,rmode);
   SSVAL(outbuf,smb_vwv11,smb_action);
@@ -3917,7 +3926,7 @@ int reply_getattrE(char *inbuf,char *outbuf)
      date to be last modify date as UNIX doesn't save
      this */
   put_dos_date2(outbuf,smb_vwv0,get_create_time(&sbuf));
-  put_dos_date2(outbuf,smb_vwv2,get_access_time(&sbuf));
+  put_dos_date2(outbuf,smb_vwv2,sbuf.st_atime);
   put_dos_date2(outbuf,smb_vwv4,sbuf.st_mtime);
   if (mode & aDIR)
     {
