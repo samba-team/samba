@@ -412,7 +412,7 @@ NTSTATUS pdb_free_sam(SAM_ACCOUNT **user)
  * 									SSS
  ***************************************************************************/
 
-NTSTATUS pdb_set_sam_sids(SAM_ACCOUNT *account_data, const struct passwd *pwd)
+static NTSTATUS pdb_set_sam_sids(SAM_ACCOUNT *account_data, const struct passwd *pwd)
 {
 	const char *guest_account = lp_guestaccount();
 	GROUP_MAP map;
@@ -475,6 +475,9 @@ NTSTATUS pdb_set_sam_sids(SAM_ACCOUNT *account_data, const struct passwd *pwd)
 char *pdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length)
 {
 	static fstring acct_str;
+
+	SMB_ASSERT(length <= sizeof(acct_str));
+
 	size_t i = 0;
 
 	acct_str[i++] = '[';
