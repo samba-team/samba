@@ -170,21 +170,21 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	 * reference to a file.
 	 */
 
-    if (normal_close && delete_on_close) {
-        DEBUG(5,("close_file: file %s. Delete on close was set - deleting file.\n",
-	    fsp->fsp_name));
+	if (normal_close && delete_on_close) {
+		DEBUG(5,("close_file: file %s. Delete on close was set - deleting file.\n",
+			fsp->fsp_name));
 		if(fsp->conn->vfs_ops.unlink(conn,dos_to_unix(fsp->fsp_name, False)) != 0) {
-          /*
-           * This call can potentially fail as another smbd may have
-           * had the file open with delete on close set and deleted
-           * it when its last reference to this file went away. Hence
-           * we log this but not at debug level zero.
-           */
+			/*
+			 * This call can potentially fail as another smbd may have
+			 * had the file open with delete on close set and deleted
+			 * it when its last reference to this file went away. Hence
+			 * we log this but not at debug level zero.
+			 */
 
-          DEBUG(5,("close_file: file %s. Delete on close was set and unlink failed \
+			DEBUG(5,("close_file: file %s. Delete on close was set and unlink failed \
 with error %s\n", fsp->fsp_name, strerror(errno) ));
-        }
-    }
+		}
+	}
 
 	unlock_share_entry_fsp(fsp);
 
@@ -242,7 +242,7 @@ static int close_directory(files_struct *fsp, BOOL normal_close)
 
 		if(ok)
 			remove_pending_change_notify_requests_by_filename(fsp);
-    }
+	}
 
 	/*
 	 * Do the code common to files and directories.
