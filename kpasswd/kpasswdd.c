@@ -206,14 +206,10 @@ change (krb5_auth_context auth_context,
 {
     krb5_error_code ret;
     char *client;
-    kadm5_principal_ent_rec ent;
-    krb5_key_data *kd;
-    krb5_salt salt;
-    krb5_keyblock new_keyblock;
     const char *pwd_reason;
-    int unchanged;
     kadm5_config_params conf;
     void *kadm5_handle;
+    char *tmp;
 
     memset (&conf, 0, sizeof(conf));
     
@@ -244,75 +240,27 @@ change (krb5_auth_context auth_context,
 	return;
     }
 
-    ret = kadm5_get_principal (kadm5_handle,
-			       principal,
-			       &ent,
-			       KADM5_KEY_DATA);
-    if (ret) {
-	krb5_warn (context, ret, "kadm5_get_principal");
+    tmp = malloc (pwd_data->length + 1);
+    if (tmp == NULL) {
+	krb5_warnx (context, "malloc: out of memory");
 	reply_priv (auth_context, s, sa, sa_size, 2,
 		    "Internal error");
-	kadm5_destroy (kadm5_handle);
-	return;
+	goto out;
     }
+    memcpy (tmp, pwd_data->data, pwd_data->length);
+    tmp[pwd_data->length] = '\0';
 
-    /*
-     * Compare with the first key to see if it already has been
-     * changed.  If it hasn't, store the new key in the database and
-     * string2key all the rest of them.
-     */
-
-    kd = &ent.key_data[0];
-    
-    salt.salttype         = kd->key_data_type[1];
-    salt.saltvalue.length = kd->key_data_length[1];
-    salt.saltvalue.data   = kd->key_data_contents[1];
-
-    memset (&new_keyblock, 0, sizeof(new_keyblock));
-    krb5_string_to_key_data_salt (context,
-				  kd->key_data_type[0],
-				  *pwd_data,
-				  salt,
-				  &new_keyblock);
-
-    unchanged = new_keyblock.keytype == kd->key_data_type[0]
-	&& new_keyblock.keyvalue.length == kd->key_data_length[0]
-	&& memcmp(new_keyblock.keyvalue.data,
-		  kd->key_data_contents[0],
-		  new_keyblock.keyvalue.length) == 0;
-
-    krb5_free_keyblock_contents (context, &new_keyblock);
-
-    if (unchanged) {
-	ret = 0;
-    } else {
-	char *tmp;
-
-	tmp = malloc (pwd_data->length + 1);
-	if (tmp == NULL) {
-	    krb5_warnx (context, "malloc: out of memory");
-	    reply_priv (auth_context, s, sa, sa_size, 2,
-			"Internal error");
-	    goto out;
-	}
-	memcpy (tmp, pwd_data->data, pwd_data->length);
-	tmp[pwd_data->length] = '\0';
-
-	ret = kadm5_chpass_principal (kadm5_handle,
-				      principal,
-				      tmp);
-	memset (tmp, 0, pwd_data->length);
-	free (tmp);
-	if (ret) {
-	    krb5_warn (context, ret, "kadm5_s_chpass_principal");
-	    reply_priv (auth_context, s, sa, sa_size, 2,
-			"Internal error");
-	    goto out;
-	}
+    ret = kadm5_s_chpass_principal_cond (kadm5_handle, principal, tmp);
+    memset (tmp, 0, pwd_data->length);
+    free (tmp);
+    if (ret) {
+	krb5_warn (context, ret, "kadm5_s_chpass_principal_cond");
+	reply_priv (auth_context, s, sa, sa_size, 2,
+		    "Internal error");
+	goto out;
     }
     reply_priv (auth_context, s, sa, sa_size, 0, "Password changed");
 out:
-    kadm5_free_principal_ent (kadm5_handle, &ent);
     kadm5_destroy (kadm5_handle);
 }
 
@@ -444,6 +392,7 @@ process (krb5_principal server,
 		s,
 		sa, sa_size,
 		&out_data);
+	memset (out_data.data, 0, out_data.length);
 	krb5_free_ticket (context, ticket);
 	free (ticket);
     }
