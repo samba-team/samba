@@ -1,5 +1,8 @@
 Mon Jul 13 15:00:31 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* lib/krb5/config_file.c (parse_binding, parse_section): make sure
+ 	everything is ok before adding to linked list
+
 	* lib/krb5/config_file.c: skip ws before checking for comment
 
 Wed Jul  8 10:45:45 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
