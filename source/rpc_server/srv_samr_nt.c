@@ -1081,7 +1081,9 @@ NTSTATUS _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u, SAM
 	DEBUG(5,("samr_reply_enum_dom_groups: %d\n", __LINE__));
 
 	/* the domain group array is being allocated in the function below */
-	get_group_domain_entries(p->mem_ctx, &grp, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES);
+	if (!NT_STATUS_IS_OK(r_u->status = get_group_domain_entries(p->mem_ctx, &grp, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES))) {
+		return r_u->status;
+	}
 
 	make_group_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name, num_entries, grp);
 
