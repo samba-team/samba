@@ -722,12 +722,12 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
 			 prompt_x + XTextWidth(font, STRING, echolen),
 			 prompt_y, SPACE_STRING, STRING_LENGTH - echolen + 1);
       }
-    } else if (isprint(c))
+    } else if (isprint(c)) {
 	if ((cnt + 1) >= MAX_PASSWD_LENGTH)
 	    XBell(dpy, 50);
 	else
 	    passwd[cnt++] = c;
-    else
+    } else
 	return;
     echolen = min(cnt, STRING_LENGTH);
     XDrawImageString(dpy, XtWindow(w), gc,
