@@ -47,8 +47,11 @@ get_default(kadm5_server_context *context, krb5_principal princ,
     kadm5_ret_t ret;
     krb5_principal def_principal;
     krb5_realm *realm = krb5_princ_realm(context->context, princ);
-    krb5_make_principal(context->context, &def_principal, 
-			*realm, "default", NULL);
+
+    ret = krb5_make_principal(context->context, &def_principal, 
+			      *realm, "default", NULL);
+    if (ret)
+	return ret;
     ret = kadm5_s_get_principal(context, def_principal, def, 
 				KADM5_PRINCIPAL_NORMAL_MASK);
     krb5_free_principal (context->context, def_principal);
@@ -83,7 +86,10 @@ create_principal(kadm5_server_context *context,
     ret = get_default(context, princ->principal, defent);
     if(ret)
 	defent = NULL;
-    ret = _kadm5_setup_entry(ent, princ, defent, mask);
+    ret = _kadm5_setup_entry(ent, princ, defent,
+			     mask | KADM5_ATTRIBUTES
+			     | KADM5_MAX_LIFE
+			     | KADM5_MAX_RLIFE);
     if(defent)
 	kadm5_free_principal_ent(context, defent);
     
