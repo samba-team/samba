@@ -148,76 +148,79 @@ krb5_parse_name(krb5_context context,
     return 0;
 }
 
+static const char quotable_chars[] = "\n\t\b\\/@";
+static const char replace_chars[] = "ntb\\/@";
+
+#define add_char(BASE, INDEX, LEN, C) do { if((INDEX) < (LEN)) (BASE)[(INDEX)++] = (C); }while(0);
+
 static size_t
-quote_string(char *s, char **out)
+quote_string(const char *s, char *out, size_t index, size_t len)
 {
-    size_t len;
-    char *p;
-    char *tmp;
-    char c = 0;
-    tmp = *out;
-    if(tmp)
-	len = strlen(tmp);
-    else 
-	len = 0;
-    for(p = s; *p; p++){
-	if(*p == '\n')
-	    c = 'n';
-	else if(*p == '\t')
-	    c = 't';
-	else if(*p == '\b')
-	    c = 'b';
-	else if(*p == '\0')
-	    c = '0';
-	else if(*p == '/')
-	    c='/';      
-	else if(*p == '@')
-	    c = '@';
-	if(c){
-	    tmp = realloc(tmp, len + 2);
-	    tmp[len] = '\\';
-	    tmp[len + 1] = c;
-	    len += 2;
-	    c = 0;
-	}else{
-	    tmp = realloc(tmp, len + 1);
-	    tmp[len] = *p;
-	    len++;
-	}
+    const char *p, *q;
+    for(p = s; *p && index < len; p++){
+	if((q = strchr(quotable_chars, *p))){
+	    add_char(out, index, len, '\\');
+	    add_char(out, index, len, replace_chars[q - quotable_chars]);
+	}else
+	    add_char(out, index, len, *p);
     }
-    tmp = realloc(tmp, len + 1);
-    tmp[len] = 0;
-    *out = tmp;
-    return len;
+    if(index < len)
+	out[index] = '\0';
+    return index;
 }
 
+
+krb5_error_code
+krb5_unparse_name_fixed(krb5_context context,
+			krb5_principal principal,
+			char *name,
+			size_t len)
+{
+    size_t index = 0;
+    int i;
+    for(i = 0; i < princ_num_comp(principal); i++){
+	if(i)
+	    add_char(name, index, len, '/');
+	index = quote_string(princ_ncomp(principal, i), name, index, len);
+    }
+    add_char(name, index, len, '@');
+    index = quote_string(princ_realm(principal), name, index, len);
+    if(index == len)
+	return ENOMEM; /* XXX */
+    return 0;
+}
 
 krb5_error_code
 krb5_unparse_name(krb5_context context,
 		  krb5_principal principal,
 		  char **name)
 {
-    size_t len;
-    char *s;
+    size_t len = 0, plen;
     int i;
-    int ncomp = princ_num_comp(principal);
-    s = NULL;
-    for (i = 0; i < ncomp; i++){
-	if(i){
-	    s = realloc(s, len + 2);
-	    s[len] = '/';
-	    s[len + 1] = 0;
-	}
-	len = quote_string(princ_ncomp(principal, i), &s);
+    krb5_error_code ret;
+    /* count length */
+    plen = strlen(princ_realm(principal));
+    if(strcspn(princ_realm(principal), quotable_chars) == plen)
+	len += plen;
+    else
+	len += 2*plen;
+    len++;
+    for(i = 0; i < princ_num_comp(principal); i++){
+	plen = strlen(princ_ncomp(principal, i));
+	if(strcspn(princ_ncomp(principal, i), quotable_chars) == plen)
+	    len += plen;
+	else
+	    len += 2*plen;
+	len++;
     }
-    s = realloc(s, len + 2);
-    s[len] = '@';
-    s[len + 1] = 0;
-    len = quote_string(princ_realm(principal), &s);
-    *name = s;
-    return 0;
+    *name = malloc(len);
+    if(*name == NULL)
+	return ENOMEM;
+    ret = krb5_unparse_name_fixed(context, principal, *name, len);
+    if(ret)
+	free(*name);
+    return ret;
 }
-
 
 #if 0 /* not implemented */
 
