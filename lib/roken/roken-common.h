@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -102,6 +102,10 @@
 
 #ifndef O_ACCMODE
 #define O_ACCMODE	003
+#endif
+
+#ifndef _PATH_DEV
+#define _PATH_DEV "/dev/"
 #endif
 
 #ifndef _PATH_DEVNULL
@@ -279,5 +283,11 @@ socket_set_tos (int sock, int tos);
 
 void
 socket_set_reuseaddr (int sock, int val);
+
+char **
+vstrcollect(va_list *ap);
+
+char **
+strcollect(char *first, ...);
 
 #endif /* __ROKEN_COMMON_H__ */
