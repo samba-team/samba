@@ -7,7 +7,8 @@
 [ uuid(1ff70682-0a51-30e8-076d-740be8cee98b),
   version(1.0),
   pointer_default(unique),
-  helpstring("Queue/List/Remove jobs for later execution")
+  helpstring("Queue/List/Remove jobs for later execution"),
+  endpoint("ncacn_np:[\\pipe\\atsvc]", "ncalrpc:")
 ] interface atsvc
 {
 	typedef struct {
