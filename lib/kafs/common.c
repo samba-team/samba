@@ -231,6 +231,8 @@ _kafs_afslog_all_local_cells(kafs_data *data, uid_t uid)
     }
     find_cells(_PATH_THESECELLS, &cells, &index);
     find_cells(_PATH_THISCELL, &cells, &index);
+    find_cells(_PATH_ARLA_THESECELLS, &cells, &index);
+    find_cells(_PATH_ARLA_THISCELL, &cells, &index);
     
     ret = afslog_cells(data, cells, index, uid);
     while(index > 0)
@@ -258,7 +260,8 @@ realm_of_cell(kafs_data *data, const char *cell, char **realm)
     char *p;
     int ret = -1;
 
-    if ((F = fopen(_PATH_CELLSERVDB, "r"))) {
+    if ((F = fopen(_PATH_CELLSERVDB, "r"))
+	|| (F = fopen(_PATH_ARLA_CELLSERVDB, "r"))) {
 	while (fgets(buf, sizeof(buf), F)) {
 	    if (buf[0] != '>')
 		continue; /* Not a cell name line, try next line */
