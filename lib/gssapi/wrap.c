@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -109,6 +109,7 @@ gss_wrap_size_limit (
       break;
   }
   krb5_free_keyblock (gssapi_krb5_context, key);
+  *minor_status = 0;
   return ret;
 }
 
@@ -141,8 +142,10 @@ wrap_des
 
   output_message_buffer->length = total_len;
   output_message_buffer->value  = malloc (total_len);
-  if (output_message_buffer->value == NULL)
+  if (output_message_buffer->value == NULL) {
+    *minor_status = ENOMEM;
     return GSS_S_FAILURE;
+  }
 
   p = gssapi_krb5_make_header(output_message_buffer->value,
 			      len,
@@ -228,6 +231,7 @@ wrap_des
   }
   if(conf_state != NULL)
       *conf_state = conf_req_flag;
+  *minor_status = 0;
   return GSS_S_COMPLETE;
 }
 
@@ -259,8 +263,10 @@ wrap_des3
 
   output_message_buffer->length = total_len;
   output_message_buffer->value  = malloc (total_len);
-  if (output_message_buffer->value == NULL)
+  if (output_message_buffer->value == NULL) {
+    *minor_status = ENOMEM;
     return GSS_S_FAILURE;
+  }
 
   p = gssapi_krb5_make_header(output_message_buffer->value,
 			      len,
@@ -395,6 +401,7 @@ wrap_des3
   }
   if(conf_state != NULL)
       *conf_state = conf_req_flag;
+  *minor_status = 0;
   return GSS_S_COMPLETE;
 }
 
