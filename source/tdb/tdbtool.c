@@ -251,7 +251,8 @@ static void show_tdb(void)
 	}
 
 	key.dptr = k;
-	key.dsize = strlen(k)+1;
+/*	key.dsize = strlen(k)+1;*/
+	key.dsize = strlen(k);
 
 	dbuf = tdb_fetch(tdb, key);
 	if (!dbuf.dptr) {
