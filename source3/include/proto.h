@@ -626,7 +626,9 @@ BOOL nmb_name_equal(struct nmb_name *n1, struct nmb_name *n2);
 int build_packet(char *buf, struct packet_struct *p);
 BOOL send_packet(struct packet_struct *p);
 struct packet_struct *receive_packet(int fd,enum packet_type type,int t);
-struct packet_struct *receive_reply_packet(int fd, int t, int trn_id);
+struct packet_struct *receive_nmb_packet(int fd, int t, int trn_id);
+struct packet_struct *receive_dgram_packet(int fd, int t, char *mailslot_name);
+BOOL match_mailslot_name(struct packet_struct *p, char *mailslot_name);
 void sort_query_replies(char *data, int n, struct in_addr ip);
 
 /*The following definitions come from  libsmb/nterr.c  */
@@ -682,7 +684,7 @@ char *smb_errstr(char *inbuf);
 
 void unexpected_packet(struct packet_struct *p);
 void clear_unexpected(time_t t);
-struct packet_struct *receive_unexpected_137(int trn_id);
+struct packet_struct *receive_unexpected(enum packet_type packet_type, int id, char *mailslot_name);
 
 /*The following definitions come from  locking/locking.c  */
 

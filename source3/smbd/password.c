@@ -959,16 +959,18 @@ struct cli_state *server_cryptkey(void)
 	struct cli_state *cli;
 	fstring desthost;
 	struct in_addr dest_ip;
-	char *p;
-    BOOL connected_ok = False;
+	char *p, *pserver;
+	BOOL connected_ok = False;
 
 	cli = server_client();
 
 	if (!cli_initialise(cli))
 		return NULL;
 
-        p = lp_passwordserver();
-        while(p && next_token( &p, desthost, LIST_SEP, sizeof(desthost))) {
+        pserver = strdup(lp_passwordserver());
+	p = pserver;
+
+        while(next_token( &p, desthost, LIST_SEP, sizeof(desthost))) {
 		standard_sub_basic(desthost);
 		strupper(desthost);
 
@@ -988,6 +990,8 @@ struct cli_state *server_cryptkey(void)
 			break;
 		}
 	}
+
+	free(pserver);
 
 	if (!connected_ok) {
 		DEBUG(0,("password server not available\n"));
@@ -1249,14 +1253,78 @@ static BOOL attempt_connect_to_dc(struct cli_state *pcli, struct in_addr *ip, un
    * Ignore addresses we have already tried.
    */
 
-  if(ip_equal(ipzero, *ip))
-    return False;
+  if (ip_equal(ipzero, *ip))
+	  return False;
 
-  if(!lookup_pdc_name(global_myname, lp_workgroup(), ip, dc_name))
-    return False;
+  if (!lookup_pdc_name(global_myname, lp_workgroup(), ip, dc_name))
+	  return False;
 
   return connect_to_domain_password_server(pcli, dc_name, trust_passwd);
 }
+
+
+
+/***********************************************************************
+ We have been asked to dynamcially determine the IP addresses of
+ the PDC and BDC's for this DOMAIN, and query them in turn.
+************************************************************************/
+static BOOL find_connect_pdc(struct cli_state *pcli, unsigned char *trust_passwd)
+{
+	struct in_addr *ip_list = NULL;
+	int count = 0;
+	int i;
+	BOOL connected_ok = False;
+
+	if (!get_dc_list(lp_workgroup(), &ip_list, &count))
+		return False;
+
+	/*
+	 * Firstly try and contact a PDC/BDC who has the same
+	 * network address as any of our interfaces.
+	 */
+	for(i = 0; i < count; i++) {
+		if(!is_local_net(ip_list[i]))
+			continue;
+
+		if((connected_ok = attempt_connect_to_dc(pcli, &ip_list[i], trust_passwd))) 
+			break;
+		
+		ip_list[i] = ipzero; /* Tried and failed. */
+	}
+
+	/*
+	 * Secondly try and contact a random PDC/BDC.
+	 */
+	if(!connected_ok) {
+		i = (sys_random() % count);
+
+		if (!(connected_ok = attempt_connect_to_dc(pcli, &ip_list[i], trust_passwd)))
+			ip_list[i] = ipzero; /* Tried and failed. */
+	}
+
+	/*
+	 * Finally go through the IP list in turn, ignoring any addresses
+	 * we have already tried.
+	 */
+	if(!connected_ok) {
+		/*
+		 * Try and connect to any of the other IP addresses in the PDC/BDC list.
+		 * Note that from a WINS server the #1 IP address is the PDC.
+		 */
+		for(i = 0; i < count; i++) {
+			if((connected_ok = attempt_connect_to_dc(pcli, &ip_list[i], trust_passwd)))
+				break;
+		}
+	}
+
+	if(ip_list != NULL)
+		free((char *)ip_list);
+
+
+	return connected_ok;
+}
+
+
 
 /***********************************************************************
  Do the same as security=server, but using NT Domain calls and a session
@@ -1273,7 +1341,7 @@ BOOL domain_client_validate( char *user, char *domain,
   unsigned char local_nt_reponse[24];
   unsigned char trust_passwd[16];
   fstring remote_machine;
-  char *p;
+  char *p, *pserver;
   NET_ID_INFO_CTR ctr;
   NET_USER_INFO_3 info3;
   struct cli_state cli;
@@ -1349,74 +1417,19 @@ BOOL domain_client_validate( char *user, char *domain,
    * PDC/BDC. Contact each in turn and try and authenticate.
    */
 
-  p = lp_passwordserver();
-  while(!connected_ok && p &&
-        next_token(&p,remote_machine,LIST_SEP,sizeof(remote_machine))) {
-    if(strequal(remote_machine, "*")) {
+  pserver = strdup(lp_passwordserver());
+  p = pserver;
 
-      /*
-       * We have been asked to dynamcially determine the IP addresses of
-       * the PDC and BDC's for this DOMAIN, and query them in turn.
-       */
-
-      struct in_addr *ip_list = NULL;
-      int count = 0;
-      int i;
-
-      if(!get_dc_list(lp_workgroup(), &ip_list, &count))
-        continue;
-
-      /*
-       * Firstly try and contact a PDC/BDC who has the same
-       * network address as any of our interfaces.
-       */
-
-      for(i = 0; i < count; i++) {
-        if(!is_local_net(ip_list[i]))
-          continue;
-
-        if((connected_ok = attempt_connect_to_dc(&cli, &ip_list[i], trust_passwd)))
-          break;
-
-        ip_list[i] = ipzero; /* Tried and failed. */
-      }
-
-      /*
-       * Secondly try and contact a random PDC/BDC.
-       */
-
-      if(!connected_ok) {
-        i = (sys_random() % count);
-
-        if(!(connected_ok = attempt_connect_to_dc(&cli, &ip_list[i], trust_passwd)))
-          ip_list[i] = ipzero; /* Tried and failed. */
-      }
-
-      /*
-       * Finally go through the IP list in turn, ignoring any addresses
-       * we have already tried.
-       */
-
-      if(!connected_ok) {
-
-        /*
-         * Try and connect to any of the other IP addresses in the PDC/BDC list.
-         * Note that from a WINS server the #1 IP address is the PDC.
-         */
-
-        for(i = 0; i < count; i++) {
-          if((connected_ok = attempt_connect_to_dc(&cli, &ip_list[i], trust_passwd)))
-            break;
-        }
-      }
-
-      if(ip_list != NULL)
-        free((char *)ip_list);
-
-    } else {
-      connected_ok = connect_to_domain_password_server(&cli, remote_machine, trust_passwd);
-    }
+  while (!connected_ok &&
+	 next_token(&p,remote_machine,LIST_SEP,sizeof(remote_machine))) {
+	  if(strequal(remote_machine, "*")) {
+		  connected_ok = find_connect_pdc(&cli, trust_passwd);
+	  } else {
+		  connected_ok = connect_to_domain_password_server(&cli, remote_machine, trust_passwd);
+	  }
   }
+
+  free(pserver);
 
   if (!connected_ok) {
     DEBUG(0,("domain_client_validate: Domain password server not available.\n"));
