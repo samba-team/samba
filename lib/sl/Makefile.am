@@ -14,8 +14,8 @@ YFLAGS = -d
 include_HEADERS = sl.h
 
 lib_LTLIBRARIES = libsl.la libss.la
-libsl_la_LDFLAGS = -version-info 1:1:1
-libss_la_LDFLAGS = -version-info 1:3:1
+libsl_la_LDFLAGS = -version-info 1:2:1
+libss_la_LDFLAGS = -version-info 1:4:1
 
 libsl_la_LIBADD = @LIB_readline@
 libss_la_LIBADD = @LIB_readline@
