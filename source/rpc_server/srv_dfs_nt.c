@@ -288,6 +288,7 @@ static uint32 init_reply_dfs_ctr(TALLOC_CTX *ctx, uint32 level, DFS_INFO_CTR* ct
 		return NT_STATUS_NO_MEMORY;
 	init_reply_dfs_info_3(ctx, jn, dfs3, num_jn);
 	ctr->dfs.info3 = dfs3;
+	break;
       }
 	default:
 		return NT_STATUS_INVALID_LEVEL;
