@@ -309,11 +309,13 @@ static NTSTATUS db_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 	if (data.dptr) {
 		tdb_delete(idmap_tdb, data);
 		tdb_delete(idmap_tdb, ksid);
+		SAFE_FREE(data.dptr);
 	}
 	data = tdb_fetch(idmap_tdb, kid);
 	if (data.dptr) {
 		tdb_delete(idmap_tdb, data);
 		tdb_delete(idmap_tdb, kid);
+		SAFE_FREE(data.dptr);
 	}
 
 	if (tdb_store(idmap_tdb, ksid, kid, TDB_INSERT) == -1) {
