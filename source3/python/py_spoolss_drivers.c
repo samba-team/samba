@@ -242,14 +242,15 @@ PyObject *spoolss_getprinterdriverdir(PyObject *self, PyObject *args,
 	DRIVER_DIRECTORY_CTR ctr;
 	uint32 needed, level;
 	char *arch = "Windows NT x86", *server_name;
-	static char *kwlist[] = {"server", "creds", NULL};
+	static char *kwlist[] = {"server", "level", "arch", "creds", NULL};
 	struct cli_state *cli = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
 
 	/* Parse parameters */
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "s|is", kwlist, 
-					 &server_name, &level, &arch))
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "s|isO!", kwlist, 
+					 &server_name, &level, &arch,
+					 &PyDict_Type, &creds))
 		return NULL;
 
 	/* Call rpc function */
