@@ -6207,6 +6207,9 @@ rm -fr conftest*
 fi
 
 
+builddir=`pwd`
+
+
 trap '' 1 2 15
 cat > confcache <<\EOF
 # This file is a shell script that caches the results of configure
@@ -6365,6 +6368,7 @@ s%@AUTOCONF@%$AUTOCONF%g
 s%@AUTOHEADER@%$AUTOHEADER%g
 s%@CPP@%$CPP%g
 s%@LIBOBJS@%$LIBOBJS%g
+s%@builddir@%$builddir%g
 
 CEOF
 EOF

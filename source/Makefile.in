@@ -19,6 +19,7 @@ INSTALLCMD=@INSTALL@
 
 VPATH=@srcdir@
 srcdir=@srcdir@
+builddir=@builddir@
 SHELL=/bin/sh
 
 BASEDIR=$(prefix)/samba
@@ -227,21 +228,16 @@ PICOBJS = $(SMBWRAPPER_OBJ:%.o=%.po)
 
 all : CHECK $(SPROGS) $(PROGS) 
 
+smbwrapper : CHECK smbwrapper/smbsh smbwrapper/smbwrapper.so
+
 .SUFFIXES:
 .SUFFIXES: .c .o .h .po
 
 CHECK:
 	@echo "Using FLAGS = $(FLAGS)"
 	@echo "Using LIBS = $(LIBS)"
-	@(cd $(srcdir) && ls -1d */*.c && echo bin/.) | \
-	 sed 's,/[^/]*$$,,;s,^$$,.,' | \
-	 while read dir; do \
-	   if test ! -d "$$dir"; then \
-	     echo mkdir "$$dir" && mkdir "$$dir" || true; \
-	   else true; fi; \
-	 done
 
-.c.o: @MAINT@ .deps/.dummy obj-dirs
+.c.o: @MAINT@ .deps/.dummy
 	@echo Compiling $*.c
 	@dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` && \
 	   if test ! -d "$$dir"; then \
@@ -253,7 +249,7 @@ CHECK:
 # it will only work with GNU make, gcc and --enable-maintainer-mode
 
 
-.c.po: @MAINT@ .deps/.dummy obj-dirs
+.c.po: @MAINT@ .deps/.dummy
 	@echo Compiling $*.c with -fpic
 	@dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` && \
 	   if test ! -d "$$dir"; then \
@@ -262,96 +258,85 @@ CHECK:
 	@$(CC) -I. -I$(srcdir) $(FLAGS) -fpic -c $< -o $@ \
 	@MAINT@ -Wp,-MD,.deps/`echo $* | sed s,/,_,g`.P && : >.deps/.stamp
 
-MKDIR_BIN = if test ! -d bin; then echo mkdir bin && mkdir bin || true; else true; fi
+bin/.dummy:
+	if test ! -d bin; then echo mkdir bin && mkdir bin || true; else true; fi
+	@: > $@ # create it
 
-bin/smbd: $(SMBD_OBJ)
+bin/smbd: $(SMBD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(MKDIR_BIN)
 	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(LIBS) 
 
-bin/nmbd: $(NMBD_OBJ)
+bin/nmbd: $(NMBD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(MKDIR_BIN)
 	@$(CC) $(FLAGS) -o $@ $(NMBD_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/swat: $(SWAT_OBJ)
+bin/swat: $(SWAT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(MKDIR_BIN)
 	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(LIBS) 
 
-bin/smbrun: $(SMBRUN_OBJ)
+bin/smbrun: $(SMBRUN_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(MKDIR_BIN)
 	@$(CC) $(FLAGS) -o $@ $(SMBRUN_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/rpcclient: $(RPCCLIENT_OBJ)
+bin/rpcclient: $(RPCCLIENT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(MKDIR_BIN)
 	@$(CC) $(FLAGS) -o $@ $(RPCCLIENT_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbclient: $(CLIENT_OBJ)
+bin/smbclient: $(CLIENT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(MKDIR_BIN)
 	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbmount: $(MOUNT_OBJ)
+bin/smbmount: $(MOUNT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(MKDIR_BIN)
 	@$(CC) $(FLAGS) -o $@ $(MOUNT_OBJ) $(LIBS)
 
-bin/smbmnt: $(MNT_OBJ)
+bin/smbmnt: $(MNT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(MKDIR_BIN)
 	@$(CC) $(FLAGS) -o $@ $(MNT_OBJ) $(LIBS)
 
-bin/smbumount: $(UMOUNT_OBJ)
+bin/smbumount: $(UMOUNT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(MKDIR_BIN)
 	@$(CC) $(FLAGS) -o $@ $(UMOUNT_OBJ) $(LIBS)
 
-bin/testparm: $(TESTPARM_OBJ)
+bin/testparm: $(TESTPARM_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(MKDIR_BIN)
 	@$(CC) $(FLAGS) -o $@ $(TESTPARM_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/testprns: $(TESTPRNS_OBJ)
+bin/testprns: $(TESTPRNS_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(MKDIR_BIN)
 	@$(CC) $(FLAGS) -o $@ $(TESTPRNS_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbstatus: $(STATUS_OBJ)
+bin/smbstatus: $(STATUS_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(MKDIR_BIN)
 	@$(CC) $(FLAGS) -o $@ $(STATUS_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbpasswd: $(SMBPASSWD_OBJ)
+bin/smbpasswd: $(SMBPASSWD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(MKDIR_BIN)
 	@$(CC) $(FLAGS) -o $@ $(SMBPASSWD_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/make_smbcodepage: $(MAKE_SMBCODEPAGE_OBJ)
+bin/make_smbcodepage: $(MAKE_SMBCODEPAGE_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(MKDIR_BIN)
 	@$(CC) $(FLAGS) -o $@ $(MAKE_SMBCODEPAGE_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/nmblookup: $(NMBLOOKUP_OBJ)
+bin/nmblookup: $(NMBLOOKUP_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(MKDIR_BIN)
 	@$(CC) $(FLAGS) -o $@ $(NMBLOOKUP_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/make_printerdef: $(MAKE_PRINTERDEF_OBJ)
+bin/make_printerdef: $(MAKE_PRINTERDEF_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(MKDIR_BIN)
 	@$(CC) $(FLAGS) -o $@ $(MAKE_PRINTERDEF_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbtorture: $(SMBTORTURE_OBJ)
+bin/smbtorture: $(SMBTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(MKDIR_BIN)
 	@$(CC) $(FLAGS) -o $@ $(SMBTORTURE_OBJ) $(LDFLAGS) $(LIBS)
 
 smbwrapper/smbwrapper.so: $(PICOBJS)
 	@echo Linking shared library $@
 	@$(LD) @LDSHFLAGS@ -o $@ $(PICOBJS)
+
+smbwrapper/smbsh: smbwrapper/smbsh.in config.status
+	CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
+	chmod +x $@
 
 install: installbin installman installscripts installcp installswat
 
@@ -409,7 +394,7 @@ ctags:
 	ctags `find . -name "*.[ch]"`
 
 realclean: clean
-	-rm -f config.log $(PROGS) $(SPROGS)
+	-rm -f config.log $(PROGS) $(SPROGS) smbsh
 
 distclean: realclean
 	-rm -f include/config.h include/stamp-h Makefile
