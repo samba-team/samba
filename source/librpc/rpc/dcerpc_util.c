@@ -303,7 +303,7 @@ const char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_bindi
 	/* this is a *really* inefficent way of dealing with strings,
 	   but this is rarely called and the strings are always short,
 	   so I don't care */
-	for (i=0;b->options[i];i++) {
+	for (i=0;b->options && b->options[i];i++) {
 		s = talloc_asprintf(mem_ctx, "%s%s,", s, b->options[i]);
 		if (!s) return NULL;
 	}
