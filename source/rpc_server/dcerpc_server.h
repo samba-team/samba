@@ -130,6 +130,9 @@ struct dcesrv_connection {
 
 	/* the current authentication state */
 	struct dcesrv_auth auth_state;
+
+	/* the transport level session key, if any */
+	DATA_BLOB session_key;
 };
 
 

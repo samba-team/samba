@@ -270,16 +270,25 @@ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	(*p)->partial_input = data_blob(NULL, 0);
 	(*p)->auth_state.ntlmssp_state = NULL;
 	(*p)->auth_state.auth_info = NULL;
+	(*p)->session_key = data_blob(NULL, 0);
 
 	return NT_STATUS_OK;
+}
+
+/*
+  set the transport level session key
+*/
+void dcesrv_set_session_key(struct dcesrv_connection *p, DATA_BLOB key)
+{
+	p->session_key = data_blob_talloc(p->mem_ctx, key.data, key.length);
 }
 
 /*
   search and connect to a dcerpc endpoint
 */
 NTSTATUS dcesrv_endpoint_search_connect(struct dcesrv_context *dce_ctx,
-				 const struct dcesrv_ep_description *ep_description,
-				 struct dcesrv_connection **dce_conn_p)
+					const struct dcesrv_ep_description *ep_description,
+					struct dcesrv_connection **dce_conn_p)
 {
 	NTSTATUS status;
 	const struct dcesrv_endpoint *ep;

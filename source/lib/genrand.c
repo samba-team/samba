@@ -246,7 +246,7 @@ void generate_random_buffer( unsigned char *out, int len, BOOL do_reseed_now)
 /*
   very basic password quality checker
 */
-static BOOL check_password_quality(const char *s)
+BOOL check_password_quality(const char *s)
 {
 	int has_digit=0, has_capital=0, has_lower=0;
 	while (*s) {

@@ -1628,6 +1628,35 @@ static NTSTATUS samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 }
 
 
+/*
+  set password via a samr_CryptPassword buffer
+  this will in the 'msg' with modify operations that will update the user
+  password when applied
+*/
+static NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
+				  struct samr_account_state *state, TALLOC_CTX *mem_ctx,
+				  struct ldb_message *msg, 
+				  struct samr_CryptPassword *pwbuf)
+{
+	char new_pass[512];
+	uint32 new_pass_len;
+	DATA_BLOB session_key = dce_call->conn->session_key;
+
+	SamOEMhashBlob(pwbuf->data, 516, &session_key);
+
+	if (!decode_pw_buffer(pwbuf->data, new_pass, sizeof(new_pass),
+			      &new_pass_len, STR_UNICODE)) {
+		DEBUG(3,("samr: failed to decode password buffer\n"));
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/* set the password - samdb needs to know both the domain and user DNs,
+	   so the domain password policy can be used */
+	return samdb_set_password(state->sam_ctx, mem_ctx,
+				  state->basedn, state->domain_state->basedn, 
+				  msg, new_pass);
+}
+
 /* 
   samr_SetUserInfo 
 */
@@ -1638,6 +1667,7 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	struct samr_account_state *state;
 	struct ldb_message mod, *msg = &mod;
 	int i, ret;
+	NTSTATUS status = NT_STATUS_OK;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_USER);
 
@@ -1703,21 +1733,42 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	case 21:
 #define IFSET(bit) if (bit & r->in.info->info21.fields_present)
-		IFSET(SAMR_FIELD_NAME)         SET_STRING(msg, info21.full_name.name,    "displayName");
-		IFSET(SAMR_FIELD_DESCRIPTION)  SET_STRING(msg, info21.description.name,  "description");
-		IFSET(SAMR_FIELD_COMMENT)      SET_STRING(msg, info21.comment.name,      "comment");
-		IFSET(SAMR_FIELD_LOGON_SCRIPT) SET_STRING(msg, info21.logon_script.name, "scriptPath");
-		IFSET(SAMR_FIELD_PROFILE)      SET_STRING(msg, info21.profile.name,      "profilePath");
-		IFSET(SAMR_FIELD_WORKSTATION)  SET_STRING(msg, info21.workstations.name, "userWorkstations");
-		IFSET(SAMR_FIELD_LOGON_HOURS)  SET_LHOURS(msg, info21.logon_hours,       "logonHours");
-		IFSET(SAMR_FIELD_CALLBACK)     SET_STRING(msg, info21.callback.name,     "userParameters");
-		IFSET(SAMR_FIELD_COUNTRY_CODE) SET_UINT(msg, info21.country_code,        "countryCode");
-		IFSET(SAMR_FIELD_CODE_PAGE)    SET_UINT(msg, info21.code_page,           "codePage");
+		IFSET(SAMR_FIELD_NAME)         
+			SET_STRING(msg, info21.full_name.name,    "displayName");
+		IFSET(SAMR_FIELD_DESCRIPTION)  
+			SET_STRING(msg, info21.description.name,  "description");
+		IFSET(SAMR_FIELD_COMMENT)      
+			SET_STRING(msg, info21.comment.name,      "comment");
+		IFSET(SAMR_FIELD_LOGON_SCRIPT) 
+			SET_STRING(msg, info21.logon_script.name, "scriptPath");
+		IFSET(SAMR_FIELD_PROFILE)      
+			SET_STRING(msg, info21.profile.name,      "profilePath");
+		IFSET(SAMR_FIELD_WORKSTATION)  
+			SET_STRING(msg, info21.workstations.name, "userWorkstations");
+		IFSET(SAMR_FIELD_LOGON_HOURS)  
+			SET_LHOURS(msg, info21.logon_hours,       "logonHours");
+		IFSET(SAMR_FIELD_CALLBACK)     
+			SET_STRING(msg, info21.callback.name,     "userParameters");
+		IFSET(SAMR_FIELD_COUNTRY_CODE) 
+			SET_UINT  (msg, info21.country_code,      "countryCode");
+		IFSET(SAMR_FIELD_CODE_PAGE)    
+			SET_UINT  (msg, info21.code_page,         "codePage");
 		break;
+
+		/* the set password levels are handled separately */
+	case 24:
+		status = samr_set_password(dce_call, state, mem_ctx, msg, 
+					   &r->in.info->info24.password);
+		break;
+		
 
 	default:
 		/* many info classes are not valid for SetUserInfo */
 		return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	/* mark all the message elements as LDB_FLAG_MOD_REPLACE */
@@ -1726,7 +1777,7 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	}
 
 	/* modify the samdb record */
-	ret = samdb_modify(state->sam_ctx, mem_ctx, &mod);
+	ret = samdb_modify(state->sam_ctx, mem_ctx, msg);
 	if (ret != 0) {
 		/* we really need samdb.c to return NTSTATUS */
 		return NT_STATUS_UNSUCCESSFUL;
