@@ -318,14 +318,14 @@ sub ParseArrayPull($$$)
 	if ((util::need_alloc($e) && !util::is_fixed_array($e)) ||
 	    ($var_prefix eq "r->in." && util::has_property($e, "ref"))) {
 		if (!util::is_inline_array($e) || $ndr_flags eq "NDR_SCALARS") {
-			pidl "\t\tNDR_ALLOC_N_SIZE(ndr, $var_prefix$e->{NAME}, MAX(1, $alloc_size), sizeof($var_prefix$e->{NAME}\[0]));\n";
+			pidl "\t\tNDR_ALLOC_N(ndr, $var_prefix$e->{NAME}, MAX(1, $alloc_size));\n";
 		}
 	}
 
 	if (($var_prefix eq "r->out." && util::has_property($e, "ref"))) {
 		if (!util::is_inline_array($e) || $ndr_flags eq "NDR_SCALARS") {
 			pidl "\tif (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {";
-			pidl "\t\tNDR_ALLOC_N_SIZE(ndr, $var_prefix$e->{NAME}, MAX(1, $alloc_size), sizeof($var_prefix$e->{NAME}\[0]));\n";
+			pidl "\t\tNDR_ALLOC_N(ndr, $var_prefix$e->{NAME}, MAX(1, $alloc_size));\n";
 			pidl "\t}\n";
 		}
 	}
@@ -1259,7 +1259,13 @@ sub ParseFunctionPull($)
 		# we need to allocate any reference output variables, so that
 		# a dcerpc backend can be sure they are non-null
 		if (util::has_property($e, "out") && util::has_property($e, "ref")) {
-			pidl "\tNDR_ALLOC(ndr, r->out.$e->{NAME});\n";			
+			my $asize = util::array_size($e);
+			if (defined $asize) {
+				my $size = find_size_var($e, $asize, "r->out.");
+				pidl "\tNDR_ALLOC_N(ndr, r->out.$e->{NAME}, MAX(1, $size));\n";
+			} else {
+				pidl "\tNDR_ALLOC(ndr, r->out.$e->{NAME});\n";
+			}
 		}
 	}
 
