@@ -54,7 +54,6 @@ static void overflow_attack(int len)
 		dbgtext( "attempting to exploit an old bug.\n" );
 		dbgtext( "Attack was from IP = %s.\n", client_addr() );
 	}
-	exit_server("possible attack");
 }
 
 
@@ -270,6 +269,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
 	if (passlen > MAX_PASS_LEN) {
 		overflow_attack(passlen);
+		return(ERROR(ERRDOS,ERRbuftoosmall));
 	}
  
 	memcpy(password,smb_buf(inbuf),passlen);
@@ -704,8 +704,10 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
   if (Protocol < PROTOCOL_NT1) {
     smb_apasslen = SVAL(inbuf,smb_vwv7);
-    if (smb_apasslen > MAX_PASS_LEN)
-      overflow_attack(smb_apasslen);
+    if (smb_apasslen > MAX_PASS_LEN) {
+	    overflow_attack(smb_apasslen);
+	    return(ERROR(ERRDOS,ERRbuftoosmall));
+    }
 
     memcpy(smb_apasswd,smb_buf(inbuf),smb_apasslen);
     smb_apasswd[smb_apasslen] = 0;
@@ -738,7 +740,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
       doencrypt = False;
 
     if (passlen1 > MAX_PASS_LEN) {
-      overflow_attack(passlen1);
+	    overflow_attack(passlen1);
+	    return(ERROR(ERRDOS,ERRbuftoosmall));
     }
 
     passlen1 = MIN(passlen1, MAX_PASS_LEN);
