@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -621,7 +621,7 @@ get_cred_from_kdc_flags(krb5_context context,
 {
     krb5_error_code ret;
     krb5_creds *tgt, tmp_creds;
-    krb5_realm client_realm, server_realm;
+    krb5_const_realm client_realm, server_realm, try_realm;
 
     *out_creds = NULL;
 
@@ -631,9 +631,15 @@ get_cred_from_kdc_flags(krb5_context context,
     ret = krb5_copy_principal(context, in_creds->client, &tmp_creds.client);
     if(ret)
 	return ret;
+
+    try_realm = krb5_config_get_string(context, NULL, "libdefaults",
+				       "capath", server_realm, NULL);
+    if (try_realm == NULL)
+	try_realm = client_realm;
+
     ret = krb5_make_principal(context,
 			      &tmp_creds.server,
-			      client_realm,
+			      try_realm,
 			      KRB5_TGS_NAME,
 			      server_realm,
 			      NULL);
