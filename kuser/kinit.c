@@ -141,6 +141,8 @@ main (int argc, char **argv)
     switch(ret){
     case 0:
 	break;
+    case KRB5KDC_ERR_NONE: /* XXX hack in krb5_get_init_creds_password */
+	exit(1);
     case KRB5KRB_AP_ERR_BAD_INTEGRITY:
     case KRB5KRB_AP_ERR_MODIFIED:
 	krb5_errx(context, 1, "Password incorrect");
