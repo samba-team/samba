@@ -11481,12 +11481,90 @@ if test "${with_posix_acls+set}" = set; then
   withval="$with_posix_acls"
    case "$withval" in
   yes)
-     echo "$ac_t""yes" 1>&6
-     cat >> confdefs.h <<\EOF
+
+	echo $ac_n "checking for acl_get_file in -lacl""... $ac_c" 1>&6
+echo "configure:11487: checking for acl_get_file in -lacl" >&5
+ac_lib_var=`echo acl'_'acl_get_file | sed 'y%./+-%__p_%'`
+if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  ac_save_LIBS="$LIBS"
+LIBS="-lacl  $LIBS"
+cat > conftest.$ac_ext <<EOF
+#line 11495 "configure"
+#include "confdefs.h"
+/* Override any gcc2 internal prototype to avoid an error.  */
+/* We use char because int might match the return type of a gcc2
+    builtin and then its argument prototype would still apply.  */
+char acl_get_file();
+
+int main() {
+acl_get_file()
+; return 0; }
+EOF
+if { (eval echo configure:11506: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+  rm -rf conftest*
+  eval "ac_cv_lib_$ac_lib_var=yes"
+else
+  echo "configure: failed program was:" >&5
+  cat conftest.$ac_ext >&5
+  rm -rf conftest*
+  eval "ac_cv_lib_$ac_lib_var=no"
+fi
+rm -f conftest*
+LIBS="$ac_save_LIBS"
+
+fi
+if eval "test \"`echo '$ac_cv_lib_'$ac_lib_var`\" = yes"; then
+  echo "$ac_t""yes" 1>&6
+    ac_tr_lib=HAVE_LIB`echo acl | sed -e 's/[^a-zA-Z0-9_]/_/g' \
+    -e 'y/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/'`
+  cat >> confdefs.h <<EOF
+#define $ac_tr_lib 1
+EOF
+
+  LIBS="-lacl $LIBS"
+
+else
+  echo "$ac_t""no" 1>&6
+fi
+
+echo $ac_n "checking for POSIX ACL support""... $ac_c" 1>&6
+echo "configure:11534: checking for POSIX ACL support" >&5
+if eval "test \"`echo '$''{'samba_cv_HAVE_POSIX_ACLS'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  
+cat > conftest.$ac_ext <<EOF
+#line 11540 "configure"
+#include "confdefs.h"
+#include <sys/types.h>
+#include <sys/acl.h>
+int main() {
+ acl_t acl; int entry_id; acl_entry_t *entry_p; return acl_get_entry( acl, entry_id, entry_p);
+; return 0; }
+EOF
+if { (eval echo configure:11548: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+  rm -rf conftest*
+  samba_cv_HAVE_POSIX_ACLS=yes
+else
+  echo "configure: failed program was:" >&5
+  cat conftest.$ac_ext >&5
+  rm -rf conftest*
+  samba_cv_HAVE_POSIX_ACLS=no
+fi
+rm -f conftest*
+fi
+
+echo "$ac_t""$samba_cv_HAVE_POSIX_ACLS" 1>&6
+if test x"$samba_cv_HAVE_POSIX_ACLS" = x"yes"; then
+	echo "$ac_t""yes" 1>&6
+    cat >> confdefs.h <<\EOF
 #define HAVE_POSIX_ACLS 1
 EOF
 
-     ;;
+fi
+	;;
   *)
     echo "$ac_t""no" 1>&6
     ;;
@@ -11502,11 +11580,11 @@ if test "$cross_compiling" = yes; then
   :
 else
   cat > conftest.$ac_ext <<EOF
-#line 11506 "configure"
+#line 11584 "configure"
 #include "confdefs.h"
 #include "${srcdir-.}/tests/summary.c"
 EOF
-if { (eval echo configure:11510: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:11588: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   echo "configure OK";
 else

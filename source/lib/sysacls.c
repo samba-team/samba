@@ -73,7 +73,7 @@ void *sys_acl_get_qualifier( SMB_ACL_ENTRY_T entry_d)
 
 SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type)
 {
-	return sys_acl_get_file( path_p, type);
+	return acl_get_file( path_p, type);
 }
 
 SMB_ACL_T sys_acl_get_fd(int fd)
