@@ -1649,4 +1649,12 @@ typedef struct user_struct
 #include "nsswitch/winbindd_nss.h"
 #include "smb_acls.h"
 
+/* Used by winbindd_glue functions */
+
+typedef struct {
+	struct cli_state *cli;
+	POLICY_HND handle;
+	TALLOC_CTX *mem_ctx;
+} CLI_POLICY_HND;
+
 #endif /* _SMB_H */

@@ -29,16 +29,6 @@
 
 #include <config.h>
 
-#ifdef RELIANTUNIX
-/*
- * <unistd.h> has to be included before any other to get
- * large file support on Reliant UNIX. Yes, it's broken :-).
- */
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#endif /* RELIANTUNIX */
-
 #include <stdio.h>
 
 #ifdef HAVE_STDLIB_H
@@ -173,13 +163,4 @@ typedef int BOOL;
 /* zero a structure given a pointer to the structure */
 #define ZERO_STRUCTP(x) { if ((x) != NULL) memset((char *)(x), 0, sizeof(*(x))); }
     
-/* Some systems (SCO) treat UNIX domain sockets as FIFOs */
-
-#ifndef S_IFSOCK
-#define S_IFSOCK S_IFIFO
-#endif
-#ifndef S_ISSOCK
-#define S_ISSOCK(mode)  ((mode & S_IFSOCK) == S_IFSOCK)
-#endif
-
 #endif

@@ -169,6 +169,7 @@ int write_sock(void *buffer, int count)
 	while(nwritten < count) {
 		struct timeval tv;
 		fd_set r_fds;
+		int selret;
 		
 		/* Catch pipe close on other end by checking if a read()
 		   call would not block by calling select(). */
@@ -177,8 +178,8 @@ int write_sock(void *buffer, int count)
 		FD_SET(established_socket, &r_fds);
 		ZERO_STRUCT(tv);
 		
-		if (select(established_socket + 1, &r_fds, 
-				     NULL, NULL, &tv) == -1) {
+		if ((selret = select(established_socket + 1, &r_fds, 
+				     NULL, NULL, &tv)) == -1) {
 			close_sock();
 			return -1;                   /* Select error */
 		}

@@ -73,12 +73,11 @@ static BOOL get_id_from_rid(char *domain_name, uint32 rid, int *id,
 {
     TDB_DATA data, key;
     fstring keystr;
-    BOOL result;
+    BOOL result = False;
 
     /* Check if rid is present in database */
 
-    slprintf(keystr, sizeof(keystr)-1, "%s/%d", domain_name, rid);
-	dos_to_unix(keystr, True);             /* Convert key to unix-codepage */
+    slprintf(keystr, sizeof(keystr), "%s/%d", domain_name, rid);
     
     key.dptr = keystr;
     key.dsize = strlen(keystr) + 1;
@@ -116,7 +115,7 @@ static BOOL get_id_from_rid(char *domain_name, uint32 rid, int *id,
 
             /* Store new id */
             
-            slprintf(keystr2, sizeof(keystr2)-1, "%s %d", isgroup ? "GID" :
+            slprintf(keystr2, sizeof(keystr2), "%s %d", isgroup ? "GID" :
                      "UID", *id);
 
             data.dptr = keystr2;
@@ -155,7 +154,7 @@ BOOL get_rid_from_id(int id, uint32 *rid, struct winbindd_domain **domain,
     fstring keystr;
     BOOL result = False;
 
-    slprintf(keystr, sizeof(keystr)-1, "%s %d", isgroup ? "GID" : "UID", id);
+    slprintf(keystr, sizeof(keystr), "%s %d", isgroup ? "GID" : "UID", id);
 
     key.dptr = keystr;
     key.dsize = strlen(keystr) + 1;
@@ -177,11 +176,17 @@ BOOL get_rid_from_id(int id, uint32 *rid, struct winbindd_domain **domain,
 
             if (domain) {
                 *domain = find_domain_from_name(domain_name);
+		if (*domain == NULL) {
+			DEBUG(1, ("unknown domain %s for rid %d\n",
+				  domain_name, the_rid));
+			result = False;
+			goto done;
+		}
             }
 
             result = True;
         }
-            
+    done:            
         free(data.dptr);
     }
 
@@ -211,8 +216,7 @@ BOOL winbindd_idmap_init(void)
     /* Open tdb cache */
 
     if (!(idmap_tdb = tdb_open(lock_path("winbindd_idmap.tdb"), 0,
-                               TDB_NOLOCK | TDB_NOMMAP, 
-                               O_RDWR | O_CREAT, 0600))) {
+                               TDB_NOLOCK, O_RDWR | O_CREAT, 0600))) {
         DEBUG(0, ("Unable to open idmap database\n"));
         return False;
     }
@@ -234,4 +238,64 @@ BOOL winbindd_idmap_init(void)
     }
 
     return True;   
+}
+
+/* Dump status information to log file.  Display different stuff based on
+   the debug level:
+
+   Debug Level        Information Displayed
+   =================================================================
+   0                  Percentage of [ug]id range allocated
+   0                  High water marks (next allocated ids)
+*/
+
+#define DUMP_INFO 0
+
+void winbindd_idmap_dump_status(void)
+{
+    int user_hwm, group_hwm;
+
+    DEBUG(0, ("Status for winbindd idmap:\n"));
+
+    /* Get current high water marks */
+
+    if ((user_hwm = tdb_fetch_int(idmap_tdb, HWM_USER)) == -1) {
+        DEBUG(DUMP_INFO, ("\tCould not get userid high water mark!\n"));
+    }
+
+    if ((group_hwm = tdb_fetch_int(idmap_tdb, HWM_GROUP)) == -1) {
+        DEBUG(DUMP_INFO, ("\tCould not get groupid high water mark!\n"));
+    }
+
+    /* Display next ids to allocate */
+
+    if (user_hwm != -1) {
+        DEBUG(DUMP_INFO, ("\tNext userid to allocate is %d\n", user_hwm));
+    }
+
+    if (group_hwm != -1) {
+        DEBUG(DUMP_INFO, ("\tNext groupid to allocate is %d\n", group_hwm));
+    }
+
+    /* Display percentage of id range already allocated. */
+
+    if (user_hwm != -1) {
+        int num_users = user_hwm - server_state.uid_low;
+        int total_users = server_state.uid_high - server_state.uid_low;
+
+        DEBUG(DUMP_INFO, ("\tUser id range is %d%% full (%d of %d)\n", 
+                          num_users * 100 / total_users, num_users,
+                          total_users));
+    }
+
+    if (group_hwm != -1) {
+        int num_groups = group_hwm - server_state.gid_low;
+        int total_groups = server_state.gid_high - server_state.gid_low;
+
+        DEBUG(DUMP_INFO, ("\tGroup id range is %d%% full (%d of %d)\n",
+                          num_groups * 100 / total_groups, num_groups,
+                          total_groups));
+    }
+
+    /* Display complete mapping of users and groups to rids */
 }

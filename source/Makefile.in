@@ -122,7 +122,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/passchange.o libsmb/unexpected.o $(RPC_PARSE_OBJ1)
 
 LIBMSRPC_OBJ = libsmb/cli_lsarpc.o libsmb/cli_samr.o libsmb/cli_spoolss.o \
-		rpc_client/cli_pipe.o
+		rpc_client/cli_pipe.o nsswitch/winbindd_glue.o
 
 RPC_SERVER_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o \
                  rpc_server/srv_lsa_hnd.o rpc_server/srv_netlog.o rpc_server/srv_netlog_nt.o \
@@ -145,11 +145,11 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_net.o \
 		rpc_parse/parse_creds.o
 
 
-RPC_CLIENT_OBJ = rpc_client/cli_netlogon.o rpc_client/cli_pipe.o \
-		rpc_client/cli_lsarpc.o rpc_client/cli_connect.o \
-		rpc_client/cli_use.o rpc_client/cli_login.o \
-		rpc_client/cli_spoolss_notify.o rpc_client/ncacn_np_use.o \
-		lib/util_list.o
+#RPC_CLIENT_OBJ = rpc_client/cli_netlogon.o rpc_client/cli_pipe.o \
+#		rpc_client/cli_lsarpc.o rpc_client/cli_connect.o \
+#		rpc_client/cli_use.o rpc_client/cli_login.o \
+#		rpc_client/cli_spoolss_notify.o rpc_client/ncacn_np_use.o \
+#		lib/util_list.o
 
 LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
 
@@ -351,6 +351,9 @@ PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
 
 PAM_SMBPASS_PICOOBJ = $(PAM_SMBPASS_OBJ_0:.o=.po)
 
+NSS_OBJ_0 = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) $(LIB_OBJ) $(NSSWINS_OBJ)
+NSS_OBJ = $(NSS_OBJ_0:.o=.po)
+
 WINBINDD_OBJ1 = \
 		nsswitch/winbindd.o       \
 		nsswitch/winbindd_user.o  \
@@ -358,23 +361,20 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_idmap.o \
 		nsswitch/winbindd_util.o  \
 		nsswitch/winbindd_cache.o \
-		nsswitch/winbindd_pam.o
+		nsswitch/winbindd_pam.o   \
+		nsswitch/winbindd_sid.o   \
+		nsswitch/winbindd_misc.o
 
 WINBINDD_OBJ = \
-		$(WINBINDD_OBJ1) \
-		$(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(STUB_UID_OBJ) \
+		$(WINBINDD_OBJ1) $(NOPROTO_OBJ) $(PASSDB_OBJ) \
 		$(LIBNMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
-		$(NSSWINS_OBJ) $(SIDDB_OBJ) $(LIBSMB_OBJ)
+		$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) $(GROUPDB_OBJ)
 
 WBINFO_OBJ = nsswitch/wbinfo.o
 
 WINBIND_NSS_OBJ = nsswitch/winbind_nss.o nsswitch/wb_common.o
 
 WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.po)
-
-
-NSS_OBJ_0 = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) $(LIB_OBJ) $(NSSWINS_OBJ)
-NSS_OBJ = $(NSS_OBJ_0:.o=.po)
 
 ######################################################################
 # now the rules...
@@ -623,8 +623,8 @@ bin/wbinfo: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ) $(UBIQX_OBJ) bi
 	@$(LINK) -o $@ $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ) \
 		$(UBIQX_OBJ) $(LIBS)
 
-nsswitch: nsswitch/libnss_wins.so nsswitch/pam_winbind.so \
-	nsswitch/libnss_winbind.so bin/wbinfo
+nsswitch: nsswitch/pam_winbind.so nsswitch/libnss_winbind.so bin/winbindd \
+	bin/wbinfo
 
 bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_PICOOBJ)
 	@echo "Linking shared library $@"
