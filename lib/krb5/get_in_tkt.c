@@ -81,7 +81,7 @@ cleanup:
 static krb5_error_code
 decrypt_tkt (krb5_context context,
 	     krb5_keyblock *key,
-	     unsigned usage,
+	     krb5_key_usage usage,
 	     krb5_const_pointer decrypt_arg,
 	     krb5_kdc_rep *dec_rep)
 {
@@ -304,12 +304,12 @@ make_pa_enc_timestamp(krb5_context context, PA_DATA *pa,
     EncryptedData encdata;
     krb5_error_code ret;
     int32_t sec, usec;
-    unsigned usec2;
+    int usec2;
     krb5_crypto crypto;
     
     krb5_us_timeofday (context, &sec, &usec);
     p.patimestamp = sec;
-    usec2 = usec;
+    usec2         = usec;
     p.pausec      = &usec2;
 
     ret = encode_PA_ENC_TS_ENC(buf + sizeof(buf) - 1,
