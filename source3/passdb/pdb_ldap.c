@@ -3176,10 +3176,12 @@ static NTSTATUS pdb_init_ldapsam_compat(PDB_CONTEXT *pdb_context, PDB_METHODS **
 	ldap_state = (*pdb_method)->private_data;
 	ldap_state->use_ntsid = False;
 
-#ifdef WITH_LDAP_SAMCONFIG
 	if (location) {
 		ldap_state->uri = talloc_strdup(pdb_context->mem_ctx, location);
 	} else {
+#ifndef WITH_LDAP_SAMCONFIG
+		ldap_state->uri = "ldap://localhost";
+#else
 		int ldap_port = lp_ldap_port();
 			
 		/* remap default port if not using SSL (ie clear or TLS) */
