@@ -1172,6 +1172,7 @@ int smb_xvasprintf(char **ptr, const char *format, va_list ap);
 void *memdup(void *p, size_t size);
 char *myhostname(void);
 char *lock_path(char *name);
+char *pid_path(char *name);
 char *parent_dirname(const char *path);
 BOOL ms_has_wild(char *s);
 BOOL mask_match(char *string, char *pattern, BOOL is_case_sensitive);
@@ -4108,6 +4109,7 @@ BOOL api_spoolss_rpc(pipes_struct *p);
 
 /* The following definitions come from rpc_server/srv_spoolss_nt.c  */
 
+void do_drv_upgrade_printer(int msg_type, pid_t src, void *buf, size_t len);
 WERROR _spoolss_open_printer(pipes_struct *p, SPOOL_Q_OPEN_PRINTER *q_u, SPOOL_R_OPEN_PRINTER *r_u);
 WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, SPOOL_R_OPEN_PRINTER_EX *r_u);
 BOOL convert_devicemode(char *printername, const DEVICEMODE *devmode,
