@@ -33,6 +33,10 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 
 #define DATABASE_VERSION 1
 
+/* we need to have a small set of default forms to support our
+   default printer */
+
+
 /****************************************************************************
 open the NT printing tdb
 ****************************************************************************/
@@ -83,13 +87,16 @@ int get_ntforms(nt_forms_struct **list)
 		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddddddd",
 				 &form.flag, &form.width, &form.length, &form.left,
 				 &form.top, &form.right, &form.bottom);
-		free(dbuf.dptr);
+		safe_free(dbuf.dptr);
 		if (ret != dbuf.dsize) continue;
 
 		*list = Realloc(*list, sizeof(nt_forms_struct)*(n+1));
 		(*list)[n] = form;
 		n++;
 	}
+
+	/* we should never return a null forms list or NT gets unhappy */
+	
 
 	return n;
 }
@@ -240,9 +247,9 @@ void get_short_archi(char *short_archi, char *long_archi)
 	{
 		{"Windows 4.0",          "WIN40"    },
 		{"Windows NT x86",       "W32X86"   },
-		{"Windows NT R4000",     "W32mips"  },
-		{"Windows NT Alpha_AXP", "W32alpha" },
-		{"Windows NT PowerPC",   "W32ppc"   },
+		{"Windows NT R4000",     "W32MIPS"  },
+		{"Windows NT Alpha_AXP", "W32ALPHA" },
+		{"Windows NT PowerPC",   "W32PPC"   },
 		{NULL,                   ""         }
 	};
 	
@@ -257,6 +264,7 @@ void get_short_archi(char *short_archi, char *long_archi)
 	{
 		DEBUGADD(107,("Unknown architecture [%s] !\n", long_archi));
 	}
+
 	StrnCpy (short_archi, archi_table[i].short_archi, strlen(archi_table[i].short_archi));
 
 	DEBUGADD(108,("index: [%d]\n", i));
@@ -325,7 +333,7 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 	
 	ret = tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
 
-	free(buf);
+	safe_free(buf);
 	return ret;
 }
 
@@ -335,6 +343,7 @@ static uint32 add_a_printer_driver_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver)
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 info3;
 
+	ZERO_STRUCT(info3);
 	info3.cversion = driver->version;
 	fstrcpy(info3.environment,driver->environment);
 	fstrcpy(info3.driverpath,driver->driverpath);
@@ -414,9 +423,14 @@ static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 	}
 	fstrcpy(driver.dependentfiles[i], "");
 
-	free(dbuf.dptr);
+	safe_free(dbuf.dptr);
+
+
 	return 0;
 }
+
+/****************************************************************************
+****************************************************************************/
 
 /****************************************************************************
 debugging function, dump at level 6 the struct in the logs
@@ -506,6 +520,7 @@ static int pack_devicemode(NT_DEVICEMODE *nt_devmode, char *buf, int buflen)
 				nt_devmode->driverextra,
 				nt_devmode->private);
 	}
+
 
 	return len;
 }
@@ -634,7 +649,7 @@ static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 
 	ret = tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
 
-	free(buf);
+	safe_free(buf);
 
 	return ret;
 }
@@ -683,7 +698,7 @@ BOOL unlink_specific_param_if_exist(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_
 		DEBUG(109,("deleting first value\n"));
 		info_2->specific=current->next;
 		safe_free(current->data);
-		free(current);
+		safe_free(current);
 		DEBUG(109,("deleted first value\n"));
 		return (True);
 	}
@@ -697,7 +712,7 @@ BOOL unlink_specific_param_if_exist(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_
 		{
 			DEBUG(109,("deleting current value\n"));
 			previous->next=current->next;
-			free(current);
+			safe_free(current);
 			DEBUG(109,("deleted current value\n"));
 			return(True);
 		}
@@ -721,11 +736,21 @@ static void free_nt_printer_param(NT_PRINTER_PARAM **param_ptr)
 	DEBUG(106,("free_nt_printer_param: deleting param [%s]\n", param->value));
 
 	if(param->data)
-		free(param->data);
+		safe_free(param->data);
 
-	free(param);
+	safe_free(param);
 	*param_ptr = NULL;
 }
+
+/****************************************************************************
+ Malloc and return an NT devicemode.
+****************************************************************************/
+
+
+/****************************************************************************
+ Deepcopy an NT devicemode.
+****************************************************************************/
+
 
 /****************************************************************************
  Clean up and deallocate a (maybe partially) allocated NT_DEVICEMODE.
@@ -740,9 +765,9 @@ static void free_nt_devicemode(NT_DEVICEMODE **devmode_ptr)
 	DEBUG(106,("free_nt_devicemode: deleting DEVMODE\n"));
 
 	if(nt_devmode->private)
-		free(nt_devmode->private);
+		safe_free(nt_devmode->private);
 
-	free(nt_devmode);
+	safe_free(nt_devmode);
 	*devmode_ptr = NULL;
 }
 
@@ -788,6 +813,7 @@ static int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
 
 	len += tdb_unpack(buf+len, buflen-len, "fddddddddddddddddddddddp",
 		       devmode.formname,
+
 		       &devmode.specversion,
 		       &devmode.driverversion,
 		       &devmode.size,
@@ -822,6 +848,7 @@ static int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
 
 	*nt_devmode = (NT_DEVICEMODE *)memdup(&devmode, sizeof(devmode));
 
+
 	return len;
 }
 
@@ -845,6 +872,7 @@ static int unpack_specifics(NT_PRINTER_PARAM **list, char *buf, int buflen)
 				  &param.data);
 		param.next = *list;
 		*list = memdup(&param, sizeof(param));
+
 	}
 
 	return len;
@@ -883,6 +911,7 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	if (! *info_ptr) return 2;
 
 	return (0);	
+
 }
 
 /****************************************************************************
@@ -934,6 +963,8 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	nt_printing_getsec(sharename, &info.secdesc);
 
 	*info_ptr=memdup(&info, sizeof(info));
+	
+
 	
 	return 0;	
 }
@@ -993,6 +1024,11 @@ static uint32 dump_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 	return (success);
 }
 
+/****************************************************************************
+ Get the parameters we can substitute in an NT print job.
+****************************************************************************/
+
+
 /*
  * The function below are the high level ones.
  * only those ones must be called from the spoolss code.
@@ -1024,6 +1060,7 @@ uint32 add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 }
 
 /****************************************************************************
+ Get a NT_PRINTER_INFO_LEVEL struct. It returns malloced memory.
 ****************************************************************************/
 uint32 get_a_printer(NT_PRINTER_INFO_LEVEL *printer, uint32 level, fstring sharename)
 {
@@ -1052,11 +1089,13 @@ uint32 get_a_printer(NT_PRINTER_INFO_LEVEL *printer, uint32 level, fstring share
 }
 
 /****************************************************************************
+ Deletes a NT_PRINTER_INFO_LEVEL struct.
 ****************************************************************************/
 uint32 free_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 {
 	uint32 success;
 	DEBUG(104,("freeing a printer at level [%d]\n", level));
+	
 	
 	switch (level)
 	{
@@ -1380,4 +1419,11 @@ jfm: I should use this comment for the text file to explain
 
 */
 
+/* Check a user has permissions to perform the given operation */
+
+
+
+/****************************************************************************
+ Check the time parameters allow a print operation.
+*****************************************************************************/
 

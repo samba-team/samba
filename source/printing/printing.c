@@ -128,15 +128,17 @@ static BOOL print_job_store(int jobid, struct printjob *pjob)
 
 /****************************************************************************
 run a given print command 
+a null terminated list of value/substitute pairs is provided
+for local substitution strings
 ****************************************************************************/
 static int print_run_command(int snum,char *command, 
 			     char *outfile,
-			     char *a1, char *v1, 
-			     char *a2, char *v2)
+			     ...)
 {
 	pstring syscmd;
-	char *p;
+	char *p, *arg;
 	int ret;
+	va_list ap;
 
 	if (!command || !*command) return -1;
 
@@ -146,8 +148,13 @@ static int print_run_command(int snum,char *command,
 	}
 
 	pstrcpy(syscmd, command);
-	if (a1) pstring_sub(syscmd, a1, v1);
-	if (a2) pstring_sub(syscmd, a2, v2);
+
+	va_start(ap, outfile);
+	while ((arg = va_arg(ap, char *))) {
+		char *value = va_arg(ap,char *);
+		pstring_sub(syscmd, arg, value);
+	}
+	va_end(ap);
   
 	p = PRINTERNAME(snum);
 	if (!p || !*p) p = SERVICE(snum);
@@ -294,7 +301,7 @@ static void print_queue_update(int snum)
 
 	unlink(tmp_file);
 	print_run_command(snum, cmd, tmp_file,
-			  NULL, NULL, NULL, NULL);
+			  NULL);
 
 	numlines = 0;
 	qlines = file_lines_load(tmp_file, &numlines);
@@ -463,13 +470,24 @@ static BOOL print_job_delete1(int jobid)
 		print_run_command(snum, 
 				  lp_lprmcommand(snum), NULL,
 				  "%j", jobstr,
-				  /*
 				  "%T", http_timestring(pjob->starttime),
-				  */
-				  NULL, NULL);
+				  NULL);
 	}
 
 	return True;
+}
+
+/****************************************************************************
+return true if the uid owns the print job
+****************************************************************************/
+static BOOL is_owner(uid_t uid, int jobid)
+{
+	struct printjob *pjob = print_job_find(jobid);
+	struct passwd *pw;
+
+	if (!pjob || !(pw = sys_getpwuid(uid))) return False;
+
+	return (pw && pjob && strequal(pw->pw_name, pjob->user));
 }
 
 /****************************************************************************
@@ -478,6 +496,9 @@ delete a print job
 BOOL print_job_delete(int jobid)
 {
 	int snum = print_job_snum(jobid);
+	/* Check access against security descriptor or whether the user
+	   owns their job. */
+
 
 	if (!print_job_delete1(jobid)) return False;
 
@@ -497,6 +518,8 @@ BOOL print_job_pause(int jobid)
 	struct printjob *pjob = print_job_find(jobid);
 	int snum, ret = -1;
 	fstring jobstr;
+
+
 	if (!pjob) return False;
 
 	if (!pjob->spooled || pjob->sysjob == -1) return False;
@@ -508,7 +531,7 @@ BOOL print_job_pause(int jobid)
 	ret = print_run_command(snum, 
 				lp_lppausecommand(snum), NULL,
 				"%j", jobstr,
-				NULL, NULL);
+				NULL);
 
 	/* force update the database */
 	print_cache_flush(snum);
@@ -525,6 +548,7 @@ BOOL print_job_resume(int jobid)
 	struct printjob *pjob = print_job_find(jobid);
 	int snum, ret;
 	fstring jobstr;
+
 	if (!pjob) return False;
 
 	if (!pjob->spooled || pjob->sysjob == -1) return False;
@@ -535,7 +559,7 @@ BOOL print_job_resume(int jobid)
 	ret = print_run_command(snum, 
 				lp_lpresumecommand(snum), NULL,
 				"%j", jobstr,
-				NULL, NULL);
+				NULL);
 
 	/* force update the database */
 	print_cache_flush(snum);
@@ -568,6 +592,7 @@ int print_job_start(int snum, char *jobname)
 	struct printjob pjob;
 	int next_jobid;
 	extern struct current_user current_user;
+
 
 	path = lp_pathname(snum);
 
@@ -659,8 +684,9 @@ int print_job_start(int snum, char *jobname)
 }
 
 /****************************************************************************
-print a file - called on closing the file. This spools the job
+ Print a file - called on closing the file. This spools the job.
 ****************************************************************************/
+
 BOOL print_job_end(int jobid)
 {
 	struct printjob *pjob = print_job_find(jobid);
@@ -669,14 +695,18 @@ BOOL print_job_end(int jobid)
 	pstring current_directory;
 	pstring print_directory;
 	char *wd, *p;
+	pstring jobname;
 
-	if (!pjob) return False;
+	if (!pjob)
+		return False;
 
-	if (pjob->spooled || pjob->pid != local_pid) return False;
+	if (pjob->spooled || pjob->pid != local_pid)
+		return False;
 
 	snum = print_job_snum(jobid);
 
-	if (sys_fstat(pjob->fd, &sbuf) == 0) pjob->size = sbuf.st_size;
+	if (sys_fstat(pjob->fd, &sbuf) == 0)
+		pjob->size = sbuf.st_size;
 
 	close(pjob->fd);
 	pjob->fd = -1;
@@ -691,21 +721,28 @@ BOOL print_job_end(int jobid)
 	/* we print from the directory path to give the best chance of
            parsing the lpq output */
 	wd = sys_getwd(current_directory);
-	if (!wd) return False;		
+	if (!wd)
+		return False;		
 
 	pstrcpy(print_directory, pjob->filename);
 	p = strrchr(print_directory,'/');
-	if (!p) return False;
+	if (!p)
+		return False;
 	*p++ = 0;
 
-	if (chdir(print_directory) != 0) return False;
+	if (chdir(print_directory) != 0)
+		return False;
+
+	pstrcpy(jobname, pjob->jobname);
+	pstring_sub(jobname, "'", "_");
 
 	/* send it to the system spooler */
 	print_run_command(snum, 
 			  lp_printcommand(snum), NULL,
 			  "%s", p,
-  /*			  "%J", stripquote(pjob->jobname), */
-			  "%f", p);
+  			  "%J", jobname,
+			  "%f", p,
+			  NULL);
 
 	chdir(wd);
 
@@ -718,10 +755,10 @@ BOOL print_job_end(int jobid)
 	return True;
 }
 
-
 /****************************************************************************
-check if the print queue has been updated recently enough
+ Check if the print queue has been updated recently enough.
 ****************************************************************************/
+
 static BOOL print_cache_expired(int snum)
 {
 	fstring key;
@@ -755,7 +792,7 @@ static int traverse_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *
 	ts->queue[i].job = jobid;
 	ts->queue[i].size = pjob.size;
 	ts->queue[i].status = pjob.status;
-	ts->queue[i].priority = 0;
+	ts->queue[i].priority = 1;
 	ts->queue[i].time = pjob.starttime;
 	fstrcpy(ts->queue[i].user, pjob.user);
 	fstrcpy(ts->queue[i].file, pjob.jobname);
@@ -820,10 +857,11 @@ int print_queue_snum(char *qname)
 ****************************************************************************/
 BOOL print_queue_pause(int snum)
 {
-	int ret = print_run_command(snum, 
-				    lp_queuepausecommand(snum), NULL,
-				    NULL, NULL,
-				    NULL, NULL);
+	int ret;
+
+
+	ret = print_run_command(snum, lp_queuepausecommand(snum), NULL,
+				NULL);
 
 	/* force update the database */
 	print_cache_flush(snum);
@@ -836,10 +874,11 @@ BOOL print_queue_pause(int snum)
 ****************************************************************************/
 BOOL print_queue_resume(int snum)
 {
-	int ret = print_run_command(snum, 
-				    lp_queueresumecommand(snum), NULL,
-				    NULL, NULL,
-				    NULL, NULL);
+	int ret;
+
+
+	ret  = print_run_command(snum, lp_queueresumecommand(snum), NULL,
+				NULL);
 
 	/* force update the database */
 	print_cache_flush(snum);
@@ -855,6 +894,7 @@ BOOL print_queue_purge(int snum)
 	print_queue_struct *queue;
 	print_status_struct status;
 	int njobs, i;
+
 
 	njobs = print_queue_status(snum, &queue, &status);
 	for (i=0;i<njobs;i++) {
