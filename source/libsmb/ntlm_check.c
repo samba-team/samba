@@ -93,6 +93,7 @@ static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB *ntv2_response,
 	uchar value_from_encryption[16];
 	uchar client_response[16];
 	DATA_BLOB client_key_data;
+	BOOL res;
 
 	if (part_passwd == NULL) {
 		DEBUG(10,("No password set - DISALLOWING access\n"));
@@ -146,7 +147,10 @@ static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB *ntv2_response,
 	dump_data(100, value_from_encryption, 16);
 #endif
 	data_blob_clear_free(&client_key_data);
-	return (memcmp(value_from_encryption, client_response, 16) == 0);
+	res = (memcmp(value_from_encryption, client_response, 16) == 0);
+	if ((!res) && (user_sess_key != NULL))
+		data_blob_clear_free(user_sess_key);
+	return res;
 }
 
 /**
