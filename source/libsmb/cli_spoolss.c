@@ -1168,3 +1168,55 @@ done:
 	return result;	
 }
 
+NTSTATUS cli_spoolss_routerreplyprinter (struct cli_state *cli, TALLOC_CTX *mem_ctx,
+					POLICY_HND *pol, uint32 condition, uint32 changd_id)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_ROUTERREPLYPRINTER q;
+        SPOOL_R_ROUTERREPLYPRINTER r;
+	NTSTATUS result;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+
+	/* Initialise input parameters */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+
+	/* write the request */
+	make_spoolss_q_routerreplyprinter(&q, pol, condition, changd_id);
+
+	/* Marshall data and send request */
+	if (!spoolss_io_q_routerreplyprinter ("", &q, &qbuf, 0)) {
+		DEBUG(0,("cli_spoolss_routerreplyprinter: Unable to marshall SPOOL_Q_ROUTERREPLYPRINTER!\n"));
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+		
+		
+	if (!rpc_api_pipe_req (cli, SPOOLSS_ROUTERREPLYPRINTER, &qbuf, &rbuf)) {
+		DEBUG(0,("cli_spoolss_routerreplyprinter: rpc_api_pipe_req failed!\n"));
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+	if (!spoolss_io_r_routerreplyprinter ("", &r, &rbuf, 0)) {
+		DEBUG(0,("cli_spoolss_routerreplyprinter: Unable to unmarshall SPOOL_R_ROUTERREPLYPRINTER!\n"));
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+		
+	/* Return output parameters */
+	result = werror_to_ntstatus(r.status);
+
+done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;	
+}
+

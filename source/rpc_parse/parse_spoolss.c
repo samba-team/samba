@@ -6104,6 +6104,73 @@ BOOL spoolss_io_r_replyopenprinter(char *desc, SPOOL_R_REPLYOPENPRINTER *r_u, pr
 /*******************************************************************
  * init a structure.
  ********************************************************************/
+BOOL make_spoolss_q_routerreplyprinter(SPOOL_Q_ROUTERREPLYPRINTER *q_u, POLICY_HND *hnd, 
+					uint32 condition, uint32 change_id)
+{
+
+	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
+
+	q_u->condition = condition;
+	q_u->change_id = change_id;
+
+	/* magic values */
+	q_u->unknown1 = 0x1;
+	memset(q_u->unknown2, 0x0, 5);
+	q_u->unknown2[0] = 0x1;
+
+	return True;
+}
+
+/*******************************************************************
+ Parse a SPOOL_Q_ROUTERREPLYPRINTER structure.
+********************************************************************/
+BOOL spoolss_io_q_routerreplyprinter (char *desc, SPOOL_Q_ROUTERREPLYPRINTER *q_u, prs_struct *ps, int depth)
+{
+
+	prs_debug(ps, depth, desc, "spoolss_io_q_routerreplyprinter");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("printer handle",&q_u->handle,ps,depth))
+		return False;
+
+	if (!prs_uint32("condition", ps, depth, &q_u->condition))
+		return False;
+
+	if (!prs_uint32("unknown1", ps, depth, &q_u->unknown1))
+		return False;
+
+	if (!prs_uint32("change_id", ps, depth, &q_u->change_id))
+		return False;
+
+	if (!prs_uint8s(False, "private",  ps, depth, q_u->unknown2, 5))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Parse a SPOOL_R_ROUTERREPLYPRINTER structure.
+********************************************************************/
+BOOL spoolss_io_r_routerreplyprinter (char *desc, SPOOL_R_ROUTERREPLYPRINTER *r_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_r_routerreplyprinter");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_werror("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
 
 BOOL make_spoolss_q_reply_closeprinter(SPOOL_Q_REPLYCLOSEPRINTER *q_u, POLICY_HND *hnd)
 {      
@@ -6239,7 +6306,7 @@ BOOL make_spoolss_q_reply_rrpcn(SPOOL_Q_REPLY_RRPCN *q_u, POLICY_HND *hnd,
 	q_u->unknown0=0x0;
 	q_u->unknown1=0x0;
 
-	q_u->info_ptr=1;
+	q_u->info_ptr=0xaddee11e;
 
 	q_u->info.version=2;
 	

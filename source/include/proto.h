@@ -590,6 +590,8 @@ NTSTATUS cli_spoolss_getprintprocessordirectory(struct cli_state *cli,
 						fstring procdir);
 NTSTATUS cli_spoolss_setprinterdata (struct cli_state *cli, TALLOC_CTX *mem_ctx,
 					POLICY_HND *pol, char* valname, char* value);
+NTSTATUS cli_spoolss_routerreplyprinter (struct cli_state *cli, TALLOC_CTX *mem_ctx,
+					POLICY_HND *pol, uint32 condition, uint32 changd_id);
 
 /*The following definitions come from  libsmb/cli_srvsvc.c  */
 
@@ -3694,6 +3696,10 @@ BOOL make_spoolss_q_replyopenprinter(SPOOL_Q_REPLYOPENPRINTER *q_u,
 			       const fstring string, uint32 printer, uint32 type);
 BOOL spoolss_io_q_replyopenprinter(char *desc, SPOOL_Q_REPLYOPENPRINTER *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_replyopenprinter(char *desc, SPOOL_R_REPLYOPENPRINTER *r_u, prs_struct *ps, int depth);
+BOOL make_spoolss_q_routerreplyprinter(SPOOL_Q_ROUTERREPLYPRINTER *q_u, POLICY_HND *hnd, 
+					uint32 condition, uint32 change_id);
+BOOL spoolss_io_q_routerreplyprinter (char *desc, SPOOL_Q_ROUTERREPLYPRINTER *r_u, prs_struct *ps, int depth);
+BOOL spoolss_io_r_routerreplyprinter (char *desc, SPOOL_R_ROUTERREPLYPRINTER *r_u, prs_struct *ps, int depth);
 BOOL make_spoolss_q_reply_closeprinter(SPOOL_Q_REPLYCLOSEPRINTER *q_u, POLICY_HND *hnd);
 BOOL spoolss_io_q_replycloseprinter(char *desc, SPOOL_Q_REPLYCLOSEPRINTER *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_replycloseprinter(char *desc, SPOOL_R_REPLYCLOSEPRINTER *r_u, prs_struct *ps, int depth);
