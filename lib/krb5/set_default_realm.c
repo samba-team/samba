@@ -40,35 +40,99 @@
 
 RCSID("$Id$");
 
+/*
+ * Convert the config binding in `b' (consisting of strings) to a
+ * NULL-terminated list of strings in `list'.  All memory is
+ * dynamically allocated.  Return an error code.
+ */
+
+static krb5_error_code
+config_binding_to_list (const krb5_config_binding *b,
+			krb5_realm **list)
+{
+    int n, i, j;
+    const krb5_config_binding *p;
+
+    for (n = 1, p = b; p != NULL; p = p->next)
+	++n;
+    *list = malloc (n * sizeof(**list));
+    if (*list == NULL)
+	return ENOMEM;
+    for (i = 0, p = b; i < n ; ++i, p = p->next)
+	(*list)[i] = NULL;
+    for (i = 0, p = b; p != NULL; ++i, p = p->next) {
+	if (p->type != krb5_config_string)
+	    continue;
+	(*list)[i] = strdup(p->u.string);
+	if ((*list)[i] == NULL) {
+	    for (j = 0; j < i; ++j)
+		free ((*list)[j]);
+	    free (*list);
+	    return ENOMEM;
+	}
+    }
+    return 0;
+}
+
+/*
+ * Convert the simple string `s' into a NULL-terminated and freshly allocated 
+ * list in `list'.  Return an error code.
+ */
+
+static krb5_error_code
+string_to_list (const char *s, krb5_realm **list)
+{
+
+    *list = malloc (2 * sizeof(**list));
+    if (*list == NULL)
+	return ENOMEM;
+    (*list)[0] = strdup (s);
+    if ((*list)[0] == NULL) {
+	free (*list);
+	return ENOMEM;
+    }
+    (*list)[1] = NULL;
+    return 0;
+}
+
+/*
+ * Set the knowledge of the default realm(s) in `context'.
+ * If realm != NULL, that's the new default realm.
+ * Otherwise, the realm(s) are figured out from configuration or DNS.  
+ */
+
 krb5_error_code
 krb5_set_default_realm(krb5_context context,
 		       char *realm)
 {
-    const char *foo;
-    char *tmp;
+    krb5_error_code ret;
+    const char *tmp;
     krb5_realm *realms = NULL;
+    const krb5_config_binding *b;
 
-    if (realm == NULL){
-	foo = krb5_config_get_string (context, NULL,
+    if (realm == NULL) {
+	tmp = krb5_config_get_string (context, NULL,
 				      "libdefaults",
 				      "default_realm",
 				      NULL);
-	if(foo == NULL){
-	    krb5_error_code ret;
-	    ret = krb5_get_host_realm(context, NULL, &realms);
-	    if(ret)
-		return ret;
-	    foo = realms[0];
+	if (tmp == NULL) {
+	    b = krb5_config_get_list (context, NULL,
+				      "libdefaults",
+				      "default_realm",
+				      NULL);
+	    if (b == NULL)
+		ret = krb5_get_host_realm(context, NULL, &realms);
+	    else
+		ret = config_binding_to_list (b, &realms);
+	} else {
+	    ret = string_to_list (tmp, &realms);
 	}
-    } else
-	foo = realm;
-
-    tmp = strdup (foo);
-    krb5_free_host_realm(context, realms);
-	
-    if (tmp == NULL)
-	return ENOMEM;
-    free(context->default_realm);
-    context->default_realm = tmp;
+    } else {
+	ret = string_to_list (realm, &realms);
+    }
+    if (ret)
+	return ret;
+    krb5_free_host_realm (context, context->default_realms);
+    context->default_realms = realms;
     return 0;
 }
