@@ -1,5 +1,7 @@
 2003-03-18  Love Hörnquist Åstrand  <lha@it.su.se>
 	
+	* Makefile.am (LDADD): use LIB_kafs
+	
 	* afslog.1: --no-v4, --no-v5
 	
 	* Makefile.am: always build afsutils now

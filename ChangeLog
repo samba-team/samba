@@ -1,5 +1,7 @@
 2003-03-18  Love Hörnquist Åstrand <lha@it.su.se>
 
+	* kuser/Makefile.am: INCLUDES: -I$(srcdir)/../lib/krb5
+	
 	* lib/krb5/convert_creds.c: add _krb5_krb_life_to_time
 	
 	* lib/krb5/krb5-v4compat.h: add _krb5_krb_life_to_time
