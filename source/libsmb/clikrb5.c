@@ -234,6 +234,13 @@ krb5_error_code get_kerberos_allowed_etypes(krb5_context context,
 }
 #endif
 
+#if !defined(HAVE_KRB5_FREE_UNPARSED_NAME)
+ void krb5_free_unparsed_name(krb5_context context, char *val)
+{
+	SAFE_FREE(val);
+}
+#endif
+
 static BOOL ads_cleanup_expired_creds(krb5_context context, 
 				      krb5_ccache  ccache,
 				      krb5_creds  *credsp)
