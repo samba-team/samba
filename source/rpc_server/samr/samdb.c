@@ -462,7 +462,7 @@ struct samr_Password samdb_result_hash(struct ldb_message *msg, const char *attr
 	const struct ldb_val *val = ldb_msg_find_ldb_val(msg, attr);
 	ZERO_STRUCT(hash);
 	if (val) {
-		memcpy(hash.hash, val->data, MIN(val->length, 16));
+		memcpy(hash.hash, val->data, MIN(val->length, sizeof(hash.hash)));
 	}
 	return hash;
 }
