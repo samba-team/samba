@@ -9,16 +9,19 @@ import printerdata
 
 # Initialise printerdata dictionary
 
-if len(sys.argv) != 2:
-    print "Usage: gprinterdata <printer>"
+if len(sys.argv) < 2 or len(sys.argv) > 3:
+    print "Usage: gprinterdata [--ex] <printer>"
     print "where <printer> is a UNC printer name."
     sys.exit(1)
 
 try:
-    host = string.replace(sys.argv[1], "/", "\\")
-    t = printerdata.printerdata(host)
+    host = string.replace(sys.argv[len(sys.argv) - 1], "/", "\\")
+    if sys.argv[1] == "--ex":
+        t = printerdata.printerdata_ex(host)
+    else:
+        t = printerdata.printerdata(host)
 except:
-    print "gprinterdata: error opening %s" % sys.argv[1]
+    print "gprinterdata: error opening %s" % sys.argv[len(sys.argv) - 1]
     sys.exit(1)
 
 # Create interface
