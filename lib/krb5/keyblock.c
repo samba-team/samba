@@ -79,3 +79,9 @@ krb5_copy_keyblock (krb5_context context,
     *to = k;
     return krb5_copy_keyblock_contents (context, inblock, k);
 }
+
+krb5_enctype
+krb5_keyblock_get_enctype(const krb5_keyblock *block)
+{
+    return block->keytype;
+}
