@@ -1339,10 +1339,15 @@ BOOL net_io_r_sam_logon(char *desc, NET_R_SAM_LOGON *r_l, prs_struct *ps, int de
 	if(!prs_align(ps))
 		return False;
 
+#if 1 /* W2k always needs this - even for bad passwd. JRA */
+	if(!net_io_user_info3("", r_l->user, ps, depth, r_l->switch_value))
+		return False;
+#else
 	if (r_l->switch_value != 0) {
 		if(!net_io_user_info3("", r_l->user, ps, depth, r_l->switch_value))
 			return False;
 	}
+#endif
 
 	if(!prs_uint32("auth_resp   ", ps, depth, &r_l->auth_resp)) /* 1 - Authoritative response; 0 - Non-Auth? */
 		return False;
