@@ -172,7 +172,7 @@ NTSTATUS do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
    
 	if (!ok) {
 		DEBUG(10,("do_unlock: returning ERRlock.\n" ));
-		return NT_STATUS_LOCK_NOT_GRANTED;
+		return NT_STATUS_RANGE_NOT_LOCKED;
 	}
 
 	if (!lp_posix_locking(SNUM(conn)))

@@ -268,6 +268,8 @@ int cli_nt_create_full(struct cli_state *cli, const char *fname, uint32 DesiredA
 int cli_nt_create(struct cli_state *cli, const char *fname, uint32 DesiredAccess);
 int cli_open(struct cli_state *cli, const char *fname, int flags, int share_mode);
 BOOL cli_close(struct cli_state *cli, int fnum);
+NTSTATUS cli_locktype(struct cli_state *cli, int fnum,
+		      uint32 offset, uint32 len, int timeout, unsigned char locktype);
 BOOL cli_lock(struct cli_state *cli, int fnum, 
 	      uint32 offset, uint32 len, int timeout, enum brl_type lock_type);
 BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len);
@@ -2041,6 +2043,7 @@ BOOL lp_dos_filetime_resolution(int );
 BOOL lp_fake_dir_create_times(int );
 BOOL lp_blocking_locks(int );
 BOOL lp_inherit_perms(int );
+BOOL lp_inherit_acls(int );
 BOOL lp_use_client_driver(int );
 BOOL lp_default_devmode(int );
 BOOL lp_nt_acl_support(int );
@@ -3698,7 +3701,7 @@ BOOL spoolss_io_q_replyopenprinter(char *desc, SPOOL_Q_REPLYOPENPRINTER *q_u, pr
 BOOL spoolss_io_r_replyopenprinter(char *desc, SPOOL_R_REPLYOPENPRINTER *r_u, prs_struct *ps, int depth);
 BOOL make_spoolss_q_routerreplyprinter(SPOOL_Q_ROUTERREPLYPRINTER *q_u, POLICY_HND *hnd, 
 					uint32 condition, uint32 change_id);
-BOOL spoolss_io_q_routerreplyprinter (char *desc, SPOOL_Q_ROUTERREPLYPRINTER *r_u, prs_struct *ps, int depth);
+BOOL spoolss_io_q_routerreplyprinter (char *desc, SPOOL_Q_ROUTERREPLYPRINTER *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_routerreplyprinter (char *desc, SPOOL_R_ROUTERREPLYPRINTER *r_u, prs_struct *ps, int depth);
 BOOL make_spoolss_q_reply_closeprinter(SPOOL_Q_REPLYCLOSEPRINTER *q_u, POLICY_HND *hnd);
 BOOL spoolss_io_q_replycloseprinter(char *desc, SPOOL_Q_REPLYCLOSEPRINTER *q_u, prs_struct *ps, int depth);

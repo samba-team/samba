@@ -4367,180 +4367,187 @@ SMB_BIG_UINT get_lock_offset( char *data, int data_offset, BOOL large_file_forma
 
 int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
-  files_struct *fsp = file_fsp(inbuf,smb_vwv2);
-  unsigned char locktype = CVAL(inbuf,smb_vwv3);
-  unsigned char oplocklevel = CVAL(inbuf,smb_vwv3+1);
-  uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
-  uint16 num_locks = SVAL(inbuf,smb_vwv7);
-  SMB_BIG_UINT count = 0, offset = 0;
-  uint16 lock_pid;
-  int32 lock_timeout = IVAL(inbuf,smb_vwv4);
-  int i;
-  char *data;
-  BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES)?True:False;
-  BOOL err;
+	files_struct *fsp = file_fsp(inbuf,smb_vwv2);
+	unsigned char locktype = CVAL(inbuf,smb_vwv3);
+	unsigned char oplocklevel = CVAL(inbuf,smb_vwv3+1);
+	uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
+	uint16 num_locks = SVAL(inbuf,smb_vwv7);
+	SMB_BIG_UINT count = 0, offset = 0;
+	uint16 lock_pid;
+	int32 lock_timeout = IVAL(inbuf,smb_vwv4);
+	int i;
+	char *data;
+	BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES)?True:False;
+	BOOL err;
 	NTSTATUS status;
 
-  START_PROFILE(SMBlockingX);
+	START_PROFILE(SMBlockingX);
 
-  CHECK_FSP(fsp,conn);
+	CHECK_FSP(fsp,conn);
 
-  data = smb_buf(inbuf);
+	data = smb_buf(inbuf);
 
-  /* Check if this is an oplock break on a file
-     we have granted an oplock on.
-   */
+	if (locktype & (LOCKING_ANDX_CANCEL_LOCK | LOCKING_ANDX_CHANGE_LOCKTYPE)) {
+		/* we don't support these - and CANCEL_LOCK makes w2k
+		   and XP reboot so I don't really want to be
+		   compatible! (tridge) */
+		return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+	}
+
+	/* Check if this is an oplock break on a file
+		we have granted an oplock on.
+	*/
 	if ((locktype & LOCKING_ANDX_OPLOCK_RELEASE)) {
-	/* Client can insist on breaking to none. */
-	BOOL break_to_none = (oplocklevel == 0);
+		/* Client can insist on breaking to none. */
+		BOOL break_to_none = (oplocklevel == 0);
 
-    DEBUG(5,("reply_lockingX: oplock break reply (%u) from client for fnum = %d\n",
-              (unsigned int)oplocklevel, fsp->fnum ));
+		DEBUG(5,("reply_lockingX: oplock break reply (%u) from client for fnum = %d\n",
+			(unsigned int)oplocklevel, fsp->fnum ));
 
-    /*
-     * Make sure we have granted an exclusive or batch oplock on this file.
-     */
+		/*
+		 * Make sure we have granted an exclusive or batch oplock on this file.
+		 */
 
 		if(!EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
-      DEBUG(0,("reply_lockingX: Error : oplock break from client for fnum = %d and \
+			DEBUG(0,("reply_lockingX: Error : oplock break from client for fnum = %d and \
 no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
 
-      /* if this is a pure oplock break request then don't send a reply */
-      if (num_locks == 0 && num_ulocks == 0) {
-        END_PROFILE(SMBlockingX);
-        return -1;
-      } else {
-        END_PROFILE(SMBlockingX);
-        return ERROR_DOS(ERRDOS,ERRlock);
-      }
-    }
+			/* if this is a pure oplock break request then don't send a reply */
+			if (num_locks == 0 && num_ulocks == 0) {
+				END_PROFILE(SMBlockingX);
+				return -1;
+			} else {
+				END_PROFILE(SMBlockingX);
+				return ERROR_DOS(ERRDOS,ERRlock);
+			}
+		}
 
-    if (remove_oplock(fsp, break_to_none) == False) {
-      DEBUG(0,("reply_lockingX: error in removing oplock on file %s\n",
-            fsp->fsp_name ));
-    }
+		if (remove_oplock(fsp, break_to_none) == False) {
+			DEBUG(0,("reply_lockingX: error in removing oplock on file %s\n",
+				fsp->fsp_name ));
+		}
 
-    /* if this is a pure oplock break request then don't send a reply */
+		/* if this is a pure oplock break request then don't send a reply */
 		if (num_locks == 0 && num_ulocks == 0) {
-      /* Sanity check - ensure a pure oplock break is not a
-         chained request. */
-      if(CVAL(inbuf,smb_vwv0) != 0xff)
-        DEBUG(0,("reply_lockingX: Error : pure oplock break is a chained %d request !\n",
-                 (unsigned int)CVAL(inbuf,smb_vwv0) ));
-      END_PROFILE(SMBlockingX);
-      return -1;
-    }
-  }
+			/* Sanity check - ensure a pure oplock break is not a
+				chained request. */
+			if(CVAL(inbuf,smb_vwv0) != 0xff)
+				DEBUG(0,("reply_lockingX: Error : pure oplock break is a chained %d request !\n",
+					(unsigned int)CVAL(inbuf,smb_vwv0) ));
+			END_PROFILE(SMBlockingX);
+			return -1;
+		}
+	}
 
-  /*
-   * We do this check *after* we have checked this is not a oplock break
-   * response message. JRA.
-   */
+	/*
+	 * We do this check *after* we have checked this is not a oplock break
+	 * response message. JRA.
+	 */
 
-  release_level_2_oplocks_on_change(fsp);
+	release_level_2_oplocks_on_change(fsp);
 
-  /* Data now points at the beginning of the list
-     of smb_unlkrng structs */
-  for(i = 0; i < (int)num_ulocks; i++) {
-    lock_pid = get_lock_pid( data, i, large_file_format);
-    count = get_lock_count( data, i, large_file_format);
-    offset = get_lock_offset( data, i, large_file_format, &err);
+	/* Data now points at the beginning of the list
+		of smb_unlkrng structs */
+	for(i = 0; i < (int)num_ulocks; i++) {
+		lock_pid = get_lock_pid( data, i, large_file_format);
+		count = get_lock_count( data, i, large_file_format);
+		offset = get_lock_offset( data, i, large_file_format, &err);
 
-    /*
-     * There is no error code marked "stupid client bug".... :-).
-     */
-    if(err) {
-      END_PROFILE(SMBlockingX);
-      return ERROR_DOS(ERRDOS,ERRnoaccess);
-    }
+		/*
+		 * There is no error code marked "stupid client bug".... :-).
+		 */
+		if(err) {
+			END_PROFILE(SMBlockingX);
+			return ERROR_DOS(ERRDOS,ERRnoaccess);
+		}
 
-    DEBUG(10,("reply_lockingX: unlock start=%.0f, len=%.0f for pid %u, file %s\n",
-          (double)offset, (double)count, (unsigned int)lock_pid, fsp->fsp_name ));
+		DEBUG(10,("reply_lockingX: unlock start=%.0f, len=%.0f for pid %u, file %s\n",
+			(double)offset, (double)count, (unsigned int)lock_pid, fsp->fsp_name ));
 
 		status = do_unlock(fsp,conn,lock_pid,count,offset);
 		if (NT_STATUS_V(status)) {
-      END_PROFILE(SMBlockingX);
+			END_PROFILE(SMBlockingX);
 			return ERROR_NT(status);
-    }
-  }
+		}
+	}
 
-  /* Setup the timeout in seconds. */
-  lock_timeout = ((lock_timeout == -1) ? -1 : lock_timeout/1000);
+	/* Setup the timeout in seconds. */
+	lock_timeout = ((lock_timeout == -1) ? -1 : lock_timeout/1000);
 
-  /* Now do any requested locks */
-  data += ((large_file_format ? 20 : 10)*num_ulocks);
+	/* Now do any requested locks */
+	data += ((large_file_format ? 20 : 10)*num_ulocks);
 
-  /* Data now points at the beginning of the list
-     of smb_lkrng structs */
+	/* Data now points at the beginning of the list
+		of smb_lkrng structs */
 
-  for(i = 0; i < (int)num_locks; i++) {
-    lock_pid = get_lock_pid( data, i, large_file_format);
-    count = get_lock_count( data, i, large_file_format);
-    offset = get_lock_offset( data, i, large_file_format, &err);
+	for(i = 0; i < (int)num_locks; i++) {
+		lock_pid = get_lock_pid( data, i, large_file_format);
+		count = get_lock_count( data, i, large_file_format);
+		offset = get_lock_offset( data, i, large_file_format, &err);
 
-    /*
-     * There is no error code marked "stupid client bug".... :-).
-     */
-    if(err) {
-      END_PROFILE(SMBlockingX);
-      return ERROR_DOS(ERRDOS,ERRnoaccess);
-    }
+		/*
+		 * There is no error code marked "stupid client bug".... :-).
+		 */
+		if(err) {
+			END_PROFILE(SMBlockingX);
+			return ERROR_DOS(ERRDOS,ERRnoaccess);
+		}
  
-    DEBUG(10,("reply_lockingX: lock start=%.0f, len=%.0f for pid %u, file %s\n",
-          (double)offset, (double)count, (unsigned int)lock_pid, fsp->fsp_name ));
+		DEBUG(10,("reply_lockingX: lock start=%.0f, len=%.0f for pid %u, file %s\n",
+			(double)offset, (double)count, (unsigned int)lock_pid, fsp->fsp_name ));
 
 		status = do_lock(fsp,conn,lock_pid, count,offset, 
-				 ((locktype & 1) ? READ_LOCK : WRITE_LOCK));
+				((locktype & 1) ? READ_LOCK : WRITE_LOCK));
 		if (NT_STATUS_V(status)) {
 			if ((lock_timeout != 0) && lp_blocking_locks(SNUM(conn))) {
-        /*
-         * A blocking lock was requested. Package up
-         * this smb into a queued request and push it
-         * onto the blocking lock queue.
-         */
-        if(push_blocking_lock_request(inbuf, length, lock_timeout, i)) {
-	  END_PROFILE(SMBlockingX);
-          return -1;
+				/*
+				 * A blocking lock was requested. Package up
+				 * this smb into a queued request and push it
+				 * onto the blocking lock queue.
+				 */
+				if(push_blocking_lock_request(inbuf, length, lock_timeout, i)) {
+					END_PROFILE(SMBlockingX);
+					return -1;
+				}
+			}
+			break;
+		}
 	}
-      }
-      break;
-    }
-  }
 
-  /* If any of the above locks failed, then we must unlock
-     all of the previous locks (X/Open spec). */
-  if(i != num_locks && num_locks != 0) {
-    /*
-     * Ensure we don't do a remove on the lock that just failed,
-     * as under POSIX rules, if we have a lock already there, we
-     * will delete it (and we shouldn't) .....
-     */
-    for(i--; i >= 0; i--) {
-      lock_pid = get_lock_pid( data, i, large_file_format);
-      count = get_lock_count( data, i, large_file_format);
-      offset = get_lock_offset( data, i, large_file_format, &err);
+	/* If any of the above locks failed, then we must unlock
+		all of the previous locks (X/Open spec). */
+	if(i != num_locks && num_locks != 0) {
+		/*
+		 * Ensure we don't do a remove on the lock that just failed,
+		 * as under POSIX rules, if we have a lock already there, we
+		 * will delete it (and we shouldn't) .....
+		 */
+		for(i--; i >= 0; i--) {
+			lock_pid = get_lock_pid( data, i, large_file_format);
+			count = get_lock_count( data, i, large_file_format);
+			offset = get_lock_offset( data, i, large_file_format, &err);
 
-      /*
-       * There is no error code marked "stupid client bug".... :-).
-       */
-      if(err) {
-	END_PROFILE(SMBlockingX);
-        return ERROR_DOS(ERRDOS,ERRnoaccess);
-      }
+			/*
+			 * There is no error code marked "stupid client bug".... :-).
+			 */
+			if(err) {
+				END_PROFILE(SMBlockingX);
+				return ERROR_DOS(ERRDOS,ERRnoaccess);
+			}
  
 			do_unlock(fsp,conn,lock_pid,count,offset);
-    }
-    END_PROFILE(SMBlockingX);
+		}
+		END_PROFILE(SMBlockingX);
 		return ERROR_NT(status);
-  }
+	}
 
-  set_message(outbuf,2,0,True);
+	set_message(outbuf,2,0,True);
   
-  DEBUG( 3, ( "lockingX fnum=%d type=%d num_locks=%d num_ulocks=%d\n",
-	fsp->fnum, (unsigned int)locktype, num_locks, num_ulocks ) );
+	DEBUG( 3, ( "lockingX fnum=%d type=%d num_locks=%d num_ulocks=%d\n",
+		fsp->fnum, (unsigned int)locktype, num_locks, num_ulocks ) );
 
-  END_PROFILE(SMBlockingX);
-  return chain_reply(inbuf,outbuf,length,bufsize);
+	END_PROFILE(SMBlockingX);
+	return chain_reply(inbuf,outbuf,length,bufsize);
 }
 
 /* Back from the dead for OS/2..... JRA. */

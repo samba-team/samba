@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    byte range locking code
    Updated to handle range splits/merges.
 
@@ -286,14 +285,17 @@ NTSTATUS brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	struct lock_struct lock, *locks;
 	char *tp;
 	NTSTATUS status = NT_STATUS_OK;
+	static int last_failed = -1;
+	static br_off last_failed_start;
 
 	kbuf = locking_key(dev,ino);
 
 	dbuf.dptr = NULL;
 
 #if !ZERO_ZERO
-	if (start == 0 && size == 0)
+	if (start == 0 && size == 0) {
 		DEBUG(0,("client sent 0/0 lock - please report this\n"));
+	}
 #endif
 
 	tdb_chainlock(tdb, kbuf);
@@ -348,6 +350,18 @@ NTSTATUS brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	return NT_STATUS_OK;
 
  fail:
+	/* this is a nasty hack to try to simulate the lock result cache code in w2k.
+	   It isn't completely accurate as I haven't yet worked out the correct
+	   semantics (tridge)
+	*/
+	if (last_failed == fnum &&
+	    last_failed_start == start &&
+	    NT_STATUS_EQUAL(status, NT_STATUS_LOCK_NOT_GRANTED)) {
+		status = NT_STATUS_FILE_LOCK_CONFLICT;
+	}
+	last_failed = fnum;
+	last_failed_start = start;
+
 	SAFE_FREE(dbuf.dptr);
 	tdb_chainunlock(tdb, kbuf);
 	return status;

@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    Blocking Locking functions
    Copyright (C) Jeremy Allison 1998
    
@@ -175,6 +174,12 @@ static void generic_blocking_lock_error(blocking_lock_record *blr, NTSTATUS stat
 	char *outbuf = OutBuffer;
 	char *inbuf = blr->inbuf;
 	construct_reply_common(inbuf, outbuf);
+
+	/* whenever a timeout is given w2k maps LOCK_NOT_GRANTED to
+	   FILE_LOCK_CONFLICT! (tridge) */
+	if (NT_STATUS_EQUAL(status, NT_STATUS_LOCK_NOT_GRANTED)) {
+		status = NT_STATUS_FILE_LOCK_CONFLICT;
+	}
 
 	ERROR_NT(status);
 	if (!send_smb(smbd_server_fd(),outbuf))
