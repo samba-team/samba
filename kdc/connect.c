@@ -232,6 +232,11 @@ handle_tcp(struct descr *d, int index, int min_free)
 	krb5_warn(context, errno, "recvfrom");
 	return;
     }
+    /* sometimes recvfrom doesn't return an address */
+    if(from_len == 0){
+	from_len = sizeof(from);
+	getpeername(d[index].s, (struct sockaddr*)&from, &from_len);
+    }
     if(d[index].size - d[index].len < n){
 	unsigned char *tmp;
 	d[index].size += 1024;
