@@ -8775,7 +8775,7 @@ else
    ac_cv_shlib_works=no
    # try building a trivial shared library
    $CC $CPPFLAGS $CFLAGS $PICFLAG -c -o shlib.po ${srcdir-.}/tests/shlib.c &&
-     $SHLD $CPPFLAGS $CFLAGS $LDSHFLAGS -o shlib.so shlib.po &&
+     $CC $CPPFLAGS $CFLAGS $LDSHFLAGS -o shlib.so shlib.po &&
      ac_cv_shlib_works=yes
    rm -f shlib.so shlib.po
 
