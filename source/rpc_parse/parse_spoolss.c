@@ -3957,8 +3957,8 @@ BOOL uni_2_asc_printer_driver_6(SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 *uni,
 	DEBUGADD(8,( "monitorname:     %s\n", d->monitorname));
 	DEBUGADD(8,( "defaultdatatype: %s\n", d->defaultdatatype));
 
-	uniarray_2_ascarray(&(uni->dependentfiles), &(d->dependentfiles) );
-	uniarray_2_ascarray(&(uni->previousnames), &(d->previousnames) );
+	uniarray_2_dosarray(&(uni->dependentfiles), &(d->dependentfiles) );
+	uniarray_2_dosarray(&(uni->previousnames), &(d->previousnames) );
 
 	return True;
 }
