@@ -370,18 +370,15 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security, T
  */
 
 static NTSTATUS gensec_ntlmssp_session_info(struct gensec_security *gensec_security,
-				     struct auth_session_info **session_info) 
+					    struct auth_session_info **session_info) 
 {
 	NTSTATUS nt_status;
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
-	nt_status = make_session_info(gensec_ntlmssp_state->server_info, session_info);
+	nt_status = make_session_info(gensec_ntlmssp_state, gensec_ntlmssp_state->server_info, session_info);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
-
-	/* the session_info owns this now */
-	gensec_ntlmssp_state->server_info = NULL;
 
 	(*session_info)->session_key = data_blob_talloc(*session_info, 
 							gensec_ntlmssp_state->ntlmssp_state->session_key.data,

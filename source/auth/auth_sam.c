@@ -144,6 +144,7 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 			
 			if(strequal(tok, user_info->wksta_name.str)) {
 				invalid_ws = False;
+
 				break;
 			}
 		}
@@ -171,37 +172,22 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 }
 
 /****************************************************************************
-check if a username/password is OK assuming the password is a 24 byte
-SMB hash supplied in the user_info structure
-return an NT_STATUS constant.
+ Look for the specified user in the sam, return ldb result structures
 ****************************************************************************/
 
-static NTSTATUS check_sam_security(const struct auth_context *auth_context,
-				   void *my_private_data, 
-				   TALLOC_CTX *mem_ctx,
-				   const struct auth_usersupplied_info *user_info, 
-				   struct auth_serversupplied_info **server_info)
+static NTSTATUS sam_search_user(const char *username, const char *domain, 
+				TALLOC_CTX *mem_ctx, void *sam_ctx, 
+				struct ldb_message ***ret_msgs, 
+				struct ldb_message ***ret_msgs_domain)
 {
 	struct ldb_message **msgs;
 	struct ldb_message **msgs_domain;
-	void *sam_ctx;
-	char *username = user_info->internal_username.str;
-	uint16_t acct_flags;
-	const char *workstation_list;
-	NTTIME acct_expiry;
-	NTTIME must_change_time;
-	NTTIME last_set_time;
 
 	uint_t ret;
 	uint_t ret_domain;
 
-	const char *domain_dn;
+	const char *domain_dn = NULL;
 	const char *domain_sid;
-
-	NTSTATUS nt_status;
-	DATA_BLOB user_sess_key = data_blob(NULL, 0);
-	DATA_BLOB lm_sess_key = data_blob(NULL, 0);
-	struct samr_Password *lm_pwd, *nt_pwd;
 
 	const char *attrs[] = {"unicodePwd", "lmPwdHash", "ntPwdHash", 
 			       "userAccountControl",
@@ -226,18 +212,31 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 			       NULL,
 	};
 
-	const char *domain_attrs[] =  {"name"};
+	const char *domain_attrs[] =  {"name", "objectSid"};
 
-	if (!user_info || !auth_context) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
-	sam_ctx = samdb_connect(mem_ctx);
-	if (sam_ctx == NULL) {
-		return NT_STATUS_INVALID_SYSTEM_SERVICE;
+	if (domain) {
+		/* find the domain's DN */
+		ret_domain = samdb_search(sam_ctx, mem_ctx, NULL, &msgs_domain, domain_attrs,
+					  "(&(|(realm=%s)(name=%s))(objectclass=domain))", 
+					  domain, domain);
+		
+		if (ret_domain == 0) {
+			DEBUG(3,("check_sam_security: Couldn't find domain [%s] in passdb file.\n", 
+				 domain));
+			return NT_STATUS_NO_SUCH_USER;
+		}
+		
+		if (ret_domain > 1) {
+			DEBUG(0,("Found %d records matching domain [%s]\n", 
+				 ret_domain, domain));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		domain_dn = msgs_domain[0]->dn;
+
 	}
 	/* pull the user attributes */
-	ret = samdb_search(sam_ctx, mem_ctx, NULL, &msgs, attrs,
+	ret = samdb_search(sam_ctx, mem_ctx, domain_dn, &msgs, attrs,
 			   "(&(sAMAccountName=%s)(objectclass=user))", 
 			   username);
 
@@ -252,30 +251,56 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	
-	domain_sid = samdb_result_sid_prefix(mem_ctx, msgs[0], "objectSid");
-	if (!domain_sid) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	if (!domain) {
+		domain_sid = samdb_result_sid_prefix(mem_ctx, msgs[0], "objectSid");
+		if (!domain_sid) {
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		/* find the domain's DN */
+		ret_domain = samdb_search(sam_ctx, mem_ctx, NULL, &msgs_domain, domain_attrs,
+					  "(&(objectSid=%s)(objectclass=domain))", 
+					  domain_sid);
+		
+		if (ret_domain == 0) {
+			DEBUG(3,("check_sam_security: Couldn't find domain [%s] in passdb file.\n", 
+				 domain_sid));
+			return NT_STATUS_NO_SUCH_USER;
+		}
+		
+		if (ret_domain > 1) {
+			DEBUG(0,("Found %d records matching domain [%s]\n", 
+				 ret_domain, domain_sid));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		domain_dn = msgs_domain[0]->dn;
 	}
-
-	/* find the domain's DN */
-	ret_domain = samdb_search(sam_ctx, mem_ctx, NULL, &msgs_domain, domain_attrs,
-			   "(&(objectSid=%s)(objectclass=domain))", 
-			   domain_sid);
-
-	if (ret_domain == 0) {
-		DEBUG(3,("check_sam_security: Couldn't find domain [%s] in passdb file.\n", 
-			 domain_sid));
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
-	if (ret_domain > 1) {
-		DEBUG(0,("Found %d records matching domain [%s]\n", 
-			 ret_domain, domain_sid));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	domain_dn = msgs_domain[0]->dn;
+	*ret_msgs = msgs;
+	*ret_msgs_domain = msgs_domain;
 	
+	return NT_STATUS_OK;
+}
+
+NTSTATUS sam_check_password(const struct auth_context *auth_context, 
+			    const char *username,
+			    TALLOC_CTX *mem_ctx, void *sam_ctx, 
+			    struct ldb_message **msgs,
+			    const char *domain_dn,
+			    const struct auth_usersupplied_info *user_info, 
+			    DATA_BLOB *user_sess_key, DATA_BLOB *lm_sess_key) 
+{
+
+	uint16_t acct_flags;
+	const char *workstation_list;
+	NTTIME acct_expiry;
+	NTTIME must_change_time;
+	NTTIME last_set_time;
+	struct samr_Password *lm_pwd, *nt_pwd;
+
+	NTSTATUS nt_status;
+
+
 	acct_flags = samdb_result_acct_flags(msgs[0], "sAMAcctFlags");
 	
 	/* Quit if the account was locked out. */
@@ -293,7 +318,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	nt_status = sam_password_ok(auth_context, mem_ctx, 
 				    username, acct_flags, 
 				    lm_pwd, nt_pwd,
-				    user_info, &user_sess_key, &lm_sess_key);
+				    user_info, user_sess_key, lm_sess_key);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
@@ -314,68 +339,72 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 				   workstation_list,
 				   user_info);
 
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	}
+	return nt_status;
+}
 
-	if (!NT_STATUS_IS_OK(nt_status = make_server_info(auth_context, server_info, username))) {		
+NTSTATUS sam_make_server_info(TALLOC_CTX *mem_ctx, void *sam_ctx, 
+			      struct ldb_message **msgs, struct ldb_message **msgs_domain, 
+			      struct auth_serversupplied_info **server_info) 
+{
+
+	struct ldb_message **group_msgs;
+	int group_ret;
+	const char *group_attrs[3] = { "sAMAccountType", "objectSid", NULL }; 
+	/* find list of sids */
+	struct dom_sid **groupSIDs = NULL;
+	struct dom_sid *user_sid;
+	struct dom_sid *primary_group_sid;
+	const char *sidstr;
+	int i;
+	uint_t rid;
+	
+	NTSTATUS nt_status;
+
+	if (!NT_STATUS_IS_OK(nt_status = make_server_info(mem_ctx, server_info, 
+							  samdb_result_string(msgs[0], "sAMAccountName", "")))) {		
 		DEBUG(0,("check_sam_security: make_server_info_sam() failed with '%s'\n", nt_errstr(nt_status)));
 		return nt_status;
 	}
-
-	{
-		struct ldb_message **group_msgs;
-		char *dn = msgs[0]->dn;
-		int group_ret;
-		const char *group_attrs[3] = { "sAMAccountType", "objectSid", NULL }; 
-		/* find list of sids */
-		struct dom_sid **groupSIDs = NULL;
-		struct dom_sid *user_sid;
-		struct dom_sid *primary_group_sid;
-		const char *sidstr;
-		int i;
-		uint_t rid;
-
-		group_ret = samdb_search(sam_ctx,
-					 mem_ctx, NULL, &group_msgs, group_attrs,
-					 "(&(member=%s)(sAMAccountType=*))", 
-					 dn);
-		if (group_ret == -1) {
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-		
-		if (group_ret > 0 && 
-		    !(groupSIDs = talloc_array_p(*server_info, struct dom_sid *, group_ret))) {
-			talloc_free(*server_info);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		/* Need to unroll some nested groups, but not aliases */
-		for (i = 0; i < group_ret; i++) {
-			sidstr = ldb_msg_find_string(group_msgs[i], "objectSid", NULL);
-			groupSIDs[i] = dom_sid_parse_talloc(*server_info, sidstr);
-		}
-		
-		sidstr = ldb_msg_find_string(msgs[0], "objectSid", NULL);
-		user_sid = dom_sid_parse_talloc(*server_info, sidstr);
-		primary_group_sid = dom_sid_parse_talloc(*server_info, sidstr);
-		rid = samdb_result_uint(msgs[0], "primaryGroupID", ~0);
-		if (rid == ~0) {
-			if (group_ret > 0) {
-				primary_group_sid = groupSIDs[0];
-			} else {
-				primary_group_sid = NULL;
-			}
-		} else {
-			primary_group_sid->sub_auths[primary_group_sid->num_auths-1] = rid;
-		}
-
-		(*server_info)->user_sid = user_sid;
-		(*server_info)->primary_group_sid = primary_group_sid;
-		
-		(*server_info)->n_domain_groups = group_ret;
-		(*server_info)->domain_groups = groupSIDs;
+	
+	group_ret = samdb_search(sam_ctx,
+				 mem_ctx, NULL, &group_msgs, group_attrs,
+				 "(&(member=%s)(sAMAccountType=*))", 
+				 msgs[0]->dn);
+	if (group_ret == -1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
+	
+	if (group_ret > 0 && 
+	    !(groupSIDs = talloc_array_p(*server_info, struct dom_sid *, group_ret))) {
+		talloc_free(*server_info);
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	/* Need to unroll some nested groups, but not aliases */
+	for (i = 0; i < group_ret; i++) {
+		sidstr = ldb_msg_find_string(group_msgs[i], "objectSid", NULL);
+		groupSIDs[i] = dom_sid_parse_talloc(*server_info, sidstr);
+	}
+	
+	sidstr = ldb_msg_find_string(msgs[0], "objectSid", NULL);
+	user_sid = dom_sid_parse_talloc(*server_info, sidstr);
+	primary_group_sid = dom_sid_parse_talloc(*server_info, sidstr);
+	rid = samdb_result_uint(msgs[0], "primaryGroupID", ~0);
+	if (rid == ~0) {
+		if (group_ret > 0) {
+			primary_group_sid = groupSIDs[0];
+		} else {
+			primary_group_sid = NULL;
+		}
+	} else {
+		primary_group_sid->sub_auths[primary_group_sid->num_auths-1] = rid;
+	}
+	
+	(*server_info)->user_sid = user_sid;
+	(*server_info)->primary_group_sid = primary_group_sid;
+	
+	(*server_info)->n_domain_groups = group_ret;
+	(*server_info)->domain_groups = groupSIDs;
 
 	(*server_info)->account_name 
 		= talloc_strdup(*server_info, 
@@ -409,10 +438,10 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	(*server_info)->last_password_change = samdb_result_nttime(msgs[0], "pwdLastSet", 0);
 	(*server_info)->allow_password_change
 		= samdb_result_allow_password_change(sam_ctx, mem_ctx, 
-						     domain_dn, msgs[0], "pwdLastSet");
+						     msgs_domain[0]->dn, msgs[0], "pwdLastSet");
 	(*server_info)->force_password_change
 		= samdb_result_force_password_change(sam_ctx, mem_ctx, 
-						     domain_dn, msgs[0], "pwdLastSet");
+						     msgs_domain[0]->dn, msgs[0], "pwdLastSet");
 
 	(*server_info)->logon_count = samdb_result_uint(msgs[0], "logonCount", 0);
 	(*server_info)->bad_password_count = samdb_result_uint(msgs[0], "badPwdCount", 0);
@@ -420,9 +449,6 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	(*server_info)->acct_flags = samdb_result_acct_flags(msgs[0], "userAccountControl");
 
 	(*server_info)->guest = False;
-
-	(*server_info)->user_session_key = user_sess_key;
-	(*server_info)->lm_session_key = lm_sess_key;
 
 	if (!(*server_info)->account_name 
 	    || !(*server_info)->full_name 
@@ -435,6 +461,85 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	}
 
 	return nt_status;
+}
+
+NTSTATUS sam_get_server_info(const char *username, const char *domain, TALLOC_CTX *mem_ctx,
+			     struct auth_serversupplied_info **server_info)
+{
+	NTSTATUS nt_status;
+
+	struct ldb_message **msgs;
+	struct ldb_message **domain_msgs;
+	void *sam_ctx;
+
+	sam_ctx = samdb_connect(mem_ctx);
+	if (sam_ctx == NULL) {
+		return NT_STATUS_INVALID_SYSTEM_SERVICE;
+	}
+
+	nt_status = sam_search_user(username, domain, mem_ctx, sam_ctx, &msgs, &domain_msgs);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+	nt_status = sam_make_server_info(mem_ctx, sam_ctx, msgs, domain_msgs, server_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS check_sam_security_internals(const struct auth_context *auth_context,
+					     const char *domain,
+					     TALLOC_CTX *mem_ctx,
+					     const struct auth_usersupplied_info *user_info, 
+					     struct auth_serversupplied_info **server_info)
+{
+	NTSTATUS nt_status;
+
+	const char *username = user_info->internal_username.str;
+	struct ldb_message **msgs;
+	struct ldb_message **domain_msgs;
+	void *sam_ctx;
+	DATA_BLOB user_sess_key, lm_sess_key;
+
+	sam_ctx = samdb_connect(mem_ctx);
+	if (sam_ctx == NULL) {
+		return NT_STATUS_INVALID_SYSTEM_SERVICE;
+	}
+
+	nt_status = sam_search_user(username, domain, mem_ctx, sam_ctx, &msgs, &domain_msgs);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+	nt_status = sam_check_password(auth_context, username, mem_ctx, sam_ctx, msgs, domain_msgs[0]->dn, user_info,
+				       &user_sess_key, &lm_sess_key);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+	
+	nt_status = sam_make_server_info(mem_ctx, sam_ctx, msgs, domain_msgs, server_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+	talloc_reference(auth_context, *server_info);
+
+	(*server_info)->user_session_key = user_sess_key;
+	(*server_info)->lm_session_key = lm_sess_key;
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS check_sam_security(const struct auth_context *auth_context,
+				   void *my_private_data, 
+				   TALLOC_CTX *mem_ctx,
+				   const struct auth_usersupplied_info *user_info, 
+				   struct auth_serversupplied_info **server_info)
+{
+	return check_sam_security_internals(auth_context, NULL,
+					    mem_ctx, user_info, server_info);
 }
 
 /* module initialisation */
@@ -462,22 +567,44 @@ static NTSTATUS check_samstrict_security(const struct auth_context *auth_context
 					 const struct auth_usersupplied_info *user_info, 
 					 struct auth_serversupplied_info **server_info)
 {
+	const char *domain;
+	BOOL is_local_name, is_my_domain;
 
 	if (!user_info || !auth_context) {
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
-	/* If we are a domain member, we must not 
-	   attempt to check the password locally,
-	   unless it is one of our aliases. */
+	is_local_name = is_myname(user_info->domain.str);
+	is_my_domain  = strequal(user_info->domain.str, lp_workgroup());
+
+	/* check whether or not we service this domain/workgroup name */
 	
-	if (!is_myname(user_info->domain.str)) {
-		DEBUG(7,("The requested user domain is not the local server name. [%s]\\[%s]\n",
-			user_info->domain.str,user_info->internal_username.str));
-		return NT_STATUS_NO_SUCH_USER;
+	switch ( lp_server_role() ) {
+		case ROLE_STANDALONE:
+		case ROLE_DOMAIN_MEMBER:
+			if ( !is_local_name ) {
+				DEBUG(6,("check_samstrict_security: %s is not one of my local names (%s)\n",
+					user_info->domain.str, (lp_server_role() == ROLE_DOMAIN_MEMBER 
+					? "ROLE_DOMAIN_MEMBER" : "ROLE_STANDALONE") ));
+				return NT_STATUS_NOT_IMPLEMENTED;
+			}
+			domain = lp_netbios_name();
+			break;
+		case ROLE_DOMAIN_PDC:
+		case ROLE_DOMAIN_BDC:
+			if ( !is_local_name && !is_my_domain ) {
+				DEBUG(6,("check_samstrict_security: %s is not one of my local names or domain name (DC)\n",
+					user_info->domain.str));
+				return NT_STATUS_NOT_IMPLEMENTED;
+			}
+			domain = lp_workgroup();
+			break;
+		default: /* name is ok */
+			domain = user_info->domain.str;
+			break;
 	}
 	
-	return check_sam_security(auth_context, my_private_data, mem_ctx, user_info, server_info);
+	return check_sam_security_internals(auth_context, domain, mem_ctx, user_info, server_info);
 }
 
 /* module initialisation */
