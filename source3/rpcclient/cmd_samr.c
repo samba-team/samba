@@ -202,7 +202,7 @@ void cmd_sam_lookup_domain(struct client_info *info)
 
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum, 
-				srv_name, 0x00000020,
+				srv_name, 0x02000000,
 				&info->dom.samr_pol_connect) : False;
 
 	/* connect to the domain */
@@ -276,7 +276,7 @@ void cmd_sam_del_aliasmem(struct client_info *info)
 
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum, 
-				srv_name, 0x00000020,
+				srv_name, 0x02000000,
 				&info->dom.samr_pol_connect) : False;
 
 	/* connect to the domain */
@@ -369,7 +369,7 @@ void cmd_sam_delete_dom_alias(struct client_info *info)
 
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum, 
-				srv_name, 0x00000020,
+				srv_name, 0x02000000,
 				&info->dom.samr_pol_connect) : False;
 
 	/* connect to the domain */
@@ -520,7 +520,7 @@ void cmd_sam_add_aliasmem(struct client_info *info)
 
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum, 
-				srv_name, 0x00000020,
+				srv_name, 0x02000000,
 				&info->dom.samr_pol_connect) : False;
 
 	/* connect to the domain */
@@ -634,7 +634,7 @@ void cmd_sam_create_dom_user(struct client_info *info)
 
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum, 
-				srv_name, 0x00000020,
+				srv_name, 0x02000000,
 				&info->dom.samr_pol_connect) : False;
 
 	/* connect to the domain */
@@ -721,7 +721,7 @@ void cmd_sam_create_dom_alias(struct client_info *info)
 
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum, 
-				srv_name, 0x00000020,
+				srv_name, 0x02000000,
 				&info->dom.samr_pol_connect) : False;
 
 	/* connect to the domain */
@@ -803,7 +803,7 @@ void cmd_sam_del_groupmem(struct client_info *info)
 
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum, 
-				srv_name, 0x00000020,
+				srv_name, 0x02000000,
 				&info->dom.samr_pol_connect) : False;
 
 	/* connect to the domain */
@@ -897,7 +897,7 @@ void cmd_sam_delete_dom_group(struct client_info *info)
 
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum, 
-				srv_name, 0x00000020,
+				srv_name, 0x02000000,
 				&info->dom.samr_pol_connect) : False;
 
 	/* connect to the domain */
@@ -1016,7 +1016,7 @@ void cmd_sam_add_groupmem(struct client_info *info)
 
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum, 
-				srv_name, 0x00000020,
+				srv_name, 0x02000000,
 				&info->dom.samr_pol_connect) : False;
 
 	/* connect to the domain */
@@ -1158,7 +1158,7 @@ void cmd_sam_create_dom_group(struct client_info *info)
 
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum, 
-				srv_name, 0x00000020,
+				srv_name, 0x02000000,
 				&info->dom.samr_pol_connect) : False;
 
 	/* connect to the domain */
@@ -1365,7 +1365,7 @@ int msrpc_sam_enum_users(struct client_info *info,
 
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum, 
-				srv_name, 0x00000020,
+				srv_name, 0x02000000,
 				&info->dom.samr_pol_connect) : False;
 
 	/* connect to the domain */
@@ -1532,7 +1532,7 @@ void cmd_sam_query_user(struct client_info *info)
 
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum,
-				srv_name, 0x00000020,
+				srv_name, 0x02000000,
 				&info->dom.samr_pol_connect) : False;
 
 	/* connect to the domain */
@@ -1623,7 +1623,7 @@ void cmd_sam_query_dispinfo(struct client_info *info)
 
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum, 
-				srv_name, 0x00000020,
+				srv_name, 0x02000000,
 				&info->dom.samr_pol_connect) : False;
 
 	/* connect to the domain */
@@ -1708,7 +1708,7 @@ void cmd_sam_query_dominfo(struct client_info *info)
 
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum, 
-				srv_name, 0x00000020,
+				srv_name, 0x02000000,
 				&info->dom.samr_pol_connect) : False;
 
 	/* connect to the domain */
@@ -1791,7 +1791,7 @@ void cmd_sam_enum_aliases(struct client_info *info)
 
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum,
-				srv_name, 0x00000020,
+				srv_name, 0x02000000,
 				&info->dom.samr_pol_connect) : False;
 
 	/* connect to the domain */
@@ -2009,7 +2009,7 @@ void cmd_sam_enum_groups(struct client_info *info)
 
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum,
-				srv_name, 0x00000020,
+				srv_name, 0x02000000,
 				&info->dom.samr_pol_connect) : False;
 
 	/* connect to the domain */
