@@ -358,6 +358,26 @@ PyObject *spoolss_hnd_enumprinterdataex(PyObject *self, PyObject *args, PyObject
 
 PyObject *spoolss_hnd_deleteprinterdataex(PyObject *self, PyObject *args, PyObject *kw)
 {
-	PyErr_SetString(spoolss_error, "Not implemented");
-	return NULL;
+	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
+	static char *kwlist[] = { "key", "value", NULL };
+	char *key, *value;
+	WERROR werror;
+
+	/* Parse parameters */
+
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "ss", kwlist, &key, &value))
+		return NULL;
+
+	/* Call rpc function */
+
+	werror = cli_spoolss_deleteprinterdataex(
+		hnd->cli, hnd->mem_ctx, &hnd->pol, key, value);
+
+	if (!W_ERROR_IS_OK(werror)) {
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
+		return NULL;
+	}
+
+	Py_INCREF(Py_None);
+	return Py_None;
 }
