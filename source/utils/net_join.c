@@ -76,7 +76,6 @@ int net_join(int argc, const char **argv)
 {
 	char *ldap_host;
 	char *hostname;
-	char *realm;
 	ADS_STRUCT *ads;
 	int rc;
 	char *password;
@@ -85,10 +84,7 @@ int net_join(int argc, const char **argv)
 
 	hostname = strdup(global_myname);
 	strlower(hostname);
-	realm = lp_realm();
-	ldap_host = lp_ads_server();
 	if (!*ldap_host) ldap_host = NULL;
-	if (!*realm) realm = NULL;
 
 	if (!secrets_init()) {
 		DEBUG(1,("Failed to initialise secrets database\n"));
@@ -97,33 +93,38 @@ int net_join(int argc, const char **argv)
 
 	password = generate_random_password(15);
 
-	ads = ads_init(realm, ldap_host, NULL);
+	ads = ads_init(NULL, NULL, NULL);
 
 	rc = ads_connect(ads);
 	if (rc) {
 		d_printf("ads_connect: %s\n", ads_errstr(rc));
+		ads_destory(&ads);
 		return -1;
 	}
 
 	rc = ads_join_realm(ads, hostname);
 	if (rc) {
 		d_printf("ads_join_realm: %s\n", ads_errstr(rc));
+		ads_destory(&ads);
 		return -1;
 	}
 
 	status = ads_set_machine_password(ads, hostname, password);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("ads_set_machine_password: %s\n", get_nt_error_msg(status));
+		ads_destory(&ads);
 		return -1;
 	}
 
 	if (!secrets_store_machine_password(password)) {
 		DEBUG(1,("Failed to save machine password\n"));
+		ads_destory(&ads);
 		return -1;
 	}
 
-	d_printf("Joined %s to realm %s\n", hostname, realm);
+	d_printf("Joined %s to realm %s\n", hostname, ads->realm);
 
+	ads_destory(&ads);
 	return 0;
 }
 

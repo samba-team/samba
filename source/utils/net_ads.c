@@ -74,6 +74,7 @@ static int net_ads_user(int argc, const char **argv)
 	}
 
 	ads_dump(ads, res);
+	ads_destroy(&ads);
 	return 0;
 }
 

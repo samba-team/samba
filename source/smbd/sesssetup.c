@@ -74,23 +74,25 @@ static int reply_spnego_kerberos(connection_struct *conn,
 				 DATA_BLOB *secblob)
 {
 	DATA_BLOB ticket;
-	char *realm, *client, *p;
+	char *client, *p;
 	const struct passwd *pw;
 	char *user;
 	int sess_vuid;
 	NTSTATUS ret;
 	DATA_BLOB auth_data;
 	auth_serversupplied_info *server_info = NULL;
-
-	realm = lp_realm();
+	ADS_STRUCT *ads;
 
 	if (!spnego_parse_krb5_wrap(*secblob, &ticket)) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
-	ret = ads_verify_ticket(&ticket, &client, &auth_data);
+	ads = ads_init(NULL, NULL, NULL);
+
+	ret = ads_verify_ticket(ads, &ticket, &client, &auth_data);
 	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(1,("Failed to verify incoming ticket!\n"));
+		DEBUG(1,("Failed to verify incoming ticket!\n"));	
+		ads_destroy(&ads);
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
@@ -99,15 +101,18 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	p = strchr_m(client, '@');
 	if (!p) {
 		DEBUG(3,("Doesn't look like a valid principal\n"));
+		ads_destroy(&ads);
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
 	*p = 0;
-	if (strcasecmp(p+1, realm) != 0) {
+	if (strcasecmp(p+1, ads->realm) != 0) {
 		DEBUG(3,("Ticket for incorrect realm %s\n", p+1));
+		ads_destroy(&ads);
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
-	
+	ads_destroy(&ads);
+
 	user = client;
 
 	/* the password is good - let them in */
