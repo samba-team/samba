@@ -213,23 +213,23 @@ encode_524_response(const char *spn, const EncTicketPart et, const Ticket *t,
 		    hdb_entry *server, EncryptedData *ticket, int *kvno)
 {
     krb5_error_code ret;
-    int use_b2;
+    int use_2b;
     size_t len;
 
-    use_b2 = krb5_config_get_bool(context, NULL, "kdc", "use_b2", spn, NULL);
-    if(use_b2) {
+    use_2b = krb5_config_get_bool(context, NULL, "kdc", "use_2b", spn, NULL);
+    if(use_2b) {
 	ASN1_MALLOC_ENCODE(EncryptedData, 
 			   ticket->cipher.data, ticket->cipher.length, 
 			   &t->enc_part, &len, ret);
 	
 	if (ret) {
-	    kdc_log(0, "Failed to encode v4 (b2) ticket (%s)", spn);
+	    kdc_log(0, "Failed to encode v4 (2b) ticket (%s)", spn);
 	    return ret;
 	}
 	
 	ticket->etype = 0;
 	ticket->kvno = NULL;
-	*kvno = 213; /* b2's use this magic kvno */
+	*kvno = 213; /* 2b's use this magic kvno */
     } else {
 	unsigned char buf[MAX_KTXT_LEN + 4 * 4];
 	Key *skey;
