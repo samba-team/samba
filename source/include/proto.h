@@ -558,12 +558,6 @@ void reset_globals_after_fork(void);
 char *client_name(int fd);
 char *client_addr(int fd);
 
-/*The following definitions come from  lib/util_status.c  */
-
-BOOL get_connection_status(struct connect_record **crec,
-				uint32 *connection_count);
-BOOL get_session_count(struct connect_record **srec,uint32 *session_count);
-
 /*The following definitions come from  lib/util_str.c  */
 
 void set_first_token(char *ptr);
@@ -1963,6 +1957,10 @@ BOOL samr_query_groupinfo(struct cli_state *cli, uint16 fnum,
 BOOL samr_query_userinfo(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol, uint16 switch_value, void* usr);
 BOOL samr_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd);
+BOOL samr_query_dispinfo(struct cli_state *cli, uint16 fnum, 
+				POLICY_HND *pol_open_domain, uint16 level,
+				uint32 *num_entries,
+				SAM_DISPINFO_CTR *ctr);
 
 /*The following definitions come from  rpc_client/cli_srvsvc.c  */
 
@@ -3169,8 +3167,13 @@ void cmd_sam_del_groupmem(struct client_info *info);
 void cmd_sam_delete_dom_group(struct client_info *info);
 void cmd_sam_add_groupmem(struct client_info *info);
 void cmd_sam_create_dom_group(struct client_info *info);
+int msrpc_sam_enum_users(struct client_info *info,
+			BOOL request_user_info,
+			BOOL request_group_info,
+			BOOL request_alias_info);
 void cmd_sam_enum_users(struct client_info *info);
 void cmd_sam_query_user(struct client_info *info);
+void cmd_sam_query_dispinfo(struct client_info *info);
 void cmd_sam_query_dominfo(struct client_info *info);
 void cmd_sam_enum_aliases(struct client_info *info);
 void cmd_sam_enum_groups(struct client_info *info);
