@@ -293,7 +293,7 @@ MAKEDIR = || exec false; \
 	@echo Compiling $*.c
 	@$(CC) -I. -I$(srcdir) $(FLAGS) -c $< \
 	  -o $@ @MAINT@ -Wp,-MD,.deps/$@
-@BROKEN_CC@		-mv `basename $@` $@
+@BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
 @MAINT@	@sed 's|^'`echo $@ | sed 's,.*/,,'`':|$@:|' \
 @MAINT@	  <.deps/$@ >.deps/$@d && \
 @MAINT@	rm -f .deps/$@ && : >.deps/.stamp
@@ -307,7 +307,7 @@ MAKEDIR = || exec false; \
 	@echo Compiling $*.c with @PICFLAG@
 	@$(CC) -I. -I$(srcdir) $(FLAGS) @PICFLAG@ -c $< \
 	  -o $*.po.o @MAINT@ -Wp,-MD,.deps/$@
-@BROKEN_CC@		-mv `basename $@` $@
+@BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.po$$%.o%'` $@.o
 @MAINT@	@sed 's|^'`echo $*\.po\.o | sed 's,.*/,,'`':|$@:|' \
 @MAINT@	  <.deps/$@ >.deps/$@d && \
 @MAINT@	rm -f .deps/$@ && : >.deps/.stamp
@@ -323,6 +323,7 @@ MAKEDIR = || exec false; \
 	@echo Compiling $*.c with @PICFLAG@ and -32
 	@$(CC) -32 -I. -I$(srcdir) $(FLAGS) @PICFLAG@ -c $< \
 	  -o $*.po32.o @MAINT@ -Wp,-MD,.deps/$@
+@BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.po32$$%.o%'` $@.o
 @MAINT@	@sed 's|^'`echo $*.po32.o | sed 's,.*/,,'`':|$@:|' \
 @MAINT@	  <.deps/$@ >.deps/$@d && \
 @MAINT@	rm -f .deps/$@ && : >.deps/.stamp
