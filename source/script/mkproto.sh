@@ -1,7 +1,8 @@
 #! /bin/sh
 
-LANG=C
-export LANG
+LANG=C; export LANG
+LC_ALL=C; export LC_ALL
+LC_COLLATE=C; export LC_COLLATE=C
 
 if [ $# -lt 3 ]
 then

@@ -55,8 +55,8 @@ NMBLOGFILE = $(LOGFILEBASE)/log.nmb
 CONFIGFILE = $(sambaconfdir)/smb.conf
 LMHOSTSFILE = $(sambaconfdir)/lmhosts
 DRIVERFILE = $(LIBDIR)/printers.def
-FORMSFILE = $(LIBDIR)/ntforms.def
 NTDRIVERSDIR = $(LIBDIR)
+FORMSFILE = $(LIBDIR)/ntforms.def
 PASSWD_PROGRAM = /bin/passwd
 # This is where smbpasswd et al go
 PRIVATEDIR = @privatedir@
@@ -151,8 +151,7 @@ SHARED_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB) \
 LIBSTATUS_OBJ = lib/util_status.o 
 
 LIB_OBJ =	lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
-		lib/getsmbpass.o lib/interface.o lib/kanji.o \
-		lib/md4.o \
+		lib/getsmbpass.o lib/interface.o lib/kanji.o lib/md4.o \
 		lib/pidfile.o lib/replace.o \
 		lib/signal.o lib/getopt.o lib/slprintf.o \
 		lib/system.o lib/doscalls.o \
@@ -676,7 +675,7 @@ PROTO_OBJ =  $(LIB_OBJ) $(LIBNMB_OBJ) $(PARAM_OBJ) \
 		$(GROUPDB_OBJ) $(PASSDB_OBJ) $(SAMPASSDB_OBJ) \
 		$(SMBPASSWD_OBJ) $(SIDDB_OBJ) \
 		$(RPC_SRVUTIL_OBJ) \
-		$(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ2)
+		$(RPC_PARSE_OBJ2)
 
 SMBWRAPPERPICOBJS = $(SMBWRAPPER_OBJ:.o=.po)
 SMBWRAPPERPICOBJS32 = $(SMBWRAPPER_OBJ:.o=.po32)
