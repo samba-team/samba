@@ -421,6 +421,76 @@ static BOOL test_ChangePasswordUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 
+static BOOL test_OemChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+					struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_OemChangePasswordUser2 r;
+	BOOL ret = True;
+	struct samr_Hash hash;
+	struct samr_CryptPassword pass;
+	struct samr_AsciiName server, account;
+
+	printf("Testing OemChangePasswordUser2\n");
+
+	ZERO_STRUCT(hash);
+	ZERO_STRUCT(pass);
+
+	server.name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	account.name = TEST_USERNAME;
+
+	r.in.server = &server;
+	r.in.account = &account;
+	r.in.password = &pass;
+	r.in.hash = &hash;
+
+	status = dcerpc_samr_OemChangePasswordUser2(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("OemChangePasswordUser2 failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	return ret;
+}
+
+static BOOL test_ChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				     struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_ChangePasswordUser2 r;
+	BOOL ret = True;
+	struct samr_Name server, account;
+	struct samr_CryptPassword nt_pass, lm_pass;
+	struct samr_Hash nt_verifier, lm_verifier;
+
+	printf("Testing ChangePasswordUser2\n");
+
+	server.name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	init_samr_Name(&account, TEST_USERNAME);
+
+	ZERO_STRUCT(nt_pass);
+	ZERO_STRUCT(lm_pass);
+	ZERO_STRUCT(nt_verifier);
+	ZERO_STRUCT(lm_verifier);
+	
+	r.in.server = &server;
+	r.in.account = &account;
+	r.in.nt_password = &nt_pass;
+	r.in.nt_verifier = &nt_verifier;
+	r.in.lm_change = 1;
+	r.in.lm_password = &lm_pass;
+	r.in.lm_verifier = &lm_verifier;
+
+	status = dcerpc_samr_ChangePasswordUser2(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ChangePasswordUser2 failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	return ret;
+}
+
+
 static BOOL test_GetMembersInAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				  struct policy_handle *alias_handle)
 {
@@ -473,6 +543,62 @@ static BOOL test_AddMemberToAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_DelAliasMem(p, mem_ctx, &d);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("DelAliasMem failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	return ret;
+}
+
+static BOOL test_AddMultipleMembersToAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+					   struct policy_handle *alias_handle)
+{
+	struct samr_AddMultipleMembersToAlias a;
+	struct samr_RemoveMultipleMembersFromAlias r;
+	NTSTATUS status;
+	BOOL ret = True;
+	struct lsa_SidArray sids;
+
+	printf("testing AddMultipleMembersToAlias\n");
+	a.in.handle = alias_handle;
+	a.in.sids = &sids;
+
+	sids.num_sids = 3;
+	sids.sids = talloc_array_p(mem_ctx, struct lsa_SidPtr, 3);
+
+	sids.sids[0].sid = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-1-2-3-1");
+	sids.sids[1].sid = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-1-2-3-2");
+	sids.sids[2].sid = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-1-2-3-3");
+
+	status = dcerpc_samr_AddMultipleMembersToAlias(p, mem_ctx, &a);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("AddMultipleMembersToAlias failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+
+	printf("testing RemoveMultipleMembersFromAlias\n");
+	r.in.handle = alias_handle;
+	r.in.sids = &sids;
+
+	status = dcerpc_samr_RemoveMultipleMembersFromAlias(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("RemoveMultipleMembersFromAlias failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	/* strange! removing twice doesn't give any error */
+	status = dcerpc_samr_RemoveMultipleMembersFromAlias(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("RemoveMultipleMembersFromAlias failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	/* but removing an alias that isn't there does */
+	sids.sids[2].sid = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-1-2-3-4");
+
+	status = dcerpc_samr_RemoveMultipleMembersFromAlias(p, mem_ctx, &r);
+	if (!NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_NOT_FOUND, status)) {
+		printf("RemoveMultipleMembersFromAlias failed - %s\n", nt_errstr(status));
 		ret = False;
 	}
 
@@ -553,6 +679,10 @@ static BOOL test_alias_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	if (!test_AddMemberToAlias(p, mem_ctx, alias_handle, 
 				   domain_handle, domain_sid)) {
+		ret = False;
+	}
+
+	if (!test_AddMultipleMembersToAlias(p, mem_ctx, alias_handle)) {
 		ret = False;
 	}
 
@@ -797,6 +927,14 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_ChangePasswordUser(p, mem_ctx, domain_handle)) {
+		ret = False;
+	}
+
+	if (!test_OemChangePasswordUser2(p, mem_ctx, domain_handle)) {
+		ret = False;
+	}
+
+	if (!test_ChangePasswordUser2(p, mem_ctx, domain_handle)) {
 		ret = False;
 	}
 
@@ -1461,6 +1599,35 @@ static BOOL test_QueryDisplayInfo2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;	
 }
 
+static BOOL test_QueryDisplayInfo3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				  struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_QueryDisplayInfo3 r;
+	BOOL ret = True;
+	uint16 levels[] = {1, 2, 3, 4, 5};
+	int i;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		printf("Testing QueryDisplayInfo3 level %u\n", levels[i]);
+
+		r.in.handle = handle;
+		r.in.level = levels[i];
+		r.in.start_idx = 0;
+		r.in.max_entries = 1000;
+		r.in.buf_size = (uint32)-1;
+
+		status = dcerpc_samr_QueryDisplayInfo3(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("QueryDisplayInfo3 level %u failed - %s\n", 
+			       levels[i], nt_errstr(status));
+			ret = False;
+		}
+	}
+	
+	return ret;	
+}
+
 static BOOL test_QueryDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 				 struct policy_handle *handle)
 {
@@ -1917,6 +2084,10 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_QueryDisplayInfo2(p, mem_ctx, &domain_handle)) {
+		ret = False;
+	}
+
+	if (!test_QueryDisplayInfo3(p, mem_ctx, &domain_handle)) {
 		ret = False;
 	}
 
