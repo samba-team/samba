@@ -1,0 +1,15 @@
+<samba:parameter name="ntlm auth"
+                 context="G"
+                 advanced="1" developer="1"
+                 xmlns:samba="http://samba.org/common">
+<listitem>
+    <para>This parameter determines whether or not <citerefentry><refentrytitle>smbd</refentrytitle>
+    <manvolnum>8</manvolnum></citerefentry> will attempt to authenticate users using the NTLM password hash.
+    If disabled, only the lanman password hashes will be used.</para>
+
+    <para>Please note that at least this option or <command moreinfo="none">lanman auth</command> should 
+    be enabled in order to be able to log in.</para>
+		
+    <para>Default : <command moreinfo="none">ntlm auth = yes</command></para>
+</listitem>
+</samba:parameter>
