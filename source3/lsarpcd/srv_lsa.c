@@ -195,9 +195,9 @@ static int make_dom_ref(DOM_R_REF *ref, char *dom_name, DOM_SID *dom_sid)
 }
 
 /***************************************************************************
-make_reply_lookup_rids
+make_reply_lookup_names
  ***************************************************************************/
-static void make_reply_lookup_rids(LSA_R_LOOKUP_RIDS *r_l,
+static void make_reply_lookup_names(LSA_R_LOOKUP_NAMES *r_l,
 				int num_entries,
 				DOM_SID dom_sids [MAX_LOOKUP_SIDS],
 				uint8   dom_types[MAX_LOOKUP_SIDS])
@@ -338,24 +338,24 @@ static void lsa_reply_lookup_sids(prs_struct *rdata,
 }
 
 /***************************************************************************
-lsa_reply_lookup_rids
+lsa_reply_lookup_names
  ***************************************************************************/
-static void lsa_reply_lookup_rids(prs_struct *rdata,
+static void lsa_reply_lookup_names(prs_struct *rdata,
 				int num_entries,
 				DOM_SID dom_sids [MAX_LOOKUP_SIDS],
 				uint8   dom_types[MAX_LOOKUP_SIDS])
 {
-	LSA_R_LOOKUP_RIDS r_l;
+	LSA_R_LOOKUP_NAMES r_l;
 
 	ZERO_STRUCT(r_l);
 
 	/* set up the LSA Lookup RIDs response */
-	make_reply_lookup_rids(&r_l, num_entries, dom_sids, dom_types);
+	make_reply_lookup_names(&r_l, num_entries, dom_sids, dom_types);
 
 	r_l.status = 0x0;
 
 	/* store the response in the SMB stream */
-	lsa_io_r_lookup_rids("", &r_l, rdata, 0);
+	lsa_io_r_lookup_names("", &r_l, rdata, 0);
 }
 
 /***************************************************************************
@@ -478,7 +478,7 @@ static void api_lsa_lookup_names( uint16 vuid, prs_struct *data,
                                   prs_struct *rdata )
 {
 	int i;
-	LSA_Q_LOOKUP_RIDS q_l;
+	LSA_Q_LOOKUP_NAMES q_l;
 	DOM_SID dom_sids [MAX_LOOKUP_SIDS];
 	uint8   dom_types[MAX_LOOKUP_SIDS];
 
@@ -486,15 +486,15 @@ static void api_lsa_lookup_names( uint16 vuid, prs_struct *data,
 	ZERO_ARRAY(dom_sids);	
 
 	/* grab the info class and policy handle */
-	lsa_io_q_lookup_rids("", &q_l, data, 0);
+	lsa_io_q_lookup_names("", &q_l, data, 0);
 
-	SMB_ASSERT_ARRAY(q_l.lookup_name, q_l.num_entries);
+	SMB_ASSERT_ARRAY(q_l.uni_name, q_l.num_entries);
 
 	/* convert received RIDs to strings, so we can do them. */
 	for (i = 0; i < q_l.num_entries; i++)
 	{
 		fstring name;
-		fstrcpy(name, unistr2(q_l.lookup_name[i].str.buffer));
+		fstrcpy(name, unistr2_to_str(&q_l.uni_name[i]));
 
 		if (!lookup_name(name, &dom_sids[i], &dom_types[i]))
 		{
@@ -503,7 +503,7 @@ static void api_lsa_lookup_names( uint16 vuid, prs_struct *data,
 	}
 
 	/* construct reply.  return status is always 0x0 */
-	lsa_reply_lookup_rids(rdata,
+	lsa_reply_lookup_names(rdata,
                               q_l.num_entries,
 	                      dom_sids, /* text-converted SIDs */
 	                      dom_types); /* SID_NAME_USE types */

@@ -432,10 +432,6 @@ Error was %s\n", sid_file, strerror(errno) ));
 ***************************************************************************/
 BOOL map_domain_name_to_sid(DOM_SID *sid, char **nt_domain)
 {
-	fstring sid_str;
-	sid_to_string(sid_str, sid);
-	DEBUG(5,("map_domain_name_to_sid: %s\n", sid_str));
-
 	if (nt_domain == NULL)
 	{
 		*sid = global_sam_sid;
@@ -446,6 +442,16 @@ BOOL map_domain_name_to_sid(DOM_SID *sid, char **nt_domain)
 	{
 		DEBUG(5,("map_domain_name_to_sid: overriding NULL name to %s\n",
 		          global_sam_name));
+		(*nt_domain) = strdup(global_sam_name);
+		*sid = global_sam_sid;
+		return True;
+	}
+
+	if ((*nt_domain)[0] == 0)
+	{
+		DEBUG(5,("map_domain_name_to_sid: overriding blank name to %s\n",
+		          global_sam_name));
+		free(*nt_domain);
 		(*nt_domain) = strdup(global_sam_name);
 		*sid = global_sam_sid;
 		return True;

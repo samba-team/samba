@@ -563,7 +563,7 @@ static void lsa_io_sid_enum(char *desc, LSA_SID_ENUM *sen,
 }
 
 /*******************************************************************
-makes an LSA_R_ENUM_TRUST_DOM structure.
+makes a structure.
 ********************************************************************/
 void make_q_lookup_sids(LSA_Q_LOOKUP_SIDS *q_l, POLICY_HND *hnd,
 				int num_sids, DOM_SID **sids,
@@ -571,7 +571,7 @@ void make_q_lookup_sids(LSA_Q_LOOKUP_SIDS *q_l, POLICY_HND *hnd,
 {
 	if (q_l == NULL) return;
 
-	DEBUG(5,("make_r_enum_trust_dom\n"));
+	DEBUG(5,("make_q_lookup_sids\n"));
 
 	memcpy(&(q_l->pol), hnd, sizeof(q_l->pol));
 	make_lsa_sid_enum(&(q_l->sids), num_sids, sids);
@@ -668,15 +668,46 @@ void lsa_io_r_lookup_sids(char *desc,  LSA_R_LOOKUP_SIDS *r_s, prs_struct *ps, i
 }
 
 /*******************************************************************
+makes a structure.
+********************************************************************/
+void make_q_lookup_names(LSA_Q_LOOKUP_NAMES *q_l, POLICY_HND *hnd,
+				int num_names, char **names)
+{
+	int i;
+	if (q_l == NULL) return;
+
+	DEBUG(5,("make_q_lookup_names\n"));
+
+	memcpy(&(q_l->pol), hnd, sizeof(q_l->pol));
+
+	SMB_ASSERT_ARRAY(q_l->uni_name, q_l->num_entries);
+
+	q_l->num_entries     = num_names;
+	q_l->num_entries2    = num_names;
+
+	for (i = 0; i < num_names; i++)
+	{
+		int len = strlen(names[i]);
+		make_uni_hdr(&q_l->hdr_name[i], len, len, len != 0);
+		make_unistr2(&q_l->uni_name[i], names[i], len);
+	}
+
+	q_l->num_trans_entries  = 0;
+	q_l->ptr_trans_sids  = 0;
+	q_l->lookup_level = 1;
+	q_l->mapped_count = 0;
+}
+
+/*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void lsa_io_q_lookup_rids(char *desc,  LSA_Q_LOOKUP_RIDS *q_r, prs_struct *ps, int depth)
+void lsa_io_q_lookup_names(char *desc,  LSA_Q_LOOKUP_NAMES *q_r, prs_struct *ps, int depth)
 {
 	int i;
 
 	if (q_r == NULL) return;
 
-	prs_debug(ps, depth, desc, "lsa_io_q_lookup_rids");
+	prs_debug(ps, depth, desc, "lsa_io_q_lookup_names");
 	depth++;
 
 	prs_align(ps);
@@ -685,47 +716,52 @@ void lsa_io_q_lookup_rids(char *desc,  LSA_Q_LOOKUP_RIDS *q_r, prs_struct *ps, i
 
 	prs_uint32("num_entries    ", ps, depth, &(q_r->num_entries));
 	prs_uint32("num_entries2   ", ps, depth, &(q_r->num_entries2));
-	prs_uint32("buffer_dom_sid ", ps, depth, &(q_r->buffer_dom_sid)); /* undocumented domain SID buffer pointer */
-	prs_uint32("buffer_dom_name", ps, depth, &(q_r->buffer_dom_name)); /* undocumented domain name buffer pointer */
 
-	SMB_ASSERT_ARRAY(q_r->lookup_name, q_r->num_entries);
+	SMB_ASSERT_ARRAY(q_r->uni_name, q_r->num_entries);
 
 	for (i = 0; i < q_r->num_entries; i++)
 	{
-		smb_io_unistr3("dom_name", &(q_r->lookup_name[i]), ps, depth); /* names to be looked up */
+		smb_io_unihdr("hdr_name", &(q_r->hdr_name[i]), ps, depth); /* pointer names */
 	}
 
-	prs_uint8s (False, "undoc          ", ps, depth, q_r->undoc, UNKNOWN_LEN);
+	for (i = 0; i < q_r->num_entries; i++)
+	{
+		smb_io_unistr2("dom_name", &(q_r->uni_name[i]), q_r->hdr_name[i].buffer, ps, depth); /* names to be looked up */
+		prs_align(ps);
+	}
+
+	prs_uint32("num_trans_entries ", ps, depth, &(q_r->num_trans_entries));
+	prs_uint32("ptr_trans_sids ", ps, depth, &(q_r->ptr_trans_sids));
+	prs_uint32("lookup_level   ", ps, depth, &(q_r->lookup_level  ));
+	prs_uint32("mapped_count   ", ps, depth, &(q_r->mapped_count  ));
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void lsa_io_r_lookup_rids(char *desc,  LSA_R_LOOKUP_RIDS *r_r, prs_struct *ps, int depth)
+void lsa_io_r_lookup_names(char *desc,  LSA_R_LOOKUP_NAMES *r_r, prs_struct *ps, int depth)
 {
 	int i;
 
 	if (r_r == NULL) return;
 
-	prs_debug(ps, depth, desc, "lsa_io_r_lookup_rids");
+	prs_debug(ps, depth, desc, "lsa_io_r_lookup_names");
 	depth++;
 
 	prs_align(ps);
 	
-	lsa_io_dom_r_ref("", &(r_r->dom_ref), ps, depth); /* domain reference info */
+	lsa_io_dom_r_ref("", r_r->dom_ref, ps, depth); /* domain reference info */
 
 	prs_uint32("num_entries ", ps, depth, &(r_r->num_entries));
 	prs_uint32("undoc_buffer", ps, depth, &(r_r->undoc_buffer));
 	prs_uint32("num_entries2", ps, depth, &(r_r->num_entries2));
-
-	SMB_ASSERT_ARRAY(r_r->dom_rid, r_r->num_entries2);
 
 	for (i = 0; i < r_r->num_entries2; i++)
 	{
 		smb_io_dom_rid2("", &(r_r->dom_rid[i]), ps, depth); /* domain RIDs being looked up */
 	}
 
-	prs_uint32("num_entries3", ps, depth, &(r_r->num_entries3));
+	prs_uint32("mapped_count", ps, depth, &(r_r->mapped_count));
 
 	prs_uint32("status      ", ps, depth, &(r_r->status));
 }

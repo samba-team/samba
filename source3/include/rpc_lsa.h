@@ -48,9 +48,6 @@ enum SID_NAME_USE
 #define LSA_OPENPOLICY2        0x2c
 #define LSA_OPENSECRET         0x1C
 
-/* XXXX these are here to get a compile! */
-#define LSA_LOOKUPRIDS      0xFD
-
 #define LSA_MAX_GROUPS 32
 #define LSA_MAX_SIDS 32
 
@@ -290,37 +287,37 @@ typedef struct lsa_r_lookup_sids
 } LSA_R_LOOKUP_SIDS;
 
 
-#define UNKNOWN_LEN 1
-
-/* LSA_Q_LOOKUP_RIDS - LSA Lookup RIDs */
-typedef struct lsa_q_lookup_rids
+/* LSA_Q_LOOKUP_NAMES - LSA Lookup NAMEs */
+typedef struct lsa_q_lookup_names
 {
     POLICY_HND pol; /* policy handle */
     uint32 num_entries;
     uint32 num_entries2;
-    uint32 buffer_dom_sid; /* undocumented domain SID buffer pointer */
-    uint32 buffer_dom_name; /* undocumented domain name buffer pointer */
-    UNISTR3 lookup_name[MAX_LOOKUP_SIDS]; /* names to be looked up */
-    uint8 undoc[UNKNOWN_LEN]; /* completely undocumented bytes of unknown length */
+    UNIHDR  hdr_name[MAX_LOOKUP_SIDS]; /* name buffer pointers */
+    UNISTR2 uni_name[MAX_LOOKUP_SIDS]; /* names to be looked up */
 
-} LSA_Q_LOOKUP_RIDS;
+    uint32 num_trans_entries; 
+    uint32 ptr_trans_sids; /* undocumented domain SID buffer pointer */
+    uint32 lookup_level; 
+    uint32 mapped_count; 
 
-/* LSA_R_LOOKUP_RIDS - response to LSA Lookup RIDs by name */
-typedef struct lsa_r_lookup_rids
+} LSA_Q_LOOKUP_NAMES;
+
+/* LSA_R_LOOKUP_NAMES - response to LSA Lookup NAMEs by name */
+typedef struct lsa_r_lookup_names
 {
-    DOM_R_REF dom_ref; /* domain reference info */
+	DOM_R_REF *dom_ref; /* domain reference info */
 
-    uint32 num_entries;
-    uint32 undoc_buffer; /* undocumented buffer pointer */
+	uint32 num_entries;
+	uint32 undoc_buffer; /* undocumented buffer pointer */
+	uint32 num_entries2; 
+	DOM_RID2 *dom_rid; /* domain RIDs being looked up */
 
-    uint32 num_entries2; 
-    DOM_RID2 dom_rid[MAX_LOOKUP_SIDS]; /* domain RIDs being looked up */
+	uint32 mapped_count; 
 
-    uint32 num_entries3; 
+	uint32 status; /* return code */
 
-  uint32 status; /* return code */
-
-} LSA_R_LOOKUP_RIDS;
+} LSA_R_LOOKUP_NAMES;
 
 
 #endif /* _RPC_LSA_H */

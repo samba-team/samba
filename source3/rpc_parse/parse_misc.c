@@ -674,7 +674,6 @@ creates a DOM_RID2 structure.
 void make_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint8 type)
 {
 	rid2->type    = type;
-	rid2->undoc   = 0x5;
 	rid2->rid     = rid;
 	rid2->rid_idx = 0;
 }
@@ -691,14 +690,8 @@ void smb_io_dom_rid2(char *desc,  DOM_RID2 *rid2, prs_struct *ps, int depth)
 
 	prs_align(ps);
 	
-	/* should be value 5, so enforce it */
-	rid2->type = 5;
-
-	/* should be value 5, so enforce it */
-	rid2->undoc = 5;
-
-	prs_uint32("type   ", ps, depth, &(rid2->type));
-	prs_uint32("undoc  ", ps, depth, &(rid2->undoc   ));
+	prs_uint8("type   ", ps, depth, &(rid2->type));
+	prs_align(ps);
 	prs_uint32("rid    ", ps, depth, &(rid2->rid     ));
 	prs_uint32("rid_idx", ps, depth, &(rid2->rid_idx ));
 }

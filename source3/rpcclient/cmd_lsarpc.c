@@ -121,7 +121,97 @@ void cmd_lsa_query_info(struct client_info *info)
 }
 
 /****************************************************************************
-nt lsa query
+lookup names
+****************************************************************************/
+void cmd_lsa_lookup_names(struct client_info *info)
+{
+	fstring temp;
+	int i;
+	fstring srv_name;
+	int num_names = 0;
+	char *names[10];
+	DOM_SID *sids;
+	int num_sids = 0;
+#if 0
+	DOM_SID sid[10];
+	DOM_SID *sids[10];
+#endif
+	BOOL res = True;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->myhostname);
+	strupper(srv_name);
+
+	DEBUG(4,("cmd_lsa_lookup_names: server: %s\n", srv_name));
+
+	while (num_names < 10 && next_token(NULL, temp, NULL, sizeof(temp)))
+	{
+		names[num_names] = strdup(temp);
+		num_names++;
+	}
+
+	if (num_names == 0)
+	{
+		fprintf(out_hnd, "lookupnames <name> [<name> ...]\n");
+		return;
+	}
+
+	/* open LSARPC session. */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_LSARPC) : False;
+
+	/* lookup domain controller; receive a policy handle */
+	res = res ? do_lsa_open_policy(smb_cli,
+				srv_name,
+				&info->dom.lsa_info_pol, True) : False;
+
+	/* send lsa lookup sids call */
+	res = res ? do_lsa_lookup_names(smb_cli, 
+	                               &info->dom.lsa_info_pol,
+	                               num_names, names,
+	                               &sids, &num_sids) : False;
+
+	res = res ? do_lsa_close(smb_cli, &info->dom.lsa_info_pol) : False;
+
+	/* close the session */
+	cli_nt_session_close(smb_cli);
+
+	if (res)
+	{
+		DEBUG(5,("cmd_lsa_lookup_names: query succeeded\n"));
+	}
+	else
+	{
+		DEBUG(5,("cmd_lsa_lookup_names: query failed\n"));
+	}
+
+	if (sids != NULL)
+	{
+		fprintf(out_hnd,"Lookup Names:\n");
+		for (i = 0; i < num_sids; i++)
+		{
+			sid_to_string(temp, &sids[i]);
+			fprintf(out_hnd, "SID: %s -> %s\n", names[i], temp);
+#if 0
+			if (sids[i] != NULL)
+			{
+				free(sids[i]);
+			}
+#endif
+		}
+		free(sids);
+	}
+
+	for (i = 0; i < num_names; i++)
+	{
+		if (names[i] != NULL)
+		{
+			free(names[i]);
+		}
+	}
+}
+
+/****************************************************************************
+lookup sids
 ****************************************************************************/
 void cmd_lsa_lookup_sids(struct client_info *info)
 {

@@ -1252,11 +1252,11 @@ BOOL pm_process( char *FileName,
 
 /*The following definitions come from  passdb/ldap.c  */
 
-struct passdb_ops *ldap_initialize_password_db(void);
+struct passdb_ops *ldap_initialise_password_db(void);
 
 /*The following definitions come from  passdb/nispass.c  */
 
-struct passdb_ops *nisplus_initialize_password_db(void);
+struct passdb_ops *nisplus_initialise_password_db(void);
 
 /*The following definitions come from  passdb/pass_check.c  */
 
@@ -1412,6 +1412,12 @@ BOOL cli_nt_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr);
 BOOL do_lsa_open_policy(struct cli_state *cli,
 			char *server_name, POLICY_HND *hnd,
 			BOOL sec_qos);
+BOOL do_lsa_lookup_names(struct cli_state *cli,
+			POLICY_HND *hnd,
+			int num_names,
+			char **names,
+			DOM_SID **sids,
+			int *num_sids);
 BOOL do_lsa_lookup_sids(struct cli_state *cli,
 			POLICY_HND *hnd,
 			int num_sids,
@@ -1591,8 +1597,10 @@ void make_q_lookup_sids(LSA_Q_LOOKUP_SIDS *q_l, POLICY_HND *hnd,
 				uint16 level);
 void lsa_io_q_lookup_sids(char *desc, LSA_Q_LOOKUP_SIDS *q_s, prs_struct *ps, int depth);
 void lsa_io_r_lookup_sids(char *desc,  LSA_R_LOOKUP_SIDS *r_s, prs_struct *ps, int depth);
-void lsa_io_q_lookup_rids(char *desc,  LSA_Q_LOOKUP_RIDS *q_r, prs_struct *ps, int depth);
-void lsa_io_r_lookup_rids(char *desc,  LSA_R_LOOKUP_RIDS *r_r, prs_struct *ps, int depth);
+void make_q_lookup_names(LSA_Q_LOOKUP_NAMES *q_l, POLICY_HND *hnd,
+				int num_names, char **names);
+void lsa_io_q_lookup_names(char *desc,  LSA_Q_LOOKUP_NAMES *q_r, prs_struct *ps, int depth);
+void lsa_io_r_lookup_names(char *desc,  LSA_R_LOOKUP_NAMES *r_r, prs_struct *ps, int depth);
 void make_lsa_q_close(LSA_Q_CLOSE *q_c, POLICY_HND *hnd);
 void lsa_io_q_close(char *desc,  LSA_Q_CLOSE *q_c, prs_struct *ps, int depth);
 void lsa_io_r_close(char *desc,  LSA_R_CLOSE *r_c, prs_struct *ps, int depth);
@@ -2283,6 +2291,7 @@ BOOL api_wkssvc_rpc(pipes_struct *p, prs_struct *data);
 /*The following definitions come from  rpcclient/cmd_lsarpc.c  */
 
 void cmd_lsa_query_info(struct client_info *info);
+void cmd_lsa_lookup_names(struct client_info *info);
 void cmd_lsa_lookup_sids(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_netlogon.c  */

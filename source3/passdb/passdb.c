@@ -111,7 +111,8 @@ struct smb_passwd *iterate_getsmbpwuid(uid_t smb_userid)
 	}
 
 	while ((pwd = getsmbpwent(fp)) != NULL && pwd->smb_userid != smb_userid)
-      ;
+	{
+	}
 
 	if (pwd != NULL)
 	{
@@ -144,7 +145,8 @@ struct smb_passwd *iterate_getsmbpwnam(char *name)
 	}
 
 	while ((pwd = getsmbpwent(fp)) != NULL && !strequal(pwd->smb_name, name))
-      ;
+	{
+	}
 
 	if (pwd != NULL)
 	{
@@ -349,7 +351,8 @@ struct sam_passwd *iterate_getsam21pwuid(uid_t uid)
 	}
 
 	while ((pwd = getsam21pwent(fp)) != NULL && pwd->smb_userid != uid)
-      ;
+	{
+	}
 
 	if (pwd != NULL)
 	{
@@ -514,30 +517,33 @@ struct sam_passwd *pwdb_smb_to_sam(struct smb_passwd *user)
 
 char *pwdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length)
 {
-  static fstring acct_str;
-  size_t i = 0;
+	static fstring acct_str;
+	size_t i = 0;
 
-  acct_str[i++] = '[';
+	acct_str[i++] = '[';
 
-  if (acct_ctrl & ACB_PWNOTREQ ) acct_str[i++] = 'N';
-  if (acct_ctrl & ACB_DISABLED ) acct_str[i++] = 'D';
-  if (acct_ctrl & ACB_HOMDIRREQ) acct_str[i++] = 'H';
-  if (acct_ctrl & ACB_TEMPDUP  ) acct_str[i++] = 'T'; 
-  if (acct_ctrl & ACB_NORMAL   ) acct_str[i++] = 'U';
-  if (acct_ctrl & ACB_MNS      ) acct_str[i++] = 'M';
-  if (acct_ctrl & ACB_WSTRUST  ) acct_str[i++] = 'W';
-  if (acct_ctrl & ACB_SVRTRUST ) acct_str[i++] = 'S';
-  if (acct_ctrl & ACB_AUTOLOCK ) acct_str[i++] = 'L';
-  if (acct_ctrl & ACB_PWNOEXP  ) acct_str[i++] = 'X';
-  if (acct_ctrl & ACB_DOMTRUST ) acct_str[i++] = 'I';
+	if (acct_ctrl & ACB_PWNOTREQ ) acct_str[i++] = 'N';
+	if (acct_ctrl & ACB_DISABLED ) acct_str[i++] = 'D';
+	if (acct_ctrl & ACB_HOMDIRREQ) acct_str[i++] = 'H';
+	if (acct_ctrl & ACB_TEMPDUP  ) acct_str[i++] = 'T'; 
+	if (acct_ctrl & ACB_NORMAL   ) acct_str[i++] = 'U';
+	if (acct_ctrl & ACB_MNS      ) acct_str[i++] = 'M';
+	if (acct_ctrl & ACB_WSTRUST  ) acct_str[i++] = 'W';
+	if (acct_ctrl & ACB_SVRTRUST ) acct_str[i++] = 'S';
+	if (acct_ctrl & ACB_AUTOLOCK ) acct_str[i++] = 'L';
+	if (acct_ctrl & ACB_PWNOEXP  ) acct_str[i++] = 'X';
+	if (acct_ctrl & ACB_DOMTRUST ) acct_str[i++] = 'I';
 
-  for ( ; i < length - 2 ; i++ ) { acct_str[i] = ' '; }
+	for ( ; i < length - 2 ; i++ )
+	{
+		acct_str[i] = ' ';
+	}
 
-  i = length - 2;
-  acct_str[i++] = ']';
-  acct_str[i++] = '\0';
+	i = length - 2;
+	acct_str[i++] = ']';
+	acct_str[i++] = '\0';
 
-  return acct_str;
+	return acct_str;
 }     
 
 /**********************************************************
@@ -575,7 +581,7 @@ uint16 pwdb_decode_acct_ctrl(const char *p)
 			case 'L': { acct_ctrl |= ACB_AUTOLOCK ; break; /* 'L'ocked account. */ } 
 			case 'X': { acct_ctrl |= ACB_PWNOEXP  ; break; /* No 'X'piry on password */ } 
 			case 'I': { acct_ctrl |= ACB_DOMTRUST ; break; /* 'I'nterdomain trust account. */ }
-            case ' ': { break; }
+			case ' ': { break; }
 			case ':':
 			case '\n':
 			case '\0': 

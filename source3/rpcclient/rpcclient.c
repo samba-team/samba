@@ -122,6 +122,7 @@ struct
   {"srvfiles",   cmd_srv_enum_files,   "List files on a server"},
   {"lsaquery",   cmd_lsa_query_info,   "Query Info Policy (domain member or server)"},
   {"lookupsids", cmd_lsa_lookup_sids,  "Resolve names from SIDs"},
+  {"lookupnames",cmd_lsa_lookup_names,  "Resolve SIDs from names"},
   {"enumusers",  cmd_sam_enum_users,   "SAM User Database Query (experimental!)"},
   {"ntpass",     cmd_sam_ntchange_pwd, "NT SAM Password Change"},
   {"samuser",    cmd_sam_query_user,   "<username> SAM User Query (experimental!)"},
