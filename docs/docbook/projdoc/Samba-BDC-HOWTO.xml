@@ -31,34 +31,92 @@ and / or question and we will do our best to provide a solution.
 <para>
 Samba-3 is capable of acting as a Backup Domain Controller to another Samba Primary Domain
 Controller. A Samba-3 PDC can operate with an LDAP Account backend. The Samba-3 BDC can
-operate with a slave LDAP server for the  Account backend. This effectively gives samba a high
+operate with a slave LDAP server for the Account backend. This effectively gives samba a high
 degree of scalability. This is a very sweet (nice) solution for large organisations.
 </para>
 
 <para>
 While it is possible to run a Samba-3 BDC with non-LDAP backend, the administrator will
 need to figure out precisely what is the best way to replicate (copy / distribute) the
-user and machine Accounts backend. Again, Samba-3 provides a number of possibilities:
+user and machine Accounts backend.
+</para>
+
+<para>
+The use of a non-LDAP backend SAM database is particularly problematic because Domain member
+servers and workstations periodically change the machine trust account password. The new
+password is then stored only locally. This means that in the absence of a centrally stored
+accounts database (such as that provided with an LDAP based solution) if Samba-3 is running
+as a BDC, the PDC instance of the Domain member trust account password will not reach the
+PDC (master) copy of the SAM. If the PDC SAM is then replicated to BDCs this results in 
+overwriting of the SAM that contains the updated (changed) trust account password with resulting
+breakage of the domain trust.
+</para>
+
+<para>
+Considering the number of comments and questions raised concerning how to configure a BDC
+lets consider each possible option and look at the pro's and con's for each theoretical solution:
 </para>
 
 <itemizedlist>
 <title>Backup Domain Backend Account Distribution Options</title>
 	<listitem><para>
-	Passwd Backend is LDAP based, BDCs use a slave LDAP server
-	</para></listitem>
+	Solution: Passwd Backend is LDAP based, BDCs use a slave LDAP server
+	</para>
+	
+	<para>
+	Arguments For: This is a neat and manageable solution. The LDAP based SAM (ldapsam)
+	is constantly kept up to date.
+	</para>
+
+	<para>
+	Arguments Against: Complexity
+	</para>
+	</listitem>
 		
 	<listitem><para>
 	Passdb Backend is tdbsam based, BDCs use cron based "net rcp vampire" to
 	suck down the Accounts database from the PDC
-	</para></listitem>
+	</para>
+
+	<para>
+	Arguments For: It would be a nice solution
+	</para>
+
+	<para>
+	Arguments Against: It does not work because Samba-3 does not support the required
+	protocols. This may become a later feature but is not available today.
+	</para>
+	</listitem>
 		
 	<listitem><para>
 	Make use of rsync to replicate (pull down) copies of the essential account files
-	</para></listitem>
+	</para>
+
+	<para>
+	Arguments For: It is a simple solution, easy to set up as a scheduled job
+	</para>
+
+	<para>
+	Arguments Against: This will over-write the locally changed machine trust account
+	passwords. This is a broken and flawed solution. Do NOT do this.
+	</para>
+	</listitem>
 		
 	<listitem><para>
 	Operate with an entirely local accounts database (not recommended)
-	</para></listitem>
+	</para>
+	
+	<para>
+	Arguments For: Simple, easy to maintain
+	</para>
+
+	<para>
+	Arguments Against: All machine trust accounts and user accounts will be locally
+	maintained. Domain users will NOT be able to roam from office to office. This is
+	a broken and flawed solution. Do NOT do this.
+	</para>
+
+	</listitem>
 </itemizedlist>
 
 </sect1>
@@ -227,21 +285,7 @@ password) to the local Domain Controller, for valdation.
 
 </sect2>
 
-
-<sect2>
-<title>When is the PDC needed?</title>
-
-<para>
-Whenever a user wants to change his password, this has to be done on the PDC. To find
-the PDC, the workstation does a NetBIOS name query for SAMBA&lt;#1b&gt;, assuming this
-machine maintains the master copy of the SAM. The workstation contacts the PDC, both
-mutually authenticate and the password change is done.
-</para>
-
-</sect2>
-
 </sect1>
-
 
 <sect1>
 <title>Backup Domain Controller Configuration</title>
@@ -329,10 +373,13 @@ watching for updates to this section.
 <title>Machine Accounts keep expiring, what can I do?</title>
 
 <para>
-This problem will occur when occur when the account files are replicated from a central
-server but the local Domain Controllers are not forwarding machine account password updates
-back to the central server, or where there is an excessive delay in replication of the centrally
-changed machine account password to the local Domain Controller.
+This problem will occur when occur when the passdb (SAM) files are copied  from a central
+server but the local Backup Domain Controllers.  Local machine trust account password updates
+are not copied back to the central server. The newer machine account password is then over
+written when the SAM is copied from the PDC. The result is that the Domain member machine
+on start up will find that it's passwords does not match the one now in the database and
+since the startup security check will now fail, this machine will not allow logon attempts
+to procede and the account expiry error will be reported.
 </para>
 
 </sect2>
