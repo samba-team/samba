@@ -109,7 +109,7 @@ static void do_node_status(int fd, const char *name, int type, struct in_addr ip
 	status = node_status_query(fd,&nname,ip, &count);
 	if (status) {
 		for (i=0;i<count;i++) {
-			fstrcpy(cleanname, status[i].name);
+			pull_ascii_fstring(cleanname, status[i].name);
 			for (j=0;cleanname[j];j++) {
 				if (!isprint((int)cleanname[j])) cleanname[j] = '.';
 			}
