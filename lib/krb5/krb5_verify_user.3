@@ -153,6 +153,13 @@ sets
 that user of
 .Fa opt
 will use.
+If the flag
+.Dv KRB5_VERIFY_LREALMS
+is used, the
+.Fa principal
+will be modified like
+.Fn krb5_verify_user_lrealm
+modifies it.
 .Pp
 .Fn krb5_verify_user_opt
 function verifies the
