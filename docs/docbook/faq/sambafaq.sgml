@@ -3,6 +3,7 @@
 <!ENTITY install SYSTEM "install.sgml">
 <!ENTITY errors SYSTEM "errors.sgml">
 <!ENTITY clientapp SYSTEM "clientapp.sgml">
+<!ENTITY features SYSTEM "features.sgml">
 ]>
 
 <book id="Samba-FAQ">
@@ -30,4 +31,5 @@ and the old samba text documents which were mostly written by John Terpstra.
 &install;
 &clientapp;
 &errors;
+&features;
 </book>
