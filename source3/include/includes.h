@@ -1218,6 +1218,12 @@ extern char *sys_errlist[];
 #define MAXHOSTNAMELEN 255
 #endif
 
+/* Lists, trees, caching, datbase... */
+#include "ubiqx/ubi_dLinkList.h"
+#ifndef UBI_BINTREE_H
+#include "ubiqx/ubi_Cache.h"
+#endif /* UBI_BINTREE_H */
+
 #include "version.h"
 #include "smb.h"
 #include "nameserv.h"
@@ -1386,17 +1392,5 @@ extern int errno;
 #if MEM_MAN
 #include "mem_man/mem_man.h"
 #endif /* MEM_MAN */
-
-
-/* -------------------------------------------------------------------------- **
- * Lists, trees, and caching...
- */
-#include "ubiqx/ubi_sLinkList.h"
-#include "ubiqx/ubi_dLinkList.h"
-
-#ifndef UBI_BINTREE_H
-#include "ubiqx/ubi_SplayTree.h"
-#include "ubiqx/ubi_Cache.h"
-#endif /* UBI_BINTREE_H */
 
 #endif /* _INCLUDES_H */
