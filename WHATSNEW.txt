@@ -1,5 +1,8 @@
-              WHATS NEW IN Samba 2.0.6
-              ========================
+              WHATS NEW IN Samba pre-2.0.7
+              ============================
+
+The WHATSNEW has not yet been updated for 2.0.7. Please
+be patient.
 
 This is the latest stable release of Samba. This is the
 version that all production Samba servers should be running
