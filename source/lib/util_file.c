@@ -24,7 +24,6 @@
 #define MAP_FAILED ((void *)-1)
 #endif
 
-
 static int gotalarm;
 
 /***************************************************************
@@ -33,7 +32,7 @@ static int gotalarm;
 
 static void gotalarm_sig(void)
 {
-  gotalarm = 1;
+	gotalarm = 1;
 }
 
 /***************************************************************
@@ -43,34 +42,33 @@ static void gotalarm_sig(void)
 
 BOOL do_file_lock(int fd, int waitsecs, int type)
 {
-  SMB_STRUCT_FLOCK lock;
-  int             ret;
-  void (*oldsig_handler)(int);
+	SMB_STRUCT_FLOCK lock;
+	int             ret;
+	void (*oldsig_handler)(int);
 
-  gotalarm = 0;
-  oldsig_handler = CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+	gotalarm = 0;
+	oldsig_handler = CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
 
-  lock.l_type = type;
-  lock.l_whence = SEEK_SET;
-  lock.l_start = 0;
-  lock.l_len = 1;
-  lock.l_pid = 0;
+	lock.l_type = type;
+	lock.l_whence = SEEK_SET;
+	lock.l_start = 0;
+	lock.l_len = 1;
+	lock.l_pid = 0;
 
-  alarm(waitsecs);
-  /* Note we must *NOT* use sys_fcntl here ! JRA */
-  ret = fcntl(fd, SMB_F_SETLKW, &lock);
-  alarm(0);
-  CatchSignal(SIGALRM, SIGNAL_CAST oldsig_handler);
+	alarm(waitsecs);
+	/* Note we must *NOT* use sys_fcntl here ! JRA */
+	ret = fcntl(fd, SMB_F_SETLKW, &lock);
+	alarm(0);
+	CatchSignal(SIGALRM, SIGNAL_CAST oldsig_handler);
 
-  if (gotalarm) {
-    DEBUG(0, ("do_file_lock: failed to %s file.\n",
-                type == F_UNLCK ? "unlock" : "lock"));
-    return False;
-  }
+	if (gotalarm) {
+		DEBUG(0, ("do_file_lock: failed to %s file.\n",
+			type == F_UNLCK ? "unlock" : "lock"));
+		return False;
+	}
 
-  return (ret == 0);
+	return (ret == 0);
 }
-
 
 /***************************************************************
  Lock an fd. Abandon after waitsecs seconds.
@@ -78,21 +76,19 @@ BOOL do_file_lock(int fd, int waitsecs, int type)
 
 BOOL file_lock(int fd, int type, int secs, int *plock_depth)
 {
-  if (fd < 0)
-    return False;
+	if (fd < 0)
+		return False;
 
-  (*plock_depth)++;
+	(*plock_depth)++;
 
-  if ((*plock_depth) == 0)
-  {
-    if (!do_file_lock(fd, secs, type)) {
-      DEBUG(10,("file_lock: locking file failed, error = %s.\n",
-                 strerror(errno)));
-      return False;
-    }
-  }
+	if ((*plock_depth) == 0) {
+		if (!do_file_lock(fd, secs, type)) {
+			DEBUG(10,("file_lock: locking file failed, error = %s.\n", strerror(errno)));
+			return False;
+		}
+	}
 
-  return True;
+	return True;
 }
 
 /***************************************************************
@@ -101,105 +97,107 @@ BOOL file_lock(int fd, int type, int secs, int *plock_depth)
 
 BOOL file_unlock(int fd, int *plock_depth)
 {
-  BOOL ret=True;
+	BOOL ret=True;
 
-  if(*plock_depth == 1)
-    ret = do_file_lock(fd, 5, F_UNLCK);
+	if(*plock_depth == 1) {
+		ret = do_file_lock(fd, 5, F_UNLCK);
+	}
 
-  (*plock_depth)--;
+	(*plock_depth)--;
 
-  if(!ret)
-    DEBUG(10,("file_unlock: unlocking file failed, error = %s.\n",
-                 strerror(errno)));
-  return ret;
+	if(!ret) {
+		DEBUG(10,("file_unlock: unlocking file failed, error = %s.\n", strerror(errno)));
+	}
+	return ret;
 }
 
 /***************************************************************
- locks a file for enumeration / modification.
+ Locks a file for enumeration / modification.
  update to be set = True if modification is required.
 ****************************************************************/
 
 void *startfilepwent(char *pfile, char *s_readbuf, int bufsize,
 				int *file_lock_depth, BOOL update)
 {
-  FILE *fp = NULL;
+	FILE *fp = NULL;
 
-  if (!*pfile)
- {
-    DEBUG(0, ("startfilepwent: No file set\n"));
-    return (NULL);
-  }
-  DEBUG(10, ("startfilepwent: opening file %s\n", pfile));
+	if (!*pfile) {
+		DEBUG(0, ("startfilepwent: No file set\n"));
+		return (NULL);
+	}
+	DEBUG(10, ("startfilepwent: opening file %s\n", pfile));
 
-  fp = sys_fopen(pfile, update ? "r+b" : "rb");
+	fp = sys_fopen(pfile, update ? "r+b" : "rb");
 
-  if (fp == NULL) {
-    DEBUG(0, ("startfilepwent: unable to open file %s\n", pfile));
-    return NULL;
-  }
+	if (fp == NULL) {
+		DEBUG(0, ("startfilepwent: unable to open file %s\n", pfile));
+		return NULL;
+	}
 
-  /* Set a buffer to do more efficient reads */
-  setvbuf(fp, s_readbuf, _IOFBF, bufsize);
+	/* Set a buffer to do more efficient reads */
+	setvbuf(fp, s_readbuf, _IOFBF, bufsize);
 
-  if (!file_lock(fileno(fp), (update ? F_WRLCK : F_RDLCK), 5, file_lock_depth))
-  {
-    DEBUG(0, ("startfilepwent: unable to lock file %s\n", pfile));
-    fclose(fp);
-    return NULL;
-  }
+	if (!file_lock(fileno(fp), (update ? F_WRLCK : F_RDLCK), 5, file_lock_depth)) {
+		DEBUG(0, ("startfilepwent: unable to lock file %s\n", pfile));
+		fclose(fp);
+		return NULL;
+	}
 
-  /* Make sure it is only rw by the owner */
-  chmod(pfile, 0600);
+	/* Make sure it is only rw by the owner */
+	chmod(pfile, 0600);
 
-  /* We have a lock on the file. */
-  return (void *)fp;
+	/* We have a lock on the file. */
+	return (void *)fp;
 }
 
 /***************************************************************
  End enumeration of the file.
 ****************************************************************/
+
 void endfilepwent(void *vp, int *file_lock_depth)
 {
-  FILE *fp = (FILE *)vp;
+	FILE *fp = (FILE *)vp;
 
-  file_unlock(fileno(fp), file_lock_depth);
-  fclose(fp);
-  DEBUG(7, ("endfilepwent: closed file.\n"));
+	file_unlock(fileno(fp), file_lock_depth);
+	fclose(fp);
+	DEBUG(7, ("endfilepwent: closed file.\n"));
 }
 
 /*************************************************************************
  Return the current position in the file list as an SMB_BIG_UINT.
  This must be treated as an opaque token.
 *************************************************************************/
+
 SMB_BIG_UINT getfilepwpos(void *vp)
 {
-  return (SMB_BIG_UINT)sys_ftell((FILE *)vp);
+	return (SMB_BIG_UINT)sys_ftell((FILE *)vp);
 }
 
 /*************************************************************************
  Set the current position in the file list from an SMB_BIG_UINT.
  This must be treated as an opaque token.
 *************************************************************************/
+
 BOOL setfilepwpos(void *vp, SMB_BIG_UINT tok)
 {
-  return !sys_fseek((FILE *)vp, (SMB_OFF_T)tok, SEEK_SET);
+	return !sys_fseek((FILE *)vp, (SMB_OFF_T)tok, SEEK_SET);
 }
 
 /*************************************************************************
- gets a line out of a file.
+ Gets a line out of a file.
  line is of format "xxxx:xxxxxx:xxxxx:".
  lines with "#" at the front are ignored.
 *************************************************************************/
+
 int getfileline(void *vp, char *linebuf, int linebuf_size)
 {
 	/* Static buffers we will return. */
 	FILE *fp = (FILE *)vp;
 	unsigned char   c;
 	unsigned char  *p;
-	size_t            linebuf_len;
+	size_t linebuf_len;
 
-	if (fp == NULL)
-	{
+	if (fp == NULL) {
 		DEBUG(0,("getfileline: Bad file pointer.\n"));
 		return -1;
 	}
@@ -207,13 +205,11 @@ int getfileline(void *vp, char *linebuf, int linebuf_size)
 	/*
 	 * Scan the file, a line at a time.
 	 */
-	while (!feof(fp))
-	{
+	while (!feof(fp)) {
 		linebuf[0] = '\0';
 
 		fgets(linebuf, linebuf_size, fp);
-		if (ferror(fp))
-		{
+		if (ferror(fp)) {
 			return -1;
 		}
 
@@ -223,47 +219,38 @@ int getfileline(void *vp, char *linebuf, int linebuf_size)
 		 */
 
 		linebuf_len = strlen(linebuf);
-		if (linebuf_len == 0)
-		{
+		if (linebuf_len == 0) {
 			linebuf[0] = '\0';
 			return 0;
 		}
 
-		if (linebuf[linebuf_len - 1] != '\n')
-		{
+		if (linebuf[linebuf_len - 1] != '\n') {
 			c = '\0';
-			while (!ferror(fp) && !feof(fp))
-			{
+			while (!ferror(fp) && !feof(fp)) {
 				c = fgetc(fp);
-				if (c == '\n')
-				{
+				if (c == '\n') {
 					break;
 				}
 			}
-		}
-		else
-		{
+		} else {
 			linebuf[linebuf_len - 1] = '\0';
 		}
 
 #ifdef DEBUG_PASSWORD
 		DEBUG(100, ("getfileline: got line |%s|\n", linebuf));
 #endif
-		if ((linebuf[0] == 0) && feof(fp))
-		{
+		if ((linebuf[0] == 0) && feof(fp)) {
 			DEBUG(4, ("getfileline: end of file reached\n"));
 			return 0;
 		}
 
-		if (linebuf[0] == '#' || linebuf[0] == '\0')
-		{
+		if (linebuf[0] == '#' || linebuf[0] == '\0') {
 			DEBUG(6, ("getfileline: skipping comment or blank line\n"));
 			continue;
 		}
 
 		p = (unsigned char *) strchr_m(linebuf, ':');
-		if (p == NULL)
-		{
+		if (p == NULL) {
 			DEBUG(0, ("getfileline: malformed line entry (no :)\n"));
 			continue;
 		}
@@ -272,85 +259,89 @@ int getfileline(void *vp, char *linebuf, int linebuf_size)
 	return -1;
 }
 
-
 /****************************************************************************
-read a line from a file with possible \ continuation chars. 
-Blanks at the start or end of a line are stripped.
-The string will be allocated if s2 is NULL
+ Read a line from a file with possible \ continuation chars. 
+ Blanks at the start or end of a line are stripped.
+ The string will be allocated if s2 is NULL.
 ****************************************************************************/
+
 char *fgets_slash(char *s2,int maxlen,XFILE *f)
 {
-  char *s=s2;
-  int len = 0;
-  int c;
-  BOOL start_of_line = True;
+	char *s=s2;
+	int len = 0;
+	int c;
+	BOOL start_of_line = True;
 
-  if (x_feof(f))
-    return(NULL);
-
-  if (maxlen <2) return(NULL);
-
-  if (!s2)
-    {
-      maxlen = MIN(maxlen,8);
-      s = (char *)malloc(maxlen);
-    }
-
-  if (!s) return(NULL);
-
-  *s = 0;
-
-  while (len < maxlen-1)
-    {
-      c = x_getc(f);
-      switch (c)
-	{
-	case '\r':
-	  break;
-	case '\n':
-	  while (len > 0 && s[len-1] == ' ')
-	    {
-	      s[--len] = 0;
-	    }
-	  if (len > 0 && s[len-1] == '\\')
-	    {
-	      s[--len] = 0;
-	      start_of_line = True;
-	      break;
-	    }
-	  return(s);
-	case EOF:
-	  if (len <= 0 && !s2) 
-	    SAFE_FREE(s);
-	  return(len>0?s:NULL);
-	case ' ':
-	  if (start_of_line)
-	    break;
-	default:
-	  start_of_line = False;
-	  s[len++] = c;
-	  s[len] = 0;
+	if (x_feof(f)) {
+		return(NULL);
 	}
-      if (!s2 && len > maxlen-3)
-	{
-	  char *t;
+
+	if (maxlen <2) {
+		return(NULL);
+	}
+
+	if (!s2) {
+		maxlen = MIN(maxlen,8);
+		s = (char *)malloc(maxlen);
+	}
+
+	if (!s) {
+		return(NULL);
+	}
+
+	*s = 0;
+
+	while (len < maxlen-1) {
+		c = x_getc(f);
+		switch (c) {
+			case '\r':
+				break;
+			case '\n':
+				while (len > 0 && s[len-1] == ' ') {
+					s[--len] = 0;
+				}
+				if (len > 0 && s[len-1] == '\\') {
+					s[--len] = 0;
+					start_of_line = True;
+					break;
+				}
+				return(s);
+			case EOF:
+				if (len <= 0 && !s2)  {
+					SAFE_FREE(s);
+				}
+				return(len>0?s:NULL);
+			case ' ':
+				if (start_of_line) {
+					break;
+				}
+			default:
+				start_of_line = False;
+				s[len++] = c;
+				s[len] = 0;
+		}
+
+		if (!s2 && len > maxlen-3) {
+			char *t;
 	  
-	  maxlen *= 2;
-	  t = (char *)Realloc(s,maxlen);
-	  if (!t) {
-	    DEBUG(0,("fgets_slash: failed to expand buffer!\n"));
-	    SAFE_FREE(s);
-	    return(NULL);
-	  } else s = t;
+			maxlen *= 2;
+			t = (char *)Realloc(s,maxlen);
+			if (!t) {
+				DEBUG(0,("fgets_slash: failed to expand buffer!\n"));
+				SAFE_FREE(s);
+				return(NULL);
+			} else {
+				s = t;
+			}
+		}
 	}
-    }
-  return(s);
+	return(s);
 }
 
-
 /****************************************************************************
-load from a pipe into memory
+ Load from a pipe into memory.
 ****************************************************************************/
+
 char *file_pload(char *syscmd, size_t *size)
 {
 	int fd, n;
@@ -359,7 +350,9 @@ char *file_pload(char *syscmd, size_t *size)
 	size_t total;
 	
 	fd = sys_popen(syscmd);
-	if (fd == -1) return NULL;
+	if (fd == -1) {
+		return NULL;
+	}
 
 	p = NULL;
 	total = 0;
@@ -371,7 +364,9 @@ char *file_pload(char *syscmd, size_t *size)
 			close(fd);
 			SAFE_FREE(p);
 			return NULL;
-		} else p = tp;
+		} else {
+			p = tp;
+		}
 		memcpy(p+total, buf, n);
 		total += n;
 	}
@@ -382,13 +377,15 @@ char *file_pload(char *syscmd, size_t *size)
 	 * truncated. */
 	sys_pclose(fd);
 
-	if (size) *size = total;
+	if (size) {
+		*size = total;
+	}
 
 	return p;
 }
 
 /****************************************************************************
-load a file into memory from a fd.
+ Load a file into memory from a fd.
 ****************************************************************************/ 
 
 char *fd_load(int fd, size_t *size)
@@ -396,10 +393,14 @@ char *fd_load(int fd, size_t *size)
 	SMB_STRUCT_STAT sbuf;
 	char *p;
 
-	if (sys_fstat(fd, &sbuf) != 0) return NULL;
+	if (sys_fstat(fd, &sbuf) != 0) {
+		return NULL;
+	}
 
 	p = (char *)malloc(sbuf.st_size+1);
-	if (!p) return NULL;
+	if (!p) {
+		return NULL;
+	}
 
 	if (read(fd, p, sbuf.st_size) != sbuf.st_size) {
 		SAFE_FREE(p);
@@ -407,79 +408,85 @@ char *fd_load(int fd, size_t *size)
 	}
 	p[sbuf.st_size] = 0;
 
-	if (size) *size = sbuf.st_size;
+	if (size) {
+		*size = sbuf.st_size;
+	}
 
 	return p;
 }
 
 /****************************************************************************
-load a file into memory
+ Load a file into memory.
 ****************************************************************************/
+
 char *file_load(const char *fname, size_t *size)
 {
 	int fd;
 	char *p;
 
-	if (!fname || !*fname) return NULL;
+	if (!fname || !*fname) {
+		return NULL;
+	}
 	
 	fd = open(fname,O_RDONLY);
-	if (fd == -1) return NULL;
+	if (fd == -1) {
+		return NULL;
+	}
 
 	p = fd_load(fd, size);
-
 	close(fd);
-
 	return p;
 }
 
-
 /*******************************************************************
-mmap (if possible) or read a file
+ mmap (if possible) or read a file.
 ********************************************************************/
+
 void *map_file(char *fname, size_t size)
 {
 	size_t s2 = 0;
 	void *p = NULL;
 #ifdef HAVE_MMAP
-	if (lp_use_mmap()) {
-		int fd;
-		fd = open(fname, O_RDONLY, 0);
-		if (fd == -1) {
-			DEBUG(2,("Failed to load %s - %s\n", fname, strerror(errno)));
-			return NULL;
-		}
-		p = mmap(NULL, size, PROT_READ, MAP_SHARED|MAP_FILE, fd, 0);
-		close(fd);
-		if (p == MAP_FAILED) {
-			DEBUG(1,("Failed to mmap %s - %s\n", fname, strerror(errno)));
-			return NULL;
-		}
+	int fd;
+	fd = open(fname, O_RDONLY, 0);
+	if (fd == -1) {
+		DEBUG(2,("map_file: Failed to load %s - %s\n", fname, strerror(errno)));
+		return NULL;
+	}
+	p = mmap(NULL, size, PROT_READ, MAP_SHARED|MAP_FILE, fd, 0);
+	close(fd);
+	if (p == MAP_FAILED) {
+		DEBUG(1,("map_file: Failed to mmap %s - %s\n", fname, strerror(errno)));
+		return NULL;
 	}
 #endif
 	if (!p) {
 		p = file_load(fname, &s2);
-		if (!p) return NULL;
+		if (!p) {
+			return NULL;
+		}
 		if (s2 != size) {
-			DEBUG(1,("incorrect size for %s - got %lu expected %lu\n",
+			DEBUG(1,("map_file: incorrect size for %s - got %lu expected %lu\n",
 				 fname, (unsigned long)s2, (unsigned long)size));
-			if (p) free(p);
+			SAFE_FREE(p);	
 			return NULL;
 		}
 	}
-
 	return p;
 }
 
-
 /****************************************************************************
-parse a buffer into lines
+ Parse a buffer into lines.
 ****************************************************************************/
+
 static char **file_lines_parse(char *p, size_t size, int *numlines)
 {
 	int i;
 	char *s, **ret;
 
-	if (!p) return NULL;
+	if (!p) {
+		return NULL;
+	}
 
 	for (s = p, i=0; s < p+size; s++) {
 		if (s[0] == '\n') i++;
@@ -491,7 +498,9 @@ static char **file_lines_parse(char *p, size_t size, int *numlines)
 		return NULL;
 	}	
 	memset(ret, 0, sizeof(ret[0])*(i+2));
-	if (numlines) *numlines = i;
+	if (numlines) {
+		*numlines = i;
+	}
 
 	ret[0] = p;
 	for (s = p, i=0; s < p+size; s++) {
@@ -500,75 +509,87 @@ static char **file_lines_parse(char *p, size_t size, int *numlines)
 			i++;
 			ret[i] = s+1;
 		}
-		if (s[0] == '\r') s[0] = 0;
+		if (s[0] == '\r') {
+			s[0] = 0;
+		}
 	}
 
 	return ret;
 }
 
-
 /****************************************************************************
-load a file into memory and return an array of pointers to lines in the file
-must be freed with file_lines_free(). 
+ Load a file into memory and return an array of pointers to lines in the file
+ must be freed with file_lines_free(). 
 ****************************************************************************/
+
 char **file_lines_load(const char *fname, int *numlines)
 {
 	char *p;
 	size_t size;
 
 	p = file_load(fname, &size);
-	if (!p) return NULL;
+	if (!p) {
+		return NULL;
+	}
 
 	return file_lines_parse(p, size, numlines);
 }
 
 /****************************************************************************
-load a fd into memory and return an array of pointers to lines in the file
-must be freed with file_lines_free(). If convert is true calls unix_to_dos on
-the list.
+ Load a fd into memory and return an array of pointers to lines in the file
+ must be freed with file_lines_free(). If convert is true calls unix_to_dos on
+ the list.
 ****************************************************************************/
+
 char **fd_lines_load(int fd, int *numlines)
 {
 	char *p;
 	size_t size;
 
 	p = fd_load(fd, &size);
-	if (!p) return NULL;
+	if (!p) {
+		return NULL;
+	}
 
 	return file_lines_parse(p, size, numlines);
 }
 
-
 /****************************************************************************
-load a pipe into memory and return an array of pointers to lines in the data
-must be freed with file_lines_free(). 
+ Load a pipe into memory and return an array of pointers to lines in the data
+ must be freed with file_lines_free(). 
 ****************************************************************************/
+
 char **file_lines_pload(char *syscmd, int *numlines)
 {
 	char *p;
 	size_t size;
 
 	p = file_pload(syscmd, &size);
-	if (!p) return NULL;
+	if (!p) {
+		return NULL;
+	}
 
 	return file_lines_parse(p, size, numlines);
 }
 
 /****************************************************************************
-free lines loaded with file_lines_load
+ Free lines loaded with file_lines_load.
 ****************************************************************************/
+
 void file_lines_free(char **lines)
 {
-	if (!lines) return;
+	if (!lines) {
+		return;
+	}
 	SAFE_FREE(lines[0]);
 	SAFE_FREE(lines);
 }
 
-
 /****************************************************************************
-take a lislist of lines and modify them to produce a list where \ continues
-a line
+ Take a list of lines and modify them to produce a list where \ continues
+ a line.
 ****************************************************************************/
+
 void file_lines_slashcont(char **lines)
 {
 	int i, j;
@@ -579,8 +600,12 @@ void file_lines_slashcont(char **lines)
 			lines[i][len-1] = ' ';
 			if (lines[i+1]) {
 				char *p = &lines[i][len];
-				while (p < lines[i+1]) *p++ = ' ';
-				for (j = i+1; lines[j]; j++) lines[j] = lines[j+1];
+				while (p < lines[i+1]) {
+					*p++ = ' ';
+				}
+				for (j = i+1; lines[j]; j++) {
+					lines[j] = lines[j+1];
+				}
 			}
 		} else {
 			i++;
@@ -588,9 +613,10 @@ void file_lines_slashcont(char **lines)
 	}
 }
 
-/*
-  save a lump of data into a file. Mostly used for debugging 
-*/
+/****************************************************************************
+ Save a lump of data into a file. Mostly used for debugging.
+****************************************************************************/
+
 BOOL file_save(const char *fname, void *packet, size_t length)
 {
 	int fd;
