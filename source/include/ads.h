@@ -76,9 +76,6 @@ typedef void **ADS_MODLIST;
 /* time between reconnect attempts */
 #define ADS_RECONNECT_TIME 5
 
-/* timeout on searches */
-#define ADS_SEARCH_TIMEOUT 10
-
 /* ldap control oids */
 #define ADS_PAGE_CTL_OID "1.2.840.113556.1.4.319"
 #define ADS_NO_REFERRALS_OID "1.2.840.113556.1.4.1339"
