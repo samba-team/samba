@@ -716,13 +716,13 @@ sub ParseElementPullSwitch($$$$)
 	if (!defined $utype ||
 	    !util::has_property($utype, "nodiscriminant")) {
 		my $e2 = find_sibling($e, $switch);
-		my $type_decl = util::map_type($e2->{TYPE});
+		my $type_decl = typelist::mapType($e2);
 		pidl "if (($ndr_flags) & NDR_SCALARS) {";
 		indent;
 		if (typelist::getType($e2->{TYPE})->{DATA}->{TYPE} eq "ENUM") {
-			$type_decl = util::enum_type_decl($e2);
+			$type_decl = typelist::mapType($e2);
 		} elsif (typelist::getType($e2->{TYPE})->{DATA}->{TYPE} eq "BITMAP") {
-			$type_decl = util::bitmap_type_decl($e2);
+			$type_decl = typelist::mapType($e2);
 		}
 		pidl "$type_decl _level;";
 		pidl "NDR_CHECK(ndr_pull_$e2->{TYPE}(ndr, NDR_SCALARS, &_level));";
@@ -1022,7 +1022,7 @@ sub ParseStructPush($)
 sub ParseEnumPush($)
 {
 	my($enum) = shift;
-	my($type_fn) = util::enum_type_fn($enum);
+	my($type_fn) = typelist::enum_type_fn($enum);
 
 	start_flags($enum);
 
@@ -1036,8 +1036,8 @@ sub ParseEnumPush($)
 sub ParseEnumPull($)
 {
 	my($enum) = shift;
-	my($type_fn) = util::enum_type_fn($enum);
-	my($type_v_decl) = util::map_type(util::enum_type_fn($enum));
+	my($type_fn) = typelist::enum_type_fn($enum);
+	my($type_v_decl) = typelist::mapScalarType(typelist::enum_type_fn($enum));
 
 	pidl "$type_v_decl v;";
 	start_flags($enum);
@@ -1103,7 +1103,7 @@ $typefamily{ENUM} = {
 	PULL_FN_ARGS => \&ArgsEnumPull,
 	PRINT_FN_BODY => \&ParseEnumPrint,
 	PRINT_FN_ARGS => \&ArgsEnumPrint,
-	ALIGN => sub { return align_type(util::enum_type_fn(shift)); }
+	ALIGN => sub { return align_type(typelist::enum_type_fn(shift)); }
 };
 
 #####################################################################
@@ -1111,7 +1111,7 @@ $typefamily{ENUM} = {
 sub ParseBitmapPush($)
 {
 	my($bitmap) = shift;
-	my($type_fn) = util::bitmap_type_fn($bitmap);
+	my($type_fn) = typelist::bitmap_type_fn($bitmap);
 
 	start_flags($bitmap);
 
@@ -1125,8 +1125,8 @@ sub ParseBitmapPush($)
 sub ParseBitmapPull($)
 {
 	my($bitmap) = shift;
-	my($type_fn) = util::bitmap_type_fn($bitmap);
-	my($type_decl) = util::bitmap_type_decl($bitmap);
+	my($type_fn) = typelist::bitmap_type_fn($bitmap);
+	my($type_decl) = typelist::mapType($bitmap);
 
 	pidl "$type_decl v;";
 	start_flags($bitmap);
@@ -1142,8 +1142,8 @@ sub ParseBitmapPrintElement($$)
 {
 	my($e) = shift;
 	my($bitmap) = shift;
-	my($type_decl) = util::bitmap_type_decl($bitmap);
-	my($type_fn) = util::bitmap_type_fn($bitmap);
+	my($type_decl) = typelist::mapType($bitmap);
+	my($type_fn) = typelist::bitmap_type_fn($bitmap);
 	my($name) = $bitmap->{PARENT}->{NAME};
 	my($flag);
 
@@ -1161,8 +1161,8 @@ sub ParseBitmapPrintElement($$)
 sub ParseBitmapPrint($)
 {
 	my($bitmap) = shift;
-	my($type_decl) = util::bitmap_type_decl($bitmap);
-	my($type_fn) = util::bitmap_type_fn($bitmap);
+	my($type_decl) = typelist::mapType($bitmap);
+	my($type_fn) = typelist::bitmap_type_fn($bitmap);
 
 	start_flags($bitmap);
 
@@ -1180,21 +1180,21 @@ sub ParseBitmapPrint($)
 sub ArgsBitmapPush($)
 {
 	my $e = shift;
-	my $type_decl = util::bitmap_type_decl($e->{DATA});
+	my $type_decl = typelist::mapType($e->{DATA});
 	return "struct ndr_push *ndr, int ndr_flags, $type_decl r";
 }
 
 sub ArgsBitmapPrint($)
 {
 	my $e = shift;
-	my $type_decl = util::bitmap_type_decl($e->{DATA});
+	my $type_decl = typelist::mapType($e->{DATA});
 	return "struct ndr_print *ndr, const char *name, $type_decl r";
 }
 
 sub ArgsBitmapPull($)
 {
 	my $e = shift;
-	my $type_decl = util::bitmap_type_decl($e->{DATA});
+	my $type_decl = typelist::mapType($e->{DATA});
 	return "struct ndr_pull *ndr, int ndr_flags, $type_decl *r";
 }
 
@@ -1205,7 +1205,7 @@ $typefamily{BITMAP} = {
 	PULL_FN_ARGS => \&ArgsBitmapPull,
 	PRINT_FN_BODY => \&ParseBitmapPrint,
 	PRINT_FN_ARGS => \&ArgsBitmapPrint,
-	ALIGN => sub { return align_type(util::bitmap_type_fn(shift)); }
+	ALIGN => sub { return align_type(typelist::bitmap_type_fn(shift)); }
 };
 
 #####################################################################
