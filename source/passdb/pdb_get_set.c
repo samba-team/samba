@@ -161,7 +161,7 @@ uint32 pdb_get_group_rid (const SAM_ACCOUNT *sampass)
  * @return the flags indicating the members initialised in the struct.
  **/
  
-uint32 pdb_get_init_flag (SAM_ACCOUNT *sampass)
+uint32 pdb_get_init_flag (const SAM_ACCOUNT *sampass)
 {
         if (sampass)
 		return sampass->private.init_flag;
