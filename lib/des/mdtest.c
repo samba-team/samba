@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -76,7 +76,7 @@ md4_tests (void)
   printf ("md4... ");
   for (t = tests; t->str; ++t) {
     struct md4 md4;
-    char res[16];
+    unsigned char res[16];
     int i;
 
     md4_init (&md4);
@@ -119,7 +119,7 @@ md5_tests (void)
   printf ("md5... ");
   for (t = tests; t->str; ++t) {
     struct md5 md5;
-    char res[16];
+    unsigned char res[16];
 
     md5_init (&md5);
     md5_update (&md5, (unsigned char *)t->str, strlen(t->str));
@@ -163,7 +163,7 @@ sha_tests (void)
   printf ("sha... ");
   for (t = tests; t->str; ++t) {
     struct sha sha;
-    char res[20];
+    unsigned char res[20];
 
     sha_init (&sha);
     sha_update (&sha, (unsigned char *)t->str, strlen(t->str));
