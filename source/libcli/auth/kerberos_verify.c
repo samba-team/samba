@@ -62,12 +62,11 @@ static DATA_BLOB unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data)
  ads_keytab_add_entry function for details.
 ***********************************************************************************/
 
-static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context auth_context,
+static krb5_error_code ads_keytab_verify_ticket(krb5_context context, krb5_auth_context auth_context,
 			const DATA_BLOB *ticket, krb5_data *p_packet, krb5_ticket **pp_tkt,
 			krb5_keyblock *keyblock)
 {
 	krb5_error_code ret = 0;
-	BOOL auth_ok = False;
 
 	krb5_keytab keytab = NULL;
 	krb5_kt_cursor cursor;
@@ -91,12 +90,13 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 		goto out;
 	}
 
-	while (!krb5_kt_next_entry(context, keytab, &kt_entry, &cursor)) {
+	while (!(ret = krb5_kt_next_entry(context, keytab, &kt_entry, &cursor))) {
 		ret = krb5_unparse_name(context, kt_entry.principal, &princ_name);
 		if (ret) {
 			DEBUG(1, ("ads_keytab_verify_ticket: krb5_unparse_name failed (%s)\n", error_message(ret)));
 			goto out;
 		}
+		DEBUG(10, ("Checking principal: %s\n", princ_name));
 		/* Look for a CIFS ticket */
 		if (!strncasecmp(princ_name, "cifs/", 5) || (!strncasecmp(princ_name, "host/", 5))) {
 #ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK
@@ -123,7 +123,6 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 				DEBUG(10,("ads_keytab_verify_ticket: enc type [%u] decrypted message !\n",
 					  keytype));
 				
-				auth_ok = True;
 				break;
 			}
 		}
@@ -133,9 +132,11 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 	if (ret && ret != KRB5_KT_END) {
 		/* This failed because something went wrong, not because the keytab file was empty. */
 		DEBUG(1, ("ads_keytab_verify_ticket: krb5_kt_next_entry failed (%s)\n", error_message(ret)));
-		goto out;
+	} else if (ret == KRB5_KT_END) {
+		DEBUG(10, ("ads_keytab_verify_ticket: no keytab entry found: %s\n", error_message(ret)));
+	} else {
+		DEBUG(10, ("ads_keytab_verify_ticket: keytab entry found: %s\n", princ_name));
 	}
-
   out:
 
 	if (princ_name) {
@@ -152,7 +153,7 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 		krb5_kt_close(context, keytab);
 	}
 
-	return auth_ok;
+	return ret;
 }
 
 /**********************************************************************************
@@ -165,7 +166,6 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 			krb5_keyblock *keyblock)
 {
 	krb5_error_code ret = 0;
-	BOOL auth_ok = False;
 	char *password_s = NULL;
 	krb5_data password;
 	krb5_enctype *enctypes = NULL;
@@ -175,13 +175,13 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 
 	if (!secrets_init()) {
 		DEBUG(1,("ads_secrets_verify_ticket: secrets_init failed\n"));
-		return False;
+		return KRB5_KT_END;
 	}
 
 	password_s = secrets_fetch_machine_password(lp_workgroup());
 	if (!password_s) {
 		DEBUG(1,("ads_secrets_verify_ticket: failed to fetch machine password\n"));
-		return False;
+		return KRB5_KT_END;
 	}
 
 	password.data = password_s;
@@ -200,7 +200,8 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 
 	/* We need to setup a auth context with each possible encoding type in turn. */
 	for (i=0;enctypes[i];i++) {
-		if (create_kerberos_key_from_string(context, host_princ, &password, keyblock, enctypes[i])) {
+		ret = create_kerberos_key_from_string(context, host_princ, &password, keyblock, enctypes[i]);
+		if (ret) {
 			continue;
 		}
 
@@ -212,11 +213,10 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 		if (!ret) {
 			DEBUG(10,("ads_secrets_verify_ticket: enc type [%u] decrypted message !\n",
 				(unsigned int)enctypes[i] ));
-			auth_ok = True;
 			break;
 		}
 
-		krb5_free_keyblock(context, keyblock);
+		krb5_free_keyblock_contents(context, keyblock);
 
 		DEBUG((ret != KRB5_BAD_ENCTYPE) ? 3 : 10,
 				("ads_secrets_verify_ticket: enc type [%u] failed to decrypt with error %s\n",
@@ -228,7 +228,7 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 	free_kerberos_etypes(context, enctypes);
 	SAFE_FREE(password_s);
 
-	return auth_ok;
+	return ret;
 }
 
 /**********************************************************************************
@@ -255,7 +255,6 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 	BOOL got_replay_mutex = False;
 
 	char *myname;
-	BOOL auth_ok = False;
 
 	char *malloc_principal;
 
@@ -304,16 +303,17 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 		goto out;
 	}
 
-	auth_ok = ads_keytab_verify_ticket(context, auth_context, ticket, &packet, &tkt, keyblock);
-	if (!auth_ok) {
-		auth_ok = ads_secrets_verify_ticket(context, auth_context, host_princ,
+	ret = ads_keytab_verify_ticket(context, auth_context, ticket, &packet, &tkt, keyblock);
+	if (ret) {
+		DEBUG(10, ("ads_secrets_verify_ticket: using host principal: [%s]\n", host_princ_s));
+		ret = ads_secrets_verify_ticket(context, auth_context, host_princ,
 							ticket, &packet, &tkt, keyblock);
 	}
 
 	release_server_mutex();
 	got_replay_mutex = False;
 
-	if (!auth_ok) {
+	if (ret) {
 		DEBUG(3,("ads_verify_ticket: krb5_rd_req with auth failed (%s)\n", 
 			 error_message(ret)));
 		goto out;
