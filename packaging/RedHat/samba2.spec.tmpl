@@ -253,6 +253,7 @@ install -m644 packaging/RedHat/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
 install -m644 packaging/RedHat/smb.conf $RPM_BUILD_ROOT/etc/samba/smb.conf
 install -m644 packaging/RedHat/smbusers $RPM_BUILD_ROOT/etc/samba/smbusers
 install -m644 packaging/RedHat/samba.pamd $RPM_BUILD_ROOT/etc/samba/samba.pamd
+install -m644 packaging/RedHat/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
 install -m644 packaging/RedHat/samba.pamd.stack $RPM_BUILD_ROOT/etc/samba/samba.stack
 install -m644 packaging/RedHat/samba.xinetd $RPM_BUILD_ROOT/etc/samba/samba.xinetd
 echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/etc/samba/lmhosts
