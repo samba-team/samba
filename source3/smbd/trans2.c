@@ -1155,7 +1155,9 @@ static int call_trans2qfsinfo(connection_struct *conn,
 	    SIVAL(pdata,0,FILE_CASE_PRESERVED_NAMES|FILE_CASE_SENSITIVE_SEARCH|
 		  (lp_nt_acl_support(SNUM(conn)) ? FILE_PERSISTENT_ACLS : 0)); /* FS ATTRIBUTES */
 	    SIVAL(pdata,4,255); /* Max filename component length */
-	    len = srvstr_push(outbuf, pdata+12, fstype, -1, STR_TERMINATE);
+	    /* NOTE! the fstype must *not* be null terminated or win98 won't recognise it
+	       and will think we can't do long filenames */
+	    len = srvstr_push(outbuf, pdata+12, fstype, -1, 0);
 	    SIVAL(pdata,8,len);
 	    data_len = 12 + len;
 	    break;
