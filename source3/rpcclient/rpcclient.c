@@ -519,7 +519,9 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 		}
 	}
 
-	if ((cmd_entry->pipe_idx == PI_NETLOGON) && !(cli->pipe_auth_flags & AUTH_PIPE_NETSEC)) {
+	/* some of the DsXXX commands use the netlogon pipe */
+
+	if (lp_client_schannel() && (cmd_entry->pipe_idx == PI_NETLOGON) && !(cli->pipe_auth_flags & AUTH_PIPE_NETSEC)) {
 		uint32 neg_flags = 0x000001ff;
 		uint32 sec_channel_type;
 	

@@ -28,6 +28,10 @@
 
 #define DS_GETPRIMDOMINFO      0x00
 
+/* Opcodes available on PIPE_NETLOGON */
+
+#define DS_ENUM_DOM_TRUSTS      0x28
+
 
 /* macros for RPC's */
 
@@ -85,7 +89,49 @@ typedef struct
 	NTSTATUS status;
 } DS_R_GETPRIMDOMINFO;
 
+typedef struct {
+	/* static portion of structure */
+	uint32		netbios_ptr;
+	uint32		dns_ptr;
+	uint32		flags;
+	uint32		parent_index;
+	uint32		trust_type;
+	uint32		trust_attributes;
+	uint32		sid_ptr;
+	GUID		guid;
+	
+	UNISTR2		netbios_domain;
+	UNISTR2		dns_domain;
+	DOM_SID2	sid;
 
+} DS_DOMAIN_TRUSTS;
+
+typedef struct {
+
+	uint32			ptr;
+	uint32			max_count;
+	DS_DOMAIN_TRUSTS 	*trusts;
+	
+} DS_DOMAIN_TRUSTS_CTR;
+
+/* DS_Q_ENUM_DOM_TRUSTS - DsEnumerateDomainTrusts() request */
+typedef struct 
+{
+	uint32		server_ptr;
+	UNISTR2		server;
+	uint32		flags;
+	
+} DS_Q_ENUM_DOM_TRUSTS;
+
+/* DS_R_ENUM_DOM_TRUSTS - DsEnumerateDomainTrusts() response */
+typedef struct 
+{
+	uint32			num_domains;
+	DS_DOMAIN_TRUSTS_CTR	domains;
+		
+	NTSTATUS status;
+
+} DS_R_ENUM_DOM_TRUSTS;
 
 
 #endif /* _RPC_DS_H */
