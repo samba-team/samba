@@ -94,8 +94,13 @@ extract_ticket(krb5_context context,
 	creds->times.renew_till = 0;
     creds->times.authtime = rep->part2.authtime;
     creds->times.endtime  = rep->part2.endtime;
-    creds->addresses.len = 0;
-    creds->addresses.val = NULL;
+    if(rep->part2.caddr)
+	copy_HostAddresses(rep->part2.caddr, &creds->addresses);
+    else {
+	creds->addresses.len = 0;
+	creds->addresses.val = NULL;
+    }
+    creds->flags.b = rep->part2.flags;
 #if 0 /* What? */
     if (rep->part2.req.values)
 	free (rep->part2.req.values);
