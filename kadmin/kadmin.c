@@ -171,7 +171,7 @@ exit_kadmin (int argc, char **argv)
 static void
 usage(int ret)
 {
-    arg_printusage (args, num_args, NULL, "");
+    arg_printusage (args, num_args, NULL, "[command]");
     exit (ret);
 }
 
