@@ -25,12 +25,7 @@ ed -s configure.in << END
 w
 q
 END
-# XXX autoreconf bug
-for i in include/config.h.in lib/roken/config.h.in; do
-    echo '/*autoheader*/' > $i
-done
 autoreconf --force --install
-automake lib/roken/Makefile ## stupid automake gets this wrong
 (cd doc && makeinfo heimdal.texi)
 
 find . -name Makefile.am | while read f; do
@@ -64,3 +59,4 @@ make_proto appl/login login_protos.h /dev/null '$(login_SOURCES)'
 
 rm fix-export make-release make-release.el
 find . -name .cvsignore -print | xargs rm
+find . -name .__afs\* -print | xargs rm
