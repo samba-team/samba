@@ -247,6 +247,19 @@ typedef struct log_info
 
 } DOM_LOG_INFO;
 
+/* DOM_CHAL - challenge info */
+typedef struct chal_info
+{
+    uchar data[8]; /* credentials */
+} DOM_CHAL;
+ 
+/* DOM_CREDs - timestamped client or server credentials */
+typedef struct cred_info
+{
+    DOM_CHAL challenge; /* credentials */
+    UTIME timestamp;    /* credential time-stamp */
+} DOM_CRED;
+
 /* DOM_CLNT_INFO - client info */
 typedef struct clnt_info
 {
