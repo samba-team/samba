@@ -45,18 +45,27 @@
 #include <sys/sockio.h>
 #endif
 
+struct iface_struct {
+	char name[16];
+	struct in_addr ip;
+	struct in_addr netmask;
+};
+
 
 #ifdef HAVE_IFACE_IFCONF
 
-/* this works for Linux 2.2, Solaris 2.5, SunOS4 and IRIX 6.4 */
+/* this works for Linux 2.2, Solaris 2.5, SunOS4, HPUX 10.20, OSF1
+   V4.0, Ultrix 4.4, SCO Unix 3.2, IRIX 6.4 and FreeBSD 3.2.
+
+   It probably also works on any BSD style system.  */
 
 /****************************************************************************
   get the netmask address for a local interface
 ****************************************************************************/
-int get_interfaces(void (*fn)(char *iname, struct in_addr ip, struct in_addr mask))
+static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 {  
 	struct ifconf ifc;
-	char buff[2048];
+	char buff[8192];
 	int fd, i, n;
 	struct ifreq *ifr=NULL;
 	int total = 0;
@@ -81,7 +90,7 @@ int get_interfaces(void (*fn)(char *iname, struct in_addr ip, struct in_addr mas
 	n = ifc.ifc_len / sizeof(struct ifreq);
 
 	/* Loop through interfaces, looking for given IP address */
-	for (i=n-1;i>=0;i--) {
+	for (i=n-1;i>=0 && total < max_interfaces;i--) {
 		if (ioctl(fd, SIOCGIFADDR, &ifr[i]) != 0) {
 			continue;
 		}
@@ -103,7 +112,10 @@ int get_interfaces(void (*fn)(char *iname, struct in_addr ip, struct in_addr mas
 
 		nmask = ((struct sockaddr_in *)&ifr[i].ifr_addr)->sin_addr;
 
-		fn(iname, ipaddr, nmask);
+		strncpy(ifaces[total].name, iname, sizeof(ifaces[total].name)-1);
+		ifaces[total].name[sizeof(ifaces[total].name)-1] = 0;
+		ifaces[total].ip = ipaddr;
+		ifaces[total].netmask = nmask;
 		total++;
 	}
 
@@ -119,14 +131,14 @@ int get_interfaces(void (*fn)(char *iname, struct in_addr ip, struct in_addr mas
 #endif
 
 /****************************************************************************
-this should cover most of the rest of systems
+this should cover most of the streams based systems
+Thanks to Andrej.Borsenkow@mow.siemens.ru for several ideas in this code
 ****************************************************************************/
-int get_interfaces(void (*fn)(char *iname, struct in_addr ip, struct in_addr mask))
+static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 {
 	struct ifreq ifreq;
 	struct strioctl strioctl;
-	struct ifconf *ifc;
-	char buff[2048];
+	char buff[8192];
 	int fd, i, n;
 	struct ifreq *ifr=NULL;
 	int total = 0;
@@ -138,34 +150,32 @@ int get_interfaces(void (*fn)(char *iname, struct in_addr ip, struct in_addr mas
 		return -1;
 	}
   
-	ifc = (struct ifconf *)buff;
-	ifc->ifc_len = BUFSIZ - sizeof(struct ifconf);
 	strioctl.ic_cmd = SIOCGIFCONF;
-	strioctl.ic_dp  = (char *)ifc;
+	strioctl.ic_dp  = buff;
 	strioctl.ic_len = sizeof(buff);
 	if (ioctl(fd, I_STR, &strioctl) < 0) {
 		close(fd);
 		return -1;
 	} 
-	
-	ifr = (struct ifreq *)ifc->ifc_req;  
+
+	/* we can ignore the possible sizeof(int) here as the resulting
+	   number of interface structures won't change */
+	n = strioctl.ic_len / sizeof(struct ifreq);
+
+	/* we will assume that the kernel returns the length as an int
+           at the start of the buffer if the offered size is a
+           multiple of the structure size plus an int */
+	if (n*sizeof(struct ifreq) + sizeof(int) == strioctl.ic_len) {
+		ifr = (struct ifreq *)(buff + sizeof(int));  
+	} else {
+		ifr = (struct ifreq *)buff;  
+	}
 
 	/* Loop through interfaces */
-	n = ifc->ifc_len / sizeof(struct ifreq);
 
-	for (i = 0; i<n; i++, ifr++) {
-		ifreq = *ifr;
+	for (i = 0; i<n && total < max_interfaces; i++) {
+		ifreq = ifr[i];
   
-		strioctl.ic_cmd = SIOCGIFADDR;
-		strioctl.ic_dp  = (char *)&ifreq;
-		strioctl.ic_len = sizeof(struct ifreq);
-		if (ioctl(fd, I_STR, &strioctl) != 0) {
-			continue;
-		}
-
-		ipaddr = (*(struct sockaddr_in *) &ifr->ifr_addr).sin_addr;
-		iname = ifr[i].ifr_name;
-
 		strioctl.ic_cmd = SIOCGIFFLAGS;
 		strioctl.ic_dp  = (char *)&ifreq;
 		strioctl.ic_len = sizeof(struct ifreq);
@@ -177,6 +187,16 @@ int get_interfaces(void (*fn)(char *iname, struct in_addr ip, struct in_addr mas
 			continue;
 		}
 
+		strioctl.ic_cmd = SIOCGIFADDR;
+		strioctl.ic_dp  = (char *)&ifreq;
+		strioctl.ic_len = sizeof(struct ifreq);
+		if (ioctl(fd, I_STR, &strioctl) != 0) {
+			continue;
+		}
+
+		ipaddr = (*(struct sockaddr_in *) &ifr->ifr_addr).sin_addr;
+		iname = ifr[i].ifr_name;
+
 		strioctl.ic_cmd = SIOCGIFNETMASK;
 		strioctl.ic_dp  = (char *)&ifreq;
 		strioctl.ic_len = sizeof(struct ifreq);
@@ -185,8 +205,11 @@ int get_interfaces(void (*fn)(char *iname, struct in_addr ip, struct in_addr mas
 		}
 
 		nmask = ((struct sockaddr_in *)&ifreq.ifr_addr)->sin_addr;
-		
-		fn(iname, ipaddr, nmask);
+
+		strncpy(ifaces[total].name, iname, sizeof(ifaces[total].name)-1);
+		ifaces[total].name[sizeof(ifaces[total].name)-1] = 0;
+		ifaces[total].ip = ipaddr;
+		ifaces[total].netmask = nmask;
 
 		total++;
 	}
@@ -201,14 +224,13 @@ int get_interfaces(void (*fn)(char *iname, struct in_addr ip, struct in_addr mas
 /****************************************************************************
 this one is for AIX (tested on 4.2)
 ****************************************************************************/
-int get_interfaces(void (*fn)(char *iname, struct in_addr ip, struct in_addr mask))
+static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 {
-	char buff[2048];
+	char buff[8192];
 	int fd, i;
 	struct ifconf ifc;
 	struct ifreq *ifr=NULL;
 	struct in_addr ipaddr;
-	struct in_addr lastip;
 	struct in_addr nmask;
 	char *iname;
 	int total = 0;
@@ -231,7 +253,7 @@ int get_interfaces(void (*fn)(char *iname, struct in_addr ip, struct in_addr mas
 	/* Loop through interfaces */
 	i = ifc.ifc_len;
 
-	while (i > 0) {
+	while (i > 0 && total < max_interfaces) {
 		unsigned inc;
 
 		inc = ifr->ifr_addr.sa_len;
@@ -257,15 +279,10 @@ int get_interfaces(void (*fn)(char *iname, struct in_addr ip, struct in_addr mas
 
 		nmask = ((struct sockaddr_in *)&ifr->ifr_addr)->sin_addr;
 
-
-		if (total && memcmp(&lastip, &ipaddr, sizeof(lastip)) == 0) {
-			/* we don't want duplicates */
-			goto next;
-		}
-		
-		lastip = ipaddr;
-
-		fn(iname, ipaddr, nmask);
+		strncpy(ifaces[total].name, iname, sizeof(ifaces[total].name)-1);
+		ifaces[total].name[sizeof(ifaces[total].name)-1] = 0;
+		ifaces[total].ip = ipaddr;
+		ifaces[total].netmask = nmask;
 
 		total++;
 
@@ -291,28 +308,70 @@ int get_interfaces(void (*fn)(char *iname, struct in_addr ip, struct in_addr mas
 }
 
 #else /* a dummy version */
-int get_interfaces()
+static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 {
-	return 0;
+	return -1;
 }
 #endif
+
+
+static int iface_comp(struct iface_struct *i1, struct iface_struct *i2)
+{
+	int r;
+	r = strcmp(i1->name, i2->name);
+	if (r) return r;
+	r = ntohl(i1->ip.s_addr) - ntohl(i2->ip.s_addr);
+	if (r) return r;
+	r = ntohl(i1->netmask.s_addr) - ntohl(i2->netmask.s_addr);
+	return r;
+}
+
+/* this wrapper is used to remove duplicates from the interface list generated
+   above */
+int get_interfaces(struct iface_struct *ifaces, int max_interfaces)
+{
+	int total, i, j;
+
+	total = _get_interfaces(ifaces, max_interfaces);
+	if (total <= 0) return total;
+
+	/* now we need to remove duplicates */
+	qsort(ifaces, total, sizeof(ifaces[0]), iface_comp);
+
+	for (i=1;i<total;) {
+		if (iface_comp(&ifaces[i-1], &ifaces[i]) == 0) {
+			for (j=i-1;j<total-1;j++) {
+				ifaces[j] = ifaces[j+1];
+			}
+			total--;
+		} else {
+			i++;
+		}
+	}
+
+	return total;
+}
 
 
 #ifdef AUTOCONF
 /* this is the autoconf driver to test get_interfaces() */
 
-static void callback(char *iname, struct in_addr ip, struct in_addr nmask)
-{
-	printf("%-10s ", iname);
-	printf("%s/", inet_ntoa(ip));
-	printf("%s\n", inet_ntoa(nmask));
-}
+#define MAX_INTERFACES 128
 
- main()
+ int main()
 {
-	int total = get_interfaces(callback);
-	printf("got %d interfaces\n", total);
-	if (total == 0) exit(1);
+	struct iface_struct ifaces[MAX_INTERFACES];
+	int total = get_interfaces(ifaces, MAX_INTERFACES);
+	int i;
+
+	printf("got %d interfaces:\n", total);
+	if (total <= 0) exit(1);
+
+	for (i=0;i<total;i++) {
+		printf("%-10s ", ifaces[i].name);
+		printf("IP=%s ", inet_ntoa(ifaces[i].ip));
+		printf("NETMASK=%s\n", inet_ntoa(ifaces[i].netmask));
+	}
 	return 0;
 }
 #endif
