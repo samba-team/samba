@@ -48,7 +48,8 @@ RCSID("$Id$");
 #include <krb.h>
 
 
-#if 0
+#define POSIX_GETPW_R
+#ifndef POSIX_GETPW_R
 
 /* This code assumes that getpwnam_r et al is following POSIX.1c,
  * however, the result is only tested for inequality with zero and the
@@ -92,7 +93,7 @@ posix_getpwuid_r(uid_t uid, struct passwd *pwd,
 
 #define getpwuid_r posix_getpwuid_r
 
-#endif
+#endif /* POSIX_GETPW*_R */
 
 /* Is it necessary to have all functions? I think not. */
 
@@ -197,8 +198,8 @@ siad_ses_authent(sia_collect_func_t *collect,
 
 	if(getpwnam_r(entity->name, &pw, pwbuf, sizeof(pwbuf), &pwd) != 0)
 	    return SIADFAIL;
-	sprintf((char*)entity->mech[pkgind], "%d%d_%d", 
-		TKT_ROOT, pw.pw_uid, getpid());
+	sprintf((char*)entity->mech[pkgind], "%s%d_%d", 
+		TKT_ROOT, pwd->pw_uid, getpid());
 	krb_set_tkt_string((char*)entity->mech[pkgind]);
 	
 	krb_get_lrealm(realm, 1);
@@ -213,7 +214,7 @@ siad_ses_authent(sia_collect_func_t *collect,
 		       entity->name, krb_get_err_text(ret));
 	    return SIADFAIL;
 	}
-	if(sia_make_entity_pwd(&pw, entity) == SIAFAIL)
+	if(sia_make_entity_pwd(pwd, entity) == SIAFAIL)
 	    return SIADFAIL;
     }
     return SIADSUCCESS;
@@ -232,8 +233,17 @@ siad_ses_launch(sia_collect_func_t *collect,
 		int pkgind)
 {
     char buf[MaxPathLen];
+    static char env[64];
     chown((char*)entity->mech[pkgind],entity->pwd->pw_uid, entity->pwd->pw_gid);
-    setenv("KRBTKFILE", (char*)entity->mech[pkgind]);
+    sprintf(env, "KRBTKFILE=%s", (char*)entity->mech[pkgind]);
+    putenv(env);
+    if (k_hasafs()) {
+	char cell[64];
+	k_setpag();
+	if(k_afs_cell_of_file(entity->pwd->pw_dir, cell, sizeof(cell)) == 0)
+	    k_afsklog(cell, 0);
+	k_afsklog(0, 0);
+    }
     return SIADSUCCESS;
 }
 
@@ -265,7 +275,7 @@ siad_ses_suauthent(sia_collect_func_t *collect,
     if(getpwuid_r(getuid(), &pw, pw_buf, sizeof(pw_buf), &pwd) != 0)
 	return SIADFAIL;
     if(entity->name[0] == 0 || strcmp(entity->name, "root") == 0){
-	strcpy(toname, pw.pw_name);
+	strcpy(toname, pwd->pw_name);
 	strcpy(toinst, "root");
 	if(getpwnam_r("root", &topw, topw_buf, sizeof(topw_buf), &topwd) != 0)
 	    return SIADFAIL;
@@ -296,7 +306,7 @@ siad_ses_suauthent(sia_collect_func_t *collect,
 	    return SIADFAIL;
 	
 	sprintf((char*)entity->mech[pkgind], "/tmp/tkt_%s_to_%s_%d", 
-		pw.pw_name, topw.pw_name, getpid());
+		pwd->pw_name, topwd->pw_name, getpid());
 	krb_set_tkt_string((char*)entity->mech[pkgind]);
 	ret = krb_verify_user(toname, toinst, realm, entity->password, 1, NULL);
 	if(ret){
@@ -348,9 +358,14 @@ siad_chg_shell(sia_collect_func_t *collect,
     return SIADFAIL;
 }
 
-int
-siad_getpwent(const char *name, struct passwd *result, char *buf, int bufsize,
-	      struct sia_context *context)
+
+int siad_getpwent (struct passwd *result, char *buf, int bufsize, 
+		   struct sia_context *context)
+/*
+  int
+  siad_getpwent(const char *name, struct passwd *result, char *buf, int bufsize,
+  struct sia_context *context)
+  */
 {
     return SIADFAIL;
 }
