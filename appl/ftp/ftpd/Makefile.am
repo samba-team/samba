@@ -9,7 +9,7 @@ libexec_PROGRAMS = ftpd
 CHECK_LOCAL = 
 
 if KRB4
-krb4_sources = krb4.c kauth.c
+krb4_sources = krb4.c
 endif
 if KRB5
 krb5_sources = gssapi.c gss_userok.c
@@ -25,6 +25,7 @@ ftpd_SOURCES =		\
 	pathnames.h	\
 	popen.c		\
 	security.c	\
+	kauth.c		\
 	$(krb4_sources) \
 	$(krb5_sources)
 
