@@ -368,7 +368,7 @@ static void PackDriverData(struct pack_desc* desc)
   SIVAL(drivdata,0,sizeof drivdata); /* cb */
   SIVAL(drivdata,4,1000);	/* lVersion */
   memset(drivdata+8,0,32);	/* szDeviceName */
-  pstrcpy(drivdata+8,"NULL");
+  srvstr_push_ascii(drivdata+8,"NULL",-1);
   PACKl(desc,"l",drivdata,sizeof drivdata); /* pDriverData */
 }
 
@@ -1267,11 +1267,11 @@ static int fill_srv_info(struct srv_info_struct *service,
   switch (uLevel)
     {
     case 0:
-      StrnCpy(p,service->name,15);
+      srvstr_push_ascii(p,service->name,15);
       break;
 
     case 1:
-      StrnCpy(p,service->name,15);
+      srvstr_push_ascii(p,service->name,15);
       SIVAL(p,18,service->type);
       SIVAL(p,22,PTR_DIFF(p2,baseaddr));
       len += CopyAndAdvance(&p2,service->comment,&l2);
@@ -1352,9 +1352,9 @@ static BOOL api_RNetServerEnum(connection_struct *conn, uint16 vuid, char *param
   DEBUG(4, ("local_only:%s\n", BOOLSTR(local_request)));
 
   if (strcmp(str1, "WrLehDz") == 0) {
-    StrnCpy(domain, p, sizeof(fstring)-1);
+	  srvstr_pull_ascii(domain, p, sizeof(fstring));
   } else {
-    StrnCpy(domain, global_myworkgroup, sizeof(fstring)-1);    
+	  fstrcpy(domain, global_myworkgroup);
   }
 
   if (lp_browse_list())
@@ -1527,7 +1527,7 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
     }
   if (!baseaddr) baseaddr = p;
   
-  StrnCpy(p,lp_servicename(snum),13);
+  srvstr_push_ascii(p,lp_servicename(snum),13);
   
   if (uLevel > 0)
     {
@@ -1739,7 +1739,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
   fstring user;
   fstring pass1,pass2;
 
-  fstrcpy(user,p);
+  srvstr_pull_ascii(user,p,sizeof(user));
 
   p = skip_string(p,1);
 
@@ -1876,8 +1876,7 @@ static BOOL api_SamOEMChangePassword(connection_struct *conn,uint16 vuid, char *
   }
   p = skip_string(p,1);
 
-  fstrcpy(user,p);
-  p = skip_string(p,1);
+  p += srvstr_pull_ascii(user,p,sizeof(user));
 
   DEBUG(3,("api_SamOEMChangePassword: Change password for <%s>\n",user));
 
@@ -2146,8 +2145,8 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
   p = *rdata;
   p2 = p + struct_len;
   if (uLevel != 20) {
-    StrnCpy(p,local_machine,16);
-    strupper(p);
+    srvstr_push(NULL, p,local_machine,16, 
+		STR_ASCII|STR_UPPER|STR_TERMINATE|STR_CONVERT);
   }
   p += 16;
   if (uLevel > 0)

@@ -144,3 +144,21 @@ int srvstr_align(void *inbuf, int offset)
 	if (!UNICODE_FLAG(inbuf)) return 0;
 	return offset & 1;
 }
+
+
+/****************************************************************************
+these are useful for replacing all those StrnCpy() ops for copying data
+to/from the wire 
+****************************************************************************/
+
+int srvstr_push_ascii(void *dest, const char *src, int dest_len)
+{
+	return srvstr_push(NULL, dest, src, dest_len, 
+			   STR_ASCII|STR_CONVERT|STR_TERMINATE);
+}
+
+int srvstr_pull_ascii(char *dest, const void *src, int dest_len)
+{
+	return srvstr_pull(NULL, dest, src, dest_len, -1,
+			   STR_ASCII|STR_CONVERT|STR_TERMINATE);
+}
