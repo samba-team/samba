@@ -1140,7 +1140,6 @@ static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_t
   {
     unsigned char trust_passwd_hash[16];
     time_t lct;
-    pstring remote_machine_list;
 
     /*
      * We're in domain level security, and the code that

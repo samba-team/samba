@@ -710,6 +710,7 @@ void make_dir_struct(char *buf,char *mask,char *fname,SMB_OFF_T size,int mode,ti
 
 void close_low_fds(BOOL stderr_too)
 {
+#ifndef VALGRIND
 	int fd;
 	int i;
 
@@ -737,6 +738,7 @@ void close_low_fds(BOOL stderr_too)
 			return;
 		}
 	}
+#endif
 }
 
 /****************************************************************************
