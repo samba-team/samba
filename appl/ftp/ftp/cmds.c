@@ -428,133 +428,131 @@ mabort(int signo)
 void
 mput(int argc, char **argv)
 {
-	int i;
-	RETSIGTYPE (*oldintr)();
-	int ointer;
-	char *tp;
+    int i;
+    RETSIGTYPE (*oldintr)();
+    int ointer;
+    char *tp;
 
-	if (argc < 2 && !another(&argc, &argv, "local-files")) {
-		printf("usage: %s local-files\n", argv[0]);
-		code = -1;
-		return;
-	}
-	mname = argv[0];
-	mflag = 1;
-	oldintr = signal(SIGINT, mabort);
-	setjmp(jabort);
-	if (proxy) {
-		char *cp, *tp2, tmpbuf[MaxPathLen];
+    if (argc < 2 && !another(&argc, &argv, "local-files")) {
+	printf("usage: %s local-files\n", argv[0]);
+	code = -1;
+	return;
+    }
+    mname = argv[0];
+    mflag = 1;
+    oldintr = signal(SIGINT, mabort);
+    setjmp(jabort);
+    if (proxy) {
+	char *cp, *tp2, tmpbuf[MaxPathLen];
 
-		while ((cp = remglob(argv,0)) != NULL) {
-			if (*cp == 0) {
-				mflag = 0;
-				continue;
-			}
-			if (mflag && confirm(argv[0], cp)) {
-				tp = cp;
-				if (mcase) {
-					while (*tp && !islower(*tp)) {
-						tp++;
-					}
-					if (!*tp) {
-						tp = cp;
-						tp2 = tmpbuf;
-						while ((*tp2 = *tp) != '\0') {
-						     if (isupper(*tp2)) {
-						        *tp2 = 'a' + *tp2 - 'A';
-						     }
-						     tp++;
-						     tp2++;
-						}
-					}
-					tp = tmpbuf;
-				}
-				if (ntflag) {
-					tp = dotrans(tp);
-				}
-				if (mapflag) {
-					tp = domap(tp);
-				}
-				sendrequest((sunique) ? "STOU" : "STOR",
-				    cp, tp, cp != tp || !interactive);
-				if (!mflag && fromatty) {
-					ointer = interactive;
-					interactive = 1;
-					if (confirm("Continue with","mput")) {
-						mflag++;
-					}
-					interactive = ointer;
-				}
-			}
-		}
-		signal(SIGINT, oldintr);
+	while ((cp = remglob(argv,0)) != NULL) {
+	    if (*cp == 0) {
 		mflag = 0;
-		return;
-	}
-	for (i = 1; i < argc; i++) {
-		char **cpp;
-		glob_t gl;
-		int flags;
-
-		if (!doglob) {
-			if (mflag && confirm(argv[0], argv[i])) {
-				tp = (ntflag) ? dotrans(argv[i]) : argv[i];
-				tp = (mapflag) ? domap(tp) : tp;
-				sendrequest((sunique) ? "STOU" : "STOR",
-				    argv[i], tp, tp != argv[i] || !interactive);
-				if (!mflag && fromatty) {
-					ointer = interactive;
-					interactive = 1;
-					if (confirm("Continue with","mput")) {
-						mflag++;
-					}
-					interactive = ointer;
-				}
+		continue;
+	    }
+	    if (mflag && confirm(argv[0], cp)) {
+		tp = cp;
+		if (mcase) {
+		    while (*tp && !islower(*tp)) {
+			tp++;
+		    }
+		    if (!*tp) {
+			tp = cp;
+			tp2 = tmpbuf;
+			while ((*tp2 = *tp) != '\0') {
+			    if (isupper(*tp2)) {
+				*tp2 = 'a' + *tp2 - 'A';
+			    }
+			    tp++;
+			    tp2++;
 			}
-			continue;
+		    }
+		    tp = tmpbuf;
 		}
-
-		memset(&gl, 0, sizeof(gl));
-		flags = GLOB_BRACE|GLOB_NOCHECK|GLOB_QUOTE|GLOB_TILDE;
-		if (glob(argv[i], flags, NULL, &gl) || gl.gl_pathc == 0) {
-			warnx("%s: not found", argv[i]);
-			globfree(&gl);
-			continue;
+		if (ntflag) {
+		    tp = dotrans(tp);
 		}
-		for (cpp = gl.gl_pathv; cpp && *cpp != NULL; cpp++) {
-			if (mflag && confirm(argv[0], *cpp)) {
-				tp = (ntflag) ? dotrans(*cpp) : *cpp;
-				tp = (mapflag) ? domap(tp) : tp;
-				sendrequest((sunique) ? "STOU" : "STOR",
-				    *cpp, tp, *cpp != tp || !interactive);
-				if (!mflag && fromatty) {
-					ointer = interactive;
-					interactive = 1;
-					if (confirm("Continue with","mput")) {
-						mflag++;
-					}
-					interactive = ointer;
-				}
-			}
+		if (mapflag) {
+		    tp = domap(tp);
 		}
-		globfree(&gl);
+		sendrequest((sunique) ? "STOU" : "STOR",
+			    cp, tp, cp != tp || !interactive);
+		if (!mflag && fromatty) {
+		    ointer = interactive;
+		    interactive = 1;
+		    if (confirm("Continue with","mput")) {
+			mflag++;
+		    }
+		    interactive = ointer;
+		}
+	    }
 	}
 	signal(SIGINT, oldintr);
 	mflag = 0;
+	return;
+    }
+    for (i = 1; i < argc; i++) {
+	char **cpp;
+	glob_t gl;
+	int flags;
+
+	if (!doglob) {
+	    if (mflag && confirm(argv[0], argv[i])) {
+		tp = (ntflag) ? dotrans(argv[i]) : argv[i];
+		tp = (mapflag) ? domap(tp) : tp;
+		sendrequest((sunique) ? "STOU" : "STOR",
+			    argv[i], tp, tp != argv[i] || !interactive);
+		if (!mflag && fromatty) {
+		    ointer = interactive;
+		    interactive = 1;
+		    if (confirm("Continue with","mput")) {
+			mflag++;
+		    }
+		    interactive = ointer;
+		}
+	    }
+	    continue;
+	}
+
+	memset(&gl, 0, sizeof(gl));
+	flags = GLOB_BRACE|GLOB_NOCHECK|GLOB_QUOTE|GLOB_TILDE;
+	if (glob(argv[i], flags, NULL, &gl) || gl.gl_pathc == 0) {
+	    warnx("%s: not found", argv[i]);
+	    globfree(&gl);
+	    continue;
+	}
+	for (cpp = gl.gl_pathv; cpp && *cpp != NULL; cpp++) {
+	    if (mflag && confirm(argv[0], *cpp)) {
+		tp = (ntflag) ? dotrans(*cpp) : *cpp;
+		tp = (mapflag) ? domap(tp) : tp;
+		sendrequest((sunique) ? "STOU" : "STOR",
+			    *cpp, tp, *cpp != tp || !interactive);
+		if (!mflag && fromatty) {
+		    ointer = interactive;
+		    interactive = 1;
+		    if (confirm("Continue with","mput")) {
+			mflag++;
+		    }
+		    interactive = ointer;
+		}
+	    }
+	}
+	globfree(&gl);
+    }
+    signal(SIGINT, oldintr);
+    mflag = 0;
 }
 
 void
 reget(int argc, char **argv)
 {
-
-	getit(argc, argv, 1, "r+w");
+    getit(argc, argv, 1, "r+w");
 }
 
 void
 get(int argc, char **argv)
 {
-
-	getit(argc, argv, 0, restart_point ? "r+w" : "w" );
+    getit(argc, argv, 0, restart_point ? "r+w" : "w" );
 }
 
 /*
@@ -658,7 +656,7 @@ usage:
 	}
 
 	recvrequest("RETR", argv[2], argv[1], mode,
-	    argv[1] != oldargv1 || argv[2] != oldargv2);
+	    argv[1] != oldargv1 || argv[2] != oldargv2, argv[2] != NULL);
 	restart_point = 0;
 	return (0);
 }
@@ -702,7 +700,7 @@ mget(int argc, char **argv)
 				tp = domap(tp);
 			}
 			recvrequest("RETR", tp, cp, "w",
-			    tp != cp || !interactive);
+			    tp != cp || !interactive, 0);
 			if (!mflag && fromatty) {
 				ointer = interactive;
 				interactive = 1;
@@ -755,7 +753,7 @@ remglob(char **argv, int doswitch)
 			pswitch(!proxy);
 		}
 		for (mode = "w"; *++argv != NULL; mode = "a")
-			recvrequest ("NLST", temp, *argv, mode, 0);
+			recvrequest ("NLST", temp, *argv, mode, 0, 0);
 		if (doswitch) {
 			pswitch(!proxy);
 		}
@@ -1036,38 +1034,38 @@ delete(int argc, char **argv)
 void
 mdelete(int argc, char **argv)
 {
-	sighand oldintr;
-	int ointer;
-	char *cp;
+    sighand oldintr;
+    int ointer;
+    char *cp;
 
-	if (argc < 2 && !another(&argc, &argv, "remote-files")) {
-		printf("usage: %s remote-files\n", argv[0]);
-		code = -1;
-		return;
+    if (argc < 2 && !another(&argc, &argv, "remote-files")) {
+	printf("usage: %s remote-files\n", argv[0]);
+	code = -1;
+	return;
+    }
+    mname = argv[0];
+    mflag = 1;
+    oldintr = signal(SIGINT, mabort);
+    setjmp(jabort);
+    while ((cp = remglob(argv,0)) != NULL) {
+	if (*cp == '\0') {
+	    mflag = 0;
+	    continue;
 	}
-	mname = argv[0];
-	mflag = 1;
-	oldintr = signal(SIGINT, mabort);
-	setjmp(jabort);
-	while ((cp = remglob(argv,0)) != NULL) {
-		if (*cp == '\0') {
-			mflag = 0;
-			continue;
+	if (mflag && confirm(argv[0], cp)) {
+	    command("DELE %s", cp);
+	    if (!mflag && fromatty) {
+		ointer = interactive;
+		interactive = 1;
+		if (confirm("Continue with", "mdelete")) {
+		    mflag++;
 		}
-		if (mflag && confirm(argv[0], cp)) {
-			command("DELE %s", cp);
-			if (!mflag && fromatty) {
-				ointer = interactive;
-				interactive = 1;
-				if (confirm("Continue with", "mdelete")) {
-					mflag++;
-				}
-				interactive = ointer;
-			}
-		}
+		interactive = ointer;
+	    }
 	}
-	signal(SIGINT, oldintr);
-	mflag = 0;
+    }
+    signal(SIGINT, oldintr);
+    mflag = 0;
 }
 
 /*
@@ -1113,11 +1111,12 @@ ls(int argc, char **argv)
 		return;
 	}
 	if (strcmp(argv[2], "-") && *argv[2] != '|')
-		if (!globulize(&argv[2]) || !confirm("output to local-file:", argv[2])) {
-			code = -1;
-			return;
-	}
-	recvrequest(cmd, argv[2], argv[1], "w", 0);
+	    if (!globulize(&argv[2]) || !confirm("output to local-file:", 
+						 argv[2])) {
+		code = -1;
+		return;
+	    }
+	recvrequest(cmd, argv[2], argv[1], "w", 0, 0, 1);
 }
 
 /*
@@ -1154,7 +1153,7 @@ usage:
 	setjmp(jabort);
 	for (i = 1; mflag && i < argc-1; ++i) {
 		*mode = (i == 1) ? 'w' : 'a';
-		recvrequest(cmd, dest, argv[i], mode, 0);
+		recvrequest(cmd, dest, argv[i], mode, 0, 1);
 		if (!mflag && fromatty) {
 			ointer = interactive;
 			interactive = 1;
