@@ -183,7 +183,6 @@ class DomainHandle(SamrHandle):
         # acct_flags in SamrEnumerateAliasesInDomain has probably
         # no meaning so use 0xffffffff like W2K
         r['acct_flags'] = 0xffffffff
-        r['max_size'] = 1000
 
         result = dcerpc.samr_EnumDomainAliases(self.pipe, r)
 
