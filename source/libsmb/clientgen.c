@@ -1492,39 +1492,50 @@ ssize_t cli_write(struct cli_state *cli,
   write to a file using a SMBwrite and not bypassing 0 byte writes
 ****************************************************************************/
 ssize_t cli_smbwrite(struct cli_state *cli,
-		     int fnum, char *buf, off_t offset, size_t size)
+		     int fnum, char *buf, off_t offset, size_t size1)
 {
 	char *p;
+	ssize_t total = 0;
 
-	memset(cli->outbuf,'\0',smb_size);
-	memset(cli->inbuf,'\0',smb_size);
+	do {
+		size_t size = MIN(size1, cli->max_xmit - 48);
+		
+		memset(cli->outbuf,'\0',smb_size);
+		memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,5, 3 + size,True);
+		set_message(cli->outbuf,5, 3 + size,True);
 
-	CVAL(cli->outbuf,smb_com) = SMBwrite;
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
+		CVAL(cli->outbuf,smb_com) = SMBwrite;
+		SSVAL(cli->outbuf,smb_tid,cli->cnum);
+		cli_setup_packet(cli);
+		
+		SSVAL(cli->outbuf,smb_vwv0,fnum);
+		SSVAL(cli->outbuf,smb_vwv1,size);
+		SIVAL(cli->outbuf,smb_vwv2,offset);
+		SSVAL(cli->outbuf,smb_vwv4,0);
+		
+		p = smb_buf(cli->outbuf);
+		*p++ = 1;
+		SSVAL(p, 0, size);
+		memcpy(p+2, buf, size);
+		
+		cli_send_smb(cli);
+		if (!cli_receive_smb(cli)) {
+			return -1;
+		}
+		
+		if (CVAL(cli->inbuf,smb_rcls) != 0) {
+			return -1;
+		}
 
-	SSVAL(cli->outbuf,smb_vwv0,fnum);
-	SSVAL(cli->outbuf,smb_vwv1,size);
-	SIVAL(cli->outbuf,smb_vwv2,offset);
-	SSVAL(cli->outbuf,smb_vwv4,0);
-  
-	p = smb_buf(cli->outbuf);
-	*p++ = 1;
-	SSVAL(p, 0, size);
-	memcpy(p+2, buf, size);
+		size = SVAL(cli->inbuf,smb_vwv0);
+		if (size == 0) break;
 
-	cli_send_smb(cli);
-	if (!cli_receive_smb(cli)) {
-		return False;
-	}
+		size1 -= size;
+		total += size;
+	} while (size1);
 
-	if (CVAL(cli->inbuf,smb_rcls) != 0) {
-		return -1;
-	}
-
-	return SVAL(cli->inbuf,smb_vwv0);
+	return total;
 }
 
 
