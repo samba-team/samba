@@ -1,3 +1,11 @@
+2001-09-17  Assar Westerlund  <assar@sics.se>
+
+	* telnetd/telnetd.c: add a kludge to make it build on aix (that
+	defines NOERROR in both sys/stream.h and arpa/nameser.h and
+	considers that a fatal error)
+
+	* telnet/telnet.c: undef PUTSHORT to avoid conflict
+
 2001-08-26  Assar Westerlund  <assar@sics.se>
 
 	* telnetd/Makefile.am: also link with the library for logout
