@@ -113,6 +113,16 @@ static int smb_pam_conv(int num_msg,
 
 	*resp = NULL;
 
+	/*
+	 * Apparantly HPUX has a buggy PAM that doesn't support the
+	 * appdata_ptr. Fail if this is the case. JRA.
+	 */
+
+	if (udp == NULL) {
+		DEBUG(0,("smb_pam_conv: PAM on this system is broken - appdata_ptr == NULL !\n"));
+		return PAM_CONV_ERR;
+	}
+
 	reply = malloc(sizeof(struct pam_response) * num_msg);
 	if (!reply)
 		return PAM_CONV_ERR;
@@ -170,6 +180,18 @@ static int smb_pam_passchange_conv(int num_msg,
 	char *p = lp_passwd_chat();
 	struct smb_pam_userdata *udp = (struct smb_pam_userdata *)appdata_ptr;
 
+	*resp = NULL;
+
+	/*
+	 * Apparantly HPUX has a buggy PAM that doesn't support the
+	 * appdata_ptr. Fail if this is the case. JRA.
+	 */
+
+	if (udp == NULL) {
+		DEBUG(0,("smb_pam_passchange_conv: PAM on this system is broken - appdata_ptr == NULL !\n"));
+		return PAM_CONV_ERR;
+	}
+
 	/* Get the prompts... */
 
 	if (!next_token(&p, currentpw_prompt, NULL, sizeof(fstring)))
@@ -178,8 +200,6 @@ static int smb_pam_passchange_conv(int num_msg,
 		return PAM_CONV_ERR;
 	if (!next_token(&p, repeatpw_prompt, NULL, sizeof(fstring)))
 		return PAM_CONV_ERR;
-
-	*resp = NULL;
 
 	reply = malloc(sizeof(struct pam_response) * num_msg);
 	if (!reply)
