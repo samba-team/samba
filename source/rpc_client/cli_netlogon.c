@@ -522,7 +522,7 @@ BOOL cli_net_sam_sync(struct cli_state *cli, uint16 nt_pipe_fnum, uint32 databas
 		net_io_r_sam_sync("", cli->sess_key, &r_s, &rbuf, 0);
 		ok = (rbuf.offset != 0);
 
-		if (ok && r_s.status != 0 && r_s.status != NT_STATUS_MORE_ENTRIES)
+		if (ok && r_s.status != 0 && r_s.status != STATUS_MORE_ENTRIES)
 		{
 			/* report error code */
 			DEBUG(5,("cli_net_sam_sync: %s\n", get_nt_error_msg(r_s.status)));
@@ -541,7 +541,7 @@ BOOL cli_net_sam_sync(struct cli_state *cli, uint16 nt_pipe_fnum, uint32 databas
 		{
 			*num_deltas = r_s.num_deltas2;
 
-			if (r_s.status == NT_STATUS_MORE_ENTRIES)
+			if (r_s.status == STATUS_MORE_ENTRIES)
 			{
 				DEBUG(5, ("(More entries)\n"));
 			}

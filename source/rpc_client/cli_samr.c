@@ -547,7 +547,8 @@ BOOL samr_query_dom_info(struct cli_state *cli, uint16 fnum,
 do a SAMR enumerate groups
 ****************************************************************************/
 BOOL samr_enum_dom_groups(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *pol, uint32 size,
+				POLICY_HND *pol,
+				uint32 start_idx, uint32 size,
 				struct acct_info **sam,
 				int *num_sam_groups)
 {
@@ -567,7 +568,7 @@ BOOL samr_enum_dom_groups(struct cli_state *cli, uint16 fnum,
 	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
-	make_samr_q_enum_dom_groups(&q_e, pol, size);
+	make_samr_q_enum_dom_groups(&q_e, pol, start_idx, size);
 
 	/* turn parameters into data stream */
 	samr_io_q_enum_dom_groups("", &q_e, &data, 0);
@@ -635,7 +636,8 @@ BOOL samr_enum_dom_groups(struct cli_state *cli, uint16 fnum,
 do a SAMR enumerate aliases
 ****************************************************************************/
 BOOL samr_enum_dom_aliases(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *pol, uint32 size,
+				POLICY_HND *pol,
+				uint32 start_idx, uint32 size,
 				struct acct_info **sam,
 				int *num_sam_aliases)
 {
@@ -655,7 +657,7 @@ BOOL samr_enum_dom_aliases(struct cli_state *cli, uint16 fnum,
 	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
-	make_samr_q_enum_dom_aliases(&q_e, pol, size);
+	make_samr_q_enum_dom_aliases(&q_e, pol, start_idx, size);
 
 	/* turn parameters into data stream */
 	samr_io_q_enum_dom_aliases("", &q_e, &data, 0);
@@ -722,12 +724,13 @@ BOOL samr_enum_dom_aliases(struct cli_state *cli, uint16 fnum,
 /****************************************************************************
 do a SAMR enumerate users
 ****************************************************************************/
-BOOL samr_enum_dom_users(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *pol, uint32 start_idx, 
+uint32 samr_enum_dom_users(struct cli_state *cli, uint16 fnum, 
+				POLICY_HND *pol, uint32 *start_idx, 
 				uint16 acb_mask, uint16 unk_1, uint32 size,
 				struct acct_info **sam,
 				int *num_sam_users)
 {
+	uint32 status = 0x0;
 	prs_struct data;
 	prs_struct rdata;
 
@@ -736,7 +739,10 @@ BOOL samr_enum_dom_users(struct cli_state *cli, uint16 fnum,
 
 	DEBUG(4,("SAMR Enum SAM DB max size:%x\n", size));
 
-	if (pol == NULL || num_sam_users == NULL) return False;
+	if (pol == NULL || num_sam_users == NULL)
+	{
+		return NT_STATUS_INVALID_PARAMETER | 0xC0000000;
+	}
 
 	/* create and send a MSRPC command with api SAMR_ENUM_DOM_USERS */
 
@@ -744,7 +750,8 @@ BOOL samr_enum_dom_users(struct cli_state *cli, uint16 fnum,
 	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
-	make_samr_q_enum_dom_users(&q_e, pol, start_idx, acb_mask, unk_1, size);
+	make_samr_q_enum_dom_users(&q_e, pol, *start_idx,
+	                           acb_mask, unk_1, size);
 
 	/* turn parameters into data stream */
 	samr_io_q_enum_dom_users("", &q_e, &data, 0);
@@ -757,33 +764,38 @@ BOOL samr_enum_dom_users(struct cli_state *cli, uint16 fnum,
 
 		samr_io_r_enum_dom_users("", &r_e, &rdata, 0);
 
+		status = r_e.status;
 		p = rdata.offset != 0;
+
 		if (p && r_e.status != 0)
 		{
 			/* report error code */
 			DEBUG(4,("SAMR_R_ENUM_DOM_USERS: %s\n", get_nt_error_msg(r_e.status)));
-			p = False;
+			p = (r_e.status == STATUS_MORE_ENTRIES);
 		}
 
 		if (p)
 		{
-			int i;
+			int i = (*num_sam_users);
+			int j = 0;
 			int name_idx = 0;
 
-			*num_sam_users = r_e.num_entries2;
-			*sam = (struct acct_info*) malloc(sizeof(struct acct_info) * (*num_sam_users));
+			(*num_sam_users) += r_e.num_entries2;
+			(*sam) = (struct acct_info*) Realloc((*sam),
+			       sizeof(struct acct_info) * (*num_sam_users));
 				    
 			if ((*sam) == NULL)
 			{
-				*num_sam_users = 0;
+				(*num_sam_users) = 0;
+				i = 0;
 			}
 
-			for (i = 0; i < *num_sam_users; i++)
+			for (j = 0; i < (*num_sam_users) && j < r_e.num_entries2; j++, i++)
 			{
-				(*sam)[i].rid = r_e.sam[i].rid;
+				(*sam)[i].rid = r_e.sam[j].rid;
 				(*sam)[i].acct_name[0] = 0;
 				(*sam)[i].acct_desc[0] = 0;
-				if (r_e.sam[i].hdr_name.buffer)
+				if (r_e.sam[j].hdr_name.buffer)
 				{
 					unistr2_to_ascii((*sam)[i].acct_name, &r_e.uni_acct_name[name_idx], sizeof((*sam)[i].acct_name)-1);
 					name_idx++;
@@ -792,6 +804,11 @@ BOOL samr_enum_dom_users(struct cli_state *cli, uint16 fnum,
 				          i, (*sam)[i].rid, (*sam)[i].acct_name));
 			}
 			valid_pol = True;
+			(*start_idx) = r_e.next_idx;
+		}
+		else if (status == 0x0)
+		{
+			status = NT_STATUS_INVALID_PARAMETER | 0xC0000000;
 		}
 
 		if (r_e.sam != NULL)
@@ -803,11 +820,15 @@ BOOL samr_enum_dom_users(struct cli_state *cli, uint16 fnum,
 			free(r_e.uni_acct_name);
 		}
 	}
+	else
+	{
+		status = NT_STATUS_ACCESS_DENIED | 0xC0000000;
+	}
 
 	prs_mem_free(&data   );
 	prs_mem_free(&rdata  );
 
-	return valid_pol;
+	return status;
 }
 
 /****************************************************************************

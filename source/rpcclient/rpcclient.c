@@ -885,6 +885,8 @@ char *complete_cmd_null(char *text, int state)
 	/* establish connections.  nothing to stop these being re-established. */
 	rpcclient_connect(&cli_info);
 
+	smb_cli->ntlmssp_cli_flgs = 0x0;
+
 	DEBUG(5,("rpcclient_connect: smb_cli->fd:%d\n", smb_cli->fd));
 	if (smb_cli->fd <= 0)
 	{
