@@ -49,7 +49,7 @@ krb5_read_message (krb5_context context,
 	return errno;
     if(ret < 4) {
 	data->length = 0;
-	return 0;
+	return HEIM_ERR_EOF;
     }
     len = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
     ret = krb5_data_alloc (data, len);
