@@ -305,8 +305,8 @@ gsskrb5_accept_sec_context
     }
 
     if (fwd_data.length > 0 && (flags & GSS_C_DELEG_FLAG)) {
-      
 	krb5_ccache ccache;
+	int32_t ac_flags;
       
 	if (delegated_cred_handle == NULL)
 	    /* XXX Create a new delegated_cred_handle? */
@@ -364,10 +364,19 @@ gsskrb5_accept_sec_context
 	    goto end_fwd;
 	}
       
+	krb5_auth_con_getflags(gssapi_krb5_context,
+			       (*context_handle)->auth_context,
+			       &ac_flags);
+	krb5_auth_con_setflags(gssapi_krb5_context,
+			       (*context_handle)->auth_context,
+			       ac_flags & ~KRB5_AUTH_CONTEXT_DO_TIME);
 	kret = krb5_rd_cred2(gssapi_krb5_context,
 			     (*context_handle)->auth_context,
 			     ccache,
 			     &fwd_data);
+	krb5_auth_con_setflags(gssapi_krb5_context,
+			       (*context_handle)->auth_context,
+			       ac_flags);
 	if (kret) {
 	    flags &= ~GSS_C_DELEG_FLAG;
 	    goto end_fwd;
