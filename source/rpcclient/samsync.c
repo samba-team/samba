@@ -268,6 +268,9 @@ static void sam_account_from_delta(SAM_ACCOUNT *account,
 	unistr2_to_ascii(s, &delta->uni_acct_name, sizeof(s) - 1);
 	pdb_set_nt_username(account, s);
 
+	/* Unix username is the same - for sainity */
+	pdb_set_username(account, s);
+
 	unistr2_to_ascii(s, &delta->uni_full_name, sizeof(s) - 1);
 	pdb_set_fullname(account, s);
 
@@ -288,19 +291,6 @@ static void sam_account_from_delta(SAM_ACCOUNT *account,
 
 	unistr2_to_ascii(s, &delta->uni_profile, sizeof(s) - 1);
 	pdb_set_profile_path(account, s, True);
-
-	/* Set Unix username to be winbindd username */
-
-	{
-		char *unix_username;
-
-		asprintf(&unix_username, "%s%s%s", lp_workgroup(), 
-			 lp_winbind_separator(), pdb_get_nt_username(account));
-
-		pdb_set_username(account, unix_username);
-
-		SAFE_FREE(unix_username);
-	}
 
 	/* User and group sid */
 
