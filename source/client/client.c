@@ -105,10 +105,6 @@ static double dir_total;
 
 #define USENMB
 
-#define CNV_LANG(s) dos_to_unix(s,False)
-#define CNV_INPUT(s) unix_to_dos(s,True)
-
-
 /****************************************************************************
 write to a local file with CR/LF->LF translation if appropriate. return the 
 number taken from the buffer. This may not equal the number written.
@@ -237,8 +233,8 @@ show cd/pwd
 ****************************************************************************/
 static void cmd_pwd(void)
 {
-	DEBUG(0,("Current directory is %s",CNV_LANG(service)));
-	DEBUG(0,("%s\n",CNV_LANG(cur_dir)));
+	DEBUG(0,("Current directory is %s",service));
+	DEBUG(0,("%s\n",cur_dir));
 }
 
 
@@ -288,7 +284,7 @@ static void cmd_cd(void)
 	if (next_token(NULL,buf,NULL,sizeof(buf)))
 		do_cd(buf);
 	else
-		DEBUG(0,("Current directory is %s\n",CNV_LANG(cur_dir)));
+		DEBUG(0,("Current directory is %s\n",cur_dir));
 }
 
 
@@ -326,7 +322,7 @@ static void display_finfo(file_info *finfo)
 	if (do_this_one(finfo)) {
 		time_t t = finfo->mtime; /* the time is assumed to be passed as GMT */
 		DEBUG(0,("  %-30s%7.7s %8.0f  %s",
-			 CNV_LANG(finfo->name),
+			 finfo->name,
 			 attrib_string(finfo->mode),
 			 (double)finfo->size,
 			 asctime(LocalTime(&t))));
@@ -549,7 +545,7 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 						strlen(next_file) - 2;
 					*save_ch = '\0';
 				}
-				DEBUG(0,("\n%s\n",CNV_LANG(next_file)));
+				DEBUG(0,("\n%s\n",next_file));
 				if (save_ch)
 				{
 					*save_ch = '\\';
@@ -659,7 +655,7 @@ static void do_get(char *rname,char *lname)
 	fnum = cli_open(cli, rname, O_RDONLY, DENY_NONE);
 
 	if (fnum == -1) {
-		DEBUG(0,("%s opening remote file %s\n",cli_errstr(cli),CNV_LANG(rname)));
+		DEBUG(0,("%s opening remote file %s\n",cli_errstr(cli),rname));
 		return;
 	}
 
@@ -707,7 +703,7 @@ static void do_get(char *rname,char *lname)
 
 	if (nread < size) {
 		DEBUG (0, ("Short read when getting file %s. Only got %ld bytes.\n",
-               CNV_LANG(rname), (long)nread));
+               rname, (long)nread));
 	}
 
 	free(data);
@@ -789,10 +785,10 @@ static void do_mget(file_info *finfo)
 
 	if (finfo->mode & aDIR)
 		slprintf(quest,sizeof(pstring)-1,
-			 "Get directory %s? ",CNV_LANG(finfo->name));
+			 "Get directory %s? ",finfo->name);
 	else
 		slprintf(quest,sizeof(pstring)-1,
-			 "Get file %s? ",CNV_LANG(finfo->name));
+			 "Get file %s? ",finfo->name);
 
 	if (prompt && !yesno(quest)) return;
 
@@ -815,13 +811,13 @@ static void do_mget(file_info *finfo)
 	
 	if (!dos_directory_exist(finfo->name,NULL) && 
 	    dos_mkdir(finfo->name,0777) != 0) {
-		DEBUG(0,("failed to create directory %s\n",CNV_LANG(finfo->name)));
+		DEBUG(0,("failed to create directory %s\n",finfo->name));
 		pstrcpy(cur_dir,saved_curdir);
 		return;
 	}
 	
 	if (dos_chdir(finfo->name) != 0) {
-		DEBUG(0,("failed to chdir to directory %s\n",CNV_LANG(finfo->name)));
+		DEBUG(0,("failed to chdir to directory %s\n",finfo->name));
 		pstrcpy(cur_dir,saved_curdir);
 		return;
 	}
@@ -914,7 +910,7 @@ static BOOL do_mkdir(char *name)
 {
 	if (!cli_mkdir(cli, name)) {
 		DEBUG(0,("%s making remote directory %s\n",
-			 cli_errstr(cli),CNV_LANG(name)));
+			 cli_errstr(cli),name));
 		return(False);
 	}
 
@@ -989,7 +985,7 @@ static void do_put(char *rname,char *lname)
 	fnum = cli_open(cli, rname, O_WRONLY|O_CREAT|O_TRUNC, DENY_NONE);
   
 	if (fnum == -1) {
-		DEBUG(0,("%s opening remote file %s\n",cli_errstr(cli),CNV_LANG(rname)));
+		DEBUG(0,("%s opening remote file %s\n",cli_errstr(cli),rname));
 		return;
 	}
 
@@ -1009,7 +1005,7 @@ static void do_put(char *rname,char *lname)
 
   
 	DEBUG(1,("putting file %s as %s ",lname,
-		 CNV_LANG(rname)));
+		 rname));
   
 	buf = (char *)malloc(maxwrite);
 	while (!feof(f)) {
@@ -1032,7 +1028,7 @@ static void do_put(char *rname,char *lname)
 	}
 
 	if (!cli_close(cli, fnum)) {
-		DEBUG(0,("%s closing remote file %s\n",cli_errstr(cli),CNV_LANG(rname)));
+		DEBUG(0,("%s closing remote file %s\n",cli_errstr(cli),rname));
 		fclose(f);
 		if (buf) free(buf);
 		return;
@@ -1304,7 +1300,7 @@ static void do_del(file_info *finfo)
 		return;
 
 	if (!cli_unlink(cli, mask)) {
-		DEBUG(0,("%s deleting remote file %s\n",cli_errstr(cli),CNV_LANG(mask)));
+		DEBUG(0,("%s deleting remote file %s\n",cli_errstr(cli),mask));
 	}
 }
 
@@ -1368,7 +1364,7 @@ static void cmd_rmdir(void)
 
 	if (!cli_rmdir(cli, mask)) {
 		DEBUG(0,("%s removing remote directory file %s\n",
-			 cli_errstr(cli),CNV_LANG(mask)));
+			 cli_errstr(cli),mask));
 	}  
 }
 
@@ -1781,9 +1777,6 @@ static void process_command_string(char *cmd)
 			cmd = p + 1;
 		}
 		
-		/* input language code to internal one */
-		CNV_INPUT (line);
-		
 		/* and get the first part of the command */
 		ptr = line;
 		if (!next_token(&ptr,tok,NULL,sizeof(tok))) continue;
@@ -1791,9 +1784,9 @@ static void process_command_string(char *cmd)
 		if ((i = process_tok(tok)) >= 0) {
 			commands[i].fn();
 		} else if (i == -2) {
-			DEBUG(0,("%s: command abbreviation ambiguous\n",CNV_LANG(tok)));
+			DEBUG(0,("%s: command abbreviation ambiguous\n",tok));
 		} else {
-			DEBUG(0,("%s: command not found\n",CNV_LANG(tok)));
+			DEBUG(0,("%s: command not found\n",tok));
 		}
 	}
 }	
@@ -1827,7 +1820,7 @@ static void process_stdin(void)
 			temp = (char *)NULL;
 		}
 
-		snprintf( prompt_str, PROMPTSIZE - 1, "smb: %s> ", CNV_LANG(cur_dir) );
+		snprintf( prompt_str, PROMPTSIZE - 1, "smb: %s> ", cur_dir );
 
 		temp = readline( prompt_str );		/* We read the line here */
 
@@ -1840,7 +1833,7 @@ static void process_stdin(void)
 		strncpy( line, temp, 1023 ); /* Maximum size of (pstring)line. Null is guarranteed. */
 #else 
 		/* display a prompt */
-		DEBUG(0,("smb: %s> ", CNV_LANG(cur_dir)));
+		DEBUG(0,("smb: %s> ", cur_dir));
 		dbgflush( );
 		
 		wait_keyboard();
@@ -1850,9 +1843,6 @@ static void process_stdin(void)
 			break;
 #endif
 
-		/* input language code to internal one */
-		CNV_INPUT (line);
-		
 		/* special case - first char is ! */
 		if (*line == '!') {
 			system(line + 1);
@@ -1866,9 +1856,9 @@ static void process_stdin(void)
 		if ((i = process_tok(tok)) >= 0) {
 			commands[i].fn();
 		} else if (i == -2) {
-			DEBUG(0,("%s: command abbreviation ambiguous\n",CNV_LANG(tok)));
+			DEBUG(0,("%s: command abbreviation ambiguous\n",tok));
 		} else {
-			DEBUG(0,("%s: command not found\n",CNV_LANG(tok)));
+			DEBUG(0,("%s: command not found\n",tok));
 		}
 	}
 }
