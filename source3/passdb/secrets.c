@@ -68,7 +68,7 @@ void *secrets_fetch(const char *key, size_t *size)
 
 /* store a secrets entry 
  */
-BOOL secrets_store(const char *key, void *data, size_t size)
+BOOL secrets_store(const char *key, const void *data, size_t size)
 {
 	TDB_DATA kbuf, dbuf;
 	secrets_init();
@@ -95,7 +95,7 @@ BOOL secrets_delete(const char *key)
 	return tdb_delete(tdb, kbuf) == 0;
 }
 
-BOOL secrets_store_domain_sid(char *domain, DOM_SID *sid)
+BOOL secrets_store_domain_sid(char *domain, const DOM_SID *sid)
 {
 	fstring key;
 
@@ -148,7 +148,7 @@ BOOL secrets_fetch_domain_guid(char *domain, GUID *guid)
 	strupper(key);
 	dyn_guid = (GUID *)secrets_fetch(key, &size);
 
-	DEBUG(6,("key is %s, guid is at %x, size is %d\n", key, dyn_guid, size));
+	DEBUG(6,("key is %s, size is %d\n", key, (int)size));
 
 	if ((NULL == dyn_guid) && (ROLE_DOMAIN_PDC == lp_server_role())) {
 		uuid_generate_random(&new_guid);
