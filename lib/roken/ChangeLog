@@ -1,3 +1,8 @@
+2003-12-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* resolv.h: add more T_ types and inline the dns headers, all this
+	for bind9 resolvers
+
 2003-12-02  Love Hörnquist Åstrand  <lha@it.su.se>
 	
 	* gai_strerror.c: EAI_ADDRFAMILY and EAI_NODATA is deprecated
