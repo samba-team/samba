@@ -92,7 +92,9 @@ static size_t convert_string(smb_iconv_t descriptor,
 		   	       DEBUG(0, ("Required %d, available %d\n",
 			       srclen, destlen));	
 		               break;
+#ifdef EILSEQ
 		  case EILSEQ: reason="Illegal myltybyte sequence"; break;
+#endif
 		}
 		DEBUG(0,("Conversion error:%s(%s)\n",reason,inbuf));
 		/* smb_panic(reason); */
