@@ -307,12 +307,22 @@ arg_printusage (struct getargs *args,
     }
 }
 
-static void
+static int
 add_string(getarg_strings *s, char *value)
 {
-    s->strings = realloc(s->strings, (s->num_strings + 1) * sizeof(*s->strings));
+    char **strings;
+
+    strings = realloc(s->strings, (s->num_strings + 1) * sizeof(*s->strings));
+    if (strings == NULL) {
+	free(s->strings);
+	s->strings = NULL;
+	s->num_strings = 0;
+	return ENOMEM;
+    }
+    s->strings = strings;
     s->strings[s->num_strings] = value;
     s->num_strings++;
+    return 0;
 }
 
 static int
@@ -390,8 +400,7 @@ arg_match_long(struct getargs *args, size_t num_args,
     }
     case arg_strings:
     {
-	add_string((getarg_strings*)current->value, goptarg + 1);
-	return 0;
+	return add_string((getarg_strings*)current->value, goptarg + 1);
     }
     case arg_flag:
     case arg_negative_flag:
@@ -497,8 +506,7 @@ arg_match_short (struct getargs *args, size_t num_args,
 		    *(char**)args[k].value = goptarg;
 		    return 0;
 		} else if(args[k].type == arg_strings) {
-		    add_string((getarg_strings*)args[k].value, goptarg);
-		    return 0;
+		    return add_string((getarg_strings*)args[k].value, goptarg);
 		} else if(args[k].type == arg_double) {
 		    double tmp;
 		    if(sscanf(goptarg, "%lf", &tmp) != 1)
