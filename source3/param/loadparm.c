@@ -1516,6 +1516,9 @@ static char *lp_string(const char *s)
 	if (!ret)
 		return NULL;
 
+	/* Note: StrnCpy touches len+1 bytes, but we allocate 100
+	 * extra bytes so we're OK. */
+
 	if (!s)
 		*ret = 0;
 	else
