@@ -79,65 +79,6 @@ static const rid_name domain_group_rids[] =
     { 0                             , NULL }
 };
 
-/*******************************************************************
- gets a domain user's groups
- ********************************************************************/
-BOOL get_domain_user_groups(TALLOC_CTX *ctx, int *numgroups, DOM_GID **pgids, SAM_ACCOUNT *sam_pass)
-{
-
-	const char *username = pdb_get_username(sam_pass);
-	int		n_unix_groups;
-	int		i,j;
-	gid_t *unix_groups;
-
-	*numgroups = 0;
-	*pgids   = NULL;
-	
-	if (!getgroups_user(username, &unix_groups, &n_unix_groups)) {
-		return False;
-	}
-
-	/* now setup the space for storing the SIDS */
-	
-	if (n_unix_groups > 0) {
-	
-		*pgids   = talloc(ctx, sizeof(DOM_GID) * n_unix_groups);
-		
-		if (!*pgids) {
-			DEBUG(0, ("get_user_group: malloc() failed for DOM_GID list!\n"));
-			SAFE_FREE(unix_groups);
-			return False;
-		}
-	}
-
-	become_root();
-	j = 0;
-	for (i = 0; i < n_unix_groups; i++) {
-		GROUP_MAP map;
-		uint32 rid;
-		
-		if (!pdb_getgrgid(&map, unix_groups[i])) {
-			DEBUG(3, ("get_user_groups: failed to convert gid %ld to a domain group!\n", 
-				(long int)unix_groups[i+1]));
-			if (i == 0) {
-				DEBUG(1,("get_domain_user_groups: primary gid of user [%s] is not a Domain group !\n", username));
-				DEBUGADD(1,("get_domain_user_groups: You should fix it, NT doesn't like that\n"));
-			}
-		} else if ((map.sid_name_use == SID_NAME_DOM_GRP)
-			   && sid_peek_check_rid(get_global_sam_sid(), &map.sid, &rid)) {
-			(*pgids)[j].attr=7;
-			(*pgids)[j].g_rid=rid;
-			j++;
-		}
-	}
-	unbecome_root();
-
-	*numgroups = j;
-
-	SAFE_FREE(unix_groups);
-
-	return True;
-}
 
 /*******************************************************************
  gets a domain user's groups from their already-calculated NT_USER_TOKEN

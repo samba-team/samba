@@ -109,7 +109,7 @@ static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups, in
 }
 #endif
 
-int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grpcnt)
+static int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grpcnt)
 {
 	char *p;
 	int retval;
@@ -138,4 +138,92 @@ int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grpcnt)
 	winbind_on();
 	
 	return retval;
+}
+
+BOOL getgroups_user(const char *user, gid_t primary_gid,
+		    gid_t **ret_groups, int *ngroups)
+{
+	int ngrp, max_grp;
+	gid_t *temp_groups;
+	gid_t *groups;
+	int i;
+
+	max_grp = groups_max();
+	temp_groups = (gid_t *)malloc(sizeof(gid_t) * max_grp);
+	if (! temp_groups) {
+		return False;
+	}
+
+	if (sys_getgrouplist(user, primary_gid, temp_groups, &max_grp) == -1) {
+		
+		gid_t *groups_tmp;
+		
+		groups_tmp = Realloc(temp_groups, sizeof(gid_t) * max_grp);
+		
+		if (!groups_tmp) {
+			SAFE_FREE(temp_groups);
+			return False;
+		}
+		temp_groups = groups_tmp;
+		
+		if (sys_getgrouplist(user, primary_gid,
+				     temp_groups, &max_grp) == -1) {
+			DEBUG(0, ("get_user_groups: failed to get the unix "
+				  "group list\n"));
+			SAFE_FREE(temp_groups);
+			return False;
+		}
+	}
+	
+	ngrp = 0;
+	groups = NULL;
+
+	/* Add in primary group first */
+	add_gid_to_array_unique(primary_gid, &groups, &ngrp);
+
+	for (i=0; i<max_grp; i++)
+		add_gid_to_array_unique(temp_groups[i], &groups, &ngrp);
+
+	*ngroups = ngrp;
+	*ret_groups = groups;
+	SAFE_FREE(temp_groups);
+	return True;
+}
+
+NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
+					    const char *username,
+					    gid_t primary_gid,
+					    DOM_SID **sids,
+					    gid_t **gids,
+					    int *num_groups)
+{
+	int i;
+
+	if (!getgroups_user(username, primary_gid, gids, num_groups)) {
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	if (*num_groups == 0) {
+		smb_panic("primary group missing");
+	}
+
+	*sids = malloc(sizeof(**sids) * *num_groups);
+
+	if (*sids == NULL) {
+		SAFE_FREE(gids);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<*num_groups; i++) {
+		if (!NT_STATUS_IS_OK(gid_to_sid(&(*sids)[i], (*gids)[i]))) {
+			DEBUG(1, ("get_user_groups: failed to convert "
+				  "gid %ld to a sid!\n", 
+				  (long int)(*gids)[i+1]));
+			SAFE_FREE(*sids);
+			SAFE_FREE(*gids);
+			return NT_STATUS_NO_SUCH_USER;
+		}
+	}
+
+	return NT_STATUS_OK;
 }
