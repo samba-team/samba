@@ -73,14 +73,13 @@ int list_find(const void *needle,
 	max_i = nmemb-1;
 
 	while (min_i < max_i) {
-		size_t test_t;
 		int r;
 
 		test_i = (min_i + max_i) / 2;
 		r = comp_fn(needle, *(void * const *)(base_p + (size * test_i)));
 		if (r == 0) {
 			/* scan back for first element */
-			while (test_t > 0 &&
+			while (test_i > 0 &&
 			       comp_fn(needle, *(void * const *)(base_p + (size * (test_i-1)))) == 0) {
 				test_i--;
 			}

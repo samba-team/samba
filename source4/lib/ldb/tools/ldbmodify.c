@@ -52,7 +52,7 @@ static void usage(void)
 static int process_file(struct ldb_context *ldb, FILE *f)
 {
 	struct ldb_ldif *ldif;
-	int ret, count = 0;
+	int ret = -1, count = 0;
 	
 	while ((ldif = ldif_read_file(f))) {
 		switch (ldif->changetype) {
