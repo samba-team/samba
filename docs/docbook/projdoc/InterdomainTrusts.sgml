@@ -105,7 +105,7 @@ which must be entered the name of the remote domain as well as the password assi
 <title>Configuring Samba NT-style Domain Trusts</title>
 
 <para>
-This descitpion is meant to be a fairly short introduction about how to set up a Samba server so
+This description is meant to be a fairly short introduction about how to set up a Samba server so
 that it could participate in interdomain trust relationships. Trust relationship support in Samba
 is in its early stage, so lot of things doesn't work yet.
 </para>
