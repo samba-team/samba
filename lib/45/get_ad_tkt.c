@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -98,14 +98,15 @@ get_ad_tkt(char *service, char *sinstance, char *realm, int lifetime)
 			       id,
 			       &in_creds,
 			       &out_creds);
-    krb5_cc_close(context, id);
     krb5_free_principal(context, in_creds.client);
     krb5_free_principal(context, in_creds.server);
     if(ret){
+	krb5_cc_close(context, id);
 	krb5_free_context(context);
 	return KFAILURE;
     }
-    ret = krb524_convert_creds_kdc(context, out_creds, &cred);
+    ret = krb524_convert_creds_kdc(context, id, out_creds, &cred);
+    krb5_cc_close(context, id);
     krb5_free_context(context);
     krb5_free_creds(context, out_creds);
     if(ret)
