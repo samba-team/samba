@@ -2092,7 +2092,7 @@ AC_ARG_WITH(manpages-langs,
   esac
 
   AC_MSG_RESULT($manlangs)
-  manlangs=${manlangs//,/ }   # replacing commas with spaces to produce a list
+  manlangs=`echo $manlangs | sed "s/,/ /"`   # replacing commas with spaces to produce a list
   AC_SUBST(manlangs)],
 
   [manlangs="en"

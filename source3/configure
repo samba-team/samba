@@ -12049,7 +12049,7 @@ if test "${with_manpages_langs+set}" = set; then
   esac
 
   echo "$ac_t""$manlangs" 1>&6
-  manlangs=${manlangs//,/ }   # replacing commas with spaces to produce a list
+  manlangs=`echo $manlangs | sed "s/,/ /"`   # replacing commas with spaces to produce a list
   
 else
   manlangs="en"
