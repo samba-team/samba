@@ -1307,66 +1307,6 @@ NTSTATUS _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAM
 	return r_u->status;
 }
 
-#if 0
-/*******************************************************************
- samr_reply_lookup_ids
- ********************************************************************/
-
- uint32 _samr_lookup_ids(pipes_struct *p, SAMR_Q_LOOKUP_IDS *q_u, SAMR_R_LOOKUP_IDS *r_u)
-{
-    uint32 rid[MAX_SAM_ENTRIES];
-    int num_rids = q_u->num_sids1;
-
-    r_u->status = NT_STATUS_OK;
-
-    DEBUG(5,("_samr_lookup_ids: %d\n", __LINE__));
-
-    if (num_rids > MAX_SAM_ENTRIES) {
-        num_rids = MAX_SAM_ENTRIES;
-        DEBUG(5,("_samr_lookup_ids: truncating entries to %d\n", num_rids));
-    }
-
-#if 0
-    int i;
-    SMB_ASSERT_ARRAY(q_u->uni_user_name, num_rids);
-
-    for (i = 0; i < num_rids && status == 0; i++)
-    {
-        struct sam_passwd *sam_pass;
-        fstring user_name;
-
-
-        fstrcpy(user_name, unistrn2(q_u->uni_user_name[i].buffer,
-                                    q_u->uni_user_name[i].uni_str_len));
-
-        /* find the user account */
-        become_root();
-        sam_pass = get_smb21pwd_entry(user_name, 0);
-        unbecome_root();
-
-        if (sam_pass == NULL)
-        {
-            status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;
-            rid[i] = 0;
-        }
-        else
-        {
-            rid[i] = sam_pass->user_rid;
-        }
-    }
-#endif
-
-    num_rids = 1;
-    rid[0] = BUILTIN_ALIAS_RID_USERS;
-
-    init_samr_r_lookup_ids(&r_u, num_rids, rid, NT_STATUS_OK);
-
-    DEBUG(5,("_samr_lookup_ids: %d\n", __LINE__));
-
-    return r_u->status;
-}
-#endif
-
 /*******************************************************************
  _samr_lookup_names
  ********************************************************************/
@@ -1433,18 +1373,6 @@ NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LO
 				  sizeof(name),
 				  q_u->uni_name[i].uni_str_len*2, 0);
 
- 		/*
-		 * we are only looking for a name
-		 * the SID we get back can be outside
-		 * the scope of the pol_sid
-		 * 
-		 * in clear: it prevents to reply to domain\group: yes
-		 * when only builtin\group exists.
-		 *
-		 * a cleaner code is to add the sid of the domain we're looking in
-		 * to the local_lookup_name function.
-		 */
-		 
             	if ((ret > 0) && lookup_name(domain_name, name, &sid,
 					     &local_type)) {
 
@@ -1452,12 +1380,6 @@ NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LO
 
 			if (sid_equal(&sid, &pol_sid)) {
 				rid[i]=local_rid;
-
-				/* Windows does not return WKN_GRP here, even
-				 * on lookups in builtin */
-				type[i] = (local_type == SID_NAME_WKN_GRP) ?
-					SID_NAME_ALIAS : local_type;
-
                 		r_u->status = NT_STATUS_OK;
 			}
             	}
@@ -1552,8 +1474,8 @@ static BOOL make_samr_lookup_rids(TALLOC_CTX *ctx, uint32 num_names, fstring nam
 
 NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOKUP_RIDS *r_u)
 {
-	fstring group_names[MAX_SAM_ENTRIES];
-	uint32 *group_attrs = NULL;
+	fstring names[MAX_SAM_ENTRIES];
+	uint32 *attrs = NULL;
 	UNIHDR *hdr_name = NULL;
 	UNISTR2 *uni_name = NULL;
 	DOM_SID pol_sid;
@@ -1569,13 +1491,17 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &pol_sid, &acc_granted))
 		return NT_STATUS_INVALID_HANDLE;
 
+	if (!(sid_check_is_builtin(&pol_sid) ||
+	      sid_check_is_domain(&pol_sid)))
+		return NT_STATUS_INVALID_HANDLE;
+
 	if (num_rids > MAX_SAM_ENTRIES) {
 		num_rids = MAX_SAM_ENTRIES;
 		DEBUG(5,("_samr_lookup_rids: truncating entries to %d\n", num_rids));
 	}
 
 	if (num_rids) {
-		if ((group_attrs = (uint32 *)talloc_zero(p->mem_ctx, num_rids * sizeof(uint32))) == NULL)
+		if ((attrs = (uint32 *)talloc_zero(p->mem_ctx, num_rids * sizeof(uint32))) == NULL)
 			return NT_STATUS_NO_MEMORY;
  	}
  
@@ -1589,28 +1515,28 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 		DOM_SID sid;
    		enum SID_NAME_USE type;
 
-		group_attrs[i] = SID_NAME_UNKNOWN;
-		*group_names[i] = '\0';
+		attrs[i] = SID_NAME_UNKNOWN;
+		*names[i] = '\0';
 
-		if (sid_equal(&pol_sid, get_global_sam_sid())) {
-			sid_copy(&sid, &pol_sid);
-			sid_append_rid(&sid, q_u->rid[i]);
+		sid_copy(&sid, &pol_sid);
+		sid_append_rid(&sid, q_u->rid[i]);
 
-			if (lookup_sid(&sid, domname, tmpname, &type)) {
-				r_u->status = NT_STATUS_OK;
-				group_attrs[i] = (uint32)type;
-				fstrcpy(group_names[i],tmpname);
-				DEBUG(5,("_samr_lookup_rids: %s:%d\n", group_names[i], group_attrs[i]));
-			}
-		}
+		if (!lookup_sid(&sid, domname, tmpname, &type))
+			continue;
+
+		r_u->status = NT_STATUS_OK;
+		attrs[i] = (uint32)type;
+		fstrcpy(names[i],tmpname);
+		DEBUG(5,("_samr_lookup_rids: %s:%d\n",
+			 names[i], attrs[i]));
 	}
 
 	unbecome_root();
 
-	if(!make_samr_lookup_rids(p->mem_ctx, num_rids, group_names, &hdr_name, &uni_name))
+	if(!make_samr_lookup_rids(p->mem_ctx, num_rids, names, &hdr_name, &uni_name))
 		return NT_STATUS_NO_MEMORY;
 
-	init_samr_r_lookup_rids(r_u, num_rids, hdr_name, uni_name, group_attrs);
+	init_samr_r_lookup_rids(r_u, num_rids, hdr_name, uni_name, attrs);
 
 	DEBUG(5,("_samr_lookup_rids: %d\n", __LINE__));
 

@@ -299,17 +299,27 @@ BOOL init_domain_list(void)
 
 	/* Add ourselves as the first entry. */
 
-	domain = add_trusted_domain( lp_workgroup(), lp_realm(),
-				     &cache_methods, NULL);
+	domain = add_trusted_domain(get_global_sam_name(), lp_realm(),
+				    &cache_methods, NULL);
+	domain->loopback = True;
 
-	if (IS_DC) {
-		domain->loopback = True;
-	} else {
-		struct winbindd_domain *local_sam;
-		local_sam = add_trusted_domain(get_global_sam_name(), NULL,
-					       &cache_methods, get_global_sam_sid());
-		
-		local_sam->loopback = True;
+	if (!secrets_fetch_domain_sid(domain->name, &domain->sid)) {
+		DEBUG(1, ("Could not fetch sid for our domain %s\n",
+			  domain->name));
+		return False;
+	}
+
+	if (lp_server_role() == ROLE_DOMAIN_MEMBER) {
+		/* As a member we've just added our nb name as domain, but the
+		   primary one will be the one will be the one connecting us
+		   to the DC */
+		domain = add_trusted_domain(lp_workgroup(), lp_realm(),
+					    &cache_methods, NULL);
+		if (!secrets_fetch_domain_sid(domain->name, &domain->sid)) {
+			DEBUG(1, ("Could not fetch sid for our domain %s\n",
+				  domain->name));
+			return False;
+		}
 	}
 
 	/* set flags about native_mode, active_directory */
@@ -326,15 +336,8 @@ BOOL init_domain_list(void)
 	if ( *domain->name )
 		set_global_myworkgroup( domain->name );
 		
-	if (!secrets_fetch_domain_sid(domain->name, &domain->sid)) {
-		DEBUG(1, ("Could not fetch sid for our domain %s\n",
-			  domain->name));
-		return False;
-	}
-
 	/* do an initial scan for trusted domains */
 	add_trusted_domains(domain);
-
 
 	/* Add our local SAM domains */
 
@@ -410,8 +413,11 @@ struct winbindd_domain *find_our_domain(void)
 	/* Search through list */
 
 	for (domain = domain_list(); domain != NULL; domain = domain->next) {
-		if (domain->primary)
+		if (domain->primary) {
+			if (!domain->initialized)
+				set_dc_type_and_flags(domain);
 			return domain;
+		}
 	}
 
 	/* Not found */

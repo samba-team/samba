@@ -123,8 +123,8 @@ static int net_groupmap_memberships(int argc, const char **argv)
 
 static void list_aliases_internals(const DOM_SID *sid)
 {
-	struct acct_info *aliases;
-	int i, num_aliases;
+	struct acct_info *aliases = NULL;
+	int i, num_aliases = 0;
 
 	if (!pdb_enum_aliases(sid, 0, 1000000, &num_aliases, &aliases)) {
 		d_printf("Could not list aliases for domain %s\n",
@@ -243,9 +243,9 @@ int net_help_groupmap(int argc, const char **argv)
 		 "\n  Create an alias\n");
 	d_printf("net groupmap delalias"\
 		 "\n  Delete an alias\n");
-	d_printf("net groupmap addmember"\
+	d_printf("net groupmap addmem"\
 		 "\n  Add an alias member\n");
-	d_printf("net groupmap delmember"\
+	d_printf("net groupmap delmem"\
 		 "\n  Delete a foreign alias member\n");
 	d_printf("net groupmap listmembers"\
 		 "\n  List foreign group members\n");

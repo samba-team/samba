@@ -596,6 +596,9 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 		NTSTATUS status;
 		struct winbindd_methods *methods;
 		unsigned int i;
+
+		if (!domain->initialized)
+			set_dc_type_and_flags(domain);
 		
 		/* if we have a domain name restricting the request and this
 		   one in the list doesn't match, then just bypass the remainder
