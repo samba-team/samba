@@ -874,6 +874,8 @@ static BOOL read_sid_from_file(int fd, char *sid_file)
 {   
   fstring fline;
     
+  memset(fline, '\0', sizeof(fline));
+
   if(read(fd, fline, sizeof(fline) -1 ) < 0) {
     DEBUG(0,("read_sid_from_file: unable to read file %s. Error was %s\n",
            sid_file, strerror(errno) ));
