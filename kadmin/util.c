@@ -461,6 +461,7 @@ is_expression(const char *string)
 int
 foreach_principal(const char *exp, 
 		  int (*func)(krb5_principal, void*), 
+		  const char *funcname,
 		  void *data)
 {
     char **princs;
@@ -500,15 +501,22 @@ foreach_principal(const char *exp,
 	ret = (*func)(princ_ent, data);
 	if(ret) {
 	    char *tmp;
-	    krb5_error_code ret2;
 
-	    ret2 = krb5_unparse_name(context, princ_ent, &tmp);
-	    if(ret2) {
-		krb5_warn(context, ret2, "krb5_unparse_name");
-		krb5_warn(context, ret, "<unknown principal>");
+	    tmp = krb5_get_error_string(context);
+	    if (tmp != NULL) {
+		krb5_warnx(context, "%s: %s", funcname, tmp);
+		krb5_free_error_string(context, tmp);
 	    } else {
-		krb5_warn(context, ret, "%s", tmp);
-		free(tmp);
+		krb5_error_code ret2;
+
+		ret2 = krb5_unparse_name(context, princ_ent, &tmp);
+		if(ret2) {
+		    krb5_warn(context, ret2, "krb5_unparse_name");
+		    krb5_warn(context, ret, "<unknown principal>");
+		} else {
+		    krb5_warn(context, ret, "%s: %s", funcname, tmp);
+		    free(tmp);
+		}
 	    }
 	}
 	krb5_free_principal(context, princ_ent);
