@@ -145,6 +145,7 @@ EXTRA_libroken_la_SOURCES =	\
 	unsetenv.c		\
 	verr.c			\
 	verrx.c			\
+	vis.hin			\
 	vsyslog.c		\
 	vwarn.c			\
 	vwarnx.c		\
