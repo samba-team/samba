@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -173,6 +173,7 @@ typedef OM_uint32 gss_qop_t;
 #define GSS_C_AF_DSS        18
 #define GSS_C_AF_OSI        19
 #define GSS_C_AF_X25        21
+#define GSS_C_AF_INET6	    24
 
 #define GSS_C_AF_NULLADDR   255
 
