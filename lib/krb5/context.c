@@ -5,17 +5,25 @@ RCSID("$Id$");
 krb5_error_code
 krb5_init_context(krb5_context *context)
 {
-  krb5_context p;
-  p = ALLOC(1, krb5_context_data);
-  if(!p)
-    return ENOMEM;
-  memset(p, 0, sizeof(krb5_context_data));
-  krb5_init_ets(p);
-  p->cc_ops = NULL;
-  krb5_config_parse_file (krb5_config_file, &p->cf);
-  krb5_set_default_realm(p, NULL);
-  *context = p;
-  return 0;
+    krb5_context p;
+    const char *skew;
+    p = ALLOC(1, krb5_context_data);
+    if(!p)
+	return ENOMEM;
+    memset(p, 0, sizeof(krb5_context_data));
+    krb5_init_ets(p);
+    p->cc_ops = NULL;
+    krb5_config_parse_file (krb5_config_file, &p->cf);
+    p->max_skew = 5 * 60;
+    skew = krb5_config_get_string (p->cf, "libdefaults", "clockskew", NULL);
+    if(skew){
+	int tmp;
+	if(sscanf(skew, "%d", &tmp) == 1)
+	    p->max_skew = tmp;
+    }
+    krb5_set_default_realm(p, NULL);
+    *context = p;
+    return 0;
 }
 
 void krb5_os_free_context(krb5_context context)
