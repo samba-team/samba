@@ -1072,7 +1072,7 @@ void init_net_user_info3(NET_USER_INFO_3 *usr,
 
 	if (num_groups > 0)
 	{
-		usr->gids = g_new(DOM_GID, num_groups);
+		usr->gids = (DOM_GID *)malloc(sizeof(DOM_GID) * num_groups);
 		if (usr->gids == NULL)
 			return;
 		for (i = 0; i < num_groups; i++)
@@ -1190,7 +1190,7 @@ static BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 *usr, prs_struct *ps, 
 
 	if (UNMARSHALLING(ps) && usr->num_groups2 > 0)
 	{
-		usr->gids = g_new(DOM_GID, usr->num_groups2);
+		usr->gids = (DOM_GID *)malloc(sizeof(DOM_GID)*usr->num_groups2);
 		if (usr->gids == NULL)
 			return False;
 	}

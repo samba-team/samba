@@ -117,24 +117,24 @@ invalidate a uid
 ****************************************************************************/
 void invalidate_vuid(uint16 vuid)
 {
-  user_struct *vuser = get_valid_user_struct(vuid);
+	user_struct *vuser = get_valid_user_struct(vuid);
 
-  if (vuser == NULL) return;
+	if (vuser == NULL)
+		return;
 
-  vuser->uid = (uid_t)-1;
-  vuser->gid = (gid_t)-1;
+	vuser->uid = (uid_t)-1;
+	vuser->gid = (gid_t)-1;
 
-  /* same number of igroups as groups */
-  vuser->n_groups = 0;
+	/* same number of igroups as groups */
+	vuser->n_groups = 0;
 
-  if (vuser->groups)
-    free((char *)vuser->groups);
+	if (vuser->groups)
+		free((char *)vuser->groups);
 
-  vuser->groups  = NULL;
+	vuser->groups  = NULL;
 
-    if (vuser->usr.gids != NULL)
-	    free (vuser->usr.gids);
-  vuser->usr.gids  = NULL;
+	if (vuser->group_sids != NULL)
+		free (vuser->group_sids);
 }
 
 
@@ -218,8 +218,7 @@ has been given. vuid is biased by an offset. This allows us to
 tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
 uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, 
-		     char *domain,BOOL guest,
-		     NET_USER_INFO_3 *usr)
+		     char *domain,BOOL guest)
 {
   user_struct *vuser;
   struct passwd *pwfile; /* for getting real name from passwd file */
@@ -279,44 +278,7 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
 	       &vuser->n_groups,
 	       &vuser->groups);
 
-  if (usr == NULL)
-  {
-	int i;
-	extern DOM_SID global_sam_sid;
-
-	DEBUG(0,("vuser struct usr being filled in with trash, today\n"));
-	DEBUG(0,("this needs to be replaced with a proper surs impl.\n"));
-	DEBUG(0,("e.g. the one used in winbindd.  in fact, all\n"));
-	DEBUG(0,("occurrences of pdb_xxx_to_xxx should be replaced\n"));
-	DEBUG(0,("as soon as possible.\n"));
-	vuser->usr.user_id = pdb_uid_to_user_rid(uid);
-	vuser->usr.group_id = pdb_gid_to_group_rid(gid);
-	vuser->usr.num_groups = vuser->n_groups;
-	if (vuser->n_groups != 0)
-	{
-		vuser->usr.gids = g_new(DOM_GID, vuser->usr.num_groups);
-		if (vuser->usr.gids == NULL)
-			return UID_FIELD_INVALID;
-	}
-
-	for (i = 0; i < vuser->usr.num_groups; i++)
-	{
-		DOM_GID *ntgid = &vuser->usr.gids[i];
-		ntgid->attr = 0x7;
-		ntgid->g_rid = pdb_gid_to_group_rid(vuser->groups[i]);
-	}
-
-	/* this is possibly the worst thing to do, ever.  it assumes */
-	/* that all users of this system are in the local SAM database */
-	/* however, because there is no code to do anything otherwise, */
-	/* we have no choice */
-
-	init_dom_sid2(&vuser->usr.dom_sid, &global_sam_sid);
-  }
-  else
-  {
-	  vuser->usr = *usr;
-  }
+  setup_user_sids(vuser);
 
   DEBUG(3,("uid %d registered to name %s\n",(int)uid,unix_name));
 
