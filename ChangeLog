@@ -1,3 +1,7 @@
+2003-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/setup.texi: describe Transit policy
+	
 2003-10-20  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kdc/kerberos5.c (fix_transited_encoding): also verify with
