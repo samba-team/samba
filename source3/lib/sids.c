@@ -326,7 +326,7 @@ BOOL generate_sam_sid(char *domain_name)
     
 	if (file_exist(machine_sid_file, NULL))
 	{
-		if (file_exist(machine_sid_file, NULL))
+		if (file_exist(sid_file, NULL))
 		{
 			DEBUG(0,("both %s and %s exist when only one should, unable to continue\n",
 			          machine_sid_file, sid_file));
