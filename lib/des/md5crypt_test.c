@@ -50,7 +50,7 @@ struct test {
     const char *salt;
     const char *result;
 } tests[] = {
-    {"Hello world!", "$1$saltstring", "$1$saltstri$YMyguxXMBpd2TEZ.vS/3q1"},
+    {"Hello world!", "$1$saltstring", "$1$saltstriYMyguxXMBpd2TEZ.vS/3q1"},
     {NULL, NULL, NULL}
 };
 
@@ -60,9 +60,17 @@ do_test (void)
     struct test *t;
     int res = 0;
 
-    for (t = tests; t->str != NULL; ++t)
-	if (strcmp (crypt (t->str, t->salt), t->result) != 0)
+    for (t = tests; t->str != NULL; ++t) {
+	const char *c;
+
+	c = crypt (t->str, t->salt);
+
+	if (strcmp (c, t->result) != 0) {
 	    res = 1;
+	    printf ("should have been: \"%s\"\n", t->result);
+	    printf ("result was:       \"%s\"\n", c);
+	}
+    }
     if (res)
 	printf ("failed\n");
     else
