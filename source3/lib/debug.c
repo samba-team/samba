@@ -602,6 +602,12 @@ BOOL reopen_logs( void )
 	force_check_log_size();
 	(void)umask(oldumask);
 
+	/* Take over stderr to catch ouput into logs */
+	if (sys_dup2(dbf->fd, 2) == -1) {
+		close_low_fds(True); /* Close stderr too, if dup2 can't point it
+					at the logfile */
+	}
+
 	return ret;
 }
 
