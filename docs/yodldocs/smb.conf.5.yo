@@ -1,306 +1,382 @@
-.TH SMB.CONF 5 "13 Jun 1998" "smb.conf 1.9.18p8"
-.SH NAME
-smb.conf \- configuration file for smbd
-.SH SYNOPSIS
-.B smb.conf
-.SH DESCRIPTION
-The
-.B smb.conf
-file is a configuration file for the Samba suite.
+mailto(samba-bugs@samba.anu.edu.au) 
 
-.B smb.conf
-contains runtime configuration information for the
-.B smbd
-program. The
-.B smbd
-program provides LanManager-like services to clients
-using the SMB protocol.
-.SH FILE FORMAT
-The file consists of sections and parameters. A section begins with the 
-name of the section in square brackets and continues until the next
-section begins. Sections contain parameters of the form 'name = value'.
+manpage(smb.conf)(5)(23 Oct 1998)(Samba)(SAMBA)
 
-The file is line-based - that is, each newline-terminated line represents
-either a comment, a section name or a parameter.
+label(NAME)
+manpagename(smb.conf)(The configuration file for the Samba suite)
+
+label(SYNOPSIS)
+manpagesynopsis() 
+
+bf(smb.conf) The bf(smb.conf) file is a configuration file for the
+Samba suite. bf(smb.conf) contains runtime configuration information
+for the Samba programs. The bf(smb.conf) file is designed to be
+configured and administered by the url(bf(swat (8)))(swat.8.html)
+program. The complete description of the file format and possible
+parameters held within are here for reference purposes.
+
+label(FILEFORMAT)
+manpagesection(FILE FORMAT)
+
+The file consists of sections and parameters. A section begins with
+the name of the section in square brackets and continues until the
+next section begins. Sections contain parameters of the form 
+
+tt('name = value')
+
+The file is line-based - that is, each newline-terminated line
+represents either a comment, a section name or a parameter.
 
 Section and parameter names are not case sensitive.
 
-Only the first equals sign in a parameter is significant. Whitespace before 
-or after the first equals sign is discarded. Leading, trailing and internal
-whitespace in section and parameter names is irrelevant. Leading and
-trailing whitespace in a parameter value is discarded. Internal whitespace
-within a parameter value is retained verbatim.
+Only the first equals sign in a parameter is significant. Whitespace
+before or after the first equals sign is discarded. Leading, trailing
+and internal whitespace in section and parameter names is
+irrelevant. Leading and trailing whitespace in a parameter value is
+discarded. Internal whitespace within a parameter value is retained
+verbatim.
 
-Any line beginning with a semicolon is ignored, as are lines containing 
-only whitespace.
+Any line beginning with a semicolon (';') or a hash ('#') character is
+ignored, as are lines containing only whitespace.
 
-Any line ending in a \e is "continued" on the next line in the
+Any line ending in a tt('\') is "continued" on the next line in the
 customary UNIX fashion.
 
-The values following the equals sign in parameters are all either a string
-(no quotes needed) or a boolean, which may be given as yes/no, 0/1 or
-true/false. Case is not significant in boolean values, but is preserved
-in string values. Some items such as create modes are numeric.
-.SH SERVICE DESCRIPTIONS
-Each section in the configuration file describes a service. The section name
-is the service name and the parameters within the section define the service's
-attributes.
+The values following the equals sign in parameters are all either a
+string (no quotes needed) or a boolean, which may be given as yes/no,
+0/1 or true/false. Case is not significant in boolean values, but is
+preserved in string values. Some items such as create modes are
+numeric.
 
-There are three special sections, [global], [homes] and [printers], which are
-described under 'special sections'. The following notes apply to ordinary 
-service descriptions.
+label(SERVICEDESCRIPTIONS)
+manpagesection(SERVICE DESCRIPTIONS)
 
-A service consists of a directory to which access is being given plus a 
-description of the access rights which are granted to the user of the 
-service. Some housekeeping options are also specifiable.
+Each section in the configuration file describes a service. The
+section name is the service name and the parameters within the section
+define the service's attributes.
 
-Services are either filespace services (used by the client as an extension of
-their native file systems) or printable services (used by the client to access
-print services on the host running the server).
+There are three special sections, link(bf([global]))(global),
+link(bf([homes]))(homes) and link(bf([printers]))(printers), which are
+described under link(bf('special sections'))(specialsections). The
+following notes apply to ordinary service descriptions.
 
-Services may be guest services, in which case no password is required to
-access them. A specified guest account is used to define access privileges
-in this case.
+A service consists of a directory to which access is being given plus
+a description of the access rights which are granted to the user of
+the service. Some housekeeping options are also specifiable.
+
+Services are either filespace services (used by the client as an
+extension of their native file systems) or printable services (used by
+the client to access print services on the host running the server).
+
+Services may be guest services, in which case no password is required
+to access them. A specified UNIX guest account is used to define
+access privileges in this case.
 
 Services other than guest services will require a password to access
-them. The client provides the username. As many clients only provide
+them. The client provides the username. As older clients only provide
 passwords and not usernames, you may specify a list of usernames to
-check against the password using the "user=" option in the service
-definition. 
+check against the password using the link(bf("user="))(user) option in
+the service definition. For modern clients such as Windows 95/98 and
+Windows NT, this should not be neccessary.
 
-Note that the access rights granted by the server are masked by the access
-rights granted to the specified or guest user by the host system. The 
-server does not grant more access than the host system grants.
+Note that the access rights granted by the server are masked by the
+access rights granted to the specified or guest UNIX user by the host
+system. The server does not grant more access than the host system
+grants.
 
-The following sample section defines a file space service. The user has write
-access to the path /home/bar. The service is accessed via the service name 
-"foo":
+The following sample section defines a file space service. The user
+has write access to the path tt(/home/bar). The service is accessed via
+the service name "foo":
+
+verb(
 
  	[foo]
  		path = /home/bar
  		writable = true
 
-The following sample section defines a printable service. The service is 
-readonly, but printable. That is, the only write access permitted is via 
-calls to open, write to and close a spool file. The 'guest ok' parameter 
-means access will be permitted as the default guest user (specified elsewhere):
+)
 
+The following sample section defines a printable service. The service
+is readonly, but printable. That is, the only write access permitted
+is via calls to open, write to and close a spool file. The
+link(bf('guest ok'))(guestok) parameter means access will be permitted
+as the default guest user (specified elsewhere):
+
+verb(
  	[aprinter]
  		path = /usr/spool/public
  		read only = true
  		printable = true
  		public = true
-.SH SPECIAL SECTIONS
+)
 
-.SS The [global] section
-.RS 3
-Parameters in this section apply to the server as a whole, or are defaults
-for services which do not specifically define certain items. See the notes
-under 'Parameters' for more information.
-.RE
+label(SPECIALSECTIONS)
+manpagesection(SPECIAL SECTIONS)
 
-.SS The [homes] section
-.RS 3
-If a section called 'homes' is included in the configuration file, services
-connecting clients to their home directories can be created on the fly by the
-server.
+startdit()
 
-When the connection request is made, the existing services are scanned. If a
-match is found, it is used. If no match is found, the requested service name is
-treated as a user name and looked up in the local passwords file. If the
-name exists and the correct password has been given, a service is created
-by cloning the [homes] section.
+label(global)
+dit(bf(The [global] section))
+
+Parameters in this section apply to the server as a whole, or are
+defaults for services which do not specifically define certain
+items. See the notes under link(bf('Parameters'))(Parameters) for more
+information.
+
+label(homes)
+dit(bf(The [homes] section))
+
+If a section called tt('homes') is included in the configuration file,
+services connecting clients to their home directories can be created
+on the fly by the server.
+
+When the connection request is made, the existing services are
+scanned. If a match is found, it is used. If no match is found, the
+requested service name is treated as a user name and looked up in the
+local passwords file. If the name exists and the correct password has
+been given, a service is created by cloning the [homes] section.
 
 Some modifications are then made to the newly created section:
 
-.RS 3
-The service name is changed from 'homes' to the located username
+startit()
 
-If no path was given, the path is set to the user's home directory.
-.RE
+it() The service name is changed from tt('homes') to the located
+username
 
-If you decide to use a path= line in your [homes] section then you may
-find it useful to use the %S macro. For example path=/data/pchome/%S
+it() If no path was given, the path is set to the user's home
+directory.
+
+endit()
+
+If you decide to use a link(bf(path=))(path) line in your [homes]
+section then you may find it useful to use the link(bf(%S))(percentS)
+macro. For example :
+
+tt(path=/data/pchome/%S)
+
 would be useful if you have different home directories for your PCs
 than for UNIX access.
 
-This is a fast and simple way to give a large number of clients access to
-their home directories with a minimum of fuss.
+This is a fast and simple way to give a large number of clients access
+to their home directories with a minimum of fuss.
 
-A similar process occurs if the requested service name is "homes", except that
-the service name is not changed to that of the requesting user. This method
-of using the [homes] section works well if different users share a client PC.
+A similar process occurs if the requested service name is tt("homes"),
+except that the service name is not changed to that of the requesting
+user. This method of using the [homes] section works well if different
+users share a client PC.
 
-The [homes] section can specify all the parameters a normal service section
-can specify, though some make more sense than others. The following is a 
-typical and suitable [homes] section:
+The [homes] section can specify all the parameters a normal service
+section can specify, though some make more sense than others. The
+following is a typical and suitable [homes] section:
 
+verb(
  	[homes]
  		writable = yes
+)
 
-An important point:
+An important point is that if guest access is specified in the [homes]
+section, all home directories will be visible to all clients
+bf(without a password). In the very unlikely event that this is
+actually desirable, it would be wise to also specify link(bf(read only
+access))(readonly).
 
-.RS 3
-If guest access is specified in the [homes] section, all home directories will
-be accessible to all clients
-.B without a password.
-In the very unlikely event
-that this is actually desirable, it would be wise to also specify read only
-access.
-.RE
-.RE
+Note that the link(bf(browseable))(browseable) flag for auto home
+directories will be inherited from the global browseable flag, not the
+[homes] browseable flag. This is useful as it means setting
+browseable=no in the [homes] section will hide the [homes] service but
+make any auto home directories visible.
 
-Note that the browseable flag for auto home directories will be
-inherited from the global browseable flag, not the [homes] browseable
-flag. This is useful as it means setting browseable=no in the [homes]
-section will hide the [homes] service but make any auto home
-directories visible.
+label(printers)
+dit(bf(The [printers] section))
 
-.SS The [printers] section
-.RS 3
-This section works like [homes], but for printers.
+This section works like link(bf([homes]))(homes), but for printers.
 
-If a [printers] section occurs in the configuration file, users are able 
-to connect to any printer specified in the local host's printcap file.
+If a [printers] section occurs in the configuration file, users are
+able to connect to any printer specified in the local host's printcap
+file.
 
-When a connection request is made, the existing services are scanned. If a
-match is found, it is used. If no match is found, but a [homes] section
-exists, it is used as described above. Otherwise, the requested service name is
-treated as a printer name and the appropriate printcap file is scanned to
-see if the requested service name is a valid printer name. If a match is
-found, a new service is created by cloning the [printers] section.
+When a connection request is made, the existing services are
+scanned. If a match is found, it is used. If no match is found, but a
+link(bf([homes]))(homes) section exists, it is used as described
+above. Otherwise, the requested service name is treated as a printer
+name and the appropriate printcap file is scanned to see if the
+requested service name is a valid printer name. If a match is found, a
+new service is created by cloning the [printers] section.
 
 A few modifications are then made to the newly created section:
 
-.RS 3
-The service name is set to the located printer name
+startit()
 
-If no printer name was given, the printer name is set to the located printer
-name
+it() The service name is set to the located printer name
 
-If the service does not permit guest access and no username was given, the 
-username is set to the located printer name.
-.RE
+it() If no printer name was given, the printer name is set to the
+located printer name
 
-Note that the [printers] service MUST be printable - if you specify otherwise,
-the server will refuse to load the configuration file.
+it() If the service does not permit guest access and no username was
+given, the username is set to the located printer name.
 
-Typically the path specified would be that of a world-writable spool directory
-with the sticky bit set on it. A typical [printers] entry would look like this:
+endit()
 
+Note that the [printers] service MUST be printable - if you specify
+otherwise, the server will refuse to load the configuration file.
+
+Typically the path specified would be that of a world-writable spool
+directory with the sticky bit set on it. A typical [printers] entry
+would look like this:
+
+verb(
  	[printers]
  		path = /usr/spool/public
  		writable = no
  		public = yes
  		printable = yes 
+)
 
-All aliases given for a printer in the printcap file are legitimate printer
-names as far as the server is concerned. If your printing subsystem doesn't
-work like that, you will have to set up a pseudo-printcap. This is a file
-consisting of one or more lines like this:
+All aliases given for a printer in the printcap file are legitimate
+printer names as far as the server is concerned. If your printing
+subsystem doesn't work like that, you will have to set up a
+pseudo-printcap. This is a file consisting of one or more lines like
+this:
 
-        alias|alias|alias|alias...
+verb(        alias|alias|alias|alias...    )
 
-Each alias should be an acceptable printer name for your printing 
-subsystem. In the [global] section, specify the new file as your printcap.
-The server will then only recognise names found in your pseudo-printcap,
-which of course can contain whatever aliases you like. The same technique
-could be used simply to limit access to a subset of your local printers.
+Each alias should be an acceptable printer name for your printing
+subsystem. In the link(bf([global]))(global) section, specify the new
+file as your printcap.  The server will then only recognise names
+found in your pseudo-printcap, which of course can contain whatever
+aliases you like. The same technique could be used simply to limit
+access to a subset of your local printers.
 
-An alias, by the way, is defined as any component of the first entry of a 
-printcap record. Records are separated by newlines, components (if there are 
-more than one) are separated by vertical bar symbols ("|").
+An alias, by the way, is defined as any component of the first entry
+of a printcap record. Records are separated by newlines, components
+(if there are more than one) are separated by vertical bar symbols
+("|").
 
 NOTE: On SYSV systems which use lpstat to determine what printers are
-defined on the system you may be able to use "printcap name = lpstat" 
-to automatically obtain a list of printers. See the "printcap name"
-option for more detils.
+defined on the system you may be able to use link(bf("printcap name =
+lpstat"))(printcapname) to automatically obtain a list of
+printers. See the link(bf("printcap name"))(printcapname) option for
+more detils.
 
-.RE
-.SH PARAMETERS
+enddit()
+
+label(PARAMETERS)
+manpagesection(PARAMETERS)
+
 Parameters define the specific attributes of services.
 
-Some parameters are specific to the [global] section (eg., security).
-Some parameters are usable in all sections (eg., create mode). All others are
+Some parameters are specific to the link(bf([global]))(global) section
+(eg., link(bf(security))(security)).  Some parameters are usable in
+all sections (eg., link(bf(create mode))(createmode)). All others are
 permissible only in normal sections. For the purposes of the following
-descriptions the [homes] and [printers] sections will be considered normal.
-The letter 'G' in parentheses indicates that a parameter is specific to the
-[global] section. The letter 'S' indicates that a parameter can be
-specified in a service specific section. Note that all S parameters
-can also be specified in the [global] section - in which case they
-will define the default behaviour for all services.
+descriptions the link(bf([homes]))(homes) and
+link(bf([printers]))(printers) sections will be considered normal.
+The letter tt('G') in parentheses indicates that a parameter is
+specific to the link(bf([global]))(global) section. The letter tt('S')
+indicates that a parameter can be specified in a service specific
+section. Note that all tt('S') parameters can also be specified in the
+link(bf([global]))(global) section - in which case they will define
+the default behaviour for all services.
 
-Parameters are arranged here in alphabetical order - this may not create
-best bedfellows, but at least you can find them! Where there are synonyms,
-the preferred synonym is described, others refer to the preferred synonym.
+Parameters are arranged here in alphabetical order - this may not
+create best bedfellows, but at least you can find them! Where there
+are synonyms, the preferred synonym is described, others refer to the
+preferred synonym.
 
-.SS VARIABLE SUBSTITUTIONS
+label(VARIABLESUBSTITUTIONS)
+manpagesection(VARIABLE SUBSTITUTIONS)
 
 Many of the strings that are settable in the config file can take
-substitutions. For example the option "path = /tmp/%u" would be
-interpreted as "path = /tmp/john" if the user connected with the
-username john.
+substitutions. For example the option link(bf(tt("path =
+/tmp/%u")))(path) would be interpreted as tt("path = /tmp/john") if
+the user connected with the username john.
 
 These substitutions are mostly noted in the descriptions below, but
-there are some general substitutions which apply whenever they might be
-relevant. These are:
+there are some general substitutions which apply whenever they might
+be relevant. These are:
 
-%S = the name of the current service, if any
+startit()
 
-%P = the root directory of the current service, if any
+label(percentS) 
+dit(bf(%S)) = the name of the current service, if any.
 
-%u = user name of the current service, if any
+label(percentP)
+dit(bf(%P)) = the root directory of the current service, if any.
 
-%g = primary group name of %u
+label(percentu)
+dit(bf(%u)) = user name of the current service, if any.
 
-%U = session user name (the user name that the client wanted, not
-necessarily the same as the one they got)
+label(percentg)
+dit(bf(%g)) = primary group name of link(bf(%u))(percentu).
 
-%G = primary group name of %U
+label(percentU) 
+dit(bf(%U)) = session user name (the user name that
+the client wanted, not necessarily the same as the one they got).
 
-%H = the home directory of the user given by %u
+label(percentG)
+dit(bf(%G)) = primary group name of link(bf(%U))(percentU).
 
-%v = the Samba version
+label(percentH)
+dit(bf(%H)) = the home directory of the user given by link(bf(%u))(percentu).
 
-%h = the hostname that Samba is running on
+label(percentv)
+dit(bf(%v)) = the Samba version.
 
-%m = the netbios name of the client machine (very useful)
+label(percenth)
+dit(bf(%h)) = the internet hostname that Samba is running on.
 
+label(percentm)
+dit(bf(%m)) = the netbios name of the client machine (very useful).
+
+label(percentL)
 %L = the netbios name of the server. This allows you to change your
 config based on what the client calls you. Your server can have a "dual
 personality".
 
-%M = the internet name of the client machine
+label(percentM) 
+dit(bf(%M)) = the internet name of the client machine.
 
-%N = the name of your NIS home directory server.  This is obtained from
-your NIS auto.map entry.  If you have not compiled Samba with -DAUTOMOUNT
-then this value will be the same as %L.
+label(percentN)
+dit(bf(%N)) = the name of your NIS home directory server.  This is
+obtained from your NIS auto.map entry.  If you have not compiled Samba
+with the bf(--with-automount) option then this value will be the same
+as link(bf(%L))(percentL).
 
-%p = the path of the service's home directory, obtained from your NIS
+label(percentp)
+dit(bf(%p)) = the path of the service's home directory, obtained from your NIS
 auto.map entry. The NIS auto.map entry is split up as "%N:%p".
 
-%R = the selected protocol level after protocol negotiation. As of 
-Samba 1.9.18 it can be one of CORE, COREPLUS, LANMAN1, LANMAN2 or NT1.
+label(percentR) 
+dit(bf(%R)) = the selected protocol level after protocol
+negotiation. It can be one of CORE, COREPLUS, LANMAN1, LANMAN2 or NT1.
 
-%d = The process id of the current server process
+label(percentd)
+dit(bf(%d) = The process id of the current server process.
 
-%a = the architecture of the remote machine. Only some are recognised,
+label(percenta)
+dit(bf(%a)) = the architecture of the remote machine. Only some are recognised,
 and those may not be 100% reliable. It currently recognises Samba,
 WfWg, WinNT and Win95. Anything else will be known as "UNKNOWN". If it
-gets it wrong then sending me a level 3 log should allow me to fix it.
+gets it wrong then sending a level 3 log to
+email(samba-bugs@samba.anu.edu.au) should allow it to be fixed.
 
-%I = The IP address of the client machine
+label(percentI)
+dit(bf(%I)) = The IP address of the client machine.
 
-%T = the current date and time
+label(percentT)
+dit(bf(%T)) = the current date and time.
+
+enddit()
 
 There are some quite creative things that can be done with these
 substitutions and other smb.conf options.
 
-.SS NAME MANGLING
+label(NAMEMANGLING)
+manpagesection(NAME MANGLING)
 
-Samba supports "name mangling" so that DOS and Windows clients can use
-files that don't conform to the 8.3 format. It can also be set to adjust
-the case of 8.3 format filenames.
+Samba supports em("name mangling") so that DOS and Windows clients can
+use files that don't conform to the 8.3 format. It can also be set to
+adjust the case of 8.3 format filenames.
 
 There are several options that control the way mangling is performed,
 and they are grouped here rather than listed separately. For the
