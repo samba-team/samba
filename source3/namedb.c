@@ -40,9 +40,6 @@ extern pstring scope;
 extern struct in_addr ipgrp;
 extern struct in_addr ipzero;
 
-/* this is our browse master/backup cache database */
-struct browse_cache_record *browserlist = NULL;
-
 /* local interfaces structure */
 extern struct interface *local_interfaces;
 
@@ -230,29 +227,6 @@ static void add_subnet(struct subnet_record *d)
 }
 
 /***************************************************************************
-  add a browser into the list
-  **************************************************************************/
-static void add_browse_cache(struct browse_cache_record *b)
-{
-  struct browse_cache_record *b2;
-
-  if (!browserlist)
-    {
-      browserlist = b;
-      b->prev = NULL;
-      b->next = NULL;
-      return;
-    }
-  
-  for (b2 = browserlist; b2->next; b2 = b2->next) ;
-  
-  b2->next = b;
-  b->next = NULL;
-  b->prev = b2;
-}
-
-
-/***************************************************************************
   add a server into the list
   **************************************************************************/
 static void add_server(struct work_record *work,struct server_record *s)
@@ -271,37 +245,6 @@ static void add_server(struct work_record *work,struct server_record *s)
   s2->next = s;
   s->next = NULL;
   s->prev = s2;
-}
-
-
-/*******************************************************************
-  remove old browse entries
-  ******************************************************************/
-void expire_browse_cache(time_t t)
-{
-  struct browse_cache_record *b;
-  struct browse_cache_record *nextb;
-  
-  /* expire old entries in the serverlist */
-  for (b = browserlist; b; b = nextb)
-    {
-      if (b->synced && b->sync_time < t)
-	{
-	  DEBUG(3,("Removing dead cached browser %s\n",b->name));
-	  nextb = b->next;
-	  
-	  if (b->prev) b->prev->next = b->next;
-	  if (b->next) b->next->prev = b->prev;
-	  
-	  if (browserlist == b) browserlist = b->next; 
-	  
-	  free(b);
-	}
-      else
-	{
-	  nextb = b->next;
-	}
-    }
 }
 
 
@@ -387,8 +330,8 @@ struct subnet_record *find_subnet(struct in_addr bcast_ip)
         }
         else if (same_net(bcast_ip, d->bcast_ip, d->mask_ip))
 	    {
-	return(d);
-    }
+	      return(d);
+	    }
     }
   
   return (NULL);
@@ -447,7 +390,7 @@ static struct subnet_record *make_subnet(struct in_addr bcast_ip, struct in_addr
   d->mask_ip  = mask_ip;
   d->workgrouplist = NULL;
   d->my_interface = False; /* True iff the interface is on the samba host */
-
+  
   add_subnet(d);
   
   return d;
@@ -506,7 +449,7 @@ struct subnet_record *add_subnet_entry(struct in_addr bcast_ip,
 				       char *name, BOOL add, BOOL lmhosts)
 {
   struct subnet_record *d;
-  
+
   /* XXXX andrew: struct in_addr ip appears not to be referenced at all except
      in the DEBUG comment. i assume that the DEBUG comment below actually
      intends to refer to bcast_ip? i don't know.
@@ -514,7 +457,7 @@ struct subnet_record *add_subnet_entry(struct in_addr bcast_ip,
   struct in_addr ip = ipgrp;
 
   */
-  
+
   if (zero_ip(bcast_ip)) 
     bcast_ip = *iface_bcast(bcast_ip);
   
@@ -536,82 +479,15 @@ struct subnet_record *add_subnet_entry(struct in_addr bcast_ip,
 	}
       /* add samba server name to workgroup list */
       if ((strequal(lp_workgroup(), name) && d->my_interface) || lmhosts)
-	{
-	  add_server_entry(d,w,myname,w->ServerType,0,ServerComment,True);
-	}
+      {
+	    add_server_entry(d,w,myname,w->ServerType,0,ServerComment,True);
+      }
       
       DEBUG(3,("Added domain name entry %s at %s\n", name,inet_ntoa(bcast_ip)));
       return d;
     }
   return NULL;
 }
-
-/****************************************************************************
-  add a browser entry
-  ****************************************************************************/
-struct browse_cache_record *add_browser_entry(char *name, int type, char *wg,
-					      time_t ttl, struct in_addr ip)
-{
-  BOOL newentry=False;
-  
-  struct browse_cache_record *b;
-
-  /* search for the entry: if it's already in the cache, update that entry */
-  for (b = browserlist; b; b = b->next)
-    {
-      if (ip_equal(ip,b->ip) && strequal(b->group, wg)) break;
-    }
-  
-  if (b && b->synced)
-    {
-      /* entries get left in the cache for a while. this stops sync'ing too
-	 often if the network is large */
-      DEBUG(4, ("browser %s %s %s already sync'd at time %d\n",
-		b->name, b->group, inet_ntoa(b->ip), b->sync_time));
-      return NULL;
-    }
-  
-  if (!b)
-    {
-      newentry = True;
-      b = (struct browse_cache_record *)malloc(sizeof(*b));
-      
-      if (!b) return(NULL);
-      
-      bzero((char *)b,sizeof(*b));
-    }
-  
-  /* update the entry */
-  ttl = time(NULL)+ttl;
-  
-  StrnCpy(b->name ,name,sizeof(b->name )-1);
-  StrnCpy(b->group,wg  ,sizeof(b->group)-1);
-  strupper(b->name);
-  strupper(b->group);
-  
-  b->ip     = ip;
-  b->type   = type;
-  
-  if (newentry || ttl < b->sync_time) 
-    b->sync_time = ttl;
-  
-  if (newentry)
-    {
-      b->synced = False;
-      add_browse_cache(b);
-      
-      DEBUG(3,("Added cache entry %s %s(%2x) %s ttl %d\n",
-	       wg, name, type, inet_ntoa(ip),ttl));
-    }
-  else
-    {
-      DEBUG(3,("Updated cache entry %s %s(%2x) %s ttl %d\n",
-	       wg, name, type, inet_ntoa(ip),ttl));
-    }
-  
-  return(b);
-}
-
 
 /****************************************************************************
   remove all samba's server entries
@@ -664,8 +540,8 @@ struct server_record *add_server_entry(struct subnet_record *d,
     }
   
   if (!s || s->serv.type != servertype || !strequal(s->serv.comment, comment))
-  updatedlists=True;
-  
+    updatedlists=True;
+
   if (!s)
     {
       newentry = True;
@@ -679,8 +555,8 @@ struct server_record *add_server_entry(struct subnet_record *d,
   
   if (d->my_interface && strequal(lp_workgroup(),work->work_group))
     {
-      if (servertype)
-	servertype |= SV_TYPE_LOCAL_LIST_ONLY;
+	  if (servertype)
+        servertype |= SV_TYPE_LOCAL_LIST_ONLY;
     }
   else
     {
@@ -714,6 +590,27 @@ struct server_record *add_server_entry(struct subnet_record *d,
 	   work->work_group,inet_ntoa(d->bcast_ip)));
   
   return(s);
+}
+
+
+/****************************************************************************
+  add the default workgroup into my domain
+  **************************************************************************/
+void add_my_subnets(char *group)
+{
+  struct interface *i;
+
+  /* add or find domain on our local subnet, in the default workgroup */
+  
+  if (*group == '*') return;
+
+	/* the coding choice is up to you, andrew: i can see why you don't want
+       global access to the local_interfaces structure: so it can't get
+       messed up! */
+    for (i = local_interfaces; i; i = i->next)
+    {
+      add_subnet_entry(i->bcast,i->nmask,group, True, False);
+    }
 }
 
 

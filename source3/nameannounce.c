@@ -50,8 +50,6 @@ extern int  workgroup_count;
 
 /* what server type are we currently */
 
-#define BROWSE_MAILSLOT "\\MAILSLOT\\BROWSE"
-
 /****************************************************************************
   send a announce request to the local net
   **************************************************************************/
@@ -108,6 +106,26 @@ void do_announce_request(char *info, char *to_name, int announce_type,
   send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,PTR_DIFF(p,outbuf),
 		      myname,to_name,from,to,dest_ip,*iface_ip(dest_ip));
 }
+
+
+/****************************************************************************
+  find a server responsible for a workgroup, and sync browse lists
+  control ends up back here via response_name_query.
+  **************************************************************************/
+void sync_server(enum state_type state, char *serv_name, char *work_name, 
+		 int name_type,
+		 struct in_addr ip)
+{                     
+  add_browser_entry(serv_name, name_type, work_name, 0, ip);
+
+  if (state == NAME_QUERY_MST_SRV_CHK)
+    {
+      /* announce ourselves as a master browser to serv_name */
+      do_announce_request(myname, serv_name, ANN_MasterAnnouncement,
+			  0x20, 0, ip);
+    }
+}
+
 
 /****************************************************************************
   construct a host announcement unicast
@@ -294,8 +312,8 @@ void announce_host(void)
 	  if (work->needannounce) {
 	    /* drop back to a max 3 minute announce - this is to prevent a
 	       single lost packet from stuffing things up for too long */
-	    work->announce_interval = MIN(work->announce_interval, 
-					  CHECK_TIME_MIN_HOST_ANNCE*60);
+	    work->announce_interval = MIN(work->announce_interval,
+						CHECK_TIME_MIN_HOST_ANNCE*60);
 	    work->lastannounce_time = t - (work->announce_interval+1);
 	  }
 	  
@@ -323,18 +341,18 @@ void announce_host(void)
 	  }
 	  
 	  if (announce)
-	    {
+	  {
 		announce_server(d,work,my_name,comment,work->announce_interval,stype);
-	    }
+	  }
 	  
 	  if (work->needannounce)
-	    {
+	  {
 	      work->needannounce = False;
 	      break;
 	      /* sorry: can't do too many announces. do some more later */
-	    }
+	  }
 	}
-    }
+  }
 }
 
 
@@ -356,8 +374,8 @@ void announce_master(void)
   time_t t = time(NULL);
   BOOL am_master = False; /* are we a master of some sort? :-) */
 
-  if (last && (t-last < CHECK_TIME_MST_ANNOUNCE * 60)) 
-    return; 
+  if (last && (t-last < CHECK_TIME_MST_ANNOUNCE * 60))
+	return;
 
   last = t;
 

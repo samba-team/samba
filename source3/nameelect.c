@@ -42,8 +42,6 @@ extern  pstring ServerComment;
 
 extern time_t StartupTime;
 
-#define BROWSE_MAILSLOT "\\MAILSLOT\\BROWSE"
-
 extern struct subnet_record *subnetlist;
 
 
@@ -57,7 +55,7 @@ void check_master_browser(void)
   struct subnet_record *d;
 
   if (!lastrun) lastrun = t;
-  if (t < lastrun + CHECK_TIME_MST_BROWSE * 60) 
+  if (t < lastrun + CHECK_TIME_MST_BROWSE * 60)
     return;
   lastrun = t;
 
@@ -215,7 +213,7 @@ void become_nonmaster(struct subnet_record *d, struct work_record *work,
   /* unbecome a master browser; unbecome a domain master, too :-( */
   if (remove_type & SV_TYPE_MASTER_BROWSER)
     remove_type |= SV_TYPE_DOMAIN_MASTER;
-  
+
   new_server_type &= ~remove_type;
 
   if (!(new_server_type & (SV_TYPE_MASTER_BROWSER|SV_TYPE_DOMAIN_MASTER)))
@@ -223,8 +221,8 @@ void become_nonmaster(struct subnet_record *d, struct work_record *work,
     /* no longer a master browser of any sort */
 
   	work->ServerType |= SV_TYPE_POTENTIAL_BROWSER;
-  work->ElectionCriterion &= ~0x4;
-  
+    work->ElectionCriterion &= ~0x4;
+
 	/* announce ourselves as no longer active as a master browser. */
     announce_server(d, work, work->work_group, myname, 0, 0);
     remove_name_entry(d,MSBROWSE        ,0x01);
@@ -356,10 +354,10 @@ void process_election(struct packet_struct *p,char *buf)
 		  
 		  /* if we are the master then remove our masterly names */
 		  if (AM_MASTER(work))
-		    {
+		  {
 		      become_nonmaster(d, work,
 					SV_TYPE_MASTER_BROWSER|SV_TYPE_DOMAIN_MASTER);
-		    }
+		  }
 		}
 	    }
 	}
