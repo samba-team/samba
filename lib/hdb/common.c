@@ -73,8 +73,7 @@ out:
 int
 hdb_key2principal(krb5_context context, krb5_data *key, krb5_principal p)
 {
-    size_t len;
-    return decode_Principal(key->data, key->length, p, &len);
+    return decode_Principal(key->data, key->length, p, NULL);
 }
 
 int
@@ -101,8 +100,7 @@ hdb_entry2value(krb5_context context, hdb_entry *ent, krb5_data *value)
 int
 hdb_value2entry(krb5_context context, krb5_data *value, hdb_entry *ent)
 {
-    size_t len;
-    return decode_hdb_entry(value->data, value->length, ent, &len);
+    return decode_hdb_entry(value->data, value->length, ent, NULL);
 }
 
 krb5_error_code

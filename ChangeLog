@@ -1,3 +1,7 @@
+Sun Nov 16 00:32:48 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/asn1/{der_get,gen_decode}.c: Allow passing NULL size.
+
 Wed Nov 12 02:35:57 1997  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/get_for_creds.c (krb5_get_forwarded_creds):
