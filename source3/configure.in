@@ -690,6 +690,7 @@ case "$host_os" in
 			BLDSHARED="true"
 			LDSHFLAGS="-shared" 
 			PICFLAG="-fPIC"
+			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
 		*solaris*) AC_DEFINE(SUNOS5)
 			BLDSHARED="true"
@@ -701,6 +702,7 @@ case "$host_os" in
 				POBAD_CC=""
 				PICSUFFIX="po.o"
 			fi
+			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
 		*sunos*) AC_DEFINE(SUNOS4)
 			BLDSHARED="true"
@@ -710,6 +712,7 @@ case "$host_os" in
 		*bsd*)  BLDSHARED="true"
 			LDSHFLAGS="-Wl,-soname,\$@ -shared"
 			PICFLAG="-fPIC"
+			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
 		*irix*) AC_DEFINE(IRIX)
 			case "$host_os" in
@@ -724,11 +727,13 @@ case "$host_os" in
 			else 
 				PICFLAG="-KPIC"
 			fi
+			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
 		*aix*) AC_DEFINE(AIX)
 			BLDSHARED="true"
 			LDSHFLAGS="-Wl,-bexpall,-bM:SRE,-bnoentry"
 			PICFLAG="-O2 -qmaxmem=6000"
+			AC_DEFINE(STAT_ST_BLOCKSIZE,DEV_BSIZE)
 		;;
 		*hpux*) AC_DEFINE(HPUX)
 			SHLIBEXT="sl"
@@ -738,6 +743,7 @@ case "$host_os" in
 				LDSHFLAGS="-b -z +h \$@"
 				PICFLAG="+z"
 			fi
+			AC_DEFINE(STAT_ST_BLOCKSIZE,8192)
 		;;
 		*qnx*) AC_DEFINE(QNX);;
 		*osf*) AC_DEFINE(OSF1)
@@ -1549,6 +1555,15 @@ exit(1);
   fi
 fi
 
+AC_CACHE_CHECK([for st_blocks in struct stat],samba_cv_HAVE_STAT_ST_BLOCKS,[
+AC_TRY_COMPILE([#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>],
+[struct stat st;  st.st_blocks = 0;],
+samba_cv_HAVE_STAT_ST_BLOCKS=yes,samba_cv_HAVE_STAT_ST_BLOCKS=no,samba_cv_HAVE_STAT_ST_BLOCKS=cross)])
+if test x"$samba_cv_HAVE_STAT_ST_BLOCKS" = x"yes"; then
+    AC_DEFINE(HAVE_STAT_ST_BLOCKS)
+fi 
 
 case "$host_os" in
 *linux*)
