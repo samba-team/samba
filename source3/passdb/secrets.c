@@ -52,7 +52,7 @@ BOOL secrets_init(void)
 /* read a entry from the secrets database - the caller must free the result
    if size is non-null then the size of the entry is put in there
  */
-void *secrets_fetch(char *key, size_t *size)
+void *secrets_fetch(const char *key, size_t *size)
 {
 	TDB_DATA kbuf, dbuf;
 	secrets_init();
@@ -68,7 +68,7 @@ void *secrets_fetch(char *key, size_t *size)
 
 /* store a secrets entry 
  */
-BOOL secrets_store(char *key, void *data, size_t size)
+BOOL secrets_store(const char *key, void *data, size_t size)
 {
 	TDB_DATA kbuf, dbuf;
 	secrets_init();
@@ -84,7 +84,7 @@ BOOL secrets_store(char *key, void *data, size_t size)
 
 /* delete a secets database entry
  */
-BOOL secrets_delete(char *key)
+BOOL const secrets_delete(const char *key)
 {
 	TDB_DATA kbuf;
 	secrets_init();
@@ -136,7 +136,7 @@ BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid)
  *
  * @return stored password's key
  **/
-char *trust_keystr(char *domain)
+const char *trust_keystr(const char *domain)
 {
 	static fstring keystr;
 
@@ -154,7 +154,7 @@ char *trust_keystr(char *domain)
  *
  * @return stored password's key
  **/
-char *trustdom_keystr(char *domain)
+char *trustdom_keystr(const char *domain)
 {
 	static char* keystr;
 
@@ -325,7 +325,7 @@ char *secrets_fetch_machine_password(void)
  Routine to delete the machine trust account password file for a domain.
 ************************************************************************/
 
-BOOL trust_password_delete(char *domain)
+BOOL trust_password_delete(const char *domain)
 {
 	return secrets_delete(trust_keystr(domain));
 }
@@ -333,7 +333,7 @@ BOOL trust_password_delete(char *domain)
 /************************************************************************
  Routine to delete the password for trusted domain
 ************************************************************************/
-BOOL trusted_domain_password_delete(char *domain)
+BOOL trusted_domain_password_delete(const char *domain)
 {
 	return secrets_delete(trustdom_keystr(domain));
 }
@@ -370,16 +370,20 @@ void reset_globals_after_fork(void)
 	generate_random_buffer( &dummy, 1, True);
 }
 
-BOOL secrets_store_ldap_pw(char* dn, char* pw)
+BOOL secrets_store_ldap_pw(const char* dn, char* pw)
 {
-	fstring key;
-	char *p;
+	char *key = NULL;
+	BOOL ret;
 	
-	pstrcpy(key, dn);
-	for (p=key; *p; p++)
-		if (*p == ',') *p = '/';
+	if (asprintf(&key, "%s/%s", SECRETS_LDAP_BIND_PW, dn) < 0) {
+		DEBUG(0, ("secrets_store_ldap_pw: asprintf failed!\n"));
+		return False;
+	}
+		
+	ret = secrets_store(key, pw, strlen(pw)+1);
 	
-	return secrets_store(key, pw, strlen(pw));
+	SAFE_FREE(key);
+	return ret;
 }
 
 

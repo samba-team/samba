@@ -77,35 +77,64 @@ static uint32 ldapsam_get_next_available_nua_rid(struct ldapsam_privates *ldap_s
 /*******************************************************************
  find the ldap password
 ******************************************************************/
-static BOOL fetch_ldapsam_pw(char *dn, char* pw, int len)
+static BOOL fetch_ldapsam_pw(char **dn, char** pw)
 {
-	fstring key;
-	char *p;
-	void *data = NULL;
+	char *key = NULL;
 	size_t size;
 	
-	pstrcpy(key, dn);
-	for (p=key; *p; p++)
-		if (*p == ',') *p = '/';
+	*dn = smb_xstrdup(lp_ldap_admin_dn());
 	
-	data=secrets_fetch(key, &size);
+	if (asprintf(&key, "%s/%s", SECRETS_LDAP_BIND_PW, *dn) < 0) {
+		SAFE_FREE(*dn);
+		DEBUG(0, ("fetch_ldapsam_pw: asprintf failed!\n"));
+	}
+	
+	*pw=secrets_fetch(key, &size);
 	if (!size) {
-		DEBUG(0,("fetch_ldap_pw: no ldap secret retrieved!\n"));
-		return False;
-	}
-	
-	if (size > len-1)
-	{
-		DEBUG(0,("fetch_ldap_pw: ldap secret is too long (%d > %d)!\n", size, len-1));
-		return False;
-	}
+		/* Upgrade 2.2 style entry */
+		char *p;
+	        char* old_style_key = strdup(*dn);
+		char *data;
+		fstring old_style_pw;
+		
+		if (!old_style_key) {
+			DEBUG(0, ("fetch_ldapsam_pw: strdup failed!\n"));
+			return False;
+		}
 
-	memcpy(pw, data, size);
-	pw[size] = '\0';
+		for (p=old_style_key; *p; p++)
+			if (*p == ',') *p = '/';
+	
+		data=secrets_fetch(old_style_key, &size);
+		if (!size && size < sizeof(old_style_pw)) {
+			DEBUG(0,("fetch_ldap_pw: neither ldap secret retrieved!\n"));
+			SAFE_FREE(old_style_key);
+			SAFE_FREE(*dn);
+			return False;
+		}
+
+		strncpy(old_style_pw, data, size);
+		old_style_pw[size] = 0;
+
+		SAFE_FREE(data);
+
+		if (!secrets_store_ldap_pw(*dn, old_style_pw)) {
+			DEBUG(0,("fetch_ldap_pw: ldap secret could not be upgraded!\n"));
+			SAFE_FREE(old_style_key);
+			SAFE_FREE(*dn);
+			return False;			
+		}
+		if (!secrets_delete(old_style_key)) {
+			DEBUG(0,("fetch_ldap_pw: old ldap secret could not be deleted!\n"));
+		}
+
+		SAFE_FREE(old_style_key);
+
+		*pw = smb_xstrdup(old_style_pw);		
+	}
 	
 	return True;
 }
-
 
 /*******************************************************************
  open a connection to the ldap server.
@@ -210,20 +239,57 @@ static BOOL ldapsam_open_connection (struct ldapsam_privates *ldap_state, LDAP *
 	return True;
 }
 
+
+/*******************************************************************
+ Add a rebind function for authenticated referrals
+******************************************************************/
+
+static int rebindproc (LDAP *ldap_struct, char **whop, char **credp,
+		       int *method, int freeit )
+{
+	int rc;
+	char *ldap_dn;
+	char *ldap_secret;
+	
+	/** @TODO Should we be doing something to check what servers we rebind to?
+	    Could we get a referral to a machine that we don't want to give our
+	    username and password to? */
+	
+	if (freeit != 0)
+	{
+		
+		if (!fetch_ldapsam_pw(&ldap_dn, &ldap_secret)) 
+		{
+			DEBUG(0, ("ldap_connect_system: Failed to retrieve password from secrets.tdb\n"));
+			return LDAP_OPERATIONS_ERROR;  /* No idea what to return */
+		}
+		
+		DEBUG(5,("ldap_connect_system: Rebinding as \"%s\"\n", 
+			  ldap_dn));
+
+		rc = ldap_simple_bind_s(ldap_struct, ldap_dn, ldap_secret);
+		
+		SAFE_FREE(ldap_dn);
+		SAFE_FREE(ldap_secret);
+
+		return rc;
+	}
+	return 0;
+}
+
 /*******************************************************************
  connect to the ldap server under system privilege.
 ******************************************************************/
 static BOOL ldapsam_connect_system(struct ldapsam_privates *ldap_state, LDAP * ldap_struct)
 {
 	int rc;
-	static BOOL got_pw = False;
-	static pstring ldap_secret;
+	char *ldap_dn;
+	char *ldap_secret;
 
-	/* get the password if we don't have it already */
-	if (!got_pw && !(got_pw=fetch_ldapsam_pw(lp_ldap_admin_dn(), ldap_secret, sizeof(pstring)))) 
+	/* get the password */
+	if (!fetch_ldapsam_pw(&ldap_dn, &ldap_secret))
 	{
-		DEBUG(0, ("ldap_connect_system: Failed to retrieve password for %s from secrets.tdb\n",
-			lp_ldap_admin_dn()));
+		DEBUG(0, ("ldap_connect_system: Failed to retrieve password from secrets.tdb\n"));
 		return False;
 	}
 
@@ -231,16 +297,22 @@ static BOOL ldapsam_connect_system(struct ldapsam_privates *ldap_state, LDAP * l
 	   (OpenLDAP) doesnt' seem to support it */
 	   
 	DEBUG(10,("ldap_connect_system: Binding to ldap server as \"%s\"\n",
-		lp_ldap_admin_dn()));
-		
-	if ((rc = ldap_simple_bind_s(ldap_struct, lp_ldap_admin_dn(), 
-		ldap_secret)) != LDAP_SUCCESS)
+		ldap_dn));
+	
+	ldap_set_rebind_proc(ldap_struct, (LDAP_REBIND_PROC *)(&rebindproc));	
+
+	rc = ldap_simple_bind_s(ldap_struct, ldap_dn, ldap_secret);
+
+	SAFE_FREE(ldap_dn);
+	SAFE_FREE(ldap_secret);
+
+	if (rc != LDAP_SUCCESS)
 	{
 		DEBUG(0, ("Bind failed: %s\n", ldap_err2string(rc)));
 		return False;
 	}
 	
-	DEBUG(2, ("ldap_connect_system: successful connection to the LDAP server\n"));
+	DEBUG(2, ("ldap_connect_system: succesful connection to the LDAP server\n"));
 	return True;
 }
 
