@@ -79,7 +79,7 @@ struct talloc_ctx {
 /**
  * Start of linked list of all talloc pools.
  *
- * @fixme We should turn the global list off when using Insure++,
+ * @todo We should turn the global list off when using Insure++,
  * otherwise all the memory will be seen as still reachable.
  **/
 TALLOC_CTX *list_head = NULL;
