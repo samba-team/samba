@@ -1357,15 +1357,6 @@ CLASS="PARAMETER"
 ><TT
 CLASS="PARAMETER"
 ><I
->max packet</I
-></TT
-> </P
-></LI
-><LI
-><P
-><TT
-CLASS="PARAMETER"
-><I
 >max ttl</I
 ></TT
 > </P
@@ -1504,15 +1495,6 @@ CLASS="PARAMETER"
 >null passwords</I
 ></TT
 > </P
-></LI
-><LI
-><P
-><TT
-CLASS="PARAMETER"
-><I
->ole locking compatibility</I
-></TT
-></P
 ></LI
 ><LI
 ><P
@@ -1763,15 +1745,6 @@ CLASS="PARAMETER"
 CLASS="PARAMETER"
 ><I
 >server string</I
-></TT
-> </P
-></LI
-><LI
-><P
-><TT
-CLASS="PARAMETER"
-><I
->shared mem size</I
 ></TT
 > </P
 ></LI
@@ -2194,7 +2167,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN710"
+NAME="AEN701"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -3226,7 +3199,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1053"
+NAME="AEN1044"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -3309,10 +3282,9 @@ CLASS="PARAMETER"
 ></TT
 > and 
 		attempts to authenticate the given user with the given password. If the 
-		authentication succeeds then <A
-HREF="smbd.8.html"
-TARGET="_top"
->smbd</A
+		authentication succeeds then <B
+CLASS="COMMAND"
+>smbd</B
 > 
 		attempts to find a UNIX user in the UNIX password database to map the 
 		Windows user into. If this lookup fails, and <TT
@@ -3321,10 +3293,9 @@ CLASS="PARAMETER"
 >add user script
 		</I
 ></TT
-> is set then <A
-HREF="smbd.8.html"
-TARGET="_top"
->smbd</A
+> is set then <B
+CLASS="COMMAND"
+>smbd</B
 > will
 		call the specified script <I
 CLASS="EMPHASIS"
@@ -3337,17 +3308,16 @@ CLASS="PARAMETER"
 ></TT
 > argument to be the user name to create.</P
 ><P
->If this script successfully creates the user then <A
-HREF="smbd.8.html"
-TARGET="_top"
->smbd</A
+>If this script successfully creates the user then <B
+CLASS="COMMAND"
+>smbd
+		</B
 > will continue on as though the UNIX user
 		already existed. In this way, UNIX users are dynamically created to
 		match existing Windows NT accounts.</P
 ><P
 >See also <A
-HREF="smb.conf.5.html#security"
-TARGET="_top"
+HREF="#SECURITY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3355,17 +3325,16 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >, <A
-HREF="smb.conf.5.html#passwordserver"
-TARGET="_top"
+HREF="#PASSWORDSERVER"
 >		<TT
 CLASS="PARAMETER"
 ><I
 >password server</I
 ></TT
 ></A
->, <A
-HREF="smb.conf.5.html#deleteuserscript"
-TARGET="_top"
+>, 
+		<A
+HREF="#DELETEUSERSCRIPT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3420,8 +3389,7 @@ NAME="ALLOWHOSTS"
 ><DD
 ><P
 >Synonym for <A
-HREF="smb.conf.5.html#hostsallow"
-TARGET="_top"
+HREF="#HOSTSALLOW"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -3438,20 +3406,20 @@ NAME="ALLOWTRUSTEDDOMAINS"
 ><DD
 ><P
 >This option only takes effect when the <A
-HREF="smb.conf.5.html"
-TARGET="_top"
->security</A
+HREF="#SECURITY"
+><TT
+CLASS="PARAMETER"
+><I
+>security</I
+></TT
+></A
 > option is set to 
 		<TT
-CLASS="PARAMETER"
-><I
->server</I
-></TT
+CLASS="CONSTANT"
+>server</TT
 > or <TT
-CLASS="PARAMETER"
-><I
->domain</I
-></TT
+CLASS="CONSTANT"
+>domain</TT
 >.  
 		If it is set to no, then attempts to connect to a resource from 
 		a domain or workgroup other than the one which smbd is running 
@@ -3537,32 +3505,15 @@ NAME="AUTOSERVICES"
 >auto services (G)</DT
 ><DD
 ><P
->This is a list of services that you want to be 
-		automatically added to the browse lists. This is most useful 
-		for homes and printers services that would otherwise not be 
-		visible.</P
-><P
->Note that if you just want all printers in your 
-		printcap file loaded then the <A
-HREF="smb.conf.5.html#loadprinters"
-TARGET="_top"
+>This is a synonym for the <A
+HREF="#PRELOAD"
 >		<TT
 CLASS="PARAMETER"
 ><I
->load printers</I
+>preload</I
 ></TT
 ></A
-> option is easier.</P
-><P
->Default: <I
-CLASS="EMPHASIS"
->no auto services</I
-></P
-><P
->Example: <B
-CLASS="COMMAND"
->auto services = fred lp colorlp</B
-></P
+>.</P
 ></DD
 ><DT
 ><A
@@ -3916,6 +3867,11 @@ NAME="CASESENSITIVE"
 HREF="#AEN201"
 >NAME MANGLING</A
 >.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>case sensitive = no</B
+></P
 ></DD
 ><DT
 ><A
@@ -4421,6 +4377,12 @@ CLASS="CONSTANT"
 			This is used for compatibility between Samba and CAP.</P
 ></LI
 ></UL
+><P
+>Default: <B
+CLASS="COMMAND"
+>coding system = &lt;empty value&gt;</B
+>
+		</P
 ></DD
 ><DT
 ><A
@@ -4509,7 +4471,7 @@ NAME="COPY"
 ><P
 >Default: <I
 CLASS="EMPHASIS"
->none</I
+>no value</I
 ></P
 ><P
 >Example: <B
@@ -4695,31 +4657,6 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
-NAME="DEBUGTIMESTAMP"
-></A
->debug timestamp (G)</DT
-><DD
-><P
->Samba 2.2 debug log messages are timestamped 
-		by default. If you are running at a high <A
-HREF="#DEBUGLEVEL"
->		<TT
-CLASS="PARAMETER"
-><I
->debug level</I
-></TT
-></A
-> these timestamps
-		can be distracting. This boolean parameter allows timestamping 
-		to be turned off.</P
-><P
->Default: <B
-CLASS="COMMAND"
->debug timestamp = yes</B
-></P
-></DD
-><DT
-><A
 NAME="DEBUGPID"
 ></A
 >debug pid (G)</DT
@@ -4744,6 +4681,31 @@ CLASS="PARAMETER"
 >Default: <B
 CLASS="COMMAND"
 >debug pid = no</B
+></P
+></DD
+><DT
+><A
+NAME="DEBUGTIMESTAMP"
+></A
+>debug timestamp (G)</DT
+><DD
+><P
+>Samba 2.2 debug log messages are timestamped 
+		by default. If you are running at a high <A
+HREF="#DEBUGLEVEL"
+>		<TT
+CLASS="PARAMETER"
+><I
+>debug level</I
+></TT
+></A
+> these timestamps
+		can be distracting. This boolean parameter allows timestamping 
+		to be turned off.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>debug timestamp = yes</B
 ></P
 ></DD
 ><DT
@@ -4823,7 +4785,7 @@ NAME="DEFAULTCASE"
 ><P
 >See the section on <A
 HREF="#AEN201"
->		NAME MANGLING"</A
+>		NAME MANGLING</A
 >. Also note the <A
 HREF="#SHORTPRESERVECASE"
 >		<TT
@@ -4833,6 +4795,11 @@ CLASS="PARAMETER"
 ></TT
 ></A
 > parameter.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>default case = lower</B
+></P
 ></DD
 ><DT
 ><A
@@ -4886,16 +4853,35 @@ CLASS="PARAMETER"
 		interesting things.</P
 ><P
 >Example:</P
+><P
 ><PRE
-CLASS="SCREEN"
-><TT
-CLASS="COMPUTEROUTPUT"
->			default service = pub
+CLASS="PROGRAMLISTING"
+>[global]
+	default service = pub
         
-			[pub]
-				path = /%S
-		</TT
-></PRE
+[pub]
+	path = /%S
+		</PRE
+></P
+></DD
+><DT
+><A
+NAME="DELETEREADONLY"
+></A
+>delete readonly (S)</DT
+><DD
+><P
+>This parameter allows readonly files to be deleted.  
+		This is not normal DOS semantics, but is allowed by UNIX.</P
+><P
+>This option may be useful for running applications such 
+		as rcs, where UNIX file ownership prevents changing file 
+		permissions, and DOS semantics prevent deletion of a read only file.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>delete readonly = no</B
+></P
 ></DD
 ><DT
 ><A
@@ -5073,25 +5059,6 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >delete user script = /usr/local/samba/bin/del_user 
 		%u</B
-></P
-></DD
-><DT
-><A
-NAME="DELETEREADONLY"
-></A
->delete readonly (S)</DT
-><DD
-><P
->This parameter allows readonly files to be deleted.  
-		This is not normal DOS semantics, but is allowed by UNIX.</P
-><P
->This option may be useful for running applications such 
-		as rcs, where UNIX file ownership prevents changing file 
-		permissions, and DOS semantics prevent deletion of a read only file.</P
-><P
->Default: <B
-CLASS="COMMAND"
->delete readonly = no</B
 ></P
 ></DD
 ><DT
@@ -5732,9 +5699,36 @@ CLASS="PARAMETER"
 		NT PDC is able to do so then cross subnet browsing will behave 
 		strangely and may fail.</P
 ><P
+>If <A
+HREF="#DOMAINLOGONS"
+><B
+CLASS="COMMAND"
+>domain logons = yes</B
+>
+		</A
+>, then the default behavior is to enable the <TT
+CLASS="PARAMETER"
+><I
+>domain 
+		master</I
+></TT
+> parameter.  If <TT
+CLASS="PARAMETER"
+><I
+>domain logons</I
+></TT
+> is 
+		not enabled (the default setting), then neither will <TT
+CLASS="PARAMETER"
+><I
+>domain 
+		master</I
+></TT
+> ne enabled by default.</P
+><P
 >Default: <B
 CLASS="COMMAND"
->domain master = no</B
+>domain master = auto</B
 ></P
 ></DD
 ><DT
@@ -6164,7 +6158,8 @@ CLASS="COMMAND"
 ><A
 NAME="FORCEDIRECTORYSECURITYMODE"
 ></A
->force directory security mode (S)</DT
+>force directory 
+		security mode (S)</DT
 ><DD
 ><P
 >This parameter controls what UNIX permission bits 
@@ -6410,9 +6405,7 @@ NAME="FORCEUSER"
 		Thus clients still need to connect as a valid user and supply a 
 		valid password. Once connected, all file operations will be performed 
 		as the "forced user", no matter what username the client connected 
-		as.</P
-><P
->This can be very useful.</P
+		as.  This can be very useful.</P
 ><P
 >In Samba 2.0.5 and above this parameter also causes the 
 		primary group of the forced user to be used as the primary group 
@@ -6508,7 +6501,7 @@ CLASS="CONSTANT"
 ><P
 >Default: <B
 CLASS="COMMAND"
->getwd cache = No</B
+>getwd cache = yes</B
 ></P
 ></DD
 ><DT
@@ -6832,7 +6825,7 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->homedir map = auto.home</B
+>homedir map = &lt;empty string&gt;</B
 ></P
 ><P
 >Example: <B
@@ -7297,6 +7290,12 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >.</P
+><P
+>Default: <I
+CLASS="EMPHASIS"
+>all active interfaces except 127.0.0.1 
+		that are broadcast capable</I
+></P
 ></DD
 ><DT
 ><A
@@ -7400,12 +7399,12 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->keepalive = 0</B
+>keepalive = 300</B
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
->keepalive = 60</B
+>keepalive = 600</B
 ></P
 ></DD
 ><DT
@@ -7510,8 +7509,7 @@ NAME="LEVEL2OPLOCKS"
 		delete any read-ahead caches.</P
 ><P
 >It is recommended that this parameter be turned on 
-		to speed access to shared executables (and also to test 
-		the code :-).</P
+		to speed access to shared executables.</P
 ><P
 >For more discussions on level2 oplocks see the CIFS spec.</P
 ><P
@@ -7563,7 +7561,7 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->level2 oplocks = False</B
+>level2 oplocks = yes</B
 ></P
 ></DD
 ><DT
@@ -7643,7 +7641,7 @@ CLASS="COMMAND"
 ><P
 >Example: <B
 CLASS="COMMAND"
->lm announce = true</B
+>lm announce = yes</B
 ></P
 ></DD
 ><DT
@@ -7803,12 +7801,12 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->lock directory = /tmp/samba</B
+>lock directory = ${prefix}/var/locks</B
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
->lock directory = /usr/local/samba/var/locks</B
+>lock directory = /var/run/samba/locks</B
 >
 		</P
 ></DD
@@ -7960,7 +7958,7 @@ CLASS="USERINPUT"
 ><P
 ><B
 CLASS="COMMAND"
->logon home = \\%L\%U\profile</B
+>logon home = \\%N\%U\profile</B
 ></P
 ><P
 >This tells Samba to return the above string, with 
@@ -8372,8 +8370,11 @@ CLASS="PARAMETER"
 ><I
 >lpq command</I
 ></TT
-> as the PATH may not be 
-		available to the server.</P
+> as the <TT
+CLASS="ENVAR"
+>$PATH
+		</TT
+> may not be available to the server.</P
 ><P
 >See also the <A
 HREF="#PRINTING"
@@ -8398,7 +8399,7 @@ CLASS="PARAMETER"
 ><P
 >Example: <B
 CLASS="COMMAND"
->lpq command = /usr/bin/lpq %p</B
+>lpq command = /usr/bin/lpq -P%p</B
 ></P
 ></DD
 ><DT
@@ -8716,6 +8717,11 @@ NAME="MANGLECASE"
 HREF="#AEN201"
 >		NAME MANGLING</A
 ></P
+><P
+>Default: <B
+CLASS="COMMAND"
+>mangle case = no</B
+></P
 ></DD
 ><DT
 ><A
@@ -8856,34 +8862,6 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
-NAME="MANGLINGCHAR"
-></A
->mangling char (S)</DT
-><DD
-><P
->This controls what character is used as 
-		the <I
-CLASS="EMPHASIS"
->magic</I
-> character in <A
-HREF="#AEN201"
->name mangling</A
->. The default is a '~'
-		but this may interfere with some software. Use this option to set 
-		it to whatever you prefer.</P
-><P
->Default: <B
-CLASS="COMMAND"
->mangling char = ~</B
-></P
-><P
->Example: <B
-CLASS="COMMAND"
->mangling char = ^</B
-></P
-></DD
-><DT
-><A
 NAME="MANGLEDSTACK"
 ></A
 >mangled stack (G)</DT
@@ -8917,6 +8895,34 @@ CLASS="COMMAND"
 >Example: <B
 CLASS="COMMAND"
 >mangled stack = 100</B
+></P
+></DD
+><DT
+><A
+NAME="MANGLINGCHAR"
+></A
+>mangling char (S)</DT
+><DD
+><P
+>This controls what character is used as 
+		the <I
+CLASS="EMPHASIS"
+>magic</I
+> character in <A
+HREF="#AEN201"
+>name mangling</A
+>. The default is a '~'
+		but this may interfere with some software. Use this option to set 
+		it to whatever you prefer.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>mangling char = ~</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>mangling char = ^</B
 ></P
 ></DD
 ><DT
@@ -9517,39 +9523,6 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
-NAME="MINPRINTSPACE"
-></A
->min print space (S)</DT
-><DD
-><P
->This sets the minimum amount of free disk 
-		space that must be available before a user will be able to spool 
-		a print job. It is specified in kilobytes. The default is 0, which 
-		means a user can always spool a print job.</P
-><P
->See also the <A
-HREF="#PRINTING"
-><TT
-CLASS="PARAMETER"
-><I
->printing
-		</I
-></TT
-></A
-> parameter.</P
-><P
->Default: <B
-CLASS="COMMAND"
->min print space = 0</B
-></P
-><P
->Example: <B
-CLASS="COMMAND"
->min print space = 2000</B
-></P
-></DD
-><DT
-><A
 NAME="MINPASSWDLENGTH"
 ></A
 >min passwd length (G)</DT
@@ -9607,6 +9580,39 @@ CLASS="PARAMETER"
 >Default: <B
 CLASS="COMMAND"
 >min password length = 5</B
+></P
+></DD
+><DT
+><A
+NAME="MINPRINTSPACE"
+></A
+>min print space (S)</DT
+><DD
+><P
+>This sets the minimum amount of free disk 
+		space that must be available before a user will be able to spool 
+		a print job. It is specified in kilobytes. The default is 0, which 
+		means a user can always spool a print job.</P
+><P
+>See also the <A
+HREF="#PRINTING"
+><TT
+CLASS="PARAMETER"
+><I
+>printing
+		</I
+></TT
+></A
+> parameter.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>min print space = 0</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>min print space = 2000</B
 ></P
 ></DD
 ><DT
@@ -9949,9 +9955,11 @@ CLASS="CONSTANT"
 		This information may be of use if any users are having problems 
 		with NT SMB support.</P
 ><P
+>You should not need to ever disable this parameter.</P
+><P
 >Default: <B
 CLASS="COMMAND"
->nt support = yes</B
+>nt smb support = yes</B
 ></P
 ></DD
 ><DT
@@ -9974,47 +9982,6 @@ TARGET="_top"
 CLASS="COMMAND"
 >null passwords = no</B
 ></P
-></DD
-><DT
-><A
-NAME="OLELOCKINGCOMPATIBILITY"
-></A
->ole locking compatibility (G)</DT
-><DD
-><P
->This parameter allows an administrator to turn 
- 		off the byte range lock manipulation that is done within Samba to 
-		give compatibility for OLE applications. Windows OLE applications 
-		use byte range locking as a form of inter-process communication, by 
-		locking ranges of bytes around the 2^32 region of a file range. This 
-		can cause certain UNIX lock managers to crash or otherwise cause 
-		problems. Setting this parameter to <TT
-CLASS="CONSTANT"
->no</TT
-> means you 
-		trust your UNIX lock manager to handle such cases correctly.</P
-><P
->Default: <B
-CLASS="COMMAND"
->ole locking compatibility = yes</B
-></P
-></DD
-><DT
-><A
-NAME="ONLYGUEST"
-></A
->only guest (S)</DT
-><DD
-><P
->A synonym for <A
-HREF="#GUESTONLY"
-><TT
-CLASS="PARAMETER"
-><I
->		guest only</I
-></TT
-></A
->.</P
 ></DD
 ><DT
 ><A
@@ -10062,6 +10029,112 @@ CLASS="PARAMETER"
 >Default: <B
 CLASS="COMMAND"
 >only user = no</B
+></P
+></DD
+><DT
+><A
+NAME="OLELOCKINGCOMPATIBILITY"
+></A
+>ole locking compatibility (G)</DT
+><DD
+><P
+>This parameter allows an administrator to turn 
+ 		off the byte range lock manipulation that is done within Samba to 
+		give compatibility for OLE applications. Windows OLE applications 
+		use byte range locking as a form of inter-process communication, by 
+		locking ranges of bytes around the 2^32 region of a file range. This 
+		can cause certain UNIX lock managers to crash or otherwise cause 
+		problems. Setting this parameter to <TT
+CLASS="CONSTANT"
+>no</TT
+> means you 
+		trust your UNIX lock manager to handle such cases correctly.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>ole locking compatibility = yes</B
+></P
+></DD
+><DT
+><A
+NAME="ONLYGUEST"
+></A
+>only guest (S)</DT
+><DD
+><P
+>A synonym for <A
+HREF="#GUESTONLY"
+><TT
+CLASS="PARAMETER"
+><I
+>		guest only</I
+></TT
+></A
+>.</P
+></DD
+><DT
+><A
+NAME="OPLOCKBREAKWAITTIME"
+></A
+>oplock break wait time (G)</DT
+><DD
+><P
+>This is a tuning parameter added due to bugs in 
+		both Windows 9x and WinNT. If Samba responds to a client too 
+		quickly when that client issues an SMB that can cause an oplock 
+		break request, then the client redirector can fail and not respond 
+		to the break request. This tuning parameter (which is set in milliseconds) 
+		is the amount of time Samba will wait before sending an oplock break 
+		request to such (broken) clients.</P
+><P
+><I
+CLASS="EMPHASIS"
+>DO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ 
+		AND UNDERSTOOD THE SAMBA OPLOCK CODE</I
+>.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>oplock break wait time = 0</B
+></P
+></DD
+><DT
+><A
+NAME="OPLOCKCONTENTIONLIMIT"
+></A
+>oplock contention limit (S)</DT
+><DD
+><P
+>This is a <I
+CLASS="EMPHASIS"
+>very</I
+> advanced 
+		<A
+HREF="smbd.8.html"
+TARGET="_top"
+>smbd(8)</A
+> tuning option to 
+		improve the efficiency of the granting of oplocks under multiple 
+		client contention for the same file.</P
+><P
+>In brief it specifies a number, which causes smbd not to 
+		grant an oplock even when requested if the approximate number of 
+		clients contending for an oplock on the same file goes over this 
+		limit. This causes <B
+CLASS="COMMAND"
+>smbd</B
+> to behave in a similar 
+		way to Windows NT.</P
+><P
+><I
+CLASS="EMPHASIS"
+>DO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ 
+		AND UNDERSTOOD THE SAMBA OPLOCK CODE</I
+>.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>oplock contention limit = 2</B
 ></P
 ></DD
 ><DT
@@ -10133,71 +10206,6 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
-NAME="OPLOCKBREAKWAITTIME"
-></A
->oplock break wait time (G)</DT
-><DD
-><P
->This is a tuning parameter added due to bugs in 
-		both Windows 9x and WinNT. If Samba responds to a client too 
-		quickly when that client issues an SMB that can cause an oplock 
-		break request, then the client redirector can fail and not respond 
-		to the break request. This tuning parameter (which is set in milliseconds) 
-		is the amount of time Samba will wait before sending an oplock break 
-		request to such (broken) clients.</P
-><P
-><I
-CLASS="EMPHASIS"
->DO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ 
-		AND UNDERSTOOD THE SAMBA OPLOCK CODE</I
->.</P
-><P
->Default: <B
-CLASS="COMMAND"
->oplock break wait time = 10</B
-></P
-></DD
-><DT
-><A
-NAME="OPLOCKCONTENTIONLIMIT"
-></A
->oplock contention limit (S)</DT
-><DD
-><P
->This is a <I
-CLASS="EMPHASIS"
->very</I
-> advanced 
-		<A
-HREF="smbd.8.html"
-TARGET="_top"
->smbd(8)</A
-> tuning option to 
-		improve the efficiency of the granting of oplocks under multiple 
-		client contention for the same file.</P
-><P
->In brief it specifies a number, which causes smbd not to 
-		grant an oplock even when requested if the approximate number of 
-		clients contending for an oplock on the same file goes over this 
-		limit. This causes <B
-CLASS="COMMAND"
->smbd</B
-> to behave in a similar 
-		way to Windows NT.</P
-><P
-><I
-CLASS="EMPHASIS"
->DO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ 
-		AND UNDERSTOOD THE SAMBA OPLOCK CODE</I
->.</P
-><P
->Default: <B
-CLASS="COMMAND"
->oplock contention limit = 2</B
-></P
-></DD
-><DT
-><A
 NAME="OSLEVEL"
 ></A
 >os level (G)</DT
@@ -10215,19 +10223,24 @@ CLASS="PARAMETER"
 ><I
 >		WORKGROUP</I
 ></TT
-> in the local broadcast area. The default is 
-		zero, which means <B
-CLASS="COMMAND"
->nmbd</B
-> will lose elections to 
-		Windows machines. See <TT
+> in the local broadcast area.</P
+><P
+><I
+CLASS="EMPHASIS"
+>Note :</I
+>By default, Samba will win 
+		a local master browsing election over all Microsoft operating 
+		systems except a Windows NT 4.0/2000 Domain Controller.  This 
+		means that a misconfigured Samba host can effectively isolate 
+		a subnet for browsing purposes.  See <TT
 CLASS="FILENAME"
->BROWSING.txt</TT
-> in the 
-		Samba <TT
+>BROWSING.txt
+		</TT
+> in the Samba <TT
 CLASS="FILENAME"
 >docs/</TT
-> directory for details.</P
+> directory 
+		for details.</P
 ><P
 >Default: <B
 CLASS="COMMAND"
@@ -10392,8 +10405,8 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->passwd chat = *old*password* %o\n *new*
-		password* %n\n *new*password* %n\n *changed*</B
+>passwd chat = *new*password* %n\n 
+		*new*password* %n\n *changed*</B
 ></P
 ><P
 >Example: <B
@@ -10473,11 +10486,6 @@ CLASS="PARAMETER"
 >Default: <B
 CLASS="COMMAND"
 >passwd chat debug = no</B
-></P
-><P
->Example: <B
-CLASS="COMMAND"
->passwd chat debug = yes</B
 ></P
 ></DD
 ><DT
@@ -10680,7 +10688,7 @@ CLASS="PARAMETER"
 		by any method and order described in that parameter.</P
 ><P
 >The password server much be a machine capable of using 
-		the "LM1.2X002" or the "LM NT 0.12" protocol, and it must be in 
+		the "LM1.2X002" or the "NT LM 0.12" protocol, and it must be in 
 		user level security mode.</P
 ><P
 ><I
@@ -11089,7 +11097,7 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->preferred master = no</B
+>preferred master = auto</B
 ></P
 ></DD
 ><DT
@@ -11116,15 +11124,31 @@ NAME="PRELOAD"
 >preload</DT
 ><DD
 ><P
->Synonym for <A
-HREF="#AUTOSERVICES"
-><TT
+>This is a list of services that you want to be 
+		automatically added to the browse lists. This is most useful 
+		for homes and printers services that would otherwise not be 
+		visible.</P
+><P
+>Note that if you just want all printers in your 
+		printcap file loaded then the <A
+HREF="#LOADPRINTERS"
+>		<TT
 CLASS="PARAMETER"
 ><I
->		auto services</I
+>load printers</I
 ></TT
 ></A
->.</P
+> option is easier.</P
+><P
+>Default: <I
+CLASS="EMPHASIS"
+>no preloaded services</I
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>preload = fred lp colorlp</B
+></P
 ></DD
 ><DT
 ><A
@@ -11140,7 +11164,7 @@ HREF="#DEFAULTCASE"
 ><TT
 CLASS="PARAMETER"
 ><I
->derault case
+>default case
 		</I
 ></TT
 ></A
@@ -11154,7 +11178,7 @@ CLASS="COMMAND"
 >See the section on <A
 HREF="#AEN201"
 >NAME 
-		MANGLING"</A
+		MANGLING</A
 > for a fuller discussion.</P
 ></DD
 ><DT
@@ -11381,29 +11405,6 @@ CLASS="PARAMETER"
 ></DD
 ><DT
 ><A
-NAME="PRINTERADMIN"
-></A
->printer admin (S)</DT
-><DD
-><P
->This is a list of users that can do anything to 
-		printers via the remote administration interfaces offered by MSRPC 
-		(usually using a NT workstation). Note that the root user always 
-		has admin rights.</P
-><P
->Default: <B
-CLASS="COMMAND"
->printer admin = &lt;empty string&gt;</B
->
-		</P
-><P
->Example: <B
-CLASS="COMMAND"
->printer admin = admin, @staff</B
-></P
-></DD
-><DT
-><A
 NAME="PRINTCAPNAME"
 ></A
 >printcap name (G)</DT
@@ -11448,11 +11449,11 @@ CLASS="COMMAND"
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
->		print1|My Printer 1
-		print2|My Printer 2
-		print3|My Printer 3
-		print4|My Printer 4
-		print5|My Printer 5
+>print1|My Printer 1
+print2|My Printer 2
+print3|My Printer 3
+print4|My Printer 4
+print5|My Printer 5
 		</PRE
 ></P
 ><P
@@ -11489,30 +11490,25 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
-NAME="PRINTER"
+NAME="PRINTERADMIN"
 ></A
->printer (S)</DT
+>printer admin (S)</DT
 ><DD
 ><P
->This parameter specifies the name of the printer 
-		to which print jobs spooled through a printable service will be sent.</P
+>This is a list of users that can do anything to 
+		printers via the remote administration interfaces offered by MSRPC 
+		(usually using a NT workstation). Note that the root user always 
+		has admin rights.</P
 ><P
->If specified in the [global] section, the printer
-		name given will be used for any printable service that does 
-		not have its own printer name specified.</P
-><P
->Default: <I
-CLASS="EMPHASIS"
->none (but may be <TT
-CLASS="CONSTANT"
->lp</TT
-> 
-		on many systems)</I
-></P
+>Default: <B
+CLASS="COMMAND"
+>printer admin = &lt;empty string&gt;</B
+>
+		</P
 ><P
 >Example: <B
 CLASS="COMMAND"
->printer name = laserwriter</B
+>printer admin = admin, @staff</B
 ></P
 ></DD
 ><DT
@@ -11521,6 +11517,23 @@ NAME="PRINTERDRIVER"
 ></A
 >printer driver (S)</DT
 ><DD
+><P
+><I
+CLASS="EMPHASIS"
+>Note :</I
+>This is a depreciated 
+		parameter and will be removed in the next major release
+		following version 2.2.  Please see the instructions in
+		<TT
+CLASS="FILENAME"
+>PRINTER_DRIVER2.txt</TT
+> in the <TT
+CLASS="FILENAME"
+>docs
+		</TT
+> ofthe Samba distribution for more information
+		on the new method of loading printer drivers onto a Samba server.
+		</P
 ><P
 >This option allows you to control the string 
 		that clients receive when they ask the server for the printer driver 
@@ -11565,6 +11578,23 @@ NAME="PRINTERDRIVERFILE"
 ></A
 >printer driver file (G)</DT
 ><DD
+><P
+><I
+CLASS="EMPHASIS"
+>Note :</I
+>This is a depreciated 
+		parameter and will be removed in the next major release
+		following version 2.2.  Please see the instructions in
+		<TT
+CLASS="FILENAME"
+>PRINTER_DRIVER2.txt</TT
+> in the <TT
+CLASS="FILENAME"
+>docs
+		</TT
+> ofthe Samba distribution for more information
+		on the new method of loading printer drivers onto a Samba server.
+		</P
 ><P
 >This parameter tells Samba where the printer driver 
 		definition file, used when serving drivers to Windows 95 clients, is 
@@ -11624,6 +11654,23 @@ NAME="PRINTERDRIVERLOCATION"
 >printer driver location (S)</DT
 ><DD
 ><P
+><I
+CLASS="EMPHASIS"
+>Note :</I
+>This is a depreciated 
+		parameter and will be removed in the next major release
+		following version 2.2.  Please see the instructions in
+		<TT
+CLASS="FILENAME"
+>PRINTER_DRIVER2.txt</TT
+> in the <TT
+CLASS="FILENAME"
+>docs
+		</TT
+> ofthe Samba distribution for more information
+		on the new method of loading printer drivers onto a Samba server.
+		</P
+><P
 >This parameter tells clients of a particular printer 
 		share where to find the printer driver files for the automatic 
 		installation of drivers for Windows 95 machines. If Samba is set up 
@@ -11673,12 +11720,40 @@ NAME="PRINTERNAME"
 >printer name (S)</DT
 ><DD
 ><P
+>This parameter specifies the name of the printer 
+		to which print jobs spooled through a printable service will be sent.</P
+><P
+>If specified in the [global] section, the printer
+		name given will be used for any printable service that does 
+		not have its own printer name specified.</P
+><P
+>Default: <I
+CLASS="EMPHASIS"
+>none (but may be <TT
+CLASS="CONSTANT"
+>lp</TT
+> 
+		on many systems)</I
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>printer name = laserwriter</B
+></P
+></DD
+><DT
+><A
+NAME="PRINTER"
+></A
+>printer (S)</DT
+><DD
+><P
 >Synonym for <A
-HREF="#PRINTER"
+HREF="#PRINTERNAME"
 ><TT
 CLASS="PARAMETER"
 ><I
->		printer</I
+>		printer name</I
 ></TT
 ></A
 >.</P
@@ -11770,37 +11845,6 @@ TARGET="_top"
 HREF="#AEN78"
 >		[printers]</A
 > section.</P
-></DD
-><DT
-><A
-NAME="PRIVATEDIR"
-></A
->private dir(G)</DT
-><DD
-><P
->The <TT
-CLASS="PARAMETER"
-><I
->private dir</I
-></TT
-> parameter 
-		allows an administator to define a directory path used to hold the 
-		various databases Samba will use to store things like a the machine 
-		trust account information when acting as a domain member (i.e. where 
-		the secrets.tdb file will be located), where the passdb.tbd file 
-		will stored in the case of using the experiemental tdbsam support, 
-		etc...</P
-><P
->Default: <B
-CLASS="COMMAND"
->private dir = &lt;compile time location 
-		of smbpasswd&gt;</B
-></P
-><P
->Example: <B
-CLASS="COMMAND"
->private dir = /etc/smbprivate</B
-></P
 ></DD
 ><DT
 ><A
@@ -12452,6 +12496,12 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>root postexec = &lt;empty string&gt;
+		</B
+></P
 ></DD
 ><DT
 ><A
@@ -12467,8 +12517,8 @@ CLASS="PARAMETER"
 ></TT
 >
 		parameter except that the command is run as root. This 
-		is useful for mounting filesystems 
-		(such as cdroms) after a connection is closed.</P
+		is useful for mounting filesystems (such as cdroms) after a 
+		connection is closed.</P
 ><P
 >See also <A
 HREF="#PREEXEC"
@@ -12487,6 +12537,12 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>root preexec = &lt;empty string&gt;
+		</B
+></P
 ></DD
 ><DT
 ><A
@@ -12520,6 +12576,11 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>root preexec close = no</B
+></P
 ></DD
 ><DT
 ><A
@@ -13313,45 +13374,6 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
-NAME="SHAREDMEMSIZE"
-></A
->shared mem size (G)</DT
-><DD
-><P
->It specifies the size of the shared memory (in 
-		bytes) to use between <A
-HREF="smbd.8.html"
-TARGET="_top"
->smbd(8)</A
-> 
-		processes. This parameter defaults to one megabyte of shared 
-		memory. It is possible that if you have a large erver with many 
-		files open simultaneously that you may need to increase this 
-		parameter. Signs that this parameter is set too low are users 
-		reporting strange problems trying to save files (locking errors) 
-		and error messages in the smbd log looking like <I
-CLASS="EMPHASIS"
->ERROR
-		smb_shm_alloc : alloc of XX bytes failed</I
->.</P
-><P
->If your OS refuses the size that Samba asks for then 
-		Samba will try a smaller size, reducing by a factor of 0.8 until 
-		the OS accepts it.</P
-><P
->Default: <B
-CLASS="COMMAND"
->shared mem size = 1048576</B
-></P
-><P
->Example: <B
-CLASS="COMMAND"
->shared mem size = 5242880 ; Set to 5mb for a 
-		large number of files.</B
-></P
-></DD
-><DT
-><A
 NAME="SHORTPRESERVECASE"
 ></A
 >short preserve case (S)</DT
@@ -13402,13 +13424,13 @@ NAME="SMBPASSWDFILE"
 ><P
 >Default: <B
 CLASS="COMMAND"
->smb passwd file= &lt;compiled 
-		default&gt;</B
+>smb passwd file = ${prefix}/private/smbpasswd
+		</B
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
->smb passwd file = /usr/samba/private/smbpasswd
+>smb passwd file = /etc/samba/smbpasswd
 		</B
 ></P
 ></DD
@@ -13436,7 +13458,7 @@ CLASS="FILENAME"
 ><P
 >Default: <B
 CLASS="COMMAND"
->smbrun=&lt;compiled default&gt;
+>smbrun = ${prefix}/private/bin/smbrun
 		</B
 ></P
 ><P
@@ -14721,7 +14743,7 @@ NAME="UNIXREALNAME"
 ><P
 >Default: <B
 CLASS="COMMAND"
->unix realname = no</B
+>unix realname = yes</B
 ></P
 ></DD
 ><DT
@@ -14941,7 +14963,7 @@ HREF="#AEN234"
 >Default: <B
 CLASS="COMMAND"
 >The guest account if a guest service, 
-		else the name of the service.</B
+		else &lt;empty string&gt;.</B
 ></P
 ><P
 >Examples:<B
@@ -15193,99 +15215,6 @@ CLASS="FILENAME"
 >Default: <I
 CLASS="EMPHASIS"
 >no utmp directory</I
-></P
-></DD
-><DT
-><A
-NAME="WINBINDCACHETIME"
-></A
->winbind cache time</DT
-><DD
-><P
-><I
-CLASS="EMPHASIS"
->NOTE:</I
-> this parameter is only 
-		available in Samba 3.0.</P
-><P
->This parameter specifies the number of seconds the
-		<A
-HREF="winbindd.8.html"
-TARGET="_top"
->winbindd(8)</A
-> daemon will cache 
-		user and group information before querying a Windows NT server 
-		again.</P
-><P
->Default: <B
-CLASS="COMMAND"
->winbind cache type = 15</B
-></P
-></DD
-><DT
-><A
-NAME="WINBINDGID"
-></A
->winbind gid</DT
-><DD
-><P
-><I
-CLASS="EMPHASIS"
->NOTE:</I
-> this parameter is only 
-		available in Samba 3.0.</P
-><P
->The winbind gid parameter specifies the range of group 
-		ids that are allocated by the <A
-HREF="winbindd.8.html"
-TARGET="_top"
->		winbindd(8)</A
-> daemon.  This range of group ids should have no 
-		existing local or nis groups within it as strange conflicts can 
-		occur otherwise.</P
-><P
->Default: <B
-CLASS="COMMAND"
->winbind gid = &lt;empty string&gt;
-		</B
-></P
-><P
->Example: <B
-CLASS="COMMAND"
->winbind gid = 10000-20000</B
-></P
-></DD
-><DT
-><A
-NAME="WINBINDUID"
-></A
->winbind uid</DT
-><DD
-><P
-><I
-CLASS="EMPHASIS"
->NOTE:</I
-> this parameter is only 
-		available in Samba 3.0.</P
-><P
->The winbind gid parameter specifies the range of group 
-		ids that are allocated by the <A
-HREF="winbindd.8.html"
-TARGET="_top"
->		winbindd(8)</A
-> daemon.  This range of ids should have no 
-		existing local or nis users within it as strange conflicts can 
-		occur otherwise.</P
-><P
->Default: <B
-CLASS="COMMAND"
->winbind uid = &lt;empty string&gt;
-		</B
-></P
-><P
->Example: <B
-CLASS="COMMAND"
->winbind uid = 10000-20000</B
 ></P
 ></DD
 ><DT
@@ -15641,66 +15570,141 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
-NAME="WINSPROXY"
+NAME="WINBINDCACHETIME"
 ></A
->wins proxy (G)</DT
+>winbind cache time</DT
 ><DD
 ><P
->This is a boolean that controls if <A
-HREF="nmbd.8.html"
+><I
+CLASS="EMPHASIS"
+>NOTE:</I
+> this parameter is only 
+		available in Samba 3.0.</P
+><P
+>This parameter specifies the number of seconds the
+		<A
+HREF="winbindd.8.html"
 TARGET="_top"
->nmbd(8)</A
-> will respond to broadcast name 
-		queries on behalf of  other hosts. You may need to set this 
-		to <TT
-CLASS="CONSTANT"
->yes</TT
-> for some older clients.</P
+>winbindd(8)</A
+> daemon will cache 
+		user and group information before querying a Windows NT server 
+		again.</P
 ><P
 >Default: <B
 CLASS="COMMAND"
->wins proxy = no</B
+>winbind cache type = 15</B
 ></P
 ></DD
 ><DT
 ><A
-NAME="WINSSERVER"
+NAME="WINBINDGID"
 ></A
->wins server (G)</DT
+>winbind gid</DT
 ><DD
-><P
->This specifies the IP address (or DNS name: IP 
-		address for preference) of the WINS server that <A
-HREF="nmbd.8.html"
-TARGET="_top"
->		nmbd(8)</A
-> should register with. If you have a WINS server on 
-		your network then you should set this to the WINS server's IP.</P
-><P
->You should point this at your WINS server if you have a
-		multi-subnetted network.</P
 ><P
 ><I
 CLASS="EMPHASIS"
->NOTE</I
->. You need to set up Samba to point 
-		to a WINS server if you have multiple subnets and wish cross-subnet 
-		browsing to work correctly.</P
+>NOTE:</I
+> this parameter is only 
+		available in Samba 3.0.</P
 ><P
->See the documentation file <TT
-CLASS="FILENAME"
->BROWSING.txt</TT
-> 
-		in the docs/ directory of your Samba source distribution.</P
+>The winbind gid parameter specifies the range of group 
+		ids that are allocated by the <A
+HREF="winbindd.8.html"
+TARGET="_top"
+>		winbindd(8)</A
+> daemon.  This range of group ids should have no 
+		existing local or nis groups within it as strange conflicts can 
+		occur otherwise.</P
 ><P
->Default: <I
-CLASS="EMPHASIS"
->not enabled</I
+>Default: <B
+CLASS="COMMAND"
+>winbind gid = &lt;empty string&gt;
+		</B
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
->wins server = 192.9.200.1</B
+>winbind gid = 10000-20000</B
+></P
+></DD
+><DT
+><A
+NAME="WINBINDSEPARATOR"
+></A
+>winbind separator</DT
+><DD
+><P
+><I
+CLASS="EMPHASIS"
+>NOTE:</I
+> this parameter is only 
+		available in Samba 3.0.</P
+><P
+>This parameter allows an admin to define the character 
+		used when listing a username of the form of <TT
+CLASS="REPLACEABLE"
+><I
+>DOMAIN
+		</I
+></TT
+>\<TT
+CLASS="REPLACEABLE"
+><I
+>user</I
+></TT
+>.  This parameter 
+		is only applizaable when using the <TT
+CLASS="FILENAME"
+>pam_winbind.so</TT
+>
+		and <TT
+CLASS="FILENAME"
+>nss_winbind.so</TT
+> modules for UNIX services.
+		</P
+><P
+>Example: <B
+CLASS="COMMAND"
+>winbind separator = \</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>winbind separator = +</B
+></P
+></DD
+><DT
+><A
+NAME="WINBINDUID"
+></A
+>winbind uid</DT
+><DD
+><P
+><I
+CLASS="EMPHASIS"
+>NOTE:</I
+> this parameter is only 
+		available in Samba 3.0.</P
+><P
+>The winbind gid parameter specifies the range of group 
+		ids that are allocated by the <A
+HREF="winbindd.8.html"
+TARGET="_top"
+>		winbindd(8)</A
+> daemon.  This range of ids should have no 
+		existing local or nis users within it as strange conflicts can 
+		occur otherwise.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>winbind uid = &lt;empty string&gt;
+		</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>winbind uid = 10000-20000</B
 ></P
 ></DD
 ><DT
@@ -15767,6 +15771,70 @@ CLASS="COMMAND"
 >nsupdate</B
 > is provided in the examples 
 		directory of the Samba source code. </P
+></DD
+><DT
+><A
+NAME="WINSPROXY"
+></A
+>wins proxy (G)</DT
+><DD
+><P
+>This is a boolean that controls if <A
+HREF="nmbd.8.html"
+TARGET="_top"
+>nmbd(8)</A
+> will respond to broadcast name 
+		queries on behalf of  other hosts. You may need to set this 
+		to <TT
+CLASS="CONSTANT"
+>yes</TT
+> for some older clients.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>wins proxy = no</B
+></P
+></DD
+><DT
+><A
+NAME="WINSSERVER"
+></A
+>wins server (G)</DT
+><DD
+><P
+>This specifies the IP address (or DNS name: IP 
+		address for preference) of the WINS server that <A
+HREF="nmbd.8.html"
+TARGET="_top"
+>		nmbd(8)</A
+> should register with. If you have a WINS server on 
+		your network then you should set this to the WINS server's IP.</P
+><P
+>You should point this at your WINS server if you have a
+		multi-subnetted network.</P
+><P
+><I
+CLASS="EMPHASIS"
+>NOTE</I
+>. You need to set up Samba to point 
+		to a WINS server if you have multiple subnets and wish cross-subnet 
+		browsing to work correctly.</P
+><P
+>See the documentation file <TT
+CLASS="FILENAME"
+>BROWSING.txt</TT
+> 
+		in the docs/ directory of your Samba source distribution.</P
+><P
+>Default: <I
+CLASS="EMPHASIS"
+>not enabled</I
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>wins server = 192.9.200.1</B
+></P
 ></DD
 ><DT
 ><A
@@ -15844,6 +15912,47 @@ CLASS="PARAMETER"
 ></DD
 ><DT
 ><A
+NAME="WRITECACHESIZE"
+></A
+>write cache size (S)</DT
+><DD
+><P
+>If this integer parameter is set to non-zero value,
+		Samba will create an in-memory cache for each oplocked file 
+		(it does <I
+CLASS="EMPHASIS"
+>not</I
+> do this for 
+		non-oplocked files). All writes that the client does not request 
+		to be flushed directly to disk will be stored in this cache if possible. 
+		The cache is flushed onto disk when a write comes in whose offset 
+		would not fit into the cache or when the file is closed by the client. 
+		Reads for the file are also served from this cache if the data is stored 
+		within it.</P
+><P
+>This cache allows Samba to batch client writes into a more 
+		efficient write size for RAID disks (ie. writes may be tuned to 
+		be the RAID stripe size) and can improve performance on systems 
+		where the disk subsystem is a bottleneck but there is free 
+		memory for userspace programs.</P
+><P
+>The integer parameter specifies the size of this cache 
+		(per oplocked file) in bytes.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>write cache size = 0</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>write cache size = 262144</B
+></P
+><P
+>for a 256k cache size per file.</P
+></DD
+><DT
+><A
 NAME="WRITELIST"
 ></A
 >write list (S)</DT
@@ -15888,47 +15997,6 @@ CLASS="COMMAND"
 >write list = admin, root, @staff
 		</B
 ></P
-></DD
-><DT
-><A
-NAME="WRITECACHESIZE"
-></A
->write cache size (S)</DT
-><DD
-><P
->This integer parameter (new with Samba 2.0.7) 
-		if set to non-zero causes Samba to create an in-memory cache for 
-		each oplocked file (it does <I
-CLASS="EMPHASIS"
->not</I
-> do this for 
-		non-oplocked files). All writes that the client does not request 
-		to be flushed directly to disk will be stored in this cache if possible. 
-		The cache is flushed onto disk when a write comes in whose offset 
-		would not fit into the cache or when the file is closed by the client. 
-		Reads for the file are also served from this cache if the data is stored 
-		within it.</P
-><P
->This cache allows Samba to batch client writes into a more 
-		efficient write size for RAID disks (ie. writes may be tuned to 
-		be the RAID stripe size) and can improve performance on systems 
-		where the disk subsystem is a bottleneck but there is free 
-		memory for userspace programs.</P
-><P
->The integer parameter specifies the size of this cache 
-		(per oplocked file) in bytes.</P
-><P
->Default: <B
-CLASS="COMMAND"
->write cache size = 0</B
-></P
-><P
->Example: <B
-CLASS="COMMAND"
->write cache size = 262144</B
-></P
-><P
->for a 256k cache size per file.</P
 ></DD
 ><DT
 ><A
@@ -16008,7 +16076,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5053"
+NAME="AEN5072"
 ></A
 ><H2
 >WARNINGS</H2
@@ -16038,7 +16106,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5059"
+NAME="AEN5078"
 ></A
 ><H2
 >VERSION</H2
@@ -16049,7 +16117,7 @@ NAME="AEN5059"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5062"
+NAME="AEN5081"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -16128,7 +16196,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5082"
+NAME="AEN5101"
 ></A
 ><H2
 >AUTHOR</H2
