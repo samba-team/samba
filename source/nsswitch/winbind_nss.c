@@ -25,8 +25,6 @@
 #include "winbind_nss_config.h"
 #include "winbindd_nss.h"
 
-#define DEBUG_STUFF 0
-
 /* Prototypes from common.c */
 
 void init_request(struct winbindd_request *req,int rq_type);
@@ -200,15 +198,8 @@ static int fill_grent(struct group *result, struct winbindd_gr *gr,
 
 		/* Out of memory */
 
-#if DEBUG_STUFF
-		fprintf(stderr, "DB> out of memory in gr_name\n");
-#endif
 		return NSS_STATUS_TRYAGAIN;
 	}
-
-#if DEBUG_STUFF
-	fprintf(stderr, "DB> \t returning group %s\n", gr->gr_name);
-#endif
 
 	strcpy(result->gr_name, gr->gr_name);
 
@@ -219,9 +210,6 @@ static int fill_grent(struct group *result, struct winbindd_gr *gr,
 
 		/* Out of memory */
 		
-#if DEBUG_STUFF
-		fprintf(stderr, "DB> out of memory in gr_passwd\n");
-#endif
 		return NSS_STATUS_TRYAGAIN;
 	}
 
@@ -243,9 +231,6 @@ static int fill_grent(struct group *result, struct winbindd_gr *gr,
 
 		/* Out of memory */
 
-#if DEBUG_STUFF
-		fprintf(stderr, "DB> out of memory in gr_mem\n");
-#endif
 		return NSS_STATUS_TRYAGAIN;
 	}
 
@@ -261,10 +246,6 @@ static int fill_grent(struct group *result, struct winbindd_gr *gr,
 
 	i = 0;
 
-#if DEBUG_STUFF
-	fprintf(stderr, "DB> \t mem_ofs = %d\n", gr->gr_mem_ofs);
-#endif
-
 	while(next_token((char **)&gr_mem, name, ",", sizeof(fstring))) {
         
 		/* Allocate space for member */
@@ -274,26 +255,14 @@ static int fill_grent(struct group *result, struct winbindd_gr *gr,
             
 			/* Out of memory */
             
-#if DEBUG_STUFF
-			fprintf(stderr, "DB> out of memory in gr_mem[%d]\n", i);
-#endif
 			return NSS_STATUS_TRYAGAIN;
 		}        
         
-#if DEBUG_STUFF
-		fprintf(stderr, "DB> \t adding group member %s\n", name);
-#endif
-
 		strcpy((result->gr_mem)[i], name);
 		i++;
 	}
 
 	/* Terminate list */
-
-#if DEBUG_STUFF
-	fprintf(stderr, "DB> \t %d members returned, %d added\n", 
-		gr->num_gr_mem, i);
-#endif
 
 	(result->gr_mem)[i] = NULL;
 
@@ -314,6 +283,10 @@ static int num_pw_cache;                 /* Current size of pwd cache */
 enum nss_status
 _nss_winbind_setpwent(void)
 {
+#ifdef DEBUG_NSS
+	fprintf(stderr, "[%5d]: setpwent\n", getpid());
+#endif
+
 	if (num_pw_cache > 0) {
 		ndx_pw_cache = num_pw_cache = 0;
 		free_response(&getpwent_response);
@@ -327,6 +300,10 @@ _nss_winbind_setpwent(void)
 enum nss_status
 _nss_winbind_endpwent(void)
 {
+#ifdef DEBUG_NSS
+	fprintf(stderr, "[%5d]: endpwent\n", getpid());
+#endif
+
 	if (num_pw_cache > 0) {
 		ndx_pw_cache = num_pw_cache = 0;
 		free_response(&getpwent_response);
@@ -346,6 +323,10 @@ _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
 	enum nss_status ret;
 	struct winbindd_request request;
 	static int called_again;
+
+#ifdef DEBUG_NSS
+	fprintf(stderr, "[%5d]: getpwent\n", getpid());
+#endif
 
 	/* Return an entry from the cache if we have one, or if we are
 	   called again because we exceeded our static buffer.  */
@@ -481,6 +462,10 @@ _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 	struct winbindd_request request;
 	static int keep_response;
 
+#ifdef DEBUG_NSS
+	fprintf(stderr, "[%5d]: getpwnam %s\n", getpid(), name);
+#endif
+
 	/* If our static buffer needs to be expanded we are called again */
 
 	if (!keep_response) {
@@ -543,6 +528,10 @@ static int num_gr_cache;                 /* Current size of grp cache */
 enum nss_status
 _nss_winbind_setgrent(void)
 {
+#ifdef DEBUG_NSS
+	fprintf(stderr, "[%5d]: setgrent\n", getpid());
+#endif
+
 	if (num_gr_cache > 0) {
 		ndx_gr_cache = num_gr_cache = 0;
 		free_response(&getgrent_response);
@@ -556,6 +545,10 @@ _nss_winbind_setgrent(void)
 enum nss_status
 _nss_winbind_endgrent(void)
 {
+#ifdef DEBUG_NSS
+	fprintf(stderr, "[%5d]: endgrent\n", getpid());
+#endif
+
 	if (num_gr_cache > 0) {
 		ndx_gr_cache = num_gr_cache = 0;
 		free_response(&getgrent_response);
@@ -576,10 +569,10 @@ _nss_winbind_getgrent_r(struct group *result,
 	static struct winbindd_request request;
 	static int called_again;
 
-#if DEBUG_STUFF
-	fprintf(stderr, "DB> getgrent(): ndx=%d num=%d again=%d\n",
-		ndx_gr_cache, num_gr_cache, called_again);
+#ifdef DEBUG_NSS
+	fprintf(stderr, "[%5d]: getgrent\n", getpid());
 #endif
+
 	/* Return an entry from the cache if we have one, or if we are
 	   called again because we exceeded our static buffer.  */
 
@@ -610,31 +603,6 @@ _nss_winbind_getgrent_r(struct group *result,
 		ndx_gr_cache = 0;
 		num_gr_cache = getgrent_response.data.num_entries;
 
-#if DEBUG_STUFF
-		fprintf(stderr, "DB> \t fetched %d entries, add ofs %d\n", 
-			num_gr_cache, num_gr_cache * sizeof(struct winbindd_gr));
-#endif
-		{
-			struct winbindd_gr *gr;
-			int i;
-
-			for (i = 0; i < num_gr_cache; i++) {
-				gr = (struct winbindd_gr *)
-					getgrent_response.extra_data;
-
-#if DEBUG_STUFF
-				fprintf(stderr, "DB> \t\t %s gid=%d "
-					"num_mem=%d mem_ofs=%d str=#%16s#\n",
-					gr[i].gr_name, gr[i].gr_gid, 
-					gr[i].num_gr_mem, gr[i].gr_mem_ofs,
-					(char *)(getgrent_response.extra_data +
-						 gr[i].gr_mem_ofs + 
-						getgrent_response.data.num_entries *
-						 sizeof(struct winbindd_gr)));
-#endif
-			}
-		}
-
 		/* Return a result */
 
 	return_result:
@@ -658,10 +626,6 @@ _nss_winbind_getgrent_r(struct group *result,
 				 (char *)(getgrent_response.extra_data +
 					  mem_ofs), &buffer, &buflen);
 		
-#if DEBUG_STUFF
-		fprintf(stderr, "DB> \t fill_grent returned %d\n", ret);
-#endif
-
 		/* Out of memory - try again */
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
@@ -677,9 +641,6 @@ _nss_winbind_getgrent_r(struct group *result,
 		/* If we've finished with this lot of results free cache */
 
 		if (ndx_gr_cache == num_gr_cache) {
-#if DEBUG_STUFF
-			fprintf(stderr, "DB> \t freeing group cache\n");
-#endif
 			ndx_gr_cache = num_gr_cache = 0;
 			free_response(&getgrent_response);
 		}
@@ -700,6 +661,10 @@ _nss_winbind_getgrnam_r(const char *name,
 	struct winbindd_request request;
 	static int keep_response;
 	
+#ifdef DEBUG_NSS
+	fprintf(stderr, "[%5d]: getgrnam %s\n", getpid(), name);
+#endif
+
 	/* If our static buffer needs to be expanded we are called again */
 	
 	if (!keep_response) {
@@ -762,6 +727,10 @@ _nss_winbind_getgrgid_r(gid_t gid,
 	struct winbindd_request request;
 	static int keep_response;
 
+#ifdef DEBUG_NSS
+	fprintf(stderr, "[%5d]: getgrgid %d\n", getpid(), gid);
+#endif
+
 	/* If our static buffer needs to be expanded we are called again */
 
 	if (!keep_response) {
@@ -821,6 +790,11 @@ _nss_winbind_initgroups(char *user, gid_t group, long int *start,
 	struct winbindd_request request;
 	struct winbindd_response response;
 	int i;
+
+#ifdef DEBUG_NSS
+	fprintf(stderr, "[%5d]: initgroups %s (%d)\n", getpid(),
+		user, group);
+#endif
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
