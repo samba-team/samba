@@ -104,7 +104,7 @@ typedef krb5_sigtype sigtype;
 
 #elif defined(_AIX)
 #ifndef DPAGAIX
-#define DPAGAIX LIBEXECDIR ## "/dpagaix"
+#define DPAGAIX LIBEXECDIR "/dpagaix"
 #endif
 int *load();
 static int (*dpagaix)(int, int, int, int, int, int) = 0;
@@ -124,7 +124,7 @@ static int (*dpagaix)(int, int, int, int, int, int) = 0;
 #endif  /* WAIT_USES_INT */
 
 #ifndef K5DCECON
-#define K5DCECON LIBEXECDIR ## "/k5dcecon"
+#define K5DCECON LIBEXECDIR "/k5dcecon"
 #endif
 
 /* 
