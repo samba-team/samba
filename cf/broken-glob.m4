@@ -8,7 +8,13 @@ ac_cv_func_glob_working=yes
 AC_TRY_LINK([
 #include <stdio.h>
 #include <glob.h>],[
-glob(NULL, GLOB_BRACE|GLOB_NOCHECK|GLOB_QUOTE|GLOB_TILDE|GLOB_LIMIT,
+glob(NULL, GLOB_BRACE|GLOB_NOCHECK|GLOB_QUOTE|GLOB_TILDE|
+#ifdef GLOB_MAXPATH
+GLOB_MAXPATH
+#else
+GLOB_LIMIT
+#endif
+,
 NULL, NULL);
 ],:,ac_cv_func_glob_working=no,:))
 
