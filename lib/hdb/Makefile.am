@@ -27,7 +27,7 @@ libhdb_a_LIBADD = ../error/error.o
 
 idir = $(top_builddir)/include
 
-all-local:
+all-local: $(inc_DATA)
 	@for i in $(inc_DATA); do \
 		if cmp -s  $$i $(idir)/$$i 2> /dev/null ; then :; else\
 			echo " $(INSTALL_DATA) $$i $(idir)/$$i"; \
@@ -40,10 +40,13 @@ $(foo) hdb_asn1.h: asn1_files
 asn1_files: ../asn1/asn1_compile $(srcdir)/hdb.asn1
 	../asn1/asn1_compile $(srcdir)/hdb.asn1 hdb_asn1
 
-$(libhdb_a_OBJECTS): hdb_asn1.h
+$(libhdb_a_OBJECTS): hdb_asn1.h hdb_err.h
 
 .x.c:
 	@cmp -s $< $@ 2> /dev/null || cp $< $@
+
+.et.h:
+	$(SHELL) ../error/compile_et $<
 
 .et.c:
 	$(SHELL) ../error/compile_et $<
