@@ -1,5 +1,5 @@
                    WHATS NEW IN Samba 3.0.2pre1
-                         January XX, 2004
+                         January 6, 2004
                   ===============================
 
 This is a preview release of the Samba 3.0.2 code base and is
@@ -47,18 +47,18 @@ o   Andrew Bartlet <abartlet@samba.org>
     * Fix early free() of encrypted_session_key.
     * Change DC lookup routines to more carefully separate
       DNS names (realms) from NetBIOS domain names.
-    * Add new sid_to_dn() utility function for internal winbindd use.
+    * Add new sid_to_dn() function for internal winbindd use.
     * Refactor cli_ds_enum_domain_trusts().
-    * BUG 707: Implement range retrieval of ADS attributes (based on 
-      work from Volker <vl@samba.org> and Guenther Deschner 
+    * BUG 707: Implement range retrieval of ADS attributes (based 
+      on work from Volker <vl@samba.org> and Guenther Deschner 
       <gd@suse.com>).
-    * Automatically initialize the signing engine if a session key is 
-      available.
+    * Automatically initialize the signing engine if a session key
+      is available.
     * BUG 916: Do not perform a + -> ' ' substitution for squid URL 
       encoded strings, only form input in SWAT.
-    * Ensure Samba resets the NTLMSSP state for new negotiate packets.
-    * Add 2-byte alignments in net_samlogon() queries to parse odd-length
-      plain text passwords.
+    * Resets the NTLMSSP state for new negotiate packets.
+    * Add 2-byte alignments in net_samlogon() queries to parse 
+      odd-length plain text passwords.
     * Allow Windows groups with no members in winbindd.
     * Allow normal authentication in the absence of a server 
       generated session key.
@@ -94,12 +94,13 @@ o   Guenther Deschner <gd@suse.com>
 	
 
 o   James Flemer <jflemer@uvm.edu>
-    * Fix AIX compile bug by linking HAVE_ATTR_LIST to HAVE_SYS_ATTRIBUTES_H.
+    * Fix AIX compile bug by linking HAVE_ATTR_LIST to 
+      HAVE_SYS_ATTRIBUTES_H.
     
     
 o   Volker Lendecke <vl@samba.org>
-    * BUG 583: Ensure that user names always contain the short version 
-      of the domain name.
+    * BUG 583: Ensure that user names always contain the short 
+      version of the domain name.
     * Fix our parsing of the LDAP uri.
     * Don't show the 'afs username map' in the SWAT basic view.
     * Fix SMB signing issues in relation to failed NTLMSSP logins.
@@ -156,6 +157,7 @@ Changes since 3.0.0
     mangled map                 Deprecated
     mangled stack               Removed
     passwd chat timeout         New
+
 
 commits
 -------
@@ -336,12 +338,12 @@ o   Relax check on the pipe name in a dce/rpc bind response to work
 o   Ensure we mangle names ending in '.' in hash2 mangling method.
 o   Correct parsing issues with munged dial string.
 o   Fix bugs in quota support for XFS.
-o   Add a cleaner method for applications that need to provide name->SID
-    mappings to do this via NSS rather than having to know the
-    winbindd pipe protocol.
+o   Add a cleaner method for applications that need to provide 
+    name->SID mappings to do this via NSS rather than having to 
+    know the winbindd pipe protocol.
 o   Adds a variant of the winbindd_getgroups() call called 
-    winbindd_getusersids() that provides direct SID->SIDs listing of a 
-    users supplementary groups. This is enough to allow non-Samba 
+    winbindd_getusersids() that provides direct SID->SIDs listing of 
+    a users supplementary groups. This is enough to allow non-Samba 
     applications to do ACL checking.
 o   Make sure we don't append the 'ldap suffix' when writing out the 
     'ldap XXX suffix' values in SWAT (bug 328).
@@ -364,10 +366,10 @@ o   Fix ACL propagation on a DFS root (bug 263).
 o   Disable NTLM2 for RPC pipes.
 o   Allow the client to specify the NTLM2 flags got NTLMSSP 
     authentication.
-o   Change the name of the job passed off to cups from "Test Page" to 
-    "smbprn.00000033 Test Page" so that we can get the smb jobid back.  
-    This allow users to delete jobs with cups printing backend (partial 
-    work on bug 770).
+o   Change the name of the job passed off to cups from "Test Page" 
+    to "smbprn.00000033 Test Page" so that we can get the smb 
+    jobid back. This allow users to delete jobs with cups printing 
+    backend (partial work on bug 770).
 o   Fix build of winbindd with static pdb modules.
 o   Retrieve the correct ACL group bits if the file has an ACL 
     (bug 802).
@@ -386,16 +388,17 @@ o   Don't mistake pre-existing UNIX jobs for smb jobs (remainder of
     bug 770).
 o   Add 'Replicator' and 'RAS Servers' to list of builtin SIDs 
    (bug 608).
-o   Fix inverted logic in hosts allow/deny checks caused by s/strcmp/strequal/
-    (bug 846).
+o   Fix inverted logic in hosts allow/deny checks caused by 
+    s/strcmp/strequal/ (bug 846).
 o   Implement correct version SamrRemoveSidForeignDomain() (bug 252).
 o   Fix typo in 'hash' mangling algorithm.
 o   Support munged dial for ldapsam (bug 800).
-o   Fix process_incoming_data() to return the number of bytes handled this 
-    call whether we have a complete PDU or not; fixes bug with multiple 
-    PDU request rpc's broken over SMBwriteX calls each.
-o   Fix incorrect smb flags2 for connections to pre-NT servers (causes
-    smbclient to fail to OS2 for example) (bug 821).
+o   Fix process_incoming_data() to return the number of bytes handled 
+    this call whether we have a complete PDU or not; fixes bug 
+    with multiple PDU request rpc's broken over SMBwriteX calls 
+    each.
+o   Fix incorrect smb flags2 for connections to pre-NT servers 
+    (causes smbclient to fail to OS2 for example) (bug 821).
 o   Update version string in smbldap-tools Makefile to 0.8.2.
 o   Correct a problem with "net rpc vampire" mis-parsing the 
     alias member info reply.
@@ -427,6 +430,7 @@ o   Fix bug that prevent --mandir from overriding the defaults
     given in the --with-fhs macro.
 o   Fix bug in in-memory Kerberos keytab detection routines 
     in configure.in
+
 
 
 ######################################################################
