@@ -3258,21 +3258,21 @@ int rename_internals(char *inbuf, char *outbuf, char *name, char *newname, BOOL 
 
     if(replace_if_exists) {
       /*
-       * NT SMB specific flag - we must remove a target
-       * file with the same name before continuing.
+       * NT SMB specific flag - rename can overwrite
+       * file with the same name so don't check for
+       * file_exist().
        */
       if(resolve_wildcards(directory,newname) &&
                   can_rename(directory,cnum) &&
-                  file_exist(newname,NULL)) {
-          sys_unlink(newname);
-      }
-    }
-
-    if (resolve_wildcards(directory,newname) && 
-                  can_rename(directory,cnum) && 
-                  !file_exist(newname,NULL) &&
                   !sys_rename(directory,newname))
-      count++;
+        count++;
+    } else {
+      if (resolve_wildcards(directory,newname) && 
+                    can_rename(directory,cnum) && 
+                    !file_exist(newname,NULL) &&
+                    !sys_rename(directory,newname))
+        count++;
+    }
 
     DEBUG(3,("rename_internals: %s doing rename on %s -> %s\n",(count != 0) ? "succeeded" : "failed",
                          directory,newname));
@@ -3319,9 +3319,7 @@ int rename_internals(char *inbuf, char *outbuf, char *name, char *newname, BOOL 
           continue;
         }
 
-        if (replace_if_exists && file_exist(destname,NULL)) {
-          sys_unlink(destname);
-        } else if(file_exist(destname,NULL)) {
+        if (!replace_if_exists && file_exist(destname,NULL)) {
           DEBUG(6,("file_exist %s\n", destname));
           error = 183;
           continue;

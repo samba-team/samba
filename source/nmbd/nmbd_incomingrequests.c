@@ -420,7 +420,7 @@ subnet %s - name not found.\n", namestr(&nmb->question.question_name),
   
   /* We don't send any stats as they could be used to attack
      the protocol. */
-  bzero(buf,64);
+  bzero(buf,46);
   
   buf += 46;
   

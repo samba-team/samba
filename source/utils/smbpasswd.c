@@ -33,9 +33,9 @@ static void usage(char *name, BOOL is_root)
 {
 	if(is_root)
 		fprintf(stderr, "Usage is : %s [-D DEBUGLEVEL] [-a] [-d] [-m] [-n] [username] [password]\n\
-%s: [-R <name resolve order>] [-D DEBUGLEVEL] [-j DOMAINNAME] [-r machine] [username] [password]\n%s: [-h]\n", name, name, name);
+%s: [-R <name resolve order>] [-D DEBUGLEVEL] [-j DOMAINNAME] [-r machine] [-U remote_username] [username] [password]\n%s: [-h]\n", name, name, name);
 	else
-		fprintf(stderr, "Usage is : %s [-h] [-D DEBUGLEVEL] [-r machine] [password]\n", name);
+		fprintf(stderr, "Usage is : %s [-h] [-D DEBUGLEVEL] [-r machine] [-U remote_username] [password]\n", name);
 	exit(1);
 }
 
@@ -134,6 +134,7 @@ int main(int argc, char **argv)
   int             err;
   BOOL is_root = False;
   pstring  user_name;
+  BOOL remote_user_name = False;
   char *remote_machine = NULL;
   BOOL add_user = False;
   BOOL got_new_pass = False;
@@ -201,7 +202,7 @@ int main(int argc, char **argv)
 
   is_root = (real_uid == 0);
 
-  while ((ch = getopt(argc, argv, "adhmnj:r:R:D:")) != EOF) {
+  while ((ch = getopt(argc, argv, "adhmnj:r:R:D:U:")) != EOF) {
     switch(ch) {
     case 'a':
       if(is_root)
@@ -250,6 +251,10 @@ int main(int argc, char **argv)
       } else
         usage(prog_name, is_root);  
       break;
+    case 'U':
+      remote_user_name = True;
+      pstrcpy(user_name, optarg);
+      break;
     case 'h':
     default:
       usage(prog_name, is_root);
@@ -258,6 +263,11 @@ int main(int argc, char **argv)
 
   argc -= optind;
   argv += optind;
+
+  if (!is_root && remote_user_name && !remote_machine) {
+    fprintf(stderr, "%s: You can only use -U with -r.\n", prog_name);
+    usage(prog_name, False);
+  }
 
   /*
    * Ensure add_user and either remote machine or join domain are
@@ -314,12 +324,7 @@ int main(int argc, char **argv)
         }
       }
 
-    /*
-     * Setup the pwd struct to point to known
-     * values for a machine account (it doesn't
-     * exist in /etc/passwd).
-     */
-      if((pwd = Get_Pwnam(user_name, True)) == NULL) {
+      if(!remote_machine && ((pwd = Get_Pwnam(user_name, True)) == NULL)) {
         fprintf(stderr, "%s: User \"%s\" was not found in system password file.\n", 
                     prog_name, user_name);
         exit(1);
@@ -344,7 +349,7 @@ int main(int argc, char **argv)
       got_new_pass = True;
     }
 
-    if((pwd = getpwuid(real_uid)) != NULL)
+    if(!remote_user_name && ((pwd = getpwuid(real_uid)) != NULL))
       pstrcpy( user_name, pwd->pw_name);
 
     /*

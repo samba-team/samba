@@ -785,7 +785,7 @@ static void init_globals(void)
   Globals.deadtime = 0;
   Globals.max_log_size = 5000;
   Globals.maxprotocol = PROTOCOL_NT1;
-  Globals.security = SEC_SHARE;
+  Globals.security = SEC_USER;
   Globals.bEncryptPasswords = False;
   Globals.bUpdateEncrypt = False;
   Globals.bReadRaw = True;

@@ -4787,126 +4787,126 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 
   /* make sure this is an SMB packet */
   if (strncmp(smb_base(inbuf),"\377SMB",4) != 0)
-    {
-      DEBUG(2,("Non-SMB packet of length %d\n",smb_len(inbuf)));
-      return(-1);
-    }
+  {
+    DEBUG(2,("Non-SMB packet of length %d\n",smb_len(inbuf)));
+    return(-1);
+  }
 
   for (match=0;match<num_smb_messages;match++)
     if (smb_messages[match].code == type)
       break;
 
   if (match == num_smb_messages)
+  {
+    DEBUG(0,("Unknown message type %d!\n",type));
+    outsize = reply_unknown(inbuf,outbuf);
+  }
+  else
+  {
+    DEBUG(3,("switch message %s (pid %d)\n",smb_messages[match].name,pid));
+
+    if(global_oplock_break && (smb_messages[match].flags & QUEUE_IN_OPLOCK))
     {
-      DEBUG(0,("Unknown message type %d!\n",type));
+      /* 
+       * Queue this message as we are the process of an oplock break.
+       */
+
+      DEBUG(2,("%s: switch_message: queueing message due to being in oplock break state.\n",
+             timestring() ));
+
+      push_smb_message( inbuf, size);
+      return -1;
+    }          
+
+    if (smb_messages[match].fn)
+    {
+      int cnum = SVAL(inbuf,smb_tid);
+      int flags = smb_messages[match].flags;
+      static uint16 last_session_tag = UID_FIELD_INVALID;
+      /* In share mode security we must ignore the vuid. */
+      uint16 session_tag = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID : SVAL(inbuf,smb_uid);
+      /* Ensure this value is replaced in the incoming packet. */
+      SSVAL(inbuf,smb_uid,session_tag);
+
+      /*
+       * Ensure the correct username is in sesssetup_user.
+       * This is a really ugly bugfix for problems with
+       * multiple session_setup_and_X's being done and
+       * allowing %U and %G substitutions to work correctly.
+       * There is a reason this code is done here, don't
+       * move it unless you know what you're doing... :-).
+       * JRA.
+       */
+      if(session_tag != last_session_tag ) {
+        user_struct *vuser = NULL;
+
+        last_session_tag = session_tag;
+        if(session_tag != UID_FIELD_INVALID)
+          vuser = get_valid_user_struct(session_tag);           
+        if(vuser != NULL)
+          pstrcpy( sesssetup_user, vuser->requested_name);
+      }
+
+      /* does this protocol need to be run as root? */
+      if (!(flags & AS_USER))
+        unbecome_user();
+
+      /* does this protocol need to be run as the connected user? */
+      if ((flags & AS_USER) && !become_user(&Connections[cnum], cnum,session_tag)) {
+        if (flags & AS_GUEST) 
+          flags &= ~AS_USER;
+        else
+          return(ERROR(ERRSRV,ERRinvnid));
+      }
+      /* this code is to work around a bug is MS client 3 without
+         introducing a security hole - it needs to be able to do
+         print queue checks as guest if it isn't logged in properly */
+      if (flags & AS_USER)
+        flags &= ~AS_GUEST;
+
+      /* does it need write permission? */
+      if ((flags & NEED_WRITE) && !CAN_WRITE(cnum))
+        return(ERROR(ERRSRV,ERRaccess));
+
+      /* ipc services are limited */
+      if (IS_IPC(cnum) && (flags & AS_USER) && !(flags & CAN_IPC))
+        return(ERROR(ERRSRV,ERRaccess));	    
+
+      /* load service specific parameters */
+      if (OPEN_CNUM(cnum) && !become_service(cnum,(flags & AS_USER)?True:False))
+        return(ERROR(ERRSRV,ERRaccess));
+
+      /* does this protocol need to be run as guest? */
+      if ((flags & AS_GUEST) && (!become_guest() || !check_access(-1)))
+        return(ERROR(ERRSRV,ERRaccess));
+
+      last_inbuf = inbuf;
+
+      outsize = smb_messages[match].fn(inbuf,outbuf,size,bufsize);
+    }
+    else
+    {
       outsize = reply_unknown(inbuf,outbuf);
     }
-  else
-    {
-      DEBUG(3,("switch message %s (pid %d)\n",smb_messages[match].name,pid));
-
-      if(global_oplock_break && (smb_messages[match].flags & QUEUE_IN_OPLOCK))
-      {
-        /* 
-         * Queue this message as we are the process of an oplock break.
-         */
-
-        DEBUG(2,("%s: switch_message: queueing message due to being in oplock break state.\n",
-               timestring() ));
-
-        push_smb_message( inbuf, size);
-        return -1;
-      }          
-
-      if (smb_messages[match].fn)
-	{
-	  int cnum = SVAL(inbuf,smb_tid);
-	  int flags = smb_messages[match].flags;
-          static uint16 last_session_tag = UID_FIELD_INVALID;
-          /* In share mode security we must ignore the vuid. */
-	  uint16 session_tag = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID : SVAL(inbuf,smb_uid);
-          /* Ensure this value is replaced in the incoming packet. */
-          SSVAL(inbuf,smb_uid,session_tag);
-
-          /*
-           * Ensure the correct username is in sesssetup_user.
-           * This is a really ugly bugfix for problems with
-           * multiple session_setup_and_X's being done and
-           * allowing %U and %G substitutions to work correctly.
-           * There is a reason this code is done here, don't
-           * move it unless you know what you're doing... :-).
-           * JRA.
-           */
-          if(session_tag != last_session_tag ) {
-            user_struct *vuser = NULL;
-
-            last_session_tag = session_tag;
-            if(session_tag != UID_FIELD_INVALID)
-              vuser = get_valid_user_struct(session_tag);           
-            if(vuser != NULL)
-              pstrcpy( sesssetup_user, vuser->requested_name);
-          }
-
-	  /* does this protocol need to be run as root? */
-	  if (!(flags & AS_USER))
-	    unbecome_user();
-
-	  /* does this protocol need to be run as the connected user? */
-	  if ((flags & AS_USER) && !become_user(&Connections[cnum], cnum,session_tag)) {
-	    if (flags & AS_GUEST) 
-	      flags &= ~AS_USER;
-	    else
-	      return(ERROR(ERRSRV,ERRinvnid));
-	  }
-	  /* this code is to work around a bug is MS client 3 without
-	     introducing a security hole - it needs to be able to do
-	     print queue checks as guest if it isn't logged in properly */
-	  if (flags & AS_USER)
-	    flags &= ~AS_GUEST;
-
-	  /* does it need write permission? */
-	  if ((flags & NEED_WRITE) && !CAN_WRITE(cnum))
-	    return(ERROR(ERRSRV,ERRaccess));
-
-	  /* ipc services are limited */
-	  if (IS_IPC(cnum) && (flags & AS_USER) && !(flags & CAN_IPC))
-	    return(ERROR(ERRSRV,ERRaccess));	    
-
-	  /* load service specific parameters */
-	  if (OPEN_CNUM(cnum) && !become_service(cnum,(flags & AS_USER)?True:False))
-	    return(ERROR(ERRSRV,ERRaccess));
-
-	  /* does this protocol need to be run as guest? */
-	  if ((flags & AS_GUEST) && (!become_guest() || !check_access(-1)))
-	    return(ERROR(ERRSRV,ERRaccess));
-
-	  last_inbuf = inbuf;
-
-	  outsize = smb_messages[match].fn(inbuf,outbuf,size,bufsize);
-	}
-      else
-	{
-	  outsize = reply_unknown(inbuf,outbuf);
-	}
-    }
+  }
 
 #if PROFILING
   GetTimeOfDay(&msg_end_time);
   if (!(smb_messages[match].flags & TIME_INIT))
-    {
-      smb_messages[match].time = 0;
-      smb_messages[match].flags |= TIME_INIT;
-    }
+  {
+    smb_messages[match].time = 0;
+    smb_messages[match].flags |= TIME_INIT;
+  }
   {
     unsigned long this_time =     
       (msg_end_time.tv_sec - msg_start_time.tv_sec)*1e6 +
-	(msg_end_time.tv_usec - msg_start_time.tv_usec);
+      (msg_end_time.tv_usec - msg_start_time.tv_usec);
     smb_messages[match].time += this_time;
     total_time += this_time;
   }
   DEBUG(2,("TIME %s  %d usecs   %g pct\n",
-	   smb_fn_name(type),smb_messages[match].time,
-	(100.0*smb_messages[match].time) / total_time));
+        smb_fn_name(type),smb_messages[match].time,
+        (100.0*smb_messages[match].time) / total_time));
 #endif
 
   return(outsize);
