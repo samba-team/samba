@@ -578,6 +578,7 @@ static BOOL test_SecondaryClosePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ct
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p2;
+	BOOL ret = True;
 
 	/* only makes sense on SMB */
 	if (p->transport.transport != NCACN_NP) {
@@ -597,13 +598,18 @@ static BOOL test_SecondaryClosePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ct
 
 	if (test_ClosePrinter(p2, mem_ctx, handle)) {
 		printf("ERROR: Allowed close on secondary connection!\n");
-		dcerpc_pipe_close(p2);
-		return False;
+		ret = False;
+	}
+
+	if (p2->last_fault_code != DCERPC_FAULT_CONTEXT_MISMATCH) {
+		printf("Unexpected fault code 0x%x - expected 0x%x\n",
+		       p2->last_fault_code, DCERPC_FAULT_CONTEXT_MISMATCH);
+		ret = False;
 	}
 
 	dcerpc_pipe_close(p2);
 
-	return True;
+	return ret;
 }
 
 static BOOL test_OpenPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
