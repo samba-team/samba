@@ -22,6 +22,14 @@
 #include "includes.h"
 
 
+static char *tstring(time_t t)
+{
+	static pstring buf;
+	pstrcpy(buf, asctime(LocalTime(&t)));
+	string_sub(buf," ","&nbsp;");
+	return buf;
+}
+
 static void print_share_mode(share_mode_entry *e, char *fname)
 {
 	printf("<tr><td>%d</td>",e->pid);
@@ -57,7 +65,7 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 	printf("</td>");
 
 	printf("<td>%s</td><td>%s</td></tr>\n",
-	       fname,asctime(LocalTime((time_t *)&e->time.tv_sec)));
+	       fname,tstring(e->time.tv_sec));
 }
 
 
@@ -157,7 +165,7 @@ void status_page(void)
 			printf("<tr><td>%d</td><td>%s</td><td>%s</td><td>%s</td><td><input type=submit value=\"X\" name=\"kill_%d\"></td></tr>\n",
 			       crec.pid,
 			       crec.machine,crec.addr,
-			       asctime(LocalTime(&crec.start)),
+			       tstring(crec.start),
 			       crec.pid);
 		}
 	}
@@ -179,7 +187,7 @@ void status_page(void)
 			       crec.name,uidtoname(crec.uid),
 			       gidtoname(crec.gid),crec.pid,
 			       crec.machine,
-			       asctime(LocalTime(&crec.start)));
+			       tstring(crec.start));
 		}
 	}
 
