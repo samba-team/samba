@@ -19,6 +19,9 @@ must support the smbfs filesystem.
 Options to smbmount are specified as a comma separated list of
 key=value pairs. 
 
+NOTE: smbmount calls smbmnt to do the actual mount. You must make sure
+that smbmnt is in the path so that it can be found.
+
 startdit()
 dit(bf(username=<arg>)) specifies the username to connect as. If this is
 not given then the environment variable USER is used. This option can
