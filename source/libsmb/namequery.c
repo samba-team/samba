@@ -35,10 +35,10 @@ static int generate_trn_id(void)
 	static int trn_id;
 
 	if (trn_id == 0) {
-		srandom(sys_getpid());
+		sys_srandom(sys_getpid());
 	}
 
-	trn_id = random();
+	trn_id = sys_random();
 
 	return trn_id % (unsigned)0x7FFF;
 }
@@ -604,8 +604,8 @@ BOOL is_ip_address(const char *name)
   int i;
   for (i=0; name[i]; i++)
     if (!(isdigit((int)name[i]) || name[i] == '.'))
-	return False;
-   
+        return False;
+
   return True;
 }
 
@@ -706,44 +706,46 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
  resolve a name of format \\server_name or \\ipaddress
  into a name.  also, cut the \\ from the front for us.
 *********************************************************/
+
 BOOL resolve_srv_name(const char* srv_name, fstring dest_host,
-				struct in_addr *ip)
+                                struct in_addr *ip)
 {
-	BOOL ret;
-	const char *sv_name = srv_name;
+        BOOL ret;
+        const char *sv_name = srv_name;
 
-	DEBUG(10,("resolve_srv_name: %s\n", srv_name));
+        DEBUG(10,("resolve_srv_name: %s\n", srv_name));
 
-	if (srv_name == NULL || strequal("\\\\.", srv_name))
-	{
-		extern pstring global_myname;
-		fstrcpy(dest_host, global_myname);
-		ip = interpret_addr2("127.0.0.1");
-		return True;
-	}
+        if (srv_name == NULL || strequal("\\\\.", srv_name))
+        {
+                extern pstring global_myname;
+                fstrcpy(dest_host, global_myname);
+                ip = interpret_addr2("127.0.0.1");
+                return True;
+        }
 
-	if (strnequal("\\\\", srv_name, 2))
-	{
-		sv_name = &srv_name[2];
-	}
+        if (strnequal("\\\\", srv_name, 2))
+        {
+                sv_name = &srv_name[2];
+        }
 
-	fstrcpy(dest_host, sv_name);
-	/* treat the '*' name specially - it is a magic name for the PDC */
-	if (strcmp(dest_host,"*") == 0) {
-		extern pstring global_myname;
-		ret = resolve_name(lp_workgroup(), ip, 0x1B);
-		lookup_pdc_name(global_myname, lp_workgroup(), ip, dest_host);
-	} else {
-		ret = resolve_name(dest_host, ip, 0x20);
-	}
-	
-	if (is_ip_address(dest_host))
-	{
-		fstrcpy(dest_host, "*SMBSERVER");
-	}
-	
-	return ret;
+        fstrcpy(dest_host, sv_name);
+        /* treat the '*' name specially - it is a magic name for the PDC */
+        if (strcmp(dest_host,"*") == 0) {
+                extern pstring global_myname;
+                ret = resolve_name(lp_workgroup(), ip, 0x1B);
+                lookup_pdc_name(global_myname, lp_workgroup(), ip, dest_host);
+        } else {
+                ret = resolve_name(dest_host, ip, 0x20);
+        }
+        
+        if (is_ip_address(dest_host))
+        {
+                fstrcpy(dest_host, "*SMBSERVER");
+        }
+        
+        return ret;
 }
+
 
 /********************************************************
  Find the IP address of the master browser or DMB for a workgroup.
