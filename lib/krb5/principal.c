@@ -821,6 +821,13 @@ name_convert(krb5_context context, const char *name, const char *realm,
     return -1;
 }
 
+/*
+ * convert the v5 principal in `principal' into a v4 corresponding one
+ * in `name, instance, realm'
+ * this is limited interface since there's no length given for these
+ * three parameters.  They have to be 40 bytes each (ANAME_SZ).
+ */
+
 krb5_error_code
 krb5_524_conv_principal(krb5_context context,
 			const krb5_principal principal,
@@ -831,6 +838,7 @@ krb5_524_conv_principal(krb5_context context,
     const char *n, *i, *r;
     char tmpinst[40];
     int type = princ_type(principal);
+    const int aname_sz = 40;
 
     r = principal->realm;
 
@@ -866,15 +874,12 @@ krb5_524_conv_principal(krb5_context context,
 	i = tmpinst;
     }
     
-    if(strlen(r) >= 40)
+    if (strlcpy (name, n, aname_sz) >= aname_sz)
 	return KRB5_PARSE_MALFORMED;
-    if(strlen(n) >= 40)
+    if (strlcpy (instance, r, aname_sz) >= aname_sz)
 	return KRB5_PARSE_MALFORMED;
-    if(strlen(i) >= 40)
+    if (strlcpy (realm, r, aname_sz) >= aname_sz)
 	return KRB5_PARSE_MALFORMED;
-    strcpy(realm, r);
-    strcpy(name, n);
-    strcpy(instance, i);
     return 0;
 }
 
