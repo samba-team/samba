@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -510,6 +510,7 @@ char *keytab_str = "HDB:";
 char *realm_str;
 int version_flag;
 int help_flag;
+char *port_str;
 
 struct getargs args[] = {
 #ifdef HAVE_DLOPEN
@@ -521,6 +522,7 @@ struct getargs args[] = {
     { "keytab", 'k', arg_string, &keytab_str, 
       "keytab to get authentication key from", "kspec" },
     { "realm", 'r', arg_string, &realm_str, "default realm", "realm" },
+    { "port",  'p', arg_string, &port_str, "port" },
     { "version", 0, arg_flag, &version_flag },
     { "help", 0, arg_flag, &help_flag }
 };
@@ -532,6 +534,7 @@ main (int argc, char **argv)
     int optind;
     krb5_keytab keytab;
     krb5_error_code ret;
+    int port;
     
     optind = krb5_program_setup(&context, argc, argv, args, num_args, NULL);
     
@@ -547,6 +550,22 @@ main (int argc, char **argv)
     
     krb5_openlog (context, "kpasswdd", &log_facility);
     krb5_set_warn_dest(context, log_facility);
+
+    if (port_str != NULL) {
+	struct servent *s = roken_getservbyname (port_str, "udp");
+
+	if (s != NULL)
+	    port = s->s_port;
+	else {
+	    char *ptr;
+
+	    port = strtol (port_str, &ptr, 10);
+	    if (port == 0 && ptr == port_str)
+		krb5_errx (context, 1, "bad port `%s'", port_str);
+	    port = htons(port);
+	}
+    } else
+	port = krb5_getportbyname (context, "kpasswd", "udp", KPASSWD_PORT);
 
     ret = krb5_kt_register(context, &hdb_kt_ops);
     if(ret)
@@ -576,7 +595,5 @@ main (int argc, char **argv)
 
     pidfile(NULL);
 
-    return doit (keytab,
-		 krb5_getportbyname (context, "kpasswd", 
-				     "udp", KPASSWD_PORT));
+    return doit (keytab, port);
 }
