@@ -32,6 +32,7 @@ struct dirent *__libc_readdir(DIR * dir);
 #define real_stat(fn, buf )		(syscall(SYS_stat, (fn), (buf)))
 #define real_fstat(fd, buf )		(syscall(SYS_fstat, (fd), (buf)))
 #define real_read(fd, buf, count )	(syscall(SYS_read, (fd), (buf), (count)))
+#define real_lseek(fd, offset, whence)	(syscall(SYS_lseek, (fd), (offset), (whence)))
 #define real_write(fd, buf, count )	(syscall(SYS_write, (fd), (buf), (count)))
 #define real_close(fd)	                (syscall(SYS_close, (fd)))
 #define real_fcntl(fd,cmd,arg)	        (syscall(SYS_fcntl, (fd), (cmd), (arg)))

@@ -758,7 +758,7 @@ static void run_trans2test(void)
 {
 	static struct cli_state cli;
 	int fnum;
-	uint32 size;
+	size_t size;
 	time_t c_time, a_time, m_time, w_time, m_time2;
 	char *fname = "\\trans2.tst";
 	char *dname = "\\trans2";
@@ -773,7 +773,7 @@ static void run_trans2test(void)
 	cli_unlink(&cli, fname);
 	fnum = cli_open(&cli, fname, 
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
-	if (!cli_qfileinfo(&cli, fnum, &c_time, &a_time, &m_time, &size, NULL)) {
+	if (!cli_qfileinfo(&cli, fnum, NULL, &size, &c_time, &a_time, &m_time)) {
 		printf("ERROR: qfileinfo failed (%s)\n", cli_errstr(&cli));
 	}
 	cli_close(&cli, fnum);

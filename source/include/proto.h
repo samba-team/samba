@@ -286,7 +286,7 @@ BOOL receive_smb(int fd,char *buffer, unsigned int timeout);
 BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout);
 BOOL send_smb(int fd,char *buffer);
 int name_extract(char *buf,int ofs,char *name);
-int name_len( char *s );
+int name_len(unsigned char *s);
 BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type);
 void msleep(int t);
 BOOL in_list(char *s,char *list,BOOL casesensitive);
