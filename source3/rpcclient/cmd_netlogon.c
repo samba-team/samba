@@ -63,7 +63,10 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 	new_mach_pwd[0] = 0;
 #endif
 
-	if (!next_token(NULL, nt_user_name, NULL, sizeof(nt_user_name)))
+	argc--;
+	argv++;
+
+	if (argc < 1)
 	{
 		fstrcpy(nt_user_name, smb_cli->user_name);
 		if (nt_user_name[0] == 0)
@@ -72,10 +75,17 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 			return;
 		}
 	}
-
-	if (next_token(NULL, password, NULL, sizeof(password)))
+	else
 	{
-		nt_password = password;
+		fstrcpy(nt_user_name, argv[0]);
+	}
+
+	argc--;
+	argv++;
+
+	if (argc < 2)
+	{
+		nt_password = argv[0];
 	}
 	else
 	{
@@ -146,16 +156,18 @@ void cmd_netlogon_domain_test(struct client_info *info, int argc, char *argv[])
 {
 	uint16 nt_pipe_fnum;
 
-	fstring nt_trust_dom;
+	char *nt_trust_dom;
 	BOOL res = True;
 	unsigned char trust_passwd[16];
 	fstring inter_dom_acct;
 
-	if (!next_token(NULL, nt_trust_dom, NULL, sizeof(nt_trust_dom)))
+	if (argc < 2)
 	{
 		report(out_hnd,"domtest: must specify domain name\n");
 		return;
 	}
+
+	nt_trust_dom = argv[1];
 
 	DEBUG(5,("do_nt_login_test: domain %s\n", nt_trust_dom));
 

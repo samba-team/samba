@@ -45,7 +45,6 @@ void cmd_brs_query_info(struct client_info *info, int argc, char *argv[])
 {
 	uint16 nt_pipe_fnum;
 	fstring dest_brs;
-	fstring tmp;
 	BRS_INFO_100 ctr;
 	uint32 info_level = 100;
 
@@ -57,9 +56,9 @@ void cmd_brs_query_info(struct client_info *info, int argc, char *argv[])
 	fstrcat(dest_brs, info->dest_host);
 	strupper(dest_brs);
 
-	if (next_token(NULL, tmp, NULL, sizeof(tmp)))
+	if (argc > 1)
 	{
-		info_level = (uint32)strtol(tmp, (char**)NULL, 10);
+		info_level = (uint32)strtol(argv[1], (char**)NULL, 10);
 	}
 
 	DEBUG(4,("cmd_brs_query_info: server:%s info level: %d\n",
