@@ -1016,12 +1016,12 @@
 
 	/******************/
 	/* Function: 0x18 */
-	NTSTATUS srvsvc_NETRSERVERSTATISTICSGET(
+	WERROR srvsvc_NETRSERVERSTATISTICSGET(
 		);
 
 	/******************/
 	/* Function: 0x19 */
-	NTSTATUS srvsvc_NETRSERVERTRANSPORTADD(
+	WERROR srvsvc_NETRSERVERTRANSPORTADD(
 		);
 
 /**************************/
@@ -1106,47 +1106,47 @@
 
 	/******************/
 	/* Function: 0x1b */
-	NTSTATUS srvsvc_NETRSERVERTRANSPORTDEL(
+	WERROR srvsvc_NETRSERVERTRANSPORTDEL(
 		);
 
 	/******************/
 	/* Function: 0x1c */
-	NTSTATUS srvsvc_NET_REMOTE_TOD(
+	WERROR srvsvc_NET_REMOTE_TOD(
 		);
 
 	/******************/
 	/* Function: 0x1d */
-	NTSTATUS srvsvc_NETRSERVERSETSERVICEBITS(
+	WERROR srvsvc_NETRSERVERSETSERVICEBITS(
 		);
 
 	/******************/
 	/* Function: 0x1e */
-	NTSTATUS srvsvc_NETRPRPATHTYPE(
+	WERROR srvsvc_NETRPRPATHTYPE(
 		);
 
 	/******************/
 	/* Function: 0x1f */
-	NTSTATUS srvsvc_NETRPRPATHCANONICALIZE(
+	WERROR srvsvc_NETRPRPATHCANONICALIZE(
 		);
 
 	/******************/
 	/* Function: 0x20 */
-	NTSTATUS srvsvc_NETRPRPATHCOMPARE(
+	WERROR srvsvc_NETRPRPATHCOMPARE(
 		);
 
 	/******************/
 	/* Function: 0x21 */
-	NTSTATUS srvsvc_NET_NAME_VALIDATE(
+	WERROR srvsvc_NET_NAME_VALIDATE(
 		);
 
 	/******************/
 	/* Function: 0x22 */
-	NTSTATUS srvsvc_NETRPRNAMECANONICALIZE(
+	WERROR srvsvc_NETRPRNAMECANONICALIZE(
 		);
 
 	/******************/
 	/* Function: 0x23 */
-	NTSTATUS srvsvc_NETRPRNAMECOMPARE(
+	WERROR srvsvc_NETRPRNAMECOMPARE(
 		);
 
 	/******************/
@@ -1164,86 +1164,86 @@
 
 	/******************/
 	/* Function: 0x25 */
-	NTSTATUS srvsvc_NETRSHAREDELSTART(
+	WERROR srvsvc_NETRSHAREDELSTART(
 		);
 
 	/******************/
 	/* Function: 0x26 */
-	NTSTATUS srvsvc_NETRSHAREDELCOMMIT(
+	WERROR srvsvc_NETRSHAREDELCOMMIT(
 		);
 
 	/******************/
 	/* Function: 0x27 */
-	NTSTATUS srvsvc_NET_FILE_QUERY_SECDESC(
+	WERROR srvsvc_NET_FILE_QUERY_SECDESC(
 		);
 
 	/******************/
 	/* Function: 0x28 */
-	NTSTATUS srvsvc_NET_FILE_SET_SECDESC(
+	WERROR srvsvc_NET_FILE_SET_SECDESC(
 		);
 
 	/******************/
 	/* Function: 0x29 */
-	NTSTATUS srvsvc_NETRSERVERTRANSPORTADDEX(
+	WERROR srvsvc_NETRSERVERTRANSPORTADDEX(
 		);
 
 	/******************/
 	/* Function: 0x2a */
-	NTSTATUS srvsvc_NETRSERVERSETSERVICEBITSEX(
+	WERROR srvsvc_NETRSERVERSETSERVICEBITSEX(
 		);
 
 	/******************/
 	/* Function: 0x2b */
-	NTSTATUS srvsvc_NETRDFSGETVERSION(
+	WERROR srvsvc_NETRDFSGETVERSION(
 		);
 
 	/******************/
 	/* Function: 0x2c */
-	NTSTATUS srvsvc_NETRDFSCREATELOCALPARTITION(
+	WERROR srvsvc_NETRDFSCREATELOCALPARTITION(
 		);
 
 	/******************/
 	/* Function: 0x2d */
-	NTSTATUS srvsvc_NETRDFSDELETELOCALPARTITION(
+	WERROR srvsvc_NETRDFSDELETELOCALPARTITION(
 		);
 
 	/******************/
 	/* Function: 0x2e */
-	NTSTATUS srvsvc_NETRDFSSETLOCALVOLUMESTATE(
+	WERROR srvsvc_NETRDFSSETLOCALVOLUMESTATE(
 		);
 
 	/******************/
 	/* Function: 0x2f */
-	NTSTATUS srvsvc_NETRDFSSETSERVERINFO(
+	WERROR srvsvc_NETRDFSSETSERVERINFO(
 		);
 
 	/******************/
 	/* Function: 0x30 */
-	NTSTATUS srvsvc_NETRDFSCREATEEXITPOINT(
+	WERROR srvsvc_NETRDFSCREATEEXITPOINT(
 		);
 
 	/******************/
 	/* Function: 0x31 */
-	NTSTATUS srvsvc_NETRDFSDELETEEXITPOINT(
+	WERROR srvsvc_NETRDFSDELETEEXITPOINT(
 		);
 
 	/******************/
 	/* Function: 0x32 */
-	NTSTATUS srvsvc_NETRDFSMODIFYPREFIX(
+	WERROR srvsvc_NETRDFSMODIFYPREFIX(
 		);
 
 	/******************/
 	/* Function: 0x33 */
-	NTSTATUS srvsvc_NETRDFSFIXLOCALVOLUME(
+	WERROR srvsvc_NETRDFSFIXLOCALVOLUME(
 		);
 
 	/******************/
 	/* Function: 0x34 */
-	NTSTATUS srvsvc_NETRDFSMANAGERREPORTSITEINFO(
+	WERROR srvsvc_NETRDFSMANAGERREPORTSITEINFO(
 		);
 
 	/******************/
 	/* Function: 0x35 */
-	NTSTATUS srvsvc_NETRSERVERTRANSPORTDELEX(
+	WERROR srvsvc_NETRSERVERTRANSPORTDELEX(
 		);
 }
