@@ -249,7 +249,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	}
 
 	if (ret_domain > 1) {
-		DEBUG(1,("Found %d records matching domain [%s]\n", ret, dom_sid_string(mem_ctx, domain_sid)));
+		DEBUG(1,("Found %d records matching domain [%s]\n", ret_domain, dom_sid_string(mem_ctx, domain_sid)));
 		samdb_close(sam_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
