@@ -347,8 +347,10 @@ BOOL lsa_open_policy2(struct cli_state *cli, uint16 fnum,
 do a LSA Open Secret
 ****************************************************************************/
 BOOL lsa_open_secret(struct cli_state *cli, uint16 fnum,
-		     POLICY_HND *hnd_pol, char *secret_name, uint32 des_access,
-		     POLICY_HND *hnd_secret)
+				const POLICY_HND *hnd_pol,
+				const char *secret_name,
+				uint32 des_access,
+				POLICY_HND *hnd_secret)
 {
 	prs_struct rbuf;
 	prs_struct buf; 

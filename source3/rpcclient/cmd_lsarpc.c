@@ -378,16 +378,7 @@ nt lsa query
 ****************************************************************************/
 void cmd_lsa_query_secret(struct client_info *info, int argc, char *argv[])
 {
-	uint16 nt_pipe_fnum;
-	fstring srv_name;
-	BOOL res = True;
-	BOOL res1;
-	BOOL res2;
-	uint32 i;
-
-	POLICY_HND hnd_secret;
 	char *secret_name;
-	STRING2 enc_secret;
 	STRING2 secret;
 	NTTIME last_update;
 
@@ -399,37 +390,9 @@ void cmd_lsa_query_secret(struct client_info *info, int argc, char *argv[])
 
 	secret_name = argv[1];
 
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
-
-	DEBUG(4,("cmd_lsa_query_info: server:%s\n", srv_name));
-
-	/* open LSARPC session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_LSARPC, &nt_pipe_fnum) : False;
-
-	/* lookup domain controller; receive a policy handle */
-	res = res ? lsa_open_policy2(smb_cli, nt_pipe_fnum,
-				srv_name,
-				&info->dom.lsa_info_pol, False) : False;
-
-	/* lookup domain controller; receive a policy handle */
-	res1 = res ? lsa_open_secret(smb_cli, nt_pipe_fnum,
-				&info->dom.lsa_info_pol,
-				secret_name, 0x02000000, &hnd_secret) : False;
-
-	res2 = res1 ? lsa_query_secret(smb_cli, nt_pipe_fnum,
-			       &hnd_secret, &enc_secret, &last_update) : False;
-
-	res1 = res1 ? lsa_close(smb_cli, nt_pipe_fnum, &hnd_secret) : False;
-
-	res = res ? lsa_close(smb_cli, nt_pipe_fnum, &info->dom.lsa_info_pol) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, nt_pipe_fnum);
-
-	if (res2 && nt_decrypt_string2(&secret, &enc_secret, (char*)(smb_cli->pwd.smb_nt_pwd)))
+	if (msrpc_lsa_query_secret(smb_cli, secret_name, &secret, &last_update))
 	{
+		int i;
 		report(out_hnd, "\tValue       : ");
 		for (i = 0; i < secret.str_str_len; i++)
 		{

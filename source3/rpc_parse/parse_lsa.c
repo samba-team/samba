@@ -415,8 +415,8 @@ BOOL lsa_io_q_query(char *desc,  LSA_Q_QUERY_INFO *q_q, prs_struct *ps, int dept
 /*******************************************************************
 makes an LSA_Q_OPEN_SECRET structure.
 ********************************************************************/
-BOOL make_q_open_secret(LSA_Q_OPEN_SECRET *q_o, POLICY_HND *pol_hnd,
-			char *secret_name, uint32 desired_access)
+BOOL make_q_open_secret(LSA_Q_OPEN_SECRET *q_o, const POLICY_HND *pol_hnd,
+			const char *secret_name, uint32 desired_access)
 {
 	int len = strlen(secret_name);
 
