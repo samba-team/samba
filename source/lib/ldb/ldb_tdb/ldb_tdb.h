@@ -90,7 +90,7 @@ int ltdb_search_dn(struct ldb_module *module, char *dn,
 		   const char * const attrs[], struct ldb_message ***res);
 int ltdb_add_attr_results(struct ldb_module *module, struct ldb_message *msg,
 			  const char * const attrs[], 
-			  unsigned int *count, 
+			  int *count, 
 			  struct ldb_message ***res);
 int ltdb_search_free(struct ldb_module *module, struct ldb_message **msgs);
 int ltdb_search(struct ldb_module *module, const char *base,

@@ -353,7 +353,7 @@ int ltdb_search_dn(struct ldb_module *module, char *dn,
 */
 int ltdb_add_attr_results(struct ldb_module *module, struct ldb_message *msg,
 			  const char * const attrs[], 
-			  unsigned int *count, 
+			  int *count, 
 			  struct ldb_message ***res)
 {
 	struct ldb_context *ldb = module->ldb;

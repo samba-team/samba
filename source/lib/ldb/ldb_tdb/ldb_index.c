@@ -80,7 +80,7 @@ static char *ldb_dn_key(struct ldb_context *ldb,
   see if a attribute value is in the list of indexed attributes
 */
 static int ldb_msg_find_idx(const struct ldb_message *msg, const char *attr,
-			    int *v_idx, const char *key)
+			    unsigned int *v_idx, const char *key)
 {
 	unsigned int i, j;
 	for (i=0;i<msg->num_elements;i++) {
@@ -509,7 +509,8 @@ static int ldb_index_filter(struct ldb_module *module, struct ldb_parse_tree *tr
 			    const struct dn_list *dn_list, 
 			    const char * const attrs[], struct ldb_message ***res)
 {
-	unsigned int count = 0, i;
+	unsigned int i;
+	int count = 0;
 
 	for (i=0;i<dn_list->count;i++) {
 		struct ldb_message msg;
