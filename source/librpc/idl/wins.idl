@@ -1,5 +1,5 @@
 [
-	uuid(45f52c28-7f9f-101a-b52b-08002b2efabe),
+	uuid("45f52c28-7f9f-101a-b52b-08002b2efabe"),
 	version(1.0),
 	helpstring("Server-to-Server WINS")
 ] interface WinsPipe

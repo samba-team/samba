@@ -2,7 +2,7 @@
 
 
 [
-  uuid(60a15ec5-4de8-11d7-a637-005056a20182),
+  uuid("60a15ec5-4de8-11d7-a637-005056a20182"),
   endpoint("ncacn_np:[\\pipe\\rpcecho]", "ncacn_ip_tcp:", "ncalrpc:"),
   version(1.0),
   helpstring("Simple echo pipe")

@@ -7,7 +7,7 @@
 #include "idl_types.h"
 
 [
-  uuid(12345678-1234-abcd-ef00-01234567cffb),
+  uuid("12345678-1234-abcd-ef00-01234567cffb"),
   version(1.0),
   endpoint("ncacn_np:[\\pipe\\netlogon]","ncacn_ip_tcp:"),
   pointer_default(unique)

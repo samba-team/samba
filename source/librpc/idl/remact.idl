@@ -9,7 +9,7 @@
 #define HRESULT uint32
 
 [
-	uuid(4d9f4ab8-7d1c-11cf-861e-0020af6e7c57),
+	uuid("4d9f4ab8-7d1c-11cf-861e-0020af6e7c57"),
 	pointer_default(unique)
 ]
 interface IRemoteActivation
