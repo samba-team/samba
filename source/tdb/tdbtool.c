@@ -111,23 +111,24 @@ static void print_data(unsigned char *buf,int len)
 
 static void help(void)
 {
-	printf("
-tdbtool: 
-  create    dbname     : create a database
-  open      dbname     : open an existing database
-  erase                : erase the database
-  dump                 : dump the database as strings
-  insert    key  data  : insert a record
-  store     key  data  : store a record (replace)
-  show      key        : show a record by key
-  delete    key        : delete a record by key
-  list                 : print the database hash table and freelist
-  free                 : print the database freelist
-  1 | first            : print the first record
-  n | next             : print the next record
-  q | quit             : terminate
-  \\n                   : repeat 'next' command
-");
+	printf("\n"
+"tdbtool: \n"
+"  create    dbname     : create a database\n"
+"  open      dbname     : open an existing database\n"
+"  erase                : erase the database\n"
+"  dump                 : dump the database as strings\n"
+"  insert    key  data  : insert a record\n"
+"  move      key  file  : move a record to a destination tdb\n"
+"  store     key  data  : store a record (replace)\n"
+"  show      key        : show a record by key\n"
+"  delete    key        : delete a record by key\n"
+"  list                 : print the database hash table and freelist\n"
+"  free                 : print the database freelist\n"
+"  1 | first            : print the first record\n"
+"  n | next             : print the next record\n"
+"  q | quit             : terminate\n"
+"  \\n                   : repeat 'next' command\n"
+"\n");
 }
 
 static void terror(char *why)
@@ -251,16 +252,26 @@ static void show_tdb(void)
 	}
 
 	key.dptr = k;
-/*	key.dsize = strlen(k)+1;*/
-	key.dsize = strlen(k);
+	key.dsize = strlen(k)+1;
 
 	dbuf = tdb_fetch(tdb, key);
 	if (!dbuf.dptr) {
-		terror("fetch failed");
-		return;
+		/* maybe it is non-NULL terminated key? */
+		key.dsize = strlen(k); 
+		dbuf = tdb_fetch(tdb, key);
+		
+		if ( !dbuf.dptr ) {
+			terror("fetch failed");
+			return;
+		}
 	}
+	
 	/* printf("%s : %*.*s\n", k, (int)dbuf.dsize, (int)dbuf.dsize, dbuf.dptr); */
 	print_rec(tdb, key, dbuf, NULL);
+	
+	free( dbuf.dptr );
+	
+	return;
 }
 
 static void delete_tdb(void)
@@ -279,6 +290,57 @@ static void delete_tdb(void)
 	if (tdb_delete(tdb, key) != 0) {
 		terror("delete failed");
 	}
+}
+
+static void move_rec(void)
+{
+	char *k = get_token(1);
+	char *file = get_token(0);	
+	TDB_DATA key, dbuf;
+	TDB_CONTEXT *dst_tdb;
+
+	if (!k) {
+		help();
+		return;
+	}
+	
+	if ( !file ) {
+		terror("need destination tdb name");
+		return;
+	}
+
+	key.dptr = k;
+	key.dsize = strlen(k)+1;
+
+	dbuf = tdb_fetch(tdb, key);
+	if (!dbuf.dptr) {
+		/* maybe it is non-NULL terminated key? */
+		key.dsize = strlen(k); 
+		dbuf = tdb_fetch(tdb, key);
+		
+		if ( !dbuf.dptr ) {
+			terror("fetch failed");
+			return;
+		}
+	}
+	
+	print_rec(tdb, key, dbuf, NULL);
+	
+	dst_tdb = tdb_open(file, 0, 0, O_RDWR, 0600);
+	if ( !dst_tdb ) {
+		terror("unable to open destination tdb");
+		return;
+	}
+	
+	if ( tdb_store( dst_tdb, key, dbuf, TDB_REPLACE ) == -1 ) {
+		terror("failed to move record");
+	}
+	else
+		printf("record moved\n");
+	
+	tdb_close( dst_tdb );
+	
+	return;
 }
 
 #if 0
@@ -455,6 +517,9 @@ int main(int argc, char *argv[])
         } else if (strcmp(tok,"dump") == 0) {
             bIterate = 0;
             tdb_traverse(tdb, print_rec, NULL);
+        } else if (strcmp(tok,"move") == 0) {
+            bIterate = 0;
+            move_rec();
         } else if (strcmp(tok,"list") == 0) {
             tdb_dump_all(tdb);
         } else if (strcmp(tok, "free") == 0) {

@@ -451,12 +451,10 @@
 /*
  * Define additional missing types
  */
-#if defined(HAVE_SIG_ATOMIC_T_TYPE) && defined(AIX)
+#if defined(HAVE_SIG_ATOMIC_T_TYPE)
 typedef sig_atomic_t SIG_ATOMIC_T;
-#elif defined(HAVE_SIG_ATOMIC_T_TYPE) && !defined(AIX)
-typedef sig_atomic_t VOLATILE SIG_ATOMIC_T;
 #else
-typedef int VOLATILE SIG_ATOMIC_T;
+typedef int SIG_ATOMIC_T;
 #endif
 
 #ifndef HAVE_SOCKLEN_T_TYPE

@@ -238,8 +238,7 @@ PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 		passdb/machine_sid.o passdb/pdb_smbpasswd.o \
 		passdb/pdb_tdb.o passdb/pdb_ldap.o \
 		passdb/pdb_unix.o passdb/pdb_guest.o passdb/util_sam_sid.o \
-		passdb/pdb_compat.o passdb/pdb_nisplus.o \
-		passdb/privileges.o 
+		passdb/pdb_compat.o passdb/pdb_nisplus.o
 
 XML_OBJ = modules/xml.o
 MYSQL_OBJ = modules/mysql.o
@@ -648,7 +647,7 @@ pch: basics
 	$(CC) -I. -I$(srcdir) $(FLAGS) -c $(srcdir)/include/includes.h -o $(srcdir)/include/includes.h.gch
 
 
-idl:
+idl: build/pidl/idl.pm
 	script/build_idl.sh FULL
 
 idl_test: build/pidl/idl.pm
