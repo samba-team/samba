@@ -1973,7 +1973,7 @@ static mode_t map_nt_perms( SEC_ACCESS access, int type)
  Unpack a SEC_DESC into a owner, group and set of UNIX permissions.
 ****************************************************************************/
 
-static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, SEC_DESC *psd)
+static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, SEC_DESC *psd, BOOL is_directory)
 {
   extern DOM_SID global_sid_World;
   DOM_SID owner_sid;
@@ -2029,13 +2029,21 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, SEC_
       return False;
     }
 
-    if(psa->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
-      DEBUG(3,("unpack_unix_permissions: ignoring inherit only ACE.\n"));
-      continue;
+    /*
+     * Ignore or remove bits we don't care about on a directory ACE.
+     */
+
+    if(is_directory) {
+      if(psa->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
+        DEBUG(3,("unpack_unix_permissions: ignoring inherit only ACE.\n"));
+        continue;
+      }
+
+      psa->flags &= ~(SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT);
     }
 
     if(psa->flags != 0) {
-      DEBUG(3,("unpack_unix_permissions: unable to set ACE flags (%x).\n", 
+      DEBUG(1,("unpack_unix_permissions: unable to set ACE flags (%x).\n", 
             (unsigned int)psa->flags));
       return False;
     }
@@ -2159,7 +2167,7 @@ security descriptor.\n"));
    * Unpack the user/group/world id's and permissions.
    */
 
-  if(!unpack_nt_permissions( &user, &grp, &perms, psd)) {
+  if(!unpack_nt_permissions( &user, &grp, &perms, psd, fsp->is_directory)) {
     free_sec_desc(&psd);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
