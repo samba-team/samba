@@ -160,49 +160,6 @@ set (int argc, char **argv, int count, OtpAlgorithm *alg, int hexp)
 }
 
 int
-print (int argc,
-       char **argv,
-       int count,
-       OtpAlgorithm *alg,
-       int hexp,
-       int extendedp)
-{
-  char pw[64];
-  OtpKey key;
-  int n;
-  int i;
-  char *seed;
-  char *ext;
-
-  if (argc != 2)
-    usage ();
-  n = atoi(argv[0]);
-  seed = argv[1];
-  des_read_pw_string (pw, sizeof(pw), "Password: ", 0);
-  alg->init (key, pw, seed);
-  if (extendedp)
-    if (hexp)
-      ext = "hex:";
-    else
-      ext = "word:";
-  else
-    ext = "";
-  for (i = 0; i < n; ++i) {
-    char s[30];
-
-    alg->next (key);
-    if (i >= n - count) {
-      if (hexp)
-	otp_print_hex (key, s);
-      else
-	otp_print_stddict (key, s);
-      printf ("%d: %s%s\n", i + 1, ext, s);
-    }
-  }
-  return 0;
-}
-
-int
 main (int argc, char **argv)
 {
   int c;
@@ -255,6 +212,8 @@ main (int argc, char **argv)
     return set (argc, argv, count, alg, hexp);
   else if (renewp)
     return renew (argc, argv, count, alg, hexp);
-  else
-    return print (argc, argv, count, alg, hexp, extendedp);
+  else {
+    fprintf (stderr, "%s: Nothing to do\n", prog);
+    return 1;
+  }
 }
