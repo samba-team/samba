@@ -396,7 +396,7 @@ static int map_share_mode( char *fname, uint32 desired_access, uint32 share_acce
   if (smb_open_mode == -1) {
     if(desired_access & (DELETE_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|
                               FILE_EXECUTE|FILE_READ_ATTRIBUTES|
-                              FILE_READ_EA|FILE_WRITE_EA|
+                              FILE_READ_EA|FILE_WRITE_EA|SYSTEM_SECURITY_ACCESS|
                               FILE_WRITE_ATTRIBUTES|READ_CONTROL_ACCESS))
       smb_open_mode = DOS_OPEN_RDONLY;
     else {
@@ -1672,7 +1672,7 @@ static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
     sid_copy(&owner_sid, &global_sam_sid);
     sid_copy(&group_sid, &global_sam_sid);
     sid_append_rid(&owner_sid, pdb_uid_to_user_rid(sbuf.st_uid));
-    sid_append_rid(&group_sid, pdb_uid_to_user_rid(sbuf.st_gid));
+    sid_append_rid(&group_sid, pdb_gid_to_group_rid(sbuf.st_gid));
 
     /*
      * Create the generic 3 element UNIX acl.

@@ -1136,7 +1136,7 @@ BOOL lookup_local_rid(uint32 rid, char *name, uint8 *psid_name_use)
 		gid_t gid = pdb_user_rid_to_gid(rid);
 		struct group *gr = getgrgid(gid);
 
-		*psid_name_use = SID_NAME_DOM_GRP;
+		*psid_name_use = SID_NAME_ALIAS;
 
 		DEBUG(5,("lookup_local_rid: looking up gid %u %s\n", (unsigned int)gid,
 			gr ? "succeeded" : "failed" ));
@@ -1193,7 +1193,7 @@ BOOL lookup_local_name(char *domain, char *user, DOM_SID *psid, uint8 *psid_name
 			return False;
 
 		sid_append_rid( &local_sid, pdb_gid_to_group_rid(grp->gr_gid));
-		*psid_name_use = SID_NAME_DOM_GRP;
+		*psid_name_use = SID_NAME_ALIAS;
 	} else {
 
 		sid_append_rid( &local_sid, pdb_uid_to_user_rid(pass->pw_uid));
