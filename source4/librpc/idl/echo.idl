@@ -88,4 +88,8 @@ interface rpcecho
 		     [in]                    uint16 level,
 		     [out,switch_is(level)]  echo_Info *info
 		);
+
+	uint32 echo_TestSleep(
+		[in] uint32 seconds
+		);
 }
