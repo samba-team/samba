@@ -93,42 +93,6 @@ struct krb5_pk_init_ctx_data {
     DH *dh;
 };
 
-/* XXX The asn1 compiler should fix this */
-
-#define oid_enc(n) { sizeof(n)/sizeof(n[0]), n }
-
-static unsigned sha1_num[] = 
-    { 1, 3, 14, 3, 2, 26 };
-heim_oid heim_sha1_oid = 
-	oid_enc(sha1_num);
-static unsigned rsaEncryption_num[] = 
-    { 1, 2, 840, 113549, 1, 1, 1 };
-heim_oid heim_rsaEncryption_oid = 
-	oid_enc(rsaEncryption_num);
-static unsigned md5WithRSAEncryption_num[] = 
-    { 1, 2, 840, 113549, 1, 1, 4 };
-heim_oid heim_md5WithRSAEncryption_oid =
-	oid_enc(md5WithRSAEncryption_num);
-static unsigned sha1WithRSAEncryption_num[] = 
-    { 1, 2, 840, 113549, 1, 1, 5 };
-heim_oid heim_sha1WithRSAEncryption_oid =
-	oid_enc(sha1WithRSAEncryption_num);
-static unsigned pkcs7_data_num[] = 
-    { 1, 2, 840, 113549, 1, 7, 1 };
-heim_oid pkcs7_data_oid =
-	oid_enc(pkcs7_data_num);
-static unsigned pkcs7_signed_num[] = 
-    { 1, 2, 840, 113549, 1, 7, 2 };
-heim_oid pkcs7_signed_oid =
-	oid_enc(pkcs7_signed_num);
-static unsigned pkcs7_enveloped_num[] = 
-    { 1, 2, 840, 113549, 1, 7, 3 };
-heim_oid pkcs7_enveloped_oid =
-	oid_enc(pkcs7_enveloped_num);
-static unsigned dhpublicnumber_num[] = 
-    { 1, 2, 840, 10046, 2, 1 };
-heim_oid heim_dhpublicnumber_oid =
-	oid_enc(dhpublicnumber_num);
 
 void KRB5_LIB_FUNCTION
 _krb5_pk_cert_free(struct krb5_pk_cert *cert)
@@ -296,7 +260,7 @@ _krb5_pk_create_sign(krb5_context context,
     }
 
     ret = set_digest_alg(&signer_info->digestAlgorithm,
-			 &heim_sha1_oid, "\x05\x00", 2);
+			 oid_id_secsig_sha_1(), "\x05\x00", 2);
     if (ret) {
 	krb5_set_error_string(context, "malloc: out of memory");
 	goto out;
@@ -305,7 +269,7 @@ _krb5_pk_create_sign(krb5_context context,
     signer_info->signedAttrs = NULL;
     signer_info->unsignedAttrs = NULL;
 
-    copy_oid(&heim_rsaEncryption_oid,
+    copy_oid(oid_id_pkcs1_rsaEncryption(),
 	     &signer_info->signatureAlgorithm.algorithm);
     signer_info->signatureAlgorithm.parameters = NULL;
 
@@ -341,7 +305,7 @@ _krb5_pk_create_sign(krb5_context context,
     }
 
     ret = set_digest_alg(&sd.digestAlgorithms.val[0],
-			 &heim_sha1_oid, "\x05\x00", 2);
+			 oid_id_secsig_sha_1(), "\x05\x00", 2);
     if (ret) {
 	krb5_set_error_string(context, "malloc: out of memory");
 	goto out;
@@ -450,7 +414,7 @@ build_auth_pack(krb5_context context,
 	ALLOC(a->clientPublicValue, 1);
 	if (a->clientPublicValue == NULL)
 	    return ENOMEM;
-	ret = copy_oid(&heim_dhpublicnumber_oid,
+	ret = copy_oid(oid_id_dhpublicnumber(),
 		       &a->clientPublicValue->algorithm.algorithm);
 	if (ret)
 	    return ret;
@@ -608,7 +572,7 @@ pk_mk_padata(krb5_context context,
 	if (buf.length != size)
 	    krb5_abortx(context, "internal ASN1 encoder error");
 
-	oid = &pkcs7_data_oid;
+	oid = oid_id_pkcs7_data();
     } else {
 	AuthPack_19 ap;
 	
@@ -641,7 +605,7 @@ pk_mk_padata(krb5_context context,
     if (ret)
 	goto out;
 
-    ret = _krb5_pk_mk_ContentInfo(context, &sd_buf, &pkcs7_signed_oid, 
+    ret = _krb5_pk_mk_ContentInfo(context, &sd_buf, oid_id_pkcs7_signedData(), 
 				  &req.signedAuthPack);
     krb5_data_free(&sd_buf);
     if (ret)
@@ -1092,13 +1056,13 @@ _krb5_pk_verify_sign(krb5_context context,
 
     /* verify signature */
     if (heim_oid_cmp(&signer_info->digestAlgorithm.algorithm,
-		&heim_sha1WithRSAEncryption_oid) == 0)
+		oid_id_pkcs1_sha1WithRSAEncryption()) == 0)
 	evp_type = EVP_sha1();
     else if (heim_oid_cmp(&signer_info->digestAlgorithm.algorithm,
-		     &heim_md5WithRSAEncryption_oid) == 0) 
+			  oid_id_pkcs1_md5WithRSAEncryption()) == 0) 
 	evp_type = EVP_md5();
     else if (heim_oid_cmp(&signer_info->digestAlgorithm.algorithm, 
-		     &heim_sha1_oid) == 0)
+			  oid_id_secsig_sha_1()) == 0)
 	evp_type = EVP_sha1();
     else {
 	X509_free(cert);
@@ -1246,7 +1210,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
 
     user_cert = sk_X509_value(ctx->id->cert, 0);
 
-    if (heim_oid_cmp(&pkcs7_enveloped_oid, &rep->contentType)) {
+    if (heim_oid_cmp(oid_id_pkcs7_envelopedData(), &rep->contentType)) {
 	krb5_set_error_string(context, "PKINIT: Invalid content type");
 	return EINVAL;
     }
@@ -1282,7 +1246,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	goto out;
     }
 
-    if (heim_oid_cmp(&heim_rsaEncryption_oid,
+    if (heim_oid_cmp(oid_id_pkcs1_rsaEncryption(),
 		     &ri->keyEncryptionAlgorithm.algorithm)) {
 	krb5_set_error_string(context, "PKINIT: invalid content type");
 	return EINVAL;
@@ -1296,12 +1260,12 @@ pk_rd_pa_reply_enckey(krb5_context context,
   
     /* verify content type */
     if (win2k_compat) {
-	if (heim_oid_cmp(&ed.encryptedContentInfo.contentType, &pkcs7_data_oid)) {
+	if (heim_oid_cmp(&ed.encryptedContentInfo.contentType, oid_id_pkcs7_data())) {
 	    ret = KRB5KRB_AP_ERR_MSG_TYPE;
 	    goto out;
 	}
     } else {
-	if (heim_oid_cmp(&ed.encryptedContentInfo.contentType, &pkcs7_signed_oid)) {
+	if (heim_oid_cmp(&ed.encryptedContentInfo.contentType, oid_id_pkcs7_signedData())) {
 	    ret = KRB5KRB_AP_ERR_MSG_TYPE;
 	    goto out;
 	}
@@ -1370,7 +1334,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	    goto out;
 	}
 
-	if (heim_oid_cmp(&ci.contentType, &pkcs7_signed_oid)) {
+	if (heim_oid_cmp(&ci.contentType, oid_id_pkcs7_signedData())) {
 	    ret = EINVAL; /* XXX */
 	    krb5_set_error_string(context, "PKINIT: Invalid content type");
 	    goto out;
@@ -1397,7 +1361,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
     }
 
     if (win2k_compat) {
-	if (heim_oid_cmp(&contentType, &pkcs7_data_oid) != 0) {
+	if (heim_oid_cmp(&contentType, oid_id_pkcs7_data()) != 0) {
 	    krb5_set_error_string(context, "PKINIT: reply key, wrong oid");
 	    ret = KRB5KRB_AP_ERR_MSG_TYPE;
 	    goto out;
@@ -1452,7 +1416,7 @@ pk_rd_pa_reply_dh(krb5_context context,
     krb5_data_zero(&content);
     memset(&kdc_dh_info, 0, sizeof(kdc_dh_info));
 
-    if (heim_oid_cmp(&pkcs7_signed_oid, &rep->contentType)) {
+    if (heim_oid_cmp(oid_id_pkcs7_signedData(), &rep->contentType)) {
 	krb5_set_error_string(context, "PKINIT: Invalid content type");
 	return EINVAL;
     }
