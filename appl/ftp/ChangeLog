@@ -1,4 +1,4 @@
-2003-05-07  Love  <lha@stacken.kth.se>
+2003-05-07  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* ftp/cmdtab.c: include afslog in both the krb4 and krb5 case
 	
