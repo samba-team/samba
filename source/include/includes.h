@@ -590,6 +590,7 @@ char *mktemp(char *); /* No standard include */
 #include <sys/termios.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>                /* needed for inet_ntoa proto */
+#include <stropts.h>
 #ifdef HPUX_10_TRUSTED
 #include <hpsecurity.h>
 #include <prot.h>

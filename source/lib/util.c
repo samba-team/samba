@@ -22,7 +22,11 @@
 #include "includes.h"
 
 #if (defined(NETGROUP) && defined (AUTOMOUNT))
+#ifdef NISPLUS
+#include <rpcsvc/nis.h>
+#else
 #include "rpcsvc/ypclnt.h"
+#endif
 #endif
 
 pstring scope = "";
@@ -3797,6 +3801,58 @@ char *client_addr(void)
 *******************************************************************/
 
 #if (defined(NETGROUP) && defined(AUTOMOUNT))
+#ifdef NISPLUS
+static char *automount_lookup(char *user_name)
+{
+  static fstring last_key = "";
+  static pstring last_value = "";
+ 
+  char *nis_map = (char *)lp_nis_home_map_name();
+ 
+  char nis_domain[NIS_MAXNAMELEN + 1];
+  char buffer[NIS_MAXATTRVAL + 1];
+  nis_result *result;
+  nis_object *object;
+  entry_obj  *entry;
+ 
+  strncpy(nis_domain, (char *)nis_local_directory(), NIS_MAXNAMELEN);
+  nis_domain[NIS_MAXNAMELEN] = '\0';
+ 
+  DEBUG(5, ("NIS+ Domain: %s\n", nis_domain));
+ 
+  if (strcmp(user_name, last_key))
+  {
+    sprintf(buffer, "[%s=%s]%s.%s", "key", user_name, nis_map, nis_domain);
+    DEBUG(5, ("NIS+ querystring: %s\n", buffer));
+ 
+    if (result = nis_list(buffer, RETURN_RESULT, NULL, NULL))
+    {
+       if (result->status != NIS_SUCCESS)
+      {
+        DEBUG(3, ("NIS+ query failed: %s\n", nis_sperrno(result->status)));
+        fstrcpy(last_key, ""); pstrcpy(last_value, "");
+      }
+      else
+      {
+        object = result->objects.objects_val;
+        if (object->zo_data.zo_type == ENTRY_OBJ)
+        {
+           entry = &object->zo_data.objdata_u.en_data;
+           DEBUG(5, ("NIS+ entry type: %s\n", entry->en_type));
+           DEBUG(3, ("NIS+ result: %s\n", entry->en_cols.en_cols_val[1].ec_value.ec_value_val));
+ 
+           pstrcpy(last_value, entry->en_cols.en_cols_val[1].ec_value.ec_value_val);
+           string_sub(last_value, "&", user_name);
+           fstrcpy(last_key, user_name);
+        }
+      }
+    }
+    nis_freeresult(result);
+  }
+  DEBUG(4, ("NIS+ Lookup: %s resulted in %s\n", user_name, last_value));
+  return last_value;
+}
+#else /* NISPLUS */
 static char *automount_lookup(char *user_name)
 {
   static fstring last_key = "";
@@ -3843,6 +3899,7 @@ static char *automount_lookup(char *user_name)
   DEBUG(4, ("YP Lookup: %s resulted in %s\n", user_name, last_value));
   return last_value;
 }
+#endif /* NISPLUS */
 #endif
 
 /*******************************************************************
