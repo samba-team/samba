@@ -7,7 +7,7 @@ AWKPROGS=dump.awk harness.awk header.awk parsefn.awk main.awk parsetree.awk temp
 all: test.h vluke
 
 test.h : $(AWKPROGS)
-	igawk -f main.awk spool.struct
+	igawk -f main.awk srvsvc.struct
 
 vluke: test.h $(OBJ) 
 	$(CC) $(CFLAGS) -o vluke $(OBJ)

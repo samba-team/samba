@@ -13,6 +13,7 @@ function header_element(f, elnum,
 			LOCAL, type)
 {
 	type=elements[elnum, "type"];
+	if (substr(type,1,1) == ".") return;
 	xprintf(f,"\t%s %s;\n", type, header_elstring(elnum));
 }
 
