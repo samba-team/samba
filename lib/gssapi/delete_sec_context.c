@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -64,5 +64,6 @@ OM_uint32 gss_delete_sec_context
 
     free (*context_handle);
     *context_handle = GSS_C_NO_CONTEXT;
+    *minor_status = 0;
     return GSS_S_COMPLETE;
 }
