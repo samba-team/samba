@@ -10,7 +10,8 @@ CFLAGS = @CFLAGS@
 INSTALL = @INSTALL@
 LIBS = @LIBS@
 
-XLIBS=-lXt -lXmu -lXext -lX11
+XINCS=-I/usr/X11R6 -I/usr/include/X11R5 -I/usr/local/include
+XLIBS=-L/usr/X11R6 -L/usr/lib/X11R5 -L/usr/local/lib -lXt -lXext -lX11
 
 MKDIRHIER = @top_srcdir@/mkdirhier-sh
 
@@ -35,7 +36,7 @@ Wall:
 	make CFLAGS="-g -Wall -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
 
 .c.o:
-	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $<
+	$(CC) -c $(CPPFLAGS) $(DEFS) $(XINCS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $<
 
 install: all
 	$(MKDIRHIER) $(bindir)
