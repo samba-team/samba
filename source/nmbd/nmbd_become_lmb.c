@@ -212,9 +212,9 @@ static void release_1d_name( struct subnet_record *subrec, char *workgroup_name,
   if((namerec = find_name_on_subnet( subrec, &nmbname, FIND_SELF_NAME))!=NULL)
   {
     struct userdata_struct *userdata;
+    int size = sizeof(struct userdata_struct) + sizeof(BOOL);
 
-    if((userdata = (struct userdata_struct *)malloc( 
-                      sizeof(struct userdata_struct) + sizeof(BOOL))) == NULL)
+    if((userdata = (struct userdata_struct *)malloc(size)) == NULL)
     {
       DEBUG(0,("release_1d_name: malloc fail.\n"));
       return;
@@ -230,7 +230,7 @@ static void release_1d_name( struct subnet_record *subrec, char *workgroup_name,
                  unbecome_local_master_fail,
                  userdata);
 
-    free((char *)userdata);
+    zero_free(userdata, size);
   }
 }
 
@@ -526,6 +526,7 @@ void become_local_master_browser(struct subnet_record *subrec, struct work_recor
 {
   struct server_record *servrec;
   struct userdata_struct *userdata;
+  int size = sizeof(struct userdata_struct) + sizeof(fstring) + 1;
 
   /* Sanity check. */
   if (!lp_local_master())
@@ -561,7 +562,7 @@ in workgroup %s on subnet %s\n",
   subrec->work_changed = True;
 
   /* Setup the userdata_struct. */
-  if((userdata = (struct userdata_struct *)malloc(sizeof(struct userdata_struct) + sizeof(fstring)+1)) == NULL)
+  if((userdata = (struct userdata_struct *)malloc(size)) == NULL)
   {
     DEBUG(0,("become_local_master_browser: malloc fail.\n"));
     return;
@@ -578,7 +579,7 @@ in workgroup %s on subnet %s\n",
                 become_local_master_fail1,
                 userdata);
 
-  free((char *)userdata);
+  zero_free(userdata, size);
 }
 
 /***************************************************************

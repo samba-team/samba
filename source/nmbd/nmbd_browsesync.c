@@ -386,6 +386,7 @@ static void find_domain_master_name_query_success(struct subnet_record *subrec,
   struct work_record *work;
   struct nmb_name nmbname;
   struct userdata_struct *userdata;
+  int size = sizeof(struct userdata_struct) + sizeof(fstring)+1;
 
   if (!(work = find_workgroup_on_subnet(subrec, q_name->name))) {
       DEBUG(0, ("find_domain_master_name_query_success: failed to find \
@@ -418,7 +419,7 @@ workgroup %s\n", q_name->name ));
 
   /* Setup the userdata_struct - this is copied so we can use
      a stack variable for this. */
-  if((userdata = (struct userdata_struct *)malloc(sizeof(struct userdata_struct) + sizeof(fstring)+1)) == NULL)
+  if((userdata = (struct userdata_struct *)malloc(size)) == NULL)
   {
     DEBUG(0, ("find_domain_master_name_query_success: malloc fail.\n"));
     return;
@@ -434,7 +435,7 @@ workgroup %s\n", q_name->name ));
                domain_master_node_status_fail,
                userdata);
 
-  free((char *)userdata);
+  zero_free(userdata, size);
 }
 
 /****************************************************************************

@@ -576,7 +576,7 @@ on the same subnet (%s) as the requestor. Not replying.\n",
   if (!success && bcast)
   {
     if((prdata != rdata) && (prdata != NULL))
-      free(rdata);
+      free(prdata);
     return; /* Never reply with a negative response to broadcasts. */
   }
 
@@ -589,7 +589,7 @@ on the same subnet (%s) as the requestor. Not replying.\n",
   if(!success && !bcast && nmb->header.nm_flags.recursion_desired)
   {
     if((prdata != rdata) && (prdata != NULL))
-      free(rdata);
+      free(prdata);
     return;
   }
 
