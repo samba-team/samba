@@ -1,6 +1,6 @@
 /* 
    Unix SMB/CIFS implementation.
-   Winbind ID Mapping
+   ID Mapping
    Copyright (C) Tim Potter 2000
    Copyright (C) Anthony Liguori <aliguor@us.ibm.com>	2003
    Copyright (C) Simo Sorce 2003
