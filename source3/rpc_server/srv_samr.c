@@ -1839,7 +1839,7 @@ static BOOL _api_samr_create_user(POLICY_HND dom_pol, UNISTR2 user_account, uint
 
 	/* add the user in the /etc/passwd file or the unix authority system */
 	if (lp_adduser_script())
-		smb_create_user(mach_acct);
+		smb_create_user(mach_acct,NULL);
 
 	/* add the user in the smbpasswd file or the Samba authority database */
 	if (!local_password_change(mach_acct, local_flags, NULL, err_str, 
