@@ -101,7 +101,7 @@
 #elif defined(MAILDIR)
 #define POP_MAILDIR	MAILDIR
 #else
-#define POP_MAILDIR	"/var/spool/mail"
+#define POP_MAILDIR	"/usr/spool/mail"
 #endif
 
 #define POP_DROP        POP_MAILDIR "/.%s.pop"
