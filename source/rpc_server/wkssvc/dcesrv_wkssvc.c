@@ -42,7 +42,7 @@ static WERROR wkssvc_NetWkstaGetInfo(struct dcesrv_call_state *dce_call, TALLOC_
 	{
 		struct wkssvc_NetWkstaInfo100 *info100;
 		
-		info100 = talloc_p(mem_ctx, struct wkssvc_NetWkstaInfo100);
+		info100 = talloc(mem_ctx, struct wkssvc_NetWkstaInfo100);
 		W_ERROR_HAVE_NO_MEMORY(info100);
 
 		info100->platform_id	= dcesrv_common_get_platform_id(mem_ctx, dce_ctx);
@@ -60,7 +60,7 @@ static WERROR wkssvc_NetWkstaGetInfo(struct dcesrv_call_state *dce_call, TALLOC_
 	{
 		struct wkssvc_NetWkstaInfo101 *info101;
 
-		info101 = talloc_p(mem_ctx, struct wkssvc_NetWkstaInfo101);
+		info101 = talloc(mem_ctx, struct wkssvc_NetWkstaInfo101);
 		W_ERROR_HAVE_NO_MEMORY(info101);
 
 		info101->platform_id	= dcesrv_common_get_platform_id(mem_ctx, dce_ctx);
@@ -143,7 +143,7 @@ static WERROR wkssvc_NetWkstaTransportEnum(struct dcesrv_call_state *dce_call, T
 
 	switch (r->in.level) {
 	case 0:
-		r->out.ctr.ctr0 = talloc_p(mem_ctx, struct wkssvc_NetWkstaTransportCtr0);
+		r->out.ctr.ctr0 = talloc(mem_ctx, struct wkssvc_NetWkstaTransportCtr0);
 		W_ERROR_HAVE_NO_MEMORY(r->out.ctr.ctr0);
 
 		r->out.ctr.ctr0->count = 0;

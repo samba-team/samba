@@ -53,7 +53,7 @@ static NTSTATUS smblsa_connect(struct smbcli_state *cli)
 		return NT_STATUS_OK;
 	}
 
-	lsa = talloc_p(cli, struct smblsa_state);
+	lsa = talloc(cli, struct smblsa_state);
 	if (lsa == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -217,7 +217,7 @@ NTSTATUS smblsa_lookup_sid(struct smbcli_state *cli,
 	names.names = NULL;
 
 	sids.num_sids = 1;
-	sids.sids = talloc_p(mem_ctx2, struct lsa_SidPtr);
+	sids.sids = talloc(mem_ctx2, struct lsa_SidPtr);
 	sids.sids[0].sid = sid;
 
 	r.in.handle = &cli->lsa->handle;

@@ -147,7 +147,7 @@ int smbcli_list_new(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 						      state.mem_ctx, &first_parms,
 						      (void*)&state, smbcli_list_new_callback);
 			if (!NT_STATUS_IS_OK(status)) {
-				talloc_destroy(state.mem_ctx);
+				talloc_free(state.mem_ctx);
 				return -1;
 			}
 		
@@ -192,7 +192,7 @@ int smbcli_list_new(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 		fn(&state.dirlist[i], Mask, caller_state);
 	}
 
-	talloc_destroy(state.mem_ctx);
+	talloc_free(state.mem_ctx);
 
 	return state.total_received;
 }
@@ -283,7 +283,7 @@ int smbcli_list_old(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 						      smbcli_list_old_callback);
 
 			if (!NT_STATUS_IS_OK(status)) {
-				talloc_destroy(state.mem_ctx);
+				talloc_free(state.mem_ctx);
 				return -1;
 			}
 		
@@ -307,7 +307,7 @@ int smbcli_list_old(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 				break;
 			}
 			if (!NT_STATUS_IS_OK(status)) {
-				talloc_destroy(state.mem_ctx);
+				talloc_free(state.mem_ctx);
 				return -1;
 			}
 			received = next_parms.search_next.out.count;
@@ -321,7 +321,7 @@ int smbcli_list_old(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 		fn(&state.dirlist[i], Mask, caller_state);
 	}
 
-	talloc_destroy(state.mem_ctx);
+	talloc_free(state.mem_ctx);
 
 	return state.total_received;
 }

@@ -136,7 +136,7 @@ static BOOL test_GetKeySecurity(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(r);
 
 	r.in.handle = handle;
-	r.in.data = r.out.data =  talloc_zero_p(mem_ctx, struct KeySecurityData);
+	r.in.data = r.out.data =  talloc_zero(mem_ctx, struct KeySecurityData);
 	r.in.data->size = 0xffff;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 
@@ -357,15 +357,15 @@ static BOOL test_QueryMultipleValues(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("Testing QueryMultipleValues\n");
 
 	r.in.key_handle = handle;
-	r.in.values = r.out.values = talloc_array_p(mem_ctx, struct QueryMultipleValue, 1);
-	r.in.values[0].name = talloc_p(mem_ctx, struct winreg_String);
+	r.in.values = r.out.values = talloc_array(mem_ctx, struct QueryMultipleValue, 1);
+	r.in.values[0].name = talloc(mem_ctx, struct winreg_String);
 	r.in.values[0].name->name = valuename;
 	r.in.values[0].offset = 0;
 	r.in.values[0].length = 0;
 	r.in.values[0].type = 0;
 
 	r.in.num_values = 1;
-	r.in.buffer_size = r.out.buffer_size = talloc_p(mem_ctx, uint32);
+	r.in.buffer_size = r.out.buffer_size = talloc(mem_ctx, uint32);
 	*r.in.buffer_size = 0x20;
 	r.in.buffer = r.out.buffer = talloc_zero_array(mem_ctx, uint8, *r.in.buffer_size);
 
@@ -557,7 +557,7 @@ static BOOL test_InitiateSystemShutdown(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 	NTSTATUS status;
 	
 	r.in.hostname = NULL;
-	r.in.message = talloc_p(mem_ctx, struct winreg_String);
+	r.in.message = talloc(mem_ctx, struct winreg_String);
 	init_winreg_String(r.in.message, msg);
 	r.in.force_apps = 1;
 	r.in.timeout = timeout;
@@ -585,7 +585,7 @@ static BOOL test_InitiateSystemShutdownEx(struct dcerpc_pipe *p, TALLOC_CTX *mem
 	NTSTATUS status;
 	
 	r.in.hostname = NULL;
-	r.in.message = talloc_p(mem_ctx, struct winreg_String);
+	r.in.message = talloc(mem_ctx, struct winreg_String);
 	init_winreg_String(r.in.message, msg);
 	r.in.force_apps = 1;
 	r.in.timeout = timeout;
@@ -784,7 +784,7 @@ BOOL torture_rpc_winreg(void)
 			ret = False;
 	}
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
         torture_rpc_close(p);
 

@@ -80,7 +80,7 @@ static void ldap_parse_attributetypedescription(struct ldap_schema *schema, DATA
 {
 	char *desc;
 
-	desc = talloc_array_p(schema, char, data->lenght + 1);
+	desc = talloc_array(schema, char, data->lenght + 1);
 	memcpy(desc, data->data, data->lenght);
 	desc[data->lenght] = '\0';
 
@@ -90,7 +90,7 @@ static void ldap_parse_objectclassdescription(struct ldap_schema *schema, DATA_B
 {
 	char *desc;
 
-	desc = talloc_array_p(schema, char, data->lenght + 1);
+	desc = talloc_array(schema, char, data->lenght + 1);
 	memcpy(desc, data->data, data->lenght);
 	desc[data->lenght] = '\0';
 
@@ -112,7 +112,7 @@ static struct ldap_schema *ldap_get_schema(void *mem_ctx, struct ldap_schema *sc
 
 	local_schema = schema;
 	if (local_schema == NULL) {
-		local_schema = talloc_p(mem_ctx, struct ldap_schema);
+		local_schema = talloc(mem_ctx, struct ldap_schema);
 		ALLOC_CHECK(local_schema);
 	}
 
@@ -156,10 +156,10 @@ struct ldap_dn *ldap_parse_dn(void *mem_ctx, const char *orig_dn)
 	char *p, *start, *separator, *src, *dest, *dn_copy, *dn_end;
 	int i, size, orig_len;
 
-	dn = talloc_p(mem_ctx, struct ldap_dn);
+	dn = talloc(mem_ctx, struct ldap_dn);
 	dn->comp_num = 0;
-	dn->components = talloc_array_p(dn, struct dn_component *, 1);
-	component = talloc_p(dn, struct dn_component);
+	dn->components = talloc_array(dn, struct dn_component *, 1);
+	component = talloc(dn, struct dn_component);
 	component->attr_num = 0;
 
 	orig_len = strlen(orig_dn);
@@ -171,8 +171,8 @@ struct ldap_dn *ldap_parse_dn(void *mem_ctx, const char *orig_dn)
 	dn_copy = p = talloc_strdup(mem_ctx, orig_dn);
 	dn_end = dn_copy + orig_len + 1;
 	do {
-		component->attributes = talloc_array_p(component, struct dn_attribute *, 1);
-		attribute = talloc_p(component, struct dn_attribute);
+		component->attributes = talloc_array(component, struct dn_attribute *, 1);
+		attribute = talloc(component, struct dn_attribute);
 
 		/* skip "spaces" */
 		while (*p == ' ' || *p == '\n') {
@@ -255,10 +255,10 @@ struct ldap_dn *ldap_parse_dn(void *mem_ctx, const char *orig_dn)
 			component->attr_num++;
 
 			if (*separator == '+') { /* expect other attributes in this component */
-				component->attributes = talloc_realloc_p(component, component->attributes, struct dn_attribute *, component->attr_num + 1);
+				component->attributes = talloc_realloc(component, component->attributes, struct dn_attribute *, component->attr_num + 1);
 
 				/* allocate new attribute structure */
-				attribute = talloc_p(component, struct dn_attribute);
+				attribute = talloc(component, struct dn_attribute);
 
 				/* skip spaces past the separator */
 				p = separator + strspn(p, " \n");
@@ -290,8 +290,8 @@ struct ldap_dn *ldap_parse_dn(void *mem_ctx, const char *orig_dn)
 		dn->comp_num++;
 
 		if (*separator == ',' || *separator == ';') {
-			dn->components = talloc_realloc_p(dn, dn->components, struct dn_component *, dn->comp_num + 1);
-			component = talloc_p(dn, struct dn_component);
+			dn->components = talloc_realloc(dn, dn->components, struct dn_component *, dn->comp_num + 1);
+			component = talloc(dn, struct dn_component);
 			component->attr_num = 0;
 		}
 		p = separator + 1;

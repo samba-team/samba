@@ -97,7 +97,7 @@ NTSTATUS pvfs_list_start(struct pvfs_state *pvfs, struct pvfs_filename *name,
 	char *pattern;
 	struct pvfs_dir *dir;
 
-	(*dirp) = talloc_zero_p(mem_ctx, struct pvfs_dir);
+	(*dirp) = talloc_zero(mem_ctx, struct pvfs_dir);
 	if (*dirp == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

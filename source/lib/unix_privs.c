@@ -57,7 +57,7 @@ static int privileges_destructor(void *ptr)
 void *root_privileges(void)
 {
 	struct saved_state *s;
-	s = talloc_p(NULL, struct saved_state);
+	s = talloc(NULL, struct saved_state);
 	if (!s) return NULL;
 	s->uid = geteuid();
 	if (s->uid != 0) {

@@ -345,6 +345,6 @@ BOOL torture_raw_oplock(void)
 	}
 
 	torture_close_connection(cli1);
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	return ret;
 }

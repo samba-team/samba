@@ -126,7 +126,7 @@ static int pvfs_wait_destructor(void *ptr)
 	struct timed_event te;
 	struct pvfs_wait *pwait;
 
-	pwait = talloc_p(pvfs, struct pvfs_wait);
+	pwait = talloc(pvfs, struct pvfs_wait);
 	if (pwait == NULL) {
 		return NULL;
 	}

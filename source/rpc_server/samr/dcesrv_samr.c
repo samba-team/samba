@@ -53,7 +53,7 @@ static NTSTATUS samr_Connect(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 
 	ZERO_STRUCTP(r->out.connect_handle);
 
-	c_state = talloc_p(dce_call->conn, struct samr_connect_state);
+	c_state = talloc(dce_call->conn, struct samr_connect_state);
 	if (!c_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -123,7 +123,7 @@ static NTSTATUS samr_QuerySecurity(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, DCESRV_HANDLE_ANY);
 
-	sd = talloc_p(mem_ctx, struct sec_desc_buf);
+	sd = talloc(mem_ctx, struct sec_desc_buf);
 	if (sd == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -232,7 +232,7 @@ static NTSTATUS samr_EnumDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		return NT_STATUS_OK;
 	}
 
-	array = talloc_p(mem_ctx, struct samr_SamArray);
+	array = talloc(mem_ctx, struct samr_SamArray);
 	if (array == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -240,7 +240,7 @@ static NTSTATUS samr_EnumDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	array->count = 0;
 	array->entries = NULL;
 
-	array->entries = talloc_array_p(mem_ctx, struct samr_SamEntry, count - start_i);
+	array->entries = talloc_array(mem_ctx, struct samr_SamEntry, count - start_i);
 	if (array->entries == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -300,7 +300,7 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
-	d_state = talloc_p(c_state, struct samr_domain_state);
+	d_state = talloc(c_state, struct samr_domain_state);
 	if (!d_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -426,7 +426,7 @@ static NTSTATUS samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_
 
 	d_state = h->data;
 
-	r->out.info = talloc_p(mem_ctx, union samr_DomainInfo);
+	r->out.info = talloc(mem_ctx, union samr_DomainInfo);
 	if (!r->out.info) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -541,7 +541,7 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	a_state = talloc_p(d_state, struct samr_account_state);
+	a_state = talloc(d_state, struct samr_account_state);
 	if (!a_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -620,7 +620,7 @@ static NTSTATUS samr_EnumDomainGroups(struct dcesrv_call_state *dce_call, TALLOC
 	}
 
 	/* convert to SamEntry format */
-	entries = talloc_array_p(mem_ctx, struct samr_SamEntry, ldb_cnt);
+	entries = talloc_array(mem_ctx, struct samr_SamEntry, ldb_cnt);
 	if (!entries) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -661,7 +661,7 @@ static NTSTATUS samr_EnumDomainGroups(struct dcesrv_call_state *dce_call, TALLOC
 	r->out.num_entries = MIN(r->out.num_entries, 
 				 1+(r->in.max_size/SAMR_ENUM_USERS_MULTIPLIER));
 
-	r->out.sam = talloc_p(mem_ctx, struct samr_SamArray);
+	r->out.sam = talloc(mem_ctx, struct samr_SamArray);
 	if (!r->out.sam) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -811,7 +811,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	a_state = talloc_p(d_state, struct samr_account_state);
+	a_state = talloc(d_state, struct samr_account_state);
 	if (!a_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -896,7 +896,7 @@ static NTSTATUS samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	/* convert to SamEntry format */
-	entries = talloc_array_p(mem_ctx, struct samr_SamEntry, count);
+	entries = talloc_array(mem_ctx, struct samr_SamEntry, count);
 	if (!entries) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -924,7 +924,7 @@ static NTSTATUS samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, TALLOC_
 	r->out.num_entries = MIN(r->out.num_entries, 
 				 1+(r->in.max_size/SAMR_ENUM_USERS_MULTIPLIER));
 
-	r->out.sam = talloc_p(mem_ctx, struct samr_SamArray);
+	r->out.sam = talloc(mem_ctx, struct samr_SamArray);
 	if (!r->out.sam) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1027,7 +1027,7 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	a_state = talloc_p(d_state, struct samr_account_state);
+	a_state = talloc(d_state, struct samr_account_state);
 	if (!a_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1101,7 +1101,7 @@ static NTSTATUS samr_EnumDomainAliases(struct dcesrv_call_state *dce_call, TALLO
 	}
 
 	/* convert to SamEntry format */
-	entries = talloc_array_p(mem_ctx, struct samr_SamEntry, ldb_cnt);
+	entries = talloc_array(mem_ctx, struct samr_SamEntry, ldb_cnt);
 	if (!entries) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1140,7 +1140,7 @@ static NTSTATUS samr_EnumDomainAliases(struct dcesrv_call_state *dce_call, TALLO
 	r->out.num_entries = count - first;
 	r->out.num_entries = MIN(r->out.num_entries, 1000);
 
-	r->out.sam = talloc_p(mem_ctx, struct samr_SamArray);
+	r->out.sam = talloc(mem_ctx, struct samr_SamArray);
 	if (!r->out.sam) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1223,7 +1223,7 @@ static NTSTATUS samr_GetAliasMembership(struct dcesrv_call_state *dce_call, TALL
 	}
 
 	r->out.rids->count = 0;
-	r->out.rids->ids = talloc_array_p(mem_ctx, uint32_t, count);
+	r->out.rids->ids = talloc_array(mem_ctx, uint32_t, count);
 	if (r->out.rids->ids == NULL)
 		return NT_STATUS_NO_MEMORY;
 
@@ -1270,8 +1270,8 @@ static NTSTATUS samr_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		return NT_STATUS_OK;
 	}
 
-	r->out.rids.ids = talloc_array_p(mem_ctx, uint32_t, r->in.num_names);
-	r->out.types.ids = talloc_array_p(mem_ctx, uint32_t, r->in.num_names);
+	r->out.rids.ids = talloc_array(mem_ctx, uint32_t, r->in.num_names);
+	r->out.types.ids = talloc_array(mem_ctx, uint32_t, r->in.num_names);
 	if (!r->out.rids.ids || !r->out.types.ids) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1351,8 +1351,8 @@ static NTSTATUS samr_LookupRids(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	if (r->in.num_rids == 0)
 		return NT_STATUS_OK;
 
-	names = talloc_array_p(mem_ctx, struct samr_String, r->in.num_rids);
-	ids = talloc_array_p(mem_ctx, uint32_t, r->in.num_rids);
+	names = talloc_array(mem_ctx, struct samr_String, r->in.num_rids);
+	ids = talloc_array(mem_ctx, uint32_t, r->in.num_rids);
 
 	if ((names == NULL) || (ids == NULL))
 		return NT_STATUS_NO_MEMORY;
@@ -1450,7 +1450,7 @@ static NTSTATUS samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	a_state = talloc_p(d_state, struct samr_account_state);
+	a_state = talloc(d_state, struct samr_account_state);
 	if (!a_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1554,7 +1554,7 @@ static NTSTATUS samr_QueryGroupInfo(struct dcesrv_call_state *dce_call, TALLOC_C
 	msg = res[0];
 
 	/* allocate the info structure */
-	r->out.info = talloc_p(mem_ctx, union samr_GroupInfo);
+	r->out.info = talloc(mem_ctx, union samr_GroupInfo);
 	if (r->out.info == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1813,7 +1813,7 @@ static NTSTATUS samr_QueryGroupMember(struct dcesrv_call_state *dce_call, TALLOC
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	array = talloc_p(mem_ctx, struct samr_ridArray);
+	array = talloc(mem_ctx, struct samr_ridArray);
 
 	if (array == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -1827,12 +1827,12 @@ static NTSTATUS samr_QueryGroupMember(struct dcesrv_call_state *dce_call, TALLOC
 
 		array->count = el->num_values;
 
-		array->rids = talloc_array_p(mem_ctx, uint32,
+		array->rids = talloc_array(mem_ctx, uint32,
 					     el->num_values);
 		if (array->rids == NULL)
 			return NT_STATUS_NO_MEMORY;
 
-		array->unknown = talloc_array_p(mem_ctx, uint32,
+		array->unknown = talloc_array(mem_ctx, uint32,
 						el->num_values);
 		if (array->unknown == NULL)
 			return NT_STATUS_NO_MEMORY;
@@ -1924,7 +1924,7 @@ static NTSTATUS samr_OpenAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	a_state = talloc_p(d_state, struct samr_account_state);
+	a_state = talloc(d_state, struct samr_account_state);
 	if (!a_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1980,7 +1980,7 @@ static NTSTATUS samr_QueryAliasInfo(struct dcesrv_call_state *dce_call, TALLOC_C
 	msg = res[0];
 
 	/* allocate the info structure */
-	r->out.info = talloc_p(mem_ctx, union samr_AliasInfo);
+	r->out.info = talloc(mem_ctx, union samr_AliasInfo);
 	if (r->out.info == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2282,7 +2282,7 @@ static NTSTATUS samr_GetMembersInAlias(struct dcesrv_call_state *dce_call, TALLO
 	if (el != NULL) {
 		int i;
 
-		sids = talloc_array_p(mem_ctx, struct lsa_SidPtr,
+		sids = talloc_array(mem_ctx, struct lsa_SidPtr,
 				      el->num_values);
 
 		if (sids == NULL)
@@ -2356,7 +2356,7 @@ static NTSTATUS samr_OpenUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	a_state = talloc_p(mem_ctx, struct samr_account_state);
+	a_state = talloc(mem_ctx, struct samr_account_state);
 	if (!a_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2438,7 +2438,7 @@ static NTSTATUS samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 	msg = res[0];
 
 	/* allocate the info structure */
-	r->out.info = talloc_p(mem_ctx, union samr_UserInfo);
+	r->out.info = talloc(mem_ctx, union samr_UserInfo);
 	if (r->out.info == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2858,7 +2858,7 @@ static NTSTATUS samr_GetGroupsForUser(struct dcesrv_call_state *dce_call, TALLOC
 	if (count < 0)
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 
-	array = talloc_p(mem_ctx, struct samr_RidArray);
+	array = talloc(mem_ctx, struct samr_RidArray);
 	if (array == NULL)
 		return NT_STATUS_NO_MEMORY;
 
@@ -2867,7 +2867,7 @@ static NTSTATUS samr_GetGroupsForUser(struct dcesrv_call_state *dce_call, TALLOC
 
 	if (count > 0) {
 		int i;
-		array->rid = talloc_array_p(mem_ctx, struct samr_RidType,
+		array->rid = talloc_array(mem_ctx, struct samr_RidType,
 					    count);
 
 		if (array->rid == NULL)
@@ -2960,19 +2960,19 @@ static NTSTATUS samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call, TALLOC
 
 	switch (r->in.level) {
 	case 1:
-		entriesGeneral = talloc_array_p(mem_ctx,
+		entriesGeneral = talloc_array(mem_ctx,
 						struct samr_DispEntryGeneral,
 						ldb_cnt);
 		break;
 	case 2:
 	case 3:
-		entriesFull = talloc_array_p(mem_ctx,
+		entriesFull = talloc_array(mem_ctx,
 					     struct samr_DispEntryFull,
 					     ldb_cnt);
 		break;
 	case 4:
 	case 5:
-		entriesAscii = talloc_array_p(mem_ctx,
+		entriesAscii = talloc_array(mem_ctx,
 					      struct samr_DispEntryAscii,
 					      ldb_cnt);
 		break;

@@ -227,7 +227,7 @@ static NTSTATUS dcerpc_schannel_update(struct gensec_security *gensec_security, 
 NTSTATUS dcerpc_schannel_session_info(struct gensec_security *gensec_security,
 				      struct auth_session_info **session_info)
 {
-	(*session_info) = talloc_p(gensec_security, struct auth_session_info);
+	(*session_info) = talloc(gensec_security, struct auth_session_info);
 	NT_STATUS_HAVE_NO_MEMORY(*session_info);
 
 	ZERO_STRUCTP(*session_info);
@@ -271,7 +271,7 @@ static NTSTATUS dcerpc_schannel_start(struct gensec_security *gensec_security)
 {
 	struct dcerpc_schannel_state *dce_schan_state;
 
-	dce_schan_state = talloc_p(gensec_security, struct dcerpc_schannel_state);
+	dce_schan_state = talloc(gensec_security, struct dcerpc_schannel_state);
 	if (!dce_schan_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -470,7 +470,7 @@ NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	int chan_type = 0;
 	struct creds_CredentialState *creds;
-	creds = talloc_p(p, struct creds_CredentialState);
+	creds = talloc(p, struct creds_CredentialState);
 	if (!creds) {
 		return NT_STATUS_NO_MEMORY;
 	}

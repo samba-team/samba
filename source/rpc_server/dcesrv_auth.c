@@ -84,7 +84,7 @@ BOOL dcesrv_auth_bind(struct dcesrv_call_state *call)
 		return True;
 	}
 
-	dce_conn->auth_state.auth_info = talloc_p(dce_conn, struct dcerpc_auth);
+	dce_conn->auth_state.auth_info = talloc(dce_conn, struct dcerpc_auth);
 	if (!dce_conn->auth_state.auth_info) {
 		return False;
 	}
@@ -214,7 +214,7 @@ BOOL dcesrv_auth_alter(struct dcesrv_call_state *call)
 		return False;
 	}
 
-	dce_conn->auth_state.auth_info = talloc_p(dce_conn, struct dcerpc_auth);
+	dce_conn->auth_state.auth_info = talloc(dce_conn, struct dcerpc_auth);
 	if (!dce_conn->auth_state.auth_info) {
 		return False;
 	}

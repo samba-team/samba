@@ -104,7 +104,7 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 	char *base_directory;
 	NTSTATUS status;
 
-	pvfs = talloc_zero_p(tcon, struct pvfs_state);
+	pvfs = talloc_zero(tcon, struct pvfs_state);
 	if (pvfs == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

@@ -84,7 +84,7 @@ static void *rootdse_db_connect(TALLOC_CTX *mem_ctx)
 		return talloc_reference(mem_ctx, ctx);
 	}
 
-	ctx = talloc_p(mem_ctx, struct rootdse_db_context);
+	ctx = talloc(mem_ctx, struct rootdse_db_context);
 	if (ctx == NULL) {
 		errno = ENOMEM;
 		return NULL;
@@ -124,7 +124,7 @@ static NTSTATUS fill_dynamic_values(void *mem_ctx, struct ldap_attribute *attrs)
 	if (strcasecmp(attrs->name, "currentTime") == 0)
 	{
 		int num_currentTime = 1;
-		DATA_BLOB *currentTime = talloc_array_p(mem_ctx, DATA_BLOB, num_currentTime);
+		DATA_BLOB *currentTime = talloc_array(mem_ctx, DATA_BLOB, num_currentTime);
 		char *str = ldap_timestring(mem_ctx, time(NULL));
 		NT_STATUS_HAVE_NO_MEMORY(str);
 		currentTime[0].data = (uint8_t *)str;
@@ -205,7 +205,7 @@ static NTSTATUS fill_dynamic_values(void *mem_ctx, struct ldap_attribute *attrs)
 	if (strcasecmp(attrs->name, "supportedLDAPVersion") == 0)
 	{
 		int num_supportedLDAPVersion = 1;
-		DATA_BLOB *supportedLDAPVersion = talloc_array_p(mem_ctx, DATA_BLOB, num_supportedLDAPVersion);
+		DATA_BLOB *supportedLDAPVersion = talloc_array(mem_ctx, DATA_BLOB, num_supportedLDAPVersion);
 		supportedLDAPVersion[0] = ATTR_BLOB_CONST("3");
 		ATTR_SINGLE_NOVAL(mem_ctx, attrs, supportedLDAPVersion, num_supportedLDAPVersion, "supportedLDAPVersion");
 		return NT_STATUS_OK;
@@ -288,7 +288,7 @@ static NTSTATUS fill_dynamic_values(void *mem_ctx, struct ldap_attribute *attrs)
 	 */
 
 	{
-		DATA_BLOB *x = talloc_array_p(mem_ctx, DATA_BLOB, 1);
+		DATA_BLOB *x = talloc_array(mem_ctx, DATA_BLOB, 1);
 		x[0] = ATTR_BLOB_CONST("0");
 		ATTR_SINGLE_NOVAL(mem_ctx, attrs, x, 1, attrs->name);
 	}
@@ -321,7 +321,7 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 	NT_STATUS_HAVE_NO_MEMORY(rootdsedb);
 
 	if (r->num_attributes >= 1) {
-		attrs = talloc_array_p(rootdsedb, const char *, r->num_attributes+1);
+		attrs = talloc_array(rootdsedb, const char *, r->num_attributes+1);
 		NT_STATUS_HAVE_NO_MEMORY(attrs);
 
 		for (j=0; j < r->num_attributes; j++) {
@@ -346,7 +346,7 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 			goto queue_reply;
 		}
 		ent->num_attributes = res[0]->num_elements;
-		ent->attributes = talloc_array_p(ent_r, struct ldap_attribute, ent->num_attributes);
+		ent->attributes = talloc_array(ent_r, struct ldap_attribute, ent->num_attributes);
 		NT_STATUS_HAVE_NO_MEMORY(ent->attributes);
 		for (j=0; j < ent->num_attributes; j++) {
 			ent->attributes[j].name = talloc_steal(ent->attributes, res[0]->elements[j].name);
@@ -360,7 +360,7 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 					return status;
 				}
 			} else {
-				ent->attributes[j].values = talloc_array_p(ent->attributes,
+				ent->attributes[j].values = talloc_array(ent->attributes,
 								DATA_BLOB, ent->attributes[j].num_values);
 				NT_STATUS_HAVE_NO_MEMORY(ent->attributes[j].values);
 				for (y=0; y < ent->attributes[j].num_values; y++) {

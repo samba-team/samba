@@ -77,7 +77,7 @@ static NTSTATUS try_trans2(struct smbcli_state *cli,
 	*rparam_len = t2.out.params.length;
 	*rdata_len = t2.out.data.length;
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	
 	return status;
 }
@@ -355,13 +355,13 @@ static NTSTATUS try_nttrans(struct smbcli_state *cli,
 	
 	if (NT_STATUS_IS_ERR(status)) {
 		DEBUG(1,("Failed to send NT_TRANS\n"));
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return status;
 	}
 	*rparam_len = parms.out.params.length;
 	*rdata_len = parms.out.data.length;
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	return status;
 }

@@ -344,7 +344,7 @@ static DATA_BLOB NTLMv2_generate_response(const uint8_t ntlm_v2_hash[16],
 	memcpy(final_response.data+sizeof(ntlmv2_response), 
 	       ntlmv2_client_data.data, ntlmv2_client_data.length);
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	return final_response;
 }

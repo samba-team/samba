@@ -148,7 +148,7 @@ struct server_stream_socket *service_setup_stream_socket(struct server_service *
 
 	stream_socket = talloc_zero(service, struct server_stream_socket);
 	if (!stream_socket) {
-		DEBUG(0,("talloc_p(mem_ctx, struct server_stream_socket) failed\n"));
+		DEBUG(0,("talloc(mem_ctx, struct server_stream_socket) failed\n"));
 		socket_destroy(sock);
 		return NULL;
 	}
@@ -207,9 +207,9 @@ struct server_connection *server_setup_connection(struct event_context *ev,
 	struct timed_event idle;
 	struct server_connection *srv_conn;
 
-	srv_conn = talloc_p(stream_socket, struct server_connection);
+	srv_conn = talloc(stream_socket, struct server_connection);
 	if (!srv_conn) {
-		DEBUG(0,("talloc_p(mem_ctx, struct server_connection) failed\n"));
+		DEBUG(0,("talloc(mem_ctx, struct server_connection) failed\n"));
 		return NULL;
 	}
 

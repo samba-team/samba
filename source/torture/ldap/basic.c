@@ -225,7 +225,7 @@ BOOL torture_ldap_basic(void)
 
 	/* no more test we are closing */
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
         torture_ldap_close(conn);
 

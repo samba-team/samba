@@ -99,7 +99,7 @@ char *reg_val_description(TALLOC_CTX *mem_ctx, struct registry_value *val)
 BOOL reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str, const char *data_str, struct registry_value **value)
 {
 	int i;
-	*value = talloc_p(mem_ctx, struct registry_value);
+	*value = talloc(mem_ctx, struct registry_value);
 	(*value)->data_type = -1;
 
 	/* Find the correct type */
@@ -123,7 +123,7 @@ BOOL reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str, const char *da
 			break;
 		case REG_DWORD:
 			(*value)->data_len = sizeof(uint32);
-			(*value)->data_blk = talloc_p(mem_ctx, uint32);
+			(*value)->data_blk = talloc(mem_ctx, uint32);
 			*((uint32 *)(*value)->data_blk) = strtol(data_str, NULL, 0);
 			break;
 
@@ -264,7 +264,7 @@ WERROR reg_key_del_abs(struct registry_context *ctx, const char *path)
 		error = reg_key_del(parent, n);
 	}
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	return error;
 }

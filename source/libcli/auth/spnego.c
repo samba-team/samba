@@ -50,7 +50,7 @@ static NTSTATUS gensec_spnego_client_start(struct gensec_security *gensec_securi
 {
 	struct spnego_state *spnego_state;
 
-	spnego_state = talloc_p(gensec_security, struct spnego_state);		
+	spnego_state = talloc(gensec_security, struct spnego_state);		
 	if (!spnego_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -68,7 +68,7 @@ static NTSTATUS gensec_spnego_server_start(struct gensec_security *gensec_securi
 {
 	struct spnego_state *spnego_state;
 
-	spnego_state = talloc_p(gensec_security, struct spnego_state);		
+	spnego_state = talloc(gensec_security, struct spnego_state);		
 	if (!spnego_state) {
 		return NT_STATUS_NO_MEMORY;
 	}

@@ -30,7 +30,7 @@ struct security_descriptor *security_descriptor_initialise(TALLOC_CTX *mem_ctx)
 {
 	struct security_descriptor *sd;
 
-	sd = talloc_p(mem_ctx, struct security_descriptor);
+	sd = talloc(mem_ctx, struct security_descriptor);
 	if (!sd) {
 		return NULL;
 	}
@@ -72,7 +72,7 @@ NTSTATUS security_descriptor_dacl_add(struct security_descriptor *sd,
 				      const struct security_ace *ace)
 {
 	if (sd->dacl == NULL) {
-		sd->dacl = talloc_p(sd, struct security_acl);
+		sd->dacl = talloc(sd, struct security_acl);
 		if (sd->dacl == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -82,7 +82,7 @@ NTSTATUS security_descriptor_dacl_add(struct security_descriptor *sd,
 		sd->dacl->aces     = NULL;
 	}
 
-	sd->dacl->aces = talloc_realloc_p(sd->dacl, sd->dacl->aces, 
+	sd->dacl->aces = talloc_realloc(sd->dacl, sd->dacl->aces, 
 					  struct security_ace, sd->dacl->num_aces+1);
 	if (sd->dacl->aces == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -257,7 +257,7 @@ struct security_descriptor *security_descriptor_create(TALLOC_CTX *mem_ctx,
 	va_start(ap, group_sid);
 	while ((sidstr = va_arg(ap, const char *))) {
 		struct dom_sid *sid;
-		struct security_ace *ace = talloc_p(sd, struct security_ace);
+		struct security_ace *ace = talloc(sd, struct security_ace);
 		NTSTATUS status;
 
 		if (ace == NULL) {

@@ -289,7 +289,7 @@ NTSTATUS schannel_start(struct schannel_state **state,
 			const uint8_t session_key[16],
 			BOOL initiator)
 {
-	(*state) = talloc_p(NULL, struct schannel_state);
+	(*state) = talloc(NULL, struct schannel_state);
 	if (!(*state)) {
 		return NT_STATUS_NO_MEMORY;
 	}

@@ -76,7 +76,7 @@ static BOOL test_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	setfile.generic.level = RAW_SFILEINFO_EA_SET;
 	setfile.generic.file.fnum = fnum;
 	setfile.ea_set.in.num_eas = 2;
-	setfile.ea_set.in.eas = talloc_array_p(mem_ctx, struct ea_struct, 2);
+	setfile.ea_set.in.eas = talloc_array(mem_ctx, struct ea_struct, 2);
 	setfile.ea_set.in.eas[0].flags = 0;
 	setfile.ea_set.in.eas[0].name.s = "EAONE";
 	setfile.ea_set.in.eas[0].value = data_blob_string_const("VALUE1");
@@ -244,6 +244,6 @@ BOOL torture_raw_eas(void)
 	smbcli_deltree(cli->tree, BASEDIR);
 
 	torture_close_connection(cli);
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	return ret;
 }

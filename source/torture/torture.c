@@ -174,7 +174,7 @@ NTSTATUS torture_rpc_connection_transport(struct dcerpc_pipe **p,
 	status = dcerpc_parse_binding(mem_ctx, binding, &b);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to parse dcerpc binding '%s'\n", binding));
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return status;
 	}
 
@@ -2598,7 +2598,7 @@ static BOOL is_binding_string(const char *binding_string)
 	
 	status = dcerpc_parse_binding(mem_ctx, binding_string, &binding_struct);
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	return NT_STATUS_IS_OK(status);
 }
 

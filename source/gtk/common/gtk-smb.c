@@ -319,7 +319,7 @@ const char *gtk_rpc_binding_dialog_get_host(GtkRpcBindingDialog *d)
 
 struct dcerpc_binding *gtk_rpc_binding_dialog_get_binding(GtkRpcBindingDialog *d, TALLOC_CTX *mem_ctx)
 {
-	struct dcerpc_binding *binding = talloc_p(mem_ctx, struct dcerpc_binding);
+	struct dcerpc_binding *binding = talloc(mem_ctx, struct dcerpc_binding);
 
 	ZERO_STRUCT(binding->object);
 

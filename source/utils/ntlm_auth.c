@@ -190,7 +190,7 @@ static NTSTATUS local_pw_check_specified(const char *username,
 				  domain, username, workstation, 
 				  nt_errstr(nt_status)));
 		}
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 	}
 	if (error_string) {
 		*error_string = strdup(nt_errstr(nt_status));
@@ -779,7 +779,7 @@ static void manage_squid_request(enum stdio_helper_mode helper_mode,
 			return;
 		}
 		if (!mux_private) {
-			mux_private = talloc_p(NULL, struct mux_private);
+			mux_private = talloc(NULL, struct mux_private);
 			mux_private->max_mux = 0;
 			mux_private->private_pointers = NULL;
 		}
@@ -790,7 +790,7 @@ static void manage_squid_request(enum stdio_helper_mode helper_mode,
 			unsigned int prev_max = mux_private->max_mux;
 			mux_private->max_mux = mux_id + 1;
 			mux_private->private_pointers
-				= talloc_realloc_p(mux_private, 
+				= talloc_realloc(mux_private, 
 						   mux_private->private_pointers, 
 						   void *, mux_private->max_mux);
 			memset(&mux_private->private_pointers[prev_max], '\0',  

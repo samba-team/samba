@@ -879,7 +879,7 @@ BOOL torture_rpc_drsuapi(void)
 
 	ret &= test_DsUnbind(p, mem_ctx, &priv);
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
         torture_rpc_close(p);
 

@@ -117,7 +117,7 @@ BOOL torture_rpc_remact(void)
 	if(!test_RemoteActivation(p, mem_ctx))
 		ret = False;
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
     torture_rpc_close(p);
 

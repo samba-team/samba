@@ -97,7 +97,7 @@ BOOL torture_rpc_alter_context(void)
 	printf("testing DSSETUP pipe operations\n");
 	ret &= test_DsRoleGetPrimaryDomainInformation(p2, mem_ctx);
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
         torture_rpc_close(p);
 

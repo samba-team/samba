@@ -52,7 +52,7 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx, struct ldb_message *msg, c
 
 	case REG_DWORD_LE:
 		*len = 4;
-		*data = talloc_p(mem_ctx, uint32);
+		*data = talloc(mem_ctx, uint32);
 		SIVAL(*data, 0, strtol(val->data, NULL, 0));
 		break;
 
@@ -66,7 +66,7 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx, struct ldb_message *msg, c
 static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx, TALLOC_CTX *mem_ctx, const char *name, uint32 type, void *data, int len)
 {
 	struct ldb_val val;
-	struct ldb_message *msg = talloc_zero_p(mem_ctx, struct ldb_message);
+	struct ldb_message *msg = talloc_zero(mem_ctx, struct ldb_message);
 	char *type_s;
 
 	ldb_msg_add_string(ctx, msg, "value", talloc_strdup(mem_ctx, name));
@@ -165,10 +165,10 @@ static WERROR ldb_get_subkey_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, 
 
 	el = ldb_msg_find_element(kd->subkeys[idx], "key");
 	
-	*subkey = talloc_p(mem_ctx, struct registry_key);
+	*subkey = talloc(mem_ctx, struct registry_key);
 	talloc_set_destructor(*subkey, reg_close_ldb_key);
 	(*subkey)->name = talloc_strdup(mem_ctx, el->values[0].data);
-	(*subkey)->backend_data = newkd = talloc_zero_p(*subkey, struct ldb_key_data);
+	(*subkey)->backend_data = newkd = talloc_zero(*subkey, struct ldb_key_data);
 	newkd->dn = talloc_strdup(mem_ctx, kd->subkeys[idx]->dn);
 
 	return WERR_OK;
@@ -191,7 +191,7 @@ static WERROR ldb_get_value_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, i
 
 	if(idx >= kd->value_count) return WERR_NO_MORE_ITEMS;
 
-	*value = talloc_p(mem_ctx, struct registry_value);
+	*value = talloc(mem_ctx, struct registry_value);
 
 	reg_ldb_unpack_value(mem_ctx, kd->values[idx], &(*value)->name, &(*value)->data_type, &(*value)->data_blk, &(*value)->data_len);
 
@@ -217,10 +217,10 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, struct registry_key *h, const ch
 		return WERR_FOOBAR;
 	}
 
-	*key = talloc_p(mem_ctx, struct registry_key);
+	*key = talloc(mem_ctx, struct registry_key);
 	talloc_set_destructor(*key, reg_close_ldb_key);
 	(*key)->name = talloc_strdup(mem_ctx, strrchr(name, '\\')?strchr(name, '\\'):name);
-	(*key)->backend_data = newkd = talloc_zero_p(*key, struct ldb_key_data);
+	(*key)->backend_data = newkd = talloc_zero(*key, struct ldb_key_data);
 	newkd->dn = talloc_strdup(mem_ctx, msg[0]->dn); 
 
 	ldb_search_free(c, msg);
@@ -247,11 +247,11 @@ static WERROR ldb_open_hive(struct registry_hive *hive, struct registry_key **k)
 	ldb_set_debug_stderr(c);
 	hive->backend_data = c;
 
-	*k = talloc_zero_p(hive, struct registry_key);
+	*k = talloc_zero(hive, struct registry_key);
 	talloc_set_destructor (*k, reg_close_ldb_key);
 	talloc_set_destructor (hive, ldb_close_hive);
 	(*k)->name = talloc_strdup(*k, "");
-	(*k)->backend_data = kd = talloc_zero_p(*k, struct ldb_key_data);
+	(*k)->backend_data = kd = talloc_zero(*k, struct ldb_key_data);
 	kd->dn = talloc_strdup(*k, "hive=");
 	
 
@@ -277,10 +277,10 @@ static WERROR ldb_add_key (TALLOC_CTX *mem_ctx, struct registry_key *parent, con
 		return WERR_FOOBAR;
 	}
 
-	*newkey = talloc_zero_p(mem_ctx, struct registry_key);
+	*newkey = talloc_zero(mem_ctx, struct registry_key);
 	(*newkey)->name = talloc_strdup(mem_ctx, name);
 
-	(*newkey)->backend_data = newkd = talloc_zero_p(*newkey, struct ldb_key_data);
+	(*newkey)->backend_data = newkd = talloc_zero(*newkey, struct ldb_key_data);
 	newkd->dn = talloc_steal(newkd, msg->dn);
 
 	return WERR_OK;
@@ -294,7 +294,7 @@ static WERROR ldb_del_key (struct registry_key *key, const char *child)
 
 	ret = ldb_delete(key->hive->backend_data, childdn);
 
-	talloc_destroy(childdn);
+	talloc_free(childdn);
 
 	if (ret < 0) {
 		DEBUG(1, ("ldb_del_key: %s\n", ldb_errstring(key->hive->backend_data)));
@@ -312,7 +312,7 @@ static WERROR ldb_del_value (struct registry_key *key, const char *child)
 
 	ret = ldb_delete(key->hive->backend_data, childdn);
 
-	talloc_destroy(childdn);
+	talloc_free(childdn);
 
 	if (ret < 0) {
 		DEBUG(1, ("ldb_del_value: %s\n", ldb_errstring(key->hive->backend_data)));
@@ -339,12 +339,12 @@ static WERROR ldb_set_value (struct registry_key *parent, const char *name, uint
 		ret = ldb_modify(ctx, msg);
 		if (ret < 0) {
 			DEBUG(1, ("ldb_msg_add: %s\n", ldb_errstring(parent->hive->backend_data)));
-			talloc_destroy(mem_ctx);
+			talloc_free(mem_ctx);
 			return WERR_FOOBAR;
 		}
 	}
 	
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	return WERR_OK;
 }
 

@@ -108,7 +108,7 @@ static BOOL test_mkdir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	md.t2mkdir.level = RAW_MKDIR_T2MKDIR;
 	md.t2mkdir.in.path = path;
 	md.t2mkdir.in.num_eas = 3;
-	md.t2mkdir.in.eas = talloc_array_p(mem_ctx, struct ea_struct, md.t2mkdir.in.num_eas);
+	md.t2mkdir.in.eas = talloc_array(mem_ctx, struct ea_struct, md.t2mkdir.in.num_eas);
 	md.t2mkdir.in.eas[0].flags = 0;
 	md.t2mkdir.in.eas[0].name.s = "EAONE";
 	md.t2mkdir.in.eas[0].value = data_blob_talloc(mem_ctx, "blah", 4);
@@ -158,6 +158,6 @@ BOOL torture_raw_mkdir(void)
 	}
 
 	torture_close_connection(cli);
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	return ret;
 }

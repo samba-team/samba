@@ -87,7 +87,7 @@ static void free_layer(struct idr_context *idp, struct idr_layer *p)
 static int idr_pre_get(struct idr_context *idp)
 {
 	while (idp->id_free_cnt < IDR_FREE_MAX) {
-		struct idr_layer *new = talloc_zero_p(idp, struct idr_layer);
+		struct idr_layer *new = talloc_zero(idp, struct idr_layer);
 		if(new == NULL)
 			return (0);
 		free_layer(idp, new);
@@ -313,7 +313,7 @@ static int _idr_remove(struct idr_context *idp, int id)
  */
 struct idr_context *idr_init(TALLOC_CTX *mem_ctx)
 {
-	return talloc_zero_p(mem_ctx, struct idr_context);
+	return talloc_zero(mem_ctx, struct idr_context);
 }
 
 /*

@@ -46,7 +46,7 @@ struct unix_sec_ctx {
 */
 static struct unix_sec_ctx *save_unix_security(TALLOC_CTX *mem_ctx)
 {
-	struct unix_sec_ctx *sec = talloc_p(mem_ctx, struct unix_sec_ctx);
+	struct unix_sec_ctx *sec = talloc(mem_ctx, struct unix_sec_ctx);
 	if (sec == NULL) {
 		return NULL;
 	}
@@ -57,7 +57,7 @@ static struct unix_sec_ctx *save_unix_security(TALLOC_CTX *mem_ctx)
 		talloc_free(sec);
 		return NULL;
 	}
-	sec->groups = talloc_array_p(sec, gid_t, sec->ngroups);
+	sec->groups = talloc_array(sec, gid_t, sec->ngroups);
 	if (sec->groups == NULL) {
 		talloc_free(sec);
 		return NULL;
@@ -101,7 +101,7 @@ static NTSTATUS nt_token_to_unix_security(struct ntvfs_module_context *ntvfs,
 	struct unixuid_private *private = ntvfs->private_data;
 	int i;
 	NTSTATUS status;
-	*sec = talloc_p(req, struct unix_sec_ctx);
+	*sec = talloc(req, struct unix_sec_ctx);
 
 	/* we can't do unix security without a user and group */
 	if (token->num_sids < 2) {
@@ -121,7 +121,7 @@ static NTSTATUS nt_token_to_unix_security(struct ntvfs_module_context *ntvfs,
 	}
 
 	(*sec)->ngroups = token->num_sids - 2;
-	(*sec)->groups = talloc_array_p(*sec, gid_t, (*sec)->ngroups);
+	(*sec)->groups = talloc_array(*sec, gid_t, (*sec)->ngroups);
 	if ((*sec)->groups == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -208,7 +208,7 @@ static NTSTATUS unixuid_connect(struct ntvfs_module_context *ntvfs,
 	struct unixuid_private *private;
 	NTSTATUS status;
 
-	private = talloc_p(req->tcon, struct unixuid_private);
+	private = talloc(req->tcon, struct unixuid_private);
 	if (!private) {
 		return NT_STATUS_NO_MEMORY;
 	}

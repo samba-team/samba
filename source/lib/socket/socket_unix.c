@@ -162,7 +162,7 @@ static NTSTATUS unixdom_accept(struct socket_context *sock,
 		}
 	}
 
-	(*new_sock) = talloc_p(NULL, struct socket_context);
+	(*new_sock) = talloc(NULL, struct socket_context);
 	if (!(*new_sock)) {
 		close(new_fd);
 		return NT_STATUS_NO_MEMORY;

@@ -28,7 +28,7 @@ struct libnet_context *libnet_context_init(void)
 
 	mem_ctx = talloc_init("libnet_context");
 
-	ctx = talloc_p(mem_ctx, struct libnet_context);
+	ctx = talloc(mem_ctx, struct libnet_context);
 	if (!ctx) {
 		return NULL;
 	}
@@ -40,7 +40,7 @@ struct libnet_context *libnet_context_init(void)
 
 void libnet_context_destroy(struct libnet_context **libnetctx)
 {
-	talloc_destroy((*libnetctx)->mem_ctx);
+	talloc_free((*libnetctx)->mem_ctx);
 
 	(*libnetctx) = NULL;
 }

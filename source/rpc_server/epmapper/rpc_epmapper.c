@@ -67,7 +67,7 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 		struct dcerpc_binding description;
 
 		for (iface=d->interface_list;iface;iface=iface->next) {
-			(*eps) = talloc_realloc_p(mem_ctx, 
+			(*eps) = talloc_realloc(mem_ctx, 
 						  *eps, 
 						  struct dcesrv_ep_iface,
 						  total + 1);
@@ -128,7 +128,7 @@ static error_status_t epm_Lookup(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	if (!eps) {
 		/* this is the first call - fill the list. Subsequent calls 
 		   will feed from this list, stored in the handle */
-		eps = talloc_p(h, struct rpc_eps);
+		eps = talloc(h, struct rpc_eps);
 		if (!eps) {
 			return EPMAPPER_STATUS_NO_MEMORY;
 		}
@@ -153,7 +153,7 @@ static error_status_t epm_Lookup(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		return EPMAPPER_STATUS_NO_MORE_ENTRIES;
 	}
 
-	r->out.entries = talloc_array_p(mem_ctx, struct epm_entry_t, num_ents);
+	r->out.entries = talloc_array(mem_ctx, struct epm_entry_t, num_ents);
 	if (!r->out.entries) {
 		return EPMAPPER_STATUS_NO_MEMORY;
 	}
@@ -161,7 +161,7 @@ static error_status_t epm_Lookup(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	for (i=0;i<num_ents;i++) {
 		ZERO_STRUCT(r->out.entries[i].object);
 		r->out.entries[i].annotation = eps->e[i].name;
-		r->out.entries[i].tower = talloc_p(mem_ctx, struct epm_twr_t);
+		r->out.entries[i].tower = talloc(mem_ctx, struct epm_twr_t);
 		if (!r->out.entries[i].tower) {
 			return EPMAPPER_STATUS_NO_MEMORY;
 		}
@@ -192,11 +192,11 @@ static error_status_t epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 
 	ZERO_STRUCT(*r->out.entry_handle);
 	r->out.num_towers = 1;
-	r->out.towers = talloc_p(mem_ctx, struct epm_twr_p_t);
+	r->out.towers = talloc(mem_ctx, struct epm_twr_p_t);
 	if (!r->out.towers) {
 		return EPMAPPER_STATUS_NO_MEMORY;
 	}
-	r->out.towers->twr = talloc_p(mem_ctx, struct epm_twr_t);
+	r->out.towers->twr = talloc(mem_ctx, struct epm_twr_t);
 	if (!r->out.towers->twr) {
 		return EPMAPPER_STATUS_NO_MEMORY;
 	}

@@ -629,7 +629,7 @@ static BOOL test_SetAliasInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		r.in.alias_handle = handle;
 		r.in.level = levels[i];
-		r.in.info  = talloc_p(mem_ctx, union samr_AliasInfo);
+		r.in.info  = talloc(mem_ctx, union samr_AliasInfo);
 		switch (r.in.level) {
 		    case 2 : init_samr_String(&r.in.info->name,TEST_ALIASNAME); break;
 		    case 3 : init_samr_String(&r.in.info->description,
@@ -1201,7 +1201,7 @@ static BOOL test_AddMultipleMembersToAlias(struct dcerpc_pipe *p, TALLOC_CTX *me
 	a.in.sids = &sids;
 
 	sids.num_sids = 3;
-	sids.sids = talloc_array_p(mem_ctx, struct lsa_SidPtr, 3);
+	sids.sids = talloc_array(mem_ctx, struct lsa_SidPtr, 3);
 
 	sids.sids[0].sid = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-1-2-3-1");
 	sids.sids[1].sid = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-1-2-3-2");
@@ -2137,7 +2137,7 @@ static BOOL test_EnumDomainUsers(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("Testing LookupNames\n");
 	n.in.domain_handle = handle;
 	n.in.num_names = r.out.sam->count;
-	n.in.names = talloc_array_p(mem_ctx, struct samr_String, r.out.sam->count);
+	n.in.names = talloc_array(mem_ctx, struct samr_String, r.out.sam->count);
 	for (i=0;i<r.out.sam->count;i++) {
 		n.in.names[i] = r.out.sam->entries[i].name;
 	}
@@ -2151,7 +2151,7 @@ static BOOL test_EnumDomainUsers(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("Testing LookupRids\n");
 	lr.in.domain_handle = handle;
 	lr.in.num_rids = r.out.sam->count;
-	lr.in.rids = talloc_array_p(mem_ctx, uint32_t, r.out.sam->count);
+	lr.in.rids = talloc_array(mem_ctx, uint32_t, r.out.sam->count);
 	for (i=0;i<r.out.sam->count;i++) {
 		lr.in.rids[i] = r.out.sam->entries[i].idx;
 	}
@@ -3199,7 +3199,7 @@ BOOL torture_rpc_samr(void)
 		ret = False;
 	}
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
         torture_rpc_close(p);
 

@@ -241,7 +241,7 @@ void load_interfaces(void)
 	}
 	
 exit:
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 }
 
 

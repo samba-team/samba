@@ -329,14 +329,14 @@ static char **reg_complete_key(const char *text, int start, int end)
 			break;
 		} else {
 			printf("Error creating completion list: %s\n", win_errstr(status));
-			talloc_destroy(mem_ctx);
+			talloc_free(mem_ctx);
 			return NULL;
 		}
 	}
 
 	if (j == 1) { /* No matches at all */
 		SAFE_FREE(matches);
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 
@@ -345,7 +345,7 @@ static char **reg_complete_key(const char *text, int start, int end)
 	} else {
 		asprintf(&matches[0], "%s%s", base_n, talloc_strndup(mem_ctx, matches[1], samelen));
 	}		
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	matches[j] = NULL;
 	return matches;
@@ -435,7 +435,7 @@ static char **reg_completion(const char *text, int start, int end)
 			if(new)curkey = new;
 		}
 	}
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	return 0;
 }

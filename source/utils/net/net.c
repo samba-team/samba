@@ -210,7 +210,7 @@ static int binary_net(int argc, const char **argv)
 	net_init_subsystems;
 
 	mem_ctx = talloc_init("net_context");
-	ctx = talloc_p(mem_ctx, struct net_context);
+	ctx = talloc(mem_ctx, struct net_context);
 	if (!ctx) {
 		d_printf("talloc_init(net_context) failed\n");
 		exit(1);
@@ -228,7 +228,7 @@ static int binary_net(int argc, const char **argv)
 		DEBUG(0,("return code = %d\n", rc));
 	}
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	return rc;
 }
 

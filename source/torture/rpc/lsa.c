@@ -119,7 +119,7 @@ static BOOL test_LookupNames(struct dcerpc_pipe *p,
 	sids.count = 0;
 	sids.sids = NULL;
 
-	names = talloc_array_p(mem_ctx, struct lsa_String, tnames->count);
+	names = talloc_array(mem_ctx, struct lsa_String, tnames->count);
 	for (i=0;i<tnames->count;i++) {
 		init_lsa_String(&names[i], tnames->names[i].name.string);
 	}
@@ -161,7 +161,7 @@ static BOOL test_LookupNames2(struct dcerpc_pipe *p,
 	sids.count = 0;
 	sids.sids = NULL;
 
-	names = talloc_array_p(mem_ctx, struct lsa_String, tnames->count);
+	names = talloc_array(mem_ctx, struct lsa_String, tnames->count);
 	for (i=0;i<tnames->count;i++) {
 		init_lsa_String(&names[i], tnames->names[i].name.string);
 	}
@@ -206,7 +206,7 @@ static BOOL test_LookupNames3(struct dcerpc_pipe *p,
 	sids.count = 0;
 	sids.sids = NULL;
 
-	names = talloc_array_p(mem_ctx, struct lsa_String, tnames->count);
+	names = talloc_array(mem_ctx, struct lsa_String, tnames->count);
 	for (i=0;i<tnames->count;i++) {
 		init_lsa_String(&names[i], tnames->names[i].name.string);
 	}
@@ -380,7 +380,7 @@ static BOOL test_many_LookupSids(struct dcerpc_pipe *p,
 
 	sids.num_sids = 100;
 
-	sids.sids = talloc_array_p(mem_ctx, struct lsa_SidPtr, sids.num_sids);
+	sids.sids = talloc_array(mem_ctx, struct lsa_SidPtr, sids.num_sids);
 
 	for (i=0; i<sids.num_sids; i++) {
 		const char *sidstr = "S-1-5-32-545";
@@ -472,7 +472,7 @@ static BOOL test_RemovePrivilegesFromAccount(struct dcerpc_pipe *p,
 
 	privs.count = 1;
 	privs.unknown = 0;
-	privs.set = talloc_array_p(mem_ctx, struct lsa_LUIDAttribute, 1);
+	privs.set = talloc_array(mem_ctx, struct lsa_LUIDAttribute, 1);
 	privs.set[0].luid = *luid;
 	privs.set[0].attribute = 0;
 
@@ -502,7 +502,7 @@ static BOOL test_AddPrivilegesToAccount(struct dcerpc_pipe *p,
 
 	privs.count = 1;
 	privs.unknown = 0;
-	privs.set = talloc_array_p(mem_ctx, struct lsa_LUIDAttribute, 1);
+	privs.set = talloc_array(mem_ctx, struct lsa_LUIDAttribute, 1);
 	privs.set[0].luid = *luid;
 	privs.set[0].attribute = 0;
 
@@ -1674,7 +1674,7 @@ BOOL torture_rpc_lsa(void)
 		ret = False;
 	}
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
         torture_rpc_close(p);
 

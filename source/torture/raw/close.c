@@ -166,6 +166,6 @@ done:
 	smbcli_close(cli->tree, fnum);
 	smbcli_unlink(cli->tree, fname);
 	torture_close_connection(cli);
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	return ret;
 }

@@ -275,7 +275,7 @@ void nb_createx(const char *fname,
 
 	ret = smb_raw_open(c->tree, mem_ctx, &io);
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	check_status("NTCreateX", status, ret);
 
@@ -527,7 +527,7 @@ void nb_qpathinfo(const char *fname, int level, NTSTATUS status)
 
 	ret = smb_raw_pathinfo(c->tree, mem_ctx, &io);
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	check_status("Pathinfo", status, ret);
 }
@@ -549,7 +549,7 @@ void nb_qfileinfo(int fnum, int level, NTSTATUS status)
 
 	ret = smb_raw_fileinfo(c->tree, mem_ctx, &io);
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	check_status("Fileinfo", status, ret);
 }
@@ -593,7 +593,7 @@ void nb_qfsinfo(int level, NTSTATUS status)
 	io.generic.level = level;
 	ret = smb_raw_fsinfo(c->tree, mem_ctx, &io);
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	
 	check_status("Fsinfo", status, ret);	
 }
@@ -621,7 +621,7 @@ void nb_findfirst(const char *mask, int level, int maxcnt, int count, NTSTATUS s
 			
 	ret = smb_raw_search_first(c->tree, mem_ctx, &io, NULL, findfirst_callback);
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	check_status("Search", status, ret);
 

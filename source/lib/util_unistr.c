@@ -41,7 +41,7 @@ static void load_case_tables(void)
 	}
 	upcase_table = map_file(lib_path(mem_ctx, "upcase.dat"), 0x20000);
 	lowcase_table = map_file(lib_path(mem_ctx, "lowcase.dat"), 0x20000);
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	if (upcase_table == NULL) {
 		upcase_table = (void *)-1;
 	}

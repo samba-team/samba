@@ -428,7 +428,7 @@ int open_udp_socket(const char *host, int port)
 	sock_out.sin_port = htons(port);
 	sock_out.sin_family = PF_INET;
 	
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	if (connect(res,(struct sockaddr *)&sock_out,sizeof(sock_out))) {
 		close(res);
