@@ -425,6 +425,352 @@ struct shmem_ops *smb_shm_open(int ronly);
 
 struct shmem_ops *sysv_shm_open(int ronly);
 
+/*The following definitions come from  nmbd/asyncdns.c  */
+
+int asyncdns_fd(void);
+void kill_async_dns_child(void);
+void start_async_dns(void);
+void run_dns_queue(void);
+BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
+		     struct name_record **n);
+BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
+		     struct name_record **n);
+void kill_async_dns_child(void);
+
+/*The following definitions come from  nmbd/nmbd.c  */
+
+BOOL reload_services(BOOL test);
+int main(int argc,char *argv[]);
+
+/*The following definitions come from  nmbd/nmbd_become_dmb.c  */
+
+void unbecome_domain_master(char *workgroup_name);
+void add_domain_names(time_t t);
+
+/*The following definitions come from  nmbd/nmbd_become_lmb.c  */
+
+void insert_permanent_name_into_unicast( struct subnet_record *subrec, 
+                                                struct nmb_name *nmbname, uint16 nb_type );
+void unbecome_local_master_success(struct subnet_record *subrec,
+                             struct userdata_struct *userdata,
+                             struct nmb_name *released_name,
+                             struct in_addr released_ip);
+void unbecome_local_master_fail(struct subnet_record *subrec, struct response_record *rrec,
+                       struct nmb_name *fail_name);
+void unbecome_local_master_browser(struct subnet_record *subrec, struct work_record *work,
+                                   BOOL force_new_election);
+void become_local_master_browser(struct subnet_record *subrec, struct work_record *work);
+void set_workgroup_local_master_browser_name( struct work_record *work, char *newname);
+
+/*The following definitions come from  nmbd/nmbd_browserdb.c  */
+
+void update_browser_death_time( struct browse_cache_record *browc );
+struct browse_cache_record *create_browser_in_lmb_cache( char *work_name, 
+                                                         char *browser_name, 
+                                                         struct in_addr ip );
+struct browse_cache_record *find_browser_in_lmb_cache( char *browser_name );
+void expire_lmb_browsers( time_t t );
+void remove_workgroup_lmb_browsers( char *work_group );
+
+/*The following definitions come from  nmbd/nmbd_browsesync.c  */
+
+void dmb_expire_and_sync_browser_lists(time_t t);
+void announce_and_sync_with_domain_master_browser( struct subnet_record *subrec,
+                                                   struct work_record *work);
+void collect_all_workgroup_names_from_wins_server(time_t t);
+
+/*The following definitions come from  nmbd/nmbd_elections.c  */
+
+void check_master_browser_exists(time_t t);
+void run_elections(time_t t);
+void process_election(struct subnet_record *subrec, struct packet_struct *p, char *buf);
+BOOL check_elections(void);
+
+/*The following definitions come from  nmbd/nmbd_incomingdgrams.c  */
+
+void tell_become_backup(void);
+void process_host_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf);
+void process_workgroup_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf);
+void process_local_master_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf);
+void process_master_browser_announce(struct subnet_record *subrec, 
+                                     struct packet_struct *p,char *buf);
+void process_lm_host_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf);
+void process_get_backup_list_request(struct subnet_record *subrec,
+                                     struct packet_struct *p,char *buf);
+void process_reset_browser(struct subnet_record *subrec,
+                                  struct packet_struct *p,char *buf);
+void process_announce_request(struct subnet_record *subrec, struct packet_struct *p, char *buf);
+void process_lm_announce_request(struct subnet_record *subrec, struct packet_struct *p, char *buf);
+
+/*The following definitions come from  nmbd/nmbd_incomingrequests.c  */
+
+void process_name_release_request(struct subnet_record *subrec, 
+                                  struct packet_struct *p);
+void process_name_refresh_request(struct subnet_record *subrec,
+                                  struct packet_struct *p);
+void process_name_registration_request(struct subnet_record *subrec, 
+                                       struct packet_struct *p);
+void process_node_status_request(struct subnet_record *subrec, struct packet_struct *p);
+void process_name_query_request(struct subnet_record *subrec, struct packet_struct *p);
+
+/*The following definitions come from  nmbd/nmbd_lmhosts.c  */
+
+void load_lmhosts_file(char *fname);
+BOOL find_name_in_lmhosts(struct nmb_name *nmbname, struct name_record **namerecp);
+
+/*The following definitions come from  nmbd/nmbd_logonnames.c  */
+
+void add_logon_names(void);
+
+/*The following definitions come from  nmbd/nmbd_mynames.c  */
+
+BOOL register_my_workgroup_and_names(void);
+void release_my_names(void);
+void refresh_my_names(time_t t);
+
+/*The following definitions come from  nmbd/nmbd_namelistdb.c  */
+
+void set_samba_nb_type(void);
+BOOL ms_browser_name( char *name, int type );
+void remove_name_from_namelist( struct subnet_record *subrec, 
+                                struct name_record   *namerec );
+struct name_record *find_name_on_subnet( struct subnet_record *subrec,
+                                         struct nmb_name      *nmbname,
+                                         BOOL                  self_only );
+struct name_record *find_name_for_remote_broadcast_subnet(
+                                                   struct nmb_name *nmbname,
+                                                   BOOL             self_only );
+void update_name_ttl( struct name_record *namerec, int ttl );
+struct name_record *add_name_to_subnet( struct subnet_record *subrec,
+                                        char                 *name,
+                                        int                   type,
+                                        uint16                nb_flags,
+                                        int                   ttl,
+                                        enum name_source      source,
+                                        int                   num_ips,
+                                        struct in_addr       *iplist);
+void standard_success_register(struct subnet_record *subrec, 
+                             struct userdata_struct *userdata,
+                             struct nmb_name *nmbname, uint16 nb_flags, int ttl,
+                             struct in_addr registered_ip);
+void standard_fail_register( struct subnet_record   *subrec,
+                             struct response_record *rrec,
+                             struct nmb_name        *nmbname );
+BOOL find_ip_in_name_record( struct name_record *namerec, struct in_addr ip );
+void add_ip_to_name_record( struct name_record *namerec, struct in_addr new_ip );
+void remove_ip_from_name_record( struct name_record *namerec,
+                                 struct in_addr      remove_ip );
+void standard_success_release( struct subnet_record   *subrec,
+                               struct userdata_struct *userdata,
+                               struct nmb_name        *nmbname,
+                               struct in_addr          released_ip );
+void expire_names_on_subnet(struct subnet_record *subrec, time_t t);
+void expire_names(time_t t);
+void add_samba_names_to_subnet( struct subnet_record *subrec );
+void dump_all_namelists(void);
+
+/*The following definitions come from  nmbd/nmbd_namequery.c  */
+
+BOOL query_name(struct subnet_record *subrec, char *name, int type,
+                   query_name_success_function success_fn,
+                   query_name_fail_function fail_fn, 
+                   struct userdata_struct *userdata);
+BOOL query_name_from_wins_server(struct in_addr ip_to, 
+                   char *name, int type,
+                   query_name_success_function success_fn,
+                   query_name_fail_function fail_fn, 
+                   struct userdata_struct *userdata);
+
+/*The following definitions come from  nmbd/nmbd_nameregister.c  */
+
+BOOL register_name(struct subnet_record *subrec,
+                   char *name, int type, uint16 nb_flags,
+                   register_name_success_function success_fn,
+                   register_name_fail_function fail_fn,
+                   struct userdata_struct *userdata);
+BOOL refresh_name(struct subnet_record *subrec, struct name_record *namerec,
+                  refresh_name_success_function success_fn,
+                  refresh_name_fail_function fail_fn,
+                  struct userdata_struct *userdata);
+
+/*The following definitions come from  nmbd/nmbd_namerelease.c  */
+
+BOOL release_name(struct subnet_record *subrec, struct name_record *namerec,
+                   release_name_success_function success_fn,
+                   release_name_fail_function fail_fn,
+                   struct userdata_struct *userdata);
+
+/*The following definitions come from  nmbd/nmbd_nodestatus.c  */
+
+BOOL node_status(struct subnet_record *subrec, struct nmb_name *nmbname,
+                 struct in_addr send_ip, node_status_success_function success_fn, 
+                 node_status_fail_function fail_fn, struct userdata_struct *userdata);
+
+/*The following definitions come from  nmbd/nmbd_packets.c  */
+
+uint16 get_nb_flags(char *buf);
+void set_nb_flags(char *buf, uint16 nb_flags);
+struct response_record *queue_register_name( struct subnet_record *subrec,
+                          response_function resp_fn,
+                          timeout_response_function timeout_fn,
+                          register_name_success_function success_fn,
+                          register_name_fail_function fail_fn,
+                          struct userdata_struct *userdata,
+                          struct nmb_name *nmbname,
+                          uint16 nb_flags);
+struct response_record *queue_register_multihomed_name( struct subnet_record *subrec,
+                          response_function resp_fn,
+                          timeout_response_function timeout_fn,
+                          register_name_success_function success_fn,
+                          register_name_fail_function fail_fn,
+                          struct userdata_struct *userdata,
+                          struct nmb_name *nmbname,
+                          uint16 nb_flags,
+                          struct in_addr register_ip);
+struct response_record *queue_release_name( struct subnet_record *subrec,
+                          response_function resp_fn,
+                          timeout_response_function timeout_fn,
+                          release_name_success_function success_fn,
+                          release_name_fail_function fail_fn,
+                          struct userdata_struct *userdata,
+                          struct nmb_name *nmbname,
+                          uint16 nb_flags,
+                          struct in_addr release_ip);
+struct response_record *queue_refresh_name( struct subnet_record *subrec,
+                          response_function resp_fn,
+                          timeout_response_function timeout_fn,
+                          refresh_name_success_function success_fn,
+                          refresh_name_fail_function fail_fn,
+                          struct userdata_struct *userdata,
+                          struct name_record *namerec,
+                          struct in_addr refresh_ip);
+struct response_record *queue_query_name( struct subnet_record *subrec,
+                          response_function resp_fn,
+                          timeout_response_function timeout_fn,
+                          query_name_success_function success_fn,
+                          query_name_fail_function fail_fn,
+                          struct userdata_struct *userdata,
+                          struct nmb_name *nmbname);
+struct response_record *queue_query_name_from_wins_server( struct in_addr to_ip,
+                          response_function resp_fn,
+                          timeout_response_function timeout_fn,
+                          query_name_success_function success_fn,
+                          query_name_fail_function fail_fn,
+                          struct userdata_struct *userdata,
+                          struct nmb_name *nmbname);
+struct response_record *queue_node_status( struct subnet_record *subrec,
+                          response_function resp_fn,
+                          timeout_response_function timeout_fn,
+                          node_status_success_function success_fn,
+                          node_status_fail_function fail_fn,
+                          struct userdata_struct *userdata,
+                          struct nmb_name *nmbname,
+                          struct in_addr send_ip);
+void reply_netbios_packet(struct packet_struct *orig_packet,
+                          int rcode, enum netbios_reply_type_code rcv_code, int opcode,
+                          int ttl, char *data,int len);
+void queue_packet(struct packet_struct *packet);
+void process_browse_packet(struct packet_struct *p, char *buf,int len);
+void process_lanman_packet(struct packet_struct *p, char *buf,int len);
+BOOL validate_nmb_response_packet( struct nmb_packet *nmb );
+BOOL validate_nmb_packet( struct nmb_packet *nmb );
+void run_packet_queue(void);
+void retransmit_or_expire_response_records(time_t t);
+BOOL listen_for_packets(BOOL run_election);
+BOOL send_mailslot(BOOL unique, char *mailslot,char *buf,int len,
+                   char *srcname, int src_type,
+                   char *dstname, int dest_type,
+                   struct in_addr dest_ip,struct in_addr src_ip);
+
+/*The following definitions come from  nmbd/nmbd_processlogon.c  */
+
+void process_logon_packet(struct packet_struct *p,char *buf,int len, 
+                          char *mailslot);
+
+/*The following definitions come from  nmbd/nmbd_responserecordsdb.c  */
+
+void add_response_record(struct subnet_record *subrec,
+				struct response_record *rrec);
+void remove_response_record(struct subnet_record *subrec,
+				struct response_record *rrec);
+struct response_record *make_response_record( struct subnet_record *subrec,
+                    struct packet_struct *p,
+                    response_function resp_fn,
+                    timeout_response_function timeout_fn,
+                    success_function success_fn,
+                    fail_function fail_fn,
+                    struct userdata_struct *userdata);
+struct response_record *find_response_record(struct subnet_record **ppsubrec,
+				uint16 id);
+BOOL is_refresh_already_queued(struct subnet_record *subrec, struct name_record *namerec);
+
+/*The following definitions come from  nmbd/nmbd_sendannounce.c  */
+
+void send_browser_reset(int reset_type, char *to_name, int to_type, struct in_addr to_ip);
+void broadcast_announce_request(struct subnet_record *subrec, struct work_record *work);
+void announce_my_server_names(time_t t);
+void announce_my_lm_server_names(time_t t);
+void reset_announce_timer(void);
+void announce_myself_to_domain_master_browser(time_t t);
+void announce_my_servers_removed(void);
+void announce_remote(time_t t);
+void browse_sync_remote(time_t t);
+
+/*The following definitions come from  nmbd/nmbd_serverlistdb.c  */
+
+void remove_all_servers(struct work_record *work);
+struct server_record *find_server_in_workgroup(struct work_record *work, char *name);
+void remove_server_from_workgroup(struct work_record *work, struct server_record *servrec);
+struct server_record *create_server_on_workgroup(struct work_record *work,
+                                                 char *name,int servertype, 
+                                                 int ttl,char *comment);
+void update_server_ttl(struct server_record *servrec, int ttl);
+void expire_servers(struct work_record *work, time_t t);
+void write_browse_list(time_t t, BOOL force_write);
+
+/*The following definitions come from  nmbd/nmbd_subnetdb.c  */
+
+BOOL create_subnets(void);
+BOOL we_are_a_wins_client(void);
+struct subnet_record *get_next_subnet_maybe_unicast(struct subnet_record *subrec);
+struct subnet_record *get_next_subnet_maybe_unicast_or_wins_server(struct subnet_record *subrec);
+
+/*The following definitions come from  nmbd/nmbd_winsproxy.c  */
+
+void make_wins_proxy_name_query_request( struct subnet_record *subrec, 
+                                         struct packet_struct *incoming_packet,
+                                         struct nmb_name *question_name);
+
+/*The following definitions come from  nmbd/nmbd_winsserver.c  */
+
+BOOL packet_is_for_wins_server(struct packet_struct *packet);
+BOOL initialise_wins(void);
+void wins_process_name_refresh_request(struct subnet_record *subrec,
+                                            struct packet_struct *p);
+void wins_process_name_registration_request(struct subnet_record *subrec,
+                                            struct packet_struct *p);
+void wins_process_multihomed_name_registration_request( struct subnet_record *subrec,
+                                                        struct packet_struct *p);
+void send_wins_name_query_response(int rcode, struct packet_struct *p, 
+                                          struct name_record *namerec);
+void wins_process_name_query_request(struct subnet_record *subrec, 
+                                     struct packet_struct *p);
+void wins_process_name_release_request(struct subnet_record *subrec,
+                                       struct packet_struct *p);
+void initiate_wins_processing(time_t t);
+void wins_write_database(void);
+
+/*The following definitions come from  nmbd/nmbd_workgroupdb.c  */
+
+struct work_record *find_workgroup_on_subnet(struct subnet_record *subrec, 
+                                             fstring name);
+struct work_record *create_workgroup_on_subnet(struct subnet_record *subrec,
+                                               fstring name, int ttl);
+void update_workgroup_ttl(struct work_record *work, int ttl);
+void initiate_myworkgroup_startup(struct subnet_record *subrec, struct work_record *work);
+void dump_workgroups(BOOL force_write);
+void expire_workgroups_and_servers(time_t t);
+
 /*The following definitions come from  param/loadparm.c  */
 
 char *lp_string(char *s);
