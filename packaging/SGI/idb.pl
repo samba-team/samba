@@ -180,6 +180,7 @@ while(@bins) {
     }
     elsif ($filename eq "smbd") {
       print IDB "f 0755 root sys usr/samba/bin/$filename $SRCPFX/source/$nextfile $PKG.sw.base \n";
+      print IDB "f 0755 root sys usr/samba/bin/$filename.noquota $SRCPFX/source/$nextfile.noquota $PKG.sw.base \n";
       print IDB "f 0755 root sys usr/samba/bin/$filename.profile $SRCPFX/source/$nextfile.profile $PKG.sw.base \n";
     }
     elsif ($filename eq "nmbd") {
