@@ -971,7 +971,8 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		break;
 	}
 	case LDAP_TAG_ModifyDNResponse: {
-/*		struct ldap_Result *r = &msg->r.ModifyDNResponse; */
+		struct ldap_Result *r = &msg->r.ModifyDNResponse;
+		ldap_encode_response(msg->type, r, &data);
 		break;
 	}
 	case LDAP_TAG_CompareRequest: {
@@ -1061,46 +1062,12 @@ static void ldap_decode_response(TALLOC_CTX *mem_ctx,
 	asn1_read_enumerated(data, &result->resultcode);
 	asn1_read_OctetString_talloc(mem_ctx, data, &result->dn);
 	asn1_read_OctetString_talloc(mem_ctx, data, &result->errormessage);
-	if (asn1_peek_tag(data, ASN1_OCTET_STRING))
+	if (asn1_peek_tag(data, ASN1_CONTEXT(3))) {
+		asn1_start_tag(data, ASN1_CONTEXT(3));
 		asn1_read_OctetString_talloc(mem_ctx, data, &result->referral);
-	else
-		result->referral = NULL;
-	asn1_end_tag(data);
-}
-
-/* read a octet string blob */
-static BOOL asn1_read_ContextSimple(ASN1_DATA *data, uint8_t num, DATA_BLOB *blob)
-{
-	int len;
-	ZERO_STRUCTP(blob);
-	if (!asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(num))) return False;
-	len = asn1_tag_remaining(data);
-	if (len < 0) {
-		data->has_error = True;
-		return False;
-	}
-	*blob = data_blob(NULL, len);
-	asn1_read(data, blob->data, len);
-	asn1_end_tag(data);
-	return !data->has_error;
-}
-
-static void ldap_decode_BindResponse(TALLOC_CTX *mem_ctx,
-				 ASN1_DATA *data,
-				 enum ldap_request_tag tag,
-				 struct ldap_BindResponse *BindResp)
-{
-	asn1_start_tag(data, ASN1_APPLICATION(tag));
-	asn1_read_enumerated(data, &BindResp->response.resultcode);
-	asn1_read_OctetString_talloc(mem_ctx, data, &BindResp->response.dn);
-	asn1_read_OctetString_talloc(mem_ctx, data, &BindResp->response.errormessage);
-	if (asn1_peek_tag(data, ASN1_CONTEXT_SIMPLE(7))) {
-		DATA_BLOB tmp_blob = data_blob(NULL, 0);
-		asn1_read_ContextSimple(data, 7, &tmp_blob);
-		BindResp->SASL.secblob = data_blob_talloc(mem_ctx, tmp_blob.data, tmp_blob.length);
-		data_blob_free(&tmp_blob);
+		asn1_end_tag(data);
 	} else {
-		BindResp->SASL.secblob = data_blob(NULL, 0);
+		result->referral = NULL;
 	}
 	asn1_end_tag(data);
 }
@@ -1300,9 +1267,26 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	case ASN1_APPLICATION(LDAP_TAG_BindResponse): {
 		struct ldap_BindResponse *r = &msg->r.BindResponse;
 		msg->type = LDAP_TAG_BindResponse;
-		ldap_decode_BindResponse(msg->mem_ctx,
-				     data, LDAP_TAG_BindResponse,
-				     r);
+		asn1_start_tag(data, ASN1_APPLICATION(LDAP_TAG_BindResponse));
+		asn1_read_enumerated(data, &r->response.resultcode);
+		asn1_read_OctetString_talloc(msg->mem_ctx, data, &r->response.dn);
+		asn1_read_OctetString_talloc(msg->mem_ctx, data, &r->response.errormessage);
+		if (asn1_peek_tag(data, ASN1_CONTEXT(3))) {
+			asn1_start_tag(data, ASN1_CONTEXT(3));
+			asn1_read_OctetString_talloc(msg->mem_ctx, data, &r->response.referral);
+			asn1_end_tag(data);
+		} else {
+			r->response.referral = NULL;
+		}
+		if (asn1_peek_tag(data, ASN1_CONTEXT_SIMPLE(7))) {
+			DATA_BLOB tmp_blob = data_blob(NULL, 0);
+			asn1_read_ContextSimple(data, 7, &tmp_blob);
+			r->SASL.secblob = data_blob_talloc(msg->mem_ctx, tmp_blob.data, tmp_blob.length);
+			data_blob_free(&tmp_blob);
+		} else {
+			r->SASL.secblob = data_blob(NULL, 0);
+		}
+		asn1_end_tag(data);
 		break;
 	}
 
@@ -1460,8 +1444,28 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	}
 
 	case ASN1_APPLICATION(LDAP_TAG_ModifyDNRequest): {
-/*		struct ldap_ModifyDNRequest *r = &msg->r.ModifyDNRequest; */
+		struct ldap_ModifyDNRequest *r = &msg->r.ModifyDNRequest;
 		msg->type = LDAP_TAG_ModifyDNRequest;
+		asn1_start_tag(data,
+			       ASN1_APPLICATION(LDAP_TAG_ModifyDNRequest));
+		asn1_read_OctetString_talloc(msg->mem_ctx, data, &r->dn);
+		asn1_read_OctetString_talloc(msg->mem_ctx, data, &r->newrdn);
+		asn1_read_BOOLEAN2(data, &r->deleteolddn);
+		r->newsuperior = NULL;
+		if (asn1_tag_remaining(data) > 0) {
+			int len;
+			char *newsup;
+			asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(0));
+			len = asn1_tag_remaining(data);
+			newsup = talloc(msg->mem_ctx, len+1);
+			if (newsup == NULL)
+				break;
+			asn1_read(data, newsup, len);
+			newsup[len] = '\0';
+			r->newsuperior = newsup;
+			asn1_end_tag(data);
+		}
+		asn1_end_tag(data);
 		break;
 	}
 
