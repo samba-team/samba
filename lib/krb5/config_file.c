@@ -640,6 +640,40 @@ krb5_config_get_time (krb5_config_section *c,
     return ret;
 }
 
+int
+krb5_config_vget_int (krb5_config_section *c,
+		      va_list args)
+{
+    const char *str;
+
+    str = krb5_config_vget_string (c, args);
+    if (str == NULL)
+	return -1;
+    else {
+	char *endptr;
+	long l;
+
+	l = strtol(str, &endptr, 0);
+	if (endptr == str)
+	    return -1;
+	else
+	    return l;
+    }
+}
+
+int
+krb5_config_get_int (krb5_config_section *c,
+		     ...)
+{
+    int ret;
+    va_list args;
+
+    va_start(args, c);
+    ret = krb5_config_vget_int (c, args);
+    va_end(args);
+    return ret;
+}
+
 #ifdef TEST
 
 int
