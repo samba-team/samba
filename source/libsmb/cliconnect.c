@@ -372,7 +372,9 @@ static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
 	p += blob2.length;
 	p += clistr_pull(cli, cli->server_os, p, sizeof(fstring), -1, STR_TERMINATE);
 	p += clistr_pull(cli, cli->server_type, p, sizeof(fstring), -1, STR_TERMINATE);
-	p += clistr_pull(cli, cli->server_domain, p, sizeof(fstring), -1, STR_TERMINATE);
+	p += clistr_pull(cli, cli->server_domain, p, sizeof(fstring), 
+			 smb_buflen(cli->inbuf) - PTR_DIFF(p, smb_buf(cli->inbuf)),
+			 0);
 
 	return blob2;
 }
