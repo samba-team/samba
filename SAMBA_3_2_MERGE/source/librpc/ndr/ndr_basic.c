@@ -404,7 +404,7 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 			break;
 		}
 		NDR_PULL_NEED_BYTES(ndr, len2*2);
-		ret = convert_string_talloc(ndr->mem_ctx, chset, CH_UNIX, 
+		ret = convert_string_talloc2(ndr->mem_ctx, chset, CH_UNIX, 
 					    ndr->data+ndr->offset, 
 					    len2*2,
 					    (const void **)&as);
@@ -435,7 +435,7 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 			*s = talloc_strdup(ndr->mem_ctx, "");
 			break;
 		}
-		ret = convert_string_talloc(ndr->mem_ctx, chset, CH_UNIX, 
+		ret = convert_string_talloc2(ndr->mem_ctx, chset, CH_UNIX, 
 					    ndr->data+ndr->offset, 
 					    len1*2,
 					    (const void **)&as);
@@ -453,7 +453,7 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		if (len1*2+2 <= ndr->data_size - ndr->offset) {
 			len1++;
 		}
-		ret = convert_string_talloc(ndr->mem_ctx, chset, CH_UNIX, 
+		ret = convert_string_talloc2(ndr->mem_ctx, chset, CH_UNIX, 
 					    ndr->data+ndr->offset, 
 					    len1*2,
 					    (const void **)s);
@@ -543,7 +543,7 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 		NDR_CHECK(ndr_push_uint32(ndr, 0));
 		NDR_CHECK(ndr_push_uint32(ndr, c_len+1));
 		NDR_PUSH_NEED_BYTES(ndr, c_len*2 + 2);
-		ret = convert_string(CH_UNIX, chset, 
+		ret = convert_string2(CH_UNIX, chset, 
 				     s, s_len+1,
 				     ndr->data+ndr->offset, c_len*2 + 2);
 		if (ret == -1) {
@@ -558,7 +558,7 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 		NDR_CHECK(ndr_push_uint32(ndr, 0));
 		NDR_CHECK(ndr_push_uint32(ndr, c_len));
 		NDR_PUSH_NEED_BYTES(ndr, c_len*2);
-		ret = convert_string(CH_UNIX, chset, 
+		ret = convert_string2(CH_UNIX, chset, 
 				     s, s_len,
 				     ndr->data+ndr->offset, c_len*2);
 		if (ret == -1) {
@@ -571,7 +571,7 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 	case LIBNDR_FLAG_STR_SIZE4:
 		NDR_CHECK(ndr_push_uint32(ndr, c_len + 1));
 		NDR_PUSH_NEED_BYTES(ndr, c_len*2 + 2);
-		ret = convert_string(CH_UNIX, chset, 
+		ret = convert_string2(CH_UNIX, chset, 
 				     s, s_len + 1,
 				     ndr->data+ndr->offset, c_len*2 + 2);
 		if (ret == -1) {
@@ -583,7 +583,7 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 
 	case LIBNDR_FLAG_STR_NULLTERM:
 		NDR_PUSH_NEED_BYTES(ndr, c_len*2 + 2);
-		ret = convert_string(CH_UNIX, chset, 
+		ret = convert_string2(CH_UNIX, chset, 
 				     s, s_len+1,
 				     ndr->data+ndr->offset, c_len*2 + 2);
 		if (ret == -1) {
@@ -598,7 +598,7 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 		NDR_CHECK(ndr_push_uint32(ndr, 0));
 		NDR_CHECK(ndr_push_uint32(ndr, c_len+1));
 		NDR_PUSH_NEED_BYTES(ndr, c_len + 1);
-		ret = convert_string(CH_UNIX, CH_DOS, 
+		ret = convert_string2(CH_UNIX, CH_DOS, 
 				     s, s_len + 1,
 				     ndr->data+ndr->offset, c_len + 1);
 		if (ret == -1) {
@@ -613,7 +613,7 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 		NDR_CHECK(ndr_push_uint32(ndr, 0));
 		NDR_CHECK(ndr_push_uint32(ndr, c_len));
 		NDR_PUSH_NEED_BYTES(ndr, c_len);
-		ret = convert_string(CH_UNIX, CH_DOS, 
+		ret = convert_string2(CH_UNIX, CH_DOS, 
 				     s, s_len,
 				     ndr->data+ndr->offset, c_len);
 		if (ret == -1) {
@@ -627,7 +627,7 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 		NDR_CHECK(ndr_push_uint32(ndr, 0));
 		NDR_CHECK(ndr_push_uint32(ndr, c_len+1));
 		NDR_PUSH_NEED_BYTES(ndr, c_len + 1);
-		ret = convert_string(CH_UNIX, CH_DOS, 
+		ret = convert_string2(CH_UNIX, CH_DOS, 
 				     s, s_len + 1,
 				     ndr->data+ndr->offset, c_len + 1);
 		if (ret == -1) {
@@ -640,7 +640,7 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 	case LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_SIZE2:
 		NDR_CHECK(ndr_push_uint16(ndr, c_len+1));
 		NDR_PUSH_NEED_BYTES(ndr, c_len + 1);
-		ret = convert_string(CH_UNIX, CH_DOS, 
+		ret = convert_string2(CH_UNIX, CH_DOS, 
 				     s, s_len + 1,
 				     ndr->data+ndr->offset, c_len + 1);
 		if (ret == -1) {
@@ -652,7 +652,7 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 
 	case LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM:
 		NDR_PUSH_NEED_BYTES(ndr, c_len + 1);
-		ret = convert_string(CH_UNIX, CH_DOS, 
+		ret = convert_string2(CH_UNIX, CH_DOS, 
 				     s, s_len+1,
 				     ndr->data+ndr->offset, c_len + 1);
 		if (ret == -1) {

@@ -696,7 +696,7 @@ static size_t cli_req_pull_ucs2(struct cli_request *req, TALLOC_CTX *mem_ctx,
 		return 0;
 	}
 
-	ret = convert_string_talloc(mem_ctx, CH_UCS2, CH_UNIX, src, src_len2, (const void **)dest);
+	ret = convert_string_talloc2(mem_ctx, CH_UCS2, CH_UNIX, src, src_len2, (const void **)dest);
 	if (ret == -1) {
 		*dest = NULL;
 		return 0;
@@ -738,7 +738,7 @@ size_t cli_req_pull_ascii(struct cli_request *req, TALLOC_CTX *mem_ctx,
 		src_len2++;
 	}
 
-	ret = convert_string_talloc(mem_ctx, CH_DOS, CH_UNIX, src, src_len2, (const void **)dest);
+	ret = convert_string_talloc2(mem_ctx, CH_DOS, CH_UNIX, src, src_len2, (const void **)dest);
 
 	if (ret == -1) {
 		*dest = NULL;
@@ -895,7 +895,7 @@ static size_t cli_blob_pull_ucs2(TALLOC_CTX* mem_ctx,
 		src_len2 += 2;
 	}
 
-	ret = convert_string_talloc(mem_ctx, CH_UCS2, CH_UNIX, src, src_len2, (const void **)dest);
+	ret = convert_string_talloc2(mem_ctx, CH_UCS2, CH_UNIX, src, src_len2, (const void **)dest);
 	if (ret == -1) {
 		*dest = NULL;
 		return 0;
@@ -939,7 +939,7 @@ static size_t cli_blob_pull_ascii(TALLOC_CTX *mem_ctx,
 		src_len2++;
 	}
 
-	ret = convert_string_talloc(mem_ctx, CH_DOS, CH_UNIX, src, src_len2, (const void **)dest);
+	ret = convert_string_talloc2(mem_ctx, CH_DOS, CH_UNIX, src, src_len2, (const void **)dest);
 
 	if (ret == -1) {
 		*dest = NULL;

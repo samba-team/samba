@@ -654,7 +654,169 @@ size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
  *
  * @returns Size in bytes of the converted string; or -1 in case of error.
  **/
-ssize_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
+static size_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
+		      		void const *src, size_t srclen, void **dest, BOOL allow_bad_conv)
+{
+	size_t dest_len;
+
+	*dest = NULL;
+	dest_len=convert_string_allocate(ctx, from, to, src, srclen, dest, allow_bad_conv);
+	if (dest_len == (size_t)-1)
+		return (size_t)-1;
+	if (*dest == NULL)
+		return (size_t)-1;
+	return dest_len;
+}
+
+/**
+ * Convert string from one encoding to another, making error checking etc
+ *
+ * @param src pointer to source string (multibyte or singlebyte)
+ * @param srclen length of the source string in bytes
+ * @param dest pointer to destination string (multibyte or singlebyte)
+ * @param destlen maximal length allowed for string
+ * @returns the number of bytes occupied in the destination
+ **/
+ssize_t convert_string2(charset_t from, charset_t to,
+		      void const *src, size_t srclen, 
+		      void *dest, size_t destlen)
+{
+	size_t i_len, o_len;
+	size_t retval;
+	const char* inbuf = (const char*)src;
+	char* outbuf = (char*)dest;
+	smb_iconv_t descriptor;
+
+	if (srclen == (size_t)-1)
+		srclen = strlen(src)+1;
+
+	lazy_initialize_conv();
+
+	descriptor = conv_handles[from][to];
+
+	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
+		/* conversion not supported, use as is */
+		size_t len = MIN(srclen,destlen);
+		memcpy(dest,src,len);
+		return len;
+	}
+
+	i_len=srclen;
+	o_len=destlen;
+	retval = smb_iconv(descriptor,  &inbuf, &i_len, &outbuf, &o_len);
+	if(retval==(size_t)-1) {
+	    	const char *reason;
+		switch(errno) {
+			case EINVAL:
+				reason="Incomplete multibyte sequence";
+				break;
+			case E2BIG:
+				reason="No more room"; 
+				DEBUG(0, ("convert_string: Required %d, available %d\n",
+					srclen, destlen));
+				/* we are not sure we need srclen bytes,
+			          may be more, may be less.
+				  We only know we need more than destlen
+				  bytes ---simo */
+		               break;
+			case EILSEQ:
+			       reason="Illegal multibyte sequence";
+			       break;
+		}
+		/* smb_panic(reason); */
+	}
+	return destlen-o_len;
+}
+
+/**
+ * Convert between character sets, allocating a new buffer for the result.
+ *
+ * @param srclen length of source buffer.
+ * @param dest always set at least to NULL
+ * @note -1 is not accepted for srclen.
+ *
+ * @returns Size in bytes of the converted string; or -1 in case of error.
+ **/
+
+ssize_t convert_string_allocate2(charset_t from, charset_t to,
+		      		void const *src, size_t srclen, void **dest)
+{
+	size_t i_len, o_len, destlen;
+	size_t retval;
+	const char *inbuf = (const char *)src;
+	char *outbuf, *ob;
+	smb_iconv_t descriptor;
+
+	*dest = NULL;
+
+	if (src == NULL || srclen == (size_t)-1 || srclen == 0)
+		return (size_t)-1;
+
+	lazy_initialize_conv();
+
+	descriptor = conv_handles[from][to];
+
+	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
+		/* conversion not supported, return -1*/
+		DEBUG(3, ("convert_string_allocate: conversion not supported!\n"));
+		return -1;
+	}
+
+	destlen = MAX(srclen, 512);
+	outbuf = NULL;
+convert:
+	destlen = destlen * 2;
+	ob = (char *)realloc(outbuf, destlen);
+	if (!ob) {
+		DEBUG(0, ("convert_string_allocate: realloc failed!\n"));
+		SAFE_FREE(outbuf);
+		return (size_t)-1;
+	}
+	else
+		outbuf = ob;
+	i_len = srclen;
+	o_len = destlen;
+	retval = smb_iconv(descriptor,
+			   &inbuf, &i_len,
+			   &outbuf, &o_len);
+	if(retval == (size_t)-1) 		{
+	    	const char *reason="unknown error";
+		switch(errno) {
+			case EINVAL:
+				reason="Incomplete multibyte sequence";
+				break;
+			case E2BIG:
+				goto convert;		
+			case EILSEQ:
+				reason="Illegal multibyte sequence";
+				break;
+		}
+		DEBUG(0,("Conversion error: %s(%s)\n",reason,inbuf));
+		/* smb_panic(reason); */
+		return (size_t)-1;
+	}
+	
+	destlen = destlen - o_len;
+	*dest = (char *)Realloc(ob,destlen);
+	if (!*dest) {
+		DEBUG(0, ("convert_string_allocate: out of memory!\n"));
+		SAFE_FREE(ob);
+		return (size_t)-1;
+	}
+
+	return destlen;
+}
+
+/**
+ * Convert between character sets, allocating a new buffer using talloc for the result.
+ *
+ * @param srclen length of source buffer.
+ * @param dest always set at least to NULL 
+ * @note -1 is not accepted for srclen.
+ *
+ * @returns Size in bytes of the converted string; or -1 in case of error.
+ **/
+ssize_t convert_string_talloc2(TALLOC_CTX *ctx, charset_t from, charset_t to,
 			      void const *src, size_t srclen, const void **dest)
 {
 	void *alloced_string;
@@ -662,7 +824,7 @@ ssize_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 	void *dst;
 
 	*dest = NULL;
-	dest_len=convert_string_allocate(from, to, src, srclen, &alloced_string);
+	dest_len=convert_string_allocate2(from, to, src, srclen, &alloced_string);
 	if (dest_len == (size_t)-1)
 		return (size_t)-1;
 	dst = talloc(ctx, dest_len + 2);

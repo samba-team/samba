@@ -630,7 +630,17 @@ LIBBIGBALLOFMUD_OBJ = $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(UBIQX_OBJ) $(SECRETS_OBJ
 LIBBIGBALLOFMUD_PICOBJS = $(LIBBIGBALLOFMUD_OBJ:.o=.@PICSUFFIX@)
 
 BASIC_OBJ = lib/util_str.o lib/debug.o lib/xfile.o lib/util.o \
-            lib/system.o lib/dprintf.o lib/time.o lib/talloc.o lib/mutex.o
+            lib/system.o lib/dprintf.o lib/time.o lib/talloc.o lib/mutex.o \
+            lib/charcnv.o lib/data_blob.o lib/util_unistr.o lib/iconv.o \
+            lib/util_sock.o lib/module.o lib/substitute.o lib/gencache.o \
+            lib/wins_srv.o lib/version.o lib/hmacmd5.o lib/username.o \
+            lib/md5.o lib/util_pw.o lib/select.o lib/util_getent.o lib/sock_exec.o \
+            lib/util_file.o lib/interface.o lib/interfaces.o lib/ms_fnmatch.o \
+            lib/util_sid.o lib/signal.o lib/genrand.o lib/md4.o lib/crc32.o \
+            intl/lang_tdb.o lib/dummysmbd.o lib/clobber.o lib/smbrun.o \
+            lib/util_sec.o
+
+NSSWITCH_OBJ = nsswitch/wb_client.o $(WBCOMMON_OBJ)
 
 CLIENT_OBJ1 = client/client.o client/clitar.o 
 
@@ -639,7 +649,7 @@ CLIENT_OBJ1 = client/client.o client/clitar.o
 #             $(READLINE_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ)
 
 CLIENT_OBJ = $(CLIENT_OBJ1) $(LIBCLI_OBJ) $(LIBCMDLINE_OBJ) $(LIBNMB_OBJ) \
-             $(PARAM_OBJ) $(BASIC_OBJ) $(LIBRPC_OBJ)
+             $(PARAM_OBJ) $(BASIC_OBJ) $(LIBRPC_OBJ) $(TDB_OBJ) $(NSSWITCH_OBJ)
 
 NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_ads_cldap.o utils/net_help.o \
 	   utils/net_rap.o utils/net_rpc.o utils/net_rpc_samsync.o \

@@ -684,10 +684,7 @@ int open_socket_in( int type, int port, int dlevel, uint32 socket_addr, BOOL reb
 
 	res = socket( AF_INET, type, 0 );
 	if( res == -1 ) {
-		if( DEBUGLVL(0) ) {
-			dbgtext( "open_socket_in(): socket() call failed: " );
-			dbgtext( "%s\n", strerror( errno ) );
-		}
+		DEBUG(0,("open_socket_in: socket() call failed: %s\n", strerror( errno )));
 		return -1;
 	}
 
@@ -695,31 +692,22 @@ int open_socket_in( int type, int port, int dlevel, uint32 socket_addr, BOOL reb
 	{
 		int val = rebind ? 1 : 0;
 		if( setsockopt(res,SOL_SOCKET,SO_REUSEADDR,(char *)&val,sizeof(val)) == -1 ) {
-			if( DEBUGLVL( dlevel ) ) {
-				dbgtext( "open_socket_in(): setsockopt: " );
-				dbgtext( "SO_REUSEADDR = %s ", val?"True":"False" );
-				dbgtext( "on port %d failed ", port );
-				dbgtext( "with error = %s\n", strerror(errno) );
-			}
+			DEBUG(dlevel,("open_socket_in: setsockopt: SO_REUSEADDR = %s on port %d failed with error = %s\n", 
+				val?"True":"False", port, strerror(errno) ));
 		}
 #ifdef SO_REUSEPORT
 		if( setsockopt(res,SOL_SOCKET,SO_REUSEPORT,(char *)&val,sizeof(val)) == -1 ) {
-			if( DEBUGLVL( dlevel ) ) {
-				dbgtext( "open_socket_in(): setsockopt: ");
-				dbgtext( "SO_REUSEPORT = %s ", val?"True":"False" );
-				dbgtext( "on port %d failed ", port );
-				dbgtext( "with error = %s\n", strerror(errno) );
-			}
+			DEBUG(dlevel,("open_socket_in: setsockopt: SO_REUSEPORT = %s on port %d failed with error = %s\n",
+				val?"True":"False", port, strerror(errno) ));
 		}
 #endif /* SO_REUSEPORT */
 	}
 
 	/* now we've got a socket - we need to bind it */
 	if( bind( res, (struct sockaddr *)&sock, sizeof(sock) ) == -1 ) {
-		if( DEBUGLVL(dlevel) && (port == SMB_PORT1 || port == SMB_PORT2 || port == NMB_PORT) ) {
-			dbgtext( "bind failed on port %d ", port );
-			dbgtext( "socket_addr = %s.\n", inet_ntoa( sock.sin_addr ) );
-			dbgtext( "Error = %s\n", strerror(errno) );
+		if( port == SMB_PORT1 || port == SMB_PORT2 || port == NMB_PORT ) {
+			DEBUG(dlevel,("bind failed on port %d socket_addr = %s. Error = %s\n", 
+				port, inet_ntoa( sock.sin_addr ), strerror(errno) ));
 		}
 		close( res ); 
 		return( -1 ); 
@@ -818,7 +806,7 @@ int open_udp_socket(const char *host, int port)
 	int res;
 	struct in_addr *addr;
 
-	addr = interpret_addr2(host);
+	addr = interpret_addr2_x(host);
 
 	res = socket(PF_INET, type, 0);
 	if (res == -1) {
@@ -957,7 +945,7 @@ char *get_peer_name(int fd, BOOL force_lookup)
 
 	fstrcpy(addr_buf, p);
 
-	addr = *interpret_addr2(p);
+	addr = *interpret_addr2_x(p);
 	
 	/* Look up the remote host name. */
 	if ((hp = gethostbyaddr((char *)&addr.s_addr, sizeof(addr.s_addr), AF_INET)) == 0) {

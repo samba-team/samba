@@ -564,6 +564,62 @@ char *ldap_timestring(TALLOC_CTX *mem_ctx, time_t t)
 }
 
 
+/****************************************************************************
+ Return the date and time as a string
+****************************************************************************/
+
+char *timestring_x(BOOL hires)
+{
+	static fstring TimeBuf;
+	struct timeval tp;
+	time_t t;
+	struct tm *tm;
+
+	if (hires) {
+		GetTimeOfDay(&tp);
+		t = (time_t)tp.tv_sec;
+	} else {
+		t = time(NULL);
+	}
+	tm = LocalTime(&t);
+	if (!tm) {
+		if (hires) {
+			slprintf(TimeBuf,
+				 sizeof(TimeBuf)-1,
+				 "%ld.%06ld seconds since the Epoch",
+				 (long)tp.tv_sec, 
+				 (long)tp.tv_usec);
+		} else {
+			slprintf(TimeBuf,
+				 sizeof(TimeBuf)-1,
+				 "%ld seconds since the Epoch",
+				 (long)t);
+		}
+	} else {
+#ifdef HAVE_STRFTIME
+		if (hires) {
+			strftime(TimeBuf,sizeof(TimeBuf)-1,"%Y/%m/%d %H:%M:%S",tm);
+			slprintf(TimeBuf+strlen(TimeBuf),
+				 sizeof(TimeBuf)-1 - strlen(TimeBuf), 
+				 ".%06ld", 
+				 (long)tp.tv_usec);
+		} else {
+			strftime(TimeBuf,sizeof(TimeBuf)-1,"%Y/%m/%d %H:%M:%S",tm);
+		}
+#else
+		if (hires) {
+			slprintf(TimeBuf, 
+				 sizeof(TimeBuf)-1, 
+				 "%s.%06ld", 
+				 asctime(tm), 
+				 (long)tp.tv_usec);
+		} else {
+			fstrcpy(TimeBuf, asctime(tm));
+		}
+#endif
+	}
+	return(TimeBuf);
+}
 
 /****************************************************************************
  Return the date and time as a string

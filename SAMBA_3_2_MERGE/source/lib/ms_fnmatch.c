@@ -142,7 +142,6 @@ static int ms_fnmatch_lanman1(const smb_ucs2_t *pattern,
 	return ms_fnmatch_lanman_core(pattern, string, case_sensitive);
 }
 
-
 /* the following function was derived using the masktest utility -
    after years of effort we finally have a perfect MS wildcard
    matching routine! 
@@ -151,7 +150,7 @@ static int ms_fnmatch_lanman1(const smb_ucs2_t *pattern,
 
    Returns 0 on match, -1 on fail.
 */
-static int ms_fnmatch_w(const smb_ucs2_t *pattern, const smb_ucs2_t *string, 
+static int ms_fnmatch_w_x(const smb_ucs2_t *pattern, const smb_ucs2_t *string, 
 			int protocol, BOOL case_sensitive)
 {
 	const smb_ucs2_t *p = pattern, *n = string;
@@ -170,23 +169,23 @@ static int ms_fnmatch_w(const smb_ucs2_t *pattern, const smb_ucs2_t *string,
 
 		case UCS2_CHAR('>'):
 			if (n[0] == UCS2_CHAR('.')) {
-				if (! n[1] && ms_fnmatch_w(p, n+1, protocol, case_sensitive) == 0) return 0;
-				if (ms_fnmatch_w(p, n, protocol, case_sensitive) == 0) return 0;
+				if (! n[1] && ms_fnmatch_w_x(p, n+1, protocol, case_sensitive) == 0) return 0;
+				if (ms_fnmatch_w_x(p, n, protocol, case_sensitive) == 0) return 0;
 				return -1;
 			}
-			if (! *n) return ms_fnmatch_w(p, n, protocol, case_sensitive);
+			if (! *n) return ms_fnmatch_w_x(p, n, protocol, case_sensitive);
 			n++;
 			break;
 
 		case UCS2_CHAR('*'):
 			for (; *n; n++) {
-				if (ms_fnmatch_w(p, n, protocol, case_sensitive) == 0) return 0;
+				if (ms_fnmatch_w_x(p, n, protocol, case_sensitive) == 0) return 0;
 			}
 			break;
 
 		case UCS2_CHAR('<'):
 			for (; *n; n++) {
-				if (ms_fnmatch_w(p, n, protocol, case_sensitive) == 0) return 0;
+				if (ms_fnmatch_w_x(p, n, protocol, case_sensitive) == 0) return 0;
 				if (*n == UCS2_CHAR('.') && !strchr_wa(n+1,'.')) {
 					n++;
 					break;
@@ -195,7 +194,7 @@ static int ms_fnmatch_w(const smb_ucs2_t *pattern, const smb_ucs2_t *string,
 			break;
 
 		case UCS2_CHAR('"'):
-			if (*n == 0 && ms_fnmatch_w(p, n, protocol, case_sensitive) == 0) return 0;
+			if (*n == 0 && ms_fnmatch_w_x(p, n, protocol, case_sensitive) == 0) return 0;
 			if (*n != UCS2_CHAR('.')) return -1;
 			n++;
 			break;
@@ -206,6 +205,75 @@ static int ms_fnmatch_w(const smb_ucs2_t *pattern, const smb_ucs2_t *string,
 			} else {
 				if (tolower_w(c) != tolower_w(*n)) return -1;
 			}
+			n++;
+		}
+	}
+	
+	if (! *n) return 0;
+	
+	return -1;
+}
+
+
+/* the following function was derived using the masktest utility -
+   after years of effort we finally have a perfect MS wildcard
+   matching routine! 
+
+   NOTE: this matches only filenames with no directory component
+
+   Returns 0 on match, -1 on fail.
+*/
+static int ms_fnmatch_w(const smb_ucs2_t *pattern, const smb_ucs2_t *string, 
+			enum protocol_types protocol)
+{
+	const smb_ucs2_t *p = pattern, *n = string;
+	smb_ucs2_t c;
+
+	if (protocol <= PROTOCOL_LANMAN2) {
+		return ms_fnmatch_lanman1(pattern, string, False);
+	}
+
+	while ((c = *p++)) {
+		switch (c) {
+		case UCS2_CHAR('?'):
+			if (! *n) return -1;
+			n++;
+			break;
+
+		case UCS2_CHAR('>'):
+			if (n[0] == UCS2_CHAR('.')) {
+				if (! n[1] && ms_fnmatch_w(p, n+1, protocol) == 0) return 0;
+				if (ms_fnmatch_w(p, n, protocol) == 0) return 0;
+				return -1;
+			}
+			if (! *n) return ms_fnmatch_w(p, n, protocol);
+			n++;
+			break;
+
+		case UCS2_CHAR('*'):
+			for (; *n; n++) {
+				if (ms_fnmatch_w(p, n, protocol) == 0) return 0;
+			}
+			break;
+
+		case UCS2_CHAR('<'):
+			for (; *n; n++) {
+				if (ms_fnmatch_w(p, n, protocol) == 0) return 0;
+				if (*n == UCS2_CHAR('.') && !strchr_wa(n+1,'.')) {
+					n++;
+					break;
+				}
+			}
+			break;
+
+		case UCS2_CHAR('"'):
+			if (*n == 0 && ms_fnmatch_w(p, n, protocol) == 0) return 0;
+			if (*n != UCS2_CHAR('.')) return -1;
+			n++;
+			break;
+
+		default:
+			if (c != *n) return -1;
 			n++;
 		}
 	}
@@ -236,8 +304,8 @@ int ms_fnmatch_x(const char *pattern, const char *string, int protocol,
 		   under this failure case is expensive, and it's pretty close */
 	}
 
-	ret = ms_fnmatch_w(buffer_pattern, buffer_string, protocol, case_senstive);
- 	DEBUG(10,("ms_fnmatch(%s,%s) -> %d\n", pattern, string, ret));
+	ret = ms_fnmatch_w_x(buffer_pattern, buffer_string, protocol, case_senstive);
+ 	DEBUG(10,("ms_fnmatch_x(%s,%s) -> %d\n", pattern, string, ret));
 
 	return ret;
 }
@@ -259,5 +327,5 @@ int ms_fnmatch(const char *pattern, const char *string, enum protocol_types prot
 /* a generic fnmatch function - uses for non-CIFS pattern matching */
 int gen_fnmatch(const char *pattern, const char *string)
 {
-	return ms_fnmatch(pattern, string, PROTOCOL_NT1, True);
+	return ms_fnmatch_x(pattern, string, PROTOCOL_NT1, True);
 }
