@@ -138,7 +138,8 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_misc.o \
                 rpc_parse/parse_reg.o rpc_parse/parse_rpc.o \
                 rpc_parse/parse_samr.o rpc_parse/parse_srv.o \
                 rpc_parse/parse_wks.o rpc_parse/parse_sec.o \
-		rpc_parse/parse_spoolss.o rpc_parse/parse_dfs.o
+		rpc_parse/parse_spoolss.o rpc_parse/parse_dfs.o \
+		rpc_parse/parse_creds.o
 
 RPC_CLIENT_OBJ = \
 		rpc_client/cli_login.o    \
@@ -148,7 +149,11 @@ RPC_CLIENT_OBJ = \
 		rpc_client/cli_wkssvc.o   \
 		rpc_client/cli_srvsvc.o   \
 		rpc_client/cli_samr.o  \
-		rpc_client/cli_reg.o
+		rpc_client/cli_reg.o \
+		rpc_client/cli_connect.o \
+		rpc_client/cli_use.o \
+		rpc_client/ncalrpc_l_use.o \
+		rpc_client/ncacn_np_use.o
 
 
 LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
@@ -171,7 +176,6 @@ SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	    smbd/blocking.o smbd/sec_ctx.o \
 	    smbd/vfs.o smbd/vfs-wrap.o smbd/statcache.o \
             smbd/unix_acls.o lib/msrpc-client.o lib/msrpc_use.o \
-            rpc_parse/parse_creds.o \
 	    smbd/process.o smbd/service.o smbd/error.o \
 	    printing/printfsp.o nsswitch/common.o
 
@@ -204,7 +208,7 @@ NMBD_OBJ = $(NMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
            $(LIB_OBJ)
 
 SWAT_OBJ = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
-           web/swat.o $(PRINTING_OBJ) $(LIBSMB_OBJ) $(LOCKING_OBJ) \
+           web/swat.o lib/msrpc-client.o $(PRINTING_OBJ) $(LIBSMB_OBJ) $(LOCKING_OBJ) \
            $(PARAM_OBJ) $(PASSDB_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
            $(UBIQX_OBJ) $(LIB_OBJ) 
 
@@ -231,17 +235,12 @@ TESTPARM_OBJ = utils/testparm.o \
 TESTPRNS_OBJ = utils/testprns.o $(PARAM_OBJ) $(PRINTING_OBJ) $(UBIQX_OBJ) \
                $(LIB_OBJ)
 
-SMBPASSWD_OBJ = utils/smbpasswd.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(PASSDB_OBJ) \
+SMBPASSWD_OBJ = utils/smbpasswd.o lib/msrpc-client.o $(PARAM_OBJ) \
+		$(LIBSMB_OBJ) $(PASSDB_OBJ) \
                 $(UBIQX_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(LIB_OBJ)
 
 RPCCLIENT_OBJ = rpcclient/rpcclient.o \
-             rpcclient/display.o \
-             rpcclient/cmd_lsarpc.o \
-             rpcclient/cmd_wkssvc.o \
-             rpcclient/cmd_samr.o \
-             rpcclient/cmd_reg.o \
-             rpcclient/cmd_srvsvc.o \
-             rpcclient/cmd_netlogon.o \
+	     lib/cmd_interp.o lib/msrpc-client.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
              $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ)
 
@@ -299,7 +298,7 @@ SMBFILTER_OBJ = utils/smbfilter.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
 PROTO_OBJ = $(SMBD_OBJ) $(NMBD_OBJ) $(SWAT_OBJ) $(CLIENT_OBJ) \
-	    $(RPCCLIENT_OBJ) $(SMBWRAPPER_OBJ) $(SMBTORTURE_OBJ)
+	    $(SMBWRAPPER_OBJ) $(SMBTORTURE_OBJ)
 
 NSS_OBJ_0 = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) $(LIB_OBJ) $(NSSWINS_OBJ)
 NSS_OBJ = $(NSS_OBJ_0:.o=.po)
@@ -584,9 +583,14 @@ uninstallcp:
 clean: 
 	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@
 
-proto: 
+proto: rpc_client_proto
 	@echo rebuilding include/proto.h
 	@cd $(srcdir) && $(AWK) -f script/mkproto.awk `echo $(PROTO_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` > include/proto.h
+
+rpc_client_proto:
+	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
+	  -h _RPC_CLIENT_PROTO_H_ include/rpc_client_proto.h \
+	  $(RPC_CLIENT_OBJ)
 
 etags:
 	etags `find . -name "*.[ch]" | grep -v /CVS/`
