@@ -1940,7 +1940,7 @@ else
 fi
 done
 
-for ac_hdr in sys/acl.h
+for ac_hdr in sys/acl.h sys/cdefs.h
 do
 ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
@@ -4352,7 +4352,7 @@ else
 fi
 done
 
-for ac_func in _getdents __getdents _lseek __lseek _read __read
+for ac_func in getdents _getdents __getdents _lseek __lseek _read __read
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 echo "configure:4359: checking for $ac_func" >&5
