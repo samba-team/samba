@@ -299,6 +299,12 @@ enum nss_status generic_request(int req_type,
 	struct winbindd_request lrequest;
 	struct winbindd_response lresponse;
 
+	/* Check for our tricky environment variable */
+
+	if (getenv(WINBINDD_DONT_ENV)) {
+		return NSS_STATUS_NOTFOUND;
+	}
+
 	if (!response) response = &lresponse;
 	if (!request) request = &lrequest;
 	

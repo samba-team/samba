@@ -631,6 +631,11 @@ int main(int argc, char **argv)
 		}
 	}
 
+	/* Set environment variable so we don't recursively call ourselves.
+	   This may also be useful interactively. */
+
+	setenv(WINBINDD_DONT_ENV, "1", 1);
+
 	/* Initialise samba/rpc client stuff */
 	slprintf(debugf, sizeof(debugf), "%s/log.winbindd", LOGFILEBASE);
 	setup_logging("winbindd", interactive);

@@ -27,7 +27,8 @@
 
 #define WINBINDD_SOCKET_NAME "pipe"            /* Name of PF_UNIX socket */
 #define WINBINDD_SOCKET_DIR  "/tmp/.winbindd"  /* Name of PF_UNIX dir */
-#define WINBINDD_DOMAIN_ENV  "WINBINDD_DOMAIN" /* Environment variable */
+#define WINBINDD_DOMAIN_ENV  "WINBINDD_DOMAIN" /* Environment variables */
+#define WINBINDD_DONT_ENV    "_NO_WINBINDD"
 
 /* Socket commands */
 
