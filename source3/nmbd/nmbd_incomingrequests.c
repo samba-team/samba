@@ -58,7 +58,7 @@ void process_name_release_request(struct subnet_record *subrec,
 	struct nmb_packet *nmb = &p->packet.nmb;
 	struct in_addr owner_ip;
 	struct nmb_name *question = &nmb->question.question_name;
-	fstring qname;
+	unstring qname;
 	BOOL bcast = nmb->header.nm_flags.bcast;
 	uint16 nb_flags = get_nb_flags(nmb->additional->rdata);
 	BOOL group = (nb_flags & NB_GROUP) ? True : False;
@@ -275,7 +275,7 @@ We put our own names first, then in alphabetical order.
 
 static int status_compare(char *n1,char *n2)
 {
-	fstring name1, name2;
+	unstring name1, name2;
 	int l1,l2,l3;
 
 	memset(name1, '\0', sizeof(name1));
@@ -300,7 +300,7 @@ static int status_compare(char *n1,char *n2)
 			(l1!=l3 || strncmp(n1,global_myname(),l3) != 0))
 		return 1;
 
-	return memcmp(n1,n2,sizeof(fstring));
+	return memcmp(n1,n2,sizeof(name1));
 }
 
 /****************************************************************************
@@ -310,7 +310,7 @@ static int status_compare(char *n1,char *n2)
 void process_node_status_request(struct subnet_record *subrec, struct packet_struct *p)
 {
 	struct nmb_packet *nmb = &p->packet.nmb;
-	fstring qname;
+	unstring qname;
 	int ques_type = nmb->question.question_name.name_type;
 	char rdata[MAX_DGRAM_SIZE];
 	char *countptr, *buf, *bufend, *buf0;
@@ -344,7 +344,7 @@ subnet %s - name not found.\n", nmb_namestr(&nmb->question.question_name),
 	while (buf < bufend) {
 		if( (namerec->data.source == SELF_NAME) || (namerec->data.source == PERMANENT_NAME) ) {
 			int name_type = namerec->name.name_type;
-			fstring name;
+			unstring name;
 
 			pull_ascii_nstring(name, sizeof(name), namerec->name.name);
 			strupper_m(name);

@@ -226,8 +226,8 @@ struct name_record {
 /* Browser cache for synchronising browse lists. */
 struct browse_cache_record {
 	ubi_dlNode     node[1];
-	fstring        lmb_name;
-	fstring        work_group;
+	unstring        lmb_name;
+	unstring        work_group;
 	struct in_addr ip;
 	time_t         sync_time;
 	time_t         death_time; /* The time the record must be removed. */
@@ -265,9 +265,9 @@ struct work_record {
 	enum logon_state log_state;
 
 	/* Work group info. */
-	fstring work_group;
+	unstring work_group;
 	int     token;        /* Used when communicating with backup browsers. */
-	fstring local_master_browser_name;      /* Current local master browser. */
+	unstring local_master_browser_name;      /* Current local master browser. */
 
 	/* Announce info. */
 	time_t lastannounce_time;

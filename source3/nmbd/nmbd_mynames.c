@@ -93,7 +93,7 @@ static void insert_refresh_name_into_unicast( struct subnet_record *subrec,
 	}
 
 	if((namerec = find_name_on_subnet(unicast_subnet, nmbname, FIND_SELF_NAME)) == NULL) {
-		fstring name;
+		unstring name;
 		pull_ascii_nstring(name, sizeof(name), nmbname->name);
 		/* The name needs to be created on the unicast subnet. */
 		(void)add_name_to_subnet( unicast_subnet, name,

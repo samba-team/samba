@@ -85,7 +85,7 @@ static void register_name_response(struct subnet_record *subrec,
 		 */
 		
 #if 1 /* OLD_SAMBA_SERVER_HACK */
-		fstring ans_name;
+		unstring ans_name;
 		pull_ascii_nstring(ans_name, sizeof(ans_name), answer_name->name);
 		if((nmb->header.rcode == ACT_ERR) && strequal(lp_workgroup(), ans_name) &&
 		   (answer_name->name_type == 0x1b)) {
@@ -418,7 +418,7 @@ static void multihomed_register_name(struct nmb_name *nmbname, uint16 nb_flags,
 	struct subnet_record *subrec;
 	char **wins_tags;
 	struct in_addr *ip_list;
-	fstring name;
+	unstring name;
 
 	for(subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec) )
 		num_ips++;
@@ -476,7 +476,7 @@ void register_name(struct subnet_record *subrec,
 	errno = 0;
 	push_ascii_nstring(nname, name);
         if (errno == E2BIG) {
-		fstring tname;
+		unstring tname;
 		pull_ascii_nstring(tname, sizeof(tname), nname);
 		DEBUG(0,("register_name: NetBIOS name %s is too long. Truncating to %s\n",
 			name, tname));
