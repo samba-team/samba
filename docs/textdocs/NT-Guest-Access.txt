@@ -1,0 +1,32 @@
+What you are seeing is normal and deliberate.
+
+MS Windows NT can be configured with the guest account enabled. When this is the
+case no logon attempt will ever fail. Instead NT will allow the user access as
+the guest account IF the username and / or password are incorrect. In a situation
+where Samba is using and NT system to validate user passwords, if the NT server
+guest account is enabled then a user logging on as "root" will always be valdated
+even if the password was incorrect. There is NO way that samba can tell from the
+reply packet from NT whether the password was correct and normal user privilidge
+has been granted, or whether the password was incorrect and the user has been given
+only "guest" privilidges.
+
+In short, if we were NOT to do what we do, then there would be no way of telling
+whether or not the password server allows guest only logons. Were we to just accept
+the validation response from such a server the a user could easily gain "root" level
+access to a Samba server.
+
+Now you would not really want us to change the current behaviour, would you?
+
+
+
+> Hi folks ... I don't know if you have seen this, have corrected this yet
+> or it is my configuration.
+> I am using our company PDC for passwd authentication and it works OK
+> except for one snag.
+> The authentication process between the our Samba server & the PDC always
+> includes one unsuccessful pass thru attempt.
+>    This initial pass thru validation has an incorrect user password
+> (1F1F1F1F......). A SMB reject from the PDC forces the Samba Svr to
+> immediately send a second validation with the correct
+> encrypted Bell Master Domain user password.
+>    It would be nice to get rid of the first bad validation attempt.
