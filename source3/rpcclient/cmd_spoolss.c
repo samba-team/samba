@@ -54,7 +54,7 @@ static const struct table_node archi_table[]= {
 function to do the mapping between the long architecture name and
 the short one.
 ****************************************************************************/
-BOOL get_short_archi(char *short_archi, const char *long_archi)
+static const char *cmd_spoolss_get_short_archi(const char *long_archi)
 {
         int i=-1;
 
@@ -66,18 +66,17 @@ BOOL get_short_archi(char *short_archi, const char *long_archi)
 
         if (archi_table[i].long_archi==NULL) {
                 DEBUGADD(10,("Unknown architecture [%s] !\n", long_archi));
-                return False;
+                return NULL;
         }
 
 	/* this might be client code - but shouldn't this be an fstrcpy etc? */
 
-        StrnCpy (short_archi, archi_table[i].short_archi, strlen(archi_table[i].short_archi));
 
         DEBUGADD(108,("index: [%d]\n", i));
-        DEBUGADD(108,("long architecture: [%s]\n", long_archi));
-        DEBUGADD(108,("short architecture: [%s]\n", short_archi));
+        DEBUGADD(108,("long architecture: [%s]\n", archi_table[i].long_archi));
+        DEBUGADD(108,("short architecture: [%s]\n", archi_table[i].short_archi));
 
-        return True;
+	return archi_table[i].short_archi;
 }
 
 #if 0
@@ -1153,7 +1152,7 @@ static char* get_driver_3_param (const char* str, const char* delim, UNISTR* des
 	   parameter because two consecutive delimiters
 	   will not return an empty string.  See man strtok(3)
 	   for details */
-	if (StrCaseCmp(ptr, "NULL") == 0)
+	if (ptr && (StrCaseCmp(ptr, "NULL") == 0))
 		ptr = NULL;
 
 	if (dest != NULL)
@@ -1227,7 +1226,7 @@ static WERROR cmd_spoolss_addprinterdriver(struct cli_state *cli,
 	uint32                  level = 3;
 	PRINTER_DRIVER_CTR	ctr;
 	DRIVER_INFO_3		info3;
-	fstring			arch;
+	const char		*arch;
 	fstring			driver_name;
 
 	/* parse the command arguements */
@@ -1243,7 +1242,7 @@ static WERROR cmd_spoolss_addprinterdriver(struct cli_state *cli,
 		
 	/* Fill in the DRIVER_INFO_3 struct */
 	ZERO_STRUCT(info3);
-	if (!get_short_archi(arch, argv[1]))
+	if (!(arch = cmd_spoolss_get_short_archi(argv[1])))
 	{
 		printf ("Error Unknown architechture [%s]\n", argv[1]);
 		return WERR_INVALID_PARAM;

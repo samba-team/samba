@@ -1513,14 +1513,17 @@ static char *lp_string(const char *s)
 	if (!ret)
 		return NULL;
 
+	/* Note: safe_strcpy touches len+1 bytes, but we allocate 100
+	 * extra bytes so we're OK. */
+
 	if (!s)
 		*ret = 0;
 	else
-		StrnCpy(ret, s, len);
+		safe_strcpy(ret, s, len+99);
 
 	if (trim_string(ret, "\"", "\"")) {
 		if (strchr(ret,'"') != NULL)
-			StrnCpy(ret, s, len);
+			safe_strcpy(ret, s, len+99);
 	}
 
 	standard_sub_basic(current_user_info.smb_name,ret,len+100);

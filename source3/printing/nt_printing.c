@@ -198,6 +198,22 @@ static const nt_forms_struct default_forms[] = {
 	{"PRC Envelope #10 Rotated",0x1,0x6fd10,0x4f1a0,0x0,0x0,0x6fd10,0x4f1a0}
 };
 
+struct table_node {
+	const char 	*long_archi;
+	const char 	*short_archi;
+	int	version;
+};
+ 
+static const struct table_node archi_table[]= {
+
+	{"Windows 4.0",          "WIN40",	0 },
+	{"Windows NT x86",       "W32X86",	2 },
+	{"Windows NT R4000",     "W32MIPS",	2 },
+	{"Windows NT Alpha_AXP", "W32ALPHA",	2 },
+	{"Windows NT PowerPC",   "W32PPC",	2 },
+	{NULL,                   "",		-1 }
+};
+
 static BOOL upgrade_to_version_3(void)
 {
 	TDB_DATA kbuf, newkey, dbuf;
@@ -638,12 +654,12 @@ void update_a_form(nt_forms_struct **list, const FORM *form, int count)
 int get_ntdrivers(fstring **list, const char *architecture, uint32 version)
 {
 	int total=0;
-	fstring short_archi;
+	const char *short_archi;
 	fstring *fl;
 	pstring key;
 	TDB_DATA kbuf, newkey;
 
-	get_short_archi(short_archi, architecture);
+	short_archi = get_short_archi(architecture);
 	slprintf(key, sizeof(key)-1, "%s%s/%d/", DRIVERS_PREFIX, short_archi, version);
 
 	for (kbuf = tdb_firstkey(tdb_drivers);
@@ -667,52 +683,32 @@ int get_ntdrivers(fstring **list, const char *architecture, uint32 version)
 }
 
 /****************************************************************************
- Function to do the mapping between the long architecture name and
- the short one.
+function to do the mapping between the long architecture name and
+the short one.
 ****************************************************************************/
-BOOL get_short_archi(char *short_archi, const char *long_archi)
+const char *get_short_archi(const char *long_archi)
 {
-	struct table {
-		const char *long_archi;
-		const char *short_archi;
-	};
-	
-	struct table archi_table[]=
-	{
-		{"Windows 4.0",          "WIN40"    },
-		{"Windows NT x86",       "W32X86"   },
-		{"Windows NT R4000",     "W32MIPS"  },
-		{"Windows NT Alpha_AXP", "W32ALPHA" },
-		{"Windows NT PowerPC",   "W32PPC"   },
-		{NULL,                   ""         }
-	};
-	
-	int i=-1;
+        int i=-1;
 
-	DEBUG(107,("Getting architecture dependant directory\n"));
+        DEBUG(107,("Getting architecture dependant directory\n"));
+        do {
+                i++;
+        } while ( (archi_table[i].long_archi!=NULL ) &&
+                  StrCaseCmp(long_archi, archi_table[i].long_archi) );
 
-	if (long_archi == NULL) {
-		DEBUGADD(107,("Bad long_archi param.!\n"));
-		return False;
-	}
+        if (archi_table[i].long_archi==NULL) {
+                DEBUGADD(10,("Unknown architecture [%s] !\n", long_archi));
+                return NULL;
+        }
 
-	do {
-		i++;
-	} while ( (archi_table[i].long_archi!=NULL ) &&
-	          StrCaseCmp(long_archi, archi_table[i].long_archi) );
+	/* this might be client code - but shouldn't this be an fstrcpy etc? */
 
-	if (archi_table[i].long_archi==NULL) {
-		DEBUGADD(107,("Unknown architecture [%s] !\n", long_archi));
-		return False;
-	}
 
-	StrnCpy (short_archi, archi_table[i].short_archi, strlen(archi_table[i].short_archi));
+        DEBUGADD(108,("index: [%d]\n", i));
+        DEBUGADD(108,("long architecture: [%s]\n", archi_table[i].long_archi));
+        DEBUGADD(108,("short architecture: [%s]\n", archi_table[i].short_archi));
 
-	DEBUGADD(108,("index: [%d]\n", i));
-	DEBUGADD(108,("long architecture: [%s]\n", long_archi));
-	DEBUGADD(108,("short architecture: [%s]\n", short_archi));
-	
-	return True;
+	return archi_table[i].short_archi;
 }
 
 /****************************************************************************
@@ -1066,7 +1062,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 /****************************************************************************
 Determine the correct cVersion associated with an architecture and driver
 ****************************************************************************/
-static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
+static uint32 get_correct_cversion(const char *architecture, fstring driverpath_in,
 				   struct current_user *user, WERROR *perr)
 {
 	int               cversion;
@@ -1111,7 +1107,7 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 	}
 
 	/* We are temporarily becoming the connection user. */
-	if (!become_user(conn, conn->vuid)) {
+	if (!become_user(conn, user->vuid)) {
 		DEBUG(0,("get_correct_cversion: Can't become user!\n"));
 		*perr = WERR_ACCESS_DENIED;
 		return -1;
@@ -1192,7 +1188,7 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 static WERROR clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver,
 											 struct current_user *user)
 {
-	fstring architecture;
+	const char *architecture;
 	fstring new_name;
 	char *p;
 	int i;
@@ -1232,7 +1228,7 @@ static WERROR clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *dri
 		}
 	}
 
-	get_short_archi(architecture, driver->environment);
+	architecture = get_short_archi(driver->environment);
 	
 	/* jfm:7/16/2000 the client always sends the cversion=0.
 	 * The server should check which version the driver is by reading
@@ -1256,7 +1252,7 @@ static WERROR clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *dri
 ****************************************************************************/
 static WERROR clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver, struct current_user *user)
 {
-	fstring architecture;
+	const char *architecture;
 	fstring new_name;
 	char *p;
 	int i;
@@ -1296,7 +1292,7 @@ static WERROR clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *dri
 		}
 	}
 
-	get_short_archi(architecture, driver->environment);
+	architecture = get_short_archi(driver->environment);
 
 	/* jfm:7/16/2000 the client always sends the cversion=0.
 	 * The server should check which version the driver is by reading
@@ -1382,7 +1378,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver;
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 converted_driver;
-	fstring architecture;
+	const char *architecture;
 	pstring new_dir;
 	pstring old_name;
 	pstring new_name;
@@ -1409,7 +1405,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 		return False;
 	}
 
-	get_short_archi(architecture, driver->environment);
+	architecture = get_short_archi(driver->environment);
 
 	/*
 	 * Connect to the print$ share under the same account as the user connected to the rpc pipe.
@@ -1589,7 +1585,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 {
 	int len, buflen;
-	fstring architecture;
+	const char *architecture;
 	pstring directory;
 	fstring temp_name;
 	pstring key;
@@ -1597,7 +1593,7 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 	int i, ret;
 	TDB_DATA kbuf, dbuf;
 
-	get_short_archi(architecture, driver->environment);
+	architecture = get_short_archi(driver->environment);
 
 	/* The names are relative. We store them in the form: \print$\arch\version\driver.xxx
 	 * \\server is added in the rpc server layer.
@@ -1751,14 +1747,14 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 driver;
 	TDB_DATA kbuf, dbuf;
-	fstring architecture;
+	const char *architecture;
 	int len = 0;
 	int i;
 	pstring key;
 
 	ZERO_STRUCT(driver);
 
-	get_short_archi(architecture, arch);
+	architecture = get_short_archi(arch);
 
 	DEBUG(8,("get_a_printer_driver_3: [%s%s/%d/%s]\n", DRIVERS_PREFIX, architecture, version, drivername));
 
@@ -4405,13 +4401,13 @@ WERROR delete_printer_driver( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct cur
                               uint32 version, BOOL delete_files )
 {
 	pstring 	key;
-	fstring		arch;
+	const char     *arch;
 	TDB_DATA 	kbuf, dbuf;
 	NT_PRINTER_DRIVER_INFO_LEVEL	ctr;
 
 	/* delete the tdb data first */
 
-	get_short_archi(arch, info_3->environment);
+	arch = get_short_archi(info_3->environment);
 	slprintf(key, sizeof(key)-1, "%s%s/%d/%s", DRIVERS_PREFIX,
 		arch, version, info_3->name);
 

@@ -600,6 +600,5 @@ local_master_browser_name for workgroup %s to workgroup name.\n",
   }
 #endif
 
-  StrnCpy(work->local_master_browser_name, newname,
-            sizeof(work->local_master_browser_name)-1);
+  fstrcpy(work->local_master_browser_name, newname);
 }
