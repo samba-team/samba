@@ -348,11 +348,11 @@ BOOL cli_api_pipe(struct cli_state *cli, char *pipe_name, int pipe_name_len,
 /****************************************************************************
 call a remote api
 ****************************************************************************/
-static BOOL cli_api(struct cli_state *cli,
-                    char *param, int prcnt, int mprcnt,
-                    char *data, int drcnt, int mdrcnt,
-                    char **rparam, int *rprcnt,
-                    char **rdata, int *rdrcnt)
+BOOL cli_api(struct cli_state *cli,
+	     char *param, int prcnt, int mprcnt,
+	     char *data, int drcnt, int mdrcnt,
+	     char **rparam, int *rprcnt,
+	     char **rdata, int *rdrcnt)
 {
   cli_send_trans(cli,SMBtrans,
                  PIPE_LANMAN,strlen(PIPE_LANMAN), /* Name, length */

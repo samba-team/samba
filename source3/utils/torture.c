@@ -71,7 +71,9 @@ static BOOL open_connection(struct cli_state *c)
 		return False;
 	}
 
-	if (!cli_send_tconX(c, share, "A:", password, strlen(password)+1)) {
+	if (!cli_send_tconX(c, share, 
+			    strstr(share,"IPC$")?"IPC":"A:", 
+			    password, strlen(password)+1)) {
 		printf("%s refused tree connect (%s)\n", host, cli_errstr(c));
 		cli_shutdown(c);
 		return False;
@@ -230,7 +232,7 @@ static void run_torture(int numops)
 static void run_locktest1(void)
 {
 	static struct cli_state cli1, cli2;
-	char *fname = "\\locktest.lck";
+	char *fname = "\\lockt1.lck";
 	int fnum1, fnum2, fnum3;
 	time_t t1, t2;
 
@@ -355,7 +357,7 @@ static void run_locktest1(void)
 static void run_locktest2(void)
 {
 	static struct cli_state cli;
-	char *fname = "\\locktest.lck";
+	char *fname = "\\lockt2.lck";
 	int fnum1, fnum2, fnum3;
 
 	if (!open_connection(&cli)) {
@@ -458,7 +460,7 @@ static void run_locktest2(void)
 static void run_locktest3(int numops)
 {
 	static struct cli_state cli1, cli2;
-	char *fname = "\\locktest.lck";
+	char *fname = "\\lockt3.lck";
 	int fnum1, fnum2, i;
 	uint32 offset;
 
@@ -605,12 +607,64 @@ static void run_unlinktest(void)
 	printf("unlink test finished\n");
 }
 
+/* generate a random buffer */
+void rand_buf(char *buf, int len)
+{
+	while (len--) {
+		*buf = random();
+		buf++;
+	}
+}
+
+/* send random IPC commands */
+static void run_randomipc(void)
+{
+	char *rparam = NULL;
+	char *rdata = NULL;
+	int rdrcnt,rprcnt;
+	pstring param;
+	int api, param_len, i;
+	static struct cli_state cli;
+	struct {
+		int api, level;
+		char *format;
+		char *subformat;
+		int len;
+	} foo;
+
+	printf("starting random ipc test\n");
+
+	if (!open_connection(&cli)) {
+		return;
+	}
+
+	for (i=0;i<1000;i++) {
+		api = random() % 500;
+		param_len = random() % 64;
+
+		rand_buf(param, param_len);
+  
+		SSVAL(param,0,api); 
+
+		cli_api(&cli, 
+			param, param_len, 8,  
+			NULL, 0, BUFFER_SIZE, 
+			&rparam, &rprcnt,     
+			&rdata, &rdrcnt);
+	}
+
+	close_connection(&cli);
+
+	printf("finished random ipc test\n");
+}
+
 
 
 static void browse_callback(char *sname, uint32 stype, char *comment)
 {
 	printf("\t%20.20s %08x %s\n", sname, stype, comment);
 }
+
 
 
 /*
@@ -911,6 +965,8 @@ static void create_procs(int nprocs, int numops)
 
 	printf("host=%s share=%s user=%s myname=%s\n", 
 	       host, share, username, myname);
+
+	run_randomipc();
 
 	start_timer();
 	create_procs(nprocs, numops);
