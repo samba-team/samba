@@ -41,7 +41,9 @@ struct CONN_INFO_1 {
 
 struct CONN_ENUM_CTR {
 	uint32 level;
+	uint32 level2;
 	uint32 num_entries;
+	uint32 num_entries2;
 	union *info[level] {
 		case 0 CONN_INFO_0 info0[num_entries]; 
 		case 1 CONN_INFO_1 info1[num_entries]; 
@@ -50,11 +52,9 @@ struct CONN_ENUM_CTR {
 
 struct SRV_R_NET_CONN_ENUM {
         .trailer;
-	uint32 level;
 	CONN_ENUM_CTR ctr;
-        ENUM_HND handle;
         uint32 num_entries;
-        uint32 status;
+        ENUM_HND handle;
         uint32 status2;
 };
 
@@ -140,8 +140,8 @@ struct SRV_R_NET_SHARE_ENUM {
        }
        .trailer;
        uint32 count;
-       uint32 status1;
-       uint32 status2;
+       ENUM_HND handle;
+       uint32 status;
 };
 
 

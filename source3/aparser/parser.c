@@ -311,9 +311,9 @@ BOOL io_pointer(char *desc, prs_struct *ps, int depth, void **p, unsigned flags)
 
 	if (!(flags & PARSE_SCALARS)) return True;
 
-	v = (*p) ? 1 : 0;
+	v = (*p) ? 0xdeadbeef : 0;
 	if (!io_uint32(desc, ps, depth, &v, flags)) return False;
-	*p = (void *) (v ? 1 : 0);
+	*p = (void *) (v ? 0xdeadbeef : 0);
 	return True;
 }
 
