@@ -106,7 +106,6 @@ Prints out the current Debug level returned by MSG_DEBUGLEVEL
 ****************************************************************************/
 void debuglevel_function(int msg_type, pid_t src, void *buf, size_t len)
 {
-	int i;
 	char *levels = (char *)buf;
 	pstring dbgcl;
 
