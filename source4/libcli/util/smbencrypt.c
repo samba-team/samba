@@ -463,7 +463,7 @@ BOOL encode_pw_buffer(uint8_t buffer[516], const char *password, int string_flag
  *new_pw_len is the length in bytes of the possibly mulitbyte
  returned password including termination.
 ************************************************************/
-BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
+BOOL decode_pw_buffer(uint8_t in_buffer[516], char *new_pwrd,
 		      int new_pwrd_size, uint32_t *new_pw_len,
 		      int string_flags)
 {
@@ -497,7 +497,7 @@ BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("decode_pw_buffer: new_pwrd: "));
-	dump_data(100, (char *)new_pwrd, *new_pw_len);
+	dump_data(100, (const uint8_t *)new_pwrd, *new_pw_len);
 	DEBUG(100,("multibyte len:%d\n", *new_pw_len));
 	DEBUG(100,("original char len:%d\n", byte_len/2));
 #endif
