@@ -43,6 +43,12 @@ int process_tar(char *inbuf, char *outbuf);
 int clipfind(char **aret, int ret, char *tok);
 int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind);
 
+/*The following definitions come from  lib/access.c  */
+
+BOOL allow_access(char *deny_list,char *allow_list,
+		  char *cname,char *caddr);
+BOOL check_access(int sock, char *allow_list, char *deny_list);
+
 /*The following definitions come from  lib/charcnv.c  */
 
 char *unix2dos_format(char *str,BOOL overwrite);
@@ -62,6 +68,7 @@ int sig_usr1( void );
 void setup_logging( char *pname, BOOL interactive );
 void reopen_logs( void );
 void force_check_log_size( void );
+void dbgflush( void );
 BOOL dbghdr( int level, char *file, char *func, int line );
 
 /*The following definitions come from  lib/fault.c  */
@@ -459,6 +466,8 @@ char *smb_errstr(char *inbuf);
 
 /*The following definitions come from  locking/locking.c  */
 
+BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout, int lock_num);
+void process_blocking_lock_queue(time_t t);
 BOOL is_locked(int fnum,int cnum,uint32 count,uint32 offset, int lock_type);
 BOOL do_lock(int fnum,int cnum,uint32 count,uint32 offset,int lock_type,
              int *eclass,uint32 *ecode);
@@ -1073,6 +1082,14 @@ BOOL pm_process( char *FileName,
 
 BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname);
 void pcap_printer_fn(void (*fn)(char *, char *));
+
+/*The following definitions come from  passdb/ldap.c  */
+
+struct passdb_ops *ldap_initialize_password_db(void);
+
+/*The following definitions come from  passdb/nispass.c  */
+
+struct passdb_ops *nisplus_initialize_password_db(void);
 
 /*The following definitions come from  passdb/pass_check.c  */
 
@@ -1842,12 +1859,6 @@ uint32 lookup_user_rid(char *user_name, uint32 *rid);
 
 BOOL api_wkssvc_rpc(pipes_struct *p, prs_struct *data);
 
-/*The following definitions come from  smbd/access.c  */
-
-BOOL allow_access(char *deny_list,char *allow_list,
-		  char *cname,char *caddr);
-BOOL check_access(int sock, char *allow_list, char *deny_list);
-
 /*The following definitions come from  smbd/chgpasswd.c  */
 
 BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequence, BOOL as_root);
@@ -1908,10 +1919,6 @@ void map_gid_to_sid( gid_t gid, DOM_SID *psid);
 int get_printerdrivernumber(int snum);
 int reply_trans(char *inbuf,char *outbuf, int size, int bufsize);
 
-/*The following definitions come from  smbd/ldap.c  */
-
-struct passdb_ops *ldap_initialize_password_db(void);
-
 /*The following definitions come from  smbd/mangle.c  */
 
 BOOL is_mangled( char *s );
@@ -1928,10 +1935,6 @@ int reply_sends(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_sendstrt(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_sendtxt(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_sendend(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
-
-/*The following definitions come from  smbd/nispass.c  */
-
-struct passdb_ops *nisplus_initialize_password_db(void);
 
 /*The following definitions come from  smbd/nttrans.c  */
 
