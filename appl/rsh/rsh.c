@@ -274,6 +274,8 @@ krb5_forward_cred (krb5_auth_context auth_context,
     return 0;
 }
 
+static int sendauth_version_error;
+
 static int
 send_krb5_auth(int s,
 	       struct sockaddr *thisaddr,
@@ -341,7 +343,11 @@ send_krb5_auth(int s,
 			    NULL,
 			    NULL);
     if (status) {
-	warnx("%s: %s", hostname, krb5_get_err_text(context, status));
+	if(status == KRB5_SENDAUTH_REJECTED && 
+	   protocol_version == 2 && protocol_version_str == NULL)
+	    sendauth_version_error = 1;
+	else
+	    krb5_warn(context, status, "%s", hostname);
 	return 1;
     }
 
@@ -1026,9 +1032,15 @@ main(int argc, char **argv)
 	    errx (1, "getaddrinfo: %s", gai_strerror(error));
 
 	auth_method = AUTH_KRB5;
+      again:
 	ret = doit (host, ai, user, local_user, cmd, cmd_len,
 		    do_errsock,
 		    send_krb5_auth);
+	if(ret != 0 && sendauth_version_error && 
+	   protocol_version == 2) {
+	    protocol_version = 1;
+	    goto again;
+	}
 	freeaddrinfo(ai);
     }
 #endif
