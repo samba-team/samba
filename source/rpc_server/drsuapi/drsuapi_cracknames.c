@@ -29,23 +29,31 @@
 #include "lib/ldb/include/ldb.h"
 
 static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX *mem_ctx,
-			uint32 format_offered, uint32 format_desired, const char *name,
-			struct drsuapi_DsNameInfo1 *info1)
+			uint32 format_flags, uint32 format_offered, uint32 format_desired,
+			const char *name, struct drsuapi_DsNameInfo1 *info1)
 {
 	int ret;
-	const char *domain_filter;
+	const char *domain_filter = NULL;
 	const char * const *domain_attrs;
-	struct ldb_message **domain_res;
-	const char *result_basedn;
+	struct ldb_message **domain_res = NULL;
+	const char *result_basedn = NULL;
 	const char *result_filter = NULL;
 	const char * const *result_attrs;
-	struct ldb_message **result_res;
+	struct ldb_message **result_res = NULL;
 
 	info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 	info1->dns_domain_name = NULL;
 	info1->result_name = NULL;
 
-	/* TODO: fill crack the correct names in all cases! */
+	if (!name) {
+		return WERR_INVALID_PARAM;
+	}
+
+	/* TODO: - fill the correct names in all cases!
+	 *       - handle format_flags
+	 */
+
+	/* here we need to set the domain_filter and/or the result_filter */
 	switch (format_offered) {
 		case DRSUAPI_DS_NAME_FORMAT_CANONICAL: {
 			char *str;
@@ -104,6 +112,7 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 		}
 	}
 
+	/* here we need to set the attrs lists for domain and result lookups */
 	switch (format_desired) {
 		case DRSUAPI_DS_NAME_FORMAT_FQDN_1779: {
 			const char * const _domain_attrs[] = { "dn", "dnsDomain", NULL};
@@ -133,15 +142,16 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 			return WERR_OK;
 	}
 
+	/* if we have a domain_filter look it up and set the result_basedn and the dns_domain_name */
 	ret = samdb_search(b_state->sam_ctx, mem_ctx, NULL, &domain_res, domain_attrs,
 				"%s", domain_filter);
 	switch (ret) {
-		case 1: 
+		case 1:
 			break;
-		case 0: 
+		case 0:
 			info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 			return WERR_OK;
-		case -1: 
+		case -1:
 			info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 			return WERR_OK;
 		default:
@@ -155,7 +165,7 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 
 	if (result_filter) {
 		result_basedn = samdb_result_string(domain_res[0], "dn", NULL);
-		
+
 		ret = samdb_search(b_state->sam_ctx, mem_ctx, result_basedn, &result_res,
 					result_attrs, "%s", result_filter);
 		switch (ret) {
@@ -174,31 +184,42 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 		result_res = domain_res;
 	}
 
+	/* here we can use result_res[0] and domain_res[0] */
 	switch (format_desired) {
 		case DRSUAPI_DS_NAME_FORMAT_FQDN_1779: {
 			info1->result_name	= samdb_result_string(result_res[0], "dn", NULL);
 			WERR_TALLOC_CHECK(info1->result_name);
+
 			info1->status		= DRSUAPI_DS_NAME_STATUS_OK;
 			return WERR_OK;
 		}
 		case DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT: {
-			const char *_dom = samdb_result_string(domain_res[0], "name", NULL);
+			const char *_dom;
 			const char *_acc = "";
+
+			_dom = samdb_result_string(domain_res[0], "name", NULL);
 			WERR_TALLOC_CHECK(_dom);
+
 			if (result_filter) {
 				_acc = samdb_result_string(result_res[0], "sAMAccountName", NULL);
 				WERR_TALLOC_CHECK(_acc);
 			}
+
 			info1->result_name	= talloc_asprintf(mem_ctx, "%s\\%s", _dom, _acc);
 			WERR_TALLOC_CHECK(info1->result_name);
+
 			info1->status		= DRSUAPI_DS_NAME_STATUS_OK;
 			return WERR_OK;
 		}
 		case DRSUAPI_DS_NAME_FORMAT_GUID: {
-			const char *result = samdb_result_string(result_res[0], "objectGUID", NULL);
+			const char *result;
+
+			result = samdb_result_string(result_res[0], "objectGUID", NULL);
 			WERR_TALLOC_CHECK(result);
+			
 			info1->result_name	= talloc_asprintf(mem_ctx, "{%s}", result);
 			WERR_TALLOC_CHECK(info1->result_name);
+
 			info1->status		= DRSUAPI_DS_NAME_STATUS_OK;
 			return WERR_OK;
 		}
@@ -227,15 +248,13 @@ WERROR dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 	switch (r->in.level) {
 		case 1: {
+			struct drsuapi_DsNameCtr1 *ctr1;
 			struct drsuapi_DsNameInfo1 *names;
 			int count;
 			int i;
 
-			r->out.ctr.ctr1 = talloc_p(mem_ctx, struct drsuapi_DsNameCtr1);
-			WERR_TALLOC_CHECK(r->out.ctr.ctr1);
-
-			r->out.ctr.ctr1->count = 0;
-			r->out.ctr.ctr1->array = NULL;
+			ctr1 = talloc_p(mem_ctx, struct drsuapi_DsNameCtr1);
+			WERR_TALLOC_CHECK(ctr1);
 
 			count = r->in.req.req1.count;
 			names = talloc_array_p(mem_ctx, struct drsuapi_DsNameInfo1, count);
@@ -243,6 +262,7 @@ WERROR dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 			for (i=0; i < count; i++) {
 				status = DsCrackNameOneName(b_state, mem_ctx,
+							    r->in.req.req1.format_flags,
 							    r->in.req.req1.format_offered,
 							    r->in.req.req1.format_desired,
 							    r->in.req.req1.names[i].str,
@@ -252,8 +272,9 @@ WERROR dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TALLOC_CT
 				}
 			}
 
-			r->out.ctr.ctr1->count = count;
-			r->out.ctr.ctr1->array = names;
+			ctr1->count = count;
+			ctr1->array = names;
+			r->out.ctr.ctr1 = ctr1;
 
 			return WERR_OK;
 		}
