@@ -122,7 +122,7 @@ static size_t     format_pos     = 0;
 /****************************************************************************
 receive a "set debug level" message
 ****************************************************************************/
-void debug_message(pid_t src, void *buf, int len)
+void debug_message(enum message_type msg_type, pid_t src, void *buf, size_t len)
 {
 	int level;
 	memcpy(&level, buf, sizeof(int));
@@ -143,28 +143,27 @@ void debug_message_send(pid_t pid, int level)
  * get ready for syslog stuff
  * ************************************************************************** **
  */
-void setup_logging( char *pname, BOOL interactive )
-  {
-  if( interactive )
-    {
-    stdout_logging = True;
-    dbf = stdout;
-    }
-#ifdef WITH_SYSLOG
-  else
-    {
-    char *p = strrchr( pname,'/' );
+void setup_logging(char *pname, BOOL interactive)
+{
+	message_register(MSG_DEBUG, debug_message);
 
-    if( p )
-      pname = p + 1;
+	if (interactive) {
+		stdout_logging = True;
+		dbf = stdout;
+	}
+#ifdef WITH_SYSLOG
+	else {
+		char *p = strrchr( pname,'/' );
+		if (p)
+			pname = p + 1;
 #ifdef LOG_DAEMON
-    openlog( pname, LOG_PID, SYSLOG_FACILITY );
+		openlog( pname, LOG_PID, SYSLOG_FACILITY );
 #else /* for old systems that have no facility codes. */
-    openlog( pname, LOG_PID );
+		openlog( pname, LOG_PID );
 #endif
-    }
+	}
 #endif
-  } /* setup_logging */
+} /* setup_logging */
 
 /* ************************************************************************** **
  * reopen the log files
