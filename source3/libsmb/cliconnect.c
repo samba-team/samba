@@ -34,6 +34,7 @@ prots[] =
       {PROTOCOL_LANMAN1,"MICROSOFT NETWORKS 3.0"},
       {PROTOCOL_LANMAN1,"LANMAN1.0"},
       {PROTOCOL_LANMAN2,"LM1.2X002"},
+      {PROTOCOL_LANMAN2,"DOS LANMAN2.1"},
       {PROTOCOL_LANMAN2,"Samba"},
       {PROTOCOL_NT1,"NT LANMAN 1.0"},
       {PROTOCOL_NT1,"NT LM 0.12"},
@@ -45,7 +46,7 @@ prots[] =
 do an old lanman2 style session setup
 ****************************************************************************/
 static BOOL cli_session_setup_lanman2(struct cli_state *cli, char *user, 
-				      char *pass, int passlen)
+				      char *pass, int passlen, const char *workgroup)
 {
 	fstring pword;
 	char *p;
@@ -88,7 +89,10 @@ static BOOL cli_session_setup_lanman2(struct cli_state *cli, char *user,
 	p = smb_buf(cli->outbuf);
 	memcpy(p,pword,passlen);
 	p += passlen;
-	p += clistr_push(cli, p, user, -1, STR_TERMINATE);
+	p += clistr_push(cli, p, user, -1, STR_TERMINATE|STR_UPPER);
+	p += clistr_push(cli, p, workgroup, -1, STR_TERMINATE|STR_UPPER);
+	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
+	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE);
 	cli_setup_bcc(cli, p);
 
 	cli_send_smb(cli);
@@ -591,7 +595,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 
 	/* if its an older server then we have to use the older request format */
 	if (cli->protocol < PROTOCOL_NT1) {
-		return cli_session_setup_lanman2(cli, user, pass, passlen);
+		return cli_session_setup_lanman2(cli, user, pass, passlen, workgroup);
 	}
 
 	/* if no user is supplied then we have to do an anonymous connection.
@@ -756,6 +760,10 @@ void cli_negprot_send(struct cli_state *cli)
 	char *p;
 	int numprots;
 
+	if (cli->protocol < PROTOCOL_NT1) {
+		cli->use_spnego = False;
+	}
+
 	memset(cli->outbuf,'\0',smb_size);
 
 	/* setup the protocol strings */
@@ -787,6 +795,10 @@ BOOL cli_negprot(struct cli_state *cli)
 	char *p;
 	int numprots;
 	int plength;
+
+	if (cli->protocol < PROTOCOL_NT1) {
+		cli->use_spnego = False;
+	}
 
 	memset(cli->outbuf,'\0',smb_size);
 
@@ -822,7 +834,7 @@ BOOL cli_negprot(struct cli_state *cli)
 		return(False);
 	}
 
-	cli->protocol = prots[SVAL(cli->inbuf,smb_vwv0)].prot;
+	cli->protocol = prots[SVAL(cli->inbuf,smb_vwv0)].prot;	
 
 	if (cli->protocol >= PROTOCOL_NT1) {    
 		/* NT protocol */
@@ -848,6 +860,7 @@ BOOL cli_negprot(struct cli_state *cli)
 				    smb_buflen(cli->inbuf)-8, STR_UNICODE|STR_NOALIGN);
 		}
 	} else if (cli->protocol >= PROTOCOL_LANMAN1) {
+		cli->use_spnego = False;
 		cli->sec_mode = SVAL(cli->inbuf,smb_vwv1);
 		cli->max_xmit = SVAL(cli->inbuf,smb_vwv2);
 		cli->sesskey = IVAL(cli->inbuf,smb_vwv6);
@@ -860,6 +873,7 @@ BOOL cli_negprot(struct cli_state *cli)
 		cli->secblob = data_blob(smb_buf(cli->inbuf),smb_buflen(cli->inbuf));
 	} else {
 		/* the old core protocol */
+		cli->use_spnego = False;
 		cli->sec_mode = 0;
 		cli->serverzone = TimeDiff(time(NULL));
 	}
