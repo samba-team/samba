@@ -754,3 +754,54 @@ void display_printer_driver_ctr(FILE *out_hnd, enum action_type action, uint32 l
 			break;
 	}
 }
+
+
+/****************************************************************************
+printer info level 1 display function
+****************************************************************************/
+static void display_printdriverdir_info_1(FILE *out_hnd, DRIVER_DIRECTORY_1 *i1)
+{
+	fstring name;
+	if (i1 == NULL)
+		return;
+
+	unistr_to_ascii(name, i1->name.buffer, sizeof(name)-1);
+
+	report(out_hnd, "\tname:[%s]\n", name);
+}
+
+/****************************************************************************
+connection info level 1 container display function
+****************************************************************************/
+static void display_printerdriverdir_info_1_ctr(FILE *out_hnd, enum action_type action, DRIVER_DIRECTORY_CTR ctr)
+{
+
+	switch (action)
+	{
+		case ACTION_HEADER:
+			report(out_hnd, "Printer driver dir Info Level 1:\n");
+			break;
+		case ACTION_ENUMERATE:
+				display_printdriverdir_info_1(out_hnd, &(ctr.driver.info_1) );
+			break;
+		case ACTION_FOOTER:
+			report(out_hnd, "\n");
+			break;
+	}
+}
+
+/****************************************************************************
+connection info container display function
+****************************************************************************/
+void display_printerdriverdir_info_ctr(FILE *out_hnd, enum action_type action, uint32 level,
+				DRIVER_DIRECTORY_CTR ctr)
+{
+	switch (level) {
+		case 1:
+			display_printerdriverdir_info_1_ctr(out_hnd, action, ctr);
+			break;
+		default:
+			report(out_hnd, "display_printerdriverdir_info_ctr: Unknown Info Level\n");
+			break;
+	}
+}

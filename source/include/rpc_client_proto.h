@@ -414,6 +414,9 @@ uint32 spoolss_getprinterdata(const POLICY_HND *hnd, const UNISTR2 *valuename,
 			uint32 *out_size,
 			uint8 *data,
 			uint32 *needed);
+uint32 spoolss_getprinterdriverdir(fstring srv_name, fstring env_name, uint32 level,
+			     NEW_BUFFER *buffer, uint32 offered,
+			     uint32 *needed);
 
 /*The following definitions come from  rpc_client/cli_srvsvc.c  */
 

@@ -398,3 +398,40 @@ uint32 cmd_spoolss_getprinterdriver(struct client_info *info, int argc, char *ar
 
 	return NT_STATUS_NOPROBLEMO;
 }
+
+/****************************************************************************
+nt spoolss query
+****************************************************************************/
+uint32 cmd_spoolss_getprinterdriverdir(struct client_info *info, int argc, char *argv[])
+{
+	DRIVER_DIRECTORY_CTR ctr;
+	int i;
+	
+	uint32 level = 1;
+
+	fstring srv_name;
+	fstring env;
+	
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+	
+	if (argc<2) {
+		DEBUG(5,("environment as a parameter !\n"));
+		return NT_STATUS_NOPROBLEMO;
+	}
+	
+	fstrcpy(env, argv[1]);
+	
+	for (i=2; i<argc; i++) {
+		fstrcat(env, " ");
+		fstrcat(env, argv[i]);
+	}
+	
+	if (msrpc_spoolss_getprinterdriverdir(srv_name, env, level, ctr))
+		DEBUG(5,("cmd_spoolss_getprinterdriverdir: query succeeded\n"));
+	else
+		report(out_hnd, "FAILED\n");
+		
+	return NT_STATUS_NOPROBLEMO;
+}

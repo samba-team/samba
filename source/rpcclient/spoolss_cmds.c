@@ -59,6 +59,9 @@ static const struct command_set spl_commands[] = {
 	 "<printer name> Spool get printer driver",
 	 {NULL, NULL}},
 
+	{"spoolgetprinterdriverdir", cmd_spoolss_getprinterdriverdir,
+	 "Spool get printer driver directory",
+	 {NULL, NULL}},
 	/*
 	 * oop!
 	 */

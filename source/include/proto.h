@@ -1910,6 +1910,7 @@ BOOL lp_nt_acl_support(void);
 BOOL lp_stat_cache(void);
 BOOL lp_restrict_anonymous(void);
 BOOL lp_host_msdfs(void);
+BOOL lp_kernel_oplocks(void);
 int lp_os_level(void);
 int lp_max_ttl(void);
 int lp_max_wins_ttl(void);
@@ -2071,8 +2072,6 @@ int lp_default_server_announce(void);
 int lp_major_announce_version(void);
 int lp_minor_announce_version(void);
 void lp_set_name_resolve_order(char *new_order);
-void lp_set_kernel_oplocks(BOOL val);
-BOOL lp_kernel_oplocks(void);
 BOOL lp_wildcard_dc(void);
 int lp_security_mask(int snum);
 int lp_force_security_mode(int snum);
@@ -2411,6 +2410,7 @@ BOOL msrpc_spoolss_getprinterdriver( const char* printer_name,
 		const char *environment, const uint32 level, 
 		const char* station, const char* user_name, 
 		PRINTER_DRIVER_CTR ctr);
+BOOL msrpc_spoolss_getprinterdriverdir(char* srv_name, char* env_name, uint32 level, DRIVER_DIRECTORY_CTR ctr);
 
 /*The following definitions come from  rpc_parse/parse_creds.c  */
 
@@ -3088,6 +3088,7 @@ uint32 cmd_spoolss_enum_jobs(struct client_info *info, int argc, char *argv[]);
 uint32 cmd_spoolss_enum_printerdata(struct client_info *info, int argc, char *argv[]);
 uint32 cmd_spoolss_getprinter(struct client_info *info, int argc, char *argv[]);
 uint32 cmd_spoolss_getprinterdriver(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_spoolss_getprinterdriverdir(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_srvsvc.c  */
 
@@ -3215,6 +3216,8 @@ void display_job_info_ctr(FILE *out_hnd, enum action_type action,
 				void *const *const ctr);
 void display_printer_driver_ctr(FILE *out_hnd, enum action_type action, uint32 level,
 				uint32 count, PRINTER_DRIVER_CTR ctr);
+void display_printerdriverdir_info_ctr(FILE *out_hnd, enum action_type action, uint32 level,
+				DRIVER_DIRECTORY_CTR ctr);
 
 /*The following definitions come from  rpcclient/display_srv.c  */
 

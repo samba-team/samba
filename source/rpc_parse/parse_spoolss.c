@@ -4145,6 +4145,26 @@ BOOL uni_2_asc_printer_info_2(const SPOOL_PRINTER_INFO_LEVEL_2 *uni,
 }
 
 /*******************************************************************
+ * init a structure.
+ ********************************************************************/
+BOOL make_spoolss_q_getprinterdriverdir(SPOOL_Q_GETPRINTERDRIVERDIR *q_u, 
+				fstring servername, fstring env_name, uint32 level, 
+				NEW_BUFFER *buffer, uint32 offered)
+{	
+	q_u->name_ptr = (servername != NULL) ? 1 : 0;
+	init_unistr2(&(q_u->name), servername, strlen(servername));
+
+	q_u->environment_ptr = (env_name != NULL) ? 1 : 0;
+	init_unistr2(&(q_u->environment), env_name, strlen(env_name));
+
+	q_u->level=level;
+	q_u->buffer=buffer;
+	q_u->offered=offered;
+
+	return True;
+}
+
+/*******************************************************************
  Parse a SPOOL_Q_GETPRINTERDRIVERDIR structure.
 ********************************************************************/  
 BOOL spoolss_io_q_getprinterdriverdir(char *desc, SPOOL_Q_GETPRINTERDRIVERDIR *q_u, prs_struct *ps, int depth)

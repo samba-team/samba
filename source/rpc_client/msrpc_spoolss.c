@@ -158,6 +158,19 @@ static void decode_printer_driver_3(NEW_BUFFER *buffer, uint32 returned, DRIVER_
 	*info=inf;
 }
 
+static void decode_printerdriverdir_info_1(NEW_BUFFER *buffer, DRIVER_DIRECTORY_1 *info)
+{
+/*	DRIVER_DIRECTORY_1 *inf;
+
+	inf=(DRIVER_DIRECTORY_1 *)malloc(returned*sizeof(DRIVER_DIRECTORY_1));
+*/
+	buffer->prs.offset=0;
+	
+	new_smb_io_driverdir_1("", buffer, info, 0);
+	
+/*	*info=inf;*/
+}
+
 /****************************************************************************
 nt spoolss query
 ****************************************************************************/
@@ -467,3 +480,40 @@ BOOL msrpc_spoolss_getprinterdriver( const char* printer_name,
 
 	return True;
 }
+
+/****************************************************************************
+nt spoolss query
+****************************************************************************/
+BOOL msrpc_spoolss_getprinterdriverdir(char* srv_name, char* env_name, uint32 level, DRIVER_DIRECTORY_CTR ctr)
+{
+	uint32 status;
+	NEW_BUFFER buffer;
+	uint32 needed;
+	
+	init_buffer(&buffer, 0);
+	
+	/* send a NULL buffer first */
+	status=spoolss_getprinterdriverdir(srv_name, env_name, level, &buffer, 0, &needed);
+	
+	if (status==ERROR_INSUFFICIENT_BUFFER) {
+		init_buffer(&buffer, needed);
+		status=spoolss_getprinterdriverdir(srv_name, env_name, level, &buffer, needed, &needed);
+	}
+	
+	report(out_hnd, "\tstatus:[%d (%x)]\n", status, status);
+	
+	if (status!=NT_STATUS_NO_PROBLEMO)
+		return False;
+		
+	switch (level) {
+	case 1:
+		decode_printerdriverdir_info_1(&buffer, &(ctr.driver.info_1));
+		break;
+	}		
+
+	display_printerdriverdir_info_ctr(out_hnd, ACTION_HEADER   , level, ctr);
+	display_printerdriverdir_info_ctr(out_hnd, ACTION_ENUMERATE, level, ctr);
+	display_printerdriverdir_info_ctr(out_hnd, ACTION_FOOTER   , level, ctr);
+	return True;
+}
+
