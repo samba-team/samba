@@ -458,7 +458,7 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 }
 
 /* module initialisation */
-NTSTATUS auth_init_ntdomain(struct auth_context *auth_context, const char* param, auth_methods **auth_method) 
+static NTSTATUS auth_init_ntdomain(struct auth_context *auth_context, const char* param, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method)) {
 		return NT_STATUS_NO_MEMORY;
@@ -546,7 +546,7 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 }
 
 /* module initialisation */
-NTSTATUS auth_init_trustdomain(struct auth_context *auth_context, const char* param, auth_methods **auth_method) 
+static NTSTATUS auth_init_trustdomain(struct auth_context *auth_context, const char* param, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method)) {
 		return NT_STATUS_NO_MEMORY;
