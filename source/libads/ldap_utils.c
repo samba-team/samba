@@ -35,6 +35,8 @@ ADS_STATUS ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope
 	int count = 3;
 	char *bp;
 
+	*res = NULL;
+
 	if (!ads->ld &&
 	    time(NULL) - ads->last_attempt < ADS_RECONNECT_TIME) {
 		return ADS_ERROR(LDAP_SERVER_DOWN);
@@ -42,15 +44,17 @@ ADS_STATUS ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope
 
 	bp = strdup(bind_path);
 
-	if (!bp) 
+	if (!bp) {
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
 
 	while (count--) {
+		*res = NULL;
 		status = ads_do_search_all(ads, bp, scope, expr, attrs, res);
 		if (ADS_ERR_OK(status)) {
 			DEBUG(5,("Search for %s gave %d replies\n",
 				 expr, ads_count_replies(ads, *res)));
-			free(bp);
+			SAFE_FREE(bp);
 			return status;
 		}
 
@@ -72,11 +76,11 @@ ADS_STATUS ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope
 			DEBUG(1,("ads_search_retry: failed to reconnect (%s)\n",
 				 ads_errstr(status)));
 			ads_destroy(&ads);
-			free(bp);
+			SAFE_FREE(bp);
 			return status;
 		}
 	}
-	free(bp);
+        SAFE_FREE(bp);
 
 	if (!ADS_ERR_OK(status))
 		DEBUG(1,("ads reopen failed after error %s\n", 
