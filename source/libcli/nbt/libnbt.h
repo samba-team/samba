@@ -132,6 +132,7 @@ struct nbt_name_query {
 		struct nbt_name name;
 		int16_t num_addrs;
 		const char **reply_addrs;
+		uint8_t rcode;
 	} out;
 };
 
@@ -147,6 +148,7 @@ struct nbt_name_status {
 		const char *reply_from;
 		struct nbt_name name;
 		struct nbt_rdata_status status;
+		uint8_t rcode;
 	} out;
 };
 

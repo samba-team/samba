@@ -155,6 +155,10 @@ static NTSTATUS do_node_query(struct nbt_name_socket *nbtsock,
 
 	status = nbt_name_query(nbtsock, nbtsock, &io);
 	NT_STATUS_NOT_OK_RETURN(status);
+
+	if (io.out.rcode != 0) {
+		return nbt_rcode_to_ntstatus(io.out.rcode);
+	}
 		
 	for (i=0;i<io.out.num_addrs;i++) {
 		printf("%s %s<%02x>\n",
