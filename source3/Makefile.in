@@ -186,18 +186,22 @@ LIBADS_SERVER_OBJ = libads/util.o libads/kerberos_verify.o
 
 SECRETS_OBJ = passdb/secrets.o
 
+LIBNTLMSSP_OBJ = libsmb/ntlmssp.o libsmb/ntlmssp_parse.o
+
+LIBSAMBA_OBJ = libsmb/nterr.o 
+
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clikrb5.o libsmb/clispnego.o libsmb/asn1.o \
 	     libsmb/clirap.o libsmb/clierror.o libsmb/climessage.o \
 	     libsmb/clireadwrite.o libsmb/clilist.o libsmb/cliprint.o \
 	     libsmb/clitrans.o libsmb/clisecdesc.o libsmb/clidgram.o \
 	     libsmb/namequery.o libsmb/nmblib.o libsmb/clistr.o \
-             libsmb/nterr.o libsmb/smbdes.o libsmb/smbencrypt.o \
+             libsmb/smbdes.o libsmb/smbencrypt.o \
              libsmb/smberr.o libsmb/credentials.o libsmb/pwd_cache.o \
 	     libsmb/clioplock.o libsmb/errormap.o libsmb/clirap2.o \
 	     libsmb/passchange.o libsmb/unexpected.o libsmb/doserr.o \
-	     libsmb/namecache.o libsmb/trustdom_cache.o libsmb/ntlmssp.o \
-	     $(RPC_PARSE_OBJ1)
+	     libsmb/namecache.o libsmb/trustdom_cache.o \
+	     $(RPC_PARSE_OBJ1) $(LIBNTLMSSP_OBJ) $(LIBSAMBA_OBJ)
 
 LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 	       rpc_client/cli_netlogon.o rpc_client/cli_srvsvc.o \
@@ -594,7 +598,7 @@ POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
 
 TDBBACKUP_OBJ = tdb/tdbbackup.o $(TDBBASE_OBJ)
 
-NTLM_AUTH_OBJ = utils/ntlm_auth.o $(LIBSMB_OBJ) $(POPT_LIB_OBJ)
+NTLM_AUTH_OBJ = utils/ntlm_auth.o $(LIBNTLMSSP_OBJ) $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ)
 
 ######################################################################
 # now the rules...
