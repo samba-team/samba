@@ -405,6 +405,7 @@ AC_CHECK_FUNCS([				\
 	getuid					\
 	grantpt					\
 	mktime					\
+	openpty					\
 	ptsname					\
 	rand					\
 	random					\
