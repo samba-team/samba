@@ -37,10 +37,26 @@
  */
 
 #include "gen_locl.h"
+#include <getarg.h>
 
 RCSID("$Id$");
 
 extern FILE *yyin;
+
+int version_flag;
+int help_flag;
+struct getargs args[] = {
+    { "version", 0, arg_flag, &version_flag },
+    { "help", 0, arg_flag, &help_flag }
+};
+int num_args = sizeof(args) / sizeof(args[0]);
+
+static void
+usage(int code)
+{
+    arg_printusage(args, num_args, NULL, "[asn1-file [name]]");
+    exit(code);
+}
 
 int
 main(int argc, char **argv)
@@ -48,17 +64,27 @@ main(int argc, char **argv)
     int ret;
     char *file;
     char *name = NULL;
+    int optind = 0;
 
-    if (argc == 1) {
+    set_progname(argv[0]);
+    if(getarg(args, num_args, argc, argv, &optind))
+	usage(1);
+    if(help_flag)
+	usage(0);
+    if(version_flag) {
+	print_version(NULL);
+	exit(0);
+    }
+    if (argc == optind) {
 	file = "stdin";
 	name = "stdin";
 	yyin = stdin;
     } else {
-	file = argv[1];
+	file = argv[optind];
 	yyin = fopen (file, "r");
 	if (yyin == NULL)
 	    err (1, "open %s", file);
-	name = argv[2];
+	name = argv[optind + 1];
     }
 
     init_generate (file, name);
