@@ -156,15 +156,15 @@ struct sys_pwent * getpwent_list(void)
 		pent->pw_uid = pwd->pw_uid;
 		pent->pw_gid = pwd->pw_gid;
 		if (pwd->pw_gecos) {
-			if ((pent->pw_name = strdup(pwd->pw_gecos)) == NULL)
+			if ((pent->pw_gecos = strdup(pwd->pw_gecos)) == NULL)
 				goto err;
 		}
 		if (pwd->pw_dir) {
-			if ((pent->pw_name = strdup(pwd->pw_dir)) == NULL)
+			if ((pent->pw_dir = strdup(pwd->pw_dir)) == NULL)
 				goto err;
 		}
 		if (pwd->pw_shell) {
-			if ((pent->pw_name = strdup(pwd->pw_shell)) == NULL)
+			if ((pent->pw_shell = strdup(pwd->pw_shell)) == NULL)
 				goto err;
 		}
 
