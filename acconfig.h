@@ -17,7 +17,7 @@
 #ifdef HAVE_FOUR_VALUED_KRB_PUT_INT
 #define KRB_PUT_INT(F, T, L, S) krb_put_int((F), (T), (L), (S))
 #else
-#define KRB_PUT_INT(F, T, L, S) krb_put_int((F), (T), (L))
+#define KRB_PUT_INT(F, T, L, S) krb_put_int((F), (T), (S))
 #endif
 
 #ifdef BROKEN_REALLOC
