@@ -1682,9 +1682,11 @@ BOOL secrets_store(char *key, void *data, size_t size);
 BOOL secrets_delete(char *key);
 BOOL secrets_store_domain_sid(char *domain, DOM_SID *sid);
 BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid);
+char *trust_keystr(char *domain);
 BOOL secrets_fetch_trust_account_password(char *domain, uint8 ret_pwd[16],
 					  time_t *pass_last_set_time);
 BOOL secrets_store_trust_account_password(char *domain, uint8 new_pwd[16]);
+BOOL trust_password_delete(char *domain);
 
 /*The following definitions come from  passdb/smbpass.c  */
 
@@ -1702,7 +1704,7 @@ BOOL local_password_change(char *user_name, int local_flags,
 
 BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth);
 BOOL pw_file_unlock(int fd, int *plock_depth);
-BOOL trust_password_delete(char *domain);
+BOOL migrate_from_old_password_file(char *domain);
 
 /*The following definitions come from  passdb/tdbpass.c  */
 
@@ -3208,14 +3210,14 @@ uint32 _spoolss_enumprinters( uint32 flags, const UNISTR2 *servername, uint32 le
 			      uint32 *needed, uint32 *returned);
 uint32 _spoolss_getprinter(POLICY_HND *handle, uint32 level,
 			   NEW_BUFFER *buffer, uint32 offered, uint32 *needed);
-uint32 _spoolss_getprinterdriver2(POLICY_HND *handle, const UNISTR2 *uni_arch, uint32 level, 
+uint32 _spoolss_getprinterdriver2(POLICY_HND *handle, const UNISTR2 *uni_arch, uint32 level,
 				uint32 clientmajorversion, uint32 clientminorversion,
 				NEW_BUFFER *buffer, uint32 offered,
 				uint32 *needed, uint32 *servermajorversion, uint32 *serverminorversion);
 uint32 _spoolss_startpageprinter(POLICY_HND *handle);
 uint32 _spoolss_endpageprinter(POLICY_HND *handle);
 uint32 _spoolss_startdocprinter(POLICY_HND *handle, uint32 level,
-				pipes_struct *p, DOC_INFO *docinfo, 
+				pipes_struct *p, DOC_INFO *docinfo,
 				uint32 *jobid);
 uint32 _spoolss_enddocprinter(POLICY_HND *handle);
 uint32 _spoolss_writeprinter( POLICY_HND *handle,
@@ -3232,7 +3234,7 @@ uint32 _spoolss_fcpn(POLICY_HND *handle);
 uint32 _spoolss_addjob(POLICY_HND *handle, uint32 level,
 		       NEW_BUFFER *buffer, uint32 offered,
 		       uint32 *needed);
-uint32 _spoolss_enumjobs( POLICY_HND *handle, uint32 firstjob, uint32 numofjobs, uint32 level,			  
+uint32 _spoolss_enumjobs( POLICY_HND *handle, uint32 firstjob, uint32 numofjobs, uint32 level,			
 			  NEW_BUFFER *buffer, uint32 offered,
 			  uint32 *needed, uint32 *returned);
 uint32 _spoolss_schedulejob( POLICY_HND *handle, uint32 jobid);
@@ -3241,12 +3243,12 @@ uint32 _spoolss_setjob(POLICY_HND *handle, uint32 jobid, uint32 level,
 uint32 _spoolss_enumprinterdrivers( UNISTR2 *name, UNISTR2 *environment, uint32 level,
 				    NEW_BUFFER *buffer, uint32 offered,
 				    uint32 *needed, uint32 *returned);
-uint32 _new_spoolss_enumforms( POLICY_HND *handle, uint32 level, 
-			       NEW_BUFFER *buffer, uint32 offered, 
+uint32 _new_spoolss_enumforms( POLICY_HND *handle, uint32 level,
+			       NEW_BUFFER *buffer, uint32 offered,
 			       uint32 *needed, uint32 *numofforms);
 uint32 _spoolss_getform( POLICY_HND *handle, uint32 level, UNISTR2 *uni_formname, NEW_BUFFER *buffer, uint32 offered, uint32 *needed);
-uint32 _spoolss_enumports( UNISTR2 *name, uint32 level, 
-			   NEW_BUFFER *buffer, uint32 offered, 
+uint32 _spoolss_enumports( UNISTR2 *name, uint32 level,
+			   NEW_BUFFER *buffer, uint32 offered,
 			   uint32 *needed, uint32 *returned);
 uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name, uint32 level,
 				const SPOOL_PRINTER_INFO_LEVEL *info,
@@ -3256,7 +3258,7 @@ uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name, uint32 level,
 uint32 _spoolss_addprinterdriver(pipes_struct *p, const UNISTR2 *server_name,
 				 uint32 level, const SPOOL_PRINTER_DRIVER_INFO_LEVEL *info);
 uint32 _spoolss_getprinterdriverdirectory(UNISTR2 *name, UNISTR2 *uni_environment, uint32 level,
-					NEW_BUFFER *buffer, uint32 offered, 
+					NEW_BUFFER *buffer, uint32 offered,
 					uint32 *needed);
 uint32 _spoolss_enumprinterdata(POLICY_HND *handle, uint32 idx,
 				uint32 in_value_len, uint32 in_data_len,
@@ -3280,16 +3282,16 @@ uint32 _spoolss_setform( POLICY_HND *handle,
 				uint32 level,
 				const FORM *form);
 uint32 _spoolss_enumprintprocessors(UNISTR2 *name, UNISTR2 *environment, uint32 level,
-				    NEW_BUFFER *buffer, uint32 offered, 
+				    NEW_BUFFER *buffer, uint32 offered,
 				    uint32 *needed, uint32 *returned);
 uint32 _spoolss_enumprintprocdatatypes(UNISTR2 *name, UNISTR2 *processor, uint32 level,
-					NEW_BUFFER *buffer, uint32 offered, 
+					NEW_BUFFER *buffer, uint32 offered,
 					uint32 *needed, uint32 *returned);
 uint32 _spoolss_enumprintmonitors(UNISTR2 *name,uint32 level,
-				    NEW_BUFFER *buffer, uint32 offered, 
+				    NEW_BUFFER *buffer, uint32 offered,
 				    uint32 *needed, uint32 *returned);
 uint32 _spoolss_getjob( POLICY_HND *handle, uint32 jobid, uint32 level,
-			NEW_BUFFER *buffer, uint32 offered, 
+			NEW_BUFFER *buffer, uint32 offered,
 			uint32 *needed);
 #endif
 
