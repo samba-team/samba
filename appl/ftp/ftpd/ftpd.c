@@ -617,11 +617,7 @@ checkuser(char *fname, char *name)
 static int
 match(const char *pattern, const char *string)
 {
-#ifdef HAVE_FNMATCH
     return fnmatch(pattern, string, FNM_NOESCAPE);
-#else
-    return strcmp(pattern, "*") != 0 && strcmp(pattern, string) != 0;
-#endif
 }
 
 static int
