@@ -1506,7 +1506,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(void)
 	init_sec_ace(&ace[1], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
 					sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
 
-	if ((psa = make_sec_acl( ACL_REVISION, 2, &ace)) != NULL) {
+	if ((psa = make_sec_acl( ACL_REVISION, 2, ace)) != NULL) {
 		psd = make_sec_desc(SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE|SEC_DESC_DACL_PRESENT,
 									&global_sid_World, &global_sid_World, NULL, psa, &sd_size);
 		free_sec_acl(&psa);
