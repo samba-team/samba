@@ -969,6 +969,11 @@ my_telnet(int f, int p, char *host, int level, char *autoname)
 	FD_ZERO(&ibits);
 	FD_ZERO(&obits);
 	FD_ZERO(&xbits);
+
+	if (f >= FD_SETSIZE
+	    || p >= FD_SETSIZE)
+	    fatal(net, "fd too large");
+
 	/*
 	 * Never look for input if there's still
 	 * stuff in the corresponding output buffer
