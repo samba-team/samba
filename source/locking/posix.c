@@ -551,7 +551,11 @@ static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 	 * find the maximum positive lock offset as an SMB_OFF_T.
 	 */
 
-#if defined(LARGE_SMB_OFF_T) && !defined(HAVE_BROKEN_FCNTL64_LOCKS)
+#if defined(MAX_POSITIVE_LOCK_OFFSET) /* Some systems have arbitrary limits. */
+
+	SMB_OFF_T max_positive_lock_offset = (MAX_POSITIVE_LOCK_OFFSET);
+
+#elif defined(LARGE_SMB_OFF_T) && !defined(HAVE_BROKEN_FCNTL64_LOCKS)
 
 	/*
 	 * In this case SMB_OFF_T is 64 bits,
@@ -597,19 +601,10 @@ static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 	}
 
 	/*
-	 * We must truncate the offset and count to less than max_positive_lock_offset.
+	 * We must truncate the count to less than max_positive_lock_offset.
 	 */
 
-	offset &= max_positive_lock_offset;
-	count &= max_positive_lock_offset;
-
-
-	/*
-	 * Deal with a very common case of count of all ones.
-	 * (lock entire file).
-	 */
-
-	if(count == (SMB_OFF_T)-1)
+	if (u_count & ~((SMB_BIG_UINT)max_positive_lock_offset))
 		count = max_positive_lock_offset;
 
 	/*
