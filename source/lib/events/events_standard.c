@@ -357,8 +357,8 @@ static int std_event_loop_epoll(struct event_context *ev, struct timeval *tvalp)
 	struct std_event_context *std_ev = talloc_get_type(ev->additional_data,
 		 					   struct std_event_context);
 	int ret, i;
-	const int maxevents = 8;
-	struct epoll_event events[maxevents];
+#define MAXEVENTS 8
+	struct epoll_event events[MAXEVENTS];
 	uint32_t destruction_count = std_ev->destruction_count;
 	int timeout = -1;
 
@@ -367,7 +367,7 @@ static int std_event_loop_epoll(struct event_context *ev, struct timeval *tvalp)
 		timeout = ((tvalp->tv_usec+999) / 1000) + (tvalp->tv_sec*1000);
 	}
 
-	ret = epoll_wait(std_ev->epoll_fd, events, maxevents, timeout);
+	ret = epoll_wait(std_ev->epoll_fd, events, MAXEVENTS, timeout);
 
 	if (ret == -1 && errno != EINTR) {
 		epoll_fallback_to_select(ev, "epoll_wait() failed");
