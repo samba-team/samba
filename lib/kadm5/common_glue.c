@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -43,6 +43,16 @@ kadm5_chpass_principal(void *server_handle,
 		       char *password)
 {
     return __CALL(chpass_principal, (server_handle, princ, password));
+}
+
+kadm5_ret_t
+kadm5_chpass_principal_with_key(void *server_handle,
+				krb5_principal princ,
+				int n_key_data,
+				krb5_key_data *key_data)
+{
+    return __CALL(chpass_principal_with_key,
+		  (server_handle, princ, n_key_data, key_data));
 }
 
 kadm5_ret_t
