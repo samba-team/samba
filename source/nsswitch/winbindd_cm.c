@@ -142,8 +142,9 @@ static BOOL cm_rpc_find_dc(const char *domain, struct in_addr *dc_ip, fstring sr
 {
 	struct in_addr *ip_list = NULL;
 	int count, i;
+	BOOL list_ordered;
 
-	if (!get_dc_list(domain, &ip_list, &count)) {
+	if (!get_dc_list(domain, &ip_list, &count, &list_ordered)) {
 		struct in_addr pdc_ip;
 		
 		if (!get_pdc_ip(domain, &pdc_ip)) {
@@ -161,8 +162,8 @@ static BOOL cm_rpc_find_dc(const char *domain, struct in_addr *dc_ip, fstring sr
 		count = 1;
 	}
 
-	/* Pick a nice close server */
-	if (count > 1) {
+	/* Pick a nice close server, but only if the list was not ordered */
+	if (!list_ordered && (count > 1) ) {
 		qsort(ip_list, count, sizeof(struct in_addr), QSORT_CAST ip_compare);
 	}
 

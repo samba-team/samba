@@ -186,6 +186,7 @@ static BOOL ads_try_netbios(ADS_STRUCT *ads)
 	int count;
 	int i;
 	const char *workgroup = ads->server.workgroup;
+	BOOL list_ordered;
 
 	if (!workgroup) {
 		workgroup = lp_workgroup();
@@ -202,7 +203,7 @@ static BOOL ads_try_netbios(ADS_STRUCT *ads)
 	}
 
 	/* now any DC, including backups */
-	if (get_dc_list(workgroup, &ip_list, &count)) { 
+	if (get_dc_list(workgroup, &ip_list, &count, &list_ordered)) { 
 		for (i=0;i<count;i++) {
 			DEBUG(6,("ads_try_netbios: trying server '%s'\n", 
 				 inet_ntoa(ip_list[i])));
