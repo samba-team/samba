@@ -27,6 +27,7 @@ static fstring password;
 static pstring username;
 static pstring owner_username;
 static fstring server;
+static fstring workgroup = "";
 static int got_pass;
 static int test_args;
 TALLOC_CTX *ctx;
@@ -758,7 +759,7 @@ struct cli_state *connect_one(char *share)
 	if (!cli_session_setup(c, username, 
 			       password, strlen(password),
 			       password, strlen(password),
-			       lp_workgroup())) {
+			       (workgroup[0] ? workgroup : lp_workgroup()))) {
 		DEBUG(0,("session setup failed: %s\n", cli_errstr(c)));
 		cli_shutdown(c);
 		return NULL;
@@ -794,6 +795,7 @@ static void usage(void)
 \t-h                      print help\n\
 \t-d debuglevel           set debug output level\n\
 \t-U username             user to autheticate as\n\
+\t-W workgroup or domain  workgroup or domain user is in\n\
 \n\
 The username can be of the form username%%password or\n\
 workgroup\\username%%password.\n\n\
@@ -872,6 +874,10 @@ You can string acls together with spaces, commas or newlines\n\
 				got_pass = 1;
 			}
 			break;
+
+                case 'W':
+                        pstrcpy(workgroup, optarg);
+                        break;
 
 		case 'S':
 			the_acl = optarg;
