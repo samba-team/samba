@@ -1218,6 +1218,10 @@ static NTSTATUS can_delete(char *fname,connection_struct *conn, int dirtype)
 	if (!CAN_WRITE(conn))
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 
+	/* Can't delete the root. */
+	if (strequal(fname, "./..") || strequal(fname, "./../"))
+		return NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
+
 	if (SMB_VFS_LSTAT(conn,fname,&sbuf) != 0)
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
