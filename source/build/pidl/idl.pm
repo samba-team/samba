@@ -2038,7 +2038,7 @@ sub
 {{
 		 "NAME" => "",
 		 "TYPE" => "EMPTY",
-		 "PROPERTIES" => $_[0],
+		 "PROPERTIES" => $_[1],
 		 "POINTERS" => 0
 	 }}
 	],
