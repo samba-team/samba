@@ -896,7 +896,7 @@ static void init_globals(void)
 	do_parameter("fstype", FSTYPE_STRING);
 	do_parameter("ntvfs handler", "unixuid default");
 
-	do_parameter("dcerpc endpoint servers", "epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi");
+	do_parameter("dcerpc endpoint servers", "epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi winreg");
 	do_parameter("server services", "smb rpc");
 	do_parameter("auth methods", "guest sam_ignoredomain");
 	do_parameter("smb passwd file", dyn_SMB_PASSWD_FILE);
