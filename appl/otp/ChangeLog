@@ -1,3 +1,9 @@
+Thu Apr  1 16:51:07 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* otpprint.c: use getarg
+
+	* otp.c: use getarg
+
 Thu Mar 18 12:08:58 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* Makefile.am: include Makefile.am.common
