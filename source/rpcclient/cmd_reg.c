@@ -903,7 +903,6 @@ static NTSTATUS cmd_reg_shutdown(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	uint32 timeout = 20;
 	uint16 flgs = 0;
 	int opt;
-	int ret;
 
 	*msg = 0;
 	optind = 0; /* TODO: test if this hack works on other systems too --simo */
@@ -958,7 +957,6 @@ static NTSTATUS cmd_reg_abort_shutdown(struct cli_state *cli,
                                        char **argv)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	int ret;
 
 	result = cli_reg_abort_shutdown(cli, mem_ctx);
 
