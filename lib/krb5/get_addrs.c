@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -103,7 +103,7 @@ find_all_addresses (krb5_addresses *res, int loop,
      size_t buf_size;
      char *buf;
      struct ifconf ifconf;
-     int num, j;
+     int num, j = 0;
      char *p;
      size_t sz;
      struct sockaddr sa_zero;
