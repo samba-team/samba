@@ -581,7 +581,6 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 	static int		got_pass = 0;
 	BOOL 			interactive = True;
 	int 			opt;
-	int 			olddebug;
 	static char		*cmdstr = "";
 	const char *server;
 	struct cli_state	*cli;
@@ -598,7 +597,6 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 	struct cmd_set 		**cmd_set;
 	struct in_addr 		server_ip;
 	NTSTATUS 		nt_status;
-	extern BOOL 		AllowDebugChange;
 
 	/* make sure the vars that get altered (4th field) are in
 	   a fixed location or certain compilers complain */
@@ -618,9 +616,6 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 	};
 
 	setlinebuf(stdout);
-
-	DEBUGLEVEL = 1;
-	AllowDebugChange = False;
 
 	/* Parse options */
 
@@ -697,12 +692,9 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 		reopen_logs();
 	
 	/* Load smb.conf file */
-	/* FIXME!  How to get this DEBUGLEVEL to last over lp_load()? */
-	olddebug = DEBUGLEVEL;
-	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
+
+	if (!lp_load(dyn_CONFIGFILE,True,False,False))
 		fprintf(stderr, "Can't load %s\n", dyn_CONFIGFILE);
-	}
-	DEBUGLEVEL = olddebug;
 
 	load_interfaces();
 
