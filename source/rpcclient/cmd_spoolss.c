@@ -1362,7 +1362,7 @@ static NTSTATUS cmd_spoolss_setdriver(struct cli_state *cli,
 	/* Get a printer handle */
 
 	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, "", 
-					     MAXIMUM_ALLOWED_ACCESS,
+					     PRINTER_ALL_ACCESS,
 					     servername, user, &pol);
 
 	if (!W_ERROR_IS_OK(result))
