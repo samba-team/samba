@@ -87,7 +87,7 @@ void make_samr_q_lookup_domain(SAMR_Q_LOOKUP_DOMAIN *q_u,
 
 	memcpy(&(q_u->connect_pol), pol, sizeof(*pol));
 
-	make_uni_hdr(&(q_u->hdr_domain), len_name, len_name, 1);
+	make_uni_hdr(&(q_u->hdr_domain), len_name);
 	make_unistr2(&(q_u->uni_domain), dom_name, len_name);
 }
 
@@ -389,8 +389,8 @@ void make_unk_info2(SAM_UNK_INFO_2 *u_2, char *domain, char *server)
 	u_2->unknown_2 = 0x00000000;
 
 	u_2->ptr_0 = 1;
-	make_uni_hdr(&(u_2->hdr_domain), len_domain, len_domain, 1);
-	make_uni_hdr(&(u_2->hdr_server), len_server, len_server, 1);
+	make_uni_hdr(&(u_2->hdr_domain), len_domain);
+	make_uni_hdr(&(u_2->hdr_server), len_server);
 
 	u_2->seq_num = 0x10000000;
 	u_2->unknown_3 = 0x00000000;
@@ -758,9 +758,9 @@ static void make_sam_entry1(SAM_ENTRY1 *sam, uint32 user_idx,
 	sam->acb_info = acb_info;
 	sam->pad      = 0;
 
-	make_uni_hdr(&(sam->hdr_acct_name), len_sam_name, len_sam_name, len_sam_name != 0);
-	make_uni_hdr(&(sam->hdr_user_name), len_sam_full, len_sam_full, len_sam_full != 0);
-	make_uni_hdr(&(sam->hdr_user_desc), len_sam_desc, len_sam_desc, len_sam_desc != 0);
+	make_uni_hdr(&(sam->hdr_acct_name), len_sam_name);
+	make_uni_hdr(&(sam->hdr_user_name), len_sam_full);
+	make_uni_hdr(&(sam->hdr_user_desc), len_sam_desc);
 }
 
 /*******************************************************************
@@ -818,8 +818,8 @@ static void make_sam_entry2(SAM_ENTRY2 *sam, uint32 user_idx,
 	sam->acb_info = acb_info;
 	sam->pad      = 0;
 
-	make_uni_hdr(&(sam->hdr_srv_name), len_sam_name, len_sam_name, len_sam_name != 0);
-	make_uni_hdr(&(sam->hdr_srv_desc), len_sam_desc, len_sam_desc, len_sam_desc != 0);
+	make_uni_hdr(&(sam->hdr_srv_name), len_sam_name);
+	make_uni_hdr(&(sam->hdr_srv_desc), len_sam_desc);
 }
 
 /*******************************************************************
@@ -874,8 +874,8 @@ static void make_sam_entry3(SAM_ENTRY3 *sam, uint32 grp_idx,
 	sam->rid_grp = rid_grp;
 	sam->attr    = 0x07; /* group rid attributes - gets ignored by nt 4.0 */
 
-	make_uni_hdr(&(sam->hdr_grp_name), len_grp_name, len_grp_name, len_grp_name != 0);
-	make_uni_hdr(&(sam->hdr_grp_desc), len_grp_desc, len_grp_desc, len_grp_desc != 0);
+	make_uni_hdr(&(sam->hdr_grp_name), len_grp_name);
+	make_uni_hdr(&(sam->hdr_grp_desc), len_grp_desc);
 }
 
 /*******************************************************************
@@ -971,7 +971,7 @@ static void make_sam_entry(SAM_ENTRY *sam, uint32 len_sam_name, uint32 rid)
 	DEBUG(5,("make_sam_entry\n"));
 
 	sam->rid = rid;
-	make_uni_hdr(&(sam->hdr_name), len_sam_name, len_sam_name, len_sam_name != 0);
+	make_uni_hdr(&(sam->hdr_name), len_sam_name);
 }
 
 /*******************************************************************
@@ -1693,12 +1693,12 @@ void make_samr_group_info1(GROUP_INFO1 *gr1,
 
 	DEBUG(5,("make_samr_group_info1\n"));
 
-	make_uni_hdr(&(gr1->hdr_acct_name), acct_len , acct_len, acct_name ? 1 : 0);
+	make_uni_hdr(&(gr1->hdr_acct_name), acct_len);
 
 	gr1->unknown_1 = 0x3;
 	gr1->unknown_2 = 0x3;
 
-	make_uni_hdr(&(gr1->hdr_acct_desc), desc_len , desc_len, acct_desc ? 1 : 0);
+	make_uni_hdr(&(gr1->hdr_acct_desc), desc_len);
 
 	make_unistr2(&(gr1->uni_acct_name), acct_name, acct_len);
 	make_unistr2(&(gr1->uni_acct_desc), acct_desc, desc_len);
@@ -1740,7 +1740,7 @@ void make_samr_group_info4(GROUP_INFO4 *gr4, const char *acct_desc)
 
 	DEBUG(5,("make_samr_group_info4\n"));
 
-	make_uni_hdr(&(gr4->hdr_acct_desc), acct_len , acct_len, acct_desc ? 1 : 0);
+	make_uni_hdr(&(gr4->hdr_acct_desc), acct_len);
 	make_unistr2(&(gr4->uni_acct_desc), acct_desc, acct_len);
 }
 
@@ -1811,7 +1811,7 @@ void make_samr_q_create_dom_group(SAMR_Q_CREATE_DOM_GROUP *q_e,
 
 	memcpy(&(q_e->pol), pol, sizeof(*pol));
 
-	make_uni_hdr(&(q_e->hdr_acct_desc), acct_len , acct_len, acct_desc ? 1 : 0);
+	make_uni_hdr(&(q_e->hdr_acct_desc), acct_len);
 	make_unistr2(&(q_e->uni_acct_desc), acct_desc, acct_len);
 
 	q_e->unknown_1 = 0x0002;
@@ -2685,7 +2685,7 @@ void make_samr_alias_info3(ALIAS_INFO3 *al3, const char *acct_desc)
 
 	DEBUG(5,("make_samr_alias_info3\n"));
 
-	make_uni_hdr(&(al3->hdr_acct_desc), acct_len , acct_len, acct_desc ? 1 : 0);
+	make_uni_hdr(&(al3->hdr_acct_desc), acct_len);
 	make_unistr2(&(al3->uni_acct_desc), acct_desc, acct_len);
 }
 
@@ -3126,7 +3126,7 @@ void make_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u,
 		for (i = 0; i < num_names; i++)
 		{
 			int len = name[i] != NULL ? strlen(name[i]) : 0;
-			make_uni_hdr(&(r_u->hdr_name[i]), len    , len, name[i] ? 1 : 0);
+			make_uni_hdr(&(r_u->hdr_name[i]), len);
 			make_unistr2(&(r_u->uni_name[i]), name[i], len);
 			r_u->type[i] = type[i];
 		}
@@ -3258,7 +3258,7 @@ void make_samr_q_create_dom_alias(SAMR_Q_CREATE_DOM_ALIAS *q_u, POLICY_HND *hnd,
 
 	memcpy(&(q_u->dom_pol), hnd, sizeof(q_u->dom_pol));
 
-	make_uni_hdr(&(q_u->hdr_acct_desc), acct_len , acct_len, acct_desc ? 1 : 0);
+	make_uni_hdr(&(q_u->hdr_acct_desc), acct_len);
 	make_unistr2(&(q_u->uni_acct_desc), acct_desc, acct_len);
 
 	q_u->unknown_1 = 0x001f;
@@ -3593,7 +3593,7 @@ void make_samr_q_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
 	for (i = 0; i < num_names; i++)
 	{
 		int len_name = name[i] != NULL ? strlen(name[i]) : 0;
-		make_uni_hdr(&(q_u->hdr_name[i]), len_name, len_name, name[i] != NULL);  /* unicode header for user_name */
+		make_uni_hdr(&(q_u->hdr_name[i]), len_name);  /* unicode header for user_name */
 		make_unistr2(&(q_u->uni_name[i]), name[i], len_name);  /* unicode string for machine account */
 	}
 }
@@ -3814,7 +3814,7 @@ void make_samr_q_create_user(SAMR_Q_CREATE_USER *q_u,
 
 	memcpy(&q_u->domain_pol, pol, sizeof(q_u->domain_pol));
 	
-	make_uni_hdr(&(q_u->hdr_name), len_name, len_name, 1);  
+	make_uni_hdr(&(q_u->hdr_name), len_name);  
 	make_unistr2(&(q_u->uni_name), name, len_name);
 
 	q_u->acb_info = acb_info;
@@ -3974,7 +3974,7 @@ void make_sam_user_info11(SAM_USER_INFO_11 *usr,
 	memcpy(&(usr->expiry),expiry, sizeof(usr->expiry)); /* expiry time or something? */
 	bzero(usr->padding_1, sizeof(usr->padding_1)); /* 0 - padding 24 bytes */
 
-	make_uni_hdr(&(usr->hdr_mach_acct), len_mach_acct, len_mach_acct, 4);  /* unicode header for machine account */
+	make_uni_hdr(&(usr->hdr_mach_acct), len_mach_acct);  /* unicode header for machine account */
 	usr->padding_2 = 0;               /* 0 - padding 4 bytes */
 
 	usr->ptr_1        = 1;            /* pointer */
@@ -4105,16 +4105,16 @@ void make_sam_user_info21(SAM_USER_INFO_21 *usr,
 	usr->pass_can_change_time  = *pass_can_change_time;
 	usr->pass_must_change_time = *pass_must_change_time;
 
-	make_uni_hdr(&(usr->hdr_user_name   ), len_user_name   , len_user_name   , 1);
-	make_uni_hdr(&(usr->hdr_full_name   ), len_full_name   , len_full_name   , 1);
-	make_uni_hdr(&(usr->hdr_home_dir    ), len_home_dir    , len_home_dir    , 1);
-	make_uni_hdr(&(usr->hdr_dir_drive   ), len_dir_drive   , len_dir_drive   , 1);
-	make_uni_hdr(&(usr->hdr_logon_script), len_logon_script, len_logon_script, 1);
-	make_uni_hdr(&(usr->hdr_profile_path), len_profile_path, len_profile_path, 1);
-	make_uni_hdr(&(usr->hdr_acct_desc   ), len_description , len_description , 1);
-	make_uni_hdr(&(usr->hdr_workstations), len_workstations, len_workstations, 1);
-	make_uni_hdr(&(usr->hdr_unknown_str ), len_unknown_str , len_unknown_str , 1);
-	make_uni_hdr(&(usr->hdr_munged_dial ), len_munged_dial , len_munged_dial , 1);
+	make_uni_hdr(&(usr->hdr_user_name   ), len_user_name   );
+	make_uni_hdr(&(usr->hdr_full_name   ), len_full_name   );
+	make_uni_hdr(&(usr->hdr_home_dir    ), len_home_dir    );
+	make_uni_hdr(&(usr->hdr_dir_drive   ), len_dir_drive   );
+	make_uni_hdr(&(usr->hdr_logon_script), len_logon_script);
+	make_uni_hdr(&(usr->hdr_profile_path), len_profile_path);
+	make_uni_hdr(&(usr->hdr_acct_desc   ), len_description );
+	make_uni_hdr(&(usr->hdr_workstations), len_workstations);
+	make_uni_hdr(&(usr->hdr_unknown_str ), len_unknown_str );
+	make_uni_hdr(&(usr->hdr_munged_dial ), len_munged_dial );
 
 	bzero(usr->nt_pwd, sizeof(usr->nt_pwd));
 	bzero(usr->lm_pwd, sizeof(usr->lm_pwd));
@@ -4520,7 +4520,7 @@ void make_samr_q_unknown_38(SAMR_Q_UNKNOWN_38 *q_u, char *srv_name)
 	DEBUG(5,("make_samr_q_unknown_38\n"));
 
 	q_u->ptr = 1;
-	make_uni_hdr(&(q_u->hdr_srv_name), len_srv_name, len_srv_name, len_srv_name != 0);
+	make_uni_hdr(&(q_u->hdr_srv_name), len_srv_name);
 	make_unistr2(&(q_u->uni_srv_name), srv_name, len_srv_name);  
 
 }
@@ -4652,9 +4652,9 @@ void make_samr_q_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
 	DEBUG(5,("make_samr_q_chgpasswd_user\n"));
 
 	q_u->ptr_0 = 1;
-	make_uni_hdr(&(q_u->hdr_dest_host), len_dest_host, len_dest_host, len_dest_host != 0);
+	make_uni_hdr(&(q_u->hdr_dest_host), len_dest_host);
 	make_unistr2(&(q_u->uni_dest_host), dest_host, len_dest_host);  
-	make_uni_hdr(&(q_u->hdr_user_name), len_user_name, len_user_name, len_user_name != 0);
+	make_uni_hdr(&(q_u->hdr_user_name), len_user_name);
 	make_unistr2(&(q_u->uni_user_name), user_name, len_user_name);  
 
 	make_enc_passwd(&(q_u->nt_newpass), nt_newpass);
