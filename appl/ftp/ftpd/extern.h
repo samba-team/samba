@@ -84,6 +84,8 @@ int find(char *);
 
 int klogin(char *name, char *password);
 
+const char *ftp_rooted(const char *path);
+
 extern struct sockaddr_in ctrl_addr, his_addr;
 extern char hostname[];
 
