@@ -93,6 +93,7 @@ def call_fn(fn, pipe, args):
     """Wrap up a RPC call and throw an exception is an error was returned."""
     
     result = fn(pipe, args);
+
     if result & 0xc0000000:
         raise dcerpc.NTSTATUS(result, dcerpc.nt_errstr(result));
 
@@ -146,7 +147,7 @@ class ConnectHandle(SamrHandle):
 
         r = dcerpc.samr_EnumDomains()
         r.data_in.connect_handle = self.handle
-        r.data_in.resume_handle = 1
+        r.data_in.resume_handle = 0
         r.data_in.buf_size = -1
 
         domains = []
@@ -169,8 +170,8 @@ class ConnectHandle(SamrHandle):
 
         r = dcerpc.samr_LookupDomain()
         r.data_in.connect_handle = self.handle
-        r.data_in.domain = dcerpc.samr_String()
-        r.data_in.domain.string = domain_name
+        r.data_in.domain_name = dcerpc.samr_String()
+        r.data_in.domain_name.string = domain_name
 
         call_fn(dcerpc.dcerpc_samr_LookupDomain, self.pipe, r)
 
@@ -193,6 +194,16 @@ class ConnectHandle(SamrHandle):
         r.data_in.connect_handle = self.handle
 
         call_fn(dcerpc.dcerpc_samr_Shutdown, self.pipe, r)
+
+    def GetDomPwInfo(self, system_name):
+
+        r = dcerpc.samr_GetDomPwInfo()
+        r.data_in.domain_name = dcerpc.samr_String()
+        r.data_in.domain_name.string = system_name
+
+        call_fn(dcerpc.dcerpc_samr_GetDomPwInfo, self.pipe, r)
+
+        return r.data_out.info
 
 
 class DomainHandle(SamrHandle):
@@ -286,7 +297,23 @@ class DomainHandle(SamrHandle):
 
         return (r.data_out.user_handle,
                 dcerpc.uint32_array_getitem(r.data_out.rid, 0))
-        
+
+    def CreateUser2(self, account_name, acct_flags = 0x00000010,
+                    access_mask = 0x02000000):
+
+        r = dcerpc.samr_CreateUser2()
+        r.data_in.domain_handle = self.handle
+        r.data_in.account_name = dcerpc.samr_String()
+        r.data_in.account_name.string = account_name
+        r.data_in.acct_flags = acct_flags
+        r.data_in.access_mask = access_mask
+
+        call_fn(dcerpc.dcerpc_samr_CreateUser2, self.pipe, r)
+
+        return (r.data_out.user_handle,
+                dcerpc.uint32_array_getitem(r.data_out.access_granted, 0),
+                dcerpc.uint32_array_getitem(r.data_out.rid, 0))
+
     def OpenUser(self, rid, access_mask = 0x02000000):
 
         r = dcerpc.samr_OpenUser()
@@ -329,9 +356,23 @@ class DomainHandle(SamrHandle):
 
         return sid_to_string(r.data_out.sid)
 
+    def RemoveMemberFromForeignDomain(self, sid):
+
+        r = dcerpc.samr_RemoveMemberFromForeignDomain()
+        r.data_in.domain_handle = self.handle
+        r.data_in.sid = sid
+
+        call_fn(dcerpc.dcerpc_samr_RemoveMemberFromForeignDomain, self.pipe, r)
+    
 
 class UserHandle(SamrHandle):
-    pass
+
+    def DeleteUser(self):
+
+        r = dcerpc.samr_DeleteUser()
+        r.data_in.user_handle = self.handle
+
+        call_fn(dcerpc.dcerpc_samr_DeleteUser, self.pipe, r)
     
 
 class GroupHandle(SamrHandle):
@@ -353,6 +394,7 @@ def Connect(pipe, access_mask = 0x02000000):
 
     return ConnectHandle(pipe, r.data_out.connect_handle)
 
+
 def Connect2(pipe, system_name = '', access_mask = 0x02000000):
     """Connect to the SAMR pipe."""
 
@@ -363,6 +405,7 @@ def Connect2(pipe, system_name = '', access_mask = 0x02000000):
     call_fn(dcerpc.dcerpc_samr_Connect2, pipe, r)
 
     return ConnectHandle(pipe, r.data_out.connect_handle)
+
 
 def Connect3(pipe, system_name = '', access_mask = 0x02000000):
 
@@ -375,6 +418,7 @@ def Connect3(pipe, system_name = '', access_mask = 0x02000000):
 
     return ConnectHandle(pipe, r.data_out.connect_handle)
 
+
 def Connect4(pipe, system_name = '', access_mask = 0x02000000):
 
     r = dcerpc.samr_Connect4()
@@ -385,6 +429,7 @@ def Connect4(pipe, system_name = '', access_mask = 0x02000000):
     call_fn(dcerpc.dcerpc_samr_Connect4, pipe, r)
 
     return ConnectHandle(pipe, r.data_out.connect_handle)
+
 
 def Connect5(pipe, system_name = '', access_mask = 0x02000000):
 
@@ -418,7 +463,6 @@ def Connect5(pipe, system_name = '', access_mask = 0x02000000):
 # AddAliasMember
 # DeleteAliasMember
 # GetMembersinAlias
-# DeleteUser
 # QueryUserInfo
 # SetUserInfo
 # ChangePasswordUser
@@ -433,13 +477,11 @@ def Connect5(pipe, system_name = '', access_mask = 0x02000000):
 # QueryUserInfo2
 # QueryDisplayInfo2
 # GetDisplayEnumerationIndex2
-# CreateUser2
 # QueryDisplayInfo3
 # AddMultipleMembersToAlias
 # RemoveMultipleMembersFromAlias
 # OemChangePasswordUser2
 # ChangePasswordUser2
-# GetDomPwInfo
 # SetUserInfo2
 # SetBootKeyInformation
 # GetBootKeyInformation
