@@ -1697,4 +1697,7 @@ typedef struct {
 extern struct poptOption popt_common_debug[];
 extern struct poptOption popt_common_configfile[];
 
+/* Module support */
+typedef int (init_module_function) (void);
+
 #endif /* _SMB_H */
