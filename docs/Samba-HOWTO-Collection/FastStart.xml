@@ -890,7 +890,7 @@ maryo:x:15000:15003:Mary Orville:/home/MIDEARTH/maryo:/bin/false
 <smbconfoption><name>delete group script</name><value>/usr/sbin/groupdel %g</value></smbconfoption>
 <smbconfoption><name>add user to group script</name><value>/usr/sbin/usermod -G %g %u</value></smbconfoption>
 <smbconfoption><name>add machine script</name><value>/usr/sbin/useradd -s /bin/false \</value></smbconfoption>
-<member><parameter>        -d /dev/null %u</parameter></member>
+<member><parameter>        -d /var/lib/nobody %u</parameter></member>
 <smbconfcomment>Note: The following specifies the default logon script.</smbconfcomment>
 <smbconfcomment>Per user logon scripts can be specified in the user account using pdbedit </smbconfcomment>
 <smbconfoption><name>logon script</name><value>scripts\logon.bat</value></smbconfoption>

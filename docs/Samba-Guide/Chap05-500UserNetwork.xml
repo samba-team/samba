@@ -957,7 +957,7 @@ hosts:      files dns wins
 <smbconfoption><name>add group script</name><value>/usr/sbin/groupadd '%g'</value></smbconfoption>
 <smbconfoption><name>delete group script</name><value>/usr/sbin/groupdel '%g'</value></smbconfoption>
 <smbconfoption><name>add user to group script</name><value>/usr/sbin/usermod -G '%g' '%u'</value></smbconfoption>
-<smbconfoption><name>add machine script</name><value>/usr/sbin/useradd -s /bin/false -d /dev/null '%u'</value></smbconfoption>
+<smbconfoption><name>add machine script</name><value>/usr/sbin/useradd -s /bin/false -d /var/lib/nobody '%u'</value></smbconfoption>
 <smbconfoption><name>preferred master</name><value>Yes</value></smbconfoption>
 <smbconfoption><name>wins support</name><value>Yes</value></smbconfoption>
 <smbconfoption><name>include</name><value>/etc/samba/dc-common.conf</value></smbconfoption>
