@@ -61,3 +61,4 @@
    0xEE    0xDD    True                  True
    0xFB    0xEB    True                  True
    0xFD    0xFC    True                  True
+   0xFF    0xFF    True                  True
