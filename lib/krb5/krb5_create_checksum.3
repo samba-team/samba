@@ -38,7 +38,6 @@
 .Nm krb5_checksum ,
 .Nm krb5_checksum_disable ,
 .Nm krb5_checksum_is_collision_proof ,
-.Nm krb5_checksum_is_disabled ,
 .Nm krb5_checksum_is_keyed ,
 .Nm krb5_checksumsize ,
 .Nm krb5_cksumtype_valid ,
@@ -63,11 +62,6 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fc
 .Ft krb5_boolean
 .Fo krb5_checksum_is_collision_proof
-.Fa "krb5_context context"
-.Fa "krb5_cksumtype type"
-.Fc
-.Ft krb5_boolean
-.Fo krb5_checksum_is_disabled
 .Fa "krb5_context context"
 .Fa "krb5_cksumtype type"
 .Fc
@@ -190,8 +184,8 @@ when you want to know the size a checksum will
 use when you create it.
 .Pp
 .Fn krb5_cksumtype_valid
-returns 0 or an error if the checksumtype is implemented/valid in this
-kerberos library.
+returns 0 or an error if the checksumtype is implemented and not
+currently disabled in this kerberos library.
 .Pp
 .Fn krb5_checksumsize
 returns the size of the outdata of checksum function.
@@ -220,9 +214,6 @@ using the keyusage
 and keyblock
 .Fa key .
 Note that keyusage is not always used in checksums.
-.Pp
-.Nm krb5_checksum_is_disabled
-returns non-zero if the checksum type is disabled.
 .Pp
 .Nm krb5_checksum_disable
 globally disables the checksum type. 
