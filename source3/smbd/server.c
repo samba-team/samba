@@ -4888,6 +4888,29 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
 }
 
 
+/****************************************************************************
+ Helper function for contruct_reply.
+****************************************************************************/
+
+void construct_reply_common(char *inbuf,char *outbuf)
+{
+  bzero(outbuf,smb_size);
+
+  CVAL(outbuf,smb_com) = CVAL(inbuf,smb_com);
+  set_message(outbuf,0,0,True);
+
+  memcpy(outbuf+4,inbuf+4,4);
+  CVAL(outbuf,smb_rcls) = SMB_SUCCESS;
+  CVAL(outbuf,smb_reh) = 0;
+  CVAL(outbuf,smb_flg) = 0x80 | (CVAL(inbuf,smb_flg) & 0x8); /* bit 7 set
+                                 means a reply */
+  SSVAL(outbuf,smb_flg2,1); /* say we support long filenames */
+  SSVAL(outbuf,smb_err,SMB_SUCCESS);
+  SSVAL(outbuf,smb_tid,SVAL(inbuf,smb_tid));
+  SSVAL(outbuf,smb_pid,SVAL(inbuf,smb_pid));
+  SSVAL(outbuf,smb_uid,SVAL(inbuf,smb_uid));
+  SSVAL(outbuf,smb_mid,SVAL(inbuf,smb_mid));
+}
 
 /****************************************************************************
   construct a reply to the incoming packet
@@ -4905,25 +4928,10 @@ int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
   chain_fnum = -1;
   reset_chain_pnum();
 
-  bzero(outbuf,smb_size);
-
   if (msg_type != 0)
     return(reply_special(inbuf,outbuf));  
 
-  CVAL(outbuf,smb_com) = CVAL(inbuf,smb_com);
-  set_message(outbuf,0,0,True);
-  
-  memcpy(outbuf+4,inbuf+4,4);
-  CVAL(outbuf,smb_rcls) = SMB_SUCCESS;
-  CVAL(outbuf,smb_reh) = 0;
-  CVAL(outbuf,smb_flg) = 0x80 | (CVAL(inbuf,smb_flg) & 0x8); /* bit 7 set 
-							     means a reply */
-  SSVAL(outbuf,smb_flg2,1); /* say we support long filenames */
-  SSVAL(outbuf,smb_err,SMB_SUCCESS);
-  SSVAL(outbuf,smb_tid,SVAL(inbuf,smb_tid));
-  SSVAL(outbuf,smb_pid,SVAL(inbuf,smb_pid));
-  SSVAL(outbuf,smb_uid,SVAL(inbuf,smb_uid));
-  SSVAL(outbuf,smb_mid,SVAL(inbuf,smb_mid));
+  construct_reply_common(inbuf, outbuf);
 
   outsize = switch_message(type,inbuf,outbuf,size,bufsize);
 

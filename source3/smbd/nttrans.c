@@ -975,7 +975,6 @@ static ubi_slList change_notify_queue = { NULL, (ubi_slNodePtr)&change_notify_qu
 
 /****************************************************************************
  Setup the common parts of the return packet and send it.
- Code stolen from construct_reply() in server.c
 *****************************************************************************/
 
 static void change_notify_reply_packet(char *inbuf, int error_class, uint32 error_code)
@@ -983,22 +982,7 @@ static void change_notify_reply_packet(char *inbuf, int error_class, uint32 erro
   extern int Client;
   char outbuf[smb_size];
 
-  bzero(outbuf,smb_size);
-
-  CVAL(outbuf,smb_com) = CVAL(inbuf,smb_com);
-  set_message(outbuf,0,0,True);
- 
-  memcpy(outbuf+4,inbuf+4,4);
-  CVAL(outbuf,smb_rcls) = SMB_SUCCESS;
-  CVAL(outbuf,smb_reh) = 0;
-  CVAL(outbuf,smb_flg) = 0x80 | (CVAL(inbuf,smb_flg) & 0x8); /* bit 7 set
-                                 means a reply */
-  SSVAL(outbuf,smb_flg2,1); /* say we support long filenames */
-  SSVAL(outbuf,smb_err,SMB_SUCCESS);
-  SSVAL(outbuf,smb_tid,SVAL(inbuf,smb_tid));
-  SSVAL(outbuf,smb_pid,SVAL(inbuf,smb_pid));
-  SSVAL(outbuf,smb_uid,SVAL(inbuf,smb_uid));
-  SSVAL(outbuf,smb_mid,SVAL(inbuf,smb_mid));
+  construct_reply_common(inbuf, outbuf);
 
   ERROR(error_class,error_code);
   send_smb(Client,outbuf);
@@ -1133,10 +1117,6 @@ static int call_nt_transact_notify_change(char *inbuf, char *outbuf, int length,
                                           int bufsize, int cnum,
                                           char **ppsetup, char **ppparams, char **ppdata)
 {
-#if 0
-  DEBUG(0,("call_nt_transact_notify_change: Should not be called !\n"));
-  return(ERROR(ERRSRV,ERRnosupport));
-#else /* Under development. */
   char *setup = *ppsetup;
   files_struct *fsp;
   int fnum = -1;
@@ -1145,7 +1125,7 @@ static int call_nt_transact_notify_change(char *inbuf, char *outbuf, int length,
 
   fnum = SVAL(setup,4);
 
-  DEBUG(0,("call_nt_transact_notify_change: fnum = %d.\n", fnum));
+  DEBUG(3,("call_nt_transact_notify_change: fnum = %d.\n", fnum));
 
   if(!VALID_FNUM(fnum))
     return(ERROR(ERRDOS,ERRbadfid));
@@ -1207,7 +1187,6 @@ static int call_nt_transact_notify_change(char *inbuf, char *outbuf, int length,
         fnum, fsp->name ));
 
   return -1;
-#endif
 }
 
 /****************************************************************************
