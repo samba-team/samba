@@ -122,6 +122,7 @@ main(int argc, char **argv)
 	krb5_keytype keytype;
 	int *etypes;
 	unsigned num;
+	char *str;
 	ret = krb5_string_to_keytype(context, keytype_str, &keytype);
 	if(ret)
 	    krb5_err(context, 1, ret, "%s", keytype_str);
@@ -131,7 +132,8 @@ main(int argc, char **argv)
 	if(num == 0)
 	    krb5_errx(context, 1, "there are no encryption types for that keytype");
 	etype = etypes[0];
-	krb5_enctype_to_string(context, etype, &keytype_str);
+	krb5_enctype_to_string(context, etype, &str);
+	keytype_str = str;
 	if(num > 1 && version5)
 	    krb5_warnx(context, "ambiguous keytype, using %s", keytype_str);
     }
