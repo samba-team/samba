@@ -41,6 +41,28 @@
 RCSID("$Id$");
 
 /*
+ * free all the memory used by (len, keys)
+ */
+
+static void
+free_keys (kadm5_server_context *context,
+	   int len, Key *keys)
+{
+    int i;
+
+    for (i = 0; i < len; ++i) {
+	free (keys[i].mkvno);
+	keys[i].mkvno = NULL;
+	if (keys[i].salt != NULL) {
+	    free_Salt(keys[i].salt);
+	    free(keys[i].salt);
+	    keys[i].salt = NULL;
+	}
+	krb5_free_keyblock_contents(context->context, &keys[i].key);
+    }
+}
+
+/*
  * Set the keys of `ent' to the string-to-key of `password'
  */
 
@@ -49,47 +71,78 @@ _kadm5_set_keys(kadm5_server_context *context,
 		hdb_entry *ent, 
 		const char *password)
 {
-    int i;
     kadm5_ret_t ret = 0;
-    Key *key;
+    int i;
+    unsigned len;
+    Key *keys;
+    krb5_salt salt;
+    krb5_enctype des_types[] = { ETYPE_DES_CBC_CRC,
+				 ETYPE_DES_CBC_MD4,
+				 ETYPE_DES_CBC_MD5 };
+    krb5_boolean v4_salt = FALSE;
 
-    for(i = 0; i < ent->keys.len; i++) {
-	key = &ent->keys.val[i];
-	free(key->mkvno);
-	key->mkvno = NULL;
-	if(key->salt && 
-	   key->salt->type == hdb_pw_salt &&
-	   (key->salt->salt.length != 0 ||
-	    !krb5_config_get_bool(context->context, NULL, 
-				  "kadmin", "use_v4_salt", NULL))){
-	    /* zap old salt, possibly keeping version 4 salts */
-	    free_Salt(key->salt);
-	    free (key->salt);
-	    key->salt = NULL;
-	}
-	krb5_free_keyblock_contents(context->context, &key->key);
-	/* XXX check for DES key and AFS3 salt? */
-	if(key->salt) {
-	    krb5_salt salt;
-	    salt.salttype = key->salt->type;
-	    salt.saltvalue = key->salt->salt;
-	    ret = krb5_string_to_key_salt(context->context,
-					  key->key.keytype,
-					  password, 
-					  salt,
-					  &key->key);
-	} else
-	    ret = krb5_string_to_key(context->context,
-				     key->key.keytype,
-				     password, 
-				     ent->principal,
-				     &key->key);
-	if(ret) {
-	    krb5_warn(context->context, ret, "string-to-key failed");
-	    break;
+    len = 4;
+    keys = malloc (len * sizeof(*keys));
+    if (keys == NULL)
+	return ENOMEM;
+
+    for (i = 0; i < len; ++i) {
+	keys[i].mkvno               = NULL;
+	keys[i].salt                = NULL;
+	keys[i].key.keyvalue.length = 0;
+	keys[i].key.keyvalue.data   = NULL;
+    }
+
+    salt.salttype         = KRB5_PW_SALT;
+    salt.saltvalue.length = 0;
+    salt.saltvalue.data   = NULL;
+
+    if (!krb5_config_get_bool (context->context,
+			       NULL, "kadmin", "use_v4_salt", NULL)) {
+	ret = krb5_get_pw_salt (context->context, ent->principal, &salt);
+	if (ret)
+	    goto out;
+    } else {
+	v4_salt = TRUE;
+    }
+
+    for (i = 0; i < sizeof(des_types) / sizeof(des_types[0]); ++i) {
+	ret = krb5_string_to_key_salt (context->context,
+				       des_types[i],
+				       password,
+				       salt,
+				       &keys[i].key);
+	if (ret)
+	    goto out;
+	if (v4_salt) {
+	    keys[i].salt = malloc (sizeof(*keys[i].salt));
+	    if (keys[i].salt == NULL) {
+		ret = ENOMEM;
+		goto out;
+	    }
+	    keys[i].salt->type = salt.salttype;
+	    ret = copy_octet_string (&salt.saltvalue, &keys[i].salt->salt);
+	    if (ret)
+		goto out;
 	}
     }
+
+    ret = krb5_string_to_key (context->context,
+			      ETYPE_DES3_CBC_SHA1,
+			      password,
+			      ent->principal,
+			      &keys[3].key);
+    if (ret)
+	goto out;
+
+    free_keys (context, ent->keys.len, ent->keys.val);
+    ent->keys.len = len;
+    ent->keys.val = keys;
     ent->kvno++;
+    return ret;
+out:
+    krb5_data_free (&salt.saltvalue);
+    free_keys (context, len, keys);
     return ret;
 }
 
