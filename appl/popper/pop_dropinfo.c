@@ -28,6 +28,9 @@ find_value_after_colon(char *p)
 
   p++;				/* Skip over : */
 
+  for(; *p == ' ' || *p == '\t'; p++) /* Remove white space */
+    ;
+
   for (t = p; *t != 0 && *t != '\n' && *t != '\r'; t++)	/* Find end of str */
     ;
 
