@@ -226,7 +226,7 @@ PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 		passdb/pdb_compat.o passdb/pdb_nisplus.o
 
 PDB_XML_OBJ = passdb/pdb_xml.o
-PDB_MYSQL_OBJ = passdb/pdb_mysql.o
+PDB_MYSQL_OBJ = passdb/pdb_mysql.o passdb/pdb_sql.o
 
 SAM_STATIC_MODULES = sam/sam_plugin.o sam/sam_skel.o sam/sam_ads.o
 
@@ -917,7 +917,7 @@ python_ext: $(PYTHON_OBJS)
 		echo Use the option --with-python to configure python; \
 		exit 1; fi
 	PYTHON_OBJS="$(PYTHON_OBJS)" PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS) $(FLAGS)" \
-x1	LIBS="$(LIBS)" \
+	LIBS="$(LIBS)" \
 		$(PYTHON) python/setup.py build
 
 python_install: $(PYTHON_OBJS)
