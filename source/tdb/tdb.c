@@ -394,7 +394,6 @@ static int update_tailer(TDB_CONTEXT *tdb, tdb_off offset,
 			 &totalsize);
 }
 
-#ifdef TDB_DEBUG
 static tdb_off tdb_dump_record(TDB_CONTEXT *tdb, tdb_off offset)
 {
 	struct list_struct rec;
@@ -444,7 +443,6 @@ static void tdb_dump_chain(TDB_CONTEXT *tdb, int i)
 
 void tdb_dump_all(TDB_CONTEXT *tdb)
 {
-	tdb_off off;
 	int i;
 	for (i=0;i<tdb->header.hash_size;i++) {
 		tdb_dump_chain(tdb, i);
@@ -457,7 +455,7 @@ void tdb_printfreelist(TDB_CONTEXT *tdb)
 {
 	long total_free = 0;
 	tdb_off offset, rec_ptr, last_ptr;
-	struct list_struct rec, lastrec, newrec;
+	struct list_struct rec;
 
 	tdb_lock(tdb, -1, F_WRLCK);
 
@@ -486,11 +484,11 @@ void tdb_printfreelist(TDB_CONTEXT *tdb)
 		/* move to the next record */
 		rec_ptr = rec.next;
 	}
-	printf("total rec_len = [0x%08x (%d)]\n", total_free, total_free );
+	printf("total rec_len = [0x%08x (%d)]\n", (int)total_free, 
+               (int)total_free);
 
 	tdb_unlock(tdb, -1, F_WRLCK);
 }
-#endif
 
 /* Remove an element from the freelist.  Must have alloc lock. */
 static int remove_from_freelist(TDB_CONTEXT *tdb, tdb_off off, tdb_off next)
