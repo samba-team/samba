@@ -676,14 +676,34 @@ uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
 
 static void create_user_info_21(SAM_USER_INFO_21 *usr,
 				const UNISTR2 *uni_user_name,
-				uint16 acb_info, uint32 user_rid)
+				uint16 acb_info, uint32 user_rid,
+				uint32 group_rid)
 {
+	time_t t = time(NULL);
+
 	ZERO_STRUCTP(usr);
+
+	init_nt_time(&usr->logon_time);
+	init_nt_time(&usr->logoff_time);
+	init_nt_time(&usr->kickoff_time);
+	init_nt_time(&usr->pass_can_change_time);
+	unix_to_nt_time(&usr->pass_last_set_time, t);
+	unix_to_nt_time(&usr->pass_must_change_time, t);
 
 	usr->acb_info = acb_info | ACB_DISABLED | ACB_PWNOTREQ;
 	usr->user_rid = user_rid;
+	usr->group_rid = group_rid;
+
 	copy_unistr2(&usr->uni_user_name, uni_user_name);
 	make_uni_hdr(&usr->hdr_user_name, uni_user_name->uni_str_len);
+
+	usr->unknown_3 = 0xffffff; /* don't know */
+	usr->logon_divs = 168; /* hours per week */
+	usr->ptr_logon_hrs = 1;
+	usr->logon_hrs.len = 21;
+	memset(&usr->logon_hrs.hours, 0xff, sizeof(usr->logon_hrs.hours)); 
+	usr->unknown_5 = 0x00020000; /* don't know */
+	usr->unknown_6 = 0x000004ec; /* don't know */
 }
 
 /*******************************************************************
@@ -697,8 +717,8 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 {
 	DOM_SID dom_sid;
 	DOM_SID usr_sid;
+	DOM_SID grp_sid;
 	TDB_CONTEXT *tdb_usr = NULL;
-	struct passwd *pass = NULL;
 
 	SAM_USER_INFO_21 usr;
 	uint32 status1;
@@ -706,6 +726,9 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 	uint32 type;
 	uint32 num_rids;
 	uint32 num_types;
+
+	struct passwd *pass = NULL;
+	uint32 group_rid;
 
 	(*unknown_0) = 0x30;
 	(*user_rid) = 0x0;
@@ -761,8 +784,17 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 			
 	}
 
-	/* create a SID for the unix user */
+	/* create a User SID for the unix user */
 	if (!sursalg_unixid_to_sam_sid(pass->pw_uid, SID_NAME_USER, &usr_sid,
+	                               True))
+	{
+		DEBUG(0,("create user: unix uid %d to RID failed\n",
+		          pass->pw_uid));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/* create a Group SID for the unix user */
+	if (!sursalg_unixid_to_sam_sid(pass->pw_gid, SID_NAME_DOM_GRP, &grp_sid,
 	                               True))
 	{
 		DEBUG(0,("create user: unix uid %d to RID failed\n",
@@ -774,12 +806,22 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 	    !sid_equal(&dom_sid, &usr_sid))
 	{
 		fstring tmp;
-		DEBUG(0,("create user: invalid SID %s\n",
+		DEBUG(0,("create user: invalid User SID %s\n",
 		         sid_to_string(tmp, &usr_sid)));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	create_user_info_21(&usr, uni_username, acb_info, (*user_rid));
+	if (!sid_split_rid(&grp_sid, &group_rid) ||
+	    !sid_equal(&dom_sid, &grp_sid))
+	{
+		fstring tmp;
+		DEBUG(0,("create user: invalid Group SID %s\n",
+		         sid_to_string(tmp, &grp_sid)));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	create_user_info_21(&usr, uni_username, acb_info,
+	                    (*user_rid), group_rid);
 
 	if (!tdb_store_user(tdb_usr, usr.user_rid, &usr))
 	{
