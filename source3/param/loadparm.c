@@ -130,6 +130,7 @@ typedef struct
   char *szLogonScript;
   char *szLogonPath;
   char *szVetoFiles;
+  char *szHideFiles;
   char *szSmbrun;
   char *szWINSserver;
   char *szInterfaces;
@@ -395,6 +396,7 @@ struct parm_struct
   {"netbios name",     P_UGSTRING,P_GLOBAL, myname,                     NULL},
   {"smbrun",           P_STRING,  P_GLOBAL, &Globals.szSmbrun,          NULL},
   {"veto files",       P_STRING,  P_GLOBAL, &Globals.szVetoFiles,       NULL},
+  {"hide files",       P_STRING,  P_GLOBAL, &Globals.szHideFiles,       NULL},
   {"log file",         P_STRING,  P_GLOBAL, &Globals.szLogFile,         NULL},
   {"config file",      P_STRING,  P_GLOBAL, &Globals.szConfigFile,      NULL},
   {"smb passwd file",  P_STRING,  P_GLOBAL, &Globals.szSMBPasswdFile,   NULL},
@@ -621,6 +623,7 @@ static void init_globals(void)
   Globals.shmem_size = SHMEM_SIZE;
   Globals.shmem_hash_size = SHMEM_HASH_SIZE;
   Globals.bUnixRealname = False;
+  Globals.szHideFiles = DEFAULT_FILES_TO_HIDE;
 #if (defined(NETGROUP) && defined(AUTOMOUNT))
   Globals.bNISHomeMap = False;
   string_set(&Globals.szNISHomeMapName, "auto.home");
@@ -796,6 +799,7 @@ FN_GLOBAL_STRING(lp_character_set,&Globals.szCharacterSet)
 FN_GLOBAL_STRING(lp_logon_script,&Globals.szLogonScript) 
 FN_GLOBAL_STRING(lp_logon_path,&Globals.szLogonPath) 
 FN_GLOBAL_STRING(lp_veto_files,&Globals.szVetoFiles)
+FN_GLOBAL_STRING(lp_hide_files,&Globals.szHideFiles)
 FN_GLOBAL_STRING(lp_remote_announce,&Globals.szRemoteAnnounce) 
 FN_GLOBAL_STRING(lp_wins_server,&Globals.szWINSserver)
 FN_GLOBAL_STRING(lp_interfaces,&Globals.szInterfaces)

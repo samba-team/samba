@@ -915,4 +915,11 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 /* Size of buffer to use when moving files across filesystems. */
 #define COPYBUF_SIZE (8*1024)
 
+/* Default files that will be hidden, but accessible.  intended
+   to replace the "hide dot files" parameter if the "hide files"
+   parameter moves to the service section instead of the global
+   section.
+ */
+#define DEFAULT_FILES_TO_HIDE ".*"
+
 /* _SMB_H */

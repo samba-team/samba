@@ -222,6 +222,11 @@ int dos_mode(int cnum,char *path,struct stat *sbuf)
 	result |= aHIDDEN;
     }
 
+  if (is_hidden_path(path))
+  {
+    result |= aHIDDEN;
+  }
+
   return(result);
 }
 
