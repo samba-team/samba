@@ -230,11 +230,11 @@ static struct dispatch_table dispatch_table[] = {
 	{ WINBINDD_GETPWNAM_FROM_USER, winbindd_getpwnam_from_user },
 	{ WINBINDD_GETPWNAM_FROM_UID, winbindd_getpwnam_from_uid },
 
-#if 0
-
 	{ WINBINDD_SETPWENT, winbindd_setpwent },
 	{ WINBINDD_ENDPWENT, winbindd_endpwent },
 	{ WINBINDD_GETPWENT, winbindd_getpwent },
+
+#if 0
 
 	{ WINBINDD_GETGROUPS, winbindd_getgroups },
 
@@ -698,6 +698,12 @@ int main(int argc, char **argv)
 	load_interfaces();
 
 	secrets_init();
+
+        /* Get list of domains we look up requests for.  This includes the
+           domain which we are a member of as well as any trusted
+           domains. */ 
+
+        get_domain_info();
 
 	ZERO_STRUCT(server_state);
 

@@ -33,15 +33,13 @@
        - manage re-entrancy for when winbindd becomes able to handle
          multiple outstanding rpc requests
   
-   We can also throw away the CLI_POLICY_HND stuff as all this information
-   will be stored within this module.
-  
    Why not have connection management as part of the rpc layer like tng?
    Good question.  This code may morph into libsmb/rpc_cache.c or something
    like that but at the moment it's simply staying as part of winbind.  I
    think the TNG architecture of forcing every user of the rpc layer to use
    the connection caching system is a bad idea.  It should be an optional
-   method of using the routines.
+   method of using the routines.  We actually cache policy handles - tng
+   caches connections to pipes.
 
    The TNG design is quite good but I disagree with some aspects of the
    implementation. -tpot
@@ -55,7 +53,13 @@
        moved down into another function.
 
      - There needs to be a utility function in libsmb/namequery.c that does
-       get_any_dc_name() 
+       cm_get_dc_name() 
+
+     - When closing down sam handles we need to close down user, group and
+       domain handles.
+
+     - Take care when destroying cli_structs as they can be shared between
+       various sam handles.
 
  */
 
@@ -63,13 +67,25 @@
 
 /* We store lists of connections here */
 
+enum sam_pipe_type {
+        SAM_PIPE_BASIC,         /* A basic handle */
+        SAM_PIPE_DOM,           /* A domain handle */
+        SAM_PIPE_USER,          /* A handle on a user */
+        SAM_PIPE_GROUP          /* A handle on a group */
+};
+
 struct winbindd_cm_conn {
         struct winbindd_cm_conn *prev, *next;
         fstring domain;
         fstring controller;
         fstring pipe_name;
-        struct cli_state cli;
+        struct cli_state *cli;
         POLICY_HND pol;
+
+        /* Specific pipe stuff - move into a union? */
+
+        enum sam_pipe_type sam_pipe_type; /* Domain, user, group etc  */
+        uint32 user_rid;
 };
 
 /* Global list of connections.  Initially a DLIST but can become a hash
@@ -122,19 +138,17 @@ static BOOL cm_open_connection(char *domain, char *pipe_name,
         BOOL result = False;
         struct ntuser_creds creds;
 
-        ZERO_STRUCT(new_conn->cli);
-
         fstrcpy(new_conn->domain, domain);
         fstrcpy(new_conn->pipe_name, pipe_name);
         
         /* Look for a domain controller for this domain */
 
-        if (!cm_get_dc_name(lp_workgroup(), new_conn->controller))
+        if (!cm_get_dc_name(domain, new_conn->controller))
                 goto done;
 
         /* Initialise SMB connection */
 
-        if (!cli_initialise(&new_conn->cli))
+        if (!(new_conn->cli = cli_initialise(NULL)))
                 goto done;
 
 	if (!resolve_srv_name(new_conn->controller, dest_host, &dest_ip))
@@ -147,21 +161,21 @@ static BOOL cm_open_connection(char *domain, char *pipe_name,
 	ZERO_STRUCT(creds);
 	creds.pwd.null_pwd = 1;
 
-	cli_init_creds(&new_conn->cli, &creds);
+	cli_init_creds(new_conn->cli, &creds);
 
-	if (!cli_establish_connection(&new_conn->cli, new_conn->controller, 
+	if (!cli_establish_connection(new_conn->cli, new_conn->controller, 
                                       &dest_ip, &calling, &called, "IPC$", 
                                       "IPC", False, True))
 		goto done;
 
-	if (!cli_nt_session_open (&new_conn->cli, pipe_name))
+	if (!cli_nt_session_open (new_conn->cli, pipe_name))
 		goto done;
 
         result = True;
 
  done:
-        if (!result)
-                cli_shutdown(&new_conn->cli);
+        if (!result && new_conn->cli)
+                cli_shutdown(new_conn->cli);
 
         return result;
 }
@@ -189,13 +203,15 @@ CLI_POLICY_HND *cm_get_lsa_handle(char *domain)
               malloc(sizeof(struct winbindd_cm_conn))))
                 return NULL;
 
+        ZERO_STRUCTP(conn);
+
         if (!cm_open_connection(domain, PIPE_LSARPC, conn)) {
                 DEBUG(3, ("Could not connect to a dc for domain %s\n",
                           domain));
                 return NULL;
         }
 
-        result = cli_lsa_open_policy(&conn->cli, conn->cli.mem_ctx, False, 
+        result = cli_lsa_open_policy(conn->cli, conn->cli->mem_ctx, False, 
                                      des_access, &conn->pol);
 
         if (!NT_STATUS_IS_OK(result))
@@ -207,7 +223,7 @@ CLI_POLICY_HND *cm_get_lsa_handle(char *domain)
 
  ok:
         hnd.pol = conn->pol;
-        hnd.cli = &conn->cli;
+        hnd.cli = conn->cli;
 
         return &hnd;
 }
@@ -216,24 +232,184 @@ CLI_POLICY_HND *cm_get_lsa_handle(char *domain)
 
 CLI_POLICY_HND *cm_get_sam_handle(char *domain)
 { 
-        DEBUG(0, ("get_sam_handle(): not implemented\n"));
-        return NULL;
+        struct winbindd_cm_conn *conn;
+        uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+        NTSTATUS result;
+        static CLI_POLICY_HND hnd;
+
+        /* Look for existing connections */
+
+        for (conn = cm_conns; conn; conn = conn->next) {
+                if (strequal(conn->domain, domain) &&
+                    strequal(conn->pipe_name, PIPE_SAMR) &&
+                    conn->sam_pipe_type == SAM_PIPE_BASIC)
+                        goto ok;
+        }
+
+        /* Create a new one */
+
+        if (!(conn = (struct winbindd_cm_conn *)
+              malloc(sizeof(struct winbindd_cm_conn))))
+                return NULL;
+
+        ZERO_STRUCTP(conn);
+
+        if (!cm_open_connection(domain, PIPE_SAMR, conn)) {
+                DEBUG(3, ("Could not connect to a dc for domain %s\n",
+                          domain));
+                return NULL;
+        }
+
+        result = cli_samr_connect(conn->cli, conn->cli->mem_ctx, des_access, 
+                                  &conn->pol);
+
+        if (!NT_STATUS_IS_OK(result))
+                return NULL;
+
+        /* Add to list */
+
+        DLIST_ADD(cm_conns, conn);
+
+ ok:
+        hnd.pol = conn->pol;
+        hnd.cli = conn->cli;
+
+        return &hnd;        
 }
 
 /* Return a SAM domain policy handle on a domain */
 
-CLI_POLICY_HND *cm_get_sam_dom_handle(char *domain)
+CLI_POLICY_HND *cm_get_sam_dom_handle(char *domain, DOM_SID *domain_sid)
 {
-        DEBUG(0, ("get_sam_dom_handle(): not implemented\n"));
-        return NULL;
+        struct winbindd_cm_conn *conn, *basic_conn = NULL;
+        static CLI_POLICY_HND hnd;
+        NTSTATUS result;
+        uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+
+        /* Look for existing connections */
+
+        for (conn = cm_conns; conn; conn = conn->next) {
+                if (strequal(conn->domain, domain) &&
+                    strequal(conn->pipe_name, PIPE_SAMR) &&
+                    conn->sam_pipe_type == SAM_PIPE_DOM)
+                        goto ok;
+        }
+
+        /* Create a basic handle to open a domain handle from */
+
+        if (!cm_get_sam_handle(domain))
+                return False;
+
+        for (conn = cm_conns; conn; conn = conn->next) {
+                if (strequal(conn->domain, domain) &&
+                    strequal(conn->pipe_name, PIPE_SAMR) &&
+                    conn->sam_pipe_type == SAM_PIPE_BASIC)
+                        basic_conn = conn;
+        }
+        
+        if (!basic_conn) {
+                DEBUG(0, ("No basic sam handle was created!\n"));
+                return NULL;
+
+                }
+        if (!(conn = (struct winbindd_cm_conn *)
+              malloc(sizeof(struct winbindd_cm_conn))))
+                return NULL;
+        
+        ZERO_STRUCTP(conn);
+
+        fstrcpy(conn->domain, basic_conn->domain);
+        fstrcpy(conn->controller, basic_conn->controller);
+        fstrcpy(conn->pipe_name, basic_conn->pipe_name);
+
+        conn->sam_pipe_type = SAM_PIPE_DOM;
+        conn->cli = basic_conn->cli;
+
+        result = cli_samr_open_domain(conn->cli, conn->cli->mem_ctx,
+                                      &basic_conn->pol, des_access, 
+                                      domain_sid, &conn->pol);
+
+        if (!NT_STATUS_IS_OK(result))
+                return NULL;
+
+        /* Add to list */
+
+        DLIST_ADD(cm_conns, conn);
+
+ ok:
+        hnd.pol = conn->pol;
+        hnd.cli = conn->cli;
+
+        return &hnd;
 }
 
 /* Return a SAM policy handle on a domain user */
 
-CLI_POLICY_HND *cm_get_sam_user_handle(char *domain, char *user)
+CLI_POLICY_HND *cm_get_sam_user_handle(char *domain, DOM_SID *domain_sid,
+                                       uint32 user_rid)
 {
-        DEBUG(0, ("get_sam_user_handle(): not implemented\n"));
-        return NULL;
+        struct winbindd_cm_conn *conn, *basic_conn = NULL;
+        static CLI_POLICY_HND hnd;
+        NTSTATUS result;
+        uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+
+        /* Look for existing connections */
+
+        for (conn = cm_conns; conn; conn = conn->next) {
+                if (strequal(conn->domain, domain) &&
+                    strequal(conn->pipe_name, PIPE_SAMR) &&
+                    conn->sam_pipe_type == SAM_PIPE_USER &&
+                    conn->user_rid == user_rid)
+                        goto ok;
+        }
+
+        /* Create a domain handle to open a user handle from */
+
+        if (!cm_get_sam_dom_handle(domain, domain_sid))
+                return NULL;
+
+        for (conn = cm_conns; conn; conn = conn->next) {
+                if (strequal(conn->domain, domain) &&
+                    strequal(conn->pipe_name, PIPE_SAMR) &&
+                    conn->sam_pipe_type == SAM_PIPE_DOM)
+                        basic_conn = conn;
+        }
+        
+        if (!basic_conn) {
+                DEBUG(0, ("No domain sam handle was created!\n"));
+                return NULL;
+        }
+
+        if (!(conn = (struct winbindd_cm_conn *)
+              malloc(sizeof(struct winbindd_cm_conn))))
+                return NULL;
+        
+        ZERO_STRUCTP(conn);
+
+        fstrcpy(conn->domain, basic_conn->domain);
+        fstrcpy(conn->controller, basic_conn->controller);
+        fstrcpy(conn->pipe_name, basic_conn->pipe_name);
+        
+        conn->sam_pipe_type = SAM_PIPE_USER;
+        conn->cli = basic_conn->cli;
+        conn->user_rid = user_rid;
+
+        result = cli_samr_open_user(conn->cli, conn->cli->mem_ctx,
+                                    &basic_conn->pol, des_access, user_rid,
+                                    &conn->pol);
+
+        if (!NT_STATUS_IS_OK(result))
+                return NULL;
+
+        /* Add to list */
+
+        DLIST_ADD(cm_conns, conn);
+
+ ok:
+        hnd.pol = conn->pol;
+        hnd.cli = conn->cli;
+
+        return &hnd;
 }
 
 /* Return a SAM policy handle on a domain group */
