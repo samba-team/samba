@@ -2942,11 +2942,7 @@ static BOOL run_rename(int dummy)
 	cli_unlink(&cli1, fname);
 	cli_unlink(&cli1, fname1);
 
-#if 0
-	fnum1 = cli_nt_create_full(&cli1, fname,FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL,
-#else
 	fnum1 = cli_nt_create_full(&cli1, fname,READ_CONTROL_ACCESS, FILE_ATTRIBUTE_NORMAL,
-#endif
 				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
 
 	if (fnum1 == -1) {
@@ -2955,7 +2951,7 @@ static BOOL run_rename(int dummy)
 	}
 
 
-#if 1
+#if 0
   {
   int fnum2;
 
