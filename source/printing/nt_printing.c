@@ -1711,6 +1711,9 @@ uint32 del_a_printer(char *sharename)
 	return 0;
 }
 
+/* FIXME!!!  Reorder so this forward declaration is not necessary --jerry */
+static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **, fstring);
+static void free_nt_printer_info_level_2(NT_PRINTER_INFO_LEVEL_2 **);
 /****************************************************************************
 ****************************************************************************/
 static uint32 update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
@@ -1775,6 +1778,7 @@ static uint32 update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 			info->parameters);
 
 	len += pack_devicemode(info->devmode, buf+len, buflen-len);
+	
 	len += pack_specifics(info->specific, buf+len, buflen-len);
 
 	if (buflen != len) {
@@ -1955,8 +1959,7 @@ NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
 	nt_devmode->panningwidth     = 0;
 	nt_devmode->panningheight    = 0;
 	
-	nt_devmode->private=NULL;
-
+	nt_devmode->private = NULL;
 	return nt_devmode;
 }
 
@@ -2088,7 +2091,7 @@ static int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
 	
 	if (devmode.private) {
 		/* the len in tdb_unpack is an int value and
-		 * devmoce.driverextra is only a short
+		 * devmode.driverextra is only a short
 		 */
 		len += tdb_unpack(buf+len, buflen-len, "B", &extra_len, &devmode.private);
 		devmode.driverextra=(uint16)extra_len;
@@ -2176,8 +2179,18 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	info.default_priority = 1;
 	info.setuptime = (uint32)time(NULL);
 
+#if 1 /* JRA - NO NOT CHANGE ! */
+	info.devmode = NULL;
+#else
+	/*
+	 * We should not return a default devicemode, as this causes
+	 * Win2K to not send the correct one on PCL drivers. It needs to
+	 * see a null devicemode so it can then overwrite the devicemode
+	 * on OpenPrinterEx. Yes this *is* insane :-). JRA.
+	 */
 	if ((info.devmode = construct_nt_devicemode(info.printername)) == NULL)
 		goto fail;
+#endif
 
 	if (!nt_printing_getsec(sharename, &info.secdesc_buf))
 		goto fail;
@@ -2399,9 +2412,13 @@ uint32 add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 			NTTIME time_nt;
 			time_t time_unix = time(NULL);
 			unix_to_nt_time(&time_nt, time_unix);
-			printer.info_2->changeid=time_nt.low;
+			if (printer.info_2->changeid==time_nt.low)
+				printer.info_2->changeid++;
+			else
+				printer.info_2->changeid=time_nt.low;
 
 			printer.info_2->c_setprinter++;
+
 			result=update_a_printer_2(printer.info_2);
 			break;
 		}
@@ -3123,5 +3140,69 @@ BOOL print_time_access_check(int snum)
 	return ok;
 }
 
+/****************************************************************************
+ Attempt to write a default device.
+*****************************************************************************/
+
+uint32 printer_write_default_dev(int snum, const PRINTER_DEFAULT *printer_default)
+{
+	NT_PRINTER_INFO_LEVEL *printer = NULL;
+
+	uint32 result = 0;
+
+	/*
+	 * Don't bother if no default devicemode was sent.
+	 */
+
+	if (printer_default->devmode_cont.devmode == NULL)
+		return 0;
+
+	if (get_a_printer(&printer, 2, lp_servicename(snum))!=0)
+		return ERROR_ACCESS_DENIED;
+
+	/*
+	 * Just ignore it if we already have a devmode.
+	 */
+
+	if (printer->info_2->devmode != NULL)
+		goto done;
+
+	/*
+	 * We don't have a devicemode and we're trying to write
+	 * one. Check we have the access needed.
+	 */
+
+	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
+		DEBUG(5,("printer_write_default_dev: Access denied for printer %s\n",
+			lp_servicename(snum) ));
+		result = ERROR_ACCESS_DENIED;
+		goto done;
+	}
+
+	/*
+	 * Convert the on the wire devicemode format to the internal one.
+	 */
+
+	if (!convert_devicemode(printer->info_2->printername,
+				printer_default->devmode_cont.devmode,
+				&printer->info_2->devmode)) {
+		result = ERROR_NOT_ENOUGH_MEMORY;
+		goto done;
+	}
+
+	/*
+	 * Finally write back to the tdb.
+	 */
+
+	if (add_a_printer(*printer, 2)!=0) {
+		result = ERROR_ACCESS_DENIED;
+		goto done;
+	}
+
+  done:
+
+	free_a_printer(&printer, 2);
+	return result;
+}
 
 #undef OLD_NTDOMAIN

@@ -12,6 +12,27 @@
 
 /* a tdb tool for manipulating a tdb database */
 
+#define FSTRING_LEN 128
+typedef char fstring[FSTRING_LEN];
+
+typedef struct connections_key {
+	pid_t pid;
+	int cnum;
+	fstring name;
+} connections_key;
+
+typedef struct connections_data {
+	int magic;
+	pid_t pid;
+	int cnum;
+	uid_t uid;
+	gid_t gid;
+	char name[24];
+	char addr[24];
+	char machine[128];
+	time_t start;
+} connections_data;
+
 static TDB_CONTEXT *tdb;
 
 static int print_rec(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state);
@@ -180,13 +201,41 @@ static void delete_tdb(void)
 	}
 }
 
+static int print_conn_key(TDB_DATA key)
+{
+	printf( "pid    =%5d   ", ((connections_key*)key.dptr)->pid);
+	printf( "cnum   =%10d  ", ((connections_key*)key.dptr)->cnum);
+	printf( "name   =[%s]\n", ((connections_key*)key.dptr)->name);
+	return 0;
+}
+
+static int print_conn_data(TDB_DATA dbuf)
+{
+	printf( "pid    =%5d   ", ((connections_data*)dbuf.dptr)->pid);
+	printf( "cnum   =%10d  ", ((connections_data*)dbuf.dptr)->cnum);
+	printf( "name   =[%s]\n", ((connections_data*)dbuf.dptr)->name);
+	
+	printf( "uid    =%5d   ",  ((connections_data*)dbuf.dptr)->uid);
+	printf( "addr   =[%s]\n", ((connections_data*)dbuf.dptr)->addr);
+	printf( "gid    =%5d   ",  ((connections_data*)dbuf.dptr)->gid);
+	printf( "machine=[%s]\n", ((connections_data*)dbuf.dptr)->machine);
+	printf( "start  = %s\n",   ctime(&((connections_data*)dbuf.dptr)->start));
+	return 0;
+}
+
 static int print_rec(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
+#if 0
+	print_conn_key(key);
+	print_conn_data(dbuf);
+	return 0;
+#else
 	printf("\nkey %d bytes\n", key.dsize);
 	print_data(key.dptr, key.dsize);
 	printf("data %d bytes\n", dbuf.dsize);
 	print_data(dbuf.dptr, dbuf.dsize);
 	return 0;
+#endif
 }
 
 static int total_bytes;
@@ -240,13 +289,16 @@ static void next_record(TDB_CONTEXT *tdb, TDB_DATA *pkey)
 	*pkey = tdb_nextkey(tdb, *pkey);
 	
 	dbuf = tdb_fetch(tdb, *pkey);
-	if (!dbuf.dptr) terror("fetch failed");
-	/* printf("%s : %*.*s\n", k, (int)dbuf.dsize, (int)dbuf.dsize, dbuf.dptr); */
-	print_rec(tdb, *pkey, dbuf, NULL);
+	if (!dbuf.dptr) 
+		terror("fetch failed");
+	else
+		/* printf("%s : %*.*s\n", k, (int)dbuf.dsize, (int)dbuf.dsize, dbuf.dptr); */
+		print_rec(tdb, *pkey, dbuf, NULL);
 }
 
 int main(int argc, char *argv[])
 {
+    int bIterate = 0;
     char *line;
     char *tok;
 	TDB_DATA iterate_kbuf;
@@ -268,9 +320,12 @@ int main(int argc, char *argv[])
         }
         
         if ((tok = strtok(line," "))==NULL) {
-            continue;
+           if (bIterate)
+              next_record(tdb, &iterate_kbuf);
+           continue;
         }
         if (strcmp(tok,"create") == 0) {
+            bIterate = 0;
             create_tdb();
             continue;
         } else if (strcmp(tok,"open") == 0) {
@@ -280,31 +335,39 @@ int main(int argc, char *argv[])
             
         /* all the rest require a open database */
         if (!tdb) {
+            bIterate = 0;
             terror("database not open");
             help();
             continue;
         }
             
         if (strcmp(tok,"insert") == 0) {
+            bIterate = 0;
             insert_tdb();
         } else if (strcmp(tok,"store") == 0) {
+            bIterate = 0;
             store_tdb();
         } else if (strcmp(tok,"show") == 0) {
+            bIterate = 0;
             show_tdb();
         } else if (strcmp(tok,"erase") == 0) {
+            bIterate = 0;
             tdb_traverse(tdb, do_delete_fn, NULL);
         } else if (strcmp(tok,"delete") == 0) {
+            bIterate = 0;
             delete_tdb();
         } else if (strcmp(tok,"dump") == 0) {
+            bIterate = 0;
             tdb_traverse(tdb, print_rec, NULL);
         } else if (strcmp(tok,"info") == 0) {
             info_tdb();
-		} else if (strcmp(tok, "free") == 0) {
-			tdb_printfreelist(tdb);
-		} else if (strcmp(tok, "first") == 0) {
-			first_record(tdb, &iterate_kbuf);
-		} else if (strcmp(tok, "next") == 0) {
-			next_record(tdb, &iterate_kbuf);
+        } else if (strcmp(tok, "free") == 0) {
+            tdb_printfreelist(tdb);
+        } else if (strcmp(tok, "first") == 0) {
+            bIterate = 1;
+            first_record(tdb, &iterate_kbuf);
+        } else if (strcmp(tok, "next") == 0) {
+            next_record(tdb, &iterate_kbuf);
         } else {
             help();
         }

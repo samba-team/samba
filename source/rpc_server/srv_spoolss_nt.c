@@ -669,10 +669,8 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 				 POLICY_HND *handle)
 {
 	uint32 result = NT_STATUS_NO_PROBLEMO;
-	SEC_DESC_BUF *sec_desc = NULL;
-	uint32 acc_granted, status;
 	fstring name;
-	extern struct current_user current_user;
+	int snum;
 	
 	if (printername == NULL) {
 		result = ERROR_INVALID_PRINTER_NAME;
@@ -729,29 +727,38 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 	}
 
 	/* NT doesn't let us connect to a printer if the connecting user
-	   doesn't have print permission.  If no security descriptor just
-	   return OK. */
+	   doesn't have print permission.  */
 
-	if (!nt_printing_getsec(name, &sec_desc)) {
-		goto done;
-	}
-	
-	/* Yuck - we should use the pipe_user rather than current_user but
-	   it doesn't seem to be filled in correctly. )-: */
+	if (!handle_is_printserver(handle)) {
 
-	map_printer_permissions(sec_desc->sec);
+		if (!get_printer_snum(handle, &snum))
+			return ERROR_INVALID_HANDLE;
 
-	if (!se_access_check(sec_desc->sec, &current_user, PRINTER_ACCESS_USE,
-			     &acc_granted, &status)) {
-		DEBUG(3, ("access DENIED for printer open\n"));
-		close_printer_handle(handle);
-		result = ERROR_ACCESS_DENIED;
-		goto done;
+		if (!print_access_check(NULL, snum, PRINTER_ACCESS_USE)) {
+			DEBUG(3, ("access DENIED for printer open\n"));
+			close_printer_handle(handle);
+			result = ERROR_ACCESS_DENIED;
+			goto done;
+		}
+
+		/*
+		 * If we have a default device pointer in the
+		 * printer_default struct, then we need to get
+		 * the printer info from the tdb and if there is
+	 	 * no default devicemode there then we do a *SET*
+		 * here ! This is insanity.... JRA.
+		 */
+
+		if (printer_default->devmode_cont.devmode != NULL) {
+			result = printer_write_default_dev( snum, printer_default);
+			if (result != 0) {
+				close_printer_handle(handle);
+				goto done;
+			}
+		}
 	}
 
  done:
-	free_sec_desc_buf(&sec_desc);
-
 	return result;
 }
 
@@ -790,15 +797,26 @@ static BOOL convert_printer_driver_info(const SPOOL_PRINTER_DRIVER_INFO_LEVEL *u
 	return True;
 }
 
-static BOOL convert_devicemode(const DEVICEMODE *devmode, NT_DEVICEMODE *nt_devmode)
+BOOL convert_devicemode(char *printername, const DEVICEMODE *devmode,
+				NT_DEVICEMODE **pp_nt_devmode)
 {
+	NT_DEVICEMODE *nt_devmode = *pp_nt_devmode;
+
+	/*
+	 * Ensure nt_devmode is a valid pointer
+	 * as we will be overwriting it.
+	 */
+		
+	if (nt_devmode == NULL)
+		if ((nt_devmode = construct_nt_devicemode(printername)) == NULL)
+			return False;
+
 	unistr_to_dos(nt_devmode->devicename, (const char *)devmode->devicename.buffer, 31);
 	unistr_to_dos(nt_devmode->formname, (const char *)devmode->formname.buffer, 31);
 
 	nt_devmode->specversion=devmode->specversion;
 	nt_devmode->driverversion=devmode->driverversion;
 	nt_devmode->size=devmode->size;
-	nt_devmode->driverextra=devmode->driverextra;
 	nt_devmode->fields=devmode->fields;
 	nt_devmode->orientation=devmode->orientation;
 	nt_devmode->papersize=devmode->papersize;
@@ -829,16 +847,20 @@ static BOOL convert_devicemode(const DEVICEMODE *devmode, NT_DEVICEMODE *nt_devm
 	nt_devmode->panningwidth=devmode->panningwidth;
 	nt_devmode->panningheight=devmode->panningheight;
 
-	safe_free(nt_devmode->private);
-	if (nt_devmode->driverextra != 0) {
-		/* if we had a previous private delete it and make a new one */
+	/*
+	 * Only change private and driverextra if the incoming devmode
+	 * has a new one. JRA.
+	 */
+
+	if ((devmode->driverextra != 0) && (devmode->private != NULL)) {
+		safe_free(nt_devmode->private);
+		nt_devmode->driverextra=devmode->driverextra;
 		if((nt_devmode->private=(uint8 *)malloc(nt_devmode->driverextra * sizeof(uint8))) == NULL)
 			return False;
 		memcpy(nt_devmode->private, devmode->private, nt_devmode->driverextra);
 	}
-	else {
-		nt_devmode->private = NULL;
-	}
+
+	*pp_nt_devmode = nt_devmode;
 
 	return True;
 }
@@ -924,7 +946,7 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 *type, uint8 **d
 		return True;
 	}
 
-	if (!strcmp(value, "DefaultSpoolDirectory")) {
+   if (!strcmp(value, "DefaultSpoolDirectory")) {
 		pstring string="You are using a Samba server";
 		*type = 0x1;			
 		*needed = 2*(strlen(string)+1);		
@@ -1054,7 +1076,7 @@ uint32 _spoolss_getprinterdata(POLICY_HND *handle, UNISTR2 *valuename,
 	if (handle_is_printserver(handle))
 		found=getprinterdata_printer_server(value, type, data, needed, *out_size);
 	else
-		found=getprinterdata_printer(handle, value, type, data, needed, *out_size);
+		found= getprinterdata_printer(handle, value, type, data, needed, *out_size);
 
 	if (found==False) {
 		DEBUG(5, ("value not found, allocating %d\n", *out_size));
@@ -1072,8 +1094,9 @@ uint32 _spoolss_getprinterdata(POLICY_HND *handle, UNISTR2 *valuename,
 	
 	if (*needed > *out_size)
 		return ERROR_MORE_DATA;
-	else
+	else {
 		return NT_STATUS_NO_PROBLEMO;
+    }
 }
 
 /***************************************************************************
@@ -2308,11 +2331,11 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum)
 	printer->unknown13 = 0x0;
 	printer->unknown14 = 0x1;
 	printer->unknown15 = 0x024a;		/* 586 Pentium ? */
-	printer->unknown16 = 0x0;
+	printer->unknown16 =  0x0;
 	printer->change_id = ntprinter->info_2->changeid; /* ChangeID in milliseconds*/
-	printer->unknown18 = 0x0;
+	printer->unknown18 =  0x0;
 	printer->status = nt_printq_status(status.status);
-	printer->unknown20 = 0x0;
+	printer->unknown20 =  0x0;
 	printer->c_setprinter = ntprinter->info_2->c_setprinter; /* how many times setprinter has been called */
 	printer->unknown22 = 0x0;
 	printer->unknown23 = 0x6; 		/* 6  ???*/
@@ -3688,7 +3711,7 @@ uint32 _spoolss_enddocprinter(POLICY_HND *handle)
 	}
 	
 	Printer->document_started=False;
-	print_job_end(Printer->jobid);
+	print_job_end(Printer->jobid,True);
 	/* error codes unhandled so far ... */
 
 	return 0x0;
@@ -4239,21 +4262,12 @@ static uint32 update_printer(POLICY_HND *handle, uint32 level,
 		/* we have a valid devmode
 		   convert it and link it*/
 
-		/*
-		 * Ensure printer->info_2->devmode is a valid pointer
-		 * as we will be overwriting it in convert_devicemode().
-		 */
-		
-		if (printer->info_2->devmode == NULL)
-			printer->info_2->devmode = construct_nt_devicemode(printer->info_2->printername);
-
 		DEBUGADD(8,("Converting the devicemode struct\n"));
-		convert_devicemode(devmode, printer->info_2->devmode);
-
-	} else {
-		if (printer->info_2->devmode != NULL)
-			free_nt_devicemode(&printer->info_2->devmode);
-		printer->info_2->devmode=NULL;
+		if (!convert_devicemode(printer->info_2->printername, devmode,
+				&printer->info_2->devmode)) {
+			result =  ERROR_NOT_ENOUGH_MEMORY;
+			goto done;
+		}
 	}
 
 	/* Do sanity check on the requested changes for Samba */
@@ -5682,10 +5696,10 @@ uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 
 	convert_specific_param(&param, value , type, data, real_len);
 
-	/* Check if we are making any changes or not.  Return true if
+    /* Check if we are making any changes or not.  Return true if
 	   nothing is actually changing. */
-
-	ZERO_STRUCT(old_param);
+	
+    ZERO_STRUCT(old_param);
 
 	if (get_specific_param(*printer, 2, param->value, &old_param.data,
 			       &old_param.type, (unsigned int *)&old_param.data_len)) {

@@ -651,6 +651,11 @@ static void usage(char *pname)
 	BlockSignals(True,SIGUSR2);
 #endif
 
+	/* POSIX demands that signals are inherited. If the invoking process has
+	 * these signals masked, we will have problems, as we won't recieve them. */
+	BlockSignals(False, SIGHUP);
+	BlockSignals(False, SIGUSR1);
+
 	/* we want total control over the permissions on created files,
 	   so set our umask to 0 */
 	umask(0);
