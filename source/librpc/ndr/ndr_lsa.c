@@ -234,7 +234,8 @@ static NTSTATUS ndr_pull_lsa_SidArray(struct ndr_pull *ndr, int ndr_flags, struc
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->sids) {
-		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)&r->sids, sizeof(r->sids[0]), r->num_sids, (ndr_pull_flags_fn_t)ndr_pull_lsa_SidPtr));
+		NDR_ALLOC_N_SIZE(ndr, r->sids, r->num_sids, sizeof(r->sids[0]));
+		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)r->sids, sizeof(r->sids[0]), r->num_sids, (ndr_pull_flags_fn_t)ndr_pull_lsa_SidPtr));
 	}
 done:
 	return NT_STATUS_OK;
@@ -348,7 +349,8 @@ static NTSTATUS ndr_pull_lsa_TransNameArray(struct ndr_pull *ndr, int ndr_flags,
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->names) {
-		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)&r->names, sizeof(r->names[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_TranslatedName));
+		NDR_ALLOC_N_SIZE(ndr, r->names, r->count, sizeof(r->names[0]));
+		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)r->names, sizeof(r->names[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_TranslatedName));
 	}
 done:
 	return NT_STATUS_OK;
@@ -420,7 +422,8 @@ static NTSTATUS ndr_pull_lsa_RefDomainList(struct ndr_pull *ndr, int ndr_flags, 
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->domains) {
-		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)&r->domains, sizeof(r->domains[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_TrustInformation));
+		NDR_ALLOC_N_SIZE(ndr, r->domains, r->count, sizeof(r->domains[0]));
+		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)r->domains, sizeof(r->domains[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_TrustInformation));
 	}
 done:
 	return NT_STATUS_OK;
@@ -509,7 +512,8 @@ static NTSTATUS ndr_pull_lsa_TransSidArray(struct ndr_pull *ndr, int ndr_flags, 
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->sids) {
-		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)&r->sids, sizeof(r->sids[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_TranslatedSid));
+		NDR_ALLOC_N_SIZE(ndr, r->sids, r->count, sizeof(r->sids[0]));
+		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)r->sids, sizeof(r->sids[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_TranslatedSid));
 	}
 done:
 	return NT_STATUS_OK;
