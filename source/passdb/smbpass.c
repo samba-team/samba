@@ -325,7 +325,16 @@ BOOL get_smbpwd_entries(struct smb_passwd *pw_buf,
 		}
 		else
 		{
-			acct_ctrl = ACB_NORMAL;
+			int len = strlen(user_name);
+			if (len != 0 && user_name[len-1] == '$')
+			{
+				/* oops - have to assume that it's a workstation trust account */
+				acct_ctrl = ACB_WSTRUST;
+			}
+			else
+			{
+				acct_ctrl = ACB_NORMAL;
+			}
 		}
 		
 		pw_buf[(*num_entries)].acct_ctrl = (uint16)acct_ctrl;
@@ -373,6 +382,7 @@ struct smb_passwd *get_smbpwd_entry(char *name, int smb_userid)
 	int             lockfd;
 	char           *pfile = lp_smb_passwd_file();
 	unsigned long   acct_ctrl;
+	int len_user_name;
 
 	if (!*pfile) {
 		DEBUG(0, ("No SMB password file set\n"));
@@ -564,7 +574,16 @@ struct smb_passwd *get_smbpwd_entry(char *name, int smb_userid)
 		fstrcpy(pw_buf.smb_name, user_name);
 		pw_buf.smb_userid    = uidval;
 		pw_buf.smb_nt_passwd = NULL;
-		pw_buf.acct_ctrl     = ACB_NORMAL;
+		len_user_name = strlen(user_name);
+		if (len_user_name != 0 && user_name[len_user_name-1] == '$')
+		{
+			/* oops - have to assume that it's a workstation trust account */
+			pw_buf.acct_ctrl = ACB_WSTRUST;
+		}
+		else
+		{
+			pw_buf.acct_ctrl = ACB_NORMAL;
+		}
 
 		/* Now check if the NT compatible password is available. */
 		p += 33; /* Move to the first character of the line after

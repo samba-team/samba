@@ -388,7 +388,7 @@ struct nt_client_info
 	DOM_CRED rtn_cred;
 
 	DOM_ID_INFO_1 id1;
-	USER_INFO_3 user_info3;
+	LSA_USER_INFO_3 user_info3;
 
 	/************** \PIPE\lsarpc stuff ********************/
 

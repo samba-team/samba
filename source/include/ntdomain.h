@@ -453,8 +453,8 @@ typedef struct logon_hours_info
 #define LSA_MAX_GROUPS 32
 #define LSA_MAX_SIDS 32
 
-/* USER_INFO_15 */
-typedef struct user_info_15
+/* SAM_USER_INFO_15 */
+typedef struct sam_user_info_15
 {
 	NTTIME logon_time;            /* logon time */
 	NTTIME logoff_time;           /* logoff time */
@@ -515,11 +515,11 @@ typedef struct user_info_15
 
 	LOGON_HRS logon_hrs;
 
-} USER_INFO_15;
+} SAM_USER_INFO_15;
 
 
-/* USER_INFO_11 */
-typedef struct user_info_11
+/* SAM_USER_INFO_11 */
+typedef struct sam_user_info_11
 {
 	uint8  padding_0[16];  /* 0 - padding 16 bytes */
 	NTTIME expiry;         /* expiry time or something? */
@@ -554,18 +554,18 @@ typedef struct user_info_11
 
 	uint8  padding_9[48];  /* 0 - padding 48 bytes */
 
-} USER_INFO_11;
+} SAM_USER_INFO_11;
 
 
-/* USER_INFO_10 */
-typedef struct user_info_10
+/* SAM_USER_INFO_10 */
+typedef struct sam_user_info_10
 {
 	uint32 rid_group;
 
-} USER_INFO_10;
+} SAM_USER_INFO_10;
 
-/* USER_INFO_3 */
-typedef struct user_info_3
+/* LSA_USER_INFO_3 */
+typedef struct lsa_user_info_3
 {
 	uint32 ptr_user_info;
 
@@ -619,7 +619,7 @@ typedef struct user_info_3
 	DOM_SID2 dom_sid;           /* domain SID */
 	DOM_SID2 other_sids[LSA_MAX_SIDS]; /* undocumented - domain SIDs */
 
-} USER_INFO_3;
+} LSA_USER_INFO_3;
 
 
 /* RPC_IFACE */
@@ -1128,7 +1128,7 @@ typedef struct net_r_sam_logon_info
     DOM_CRED srv_creds; /* server credentials.  server time stamp appears to be ignored. */
     
 	uint16 switch_value; /* 3 - indicates type of USER INFO */
-    USER_INFO_3 *user;
+    LSA_USER_INFO_3 *user;
 
     uint32 auth_resp; /* 1 - Authoritative response; 0 - Non-Auth? */
 
@@ -1666,9 +1666,9 @@ typedef struct r_samr_query_user_info
 
 	union
 	{
-		USER_INFO_10 *id10; /* auth-level 10 */
-		USER_INFO_11 *id11; /* auth-level 11 */
-		USER_INFO_15 *id15; /* auth-level 15 */
+		SAM_USER_INFO_10 *id10; /* auth-level 10 */
+		SAM_USER_INFO_11 *id11; /* auth-level 11 */
+		SAM_USER_INFO_15 *id15; /* auth-level 15 */
 		void* id; /* to make typecasting easy */
 
 	} info;

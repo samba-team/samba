@@ -150,9 +150,9 @@ static void display_group_info(uint32 num_gids, DOM_GID *gid)
 
 
 /****************************************************************************
- display user_info_15 structure
+ display sam_user_info_15 structure
  ****************************************************************************/
-static void display_user_info_15(USER_INFO_15 *usr)
+static void display_sam_user_info_15(SAM_USER_INFO_15 *usr)
 {
 	fprintf(out_hnd, "\tUser Info, Level 0x15\n");
 	fprintf(out_hnd, "\t---------------------\n");
@@ -322,7 +322,7 @@ void cmd_sam_query_users(struct client_info *info)
 		while (res && user_idx < info->dom.num_sam_entries)
 		{
 			uint32 user_rid = info->dom.sam[user_idx].smb_userid;
-			USER_INFO_15 usr;
+			SAM_USER_INFO_15 usr;
 
 			fprintf(out_hnd, "User RID: %8x  User Name: %s\n",
 					  user_rid,
@@ -335,7 +335,7 @@ void cmd_sam_query_users(struct client_info *info)
 							&info->dom.samr_pol_open_domain,
 							user_rid, &usr))
 				{
-					display_user_info_15(&usr);
+					display_sam_user_info_15(&usr);
 				}
 			}
 

@@ -956,6 +956,39 @@ void lsa_io_q_lookup_sids(char *desc, BOOL io, LSA_Q_LOOKUP_SIDS *q_s, struct me
 void lsa_io_r_lookup_sids(char *desc, BOOL io, LSA_R_LOOKUP_SIDS *r_s, struct mem_buffer *buf, int *q,  int depth);
 void lsa_io_q_lookup_rids(char *desc, BOOL io, LSA_Q_LOOKUP_RIDS *q_r, struct mem_buffer *buf, int *q,  int depth);
 void lsa_io_r_lookup_rids(char *desc, BOOL io, LSA_R_LOOKUP_RIDS *r_r, struct mem_buffer *buf, int *q,  int depth);
+void make_lsa_user_info3(LSA_USER_INFO_3 *usr,
+
+	NTTIME *logon_time,
+	NTTIME *logoff_time,
+	NTTIME *kickoff_time,
+	NTTIME *pass_last_set_time,
+	NTTIME *pass_can_change_time,
+	NTTIME *pass_must_change_time,
+
+	char *user_name,
+	char *full_name,
+	char *logon_script,
+	char *profile_path,
+	char *home_dir,
+	char *dir_drive,
+
+	uint16 logon_count,
+	uint16 bad_pw_count,
+
+	uint32 user_id,
+	uint32 group_id,
+	uint32 num_groups,
+	DOM_GID *gids,
+	uint32 user_flgs,
+
+	char sess_key[16],
+
+	char *logon_srv,
+	char *logon_dom,
+
+	char *dom_sid,
+	char *other_sids);
+void lsa_io_user_info3(char *desc, BOOL io, LSA_USER_INFO_3 *usr, struct mem_buffer *buf, int *q, int depth);
 
 /*The following definitions come from  rpc_pipes/netparse.c  */
 
@@ -1010,7 +1043,7 @@ void make_nt_login_info(DOM_ID_INFO_1 *id1,
 BOOL do_nt_login(struct cli_state *cli, int t_idx, uint16 fnum,
 				uint8 sess_key[16], DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
 				DOM_ID_INFO_1 *id1, char *dest_host, char *myhostname,
-				USER_INFO_3 *user_info3);
+				LSA_USER_INFO_3 *user_info3);
 BOOL do_nt_logoff(struct cli_state *cli, int t_idx, uint16 fnum,
 				uint8 sess_key[16], DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
 				DOM_ID_INFO_1 *id1, char *dest_host, char *myhostname);
@@ -1048,7 +1081,7 @@ BOOL do_net_sam_logon(struct cli_state *cli, int t_idx, uint16 fnum,
         DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
 		uint16 logon_level, uint16 switch_value,
 		DOM_ID_INFO_1 *id1, uint16 switch_value2,
-		USER_INFO_3 *user_info3,
+		LSA_USER_INFO_3 *user_info3,
 		DOM_CRED *srv_cred);
 BOOL do_net_sam_logoff(struct cli_state *cli, int t_idx, uint16 fnum,
 		uchar sess_key[8], DOM_CRED *sto_clnt_cred,
@@ -1073,7 +1106,7 @@ BOOL get_samr_query_usergroups(struct cli_state *cli, int t_idx, uint16 fnum,
 				POLICY_HND *pol_open_domain, uint32 user_rid,
 				uint32 *num_groups, DOM_GID *gid);
 BOOL get_samr_query_userinfo_15(struct cli_state *cli, int t_idx, uint16 fnum, 
-				POLICY_HND *pol_open_domain, uint32 user_rid, USER_INFO_15 *usr);
+				POLICY_HND *pol_open_domain, uint32 user_rid, SAM_USER_INFO_15 *usr);
 BOOL do_samr_enum_dom_users(struct cli_state *cli, int t_idx, uint16 fnum, 
 				POLICY_HND *pol, uint16 num_entries, uint16 unk_0,
 				uint16 acb_mask, uint16 unk_1, uint32 size,
@@ -1280,6 +1313,46 @@ void samr_io_r_query_usergroups(char *desc, BOOL io, SAMR_R_QUERY_USERGROUPS *r_
 void make_samr_q_query_userinfo(SAMR_Q_QUERY_USERINFO *q_u,
 				POLICY_HND *hnd, uint16 switch_value);
 void samr_io_q_query_userinfo(char *desc, BOOL io, SAMR_Q_QUERY_USERINFO *q_u, struct mem_buffer *buf, int *q, int depth);
+void make_sam_user_info11(SAM_USER_INFO_11 *usr,
+				NTTIME *expiry,
+				char *mach_acct,
+				uint32 rid_user,
+				uint32 rid_group,
+				uint16 acct_ctrl);
+void sam_io_user_info11(char *desc, BOOL io, SAM_USER_INFO_11 *usr, struct mem_buffer *buf, int *q, int depth);
+void make_sam_user_info15(SAM_USER_INFO_15 *usr,
+
+	NTTIME *logon_time,
+	NTTIME *logoff_time,
+	NTTIME *kickoff_time,
+	NTTIME *pass_last_set_time,
+	NTTIME *pass_can_change_time,
+	NTTIME *pass_must_change_time,
+
+	char *user_name,
+	char *full_name,
+	char *home_dir,
+	char *dir_drive,
+	char *profile_path,
+	char *logon_script,
+	char *description,
+
+	uint16 logon_count,
+	uint16 bad_pw_count,
+
+	uint32 unknown_0,
+	uint32 unknown_1,
+
+	uint32 user_rid,
+	uint32 group_rid,
+	uint16 acb_info, 
+
+	uint32 unknown_3,
+	uint16 logon_divs,
+	LOGON_HRS *hrs,
+	uint32 unknown_5,
+	uint32 unknown_6);
+void sam_io_user_info15(char *desc, BOOL io, SAM_USER_INFO_15 *usr, struct mem_buffer *buf, int *q, int depth);
 void make_samr_r_query_userinfo(SAMR_R_QUERY_USERINFO *r_u,
 				uint16 switch_value, void *info, uint32 status);
 void samr_io_r_query_userinfo(char *desc, BOOL io, SAMR_R_QUERY_USERINFO *r_u, struct mem_buffer *buf, int *q, int depth);
@@ -1406,79 +1479,6 @@ void make_netinfo_2(NETLOGON_INFO_2 *info, uint32 flags, uint32 pdc_status,
 				uint32 tc_status, char *trusted_dc_name);
 void smb_io_netinfo_2(char *desc, BOOL io, NETLOGON_INFO_2 *info, struct mem_buffer *buf, int *q, int depth);
 void smb_io_logon_hrs(char *desc, BOOL io, LOGON_HRS *hrs, struct mem_buffer *buf, int *q, int depth);
-void make_user_info3(USER_INFO_3 *usr,
-
-	NTTIME *logon_time,
-	NTTIME *logoff_time,
-	NTTIME *kickoff_time,
-	NTTIME *pass_last_set_time,
-	NTTIME *pass_can_change_time,
-	NTTIME *pass_must_change_time,
-
-	char *user_name,
-	char *full_name,
-	char *logon_script,
-	char *profile_path,
-	char *home_dir,
-	char *dir_drive,
-
-	uint16 logon_count,
-	uint16 bad_pw_count,
-
-	uint32 user_id,
-	uint32 group_id,
-	uint32 num_groups,
-	DOM_GID *gids,
-	uint32 user_flgs,
-
-	char sess_key[16],
-
-	char *logon_srv,
-	char *logon_dom,
-
-	char *dom_sid,
-	char *other_sids);
-void smb_io_user_info3(char *desc, BOOL io, USER_INFO_3 *usr, struct mem_buffer *buf, int *q, int depth);
-void make_user_info11(USER_INFO_11 *usr,
-				NTTIME *expiry,
-				char *mach_acct,
-				uint32 rid_user,
-				uint32 rid_group,
-				uint16 acct_ctrl);
-void smb_io_user_info11(char *desc, BOOL io, USER_INFO_11 *usr, struct mem_buffer *buf, int *q, int depth);
-void make_user_info15(USER_INFO_15 *usr,
-
-	NTTIME *logon_time,
-	NTTIME *logoff_time,
-	NTTIME *kickoff_time,
-	NTTIME *pass_last_set_time,
-	NTTIME *pass_can_change_time,
-	NTTIME *pass_must_change_time,
-
-	char *user_name,
-	char *full_name,
-	char *home_dir,
-	char *dir_drive,
-	char *profile_path,
-	char *logon_script,
-	char *description,
-
-	uint16 logon_count,
-	uint16 bad_pw_count,
-
-	uint32 unknown_0,
-	uint32 unknown_1,
-
-	uint32 user_rid,
-	uint32 group_rid,
-	uint16 acb_info, 
-
-	uint32 unknown_3,
-	uint16 logon_divs,
-	LOGON_HRS *hrs,
-	uint32 unknown_5,
-	uint32 unknown_6);
-void smb_io_user_info15(char *desc, BOOL io, USER_INFO_15 *usr, struct mem_buffer *buf, int *q, int depth);
 
 /*The following definitions come from  rpc_pipes/srvparse.c  */
 
