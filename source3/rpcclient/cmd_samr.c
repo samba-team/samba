@@ -160,14 +160,21 @@ static void display_sam_unk_info_2(SAM_UNK_INFO_2 *info2)
 	printf("Total Groups:\t%d\n", info2->num_domain_grps);
 	printf("Total Aliases:\t%d\n", info2->num_local_grps);
 	
-	printf("Sequence No:\t%d\n", info2->seq_num);
+	printf("Sequence No:\t%d\n", info2->seq_num.low);
 	
 	printf("Unknown 0:\t0x%x\n", info2->unknown_0);
 	printf("Unknown 1:\t0x%x\n", info2->unknown_1);
-	printf("Unknown 3:\t0x%x\n", info2->unknown_3);
 	printf("Unknown 4:\t0x%x\n", info2->unknown_4);
 	printf("Unknown 5:\t0x%x\n", info2->unknown_5);
 	printf("Unknown 6:\t0x%x\n", info2->unknown_6);
+}
+
+static void display_sam_unk_info_8(SAM_UNK_INFO_8 *info8)
+{
+	printf("Sequence No:\t%d\n", info8->seq_num.low);
+	printf("Domain Create Time:\t%s\n", 
+		http_timestring(nt_time_to_unix(&info8->domain_create_time)));
+
 }
 
 static void display_sam_unk_info_12(SAM_UNK_INFO_12 *info12)
@@ -1129,6 +1136,9 @@ static NTSTATUS cmd_samr_query_dominfo(struct cli_state *cli,
 		break;
 	case 2:
 		display_sam_unk_info_2(&ctr.info.inf2);
+		break;
+	case 8:
+		display_sam_unk_info_8(&ctr.info.inf8);
 		break;
 	case 12:
 		display_sam_unk_info_12(&ctr.info.inf12);
