@@ -94,10 +94,8 @@ typedef NTSTATUS (*pdb_init_function)(struct pdb_context *,
 
 struct pdb_init_function_entry {
 	char *name;
-	/* Function to create a member of the authmethods list */
-	NTSTATUS (*init)(struct pdb_context *pdb_context, 
-			 struct pdb_methods **pdb_method, 
-			 const char *location);
+	/* Function to create a member of the pdb_methods list */
+	pdb_init_function init;
 };
 
 #endif /* _PASSDB_H */
