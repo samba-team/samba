@@ -41,9 +41,9 @@ LD_FLAGS = @REAL_LD_FLAGS@
 
 LIB = libsia_krb4.$(SHLIBEXT)
 
-SOURCES = sia.c
+SOURCES = sia.c posix_getpw.c
 
-OBJECTS = sia.o
+OBJECTS = sia.o posix_getpw.o
 
 all: $(LIB)
 
