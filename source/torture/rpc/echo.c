@@ -352,6 +352,49 @@ static BOOL test_surrounding(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return ret;
 }
 
+/*
+  test multiple levels of pointers
+*/
+static BOOL test_doublepointer(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct echo_TestDoublePointer r;
+	BOOL ret = True;
+	uint16_t value = 12;
+	uint16_t *pvalue = &value;
+	uint16_t **ppvalue = &pvalue;
+
+	ZERO_STRUCT(r);
+	r.in.data = &ppvalue;
+
+	printf("\nTesting TestDoublePointer\n");
+	status = dcerpc_echo_TestDoublePointer(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("TestDoublePointer failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	if (value != r.out.result) {
+		printf("TestSurrounding did not return original value\n");
+		ret = False;
+	}
+
+	pvalue = NULL;
+
+	status = dcerpc_echo_TestDoublePointer(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("TestDoublePointer failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	if (r.out.result != 0) {
+		printf("TestSurrounding did not return 0 when passed a NULL pointer\n");
+		ret = False;
+	}
+
+	return ret;
+}
+
 BOOL torture_rpc_echo(void)
 {
 	NTSTATUS status;
@@ -377,6 +420,7 @@ BOOL torture_rpc_echo(void)
 	ret &= test_testcall2(p, mem_ctx);
 	ret &= test_enum(p, mem_ctx);
 	ret &= test_surrounding(p, mem_ctx);
+	ret &= test_doublepointer(p, mem_ctx);
 	ret &= test_sleep(p, mem_ctx);
 
 	printf("\n");

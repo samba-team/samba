@@ -151,6 +151,15 @@ static NTSTATUS echo_TestSurrounding(struct dcesrv_call_state *dce_call, TALLOC_
 	return NT_STATUS_OK;
 }
 
+static uint16_t echo_TestDoublePointer(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestDoublePointer *r) 
+{
+	if (!*r->in.data) 
+		return 0;
+	if (!**r->in.data)
+		return 0;
+	return ***r->in.data;
+}
+
 static long echo_TestSleep(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestSleep *r)
 {
 	struct echo_TestSleep_private *p;

@@ -170,7 +170,10 @@ sub need_wire_pointer($)
 	my $n = $e->{POINTERS};
 	my $pt = pointer_type($e);
 
-	if (defined($pt) and $pt eq "ref") {
+	if (	defined($pt) 
+		and $pt eq "ref" 
+		and $e->{PARENT}->{TYPE} eq "FUNCTION") 
+	{
 		$n--;
 	}
 
@@ -182,11 +185,8 @@ sub need_wire_pointer($)
 sub is_pure_scalar($)
 {
 	my $e = shift;
-	if (util::has_property($e, "ref")) {
-		return 1;
-	}
 	if (is_scalar_type($e->{TYPE}) && 
-	    !$e->{POINTERS} && 
+	    need_wire_pointer($e) == 0 && 
 	    !util::array_size($e)) {
 		return 1;
 	}
@@ -198,15 +198,17 @@ sub need_alloc($)
 {
 	my $e = shift;
 
-	if (util::has_property($e, "ref")) {
-		return 0;
-	}
-
-	if ($e->{POINTERS} || util::array_size($e)) {
-		return 1;
-	}
-
+	return 0 if (util::has_property($e, "ref"));
+	return 1 if ($e->{POINTERS} || util::array_size($e));
 	return 0;
+}
+
+sub c_ptr_prefix($)
+{
+	my $e = shift;
+	my $pointers = "";
+	foreach my $i (need_wire_pointer($e)..$e->{POINTERS}-1) { $pointers.="*"; }
+	return $pointers;
 }
 
 # determine the C prefix used to refer to a variable when passing to a push
@@ -216,20 +218,22 @@ sub c_push_prefix($)
 {
 	my $e = shift;
 
-	if ($e->{TYPE} =~ "string") {
-		return "";
-	}
+	my $ret = "";
 
-	if (is_scalar_type($e->{TYPE}) &&
+	if ($e->{TYPE} =~ "string") {
+		$ret = "";
+	} elsif (is_scalar_type($e->{TYPE}) &&
 	    $e->{POINTERS}) {
-		return "*";
-	}
-	if (!is_scalar_type($e->{TYPE}) &&
+		$ret = "*";
+	} elsif (!is_scalar_type($e->{TYPE}) &&
 	    !$e->{POINTERS} &&
 	    !util::array_size($e)) {
 		return "&";
 	}
-	return "";
+
+	foreach my $i (2..$e->{POINTERS}) { $ret.="*"; }
+	
+	return $ret;
 }
 
 # determine the C prefix used to refer to a variable when passing to a pull
@@ -246,7 +250,9 @@ sub c_pull_prefix($)
 		return "&";
 	}
 
-	return "";
+	my $ret = "";
+	foreach my $i (2..$e->{POINTERS}) { $ret.="*"; }
+	return $ret;
 }
 my $res = "";
 my $tabs = "";
@@ -488,10 +494,9 @@ sub ParseArrayPrint($$)
 	my $e = shift;
 	my $var_prefix = shift;
 	my $size = ParseExpr($e, util::array_size($e), $var_prefix);
-	my $length = util::has_property($e, "length_is");
 
-	if (defined $length) {
-		$size = ParseExpr($e, $length, $var_prefix);
+	if (is_varying_array($e)) {
+		$size = ParseExpr($e, util::has_property($e, "length_is"), $var_prefix);
 	}
 
 	if (is_scalar_type($e->{TYPE})) {
@@ -508,8 +513,7 @@ sub CheckArraySizes($$)
 	my $e = shift;
 	my $var_prefix = shift;
 
-	if (!is_surrounding_array($e) && 
-		is_conformant_array($e)) {
+	if (!is_surrounding_array($e) && is_conformant_array($e)) {
 		my $size = ParseExpr($e, util::array_size($e), $var_prefix);
 		pidl "if ($var_prefix$e->{NAME}) {";
 		indent;
@@ -592,12 +596,13 @@ sub ParseArrayPull($$$)
 		}
 	}
 
-	if (my $length = util::has_property($e, "length_is")) {
+	if (is_varying_array($e)) {
 		pidl "NDR_CHECK(ndr_pull_array_length(ndr, &$var_prefix$e->{NAME}));";
 		$size = "ndr_get_array_length(ndr, &$var_prefix$e->{NAME})";
 	}
 
 	check_null_pointer($size);
+
 	if (is_scalar_type($e->{TYPE})) {
 		pidl "NDR_CHECK(ndr_pull_array_$e->{TYPE}(ndr, $ndr_flags, $var_prefix$e->{NAME}, $size));";
 	} else {
@@ -613,6 +618,7 @@ sub ParseElementPushScalar($$$)
 	my($var_prefix) = shift;
 	my($ndr_flags) = shift;
 	my $cprefix = c_push_prefix($e);
+	my $ptr_prefix = c_ptr_prefix($e);
 	my $sub_size = util::has_property($e, "subcontext");
 
 	start_flags($e);
@@ -622,11 +628,11 @@ sub ParseElementPushScalar($$$)
 	}
 
 	if (util::has_property($e, "relative")) {
-		pidl "NDR_CHECK(ndr_push_relative_ptr1(ndr, $var_prefix$e->{NAME}));";
+		pidl "NDR_CHECK(ndr_push_relative_ptr1(ndr, $ptr_prefix$var_prefix$e->{NAME}));";
+	} elsif (need_wire_pointer($e)) {
+		ParseElementPushPtr($e, $ptr_prefix.$var_prefix, "NDR_SCALARS");
 	} elsif (is_inline_array($e)) {
 		ParseArrayPush($e, "r->", "NDR_SCALARS");
-	} elsif (need_wire_pointer($e)) {
-		ParseElementPushPtr($e, $var_prefix, $ndr_flags);
 	} elsif (need_alloc($e)) {
 		# no scalar component
 	} elsif (my $switch = util::has_property($e, "switch_is")) {
@@ -659,6 +665,7 @@ sub ParseElementPrint($$)
 	my($e) = shift;
 	my($var_prefix) = shift;
 	my $cprefix = c_push_prefix($e);
+	my $ptr_prefix = c_ptr_prefix($e);
 
 	return if (util::has_property($e, "noprint"));
 
@@ -670,13 +677,16 @@ sub ParseElementPrint($$)
 		pidl "}";
 	}
 
-	if (!is_fixed_array($e) and ($e->{POINTERS} or util::array_size($e))) {
+	my $l = $e->{POINTERS};
+	$l++ if (util::array_size($e) and $l == 0 and !is_fixed_array($e));
+
+	foreach my $i (1..$l) {
 		pidl "ndr_print_ptr(ndr, \"$e->{NAME}\", $var_prefix$e->{NAME});";
 		pidl "ndr->depth++;";
-	}
-	if (need_wire_pointer($e)) {
-		pidl "if ($var_prefix$e->{NAME}) {";
-		indent;
+		if ($i > $l-need_wire_pointer($e)) {
+			pidl "if ($ptr_prefix$var_prefix$e->{NAME}) {";
+			indent;
+		}
 	}
 
 	if (util::array_size($e)) {
@@ -690,11 +700,11 @@ sub ParseElementPrint($$)
 		pidl "ndr_print_$e->{TYPE}(ndr, \"$e->{NAME}\", $cprefix$var_prefix$e->{NAME});";
 	}
 
-	if (need_wire_pointer($e)) {
-		deindent;
-		pidl "}";
-	}
-	if (!is_fixed_array($e) and ($e->{POINTERS} or util::array_size($e))) {
+	foreach my $i (1..$l) {
+		if ($i > $l-need_wire_pointer($e)) {
+			deindent;
+			pidl "}";
+		}
 		pidl "ndr->depth--;";
 	}
 }
@@ -804,6 +814,7 @@ sub ParseElementPullScalar($$$)
 	my($var_prefix) = shift;
 	my($ndr_flags) = shift;
 	my $cprefix = c_pull_prefix($e);
+	my $ptr_prefix = c_ptr_prefix($e);
 	my $sub_size = util::has_property($e, "subcontext");
 
 	start_flags($e);
@@ -811,9 +822,8 @@ sub ParseElementPullScalar($$$)
 	if (is_inline_array($e)) {
 		ParseArrayPull($e, "r->", "NDR_SCALARS");
 	} elsif (need_wire_pointer($e)) {
-		ParseElementPullPtr($e, $var_prefix, $ndr_flags);
-	} elsif (need_alloc($e)) {
-		# no scalar component
+		ParseElementPullPtr($e, $ptr_prefix.$var_prefix, "NDR_SCALARS");
+	} elsif (is_surrounding_array($e)) {
 	} elsif (my $switch = util::has_property($e, "switch_is")) {
 		ParseElementPullSwitch($e, $var_prefix, $ndr_flags, $switch);
 	} elsif (defined $sub_size) {
@@ -821,6 +831,7 @@ sub ParseElementPullScalar($$$)
 	} else {
 		pidl "NDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME}));";
 	}
+
 	if (my $range = util::has_property($e, "range")) {
 		my ($low, $high) = split(/ /, $range, 2);
 		pidl "if ($var_prefix$e->{NAME} < $low || $var_prefix$e->{NAME} > $high) {";
@@ -862,18 +873,22 @@ sub ParseElementPushBuffer($$$)
 	my $cprefix = c_push_prefix($e);
 	my $sub_size = util::has_property($e, "subcontext");
 
-	if (is_pure_scalar($e)) {
-		return;
-	}
+	return if (is_pure_scalar($e));
 
 	start_flags($e);
 
-	if (need_wire_pointer($e)) {
-		pidl "if ($var_prefix$e->{NAME}) {";
-		indent;
-		if (util::has_property($e, "relative")) {
-			pidl "NDR_CHECK(ndr_push_relative_ptr2(ndr, $var_prefix$e->{NAME}));";
+	my $pointers = c_ptr_prefix($e);
+	for my $i (1..need_wire_pointer($e)) {
+		if ($i > 1) {
+			ParseElementPushPtr($e,$pointers.$var_prefix,$ndr_flags);
 		}
+		pidl "if ($pointers$var_prefix$e->{NAME}) {";
+		indent;
+		$pointers.="*";
+	}
+		
+	if (util::has_property($e, "relative")) {
+		pidl "NDR_CHECK(ndr_push_relative_ptr2(ndr, $var_prefix$e->{NAME}));";
 	}
 	    
 	if (is_inline_array($e)) {
@@ -896,10 +911,10 @@ sub ParseElementPushBuffer($$$)
 		pidl "NDR_CHECK(ndr_push_$e->{TYPE}(ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME}));";
 	}
 
-	if (need_wire_pointer($e)) {
+	for my $i (1..need_wire_pointer($e)) {
 		deindent;
 		pidl "}";
-	}	
+	}
 
 	end_flags($e);
 }
@@ -914,22 +929,26 @@ sub ParseElementPullBuffer($$$)
 	my $cprefix = c_pull_prefix($e);
 	my $sub_size = util::has_property($e, "subcontext");
 
-	if (is_pure_scalar($e)) {
-		return;
-	}
+	return if (is_pure_scalar($e));
 
 	start_flags($e);
 
-	if (need_wire_pointer($e)) {
-		pidl "if ($var_prefix$e->{NAME}) {";
-		indent;
-		if (util::has_property($e, "relative")) {
-			pidl "struct ndr_pull_save _relative_save;";
-			pidl "ndr_pull_save(ndr, &_relative_save);";
-			pidl "NDR_CHECK(ndr_pull_relative_ptr2(ndr, $var_prefix$e->{NAME}));";
-		}
-	}
-	    
+ 	my $pointers = c_ptr_prefix($e);
+ 	for my $i (1..need_wire_pointer($e)) {
+ 		if ($i > 1) {
+ 			ParseElementPullPtr($e,$pointers.$var_prefix,"NDR_SCALARS");
+ 		}
+ 		pidl "if ($pointers$var_prefix$e->{NAME}) {";
+ 		indent;
+ 		$pointers.="*";
+ 	}
+ 
+ 	if (util::has_property($e, "relative")) {
+ 		pidl "struct ndr_pull_save _relative_save;";
+ 		pidl "ndr_pull_save(ndr, &_relative_save);";
+ 		pidl "NDR_CHECK(ndr_pull_relative_ptr2(ndr, $var_prefix$e->{NAME}));";
+ 	}
+  	    
 	if (is_inline_array($e)) {
 		ParseArrayPull($e, "r->", "NDR_BUFFERS");
 	} elsif (util::array_size($e)) {
@@ -950,13 +969,13 @@ sub ParseElementPullBuffer($$$)
 		pidl "NDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME}));";
 	}
 
-	if (need_wire_pointer($e)) {
-		if (util::has_property($e, "relative")) {
-			pidl "ndr_pull_restore(ndr, &_relative_save);";
-		}
+	if (util::has_property($e, "relative")) {
+		pidl "ndr_pull_restore(ndr, &_relative_save);";
+	}
+	for my $i (1..need_wire_pointer($e)) {
 		deindent;
 		pidl "}";
-	}	
+	}
 
 	end_flags($e);
 }
@@ -1710,7 +1729,7 @@ sub ParseFunctionElementPush($$)
 	} else {
 		ParseElementPushScalar($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
 
-		if ($e->{POINTERS}) {
+		if (need_wire_pointer($e)) {
 			ParseElementPushBuffer($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
 		}
 	}
@@ -1769,14 +1788,12 @@ sub ParseFunctionElementPull($$)
 			pidl "NDR_CHECK(ndr_pull_unique_ptr(ndr, &_ptr_$e->{NAME}));";
 			pidl "r->$inout.$e->{NAME} = NULL;";
 			pidl "if (_ptr_$e->{NAME}) {";
-			indent;
 		} elsif ($inout eq "out" && util::has_property($e, "ref")) {
 			pidl "if (r->$inout.$e->{NAME}) {";
-			indent;
 		} else {
 			pidl "{";
-			indent;
 		}
+		indent;
 		ParseArrayPull($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
 		deindent;
 		pidl "}";
@@ -1786,12 +1803,13 @@ sub ParseFunctionElementPull($$)
 			pidl "\tNDR_ALLOC(ndr, r->out.$e->{NAME});";
 			pidl "}";
 		}
+
 		if ($inout eq "in" && util::has_property($e, "ref")) {
 			pidl "NDR_ALLOC(ndr, r->in.$e->{NAME});";
 		}
 
 		ParseElementPullScalar($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
-		if ($e->{POINTERS}) {
+		if (need_wire_pointer($e)) {
 			ParseElementPullBuffer($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
 		}
 	}
@@ -2175,3 +2193,4 @@ sub Parse($$)
 RegisterPrimitives();
 
 1;
+

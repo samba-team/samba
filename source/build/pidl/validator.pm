@@ -40,10 +40,6 @@ sub el_name($)
 sub ValidElement($)
 {
 	my $e = shift;
-	if ($e->{POINTERS} && $e->{POINTERS} > 1) {
-		fatal(el_name($e) . " : pidl cannot handle multiple pointer levels. Use a sub-structure containing a pointer instead\n");
-	}
-
 	if ($e->{POINTERS} && $e->{ARRAY_LEN}) {
 		fatal(el_name($e) . " : pidl cannot handle pointers to arrays. Use a substructure instead\n");
 	}
