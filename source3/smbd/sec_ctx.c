@@ -143,6 +143,8 @@ static void get_current_groups(int *ngroups, gid_t **groups)
 
 BOOL push_sec_ctx(void)
 {
+	struct sec_ctx *ctx_p;
+
 	/* Check we don't overflow our stack */
 
 	if (sec_ctx_stack_ndx == (MAX_SEC_CTX_DEPTH)) {
@@ -154,20 +156,23 @@ BOOL push_sec_ctx(void)
 
 	sec_ctx_stack_ndx++;
 
-	sec_ctx_stack[sec_ctx_stack_ndx].uid = geteuid();
-	sec_ctx_stack[sec_ctx_stack_ndx].gid = getegid();
+	ctx_p = &sec_ctx_stack[sec_ctx_stack_ndx];
 
-	sec_ctx_stack[sec_ctx_stack_ndx].ngroups = sys_getgroups(0, NULL);
+	ctx_p->uid = geteuid();
+	ctx_p->gid = getegid();
 
-	if (!(sec_ctx_stack[sec_ctx_stack_ndx].groups = 
-	      malloc(sec_ctx_stack[sec_ctx_stack_ndx].ngroups * 
-		     sizeof(gid_t)))) {
-		DEBUG(0, ("Out of memory in push_sec_ctx()\n"));
-		return False;
+	ctx_p->ngroups = sys_getgroups(0, NULL);
+
+	if (ctx_p->ngroups != 0) {
+		if (!(ctx_p->groups = malloc(ctx_p->ngroups * sizeof(gid_t)))) {
+			DEBUG(0, ("Out of memory in push_sec_ctx()\n"));
+			return False;
+		}
+
+		sys_getgroups(ctx_p->ngroups, ctx_p->groups);
+	} else {
+		ctx_p->groups = NULL;
 	}
-
-	sys_getgroups(sec_ctx_stack[sec_ctx_stack_ndx].ngroups,
-		  sec_ctx_stack[sec_ctx_stack_ndx].groups);
 
 	return True;
 }
@@ -176,6 +181,8 @@ BOOL push_sec_ctx(void)
 
 void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups)
 {
+	struct sec_ctx *ctx_p = &sec_ctx_stack[sec_ctx_stack_ndx];
+
 	/* Set the security context */
 
 	DEBUG(3, ("setting sec ctx (%d, %d)\n", uid, gid));
@@ -186,18 +193,16 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups)
 	sys_setgroups(ngroups, groups);
 #endif
 
-	sec_ctx_stack[sec_ctx_stack_ndx].ngroups = ngroups;
+	ctx_p->ngroups = ngroups;
 
-	if (sec_ctx_stack[sec_ctx_stack_ndx].groups != NULL)
-		free(sec_ctx_stack[sec_ctx_stack_ndx].groups);
+	safe_free(ctx_p->groups);
 
-	sec_ctx_stack[sec_ctx_stack_ndx].groups = 
-		memdup(groups, sizeof(gid_t) * ngroups);
+	ctx_p->groups = memdup(groups, sizeof(gid_t) * ngroups);
 
 	become_id(uid, gid);
 
-	sec_ctx_stack[sec_ctx_stack_ndx].uid = uid;
-	sec_ctx_stack[sec_ctx_stack_ndx].gid = gid;
+	ctx_p->uid = uid;
+	ctx_p->gid = gid;
 
 	/* Update current_user stuff */
 
@@ -220,6 +225,9 @@ void set_root_sec_ctx(void)
 
 BOOL pop_sec_ctx(void)
 {
+	struct sec_ctx *ctx_p;
+	struct sec_ctx *prev_ctx_p;
+
 	/* Check for stack underflow */
 
 	if (sec_ctx_stack_ndx == 0) {
@@ -227,13 +235,15 @@ BOOL pop_sec_ctx(void)
 		return False;
 	}
 
+	ctx_p = &sec_ctx_stack[sec_ctx_stack_ndx];
+
 	/* Clear previous user info */
 
-	sec_ctx_stack[sec_ctx_stack_ndx].uid = (uid_t)-1;
-	sec_ctx_stack[sec_ctx_stack_ndx].gid = (gid_t)-1;
+	ctx_p->uid = (uid_t)-1;
+	ctx_p->gid = (gid_t)-1;
 
-	safe_free(sec_ctx_stack[sec_ctx_stack_ndx].groups);
-	sec_ctx_stack[sec_ctx_stack_ndx].ngroups = 0;
+	safe_free(ctx_p->groups);
+	ctx_p->ngroups = 0;
 
 	/* Pop back previous user */
 
@@ -241,20 +251,20 @@ BOOL pop_sec_ctx(void)
 
 	gain_root();
 
+	prev_ctx_p = &sec_ctx_stack[sec_ctx_stack_ndx];
+
 #ifdef HAVE_SETGROUPS
-	sys_setgroups(sec_ctx_stack[sec_ctx_stack_ndx].ngroups,
-		      sec_ctx_stack[sec_ctx_stack_ndx].groups);
+	sys_setgroups(prev_ctx_p->ngroups, prev_ctx_p->groups);
 #endif
 
-	become_id(sec_ctx_stack[sec_ctx_stack_ndx].uid,
-		  sec_ctx_stack[sec_ctx_stack_ndx].gid);
+	become_id(prev_ctx_p->uid, prev_ctx_p->gid);
 
 	/* Update current_user stuff */
 
-	current_user.uid = sec_ctx_stack[sec_ctx_stack_ndx].uid;
-	current_user.gid = sec_ctx_stack[sec_ctx_stack_ndx].gid;
-	current_user.ngroups = sec_ctx_stack[sec_ctx_stack_ndx].ngroups;
-	current_user.groups = sec_ctx_stack[sec_ctx_stack_ndx].groups;
+	current_user.uid = prev_ctx_p->uid;
+	current_user.gid = prev_ctx_p->gid;
+	current_user.ngroups = prev_ctx_p->ngroups;
+	current_user.groups = prev_ctx_p->groups;
 
 	DEBUG(3, ("popped off to sec ctx (%d, %d)\n", geteuid(), getegid()));
 
@@ -266,6 +276,7 @@ BOOL pop_sec_ctx(void)
 void init_sec_ctx(void)
 {
 	int i;
+	struct sec_ctx *ctx_p;
 
 	/* Initialise security context stack */
 
@@ -277,19 +288,19 @@ void init_sec_ctx(void)
 	}
 
 	/* Initialise first level of stack.  It is the current context */
+	ctx_p = &sec_ctx_stack[0];
 
-	sec_ctx_stack[0].uid = geteuid();
-	sec_ctx_stack[0].gid = getegid();
+	ctx_p->uid = geteuid();
+	ctx_p->gid = getegid();
 
-	get_current_groups(&sec_ctx_stack[0].ngroups,
-			   &sec_ctx_stack[0].groups);
+	get_current_groups(&ctx_p->ngroups, &ctx_p->groups);
 
 	/* Initialise current_user global */
 
-	current_user.uid = sec_ctx_stack[sec_ctx_stack_ndx].uid;
-	current_user.gid = sec_ctx_stack[sec_ctx_stack_ndx].gid;
-	current_user.ngroups = sec_ctx_stack[sec_ctx_stack_ndx].ngroups;
-	current_user.groups = sec_ctx_stack[sec_ctx_stack_ndx].groups;
+	current_user.uid = ctx_p->uid;
+	current_user.gid = ctx_p->gid;
+	current_user.ngroups = ctx_p->ngroups;
+	current_user.groups = ctx_p->groups;
 
 	/* The conn and vuid are usually taken care of by other modules.
 	   We initialise them here. */
