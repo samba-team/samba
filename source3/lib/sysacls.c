@@ -30,7 +30,7 @@ extern int DEBUGLEVEL;
 
  The interfaces that each ACL implementation must support are as follows :
 
- int sys_acl_get_entry( SMB_ACL_T acl, int entry_id, SMB_ACL_ENTRY_T *entry_p)
+ int sys_acl_get_entry( SMB_ACL_T theacl, int entry_id, SMB_ACL_ENTRY_T *entry_p)
  int sys_acl_get_tag_type( SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p)
  int sys_acl_get_permset( SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p
  void *sys_acl_get_qualifier( SMB_ACL_ENTRY_T entry_d)
@@ -38,7 +38,15 @@ extern int DEBUGLEVEL;
  SMB_ACL_T sys_acl_get_fd(int fd)
  int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset);
  int sys_acl_add_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
- char *sys_acl_to_text( SMB_ACL_T acl, ssize_t *plen)
+ char *sys_acl_to_text( SMB_ACL_T theacl, ssize_t *plen)
+ SMB_ACL_T sys_acl_init( int count)
+ int sys_acl_create_entry( SMB_ACL_T *pacl, SMB_ACL_ENTRY_T *pentry)
+ int sys_acl_set_tag_type( SMB_ACL_ENTRY_T entry, SMB_ACL_TAG_T tagtype)
+ int sys_acl_set_qualifier( SMB_ACL_ENTRY_T entry, void *qual)
+ int sys_acl_set_permset( SMB_ACL_ENTRY_T entry, SMB_ACL_PERMSET_T permset)
+ int sys_acl_valid( SMB_ACL_T theacl )
+ int sys_acl_set_file( char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
+ int sys_acl_set_fd( int fd, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
 
  This next one is not POSIX complient - but we *have* to have it !
  More POSIX braindamage.
@@ -112,6 +120,46 @@ char *sys_acl_to_text( SMB_ACL_T the_acl, ssize_t *plen)
 	return acl_to_text( the_acl, plen);
 }
 
+SMB_ACL_T sys_acl_init( int count)
+{
+	return acl_init(count);
+}
+
+int sys_acl_create_entry( SMB_ACL_T *pacl, SMB_ACL_ENTRY_T *pentry)
+{
+	return acl_create_entry(pacl, pentry);
+}
+
+int sys_acl_set_tag_type( SMB_ACL_ENTRY_T entry, SMB_ACL_TAG_T tagtype)
+{
+	return acl_set_tag_type(entry, tagtype);
+}
+
+int sys_acl_set_qualifier( SMB_ACL_ENTRY_T entry, void *qual)
+{
+	return acl_set_qualifier(entry, qual);
+}
+
+int sys_acl_set_permset( SMB_ACL_ENTRY_T entry, SMB_ACL_PERMSET_T permset)
+{
+	return acl_set_permset(entry, permset);
+}
+
+int sys_acl_valid( SMB_ACL_T theacl )
+{
+	return acl_valid(thacl);
+}
+
+int sys_acl_set_file( char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
+{
+	return acl_set_file(name, acltype, theacl);
+}
+
+int sys_acl_set_fd( int fd, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
+{
+	return acl_set_fd(fd, acltype, theacl);
+}
+
 int sys_acl_free_text(char *text)
 {
 	return acl_free(text);
@@ -179,6 +227,46 @@ char *sys_acl_to_text( SMB_ACL_T the_acl, ssize_t *plen)
 }
 
 int sys_acl_free_text(char *text)
+{
+	return -1;
+}
+
+SMB_ACL_T sys_acl_init( int count)
+{
+	return NULL;
+}
+
+int sys_acl_create_entry( SMB_ACL_T *pacl, SMB_ACL_ENTRY_T *pentry)
+{
+	return -1;
+}
+
+int sys_acl_set_tag_type( SMB_ACL_ENTRY_T entry, SMB_ACL_TAG_T tagtype)
+{
+	return -1;
+}
+
+int sys_acl_set_qualifier( SMB_ACL_ENTRY_T entry, void *qual)
+{
+	return -1;
+}
+
+int sys_acl_set_permset( SMB_ACL_ENTRY_T entry, SMB_ACL_PERMSET_T permset)
+{
+	return -1;
+}
+
+int sys_acl_valid( SMB_ACL_T theacl )
+{
+	return -1;
+}
+
+int sys_acl_set_file( char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
+{
+	return -1;
+}
+
+int sys_acl_set_fd( int fd, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
 {
 	return -1;
 }
