@@ -589,9 +589,8 @@ int cli_nt_create(struct cli_state *cli, char *fname);
 int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode);
 BOOL cli_close(struct cli_state *cli, int fnum);
 BOOL cli_lock(struct cli_state *cli, int fnum, 
-	      uint32 offset, uint32 len, int timeout, enum lock_type lock_type);
-BOOL cli_unlock(struct cli_state *cli, int fnum, 
-		uint32 offset, uint32 len);
+	      uint32 offset, uint32 len, int timeout, enum brl_type lock_type);
+BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len);
 size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size);
 ssize_t cli_write(struct cli_state *cli,
 		  int fnum, uint16 write_mode,
@@ -758,14 +757,14 @@ void brl_init(void);
 BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	      uint16 smbpid, pid_t pid, uint16 tid,
 	      br_off start, br_off size, 
-	      enum lock_type lock_type);
+	      enum brl_type lock_type);
 BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		uint16 smbpid, pid_t pid, uint16 tid,
 		br_off start, br_off size);
 BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, 
 		  uint16 smbpid, pid_t pid, uint16 tid,
 		  br_off start, br_off size, 
-		  enum lock_type lock_type);
+		  enum brl_type lock_type);
 void brl_close(SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum);
 
 /*The following definitions come from  locking/locking.c  */
@@ -773,9 +772,9 @@ void brl_close(SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum);
 void locking_close_file(files_struct *fsp);
 BOOL is_locked(files_struct *fsp,connection_struct *conn,
 	       SMB_OFF_T count,SMB_OFF_T offset, 
-	       enum lock_type lock_type);
+	       enum brl_type lock_type);
 BOOL do_lock(files_struct *fsp,connection_struct *conn,
-             SMB_OFF_T count,SMB_OFF_T offset,enum lock_type lock_type,
+             SMB_OFF_T count,SMB_OFF_T offset,enum brl_type lock_type,
              int *eclass,uint32 *ecode);
 BOOL do_unlock(files_struct *fsp,connection_struct *conn,
                SMB_OFF_T count,SMB_OFF_T offset, 

@@ -44,7 +44,7 @@ struct lock_struct {
 	br_off start;
 	br_off size;
 	int fnum;
-	enum lock_type lock_type;
+	enum brl_type lock_type;
 };
 
 /* the key used in the brlock database */
@@ -74,7 +74,8 @@ see if lock2 can be added when lock1 is in place
 static BOOL brl_conflict(struct lock_struct *lck1, 
 			 struct lock_struct *lck2)
 {
-	if (lck1->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK) return False;
+	if (lck1->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK) 
+		return False;
 
 	if (brl_same_context(&lck1->context, &lck2->context) &&
 	    lck2->lock_type == READ_LOCK) return False;
@@ -106,7 +107,7 @@ lock a range of bytes
 BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	      uint16 smbpid, pid_t pid, uint16 tid,
 	      br_off start, br_off size, 
-	      enum lock_type lock_type)
+	      enum brl_type lock_type)
 {
 	struct lock_key key;
 	TDB_DATA kbuf, dbuf;
@@ -231,7 +232,7 @@ test if we could add a lock if we wanted to
 BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, 
 		  uint16 smbpid, pid_t pid, uint16 tid,
 		  br_off start, br_off size, 
-		  enum lock_type lock_type)
+		  enum brl_type lock_type)
 {
 	struct lock_key key;
 	TDB_DATA kbuf, dbuf;
