@@ -132,7 +132,6 @@ SHADOW_PWD option enabled
   - Fixed smb.conf file path for log files
   - Fixed smb.conf file path for incoming smb print spool directory
   - Added a number of options to smb.conf file
-  - Added smbadduser command (missed from all previous RPMs) - Doooh!
   - Added smbuser file and smb.conf file updates for username map
 
 %prep
@@ -156,18 +155,14 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
 	--with-quotas \
 	--with-smbmount \
 	--with-pam \
-	--with-profile \
 	--with-syslog \
 	--with-utmp \
-	--with-vfs \
-	--with-msdfs \
 	--with-netatalk \
 	--with-sambabook=%{prefix}/share/samba/swat/using_samba
 make -j${NUMCPU} proto
-make -j${NUMCPU} all smbfilter nsswitch/libnss_wins.so
-make -j${NUMCPU} smbtorture debug2html locktest2
-make -j${NUMCPU} masktest bin/smbspool
-#make -j${NUMCPU} rpctorture locktest smbwrapper bin/wbinfo
+make -j${NUMCPU} all nsswitch/libnss_wins.so
+make -j${NUMCPU} debug2html
+make -j${NUMCPU} bin/smbspool
 
 
 %install
@@ -189,8 +184,8 @@ mkdir -p $RPM_BUILD_ROOT/lib
 
 # Install standard binary files
 for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
-      make_smbcodepage make_unicodemap make_printerdef rpcclient smbspool
-#      smbsh smbwrapper.so 
+      make_smbcodepage make_unicodemap make_printerdef rpcclient smbspool \
+      smbcacls smbcontrol
 do
 install -m755 -s source/bin/$i $RPM_BUILD_ROOT%{prefix}/bin
 done
@@ -200,9 +195,7 @@ install -m755 source/script/$i $RPM_BUILD_ROOT%{prefix}/bin
 done
 
 # Install secure binary files
-for i in smbd nmbd swat smbmount smbumount smbmnt debug2html \
-      smbtorture smbfilter locktest2 masktest
-#     wbinfo
+for i in smbd nmbd swat smbmount smbumount smbmnt debug2html 
 do
 install -m755 -s source/bin/$i $RPM_BUILD_ROOT%{prefix}/sbin
 done
@@ -246,7 +239,6 @@ install -m644 packaging/RedHat/smb.conf $RPM_BUILD_ROOT/etc/samba/smb.conf
 install -m644 packaging/RedHat/smbusers $RPM_BUILD_ROOT/etc/samba/smbusers
 install -m755 packaging/RedHat/smbprint $RPM_BUILD_ROOT%{prefix}/bin
 install -m755 packaging/RedHat/findsmb $RPM_BUILD_ROOT%{prefix}/bin
-install -m755 packaging/RedHat/smbadduser $RPM_BUILD_ROOT%{prefix}/bin
 install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
 install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT%{prefix}/sbin/samba
 install -m644 packaging/RedHat/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
@@ -344,7 +336,8 @@ fi
 %attr(-,root,root) %{prefix}/bin/smbpasswd
 %attr(-,root,root) %{prefix}/bin/smbtar
 %attr(-,root,root) %{prefix}/bin/smbprint
-%attr(-,root,root) %{prefix}/bin/smbadduser
+%attr(-,root,root) %{prefix}/bin/smbcontrol
+%attr(-,root,root) %{prefix}/bin/smbcacls
 %attr(755,root,root) /lib/libnss_wins.s*
 %attr(-,root,root) %{prefix}/share/samba/swat/help/*
 %attr(-,root,root) %{prefix}/share/samba/swat/images/*
@@ -363,9 +356,6 @@ fi
 %attr(-,root,root) MANDIR_MACRO/man7/*
 %attr(-,root,root) MANDIR_MACRO/man8/*
 %attr(-,root,root) %dir %{prefix}/share/samba/codepages/*
-%attr(-,root,root) %dir /var/lock/samba
+%attr(755,root,root) %dir /var/lock/samba
 %attr(-,root,root) %dir /var/log/samba
 %attr(1777,root,root) %dir /var/spool/samba
-
-
-
