@@ -653,11 +653,13 @@ pch: basics
 idl:
 	script/build_idl.sh FULL
 
-idl_test:
+idl_test: build/pidl/idl.pm
 	@script/build_idl.sh
 
 basics: idl_test proto_test
 
+build/pidl/idl.pm: build/pidl/idl.yp
+	-yapp -s build/pidl/idl.yp
 
 # These dependencies are only approximately correct: we want to make
 # sure Samba's paths are updated if ./configure is re-run.  Really it
