@@ -173,7 +173,7 @@ static void srv_spoolss_replycloseprinter(POLICY_HND *handle)
 	
 	if (!W_ERROR_IS_OK(result))
 		DEBUG(0,("srv_spoolss_replycloseprinter: reply_close_printer failed [%s].\n",
-			werror_str(result)));
+			dos_errstr(result)));
 
 	/* if it's the last connection, deconnect the IPC$ share */
 	if (smb_connections==1) {
@@ -698,7 +698,7 @@ static void send_spoolss_event_notification(PRINTER_MESSAGE_INFO *msg)
 			
 			if (!W_ERROR_IS_OK(result)) {
 				DEBUG(5,("send_spoolss_event_notification: Event notification failed [%s]\n",
-					werror_str(result)));
+					dos_errstr(result)));
 		}
 	}
 }
@@ -1607,7 +1607,7 @@ static BOOL srv_spoolss_replyopenprinter(char *printer, uint32 localprinter, uin
 
 	if (!W_ERROR_IS_OK(result))
 		DEBUG(5,("srv_spoolss_reply_open_printer: Client RPC returned [%s]\n",
-			werror_str(result)));
+			dos_errstr(result)));
 
 	return (W_ERROR_IS_OK(result));	
 }
