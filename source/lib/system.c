@@ -79,7 +79,7 @@ int sys_select(fd_set *fds,struct timeval *tval)
 	return(found);
       }
       
-      if (tval && tval.tv_sec < counter) return(0);
+      if (tval && tval->tv_sec < counter) return(0);
       sleep(1);
       counter++;
     }
