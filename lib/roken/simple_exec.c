@@ -97,7 +97,7 @@ int
 simple_execlp(const char *file, ...)
 {
     va_list ap;
-    char **argv;
+    char **argv = NULL;
     int argc, i;
 
     argc = i = 0;
