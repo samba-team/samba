@@ -319,8 +319,8 @@ int smbw_errno(struct cli_state *c)
 	ret = cli_error(c, &eclass, &ecode);
 
 	if (ret) {
-		DEBUG(3,("smbw_error %d %d (0x%x)\n", 
-			 (int)eclass, (int)ecode, (int)ecode));
+		DEBUG(3,("smbw_error %d %d (0x%x) -> %d\n", 
+			 (int)eclass, (int)ecode, (int)ecode, ret));
 	}
 	return ret;
 }

@@ -51,6 +51,7 @@
 
 #define real_readlink(fn,buf,len)	(syscall(SYS_readlink, (fn), (buf), (len)))
 #define real_rename(fn1, fn2)		(syscall(SYS_rename, (fn1), (fn2)))
+#define real_symlink(fn1, fn2)		(syscall(SYS_symlink, (fn1), (fn2)))
 #define real_stat(fn, buf )		(syscall(SYS_stat, (fn), (buf)))
 #define real_fstat(fd, buf )		(syscall(SYS_fstat, (fd), (buf)))
 #define real_read(fd, buf, count )	(syscall(SYS_read, (fd), (buf), (count)))
