@@ -308,3 +308,78 @@ gain stable and dependable use of samba?
 Cheers,
 John H Terpstra (Also from home!!!!)
 
+=============================================================================
+Further notes by Bruce Cook
+
+Date: Sun, 12 Apr 1998 14:12:22 +1000
+From: Bruce Cook <BC3-AU@bigfoot.com>
+Subject: Re: Win95 / NT Profiles (was: RE: A question about NT Domains)
+
+Ah yes I knew there was something I forgot.
+here it is for completeness.
+
+=============================================================================
+
+When a user logs into a specific machine for the first time, they will be
+told that they've never logged into the machine, and would they like to
+store the user setting for future use.
+
+If the user answers NO, they will be nagged about this every time they
+log into the machine until they say YES. (How about it MS, could we
+possible do something about this feature?)
+
+When the user answers YES, thereafter upon logging out of the machine,
+a copy of the user's profile is also written onto the machines local disk
+for later use.
+
+When a user logs into a machine where his/her profile has previously been
+saved, a comparison is made between the date of the profile copy kept on
+the machine, and the date of the profile stored on the server.  In theory
+the server date should be later or the same.
+
+If the local machine date is later than the server date, the client
+machine will tell you the the settings on the local machine are more
+recent than those of the server, and would you like to user them instead.
+
+This occurs for a couple of reasons:
+	1. Server not available when the user logs out
+	2. Date mismatch between the server and the client
+	   (I always use NET TIME \\server /SET /YES in my logon scripts)
+
+
+Logging in with NO server available.
+
+In some cases a client will want to log into a network with no server
+available. (Portables away from the office, or a dead server)
+
+This can only happen if the administrator has NOT set the machine to
+give access only upon password verification from the server.
+(If the admin has done this, it can be circumvented by restarting
+ the machine in safe mode, and running poledit, or regedit and
+ disabling that feature)
+
+If you are able to log in while the server is unavailable, you have
+two choices
+	1. Log in as a user that previously stored a profile
+	   (The password won't have to match unless the machine
+	    is set up to store passwords)
+
+	2. log in as the default user (bit the cancel button or escape key)
+
+If you choose to use your profile stored on the local machine, there are
+several things you should be wary of:
+	1. the profile stored on the machine will be a copy of the last
+	   profile used when you logged into THAT machine.  You may get
+	   quite an old profile.
+	2. When you log out, that local profile is garunteed to be later
+	   than the one on the server, and if the server is available, or
+	   you later log into that machine when the server is available
+	   you could overwrite the good server profile with a bogus profile.
+
+
+Technique note:
+	I set portable computers up so that they don't use roaming profiles,
+	rather they have a single profile kept on the machine.  This means
+	that a user has the same desktop look an feel regardless of where
+	they are.   This follows the philosophy that laptops tend to be used
+	by only one person.	
