@@ -406,7 +406,6 @@ static void usage(char *pname)
 	dos_GetWd(OriginalDir);
 
 	init_vuid();
-	init_uid();
 
 	/* this is for people who can't start the program correctly */
 	while (argc > 1 && (*argv[1] != '-')) {

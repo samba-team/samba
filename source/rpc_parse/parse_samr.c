@@ -6147,6 +6147,7 @@ BOOL make_samr_r_unknown_38(SAMR_R_UNKNOWN_38 *r_u)
 
 	r_u->unk_0 = 0;
 	r_u->unk_1 = 0;
+	r_u->unk_2 = 0;
 	r_u->status = 0;
 
 	return True;
@@ -6167,6 +6168,8 @@ BOOL samr_io_r_unknown_38(char *desc,  SAMR_R_UNKNOWN_38 *r_u, prs_struct *ps, i
 	prs_uint16("unk_0", ps, depth, &(r_u->unk_0));
 	prs_align(ps);
 	prs_uint16("unk_1", ps, depth, &(r_u->unk_1));
+	prs_align(ps);
+	prs_uint16("unk_2", ps, depth, &(r_u->unk_2));
 	prs_align(ps);
 	prs_uint32("status", ps, depth, &(r_u->status));
 

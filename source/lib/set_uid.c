@@ -54,6 +54,9 @@ void init_uid(void)
 	current_user.conn = NULL;
 	current_user.vuid = UID_FIELD_INVALID;
 	
+	current_user.ngroups = 0;
+	current_user.groups = NULL;
+
 	dos_ChDir(OriginalDir);
 }
 

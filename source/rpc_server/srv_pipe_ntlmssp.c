@@ -231,8 +231,8 @@ static BOOL api_ntlmssp_verify(rpcsrv_struct *l,
 	dom_len    = ntlmssp_resp->hdr_domain .str_str_len;
 	wks_len    = ntlmssp_resp->hdr_wks    .str_str_len;
 
-	if (lm_owf_len == 0 && nt_owf_len == 0 &&
-	    usr_len == 0 && dom_len == 0 && wks_len == 0)
+	if (lm_owf_len <= 1 && nt_owf_len == 0 &&
+	    usr_len == 0 && dom_len == 0)
 	{
 		anonymous = True;
 	}
@@ -250,12 +250,9 @@ static BOOL api_ntlmssp_verify(rpcsrv_struct *l,
 	memcpy(lm_owf, ntlmssp_resp->lm_resp, sizeof(lm_owf));
 	memcpy(nt_owf, ntlmssp_resp->nt_resp, sizeof(nt_owf));
 
-#ifdef DEBUG_PASSWORD
-	DEBUG(100,("lm, nt owfs, chal\n"));
-	dump_data(100, lm_owf, sizeof(lm_owf));
-	dump_data(100, nt_owf, sizeof(nt_owf));
-	dump_data(100, a->ntlmssp_chal.challenge, 8);
-#endif
+	dump_data_pw("lm_owf:", lm_owf, sizeof(lm_owf));
+	dump_data_pw("nt_owf:", nt_owf, sizeof(nt_owf));
+	dump_data_pw("chal:", a->ntlmssp_chal.challenge, 8);
 
 	memset(user_name, 0, sizeof(user_name));
 	memset(domain   , 0, sizeof(domain   ));
@@ -312,9 +309,11 @@ static BOOL api_ntlmssp_verify(rpcsrv_struct *l,
 
 	if (l->auth_validated)
 	{
+		become_root(False);
 		l->vuid = register_vuid(pw->pw_uid, pw->pw_gid,
 					unix_user, nt_user,
 					guest, user_sess_key);
+		unbecome_root(False);
 		l->auth_validated = l->vuid != UID_FIELD_INVALID;
 	}
 

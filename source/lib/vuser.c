@@ -131,8 +131,8 @@ tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
 uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, BOOL guest, uchar user_sess_key[16])
 {
-	int n_groups;
-	gid_t *groups;
+	int n_groups = 0;
+	gid_t *groups = NULL;
 	fstring real_name;
   struct passwd *pwfile; /* for getting real name from passwd file */
 
