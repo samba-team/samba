@@ -176,7 +176,8 @@ ADD_OBJ_FILES = \
 		torture/nbt/register.o \
 		torture/nbt/wins.o \
 		torture/nbt/winsbench.o \
-		torture/nbt/winsreplication.o
+		torture/nbt/winsreplication.o \
+		torture/nbt/dgram.o
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB LIBCLI_WINS
 # End SUBSYSTEM TORTURE_NBT
