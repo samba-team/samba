@@ -9,7 +9,7 @@ naming services to clients)
 label(SYNOPSIS)
 manpagesynopsis()
 
-bf(nmbd) [link(-D)(minusD)] [link(-a)(minusa)] [link(-o)(minuso)] [link(-h)(minush)] [link(-V)(minusV)] [link(-H lmhosts file)(minusH)] [link(-d debuglevel)(minusd)] [link(-l log file basename)(minusl)] [link(-n primary NetBIOS name)(minusn)] [link(-p port number)(minusp)] [link(-s configuration file)(minuss)] [link(-i NetBIOS scope)(minusi)]
+bf(nmbd) [link(-D)(minusD)] [link(-a)(minusa)] [link(-o)(minuso)] [link(-h)(minush)] [link(-V)(minusV)] [link(-H lmhosts file)(minusH)] [link(-d debuglevel)(minusd)] [link(-l log file basename)(minusl)] [link(-n primary NetBIOS name)(minusn)] [link(-p port number)(minusp)] [link(-s configuration file)(minuss)]
 
 label(DESCRIPTION)
 manpagedescription()
@@ -141,14 +141,6 @@ this may be changed when Samba is autoconfigured.
 
 The file specified contains the configuration details required by the
 server. See url(bf(smb.conf (5)))(smb.conf.5.html) for more information.
-
-label(minusi)
-dit(bf(-i scope)) This specifies a NetBIOS scope that bf(nmbd) will use
-to communicate with when generating NetBIOS names. For details on the
-use of NetBIOS scopes, see rfc1001.txt and rfc1002.txt. NetBIOS scopes
-are em(very) rarely used, only set this parameter if you are the
-system administrator in charge of all the NetBIOS systems you
-communicate with.
 
 endit()
 
