@@ -2905,7 +2905,9 @@ int open_socket_out(int type, struct in_addr *addr, int port ,int timeout)
 connect_again:
   ret = connect(res,(struct sockaddr *)&sock_out,sizeof(sock_out));
 
-  if (ret < 0 && (errno == EINPROGRESS || errno == EALREADY) && loops--) {
+  /* Some systems return EAGAIN when they mean EINPROGRESS */
+  if (ret < 0 && (errno == EINPROGRESS || errno == EALREADY ||
+        errno == EAGAIN) && loops--) {
     msleep(connect_loop);
     goto connect_again;
   }

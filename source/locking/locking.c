@@ -167,7 +167,7 @@ int get_share_modes(int cnum, share_lock_token token, uint32 dev, uint32 inode,
       ("PANIC ERROR : get_share_modes (FAST_SHARE_MODES): hash_entry %d too large \
 (max = %d)\n",
       hash_entry, lp_shmem_hash_size() ));
-    abort();
+    return 0;
   }
 
   mode_array = (smb_shm_offset_t *)smb_shm_offset2addr(smb_shm_get_userdef_off());
@@ -265,7 +265,7 @@ bucket %d",file_scanner_p->locking_version, dev, inode, hash_entry));
         DEBUG(0,("PANIC ERROR:get_share_mode (FAST_SHARE_MODES): num_share_mode_entries < 0 (%d) \
 for dev = %d, ino = %d, hashbucket %d\n", file_scanner_p->num_share_mode_entries,
              dev, inode, hash_entry));
-        abort();
+        return 0;
       }
 
       DEBUG(0,("get_share_modes (FAST_SHARE_MODES): process %d no longer exists and \
@@ -344,7 +344,7 @@ void del_share_mode(share_lock_token token, int fnum)
       ("PANIC ERROR:del_share_mode (FAST_SHARE_MODES): hash_entry %d too large \
 (max = %d)\n",
       hash_entry, lp_shmem_hash_size() ));
-    abort();
+    return;
   }
 
   mode_array = (smb_shm_offset_t *)smb_shm_offset2addr(smb_shm_get_userdef_off());
@@ -353,7 +353,7 @@ void del_share_mode(share_lock_token token, int fnum)
   {  
     DEBUG(0,("PANIC ERROR:del_share_mode (FAST_SHARE_MODES): hash bucket %d empty\n", 
                   hash_entry));
-    abort();
+    return;
   }  
   
   file_scanner_p = (share_mode_record *)smb_shm_offset2addr(mode_array[hash_entry]);
@@ -436,7 +436,7 @@ Deleting share mode entry dev = %d, inode = %d in hash bucket %d (num entries no
       DEBUG(0,("PANIC ERROR:del_share_mode (FAST_SHARE_MODES): num_share_mode_entries < 0 (%d) \
 for dev = %d, ino = %d, hashbucket %d\n", file_scanner_p->num_share_mode_entries,
            dev, inode, hash_entry));
-      abort();
+      return;
     }
 
     /* If we deleted the last share mode entry then remove the share mode record. */
@@ -483,7 +483,7 @@ BOOL set_share_mode(share_lock_token token, int fnum)
       ("PANIC ERROR:set_share_mode (FAST_SHARE_MODES): hash_entry %d too large \
 (max = %d)\n",
       hash_entry, lp_shmem_hash_size() ));
-    abort();
+    return False;
   }
 
   mode_array = (smb_shm_offset_t *)smb_shm_offset2addr(smb_shm_get_userdef_off());
@@ -564,7 +564,7 @@ inode %d in hash bucket %d\n", fs_p->name, dev, inode, hash_entry));
     DEBUG(0,("PANIC ERROR:set_share_mode (FAST_SHARE_MODES): num_share_mode_entries < 0 (%d) \
 for dev = %d, ino = %d, hashbucket %d\n", file_scanner_p->num_share_mode_entries,
          dev, inode, hash_entry));
-    abort();
+    return False;
   }
 
   /* Increment the share_mode_entries counter */
@@ -838,7 +838,7 @@ int get_share_modes(int cnum, share_lock_token token, uint32 dev, uint32 inode,
   {
     DEBUG(0,("PANIC ERROR:get_share_mode: num_share_mode_entries < 0 (%d) \
 for share file %d\n", num_entries, fname));
-    abort();
+    return 0;
   }
 
   if(num_entries)
@@ -1005,7 +1005,7 @@ void del_share_mode(share_lock_token token, int fnum)
   {
     DEBUG(0,("PANIC ERROR:del_share_mode: num_share_mode_entries < 0 (%d) \
 for share file %d\n", num_entries, fname));
-    abort();
+    return;
   }
 
   if(num_entries == 0)

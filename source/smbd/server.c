@@ -937,7 +937,7 @@ int fd_attempt_close(file_fd_struct *fd_ptr)
 /****************************************************************************
 open a file
 ****************************************************************************/
-void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct stat *sbuf)
+static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct stat *sbuf)
 {
   extern struct current_user current_user;
   pstring fname;
@@ -1033,14 +1033,6 @@ void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct stat *s
       return;
     }
 
-    /* 
-     * If O_TRUNC was set, ensure we truncate the file.
-     * open_file_shared explicitly clears this flag before
-     * calling open_file, so we can safely do this here.
-     */
-    if(flags & O_TRUNC)
-      ftruncate(fd_ptr->fd, 0);
-      
   } else {
     int open_flags;
     /* We need to allocate a new file_fd_struct (this increments the
@@ -1389,11 +1381,19 @@ free_and_exit:
   Helper for open_file_shared. 
   Truncate a file after checking locking; close file if locked.
   **************************************************************************/
-static void truncate_unless_locked(int fnum, int cnum)
+static void truncate_unless_locked(int fnum, int cnum, share_lock_token token, 
+       BOOL *share_locked)
 {
   if (Files[fnum].can_write){
     if (is_locked(fnum,cnum,0x3FFFFFFF,0)){
+      /* If share modes are in force for this connection we
+         have the share entry locked. Unlock it before closing. */
+      if (*share_locked && lp_share_modes(SNUM(cnum)))
+        unlock_share_entry( cnum, Files[fnum].fd_ptr->dev, 
+                            Files[fnum].fd_ptr->inode, token);
       close_file(fnum);   
+      /* Share mode no longer locked. */
+      *share_locked = False;
       errno = EACCES;
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRlock;
@@ -1600,12 +1600,15 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
       if (!file_existed) *action = 2;
       if (file_existed && (flags2 & O_TRUNC)) *action = 3;
     }
-
-    if ((flags2&O_TRUNC) && file_existed)
-      truncate_unless_locked(fnum,cnum);
-
+    /* We must create the share mode entry before truncate as
+       truncate can fail due to locking and have to close the
+       file (which expects the share_mode_entry to be there).
+     */
     if (lp_share_modes(SNUM(cnum)))
       set_share_mode(token, fnum);
+
+    if ((flags2&O_TRUNC) && file_existed)
+      truncate_unless_locked(fnum,cnum,token,&share_locked);
   }
 
   if (share_locked && lp_share_modes(SNUM(cnum)))

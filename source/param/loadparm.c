@@ -1079,6 +1079,10 @@ BOOL lp_add_printer(char *pszPrintername, int iDefaultService)
   string_set(&iSERVICE(i).szPrintername,pszPrintername);
   string_set(&iSERVICE(i).comment,comment);
   iSERVICE(i).bBrowseable = sDefault.bBrowseable;
+  /* Printers cannot be read_only. */
+  iSERVICE(i).bRead_only = False;
+  /* No share modes on printer services. */
+  iSERVICE(i).bShareModes = False;
   
   DEBUG(3,("adding printer service %s\n",pszPrintername));
   

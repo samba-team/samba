@@ -1135,7 +1135,7 @@ int reply_ulogoffX(char *inbuf,char *outbuf,int length,int bufsize)
 
 
 /****************************************************************************
-  reply to a mknew
+  reply to a mknew or a create
 ****************************************************************************/
 int reply_mknew(char *inbuf,char *outbuf)
 {
@@ -1145,7 +1145,8 @@ int reply_mknew(char *inbuf,char *outbuf)
   int outsize = 0;
   int createmode;
   mode_t unixmode;
-  
+  int ofun = 0;
+ 
   com = SVAL(inbuf,smb_com);
   cnum = SVAL(inbuf,smb_tid);
 
@@ -1160,9 +1161,6 @@ int reply_mknew(char *inbuf,char *outbuf)
   
   unixmode = unix_mode(cnum,createmode);
   
-  if (com == SMBmknew && file_exist(fname,NULL))
-    return(ERROR(ERRDOS,ERRfilexists));
-    
   fnum = find_free_file();
   if (fnum < 0)
     return(ERROR(ERRSRV,ERRnofids));
@@ -1170,7 +1168,19 @@ int reply_mknew(char *inbuf,char *outbuf)
   if (!check_name(fname,cnum))
     return(UNIXERROR(ERRDOS,ERRnoaccess));
 
-  open_file(fnum,cnum,fname,O_RDWR | O_CREAT | O_TRUNC,unixmode, 0);
+  if(com == SMBmknew)
+  {
+    /* We should fail if file exists. */
+    ofun = 0x10;
+  }
+  else
+  {
+    /* SMBcreate - Create if file doesn't exist, truncate if it does. */
+    ofun = 0x12;
+  }
+
+  /* Open file in dos compatibility share mode. */
+  open_file_shared(fnum,cnum,fname,(DENY_FCB<<4)|0xF, ofun, unixmode, NULL, NULL);
   
   if (!Files[fnum].open)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -1218,7 +1228,9 @@ int reply_ctemp(char *inbuf,char *outbuf)
 
   strcpy(fname2,(char *)mktemp(fname));
 
-  open_file(fnum,cnum,fname2,O_RDWR | O_CREAT | O_TRUNC,unixmode, 0);
+  /* Open file in dos compatibility share mode. */
+  /* We should fail if file exists. */
+  open_file_shared(fnum,cnum,fname2,(DENY_FCB<<4)|0xF, 0x10, unixmode, NULL, NULL);
 
   if (!Files[fnum].open)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -2219,8 +2231,8 @@ int reply_printopen(char *inbuf,char *outbuf)
   if (!check_name(fname2,cnum))
     return(ERROR(ERRDOS,ERRnoaccess));
 
-  open_file(fnum,cnum,fname2,O_WRONLY | O_CREAT | O_TRUNC,
-	    unix_mode(cnum,0), 0);
+  /* Open for exclusive use, write only. */
+  open_file_shared(fnum,cnum,fname2,(DENY_ALL<<4)|1, 0x12, unix_mode(cnum,0), NULL, NULL);
 
   if (!Files[fnum].open)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
