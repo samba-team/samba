@@ -2064,6 +2064,7 @@ BOOL prs_read(prs_struct *ps, int fd, size_t len, int timeout);
 void prs_mem_free(prs_struct *ps);
 void prs_give_memory(prs_struct *ps, char *buf, uint32 size, BOOL is_dynamic);
 char *prs_take_memory(prs_struct *ps, uint32 *psize);
+BOOL prs_set_buffer_size(prs_struct *ps, uint32 newsize);
 BOOL prs_grow(prs_struct *ps, uint32 extra_space);
 BOOL prs_force_grow(prs_struct *ps, uint32 extra_space);
 char *prs_data_p(prs_struct *ps);
