@@ -268,7 +268,7 @@ static int help_usage(int argc, const char **argv)
 "\n"\
 "Valid functions are:\n"\
 "  RPC RAP ADS FILE SHARE SESSION SERVER DOMAIN PRINTQ USER GROUP VALIDATE\n"\
-"  GROUPMEMBER ADMIN SERVICE PASSWORD TIME\n");
+"  GROUPMEMBER ADMIN SERVICE PASSWORD TIME LOOKUP\n");
 	return -1;
 }
 
@@ -296,6 +296,7 @@ static int net_help(int argc, const char **argv)
 		{"SERVICE", net_rap_service_usage},
 		{"PASSWORD", net_rap_password_usage},
 		{"TIME", net_time_usage},
+		{"LOOKUP", net_lookup_usage},
 
 		{"HELP", help_usage},
 		{NULL, NULL}};
@@ -324,6 +325,7 @@ static struct functable net_func[] = {
 	{"SERVICE", net_rap_service},	
 	{"PASSWORD", net_rap_password},
 	{"TIME", net_time},
+	{"LOOKUP", net_lookup},
 
 	{"HELP", net_help},
 	{NULL, NULL}
