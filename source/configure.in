@@ -2654,6 +2654,15 @@ if test x"$with_ads_support" != x"no"; then
                [Whether in-memory keytabs are supported])
   fi
 
+  AC_CHECK_MEMBER(krb5_keytab_entry.key,
+	AC_DEFINE(HAVE_KRB5_KEYTAB_ENTRY_KEY, 1, 
+		[Whether krb5_keytab_entry has key member]), [],
+		[#include <krb5.h>])
+
+  AC_CHECK_MEMBER(krb5_keytab_entry.keyblock,
+	AC_DEFINE(HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK, 1, 
+		[Whether krb5_keytab_entry has keyblock member]), [],
+		[#include <krb5.h>])
 
   if test x"$ac_cv_lib_ext_krb5_krb5_mk_req_extended" = x"yes"; then
     AC_DEFINE(HAVE_KRB5,1,[Whether to have KRB5 support])
