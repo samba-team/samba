@@ -23,16 +23,6 @@
 
 extern int DEBUGLEVEL;
 
- smb_ucs2_t wchar_list_sep[] = { (smb_ucs2_t)' ', (smb_ucs2_t)'\t', (smb_ucs2_t)',',
-								(smb_ucs2_t)';', (smb_ucs2_t)':', (smb_ucs2_t)'\n',
-								(smb_ucs2_t)'\r', 0 };
-/*
- * The following are the codepage to ucs2 and vica versa maps.
- * These are dynamically loaded from a unicode translation file.
- */
-
-#define CONV_DEBUGLEVEL		83
-
 #ifndef MAXUNI
 #define MAXUNI 1024
 #endif
