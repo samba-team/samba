@@ -1483,13 +1483,68 @@ store a security desc for a printer
 ****************************************************************************/
 uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 {
+	SEC_DESC_BUF *new_secdesc_ctr = NULL;
 	prs_struct ps;
 	fstring key;
 	uint32 status;
 
-	prs_init(&ps, (uint32)sec_desc_size(secdesc_ctr->sec) + sizeof(SEC_DESC_BUF), 4, MARSHALL);
+	/* The old owner and group sids of the security descriptor are not
+	   present when new ACEs are added or removed by changing printer
+	   permissions through NT.  If they are NULL in the new security
+	   descriptor then copy them over from the old one. */
 
-	if (!sec_io_desc_buf("nt_printing_setsec", &secdesc_ctr, &ps, 1)) {
+	if (!secdesc_ctr->sec->owner_sid || !secdesc_ctr->sec->grp_sid) {
+		SEC_DESC_BUF *old_secdesc_ctr = NULL;
+		DOM_SID *owner_sid, *group_sid;
+		SEC_DESC *psd = NULL;
+		size_t size;
+
+		/* Get old security descriptor */
+
+		if (!nt_printing_getsec(printername, &old_secdesc_ctr)) {
+			DEBUG(0, ("could not get old security descriptor for "
+				  "printer %s", printername));
+			return ERROR_INVALID_FUNCTION;
+		}
+
+		/* Pick out correct owner and group sids */
+
+		owner_sid = secdesc_ctr->sec->owner_sid ?
+			secdesc_ctr->sec->owner_sid :
+			old_secdesc_ctr->sec->owner_sid;
+
+		group_sid = secdesc_ctr->sec->grp_sid ?
+			secdesc_ctr->sec->grp_sid :
+			old_secdesc_ctr->sec->grp_sid;
+
+		/* Make a deep copy of the security descriptor */
+
+		psd = make_sec_desc(secdesc_ctr->sec->revision,
+				    secdesc_ctr->sec->type,
+				    owner_sid, group_sid,
+				    secdesc_ctr->sec->sacl,
+				    secdesc_ctr->sec->dacl,
+				    &size);
+
+		new_secdesc_ctr = make_sec_desc_buf(size, psd);
+
+		/* Free up memory */
+
+		free_sec_desc(&psd);
+		free_sec_desc_buf(&old_secdesc_ctr);
+	}
+
+	if (!new_secdesc_ctr) {
+		new_secdesc_ctr = secdesc_ctr;
+	}
+
+	/* Store the security descriptor in a tdb */
+
+	prs_init(&ps, (uint32)sec_desc_size(new_secdesc_ctr->sec) + 
+		 sizeof(SEC_DESC_BUF), 4, MARSHALL);
+
+	if (!sec_io_desc_buf("nt_printing_setsec", &new_secdesc_ctr, 
+			     &ps, 1)) {
 		status = ERROR_INVALID_FUNCTION;
 		goto out;
 	}
@@ -1504,6 +1559,10 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 	}
 
  out:
+	if (new_secdesc_ctr != secdesc_ctr) {
+		free_sec_desc_buf(&new_secdesc_ctr);
+	}
+
 	prs_mem_free(&ps);
 	return status;
 }
@@ -1522,7 +1581,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(void)
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
 
-	init_sec_access(&sa,PRINTER_MANAGE_DOCUMENTS);
+	init_sec_access(&sa,PRINTER_ACE_FULL_CONTROL);
 	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
 					sa, SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY);
 	init_sec_ace(&ace[1], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
@@ -1609,72 +1668,60 @@ jfm: I should use this comment for the text file to explain
 
 */
 
-static char *pace_str(uint32 ace_flags)
-{
-	if ((ace_flags & PRINTER_ACE_FULL_CONTROL) == 
-	    PRINTER_ACE_FULL_CONTROL) return "full control";
+/* Check a user has permissions to perform the given operation */
 
-	if ((ace_flags & PRINTER_ACE_MANAGE_DOCUMENTS) ==
-	    PRINTER_ACE_MANAGE_DOCUMENTS) return "manage documents";
-
-	if ((ace_flags & PRINTER_ACE_PRINT) == PRINTER_ACE_PRINT)
-		return "print";
-
-	return "UNKNOWN";
-}
-
-BOOL print_access_check(int snum, uint16 vuid, uint32 required_access)
+BOOL print_access_check(struct current_user *user, int snum, 
+			uint32 required_access)
 {
 	SEC_DESC_BUF *secdesc = NULL;
-	user_struct *user;
-	char *p;
+	uint32 access_granted, status;
+	BOOL result;
+	char *pname;
 	int i;
 
 	/* Get printer name */
 
-	p = PRINTERNAME(snum);
-	if (!p || !*p) p = SERVICE(snum);
+	pname = PRINTERNAME(snum);
+	if (!pname || !*pname) pname = SERVICE(snum);
 
 	/* Get printer security descriptor */
 
-	nt_printing_getsec(p, &secdesc);
-	user = get_valid_user_struct(vuid);
+	nt_printing_getsec(pname, &secdesc);
 
-	/* Do something useful */
+	/* The ACE for Full Control in a printer security descriptor
+	   doesn't seem to map properly to the access checking model.  For
+	   it to work properly it should be the logical OR of all the other
+	   values, i.e PRINTER_ACE_MANAGE_DOCUMENTS | PRINTER_ACE_PRINT.
+	   This would cause the access check to simply fall out when we
+	   check against any subset of these bits.  To get things to work,
+	   change every ACE mask of PRINTER_ACE_FULL_CONTROL to 
+	   PRINTER_ACE_MANAGE_DOCUMENTS | PRINTER_ACE_PRINT before
+	   performing the access check.  I'm sure there is a better way to
+	   do this! */
 
-	for(i = 0; i < secdesc->sec->dacl->num_aces; i++) {
-		DOM_SID *sid = &secdesc->sec->dacl->ace[i].sid;
-		uint32 ace_flags = secdesc->sec->dacl->ace[i].info.mask;
-		uint8 ace_type = secdesc->sec->dacl->ace[i].type;
-		fstring sid_str;
-		fstring dom_name, name;
-		uint8 name_type;
-
-		sid_to_string(sid_str, sid);
-		winbind_lookup_sid(sid, dom_name, name, &name_type);
-		
-		DEBUG(0, ("ACE%d: %s/%s, %s%s\n", i, dom_name, name, 
-			  (ace_type == SEC_ACE_TYPE_ACCESS_ALLOWED) ? 
-			  "+" : "-", pace_str(ace_flags)));
-
-		DEBUG(0, ("\ttype = 0x%02x, flags = 0x%02x, size=0x%04x, mask=0x%08x\n", 
-			  ace_type, secdesc->sec->dacl->ace[i].flags,
-			  secdesc->sec->dacl->ace[i].size, ace_flags));
+	if (secdesc && secdesc->sec && secdesc->sec->dacl &&
+	    secdesc->sec->dacl->ace) {
+		for(i = 0; i < secdesc->sec->dacl->num_aces; i++) {
+			if (secdesc->sec->dacl->ace[i].info.mask ==
+			    PRINTER_ACE_FULL_CONTROL) {
+				secdesc->sec->dacl->ace[i].info.mask =
+					PRINTER_ACE_MANAGE_DOCUMENTS | 
+					PRINTER_ACE_PRINT;
+			}
+		}
 	}
 
-#if 0
-	/* Still mucking around with getting se_access_check() to work.
-	   Currently it takes a NET_USER_INFO_3 structure but this should
-	   perhaps be changed to a user_struct as it contains the
-	   user and group sid information required to perform the check. */
+	/* Check access */
 
-	result = se_access_check(secdesc, user, required_access, 0,
-				 &acc_grant, &status);
-#endif
+	result = se_access_check(secdesc->sec, user->uid, user->gid,
+				 user->ngroups, user->groups,
+				 required_access, &access_granted, &status);
 
-	/* Free security descriptor */
+	DEBUG(4, ("access check was %s\n", result ? "SUCCESS" : "FAILURE"));
+
+	/* Free mallocated memory */
 
 	free_sec_desc_buf(&secdesc);
 
-	return True;
+	return result;
 }
