@@ -121,32 +121,73 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 		}
 	}
 
-	if (!NT_STATUS_IS_OK(result = cli_samr_chgpasswd_user(&cli, cli.mem_ctx, user_name, 
-							      new_passwd, old_passwd))) {
+	if (NT_STATUS_IS_OK(result = cli_samr_chgpasswd_user(&cli, cli.mem_ctx, user_name, 
+							     new_passwd, old_passwd))) {
+		/* Great - it all worked! */
+		cli_shutdown(&cli);
+		return True;
 
-		if (NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) 
-		    || NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL)) {
-			/* try the old Lanman method */
-			if (lp_client_lanman_auth()) {
-				if (!cli_oem_change_password(&cli, user_name, new_passwd, old_passwd)) {
-					slprintf(err_str, err_str_len-1, "machine %s rejected the password change: Error was : %s.\n",
-						 remote_machine, cli_errstr(&cli) );
-					cli_shutdown(&cli);
-					return False;
-				}
-			} else {
-				slprintf(err_str, err_str_len-1, "machine %s does not support SAMR connections, but LANMAN password changed are disabled\n",
-					 remote_machine);
-				cli_shutdown(&cli);
-				return False;
-			}
-		} else {
-			slprintf(err_str, err_str_len-1, "machine %s rejected the password change: Error was : %s.\n",
+	} else if (!(NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) 
+		     || NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL))) {
+		/* it failed, but for reasons such as wrong password, too short etc ... */
+		
+		slprintf(err_str, err_str_len-1, "machine %s rejected the password change: Error was : %s.\n",
+			 remote_machine, get_friendly_nt_error_msg(result));
+		cli_shutdown(&cli);
+		return False;
+	}
+
+	/* OK, that failed, so try again... */
+	cli_nt_session_close(&cli);
+	
+	/* Try anonymous NTLMSSP... */
+	init_creds(&creds, "", "", NULL);
+	cli_init_creds(&cli, &creds);
+	
+	result = NT_STATUS_UNSUCCESSFUL;
+	
+	/* OK, this is ugly, but... */
+	if ( cli_nt_session_open( &cli, PI_SAMR ) 
+	     && NT_STATUS_IS_OK(result
+				= cli_samr_chgpasswd_user(&cli, cli.mem_ctx, user_name, 
+							  new_passwd, old_passwd))) {
+		/* Great - it all worked! */
+		cli_shutdown(&cli);
+		return True;
+
+	} else {
+		if (!(NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) 
+		      || NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL))) {
+			/* it failed, but again it was due to things like new password too short */
+
+			slprintf(err_str, err_str_len-1, 
+				 "machine %s rejected the (anonymous) password change: Error was : %s.\n",
 				 remote_machine, get_friendly_nt_error_msg(result));
 			cli_shutdown(&cli);
 			return False;
 		}
+		
+		/* We have failed to change the user's password, and we think the server
+		   just might not support SAMR password changes, so fall back */
+		
+		if (lp_client_lanman_auth()) {
+			if (cli_oem_change_password(&cli, user_name, new_passwd, old_passwd)) {
+				/* SAMR failed, but the old LanMan protocol worked! */
+
+				cli_shutdown(&cli);
+				return True;
+			}
+			slprintf(err_str, err_str_len-1, 
+				 "machine %s rejected the password change: Error was : %s.\n",
+				 remote_machine, cli_errstr(&cli) );
+			cli_shutdown(&cli);
+			return False;
+		} else {
+			slprintf(err_str, err_str_len-1, 
+				 "machine %s does not support SAMR connections, but LANMAN password changed are disabled\n",
+				 remote_machine);
+			cli_shutdown(&cli);
+			return False;
+		}
 	}
-	cli_shutdown(&cli);
-	return True;
 }
