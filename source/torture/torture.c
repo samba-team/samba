@@ -3996,6 +3996,7 @@ static struct {
         {"RPC-SRVSVC", torture_rpc_srvsvc, 0},
         {"RPC-ATSVC", torture_rpc_atsvc, 0},
         {"RPC-EVENTLOG", torture_rpc_eventlog, 0},
+        {"RPC-EPMAPPER", torture_rpc_epmapper, 0},
         {"RPC-WINREG", torture_rpc_winreg, 0},
 	{NULL, NULL, 0}};
 

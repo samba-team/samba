@@ -91,8 +91,15 @@ struct ndr_print {
 	void *private;
 };
 
-#define LIBNDR_FLAG_BIGENDIAN 1
+#define LIBNDR_FLAG_BIGENDIAN  (1<<0)
+#define LIBNDR_FLAG_NOALIGN    (1<<1)
 
+#define LIBNDR_FLAG_STR_ASCII    (1<<2)
+#define LIBNDR_FLAG_STR_LEN4     (1<<3)
+#define LIBNDR_FLAG_STR_SIZE4    (1<<4)
+#define LIBNDR_FLAG_STR_NOTERM   (1<<5)
+#define LIBNDR_FLAG_STR_NULLTERM (1<<6)
+#define LIBNDR_STRING_FLAGS      (0x7C)
 
 /* useful macro for debugging */
 #define NDR_PRINT_DEBUG(type, p) ndr_print_debug((ndr_print_fn_t)ndr_print_ ##type, #p, p)
@@ -110,7 +117,9 @@ enum ndr_err_code {
 	NDR_ERR_OFFSET,
 	NDR_ERR_RELATIVE,
 	NDR_ERR_CHARCNV,
-	NDR_ERR_LENGTH
+	NDR_ERR_LENGTH,
+	NDR_ERR_SUBCONTEXT,
+	NDR_ERR_STRING
 };
 
 /*
@@ -133,7 +142,9 @@ enum ndr_err_code {
 } while(0)
 
 #define NDR_PULL_ALIGN(ndr, n) do { \
-	ndr->offset = (ndr->offset + (n-1)) & ~(n-1); \
+	if (!(ndr->flags & LIBNDR_FLAG_NOALIGN)) { \
+		ndr->offset = (ndr->offset + (n-1)) & ~(n-1); \
+	} \
 	if (ndr->offset >= ndr->data_size) { \
 		return NT_STATUS_BUFFER_TOO_SMALL; \
 	} \
@@ -142,8 +153,10 @@ enum ndr_err_code {
 #define NDR_PUSH_NEED_BYTES(ndr, n) NDR_CHECK(ndr_push_expand(ndr, ndr->offset+(n)))
 
 #define NDR_PUSH_ALIGN(ndr, n) do { \
-	uint32 _pad = (ndr->offset & (n-1)); \
-	while (_pad--) NDR_CHECK(ndr_push_uint8(ndr, 0)); \
+	if (!(ndr->flags & LIBNDR_FLAG_NOALIGN)) { \
+		uint32 _pad = (ndr->offset & (n-1)); \
+		while (_pad--) NDR_CHECK(ndr_push_uint8(ndr, 0)); \
+	} \
 } while(0)
 
 
@@ -201,4 +214,5 @@ typedef void (*ndr_print_union_fn_t)(struct ndr_print *, const char *, uint32, v
 #include "librpc/gen_ndr/ndr_srvsvc.h"
 #include "librpc/gen_ndr/ndr_atsvc.h"
 #include "librpc/gen_ndr/ndr_eventlog.h"
+#include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/ndr_winreg.h"

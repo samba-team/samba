@@ -202,6 +202,26 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+static BOOL test_GetUserPwInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			       struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_GetUserPwInfo r;
+	BOOL ret = True;
+
+	printf("Testing GetUserPwInfo\n");
+
+	r.in.handle = handle;
+
+	status = dcerpc_samr_GetUserPwInfo(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("GetUserPwInfo failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	return ret;
+}
+
 
 static BOOL test_user_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			  struct policy_handle *handle)
@@ -219,6 +239,10 @@ static BOOL test_user_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	if (!test_SetUserInfo(p, mem_ctx, handle)) {
 		ret = False;
 	}	
+
+	if (!test_GetUserPwInfo(p, mem_ctx, handle)) {
+		ret = False;
+	}
 
 	return ret;
 }
@@ -431,6 +455,10 @@ static BOOL test_OpenUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_QueryUserInfo(p, mem_ctx, &acct_handle)) {
+		ret = False;
+	}
+
+	if (!test_GetUserPwInfo(p, mem_ctx, &acct_handle)) {
 		ret = False;
 	}
 

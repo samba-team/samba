@@ -1,3 +1,6 @@
+#include "idl_types.h"
+
+
 [
 uuid(60a15ec5-4de8-11d7-a637-005056a20182),
 version(1.0)

@@ -120,7 +120,8 @@ property: 'unique'
 	  | 'noprint'
 	  | 'relative'	  
 	  | 'nodiscriminant'
-	  | 'subcontext'
+          | 'subcontext' '(' constant ')' {{ "$item[1]" => "$item{constant}" }}
+          | 'flag' '(' anytext ')' {{ "$item[1]" => "$item{anytext}" }}
 	  | 'byte_count_pointer' '(' expression ')' {{ "$item[1]" => "$item{expression}" }}
           | 'size_is' '(' expression ')' {{ "$item[1]" => "$item{expression}" }}
           | 'length_is' '(' expression ')' {{ "$item[1]" => "$item{expression}" }}
@@ -153,7 +154,7 @@ type :
 
 text: /[\w\s\..?-]*/
 
-text2: /[\w\s\*\>\/\..?-]*/
+text2: /[\|\w\s\*\>\/\..?-]*/
 
 anytext: text2 '(' <commit> anytext ')' anytext
 	 {{ "$item[1]($item[4])$item[6]" }}

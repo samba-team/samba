@@ -64,6 +64,17 @@ midl.exe would write the above array as the following C header:
 		long s[1];
 	} Struct1;
 
+pidl takes a different approach, and writes it like this:
+
+       typedef struct {
+		long abc;
+		long count;     
+		long foo;
+		long *s;
+	} Struct1;
+
+
+
 VARYING ARRAYS
 --------------
 

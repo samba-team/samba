@@ -61,6 +61,7 @@ NTSTATUS ndr_pull_subcontext(struct ndr_pull *ndr, struct ndr_pull *ndr2, uint32
 	ndr2->data += ndr2->offset;
 	ndr2->offset = 0;
 	ndr2->data_size = size;
+	ndr2->flags = ndr->flags;
 	return NT_STATUS_OK;
 }
 
@@ -400,53 +401,94 @@ NTSTATUS ndr_push_error(struct ndr_push *ndr, enum ndr_err_code err, const char 
   handle subcontext buffers, which in midl land are user-marshalled, but
   we use magic in pidl to make them easier to cope with
 */
+static NTSTATUS ndr_pull_subcontext_header(struct ndr_pull *ndr, 
+					   size_t sub_size,
+					   struct ndr_pull *ndr2)
+{
+	switch (sub_size) {
+	case 0: {
+		uint32 size = ndr->data_size - ndr->offset;
+		if (size == 0) return NT_STATUS_OK;
+		NDR_CHECK(ndr_pull_subcontext(ndr, ndr2, size));
+		break;
+	}
+
+	case 2: {
+		uint16 size;
+		NDR_CHECK(ndr_pull_uint16(ndr, &size));
+		if (size == 0) return NT_STATUS_OK;
+		NDR_CHECK(ndr_pull_subcontext(ndr, ndr2, size));
+		break;
+	}
+
+	case 4: {
+		uint32 size;
+		NDR_CHECK(ndr_pull_uint32(ndr, &size));
+		if (size == 0) return NT_STATUS_OK;
+		NDR_CHECK(ndr_pull_subcontext(ndr, ndr2, size));
+		break;
+	}
+	default:
+		return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext size %d", 
+				      sub_size);
+	}
+	return NT_STATUS_OK;
+}
+
+/*
+  handle subcontext buffers, which in midl land are user-marshalled, but
+  we use magic in pidl to make them easier to cope with
+*/
 NTSTATUS ndr_pull_subcontext_fn(struct ndr_pull *ndr, 
+				size_t sub_size,
 				void *base,
 				NTSTATUS (*fn)(struct ndr_pull *, void *))
 {
-	uint32 size;
 	struct ndr_pull ndr2;
 
-	NDR_CHECK(ndr_pull_uint32(ndr, &size));
-	NDR_CHECK(ndr_pull_subcontext(ndr, &ndr2, size));
+	NDR_CHECK(ndr_pull_subcontext_header(ndr, sub_size, &ndr2));
 	NDR_CHECK(fn(&ndr2, base));
-	NDR_CHECK(ndr_pull_advance(ndr, size));
+	if (sub_size) {
+		NDR_CHECK(ndr_pull_advance(ndr, ndr2.data_size));
+	} else {
+		NDR_CHECK(ndr_pull_advance(ndr, ndr2.offset));
+	}
 	return NT_STATUS_OK;
 }
 
 
 NTSTATUS ndr_pull_subcontext_flags_fn(struct ndr_pull *ndr, 
+				      size_t sub_size,
 				      void *base,
 				      NTSTATUS (*fn)(struct ndr_pull *, int , void *))
 {
-	uint32 size;
 	struct ndr_pull ndr2;
 
-	NDR_CHECK(ndr_pull_uint32(ndr, &size));
-	if (size == 0) {
-		return NT_STATUS_OK;
-	}
-	NDR_CHECK(ndr_pull_subcontext(ndr, &ndr2, size));
+	NDR_CHECK(ndr_pull_subcontext_header(ndr, sub_size, &ndr2));
 	NDR_CHECK(fn(&ndr2, NDR_SCALARS|NDR_BUFFERS, base));
-	NDR_CHECK(ndr_pull_advance(ndr, size));
+	if (sub_size) {
+		NDR_CHECK(ndr_pull_advance(ndr, ndr2.data_size));
+	} else {
+		NDR_CHECK(ndr_pull_advance(ndr, ndr2.offset));
+	}
 	return NT_STATUS_OK;
 }
 
 NTSTATUS ndr_pull_subcontext_union_fn(struct ndr_pull *ndr, 
+				      size_t sub_size,
 				      uint32 level,
 				      void *base,
 				      NTSTATUS (*fn)(struct ndr_pull *, int , uint32 , void *))
 {
-	uint32 size;
 	struct ndr_pull ndr2;
 
-	NDR_CHECK(ndr_pull_uint32(ndr, &size));
-	if (size == 0) {
-		return NT_STATUS_OK;
-	}
-	NDR_CHECK(ndr_pull_subcontext(ndr, &ndr2, size));
+	NDR_CHECK(ndr_pull_subcontext_header(ndr, sub_size, &ndr2));
 	NDR_CHECK(fn(&ndr2, NDR_SCALARS|NDR_BUFFERS, level, base));
-	NDR_CHECK(ndr_pull_advance(ndr, size));
+	if (sub_size) {
+		NDR_CHECK(ndr_pull_advance(ndr, ndr2.data_size));
+	} else {
+		NDR_CHECK(ndr_pull_advance(ndr, ndr2.offset));
+	}
 	return NT_STATUS_OK;
 }
 

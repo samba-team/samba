@@ -1,3 +1,5 @@
+#include "idl_types.h"
+
 /*
   miscellaneous IDL structures
 */

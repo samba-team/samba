@@ -42,6 +42,10 @@ sub find_sibling($$)
 	my($name) = shift;
 	my($fn) = $e->{PARENT};
 
+	if ($name =~ /\*(.*)/) {
+		$name = $1;
+	}
+
 	if ($fn->{TYPE} eq "FUNCTION") {
 		for my $e2 (@{$fn->{DATA}}) {
 			if ($e2->{NAME} eq $name) {
@@ -74,17 +78,24 @@ sub find_size_var($$)
 		return $size;
 	}
 
+	my $prefix = "";
+
+	if ($size =~ /\*(.*)/) {
+		$size = $1;
+		$prefix = "*";
+	}
+
 	if ($fn->{TYPE} ne "FUNCTION") {
-		return "r->$size";
+		return $prefix . "r->$size";
 	}
 
 	my $e2 = find_sibling($e, $size);
 
 	if (util::has_property($e2, "in")) {
-		return "r->in.$size";
+		return $prefix . "r->in.$size";
 	}
 	if (util::has_property($e2, "out")) {
-		return "r->out.$size";
+		return $prefix . "r->out.$size";
 	}
 
 	die "invalid variable in $size for element $e->{NAME} in $fn->{NAME}\n";
@@ -100,6 +111,30 @@ sub fn_prefix($)
 		return "static ";
 	}
 	return "";
+}
+
+
+###################################################################
+# setup any special flags for an element or structure
+sub start_flags($)
+{
+	my $e = shift;
+	my $flags = util::has_property($e, "flag");
+	if (defined $flags) {
+		pidl "\t{ uint32 _flags_save_$e->{TYPE} = ndr->flags;\n";
+		pidl "\tndr->flags |= $flags;\n";
+	}
+}
+
+###################################################################
+# end any special flags for an element or structure
+sub end_flags($)
+{
+	my $e = shift;
+	my $flags = util::has_property($e, "flag");
+	if (defined $flags) {
+		pidl "\tndr->flags = _flags_save_$e->{TYPE};\n\t}\n";
+	}
 }
 
 
@@ -287,6 +322,8 @@ sub ParseElementPushScalar($$$)
 	my($ndr_flags) = shift;
 	my $cprefix = util::c_push_prefix($e);
 
+	start_flags($e);
+
 	if (util::has_property($e, "relative")) {
 		pidl "\tNDR_CHECK(ndr_push_relative(ndr, NDR_SCALARS, $var_prefix$e->{NAME}, (ndr_push_const_fn_t) ndr_push_$e->{TYPE}));\n";
 	} elsif (util::is_inline_array($e)) {
@@ -304,6 +341,8 @@ sub ParseElementPushScalar($$$)
 	} else {
 		pidl "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME}));\n";
 	}
+
+	end_flags($e);
 }
 
 #####################################################################
@@ -351,8 +390,9 @@ sub ParseElementPullSwitch($$$$)
 		pidl "\t}\n";
 	}
 
-	if (util::has_property($e, "subcontext")) {
-		pidl "\tNDR_CHECK(ndr_pull_subcontext_union_fn(ndr, $switch_var, $cprefix$var_prefix$e->{NAME}, (ndr_pull_union_fn_t) ndr_pull_$e->{TYPE}));\n";
+	my $sub_size = util::has_property($e, "subcontext");
+	if (defined $sub_size) {
+		pidl "\tNDR_CHECK(ndr_pull_subcontext_union_fn(ndr, $sub_size, $switch_var, $cprefix$var_prefix$e->{NAME}, (ndr_pull_union_fn_t) ndr_pull_$e->{TYPE}));\n";
 	} else {
 		pidl "\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $ndr_flags, $switch_var, $cprefix$var_prefix$e->{NAME}));\n";
 	}
@@ -378,8 +418,9 @@ sub ParseElementPushSwitch($$$$)
 		pidl "\tNDR_CHECK(ndr_push_$e2->{TYPE}(ndr, $switch_var));\n";
 	}
 
-	if (util::has_property($e, "subcontext")) {
-		pidl "\tNDR_CHECK(ndr_push_subcontext_union_fn(ndr, $switch_var, $cprefix$var_prefix$e->{NAME}, (ndr_push_union_fn_t) ndr_pull_$e->{TYPE}));\n";
+	my $sub_size = util::has_property($e, "subcontext");
+	if (defined $sub_size) {
+		pidl "\tNDR_CHECK(ndr_push_subcontext_union_fn(ndr, $sub_size, $switch_var, $cprefix$var_prefix$e->{NAME}, (ndr_push_union_fn_t) ndr_pull_$e->{TYPE}));\n";
 	} else {
 		pidl "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $ndr_flags, $switch_var, $cprefix$var_prefix$e->{NAME}));\n";
 	}
@@ -407,6 +448,9 @@ sub ParseElementPullScalar($$$)
 	my($var_prefix) = shift;
 	my($ndr_flags) = shift;
 	my $cprefix = util::c_pull_prefix($e);
+	my $sub_size = util::has_property($e, "subcontext");
+
+	start_flags($e);
 
 	if (util::has_property($e, "relative")) {
 		pidl "\tNDR_CHECK(ndr_pull_relative(ndr, (const void **)&$var_prefix$e->{NAME}, sizeof(*$var_prefix$e->{NAME}), (ndr_pull_flags_fn_t)ndr_pull_$e->{TYPE}));\n";
@@ -425,17 +469,19 @@ sub ParseElementPullScalar($$$)
 		# no scalar component
 	} elsif (my $switch = util::has_property($e, "switch_is")) {
 		ParseElementPullSwitch($e, $var_prefix, $ndr_flags, $switch);
-	} elsif (util::has_property($e, "subcontext")) {
+	} elsif (defined $sub_size) {
 		if (util::is_builtin_type($e->{TYPE})) {
-			pidl "\tNDR_CHECK(ndr_pull_subcontext_fn(ndr, $cprefix$var_prefix$e->{NAME}, (ndr_pull_fn_t) ndr_pull_$e->{TYPE}));\n";
+			pidl "\tNDR_CHECK(ndr_pull_subcontext_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_pull_fn_t) ndr_pull_$e->{TYPE}));\n";
 		} else {
-			pidl "\tNDR_CHECK(ndr_pull_subcontext_flags_fn(ndr, $cprefix$var_prefix$e->{NAME}, (ndr_pull_flags_fn_t) ndr_pull_$e->{TYPE}));\n";
+			pidl "\tNDR_CHECK(ndr_pull_subcontext_flags_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_pull_flags_fn_t) ndr_pull_$e->{TYPE}));\n";
 		}
 	} elsif (util::is_builtin_type($e->{TYPE})) {
 		pidl "\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $cprefix$var_prefix$e->{NAME}));\n";
 	} else {
 		pidl "\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME}));\n";
 	}
+
+	end_flags($e);
 }
 
 #####################################################################
@@ -450,6 +496,8 @@ sub ParseElementPushBuffer($$$)
 	if (util::is_pure_scalar($e)) {
 		return;
 	}
+
+	start_flags($e);
 
 	if (util::need_wire_pointer($e)) {
 		pidl "\tif ($var_prefix$e->{NAME}) {\n";
@@ -478,6 +526,8 @@ sub ParseElementPushBuffer($$$)
 	if (util::need_wire_pointer($e)) {
 		pidl "\t}\n";
 	}	
+
+	end_flags($e);
 }
 
 #####################################################################
@@ -514,6 +564,7 @@ sub ParseElementPullBuffer($$$)
 	my($var_prefix) = shift;
 	my($ndr_flags) = shift;
 	my $cprefix = util::c_pull_prefix($e);
+	my $sub_size = util::has_property($e, "subcontext");
 
 	if (util::is_pure_scalar($e)) {
 		return;
@@ -522,6 +573,8 @@ sub ParseElementPullBuffer($$$)
 	if (util::has_property($e, "relative")) {
 		return;
 	}
+
+	start_flags($e);
 
 	if (util::need_wire_pointer($e)) {
 		pidl "\tif ($var_prefix$e->{NAME}) {\n";
@@ -537,11 +590,13 @@ sub ParseElementPullBuffer($$$)
 		} else {
 			ParseElementPullSwitch($e, $var_prefix, "NDR_BUFFERS", $switch);
 		}
-	} elsif (util::has_property($e, "subcontext")) {
-		if (util::is_builtin_type($e->{TYPE})) {
-			pidl "\tNDR_CHECK(ndr_pull_subcontext_fn(ndr, $cprefix$var_prefix$e->{NAME}, (ndr_pull_fn_t) ndr_pull_$e->{TYPE}));\n";
-		} else {
-			pidl "\tNDR_CHECK(ndr_pull_subcontext_flags_fn(ndr, $cprefix$var_prefix$e->{NAME}, (ndr_pull_flags_fn_t) ndr_pull_$e->{TYPE}));\n";
+	} elsif (defined $sub_size) {
+		if ($e->{POINTERS}) {
+			if (util::is_builtin_type($e->{TYPE})) {
+				pidl "\tNDR_CHECK(ndr_pull_subcontext_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_pull_fn_t) ndr_pull_$e->{TYPE}));\n";
+			} else {
+				pidl "\tNDR_CHECK(ndr_pull_subcontext_flags_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_pull_flags_fn_t) ndr_pull_$e->{TYPE}));\n";
+			}
 		}
 	} elsif (util::is_builtin_type($e->{TYPE})) {
 		pidl "\t\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $cprefix$var_prefix$e->{NAME}));\n";
@@ -554,6 +609,8 @@ sub ParseElementPullBuffer($$$)
 	if (util::need_wire_pointer($e)) {
 		pidl "\t}\n";
 	}	
+
+	end_flags($e);
 }
 
 #####################################################################
@@ -562,10 +619,12 @@ sub ParseStructPush($)
 {
 	my($struct) = shift;
 	my $conform_e;
-
+	
 	if (! defined $struct->{ELEMENTS}) {
 		return;
 	}
+
+	start_flags($struct);
 
 	# see if the structure contains a conformant array. If it
 	# does, then it must be the last element of the structure, and
@@ -600,6 +659,8 @@ sub ParseStructPush($)
 	}
 
 	pidl "done:\n";
+
+	end_flags($struct);
 }
 
 #####################################################################
@@ -629,6 +690,8 @@ sub ParseStructPull($)
 	if (! defined $struct->{ELEMENTS}) {
 		return;
 	}
+
+	start_flags($struct);
 
 	# see if the structure contains a conformant array. If it
 	# does, then it must be the last element of the structure, and
@@ -674,6 +737,8 @@ sub ParseStructPull($)
 	}
 
 	pidl "done:\n";
+
+	end_flags($struct);
 }
 
 
@@ -683,8 +748,10 @@ sub ParseUnionPush($)
 {
 	my $e = shift;
 	my $have_default = 0;
-	pidl "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
 
+	start_flags($e);
+
+	pidl "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
 	pidl "\tNDR_CHECK(ndr_push_struct_start(ndr));\n";
 
 #	my $align = union_alignment($e);
@@ -729,6 +796,7 @@ sub ParseUnionPush($)
 	}
 	pidl "\t}\n";
 	pidl "done:\n";
+	end_flags($e);
 }
 
 #####################################################################
@@ -763,6 +831,8 @@ sub ParseUnionPull($)
 {
 	my $e = shift;
 	my $have_default = 0;
+
+	start_flags($e);
 
 	pidl "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
 
@@ -814,6 +884,7 @@ sub ParseUnionPull($)
 	}
 	pidl "\t}\n";
 	pidl "done:\n";
+	end_flags($e);
 }
 
 #####################################################################

@@ -1,0 +1,134 @@
+#include "idl_types.h"
+
+/*
+  endpoint mapper interface
+*/
+
+[
+ uuid(e1af8308-5d1f-11c9-91a4-08002b14a0fa), 
+ version(3.0), 
+ pointer_default(unique)
+]
+interface epmapper
+{
+
+	typedef struct {
+		GUID uuid;
+		uint16 version;
+	} epm_prot_uuid;
+
+	typedef [nodiscriminant] union {
+		[case(13)] epm_prot_uuid uuid;
+		[default]  ;
+	} epm_protocol_info;
+
+	typedef struct {
+		uint8  protocol;
+		[switch_is(protocol)] epm_protocol_info info;
+	} epm_lhs;
+
+	typedef struct {
+		uint16 unknown;
+	} epm_rhs;
+
+	typedef struct {
+		[subcontext(2)] epm_lhs lhs;
+		[subcontext(2)] epm_rhs rhs;
+	} epm_floor;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16 num_floors;
+		epm_floor floors[num_floors];
+	} epm_towers;
+
+	typedef struct {
+		uint32  tower_length;
+		[subcontext(4)] epm_towers towers;
+	} twr_t;
+
+	typedef struct {
+		GUID        object;
+		twr_t       *tower;
+		ascstr2     annotation;
+	} epm_entry_t;
+
+	typedef struct {
+		GUID                uuid;
+		uint16              vers_major;
+		uint16              vers_minor;
+	} rpc_if_id_t;
+    
+	/**********************/
+	/* Function 0x0       */
+	void epm_Insert(
+		[in]    uint32          num_ents,
+		[in,size_is(num_ents)]  epm_entry_t         entries[],
+		[in]    uint32    replace,
+		[out]   uint32    *status
+		);
+    
+	/**********************/
+	/* Function 0x1       */
+	void epm_Delete(
+		[in]     uint32          num_ents,
+		[in, size_is(num_ents)]  epm_entry_t entries[],
+		[out]    uint32          *status
+		);
+    
+	/**********************/
+	/* Function 0x02      */
+	void epm_Lookup(
+		[in]            uint32          inquiry_type,
+		[in]            GUID            *object,
+		[in]            rpc_if_id_t     *interface_id,
+		[in]            uint32          vers_option,
+		[in, out, ref]  policy_handle   *entry_handle,
+		[in]            uint32          max_ents,
+		[out]           uint32          num_ents,
+		[out, length_is(num_ents), size_is(max_ents)]  epm_entry_t entries[],
+		[out]           uint32          status
+		);
+
+
+	/**********************/
+	/* Function 0x03      */
+
+	typedef struct {
+		twr_t *twr;
+	} twr_p_t;
+
+	void epm_Map(
+		[in]            GUID            *object,
+		[in]            twr_t           *map_tower,
+		[in, out]       policy_handle   *entry_handle,
+		[in]            uint32          max_towers,
+		[out]           uint32          *num_towers,
+		[out, length_is(*num_towers), size_is(max_towers)]  twr_p_t towers[],
+		[out]           uint32          *status
+		);
+    
+
+	/**********************/
+	/* Function 0x04      */
+	void epm_LookupHandleFree(
+		[in, out]       policy_handle *entry_handle,
+		[out]           uint32        *status
+		);
+    
+	/**********************/
+	/* Function 0x05      */
+	void epm_InqObject(
+		[out]           GUID        *epm_object,
+		[out]           uint32      *status
+		);
+    
+
+	/**********************/
+	/* Function 0x05      */
+	void epm_MgmtDelete(
+		[in]            uint32   object_speced,
+		[in]            GUID     *object,
+		[in]            twr_t    *tower,
+		[out]           uint32   *status
+		);
+}

@@ -49,7 +49,8 @@ sub HeaderElement($)
     $res .= tabs();
     HeaderType($element, $element->{TYPE}, "");
     $res .= " ";
-    if ($element->{POINTERS}) {
+    if ($element->{POINTERS} && 
+	$element->{TYPE} ne "string") {
 	    my($n) = $element->{POINTERS};
 	    for (my($i)=$n; $i > 0; $i--) {
 		    $res .= "*";
@@ -125,11 +126,7 @@ sub HeaderType($$$)
 		    HeaderUnion($data, $name);
 		return;
 	}
-	if ($data =~ "unistr" ||
-	    $data =~ "ascstr") {
-		$res .= "const char";
-	} elsif ($data =~ "nstring" ||
-		 $data =~ "lstring") {
+	if ($data =~ "string") {
 		$res .= "const char *";
 	} elsif (util::is_scalar_type($data)) {
 		$res .= "$data";
