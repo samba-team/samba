@@ -1,5 +1,5 @@
-          WHATS NEW IN 1.9.18alpha11 Nov 2nd 1997
-          =======================================
+          WHATS NEW IN 1.9.18alpha12 Nov 27th 1997
+          ========================================
 
 This is NOT a production release of Samba code.
 For production servers please run Samba 1.9.17p4
