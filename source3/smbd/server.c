@@ -2795,11 +2795,12 @@ global_oplocks_open = %d\n", timestring(), dev, inode, global_oplocks_open));
   {
     if(OPEN_FNUM(fnum))
     {
-      fsp = &Files[fnum];
       if((fsp->fd_ptr->dev == dev) && (fsp->fd_ptr->inode == inode) &&
          (fsp->open_time.tv_sec == tval->tv_sec) && 
-         (fsp->open_time.tv_usec == tval->tv_usec))
-        break;
+         (fsp->open_time.tv_usec == tval->tv_usec)) {
+	      fsp = &Files[fnum];
+	      break;
+      }
     }
   }
 
