@@ -657,7 +657,8 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 
 	/* Finally, actually ask if the password is OK */
 
-	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_state->check_password(ntlmssp_state, &nt_session_key, &lm_session_key))) {
+	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_state->check_password(ntlmssp_state, 
+								       &nt_session_key, &lm_session_key))) {
 		data_blob_free(&encrypted_session_key);
 		return nt_status;
 	}
@@ -677,7 +678,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 		} else {
 			data_blob_free(&encrypted_session_key);
 			DEBUG(10,("ntlmssp_server_auth: Failed to create NTLM2 session key.\n"));
-			return NT_STATUS_INVALID_PARAMETER;
+			session_key = data_blob(NULL, 0);
 		}
 	} else if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) {
 		if (lm_session_key.data && lm_session_key.length >= 8) {
@@ -696,7 +697,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 		} else {
 			data_blob_free(&encrypted_session_key);
 			DEBUG(10,("ntlmssp_server_auth: Failed to create NTLM session key.\n"));
-			return NT_STATUS_INVALID_PARAMETER;
+			session_key = data_blob(NULL, 0);
 		}
 	} else if (nt_session_key.data) {
 		session_key = nt_session_key;
@@ -709,7 +710,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 	} else {
 		data_blob_free(&encrypted_session_key);
 		DEBUG(10,("ntlmssp_server_auth: Failed to create unmodified session key.\n"));
-		return NT_STATUS_INVALID_PARAMETER;
+		session_key = data_blob(NULL, 0);
 	}
 
 	/* With KEY_EXCH, the client supplies the proposed session key, 
@@ -915,7 +916,14 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	}
 
 	if (!ntlmssp_state->password) {
+		static const uchar zeros[16];
 		/* do nothing - blobs are zero length */
+
+		/* session key is all zeros */
+		session_key = data_blob_talloc(ntlmssp_state->mem_ctx, zeros, 16);
+		
+		/* not doing NLTM2 without a password */
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
 	} else if (ntlmssp_state->use_ntlmv2) {
 
 		if (!struct_blob.length) {
