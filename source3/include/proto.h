@@ -493,6 +493,7 @@ int StrnCaseCmp(const char *s, const char *t, size_t n);
 BOOL strequal(const char *s1, const char *s2);
 BOOL strnequal(const char *s1,const char *s2,size_t n);
 BOOL strcsequal(const char *s1,const char *s2);
+int strwicmp(char *psz1, char *psz2);
 void strlower(char *s);
 void strupper(char *s);
 void strnorm(char *s);
@@ -3699,6 +3700,7 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 int get_current_groups(int *p_ngroups, gid_t **p_groups);
 void delete_nt_token(NT_USER_TOKEN **pptoken);
 NT_USER_TOKEN *dup_nt_token(NT_USER_TOKEN *ptoken);
+BOOL initialise_groups(char *user, uid_t uid, gid_t gid);
 BOOL push_sec_ctx(void);
 void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN *token);
 void set_root_sec_ctx(void);
