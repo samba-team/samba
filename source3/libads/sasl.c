@@ -227,13 +227,13 @@ failed:
 */
 static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 {
-	OM_uint32 minor_status;
+	uint32 minor_status;
 	gss_name_t serv_name;
 	gss_buffer_desc input_name;
 	gss_ctx_id_t context_handle;
 	gss_OID mech_type = GSS_C_NULL_OID;
 	gss_buffer_desc output_token, input_token;
-	OM_uint32 ret_flags, conf_state;
+	uint32 ret_flags, conf_state;
 	struct berval cred;
 	struct berval *scred;
 	int i=0;
