@@ -20525,12 +20525,22 @@ if test x$FOUND_KRB5 = x"no"; then
 # see if this box has the SuSE location for the heimdal kerberos implementation
 echo "$as_me:$LINENO: checking for /usr/include/heimdal" >&5
 echo $ECHO_N "checking for /usr/include/heimdal... $ECHO_C" >&6
-if test -d /usr/include/heimdal -a -f /usr/lib/heimdal/lib/libkrb5.a; then
-    LIBS="$LIBS -lkrb5"
-    CFLAGS="$CFLAGS -I/usr/include/heimdal"
-    CPPFLAGS="$CPPFLAGS -I/usr/include/heimdal"
-    echo "$as_me:$LINENO: result: yes" >&5
+if test -d /usr/include/heimdal; then
+    if test -f /usr/lib/heimdal/lib/libkrb5.a; then
+        LIBS="$LIBS -lkrb5"
+        CFLAGS="$CFLAGS -I/usr/include/heimdal"
+        CPPFLAGS="$CPPFLAGS -I/usr/include/heimdal"
+        LDFLAGS="$LDFLAGS -L/usr/lib/heimdal/lib"
+        echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
+    else
+        LIBS="$LIBS -lkrb5"
+        CFLAGS="$CFLAGS -I/usr/include/heimdal"
+        CPPFLAGS="$CPPFLAGS -I/usr/include/heimdal"
+        echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+
+    fi
 else
     echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6
