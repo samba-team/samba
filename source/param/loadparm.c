@@ -4296,7 +4296,6 @@ void get_private_directory(pstring privdir)
 
 void lp_set_logfile(const char *name)
 {
-	extern pstring debugf;
 	string_set(&Globals.szLogFile, name);
 	pstrcpy(debugf, name);
 }
