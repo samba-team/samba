@@ -938,6 +938,7 @@ account without a valid local system user.\n", user_name);
 	} else {
 		/* the entry already existed */
 		local_flags &= ~LOCAL_ADD_USER;
+		slprintf(msg_str, msg_str_len-1, "Password changed for user %s.\n", user_name );
 	}
 
 	/*
