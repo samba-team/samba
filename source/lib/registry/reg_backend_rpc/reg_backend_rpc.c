@@ -47,7 +47,7 @@ static void init_winreg_String(struct winreg_String *name, const char *s)
 	r.out.handle = hnd;\
 	\
 	if (!NT_STATUS_IS_OK(dcerpc_winreg_Open ## u(p, h->mem_ctx, &r))) {\
-		printf("Error executing open\n");\
+		DEBUG(0,("Error executing open\n"));\
 		return NULL;\
 	}\
 \
@@ -89,7 +89,7 @@ static WERROR rpc_open_registry(REG_HANDLE *h, const char *location, const char 
 	user = talloc_strdup(h->mem_ctx, credentials);
 	pass = strchr(user, '%');
 	*pass = '\0'; pass++;
-	
+
 	ZERO_STRUCTP(mydata);
 	
 	status = dcerpc_pipe_connect(&mydata->pipe, binding, 
