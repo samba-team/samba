@@ -35,6 +35,7 @@
 struct smbc_dirent {
 
   uint smbc_type;  /* Type of entity, see below */
+  uint dirlen;     /* Convenience               */
   uint namelen;
   uint commentlen;
   char *comment;   /* Points to the comment futher down */
@@ -42,6 +43,9 @@ struct smbc_dirent {
 
 };
 
+/*
+ * Entity types
+ */
 #define SMBC_WORKGROUP     1
 #define SMBC_SERVER        2
 #define SMBC_FILE_SHARE    3

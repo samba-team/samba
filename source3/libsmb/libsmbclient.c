@@ -631,6 +631,14 @@ static int creat_bits = O_WRONLY | O_CREAT | O_TRUNC; /* FIXME: Do we need this 
 
 int smbc_creat(const char *path, mode_t mode)
 {
+
+  if (!smbc_initialized) {
+
+    errno = EUCLEAN;
+    return -1;
+
+  }
+
   return smbc_open(path, creat_bits, mode);
 }
 
@@ -642,6 +650,13 @@ ssize_t smbc_read(int fd, void *buf, size_t count)
 {
   struct smbc_file *fe;
   int ret;
+
+  if (!smbc_initialized) {
+
+    errno = EUCLEAN;
+    return -1;
+
+  }
 
   DEBUG(4, ("smbc_read(%d, %d)\n", fd, (int)count));
 
@@ -687,6 +702,13 @@ ssize_t smbc_write(int fd, void *buf, size_t count)
   int ret;
   struct smbc_file *fe;
 
+  if (!smbc_initialized) {
+
+    errno = EUCLEAN;
+    return -1;
+
+  }
+
   if (fd < smbc_start_fd || fd >= (smbc_start_fd + smbc_max_fd)) {
 
     errno = EBADF;
@@ -717,6 +739,13 @@ ssize_t smbc_write(int fd, void *buf, size_t count)
 int smbc_close(int fd)
 {
   struct smbc_file *fe;
+
+  if (!smbc_initialized) {
+
+    errno = EUCLEAN;
+    return -1;
+
+  }
 
   if (fd < smbc_start_fd || fd >= (smbc_start_fd + smbc_max_fd)) {
    
@@ -877,6 +906,13 @@ off_t smbc_lseek(int fd, off_t offset, int whence)
   struct smbc_file *fe;
   size_t size;
 
+  if (!smbc_initialized) {
+
+    errno = EUCLEAN;
+    return -1;
+
+  }
+
   if (fd < smbc_start_fd || fd >= (smbc_start_fd + smbc_max_fd)) {
 
     errno = EBADF;
@@ -985,6 +1021,14 @@ BOOL smbc_getatr(struct smbc_server *srv, char *path,
 		 time_t *c_time, time_t *a_time, time_t *m_time,
 		 SMB_INO_T *ino)
 {
+
+  if (!smbc_initialized) {
+
+    errno = EUCLEAN;
+    return -1;
+
+  }
+
   DEBUG(4,("sending qpathinfo\n"));
   
   if (!srv->no_pathinfo2 &&
@@ -1098,6 +1142,13 @@ int smbc_fstat(int fd, struct stat *st)
   uint16 mode;
   SMB_INO_T ino = 0;
 
+  if (!smbc_initialized) {
+
+    errno = EUCLEAN;
+    return -1;
+
+  }
+
   if (fd < smbc_start_fd || fd >= (smbc_start_fd + smbc_max_fd)) {
 
     errno = EBADF;
@@ -1150,12 +1201,15 @@ int smbc_fstat(int fd, struct stat *st)
 
 static void smbc_remove_dir(struct smbc_file *dir)
 {
-  for (dir->dir_next = dir->dir_list; 
-       dir->dir_next != NULL; 
-       dir->dir_next = dir->dir_next->next) {
+  struct smbc_dir_list *d,*f;
 
-    if (dir->dir_next->dirent) free(dir->dir_next->dirent);
-    free(dir->dir_next);
+  d = dir->dir_list;
+  while (d) {
+
+    f = d; d = d->next;
+
+    if (f->dirent) free(f->dirent);
+    free(f);
 
   }
 
@@ -1166,6 +1220,7 @@ static void smbc_remove_dir(struct smbc_file *dir)
 static int add_dirent(struct smbc_file *dir, const char *name, const char *comment, uint32 type)
 {
   struct smbc_dirent *dirent;
+  int size;
 
   /*
    * Allocate space for the dirent, which must be increased by the 
@@ -1173,9 +1228,11 @@ static int add_dirent(struct smbc_file *dir, const char *name, const char *comme
    * The null on the name is already accounted for.
    */
 
-  dirent = malloc(sizeof(struct smbc_dirent) + (name?strlen(name):0) +
-		  (comment?strlen(comment):0) + 1); 
+  size = sizeof(struct smbc_dirent) + (name?strlen(name):0) +
+    (comment?strlen(comment):0) + 1; 
     
+  dirent = malloc(size);
+
   if (!dirent) {
 
     dir->dir_error = ENOMEM;
@@ -1216,10 +1273,11 @@ static int add_dirent(struct smbc_file *dir, const char *name, const char *comme
 
   dir->dir_end->dirent = dirent;
 
-  dirent->smbc_type = dir->dir_type;
+  dirent->smbc_type = type;
   dirent->namelen = (name?strlen(name):0);
   dirent->commentlen = (comment?strlen(comment):0);
-
+  dirent->dirlen = size;
+  
   strncpy(dirent->name, (name?name:""), dirent->namelen + 1);
 
   dirent->comment = (char *)(&dirent->name + dirent->namelen + 1);
@@ -1232,8 +1290,39 @@ static int add_dirent(struct smbc_file *dir, const char *name, const char *comme
 static void
 list_fn(const char *name, uint32 type, const char *comment, void *state)
 {
+  struct smbc_file *dir = (struct smbc_file *)state;
+  int dirent_type;
 
-  if (add_dirent((struct smbc_file *)state, name, comment, type) < 0) {
+  /* We need to process the type a little ... */
+
+  if (dir->dir_type == SMBC_FILE_SHARE) {
+
+    switch (type) {
+    case 0: /* Directory tree */
+      dirent_type = SMBC_FILE_SHARE;
+      break;
+
+    case 1:
+      dirent_type = SMBC_PRINTER_SHARE;
+      break;
+
+    case 2:
+      dirent_type = SMBC_COMMS_SHARE;
+      break;
+
+    case 3:
+      dirent_type = SMBC_IPC_SHARE;
+      break;
+
+    default:
+      dirent_type = SMBC_FILE_SHARE; /* FIXME, error? */
+      break;
+    }
+
+  }
+  else dirent_type = dir->dir_type;
+
+  if (add_dirent(dir, name, comment, dirent_type) < 0) {
 
     /* An error occurred, what do we do? */
 
@@ -1246,7 +1335,8 @@ dir_list_fn(file_info *finfo, const char *mask, void *state)
 {
 
   fprintf(stderr, "Finfo->name=%s, mask=%s\n", finfo->name, mask);
-  if (add_dirent((struct smbc_file *)state, finfo->name, "", SMBC_FILE) < 0) {
+  if (add_dirent((struct smbc_file *)state, finfo->name, "", 
+		 (finfo->mode&aDIR?SMBC_DIR:SMBC_FILE)) < 0) {
 
     /* Handle an error ... */
 
@@ -1503,6 +1593,36 @@ int smbc_opendir(const char *fname)
 
 int smbc_closedir(int fd)
 {
+  struct smbc_file *fe;
+
+  if (!smbc_initialized) {
+
+    errno = EUCLEAN;
+    return -1;
+
+  }
+
+  if (fd < smbc_start_fd || fd >= (smbc_start_fd + smbc_max_fd)) {
+
+    errno = EBADF;
+    return -1;
+
+  }
+
+  fe = smbc_file_table[fd - smbc_start_fd];
+
+  if (!fe) {
+
+    errno = ENOENT;  /* FIXME: Is this correct */
+    return -1;
+
+  }
+
+  smbc_remove_dir(fe); /* Clean it up */
+
+  if (fe) free(fe);    /* Free the space too */
+
+  smbc_file_table[fd - smbc_start_fd] = NULL;
 
   return 0;
 
@@ -1519,6 +1639,13 @@ int smbc_getdents(unsigned int fd, struct smbc_dirent *dirp, int count)
   int rem = count, reqd;
 
   /* Check that all is ok first ... */
+
+  if (!smbc_initialized) {
+
+    errno = EUCLEAN;
+    return -1;
+
+  }
 
   if (fd < smbc_start_fd || fd >= (smbc_start_fd + smbc_max_fd)) {
 
@@ -1597,6 +1724,15 @@ int smbc_getdents(unsigned int fd, struct smbc_dirent *dirp, int count)
 int smbc_mkdir(const char *fname, mode_t mode)
 {
 
+  if (!smbc_initialized) {
+
+    errno = EUCLEAN;
+    return -1;
+
+  }
+
+  return 0;
+
 }
 
 /*
@@ -1605,6 +1741,13 @@ int smbc_mkdir(const char *fname, mode_t mode)
 
 int smbc_lseekdir(int fd, off_t offset, int whence)
 {
+
+  if (!smbc_initialized) {
+
+    errno = EUCLEAN;
+    return -1;
+
+  }
 
   return 0;
 
@@ -1616,6 +1759,13 @@ int smbc_lseekdir(int fd, off_t offset, int whence)
 
 int smbc_fstatdir(int fd, struct stat *st)
 {
+
+  if (!smbc_initialized) {
+
+    errno = EUCLEAN;
+    return -1;
+
+  }
 
   return 0;
 
