@@ -1,5 +1,7 @@
 2004-06-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* afssys.c: s/arla/nnpfs/
+	
 	* afssys.c: support the linux /proc/fs/mumel/afs_ioctl afs
 	"syscall" interface
 
