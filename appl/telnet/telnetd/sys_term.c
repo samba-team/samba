@@ -432,7 +432,7 @@ int getpty(int *ptynum)
 			break;
 		for (i = 0; i < 16; i++) {
 			*p2 = "0123456789abcdef"[i];
-			p = open(line, 2);
+			p = open(line, O_RDWR);
 			if (p > 0) {
 #ifndef	__hpux
 				line[5] = 't';
@@ -443,14 +443,14 @@ int getpty(int *ptynum)
 #endif
 				chown(line, 0, 0);
 				chmod(line, 0600);
-#if defined(sun) && defined(TIOCGPGRP) && BSD < 199207
+#if SunOS == 4
 				if (ioctl(p, TIOCGPGRP, &dummy) == 0
 				    || errno != EIO) {
 					chmod(line, 0666);
 					close(p);
 					line[5] = 'p';
 				} else
-#endif /* defined(sun) && defined(TIOCGPGRP) && BSD < 199207 */
+#endif /* SunOS == 4 */
 					return(p);
 			}
 		}
@@ -921,7 +921,7 @@ int getptyslave(void)
 	 * that we are the session (process group) leader.
 	 */
 
-#if HAVE_SETSID
+#ifdef HAVE_SETSID
 	if(setsid()<0)
 	  fatalperror(net, "setsid()");
 #else

@@ -1,6 +1,7 @@
 # Makefile.in,v 1.2 1994/05/13 05:02:46 assar Exp
 
 srcdir		= @srcdir@
+top_srcdir	= @top_srcdir@
 VPATH		= @srcdir@
 
 SHELL		= /bin/sh
@@ -10,7 +11,7 @@ AR = ar
 RANLIB = @RANLIB@
 DEFS = @DEFS@
 CFLAGS = @CFLAGS@
-LIBS = @LIBS@ @GETMSG_LIBS@
+LIBS = @LIBS@
 INSTALL = @INSTALL@
 MKDIRHIER = @top_srcdir@/../../mkdirhier-sh
 
