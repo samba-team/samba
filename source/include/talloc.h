@@ -49,8 +49,8 @@ typedef void TALLOC_CTX;
 #define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)
 #define realloc_p(p, type, count) (type *)realloc_array(p, sizeof(type), count)
 
-#define data_blob(ptr, size) data_blob_named(ptr, size, __location__)
-#define data_blob_talloc(ctx, ptr, size) data_blob_talloc_named(ctx, ptr, size, __location__)
+#define data_blob(ptr, size) data_blob_named(ptr, size, "DATA_BLOB: "__location__)
+#define data_blob_talloc(ctx, ptr, size) data_blob_talloc_named(ctx, ptr, size, "DATA_BLOB: "__location__)
 
 #ifndef PRINTF_ATTRIBUTE
 #define PRINTF_ATTRIBUTE(a1, a2)
