@@ -348,14 +348,16 @@ static void offer_gss_spnego_mechs(void) {
 	DATA_BLOB token;
 	ASN1_DATA asn1;
 	SPNEGO_DATA spnego;
-	const char *OIDs[] = {OID_NTLMSSP, NULL};
 	ssize_t len;
 	char *reply_base64;
 
-	/* Server negTokenInit (mech offerings) */
 	ZERO_STRUCT(spnego);
+
+	/* Server negTokenInit (mech offerings) */
 	spnego.type = SPNEGO_NEG_TOKEN_INIT;
-	spnego.negTokenInit.mechTypes = OIDs;
+	spnego.negTokenInit.mechTypes = smb_xmalloc(sizeof(char *) * 2);
+	spnego.negTokenInit.mechTypes[0] = smb_xstrdup(OID_NTLMSSP);
+	spnego.negTokenInit.mechTypes[1] = NULL;
 
 	ZERO_STRUCT(asn1);
 	asn1_push_tag(&asn1, ASN1_SEQUENCE(0));
@@ -367,7 +369,7 @@ static void offer_gss_spnego_mechs(void) {
 	asn1_free(&asn1);
 
 	len = write_spnego_data(&token, &spnego);
-	data_blob_free(&spnego.negTokenInit.mechListMIC);
+	free_spnego_data(&spnego);
 
 	if (len == -1) {
 		DEBUG(1, ("Could not write SPNEGO data blob\n"));
@@ -437,14 +439,6 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 		return;
 	}
 
-	if ( (spnego.type != SPNEGO_NEG_TOKEN_INIT) &&
-	     (spnego.type != SPNEGO_NEG_TOKEN_TARG) ) {
-
-		DEBUG(1, ("Got an invalid SPNEGO token!\n"));
-		x_fprintf(x_stdout, "BH\n");
-		return;
-	}
-
 	if (spnego.type == SPNEGO_NEG_TOKEN_INIT) {
 
 		/* Second request from Client. This is where the
@@ -490,7 +484,8 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 		dump_data(10, spnego.negTokenInit.mechToken.data,
 			  spnego.negTokenInit.mechToken.length);
 
-		ZERO_STRUCT(spnego);
+		free_spnego_data(&spnego);
+
 		spnego.type = SPNEGO_NEG_TOKEN_TARG;
 		spnego.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
 		spnego.negTokenTarg.supportedMech = OID_NTLMSSP;
@@ -543,6 +538,7 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 	}
 
 	len = write_spnego_data(&token, &spnego);
+	free_spnego_data(&spnego);
 
 	if (len == -1) {
 		DEBUG(1, ("Could not write SPNEGO data blob\n"));
