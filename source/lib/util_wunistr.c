@@ -925,7 +925,7 @@ typedef struct {
 	unsigned char flags;
 } smb_unicode_table_t;
 
-static smb_unicode_table_t map_table[] = {
+static const smb_unicode_table_t map_table[] = {
 #include "unicode_map_table.h"
 };
 
