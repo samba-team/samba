@@ -1,3 +1,9 @@
+1999-08-25  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/keytab.c
+	(krb5_kt_{start_seq_get,next_entry,end_seq_get}): check for NULL
+	pointer
+
 1999-08-24  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kpasswd/kpasswdd.c: add `--keytab' flag
