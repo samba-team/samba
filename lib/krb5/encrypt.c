@@ -66,6 +66,21 @@ krb5_etype2keytype(krb5_context context,
     return 0;
 }
 
+static void
+generate_random_block(void *buf, size_t len)
+{
+    des_cblock tmp;
+    unsigned char *p = buf;
+    size_t l;
+    while(len){
+	des_new_random_key(&tmp);
+	l = len > 8 ? 8 : len;
+	memcpy(p, tmp, l);
+	p += l;
+	len -= l;
+    }
+}
+
 static krb5_error_code
 krb5_do_encrypt(krb5_context context,
 		void *ptr, 
@@ -88,7 +103,7 @@ krb5_do_encrypt(krb5_context context,
     p = calloc(1, sz);
     if (p == NULL)
 	return ENOMEM;
-    des_rand_data(p, et->confoundersize); /* XXX */
+    generate_random_block(p, et->confoundersize); /* XXX */
     memcpy(p + et->confoundersize + checksumsize, ptr, len);
 
     krb5_create_checksum(context, et->cksumtype, p, sz, &cksum);
