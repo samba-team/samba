@@ -1,0 +1,7 @@
+This smb.conf example should get you started:
+
+	dcerpc endpoint servers = remote
+	dcerpc_remote:binding = ncacn_np:win2003
+	dcerpc_remote:username = administrator
+	dcerpc_remote:password = PASSWORD
+	dcerpc_remote:interfaces = samr, lsarpc, netlogon
