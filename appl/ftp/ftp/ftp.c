@@ -190,8 +190,9 @@ login (char *host)
 	    printf ("Name (%s:%s): ", host, myname);
 	else
 	    printf ("Name (%s): ", host);
-	fgets (tmp, sizeof (tmp) - 1, stdin);
-	tmp[strlen (tmp) - 1] = '\0';
+	*tmp = '\0';
+	if (fgets (tmp, sizeof (tmp) - 1, stdin) != NULL)
+	    tmp[strlen (tmp) - 1] = '\0';
 	if (*tmp == '\0')
 	    user = myname;
 	else
