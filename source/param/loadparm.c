@@ -1086,7 +1086,7 @@ static void init_globals(void)
   Globals.shmem_size = SHMEM_SIZE;
   Globals.stat_cache_size = 50; /* Number of stat translations we'll keep */
   Globals.announce_as = ANNOUNCE_AS_NT_SERVER;
-  Globals.bUnixRealname = False;
+  Globals.bUnixRealname = True;
 #if (defined(HAVE_NETGROUP) && defined(WITH_AUTOMOUNT))
   Globals.bNISHomeMap = False;
 #ifdef WITH_NISPLUS_HOME

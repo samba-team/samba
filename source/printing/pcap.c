@@ -411,7 +411,7 @@ void pcap_printer_fn(void (*fn)(char *, char *))
       comment[60] = 0;
       name[MAXPRINTERLEN] = 0;
 
-      if (*name)
+      if (*name) 
 	fn(name,comment);
     }
   fclose(pfile);
