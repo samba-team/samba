@@ -651,6 +651,7 @@ void make_dom_rid3(DOM_RID3 *rid3, uint32 rid, uint8 type)
 	rid3->type1    = type;
 	rid3->ptr_type = 0x1; /* non-zero, basically. */
 	rid3->type2    = 0x1;
+	rid3->unk      = type;
 }
 
 /*******************************************************************
@@ -669,6 +670,7 @@ void smb_io_dom_rid3(char *desc,  DOM_RID3 *rid3, prs_struct *ps, int depth)
 	prs_uint32("type1   ", ps, depth, &(rid3->type1   ));
 	prs_uint32("ptr_type", ps, depth, &(rid3->ptr_type));
 	prs_uint32("type2   ", ps, depth, &(rid3->type2   ));
+	prs_uint32("unk     ", ps, depth, &(rid3->unk     ));
 }
 
 /*******************************************************************
@@ -680,7 +682,6 @@ void make_dom_rid4(DOM_RID4 *rid4, uint16 unknown, uint16 attr, uint32 rid)
 	rid4->attr    = attr;
 	rid4->rid     = rid;
 }
-
 
 /*******************************************************************
 makes a DOM_CLNT_SRV structure.

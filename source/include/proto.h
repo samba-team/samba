@@ -2045,6 +2045,26 @@ void make_samr_r_query_dispinfo(SAMR_R_QUERY_DISPINFO *r_u,
 void samr_io_r_query_dispinfo(char *desc,  SAMR_R_QUERY_DISPINFO *r_u, prs_struct *ps, int depth);
 void make_samr_q_open_group(SAMR_Q_OPEN_GROUP *q_c,
 				POLICY_HND *hnd, uint32 unk, uint32 rid);
+void samr_io_q_open_group(char *desc,  SAMR_Q_OPEN_GROUP *q_u, prs_struct *ps, int depth);
+void samr_io_r_open_group(char *desc,  SAMR_R_OPEN_GROUP *r_u, prs_struct *ps, int depth);
+void make_samr_group_info1(GROUP_INFO1 *gr1,
+				char *acct_name, char *acct_desc);
+void samr_io_group_info1(char *desc,  GROUP_INFO1 *gr1, prs_struct *ps, int depth);
+void make_samr_group_info4(GROUP_INFO4 *gr4, char *acct_desc);
+void samr_io_group_info4(char *desc,  GROUP_INFO4 *gr4, prs_struct *ps, int depth);
+void samr_group_info_ctr(char *desc,  GROUP_INFO_CTR *ctr, prs_struct *ps, int depth);
+void make_samr_q_query_groupinfo(SAMR_Q_QUERY_GROUPINFO *q_e,
+				POLICY_HND *pol,
+				uint16 switch_level);
+void samr_io_q_query_groupinfo(char *desc,  SAMR_Q_QUERY_GROUPINFO *q_e, prs_struct *ps, int depth);
+void make_samr_r_query_groupinfo(SAMR_R_QUERY_GROUPINFO *r_u, GROUP_INFO_CTR *ctr,
+		uint32 status);
+void samr_io_r_query_groupinfo(char *desc,  SAMR_R_QUERY_GROUPINFO *r_u, prs_struct *ps, int depth);
+void make_samr_q_query_groupmem(SAMR_Q_QUERY_GROUPMEM *q_c, POLICY_HND *hnd);
+void samr_io_q_query_groupmem(char *desc,  SAMR_Q_QUERY_GROUPMEM *q_u, prs_struct *ps, int depth);
+void make_samr_r_query_groupmem(SAMR_R_QUERY_GROUPMEM *r_u,
+		uint32 num_entries, uint32 *rid, uint32 *attr, uint32 status);
+void samr_io_r_query_groupmem(char *desc,  SAMR_R_QUERY_GROUPMEM *r_u, prs_struct *ps, int depth);
 void make_samr_q_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_e, POLICY_HND *pol,
 				uint16 switch_level, uint32 start_idx, uint32 size);
 void samr_io_q_enum_dom_groups(char *desc,  SAMR_Q_ENUM_DOM_GROUPS *q_e, prs_struct *ps, int depth);
