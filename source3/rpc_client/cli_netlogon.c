@@ -379,7 +379,7 @@ static uint32 cli_net_sam_logon_internal(struct cli_state *cli, NET_ID_INFO_CTR 
 
 	/* send the data on \PIPE\ */
 	if (!rpc_api_pipe_req(cli, NET_SAMLOGON, &buf, &rbuf)) {
-		DEBUG(0,("cli_net_sam_logon_internal: Erro rpc_api_pipe_req failed.\n"));
+		DEBUG(0,("cli_net_sam_logon_internal: Error pc_api_pipe_req failed.\n"));
 		goto out;
 	}
 
