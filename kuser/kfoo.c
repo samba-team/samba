@@ -1,5 +1,6 @@
-#include <string.h>
-#include <krb5.h>
+#include "kuser_locl.h"
+
+RCSID("$Id$");
 
 #if 1
 main(int argc, char **argv)
