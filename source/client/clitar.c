@@ -142,6 +142,8 @@ static void unfixtarname(char *tptr, char *fp, int l);
  * tar specific utitlities
  */
 
+#if 0 /* Removed to get around gcc 'defined but not used' error. */
+
 /*
  * Stack routines, push_dir, pop_dir, top_dir_name
  */
@@ -185,6 +187,8 @@ static BOOL sub_dir(char *dir1, char *dir2)
   return(True);
 
 }
+
+#endif /* Removed to get around gcc 'defined but not used' error. */
 
 /* Create a string of size size+1 (for the null) */
 static char * string_create_s(int size)
@@ -1477,6 +1481,8 @@ static void unfixtarname(char *tptr, char *fp, int l)
   }
 }
 
+#if 0 /* Removed to get around gcc 'defined but not used' error. */
+
 /****************************************************************************
 Move to the next block in the buffer, which may mean read in another set of
 blocks.
@@ -1664,6 +1670,7 @@ static void do_tarput2(void)
 
 
 }
+#endif /* Removed to get around gcc 'defined but not used' error. */
 
 static void do_tarput()
 {

@@ -48,16 +48,16 @@ int i;
 	return(i);
 }
 
-static char *fix_backslash(char *string)
+static char *fix_backslash(char *str)
 {
 static char newstring[1024];
 char *p = newstring;
 
 	*p = '\0';
-        while (*string) {
-                if (*string == '\\') {*p++ = '\\';*p++ = '\\';}
-                else *p++ = *string;
-                ++string;
+        while (*str) {
+                if (*str == '\\') {*p++ = '\\';*p++ = '\\';}
+                else *p++ = *str;
+                ++str;
                 *p = '\0';
         }
 	return newstring;

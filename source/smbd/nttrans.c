@@ -30,6 +30,20 @@ extern int oplock_sock;
 extern int smb_read_error;
 extern int global_oplock_break;
 
+static char *known_nt_pipes[] = {
+  "\\LANMAN",
+  "\\srvsvc",
+  "\\samr",
+  "\\wkssvc",
+  "\\NETLOGON",
+  "\\ntlsa",
+  "\\ntsvcs",
+  "\\lsass",
+  "\\lsarpc",
+  NULL
+};
+
+
 /****************************************************************************
   reply to an unsolicited SMBNTtranss - just ignore it!
 ****************************************************************************/
@@ -166,9 +180,8 @@ due to being in oplock break state.\n", timestring() ));
     SSVAL(outbuf,smb_flg2,flg2 | 0x40); /* IS_LONG_NAME */
   }
 
-  /* Now we must call the relevant TRANS2 function */
-  switch(function_code) 
-    {
+  /* Now we must call the relevant NT_TRANS function */
+  switch(function_code) {
     case NT_TRANSACT_CREATE:
       outsize = call_nt_transact_create(inbuf, outbuf, bufsize, cnum, 
                                         &setup, &params, &data);
@@ -204,7 +217,7 @@ due to being in oplock break state.\n", timestring() ));
       if(data)
 	free(data);
       return (ERROR(ERRSRV,ERRerror));
-    }
+  }
 
   /* As we do not know how many data packets will need to be
      returned here the various call_nt_transact_xxxx calls
