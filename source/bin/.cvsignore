@@ -41,3 +41,5 @@ winbindd
 wrepld
 vfstest
 samtest
+debug2html
+*.so
