@@ -776,9 +776,6 @@ each parameter for details. Note that some are synonyms.
 \fInis homedir\fR
 .TP 0.2i
 \(bu
-\fInt acl support\fR
-.TP 0.2i
-\(bu
 \fInt pipe support\fR
 .TP 0.2i
 \(bu
@@ -1237,6 +1234,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fImsdfs root\fR
+.TP 0.2i
+\(bu
+\fInt acl support\fR
 .TP 0.2i
 \(bu
 \fIonly guest\fR
@@ -4604,10 +4604,12 @@ be a logon server.
 
 Default: \fBnis homedir = no\fR
 .TP
-\fBnt acl support (G)\fR
+\fBnt acl support (S)\fR
 This boolean parameter controls whether 
 smbd(8)will attempt to map 
 UNIX permissions into Windows NT access control lists.
+This parameter was formally a global parameter in releases
+prior to 2.2.2.
 
 Default: \fBnt acl support = yes\fR
 .TP

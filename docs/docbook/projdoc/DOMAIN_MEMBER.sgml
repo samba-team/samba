@@ -31,14 +31,7 @@
 
 	<title>Joining an NT Domain with Samba 2.2</title>
 
-	<para>In order for a Samba-2 server to join an NT domain, 
-	you must first add the NetBIOS name of the Samba server to the 
-	NT domain on the PDC using Server Manager for Domains.  This creates 
-	the machine account in the domain (PDC) SAM. Note that you should 
-	add the Samba server as a "Windows NT Workstation or Server", 
-	<emphasis>NOT</emphasis> as a Primary or backup domain controller.</para>
-
-	<para>Assume you have a Samba-2 server with a NetBIOS name of 
+	<para>Assume you have a Samba 2.x server with a NetBIOS name of 
 	<constant>SERV1</constant> and are joining an NT domain called
 	<constant>DOM</constant>, which has a PDC with a NetBIOS name
 	of <constant>DOMPDC</constant> and two backup domain controllers 
@@ -49,11 +42,14 @@
 	and run the command:</para>
 
 	<para><prompt>root# </prompt><userinput>smbpasswd -j DOM -r DOMPDC
-	</userinput></para>
+	-U<replaceable>Administrator%password</replaceable></userinput></para>
 
 	<para>as we are joining the domain DOM and the PDC for that domain 
 	(the only machine that has write access to the domain SAM database) 
-	is DOMPDC. If this is successful you will see the message:</para>
+	is DOMPDC. The <replaceable>Administrator%password</replaceable> is 
+	the login name and password for an account which has the necessary 
+	privilege to add machines to the domain.  If this is successful 
+	you will see the message:</para>
 
 	<para><computeroutput>smbpasswd: Joined domain DOM.</computeroutput>
 	</para>

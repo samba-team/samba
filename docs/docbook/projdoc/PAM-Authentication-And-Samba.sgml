@@ -101,9 +101,12 @@ hashes. This database is stored in either
 <filename>/etc/samba.d/smbpasswd</filename>, depending on the 
 Samba implementation for your Unix/Linux system. The 
 <filename>pam_smbpass.so</filename> module is provided by 
-Samba version 2.2.1 or later. It can be compiled only if the 
-<constant>--with-pam --with-pam_smbpass</constant> options are both 
-provided to the Samba <command>configure</command> program.
+Samba version 2.2.1 or later. It can be compiled by specifying the 
+<command>--with-pam_smbpass</command> options when running Samba's
+<filename>configure</filename> script.  For more information
+on the <filename>pam_smbpass</filename> module, see the documentation
+in the <filename>source/pam_smbpass</filename> directory of the Samba 
+source distribution.
 </para>
 
 <para><programlisting>
