@@ -1,29 +1,22 @@
-                  WHATS NEW IN Samba 3.0.0 beta4
-                           July 16 2003
+                   WHATS NEW IN Samba 3.0.0 RC3
+                          September 8, 2003
                   ==============================
 
-This is the third beta release of Samba 3.0.0. This is a 
-non-production release intended for testing purposes.  Use 
-at your own risk. 
+This is the third release candidate snapshot of Samba 3.0.0. A release 
+candidate implies that the code is very close to a final release, remember 
+that this is still a non-production release intended for testing purposes.  
+Use at your own risk. 
 
-The purpose of this beta release is to get wider testing of the major
-new pieces of code in the current Samba 3.0 development tree. We have
-officially ceased development on the 2.2.x release of Samba and are
-concentrating on Samba 3.0. To reduce the time before the final 
-Samba 3.0 release we need as many people as possible to start testing 
-these beta releases, and to provide high quality feedback on what 
-needs fixing.
-
-Samba 3.0 is feature complete. However there is still some final 
-work to be done on certain pieces of functionality.  Please refer to 
-the section on "Known Issues" for more details.
+The purpose of this release candidate is to get wider testing of the major
+new pieces of code in the current Samba 3.0 development tree. 
+Please refer to the section on "Known Issues" for more details.
 
 
 Major new features:
 -------------------
 
 1)  Active Directory support.  Samba 3.0 is now able to  
-    to join a ADS realm as a member server and authenticate 
+    join a ADS realm as a member server and authenticate 
     users using LDAP/Kerberos.
 
 2)  Unicode support. Samba will now negotiate UNICODE on the wire and
@@ -34,9 +27,7 @@ Major new features:
     been almost completely rewritten. Most of the changes are internal,
     but the new auth system is also very configurable.
 
-4)  New filename mangling system. The filename mangling system has been
-    completely rewritten. An internal database now stores mangling maps
-    persistently. This needs lots of testing.
+4)  New default filename mangling system.
 
 5)  A new "net" command has been added. It is somewhat similar to 
     the "net" command in windows. Eventually we plan to replace 
@@ -49,9 +40,10 @@ Major new features:
 7)  Better Windows 2000/XP/2003 printing support including publishing 
     printer attributes in active directory.
 
-8)  New loadable RPC modules.
+8)  New loadable module support for passdb backends and 
+    character sets.
 
-9)  New dual-daemon winbindd support for better performance.
+9)  New default dual-daemon winbindd support for better performance.
 
 10) Support for migrating from a Windows NT 4.0 domain to a Samba 
     domain and maintaining user, group and domain SIDs.
@@ -64,25 +56,257 @@ Major new features:
   
 13) Major updates to the Samba documentation tree.
 
+14) Full support for client and server SMB signing to ensure
+    compatibility with default Windows 2003 security settings.
+
 Plus lots of other improvements!
 
 
 Additional Documentation
 ------------------------
 
-Please refer to Samba documentation tree (including in the docs/ 
+Please refer to Samba documentation tree (included in the docs/ 
 subdirectory) for extensive explanations of installing, configuring
 and maintaining Samba 3.0 servers and clients.  It is advised to 
 begin with the Samba-HOWTO-Collection for overviews and specific 
 tasks (the current book is up to approximately 400 pages) and to 
 refer to the various man pages for information on individual options.
 
+We are very glad to be able to include the second edition of
+"Using Samba" by Jay Ts, Robert Eckstein, and David Collier-Brown
+(O'Reilly & Associates) in this release.  The book is available
+on-line at http://samba.org/samba/docs/ and is included with 
+the Samba Web Administration Tool (SWAT).  Thanks to the authors and
+publisher for making "Using Samba" under the GNU Free Documentation 
+License.
+
+
 ######################################################################
-Changes since 3.0beta2
-######################
+Changes since 3.0rc2
+####################
 
 Please refer to the CVS log for the SAMBA_3_0 branch for complete 
-details
+details:
+
+1)  Remove Perl module dependencies in generated RedHat 8/9 RPMS.
+2)  Update mount helper to take synonyms for file_mode and 
+    dir_mode (fmask and dmask).
+3)  Fix portability bug with log2pcaphex.
+4)  Use different algorithm to generate codepages source code which 
+    allows to take gaps into account thus making unnecessary 
+    extended [index] = value, syntax in to_ucs2 array (bug 380).
+5)  Fix comment strings to 43 bytes as per spec.
+6)  Fix pam_winbind compile bug on FreeBSD (bug 261).
+7)  Support for in-memory keytabs, which are needed to make heimdal 
+    work properly.  MIT does not support them, so this check will be 
+    used to decide whether to use them.  (partial fix for bug 372).
+8)  Disable RC4-HMAC on broken heimdal setups.  (remainder of bug 
+    372).
+9)  Correct bug in smbclient that resulted in errors when untarring
+    long filenames (bug 308).
+10) Improve autoconf checks for PAM header files and libs.
+11) Added fast path to convert_string() when dealing with 
+    ASCII->ASCII, UCS2-LE->ASCII, and ASCII->UCS2-LE with 
+    values <= 0x7F. 
+12) Quiet debug messages when we don't find a module and it is not
+    a critical error (bug 375).
+13) Fix UNIX passwd sync properly.
+14) Fix more transitive trust issues in winbindd (bug 305).
+15) Ensure that winbindd functions with 'disable netbios = yes'
+16) Store the real short domain name in secrets.tdb as soon as we
+    know it.  Also display an error message when joining an AD
+    domain and the 'workgroup' parameter has not been specified.
+17) Return 0 DFS links instead of -1 when dfs support is not enabled.
+18) Update LDAP schema for Netscape DS 4.x and Novell eDirectory 8.7
+19) Ensure that name types can be specified using name#type notation
+    in the 'net' command (bug 73).
+20) Add retry looks to ADS sequence number and domain SID lookups 
+    (bug 364).
+21) use a variant of alloc_sub_basic() for string lists such as 
+    'valid users', 'write list', and 'read list' (bug 397).
+22) Fix seg fault when winbindd receives an error from the AD server
+    in response to an LDAP search (bug 282).
+23) Update findsmb to use the new syntax for smbclient and nmblookup.
+24) Fix bug that prevented variables from being used in explicitly 
+    defined path in [homes].
+25) Only set SIDs when they're returned by the MySQL query 
+    (pdb_mysql.so).
+26) Include support for NTLMv2 key exchange.
+27) Revert default for 'client ntlmv2 auth' to off (bug 359).
+28) Fix crash in winbindd when the trust account password gets 
+    changed underneath us via 'net rpc changetrustpw' (bug 382).
+29) Use djb-algorithm string hash - faster than the tdb one we 
+    used to use.  Does not change on disk format or hashing location.
+30) Implements some kind of improved AFS support for Samba on
+    Linux with OpenAFS 1.2.10. './configure --with-fake-kaserver'
+    assumes that you have OpenAFS on your machine.
+31) When enumerating dfs shares loop from 0 to lp_numservices() instead 
+    of relying on lp_servicename(n) to return an empty string for 
+    invalid service numbers (bug 403).
+32) Fix crash bug in 'net rpc samdump' (bug 334).
+33) Fix crash bug in WINS NSS module (bug 299).
+34) Fix a few minor compile errors on HP-UX.
+
+
+
+Changes since 3.0rc1
+####################
+
+1)  Add levels 261 and 262 to search. Found using Samba4 tester.
+2)  Correct bad error return code in session setup reply
+3)  Fix bug where smbd returned DOS error codes from SMBsearch
+    even when NT1 protocol was negotiated.
+4)  Implement SMBexit properly.
+5)  Return group lists from a Samba PDC to a Windows 9x/ME box
+    in implementing user level access control (bug 314).
+6)  Prevent SWAT from crashing when adding shares (bug 254)
+7)  Fix various documentation issues (bugs 304 & 214)
+8)  Fix wins server listing in SWAT (bug 197)
+9)  Fix problem in rpcclient that caused enumerating printer 
+    drivers to report failure (bug 294).
+10) Use kerberos 5 authentication in our client code whenever possible
+11) Fix schannel bug that caused Active Directory DC's to downgrade our
+    machine account to an NT member.
+12) Implement missing SAMR_REMOVE_USER_FOREIGN_DOMAIN call (bug 252).
+13) Implement automatic generation of include/version.h
+14) Include initial version of smbldap-tool scripts for the Samba 
+    3.0 schema.
+15) Implement numerous fixes for multi-byte character strings.
+16) Enable 'unix extensions' parameter by default.
+17) Make sure we set the SID type when falling back to the rid 
+    algorithm (bug 245).
+18) Correct linking problems with pam_smbpass (bug 327).
+19) Add SYSV defines for Irix and Solaris to ensure the 'printing'
+    parameter default to the correct value (bug 230)
+20) Fix recursion bug in alloc_string_sub() (bug 289, et. al.)
+21) Ensure that 'make install' includes the static and shared 
+    versions of the libsmbclient libraries.
+22) Add CP850 and CP437 internal character set support (bug 150).
+23) Add support to examples/LDAP/convertSambaAccount for generating
+    LDIF modify files instead of just add (303).
+24) Fix support for -W option in smbclient (bug 39)
+25) Remove 'ldap trust ids' parameter since it could not be supported
+    by the current architecture.
+26) Don't crash when no argument is given to -T in smbclient (bug 345).
+27) Ensure smbadduser contains the same paths for the smbpasswd file 
+    as the other Samba tools (bug 290).
+28) Port of 'available = no' fix for [homes] from SAMBA_2_2 cvs tree.
+29) Add sanity checks to DeletePrinterData[Ex]() and ensure that the
+    modified printer is written to disk.
+30) Force winbindd to periodically update the trusted domain cache.
+31) Remove outdated import/export script to convert an smbpasswd file
+    to and from and LDAP directory.  Use the pdbedit tool instead.
+32) Ensure that %U substitution is restored on next valid packet
+    if a logon fails.
+
+
+Changes since 3.0beta3
+######################
+
+1)  Various memory leak fixes.
+2)  Provide full support for SMB signing (server and client)
+3)  Check for broken getgrouplist() in glibc.
+4)  Don't get stuck in an infinite loop listing directories 
+    recursively if the server returns an empty directory name
+    (bug 222).
+5)  Idle LDAP connections after 150 seconds.
+6)  Patched make uninstallmodules (bug 236).
+7)  Fix bug that caused smbd to return incomplete directory listings
+    when UNIX files contained MS wildcard characters.
+8)  Quiet default debug messages in command line tools.
+9)  Fixes to avoid panics on invalid multi-byte strings.
+10) Fix error messages when creating a new smbpasswd file (bug 198).
+11) Implemented better detection routines in autoconf scripts for 
+    locating ads support on the host OS.
+12) Fix bug that caused libraries in /usr/local/lib to be ignored 
+    (bug 174).
+13) Ensure winbindd_ads uses the correct realm or domain name when 
+    connecting to trusted DC.
+14) Ensure a correct prototype is created for snprintf() (bug 187)
+15) Stop files being created on read-only shares in some circumstances.
+16) Fix wbinfo -p (bug 251)
+17) Support schannel on any tcp/ip connection if necessary
+18) Correct bug in user_in_list() so that it works with winbind groups 
+    again.
+19) Ensure the schannel bind credentials default to the domain 
+    of the destination host.
+20) Default password expiration time in account_pol.tdb to never 
+    expire.  Remove any existing account_pol.tdb file to reset
+    the new default policy (bug 184). 
+21) Add buttons to SWAT to change the view of smb.conf (bug 212)
+22) Fix incorrect checks that determine whether or not the 'add user 
+    script' has been set.
+23) More cleanup for internal character set conversions.
+24) Fixes for multi-byte strings in stat cache code.
+25) Ensure that the net command honors the 'workgroup' parameter 
+    in smb.conf when not overridden from the command line.
+26) Add gss-spnego support to the ntlm_auth tool.
+27) Add vfs_default_quota VFS module.
+28) Added server support for NT quota interfaces.
+29) Prevent Krb5 replay attacks by adding a replay_cache.
+30) Fix problems with winbindd and transitive trusts in AD domains.
+31) Added -S to client tools for setting SMB signing options on the 
+    command line.
+32) Fix bug causing the 'passwd change program' to be called as the 
+    connected user and not root.
+33) Fixed data corruption bug in byte-range locking (e.g. affected MS Excel).
+34) Support winbindd on FreeBSD is possible.
+35) Look at only the first OID in the security blob sent in the session 
+    setup request to determine the token type.
+36) Only push locks onto a blocking lock queue if the posix lock failed with 
+    EACCES or EAGAIN (this means another lock conflicts). Else return an 
+    error and don't queue the request.
+37) Fix command line argument processing for smbtar.
+38) Correct issue that caused smbd to return generic unix_user.<uid> 
+    for lookupsid().
+39) Default to algorithmic mapping when generating a rid for a group
+    mapping.
+40) Expand %g and %G in logon script, profile path, etc... during
+    a domain logon (bug 208).
+41) Make sure smbclient obeys '-s <config>'
+42) Added win2k3 shadow copy operations to VFS interface.
+43) Allow connections to samba domain member as SERVER\user (don't
+    always default to DOMAIN\user).
+44) Remove checks in winbindd that caused it to attempt to use 
+    non-transitive trust relationships.
+45) Remove delays in winbindd caused by invalid DNS lookups.
+46) Fix supplementary group memberships on systems with slightly 
+    broken NSS implementations (bug 267).
+47) Correct issue that prevented smbclient from viewing shares on 
+    a win2k server when using a non-anonymous connection (bug 284).
+48) Add --domain=DOMAIN_NAME to wbinfo for limiting operations like 
+    'wbinfo -u' to a single domain.  The '.' character represents 
+    our domain.
+49) Fix group enumeration bug when using an LDAP directory for 
+    storing group mappings.
+50) Default to use NTLMv2 if available.  Fallback to not use LM/NTLM
+    when the extended security capability bit is not set.
+51) Fix crash in 'wbinfo -a' when using extended characters in the 
+    username (bug 269).
+52) Fix multi-byte strupper() panics (bug 205).
+53) Add vfs_readonly VFS module.
+54) Make sure to initialize the sambaNextUserRid and sambaNextGroupRid
+    attributes when using 'idmap backend = ldap' (bug 280).
+55) Make sure that users shared between a Samba PDC and member 
+    samba server are seen as domain users and not local users on the 
+    domain member.
+56) Fix Query FS Info level 2.
+57) Allow enumeration of users and groups by win9x "file server" (bug 
+    286).
+58) Create symlinks during install for modules that support mutliple
+    functions (bug 91).
+59) More iconv detection fixes.
+60) Fix path length error in vfs_recycle module (bug 291).
+61) Added server support for the LSA_DS UUID on the \lsarpc pipe.
+    (server DsRoleGetPrimaryDomainInfo() is currently disabled).
+62) Fix SMBseek and get/set position calls.
+62) Fix SetFileInfo level 1.
+63) Added tool to convert smbd log file to a pcap file (log2pcaphex).
+
+
+
+Changes since 3.0beta2
+######################
 
 1)  Added fix for Japanese case names in statcache code; 
     these can change size on upper casing.
@@ -113,8 +337,8 @@ details
     groups (bug #109).
 13) Remove idmap_XX_to_XX calls from smbd.  Move back to the the
     winbind_XXX and local_XXX calls used in 2.2.
-14) All uid/gid allocation must involve winbindd now
-    (we no attempt to map unknown SIDs to a UNIX identify).
+14) All uid/gid allocation must involve winbindd now (we do not 
+    attempt to map unknown SIDs to a UNIX identify).
 15) Add 'winbind trusted domains only' parameter to force a domain
     member.  The server to use matching users names from /etc/passwd 
     for its domain   (needed for domain member of a Samba domain).
@@ -241,6 +465,49 @@ Changes since 3.0beta1
 
 
 ######################################################################
+Upgrading from a previous Samba 3.0 beta
+########################################
+
+Beginning with Samba 3.0.0beta3, the RID allocation functions
+have been moved into winbindd.  Previously these were handled
+by each passdb backend.  This means that winbindd must be running
+to automatically allocate RIDs for users and/or groups.  Otherwise,
+smbd will use the 2.2 algorithm for generating new RIDs.
+
+If you are using 'passdb backend = tdbsam' with a previous Samba 
+3.0 beta release (or possibly alpha), it may be necessary to 
+move the RID_COUNTER entry from /usr/local/samba/private/passdb.tdb
+to winbindd_idmap.tdb.  To do this:
+
+1)  Ensure that winbindd_idmap.tdb exists (launch winbindd at least 
+    once)
+2)  build tdbtool by executing 'make tdbtool' in the source/tdb/ 
+    directory
+3)  run: (note that 'tdb>' is the tool's prompt for input)
+
+       root# ./tdbtool /usr/local/samba/private/passdb.tdb
+       tdb> show RID_COUNTER
+       key 12 bytes
+       RID_COUNTER
+       data 4 bytes
+       [000] 0A 52 00 00                                       .R.
+
+       tdb> move RID_COUNTER /usr/local/samba/var/locks/winbindd_idmap.tdb
+       ....
+       record moved
+
+If you are using 'passdb backend = ldapsam', it will be necessary to 
+store idmap entries in the LDAP directory as well (i.e. idmap backend 
+= ldap).  Refer to the 'net idmap' command for more information on 
+migrating SID<->UNIX id mappings from one backend to another.
+
+If the RID_COUNTER record does not exist, then these instructions are
+unneccessary and the new RID_COUNTER record will be correctly generated
+if needed.  
+
+
+
+########################
 Upgrading from Samba 2.2
 ########################
 
@@ -337,6 +604,7 @@ New Parameters (new parameters have been grouped by function):
   * ntlm auth
   * paranoid server security
   * server schannel
+  * server signing
   * smb ports
   * use spnego
 
@@ -382,7 +650,6 @@ New Parameters (new parameters have been grouped by function):
   * ldap idmap suffix
   * ldap machine suffix
   * ldap passwd sync
-  * ldap trust ids
   * ldap user suffix
   
   General Configuration
@@ -399,6 +666,7 @@ Modified Parameters (changes in behavior):
   * restrict anonymous (integer value)
   * security (new 'ads' value)
   * strict locking (enabled by default)
+  * unix extensions (enabled by default)
   * winbind cache time (increased to 5 minutes)
   * winbind uid (deprecated in favor of 'idmap uid')
   * winbind gid (deprecated in favor of 'idmap gid')
@@ -469,6 +737,14 @@ aware of when moving to Samba 3.0.
   2) Inclusion of new 'security = ads' option for integration 
      with an Active Directory domain using the native Windows
      Kerberos 5 and LDAP protocols.
+
+     MIT kerberos 1.3.1 supports the ARCFOUR-HMAC-MD5 encryption 
+     type which is neccessary for servers on which the 
+     administrator password has not been changed, or kerberos-enabled 
+     SMB connections to servers that require Kerberos SMB signing.
+     Besides this one difference, either MIT or Heimdal Kerberos
+     distributions are usable by Samba 3.0.
+     
 
 Samba 3.0 also includes the possibility of setting up chains
 of authentication methods (auth methods) and account storage 
@@ -716,10 +992,10 @@ Examples
 Known Issues
 ############
 
-* The smbldap perl scripts for managing user entries in an LDAP
-  directory have not be updated to function with the Samba 3.0
-  schema changes.  This (or an equivalent solution) work is planned
-  to be completed prior to the stable 3.0.0 release.
+* There are several bugs currently logged against the 3.0 codebase
+  that affect the use of NT 4.0 GUI domain management tools when run
+  against a Samba 3.0 PDC.  This bugs should be released in an early 
+  3.0.x release.
 
 Please refer to https://bugzilla.samba.org/ for a current list of bugs 
 filed against the Samba 3.0 codebase.
@@ -738,6 +1014,6 @@ the problem then you will probably be ignored.
 
 A new bugzilla installation has been established to help support the 
 Samba 3.0 community of users.  This server, located at 
-https://bugzilla.samba.org/, will replace the existing jitterbug server 
-and the old http://bugs.samba.org now points to the new bugzilla server.
+https://bugzilla.samba.org/, has replaced the older jitterbug server 
+previously located at http://bugs.samba.org/.
 
