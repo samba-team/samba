@@ -22,7 +22,14 @@ LDADD = libhdb.la \
 lib_LTLIBRARIES = libhdb.la
 libhdb_la_LDFLAGS = -version-info 3:0:0
 
-libhdb_la_SOURCES = hdb.c common.c db.c ndbm.c print.c $(BUILT_SOURCES)
+libhdb_la_SOURCES = 				\
+		    keytab.c			\
+		    hdb.c			\
+		    common.c			\
+		    db.c			\
+		    ndbm.c			\
+		    print.c			\
+		    $(BUILT_SOURCES)
 
 include_HEADERS = hdb.h hdb_err.h hdb_asn1.h hdb-protos.h hdb-private.h
 
