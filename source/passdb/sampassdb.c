@@ -342,6 +342,48 @@ struct sam_disp_info *pwdb_sam_to_dispinfo(struct sam_passwd *user)
 	return &disp_info;
 }
 
+static void select_name(fstring string, char **name, const UNISTR2 *from)
+{
+	if (from->buffer != 0)
+	{
+		unistr2_to_ascii(string, from, sizeof(string));
+		*name = string;
+	}
+}
+
+/*************************************************************
+ copies a sam passwd.
+ **************************************************************/
+void copy_id23_to_sam_passwd(struct sam_passwd *to, const SAM_USER_INFO_23 *from)
+{
+	static fstring nt_name;
+	static fstring full_name;
+	static fstring home_dir;
+	static fstring dir_drive;
+	static fstring logon_script;
+	static fstring profile_path;
+	static fstring acct_desc;
+	static fstring workstations;
+	static fstring unknown_str;
+	static fstring munged_dial;
+
+	if (from == NULL || to == NULL) return;
+
+	memcpy(to, from, sizeof(*from));
+
+	select_name(nt_name     , &to->nt_name     , &from->uni_user_name   );
+	select_name(full_name   , &to->full_name   , &from->uni_full_name   );
+	select_name(home_dir    , &to->home_dir    , &from->uni_home_dir    );
+	select_name(dir_drive   , &to->dir_drive   , &from->uni_dir_drive   );
+	select_name(logon_script, &to->logon_script, &from->uni_logon_script);
+	select_name(profile_path, &to->profile_path, &from->uni_profile_path);
+	select_name(acct_desc   , &to->acct_desc   , &from->uni_acct_desc   );
+	select_name(workstations, &to->workstations, &from->uni_workstations);
+	select_name(unknown_str , &to->unknown_str , &from->uni_unknown_str );
+	select_name(munged_dial , &to->munged_dial , &from->uni_munged_dial );
+}
+
+
 /*************************************************************
  copies a sam passwd.
  **************************************************************/
