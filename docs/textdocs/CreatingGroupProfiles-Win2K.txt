@@ -42,3 +42,14 @@ No difference. Samba handles the profile ACLs the same way Win2K does.
 But understand that it is the Win2K client that does all the processing
 of the SIDs on the ACLs in the profile NTUser.DAT file.
 
+
+Note:
+-----
+> Unless your users are using Outlook (or virtually any E-mail client for
+> that matter) I have a few users with .PST files that are over 1Gig in
+> size. This is due to the regular amount of data files that we are sent. I
+> have discussed with them the need to trim those files down.
+
+Under NT/2K the use of mandotory profiles forces the use of MS Exchange
+storage of mail data. That keeps desktop profiles usable.
+
