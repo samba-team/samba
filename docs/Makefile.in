@@ -35,7 +35,7 @@ TOPDIR = $(shell pwd)
 OUTPUTDIR = $(TOPDIR)/output
 ARCHIVEDIR = $(OUTPUTDIR)/archive
 SRCDIR = @srcdir@
-MANDIR=$(OUTPUTDIR)/manpages
+MANDIR = $(OUTPUTDIR)/manpages
 EPSTOPDF = @EPSTOPDF@
 MANPAGEDIR = $(TOPDIR)/manpages
 HOWTODIR = $(TOPDIR)/howto
@@ -43,14 +43,12 @@ MAKEINDEX = @MAKEINDEX@
 IMAGEPROJDIR = $(HOWTODIR)/imagefiles
 GUIDEDOC = $(TOPDIR)/guide
 EXAMPLESDIR = $(TOPDIR)/examples
-DEVDOC = $(TOPDIR)/devel
+DEVDOCDIR = $(TOPDIR)/devel
 SMBDOTCONFDOC = $(TOPDIR)/smbdotconf
 PSDIR = $(OUTPUTDIR)
 PDFDIR = $(OUTPUTDIR)
 DVIDIR = $(OUTPUTDIR)
 TXTDIR = $(OUTPUTDIR)/textdocs
-FAQHOWTODIR = $(TOPDIR)/faq
-FAQDIR = $(OUTPUTDIR)/faq
 HTMLDIR=$(OUTPUTDIR)/htmldocs
 PLUCKERDIR=$(OUTPUTDIR)/plucker
 
@@ -64,7 +62,7 @@ MANPAGES_PLUCKER = $(patsubst $(MANPAGEDIR)/%.xml,$(PLUCKERDIR)/%.pdb,$(MANPAGES
 HOWTODIR_IMAGES_PNG = $(wildcard $(IMAGEPROJDIR)/*.png)
 HOWTODIR_IMAGES_EPS=$(patsubst %.png,%.eps,$(wildcard $(IMAGEPROJDIR)/*.png))
 HOWTODIR_DEPS = $(HOWTODIR)/*.xml $(HOWTODIR)/attributions.xml $(MANPAGEDIR)/*.xml $(SMBDOTCONFDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/parameters.global.xml $(SMBDOTCONFDOC)/parameters.service.xml 
-DEVDOC_DEPS = $(DEVDOC)/*.xml $(DEVDOC)/attributions.xml
+DEVDOCDIR_DEPS = $(DEVDOCDIR)/*.xml $(DEVDOCDIR)/attributions.xml
 
 all: 
 	@echo "Supported make targets:"
@@ -79,14 +77,13 @@ all:
 	@echo " and developers guide"
 	@echo "html - Build HTML version of HOWTO Collection and Developers Guide"
 	@echo "htmlman - Build html version of manpages"
-	@echo "htmlfaq - Build html version of the FAQ"
-	@echo "plucker - Build HOWTO, Developers Guide, man pages, and FAQ in Plucker format for PDA"
+	@echo "plucker - Build HOWTO, Developers Guide, man pages in Plucker format for PDA"
 	@echo "undocumented - Output list of undocumented smb.conf options"
 	@echo "samples - Extract examples"
 	@echo "files - Extract other files"
 	@echo "everything - Build all of the above"
 
-everything: manpages pdf html-single html htmlman htmlfaq txt ps
+everything: manpages pdf html-single html htmlman txt ps
 
 release: manpages htmlman html html-single pdf guide
 
@@ -102,27 +99,24 @@ txt: $(TXTDIR) $(TXTDIR)/Samba-HOWTO-Collection.txt $(TXTDIR)/Samba-Developers-G
 
 htmlman: $(HTMLDIR) $(MANPAGES_HTML) CSS
 
-htmlfaq: $(HTMLDIR) CSS
-	$(XSLTPROC) --stringparam base.dir "$(FAQDIR)/" --stringparam root.filename samba-faq xslt/html-chunk.xsl $(FAQHOWTODIR)/sambafaq.xml
 html-single: $(HTMLDIR) CSS $(HTMLDIR)/Samba-HOWTO-Collection.html  $(HTMLDIR)/Samba-Developers-Guide.html
 	@if [ ! -d $(HTMLDIR)/images/ ]; then \
 		mkdir $(HTMLDIR)/images/; \
 	fi \
-	&& cp -p $(IMAGEPROJDIR)/*png $(HTMLDIR)/images/
+	&& cp -p $(HOWTODIR)/imagefiles/*png $(HTMLDIR)/images/
 
 html: $(HTMLDIR) CSS Samba-HOWTO-Collection.xml $(HTMLDIR)/Samba-Developers-Guide.html
 	$(XSLTPROC) -o "$(HTMLDIR)/" xslt/html-chunk.xsl Samba-HOWTO-Collection.xml
 	@if [ ! -d $(HTMLDIR)/images/ ]; then \
 		mkdir $(HTMLDIR)/images/; \
 	fi \
-	&& cp -p $(IMAGEPROJDIR)/*png $(HTMLDIR)/images/
+	&& cp -p $(HOWTODIR)/imagefiles/*png $(HTMLDIR)/images/
 
 manpages: $(MANDIR) $(MANPAGES)
 
 tex: Samba-HOWTO-Collection.tex Samba-Developers-Guide.tex gpl.tex
 
-plucker: html-single htmlman htmlfaq $(PLUCKERDIR) $(MANPAGES_PLUCKER) $(PLUCKERDIR)/Samba-Developers-Guide.pdb $(PLUCKERDIR)/Samba-HOWTO-Collection.pdb
-	$(PLUCKERBUILD) -v -M2 --stayonhost  --noimages --zlib-compression -H file:$(FAQDIR)/samba-faq.html -f samba-faq -p $(PLUCKERDIR)
+plucker: html-single htmlman $(PLUCKERDIR) $(MANPAGES_PLUCKER) $(PLUCKERDIR)/Samba-Developers-Guide.pdb $(PLUCKERDIR)/Samba-HOWTO-Collection.pdb
 
 Samba-HOWTO-Collection.xml: $(HOWTODIR)/index.xml $(HOWTODIR_DEPS)
 	$(XSLTPROC) --stringparam noreference 1 --xinclude --output $@ xslt/expand-sambadoc.xsl $<
@@ -130,23 +124,23 @@ Samba-HOWTO-Collection.xml: $(HOWTODIR)/index.xml $(HOWTODIR_DEPS)
 Samba-Guide.xml: $(GUIDEDOC)/guide-main.xml
 	$(XSLTPROC) --stringparam noreference 1 --xinclude --output $@ xslt/expand-sambadoc.xsl $<
 
-Samba-Developers-Guide.xml: $(DEVDOC)/dev-doc.xml $(DEVDOC_DEPS)
+Samba-Developers-Guide.xml: $(DEVDOCDIR)/index.xml $(DEVDOCDIR_DEPS)
 	$(XSLTPROC) --stringparam noreference 1 --xinclude --output $@ xslt/expand-sambadoc.xsl $<
 
 $(HOWTODIR)/attributions.xml: $(HOWTODIR)/index.xml
 	@echo > $@ # Make sure we don't get recursive dependencies, etc!
 	$(XSLTPROC) --output $@ xslt/generate-attributions.xsl $<
 
-$(DEVDOC)/attributions.xml: $(DEVDOC)/dev-doc.xml
+$(DEVDOCDIR)/attributions.xml: $(DEVDOCDIR)/index.xml
 	@echo > $@ # Make sure we don't get recursive dependencies, etc!
 	$(XSLTPROC) --output $@ xslt/generate-attributions.xsl $<
 
 clean: 
 	rm -f *.xml $(MANPAGES) $(TXTDIR)/*.txt $(PSDIR)/*.ps \
-	    $(PDFDIR)/*.pdf $(FAQDIR)/*.html $(HTMLDIR)/*html $(HTMLDIR)/samba.css
+	    $(PDFDIR)/*.pdf $(HTMLDIR)/*html $(HTMLDIR)/samba.css
 	rm -f xslt/figures/*pdf
 	rm -f $(SMBDOTCONFDOC)/parameters.*.xml $(DVIDIR)/*.dvi
-	rm -f samba-doc.* dev-doc.* $(HOWTODIR)/changelog.xml $(HOWTODIR)/attributions.xml $(DEVDOC)/attributions.xml
+	rm -f samba-doc.* index.* $(HOWTODIR)/changelog.xml $(HOWTODIR)/attributions.xml $(DEVDOCDIR)/attributions.xml
 	rm -f Samba-HOWTO-Collection.*
 	rm -f Samba-Developers-Guide.*
 	rm -f Samba-Guide.*
@@ -154,7 +148,7 @@ clean:
 	rm -f $(PLUCKERDIR)/*.pdb
 
 # Text files
-$(TXTDIR): $(OUTPUTDIR)
+$(TXTDIR):
 	mkdir $(TXTDIR)
 
 $(TXTDIR)/%.txt: %.xml
@@ -197,15 +191,13 @@ $(PSDIR)/%.ps: $(DVIDIR)/%.dvi
 xslt/figures/%.pdf: xslt/figures/%.eps
 	$(EPSTOPDF) $<
 
-$(OUTPUTDIR):
-	mkdir $(OUTPUTDIR)
 # Single large HTML files
 
-$(HTMLDIR): $(OUTPUTDIR)
+$(HTMLDIR):
 	mkdir $(HTMLDIR)
 	mkdir $(HTMLDIR)/images
 
-$(PLUCKERDIR): $(OUTPUTDIR)
+$(PLUCKERDIR):
 	mkdir $(PLUCKERDIR)
 
 CSS: $(HTMLDIR) xslt/html/samba.css
@@ -214,7 +206,7 @@ CSS: $(HTMLDIR) xslt/html/samba.css
 $(HTMLDIR)/Samba-HOWTO-Collection.html: Samba-HOWTO-Collection.xml $(HOWTODIR_DEPS) $(HOWTODIR_IMAGES_PNG)
 	$(XSLTPROC) --output $@ xslt/html.xsl $<
 
-$(HTMLDIR)/Samba-Developers-Guide.html: Samba-Developers-Guide.xml $(DEVDOC_DEPS)
+$(HTMLDIR)/Samba-Developers-Guide.html: Samba-Developers-Guide.xml $(DEVDOCDIR_DEPS)
 	$(XSLTPROC) --output $@ xslt/html.xsl $<
 
 $(HTMLDIR)/%.html: %.xml
@@ -252,7 +244,7 @@ smb.conf.5.xml: $(SMBDOTCONFDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/parameters.all.
  		$(SMBDOTCONFDOC)/parameters.global.xml $(SMBDOTCONFDOC)/parameters.service.xml 
 	$(XSLTPROC) --stringparam noreference 1 --xinclude --output $@ xslt/expand-sambadoc.xsl $<
 
-$(MANDIR): $(OUTPUTDIR)
+$(MANDIR): 
 	mkdir $(MANDIR)
 
 $(MANDIR)/%: %.xml
