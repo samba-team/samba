@@ -34,7 +34,8 @@ uint32 cli_nt_setup_creds(const char *srv_name,
 			  const char *domain,
 			  const char *myhostname,
 			  const char *trust_acct,
-			  const uchar trust_pwd[16], uint16 sec_chan)
+			  const uchar trust_pwd[16], uint16 sec_chan,
+			  uint16 * validation_level)
 {
 	DOM_CHAL clnt_chal;
 	DOM_CHAL srv_chal;
@@ -49,7 +50,8 @@ uint32 cli_nt_setup_creds(const char *srv_name,
 	generate_random_buffer(clnt_chal.data, 8, False);
 
 	/* send a client challenge; receive a server challenge */
-	status = cli_net_req_chal(srv_name, myhostname, &clnt_chal, &srv_chal);
+	status =
+		cli_net_req_chal(srv_name, myhostname, &clnt_chal, &srv_chal);
 	if (status != 0)
 	{
 		DEBUG(1, ("cli_nt_setup_creds: request challenge failed\n"));
@@ -78,7 +80,7 @@ uint32 cli_nt_setup_creds(const char *srv_name,
 	 * Receive an auth-2 challenge response and check it.
 	 */
 	status = cli_net_auth2(srv_name, trust_acct, myhostname,
-			    sec_chan, &neg_flags, &srv_chal);
+			       sec_chan, &neg_flags, &srv_chal);
 	if (status != 0x0)
 	{
 		DEBUG(1,
@@ -118,6 +120,16 @@ uint32 cli_nt_setup_creds(const char *srv_name,
 			return NT_STATUS_ACCESS_DENIED | 0xC0000000;
 		}
 	}
+
+	if (IS_BITS_SET_ALL(neg_flags, 0x40))
+	{
+		(*validation_level) = 3;
+	}
+	else
+	{
+		(*validation_level) = 2;
+	}
+
 	return status;
 }
 
@@ -150,12 +162,14 @@ BOOL cli_nt_login_general(const char *srv_name, const char *myhostname,
 			  const char *domain, const char *username,
 			  uint32 luid_low,
 			  const char *general,
-			  NET_ID_INFO_CTR * ctr, NET_USER_INFO_3 * user_info3)
+			  NET_ID_INFO_CTR * ctr,
+			  uint16 validation_level,
+			  NET_USER_INFO_3 * user_info3)
 {
 	uint8 sess_key[16];
 	NET_USER_INFO_CTR user_ctr;
 	uint32 status;
-	user_ctr.switch_value = 2;
+	user_ctr.switch_value = validation_level;
 
 	DEBUG(5, ("cli_nt_login_general: %d\n", __LINE__));
 
@@ -195,17 +209,18 @@ password equivalents, protected by the session key) is inherently insecure
 given the current design of the NT Domain system. JRA.
  ****************************************************************************/
 uint32 cli_nt_login_interactive(const char *srv_name, const char *myhostname,
-			      const char *domain, const char *username,
-			      uint32 luid_low,
-			      const uchar * lm_owf_user_pwd,
-			      const uchar * nt_owf_user_pwd,
-			      NET_ID_INFO_CTR * ctr,
-			      NET_USER_INFO_3 * user_info3)
+				const char *domain, const char *username,
+				uint32 luid_low,
+				const uchar * lm_owf_user_pwd,
+				const uchar * nt_owf_user_pwd,
+				NET_ID_INFO_CTR * ctr,
+				uint16 validation_level,
+				NET_USER_INFO_3 * user_info3)
 {
 	uint32 status;
 	uint8 sess_key[16];
 	NET_USER_INFO_CTR user_ctr;
-	user_ctr.switch_value = 2;
+	user_ctr.switch_value = validation_level;
 
 	DEBUG(5, ("cli_nt_login_interactive: %d\n", __LINE__));
 
@@ -250,18 +265,20 @@ password equivalents over the network. JRA.
 ****************************************************************************/
 
 uint32 cli_nt_login_network(const char *srv_name, const char *myhostname,
-			  const char *domain, const char *username,
-			  uint32 luid_low, const char lm_chal[8],
-			  const char *lm_chal_resp,
-			  int lm_chal_len,
-			  const char *nt_chal_resp,
-			  int nt_chal_len,
-			  NET_ID_INFO_CTR * ctr, NET_USER_INFO_3 * user_info3)
+			    const char *domain, const char *username,
+			    uint32 luid_low, const char lm_chal[8],
+			    const char *lm_chal_resp,
+			    int lm_chal_len,
+			    const char *nt_chal_resp,
+			    int nt_chal_len,
+			    NET_ID_INFO_CTR * ctr,
+			    uint16 validation_level,
+			    NET_USER_INFO_3 * user_info3)
 {
 	uint8 sess_key[16];
 	uint32 status;
 	NET_USER_INFO_CTR user_ctr;
-	user_ctr.switch_value = 2;
+	user_ctr.switch_value = validation_level;
 
 	DEBUG(5, ("cli_nt_login_network: %d\n", __LINE__));
 
@@ -327,6 +344,7 @@ BOOL net_sam_sync(const char *srv_name,
 		  SAM_DELTA_CTR deltas[MAX_SAM_DELTAS], uint32 * num_deltas)
 {
 	BOOL res = True;
+	uint16 validation_level;
 
 	*num_deltas = 0;
 
@@ -335,7 +353,8 @@ BOOL net_sam_sync(const char *srv_name,
 	res = res ? cli_nt_setup_creds(srv_name, domain, myhostname,
 				       trust_acct,
 				       trust_passwd,
-				       SEC_CHAN_BDC) == 0x0 : False;
+				       SEC_CHAN_BDC,
+				       &validation_level) == 0x0 : False;
 
 	memset(trust_passwd, 0, 16);
 

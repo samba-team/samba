@@ -83,7 +83,8 @@ uint32 cli_nt_setup_creds(const char *srv_name,
 			  const char *domain,
 			  const char *myhostname,
 			  const char *trust_acct,
-			  const uchar trust_pwd[16], uint16 sec_chan);
+			  const uchar trust_pwd[16], uint16 sec_chan,
+			uint16 *validation_level);
 BOOL cli_nt_srv_pwset(const char *srv_name, const char *myhostname,
 		      const char *trust_acct,
 		      const uchar * new_hashof_trust_pwd, uint16 sec_chan);
@@ -91,22 +92,27 @@ BOOL cli_nt_login_general(const char *srv_name, const char *myhostname,
 			  const char *domain, const char *username,
 			  uint32 luid_low,
 			  const char *general,
-			  NET_ID_INFO_CTR * ctr, NET_USER_INFO_3 * user_info3);
+			  NET_ID_INFO_CTR * ctr,
+			  uint16 validation_level,
+			  NET_USER_INFO_3 * user_info3);
 uint32 cli_nt_login_interactive(const char *srv_name, const char *myhostname,
-			      const char *domain, const char *username,
-			      uint32 luid_low,
-			      const uchar * lm_owf_user_pwd,
-			      const uchar * nt_owf_user_pwd,
-			      NET_ID_INFO_CTR * ctr,
-			      NET_USER_INFO_3 * user_info3);
+				const char *domain, const char *username,
+				uint32 luid_low,
+				const uchar * lm_owf_user_pwd,
+				const uchar * nt_owf_user_pwd,
+				NET_ID_INFO_CTR * ctr,
+				uint16 validation_level,
+				NET_USER_INFO_3 * user_info3);
 uint32 cli_nt_login_network(const char *srv_name, const char *myhostname,
-			  const char *domain, const char *username,
-			  uint32 luid_low, const char lm_chal[8],
-			  const char *lm_chal_resp,
-			  int lm_chal_len,
-			  const char *nt_chal_resp,
-			  int nt_chal_len,
-			  NET_ID_INFO_CTR * ctr, NET_USER_INFO_3 * user_info3);
+			    const char *domain, const char *username,
+			    uint32 luid_low, const char lm_chal[8],
+			    const char *lm_chal_resp,
+			    int lm_chal_len,
+			    const char *nt_chal_resp,
+			    int nt_chal_len,
+			    NET_ID_INFO_CTR * ctr,
+			    uint16 validation_level,
+			    NET_USER_INFO_3 * user_info3);
 BOOL cli_nt_logoff(const char *srv_name, const char *myhostname,
 		   NET_ID_INFO_CTR * ctr);
 BOOL net_sam_sync(const char *srv_name,

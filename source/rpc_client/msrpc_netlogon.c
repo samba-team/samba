@@ -43,12 +43,14 @@ BOOL modify_trust_password(const char *domain, const char *srv_name,
 			   uint16 sec_chan)
 {
 	fstring trust_acct;
+	uint16 validation_level;
 
 	fstrcpy(trust_acct, global_myname);
 	fstrcat(trust_acct, "$");
 
 	if (cli_nt_setup_creds(srv_name, domain, global_myname, trust_acct,
-			       orig_trust_passwd_hash, sec_chan) != 0x0)
+			       orig_trust_passwd_hash, sec_chan,
+			       &validation_level) != 0x0)
 	{
 		return False;
 	}
@@ -82,6 +84,7 @@ static uint32 domain_client_validate(const char *user, const char *domain,
 	fstring trust_acct;
 	fstring srv_name;
 	fstring sec_name;
+	uint16 validation_level;
 	BOOL cleartext = smb_apasslen != 0 && smb_apasslen != 24 &&
 		smb_ntpasslen == 0;
 
@@ -131,7 +134,8 @@ static uint32 domain_client_validate(const char *user, const char *domain,
 
 	status =
 		cli_nt_setup_creds(srv_name, domain, global_myname,
-				   trust_acct, trust_passwd, acct_type);
+				   trust_acct, trust_passwd, acct_type,
+				   &validation_level);
 	if (status != 0x0)
 	{
 		DEBUG(0, ("domain_client_validate: credentials failed (%s)\n",
@@ -149,7 +153,8 @@ static uint32 domain_client_validate(const char *user, const char *domain,
 						  domain, user,
 						  smb_uid_low,
 						  smb_apasswd, smb_ntpasswd,
-						  &ctr, info3);
+						  &ctr, validation_level,
+						  info3);
 	}
 	else if (challenge == NULL)
 	{
@@ -157,7 +162,8 @@ static uint32 domain_client_validate(const char *user, const char *domain,
 					      global_myname,
 					      domain, user,
 					      smb_uid_low,
-					      smb_apasswd, &ctr, info3);
+					      smb_apasswd, &ctr,
+					      validation_level, info3);
 	}
 	else
 	{
@@ -169,7 +175,8 @@ static uint32 domain_client_validate(const char *user, const char *domain,
 					      (const uchar *)smb_apasswd,
 					      smb_apasslen,
 					      (const uchar *)smb_ntpasswd,
-					      smb_ntpasslen, &ctr, info3);
+					      smb_ntpasslen, &ctr,
+					      validation_level, info3);
 	}
 
 	if (status ==

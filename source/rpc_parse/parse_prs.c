@@ -292,7 +292,7 @@ void prs_free_data(prs_struct * buf)
 	if (buf->data != NULL)
 	{
 		CHECK_STRUCT(buf);
-		free(buf->data);	/* delete data in this structure */
+		safe_free(buf->data);	/* delete data in this structure */
 		buf->data = NULL;
 	}
 	buf->data_size = 0;

@@ -52,6 +52,7 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 	fstring trust_acct;
 	fstring domain;
 	char *p;
+	uint16 validation_level;
 
 	fstring wks_name;
 	fstring srv_name;
@@ -158,7 +159,8 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 	res = res ? cli_nt_setup_creds(srv_name, domain, info->myhostname,
 				       trust_acct,
 				       trust_passwd,
-				       SEC_CHAN_WKSTA) == 0x0 : False;
+				       SEC_CHAN_WKSTA,
+				       &validation_level) == 0x0 : False;
 
 
 	memset(trust_passwd, 0, 16);
@@ -168,6 +170,7 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 					      domain, nt_user_name,
 					      getuid(), lm_pw, nt_pw,
 					      &info->dom.ctr,
+					      validation_level,
 					      &info->dom.user_info3) ==
 		     0x0) : False;
 
@@ -197,6 +200,7 @@ void cmd_netlogon_domain_test(struct client_info *info, int argc,
 	fstring inter_dom_acct;
 	fstring trust_sec_name;
 	fstring domain;
+	uint16 validation_level;
 
 	fstring wks_name;
 	fstring srv_name;
@@ -250,7 +254,8 @@ void cmd_netlogon_domain_test(struct client_info *info, int argc,
 	res = res ? cli_nt_setup_creds(srv_name, domain,
 				       info->myhostname, inter_dom_acct,
 				       trust_passwd,
-				       SEC_CHAN_DOMAIN) == 0x0 : False;
+				       SEC_CHAN_DOMAIN,
+				       &validation_level) == 0x0 : False;
 
 	memset(trust_passwd, 0, 16);
 

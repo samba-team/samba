@@ -439,6 +439,17 @@ typedef struct sam_unknown_info_7_info
 
 } SAM_UNK_INFO_7;
 
+typedef struct sam_unknown_info_12_inf
+{
+	uint32 unknown_0; /* 0xcf1d cc00 */
+	uint32 unknown_1; /* 0xffff fffb */
+	uint32 unknown_2; /* 0xcf1d cc00 */
+	uint32 unknown_3; /* 0xffff fffb */
+	
+	uint32 unknown_4; /* 0x8a88 0000 */
+
+} SAM_UNK_INFO_12;
+
 typedef struct sam_unknown_info_2_inf
 {
 	uint32 unknown_0; /* 0x0000 0000 */
@@ -488,6 +499,7 @@ typedef struct sam_unknown_ctr_info
 		SAM_UNK_INFO_3 inf3;
 		SAM_UNK_INFO_6 inf6;
 		SAM_UNK_INFO_7 inf7;
+		SAM_UNK_INFO_12 inf12;
 
 	} info;
 

@@ -2310,6 +2310,11 @@ uint32 _samr_query_dom_info(const POLICY_HND *domain_pol,
 
 	switch (switch_value)
 	{
+		case 0x0c:
+		{
+			make_unk_info12(&(ctr->info.inf12));
+			break;
+		}
 		case 0x07:
 		{
 			make_unk_info7(&(ctr->info.inf7));

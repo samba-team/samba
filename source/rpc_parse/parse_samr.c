@@ -556,6 +556,47 @@ static BOOL sam_io_unk_info7(char *desc, SAM_UNK_INFO_7 * u_7,
 /*******************************************************************
 makes a structure.
 ********************************************************************/
+BOOL make_unk_info12(SAM_UNK_INFO_12 * u_12)
+{
+	if (u_12 == NULL)
+		return False;
+
+	u_12->unknown_0 = 0xcf1dcc00;
+	u_12->unknown_1 = 0xfffffffb;
+	u_12->unknown_2 = 0xcf1dcc00;
+	u_12->unknown_3 = 0xfffffffb;
+
+	u_12->unknown_4 = 0x8a880000;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+static BOOL sam_io_unk_info12(char *desc, SAM_UNK_INFO_12 * u_12,
+			     prs_struct * ps, int depth)
+{
+	if (u_12 == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "sam_io_unk_info12");
+	depth++;
+
+	prs_uint32("unknown_0", ps, depth, &u_12->unknown_0);
+	prs_uint32("unknown_1", ps, depth, &u_12->unknown_1);
+	prs_uint32("unknown_2", ps, depth, &u_12->unknown_2);
+	prs_uint32("unknown_3", ps, depth, &u_12->unknown_3);
+	prs_uint32("unknown_4", ps, depth, &u_12->unknown_4);
+
+	prs_align(ps);
+
+	return True;
+}
+
+/*******************************************************************
+makes a structure.
+********************************************************************/
 BOOL make_unk_info2(SAM_UNK_INFO_2 * u_2, char *domain, char *server)
 {
 	int len_domain = strlen(domain);
@@ -602,35 +643,35 @@ static BOOL sam_io_unk_info2(char *desc, SAM_UNK_INFO_2 * u_2,
 	prs_debug(ps, depth, desc, "sam_io_unk_info2");
 	depth++;
 
-	prs_uint32("unknown_0", ps, depth, &u_2->unknown_0);	/* 0x0000 0000 */
-	prs_uint32("unknown_1", ps, depth, &u_2->unknown_1);	/* 0x8000 0000 */
-	prs_uint32("unknown_2", ps, depth, &u_2->unknown_2);	/* 0x0000 0000 */
+	prs_uint32("unknown_0", ps, depth, &u_2->unknown_0); /* 0x0000 0000 */
+	prs_uint32("unknown_1", ps, depth, &u_2->unknown_1); /* 0x8000 0000 */
+	prs_uint32("unknown_2", ps, depth, &u_2->unknown_2); /* 0x0000 0000 */
 
-	prs_uint32("ptr_0", ps, depth, &u_2->ptr_0);	/* pointer to unknown structure */
-	smb_io_unihdr("hdr_domain", &u_2->hdr_domain, ps, depth);	/* domain name unicode header */
-	smb_io_unihdr("hdr_server", &u_2->hdr_server, ps, depth);	/* server name unicode header */
+	prs_uint32("ptr_0", ps, depth, &u_2->ptr_0);
+	smb_io_unihdr("hdr_domain", &u_2->hdr_domain, ps, depth);
+	smb_io_unihdr("hdr_server", &u_2->hdr_server, ps, depth);
 
 	/* put all the data in here, at the moment, including what the above
 	   pointer is referring to
 	 */
 
-	prs_uint32("seq_num ", ps, depth, &u_2->seq_num);	/* 0x0000 0099 or 0x1000 0000 */
-	prs_uint32("unknown_3 ", ps, depth, &u_2->unknown_3);	/* 0x0000 0000 */
+	prs_uint32("seq_num ", ps, depth, &u_2->seq_num); /* 0x0000 0099 or 0x1000 0000 */
+	prs_uint32("unknown_3 ", ps, depth, &u_2->unknown_3); /* 0x0000 0000 */
 
-	prs_uint32("unknown_4 ", ps, depth, &u_2->unknown_4);	/* 0x0000 0001 */
-	prs_uint32("unknown_5 ", ps, depth, &u_2->unknown_5);	/* 0x0000 0003 */
-	prs_uint32("unknown_6 ", ps, depth, &u_2->unknown_6);	/* 0x0000 0001 */
-	prs_uint32("num_domain_usrs ", ps, depth, &u_2->num_domain_usrs);	/* 0x0000 0008 */
-	prs_uint32("num_domain_grps", ps, depth, &u_2->num_domain_grps);	/* 0x0000 0003 */
-	prs_uint32("num_local_grps", ps, depth, &u_2->num_local_grps);	/* 0x0000 0003 */
+	prs_uint32("unknown_4 ", ps, depth, &u_2->unknown_4); /* 0x0000 0001 */
+	prs_uint32("unknown_5 ", ps, depth, &u_2->unknown_5); /* 0x0000 0003 */
+	prs_uint32("unknown_6 ", ps, depth, &u_2->unknown_6); /* 0x0000 0001 */
+	prs_uint32("num_domain_usrs ", ps, depth, &u_2->num_domain_usrs);
+	prs_uint32("num_domain_grps", ps, depth, &u_2->num_domain_grps);
+	prs_uint32("num_local_grps", ps, depth, &u_2->num_local_grps);
 
-	prs_uint8s(False, "padding", ps, depth, u_2->padding, sizeof(u_2->padding));	/* 12 bytes zeros */
+	prs_uint8s(False, "padding", ps, depth, u_2->padding, sizeof(u_2->padding));
 
 	smb_io_unistr2("uni_domain", &u_2->uni_domain, u_2->hdr_domain.buffer,
-		       ps, depth);	/* domain name unicode string */
+		       ps, depth);	
 	prs_align(ps);
 	smb_io_unistr2("uni_server", &u_2->uni_server, u_2->hdr_server.buffer,
-		       ps, depth);	/* server name unicode string */
+		       ps, depth);
 
 	prs_align(ps);
 
@@ -665,10 +706,10 @@ static BOOL sam_io_unk_info1(char *desc, SAM_UNK_INFO_1 * u_1,
 	prs_debug(ps, depth, desc, "sam_io_unk_info1");
 	depth++;
 
-	prs_uint8s(False, "padding", ps, depth, u_1->padding, sizeof(u_1->padding));	/* 12 bytes zeros */
+	prs_uint8s(False, "padding", ps, depth, u_1->padding, sizeof(u_1->padding));
 
-	prs_uint32("unknown_1", ps, depth, &u_1->unknown_1);	/* 0x8000 0000 */
-	prs_uint32("unknown_2", ps, depth, &u_1->unknown_2);	/* 0x0000 0000 */
+	prs_uint32("unknown_1", ps, depth, &u_1->unknown_1); /* 0x8000 0000 */
+	prs_uint32("unknown_2", ps, depth, &u_1->unknown_2); /* 0x0000 0000 */
 
 	prs_align(ps);
 
@@ -724,6 +765,13 @@ BOOL samr_io_r_query_dom_info(char *desc, SAMR_R_QUERY_DOMAIN_INFO * r_u,
 
 		switch (r_u->switch_value)
 		{
+			case 0x0c:
+			{
+				sam_io_unk_info12("unk_inf12",
+						 &r_u->ctr->info.inf12, ps,
+						 depth);
+				break;
+			}
 			case 0x07:
 			{
 				sam_io_unk_info7("unk_inf7",
