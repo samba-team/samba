@@ -120,8 +120,8 @@ extern ATTRIB_MAP_ENTRY sidmap_attr_list[];
    have to worry about LDAP structure types */
 
 const char* get_attr_key2string( ATTRIB_MAP_ENTRY table[], int key );
-char** get_attr_list( ATTRIB_MAP_ENTRY table[] );
-void free_attr_list( char **list );
+const char** get_attr_list( ATTRIB_MAP_ENTRY table[] );
+void free_attr_list( const char **list );
 void smbldap_set_mod (LDAPMod *** modlist, int modop, const char *attribute, const char *value);
 void smbldap_make_mod(LDAP *ldap_struct, LDAPMessage *existing,
 		      LDAPMod ***mods,
