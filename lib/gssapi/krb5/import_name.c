@@ -126,7 +126,10 @@ OM_uint32 gss_import_name
 	return import_hostbased_name (minor_status,
 				      input_name_buffer,
 				      output_name);
-    else if (input_name_type == GSS_C_NO_OID) 	/* default printable syntax */
+    else if (input_name_type == GSS_C_NO_OID
+	     || input_name_type == GSS_C_NT_USER_NAME
+	     || input_name_type == GSS_KRB5_NT_PRINCIPAL_NAME)
+ 	/* default printable syntax */
 	return import_krb5_name (minor_status,
 				 input_name_buffer,
 				 output_name);
