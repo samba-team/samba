@@ -1,0 +1,4 @@
+Tue Jan  6 04:25:58 1998  Assar Westerlund  <assar@sics.se>
+
+	* afssysdefs.h (AFS_SYSCALL): add FreeBSD
+
