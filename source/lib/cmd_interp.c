@@ -235,7 +235,7 @@ help
 ****************************************************************************/
 static void cmd_help(struct client_info *info, int argc, char *argv[])
 {
-	int i = 0, j;
+	int i = 0, j = 0;
 
 	if (argc > 1)
 	{
