@@ -635,7 +635,7 @@ static BOOL test_many_files(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	for (t=0;t<ARRAY_SIZE(search_types);t++) {
 		ZERO_STRUCT(result);
-		result.mem_ctx = talloc(mem_ctx, 0);
+		result.mem_ctx = talloc_new(mem_ctx);
 	
 		printf("Continue %s via %s\n", search_types[t].name, search_types[t].cont_name);
 
@@ -767,7 +767,7 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("pulling the first file\n");
 	ZERO_STRUCT(result);
-	result.mem_ctx = talloc(mem_ctx, 0);
+	result.mem_ctx = talloc_new(mem_ctx);
 
 	io.generic.level = RAW_SEARCH_BOTH_DIRECTORY_INFO;
 	io.t2ffirst.in.search_attrib = 0;

@@ -85,7 +85,7 @@ struct event_context *event_context_init(TALLOC_CTX *mem_ctx)
 	/* start off with no events */
 	ZERO_STRUCTP(ev);
 
-	ev->events = talloc(ev, 0);
+	ev->events = talloc_new(ev);
 
 	return ev;
 }

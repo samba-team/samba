@@ -333,7 +333,7 @@ static BOOL test_misc(void)
 
 	printf("TESTING MISCELLANEOUS\n");
 
-	root = talloc(NULL, 0);
+	root = talloc_new(NULL);
 
 	p1 = talloc(root, 0x7fffffff);
 	if (p1) {
@@ -515,7 +515,7 @@ static BOOL test_realloc(void)
 
 	printf("TESTING REALLOC\n");
 
-	root = talloc(NULL, 0);
+	root = talloc_new(NULL);
 
 	p1 = talloc(root, 10);
 	CHECK_SIZE(p1, 10);

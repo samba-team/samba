@@ -94,7 +94,7 @@ static NTSTATUS sidmap_primary_domain_sid(struct sidmap_context *sidmap,
 					  TALLOC_CTX *mem_ctx, struct dom_sid **sid)
 {
 	const char *attrs[] = { "objectSid", NULL };
-	void *ctx = talloc(mem_ctx, 0);
+	void *ctx = talloc_new(mem_ctx);
 	const char *sidstr;
 	int ret;
 	struct ldb_message **res;
@@ -138,7 +138,7 @@ NTSTATUS sidmap_sid_to_unixuid(struct sidmap_context *sidmap,
 	struct dom_sid *domain_sid;
 	NTSTATUS status;
 
-	ctx = talloc(sidmap, 0);
+	ctx = talloc_new(sidmap);
 	sidstr = dom_sid_string(ctx, sid);
 	if (sidstr == NULL) {
 		talloc_free(ctx);
@@ -237,7 +237,7 @@ NTSTATUS sidmap_sid_to_unixgid(struct sidmap_context *sidmap,
 	NTSTATUS status;
 	struct dom_sid *domain_sid;
 
-	ctx = talloc(sidmap, 0);
+	ctx = talloc_new(sidmap);
 	sidstr = dom_sid_string(ctx, sid);
 	if (sidstr == NULL) {
 		talloc_free(ctx);
@@ -349,7 +349,7 @@ NTSTATUS sidmap_uid_to_sid(struct sidmap_context *sidmap,
 	*/
 
 
-	ctx = talloc(sidmap, 0);
+	ctx = talloc_new(sidmap);
 
 
 	/*
@@ -461,7 +461,7 @@ NTSTATUS sidmap_gid_to_sid(struct sidmap_context *sidmap,
 	*/
 
 
-	ctx = talloc(sidmap, 0);
+	ctx = talloc_new(sidmap);
 
 
 	/*
@@ -553,7 +553,7 @@ NTSTATUS sidmap_allocated_sid_lookup(struct sidmap_context *sidmap,
 {
 	NTSTATUS status;
 	struct dom_sid *domain_sid;
-	void *ctx = talloc(mem_ctx, 0);
+	void *ctx = talloc_new(mem_ctx);
 	uint32_t rid;
 
 	status = sidmap_primary_domain_sid(sidmap, ctx, &domain_sid);

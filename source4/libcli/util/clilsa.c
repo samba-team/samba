@@ -153,7 +153,7 @@ NTSTATUS smblsa_sid_check_privilege(struct smbcli_state *cli,
 {
 	struct lsa_RightSet rights;
 	NTSTATUS status;
-	TALLOC_CTX *mem_ctx = talloc(cli, 0);
+	TALLOC_CTX *mem_ctx = talloc_new(cli);
 	struct dom_sid *sid;
 	unsigned i;
 
@@ -195,7 +195,7 @@ NTSTATUS smblsa_lookup_sid(struct smbcli_state *cli,
 	uint32_t count = 1;
 	NTSTATUS status;
 	struct dom_sid *sid;
-	TALLOC_CTX *mem_ctx2 = talloc(mem_ctx, 0);
+	TALLOC_CTX *mem_ctx2 = talloc_new(mem_ctx);
 
 	status = smblsa_connect(cli);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -255,7 +255,7 @@ NTSTATUS smblsa_lookup_name(struct smbcli_state *cli,
 	uint32_t count = 1;
 	NTSTATUS status;
 	struct dom_sid *sid;
-	TALLOC_CTX *mem_ctx2 = talloc(mem_ctx, 0);
+	TALLOC_CTX *mem_ctx2 = talloc_new(mem_ctx);
 	uint32_t rid;
 
 	status = smblsa_connect(cli);

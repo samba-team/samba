@@ -80,7 +80,7 @@ static void ldap_parse_attributetypedescription(struct ldap_schema *schema, DATA
 {
 	char *desc;
 
-	desc = (char *)talloc(schema, data->lenght + 1);
+	desc = talloc_array_p(schema, char, data->lenght + 1);
 	memcpy(desc, data->data, data->lenght);
 	desc[data->lenght] = '\0';
 
@@ -90,7 +90,7 @@ static void ldap_parse_objectclassdescription(struct ldap_schema *schema, DATA_B
 {
 	char *desc;
 
-	desc = (char *)talloc(schema, data->lenght + 1);
+	desc = talloc_array_p(schema, char, data->lenght + 1);
 	memcpy(desc, data->data, data->lenght);
 	desc[data->lenght] = '\0';
 
