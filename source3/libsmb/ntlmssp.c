@@ -338,6 +338,10 @@ static void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
 	}
 
+	if (neg_flags & NTLMSSP_NEGOTIATE_ALWAYS_SIGN) {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
+	}
+
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_NTLM2)) {
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
 	}
