@@ -125,6 +125,7 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 			   directory.
 			*/
 			flags &= ~O_CREAT;
+			local_flags &= ~O_CREAT;
 		}
 	}
 
