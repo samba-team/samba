@@ -1,9 +1,7 @@
 /* 
- * Copyright francesco@aerra.it - code used WITHOUT acknowledgment to
- *                                request to use it here yet received.
+ * Copyright Francesco Ferrara, 1998 <francesco@aerra.it> 
  *
- * must work on the dr dobb's version or find another version if
- * permission not received or permission refused.
+ * Used by kind permission, 14th October 1998. http://www.aerre.it/francesco
  *
  *
  */
