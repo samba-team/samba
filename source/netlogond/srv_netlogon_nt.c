@@ -432,7 +432,7 @@ uint32 _net_req_chal(const UNISTR2 * uni_logon_server,
 
 	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
 	{
-		return NT_STATUS_INVALID_HANDLE;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	return NT_STATUS_NOPROBLEMO;
@@ -595,7 +595,7 @@ uint32 _net_auth(const DOM_LOG_INFO * clnt_id,
 
 	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
 	{
-		return NT_STATUS_INVALID_HANDLE;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* check that the client credentials are valid */
@@ -617,7 +617,7 @@ uint32 _net_auth(const DOM_LOG_INFO * clnt_id,
 
 	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
 	{
-		return NT_STATUS_INVALID_HANDLE;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	return NT_STATUS_NOPROBLEMO;
@@ -645,7 +645,7 @@ uint32 _net_auth_2(const DOM_LOG_INFO * clnt_id,
 
 	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
 	{
-		return NT_STATUS_INVALID_HANDLE;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* check that the client credentials are valid */
@@ -667,7 +667,7 @@ uint32 _net_auth_2(const DOM_LOG_INFO * clnt_id,
 
 	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
 	{
-		return NT_STATUS_INVALID_HANDLE;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* mask out unsupported bits */
@@ -720,7 +720,7 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO * clnt_id,
 
 	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
 	{
-		return NT_STATUS_INVALID_HANDLE;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* checks and updates credentials.  creates reply credentials */
@@ -781,7 +781,7 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO * clnt_id,
 
 	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
 	{
-		return NT_STATUS_INVALID_HANDLE;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	return NT_STATUS_NOPROBLEMO;
@@ -840,7 +840,7 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 
 	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
 	{
-		return NT_STATUS_INVALID_HANDLE;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* checks and updates credentials.  creates reply credentials */
@@ -1099,7 +1099,7 @@ usr_sess_key, lm_pw8);
 
 	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
 	{
-		return NT_STATUS_INVALID_HANDLE;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	return NT_STATUS_NOPROBLEMO;
@@ -1121,7 +1121,7 @@ uint32 _net_sam_logoff(const DOM_SAM_INFO * sam_id,
 
 	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
 	{
-		return NT_STATUS_INVALID_HANDLE;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* checks and updates credentials.  creates reply credentials */
@@ -1135,7 +1135,7 @@ uint32 _net_sam_logoff(const DOM_SAM_INFO * sam_id,
 
 	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
 	{
-		return NT_STATUS_INVALID_HANDLE;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	return NT_STATUS_NOPROBLEMO;
