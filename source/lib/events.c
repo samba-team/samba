@@ -186,15 +186,13 @@ struct timed_event *event_add_timed(struct event_context *ev, struct timed_event
 
 /*
   remove a timed event
-  the event to remove is matched only on the handler function
   return False on failure (event not found)
 */
 BOOL event_remove_timed(struct event_context *ev, struct timed_event *e1) 
 {
 	struct timed_event *e;
 	for (e=ev->timed_events; e; e=e->next) {
-		if (e->ref_count &&
-		    e->handler == e1->handler) {
+		if (e->ref_count && e == e1) {
 			e->ref_count--;
 			return True;
 		}
