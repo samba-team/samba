@@ -21,6 +21,8 @@
 
 #include "includes.h"
 
+extern BOOL AllowDebugChange;
+
 static struct {
 	char *name;
 	int value;
@@ -342,6 +344,8 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 	TimeInit();
 	setup_logging(argv[0],True);
 	
+	AllowDebugChange = False;
+	DEBUGLEVEL = 0;
 	charset_initialise();
 
 	if (argc < 2) usage(True);
