@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -87,7 +87,8 @@ create_principal(kadm5_server_context *context,
 	def_mask = KADM5_ATTRIBUTES | KADM5_MAX_LIFE | KADM5_MAX_RLIFE;
     }
 
-    ret = _kadm5_setup_entry(ent, mask | def_mask,
+    ret = _kadm5_setup_entry(context,
+			     ent, mask | def_mask,
 			     princ, mask,
 			     defent, def_mask);
     if(defent)
@@ -119,7 +120,7 @@ kadm5_s_create_principal_with_key(void *server_handle,
     if(ret)
 	goto out;
 
-    ret = _kadm5_set_keys2(&ent, princ->n_key_data, princ->key_data);
+    ret = _kadm5_set_keys2(context, &ent, princ->n_key_data, princ->key_data);
     if(ret)
 	goto out;
     
