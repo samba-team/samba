@@ -1,3 +1,7 @@
+Thu Jul 24 08:13:59 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/roken/getarg.c: Handle `-f arg' correctly.
+
 Thu Jul 24 01:54:43 1997  Assar Westerlund  <assar@sics.se>
 
 	* removed some memory leaks.
