@@ -40,7 +40,6 @@ static void auth_init(rpcsrv_struct *l)
 static void service_init(char* service_name)
 {
 	add_msrpc_command_processor( pipe_name, service_name, api_spoolss_rpc );
-	init_printer_hnd(); /* for SPOOLSS handles */
 }
 
 /****************************************************************************
