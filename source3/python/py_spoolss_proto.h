@@ -45,6 +45,17 @@ PyObject *spoolss_enumforms(PyObject *self, PyObject *args, PyObject *kw);
 BOOL py_from_FORM_1(PyObject **dict, FORM_1 *form);
 BOOL py_to_FORM(FORM *form, PyObject *dict);
 
+/* The following definitions come from python/py_spoolss_jobs.c  */
+
+PyObject *spoolss_enumjobs(PyObject *self, PyObject *args, PyObject *kw);
+
+/* The following definitions come from python/py_spoolss_jobs_conv.c  */
+
+BOOL py_from_JOB_INFO_1(PyObject **dict, JOB_INFO_1 *info);
+BOOL py_to_JOB_INFO_1(JOB_INFO_1 *info, PyObject *dict);
+BOOL py_from_JOB_INFO_2(PyObject **dict, JOB_INFO_2 *info);
+BOOL py_to_JOB_INFO_2(JOB_INFO_2 *info, PyObject *dict);
+
 /* The following definitions come from python/py_spoolss_ports.c  */
 
 PyObject *spoolss_enumports(PyObject *self, PyObject *args, PyObject *kw);
