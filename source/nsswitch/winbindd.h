@@ -102,5 +102,6 @@ extern struct winbindd_domain *domain_list;  /* List of domains we know */
 #include "rpc_client.h"
 
 #define WINBINDD_ESTABLISH_LOOP 30
+#define DOM_SEQUENCE_NONE ((uint32)-1)
 
 #endif /* _WINBINDD_H */

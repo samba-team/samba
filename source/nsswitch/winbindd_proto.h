@@ -26,21 +26,20 @@ void winbindd_fill_group_cache_entry(char *domain, char *group_name,
 void winbindd_fill_gid_cache_entry(char *domain, gid_t gid, 
                                      struct winbindd_gr *gr, void *extra_data,
                                      int extra_data_len);
-void expire_cache(char *domain_name, char *cache_type);
 BOOL winbindd_fetch_user_cache(char *domain_name,
                                struct acct_info **sam_entries,
                                int *num_entries);
 BOOL winbindd_fetch_group_cache(char *domain_name,
                                 struct acct_info **sam_entries,
                                 int *num_entries);
-BOOL winbindd_fetch_user_cache_entry(char *domain, char *user, 
+BOOL winbindd_fetch_user_cache_entry(char *domain_name, char *user, 
                                      struct winbindd_pw *pw);
-BOOL winbindd_fetch_uid_cache_entry(char *domain, uid_t uid, 
+BOOL winbindd_fetch_uid_cache_entry(char *domain_name, uid_t uid, 
 				    struct winbindd_pw *pw);
-BOOL winbindd_fetch_group_cache_entry(char *domain, char *group, 
+BOOL winbindd_fetch_group_cache_entry(char *domain_name, char *group, 
                                       struct winbindd_gr *gr,
                                       void **extra_data, int *extra_data_len);
-BOOL winbindd_fetch_gid_cache_entry(char *domain, gid_t gid,
+BOOL winbindd_fetch_gid_cache_entry(char *domain_name, gid_t gid,
 				    struct winbindd_gr *gr,
 				    void **extra_data, int *extra_data_len);
 void winbindd_flush_cache(void);
@@ -110,4 +109,5 @@ void free_getent_state(struct getent_state *state);
 BOOL winbindd_param_init(void);
 char *winbindd_cmd_to_string(enum winbindd_cmd cmd);
 void parse_domain_user(char *domuser, fstring domain, fstring user);
+uint32 domain_sequence_number(char *domain_name);
 #endif /* _WINBINDD_PROTO_H_ */

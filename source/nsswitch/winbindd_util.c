@@ -611,3 +611,23 @@ void parse_domain_user(char *domuser, fstring domain, fstring user)
 	fstrcpy(domain, domuser);
 	domain[PTR_DIFF(p, domuser)] = 0;
 }
+
+/* find the sequence number for a domain */
+uint32 domain_sequence_number(char *domain_name)
+{
+	struct winbindd_domain *domain;
+	SAM_UNK_CTR ctr;
+
+	domain = find_domain_from_name(domain_name);
+	if (!domain) return DOM_SEQUENCE_NONE;
+
+	if (!samr_query_dom_info(&domain->sam_dom_handle, 2, &ctr)) {
+		DEBUG(2,("domain sequence query failed\n"));
+		return DOM_SEQUENCE_NONE;
+	}
+
+	DEBUG(4,("got domain sequence number for %s of %u\n", 
+		 domain_name, (unsigned)ctr.info.inf2.seq_num));
+	
+	return ctr.info.inf2.seq_num;
+}

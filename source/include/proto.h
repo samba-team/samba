@@ -4481,6 +4481,8 @@ int tdb_get_int_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len);
 int tdb_get_int(TDB_CONTEXT *tdb, char *keystr);
 int tdb_store_int_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, int v);
 int tdb_store_int(TDB_CONTEXT *tdb, char *keystr, int v);
+int tdb_store_by_string(TDB_CONTEXT *tdb, char *keystr, void *buffer, int len);
+TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, char *keystr);
 
 /*The following definitions come from  utils/rpctorture.c  */
 
