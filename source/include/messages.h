@@ -51,6 +51,7 @@
 /* #define MSG_PRINTER_NOTIFY  2001*/ /* Obsolete */
 #define MSG_PRINTER_DRVUPGRADE 2002
 #define MSG_PRINTER_NOTIFY2     2003
+#define MSG_PRINTERDATA_INIT_RESET	2004
 
 /* smbd messages */
 #define MSG_SMB_CONF_UPDATED 3001
