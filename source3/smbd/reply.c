@@ -1032,7 +1032,7 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
     if(VALID_STAT(st))
       ok = S_ISDIR(st.st_mode);
     else
-      ok = vfs_directory_exist(conn,dos_to_unix(name,False),NULL);
+      ok = vfs_directory_exist(conn,name,NULL);
   }
 
   if (!ok)
@@ -1167,7 +1167,7 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   mode = SVAL(inbuf,smb_vwv0);
   mtime = make_unix_date3(inbuf+smb_vwv1);
   
-  if (VALID_STAT_OF_DIR(st) || vfs_directory_exist(conn, dos_to_unix(fname,False),NULL))
+  if (VALID_STAT_OF_DIR(st) || vfs_directory_exist(conn, fname, NULL))
     mode |= aDIR;
   if (check_name(fname,conn))
     ok =  (file_chmod(conn,fname,mode,NULL) == 0);
@@ -1918,7 +1918,7 @@ static BOOL can_delete(char *fname,connection_struct *conn, int dirtype)
 
   if (!CAN_WRITE(conn)) return(False);
 
-  if (conn->vfs_ops.lstat(fname,&sbuf) != 0) return(False);
+  if (conn->vfs_ops.lstat(dos_to_unix(fname,False),&sbuf) != 0) return(False);
   fmode = dos_mode(conn,fname,&sbuf);
   if (fmode & aDIR) return(False);
   if (!lp_delete_readonly(SNUM(conn))) {
@@ -1989,7 +1989,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
     if (can_delete(directory,conn,dirtype) && !dos_unlink(directory))
       count++;
     if (!count)
-      exists = vfs_file_exist(conn,dos_to_unix(directory,False),NULL);    
+      exists = vfs_file_exist(conn,directory,NULL);    
   } else {
     void *dirptr = NULL;
     char *dname;
@@ -2019,7 +2019,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	    error = ERRnoaccess;
 	    slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
 	    if (!can_delete(fname,conn,dirtype)) continue;
-	    if (!conn->vfs_ops.unlink(fname)) count++;
+	    if (!conn->vfs_ops.unlink(dos_to_unix(fname,False))) count++;
 	    DEBUG(3,("reply_unlink : doing unlink on %s\n",fname));
 	  }
 	CloseDir(dirptr);
@@ -2708,7 +2708,7 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 
         SMB_STRUCT_STAT sbuf;
 
-        if(conn->vfs_ops.fstat( fsp->fd_ptr->fd, &sbuf) == -1)
+        if(conn->vfs_ops.fstat(fsp->fd_ptr->fd, &sbuf) == -1)
           return(UNIXERROR(ERRDOS,ERRnoaccess));
 
         current_pos += sbuf.st_size;
@@ -3290,7 +3290,7 @@ static BOOL recursive_rmdir(connection_struct *conn, char *directory)
     pstrcat(fullname, "/");
     pstrcat(fullname, dname);
 
-    if(conn->vfs_ops.lstat(fullname, &st) != 0)
+    if(conn->vfs_ops.lstat(dos_to_unix(fullname,False), &st) != 0)
     {
       ret = True;
       break;
@@ -3518,7 +3518,7 @@ static BOOL can_rename(char *fname,connection_struct *conn)
 
   if (!CAN_WRITE(conn)) return(False);
 
-  if (conn->vfs_ops.lstat(fname,&sbuf) != 0) return(False);
+  if (conn->vfs_ops.lstat(dos_to_unix(fname,False),&sbuf) != 0) return(False);
   if (!check_file_sharing(conn,fname,True)) return(False);
 
   return(True);
@@ -3654,7 +3654,7 @@ int rename_internals(connection_struct *conn,
 		} else {
 			if (resolve_wildcards(directory,newname) && 
 			    can_rename(directory,conn) && 
-			    !vfs_file_exist(conn,dos_to_unix(newname,False),NULL) &&
+			    !vfs_file_exist(conn,newname,NULL) &&
 			    !conn->vfs_ops.rename(dos_to_unix(directory,False),
 						  newname))
 				count++;
@@ -3663,8 +3663,8 @@ int rename_internals(connection_struct *conn,
 		DEBUG(3,("rename_internals: %s doing rename on %s -> %s\n",(count != 0) ? "succeeded" : "failed",
                          directory,newname));
 		
-		if (!count) exists = vfs_file_exist(conn,dos_to_unix(directory,False),NULL);
-		if (!count && exists && vfs_file_exist(conn,dos_to_unix(newname,False),NULL)) {
+		if (!count) exists = vfs_file_exist(conn,directory,NULL);
+		if (!count && exists && vfs_file_exist(conn,newname,NULL)) {
 			exists = True;
 			error = ERRrename;
 		}
@@ -3701,17 +3701,20 @@ int rename_internals(connection_struct *conn,
 				pstrcpy(destname,newname);
 				
 				if (!resolve_wildcards(fname,destname)) {
-					DEBUG(6,("resolve_wildcards %s %s failed\n", fname, destname));
+					DEBUG(6,("resolve_wildcards %s %s failed\n", 
+                                                 fname, destname));
 					continue;
 				}
 				
-				if (!replace_if_exists && vfs_file_exist(conn,dos_to_unix(destname,False),NULL)) {
+				if (!replace_if_exists && 
+                                    vfs_file_exist(conn,destname, NULL)) {
 					DEBUG(6,("file_exist %s\n", destname));
 					error = 183;
 					continue;
 				}
 				
-				if (!conn->vfs_ops.rename(dos_to_unix(fname,False),destname))
+				if (!conn->vfs_ops.rename(dos_to_unix(fname,False),
+                                                          destname))
 					count++;
 				DEBUG(3,("rename_internals: doing rename on %s -> %s\n",fname,destname));
 			}
@@ -3782,7 +3785,7 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
     pstrcat(dest,p);
   }
 
-  if (!vfs_file_exist(conn,dos_to_unix(src,False),&st))
+  if (!vfs_file_exist(conn,src,&st))
     return(False);
 
   fsp1 = file_new();
@@ -3882,7 +3885,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   rc = unix_convert(name,conn,0,&bad_path1,NULL);
   unix_convert(newname,conn,0,&bad_path2,NULL);
 
-  target_is_directory = vfs_directory_exist(conn,dos_to_unix(newname,False),NULL);
+  target_is_directory = vfs_directory_exist(conn,False,NULL);
 
   if ((flags&1) && target_is_directory) {
     return(ERROR(ERRDOS,ERRbadfile));
@@ -3892,7 +3895,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     return(ERROR(ERRDOS,ERRbadpath));
   }
 
-  if ((flags&(1<<5)) && vfs_directory_exist(conn,dos_to_unix(name,False),NULL)) {
+  if ((flags&(1<<5)) && vfs_directory_exist(conn,name,NULL)) {
     /* wants a tree copy! XXXX */
     DEBUG(3,("Rejecting tree copy\n"));
     return(ERROR(ERRSRV,ERRerror));    
@@ -3932,7 +3935,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 		errno = err;
 		return(UNIXERROR(ERRHRD,ERRgeneral));
 	}
-    if (!count) exists = vfs_file_exist(conn,dos_to_unix(directory,False),NULL);
+    if (!count) exists = vfs_file_exist(conn,directory,NULL);
   } else {
     void *dirptr = NULL;
     char *dname;
@@ -4012,7 +4015,7 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   if (strlen(newdir) == 0) {
 	  ok = True;
   } else {
-	  ok = vfs_directory_exist(conn,dos_to_unix(newdir,False),NULL);
+	  ok = vfs_directory_exist(conn,newdir,NULL);
 	  if (ok) {
 		  string_set(&conn->connectpath,newdir);
 	  }

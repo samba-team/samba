@@ -444,7 +444,7 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
    * stat the name - if it exists then we are all done!
    */
 
-  if (conn->vfs_ops.stat(name,&st) == 0) {
+  if (conn->vfs_ops.stat(dos_to_unix(name,False),&st) == 0) {
     stat_cache_add(orig_path, name);
     DEBUG(5,("conversion finished %s -> %s\n",orig_path, name));
     if(pst)
@@ -511,7 +511,7 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
        * Check if the name exists up to this point.
        */
 
-      if (conn->vfs_ops.stat(name, &st) == 0) {
+      if (conn->vfs_ops.stat(dos_to_unix(name,False), &st) == 0) {
         /*
          * It exists. it must either be a directory or this must be
          * the last part of the path for it to be OK.

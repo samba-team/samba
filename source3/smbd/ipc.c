@@ -2055,6 +2055,7 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 		if (isalpha((int)*s)) {
 			pstring name;
 			int l = 0;
+
 			while (l<64 && *s) {
 				if (issafe(*s)) name[l++] = *s;
 				s++;
@@ -2066,17 +2067,23 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 			fsp = file_find_print();	
 
 			if (fsp) {
-				connection_struct *fconn = fsp->conn;
-				unbecome_user();
+                            pstring zfrom,zto;
+                            connection_struct *fconn = fsp->conn;
+
+                            unbecome_user();
 	      
-				if (!become_user(fconn,vuid) || 
-				    !become_service(fconn,True))
-					break;
-	      
-				if (fsp->conn->vfs_ops.rename(fsp->fsp_name,name) == 0) {
-					string_set(&fsp->fsp_name,name);
-				}
-				break;
+                            if (!become_user(fconn,vuid) || 
+                                !become_service(fconn,True))
+                                break;
+                            
+                            pstrcpy(zfrom, dos_to_unix(fsp->fsp_name,False));
+                            pstrcpy(zto, dos_to_unix(name,False));
+                            
+                            if (fsp->conn->vfs_ops.rename(zfrom,zto) == 0) {
+                                string_set(&fsp->fsp_name,name);
+                            }
+                            
+                            break;
 			}
 		}
 		desc.errcode=NERR_Success;
