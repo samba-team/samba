@@ -1,4 +1,4 @@
-/* include/config.h.in.  Generated automatically from configure.in by autoheader 2.13.  */
+/* include/config.h.in.  Generated automatically from configure.in by autoheader.  */
 
 /* Define if on AIX 3.
    System headers sometimes define this.
@@ -831,6 +831,9 @@
 
 /* Define if you have the <limits.h> header file.  */
 #undef HAVE_LIMITS_H
+
+/* Define if you have the <linux/xqm.h> header file.  */
+#undef HAVE_LINUX_XQM_H
 
 /* Define if you have the <memory.h> header file.  */
 #undef HAVE_MEMORY_H
