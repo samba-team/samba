@@ -327,6 +327,109 @@ More later.
 </sect1>
 
 <sect1>
+<title>Migration Options</title>
+
+<para>
+There are 3 major Site Types:
+</para>
+
+<para><programlisting>
+<= 50 Users
+Want simple conversion with NO pain
+50 - 250 Users
+Want new features, can manage some in-house complexity
+Large Scale Sites
+Solution / Implementation MUST scale well, complex needs
+Cross departmental decision process
+Local expertise in most areas
+Planning for Success
+Decide which approach is needed - 3 Choices
+Simple Conversion (total replacement)
+Upgraded Conversion (could be one of integration)
+Complete Redesign (completely new solution)
+Take sufficient time
+Avoid Panic
+Test ALL assumptions
+Test full roll-out program, including workstation deployment
+Simple Conversion
+Make use of minimal OS specific features
+Can use No Unix Accounts Option
+Suck all accounts from NT4 into Samba-3
+Make least number of operational changes
+Take least amount of time to migrate
+Live versus Isolated Conversion
+Integrate Samba-3 then migrate while users are active
+Change of control (ie: swap out)
+Upgraded Conversion
+Translate NT4 features to new host OS features
+Copy and improve
+Old environment to Samba-3
+Make progressive improvements
+Minimise user impact
+Macimise functionality
+Take advantage of lower maintenance opportunity
+Complete Network Redesign
+Decide
+Authentication Regime (database locate and access)
+Desktop Management Methods
+Better Control of Desktops / Users
+Identify Needs for:
+Manageability, Scalability, Security, Availability
+Samba Implementation Choices
+Authentication database back end
+Winbind (external Samba or NT4/200x server)
+Can use pam_mkhomedir.so to auto-create home dirs
+External server could use Active Directory or NT4 Domain
+Database type
+smbpasswd, tdbsam, ldapsam, MySQLsam
+With local accounts or with No Unix Accounts (NUA option)
+Samba Implementation Choice - II
+Access Control Points
+On the Share itself (Use NT4 Server Manager)
+On the file system
+Unix permissions on files and directories
+Posix ACLs enablement in file system?
+Through Samba share parameters
+Not recommended - except as only resort
+Samba Implementation Choice - III
+Policies (migrate or create new ones)
+Group Policy Editor (NT4)
+Watch out for Tattoo effect
+User and Group Profiles
+Platform specific so use platform tool to change from a Local to a Roaming profile
+Can use new profiles tool to change SIDs (NTUser.DAT)
+Logon Scripts (Know how they work)
+Samba Implementation Choices - IV
+User and Group mapping to Unix/Linux
+username map facility may be needed
+Use smbgroupedit to connect NT4 groups to Unix groups
+Use pdbedit to set/change user configuration
+NOTE:
+If migrating to LDAP back end it may be easier to dump initial LDAP database to LDIF, then edit, then reload into LDAP
+Samba Implementation Choices - V
+OS specific scripts / programs may be needed
+Add / delete Users
+Note OS limits on size of name (Linux 8 chars)
+NT4 up to 254 chars
+Add / delete machines
+Applied only to domain members (note up to 16 chars)
+Add / delete Groups
+Note OS limits on size and nature
+Linux limit is 16 char, no spaces and no upper case chars (groupadd)
+Migration Tools
+Domain Control (NT4 Style)
+Profiles, Policies, Access Controls, Security
+Migration Tools
+Samba: net, rpcclient, smbpasswd, pdbedit, smbgroupedit, profiles
+Windows: NT4 Domain User Manager, Server Manager (NEXUS)
+Authentication
+New SAM back end (smbpasswd, tdbsam, ldapsam, mysqlsam)
+With of without Unix Accounts (NUA)
+<programlisting></para>
+
+</sect1>
+
+<sect1>
 <title>Managing Samba-3 Domain Control</title>
 
 <para>
