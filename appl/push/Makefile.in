@@ -49,7 +49,7 @@ all: $(PROGRAMS)
 install: all
 	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
 	for x in $(bin_PROGRAMS); do \
-	  $(INSTALL_PROGRAM) $$x $(DESTDIR)$(bin)/`echo $$x | sed '$(transform)'`; \
+	  $(INSTALL_PROGRAM) $$x $(DESTDIR)$(bindir)/`echo $$x | sed '$(transform)'`; \
 	done
 	$(MKINSTALLDIRS) $(DESTDIR)$(libexecdir)
 	for x in $(libexec_PROGRAMS); do \
