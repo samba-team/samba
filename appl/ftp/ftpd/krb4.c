@@ -110,7 +110,6 @@ int krb4_mic(char *msg)
     int len;
     int kerror;
     MSG_DAT m_data;
-    char *p;
     char *tmp, *cmd;
   
     cmd = strdup(msg);
@@ -131,7 +130,7 @@ int krb4_mic(char *msg)
     }
     
     tmp = strdup(msg);
-    sprintf(tmp, "%.*s", m_data.app_length, m_data.app_data);
+    sprintf(tmp, "%.*s", (int)m_data.app_length, m_data.app_data);
     if(!strstr(tmp, "\r\n"))
 	strcat(tmp, "\r\n");
     new_ftp_command(tmp);
@@ -152,7 +151,6 @@ int krb4_enc(char *msg)
     int len;
     int kerror;
     MSG_DAT m_data;
-    char *p;
     char *tmp, *cmd;
   
     cmd = strdup(msg);
@@ -173,7 +171,7 @@ int krb4_enc(char *msg)
     }
     
     tmp = strdup(msg);
-    sprintf(tmp, "%.*s", m_data.app_length, m_data.app_data);
+    sprintf(tmp, "%.*s", (int)m_data.app_length, m_data.app_data);
     if(!strstr(tmp, "\r\n"))
 	strcat(tmp, "\r\n");
     new_ftp_command(tmp);

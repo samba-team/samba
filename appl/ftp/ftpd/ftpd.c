@@ -209,7 +209,7 @@ static char	*gunique (char *);
 static void	 lostconn (int);
 static int	 receive_data (FILE *, FILE *);
 static void	 send_data (FILE *, FILE *, off_t);
-static struct passwd * sk_getpwnam (char *);
+static struct passwd * sgetpwnam (char *);
 
 static char *
 curdir(void)
@@ -264,7 +264,7 @@ main(int argc, char **argv)
 
 	/* detach from any tickets and tokens */
 
-	sprintf(tkfile, "/tmp/ftp_%d", getpid());
+	sprintf(tkfile, "/tmp/ftp_%u", (unsigned int)getpid());
 	krb_set_tkt_string(tkfile);
 	if(k_hasafs())
 	    k_setpag();
@@ -373,7 +373,7 @@ main(int argc, char **argv)
 	debug = 0;
 
 	/* set this here so it can be put in wtmp */
-	sprintf(ttyline, "ftp%d", getpid());
+	sprintf(ttyline, "ftp%u", (unsigned)getpid());
 
 
 	/*	(void) freopen(_PATH_DEVNULL, "w", stderr); */
