@@ -1475,9 +1475,47 @@ dir_list_fn(file_info *finfo, const char *mask, void *state)
 
 }
 
+
+/* Return the IP address and workgroup of a master browser on the 
+   network. */
+
+static BOOL find_master_ip_bcast(pstring workgroup, struct in_addr *server_ip)
+{
+	struct in_addr *ip_list;
+	int i, count;
+
+        /* Go looking for workgroups by broadcasting on the local network */ 
+
+        if (!name_resolve_bcast(MSBROWSE, 1, &ip_list, &count)) {
+                return False;
+        }
+
+	for (i = count-1; i < count; i++) {
+		static fstring name;
+
+		DEBUG(0, ("name_status_find %d %s\n", i, inet_ntoa(ip_list[i])));
+
+		if (!name_status_find("*", 0, 0x1d, ip_list[i], name))
+			continue;
+
+                if (!find_master_ip(name, server_ip))
+			continue;
+
+                pstrcpy(workgroup, name);
+
+                DEBUG(4, ("found master browser %s, %s\n", 
+                          name, inet_ntoa(ip_list[i])));
+
+                return True;
+	}
+
+	return False;
+}
+
 static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 {
-	fstring server, share, user, password, workgroup;
+	fstring server, share, user, password;
+	pstring workgroup;
 	pstring path;
 	SMBCSRV *srv  = NULL;
 	SMBCFILE *dir = NULL;
@@ -1486,28 +1524,31 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
 
+	    fprintf(stderr, "no valid context\n");
 		errno = EINVAL;
 		return NULL;
 
 	}
 
 	if (!fname) {
-    
+	    fprintf(stderr, "no valid fname\n");
 		errno = EINVAL;
 		return NULL;
 
 	}
 
 	if (smbc_parse_path(context, fname, server, share, path, user, password)) {
-
+	    fprintf(stderr, "no valid path\n");
 		errno = EINVAL;
 		return NULL;
 
 	}
 
+	fprintf(stderr, "parsed path: fname='%s' server='%s' share='%s' path='%s'\n", fname, server, share, path);
+
 	if (user[0] == (char)0) fstrcpy(user, context->user);
 
-	fstrcpy(workgroup, context->workgroup);
+	pstrcpy(workgroup, context->workgroup);
 
 	dir = malloc(sizeof(*dir));
 
@@ -1528,9 +1569,12 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 	dir->dir_list = dir->dir_next = dir->dir_end = NULL;
 
 	if (server[0] == (char)0) {
+	    struct in_addr server_ip;
+
+	    fprintf(stderr, "empty server\n");
 
 		if (share[0] != (char)0 || path[0] != (char)0) {
-    
+		    fprintf(stderr, "share %d path %d\n", share[0], path[0]);
 			errno = EINVAL;
 			if (dir) {
 				SAFE_FREE(dir->fname);
@@ -1544,48 +1588,40 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
                 /* first try to get the LMB for our workgroup, and if that fails,     */
                 /* try the DMB                                                        */
 
-		if (!(resolve_name(context->workgroup, &rem_ip, 0x1d) ||
-                      resolve_name(context->workgroup, &rem_ip, 0x1b))) {
-      
-			errno = EINVAL;  /* Something wrong with smb.conf? */
+		pstrcpy(workgroup, lp_workgroup());
+
+		if (!find_master_ip(lp_workgroup(), &server_ip)) {
+		    DEBUG(4, ("Unable to find master browser for workgroup %s\n", 
+			      workgroup));
+		    if (!find_master_ip_bcast(workgroup, &server_ip)) {
+			DEBUG(4, ("Unable to find master browser by "
+				  "broadcast\n"));
+			errno = ENOENT;
 			return NULL;
+		    }
+		}	
 
-		}
+               /*
+                * Get a connection to IPC$ on the server if we do not already have one
+                */
 
-		dir->dir_type = SMBC_WORKGROUP;
+               srv = smbc_server(context, inet_ntoa(server_ip), "IPC$", workgroup, user, password);
 
-		/* find the name of the server ... */
-
-		if (!name_status_find("*", 0, 0, rem_ip, server)) {
-
-			DEBUG(0,("Could not get the name of local/domain master browser for server %s\n", server));
-			errno = EINVAL;
-			return NULL;
-
-		}
-
-		/*
-		 * Get a connection to IPC$ on the server if we do not already have one
-		 */
-
-		srv = smbc_server(context, server, "IPC$", workgroup, user, password);
-
-		if (!srv) {
-
-			if (dir) {
-				SAFE_FREE(dir->fname);
-				SAFE_FREE(dir);
-			}
-			
-			return NULL;
-
-		}
-
+               if (!srv) {
+		   
+		   if (dir) {
+		       SAFE_FREE(dir->fname);
+		       SAFE_FREE(dir);
+		   }
+		   return NULL;
+	       }
+		   
 		dir->srv = srv;
+		dir->dir_type = SMBC_WORKGROUP;
 
 		/* Now, list the stuff ... */
 
-		if (!cli_NetServerEnum(&srv->cli, workgroup, 0x80000000, list_fn,
+		if (!cli_NetServerEnum(&srv->cli, workgroup, SV_TYPE_DOMAIN_ENUM, list_fn,
 				       (void *)dir)) {
 
 			if (dir) {
@@ -2655,7 +2691,7 @@ SMBCCTX * smbc_init_context(SMBCCTX * context)
 		/* Do we still need this ? */
 		DEBUGLEVEL = 10;
 		
-		setup_logging( "libsmbclient", False);
+		setup_logging( "libsmbclient", True);
 
 		/* Here we would open the smb.conf file if needed ... */
 		
