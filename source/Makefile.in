@@ -837,16 +837,27 @@ uninstallcp:
 clean: 
 	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.lo */*.so
 
-proto: rpc_parse_proto all_other_proto_for_now
+proto: libsmb_proto rpc_client_proto rpc_parse_proto \
+		all_other_proto_for_now
 
 all_other_proto_for_now: 
 	@echo rebuilding include/proto.h
 	@cd $(srcdir) && $(AWK) -f script/mkproto.awk `echo $(PROTO_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` > include/proto.h
 
+libsmb_proto:
+	@echo rebuilding include/libsmb_proto.h
+	@cd $(srcdir) && $(AWK) -v headername=_LIB_SMB_PROTO_H_ \
+	  -f script/mkproto.awk `echo $(LIBSMB_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` > include/lib_smb_proto.h
+
 rpc_parse_proto:
 	@echo rebuilding include/rpc_parse_proto.h
 	@cd $(srcdir) && $(AWK) -v headername=_RPC_PARSE_PROTO_H_ \
 	  -f script/mkproto.awk `echo $(RPC_PARSE_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` > include/rpc_parse_proto.h
+
+rpc_client_proto:
+	@echo rebuilding include/rpc_client_proto.h
+	@cd $(srcdir) && $(AWK) -v headername=_RPC_CLIENT_PROTO_H_ \
+	  -f script/mkproto.awk `echo $(RPC_CLIENT_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` > include/rpc_client_proto.h
 
 etags:
 	etags `find . -name "*.[ch]"`

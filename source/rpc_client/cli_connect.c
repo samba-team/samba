@@ -451,7 +451,14 @@ BOOL cli_get_con_usr_sesskey(struct cli_connection *con, uchar usr_sess_key[16])
 		return False;
 	}
 	nt = cli_conn_get_ntinfo(con);
-	memcpy(usr_sess_key, nt->usr_sess_key, sizeof(nt->usr_sess_key));
+	if (nt != NULL)
+	{
+		memcpy(usr_sess_key, nt->usr_sess_key, sizeof(nt->usr_sess_key));
+	}
+	else
+	{
+		memset(usr_sess_key, 0, sizeof(nt->usr_sess_key));
+	}
 
 	return True;
 }
