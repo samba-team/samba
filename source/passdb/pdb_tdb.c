@@ -616,7 +616,6 @@ BOOL pdb_getsampwrid (SAM_ACCOUNT *user, uint32 rid)
 ****************************************************************************/
 BOOL pdb_delete_sam_account(char *sname)
 {
-	struct passwd  *pwd = NULL;
 	SAM_ACCOUNT	*sam_pass = NULL;
 	TDB_CONTEXT 	*pwd_tdb;
 	TDB_DATA 	key, data;
@@ -669,12 +668,10 @@ BOOL pdb_delete_sam_account(char *sname)
 	}
 	SAFE_FREE(data.dptr);
 
-	pwd = sys_getpwnam(sam_pass->username);
-	
+	rid = pdb_get_user_rid(sam_pass);
+
 	pdb_free_sam (sam_pass);
 	
-	rid = pdb_uid_to_user_rid (pwd->pw_uid);
-
 	/* it's outaa here!  8^) */
 	if (tdb_delete(pwd_tdb, key) != TDB_SUCCESS)
 	{
