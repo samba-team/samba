@@ -39,6 +39,7 @@ static BOOL test_readwrite(TALLOC_CTX *mem_ctx, const char *host)
 	int i;
 
 	com_init(&ctx);
+	dcom_client_init(ctx, lp_parm_string(-1, "torture", "userdomain"), lp_parm_string(-1, "torture", "username"), lp_parm_string(-1, "torture", "password"));
 
 	GUID_from_string(COM_ISTREAM_UUID, &IID[0]);
 	GUID_from_string(COM_IUNKNOWN_UUID, &IID[1]);

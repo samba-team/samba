@@ -21,7 +21,11 @@ interface IRemoteActivation
 		RPC_C_IMP_LEVEL_IMPERSONATE = 3,
 		RPC_C_IMP_LEVEL_DELEGATE = 4
 	} imp_levels;
-	
+
+	typedef struct {
+		MInterfacePointer *ip;
+	} pMInterfacePointer;
+
 	const uint32 MODE_GET_CLASS_OBJECT = 0xffffffff;
 	WERROR RemoteActivation (
 			[in] ORPCTHIS this,
@@ -41,7 +45,7 @@ interface IRemoteActivation
 			[out] uint32 AuthnHint,
 			[out] COMVERSION ServerVersion,
 			[out] WERROR hr,
-			[out,size_is(Interfaces)] MInterfacePointer *ifaces[],
+			[out,size_is(Interfaces)] pMInterfacePointer ifaces[],
 			[out,size_is(Interfaces)] WERROR results[]
 			);
 }

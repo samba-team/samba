@@ -99,7 +99,7 @@ interface ObjectRpcBaseTypes
 
 	/* DUALSTRINGARRAYS are the return type for arrays of network addresses, */
 	/* arrays of endpoints and arrays of both used in many ORPC interfaces */
-	typedef [public] struct 
+	typedef [public,flag(NDR_NOALIGN)] struct 
 	{
 		uint16 wTowerId; /* Cannot be zero. */
 		nstring NetworkAddr; 
@@ -107,9 +107,10 @@ interface ObjectRpcBaseTypes
 
 
 	const uint16 COM_C_AUTHZ_NONE = 0xffff;
-	typedef [public] struct 
+	typedef [public,flag(NDR_NOALIGN)] struct 
 	{
 		uint16 wAuthnSvc; /* Cannot be zero. */
+		uint16 wAuthzSvc;
 		nstring PrincName; 
 	} 	SECURITYBINDING;
 
