@@ -465,7 +465,8 @@ kadm_ser_cpw(krb5_context context,
     krb5_warnx(context, "v4-compat %s: cpw %s",
 	       principal_string, principal_string); 
 
-    ret = message->fetch(message, key, 8);
+    ret = message->fetch(message, key + 4, 4);
+    ret = message->fetch(message, key, 4);
     ret = krb5_ret_stringz(message, &password);
     
     if(password)
