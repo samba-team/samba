@@ -39,10 +39,6 @@ RCSID("$Id$");
     (C)->E = krb5_config_get_ ## T ## _default ((C), NULL, (D), 	\
 						"libdefaults", F, NULL)
 
-#ifdef KRB4
-extern krb5_kt_ops krb4_fkt_ops;
-#endif
-
 /*
  * Set the list of etypes `ret_etypes' from the configuration variable
  * `name'
@@ -146,10 +142,8 @@ init_context_from_config_file(krb5_context context)
     context->kt_types     = NULL;
     krb5_kt_register (context, &krb5_fkt_ops);
     krb5_kt_register (context, &krb5_mkt_ops);
-#ifdef KRB4
-    krb5_kt_register (context, &krb4_fkt_ops);
-#endif
     krb5_kt_register (context, &krb5_akf_ops);
+    krb5_kt_register (context, &krb4_fkt_ops);
     return 0;
 }
 
