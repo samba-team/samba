@@ -379,35 +379,6 @@ static uint32 unix_dev_minor(SMB_DEV_T dev)
 }
 
 /****************************************************************************
- Map standard UNIX permissions onto wire representations.
-****************************************************************************/
-
-static uint32  unix_perms_to_wire(mode_t perms)
-{
-	uint ret = 0;
-
-	ret |= ((perms & S_IXOTH) ?  UNIX_X_OTH : 0);
-	ret |= ((perms & S_IWOTH) ?  UNIX_W_OTH : 0);
-	ret |= ((perms & S_IROTH) ?  UNIX_R_OTH : 0);
-	ret |= ((perms & S_IXGRP) ?  UNIX_X_GRP : 0);
-	ret |= ((perms & S_IWGRP) ?  UNIX_W_GRP : 0);
-	ret |= ((perms & S_IRGRP) ?  UNIX_R_GRP : 0);
-	ret |= ((perms & S_IXUSR) ?  UNIX_X_USR : 0);
-	ret |= ((perms & S_IWUSR) ?  UNIX_W_USR : 0);
-	ret |= ((perms & S_IRUSR) ?  UNIX_R_USR : 0);
-#ifdef S_ISVTX
-	ret |= ((perms & S_ISVTX) ?  UNIX_STICKY : 0);
-#endif
-#ifdef S_ISGID
-	ret |= ((perms & S_ISGID) ?  UNIX_SET_GID : 0);
-#endif
-#ifdef S_ISUID
-	ret |= ((perms & S_ISVTX) ?  UNIX_SET_UID : 0);
-#endif
-	return ret;
-}
-
-/****************************************************************************
  Map wire perms onto standard UNIX permissions. Obey share restrictions.
 ****************************************************************************/
 
@@ -2173,18 +2144,25 @@ static int ensure_link_is_safe(connection_struct *conn, const char *link_dest_in
 	pstring resolved_name;
 #endif
 	pstring link_dest;
+	BOOL bad_path = False;
+	SMB_STRUCT_STAT sbuf;
 
 	pstrcpy(link_dest, link_dest_in);
-
-	if (*link_dest != '/') {
-		pstrcpy(link_dest, conn->connectpath);
-		pstrcat(link_dest, link_dest_in);
-	}
+	unix_convert(link_dest,conn,0,&bad_path,&sbuf);
 
 	if (conn->vfs_ops.realpath(conn,dos_to_unix(link_dest,False),resolved_name) == NULL)
 		return -1;
 
-	pstrcpy(link_dest_out, unix_to_dos(resolved_name,False));
+	pstrcpy(link_dest, unix_to_dos(resolved_name,False));
+
+	if (*link_dest != '/') {
+		/* Relative path. */
+		pstrcpy(link_dest_out, conn->connectpath);
+		pstrcat(link_dest_out, "/");
+		pstrcat(link_dest_out, link_dest);
+	} else {
+		pstrcpy(link_dest_out, link_dest);
+	}
 
 	/*
 	 * Check if the link is within the share.
@@ -2330,6 +2308,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 	tvs.modtime = sbuf.st_mtime;
 	tvs.actime = sbuf.st_atime;
 	dosmode = dos_mode(conn,fname,&sbuf);
+	unixmode = sbuf.st_mode;
+
 	set_owner = VALID_STAT(sbuf) ? sbuf.st_uid : (uid_t)UID_NO_CHANGE;
 	set_grp = VALID_STAT(sbuf) ? sbuf.st_gid : (gid_t)GID_NO_CHANGE;
 
@@ -2550,8 +2530,12 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			pdata += 8;
 			set_grp = (gid_t)IVAL(pdata,0);
 			pdata += 8;
-			raw_unixmode = IVAL(pdata,20);
+			raw_unixmode = IVAL(pdata,28);
 			unixmode = unix_perms_from_wire(conn, &sbuf, raw_unixmode);
+
+			DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_BASIC: name = %s \
+size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
+				fname, (double)size, (unsigned int)set_owner, (unsigned int)set_grp, (int)raw_unixmode));
 
 			if (!VALID_STAT(sbuf)) {
 

@@ -1473,6 +1473,121 @@ static void cmd_rmdir(void)
 }
 
 /****************************************************************************
+ UNIX hardlink.
+****************************************************************************/
+
+static void cmd_link(void)
+{
+	pstring src,dest;
+	fstring buf,buf2;
+  
+	pstrcpy(src,cur_dir);
+	pstrcpy(dest,cur_dir);
+  
+	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token(NULL,buf2,NULL, sizeof(buf2))) {
+		DEBUG(0,("link <src> <dest>\n"));
+		return;
+	}
+
+	pstrcat(src,buf);
+	pstrcat(dest,buf2);
+
+	if (!cli_unix_hardlink(cli, src, dest)) {
+		DEBUG(0,("%s linking files (%s -> %s)\n",
+			cli_errstr(cli), src, dest));
+		return;
+	}  
+}
+
+/****************************************************************************
+ UNIX symlink.
+****************************************************************************/
+
+static void cmd_symlink(void)
+{
+	pstring src,dest;
+	fstring buf,buf2;
+  
+	pstrcpy(src,cur_dir);
+	pstrcpy(dest,cur_dir);
+	
+	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token(NULL,buf2,NULL, sizeof(buf2))) {
+		DEBUG(0,("symlink <src> <dest>\n"));
+		return;
+	}
+
+	pstrcat(src,buf);
+	pstrcat(dest,buf2);
+
+	if (!cli_unix_symlink(cli, src, dest)) {
+		DEBUG(0,("%s symlinking files (%s -> %s)\n",
+			cli_errstr(cli), src, dest));
+		return;
+	}  
+}
+
+/****************************************************************************
+ UNIX chmod.
+****************************************************************************/
+
+static void cmd_chmod(void)
+{
+	pstring src;
+	mode_t mode;
+	fstring buf, buf2;
+  
+	pstrcpy(src,cur_dir);
+	
+	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token(NULL,buf2,NULL, sizeof(buf2))) {
+		DEBUG(0,("chmod mode file\n"));
+		return;
+	}
+
+	mode = (mode_t)strtol(buf, NULL, 8);
+	pstrcat(src,buf2);
+
+	if (!cli_unix_chmod(cli, src, mode)) {
+		DEBUG(0,("%s chmod file %s 0%o\n",
+			cli_errstr(cli), src, (unsigned int)mode));
+		return;
+	}  
+}
+
+/****************************************************************************
+ UNIX chown.
+****************************************************************************/
+
+static void cmd_chown(void)
+{
+	pstring src;
+	uid_t uid;
+	gid_t gid;
+	fstring buf, buf2, buf3;
+  
+	pstrcpy(src,cur_dir);
+	
+	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token(NULL,buf2,NULL, sizeof(buf2)) ||
+	    !next_token(NULL,buf3,NULL, sizeof(buf3))) {
+		DEBUG(0,("chown uid gid file\n"));
+		return;
+	}
+
+	uid = (uid_t)atoi(buf);
+	gid = (gid_t)atoi(buf2);
+	pstrcat(src,buf3);
+
+	if (!cli_unix_chown(cli, src, uid, gid)) {
+		DEBUG(0,("%s chown file %s uid=%d, gid=%d\n",
+			cli_errstr(cli), src, (int)uid, (int)gid));
+		return;
+	} 
+}
+
+/****************************************************************************
 rename some files
 ****************************************************************************/
 static void cmd_rename(void)
@@ -1715,6 +1830,8 @@ struct
   {"du",cmd_du,"<mask> computes the total size of the current directory",{COMPL_REMOTE,COMPL_NONE}},
   {"lcd",cmd_lcd,"[directory] change/report the local current working directory",{COMPL_LOCAL,COMPL_NONE}},
   {"cd",cmd_cd,"[directory] change/report the remote directory",{COMPL_REMOTE,COMPL_NONE}},
+  {"chmod",cmd_chmod,"<src> <mode> chmod a file using UNIX permission",{COMPL_REMOTE,COMPL_REMOTE}},
+  {"chown",cmd_chown,"<src> <uid> <gid> chown a file using UNIX uids and gids",{COMPL_REMOTE,COMPL_REMOTE}},
   {"pwd",cmd_pwd,"show current remote directory (same as 'cd' with no args)",{COMPL_NONE,COMPL_NONE}},
   {"get",cmd_get,"<remote name> [local name] get a file",{COMPL_REMOTE,COMPL_LOCAL}},
   {"mget",cmd_mget,"<mask> get all the matching files",{COMPL_REMOTE,COMPL_NONE}},
@@ -1726,12 +1843,14 @@ struct
   {"del",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
   {"open",cmd_open,"<mask> open a file",{COMPL_REMOTE,COMPL_NONE}},
   {"rm",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
+  {"link",cmd_link,"<src> <dest> create a UNIX hard link",{COMPL_REMOTE,COMPL_REMOTE}},
   {"mkdir",cmd_mkdir,"<directory> make a directory",{COMPL_NONE,COMPL_NONE}},
   {"md",cmd_mkdir,"<directory> make a directory",{COMPL_NONE,COMPL_NONE}},
   {"rmdir",cmd_rmdir,"<directory> remove a directory",{COMPL_NONE,COMPL_NONE}},
   {"rd",cmd_rmdir,"<directory> remove a directory",{COMPL_NONE,COMPL_NONE}},
   {"prompt",cmd_prompt,"toggle prompting for filenames for mget and mput",{COMPL_NONE,COMPL_NONE}},  
   {"recurse",cmd_recurse,"toggle directory recursion for mget and mput",{COMPL_NONE,COMPL_NONE}},  
+  {"symlink",cmd_symlink,"<src> <dest> create a UNIX symlink",{COMPL_REMOTE,COMPL_REMOTE}},
   {"translate",cmd_translate,"toggle text translation for printing",{COMPL_NONE,COMPL_NONE}},  
   {"lowercase",cmd_lowercase,"toggle lowercasing of filenames for get",{COMPL_NONE,COMPL_NONE}},  
   {"print",cmd_print,"<file name> print a file",{COMPL_NONE,COMPL_NONE}},

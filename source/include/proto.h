@@ -246,6 +246,11 @@ BOOL cli_is_dos_error(struct cli_state *cli);
 
 /*The following definitions come from  libsmb/clifile.c  */
 
+uint32  unix_perms_to_wire(mode_t perms);
+BOOL cli_unix_symlink(struct cli_state *cli, const char *fname_src, const char *fname_dst);
+BOOL cli_unix_hardlink(struct cli_state *cli, const char *fname_src, const char *fname_dst);
+BOOL cli_unix_chmod(struct cli_state *cli, const char *fname, mode_t mode);
+BOOL cli_unix_chown(struct cli_state *cli, const char *fname, uid_t uid, gid_t gid);
 BOOL cli_rename(struct cli_state *cli, const char *fname_src, const char *fname_dst);
 BOOL cli_unlink(struct cli_state *cli, const char *fname);
 BOOL cli_mkdir(struct cli_state *cli, const char *dname);

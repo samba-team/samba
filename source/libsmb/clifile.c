@@ -24,6 +24,169 @@
 #include "includes.h"
 
 /****************************************************************************
+ Hard/Symlink a file (UNIX extensions).
+****************************************************************************/
+
+static BOOL cli_link_internal(struct cli_state *cli, const char *fname_src, const char *fname_dst, BOOL hard_link)
+{
+	int data_len = 0;
+	int param_len = 0;
+	uint16 setup = TRANSACT2_SETPATHINFO;
+	char param[sizeof(pstring)+6];
+	pstring data;
+	char *rparam=NULL, *rdata=NULL;
+	char *p;
+
+	memset(param, 0, sizeof(param));
+	SSVAL(param,0,hard_link ? SMB_SET_FILE_UNIX_HLINK : SMB_SET_FILE_UNIX_LINK);
+	p = &param[6];
+
+	p += clistr_push(cli, p, fname_src, -1, STR_TERMINATE);
+	param_len = PTR_DIFF(p, param);
+
+	p = data;
+	p += clistr_push(cli, p, fname_dst, -1, STR_TERMINATE);
+	data_len = PTR_DIFF(p, data);
+
+	if (!cli_send_trans(cli, SMBtrans2,
+		NULL,                        /* name */
+		-1, 0,                          /* fid, flags */
+		&setup, 1, 0,                   /* setup, length, max */
+		param, param_len, 2,            /* param, length, max */
+		(char *)&data,  data_len, cli->max_xmit /* data, length, max */
+		)) {
+			return False;
+	}
+
+	if (!cli_receive_trans(cli, SMBtrans2,
+		&rparam, &param_len,
+		&rdata, &data_len)) {
+			return False;
+	}
+
+	SAFE_FREE(rdata);
+	SAFE_FREE(rparam);
+
+	return True;
+}
+
+/****************************************************************************
+ Map standard UNIX permissions onto wire representations.
+****************************************************************************/
+
+uint32  unix_perms_to_wire(mode_t perms)
+{
+        uint ret = 0;
+
+        ret |= ((perms & S_IXOTH) ?  UNIX_X_OTH : 0);
+        ret |= ((perms & S_IWOTH) ?  UNIX_W_OTH : 0);
+        ret |= ((perms & S_IROTH) ?  UNIX_R_OTH : 0);
+        ret |= ((perms & S_IXGRP) ?  UNIX_X_GRP : 0);
+        ret |= ((perms & S_IWGRP) ?  UNIX_W_GRP : 0);
+        ret |= ((perms & S_IRGRP) ?  UNIX_R_GRP : 0);
+        ret |= ((perms & S_IXUSR) ?  UNIX_X_USR : 0);
+        ret |= ((perms & S_IWUSR) ?  UNIX_W_USR : 0);
+        ret |= ((perms & S_IRUSR) ?  UNIX_R_USR : 0);
+#ifdef S_ISVTX
+        ret |= ((perms & S_ISVTX) ?  UNIX_STICKY : 0);
+#endif
+#ifdef S_ISGID
+        ret |= ((perms & S_ISGID) ?  UNIX_SET_GID : 0);
+#endif
+#ifdef S_ISUID
+        ret |= ((perms & S_ISVTX) ?  UNIX_SET_UID : 0);
+#endif
+        return ret;
+}
+
+/****************************************************************************
+ Symlink a file (UNIX extensions).
+****************************************************************************/
+
+BOOL cli_unix_symlink(struct cli_state *cli, const char *fname_src, const char *fname_dst)
+{
+	return cli_link_internal(cli, fname_src, fname_dst, False);
+}
+
+/****************************************************************************
+ Hard a file (UNIX extensions).
+****************************************************************************/
+
+BOOL cli_unix_hardlink(struct cli_state *cli, const char *fname_src, const char *fname_dst)
+{
+	return cli_link_internal(cli, fname_src, fname_dst, True);
+}
+
+/****************************************************************************
+ Chmod or chown a file internal (UNIX extensions).
+****************************************************************************/
+
+static BOOL cli_unix_chmod_chown_internal(struct cli_state *cli, const char *fname, uint32 mode, uint32 uid, uint32 gid)
+{
+	int data_len = 0;
+	int param_len = 0;
+	uint16 setup = TRANSACT2_SETPATHINFO;
+	char param[sizeof(pstring)+6];
+	char data[100];
+	char *rparam=NULL, *rdata=NULL;
+	char *p;
+
+	memset(param, 0, sizeof(param));
+	memset(data, 0, sizeof(data));
+	SSVAL(param,0,SMB_SET_FILE_UNIX_BASIC);
+	p = &param[6];
+
+	p += clistr_push(cli, p, fname, -1, STR_TERMINATE);
+	param_len = PTR_DIFF(p, param);
+
+	SIVAL(data,40,uid);
+	SIVAL(data,48,gid);
+	SIVAL(data,84,mode);
+
+	data_len = 100;
+
+	if (!cli_send_trans(cli, SMBtrans2,
+		NULL,                        /* name */
+		-1, 0,                          /* fid, flags */
+		&setup, 1, 0,                   /* setup, length, max */
+		param, param_len, 2,            /* param, length, max */
+		(char *)&data,  data_len, cli->max_xmit /* data, length, max */
+		)) {
+			return False;
+	}
+
+	if (!cli_receive_trans(cli, SMBtrans2,
+		&rparam, &param_len,
+		&rdata, &data_len)) {
+			return False;
+	}
+
+	SAFE_FREE(rdata);
+	SAFE_FREE(rparam);
+
+	return True;
+}
+
+/****************************************************************************
+ chmod a file (UNIX extensions).
+****************************************************************************/
+
+BOOL cli_unix_chmod(struct cli_state *cli, const char *fname, mode_t mode)
+{
+	return cli_unix_chmod_chown_internal(cli, fname, 
+		unix_perms_to_wire(mode), UID_NO_CHANGE, GID_NO_CHANGE);
+}
+
+/****************************************************************************
+ chown a file (UNIX extensions).
+****************************************************************************/
+
+BOOL cli_unix_chown(struct cli_state *cli, const char *fname, uid_t uid, gid_t gid)
+{
+	return cli_unix_chmod_chown_internal(cli, fname, MODE_NO_CHANGE, (uint32)uid, (uint32)gid);
+}
+
+/****************************************************************************
  Rename a file.
 ****************************************************************************/
 
@@ -186,19 +349,19 @@ int cli_nt_delete_on_close(struct cli_state *cli, int fnum, BOOL flag)
 	data = flag ? 1 : 0;
 
 	if (!cli_send_trans(cli, SMBtrans2,
-						NULL,                        /* name */
-						-1, 0,                          /* fid, flags */
-						&setup, 1, 0,                   /* setup, length, max */
-						param, param_len, 2,            /* param, length, max */
-						(char *)&data,  data_len, cli->max_xmit /* data, length, max */
-						)) {
-		return False;
+		NULL,                        /* name */
+		-1, 0,                          /* fid, flags */
+		&setup, 1, 0,                   /* setup, length, max */
+		param, param_len, 2,            /* param, length, max */
+		(char *)&data,  data_len, cli->max_xmit /* data, length, max */
+		)) {
+			return False;
 	}
 
 	if (!cli_receive_trans(cli, SMBtrans2,
-						&rparam, &param_len,
-						&rdata, &data_len)) {
-		return False;
+		&rparam, &param_len,
+		&rdata, &data_len)) {
+			return False;
 	}
 
 	SAFE_FREE(rdata);

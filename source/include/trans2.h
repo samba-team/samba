@@ -327,31 +327,33 @@ Byte offset   Type     name                description
 #define GID_NO_CHANGE                  0xFFFFFFFF
 
 /*
- LARGE_INTEGER EndOfFile                File size
- LARGE_INTEGER Blocks                   Number of bytes used on disk (st_blocks).
- LARGE_INTEGER CreationTime             Creation time
- LARGE_INTEGER LastAccessTime           Last access time
- LARGE_INTEGER LastModificationTime     Last modification time
- LARGE_INTEGER Uid                      Numeric user id for the owner
- LARGE_INTEGER Gid                      Numeric group id of owner
- ULONG Type                             Enumeration specifying the pathname type:
-                                         0 -- File
-                                         1 -- Directory
-                                         2 -- Symbolic link
-                                         3 -- Character device
-                                         4 -- Block device
-                                         5 -- FIFO (named pipe)
-                                         6 -- Unix domain socket
+Offset Size         Name
+0      LARGE_INTEGER EndOfFile                File size
+8      LARGE_INTEGER Blocks                   Number of bytes used on disk (st_blocks).
+16     LARGE_INTEGER CreationTime             Creation time
+24     LARGE_INTEGER LastAccessTime           Last access time
+32     LARGE_INTEGER LastModificationTime     Last modification time
+40     LARGE_INTEGER Uid                      Numeric user id for the owner
+48     LARGE_INTEGER Gid                      Numeric group id of owner
+56     ULONG Type                             Enumeration specifying the pathname type:
+                                              0 -- File
+                                              1 -- Directory
+                                              2 -- Symbolic link
+                                              3 -- Character device
+                                              4 -- Block device
+                                              5 -- FIFO (named pipe)
+                                              6 -- Unix domain socket
 
- LARGE_INTEGER devmajor                 Major device number if type is device
- LARGE_INTEGER devminor                 Minor device number if type is device
- LARGE_INTEGER uniqueid                 This is a server-assigned unique id for the file. The client
-                                        will typically map this onto an inode number. The scope of
-                                        uniqueness is the share.
- LARGE_INTEGER permissions              Standard UNIX file permissions  - see below.
- LARGE_INTEGER nlinks                   The number of directory entries that map to this entry
-                                          (number of hard links)
+60     LARGE_INTEGER devmajor                 Major device number if type is device
+68     LARGE_INTEGER devminor                 Minor device number if type is device
+76     LARGE_INTEGER uniqueid                 This is a server-assigned unique id for the file. The client
+                                              will typically map this onto an inode number. The scope of
+                                              uniqueness is the share.
+84     LARGE_INTEGER permissions              Standard UNIX file permissions  - see below.
+92     LARGE_INTEGER nlinks                   The number of directory entries that map to this entry
+                                              (number of hard links)
 
+100 - end.
 */
 
 /* UNIX filetype mappings. */
