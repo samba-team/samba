@@ -1,9 +1,17 @@
-          WHATS NEW IN 1.9.18alpha2 Oct 21st 1997
+          WHATS NEW IN 1.9.18alpha3 Oct 21st 1997
           =======================================
 
 This is NOT a production release of Samba code.
 For production servers please run Samba 1.9.17p4
 or later releases in the 1.9.17 series.
+
+This release is being made as alpha3, as an
+incorrect alpha2 was temporarily available from
+the Samba ftp site. As we have no way of knowing
+if some people downloaded this incorrect release
+the safest course seemed to be to increment the
+alpha release number as we wish there to be no
+confusion between releases.
 
 This release contains some experimental features and
 changes and is being made available so people can
