@@ -166,7 +166,7 @@ KDC-REQ-BODY ::=   SEQUENCE {
                          -- Also client's in AS-REQ
             sname[3]             PrincipalName OPTIONAL,
             from[4]              KerberosTime OPTIONAL,
-            till[5]              KerberosTime,
+            till[5]              KerberosTime OPTIONAL,
             rtime[6]             KerberosTime OPTIONAL,
             nonce[7]             INTEGER,
             etype[8]             SEQUENCE OF INTEGER, -- EncryptionType,
