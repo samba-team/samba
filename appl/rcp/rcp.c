@@ -702,28 +702,14 @@ usage()
 	exit(1);
 }
 
-#if __STDC__
 #include <stdarg.h>
-#else
-#include <varargs.h>
-#endif
 
 void
-#if __STDC__
 run_err(const char *fmt, ...)
-#else
-run_err(fmt, va_alist)
-	char *fmt;
-        va_dcl
-#endif
 {
 	static FILE *fp;
 	va_list ap;
-#if __STDC__
 	va_start(ap, fmt);
-#else
-	va_start(ap);
-#endif
 
 	++errs;
 	if (fp == NULL && !(fp = fdopen(remout, "w")))
