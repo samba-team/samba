@@ -143,6 +143,9 @@ man_MANS =					\
 	krb5_build_principal.3			\
 	krb5_config.3				\
 	krb5_context.3				\
+	krb5_create_checksum.3			\
+	krb5_crypto_init.3			\
+	krb5_encrypt.3				\
 	krb5_free_principal.3			\
 	krb5_get_all_client_addrs.3		\
 	krb5_get_krbhst.3			\
@@ -151,6 +154,7 @@ man_MANS =					\
 	krb5_krbhst_init.3			\
 	krb5_openlog.3				\
 	krb5_parse_name.3			\
+	krb5_principal_get_realm.3		\
 	krb5_sname_to_principal.3		\
 	krb5_timeofday.3			\
 	krb5_unparse_name.3			\
