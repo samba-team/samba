@@ -54,7 +54,7 @@ The modules are used in the order in which they are specified.
 <para>
 Samba will attempt to load modules from the <emphasis>lib</emphasis>
 directory in the root directory of the samba installation (usually 
-<filename>/usr/lib/samba</filename> or <filename>/usr/local/samba/lib
+<filename>/usr/lib/samba/vfs</filename> or <filename>/usr/local/samba/lib/vfs
 </filename>).
 </para>
 
