@@ -931,3 +931,23 @@ BOOL all_zero(const char *ptr, uint_t size)
 	return True;
 }
 
+
+/*
+  this is a warning hack. The idea is to use this everywhere that we
+  get the "discarding const" warning from gcc, effectively moving all
+  the warnings to this one place. That doesn't actually fix the
+  problem of course, but it means that when we do get to cleaning them
+  up we can do it by searching the code for discard_const.
+
+  It also means that other error types aren't as swamped by the noise
+  of hundreds of const warnings, so we are more likely to notice when
+  we get new errors.
+
+  Please only add more calls to this function when you find it
+  _really_ hard to fix const warnings. Our aim is to eventually not
+  need this function at all,
+*/
+void *discard_const(const void *ptr)
+{
+	return (void *)ptr;
+}
