@@ -89,7 +89,7 @@ __attribute__ ((format (printf, 1, 2)))
 ;
 void	pass(char *);
 void	pasv(void);
-void	perror_reply(int, char *);
+void	perror_reply(int, const char *);
 void	pwd(void);
 void	removedir(char *);
 void	renamecmd(char *, char *);
@@ -99,7 +99,7 @@ void	reply(int, const char *, ...)
 __attribute__ ((format (printf, 2, 3)))
 #endif
 ;
-void	retrieve(char *, char *);
+void	retrieve(const char *, char *);
 void	send_file_list(char *);
 void	setproctitle(const char *, ...)
 #ifdef __GNUC__
@@ -113,7 +113,7 @@ void	upper(char *);
 void	user(char *);
 void	yyerror(char *);
 
-void	list_file(const char*);
+void	list_file(char*);
 
 void	kauth(char *, char*);
 void	klist(void);
