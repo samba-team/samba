@@ -57,6 +57,9 @@ used by the ``KDC'' in AFS. Requires Kerberos 4 support.
 Gives the path for the GNU Readline library, which will be used in some
 programs. If no readline library is found, the (simpler) editline
 library will be used instead.
+@item @kbd{--disable-otp}
+By default some of the application programs will build with support for
+one-time passwords (OTP).  Use this option to disable that support.
 @end table
 
 @menu
