@@ -29,7 +29,7 @@ static void print_tree(int l, REG_KEY *p, int fullpath, int novals)
 	int i;
 
 	for(i = 0; i < l; i++) putchar(' ');
-	if(fullpath) printf("%s\n", reg_key_get_path(p));
+	if(fullpath) printf("%s\n", reg_key_get_path_abs(p));
 	else printf("%s\n", reg_key_name(p));
 
 	for(i = 0; W_ERROR_IS_OK(error = reg_key_get_subkey_by_index(p, i, &subkey)); i++) {
@@ -38,7 +38,7 @@ static void print_tree(int l, REG_KEY *p, int fullpath, int novals)
 	}
 
 	if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) {
-		DEBUG(0, ("Error occured while fetching subkeys for '%s': %s\n", reg_key_get_path(p), win_errstr(error)));
+		DEBUG(0, ("Error occured while fetching subkeys for '%s': %s\n", reg_key_get_path_abs(p), win_errstr(error)));
 	}
 
 	if(!novals) {
@@ -53,7 +53,7 @@ static void print_tree(int l, REG_KEY *p, int fullpath, int novals)
 		}
 
 		if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) {
-			DEBUG(0, ("Error occured while fetching values for '%s': %s\n", reg_key_get_path(p), win_errstr(error)));
+			DEBUG(0, ("Error occured while fetching values for '%s': %s\n", reg_key_get_path_abs(p), win_errstr(error)));
 		}
 	}
 }
