@@ -52,4 +52,5 @@ LDADD = ../common/libcommon.a \
 	$(LIB_krb4) \
 	$(top_builddir)/lib/asn1/libasn1.a \
 	$(top_builddir)/lib/otp/libotp.a \
-	$(top_builddir)/lib/roken/libroken.a
+	$(top_builddir)/lib/roken/libroken.a \
+	@LIB_crypt@
