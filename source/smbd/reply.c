@@ -1311,6 +1311,21 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	}
 
 	size = sbuf.st_size;
+
+	if ((smb_action == FILE_WAS_CREATED) || (smb_action == FILE_WAS_OVERWRITTEN)) {
+		SMB_BIG_UINT allocation_size = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv9);
+		if (allocation_size && (allocation_size > (SMB_BIG_UINT)size)) {
+			fsp->initial_allocation_size = smb_roundup(fsp->conn, allocation_size);
+			if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
+				close_file(fsp,False);
+				END_PROFILE(SMBntcreateX);
+				return ERROR_NT(NT_STATUS_DISK_FULL);
+			}
+		} else {
+			fsp->initial_allocation_size = smb_roundup(fsp->conn,(SMB_BIG_UINT)size);
+		}
+	}
+
 	fmode = dos_mode(conn,fname,&sbuf);
 	mtime = sbuf.st_mtime;
 	if (fmode & aDIR) {
@@ -1348,7 +1363,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		put_dos_date3(outbuf,smb_vwv4,mtime & ~1);
 	else
 		put_dos_date3(outbuf,smb_vwv4,mtime);
-	SIVAL(outbuf,smb_vwv6,(uint32)size);
+	SIVAL(outbuf,smb_vwv6,(uint32)get_allocation_size(conn,fsp,&sbuf));
 	SSVAL(outbuf,smb_vwv8,rmode);
 	SSVAL(outbuf,smb_vwv11,smb_action);
 
