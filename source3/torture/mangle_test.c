@@ -135,7 +135,7 @@ static void gen_name(char *name)
 
 	/* and a medium probability of a common lead string */
 	if (random() % 10 == 0) {
-		strncpy(p, "ABCDE", 5);
+		strncpy(p, "ABCDE", 6);
 	}
 
 	/* and a high probability of a good extension length */
