@@ -61,6 +61,8 @@ sub smb_build_main($)
 		config_mk::import_file($SMB_BUILD_CTX{INPUT}, $mkfile);
 	}
 
+	print Data::Dumper::Dumper($SMB_BUILD_CTX{INPUT});
+
 	%{$SMB_BUILD_CTX{DEPEND}} = input::check(\%SMB_BUILD_CTX);
 	
 	%{$SMB_BUILD_CTX{OUTPUT}} = output::create_output($SMB_BUILD_CTX{DEPEND});
