@@ -33,6 +33,10 @@ For example I have used:
     writeable = no
     guest ok = yes
 
+Note that it is important that this share is not writeable by ordinary
+users, in a secure environment: ordinary users should not be allowed
+to modify or add files that another user's computer would then download
+when they log in.
 
 3) in the [global] section of smb.conf set the following:
 
