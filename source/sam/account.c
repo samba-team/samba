@@ -24,7 +24,7 @@
 #include "includes.h"
 
 #undef DBGC_CLASS
-#define DBGC_CLASS DBGC_PASSDB
+#define DBGC_CLASS DBGC_SAM
 
 /************************************************************
  Fill the SAM_USER_HANDLE with default values.
