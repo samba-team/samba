@@ -435,25 +435,29 @@ int get_ntforms(nt_forms_struct **list)
 
 	for (kbuf = tdb_firstkey(tdb_forms);
 	     kbuf.dptr;
-	     newkey = tdb_nextkey(tdb_forms, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
-		if (strncmp(kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) != 0) continue;
+	     newkey = tdb_nextkey(tdb_forms, kbuf), safe_free(kbuf.dptr), kbuf=newkey) 
+	{
+		if (strncmp(kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) != 0) 
+			continue;
 		
 		dbuf = tdb_fetch(tdb_forms, kbuf);
-		if (!dbuf.dptr) continue;
+		if (!dbuf.dptr) 
+			continue;
 
 		fstrcpy(form.name, kbuf.dptr+strlen(FORMS_PREFIX));
 		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "dddddddd",
 				 &i, &form.flag, &form.width, &form.length, &form.left,
 				 &form.top, &form.right, &form.bottom);
 		SAFE_FREE(dbuf.dptr);
-		if (ret != dbuf.dsize) continue;
+		if (ret != dbuf.dsize) 
+			continue;
 
 		tl = Realloc(*list, sizeof(nt_forms_struct)*(n+1));
 		if (!tl) {
 			DEBUG(0,("get_ntforms: Realloc fail.\n"));
 			return 0;
 		}
-        *list = tl;
+		*list = tl;
 		(*list)[n] = form;
 		n++;
 	}

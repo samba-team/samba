@@ -39,6 +39,7 @@ static char *top_level_keys[MAX_TOP_LEVEL_KEYS] = {
 	"Printers" 
 };
 
+
 /**********************************************************************
  It is safe to assume that every registry path passed into on of 
  the exported functions here begins with KEY_PRINTING else
@@ -97,11 +98,18 @@ static int print_subpath_environments( char *key, REGSUBKEY_CTR *subkeys )
 
 /**********************************************************************
  handle enumeration of subkeys below KEY_PRINTING\Forms
+ Really just a stub function, but left here in case it needs to
+ be expanded later on
  *********************************************************************/
  
 static int print_subpath_forms( char *key, REGSUBKEY_CTR *subkeys )
 {
 	DEBUG(10,("print_subpath_forms: key=>[%s]\n", key ? key : "NULL" ));
+	
+	/* there are no subkeys */
+	
+	if ( key )
+		return -1;
 	
 	return 0;
 }
@@ -110,36 +118,74 @@ static int print_subpath_forms( char *key, REGSUBKEY_CTR *subkeys )
  handle enumeration of values below KEY_PRINTING\Forms
  *********************************************************************/
  
-static int print_values_forms( char *key, REGVAL_CTR *val )
+static int print_subpath_values_forms( char *key, REGVAL_CTR *val )
 {
-	int num_values = 0;
+	int 		num_values = 0;
+	uint32 		data[7];
 	
 	DEBUG(10,("print_values_forms: key=>[%s]\n", key ? key : "NULL" ));
 	
 	/* handle ..\Forms\ */
 	
-#if 0	/* JERRY */
 	if ( !key )
 	{
-		nt_forms_struct *forms = NULL;
+		nt_forms_struct *forms_list = NULL;
+		nt_forms_struct *form = NULL;
 		int i;
 		
-		if ( (num_values = get_ntforms( &forms )) == 0 )
+		if ( (num_values = get_ntforms( &forms_list )) == 0 ) 
 			return 0;
 		
-		if ( !(*values = malloc(sizeof(REGISTRY_VALUE) * num_values)) ) {
-			DEBUG(0,("print_values_forms: Failed to malloc memory for [%d] REGISTRY_VALUE structs!\n",
-				num_values));
-			return -1;
-		}
-		
+		DEBUG(10,("print_subpath_values_forms: [%d] user defined forms returned\n",
+			num_values));
+
+		/* handle user defined forms */
+				
 		for ( i=0; i<num_values; i++ )
 		{
+			form = &forms_list[i];
 			
+			data[0] = form->flag;
+			data[1] = form->width;
+			data[2] = form->length;
+			data[3] = form->left;
+			data[4] = form->top;
+			data[5] = form->right;
+			data[6] = form->bottom;
+			
+			regval_ctr_addvalue( val, form->name, REG_BINARY, (char*)data, sizeof(data) );
 		
 		}
+		
+		SAFE_FREE( forms_list );
+		forms_list = NULL;
+		
+		/* handle built-on forms */
+		
+		if ( (num_values = get_builtin_ntforms( &forms_list )) == 0 ) 
+			return 0;
+		
+		DEBUG(10,("print_subpath_values_forms: [%d] built-in forms returned\n",
+			num_values));
+			
+		for ( i=0; i<num_values; i++ )
+		{
+			form = &forms_list[i];
+			
+			data[0] = form->flag;
+			data[1] = form->width;
+			data[2] = form->length;
+			data[3] = form->left;
+			data[4] = form->top;
+			data[5] = form->right;
+			data[6] = form->bottom;
+
+			regval_ctr_addvalue( val, form->name, REG_BINARY, (char*)data, sizeof(data) );
+		
+		}
+		
+		SAFE_FREE( forms_list );
 	}
-#endif
 	
 	return num_values;
 }
@@ -150,7 +196,7 @@ static int print_values_forms( char *key, REGVAL_CTR *val )
  
 static int print_subpath_printers( char *key, REGSUBKEY_CTR *subkeys )
 {
-	int n_services = lp_numservices();
+	int n_services = lp_numservices();	
 	int snum;
 	fstring sname;
 	
@@ -208,29 +254,25 @@ static int handle_printing_subpath( char *key, REGSUBKEY_CTR *subkeys, REGVAL_CT
 		
 	if ( !(i < MAX_TOP_LEVEL_KEYS) )
 		return -1;
-	
-	/* quick hack for now */
-	if ( !subkeys )
-		return 0;
-					
+						
 	/* Call routine to handle each top level key */
 	switch ( i )
 	{
 		case KEY_INDEX_ENVIR:
 			if ( subkeys )
 				print_subpath_environments( p, subkeys );
-#if 0	/* JERRY */
-			if ( val )
-				print_subpath_values_environments( p, val );
-#endif
 			break;
 		
 		case KEY_INDEX_FORMS:
-			result = print_subpath_forms( p, subkeys );
+			if ( subkeys )
+				print_subpath_forms( p, subkeys );
+			if ( val )
+				print_subpath_values_forms( p, val );
 			break;
 			
 		case KEY_INDEX_PRINTER:
-			result = print_subpath_printers( p, subkeys );
+			if ( subkeys )
+				print_subpath_printers( p, subkeys );
 			break;
 	
 		/* default case for top level key that has no handler */
