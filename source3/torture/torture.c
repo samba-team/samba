@@ -573,12 +573,12 @@ static BOOL run_readwritemulti(int dummy)
 
 	cli = current_cli;
 
-	cli_sockopt(&cli, sockops);
+	cli_sockopt(cli, sockops);
 
 	printf("run_readwritemulti: fname %s\n", randomfname);
-	test = rw_torture3(&cli, randomfname);
+	test = rw_torture3(cli, randomfname);
 
-	if (!torture_close_connection(&cli)) {
+	if (!torture_close_connection(cli)) {
 		test = False;
 	}
 	
@@ -697,7 +697,7 @@ static BOOL run_netbench(int client)
 	pstring line;
 	char cname[20];
 	FILE *f;
-	char *params[20];
+	const char *params[20];
 	BOOL correct = True;
 
 	cli = current_cli;
@@ -1066,6 +1066,7 @@ static BOOL run_tcon2_test(int dummy)
 
 static BOOL tcon_devtest(struct cli_state *cli,
 			 const char *myshare, const char *devtype,
+			 const char *return_devtype,
 			 NTSTATUS expected_error)
 {
 	BOOL status;
@@ -1076,7 +1077,15 @@ static BOOL tcon_devtest(struct cli_state *cli,
 
 	if (NT_STATUS_IS_OK(expected_error)) {
 		if (status) {
-			ret = True;
+			if (strcmp(cli->dev, return_devtype) == 0) {
+				ret = True;
+			} else { 
+				printf("tconX to share %s with type %s "
+				       "succeeded but returned the wrong "
+				       "device type (got [%s] but should have got [%s])\n",
+				       myshare, devtype, cli->dev, return_devtype);
+				ret = False;
+			}
 		} else {
 			printf("tconX to share %s with type %s "
 			       "should have succeeded but failed\n",
@@ -1125,34 +1134,34 @@ static BOOL run_tcon_devtype_test(int dummy)
 		return False;
 	}
 
-	if (!tcon_devtest(cli1, "IPC$", "A:", NT_STATUS_BAD_DEVICE_TYPE))
+	if (!tcon_devtest(cli1, "IPC$", "A:", NULL, NT_STATUS_BAD_DEVICE_TYPE))
 		ret = False;
 
-	if (!tcon_devtest(cli1, "IPC$", "?????", NT_STATUS_OK))
+	if (!tcon_devtest(cli1, "IPC$", "?????", "IPC", NT_STATUS_OK))
 		ret = False;
 
-	if (!tcon_devtest(cli1, "IPC$", "LPT:", NT_STATUS_BAD_DEVICE_TYPE))
+	if (!tcon_devtest(cli1, "IPC$", "LPT:", NULL, NT_STATUS_BAD_DEVICE_TYPE))
 		ret = False;
 
-	if (!tcon_devtest(cli1, "IPC$", "IPC", NT_STATUS_OK))
+	if (!tcon_devtest(cli1, "IPC$", "IPC", "IPC", NT_STATUS_OK))
 		ret = False;
 			
-	if (!tcon_devtest(cli1, "IPC$", "FOOBA", NT_STATUS_BAD_DEVICE_TYPE))
+	if (!tcon_devtest(cli1, "IPC$", "FOOBA", NULL, NT_STATUS_BAD_DEVICE_TYPE))
 		ret = False;
 
-	if (!tcon_devtest(cli1, share, "A:", NT_STATUS_OK))
+	if (!tcon_devtest(cli1, share, "A:", "A:", NT_STATUS_OK))
 		ret = False;
 
-	if (!tcon_devtest(cli1, share, "?????", NT_STATUS_OK))
+	if (!tcon_devtest(cli1, share, "?????", "A:", NT_STATUS_OK))
 		ret = False;
 
-	if (!tcon_devtest(cli1, share, "LPT:", NT_STATUS_BAD_DEVICE_TYPE))
+	if (!tcon_devtest(cli1, share, "LPT:", NULL, NT_STATUS_BAD_DEVICE_TYPE))
 		ret = False;
 
-	if (!tcon_devtest(cli1, share, "IPC", NT_STATUS_BAD_DEVICE_TYPE))
+	if (!tcon_devtest(cli1, share, "IPC", NULL, NT_STATUS_BAD_DEVICE_TYPE))
 		ret = False;
 			
-	if (!tcon_devtest(cli1, share, "FOOBA", NT_STATUS_BAD_DEVICE_TYPE))
+	if (!tcon_devtest(cli1, share, "FOOBA", NULL, NT_STATUS_BAD_DEVICE_TYPE))
 		ret = False;
 
 	cli_shutdown(cli1);
