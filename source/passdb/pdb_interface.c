@@ -41,7 +41,7 @@ const struct pdb_init_function_entry builtin_pdb_init_functions[] = {
 
 static BOOL context_setsampwent(struct pdb_context *context, BOOL update)
 {
-	if ((!context) || (!context->pdb_methods) || (!context->pdb_methods->setsampwent)) {
+	if (!context) {
 		DEBUG(0, ("invalid pdb_context specified!\n"));
 		return False;
 	}
@@ -53,7 +53,7 @@ static BOOL context_setsampwent(struct pdb_context *context, BOOL update)
 		return True;
 	}
 
-	while (!(context->pwent_methods->setsampwent(context->pwent_methods, update))) {
+	while (!(context->pwent_methods->setsampwent) || !(context->pwent_methods->setsampwent(context->pwent_methods, update))) {
 		context->pwent_methods = context->pwent_methods->next;
 		if (context->pwent_methods == NULL) 
 			return False;
