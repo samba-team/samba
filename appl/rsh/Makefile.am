@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = no-dependencies foreign
 
-INCLUDES = -I$(top_builddir)/include $(INCLUDE_krb4)
+INCLUDES = -I$(top_builddir)/include $(INCLUDE_krb4) -DBINDIR=\"$(bindir)\"
 
 bin_PROGRAMS = rsh
 
