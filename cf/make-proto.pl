@@ -1,9 +1,18 @@
 # Make prototypes from .c files
 # $Id$
 
+##use Getopt::Std;
+require 'getopts.pl';
+
 $brace = 0;
 $line = "";
 $debug = 0;
+
+do Getopts('o:p:d') || die "foo";
+
+if($opt_d) {
+    $debug = 1;
+}
 
 while(<>) {
     print $brace, " ", $_ if($debug);
@@ -30,7 +39,7 @@ while(<>) {
 	    s/^\s*//;
 	    s/\s$//;
 	    s/\s+/ /g;
-	    if(!/^static/){
+	    if(!/^static/ && !/^PRIVATE/){
 		# remove outer ()
 		s/\s*\(/@/;
 		s/\)$/@/;
@@ -69,9 +78,34 @@ while(<>) {
     }
 }
 
-print '/* This is a generated file */
-#ifndef __krb5_protos_h__
-#define __krb5_protos_h__
+sub foo {
+    local ($arg) = @_;
+    $_ = $arg;
+    s/.*\/([^\/]*)/$1/;
+    s/[^a-zA-Z0-9]/_/g;
+    "__" . $_ . "__";
+}
+
+if($opt_o) {
+    open(OUT, ">$opt_o");
+    $block = &foo($opt_o);
+} else {
+    $block = "__public_h__";
+}
+
+if($opt_p) {
+    open(PRIV, ">$opt_p");
+    $private = &foo($opt_p);
+} else {
+    $private = "__private_h__";
+}
+
+$public_h = "";
+$private_h = "";
+
+$public_h_header = "/* This is a generated file */
+#ifndef $block
+#define $block
 
 #ifdef __STDC__
 #include <stdarg.h>
@@ -84,11 +118,48 @@ print '/* This is a generated file */
 #endif
 #endif
 
-';
+";
+
+$private_h_header = "/* This is a generated file */
+#ifndef $private
+#define $private
+
+#ifdef __STDC__
+#include <stdarg.h>
+#ifndef __P
+#define __P(x) x
+#endif
+#else
+#ifndef __P
+#define __P(x) ()
+#endif
+#endif
+
+";
 
 foreach(sort keys %funcs){
     if(/^(main)$/) { next }
-    print $funcs{$_}, "\n\n";
+    if(/^_/) {
+	$private_h .= $funcs{$_} . "\n\n";
+    } else {
+	$public_h .= $funcs{$_} . "\n\n";
+    }
 }
 
-print "#endif /* __krb5_protos_h__ */\n";
+
+if ($public_h ne "") {
+    $public_h = $public_h_header . $public_h . "#endif /* $block */\n";
+}
+if ($private_h ne "") {
+    $private_h = $private_h_header . $private_h . "#endif /* $private */\n";
+}
+
+if($opt_o) {
+    print OUT $public_h;
+} 
+if($opt_p) {
+    print PRIV $private_h;
+} 
+
+close OUT;
+close PRIV;
