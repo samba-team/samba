@@ -410,7 +410,7 @@ static NTSTATUS smb_raw_session_setup_generic_spnego(struct smbcli_session *sess
 	status = gensec_client_start(session, &session->gensec);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start GENSEC client mode: %s\n", nt_errstr(status)));
-		goto done;
+		return status;
 	}
 
 	gensec_want_feature(session->gensec, GENSEC_FEATURE_SESSION_KEY);
@@ -505,7 +505,8 @@ done:
 		parms->generic.out.lanman = s2.spnego.out.lanman;
 		parms->generic.out.domain = s2.spnego.out.domain;
 	} else {
-		gensec_end(&session->gensec);
+		talloc_free(session->gensec);
+		session->gensec = NULL;
 		DEBUG(1, ("Failed to login with %s: %s\n", gensec_get_name_by_oid(chosen_oid), nt_errstr(status)));
 		return status;
 	}
