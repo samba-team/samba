@@ -22,8 +22,7 @@ krb4_verify_password (POP *p)
 		krb_get_err_text(status));
 	return 1;
     }
-    snprintf (tkt, sizeof(tkt),
-	      TKT_ROOT "_popper.%u", (unsigned)getpid());
+    snprintf(tkt, sizeof(tkt), "%s_popper.%u", TKT_ROOT, (unsigned)getpid());
     krb_set_tkt_string (tkt);
 
     status = krb_verify_user(p->user, "", lrealm,
