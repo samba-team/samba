@@ -735,24 +735,21 @@
 	} samr_Hash;
 
 	/*
-	  this interface is quite mysterious. I can make w2k3 give me
-	  NT_STATUS_PASSWORD_RESTRICTION and NT_STATUS_WRONG_PASSWORD
-	  with various options, but so far I haven't managed a successful
-	  password change. Perhaps this interface is disabled now?
-	  Needs testing against NT4
+	  this is a password change interface that doesn't give
+	  the server the plaintext password. Depricated.
 	*/
 	NTSTATUS samr_ChangePasswordUser(
 		[in,ref]    policy_handle *handle,
-		[in]        bool8 unknown1,
-		[in]        samr_Hash *hash1,
-		[in]        samr_Hash *hash2,
-		[in]        bool8 unknown2,
-		[in]        samr_Hash *hash3,
-		[in]        samr_Hash *hash4,
-		[in]        bool8 unknown3,
-		[in]        samr_Hash *hash5,
-		[in]        bool8 unknown4,
-		[in]        samr_Hash *hash6
+		[in]        bool8 lm_present,
+		[in]        samr_Hash *old_lm_crypted,
+		[in]        samr_Hash *new_lm_crypted,
+		[in]        bool8 nt_present,
+		[in]        samr_Hash *old_nt_crypted,
+		[in]        samr_Hash *new_nt_crypted,
+		[in]        bool8 cross1_present,
+		[in]        samr_Hash *nt_cross,
+		[in]        bool8 cross2_present,
+		[in]        samr_Hash *lm_cross
 		);
 
 	/************************/
