@@ -655,9 +655,6 @@ typedef struct sk_struct {
   char sec_desc[1];
 } SK_HDR;
 
-#define OFF(f) ((f) + 0x1000 + 4) 
-#define LOCN(base, f) ((base) + OFF(f))
-
 typedef struct hash_struct {
   DWORD nk_off;
   char hash[4];
