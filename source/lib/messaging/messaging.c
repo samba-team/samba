@@ -375,6 +375,8 @@ NTSTATUS messaging_send(void *msg_ctx, servid_t server, uint32_t msg_type, DATA_
 
 	talloc_set_destructor(rec, rec_destructor);
 
+	messaging_send_handler(msg->event.ev, rec->fde, 0, EVENT_FD_WRITE);
+
 	return NT_STATUS_OK;
 }
 
