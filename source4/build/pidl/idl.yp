@@ -267,7 +267,14 @@ again:
 				$parser->YYData->{INPUT_FILENAME} = $2;
 				goto again;
 			}
-			goto again;
+			if (s/^\#line (\d+) \"(.*?)\"( \d+|)//) {
+				$parser->YYData->{LINE} = $1-1;
+				$parser->YYData->{INPUT_FILENAME} = $2;
+				goto again;
+			}
+			if (s/^(\#.*)$//m) {
+				goto again;
+			}
 		}
 		if (s/^(\n)//) {
 			$parser->YYData->{LINE}++;
