@@ -66,7 +66,7 @@ shrink.
 			<para>
 			Samba honours and implements Unix file system access controls. Users
 			who access a Samba server will do so as a particular MS Windows user.
-			This information is passed to the Samba server as part of the logon orr
+			This information is passed to the Samba server as part of the logon or
 			connection setup process. Samba uses this user identity to validate
 			whether or not the user should be given access to file system resources
 			(files and directories). This chapter provides an overview for those
@@ -413,7 +413,7 @@ Before using any of the following options please refer to the man page for &smb.
 	<para>
 	As always, it is highly advisable to use the least difficult to maintain and the least ambiguous method for
 	controlling access. Remember, that when you leave the scene someone else will need to provide assistance and
-	if that person finds to great a mess, or if they do not understand what you have done then there is risk of
+	if that person finds too great a mess, or if they do not understand what you have done then there is risk of
 	Samba being removed and an alternative solution being adopted.
 	</para>
 
@@ -772,7 +772,7 @@ Before using any of the following options please refer to the man page for &smb.
 			<para>
 			Be careful. If you take away all permissions from the <constant>Everyone</constant> user without removing this user
 			then effectively no user will be able to access the share. This is a result of what is known as
-			ACL precidence. ie: Everyone with <strong>no access</strong> means that MaryK who is part of the group 
+			ACL precedence. ie: Everyone with <strong>no access</strong> means that MaryK who is part of the group 
 			<constant>Everyone</constant> will have no access even if this user is given explicit full control access.
 			</para>
 			</warning>

@@ -106,7 +106,7 @@ The following functionalities are new to the Samba-3 release:
 	<listitem><para>
 	Adding users via the User Manager for Domains. This can be done on any MS Windows
 	client using the Nexus toolkit that is available from Microsoft's web site.
-	At some later date Samba-3 may get support for the use of the Microsoft Manangement
+	At some later date Samba-3 may get support for the use of the Microsoft Management
 	Console for user management.
 	</para></listitem>
 
