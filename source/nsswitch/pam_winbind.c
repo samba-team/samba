@@ -155,6 +155,14 @@ static int winbind_auth_request(const char *user, const char *pass, int ctrl)
 		/* incorrect password */
 		_pam_log(LOG_WARNING, "user `%s' denied access (incorrect password)", user);
 		return retval;
+	case PAM_ACCT_EXPIRED:
+		/* account expired */
+		_pam_log(LOG_WARNING, "user `%s' account expired", user);
+		return retval;
+	case PAM_AUTHTOK_EXPIRED:
+		/* password expired */
+		_pam_log(LOG_WARNING, "user `%s' password expired", user);
+		return retval;
 	case PAM_USER_UNKNOWN:
 		/* the user does not exist */
 		if (ctrl & WINBIND_DEBUG_ARG)
@@ -577,6 +585,7 @@ PAM_EXTERN int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		retval = winbind_auth_request(user, pass_old, ctrl);
 		
 		if (retval != PAM_ACCT_EXPIRED 
+		    && retval != PAM_AUTHTOK_EXPIRED
 		    && retval != PAM_NEW_AUTHTOK_REQD 
 		    && retval != PAM_SUCCESS) {
 			pass_old = NULL;
