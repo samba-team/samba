@@ -1118,7 +1118,7 @@ filename_check(char *filename)
 	if(*p == '\0')
 	    return 0;
     }
-    lreply(553, "\"%s\" is an illegal filename.", filename);
+    lreply(553, "\"%s\" is not an acceptable filename.", filename);
     lreply(553, "The filename must start with an alphanumeric "
 	   "character and must only");
     reply(553, "consist of alphanumeric characters or any of the following: %s", 
