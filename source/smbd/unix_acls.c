@@ -423,7 +423,7 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
     }
 
     if(num_acls)
-      if((psa = make_sec_acl( 3, num_acls, ace_list)) == NULL) {
+      if((psa = make_sec_acl( ACL_REVISION, num_acls, ace_list)) == NULL) {
         DEBUG(0,("get_nt_acl: Unable to malloc space for acl.\n"));
         return 0;
       }

@@ -411,7 +411,7 @@ void free_sec_desc(SEC_DESC **ppsd)
 SEC_DESC *make_standard_sec_desc(DOM_SID *owner_sid, DOM_SID *grp_sid,
 				 SEC_ACL *dacl, size_t *sd_size)
 {
-	return make_sec_desc(1, SEC_DESC_SELF_RELATIVE|SEC_DESC_DACL_PRESENT,
+	return make_sec_desc(SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE|SEC_DESC_DACL_PRESENT,
 			     owner_sid, grp_sid, NULL, dacl, sd_size);
 }
 
