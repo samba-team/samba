@@ -92,8 +92,14 @@ static void calc_ntlmv2_hash(unsigned char hash[16], char digest[16],
 	calc_hash(hash, digest, 16);
 }
 
+enum ntlmssp_direction {
+	NTLMSSP_SEND,
+	NTLMSSP_RECEIVE
+};
+
 static NTSTATUS ntlmssp_make_packet_signiture(NTLMSSP_CLIENT_STATE *ntlmssp_state,
 					      const uchar *data, size_t length, 
+					      enum ntlmssp_direction direction,
 					      DATA_BLOB *sig) 
 {
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
@@ -110,8 +116,14 @@ static NTSTATUS ntlmssp_make_packet_signiture(NTLMSSP_CLIENT_STATE *ntlmssp_stat
 		if (!msrpc_gen(sig, "Bd", digest, sizeof(digest), ntlmssp_state->ntlmssp_seq_num)) {
 			return NT_STATUS_NO_MEMORY;
 		}
-	       
-		NTLMSSPcalc_ap(ntlmssp_state->cli_seal_hash,  sig->data, sig->length);
+		switch (direction) {
+		case NTLMSSP_SEND:
+			NTLMSSPcalc_ap(ntlmssp_state->cli_sign_hash,  sig->data, sig->length);
+			break;
+		case NTLMSSP_RECEIVE:
+			NTLMSSPcalc_ap(ntlmssp_state->srv_sign_hash,  sig->data, sig->length);
+			break;
+		}
 	} else {
 		uint32 crc;
 		crc = crc32_calc_buffer(data, length);
@@ -129,7 +141,7 @@ NTSTATUS ntlmssp_client_sign_packet(NTLMSSP_CLIENT_STATE *ntlmssp_state,
 					   DATA_BLOB *sig) 
 {
 	ntlmssp_state->ntlmssp_seq_num++;
-	return ntlmssp_make_packet_signiture(ntlmssp_state, data, length, sig);
+	return ntlmssp_make_packet_signiture(ntlmssp_state, data, length, NTLMSSP_SEND, sig);
 }
 
 /**
@@ -151,7 +163,7 @@ NTSTATUS ntlmssp_client_check_packet(NTLMSSP_CLIENT_STATE *ntlmssp_state,
 	}
 
 	nt_status = ntlmssp_make_packet_signiture(ntlmssp_state, data, 
-						  length, &local_sig);
+						  length, NTLMSSP_RECEIVE, &local_sig);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("NTLMSSP packet check failed with %s\n", nt_errstr(nt_status)));
@@ -161,6 +173,12 @@ NTSTATUS ntlmssp_client_check_packet(NTLMSSP_CLIENT_STATE *ntlmssp_state,
 	if (memcmp(sig->data, local_sig.data, MIN(sig->length, local_sig.length)) == 0) {
 		return NT_STATUS_OK;
 	} else {
+		DEBUG(5, ("BAD SIG: wanted signature of\n"));
+		dump_data(5, local_sig.data, local_sig.length);
+		
+		DEBUG(5, ("BAD SIG: got signature of\n"));
+		dump_data(5, sig->data, sig->length);
+
 		DEBUG(0, ("NTLMSSP packet check failed due to invalid signiture!\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
