@@ -44,8 +44,9 @@ int
 get_entry(int argc, char **argv)
 {
     HDB *db;
-    int err;
+    int ret;
     hdb_entry ent;
+    int i;
     
     if(argc != 2){
 	fprintf(stderr, "Usage: get_entry principal\n");
@@ -54,14 +55,14 @@ get_entry(int argc, char **argv)
 	
     krb5_parse_name(context, argv[1], &ent.principal);
     
-    if((err = hdb_open(context, &db, database, O_RDONLY, 0600))){
-	fprintf(stderr, "hdb_open: %s\n", krb5_get_err_text(context, err));
+    if((ret = hdb_open(context, &db, database, O_RDONLY, 0600))){
+	fprintf(stderr, "hdb_open: %s\n", krb5_get_err_text(context, ret));
 	return 0;
     }
     
-    err = db->fetch(context, db, &ent);
+    ret = db->fetch(context, db, &ent);
     
-    switch(err){
+    switch(ret){
     case KRB5_HDB_NOENTRY:
 	fprintf(stderr, "Entry not found in database\n");
 	break;
@@ -72,16 +73,19 @@ get_entry(int argc, char **argv)
 	free(name);
 	printf("Max ticket life: %d\n", ent.max_life);
 	printf("Max renewable ticket life: %d\n", ent.max_renew);
-	printf("Key type: ");
-	if(ent.keyblock.keytype == KEYTYPE_DES)
-	    printf("DES");
-	else
-	    printf("%d", (int)ent.keyblock.keytype);
-	printf("\tKvno: %d\n", ent.kvno);
+	printf("Kvno: %d\n", ent.kvno);
+	printf("Keys: ");
+	for(i = 0; i < ent.keys.len; i++){
+	    if(i) printf(", ");
+	    printf("type = %d, len = %d", ent.keys.val[i].key.keytype,
+		   ent.keys.val[i].key.keyvalue.length);
+	}
+	printf("\n");
+	
 	break;
     }
     default:
-	fprintf(stderr, "dbget: %s\n", krb5_get_err_text(context, err));;
+	fprintf(stderr, "dbget: %s\n", krb5_get_err_text(context, ret));;
 	break;
     }
     memset(&ent, 0, sizeof(ent));

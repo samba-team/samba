@@ -40,34 +40,25 @@
 
 RCSID("$Id$");
 
+
 static void
-doit(char *principal, int mod)
+doit2(HDB *db, hdb_entry *ent, int mod)
 {
-    HDB *db;
-    int err;
-    hdb_entry ent;
+    int ret;
     hdb_entry def;
     int32_t tmp;
     char buf[1024];
     
-    krb5_parse_name(context, principal, &ent.principal);
+    ret = db->fetch(context, db, ent);
     
-    if((err = hdb_open(context, &db, database, O_RDWR, 0600))){
-	fprintf(stderr, "hdb_open: %s\n", krb5_get_err_text(context, err));
-	return;
-    }
-    
-    err = db->fetch(context, db, &ent);
-    
-    switch(err){
+    switch(ret){
     case KRB5_HDB_NOENTRY:
 	if(mod){
 	    fprintf(stderr, "Entry not found in database\n");
-	    goto out;
+	    return;
 	}else{
 	    krb5_realm *realm;
-	    
-	    realm = krb5_princ_realm(context, ent.principal);
+	    realm = krb5_princ_realm(context, ent->principal);
 	    krb5_build_principal(context, &def.principal, 
 				 strlen(*realm),
 				 *realm,
@@ -76,78 +67,132 @@ doit(char *principal, int mod)
 	    if(db->fetch(context, db, &def)){
 		/* XXX */
 	    }
-	    ent.flags.i = 0;
-	    ent.kvno = 0;
-	    ent.max_life = def.max_life;
-	    ent.max_renew = def.max_renew;
-	    ent.expires = def.expires;
-	    hdb_free_entry(context, &def);
-	    if(ent.expires)
-		ent.expires += time(NULL);
+	    memset(&ent->flags, 0, sizeof(ent->flags));
+	    ent->flags.client = 1;
+	    ent->flags.server = 1;
+	    ent->flags.forwardable = 1;
+	    ent->flags.proxiable = 1;
+	    ent->flags.renewable = 1;
+	    ent->flags.postdate = 1;
+	    ent->max_life = malloc(sizeof(*ent->max_life));
+	    *ent->max_life = *def.max_life;
+	    ent->max_renew = malloc(sizeof(*ent->max_renew));
+	    *ent->max_renew = *def.max_renew;
+ 	    hdb_free_entry(context, &def);
 	    break;
 	}
     case 0:
 	if(!mod){
 	    warnx("Principal exists");
-	    goto out;
+	    return;
 	}
 	break;
     default:
-	errx(1, "dbget: %s", krb5_get_err_text(context, err));
+	errx(1, "dbget: %s", krb5_get_err_text(context, ret));
     }
-    printf("Max ticket life [%d]: ", ent.max_life);
-    fgets(buf, sizeof(buf), stdin);
-    if(sscanf(buf, "%d", &tmp) == 1)
-	ent.max_life = tmp;
-    printf("Max renewable ticket [%d]: ", ent.max_renew);
-    fgets(buf, sizeof(buf), stdin);
-    if(sscanf(buf, "%d", &tmp) == 1)
-	ent.max_renew = tmp;
+    {
+	time_t t;
+	if(ent->max_life){
+	    char *p;
+	    asprintf(&p, "%ds", *ent->max_life);
+	    t = gettime ("Max ticket life", p, 1);
+	    free(p);
+	}else{
+	    t = gettime ("Max ticket life", "unlimited", 1);
+	}
+	if(t){
+	    if(ent->max_life == NULL)
+		ent->max_life = malloc(sizeof(*ent->max_life));
+	    *ent->max_life = t;
+	}else if(ent->max_life){
+	    free(ent->max_life);
+	    ent->max_life = NULL;
+	}
+	if(ent->max_renew){
+	    char *p;
+	    asprintf(&p, "%ds", *ent->max_renew);
+	    t = gettime ("Max renewable life", p, 1);
+	    free(p);
+	}else{
+	    t = gettime ("Max renewable life", "unlimited", 1);
+	}
+	if(t){
+	    if(ent->max_renew == NULL)
+		ent->max_renew = malloc(sizeof(*ent->max_renew));
+	    *ent->max_renew = t;
+	}else if(ent->max_renew){
+	    free(ent->max_renew);
+	    ent->max_renew = NULL;
+	}
+    }
     while(mod){
 	fprintf(stderr, "Change password? (y/n) ");
 	fgets(buf, sizeof(buf), stdin);
 	if(buf[0] == 'n' || buf[0] == 'y')
 	    break;
-	else {
-	    fprintf(stderr, "Please answer yes or no.\n");
-	    continue;
-	}
+	fprintf(stderr, "Please answer yes or no.\n");
+    }
+    if(!mod){
+	ent->keys.len = 1;
+	ent->keys.val = calloc(1, sizeof(*ent->keys.val));
     }
     if(mod == 0 || buf[0] == 'y'){
 	krb5_data salt;
 	des_read_pw_string(buf, sizeof(buf), "Password:", 1);
 	if(strcasecmp(buf, "random") == 0)
-	    krb5_generate_random_keyblock(context,
-					  KEYTYPE_DES,
-					  &ent.keyblock);
+	    init_des_key(ent);
 	else{
-	    memset(&salt, 0, sizeof(salt));
-	    krb5_get_salt(ent.principal, &salt);
-	    memset(&ent.keyblock, 0, sizeof(ent.keyblock));
-	    krb5_string_to_key(buf, &salt, &ent.keyblock);
-	    krb5_data_free(&salt);
+	    set_keys(ent, buf);
 	}
-	ent.kvno++;
     }
-    ent.last_change = time(NULL);
     {
-	krb5_realm *realm = krb5_princ_realm(context, ent.principal);
+	Event *ev;
+	krb5_realm *realm;
+	ev = malloc(sizeof(*ev));
+	ev->time = time(NULL);
+	realm = krb5_princ_realm(context, ent->principal);
 	
-	krb5_build_principal(context, &ent.changed_by,
+	krb5_build_principal(context, &ev->principal,
 			     strlen(*realm),
 			     *realm,
 			     "kadmin",
 			     NULL);
+	if(mod){
+	    if(ent->modified_by){
+		free_Event(ent->modified_by);
+		free(ent->modified_by);
+	    }
+	    ent->modified_by = ev;
+	}else{
+	    ent->created_by = *ev;
+	    free(ev);
+	}
     }
-    err = db->store(context, db, &ent);
-    if(err == -1){
+    ret = db->store(context, db, ent);
+    if(ret == -1){
 	perror("dbput");
 	exit(1);
     }
-    hdb_free_entry(context, &ent);
-out:
-    db->close(context, db);
 }
+
+void
+doit(const char *principal, int mod)
+{
+    HDB *db;
+    hdb_entry ent;
+    krb5_error_code ret;
+    memset(&ent, 0, sizeof(ent));
+    if((ret = hdb_open(context, &db, database, O_RDWR, 0600))){
+	fprintf(stderr, "hdb_open: %s\n", krb5_get_err_text(context, ret));
+	return;
+    }
+    krb5_parse_name(context, principal, &ent.principal);
+    
+    doit2(db, &ent, mod);
+    db->close(context, db);
+    hdb_free_entry(context, &ent);
+}
+    
 
 
 int

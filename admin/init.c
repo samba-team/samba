@@ -109,30 +109,33 @@ init(int argc, char **argv)
 	    return 0;
 	}
 	
-	max_life = get_time("Realm max ticket life", max_life);
-	max_renew = get_time("Realm max renewable ticket life", max_renew);
-	default_life = get_time("Default ticket life", default_life);
-	default_renew = get_time("Default renewable ticket life", 
-				 default_renew);
+	max_life = gettime("Realm max ticket life", "infinite", 1);
+	max_renew = gettime("Realm max renewable ticket life", "infinite", 1);
+	default_life = gettime("Default ticket life", "1 day", 1);
+	default_renew = gettime("Default renewable ticket life", "7 days", 1);
 	
 	
 	/* Create `krbtgt/REALM' */
-	ent.keyblock.keytype = KEYTYPE_DES;
-	ent.keyblock.keyvalue.length = 8;
-	ent.keyblock.keyvalue.data = malloc(ent.keyblock.keyvalue.length);
-	des_new_random_key(ent.keyblock.keyvalue.data);
+	init_des_key(&ent);
 	ent.kvno = 1;
-	ent.max_life = max_life;
-	ent.max_renew = max_renew;
-	ent.last_change = time(NULL);
-	krb5_build_principal(context, &ent.changed_by, 
+	if(max_life){
+	    ent.max_life = malloc(sizeof(*ent.max_life));
+	    *ent.max_life = max_life;
+	}
+	if(max_renew){
+	    ent.max_renew = malloc(sizeof(*ent.max_renew));
+	    *ent.max_renew = max_renew;
+	}
+	ent.created_by.time = time(NULL);
+	krb5_build_principal(context, &ent.created_by.principal,
 			     strlen(argv[i]), argv[i],
 			     "kadmin",
 			     NULL);
-	ent.expires = 0;
-	ent.flags.b.forwardable = 1;
-	ent.flags.b.renewable = 1;
-	ent.flags.b.server = 1;
+	ent.flags.forwardable = 1;
+	ent.flags.proxiable = 1;
+	ent.flags.renewable = 1;
+	ent.flags.postdate = 1;
+	ent.flags.server = 1;
 	db->store(context, db, &ent);
 	hdb_free_entry(context, &ent);
 
@@ -142,19 +145,20 @@ init(int argc, char **argv)
 			     strlen(argv[i]), argv[i],
 			     "default",
 			     NULL);
-	ent.keyblock.keytype = KEYTYPE_DES;
-	ent.keyblock.keyvalue.length = 0;
-	ent.keyblock.keyvalue.data = NULL;
-	ent.kvno = 1;
-	ent.max_life = default_life;
-	ent.max_renew = default_renew;
-	ent.last_change = time(NULL);
-	krb5_build_principal(context, &ent.changed_by, 
+	if(default_life){
+	    ent.max_life = malloc(sizeof(*ent.max_life));
+	    *ent.max_life = default_life;
+	}
+	if(default_renew){
+	    ent.max_renew = malloc(sizeof(*ent.max_renew));
+	    *ent.max_renew = default_renew;
+	}
+	ent.created_by.time = time(NULL);
+	krb5_build_principal(context, &ent.created_by.principal, 
 			     strlen(argv[i]), argv[i],
 			     "kadmin",
 			     NULL);
-	ent.expires = 0;
-	ent.flags.b.locked = 1;
+	ent.flags.invalid = 1;
 	db->store(context, db, &ent);
 	hdb_free_entry(context, &ent);
     }
