@@ -145,7 +145,7 @@ struct
   {"samtest",    cmd_sam_test      ,   "SAM User Encrypted RPC test (experimental!)"},
   {"enumaliases",cmd_sam_enum_aliases, "SAM Aliases Database Query (experimental!)"},
   {"enumgroups", cmd_sam_enum_groups,  "SAM Group Database Query (experimental!)"},
-  {"samgroups",  cmd_sam_query_dominfo, "SAM Query Domain Info(experimental!)"},
+  {"dominfo",    cmd_sam_query_dominfo, "SAM Query Domain Info(experimental!)"},
   {"querysecret", cmd_lsa_query_secret, "LSA Query Secret (developer use)"},
   {"samsync",    cmd_sam_sync,    "SAM Synchronization Test (experimental)"},
   {"quit",       cmd_quit,        "logoff the server"},
