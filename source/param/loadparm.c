@@ -996,7 +996,7 @@ static void init_globals(void)
 				string_set(parm_table[i].ptr, "");
 
 		string_set(&sDefault.szGuestaccount, GUEST_ACCOUNT);
-		string_set(&sDefault.szPrinterDriver, "NULL");
+		string_set(&sDefault.szPrinterDriver, "");
 		string_set(&sDefault.fstype, FSTYPE_STRING);
 
 		done_init = True;
