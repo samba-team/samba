@@ -291,7 +291,7 @@ static BOOL srv_io_srv_share_ctr(char *desc, SRV_SHARE_INFO_CTR *ctr, prs_struct
 		int i;
 
 		if (UNMARSHALLING(ps)) {
-			if (!(info1 = prs_alloc_mem(ps, num_entries * sizeof(SRV_SHARE_INFO_1))))
+			if (!(info1 = (SRV_SHARE_INFO_1 *)prs_alloc_mem(ps, num_entries * sizeof(SRV_SHARE_INFO_1))))
 				return False;
 			memset(info1, '\0', num_entries * sizeof(SRV_SHARE_INFO_1));
 			ctr->share.info1 = info1;
@@ -317,7 +317,7 @@ static BOOL srv_io_srv_share_ctr(char *desc, SRV_SHARE_INFO_CTR *ctr, prs_struct
 		int i;
 
 		if (UNMARSHALLING(ps)) {
-			if (!(info2 = prs_alloc_mem(ps,num_entries * sizeof(SRV_SHARE_INFO_2))))
+			if (!(info2 = (SRV_SHARE_INFO_2 *)prs_alloc_mem(ps,num_entries * sizeof(SRV_SHARE_INFO_2))))
 				return False;
 			memset(info2, '\0', num_entries * sizeof(SRV_SHARE_INFO_2));
 			ctr->share.info2 = info2;
