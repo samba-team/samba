@@ -253,7 +253,7 @@ principal of speaking only when necessary.
 </para>
 
 <para>
-Samba version 2.2.0 will add Linux support for extensions to 
+Starting with version 2.2.0 samba has Linux support for extensions to 
 the name service switch infrastructure so that linux clients will 
 be able to obtain resolution of MS Windows NetBIOS names to IP 
 Addresses. To gain this functionality Samba needs to be compiled 

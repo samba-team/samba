@@ -167,4 +167,10 @@ A domain controller has to announce on the network who it is. This usually takes
 </para>
 </sect1>
 
+<sect1>
+<title>I'm getting "open_oplock_ipc: Failed to get local UDP socket for address 100007f. Error was Cannot assign requested" in the logs</title>
+<para>Your loopback device isn't working correctly. Make sure it's running.
+</para>
+</sect1>
+
 </chapter>

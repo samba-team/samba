@@ -144,6 +144,11 @@ details.
 <sect1>
 <title>Locking</title>
 <para>
+Since samba 2.2, samba supports other types of locking as well. This 
+section is outdated.
+</para>
+
+<para>
 The locking calls available under a DOS/Windows environment are much
 richer than those available in unix. This means a unix server (like
 Samba) choosing to use the standard fcntl() based unix locking calls

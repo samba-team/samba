@@ -412,7 +412,7 @@ you get frustrated with the way things are going.  ;-)
 </para>
 
 <para>
-The latest version of SAMBA (version 2.2.2 as of this writing), now 
+The latest version of SAMBA (version 3.0 as of this writing), now 
 includes a functioning winbindd daemon.  Please refer to the 
 <ulink url="http://samba.org/">main SAMBA web page</ulink> or, 
 better yet, your closest SAMBA mirror site for instructions on 

@@ -13,7 +13,6 @@
 <!ENTITY Samba-PAM SYSTEM "PAM-Authentication-And-Samba.sgml">
 <!ENTITY Samba-LDAP SYSTEM "Samba-LDAP-HOWTO.sgml">
 <!ENTITY Diagnosis SYSTEM "Diagnosis.sgml">
-<!ENTITY PRINTING SYSTEM "Printing.sgml">
 <!ENTITY BUGS SYSTEM "Bugs.sgml">
 <!ENTITY SECURITY-LEVEL SYSTEM "security_level.sgml">
 <!ENTITY SPEED SYSTEM "Speed.sgml">
@@ -23,6 +22,10 @@
 <!ENTITY Portability SYSTEM "Portability.sgml">
 <!ENTITY Other-Clients SYSTEM "Other-Clients.sgml">
 <!ENTITY ADS-HOWTO SYSTEM "ADS-HOWTO.sgml">
+<!ENTITY oplocks SYSTEM "oplocks.sgml">
+<!ENTITY pdb-mysql SYSTEM "pdb_mysql.sgml">
+<!ENTITY pdb-xml SYSTEM "pdb_xml.sgml">
+<!ENTITY VFS SYSTEM "VFS.sgml">
 ]>
 
 <book id="Samba-HOWTO-Collection">
@@ -40,7 +43,7 @@
 <title>Abstract</title>
 
 <para>
-<emphasis>Last Update</emphasis> : Thu Aug 15 12:48:45 CDT 2002
+<emphasis>Last Update</emphasis> : $Date: 2002/11/22 00:32:23 $
 </para>
 
 <para>
@@ -49,7 +52,8 @@ I try to ensure that all are current, but sometimes the is a larger job
 than one person can maintain.  The most recent version of this document
 can be found at <ulink url="http://www.samba.org/">http://www.samba.org/</ulink>
 on the "Documentation" page.  Please send updates to <ulink 
-url="mailto:jerry@samba.org">jerry@samba.org</ulink>.
+url="mailto:jerry@samba.org">jerry@samba.org</ulink> or 
+<ulink url="mailto:jelmer@samba.org">jelmer@samba.org</ulink>.
 </para>
 
 <para>
@@ -66,30 +70,65 @@ Cheers, jerry
 </dedication>
 
 <!-- Chapters -->
+<part id="introduction">
+<title>General installation</title>
+<partintro>
+<title>Introduction</title>
+<para>This part contains general info on how to install samba 
+and how to configure the parts of samba you will most likely need.
+PLEASE read this.</para>
+</partintro>
 &UNIX-INSTALL;
-&IntegratingWithWindows;
-&Samba-PAM;
-&MS-Dfs-Setup;
-&NT-Security;
-&PRINTER-DRIVER2;
-&PRINTING;
+&BROWSING;
+&oplocks;
+&BROWSING-Quick;
+&ENCRYPTION;
+</part>
+
+<part id="type">
+<title>Type of installation</title>
+<partintro>
+<title>Introduction</title>
+<para>
+Samba can operate in various SMB networks. This part contains information on configuring samba 
+for various environments.
+</para>
+</partintro>
 &SECURITY-LEVEL;
-&DOMAIN-MEMBER;
-&WINBIND;
 &Samba-PDC-HOWTO;
 &Samba-BDC-HOWTO;
-&Samba-LDAP;
 &ADS-HOWTO;
-&BROWSING;
-&BROWSING-Quick;
-&SPEED;
-&CVS-Access;
-&BUGS;
-&GROUP-MAPPING-HOWTO;
+&DOMAIN-MEMBER;
+</part>
 
-<!-- Appendices -->
+<part id="optional">
+<title>Optional configuration</title>
+<partintro>
+<title>Introduction</title>
+<para>Samba has several features that you might want or might not want to use. The chapters in this 
+part each cover one specific feature.</para>
+</partintro>
+&IntegratingWithWindows;
+&NT-Security;
+&Samba-PAM;
+&MS-Dfs-Setup;
+&PRINTER-DRIVER2;
+&WINBIND;
+&pdb-mysql;
+&pdb-xml;
+&VFS;
+&Samba-LDAP;
+&CVS-Access;
+&GROUP-MAPPING-HOWTO;
+&SPEED;
+</part>
+
+<part id="Appendixes">
+<title>Appendixes</title>
 &Portability;
 &Other-Clients;
+&BUGS;
 &Diagnosis;
+</part>
 
 </book>

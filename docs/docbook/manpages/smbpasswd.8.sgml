@@ -28,6 +28,8 @@
 		<arg choice="opt">-h</arg>	
 		<arg choice="opt">-s</arg>	
 		<arg choice="opt">-w pass</arg>	
+		<arg choice="opt">-i</arg>
+		<arg choice="opt">-L</arg>
 		<arg choice="opt">username</arg>	
 	</cmdsynopsis>
 </refsynopsisdiv>
@@ -317,7 +319,22 @@
 		</para>
 		</listitem>
 		</varlistentry>
-		
+
+		<varlistentry>
+		<term>-i</term>
+		<listitem><para>This option tells smbpasswd that the account 
+		being changed is an interdomain trust account. Currently this is used 
+		when Samba is being used as an NT Primary Domain Controller. 
+		The account contains the info about another trusted domain.</para>
+
+		<para>This option is only available when running smbpasswd as root.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-L</term>
+		<listitem><para>Run in local mode.</para></listitem>
+		</varlistentry>
 		
 		<varlistentry>
 		<term>username</term>
@@ -382,7 +399,3 @@
 </refsect1>
 
 </refentry>
-
-
-
-

@@ -25,7 +25,7 @@
 </chapterinfo>
 
 
-<title>security = domain in Samba 2.x</title>
+<title>Samba as a NT4 domain member</title>
 
 <sect1>
 
@@ -139,10 +139,11 @@
 
 <sect1>
 <title>Samba and Windows 2000 Domains</title>
+<!-- FIXME: this section is partly obsoleted - jelmer@samba.org -->
 
 <para>
 Many people have asked regarding the state of Samba's ability to participate in
-a Windows 2000 Domain.  Samba 2.2 is able to act as a member server of a Windows
+a Windows 2000 Domain.  Samba 3.0 is able to act as a member server of a Windows
 2000 domain operating in mixed or native mode.
 </para>
 
@@ -163,7 +164,6 @@ Computers" MMC (Microsoft Management Console) plugin.
 </para>
 
 </sect1>
-
 
 <sect1>
 	<title>Why is this better than security = server?</title>
