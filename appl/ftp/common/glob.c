@@ -161,7 +161,7 @@ glob(const char *pattern,
 {
 	const u_char *patnext;
 	int c;
-	Char *bufnext, *bufend, patbuf[MAXPATHLEN+1];
+	Char *bufnext, *bufend, patbuf[MaxPathLen+1];
 
 	patnext = (u_char *) pattern;
 	if (!(flags & GLOB_APPEND)) {
@@ -175,7 +175,7 @@ glob(const char *pattern,
 	pglob->gl_matchc = 0;
 
 	bufnext = patbuf;
-	bufend = bufnext + MAXPATHLEN;
+	bufend = bufnext + MaxPathLen;
 	if (flags & GLOB_QUOTE) {
 		/* Protect the quoted characters. */
 		while (bufnext < bufend && (c = *patnext++) != EOS) 
@@ -233,7 +233,7 @@ static int globexp2(const Char *ptr, const Char *pattern,
 	int     i;
 	Char   *lm, *ls;
 	const Char *pe, *pm, *pl;
-	Char    patbuf[MAXPATHLEN + 1];
+	Char    patbuf[MaxPathLen + 1];
 
 	/* copy part up to the brace */
 	for (lm = patbuf, pm = pattern; pm != ptr; *lm++ = *pm++)
@@ -394,7 +394,7 @@ glob0(const Char *pattern, glob_t *pglob)
 {
 	const Char *qpatnext;
 	int c, err, oldpathc;
-	Char *bufnext, patbuf[MAXPATHLEN+1];
+	Char *bufnext, patbuf[MaxPathLen+1];
 
 	qpatnext = globtilde(pattern, patbuf, pglob);
 	oldpathc = pglob->gl_pathc;
@@ -481,7 +481,7 @@ compare(const void *p, const void *q)
 static int
 glob1(Char *pattern, glob_t *pglob)
 {
-	Char pathbuf[MAXPATHLEN+1];
+	Char pathbuf[MaxPathLen+1];
 
 	/* A null pathname is invalid -- POSIX 1003.1 sect. 2.4. */
 	if (*pattern == EOS)
@@ -550,7 +550,7 @@ glob3(Char *pathbuf, Char *pathend, Char *pattern, Char *restpattern,
 	register struct dirent *dp;
 	DIR *dirp;
 	int err;
-	char buf[MAXPATHLEN];
+	char buf[MaxPathLen];
 
 	/*
 	 * The readdirfunc declaration can't be prototyped, because it is
@@ -726,7 +726,7 @@ globfree(glob_t *pglob)
 static DIR *
 g_opendir(Char *str, glob_t *pglob)
 {
-	char buf[MAXPATHLEN];
+	char buf[MaxPathLen];
 
 	if (!*str)
 		strcpy(buf, ".");
@@ -742,7 +742,7 @@ g_opendir(Char *str, glob_t *pglob)
 static int
 g_lstat(Char *fn, struct stat *sb, glob_t *pglob)
 {
-	char buf[MAXPATHLEN];
+	char buf[MaxPathLen];
 
 	g_Ctoc(fn, buf);
 	if (pglob->gl_flags & GLOB_ALTDIRFUNC)
@@ -753,7 +753,7 @@ g_lstat(Char *fn, struct stat *sb, glob_t *pglob)
 static int
 g_stat(Char *fn, struct stat *sb, glob_t *pglob)
 {
-	char buf[MAXPATHLEN];
+	char buf[MaxPathLen];
 
 	g_Ctoc(fn, buf);
 	if (pglob->gl_flags & GLOB_ALTDIRFUNC)
