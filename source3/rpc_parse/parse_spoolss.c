@@ -3817,9 +3817,9 @@ BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_
 		return False;
 	if(!smb_io_time("driverdate", &il->driverdate, ps, depth))
 		return False;
-	if(!prs_uint64("driverversion", ps, depth, &il->driverversion))
-		return False;
 	if(!prs_uint32("dummy4", ps, depth, &il->dummy4))
+		return False;
+	if(!prs_uint64("driverversion", ps, depth, &il->driverversion))
 		return False;
 	if(!prs_uint32("mfgname_ptr", ps, depth, &il->mfgname_ptr))
 		return False;
