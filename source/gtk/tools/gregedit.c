@@ -31,6 +31,7 @@ GtkWidget *savefilewin;
 GtkTreeStore *store_keys;
 GtkListStore *store_vals;
 GtkWidget *tree_keys;
+GtkWidget *tree_vals;
 GtkWidget *mainwin;
 GtkWidget *mnu_add_key, *mnu_add_value, *mnu_del_key, *mnu_del_value, *mnu_find;
 TALLOC_CTX *mem_ctx; /* FIXME: Split up */
@@ -40,6 +41,7 @@ GtkWidget *save_as;
 static GtkWidget* create_openfilewin (void);
 static GtkWidget* create_savefilewin (void);
 struct registry_context *registry = NULL;
+struct registry_key *current_key = NULL;
 
 static GtkWidget* create_FindDialog (void)
 {
@@ -194,7 +196,7 @@ static GtkWidget* create_SetValueDialog (void)
   return SetValueDialog;
 }
 
-static GtkWidget* create_NewKeyDialog (void)
+static GtkWidget* create_NewKeyDialog (GtkWidget **name_entry)
 {
   GtkWidget *NewKeyDialog;
   GtkWidget *dialog_vbox2;
@@ -224,6 +226,8 @@ static GtkWidget* create_NewKeyDialog (void)
 
   dialog_action_area2 = GTK_DIALOG (NewKeyDialog)->action_area;
   gtk_button_box_set_layout (GTK_BUTTON_BOX (dialog_action_area2), GTK_BUTTONBOX_END);
+
+  *name_entry = entry_key_name;
 
   cancelbutton2 = gtk_button_new_from_stock ("gtk-cancel");
   gtk_dialog_add_action_widget (GTK_DIALOG (NewKeyDialog), cancelbutton2, GTK_RESPONSE_CANCEL);
@@ -440,45 +444,96 @@ static void on_quit_activate                       (GtkMenuItem     *menuitem,
 }
 
 
-static void on_delete_activate                     (GtkMenuItem     *menuitem,
+static void on_delete_value_activate                     (GtkMenuItem     *menuitem,
 										gpointer         user_data)
 {
-	/* FIXME */
+	WERROR error;
+	GtkTreeIter iter;
+	struct registry_value *value;
+
+	if (!gtk_tree_selection_get_selected (gtk_tree_view_get_selection(GTK_TREE_VIEW(tree_vals)), NULL, &iter)) {
+		return;
+	}
+
+	gtk_tree_model_get(GTK_TREE_MODEL(store_vals), &iter, 1, &value, -1);
+	
+	error = reg_del_value(current_key, value->name);
+
+	if (!W_ERROR_IS_OK(error)) {
+		gtk_show_werror(NULL, error);
+		return;
+	}
+}
+
+static void on_delete_key_activate                     (GtkMenuItem     *menuitem,
+										gpointer         user_data)
+{
+	WERROR error;
+	GtkTreeIter iter, parentiter;
+	struct registry_key *parent_key;
+
+	if (!gtk_tree_selection_get_selected (gtk_tree_view_get_selection(GTK_TREE_VIEW(tree_keys)), NULL, &iter)) {
+		return;
+	}
+
+	if (!gtk_tree_model_iter_parent(GTK_TREE_MODEL(store_keys), &parentiter, &iter)) {
+		return;
+	}
+	
+	gtk_tree_model_get(GTK_TREE_MODEL(store_keys), &parentiter, 1, &parent_key, -1);
+	
+	error = reg_key_del(parent_key, current_key->name);
+
+	if (!W_ERROR_IS_OK(error)) {
+		gtk_show_werror(NULL, error);
+		return;
+	}
 }
 
 static void on_add_key_activate                     (GtkMenuItem     *menuitem,
 										gpointer         user_data)
 {
-        GtkDialog *addwin = GTK_DIALOG(create_NewKeyDialog());
-        gtk_dialog_run(addwin);
-	/* FIXME */
-        gtk_widget_destroy(GTK_WIDGET(addwin));
+	GtkWidget *entry;
+    GtkDialog *addwin = GTK_DIALOG(create_NewKeyDialog(&entry));
+    gint result = gtk_dialog_run(addwin);
+
+	if (result == GTK_RESPONSE_OK)
+	{
+		struct registry_key *newkey;
+		WERROR error = reg_key_add_name(mem_ctx, current_key, gtk_entry_get_text(GTK_ENTRY(entry)), 0, NULL, &newkey);
+
+		if (!W_ERROR_IS_OK(error)) {
+			gtk_show_werror(NULL, error);
+		}
+	}
+
+    gtk_widget_destroy(GTK_WIDGET(addwin));
 }
 
 static void on_add_value_activate                     (GtkMenuItem     *menuitem,
 										gpointer         user_data)
 {
-        GtkDialog *addwin = GTK_DIALOG(create_SetValueDialog());
-        gtk_dialog_run(addwin);
+    GtkDialog *addwin = GTK_DIALOG(create_SetValueDialog());
+    gint result = gtk_dialog_run(addwin);
 	/* FIXME */
-        gtk_widget_destroy(GTK_WIDGET(addwin));
+    gtk_widget_destroy(GTK_WIDGET(addwin));
 }
 
 static void on_find_activate                     (GtkMenuItem     *menuitem,
 										gpointer         user_data)
 {
-        GtkDialog *findwin = GTK_DIALOG(create_FindDialog());
-        gtk_dialog_run(findwin);
+    GtkDialog *findwin = GTK_DIALOG(create_FindDialog());
+    gint result = gtk_dialog_run(findwin);
 	/* FIXME */
-        gtk_widget_destroy(GTK_WIDGET(findwin));
+    gtk_widget_destroy(GTK_WIDGET(findwin));
 }
 
 static void on_about_activate                      (GtkMenuItem     *menuitem,
 										gpointer         user_data)
 {
-        GtkDialog *aboutwin = GTK_DIALOG(create_gtk_samba_about_dialog("gregedit"));
-        gtk_dialog_run(aboutwin);
-        gtk_widget_destroy(GTK_WIDGET(aboutwin));
+    GtkDialog *aboutwin = GTK_DIALOG(create_gtk_samba_about_dialog("gregedit"));
+    gtk_dialog_run(aboutwin);
+    gtk_widget_destroy(GTK_WIDGET(aboutwin));
 }
 
 gboolean on_key_activate(GtkTreeSelection *selection,
@@ -499,12 +554,17 @@ gboolean on_key_activate(GtkTreeSelection *selection,
 	gtk_widget_set_sensitive(mnu_del_value, !path_currently_selected);
 	gtk_widget_set_sensitive(mnu_find, !path_currently_selected);
 
-	if(path_currently_selected) { return TRUE; }
+	if(path_currently_selected) { 
+		current_key = NULL; 
+		return TRUE; 
+	}
 
 	gtk_tree_model_get_iter(GTK_TREE_MODEL(store_keys), &parent, path);
 	gtk_tree_model_get(GTK_TREE_MODEL(store_keys), &parent, 1, &k, -1);
 
-	g_assert(k);
+	current_key = k;
+
+	if (!k) return FALSE;
 
 	gtk_list_store_clear(store_vals);
 
@@ -554,7 +614,6 @@ static GtkWidget* create_mainwin (void)
 	GtkWidget *hbox1;
 	GtkWidget *scrolledwindow1;
 	GtkWidget *scrolledwindow2;
-	GtkWidget *tree_vals;
 	GtkWidget *statusbar;
 	GtkAccelGroup *accel_group;
 
@@ -763,7 +822,10 @@ static GtkWidget* create_mainwin (void)
 					  G_CALLBACK (on_find_activate),
 					  NULL);
 	g_signal_connect ((gpointer) mnu_del_key, "activate",
-					  G_CALLBACK (on_delete_activate),
+					  G_CALLBACK (on_delete_key_activate),
+					  NULL);
+	g_signal_connect ((gpointer) mnu_del_value, "activate",
+					  G_CALLBACK (on_delete_value_activate),
 					  NULL);
 	g_signal_connect ((gpointer) about, "activate",
 					  G_CALLBACK (on_about_activate),
