@@ -344,7 +344,7 @@ typedef struct reg_key_s {
 
 typedef struct key_list_s {
   int key_count;
-  REG_KEY keys[1];
+  REG_KEY *keys[1];
 } KEY_LIST;
 
 typedef struct val_key_s {
@@ -790,6 +790,10 @@ VAL_KEY *process_vk(REGF *regf, VK_HDR *vk_hdr, int size)
 
   val_type = val_to_str(dat_type, reg_type_names);
 
+  /*
+   * We need to save the data area as well
+   */
+
   fprintf(stdout, "  %s : %s : \n", val_name, val_type);
 
   return NULL;
@@ -841,15 +845,28 @@ KEY_LIST *process_lf(REGF *regf, LF_HDR *lf_hdr, int size)
 
   /* Now, we should allocate a KEY_LIST struct and fill it in ... */
 
+  tmp = (KEY_LIST *)malloc(sizeof(KEY_LIST) + (count - 1) * sizeof(REG_KEY *));
+  if (!tmp) {
+    goto error;
+  }
+
+  tmp->key_count = count;
+
   for (i=0; i<count; i++) {
     NK_HDR *nk_hdr;
     int nk_off;
 
     nk_off = IVAL(&lf_hdr->hr[i].nk_off);
     nk_hdr = (NK_HDR *)LOCN(regf->base, nk_off);
-    nt_get_key_tree(regf, nk_hdr, BLK_SIZE(nk_hdr));
+    tmp->keys[i] = nt_get_key_tree(regf, nk_hdr, BLK_SIZE(nk_hdr));
+    if (!tmp->keys[i]) {
+      goto error;
+    }
   }
 
+  return tmp;
+
+ error:
   return NULL;
 }
 
@@ -860,6 +877,7 @@ KEY_LIST *process_lf(REGF *regf, LF_HDR *lf_hdr, int size)
 REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size)
 {
   REG_KEY *tmp = NULL;
+  KEY_LIST *key_list;
   int rec_size, name_len, clsname_len, lf_off, val_off, val_count, sk_off;
   unsigned int nk_id;
   LF_HDR *lf_hdr;
@@ -902,10 +920,20 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size)
 
   assert(name_len < sizeof(key_name));
 
+  /* Allocate the key struct now */
+  tmp = (REG_KEY *)malloc(sizeof(REG_KEY));
+  if (!tmp) return tmp;
+  bzero(tmp, sizeof(REG_KEY));
+
   strncpy(key_name, nk_hdr->key_nam, name_len);
   key_name[name_len] = '\0';
 
   fprintf(stdout, "Key name: %s\n", key_name);
+
+  tmp->name = strdup(key_name);
+  if (!tmp->name) {
+    goto error;
+  }
 
   /*
    * Fish out the class name, it is in UNICODE, while the key name is 
@@ -922,6 +950,16 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size)
     bzero(cls_name, clsname_len);
     uni_to_ascii(clsnamep, cls_name, sizeof(cls_name), clsname_len);
     
+    /*
+     * I am keeping class name as an ascii string for the moment.
+     * That means it needs to be converted on output.
+     * XXX: FIXME
+     */
+
+    tmp->class_name = strdup(cls_name);
+    if (!tmp->class_name) {
+      goto error;
+    }
 
     fprintf(stdout, "  Class Name: %s\n", cls_name);
 
@@ -939,7 +977,11 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size)
     val_off = IVAL(&nk_hdr->val_off);
     vl = (VL_TYPE *)LOCN(regf->base, val_off);
 
-    process_vl(regf, *vl, val_count, BLK_SIZE(vl));
+    tmp->values = process_vl(regf, *vl, val_count, BLK_SIZE(vl));
+    if (!tmp->values) {
+      goto error;
+    }
+
   }
 
   /* 
@@ -965,13 +1007,18 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size)
 
     lf_hdr = (LF_HDR *)LOCN(regf->base, lf_off);
     
-    /* Should assign this to something */ 
-    process_lf(regf, lf_hdr, BLK_SIZE(lf_hdr));
+    tmp->sub_keys = process_lf(regf, lf_hdr, BLK_SIZE(lf_hdr));
+    if (!tmp->sub_keys){
+      goto error;
+    }
 
   }
 
   return tmp;
 
+ error:
+  if (tmp) nt_delete_reg_key(tmp);
+  return NULL;
 }
 
 int nt_load_registry(REGF *regf)
