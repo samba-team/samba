@@ -208,7 +208,7 @@ if (defined($tmp = $Options{'w'})) {
 
   if (!$with_smbpasswd) {
 	# (jtournier)
-	# Objectclass sambaSAMAccount is now added directly by samba when joigning the domain (for samba3)
+	# Objectclass sambaSamAccount is now added directly by samba when joigning the domain (for samba3)
 	#if (!add_samba_machine_mkntpwd($userName, $userUidNumber)) {
 	#  die "$0: error while adding samba account\n";
 	#}
@@ -312,7 +312,7 @@ if (defined($Options{'a'})) {
 
 	my $modify = $ldap_master->modify ( "uid=$userName,$usersdn",
 										changes => [
-													add => [objectClass => 'sambaSAMAccount'],
+													add => [objectClass => 'sambaSamAccount'],
 													add => [sambaPwdLastSet => "$valpwdlastset"],
 													add => [sambaLogonTime => '0'],
 													add => [sambaLogoffTime => '2147483647'],

@@ -239,7 +239,7 @@ sub does_sid_exist
 	my $mesg = $ldap_slave->search (    base   => $dn_group,
 										scope => $scope,
 										filter => "(sambaSID=$sid)"
-										#filter => "(&(objectClass=sambaSAMAccount|objectClass=sambaGroupMapping)(sambaSID=$sid))"
+										#filter => "(&(objectClass=sambaSamAccount|objectClass=sambaGroupMapping)(sambaSID=$sid))"
 								   );
 	$mesg->code && die $mesg->error;
 	$ldap_slave->unbind;
@@ -333,7 +333,7 @@ sub add_samba_machine_mkntpwd
 	my $ldap_master=connect_ldap_master();
 	my $modify = $ldap_master->modify ( "uid=$user,$computersdn",
 										changes => [
-													replace => [objectClass => ['inetOrgPerson', 'posixAccount', 'sambaSAMAccount']],
+													replace => [objectClass => ['inetOrgPerson', 'posixAccount', 'sambaSamAccount']],
 													add => [sambaPwdLastSet => '0'],
 													add => [sambaLogonTime => '0'],
 													add => [sambaLogoffTime => '2147483647'],
