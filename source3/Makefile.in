@@ -641,6 +641,11 @@ installcp: installdirs
 installswat: installdirs
 	@$(SHELL) $(srcdir)/script/installswat.sh $(SWATDIR) $(srcdir)
 
+installclientlib:
+	@$(INSTALLCMD) bin/libsmbclient.so $(LIBDIR)
+	@$(INSTALLCMD) -d ${prefix}/include
+	@$(INSTALLCMD) include/libsmbclient.h ${prefix}/include
+
 # revert to the previously installed version
 revert:
 	@$(SHELL) $(srcdir)/script/revert.sh $(SBINDIR) $(SPROGS) 
