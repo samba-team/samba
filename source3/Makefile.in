@@ -127,7 +127,7 @@ SCRIPTS = $(srcdir)/script/smbtar $(srcdir)/script/addtosmbpass $(srcdir)/script
 
 QUOTAOBJS=@QUOTAOBJS@
 
-VFS_MODULES = bin/vfs_audit.@SHLIBEXT@ bin/vfs_recycle.@SHLIBEXT@ bin/vfs_netatalk.@SHLIBEXT@ 
+VFS_MODULES = bin/vfs_audit.@SHLIBEXT@ bin/vfs_recycle.@SHLIBEXT@ bin/vfs_netatalk.@SHLIBEXT@ bin/vfs_fake_perms.@SHLIBEXT@
 PDB_MODULES = @MODULE_MYSQL@ @MODULE_XML@
 MODULES = bin/developer.@SHLIBEXT@ 
 
@@ -463,6 +463,7 @@ VFSTEST_OBJ = torture/cmd_vfs.o torture/vfstest.o $(SMBD_OBJ_BASE) $(READLINE_OB
 VFS_AUDIT_OBJ = modules/vfs_audit.o
 VFS_RECYCLE_OBJ = modules/vfs_recycle.o
 VFS_NETATALK_OBJ = modules/vfs_netatalk.o
+VFS_FAKE_PERMS_OBJ = modules/vfs_fake_perms.o
 
 LOCKTEST2_OBJ = torture/locktest2.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
@@ -887,6 +888,11 @@ bin/vfs_recycle.@SHLIBEXT@: $(VFS_RECYCLE_OBJ)
 bin/vfs_netatalk.@SHLIBEXT@: $(VFS_NETATALK_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_NETATALK_OBJ) \
+		@SONAMEFLAG@`basename $@`
+
+bin/vfs_fake_perms.@SHLIBEXT@: $(VFS_FAKE_PERMS_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_FAKE_PERMS_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
 bin/wbinfo@EXEEXT@: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
