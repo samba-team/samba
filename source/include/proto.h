@@ -1572,6 +1572,8 @@ void write_browse_list(time_t t, BOOL force_write);
 
 /*The following definitions come from  nmbd/nmbd_subnetdb.c  */
 
+void close_subnet(struct subnet_record *subrec);
+struct subnet_record *make_normal_subnet(struct interface *iface);
 BOOL create_subnets(void);
 BOOL we_are_a_wins_client(void);
 struct subnet_record *get_next_subnet_maybe_unicast(struct subnet_record *subrec);

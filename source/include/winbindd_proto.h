@@ -891,7 +891,6 @@ BOOL vuid_init_db(void);
 
 /*The following definitions come from  nsswitch/winbindd.c  */
 
-void exit_server(char *reason);
 int winbind_get_domain_sid(char *system_name, fstring domain_name,
                           DOM_SID *domain_sid);
 int winbind_lookup_by_name(char *system_name, DOM_SID *level5_sid,
@@ -901,35 +900,62 @@ int winbind_lookup_by_sid(char *system_name, DOM_SID *level5_sid,
                           DOM_SID *sid, char *name,
                           enum SID_NAME_USE *type);
 int winbind_lookup_userinfo(char *system_name, DOM_SID *level5_sid,
-                            uint32 user_rid, SAM_USERINFO_CTR *info);
+                            uint32 user_rid, SAM_USERINFO_CTR *user_info);
 int winbind_lookup_groupinfo(char *system_name, DOM_SID *level5_sid,
                              uint32 group_rid, GROUP_INFO_CTR *info);
-int create_winbind_socket(void);
+int winbind_lookup_groupmem(char *system_name, DOM_SID *level5_sid,
+                            uint32 group_rid, uint32 *num_names,
+                            uint32 **rid_mem, char ***names,
+                            uint32 **name_types);
+int winbind_lookup_aliasmem(char *system_name, DOM_SID *level5_sid,
+                            uint32 group_rid, uint32 *num_names,
+                            DOM_SID ***sids, char ***names,
+                            uint32 **name_types);
+int winbind_lookup_aliasinfo(char *system_name, DOM_SID *level5_sid,
+                             uint32 group_rid, ALIAS_INFO_CTR *info);
 int main(int argc, char **argv);
 
 /*The following definitions come from  nsswitch/winbindd_group.c  */
 
-void winbindd_getgrnam_from_group(DOM_SID *domain_sid,
+void winbindd_getgrnam_from_group(DOM_SID *domain_sid, char *domain_name,
                                   struct winbindd_request *request,
                                   struct winbindd_response *response);
-void winbindd_getgrnam_from_gid(DOM_SID *domain_sid,
+void winbindd_getgrnam_from_gid(DOM_SID *domain_sid, char *domain_name,
                                 struct winbindd_request *request,
                                 struct winbindd_response *response);
+void winbindd_setgrent(DOM_SID *domain_sid,
+                       struct winbindd_request *request,
+                       struct winbindd_response *response);
+void winbindd_endgrent(struct winbindd_request *request,
+                       struct winbindd_response *response);
+void winbindd_getgrent(DOM_SID *domain_sid, char *domain_name,
+                       struct winbindd_request *request,
+                       struct winbindd_response *response);
 
 /*The following definitions come from  nsswitch/winbindd_surs.c  */
 
-BOOL winbindd_surs_sam_sid_to_unixid(DOM_SID *sid, uint32 type, uint32 *id);
+int winbindd_surs_init(DOM_SID *domain_sid, char *domain_name);
+BOOL winbindd_surs_sam_sid_to_unixid(DOM_SID *sid, char *name, uint32 type, 
+                                     uint32 *id);
 BOOL winbindd_surs_unixid_to_sam_sid(uint32 id, uint32 type, DOM_SID *sid,
-                                        BOOL create);
+                                     BOOL create);
 
 /*The following definitions come from  nsswitch/winbindd_user.c  */
 
-void winbindd_getpwnam_from_user(DOM_SID *domain_sid,
+void winbindd_getpwnam_from_user(DOM_SID *domain_sid, char *domain_name,
                                  struct winbindd_request *request,
                                  struct winbindd_response *response);
 void winbindd_getpwnam_from_uid(DOM_SID *domain_sid,
                                 struct winbindd_request *request,
                                 struct winbindd_response *response);
+void winbindd_setpwent(DOM_SID *domain_sid,
+                       struct winbindd_request *request,
+                       struct winbindd_response *response);
+void winbindd_endpwent(struct winbindd_request *request,
+                       struct winbindd_response *response);
+void winbindd_getpwent(DOM_SID *domain_sid, char *domain_name,
+                       struct winbindd_request *request,
+                       struct winbindd_response *response);
 
 /*The following definitions come from  param/loadparm.c  */
 
