@@ -28,7 +28,7 @@ sub FlattenHash($)
     my $a = shift;
     my %b;
     for my $d (@{$a}) {
-	for my $k (%{$d}) {
+	for my $k (keys %{$d}) {
 	    $b{$k} = $d->{$k};
 	}
     }
@@ -102,7 +102,7 @@ sub ChangeExtension($$)
 {
     my($fname) = shift;
     my($ext) = shift;
-    if ($fname =~ /^(.*?)\.(.*?)$/) {
+    if ($fname =~ /^(.*)\.(.*?)$/) {
 	return "$1.$ext";
     }
     return "$fname.$ext";
