@@ -57,15 +57,6 @@ static uint32_t dos_mode_from_stat(struct pvfs_state *pvfs, struct stat *st)
 	if (S_ISDIR(st->st_mode))
 		result = FILE_ATTRIBUTE_DIRECTORY | (result & FILE_ATTRIBUTE_READONLY);
 
-	if (!(result & 
-	      (FILE_ATTRIBUTE_READONLY|
-	       FILE_ATTRIBUTE_ARCHIVE|
-	       FILE_ATTRIBUTE_SYSTEM|
-	       FILE_ATTRIBUTE_HIDDEN|
-	       FILE_ATTRIBUTE_DIRECTORY))) {
-		result |= FILE_ATTRIBUTE_NORMAL;
-	}
- 
 	return result;
 }
 
