@@ -986,9 +986,8 @@ sub Parse($$)
 
 	foreach my $x (@{$idl}) {
 
-	    ($x->{TYPE} eq "MODULEHEADER") && ModuleHeader($x);
-		
 	    if ($x->{TYPE} eq "INTERFACE") { 
+		ModuleHeader($x);
 		$module = $x->{NAME};
 		BuildNeeded($x);
 	    }
