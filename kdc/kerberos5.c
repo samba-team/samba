@@ -2,28 +2,11 @@
 
 RCSID("$Id$");
 
-struct timeval now;
-#define kdc_time now.tv_sec
-
 #ifndef MIN
 #define MIN(A,B) ((A)<(B)?(A):(B))
 #endif
 
 #define MAX_TIME ((time_t)((1U << 31) - 1))
-
-hdb_entry*
-db_fetch(krb5_context context, PrincipalName *principal, char *realm)
-{
-    HDB *db;
-    hdb_entry *ent;
-
-    ent = malloc(sizeof(*ent));
-    principalname2krb5_principal(&ent->principal, *principal, realm);
-    hdb_open(context, &db, NULL, O_RDONLY, 0);
-    db->fetch(context, db, ent);
-    db->close(context, db);
-    return ent;
-}
 
 krb5_error_code
 krb5_encrypt (krb5_context context,
@@ -31,45 +14,6 @@ krb5_encrypt (krb5_context context,
 	      size_t len,
 	      krb5_keyblock *keyblock,
 	      krb5_data *result);
-
-krb5_error_code
-krb5_mk_error(krb5_principal princ, 
-	      krb5_error_code error_code,
-	      char *e_text,
-	      krb5_data *e_data,
-	      krb5_data *err)
-{
-    KRB_ERROR msg;
-    unsigned char buf[1024];
-    
-    memset(&msg, 0, sizeof(msg));
-    msg.pvno = 5;
-    msg.msg_type = krb_error;
-    msg.stime = time(0);
-    msg.error_code = error_code;
-    msg.realm = princ->realm.data;
-    krb5_principal2principalname(&msg.sname, princ);
-    if (e_text)
-	msg.e_text = &e_text;
-    if (e_data)
-	msg.e_data = e_data;
-    err->length = encode_KRB_ERROR(buf + sizeof(buf) - 1, sizeof(buf), &msg);
-    err->data = malloc(err->length);
-    memcpy(err->data, buf + sizeof(buf) - err->length, err->length);
-    return 0;
-}
-
-krb5_error_code
-mk_des_keyblock(EncryptionKey *kb)
-{
-    kb->keytype = KEYTYPE_DES;
-    kb->keyvalue.data = malloc(sizeof(des_cblock));
-    kb->keyvalue.length = sizeof(des_cblock);
-    des_rand_data_key(kb->keyvalue.data);
-    return 0;
-}
-
-
 
 krb5_error_code
 as_rep(krb5_context context, 
@@ -535,95 +479,4 @@ tgs_rep(krb5_context context,
 	return 0;
     }
 	    
-}
-
-
-krb5_error_code
-process_request(krb5_context context, 
-    KDC_REQ *req, 
-    krb5_data *reply)
-{
-    gettimeofday(&now, NULL);
-
-    if(req->msg_type == krb_as_req)
-	return as_rep(context, req, reply);
-    else if(req->msg_type == krb_tgs_req)
-	return tgs_rep(context, req, reply);
-    else
-	return KRB5KRB_AP_ERR_MSG_TYPE;	/* XXX */
-}
-
-int
-kerberos(krb5_context context, 
-	 unsigned char *buf, 
-	 size_t len, 
-	 krb5_data *reply)
-{
-    KDC_REQ req;
-    krb5_error_code err;
-    int i;
-    i = decode_AS_REQ(buf, len, &req);
-    if(i >= 0){
-	err = process_request(context, &req, reply);
-	free_AS_REQ(&req);
-	return err;
-    }
-    i = decode_TGS_REQ(buf, len, &req);
-    if(i >= 0){
-	err = process_request(context, &req, reply);
-	free_TGS_REQ(&req);
-	return err;
-    }
-    return -1;
-}
-
-main(int argc, char **argv)
-{
-    krb5_context context;
-    int s = socket(AF_INET, SOCK_DGRAM, 0);
-    struct sockaddr_in sin;
-    int one = 1;
-    if(s < 0){
-	perror("socket");
-	exit(1);
-    }
-    krb5_init_context(&context);
-    memset(&sin, 0, sizeof(sin));
-    sin.sin_family = AF_INET;
-    sin.sin_port = htons(88);
-    if(bind(s, (struct sockaddr*)&sin, sizeof(sin)) < 0){
-	perror("bind");
-	exit(1);
-    }
-    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
-    while(1){
-	fd_set fds;
-	unsigned char buf[1024];
-	size_t len;
-	FD_ZERO(&fds);
-	FD_SET(s, &fds);
-	if(select(s + 1, &fds, NULL, NULL, NULL) < 0){
-	    perror("select");
-	    exit(1);
-	}
-	if(FD_ISSET(s, &fds)){
-	    struct sockaddr_in from;
-	    int from_len = sizeof(from);
-	    krb5_error_code err;
-	    krb5_data reply;
-	    len = recvfrom(s, buf, sizeof(buf), 0, 
-			   (struct sockaddr*)&from, &from_len);
-	    fprintf(stderr, "%d byte packet from %s\n", 
-		    len, inet_ntoa(from.sin_addr));
-	    err = kerberos(context, buf, len, &reply);
-	    if(err){
-		fprintf(stderr, "%s\n", krb5_get_err_text(context, err));
-	    }else{
-		fprintf(stderr, "sending %d bytes\n", reply.length);
-		sendto(s, reply.data, reply.length, 0, 
-		       (struct sockaddr*)&from, from_len);
-		krb5_data_free(&reply);
-	    }
-	}
-    }
 }
