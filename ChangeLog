@@ -1,5 +1,20 @@
 2004-02-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/asn1/check-gen.c: test for: (length_type): TSequenceOf: add
+	up the size of all the elements, don't use just the size of the
+	last element.
+
+	* lib/krb5/aes-test.c: add "next iv" test for aes128, check
+	decryption case too
+
+	* lib/krb5/crypto.c (_krb5_aes_cts_encrypt): out iv is the iv of
+	the next to last block, fix decryption case too
+	
+	* lib/krb5/aes-test.c: add "next iv" test for aes128
+	
+	* lib/krb5/crypto.c (_krb5_aes_cts_encrypt): out iv is the iv of
+	the next to last block
+
 	* lib/krb5/mk_rep.c (krb5_mk_rep): abort on internal asn1 encode
 	error
 	
