@@ -536,8 +536,7 @@ int main (int argc, char **argv)
 		exit(1);
 	}
 
-	if(lp_modules())
-		smb_load_modules(lp_modules());
+	init_modules();
 	
 	if (!init_names())
 		exit(1);

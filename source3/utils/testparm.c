@@ -177,6 +177,12 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 		printf("'algorithmic rid base' must be even.\n");
 	}
 
+#ifndef HAVE_DLOPEN
+	if (lp_preload_modules()) {
+		printf("WARNING: 'preload modules = ' set while loading plugins not supported.\n");
+	}
+#endif
+
 	return ret;
 }   
 
