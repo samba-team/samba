@@ -110,6 +110,99 @@ This appears like this:
 Fixed arrays are an extension added to support some of the strange
 embedded structures in security descriptors and spoolss. 
 
+Supported MIDL-compatible properties (attributes is the MIDL term)
+------------------------------------
+in
+out
+ref
+public
+length_is
+switch_is
+size_is
+uuid
+case
+default
+string
+unique
+
+PIDL Specific properties 
+---------------
+noprint
+value
+relative
+subcontext
+flag
+
+Unsupported MIDL properties
+---------------------------
+aggregatable
+appobject
+async_uuid
+bindable
+call_as
+coclass
+control
+cpp_quote
+defaultbind
+defaultcollelem
+defaultvalue
+defaultvtable
+dispinterface
+displaybind
+dual
+entry
+first_is
+helpcontext
+helpfile
+helpstringcontext
+helpstringdll
+helpstring
+hidden
+idl_module
+idl_quote
+id
+iid_is
+immediatebind
+importlib
+import
+include
+includelib
+last_is
+lcid
+licensed
+local
+max_is
+module
+ms_union
+no_injected_text
+nonbrowsable
+noncreatable
+nonextensible
+object
+odl
+oleautomation
+optional
+pointer_default
+pragma
+progid
+propget
+propputref
+propput
+ptr
+range
+readonly
+requestedit
+restricted
+retval
+source
+switch_type
+transmit_as
+uidefault
+usesgetlasterror
+v1_enum
+vararg
+vi_progid
+wire_marshal
 
 [public] property
 -----------------
@@ -161,6 +254,7 @@ discriminent field at the start of the union on the wire is
 omitted. This is not normally allowed in IDL/NDR, but is used for some
 spoolss structures.
 
+
 VALIDATOR
 ---------
 
@@ -169,4 +263,3 @@ valid IDL. Right now the compiler sails on regardless in many cases
 even if the IDL is invalid (for example, I don't check that conformant
 arrays are always the last element in any structure). There are dozens
 of rules that should be checked.
-
