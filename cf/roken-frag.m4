@@ -72,6 +72,7 @@ AC_CHECK_HEADERS([\
 	rpcsvc/dbm.h				\
 	rpcsvc/ypclnt.h				\
 	shadow.h				\
+	sys/bswap.h				\
 	sys/ioctl.h				\
 	sys/param.h				\
 	sys/proc.h				\
@@ -242,6 +243,16 @@ AC_NEED_PROTO([
 #include <string.h>],
 vasnprintf)dnl
 fi
+
+AC_FIND_FUNC_NO_LIBS(bswap16,,
+[#ifdef HAVE_SYS_BSWAP_H
+#include <sys/bswap.h>
+#endif],0)
+
+AC_FIND_FUNC_NO_LIBS(bswap32,,
+[#ifdef HAVE_SYS_BSWAP_H
+#include <sys/bswap.h>
+#endif],0)
 
 AC_FIND_FUNC_NO_LIBS(pidfile,util,
 [#ifdef HAVE_UTIL_H
