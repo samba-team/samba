@@ -170,7 +170,7 @@ int dos_open(char *fname,int flags,int mode);
 DIR *dos_opendir(char *dname);
 int dos_stat(char *fname,SMB_STRUCT_STAT *sbuf);
 int sys_waitpid(pid_t pid,int *status,int options);
-int dos_lstat(char *fname,struct stat *sbuf);
+int dos_lstat(char *fname,SMB_STRUCT_STAT *sbuf);
 int dos_mkdir(char *dname,int mode);
 int dos_rmdir(char *dname);
 int dos_chdir(char *dname);
@@ -305,7 +305,6 @@ int set_filelen(int fd, long len);
 int byte_checksum(char *buf,int len);
 char *dirname_dos(char *path,char *buf);
 void *Realloc(void *p,int size);
-void Abort(void );
 BOOL get_myname(char *my_name,struct in_addr *ip);
 BOOL ip_equal(struct in_addr ip1,struct in_addr ip2);
 int open_socket_in(int type, int port, int dlevel,uint32 socket_addr);
@@ -2052,8 +2051,8 @@ BOOL is_mangled( char *s );
 BOOL is_8_3( char *fname, BOOL check_case );
 void reset_mangled_cache( void );
 BOOL check_mangled_cache( char *s );
-void mangle_name_83( char *s, int s_len );
-BOOL name_map_mangle( char *OutName, BOOL need83, int snum );
+void mangle_name_83( char *s);
+BOOL name_map_mangle(char *OutName, BOOL need83, int snum);
 
 /*The following definitions come from  smbd/message.c  */
 
@@ -2291,7 +2290,6 @@ char *quotequotes(char *s);
 void quote_spaces(char *buf);
 void cgi_setup(char *rootdir, int auth_required);
 char *cgi_baseurl(void);
-char *cgi_rooturl(void);
 char *cgi_pathinfo(void);
 char *cgi_remote_host(void);
 char *cgi_remote_addr(void);

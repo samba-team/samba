@@ -77,7 +77,7 @@ BOOL mangled_equal(char *name1, char *name2)
     return(False);
 
   pstrcpy(tmpname,name2);
-  mangle_name_83(tmpname,sizeof(tmpname));
+  mangle_name_83(tmpname);
 
   return(strequal(name1,tmpname));
 }
