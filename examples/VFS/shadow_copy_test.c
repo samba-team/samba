@@ -58,7 +58,7 @@ static int test_get_shadow_copy_data(vfs_handle_struct *handle, files_struct *fs
 	shadow_copy_data->num_volumes = num;
 	
 	if (labels) {	
-		shadow_copy_data->labels = (SHADOW_COPY_LABEL *)talloc_zero(shadow_copy_data->mem_ctx,(num)*sizeof(SHADOW_COPY_LABEL));
+		shadow_copy_data->labels = TALLOC_ZERO_ARRAY(shadow_copy_data->mem_ctx,SHADOW_COPY_LABEL,num);
 		for (i=0;i<num;i++) {
 			snprintf(shadow_copy_data->labels[i], sizeof(SHADOW_COPY_LABEL), "@GMT-2003.08.05-12.%02u.00",i);
 		}
