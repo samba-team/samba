@@ -147,6 +147,7 @@ char *lp_wins_server(void);
 char *lp_interfaces(void);
 char *lp_socket_address(void);
 char *lp_nis_home_map_name(void);
+BOOL lp_dns_proxy(void);
 BOOL lp_wins_support(void);
 BOOL lp_wins_proxy(void);
 BOOL lp_local_master(void);
@@ -273,12 +274,18 @@ BOOL do_lock(int fnum,int cnum,uint32 count,uint32 offset,int *eclass,uint32 *ec
 BOOL do_unlock(int fnum,int cnum,uint32 count,uint32 offset,int *eclass,uint32 *ecode);
 BOOL start_share_mode_mgmt(void);
 BOOL stop_share_mode_mgmt(void);
-BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token *);
-BOOL unlock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token);
+BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token *ptok);
+BOOL unlock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token token);
 int get_share_modes(int cnum, share_lock_token token, uint32 dev, uint32 inode, 
                     min_share_mode_entry **old_shares);
 void del_share_mode(share_lock_token token, int fnum);
 BOOL set_share_mode(share_lock_token token, int fnum);
+BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token *ptok);
+BOOL unlock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token token);
+int get_share_modes(int cnum, share_lock_token token, uint32 dev, uint32 inode, 
+                    min_share_mode_entry **old_shares);
+void del_share_mode(share_lock_token token, int fnum);
+BOOL set_share_mode(share_lock_token token,int fnum);
 
 /*The following definitions come from  mangle.c  */
 
@@ -302,7 +309,6 @@ int reply_sendend(char *inbuf,char *outbuf);
 
 /*The following definitions come from  nameannounce.c  */
 
-void reset_announce_timer();
 void announce_request(struct work_record *work, struct in_addr ip);
 void do_announce_request(char *info, char *to_name, int announce_type, 
 			 int from,
@@ -320,6 +326,7 @@ void announce_my_servers_removed(void);
 void announce_server(struct subnet_record *d, struct work_record *work,
 		     char *name, char *comment, time_t ttl, int server_type);
 void announce_host(time_t t);
+void reset_announce_timer();
 void announce_master(time_t t);
 void announce_remote(time_t t);
 
@@ -327,8 +334,7 @@ void announce_remote(time_t t);
 
 void expire_browse_cache(time_t t);
 struct browse_cache_record *add_browser_entry(char *name, int type, char *wg,
-					      time_t ttl, 
-                                              struct subnet_record *d,
+					      time_t ttl, struct subnet_record *d,
                                               struct in_addr ip, BOOL local);
 void do_browser_lists(time_t t);
 
@@ -718,16 +724,12 @@ int construct_reply(char *inbuf,char *outbuf,int size,int bufsize);
 
 /*The following definitions come from  shmem.c  */
 
+BOOL smb_shm_create_hash_table( unsigned int size );
 BOOL smb_shm_open( char *file_name, int size);
 BOOL smb_shm_close( void );
 BOOL smb_shm_free(smb_shm_offset_t offset);
 BOOL smb_shm_set_userdef_off(smb_shm_offset_t userdef_off);
 void * smb_shm_offset2addr(smb_shm_offset_t offset);
-BOOL smb_shm_lock(void);
-BOOL smb_shm_unlock(void);
-smb_shm_offset_t smb_shm_alloc(int size);
-smb_shm_offset_t smb_shm_addr2offset(void *addr);
-smb_shm_offset_t smb_shm_get_userdef_off(void);
 BOOL smb_shm_lock_hash_entry( unsigned int entry);
 BOOL smb_shm_unlock_hash_entry( unsigned int entry );
 BOOL smb_shm_get_usage(int *bytes_free,
