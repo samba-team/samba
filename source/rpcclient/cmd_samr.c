@@ -1279,6 +1279,15 @@ static NTSTATUS cmd_samr_create_dom_user(struct cli_state *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
+	result = cli_samr_close(cli, mem_ctx, &user_pol);
+	if (!NT_STATUS_IS_OK(result)) goto done;
+
+	result = cli_samr_close(cli, mem_ctx, &domain_pol);
+	if (!NT_STATUS_IS_OK(result)) goto done;
+
+	result = cli_samr_close(cli, mem_ctx, &connect_pol);
+	if (!NT_STATUS_IS_OK(result)) goto done;
+
  done:
 	return result;
 }
