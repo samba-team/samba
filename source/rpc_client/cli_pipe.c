@@ -28,7 +28,7 @@
 
 extern struct pipe_id_info pipe_names[];
 
-void get_auth_type_level(int pipe_auth_flags, int *auth_type, int *auth_level) 
+static void get_auth_type_level(int pipe_auth_flags, int *auth_type, int *auth_level) 
 {
 	*auth_type = 0;
 	*auth_level = 0;
@@ -989,21 +989,11 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 
 		if (cli->pipe_auth_flags) {
 			size_t data_and_padding_size;
+			int auth_type;
+			int auth_level;
 			prs_align_uint64(&sec_blob);
-			int auth_type = 0;
-			int auth_level = 0;
 
-			if (cli->pipe_auth_flags & AUTH_PIPE_SEAL) {
-				auth_level = RPC_PIPE_AUTH_SEAL_LEVEL;
-			} else if (cli->pipe_auth_flags & AUTH_PIPE_SIGN) {
-				auth_level = RPC_PIPE_AUTH_SIGN_LEVEL;
-			}
-
-			if (cli->pipe_auth_flags & AUTH_PIPE_NETSEC) {
-				auth_type = NETSEC_AUTH_TYPE;
-			} else if (cli->pipe_auth_flags & AUTH_PIPE_NTLMSSP) {
-				auth_type = NTLMSSP_AUTH_TYPE;
-			}
+			get_auth_type_level(cli->pipe_auth_flags, &auth_type, &auth_level);
 
 			data_and_padding_size = prs_offset(&sec_blob);
 			auth_padding = data_and_padding_size - send_size;
