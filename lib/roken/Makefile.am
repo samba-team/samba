@@ -7,7 +7,8 @@ INCLUDES = -I$(top_builddir)/include
 lib_LIBRARIES = libroken.a
 
 libroken_a_SOURCES = \
-k_getpwuid.c k_getpwnam.c signal.c verify.c inaddr2str.o mini_inetd.c \
-get_window_size.c warnerr.c snprintf.c getarg.c parse_units.c parse_time.c
+	base64.c get_window_size.c getarg.c inaddr2str.o k_getpwnam.c	\
+	k_getpwuid.c mini_inetd.c parse_time.c parse_units.c signal.c	\
+	snprintf.c verify.c warnerr.c
 
 libroken_a_LIBADD = @LIBOBJS@
