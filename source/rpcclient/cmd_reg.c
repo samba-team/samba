@@ -1140,7 +1140,7 @@ void cmd_reg_shutdown(struct client_info *info, int argc, char *argv[])
 			}
 			case 'f':
 			{
-				flgs |= 0x100;
+				flgs |= 0x001;
 				break;
 			}
 			case '-':
