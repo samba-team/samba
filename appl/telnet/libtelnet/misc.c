@@ -50,10 +50,10 @@ auth_encrypt_init(char *local, char *remote, char *name, int server)
 {
     RemoteHostName = remote;
     LocalHostName = local;
-#if	defined(AUTHENTICATION)
+#ifdef AUTHENTICATION
     auth_init(name, server);
 #endif
-#if	defined(ENCRYPTION)
+#ifdef ENCRYPTION
     encrypt_init(name, server);
 #endif
     if (UserNameRequested) {
