@@ -42,7 +42,13 @@ static TDB_CONTEXT *tdb_printers; /* used for printers files */
 
 /* Map generic permissions to printer object specific permissions */
 
-struct generic_mapping printer_generic_mapping = {
+GENERIC_MAPPING printer_generic_mapping = {
+	PRINTER_READ,
+	PRINTER_EXECUTE,
+	PRINTER_ALL_ACCESS
+};
+
+STANDARD_MAPPING printer_std_mapping = {
 	PRINTER_READ,
 	PRINTER_WRITE,
 	PRINTER_EXECUTE,
@@ -2160,10 +2166,6 @@ void free_nt_printer_param(NT_PRINTER_PARAM **param_ptr)
 
 NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
 {
-/*
- * should I init this ones ???
-	nt_devmode->devicename
-*/
 
 	char adevice[32];
 	NT_DEVICEMODE *nt_devmode = (NT_DEVICEMODE *)malloc(sizeof(NT_DEVICEMODE));
@@ -2485,11 +2487,8 @@ static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	snum = lp_servicenumber(sharename);
 
 	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", get_called_name());
-	strupper(info.servername);
-	slprintf(info.printername, sizeof(info.printername)-1, "\\\\%s\\", 
-		 get_called_name());
-	strupper(info.printername);
-	fstrcat(info.printername, sharename);
+	slprintf(info.printername, sizeof(info.printername)-1, "\\\\%s\\%s", 
+		 get_called_name(), sharename);
 	fstrcpy(info.sharename, sharename);
 	fstrcpy(info.portname, SAMBA_PRINTER_PORT_NAME);
 	fstrcpy(info.drivername, lp_printerdriver(snum));
@@ -2605,8 +2604,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	info.attributes |= (PRINTER_ATTRIBUTE_SHARED | PRINTER_ATTRIBUTE_NETWORK); 
 
 	/* Restore the stripped strings. */
-	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s",
-		 get_called_name());
+	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", get_called_name());
 	slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", get_called_name(),
 			info.printername);
 	fstrcpy(info.printername, printername);
@@ -2739,8 +2737,17 @@ static uint32 rev_changeid(void)
 
 	get_process_uptime(&tv);
 
+#if 1	/* JERRY */
 	/* Return changeid as msec since spooler restart */
 	return tv.tv_sec * 1000 + tv.tv_usec / 1000;
+#else
+	/*
+	 * This setting seems to work well but is too untested
+	 * to replace the above calculation.  Left in for experiementation
+	 * of the reader            --jerry (Tue Mar 12 09:15:05 CST 2002)
+	 */
+	return tv.tv_sec * 10 + tv.tv_usec / 100000;
+#endif
 }
 
 /*
@@ -2857,11 +2864,44 @@ static uint32 set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
 	ZERO_STRUCT(info.devmode->devicename);
 	fstrcpy(info.devmode->devicename, info_ptr->printername);
 
+
+	/*
+	 * NT/2k does not change out the entire DeviceMode of a printer
+	 * when changing the driver.  Only the driverextra, private, & 
+	 * driverversion fields.   --jerry  (Thu Mar 14 08:58:43 CST 2002)
+	 */
+
+#if 0	/* JERRY */
+
 	/* 
 	 * 	Bind the saved DEVMODE to the new the printer.
 	 */
 	free_nt_devicemode(&info_ptr->devmode);
 	info_ptr->devmode = info.devmode;
+#else
+	/* copy the entire devmode if we currently don't have one */
+
+	if (!info_ptr->devmode) {
+		DEBUG(10,("set_driver_init_2: Current Devmode is NULL.  Copying entire Device Mode\n"));
+		info_ptr->devmode = info.devmode;
+	}
+	else {
+		/* only set the necessary fields */
+
+		DEBUG(10,("set_driver_init_2: Setting driverversion [0x%x] and private data [0x%x]\n",
+			info.devmode->driverversion, info.devmode->driverextra));
+
+		info_ptr->devmode->driverversion = info.devmode->driverversion;
+
+		SAFE_FREE(info_ptr->devmode->private);
+		info_ptr->devmode->private = NULL;
+
+		if (info.devmode->driverversion)
+			info_ptr->devmode->private = memdup(info.devmode->private, info.devmode->driverversion);
+
+		free_nt_devicemode(&info.devmode);
+	}
+#endif
 
 	DEBUG(10,("set_driver_init_2: Set printer [%s] init DEVMODE for driver [%s]\n",
 			info_ptr->printername, info_ptr->drivername));
@@ -3934,6 +3974,7 @@ BOOL print_time_access_check(int snum)
 	return ok;
 }
 
+#if 0	/* JERRY - not used */
 /****************************************************************************
  Attempt to write a default device.
 *****************************************************************************/
@@ -4005,3 +4046,4 @@ WERROR printer_write_default_dev(int snum, const PRINTER_DEFAULT *printer_defaul
 	free_a_printer(&printer, 2);
 	return result;
 }
+#endif	/* JERRY */

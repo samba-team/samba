@@ -47,21 +47,21 @@ This should be moved in a more generic lib.
 
 static BOOL spoolss_io_system_time(char *desc, prs_struct *ps, int depth, SYSTEMTIME *systime)
 {
-	if(!prs_uint16("year", ps, depth, &(systime->year)))
+	if(!prs_uint16("year", ps, depth, &systime->year))
 		return False;
-	if(!prs_uint16("month", ps, depth, &(systime->month)))
+	if(!prs_uint16("month", ps, depth, &systime->month))
 		return False;
-	if(!prs_uint16("dayofweek", ps, depth, &(systime->dayofweek)))
+	if(!prs_uint16("dayofweek", ps, depth, &systime->dayofweek))
 		return False;
-	if(!prs_uint16("day", ps, depth, &(systime->day)))
+	if(!prs_uint16("day", ps, depth, &systime->day))
 		return False;
-	if(!prs_uint16("hour", ps, depth, &(systime->hour)))
+	if(!prs_uint16("hour", ps, depth, &systime->hour))
 		return False;
-	if(!prs_uint16("minute", ps, depth, &(systime->minute)))
+	if(!prs_uint16("minute", ps, depth, &systime->minute))
 		return False;
-	if(!prs_uint16("second", ps, depth, &(systime->second)))
+	if(!prs_uint16("second", ps, depth, &systime->second))
 		return False;
-	if(!prs_uint16("milliseconds", ps, depth, &(systime->milliseconds)))
+	if(!prs_uint16("milliseconds", ps, depth, &systime->milliseconds))
 		return False;
 
 	return True;
@@ -424,8 +424,13 @@ BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
 				return False;
 		}
 	}
+#if 0	/* JERRY */
+
+	/* Win2k does not seem to put this parse align here */
+
 	if(!prs_align(ps))
 		return False;
+#endif
 
 	return True;
 }
@@ -820,11 +825,8 @@ BOOL make_spoolss_q_addprinterex(
 create a SPOOL_PRINTER_INFO_2 stuct from a PRINTER_INFO_2 struct
 *******************************************************************/
 
-BOOL make_spoolss_printer_info_2(
-	TALLOC_CTX *mem_ctx,
-	SPOOL_PRINTER_INFO_LEVEL_2 **spool_info2, 
-	PRINTER_INFO_2 *info
-)
+BOOL make_spoolss_printer_info_2(TALLOC_CTX *mem_ctx, SPOOL_PRINTER_INFO_LEVEL_2 **spool_info2, 
+				PRINTER_INFO_2 *info)
 {
 
 	SPOOL_PRINTER_INFO_LEVEL_2 *inf;
@@ -952,7 +954,7 @@ BOOL spoolss_io_r_open_printer_ex(char *desc, SPOOL_R_OPEN_PRINTER_EX *r_u, prs_
 	if (!smb_io_pol_hnd("printer handle",&(r_u->handle),ps,depth))
 		return False;
 
-	if (!prs_werror("status", ps, depth, &(r_u->status)))
+	if (!prs_werror("status code", ps, depth, &(r_u->status)))
 		return False;
 
 	return True;
@@ -3648,40 +3650,28 @@ BOOL make_spoolss_q_getprinter(
 /*******************************************************************
  * init a structure.
  ********************************************************************/
-BOOL make_spoolss_q_setprinter(
-	TALLOC_CTX *mem_ctx,
-	SPOOL_Q_SETPRINTER *q_u, 
-	const POLICY_HND *hnd, 
-	uint32 level, 
-	PRINTER_INFO_CTR *info, 
-	uint32 command
-)
+BOOL make_spoolss_q_setprinter(TALLOC_CTX *mem_ctx, SPOOL_Q_SETPRINTER *q_u, 
+				const POLICY_HND *hnd, uint32 level, PRINTER_INFO_CTR *info, 
+				uint32 command)
 {
 	SEC_DESC *secdesc;
 	DEVICEMODE *devmode;
 
 	if (q_u == NULL)
-	{
 		return False;
-	}
 	
 	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
 
 	q_u->level = level;
 	q_u->info.level = level;
 	q_u->info.info_ptr = (info != NULL) ? 1 : 0;
-	switch (level)
-	{
+	switch (level) {
 	case 2:
 		secdesc = info->printers_2->secdesc;
 		devmode = info->printers_2->devmode;
 		
-		/* FIXMEE!!  HACK ALERT!!!  --jerry */
-		info->printers_2->devmode = NULL;
-		info->printers_2->secdesc = NULL;
-		
 		make_spoolss_printer_info_2 (mem_ctx, &q_u->info.info_2, info->printers_2);
-#if 0	/* JERRY TEST */
+#if 1	/* JERRY TEST */
 		q_u->secdesc_ctr = (SEC_DESC_BUF*)malloc(sizeof(SEC_DESC_BUF));
 		if (!q_u->secdesc_ctr)
 			return False;
@@ -3691,7 +3681,7 @@ BOOL make_spoolss_q_setprinter(
 		q_u->secdesc_ctr->sec = secdesc;
 
 		q_u->devmode_ctr.devmode_ptr = (devmode != NULL) ? 1 : 0;
-		q_u->devmode_ctr.size = sizeof(DEVICEMODE) + (3*sizeof(uint32));
+		q_u->devmode_ctr.size = (devmode != NULL) ? sizeof(DEVICEMODE) + (3*sizeof(uint32)) : 0;
 		q_u->devmode_ctr.devmode = devmode;
 #else
 		q_u->secdesc_ctr = NULL;
@@ -3773,13 +3763,14 @@ BOOL spoolss_io_q_setprinter(char *desc, SPOOL_Q_SETPRINTER *q_u, prs_struct *ps
 		if (!sec_io_desc_buf(desc, &q_u->secdesc_ctr, ps, depth))
 			return False;
 	} else {
-		uint32 dummy;
+		uint32 dummy = 0;
 
 		/* Parse a NULL security descriptor.  This should really
 		   happen inside the sec_io_desc_buf() function. */
 
 		prs_debug(ps, depth, "", "sec_io_desc_buf");
-		if (!prs_uint32("size", ps, depth + 1, &dummy)) return False;
+		if (!prs_uint32("size", ps, depth + 1, &dummy))
+			return False;
 		if (!prs_uint32("ptr", ps, depth + 1, &dummy)) return
 								       False;
 	}
@@ -5657,6 +5648,24 @@ BOOL make_spoolss_q_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u,
 
 /*******************************************************************
 ********************************************************************/  
+BOOL make_spoolss_q_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u, TALLOC_CTX *ctx, const POLICY_HND *hnd,
+				char* value, char* data)
+{
+	UNISTR2 tmp;
+
+	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
+	q_u->type = REG_SZ;
+	init_unistr2(&q_u->value, value, strlen(value)+1);
+
+	init_unistr2(&tmp, data, strlen(data)+1);
+	q_u->max_len = q_u->real_len = tmp.uni_max_len*2;
+	q_u->data = talloc(ctx, q_u->real_len);
+	memcpy(q_u->data, tmp.buffer, q_u->real_len);
+	
+	return True;
+}
+/*******************************************************************
+********************************************************************/  
 
 BOOL spoolss_io_q_setprinterdata(char *desc, SPOOL_Q_SETPRINTERDATA *q_u, prs_struct *ps, int depth)
 {
@@ -5722,7 +5731,43 @@ BOOL spoolss_io_r_setprinterdata(char *desc, SPOOL_R_SETPRINTERDATA *r_u, prs_st
 
 /*******************************************************************
 ********************************************************************/  
+BOOL spoolss_io_q_resetprinter(char *desc, SPOOL_Q_RESETPRINTER *q_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_q_resetprinter");
+	depth++;
 
+	if (!prs_align(ps))
+		return False;
+	if (!smb_io_pol_hnd("printer handle", &q_u->handle, ps, depth))
+		return False;
+
+	if (!prs_uint32("unknown1", ps, depth, &q_u->unknown1))
+		return False;
+
+	if (!spoolss_io_devmode_cont(desc, &q_u->devmode_ctr, ps, depth))
+		return False;
+
+	return True;
+}
+
+
+/*******************************************************************
+********************************************************************/  
+BOOL spoolss_io_r_resetprinter(char *desc, SPOOL_R_RESETPRINTER *r_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_r_resetprinter");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+	if(!prs_werror("status",     ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/  
 BOOL convert_specific_param(NT_PRINTER_PARAM **param, const UNISTR2 *value,
 				uint32 type, const uint8 *data, uint32 len)
 {
@@ -5832,7 +5877,7 @@ BOOL spoolss_io_r_deleteform(char *desc, SPOOL_R_DELETEFORM *r_u, prs_struct *ps
 
 BOOL spoolss_io_q_addform(char *desc, SPOOL_Q_ADDFORM *q_u, prs_struct *ps, int depth)
 {
-	uint32 useless_ptr=1;
+	uint32 useless_ptr=0;
 	prs_debug(ps, depth, desc, "spoolss_io_q_addform");
 	depth++;
 
@@ -5877,7 +5922,7 @@ BOOL spoolss_io_r_addform(char *desc, SPOOL_R_ADDFORM *r_u, prs_struct *ps, int 
 
 BOOL spoolss_io_q_setform(char *desc, SPOOL_Q_SETFORM *q_u, prs_struct *ps, int depth)
 {
-	uint32 useless_ptr=1;
+	uint32 useless_ptr=0;
 	prs_debug(ps, depth, desc, "spoolss_io_q_setform");
 	depth++;
 
@@ -6100,6 +6145,73 @@ BOOL spoolss_io_r_replyopenprinter(char *desc, SPOOL_R_REPLYOPENPRINTER *r_u, pr
 /*******************************************************************
  * init a structure.
  ********************************************************************/
+BOOL make_spoolss_q_routerreplyprinter(SPOOL_Q_ROUTERREPLYPRINTER *q_u, POLICY_HND *hnd, 
+					uint32 condition, uint32 change_id)
+{
+
+	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
+
+	q_u->condition = condition;
+	q_u->change_id = change_id;
+
+	/* magic values */
+	q_u->unknown1 = 0x1;
+	memset(q_u->unknown2, 0x0, 5);
+	q_u->unknown2[0] = 0x1;
+
+	return True;
+}
+
+/*******************************************************************
+ Parse a SPOOL_Q_ROUTERREPLYPRINTER structure.
+********************************************************************/
+BOOL spoolss_io_q_routerreplyprinter (char *desc, SPOOL_Q_ROUTERREPLYPRINTER *q_u, prs_struct *ps, int depth)
+{
+
+	prs_debug(ps, depth, desc, "spoolss_io_q_routerreplyprinter");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("printer handle",&q_u->handle,ps,depth))
+		return False;
+
+	if (!prs_uint32("condition", ps, depth, &q_u->condition))
+		return False;
+
+	if (!prs_uint32("unknown1", ps, depth, &q_u->unknown1))
+		return False;
+
+	if (!prs_uint32("change_id", ps, depth, &q_u->change_id))
+		return False;
+
+	if (!prs_uint8s(False, "private",  ps, depth, q_u->unknown2, 5))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Parse a SPOOL_R_ROUTERREPLYPRINTER structure.
+********************************************************************/
+BOOL spoolss_io_r_routerreplyprinter (char *desc, SPOOL_R_ROUTERREPLYPRINTER *r_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_r_routerreplyprinter");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_werror("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
 
 BOOL make_spoolss_q_reply_closeprinter(SPOOL_Q_REPLYCLOSEPRINTER *q_u, POLICY_HND *hnd)
 {      
@@ -6150,12 +6262,79 @@ BOOL spoolss_io_r_replycloseprinter(char *desc, SPOOL_R_REPLYCLOSEPRINTER *r_u, 
 	return True;		
 }
 
+#if 0	/* JERRY - not currently used but could be :-) */
+
+/*******************************************************************
+ Deep copy a SPOOL_NOTIFY_INFO_DATA structure
+ ******************************************************************/
+static BOOL copy_spool_notify_info_data(SPOOL_NOTIFY_INFO_DATA *dst, 
+				SPOOL_NOTIFY_INFO_DATA *src, int n)
+{
+	int i;
+
+	memcpy(dst, src, sizeof(SPOOL_NOTIFY_INFO_DATA)*n);
+	
+	for (i=0; i<n; i++) {
+		int len;
+		uint16 *s = NULL;
+		
+		if (src->size != POINTER) 
+			continue;
+		len = src->notify_data.data.length;
+		s = malloc(sizeof(uint16)*len);
+		if (s == NULL) {
+			DEBUG(0,("copy_spool_notify_info_data: malloc() failed!\n"));
+			return False;
+		}
+		
+		memcpy(s, src->notify_data.data.string, len*2);
+		dst->notify_data.data.string = s;
+	}
+	
+	return True;
+}
+
+/*******************************************************************
+ Deep copy a SPOOL_NOTIFY_INFO structure
+ ******************************************************************/
+static BOOL copy_spool_notify_info(SPOOL_NOTIFY_INFO *dst, SPOOL_NOTIFY_INFO *src)
+{
+	if (!dst) {
+		DEBUG(0,("copy_spool_notify_info: NULL destination pointer!\n"));
+		return False;
+	}
+		
+	dst->version = src->version;
+	dst->flags   = src->flags;
+	dst->count   = src->count;
+	
+	if (dst->count) 
+	{
+		dst->data = malloc(dst->count * sizeof(SPOOL_NOTIFY_INFO_DATA));
+		
+		DEBUG(10,("copy_spool_notify_info: allocating space for [%d] PRINTER_NOTIFY_INFO_DATA entries\n",
+			dst->count));
+
+		if (dst->data == NULL) {
+			DEBUG(0,("copy_spool_notify_info: malloc() failed for [%d] entries!\n", 
+				dst->count));
+			return False;
+		}
+		
+		return (copy_spool_notify_info_data(dst->data, src->data, src->count));
+	}
+	
+	return True;
+}
+#endif	/* JERRY */
+
 /*******************************************************************
  * init a structure.
  ********************************************************************/
 
 BOOL make_spoolss_q_reply_rrpcn(SPOOL_Q_REPLY_RRPCN *q_u, POLICY_HND *hnd,
-			        uint32 change_low, uint32 change_high)
+			        uint32 change_low, uint32 change_high,
+				SPOOL_NOTIFY_INFO *info)
 {      
 	if (q_u == NULL)
 		return False;
@@ -6168,11 +6347,23 @@ BOOL make_spoolss_q_reply_rrpcn(SPOOL_Q_REPLY_RRPCN *q_u, POLICY_HND *hnd,
 	q_u->unknown0=0x0;
 	q_u->unknown1=0x0;
 
-	q_u->info_ptr=1;
+	q_u->info_ptr=0xaddee11e;
 
 	q_u->info.version=2;
+	
+	if (info->count) {
+		DEBUG(10,("make_spoolss_q_reply_rrpcn: [%d] PRINTER_NOTIFY_INFO_DATA\n",
+			info->count));
+		q_u->info.version = info->version;
+		q_u->info.flags   = info->flags;
+		q_u->info.count   = info->count;
+		/* pointer field - be careful! */
+		q_u->info.data    = info->data;
+	}
+	else  {
 	q_u->info.flags=PRINTER_NOTIFY_INFO_DISCARDED;
 	q_u->info.count=0;
+	}
 
 	return True;
 }
@@ -6220,7 +6411,7 @@ BOOL spoolss_io_q_reply_rrpcn(char *desc, SPOOL_Q_REPLY_RRPCN *q_u, prs_struct *
 
 BOOL spoolss_io_r_reply_rrpcn(char *desc, SPOOL_R_REPLY_RRPCN *r_u, prs_struct *ps, int depth)
 {		
-	prs_debug(ps, depth, desc, "spoolss_io_r_replycloseprinter");
+	prs_debug(ps, depth, desc, "spoolss_io_r_reply_rrpcn");
 	depth++;
 
 	if (!prs_align(ps))
@@ -6473,7 +6664,8 @@ static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps,
 	if (!prs_uint32("size", ps, depth, &ctr->size))
 		return False;
 	
-	/* offset data begins at 20 bytes per structure * size_of_array. */
+	/* offset data begins at 20 bytes per structure * size_of_array.
+	   Don't forget the uint32 at the beginning */
 	
 	current_offset = basic_unit * ctr->size_of_array;
 	
@@ -6499,7 +6691,6 @@ static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps,
 			return False;
 			
 		current_offset = data_offset + ctr->values[i].data_len - basic_unit;
-	
 	}
 
 	/* loop #2 for writing the dynamically size objects
