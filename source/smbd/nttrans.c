@@ -473,6 +473,10 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		SSVAL(p,0,FILE_TYPE_MESSAGE_MODE_PIPE);
 		/* Device state. */
 		SSVAL(p,2, 0x5FF); /* ? */
+
+		DEBUG(5,("reply_ntcreate_and_X: open pipe = %s\n", fname));
+
+		return chain_reply(inbuf,outbuf,length,bufsize);
 	}
 
 	/*

@@ -116,7 +116,6 @@ static void blocking_lock_reply_success(blocking_lock_record *blr)
    * that here and must set up the chain info manually.
    */
 
-  file_set_chain(fsp);
   chain_size = 0;
 
   outsize = chain_reply(inbuf,outbuf,blr->length,bufsize);
@@ -227,7 +226,7 @@ static BOOL blocking_lock_record_process(blocking_lock_record *blr)
    */
 
   DEBUG(10,("blocking_lock_record_process: only got %d locks of %d needed for fnum = %d. \
-Waiting..\n", blr->lock_num, num_locks, fsp->fnum));
+Waiting....\n", blr->lock_num, num_locks, fsp->fnum));
 
   return False;
 }
@@ -249,8 +248,17 @@ void process_blocking_lock_queue(time_t t)
    */
 
   while(blr != NULL) {
-    files_struct *fsp = file_fsp(blr->inbuf,smb_vwv2);
-    uint16 vuid = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID :
+    files_struct *fsp = NULL;
+    uint16 vuid;
+
+    /*
+     * Ensure we don't have any old chain_fnum values
+     * sitting around....
+     */
+    file_chain_reset();
+
+    fsp = file_fsp(blr->inbuf,smb_vwv2);
+    vuid = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID :
                   SVAL(blr->inbuf,smb_uid);
 
     DEBUG(5,("process_blocking_lock_queue: examining pending lock fnum = %d for file %s\n",
