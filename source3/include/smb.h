@@ -2,10 +2,10 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    SMB parameters and setup
-   Copyright (C) Andrew Tridgell 1992-1998
-   Copyright (C) John H Terpstra 1996-1998
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1998
-   Copyright (C) Paul Ashton 1998
+   Copyright (C) Andrew Tridgell              1992-2000
+   Copyright (C) John H Terpstra              1996-2000
+   Copyright (C) Luke Kenneth Casson Leighton 1996-2000
+   Copyright (C) Paul Ashton                  1998-2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -618,33 +618,43 @@ struct dcinfo
   uchar  md4pw[16];   /* md4(machine password) */
 };
 
+#include "nt_printing.h"
+
+#include "ntdomain.h"
+
 typedef struct
 {
-  uid_t uid; /* uid of a validated user */
-  gid_t gid; /* gid of a validated user */
+	uid_t uid; /* uid of a validated user */
+	gid_t gid; /* gid of a validated user */
 
-  fstring requested_name; /* user name from the client */
-  fstring name; /* unix user name of a validated user */
-  fstring real_name;   /* to store real name from password file - simeon */
-  BOOL guest;
+	fstring requested_name; /* user name from the client */
+	fstring name; /* unix user name of a validated user */
+	fstring real_name;   /* to store real name from password file - simeon */
+	BOOL guest;
 
-  /* following groups stuff added by ih */
-  /* This groups info is needed for when we become_user() for this uid */
-  int n_groups;
-  gid_t *groups;
+	/* following groups stuff added by ih */
+	/* This groups info is needed for when we become_user() for this uid */
+	int n_groups;
+	gid_t *groups;
 
-  int n_sids;
-  int *sids;
+	/* per-user authentication information on NT RPCs */
+	/* lkclXXXX - THIS SHOULD NOT BE HERE! */
+	struct dcinfo dc;
 
-  /* per-user authentication information on NT RPCs */
-  struct dcinfo dc;
+	NET_USER_INFO_3 usr;
 
 } user_struct;
 
+typedef struct
+{
+	uint32 pid;
+	uint16 vuid;
+
+} vuser_key;
 
 enum {LPQ_QUEUED,LPQ_PAUSED,LPQ_SPOOLING,LPQ_PRINTING};
 
-typedef struct
+typedef struct _print_queue_struct
 {
   int job;
   int size;
@@ -1635,9 +1645,6 @@ extern int chain_size;
 #define CMD_REPLY 0x8000
 
 #include "smb_macros.h"
-
-#include "nt_printing.h"
-#include "ntdomain.h"
 
 /* A netbios name structure. */
 struct nmb_name {

@@ -1607,15 +1607,18 @@ typedef struct pjob_info_info
 		JOB_INFO_1 *job_info_1;
 		JOB_INFO_2 *job_info_2;
 		void *info;
-	} job;
+	}
+	job;
 
-} PJOB_INFO;
+}
+PJOB_INFO;
 
 typedef struct spool_r_getjob
 {
 	NEW_BUFFER *buffer;
 	uint32 needed;
 	uint32 status;
+
 }
 SPOOL_R_GETJOB;
 
