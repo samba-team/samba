@@ -1,5 +1,8 @@
 2005-01-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* appl/kf/kfd.c (kfd_match_version): cast argument to islower to
+	unsigned char
+
 	* lib/krb5/krb5.3: drop krb5_{checksum,enctype}_is_disabled
 
 	* lib/krb5/krb5_encrypt.3: drop krb5_enctype_is_disabled, more
