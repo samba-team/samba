@@ -123,6 +123,9 @@ start_logout_process(void)
     if(pid == -1)
 	err(1, "fork");
     /* wait for the real login process to exit */
+#ifdef HAVE_SETPROCTITLE
+    setproctitle("waitpid %d", pid);
+#endif
     while(1) {
 	int status;
 	int ret;
