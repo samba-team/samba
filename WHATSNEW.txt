@@ -47,6 +47,10 @@ smbclient, has over sixty five commands that provide equivalent
 functionality for the same Windows NT (tm) Administrative tools,
 including the ability to remotely shut down a Windows NT (tm) Server.
 
+rpcclient has now been joined by net, samedit, regedit, spoolss,
+eventlog, lsa, cmdat and svccontrol.  If anyone can think of better
+names for these, suggestions are welcomed.
+
 3). Portability
 ---------------
 
@@ -127,6 +131,8 @@ network neighbourhood environment with "wins support = no"
 and "wins server = x.x.x.x" to flood the WINS server with about
 3 requests per second to resolve every single name in the
 network neighbourhood.  Be Warned!
+
+This issue appears to have been resolved, cause unknown, fix unknown.
 
 You can avoid this by using a stable, production release of nmbd, such
 as can be found in 2.0.6a or later.
