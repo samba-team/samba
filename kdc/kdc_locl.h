@@ -28,6 +28,7 @@
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif
+#include <err.h>
 #include <roken.h>
 #include <krb5.h>
 #include <hdb_err.h>

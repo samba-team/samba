@@ -33,6 +33,7 @@
 #ifdef HAVE_PATHS_H
 #include <paths.h>
 #endif
+#include <err.h>
 #include <roken.h>
 #ifdef KRB4
 #include <krb.h>
