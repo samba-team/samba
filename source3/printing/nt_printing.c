@@ -2110,7 +2110,7 @@ done:
 NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
 {
 
-	char adevice[MAXDEVICENAME];
+	char adevice[MAXDEVICENAME+1];
 	NT_DEVICEMODE *nt_devmode = (NT_DEVICEMODE *)malloc(sizeof(NT_DEVICEMODE));
 
 	if (nt_devmode == NULL) {
@@ -2120,7 +2120,7 @@ NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
 
 	ZERO_STRUCTP(nt_devmode);
 
-	safe_strcpy(adevice, default_devicename, sizeof(adevice));
+	safe_strcpy(adevice, default_devicename, sizeof(adevice)-1);
 	fstrcpy(nt_devmode->devicename, adevice);	
 	
 	fstrcpy(nt_devmode->formname, "Letter");
