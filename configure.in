@@ -80,7 +80,7 @@ if test "$with_krb4" != "no"; then
 	save_CFLAGS="$CFLAGS"
 	CFLAGS="$CFLAGS $INCLUDE_krb4"
 	save_LIBS="$LIBS"
-	LIBS="$LIB_krb4 $LIBS"
+	LIBS="$LIB_krb4 -ldes $LIBS"
 	EXTRA_LIB45=lib45.a
 	AC_SUBST(EXTRA_LIB45)
 	AC_CACHE_CHECK(for four valued krb_put_int, ac_cv_func_krb_put_int_four,
