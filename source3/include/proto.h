@@ -197,10 +197,11 @@ int smbrun(char *cmd,char *outfile,BOOL shared);
 
 /*The following definitions come from  lib/substitute.c  */
 
-void standard_sub_basic(char *str);
-void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *str);
-void standard_sub(connection_struct *conn, char *str);
+void standard_sub_conn(connection_struct *conn, char *str);
 void standard_sub_snum(int snum, char *str);
+void standard_sub_basic(char *str);
+void standard_sub_vuser(char *str, user_struct *vuser);
+void standard_sub_vsnum(char *str, user_struct *vuser, int snum);
 
 /*The following definitions come from  lib/system.c  */
 
@@ -567,6 +568,15 @@ smb_ucs2_t *string_truncate_w(smb_ucs2_t *s, size_t length);
 
 int cli_set_port(struct cli_state *cli, int port);
 char *cli_errstr(struct cli_state *cli);
+void cli_safe_smb_errstr(struct cli_state *cli, char *msg, size_t len);
+BOOL get_safe_rap_errstr(int rap_error, char *err_msg, size_t msglen);
+void cli_safe_errstr(struct cli_state *cli, char *err_msg, size_t msglen);
+BOOL cli_send_trans(struct cli_state *cli, int trans, 
+                           char *name, int pipe_name_len, 
+                           int fid, int flags,
+                           uint16 *setup, int lsetup, int msetup,
+                           char *param, int lparam, int mparam,
+                           char *data, int ldata, int mdata);
 BOOL cli_api_pipe(struct cli_state *cli, char *pipe_name, int pipe_name_len,
                   uint16 *setup, uint32 setup_count, uint32 max_setup_count,
                   char *params, uint32 param_count, uint32 max_param_count,
