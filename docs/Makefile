@@ -30,14 +30,12 @@ help:
 	@echo " all - Build all docs that can be build using the utilities found by configure"
 	@echo " everything - Build all of the above"
 	@echo " pdf,tex,dvi,ps,manpages,txt,pearson,fo,htmlhelp - Build specific output format"
-	@echo " html - Build multi-file HTML version of HOWTO Collection, Guide and Dev-Guide"
-	@echo " html-single - Build single-file HTML version of HOWTO Collection, Guide and Dev-Guide"
+	@echo " html - Build multi-file HTML versions"
+	@echo " html-single - Build single-file HTML versions"
 	@echo " htmlman - Build HTML version of manpages"
 	@echo " undocumented - Output list of undocumented smb.conf options"
 	@echo " samples - Extract examples"
 	@echo " files - Extract other files"
-
-
 
 Samba-Guide/index.xml: $(subst Samba-Guide/index.xml,,$(wildcard Samba-Guide/*.xml))
 Samba-HOWTO-Collection/index.xml: $(subst Samba-HOWTO-Collection/index.xml,,$(wildcard Samba-HOWTO-Collection/*.xml)) Samba-HOWTO-Collection-attributions.xml
@@ -67,6 +65,7 @@ htmlman: $(patsubst $(MANPAGEDIR)/%.xml,$(HTMLDIR)/%.html,$(MANPAGES)) $(HTMLDIR
 html-single: $(patsubst $(DOCBOOKDIR)/%.xml,$(HTMLDIR)/%.html,$(MAIN_DOCS))
 html: $(patsubst $(DOCBOOKDIR)/%.xml,$(HTMLDIR)/%/index.html,$(MAIN_DOCS)) $(HTMLDIR)/index.html
 htmlhelp: $(patsubst $(DOCBOOKDIR)/%.xml,$(HTMLHELPDIR)/%,$(MAIN_DOCS))
+validate: $(patsubst $(DOCBOOKDIR)/%.xml,$(VALIDATEDIR)/%.report.html,$(MAIN_DOCS))
 
 # Intermediate docbook docs
 
@@ -230,8 +229,6 @@ $(VALIDATEDIR)/%.report.html: %/index.xml
 	mkdir -p $(@D)
 	$(XMLLINT) --xinclude --postvalid --noout --htmlout $< 2> $@
 
-validate: $(VALIDATEDIR)/Samba-HOWTO-Collection.report.html $(VALIDATEDIR)/Samba-Developers-Guide.report.html $(VALIDATEDIR)/Samba-Guide.report.html 
-
 # Find undocumented parameters
 undocumented: $(SMBDOTCONFDOC)/parameters.all.xml scripts/find_missing_doc.pl scripts/find_missing_manpages.pl
 	@$(PERL) scripts/find_missing_doc.pl $(SRCDIR)
@@ -249,8 +246,8 @@ samples: $(DOCBOOKDIR)/Samba-HOWTO-Collection.xml xslt/extract-examples.xsl scri
 # Archiving
 archive: pdf
 	mkdir -p $(ARCHIVEDIR)
-	cp $(PDFDIR)/Samba-HOWTO-Collection.pdf $(ARCHIVEDIR)/TOSHARG-`date +%Y%m%d%H%M%S`.pdf
-	cp $(PDFDIR)/Samba-Guide.pdf $(ARCHIVEDIR)/S3bE-`date +%Y%m%d%H%M%S`.pdf
+	cp $(PDFDIR)/Samba-HOWTO-Collection.pdf $(ARCHIVEDIR)/TOSHARG-$(shell date +%Y%m%d%H%M%S).pdf
+	cp $(PDFDIR)/Samba-Guide.pdf $(ARCHIVEDIR)/S3bE-$(shell date +%Y%m%d%H%M%S).pdf
 
 # XSL scripts
 xslt/html.xsl: xslt/html-common.xsl settings.xsl
