@@ -50,6 +50,76 @@ static WERROR spoolss_EnumPrinters1(TALLOC_CTX *mem_ctx,
 	return WERR_OK;
 }
 
+static WERROR spoolss_EnumPrinters2(TALLOC_CTX *mem_ctx, 
+				    struct ldb_message **msgs, int num_msgs,
+				    struct ndr_push *ndr)
+{
+	struct spoolss_PrinterInfo2 *info;
+	int i;
+
+	info = talloc(mem_ctx, num_msgs * sizeof(struct spoolss_PrinterInfo1));
+
+	if (!info)
+		return WERR_NOMEM;
+
+	for (i = 0; i < num_msgs; i++) {
+		info[i].servername = samdb_result_string(msgs[i], "servername", "");
+		info[i].printername = samdb_result_string(msgs[i], "printername", "");
+		info[i].sharename = samdb_result_string(msgs[i], "sharename", "");
+		info[i].portname = samdb_result_string(msgs[i], "portname", "");
+		info[i].drivername = samdb_result_string(msgs[i], "drivername", "");
+		info[i].comment = samdb_result_string(msgs[i], "comment", "");
+		info[i].location = samdb_result_string(msgs[i], "location", "");
+		/* DEVICEMODE - eek! */
+		info[i].sepfile = samdb_result_string(msgs[i], "sepfile", "");
+		info[i].printprocessor = samdb_result_string(msgs[i], "printprocessor", "");
+		info[i].datatype = samdb_result_string(msgs[i], "datatype", "");
+		info[i].parameters = samdb_result_string(msgs[i], "parameters", "");
+		/* SECURITY_DESCRIPTOR */
+		info[i].attributes = samdb_result_uint(msgs[i], "attributes", 0);
+		info[i].priority = samdb_result_uint(msgs[i], "priority", 0);
+		info[i].defaultpriority = samdb_result_uint(msgs[i], "defaultpriority", 0);
+		info[i].starttime = samdb_result_uint(msgs[i], "starttime", 0);
+		info[i].untiltime = samdb_result_uint(msgs[i], "untiltime", 0);
+		info[i].status = samdb_result_uint(msgs[i], "status", 0);
+		info[i].cjobs = samdb_result_uint(msgs[i], "cjobs", 0);
+		info[i].averageppm = samdb_result_uint(msgs[i], "averageppm", 0);
+	}
+
+	ndr_push_array(ndr, NDR_SCALARS|NDR_BUFFERS, info,
+		       sizeof(struct spoolss_PrinterInfo2), num_msgs,
+		       (ndr_push_flags_fn_t)ndr_push_spoolss_PrinterInfo2);
+
+	return WERR_OK;
+}
+
+static WERROR spoolss_EnumPrinters5(TALLOC_CTX *mem_ctx, 
+				    struct ldb_message **msgs, int num_msgs,
+				    struct ndr_push *ndr)
+{
+	struct spoolss_PrinterInfo5 *info;
+	int i;
+
+	info = talloc(mem_ctx, num_msgs * sizeof(struct spoolss_PrinterInfo1));
+
+	if (!info)
+		return WERR_NOMEM;
+
+	for (i = 0; i < num_msgs; i++) {
+		info[i].printername = samdb_result_string(msgs[i], "name", "");
+		info[i].portname = samdb_result_string(msgs[i], "port", "");
+		info[i].attributes = samdb_result_uint(msgs[i], "attributes", 0);
+		info[i].device_not_selected_timeout = samdb_result_uint(msgs[i], "device_not_selected_timeout", 0);
+		info[i].transmission_retry_timeout = samdb_result_uint(msgs[i], "transmission_retry_timeout", 0);
+	}
+
+	ndr_push_array(ndr, NDR_SCALARS|NDR_BUFFERS, info,
+		       sizeof(struct spoolss_PrinterInfo5), num_msgs,
+		       (ndr_push_flags_fn_t)ndr_push_spoolss_PrinterInfo5);
+
+	return WERR_OK;
+}
+
 /* 
   spoolss_EnumPrinters 
 */
@@ -78,9 +148,15 @@ static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CT
 	case 1:
 		result = spoolss_EnumPrinters1(mem_ctx, msgs, ret, ndr);
 		break;
+	case 2:
+		result = spoolss_EnumPrinters2(mem_ctx, msgs, ret, ndr);
+		break;
+	case 5:
+		result = spoolss_EnumPrinters5(mem_ctx, msgs, ret, ndr);
+		break;
 	default:
 		r->out.buffer = NULL;
-		result = WERR_INVALID_PARAM;
+		result = WERR_UNKNOWN_LEVEL;
 		goto done;
 	}
 
