@@ -118,7 +118,7 @@ BOOL account_policy_get(int field, uint32 *value)
 {
 	fstring name;
 
-	init_account_policy();
+	if(!init_account_policy())return False;
 
 	*value = 0;
 
@@ -142,7 +142,7 @@ BOOL account_policy_set(int field, uint32 value)
 {
 	fstring name;
 
-	init_account_policy();
+	if(!init_account_policy())return False;
 
 	fstrcpy(name, decode_account_policy_name(field));
 	if (!*name) {
