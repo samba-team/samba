@@ -122,7 +122,7 @@ static int process_options(int argc, char **argv, int local_flags)
 			local_flags |= LOCAL_INTERDOM_ACCOUNT;
 			break;
 		case 'j':
-			d_printf("See 'net rpc join' for this functionality\n");
+			d_printf("See 'net join' for this functionality\n");
 			exit(1);
 			break;
 		case 'n':
