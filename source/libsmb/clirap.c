@@ -203,11 +203,11 @@ int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, co
 
 
 /****************************************************************************
-call a NetServerEnum for the specified workgroup and servertype mask.
-This function then calls the specified callback function for each name returned.
+call a NetServerEnum for the specified workgroup and servertype mask.  This
+function then calls the specified callback function for each name returned.
 
-The callback function takes 3 arguments: the machine name, the server type and
-the comment.
+The callback function takes 4 arguments: the machine name, the server type,
+the comment and a state pointer.
 ****************************************************************************/
 BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 		       void (*fn)(const char *, uint32, const char *, void *),
