@@ -41,19 +41,8 @@
 #ifndef GSSAPI_LOCL_H
 #define GSSAPI_LOCL_H
 
-#include <stdlib.h>
-#include <string.h>
-
-#ifdef HAVE_NETDB_H
-#include <netdb.h>
-#endif
-
-#include <gssapi.h>
-
-#include <krb5.h>
-#include <des.h>
 #include <krb5_locl.h>
-#include <der.h>
+#include <gssapi.h>
 
 extern krb5_context gssapi_krb5_context;
 
