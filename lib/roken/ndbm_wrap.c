@@ -50,6 +50,8 @@ RCSID("$Id$");
 #include <string.h>
 #include <fcntl.h>
 
+/* XXX undefine open so this works on Solaris with large file support */
+#undef open
 
 #define DBT2DATUM(DBT, DATUM) do { (DATUM)->dptr = (DBT)->data; (DATUM)->dsize = (DBT)->size; } while(0)
 #define DATUM2DBT(DATUM, DBT) do { (DBT)->data = (DATUM)->dptr; (DBT)->size = (DATUM)->dsize; } while(0)
