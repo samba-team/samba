@@ -276,7 +276,7 @@ static int tdb_lock(TDB_CONTEXT *tdb, int list, int ltype)
 	if (tdb->locked[list+1].count == 0) {
 		if (!tdb->read_only && tdb->header.rwlocks) {
 			if (tdb_spinlock(tdb, list, ltype)) {
-				TDB_LOG((tdb, 0, "tdb_lock spinlock failed on list ltype=%d\n", 
+				TDB_LOG((tdb, 0, "tdb_lock spinlock failed on list %d ltype=%d\n", 
 					   list, ltype));
 				return -1;
 			}
