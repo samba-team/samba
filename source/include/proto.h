@@ -1856,6 +1856,7 @@ BOOL smb_io_rpc_hdr_ba(char *desc, RPC_HDR_BA *rpc, prs_struct *ps, int depth);
 void init_rpc_hdr_req(RPC_HDR_REQ *hdr, uint32 alloc_hint, uint16 opnum);
 BOOL smb_io_rpc_hdr_req(char *desc, RPC_HDR_REQ *rpc, prs_struct *ps, int depth);
 BOOL smb_io_rpc_hdr_resp(char *desc, RPC_HDR_RESP *rpc, prs_struct *ps, int depth);
+BOOL smb_io_rpc_hdr_fault(char *desc, RPC_HDR_FAULT *rpc, prs_struct *ps, int depth);
 void init_rpc_hdr_autha(RPC_HDR_AUTHA *rai,
 				uint16 max_tsize, uint16 max_rsize,
 				uint8 auth_type, uint8 auth_level,
