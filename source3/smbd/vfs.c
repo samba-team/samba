@@ -814,7 +814,7 @@ BOOL canonicalize_path(connection_struct *conn, pstring path)
  it is below dir in the heirachy. This uses realpath.
 ********************************************************************/
 
-BOOL reduce_name(connection_struct *conn, pstring fname)
+BOOL reduce_name(connection_struct *conn, const pstring fname)
 {
 #ifdef REALPATH_TAKES_NULL
 	BOOL free_resolved_name = True;
@@ -924,7 +924,11 @@ BOOL reduce_name(connection_struct *conn, pstring fname)
 	}
 
 	if (!*p) {
-		pstrcpy(resolved_name, ".");
+		if (fname[0] == '.' && fname[1] == '/' && fname[2] == '\0') {
+			pstrcpy(resolved_name, "./");
+		} else {
+			pstrcpy(resolved_name, ".");
+		}
 		p = resolved_name;
 	}
 
