@@ -62,7 +62,7 @@ PyObject *spoolss_openprinter(PyObject *self, PyObject *args, PyObject *kw)
 		goto done;
 	}
 
-	if (!(mem_ctx = talloc_init())) {
+	if (!(mem_ctx = talloc_init("spoolss_openprinter"))) {
 		PyErr_SetString(spoolss_error, 
 				"unable to init talloc context\n");
 		goto done;
@@ -310,7 +310,7 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 		goto done;
 	}
 
-	if (!(mem_ctx = talloc_init())) {
+	if (!(mem_ctx = talloc_init("spoolss_enumprinters"))) {
 		PyErr_SetString(
 			spoolss_error, "unable to init talloc context\n");
 		goto done;
@@ -445,7 +445,7 @@ PyObject *spoolss_addprinterex(PyObject *self, PyObject *args, PyObject *kw)
 		goto done;
 	}
 
-	if (!(mem_ctx = talloc_init())) {
+	if (!(mem_ctx = talloc_init("spoolss_addprinterex"))) {
 		PyErr_SetString(
 			spoolss_error, "unable to init talloc context\n");
 		goto done;

@@ -59,7 +59,7 @@ PyObject *spoolss_enumports(PyObject *self, PyObject *args, PyObject *kw)
 		goto done;
 	}
 
-	if (!(mem_ctx = talloc_init())) {
+	if (!(mem_ctx = talloc_init("spoolss_enumports"))) {
 		PyErr_SetString(
 			spoolss_error, "unable to init talloc context\n");
 		goto done;
