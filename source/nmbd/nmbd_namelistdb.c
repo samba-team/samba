@@ -528,19 +528,19 @@ void add_samba_names_to_subnet( struct subnet_record *subrec )
  into a file. Initiated by SIGHUP - used to debug the state of the namelists.
 **************************************************************************/
 
-static void dump_subnet_namelist( struct subnet_record *subrec, FILE *fp)
+static void dump_subnet_namelist( struct subnet_record *subrec, XFILE *fp)
 {
   struct name_record *namerec;
   char *src_type;
   struct tm *tm;
   int i;
 
-  fprintf(fp, "Subnet %s\n----------------------\n", subrec->subnet_name);
+  x_fprintf(fp, "Subnet %s\n----------------------\n", subrec->subnet_name);
   for( namerec = (struct name_record *)ubi_trFirst( subrec->namelist );
        namerec;
        namerec = (struct name_record *)ubi_trNext( namerec ) )
   {
-    fprintf(fp,"\tName = %s\t", nmb_namestr(&namerec->name));
+    x_fprintf(fp,"\tName = %s\t", nmb_namestr(&namerec->name));
     switch(namerec->data.source)
     {
       case LMHOSTS_NAME:
@@ -568,29 +568,29 @@ static void dump_subnet_namelist( struct subnet_record *subrec, FILE *fp)
         src_type = "unknown!";
         break;
     }
-    fprintf(fp,"Source = %s\nb_flags = %x\t", src_type, namerec->data.nb_flags);
+    x_fprintf(fp,"Source = %s\nb_flags = %x\t", src_type, namerec->data.nb_flags);
 
     if(namerec->data.death_time != PERMANENT_TTL)
     {
       tm = LocalTime(&namerec->data.death_time);
-      fprintf(fp, "death_time = %s\t", asctime(tm));
+      x_fprintf(fp, "death_time = %s\t", asctime(tm));
     }
     else
-      fprintf(fp, "death_time = PERMANENT\t");
+      x_fprintf(fp, "death_time = PERMANENT\t");
 
     if(namerec->data.refresh_time != PERMANENT_TTL)
     {
       tm = LocalTime(&namerec->data.refresh_time);
-      fprintf(fp, "refresh_time = %s\n", asctime(tm));
+      x_fprintf(fp, "refresh_time = %s\n", asctime(tm));
     }
     else
-      fprintf(fp, "refresh_time = PERMANENT\n");
+      x_fprintf(fp, "refresh_time = PERMANENT\n");
 
-    fprintf(fp, "\t\tnumber of IPS = %d", namerec->data.num_ips);
+    x_fprintf(fp, "\t\tnumber of IPS = %d", namerec->data.num_ips);
     for(i = 0; i < namerec->data.num_ips; i++)
-      fprintf(fp, "\t%s", inet_ntoa(namerec->data.ip[i]));
+      x_fprintf(fp, "\t%s", inet_ntoa(namerec->data.ip[i]));
 
-    fprintf(fp, "\n\n");
+    x_fprintf(fp, "\n\n");
   }
 }
 
@@ -601,10 +601,10 @@ static void dump_subnet_namelist( struct subnet_record *subrec, FILE *fp)
 
 void dump_all_namelists(void)
 {
-  FILE *fp; 
+  XFILE *fp; 
   struct subnet_record *subrec;
 
-  fp = sys_fopen(lock_path("namelist.debug"),"w");
+  fp = x_fopen(lock_path("namelist.debug"),O_WRONLY|O_CREAT|O_TRUNC, 0644);
      
   if (!fp)
   { 
@@ -626,5 +626,5 @@ void dump_all_namelists(void)
 
   if( wins_server_subnet != NULL )
     dump_subnet_namelist( wins_server_subnet, fp );
-  fclose( fp );
+  x_fclose( fp );
 }

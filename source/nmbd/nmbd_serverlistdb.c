@@ -307,7 +307,7 @@ void write_browse_list(time_t t, BOOL force_write)
   uint32 stype;
   fstring tmp;
   int i;
-  FILE *fp;
+  XFILE *fp;
   BOOL list_changed = force_write;
   static time_t lasttime = 0;
     
@@ -345,7 +345,7 @@ void write_browse_list(time_t t, BOOL force_write)
   pstrcpy(fnamenew,fname);
   pstrcat(fnamenew,".");
  
-  fp = sys_fopen(fnamenew,"w");
+  fp = x_fopen(fnamenew,O_WRONLY|O_CREAT|O_TRUNC, 0644);
  
   if (!fp)
   {
@@ -363,16 +363,16 @@ void write_browse_list(time_t t, BOOL force_write)
   { 
     DEBUG(0,("write_browse_list: Fatal error - cannot find my workgroup %s\n",
              global_myworkgroup));
-    fclose(fp);
+    x_fclose(fp);
     return;
   }
 
   slprintf(tmp,sizeof(tmp)-1, "\"%s\"", work->work_group);
-  fprintf(fp, "%-25s ", tmp);
-  fprintf(fp, "%08x ", SV_TYPE_DOMAIN_ENUM|SV_TYPE_NT|SV_TYPE_LOCAL_LIST_ONLY);
+  x_fprintf(fp, "%-25s ", tmp);
+  x_fprintf(fp, "%08x ", SV_TYPE_DOMAIN_ENUM|SV_TYPE_NT|SV_TYPE_LOCAL_LIST_ONLY);
   slprintf(tmp, sizeof(tmp)-1, "\"%s\" ", work->local_master_browser_name);
-  fprintf(fp, "%-30s", tmp);
-  fprintf(fp, "\"%s\"\n", work->work_group);
+  x_fprintf(fp, "%-30s", tmp);
+  x_fprintf(fp, "\"%s\"\n", work->work_group);
 
   /* 
    * We need to do something special for our own names.
@@ -397,12 +397,12 @@ void write_browse_list(time_t t, BOOL force_write)
 
     /* Output server details, plus what workgroup they're in. */
     slprintf(tmp, sizeof(tmp)-1, "\"%s\"", my_netbios_names[i]);
-    fprintf(fp, "%-25s ", tmp);
-    fprintf(fp, "%08x ", stype);
+    x_fprintf(fp, "%-25s ", tmp);
+    x_fprintf(fp, "%08x ", stype);
     slprintf(tmp, sizeof(tmp)-1, "\"%s\" ", 
 	     string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH));
-    fprintf(fp, "%-30s", tmp);
-    fprintf(fp, "\"%s\"\n", global_myworkgroup);
+    x_fprintf(fp, "%-30s", tmp);
+    x_fprintf(fp, "\"%s\"\n", global_myworkgroup);
   }
       
   for (subrec = FIRST_SUBNET; subrec ; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec)) 
@@ -417,12 +417,12 @@ void write_browse_list(time_t t, BOOL force_write)
       if(wg_type)
       {
         slprintf(tmp, sizeof(tmp)-1, "\"%s\"", work->work_group);
-        fprintf(fp, "%-25s ", tmp);
+        x_fprintf(fp, "%-25s ", tmp);
 
-        fprintf(fp, "%08x ", wg_type);
+        x_fprintf(fp, "%08x ", wg_type);
         slprintf(tmp, sizeof(tmp)-1, "\"%s\" ", work->local_master_browser_name);
-        fprintf(fp, "%-30s", tmp);
-        fprintf(fp, "\"%s\"\n", work->work_group);
+        x_fprintf(fp, "%-30s", tmp);
+        x_fprintf(fp, "\"%s\"\n", work->work_group);
       }
 
       /* Now write out any server records a workgroup may have. */
@@ -441,17 +441,17 @@ void write_browse_list(time_t t, BOOL force_write)
         {
           /* Output server details, plus what workgroup they're in. */
           slprintf(tmp, sizeof(tmp)-1, "\"%s\"", servrec->serv.name);
-          fprintf(fp, "%-25s ", tmp);
-          fprintf(fp, "%08x ", serv_type);
+          x_fprintf(fp, "%-25s ", tmp);
+          x_fprintf(fp, "%08x ", serv_type);
           slprintf(tmp, sizeof(tmp)-1, "\"%s\" ", servrec->serv.comment);
-          fprintf(fp, "%-30s", tmp);
-          fprintf(fp, "\"%s\"\n", work->work_group);
+          x_fprintf(fp, "%-30s", tmp);
+          x_fprintf(fp, "\"%s\"\n", work->work_group);
         }
       }
     }
   } 
   
-  fclose(fp);
+  x_fclose(fp);
   unlink(fname);
   chmod(fnamenew,0644);
   rename(fnamenew,fname);
