@@ -753,7 +753,7 @@ static void offer_gss_spnego_mechs(void) {
 
 	/* Server negTokenInit (mech offerings) */
 	spnego.type = SPNEGO_NEG_TOKEN_INIT;
-	spnego.negTokenInit.mechTypes = SMB_XMALLOC_ARRAY(char *, 3);
+	spnego.negTokenInit.mechTypes = SMB_XMALLOC_ARRAY(const char *, 3);
 #ifdef HAVE_KRB5
 	spnego.negTokenInit.mechTypes[0] = smb_xstrdup(OID_KERBEROS5_OLD);
 	spnego.negTokenInit.mechTypes[1] = smb_xstrdup(OID_NTLMSSP);
