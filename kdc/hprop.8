@@ -73,7 +73,8 @@ The database to be propagated.
 .Fl -source= Ns Ar heimdal|mit-dump|krb4-db|krb4-dump
 .Xc
 Specifies the type of the source database. Alternatives include: 
-.Bl -tag -width krb4-dump
+
+.Bl -tag -width krb4-dump -compact -offset indent
 .It heimdal
 a Heimdal database
 .It mit-dump
@@ -83,7 +84,7 @@ a Kerberos 4 database
 .It krb4-dump
 a Kerberos 4 dump file
 .It kaserver
-a Transarc kaserver database
+a AFS kaserver database
 .El
 .It Xo
 .Fl k Ar keytab Ns ,
