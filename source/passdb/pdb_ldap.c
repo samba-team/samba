@@ -104,7 +104,7 @@ struct ldapsam_privates {
  
 static void private_data_free_fn(void **result) 
 {
-	ldap_memfree(*result);
+	ldap_msgfree(*result);
 	*result = NULL;
 }
 
@@ -1377,6 +1377,7 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_A
 	if (!init_ldap_from_sam(ldap_state, entry, &mods, newpwd,
 				element_is_changed)) {
 		DEBUG(0, ("ldapsam_update_sam_account: init_ldap_from_sam failed!\n"));
+		ldap_memfree(dn);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
@@ -1384,11 +1385,13 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_A
 		DEBUG(4,("mods is empty: nothing to update for user: %s\n",
 			 pdb_get_username(newpwd)));
 		ldap_mods_free(mods, True);
+		ldap_memfree(dn);
 		return NT_STATUS_OK;
 	}
 	
 	ret = ldapsam_modify_entry(my_methods,newpwd,dn,mods,LDAP_MOD_REPLACE, element_is_changed);
 	ldap_mods_free(mods,True);
+	ldap_memfree(dn);
 
 	if (!NT_STATUS_IS_OK(ret)) {
 		char *ld_error = NULL;
