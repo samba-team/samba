@@ -447,6 +447,7 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 BOOL is_myname(char *s);
 void set_remote_arch(enum remote_arch_types type);
 enum remote_arch_types get_remote_arch(void);
+char *align4(char *q, char *base);
 char *align2(char *q, char *base);
 void out_ascii(FILE *f, unsigned char *buf,int len);
 void out_data(FILE *f,char *buf1,int len, int per_line);
@@ -1401,41 +1402,6 @@ struct smb_passwd *ldap_getpw(void);
 BOOL ldap_allocaterid(uint32 *rid);
 struct smb_passdb_ops *ldap_initialise_password_db(void);
 
-/*The following definitions come from  passdb/mysqlpass.c  */
-
-int mysql_db_lock_connect( MYSQL *handle );
-void *mysql_startpwent( BOOL update );
-void mysql_endpwent( void *ptr );
-SMB_BIG_UINT mysql_getpwpos(void *vp);
-BOOL mysql_setpwpos(void *vp, SMB_BIG_UINT pos);
-void *mysql_fill_smb_passwd( MYSQL_ROW *row );
-struct smb_passwd *mysql_getsmbpwent(void *vp);
-void *mysql_fetch_passwd( void *(*filler)(MYSQL_ROW*), char *where );
-void *mysql_getpwuid(void *(*filler)(MYSQL_ROW *), uid_t uid);
-struct smb_passwd *mysql_getsmbpwuid(uid_t uid);
-void *mysql_getpwnam(void *(*filler)(MYSQL_ROW *), char *field, const char *name);
-struct smb_passwd *mysql_getsmbpwnam(const char *unix_name);
-BOOL mysql_del_smb( MYSQL *handle, char *unix_name );
-BOOL mysql_add_smb( MYSQL *handle, struct smb_passwd *smb );
-BOOL mysql_mod_smb( MYSQL *handle, struct smb_passwd *smb, BOOL override );
-BOOL mysql_add_smbpwd_entry(struct smb_passwd *smb);
-BOOL mysql_mod_smbpwd_entry(struct smb_passwd *smb, BOOL override);
-struct smb_passdb_ops *mysql_initialise_password_db(void);
-
-/*The following definitions come from  passdb/mysqlsampass.c  */
-
-void *mysql_fill_sam_passwd( MYSQL_ROW *row );
-struct sam_passwd *mysql_getsampwent(void *vp);
-struct sam_passwd *mysql_getsampwrid(uint32 rid);
-struct sam_passwd *mysql_getsampwuid(uid_t uid);
-struct sam_passwd *mysql_getsampwntnam(const char *nt_name);
-struct sam_disp_info *mysql_getsamdispntnam(const char *nt_name);
-struct sam_disp_info *mysql_getsamdisprid(uint32 rid);
-struct sam_disp_info *mysql_getsamdispent(void *vp);
-BOOL mysql_add_sampwd_entry(struct sam_passwd *sam);
-BOOL mysql_mod_sampwd_entry(struct sam_passwd *sam, BOOL override);
-struct sam_passdb_ops *mysql_initialise_sam_password_db(void);
-
 /*The following definitions come from  passdb/nispass.c  */
 
 struct passdb_ops *nisplus_initialise_password_db(void);
@@ -1945,8 +1911,9 @@ void smb_io_dom_rid2(char *desc,  DOM_RID2 *rid2, prs_struct *ps, int depth);
 void make_dom_rid3(DOM_RID3 *rid3, uint32 rid, uint8 type);
 void smb_io_dom_rid3(char *desc,  DOM_RID3 *rid3, prs_struct *ps, int depth);
 void make_dom_rid4(DOM_RID4 *rid4, uint16 unknown, uint16 attr, uint32 rid);
-void make_log_info(DOM_LOG_INFO *log, char *logon_srv, char *acct_name,
-		uint16 sec_chan, char *comp_name);
+void make_log_info(DOM_LOG_INFO *log,
+		const char *logon_srv, const char *acct_name,
+		uint16 sec_chan, const char *comp_name);
 void smb_io_log_info(char *desc,  DOM_LOG_INFO *log, prs_struct *ps, int depth);
 void smb_io_chal(char *desc,  DOM_CHAL *chal, prs_struct *ps, int depth);
 void smb_io_cred(char *desc,  DOM_CRED *cred, prs_struct *ps, int depth);
