@@ -904,9 +904,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   /* If no username is sent use the guest account */
   if (!*user) {
     pstrcpy(user,lp_guestaccount(-1));
-    /* If no user and no password then set guest flag. */
-    if( *smb_apasswd == 0)
-      guest = True;
+    guest = True;
   }
 
   pstrcpy(current_user_info.smb_name,user);
@@ -953,13 +951,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   smb_getpwnam(user, True);
 
   add_session_user(user);
-
-  /*
-   * Check if the given username was the guest user with no password.
-   */
-
-  if(!guest && strequal(user,lp_guestaccount(-1)) && (*smb_apasswd == 0))
-    guest = True;
 
   /* 
    * Check with orig_user for security=server and
