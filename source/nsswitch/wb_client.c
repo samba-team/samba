@@ -56,7 +56,8 @@ BOOL winbind_lookup_name(const char *dom_name, const char *name, DOM_SID *sid,
 
 	if ((result = winbindd_request(WINBINDD_LOOKUPNAME, &request, 
 				       &response)) == NSS_STATUS_SUCCESS) {
-		string_to_sid(sid, response.data.sid.sid);
+		if (!string_to_sid(sid, response.data.sid.sid))
+			return False;
 		*name_type = (enum SID_NAME_USE)response.data.sid.type;
 	}
 
@@ -158,7 +159,8 @@ BOOL winbind_uid_to_sid(DOM_SID *sid, uid_t uid)
 	/* Copy out result */
 
 	if (result == NSS_STATUS_SUCCESS) {
-		string_to_sid(sid, response.data.sid.sid);
+		if (!string_to_sid(sid, response.data.sid.sid))
+			return False;
 	} else {
 		sid_copy(sid, &global_sid_NULL);
 	}
@@ -224,7 +226,8 @@ BOOL winbind_gid_to_sid(DOM_SID *sid, gid_t gid)
 	/* Copy out result */
 
 	if (result == NSS_STATUS_SUCCESS) {
-		string_to_sid(sid, response.data.sid.sid);
+		if (!string_to_sid(sid, response.data.sid.sid))
+			return False;
 	} else {
 		sid_copy(sid, &global_sid_NULL);
 	}
