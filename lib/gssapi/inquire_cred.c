@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -45,6 +45,13 @@ OM_uint32 gss_inquire_cred
            )
 {
     OM_uint32 ret;
+
+    *minor_status = 0;
+
+    if (name)
+	*name = NULL;
+    if (mechanisms)
+	*mechanisms = GSS_C_NO_OID_SET;
 
     if (cred_handle == GSS_C_NO_CREDENTIAL) {
         return GSS_S_FAILURE;
