@@ -4291,7 +4291,7 @@ BOOL samr_io_r_query_aliasmem(char *desc, SAMR_R_QUERY_ALIASMEM * r_u,
 inits a SAMR_Q_LOOKUP_NAMES structure.
 ********************************************************************/
 
-void init_samr_q_lookup_names(SAMR_Q_LOOKUP_NAMES * q_u,
+void init_samr_q_lookup_names(TALLOC_CTX *ctx, SAMR_Q_LOOKUP_NAMES * q_u,
 			      POLICY_HND *pol, uint32 flags,
 			      uint32 num_names, char **name)
 {
@@ -4305,6 +4305,9 @@ void init_samr_q_lookup_names(SAMR_Q_LOOKUP_NAMES * q_u,
 	q_u->flags = flags;
 	q_u->ptr = 0;
 	q_u->num_names2 = num_names;
+
+	q_u->hdr_name = (UNIHDR *)talloc_zero(ctx, num_names * sizeof(UNIHDR));
+	q_u->uni_name = (UNISTR2 *)talloc_zero(ctx, num_names * sizeof(UNISTR2));
 
 	for (i = 0; i < num_names; i++) {
 		int len_name = name[i] != NULL ? strlen(name[i]) : 0;
@@ -4346,7 +4349,14 @@ BOOL samr_io_q_lookup_names(char *desc, SAMR_Q_LOOKUP_NAMES * q_u,
 	if(!prs_uint32("num_names2", ps, depth, &q_u->num_names2))
 		return False;
 
-	SMB_ASSERT_ARRAY(q_u->hdr_name, q_u->num_names2);
+	if (UNMARSHALLING(ps) && (q_u->num_names2 != 0)) {
+		q_u->hdr_name = (UNIHDR *)prs_alloc_mem(ps, sizeof(UNIHDR) *
+							q_u->num_names2);
+		q_u->uni_name = (UNISTR2 *)prs_alloc_mem(ps, sizeof(UNISTR2) *
+							 q_u->num_names2);
+		if (!q_u->hdr_name || q_u->uni_name)
+			return False;
+	}
 
 	for (i = 0; i < q_u->num_names2; i++) {
 		if(!smb_io_unihdr("", &q_u->hdr_name[i], ps, depth))
