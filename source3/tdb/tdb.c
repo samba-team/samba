@@ -127,14 +127,15 @@ struct list_struct {
 	u32 full_hash; /* the full 32 bit hash of the key */
 	u32 magic;   /* try to catch errors */
 	/* the following union is implied:
-	   union {
-              char record[rec_len];
-	      struct {
-	        char key[key_len];
-		char data[data_len];
-	      }
-	      u32 totalsize; (tailer)
-           } */
+		union {
+			char record[rec_len];
+			struct {
+				char key[key_len];
+				char data[data_len];
+			}
+			u32 totalsize; (tailer)
+		}
+	*/
 };
 
 /* a byte range locking function - return 0 on success
@@ -144,7 +145,7 @@ static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset,
 {
 	struct flock fl;
 
-        if (tdb->flags & TDB_NOLOCK) return 0;
+	if (tdb->flags & TDB_NOLOCK) return 0;
 	if (tdb->read_only) return -1;
 
 	fl.l_type = rw_type;
@@ -234,7 +235,9 @@ static int tdb_oob(TDB_CONTEXT *tdb, tdb_off len, int probe)
 	if (len <= tdb->map_size) return 0;
 	if (tdb->flags & TDB_INTERNAL) return 0;
 
-	fstat(tdb->fd, &st);
+	if (fstat(tdb->fd, &st) == -1)
+		return TDB_ERRCODE(TDB_ERR_IO, -1);
+
 	if (st.st_size < (size_t)len) {
 		if (!probe) {
 			TDB_LOG((tdb, 0,"tdb_oob len %d beyond eof at %d\n",
