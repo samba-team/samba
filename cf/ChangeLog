@@ -1,3 +1,7 @@
+Wed Mar 10 19:29:20 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* wflags.m4: AC_WFLAGS
+
 Mon Mar  1 11:23:41 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* have-struct-field.m4: remove extra AC_MSG_RESULT
