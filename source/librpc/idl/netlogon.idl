@@ -652,16 +652,17 @@ interface netlogon
 		[in,out]  netr_UAS_INFO_0 recordid
 		);
 
-#if 0
 
 	/*****************/
 	/* Function 0x0B */
 
 	NTSTATUS netr_GetDcName(
-		[in] unistr logon_server,
-		[in] unistr *domainname,
-		[out]unistr *dcname,
-		};
+		[in]  unistr logon_server,
+		[in]  unistr *domainname,
+		[out] unistr *dcname
+		);
+
+#if 0
 
 	typedef struct {
 		uint32 flags;

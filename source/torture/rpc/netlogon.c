@@ -428,6 +428,28 @@ static BOOL test_AccountSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return ret;
 }
 
+/*
+  try a netlogon GetDcName
+*/
+static BOOL test_GetDcName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct netr_GetDcName r;
+
+	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.domainname = lp_workgroup();
+
+	printf("Testing GetDcName\n");
+
+	status = dcerpc_netr_GetDcName(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("GetDcName - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+}
+
 
 BOOL torture_rpc_netlogon(int dummy)
 {
@@ -447,11 +469,6 @@ BOOL torture_rpc_netlogon(int dummy)
 	}
 	
 	p->flags |= DCERPC_DEBUG_PRINT_BOTH;
-
-	if (!test_AccountSync(p, mem_ctx)) {
-		ret = False;
-	}
-	return ret;
 
 	if (!test_LogonUasLogon(p, mem_ctx)) {
 		ret = False;
@@ -478,6 +495,14 @@ BOOL torture_rpc_netlogon(int dummy)
 	}
 
 	if (!test_AccountDeltas(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_AccountSync(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_GetDcName(p, mem_ctx)) {
 		ret = False;
 	}
 
