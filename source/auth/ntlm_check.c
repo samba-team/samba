@@ -187,6 +187,13 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			 username));
 	}
 
+	if (lm_sess_key) {
+		*lm_sess_key = data_blob(NULL, 0);
+	}
+	if (user_sess_key) {
+		*user_sess_key = data_blob(NULL, 0);
+	}
+
 	if (nt_interactive_password && nt_interactive_password->length && nt_pw) { 
 		if (nt_interactive_password->length != 16) {
 			DEBUG(3,("ntlm_password_check: Interactive logon: Invalid NT password length (%d) supplied for user %s\n", (int)nt_interactive_password->length,
