@@ -75,49 +75,11 @@ krb5_kt_read_service_key(krb5_context context,
 }
 
 krb5_error_code
-krb5_kt_add_entry(krb5_context context,
-		  krb5_keytab id,
-		  krb5_keytab_entry *entry)
-{
-    int ret;
-    int fd;
-    krb5_storage *sp;
-
-    fd = open (id->filename, O_APPEND);
-    if (fd < 0) {
-	fd = open (id->filename, O_WRONLY | O_CREAT, 0600);
-	if (fd < 0)
-	    return -1;
-	sp = krb5_storage_from_fd(fd);
-	ret = krb5_store_int16 (sp, 0x0502);
-	if (ret) return ret;
-    } else {
-	sp = krb5_storage_from_fd(fd);
-    }
-
-    ret = krb5_store_int32 (sp, 4711); /* XXX */
-    if (ret) return ret;
-    ret = krb5_kt_store_principal (sp, entry->principal);
-    if (ret) return ret;
-    ret = krb5_store_int32 (sp, entry->principal->type);
-    if (ret) return ret;
-    ret = krb5_store_int32 (sp, time(NULL));
-    if (ret) return ret;
-    ret = krb5_store_int8 (sp, entry->vno);
-    if (ret) return ret;
-    ret = krb5_kt_store_keyblock (sp, &entry->keyblock);
-    if (ret) return ret;
-    krb5_storage_free (sp);
-    close (fd);
-    return 0;
-}
-
-krb5_error_code
 krb5_kt_remove_entry(krb5_context context,
 		     krb5_keytab id,
 		     krb5_keytab_entry *entry)
 {
-  abort ();
+    abort();
 }
 
 krb5_error_code
@@ -194,23 +156,6 @@ krb5_kt_start_seq_get(krb5_context context,
 }
 
 static krb5_error_code
-krb5_kt_store_data(krb5_storage *sp,
-		   krb5_data data)
-{
-    int ret;
-    ret = krb5_store_int16(sp, data.length);
-    if(ret < 0)
-	return ret;
-    ret = sp->store(sp, data.data, data.length);
-    if(ret != data.length){
-	if(ret < 0)
-	    return errno;
-	return KRB5_CC_END;
-    }
-    return 0;
-}
-
-static krb5_error_code
 krb5_kt_ret_data(krb5_storage *sp,
 		 krb5_data *data)
 {
@@ -224,24 +169,6 @@ krb5_kt_ret_data(krb5_storage *sp,
     ret = sp->fetch(sp, data->data, size);
     if(ret != size)
 	return (ret < 0)? errno : KRB5_CC_END;
-    return 0;
-}
-
-static krb5_error_code
-krb5_kt_store_principal(krb5_storage *sp,
-			krb5_principal princ)
-{
-    int i;
-    int ret;
-
-    ret = krb5_store_int16 (sp, princ->ncomp);
-    if (ret) return ret;
-    ret = krb5_kt_store_data (sp, princ->realm);
-    if (ret) return ret;
-    for (i = 0; i < princ->ncomp; i++) {
-	ret = krb5_kt_store_data (sp, princ->comp[i]);
-	if (ret) return ret;
-    }
     return 0;
 }
 
@@ -291,15 +218,90 @@ krb5_kt_ret_keyblock(krb5_storage *sp, krb5_keyblock *p)
 }
 
 static krb5_error_code
-krb5_kt_store_keyblock (krb5_storage *sp,
-			krb5_keyblock *p)
+krb5_kt_store_data(krb5_storage *sp,
+		   krb5_data data)
+{
+    int ret;
+    ret = krb5_store_int16(sp, data.length);
+    if(ret < 0)
+	return ret;
+    ret = sp->store(sp, data.data, data.length);
+    if(ret != data.length){
+	if(ret < 0)
+	    return errno;
+	return KRB5_CC_END;
+    }
+    return 0;
+}
+
+static krb5_error_code
+krb5_kt_store_keyblock(krb5_storage *sp, 
+		       krb5_keyblock *p)
 {
     int ret;
 
-    ret = krb5_store_int16(sp, p->keytype);
-    if (ret) return ret;
+    ret = krb5_store_int16(sp, p->keytype); /* keytype + etype */
+    if(ret) return ret;
     ret = krb5_kt_store_data(sp, p->contents);
+    return ret;
+}
+
+
+static krb5_error_code
+krb5_kt_store_principal(krb5_storage *sp,
+			krb5_principal p)
+{
+    int i;
+    int ret;
+    int16_t tmp;
+    
+    ret = krb5_store_int16(sp, p->ncomp);
+    if(ret) return ret;
+    ret = krb5_kt_store_data(sp, p->realm);
+    if(ret) return ret;
+    for(i = 0; i < p->ncomp; i++){
+	ret = krb5_kt_store_data(sp, p->comp[i]);
+	if(ret) return ret;
+    }
+    return 0;
+}
+
+
+krb5_error_code
+krb5_kt_add_entry(krb5_context context,
+		  krb5_keytab id,
+		  krb5_keytab_entry *entry)
+{
+    int ret;
+    int fd;
+    krb5_storage *sp;
+
+    fd = open (id->filename, O_APPEND);
+    if (fd < 0) {
+	fd = open (id->filename, O_WRONLY | O_CREAT, 0600);
+	if (fd < 0)
+	    return errno;
+	sp = krb5_storage_from_fd(fd);
+	ret = krb5_store_int16 (sp, 0x0502);
+	if (ret) return ret;
+    } else {
+	sp = krb5_storage_from_fd(fd);
+    }
+
+    ret = krb5_store_int32 (sp, 4711); /* XXX */
     if (ret) return ret;
+    ret = krb5_kt_store_principal (sp, entry->principal);
+    if (ret) return ret;
+    ret = krb5_store_int32 (sp, entry->principal->type);
+    if (ret) return ret;
+    ret = krb5_store_int32 (sp, time(NULL));
+    if (ret) return ret;
+    ret = krb5_store_int8 (sp, entry->vno);
+    if (ret) return ret;
+    ret = krb5_kt_store_keyblock (sp, &entry->keyblock);
+    if (ret) return ret;
+    krb5_storage_free (sp);
+    close (fd);
     return 0;
 }
 
