@@ -392,6 +392,7 @@ typedef struct
 	BOOL bBlockingLocks;
 	BOOL bInheritPerms;
 	BOOL bMSDfsRoot;
+	BOOL bUseClientDriver;
 
 	char dummy[3];		/* for alignment */
 }
@@ -506,6 +507,7 @@ static service sDefault = {
 	True,			/* bBlockingLocks */
 	False,			/* bInheritPerms */
 	False,			/* bMSDfsRoot */
+	False,			/* bUseClientDriver */
 
 	""			/* dummy */
 };
@@ -851,10 +853,11 @@ static struct parm_struct parm_table[] = {
 	{"addprinter command", P_STRING, P_GLOBAL, &Globals.szAddPrinterCommand, NULL, NULL, 0},
 	{"deleteprinter command", P_STRING, P_GLOBAL, &Globals.szDeletePrinterCommand, NULL, NULL, 0},
 	{"show add printer wizard", P_BOOL, P_GLOBAL, &Globals.bMsAddPrinterWizard, NULL, NULL, 0},
-    {"os2 driver map", P_STRING, P_GLOBAL, &Globals.szOs2DriverMap, NULL, NULL, 0},
+	{"os2 driver map", P_STRING, P_GLOBAL, &Globals.szOs2DriverMap, NULL, NULL, 0},
 	
 	{"printer name", P_STRING, P_LOCAL, &sDefault.szPrintername, NULL, NULL, FLAG_PRINT|FLAG_DOS_STRING},
 	{"printer", P_STRING, P_LOCAL, &sDefault.szPrintername, NULL, NULL, FLAG_DOS_STRING},
+	{"use client driver", P_BOOL, P_LOCAL, &sDefault.bUseClientDriver, NULL, NULL, FLAG_PRINT},
 	{"printer driver", P_STRING, P_LOCAL, &sDefault.szPrinterDriver, NULL, NULL, FLAG_PRINT},
 	{"printer driver file", P_STRING, P_LOCAL, &sDefault.szDriverFile, NULL, NULL, FLAG_PRINT},
 	{"printer driver location", P_STRING, P_LOCAL, &sDefault.szPrinterDriverLocation, NULL, NULL, FLAG_PRINT | FLAG_GLOBAL},
@@ -1676,6 +1679,7 @@ FN_LOCAL_BOOL(lp_dos_filetime_resolution, bDosFiletimeResolution)
 FN_LOCAL_BOOL(lp_fake_dir_create_times, bFakeDirCreateTimes)
 FN_LOCAL_BOOL(lp_blocking_locks, bBlockingLocks)
 FN_LOCAL_BOOL(lp_inherit_perms, bInheritPerms)
+FN_LOCAL_BOOL(lp_use_client_driver, bUseClientDriver)
 FN_LOCAL_INTEGER(lp_create_mask, iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode, iCreate_force_mode)
 FN_LOCAL_INTEGER(lp_security_mask, iSecurity_mask)
