@@ -24,6 +24,8 @@
 #include "winbindd.h"
 #include "sids.h"
 
+static void winbindd_kill_connections(struct winbindd_domain *domain);
+
 /* Debug connection state */
 
 void debug_conn_state(void)
@@ -221,7 +223,7 @@ BOOL domain_handles_open(struct winbindd_domain *domain)
 
 /* Shut down connections to all domain controllers */
 
-void winbindd_kill_connections(struct winbindd_domain *domain)
+static void winbindd_kill_connections(struct winbindd_domain *domain)
 {
         /* Kill all connections */
 
@@ -756,84 +758,6 @@ BOOL winbindd_param_init(void)
     }
     
     return True;
-}
-
-/* Convert a enum winbindd_cmd to a string */
-
-struct cmdstr_table {
-	enum winbindd_cmd cmd;
-	char *desc;
-};
-
-static struct cmdstr_table cmdstr_table[] = {
-	
-	/* User functions */
-
-	{ WINBINDD_GETPWNAM_FROM_USER, "getpwnam from user" },
-	{ WINBINDD_GETPWNAM_FROM_UID, "getpwnam from uid" },
-	{ WINBINDD_SETPWENT, "setpwent" },
-	{ WINBINDD_ENDPWENT, "endpwent" },
-	{ WINBINDD_GETPWENT, "getpwent" },
-	{ WINBINDD_GETGROUPS, "getgroups" },
-
-	/* Group functions */
-
-	{ WINBINDD_GETGRNAM_FROM_GROUP, "getgrnam from group" },
-	{ WINBINDD_GETGRNAM_FROM_GID, "getgrnam from gid" },
-	{ WINBINDD_SETGRENT, "setgrent" },
-	{ WINBINDD_ENDGRENT, "endgrent" },
-	{ WINBINDD_GETGRENT, "getgrent" },
-
-	/* PAM auth functions */
-
-	{ WINBINDD_PAM_AUTH, "pam auth" },
-	{ WINBINDD_PAM_AUTH_CRAP, "pam auth crap" },
-	{ WINBINDD_PAM_CHAUTHTOK, "pam chauthtok" },
-
-	/* List things */
-
-        { WINBINDD_LIST_USERS, "list users" },
-        { WINBINDD_LIST_GROUPS, "list groups" },
-	{ WINBINDD_LIST_TRUSTDOM, "list trusted domains" },
-
-	/* SID related functions */
-
-	{ WINBINDD_LOOKUPSID, "lookup sid" },
-	{ WINBINDD_LOOKUPNAME, "lookup name" },
-
-	/* S*RS related functions */
-
-	{ WINBINDD_SID_TO_UID, "sid to uid" },
-	{ WINBINDD_SID_TO_GID, "sid to gid " },
-	{ WINBINDD_GID_TO_SID, "gid to sid" },
-	{ WINBINDD_UID_TO_SID, "uid to sid" },
-
-	/* Miscellaneous other stuff */
-
-	{ WINBINDD_CHECK_MACHACC, "check machine acct pw" },
-
-	/* End of list */
-
-	{ WINBINDD_NUM_CMDS, NULL }
-};
-
-char *winbindd_cmd_to_string(enum winbindd_cmd cmd)
-{
-	struct cmdstr_table *table = cmdstr_table;
-	char *result = NULL;
-
-	for(table = cmdstr_table; table->desc; table++) {
-		if (cmd == table->cmd) {
-			result = table->desc;
-			break;
-		}
-	}
-	
-	if (result == NULL) {
-		result = "invalid command";
-	}
-
-	return result;
 }
 
 /* find the sequence number for a domain */
