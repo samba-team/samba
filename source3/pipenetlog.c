@@ -46,14 +46,14 @@ static void make_lsa_r_req_chal(LSA_R_REQ_CHAL *r_c,
 }
 
 static int lsa_reply_req_chal(LSA_Q_REQ_CHAL *q_c, char *q, char *base,
-					DOM_CHAL *srv_chal)
+					DOM_CHAL *srv_chal, uint32 srv_time)
 {
 	LSA_R_REQ_CHAL r_c;
 
 	DEBUG(6,("lsa_reply_req_chal: %d\n", __LINE__));
 
 	/* set up the LSA REQUEST CHALLENGE response */
-	make_lsa_r_req_chal(&r_c, srv_chal, 0);
+	make_lsa_r_req_chal(&r_c, srv_chal, srv_time);
 
 	/* store the response in the SMB stream */
 	q = lsa_io_r_req_chal(False, &r_c, q, base, 4, 0);
@@ -284,26 +284,23 @@ static int lsa_reply_sam_logoff(LSA_Q_SAM_LOGOFF *q_s, char *q, char *base,
 	return PTR_DIFF(q, base);
 }
 
-
-static BOOL update_dcinfo(int cnum, uint16 vuid,
-		struct dcinfo *dc, DOM_CHAL *clnt_chal, char *mach_acct)
+/****************************************************************************
+  gets a machine password entry
+****************************************************************************/
+BOOL get_md4pw(char *md4pw, char *mach_acct)
 {
     struct smb_passwd *smb_pass;
-	int i;
 
-	unbecome_user();
+	become_root(True);
 	smb_pass = get_smbpwnam(mach_acct);
-	if (!become_user(cnum, vuid))
-	{
-		DEBUG(0,("update_dcinfo: become_user failed\n"));
-		return False;
-	}
+	unbecome_root(True);
 
 	if (smb_pass != NULL)
 	{
-		memcpy(dc->md4pw, smb_pass->smb_nt_passwd, sizeof(dc->md4pw));
-		DEBUG(5,("dc->md4pw(%d) :", sizeof(dc->md4pw)));
-		dump_data(5, dc->md4pw, 16);
+		memcpy(md4pw, smb_pass->smb_nt_passwd, 16);
+		dump_data(5, md4pw, 16);
+
+		return True;
 	}
 	else
 	{
@@ -312,32 +309,6 @@ static BOOL update_dcinfo(int cnum, uint16 vuid,
 		DEBUG(1,("No account in domain for %s\n", mach_acct));
 		return False;
 	}
-
-	{
-		fstring foo;
-		for (i = 0; i < 16; i++) sprintf(foo+i*2,"%02x ", dc->md4pw[i]);
-		DEBUG(4,("pass %s %s\n", mach_acct, foo));
-	}
-
-	/* copy the client credentials */
-	memcpy(dc->clnt_chal.data, clnt_chal->data, sizeof(clnt_chal->data));
-	memcpy(dc->clnt_cred.data, clnt_chal->data, sizeof(clnt_chal->data));
-
-	/* create a server challenge for the client */
-	/* PAXX: set these to random values. */
-	/* lkcl: paul, you mentioned that it doesn't really matter much */
-	dc->srv_chal.data[0] = 0x11111111;
-	dc->srv_chal.data[1] = 0x11111111;
-	dc->srv_cred.data[0] = 0x11111111;
-	dc->srv_cred.data[1] = 0x11111111;
-
-	/* from client / server challenges and md4 password, generate sess key */
-	cred_session_key(&(dc->clnt_chal), &(dc->srv_chal),
-	                   dc->md4pw, dc->sess_key);
-
-	DEBUG(6,("update_dcinfo: %d\n", __LINE__));
-
-	return True;
 }
 
 static void api_lsa_req_chal( int cnum, uint16 vuid,
@@ -360,11 +331,28 @@ static void api_lsa_req_chal( int cnum, uint16 vuid,
 	DEBUG(6,("q_r.clnt_chal.data: %lx %lx\n",
 	         q_r.clnt_chal.data[0], q_r.clnt_chal.data[1]));
 
-	update_dcinfo(cnum, vuid, &(vuser->dc), &(q_r.clnt_chal), mach_acct);
+	if (get_md4pw(vuser->dc.md4pw, mach_acct))
+	{
+		/* copy the client credentials */
+		memcpy(vuser->dc.clnt_chal.data          , q_r.clnt_chal.data, sizeof(q_r.clnt_chal.data));
+		memcpy(vuser->dc.clnt_cred.challenge.data, q_r.clnt_chal.data, sizeof(q_r.clnt_chal.data));
+
+		/* create a server challenge for the client */
+		/* PAXX: set these to random values. */
+		/* lkcl: paul, you mentioned that it doesn't really matter much */
+		vuser->dc.srv_chal.data[0] = 0x11111111;
+		vuser->dc.srv_chal.data[1] = 0x11111111;
+		vuser->dc.srv_cred.challenge.data[0] = vuser->dc.srv_chal.data[0];
+		vuser->dc.srv_cred.challenge.data[1] = vuser->dc.srv_chal.data[1];
+
+		/* from client / server challenges and md4 password, generate sess key */
+		cred_session_key(&(vuser->dc.clnt_chal), &(vuser->dc.srv_chal),
+						   vuser->dc.md4pw, vuser->dc.sess_key);
+	}
 
 	/* construct reply.  return status is always 0x0 */
 	*rdata_len = lsa_reply_req_chal(&q_r, *rdata + 0x18, *rdata,
-					&(vuser->dc.srv_chal));
+					&(vuser->dc.srv_chal), 0);
 
 }
 
@@ -384,63 +372,20 @@ static void api_lsa_auth_2( user_struct *vuser,
 
 	/* check that the client credentials are valid */
 	cred_assert(&(q_a.clnt_chal), vuser->dc.sess_key,
-                &(vuser->dc.clnt_cred), srv_time);
+                &(vuser->dc.clnt_cred.challenge), srv_time);
 
 	/* create server challenge for inclusion in the reply */
-	cred_create(vuser->dc.sess_key, &(vuser->dc.srv_cred), srv_time, &srv_cred);
+	cred_create(vuser->dc.sess_key, &(vuser->dc.srv_cred.challenge), srv_time, &srv_cred);
 
 	/* copy the received client credentials for use next time */
-	memcpy(vuser->dc.clnt_cred.data, &(q_a.clnt_chal.data), sizeof(q_a.clnt_chal.data));
-	memcpy(vuser->dc.srv_cred .data, &(q_a.clnt_chal.data), sizeof(q_a.clnt_chal.data));
+	memcpy(vuser->dc.clnt_cred.challenge.data, &(q_a.clnt_chal.data), sizeof(q_a.clnt_chal.data));
+	memcpy(vuser->dc.srv_cred .challenge.data, &(q_a.clnt_chal.data), sizeof(q_a.clnt_chal.data));
 
 	/* construct reply. */
 	*rdata_len = lsa_reply_auth_2(&q_a, *rdata + 0x18, *rdata,
 					&srv_cred, 0x0);
 }
 
-
-static BOOL deal_with_credentials(user_struct *vuser,
-			DOM_CRED *clnt_cred, DOM_CRED *srv_cred)
-{
-	UTIME new_clnt_time;
-	uint32 new_cred;
-
-	DEBUG(5,("deal_with_credentials: %d\n", __LINE__));
-
-	/* increment client time by one second */
-	new_clnt_time.time = clnt_cred->timestamp.time + 1;
-
-	/* first 4 bytes of the new seed is old client 4 bytes + clnt time + 1 */
-	new_cred = IVAL(vuser->dc.clnt_cred.data, 0);
-	new_cred += new_clnt_time.time;
-
-	DEBUG(5,("deal_with_credentials: new_cred[0]=%lx\n", new_cred));
-
-	/* doesn't matter that server time is 0 */
-	srv_cred->timestamp.time = 0;
-
-	/* check that the client credentials are valid */
-	if (!cred_assert(&(clnt_cred->challenge), vuser->dc.sess_key,
-                    &(vuser->dc.clnt_cred), clnt_cred->timestamp))
-	{
-		return False;
-	}
-
-	DEBUG(5,("deal_with_credentials: new_clnt_time=%lx\n", new_clnt_time.time));
-
-	/* create server credentials for inclusion in the reply */
-	cred_create(vuser->dc.sess_key, &(vuser->dc.clnt_cred), new_clnt_time,
-	            &(srv_cred->challenge));
-	
-	DEBUG(5,("deal_with_credentials: clnt_cred[0]=%lx\n",
-	          vuser->dc.clnt_cred.data[0]));
-
-	/* store new seed in client and server credentials */
-	SIVAL(vuser->dc.clnt_cred.data, 0, new_cred);
-	SIVAL(vuser->dc.srv_cred .data, 0, new_cred);
-
-	return True;
-}
 
 static void api_lsa_srv_pwset( user_struct *vuser,
                                char *param, char *data,
@@ -454,7 +399,7 @@ static void api_lsa_srv_pwset( user_struct *vuser,
 	lsa_io_q_srv_pwset(True, &q_a, data + 0x18, data, 4, 0);
 
 	/* checks and updates credentials.  creates reply credentials */
-	deal_with_credentials(vuser, &(q_a.clnt_id.cred), &srv_cred);
+	srv_deal_with_creds(&(vuser->dc), &(q_a.clnt_id.cred), &srv_cred);
 
 	DEBUG(5,("api_lsa_srv_pwset: %d\n", __LINE__));
 
@@ -477,7 +422,7 @@ static void api_lsa_sam_logoff( user_struct *vuser,
 	lsa_io_q_sam_logoff(True, &q_l, data + 0x18, data, 4, 0);
 
 	/* checks and updates credentials.  creates reply credentials */
-	deal_with_credentials(vuser, &(q_l.sam_id.client.cred), &srv_cred);
+	srv_deal_with_creds(&(vuser->dc), &(q_l.sam_id.client.cred), &srv_cred);
 
 	/* construct reply.  always indicate success */
 	*rdata_len = lsa_reply_sam_logoff(&q_l, *rdata + 0x18, *rdata,
@@ -498,7 +443,7 @@ static void api_lsa_sam_logon( user_struct *vuser,
 	lsa_io_q_sam_logon(True, &q_l, data + 0x18, data, 4, 0);
 
 	/* checks and updates credentials.  creates reply credentials */
-	deal_with_credentials(vuser, &(q_l.sam_id.client.cred), &srv_creds);
+	srv_deal_with_creds(&(vuser->dc), &(q_l.sam_id.client.cred), &srv_creds);
 
 	usr_info.ptr_user_info = 0;
 
@@ -645,13 +590,13 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 		return True;
 	}
 
-	DEBUG(4,("netlogon TransactNamedPipe op %x\n",hdr.reserved));
+	DEBUG(4,("netlogon TransactNamedPipe op %x\n",hdr.opnum));
 
 	if ((vuser = get_valid_user_struct(uid)) == NULL) return False;
 
 	DEBUG(3,("Username of UID %d is %s\n", vuser->uid, vuser->name));
 
-	switch (hdr.reserved)
+	switch (hdr.opnum)
 	{
 		case LSA_REQCHAL:
 		{
@@ -695,7 +640,7 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 
 		default:
 		{
-  			DEBUG(4, ("**** netlogon, unknown code: %lx\n", hdr.reserved));
+  			DEBUG(4, ("**** netlogon, unknown code: %lx\n", hdr.opnum));
 			break;
 		}
 	}

@@ -3886,6 +3886,8 @@ static void usage(char *pname)
       return(ret);
     }
 
+#ifdef NTDOMAIN
+
 	if (nt_domain_logon)
 	{
 		int ret = 0;
@@ -3897,25 +3899,17 @@ static void usage(char *pname)
 
 		if (cli_open_sockets(port))
 		{
-			DOM_CHAL srv_chal;
-
 			if (!cli_send_login(NULL,NULL,True,True)) return(1);
 
-			if (!cli_lsa_req_chal(&srv_chal, desthost, myhostname, Client, cnum))
-			{
-				return (1);
-			}
-#if 0
-			cli_lsa_auth2();
-			cli_lsa_sam_logon();
-			cli_lsa_sam_logoff();
-#endif
+			do_nt_login(desthost, myhostname, Client, cnum);
+
 			cli_send_logout();
 			close_sockets();
 		}
 
 		return(ret);
 	}
+#endif 
 
   if (cli_open_sockets(port))
     {

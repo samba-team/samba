@@ -550,7 +550,7 @@ typedef struct rpc_hdr_info
   uint32 alloc_hint; /* allocation hint - data size (bytes) minus header and tail. */
   uint16 context_id; /* 0 - presentation context identifier */
   uint8  cancel_count; /* 0 - cancel count */
-  uint8  reserved; /* 0 - reserved */
+  uint8  opnum; /* request: 0 - reserved.  response: opnum */
 
 } RPC_HDR;
 
@@ -1185,8 +1185,8 @@ struct dcinfo
 {
   DOM_CHAL clnt_chal; /* Initial challenge received from client */
   DOM_CHAL srv_chal;  /* Initial server challenge */
-  DOM_CHAL clnt_cred; /* Last client credential */
-  DOM_CHAL srv_cred;  /* Last server credential */
+  DOM_CRED clnt_cred; /* Last client credential */
+  DOM_CRED srv_cred;  /* Last server credential */
 
   uint32 sess_key[2]; /* Session key */
   uchar  md4pw[16];   /* md4(machine password) */

@@ -298,6 +298,24 @@ char* lsa_io_r_req_chal(BOOL io, LSA_R_REQ_CHAL *r_c, char *q, char *base, int a
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+void make_q_auth_2(LSA_Q_AUTH_2 *q_a,
+		char *logon_srv, char *acct_name, uint16 sec_chan, char *comp_name,
+		DOM_CHAL *clnt_chal, uint32 clnt_flgs)
+{
+	if (q_a == NULL) return;
+
+	DEBUG(5,("make_q_auth_2: %d\n", __LINE__));
+
+	make_log_info(&(q_a->clnt_id), logon_srv, acct_name, sec_chan, comp_name);
+	memcpy(q_a->clnt_chal.data, clnt_chal->data, sizeof(clnt_chal->data));
+	q_a->clnt_flgs.neg_flags = clnt_flgs;
+
+	DEBUG(5,("make_q_auth_2: %d\n", __LINE__));
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
 char* lsa_io_q_auth_2(BOOL io, LSA_Q_AUTH_2 *q_a, char *q, char *base, int align, int depth)
 {
 	if (q_a == NULL) return NULL;

@@ -1606,11 +1606,12 @@ static BOOL api_PrintJobInfo(int cnum,uint16 vuid,char *param,char *data,
 	  if (Files[i].open && Files[i].print_file)
 	    {
 	      pstring wd;
+          int fcnum = Files[i].cnum;
 	      GetWd(wd);
 	      unbecome_user();
 	      
-	      if (!become_user(Files[i].cnum,vuid) || 
-		  !become_service(Files[i].cnum,True))
+	      if (!become_user(&Connections[fcnum], fcnum,vuid) || 
+		  !become_service(fcnum,True))
 		break;
 	      
 	      if (sys_rename(Files[i].name,name) == 0)

@@ -226,15 +226,15 @@ it also defines lots of intermediate macros, just ignore those :-)
 #define DBG_RW_CVAL(string,depth,base,read,inbuf,outbuf) \
 	RW_CVAL(read,inbuf,outbuf,0) \
 	DEBUG(5,("%s%04x %s: %02x\n", \
-             tab_depth(depth), PTR_DIFF(inbuf,base),string, *((uint8*)(inbuf))));
+             tab_depth(depth), PTR_DIFF(inbuf,base),string, CVAL(inbuf, 0)));
 
 #define DBG_RW_SVAL(string,depth,base,read,inbuf,outbuf) \
 	RW_SVAL(read,inbuf,outbuf,0) \
 	DEBUG(5,("%s%04x %s: %04x\n", \
-             tab_depth(depth), PTR_DIFF(inbuf,base),string, *((uint16*)(inbuf))));
+             tab_depth(depth), PTR_DIFF(inbuf,base),string, SVAL(inbuf, 0)));
 
 #define DBG_RW_IVAL(string,depth,base,read,inbuf,outbuf) \
 	RW_IVAL(read,inbuf,outbuf,0) \
 	DEBUG(5,("%s%04x %s: %08x\n", \
-             tab_depth(depth), PTR_DIFF(inbuf,base),string, *((uint32*)(inbuf))));
+             tab_depth(depth), PTR_DIFF(inbuf,base),string, IVAL(inbuf, 0)));
 
