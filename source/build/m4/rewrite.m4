@@ -110,8 +110,8 @@ case "$host_os" in
 	  *-D_POSIX_C_SOURCE*)
 		;;
 	  *)
-		CPPFLAGS="$CPPFLAGS -D_POSIX_C_SOURCE=199506L"
-		AC_DEFINE(_POSIX_C_SOURCE, 199506L, [Whether to enable POSIX support])
+		CPPFLAGS="$CPPFLAGS -D_POSIX_C_SOURCE=200112L"
+		AC_DEFINE(_POSIX_C_SOURCE, 200112L, [Whether to enable POSIX support])
 		;;
     esac
     case "$CPPFLAGS" in
