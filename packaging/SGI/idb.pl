@@ -113,11 +113,7 @@ chdir $curdir;
 # add my local files to the list of binaries to install
 @bins = sort byfilename (@sprogs,@progs,@progs1,@progs2,@mprogs,@scripts,@winbind_progs,@winbind_sprogs,("/findsmb","/sambalp","/smbprint"));
 
-# add libnss_wins.so if it was built
-if (-e "$SRCDIR/source/nsswitch/libnss_wins.so") {
-  $libns_wins = "nsswitch/libnss_wins.so";
-}
-@nsswitch = sort byfilename (@winbind_lprogs,@winbind_pam_progs,$libns_wins);
+@nsswitch = sort byfilename (@winbind_lprogs,@winbind_pam_progs);
 
 # get a complete list of all files in the tree
 chdir "$SRCDIR/";

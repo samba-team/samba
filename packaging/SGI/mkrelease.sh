@@ -66,7 +66,7 @@ echo Making binaries
 
 echo "=====================  Making Profile versions ======================="
 make clean
-make -P "CFLAGS=-O -g3 -D WITH_PROFILE" CHECK bin/smbd bin/nmbd
+make -P "CFLAGS=-O -g3 -woff 1188 -D DMF_FIX -D WITH_PROFILE" CHECK bin/smbd bin/nmbd
 errstat=$?
 if [ $errstat -ne 0 ]; then
   echo "Error $errstat building profile sources\n";
@@ -77,7 +77,7 @@ mv  bin/nmbd bin/nmbd.profile
 
 echo "=====================  Making No Quota versions ======================="
 make clean
-make -P "CFLAGS=-O -g3 -D QUOTAOBJS=smbd/noquotas.o" CHECK bin/smbd
+make -P "CFLAGS=-O -g3 -woff 1188 -D DMF_FIX -D QUOTAOBJS=smbd/noquotas.o" CHECK bin/smbd
 errstat=$?
 if [ $errstat -ne 0 ]; then
   echo "Error $errstat building noquota sources\n";
@@ -90,7 +90,7 @@ echo "=====================  Making smbwrapper.32.so ======================="
 # just for this object
 ISA=
 export ISA
-make -P "CFLAGS=-O -g3" bin/smbwrapper.32.so
+make -P "CFLAGS=-O -g3 -woff 1188 -D DMF_FIX" bin/smbwrapper.32.so
 errstat=$?
 if [ $errstat -ne 0 ]; then
   echo "Error $errstat building sources\n";
@@ -99,7 +99,7 @@ fi
 ISA=-mips3
 export ISA
 echo "=====================  Making Regular versions ======================="
-make -P "CFLAGS=-O -g3" all nsswitch/libnss_wins.so
+make -P "CFLAGS=-O -g3 -woff 1188 -D DMF_FIX" all
 errstat=$?
 if [ $errstat -ne 0 ]; then
   echo "Error $errstat building sources\n";
