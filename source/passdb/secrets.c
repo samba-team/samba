@@ -129,13 +129,13 @@ form a key for fetching a domain trust password
 char *trust_keystr(char *domain)
 {
 	static fstring keystr;
-	fstring upper_domain;
-
-	fstrcpy(upper_domain, domain);
-	strupper(upper_domain);
 
 	slprintf(keystr,sizeof(keystr)-1,"%s/%s", 
 		 SECRETS_MACHINE_ACCT_PASS, upper_domain);
+
+	unix_to_dos(keystr);
+	strupper(keystr);
+	dos_to_unix(keystr);	
 
 	return keystr;
 }
