@@ -365,5 +365,5 @@ void interpret_character_set(char *str, int codepage)
         DEBUG(0,("unrecognized character set %s\n", str));
     }
 
-    load_unix_unicode_map(str);
+    load_unix_unicode_map(str, True);
 }

@@ -27,7 +27,6 @@
 
 /* Misc bit macros */
 #define BOOLSTR(b) ((b) ? "Yes" : "No")
-#define BITSETB(ptr,bit) ((((char *)ptr)[0] & (1<<(bit)))!=0)
 #define BITSETW(ptr,bit) ((SVAL(ptr,0) & (1<<(bit)))!=0)
 
 /* for readability... */

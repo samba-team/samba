@@ -370,6 +370,7 @@ for code page %d failed. Using default client codepage 850\n",
 
   /* Try and load the unicode map. */
   load_dos_unicode_map(client_codepage);
+  load_unix_unicode_map("iso8859-1", False); /* This will be reset by character set = XXX */
 }
 
 /*******************************************************************
