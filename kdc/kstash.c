@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -43,6 +43,7 @@ int help_flag;
 int version_flag;
 
 int master_key_fd = -1;
+int random_key;
 
 const char *enctype_str = "des3-cbc-sha1";
 
@@ -53,6 +54,7 @@ struct getargs args[] = {
       "just convert keyfile to new format" },
     { "master-key-fd", 0, arg_integer, &master_key_fd, 
       "filedescriptor to read passphrase from", "fd" },
+    { "random-key", 0, arg_flag, &random_key, "generate a random master key" },
     { "help", 'h', arg_flag, &help_flag },
     { "version", 0, arg_flag, &version_flag }
 };
@@ -78,6 +80,10 @@ main(int argc, char **argv)
 	exit(0);
     }
 
+    if (master_key_fd != -1 && random_key)
+	krb5_errx(context, 1, "random-key and master-key-fd "
+		  "is mutual exclusive");
+
     ret = krb5_string_to_enctype(context, enctype_str, &enctype);
     if(ret)
 	krb5_err(context, 1, ret, "krb5_string_to_enctype");
@@ -96,18 +102,26 @@ main(int argc, char **argv)
 	/* XXX better value? */
 	salt.saltvalue.data = NULL;
 	salt.saltvalue.length = 0;
-	if(master_key_fd != -1) {
-	    ssize_t n;
-	    n = read(master_key_fd, buf, sizeof(buf));
-	    if(n <= 0)
-		krb5_err(context, 1, errno, "failed to read passphrase");
-	    buf[n] = '\0';
-	    buf[strcspn(buf, "\r\n")] = '\0';
+	if (random_key) {
+	    ret = krb5_generate_random_keyblock(context, enctype, &key);
+	    if (ret)
+		krb5_err(context, 1, ret, "krb5_generate_random_keyblock");
+
 	} else {
-	    if(UI_UTIL_read_pw_string(buf, sizeof(buf), "Master key: ", 1))
-		exit(1);
+	    if(master_key_fd != -1) {
+		ssize_t n;
+		n = read(master_key_fd, buf, sizeof(buf));
+		if(n <= 0)
+		    krb5_err(context, 1, errno, "failed to read passphrase");
+		buf[n] = '\0';
+		buf[strcspn(buf, "\r\n")] = '\0';
+		
+	    } else {
+		if(UI_UTIL_read_pw_string(buf, sizeof(buf), "Master key: ", 1))
+		    exit(1);
+	    }
+	    krb5_string_to_key_salt(context, enctype, buf, salt, &key);
 	}
-	krb5_string_to_key_salt(context, enctype, buf, salt, &key);
 	ret = hdb_add_master_key(context, &key, &mkey);
 	
 	krb5_free_keyblock_contents(context, &key);
