@@ -1747,11 +1747,7 @@ static void free_service(service * pservice)
 		       pservice->szService));
 
 	string_free(&pservice->szService);
-	if (pservice->copymap)
-	{
-		free(pservice->copymap);
-		pservice->copymap = NULL;
-	}
+	SAFE_FREE(pservice->copymap);
 
 	for (i = 0; parm_table[i].label; i++)
 	{
@@ -2160,13 +2156,13 @@ static void add_to_file_list(char *fname, char *subfname)
 		f->name = strdup(fname);
 		if (!f->name)
 		{
-			free(f);
+			SAFE_FREE(f);
 			return;
 		}
 		f->subfname = strdup(subfname);
 		if (!f->subfname)
 		{
-			free(f);
+			SAFE_FREE(f);
 			return;
 		}
 		file_lists = f;
@@ -2203,7 +2199,7 @@ BOOL lp_file_list_changed(void)
 				 ("file %s modified: %s\n", n2,
 				  ctime(&mod_time)));
 			f->modtime = mod_time;
-			free(f->subfname);
+			SAFE_FREE(f->subfname);
 			f->subfname = strdup(n2);
 			return (True);
 		}
@@ -2486,8 +2482,7 @@ initialise a copymap
 static void init_copymap(service * pservice)
 {
 	int i;
-	if (pservice->copymap)
-		free(pservice->copymap);
+	SAFE_FREE(pservice->copymap);
 	pservice->copymap = (BOOL *)malloc(sizeof(BOOL) * NUMPARAMETERS);
 	if (!pservice->copymap)
 		DEBUG(0,
@@ -3074,7 +3069,7 @@ static void lp_add_auto_services(char *str)
 			lp_add_home(p, homes, home);
 		}
 	}
-	free(s);
+	SAFE_FREE(s);
 }
 
 /***************************************************************************
@@ -3622,8 +3617,8 @@ char **lp_list_make(char *string)
 			rlist = (char **)Realloc(list, ((sizeof(char **)) * (lsize +1)));
 			if (!rlist) {
 				DEBUG(0,("lp_list_make: Unable to allocate memory"));
-				lp_list_free (&list);
-				free (s);
+				lp_list_free(&list);
+				SAFE_FREE(s);
 				return NULL;
 			}
 			else list = rlist;
@@ -3633,15 +3628,15 @@ char **lp_list_make(char *string)
 		list[num] = strdup(tok);
 		if (!list[num]) {
 			DEBUG(0,("lp_list_make: Unable to allocate memory"));
-			lp_list_free (&list);
-			free (s);
+			lp_list_free(&list);
+			SAFE_FREE(s);
 			return NULL;
 		}
 	
 		num++;	
 	}
 	
-	free (s);
+	SAFE_FREE(s);
 	return list;
 }
 
@@ -3663,7 +3658,7 @@ BOOL lp_list_copy(char ***dest, char **src)
 			rlist = (char **)Realloc(list, ((sizeof(char **)) * (lsize +1)));
 			if (!rlist) {
 				DEBUG(0,("lp_list_copy: Unable to allocate memory"));
-				lp_list_free (&list);
+				lp_list_free(&list);
 				return False;
 			}
 			else list = rlist;
@@ -3673,7 +3668,7 @@ BOOL lp_list_copy(char ***dest, char **src)
 		list[num] = strdup(src[num]);
 		if (!list[num]) {
 			DEBUG(0,("lp_list_copy: Unable to allocate memory"));
-			lp_list_free (&list);
+			lp_list_free(&list);
 			return False;
 		}
 
@@ -3706,9 +3701,8 @@ void lp_list_free(char ***list)
 	
 	if (!list || !*list) return;
 	tlist = *list;
-	for(; *tlist; tlist++) free(*tlist);
-	free (*list);
-	*list = NULL;
+	for(; *tlist; tlist++) SAFE_FREE(*tlist);
+	SAFE_FREE(*list);
 }
 
 BOOL lp_list_substitute(char **list, const char *pattern, const char *insert)
@@ -3742,7 +3736,7 @@ BOOL lp_list_substitute(char **list, const char *pattern, const char *insert)
 				}
 				memcpy(t, *list, d);
 				memcpy(t +d +li, p +lp, ls -d -lp +1);
-				free (*list);
+				SAFE_FREE(*list);
 				*list = t;
 				ls += ld;
 				s = t +d +li;
