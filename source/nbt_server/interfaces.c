@@ -33,9 +33,22 @@ static void nbtd_request_handler(struct nbt_name_socket *nbtsock,
 				 struct nbt_name_packet *packet, 
 				 const char *src_address, int src_port)
 {
+	/* if its a WINS query then direct to our WINS server */
+	if ((packet->operation & NBT_FLAG_RECURSION_DESIRED) &&
+	    !(packet->operation & NBT_FLAG_BROADCAST)) {
+		nbtd_query_wins(nbtsock, packet, src_address, src_port);
+		return;
+	}
+
+	/* the request is to us in our role as a B node */
 	switch (packet->operation & NBT_OPCODE) {
 	case NBT_OPCODE_QUERY:
 		nbtd_request_query(nbtsock, packet, src_address, src_port);
+		break;
+
+	case NBT_OPCODE_REGISTER:
+	case NBT_OPCODE_REFRESH:
+		nbtd_request_defense(nbtsock, packet, src_address, src_port);
 		break;
 	}
 }

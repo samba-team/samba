@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   answer name queries
+   defend our names against name registration requests
 
    Copyright (C) Andrew Tridgell	2005
    
@@ -26,13 +26,13 @@
 #include "nbt_server/nbt_server.h"
 
 /*
-  send a name query reply
+  send a name defense reply
 */
-static void nbtd_name_query_reply(struct nbt_name_socket *nbtsock, 
-				  struct nbt_name_packet *request_packet, 
-				  const char *src_address, int src_port,
-				  struct nbt_name *name, uint32_t ttl,
-				  uint16_t nb_flags, const char *address)
+static void nbtd_name_defense_reply(struct nbt_name_socket *nbtsock, 
+				    struct nbt_name_packet *request_packet, 
+				    const char *src_address, int src_port,
+				    struct nbt_name *name, uint32_t ttl,
+				    uint16_t nb_flags, const char *address)
 {
 	struct nbt_name_packet *packet;
 
@@ -43,11 +43,12 @@ static void nbtd_name_query_reply(struct nbt_name_socket *nbtsock,
 	packet->ancount = 1;
 	packet->operation = 
 		NBT_FLAG_REPLY | 
-		NBT_OPCODE_QUERY | 
+		(request_packet->operation & NBT_OPCODE) |
 		NBT_FLAG_AUTHORITIVE |
 		NBT_FLAG_RECURSION_DESIRED |
-		NBT_FLAG_RECURSION_AVAIL;
-
+		NBT_FLAG_RECURSION_AVAIL |
+		NBT_RCODE_ACT;
+	
 	packet->answers = talloc_array(packet, struct nbt_res_rec, 1);
 	if (packet->answers == NULL) goto failed;
 
@@ -56,15 +57,16 @@ static void nbtd_name_query_reply(struct nbt_name_socket *nbtsock,
 	packet->answers[0].rr_class = NBT_QCLASS_IP;
 	packet->answers[0].ttl      = ttl;
 	packet->answers[0].rdata.netbios.length = 6;
-	packet->answers[0].rdata.netbios.addresses = talloc_array(packet->answers,
-							    struct nbt_rdata_address, 1);
+	packet->answers[0].rdata.netbios.addresses = 
+		talloc_array(packet->answers,
+			     struct nbt_rdata_address, 1);
 	if (packet->answers[0].rdata.netbios.addresses == NULL) goto failed;
 	packet->answers[0].rdata.netbios.addresses[0].nb_flags = nb_flags;
 	packet->answers[0].rdata.netbios.addresses[0].ipaddr = 
 		talloc_strdup(packet->answers, address);
 	if (packet->answers[0].rdata.netbios.addresses[0].ipaddr == NULL) goto failed;
 
-	DEBUG(7,("Sending name query reply for %s<%02x> at %s to %s:%d\n", 
+	DEBUG(7,("Sending name defense reply for %s<%02x> at %s to %s:%d\n", 
 		 name->name, name->type, src_address, address, src_port));
 	
 	nbt_name_reply_send(nbtsock, src_address, src_port, packet);
@@ -75,39 +77,34 @@ failed:
 
 
 /*
-  answer a name query
+  defend our registered names against registration or name refresh
+  requests
 */
-void nbtd_request_query(struct nbt_name_socket *nbtsock, 
-			struct nbt_name_packet *packet, 
-			const char *src_address, int src_port)
+void nbtd_request_defense(struct nbt_name_socket *nbtsock, 
+			  struct nbt_name_packet *packet, 
+			  const char *src_address, int src_port)
 {
 	struct nbt_iface_name *iname;
 	struct nbt_name *name;
 	struct nbt_interface *iface = talloc_get_type(nbtsock->incoming.private, 
 						      struct nbt_interface);
 
-	/* see if its a node status query */
-	if (packet->qdcount == 1 &&
-	    packet->questions[0].question_type == NBT_QTYPE_STATUS) {
-		nbtd_query_status(nbtsock, packet, src_address, src_port);
-		return;
-	}
-
 	NBT_ASSERT_PACKET(packet, src_address, packet->qdcount == 1);
-	NBT_ASSERT_PACKET(packet, src_address, packet->questions[0].question_type == NBT_QTYPE_NETBIOS);
-	NBT_ASSERT_PACKET(packet, src_address, packet->questions[0].question_class == NBT_QCLASS_IP);
+	NBT_ASSERT_PACKET(packet, src_address, packet->arcount == 1);
+	NBT_ASSERT_PACKET(packet, src_address, 
+			  packet->questions[0].question_type == NBT_QTYPE_NETBIOS);
+	NBT_ASSERT_PACKET(packet, src_address, 
+			  packet->questions[0].question_class == NBT_QCLASS_IP);
 
 	/* see if we have the requested name on this interface */
 	name = &packet->questions[0].name;
 
 	iname = nbtd_find_iname(iface, name, NBT_NM_ACTIVE);
-	if (iname == NULL) {
-		DEBUG(7,("Query for %s<%02x> from %s - not found on %s\n",
-			 name->name, name->type, src_address, iface->ip_address));
-		return;
+	if (iname != NULL) {
+		DEBUG(2,("Defending name %s<%02x> on %s against %s\n",
+			 name->name, name->type, iface->bcast_address, src_address));
+		nbtd_name_defense_reply(nbtsock, packet, src_address, src_port,
+					&iname->name, iname->ttl, iname->nb_flags, 
+					iface->ip_address);
 	}
-
-	nbtd_name_query_reply(nbtsock, packet, src_address, src_port,
-			      &iname->name, iname->ttl, iname->nb_flags, 
-			      iface->ip_address);
 }
