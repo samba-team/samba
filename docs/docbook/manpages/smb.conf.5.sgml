@@ -629,6 +629,7 @@
 		<listitem><para><parameter>interfaces</parameter></para></listitem>
 		<listitem><para><parameter>keepalive</parameter></para></listitem>
 		<listitem><para><parameter>kernel oplocks</parameter></para></listitem>
+		<listitem><para><parameter>lanman auth</parameter></para></listitem>
 		<listitem><para><parameter>lm announce</parameter></para></listitem>
 		<listitem><para><parameter>lm interval</parameter></para></listitem>
 		<listitem><para><parameter>load printers</parameter></para></listitem>
@@ -649,6 +650,7 @@
 		<listitem><para><parameter>max log size</parameter></para></listitem>
 		<listitem><para><parameter>max mux</parameter></para></listitem>
 		<listitem><para><parameter>max open files</parameter></para></listitem>
+		<listitem><para><parameter>max protocol</parameter></para></listitem>
 		<listitem><para><parameter>max smbd processes</parameter></para></listitem>
 		<listitem><para><parameter>max ttl</parameter></para></listitem>
 		<listitem><para><parameter>max wins ttl</parameter></para></listitem>
@@ -656,6 +658,7 @@
 		<listitem><para><parameter>message command</parameter></para></listitem>
 		<listitem><para><parameter>min passwd length</parameter></para></listitem>
 		<listitem><para><parameter>min password length</parameter></para></listitem>
+		<listitem><para><parameter>min protocol</parameter></para></listitem>
 		<listitem><para><parameter>min wins ttl</parameter></para></listitem>
 		<listitem><para><parameter>name resolve order</parameter></para></listitem>
 		<listitem><para><parameter>netbios aliases</parameter></para></listitem>
@@ -3081,6 +3084,22 @@
 		</listitem>
 		</varlistentry>
 
+
+
+
+		<varlistentry>
+		<term><anchor id="LANMANAUTH">lanman auth (G)</term>
+		<listitem><para>This parameter determines whether or not smbd will
+		attempt to authentication users using the LANMAN password hash.
+		If disabled, only clients which support NT password hashes (e.g. Windows 
+		NT/2000 clients, smbclient, etc... but not Windows 95/98 or the MS DOS 
+		network client) will be able to connect to the Samba host.</para>
+		
+		<para>Default : <command>lanman auth = yes</command></para>
+		</listitem>
+		</varlistentry>
+
+
 		
 
 		<varlistentry>
@@ -3122,6 +3141,8 @@
 		<para>Default: <command>level2 oplocks = yes</command></para>
 		</listitem>
 		</varlistentry>
+
+
 
 
 
@@ -4034,6 +4055,43 @@
 		</varlistentry>
 
 
+		<varlistentry>
+		<term><anchor id="MAXPROTOCOL">max protocol (G)</term>
+		<listitem><para>The value of the parameter (a string) is the highest 
+		protocol level that will be supported by the server.</para>
+
+		<para>Possible values are :</para>
+		<itemizedlist>
+			<listitem><para><constant>CORE</constant>: Earliest version. No 
+			concept of user names.</para></listitem>
+			
+			<listitem><para><constant>COREPLUS</constant>: Slight improvements on 
+			CORE for efficiency.</para></listitem>
+
+			<listitem><para><constant>LANMAN1</constant>: First <emphasis>
+			modern</emphasis> version of the protocol. Long filename
+			support.</para></listitem>
+
+			<listitem><para><constant>LANMAN2</constant>: Updates to Lanman1 protocol.
+			</para></listitem>
+
+			<listitem><para><constant>NT1</constant>: Current up to date version of 
+			the protocol. Used by Windows NT. Known as CIFS.</para></listitem>
+		</itemizedlist>
+
+		<para>Normally this option should not be set as the automatic 
+		negotiation phase in the SMB protocol takes care of choosing 
+		the appropriate protocol.</para>
+		
+		<para>See also <link linkend="MINPROTOCOL"><parameter>min
+		protocol</parameter></link></para>
+
+		<para>Default: <command>max protocol = NT1</command></para>
+		<para>Example: <command>max protocol = LANMAN1</command></para>
+		</listitem>
+		</varlistentry>
+
+
 
 		<varlistentry>
 		<term><anchor id="MAXSMBDPROCESSES">max smbd processes (G)</term>
@@ -4213,6 +4271,29 @@
 		</listitem>
 		</varlistentry>
 
+
+
+
+		<varlistentry>
+		<term><anchor id="MINPROTOCOL">min protocol (G)</term>
+		<listitem><para>The value of the parameter (a string) is the 
+		lowest SMB protocol dialect than Samba will support.  Please refer
+		to the <link linkend="MAXPROTOCOL"><parameter>max protocol</parameter></link>
+		parameter for a list of valid protocol names and a brief description
+		of each.  You may also wish to refer to the C source code in
+		<filename>source/smbd/negprot.c</filename> for a listing of known protocol
+		dialects supported by clients.</para>
+		
+		<para>If you are viewing this parameter as a security measure, you should
+		also refer to the <link linkend="LANMANAUTH"><parameter>lanman 
+		auth</parameter></link> parameter.  Otherwise, you should never need 
+		to change this parameter.</para>
+		
+		<para>Default : <command>min protocol = CORE</command></para>
+		<para>Example : <command>min protocol = NT1</command>  # disable DOS 
+		clients</para>
+		</listitem>
+		</varlistentry>
 
 
 
@@ -4732,7 +4813,10 @@
 		with mixed-case passwords.  One offending client is Windows for 
 		Workgroups, which for some reason forces passwords to upper 
 		case when using the LANMAN1 protocol, but leaves them alone when 
-		using COREPLUS!</para>
+		using COREPLUS!  Another problem child is the Windows 95/98
+		family of operating systems.  These clients upper case clear
+		text passwords even when NT LM 0.12 selected by the protocol
+		negotiation request/response.</para>
 
 		<para>This parameter defines the maximum number of characters 
 		that may be upper case in passwords.</para>
@@ -5162,11 +5246,11 @@
 		<para>A minimal printcap file would look something like this:</para>
 
 		<para><programlisting>
-print1|My Printer 1
-print2|My Printer 2
-print3|My Printer 3
-print4|My Printer 4
-print5|My Printer 5
+		print1|My Printer 1
+		print2|My Printer 2
+		print3|My Printer 3
+		print4|My Printer 4
+		print5|My Printer 5
 		</programlisting></para>
 	
 		<para>where the '|' separates aliases of a printer. The fact 
@@ -5366,36 +5450,11 @@ print5|My Printer 5
 		
 		<varlistentry>
 		<term><anchor id="PROTOCOL">protocol (G)</term>
-		<listitem><para>The value of the parameter (a string) is the highest 
-		protocol level that will be supported by the server.</para>
-
-		<para>Possible values are :</para>
-		<itemizedlist>
-			<listitem><para><constant>CORE</constant>: Earliest version. No 
-			concept of user names.</para></listitem>
-			
-			<listitem><para><constant>COREPLUS</constant>: Slight improvements on 
-			CORE for efficiency.</para></listitem>
-
-			<listitem><para><constant>LANMAN1</constant>: First <emphasis>
-			modern</emphasis> version of the protocol. Long filename
-			support.</para></listitem>
-
-			<listitem><para><constant>LANMAN2</constant>: Updates to Lanman1 protocol.
-			</para></listitem>
-
-			<listitem><para><constant>NT1</constant>: Current up to date version of 
-			the protocol. Used by Windows NT. Known as CIFS.</para></listitem>
-		</itemizedlist>
-
-		<para>Normally this option should not be set as the automatic 
-		negotiation phase in the SMB protocol takes care of choosing 
-		the appropriate protocol.</para>
-
-		<para>Default: <command>protocol = NT1</command></para>
-		<para>Example: <command>protocol = LANMAN1</command></para>
-		</listitem>
+		<listitem><para>Synonym for <link linkend="MAXPROTOCOL">
+		<parameter>max protocol</parameter></link>.</para></listitem>
 		</varlistentry>
+
+
 
 
 		<varlistentry>
