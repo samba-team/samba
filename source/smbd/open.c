@@ -1149,7 +1149,8 @@ int open_directory(files_struct *fsp,connection_struct *conn,
 	}
 
 	if (got_stat && (GET_FILE_OPEN_DISPOSITION(smb_ofun) == FILE_EXISTS_FAIL)) {
-      return -1;
+		errno = EEXIST; /* Setup so correct error is returned to client. */
+		return -1;
 	}
 
 	if (GET_FILE_CREATE_DISPOSITION(smb_ofun) == FILE_CREATE_IF_NOT_EXIST) {
