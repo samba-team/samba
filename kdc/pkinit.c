@@ -363,7 +363,7 @@ get_dh_param(krb5_context context, SubjectPublicKeyInfo *dh_key_info,
     if (DH_check(dh, &dhret) != 1) {
 	krb5_set_error_string(context, "PKINIT DH data not ok: %s",
 			      ERR_error_string(ERR_get_error(), NULL));
-	ret = KRB5_KDC_ERR_KEY_TOO_WEAK;
+	ret = KRB5_KDC_ERR_KEY_SIZE;
 	goto out;
     }
 
@@ -1081,7 +1081,7 @@ pk_check_client(krb5_context context,
     free(*subject_name);
     *subject_name = NULL;
     krb5_set_error_string(context, "PKINIT no matching principals");
-    return KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
+    return KRB5_KDC_ERROR_CLIENT_NAME_MISMATCH;
 }
 
 static krb5_error_code
