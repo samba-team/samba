@@ -1,11 +1,11 @@
 Index: Makefile.in
 ===================================================================
 RCS file: /data/cvs/samba/source/Makefile.in,v
-retrieving revision 1.460
-diff -u -r1.460 Makefile.in
---- Makefile.in	2002/03/22 02:39:35	1.460
-+++ Makefile.in	2002/03/28 04:12:51
-@@ -781,6 +781,27 @@
+retrieving revision 1.465
+diff -u -r1.465 Makefile.in
+--- Makefile.in	2002/04/04 22:58:56	1.465
++++ Makefile.in	2002/04/05 05:48:51
+@@ -785,6 +785,29 @@
  	-$(INSTALLCMD) -d ${prefix}/include
  	-$(INSTALLCMD) include/libsmbclient.h ${prefix}/include
  
@@ -14,9 +14,11 @@ diff -u -r1.460 Makefile.in
 +PYTHON_OBJS = $(LIB_OBJ) $(LIBSMB_OBJ) $(RPC_PARSE_OBJ) $(UBIQX_OBJ) \
 +	$(PARAM_OBJ) $(LIBMSRPC_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ)
 +
-+PY_SPOOLSS_PROTO_OBJ = python/py_spoolss.o python/py_spoolss_printers.o \
-+		python/py_spoolss_forms.o python/py_spoolss_ports.o \
-+		python/py_spoolss_drivers.o
++PY_SPOOLSS_PROTO_OBJ = python/py_spoolss.o \
++		python/py_spoolss_printers.o python/py_spoolss_printers_conv.o\
++		python/py_spoolss_forms.o python/py_spoolss_forms_conv.o \
++		python/py_spoolss_ports.o python/py_spoolss_ports_conv.o \
++		python/py_spoolss_drivers.o python/py_spoolss_drivers_conv.o \
 +
 +python_proto: python_spoolss_proto
 +
@@ -36,11 +38,11 @@ diff -u -r1.460 Makefile.in
 Index: configure.in
 ===================================================================
 RCS file: /data/cvs/samba/source/configure.in,v
-retrieving revision 1.292
-diff -u -r1.292 configure.in
---- configure.in	2002/03/19 02:32:31	1.292
-+++ configure.in	2002/03/28 04:12:52
-@@ -2690,7 +2690,7 @@
+retrieving revision 1.298
+diff -u -r1.298 configure.in
+--- configure.in	2002/04/04 05:47:41	1.298
++++ configure.in	2002/04/05 05:48:52
+@@ -2695,7 +2695,7 @@
  builddir=`pwd`
  AC_SUBST(builddir)
  
