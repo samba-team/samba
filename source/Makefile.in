@@ -311,7 +311,7 @@ cleandir:  clean
 	rm -f .depend tags
 
 proto:
-	$(AWK) -f mkproto.awk `echo $(PROTOOBJ) | sed -e 's/\.o/\.c/g' | tr ' ' '\n' | sort | fgrep -v "ubiqx" | uniq` > proto.h
+	$(AWK) -f mkproto.awk `echo $(PROTOOBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort | fgrep -v "ubiqx" | uniq` > proto.h
 
 etags:
 	etags `find . -name "*.[ch]"`
