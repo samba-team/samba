@@ -234,7 +234,7 @@ static void display_print_driver_3(DRIVER_INFO_3 *i1)
 }
 
 
-static void display_reg_value(pstring subkey, REGISTRY_VALUE value)
+static void display_reg_value(const char *subkey, REGISTRY_VALUE value)
 {
 	pstring text;
 
