@@ -70,30 +70,6 @@ usage (void)
     exit (1);
 }
 
-/*
- * Check expiration information
- */
-
-static void
-print_expire (krb5_context context,
-	      krb5_kdc_rep *k)
-{
-    int i;
-    LastReq *lr = &k->part2.last_req;
-
-    for (i = 0; i < lr->len; ++i) {
-	if (lr->val[i].lr_type == 6) {
-	    printf ("Your password will expire at %s",
-		    ctime(&lr->val[i].lr_value));
-	    return;
-	}
-    }
-
-    if (k->part2.key_expiration)
-	printf ("Your password/account will expire at %s",
-		ctime(k->part2.key_expiration));
-}
-
 int
 main (int argc, char **argv)
 {
@@ -108,18 +84,11 @@ main (int argc, char **argv)
     char *realm;
     char pwbuf[128];
     krb5_kdc_rep kdc_rep;
-    
-#if 0
-    krb5_kdc_flags options;
-#endif
     int optind = 0;
     krb5_get_init_creds_opt opt;
 
     set_progname (argv[0]);
     memset(&cred, 0, sizeof(cred));
-#if 0
-    options.i = 0;
-#endif
     
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
 	usage();
@@ -150,14 +119,6 @@ main (int argc, char **argv)
 	krb5_get_init_creds_opt_set_tkt_life (&opt, tmp);
     }
 
-#if 0
-    options.b.forwardable = forwardable;
-
-    if(renewable){
-	options.b.renewable = 1;
-	cred.times.renew_till = 1 << 30;
-    }
-#endif
     argc -= optind;
     argv += optind;
 
@@ -197,94 +158,6 @@ main (int argc, char **argv)
     if (ret)
 	errx (1, "krb5_cc_store_cred: %s", krb5_get_err_text(context, ret));
     krb5_free_creds_contents (context, &cred);
-
-#if 0
-    ret = krb5_get_default_realm (context, &realm);
-    if (ret)
-	errx (1, "krb5_get_default_realm: %s",
-	      krb5_get_err_text(context, ret));
-
-    if(argv[0]){
-	ret = krb5_parse_name (context, argv[0], &principal);
-	if (ret)
-	    errx (1, "krb5_parse_name: %s", krb5_get_err_text(context, ret));
-    }else{
-	struct passwd *pw;
-
-	pw = getpwuid(getuid());
-	ret = krb5_build_principal(context, &principal,
-				   strlen(realm), realm,
-				   pw->pw_name, NULL);
-	if (ret)
-	    errx (1, "krb5_build_principal: %s",
-		  krb5_get_err_text(context, ret));
-    }
-    free(realm);
-
-    ret = krb5_cc_initialize (context, ccache, principal);
-    if (ret)
-	errx (1, "krb5_cc_initialize: %s",
-	      krb5_get_err_text(context, ret));
-
-    ret = krb5_build_principal_ext (context,
-				    &server,
-				    strlen(principal->realm),
-				    principal->realm,
-				    strlen("krbtgt"),
-				    "krbtgt",
-				    strlen(principal->realm),
-				    principal->realm,
-				    NULL);
-    if (ret)
-	errx (1, "krb5_build_principal_ext: %s",
-	      krb5_get_err_text(context, ret));
-
-    server->name.name_type = KRB5_NT_SRV_INST;
-
-    cred.client = principal;
-    cred.server = server;
-    if (lifetime) {
-	int tmp = parse_time (lifetime, NULL);
-	if (tmp < 0)
-	    errx (1, "unparsable time: %s", lifetime);
-
-	cred.times.endtime = time(NULL) + tmp;
-    } else {
-	cred.times.endtime = 0;
-    }
-    
-    {
-	char *p;
-	char *prompt;
-	krb5_unparse_name(context, principal, &p);
-	asprintf(&prompt, "%s's Password: ", p);
-	free(p);
-	if(des_read_pw_string(pwbuf, sizeof(pwbuf), prompt, 0))
-	    return 1;
-	free(prompt);
-    }
-
-
-    ret = krb5_get_in_tkt_with_password (context,
-					 options.i,
-					 NULL,
-					 NULL,
-					 preauth ? pre_auth_types : NULL,
-					 pwbuf,
-					 ccache,
-					 &cred,
-					 &kdc_rep);
-    memset(pwbuf, 0, sizeof(pwbuf));
-    if (ret)
-	errx (1, "krb5_get_in_tkt_with_password: %s",
-	      krb5_get_err_text(context, ret));
-
-    print_expire (context, &kdc_rep);
-
-    krb5_free_kdc_rep (context, &kdc_rep);
-    krb5_free_principal (context, principal);
-    krb5_free_principal (context, server);
-#endif
     krb5_cc_close (context, ccache);
     krb5_free_context (context);
     return 0;
