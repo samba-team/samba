@@ -82,7 +82,7 @@ $(DOCBOOKDIR)/%.xml: $(MANPAGEDIR)/%.xml xslt/expand-sambadoc.xsl
 $(DOCBOOKDIR)/manpages.xml: $(MANPAGES) xslt/manpage-summary.xsl
 	mkdir -p $(@D)
 	echo "<article><variablelist>" > $@
-	for I in $(MANPAGES); do $(XSLTPROC) xslt/manpage-summary.xsl $$I >> $@; done
+	$(XSLTPROC) xslt/manpage-summary.xsl $(MANPAGES) >> $@
 	echo "</variablelist></article>" >> $@
 
 # HTML docs
