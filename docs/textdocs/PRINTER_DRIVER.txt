@@ -1,3 +1,6 @@
+!==
+!== PRINTER_DRIVER.txt for Samba release 1.9.18alpha7 30 Oct 1997
+!==
 ==========================================================================
 	Supporting the famous PRINTER$ share
  
