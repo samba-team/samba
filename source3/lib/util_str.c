@@ -1211,7 +1211,7 @@ char *strchr_m(const char *src, char c)
 	/* characters below 0x3F are guaranteed to not appear in
 	   non-initial position in multi-byte charsets */
 	if ((c & 0xC0) == 0) {
-		return strchr(s, c);
+		return strchr(src, c);
 	}
 
 	/* this is quite a common operation, so we want it to be
