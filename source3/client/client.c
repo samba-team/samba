@@ -2853,6 +2853,7 @@ static int do_message_op(void)
  int main(int argc,char *argv[])
 {
 	extern BOOL AllowDebugChange;
+	extern BOOL override_logfile;
 	pstring base_directory;
 	int opt;
 	pstring query_host;
@@ -2989,11 +2990,14 @@ static int do_message_op(void)
 	
 	/* save the workgroup...
 	
-	   FIXME!! do we need to do tyhis for other options as well 
+	   FIXME!! do we need to do this for other options as well 
 	   (or maybe a generic way to keep lp_load() from overwriting 
 	   everything)?  */
 	
-	fstrcpy( new_workgroup, lp_workgroup() );		
+	fstrcpy( new_workgroup, lp_workgroup() );
+	
+	if ( override_logfile )
+		setup_logging( lp_logfile(), False );
 	
 	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
 		fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n",
