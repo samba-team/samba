@@ -2769,6 +2769,7 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
   int fd;
   int subcommand;
   
+  DEBUG(5,("api_fd_reply\n"));
   /* First find out the name of this file. */
   if (suwcnt != 2)
     {
@@ -2976,18 +2977,24 @@ static int named_pipe(int cnum,uint16 vuid, char *outbuf,char *name,
 		      int suwcnt,int tdscnt,int tpscnt,
 		      int msrcnt,int mdrcnt,int mprcnt)
 {
+	DEBUG(3,("named pipe command on <%s> name\n"));
 
-  if (strequal(name,"LANMAN"))
-    return(api_reply(cnum,vuid,outbuf,data,params,tdscnt,tpscnt,mdrcnt,mprcnt));
+	if (strequal(name,"LANMAN"))
+	{
+		return api_reply(cnum,vuid,outbuf,data,params,tdscnt,tpscnt,mdrcnt,mprcnt);
+	}
 
-if (strlen(name) < 1)
-  return(api_fd_reply(cnum,vuid,outbuf,setup,data,params,suwcnt,tdscnt,tpscnt,mdrcnt,mprcnt));
+	if (strlen(name) < 1)
+	{
+		return api_fd_reply(cnum,vuid,outbuf,setup,data,params,suwcnt,tdscnt,tpscnt,mdrcnt,mprcnt);
+	}
 
+	if (setup)
+	{
+		DEBUG(3,("unknown named pipe: setup 0x%X setup1=%d\n", (int)setup[0],(int)setup[1]));
+	}
 
-  DEBUG(3,("named pipe command on <%s> 0x%X setup1=%d\n",
-	   name,(int)setup[0],(int)setup[1]));
-  
-  return(0);
+	return 0;
 }
 
 
@@ -3018,6 +3025,7 @@ int reply_trans(char *inbuf,char *outbuf)
   int dsoff = SVAL(inbuf,smb_vwv12);
   int suwcnt = CVAL(inbuf,smb_vwv13);
 
+  bzero(name, sizeof(name));
   fstrcpy(name,smb_buf(inbuf));
 
   if (dscnt > tdscnt || pscnt > tpscnt) {
@@ -3096,11 +3104,18 @@ int reply_trans(char *inbuf,char *outbuf)
 
 
   DEBUG(3,("trans <%s> data=%d params=%d setup=%d\n",name,tdscnt,tpscnt,suwcnt));
-  
 
   if (strncmp(name,"\\PIPE\\",strlen("\\PIPE\\")) == 0)
+  {
+    DEBUG(5,("calling named_pipe\n"));
     outsize = named_pipe(cnum,vuid,outbuf,name+strlen("\\PIPE\\"),setup,data,params,
 			 suwcnt,tdscnt,tpscnt,msrcnt,mdrcnt,mprcnt);
+  }
+  else
+  {
+    DEBUG(3,("invalid pipe name\n"));
+    outsize = 0;
+  }
 
 
   if (data) free(data);
