@@ -117,35 +117,48 @@ int
 sl_loop (SL_cmd *cmds, char *prompt)
 {
     char *buf;
-    int count;
-    char *ptr[17];
-    int i;
+    unsigned max_count;
+    char **ptr;
+
+    max_count = 17;
+    ptr = malloc(max_count * sizeof(*ptr));
+    if (ptr == NULL) {
+	printf ("sl_loop: failed to allocate %u bytes of memory\n",
+		max_count * sizeof(*ptr));
+	return -1;
+    }
 
     for (;;) {
-	char *p;
-	char **a = ptr;
+	char *buf;
+	unsigned count;
 	SL_cmd *c;
 
 	buf = readline(prompt);
 	if(buf == NULL)
 	    break;
 
-	p = buf;
-	count = 0;
 	if(*buf)
 	    add_history(buf);
-	for (;;) {
-	    while (*p == ' ' || *p == '\t')
-		p++;
-	    if (*p == '\0')
-		break;
-	    *a++ = p;
-	    ++count;
-	    while (*p != '\0' && *p != ' ' && *p != '\t')
-		p++;
-	    if (*p == '\0')
-		break;
-	    *p++ = '\0';
+	count = 0;
+	{
+	    char *foo;
+	    char *p;
+
+	    for(p = strtok_r (buf, " \t", &foo);
+		p;
+		p = strtok_r (NULL, " \t", &foo)) {
+		if(count == max_count) {
+		    max_count *= 2;
+		    ptr = realloc (ptr, max_count * sizeof(*ptr));
+		    if (ptr == NULL) {
+			printf ("sl_loop: failed to allocate %u "
+				"bytes of memory\n",
+				max_count * sizeof(*ptr));
+			return -1;
+		    }
+		}
+		ptr[count++] = p;
+	    }
 	}
 	if (count > 0) {
 	    c = sl_match (cmds, ptr[0], 0);
@@ -156,6 +169,6 @@ sl_loop (SL_cmd *cmds, char *prompt)
 	}
 	free(buf);
     }
+    free (ptr);
     return 0;
 }
-
