@@ -1,5 +1,9 @@
 2001-05-07  Assar Westerlund  <assar@sics.se>
 
+	* kuser/kinit.c (main): try to print the error string
+	* lib/krb5/get_in_tkt.c (krb5_get_in_cred): set some sensible
+	error strings for errors
+
 	* lib/krb5/krb5.h (krb5_context_data): add error_string and
 	error_buf
 	* lib/krb5/Makefile.am (libkrb5_la_SOURCES): add error_string.c
