@@ -909,6 +909,31 @@ BOOL spoolss_io_q_open_printer_ex(char *desc, SPOOL_Q_OPEN_PRINTER_EX *q_u, prs_
 }
 
 /*******************************************************************
+ * init a structure.
+ ********************************************************************/
+BOOL make_spoolss_q_deleteprinterdriver(
+	TALLOC_CTX *mem_ctx,
+	SPOOL_Q_DELETEPRINTERDRIVER *q_u, 
+	const char *server,
+	const char* arch, 
+	const char* driver 
+)
+{
+	DEBUG(5,("make_spoolss_q_deleteprinterdriver\n"));
+	
+	q_u->server_ptr = (server!=NULL)?1:0;
+
+	/* these must be NULL terminated or else NT4 will
+	   complain about invalid parameters --jerry */
+	init_unistr2(&q_u->server, server, strlen(server)+1);
+	init_unistr2(&q_u->arch, arch, strlen(arch)+1);
+	init_unistr2(&q_u->driver, driver, strlen(driver)+1);
+
+	
+	return True;
+}
+
+/*******************************************************************
  * write a structure.
  * called from static spoolss_r_open_printer_ex (srv_spoolss.c)
  * called from spoolss_open_printer_ex (cli_spoolss.c)
@@ -1150,6 +1175,58 @@ BOOL spoolss_io_r_deleteprinter(char *desc, SPOOL_R_DELETEPRINTER *r_u, prs_stru
 	
 	return True;
 }
+
+
+/*******************************************************************
+ * read a structure.
+ * called from api_spoolss_deleteprinterdriver (srv_spoolss.c)
+ * called from spoolss_deleteprinterdriver (cli_spoolss.c)
+ ********************************************************************/
+
+BOOL spoolss_io_q_deleteprinterdriver(char *desc, SPOOL_Q_DELETEPRINTERDRIVER *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL) return False;
+
+	prs_debug(ps, depth, desc, "spoolss_io_q_deleteprinterdriver");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("server_ptr", ps, depth, &q_u->server_ptr))
+		return False;		
+	if(!smb_io_unistr2("server", &q_u->server, q_u->server_ptr, ps, depth))
+		return False;
+	if(!smb_io_unistr2("arch", &q_u->arch, True, ps, depth))
+		return False;
+	if(!smb_io_unistr2("driver", &q_u->driver, True, ps, depth))
+		return False;
+
+
+	return True;
+}
+
+
+/*******************************************************************
+ * write a structure.
+ ********************************************************************/
+BOOL spoolss_io_r_deleteprinterdriver(char *desc, SPOOL_R_DELETEPRINTERDRIVER *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL) return False;
+
+	prs_debug(ps, depth, desc, "spoolss_io_r_deleteprinterdriver");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+
 
 /*******************************************************************
  * read a structure.

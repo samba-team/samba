@@ -1053,4 +1053,61 @@ done:
 	return result;	
 }
 
+/**********************************************************************
+ * Delete a Printer Driver from the server (does not remove 
+ * the driver files
+ */
+uint32 cli_spoolss_deleteprinterdriver (
+	struct cli_state 	*cli, 
+	TALLOC_CTX		*mem_ctx,
+	char			*arch,
+	char			*driver
+)
+{
+	prs_struct 			qbuf, rbuf;
+	SPOOL_Q_DELETEPRINTERDRIVER	q;
+        SPOOL_R_DELETEPRINTERDRIVER	r;
+	uint32 				result;
+	fstring				server;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+
+	/* Initialise input parameters */
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+        slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+        strupper (server);
+
+	/* write the request */
+	make_spoolss_q_deleteprinterdriver (mem_ctx, &q, server, arch, driver);
+
+	/* Marshall data and send request */
+	result = NT_STATUS_UNSUCCESSFUL;
+	if (!spoolss_io_q_deleteprinterdriver ("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req (cli,SPOOLSS_DELETEPRINTERDRIVER , &qbuf, &rbuf)) 
+	{
+		goto done;
+	}
+
+		
+	/* Unmarshall response */
+	result = NT_STATUS_UNSUCCESSFUL;
+	if (!spoolss_io_r_deleteprinterdriver ("", &r, &rbuf, 0))
+	{
+		goto done;
+	}
+		
+	/* Return output parameters */
+	result = r.status;
+
+done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;	
+}
+
 
