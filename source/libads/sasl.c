@@ -39,6 +39,11 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 	extern pstring global_myname;
 	int rc;
 
+	if (!ads->auth.password) {
+		/* No password, don't segfault below... */
+		return ADS_ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
+
 	neg_flags = NTLMSSP_NEGOTIATE_UNICODE | 
 		NTLMSSP_NEGOTIATE_128 | 
 		NTLMSSP_NEGOTIATE_NTLM;
