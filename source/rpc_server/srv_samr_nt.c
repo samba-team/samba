@@ -2305,7 +2305,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 			
   			all_string_sub(add_script, "%u", account, sizeof(add_script));
   			add_ret = smbrun(add_script,NULL);
- 			DEBUG(3,("_samr_create_user: Running the command `%s' gave %d\n", add_script, add_ret));
+ 			DEBUG(add_ret ? 0 : 3,("_samr_create_user: Running the command `%s' gave %d\n", add_script, add_ret));
   		}
 		else	/* no add user script -- ask winbindd to do it */
 		{
@@ -3813,7 +3813,7 @@ static int smb_delete_user(const char *unix_user)
 		return -1;
 	all_string_sub(del_script, "%u", unix_user, sizeof(del_script));
 	ret = smbrun(del_script,NULL);
-	DEBUG(3,("smb_delete_user: Running the command `%s' gave %d\n",del_script,ret));
+	DEBUG(ret ? 0 : 3,("smb_delete_user: Running the command `%s' gave %d\n",del_script,ret));
 
 	return ret;
 }
