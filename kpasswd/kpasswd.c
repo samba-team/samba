@@ -138,12 +138,15 @@ send_request (krb5_context context,
     *p++ = (ap_req_data.length >> 8) & 0xFF;
     *p++ = (ap_req_data.length >> 0) & 0xFF;
 
+    memset(&msghdr, 0, sizeof(msghdr));
     msghdr.msg_name       = &addr;
     msghdr.msg_namelen    = sizeof(addr);
     msghdr.msg_iov        = iov;
     msghdr.msg_iovlen     = sizeof(iov)/sizeof(*iov);
+#if 0
     msghdr.msg_control    = NULL;
     msghdr.msg_controllen = 0;
+#endif
 
     iov[0].iov_base    = header;
     iov[0].iov_len     = 6;
