@@ -246,8 +246,7 @@ NTSTATUS sam_account_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *user
 		SAFE_FREE(workstation_list);
 	}
 
-	
-	{
+	if (!(pdb_get_acct_ctrl(sampass) & ACB_PWNOEXP)) {
 		time_t must_change_time = pdb_get_pass_must_change_time(sampass);
 		time_t last_set_time = pdb_get_pass_last_set_time(sampass);
 
