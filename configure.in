@@ -28,7 +28,8 @@ AC_PROG_AWK
 AC_KRB_PROG_LN_S
 
 if test "$GCC" = "yes"; then
-  WFLAGS="-Wall -Wmissing-prototypes -Wpointer-arith -Wbad-function-cast -Wcast-align -Wmissing-declarations -Wnested-externs"
+# -Wcast-align doesn't work well on alpha osf/1
+  WFLAGS="-Wall -Wmissing-prototypes -Wpointer-arith -Wbad-function-cast -Wmissing-declarations -Wnested-externs"
   WFLAGS_NOUNUSED="-Wno-unused"
 fi
 AC_SUBST(WFLAGS)
