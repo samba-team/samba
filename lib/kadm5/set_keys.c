@@ -56,7 +56,7 @@ make_keys(krb5_context context, krb5_principal principal, const char *password,
 
     krb5_enctype e;
 
-    krb5_error_code ret;
+    krb5_error_code ret = 0;
     char **ktypes, **kp;
 
     Key *keys = NULL, *tmp;
@@ -179,24 +179,32 @@ make_keys(krb5_context context, krb5_principal principal, const char *password,
 	    if(ret)
 		goto out;
 
-	    if (salt_set) {
-		/* is the salt has not been set explicitly, it will be
-                   the default salt, so there's no need to explicitly
-                   copy it */
+	    if (salt.salttype != KRB5_PW_SALT || salt_set) {
 		key.salt = malloc (sizeof(*key.salt));
 		if (key.salt == NULL) {
+		    free_Key(&key);
 		    ret = ENOMEM;
 		    goto out;
 		}
 		key.salt->type = salt.salttype;
-		ret = krb5_data_copy(&key.salt->salt, 
-				     salt.saltvalue.data, 
-				     salt.saltvalue.length);
-		if (ret)
-		    goto out;
+		krb5_data_zero (&key.salt->salt);
+
+		/* is the salt has not been set explicitly, it will be
+		   the default salt, so there's no need to explicitly
+		   copy it */
+		if (salt_set) {
+		    ret = krb5_data_copy(&key.salt->salt, 
+					 salt.saltvalue.data, 
+					 salt.saltvalue.length);
+		    if (ret) {
+			free_Key(&key);
+			goto out;
+		    }
+		}
 	    }
 	    tmp = realloc(keys, (num_keys + 1) * sizeof(*keys));
 	    if(tmp == NULL) {
+		free_Key(&key);
 		ret = ENOMEM;
 		goto out;
 	    }
