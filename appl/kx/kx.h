@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -106,6 +106,10 @@
 #ifdef HAVE_SYS_STROPTS_H
 #include <sys/stropts.h>
 #endif
+
+/* defined by aix's sys/stream.h and again by arpa/nameser.h */
+
+#undef NOERROR
 
 /* as far as we know, this is only used with later versions of Slowlaris */
 #if SunOS >= 50 && defined(HAVE_SYS_STROPTS_H) && defined(HAVE_FATTACH) && defined(I_PUSH)
