@@ -204,7 +204,6 @@ would look like this:
 
  	[printers]
  		path = /usr/spool/public
- 		writeable = no
  		guest ok = yes
  		printable = yes 
 
@@ -3240,7 +3239,7 @@ in the docs/ directory, PRINTER_DRIVER.txt.
 find the printer driver files for the automatic installation of
 drivers for Windows 95 machines. If Samba is set up to serve printer
 drivers to Windows 95 machines, this should be set to
-<p><br><code>\\MACHINE\aPRINTER$</code>
+<p><br><code>\\MACHINE\PRINTER$</code>
 <p><br>Where MACHINE is the NetBIOS name of your Samba server, and PRINTER$
 is a share you set up for serving printer driver files. For more
 details on setting this up see the documentation file in the docs/
