@@ -1,3 +1,8 @@
+2001-02-07  Assar Westerlund  <assar@sics.se>
+
+	* kadmin.c: add --keytab / _K, from Leif Johansson
+	<leifj@it.su.se>
+
 2001-01-29  Assar Westerlund  <assar@sics.se>
 
 	* kadm_conn.c (spawn_child): close the newly created socket in the

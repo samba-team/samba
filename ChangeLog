@@ -4,6 +4,9 @@
 
 2001-02-05  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/krb5_keytab.3: new man page, contributed by
+	<lha@stacken.kth.se>
+
 	* kdc/kaserver.c: update to new db_fetch4
 
 2001-02-05  Assar Westerlund  <assar@assaris.sics.se>
