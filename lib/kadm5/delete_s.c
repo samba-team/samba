@@ -63,7 +63,7 @@ kadm5_s_delete_principal(void *server_handle, krb5_principal princ)
     
     kadm5_log_delete (context, princ);
     
-    ret = context->db->delete(context->context, context->db, &ent);
+    ret = context->db->remove(context->context, context->db, &ent);
 out:
     hdb_free_entry(context->context, &ent);
 out2:
