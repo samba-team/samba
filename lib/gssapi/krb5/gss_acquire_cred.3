@@ -522,6 +522,11 @@ If access control is needed, see section
 .Fn gss_inquire_context
 returns information about the context.
 Information is available even after the context have expired.
+.Fa lifetime_rec
+argument is set to
+.Dv GSS_C_INDEFINITE
+(dont expire) or the number of seconds that the context is still valid.
+A value of 0 means that the context is expired.
 .Fa mech_type
 argument should be considered readonly and must not be released.
 .Fa src_name
