@@ -440,7 +440,6 @@ static NTSTATUS context_add_trust_passwd(struct pdb_context *context,
                                          SAM_TRUST_PASSWD *trust)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	struct pdb_methods *methods;
 	
 	if (!context) {
 		DEBUG(0, ("invalid pdb_context specified!\n"));
@@ -454,7 +453,6 @@ static NTSTATUS context_update_trust_passwd(struct pdb_context *context,
                                             SAM_TRUST_PASSWD *trust)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	struct pdb_methods *methods;
 	
 	if (!context) {
 		DEBUG(0, ("invalid pdb_context specified!\n"));
@@ -473,7 +471,6 @@ static NTSTATUS context_delete_trust_passwd(struct pdb_context *context,
                                             SAM_TRUST_PASSWD *trust)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	struct pdb_methods *methods;
 	
 	if (!context) {
 		DEBUG(0, ("invalid pdb_context specified!\n"));
