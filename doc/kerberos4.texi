@@ -138,7 +138,7 @@ Actually, this example doesn't work. Or rather, it works to well. Since
 it has no way of knowing which hostnames are valid and which are not, it
 will happily convert @samp{rcmd.gone} to @samp{host/gone.foo.se}. This
 isn't a big problem, but if you have run your kerberos realm for a few
-years, changes are big that you have quite a few `junk' principals.
+years, chances are big that you have quite a few `junk' principals.
 
 If you don't want this you can remove the @samp{default_domain}
 statement, but then you will have to add entries for @emph{all} your hosts
@@ -151,5 +151,33 @@ of static host entries.
 To enable DNS lookup you should turn on @samp{v4_instance_resolve} in
 the @samp{[libdefaults]} section.
 
+@subsection Converting a database
+
+The database conversion is done with @samp{hprop}. Assuming that you
+have the @samp{kadmin/hprop} key in the keytab @file{hprop.keytab}, you
+can run this command to propagate the database to the machine called
+@samp{slave-server} (which should be running a @samp{hpropd}).
+
+@example
+hprop -4 -E -k hprop.keytab slave-server
+@end example
+
+@section Version 4 Kadmin
+
+@samp{kadmind} can act as a version 4 kadmind, and you can do most
+operations, but with some restrictions (since the version 4 kadmin
+protocol is, lets say, very ad hoc.) One example is that it only passes
+des keys when creating principals and changing passwords (modern kpasswd
+clients do send the password, so it's possible to to password quality
+checks). Because of this you can only create principals with des keys,
+and you can't set any flags or do any other fancy stuff.
+
+To get this to work, you have to create a @samp{changepw/kerberos}
+principal (if you are converting a version 4 data you should have this
+principal), and add it to the keytab the @samp{kadmind} is using. You
+then have to add another entry to inetd (since version 4 uses port 751,
+not 749).
+
 @emph{And then there are a many more things you can do; more on this in
 a later version of this manual. Until then, UTSL.}
+
