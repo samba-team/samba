@@ -101,8 +101,8 @@ static void srv_free_sh_info1(SH_INFO_1 * sh1)
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL srv_io_sh_info1(char *desc, SH_INFO_1 * sh1,
-			    prs_struct *ps, int depth)
+static BOOL srv_io_sh_info1_hdr(char *desc, SH_INFO_1 * sh1,
+				prs_struct *ps, int depth)
 {
 	if (sh1 == NULL)
 		return False;
@@ -115,6 +115,64 @@ static BOOL srv_io_sh_info1(char *desc, SH_INFO_1 * sh1,
 	prs_uint32("ptr_netname", ps, depth, &(sh1->ptr_netname));
 	prs_uint32("type       ", ps, depth, &(sh1->type));
 	prs_uint32("ptr_remark ", ps, depth, &(sh1->ptr_remark));
+
+	return True;
+}
+
+/*******************************************************************
+ makes a SHARE_INFO_1 structure
+********************************************************************/
+BOOL make_srv_share_info_1(SHARE_INFO_1 * sh1,
+			   const char *net_name, uint32 type,
+			   const char *remark)
+{
+	if (sh1 == NULL)
+		return False;
+
+	DEBUG(5, ("make_srv_share_info_1: %s %8x %s\n",
+		  net_name, type, remark));
+
+	if (!make_srv_sh_info1(&sh1->info1_hdr, net_name, type, remark))
+		return False;
+
+	if (!make_srv_sh_info1_str(&sh1->info1_str, net_name, remark))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+static void srv_free_share_info_1(SHARE_INFO_1 * sh1)
+{
+	if (sh1 == NULL)
+		return;
+}
+
+static BOOL srv_io_share_info_1(char *desc, SHARE_INFO_1 * sh1, uint32 count,
+				prs_struct *ps, int depth)
+{
+	uint32 i;
+
+	if (sh1 == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "srv_io_share_info_1");
+	depth++;
+
+	prs_align(ps);
+
+	for (i = 0; i < count; i++)
+	{
+		if (!srv_io_sh_info1_hdr("", &(sh1[i].info1_hdr), ps, depth))
+			return False;
+	}
+	for (i = 0; i < count; i++)
+	{
+		if (!srv_io_sh_info1_str("", &(sh1[i].info1_str), ps, depth))
+			return False;
+	}
 
 	return True;
 }
@@ -186,7 +244,8 @@ static BOOL srv_io_srv_share_info_1(char *desc, SRV_SHARE_INFO_1 * ctr,
 			{
 				ctr->info_1[i] = g_new(SH_INFO_1, 1);
 			}
-			if (!srv_io_sh_info1("", ctr->info_1[i], ps, depth))
+			if (!srv_io_sh_info1_hdr("", ctr->info_1[i],
+						 ps, depth))
 			{
 				srv_free_srv_share_info_1(ctr);
 				return False;
@@ -460,6 +519,16 @@ static void srv_free_share_info_union(SHARE_INFO_UNION * info,
 
 	switch (info_level)
 	{
+		case 1:
+		{
+			for (i = 0; i < count; i++)
+			{
+				srv_free_share_info_1(&(info->id1[i]));
+			}
+			safe_free(info->id1);
+			info->id1 = NULL;
+			break;
+		}
 		case 2:
 		{
 			for (i = 0; i < count; i++)
@@ -505,6 +574,21 @@ static BOOL srv_io_share_info_union(const char *desc,
 
 	switch (info_level)
 	{
+		case 1:
+		{
+			if (UNMARSHALLING(ps))
+			{
+				info->id1 = g_new(SHARE_INFO_1, count);
+				if (info->id1 == NULL)
+				{
+					DEBUG(1,
+					      ("srv_io_share_info_ctr at level 1: malloc failed\n"));
+					return False;
+				}
+			}
+			return srv_io_share_info_1("", info->id1, count,
+						   ps, depth);
+		}
 		case 2:
 		{
 			if (UNMARSHALLING(ps))

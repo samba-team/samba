@@ -48,8 +48,8 @@ BOOL make_samr_q_close_hnd(SAMR_Q_CLOSE_HND * q_c, POLICY_HND * hnd)
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL samr_io_q_close_hnd(char *desc, SAMR_Q_CLOSE_HND * q_u, prs_struct * ps,
-			 int depth)
+BOOL samr_io_q_close_hnd(char *desc, SAMR_Q_CLOSE_HND * q_u,
+			 prs_struct * ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -65,8 +65,8 @@ BOOL samr_io_q_close_hnd(char *desc, SAMR_Q_CLOSE_HND * q_u, prs_struct * ps,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL samr_io_r_close_hnd(char *desc, SAMR_R_CLOSE_HND * r_u, prs_struct * ps,
-			 int depth)
+BOOL samr_io_r_close_hnd(char *desc, SAMR_R_CLOSE_HND * r_u,
+			 prs_struct * ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -835,8 +835,8 @@ BOOL samr_io_r_query_sec_obj(char *desc, SAMR_R_QUERY_SEC_OBJ * r_u,
 reads or writes a SAM_STR1 structure.
 ********************************************************************/
 static BOOL sam_io_sam_str1(char *desc, SAM_STR1 * sam, uint32 acct_buf,
-			    uint32 name_buf, uint32 desc_buf, prs_struct * ps,
-			    int depth)
+			    uint32 name_buf, uint32 desc_buf,
+			    prs_struct * ps, int depth)
 {
 	if (sam == NULL)
 		return False;
@@ -884,8 +884,8 @@ static BOOL make_sam_entry1(SAM_ENTRY1 * sam, uint32 user_idx,
 /*******************************************************************
 reads or writes a SAM_ENTRY1 structure.
 ********************************************************************/
-static BOOL sam_io_sam_entry1(char *desc, SAM_ENTRY1 * sam, prs_struct * ps,
-			      int depth)
+static BOOL sam_io_sam_entry1(char *desc, SAM_ENTRY1 * sam,
+			      prs_struct * ps, int depth)
 {
 	if (sam == NULL)
 		return False;
@@ -912,7 +912,8 @@ static BOOL sam_io_sam_entry1(char *desc, SAM_ENTRY1 * sam, prs_struct * ps,
 reads or writes a SAM_STR2 structure.
 ********************************************************************/
 static BOOL sam_io_sam_str2(char *desc, SAM_STR2 * sam, uint32 acct_buf,
-			    uint32 desc_buf, prs_struct * ps, int depth)
+			    uint32 desc_buf,
+			    prs_struct * ps, int depth)
 {
 	if (sam == NULL)
 		return False;
@@ -956,8 +957,8 @@ static BOOL make_sam_entry2(SAM_ENTRY2 * sam, uint32 user_idx,
 /*******************************************************************
 reads or writes a SAM_ENTRY2 structure.
 ********************************************************************/
-static BOOL sam_io_sam_entry2(char *desc, SAM_ENTRY2 * sam, prs_struct * ps,
-			      int depth)
+static BOOL sam_io_sam_entry2(char *desc, SAM_ENTRY2 * sam,
+			      prs_struct * ps, int depth)
 {
 	if (sam == NULL)
 		return False;
@@ -983,7 +984,8 @@ static BOOL sam_io_sam_entry2(char *desc, SAM_ENTRY2 * sam, prs_struct * ps,
 reads or writes a SAM_STR3 structure.
 ********************************************************************/
 static BOOL sam_io_sam_str3(char *desc, SAM_STR3 * sam, uint32 acct_buf,
-			    uint32 desc_buf, prs_struct * ps, int depth)
+			    uint32 desc_buf,
+			    prs_struct * ps, int depth)
 {
 	if (sam == NULL)
 		return False;
@@ -1026,8 +1028,8 @@ static BOOL make_sam_entry3(SAM_ENTRY3 * sam, uint32 grp_idx,
 /*******************************************************************
 reads or writes a SAM_ENTRY3 structure.
 ********************************************************************/
-static BOOL sam_io_sam_entry3(char *desc, SAM_ENTRY3 * sam, prs_struct * ps,
-			      int depth)
+static BOOL sam_io_sam_entry3(char *desc, SAM_ENTRY3 * sam,
+			      prs_struct * ps, int depth)
 {
 	if (sam == NULL)
 		return False;
@@ -1069,8 +1071,8 @@ static BOOL make_sam_entry4(SAM_ENTRY4 * sam, uint32 user_idx,
 /*******************************************************************
 reads or writes a SAM_ENTRY4 structure.
 ********************************************************************/
-static BOOL sam_io_sam_entry4(char *desc, SAM_ENTRY4 * sam, prs_struct * ps,
-			      int depth)
+static BOOL sam_io_sam_entry4(char *desc, SAM_ENTRY4 * sam,
+			      prs_struct * ps, int depth)
 {
 	if (sam == NULL)
 		return False;
@@ -1107,8 +1109,8 @@ static BOOL make_sam_entry5(SAM_ENTRY5 * sam, uint32 grp_idx,
 /*******************************************************************
 reads or writes a SAM_ENTRY5 structure.
 ********************************************************************/
-static BOOL sam_io_sam_entry5(char *desc, SAM_ENTRY5 * sam, prs_struct * ps,
-			      int depth)
+static BOOL sam_io_sam_entry5(char *desc, SAM_ENTRY5 * sam,
+			      prs_struct * ps, int depth)
 {
 	if (sam == NULL)
 		return False;
@@ -1143,8 +1145,8 @@ BOOL make_sam_entry(SAM_ENTRY * sam, uint32 len_sam_name, uint32 rid)
 /*******************************************************************
 reads or writes a SAM_ENTRY structure.
 ********************************************************************/
-static BOOL sam_io_sam_entry(char *desc, SAM_ENTRY * sam, prs_struct * ps,
-			     int depth)
+static BOOL sam_io_sam_entry(char *desc, SAM_ENTRY * sam,
+			     prs_struct * ps, int depth)
 {
 	if (sam == NULL)
 		return False;
@@ -1360,8 +1362,8 @@ BOOL samr_io_q_query_dispinfo(char *desc, SAMR_Q_QUERY_DISPINFO * q_e,
 /*******************************************************************
 makes a SAM_DISPINFO_1 structure.
 ********************************************************************/
-BOOL make_sam_dispinfo_1(SAM_DISPINFO_1 * sam, uint32 * num_entries,
-			 uint32 * data_size, uint32 start_idx,
+BOOL make_sam_dispinfo_1(SAM_DISPINFO_1 * sam, uint32 *num_entries,
+			 uint32 *data_size, uint32 start_idx,
 			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES])
 {
 	uint32 len_sam_name, len_sam_full, len_sam_desc;
@@ -1409,8 +1411,8 @@ BOOL make_sam_dispinfo_1(SAM_DISPINFO_1 * sam, uint32 * num_entries,
 reads or writes a structure.
 ********************************************************************/
 static BOOL sam_io_sam_dispinfo_1(char *desc, SAM_DISPINFO_1 * sam,
-				  uint32 num_entries, prs_struct * ps,
-				  int depth)
+				  uint32 num_entries,
+				  prs_struct * ps, int depth)
 {
 	uint32 i;
 
@@ -1444,8 +1446,8 @@ static BOOL sam_io_sam_dispinfo_1(char *desc, SAM_DISPINFO_1 * sam,
 /*******************************************************************
 makes a SAM_DISPINFO_2 structure.
 ********************************************************************/
-BOOL make_sam_dispinfo_2(SAM_DISPINFO_2 * sam, uint32 * num_entries,
-			 uint32 * data_size, uint32 start_idx,
+BOOL make_sam_dispinfo_2(SAM_DISPINFO_2 * sam, uint32 *num_entries,
+			 uint32 *data_size, uint32 start_idx,
 			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES])
 {
 	uint32 len_sam_name, len_sam_desc;
@@ -1489,8 +1491,8 @@ BOOL make_sam_dispinfo_2(SAM_DISPINFO_2 * sam, uint32 * num_entries,
 reads or writes a structure.
 ********************************************************************/
 static BOOL sam_io_sam_dispinfo_2(char *desc, SAM_DISPINFO_2 * sam,
-				  uint32 num_entries, prs_struct * ps,
-				  int depth)
+				  uint32 num_entries,
+				  prs_struct * ps, int depth)
 {
 	uint32 i;
 
@@ -1523,8 +1525,8 @@ static BOOL sam_io_sam_dispinfo_2(char *desc, SAM_DISPINFO_2 * sam,
 /*******************************************************************
 makes a SAM_DISPINFO_3 structure.
 ********************************************************************/
-BOOL make_sam_dispinfo_3(SAM_DISPINFO_3 * sam, uint32 * num_entries,
-			 uint32 * data_size, uint32 start_idx,
+BOOL make_sam_dispinfo_3(SAM_DISPINFO_3 * sam, uint32 *num_entries,
+			 uint32 *data_size, uint32 start_idx,
 			 DOMAIN_GRP * grp)
 {
 	uint32 len_sam_name, len_sam_desc;
@@ -1568,8 +1570,8 @@ BOOL make_sam_dispinfo_3(SAM_DISPINFO_3 * sam, uint32 * num_entries,
 reads or writes a structure.
 ********************************************************************/
 static BOOL sam_io_sam_dispinfo_3(char *desc, SAM_DISPINFO_3 * sam,
-				  uint32 num_entries, prs_struct * ps,
-				  int depth)
+				  uint32 num_entries,
+				  prs_struct * ps, int depth)
 {
 	uint32 i;
 
@@ -1602,8 +1604,8 @@ static BOOL sam_io_sam_dispinfo_3(char *desc, SAM_DISPINFO_3 * sam,
 /*******************************************************************
 makes a SAM_DISPINFO_4 structure.
 ********************************************************************/
-BOOL make_sam_dispinfo_4(SAM_DISPINFO_4 * sam, uint32 * num_entries,
-			 uint32 * data_size, uint32 start_idx,
+BOOL make_sam_dispinfo_4(SAM_DISPINFO_4 * sam, uint32 *num_entries,
+			 uint32 *data_size, uint32 start_idx,
 			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES])
 {
 	fstring sam_name;
@@ -1646,8 +1648,8 @@ BOOL make_sam_dispinfo_4(SAM_DISPINFO_4 * sam, uint32 * num_entries,
 reads or writes a structure.
 ********************************************************************/
 static BOOL sam_io_sam_dispinfo_4(char *desc, SAM_DISPINFO_4 * sam,
-				  uint32 num_entries, prs_struct * ps,
-				  int depth)
+				  uint32 num_entries,
+				  prs_struct * ps, int depth)
 {
 	uint32 i;
 
@@ -1680,8 +1682,8 @@ static BOOL sam_io_sam_dispinfo_4(char *desc, SAM_DISPINFO_4 * sam,
 /*******************************************************************
 makes a SAM_DISPINFO_5 structure.
 ********************************************************************/
-BOOL make_sam_dispinfo_5(SAM_DISPINFO_5 * sam, uint32 * num_entries,
-			 uint32 * data_size, uint32 start_idx,
+BOOL make_sam_dispinfo_5(SAM_DISPINFO_5 * sam, uint32 *num_entries,
+			 uint32 *data_size, uint32 start_idx,
 			 DOMAIN_GRP * grp)
 {
 	uint32 len_sam_name;
@@ -1721,8 +1723,8 @@ BOOL make_sam_dispinfo_5(SAM_DISPINFO_5 * sam, uint32 * num_entries,
 reads or writes a structure.
 ********************************************************************/
 static BOOL sam_io_sam_dispinfo_5(char *desc, SAM_DISPINFO_5 * sam,
-				  uint32 num_entries, prs_struct * ps,
-				  int depth)
+				  uint32 num_entries,
+				  prs_struct * ps, int depth)
 {
 	uint32 i;
 
@@ -1947,8 +1949,8 @@ BOOL make_samr_group_info1(GROUP_INFO1 * gr1,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL samr_io_group_info1(char *desc, GROUP_INFO1 * gr1, prs_struct * ps,
-			 int depth)
+BOOL samr_io_group_info1(char *desc, GROUP_INFO1 * gr1,
+			 prs_struct * ps, int depth)
 {
 	if (gr1 == NULL)
 		return False;
@@ -1997,8 +1999,8 @@ BOOL make_samr_group_info4(GROUP_INFO4 * gr4, const char *acct_desc)
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL samr_io_group_info4(char *desc, GROUP_INFO4 * gr4, prs_struct * ps,
-			 int depth)
+BOOL samr_io_group_info4(char *desc, GROUP_INFO4 * gr4,
+			 prs_struct * ps, int depth)
 {
 	if (gr4 == NULL)
 		return False;
@@ -2538,8 +2540,8 @@ BOOL samr_io_q_query_groupmem(char *desc, SAMR_Q_QUERY_GROUPMEM * q_u,
 makes a SAMR_R_QUERY_GROUPMEM structure.
 ********************************************************************/
 BOOL make_samr_r_query_groupmem(SAMR_R_QUERY_GROUPMEM * r_u,
-				uint32 num_entries, uint32 * rid,
-				uint32 * attr, uint32 status)
+				uint32 num_entries, uint32 *rid,
+				uint32 *attr, uint32 status)
 {
 	if (r_u == NULL)
 		return False;
@@ -2739,7 +2741,7 @@ BOOL make_samr_r_query_usergroups(SAMR_R_QUERY_USERGROUPS * r_u,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL samr_io_gids(char *desc, uint32 * num_gids, DOM_GID ** gid,
+BOOL samr_io_gids(char *desc, uint32 *num_gids, DOM_GID ** gid,
 		  prs_struct * ps, int depth)
 {
 	uint32 i;
@@ -3262,8 +3264,8 @@ BOOL make_samr_alias_info3(ALIAS_INFO3 * al3, const char *acct_desc)
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL samr_io_alias_info3(char *desc, ALIAS_INFO3 * al3, prs_struct * ps,
-			 int depth)
+BOOL samr_io_alias_info3(char *desc, ALIAS_INFO3 * al3,
+			 prs_struct * ps, int depth)
 {
 	if (al3 == NULL)
 		return False;
@@ -3284,8 +3286,8 @@ BOOL samr_io_alias_info3(char *desc, ALIAS_INFO3 * al3, prs_struct * ps,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL samr_alias_info_ctr(char *desc, ALIAS_INFO_CTR * ctr, prs_struct * ps,
-			 int depth)
+BOOL samr_alias_info_ctr(char *desc, ALIAS_INFO_CTR * ctr,
+			 prs_struct * ps, int depth)
 {
 	if (ctr == NULL)
 		return False;
@@ -3465,7 +3467,7 @@ makes a SAMR_Q_QUERY_USERALIASES structure.
 BOOL make_samr_q_query_useraliases(SAMR_Q_QUERY_USERALIASES * q_u,
 				   const POLICY_HND * hnd,
 				   uint32 num_sids,
-				   uint32 * ptr_sid, DOM_SID2 * sid)
+				   uint32 *ptr_sid, DOM_SID2 * sid)
 {
 	if (q_u == NULL || hnd == NULL)
 		return False;
@@ -3575,7 +3577,7 @@ void samr_free_q_query_useraliases(SAMR_Q_QUERY_USERALIASES * q_u)
 makes a SAMR_R_QUERY_USERALIASES structure.
 ********************************************************************/
 BOOL make_samr_r_query_useraliases(SAMR_R_QUERY_USERALIASES * r_u,
-				   uint32 num_rids, uint32 * rid,
+				   uint32 num_rids, uint32 *rid,
 				   uint32 status)
 {
 	if (r_u == NULL)
@@ -3606,7 +3608,7 @@ BOOL make_samr_r_query_useraliases(SAMR_R_QUERY_USERALIASES * r_u,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL samr_io_rids(char *desc, uint32 * num_rids, uint32 ** rid,
+BOOL samr_io_rids(char *desc, uint32 *num_rids, uint32 **rid,
 		  prs_struct * ps, int depth)
 {
 	fstring tmp;
@@ -3746,7 +3748,7 @@ makes a SAMR_Q_LOOKUP_RIDS structure.
 ********************************************************************/
 BOOL make_samr_q_lookup_rids(SAMR_Q_LOOKUP_RIDS * q_u,
 			     const POLICY_HND * pol, uint32 flags,
-			     uint32 num_rids, const uint32 * rid)
+			     uint32 num_rids, const uint32 *rid)
 {
 	if (q_u == NULL)
 		return False;
@@ -3839,7 +3841,7 @@ makes a SAMR_R_LOOKUP_RIDS structure.
 ********************************************************************/
 BOOL make_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS * r_u,
 			     uint32 num_names, UNIHDR * hdr_name,
-			     UNISTR2 * uni_name, uint32 * type)
+			     UNISTR2 * uni_name, uint32 *type)
 {
 	if (r_u == NULL)
 		return False;
@@ -4508,7 +4510,7 @@ makes a SAMR_R_LOOKUP_NAMES structure.
 ********************************************************************/
 BOOL make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES * r_u,
 			      uint32 num_rids,
-			      const uint32 * rid, const uint32 * type,
+			      const uint32 *rid, const uint32 *type,
 			      uint32 status)
 {
 	if (r_u == NULL)
@@ -4754,8 +4756,8 @@ BOOL make_samr_q_open_user(SAMR_Q_OPEN_USER * q_u,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL samr_io_q_open_user(char *desc, SAMR_Q_OPEN_USER * q_u, prs_struct * ps,
-			 int depth)
+BOOL samr_io_q_open_user(char *desc, SAMR_Q_OPEN_USER * q_u,
+			 prs_struct * ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -4778,8 +4780,8 @@ BOOL samr_io_q_open_user(char *desc, SAMR_Q_OPEN_USER * q_u, prs_struct * ps,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL samr_io_r_open_user(char *desc, SAMR_R_OPEN_USER * r_u, prs_struct * ps,
-			 int depth)
+BOOL samr_io_r_open_user(char *desc, SAMR_R_OPEN_USER * r_u,
+			 prs_struct * ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -4918,8 +4920,8 @@ BOOL samr_io_q_query_userinfo(char *desc, SAMR_Q_QUERY_USERINFO * q_u,
 /*******************************************************************
 reads or writes a LOGON_HRS structure.
 ********************************************************************/
-static BOOL sam_io_logon_hrs(char *desc, LOGON_HRS * hrs, prs_struct * ps,
-			     int depth)
+static BOOL sam_io_logon_hrs(char *desc, LOGON_HRS * hrs,
+			     prs_struct * ps, int depth)
 {
 	if (hrs == NULL)
 		return False;
@@ -4981,8 +4983,8 @@ BOOL make_sam_user_info12(SAM_USER_INFO_12 * usr,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL sam_io_user_info12(char *desc, SAM_USER_INFO_12 * u, prs_struct * ps,
-			int depth)
+BOOL sam_io_user_info12(char *desc, SAM_USER_INFO_12 * u,
+			prs_struct * ps, int depth)
 {
 	if (u == NULL)
 		return False;
@@ -5022,8 +5024,8 @@ BOOL make_sam_user_info10(SAM_USER_INFO_10 * usr, uint32 acb_info)
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL sam_io_user_info10(char *desc, SAM_USER_INFO_10 * usr, prs_struct * ps,
-			int depth)
+BOOL sam_io_user_info10(char *desc, SAM_USER_INFO_10 * usr,
+			prs_struct * ps, int depth)
 {
 	if (usr == NULL)
 		return False;
@@ -5090,8 +5092,8 @@ BOOL make_sam_user_info11(SAM_USER_INFO_11 * usr,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL sam_io_user_info11(char *desc, SAM_USER_INFO_11 * usr, prs_struct * ps,
-			int depth)
+BOOL sam_io_user_info11(char *desc, SAM_USER_INFO_11 * usr,
+			prs_struct * ps, int depth)
 {
 	if (usr == NULL)
 		return False;
@@ -5718,8 +5720,8 @@ BOOL make_sam_user_info21A(SAM_USER_INFO_21 * usr,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL sam_io_user_info21(char *desc, SAM_USER_INFO_21 * usr, prs_struct * ps,
-			int depth)
+BOOL sam_io_user_info21(char *desc, SAM_USER_INFO_21 * usr,
+			prs_struct * ps, int depth)
 {
 	if (usr == NULL)
 		return False;
@@ -6397,8 +6399,8 @@ BOOL make_samr_q_connect(SAMR_Q_CONNECT * q_u,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL samr_io_q_connect(char *desc, SAMR_Q_CONNECT * q_u, prs_struct * ps,
-		       int depth)
+BOOL samr_io_q_connect(char *desc, SAMR_Q_CONNECT * q_u,
+		       prs_struct * ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -6421,8 +6423,8 @@ BOOL samr_io_q_connect(char *desc, SAMR_Q_CONNECT * q_u, prs_struct * ps,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL samr_io_r_connect(char *desc, SAMR_R_CONNECT * r_u, prs_struct * ps,
-		       int depth)
+BOOL samr_io_r_connect(char *desc, SAMR_R_CONNECT * r_u,
+		       prs_struct * ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -6597,8 +6599,8 @@ BOOL make_enc_passwd(SAMR_ENC_PASSWD * pwd, const char pass[512])
 /*******************************************************************
 reads or writes a SAMR_ENC_PASSWD structure.
 ********************************************************************/
-BOOL samr_io_enc_passwd(char *desc, SAMR_ENC_PASSWD * pwd, prs_struct * ps,
-			int depth)
+BOOL samr_io_enc_passwd(char *desc, SAMR_ENC_PASSWD * pwd,
+			prs_struct * ps, int depth)
 {
 	if (pwd == NULL)
 		return False;
@@ -6643,8 +6645,8 @@ BOOL make_enc_hash(SAMR_ENC_HASH * hsh, const uchar hash[16])
 /*******************************************************************
 reads or writes a SAMR_ENC_HASH structure.
 ********************************************************************/
-BOOL samr_io_enc_hash(char *desc, SAMR_ENC_HASH * hsh, prs_struct * ps,
-		      int depth)
+BOOL samr_io_enc_hash(char *desc, SAMR_ENC_HASH * hsh,
+		      prs_struct * ps, int depth)
 {
 	if (hsh == NULL)
 		return False;

@@ -133,6 +133,7 @@ char *unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 {
 	char *destend;
 	const uint16 *src;
+	char *origdest;
 	size_t len;
 	register uint16 c;
 
@@ -154,6 +155,7 @@ char *unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 	}
 
 	len = MIN(str->uni_str_len, maxlen);
+	origdest = dest;
 	destend = dest + len;
 
 	while (dest < destend)
@@ -169,7 +171,7 @@ char *unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 
 	*dest = 0;
 
-	return dest;
+	return origdest;
 }
 
 

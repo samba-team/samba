@@ -126,10 +126,13 @@ frees a structure.
 ********************************************************************/
 void free_sec_acl(SEC_ACL *t)
 {
+	if (t == NULL) return;
 	if (t->ace != NULL)
 	{
 		free(t->ace);
+		t->ace = NULL;
 	}
+	t->num_aces = 0;
 }
 
 /*******************************************************************
@@ -226,8 +229,8 @@ int make_sec_desc(SEC_DESC *t, uint16 revision, uint16 type,
 		{
 			offset = 0x14;
 		}
-		t->off_dacl = offset;
-		offset += dacl->size;
+		t->off_sacl = offset;
+		offset += sacl->size;
 	}
 
 	if (owner_sid != NULL)
@@ -273,11 +276,13 @@ void free_sec_desc(SEC_DESC *t)
 	if (t->owner_sid != NULL)
 	{
 		free(t->owner_sid);
+		t->owner_sid = NULL;
 	}
 
 	if (t->grp_sid != NULL)
 	{
 		free(t->grp_sid);
+		t->grp_sid = NULL;
 	}
 }
 
@@ -471,10 +476,12 @@ frees a SEC_DESC_BUF structure.
 ********************************************************************/
 void free_sec_desc_buf(SEC_DESC_BUF *buf)
 {
+	if (buf == NULL) return;
 	if (buf->sec != NULL)
 	{
 		free_sec_desc(buf->sec);
 		free(buf->sec);
+		buf->sec = NULL;
 	}
 }
 
