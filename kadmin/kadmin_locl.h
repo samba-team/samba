@@ -99,9 +99,16 @@ DECL(help);
 DECL(list_princs);
 DECL(mod_entry);
 DECL(rename_entry);
+DECL(init);
+DECL(dump);
+DECL(load);
+DECL(merge);
 
 #define ALLOC(X) ((X) = malloc(sizeof(*(X))))
 
 #define KADMIN_APPL_VERSION "KADM0.0" /* XXX get from kadm5_locl.h */
+
+void get_response(const char*, const char*, char*, size_t);
+unsigned get_deltat(const char*, const char*);
 
 #endif /* __ADMIN_LOCL_H__ */
