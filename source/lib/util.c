@@ -1389,20 +1389,39 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 }
 
 /*******************************************************************
-is the name specified one of my netbios names
-returns true is it is equal, false otherwise
+ Is the name specified one of my netbios names.
+ Returns true if it is equal, false otherwise.
 ********************************************************************/
+
 BOOL is_myname(char *s)
 {
-  int n;
-  BOOL ret = False;
+	int n;
+	BOOL ret = False;
 
-  for (n=0; my_netbios_names[n]; n++) {
-    if (strequal(my_netbios_names[n], s))
-      ret=True;
-  }
-  DEBUG(8, ("is_myname(\"%s\") returns %d\n", s, ret));
-  return(ret);
+	for (n=0; my_netbios_names[n]; n++) {
+		if (strequal(my_netbios_names[n], s))
+			ret=True;
+	}
+	DEBUG(8, ("is_myname(\"%s\") returns %d\n", s, ret));
+	return(ret);
+}
+
+/********************************************************************
+ Return only the first IP address of our configured interfaces
+ as a string.
+ ********************************************************************/
+
+const char *get_my_primary_ip (void)
+{
+	static fstring ip_string;
+	int n;
+	struct iface_struct nics[MAX_INTERFACES];
+
+	if ((n=get_interfaces(nics, MAX_INTERFACES)) <= 0)
+		return NULL;
+
+	fstrcpy(ip_string, inet_ntoa(nics[0].ip));
+	return ip_string;
 }
 
 BOOL is_myname_or_ipaddr(char *s)
@@ -1414,8 +1433,7 @@ BOOL is_myname_or_ipaddr(char *s)
 		return True;
 
 	/* maybe its an IP address? */
-	if (is_ipaddress(s))
-	{
+	if (is_ipaddress(s)) {
 		struct iface_struct nics[MAX_INTERFACES];
 		int i, n;
 		uint32 ip;
@@ -1433,59 +1451,56 @@ BOOL is_myname_or_ipaddr(char *s)
 
 	/* check for an alias */
   	ptr = lp_netbios_aliases();
-	for ( ; *ptr; ptr++ )
-	{
+	for ( ; *ptr; ptr++ ) {
 		if (StrCaseCmp(s, *ptr) == 0)
 			return True;
 	}
 	
-	
 	/* no match */
 	return False;
-
 }
 
-
 /*******************************************************************
-set the horrid remote_arch string based on an enum.
+ Set the horrid remote_arch string based on an enum.
 ********************************************************************/
+
 void set_remote_arch(enum remote_arch_types type)
 {
-  extern fstring remote_arch;
-  ra_type = type;
-  switch( type )
-  {
-  case RA_WFWG:
-    fstrcpy(remote_arch, "WfWg");
-    return;
-  case RA_OS2:
-    fstrcpy(remote_arch, "OS2");
-    return;
-  case RA_WIN95:
-    fstrcpy(remote_arch, "Win95");
-    return;
-  case RA_WINNT:
-    fstrcpy(remote_arch, "WinNT");
-    return;
-  case RA_WIN2K:
-    fstrcpy(remote_arch, "Win2K");
-    return;
-  case RA_SAMBA:
-    fstrcpy(remote_arch,"Samba");
-    return;
-  default:
-    ra_type = RA_UNKNOWN;
-    fstrcpy(remote_arch, "UNKNOWN");
-    break;
-  }
+	extern fstring remote_arch;
+	ra_type = type;
+	switch( type ) {
+	case RA_WFWG:
+		fstrcpy(remote_arch, "WfWg");
+		return;
+	case RA_OS2:
+		fstrcpy(remote_arch, "OS2");
+		return;
+	case RA_WIN95:
+		fstrcpy(remote_arch, "Win95");
+		return;
+	case RA_WINNT:
+		fstrcpy(remote_arch, "WinNT");
+		return;
+	case RA_WIN2K:
+		fstrcpy(remote_arch, "Win2K");
+		return;
+	case RA_SAMBA:
+		fstrcpy(remote_arch,"Samba");
+		return;
+	default:
+		ra_type = RA_UNKNOWN;
+		fstrcpy(remote_arch, "UNKNOWN");
+		break;
+	}
 }
 
 /*******************************************************************
  Get the remote_arch type.
 ********************************************************************/
+
 enum remote_arch_types get_remote_arch(void)
 {
-  return ra_type;
+	return ra_type;
 }
 
 
@@ -1493,42 +1508,35 @@ void out_ascii(FILE *f, unsigned char *buf,int len)
 {
 	int i;
 	for (i=0;i<len;i++)
-	{
 		fprintf(f, "%c", isprint(buf[i])?buf[i]:'.');
-	}
 }
 
 void out_data(FILE *f,char *buf1,int len, int per_line)
 {
 	unsigned char *buf = (unsigned char *)buf1;
 	int i=0;
-	if (len<=0)
-	{
+	if (len<=0) {
 		return;
 	}
 
 	fprintf(f, "[%03X] ",i);
-	for (i=0;i<len;)
-	{
+	for (i=0;i<len;) {
 		fprintf(f, "%02X ",(int)buf[i]);
 		i++;
 		if (i%(per_line/2) == 0) fprintf(f, " ");
-		if (i%per_line == 0)
-		{      
+		if (i%per_line == 0) {      
 			out_ascii(f,&buf[i-per_line  ],per_line/2); fprintf(f, " ");
 			out_ascii(f,&buf[i-per_line/2],per_line/2); fprintf(f, "\n");
 			if (i<len) fprintf(f, "[%03X] ",i);
 		}
 	}
-	if ((i%per_line) != 0)
-	{
+	if ((i%per_line) != 0) {
 		int n;
 
 		n = per_line - (i%per_line);
 		fprintf(f, " ");
 		if (n>(per_line/2)) fprintf(f, " ");
-		while (n--)
-		{
+		while (n--) {
 			fprintf(f, "   ");
 		}
 		n = MIN(per_line/2,i%per_line);

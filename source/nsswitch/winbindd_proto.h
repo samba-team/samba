@@ -9,7 +9,6 @@
 void winbind_process_packet(struct winbindd_cli_state *state);
 void winbind_client_read(struct winbindd_cli_state *state);
 int winbind_setup_common(void);
-int main(int argc, char **argv);
 
 /* The following definitions come from nsswitch/winbindd_ads.c  */
 
