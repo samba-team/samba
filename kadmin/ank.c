@@ -169,7 +169,8 @@ out:
 	krb5_free_principal (context, princ_ent);
     if(default_ent)
 	kadm5_free_principal_ent (context, default_ent);
-    memset (password, 0, strlen(password));
+    if (password != NULL)
+	memset (password, 0, strlen(password));
     return ret;
 }
 
