@@ -37,9 +37,11 @@
 .Sh NAME
 .Nm krb5_keyblock ,
 .Nm krb5_keyblock_get_enctype ,
+.Nm krb5_copy_keyblock ,
 .Nm krb5_copy_keyblock_contents ,
 .Nm krb5_free_keyblock ,
 .Nm krb5_free_keyblock_contents ,
+.Nm krb5_generate_random_keyblock ,
 .Nm krb5_keyblock_zero
 .Nd Kerberos 5 key handling functions.
 .Sh LIBRARY
@@ -51,6 +53,11 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Ft krb5_enctype
 .Fo krb5_keyblock_get_enctype
 .Fa "const krb5_keyblock *block"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_copy_keyblock
+.Fa "krb5_context context"
+.Fa "krb5_keyblock **to"
 .Fc
 .Ft krb5_error_code
 .Fo krb5_copy_keyblock_contents
@@ -68,6 +75,12 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "krb5_context context"
 .Fa "krb5_keyblock *keyblock"
 .Fc
+.Ft krb5_error_code
+.Fo krb5_generate_random_keyblock
+.Fa "krb5_context context"
+.Fa "krb5_enctype type"
+.Fa "krb5_keyblock *key"
+.Fc
 .Ft void
 .Fo krb5_keyblock_zero
 .Fa "krb5_keyblock *keyblock"
@@ -82,6 +95,16 @@ that is directly referable.
 .Fn krb5_keyblock_get_enctype
 returns the encryption type of the keyblock.
 .Pp
+.Fn krb5_copy_keyblock
+makes a copy the keyblock
+.Fa inblock
+to the
+output
+.Fa out .
+.Fa out
+should be freed by the caller with
+.Fa krb5_free_keyblock .
+.Pp
 .Fn krb5_copy_keyblock_contents
 copies the contents of
 .Fa inblock
@@ -95,6 +118,16 @@ free the content and the keyblock itself.
 .Pp
 .Fn krb5_free_keyblock_contents
 frees the content of the keyblock.
+.Pp
+.Fn krb5_generate_random_keyblock
+creates a new content of the keyblock
+.Fa key
+of type encrytion type
+.Fa type .
+The content of
+.Fa key
+is overwritten and not freed, so the caller should be sure it is
+freed before calling the function.
 .Pp
 .Fn krb5_keyblock_zero
 zeros out the keyblock to to make sure no keymaterial is in
