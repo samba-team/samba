@@ -1782,7 +1782,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 
 	/* find the domain controller */
 	if (!net_find_pdc(&server_ip, pdc_name, domain_name)) {
-		DEBUG(0, ("Coulnd find domain controller for domain %s\n", domain_name));
+		DEBUG(0, ("Couldn't find domain controller for domain %s\n", domain_name));
 		return -1;
 	}
 
