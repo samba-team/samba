@@ -734,7 +734,6 @@ extern int errno;
 #include "messages.h"
 #include "charset.h"
 #include "dynconfig.h"
-#include "adt_tree.h"
 
 #include "util_getent.h"
 
@@ -748,10 +747,6 @@ extern int errno;
 #include "ntdomain.h"
 
 #include "msdfs.h"
-
-#include "mapping.h"
-
-#include "rap.h"
 
 #include "md5.h"
 #include "hmacmd5.h"
