@@ -1,4 +1,4 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  Routines to operate on various trust relationships
  *  Copyright (C) Andrew Bartlett                   2001
@@ -127,8 +127,8 @@ NTSTATUS trust_pw_find_change_and_store_it(struct cli_state *cli,
  Enumerate the list of trusted domains from a DC
 *********************************************************************/
 
-BOOL enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain, 
-                                     char ***domain_names, uint32 *num_domains, 
+BOOL enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
+                                     char ***domain_names, uint32 *num_domains,
 				     DOM_SID **sids )
 {
 	POLICY_HND 	pol;
@@ -138,36 +138,36 @@ BOOL enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
 	uint32 		enum_ctx = 0;
 	struct cli_state *cli = NULL;
 	BOOL 		retry;
-	
+
 	*domain_names = NULL;
 	*num_domains = 0;
 	*sids = NULL;
-	
+
 	/* lookup a DC first */
-	
+
 	if ( !get_dc_name(domain, dc_name, &dc_ip) ) {
 		DEBUG(3,("enumerate_domain_trusts: can't locate a DC for domain %s\n",
 			domain));
 		return False;
 	}
-	
+
 	/* setup the anonymous connection */
-		
-	result = cli_full_connection( &cli, global_myname(), dc_name, &dc_ip, 0, "IPC$", "IPC", 
+
+	result = cli_full_connection( &cli, global_myname(), dc_name, &dc_ip, 0, "IPC$", "IPC",
 		"", "", "", 0, &retry);
 	if ( !NT_STATUS_IS_OK(result) )
 		goto done;
-	
+
 	/* open the LSARPC_PIPE	*/
-	
+
 	if ( !cli_nt_session_open( cli, PI_LSARPC ) ) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
-		
+
 	/* get a handle */
-	
-	result = cli_lsa_open_policy(cli, mem_ctx, True, 
+
+	result = cli_lsa_open_policy(cli, mem_ctx, True,
 		POLICY_VIEW_LOCAL_INFORMATION, &pol);
 	if ( !NT_STATUS_IS_OK(result) )
 		goto done;
@@ -176,56 +176,15 @@ BOOL enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
 
 	result = cli_lsa_enum_trust_dom(cli, mem_ctx, &pol, &enum_ctx,
 		num_domains, domain_names, sids);
-	if ( !NT_STATUS_IS_OK(result) ) 
+	if ( !NT_STATUS_IS_OK(result) )
 		goto done;
-	
-done:	
+
+done:
 	/* cleanup */
-	
+
 	cli_nt_session_close( cli );
 	cli_shutdown( cli );
-		
+
 	return NT_STATUS_IS_OK(result);
-}
-
-
-/**
- * Verify whether or not given domain is trusted.
- *
- * @param domain_name name of the domain to be verified
- * @return true if domain is one of the trusted once or
- *         false if otherwise
- **/
- 
-BOOL is_trusted_domain(const char* dom_name)
-{
-	DOM_SID trustdom_sid;
-	char *pass = NULL;
-	time_t lct;
-	BOOL ret;
-
-	/* if we are a DC, then check for a direct trust relationships */
-	
-	if (lp_server_role() == ROLE_DOMAIN_BDC || lp_server_role() == ROLE_DOMAIN_PDC) {
-		ret = secrets_fetch_trusted_domain_password(dom_name, &pass, &trustdom_sid, &lct);
-		SAFE_FREE(pass);
-		if (ret) 
-			return True;
-	}
-	
-	/* if winbindd is not up then we need to update the trustdom_cache ourselves */
-
-	if ( !winbind_ping() )
-		update_trustdom_cache();
-	
-	/* now the trustdom cache should be available a DC could still 
-	 * have a transitive trust so fall back to the cache of trusted 
-	 * domains (like a domain member would use  */
-	
-	if ( trustdom_cache_fetch(dom_name, &trustdom_sid) ) {
-		return True;
-	}
-
-	return False;
 }
 
