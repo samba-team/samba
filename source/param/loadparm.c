@@ -266,6 +266,7 @@ typedef struct
 	BOOL bUnicode;
 	BOOL bUseMmap;
 	BOOL bHostnameLookups;
+	BOOL bUseSpnego;
 }
 global;
 
@@ -795,6 +796,7 @@ static struct parm_struct parm_table[] = {
 	{"max wins ttl", P_INTEGER, P_GLOBAL, &Globals.max_wins_ttl, NULL, NULL, 0},
 	{"min wins ttl", P_INTEGER, P_GLOBAL, &Globals.min_wins_ttl, NULL, NULL, 0},
 	{"time server", P_BOOL, P_GLOBAL, &Globals.bTimeServer, NULL, NULL, 0},
+	{"use spnego", P_BOOL, P_GLOBAL, &Globals.bUseSpnego, NULL, NULL, 0},
 
 	{"Tuning Options", P_SEP, P_SEPARATOR},
 	
@@ -1347,6 +1349,9 @@ static void init_globals(void)
 	Globals.winbind_cache_time = 15;
 	Globals.bWinbindEnumUsers = True;
 	Globals.bWinbindEnumGroups = True;
+
+	Globals.bUseSpnego = True;
+
 }
 
 static TALLOC_CTX *lp_talloc;
@@ -1559,6 +1564,7 @@ FN_GLOBAL_BOOL(lp_host_msdfs, &Globals.bHostMSDfs)
 FN_GLOBAL_BOOL(lp_kernel_oplocks, &Globals.bKernelOplocks)
 FN_GLOBAL_BOOL(lp_enhanced_browsing, &Globals.enhanced_browsing)
 FN_GLOBAL_BOOL(lp_use_mmap, &Globals.bUseMmap)
+FN_GLOBAL_BOOL(lp_use_spnego, &Globals.bUseSpnego)
 FN_GLOBAL_BOOL(lp_hostname_lookups, &Globals.bHostnameLookups)
 FN_GLOBAL_INTEGER(lp_os_level, &Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl, &Globals.max_ttl)
