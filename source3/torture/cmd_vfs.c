@@ -28,16 +28,24 @@ static char *null_string = "";
 static NTSTATUS cmd_load_module(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	struct smb_vfs_handle_struct *handle;
+	char *path = lp_vfs_path(0);
+	char name[PATH_MAX];
 	
 	if (argc != 2) {
 		printf("Usage: load <module path>\n");
 		return NT_STATUS_OK;
 	}
+
+	if (path != NULL && *path != '\0') {
+		snprintf(name, PATH_MAX, "%s/%s", path, argv[1]);
+	} else {
+		snprintf(name, PATH_MAX, "%s", argv[1]);
+	}
 	vfs->conn->vfs_private = NULL;
 	handle = (struct smb_vfs_handle_struct *) smb_xmalloc(sizeof(smb_vfs_handle_struct));
 	handle->handle = NULL;
 	DLIST_ADD(vfs->conn->vfs_private, handle)
-	if (!vfs_init_custom(vfs->conn, argv[1])) {
+	if (!vfs_init_custom(vfs->conn, name)) {
 		DEBUG(0, ("load: error=-1 (vfs_init_custom failed for %s)\n", argv[1]));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -197,7 +205,8 @@ static NTSTATUS cmd_closedir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int arg
 
 static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
-	int flags, mode, fd;
+	int flags, fd;
+	mode_t mode;
 	char *flagstr;
 
 	mode = 00400;
@@ -520,7 +529,7 @@ static NTSTATUS cmd_stat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	printf("  Size: %10d", st.st_size);
 	printf(" Blocks: %9d", st.st_blocks);
 	printf(" IO Block: %d\n", st.st_blksize);
-	printf("  Device: 0x%.10x", st.st_dev);
+	printf("  Device: 0x%10x", st.st_dev);
 	printf(" Inode: %10d", st.st_ino);
 	printf(" Links: %10d\n", st.st_nlink);
 	printf("  Access: %05o", (st.st_mode) & 007777);
@@ -808,7 +817,84 @@ static NTSTATUS cmd_ftruncate(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int ar
 
 static NTSTATUS cmd_lock(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
-	printf("lock: Not yet implemented!\n");
+	BOOL ret;
+	int fd;
+	int op;
+	long offset;
+	long count;
+	int type;
+	char *typestr;
+	
+	if (argc != 6) {
+		printf("Usage: lock <fd> <op> <offset> <count> <type>\n");
+                printf("  ops: G = F_GETLK\n");
+                printf("       S = F_SETLK\n");
+                printf("       W = F_SETLKW\n");
+                printf("  type: R = F_RDLCK\n");
+                printf("        W = F_WRLCK\n");
+                printf("        U = F_UNLCK\n");
+		return NT_STATUS_OK;
+	}
+
+	if (sscanf(argv[1], "%d", &fd) == 0) {
+		printf("lock: error=-1 (error parsing fd)\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	op = 0;
+	switch (*argv[2]) {
+	case 'G':
+		op = F_GETLK;
+		break;
+	case 'S':
+		op = F_SETLK;
+		break;
+	case 'W':
+		op = F_SETLKW;
+		break;
+	default:
+		printf("lock: error=-1 (invalid op flag!)\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (sscanf(argv[3], "%ld", &offset) == 0) {
+		printf("lock: error=-1 (error parsing fd)\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (sscanf(argv[4], "%ld", &count) == 0) {
+		printf("lock: error=-1 (error parsing fd)\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	type = 0;
+	typestr = argv[5];
+	while(*typestr) {
+		switch (*typestr) {
+		case 'R':
+			type |= F_RDLCK;
+			break;
+		case 'W':
+			type |= F_WRLCK;
+			break;
+		case 'U':
+			type |= F_UNLCK;
+			break;
+		default:
+			printf("lock: error=-1 (invalid type flag!)\n");
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+		typestr++;
+	}
+
+	printf("lock: debug lock(fd=%d, op=%d, offset=%ld, count=%ld, type=%d))\n", fd, op, offset, count, type);
+
+	if ((ret = vfs->conn->vfs_ops.lock(vfs->files[fd], fd, op, offset, count, type)) == False) {
+		printf("lock: error=%d (%s)\n", errno, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	printf("lock: ok\n");
 	return NT_STATUS_OK;
 }
 
@@ -868,7 +954,32 @@ static NTSTATUS cmd_link(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 
 static NTSTATUS cmd_mknod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
-	printf("lock: Not yet implemented!\n");
+	mode_t mode;
+	SMB_DEV_T dev;
+	
+	if (argc != 4) {
+		printf("Usage: mknod <path> <mode> <dev>\n");
+		printf("  mode is octal\n");
+		printf("  dev is hex\n");
+		return NT_STATUS_OK;
+	}
+
+	if (sscanf(argv[2], "%o", &mode) == 0) {
+		printf("open: error=-1 (invalid mode!)\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (sscanf(argv[3], "%x", &dev) == 0) {
+		printf("open: error=-1 (invalid dev!)\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (vfs->conn->vfs_ops.mknod(vfs->conn, argv[1], mode, dev) == -1) {
+		printf("mknod: error=%d (%s)\n", errno, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	printf("mknod: ok\n");
 	return NT_STATUS_OK;
 }
 
@@ -924,11 +1035,11 @@ struct cmd_set vfs_commands[] = {
 	{ "getwd",   cmd_getwd,   "VFS getwd()",    "getwd" },
 	{ "utime",   cmd_utime,   "VFS utime()",    "utime <path> <access> <modify>" },
 	{ "ftruncate",   cmd_ftruncate,   "VFS ftruncate()",    "ftruncate <fd> <length>" },
-	{ "lock",   cmd_lock,   "VFS lock()",    "lock: Not yet implemented!" },
+	{ "lock",   cmd_lock,   "VFS lock()",    "lock <f> <op> <offset> <count> <type>" },
 	{ "symlink",   cmd_symlink,   "VFS symlink()",    "symlink <old> <new>" },
 	{ "readlink",   cmd_readlink,   "VFS readlink()",    "readlink <path>" },
 	{ "link",   cmd_link,   "VFS link()",    "link <oldpath> <newpath>" },
-	{ "mknod",   cmd_mknod,   "VFS mknod()",    "mknod: Not yet implemented!" },
+	{ "mknod",   cmd_mknod,   "VFS mknod()",    "mknod <path> <mode> <dev>" },
 	{ "realpath",   cmd_realpath,   "VFS realpath()",    "realpath <path>" },
 	{ NULL }
 };
