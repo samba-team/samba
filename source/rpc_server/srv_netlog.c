@@ -693,8 +693,6 @@ static void api_net_sam_logon( int uid,
 		dummy_time.low  = 0xffffffff;
 		dummy_time.high = 0x7fffffff;
 
-		get_myname(myname, NULL);
-
 		/* XXXX hack to get standard_sub_basic() to use sam logon username */
 		/* possibly a better way would be to do a become_user() call */
 		sam_logon_in_ssb = True;
