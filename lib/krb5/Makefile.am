@@ -16,7 +16,7 @@ libkrb5_a_SOURCES = address.c asn1_glue.c auth_context.c build_ap_req.c	\
 	mk_safe.c net_read.c net_write.c principal.c rd_priv.c rd_rep.c \
 	rd_req.c rd_safe.c recvauth.c send_to_kdc.c sendauth.c		\
 	set_default_realm.c store.c store_emem.c store_fd.c		\
-	store_mem.c str2key.c verify_user.c
+	store_mem.c str2key.c verify_user.c creds.c
 
 libkrb5_a_LIBADD = ../error/error.o ../error/krb5_err.o \
 	../error/asn1_err.o ../error/hdb_err.o
