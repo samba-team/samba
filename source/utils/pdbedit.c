@@ -57,8 +57,11 @@
  Add all currently available users to another db
  ********************************************************/
 
-static int export_database (struct pdb_context *in, struct pdb_context *out) {
+static int export_database (struct pdb_context *in, struct pdb_context
+			    *out, const char *username) {
 	SAM_ACCOUNT *user = NULL;
+
+	DEBUG(3, ("called with username=\"%s\"\n", username));
 
 	if (NT_STATUS_IS_ERR(in->pdb_setsampwent(in, 0))) {
 		fprintf(stderr, "Can't sampwent!\n");
@@ -71,10 +74,17 @@ static int export_database (struct pdb_context *in, struct pdb_context *out) {
 	}
 
 	while (NT_STATUS_IS_OK(in->pdb_getsampwent(in, user))) {
-		out->pdb_add_sam_account(out, user);
-		if (!NT_STATUS_IS_OK(pdb_reset_sam(user))){
-			fprintf(stderr, "Can't reset SAM_ACCOUNT!\n");
-			return 1;
+		DEBUG(4, ("Processing account %s\n",
+			  user->private.username));
+		if (!username || 
+		    (strcmp(username, user->private.username)
+		     == 0)) {
+			out->pdb_add_sam_account(out, user);
+			if (!NT_STATUS_IS_OK(pdb_reset_sam(user))) {
+				fprintf(stderr,
+					"Can't reset SAM_ACCOUNT!\n");
+				return 1;
+			}
 		}
 	}
 
@@ -764,7 +774,7 @@ int main (int argc, char **argv)
 
 	/* import and export operations */
 	if (((checkparms & BIT_IMPORT) || (checkparms & BIT_EXPORT))
-			&& !(checkparms & ~(BIT_IMPORT +BIT_EXPORT))) {
+	    && !(checkparms & ~(BIT_IMPORT +BIT_EXPORT +BIT_USER))) {
 		if (backend_in) {
 			if (!NT_STATUS_IS_OK(make_pdb_context_string(&bin, backend_in))) {
 				fprintf(stderr, "Can't initialize passdb backend.\n");
@@ -782,9 +792,15 @@ int main (int argc, char **argv)
 			bout = bdef;
 		}
 		if (transfer_groups) {
-			return export_groups(bin, bout);
+			if (!(checkparms & BIT_USER))
+				return export_groups(bin, bout);
 		} else {
-			return export_database(bin, bout);
+			if (checkparms & BIT_USER)
+				return export_database(bin, bout,
+						       user_name);
+			else
+				return export_database(bin, bout,
+						       NULL);
 		}
 	}
 
