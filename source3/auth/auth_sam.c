@@ -170,9 +170,13 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 
 	if (*workstation_list) {
 		BOOL invalid_ws = True;
-		const char *s = workstation_list;
-			
 		fstring tok;
+		const char *s = workstation_list;
+
+		const char *machine_name = talloc_asprintf(mem_ctx, "%s$", user_info->wksta_name.str);
+		if (machine_name == NULL)
+			return NT_STATUS_NO_MEMORY;
+			
 			
 		while (next_token(&s, tok, ",", sizeof(tok))) {
 			DEBUG(10,("sam_account_ok: checking for workstation match %s and %s (len=%d)\n",
@@ -180,6 +184,14 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 			if(strequal(tok, user_info->wksta_name.str)) {
 				invalid_ws = False;
 				break;
+			}
+			if (tok[0] == '@') {
+				DEBUG(10,("sam_account_ok: checking for workstation %s in group: %s\n", 
+					machine_name, tok + 1));
+				if (user_in_group_list(machine_name, tok + 1, NULL, 0)) {
+					invalid_ws = False;
+					break;
+				}
 			}
 		}
 		
