@@ -4548,7 +4548,7 @@ bf("printing=SYSV"),bf("printing="HPUX"),bf("printing=QNX") and
 bf("printing=SOFTQ").
 
 To see what the defaults are for the other print commands when using
-these three options use the url(bf("testparm"))(testparm) program.
+these three options use the url(bf("testparm"))(testparm.1.html) program.
 
 This option can be set on a per printer basis
 
