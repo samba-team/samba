@@ -1441,44 +1441,43 @@ void cmd_sam_query_user(struct client_info *info)
 	uint16 fnum;
 	fstring srv_name;
 	fstring domain;
-	fstring sid;
-	DOM_SID sid1;
-	int user_idx = 0;  /* FIXME maybe ... */
+	fstring sid_str;
+	DOM_SID sid;
 	BOOL res = True;
-	uint32 ace_perms = 0x304; /* absolutely no idea. */
-	fstring rid_str ;
-	fstring info_str;
-	uint32 user_rid = 0;
-	uint32 info_level = 0x15;
+	BOOL res1 = True;
 
+	fstring user_name;
+	const char *names[1];
+	uint32 num_rids;
+	uint32 rid[MAX_LOOKUP_SIDS];
+	uint32 type[MAX_LOOKUP_SIDS];
+	uint32 info_level = 0x15;
 	SAM_USER_INFO_21 usr;
 
-	sid_to_string(sid, &info->dom.level5_sid);
 	fstrcpy(domain, info->dom.level5_dom);
+	sid_copy(&sid, &info->dom.level5_sid);
 
-	if (strlen(sid) == 0)
+	if (sid.num_auths == 0)
 	{
 		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
 		return;
 	}
 
-	string_to_sid(&sid1, sid);
+	if (!next_token(NULL, user_name, NULL, sizeof(user_name)))
+	{
+		fprintf(out_hnd, "samuser <name>\n");
+		return;
+	}
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	if (next_token(NULL, rid_str , NULL, sizeof(rid_str )) &&
-	    next_token(NULL, info_str, NULL, sizeof(info_str)))
-	{
-		user_rid   = strtoul(rid_str , (char**)NULL, 16);
-		info_level = strtoul(info_str, (char**)NULL, 10);
-	}
+	sid_to_string(sid_str, &sid);
 
-	fprintf(out_hnd, "SAM Query User: rid %x info level %d\n",
-	                  user_rid, info_level);
+	fprintf(out_hnd, "SAM Query User: %s\n", user_name);
 	fprintf(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
-	                  info->myhostname, srv_name, domain, sid);
+	                  info->myhostname, srv_name, domain, sid_str);
 
 	/* open SAMR session.  negotiate credentials */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
@@ -1490,25 +1489,20 @@ void cmd_sam_query_user(struct client_info *info)
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(smb_cli, fnum,
-	            &info->dom.samr_pol_connect, ace_perms, &sid1,
+	            &info->dom.samr_pol_connect, 0x304, &sid,
 	            &info->dom.samr_pol_open_domain) : False;
 
-	fprintf(out_hnd, "User RID: %8x  User Name: %s\n",
-			  user_rid,
-			  info->dom.sam[user_idx].acct_name);
+	/* look up user rid */
+	names[0] = user_name;
+	res1 = res ? samr_query_lookup_names(smb_cli, fnum,
+					&info->dom.samr_pol_open_domain, 0x3e8,
+					1, names,
+					&num_rids, rid, type) : False;
 
-	/* send user info query, level */
-	if (get_samr_query_userinfo(smb_cli, fnum,
-					&info->dom.samr_pol_open_domain,
-					info_level, user_rid, &usr))
-	{
-		if (info_level == 0x15)
-		{
-			display_sam_user_info_21(out_hnd, ACTION_HEADER   , &usr);
-			display_sam_user_info_21(out_hnd, ACTION_ENUMERATE, &usr);
-			display_sam_user_info_21(out_hnd, ACTION_FOOTER   , &usr);
-		}
-	}
+	/* send user info query */
+	res1 = (res1 && num_rids == 1) ? get_samr_query_userinfo(smb_cli, fnum,
+					 &info->dom.samr_pol_open_domain,
+					 info_level, rid[0], &usr) : False;
 
 	res = res ? samr_close(smb_cli, fnum,
 	            &info->dom.samr_pol_connect) : False;
@@ -1519,8 +1513,12 @@ void cmd_sam_query_user(struct client_info *info)
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
 
-	if (res)
+	if (res1)
 	{
+		display_sam_user_info_21(out_hnd, ACTION_HEADER   , &usr);
+		display_sam_user_info_21(out_hnd, ACTION_ENUMERATE, &usr);
+		display_sam_user_info_21(out_hnd, ACTION_FOOTER   , &usr);
+
 		DEBUG(5,("cmd_sam_query_user: succeeded\n"));
 	}
 	else
