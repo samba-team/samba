@@ -28,7 +28,7 @@ typedef struct {
 
 typedef struct {
 	uint8 tag2;
-	fstring protocol;
+	string protocol;
 } BUF2;
 
 typedef struct {
@@ -64,11 +64,11 @@ typedef struct {
 	USHORT  Reserved;             /* MBZ */
 	USHORT  ByteCount;             /* Count of data bytes */
 	UCHAR Challenge[ChallengeLength];            /* The challenge */
-	fstring PrimaryDomain;       /* The server's primary domain */
+	string PrimaryDomain;       /* The server's primary domain */
 
 	uint16 bcount;
 	uint8 chal[8];
-	fstring domain;
+	string domain;
 } R_NEGPROT_12;
 
 typedef struct {
@@ -101,7 +101,7 @@ typedef struct {
 			      /*  security package if CAP_EXTENDED_SECURITY is */
 			      /*  on in the Capabilities field; else challenge */
 			      /*  for CIFS challenge/response authentication. */
-	fstring OemDomainName; /*The name of the domain (in OEM chars); not */
+	string OemDomainName; /*The name of the domain (in OEM chars); not */
 	                      /*  present  if CAP_EXTENDED_SECURITY is on in the */
 			      /*  Capabilities field */
 } R_NEGPROT_17;
@@ -165,9 +165,9 @@ typedef struct {
 
 	uint16 bcount;
 	uint8 password[pwlen];
-	fstring domain;
-	fstring os;
-	fstring server;
+	string domain;
+	string os;
+	string server;
 
 } Q_SESSION_SETUP_ANDX_10;
 
@@ -185,10 +185,10 @@ typedef struct {
 	uint16 bcount;
 	uint8 password[pwlen];
 	uint8 upassword[upwlen];
-	fstring user;
-	fstring domain;
-	fstring os;
-	fstring server;
+	string user;
+	string domain;
+	string os;
+	string server;
 
 } Q_SESSION_SETUP_ANDX_13;
 
@@ -206,8 +206,8 @@ typedef struct {
 	uint16 passlen;
 	uint16 bcount;
 	uint8 password[passlen];
-	fstring path;
-	fstring device;
+	string path;
+	string device;
 } Q_TCON_ANDX_4;
 
 typedef struct _Q_TCON_ANDX {
@@ -221,7 +221,7 @@ typedef struct {
 	ANDX_INFO andx;
 	uint16 vwv2;
 	uint16 bcount;
-	fstring share;
+	string share;
 } R_TCON_ANDX_3;
 
 typedef struct _R_TCON_ANDX {
@@ -236,9 +236,9 @@ typedef struct {
 	uint16 action;
 
 	uint16 count;
-	fstring os;
-	fstring server;
-	fstring domain;
+	string os;
+	string server;
+	string domain;
 } R_SESSION_SETUP_ANDX_10;
 
 typedef struct _R_SESSION_SETUP_ANDX {
@@ -555,6 +555,71 @@ typedef struct _Q_WRITE_ANDX {
 } Q_WRITE_ANDX;
 
 
+
+typedef struct _Q_NTTRANS_19 {
+	UCHAR MaxSetupCount;          /* Max setup words to return */
+	USHORT Reserved;
+	ULONG TotalParameterCount;    /* Total parameter bytes being sent */
+	ULONG TotalDataCount;         /* Total data bytes being sent */
+	ULONG MaxParameterCount;      /* Max parameter bytes to return */
+	ULONG MaxDataCount;           /* Max data bytes to return */
+	ULONG ParameterCount;         /* Parameter bytes sent this buffer */
+	ULONG ParameterOffset;        /* Offset (from header start) to */
+					 /* Parameters */
+	ULONG DataCount;              /* Data bytes sent this buffer */
+	ULONG DataOffset;             /* Offset (from header start) to data */
+	UCHAR SetupCount;             /* Count of setup words */
+	USHORT Function;              /* The transaction function code */
+	UCHAR Buffer[1];
+	USHORT Setup[SetupCount];     /* Setup words */
+	USHORT ByteCount;             /* Count of data bytes */
+	UCHAR Pad1;                   /* Pad to LONG */
+	UCHAR Parameters[ParameterCount];/* Parameter bytes */
+	UCHAR Pad2;                   /* Pad to LONG */
+	UCHAR Data[DataCount];        /* Data bytes */
+
+} Q_NTTRANS_19;
+
+typedef struct _Q_NTTRANS {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 19 Q_NTTRANS_19 q19;
+	}
+} Q_NTTRANS;
+
+typedef struct _R_NTTRANS_18 {
+	UCHAR Reserved[3];
+	ULONG TotalParameterCount;   /* Total parameter bytes being sent */
+	ULONG TotalDataCount;        /* Total data bytes being sent */
+	ULONG ParameterCount;        /* Parameter bytes sent this buffer */
+	ULONG ParameterOffset;       /* Offset (from header start) to */
+					  /* Parameters */
+	ULONG ParameterDisplacement; /* Specifies the offset from the start */
+				/* of the overall parameter block to */
+				/* the parameter bytes that are */
+				/* contained in this message */
+	ULONG DataCount;        /* Data bytes sent this buffer */
+	ULONG DataOffset;       /* Offset (from header start) to data */
+	ULONG DataDisplacement; /* Specifies the offset from the start */
+				/* of the overall data block to the */
+				/* data bytes that are contained in */
+				/* this message. */
+	UCHAR SetupCount;       /* Count of setup words */
+	USHORT Setup[SetupCount]; /* Setup words */
+	USHORT ByteCount;       /* Count of data bytes */
+	UCHAR Pad1;           /* Pad to LONG */
+	UCHAR Parameters[ParameterCount]; /* Parameter bytes */
+	UCHAR Pad2;           /* Pad to SHORT or LONG */
+	UCHAR Data[DataCount];  /* Data bytes */
+} R_NTTRANS_18;
+
+typedef struct _R_NTTRANS {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 18 R_NTTRANS_18 q18;
+	}
+} R_NTTRANS;
+
 typedef struct _Q_TRANS2_15 {
 	USHORT TotalParameterCount;      /* Total parameter bytes being sent */
 	USHORT TotalDataCount;           /* Total data bytes being sent */
@@ -575,7 +640,7 @@ typedef struct _Q_TRANS2_15 {
 	UCHAR Reserved3;                 /* Reserved (pad above to word) */
 	USHORT Setup[SetupCount];        /* Setup words (# = SetupWordCount) */
 	USHORT ByteCount;                /* Count of data bytes */
-	fstring Name;                    /* Must be NULL */
+	string Name;                    /* Must be NULL */
 	UCHAR Pad[];                     /* Pad to SHORT or LONG */
 	UCHAR Parameters[ParameterCount];/* Parameter bytes (# = ParameterCount) */ 
 	UCHAR Pad1[];                    /* Pad to SHORT or LONG */
@@ -610,7 +675,7 @@ typedef struct _Q_TRANS_16 {
 	UCHAR Reserved3;                 /* Reserved (pad above to word) */
 	USHORT Setup[SetupCount];        /* Setup words (# = SetupWordCount) */
 	USHORT ByteCount;                /* Count of data bytes */
-	fstring Name;                    /* Must be NULL */
+	string Name;                    /* Must be NULL */
 	UCHAR Pad[];                     /* Pad to SHORT or LONG */
 	UCHAR Parameters[ParameterCount];/* Parameter bytes (# = ParameterCount) */ 
 	UCHAR Pad1[];                    /* Pad to SHORT or LONG */
@@ -628,6 +693,7 @@ typedef struct _Q_TRANS {
 typedef struct _R_TRANS_10 {
 	USHORT TotalParameterCount;/* Total parameter bytes being sent */
 	USHORT TotalDataCount;     /* Total data bytes being sent */
+	USHORT Reserved2;
 	USHORT ParameterCount;     /* Parameter bytes sent this buffer */
 	USHORT ParameterOffset;    /* Offset (from header start) to */
 				  /* Parameters */
@@ -647,7 +713,7 @@ typedef struct _R_TRANS_10 {
 	USHORT ByteCount;         /* Count of data bytes */
 	UCHAR Pad1;               /* Pad to LONG */
 	UCHAR Parameters[ParameterCount];/* Parameter bytes */
-	UCHAR Pad2;               /* Pad to SHORT or LONG */
+	/*UCHAR Pad2;               Pad to SHORT or LONG */
 	UCHAR Data[DataCount];    /* Data bytes */
 } R_TRANS_10;
 
@@ -730,6 +796,7 @@ typedef struct _R_SMB {
 		case 115 R_SESSION_SETUP_ANDX r115;
 		case 117 R_TCON_ANDX r117;
 		case 128 R_DSKATTR    r128;
+		case 160 R_NTTRANS r160;
 	}
 } R_SMB;
 
@@ -750,6 +817,7 @@ typedef struct _Q_SMB {
 		case 115 Q_SESSION_SETUP_ANDX q115;
 		case 117 Q_TCON_ANDX q117;
 		case 128 Q_DSKATTR    q128;
+		case 160 Q_NTTRANS q160;
 	}
 } Q_SMB;
 
