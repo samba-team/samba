@@ -489,12 +489,12 @@ BOOL cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, c
   pstrcpy(p,"B13BWz");
   p = skip_string(p,1);
   SSVAL(p,0,1);
-  SSVAL(p,2,CLI_BUFFER_SIZE);
+  SSVAL(p,2,0xFFFF);
   p += 4;
 
   if (cli_api(cli, 
               param, PTR_DIFF(p,param), 1024,  /* Param, length, maxlen */
-              NULL, 0, CLI_BUFFER_SIZE,            /* data, length, maxlen */
+              NULL, 0, 0xFFFF,            /* data, length, maxlen */
               &rparam, &rprcnt,                /* return params, length */
               &rdata, &rdrcnt))                /* return data, length */
     {
@@ -502,20 +502,22 @@ BOOL cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, c
       int converter=SVAL(rparam,2);
       int i;
       
-      if (res == 0)
-	{
-	  count=SVAL(rparam,4);
-	  p = rdata;
+      if (res == 0 || res == ERRmoredata) {
+	      count=SVAL(rparam,4);
+	      p = rdata;
 
-	  for (i=0;i<count;i++,p+=20)
-	    {
-	      char *sname = p;
-	      int type = SVAL(p,14);
-	      int comment_offset = IVAL(p,16) & 0xFFFF;
-	      char *cmnt = comment_offset?(rdata+comment_offset-converter):"";
-	      fn(sname, type, cmnt);
-	    }
-	}
+	      for (i=0;i<count;i++,p+=20) {
+		      char *sname = p;
+		      int type = SVAL(p,14);
+		      int comment_offset = IVAL(p,16) & 0xFFFF;
+		      char *cmnt = comment_offset?(rdata+comment_offset-converter):"";
+		      fn(sname, type, cmnt);
+	      }
+      } else {
+	      DEBUG(4,("NetShareEnum res=%d\n", res));
+      }      
+    } else {
+	      DEBUG(4,("NetShareEnum failed\n"));
     }
   
   if (rparam)
@@ -574,7 +576,7 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 		int converter=SVAL(rparam,2);
 		int i;
 			
-		if (res == 0) {
+		if (res == 0 || res == ERRmoredata) {
 			count=SVAL(rparam,4);
 			p = rdata;
 					
@@ -698,7 +700,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 		SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
 		SSVAL(cli->outbuf,smb_vwv7,passlen);
 		SSVAL(cli->outbuf,smb_vwv8,ntpasslen);
-		SSVAL(cli->outbuf,smb_vwv11,CAP_STATUS32);
+		SSVAL(cli->outbuf,smb_vwv11,0);
 		p = smb_buf(cli->outbuf);
 		memcpy(p,pword,passlen); 
 		p += SVAL(cli->outbuf,smb_vwv7);
@@ -805,8 +807,17 @@ BOOL cli_send_tconX(struct cli_state *cli,
 		return False;
 	}
 
-	fstrcpy(cli->dev, smb_buf(cli->inbuf));
+	fstrcpy(cli->dev, "A:");
 
+	if (cli->protocol >= PROTOCOL_NT1) {
+		fstrcpy(cli->dev, smb_buf(cli->inbuf));
+	}
+
+	if (strcasecmp(share,"IPC$")==0) {
+		fstrcpy(cli->dev, "IPC");
+	}
+
+	/* only grab the device if we have a recent protocol level */
 	if (cli->protocol >= PROTOCOL_NT1 &&
 	    smb_buflen(cli->inbuf) == 3) {
 		/* almost certainly win95 - enable bug fixes */
