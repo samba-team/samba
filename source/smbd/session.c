@@ -51,6 +51,7 @@ BOOL session_claim(uint16 vuid)
 	uint32 pid = (uint32)sys_getpid();
 	TDB_DATA key;		
 	fstring keystr;
+	char * hostname;
 
 	vuser->session_id = 0;
 
@@ -88,15 +89,12 @@ BOOL session_claim(uint16 vuid)
 		return False;
 	}
 
+	hostname = client_name();
+	if (strequal(hostname,"UNKNOWN"))
+		hostname = client_addr();
+
 	fstrcpy(sessionid.username, vuser->user.unix_name);
-#if WITH_UTMP	
-	fstrcpy(sessionid.hostname, lp_utmp_hostname());
-#else
-	{
-		extern fstring remote_machine;
-		fstrcpy(sessionid.hostname, remote_machine);
-	}
-#endif
+	fstrcpy(sessionid.hostname, hostname);
 	slprintf(sessionid.id_str, sizeof(sessionid.id_str)-1, SESSION_TEMPLATE, i);
 	sessionid.id_num = i;
 	sessionid.pid = pid;
@@ -113,7 +111,7 @@ BOOL session_claim(uint16 vuid)
 	}
 
 #if WITH_PAM
-	if (!pam_session(True, sessionid.username, sessionid.id_str)) {
+	if (!pam_session(True, sessionid.username, sessionid.id_str, sessionid.hostname)) {
 		DEBUG(1,("pam_session rejected the session for %s [%s]\n",
 			 sessionid.username, sessionid.id_str));
 		tdb_delete(tdb, key);
@@ -169,7 +167,7 @@ void session_yield(uint16 vuid)
 #endif
 
 #if WITH_PAM
-	pam_session(False, sessionid.username, sessionid.id_str);
+	pam_session(False, sessionid.username, sessionid.id_str, sessionid.hostname);
 #endif
 
 	tdb_delete(tdb, key);
