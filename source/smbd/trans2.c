@@ -1771,7 +1771,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
         /*
          * Doing a DELETE_ON_CLOSE should cancel a print job.
          */
-        if ((info_level == SMB_SET_FILE_DISPOSITION_INFO) && CVAL(pdata,0)) {
+        if (((info_level == SMB_SET_FILE_DISPOSITION_INFO)||(info_level == SMB_FILE_DISPOSITION_INFORMATION)) &&
+						CVAL(pdata,0)) {
           fsp->share_mode = FILE_DELETE_ON_CLOSE;
 
           DEBUG(3,("call_trans2setfilepathinfo: Cancelling print job (%s)\n",

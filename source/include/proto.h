@@ -4040,8 +4040,8 @@ BOOL set_filetime(connection_struct *conn, char *fname, time_t mtime);
 
 /*The following definitions come from  smbd/error.c  */
 
-int unix_error_packet(char *outbuf,int def_class,uint32 def_code,int line);
-int error_packet(char *outbuf,uint32 nt_err, int error_class,uint32 error_code,int line);
+int unix_error_packet(char *outbuf,int def_class,uint32 def_code,int line, const char *file);
+int error_packet(char *outbuf,uint32 nt_err, int error_class,uint32 error_code,int line, const char *file);
 
 /*The following definitions come from  smbd/fileio.c  */
 

@@ -135,11 +135,11 @@
 /* these are the datagram types */
 #define DGRAM_DIRECT_UNIQUE 0x10
 
-#define ERROR(class,x) error_packet(outbuf,0,class,x,__LINE__)
-#define ERROR_BOTH(nterr,class,x) error_packet(outbuf,nterr,class,x,__LINE__)
+#define ERROR(class,x) error_packet(outbuf,0,class,x,__LINE__,__FILE__)
+#define ERROR_BOTH(nterr,class,x) error_packet(outbuf,nterr,class,x,__LINE__,__FILE__)
 
 /* this is how errors are generated */
-#define UNIXERROR(defclass,deferror) unix_error_packet(outbuf,defclass,deferror,__LINE__)
+#define UNIXERROR(defclass,deferror) unix_error_packet(outbuf,defclass,deferror,__LINE__,__FILE__)
 
 #define SMB_ROUNDUP(x,g) (((x)+((g)-1))&~((g)-1))
 
