@@ -34,10 +34,6 @@
 #include "ftp_locl.h"
 RCSID("$Id$");
 
-#ifndef INADDR_NONE
-#define INADDR_NONE 0xffffffff
-#endif
-
 struct	sockaddr_in hisctladdr;
 struct	sockaddr_in data_addr;
 int	data = -1;
@@ -1585,7 +1581,7 @@ gunique(char *local)
 	while (!d) {
 		if (++count == 100) {
 			printf("runique: can't find unique file name.\n");
-			return ((char *) 0);
+			return NULL;
 		}
 		*cp++ = ext;
 		*cp = '\0';
