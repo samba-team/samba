@@ -1493,6 +1493,26 @@ AC_ARG_WITH(msdfs,
 )
 
 #################################################
+# check for Samba VFS support
+
+AC_MSG_CHECKING(whether to support the experimantal Samba vfs)
+AC_ARG_WITH(vfs,
+[  --with-vfs		Include Samba vfs support
+  --without-vfs	Don't include Samba vfs support (default)],
+[ case "$withval" in
+  yes)
+     AC_MSG_RESULT(yes)
+     AC_DEFINE(WITH_VFS)
+     ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+#################################################
+#################################################
 # set private directory location
 AC_ARG_WITH(privatedir,
 [  --with-privatedir=DIR     Where to put smbpasswd ($ac_default_prefix/private)],

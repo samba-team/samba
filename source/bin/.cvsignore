@@ -5,6 +5,7 @@ nmbd
 nmblookup
 rpcclient
 smbclient
+smbcontrol
 smbd
 smbpasswd
 smbspool
