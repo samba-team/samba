@@ -642,13 +642,13 @@ pch: basics
 	$(CC) -I. -I$(srcdir) $(FLAGS) -c $(srcdir)/include/includes.h -o $(srcdir)/include/includes.h.gch
 
 
-idl: build/pidl/idl.pm
+idl_full: build/pidl/idl.pm
 	script/build_idl.sh FULL
 
-idl_test: build/pidl/idl.pm
+idl: build/pidl/idl.pm
 	@script/build_idl.sh
 
-basics: idl_test proto_test
+basics: idl proto_test
 
 build/pidl/idl.pm: build/pidl/idl.yp
 	-yapp -s build/pidl/idl.yp
@@ -1094,7 +1094,7 @@ include/build_env.h:
 # parallel make.
 headers: delheaders include/proto.h include/build_env.h 
 
-proto: idl_test headers 
+proto: idl headers 
 
 proto_test:
 	@[ -f include/proto.h ] || $(MAKE) proto
