@@ -46,20 +46,8 @@ OM_uint32 gss_export_name
             gss_buffer_t exported_name
            )
 {
-  char *output_name;
-  krb5_error_code kerr;
-
-  gssapi_krb5_init();
-
-  kerr = krb5_unparse_name(gssapi_krb5_context,
-			   input_name,
-			   &output_name);
-
-  if (kerr != 0)
-    return GSS_S_BAD_NAME;
-
-  exported_name->length = strlen(output_name);
-  exported_name->value = output_name;
-
-  return GSS_S_COMPLETE;
+  return gss_display_name(minor_status,
+        input_name,
+        exported_name,
+        NULL);
 }
