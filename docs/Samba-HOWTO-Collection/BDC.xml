@@ -548,7 +548,7 @@ regarding its behavior.
 </para></note>
 
 <para>
-The use of the <smbconfoption><name>idmap backend</name><value>ldap:ldap://master.quenya/org</value></smbconfoption>
+The use of the <smbconfoption><name>idmap backend</name><value>ldap:ldap://master.quenya.org</value></smbconfoption>
 option on a BDC only make sense where ldapsam is used on a PDC. The purpose for an LDAP based idmap backend is
 also to allow a domain-member (without its own passdb backend) to use winbindd to resolve Windows network users
 and groups to common UID/GIDs. In other words, this option is generally intended for use on BDCs and on Domain
