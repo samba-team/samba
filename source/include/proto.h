@@ -441,7 +441,7 @@ void become_user_permanently(uid_t uid, gid_t gid);
 
 void generate_wellknown_sids(void);
 BOOL map_domain_sid_to_name(DOM_SID *sid, char *nt_domain);
-BOOL lookup_known_rid(DOM_SID *sid, uint32 rid, char *name, uint8 *psid_name_use);
+BOOL lookup_known_rid(DOM_SID *sid, uint32 rid, char *name, enum SID_NAME_USE *psid_name_use);
 BOOL map_domain_name_to_sid(DOM_SID *sid, char *nt_domain);
 void split_domain_name(const char *fullname, char *domain, char *name);
 char *sid_to_string(fstring sidstr_out, DOM_SID *sid);
@@ -1275,15 +1275,14 @@ void expire_workgroups_and_servers(time_t t);
 
 /*The following definitions come from  nsswitch/wb_client.c  */
 
-BOOL winbind_lookup_name(char *name, DOM_SID *sid, uint8 *name_type);
-BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, 
-			uint8 *name_type);
-BOOL winbind_uid_to_sid(DOM_SID *sid, uid_t uid);
-BOOL winbind_gid_to_sid(DOM_SID *sid, gid_t gid);
-BOOL lookup_name(char *name, DOM_SID *psid, uint8 *name_type);
-BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, uint8 *name_type);
+BOOL winbind_lookup_name(char *name, DOM_SID *sid, enum SID_NAME_USE *name_type);
+BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE *name_type);
+BOOL lookup_name(char *name, DOM_SID *psid, enum SID_NAME_USE *name_type);
+BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE *name_type);
 DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid);
 DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid);
+BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype);
+BOOL sid_to_gid(DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype);
 
 /*The following definitions come from  nsswitch/wb_common.c  */
 
@@ -1627,10 +1626,12 @@ gid_t pdb_user_rid_to_gid(uint32 user_rid);
 uint32 pdb_uid_to_user_rid(uid_t uid);
 uint32 pdb_gid_to_group_rid(gid_t gid);
 BOOL pdb_rid_is_user(uint32 rid);
-BOOL local_lookup_rid(uint32 rid, char *name, uint8 *psid_name_use);
-BOOL local_lookup_name(char *domain, char *user, DOM_SID *psid, uint8 *psid_name_use);
+BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use);
+BOOL local_lookup_name(char *domain, char *user, DOM_SID *psid, enum SID_NAME_USE *psid_name_use);
 DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid);
+BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type);
 DOM_SID *local_gid_to_sid(DOM_SID *psid, gid_t gid);
+BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type);
 
 /*The following definitions come from  passdb/secrets.c  */
 

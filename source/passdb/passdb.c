@@ -1091,7 +1091,7 @@ BOOL pdb_rid_is_user(uint32 rid)
  Convert a rid into a name. Used in the lookup SID rpc.
  ********************************************************************/
 
-BOOL local_lookup_rid(uint32 rid, char *name, uint8 *psid_name_use)
+BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 {
 
 	BOOL is_user = pdb_rid_is_user(rid);
@@ -1159,7 +1159,7 @@ BOOL local_lookup_rid(uint32 rid, char *name, uint8 *psid_name_use)
  Convert a name into a SID. Used in the lookup name rpc.
  ********************************************************************/
 
-BOOL local_lookup_name(char *domain, char *user, DOM_SID *psid, uint8 *psid_name_use)
+BOOL local_lookup_name(char *domain, char *user, DOM_SID *psid, enum SID_NAME_USE *psid_name_use)
 {
 	extern DOM_SID global_sid_World_Domain;
 	struct passwd *pass = NULL;
@@ -1219,6 +1219,42 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 	return psid;
 }
 
+
+/****************************************************************************
+ Convert a SID to uid - locally.
+****************************************************************************/
+
+BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type)
+{
+    extern DOM_SID global_sam_sid;
+	DOM_SID dom_sid;
+	uint32 rid;
+
+	*name_type = SID_NAME_UNKNOWN;
+
+	sid_copy(&dom_sid, psid);
+	sid_split_rid(&dom_sid, &rid);
+
+	/*
+	 * We can only convert to a uid if this is our local
+	 * Domain SID (ie. we are the controling authority).
+	 */
+
+	if (!sid_equal(&global_sam_sid, &dom_sid))
+		return False;
+
+	*puid = pdb_user_rid_to_uid(rid);
+
+	/*
+	 * Ensure this uid really does exist.
+	 */
+
+	if(!sys_getpwuid(*puid))
+		return False;
+
+	return True;
+}
+
 /****************************************************************************
  Convert a gid to SID - locally.
 ****************************************************************************/
@@ -1231,4 +1267,39 @@ DOM_SID *local_gid_to_sid(DOM_SID *psid, gid_t gid)
 	sid_append_rid(psid, pdb_gid_to_group_rid(gid));
 
 	return psid;
+}
+
+/****************************************************************************
+ Convert a SID to gid - locally.
+****************************************************************************/
+
+BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
+{
+    extern DOM_SID global_sam_sid;
+	DOM_SID dom_sid;
+	uint32 rid;
+
+	*name_type = SID_NAME_UNKNOWN;
+
+	sid_copy(&dom_sid, psid);
+	sid_split_rid(&dom_sid, &rid);
+
+	/*
+	 * We can only convert to a gid if this is our local
+	 * Domain SID (ie. we are the controling authority).
+	 */
+
+	if (!sid_equal(&global_sam_sid, &dom_sid))
+		return False;
+
+	*pgid = pdb_user_rid_to_gid(rid);
+
+	/*
+	 * Ensure this gid really does exist.
+	 */
+
+	if(!getgrgid(*pgid))
+		return False;
+
+	return True;
 }

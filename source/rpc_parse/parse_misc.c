@@ -910,6 +910,7 @@ void init_unistr2_from_unistr (UNISTR2 *to, UNISTR *from)
 	while ((from->buffer)[i]!='\0')
 		i++;
 	i++;	/* one more to catch the terminating NULL */
+		/* is this necessary -- jerry?  I need to think */
 
 	/* set up string lengths; uni_max_len is set to i+1
            because we need to account for the final NULL termination */

@@ -1967,7 +1967,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(void)
 	SEC_DESC *psd = NULL;
 	DOM_SID owner_sid;
 	size_t sd_size;
-	uint8 name_type;
+	enum SID_NAME_USE name_type;
 
 	/* Create an ACE where Everyone is allowed to print */
 
@@ -2067,7 +2067,7 @@ BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr)
 
 	if (sid_equal((*secdesc_ctr)->sec->owner_sid, &global_sid_World)) {
 		DOM_SID owner_sid;
-		uint8 name_type;
+		enum SID_NAME_USE name_type;
 
 		/* Change sd owner to workgroup administrator */
 
