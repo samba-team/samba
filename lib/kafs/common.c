@@ -277,6 +277,8 @@ _kafs_afslog_all_local_cells(kafs_data *data, uid_t uid, const char *homedir)
     find_cells(_PATH_OPENAFS_DEBIAN_THISCELL, &cells, &index);
     find_cells(_PATH_ARLA_DEBIAN_THESECELLS, &cells, &index);
     find_cells(_PATH_ARLA_DEBIAN_THISCELL, &cells, &index);
+    find_cells(_PATH_ARLA_OPENBSD_THESECELLS, &cells, &index);
+    find_cells(_PATH_ARLA_OPENBSD_THISCELL, &cells, &index);
     
     ret = afslog_cells(data, cells, index, uid, homedir);
     while(index > 0)

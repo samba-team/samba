@@ -203,6 +203,11 @@ krb5_error_code krb5_realm_of_cell __P((const char *cell, char **realm));
 #define _PATH_ARLA_DEBIAN_CELLSERVDB		_PATH_ARLA_DEBIAN_VICE "CellServDB"
 #define _PATH_ARLA_DEBIAN_THESECELLS		_PATH_ARLA_DEBIAN_VICE "TheseCells"
 
+#define _PATH_ARLA_OPENBSD_VICE			"/etc/afs/"
+#define _PATH_ARLA_OPENBSD_THISCELL		_PATH_ARLA_OPENBSD_VICE "ThisCell"
+#define _PATH_ARLA_OPENBSD_CELLSERVDB		_PATH_ARLA_OPENBSD_VICE "CellServDB"
+#define _PATH_ARLA_OPENBSD_THESECELLS		_PATH_ARLA_OPENBSD_VICE "TheseCells"
+
 extern int _kafs_debug;
 
 #endif /* __KAFS_H */
