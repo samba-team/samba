@@ -53,6 +53,9 @@
 /* pointer difference macro */
 #define PTR_DIFF(p1,p2) ((ptrdiff_t)(((const char *)(p1)) - (const char *)(p2)))
 
+/* work out how many elements there are in a static array */
+#define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
+
 /* assert macros */
 #define SMB_ASSERT(b) ((b)?(void)0: \
         (DEBUG(0,("PANIC: assert failed at %s(%d)\n", \

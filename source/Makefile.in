@@ -318,8 +318,9 @@ UMOUNT_OBJ = client/smbumount.o \
 NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(UBIQX_OBJ) \
                 $(LIBSMB_OBJ) $(LIB_OBJ)
 
-SMBTORTURE_OBJ = torture/torture.o torture/nbio.o torture/scanner.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
-                 $(UBIQX_OBJ) $(LIB_OBJ)
+SMBTORTURE_OBJ = torture/torture.o torture/nbio.o torture/scanner.o \
+		torture/denytest.o \
+	$(LIBSMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
 MASKTEST_OBJ = torture/masktest.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
@@ -414,7 +415,7 @@ WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.po)
 ######################################################################
 # now the rules...
 ######################################################################
-all : CHECK include/proto.h $(SPROGS) $(PROGS) $(SHLIBS) nsswitch
+all : CHECK $(SPROGS) $(PROGS) $(SHLIBS) nsswitch
 
 pam_smbpass : CHECK bin/pam_smbpass.@SHLIBEXT@
 
@@ -458,7 +459,7 @@ MAKEDIR = || exec false; \
 	  mkdir "$$dir" || \
 	  exec false; fi || exec false
 
-.c.o: 
+.c.o:
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	 dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
 	@echo Compiling $*.c
@@ -710,7 +711,13 @@ winbindd_proto:
 delproto:
 	@/bin/rm -f $(srcdir)/include/proto.h
 
-include/proto.h: 
+# we want proto.h to be rebuilt if it doesn't exist, but not rebuilt every time
+.proto.stamp: include/proto.h
+	@[ -f $@ ] || touch $@
+
+$(PROTO_OBJ) : .proto.stamp
+
+include/proto.h:
 	@echo rebuilding include/proto.h
 	@cd $(srcdir) && $(AWK) -f script/mkproto.awk `echo $(PROTO_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` > include/proto.h
 
