@@ -482,6 +482,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   pstring smb_ntpasswd;
   BOOL valid_nt_password = False;
   pstring user;
+  pstring orig_user;
   BOOL guest=False;
   static BOOL done_sesssetup = False;
   BOOL doencrypt = SMBENCRYPT();
@@ -624,6 +625,14 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   reload_services(True);
 
   /*
+   * Save the username before mapping. We will use
+   * the original username sent to us for security=server
+   * and security=domain checking.
+   */
+
+  pstrcpy( orig_user, user);
+
+  /*
    * Pass the user through the NT -> unix user mapping
    * function.
    */
@@ -645,14 +654,17 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     guest = True;
 
   if (!guest && !(lp_security() == SEC_SERVER && 
-		  server_validate(user, domain, 
-				  smb_apasswd, smb_apasslen, 
-				  smb_ntpasswd, smb_ntpasslen)) &&
-                !(lp_security() == SEC_DOMAIN &&
-                  domain_client_validate(user, domain,
-                                  smb_apasswd, smb_apasslen,
-                                  smb_ntpasswd, smb_ntpasslen)) &&
-      !check_hosts_equiv(user))
+      /* Check with orig_user for security=server and
+         security=domain. */
+      server_validate(orig_user, domain, 
+                      smb_apasswd, smb_apasslen, 
+                      smb_ntpasswd, smb_ntpasslen)) &&
+      !(lp_security() == SEC_DOMAIN &&
+      domain_client_validate(orig_user, domain,
+                             smb_apasswd, smb_apasslen,
+                            smb_ntpasswd, smb_ntpasslen)) &&
+      !check_hosts_equiv(user)
+     )
     {
 
       /* now check if it's a valid username/password */
