@@ -161,6 +161,7 @@ void conn_close_all(void)
 	connection_struct *conn, *next;
 	for (conn=Connections;conn;conn=next) {
 		next=conn->next;
+		set_current_service(conn, True);
 		close_cnum(conn, conn->vuid);
 	}
 }
