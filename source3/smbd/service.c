@@ -468,10 +468,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		return NULL;
 	}  
 		
-	if (lp_status(SNUM(conn)))
-		claim_connection(conn,"",
-				 MAXSTATUS,False);
-
 	conn->nt_user_token = create_nt_token(conn->uid, conn->gid, conn->ngroups, conn->groups);
 
 	/* Initialise VFS function pointers */
@@ -520,9 +516,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		yield_connection(conn,
 				 lp_servicename(SNUM(conn)),
 				 lp_max_connections(SNUM(conn)));
-		if (lp_status(SNUM(conn))) {
-			yield_connection(conn,"",MAXSTATUS);
-		}
 		conn_free(conn);
 		*ecode = ERRbadpw;
 		return NULL;
@@ -535,8 +528,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		yield_connection(conn,
 				 lp_servicename(SNUM(conn)),
 				 lp_max_connections(SNUM(conn)));
-		if (lp_status(SNUM(conn))) 
-			yield_connection(conn,"",MAXSTATUS);
 		conn_free(conn);
 		*ecode = ERRnosuchshare;
 		return NULL;
@@ -629,9 +620,6 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	yield_connection(conn,
 			 lp_servicename(SNUM(conn)),
 			 lp_max_connections(SNUM(conn)));
-
-	if (lp_status(SNUM(conn)))
-		yield_connection(conn,"",MAXSTATUS);
 
 	file_close_conn(conn);
 	dptr_closecnum(conn);
