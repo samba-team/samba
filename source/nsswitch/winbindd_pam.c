@@ -23,6 +23,8 @@
 
 #include "winbindd.h"
 
+extern pstring global_myname;
+
 /* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
    form DOMAIN/user into a domain and a user */
 
@@ -42,6 +44,115 @@ static BOOL parse_domain_user(char *domuser, fstring domain, fstring user)
 	return True;
 }
 
+static uint32 check_any(fstring name_user, fstring name_domain, 
+			uchar trust_passwd[16], const char *challenge,
+			const char *smb_apasswd, int smb_apasslen,
+			const char *smb_ntpasswd, int smb_ntpasslen,
+			NET_USER_INFO_3 *info3)
+{
+	struct in_addr *ip_list = NULL;
+	int count, i;
+	uint32 result;
+	BOOL try_local = True;
+
+	if (!get_dc_list(False, lp_workgroup(), &ip_list, &count)) {
+		DEBUG(0, ("could not find domain controller for "
+			  "domain %s\n", lp_workgroup()));
+		safe_free(ip_list);
+		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+	}
+
+	/* Try DC on local net */
+
+retry:
+	for (i = 0; i < count; i++) {
+		fstring srv_name;
+
+		if (try_local && !is_local_net(ip_list[i]))
+			continue;
+
+		if (!name_status_find(lp_workgroup(), 0x1c, 0x20,
+				      ip_list[i], srv_name)) {
+			DEBUG(3, ("IP %s not a dc for our domain\n",
+				  inet_ntoa(ip_list[i])));
+			continue;
+		}
+
+		result = domain_client_validate_backend(
+			srv_name, name_user, name_domain, global_myname,
+			SEC_CHAN_WKSTA, trust_passwd, challenge,
+			smb_apasswd, smb_apasslen, smb_ntpasswd,
+			smb_ntpasslen, info3);
+
+		if (result == NT_STATUS_NOPROBLEMO ||
+		    result == NT_STATUS_WRONG_PASSWORD)
+			goto done;
+
+		ip_list[i] = ipzero; /* Tried and failed */
+	}
+
+	/* OK try other DCs then */
+
+	if (try_local) {
+		try_local = False;
+		goto retry;
+	}
+
+done:
+	safe_free(ip_list);
+	return result;
+}
+
+static uint32 check_passwordserver(fstring name_user, fstring name_domain,
+				   uchar trust_passwd[16], 
+				   const char *challenge,
+				   const char *smb_apasswd, 
+				   int smb_apasslen, 
+				   const char *smb_ntpasswd, 
+				   int smb_ntpasslen, 
+				   NET_USER_INFO_3 *info3)
+{
+	fstring remote_machine;
+	uint32 result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+	char *pserver;
+
+	pserver = lp_passwordserver();
+
+	while(next_token(&pserver, remote_machine, LIST_SEP, 
+			 sizeof(remote_machine))) {
+		fstring srv_name;
+
+		/* Look up name of ip address */
+		
+		if (is_ipaddress(remote_machine)) {
+			struct in_addr ip;
+
+			inet_aton(remote_machine, &ip);
+
+			if (!name_status_find(lp_workgroup(), 0x1c, 0x20, ip, srv_name)) {
+				DEBUG(3, ("invalid server %s\n",
+					  remote_machine));
+				continue;
+			}
+		} else
+			fstrcpy(srv_name, remote_machine);
+
+		/* Return result of domain client validate */
+
+		result = domain_client_validate_backend(
+			srv_name, name_user, name_domain, global_myname,
+			SEC_CHAN_WKSTA, trust_passwd, challenge,
+			smb_apasswd, smb_apasslen, smb_ntpasswd,
+			smb_ntpasslen, info3);
+
+		if (result == NT_STATUS_NOPROBLEMO ||
+		    result == NT_STATUS_WRONG_PASSWORD)
+			break;
+	}
+
+	return result;	
+}
+
 /* Authenticate a user from a plaintext password */
 
 enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state) 
@@ -51,9 +162,8 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	uchar lmpw[16];
 	uchar trust_passwd[16];
 	uint32 status;
-	fstring server;
 	fstring name_domain, name_user;
-	extern pstring global_myname;
+	char *p;
 
 	DEBUG(3, ("[%5d]: pam auth %s\n", state->pid,
 		  state->request.data.auth.user));
@@ -73,15 +183,20 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 
 	nt_lm_owf_gen(state->request.data.auth.pass, ntpw, lmpw);
 
-	slprintf(server, sizeof(server), "\\\\%s", server_state.controller);
+	p = lp_passwordserver();
+	if (strequal(p, ""))
+		p = "*";
 
-	status = domain_client_validate_backend(server, 
-						name_user, name_domain,
-						global_myname, SEC_CHAN_WKSTA,
-						trust_passwd,
-						NULL,
-						lmpw, sizeof(lmpw),
-						ntpw, sizeof(ntpw), &info3);
+	if (strequal(p, "*"))
+		status = check_any(
+			name_user, name_domain, trust_passwd,
+			NULL, lmpw, sizeof(lmpw), ntpw, sizeof(ntpw),
+			&info3);
+	else
+		status = check_passwordserver(
+			name_user, name_domain, trust_passwd,
+			NULL, lmpw, sizeof(lmpw), ntpw, sizeof(ntpw),
+			&info3);
 
 	/* The group rids in the info3 structure are allocated dynamically
 	   so make sure we free them. */
@@ -105,9 +220,8 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	NET_USER_INFO_3 info3;
 	uchar trust_passwd[16];
 	uint32 status;
-	fstring server;
 	fstring name_domain, name_user;
-	extern pstring global_myname;
+	char *p;
 
 	DEBUG(3, ("[%5d]: pam auth crap %s\n", state->pid,
 		  state->request.data.auth_crap.user));
@@ -125,16 +239,28 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
             return WINBINDD_ERROR;
         }
 
-	slprintf(server, sizeof(server), "\\\\%s", server_state.controller);
+	p = lp_passwordserver();
+	if (strequal(p, ""))
+		p = "*";
 
-	status = domain_client_validate_backend
-          (server, name_user, name_domain, global_myname, SEC_CHAN_WKSTA,
-           trust_passwd, state->request.data.auth_crap.chal,
-           state->request.data.auth_crap.lm_resp, 
-	   state->request.data.auth_crap.lm_resp_len,
-           state->request.data.auth_crap.nt_resp, 
-	   state->request.data.auth_crap.nt_resp_len,
-           &info3);
+	if (strequal(p, "*"))
+		status = check_any(
+			name_user, name_domain, trust_passwd,
+			state->request.data.auth_crap.chal,
+			state->request.data.auth_crap.lm_resp, 
+			state->request.data.auth_crap.lm_resp_len,
+			state->request.data.auth_crap.nt_resp, 
+			state->request.data.auth_crap.nt_resp_len,
+			&info3);
+	else
+		status = check_passwordserver(
+			name_user, name_domain, trust_passwd,
+			state->request.data.auth_crap.chal,
+			state->request.data.auth_crap.lm_resp, 
+			state->request.data.auth_crap.lm_resp_len,
+			state->request.data.auth_crap.nt_resp, 
+			state->request.data.auth_crap.nt_resp_len,
+			&info3);
 
 	/* The group rids in the info3 structure are allocated dynamically
 	   so make sure we free them. */
