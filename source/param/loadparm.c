@@ -624,18 +624,16 @@ static const struct enum_list enum_ldap_ssl[] = {
 };
 
 static const struct enum_list enum_ldap_passwd_sync[] = {
-	{LDAP_PASSWD_SYNC_ON, "Yes"},
-	{LDAP_PASSWD_SYNC_ON, "yes"},
-	{LDAP_PASSWD_SYNC_ON, "on"},
-	{LDAP_PASSWD_SYNC_ON, "On"},
 	{LDAP_PASSWD_SYNC_OFF, "no"},
 	{LDAP_PASSWD_SYNC_OFF, "No"},
 	{LDAP_PASSWD_SYNC_OFF, "off"},
 	{LDAP_PASSWD_SYNC_OFF, "Off"},
-#ifdef LDAP_EXOP_X_MODIFY_PASSWD	
+	{LDAP_PASSWD_SYNC_ON, "Yes"},
+	{LDAP_PASSWD_SYNC_ON, "yes"},
+	{LDAP_PASSWD_SYNC_ON, "on"},
+	{LDAP_PASSWD_SYNC_ON, "On"},
 	{LDAP_PASSWD_SYNC_ONLY, "Only"},
 	{LDAP_PASSWD_SYNC_ONLY, "only"},
-#endif /* LDAP_EXOP_X_MODIFY_PASSWD */	
 	{-1, NULL}
 };
 
