@@ -105,7 +105,7 @@
 /* EA operations. */
 #define SMB_VFS_GETXATTR(conn,path,name,value,size) ((conn)->vfs.ops.getxattr((conn)->vfs.handles.getxattr,(conn),(path),(name),(value),(size)))
 #define SMB_VFS_LGETXATTR(conn,path,name,value,size) ((conn)->vfs.ops.lgetxattr((conn)->vfs.handles.lgetxattr,(conn),(path),(name),(value),(size)))
-#define SMB_VFS_FGETXATTR(fsp,fd,name,value,size) ((fsp)->conn->vfs.ops.fgetxattr((fsp)->conn->vfs.handles.fgetxattr,(fsp),(fd),(value),(size)))
+#define SMB_VFS_FGETXATTR(fsp,fd,name,value,size) ((fsp)->conn->vfs.ops.fgetxattr((fsp)->conn->vfs.handles.fgetxattr,(fsp),(fd),(name),(value),(size)))
 #define SMB_VFS_LISTXATTR(conn,path,list,size) ((conn)->vfs.ops.listxattr((conn)->vfs.handles.listxattr,(conn),(path),(list),(size)))
 #define SMB_VFS_LLISTXATTR(conn,path,list,size) ((conn)->vfs.ops.llistxattr((conn)->vfs.handles.llistxattr,(conn),(path),(list),(size)))
 #define SMB_VFS_FLISTXATTR(fsp,fd,list,size) ((fsp)->conn->vfs.ops.flistxattr((fsp)->conn->vfs.handles.flistxattr,(fsp),(fd),(list),(size)))
