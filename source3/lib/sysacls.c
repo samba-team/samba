@@ -302,11 +302,11 @@ SMB_ACL_T sys_acl_get_file(const char *path_p, SMB_ACL_TYPE_T type)
 	while ((count = acl(path_p, GETACL, count, &acl_d->acl[0])) < 0
 	    && errno == ENOSPC) {
 
+		sys_acl_free_acl(acl_d);
+
 		if ((count = acl(path_p, GETACLCNT, 0, NULL)) < 0) {
 			return NULL;
 		}
-
-		sys_acl_free_acl(acl_d);
 
 		if ((acl_d = sys_acl_init(count)) == NULL) {
 			return NULL;
@@ -314,6 +314,7 @@ SMB_ACL_T sys_acl_get_file(const char *path_p, SMB_ACL_TYPE_T type)
 	}
 
 	if (count < 0) {
+		sys_acl_free_acl(acl_d);
 		return NULL;
 	}
 
@@ -365,11 +366,11 @@ SMB_ACL_T sys_acl_get_fd(int fd)
 	while ((count = facl(fd, GETACL, count, &acl_d->acl[0])) < 0
 	    && errno == ENOSPC) {
 
+		sys_acl_free_acl(acl_d);
+
 		if ((count = facl(fd, GETACLCNT, 0, NULL)) < 0) {
 			return NULL;
 		}
-
-		sys_acl_free_acl(acl_d);
 
 		if ((acl_d = sys_acl_init(count)) == NULL) {
 			return NULL;
@@ -377,6 +378,7 @@ SMB_ACL_T sys_acl_get_fd(int fd)
 	}
 
 	if (count < 0) {
+		sys_acl_free_acl(acl_d);
 		return NULL;
 	}
 
