@@ -1394,6 +1394,9 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       data_size = PTR_DIFF(pdata,(*ppdata));
       break;
 
+#if 0
+      /* NT4 server just returns "invalid query" to this - if we try to answer 
+	 it then NTws gets a BSOD! (tridge) */
     case SMB_QUERY_FILE_STREAM_INFO:
       data_size = 24 + l;
       SIVAL(pdata,0,pos);
@@ -1402,6 +1405,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       SIVAL(pdata,20,l);	
       pstrcpy(pdata+24,fname);
       break;
+#endif
 
     default:
       return(ERROR(ERRDOS,ERRunknownlevel));
