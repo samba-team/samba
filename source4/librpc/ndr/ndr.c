@@ -642,32 +642,6 @@ NTSTATUS ndr_check_array_length(struct ndr_pull *ndr, void *p, uint32_t length)
 }
 
 /*
-  store a switch value
- */
-NTSTATUS ndr_push_set_switch_value(struct ndr_push *ndr, void *p, uint32_t val)
-{
-	return ndr_token_store(ndr, &ndr->switch_list, p, val);
-}
-
-NTSTATUS ndr_pull_set_switch_value(struct ndr_pull *ndr, void *p, uint32_t val)
-{
-	return ndr_token_store(ndr, &ndr->switch_list, p, val);
-}
-
-/*
-  retrieve a switch value
- */
-uint32_t ndr_push_get_switch_value(struct ndr_push *ndr, void *p)
-{
-	return ndr_token_peek(&ndr->switch_list, p);
-}
-
-uint32_t ndr_pull_get_switch_value(struct ndr_pull *ndr, void *p)
-{
-	return ndr_token_peek(&ndr->switch_list, p);
-}
-
-/*
   pull a relative object - stage1
   called during SCALARS processing
 */
