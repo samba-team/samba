@@ -87,7 +87,7 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
           lib/getsmbpass.o lib/interface.o lib/kanji.o lib/md4.o \
           lib/membuffer.o lib/netmask.o lib/pidfile.o lib/replace.o \
           lib/signal.o lib/slprintf.o lib/system.o lib/time.o lib/ufc.o \
-          lib/util.o
+          lib/util.o lib/genrand.o 
 
 UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
             ubiqx/ubi_dLinkList.o ubiqx/ubi_sLinkList.o
@@ -115,21 +115,39 @@ RPC_CLIENT_OBJ = rpc_client/cli_login.o rpc_client/cli_netlogon.o \
 LOCKING_OBJ = locking/locking.o locking/locking_shm.o locking/locking_slow.o \
               locking/shmem.o locking/shmem_sysv.o
 
+PASSDB_OBJ = passdb/passdb.o passdb/smbpassfile.o passdb/username.o \
+             passdb/pcap.o passdb/smbpass.o
+
 SMBD_OBJ1 = smbd/server.o smbd/access.o smbd/chgpasswd.o smbd/connection.o \
-            smbd/credentials.o smbd/dfree.o smbd/dir.o smbd/genrand.o \
+            smbd/credentials.o smbd/dfree.o smbd/dir.o \
             smbd/groupname.o smbd/ipc.o smbd/ldap.o smbd/mangle.o \
-            smbd/message.o smbd/nispass.o smbd/nttrans.o smbd/passdb.o \
-            smbd/password.o smbd/pcap.o smbd/pipes.o smbd/predict.o \
+            smbd/message.o smbd/nispass.o smbd/nttrans.o \
+            smbd/password.o smbd/pipes.o smbd/predict.o \
             smbd/print_svid.o smbd/printing.o smbd/quotas.o smbd/reply.o \
-            smbd/smbpass.o smbd/smbpassfile.o \
-            smbd/ssl.o smbd/trans2.o smbd/uid.o smbd/username.o
+            smbd/ssl.o smbd/trans2.o smbd/uid.o 
 
 SMBD_OBJ = $(SMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
            $(RPC_SERVER_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
-           $(LOCKING_OBJ) $(LIB_OBJ)
+           $(LOCKING_OBJ) $(PASSDB_OBJ) $(LIB_OBJ)
 
 
-PROTO_OBJ = $(SMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
+NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
+            nmbd/nmbd_become_lmb.o nmbd/nmbd_browserdb.o \
+            nmbd/nmbd_browsesync.o nmbd/nmbd_elections.o \
+            nmbd/nmbd_incomingdgrams.o nmbd/nmbd_incomingrequests.o \
+            nmbd/nmbd_lmhosts.o nmbd/nmbd_logonnames.o nmbd/nmbd_mynames.o \
+            nmbd/nmbd_namelistdb.o nmbd/nmbd_namequery.o \
+            nmbd/nmbd_nameregister.o nmbd/nmbd_namerelease.o \
+            nmbd/nmbd_nodestatus.o nmbd/nmbd_packets.o \
+            nmbd/nmbd_processlogon.o nmbd/nmbd_responserecordsdb.o \
+            nmbd/nmbd_sendannounce.o nmbd/nmbd_serverlistdb.o \
+            nmbd/nmbd_subnetdb.o nmbd/nmbd_winsproxy.o nmbd/nmbd_winsserver.o \
+            nmbd/nmbd_workgroupdb.o
+
+NMBD_OBJ = $(NMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
+           $(PASSDB_OBJ) $(LIB_OBJ)
+
+PROTO_OBJ = $(SMBD_OBJ1) $(NMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
            $(RPC_SERVER_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
            $(LOCKING_OBJ) $(LIB_OBJ)
 
@@ -150,6 +168,11 @@ bin/smbd: $(SMBD_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LIBS) 
 
+bin/nmbd: $(NMBD_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(NMBD_OBJ) $(LIBS)
+
+
 smbrun: smbrun.o 
 	@echo Linking smbrun
 	@$(CC) $(FLAGS) -o smbrun smbrun.o $(LIBS)
@@ -157,10 +180,6 @@ smbrun: smbrun.o
 nmblookup: $(LOOKUP_OBJ)
 	@echo Linking nmblookup
 	@$(CC) $(FLAGS) -o nmblookup $(LOOKUP_OBJ) $(LIBS)
-
-nmbd: $(NMBDOBJ)
-	@echo Linking nmbd
-	@$(CC) $(FLAGS) -o nmbd $(NMBDOBJ) $(LIBS)
 
 smbclient: $(CLIENT_OBJ) 
 	@echo Linking smbclient
