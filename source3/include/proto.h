@@ -172,7 +172,7 @@ struct in_addr *iface_ip(struct in_addr ip);
 /*The following definitions come from  ipc.c  */
 
 int get_printerdrivernumber(int snum);
-int reply_trans(char *inbuf,char *outbuf);
+int reply_trans(char *inbuf,char *outbuf, int size, int bufsize);
 
 /*The following definitions come from  kanji.c  */
 
@@ -1071,6 +1071,7 @@ int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int 
 BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval);
 BOOL request_oplock_break(share_mode_entry *share_entry, 
                           uint32 dev, uint32 inode);
+BOOL receive_next_smb(int smbfd, int oplockfd, char *inbuf, int bufsize, int timeout);
 BOOL snum_used(int snum);
 BOOL reload_services(BOOL test);
 int setup_groups(char *user, int uid, int gid, int *p_ngroups, 

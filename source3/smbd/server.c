@@ -3087,6 +3087,32 @@ oplock break response from pid %d on port %d for dev = %x, inode = %x.\n",
 }
 
 /****************************************************************************
+Get the next SMB packet, doing the local message processing automatically.
+****************************************************************************/
+
+BOOL receive_next_smb(int smbfd, int oplockfd, char *inbuf, int bufsize, int timeout)
+{
+  BOOL got_smb = False;
+  BOOL ret;
+
+  do
+  {
+    ret = receive_message_or_smb(smbfd,oplockfd,inbuf,bufsize,
+                                 timeout,&got_smb);
+
+    if(ret && !got_smb)
+    {
+      /* Deal with oplock break requests from other smbd's. */
+      process_local_message(oplock_sock, inbuf, bufsize);
+      continue;
+    }
+  }
+  while(ret && !got_smb);
+
+  return ret;
+}
+
+/****************************************************************************
 check if a snum is in use
 ****************************************************************************/
 BOOL snum_used(int snum)

@@ -3495,7 +3495,14 @@ dev = %x, inode = %x\n",
 
     /* if this is a pure oplock break request then don't send a reply */
     if (num_locks == 0 && num_ulocks == 0)
-	    return -1;
+    {
+      /* Sanity check - ensure a pure oplock break is not a
+         chained request. */
+      if(CVAL(inbuf,smb_vwv0) != 0xff)
+        DEBUG(0,("reply_lockingX: Error : pure oplock break is a chained %d request !\n",
+                 (unsigned int)CVAL(inbuf,smb_vwv0) ));
+      return -1;
+    }
   }
 
   /* Data now points at the beginning of the list
