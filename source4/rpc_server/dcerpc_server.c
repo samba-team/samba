@@ -856,32 +856,6 @@ NTSTATUS dcesrv_input(struct dcesrv_connection *dce_conn, const DATA_BLOB *data)
 {
 	NTSTATUS status;
 
-	/* handle the very common case that the input contains a full packet and there
-	   is no partial packet pending. In this case we can avoid a copy of the
-	   data */
-	if (dce_conn->partial_input.length == 0) {
-		dce_conn->partial_input = *data;
-		/* make sure that dce_partial_advance doesn't free this data */
-		dce_conn->partial_input.free = NULL;
-		while (dce_full_packet(&dce_conn->partial_input)) {
-			status = dcesrv_input_process(dce_conn);
-			if (!NT_STATUS_IS_OK(status)) {
-				return status;
-			}
-		}
-		if (dce_conn->partial_input.length) {
-			/* there was some data left over. We have to copy this
-			   as the caller may free the data */
-			dce_conn->partial_input = 
-				data_blob(dce_conn->partial_input.data,
-					  dce_conn->partial_input.length);
-			if (!dce_conn->partial_input.data) {
-				return NT_STATUS_NO_MEMORY;
-			}
-		}
-		return NT_STATUS_OK;
-	}
-
 	dce_conn->partial_input.data = Realloc(dce_conn->partial_input.data,
 					  dce_conn->partial_input.length + data->length);
 	if (!dce_conn->partial_input.data) {
