@@ -24,7 +24,7 @@
 
 static struct passwd *alloc_copy_passwd(const struct passwd *from) 
 {
-	struct passwd *ret = smb_xmalloc(sizeof(struct passwd));
+	struct passwd *ret = smb_xmalloc_p(struct passwd);
 	ZERO_STRUCTP(ret);
 	ret->pw_name = smb_xstrdup(from->pw_name);
 	ret->pw_passwd = smb_xstrdup(from->pw_passwd);
