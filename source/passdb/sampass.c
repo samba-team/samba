@@ -114,7 +114,7 @@ static struct sam_passwd *getsamfile21pwent(void *vp)
 
 	/* HACK to make %U work in substitutions below */
 	fstrcpy(bogus_user_struct.requested_name, user->nt_name);
-	fstrcpy(bogus_user_struct.name          , user->unix_name);
+	fstrcpy(bogus_user_struct.unix_name     , user->unix_name);
 	DEBUG(7, ("getsamfile21pwent: nt_name=%s, unix_name=%s\n",
 		  user->nt_name, user->unix_name));
  

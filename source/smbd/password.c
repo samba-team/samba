@@ -264,11 +264,11 @@ BOOL authorise_login(int snum, char *user, char *domain,
 		/* check for a previously registered guest username */
 		if (!ok && (vuser != 0) && vuser->guest)
 		{
-			if (user_ok(vuser->name, snum) &&
-			    password_ok(vuser->name, domain, password, pwlen,
+			if (user_ok(vuser->unix_name, snum) &&
+			    password_ok(vuser->unix_name, domain, password, pwlen,
 					NULL, 0, NULL, &vuser->usr))
 			{
-				fstrcpy(user, vuser->name);
+				fstrcpy(user, vuser->unix_name);
 				vuser->guest = False;
 				DEBUG(3,
 				      ("ACCEPTED: given password with registered user %s\n",
@@ -313,9 +313,9 @@ BOOL authorise_login(int snum, char *user, char *domain,
 		/* check for a previously validated username/password pair */
 		if (!ok && (!lp_revalidate(snum) || lp_security() > SEC_SHARE)
 		    && (vuser != 0) && !vuser->guest
-		    && user_ok(vuser->name, snum))
+		    && user_ok(vuser->unix_name, snum))
 		{
-			fstrcpy(user, vuser->name);
+			fstrcpy(user, vuser->unix_name);
 			*guest = False;
 			DEBUG(3,
 			      ("ACCEPTED: validated uid ok as non-guest\n"));

@@ -420,12 +420,12 @@ void standard_sub_vsnum(char *str, user_struct *vuser, int snum);
 BOOL surs_sam_sid_to_unixid(const SURS_SID_ID *sid, SURS_POSIX_ID *id, BOOL create);
 BOOL surs_unixid_to_sam_sid(const SURS_POSIX_ID *id, SURS_SID_ID *sid, BOOL create);
 
-/*The following definitions come from  lib/sursalgdomonly.c  */
+/*The following definitions come from  lib/sursalgmultidom.c  */
 
-BOOL surs_algdomonly_sam_sid_to_unixid(DOM_SID *sid, SURS_POSIX_ID *id,
-				BOOL create);
-BOOL surs_algdomonly_unixid_to_sam_sid(SURS_POSIX_ID *id, DOM_SID *sid,
-				BOOL create);
+BOOL surs_multidomalg_sam_sid_to_unixid(const SURS_SID_ID * sid,
+					SURS_POSIX_ID * id, BOOL create);
+BOOL surs_multidomalg_unixid_to_sam_sid(const SURS_POSIX_ID * id,
+					SURS_SID_ID * sid, BOOL create);
 
 /*The following definitions come from  lib/sursalgnt5ldap.c  */
 

@@ -315,7 +315,7 @@ BOOL msrpcd_init(int c, rpcsrv_struct ** l)
 
 	if (vuser != NULL && !vuser->guest)
 	{
-		char *user = vuser->name;
+		char *user = vuser->unix_name;
 		if (!strequal(user, lp_guestaccount(-1)) &&
 		    lp_servicenumber(user) < 0)
 		{

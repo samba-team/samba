@@ -2335,7 +2335,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 	{
 		DEBUG(3,
 		      ("  Username of UID %d is %s\n", (int)vuser->uid,
-		       vuser->name));
+		       vuser->unix_name));
 	}
 	else
 	{

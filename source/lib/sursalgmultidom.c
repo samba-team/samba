@@ -243,8 +243,8 @@ static BOOL domrange_param_init(void)
 
 	/* Parse domrange uid and domrange_gid parameters */
 
-	if (!parse_id_list(lp_surs_domainrange_uid(), True) ||
-	    !parse_id_list(lp_surs_domainrange_gid(), False))
+	if (!parse_id_list(lp_winbind_uid(), True) ||
+	    !parse_id_list(lp_winbind_gid(), False))
 	{
 		return False;
 	}
