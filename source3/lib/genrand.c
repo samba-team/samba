@@ -259,7 +259,7 @@ char *generate_random_str(size_t len)
 		len = sizeof(retstr) -1;
 	generate_random_buffer( retstr, len, False);
 	for (i = 0; i < len; i++)
-		retstr[i] = c_list[ retstr[i] % sizeof(c_list) ];
+		retstr[i] = c_list[ retstr[i] % (sizeof(c_list)-1) ];
 
 	retstr[i] = '\0';
 
