@@ -14,10 +14,12 @@
 @syncodeindex pg cp
 @c %**end of header
 
-@dircategory Kerberos
+@ifinfo
+@dircategory Heimdal
 @direntry
 * Heimdal: (heimdal).           The Kerberos 5 distribution from KTH
 @end direntry
+@end ifinfo
 
 @c title page
 @titlepage
@@ -212,9 +214,11 @@ to the following restrictions:
 
 @menu
 * Introduction::                
+* What is Kerberos?::           
 * Building and Installing::     
 * Setting up a realm::          
 * Kerberos 4 issues::           
+* Acknowledgments::             
 
  --- The Detailed Node Listing ---
 
@@ -229,9 +233,11 @@ Kerberos 4 issues
 @end menu
 
 @include intro.texi
+@include whatis.texi
 @include install.texi
 @include setup.texi
 @include kerberos4.texi
+@include ack.texi
 
 @c @shortcontents
 @contents

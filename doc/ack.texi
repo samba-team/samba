@@ -1,0 +1,41 @@
+@node  Acknowledgments, , Kerberos 4 issues, Top
+@comment  node-name,  next,  previous,  up
+@appendix Acknowledgments
+
+Eric Young wrote ``libdes''.
+
+The University of California at Berkeley initially wrote @code{telnet},
+and @code{telnetd}.  The authentication and encryption code of
+@code{telnet} and @code{telnetd} was added by David Borman (then of Cray
+Research, Inc).  The encryption code was removed when this was exported
+and then added back by Juha Eskelinen, @email{esc@@magic.fi}.
+
+The @code{popper} was also a Berkeley program initially.
+
+Some of the functions in @file{libroken} also come from Berkeley by way
+of NetBSD/FreeBSD.
+
+@code{editline} was written by Simmule Turner and Rich Salz.
+
+Bugfixes, documentation, encouragement, and code has been contributed by:
+@table @asis
+@item Derrick J Brashear
+@email{shadow@@dementia.org}
+@item Ken Hornstein
+@email{kenh@@cmf.nrl.navy.mil}
+@item Johan Ihrén
+@email{johani@@pdc.kth.se}
+@item Love Hörnquist-Åstrand
+@email{e96_lho@@e.kth.se}
+@item Magnus Ahltorp
+@email{map@@stacken.kth.se}
+@item Marc Eichin
+@email{eichin@@cygnus.com}
+@item Marc Horowitz
+@email{marc@@cygnus.com}
+@item Luke Howard
+@email{lukeh@@xedoc.com.au}
+@item and we hope that those not mentioned here will forgive us.
+@end table
+
+All bugs were introduced by ourselves.

@@ -3,14 +3,16 @@
 
 A
 @cindex realm
-realm is an administrative domain.  Kerberos realms usually consists of
-an Internet domain name in uppercase. Call your realm the same as your
-Internet domain name if you do not have strong reasons for not doing so.
-It will make life easier for you and everyone else.
+realm is an administrative domain.  The name of a Kerberos realm is
+usually the Internet domain name in uppercase.  Call your realm the same
+as your Internet domain name if you do not have strong reasons for not
+doing so.  It will make life easier for you and everyone else.
+
+@section Configuration file
 
 To setup a realm you will first have to create a configuration file:
 @file{/etc/krb5.conf}. The @file{krb5.conf} file can contain many
-configuration options, some which are described here.
+configuration options, some of which are described here.
 
 There is a sample @file{krb5.conf} supplied with the distribution.
 
@@ -70,6 +72,8 @@ with contents similar to the following.
 If you use a realm name equal to your domain name, you can omit the
 @samp{libdefaults}, and @samp{domain_realm}, sections.
 
+@section Creating the database
+
 The database library will look for the database in @file{/var/heimdal},
 so you should probably create that directory.
 
@@ -96,6 +100,7 @@ Default renewable ticket life: [7 days]
 kdb_edit> ank me
 Max ticket life [1 day]: 
 Max renewable ticket [7 days]: 
+Flags [client, server, postdate, renewable, proxiable, forwardable]: 
 Password:
 Verifying password - Password:
 @end example
@@ -113,3 +118,28 @@ Credentials cache: /tmp/krb5cc_3008
   Issued           Expires          Principal
 Aug 25 07:25:55  Aug 25 17:25:55  krbtgt/MY.REALM@@MY.REALM
 @end example
+
+@section keytabs
+
+To extract a service ticket from the database and put it in a keytab you
+need to first create the principal in the database with @samp{ank}
+(entering @kbd{random} and then extract it with @samp{ext_keytab}.
+
+@example
+# kdb_edit
+kdb_edit> ank host/my.host.name
+Max ticket life [1 day]: 
+Max renewable life [1 week]: 
+Flags [client, server, postdate, renewable, proxiable, forwardable]: 
+Password:
+Verifying password - Password:
+kdb_edit> ext host/my.host.name
+# ktutil list
+Version  Type  Principal
+     0     1   host/my.host.name@@MY.REALM
+@end example
+
+@section Testing clients and servers
+
+Now you should be able to run all the clients and servers.  Refer to the
+appropriate man pages for information on how to use them.

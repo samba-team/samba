@@ -1,4 +1,4 @@
-@node Building and Installing, Setting up a realm, Introduction, Top
+@node Building and Installing, Setting up a realm, What is Kerberos?, Top
 @comment  node-name,  next,  previous,  up
 @chapter Building and Installing
 
@@ -18,6 +18,8 @@ You will need to build the distribution:
 A compiler that supports a ``loose'' ANSI C mode, such as @code{gcc}.
 @item
 lex or flex
+@item
+awk
 @item
 yacc or bison
 @item
@@ -44,6 +46,10 @@ Kerberos 4 support in the applications (telnet, rsh, popper, etc) and
 the KDC. If you keep libraries and headers in different places, you can
 instead give the path to each with the @kbd{--with-krb4-lib=@file{dir}},
 and @kbd{--with-krb4-include=@file{dir}} options.
+
+You will need a fairly recent version of our Kerberos 4 distribution for
+@code{rshd} and @code{popper} to support version 4 clients.
+
 @item @kbd{--enable-kaserver}
 Enables experimental kaserver support in the KDC. This is the protocol
 used by ``KDC'' in AFS. Requires Kerberos 4 support.
