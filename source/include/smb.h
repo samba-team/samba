@@ -364,7 +364,7 @@ typedef char fstring[FSTRING_LEN];
 #define PIPE_LSARPC   "\\PIPE\\lsarpc"
 #define PIPE_ATSVC    "\\PIPE\\atsvc"
 #define PIPE_SPOOLSS  "\\pipe\\spoolss"
-
+#define PIPE_EVENTLOG "\\PIPE\\EVENTLOG"
 
 /* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
 typedef struct nttime_info
