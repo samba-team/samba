@@ -252,7 +252,7 @@ const char *trust_keystr(const char *domain)
  *
  * @return stored password's key
  **/
-const char *trustdom_keystr(const char *domain)
+static char *trustdom_keystr(const char *domain)
 {
 	static pstring keystr;
 

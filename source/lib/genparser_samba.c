@@ -125,7 +125,7 @@ int gen_parse_DATA_BLOB(TALLOC_CTX *mem_ctx, char *ptr, const char *str)
 
 int gen_parse_TALLOC_CTX(TALLOC_CTX *mem_ctx, char *ptr, const char *str)
 {
-	(TALLOC_CTX *)ptr = NULL;
+	ptr = NULL;
 	return 0;
 }
 

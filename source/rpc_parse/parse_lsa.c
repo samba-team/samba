@@ -1861,7 +1861,7 @@ NTSTATUS init_lsa_r_enum_privsaccount(TALLOC_CTX *mem_ctx, LSA_R_ENUMPRIVSACCOUN
 
 	if ( !NT_STATUS_IS_OK(ret = privilege_set_init_by_ctx(mem_ctx, &(r_u->set))) )
 		return ret;
-
+	
 	r_u->set.count = count;
 	
 	if (!NT_STATUS_IS_OK(ret = dup_luid_attr(r_u->set.mem_ctx, &(r_u->set.set), set, count)))

@@ -58,7 +58,7 @@ BOOL set_current_service(connection_struct *conn, uint16 flags, BOOL do_chdir)
 
 	last_conn = conn;
 	last_flags = flags;
-
+	
 	/* Obey the client case sensitivity requests - only for clients that support it. */
 	if (lp_casesensitive(snum) == Auto) {
 		/* We need this uglyness due to DOS/Win9x clients that lie about case insensitivity. */

@@ -48,7 +48,7 @@ static BOOL ds_io_dominfobasic( const char *desc, prs_struct *ps, int depth, DSR
 		return False;
 	if ( !prs_uint32("forestname_ptr", ps, depth, &p->forestname_ptr) )
 		return False;
-
+		
 	if ( !smb_io_uuid("domain_guid", &p->domain_guid, ps, depth) )
 		return False;
 		

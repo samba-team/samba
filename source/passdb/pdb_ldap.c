@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    LDAP protocol helper functions for SAMBA
-   Copyright (C) Jean François Micouleau	1998
+   Copyright (C) Jean FranÃ§ois Micouleau	1998
    Copyright (C) Gerald Carter			2001-2003
    Copyright (C) Shahms King			2001
    Copyright (C) Andrew Bartlett		2002-2003
@@ -1497,7 +1497,7 @@ static BOOL ldapsam_can_pwchange_exop(struct smbldap_state *ldap_state)
 }
 
 /********************************************************************
- Do the actual modification - also change a plaintext password if 
+ Do the actual modification - also change a plaintext passord if 
  it it set.
 **********************************************************************/
 
@@ -2828,7 +2828,7 @@ static NTSTATUS ldapsam_modify_aliasmem(struct pdb_methods *methods,
 		ldap_get_option(ldap_state->smbldap_state->ldap_struct,
 				LDAP_OPT_ERROR_STRING,&ld_error);
 		
-		DEBUG(0, ("ldapsam_modify_aliasmem: Could not modify attributes "
+		DEBUG(0, ("ldapsam_modify_aliasmem: Could not modify alias "
 			  "for %s, error: %s (%s)\n", dn, ldap_err2string(rc),
 			  ld_error?ld_error:"unknown"));
 		SAFE_FREE(ld_error);
@@ -2886,13 +2886,13 @@ static NTSTATUS ldapsam_enum_aliasmem(struct pdb_methods *methods,
 				   result);
 
 	if (count < 1) {
-		DEBUG(4, ("ldapsam_modify_aliasmem: Did not find alias\n"));
+		DEBUG(4, ("ldapsam_enum_aliasmem: Did not find alias\n"));
 		ldap_msgfree(result);
 		return NT_STATUS_NO_SUCH_ALIAS;
 	}
 
 	if (count > 1) {
-		DEBUG(1, ("ldapsam_modify_aliasmem: Duplicate entries for filter %s: "
+		DEBUG(1, ("ldapsam_enum_aliasmem: Duplicate entries for filter %s: "
 			  "count=%d\n", filter, count));
 		ldap_msgfree(result);
 		return NT_STATUS_NO_SUCH_ALIAS;

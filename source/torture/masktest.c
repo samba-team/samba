@@ -140,7 +140,7 @@ static BOOL reg_match_one(struct cli_state *cli, const char *pattern, const char
 
 	if (strcmp(file,"..") == 0) file = ".";
 
-	return ms_fnmatch(pattern, file, cli->protocol, False /* not case sensitive */)==0;
+	return ms_fnmatch(pattern, file, cli->protocol, False) == 0;
 }
 
 static char *reg_test(struct cli_state *cli, char *pattern, char *long_name, char *short_name)

@@ -1395,7 +1395,7 @@ static void print_queue_update(int snum)
 	 * Make sure that the background queue process exists.  
 	 * Otherwise just do the update ourselves 
 	 */
-	   
+	
 	if ( background_lpq_updater_pid == -1 ) {
 		print_queue_update_with_lock( snum );
 		return;
@@ -1403,7 +1403,7 @@ static void print_queue_update(int snum)
 
 	fstrcpy( sharename, lp_const_servicename(snum));
 
-		ctx.printing_type = lp_printing(snum);
+	ctx.printing_type = lp_printing(snum);
 
 	pstrcpy( lpqcommand, lp_lpqcommand(snum));
 	pstring_sub( lpqcommand, "%p", PRINTERNAME(snum) );
@@ -1429,9 +1429,9 @@ static void print_queue_update(int snum)
 
 	SMB_ASSERT( newlen == len );
 
-		DEBUG(10,("print_queue_update: Sending message -> printer = %s, "
-			"type = %d, lpq command = [%s]\n",
-			ctx.sharename, ctx.printing_type, ctx.lpqcommand ));
+	DEBUG(10,("print_queue_update: Sending message -> printer = %s, "
+		"type = %d, lpq command = [%s]\n",
+		ctx.sharename, ctx.printing_type, ctx.lpqcommand ));
 
 	/* here we set a msg pending record for other smbd processes 
 	   to throttle the number of duplicate print_queue_update msgs
@@ -1451,10 +1451,10 @@ static void print_queue_update(int snum)
 
 	/* finally send the message */
 	
-		become_root();
-		message_send_pid(background_lpq_updater_pid,
+	become_root();
+	message_send_pid(background_lpq_updater_pid,
 		 MSG_PRINTER_UPDATE, buffer, len, False);
-		unbecome_root();
+	unbecome_root();
 
 	SAFE_FREE( ctx.sharename );
 	SAFE_FREE( ctx.lpqcommand );

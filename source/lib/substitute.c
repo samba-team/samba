@@ -447,7 +447,7 @@ static void standard_sub_advanced(int snum, const char *user,
 			break;
 		case 'S': 
 			if ( snum != -1 )
-			string_sub(p,"%S", lp_servicename(snum), l); 
+				string_sub(p,"%S", lp_servicename(snum), l); 
 			break;
 		case 'g': 
 			string_sub(p,"%g", gidtoname(gid), l); 
@@ -465,7 +465,7 @@ static void standard_sub_advanced(int snum, const char *user,
 			 * service name, not the username.  */
 		case 'p': 
 			if ( snum != -1 )
-			string_sub(p,"%p", automount_path(lp_servicename(snum)), l); 
+				string_sub(p,"%p", automount_path(lp_servicename(snum)), l); 
 			break;
 		case '\0': 
 			p++; 
