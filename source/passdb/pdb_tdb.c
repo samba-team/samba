@@ -246,8 +246,8 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 		}
 	}
 
-	pdb_set_user_rid(sampass, user_rid);
-	pdb_set_group_rid(sampass, group_rid);
+	pdb_set_user_sid_from_rid(sampass, user_rid);
+	pdb_set_group_sid_from_rid(sampass, group_rid);
 	pdb_set_unknown_3(sampass, unknown_3);
 	pdb_set_hours_len(sampass, hours_len);
 	pdb_set_unknown_5(sampass, unknown_5);
@@ -671,7 +671,8 @@ static BOOL tdbsam_getsampwrid (struct pdb_methods *my_methods, SAM_ACCOUNT *use
 static BOOL tdbsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, DOM_SID *sid)
 {
 	uint32 rid;
-	sid_peek_rid(sid, &rid);
+	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid))
+		return False;
 	return tdbsam_getsampwrid(my_methods, user, rid);
 }
 
@@ -775,7 +776,7 @@ static BOOL tdb_update_sam(struct pdb_methods *my_methods, SAM_ACCOUNT* newpwd, 
 						goto done;
 					}
 				}
-				pdb_set_user_rid(newpwd, user_rid);
+				pdb_set_user_sid_from_rid(newpwd, user_rid);
 			} else {
 				user_rid = tdb_state->low_nua_rid;
 				tdb_ret = tdb_change_uint32_atomic(pwd_tdb, "NUA_RID_COUNTER", &user_rid, RID_MULTIPLIER);
@@ -788,7 +789,7 @@ static BOOL tdb_update_sam(struct pdb_methods *my_methods, SAM_ACCOUNT* newpwd, 
 					ret = False;
 					goto done;
 				}
-				pdb_set_user_rid(newpwd, user_rid);
+				pdb_set_user_sid_from_rid(newpwd, user_rid);
 			}
 		} else {
 			DEBUG (0,("tdb_update_sam: Failing to store a SAM_ACCOUNT for [%s] without a RID\n",pdb_get_username(newpwd)));
@@ -805,7 +806,7 @@ static BOOL tdb_update_sam(struct pdb_methods *my_methods, SAM_ACCOUNT* newpwd, 
 				goto done;
 			} else {
 				/* This seems like a good default choice for non-unix users */
-				pdb_set_group_rid(newpwd, DOMAIN_GROUP_RID_USERS);
+				pdb_set_group_sid_from_rid(newpwd, DOMAIN_GROUP_RID_USERS);
 			}
 		} else {
 			DEBUG (0,("tdb_update_sam: Failing to store a SAM_ACCOUNT for [%s] without a primary group RID\n",pdb_get_username(newpwd)));

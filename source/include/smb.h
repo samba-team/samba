@@ -624,8 +624,8 @@ typedef struct sam_passwd
 		
 		uid_t uid;          /* this is a unix uid_t */
 		gid_t gid;          /* this is a unix gid_t */
-		uint32 user_rid;    /* Primary User ID */
-		uint32 group_rid;   /* Primary Group ID */
+		DOM_SID user_sid;    /* Primary User SID */
+		DOM_SID group_sid;   /* Primary Group SID */
 		
 		DATA_BLOB lm_pw; /* .data is Null if no password */
 		DATA_BLOB nt_pw; /* .data is Null if no password */

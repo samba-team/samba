@@ -1,10 +1,11 @@
 /* 
    Unix SMB/CIFS implementation.
    Samba utility functions
-   Copyright (C) Andrew Tridgell 1992-1998
-   Copyright (C) Luke Kenneth Caseson Leighton 1998-1999
-   Copyright (C) Jeremy Allison  1999
-   
+   Copyright (C) Andrew Tridgell 		1992-1998
+   Copyright (C) Luke Kenneth Caseson Leighton 	1998-1999
+   Copyright (C) Jeremy Allison  		1999
+   Copyright (C) Stefan (metze) Metzmacher 	2002
+      
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -253,11 +254,33 @@ BOOL sid_split_rid(DOM_SID *sid, uint32 *rid)
 
 BOOL sid_peek_rid(DOM_SID *sid, uint32 *rid)
 {
+	if (!sid || !rid)
+		return False;		
+	
 	if (sid->num_auths > 0) {
 		*rid = sid->sub_auths[sid->num_auths - 1];
 		return True;
 	}
 	return False;
+}
+
+/*****************************************************************
+ Return the last rid from the end of a sid
+ and check the sid against the exp_dom_sid  
+*****************************************************************/  
+
+BOOL sid_peek_check_rid(DOM_SID *exp_dom_sid,DOM_SID *sid, uint32 *rid)
+{
+	if (!exp_dom_sid || !sid || !rid)
+		return False;
+			
+
+	if (sid_compare_domain(exp_dom_sid, sid)!=0){
+		*rid=(-1);
+		return False;
+	}
+	
+	return sid_peek_rid(sid,rid);
 }
 
 /*****************************************************************

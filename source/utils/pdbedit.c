@@ -81,10 +81,12 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
 		if (IS_SAM_UNIX_USER(sam_pwent)) {
 			uid = pdb_get_uid(sam_pwent);
 			gid = pdb_get_gid(sam_pwent);
-			printf ("user ID/Group:        %d/%d\n", uid, gid);
+			printf ("User ID/Group ID:     %d/%d\n", uid, gid);
 		}
-		printf ("user RID/GRID:        %u/%u\n", (unsigned int)pdb_get_user_rid(sam_pwent),
-			(unsigned int)pdb_get_group_rid(sam_pwent));
+		printf ("User SID:             %s\n",
+			sid_string_static((DOM_SID *)pdb_get_user_sid(sam_pwent)));
+		printf ("Primary Group SID:    %s\n",
+			sid_string_static((DOM_SID *)pdb_get_group_sid(sam_pwent)));
 		printf ("Full Name:            %s\n", pdb_get_fullname(sam_pwent));
 		printf ("Home Directory:       %s\n", pdb_get_homedir(sam_pwent));
 		printf ("HomeDir Drive:        %s\n", pdb_get_dirdrive(sam_pwent));
@@ -329,7 +331,7 @@ static int new_machine (struct pdb_context *in, char *machinename)
 	
 	pdb_set_acct_ctrl (sam_pwent, ACB_WSTRUST);
 	
-	pdb_set_group_rid(sam_pwent, DOMAIN_GROUP_RID_COMPUTERS);
+	pdb_set_group_sid_from_rid(sam_pwent, DOMAIN_GROUP_RID_COMPUTERS);
 	
 	if (in->pdb_add_sam_account (in, sam_pwent)) {
 		print_user_info (in, name, True, False);

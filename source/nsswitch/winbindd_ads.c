@@ -273,7 +273,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			continue;
 		}
 
-		if (!sid_peek_rid(&sid, &rid)) {
+		if (!sid_peek_check_rid(&domain->sid, &sid, &rid)) {
 			DEBUG(1,("No rid for %s !?\n", name));
 			continue;
 		}
@@ -356,7 +356,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 			continue;
 		}
 
-		if (!sid_peek_rid(&sid, &rid)) {
+		if (!sid_peek_check_rid(&domain->sid, &sid, &rid)) {
 			DEBUG(1,("No rid for %s !?\n", name));
 			continue;
 		}
@@ -584,7 +584,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		goto done;
 	}
 	
-	if (!sid_peek_rid(&sid, &info->user_rid)) {
+	if (!sid_peek_check_rid(&domain->sid,&sid, &info->user_rid)) {
 		DEBUG(1,("No rid for %d !?\n", user_rid));
 		goto done;
 	}
@@ -662,7 +662,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 	for (i=1;i<count;i++) {
 		uint32 rid;
-		if (!sid_peek_rid(&sids[i-1], &rid)) continue;
+		if (!sid_peek_check_rid(&domain->sid, &sids[i-1], &rid)) continue;
 		(*user_gids)[*num_groups] = rid;
 		(*num_groups)++;
 	}
@@ -737,7 +737,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 			DEBUG(1,("No sid for %s !?\n", (*names)[*num_names]));
 			continue;
 		}
-		if (!sid_peek_rid(&sid, &rid)) {
+		if (!sid_peek_check_rid(&domain->sid, &sid, &rid)) {
 			DEBUG(1,("No rid for %s !?\n", (*names)[*num_names]));
 			continue;
 		}
