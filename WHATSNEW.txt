@@ -88,6 +88,8 @@ is down, rolls over to secondaries correctly now.
 20). Fixed timeout processing to be timer based. Now will
 always occur even if smbd is under load.
 21). Fixed signed/unsigned problem in quotas code.
+22). Fixed bug where setting the password of a completely fresh
+user would end up setting the account disabled flag.
 
 Bugfixes added since 2.0.1
 --------------------------
