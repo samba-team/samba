@@ -190,7 +190,7 @@ int net_rpc_join(int argc, const char **argv)
 	/* Create a random machine account password */
 
 	clear_trust_password = generate_random_str(15);
-	clear_trust_password = strdup("samba2");
+	clear_trust_password = strdup(clear_trust_password);
 	
 	ucs2_pw_len = push_ucs2(NULL, ucs2_trust_password, 
 				clear_trust_password, 
