@@ -33,6 +33,8 @@
 struct smbcli_session *smbcli_session_init(struct smbcli_transport *transport)
 {
 	struct smbcli_session *session;
+	uint16_t flags2;
+	uint32_t capabilities;
 
 	session = talloc_p(transport, struct smbcli_session);
 	if (!session) {
@@ -43,6 +45,26 @@ struct smbcli_session *smbcli_session_init(struct smbcli_transport *transport)
 	session->transport = talloc_reference(session, transport);
 	session->pid = (uint16_t)getpid();
 	session->vuid = UID_FIELD_INVALID;
+
+	
+	capabilities = transport->negotiate.capabilities;
+
+	flags2 = FLAGS2_LONG_PATH_COMPONENTS;
+
+	if (capabilities & CAP_UNICODE) {
+		flags2 |= FLAGS2_UNICODE_STRINGS;
+	}
+	if (capabilities & CAP_STATUS32) {
+		flags2 |= FLAGS2_32_BIT_ERROR_CODES;
+	}
+	if (capabilities & CAP_EXTENDED_SECURITY) {
+		flags2 |= FLAGS2_EXTENDED_SECURITY;
+	}
+	if (session->transport->negotiate.sign_info.doing_signing) {
+		flags2 |= FLAGS2_SMB_SECURITY_SIGNATURES;
+	}
+
+	session->flags2 = flags2;
 
 	return session;
 }
