@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    NBT netbios library routines
-   Copyright (C) Andrew Tridgell 1994-1996
+   Copyright (C) Andrew Tridgell 1994-1997
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -62,7 +62,7 @@ static void dead_netbios_entry(struct subnet_record *d,
 	  
 	  if ((!NAME_GROUP(n->nb_flags)))
 	    {
-	      struct subnet_record *d1 = find_subnet(wins_ip);
+	      struct subnet_record *d1 = wins_subnet;
 	      if (d1)
 		{
 		  /* remove the name that had been registered with us,
@@ -162,18 +162,11 @@ static void dead_netbios_entry(struct subnet_record *d,
   
   case NAME_QUERY_DOMAIN:
     {
-      /* if no response received, there is no domain controller on
-         this local subnet.  it's ok for us to register
+      /* if no response was received, there is no domain controller for
+         this DOMAIN registered within WINS.  it's ok for us to register
+         the DOMAIN<1b> name.
 	 */
       
-      if (!n->bcast)
-	{
-	  DEBUG(0,("NAME_QUERY_DOMAIN incorrectly used - contact samba-bugs!\n"));
-	  /* XXXX whoops. someone's using this to unicast a packet.  this state
-	     should only be used for broadcast checks
-	     */
-	  break;
-	}
       if (n->num_msgs == 0)
 	{
 	  struct work_record *work = find_workgroupstruct(d,n->name.name,False);
@@ -182,6 +175,11 @@ static void dead_netbios_entry(struct subnet_record *d,
 	      become_domain_master(d,work);
 	    }
 	}
+      else
+        {
+          DEBUG(0, ("ERROR: nmbd configured as domain master and one already exitsts !!!\n"));
+          exit(1);
+        }
       break;
     }
 
@@ -206,7 +204,7 @@ void expire_netbios_response_entries(time_t t)
 {
   struct subnet_record *d;
 
-  for (d = subnetlist; d; d = d->next)
+  for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_INCLUDING_WINS(d))
   {
     struct response_record *n, *nextn;
 
@@ -249,7 +247,7 @@ void expire_netbios_response_entries(time_t t)
   name server instead, if it exists. if wins is false, and there has been no
   WINS server specified, the packet will NOT be sent.
   ****************************************************************************/
-struct response_record *queue_netbios_pkt_wins(struct subnet_record *d,
+struct response_record *queue_netbios_pkt_wins(
 				int fd,int quest_type,enum state_type state,
 			    char *name,int name_type,int nb_flags, time_t ttl,
 				int server_type, char *my_name, char *my_comment,
@@ -283,7 +281,7 @@ struct response_record *queue_netbios_pkt_wins(struct subnet_record *d,
 
   if (zero_ip(send_ip)) return NULL;
 
-  return queue_netbios_packet(d,fd, quest_type, state, 
+  return queue_netbios_packet(wins_subnet,fd, quest_type, state, 
 		       name, name_type, nb_flags, ttl,
                server_type,my_name,my_comment,
 		       bcast, recurse, send_ip, reply_to_ip);

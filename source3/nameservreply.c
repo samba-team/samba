@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    NBT netbios routines and daemon - version 2
-   Copyright (C) Andrew Tridgell 1994-1996
+   Copyright (C) Andrew Tridgell 1994-1997
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -433,7 +433,7 @@ void reply_name_status(struct packet_struct *p)
       /* end of this name list: add wins names too? */
       struct subnet_record *w_d;
 
-      if (!(w_d = find_subnet(wins_ip))) break;
+      if (!(w_d = wins_subnet)) break;
 
       if (w_d != d)
       {
@@ -520,7 +520,7 @@ void reply_name_query(struct packet_struct *p)
   }
   else
   {
-    if (!(d = find_subnet(wins_ip)))
+    if (!(d = wins_subnet))
     {
       DEBUG(3,("name query: wins search %s not known\n",
 				    inet_ntoa(p->ip)));

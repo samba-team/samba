@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    NBT netbios routines and daemon - version 2
-   Copyright (C) Andrew Tridgell 1994-1996
+   Copyright (C) Andrew Tridgell 1994-1997
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -97,7 +97,7 @@ static struct work_record *make_workgroup(char *name)
   
   /* make sure all token representations of workgroups are unique */
   
-  for (d = subnetlist; d && t == -1; d = d->next)
+  for (d = FIRST_SUBNET; d && t == -1; d = NEXT_SUBNET_INCLUDING_WINS(d))
     {
       struct work_record *w;
       for (w = d->workgrouplist; w && t == -1; w = w->next)
@@ -175,16 +175,6 @@ struct work_record *find_workgroupstruct(struct subnet_record *d,
   
   DEBUG(4, ("workgroup search for %s: ", name));
   
-  if (strequal(name, "*"))
-    {
-      DEBUG(2,("add any workgroups: initiating browser search on %s\n",
-	       inet_ntoa(d->bcast_ip)));
-      queue_netbios_pkt_wins(d,ClientNMB,NMB_QUERY, NAME_QUERY_FIND_MST,
-			     MSBROWSE,0x1,0,0,0,NULL,NULL,
-			     True,False, d->bcast_ip, d->bcast_ip);
-      return NULL;
-    }
-  
   for (ret = d->workgrouplist; ret; ret = ret->next) {
     if (!strcmp(ret->work_group,name)) {
       DEBUG(4, ("found\n"));
@@ -223,7 +213,7 @@ void dump_workgroups(void)
 {
   struct subnet_record *d;
   
-  for (d = subnetlist; d; d = d->next)
+  for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_INCLUDING_WINS(d))
     {
       if (d->workgrouplist)
 	{
@@ -248,42 +238,3 @@ void dump_workgroups(void)
 	}
     }
 }
-
-/****************************************************************************
-  check to see if a ServerType bit is set in any workgroup on any interface
-  except WINS. Used to determine if a nmbd is a master browser or domain 
-  master browser in a particular workgroup on any subnet.
-  **************************************************************************/
-int check_work_servertype(const char *work_name, int type_mask)
-{
-  struct subnet_record *d;
-
-  for (d = subnetlist; d; d = d->next)
-    {
-      if(ip_equal(d->bcast_ip, wins_ip)) 
-        {
-          /* WINS ip */
-          DEBUG(10,("check_work_servertype: ignoring WINS subnet\n"));
-          continue;
-        }
-      if (d->workgrouplist)
-        {
-          struct work_record *work;
-
-          for (work = d->workgrouplist; work; work = work->next)
-            {
-              if(strequal(work->work_group, (char *)work_name) &&
-                    (type_mask & work->ServerType) != 0)
-                {
-                  DEBUG(10, ("check_work_servertype: Workgroup %s has \
-ServerType %x - match for type_mask %x\n", work_name, work->ServerType,
-                       type_mask));
-                  return 1;
-                }
-            }
-         }
-    }
-  DEBUG(10, ("check_work_servertype: Workgroup %s has no match for \
-type mask %x\n", work_name, type_mask));
-  return 0;
-}                

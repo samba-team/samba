@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    NBT netbios routines to synchronise browse lists
-   Copyright (C) Andrew Tridgell 1994-1995
+   Copyright (C) Andrew Tridgell 1994-1997
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -140,7 +140,13 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 {
   uint32 local_type = local ? SV_TYPE_LOCAL_LIST_ONLY : 0;
 
-  if (!d || !work || !AM_ANY_MASTER(work)) return;
+  if (!d || !work ) return;
+
+  if(d != wins_subnet) {
+      DEBUG(0,
+        ("sync_browse_lists: ERROR sync requested on non-WINS subnet.\n"));
+      return;
+  }
 
   pid = getpid();
   uid = getuid();

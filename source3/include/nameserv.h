@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    NBT netbios header - version 2
-   Copyright (C) Andrew Tridgell 1994-1995
+   Copyright (C) Andrew Tridgell 1994-1997
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -75,8 +75,6 @@
 #define AM_BACKUP(work) (work->ServerType & SV_TYPE_BACKUP_BROWSER)
 #define AM_DOMMST(work) (work->ServerType & SV_TYPE_DOMAIN_MASTER)
 #define AM_DOMMEM(work) (work->ServerType & SV_TYPE_DOMAIN_MEMBER)
-#define AM_ANY_MASTER(work) (check_work_servertype(work->work_group, \
-SV_TYPE_MASTER_BROWSER|SV_TYPE_DOMAIN_MASTER))
 
 /* microsoft browser NetBIOS name */
 #define MSBROWSE "\001\002__MSBROWSE__\002"
@@ -160,6 +158,8 @@ struct name_record
   time_t refresh_time; /* time record should be refreshed */
 };
 
+struct subnet_record;
+
 /* browse and backup server cache for synchronising browse list */
 struct browse_cache_record
 {
@@ -173,6 +173,7 @@ struct browse_cache_record
 	time_t sync_time;
 	BOOL synced;
 	BOOL local;
+        struct subnet_record *subnet;
 };
 
 /* this is used to hold the list of servers in my domain, and is */
@@ -412,4 +413,16 @@ struct packet_struct
 			  SV_TYPE_TIME_SOURCE | SV_TYPE_SERVER_UNIX | \
 			  SV_TYPE_PRINTQ_SERVER | SV_TYPE_SERVER_NT | \
 			  SV_TYPE_NT )
+
+/* Macro's to enumerate subnets either with or without
+   the WINS subnet. */
+
+extern struct subnet_record *subnetlist;
+extern struct subnet_record *wins_subnet;
+
+#define FIRST_SUBNET subnetlist
+#define NEXT_SUBNET_EXCLUDING_WINS(x) ((x)->next)
+#define NEXT_SUBNET_INCLUDING_WINS(x) ( ((x) == wins_subnet) ? 0 : \
+                                        (((x)->next == 0) ? wins_subnet : \
+                                         (x)->next))
 

@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    NBT netbios routines and daemon - version 2
-   Copyright (C) Andrew Tridgell 1994-1996
+   Copyright (C) Andrew Tridgell 1994-1997
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -208,7 +208,7 @@ void expire_servers(time_t t)
 {
   struct subnet_record *d;
   
-  for (d = subnetlist ; d ; d = d->next)
+  for (d = FIRST_SUBNET; d ; d = NEXT_SUBNET_INCLUDING_WINS(d))
     {
       struct work_record *work;
       

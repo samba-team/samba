@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    NBT netbios routines and daemon - version 2
-   Copyright (C) Andrew Tridgell 1994-1995
+   Copyright (C) Andrew Tridgell 1994-1997
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@ extern int  workgroup_count;
 
 extern struct in_addr wins_ip;
 
-
+extern pstring scope;
 
 /****************************************************************************
   send a announce request to the local net
@@ -119,12 +119,13 @@ void do_announce_request(char *info, char *to_name, int announce_type,
   **************************************************************************/
 void sync_server(enum state_type state, char *serv_name, char *work_name, 
 		 int name_type,
+                 struct subnet_record *d,
 		 struct in_addr ip)
 {                     
   /* with a domain master we can get the whole list (not local only list) */
   BOOL local_only = (state != NAME_STATUS_DOM_SRV_CHK);
 
-  add_browser_entry(serv_name, name_type, work_name, 0, ip, local_only);
+  add_browser_entry(serv_name, name_type, work_name, 0, d, ip, local_only);
 
   if (state == NAME_STATUS_DOM_SRV_CHK)
   {
@@ -189,7 +190,7 @@ void do_announce_host(int command,
 void remove_my_servers(void)
 {
 	struct subnet_record *d; 
-	for (d = subnetlist; d; d = d->next)
+	for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_EXCLUDING_WINS(d))
 	{
 		struct work_record *work;
 		for (work = d->workgrouplist; work; work = work->next)
@@ -228,7 +229,7 @@ void announce_server(struct subnet_record *d, struct work_record *work,
 			if (!lp_wins_support() && *lp_wins_server())
 			{
 				/* look up the domain master with the WINS server */
-				queue_netbios_pkt_wins(d,ClientNMB,NMB_QUERY,
+				queue_netbios_pkt_wins(ClientNMB,NMB_QUERY,
 					 NAME_QUERY_ANNOUNCE_HOST,
 					 work->work_group,0x1b,0,ttl*1000,
 					 server_type,name,comment,
@@ -305,11 +306,9 @@ void announce_host(time_t t)
 
   my_name = *myname ? myname : "NoName";
 
-  for (d = subnetlist; d; d = d->next)
+  for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_EXCLUDING_WINS(d))
     {
       struct work_record *work;
-      
-      if (ip_equal(d->bcast_ip, wins_ip)) continue;
       
       for (work = d->workgrouplist; work; work = work->next)
 	{
@@ -362,6 +361,19 @@ void announce_host(time_t t)
     }
 }
 
+/* Announce timer. Moved into global static so it can be reset
+   when a machine becomes a master browser. */
+static time_t announce_timer_last=0;
+
+/****************************************************************************
+ Reset the announce_timer so that a master browser announce will be done
+ immediately.
+ ****************************************************************************/
+
+void reset_announce_timer()
+{
+  announce_timer_last = 0;
+}
 
 /****************************************************************************
   announce myself as a master to all other domain master browsers.
@@ -373,16 +385,26 @@ void announce_host(time_t t)
 void announce_master(time_t t)
 {
   struct subnet_record *d;
-  static time_t last=0;
+  struct work_record *work;
   BOOL am_master = False; /* are we a master of some sort? :-) */
 
-  if (!last) last = t;
-  if (t-last < CHECK_TIME_MST_ANNOUNCE * 60)
-	return;
+  if (!announce_timer_last) announce_timer_last = t;
+  if (t-announce_timer_last < CHECK_TIME_MST_ANNOUNCE * 60)
+    {
+      DEBUG(10,("announce_master: t (%d) - last(%d) < %d\n",
+                 t, announce_timer_last, CHECK_TIME_MST_ANNOUNCE * 60 ));
+      return;
+    }
 
-  last = t;
+  if(wins_subnet == 0)
+    {
+      DEBUG(10,("announce_master: no wins subnet, ignoring.\n"));
+      return;
+    }
 
-  for (d = subnetlist; d; d = d->next)
+  announce_timer_last = t;
+
+  for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_EXCLUDING_WINS(d))
     {
       struct work_record *work;
       for (work = d->workgrouplist; work; work = work->next)
@@ -398,69 +420,95 @@ void announce_master(time_t t)
 
   if (!am_master) return; /* only proceed if we are a master browser */
   
-  /* Note that we don't do this if we are domain master browser. */
+  /* Note that we don't do this if we are domain master browser
+     and that we *only* do this on the WINS subnet. */
 
-  for (d = subnetlist; d; d = d->next)
+  /* Try and find our workgroup on the WINS subnet */
+  work = find_workgroupstruct(wins_subnet, lp_workgroup(), False);
+
+  if (work)
     {
-      /* Try and find our workgroup on this subnet */
-      struct work_record *work = find_workgroupstruct(d, lp_workgroup(), False);
+      char *name;
+      int   type;
 
-      if (work)
+      if (*lp_domain_controller())
         {
-          char *name;
-          int   type;
-
-          if (*lp_domain_controller())
-            {
-              /* the domain controller option is used to manually specify
-                 the domain master browser to sync with
-               */
-
-              /* XXXX i'm not sure we should be using the domain controller
-                 option for this purpose.
-               */
-
-              name = lp_domain_controller();
-              type = 0x20;
-            }
-          else
-            {
-              /* assume that the domain master browser we want to sync
-                 with is our own domain.
-               */
-              name = work->work_group;
-              type = 0x1b;
-            }
-
-          /* check the existence of a dmb for this workgroup, and if
-             one exists at the specified ip, sync with it and announce
-             ourselves as a master browser to it
+          /* the domain controller option is used to manually specify
+             the domain master browser to sync with
            */
 
-          if (!lp_wins_support() && *lp_wins_server() &&
-               ip_equal(d->bcast_ip, wins_ip))
-            {
-              DEBUG(4, ("Local Announce: find %s<%02x> from WINS server %s\n",
-                         name, type, lp_wins_server()));
+          /* XXXX i'm not sure we should be using the domain controller
+             option for this purpose.
+           */
 
-              queue_netbios_pkt_wins(d,ClientNMB,
-                        NMB_QUERY,NAME_QUERY_DOM_SRV_CHK,
-                        name, type, 0,0,0,
-                        work->work_group,NULL,
-                        False, False, ipzero, ipzero);
-            }
-          else
-            {
-              DEBUG(4, ("Local Announce: find %s<%02x> on %s\n",
-                name, type, inet_ntoa(d->bcast_ip)));
+          name = lp_domain_controller();
+          type = 0x20;
+        }
+      else
+        {
+          /* assume that the domain master browser we want to sync
+             with is our own domain.
+           */
+          name = work->work_group;
+          type = 0x1b;
+        }
 
-              queue_netbios_packet(d,ClientNMB,
-                         NMB_QUERY,NAME_QUERY_DOM_SRV_CHK,
-                         name, type, 0,0,0,
-                         work->work_group,NULL,
-                         True, False, d->bcast_ip, d->bcast_ip);
-	    }
-	}
+      /* check the existence of a dmb for this workgroup, and if
+         one exists at the specified ip, sync with it and announce
+         ourselves as a master browser to it
+       */
+
+      if (!lp_wins_support() && *lp_wins_server() )
+        {
+          DEBUG(4, ("Local Announce: find %s<%02x> from WINS server %s\n",
+                     name, type, lp_wins_server()));
+
+          queue_netbios_pkt_wins(ClientNMB,
+                    NMB_QUERY,NAME_QUERY_DOM_SRV_CHK,
+                    name, type, 0,0,0,
+                    work->work_group,NULL,
+                    False, False, ipzero, ipzero);
+        }
+      else if(lp_wins_support()) 
+        {
+           /* We are the WINS server - query ourselves for the dmb name. */
+
+           struct nmb_name netb_name;
+           struct subnet_record *d = 0;
+           struct name_record *nr = 0;
+ 
+           make_nmb_name(&netb_name, name, type, scope);
+
+           if ((nr = find_name_search(&d, &netb_name, FIND_WINS, ipzero)) == 0)
+             {
+               DEBUG(0, ("announce_master: unable to find domain master browser for workgroup %s \
+in our own WINS database.\n", work->work_group));
+               return;
+             }
+
+           /* Check that this isn't one of our addresses (ie. we are not domain master
+              ourselves) */
+           if(ismyip(nr->ip_flgs[0].ip))
+             {
+               DEBUG(4, ("announce_master: domain master ip found (%s) for workgroup %s \
+is one of our interfaces.\n", work->work_group, inet_ntoa(nr->ip_flgs[0].ip) ));
+               return;
+             }
+
+           /* Issue a NAME_STATUS_DOM_SRV_CHK immediately - short circuit the
+              NAME_QUERY_DOM_SRV_CHK which is done only if we are talking to a 
+              remote WINS server. */
+
+           DEBUG(4, ("announce_master: doing name status for %s<%02x> to domain master ip %s \
+for workgroup %s\n", name, type, inet_ntoa(nr->ip_flgs[0].ip), work->work_group ));
+
+           queue_netbios_packet(wins_subnet, ClientNMB,
+                    NMB_QUERY,NAME_STATUS_DOM_SRV_CHK,
+                    name, type, 0,0,0,
+                    work->work_group,NULL,
+                    False, False, nr->ip_flgs[0].ip, nr->ip_flgs[0].ip);
+         }
+
     }
 }
 

@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    test printer setup
-   Copyright (C) Karl Auer 1993, 1994
+   Copyright (C) Karl Auer 1993, 1994-1997
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

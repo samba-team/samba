@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    NBT netbios routines and daemon - version 2
-   Copyright (C) Andrew Tridgell 1994-1996
+   Copyright (C) Andrew Tridgell 1994-1997
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -187,7 +187,7 @@ struct name_record *find_name_search(struct subnet_record **d,
   if (!(search & FIND_WINS)) return NULL;
 
   /* find WINS subnet record. */
-  *d = find_subnet(wins_ip);
+  *d = wins_subnet;
   
   if (*d == NULL) return NULL;
   
@@ -203,12 +203,14 @@ struct name_record *find_name_search(struct subnet_record **d,
 void dump_names(void)
 {
   struct name_record *n;
-  struct subnet_record *d;
   fstring fname, fnamenew;
   time_t t = time(NULL);
   
   FILE *f;
-  
+ 
+  if(lp_wins_support() == False || wins_subnet == 0)
+    return;
+ 
   strcpy(fname,lp_lockdir());
   trim_string(fname,NULL,"/");
   strcat(fname,"/");
@@ -224,29 +226,28 @@ void dump_names(void)
     return;
   }
   
-  DEBUG(4,("Dump of local name table:\n"));
+  DEBUG(4,("Dump of WINS name table:\n"));
   
-  for (d = subnetlist; d; d = d->next)
-   for (n = d->namelist; n; n = n->next)
-    {
-      int i;
+  for (n = wins_subnet->namelist; n; n = n->next)
+   {
+     int i;
 
-	  DEBUG(4,("%15s ", inet_ntoa(d->bcast_ip)));
-	  DEBUG(4,("%15s ", inet_ntoa(d->mask_ip)));
-      DEBUG(4,("%-19s TTL=%ld ",
+     DEBUG(4,("%15s ", inet_ntoa(wins_subnet->bcast_ip)));
+     DEBUG(4,("%15s ", inet_ntoa(wins_subnet->mask_ip)));
+     DEBUG(4,("%-19s TTL=%ld ",
 	       namestr(&n->name),
 	       n->death_time?n->death_time-t:0));
 
-        for (i = 0; i < n->num_ips; i++)
-        {
-           DEBUG(4,("%15s NB=%2x source=%d",
-		    inet_ntoa(n->ip_flgs[i].ip),
+     for (i = 0; i < n->num_ips; i++)
+      {
+        DEBUG(4,("%15s NB=%2x source=%d",
+                 inet_ntoa(n->ip_flgs[i].ip),
 		    n->ip_flgs[i].nb_flags,n->source));
 
-        }
-		DEBUG(4,("\n"));
+      }
+     DEBUG(4,("\n"));
 
-      if (f && ip_equal(d->bcast_ip, wins_ip) && n->source == REGISTER)
+     if (f && n->source == REGISTER)
       {
       /* XXXX i have little imagination as to how to output nb_flags as
          anything other than as a hexadecimal number :-) */
@@ -264,7 +265,7 @@ void dump_names(void)
 		fprintf(f, "\n");
       }
 
-    }
+  }
 
   fclose(f);
   unlink(fname);
@@ -282,7 +283,7 @@ void dump_names(void)
   ****************************************************************************/
 void load_netbios_names(void)
 {
-  struct subnet_record *d = find_subnet(wins_ip);
+  struct subnet_record *d = wins_subnet;
   fstring fname;
 
   FILE *f;
@@ -414,6 +415,7 @@ struct name_record *add_netbios_entry(struct subnet_record *d,
 {
   struct name_record *n;
   struct name_record *n2=NULL;
+  struct subnet_record *found_subnet = 0;
   int search = 0;
   BOOL self = source == SELF;
 
@@ -447,12 +449,13 @@ struct name_record *add_netbios_entry(struct subnet_record *d,
 
   make_nmb_name(&n->name,name,type,scope);
 
-  if ((n2 = find_name_search(&d, &n->name, search, new_only?ipzero:ip)))
+  if ((n2 = find_name_search(&found_subnet, &n->name, search, new_only?ipzero:ip)))
   {
     free(n->ip_flgs);
     free(n);
     if (new_only || (n2->source==SELF && source!=SELF)) return n2;
     n = n2;
+    d = found_subnet;
   }
 
   if (ttl)
@@ -469,7 +472,7 @@ struct name_record *add_netbios_entry(struct subnet_record *d,
 
   DEBUG(3,("Added netbios name %s at %s ttl=%d nb_flags=%2x to interface %s\n",
 	   namestr(&n->name),inet_ntoa(ip),ttl,nb_flags,
-	   ip_equal(d->bcast_ip, wins_ip) ? "WINS" : inet_ntoa(d->bcast_ip)));
+	   ip_equal(d->bcast_ip, wins_ip) ? "WINS" : (char *)inet_ntoa(d->bcast_ip)));
 
   return(n);
 }
@@ -485,7 +488,7 @@ void expire_names(time_t t)
 	struct subnet_record *d;
 
 	/* expire old names */
-	for (d = subnetlist; d; d = d->next)
+	for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_INCLUDING_WINS(d))
 	{
 	  for (n = d->namelist; n; n = next)
 	    {
@@ -522,9 +525,9 @@ struct name_record *dns_name_search(struct nmb_name *question, int Time)
 	char *r;
 	BOOL dns_type = (name_type == 0x20 || name_type == 0);
 	struct in_addr dns_ip;
-	struct subnet_record *d = find_subnet(wins_ip);
 
-	if (d == NULL) return NULL;
+	if (wins_subnet == NULL) 
+          return NULL;
 
 	DEBUG(3,("Search for %s - ", namestr(question)));
 
@@ -543,7 +546,7 @@ struct name_record *dns_name_search(struct nmb_name *question, int Time)
 		/* no luck with DNS. We could possibly recurse here XXXX */
 		DEBUG(3,("not found. no recursion.\n"));
 		/* add the fail to WINS cache of names. give it 1 hour in the cache */
-		add_netbios_entry(d,qname,name_type,NB_ACTIVE,60*60,DNSFAIL,dns_ip,
+		add_netbios_entry(wins_subnet,qname,name_type,NB_ACTIVE,60*60,DNSFAIL,dns_ip,
 		                  True, True);
 		return NULL;
 	}
@@ -551,6 +554,6 @@ struct name_record *dns_name_search(struct nmb_name *question, int Time)
 	DEBUG(3,("found with DNS: %s\n", inet_ntoa(dns_ip)));
 
 	/* add it to our WINS cache of names. give it 2 hours in the cache */
-	return add_netbios_entry(d,qname,name_type,NB_ACTIVE,2*60*60,DNS,dns_ip,
+	return add_netbios_entry(wins_subnet,qname,name_type,NB_ACTIVE,2*60*60,DNS,dns_ip,
 	                         True,True);
 }

@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    Parameter loading functions
-   Copyright (C) Karl Auer 1993,1994
+   Copyright (C) Karl Auer 1993,1997
 
    Largely re-written by Andrew Tridgell, September 1994
    

@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    NBT netbios routines and daemon - version 2
-   Copyright (C) Andrew Tridgell 1994-1996
+   Copyright (C) Andrew Tridgell 1994-1997
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -320,7 +320,7 @@ static void response_name_status_check(struct in_addr ip,
                            workgroup name to sync with. See 
                            response_server_check() */
 			sync_server(n->state,serv_name,
-			            n->my_name,name.name_type, n->send_ip);
+			            n->my_name,name.name_type, d, n->send_ip);
 		}
 	}
 	else
