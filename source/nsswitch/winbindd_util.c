@@ -24,6 +24,13 @@
 #include "winbindd.h"
 #include "sids.h"
 
+BOOL domain_handles_open(struct winbindd_domain *domain)
+{
+	return domain->sam_handle_open &&
+		domain->sam_dom_handle_open &&
+		domain->sam_blt_handle_open;
+}
+
 static BOOL resolve_dc_name(char *domain_name, fstring domain_controller)
 {
 	struct in_addr ip;
@@ -40,82 +47,6 @@ static BOOL resolve_dc_name(char *domain_name, fstring domain_controller)
 	if (!resolve_name(domain_name, &ip, 0x1B)) return False;
 
 	return lookup_pdc_name(global_myname, domain_name, &ip, domain_controller);
-}
-
-/* Connect to a domain controller using get_any_dc_name() to discover 
-   the domain name and sid */
-
-BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
-{
-    fstring level5_dom;
-    BOOL res;
-    uint32 enum_ctx = 0;
-    uint32 num_doms = 0;
-    char **domains = NULL;
-    DOM_SID **sids = NULL;
-
-    if (domain == NULL) {
-        return False;
-    }
-
-    DEBUG(1, ("looking up sid for domain %s\n", domain_name));
-
-    /* Get controller name for domain */
-    if (!resolve_dc_name(domain_name, domain->controller)) {
-	    return False;
-    }
-
-    if (strcmp(server_state.controller,"*") == 0) {
-	    if (!resolve_dc_name(lp_workgroup(), server_state.controller)) {
-		    return False;
-	    }
-    }
-
-    /* Lookup sid for domain.  We must call lsa_open_policy() directly to
-       avoid an infinite loop with open_lsa_handle() function. */
-
-    server_state.lsa_handle_open =
-        lsa_open_policy(server_state.controller, &server_state.lsa_handle, 
-                        False, SEC_RIGHTS_MAXIMUM_ALLOWED);
-        
-    if (strequal(domain->controller, server_state.controller)) {
-        /* Do a level 5 query info policy */
-
-        res = server_state.lsa_handle_open ? 
-            lsa_query_info_pol(&server_state.lsa_handle, 0x05, level5_dom, 
-                               &domain->sid) : False;
-	return res;
-    } 
-
-    /* Use lsaenumdomains to get sid for this domain */
-    
-    res = server_state.lsa_handle_open ?
-            lsa_enum_trust_dom(&server_state.lsa_handle, &enum_ctx,
-                               &num_doms, &domains, &sids) : False;
-    
-    /* Look for domain name */
-    
-    if (res && domains && sids) {
-            int found = False;
-            int i;
-	    
-            for(i = 0; i < num_doms; i++) {
-		    if (strequal(domain_name, domains[i])) {
-			    sid_copy(&domain->sid, sids[i]);
-			    found = True;
-			    break;
-		    }
-            }
-	    
-            res = found;
-    }
-    
-    /* Free memory */
-    
-    free_char_array(num_doms, domains);
-    free_sid_array(num_doms, sids);
-
-    return res;
 }
 
 
@@ -147,64 +78,191 @@ static struct winbindd_domain *add_trusted_domain(char *domain_name)
 }
 
 /* Look up global info for the winbind daemon */
-
-BOOL get_trusted_domains(void)
+static BOOL get_trusted_domains(void)
 {
-    struct winbindd_domain *domain;
+	uint32 enum_ctx = 0;
+	uint32 num_doms = 0;
+	char **domains = NULL;
+	DOM_SID **sids = NULL;
+	BOOL result;
+	int i;
+	
+	DEBUG(1, ("getting trusted domain list\n"));
+	
+	/* Enumerate list of trusted domains */	
+	result = lsa_enum_trust_dom(&server_state.lsa_handle, &enum_ctx,
+				    &num_doms, &domains, &sids);
+	
+	if (!result || !domains) return False;
+	
+        /* Add each domain to the trusted domain list */
+	for(i = 0; i < num_doms; i++) {
+		if (!add_trusted_domain(domains[i])) {
+			DEBUG(0, ("could not add record for domain %s\n", domains[i]));
+			result = False;
+		}
+	}
+	
+	/* Free memory */	
+	free_char_array(num_doms, domains);
+	free_sid_array(num_doms, sids);
+	
+	return True;
+}
+
+
+/* Open sam and sam domain handles to a domain and cache the results */
+static BOOL open_sam_handles(struct winbindd_domain *domain)
+{
+	/* Get domain info */
+	if (!domain->got_domain_info) {
+		domain->got_domain_info = get_domain_info(domain);
+		if (!domain->got_domain_info) return False;
+	}
+
+	/* Open sam handle if it isn't already open */
+	if (!domain->sam_handle_open) {
+		domain->sam_handle_open = 
+			samr_connect(domain->controller, SEC_RIGHTS_MAXIMUM_ALLOWED, 
+				     &domain->sam_handle);
+		if (!domain->sam_handle_open) return False;
+	}
+
+	/* Open sam domain handle if it isn't already open */
+	if (!domain->sam_dom_handle_open) {
+		domain->sam_dom_handle_open =
+			samr_open_domain(&domain->sam_handle, 
+					 SEC_RIGHTS_MAXIMUM_ALLOWED, &domain->sid, 
+					 &domain->sam_dom_handle);
+		if (!domain->sam_dom_handle_open) return False;
+	}
+	
+	/* Open sam builtin handle if it isn't already open */
+	if (!domain->sam_blt_handle_open) {
+		domain->sam_blt_handle_open =
+			samr_open_domain(&domain->sam_handle,
+					 SEC_RIGHTS_MAXIMUM_ALLOWED, global_sid_builtin,
+					 &domain->sam_blt_handle);
+		if (!domain->sam_blt_handle_open) return False;
+	}
+	
+	return True;
+}
+
+
+BOOL establish_connections(void) 
+{
+	struct winbindd_domain *domain;
+	static BOOL initialised;
+	static time_t lastt;
+	time_t t;
+
+	if (!initialised) {
+		initialised = True;
+
+		fstrcpy(server_state.controller, lp_passwordserver());
+		if (strcmp(server_state.controller,"*") == 0) {
+			if (!resolve_dc_name(lp_workgroup(), server_state.controller)) {
+				return False;
+			}
+		}
+
+
+		if (!add_trusted_domain("BUILTIN")) {
+			DEBUG(0, ("could not add record for domain %s\n", lp_workgroup()));
+			return False;
+		}
+
+		/* Add our workgroup - keep handle to look up trusted domains */
+		if (!add_trusted_domain(lp_workgroup())) {
+			DEBUG(0, ("could not add record for domain %s\n", lp_workgroup()));
+			return False;
+		}
+	}
+	
+	t = time(NULL);
+	if (t - lastt < WINBINDD_ESTABLISH_LOOP) {
+		return False;
+	}
+	lastt = t;
+
+	/* Open lsa handle if it isn't already open */
+	if (!server_state.lsa_handle_open) {
+		server_state.lsa_handle_open =
+			lsa_open_policy(server_state.controller, &server_state.lsa_handle, 
+					False, SEC_RIGHTS_MAXIMUM_ALLOWED);
+		if (!server_state.lsa_handle_open) return False;
+		get_trusted_domains();
+	}
+
+	for (domain=domain_list; domain; domain=domain->next) {
+		if (!domain_handles_open(domain)) {
+			open_sam_handles(domain);
+		}
+	}
+
+	return True;
+}
+
+
+/* Connect to a domain controller using get_any_dc_name() to discover 
+   the domain name and sid */
+BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
+{
+    fstring level5_dom;
+    BOOL res;
     uint32 enum_ctx = 0;
     uint32 num_doms = 0;
     char **domains = NULL;
     DOM_SID **sids = NULL;
-    BOOL result;
 
-    /* Open lsa handle */
-
-    for (domain = domain_list; domain != NULL; domain = domain->next) {
-        if (strcmp(domain->name, lp_workgroup()) == 0) {
-            break;
-        }
-    }
-
-    DEBUG(1, ("getting trusted domain list\n"));
-
-    /* Open lsa handle.  We must call lsa_open_policy() directly to
-       avoid an infinite loop with open_lsa_handle() function. */
-
-    server_state.lsa_handle_open =
-        lsa_open_policy(server_state.controller, &server_state.lsa_handle, 
-                        False, SEC_RIGHTS_MAXIMUM_ALLOWED);
-
-    if (!server_state.lsa_handle_open) {
+    if (domain == NULL) {
         return False;
     }
 
-    /* Enumerate list of trusted domains */
+    DEBUG(1, ("looking up sid for domain %s\n", domain_name));
 
-    result = lsa_enum_trust_dom(&server_state.lsa_handle, &enum_ctx,
-                             &num_doms, &domains, &sids);
-
-    if (result && domains) {
-        int i;
-
-        /* Add each domain to the trusted domain list */
-
-        for(i = 0; i < num_doms; i++) {
-            if (!add_trusted_domain(domains[i])) {
-                DEBUG(0, ("could not add record for domain %s\n", domains[i]));
-                result = False;
-            }
-        }
-
-        /* Free memory */
-
-        free_char_array(num_doms, domains);
-        free_sid_array(num_doms, sids);
-
-        result = True;
+    /* Get controller name for domain */
+    if (!resolve_dc_name(domain_name, domain->controller)) {
+	    return False;
     }
 
-    return result;
+    if (strequal(domain->controller, server_state.controller)) {
+	    /* Do a level 5 query info policy */
+	    return lsa_query_info_pol(&server_state.lsa_handle, 0x05, 
+				      level5_dom, &domain->sid);
+    } 
+
+    /* Use lsaenumdomains to get sid for this domain */
+    
+    res = lsa_enum_trust_dom(&server_state.lsa_handle, &enum_ctx,
+			     &num_doms, &domains, &sids);
+    
+    /* Look for domain name */
+    
+    if (res && domains && sids) {
+            int found = False;
+            int i;
+	    
+            for(i = 0; i < num_doms; i++) {
+		    if (strequal(domain_name, domains[i])) {
+			    sid_copy(&domain->sid, sids[i]);
+			    found = True;
+			    break;
+		    }
+            }
+	    
+            res = found;
+    }
+    
+    /* Free memory */
+    
+    free_char_array(num_doms, domains);
+    free_sid_array(num_doms, sids);
+
+    return res;
 }
+
 
 /* Lookup domain controller and sid for a domain */
 
@@ -213,12 +271,6 @@ BOOL get_domain_info(struct winbindd_domain *domain)
     fstring sid_str;
 
     DEBUG(1, ("Getting domain info for domain %s\n", domain->name));
-
-    /* Lookup global list of trusted domains if we haven't done so already */ 
-
-    if (!server_state.got_trusted_domains) {
-        server_state.got_trusted_domains = get_trusted_domains();
-    }
 
     /* Lookup domain sid */
         
@@ -249,67 +301,6 @@ BOOL get_domain_info(struct winbindd_domain *domain)
     return True;
 }        
 
-/* Open a lsa handle to a domain and cache the result */
-
-BOOL open_lsa_handle(struct winbindd_domain *domain)
-{
-    /* Get domain info */
-
-    if (!domain->got_domain_info) {
-        domain->got_domain_info = get_domain_info(domain);
-    }
-
-    /* Open lsa handle if it isn't already open */
-
-    if (domain->got_domain_info && !server_state.lsa_handle_open) {
-        server_state.lsa_handle_open =
-            lsa_open_policy(server_state.controller, &server_state.lsa_handle, 
-                            False, SEC_RIGHTS_MAXIMUM_ALLOWED);
-    }
-
-    return server_state.lsa_handle_open;
-}
-
-/* Open sam and sam domain handles to a domain and cache the results */
-
-BOOL open_sam_handles(struct winbindd_domain *domain)
-{
-    /* Get domain info */
-
-    if (!domain->got_domain_info) {
-        domain->got_domain_info = get_domain_info(domain);
-    }
-
-    /* Open sam handle if it isn't already open */
-
-    if (domain->got_domain_info && !domain->sam_handle_open) {
-        domain->sam_handle_open = 
-            samr_connect(domain->controller, SEC_RIGHTS_MAXIMUM_ALLOWED, 
-                         &domain->sam_handle);
-    }
-
-    /* Open sam domain handle if it isn't already open */
-
-    if (domain->sam_handle_open && !domain->sam_dom_handle_open) {
-        domain->sam_dom_handle_open =
-            samr_open_domain(&domain->sam_handle, 
-                             SEC_RIGHTS_MAXIMUM_ALLOWED, &domain->sid, 
-                             &domain->sam_dom_handle);
-    }
-
-    /* Open sam builtin handle if it isn't already open */
-
-    if (domain->sam_handle_open && !domain->sam_blt_handle_open) {
-        domain->sam_blt_handle_open =
-            samr_open_domain(&domain->sam_handle,
-                             SEC_RIGHTS_MAXIMUM_ALLOWED, global_sid_builtin,
-                             &domain->sam_blt_handle);
-    }
-
-    return domain->sam_dom_handle_open && 
-        domain->sam_blt_handle_open;
-}
-
 /* Lookup a sid in a domain from a name */
 
 BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain,
@@ -327,15 +318,10 @@ BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain,
         return False;
     }
 
-    /* Open handles */
-
-    if (!open_lsa_handle(domain)) return False;
-
     /* Lookup name */
 
-    res = server_state.lsa_handle_open ? 
-        lsa_lookup_names(&server_state.lsa_handle, num_names, (char **)&name,
-                         &sids, &types, &num_sids) : False;
+    res = lsa_lookup_names(&server_state.lsa_handle, num_names, (char **)&name,
+			   &sids, &types, &num_sids);
 
     /* Return rid and type if lookup successful */
 
@@ -373,15 +359,9 @@ BOOL winbindd_lookup_name_by_sid(struct winbindd_domain *domain,
     char **names;
     BOOL res;
 
-    /* Open handles */
-
-    if (!open_lsa_handle(domain)) return False;
-
     /* Lookup name */
-
-    res = server_state.lsa_handle_open ? 
-        lsa_lookup_sids(&server_state.lsa_handle, num_sids, &sid, &names, 
-                        &types, &num_names) : False;
+    res = lsa_lookup_sids(&server_state.lsa_handle, num_sids, &sid, &names, 
+			  &types, &num_names);
 
     /* Return name and type if successful */
 
@@ -413,19 +393,9 @@ BOOL winbindd_lookup_name_by_sid(struct winbindd_domain *domain,
 BOOL winbindd_lookup_userinfo(struct winbindd_domain *domain,
                               uint32 user_rid, SAM_USERINFO_CTR *user_info)
 {
-    BOOL res;
+	if (!domain_handles_open(domain)) return False;
 
-    /* Open handles */
-
-    if (!open_sam_handles(domain)) return False;
-
-    /* Get user info */
-
-    res = domain->sam_dom_handle_open ? 
-        get_samr_query_userinfo(&domain->sam_dom_handle, 0x15, user_rid, 
-                                user_info) : False;
-
-    return res;
+	return get_samr_query_userinfo(&domain->sam_dom_handle, 0x15, user_rid, user_info);
 }                                   
 
 /* Lookup group information from a rid */
@@ -433,19 +403,9 @@ BOOL winbindd_lookup_userinfo(struct winbindd_domain *domain,
 BOOL winbindd_lookup_groupinfo(struct winbindd_domain *domain,
                               uint32 group_rid, GROUP_INFO_CTR *info)
 {
-    BOOL res;
+	if (!domain_handles_open(domain)) return False;
 
-    /* Open pipes */
-
-    if (!open_sam_handles(domain)) return False;
-
-    /* Query group info */
-    
-    res = domain->sam_dom_handle_open ? 
-        get_samr_query_groupinfo(&domain->sam_dom_handle, 1, group_rid, 
-                                 info) : False;
-
-    return res;
+	return get_samr_query_groupinfo(&domain->sam_dom_handle, 1, group_rid, info);
 }
 
 /* Lookup group membership given a rid */
@@ -455,19 +415,10 @@ BOOL winbindd_lookup_groupmem(struct winbindd_domain *domain,
                               uint32 **rid_mem, char ***names, 
                               enum SID_NAME_USE **name_types)
 {
-    BOOL res;
-
-    /* Open pipes */
-
-    if (!open_sam_handles(domain)) return False;
-
-    /* Query group membership */
+	if (!domain_handles_open(domain)) return False;
     
-    res = domain->sam_dom_handle_open ? 
-        sam_query_groupmem(&domain->sam_dom_handle, group_rid, num_names, 
-                           rid_mem, names, name_types) : False;
-
-    return res;
+	return sam_query_groupmem(&domain->sam_dom_handle, group_rid, num_names, 
+				  rid_mem, names, name_types);
 }
 
 /* Lookup alias membership given a rid */
@@ -478,11 +429,9 @@ int winbindd_lookup_aliasmem(struct winbindd_domain *domain,
                              enum SID_NAME_USE **name_types)
 {
     POLICY_HND *pol;
-    BOOL res;
 
     /* Open sam handles */
-
-    if (!open_sam_handles(domain)) return False;
+    if (!domain_handles_open(domain)) return False;
 
     if (sid_equal(global_sid_builtin, &domain->sid)) {
         pol = &domain->sam_blt_handle;
@@ -490,13 +439,8 @@ int winbindd_lookup_aliasmem(struct winbindd_domain *domain,
         pol = &domain->sam_dom_handle;
     }
 
-    /* Query alias membership */
-    
-    res = domain->sam_dom_handle_open ? 
-        sam_query_aliasmem(domain->controller, pol, alias_rid, num_names, 
-                           sids, names, name_types) : False;
-
-    return res;
+    return sam_query_aliasmem(domain->controller, pol, alias_rid, num_names, 
+			      sids, names, name_types);
 }
 
 /* Globals for domain list stuff */
@@ -507,26 +451,19 @@ struct winbindd_domain *domain_list = NULL;
 
 struct winbindd_domain *find_domain_from_name(char *domain_name)
 {
-    struct winbindd_domain *tmp;
+	struct winbindd_domain *tmp;
 
-    /* Search through list */
+	/* Search through list */
+	for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
+		if (strcmp(domain_name, tmp->name) == 0) {
+			if (!tmp->got_domain_info) return NULL;
+		}
 
-    for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
-        if (strcmp(domain_name, tmp->name) == 0) {
-
-            /* Get domain info for this domain */
-
-            if (!tmp->got_domain_info && !get_domain_info(tmp)) {
-                return NULL;
-            }
-
-            return tmp;
+		return tmp;
         }
-    }
 
-    /* Not found */
-
-    return NULL;
+	/* Not found */
+	return NULL;
 }
 
 /* Free state information held for {set,get,end}{pw,gr}ent() functions */
@@ -584,7 +521,6 @@ static BOOL parse_id_list(char *paramstr, BOOL is_user)
 
 BOOL winbindd_param_init(void)
 {
-
     /* Parse winbind uid and winbind_gid parameters */
 
     if (!(parse_id_list(lp_winbind_uid(), True) &&
@@ -605,18 +541,6 @@ BOOL winbindd_param_init(void)
     }
     
     /* Add builtin domain */
-
-    if (!add_trusted_domain("BUILTIN")) {
-        DEBUG(0, ("could not add record for domain %s\n", lp_workgroup()));
-        return False;
-    }
-
-    /* Add our workgroup - keep handle to look up trusted domains */
-
-    if (!add_trusted_domain(lp_workgroup())) {
-        DEBUG(0, ("could not add record for domain %s\n", lp_workgroup()));
-        return False;
-    }
 
     return True;
 }
