@@ -123,6 +123,8 @@ ldap_open_connection (LDAP ** ldap_struct)
 			break;
 		case LDAP_SSL_OFF:
 		default:
+			/* What is meant here ? JRA. */
+			break;
 	}
 
 	DEBUG(2, ("ldap_open_connection: connection opened\n"));
