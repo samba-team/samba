@@ -18,6 +18,14 @@ PyObject *spoolss_getprinterdriver(PyObject *self, PyObject *args,
 				   PyObject *kw);
 PyObject *spoolss_getprinterdriverdir(PyObject *self, PyObject *args, 
 				      PyObject *kw);
+PyObject *spoolss_addprinterdriver(PyObject *self, PyObject *args,
+				   PyObject *kw);
+PyObject *spoolss_addprinterdriverex(PyObject *self, PyObject *args,
+				     PyObject *kw);
+PyObject *spoolss_deleteprinterdriver(PyObject *self, PyObject *args,
+				      PyObject *kw);
+PyObject *spoolss_deleteprinterdriverex(PyObject *self, PyObject *args,
+					PyObject *kw);
 
 /* The following definitions come from python/py_spoolss_drivers_conv.c  */
 
@@ -81,6 +89,8 @@ BOOL py_to_PORT_INFO_2(PORT_INFO_2 *info, PyObject *dict);
 PyObject *spoolss_getprinterdata(PyObject *self, PyObject *args, PyObject *kw);
 PyObject *spoolss_setprinterdata(PyObject *self, PyObject *args, PyObject *kw);
 PyObject *spoolss_enumprinterdata(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_deleteprinterdata(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_deleteprinterdataex(PyObject *self, PyObject *args, PyObject *kw);
 
 /* The following definitions come from python/py_spoolss_printers.c  */
 
