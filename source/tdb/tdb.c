@@ -1278,31 +1278,6 @@ int tdb_close(TDB_CONTEXT *tdb)
 	return 0;
 }
 
-/* lock the database. If we already have it locked then don't do anything */
-int tdb_writelock(TDB_CONTEXT *tdb)
-{
-        if (tdb == NULL) {
-#ifdef TDB_DEBUG
-            printf("tdb_writelock() called with null context\n");
-#endif
-            return -1;
-        }
-
-	return tdb_lock(tdb, -1, F_WRLCK);
-}
-
-/* unlock the database. */
-int tdb_writeunlock(TDB_CONTEXT *tdb)
-{
-        if (tdb == NULL) {
-#ifdef TDB_DEBUG
-            printf("tdb_writeunlock() called with null context\n");
-#endif
-            return -1;
-        }
-
-	return tdb_unlock(tdb, -1);
-}
 
 /* lock one hash chain. This is meant to be used to reduce locking
    contention - it cannot guarantee how many records will be locked */

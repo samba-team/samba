@@ -68,6 +68,8 @@ Does not survive a fork
 ****************************************************************************/
 BOOL print_backend_init(void)
 {
+	char *sversion = "INFO/version";
+
 	if (tdb && local_pid == sys_getpid()) return True;
 	tdb = tdb_open(lock_path("printing.tdb"), 0, 0, O_RDWR|O_CREAT, 0600);
 	if (!tdb) {
@@ -76,12 +78,12 @@ BOOL print_backend_init(void)
 	local_pid = sys_getpid();
 
 	/* handle a Samba upgrade */
-	tdb_writelock(tdb);
-	if (tdb_fetch_int(tdb, "INFO/version") != PRINT_DATABASE_VERSION) {
+	tdb_lock_bystring(tdb, sversion);
+	if (tdb_fetch_int(tdb, sversion) != PRINT_DATABASE_VERSION) {
 		tdb_traverse(tdb, (tdb_traverse_func)tdb_delete, NULL);
-		tdb_store_int(tdb, "INFO/version", PRINT_DATABASE_VERSION);
+		tdb_store_int(tdb, sversion, PRINT_DATABASE_VERSION);
 	}
-	tdb_writeunlock(tdb);
+	tdb_unlock_bystring(tdb, sversion);
 
 	return nt_printing_init();
 }
@@ -678,7 +680,7 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	fstrcpy(pjob.qname, lp_servicename(snum));
 
 	/* lock the database */
-	tdb_writelock(tdb);
+	tdb_lock_bystring(tdb, "INFO/nextjob");
 
  next_jobnum:
 	next_jobid = tdb_fetch_int(tdb, "INFO/nextjob");
@@ -712,7 +714,7 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 
 	print_job_store(jobid, &pjob);
 
-	tdb_writeunlock(tdb);
+	tdb_unlock_bystring(tdb, "INFO/nextjob");
 
 	/*
 	 * If the printer is marked as postscript output a leading
@@ -732,7 +734,7 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 		tdb_delete(tdb, print_key(jobid));
 	}
 
-	tdb_writeunlock(tdb);
+	tdb_unlock_bystring(tdb, "INFO/nextjob");
 	return -1;
 }
 
