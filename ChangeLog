@@ -1,3 +1,11 @@
+2003-04-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/name-45-test.c: use a more unique name then ratatosk so
+	that other (me) have such hosts in the local domain and the tests
+	fails, to take hokkigai.pdc.kth.se instead
+	
+	* lib/krb5/test_alname.c: add --version and --help
+	
 2003-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/krb5_warn.3: add krb5_get_err_text
