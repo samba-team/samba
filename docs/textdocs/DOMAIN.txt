@@ -1,10 +1,10 @@
 !==
-!== DOMAIN.txt for Samba release 2.0.0-beta1 13 Nov 1998
+!== DOMAIN.txt for Samba release 2.1.0prealpha 981204
 !==
 Contributor:	Samba Team
-Updated:	June 27, 1997
+Updated:	December 4, 1998 (John H Terpstra)
 
-Subject:	Network Logons and Roving Profiles
+Subject:	Network Logons and Roaming (Roving) Profiles
 ===========================================================================
 
 A domain and a workgroup are exactly the same thing in terms of network
@@ -14,6 +14,11 @@ network.  Also, different access rights can be granted to users if they
 successfully authenticate against a domain logon server (samba does not
 support this, but NT server and other systems based on NT server do).
 
+As of samba-2.0.0 this is now a work in progress that is expected to
+mature rapidly. Since this document pre-dates samba-2.0.0 it should be
+read from the perspective of it's origins but the reader should understand
+that the following details may NOT be up to date with current development.
+
 The SMB client logging on to a domain has an expectation that every other
 server in the domain should accept the same authentication information.
 However the network browsing functionality of domains and workgroups is
@@ -21,9 +26,13 @@ identical and is explained in BROWSING.txt.
 
 Issues related to the single-logon network model are discussed in this
 document.  Samba supports domain logons, network logon scripts, and user
-profiles.  The support is still experimental, but it seems to work.
+profiles for MS Windows for workgroups and MS Windows 9X clients.
 
-The support is also not complete.  Samba does not yet support the sharing
+Work is underway to support domain logon for MS Windows NT clients - this
+is mostly working but will undergo much change as the the behaviour of the
+new code matures and becomes easier to manage.
+
+Support is also not complete.  Samba does not yet support the sharing
 of the Windows NT-style SAM database with other systems.  However this is
 only one way of having a shared user database: exactly the same effect can
 be achieved by having all servers in a domain share a distributed NIS or
@@ -71,7 +80,7 @@ the network and download their preferences, desktop and start menu.
 
 
 Configuration Instructions:	Network Logons
-==========================================
+==============================================
 
 To use domain logons and profiles you need to do the following:
 
