@@ -8,6 +8,11 @@ dnl
 SMB_VERSION_STRING=`cat include/version.h | grep 'SAMBA_VERSION_OFFICIAL_STRING' | cut -d '"' -f2`
 echo "SAMBA VERSION: ${SMB_VERSION_STRING}"
 
+SAMBA_VERSION_SVN_REVISION=`cat include/version.h | grep 'SAMBA_VERSION_SVN_REVISION' | cut -d ' ' -f3-`
+if test -n "${SAMBA_VERSION_SVN_REVISION}";then
+	echo "BUILD REVISION: ${SAMBA_VERSION_SVN_REVISION}"
+fi
+
 AC_VALIDATE_CACHE_SYSTEM_TYPE
 
 sinclude(build/smb_build/check_path.m4)
