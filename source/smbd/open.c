@@ -786,6 +786,10 @@ static void delete_defered_open_entry_record(connection_struct *conn, SMB_DEV_T 
 	deferred_open_entry *de_array = NULL;
 	int num_de_entries, i;
 
+	if (!lp_defer_sharing_violations(SNUM(conn))) {
+		return;
+	}
+
 	num_de_entries = get_deferred_opens(conn, dev, inode, &de_array);
 	for (i = 0; i < num_de_entries; i++) {
 		deferred_open_entry *entry = &de_array[i];
@@ -813,6 +817,10 @@ void defer_open_sharing_error(connection_struct *conn, struct timeval *ptv,
 	deferred_open_entry *de_array = NULL;
 	int num_de_entries, i;
 	struct dev_inode_bundle dib;
+
+	if (!lp_defer_sharing_violations(SNUM(conn))) {
+		return;
+	}
 
 	dib.dev = dev;
 	dib.inode = inode;
