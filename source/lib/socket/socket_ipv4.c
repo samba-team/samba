@@ -310,26 +310,26 @@ static int ipv4_tcp_get_fd(struct socket_context *sock)
 }
 
 static const struct socket_ops ipv4_tcp_ops = {
-	.name		= "ipv4",
-	.type		= SOCKET_TYPE_STREAM,
+	.name			= "ipv4",
+	.type			= SOCKET_TYPE_STREAM,
 
-	.init		= ipv4_tcp_init,
-	.connect	= ipv4_tcp_connect,
-	.listen		= ipv4_tcp_listen,
-	.accept		= ipv4_tcp_accept,
-	.recv		= ipv4_tcp_recv,
-	.send		= ipv4_tcp_send,
-	.close		= ipv4_tcp_close,
+	.fn_init		= ipv4_tcp_init,
+	.fn_connect		= ipv4_tcp_connect,
+	.fn_listen		= ipv4_tcp_listen,
+	.fn_accept		= ipv4_tcp_accept,
+	.fn_recv		= ipv4_tcp_recv,
+	.fn_send		= ipv4_tcp_send,
+	.fn_close		= ipv4_tcp_close,
 
-	.set_option	= ipv4_tcp_set_option,
+	.fn_set_option		= ipv4_tcp_set_option,
 
-	.get_peer_name	= ipv4_tcp_get_peer_name,
-	.get_peer_addr	= ipv4_tcp_get_peer_addr,
-	.get_peer_port	= ipv4_tcp_get_peer_port,
-	.get_my_addr	= ipv4_tcp_get_my_addr,
-	.get_my_port	= ipv4_tcp_get_my_port,
+	.fn_get_peer_name	= ipv4_tcp_get_peer_name,
+	.fn_get_peer_addr	= ipv4_tcp_get_peer_addr,
+	.fn_get_peer_port	= ipv4_tcp_get_peer_port,
+	.fn_get_my_addr		= ipv4_tcp_get_my_addr,
+	.fn_get_my_port		= ipv4_tcp_get_my_port,
 
-	.get_fd		= ipv4_tcp_get_fd
+	.fn_get_fd		= ipv4_tcp_get_fd
 };
 
 const struct socket_ops *socket_ipv4_ops(void)

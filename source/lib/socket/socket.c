@@ -26,8 +26,8 @@
 static int socket_destructor(void *ptr)
 {
 	struct socket_context *sock = ptr;
-	if (sock->ops->close) {
-		sock->ops->close(sock);
+	if (sock->ops->fn_close) {
+		sock->ops->fn_close(sock);
 	}
 	return 0;
 }
@@ -54,7 +54,7 @@ NTSTATUS socket_create(const char *name, enum socket_type type, struct socket_co
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = (*new_sock)->ops->init((*new_sock));
+	status = (*new_sock)->ops->fn_init((*new_sock));
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(*new_sock);
 		return status;
@@ -92,11 +92,11 @@ NTSTATUS socket_connect(struct socket_context *sock,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!sock->ops->connect) {
+	if (!sock->ops->fn_connect) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	return sock->ops->connect(sock, my_address, my_port, server_address, server_port, flags);
+	return sock->ops->fn_connect(sock, my_address, my_port, server_address, server_port, flags);
 }
 
 NTSTATUS socket_listen(struct socket_context *sock, const char *my_address, int port, int queue_size, uint32_t flags)
@@ -109,11 +109,11 @@ NTSTATUS socket_listen(struct socket_context *sock, const char *my_address, int 
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!sock->ops->listen) {
+	if (!sock->ops->fn_listen) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	return sock->ops->listen(sock, my_address, port, queue_size, flags);
+	return sock->ops->fn_listen(sock, my_address, port, queue_size, flags);
 }
 
 NTSTATUS socket_accept(struct socket_context *sock, struct socket_context **new_sock)
@@ -128,11 +128,11 @@ NTSTATUS socket_accept(struct socket_context *sock, struct socket_context **new_
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!sock->ops->accept) {
+	if (!sock->ops->fn_accept) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	status = sock->ops->accept(sock, new_sock);
+	status = sock->ops->fn_accept(sock, new_sock);
 
 	if (NT_STATUS_IS_OK(status)) {
 		talloc_set_destructor(*new_sock, socket_destructor);
@@ -153,7 +153,7 @@ NTSTATUS socket_recv(struct socket_context *sock, void *buf,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!sock->ops->recv) {
+	if (!sock->ops->fn_recv) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
@@ -162,10 +162,10 @@ NTSTATUS socket_recv(struct socket_context *sock, void *buf,
 			*nread = 0;
 			return STATUS_MORE_ENTRIES;
 		}
-		return sock->ops->recv(sock, buf, 1+(random() % wantlen), nread, flags);
+		return sock->ops->fn_recv(sock, buf, 1+(random() % wantlen), nread, flags);
 	}
 
-	return sock->ops->recv(sock, buf, wantlen, nread, flags);
+	return sock->ops->fn_recv(sock, buf, wantlen, nread, flags);
 }
 
 NTSTATUS socket_send(struct socket_context *sock, 
@@ -180,7 +180,7 @@ NTSTATUS socket_send(struct socket_context *sock,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!sock->ops->send) {
+	if (!sock->ops->fn_send) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
@@ -191,73 +191,73 @@ NTSTATUS socket_send(struct socket_context *sock,
 			return STATUS_MORE_ENTRIES;
 		}
 		blob2.length = 1+(random() % blob2.length);
-		return sock->ops->send(sock, &blob2, sendlen, flags);
+		return sock->ops->fn_send(sock, &blob2, sendlen, flags);
 	}
 
-	return sock->ops->send(sock, blob, sendlen, flags);
+	return sock->ops->fn_send(sock, blob, sendlen, flags);
 }
 
 NTSTATUS socket_set_option(struct socket_context *sock, const char *option, const char *val)
 {
-	if (!sock->ops->set_option) {
+	if (!sock->ops->fn_set_option) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	return sock->ops->set_option(sock, option, val);
+	return sock->ops->fn_set_option(sock, option, val);
 }
 
 char *socket_get_peer_name(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 {
-	if (!sock->ops->get_peer_name) {
+	if (!sock->ops->fn_get_peer_name) {
 		return NULL;
 	}
 
-	return sock->ops->get_peer_name(sock, mem_ctx);
+	return sock->ops->fn_get_peer_name(sock, mem_ctx);
 }
 
 char *socket_get_peer_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 {
-	if (!sock->ops->get_peer_addr) {
+	if (!sock->ops->fn_get_peer_addr) {
 		return NULL;
 	}
 
-	return sock->ops->get_peer_addr(sock, mem_ctx);
+	return sock->ops->fn_get_peer_addr(sock, mem_ctx);
 }
 
 int socket_get_peer_port(struct socket_context *sock)
 {
-	if (!sock->ops->get_peer_port) {
+	if (!sock->ops->fn_get_peer_port) {
 		return -1;
 	}
 
-	return sock->ops->get_peer_port(sock);
+	return sock->ops->fn_get_peer_port(sock);
 }
 
 char *socket_get_my_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 {
-	if (!sock->ops->get_my_addr) {
+	if (!sock->ops->fn_get_my_addr) {
 		return NULL;
 	}
 
-	return sock->ops->get_my_addr(sock, mem_ctx);
+	return sock->ops->fn_get_my_addr(sock, mem_ctx);
 }
 
 int socket_get_my_port(struct socket_context *sock)
 {
-	if (!sock->ops->get_my_port) {
+	if (!sock->ops->fn_get_my_port) {
 		return -1;
 	}
 
-	return sock->ops->get_my_port(sock);
+	return sock->ops->fn_get_my_port(sock);
 }
 
 int socket_get_fd(struct socket_context *sock)
 {
-	if (!sock->ops->get_fd) {
+	if (!sock->ops->fn_get_fd) {
 		return -1;
 	}
 
-	return sock->ops->get_fd(sock);
+	return sock->ops->fn_get_fd(sock);
 }
 
 /*

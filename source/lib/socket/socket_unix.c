@@ -246,26 +246,26 @@ static int unixdom_get_fd(struct socket_context *sock)
 }
 
 static const struct socket_ops unixdom_ops = {
-	.name		= "unix",
-	.type		= SOCKET_TYPE_STREAM,
+	.name			= "unix",
+	.type			= SOCKET_TYPE_STREAM,
 
-	.init		= unixdom_init,
-	.connect	= unixdom_connect,
-	.listen		= unixdom_listen,
-	.accept		= unixdom_accept,
-	.recv		= unixdom_recv,
-	.send		= unixdom_send,
-	.close		= unixdom_close,
+	.fn_init		= unixdom_init,
+	.fn_connect		= unixdom_connect,
+	.fn_listen		= unixdom_listen,
+	.fn_accept		= unixdom_accept,
+	.fn_recv		= unixdom_recv,
+	.fn_send		= unixdom_send,
+	.fn_close		= unixdom_close,
 
-	.set_option	= unixdom_set_option,
+	.fn_set_option		= unixdom_set_option,
 
-	.get_peer_name	= unixdom_get_peer_name,
-	.get_peer_addr	= unixdom_get_peer_addr,
-	.get_peer_port	= unixdom_get_peer_port,
-	.get_my_addr	= unixdom_get_my_addr,
-	.get_my_port	= unixdom_get_my_port,
+	.fn_get_peer_name	= unixdom_get_peer_name,
+	.fn_get_peer_addr	= unixdom_get_peer_addr,
+	.fn_get_peer_port	= unixdom_get_peer_port,
+	.fn_get_my_addr		= unixdom_get_my_addr,
+	.fn_get_my_port		= unixdom_get_my_port,
 
-	.get_fd		= unixdom_get_fd
+	.fn_get_fd		= unixdom_get_fd
 };
 
 const struct socket_ops *socket_unixdom_ops(void)

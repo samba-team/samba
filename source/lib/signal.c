@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "system/wait.h"
 
 /****************************************************************************
  Catch child exits and reap the child zombie status.

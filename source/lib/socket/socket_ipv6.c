@@ -328,26 +328,26 @@ static int ipv6_tcp_get_fd(struct socket_context *sock)
 }
 
 static const struct socket_ops ipv6_tcp_ops = {
-	.name		= "ipv6",
-	.type		= SOCKET_TYPE_STREAM,
+	.name			= "ipv6",
+	.type			= SOCKET_TYPE_STREAM,
 
-	.init		= ipv6_tcp_init,
-	.connect	= ipv6_tcp_connect,
-	.listen		= ipv6_tcp_listen,
-	.accept		= ipv6_tcp_accept,
-	.recv		= ipv6_tcp_recv,
-	.send		= ipv6_tcp_send,
-	.close		= ipv6_tcp_close,
+	.fn_init		= ipv6_tcp_init,
+	.fn_connect		= ipv6_tcp_connect,
+	.fn_listen		= ipv6_tcp_listen,
+	.fn_accept		= ipv6_tcp_accept,
+	.fn_recv		= ipv6_tcp_recv,
+	.fn_send		= ipv6_tcp_send,
+	.fn_close		= ipv6_tcp_close,
 
-	.set_option	= ipv6_tcp_set_option,
+	.fn_set_option		= ipv6_tcp_set_option,
 
-	.get_peer_name	= ipv6_tcp_get_peer_name,
-	.get_peer_addr	= ipv6_tcp_get_peer_addr,
-	.get_peer_port	= ipv6_tcp_get_peer_port,
-	.get_my_addr	= ipv6_tcp_get_my_addr,
-	.get_my_port	= ipv6_tcp_get_my_port,
+	.fn_get_peer_name	= ipv6_tcp_get_peer_name,
+	.fn_get_peer_addr	= ipv6_tcp_get_peer_addr,
+	.fn_get_peer_port	= ipv6_tcp_get_peer_port,
+	.fn_get_my_addr		= ipv6_tcp_get_my_addr,
+	.fn_get_my_port		= ipv6_tcp_get_my_port,
 
-	.get_fd		= ipv6_tcp_get_fd
+	.fn_get_fd		= ipv6_tcp_get_fd
 };
 
 const struct socket_ops *socket_ipv6_ops(void)
