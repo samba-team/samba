@@ -86,7 +86,7 @@ static BOOL check_user_equiv(const char *user, const char *remote, const char *e
 	      static char *mydomain = NULL;
 	      if (!mydomain)
 		yp_get_default_domain(&mydomain);
-	      if (mydomain && innetgr(file_host,remote,user,mydomain))
+	      if (mydomain && innetgr(file_host,(char *)remote,(char *)user,mydomain))
 		host_ok = True;
 	    }
 #else
