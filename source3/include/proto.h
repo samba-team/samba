@@ -880,7 +880,7 @@ BOOL is_posix_locked(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_co
 BOOL set_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count, enum brl_type lock_type);
 BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count);
 void posix_locking_close_file(files_struct *fsp);
-BOOL posix_locking_init(void);
+BOOL posix_locking_init(int read_only);
 BOOL posix_locking_end(void);
 
 /*The following definitions come from  msdfs/msdfs.c  */
@@ -3264,6 +3264,12 @@ BOOL init_change_notify(void);
 
 #if OLD_NTDOMAIN
 struct cnotify_fns *hash_notify_init(void) ;
+#endif
+
+/*The following definitions come from  smbd/notify_kernel.c  */
+
+#if OLD_NTDOMAIN
+struct cnotify_fns *kernel_notify_init(void) ;
 #endif
 
 /*The following definitions come from  smbd/nttrans.c  */
