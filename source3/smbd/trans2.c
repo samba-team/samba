@@ -353,8 +353,8 @@ static int get_lanman2_dir_entry(connection_struct *conn,
 
     reskey = 0;
 
-    DEBUG(8,("get_lanman2_dir_entry:readdir on dirptr 0x%x now at offset %d\n",
-      (unsigned)conn->dirptr,TellDir(conn->dirptr)));
+    DEBUG(8,("get_lanman2_dir_entry:readdir on dirptr 0x%lx now at offset %d\n",
+      (long)conn->dirptr,TellDir(conn->dirptr)));
       
     if (!dname) 
       return(False);
@@ -905,9 +905,9 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
   /* Get the attr mask from the dptr */
   dirtype = dptr_attr(dptr_num);
 
-  DEBUG(3,("dptr_num is %d, mask = %s, attr = %x, dirptr=(0x%X,%d)\n",
+  DEBUG(3,("dptr_num is %d, mask = %s, attr = %x, dirptr=(0x%lX,%d)\n",
 	   dptr_num, mask, dirtype, 
-	   (unsigned)conn->dirptr,
+	   (long)conn->dirptr,
 	   TellDir(conn->dirptr)));
 
   /* We don't need to check for VOL here as this is returned by 
