@@ -235,6 +235,7 @@ BOOL create_subnets(void)
   int num_interfaces = iface_count();
   int i;
   struct in_addr unicast_ip;
+  extern struct in_addr loopback_ip;
 
   if(num_interfaces == 0)
   {
@@ -250,6 +251,17 @@ BOOL create_subnets(void)
   for (i = 0 ; i < num_interfaces; i++)
   {
     struct interface *iface = get_interface(i);
+
+    /*
+     * We don't want to add a loopback interface, in case
+     * someone has added 127.0.0.1 for smbd, nmbd needs to
+     * ignore it here. JRA.
+     */
+
+    if (ip_equal(iface->ip, loopback_ip)) {
+      DEBUG(2,("create_subnets: Ignoring loopback interface.\n" ));
+      continue;
+    }
 
     if (!make_normal_subnet(iface)) return False;
   }
