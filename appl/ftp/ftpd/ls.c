@@ -50,6 +50,19 @@ struct fileinfo {
     char *link;
 };
 
+static void
+free_fileinfo(struct fileinfo *f)
+{
+    free(f->user);
+    free(f->group);
+    free(f->size);
+    free(f->major);
+    free(f->minor);
+    free(f->date);
+    free(f->filename);
+    free(f->link);
+}
+
 #define LS_DIRS		 1
 #define LS_IGNORE_DOT	 2
 #define LS_SORT_MODE	 12
@@ -362,7 +375,7 @@ lstat_file (const char *file, struct stat *sb)
 }
 
 static void
-list_files(FILE *out, char **files, int n_files, int flags)
+list_files(FILE *out, const char **files, int n_files, int flags)
 {
     struct fileinfo *fi;
     int i;
@@ -468,6 +481,9 @@ list_files(FILE *out, char **files, int n_files, int flags)
 			   max_major,
 			   max_minor,
 			   max_date);
+	for(i = 0; i < n_files; i++)
+	    free_fileinfo(&fi[i]);
+	free(fi);
     }
 }
 
@@ -522,7 +538,7 @@ list_dir(FILE *out, const char *directory, int flags)
 	++n_files;
     }
     closedir(d);
-    list_files(out, files, n_files, flags | LS_DIRS);
+    list_files(out, (const char**)files, n_files, flags | LS_DIRS);
 }
 
 void
