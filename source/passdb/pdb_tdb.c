@@ -294,7 +294,7 @@ static int tdbsam_traverse_setpwent(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data,
  Save a list of user keys for iteration.
 ****************************************************************/
 
-static NTSTATUS tdbsam_setsampwent(struct pdb_methods *my_methods, BOOL update)
+static NTSTATUS tdbsam_setsampwent(struct pdb_methods *my_methods, BOOL update, uint16 acb_mask)
 {
 	uint32 flags = update ? (O_RDWR|O_CREAT) : O_RDONLY;
 	
