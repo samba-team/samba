@@ -1,3 +1,20 @@
+2004-06-27  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kadmin.8: document get -o and stash
+	
+	* get.c: implement output column selection, similar to ps -o
+	
+	* kadmin-commands.in: make get -l the default again, and add
+	column selection flag; sync list with get
+	
+2004-06-24  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kadmin-commands.in: mod needs default kvno of -1
+	
+2004-06-21  Johan Danielsson  <joda@pdc.kth.se>
+	
+	* kadmin: convert to use slc; also add stash subcommand
+
 2004-06-15  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* kadmin.c (main): keytab mode requires principal name
