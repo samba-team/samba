@@ -371,6 +371,8 @@ va_dcl
     }
 #endif
   
+  check_log_size();
+
 #ifdef WITH_SYSLOG
   if( !lp_syslog_only() )
 #endif
@@ -385,8 +387,6 @@ va_dcl
     va_end( ap );
     (void)fflush( dbf );
     }
-
-  check_log_size();
 
   errno = old_errno;
 
