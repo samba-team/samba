@@ -23,7 +23,7 @@ klogin(char *name, char *password)
     
     struct hostent *hp;
     
-    gethostname(hostname);
+    k_gethostname(hostname, sizeof(hostname));
     phost = krb_get_phost(hostname);
 
     krb_get_lrealm(realm, 0);
