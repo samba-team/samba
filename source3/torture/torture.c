@@ -3043,7 +3043,6 @@ static BOOL run_opentest(int dummy)
 	size_t fsize;
 	BOOL correct = True;
 	char *tmp_path;
-	uint16 attr;
 
 	printf("starting open test\n");
 	
@@ -3418,99 +3417,6 @@ static BOOL run_opentest(int dummy)
 
 	cli_unlink(&cli1, fname);
 
-	/* Test 8 - attributes test #1... */
-	fnum1 = cli_nt_create_full(&cli1, fname,FILE_WRITE_DATA, FILE_ATTRIBUTE_HIDDEN,
-				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
-
-	if (fnum1 == -1) {
-		printf("test 8 open 1 of %s failed (%s)\n", fname, cli_errstr(&cli1));
-		return False;
-	}
-
-	if (!cli_close(&cli1, fnum1)) {
-		printf("test 8 close 1 of %s failed (%s)\n", fname, cli_errstr(&cli1));
-		return False;
-	}
-
-	/* FILE_SUPERSEDE && FILE_OVERWRITE_IF have the same effect here. */
-	fnum1 = cli_nt_create_full(&cli1, fname,FILE_READ_DATA, FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_NORMAL,
-				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
-
-	if (fnum1 == -1) {
-		printf("test 8 open 2 of %s failed (%s)\n", fname, cli_errstr(&cli1));
-		return False;
-	}
-
-	if (!cli_close(&cli1, fnum1)) {
-		printf("test 8 close 2 of %s failed (%s)\n", fname, cli_errstr(&cli1));
-		return False;
-	}
-
-	/* This open should fail with ACCESS_DENIED for FILE_SUPERSEDE, FILE_OVERWRITE and FILE_OVERWRITE_IF. */
-	fnum1 = cli_nt_create_full(&cli1, fname,FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL,
-				   FILE_SHARE_NONE, FILE_OVERWRITE, 0);
-
-	if (fnum1 != -1) {
-		printf("test 8 open 3 of %s succeeded - should have failed with (NT_STATUS_ACCESS_DENIED)\n", fname);
-		correct = False;
-		cli_close(&cli1, fnum1);
-	} else {
-        	if (check_error(__LINE__, &cli1, ERRDOS, ERRnoaccess, NT_STATUS_ACCESS_DENIED)) {
-			printf("correct error code NT_STATUS_ACCESS_DENIED/ERRDOS:ERRnoaccess returned\n");
-		}
-	}
-
-	printf("Attribute open test #8 %s.\n", correct ? "passed" : "failed");
-
-	cli_unlink(&cli1, fname);
-
-	/*
-	 * Test #9. Open with NORMAL, close, then re-open with attribute
-	 * HIDDEN and request to truncate.
-	 */
-
-	fnum1 = cli_nt_create_full(&cli1, fname,FILE_WRITE_DATA, FILE_ATTRIBUTE_NORMAL,
-				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
-
-	if (fnum1 == -1) {
-		printf("test 9 open 1 of %s failed (%s)\n", fname, cli_errstr(&cli1));
-		return False;
-	}
-
-	if (!cli_close(&cli1, fnum1)) {
-		printf("test 9 close 1 of %s failed (%s)\n", fname, cli_errstr(&cli1));
-		return False;
-	}
-
-	fnum1 = cli_nt_create_full(&cli1, fname,FILE_READ_DATA|FILE_WRITE_DATA, FILE_ATTRIBUTE_HIDDEN,
-				   FILE_SHARE_NONE, FILE_OVERWRITE, 0);
-
-	if (fnum1 == -1) {
-		printf("test 9 open 2 of %s failed (%s)\n", fname, cli_errstr(&cli1));
-		return False;
-	}
-
-	if (!cli_close(&cli1, fnum1)) {
-		printf("test 9 close 2 of %s failed (%s)\n", fname, cli_errstr(&cli1));
-		return False;
-	}
-
-	/* Ensure we have attr hidden. */
-	if (!cli_getatr(&cli1, fname, &attr, NULL, NULL)) {
-		printf("test 9 getatr(2) failed (%s)\n", cli_errstr(&cli1));
-		return False;
-	}
-
-	if (!(attr & FILE_ATTRIBUTE_HIDDEN)) {
-		printf("test 9 getatr didn't have HIDDEN attribute\n");
-		cli_unlink(&cli1, fname);
-		return False;
-	}
-
-	printf("Attribute open test #9 %s.\n", correct ? "passed" : "failed");
-
-	cli_unlink(&cli1, fname);
-
 	if (!torture_close_connection(&cli1)) {
 		correct = False;
 	}
@@ -3521,33 +3427,61 @@ static BOOL run_opentest(int dummy)
 	return correct;
 }
 
-static uint32 initial_open_attrs[] = {
+static uint32 open_attrs_table[] = {
 		FILE_ATTRIBUTE_NORMAL,
-		FILE_ATTRIBUTE_READONLY,
-		FILE_ATTRIBUTE_HIDDEN,
-		FILE_ATTRIBUTE_SYSTEM
-};
-
-static uint32 trunc_open_attrs[] = {
-		FILE_ATTRIBUTE_NORMAL,
+		FILE_ATTRIBUTE_ARCHIVE,
 		FILE_ATTRIBUTE_READONLY,
 		FILE_ATTRIBUTE_HIDDEN,
 		FILE_ATTRIBUTE_SYSTEM,
+
+		FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY,
+		FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN,
+		FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_SYSTEM,
+		FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_HIDDEN,
+		FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_SYSTEM,
+		FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM,
+
 		FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_HIDDEN,
 		FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_SYSTEM,
-		FILE_ATTRIBUTE_HIDDEN,FILE_ATTRIBUTE_SYSTEM
+		FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM,
+		FILE_ATTRIBUTE_HIDDEN,FILE_ATTRIBUTE_SYSTEM,
 };
 
 struct trunc_open_results {
-	uint32 nt_error_code;
-	uint32 trunc_result_attr;
+	int num;
+	uint32 init_attr;
+	uint32 trunc_attr;
+	uint32 result_attr;
 };
 
-#if 0
-statuc struct trunc_open_results attr_results[] = {
-	{NT_STATUS_OK, FILE_ATTRIBUTE_NORMAL},
-}
-#endif
+static struct trunc_open_results attr_results[] = {
+	{ 0, FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_ARCHIVE },
+	{ 1, FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_ARCHIVE, FILE_ATTRIBUTE_ARCHIVE },
+	{ 2, FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_READONLY, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY },
+	{ 16, FILE_ATTRIBUTE_ARCHIVE, FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_ARCHIVE },
+	{ 17, FILE_ATTRIBUTE_ARCHIVE, FILE_ATTRIBUTE_ARCHIVE, FILE_ATTRIBUTE_ARCHIVE },
+	{ 18, FILE_ATTRIBUTE_ARCHIVE, FILE_ATTRIBUTE_READONLY, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY },
+	{ 51, FILE_ATTRIBUTE_HIDDEN, FILE_ATTRIBUTE_HIDDEN, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN },
+	{ 54, FILE_ATTRIBUTE_HIDDEN, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN },
+	{ 56, FILE_ATTRIBUTE_HIDDEN, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_HIDDEN, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_HIDDEN },
+	{ 68, FILE_ATTRIBUTE_SYSTEM, FILE_ATTRIBUTE_SYSTEM, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_SYSTEM },
+	{ 71, FILE_ATTRIBUTE_SYSTEM, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_SYSTEM, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_SYSTEM },
+	{ 73, FILE_ATTRIBUTE_SYSTEM, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_SYSTEM, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_SYSTEM },
+	{ 99, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN, FILE_ATTRIBUTE_HIDDEN,FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN },
+	{ 102, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN },
+	{ 104, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_HIDDEN, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_HIDDEN },
+	{ 116, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_SYSTEM, FILE_ATTRIBUTE_SYSTEM, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_SYSTEM },
+	{ 119,  FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_SYSTEM,  FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_SYSTEM, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_SYSTEM },
+	{ 121, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_SYSTEM, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_SYSTEM, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_SYSTEM },
+	{ 170, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_SYSTEM|FILE_ATTRIBUTE_HIDDEN, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_SYSTEM|FILE_ATTRIBUTE_HIDDEN, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_SYSTEM|FILE_ATTRIBUTE_HIDDEN },
+	{ 173, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_SYSTEM|FILE_ATTRIBUTE_HIDDEN, FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM },
+	{ 227, FILE_ATTRIBUTE_HIDDEN, FILE_ATTRIBUTE_HIDDEN, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN },
+	{ 230, FILE_ATTRIBUTE_HIDDEN, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_HIDDEN },
+	{ 232, FILE_ATTRIBUTE_HIDDEN, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_HIDDEN, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_HIDDEN },
+	{ 244, FILE_ATTRIBUTE_SYSTEM, FILE_ATTRIBUTE_SYSTEM, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_SYSTEM },
+	{ 247, FILE_ATTRIBUTE_SYSTEM, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_SYSTEM, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_SYSTEM },
+	{ 249, FILE_ATTRIBUTE_SYSTEM, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_SYSTEM, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_SYSTEM }
+};
 
 static BOOL run_openattrtest(int dummy)
 {
@@ -3556,7 +3490,7 @@ static BOOL run_openattrtest(int dummy)
 	int fnum1;
 	BOOL correct = True;
 	uint16 attr;
-	int i, j;
+	int i, j, k, l;
 
 	printf("starting open attr test\n");
 	
@@ -3566,10 +3500,10 @@ static BOOL run_openattrtest(int dummy)
 	
 	cli_sockopt(&cli1, sockops);
 
-	for (i = 0; i < sizeof(initial_open_attrs)/sizeof(uint32); i++) {
+	for (k = 0, i = 0; i < sizeof(open_attrs_table)/sizeof(uint32); i++) {
 		cli_setatr(&cli1, fname, 0, 0);
 		cli_unlink(&cli1, fname);
-		fnum1 = cli_nt_create_full(&cli1, fname,FILE_WRITE_DATA, initial_open_attrs[i],
+		fnum1 = cli_nt_create_full(&cli1, fname,FILE_WRITE_DATA, open_attrs_table[i],
 				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
 
 		if (fnum1 == -1) {
@@ -3582,12 +3516,30 @@ static BOOL run_openattrtest(int dummy)
 			return False;
 		}
 
-		for (j = 0; j < sizeof(trunc_open_attrs)/sizeof(uint32); j++) {
-			fnum1 = cli_nt_create_full(&cli1, fname,FILE_READ_DATA|FILE_WRITE_DATA, trunc_open_attrs[j],
+		for (j = 0; j < sizeof(open_attrs_table)/sizeof(uint32); j++) {
+			fnum1 = cli_nt_create_full(&cli1, fname,FILE_READ_DATA|FILE_WRITE_DATA, open_attrs_table[j],
 					   FILE_SHARE_NONE, FILE_OVERWRITE, 0);
 
 			if (fnum1 == -1) {
-				printf("open %d (2) of %s failed (%u:%s)\n", j, fname, 0, cli_errstr(&cli1));
+				for (l = 0; l < sizeof(attr_results)/sizeof(struct trunc_open_results); l++) {
+					if (attr_results[l].num == k) {
+						printf("[%d] trunc open 0x%x -> 0x%x of %s failed - should have succeeded !(0x%x:%s)\n",
+								k, open_attrs_table[i],
+								open_attrs_table[j],
+								fname, NT_STATUS_V(cli_nt_error(&cli1)), cli_errstr(&cli1));
+						correct = False;
+					}
+				}
+				if (NT_STATUS_V(cli_nt_error(&cli1)) != NT_STATUS_V(NT_STATUS_ACCESS_DENIED)) {
+					printf("[%d] trunc open 0x%x -> 0x%x failed with wrong error code %s\n",
+							k, open_attrs_table[i], open_attrs_table[j],
+							cli_errstr(&cli1));
+					correct = False;
+				}
+#if 0
+				printf("[%d] trunc open 0x%x -> 0x%x failed\n", k, open_attrs_table[i], open_attrs_table[j]);
+#endif
+				k++;
 				continue;
 			}
 
@@ -3597,14 +3549,31 @@ static BOOL run_openattrtest(int dummy)
 			}
 
 			if (!cli_getatr(&cli1, fname, &attr, NULL, NULL)) {
-				printf("test 9 getatr(2) failed (%s)\n", cli_errstr(&cli1));
+				printf("getatr(2) failed (%s)\n", cli_errstr(&cli1));
 				return False;
 			}
 
-			printf("getatr [%x] trunc [%x] got attribute %x\n",
-					initial_open_attrs[i],
-					trunc_open_attrs[j],
-					(unsigned int)attr);
+#if 0
+			printf("[%d] getatr check [0x%x] trunc [0x%x] got attr 0x%x\n",
+					k,  open_attrs_table[i],  open_attrs_table[j], attr );
+#endif
+
+			for (l = 0; l < sizeof(attr_results)/sizeof(struct trunc_open_results); l++) {
+				if (attr_results[l].num == k) {
+					if (attr != attr_results[l].result_attr ||
+							open_attrs_table[i] != attr_results[l].init_attr ||
+							open_attrs_table[j] != attr_results[l].trunc_attr) {
+						printf("getatr check failed. [0x%x] trunc [0x%x] got attr 0x%x, should be 0x%x\n",
+						open_attrs_table[i],
+						open_attrs_table[j],
+						(unsigned int)attr,
+						attr_results[l].result_attr);
+						correct = False;
+					}
+					break;
+				}
+			}
+			k++;
 		}
 	}
 
@@ -4014,7 +3983,7 @@ static struct {
 	{"RW2",  run_readwritemulti, FLAG_MULTIPROC},
 	{"RW3",  run_readwritelarge, 0},
 	{"OPEN", run_opentest, 0},
-#if 0
+#if 1
 	{"OPENATTR", run_openattrtest, 0},
 #endif
 	{"XCOPY", run_xcopy, 0},
