@@ -530,6 +530,8 @@ directory mode
 
 dont descend
 
+dos filetimes
+
 exec
 
 fake oplocks
@@ -1185,6 +1187,22 @@ descend" entries. For example you may need "./proc" instead of just
 
 .B Example:
   	dont descend = /proc,/dev
+
+.SS dos filetimes (S)
+Under DOS and Windows, if a user can write to a file they can change
+the timestamp on it. Under POSIX semantics, only the owner of the file
+or root may change the timestamp. By default, Samba runs with POSIX
+semantics and refuses to change the timestamp on a file if the user
+smbd is acting on behalf of is not the file owner. Setting this option
+to True allows DOS semantics and smbd will change the file timstamp as 
+DOS requires. This is a correct implementation of a previous compile-time
+options (UTIME_WORKAROUND) which was broken and is now removed.
+
+.B Default:
+        dos filetimes = False
+
+.B Example:
+        dos filetimes = True
 
 .SS encrypt passwords (G)
 

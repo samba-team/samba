@@ -262,6 +262,7 @@ typedef struct
   BOOL *copymap;
   BOOL bDeleteReadonly;
   BOOL bFakeOplocks;
+  BOOL bDosFiletimes;
   char dummy[3]; /* for alignment */
 } service;
 
@@ -342,6 +343,7 @@ static service sDefault =
   NULL,  /* copymap */
   False, /* bDeleteReadonly */
   False, /* bFakeOplocks */
+  False, /* bDosFiletimes */
   ""     /* dummy */
 };
 
@@ -560,6 +562,7 @@ struct parm_struct
   {"magic output",     P_STRING,  P_LOCAL,  &sDefault.szMagicOutput,    NULL},
   {"mangled map",      P_STRING,  P_LOCAL,  &sDefault.szMangledMap,     NULL},
   {"delete readonly",  P_BOOL,    P_LOCAL,  &sDefault.bDeleteReadonly,  NULL},
+  {"dos filetimes",    P_BOOL,    P_LOCAL,  &sDefault.bDosFiletimes,    NULL},
 
   {NULL,               P_BOOL,    P_NONE,   NULL,                       NULL}
 };
@@ -945,6 +948,7 @@ FN_LOCAL_BOOL(lp_syncalways,bSyncAlways)
 FN_LOCAL_BOOL(lp_map_system,bMap_system)
 FN_LOCAL_BOOL(lp_delete_readonly,bDeleteReadonly)
 FN_LOCAL_BOOL(lp_fake_oplocks,bFakeOplocks)
+FN_LOCAL_BOOL(lp_dos_filetimes,bDosFiletimes)
 
 FN_LOCAL_INTEGER(lp_create_mode,iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode,iCreate_force_mode)
