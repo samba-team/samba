@@ -21,87 +21,102 @@
 
 #include "includes.h"
 
-/* this is here because it allows us to avoid a nasty race in signal handling. 
-   We need to guarantee that when we get a signal we get out of a select immediately
-   but doing that involves a race condition. We can avoid the race by getting the 
-   signal handler to write to a pipe that is in the select/poll list 
-
-   this means all Samba signal handlers should call sys_select_signal()
-*/
-static pid_t initialised;
-static int select_pipe[2];
-static VOLATILE unsigned pipe_written, pipe_read;
-
-
 /*******************************************************************
-call this from all Samba signal handlers if you want to avoid a 
-nasty signal race condition
+this replaces the normal select() system call
+return if some data has arrived on one of the file descriptors
+return -1 means error
 ********************************************************************/
-void sys_select_signal(void)
+#ifndef HAVE_SELECT
+static int pollfd(int fd)
 {
-	char c = 1;
-	if (!initialised) return;
+  int     r=0;
 
-	if (pipe_written > pipe_read+256) return;
+#ifdef HAS_RDCHK
+  r = rdchk(fd);
+#elif defined(TCRDCHK)
+  (void)ioctl(fd, TCRDCHK, &r);
+#else
+  (void)ioctl(fd, FIONREAD, &r);
+#endif
 
-	if (write(select_pipe[1], &c, 1) == 1) pipe_written++;
+  return(r);
 }
 
-/*******************************************************************
-like select() but avoids the signal race using a pipe
-it also guuarantees that fds on return only ever contains bits set
-for file descriptors that were readable
-********************************************************************/
 int sys_select(int maxfd, fd_set *fds,struct timeval *tval)
 {
-	int ret;
+  fd_set fds2;
+  int counter=0;
+  int found=0;
 
-	if (initialised != sys_getpid()) {
-		initialised = sys_getpid();
-		pipe(select_pipe);
-	}
+  FD_ZERO(&fds2);
 
-	maxfd = MAX(select_pipe[0]+1, maxfd);
-	FD_SET(select_pipe[0], fds);
-	errno = 0;
-	ret = select(maxfd,fds,NULL,NULL,tval);
+  while (1) 
+  {
+    int i;
+    for (i=0;i<maxfd;i++) {
+      if (FD_ISSET(i,fds) && pollfd(i)>0) {
+        found++;
+        FD_SET(i,&fds2);
+      }
+    }
 
-	if (ret <= 0) {
-		FD_ZERO(fds);
-	}
-
-	if (FD_ISSET(select_pipe[0], fds)) {
-		FD_CLR(select_pipe[0], fds);
-		ret--;
-		if (ret == 0) {
-			ret = -1;
-			errno = EINTR;
-		}
-	}
-
-	while (pipe_written != pipe_read) {
-		char c;
-		if (read(select_pipe[0], &c, 1) == 1) pipe_read++;
-	}
-
-	return ret;
+    if (found) {
+      memcpy((void *)fds,(void *)&fds2,sizeof(fds2));
+      return(found);
+    }
+      
+    if (tval && tval->tv_sec < counter) return(0);
+      sleep(1);
+      counter++;
+  }
 }
 
-/*******************************************************************
-similar to sys_select() but catch EINTR and continue
-this is what sys_select() used to do in Samba
-********************************************************************/
-int sys_select_intr(int maxfd, fd_set *fds,struct timeval *tval)
+#else /* !NO_SELECT */
+int sys_select(int maxfd, fd_set *fds,struct timeval *tval)
 {
-	int ret;
-	fd_set fds2;
+#ifdef USE_POLL
+  struct pollfd pfd[256];
+  int i;
+  int maxpoll;
+  int timeout;
+  int pollrtn;
 
-	do {
-		fds2 = *fds;
-		ret = sys_select(maxfd, &fds2, tval);
-	} while (ret == -1 && errno == EINTR);
+  maxpoll = 0;
+  for( i = 0; i < maxfd; i++) {
+    if(FD_ISSET(i,fds)) {
+      struct pollfd *pfdp = &pfd[maxpoll++];
+      pfdp->fd = i;
+      pfdp->events = POLLIN;
+      pfdp->revents = 0;
+    }
+  }
 
-	*fds = fds2;
+  timeout = (tval != NULL) ? (tval->tv_sec * 1000) + (tval->tv_usec/1000) :
+                -1;
+  errno = 0;
+  do {
+    pollrtn = poll( &pfd[0], maxpoll, timeout);
+  } while (pollrtn<0 && errno == EINTR);
 
-	return ret;
+  FD_ZERO(fds);
+
+  for( i = 0; i < maxpoll; i++)
+    if( pfd[i].revents & POLLIN )
+      FD_SET(pfd[i].fd,fds);
+
+  return pollrtn;
+#else /* USE_POLL */
+
+  struct timeval t2;
+  int selrtn;
+
+  do {
+    if (tval) memcpy((void *)&t2,(void *)tval,sizeof(t2));
+    errno = 0;
+    selrtn = select(maxfd,SELECT_CAST fds,NULL,NULL,tval?&t2:NULL);
+  } while (selrtn<0 && errno == EINTR);
+
+  return(selrtn);
 }
+#endif /* USE_POLL */
+#endif /* NO_SELECT */
