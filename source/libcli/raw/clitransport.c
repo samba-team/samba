@@ -353,6 +353,12 @@ static void smbcli_transport_finish_recv(struct smbcli_transport *transport)
 	req->in.size = len;
 	req->in.allocated = req->in.size;
 
+	/* handle NBT session replies */
+	if (req->in.buffer[0] != 0) {
+		req->status = NT_STATUS_OK;
+		goto async;
+	}
+
 	/* handle non-SMB replies */
 	if (req->in.size < NBT_HDR_SIZE + MIN_SMB_SIZE) {
 		req->state = SMBCLI_REQUEST_ERROR;
