@@ -370,8 +370,249 @@ at how Samba helps to bridge the differences.
 <title>Share Definition Access Controls</title>
 
 <para>
-Explain here about the smb.conf [share] Access Control parameters, Mode and Mask parameters, force user/group, valid/invalid users, etc.
+The following parameters in the &smb.conf; file sections that define a share control or affect access controls.
+Before using any of the following options please refer to the man page for &smb.conf;.
 </para>
+
+<table frame='all'><title>User and Group Based Controls</title>
+<tgroup cols='2'>
+        <thead>
+	<row>
+		<entry align="center">Control Parameter</entry>
+		<entry align="center">Description - Action - Notes</entry>
+	</row>
+	</thead>
+	<tbody>
+	<row>
+		<entry>admin users</entry>
+		<entry><para>
+		List of users who will be granted administrative privileges on the share.
+		They will do all file operations as the super-user (root).  
+		Any user in this list will be able to do anything they like on the share,
+		irrespective of file permissions.
+		</para></entry>
+	</row>
+	<row>
+		<entry>force group</entry>
+		<entry><para>
+		Specifies a UNIX group name that will be assigned as the default primary group
+		for all users connecting to this service.
+		</para></entry>
+	</row>
+	<row>
+		<entry>force user</entry>
+		<entry><para>
+		Specifies a UNIX user name that will be assigned as the default user for all users connecting to this service.
+		This is useful for sharing files. Incorrect use can cause security problems.
+		</para></entry>
+	</row>
+	<row>
+		<entry>guest ok</entry>
+		<entry><para>
+		If this parameter is set for a service, then no password is required to connect to the service. Privileges will be 
+		those of the  guest account.
+		</para></entry>
+	</row>
+	<row>
+		<entry>invalid users</entry>
+		<entry><para>
+		List of users that should not be allowed to login to this service.
+		</para></entry>
+	</row>
+	<row>
+		<entry>only user</entry>
+		<entry><para>
+		Controls whether connections with usernames not in the user list will be allowed.
+		</para></entry>
+	</row>
+	<row>
+		<entry>read list</entry>
+		<entry><para>
+		List of users that are given read-only access to a service. Users in this list
+		will not be given write access, no matter what the  read only  option is set to. 
+		</para></entry>
+	</row>
+	<row>
+		<entry>username</entry>
+		<entry><para>
+		Refer to the &smb.conf; man page for more information - this is a complex and potentially misused parameter.
+		</para></entry>
+	</row>
+	<row>
+		<entry>valid users</entry>
+		<entry><para>
+		List of users that should be allowed to login to this service.
+		</para></entry>
+	</row>
+	<row>
+		<entry>write list</entry>
+		<entry><para>
+		List of users that are given read-write access to a service.
+		</para></entry>
+	</row>
+	</tbody>
+</tgroup>
+</table>
+
+<para>
+The following file and directory permission based controls, if misused, can result in considerable difficulty to
+diagnose the cause of mis-configuration. Use them sparingly and carefully. By gradually introducing each one by one
+undesirable side-effects may be detected. In the event of a problem, always comment all of them out and then gradually
+re-instroduce them in a controlled fashion.
+</para>
+
+<table frame='all'><title>File and Directory Permission Based Controls</title>
+<tgroup cols='2'>
+        <thead>
+	<row>
+		<entry align="center">Control Parameter</entry>
+		<entry align="center">Description - Action - Notes</entry>
+	</row>
+	</thead>
+	<tbody>
+	<row>
+		<entry>create mask</entry>
+		<entry><para>
+		Refer to the &smb.conf; man page.
+		</para></entry>
+	</row>
+	<row>
+		<entry>directory mask</entry>
+		<entry><para>
+		The octal modes used when converting DOS modes to UNIX modes when creating UNIX directories.
+		See also: directory security mask.
+		</para></entry></row>
+	<row>
+		<entry>dos filemode</entry>
+		<entry><para>
+		Enabling this parameter allows a user who has write access to the file to modify the permissions on it.
+		</para></entry>
+	</row>
+	<row>
+		<entry>force create mode</entry>
+		<entry><para>
+		This parameter specifies a set of UNIX mode bit permissions that will always be set on a file created by Samba.
+		</para></entry>
+	</row>
+	<row>
+		<entry>force directory mode</entry>
+		<entry><para>
+		This parameter specifies a set of UNIX mode bit permissions that will always be set on a directory created by Samba.
+		</para></entry>
+	</row>
+	<row>
+		<entry>force directory security mode</entry>	
+		<entry><para>
+		Controls UNIX permission bits modified when a Windows NT client is manipulating UNIX permissions on a directory
+		</para></entry>
+	</row>
+	<row>
+		<entry>force security mode</entry>
+		<entry><para>
+		Controls UNIX permission bits modified when a Windows NT client manipulates UNIX permissions.
+		</para></entry>
+	</row>
+	<row>
+		<entry>hide unreadable</entry>
+		<entry><para>
+		Prevents clients from seeing the existance of files that cannot be read.
+		</para></entry>
+	</row>
+	<row>
+		<entry>hide unwriteable files</entry>
+		<entry><para>
+		Prevents clients from seeing the existance of files that cannot be written to. Unwriteable directories are shown as usual. 
+		</para></entry>
+	</row>
+	<row>
+		<entry>nt acl support</entry>
+		<entry><para>
+		This parameter controls whether smbd will attempt to map UNIX permissions into Windows NT access control lists.
+		</para></entry>
+	</row>
+	<row>
+		<entry>security mask</entry>
+		<entry><para>
+		Controls UNIX permission bits modified when a Windows NT client is manipulating the UNIX permissions on a file.
+		</para></entry>
+	</row>
+	</tbody>
+</tgroup>
+</table>
+
+<table frame='all'><title>Other Controls</title>
+<tgroup cols='2'>
+        <thead>
+	<row>
+		<entry align="center">Control Parameter</entry>
+		<entry align="center">Description - Action - Notes</entry>
+	</row>
+	</thead>
+	<tbody>
+	<row>
+		<entry>case sensitive</entry>
+		<entry><para>
+		This means that all file name lookup will be done in a case sensitive manner. 
+		Files will be created with the precise filename Samba received from the MS Windows client.
+		See also: default case, short preserve case.
+		</para></entry>
+	</row>
+	<row>
+		<entry>csc policy</entry>
+		<entry><para>
+		Client Side Caching Policy - parallels MS Windows client side file caching capabilities.
+		</para></entry>
+	</row>
+	<row>
+		<entry>dont descend</entry>
+		<entry><para>
+		Allows to specify a comma-delimited list of directories that the server should always show as empty.
+		</para></entry>
+	</row>
+	<row>
+		<entry>dos filetime resolution</entry>
+		<entry><para>
+		This option is mainly used as a compatibility option for Visual C++ when used against Samba shares.
+		</para></entry>
+	</row>
+	<row>
+		<entry>dos filetimes</entry>
+		<entry><para>
+		Under DOS and Windows, if a user can write to a file they can change the timestamp on it. Under POSIX semantics, only the
+		owner of the file or root may change the timestamp. By default, Samba runs with POSIX semantics and refuses to change the 
+		timestamp on a file if the user smbd is acting on behalf of is not the file owner. Setting this option to yes allows DOS 
+		semantics and smbd(8) will change the file timestamp as DOS requires.
+		</para></entry>
+	</row>
+	<row>
+		<entry>fake oplocks</entry>
+		<entry><para>
+		Oplocks are the way that SMB clients get permission from a server to locally cache file operations. If a server grants an
+		oplock (opportunistic lock) then the client is free to assume that it is the only one accessing the file and it will 
+		aggressively cache file data. With some oplock types the client may even cache file open/close operations. 
+		</para></entry>
+	</row>
+	<row>
+		<entry>hide dot files, hide files, veto files</entry>
+		<entry><para>
+		Note: MS Windows Explorer allows over-ride of files marked as hidden so they will still be visible.
+		</para></entry>
+	</row>
+	<row>
+		<entry>read only</entry>
+		<entry><para>
+		If this parameter is yes, then users of a service may not create or modify files in the service's directory.
+		</para></entry>
+	</row>
+	<row>
+		<entry>veto files</entry>
+		<entry><para>
+		List of files and directories that are neither visible nor accessible.
+		</para></entry>
+	</row>
+	</tbody>
+</tgroup>
+</table>
 
 </sect1>
 
