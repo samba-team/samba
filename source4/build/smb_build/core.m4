@@ -58,6 +58,8 @@ $SMB_INFO_BINARIES
 ## End Binaries
 #########################################
 
+$SMB_INFO_ENABLES
+
 smb_build_main(\%INPUT);
 
 _SMB_ACEOF

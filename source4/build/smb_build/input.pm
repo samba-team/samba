@@ -51,6 +51,7 @@ sub check_subsystem($$)
 	my $subsys = shift;
 	if ($subsys->{ENABLE} ne "YES") {
 		printf("Subsystem: %s disabled!\n",$subsys->{NAME});
+		return;
 	}
 	
 	$subsys->{OUTPUT_TYPE} = $subsystem_output_type;
