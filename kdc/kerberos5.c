@@ -769,8 +769,11 @@ fix_transited_encoding(TransitedEncoding *tr,
 
 
 static krb5_error_code
-tgs_make_reply(KDC_REQ_BODY *b, EncTicketPart *tgt, 
-	       hdb_entry *server, hdb_entry *client, 
+tgs_make_reply(KDC_REQ_BODY *b, 
+	       EncTicketPart *tgt, 
+	       EncTicketPart *adtkt, 
+	       hdb_entry *server, 
+	       hdb_entry *client, 
 	       krb5_principal client_principal, 
 	       hdb_entry *krbtgt,
 	       krb5_enctype cetype,
@@ -784,6 +787,7 @@ tgs_make_reply(KDC_REQ_BODY *b, EncTicketPart *tgt,
     int i;
     krb5_enctype setype;
     Key *skey;
+    EncryptionKey *ekey;
     krb5_keytype sess_ktype;
     
     /* Find appropriate key */
@@ -800,17 +804,22 @@ tgs_make_reply(KDC_REQ_BODY *b, EncTicketPart *tgt,
     sess_ktype = skey->key.keytype;
     
     skey = NULL;
-    for(i = 0; i < server->keys.len; i++){
-	if(skey == NULL || is_better(server->keys.val[i].key.keytype, 
-				     skey->key.keytype))
-	    skey = &server->keys.val[i];
+    if(adtkt)
+	ekey = &adtkt->key;
+    else{
+	for(i = 0; i < server->keys.len; i++){
+	    if(skey == NULL || is_better(server->keys.val[i].key.keytype, 
+					 skey->key.keytype))
+		skey = &server->keys.val[i];
+	}
+	if(skey == NULL){
+	    ret = KRB5KDC_ERR_NULL_KEY;
+	    kdc_log(0, "No key found for server");
+	    goto out;
+	}
+	ekey = &skey->key;
     }
-    if(skey == NULL){
-	ret = KRB5KDC_ERR_NULL_KEY;
-	kdc_log(0, "No key found for server");
-	goto out;
-    }
-    ret = krb5_keytype_to_etype(context, skey->key.keytype, &setype);
+    ret = krb5_keytype_to_etype(context, ekey->keytype, &setype);
     
     memset(&rep, 0, sizeof(rep));
     memset(&et, 0, sizeof(et));
@@ -929,8 +938,8 @@ tgs_make_reply(KDC_REQ_BODY *b, EncTicketPart *tgt,
 	}
 	krb5_encrypt_EncryptedData(context, buf + sizeof(buf) - len, len,
 				   setype,
-				   server->kvno,
-				   &skey->key,
+				   adtkt ? 0 : server->kvno,
+				   ekey,
 				   &rep.ticket.enc_part);
 	
 	ret = encode_EncTGSRepPart(buf + sizeof(buf) - 1, 
@@ -1152,21 +1161,28 @@ tgs_rep2(KDC_REQ_BODY *b,
 	hdb_entry *server = NULL, *client = NULL;
 	TransitedEncoding tr;
 	int loop = 0;
+	EncTicketPart adtkt;
 
 	s = b->sname;
 	r = b->realm;
-#if 0
 	if(b->kdc_options.enc_tkt_in_skey){
 	    Ticket *t;
 	    hdb_entry *uu;
 	    krb5_principal p;
 	    Key *tkey;
-	    if(b->additional_tickets == NULL){
+	    
+	    if(b->additional_tickets == NULL || 
+	       b->additional_tickets->len == 0){
 		ret = KRB5KDC_ERR_BADOPTION; /* ? */
 		kdc_log(0, "No second ticket present in request");
 		goto out;
 	    }
 	    t = &b->additional_tickets->val[0];
+	    if(!is_krbtgt(&t->sname)){
+		kdc_log(0, "Additional ticket is not a ticket-granting ticket");
+		ret = KRB5KDC_ERR_POLICY;
+		goto out2;
+	    }
 	    principalname2krb5_principal(&p, t->sname, t->realm);
 	    uu = db_fetch(p);
 	    krb5_free_principal(context, p);
@@ -1179,21 +1195,13 @@ tgs_rep2(KDC_REQ_BODY *b,
 		ret = KRB5KDC_ERR_ETYPE_NOSUPP; /* XXX */
 		goto out;
 	    }
-	    ret = krb5_decrypt_EncryptedData(context, &t->enc_part,
-					     &tkey->key, &result);
-	    
-	    if(ret){
-		/* XXX */
+	    ret = krb5_decrypt_ticket(context, t, &tkey->key, &adtkt);
+
+	    if(ret)
 		goto out;
-	    }
-	    ret = decode_EncTicketPart(result.data, result.length, &ct, &len);
-	    if(ret){
-		goto out;
-	    }
-	    s = ct.cname;
-	    r = ct.crealm;
+	    s = &adtkt.cname;
+	    r = adtkt.crealm;
 	}
-#endif
 
 	principalname2krb5_principal(&sp, *s, r);
 	krb5_unparse_name(context, sp, &spn);	
@@ -1246,8 +1254,9 @@ tgs_rep2(KDC_REQ_BODY *b,
 	    goto out;
 	}
 	
-	ret = tgs_make_reply(b, tgt, server, client, cp, 
-			     krbtgt, cetype, reply);
+	ret = tgs_make_reply(b, tgt, 
+			     b->kdc_options.enc_tkt_in_skey ? &adtkt : NULL, 
+			     server, client, cp, krbtgt, cetype, reply);
 	
     out:
 	free(spn);
