@@ -3,12 +3,12 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "NMBD" "8" "09 July 2001" "" ""
+.TH "NMBD" "8" "26 September 2001" "" ""
 .SH NAME
 nmbd \- NetBIOS name server to provide NetBIOS  over IP naming services to clients
 .SH SYNOPSIS
 .sp
-\fBsmbd\fR [ \fB-D\fR ]  [ \fB-a\fR ]  [ \fB-o\fR ]  [ \fB-P\fR ]  [ \fB-h\fR ]  [ \fB-V\fR ]  [ \fB-d <debug level>\fR ]  [ \fB-H <lmhosts file>\fR ]  [ \fB-l <log file>\fR ]  [ \fB-n <primary netbios name>\fR ]  [ \fB-p <port number>\fR ]  [ \fB-s <configuration file>\fR ] 
+\fBnmbd\fR [ \fB-D\fR ]  [ \fB-a\fR ]  [ \fB-o\fR ]  [ \fB-P\fR ]  [ \fB-h\fR ]  [ \fB-V\fR ]  [ \fB-d <debug level>\fR ]  [ \fB-H <lmhosts file>\fR ]  [ \fB-l <log file>\fR ]  [ \fB-n <primary netbios name>\fR ]  [ \fB-p <port number>\fR ]  [ \fB-s <configuration file>\fR ] 
 .SH "DESCRIPTION"
 .PP
 This program is part of the Samba suite.
@@ -208,12 +208,13 @@ it to dump out its namelists into the file \fInamelist.debug
 directory (or the \fIvar/locks\fR directory configured 
 under wherever Samba was configured to install itself). This will also 
 cause \fBnmbd\fR to dump out its server database in
-the \fIlog.nmb\fR file. In addition, the debug log level 
-of nmbd may be raised by sending it a SIGUSR1 (\fBkill -USR1
-<nmbd-pid>\fR) and lowered by sending it a
-SIGUSR2 (\fBkill -USR2 <nmbd-pid>\fR). This is to 
-allow transient problems to be diagnosed, whilst still running at a 
-normally low log level.
+the \fIlog.nmb\fR file.
+.PP
+The debug log level of nmbd may be raised or lowered using
+\fBsmbcontrol(1)\fR
+(SIGUSR[1|2] signals are no longer used in Samba 2.2). This is
+to allow transient problems to be diagnosed, whilst still running
+at a normally low log level.
 .SH "VERSION"
 .PP
 This man page is correct for version 2.2 of 
