@@ -1929,7 +1929,7 @@ BOOL listen_for_packets(BOOL run_election)
 /****************************************************************************
   Construct and send a netbios DGRAM.
 **************************************************************************/
-BOOL send_mailslot(BOOL unique, const char *mailslot,char *buf,int len,
+BOOL send_mailslot(BOOL unique, const char *mailslot,char *buf, size_t len,
                    const char *srcname, int src_type,
                    const char *dstname, int dest_type,
                    struct in_addr dest_ip,struct in_addr src_ip,
@@ -1979,11 +1979,16 @@ BOOL send_mailslot(BOOL unique, const char *mailslot,char *buf,int len,
   SSVAL(ptr,smb_vwv15,1);
   SSVAL(ptr,smb_vwv16,2);
   p2 = smb_buf(ptr);
-  pstrcpy(p2,mailslot);
+  safe_strcpy_base(p2, mailslot, dgram->data, sizeof(dgram->data));
   p2 = skip_string(p2,1);
-
-  memcpy(p2,buf,len);
-  p2 += len;
+  
+  if (((p2+len) > dgram->data+sizeof(dgram->data)) || ((p2+len) < p2)) {
+	  DEBUG(0, ("send_mailslot: Cannot write beyond end of packet\n"));
+	  return False;
+  } else {
+	  memcpy(p2,buf,len);
+	  p2 += len;
+  }
 
   dgram->datasize = PTR_DIFF(p2,ptr+4); /* +4 for tcp length. */
 

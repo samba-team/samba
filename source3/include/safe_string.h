@@ -110,6 +110,8 @@ size_t __unsafe_string_function_usage_here_char__(void);
 #define pstrcpy_base(dest, src, pstring_base) \
     safe_strcpy(dest, src, sizeof(pstring)-PTR_DIFF(dest,pstring_base)-1)
 
+#define safe_strcpy_base(dest, src, base, size) \
+    safe_strcpy(dest, src, size-PTR_DIFF(dest,base)-1)
 
 /* String copy functions - macro hell below adds 'type checking' (limited, but the best we can
    do in C) and may tag with function name/number to record the last 'clobber region' on
