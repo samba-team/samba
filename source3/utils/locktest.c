@@ -87,10 +87,10 @@ static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, int pid,
 	}
 #endif
 
-	printf("%6d   %05x:%05x    %s  %9.0f   %9.0f   %9.0f\n", 
+	printf("%6d   %05x:%05x    %s  %.0f:%.0f(%.0f)\n", 
 	       (int)pid, (int)dev, (int)ino, 
 	       lock_type==READ_LOCK?"R":"W",
-	       (double)start, (double)size, (double)start+size);
+	       (double)start, (double)start+size-1,(double)size);
 
 }
 
@@ -250,8 +250,10 @@ static BOOL test_one(struct cli_state *cli[2][2],
 				fnum[1][conn][f],
 				start, len, LOCK_TIMEOUT, op);
 		if (showall || ret1 != ret2) {
-			printf("lock   conn=%d f=%d range=%d:%d op=%s -> %d:%d\n",
-			       conn, f, start, len, op==READ_LOCK?"READ_LOCK":"WRITE_LOCK",
+			printf("lock   conn=%d f=%d range=%d:%d(%d) op=%s -> %d:%d\n",
+			       conn, f, 
+			       start, start+len-1, len,
+			       op==READ_LOCK?"READ_LOCK":"WRITE_LOCK",
 			       ret1, ret2);
 		}
 		if (showall) brl_forall(print_brl);
@@ -265,8 +267,9 @@ static BOOL test_one(struct cli_state *cli[2][2],
 				  fnum[1][conn][f],
 				  start, len);
 		if (showall || ret1 != ret2) {
-			printf("unlock conn=%d f=%d %d:%d       -> %d:%d\n",
-			       conn, f, start, len,
+			printf("unlock conn=%d f=%d range=%d:%d(%d)       -> %d:%d\n",
+			       conn, f, 
+			       start, start+len-1, len,
 			       ret1, ret2);
 		}
 		if (showall) brl_forall(print_brl);
