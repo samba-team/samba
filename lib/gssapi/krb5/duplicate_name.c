@@ -50,6 +50,7 @@ OM_uint32 gss_duplicate_name (
 			      dest_name);
   if (kret) {
     *minor_status = kret;
+    gssapi_krb5_set_error_string ();
     return GSS_S_FAILURE;
   } else {
     return GSS_S_COMPLETE;

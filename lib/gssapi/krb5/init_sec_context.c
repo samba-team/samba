@@ -228,6 +228,7 @@ init_auth
     kret = krb5_auth_con_init (gssapi_krb5_context,
 			       &(*context_handle)->auth_context);
     if (kret) {
+	gssapi_krb5_set_error_string ();
 	*minor_status = kret;
 	ret = GSS_S_FAILURE;
 	goto failure;
@@ -259,6 +260,7 @@ init_auth
     if (initiator_cred_handle == GSS_C_NO_CREDENTIAL) {
 	kret = krb5_cc_default (gssapi_krb5_context, &ccache);
 	if (kret) {
+	    gssapi_krb5_set_error_string ();
 	    *minor_status = kret;
 	    ret = GSS_S_FAILURE;
 	    goto failure;
@@ -270,6 +272,7 @@ init_auth
 				  ccache,
 				  &(*context_handle)->source);
     if (kret) {
+	gssapi_krb5_set_error_string ();
 	*minor_status = kret;
 	ret = GSS_S_FAILURE;
 	goto failure;
@@ -279,6 +282,7 @@ init_auth
 				target_name,
 				&(*context_handle)->target);
     if (kret) {
+	gssapi_krb5_set_error_string ();
 	*minor_status = kret;
 	ret = GSS_S_FAILURE;
 	goto failure;
@@ -303,6 +307,7 @@ init_auth
 				 &cred);
 
     if (kret) {
+	gssapi_krb5_set_error_string ();
 	*minor_status = kret;
 	ret = GSS_S_FAILURE;
 	goto failure;
@@ -345,6 +350,7 @@ init_auth
 					     &cksum);
     krb5_data_free (&fwd_data);
     if (kret) {
+	gssapi_krb5_set_error_string ();
 	*minor_status = kret;
 	ret = GSS_S_FAILURE;
 	goto failure;
@@ -374,6 +380,7 @@ init_auth
 				     KRB5_KU_AP_REQ_AUTH);
 
     if (kret) {
+	gssapi_krb5_set_error_string ();
 	*minor_status = kret;
 	ret = GSS_S_FAILURE;
 	goto failure;
@@ -387,6 +394,7 @@ init_auth
 			      &outbuf);
 
     if (kret) {
+	gssapi_krb5_set_error_string ();
 	*minor_status = kret;
 	ret = GSS_S_FAILURE;
 	goto failure;
@@ -456,6 +464,7 @@ repl_mutual
 			&indata,
 			&repl);
     if (kret) {
+	gssapi_krb5_set_error_string ();
 	*minor_status = kret;
 	return GSS_S_FAILURE;
     }

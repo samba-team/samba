@@ -50,6 +50,7 @@ gss_krb5_copy_ccache(OM_uint32 *minor,
     kret = krb5_cc_copy_cache(gssapi_krb5_context, cred->ccache, out);
     if (kret) {
 	*minor = kret;
+	gssapi_krb5_set_error_string ();
 	return GSS_S_FAILURE;
     }
     return GSS_S_COMPLETE;

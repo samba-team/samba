@@ -57,6 +57,7 @@ OM_uint32 gss_context_time
     kret = krb5_timeofday(gssapi_krb5_context, &timeret);
     if (kret) {
 	*minor_status = kret;
+	gssapi_krb5_set_error_string ();
         return GSS_S_FAILURE;
     }
 

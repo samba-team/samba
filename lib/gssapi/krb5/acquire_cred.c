@@ -145,6 +145,7 @@ OM_uint32 gss_acquire_cred
  krb5_bad:
     ret = GSS_S_FAILURE;
     *minor_status = kret;
+    gssapi_krb5_set_error_string ();
 
  gssapi_bad:
     krb5_free_principal(gssapi_krb5_context, handle->principal);

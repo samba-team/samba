@@ -107,4 +107,10 @@ gss_address_to_krb5addr(OM_uint32 gss_addr_type,
 #define SC_LOCAL_SUBKEY	  0x08
 #define SC_REMOTE_SUBKEY  0x10
 
+void
+gssapi_krb5_set_error_string (void);
+
+char *
+gssapi_krb5_get_error_string (void);
+
 #endif

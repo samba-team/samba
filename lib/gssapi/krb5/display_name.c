@@ -52,6 +52,7 @@ OM_uint32 gss_display_name
 			    &buf);
   if (kret) {
     *minor_status = kret;
+    gssapi_krb5_set_error_string ();
     return GSS_S_FAILURE;
   }
   len = strlen (buf);

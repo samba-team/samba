@@ -174,6 +174,7 @@ mic_des3
   if (kret) {
       free (message_token->value);
       free (tmp);
+      gssapi_krb5_set_error_string ();
       *minor_status = kret;
       return GSS_S_FAILURE;
   }
@@ -189,6 +190,7 @@ mic_des3
   krb5_crypto_destroy (gssapi_krb5_context, crypto);
   if (kret) {
       free (message_token->value);
+      gssapi_krb5_set_error_string ();
       *minor_status = kret;
       return GSS_S_FAILURE;
   }
@@ -212,6 +214,7 @@ mic_des3
 			  ETYPE_DES3_CBC_NONE, &crypto);
   if (kret) {
       free (message_token->value);
+      gssapi_krb5_set_error_string ();
       *minor_status = kret;
       return GSS_S_FAILURE;
   }
@@ -223,6 +226,7 @@ mic_des3
   krb5_crypto_destroy (gssapi_krb5_context, crypto);
   if (kret) {
       free (message_token->value);
+      gssapi_krb5_set_error_string ();
       *minor_status = kret;
       return GSS_S_FAILURE;
   }
@@ -258,6 +262,7 @@ OM_uint32 gss_get_mic
 
   ret = gss_krb5_getsomekey(context_handle, &key);
   if (ret) {
+      gssapi_krb5_set_error_string ();
       *minor_status = ret;
       return GSS_S_FAILURE;
   }

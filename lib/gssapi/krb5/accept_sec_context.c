@@ -106,6 +106,8 @@ gss_accept_sec_context
 			     &(*context_handle)->auth_context);
   if (kret) {
     ret = GSS_S_FAILURE;
+    *minor_status = kret;
+    gssapi_krb5_set_error_string ();
     goto failure;
   }
 
@@ -135,6 +137,7 @@ gss_accept_sec_context
                                &acceptor_addr); 
      if (kret) {
         *minor_status = kret;
+	gssapi_krb5_set_error_string ();
         ret = GSS_S_BAD_BINDINGS;
         goto failure;
      }
@@ -146,6 +149,7 @@ gss_accept_sec_context
      if (kret) {
         krb5_free_address (gssapi_krb5_context, &acceptor_addr);
         *minor_status = kret;
+	gssapi_krb5_set_error_string ();
         ret = GSS_S_BAD_BINDINGS;
         goto failure;
      }
@@ -166,6 +170,7 @@ gss_accept_sec_context
      
      if (kret) {
         *minor_status = kret;
+	gssapi_krb5_set_error_string ();
         ret = GSS_S_BAD_BINDINGS;
         goto failure;
      }
@@ -211,6 +216,8 @@ gss_accept_sec_context
 		      &ticket);
   if (kret) {
     ret = GSS_S_FAILURE;
+    *minor_status = kret;
+    gssapi_krb5_set_error_string ();
     goto failure;
   }
 
@@ -219,6 +226,8 @@ gss_accept_sec_context
 			      &(*context_handle)->source);
   if (kret) {
     ret = GSS_S_FAILURE;
+    *minor_status = kret;
+    gssapi_krb5_set_error_string ();
     goto failure;
   }
 
@@ -227,6 +236,8 @@ gss_accept_sec_context
 			      &(*context_handle)->target);
   if (kret) {
     ret = GSS_S_FAILURE;
+    *minor_status = kret;
+    gssapi_krb5_set_error_string ();
     goto failure;
   }
 
@@ -236,6 +247,8 @@ gss_accept_sec_context
 				src_name);
     if (kret) {
       ret = GSS_S_FAILURE;
+      *minor_status = kret;
+      gssapi_krb5_set_error_string ();
       goto failure;
     }
   }
@@ -248,6 +261,8 @@ gss_accept_sec_context
 					&authenticator);
       if(kret) {
 	  ret = GSS_S_FAILURE;
+	  *minor_status = kret;
+	  gssapi_krb5_set_error_string ();
 	  goto failure;
       }
 
@@ -258,6 +273,8 @@ gss_accept_sec_context
       krb5_free_authenticator(gssapi_krb5_context, &authenticator);
       if (kret) {
 	  ret = GSS_S_FAILURE;
+	  *minor_status = kret;
+	  gssapi_krb5_set_error_string ();
 	  goto failure;
       }
   }
@@ -326,6 +343,8 @@ end_fwd:
 			&outbuf);
     if (kret) {
       ret = GSS_S_FAILURE;
+      *minor_status = kret;
+      gssapi_krb5_set_error_string ();
       goto failure;
     }
     ret = gssapi_krb5_encapsulate (&outbuf,

@@ -60,9 +60,11 @@ import_krb5_name (OM_uint32 *minor_status,
     if (kerr == 0)
 	return GSS_S_COMPLETE;
     else if (kerr == KRB5_PARSE_ILLCHAR || kerr == KRB5_PARSE_MALFORMED) {
+	gssapi_krb5_set_error_string ();
 	*minor_status = kerr;
 	return GSS_S_BAD_NAME;
     } else {
+	gssapi_krb5_set_error_string ();
 	*minor_status = kerr;
 	return GSS_S_FAILURE;
     }
@@ -112,9 +114,11 @@ import_hostbased_name (OM_uint32 *minor_status,
     if (kerr == 0)
 	return GSS_S_COMPLETE;
     else if (kerr == KRB5_PARSE_ILLCHAR || kerr == KRB5_PARSE_MALFORMED) {
+	gssapi_krb5_set_error_string ();
 	*minor_status = kerr;
 	return GSS_S_BAD_NAME;
     } else {
+	gssapi_krb5_set_error_string ();
 	*minor_status = kerr;
 	return GSS_S_FAILURE;
     }

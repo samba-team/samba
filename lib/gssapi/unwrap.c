@@ -251,6 +251,7 @@ unwrap_des3
       ret = krb5_crypto_init(gssapi_krb5_context, key,
 			     ETYPE_DES3_CBC_NONE, &crypto);
       if (ret) {
+	  gssapi_krb5_set_error_string ();
 	  *minor_status = ret;
 	  return GSS_S_FAILURE;
       }
@@ -258,6 +259,7 @@ unwrap_des3
 			 p, input_message_buffer->length - len, &tmp);
       krb5_crypto_destroy(gssapi_krb5_context, crypto);
       if (ret) {
+	  gssapi_krb5_set_error_string ();
 	  *minor_status = ret;
 	  return GSS_S_FAILURE;
       }
@@ -294,6 +296,7 @@ unwrap_des3
   ret = krb5_crypto_init(gssapi_krb5_context, key,
 			 ETYPE_DES3_CBC_NONE_IVEC, &crypto);
   if (ret) {
+      gssapi_krb5_set_error_string ();
       *minor_status = ret;
       return GSS_S_FAILURE;
   }
@@ -309,6 +312,7 @@ unwrap_des3
   }
   krb5_crypto_destroy (gssapi_krb5_context, crypto);
   if (ret) {
+      gssapi_krb5_set_error_string ();
       *minor_status = ret;
       return GSS_S_FAILURE;
   }
@@ -339,6 +343,7 @@ unwrap_des3
 
   ret = krb5_crypto_init(gssapi_krb5_context, key, 0, &crypto);
   if (ret) {
+      gssapi_krb5_set_error_string ();
       *minor_status = ret;
       return GSS_S_FAILURE;
   }
@@ -350,6 +355,7 @@ unwrap_des3
 			      &csum);
   krb5_crypto_destroy (gssapi_krb5_context, crypto);
   if (ret) {
+      gssapi_krb5_set_error_string ();
       *minor_status = ret;
       return GSS_S_FAILURE;
   }
@@ -382,6 +388,7 @@ OM_uint32 gss_unwrap
 
   ret = gss_krb5_getsomekey(context_handle, &key);
   if (ret) {
+      gssapi_krb5_set_error_string ();
       *minor_status = ret;
       return GSS_S_FAILURE;
   }
