@@ -537,7 +537,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   
   smb_bufsize = SVAL(inbuf,smb_vwv2);
 
-  if (Protocol < PROTOCOL_NT1) {
+  if (Protocol < PROTOCOL_NT1)
+  {
     smb_apasslen = SVAL(inbuf,smb_vwv7);
     if (smb_apasslen > MAX_PASS_LEN)
     {
@@ -551,7 +552,16 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     if (!doencrypt && (lp_security() != SEC_SERVER)) {
 	    smb_apasslen = strlen(smb_apasswd);
     }
-  } else {
+
+	if (lp_server_ntlmv2() == True)
+	{
+		DEBUG(1,("NTLMv2-only accepted with NT LANMAN 1.0 and above.\n\
+user %s attempted down-level SMB connection\n", user));
+		return(ERROR(ERRSRV,ERRbadpw));
+	}
+  }
+  else
+  {
     uint16 passlen1 = SVAL(inbuf,smb_vwv7);
     uint16 passlen2 = SVAL(inbuf,smb_vwv8);
     enum remote_arch_types ra_type = get_remote_arch();
@@ -707,7 +717,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
      * 128 length unicode.
       */
 
-    if(smb_ntpasslen)
+    if (smb_ntpasslen)
     {
       if(!password_ok(user, smb_ntpasswd,smb_ntpasslen,NULL,user_sess_key))
         DEBUG(0,("NT Password did not match ! Defaulting to Lanman\n"));
