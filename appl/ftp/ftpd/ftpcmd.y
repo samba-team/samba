@@ -64,13 +64,13 @@ struct tab {
 extern struct tab cmdtab[];
 extern struct tab sitetab[];
 
-static char	*copy (char *);
-static void	 help (struct tab *, char *);
+static char		*copy (char *);
+static void		 help (struct tab *, char *);
 static struct tab *
-		 lookup (struct tab *, char *);
-static void	 sizecmd (char *);
-static void	 toolong (int);
-static int	 yylex (void);
+			 lookup (struct tab *, char *);
+static void		 sizecmd (char *);
+static RETSIGTYPE	 toolong (int);
+static int		 yylex (void);
 
 /* This is for bison */
 
