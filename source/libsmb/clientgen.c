@@ -679,6 +679,8 @@ prots[] =
       {PROTOCOL_LANMAN2,"Samba"},
       {PROTOCOL_NT1,"NT LANMAN 1.0"},
       {PROTOCOL_NT1,"NT LM 0.12"},
+#if 0
+#endif
       {-1,NULL}
     };
 
