@@ -340,10 +340,6 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 				  spnego_state->expected_packet));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-	
-		if (spnego.negTokenTarg.negResult == SPNEGO_REJECT) {
-			return NT_STATUS_ACCESS_DENIED;
-		}
 		
 		if (spnego.negTokenTarg.responseToken.length) {
 			nt_status = gensec_update(spnego_state->sub_sec_security,
@@ -353,11 +349,6 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		} else {
 			unwrapped_out = data_blob(NULL, 0);
 			nt_status = NT_STATUS_OK;
-		}
-		
-		if (NT_STATUS_IS_OK(nt_status) 
-		    && (spnego.negTokenTarg.negResult != SPNEGO_ACCEPT_COMPLETED)) {
-			nt_status = NT_STATUS_INVALID_PARAMETER;
 		}
 		
 		spnego_state->result = spnego.negTokenTarg.negResult;
