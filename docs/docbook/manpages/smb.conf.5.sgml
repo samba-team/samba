@@ -2300,7 +2300,7 @@
 		<term><anchor id="DOMAINLOGONS">domain logons (G)</term>
 		<listitem><para>If set to <constant>yes</constant>, the Samba server will serve 
 		Windows 95/98 Domain logons for the <link linkend="WORKGROUP">
-		<parameter>workgroup</parameter></link> it is in. Samba 2.2 also 
+		<parameter>workgroup</parameter></link> it is in. Samba 2.2
 		has limited capability to act as a domain controller for Windows 
 		NT 4 Domains.  For more details on setting up this feature see 
 		the Samba-PDC-HOWTO included in the <filename>htmldocs/</filename>
@@ -3791,7 +3791,7 @@
 		<listitem><para>The value of the parameter (a astring) allows 
 		the debug level (logging level) to be specified in the 
 		<filename>smb.conf</filename> file. This parameter has been
-		extended since 2.2.x series, now it allow to specify the debug
+		extended since the 2.2.x series, now it allow to specify the debug
 		level for multiple debug classes. This is to give greater 
 		flexibility in the configuration of the system.</para>
 
@@ -8055,11 +8055,10 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 
 		<varlistentry>
 		<term><anchor id="VFSOBJECT">vfs object (S)</term>
-		<listitem><para>This parameter specifies a shared object file that 
-		is used for Samba VFS I/O operations.  By default, normal 
+		<listitem><para>This parameter specifies a shared object files that 
+		are used for Samba VFS I/O operations.  By default, normal 
 		disk I/O operations are used but these can be overloaded 
-		with a VFS object.  The Samba VFS layer is new to Samba 2.2 and 
-		must be enabled at compile time with --with-vfs.</para>
+		with one or more VFS objects. </para>
 		
 		<para>Default : <emphasis>no value</emphasis></para>
 		</listitem>
@@ -8071,9 +8070,8 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 		<varlistentry>
 		<term><anchor id="VFSOPTIONS">vfs options (S)</term>
 		<listitem><para>This parameter allows parameters to be passed 
-		to the vfs layer at initialization time.  The Samba VFS layer 
-		is new to Samba 2.2 and must be enabled at compile time 
-		with --with-vfs.  See also <link linkend="VFSOBJECT"><parameter>
+		to the vfs layer at initialization time. 
+		See also <link linkend="VFSOBJECT"><parameter>
 		vfs object</parameter></link>.</para>
 		
 		<para>Default : <emphasis>no value</emphasis></para>
