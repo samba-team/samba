@@ -1206,6 +1206,46 @@ done:
 	return result;
 }
 
+/* add account rights to an account. */
+
+NTSTATUS cli_lsa_add_account_rights(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+					POLICY_HND *pol, DOM_SID sid,
+					uint32 count, const char **privs_name)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_ADD_ACCT_RIGHTS q;
+	LSA_R_ADD_ACCT_RIGHTS r;
+	NTSTATUS result;
+
+	ZERO_STRUCT(q);
+
+	/* Initialise parse structures */
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+	init_q_add_acct_rights(&q, pol, &sid, count, privs_name);
+
+	if (!lsa_io_q_add_acct_rights("", &q, &qbuf, 0) ||
+			!rpc_api_pipe_req(cli, LSA_ADDACCTRIGHTS, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!lsa_io_r_add_acct_rights("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	if (!NT_STATUS_IS_OK(result = r.status))
+		goto done;
+
+done:
+
+	return result;
+}
 
 #if 0
 
