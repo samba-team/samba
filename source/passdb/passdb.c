@@ -583,6 +583,57 @@ BOOL pdb_gethexpwd(const char *p, unsigned char *pwd)
 	return (True);
 }
 
+/*************************************************************
+ Routine to set 42 hex hours characters from a 21 byte array.
+**************************************************************/
+
+void pdb_sethexhours(char *p, const unsigned char *hours)
+{
+	if (hours != NULL) {
+		int i;
+		for (i = 0; i < 21; i++) {
+			slprintf(&p[i*2], 3, "%02X", hours[i]);
+		}
+	} else {
+		safe_strcpy(p, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 43);
+	}
+}
+
+/*************************************************************
+ Routine to get the 42 hex characters and turn them
+ into a 21 byte array.
+**************************************************************/
+
+BOOL pdb_gethexhours(const char *p, unsigned char *hours)
+{
+	int i;
+	unsigned char   lonybble, hinybble;
+	const char      *hexchars = "0123456789ABCDEF";
+	char           *p1, *p2;
+
+	if (!p) {
+		return (False);
+	}
+
+	for (i = 0; i < 42; i += 2) {
+		hinybble = toupper(p[i]);
+		lonybble = toupper(p[i + 1]);
+
+		p1 = strchr(hexchars, hinybble);
+		p2 = strchr(hexchars, lonybble);
+
+		if (!p1 || !p2) {
+			return (False);
+		}
+
+		hinybble = PTR_DIFF(p1, hexchars);
+		lonybble = PTR_DIFF(p2, hexchars);
+
+		hours[i / 2] = (hinybble << 4) | lonybble;
+	}
+	return (True);
+}
+
 int algorithmic_rid_base(void)
 {
 	static int rid_offset = 0;
