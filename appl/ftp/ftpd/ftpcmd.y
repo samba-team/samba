@@ -159,18 +159,21 @@ cmd
 			eprt ($3);
 			free ($3);
 		}
-	| PASV CRLF
+	| PASV CRLF check_login
 		{
+		    if($3)
 			pasv ();
 		}
-	| EPSV CRLF
+	| EPSV CRLF check_login
 		{
+		    if($3)
 			epsv (NULL);
 		}
-	| EPSV SP STRING CRLF
+	| EPSV SP STRING CRLF check_login
 		{
+		    if($5)
 			epsv ($3);
-			free ($3);
+		    free ($3);
 		}
 	| TYPE SP type_code CRLF
 		{
