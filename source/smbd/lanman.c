@@ -1940,13 +1940,13 @@ static BOOL api_WPrintQueuePurge(connection_struct *conn,uint16 vuid, char *para
 
 	switch (function) {
 	case 74: /* Pause queue */
-		if (print_queue_pause(NULL, snum)) errcode = NERR_Success;
+		if (print_queue_pause(NULL, snum, &errcode)) errcode = NERR_Success;
 		break;
 	case 75: /* Resume queue */
-		if (print_queue_resume(NULL, snum)) errcode = NERR_Success;
+		if (print_queue_resume(NULL, snum, &errcode)) errcode = NERR_Success;
 		break;
 	case 103: /* Purge */
-		if (print_queue_purge(NULL, snum)) errcode = NERR_Success;
+		if (print_queue_purge(NULL, snum, &errcode)) errcode = NERR_Success;
 		break;
 	}
 

@@ -131,6 +131,36 @@ static BOOL api_spoolss_closeprinter(pipes_struct *p)
 }
 
 /********************************************************************
+ * api_spoolss_abortprinter
+ *
+ * called from the spoolss dispatcher
+ ********************************************************************/
+static BOOL api_spoolss_abortprinter(pipes_struct *p)
+{
+	SPOOL_Q_ABORTPRINTER q_u;
+	SPOOL_R_ABORTPRINTER r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if (!spoolss_io_q_abortprinter("", &q_u, data, 0)) {
+		DEBUG(0,("spoolss_io_q_abortprinter: unable to unmarshall SPOOL_Q_ABORTPRINTER.\n"));
+		return False;
+	}
+
+	r_u.status = _spoolss_abortprinter(&q_u.handle, p);
+
+	if (!spoolss_io_r_abortprinter("",&r_u,rdata,0)) {
+		DEBUG(0,("spoolss_io_r_abortprinter: unable to marshall SPOOL_R_ABORTPRINTER.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/********************************************************************
  * api_spoolss_deleteprinter
  *
  * called from the spoolss dispatcher
@@ -1209,6 +1239,7 @@ struct api_struct api_spoolss_cmds[] =
  {"SPOOLSS_GETPRINTERDATA",            SPOOLSS_GETPRINTERDATA,            api_spoolss_getprinterdata            },
  {"SPOOLSS_CLOSEPRINTER",              SPOOLSS_CLOSEPRINTER,              api_spoolss_closeprinter              },
  {"SPOOLSS_DELETEPRINTER",             SPOOLSS_DELETEPRINTER,             api_spoolss_deleteprinter             },
+ {"SPOOLSS_ABORTPRINTER",              SPOOLSS_ABORTPRINTER,              api_spoolss_abortprinter              },
  {"SPOOLSS_RFFPCNEX",                  SPOOLSS_RFFPCNEX,                  api_spoolss_rffpcnex                  },
  {"SPOOLSS_RFNPCNEX",                  SPOOLSS_RFNPCNEX,                  api_spoolss_rfnpcnex                  },
  {"SPOOLSS_ENUMPRINTERS",              SPOOLSS_ENUMPRINTERS,              api_spoolss_enumprinters              },
