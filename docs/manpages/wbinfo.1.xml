@@ -50,7 +50,7 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This tool is part of the <citerefentry><refentrytitle>Samba</refentrytitle>
+	<para>This tool is part of the <citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 	
 	<para>The <command>wbinfo</command> program queries and returns information 
@@ -99,7 +99,7 @@
 		<varlistentry>
 		<term>-g</term>
 		<listitem><para>This option will list all groups available 
-		in the Windows NT domain for which the <citerefentry><refentrytitle>Samba</refentrytitle>
+		in the Windows NT domain for which the <citerefentry><refentrytitle>samba</refentrytitle>
 		<manvolnum>7</manvolnum></citerefentry> daemon is operating in. Groups in all trusted domains
 		will also be listed.  Note that this operation does not assign 
 		group ids to any groups that have not already been 

@@ -33,7 +33,7 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This program is part of the <citerefentry><refentrytitle>Samba</refentrytitle>
+	<para>This program is part of the <citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
 	<para><command>winbindd</command> is a daemon that provides 
@@ -437,7 +437,7 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 	<title>SEE ALSO</title>
 	
 	<para><filename>nsswitch.conf(5)</filename>, <citerefentry>
-	<refentrytitle>Samba</refentrytitle>
+	<refentrytitle>samba</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry>, <citerefentry>
 	<refentrytitle>wbinfo</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry>, <citerefentry>

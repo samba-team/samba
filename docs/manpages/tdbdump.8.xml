@@ -26,7 +26,7 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This tool is part of the <citerefentry><refentrytitle>Samba</refentrytitle>
+	<para>This tool is part of the <citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>1</manvolnum></citerefentry> suite.</para>
 
 	<para><command>tdbdump</command> is a very simple utility that 'dumps' the 
