@@ -1202,15 +1202,6 @@ int vasprintf(char **ptr, const char *format, va_list ap);
 #define LOG_DEBUG       7       /* debug-level messages */
 #endif
 
-/* NetBSD doesn't have these */
-#ifndef SHM_R
-#define SHM_R 0400
-#endif
-
-#ifndef SHM_W
-#define SHM_W 0200
-#endif
-
 #if HAVE_KERNEL_SHARE_MODES
 #ifndef LOCK_MAND 
 #define LOCK_MAND	32	/* This is a mandatory flock */

@@ -22,7 +22,7 @@
 #include "includes.h"
 
 #ifdef WITH_PROFILE
-#define IPC_PERMS ((SHM_R | SHM_W) | (SHM_R>>3) | (SHM_R>>6))
+#define IPC_PERMS ((S_IRUSR | S_IWUSR) | S_IRGRP | S_IROTH)
 #endif /* WITH_PROFILE */
 
 #ifdef WITH_PROFILE
