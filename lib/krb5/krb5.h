@@ -211,9 +211,10 @@ typedef HostAddress krb5_address;
 typedef HostAddresses krb5_addresses;
 
 typedef enum krb5_keytype { 
-    KEYTYPE_NULL = 0,
-    KEYTYPE_DES = 1,
-    KEYTYPE_DES3 = 7
+    KEYTYPE_NULL	= 0,
+    KEYTYPE_DES		= 1,
+    KEYTYPE_DES3	= 7,
+    KEYTYPE_RC4		= 23
 } krb5_keytype;
 
 typedef EncryptionKey krb5_keyblock;
