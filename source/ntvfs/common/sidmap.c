@@ -540,3 +540,64 @@ allocate_sid:
 
 	return NT_STATUS_OK;
 }
+
+/*
+  check if a sid is in the range of auto-allocated SIDs from our primary domain,
+  and if it is, then return the name and atype
+*/
+NTSTATUS sidmap_allocated_sid_lookup(struct sidmap_context *sidmap, 
+				     TALLOC_CTX *mem_ctx, 
+				     const struct dom_sid *sid,
+				     const char **name,
+				     uint32_t *atype)
+{
+	NTSTATUS status;
+	struct dom_sid *domain_sid;
+	void *ctx = talloc(mem_ctx, 0);
+	uint32_t rid;
+
+	status = sidmap_primary_domain_sid(sidmap, ctx, &domain_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_NO_SUCH_DOMAIN;
+	}
+
+	if (!dom_sid_in_domain(domain_sid, sid)) {
+		talloc_free(ctx);
+		return NT_STATUS_INVALID_SID;
+	}
+
+	talloc_free(ctx);
+
+	rid = sid->sub_auths[sid->num_auths-1];
+	if (rid < SIDMAP_LOCAL_USER_BASE) {
+		return NT_STATUS_INVALID_SID;
+	}
+
+	if (rid < SIDMAP_LOCAL_GROUP_BASE) {
+		struct passwd *pwd;
+		uid_t uid = rid - SIDMAP_LOCAL_USER_BASE;
+		*atype = ATYPE_NORMAL_ACCOUNT;
+		pwd = getpwuid(uid);
+		if (pwd == NULL) {
+			*name = talloc_asprintf(mem_ctx, "uid%u", uid);
+		} else {
+			*name = talloc_strdup(mem_ctx, pwd->pw_name);
+		}
+	} else {
+		struct group *grp;
+		gid_t gid = rid - SIDMAP_LOCAL_GROUP_BASE;
+		*atype = ATYPE_LOCAL_GROUP;
+		grp = getgrgid(gid);
+		if (grp == NULL) {
+			*name = talloc_asprintf(mem_ctx, "gid%u", gid);
+		} else {
+			*name = talloc_strdup(mem_ctx, grp->gr_name);
+		}
+	}
+
+	if (*name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}

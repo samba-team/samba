@@ -42,6 +42,7 @@ enum lsa_handle {
 struct lsa_policy_state {
 	int reference_count;
 	void *sam_ctx;
+	struct sidmap_context *sidmap;
 	uint32_t access_mask;
 	const char *domain_dn;
 	const char *domain_name;
@@ -162,6 +163,12 @@ static NTSTATUS lsa_OpenPolicy2(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	/* make sure the sam database is accessible */
 	state->sam_ctx = samdb_connect(state);
 	if (state->sam_ctx == NULL) {
+		talloc_free(state);
+		return NT_STATUS_INVALID_SYSTEM_SERVICE;
+	}
+
+	state->sidmap = sidmap_open(state);
+	if (state->sidmap == NULL) {
 		talloc_free(state);
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -423,6 +430,9 @@ static NTSTATUS lsa_authority_name(struct lsa_policy_state *state,
 	return NT_STATUS_OK;
 }
 
+/*
+  add to the lsa_RefDomainList for LookupSids and LookupNames
+*/
 static NTSTATUS lsa_authority_list(struct lsa_policy_state *state, TALLOC_CTX *mem_ctx, 
 				   struct dom_sid *sid, 
 				   struct lsa_RefDomainList *domains)
@@ -459,6 +469,36 @@ static NTSTATUS lsa_authority_list(struct lsa_policy_state *state, TALLOC_CTX *m
 	}
 	
 	return NT_STATUS_OK;
+}
+
+/*
+  lookup a name for 1 SID
+*/
+static NTSTATUS lsa_lookup_sid(struct lsa_policy_state *state, TALLOC_CTX *mem_ctx,
+			       struct dom_sid *sid, const char *sid_str,
+			       const char **name, uint32_t *atype)
+{
+	int ret;
+	struct ldb_message **res;
+	const char * const attrs[] = { "sAMAccountName", "sAMAccountType", NULL};
+	NTSTATUS status;
+
+	ret = samdb_search(state->sam_ctx, mem_ctx, NULL, &res, attrs, 
+			   "objectSid=%s", sid_str);
+	if (ret == 1) {
+		*name = ldb_msg_find_string(res[0], "sAMAccountName", NULL);
+		if (*name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	
+		*atype = samdb_result_uint(res[0], "sAMAccountType", 0);
+
+		return NT_STATUS_OK;
+	}
+
+	status = sidmap_allocated_sid_lookup(state->sidmap, mem_ctx, sid, name, atype);
+
+	return status;
 }
 
 
@@ -499,11 +539,8 @@ static NTSTATUS lsa_LookupSids2(struct dcesrv_call_state *dce_call,
 	}
 
 	for (i=0;i<r->in.sids->num_sids;i++) {
-		const char * const attrs[] = { "sAMAccountName", "sAMAccountType", NULL};
 		struct dom_sid *sid = r->in.sids->sids[i].sid;
 		char *sid_str = dom_sid_string(mem_ctx, sid);
-		int ret;
-		struct ldb_message **res;
 		const char *name;
 		uint32_t atype, rtype;
 		NTSTATUS status2;
@@ -528,20 +565,9 @@ static NTSTATUS lsa_LookupSids2(struct dcesrv_call_state *dce_call,
 			return status2;
 		}
 
-		ret = samdb_search(state->sam_ctx, mem_ctx, NULL, &res, attrs, "objectSid=%s", sid_str);
-		if (ret != 1) {
-			status = STATUS_SOME_UNMAPPED;
-			continue;
-		}
-
-		name = ldb_msg_find_string(res[0], "sAMAccountName", NULL);
-		if (name == NULL) {
-			status = STATUS_SOME_UNMAPPED;
-			continue;
-		}
-
-		atype = samdb_result_uint(res[0], "sAMAccountType", 0);
-		if (atype == 0) {
+		status2 = lsa_lookup_sid(state, mem_ctx, sid, sid_str, 
+					 &name, &atype);
+		if (!NT_STATUS_IS_OK(status2)) {
 			status = STATUS_SOME_UNMAPPED;
 			continue;
 		}
