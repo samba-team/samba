@@ -15,6 +15,8 @@ static char *sep = ", \t";
 
 #define	FAIL		(-1)
 
+#define ALLONES  ((uint32)0xFFFFFFFF)
+
 /* masked_match - match address against netnumber/netmask */
 static int masked_match(char *tok, char *slash, char *s)
 {
@@ -27,8 +29,14 @@ static int masked_match(char *tok, char *slash, char *s)
 	*slash = 0;
 	net = interpret_addr(tok);
 	*slash = '/';
-	if (net == INADDR_NONE || 
-	    (mask = interpret_addr(slash + 1)) == INADDR_NONE) {
+
+        if (strlen(slash + 1) > 2) {
+                mask = interpret_addr(slash + 1);
+        } else {
+		mask = (uint32)((ALLONES >> atoi(slash + 1)) ^ ALLONES);
+        }
+
+	if (net == INADDR_NONE || mask == INADDR_NONE) {
 		DEBUG(0,("access: bad net/mask access control: %s\n", tok));
 		return (False);
 	}
