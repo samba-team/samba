@@ -1,5 +1,7 @@
 1999-12-03  Assar Westerlund  <assar@sics.se>
 
+	* mini_inetd.c (mini_inted): rewrite to use `getaddrinfo'
+	* getaddrinfo.c (const_v*): no sizeof(sizeof())
 	* getaddrinfo.c (add_hostent): search for the canonical name among
 	all aliases
 	(getaddrinfo): handle AI_NUMERICHOST correctly
