@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -54,6 +54,7 @@ krb5_rd_priv(krb5_context context,
   krb5_data plain;
   krb5_keyblock *key;
 
+  memset(&priv, 0, sizeof(priv));
   ret = decode_KRB_PRIV (inbuf->data, inbuf->length, &priv, &len);
   if (ret) 
       goto failure;
