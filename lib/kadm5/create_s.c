@@ -85,9 +85,12 @@ create_principal(kadm5_server_context *context,
     
     defent = &defrec;
     ret = get_default(context, princ->principal, defent);
-    if(ret)
-	defent = NULL;
-    def_mask = KADM5_ATTRIBUTES | KADM5_MAX_LIFE | KADM5_MAX_RLIFE;
+    if(ret) {
+	defent   = NULL;
+	def_mask = 0;
+    } else {
+	def_mask = KADM5_ATTRIBUTES | KADM5_MAX_LIFE | KADM5_MAX_RLIFE;
+    }
 
     ret = _kadm5_setup_entry(ent, mask | def_mask,
 			     princ, mask,
