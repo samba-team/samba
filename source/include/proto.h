@@ -1365,6 +1365,9 @@ uint32 _lsa_open_secret(const POLICY_HND * hnd,
 			POLICY_HND * hnd_secret);
 uint32 _lsa_enum_privs(POLICY_HND *hnd, uint32 unk0, uint32 unk1,
 		       uint32 *count, LSA_PRIV_ENTRY **entries);
+
+uint32 _lsa_unk_2d(const UNISTR2 uni_servername, LSA_R_UNK_2D* r_u);
+
 uint32 _lsa_priv_get_dispname(const POLICY_HND *hnd,
 			      const UNISTR2 *name,
 			      uint16 lang_id, uint16 lang_id_sys,
@@ -1372,6 +1375,7 @@ uint32 _lsa_priv_get_dispname(const POLICY_HND *hnd,
 
 /*The following definitions come from  msdfs/msdfs.c  */
 
+BOOL is_msdfs_volume(connection_struct* conn, char* path);
 BOOL dfs_redirect(char* pathname, connection_struct* conn);
 BOOL dfs_findfirst_redirect(char* pathname, connection_struct* conn);
 int setup_dfs_referral(char* pathname, int max_referral_level, 
@@ -1379,20 +1383,7 @@ int setup_dfs_referral(char* pathname, int max_referral_level,
 int dfs_path_error(char* inbuf, char* outbuf);
 int setup_dfs_referral(char* pathname, int max_referral_level, 
 		       char** ppdata);
-
-/*The following definitions come from  msdfs/msdfs_tdb.c  */
-
-BOOL msdfs_open(BOOL update);
-BOOL add_junction_entry(struct junction_map* junction);
-BOOL get_junction_entry(struct junction_map* junction);
-BOOL isDfsShare(char* svc,char* vol);
-void msdfs_close(void);
-void msdfs_end(void);
-
-/*The following definitions come from  msdfs/parse_dfs_map.c  */
-
-void load_dfsmaps(void);
-void load_dfsmaps(void);
+BOOL is_msdfs_volume(connection_struct* conn, char* path);
 
 /*The following definitions come from  msrpc/msrpcd.c  */
 
@@ -1993,8 +1984,7 @@ char *lp_veto_files(int );
 char *lp_hide_files(int );
 char *lp_veto_oplocks(int );
 char *lp_driverlocation(int );
-char *lp_dfsmap(int );
-BOOL lp_dfsmap_loaded(int );
+BOOL lp_msdfs_root(int );
 BOOL lp_autoloaded(int );
 BOOL lp_preexec_close(int );
 BOOL lp_rootpreexec_close(int );
@@ -2061,7 +2051,6 @@ BOOL lp_add_home(char *pszHomename, int iDefaultService, char *pszHomedir);
 int lp_add_service(char *pszService, int iDefaultService);
 BOOL lp_add_printer(char *pszPrintername, int iDefaultService);
 BOOL lp_file_list_changed(void);
-void set_dfsmap_loaded(int i,BOOL b);
 void *lp_local_ptr(int snum, void *ptr);
 BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue);
 BOOL lp_is_default(int snum, struct parm_struct *parm);

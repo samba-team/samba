@@ -853,6 +853,15 @@ uint32 _lsa_enum_privs(POLICY_HND *hnd, uint32 unk0, uint32 unk1,
 	return NT_STATUS_NOPROBLEMO;
 }
 
+#if 0
+/***************************************************************************
+ _lsa_unk_2d : returns username & domain of connection
+ ***************************************************************************/
+uint32 _lsa_unk_2d(const UNISTR2 uni_servername, LSA_R_UNK_2D* r_u)
+{
+  
+#endif
+
 uint32 _lsa_priv_get_dispname(const POLICY_HND *hnd,
 			      const UNISTR2 *name,
 			      uint16 lang_id, uint16 lang_id_sys,
@@ -874,3 +883,4 @@ uint32 _lsa_priv_get_dispname(const POLICY_HND *hnd,
 
 	return NT_STATUS_NOPROBLEMO;
 }
+

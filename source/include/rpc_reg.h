@@ -417,41 +417,43 @@ typedef struct r_reg_enum_key_info
 /* REG_Q_INFO */
 typedef struct q_reg_info_info
 {
-	POLICY_HND pol;        /* policy handle */
+  POLICY_HND pol;        /* policy handle */
 
-	UNIHDR  hdr_val;       /* unicode product type header */
-	UNISTR2 uni_val;       /* unicode product type - "ProductType" */
+  UNIHDR  hdr_val;       /* unicode product type header */
+  UNISTR2 uni_val;       /* unicode product type - "ProductType" */
 
-	uint32 ptr_type;            /* pointer */
-	uint32 type;            /* type of buffer */
+  uint32 ptr_reserved;      /* pointer */
+	
+  uint32 ptr_buf;   /* the next three fields follow if ptr_buf != 0 */
+  uint32 ptr_bufsize;
+  uint32 bufsize;
+  uint32 buf_unk;
 
-	uint32 ptr_uni_type;       /* pointer to o/s type */
-	BUFFER2 uni_type;      /* unicode string o/s type - "LanmanNT" */
+  uint32 unk1;
+  uint32 ptr_buflen;
+  uint32 buflen;
 
-	uint32 ptr_max_len;           /* pointer to unknown_0 */
-	uint32 buf_max_len;    /* 0x12 */
-
-	uint32 ptr_len;           /* pointer to unknown_1 */
-	uint32 buf_len;        /* 0x12 */
+  uint32 ptr_buflen2;
+  uint32 buflen2;
 
 } REG_Q_INFO;
 
 /* REG_R_INFO */
 typedef struct r_reg_info_info
 { 
-	uint32 ptr_type;            /* buffer pointer */
-	uint32 *type;          /* 0x1 - info level? */
+  uint32 ptr_type;    /* regkey type pointer */
+  uint32 type;        /* regkey datatype */
+  
+  uint32 ptr_uni_val;  /* pointer to key value */
+  BUFFER2* uni_val;    /* key value */
+  
+  uint32 ptr_max_len;  
+  uint32 buf_max_len;
 
-	uint32 ptr_uni_type;       /* pointer to o/s type */
-	BUFFER2 *uni_type;      /* unicode string o/s type - "LanmanNT" */
+  uint32 ptr_len;
+  uint32 buf_len;
 
-	uint32 ptr_max_len;    /* pointer to unknown_0 */
-	uint32 buf_max_len;    /* 0x12 */
-
-	uint32 ptr_len;    /* pointer to unknown_1 */
-	uint32 buf_len;        /* 0x12 */
-
-	uint32 status;         /* return status */
+  uint32 status;
 
 } REG_R_INFO;
 

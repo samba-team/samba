@@ -2,7 +2,7 @@
 
 LANG=C; export LANG
 LC_ALL=C; export LC_ALL
-LC_COLLATE=C; export LC_COLLATE=C
+LC_COLLATE=C; export LC_COLLATE
 
 if [ $# -lt 3 ]
 then

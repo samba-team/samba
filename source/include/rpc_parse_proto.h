@@ -287,7 +287,7 @@ BOOL reg_io_r_get_key_sec(char *desc, REG_R_GET_KEY_SEC * r_q, prs_struct *ps,
 BOOL make_reg_q_info(REG_Q_INFO * q_i, POLICY_HND *pol, const char *val_name,
 		     uint8 major, uint8 minor);
 BOOL reg_io_q_info(char *desc, REG_Q_INFO * r_q, prs_struct *ps, int depth);
-BOOL make_reg_r_info(REG_R_INFO * r_r,
+BOOL make_reg_r_info(uint32 include_keyval, REG_R_INFO * r_r,
 		     uint32 *type, BUFFER2 * buf, uint32 status);
 BOOL reg_io_r_info(char *desc, REG_R_INFO * r_r, prs_struct *ps, int depth);
 BOOL make_reg_q_enum_val(REG_Q_ENUM_VALUE * q_i, POLICY_HND *pol,

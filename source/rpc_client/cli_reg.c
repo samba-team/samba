@@ -491,8 +491,8 @@ BOOL reg_query_info(POLICY_HND *hnd, const char *val_name,
 
 		ZERO_STRUCT(r_o);
 
-		r_o.type = type;
-		r_o.uni_type = buffer;
+		r_o.type = *type;
+		r_o.uni_val = buffer;
 
 		reg_io_r_info("", &r_o, &rbuf, 0);
 		p = rbuf.offset != 0;

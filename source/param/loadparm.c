@@ -389,10 +389,7 @@ typedef struct
   BOOL bFakeDirCreateTimes;
   BOOL bBlockingLocks;
   BOOL bInheritPerms; 
-#ifdef MS_DFS
-  char *szDfsMap;
-  BOOL bDfsMapLoaded;
-#endif
+  BOOL bMSDfsRoot;
   char dummy[3]; /* for alignment */
 } service;
 
@@ -503,10 +500,7 @@ static service sDefault =
   False, /* bFakeDirCreateTimes */
   True,  /* bBlockingLocks */
   False, /* bInheritPerms */
-#ifdef MS_DFS
-  NULL,    /* MS Dfs map path */
-  False, /* bDfsMapLoaded */
-#endif
+  False, /* bMSDfsRoot */
   ""     /* dummy */
 };
 
@@ -958,10 +952,8 @@ static struct parm_struct parm_table[] =
   {"vfs object",       P_STRING,  P_LOCAL,  &sDefault.szVfsObjectFile,  handle_vfs_object,   NULL,  0},
   {"vfs options",      P_STRING,  P_LOCAL,  &sDefault.szVfsOptions,     NULL,   NULL,  0}, 
 
-#ifdef MS_DFS
-  {"dfs map",	       P_STRING,  P_LOCAL,  &sDefault.szDfsMap,        NULL,   NULL,  FLAG_SHARE},
+  {"msdfs root",      P_BOOL,    P_LOCAL,  &sDefault.bMSDfsRoot,       NULL,   NULL,  FLAG_SHARE},
   {"host msdfs",      P_BOOL,    P_GLOBAL, &Globals.bHostMSDfs,        NULL,   NULL, FLAG_GLOBAL},
-#endif
 
   {"Winbind options", P_SEP, P_SEPARATOR},
 
@@ -1568,10 +1560,7 @@ FN_LOCAL_STRING(lp_hide_files,szHideFiles)
 FN_LOCAL_STRING(lp_veto_oplocks,szVetoOplockFiles)
 FN_LOCAL_STRING(lp_driverlocation,szPrinterDriverLocation)
 
-#ifdef MS_DFS
-FN_LOCAL_STRING(lp_dfsmap,szDfsMap)
-FN_LOCAL_BOOL(lp_dfsmap_loaded,bDfsMapLoaded)
-#endif
+FN_LOCAL_BOOL(lp_msdfs_root, bMSDfsRoot)
 
 FN_LOCAL_BOOL(lp_autoloaded,autoloaded)
 FN_LOCAL_BOOL(lp_preexec_close,bPreexecClose)
@@ -2238,16 +2227,6 @@ static BOOL handle_source_env(char *pszParmValue,char **ptr)
 
 	return(result);
 }
-
-
-
-#ifdef MS_DFS
-void set_dfsmap_loaded(int i,BOOL b)
-{
-  pSERVICE(i)->bDfsMapLoaded = b;
-}
-
-#endif
 
 /***************************************************************************
   handle the interpretation of the vfs object parameter

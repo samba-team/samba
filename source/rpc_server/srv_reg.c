@@ -180,7 +180,7 @@ static BOOL api_reg_info(prs_struct *data,
 	/* construct reply.  always indicate success */
 	status = _reg_info(&q_u.pol, &buf, &type);
 
-	make_reg_r_info(&r_u, &type, &buf, status);
+	make_reg_r_info(q_u.ptr_buf, &r_u, &type, &buf, status);
 
 	/* store the response in the SMB stream */
 	return reg_io_r_info("", &r_u, rdata, 0);

@@ -1,4 +1,4 @@
-###########################################################################
+##########################################################################
 # Makefile.in for Samba - rewritten for autoconf support
 # Copyright Andrew Tridgell 1992-1998
 ###########################################################################
@@ -287,7 +287,7 @@ PRINTING_OBJ =  printing/pcap.o printing/print_svid.o \
 
 PRINTBACKEND_OBJ = printing/printing.o printing/lpq_parse.o
 
-MSDFS_OBJ = msdfs/msdfs.o msdfs/msdfs_tdb.o msdfs/parse_dfs_map.o
+MSDFS_OBJ = msdfs/msdfs.o 
 
 MSRPCD_OBJ = msrpc/msrpcd.o \
 		msrpc/msrpcd_process.o \

@@ -434,7 +434,29 @@ static BOOL api_lsa_open_secret(prs_struct *data, prs_struct *rdata)
 	return lsa_io_r_open_secret("", &r_o, rdata, 0);
 }
 
+#if 0
+
 /***************************************************************************
+<<<<<<< srv_lsa.c
+ api_lsa_unk_2d
+ ***************************************************************************/
+static BOOL api_lsa_unk_2d(prs_struct* data, prs_struct* rdata)
+{
+  LSA_R_UNK_2D r_u;
+  LSA_Q_UNK_2D q_u;
+
+  ZERO_STRUCT(r_u);
+  ZERO_STRUCT(q_u);
+
+  if(!lsa_io_q_unk_2d("", &q_u, data, 0))
+    return False;
+
+  r_u.status = _lsa_unk_2d(&q_u.uni2_srvname, &r_u);
+
+#endif
+
+/***************************************************************************
+=======
  api_lsa_enum_privs
  ***************************************************************************/
 static BOOL api_lsa_enum_privs(prs_struct *data, prs_struct *rdata)
@@ -496,6 +518,7 @@ static BOOL api_lsa_priv_get_dispname(prs_struct *data, prs_struct *rdata)
 }
 
 /***************************************************************************
+>>>>>>> 1.36.2.42
  \PIPE\ntlsa commands
  ***************************************************************************/
 static const struct api_struct api_lsa_cmds[] = {
