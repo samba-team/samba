@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -43,7 +43,10 @@ db_fetch(krb5_principal principal)
     hdb_entry *ent;
     krb5_error_code ret;
     int i;
-    ALLOC(ent);
+
+    ent = malloc (sizeof (*ent));
+    if (ent == NULL)
+	return NULL;
     ent->principal = principal;
 
     for(i = 0; i < num_db; i++) {
@@ -61,3 +64,11 @@ db_fetch(krb5_principal principal)
     free(ent);
     return NULL;
 }
+
+void
+free_ent(hdb_entry *ent)
+{
+    hdb_free_entry (context, ent);
+    free (ent);
+}
+
