@@ -5994,10 +5994,17 @@ uint32 _spoolss_addprinterdriver(pipes_struct *p, const UNISTR2 *server_name,
 			driver_name));
 	}
 	
-	/* delete existing driver init data */
+	/* if driver is not 9x, delete existing driver init data */
 
-	if (!del_driver_init(driver_name))
-		DEBUG(3,("_spoolss_addprinterdriver: del_driver_init(%s) failed!\n", driver_name));
+	if ((level == 3 && driver.info_3->cversion != 0) ||
+		(level == 6 && driver.info_6->version  != 0)) {
+		if (!del_driver_init(driver_name))
+			DEBUG(3,("_spoolss_addprinterdriver: del_driver_init(%s) failed!\n", driver_name));
+	}
+	else {
+		DEBUG(10,("_spoolss_addprinterdriver: init data not deleted for 9x driver [%s]\n", 
+				driver_name));
+	}
 
 done:
 	free_a_printer_driver(driver, level);
