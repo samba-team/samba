@@ -1506,7 +1506,7 @@ ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 		ret = ADS_ERROR(LDAP_NO_MEMORY);
 		goto ads_set_sd_error;
 	}
-	prs_copy_all_data_out((char *)&bval.bv_val, &ps_wire);
+	prs_copy_all_data_out(bval.bv_val, &ps_wire);
 
 	ads_mod_ber(ctx, &mods, attrs[0], &bval);
 	ret = ads_gen_mod(ads, dn, mods);
