@@ -1391,7 +1391,7 @@ help(struct tab *ctab, char *s)
 			    w++;
 			}
 		    }
-		    lreply(214, buf);
+		    lreply(214, "%s", buf);
 		}
 		reply(214, "Direct comments to kth-krb-bugs@pdc.kth.se");
 		return;
