@@ -191,8 +191,6 @@ static int winbind_named_pipe_sock(const char *dir)
 	
 	if (connect(fd, (struct sockaddr *)&sunaddr, 
 		    sizeof(sunaddr)) == -1) {
-		DEBUG(10, ("error connecting to pipe socket: %s\n", 
-			strerror(errno)));
 		close(fd);
 		return -1;
 	}
