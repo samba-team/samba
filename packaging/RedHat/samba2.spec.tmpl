@@ -254,11 +254,13 @@ install -m644 packaging/RedHat/smb.conf $RPM_BUILD_ROOT/etc/samba/smb.conf
 install -m644 packaging/RedHat/smbusers $RPM_BUILD_ROOT/etc/samba/smbusers
 install -m644 packaging/RedHat/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
 echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/etc/samba/lmhosts
+
 %clean
-#rm -rf $RPM_BUILD_ROOT
+rm -rf $RPM_BUILD_ROOT
 
 %post
 /sbin/chkconfig --add smb
+/sbin/chkconfig smb off
 
 echo "Looking for old /etc/smb.conf..."
 if [ -f /etc/smb.conf ]; then
