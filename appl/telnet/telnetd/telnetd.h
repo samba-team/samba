@@ -175,7 +175,7 @@
 /* BINDIR should be defined somewhere else... */
 
 #ifndef BINDIR
-#define BINDIR "/usr/athena"
+#define BINDIR "/usr/athena/bin"
 #endif
 
 #undef _PATH_LOGIN
