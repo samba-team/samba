@@ -34,6 +34,7 @@ const struct pdb_init_function_entry builtin_pdb_init_functions[] = {
 	{ "ldapsam", pdb_init_ldapsam },
 	{ "ldapsam_nua", pdb_init_ldapsam_nua },
 	{ "unixsam", pdb_init_unixsam },
+	{ "nisplussam", pdb_init_nisplussam },
 	{ "plugin", pdb_init_plugin },
 	{ NULL, NULL}
 };

@@ -1,10 +1,10 @@
 /*
- * Unix SMB/CIFS implementation.
- * SMB parameters and setup
+ * Test password backend for samba
  * Copyright (C) Andrew Tridgell 1992-1998 Modified by Jeremy Allison 1995.
  * Copyright (C) Benny Holmgren 1998 <bigfoot@astrakan.hgs.se> 
  * Copyright (C) Luke Kenneth Casson Leighton 1996-1998.
  * Copyright (C) Toomas Soome <tsoome@ut.ee> 2001
+ * Copyright (C) Jelmer Vernooij 2002
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
@@ -35,6 +35,7 @@
  * an enum in /usr/include/rpcsvc/nis.h.
  */
 
+
 #if defined(GROUP)
 #undef GROUP
 #endif
@@ -46,17 +47,6 @@
 #endif
 
 #include <rpcsvc/nis.h>
-
-extern int      DEBUGLEVEL;
-
-struct nisp_enum_info
-{
-	nis_result *result;
-	int enum_entry;
-};
-
-static struct nisp_enum_info global_nisp_ent;
-static SIG_ATOMIC_T gotalarm;
 
 /***************************************************************
 
@@ -114,15 +104,576 @@ static SIG_ATOMIC_T gotalarm;
 #define NPF_WORKSTATIONS  20
 #define NPF_HOURS         21
 
-
-/*******************************************************************
- Converts NT user RID to a UNIX uid.
- ********************************************************************/
-
-static uid_t pdb_user_rid_to_uid(uint32 user_rid)
+struct nisp_enum_info
 {
-	return (uid_t)(((user_rid & (~USER_RID_TYPE))- 1000)/RID_MULTIPLIER);
+	nis_result *result;
+	int enum_entry;
+};
+
+static char *make_nisname_from_user_rid(uint32 rid, char *pfile);
+static char *make_nisname_from_name(const char *user_name, char *pfile);
+static void get_single_attribute(const nis_object *new_obj, int col,
+				char *val, int len);;
+static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, const nis_object *obj);
+static BOOL make_sam_from_nisresult(SAM_ACCOUNT *pw_buf, const nis_result *result);;
+static void set_single_attribute(nis_object *new_obj, int col,
+				const char *val, int len, int flags);
+static BOOL init_nisp_from_sam(nis_object *obj, const SAM_ACCOUNT *sampass,
+			       nis_object *old);
+static nis_result *nisp_get_nis_list(const char *nisname, unsigned int flags);
+
+/***************************************************************
+ Start enumeration of the passwd list.
+****************************************************************/
+
+static BOOL nisplussam_setsampwent(struct pdb_methods *methods, BOOL update)
+{
+	struct nisp_enum_info *global_nisp_ent = (struct nisp_enum_info *)methods->private_data;
+
+	char *sp, * p = lp_smb_passwd_file();
+	pstring pfiletmp;
+
+	if( (sp = strrchr( p, '/' )) )
+	  safe_strcpy(pfiletmp, sp+1, sizeof(pfiletmp)-1);
+	else
+	  safe_strcpy(pfiletmp, p, sizeof(pfiletmp)-1);
+	safe_strcat(pfiletmp, ".org_dir", sizeof(pfiletmp)-strlen(pfiletmp)-1);
+
+	pdb_endsampwent();	/* just in case */
+	global_nisp_ent->result = nisp_get_nis_list( pfiletmp, 0 );
+	global_nisp_ent->enum_entry = 0;
+	return global_nisp_ent->result != NULL ? True : False;
 }
+
+/***************************************************************
+ End enumeration of the passwd list.
+****************************************************************/
+
+static void nisplussam_endsampwent(struct pdb_methods *methods)
+{
+	struct nisp_enum_info *global_nisp_ent = (struct nisp_enum_info *)methods->private_data;
+  if( global_nisp_ent->result )
+    nis_freeresult(global_nisp_ent->result);
+  global_nisp_ent->result = NULL;
+  global_nisp_ent->enum_entry = 0;
+}
+
+/*****************************************************************
+ Get one SAM_ACCOUNT from the list (next in line)
+*****************************************************************/
+
+static BOOL nisplussam_getsampwent(struct pdb_methods *methods, SAM_ACCOUNT *user)
+{
+
+	struct nisp_enum_info *global_nisp_ent = (struct nisp_enum_info *)methods->private_data;
+  int enum_entry = (int)(global_nisp_ent->enum_entry);
+  nis_result *result = global_nisp_ent->result;
+  
+  if (user==NULL) {
+	DEBUG(0,("SAM_ACCOUNT is NULL.\n"));
+	return False;
+  }
+
+  if (result == NULL ||
+      enum_entry < 0 || enum_entry >= (NIS_RES_NUMOBJ(result) - 1))
+  {
+	return False;
+  } 
+
+  if(!make_sam_from_nisp_object(user, &NIS_RES_OBJECT(result)[enum_entry]) )
+  {
+    DEBUG(0,("Bad SAM_ACCOUNT entry returned from NIS+!\n"));
+	return False;
+  }
+  (int)(global_nisp_ent->enum_entry)++;
+  return True;
+	DEBUG(10, ("nisplussam_getsampwent called\n"));
+	return False;
+}
+
+/******************************************************************
+ Lookup a name in the SAM database
+******************************************************************/
+
+static BOOL nisplussam_getsampwnam (struct pdb_methods *methods, SAM_ACCOUNT *user, const char *sname)
+{
+	/* Static buffers we will return. */
+	nis_result *result = NULL;
+	pstring nisname;
+	BOOL ret;
+	char *pfile = lp_smb_passwd_file();
+
+	if (!*pfile)
+	{
+		DEBUG(0, ("No SMB password file set\n"));
+		return False;
+	}
+	if( strrchr( pfile, '/') )
+                pfile = strrchr( pfile, '/') + 1;
+
+	slprintf(nisname, sizeof(nisname)-1, "[name=%s],%s.org_dir", sname, pfile);
+	DEBUG(10, ("search by nisname: %s\n", nisname));
+
+	/* Search the table. */
+
+	if(!(result = nisp_get_nis_list(nisname, 0)))
+	{
+		return False;
+  	}
+
+	ret = make_sam_from_nisresult(user, result);
+	nis_freeresult(result);
+
+	return ret;
+
+	DEBUG(10, ("nisplussam_getsampwnam called\n"));
+	return False;
+}
+
+/***************************************************************************
+ Search by sid
+ **************************************************************************/
+
+static BOOL nisplussam_getsampwrid (struct pdb_methods *methods, SAM_ACCOUNT *user, uint32 rid)
+{
+	nis_result *result;
+	char *nisname;
+	BOOL ret;
+	char *sp, *p = lp_smb_passwd_file();
+	pstring pfiletmp;
+
+	if (!*p)
+	{
+		DEBUG(0, ("no SMB password file set\n"));
+		return False;
+	}
+
+	if( (sp = strrchr( p, '/' )) )
+          safe_strcpy(pfiletmp, sp+1, sizeof(pfiletmp)-1);
+        else
+          safe_strcpy(pfiletmp, p, sizeof(pfiletmp)-1);
+        safe_strcat(pfiletmp, ".org_dir", sizeof(pfiletmp)-strlen(pfiletmp)-1);
+
+	nisname = make_nisname_from_user_rid(rid, pfiletmp);
+
+	DEBUG(10, ("search by rid: %s\n", nisname));
+
+	/* Search the table. */
+
+	if(!(result = nisp_get_nis_list(nisname, 0)))
+	{
+		return False;
+	}
+
+	ret = make_sam_from_nisresult(user, result);
+	nis_freeresult(result);
+
+	return ret;
+
+	DEBUG(10, ("nisplussam_getsampwsid called\n"));
+	return False;
+}
+
+static BOOL nisplussam_getsampwsid (struct pdb_methods *methods, SAM_ACCOUNT *user, const DOM_SID *sid)
+{
+	uint32 rid;
+	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid))                           return False;
+	return nisplussam_getsampwrid(methods, user, rid);
+}
+
+
+
+/***************************************************************************
+ Delete a SAM_ACCOUNT
+****************************************************************************/
+
+static BOOL nisplussam_delete_sam_account(struct pdb_methods *methods, SAM_ACCOUNT *user)
+{
+
+  const char *sname;
+  char *pfile = lp_smb_passwd_file();
+  pstring nisname;
+  nis_result *result, *delresult;
+  nis_object *obj;
+ 
+  if (!user) {
+	  DEBUG(0, ("no SAM_ACCOUNT specified!\n"));
+	  return False;
+  }
+
+  sname = pdb_get_username(user);
+
+  if (!*pfile)
+    {
+      DEBUG(0, ("no SMB password file set\n"));
+      return False;
+    }
+  if( strrchr( pfile, '/') )
+	  pfile = strrchr( pfile, '/') + 1;
+  
+  slprintf(nisname, sizeof(nisname)-1, "[name=%s],%s.org_dir", sname, pfile);
+  
+  /* Search the table. */
+  
+  if( !(result = nisp_get_nis_list(nisname,
+				   MASTER_ONLY|FOLLOW_LINKS|FOLLOW_PATH|\
+				   EXPAND_NAME|HARD_LOOKUP))) {
+    return False;
+  }
+  
+  if(result->status != NIS_SUCCESS || NIS_RES_NUMOBJ(result) <= 0) {
+    /* User not found. */
+    DEBUG(0,("user not found in NIS+\n"));
+    nis_freeresult(result);
+    return False;
+  }
+
+  obj = NIS_RES_OBJECT(result);
+  slprintf(nisname, sizeof(nisname)-1, "[name=%s],%s.%s", sname, obj->zo_name,
+	   obj->zo_domain);
+
+  DEBUG(10, ("removing name: %s\n", nisname));
+  delresult = nis_remove_entry(nisname, obj, 
+    MASTER_ONLY|REM_MULTIPLE|ALL_RESULTS|FOLLOW_PATH|EXPAND_NAME|HARD_LOOKUP);
+  
+  nis_freeresult(result);
+
+  if(delresult->status != NIS_SUCCESS) {
+    DEBUG(0, ("NIS+ table update failed: %s %s\n",
+          nisname, nis_sperrno(delresult->status)));
+    nis_freeresult(delresult);
+    return False;
+  }
+  nis_freeresult(delresult);
+  return True;
+	DEBUG(10, ("nisplussam_delete_sam_account called\n"));
+	return False;
+}
+
+/***************************************************************************
+ Modifies an existing SAM_ACCOUNT
+****************************************************************************/
+
+static BOOL nisplussam_update_sam_account (struct pdb_methods *methods, SAM_ACCOUNT *newpwd)
+{
+  nis_result *result, *addresult;
+  nis_object *obj;
+  nis_object new_obj;
+  entry_col *ecol;
+  int ta_maxcol;
+  char *pfile = lp_smb_passwd_file();
+  pstring nisname;
+
+  if (!*pfile)
+    {
+      DEBUG(0, ("no SMB password file set\n"));
+      return False;
+    }
+  if( strrchr( pfile, '/') )
+	  pfile = strrchr( pfile, '/') + 1;
+  
+  slprintf(nisname, sizeof(nisname)-1, "[name=%s],%s.org_dir",
+	   pdb_get_username(newpwd), pfile);
+  
+  DEBUG(10, ("search by name: %s\n", nisname));
+  
+  /* Search the table. */
+  
+  if( !(result = nisp_get_nis_list(nisname, MASTER_ONLY|FOLLOW_LINKS|\
+				   FOLLOW_PATH|EXPAND_NAME|HARD_LOOKUP))) {
+    return False;
+  }
+  
+  if(result->status != NIS_SUCCESS || NIS_RES_NUMOBJ(result) <= 0) {
+    /* User not found. */
+    DEBUG(0,("user not found in NIS+\n"));
+    nis_freeresult(result);
+    return False;
+  }
+
+  obj = NIS_RES_OBJECT(result);
+  DEBUG(6,("entry found in %s\n", obj->zo_domain));
+
+  /* we must create new stub object with EN_MODIFIED flag.
+     this is because obj from result is going to be freed and
+     we do not want to break it or cause memory leaks or corruption.
+  */
+  
+  memmove((char *)&new_obj, obj, sizeof (new_obj));
+  ta_maxcol = obj->TA_data.ta_maxcol;
+  
+  if(!(ecol = (entry_col*)malloc(ta_maxcol*sizeof(entry_col)))) {
+    DEBUG(0, ("memory allocation failure\n"));
+    nis_freeresult(result);
+    return False;
+  }
+
+  memmove((char *)ecol, obj->EN_data.en_cols.en_cols_val,
+	  ta_maxcol*sizeof (entry_col));
+  new_obj.EN_data.en_cols.en_cols_val = ecol;
+  new_obj.EN_data.en_cols.en_cols_len = ta_maxcol;
+
+  if ( init_nisp_from_sam(&new_obj, newpwd, obj) == True ) {
+    slprintf(nisname, sizeof(nisname)-1, "[name=%s],%s.%s",
+	   pdb_get_username(newpwd), pfile, obj->zo_domain);
+
+    DEBUG(10, ("NIS+ table update: %s\n", nisname));
+    addresult =
+      nis_modify_entry(nisname, &new_obj, 
+		  MOD_SAMEOBJ | FOLLOW_PATH | EXPAND_NAME | HARD_LOOKUP);
+  
+    if(addresult->status != NIS_SUCCESS) {
+      DEBUG(0, ("NIS+ table update failed: %s %s\n",
+		nisname, nis_sperrno(addresult->status)));
+      nis_freeresult(addresult);
+      nis_freeresult(result);
+      free(ecol);
+      return False;
+    }
+    
+    DEBUG(6,("password changed\n"));
+    nis_freeresult(addresult);
+  } else {
+    DEBUG(6,("nothing to change!\n"));
+  }
+
+  free(ecol);
+  nis_freeresult(result);
+  
+  return True;
+
+	DEBUG(10, ("nisplussam_update_sam_account called\n"));
+	return False;
+}
+
+/***************************************************************************
+ Adds an existing SAM_ACCOUNT
+****************************************************************************/
+
+static BOOL nisplussam_add_sam_account (struct pdb_methods *methods, SAM_ACCOUNT *newpwd)
+{
+  int local_user = 0;
+  char           *pfile;
+  pstring	  pfiletmp;
+  char           *nisname;
+  nis_result     *result = NULL,
+    *tblresult = NULL;
+  nis_object new_obj;
+  entry_col *ecol;
+  int ta_maxcol;
+  
+  /*
+   * 1. find user domain.
+   *   a. try nis search in passwd.org_dir - if found use domain from result.
+   *   b. try getpwnam. this may be needed if user is defined
+   *      in /etc/passwd file (or elsewere) and not in passwd.org_dir.
+   *      if found, use host default domain.
+   *   c. exit with False - no such user.
+   *
+   * 2. add user
+   *   a. find smbpasswd table
+   *      search pfile in user domain if not found, try host default
+   *      domain. 
+   *   b. smbpasswd domain is found, fill data and add entry.
+   *
+   * pfile should contain ONLY table name, org_dir will be concated.
+   * so, at first we will clear path prefix from pfile, and
+   * then we will use pfiletmp as playground to put together full
+   * nisname string.
+   * such approach will make it possible to specify samba private dir
+   * AND still use NIS+ table. as all domain related data is normally
+   * stored in org_dir.DOMAIN, this should be ok do do.
+   */
+
+  pfile = lp_smb_passwd_file();
+  if( strrchr( pfile, '/') )
+    pfile = strrchr( pfile, '/') + 1;
+
+  /*
+   * Check if user is already there.
+   */
+  safe_strcpy(pfiletmp, pfile, sizeof(pfiletmp)-1);
+  safe_strcat(pfiletmp, ".org_dir",
+	      sizeof(pfiletmp)-strlen(pfiletmp)-1);
+
+  if(pdb_get_username(newpwd) != NULL) {
+    nisname = make_nisname_from_name(pdb_get_username(newpwd),
+				     pfiletmp);
+  } else {
+    return False;
+  }
+
+  if(!(result = nisp_get_nis_list(nisname, MASTER_ONLY|FOLLOW_LINKS|\
+				  FOLLOW_PATH|EXPAND_NAME|HARD_LOOKUP))) {
+    return False;
+  }
+  if (result->status != NIS_SUCCESS && 
+      result->status != NIS_NOTFOUND) {
+    DEBUG(3, ( "nis_list failure: %s: %s\n",
+	       nisname,  nis_sperrno(result->status)));
+    nis_freeresult(result);
+    return False;
+  }   
+
+  if (result->status == NIS_SUCCESS && NIS_RES_NUMOBJ(result) > 0)
+    {
+      DEBUG(3, ("User already exists in NIS+ password db: %s\n",
+		pfile));
+      nis_freeresult(result);
+      return False;
+    }
+
+  nis_freeresult(result); /* no such user, free results */
+
+  /*
+   * check for user in unix password database. we need this to get
+   * domain, where smbpasswd entry should be stored.
+   */
+
+  nisname = make_nisname_from_name(pdb_get_username(newpwd),
+				     "passwd.org_dir");
+  
+  result = nisp_get_nis_list(nisname,
+			     MASTER_ONLY|FOLLOW_LINKS|FOLLOW_PATH|\
+			     EXPAND_NAME|HARD_LOOKUP);
+  
+  if (result->status != NIS_SUCCESS || NIS_RES_NUMOBJ(result) <= 0)
+    {
+      struct passwd *passwd;
+      DEBUG(3, ("nis_list failure: %s: %s\n", 
+		nisname,  nis_sperrno(result->status)));
+      nis_freeresult(result);
+
+      if (!(passwd = getpwnam_alloc(pdb_get_username(newpwd)))) {
+	/* no such user in system! */
+	return False;
+      }
+      passwd_free(&passwd);
+
+	/* 
+	 * user is defined, but not in passwd.org_dir.
+	 */
+      local_user = 1;
+    } else {
+      safe_strcpy(pfiletmp, pfile, sizeof(pfiletmp)-1);
+      safe_strcat(pfiletmp, ".", sizeof(pfiletmp)-strlen(pfiletmp)-1);
+      safe_strcat(pfiletmp, NIS_RES_OBJECT(result)->zo_domain,
+		  sizeof(pfiletmp)-strlen(pfiletmp)-1);
+      nis_freeresult(result); /* not needed any more */
+
+      tblresult = nisp_get_nis_list(pfiletmp,
+				    MASTER_ONLY|FOLLOW_LINKS|\
+				    FOLLOW_PATH|EXPAND_NAME|HARD_LOOKUP); 
+    }
+
+  if (local_user || tblresult->status != NIS_SUCCESS)
+    {
+      /*
+       * no user domain or
+       * smbpasswd table not found in user domain, fallback to
+       * default domain.
+       */
+      if (!local_user) /* free previous failed search result */
+	nis_freeresult(tblresult);
+      
+      safe_strcpy(pfiletmp, pfile, sizeof(pfiletmp)-1);
+      safe_strcat(pfiletmp, ".org_dir",
+		  sizeof(pfiletmp)-strlen(pfiletmp)-1);
+      tblresult = nis_lookup(pfiletmp, MASTER_ONLY|FOLLOW_LINKS|\
+			     FOLLOW_PATH|EXPAND_NAME|HARD_LOOKUP);
+      if (tblresult->status != NIS_SUCCESS)
+	{
+	    /* still nothing. bail out */
+	  nis_freeresult(tblresult);
+	  DEBUG(3, ( "nis_lookup failure: %s\n",
+		     nis_sperrno(tblresult->status)));
+	  return False;
+	}
+      /* we need full name for nis_add_entry() */
+      safe_strcpy(pfiletmp, pfile, sizeof(pfiletmp)-1);
+      safe_strcat(pfiletmp, ".", sizeof(pfiletmp)-strlen(pfiletmp)-1);
+      safe_strcat(pfiletmp, NIS_RES_OBJECT(tblresult)->zo_domain,
+		  sizeof(pfiletmp)-strlen(pfiletmp)-1);
+    }
+
+  memset((char *)&new_obj, 0, sizeof (new_obj));
+  /* fill entry headers */
+  /* we do not free these. */
+  new_obj.zo_name   = NIS_RES_OBJECT(tblresult)->zo_name;
+  new_obj.zo_owner  = NIS_RES_OBJECT(tblresult)->zo_owner;
+  new_obj.zo_group  = NIS_RES_OBJECT(tblresult)->zo_group;
+  new_obj.zo_domain = NIS_RES_OBJECT(tblresult)->zo_domain;
+  /* uints */
+  new_obj.zo_access = NIS_RES_OBJECT(tblresult)->zo_access;
+  new_obj.zo_ttl    = NIS_RES_OBJECT(tblresult)->zo_ttl;
+
+  new_obj.zo_data.zo_type = ENTRY_OBJ;
+  new_obj.EN_data.en_type =
+    NIS_RES_OBJECT(tblresult)->TA_data.ta_type;
+
+  ta_maxcol = NIS_RES_OBJECT(tblresult)->TA_data.ta_maxcol;
+  
+  if(!(ecol = (entry_col*)malloc(ta_maxcol*sizeof(entry_col)))) {
+    DEBUG(0, ("memory allocation failure\n"));
+    nis_freeresult(tblresult);
+    return False;
+  }
+  
+  memset((char *)ecol, 0, ta_maxcol*sizeof (entry_col));
+  new_obj.EN_data.en_cols.en_cols_val = ecol;
+  new_obj.EN_data.en_cols.en_cols_len = ta_maxcol;
+  
+  init_nisp_from_sam(&new_obj, newpwd, NULL);
+  
+  DEBUG(10, ( "add NIS+ entry: %s\n", nisname));
+  result = nis_add_entry(pfiletmp, &new_obj, 0);
+
+  free(ecol); /* free allocated entry space */
+  
+  if (result->status != NIS_SUCCESS)
+    {
+      DEBUG(3, ( "NIS+ table update failed: %s,%s\n",
+		 nisname, nis_sperrno(result->status)));
+      nis_freeresult(tblresult);
+      nis_freeresult(result);
+      return False;
+    }
+  
+  nis_freeresult(tblresult);
+  nis_freeresult(result);
+  
+  return True;
+
+	DEBUG(10, ("nisplussam_add_sam_account called\n"));
+	return False;
+}
+
+NTSTATUS pdb_init_nisplussam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+{
+	NTSTATUS nt_status;
+
+	if (!NT_STATUS_IS_OK(nt_status = make_pdb_methods(pdb_context->mem_ctx, pdb_method))) {
+		return nt_status;
+	}
+
+	(*pdb_method)->name = "nisplussam";
+
+	/* Functions your pdb module doesn't provide should be set 
+	 * to NULL */
+
+	(*pdb_method)->setsampwent = nisplussam_setsampwent;
+	(*pdb_method)->endsampwent = nisplussam_endsampwent;
+	(*pdb_method)->getsampwent = nisplussam_getsampwent;
+	(*pdb_method)->getsampwnam = nisplussam_getsampwnam;
+	(*pdb_method)->getsampwsid = nisplussam_getsampwsid;
+	(*pdb_method)->add_sam_account = nisplussam_add_sam_account;
+	(*pdb_method)->update_sam_account = nisplussam_update_sam_account;
+	(*pdb_method)->delete_sam_account = nisplussam_delete_sam_account;
+	(*pdb_method)->private_data = malloc(sizeof(struct nisp_enum_info));
+
+	return NT_STATUS_OK;
+}
+
 
 /*******************************************************************
  converts UNIX uid to an NT User RID.
@@ -134,14 +685,6 @@ static uint32 pdb_uid_to_user_rid(uid_t uid)
 }
 
 /***************************************************************
- Signal function to tell us we timed out.
-****************************************************************/
-static void gotalarm_sig(void)
-{
-  gotalarm = 1;
-}
-
-/***************************************************************
  make_nisname_from_user_rid
  ****************************************************************/
 static char *make_nisname_from_user_rid(uint32 rid, char *pfile)
@@ -150,21 +693,6 @@ static char *make_nisname_from_user_rid(uint32 rid, char *pfile)
 
 	safe_strcpy(nisname, "[user_rid=", sizeof(nisname)-1);
 	slprintf(nisname, sizeof(nisname)-1, "%s%d", nisname, rid);
-	safe_strcat(nisname, "],", sizeof(nisname)-strlen(nisname)-1);
-	safe_strcat(nisname, pfile, sizeof(nisname)-strlen(nisname)-1);
-
-	return nisname;
-}
-
-/***************************************************************
- make_nisname_from_uid
- ****************************************************************/
-static char *make_nisname_from_uid(int uid, char *pfile)
-{
-	static pstring nisname;
-
-	safe_strcpy(nisname, "[uid=", sizeof(nisname)-1);
-	slprintf(nisname, sizeof(nisname)-1, "%s%d", nisname, uid);
 	safe_strcat(nisname, "],", sizeof(nisname)-strlen(nisname)-1);
 	safe_strcat(nisname, pfile, sizeof(nisname)-strlen(nisname)-1);
 
@@ -750,14 +1278,14 @@ static BOOL init_nisp_from_sam(nis_object *obj, const SAM_ACCOUNT *sampass,
     
     /* logon_script */
     /* must support set, unset and change */
-    if( (pdb_get_logon_script(sampass) && 
-	 !ENTRY_VAL(old, NPF_LOGON_SCRIPT) ||
-	 (ENTRY_VAL(old, NPF_LOGON_SCRIPT) &&
-	  !pdb_get_logon_script(sampass)) ||
-	 ( ENTRY_VAL(old, NPF_LOGON_SCRIPT) &&
+    if( ((pdb_get_logon_script(sampass) && 
+	 !ENTRY_VAL(old, NPF_LOGON_SCRIPT)) ||
+	 ((ENTRY_VAL(old, NPF_LOGON_SCRIPT) &&
+	  (!pdb_get_logon_script(sampass)))) ||
+	 (( ENTRY_VAL(old, NPF_LOGON_SCRIPT) &&
 	   pdb_get_logon_script(sampass) &&
 	   strcmp( ENTRY_VAL(old, NPF_LOGON_SCRIPT),
-		   pdb_get_logon_script(sampass))))) {
+		   pdb_get_logon_script(sampass)))))) {
       need_to_modify = True;
       set_single_attribute(obj, NPF_LOGON_SCRIPT,
 			   pdb_get_logon_script(sampass),
@@ -803,9 +1331,9 @@ static BOOL init_nisp_from_sam(nis_object *obj, const SAM_ACCOUNT *sampass,
 	 (ENTRY_VAL(old, NPF_WORKSTATIONS) &&
 	  !pdb_get_workstations(sampass)) ||
 	 (ENTRY_VAL(old, NPF_WORKSTATIONS) &&
-	  pdb_get_workstations(sampass)) &&
+	  (pdb_get_workstations(sampass)) &&
 	 strcmp( ENTRY_VAL(old, NPF_WORKSTATIONS), 
-		 pdb_get_workstations(sampass))) {
+		 pdb_get_workstations(sampass)))) {
       need_to_modify = True;
       set_single_attribute(obj, NPF_WORKSTATIONS,
 			   pdb_get_workstations(sampass),
@@ -899,7 +1427,7 @@ static BOOL init_nisp_from_sam(nis_object *obj, const SAM_ACCOUNT *sampass,
 /***************************************************************
  calls nis_list, returns results.
  ****************************************************************/
-static nis_result *nisp_get_nis_list(const char *nis_name, unsigned int flags)
+static nis_result *nisp_get_nis_list(const char *nisname, unsigned int flags)
 {
 	nis_result *result;
 	int i;
@@ -909,17 +1437,11 @@ static nis_result *nisp_get_nis_list(const char *nis_name, unsigned int flags)
 
 	for(i = 0; i<2;i++ ) {
 	  alarm(60);		/* hopefully ok for long searches */
-	  result = nis_list(nis_name, flags,NULL,NULL);
+	  result = nis_list(nisname, flags,NULL,NULL);
 
 	  alarm(0);
 	  CatchSignal(SIGALRM, SIGNAL_CAST SIG_DFL);
 
-	  if (gotalarm)
-	  {
-		DEBUG(0,("NIS+ lookup time out\n"));
-		nis_freeresult(result);
-		return NULL;
-	  }
 	  if( !(flags & MASTER_ONLY) && NIS_RES_NUMOBJ(result) <= 0 ) {
 	    /* nis replicas are not in sync perhaps?
              * this can happen, if account was just added.
@@ -933,506 +1455,10 @@ static nis_result *nisp_get_nis_list(const char *nis_name, unsigned int flags)
 	return result;
 }
 
-/***************************************************************
- Start to enumerate the nisplus passwd list.
- ****************************************************************/
-BOOL pdb_setsampwent(BOOL update)
-{
-	char *sp, * p = lp_smb_passwd_file();
-	pstring pfiletmp;
-
-	if( (sp = strrchr( p, '/' )) )
-	  safe_strcpy(pfiletmp, sp+1, sizeof(pfiletmp)-1);
-	else
-	  safe_strcpy(pfiletmp, p, sizeof(pfiletmp)-1);
-	safe_strcat(pfiletmp, ".org_dir", sizeof(pfiletmp)-strlen(pfiletmp)-1);
-
-	pdb_endsampwent();	/* just in case */
-	global_nisp_ent.result = nisp_get_nis_list( pfiletmp, 0 );
-	global_nisp_ent.enum_entry = 0;
-	return global_nisp_ent.result != NULL ? True : False;
+#else 
+NTSTATUS pdb_init_nisplussam(PDB_CONTEXT *c, PDB_METHODS **m, const char *l)
+{ 
+	DEBUG(0, ("nisplus sam not compiled in!\n"));
+	return NT_STATUS_UNSUCCESSFUL;
 }
-
-/***************************************************************
- End enumeration of the nisplus passwd list.
-****************************************************************/
-void pdb_endsampwent(void)
-{
-  if( global_nisp_ent.result )
-    nis_freeresult(global_nisp_ent.result);
-  global_nisp_ent.result = NULL;
-  global_nisp_ent.enum_entry = 0;
-}
-
-/*************************************************************************
- Routine to return the next entry in the nisplus passwd list.
- *************************************************************************/
-BOOL pdb_getsampwent(SAM_ACCOUNT *user)
-{
-  int enum_entry = (int)(global_nisp_ent.enum_entry);
-  nis_result *result = global_nisp_ent.result;
-  
-  if (user==NULL) {
-	DEBUG(0,("SAM_ACCOUNT is NULL.\n"));
-	return False;
-  }
-
-  if (result == NULL ||
-      enum_entry < 0 || enum_entry >= (NIS_RES_NUMOBJ(result) - 1))
-  {
-	return False;
-  } 
-
-  if(!make_sam_from_nisp_object(user, &NIS_RES_OBJECT(result)[enum_entry]) )
-  {
-    DEBUG(0,("Bad SAM_ACCOUNT entry returned from NIS+!\n"));
-	return False;
-  }
-  (int)(global_nisp_ent.enum_entry)++;
-  return True;
-}
-
-/*************************************************************************
- Routine to search the nisplus passwd file for an entry matching the username
- *************************************************************************/
-BOOL pdb_getsampwnam(SAM_ACCOUNT * user, const char *sname)
-{
-	/* Static buffers we will return. */
-	nis_result *result = NULL;
-	pstring nisname;
-	BOOL ret;
-	char *pfile = lp_smb_passwd_file();
-        int i;
-
-	if (!*pfile)
-	{
-		DEBUG(0, ("No SMB password file set\n"));
-		return False;
-	}
-	if( strrchr( pfile, '/') )
-                pfile = strrchr( pfile, '/') + 1;
-
-	slprintf(nisname, sizeof(nisname)-1, "[name=%s],%s.org_dir", sname, pfile);
-	DEBUG(10, ("search by nisname: %s\n", nisname));
-
-	/* Search the table. */
-
-	if(!(result = nisp_get_nis_list(nisname, 0)))
-	{
-		return False;
-  	}
-
-	ret = make_sam_from_nisresult(user, result);
-	nis_freeresult(result);
-
-	return ret;
-}
-
-/*************************************************************************
- Routine to search the nisplus passwd file for an entry matching the username
- *************************************************************************/
-
-BOOL pdb_getsampwsid(SAM_ACCOUNT * user, const DOM_SID *sid)
-{
-	uint32 rid;
-	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid))
-		return False;
-	return pdb_getsampwrid(user, rid);
-}
-
-static BOOL pdb_getsampwrid(SAM_ACCOUNT * user, uint32 rid)
-{
-	nis_result *result;
-	char *nisname;
-	BOOL ret;
-	char *sp, *p = lp_smb_passwd_file();
-	pstring pfiletmp;
-
-	if (!*p)
-	{
-		DEBUG(0, ("no SMB password file set\n"));
-		return False;
-	}
-
-	if( (sp = strrchr( p, '/' )) )
-          safe_strcpy(pfiletmp, sp+1, sizeof(pfiletmp)-1);
-        else
-          safe_strcpy(pfiletmp, p, sizeof(pfiletmp)-1);
-        safe_strcat(pfiletmp, ".org_dir", sizeof(pfiletmp)-strlen(pfiletmp)-1);
-
-	nisname = make_nisname_from_user_rid(rid, pfiletmp);
-
-	DEBUG(10, ("search by rid: %s\n", nisname));
-
-	/* Search the table. */
-
-	if(!(result = nisp_get_nis_list(nisname, 0)))
-	{
-		return False;
-	}
-
-	ret = make_sam_from_nisresult(user, result);
-	nis_freeresult(result);
-
-	return ret;
-}
-
-/*************************************************************************
- Routine to remove entry from the nisplus smbpasswd table
- *************************************************************************/
-BOOL pdb_delete_sam_account(SAM_ACCOUNT * user)
-{
-  const char *sname;
-  char *pfile = lp_smb_passwd_file();
-  pstring nisname;
-  nis_result *result, *delresult;
-  nis_object *obj;
-  int i;
- 
-  if (!user) {
-	  DEBUG(0, ("no SAM_ACCOUNT specified!\n"));
-	  return False;
-  }
-
-  sname = pdb_get_username(user);
-
-  if (!*pfile)
-    {
-      DEBUG(0, ("no SMB password file set\n"));
-      return False;
-    }
-  if( strrchr( pfile, '/') )
-	  pfile = strrchr( pfile, '/') + 1;
-  
-  slprintf(nisname, sizeof(nisname)-1, "[name=%s],%s.org_dir", sname, pfile);
-  
-  /* Search the table. */
-  
-  if( !(result = nisp_get_nis_list(nisname,
-				   MASTER_ONLY|FOLLOW_LINKS|FOLLOW_PATH|\
-				   EXPAND_NAME|HARD_LOOKUP))) {
-    return False;
-  }
-  
-  if(result->status != NIS_SUCCESS || NIS_RES_NUMOBJ(result) <= 0) {
-    /* User not found. */
-    DEBUG(0,("user not found in NIS+\n"));
-    nis_freeresult(result);
-    return False;
-  }
-
-  obj = NIS_RES_OBJECT(result);
-  slprintf(nisname, sizeof(nisname)-1, "[name=%s],%s.%s", sname, obj->zo_name,
-	   obj->zo_domain);
-
-  DEBUG(10, ("removing name: %s\n", nisname));
-  delresult = nis_remove_entry(nisname, obj, 
-    MASTER_ONLY|REM_MULTIPLE|ALL_RESULTS|FOLLOW_PATH|EXPAND_NAME|HARD_LOOKUP);
-  
-  nis_freeresult(result);
-
-  if(delresult->status != NIS_SUCCESS) {
-    DEBUG(0, ("NIS+ table update failed: %s %s\n",
-          nisname, nis_sperrno(delresult->status)));
-    nis_freeresult(delresult);
-    return False;
-  }
-  nis_freeresult(delresult);
-  return True;
-}
-
-/************************************************************************
- Routine to add an entry to the nisplus passwd file.
-*************************************************************************/
-BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
-{
-  int local_user = 0;
-  char           *pfile;
-  pstring	  pfiletmp;
-  char           *nisname;
-  nis_result     *result = NULL,
-    *tblresult = NULL;
-  nis_object new_obj;
-  entry_col *ecol;
-  int ta_maxcol;
-  
-  /*
-   * 1. find user domain.
-   *   a. try nis search in passwd.org_dir - if found use domain from result.
-   *   b. try getpwnam. this may be needed if user is defined
-   *      in /etc/passwd file (or elsewere) and not in passwd.org_dir.
-   *      if found, use host default domain.
-   *   c. exit with False - no such user.
-   *
-   * 2. add user
-   *   a. find smbpasswd table
-   *      search pfile in user domain if not found, try host default
-   *      domain. 
-   *   b. smbpasswd domain is found, fill data and add entry.
-   *
-   * pfile should contain ONLY table name, org_dir will be concated.
-   * so, at first we will clear path prefix from pfile, and
-   * then we will use pfiletmp as playground to put together full
-   * nisname string.
-   * such approach will make it possible to specify samba private dir
-   * AND still use NIS+ table. as all domain related data is normally
-   * stored in org_dir.DOMAIN, this should be ok do do.
-   */
-
-  pfile = lp_smb_passwd_file();
-  if( strrchr( pfile, '/') )
-    pfile = strrchr( pfile, '/') + 1;
-
-  /*
-   * Check if user is already there.
-   */
-  safe_strcpy(pfiletmp, pfile, sizeof(pfiletmp)-1);
-  safe_strcat(pfiletmp, ".org_dir",
-	      sizeof(pfiletmp)-strlen(pfiletmp)-1);
-
-  if(pdb_get_username(newpwd) != NULL) {
-    nisname = make_nisname_from_name(pdb_get_username(newpwd),
-				     pfiletmp);
-  } else {
-    return False;
-  }
-
-  if(!(result = nisp_get_nis_list(nisname, MASTER_ONLY|FOLLOW_LINKS|\
-				  FOLLOW_PATH|EXPAND_NAME|HARD_LOOKUP))) {
-    return False;
-  }
-  if (result->status != NIS_SUCCESS && 
-      result->status != NIS_NOTFOUND) {
-    DEBUG(3, ( "nis_list failure: %s: %s\n",
-	       nisname,  nis_sperrno(result->status)));
-    nis_freeresult(result);
-    return False;
-  }   
-
-  if (result->status == NIS_SUCCESS && NIS_RES_NUMOBJ(result) > 0)
-    {
-      DEBUG(3, ("User already exists in NIS+ password db: %s\n",
-		pfile));
-      nis_freeresult(result);
-      return False;
-    }
-
-  nis_freeresult(result); /* no such user, free results */
-
-  /*
-   * check for user in unix password database. we need this to get
-   * domain, where smbpasswd entry should be stored.
-   */
-
-  nisname = make_nisname_from_name(pdb_get_username(newpwd),
-				     "passwd.org_dir");
-  
-  result = nisp_get_nis_list(nisname,
-			     MASTER_ONLY|FOLLOW_LINKS|FOLLOW_PATH|\
-			     EXPAND_NAME|HARD_LOOKUP);
-  
-  if (result->status != NIS_SUCCESS || NIS_RES_NUMOBJ(result) <= 0)
-    {
-      struct passwd *passwd;
-      DEBUG(3, ("nis_list failure: %s: %s\n", 
-		nisname,  nis_sperrno(result->status)));
-      nis_freeresult(result);
-
-      if (!(passwd = getpwnam_alloc(pdb_get_username(newpwd)))) {
-	/* no such user in system! */
-	return False;
-      }
-      passwd_free(&passwd);
-
-	/* 
-	 * user is defined, but not in passwd.org_dir.
-	 */
-      local_user = 1;
-    } else {
-      safe_strcpy(pfiletmp, pfile, sizeof(pfiletmp)-1);
-      safe_strcat(pfiletmp, ".", sizeof(pfiletmp)-strlen(pfiletmp)-1);
-      safe_strcat(pfiletmp, NIS_RES_OBJECT(result)->zo_domain,
-		  sizeof(pfiletmp)-strlen(pfiletmp)-1);
-      nis_freeresult(result); /* not needed any more */
-
-      tblresult = nisp_get_nis_list(pfiletmp,
-				    MASTER_ONLY|FOLLOW_LINKS|\
-				    FOLLOW_PATH|EXPAND_NAME|HARD_LOOKUP); 
-    }
-
-  if (local_user || tblresult->status != NIS_SUCCESS)
-    {
-      /*
-       * no user domain or
-       * smbpasswd table not found in user domain, fallback to
-       * default domain.
-       */
-      if (!local_user) /* free previous failed search result */
-	nis_freeresult(tblresult);
-      
-      safe_strcpy(pfiletmp, pfile, sizeof(pfiletmp)-1);
-      safe_strcat(pfiletmp, ".org_dir",
-		  sizeof(pfiletmp)-strlen(pfiletmp)-1);
-      tblresult = nis_lookup(pfiletmp, MASTER_ONLY|FOLLOW_LINKS|\
-			     FOLLOW_PATH|EXPAND_NAME|HARD_LOOKUP);
-      if (tblresult->status != NIS_SUCCESS)
-	{
-	    /* still nothing. bail out */
-	  nis_freeresult(tblresult);
-	  DEBUG(3, ( "nis_lookup failure: %s\n",
-		     nis_sperrno(tblresult->status)));
-	  return False;
-	}
-      /* we need full name for nis_add_entry() */
-      safe_strcpy(pfiletmp, pfile, sizeof(pfiletmp)-1);
-      safe_strcat(pfiletmp, ".", sizeof(pfiletmp)-strlen(pfiletmp)-1);
-      safe_strcat(pfiletmp, NIS_RES_OBJECT(tblresult)->zo_domain,
-		  sizeof(pfiletmp)-strlen(pfiletmp)-1);
-    }
-
-  memset((char *)&new_obj, 0, sizeof (new_obj));
-  /* fill entry headers */
-  /* we do not free these. */
-  new_obj.zo_name   = NIS_RES_OBJECT(tblresult)->zo_name;
-  new_obj.zo_owner  = NIS_RES_OBJECT(tblresult)->zo_owner;
-  new_obj.zo_group  = NIS_RES_OBJECT(tblresult)->zo_group;
-  new_obj.zo_domain = NIS_RES_OBJECT(tblresult)->zo_domain;
-  /* uints */
-  new_obj.zo_access = NIS_RES_OBJECT(tblresult)->zo_access;
-  new_obj.zo_ttl    = NIS_RES_OBJECT(tblresult)->zo_ttl;
-
-  new_obj.zo_data.zo_type = ENTRY_OBJ;
-  new_obj.EN_data.en_type =
-    NIS_RES_OBJECT(tblresult)->TA_data.ta_type;
-
-  ta_maxcol = NIS_RES_OBJECT(tblresult)->TA_data.ta_maxcol;
-  
-  if(!(ecol = (entry_col*)malloc(ta_maxcol*sizeof(entry_col)))) {
-    DEBUG(0, ("memory allocation failure\n"));
-    nis_freeresult(tblresult);
-    return False;
-  }
-  
-  memset((char *)ecol, 0, ta_maxcol*sizeof (entry_col));
-  new_obj.EN_data.en_cols.en_cols_val = ecol;
-  new_obj.EN_data.en_cols.en_cols_len = ta_maxcol;
-  
-  init_nisp_from_sam(&new_obj, newpwd, NULL);
-  
-  DEBUG(10, ( "add NIS+ entry: %s\n", nisname));
-  result = nis_add_entry(pfiletmp, &new_obj, 0);
-
-  free(ecol); /* free allocated entry space */
-  
-  if (result->status != NIS_SUCCESS)
-    {
-      DEBUG(3, ( "NIS+ table update failed: %s\n",
-		 nisname, nis_sperrno(result->status)));
-      nis_freeresult(tblresult);
-      nis_freeresult(result);
-      return False;
-    }
-  
-  nis_freeresult(tblresult);
-  nis_freeresult(result);
-  
-  return True;
-}
-
-/************************************************************************
- Routine to modify the nisplus passwd entry.
-************************************************************************/
-BOOL pdb_update_sam_account(SAM_ACCOUNT * newpwd)
-{
-  nis_result *result, *addresult;
-  nis_object *obj;
-  nis_object new_obj;
-  entry_col *ecol;
-  int ta_maxcol;
-  char *pfile = lp_smb_passwd_file();
-  pstring nisname;
-  int i;
-
-  if (!*pfile)
-    {
-      DEBUG(0, ("no SMB password file set\n"));
-      return False;
-    }
-  if( strrchr( pfile, '/') )
-	  pfile = strrchr( pfile, '/') + 1;
-  
-  slprintf(nisname, sizeof(nisname)-1, "[name=%s],%s.org_dir",
-	   pdb_get_username(newpwd), pfile);
-  
-  DEBUG(10, ("search by name: %s\n", nisname));
-  
-  /* Search the table. */
-  
-  if( !(result = nisp_get_nis_list(nisname, MASTER_ONLY|FOLLOW_LINKS|\
-				   FOLLOW_PATH|EXPAND_NAME|HARD_LOOKUP))) {
-    return False;
-  }
-  
-  if(result->status != NIS_SUCCESS || NIS_RES_NUMOBJ(result) <= 0) {
-    /* User not found. */
-    DEBUG(0,("user not found in NIS+\n"));
-    nis_freeresult(result);
-    return False;
-  }
-
-  obj = NIS_RES_OBJECT(result);
-  DEBUG(6,("entry found in %s\n", obj->zo_domain));
-
-  /* we must create new stub object with EN_MODIFIED flag.
-     this is because obj from result is going to be freed and
-     we do not want to break it or cause memory leaks or corruption.
-  */
-  
-  memmove((char *)&new_obj, obj, sizeof (new_obj));
-  ta_maxcol = obj->TA_data.ta_maxcol;
-  
-  if(!(ecol = (entry_col*)malloc(ta_maxcol*sizeof(entry_col)))) {
-    DEBUG(0, ("memory allocation failure\n"));
-    nis_freeresult(result);
-    return False;
-  }
-
-  memmove((char *)ecol, obj->EN_data.en_cols.en_cols_val,
-	  ta_maxcol*sizeof (entry_col));
-  new_obj.EN_data.en_cols.en_cols_val = ecol;
-  new_obj.EN_data.en_cols.en_cols_len = ta_maxcol;
-
-  if ( init_nisp_from_sam(&new_obj, newpwd, obj) == True ) {
-    slprintf(nisname, sizeof(nisname)-1, "[name=%s],%s.%s",
-	   pdb_get_username(newpwd), pfile, obj->zo_domain);
-
-    DEBUG(10, ("NIS+ table update: %s\n", nisname));
-    addresult =
-      nis_modify_entry(nisname, &new_obj, 
-		  MOD_SAMEOBJ | FOLLOW_PATH | EXPAND_NAME | HARD_LOOKUP);
-  
-    if(addresult->status != NIS_SUCCESS) {
-      DEBUG(0, ("NIS+ table update failed: %s %s\n",
-		nisname, nis_sperrno(addresult->status)));
-      nis_freeresult(addresult);
-      nis_freeresult(result);
-      free(ecol);
-      return False;
-    }
-    
-    DEBUG(6,("password changed\n"));
-    nis_freeresult(addresult);
-  } else {
-    DEBUG(6,("nothing to change!\n"));
-  }
-
-  free(ecol);
-  nis_freeresult(result);
-  
-  return True;
-}
- 
-#else
- void nisplus_dummy_function(void);
- void nisplus_dummy_function(void) { } /* stop some compilers complaining */
-#endif /* WITH_NISPLUSSAM */
+#endif /* WITH_NISPLUS_SAM */
