@@ -6,10 +6,18 @@ RCSID("$Id$");
 #endif
 
 #include <des.h>
+#include <des_locl.h>
 
 #include <sys/bitypes.h>
 #include <sys/time.h>
+
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#ifdef HAVE_IO_H
+#include <io.h>
+#endif
+
 #include <signal.h>
 #include <fcntl.h>
 #include <string.h>
@@ -102,6 +110,8 @@ static volatile unsigned char *gdata; /* Global data */
 static volatile int igdata;	/* Index into global data */
 static int gsize;
 
+#ifndef WIN32	/* Visual C++ 4.0 (Windows95/NT) */
+
 static
 RETSIGTYPE
 sigALRM(int sig)
@@ -112,9 +122,14 @@ sigALRM(int sig)
     SIGRETURN(0);
 }
 
-#ifdef HAVE_RANDOM
+#endif
 
-/* XXX this is a quick hack, should be fixed */
+#if !defined(HAVE_RANDOM) && defined(HAVE_RAND)
+#define srandom srand
+#define random rand
+#endif
+
+#ifdef HAVE_RANDOM
 
 void
 des_not_rand_data(unsigned char *data, int size)
@@ -128,6 +143,8 @@ des_not_rand_data(unsigned char *data, int size)
 }
 
 #endif
+
+#ifndef WIN32
 
 #ifndef HAVE_SETITIMER
 void pacemaker(struct timeval *tv)
@@ -216,6 +233,13 @@ des_rand_data(unsigned char *data, int size)
 #endif
     sigaction(SIGALRM, &osa, 0);
 }
+#else
+void
+des_rand_data(unsigned char *p, int s)
+{
+  return des_not_rand_data (p, s);
+}
+#endif
 
 void
 des_generate_random_block(des_cblock *block)
@@ -223,7 +247,6 @@ des_generate_random_block(des_cblock *block)
   des_rand_data((unsigned char *)block, sizeof(*block));
 }
 
-#if 0
 /*
  * Generate a "random" DES key.
  */
@@ -255,7 +278,6 @@ des_mem_rand8(unsigned char *data)
 {
   return 1;
 }
-#endif
 
 /*
  * In case the generator does not get initialized use this as fallback.

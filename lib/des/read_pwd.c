@@ -51,10 +51,17 @@
 #include <string.h>
 #include <setjmp.h>
 
+#ifdef WIN32	/* Visual C++ 4.0 (Windows95/NT) */
+#include "winlocl/passwd_dlg.h"
+#endif /* WIN32 */
+ 
 /* There are 5 types of terminal interface supported,
  * TERMIO, TERMIOS, VMS, MSDOS and SGTTY
  */
 
+/* Now there are also support for Windows95/NT inteface
+ * d93-jka 960530
+ */
 #if defined(sgi) || defined(__sgi)
 #define TERMIOS
 #undef TERMIO
@@ -65,7 +72,7 @@
 #define TERMIO
 #endif
 
-#if !defined(TERMIO) && !defined(TERMIOS) && !defined(VMS) && !defined(MSDOS)
+#if !defined(TERMIO) && !defined(TERMIOS) && !defined(VMS) && !defined(MSDOS) && !defined(WIN32)
 #define SGTTY
 #endif
 
@@ -93,7 +100,7 @@
 #define TTY_set(tty,data)	ioctl(tty,TIOCSETP,data)
 #endif
 
-#if !defined(_LIBC) && !defined(MSDOS)
+#if !defined(_LIBC) && !defined(MSDOS) && !defined(WIN32)
 #include <sys/ioctl.h>
 #endif
 
@@ -205,6 +212,9 @@ int size;
 char *prompt;
 int verify;
 	{
+#ifdef WIN32	/* Visual C++ 4.0 (Windows95/NT) */
+	return pwd_dialog(buf, size);
+#else /* !WIN32 */
 #ifdef VMS
 	struct IOSB iosb;
 	$DESCRIPTOR(terminal,"TT");
@@ -321,8 +331,10 @@ error:
 	status = SYS$DASSGN(channel);
 #endif
 	return(!ok);
+#endif /* !WIN32 */
 	}
 
+#ifndef WIN32	/* Visual C++ 4.0 (Windows95/NT) */
 static void pushsig()
 	{
 	int i;
@@ -347,6 +359,8 @@ int i;
 	i=i;
 #endif
 	}
+
+#endif /* !WIN32 */
 
 #ifdef MSDOS
 static int noecho_fgets(buf,size,tty)

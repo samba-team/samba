@@ -119,6 +119,10 @@ typedef des_key_schedule bit_64;
 extern int des_check_key;	/* defaults to false */
 extern int des_rw_mode;		/* defaults to DES_PCBC_MODE */
 
+#ifdef cplusplus
+extern "C" {
+#endif
+
 /* The next line is used to disable full ANSI prototypes, if your
  * compiler has problems with the prototypes, make sure this line always
  * evaluates to true :-) */
@@ -255,4 +259,9 @@ void des_generate_random_block();
 void des_rand_data();
 
 #endif
+
+#ifdef cplusplus
+}
+#endif
+
 #endif

@@ -52,7 +52,7 @@
 #include <config.h>
 #endif
 
-#ifndef MSDOS
+#if !defined(MSDOS) && !defined(WIN32)
 #define TIMES
 #endif
 
@@ -178,6 +178,7 @@ int s;
 #endif
 	}
 
+/*
 int main(argc,argv)
 int argc;
 char **argv;
@@ -313,3 +314,4 @@ char **argv;
 	return(0);
 #endif
 	}
+*/

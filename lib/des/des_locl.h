@@ -72,8 +72,11 @@
 #define HEADER_DES_LOCL_H
 #include <stdio.h>
 #include <stdlib.h>
-#ifndef MSDOS
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#ifdef HAVE_IO_H
+#include <io.h>
 #endif
 #include "des.h"
 
@@ -101,7 +104,7 @@
 #undef NOPROTO
 #endif
 
-#if defined(__STDC__) || defined(VMS) || defined(M_XENIX) || defined(MSDOS)
+#if defined(__STDC__) || defined(VMS) || defined(M_XENIX) || defined(MSDOS) || defined(WIN32)
 #include <string.h>
 #endif
 

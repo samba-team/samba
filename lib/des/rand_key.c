@@ -58,6 +58,8 @@ des_cblock key;
 	seed=1;
 	}
 
+/* Old source */
+/*
 void des_random_key(ret)
 unsigned char *ret;
 	{
@@ -70,7 +72,7 @@ unsigned char *ret;
 	DES_LONG t;
 	int i;
 
-#ifdef MSDOS
+#if defined(MSDOS) || defined(WIN32)
 	pid=1;
 #else
 	if (!pid) pid=getpid();
@@ -105,3 +107,4 @@ unsigned char *ret;
 	memset(ks,0,sizeof(ks));
 	t=0;
 	}
+*/
