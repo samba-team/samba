@@ -1,3 +1,29 @@
+2003-08-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* inquire_cred.c (gss_inquire_cred): handle cred_handle beeing
+	GSS_C_NO_CREDENTIAL and use the default cred then.
+	
+2003-08-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gss_acquire_cred.3: break out extensions and document
+	gsskrb5_register_acceptor_identity
+
+2003-08-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* test_acquire_cred.c (print_time): time is returned in seconds
+	from now, not unix time
+
+2003-08-17  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* compat.c (check_compat): avoid leaking principal when finding a
+	match
+
+	* address_to_krb5addr.c: sa_size argument to krb5_addr2sockaddr is
+	a krb5_socklen_t
+
+	* acquire_cred.c (gss_acquire_cred): 4th argument to
+	gss_test_oid_set_member is a int
+
 2003-07-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* init_sec_context.c (repl_mutual): don't set kerberos error where
