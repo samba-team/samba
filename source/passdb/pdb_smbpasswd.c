@@ -1144,8 +1144,8 @@ static BOOL build_smb_pass (struct smb_passwd *smb_pw, const SAM_ACCOUNT *sampas
 			smb_pw->smb_userid=passwd->pw_uid;
 			passwd_free(&passwd);
 
-		} else if (fallback_pdb_rid_is_user(rid)) {
-			smb_pw->smb_userid=fallback_pdb_user_rid_to_uid(rid);
+		} else if (algorithmic_pdb_rid_is_user(rid)) {
+			smb_pw->smb_userid=algorithmic_pdb_user_rid_to_uid(rid);
 		} else {
 			DEBUG(0,("build_sam_pass: Failing attempt to store user with non-uid based user RID. \n"));
 			return False;
@@ -1366,7 +1366,7 @@ static NTSTATUS smbpasswd_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUN
 		return nt_status;
 	}
 
-	while ( ((smb_pw=getsmbfilepwent(smbpasswd_state, fp)) != NULL) && (fallback_pdb_uid_to_user_rid(smb_pw->smb_userid) != rid) )
+	while ( ((smb_pw=getsmbfilepwent(smbpasswd_state, fp)) != NULL) && (algorithmic_pdb_uid_to_user_rid(smb_pw->smb_userid) != rid) )
       		/* do nothing */ ;
 
 	endsmbfilepwent(fp, &(smbpasswd_state->pw_file_lock_depth));
