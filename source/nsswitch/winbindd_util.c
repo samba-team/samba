@@ -559,64 +559,72 @@ BOOL winbindd_param_init(void)
 
 char *winbindd_cmd_to_string(enum winbindd_cmd cmd)
 {
-    char *result;
+	char *result;
 
-    switch (cmd) {
+	switch (cmd) {
 
-    case WINBINDD_GETPWNAM_FROM_USER:
-        result = "getpwnam from user";
-        break;
+	case WINBINDD_GETPWNAM_FROM_USER:
+		result = "getpwnam from user";
+		break;
             
-    case WINBINDD_GETPWNAM_FROM_UID:
-        result = "getpwnam from uid";
-        break;
+	case WINBINDD_GETPWNAM_FROM_UID:
+		result = "getpwnam from uid";
+		break;
 
-    case WINBINDD_GETGRNAM_FROM_GROUP:
-        result = "getgrnam from group";
-        break;
+	case WINBINDD_GETGRNAM_FROM_GROUP:
+		result = "getgrnam from group";
+		break;
 
-    case WINBINDD_GETGRNAM_FROM_GID:
-        result = "getgrnam from gid";
-        break;
+	case WINBINDD_GETGRNAM_FROM_GID:
+		result = "getgrnam from gid";
+		break;
 
-    case WINBINDD_SETPWENT:
-        result = "setpwent";
-        break;
+	case WINBINDD_SETPWENT:
+		result = "setpwent";
+		break;
 
-    case WINBINDD_ENDPWENT:
-        result = "endpwent";
-        break;
+	case WINBINDD_ENDPWENT:
+		result = "endpwent";
+		break;
 
-    case WINBINDD_GETPWENT:
-        result = "getpwent";
-        break;
+	case WINBINDD_GETPWENT:
+		result = "getpwent";
+		break;
 
-    case WINBINDD_SETGRENT:
-        result = "setgrent";
-        break;
+	case WINBINDD_SETGRENT:
+		result = "setgrent";
+		break;
 
-    case WINBINDD_ENDGRENT:
-        result = "endgrent"; 
-        break;
+	case WINBINDD_ENDGRENT:
+		result = "endgrent"; 
+		break;
 
-    case WINBINDD_GETGRENT:
-        result = "getgrent";
-        break;
+	case WINBINDD_GETGRENT:
+		result = "getgrent";
+		break;
 
-    case WINBINDD_PAM_AUTH:
-        result = "pam_auth";
-        break;
+	case WINBINDD_PAM_AUTH:
+		result = "pam_auth";
+		break;
 
-    case WINBINDD_PAM_CHAUTHTOK:
-        result = "pam_chauthtok";
-        break;
+	case WINBINDD_PAM_CHAUTHTOK:
+		result = "pam_chauthtok";
+		break;
 
-    default:
-        result = "invalid command";
-        break;
-    }
+	case WINBINDD_LIST_USERS:
+		result = "list_users";
+		break;
 
-    return result;
+	case WINBINDD_LIST_GROUPS:
+		result = "list_groups";
+		break;
+
+	default:
+		result = "invalid command";
+		break;
+	}
+
+	return result;
 };
 
 
@@ -657,4 +665,26 @@ uint32 domain_sequence_number(char *domain_name)
 		 domain_name, (unsigned)ctr.info.inf2.seq_num));
 	
 	return ctr.info.inf2.seq_num;
+}
+
+/* Query display info for a domain.  This returns enough information plus a
+   bit extra to give an overview of domain users for the User Manager
+   application. */
+
+BOOL winbindd_query_dispinfo(struct winbindd_domain *domain,
+                             uint16 info_level, uint32 *num_entries,
+                             SAM_DISPINFO_CTR *ctr)
+{
+	BOOL res;
+
+	if (!domain_handles_open(domain)) return False;
+
+	DEBUG(0, ("query_dispinfo(%s)\n", domain->name));
+
+	res = samr_query_dispinfo(&domain->sam_dom_handle, info_level,
+				  num_entries, ctr);
+
+	DEBUG(0, ("got %d entries\n", *num_entries));
+
+	return res;
 }

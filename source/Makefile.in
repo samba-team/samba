@@ -748,6 +748,8 @@ WINBINDD_OBJ = \
 		$(LIBNMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
 		$(NSSWINS_OBJ) $(SIDDB_OBJ) $(LIBSMB_OBJ)
 
+WBINFO_OBJ = nsswitch/wbinfo.o nsswitch/common.o
+
 WINBIND_NSS_OBJ = nsswitch/winbind_nss.o nsswitch/common.o
 
 WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.po)
@@ -786,7 +788,8 @@ rpctorture : CHECK bin/rpctorture
 
 smbfilter : CHECK bin/smbfilter
 
-nsswitch: CHECK nsswitch/libnss_winbind.so bin/winbindd @pam_modules@
+nsswitch: CHECK nsswitch/libnss_winbind.so bin/winbindd @pam_modules@ \
+	bin/wbinfo
 
 check: all nsswitch
 	$(RUNTEST) $(RUNTESTDEFAULTFLAGS) $(RUNTESTFLAGS)
@@ -1127,6 +1130,10 @@ bin/smbsh: $(SAMBALIB) $(SMBSH_OBJ) bin/.dummy
 bin/winbindd: $(WINBINDD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(WINBINDD_OBJ) $(LIBS)
+
+bin/wbinfo: $(WBINFO_OBJ) $(LIBSAMBA_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(LINK) -o $@ $(WBINFO_OBJ) $(LIBSAMBA_OBJ) $(LIBS)
 
 nsswitch/libnss_winbind.so: $(WINBIND_NSS_PICOBJS)
 	@echo "Linking $@"

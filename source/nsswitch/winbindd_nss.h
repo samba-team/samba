@@ -32,18 +32,20 @@
 /* Socket commands */
 
 enum winbindd_cmd {
-    WINBINDD_GETPWNAM_FROM_USER,     /* getpwnam stuff */
-    WINBINDD_GETPWNAM_FROM_UID,
-    WINBINDD_GETGRNAM_FROM_GROUP,    /* getgrnam stuff */
-    WINBINDD_GETGRNAM_FROM_GID,
-    WINBINDD_SETPWENT,               /* get/set/endpwent */
-    WINBINDD_ENDPWENT,
-    WINBINDD_GETPWENT,
-    WINBINDD_SETGRENT,               /* get/set/endgrent */
-    WINBINDD_ENDGRENT,
-    WINBINDD_GETGRENT,
-    WINBINDD_PAM_AUTH,               /* validate user */
-    WINBINDD_PAM_CHAUTHTOK           /* change password */
+	WINBINDD_GETPWNAM_FROM_USER,     /* getpwnam stuff */
+	WINBINDD_GETPWNAM_FROM_UID,
+	WINBINDD_GETGRNAM_FROM_GROUP,    /* getgrnam stuff */
+	WINBINDD_GETGRNAM_FROM_GID,
+	WINBINDD_SETPWENT,               /* get/set/endpwent */
+	WINBINDD_ENDPWENT,
+	WINBINDD_GETPWENT,
+	WINBINDD_SETGRENT,               /* get/set/endgrent */
+	WINBINDD_ENDGRENT,
+	WINBINDD_GETGRENT,
+	WINBINDD_PAM_AUTH,               /* validate user */
+	WINBINDD_PAM_CHAUTHTOK,          /* change password */
+        WINBINDD_LIST_USERS,             /* list domain users w/o uid map */
+        WINBINDD_LIST_GROUPS             /* list domain groups w/o gid map */
 };
 
 /* Winbind request structure */

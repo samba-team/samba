@@ -48,12 +48,14 @@ void winbindd_cache_dump_status(void);
 
 /*The following definitions come from  nsswitch/winbindd_group.c  */
 
-enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state *state);
+enum winbindd_result winbindd_getgrnam_from_group(
+	struct winbindd_cli_state *state);
 enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state 
                                                 *state);
 enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_endgrent(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state);
+enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state);
 
 /*The following definitions come from  nsswitch/winbindd_idmap.c  */
 
@@ -83,6 +85,7 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_endpwent(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state);
+enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state);
 
 /*The following definitions come from  nsswitch/winbindd_util.c  */
 
@@ -114,4 +117,7 @@ BOOL winbindd_param_init(void);
 char *winbindd_cmd_to_string(enum winbindd_cmd cmd);
 void parse_domain_user(char *domuser, fstring domain, fstring user);
 uint32 domain_sequence_number(char *domain_name);
+BOOL winbindd_query_dispinfo(struct winbindd_domain *domain,
+                             uint16 info_level, uint32 *num_entries,
+                             SAM_DISPINFO_CTR *ctr);
 #endif /* _WINBINDD_PROTO_H_ */

@@ -207,78 +207,89 @@ static int create_sock(void)
 
 static void process_request(struct winbindd_cli_state *state)
 {
-    /* Process command */
+	/* Process command */
 
-    state->response.result = WINBINDD_ERROR;
-    state->response.length = sizeof(struct winbindd_response);
+	state->response.result = WINBINDD_ERROR;
+	state->response.length = sizeof(struct winbindd_response);
 
-    DEBUG(3,("processing command %s from pid %d\n", 
-            winbindd_cmd_to_string(state->request.cmd), state->pid));
+	DEBUG(3,("processing command %s from pid %d\n", 
+		 winbindd_cmd_to_string(state->request.cmd), state->pid));
 
-    if (!server_state.lsa_handle_open) return;
+	if (!server_state.lsa_handle_open) return;
 
-    switch(state->request.cmd) {
+	switch(state->request.cmd) {
         
-        /* User functions */
+		/* User functions */
         
-    case WINBINDD_GETPWNAM_FROM_USER: 
-        state->response.result = winbindd_getpwnam_from_user(state);
-        break;
+	case WINBINDD_GETPWNAM_FROM_USER: 
+		state->response.result = winbindd_getpwnam_from_user(state);
+		break;
         
-    case WINBINDD_GETPWNAM_FROM_UID:
-        state->response.result = winbindd_getpwnam_from_uid(state);
-        break;
+	case WINBINDD_GETPWNAM_FROM_UID:
+		state->response.result = winbindd_getpwnam_from_uid(state);
+		break;
         
-    case WINBINDD_SETPWENT:
-        state->response.result = winbindd_setpwent(state);
-        break;
+	case WINBINDD_SETPWENT:
+		state->response.result = winbindd_setpwent(state);
+		break;
         
-    case WINBINDD_ENDPWENT:
-        state->response.result = winbindd_endpwent(state);
-        break;
+	case WINBINDD_ENDPWENT:
+		state->response.result = winbindd_endpwent(state);
+		break;
         
-    case WINBINDD_GETPWENT:
-        state->response.result = winbindd_getpwent(state);
-        break;
+	case WINBINDD_GETPWENT:
+		state->response.result = winbindd_getpwent(state);
+		break;
 
-        /* Group functions */
+		/* Group functions */
         
-    case WINBINDD_GETGRNAM_FROM_GROUP:
-        state->response.result = winbindd_getgrnam_from_group(state);
-        break;
+	case WINBINDD_GETGRNAM_FROM_GROUP:
+		state->response.result = winbindd_getgrnam_from_group(state);
+		break;
         
-    case WINBINDD_GETGRNAM_FROM_GID:
-        state->response.result = winbindd_getgrnam_from_gid(state);
-        break;
+	case WINBINDD_GETGRNAM_FROM_GID:
+		state->response.result = winbindd_getgrnam_from_gid(state);
+		break;
         
-    case WINBINDD_SETGRENT:
-        state->response.result = winbindd_setgrent(state);
-        break;
+	case WINBINDD_SETGRENT:
+		state->response.result = winbindd_setgrent(state);
+		break;
         
-    case WINBINDD_ENDGRENT:
-        state->response.result = winbindd_endgrent(state);
-        break;
+	case WINBINDD_ENDGRENT:
+		state->response.result = winbindd_endgrent(state);
+		break;
         
-    case WINBINDD_GETGRENT:
-        state->response.result = winbindd_getgrent(state);
-        break;
+	case WINBINDD_GETGRENT:
+		state->response.result = winbindd_getgrent(state);
+		break;
 
-	/* pam auth functions */
+		/* pam auth functions */
 
-    case WINBINDD_PAM_AUTH:
-        state->response.result = winbindd_pam_auth(state);
-        break;
+	case WINBINDD_PAM_AUTH:
+		state->response.result = winbindd_pam_auth(state);
+		break;
 
-    case WINBINDD_PAM_CHAUTHTOK:
-        state->response.result = winbindd_pam_chauthtok(state);
-        break;
+	case WINBINDD_PAM_CHAUTHTOK:
+		state->response.result = winbindd_pam_chauthtok(state);
+		break;
 
-        /* Oops */
+                /* List users and groups without mapping unix ids */ 
+
+        case WINBINDD_LIST_USERS:
+                state->response.result = winbindd_list_users(state);
+                break;
+
+        case WINBINDD_LIST_GROUPS:
+                state->response.result = winbindd_list_groups(state);
+                break;
+
+		/* Oops */
         
-    default:
-        DEBUG(0, ("oops - unknown winbindd command %d\n", state->request.cmd));
-        break;
-    }
+	default:
+		DEBUG(0, ("oops - unknown winbindd command %d\n", 
+			  state->request.cmd));
+		break;
+	}
 }
 
 /* Process a new connection by adding it to the client connection list */

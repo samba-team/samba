@@ -271,7 +271,9 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
 
                         /* Create name */
 			slprintf(entry->name, sizeof(entry->name),
-				 "%s%s%s", name_dom, lp_winbind_separator(), name_user);
+				 "%s%s%s", name_dom,
+				 lp_winbind_separator(), 
+				 name_user);
                         
                         /* Add to list */
 
@@ -434,7 +436,8 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
 
 /* Return a group structure from a group name */
 
-enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_getgrnam_from_group(
+	struct winbindd_cli_state *state)
 {
     DOM_SID group_sid;
     struct winbindd_domain *domain;
@@ -563,7 +566,8 @@ enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state
     }
 
     if (strcmp(lp_winbind_separator(),"\\")) {
-	    string_sub(group_name, "\\", lp_winbind_separator(), sizeof(fstring));
+	    string_sub(group_name, "\\", lp_winbind_separator(), 
+		       sizeof(fstring));
     }
 
     if (!((name_type == SID_NAME_ALIAS) || (name_type == SID_NAME_DOM_GRP))) {
@@ -654,6 +658,52 @@ enum winbindd_result winbindd_endgrent(struct winbindd_cli_state *state)
     return WINBINDD_OK;
 }
 
+/* Get the list of domain groups and domain aliases for a domain */
+
+static BOOL get_sam_group_entries(struct getent_state *ent)
+{
+	uint32 status, start_ndx = 0, start_ndx2 = 0;
+        
+	if (!winbindd_fetch_group_cache(ent->domain->name, 
+					&ent->sam_entries,
+					&ent->num_sam_entries)) {
+		
+                /* Fetch group entries */
+		
+                if (!domain_handles_open(ent->domain)) return False;
+		
+		/* Enumerate domain groups */
+		
+		do {
+                        status =
+				samr_enum_dom_groups(&ent->domain->
+						     sam_dom_handle,
+						     &start_ndx, 0x100000,
+						     &ent->sam_entries,
+						     &ent->num_sam_entries);
+		} while (status == STATUS_MORE_ENTRIES);
+		
+		/* Enumerate domain aliases */
+		
+		do {
+                        status = 
+				samr_enum_dom_aliases(&ent->domain->
+						      sam_dom_handle,
+						      &start_ndx2, 0x100000,
+						      &ent->sam_entries,
+						      &ent->num_sam_entries);
+		} while (status == STATUS_MORE_ENTRIES);
+                
+                /* Fill cache with received entries */
+
+                winbindd_fill_group_cache(ent->domain->name, ent->sam_entries,
+                                          ent->num_sam_entries);
+            }
+	
+	ent->got_sam_entries = True;
+	return True;
+}
+
 /* Fetch next group entry from netdom database */
 
 enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
@@ -668,43 +718,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
         /* Get list of entries if we haven't already got them */
 
         if (!ent->got_sam_entries) {
-            uint32 status, start_ndx = 0, start_ndx2 = 0;
-        
-            if (!winbindd_fetch_group_cache(ent->domain->name, 
-                                            &ent->sam_entries,
-                                            &ent->num_sam_entries)) {
-
-                /* Fetch group entries */
-
-                if (!domain_handles_open(ent->domain)) goto cleanup;
-
-		/* Enumerate domain groups */
-                    
-		do {
-                        status =
-				samr_enum_dom_groups(&ent->domain->sam_dom_handle,
-						     &start_ndx, 0x100000,
-						     &ent->sam_entries,
-						     &ent->num_sam_entries);
-		} while (status == STATUS_MORE_ENTRIES);
-                    
-		/* Enumerate domain aliases */
-                    
-		do {
-                        status = 
-				samr_enum_dom_aliases(&ent->domain->sam_dom_handle,
-						      &start_ndx2, 0x100000,
-						      &ent->sam_entries,
-						      &ent->num_sam_entries);
-		} while (status == STATUS_MORE_ENTRIES);
-                
-                /* Fill cache with received entries */
-
-                winbindd_fill_group_cache(ent->domain->name, ent->sam_entries,
-                                          ent->num_sam_entries);
-            }
-
-            ent->got_sam_entries = True;
+		if (!get_sam_group_entries(ent)) goto cleanup;
         }
 
         /* Send back a group */
@@ -718,7 +732,8 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
             /* Prepend domain to name */
 
 	    slprintf(domain_group_name, sizeof(domain_group_name),
-		     "%s%s%s", ent->domain->name, lp_winbind_separator(), group_name);
+		     "%s%s%s", ent->domain->name, lp_winbind_separator(), 
+		     group_name);
    
             /* Get group entry from group name */
 
@@ -762,4 +777,89 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
     /* Out of pipes so we're done */
 
     return WINBINDD_ERROR;
+}
+
+/* List domain groups without mapping to unix ids */
+
+enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
+{
+        uint32 total_entries = 0;
+        struct winbindd_domain *domain;
+	struct getent_state groups;
+	char *extra_data = NULL;
+	int extra_data_len = 0, i;
+
+        /* Enumerate over trusted domains */
+
+        for (domain = domain_list; domain; domain = domain->next) {
+
+		/* Skip domains other than WINBINDD_DOMAIN environment
+		   variable */ 
+
+		if ((strcmp(state->request.domain, "") != 0) &&
+		    (strcmp(state->request.domain, domain->name) != 0)) {
+			continue;
+		}
+
+		/* Get list of sam groups */
+
+		ZERO_STRUCT(groups);
+		groups.domain = domain;
+
+		get_sam_group_entries(&groups);
+
+		if (groups.num_sam_entries == 0) continue;
+
+		/* Allocate some memory for extra data.  Note that we limit
+		   account names to sizeof(fstring) = 128 characters.  */
+
+		total_entries += groups.num_sam_entries;
+		extra_data = Realloc(extra_data, 
+				     sizeof(fstring) * total_entries);
+
+		if (!extra_data) {
+			return WINBINDD_ERROR;
+		}
+
+		/* Pack user list into extra data fields */
+
+		DEBUG(0, ("got %d entries\n", groups.num_sam_entries));
+
+		for (i = 0; i < groups.num_sam_entries; i++) {
+			char *group_name = (groups.sam_entries)[i].acct_name; 
+			fstring name;
+
+			/* Convert unistring to ascii */
+
+			slprintf(name, sizeof(name), "%s%s%s",
+				 domain->name, lp_winbind_separator(),
+				 group_name);
+
+
+			DEBUG(0, ("appending name %s\n", name));
+
+			/* Append to extra data */
+			
+			memcpy(&extra_data[extra_data_len], name, 
+			       strlen(name));
+			extra_data_len += strlen(name);
+
+			if (i == (groups.num_sam_entries - 1)) {
+				extra_data[extra_data_len++] = '\0';
+			} else {
+				extra_data[extra_data_len++] = ',';
+			}   
+		}
+	}
+
+	/* Assign extra_data fields in response structure */
+
+	if (extra_data) {
+		state->response.extra_data = extra_data;
+		state->response.length += extra_data_len;
+		
+		return WINBINDD_OK;
+	}
+
+        return WINBINDD_OK;
 }

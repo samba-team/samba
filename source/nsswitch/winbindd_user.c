@@ -208,7 +208,8 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
     }
 
     if (strcmp("\\", lp_winbind_separator())) {
-	    string_sub(user_name, "\\", lp_winbind_separator(), sizeof(fstring));
+	    string_sub(user_name, "\\", lp_winbind_separator(), 
+		       sizeof(fstring));
     }
 
     /* Get some user info */
@@ -365,7 +366,8 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
             /* Prepend domain to name */
 
 	    slprintf(domain_user_name, sizeof(domain_user_name),
-		     "%s%s%s", ent->domain->name, lp_winbind_separator(), user_name);
+		     "%s%s%s", ent->domain->name, lp_winbind_separator(), 
+		     user_name);
                 
             /* Get passwd entry from user name */
                 
@@ -411,4 +413,94 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
     /* Out of pipes so we're done */
 
     return WINBINDD_ERROR;
+}
+
+/* List domain users without mapping to unix ids */
+
+enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
+{
+        struct winbindd_domain *domain;
+        SAM_DISPINFO_CTR ctr;
+	SAM_DISPINFO_1 info1;
+        uint32 num_entries, total_entries = 0;
+	char *extra_data = NULL;
+	int extra_data_len = 0;
+
+        /* Enumerate over trusted domains */
+
+        for (domain = domain_list; domain; domain = domain->next) {
+		int i;
+
+		ctr.sam.info1 = &info1;
+
+		/* Skip domains other than WINBINDD_DOMAIN environment
+		   variable */ 
+
+		if ((strcmp(state->request.domain, "") != 0) &&
+		    (strcmp(state->request.domain, domain->name) != 0)) {
+			continue;
+		}
+
+                /* Query display info */
+
+                if (!winbindd_query_dispinfo(domain, 1, &num_entries, &ctr)) {
+			continue;
+		}
+
+		/* Allocate some memory for extra data.  Note that we limit
+		   account names to sizeof(fstring) = 128 characters.  */
+
+		total_entries += num_entries;
+		extra_data = Realloc(extra_data, 
+				     sizeof(fstring) * total_entries);
+
+		if (!extra_data) {
+			return WINBINDD_ERROR;
+		}
+
+		/* Pack user list into extra data fields */
+
+		for (i = 0; i < num_entries; i++) {
+			UNISTR2 *uni_acct_name;
+			fstring acct_name, name;
+
+			/* Convert unistring to ascii */
+
+			uni_acct_name = &ctr.sam.info1->str[i]. uni_acct_name;
+			unistr2_to_ascii(acct_name, uni_acct_name,
+					 sizeof(acct_name) - 1);
+                                                 
+			slprintf(name, sizeof(name), "%s%s%s",
+				 domain->name, lp_winbind_separator(),
+				 acct_name);
+
+
+			DEBUG(0, ("appending name %s\n", name));
+
+			/* Append to extra data */
+			
+			memcpy(&extra_data[extra_data_len], name, 
+			       strlen(name));
+			extra_data_len += strlen(name);
+
+			if (i == (num_entries - 1)) {
+				extra_data[extra_data_len++] = '\0';
+			} else {
+				extra_data[extra_data_len++] = ',';
+			}   
+		}
+        }
+
+	/* Assign extra_data fields in response structure */
+
+	if (extra_data) {
+		state->response.extra_data = extra_data;
+		state->response.length += extra_data_len;
+		
+		return WINBINDD_OK;
+	}
+
+	/* No domains responded */
+
+	return WINBINDD_ERROR;
 }
