@@ -1,0 +1,321 @@
+<chapter id="compiling">
+<chapterinfo>
+	<author>
+		<affiliation>
+			<orgname>Samba Team</orgname>
+		</affiliation>
+	</author>
+	
+	<pubdate> (22 May 2001) </pubdate>
+	<pubdate> 18 March 2003 </pubdate>
+</chapterinfo>
+
+<title>How to compile SAMBA</title>
+
+<para>You can obtain the samba source from the <ulink url="http://samba.org/">samba website</ulink>. To obtain a development version, 
+you can download samba from CVS or using rsync. </para>
+
+<sect1>
+<title>Access Samba source code via CVS</title>
+
+<sect2>
+<title>Introduction</title>
+
+<para>
+Samba is developed in an open environment.  Developers use CVS
+(Concurrent Versioning System) to "checkin" (also known as 
+"commit") new source code.  Samba's various CVS branches can
+be accessed via anonymous CVS using the instructions
+detailed in this chapter.
+</para>
+
+<para>
+This chapter is a modified version of the instructions found at
+<ulink url="http://samba.org/samba/cvs.html">http://samba.org/samba/cvs.html</ulink>
+</para>
+
+</sect2>
+
+<sect2>
+<title>CVS Access to samba.org</title>
+
+<para>
+The machine samba.org runs a publicly accessible CVS 
+repository for access to the source code of several packages, 
+including samba, rsync and jitterbug. There are two main ways of 
+accessing the CVS server on this host.
+</para>
+
+<sect3>
+<title>Access via CVSweb</title>
+
+<para>
+You can access the source code via your 
+favourite WWW browser. This allows you to access the contents of 
+individual files in the repository and also to look at the revision 
+history and commit logs of individual files. You can also ask for a diff 
+listing between any two versions on the repository.
+</para>
+
+<para>
+Use the URL : <ulink
+url="http://samba.org/cgi-bin/cvsweb">http://samba.org/cgi-bin/cvsweb</ulink>
+</para>
+</sect3>
+
+<sect3>
+<title>Access via cvs</title>
+
+<para>
+You can also access the source code via a 
+normal cvs client.  This gives you much more control over you can 
+do with the repository and allows you to checkout whole source trees 
+and keep them up to date via normal cvs commands. This is the 
+preferred method of access if you are a developer and not
+just a casual browser.
+</para>
+
+<para>
+To download the latest cvs source code, point your
+browser at the URL : <ulink url="http://www.cyclic.com/">http://www.cyclic.com/</ulink>.
+and click on the 'How to get cvs' link. CVS is free software under 
+the GNU GPL (as is Samba).  Note that there are several graphical CVS clients
+which provide a graphical interface to the sometimes mundane CVS commands.
+Links to theses clients are also available from http://www.cyclic.com.
+</para>
+
+<para>
+To gain access via anonymous cvs use the following steps. 
+For this example it is assumed that you want a copy of the 
+samba source code. For the other source code repositories 
+on this system just substitute the correct package name
+</para>
+
+<orderedlist>
+<listitem>
+	<para>
+	Install a recent copy of cvs. All you really need is a 
+	copy of the cvs client binary. 
+	</para>
+</listitem>
+
+
+<listitem>
+	<para>
+	Run the command 
+	</para>
+
+	<para>
+	<command>cvs -d :pserver:cvs@samba.org:/cvsroot login</command>
+	</para>
+	
+	<para>
+	When it asks you for a password type <userinput>cvs</userinput>.
+	</para>
+</listitem>
+
+
+<listitem>
+	<para>
+	Run the command 
+	</para>
+	
+	<para>
+	<command>cvs -d :pserver:cvs@samba.org:/cvsroot co samba</command>
+	</para>
+	
+	<para>
+	This will create a directory called samba containing the 
+	latest samba source code (i.e. the HEAD tagged cvs branch). This 
+	currently corresponds to the 3.0 development tree. 
+	</para>
+	
+	<para>
+	CVS branches other HEAD can be obtained by using the <parameter>-r</parameter>
+	and defining a tag name.  A list of branch tag names can be found on the
+	"Development" page of the samba web site.  A common request is to obtain the
+	latest 2.2 release code.  This could be done by using the following command.
+	</para>
+	
+	<para>
+	<command>cvs -d :pserver:cvs@samba.org:/cvsroot co -r SAMBA_2_2 samba</command>
+	</para>
+</listitem>
+
+<listitem>
+	<para>
+	Whenever you want to merge in the latest code changes use 
+	the following command from within the samba directory: 
+	</para>
+	
+	<para>
+	<command>cvs update -d -P</command>
+	</para>
+</listitem>
+</orderedlist>
+	
+</sect3>
+</sect2>
+
+</sect1>
+
+<sect1>
+	<title>Accessing the samba sources via rsync and ftp</title>
+
+	<para>
+	pserver.samba.org also exports unpacked copies of most parts of the CVS tree at <ulink url="ftp://pserver.samba.org/pub/unpacked">ftp://pserver.samba.org/pub/unpacked</ulink> and also via anonymous rsync at rsync://pserver.samba.org/ftp/unpacked/. I recommend using rsync rather than ftp.
+	See <ulink url="http://rsync.samba.org/">the rsync homepage</ulink> for more info on rsync.                       
+	</para>
+
+	<para>
+	The disadvantage of the unpacked trees
+	is that they do not support automatic
+	merging of local changes like CVS does.
+	rsync access is most convenient for an 
+	initial install.                       
+	</para>
+</sect1>
+
+<sect1>
+	<title>Building the Binaries</title>
+	
+	<para>To do this, first run the program <command>./configure
+	</command> in the source directory. This should automatically 
+	configure Samba for your operating system. If you have unusual 
+	needs then you may wish to run</para>
+	
+	<para><prompt>root# </prompt><userinput>./configure --help
+	</userinput></para>
+	
+	<para>first to see what special options you can enable.
+	Then executing</para>
+	
+	<para><prompt>root# </prompt><userinput>make</userinput></para>
+	
+	<para>will create the binaries. Once it's successfully 
+	compiled you can use </para>
+	
+	<para><prompt>root# </prompt><userinput>make install</userinput></para>
+	
+	<para>to install the binaries and manual pages. You can 
+	separately install the binaries and/or man pages using</para>
+	
+	<para><prompt>root# </prompt><userinput>make installbin
+	</userinput></para>
+	
+	<para>and</para>
+	
+	<para><prompt>root# </prompt><userinput>make installman
+	</userinput></para>
+
+	<para>Note that if you are upgrading for a previous version 
+	of Samba you might like to know that the old versions of 
+	the binaries will be renamed with a ".old" extension. You 
+	can go back to the previous version with</para>
+	
+	<para><prompt>root# </prompt><userinput>make revert
+	</userinput></para>
+	
+	<para>if you find this version a disaster!</para>
+</sect1>
+
+<sect1>
+	<title>Starting the smbd and nmbd</title>
+
+	<para>You must choose to start smbd and nmbd either
+	as daemons or from <command>inetd</command>. Don't try
+	to do both!  Either you can put them in <filename>
+	inetd.conf</filename> and have them started on demand
+	by <command>inetd</command>, or you can start them as
+	daemons either from the command line or in <filename>
+	/etc/rc.local</filename>. See the man pages for details
+	on the command line options. Take particular care to read
+	the bit about what user you need to be in order to start
+	Samba.  In many cases you must be root.</para>
+
+	<para>The main advantage of starting <command>smbd</command>
+	and <command>nmbd</command> using the recommended daemon method
+	is that they will respond slightly more quickly to an initial connection
+	request.</para>
+
+	<sect2>
+		<title>Starting from inetd.conf</title>
+
+		<para>NOTE; The following will be different if 
+		you use NIS, NIS+ or LDAP to distribute services maps.</para>
+		
+		<para>Look at your <filename>/etc/services</filename>. 
+		What is defined at port 139/tcp. If nothing is defined 
+		then add a line like this:</para>
+
+		<para><userinput>netbios-ssn     139/tcp</userinput></para>
+
+		<para>similarly for 137/udp you should have an entry like:</para>
+
+		<para><userinput>netbios-ns	137/udp</userinput></para>
+
+		<para>Next edit your <filename>/etc/inetd.conf</filename> 
+		and add two lines something like this:</para>
+
+		<para><programlisting>
+		netbios-ssn stream tcp nowait root /usr/local/samba/bin/smbd smbd 
+		netbios-ns dgram udp wait root /usr/local/samba/bin/nmbd nmbd 
+		</programlisting></para>
+
+		<para>The exact syntax of <filename>/etc/inetd.conf</filename> 
+		varies between unixes. Look at the other entries in inetd.conf 
+		for a guide.</para>
+
+		<para>NOTE: Some unixes already have entries like netbios_ns 
+		(note the underscore) in <filename>/etc/services</filename>. 
+		You must either edit <filename>/etc/services</filename> or
+		<filename>/etc/inetd.conf</filename> to make them consistent.</para>
+
+		<para>NOTE: On many systems you may need to use the 
+		"interfaces" option in smb.conf to specify the IP address 
+		and netmask of your interfaces. Run <command>ifconfig</command> 
+		as root if you don't know what the broadcast is for your
+		net. <command>nmbd</command> tries to determine it at run 
+		time, but fails on some unixes. See the section on "testing nmbd" 
+		for a method of finding if you need to do this.</para>
+
+		<para>!!!WARNING!!! Many unixes only accept around 5 
+		parameters on the command line in <filename>inetd.conf</filename>. 
+		This means you shouldn't use spaces between the options and 
+		arguments, or you should use a script, and start the script 
+		from <command>inetd</command>.</para>
+
+		<para>Restart <command>inetd</command>, perhaps just send 
+		it a HUP. If you have installed an earlier version of <command>
+		nmbd</command> then you may need to kill nmbd as well.</para>
+	</sect2>
+	
+	<sect2>
+		<title>Alternative: starting it as a daemon</title>
+
+		<para>To start the server as a daemon you should create 
+		a script something like this one, perhaps calling 
+		it <filename>startsmb</filename>.</para>
+
+		<para><programlisting>
+		#!/bin/sh
+		/usr/local/samba/bin/smbd -D 
+		/usr/local/samba/bin/nmbd -D 
+		</programlisting></para>
+
+		<para>then make it executable with <command>chmod 
+		+x startsmb</command></para>
+
+		<para>You can then run <command>startsmb</command> by 
+		hand or execute it from <filename>/etc/rc.local</filename>
+		</para>
+
+		<para>To kill it send a kill signal to the processes 
+		<command>nmbd</command> and <command>smbd</command>.</para>
+
+		<para>NOTE: If you use the SVR4 style init system then 
+		you may like to look at the <filename>examples/svr4-startup</filename>
+		script to make Samba fit into that system.</para>
+	</sect2>
+</sect1>
+</chapter>
