@@ -86,6 +86,14 @@ security protocols.
 The benefits of Domain security are fully available to those sites that deploy a Samba PDC.
 </para>
 
+<note><para>
+Network clients of an MS Windows Domain security environment must be Domain members to be
+able to gain access to the advanced features provided. Domain membership involves more than just
+setting the workgroup name to the Domain name. It requires the creation of a Domain trust account
+for the workstation (called a machine account). Please refer to the chapter on Domain Membership
+for more information.
+</para></note>
+
 <para>
 The following functionalities are new to the Samba-3 release:
 </para>
@@ -96,8 +104,10 @@ The following functionalities are new to the Samba-3 release:
 	</para></listitem>
 	
 	<listitem><para>
-	Adding users via the User Manager for Domains or via the Windows 200x Microsoft
-	Management Console.
+	Adding users via the User Manager for Domains. This can be done on any MS Windows
+	client using the Nexus toolkit that is available from Microsoft's web site.
+	At some later date Samba-3 may get support for the use of the Microsoft Manangement
+	Console for user management.
 	</para></listitem>
 
 	<listitem><para>
@@ -294,10 +304,11 @@ MS Windows 200x domain control protcols also.
 </para>
 
 <para>
-At this time Samba-3 is capable of acting as an <emphasis>ADS Domain Controller</emphasis> but
-in only a limited and experimental manner. This functionality should not be depended upon
-until the samba-team offers formal support for it. At such a time, the documentation will
-be revised to duely reflect all configuration and management requirements.
+At this time any appearance that Samba-3 is capable of acting as an
+<emphasis>ADS Domain Controller</emphasis> is limited and experimental in nature.
+This functionality should not be used until the samba-team offers formal support for it.
+At such a time, the documentation will be revised to duely reflect all configuration and
+management requirements.
 </para>
 
 </sect2>
@@ -493,7 +504,7 @@ Here is an example &smb.conf; for acting as a PDC:
 	    ; security settings (must user security = user)
 	    <ulink url="smb.conf.5.html#SECURITYEQUALSUSER">security</ulink> = user
 	    
-	    ; encrypted passwords are a requirement for a PDC
+	    ; encrypted passwords are a requirement for a PDC (default = Yes)
 	    <ulink url="smb.conf.5.html#ENCRYPTPASSWORDS">encrypt passwords</ulink> = yes
 	    
 	    ; support domain logons
@@ -568,9 +579,12 @@ There are a couple of points to emphasize in the above configuration.
 <title>Samba ADS Domain Control</title>
 
 <para>
-Samba-3 can behave and appear to MS Windows 200x and XP clients as an Active Directory Server.
-The problem with doing this is that samba-3 is NOT an Active Directory server and does NOT yet
-support all protocols needed to make this a possibility.
+Samba-3 is not and can not act as an Active Directory Server. It can not truely function as
+an Active Directory Primary Domain Controller. The protocols for some of the functionality
+the Active Directory Domain Controllers is have been partially implemented on an experiemental
+only basis. Please do NOT expect Samba-3 to support these protocols - nor should you depend
+on any such functionality either now or in the future. The Samba-Team may well remove such
+experiemental features or may change their behaviour.
 </para>
 
 </sect1>
