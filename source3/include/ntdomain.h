@@ -162,5 +162,8 @@ struct acct_info
 #define REG_KEY_FN(fn) void (*fn)(const char*, const char*, time_t)
 #define REG_VAL_FN(fn) void (*fn)(const char *, const char*, uint32, BUFFER2 *)
 
+#define SVC_QUERY_FN(fn) void (*fn)(QUERY_SERVICE_CONFIG *)
+#define SVC_INFO_FN(fn)  void (*fn)(ENUM_SRVC_STATUS *)
+
 #endif /* _NT_DOMAIN_H */
 

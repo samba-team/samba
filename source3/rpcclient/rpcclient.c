@@ -138,6 +138,13 @@ commands[] =
 		{COMPL_NONE, COMPL_NONE}
 	},
 
+	{
+		"svcinfo",
+		cmd_svc_info,
+		"<service> Service Information",
+		{COMPL_NONE, COMPL_NONE}
+	},
+
 	/*
 	 * scheduler
 	 */
