@@ -2038,7 +2038,7 @@ tn(int argc, char **argv)
     struct servent *sp = 0;
     unsigned long temp;
     extern char *inet_ntoa();
-#if	defined(IP_OPTIONS) && defined(IPPROTO_IP)
+#if defined(IP_OPTIONS) && defined(IPPROTO_IP)
     char *srp = 0;
     int srlen;
 #endif
@@ -2219,34 +2219,35 @@ tn(int argc, char **argv)
 	}
 	telnetport = 1;
     }
-    switch(family) {
-    case AF_INET:
-	sin.sin_port = port;
-	printf("Trying %s...\r\n", inet_ntoa(sin.sin_addr));
-	break;
+    do {
+	switch(family) {
+	case AF_INET:
+	    sin.sin_port = port;
+	    printf("Trying %s...\r\n", inet_ntoa(sin.sin_addr));
+	    break;
 #ifdef HAVE_IPV6
-    case AF_INET6: {
+	case AF_INET6: {
 #ifndef INET6_ADDRSTRLEN
 #define INET6_ADDRSTRLEN 46 
 #endif
 
-	char buf[INET6_ADDRSTRLEN];
+	    char buf[INET6_ADDRSTRLEN];
 
-	sin6.sin6_port = port;
+	    sin6.sin6_port = port;
 #ifdef HAVE_INET_NTOP
-	printf("Trying %s...\r\n", inet_ntop(AF_INET6,
-					     &sin6.sin6_addr,
-					     buf,
-					     sizeof(buf)));
+	    printf("Trying %s...\r\n", inet_ntop(AF_INET6,
+						 &sin6.sin6_addr,
+						 buf,
+						 sizeof(buf)));
 #endif
-	break;
-    }
+	    break;
+	}
 #endif
-    default:
-	abort();
-    }
+	default:
+	    abort();
+	}
 
-    do {
+
 	net = socket(family, SOCK_STREAM, 0);
 	setuid(getuid());
 	if (net < 0) {
