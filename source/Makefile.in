@@ -595,8 +595,8 @@ LOCKTEST2_OBJ = torture/locktest2.o $(PARAM_OBJ) $(LOCKING_OBJ) $(LIBSMB_OBJ) \
 
 SMBCACLS_OBJ = utils/smbcacls.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 			   $(KRBCLIENT_OBJ) $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(RPC_PARSE_OBJ) \
-			   $(PASSDB_GET_SET_OBJ) $(LIBMSRPC_OBJ) $(SECRETS_OBJ) \
-			   $(POPT_LIB_OBJ) $(DCUTIL_OBJ) $(LIBADS_OBJ)
+			   $(PASSDB_OBJ) $(GROUPDB_OBJ) $(DUMMYROOT_OBJ) $(LIBMSRPC_OBJ) $(SECRETS_OBJ) \
+			   $(POPT_LIB_OBJ) $(DCUTIL_OBJ) $(LIBADS_OBJ) $(SMBLDAP_OBJ)
 
 SMBCQUOTAS_OBJ = utils/smbcquotas.o $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 		$(PARAM_OBJ) \
@@ -697,8 +697,8 @@ NTLM_AUTH_OBJ1 = utils/ntlm_auth.o utils/ntlm_auth_diagnostics.o
 NTLM_AUTH_OBJ = ${NTLM_AUTH_OBJ1} $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
 		libsmb/asn1.o libsmb/spnego.o libsmb/clikrb5.o libads/kerberos.o \
 		libads/kerberos_verify.o $(SECRETS_OBJ) $(SERVER_MUTEX_OBJ) \
-		libads/authdata.o $(RPC_PARSE_OBJ0) \
-		$(DOSERR_OBJ)
+		libads/authdata.o $(RPC_PARSE_OBJ0) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
+		$(SMBLDAP_OBJ) $(DOSERR_OBJ) $(DUMMYROOT_OBJ)
 
 ######################################################################
 # now the rules...
