@@ -199,7 +199,10 @@ BOOL add_mapping_entry(GROUP_MAP *map, int flag)
 	int i;
 	PRIVILEGE_SET *set;
 
-	init_group_mapping();
+	if(!init_group_mapping()) {
+		DEBUG(0,("failed to initialize group mapping"));
+		return(False);
+	}
 	
 	sid_to_string(string_sid, &map->sid);
 
@@ -509,7 +512,10 @@ BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map, BOOL with_priv)
 	int i;
 	PRIVILEGE_SET *set;
 	
-	init_group_mapping();
+	if(!init_group_mapping()) {
+		DEBUG(0,("failed to initialize group mapping"));
+		return(False);
+	}
 
 	/* the key is the SID, retrieving is direct */
 
@@ -568,7 +574,10 @@ BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map, BOOL with_priv)
 	int i;
 	PRIVILEGE_SET *set;
 
-	init_group_mapping();
+	if(!init_group_mapping()) {
+		DEBUG(0,("failed to initialize group mapping"));
+		return(False);
+	}
 
 	/* we need to enumerate the TDB to find the GID */
 
@@ -628,7 +637,10 @@ BOOL get_group_map_from_ntname(char *name, GROUP_MAP *map, BOOL with_priv)
 	int i;
 	PRIVILEGE_SET *set;
 
-	init_group_mapping();
+	if(!init_group_mapping()) {
+		DEBUG(0,("failed to initialize group mapping"));
+		return(False);
+	}
 
 	/* we need to enumerate the TDB to find the name */
 
@@ -688,7 +700,10 @@ BOOL group_map_remove(DOM_SID sid)
 	pstring key;
 	fstring string_sid;
 	
-	init_group_mapping();
+	if(!init_group_mapping()) {
+		DEBUG(0,("failed to initialize group mapping"));
+		return(False);
+	}
 
 	/* the key is the SID, retrieving is direct */
 
@@ -726,7 +741,10 @@ BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 	int i;
 	PRIVILEGE_SET *set;
 
-	init_group_mapping();
+	if(!init_group_mapping()) {
+		DEBUG(0,("failed to initialize group mapping"));
+		return(False);
+	}
 
 	*num_entries=0;
 	*rmap=NULL;
