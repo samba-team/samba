@@ -334,6 +334,7 @@ typedef struct krb5_keytab_entry {
 typedef struct krb5_kt_cursor {
     int fd;
     krb5_storage *sp;
+    off_t offset;
 } krb5_kt_cursor;
 
 struct krb5_keytab_data;
