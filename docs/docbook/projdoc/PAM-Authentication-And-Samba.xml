@@ -16,23 +16,20 @@
 <title>Samba and PAM</title>
 
 <para>
-A number of Unix systems (eg: Sun Solaris), as well as the 
-xxxxBSD family and Linux, now utilize the Pluggable Authentication 
-Modules (PAM) facility to provide all authentication, 
-authorization and resource control services. Prior to the 
-introduction of PAM, a decision to use an alternative to 
-the system password database (<filename>/etc/passwd</filename>) 
-would require the provision of alternatives for all programs that provide 
-security services. Such a choice would involve provision of 
-alternatives to such programs as: <command>login</command>, 
+A number of Unix systems (eg: Sun Solaris), as well as the xxxxBSD family and Linux,
+now utilize the Pluggable Authentication Modules (PAM) facility to provide all authentication, 
+authorization and resource control services. Prior to the introduction of PAM, a decision
+to use an alternative to the system password database (<filename>/etc/passwd</filename>) 
+would require the provision of alternatives for all programs that provide security services.
+Such a choice would involve provision of alternatives to such programs as: <command>login</command>, 
 <command>passwd</command>, <command>chown</command>, etc.
 </para>
 
 <para>
-PAM provides a mechanism that disconnects these security programs 
-from the underlying authentication/authorization infrastructure.
-PAM is configured either through one file <filename>/etc/pam.conf</filename> (Solaris), 
-or by editing individual files that are located in <filename>/etc/pam.d</filename>.
+PAM provides a mechanism that disconnects these security programs from the underlying
+authentication/authorization infrastructure.  PAM is configured either through one file
+<filename>/etc/pam.conf</filename> (Solaris), or by editing individual files that are
+located in <filename>/etc/pam.d</filename>.
 </para>
 
 <note>
@@ -42,9 +39,9 @@ or by editing individual files that are located in <filename>/etc/pam.d</filenam
 	Linux, the default location is <filename>/lib/security</filename>. If the module
 	is located outside the default then the path must be specified as:
 	
-	<programlisting>
+	<screen>
 	auth       required      /other_path/pam_strange_module.so
-	</programlisting>
+	</screen>
 	</para>
 </note>
 
@@ -56,7 +53,7 @@ of the login process. Essentially all conditions can be disabled
 by commenting them out except the calls to <filename>pam_pwdb.so</filename>.
 </para>
 
-<para><programlisting>
+<para><screen>
 	#%PAM-1.0
 	# The PAM configuration file for the `login' service
 	#
@@ -71,15 +68,14 @@ by commenting them out except the calls to <filename>pam_pwdb.so</filename>.
 	# session 	optional	pam_lastlog.so
 	# password   	required   	pam_cracklib.so retry=3
 	password	required	pam_pwdb.so shadow md5
-</programlisting></para>
+</screen></para>
 
 <para>
-PAM allows use of replacable modules. Those available on a 
-sample system include:
+PAM allows use of replacable modules. Those available on a sample system include:
 </para>
 
 <para><prompt>$</prompt><userinput>/bin/ls /lib/security</userinput>
-<programlisting>
+<screen>
 	pam_access.so    pam_ftp.so          pam_limits.so     
 	pam_ncp_auth.so  pam_rhosts_auth.so  pam_stress.so     
 	pam_cracklib.so  pam_group.so        pam_listfile.so   
@@ -92,7 +88,7 @@ sample system include:
 	pam_radius.so    pam_smbpass.so      pam_unix_acct.so  
 	pam_wheel.so     pam_unix_auth.so    pam_unix_passwd.so
 	pam_userdb.so    pam_warn.so         pam_unix_session.so
-</programlisting></para>
+</screen></para>
 
 <para>
 The following example for the login program replaces the use of 
@@ -115,7 +111,7 @@ in the <filename>source/pam_smbpass</filename> directory of the Samba
 source distribution.
 </para>
 
-<para><programlisting>
+<para><screen>
 	#%PAM-1.0
 	# The PAM configuration file for the `login' service
 	#
@@ -123,14 +119,14 @@ source distribution.
 	account		required	pam_smbpass.so nodelay
 	session		required	pam_smbpass.so nodelay
 	password	required	pam_smbpass.so nodelay
-</programlisting></para>
+</screen></para>
 
 <para>
 The following is the PAM configuration file for a particular 
 Linux system. The default condition uses <filename>pam_pwdb.so</filename>.
 </para>
 
-<para><programlisting>
+<para><screen>
 	#%PAM-1.0
 	# The PAM configuration file for the `samba' service
 	#
@@ -138,7 +134,7 @@ Linux system. The default condition uses <filename>pam_pwdb.so</filename>.
 	account    required     pam_pwdb.so audit nodelay
 	session    required     pam_pwdb.so nodelay
 	password   required     pam_pwdb.so shadow md5
-</programlisting></para>
+</screen></para>
 
 <para>
 In the following example the decision has been made to use the 
@@ -148,7 +144,7 @@ thus allow the smbpasswd passwords to be changed using the passwd
 program.
 </para>
 
-<para><programlisting>
+<para><screen>
 	#%PAM-1.0
 	# The PAM configuration file for the `samba' service
 	#
@@ -156,7 +152,7 @@ program.
 	account    required     pam_pwdb.so audit nodelay
 	session    required     pam_pwdb.so nodelay
 	password   required     pam_smbpass.so nodelay smbconf=/etc/samba.d/smb.conf
-</programlisting></para>
+</screen></para>
 
 <note><para>PAM allows stacking of authentication mechanisms. It is 
 also possible to pass information obtained within one PAM module through 
@@ -273,7 +269,7 @@ is changed.  Useful when an expired password might be changed by an
 application (such as ssh).
 </para>
 
-<para><programlisting>
+<para><screen>
 	#%PAM-1.0
 	# password-sync
 	#
@@ -284,7 +280,7 @@ application (such as ssh).
 	password   requisite        pam_unix.so shadow md5 use_authtok try_first_pass
 	password   required         pam_smbpass.so nullok use_authtok try_first_pass
 	session    required         pam_unix.so
-</programlisting></para>
+</screen></para>
 </sect3>
 
 <sect3>
@@ -298,7 +294,7 @@ password migration takes place when users ftp in, login using ssh, pop
 their mail, etc.
 </para>
 
-<para><programlisting>
+<para><screen>
 	#%PAM-1.0
 	# password-migration
 	#
@@ -311,7 +307,7 @@ their mail, etc.
 	password   requisite        pam_unix.so shadow md5 use_authtok try_first_pass
 	password   optional         pam_smbpass.so nullok use_authtok try_first_pass
 	session    required         pam_unix.so
-</programlisting></para>
+</screen></para>
 </sect3>
 
 <sect3>
@@ -323,7 +319,7 @@ private/smbpasswd is fully populated, and we consider it an error if
 the smbpasswd doesn't exist or doesn't match the Unix password.
 </para>
 
-<para><programlisting>
+<para><screen>
 	#%PAM-1.0
 	# password-mature
 	#
@@ -334,7 +330,7 @@ the smbpasswd doesn't exist or doesn't match the Unix password.
 	password   requisite        pam_unix.so shadow md5 use_authtok try_first_pass
 	password   required         pam_smbpass.so use_authtok use_first_pass
 	session    required         pam_unix.so
-</programlisting></para>
+</screen></para>
 </sect3>
 
 <sect3>
@@ -346,7 +342,7 @@ pam_krb5.  This could be useful on a Samba PDC that is also a member of
 a Kerberos realm.
 </para>
 
-<para><programlisting>
+<para><screen>
 	#%PAM-1.0
 	# kdc-pdc
 	#
@@ -358,7 +354,7 @@ a Kerberos realm.
 	password   optional         pam_smbpass.so nullok use_authtok try_first_pass
 	password   required         pam_krb5.so use_authtok try_first_pass
 	session    required         pam_krb5.so
-</programlisting></para>
+</screen></para>
 </sect3>
 
 </sect2>

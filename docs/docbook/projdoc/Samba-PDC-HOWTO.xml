@@ -202,7 +202,7 @@ there can be multiple back-ends for this including:
 </itemizedlist>
 
 <para>
-Read the chapter about the <link linkend="passdb">User Database</link> for details
+Read the chapter about <link linkend="passdb">Account Information Database</link> for details
 regarding the choices available and how to configure them.
 </para>
 
@@ -513,7 +513,7 @@ There are a couple of points to emphasize in the above configuration.
 <itemizedlist>
 	<listitem><para>
 	Encrypted passwords must be enabled.  For more details on how 
-	to do this, refer to <link linkend="passdb">the User Database chapter</link>.
+	to do this, refer to <link linkend="passdb">Account Information Database chapter</link>.
 	</para></listitem>
 	
 	<listitem><para>
@@ -898,8 +898,8 @@ for both client and server.
 I get a message about my account being disabled.</title>
 
 <para>
-At first be ensure to enable the useraccounts with <userinput>smbpasswd -e 
-<replaceable>username</replaceable></userinput>, this is normally done, when you create an account.
+Enable the user accounts with <userinput>smbpasswd -e <replaceable>username</replaceable>
+</userinput>, this is normally done, as an account is created.
 </para>
 
 </sect2>
