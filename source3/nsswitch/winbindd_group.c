@@ -27,6 +27,34 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
+/*********************************************************************
+*********************************************************************/
+
+static int gr_mem_buffer( char **buffer, char **members, int num_members )
+{
+	int i;
+	int len = 0;
+	int idx = 0;
+
+	if ( num_members == 0 ) {
+		*buffer = NULL;
+		return 0;
+	}
+	
+	for ( i=0; i<num_members; i++ )
+		len += strlen(members[i])+1;
+
+	*buffer = (char*)smb_xmalloc(len);
+	for ( i=0; i<num_members; i++ ) {
+		snprintf( &(*buffer)[idx], len-idx, "%s,", members[i]);
+		idx += strlen(members[i])+1;
+	}
+	/* terminate with NULL */
+	(*buffer)[len-1] = '\0';
+	
+	return len;	
+}
+
 /***************************************************************
  Empty static struct for negative caching.
 ****************************************************************/
@@ -193,6 +221,7 @@ done:
 enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 {
 	DOM_SID group_sid;
+	WINBINDD_GR *grp;
 	struct winbindd_domain *domain;
 	enum SID_NAME_USE name_type;
 	fstring name_domain, name_group;
@@ -211,18 +240,38 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 	memset(name_group, 0, sizeof(fstring));
 
 	tmp = state->request.data.groupname;
-	if (!parse_domain_user(tmp, name_domain, name_group))
-		return WINBINDD_ERROR;
+	
+	parse_domain_user(tmp, name_domain, name_group);
 
-	/* don't handle our own domain if we are a DC ( or a member of a Samba domain 
-	   that shares UNIX accounts).  This code handles cases where
-	   the account doesn't exist anywhere and gets passed on down the NSS layer */
+	/* if no domain or our local domain, then do a local tdb search */
+	
+	if ( !*name_domain || strequal(name_domain, get_global_sam_name()) ) {
+		char *buffer = NULL;
+		
+		if ( !(grp=wb_getgrnam(name_group)) ) {
+			DEBUG(5,("winbindd_getgrnam: lookup for %s\\%s failed\n",
+				name_domain, name_group));
+			return WINBINDD_ERROR;
+		}
+		memcpy( &state->response.data.gr, grp, sizeof(WINBINDD_GR) );
 
-	if ( (IS_DC || lp_winbind_trusted_domains_only()) && strequal(name_domain, lp_workgroup()) ) {
-		DEBUG(7,("winbindd_getgrnam: rejecting getpwnam() for %s\\%s since I am on the PDC for this domain\n", 
+		gr_mem_len = gr_mem_buffer( &buffer, grp->gr_mem, grp->num_gr_mem );
+		
+		state->response.data.gr.gr_mem_ofs = 0;
+		state->response.length += gr_mem_len;
+		state->response.extra_data = buffer;	/* give the memory away */
+		
+		return WINBINDD_OK;
+	}
+
+	/* should we deal with users for our domain? */
+	
+	if ( lp_winbind_trusted_domains_only() && strequal(name_domain, lp_workgroup())) {
+		DEBUG(7,("winbindd_getgrnam: My domain -- rejecting getgrnam() for %s\\%s.\n", 
 			name_domain, name_group));
 		return WINBINDD_ERROR;
 	}	
+
 	
 	/* Get info for the domain */
 
@@ -277,6 +326,7 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 enum winbindd_result winbindd_getgrgid(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
+	WINBINDD_GR *grp;
 	DOM_SID group_sid;
 	enum SID_NAME_USE name_type;
 	fstring dom_name;
@@ -292,6 +342,21 @@ enum winbindd_result winbindd_getgrgid(struct winbindd_cli_state *state)
 	if ((state->request.data.gid < server_state.gid_low) ||
 	    (state->request.data.gid > server_state.gid_high))
 		return WINBINDD_ERROR;
+
+	/* alway try local tdb lookup first */
+	if ( ( grp=wb_getgrgid(state->request.data.gid)) != NULL ) {
+		char *buffer = NULL;
+		
+		memcpy( &state->response.data.gr, grp, sizeof(WINBINDD_GR) );
+		
+		gr_mem_len = gr_mem_buffer( &buffer, grp->gr_mem, grp->num_gr_mem );
+		
+		state->response.data.gr.gr_mem_ofs = 0;
+		state->response.length += gr_mem_len;
+		state->response.extra_data = buffer;	/* give away the memory */
+		
+		return WINBINDD_OK;
+	}
 
 	/* Get rid from gid */
 	if (!NT_STATUS_IS_OK(idmap_gid_to_sid(&group_sid, state->request.data.gid))) {
@@ -859,8 +924,12 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 
 	/* Parse domain and username */
 
-	if (!parse_domain_user(state->request.data.username, name_domain, 
-			  name_user))
+	parse_domain_user(state->request.data.username, 
+		name_domain, name_user);
+	
+	/* bail if there is no domain */ 
+	
+	if ( !*name_domain )
 		goto done;
 
 	/* Get info for the domain */

@@ -367,3 +367,147 @@ BOOL winbind_ping( void )
 	return result == NSS_STATUS_SUCCESS;
 }
 
+/**********************************************************************
+ Ask winbindd to create a local user
+**********************************************************************/
+
+BOOL winbind_create_user( const char *name )
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	NSS_STATUS result;
+	
+	if ( !lp_winbind_enable_local_accounts() )
+		return False;
+	
+	if ( !name )
+		return False;
+		
+	DEBUG(10,("winbind_create_user: %s\n", name));
+
+	fstrcpy( request.data.acct_mgt.username, name );
+	fstrcpy( request.data.acct_mgt.groupname, "" );
+	
+	ZERO_STRUCT(response);
+	
+	result = winbindd_request( WINBINDD_CREATE_USER, &request, &response);
+	
+	return result == NSS_STATUS_SUCCESS;
+}
+
+/**********************************************************************
+ Ask winbindd to create a local group
+**********************************************************************/
+
+BOOL winbind_create_group( const char *name )
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	NSS_STATUS result;
+	
+	if ( !lp_winbind_enable_local_accounts() )
+		return False;
+		
+	if ( !name )
+		return False;
+		
+	DEBUG(10,("winbind_create_group: %s\n", name));
+
+	fstrcpy( request.data.acct_mgt.groupname, name );
+	
+	ZERO_STRUCT(response);
+	
+	result = winbindd_request( WINBINDD_CREATE_GROUP, &request, &response);
+	
+	return result == NSS_STATUS_SUCCESS;
+}
+
+/**********************************************************************
+ Ask winbindd to add a user to a local group
+**********************************************************************/
+
+BOOL winbind_add_user_to_group( const char *user, const char *group )
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	NSS_STATUS result;
+	
+	if ( !lp_winbind_enable_local_accounts() )
+		return False;
+		
+	if ( !user || !group )
+		return False;
+		
+	DEBUG(10,("winbind_add_user_to_group: user(%s), group(%s) \n", 
+		user, group));
+		
+	fstrcpy( request.data.acct_mgt.username, user );
+	fstrcpy( request.data.acct_mgt.groupname, group );
+	
+	ZERO_STRUCT(response);
+	
+	result = winbindd_request( WINBINDD_ADD_USER_TO_GROUP, &request, &response);
+	
+	return result == NSS_STATUS_SUCCESS;
+}
+
+/**********************************************************************
+ Ask winbindd to remove a user to a local group
+**********************************************************************/
+
+BOOL winbind_remove_user_from_group( const char *user, const char *group )
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	NSS_STATUS result;
+	
+	if ( !lp_winbind_enable_local_accounts() )
+		return False;
+		
+	if ( !user || !group )
+		return False;
+		
+	DEBUG(10,("winbind_remove_user_from_group: user(%s), group(%s) \n", 
+		user, group));
+		
+	fstrcpy( request.data.acct_mgt.username, user );
+	fstrcpy( request.data.acct_mgt.groupname, group );
+	
+	ZERO_STRUCT(response);
+	
+	result = winbindd_request( WINBINDD_REMOVE_USER_FROM_GROUP, &request, &response);
+	
+	return result == NSS_STATUS_SUCCESS;
+}
+
+/**********************************************************************
+ Ask winbindd to set the primary group for a user local user
+**********************************************************************/
+
+BOOL winbind_set_user_primary_group( const char *user, const char *group )
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	NSS_STATUS result;
+	
+	if ( !lp_winbind_enable_local_accounts() )
+		return False;
+		
+	if ( !user || !group )
+		return False;
+		
+	DEBUG(10,("winbind_set_user_primary_group: user(%s), group(%s) \n", 
+		user, group));
+
+	fstrcpy( request.data.acct_mgt.username, user );
+	fstrcpy( request.data.acct_mgt.groupname, group );
+	
+	ZERO_STRUCT(response);
+	
+	result = winbindd_request( WINBINDD_SET_USER_PRIMARY_GROUP, &request, &response);
+	
+	return result == NSS_STATUS_SUCCESS;
+}
+
+
+

@@ -675,6 +675,7 @@ static void ldap_idmap_status(void)
 
 static struct idmap_methods ldap_methods = {
 	ldap_idmap_init,
+	ldap_allocate_id,
 	ldap_get_sid_from_id,
 	ldap_get_id_from_sid,
 	ldap_set_mapping,

@@ -511,6 +511,151 @@ static BOOL wbinfo_auth_crap(char *username)
         return result == NSS_STATUS_SUCCESS;
 }
 
+/******************************************************************
+ create a winbindd user
+******************************************************************/
+
+static BOOL wbinfo_create_user(char *username)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+        NSS_STATUS result;
+
+	/* Send off request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	fstrcpy(request.data.acct_mgt.username, username);
+
+	result = winbindd_request(WINBINDD_CREATE_USER, &request, &response);
+	
+	if (response.data.auth.nt_status)
+		d_printf("error code was %s (0x%x)\nerror messsage was: %s\n", 
+			 response.data.auth.nt_status_string, 
+			 response.data.auth.nt_status,
+			 response.data.auth.error_string);
+
+        return result == NSS_STATUS_SUCCESS;
+}
+
+/******************************************************************
+ create a winbindd group
+******************************************************************/
+
+static BOOL wbinfo_create_group(char *groupname)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+        NSS_STATUS result;
+
+	/* Send off request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	fstrcpy(request.data.acct_mgt.groupname, groupname);
+
+	result = winbindd_request(WINBINDD_CREATE_GROUP, &request, &response);
+	
+	if (response.data.auth.nt_status)
+		d_printf("error code was %s (0x%x)\nerror messsage was: %s\n", 
+			 response.data.auth.nt_status_string, 
+			 response.data.auth.nt_status,
+			 response.data.auth.error_string);
+
+        return result == NSS_STATUS_SUCCESS;
+}
+
+/******************************************************************
+ parse a string in the form user:group
+******************************************************************/
+
+static BOOL parse_user_group( const char *string, fstring user, fstring group )
+{
+	char *p;
+	
+	if ( !string )
+		return False;
+	
+	if ( !(p = strchr( string, ':' )) )
+		return False;
+		
+	*p = '\0';
+	p++;
+	
+	fstrcpy( user, string );
+	fstrcpy( group, p );
+	
+	return True;
+}
+
+/******************************************************************
+ add a user to a winbindd group
+******************************************************************/
+
+static BOOL wbinfo_add_user_to_group(char *string)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+        NSS_STATUS result;
+
+	/* Send off request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	if ( !parse_user_group( string, request.data.acct_mgt.username,
+		request.data.acct_mgt.groupname))
+	{
+		d_printf("Can't parse user:group from %s\n", string);
+		return False;
+	}
+
+	result = winbindd_request(WINBINDD_ADD_USER_TO_GROUP, &request, &response);
+	
+	if (response.data.auth.nt_status)
+		d_printf("error code was %s (0x%x)\nerror messsage was: %s\n", 
+			 response.data.auth.nt_status_string, 
+			 response.data.auth.nt_status,
+			 response.data.auth.error_string);
+
+        return result == NSS_STATUS_SUCCESS;
+}
+
+/******************************************************************
+ remove a user from a winbindd group
+******************************************************************/
+
+static BOOL wbinfo_remove_user_from_group(char *string)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+        NSS_STATUS result;
+
+	/* Send off request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	if ( !parse_user_group( string, request.data.acct_mgt.username,
+		request.data.acct_mgt.groupname))
+	{
+		d_printf("Can't parse user:group from %s\n", string);
+		return False;
+	}
+
+	result = winbindd_request(WINBINDD_REMOVE_USER_FROM_GROUP, &request, &response);
+	
+	if (response.data.auth.nt_status)
+		d_printf("error code was %s (0x%x)\nerror messsage was: %s\n", 
+			 response.data.auth.nt_status_string, 
+			 response.data.auth.nt_status,
+			 response.data.auth.error_string);
+
+        return result == NSS_STATUS_SUCCESS;
+}
+
 /* Print domain users */
 
 static BOOL print_domain_users(void)
@@ -705,6 +850,10 @@ int main(int argc, char **argv)
 		{ "gid-to-sid", 'G', POPT_ARG_INT, &int_arg, 'G', "Converts gid to sid", "GID" },
 		{ "sid-to-uid", 'S', POPT_ARG_STRING, &string_arg, 'S', "Converts sid to uid", "SID" },
 		{ "sid-to-gid", 'Y', POPT_ARG_STRING, &string_arg, 'Y', "Converts sid to gid", "SID" },
+		{ "create-user", 'c', POPT_ARG_STRING, &string_arg, 'c', "Create a local user account", "name" },
+		{ "create-group", 'C', POPT_ARG_STRING, &string_arg, 'C', "Create a local group", "name" },
+		{ "add-to-group", 'o', POPT_ARG_STRING, &string_arg, 'o', "Add user to group", "user:group" },
+		{ "del-from-group", 'O', POPT_ARG_STRING, &string_arg, 'O', "Remove user from group", "user:group" },
 		{ "check-secret", 't', POPT_ARG_NONE, 0, 't', "Check shared secret" },
 		{ "trusted-domains", 'm', POPT_ARG_NONE, 0, 'm', "List trusted domains" },
 		{ "sequence", 0, POPT_ARG_NONE, 0, OPT_SEQUENCE, "Show sequence numbers of all domains" },
@@ -863,7 +1012,31 @@ int main(int argc, char **argv)
 					goto done;
 				break;
 			}
-		case 'p':
+		case 'c':
+			if ( !wbinfo_create_user(string_arg) ) {
+				d_printf("Could not create user account\n");
+				goto done;
+			}
+			break;
+		case 'C':
+			if ( !wbinfo_create_group(string_arg) ) {
+				d_printf("Could not create group\n");
+				goto done;
+			}
+			break;
+		case 'o':
+			if ( !wbinfo_add_user_to_group(string_arg) ) {
+				d_printf("Could not add user to group\n");
+				goto done;
+			}
+			break;
+		case 'O':
+			if ( !wbinfo_remove_user_from_group(string_arg) ) {
+				d_printf("Could not remove user kfrom group\n");
+				goto done;
+			}
+			break;
+		case 'P':
 			if (!wbinfo_ping()) {
 				d_printf("could not ping winbindd!\n");
 				goto done;

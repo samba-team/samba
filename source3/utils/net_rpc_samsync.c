@@ -441,10 +441,17 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 			add_ret = smbrun(add_script,NULL);
 			DEBUG(1,("fetch_account: Running the command `%s' "
 				 "gave %d\n", add_script, add_ret));
-
-			/* try and find the possible unix account again */
-			passwd = Get_Pwnam(account);
 		}
+		else {
+			DEBUG(8,("fetch_account_info: no add user/machine script.  Asking winbindd\n"));
+			if ( !winbind_create_user( account ) )
+				DEBUG(4,("fetch_account_info: winbind_create_user() failed\n"));
+		}
+		
+		/* try and find the possible unix account again */
+		if ( !(passwd = Get_Pwnam(account)) )
+			return NT_STATUS_NO_SUCH_USER;
+			
 	}
 	
 	sid_copy(&user_sid, get_global_sam_sid());
@@ -912,7 +919,7 @@ fetch_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta,
 				&delta->als_mem_info, dom_sid);
 		break;
 	case SAM_DELTA_DOMAIN_INFO:
-		d_printf("SAMBA_DELTA_DOMAIN_INFO not handled\n");
+		d_printf("SAM_DELTA_DOMAIN_INFO not handled\n");
 		break;
 	default:
 		d_printf("Unknown delta record type %d\n", hdr_delta->type);

@@ -809,17 +809,28 @@ NTSTATUS sid_to_uid(const DOM_SID *psid, uid_t *puid)
 	if (fetch_uid_from_cache(puid, psid))
 		return NT_STATUS_OK;
 
-	/*
-	 * First we must look up the name and decide if this is a user sid.
-	 */
+	/* if this is our DIS then go straight to a local lookup */
+	
+	if ( sid_compare_domain(get_global_sam_sid(), psid) == 0 ) {
+		DEBUG(10,("sid_to_uid: my domain (%s) - trying local.\n",
+			sid_string_static(psid) ));
+		
+		if ( (ret = local_sid_to_uid(puid, psid, &name_type)) == True )
+			store_uid_sid_cache(psid, *puid);
+		
+		return (ret ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL);
+	}
+	
+
+	/* look up the name and decide if this is a user sid */
 
 	if ( (!winbind_lookup_sid(psid, dom_name, name, &name_type)) || (name_type != SID_NAME_USER) ) {
 		DEBUG(10,("sid_to_uid: winbind lookup for sid %s failed - trying local.\n",
-			sid_to_string(sid_str, psid) ));
+			sid_string_static(psid) ));
 
-		ret = local_sid_to_uid(puid, psid, &name_type);
-		if (ret)
+		if ( (ret = local_sid_to_uid(puid, psid, &name_type)) == True )
 			store_uid_sid_cache(psid, *puid);
+
 		return (ret ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL);
 	}
 

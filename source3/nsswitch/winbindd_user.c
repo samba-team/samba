@@ -97,6 +97,7 @@ static BOOL winbindd_fill_pwent(char *dom_name, char *user_name,
 enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state) 
 {
 	WINBIND_USERINFO user_info;
+	WINBINDD_PW *pw;
 	DOM_SID user_sid;
 	NTSTATUS status;
 	fstring name_domain, name_user;
@@ -112,16 +113,25 @@ enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state)
 	
 	/* Parse domain and username */
 
-	if (!parse_domain_user(state->request.data.username, name_domain, 
-			       name_user))
-		return WINBINDD_ERROR;
+	parse_domain_user(state->request.data.username, 
+		name_domain, name_user);
 	
-	/* don't handle our own domain if we are a DC ( or a member of a Samba domain 
-	   that shares UNIX accounts).  This code handles cases where
-	   the account doesn't exist anywhere and gets passed on down the NSS layer */
+	/* if this is our local domain (or no domain), the do a local tdb search */
+	
+	if ( !*name_domain || strequal(name_domain, get_global_sam_name()) ) {
+		if ( !(pw = wb_getpwnam(name_user)) ) {
+			DEBUG(5,("winbindd_getpwnam: lookup for %s\\%s failed\n",
+				name_domain, name_user));
+			return WINBINDD_ERROR;
+		}
+		memcpy( &state->response.data.pw, pw, sizeof(WINBINDD_PW) );
+		return WINBINDD_OK;
+	}
 
-	if ( (IS_DC || lp_winbind_trusted_domains_only()) && strequal(name_domain, lp_workgroup()) ) {
-		DEBUG(7,("winbindd_getpwnam: rejecting getpwnam() for %s\\%s since I am on the PDC for this domain\n", 
+	/* should we deal with users for our domain? */
+	
+	if ( lp_winbind_trusted_domains_only() && strequal(name_domain, lp_workgroup())) {
+		DEBUG(7,("winbindd_getpenam: My domain -- rejecting getpwnam() for %s\\%s.\n", 
 			name_domain, name_user));
 		return WINBINDD_ERROR;
 	}	
@@ -184,6 +194,7 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 {
 	DOM_SID user_sid;
 	struct winbindd_domain *domain;
+	WINBINDD_PW *pw;
 	fstring dom_name;
 	fstring user_name;
 	enum SID_NAME_USE name_type;
@@ -200,6 +211,13 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 
 	DEBUG(3, ("[%5d]: getpwuid %d\n", state->pid, 
 		  state->request.data.uid));
+
+	/* always try local tdb first */
+	
+	if ( (pw = wb_getpwuid(state->request.data.uid)) != NULL ) {
+		memcpy( &state->response.data.pw, pw, sizeof(WINBINDD_PW) );
+		return WINBINDD_OK;
+	}
 	
 	/* Get rid from uid */
 

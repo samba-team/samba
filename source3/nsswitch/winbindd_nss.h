@@ -36,7 +36,7 @@
 
 /* Update this when you change the interface.  */
 
-#define WINBIND_INTERFACE_VERSION 7
+#define WINBIND_INTERFACE_VERSION 8
 
 /* Socket commands */
 
@@ -99,6 +99,16 @@ enum winbindd_cmd {
 	WINBINDD_WINS_BYIP,
 	WINBINDD_WINS_BYNAME,
 
+	/* account management commands */
+
+	WINBINDD_CREATE_USER,
+	WINBINDD_CREATE_GROUP,
+	WINBINDD_ADD_USER_TO_GROUP,
+	WINBINDD_REMOVE_USER_FROM_GROUP,
+	WINBINDD_SET_USER_PRIMARY_GROUP,
+	WINBINDD_DELETE_USER,
+	WINBINDD_DELETE_GROUP,
+	
 	/* this is like GETGRENT but gives an empty group list */
 	WINBINDD_GETGRLST,
 
@@ -110,6 +120,27 @@ enum winbindd_cmd {
 
 	WINBINDD_NUM_CMDS
 };
+
+typedef struct winbindd_pw {
+	fstring pw_name;
+	fstring pw_passwd;
+	uid_t pw_uid;
+	gid_t pw_gid;
+	fstring pw_gecos;
+	fstring pw_dir;
+	fstring pw_shell;
+} WINBINDD_PW;
+
+
+typedef struct winbindd_gr {
+	fstring gr_name;
+	fstring gr_passwd;
+	gid_t gr_gid;
+	int num_gr_mem;
+	int gr_mem_ofs;   /* offset to group membership */
+	char **gr_mem;
+} WINBINDD_GR;
+
 
 #define WBFLAG_PAM_INFO3_NDR  		0x0001
 #define WBFLAG_PAM_INFO3_TEXT 		0x0002
@@ -160,6 +191,10 @@ struct winbindd_request {
 			fstring name;       
 		} name;
 		uint32 num_entries;  /* getpwent, getgrent */
+		struct {
+			fstring username;
+			fstring groupname;
+		} acct_mgt;
 	} data;
 	char null_term;
 };
@@ -189,25 +224,11 @@ struct winbindd_response {
 
 		/* getpwnam, getpwuid */
 		
-		struct winbindd_pw {
-			fstring pw_name;
-			fstring pw_passwd;
-			uid_t pw_uid;
-			gid_t pw_gid;
-			fstring pw_gecos;
-			fstring pw_dir;
-			fstring pw_shell;
-		} pw;
+		struct winbindd_pw pw;
 
 		/* getgrnam, getgrgid */
 
-		struct winbindd_gr {
-			fstring gr_name;
-			fstring gr_passwd;
-			gid_t gr_gid;
-			int num_gr_mem;
-			int gr_mem_ofs;   /* offset to group membership */
-		} gr;
+		struct winbindd_gr gr;
 
 		uint32 num_entries; /* getpwent, getgrent */
 		struct winbindd_sid {

@@ -146,6 +146,10 @@ END {
     gotstart = 1;
   }
 
+  if( $0 ~ /^WINBINDD_PW|^WINBINDD_GR/ ) {
+    gotstart = 1;
+  }
+
   if(!gotstart) {
     next;
   }
