@@ -1,3 +1,15 @@
+2002-09-10  Johan Danielsson  <joda@pdc.kth.se>
+
+	* tools/Makefile.am: subst INCLUDE_des
+
+	* tools/krb5-config.in: add INCLUDE_des to cflags
+
+	* configure.in: use AC_CONFIG_SRCDIR
+
+	* fix-export: remove some unneeded stuff
+
+	* kuser/kinit.c (do_524init): free principals
+
 2002-09-09  Jacques Vidrine  <nectar@kth.se>
 
 	* kdc/kerberos5.c (get_pa_etype_info, fix_transited_encoding),
