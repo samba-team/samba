@@ -232,6 +232,13 @@ hdb_unlock(int fd)
 void
 hdb_free_entry(krb5_context context, hdb_entry *ent)
 {
+    int i;
+
+    for(i = 0; i < ent->keys.len; ++i) {
+	Key *k = &ent->keys.val[i];
+
+	memset (k->key.keyvalue.data, 0, k->key.keyvalue.length);
+    }
     free_hdb_entry(ent);
 }
 
@@ -262,12 +269,16 @@ hdb_check_db_format(krb5_context context, HDB *db)
     krb5_data version;
     krb5_error_code ret;
     unsigned ver;
+    int foo;
+
     tag.data = HDB_DB_FORMAT_ENTRY;
     tag.length = strlen(tag.data);
     ret = (*db->_get)(context, db, tag, &version);
     if(ret)
 	return ret;
-    if(sscanf(version.data, "%u", &ver) != 1)
+    foo = sscanf(version.data, "%u", &ver);
+    krb5_data_free (&version);
+    if (foo != 1)
 	return HDB_ERR_BADVERSION;
     if(ver != HDB_DB_FORMAT)
 	return HDB_ERR_BADVERSION;
