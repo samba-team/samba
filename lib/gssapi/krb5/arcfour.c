@@ -380,7 +380,7 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
     
     p += 24; /* skip SND_SEQ, SGN_CKSUM, and Confounder */
     memcpy(p, input_message_buffer->value, input_message_buffer->length);
-    p[input_message_buffer->length] = 0; /* PADDING */
+    p[input_message_buffer->length] = 1; /* PADDING */
 
     ret = arcfour_mic_cksum(key, KRB5_KU_USAGE_SEAL,
 			    token->SGN_CKSUM, 8,
@@ -467,6 +467,7 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
     u_char *p;
     int cmp;
     int conf_flag;
+    size_t padlen;
     
     if (conf_state)
 	*conf_state = 0;
@@ -557,7 +558,7 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
 	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
     }
-    output_message_buffer->length = datalen - 1;
+    output_message_buffer->length = datalen;
 
     if(conf_flag) {
 	RC4_KEY rc4_key;
@@ -573,14 +574,22 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
     }
     memset(k6_data, 0, sizeof(k6_data));
 
+    ret = _gssapi_verify_pad(output_message_buffer, datalen, &padlen);
+    if (ret) {
+	gss_release_buffer(minor_status, output_message_buffer);
+	*minor_status = 0;
+	return ret;
+    }
+    output_message_buffer->length -= padlen;
+
     ret = arcfour_mic_cksum(key, KRB5_KU_USAGE_SEAL,
 			    cksum_data, sizeof(cksum_data),
 			    p - 8, 8, 
 			    Confounder, sizeof(Confounder),
 			    output_message_buffer->value, 
-			    output_message_buffer->length + 1);
+			    output_message_buffer->length + padlen);
     if (ret) {
-	gss_release_buffer(minor_status, input_message_buffer);
+	gss_release_buffer(minor_status, output_message_buffer);
 	*minor_status = ret;
 	return GSS_S_FAILURE;
     }
