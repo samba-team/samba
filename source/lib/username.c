@@ -83,7 +83,7 @@ static BOOL build_passwd_hash_table(void)
   DEBUG(3,("Building passwd hash table\n"));
   /* Free the allocated strings in old hash table */
   for (i=0;i<pht->passwds_size;i++) {
-    free(pht->passwds[i].pw_name);
+    free(pht->passwds[i].pw_name); 
     free(pht->passwds[i].pw_passwd);
     free(pht->passwds[i].pw_gecos);
     free(pht->passwds[i].pw_dir);
@@ -302,7 +302,7 @@ get a users home directory.
 ****************************************************************************/
 char *get_home_dir(char *user)
 {
-	struct passwd *pass;
+	const struct passwd *pass;
 	static pstring home_dir;
 
 	pass = Get_Pwnam(user, False);
@@ -428,6 +428,86 @@ static struct passwd *_Get_Pwnam(char *s)
   ret = hashed_getpwnam(s);
   if (ret)
     {
+
+  /* Deal with password information stored in shadows.  Due to the
+     dynamic allocation of password cache stuff, the original password
+     needs to be freed and the new password mallocated to avoid
+     crashing the cache destructor code. */
+
+#ifdef HAVE_GETSPNAM
+	{
+		struct spwd *spass;
+
+		/* many shadow systems require you to be root to get
+		   the password, in most cases this should already be
+		   the case when this function is called, except
+		   perhaps for IPC password changing requests */
+
+		spass = getspnam(ret->pw_name);
+		if (spass && spass->sp_pwdp) {
+		    free(ret->pw_passwd);
+		    ret->pw_passwd = strdup(spass->sp_pwdp);
+		}
+	}
+#elif defined(IA_UINFO)
+	{
+		/* Need to get password with SVR4.2's ia_ functions
+		   instead of get{sp,pw}ent functions. Required by
+		   UnixWare 2.x, tested on version
+		   2.1. (tangent@cyberport.com) */
+   	        /* Not sure how large the new password string should
+		   be so I'm using a pstring instead.  If anyone has
+		   access to a UnixWare system perhaps they could
+		   optimise this.  (tpot@samba.org) */
+		uinfo_t uinfo;
+		if (ia_openinfo(ret->pw_name, &uinfo) != -1) {
+		    free(ret->pw_passwd);
+		    ret->pw_passwd = malloc(FSTRING_LEN);
+		    ia_get_logpwd(uinfo, &(ret->pw_passwd));
+		}
+	}
+#endif
+
+#ifdef HAVE_GETPRPWNAM
+	{
+		struct pr_passwd *pr_pw = getprpwnam(ret->pw_name);
+		if (pr_pw && pr_pw->ufld.fd_encrypt) {
+		    free(ret->pw_passwd);
+		    ret->pw_passwd = strdup(pr_pw->ufld.fd_encrypt);
+		}
+	}
+#endif
+
+#ifdef OSF1_ENH_SEC
+	{
+		struct pr_passwd *mypasswd;
+		DEBUG(5,("Checking password for user %s in OSF1_ENH_SEC\n",
+			 user));
+		mypasswd = getprpwnam (user);
+		if (mypasswd) { 
+		    free(ret->pw_name);
+		    free(ret->pw_passwd);
+		    ret->pw_name = strdup(mypasswd->ufld.fd_name);
+		    ret->pw_passwd = strdup(mypasswd->ufld.fd_encrypt);
+		} else {
+		    DEBUG(5,("No entry for user %s in protected database !\n",
+			     user));
+		    return(False);
+		}
+	}
+#endif
+
+#ifdef ULTRIX_AUTH
+	{
+		AUTHORIZATION *ap = getauthuid(ret->pw_uid);
+		if (ap) {
+		    free(ret->pw_passwd);
+		    ret->pw_passwd = strdup(ap->a_password);
+		    endauthent();
+		}
+	}
+#endif
+
 #ifdef HAVE_GETPWANAM
       struct passwd_adjunct *pwret;
       pwret = getpwanam(s);
@@ -447,9 +527,11 @@ static struct passwd *_Get_Pwnam(char *s)
 /****************************************************************************
 a wrapper for getpwnam() that tries with all lower and all upper case 
 if the initial name fails. Also tried with first letter capitalised
-Note that this can change user!
+Note that this can change user!  Function returns const to emphasise
+the fact that most of the members of the struct passwd * returned are
+dynamically allocated.
 ****************************************************************************/
-struct passwd *Get_Pwnam(char *user,BOOL allow_change)
+const struct passwd *Get_Pwnam(char *user,BOOL allow_change)
 {
   fstring user2;
   int last_char;
@@ -538,7 +620,7 @@ static BOOL user_in_group_list(char *user,char *gname)
 #ifdef HAVE_GETGRNAM 
   struct group *gptr;
   char **member;  
-  struct passwd *pass = Get_Pwnam(user,False);
+  const struct passwd *pass = Get_Pwnam(user,False);
 
   if (pass)
   { 

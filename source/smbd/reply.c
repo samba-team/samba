@@ -774,7 +774,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
      user we should become.
      */
   {
-    struct passwd *pw = Get_Pwnam(user,False);
+    const struct passwd *pw = Get_Pwnam(user,False);
     if (!pw) {
       DEBUG(1,("Username %s is invalid on this system\n",user));
       return(ERROR(ERRSRV,ERRbadpw));

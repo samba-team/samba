@@ -415,7 +415,7 @@ BOOL pass_check_smb(char *user, char *domain,
 		uchar *chal, uchar *lm_pwd, uchar *nt_pwd,
 		struct passwd *pwd, uchar user_sess_key[16])
 {
-	struct passwd *pass;
+	const struct passwd *pass;
 	struct smb_passwd *smb_pass;
 
 	if (!lm_pwd || !nt_pwd)
@@ -877,7 +877,7 @@ BOOL check_hosts_equiv(char *user)
 {
   char *fname = NULL;
   pstring rhostsfile;
-  struct passwd *pass = Get_Pwnam(user,True);
+  const struct passwd *pass = Get_Pwnam(user,True);
 
   if (!pass) 
     return(False);

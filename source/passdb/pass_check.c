@@ -753,7 +753,7 @@ BOOL pass_check(char *user,char *password, int pwlen, struct passwd *pwd,
 {
 	pstring pass2;
 	int level = lp_passwordlevel();
-	struct passwd *pass;
+	const struct passwd *pass;
 
 	if (password) password[pwlen] = 0;
 
@@ -784,68 +784,6 @@ BOOL pass_check(char *user,char *password, int pwlen, struct passwd *pwd,
 		DEBUG(3,("Couldn't find user %s\n",user));
 		return(False);
 	}
-
-#ifdef HAVE_GETSPNAM
-	{
-		struct spwd *spass;
-
-		/* many shadow systems require you to be root to get
-		   the password, in most cases this should already be
-		   the case when this function is called, except
-		   perhaps for IPC password changing requests */
-
-		spass = getspnam(pass->pw_name);
-		if (spass && spass->sp_pwdp) {
-			pass->pw_passwd = spass->sp_pwdp;
-		}
-	}
-#elif defined(IA_UINFO)
-	{
-		/* Need to get password with SVR4.2's ia_ functions
-		   instead of get{sp,pw}ent functions. Required by
-		   UnixWare 2.x, tested on version
-		   2.1. (tangent@cyberport.com) */
-		uinfo_t uinfo;
-		if (ia_openinfo(pass->pw_name, &uinfo) != -1) {
-			ia_get_logpwd(uinfo, &(pass->pw_passwd));
-		}
-	}
-#endif
-
-#ifdef HAVE_GETPRPWNAM
-	{
-		struct pr_passwd *pr_pw = getprpwnam(pass->pw_name);
-		if (pr_pw && pr_pw->ufld.fd_encrypt)
-			pass->pw_passwd = pr_pw->ufld.fd_encrypt;
-	}
-#endif
-
-#ifdef OSF1_ENH_SEC
-	{
-		struct pr_passwd *mypasswd;
-		DEBUG(5,("Checking password for user %s in OSF1_ENH_SEC\n",
-			 user));
-		mypasswd = getprpwnam (user);
-		if (mypasswd) { 
-			fstrcpy(pass->pw_name,mypasswd->ufld.fd_name);
-			fstrcpy(pass->pw_passwd,mypasswd->ufld.fd_encrypt);
-		} else {
-			DEBUG(5,("No entry for user %s in protected database !\n",
-				 user));
-			return(False);
-		}
-	}
-#endif
-
-#ifdef ULTRIX_AUTH
-	{
-		AUTHORIZATION *ap = getauthuid(pass->pw_uid);
-		if (ap) {
-			fstrcpy(pass->pw_passwd, ap->a_password);
-			endauthent();
-		}
-	}
-#endif
 
 	/* extract relevant info */
 	fstrcpy(this_user,pass->pw_name);  

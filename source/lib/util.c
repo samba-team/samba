@@ -2125,7 +2125,7 @@ void standard_sub_basic(char *str)
 {
 	char *s, *p;
 	char pidstr[10];
-	struct passwd *pass;
+	const struct passwd *pass;
 	char *username = sam_logon_in_ssb ? samlogon_user : sesssetup_user;
 
 	for (s = str ; s && *s && (p = strchr(s,'%')); s = p )
@@ -2498,7 +2498,7 @@ turn a user name into a uid
 ********************************************************************/
 BOOL nametouid(const char *name, uid_t *uid)
 {
-	struct passwd *pass = Get_Pwnam((char *)name, False);
+	const struct passwd *pass = Get_Pwnam((char *)name, False);
 	if (pass)
 	{
 		*uid = pass->pw_uid;
