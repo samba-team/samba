@@ -569,7 +569,17 @@ static int make_dom_sid2s(char *sids_str, DOM_SID2 *sids, int max_sids)
 
 /*******************************************************************
 makes a NET_ID_INFO_1 structure.
+
+This is an interactive logon packet. The log_id parameters
+are what an NT server would generate for LUID once the
+user is logged on. I don't think we care about them.
+
+Note that this passes the actual NT and LM hashed passwords
+over the secure channel. This is not the preferred logon 
+method from a Samba domain client as it exposes the password
+hashes to anyone who has compromised the secure channel. JRA.
 ********************************************************************/
+
 void make_id_info1(NET_ID_INFO_1 *id, char *domain_name,
 				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
 				char *user_name, char *wksta_name,
@@ -671,7 +681,19 @@ void net_io_id_info1(char *desc,  NET_ID_INFO_1 *id, prs_struct *ps, int depth)
 
 /*******************************************************************
 makes a NET_ID_INFO_2 structure.
+
+This is a network logon packet. The log_id parameters
+are what an NT server would generate for LUID once the
+user is logged on. I don't think we care about them.
+
+Note that this has no access to the NT and LM hashed passwords,
+so it forwards the challenge, and the NT and LM responses (24
+bytes each) over the secure channel to the Domain controller
+for it to say yea or nay. This is the preferred method of 
+checking for a logon as it doesn't export the password
+hashes to anyone who has compromised the secure channel. JRA.
 ********************************************************************/
+
 void make_id_info2(NET_ID_INFO_2 *id, char *domain_name,
 				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
 				char *user_name, char *wksta_name,

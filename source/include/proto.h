@@ -1492,6 +1492,10 @@ BOOL nmb_name_equal(struct nmb_name *n1, struct nmb_name *n2);
 BOOL send_packet(struct packet_struct *p);
 struct packet_struct *receive_packet(int fd,enum packet_type type,int t);
 
+/*The following definitions come from  nterr.c  */
+
+char *get_nt_error_msg(uint32 nt_code);
+
 /*The following definitions come from  params.c  */
 
 BOOL pm_process( char *FileName,

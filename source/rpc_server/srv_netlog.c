@@ -647,7 +647,7 @@ static void api_net_sam_logon( int uid,
 		{
 			case 1:
 			{
-				/* interactive login.  passwords arcfour'd with session key */
+				/* interactive login. */
 				status = net_login_interactive(&q_l.sam_id.ctr->auth.id1,
 				                               smb_pass, vuser);
 				break;

@@ -71,19 +71,39 @@ char *cli_errstr(struct cli_state *cli)
   int i;      
       
   /*  
-   * Errors are of two kinds - smb errors,
-   * dealt with by cli_smb_errstr, and rap
-   * errors, whose error code is in cli.error.
+   * Errors are of three kinds - smb errors,
+   * dealt with by cli_smb_errstr, NT errors,
+   * whose code is in cli.nt_error, and rap
+   * errors, whose error code is in cli.rap_error.
    */ 
 
   cli_error(cli, &errclass, &errnum);
   if(errclass != 0)
     return cli_smb_errstr(cli);
-    
-  sprintf(error_message, "code %d", cli->error);
+
+  /*
+   * Was it an NT error ?
+   */
+
+  if(cli->nt_error) {
+    char *nt_msg = get_nt_error_msg(cli->nt_error);
+
+    if(nt_msg == NULL)
+      sprintf(error_message, "NT code %d", cli->nt_error);
+    else
+      fstrcpy(error_message, nt_msg);
+
+    return error_message;
+  }
+
+  /*
+   * Must have been a rap error.
+   */
+
+  sprintf(error_message, "code %d", cli->rap_error);
     
   for(i = 0; rap_errmap[i].message != NULL; i++) {
-    if (rap_errmap[i].err == cli->error) {
+    if (rap_errmap[i].err == cli->rap_error) {
       fstrcpy( error_message, rap_errmap[i].message);
       break;
     }
@@ -97,6 +117,8 @@ setup basics in a outgoing packet
 ****************************************************************************/
 static void cli_setup_packet(struct cli_state *cli)
 {
+        cli->rap_error = 0;
+        cli->nt_error = 0;
 	SSVAL(cli->outbuf,smb_pid,cli->pid);
 	SSVAL(cli->outbuf,smb_uid,cli->uid);
 	SSVAL(cli->outbuf,smb_mid,cli->mid);
@@ -382,29 +404,27 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 	SSVAL(p, 0, BUFFER_SIZE);
 	p += 2;
 	
-	cli->error = -1;
-	
 	if (cli_api(cli, 
                     param, PTR_DIFF(p,param),1024,  /* param, length, max */
                     NULL, 0, BUFFER_SIZE,           /* data, length, max */
                     &rparam, &rprcnt,               /* return params, return size */
                     &rdata, &rdrcnt                 /* return data, return size */
                    )) {
-		cli->error = SVAL(rparam,0);
+		cli->rap_error = SVAL(rparam,0);
 		p = rdata;
 		
-		if (cli->error == 0) {
+		if (cli->rap_error == 0) {
 			DEBUG(4,("NetWkstaUserLogon success\n"));
 			cli->privilages = SVAL(p, 24);
 			fstrcpy(cli->eff_name,p+2);
 		} else {
-			DEBUG(1,("NetwkstaUserLogon gave error %d\n", cli->error));
+			DEBUG(1,("NetwkstaUserLogon gave error %d\n", cli->rap_error));
 		}
 	}
 	
 	if (rparam) free(rparam);
 	if (rdata) free(rdata);
-	return cli->error == 0;
+	return (cli->rap_error == 0);
 }
 
 
@@ -1357,8 +1377,6 @@ BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_passwo
   char *rdata = NULL;
   int rprcnt, rdrcnt;
 
-  cli->error = -1;
-
   if(strlen(user) >= sizeof(fstring)-1) {
     DEBUG(0,("cli_oem_change_password: user name %s is too long.\n", user));
     return False;
@@ -1432,7 +1450,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_passwo
                        &rparam, &rprcnt,
                        &rdata, &rdrcnt)) {
     if(rparam)
-      cli->error = SVAL(rparam,0);
+      cli->rap_error = SVAL(rparam,0);
   }
 
   if (rparam)
@@ -1440,7 +1458,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_passwo
   if (rdata)
     free(rdata);
 
-  return (cli->error == 0);
+  return (cli->rap_error == 0);
 }
 
 /****************************************************************************
@@ -1561,7 +1579,8 @@ BOOL cli_session_request(struct cli_state *cli, char *host, int name_type,
 		return False;
 
 	if (CVAL(cli->inbuf,0) != 0x82) {
-		cli->error = CVAL(cli->inbuf,0);
+                /* This is the wrong place to put the error... JRA. */
+		cli->rap_error = CVAL(cli->inbuf,0);
 		return False;
 	}
 	return(True);

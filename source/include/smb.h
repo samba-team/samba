@@ -298,7 +298,8 @@ struct cli_state {
 	int uid;
 	int protocol;
 	int sec_mode;
-	int error;
+	int rap_error;
+        uint32 nt_error;
 	int privilages;
 	fstring eff_name;
 	fstring desthost;
