@@ -188,8 +188,6 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 
 int main(int argc, const char *argv[])
 {
-	extern char *optarg;
-	extern int optind;
 	const char *config_file = dyn_CONFIGFILE;
 	int s;
 	static BOOL silent_mode = False;
