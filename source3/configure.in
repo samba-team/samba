@@ -883,7 +883,7 @@ case "$host_os" in
 			AC_DEFINE(SUNOS5)
 			BLDSHARED="true"
 			LDSHFLAGS="-h \$@ -G"
-			if test "${ac_cv_prog_CC}" = "gcc"; then
+			if test "${GCC}" = "yes"; then
 				PICFLAG="-fPIC"
 			else
 				PICFLAG="-KPIC"
@@ -911,7 +911,7 @@ case "$host_os" in
 			BLDSHARED="true"
 			LDSHFLAGS="-soname \$@ -shared"
 			SHLD="\${LD}"
-			if test "${ac_cv_prog_CC}" = "gcc"; then
+			if test "${GCC}" = "yes"; then
 				PICFLAG="-fPIC"
 			else 
 				PICFLAG="-KPIC"
@@ -2864,7 +2864,7 @@ AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
 builddir=`pwd`
 AC_SUBST(builddir)
 
-AC_OUTPUT(include/stamp-h Makefile)
+AC_OUTPUT(include/stamp-h Makefile script/findsmb)
 
 #################################################
 # Print very concise instructions on building/use
