@@ -50,7 +50,12 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 
 #define HDB2LDAP(db) ((LDAP *)(db)->hdb_db)
 
-static char *structural_object = "account"; /* XXX or person */
+static const char *default_structural_object = "account";
+static char *structural_object;
+
+/*
+ *
+ */
 
 static char *krb5kdcentry_attrs[] = { 
     "cn",
@@ -389,7 +394,7 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
 	    for (i=0; i < num_objectclasses; i++) {
 		if (strcasecmp(values[i], "sambaSamAccount") == 0) {
 		    is_samba_account = TRUE;
-		} else if (strcasecmp(values[i], "account") == 0) {
+		} else if (strcasecmp(values[i], structural_object) == 0) {
 		    is_account = TRUE;
 		} else if (strcasecmp(values[i], "krb5Principal") == 0) {
 		    is_heimdal_principal = TRUE;
@@ -1640,6 +1645,20 @@ static krb5_error_code LDAP_destroy(krb5_context context, HDB * db)
 krb5_error_code
 hdb_ldap_create(krb5_context context, HDB ** db, const char *arg)
 {
+    if (structural_object == NULL) {
+	const char *p;
+
+	p = krb5_config_get_string(context, NULL, "kdc", 
+				   "hdb-ldap-structural-object", NULL);
+	if (p == NULL)
+	    p = default_structural_object;
+	structural_object = strdup(p);
+	if (structural_object == NULL) {
+	    krb5_set_error_string(context, "malloc: out of memory");
+	    return ENOMEM;
+	}
+    }
+
     *db = malloc(sizeof(**db));
     if (*db == NULL) {
 	krb5_set_error_string(context, "malloc: out of memory");
