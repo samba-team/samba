@@ -52,6 +52,19 @@ fix_time(time_t **t)
     if(**t == 0) **t = MAX_TIME; /* fix for old clients */
 }
 
+static void
+set_salt_padata (METHOD_DATA **m, Salt *salt)
+{
+    if (salt) {
+	ALLOC(*m);
+	(*m)->len = 1;
+	ALLOC((*m)->val);
+	(*m)->val->padata_type = salt->type;
+	copy_octet_string(&salt->salt,
+			  &(*m)->val->padata_value);
+    }
+}
+
 krb5_error_code
 as_rep(KDC_REQ *req, 
        krb5_data *reply,
@@ -517,14 +530,7 @@ as_rep(KDC_REQ *req,
 				   &ekey->key,
 				   &rep.enc_part);
 	hdb_free_key(ekey);
-	if(ckey->salt){
-	    ALLOC(rep.padata);
-	    rep.padata->len = 1;
-	    rep.padata->val = calloc(1, sizeof(*rep.padata->val));
-	    rep.padata->val->padata_type = ckey->salt->type;
-	    copy_octet_string(&ckey->salt->salt,
-			      &rep.padata->val->padata_value);
-	}
+	set_salt_padata (&rep.padata, ckey->salt);
 	
 	ret = encode_AS_REP(buf + sizeof(buf) - 1, sizeof(buf), &rep, &len);
 	free_AS_REP(&rep);
