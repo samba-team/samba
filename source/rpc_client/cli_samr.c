@@ -98,6 +98,63 @@ BOOL get_samr_query_userinfo(struct cli_state *cli,
 }
 
 /****************************************************************************
+do a SAMR change user password command
+****************************************************************************/
+BOOL do_samr_chgpasswd_user(struct cli_state *cli,
+		char *srv_name, char *user_name,
+		char nt_newpass[516], char nt_oldhash[16],
+		char lm_newpass[516], char lm_oldhash[16])
+{
+	prs_struct data;
+	prs_struct rdata;
+
+	SAMR_Q_CHGPASSWD_USER q_e;
+	BOOL valid_pwc = False;
+
+	/* create and send a MSRPC command with api SAMR_CHGPASSWD_USER */
+
+	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+
+	DEBUG(4,("SAMR Change User Password. server:%s username:%s\n",
+	        srv_name, user_name));
+
+	make_samr_q_chgpasswd_user(&q_e, srv_name, user_name,
+	                           nt_newpass, nt_oldhash,
+	                           lm_newpass, lm_oldhash);
+
+	/* turn parameters into data stream */
+	samr_io_q_chgpasswd_user("", &q_e, &data, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, SAMR_CHGPASSWD_USER, &data, &rdata))
+	{
+		SAMR_R_CHGPASSWD_USER r_e;
+		BOOL p;
+
+		samr_io_r_chgpasswd_user("", &r_e, &rdata, 0);
+
+		p = rdata.offset != 0;
+		if (p && r_e.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SAMR_R_CHGPASSWD_USER: %s\n", get_nt_error_msg(r_e.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_pwc = True;
+		}
+	}
+
+	prs_mem_free(&data   );
+	prs_mem_free(&rdata  );
+
+	return valid_pwc;
+}
+
+/****************************************************************************
 do a SAMR unknown 0x38 command
 ****************************************************************************/
 BOOL do_samr_unknown_38(struct cli_state *cli, char *srv_name)
