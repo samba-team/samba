@@ -1727,11 +1727,16 @@ void initiate_wins_processing(time_t t)
 		     && (namerec->data.death_time < t) ) {
 
 			if( namerec->data.source == SELF_NAME ) {
-				DEBUG( 3, ( "expire_names_on_subnet: Subnet %s not expiring SELF name %s\n", 
+				DEBUG( 3, ( "initiate_wins_processing: Subnet %s not expiring SELF name %s\n", 
 				           wins_server_subnet->subnet_name, nmb_namestr(&namerec->name) ) );
 				namerec->data.death_time += 300;
 				namerec->subnet->namelist_changed = True;
 				continue;
+			} else if (namerec->data.source == DNS_NAME || namerec->data.source == DNSFAIL_NAME) {
+				DEBUG(3,("initiate_wins_processing: deleting timed out DNS name %s\n",
+						nmb_namestr(&namerec->name)));
+				remove_name_from_namelist( wins_server_subnet, namerec );
+				break;
 			}
 
 			/* handle records, samba is the wins owner */
