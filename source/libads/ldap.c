@@ -456,8 +456,6 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 	controls[1] = &PagedResults;
 	controls[2] = NULL;
 
-	*res = NULL;
-
 	/* we need to disable referrals as the openldap libs don't
 	   handle them and paged results at the same time.  Using them
 	   together results in the result record containing the server 
@@ -533,6 +531,7 @@ ADS_STATUS ads_do_search_all(ADS_STRUCT *ads, const char *bind_path,
 	int count = 0;
 	ADS_STATUS status;
 
+	*res = NULL;
 	status = ads_do_paged_search(ads, bind_path, scope, expr, attrs, res,
 				     &count, &cookie);
 
@@ -623,6 +622,7 @@ ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope,
 	char *utf8_expr, *utf8_path, **search_attrs = NULL;
 	TALLOC_CTX *ctx;
 
+	*res = NULL;
 	if (!(ctx = talloc_init("ads_do_search"))) {
 		DEBUG(1,("ads_do_search: talloc_init() failed!"));
 		return ADS_ERROR(LDAP_NO_MEMORY);
@@ -653,7 +653,6 @@ ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope,
 
 	timeout.tv_sec = ADS_SEARCH_TIMEOUT;
 	timeout.tv_usec = 0;
-	*res = NULL;
 
 	/* see the note in ads_do_paged_search - we *must* disable referrals */
 	ldap_set_option(ads->ld, LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
@@ -763,6 +762,8 @@ ADS_STATUS ads_find_machine_acct(ADS_STRUCT *ads, void **res, const char *machin
 	ADS_STATUS status;
 	char *expr;
 	const char *attrs[] = {"*", "nTSecurityDescriptor", NULL};
+
+	*res = NULL;
 
 	/* the easiest way to find a machine account anywhere in the tree
 	   is to look for hostname$ */
@@ -2494,6 +2495,10 @@ ADS_STATUS ads_workgroup_name(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char *
 
 	asprintf(&expr, "(&(objectclass=computer)(dnshostname=%s.%s))", 
 		 ads->config.ldap_server_name, ads->config.realm);
+	if (expr == NULL) {
+		ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
+
 	rc = ads_search(ads, &res, expr, attrs);
 	free(expr);
 
