@@ -230,20 +230,16 @@ samba_cv_HAVE_SENDFILEV=yes,samba_cv_HAVE_SENDFILEV=no)])
 # end check for sendfile support
 #################################################
 
-SMB_MODULE(ntvfs_cifs, NTVFS, STATIC, [ntvfs/cifs/vfs_cifs.o])
+SMB_MODULE_MK(ntvfs_cifs, NTVFS, STATIC, ntvfs/config.mk)
 
-SMB_MODULE(ntvfs_simple, NTVFS, STATIC, 
-		[ntvfs/simple/vfs_simple.o],
-		[ntvfs/simple/svfs_util.o])
+SMB_MODULE_MK(ntvfs_simple, NTVFS, STATIC, ntvfs/config.mk)
 
-SMB_MODULE(ntvfs_print, NTVFS, STATIC, [ntvfs/print/vfs_print.o])
+SMB_MODULE_MK(ntvfs_print, NTVFS, STATIC, ntvfs/config.mk)
 
-SMB_MODULE(ntvfs_ipc, NTVFS, STATIC, [ntvfs/ipc/vfs_ipc.o])
+SMB_MODULE_MK(ntvfs_ipc, NTVFS, STATIC, ntvfs/config.mk)
 
-SMB_MODULE(ntvfs_posix, NTVFS, STATIC, [ntvfs/posix/vfs_posix.o])
+SMB_MODULE_MK(ntvfs_posix, NTVFS, STATIC, ntvfs/config.mk)
 
-SMB_MODULE(ntvfs_nbench, NTVFS, STATIC, [ntvfs/nbench/vfs_nbench.o])
+SMB_MODULE_MK(ntvfs_nbench, NTVFS, STATIC, ntvfs/config.mk)
 
-SMB_SUBSYSTEM(NTVFS,ntvfs/ntvfs_base.o,
-		[ntvfs/ntvfs_generic.o
-		ntvfs/ntvfs_util.o])
+SMB_SUBSYSTEM_MK(NTVFS,ntvfs/config.mk)
