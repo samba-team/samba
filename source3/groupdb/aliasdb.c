@@ -92,6 +92,7 @@ LOCAL_GRP *iterate_getaliasrid(uint32 rid, LOCAL_GRP_MEMBER **mem, int *num_mem)
 
 	while ((als = getaliasent(fp, mem, num_mem)) != NULL && als->rid != rid)
 	{
+		DEBUG(10,("iterate: %s 0x%x", als->name, als->rid));
 	}
 
 	if (als != NULL)
