@@ -2,7 +2,7 @@
                         September 11, 2003
                   ==============================
 
-This is the third release candidate snapshot of Samba 3.0.0. A release 
+This is the fourth release candidate snapshot of Samba 3.0.0. A release 
 candidate implies that the code is very close to a final release, remember 
 that this is still a non-production release intended for testing purposes.  
 Use at your own risk. 
@@ -102,9 +102,10 @@ details:
 9)  Fix smbd crash when changing the machine trust account password 
     (bug 273).
 10) Remove getpwnam() calls from init_sam_from_xxx().  This means 
-    that %u & %g will no longer expand, but %U and %G still do.	
-    The payback is that winbindd local accounts for users work with 
-    'wbinfo -u' when winbind is running on a PDC.
+    that %u & %g will no longer expand in the "login ..." set of 
+    smb.conf options, but %U and %G still do. The payback is that 
+    winbindd local accounts for users work with 'wbinfo -u' 
+    when winbind is running on a Samba PDC.
 11) Fix unitiailized timestamp where merging print_jobs and 
     lpq listing.
 
