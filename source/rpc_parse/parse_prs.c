@@ -584,7 +584,6 @@ BOOL prs_buffer5(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER5 *
 		str->buffer = (uint16 *)prs_alloc_mem(ps,str->buf_len * sizeof(uint16));
 		if (str->buffer == NULL)
 			return False;
-		memset(str->buffer, '\0', str->buf_len * sizeof(uint16));
 	}
 
 	/* If the string is empty, we don't have anything to stream */
@@ -678,7 +677,6 @@ BOOL prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *
 		str->buffer = (uint16 *)prs_alloc_mem(ps,str->uni_max_len * sizeof(uint16));
 		if (str->buffer == NULL)
 			return False;
-		memset(str->buffer, '\0', str->uni_max_len * sizeof(uint16));
 	}
 
 	/* If the string is empty, we don't have anything to stream */

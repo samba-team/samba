@@ -206,7 +206,6 @@ BOOL sec_io_acl(char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 		 */
 		if((psa = (SEC_ACL *)malloc(sizeof(SEC_ACL))) == NULL)
 			return False;
-		ZERO_STRUCTP(psa);
 		*ppsa = psa;
 	}
 
@@ -231,7 +230,6 @@ BOOL sec_io_acl(char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 		/* reading */
 		if((psa->ace = malloc(sizeof(psa->ace[0]) * psa->num_aces)) == NULL)
 			return False;
-		ZERO_STRUCTP(psa->ace);
 	}
 
 	for (i = 0; i < psa->num_aces; i++) {
@@ -633,7 +631,6 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 		if(UNMARSHALLING(ps)) {
 			if((psd = (SEC_DESC *)malloc(sizeof(SEC_DESC))) == NULL)
 				return False;
-			ZERO_STRUCTP(psd);
 			*ppsd = psd;
 		} else {
 			/* Marshalling - just ignore. */
@@ -678,7 +675,6 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 			/* reading */
 			if((psd->owner_sid = malloc(sizeof(*psd->owner_sid))) == NULL)
 				return False;
-			ZERO_STRUCTP(psd->owner_sid);
 		}
 
 		if(!smb_io_dom_sid("owner_sid ", psd->owner_sid , ps, depth))
@@ -697,7 +693,6 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 				return False;
 			if((psd->grp_sid = malloc(sizeof(*psd->grp_sid))) == NULL)
 				return False;
-			ZERO_STRUCTP(psd->grp_sid);
 		}
 
 		if(!smb_io_dom_sid("grp_sid", psd->grp_sid, ps, depth))
@@ -810,7 +805,6 @@ BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int depth
 	if (UNMARSHALLING(ps) && psdb == NULL) {
 		if((psdb = (SEC_DESC_BUF *)malloc(sizeof(SEC_DESC_BUF))) == NULL)
 			return False;
-		ZERO_STRUCTP(psdb);
 		*ppsdb = psdb;
 	}
 
