@@ -1408,7 +1408,7 @@ BOOL pdb_getsampwuid (SAM_ACCOUNT *sam_acct, uid_t uid)
 	struct smb_passwd *smb_pw;
 	void *fp = NULL;
 
-	DEBUG(10, ("pdb_getsampwuid: search by uid: %d\n", uid));
+	DEBUG(10, ("pdb_getsampwuid: search by uid: %d\n", (int)uid));
 
 	/* Open the sam password file - not for update. */
 	fp = startsmbfilepwent(lp_smb_passwd_file(), PWF_READ, &pw_file_lock_depth);

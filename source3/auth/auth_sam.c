@@ -96,7 +96,7 @@ static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB ntv2_response,
 	if (ntv2_response.length < 16) {
 		/* We MUST have more than 16 bytes, or the stuff below will go
 		   crazy... */
-		DEBUG(0, ("smb_pwd_check_ntlmv1: incorrect password length (%d)\n", 
+		DEBUG(0, ("smb_pwd_check_ntlmv2: incorrect password length (%d)\n", 
 			  ntv2_response.length));
 		return False;
 	}
@@ -132,15 +132,16 @@ static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB ntv2_response,
  Do a specific test for an smb password being correct, given a smb_password and
  the lanman and NT responses.
 ****************************************************************************/
-NTSTATUS sam_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *user_info, uint8 user_sess_key[16])
+static NTSTATUS sam_password_ok(SAM_ACCOUNT *sampass, 
+				const auth_usersupplied_info *user_info, 
+				const auth_authsupplied_info *auth_info,
+				uint8 user_sess_key[16])
 {
+	uint16 acct_ctrl;
 	const uint8 *nt_pw, *lm_pw;
-	uint16	acct_ctrl = pdb_get_acct_ctrl(sampass);
 	uint32 ntlmssp_flags;
 
-	if (!user_info || !sampass) 
-		return NT_STATUS_LOGON_FAILURE;
-
+	acct_ctrl = pdb_get_acct_ctrl(sampass);
 	if (acct_ctrl & ACB_PWNOTREQ) 
 	{
 		if (lp_null_passwords()) 
@@ -173,8 +174,8 @@ NTSTATUS sam_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *use
 		*/
 		DEBUG(4,("smb_password_ok: Checking NTLMv2 password\n"));
 		if (smb_pwd_check_ntlmv2( user_info->nt_resp, 
-					  nt_pw, 
-					  user_info->sec_blob, user_info->smb_name.str, 
+					  nt_pw, auth_info->challange, 
+					  user_info->smb_name.str, 
 					  user_info->client_domain.str,
 					  user_sess_key))
 		{
@@ -190,7 +191,7 @@ NTSTATUS sam_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *use
 			*/
 			DEBUG(4,("smb_password_ok: Checking NT MD4 password\n"));
 			if (smb_pwd_check_ntlmv1(user_info->nt_resp, 
-						 nt_pw, user_info->sec_blob,
+						 nt_pw, auth_info->challange,
 						 user_sess_key)) 
 			{
 				return NT_STATUS_OK;
@@ -223,7 +224,7 @@ NTSTATUS sam_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *use
 		
 		DEBUG(4,("smb_password_ok: Checking LM password\n"));
 		if (smb_pwd_check_ntlmv1(user_info->lm_resp, 
-					 lm_pw, user_info->sec_blob,
+					 lm_pw, auth_info->challange,
 					 user_sess_key)) 
 		{
 			return NT_STATUS_OK;
@@ -265,6 +266,24 @@ static NTSTATUS sam_account_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_inf
 		return NT_STATUS_ACCOUNT_EXPIRED;
 	}
 
+	if (!(pdb_get_acct_ctrl(sampass) & ACB_PWNOEXP)) {
+		time_t must_change_time = pdb_get_pass_must_change_time(sampass);
+		time_t last_set_time = pdb_get_pass_last_set_time(sampass);
+
+		/* check for immediate expiry "must change at next logon" */
+		if (must_change_time == 0 && last_set_time != 0) {
+			DEBUG(1,("Account for user '%s' password must change!.\n", pdb_get_username(sampass)));
+			return NT_STATUS_PASSWORD_MUST_CHANGE;
+		}
+
+		/* check for expired password */
+		if (must_change_time < time(NULL) && must_change_time != 0) {
+			DEBUG(1,("Account for user '%s' password expired!.\n", pdb_get_username(sampass)));
+			DEBUG(1,("Password expired at '%s' (%ld) unix time.\n", http_timestring(must_change_time), (long)must_change_time));
+			return NT_STATUS_PASSWORD_EXPIRED;
+		}
+	}
+
 	/* Test workstation. Workstation list is comma separated. */
 
 	workstation_list = strdup(pdb_get_workstations(sampass));
@@ -293,24 +312,6 @@ static NTSTATUS sam_account_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_inf
 		SAFE_FREE(workstation_list);
 	}
 
-	if (!(pdb_get_acct_ctrl(sampass) & ACB_PWNOEXP)) {
-		time_t must_change_time = pdb_get_pass_must_change_time(sampass);
-		time_t last_set_time = pdb_get_pass_last_set_time(sampass);
-
-		/* check for immediate expiry "must change at next logon" */
-		if (must_change_time == 0 && last_set_time != 0) {
-			DEBUG(1,("Account for user '%s' password must change!.\n", pdb_get_username(sampass)));
-			return NT_STATUS_PASSWORD_MUST_CHANGE;
-		}
-
-		/* check for expired password */
-		if (must_change_time < time(NULL) && must_change_time != 0) {
-			DEBUG(1,("Account for user '%s' password expired!.\n", pdb_get_username(sampass)));
-			DEBUG(1,("Password expired at '%s' (%ld) unix time.\n", http_timestring(must_change_time), (long)must_change_time));
-			return NT_STATUS_PASSWORD_EXPIRED;
-		}
-	}
-
 	if (acct_ctrl & ACB_DOMTRUST) {
 		DEBUG(2,("session_trust_account: Domain trust account %s denied by server\n", pdb_get_username(sampass)));
 		return NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT;
@@ -336,7 +337,10 @@ SMB hash supplied in the user_info structure
 return an NT_STATUS constant.
 ****************************************************************************/
 
-NTSTATUS check_smbpasswd_security(const auth_usersupplied_info *user_info, auth_serversupplied_info **server_info)
+NTSTATUS check_sam_security(void *my_private_dat,
+			    const auth_usersupplied_info *user_info, 
+			    const auth_authsupplied_info *auth_info,
+			    auth_serversupplied_info **server_info)
 {
 	SAM_ACCOUNT *sampass=NULL;
 	BOOL ret;
@@ -344,7 +348,7 @@ NTSTATUS check_smbpasswd_security(const auth_usersupplied_info *user_info, auth_
 	uint8 user_sess_key[16];
 	const uint8* lm_hash;
 
-	if (!user_info) {
+	if (!user_info || !auth_info) {
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
@@ -365,7 +369,7 @@ NTSTATUS check_smbpasswd_security(const auth_usersupplied_info *user_info, auth_
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	nt_status = sam_password_ok(sampass, user_info, user_sess_key);
+	nt_status = sam_password_ok(sampass, user_info, auth_info, user_sess_key);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		pdb_free_sam(&sampass);
@@ -394,6 +398,15 @@ NTSTATUS check_smbpasswd_security(const auth_usersupplied_info *user_info, auth_
 	return nt_status;
 }
 
+BOOL auth_init_sam(auth_methods **auth_method) 
+{
+	if (!make_auth_methods(auth_method)) {
+		return False;
+	}
+
+	(*auth_method)->auth = check_sam_security;
+	return True;
+}
 
 
 

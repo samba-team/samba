@@ -135,7 +135,6 @@ check for a possible hosts equiv or rhosts entry for the user
 static BOOL check_hosts_equiv(struct passwd *pass)
 {
   char *fname = NULL;
-  pstring rhostsfile;
 
   if (!pass) 
     return(False);
@@ -148,39 +147,82 @@ static BOOL check_hosts_equiv(struct passwd *pass)
 		  return(True);
   }
   
-  if (lp_use_rhosts())
-  {
-	  char *home = pass->pw_dir;
-	  if (home) {
-		  slprintf(rhostsfile, sizeof(rhostsfile)-1, "%s/.rhosts", home);
-		  if (check_user_equiv(pass->pw_name,client_name(),rhostsfile))
-			  return(True);
-	  }
-  }
-  
   return(False);
 }
+
 
 /****************************************************************************
  Check for a valid .rhosts/hosts.equiv entry for this user
 ****************************************************************************/
 
-NTSTATUS check_rhosts_security(const auth_usersupplied_info *user_info, 
-			     auth_serversupplied_info **server_info)
+static NTSTATUS check_hostsequiv_security(void *my_private_data, 
+					  const auth_usersupplied_info *user_info, 
+					  const auth_authsupplied_info *auth_info,
+					  auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 	struct passwd *pass = Get_Pwnam(user_info->internal_username.str);
 	
 	if (pass) {
-		become_root();
 		if (check_hosts_equiv(pass)) {
 			nt_status = NT_STATUS_OK;
 			make_server_info_pw(server_info, pass);
 		}
-		unbecome_root();
 	} else {
 		nt_status = NT_STATUS_NO_SUCH_USER;
 	}
 
 	return nt_status;
+}
+
+
+/****************************************************************************
+ Check for a valid .rhosts/hosts.equiv entry for this user
+****************************************************************************/
+
+static NTSTATUS check_rhosts_security(void *my_private_data, 
+				      const auth_usersupplied_info *user_info, 
+				      const auth_authsupplied_info *auth_info,
+				      auth_serversupplied_info **server_info)
+{
+	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
+	struct passwd *pass = Get_Pwnam(user_info->internal_username.str);
+	pstring rhostsfile;
+	
+	if (pass) {
+		char *home = pass->pw_dir;
+		if (home) {
+			slprintf(rhostsfile, sizeof(rhostsfile)-1, "%s/.rhosts", home);
+			become_root();
+			if (check_user_equiv(pass->pw_name,client_name(),rhostsfile)) {
+				nt_status = NT_STATUS_OK;
+				make_server_info_pw(server_info, pass);
+			}
+			unbecome_root();
+		} 
+	} else {
+		nt_status = NT_STATUS_NO_SUCH_USER;
+	}
+
+	return nt_status;
+}
+
+BOOL auth_init_hostsequiv(auth_methods **auth_method) 
+{
+
+	if (!make_auth_methods(auth_method)) {
+		return False;
+	}
+	(*auth_method)->auth = check_hostsequiv_security;
+	return True;
+}
+
+BOOL auth_init_rhosts(auth_methods **auth_method) 
+{
+
+	if (!make_auth_methods(auth_method)) {
+		return False;
+	}
+	(*auth_method)->auth = check_rhosts_security;
+	return True;
 }

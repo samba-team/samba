@@ -197,7 +197,7 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, char *user,
 	int passlen;
 	char *p;
 
-	passlen = clistr_push(cli, pword, pass, sizeof(pword), STR_TERMINATE);
+	passlen = clistr_push(cli, pword, pass, sizeof(pword), STR_TERMINATE|STR_ASCII);
 
 	set_message(cli->outbuf,13,0,True);
 	CVAL(cli->outbuf,smb_com) = SMBsesssetupX;

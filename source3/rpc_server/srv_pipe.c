@@ -271,6 +271,7 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	NTSTATUS nt_status;
 
 	auth_usersupplied_info *user_info = NULL;
+	auth_authsupplied_info *auth_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
 
 	uid_t *puid;
@@ -343,17 +344,20 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
  			return False;
 
 	}
+	
+	make_auth_info_fixed(&auth_info, (uchar*)p->challenge);
 
 	if (!make_user_info_netlogon_network(&user_info, 
-					     user_name, domain, wks,  (uchar*)p->challenge, 
+					     user_name, domain, wks,
 					     lm_owf, lm_pw_len, 
 					     nt_owf, nt_pw_len)) {
 		DEBUG(0,("make_user_info_netlogon_network failed!  Failing authenticaion.\n"));
 		return False;
 	}
 	
-	nt_status = check_password(user_info, &server_info); 
+	nt_status = check_password(user_info, auth_info, &server_info); 
 	
+	free_auth_info(&auth_info);
 	free_user_info(&user_info);
 	
 	p->ntlmssp_auth_validated = NT_STATUS_IS_OK(nt_status);

@@ -159,9 +159,10 @@ password equivalents over the network. JRA.
 ****************************************************************************/
 
 NTSTATUS cli_nt_login_network(struct cli_state *cli, 
-                            const auth_usersupplied_info *user_info, 
-                            uint32 smb_userid_low, NET_ID_INFO_CTR *ctr, 
-                            NET_USER_INFO_3 *user_info3)
+			      const auth_usersupplied_info *user_info, 
+			      uchar chal[8],
+			      uint32 smb_userid_low, NET_ID_INFO_CTR *ctr, 
+			      NET_USER_INFO_3 *user_info3)
 {
   DEBUG(5,("cli_nt_login_network: %d\n", __LINE__));
   /* indicate a "network" login */
@@ -174,7 +175,7 @@ NTSTATUS cli_nt_login_network(struct cli_state *cli,
 		((user_info->wksta_name.len > 0) ?
 		 user_info->wksta_name.str :
 		 cli->clnt_name_slash),
-		user_info->sec_blob.data, 
+		chal, 
 		user_info->lm_resp.data, user_info->lm_resp.length,
 		user_info->nt_resp.data, user_info->nt_resp.length);
 

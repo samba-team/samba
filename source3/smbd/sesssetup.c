@@ -23,6 +23,7 @@
 #include "includes.h"
 
 uint32 global_client_caps = 0;
+static auth_authsupplied_info *ntlmssp_auth_info;
 
 /****************************************************************************
  Add the standard 'Samba' signature to the end of the session setup.
@@ -36,6 +37,31 @@ static void add_signature(char *outbuf)
 	p += srvstr_push(outbuf, p, lp_workgroup(), -1, STR_TERMINATE);
 	set_message_end(outbuf,p);
 }
+
+/****************************************************************************
+ Do a 'guest' logon, getting back the 
+****************************************************************************/
+static NTSTATUS check_guest_password(auth_serversupplied_info **server_info) 
+{
+
+	auth_authsupplied_info *auth_info;
+	auth_usersupplied_info *user_info = NULL;
+	
+	NTSTATUS nt_status;
+	char chal[8];
+
+	ZERO_STRUCT(chal);
+
+	DEBUG(3,("Got anonymous request\n"));
+
+	make_user_info_guest(&user_info);
+	make_auth_info_fixed(&auth_info, chal);
+	
+	nt_status = check_password(user_info, auth_info, server_info);
+	free_auth_info(&auth_info);
+	return nt_status;
+}
+
 
 #if HAVE_KRB5
 /****************************************************************************
@@ -189,7 +215,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	int i;
 	uint32 ntlmssp_command, neg_flags;
 	DATA_BLOB sess_key, chal, spnego_chal;
-	uint8 cryptkey[8];
+	DATA_BLOB cryptkey;
 	BOOL got_kerberos = False;
 
 	/* parse out the OIDs and the first sec blob */
@@ -238,9 +264,11 @@ static int reply_spnego_negotiate(connection_struct *conn,
 
 	DEBUG(3,("Got neg_flags=%08x\n", neg_flags));
 
-	if (!last_challenge(cryptkey)) {
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	if (!make_auth_info_subsystem(&ntlmssp_auth_info)) {
+		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
+
+	cryptkey = auth_get_challange(ntlmssp_auth_info);
 
 	/* Give them the challenge. For now, ignore neg_flags and just
 	   return the flags we want. Obviously this is not correct */
@@ -255,7 +283,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 		  0,
 		  0x30, /* ?? */
 		  neg_flags,
-		  cryptkey, 8,
+		  cryptkey.data, cryptkey.length,
 		  0, 0, 0,
 		  0x3000); /* ?? */
 
@@ -268,6 +296,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	reply_sesssetup_blob(conn, outbuf, spnego_chal);
 
 	data_blob_free(&chal);
+	data_blob_free(&cryptkey);
 	data_blob_free(&spnego_chal);
 
 	/* and tell smbd that we have already replied to this packet */
@@ -286,11 +315,9 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 	char *workgroup, *user, *machine;
 	DATA_BLOB lmhash, nthash, sess_key;
 	DATA_BLOB plaintext_password = data_blob(NULL, 0);
-	DATA_BLOB sec_blob;
 	uint32 ntlmssp_command, neg_flags;
 	NTSTATUS nt_status;
 	int sess_vuid;
-	char chal[8];
 
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
@@ -327,26 +354,19 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 	file_save("lmhash1.dat", lmhash.data, lmhash.length);
 #endif
 
-	if (!last_challenge(chal)) {
-		DEBUG(0,("Encrypted login but no challange set!\n"));
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
-	}
-	sec_blob = data_blob(chal, 8);
-	if (!sec_blob.data) {
-		return ERROR_NT(NT_STATUS_NO_MEMORY);
-	}
-	
 	if (!make_user_info_map(&user_info, 
 				user, workgroup, 
-				machine, sec_blob,
+				machine, 
 				lmhash, nthash,
 				plaintext_password, 
 				neg_flags, True)) {
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 	
-	nt_status = check_password(user_info, &server_info); 
+	nt_status = check_password(user_info, ntlmssp_auth_info, &server_info); 
 	
+	free_auth_info(&ntlmssp_auth_info);
+
 	free_user_info(&user_info);
 	
 	data_blob_free(&lmhash);
@@ -383,18 +403,17 @@ static int reply_spnego_anonymous(connection_struct *conn, char *inbuf, char *ou
 				  int length, int bufsize)
 {
 	int sess_vuid;
-	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
-
 	NTSTATUS nt_status;
 
-	DEBUG(3,("Got anonymous request\n"));
+	nt_status = check_guest_password(&server_info);
 
-	make_user_info_guest(&user_info);
-
-	nt_status = check_password(user_info, &server_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return ERROR_NT(nt_status_squash(nt_status));
+	}
 
 	sess_vuid = register_vuid(server_info, lp_guestaccount());
+
 	free_server_info(&server_info);
   
 	if (sess_vuid == -1) {
@@ -490,6 +509,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	extern int max_send;
 
 	auth_usersupplied_info *user_info = NULL;
+	extern auth_authsupplied_info *negprot_global_auth_info;
 	auth_serversupplied_info *server_info = NULL;
 
 	NTSTATUS nt_status;
@@ -523,16 +543,12 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			lm_resp = data_blob(smb_buf(inbuf), passlen1);
 		} else {
 			plaintext_password = data_blob(smb_buf(inbuf), passlen1+1);
-			if (!plaintext_password.data) {
-				DEBUG(0,("reply_sesssetup_and_X: malloc failed for plaintext_password!\n"));
-				return ERROR_NT(NT_STATUS_NO_MEMORY);
-			} else {
-				/* Ensure null termination */
-				plaintext_password.data[passlen1] = 0;
-			}
+			/* Ensure null termination */
+			plaintext_password.data[passlen1] = 0;
 		}
 
 		srvstr_pull(inbuf, user, smb_buf(inbuf)+passlen1, sizeof(user), -1, STR_TERMINATE);
+		*domain = 0;
   
 	} else {
 		uint16 passlen1 = SVAL(inbuf,smb_vwv7);
@@ -645,15 +661,41 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		*user = 0;
 	}
 	
-	if (!make_user_info_for_reply(&user_info, 
-				      user, domain, 
-				      lm_resp, nt_resp,
-				      plaintext_password, doencrypt)) {
-		return ERROR_NT(NT_STATUS_NO_MEMORY);
+	if (!*user) {
+
+		nt_status = check_guest_password(&server_info);
+
+	} else if (doencrypt) {
+		if (!make_user_info_for_reply_enc(&user_info, 
+						  user, domain, 
+						  lm_resp, nt_resp,
+						  plaintext_password)) {
+			return ERROR_NT(NT_STATUS_NO_MEMORY);
+		}
+		
+		nt_status = check_password(user_info, negprot_global_auth_info, &server_info); 
+
+	} else {
+		auth_authsupplied_info *plaintext_auth_info = NULL;
+		DATA_BLOB chal;
+		if (!make_auth_info_subsystem(&plaintext_auth_info)) {
+			return ERROR_NT(NT_STATUS_NO_MEMORY);
+		}
+
+		chal = auth_get_challange(plaintext_auth_info);
+
+		if (!make_user_info_for_reply(&user_info, 
+					      user, domain, chal.data,
+					      plaintext_password)) {
+			return ERROR_NT(NT_STATUS_NO_MEMORY);
+		}
+		
+		nt_status = check_password(user_info, plaintext_auth_info, &server_info); 
+		
+		data_blob_free(&chal);
+		free_auth_info(&plaintext_auth_info);
 	}
-	
-	nt_status = check_password(user_info, &server_info); 
-	
+
 	free_user_info(&user_info);
 	
 	data_blob_free(&lm_resp);
@@ -726,3 +768,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	END_PROFILE(SMBsesssetupX);
 	return chain_reply(inbuf,outbuf,length,bufsize);
 }
+
+
+
+
+
