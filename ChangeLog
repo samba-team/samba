@@ -1,5 +1,11 @@
 2004-03-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/kerberos5.c: add missing req argument to pk_mk_pa_reply
+	
+	* kdc/pkinit.c (pk_mk_pa_reply): add hdb_entry
+	
+2004-03-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
 	* kdc/pkinit.c: pass client hdb_entry to pk_check_client
 	
 	* kdc/kdc_locl.h: pass client hdb_entry to pk_check_client
