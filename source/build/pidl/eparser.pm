@@ -354,7 +354,7 @@ sub ParseElementPullScalar($$)
 	start_flags($e);
 
 	if (util::has_property($e, "relative")) {
-		pidl "\tndr_pull_relative(ndr, get_subtree(tree, \"$e->{NAME}\", ndr, ett_dcerpc_$module), ndr_pull_$e->{TYPE});\n";
+		pidl "\tndr_pull_relative(ndr, get_subtree(tree, \"$e->{NAME}\", ndr, ett_$e->{TYPE}), ndr_pull_$e->{TYPE});\n";
 	} elsif (util::is_inline_array($e)) {
 		ParseArrayPull($e, "NDR_SCALARS");
 	} elsif (util::need_wire_pointer($e)) {
@@ -370,14 +370,14 @@ sub ParseElementPullScalar($$)
 		ParseElementPullSwitch($e, $ndr_flags, $switch);
 	} elsif (defined $sub_size) {
 		if (util::is_builtin_type($e->{TYPE})) {
-			pidl "\tndr_pull_subcontext_fn(ndr, get_subtree(tree, \"$e->{NAME}\", ndr, ett_dcerpc_$module), $sub_size, (ndr_pull_fn_t) ndr_pull_$e->{TYPE});\n";
+			pidl "\tndr_pull_subcontext_fn(ndr, get_subtree(tree, \"$e->{NAME}\", ndr, ett_$e->{TYPE}), $sub_size, (ndr_pull_fn_t) ndr_pull_$e->{TYPE});\n";
 		} else {
-			pidl "\tndr_pull_subcontext_flags_fn(ndr, get_subtree(tree, \"$e->{NAME}\", ndr, ett_dcerpc_$module), $sub_size, (ndr_pull_flags_fn_t) ndr_pull_$e->{TYPE});\n";
+			pidl "\tndr_pull_subcontext_flags_fn(ndr, get_subtree(tree, \"$e->{NAME}\", ndr, ett_$e->{TYPE}), $sub_size, (ndr_pull_flags_fn_t) ndr_pull_$e->{TYPE});\n";
 		}
 	    } elsif (util::is_builtin_type($e->{TYPE})) {
 		pidl "\tndr_pull_$e->{TYPE}(ndr, tree, hf_$e->{NAME}_$e->{TYPE}, &elt_$e->{NAME});\n";
 	} else {
-		pidl "\tndr_pull_$e->{TYPE}(ndr, get_subtree(tree, \"$e->{NAME}\", ndr, ett_dcerpc_$module), $ndr_flags);\n";
+		pidl "\tndr_pull_$e->{TYPE}(ndr, get_subtree(tree, \"$e->{NAME}\", ndr, ett_$e->{TYPE}), $ndr_flags);\n";
 	}
 
 	end_flags($e);
@@ -419,17 +419,17 @@ sub ParseElementPullBuffer($$)
 	} elsif (defined $sub_size) {
 		if ($e->{POINTERS}) {
 			if (util::is_builtin_type($e->{TYPE})) {
-				pidl "\tndr_pull_subcontext_fn(ndr, get_subtree(tree, \"$e->{NAME}\", ndr, ett_dcerpc_$module), $sub_size, _pull_$e->{TYPE});\n";
+				pidl "\tndr_pull_subcontext_fn(ndr, get_subtree(tree, \"$e->{NAME}\", ndr, ett_$e->{TYPE}), $sub_size, _pull_$e->{TYPE});\n";
 			} else {
-				pidl "\tndr_pull_subcontext_flags_fn(ndr, get_subtree(tree, \"$e->{NAME}\", ndr, ett_dcerpc_$module), $sub_size, ndr_pull_$e->{TYPE});\n";
+				pidl "\tndr_pull_subcontext_flags_fn(ndr, get_subtree(tree, \"$e->{NAME}\", ndr, ett_$e->{TYPE}), $sub_size, ndr_pull_$e->{TYPE});\n";
 			}
 		}
 	} elsif (util::is_builtin_type($e->{TYPE})) {
 		pidl "\tndr_pull_$e->{TYPE}(ndr, tree, hf_$e->{NAME}_$e->{TYPE}, &elt_$e->{NAME});\n";
 	} elsif ($e->{POINTERS}) {
-		pidl "\tndr_pull_$e->{TYPE}(ndr, get_subtree(tree, \"$e->{NAME}\", ndr, ett_dcerpc_$module), NDR_SCALARS|NDR_BUFFERS);\n";
+		pidl "\tndr_pull_$e->{TYPE}(ndr, get_subtree(tree, \"$e->{NAME}\", ndr, ett_$e->{TYPE}), NDR_SCALARS|NDR_BUFFERS);\n";
 	} else {
-		pidl "\tndr_pull_$e->{TYPE}(ndr, get_subtree(tree, \"$e->{NAME}\", ndr, ett_dcerpc_$module), $ndr_flags);\n";
+		pidl "\tndr_pull_$e->{TYPE}(ndr, get_subtree(tree, \"$e->{NAME}\", ndr, ett_$e->{TYPE}), $ndr_flags);\n";
 	}
 
 	if (util::need_wire_pointer($e)) {
@@ -644,7 +644,6 @@ sub ParseTypedefPull($)
 	pidl "*/\n\n";
 
 	if ($e->{DATA}->{TYPE} eq "STRUCT") {
-  	        pidl "static gint ett_$e->{NAME} = -1;\n\n";
 		pidl $static . "void ndr_pull_$e->{NAME}(struct e_ndr_pull *ndr, proto_tree *tree, int ndr_flags)";
 		pidl "\n{\n";
 		ParseTypePull($e->{DATA});
@@ -652,7 +651,6 @@ sub ParseTypedefPull($)
 	}
 
 	if ($e->{DATA}->{TYPE} eq "UNION") {
-  	        pidl "static gint ett_$e->{NAME} = -1;\n\n";
 		pidl $static . "void ndr_pull_$e->{NAME}(struct e_ndr_pull *ndr, proto_tree *tree, int ndr_flags, int level)";
 		pidl "\n{\n";
 		pidl "\tproto_item *item = NULL;\n";
@@ -868,6 +866,9 @@ sub NeededFunction($)
 {
 	my $fn = shift;
 	foreach my $e (@{$fn->{DATA}}) {
+
+	    if (util::is_scalar_type($e->{TYPE})) {
+
 	        $needed{"hf_$e->{NAME}_$e->{TYPE}"} = {
 		    'name' => $e->{NAME},
 		    'type' => $e->{TYPE},
@@ -875,6 +876,9 @@ sub NeededFunction($)
 		    'base' => type2base($e->{TYPE})
 		    };
 		$e->{PARENT} = $fn;
+	    } else {
+		$needed{"ett_$e->{TYPE}"} = 1;
+	    }
 	}
 }
 
@@ -892,17 +896,25 @@ sub NeededTypedef($)
 
 		for my $e (@{$t->{DATA}->{ELEMENTS}}) {
 
-	        $needed{"hf_$e->{NAME}_$e->{TYPE}"} = {
-		    'name' => $e->{NAME},
-		    'type' => $e->{TYPE},
-		    'ft'   => type2ft($e->{TYPE}),
-		    'base' => type2base($e->{TYPE})
-		    };
+		    if (util::is_scalar_type($e->{TYPE})) {
 
+			$needed{"hf_$e->{NAME}_$e->{TYPE}"} = {
+			    'name' => $e->{NAME},
+			    'type' => $e->{TYPE},
+			    'ft'   => type2ft($e->{TYPE}),
+			    'base' => type2base($e->{TYPE})
+			    };
+			
 			$e->{PARENT} = $t->{DATA};
+
 			if ($needed{"pull_$t->{NAME}"}) {
-				$needed{"pull_$e->{TYPE}"} = 1;
+			    $needed{"pull_$e->{TYPE}"} = 1;
 			}
+		    } else {
+			
+			$needed{"ett_$e->{TYPE}"} = 1;
+
+		    }
 		}
 	}
 	if ($t->{DATA}->{TYPE} eq "UNION") {
@@ -1029,6 +1041,14 @@ sub Parse($$)
 
 	foreach my $y (keys(%needed)) {
 	    pidl "static int $y = -1;\n", if $y =~ /^hf_/;
+	}
+
+	pidl "\n";
+
+	# Declarations for ett variables
+
+	foreach my $y (keys(%needed)) {
+	    pidl "static gint $y = -1;\n", if $y =~ /^ett_/;
 	}
 
 	pidl "\n";
