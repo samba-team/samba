@@ -552,7 +552,7 @@ all : SHOWFLAGS proto_exists $(SBIN_PROGS) $(BIN_PROGS) $(SHLIBS) \
 
 pam_smbpass : SHOWFLAGS bin/pam_smbpass.@SHLIBEXT@
 
-smbwrapper : SHOWFLAGS @WRAPPROG@ @WRAP@ @WRAP32@
+smbwrapper : SHOWFLAGS @SMBWRAPPER@
 
 torture : SHOWFLAGS $(TORTURE_PROGS)
 
