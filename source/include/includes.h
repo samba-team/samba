@@ -385,23 +385,6 @@
 #endif
 
 /*
- * Type for statvfs structure.
- * Unfortunately, due to the make proto structure
- * we still need to define this as void * for platforms
- * that don't have either statvfs or statvfs64. JRA.
- */
-
-#ifndef SMB_STRUCT_STATVFS
-#  if defined(STAT_STATVFS64)
-#    define SMB_STRUCT_STATVFS struct statvfs64
-#  elif defined(STAT_STATVFS)
-#    define SMB_STRUCT_STATVFS struct statvfs
-#  else
-#    define SMB_STRUCT_STATVFS void *
-#  endif
-#endif
-
-/*
  * Defines for 64 bit fcntl locks.
  */
 

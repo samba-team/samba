@@ -156,10 +156,14 @@ static int fsusage(const char *path, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 # define CONVERT_BLOCKS(B) \
 	adjust_blocks ((SMB_BIG_UINT)(B), fsd.f_frsize ? (SMB_BIG_UINT)fsd.f_frsize : (SMB_BIG_UINT)fsd.f_bsize, (SMB_BIG_UINT)512)
 
-	SMB_STRUCT_STATVFS fsd;
+#ifdef STAT_STATVFS64
+	struct statvfs64 fsd;
+	if (statvfs64(path, &fsd) < 0) return -1;
+#else
+	struct statvfs fsd;
+	if (statvfs(path, &fsd) < 0) return -1;
+#endif
 
-	if (sys_statvfs (path, &fsd) < 0)
-		return -1;
 	/* f_frsize isn't guaranteed to be supported.  */
 
 #endif /* STAT_STATVFS */
