@@ -90,6 +90,20 @@ usage(void)
  */
 
 
+#ifdef KRB5
+/* XXX ugly hack to setup dns-proxy stuff */
+#define Authenticator asn1_Authenticator
+#include <krb5.h>
+static void
+krb5_init(void)
+{
+    krb5_context context;
+    krb5_init_context(&context);
+    krb5_free_context(context);
+    
+}
+#endif
+
 int
 main(int argc, char **argv)
 {
@@ -100,15 +114,9 @@ main(int argc, char **argv)
 #endif	/* FORWARD */
 
 #ifdef KRB5
-	{
-	    /* XXX ugly hack to setup dns-proxy stuff */
-	    krb5_context context;
-	    krb5_init_context(&context);
-	    krb5_free_context(context);
-		
-	}
+	krb5_init();
 #endif
-
+	
 	tninit();		/* Clear out things */
 
 	TerminalSaveState();
