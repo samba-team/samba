@@ -35,16 +35,17 @@
 /* Client state structure */
 
 struct winbindd_cli_state {
-    struct winbindd_cli_state *prev, *next;   /* Linked list pointers */
-    int sock;                                 /* Open socket from client */
-    pid_t pid;                                /* pid of client */
-    int read_buf_len, write_buf_len;          /* Indexes in request/response */
-    BOOL finished;                            /* Can delete from list */
-    BOOL write_extra_data;                    /* Write extra_data field */
-    struct winbindd_request request;          /* Request from client */
-    struct winbindd_response response;        /* Respose to client */
-    struct getent_state *getpwent_state;      /* State for getpwent() */
-    struct getent_state *getgrent_state;      /* State for getgrent() */
+	struct winbindd_cli_state *prev, *next;   /* Linked list pointers */
+	int sock;                                 /* Open socket from client */
+	pid_t pid;                                /* pid of client */
+	int read_buf_len, write_buf_len;          /* Indexes in request/response */
+	BOOL finished;                            /* Can delete from list */
+	BOOL write_extra_data;                    /* Write extra_data field */
+	time_t last_access;                       /* Time of last access (read or write) */
+	struct winbindd_request request;          /* Request from client */
+	struct winbindd_response response;        /* Respose to client */
+	struct getent_state *getpwent_state;      /* State for getpwent() */
+	struct getent_state *getgrent_state;      /* State for getgrent() */
 };
 
 /* State between get{pw,gr}ent() calls */
