@@ -21,7 +21,6 @@
 
 #include "includes.h"
 #include "rpc_server/dcerpc_server.h"
-#include "librpc/gen_ndr/tables.h"
 
 struct dcesrv_remote_private {
 	struct dcerpc_pipe *c_pipe;
@@ -158,12 +157,12 @@ static BOOL remote_fill_interface(struct dcesrv_interface *iface, const struct d
 
 static BOOL remote_op_interface_by_uuid(struct dcesrv_interface *iface, const char *uuid, uint32_t if_version)
 {
-	int i;
+	struct dcerpc_interface_list *l;
 
-	for (i=0;dcerpc_pipes[i];i++) {
-		if (dcerpc_pipes[i]->if_version == if_version &&
-			strcmp(dcerpc_pipes[i]->uuid, uuid)==0) {
-			return remote_fill_interface(iface, dcerpc_pipes[i]);
+	for (l=dcerpc_pipes;l;l=l->next) {
+		if (l->table->if_version == if_version &&
+			strcmp(l->table->uuid, uuid)==0) {
+			return remote_fill_interface(iface, l->table);
 		}
 	}
 
@@ -172,11 +171,11 @@ static BOOL remote_op_interface_by_uuid(struct dcesrv_interface *iface, const ch
 
 static BOOL remote_op_interface_by_name(struct dcesrv_interface *iface, const char *name)
 {
-	int i;
+	struct dcerpc_interface_list *l;
 
-	for (i=0;dcerpc_pipes[i];i++) {
-		if (strcmp(dcerpc_pipes[i]->name, name)==0) {
-			return remote_fill_interface(iface, dcerpc_pipes[i]);
+	for (l=dcerpc_pipes;l;l=l->next) {
+		if (strcmp(l->table->name, name)==0) {
+			return remote_fill_interface(iface, l->table);
 		}
 	}
 

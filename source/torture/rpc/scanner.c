@@ -22,7 +22,6 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_mgmt.h"
-#include "librpc/gen_ndr/tables.h"
 
 /*
   work out how many calls there are for an interface
@@ -135,7 +134,7 @@ BOOL torture_rpc_scanner(void)
         struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
-	int i;
+	struct dcerpc_interface_list *l;
 	const char *binding = lp_parm_string(-1, "torture", "binding");
 	struct dcerpc_binding b;
 
@@ -152,31 +151,31 @@ BOOL torture_rpc_scanner(void)
 		return False;
 	}
 
-	for (i=0;dcerpc_pipes[i];i++) {		
+	for (l=dcerpc_pipes;l;l=l->next) {		
 		/* some interfaces are not mappable */
-		if (dcerpc_pipes[i]->num_calls == 0 ||
-		    strcmp(dcerpc_pipes[i]->name, "mgmt") == 0) {
+		if (l->table->num_calls == 0 ||
+		    strcmp(l->table->name, "mgmt") == 0) {
 			continue;
 		}
 
-		printf("\nTesting pipe '%s'\n", dcerpc_pipes[i]->name);
+		printf("\nTesting pipe '%s'\n", l->table->name);
 
 		if (b.transport == NCACN_IP_TCP) {
 			status = dcerpc_epm_map_binding(mem_ctx, &b, 
-							 dcerpc_pipes[i]->uuid,
-							 dcerpc_pipes[i]->if_version);
+							 l->table->uuid,
+							 l->table->if_version);
 			if (!NT_STATUS_IS_OK(status)) {
-				printf("Failed to map port for uuid %s\n", dcerpc_pipes[i]->uuid);
+				printf("Failed to map port for uuid %s\n", l->table->uuid);
 				continue;
 			}
 		} else {
-			b.endpoint = dcerpc_pipes[i]->name;
+			b.endpoint = l->table->name;
 		}
 
 		lp_set_cmdline("torture:binding", dcerpc_binding_string(mem_ctx, &b));
 
 		status = torture_rpc_connection(&p, 
-						dcerpc_pipes[i]->name,
+						l->table->name,
 						DCERPC_MGMT_UUID,
 						DCERPC_MGMT_VERSION);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -184,7 +183,7 @@ BOOL torture_rpc_scanner(void)
 			continue;
 		}
 	
-		if (!test_inq_if_ids(p, mem_ctx, dcerpc_pipes[i])) {
+		if (!test_inq_if_ids(p, mem_ctx, l->table)) {
 			ret = False;
 		}
 

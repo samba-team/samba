@@ -47,9 +47,6 @@ BOOL torture_dcom_simple(void)
 
 	mem_ctx = talloc_init("torture_dcom_simple");
 
-	dcom_IUnknown_init();
-	dcom_IStream_init();
-
 	dcom_init(&ctx, lp_parm_string(-1, "torture", "userdomain"),
 			  	lp_parm_string(-1, "torture", "username"), 
 				  lp_parm_string(-1, "torture", "password"));

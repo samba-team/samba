@@ -32,10 +32,50 @@ REQUIRED_SUBSYSTEMS = SOCKET
 ################################################
 # Start SUBSYSTEM LIBNDR_GEN
 [SUBSYSTEM::LIBNDR_GEN]
+INIT_FUNCTION = \
+		dcerpc_audiosrv_init \
+		dcerpc_dcerpc_init \
+		dcerpc_echo_init \
+		dcerpc_exchange_init \
+		dcerpc_dsbackup_init \
+		dcerpc_efs_init \
+		dcerpc_misc_init \
+		dcerpc_lsa_init \
+		dcerpc_lsads_init \
+		dcerpc_dfs_init \
+		dcerpc_drsuapi_init \
+		dcerpc_policyagent_init \
+		dcerpc_samr_init \
+		dcerpc_spoolss_init \
+		dcerpc_wkssvc_init \
+		dcerpc_srvsvc_init \
+		dcerpc_svcctl_init \
+		dcerpc_atsvc_init \
+		dcerpc_eventlog_init \
+		dcerpc_epmapper_init \
+		dcerpc_dbgidl_init \
+		dcerpc_dssetup_init \
+		dcerpc_msgsvc_init \
+		dcerpc_wins_init \
+		dcerpc_winreg_init \
+		dcerpc_mgmt_init \
+		dcerpc_protected_storage_init \
+		dcerpc_dcom_init \
+		dcerpc_oxidresolver_init \
+		dcerpc_remact_init \
+		dcerpc_wzcsvc_init \
+		dcerpc_browser_init \
+		dcerpc_w32time_init \
+		dcerpc_scerpc_init \
+		dcerpc_ntsvcs_init \
+		dcerpc_netlogon_init \
+		dcerpc_trkwks_init \
+		dcerpc_keysvc_init \
+		dcerpc_krb5pac_init \
+		dcerpc_xattr_init \
+		dcerpc_schannel_init
+
 NOPROTO = YES
-INIT_FUNCTION = librpc_init
-INIT_OBJ_FILES = \
-		librpc/gen_ndr/tables.o
 ADD_OBJ_FILES = \
 		librpc/gen_ndr/ndr_audiosrv.o \
 		librpc/gen_ndr/ndr_dcerpc.o \
