@@ -1120,7 +1120,7 @@ BOOL reg_shutdown(const char *srv_name,
 
 	struct cli_connection *con = NULL;
 
-	if (!cli_connection_init(srv_name, PIPE_LSARPC, &con))
+	if (!cli_connection_init(srv_name, PIPE_WINREG, &con))
 	{
 		return False;
 	}
@@ -1168,4 +1168,65 @@ BOOL reg_shutdown(const char *srv_name,
 	cli_connection_unlink(con);
 
 	return valid_shutdown;
+}
+
+
+/****************************************************************************
+do a REG Abort Shutdown
+****************************************************************************/
+BOOL reg_abort_shutdown(const char *srv_name)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	REG_Q_ABORT_SHUTDOWN q_o;
+	BOOL valid_abort = False;
+
+	struct cli_connection *con = NULL;
+
+	if (!cli_connection_init(srv_name, PIPE_WINREG, &con))
+	{
+		return False;
+	}
+
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
+
+	/* create and send a MSRPC command with api REG_ABORT_SHUTDOWN */
+
+	DEBUG(4,("REG Abort Shutdown\n"));
+
+	make_reg_q_abort_shutdown(&q_o);
+
+	/* turn parameters into data stream */
+	if (reg_io_q_abort_shutdown("", &q_o, &buf, 0) &&
+	    rpc_con_pipe_req(con, REG_ABORT_SHUTDOWN, &buf, &rbuf))
+	{
+		REG_R_ABORT_SHUTDOWN r_o;
+		BOOL p;
+
+		ZERO_STRUCT(r_o);
+
+		reg_io_r_abort_shutdown("", &r_o, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0, ("REG_ABORT_SHUTDOWN: %s\n",
+				  get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_abort = True;
+		}
+	}
+
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
+
+	cli_connection_unlink(con);
+
+	return valid_abort;
 }

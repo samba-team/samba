@@ -44,6 +44,7 @@
 #define REG_INFO            0x11
 #define REG_CLOSE           0x05
 #define REG_SHUTDOWN        0x18
+#define REG_ABORT_SHUTDOWN  0x19
 
 #define HKEY_CLASSES_ROOT  0x80000000
 #define HKEY_CURRENT_USER  0x80000001
@@ -538,5 +539,20 @@ typedef struct r_reg_shutdown_info
 }
 REG_R_SHUTDOWN;
 
+
+/* REG_Q_ABORT_SHUTDOWN */
+typedef struct q_reg_abort_shutdown_info
+{
+	uint32 ptr_server;
+	uint16 server;
+
+} REG_Q_ABORT_SHUTDOWN;
+
+/* REG_R_ABORT_SHUTDOWN */
+typedef struct r_reg_abort_shutdown_info
+{ 
+	uint32 status; /* return status */
+
+} REG_R_ABORT_SHUTDOWN;
 
 #endif /* _RPC_REG_H */

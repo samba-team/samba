@@ -1132,6 +1132,8 @@ void cmd_reg_shutdown(struct client_info *info, int argc, char *argv[])
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
+	msg[0] = 0;
+
 	while ((opt = getopt(argc, argv,"fim:t:r-")) != EOF)
 	{
 		switch (opt)
@@ -1182,6 +1184,33 @@ void cmd_reg_shutdown(struct client_info *info, int argc, char *argv[])
 	else
 	{
 		DEBUG(5,("cmd_reg_shutdown: query failed\n"));
+		report(out_hnd,"Failed\n");
+	}
+}
+
+/****************************************************************************
+abort a shutdown
+****************************************************************************/
+void cmd_reg_abort_shutdown(struct client_info *info, int argc, char *argv[])
+{
+	BOOL res = True;
+
+	fstring srv_name;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	res = res ? reg_abort_shutdown(srv_name) : False;
+
+	if (res)
+	{
+		DEBUG(5,("cmd_reg_abort_shutdown: query succeeded\n"));
+		report(out_hnd,"OK\n");
+	}
+	else
+	{
+		DEBUG(5,("cmd_reg_abort_shutdown: query failed\n"));
 		report(out_hnd,"Failed\n");
 	}
 }

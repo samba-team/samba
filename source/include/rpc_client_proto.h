@@ -283,6 +283,7 @@ BOOL reg_open_entry(POLICY_HND *hnd,
 BOOL reg_close(POLICY_HND *hnd);
 BOOL reg_shutdown(const char *srv_name,
 			const char *msg, uint32 timeout, uint16 flags);
+BOOL reg_abort_shutdown(const char *srv_name);
 
 /*The following definitions come from  rpc_client/cli_samr.c  */
 

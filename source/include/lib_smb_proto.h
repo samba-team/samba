@@ -405,8 +405,6 @@ BOOL make_buf_string2(STRING2 *str, uint32 *ptr, const char *buf);
 BOOL smb_io_string2(char *desc,  STRING2 *str2, uint32 buffer, prs_struct *ps, int depth);
 BOOL make_unistr2(UNISTR2 *str, const char *buf, int len);
 BOOL smb_io_unistr2(char *desc,  UNISTR2 *uni2, uint32 buffer, prs_struct *ps, int depth);
-BOOL smb_io_chal(char *desc,  DOM_CHAL *chal, prs_struct *ps, int depth);
-BOOL smb_io_cred(char *desc,  DOM_CRED *cred, prs_struct *ps, int depth);
 BOOL smb_io_gid(char *desc,  DOM_GID *gid, prs_struct *ps, int depth);
 BOOL smb_io_pol_hnd(char *desc,  POLICY_HND *pol, prs_struct *ps, int depth);
 BOOL smb_io_unistr3(char *desc,  UNISTR3 *name, prs_struct *ps, int depth);
@@ -759,9 +757,8 @@ BOOL smb_io_rpc_hdr_fault(char *desc, RPC_HDR_FAULT * rpc, prs_struct * ps,
 BOOL smb_io_rpc_uuid(char *desc, RPC_UUID * uuid, prs_struct *ps, int depth);
 BOOL make_rpc_hdr_rb(RPC_HDR_RB * rpc,
 		     uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
-		     uint8 num_elements, uint16 context_id,
-		     uint8 num_syntaxes, RPC_IFACE * abstract,
-		     RPC_IFACE * transfer);
+		     uint8 num_elements, uint16 context_id, uint8 num_syntaxes,
+		     RPC_IFACE *abstract, RPC_IFACE *transfer);
 BOOL smb_io_rpc_hdr_rb(char *desc, RPC_HDR_RB * rpc, prs_struct * ps,
 		       int depth);
 BOOL make_rpc_hdr_ba(RPC_HDR_BA * rpc,

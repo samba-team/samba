@@ -1476,7 +1476,6 @@ BOOL reg_io_q_shutdown(char *desc, REG_Q_SHUTDOWN * q_q, prs_struct *ps,
 
 	prs_uint32("timeout", ps, depth, &(q_q->timeout));
 	prs_uint16("flags  ", ps, depth, &(q_q->flags));
-	prs_align(ps);
 
 	return True;
 }
@@ -1491,6 +1490,62 @@ BOOL reg_io_r_shutdown(char *desc, REG_R_SHUTDOWN * r_q, prs_struct *ps,
 		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_shutdown");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("status", ps, depth, &(r_q->status));
+
+	return True;
+}
+
+
+/*******************************************************************
+makes a structure.
+********************************************************************/
+BOOL make_reg_q_abort_shutdown(REG_Q_ABORT_SHUTDOWN * q_i)
+{
+	if (q_i == NULL)
+		return False;
+
+	ZERO_STRUCTP(q_i);
+
+	q_i->ptr_server = 0;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL reg_io_q_abort_shutdown(char *desc, REG_Q_ABORT_SHUTDOWN * q_q,
+			     prs_struct *ps, int depth)
+{
+	if (q_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "reg_io_q_abort_shutdown");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("ptr_server", ps, depth, &(q_q->ptr_server));
+	if (q_q->ptr_server != 0)
+		prs_uint16("server", ps, depth, &(q_q->server));
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL reg_io_r_abort_shutdown(char *desc, REG_R_ABORT_SHUTDOWN * r_q,
+			     prs_struct *ps, int depth)
+{
+	if (r_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "reg_io_r_abort_shutdown");
 	depth++;
 
 	prs_align(ps);

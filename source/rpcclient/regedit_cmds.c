@@ -147,6 +147,12 @@ static const struct command_set reg_commands[] =
 		{NULL, NULL}
 	},
 	{
+		"abortshutdown",
+		cmd_reg_abort_shutdown,
+		"Abort Shutdown",
+		{NULL, NULL}
+	},
+	{
 		"regqueryval",
 		cmd_reg_query_info,
 		"<valname> Registry Value Query",

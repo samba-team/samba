@@ -321,6 +321,11 @@ BOOL reg_io_q_shutdown(char *desc, REG_Q_SHUTDOWN * q_q, prs_struct *ps,
 		       int depth);
 BOOL reg_io_r_shutdown(char *desc, REG_R_SHUTDOWN * r_q, prs_struct *ps,
 		       int depth);
+BOOL make_reg_q_abort_shutdown(REG_Q_ABORT_SHUTDOWN * q_i);
+BOOL reg_io_q_abort_shutdown(char *desc, REG_Q_ABORT_SHUTDOWN * q_q,
+			     prs_struct *ps, int depth);
+BOOL reg_io_r_abort_shutdown(char *desc, REG_R_ABORT_SHUTDOWN * r_q,
+			     prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_samr.c  */
 

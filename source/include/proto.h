@@ -830,6 +830,7 @@ void split_at_first_component(char *path, char *front, char sep, char *back);
 void split_at_last_component(char *path, char *front, char sep, char *back);
 char *bit_field_to_str(uint32 type, struct field_info *bs);
 char *enum_field_to_str(uint32 type, struct field_info *bs, BOOL first_default);
+uint32 str_to_enum_field(char *in, struct field_info *bs, uint32 def);
 char *octal_string(int i);
 char *string_truncate(char *s, int length);
 
@@ -1986,7 +1987,6 @@ BOOL lp_msdfs_root(int );
 BOOL lp_autoloaded(int );
 BOOL lp_preexec_close(int );
 BOOL lp_rootpreexec_close(int );
-BOOL lp_revalidate(int );
 BOOL lp_casesensitive(int );
 BOOL lp_preservecase(int );
 BOOL lp_shortpreservecase(int );
@@ -2848,9 +2848,8 @@ BOOL smb_io_rpc_hdr_fault(char *desc, RPC_HDR_FAULT * rpc, prs_struct * ps,
 BOOL smb_io_rpc_uuid(char *desc, RPC_UUID * uuid, prs_struct *ps, int depth);
 BOOL make_rpc_hdr_rb(RPC_HDR_RB * rpc,
 		     uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
-		     uint8 num_elements, uint16 context_id,
-		     uint8 num_syntaxes, RPC_IFACE * abstract,
-		     RPC_IFACE * transfer);
+		     uint8 num_elements, uint16 context_id, uint8 num_syntaxes,
+		     RPC_IFACE *abstract, RPC_IFACE *transfer);
 BOOL smb_io_rpc_hdr_rb(char *desc, RPC_HDR_RB * rpc, prs_struct * ps,
 		       int depth);
 BOOL make_rpc_hdr_ba(RPC_HDR_BA * rpc,
@@ -3037,6 +3036,7 @@ void cmd_reg_create_key(struct client_info *info, int argc, char *argv[]);
 void cmd_reg_test_key_sec(struct client_info *info, int argc, char *argv[]);
 void cmd_reg_get_key_sec(struct client_info *info, int argc, char *argv[]);
 void cmd_reg_shutdown(struct client_info *info, int argc, char *argv[]);
+void cmd_reg_abort_shutdown(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_samr.c  */
 
@@ -4489,6 +4489,8 @@ int tdb_store_int_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, int v);
 int tdb_store_int(TDB_CONTEXT *tdb, char *keystr, int v);
 int tdb_store_by_string(TDB_CONTEXT *tdb, char *keystr, void *buffer, int len);
 TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, char *keystr);
+size_t tdb_pack(char *buf, int bufsize, char *fmt, ...);
+int tdb_unpack(char *buf, int bufsize, char *fmt, ...);
 
 /*The following definitions come from  utils/rpctorture.c  */
 
