@@ -240,18 +240,14 @@ static size_t convert_string_internal(charset_t from, charset_t to,
  *
  * Ensure the srclen contains the terminating zero.
  *
+ * This function has been hand-tuned to provide a fast path.
+ * Don't change unless you really know what you are doing. JRA.
  **/
 
 size_t convert_string(charset_t from, charset_t to,
 		      void const *src, size_t srclen, 
 		      void *dest, size_t destlen)
 {
-	if (srclen == (size_t)-1) {
-		if (from == CH_UCS2)
-			srclen = strlen_w(src)+2;
-		else
-			srclen = strlen(src)+1;
-	}
 	if (srclen == 0)
 		return 0;
 
@@ -265,12 +261,17 @@ size_t convert_string(charset_t from, charset_t to,
 		while (srclen && destlen) {
 			if ((lastp = *p) <= 0x7f) {
 				*q++ = *p++;
-				srclen--;
+				if (srclen != (size_t)-1) {
+					srclen--;
+				}
 				destlen--;
 				retval++;
 				if (!lastp)
 					break;
 			} else {
+				if (srclen == (size_t)-1) {
+					srclen = strlen(src)+1;
+				}
 				return retval + convert_string_internal(from, to, p, srclen, q, destlen);
 			}
 		}
@@ -285,13 +286,18 @@ size_t convert_string(charset_t from, charset_t to,
 		while ((srclen >= 2) && destlen) {
 			if ((lastp = *p) <= 0x7f && p[1] == 0) {
 				*q++ = *p;
-				srclen -= 2;
+				if (srclen != (size_t)-1) {
+					srclen -= 2;
+				}
 				p += 2;
 				destlen--;
 				retval++;
 				if (!lastp)
 					break;
 			} else {
+				if (srclen == (size_t)-1) {
+					srclen = strlen_w(src)+2;
+				}
 				return retval + convert_string_internal(from, to, p, srclen, q, destlen);
 			}
 		}
@@ -307,12 +313,17 @@ size_t convert_string(charset_t from, charset_t to,
 			if ((lastp = *p) <= 0x7F) {
 				*q++ = *p++;
 				*q++ = '\0';
-				srclen--;
+				if (srclen != (size_t)-1) {
+					srclen--;
+				}
 				destlen -= 2;
 				retval += 2;
 				if (!lastp)
 					break;
 			} else {
+				if (srclen == (size_t)-1) {
+					srclen = strlen(src)+1;
+				}
 				return retval + convert_string_internal(from, to, p, srclen, q, destlen);
 			}
 		}
@@ -697,22 +708,26 @@ size_t pull_ascii_nstring(char *dest, const void *src)
  * @param dest_len is the maximum length allowed in the
  * destination. If dest_len is -1 then no maxiumum is used.
  **/
+
 size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_len, int flags)
 {
 	size_t len=0;
-	size_t src_len = strlen(src);
+	size_t src_len;
 
 	/* treat a pstring as "unlimited" length */
 	if (dest_len == (size_t)-1)
 		dest_len = sizeof(pstring);
 
 	if (flags & STR_TERMINATE)
-		src_len++;
+		src_len = (size_t)-1;
+	else
+		src_len = strlen(src);
 
 	if (ucs2_align(base_ptr, dest, flags)) {
 		*(char *)dest = 0;
 		dest = (void *)((char *)dest + 1);
-		if (dest_len) dest_len--;
+		if (dest_len)
+			dest_len--;
 		len++;
 	}
 
