@@ -1874,6 +1874,45 @@ static int nt_ace_comp( SEC_ACE *a1, SEC_ACE *a2)
 }
 
 /****************************************************************************
+  Incoming NT ACLs on a directory can be split into a default POSIX acl (CI|OI|IO) and
+  a normal POSIX acl. Win2k needs these split acls re-merging into one ACL
+  with CI|OI set so it is inherited and also applies to the directory.
+  Based on code from "Jim McDonough" <jmcd@us.ibm.com>.
+****************************************************************************/
+
+static size_t merge_default_aces( SEC_ACE *nt_ace_list, size_t num_aces)
+{
+	size_t i, j;
+
+	for (i = 0; i < num_aces; i++) {
+		for (j = i+1; j < num_aces; j++) {
+			/* We know the lower number ACE's are file entries. */
+			if ((nt_ace_list[i].type == nt_ace_list[j].type) &&
+				(nt_ace_list[i].size == nt_ace_list[j].size) &&
+				(nt_ace_list[i].info.mask == nt_ace_list[j].info.mask) &&
+				sid_equal(&nt_ace_list[i].trustee, &nt_ace_list[j].trustee) &&
+				(nt_ace_list[i].flags == 0) &&
+				(nt_ace_list[j].flags == (SEC_ACE_FLAG_OBJECT_INHERIT|
+							  SEC_ACE_FLAG_CONTAINER_INHERIT|
+							  SEC_ACE_FLAG_INHERIT_ONLY))) {
+				/*
+				 * These are identical except for the flags.
+				 * Merge the inherited ACE onto the non-inherited ACE.
+				 */
+
+				nt_ace_list[i].flags = SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT;
+				if (num_aces - j - 1 > 0)
+					memmove(&nt_ace_list[j], &nt_ace_list[j+1], (num_aces-j-1) *
+							sizeof(SEC_ACE));
+				num_aces--;
+				break;
+			}
+		}
+	}
+
+	return num_aces;
+}
+/****************************************************************************
  Reply to query a security descriptor from an fsp. If it succeeds it allocates
  the space for the return elements and returns the size needed to return the
  security descriptor. This should be the only external function needed for
@@ -1979,7 +2018,7 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 		goto done;
 	}
 
-	memset(nt_ace_list, '\0', (num_acls + num_dir_acls) * sizeof(SEC_ACE) );
+	memset(nt_ace_list, '\0', (num_acls + num_profile_acls + num_dir_acls) * sizeof(SEC_ACE) );
 
 	/*
 	 * Create the NT ACE list from the canonical ace lists.
@@ -2026,14 +2065,22 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 		}
 
 		/*
+		 * Merge POSIX default ACLs and normal ACLs into one NT ACE.
+		 * Win2K needs this to get the inheritance correct when replacing ACLs
+		 * on a directory tree. Based on work by Jim @ IBM.
+		 */
+
+		num_aces = merge_default_aces(nt_ace_list, num_aces);
+
+		/*
 		 * Sort to force deny entries to the front.
 		 */
 
-		if (num_acls + num_dir_acls)
-			qsort( nt_ace_list, num_acls + num_dir_acls, sizeof(nt_ace_list[0]), QSORT_CAST nt_ace_comp);
+		if (num_aces)
+			qsort( nt_ace_list, num_aces, sizeof(nt_ace_list[0]), QSORT_CAST nt_ace_comp);
 	}
 
-	if (num_acls) {
+	if (num_aces) {
 		if((psa = make_sec_acl( main_loop_talloc_get(), ACL_REVISION, num_aces, nt_ace_list)) == NULL) {
 			DEBUG(0,("get_nt_acl: Unable to malloc space for acl.\n"));
 			goto done;
@@ -2060,14 +2107,14 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 	return sd_size;
 }
 
-/*
-  try to chown a file. We will be able to chown it under the following conditions
+/****************************************************************************
+ Try to chown a file. We will be able to chown it under the following conditions.
 
-  1) if we have root privileges, then it will just work
-  2) if we have write permission to the file and dos_filemodes is set
+  1) If we have root privileges, then it will just work.
+  2) If we have write permission to the file and dos_filemodes is set
      then allow chown to the currently authenticated user.
+****************************************************************************/
 
- */
 static int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid)
 {
 	int ret;
@@ -2413,6 +2460,10 @@ int fchmod_acl(files_struct *fsp, int fd, mode_t mode)
 	conn->vfs_ops.sys_acl_free_acl(conn, posix_acl);
 	return ret;
 }
+
+/****************************************************************************
+ Check for an existing default POSIX ACL on a directory.
+****************************************************************************/
 
 BOOL directory_has_default_acl(connection_struct *conn, const char *fname)
 {
