@@ -1,3 +1,4 @@
+
 /* 
    Unix SMB/CIFS implementation.
    SMB client library implementation (server cache)
@@ -23,12 +24,8 @@
 
 #include "includes.h"
 
-/*
- * Define this to get the real SMBCFILE and SMBCSRV structures 
- */
-#define _SMBC_INTERNAL
 #include "include/libsmbclient.h"
-
+#include "../include/libsmb_internal.h"
 /*
  * Structure we use if internal caching mechanism is used 
  * nothing fancy here.
@@ -115,11 +112,53 @@ static SMBCSRV * smbc_get_cached_server(SMBCCTX * context, const char * server,
 	
 	/* Search the cache lines */
 	for (srv=((struct smbc_server_cache *)context->server_cache);srv;srv=srv->next) {
+
 		if (strcmp(server,srv->server_name)  == 0 &&
-		    strcmp(share,srv->share_name)    == 0 &&
 		    strcmp(workgroup,srv->workgroup) == 0 &&
-		    strcmp(user, srv->username)  == 0) 
-			return srv->server;
+		    strcmp(user, srv->username)  == 0) {
+
+                        /* If the share name matches, we're cool */
+                        if (strcmp(share, srv->share_name) == 0) {
+                                return srv->server;
+                        }
+
+                        /*
+                         * We only return an empty share name or the attribute
+                         * server on an exact match (which would have been
+                         * caught above).
+                         */
+                        if (*share == '\0' || strcmp(share, "*IPC$") == 0)
+                                continue;
+
+                        /*
+                         * Never return an empty share name or the attribute
+                         * server if it wasn't what was requested.
+                         */
+                        if (*srv->share_name == '\0' ||
+                            strcmp(srv->share_name, "*IPC$") == 0)
+                                continue;
+
+                        /*
+                         * If we're only allowing one share per server, then
+                         * a connection to the server (other than the
+                         * attribute server connection) is cool.
+                         */
+                        if (context->options.one_share_per_server) {
+                                /*
+                                 * The currently connected share name
+                                 * doesn't match the requested share, so
+                                 * disconnect from the current share.
+                                 */
+                                if (! cli_tdis(&srv->server->cli)) {
+                                        /* Sigh. Couldn't disconnect. */
+                                        cli_shutdown(&srv->server->cli);
+                                        context->callbacks.remove_cached_srv_fn(context, srv->server);
+                                        continue;
+                                }
+
+                                return srv->server;
+                        }
+                }
 	}
 
 	return NULL;
