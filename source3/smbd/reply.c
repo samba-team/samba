@@ -2740,24 +2740,24 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 
 int reply_flush(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize)
 {
-  int outsize = set_message(outbuf,0,0,True);
-  files_struct *fsp = file_fsp(inbuf,smb_vwv0);
-  START_PROFILE(SMBflush);
+	int outsize = set_message(outbuf,0,0,True);
+	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	START_PROFILE(SMBflush);
 
-  if (fsp) {
-	  CHECK_FSP(fsp,conn);
-	  CHECK_ERROR(fsp);
-  }
-
-  if (!fsp) {
-	  file_sync_all(conn);
-  } else {
+	CHECK_FSP(fsp,conn);
+	if (fsp) {
+		CHECK_ERROR(fsp);
+	}
+	
+	if (!fsp) {
+		file_sync_all(conn);
+	} else {
 		sync_file(conn,fsp);
-  }
-
-  DEBUG(3,("flush\n"));
-  END_PROFILE(SMBflush);
-  return(outsize);
+	}
+	
+	DEBUG(3,("flush\n"));
+	END_PROFILE(SMBflush);
+	return(outsize);
 }
 
 
