@@ -297,6 +297,18 @@ Set the form given by the dictionary argument."},
            METH_VARARGS | METH_KEYWORDS,
           "Delete printer data." },
 
+        { "enumprinterkey", (PyCFunction)spoolss_hnd_enumprinterkey,
+           METH_VARARGS | METH_KEYWORDS,
+          "Enumerate printer key." },
+
+#if 0
+        /* Not implemented */
+
+        { "deleteprinterkey", (PyCFunction)spoolss_hnd_deleteprinterkey,
+           METH_VARARGS | METH_KEYWORDS,
+          "Delete printer key." },
+#endif
+
 	{ NULL }
 
 };
