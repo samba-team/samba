@@ -1,3 +1,13 @@
+2003-04-11  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: add INCLUDE_krb4 when using krb4, add INCLUDE_des
+	when using krb5, add strupr.c
+	
+	* afskrb5.c: Check the cell part of the name, not the realm part
+	when checking if 2b should be used. The reson is afs@REALM might
+	have updated their servers but not afs/cell@REALM. Add constant
+	KAFS_RXKAD_2B_KVNO.
+
 2003-04-06  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* kafs.3: s/kerberos/Kerberos/
