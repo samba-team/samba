@@ -73,7 +73,7 @@ typedef enum
 #define NSD_MEM_VOLATILE 1
 #define NSD_MEM_DYNAMIC 2
 
-#elif defined(HPUX)
+#elif defined(HPUX) && defined(HAVE_NSSWITCH_H)
 /* HP-UX 11 */
 
 #include "nsswitch/hp_nss_common.h"
