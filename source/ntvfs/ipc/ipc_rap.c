@@ -417,7 +417,7 @@ NTSTATUS ipc_rap_call(struct smbsrv_request *req, struct smb_trans2 *trans)
 	call->ndr_push_param->flags = RAPNDR_FLAGS;
 	call->ndr_push_data->flags = RAPNDR_FLAGS;
 
-	result = NT_STATUS_NOT_IMPLEMENTED;
+	result = NT_STATUS_INVALID_SYSTEM_SERVICE;
 
 	for (i=0; api_commands[i].name != NULL; i++) {
 		if (api_commands[i].id == call->callno) {
