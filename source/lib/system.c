@@ -898,7 +898,7 @@ struct passwd *sys_getpwnam(const char *name)
 		return NULL;
 
 	/* check for a cache hit first */
-	if (num_lookups && pw_cache.pass.pw_name && strequal(name, pw_cache.pass.pw_name)) {
+	if (num_lookups && pw_cache.pass.pw_name && !strcmp(name, pw_cache.pass.pw_name)) {
 		return setup_pwret(&pw_cache.pass);
 	}
 
