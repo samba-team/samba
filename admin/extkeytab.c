@@ -28,13 +28,14 @@ ext_keytab(int argc, char **argv)
     ret = krb5_parse_name (context, argv[1], &ent.principal);
     if (ret) {
 	warnx("%s", krb5_get_err_text(context, ret));
-	return;
+	goto cleanup1;
     }
 
     ret = db->fetch(context, db, &ent);
     if (ret) {
 	warnx ("%s", krb5_get_err_text(context, ret));
-	return;
+	krb5_free_principal (context, ent.principal);
+	goto cleanup1;
     }
 
     krb5_copy_principal (context, ent.principal, &key_entry.principal);
@@ -48,15 +49,22 @@ ext_keytab(int argc, char **argv)
     ret = krb5_kt_default (context, &kid);
     if (ret) {
 	warnx("%s", krb5_get_err_text(context, ret));
-	return;
+	goto cleanup2;
     }
 
     ret = krb5_kt_add_entry(context,
 			    kid,
 			    &key_entry);
+    /* XXX - krb5_kt_free_entry? */
+
     if (ret) {
 	warnx("%s", krb5_get_err_text(context, ret));
-	return;
     }
+    krb5_kt_close (context, kid);
+cleanup2:
+    krb5_free_principal (context, key_entry.principal);
+    krb5_free_keyblock (context, &key_entry.keyblock);
+    hdb_free_entry (context, &ent);
+cleanup1:
     db->close (context, db);
 }
