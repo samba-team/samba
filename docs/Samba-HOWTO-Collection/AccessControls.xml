@@ -420,7 +420,7 @@ drwsrwsrwx    2 maryo   gnomes       48 2003-05-12 22:29 muchado08
 	Unfortunately, the implementation of the immutible flag is NOT consistent with published documentation. For example, the
 	man page for the <command>chattr</command> on SUSE Linux 9.2 says:
 <screen>
-A file with the‘i attribute cannot be modified: it cannot be deleted
+A file with the i attribute cannot be modified: it cannot be deleted
 or renamed, no link can be created to this file and no data can be
 written to the file. Only the superuser or a process possessing the
 CAP_LINUX_IMMUTABLE capability can set or clear this attribute.
@@ -1237,6 +1237,9 @@ Before using any of the following options, please refer to the man page for &smb
 	the way in which Windows ACLs must be implemented.
 	</para>
 
+	<sect3>
+	<title>UNIX POSIX ACL Overview</title>
+
 	<para>
 	In examining POSIX ACLs we must consider the manner in which they operate for 
 	both files and directories. File ACLs have the following significance:
@@ -1267,6 +1270,106 @@ default:mask:rwx      &lt;-- inherited default mask
 default:other:---     &lt;-- inherited permissions for everyone (other)
 </screen>
 	</para>
+
+	</sect3>
+
+	<sect3>
+	<title>Mapping of Windows File ACLs to UNIX POSIX ACLs</title>
+
+	<para>
+	Microsoft Windows NT4/200X ACLs must of necessity be mapped to POSIX ACLs.
+	The mappings for file permissions are shown in <link linkend="fdsacls"/>.
+	</para>
+
+	<table frame='all' pgwide='0' id="fdsacls"><title>How Windows File ACLs Map to UNIX POSIX File ACLs</title>
+	<tgroup cols='2'>
+		<colspec align="left"/>
+		<colspec align="center"/>
+		<thead>
+		<row>
+			<entry align="center">Windows ACE</entry>
+			<entry align="center">File Attribute Flag</entry>
+		</row>
+		</thead>
+		<tbody>
+		<row>
+			<entry><para>Full Control</para></entry>
+			<entry><para>#</para></entry>
+		</row>
+		<row>
+			<entry><para>Traverse Folder / Execute File</para></entry>
+			<entry><para>x</para></entry>
+		</row>
+		<row>
+			<entry><para>List Folder / Read Data</para></entry>
+			<entry><para>r</para></entry>
+		</row>
+		<row>
+			<entry><para>Read Attributes</para></entry>
+			<entry><para>r</para></entry>
+		</row>
+		<row>
+			<entry><para>Read Extended Attribures</para></entry>
+			<entry><para>r</para></entry>
+		</row>
+		<row>
+			<entry><para>Create Files / Write Data</para></entry>
+			<entry><para>w</para></entry>
+		</row>
+		<row>
+			<entry><para>Create Folders / Append Data</para></entry>
+			<entry><para>w</para></entry>
+		</row>
+		<row>
+			<entry><para>Write Attributes</para></entry>
+			<entry><para>w</para></entry>
+		</row>
+		<row>
+			<entry><para>Write Extended Attributes</para></entry>
+			<entry><para>w</para></entry>
+		</row>
+		<row>
+			<entry><para>Delete Subfolders and Files</para></entry>
+			<entry><para>w</para></entry>
+		</row>
+		<row>
+			<entry><para>Delete</para></entry>
+			<entry><para>#</para></entry>
+		</row>
+		<row>
+			<entry><para>Read Permissions</para></entry>
+			<entry><para>all</para></entry>
+		</row>
+		<row>
+			<entry><para>Change Permissions</para></entry>
+			<entry><para>#</para></entry>
+		</row>
+		<row>
+			<entry><para>Take Ownership</para></entry>
+			<entry><para>#</para></entry>
+		</row>
+		</tbody>
+	</tgroup>
+	</table>
+
+	<para>
+	As can be seen from the mapping table, there is no 1:1 mapping capability and therefore
+	Samba must make a logical mapping that will permit Windows to operate more-or-less the way
+	that is intended by the Administrator.
+	</para>
+
+	</sect3>
+
+	<sect3>
+	<title>Mapping of Windows Directory ACLs to UNIX POSIX ACLs</title>
+
+	<para>
+	Interesting things happen in the mapping of UNIX POSIX directory permissions as well
+	as UNIX POSIX ACLs to Windows ACEs (Access Control Entries, the discrete component of
+	an Access Control List (ACL), are mapped to Windows directory ACLs.
+	</para>
+
+	</sect3>
 
 	</sect2>
 </sect1>
