@@ -624,11 +624,30 @@ doit (int do_kerberos, int check_rhosts)
 
 #ifdef KRB4
     if(k_hasafs()) {
+	char cell[64];
+	char *pw_dir;
+
+#ifdef _AIX
+	/* XXX this is a fix for a bug in AFS for AIX 4.3, w/o
+	   this hack the kernel crashes on the following
+	   pioctl... */
+	pw_dir = strdup(pwd->pw_dir);
+#else
+	pw_dir = pwd->pw_dir;
+#endif
+
 	if(do_newpag)
 	    k_setpag();
-	krb_afslog(NULL, NULL);
+	if (k_afs_cell_of_file (pw_dir, cell, sizeof(cell)) == 0)
+	    krb_afslog_uid_home (cell, NULL, pwd->pw_uid, pwd->pw_dir);
+
+	krb_afslog_uid_home(NULL, NULL, pwd->pw_uid, pwd->pw_dir);
+
+#ifdef KRB5
+	/* XXX */
+#endif /* KRB5 */
     }
-#endif
+#endif /* KRB4 */
     execle (pwd->pw_shell, pwd->pw_shell, "-c", cmd, NULL, env);
     err(1, "exec %s", pwd->pw_shell);
 }
@@ -661,9 +680,9 @@ usage (int ret)
 	arg_printusage (args,
 			sizeof(args) / sizeof(args[0]),
 			NULL,
-			"host command");
+			"");
     else
-	syslog (LOG_ERR, "Usage: %s [-ixklv] [-p port]", __progname);
+	syslog (LOG_ERR, "Usage: %s [-ikxlvPL] [-p port]", __progname);
     exit (ret);
 }
 
