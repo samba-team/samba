@@ -482,6 +482,8 @@ extern int errno;
 #include "ubi_Cache.h"
 #endif /* UBI_BINTREE_H */
 
+#include "debugparse.h"
+
 #include "version.h"
 #include "smb.h"
 #include "smbw.h"
@@ -493,8 +495,6 @@ extern int errno;
 #include "charset.h"
 
 #include "nterr.h"
-
-#include "debugparse.h"
 
 #ifndef MAXCODEPAGELINES
 #define MAXCODEPAGELINES 256

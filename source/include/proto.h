@@ -84,11 +84,6 @@ void force_check_log_size( void );
 void dbgflush( void );
 BOOL dbghdr( int level, char *file, char *func, int line );
 
-/*The following definitions come from  lib/debugparse.c  */
-
-char *dbg_token2string( dbg_Token tok );
-void dbg_test( void );
-
 /*The following definitions come from  lib/fault.c  */
 
 void fault_setup(void (*fn)(void *));
