@@ -2018,4 +2018,4 @@ dnl Remove -I/usr/include/? from CFLAGS and CPPFLAGS
 CFLAGS_REMOVE_USR_INCLUDE(CFLAGS)
 CFLAGS_REMOVE_USR_INCLUDE(CPPFLAGS)
 
-AC_OUTPUT(include/stamp-h Makefile)
+AC_OUTPUT(Makefile)
