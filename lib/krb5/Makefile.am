@@ -101,7 +101,7 @@ libkrb5_a_SOURCES = \
 $(libkrb5_a_OBJECTS): $(srcdir)/krb5-protos.h
 
 $(srcdir)/krb5-protos.h:
-	cd $(srcdir); perl ../../aux/make-proto.pl $(libkrb5_a_SOURCES) > krb5-protos.h || rm -f krb5-protos.h
+	cd $(srcdir); perl ../../cf/make-proto.pl $(libkrb5_a_SOURCES) > krb5-protos.h || rm -f krb5-protos.h
 
 INCLUDES = $(INCLUDE_krb4)
 
