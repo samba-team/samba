@@ -180,6 +180,27 @@ static void show_parameter(int snum, struct parm_struct *parm)
 			make_parm_name(parm->label),(char)(parm->def.cvalue));
 		break;
 
+	case P_LIST:
+		printf("<input type=text size=40 name=\"parm_%s\" value=\"",
+			make_parm_name(parm->label));
+		if (ptr) {
+			char** list = ptr;
+			for (;*list;list++) {
+				printf("%s%s", *list, ((*(list+1))?" ":""));
+			}
+		}
+		printf("\">");
+		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.value=\'",
+			make_parm_name(parm->label));
+		if (parm->def.lvalue) {
+			char **list = parm->def.lvalue;
+			for (; *list; list++) {
+				printf("%s%s", *list, ((*(list+1))?" ":""));
+			}
+		}
+		printf("\'\">");
+		break;
+
 	case P_STRING:
 	case P_USTRING:
 		printf("<input type=text size=40 name=\"parm_%s\" value=\"%s\">",
@@ -277,6 +298,10 @@ static void show_parameters(int snum, int allparameters, int advanced, int print
 				switch (parm->type) {
 				case P_CHAR:
 					if (*(char *)ptr == (char)(parm->def.cvalue)) continue;
+					break;
+
+				case P_LIST:
+					if (!lp_list_compare(*(char ***)ptr,(char **)(parm->def.lvalue))) continue;
 					break;
 
 				case P_STRING:
