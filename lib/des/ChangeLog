@@ -1,3 +1,16 @@
+2004-03-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: new arcfour implementation
+	
+	* rc4.c: implemented from description in
+	draft-kaukonen-cipher-arcfour-03.txt
+	
+	* rc4.h: replace with new implementation
+	
+	* rc4_enc.c rc4_skey.c: remove 
+
+	* rctest.c: test for arcfour
+	
 2003-12-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rnd_keys.c: uninitialized variable, from Panasas Inc
