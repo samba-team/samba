@@ -27,58 +27,91 @@ static fstring password;
 static fstring username;
 static int got_pass;
 
+/* numeric is set when the user wants numeric SIDs and ACEs rather
+   than going via LSA calls to resolve them */
+static int numeric;
 
-/* print a ascii version of a security descriptor on a FILE handle */
-static void sec_desc_print(FILE *f, SEC_DESC *sd)
+/* convert a SID to a string, either numeric or username/group */
+static void SidToString(fstring str, DOM_SID *sid)
 {
-	fstring sidstr;
-	int i;
-
-	printf("REVISION:%x TYPE:%x\n", sd->revision, sd->type);
-
-	/* Print owner and group sid */
-
-	if (sd->owner_sid) {
-		sid_to_string(sidstr, sd->owner_sid);
+	if (numeric) {
+		sid_to_string(str, sid);
 	} else {
-		fstrcpy(sidstr, "");
+		printf("need to add LSA lookups\n");
+		sid_to_string(str, sid);
 	}
+}
 
-	printf("OWNER:%s\n", sidstr);
-
-	if (sd->grp_sid) {
-		sid_to_string(sidstr, sd->grp_sid);
+/* convert a string to a SID, either numeric or username/group */
+static BOOL StringToSid(DOM_SID *sid, fstring str)
+{
+	if (strncmp(str,"S-", 2) == 0) {
+		return string_to_sid(sid, str);
 	} else {
-		fstrcpy(sidstr, "");
-	}
-
-	fprintf(f, "GROUP:%s\n", sidstr);
-
-	/* Print aces */
-	for (i = 0; sd->dacl && i < sd->dacl->num_aces; i++) {
-		SEC_ACE *ace = &sd->dacl->ace[i];
-		fstring sidstr;
-
-		sid_to_string(sidstr, &ace->sid);
-
-		fprintf(f, "DACL:%x:%x:%08x:%s\n", ace->type, ace->flags,
-			ace->info.mask, sidstr);
-	}
-
-	for (i = 0; sd->sacl && i < sd->sacl->num_aces; i++) {
-		SEC_ACE *ace = &sd->sacl->ace[i];
-		fstring sidstr;
-
-		sid_to_string(sidstr, &ace->sid);
-
-		fprintf(f, "SACL:%x:%x:%08x:%s\n", ace->type, ace->flags,
-			ace->info.mask, sidstr);
+		printf("need to add LSA lookups\n");
+		return False;
 	}
 }
 
 
+/* print an ACE on a FILE, using either numeric or ascii representation */
+static void print_ace(FILE *f, SEC_ACE *ace)
+{
+	fstring sidstr;
+	char *perm;
+
+	SidToString(sidstr, &ace->sid);
+
+	fprintf(f, "%s:", sidstr);
+
+	if (numeric) {
+		fprintf(f, "%x/%x/%08x\n", 
+			ace->type, ace->flags, ace->info.mask);
+		return;
+	}
+
+	/* this interpretation is almost certainly wrong, Tim, please
+	   have a look at these */
+	if (ace->info.mask == 0x001f01ff) {
+		perm = "F";
+	} else if (ace->info.mask == 0x001301bf) {
+		perm = "C";
+	} else if (ace->info.mask == 0x001200a9) {
+		perm = "R";
+	} else if (ace->info.mask == 0x00000000) {
+		perm = "N";
+	} else {
+		perm = "?";
+	}
+
+	fprintf(f,"%s\n", perm);
+}
+
+
+/* parse an ACE in the same format as print_ace() */
+static BOOL parse_ace(SEC_ACE *ace, char *str)
+{
+	char *p;
+	unsigned atype, aflags, amask;
+	ZERO_STRUCTP(ace);
+	p = strchr(str,':');
+	if (!p) return False;
+	*p = 0;
+	if (sscanf(p+1, "%x/%x/%08x", 
+		   &atype, &aflags, &amask) != 3 ||
+	    !StringToSid(&ace->sid, str)) {
+		return False;
+	}
+	ace->type = atype;
+	ace->flags = aflags;
+	ace->info.mask = amask;
+	return True;
+}
+
+
+
 /* add an ACE to a list of ACEs in a SEC_ACL */
-static BOOL add_acl(SEC_ACL **acl, SEC_ACE *ace)
+static BOOL add_ace(SEC_ACL **acl, SEC_ACE *ace)
 {
 	if (! *acl) {
 		*acl = (SEC_ACL *)calloc(1, sizeof(*acl));
@@ -117,7 +150,7 @@ static SEC_DESC *sec_desc_parse(char *str)
 		if (strncmp(tok,"OWNER:", 6) == 0) {
 			sd->owner_sid = (DOM_SID *)calloc(1, sizeof(DOM_SID));
 			if (!sd->owner_sid ||
-			    !string_to_sid(sd->owner_sid, tok+6)) {
+			    !StringToSid(sd->owner_sid, tok+6)) {
 				printf("Failed to parse owner sid\n");
 				return NULL;
 			}
@@ -126,44 +159,28 @@ static SEC_DESC *sec_desc_parse(char *str)
 		if (strncmp(tok,"GROUP:", 6) == 0) {
 			sd->grp_sid = (DOM_SID *)calloc(1, sizeof(DOM_SID));
 			if (!sd->grp_sid ||
-			    !string_to_sid(sd->grp_sid, tok+6)) {
+			    !StringToSid(sd->grp_sid, tok+6)) {
 				printf("Failed to parse group sid\n");
 				return NULL;
 			}
 		}
 
 		if (strncmp(tok,"DACL:", 5) == 0) {
-			fstring s;
-			unsigned atype, aflags, amask;
 			SEC_ACE ace;
-			ZERO_STRUCT(ace);
-			if (sscanf(tok+5, "%x:%x:%08x:%s", 
-				   &atype, &aflags, &amask,s) != 4 ||
-			    !string_to_sid(&ace.sid, s)) {
+			if (!parse_ace(&ace, tok+5) || 
+			    !add_ace(&sd->dacl, &ace)) {
 				printf("Failed to parse DACL\n");
 				return NULL;
 			}
-			ace.type = atype;
-			ace.flags = aflags;
-			ace.info.mask = amask;
-			add_acl(&sd->dacl, &ace);
 		}
 
 		if (strncmp(tok,"SACL:", 5) == 0) {
-			fstring s;
-			unsigned atype, aflags, amask;
 			SEC_ACE ace;
-			ZERO_STRUCT(ace);
-			if (sscanf(tok+5, "%x:%x:%08x:%s", 
-				   &atype, &aflags, &amask,s) != 4 ||
-			    !string_to_sid(&ace.sid, s)) {
+			if (!parse_ace(&ace, tok+5) || 
+			    !add_ace(&sd->sacl, &ace)) {
 				printf("Failed to parse SACL\n");
 				return NULL;
 			}
-			ace.type = atype;
-			ace.flags = aflags;
-			ace.info.mask = amask;
-			add_acl(&sd->sacl, &ace);
 		}
 	}
 
@@ -176,6 +193,50 @@ static SEC_DESC *sec_desc_parse(char *str)
 }
 
 
+/* print a ascii version of a security descriptor on a FILE handle */
+static void sec_desc_print(FILE *f, SEC_DESC *sd)
+{
+	fstring sidstr;
+	int i;
+
+	printf("REVISION:%x TYPE:%x\n", sd->revision, sd->type);
+
+	/* Print owner and group sid */
+
+	if (sd->owner_sid) {
+		SidToString(sidstr, sd->owner_sid);
+	} else {
+		fstrcpy(sidstr, "");
+	}
+
+	printf("OWNER:%s\n", sidstr);
+
+	if (sd->grp_sid) {
+		SidToString(sidstr, sd->grp_sid);
+	} else {
+		fstrcpy(sidstr, "");
+	}
+
+	fprintf(f, "GROUP:%s\n", sidstr);
+
+	/* Print aces */
+	for (i = 0; sd->dacl && i < sd->dacl->num_aces; i++) {
+		SEC_ACE *ace = &sd->dacl->ace[i];
+		fprintf(f, "DACL:");
+		print_ace(f, ace);
+	}
+
+	for (i = 0; sd->sacl && i < sd->sacl->num_aces; i++) {
+		SEC_ACE *ace = &sd->sacl->ace[i];
+		fstring sidstr;
+
+		SidToString(sidstr, &ace->sid);
+
+		fprintf(f, "SACL:%s:%x:%x:%08x\n", sidstr, 
+			ace->type, ace->flags,
+			ace->info.mask);
+	}
+}
 
 
 /***************************************************** 
@@ -308,14 +369,6 @@ struct cli_state *connect_one(char *share)
 		return NULL;
 	}
 
-	/*
-	 * These next two lines are needed to emulate
-	 * old client behaviour for people who have
-	 * scripts based on client output.
-	 * QUESTION ? Do we want to have a 'client compatibility
-	 * mode to turn these on/off ? JRA.
-	 */
-	
 	DEBUG(4,(" session setup ok\n"));
 
 	if (!cli_send_tconX(c, share, "?????",
@@ -386,7 +439,7 @@ static void usage(void)
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "U:hs:")) != EOF) {
+	while ((opt = getopt(argc, argv, "U:nhS:")) != EOF) {
 		switch (opt) {
 		case 'U':
 			pstrcpy(username,optarg);
@@ -397,9 +450,15 @@ static void usage(void)
 				got_pass = 1;
 			}
 			break;
-		case 's':
+
+		case 'S':
 			set_acl = optarg;
 			break;
+
+		case 'n':
+			numeric = 1;
+			break;
+
 		case 'h':
 			usage();
 			exit(1);
