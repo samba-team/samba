@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 2000, 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -53,8 +53,10 @@ strsep_copy(const char **stringp, const char *delim, char *buf, size_t len)
 	return -1;
     *stringp = *stringp + strcspn(*stringp, delim);
     l = min(len, *stringp - save);
-    memcpy(buf, save, l);
-    buf[l] = '\0';
+    if(len > 0) {
+	memcpy(buf, save, l);
+	buf[l] = '\0';
+    }
 
     l = *stringp - save;
     if(**stringp == '\0')
