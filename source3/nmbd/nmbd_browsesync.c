@@ -32,7 +32,7 @@ extern pstring global_myname;
 extern fstring global_myworkgroup;
 
 /* This is our local master browser list database. */
-extern struct browse_cache_record *lmb_browserlist;
+extern struct ubi_dlList lmb_browserlist[];
 
 static struct work_record *call_work;
 static struct subnet_record *call_subrec;

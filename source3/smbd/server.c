@@ -3864,13 +3864,12 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   pcon->ngroups = 0;
   pcon->igroups = NULL;
   pcon->groups = NULL;
-  pcon->attrs = NULL;
 
   if (!IS_IPC(cnum))
     {
       /* Find all the groups this uid is in and store them. Used by become_user() */
       setup_groups(pcon->user,pcon->uid,pcon->gid,
-                  &pcon->ngroups,&pcon->igroups,&pcon->groups,&pcon->attrs);
+                  &pcon->ngroups,&pcon->igroups,&pcon->groups);
       
       /* check number of connections */
       if (!claim_connection(cnum,
@@ -4235,11 +4234,7 @@ reply for the nt protocol
 int reply_nt1(char *outbuf)
 {
   /* dual names + lock_and_read + nt SMBs + remote API calls */
-  int capabilities = CAP_NT_FIND|CAP_LOCK_AND_READ|CAP_RPC_REMOTE_APIS
-#ifdef HAVE_NT_SMBS
-                     |CAP_NT_SMBS
-#endif /* HAVE_NT_SMBS */
-                      ;
+  int capabilities = CAP_NT_FIND|CAP_LOCK_AND_READ|CAP_RPC_REMOTE_APIS |CAP_NT_SMBS;
 
 /*
   other valid capabilities which we may support at some time...
@@ -4810,13 +4805,11 @@ struct smb_message_struct
    {SMBtrans2, "SMBtrans2", reply_trans2, AS_USER },
    {SMBtranss2, "SMBtranss2", reply_transs2, AS_USER},
 
-#ifdef HAVE_NT_SMBS
    /* NT PROTOCOL FOLLOWS */
    {SMBntcreateX, "SMBntcreateX", reply_ntcreate_and_X, AS_USER | CAN_IPC | QUEUE_IN_OPLOCK },
    {SMBnttrans, "SMBnttrans", reply_nttrans, AS_USER | CAN_IPC },
    {SMBnttranss, "SMBnttranss", reply_nttranss, AS_USER | CAN_IPC },
    {SMBntcancel, "SMBntcancel", reply_ntcancel, AS_USER },
-#endif /* HAVE_NT_SMBS */
 
    /* messaging routines */
    {SMBsends,"SMBsends",reply_sends,AS_GUEST},

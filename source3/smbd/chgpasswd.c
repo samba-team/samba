@@ -74,7 +74,13 @@ static int findpty(char **slave)
     grantpt(master);
     unlockpt(master);
     *slave = ptsname(master);
-    return (master);
+    if(*slave == NULL) {
+      DEBUG(0,("findpty: Unable to create master/slave pty pair.\n"));
+      return -1;
+    } else {
+      DEBUG(10, ("findpty: Allocated slave pty %s\n", *slave));
+      return (master);
+    }
   }
 #else /* USE_GRANTPT */
   fstrcpy( line, "/dev/ptyXX" );
@@ -197,6 +203,8 @@ static int dochild(int master,char *slavedev, char *name, char *passwordprogram,
 #endif
   }
 
+  DEBUG(10, ("Invoking '%s' as password change program.\n", passwordprogram));
+
   /* execl() password-change application */
   if (execl("/bin/sh","sh","-c",passwordprogram,NULL) < 0) {
     DEBUG(3,("Bad status returned from %s\n",passwordprogram));
@@ -297,7 +305,7 @@ BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequence, BOOL
   int master;
   pid_t pid, wpid;
   int wstat;
-  BOOL chstat;    
+  BOOL chstat = False;    
 
   /* allocate a pseudo-terminal device */
   if ((master = findpty (&slavedev)) < 0) {
@@ -315,7 +323,6 @@ BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequence, BOOL
     if ((chstat = talktochild(master, chatsequence)) == False) {
       DEBUG(3,("Child failed to change password: %s\n",name));
       kill(pid, SIGKILL); /* be sure to end this process */
-      return(False);
     }
     if ((wpid = sys_waitpid(pid, &wstat, 0)) < 0) {
       DEBUG(3,("The process is no longer waiting!\n\n"));
@@ -348,7 +355,9 @@ BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequence, BOOL
     if(as_root)
       unbecome_root(False);
   }
-  DEBUG(3,("Password change %ssuccessful for user %s\n", (chstat?"":"un"), name));
+
+  if(chstat)
+    DEBUG(3,("Password change %ssuccessful for user %s\n", (chstat?"":"un"), name));
   return (chstat);
 }
 

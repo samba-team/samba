@@ -398,7 +398,6 @@ struct current_user
   int ngroups;
   gid_t *groups;
   int *igroups;
-  int *attrs;
 };
 
 typedef struct
@@ -510,7 +509,6 @@ typedef struct
   int ngroups;
   gid_t *groups;
   int *igroups; /* an integer version - some OSes are broken :-( */
-  int *attrs;
 
   time_t lastused;
   BOOL used;
@@ -548,7 +546,6 @@ typedef struct
   int n_groups;
   gid_t *groups;
   int *igroups; /* an integer version - some OSes are broken :-( */
-  int *attrs; /* attributes associated with each gid */
 
   int n_sids;
   int *sids;
