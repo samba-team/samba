@@ -1,22 +1,23 @@
 .\" $Id$
 .\"
-.Dd Aug 27, 1997
+.Dd December 16, 2000
 .Dt KTUTIL 8
 .Os HEIMDAL
 .Sh NAME
 .Nm ktutil
-.Ar command
 .Nd
-handle a keytab
+manage Kerberos keytabs
 .Sh SYNOPSIS
 .Nm
-.Op Fl k Ar keytab
-.Op Fl -keytab= Ns Ar keytab
-.Op Fl v
+.Oo Fl k Ar keytab \*(Ba Xo
+.Fl -keytab= Ns Ar keytab 
+.Xc
+.Oc
+.Op Fl v | Fl -verbose
 .Op Fl -version
-.Op Fl h
-.Op Fl -help
-.Ar command
+.Op Fl h | Fl -help
+.Ar command 
+.Op Ar args
 .Sh DESCRIPTION
 .Nm
 is a program for managing keytabs.
@@ -107,7 +108,13 @@ older than
 Converts the version 4 srvtab in
 .Ar srvtab
 to a version 5 keytab and stores it in
-.Ar keytab .
+.Ar keytab . 
+Identical to:
+.Bd -ragged -offset indent
+.Li ktutil copy 
+.Li krb4: Ns Ar srvtab
+.Ar keytab 
+.Ed
 .It srvcreate
 .It key2srvtab Xo
 .Op Fl s Ar srvtab
@@ -117,6 +124,12 @@ Converts the version 5 keytab in
 .Ar keytab
 to a version 4 srvtab and stores it in
 .Ar srvtab .
+Identical to:
+.Bd -ragged -offset indent
+.Li ktutil copy 
+.Ar keytab 
+.Li krb4: Ns Ar srvtab
+.Ed
 .El
 .Sh SEE ALSO
 .Xr kadmin 8
