@@ -144,6 +144,11 @@ int find_service(char *service)
       }
    }
 
+   /* Check for default vfs service?  Unsure whether to implement this */
+   if (iService < 0)
+   {
+   }
+
    /* just possibly it's a default service? */
    if (iService < 0) 
    {
@@ -340,7 +345,24 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	conn->veto_oplock_list = NULL;
 	string_set(&conn->dirpath,"");
 	string_set(&conn->user,user);
-	
+
+	/* Initialise VFS function pointers */
+
+	if (*lp_vfsobj(SNUM(conn))) {
+
+	    /* Loadable object file */
+
+	    if (vfs_init_custom(conn) < 0) {
+		return NULL;
+	    }
+
+	} else {
+
+	    /* Normal share - initialise with disk access functions */
+
+	    vfs_init_default(conn);
+	}
+
 #ifdef HAVE_GETGRNAM 
 	if (*lp_force_group(snum)) {
 		struct group *gptr;
@@ -492,6 +514,14 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		dbgtext( "(uid=%d, gid=%d) ", (int)conn->uid, (int)conn->gid );
 		dbgtext( "(pid %d)\n", (int)getpid() );
 	}
+
+	/* Invoke make connection hook */
+
+	if (conn->vfs_ops.connect) {
+	    if (conn->vfs_ops.connect(conn, service, user) < 0) {
+		return NULL;
+	    }
+	}
 	
 	return(conn);
 }
@@ -510,6 +540,10 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	DEBUG(IS_IPC(conn)?3:1, ("%s (%s) closed connection to service %s\n",
 				 remote_machine,client_addr(Client),
 				 lp_servicename(SNUM(conn))));
+
+	if (conn->vfs_ops.disconnect != NULL) {
+	  conn->vfs_ops.disconnect(conn, lp_servicename(SNUM(conn)));
+	}
 
 	yield_connection(conn,
 			 lp_servicename(SNUM(conn)),
