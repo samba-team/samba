@@ -329,10 +329,17 @@ void free_getent_state(struct getent_state *state)
 	}
 }
 
-/* Initialise trusted domain info */
+/* Parse winbindd related parameters */
 
 BOOL winbindd_param_init(void)
 {
+	/* We must be in domain mode otherwise there really is no point. */
+
+	if (lp_security() != SEC_DOMAIN) {
+		DEBUG(0, ("must be in security = domain mode to run winbindd\n"));
+		return False;
+	}
+
 	/* Parse winbind uid and winbind_gid parameters */
 
 	if (!lp_winbind_uid(&server_state.uid_low, &server_state.uid_high)) {
