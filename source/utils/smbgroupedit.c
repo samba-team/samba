@@ -97,7 +97,7 @@ int addgroup(char *group, enum SID_NAME_USE sid_type, char *ntgroup, char *ntcom
 /*********************************************************
  Change a group.
 **********************************************************/
-int changegroup(char *sid_string, char *group, enum SID_NAME_USE sid_type, char *groupdesc, char *privilege)
+int changegroup(char *sid_string, char *group, enum SID_NAME_USE sid_type, char *ntgroup, char *groupdesc, char *privilege)
 {
 	DOM_SID sid;
 	GROUP_MAP map;
@@ -130,6 +130,9 @@ int changegroup(char *sid_string, char *group, enum SID_NAME_USE sid_type, char 
 		if (map.sid_name_use==SID_NAME_ALIAS || map.sid_name_use==SID_NAME_DOM_GRP)
 			map.sid_name_use=sid_type;
 
+
+	if (ntgroup!=NULL)
+		fstrcpy(map.nt_name, ntgroup);
 
 	/* Change comment if new one */
 	if (groupdesc!=NULL)
@@ -332,7 +335,7 @@ int main (int argc, char **argv)
 		return deletegroup(group);
 	
 	if (change_group) {		
-		return changegroup(sid, group, sid_type, group_desc, privilege);
+		return changegroup(sid, group, sid_type, ntgroup, group_desc, privilege);
 	}
 	
 	usage();
