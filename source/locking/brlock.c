@@ -233,9 +233,12 @@ void brl_init(int read_only)
 		return;
 	}
 
+#if DONT_DO_THIS
+	/* doing this traversal could kill solaris machines under high load (tridge) */
 	/* delete any dead locks */
 	if (!read_only)
 		tdb_traverse(tdb, delete_fn, &check_self);
+#endif
 }
 
 /****************************************************************************
@@ -249,9 +252,12 @@ void brl_shutdown(int read_only)
 	if (!tdb)
 		return;
 
+#if DONT_DO_THIS
+	/* doing this traversal could kill solaris machines under high load (tridge) */
 	/* delete any dead locks */
 	if (!read_only)
 		tdb_traverse(tdb, delete_fn, &check_self);
+#endif
 
 	tdb_close(tdb);
 }
