@@ -82,6 +82,6 @@ libkrb5_a_SOURCES = \
 	write_message.c
 
 libkrb5_a_LIBADD = ../error/error.o ../error/krb5_err.o \
-	../error/asn1_err.o ../error/hdb_err.o
+	../error/asn1_err.o ../error/hdb_err.o ../error/heim_err.o
 
-man_MANS = krb5.conf.5
+man_MANS = krb5.conf.5 krb5_warn.3 krb5_openlog.3
