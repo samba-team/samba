@@ -49,7 +49,6 @@ static int show_brl;
  void become_root(void) {}
  void unbecome_root(void) {}
 
-
 /* added by OH */
 static void Ucrit_addUsername(const char *username)
 {
