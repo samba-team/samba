@@ -3729,7 +3729,7 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 		No. You can use any type of printer and must use the interfacing protocol supported
 		by the printer. Many networks use LPR/LPD print servers to which are attached
 		PCL printers, InkJet printers, plotters, and so on. At home I use a USB attached
-		Inject printer. Use the appropriate device URI (Universal Resource Interface)
+		Inkjet printer. Use the appropriate device URI (Universal Resource Interface)
 		argument to the <constant>lpadmin -v</constant> option that is right for your
 		printer.
 		</para>
