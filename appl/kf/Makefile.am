@@ -4,7 +4,7 @@ include $(top_srcdir)/Makefile.am.common
 
 noinst_PROGRAMS = kf kfd
 
-man_MANS = kf.1
+man_MANS = kf.1 kfd.8
 
 kf_SOURCES = kf.c kf_locl.h
 
