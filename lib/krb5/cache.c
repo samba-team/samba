@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -356,7 +356,9 @@ krb5_cc_remove_cred(krb5_context context,
 		    krb5_flags which,
 		    krb5_creds *cred)
 {
-    return id->ops->remove_cred(context, id, which, cred);
+    if(id->ops->remove_cred == NULL)
+	return EACCES; /* XXX */
+    return (*id->ops->remove_cred)(context, id, which, cred);
 }
 
 /*
