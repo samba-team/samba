@@ -90,6 +90,8 @@ static int print_subpath_environments( char *key, REGSUBKEY_CTR *subkeys )
 		"Windows NT R4000",
 		"Windows NT Alpha_AXP",
 		"Windows NT PowerPC",
+		"Windows IA64",
+		"Windows x64",
 		NULL };
 	fstring *drivers = NULL;
 	int i, env_index, num_drivers;
