@@ -573,7 +573,7 @@ static BOOL print_domain_groups(void)
 
 static BOOL wbinfo_set_auth_user(char *username)
 {
-	const char *password;
+	char *password;
 	fstring user, domain;
 
 	/* Separate into user and password */
