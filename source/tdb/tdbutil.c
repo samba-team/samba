@@ -724,32 +724,52 @@ size_t tdb_trusted_dom_pass_unpack(char* pack_buf, int bufsize, TRUSTED_DOM_PASS
  **/
 size_t tdb_trustpw_unpack(SAM_TRUST_PASSWD* trustpw, const char* pack_buf, int bufsize)
 {
-	int idx, len = 0, pass_len =0;
+	int idx, len = 0;
+	char *p_buf = NULL, *buf = NULL;
 	struct trust_passwd_data *t;
+	TALLOC_CTX *mem_ctx;
 	
 	if (!trustpw || !pack_buf) return -1;
 	t = &trustpw->private;
+	mem_ctx = trustpw->mem_ctx;
+
+	/* allocating pack buffer to satisfy const argument */
+	p_buf = (char*) talloc(mem_ctx, bufsize);
+	if (!p_buf) return -1;
+
+	memcpy((void*)p_buf, (const void*)pack_buf, bufsize);
+	buf = p_buf;
 	
 	/* packing password type flags */
-	len += tdb_unpack(pack_buf + len, bufsize - len, "w", &t->flags);
+	len += tdb_unpack(p_buf + len, bufsize - len, "w", &t->flags);
 
 	/* unpack unicode domain name and plaintext password */
-	len += tdb_unpack(pack_buf + len, bufsize - len, "d", &t->uni_name_len);
+	len += tdb_unpack(p_buf + len, bufsize - len, "d", &t->uni_name_len);
 	for (idx = 0; idx < 32; idx++)
-		len += tdb_unpack((const char*)(pack_buf + len), bufsize - len,
+		len += tdb_unpack((char*)(p_buf + len), bufsize - len,
 		                  "w", &t->uni_name[idx]);
 
-	/* unpacking password and last modification time */
-	len += tdb_unpack((const char*)(pack_buf + len), bufsize - len, "dPd",
-	                  &pass_len, &t->pass, &t->mod_time);
+	/* unpacking password length */
+	len += tdb_unpack((char*)(p_buf + len), bufsize - len, "d",
+	                  &t->pass.length);
+		
+	/* allocating and unpacking password blob */
+	t->pass = data_blob_talloc(mem_ctx, NULL, t->pass.length);
+        if (t->pass.data)
+		memset((void*)t->pass.data, 0, t->pass.length);
+	
+	for (idx = 0; idx < t->pass.length; idx++)
+		len += tdb_unpack((char*)(p_buf + len), bufsize - len,
+				  "b", &t->pass.data[idx]);
 
-	if (pass_len > FSTRING_LEN) return -1;
-	t->pass[pass_len] = 0;
-	
+	/* last change time */
+	len += tdb_unpack((char*)(p_buf + len), bufsize - len, "d",
+			  &t->mod_time);
+
 	/* unpack sid */
-	len += tdb_sid_unpack((const char*)(pack_buf + len), bufsize - len,
+	len += tdb_sid_unpack((char*)(p_buf + len), bufsize - len,
 	                      &t->domain_sid);
-	
+
 	return len;	
 }
 
@@ -782,8 +802,8 @@ size_t tdb_trustpw_pack(const SAM_TRUST_PASSWD* trustpw, char* pack_buf, int buf
 		len += tdb_pack(pack_buf + len, bufsize - len, "w", t.uni_name[idx]);
 	
 	/* packing password and last modification time */
-	len += tdb_pack(pack_buf + len, bufsize - len, "dPd", strlen(t.pass),
-	                t.pass, t.mod_time);
+	len += tdb_pack(pack_buf + len, bufsize - len, "Bd", t.pass.length,
+	                t.pass.data, t.mod_time);
 
 	/* packing SID structure */
 	len += tdb_sid_pack(pack_buf + len, bufsize - len, &t.domain_sid);
