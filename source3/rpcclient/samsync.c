@@ -324,15 +324,15 @@ static void sam_account_from_delta(SAM_ACCOUNT *account,
 
 static void apply_account_info(SAM_ACCOUNT_INFO *sam_acct_delta)
 {
-	SAM_ACCOUNT sam_acct;
+	SAM_ACCOUNT *sam_acct;
 	BOOL result;
 
-	ZERO_STRUCT(sam_acct);
+	if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_acct))) {
+		return;
+	}
 
-	pdb_init_sam(&sam_acct);
-
-	sam_account_from_delta(&sam_acct, sam_acct_delta);
-	result = pdb_add_sam_account(&sam_acct);
+	sam_account_from_delta(sam_acct, sam_acct_delta);
+	result = pdb_add_sam_account(sam_acct);
 }
 
 /* Apply an array of deltas to the SAM database */
@@ -544,7 +544,7 @@ static void user_callback(poptContext con,
 			  const struct poptOption *opt,
 			  const char *arg, const void *data)
 {
-	char *p, *ch;
+	const char *p, *ch;
 
 	if (!arg)
 		return;
