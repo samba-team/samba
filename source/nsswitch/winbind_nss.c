@@ -32,6 +32,7 @@
 #endif
 
 #define MAX_GETPWENT_USERS 250
+#define MAX_GETGRENT_USERS 250
 
 /* Prototypes from wb_common.c */
 
@@ -53,6 +54,7 @@ void free_response(struct winbindd_response *response);
 /* IRIX version */
 
 static int send_next_request(nsd_file_t *, struct winbindd_request *);
+static int do_list(int state, nsd_file_t *rq);
 
 static nsd_file_t *current_rq = NULL;
 static int current_winbind_xid = 0;
@@ -115,12 +117,6 @@ winbind_xid_lookup(int xid, struct winbindd_request **requestp)
         return result;
 }
 
-int init(void)
-{
-	nsd_logprintf(NSD_LOG_MIN, "entering init (winbind)\n");
-	return(NSD_OK);
-}
-
 static int
 winbind_startnext_timeout(nsd_file_t **rqp, nsd_times_t *to)
 {
@@ -153,6 +149,28 @@ dequeue_request()
 	}
 }
 
+static int
+do_request(nsd_file_t *rq, struct winbindd_request *request)
+{
+	if (winbind_xids == NULL) {
+		/*
+		 * No outstanding requests.
+		 * Send off the request to winbindd
+		 */
+		nsd_logprintf(NSD_LOG_MIN, "lookup (winbind) sending request\n");
+		return(send_next_request(rq, request));
+	} else {
+		/*
+		 * Just queue it up for now - previous callout or timout
+		 * will start it up
+		 */
+		nsd_logprintf(NSD_LOG_MIN,
+			"lookup (winbind): queue request xid = %d\n",
+			next_winbind_xid);
+		return(winbind_xid_new(next_winbind_xid++, rq, request));
+	}
+}
+
 static int 
 winbind_callback(nsd_file_t **rqp, int fd)
 {
@@ -163,6 +181,7 @@ winbind_callback(nsd_file_t **rqp, int fd)
 	NSS_STATUS status;
 	char result[1024];
 	char *members;
+	int i;
 
 	dequeue_request();
 
@@ -180,7 +199,9 @@ winbind_callback(nsd_file_t **rqp, int fd)
 	if (status != NSS_STATUS_SUCCESS) {
 		/* free any extra data area in response structure */
 		free_response(&response);
-		nsd_logprintf(NSD_LOG_MIN, "callback (winbind) returning not found\n");
+		nsd_logprintf(NSD_LOG_MIN, 
+			"callback (winbind) returning not found, status = %d\n",
+			status);
 		rq->f_status = NS_NOTFOUND;
 		return NSD_NEXT;
 	}
@@ -205,10 +226,82 @@ winbind_callback(nsd_file_t **rqp, int fd)
 		snprintf(result,1023,"%s:%s:%d:%s\n",
 			gr->gr_name, gr->gr_passwd, gr->gr_gid, members);
 		break;
+	    case WINBINDD_SETGRENT:
+	    case WINBINDD_SETPWENT:
+		nsd_logprintf(NSD_LOG_MIN, "callback (winbind) - SETPWENT/SETGRENT\n");
+		free_response(&response);
+		return(do_list(1,rq));
+	    case WINBINDD_GETGRENT:
+		nsd_logprintf(NSD_LOG_MIN, 
+			"callback (winbind) - %d GETGRENT responses\n",
+			response.data.num_entries);
+		if (response.data.num_entries) {
+		    gr = (struct winbindd_gr *)response.extra_data;
+		    if (! gr ) {
+			nsd_logprintf(NSD_LOG_MIN, "     no extra_data\n");
+			free_response(&response);
+			return NSD_ERROR;
+		    }
+		    members = (char *)response.extra_data + 
+				(response.data.num_entries * sizeof(struct winbindd_gr));
+		    for (i = 0; i < response.data.num_entries; i++) {
+			snprintf(result,1023,"%s:%s:%d:%s\n",
+				gr->gr_name, gr->gr_passwd, gr->gr_gid, 
+				&members[gr->gr_mem_ofs]);
+			nsd_logprintf(NSD_LOG_MIN, "     GETGRENT %s\n",result);
+			nsd_append_element(rq,NS_SUCCESS,result,strlen(result));
+			gr++;
+		    }
+		}
+		i = response.data.num_entries;
+		free_response(&response);
+		if (i < MAX_GETPWENT_USERS)
+		    return(do_list(2,rq));
+		else
+		    return(do_list(1,rq));
+	    case WINBINDD_GETPWENT:
+		nsd_logprintf(NSD_LOG_MIN, 
+			"callback (winbind) - %d GETPWENT responses\n",
+			response.data.num_entries);
+		if (response.data.num_entries) {
+		    pw = (struct winbindd_pw *)response.extra_data;
+		    if (! pw ) {
+			nsd_logprintf(NSD_LOG_MIN, "     no extra_data\n");
+			free_response(&response);
+			return NSD_ERROR;
+		    }
+		    for (i = 0; i < response.data.num_entries; i++) {
+			snprintf(result,1023,"%s:%s:%d:%d:%s:%s:%s",
+				pw->pw_name,
+				pw->pw_passwd,
+				pw->pw_uid,
+				pw->pw_gid,
+				pw->pw_gecos,
+				pw->pw_dir,
+				pw->pw_shell);
+			nsd_logprintf(NSD_LOG_MIN, "     GETPWENT %s\n",result);
+			nsd_append_element(rq,NS_SUCCESS,result,strlen(result));
+			pw++;
+		    }
+		}
+		i = response.data.num_entries;
+		free_response(&response);
+		if (i < MAX_GETPWENT_USERS)
+		    return(do_list(2,rq));
+		else
+		    return(do_list(1,rq));
+	    case WINBINDD_ENDGRENT:
+	    case WINBINDD_ENDPWENT:
+		nsd_logprintf(NSD_LOG_MIN, "callback (winbind) - ENDPWENT/ENDGRENT\n");
+		nsd_append_element(rq,NS_SUCCESS,"\n",1);
+		free_response(&response);
+		return NSD_NEXT;
 	    default:
+		free_response(&response);
 		nsd_logprintf(NSD_LOG_MIN, "callback (winbind) - no valid command\n");
 		return NSD_NEXT;
 	}
+	nsd_logprintf(NSD_LOG_MIN, "callback (winbind) %s\n", result);
 	/* free any extra data area in response structure */
 	free_response(&response);
 	nsd_set_result(rq,NS_SUCCESS,result,strlen(result),VOLATILE);
@@ -266,6 +359,12 @@ send_next_request(nsd_file_t *rq, struct winbindd_request *request)
 	return NSD_CONTINUE;
 }
 
+int init(void)
+{
+	nsd_logprintf(NSD_LOG_MIN, "entering init (winbind)\n");
+	return(NSD_OK);
+}
+
 int lookup(nsd_file_t *rq)
 {
 	char *map;
@@ -284,6 +383,8 @@ int lookup(nsd_file_t *rq)
 		return NSD_ERROR;
 	}
 
+	nsd_logprintf(NSD_LOG_MIN, "lookup (winbind %s)\n",map);
+
 	request = (struct winbindd_request *)nsd_calloc(1,sizeof(struct winbindd_request));
 	if (! request) {
 		nsd_logprintf(NSD_LOG_RESOURCE,
@@ -292,52 +393,117 @@ int lookup(nsd_file_t *rq)
 	}
 
 	if (strcasecmp(map,"passwd.byuid") == 0) {
-	    nsd_logprintf(NSD_LOG_MIN, "lookup (winbind %s)\n",map);
 	    request->data.uid = atoi(key);
 	    rq->f_cmd_data = (void *)WINBINDD_GETPWNAM_FROM_UID;
 	} else if (strcasecmp(map,"passwd.byname") == 0) {
-	    nsd_logprintf(NSD_LOG_MIN, "lookup (winbind %s)\n",map);
 	    strncpy(request->data.username, key, 
 		sizeof(request->data.username) - 1);
 	    request->data.username[sizeof(request->data.username) - 1] = '\0';
 	    rq->f_cmd_data = (void *)WINBINDD_GETPWNAM_FROM_USER; 
 	} else if (strcasecmp(map,"group.byname") == 0) {
-	    nsd_logprintf(NSD_LOG_MIN, "lookup (winbind %s)\n",map);
 	    strncpy(request->data.groupname, key, 
 		sizeof(request->data.groupname) - 1);
 	    request->data.groupname[sizeof(request->data.groupname) - 1] = '\0';
 	    rq->f_cmd_data = (void *)WINBINDD_GETGRNAM_FROM_GROUP; 
 	} else if (strcasecmp(map,"group.bygid") == 0) {
-	    nsd_logprintf(NSD_LOG_MIN, "lookup (winbind %s)\n",map);
 	    request->data.gid = atoi(key);
 	    rq->f_cmd_data = (void *)WINBINDD_GETGRNAM_FROM_GID;
 	} else {
 		/*
 		 * Don't understand this map - just return not found
 		 */
-		nsd_logprintf(NSD_LOG_MIN, "lookup (winbind) unknown table %s\n",map);
+		nsd_logprintf(NSD_LOG_MIN, "lookup (winbind) unknown table\n");
 		free(request);
 		rq->f_status = NS_NOTFOUND;
 		return NSD_NEXT;
 	}
 
-	if (winbind_xids == NULL) {
-		/*
-		 * No outstanding requests.
-		 * Send off the request to winbindd
-		 */
-		nsd_logprintf(NSD_LOG_MIN, "lookup (winbind) sending request\n");
-		return(send_next_request(rq, request));
+	return(do_request(rq, request));
+}
+
+int list(nsd_file_t *rq)
+{
+	char *map;
+
+	nsd_logprintf(NSD_LOG_MIN, "entering list (winbind)\n");
+	if (! rq)
+		return NSD_ERROR;
+
+	map = nsd_attr_fetch_string(rq->f_attrs, "table", (char*)0);
+	if (! map ) {
+		nsd_logprintf(NSD_LOG_MIN, "list (winbind) table not defined\n");
+		rq->f_status = NS_BADREQ;
+		return NSD_ERROR;
+	}
+
+	nsd_logprintf(NSD_LOG_MIN, "list (winbind %s)\n",map);
+
+	return (do_list(0,rq));
+}
+
+static int
+do_list(int state, nsd_file_t *rq)
+{
+	char *map;
+	struct winbindd_request *request;
+
+	nsd_logprintf(NSD_LOG_MIN, "entering do_list (winbind) state = %d\n",state);
+
+	map = nsd_attr_fetch_string(rq->f_attrs, "table", (char*)0);
+	request = (struct winbindd_request *)nsd_calloc(1,sizeof(struct winbindd_request));
+	if (! request) {
+		nsd_logprintf(NSD_LOG_RESOURCE,
+			"do_list (winbind): failed malloc\n");
+		return NSD_ERROR;
+	}
+
+	if (strcasecmp(map,"passwd.byname") == 0) {
+	    switch (state) {
+		case 0:
+		    rq->f_cmd_data = (void *)WINBINDD_SETPWENT;
+		    break;
+		case 1:
+		    request->data.num_entries = MAX_GETPWENT_USERS;
+		    rq->f_cmd_data = (void *)WINBINDD_GETPWENT;
+		    break;
+		case 2:
+		    rq->f_cmd_data = (void *)WINBINDD_ENDPWENT;
+		    break;
+		default:
+		    nsd_logprintf(NSD_LOG_MIN, "do_list (winbind) unknown state\n");
+		    free(request);
+		    rq->f_status = NS_NOTFOUND;
+		    return NSD_NEXT;
+	    }
+	} else if (strcasecmp(map,"group.byname") == 0) {
+	    switch (state) {
+		case 0:
+		    rq->f_cmd_data = (void *)WINBINDD_SETGRENT;
+		    break;
+		case 1:
+		    request->data.num_entries = MAX_GETGRENT_USERS;
+		    rq->f_cmd_data = (void *)WINBINDD_GETGRENT;
+		    break;
+		case 2:
+		    rq->f_cmd_data = (void *)WINBINDD_ENDGRENT;
+		    break;
+		default:
+		    nsd_logprintf(NSD_LOG_MIN, "do_list (winbind) unknown state\n");
+		    free(request);
+		    rq->f_status = NS_NOTFOUND;
+		    return NSD_NEXT;
+	    }
 	} else {
 		/*
-		 * Just queue it up for now - previous callout or timout
-		 * will start it up
+		 * Don't understand this map - just return not found
 		 */
-		nsd_logprintf(NSD_LOG_MIN,
-			"lookup (winbind): queue request xid = %d\n",
-			next_winbind_xid);
-		return(winbind_xid_new(next_winbind_xid++, rq, request));
+		nsd_logprintf(NSD_LOG_MIN, "do_list (winbind) unknown table\n");
+		free(request);
+		rq->f_status = NS_NOTFOUND;
+		return NSD_NEXT;
 	}
+
+	return(do_request(rq, request));
 }
 
 #else
@@ -863,8 +1029,6 @@ _nss_winbind_endgrent(void)
 }
 
 /* Get next entry from ntdom group database */
-
-#define MAX_GETGRENT_USERS 250
 
 NSS_STATUS
 _nss_winbind_getgrent_r(struct group *result,
