@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -88,6 +88,11 @@ krb5_mk_req_internal(krb5_context context,
   krb5_free_keyblock(context, ac->keyblock);
   krb5_copy_keyblock(context, &in_creds->session, &ac->keyblock);
   
+  /* it's unclear what type of checksum we can use.  try the best one, except:
+   * a) if it's configured differently for the current realm, or
+   * b) if the session key is des-cbc-crc
+   */
+
   if (in_data) {
       if(ac->keyblock->keytype == ETYPE_DES_CBC_CRC) {
 	  /* this is to make DCE secd (and older MIT kdcs?) happy */
