@@ -1605,9 +1605,8 @@ for i in $LOOK_DIRS ; do
     save_CPPFLAGS=$CPPFLAGS
     CPPFLAGS="$CPPFLAGS -I$i/include"
 dnl This is here to handle -withval stuff for --with-libiconv
-    if test x"$ICONV_PATH_SPEC" = "xyes" ; then
-       LDFLAGS="-L$i/lib"
-    fi
+dnl Perhaps we should always add a -L
+    LDFLAGS="$LDFLAGS -L$i/lib"
     LIBS=
     export LDFLAGS LIBS CPPFLAGS
 dnl Try to find iconv(3)
@@ -1628,6 +1627,9 @@ dnl there might be a working iconv further down the list of LOOK_DIRS
         ic_save_LIBS="$LIBS"
         if test x"$ICONV_PATH_SPEC" = "xyes" ; then
            LIBS="$LIBS -L$ICONV_LOCATION/lib"
+        fi
+        if test x"$jm_cv_lib_iconv" != x; then
+           LIBS="$LIBS -l$jm_cv_lib_iconv"
         fi
 dnl        AC_CACHE_CHECK([for working iconv],samba_cv_HAVE_NATIVE_ICONV,[
 	default_dos_charset=no
@@ -1682,6 +1684,11 @@ dnl ])
         LIBS="$ic_save_LIBS"
         if test x"$samba_cv_HAVE_NATIVE_ICONV" = x"yes"; then
   	   CPPFLAGS=$save_CPPFLAGS
+	   LDFLAGS=$save_LDFLAGS
+	   LIBS=$save_LIBS
+           if test x"$jm_cv_lib_iconv" != x; then
+              LIBS="$LIBS -l$jm_cv_lib_iconv"
+           fi
 	   CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
 	   export CPPFLAGS
            AC_DEFINE(HAVE_NATIVE_ICONV,1,[Whether to use native iconv])
