@@ -69,6 +69,7 @@ while (<CONFIGFILE>) {
 		($param, $value) = split (/=/, $_);
 		$param =~ s/./\l$&/g;
 		$param =~ s/\s+//g;
+		$value =~ s/^\s+//;
 		
 		$config{$section}{$param} = $value;
 		
