@@ -42,6 +42,8 @@ int net_ads_usage(int argc, const char **argv)
 "\n\tshows some info on the server\n"\
 "\nnet ads status"\
 "\n\tdump the machine account details to stdout\n"
+"\nnet ads lookup"\
+"\n\tperform a CLDAP search on the server\n"
 "\nnet ads password <username@realm> -Uadmin_username@realm%%admin_pass"\
 "\n\tchange a user's password using an admin account"\
 "\n\t(note: use realm in UPPERCASE)\n"\
