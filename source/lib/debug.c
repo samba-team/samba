@@ -126,16 +126,15 @@ static size_t     format_pos     = 0;
  */
 void sig_usr2( int sig )
   {
-  BlockSignals( True, SIGUSR2 );
-
   DEBUGLEVEL--;
   if( DEBUGLEVEL < 0 )
     DEBUGLEVEL = 0;
 
   DEBUG( 0, ( "Got SIGUSR2; set debug level to %d.\n", DEBUGLEVEL ) );
 
-  BlockSignals( False, SIGUSR2 );
+#if !defined(HAVE_SIGACTION)
   CatchSignal( SIGUSR2, SIGNAL_CAST sig_usr2 );
+#endif
 
   } /* sig_usr2 */
 #endif /* SIGUSR2 */
@@ -147,7 +146,6 @@ void sig_usr2( int sig )
  */
 void sig_usr1( int sig )
   {
-  BlockSignals( True, SIGUSR1 );
 
   DEBUGLEVEL++;
 
@@ -156,8 +154,9 @@ void sig_usr1( int sig )
 
   DEBUG( 0, ( "Got SIGUSR1; set debug level to %d.\n", DEBUGLEVEL ) );
 
-  BlockSignals( False, SIGUSR1 );
+#if !defined(HAVE_SIGACTION)
   CatchSignal( SIGUSR1, SIGNAL_CAST sig_usr1 );
+#endif
 
   } /* sig_usr1 */
 #endif /* SIGUSR1 */
@@ -253,7 +252,7 @@ static void check_log_size( void )
   int         maxlog;
   SMB_STRUCT_STAT st;
 
-  if( debug_count++ < 100 || getuid() != 0 )
+  if( debug_count++ < 100 || geteuid() != 0 )
     return;
 
   maxlog = lp_max_log_size() * 1024;
