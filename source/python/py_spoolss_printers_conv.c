@@ -224,8 +224,12 @@ BOOL py_from_PRINTER_INFO_2(PyObject **dict, PRINTER_INFO_2 *info)
 
 	*dict = from_struct(info, py_PRINTER_INFO_2);
 
-	if (py_from_SECDESC(&obj, info->secdesc))
-		PyDict_SetItemString(*dict, "security_descriptor", obj);
+	/* The security descriptor could be NULL */
+
+	if (info->secdesc) {
+		if (py_from_SECDESC(&obj, info->secdesc))
+			PyDict_SetItemString(*dict, "security_descriptor", obj);
+	}
 
 	/* Bong!  The devmode could be NULL */
 
