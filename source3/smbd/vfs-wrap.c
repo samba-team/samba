@@ -470,10 +470,10 @@ int vfswrap_ftruncate(files_struct *fsp, int fd, SMB_OFF_T len)
 	}
   done:
 
-#endif
-
     END_PROFILE(syscall_ftruncate);
     return result;
+#endif
+
 }
 
 BOOL vfswrap_lock(files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
