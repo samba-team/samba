@@ -25,15 +25,10 @@
 #include "rpc_server/spoolss/dcesrv_spoolss.h"
 
 
-/* 
-  spoolss_EnumPrinters 
-*/
-static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct spoolss_EnumPrinters *r)
+static WERROR spoolss_EnumPrinters1(TALLOC_CTX *mem_ctx, void *spoolss_ctx,
+				    struct ndr_push *ndr, uint32_t *count)
 {
-	struct ndr_push *buf;
 	struct spoolss_PrinterInfo1 info[2];
-	WERROR result;
 
 	info[0].flags = 0x80;
 	info[0].name = "p";
@@ -45,14 +40,46 @@ static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CT
 	info[1].description = "spottyfoot";
 	info[1].comment = "the doggy";
 
-	buf = ndr_push_init();
-	
-	ndr_push_array(buf, NDR_SCALARS|NDR_BUFFERS, info,
+	ndr_push_array(ndr, NDR_SCALARS|NDR_BUFFERS, info,
 		       sizeof(struct spoolss_PrinterInfo1), 2,
-		        (ndr_push_const_fn_t)ndr_push_spoolss_PrinterInfo1);
+		       (ndr_push_flags_fn_t)ndr_push_spoolss_PrinterInfo1);
 
-	if (*r->in.buf_size < buf->offset) {
-		*r->out.buf_size = buf->offset;
+	*count = 2;
+
+	return WERR_OK;
+}
+
+/* 
+  spoolss_EnumPrinters 
+*/
+static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_EnumPrinters *r)
+{
+	struct ndr_push *ndr;
+	void *spoolss_ctx;
+	WERROR result;
+
+	spoolss_ctx = spoolssdb_connect();
+	if (spoolss_ctx == NULL)
+		return WERR_NOMEM;
+
+	ndr = ndr_push_init();
+
+	switch(r->in.level) {
+	case 1:
+		result = spoolss_EnumPrinters1(
+			mem_ctx, spoolss_ctx, ndr, &r->out.count);
+		break;
+	default:
+		r->out.buffer = NULL;
+		*r->out.buf_size = 0;
+		r->out.count = 0;
+		result = WERR_INVALID_PARAM;
+		goto done;
+	}
+
+	if (*r->in.buf_size < ndr->offset) {
+		*r->out.buf_size = ndr->offset;
 		result = WERR_INSUFFICIENT_BUFFER;
 		goto done;
 	}
@@ -64,15 +91,12 @@ static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CT
 		goto done;
 	}
 
-	*r->out.buffer = data_blob_talloc(mem_ctx, buf->data, buf->offset);
-
-	r->out.count = 2;
-	*r->out.buf_size = buf->offset;
-
-	result = WERR_OK;
+	*r->out.buffer = data_blob_talloc(mem_ctx, ndr->data, ndr->offset);
+	*r->out.buf_size = ndr->offset;
 
  done:
-	ndr_push_free(buf);
+	ndr_push_free(ndr);
+	spoolssdb_close(spoolss_ctx);
 
 	return result;
 }
