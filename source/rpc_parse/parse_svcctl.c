@@ -1,10 +1,7 @@
 /* 
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1997,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997,
- *  Copyright (C) Gerald (Jerry) Carter             2004.
+ *  Copyright (C) Gerald (Jerry) Carter             2005.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -61,7 +58,7 @@ BOOL svcctl_io_r_close_service(const char *desc, SVCCTL_R_CLOSE_SERVICE *r_u, pr
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_ntstatus("status", ps, depth, &r_u->status))
+	if(!prs_werror("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -119,7 +116,7 @@ BOOL svcctl_io_r_open_scmanager(const char *desc, SVCCTL_R_OPEN_SCMANAGER *r_u, 
 	if(!smb_io_pol_hnd("scm_pol", &r_u->handle, ps, depth))
 		return False;
 
-	if(!prs_ntstatus("status", ps, depth, &r_u->status))
+	if(!prs_werror("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -189,7 +186,7 @@ BOOL svcctl_io_r_get_display_name(const char *desc, SVCCTL_R_GET_DISPLAY_NAME *r
 	if(!prs_uint32("display_name_len", ps, depth, &r_u->display_name_len))
 		return False;
 
-	if(!prs_ntstatus("status", ps, depth, &r_u->status))
+	if(!prs_werror("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -239,13 +236,83 @@ BOOL svcctl_io_r_open_service(const char *desc, SVCCTL_R_OPEN_SERVICE *r_u, prs_
 	if(!prs_align(ps))
 		return False;
 
-	
 	if(!smb_io_pol_hnd("service_pol", &r_u->handle, ps, depth))
 		return False;
 
-	if(!prs_ntstatus("status", ps, depth, &r_u->status))
+	if(!prs_werror("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
 }
 
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_q_query_status(const char *desc, SVCCTL_Q_QUERY_STATUS *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "svcctl_io_q_query_status");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("service_pol", &q_u->handle, ps, depth))
+		return False;
+	
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/
+
+static BOOL svcctl_io_service_status( const char *desc, SERVICE_STATUS *status, prs_struct *ps, int depth )
+{
+	if(!prs_uint32("type", ps, depth, &status->type))
+		return False;
+
+	if(!prs_uint32("state", ps, depth, &status->state))
+		return False;
+
+	if(!prs_uint32("controls_accepted", ps, depth, &status->controls_accepted))
+		return False;
+
+	if(!prs_uint32("win32_exit_code", ps, depth, &status->win32_exit_code))
+		return False;
+
+	if(!prs_uint32("service_exit_code", ps, depth, &status->service_exit_code))
+		return False;
+
+	if(!prs_uint32("check_point", ps, depth, &status->check_point))
+		return False;
+
+	if(!prs_uint32("wait_hint", ps, depth, &status->wait_hint))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_r_query_status(const char *desc, SVCCTL_R_QUERY_STATUS *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "svcctl_io_r_query_status");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!svcctl_io_service_status("service_status", &r_u->svc_status, ps, depth))
+		return False;
+
+	if(!prs_werror("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}

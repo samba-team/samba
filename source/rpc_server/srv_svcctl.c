@@ -1,10 +1,7 @@
 /* 
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1997,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997,
- *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2003.
+ *  Copyright (C) Gerald Carter                   2005.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -122,6 +119,55 @@ static BOOL api_svcctl_get_display_name(pipes_struct *p)
 	return True;
 }
 
+/*******************************************************************
+ ********************************************************************/
+
+static BOOL api_svcctl_query_status(pipes_struct *p)
+{
+	SVCCTL_Q_QUERY_STATUS q_u;
+	SVCCTL_R_QUERY_STATUS r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!svcctl_io_q_query_status("", &q_u, data, 0))
+		return False;
+
+	r_u.status = _svcctl_query_status(p, &q_u, &r_u);
+
+	if(!svcctl_io_r_query_status("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+
+#if 0
+/*******************************************************************
+ ********************************************************************/
+
+static BOOL api_svcctl_start_service(pipes_struct *p)
+{
+	SVCCTL_Q_START_SERVICE q_u;
+	SVCCTL_R_START_SERVICE r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!svcctl_io_q_start_service("", &q_u, data, 0))
+		return False;
+
+	r_u.status = _svcctl_start_service(p, &q_u, &r_u);
+
+	if(!svcctl_io_r_start_service("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+#endif
 
 /*******************************************************************
  \PIPE\svcctl commands
@@ -132,7 +178,11 @@ static struct api_struct api_svcctl_cmds[] =
       { "SVCCTL_CLOSE_SERVICE"      , SVCCTL_CLOSE_SERVICE       , api_svcctl_close_service },
       { "SVCCTL_OPEN_SCMANAGER"     , SVCCTL_OPEN_SCMANAGER      , api_svcctl_open_scmanager },
       { "SVCCTL_OPEN_SERVICE"       , SVCCTL_OPEN_SERVICE        , api_svcctl_open_service },
-      { "SVCCTL_GET_DISPLAY_NAME"   , SVCCTL_GET_DISPLAY_NAME    , api_svcctl_get_display_name }
+      { "SVCCTL_GET_DISPLAY_NAME"   , SVCCTL_GET_DISPLAY_NAME    , api_svcctl_get_display_name },
+#if 0
+      { "SVCCTL_START_SERVICE"      , SVCCTL_START_SERVICE       , api_svcctl_start_service }
+#endif
+      { "SVCCTL_QUERY_STATUS"       , SVCCTL_QUERY_STATUS        , api_svcctl_query_status }
 };
 
 void svcctl_get_pipe_fns( struct api_struct **fns, int *n_fns )

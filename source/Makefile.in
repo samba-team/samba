@@ -417,7 +417,7 @@ PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/print_aix.o \
 
 PRINTBASE_OBJ = printing/notify.o printing/printing_db.o
 
-PRINTBACKEND_OBJ = printing/printing.o printing/nt_printing.o $(PRINTBASE_OBJ) printing/ntprint_ldap.o
+PRINTBACKEND_OBJ = printing/printing.o printing/nt_printing.o $(PRINTBASE_OBJ) 
 
 SMBD_OBJ = $(SMBD_OBJ_BASE) $(SMBD_OBJ_MAIN)
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \

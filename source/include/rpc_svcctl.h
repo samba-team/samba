@@ -26,6 +26,7 @@
 /* svcctl pipe */
 
 #define SVCCTL_CLOSE_SERVICE		0x00
+#define SVCCTL_QUERY_STATUS		0x06
 #define SVCCTL_OPEN_SCMANAGER		0x0f
 #define SVCCTL_OPEN_SERVICE		0x10
 #define SVCCTL_START_SERVICE		0x13
@@ -34,15 +35,15 @@
 
 /* rpc structures */
 
-typedef struct _svcctl_q_close_svc {
+typedef struct {
 	POLICY_HND handle;
 } SVCCTL_Q_CLOSE_SERVICE;
 
-typedef struct _svcctl_r_close_svc {
-	NTSTATUS status;
+typedef struct {
+	WERROR status;
 } SVCCTL_R_CLOSE_SERVICE;
 
-typedef struct _svcctl_q_open_scmanager {
+typedef struct {
 	uint32 ptr_srv;
 	UNISTR2 servername;
 	uint32 ptr_db;
@@ -50,34 +51,62 @@ typedef struct _svcctl_q_open_scmanager {
 	uint32 access_mask;
 } SVCCTL_Q_OPEN_SCMANAGER;
 
-typedef struct _svcctl_r_open_scmanager {
+typedef struct {
 	POLICY_HND handle;
-	NTSTATUS status;
+	WERROR status;
 } SVCCTL_R_OPEN_SCMANAGER;
 
-typedef struct _svcctl_q_get_display_name {
+typedef struct {
 	POLICY_HND handle;
 	UNISTR2 servicename;
 	uint32  display_name_len;
 } SVCCTL_Q_GET_DISPLAY_NAME;
 
-typedef struct _svcctl_r_get_display_name {
+typedef struct {
 	UNISTR2 displayname;
 	uint32 display_name_len;
-	NTSTATUS status;
+	WERROR status;
 } SVCCTL_R_GET_DISPLAY_NAME;
 
-typedef struct _svcctl_q_open_service {
+typedef struct {
 	POLICY_HND handle;
 	UNISTR2 servicename;
 	uint32 access_mask;
 } SVCCTL_Q_OPEN_SERVICE;
 
-typedef struct _svcctl_r_open_service {
+typedef struct {
 	POLICY_HND handle;
-	NTSTATUS status;
+	WERROR status;
 } SVCCTL_R_OPEN_SERVICE;
 
+typedef struct {
+	POLICY_HND handle;
+	uint32 parmcount;
+	UNISTR2_ARRAY parameters;
+} SVCCTL_Q_START_SERVICE;
+
+typedef struct {
+	WERROR status;
+} SVCCTL_R_START_SERVICE;
+
+typedef struct {
+	uint32 type;
+	uint32 state;
+	uint32 controls_accepted;
+	uint32 win32_exit_code;
+	uint32 service_exit_code;
+	uint32 check_point;
+	uint32 wait_hint;
+} SERVICE_STATUS;
+
+typedef struct {
+	POLICY_HND handle;
+} SVCCTL_Q_QUERY_STATUS;
+
+typedef struct {
+	SERVICE_STATUS svc_status;
+	WERROR status;
+} SVCCTL_R_QUERY_STATUS;
 
 #endif /* _RPC_SVCCTL_H */
 
