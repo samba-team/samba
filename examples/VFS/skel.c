@@ -104,12 +104,12 @@ static int skel_close(struct files_struct *fsp, int fd)
 	return default_vfs_ops.close(fsp, fd);
 }
 
-static ssize_t skel_read(struct files_struct *fsp, int fd, char *data, size_t n)
+static ssize_t skel_read(struct files_struct *fsp, int fd, void *data, size_t n)
 {
 	return default_vfs_ops.read(fsp, fd, data, n);
 }
 
-static ssize_t skel_write(struct files_struct *fsp, int fd, char *data, size_t n)
+static ssize_t skel_write(struct files_struct *fsp, int fd, const void *data, size_t n)
 {
 	return default_vfs_ops.write(fsp, fd, data, n);
 }
@@ -202,6 +202,21 @@ static BOOL skel_symlink(struct connection_struct *conn, const char *oldpath, co
 static BOOL skel_readlink(struct connection_struct *conn, const char *path, char *buf, size_t bufsiz)
 {
 	return default_vfs_ops.readlink(conn, path, buf, bufsiz);
+}
+
+static int skel_link(struct connection_struct *conn, const char *oldpath, const char *newpath)
+{
+	return default_vfs_ops.link(conn, oldpath, newpath);
+}
+
+static int skel_mknod(struct connection_struct *conn, const char *path, mode_t mode, SMB_DEV_T dev)
+{
+	return default_vfs_ops.mknod(conn, path, mode, dev);
+}
+
+static char *skel_realpath(struct connection_struct *conn, const char *path, char *resolved_path)
+{
+	return default_vfs_ops.realpath(conn, path, resolved_path);
 }
 
 static size_t skel_fget_nt_acl(struct files_struct *fsp, int fd, struct security_descriptor_info **ppdesc)
@@ -388,6 +403,9 @@ struct vfs_ops skel_ops = {
 	skel_lock,
 	skel_symlink,
 	skel_readlink,
+	skel_link,
+	skel_mknod,
+	skel_realpath,
 
 	/* NT File ACL operations */
 
