@@ -3507,8 +3507,8 @@ static void set_server_role(void)
 		case SEC_DOMAIN:
 		case SEC_ADS:
 			if (lp_domain_logons()) {
-				server_role = ROLE_DOMAIN_BDC;
-				DEBUG(10,("set_server_role:ROLE_DOMAIN_BDC\n"));
+				server_role = ROLE_DOMAIN_PDC;
+				DEBUG(10,("set_server_role:ROLE_DOMAIN_PDC\n"));
 				break;
 			}
 			server_role = ROLE_DOMAIN_MEMBER;
