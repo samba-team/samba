@@ -8261,29 +8261,8 @@ if test $ac_cv_prog_cc_fpic = yes; then
     PICFLAG="-fpic";
 fi
 if test x$PICFLAG = x; then
-  echo $ac_n "checking whether ${CC-cc} accepts -Kpic""... $ac_c" 1>&6
-echo "configure:8266: checking whether ${CC-cc} accepts -Kpic" >&5
-if eval "test \"`echo '$''{'ac_cv_prog_cc_Kpic'+set}'`\" = set"; then
-  echo $ac_n "(cached) $ac_c" 1>&6
-else
-  echo 'void f(){}' > conftest.c
-if test -z "`${CC-cc} -Kpic -c conftest.c 2>&1`"; then
-  ac_cv_prog_cc_Kpic=yes
-else
-  ac_cv_prog_cc_Kpic=no
-fi
-rm -f conftest*
-
-fi
-
-echo "$ac_t""$ac_cv_prog_cc_Kpic" 1>&6
-  if test $ac_cv_prog_cc_Kpic = yes; then
-    PICFLAG="-Kpic";
-  fi
-fi
-if test x$PICFLAG = x; then
   echo $ac_n "checking whether ${CC-cc} accepts -KPIC""... $ac_c" 1>&6
-echo "configure:8287: checking whether ${CC-cc} accepts -KPIC" >&5
+echo "configure:8266: checking whether ${CC-cc} accepts -KPIC" >&5
 if eval "test \"`echo '$''{'ac_cv_prog_cc_KPIC'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -8300,6 +8279,27 @@ fi
 echo "$ac_t""$ac_cv_prog_cc_KPIC" 1>&6
   if test $ac_cv_prog_cc_KPIC = yes; then
     PICFLAG="-KPIC";
+  fi
+fi
+if test x$PICFLAG = x; then
+  echo $ac_n "checking whether ${CC-cc} accepts -Kpic""... $ac_c" 1>&6
+echo "configure:8287: checking whether ${CC-cc} accepts -Kpic" >&5
+if eval "test \"`echo '$''{'ac_cv_prog_cc_Kpic'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  echo 'void f(){}' > conftest.c
+if test -z "`${CC-cc} -Kpic -c conftest.c 2>&1`"; then
+  ac_cv_prog_cc_Kpic=yes
+else
+  ac_cv_prog_cc_Kpic=no
+fi
+rm -f conftest*
+
+fi
+
+echo "$ac_t""$ac_cv_prog_cc_Kpic" 1>&6
+  if test $ac_cv_prog_cc_Kpic = yes; then
+    PICFLAG="-Kpic";
   fi
 fi
 
