@@ -636,7 +636,7 @@ krb5_425_conv_principal_ext(krb5_context context,
     const char *p;
     krb5_error_code ret;
     krb5_principal pr;
-    char host[128];
+    char host[MAXHOSTNAMELEN];
 
     /* do the following: if the name is found in the
        `v4_name_convert:host' part, is is assumed to be a `host' type
@@ -931,7 +931,7 @@ krb5_sname_to_principal (krb5_context context,
 			 krb5_principal *ret_princ)
 {
     krb5_error_code ret;
-    char localhost[128];
+    char localhost[MAXHOSTNAMELEN];
     char **realms, *host = NULL;
 	
     if(type != KRB5_NT_SRV_HST && type != KRB5_NT_UNKNOWN)
