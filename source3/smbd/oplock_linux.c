@@ -27,9 +27,9 @@
 
 extern int DEBUGLEVEL;
 
-static unsigned signals_received;
-static unsigned signals_processed;
-static int fd_pending; /* the fd of the current pending signal */
+static VOLATILE SIG_ATOMIC_T signals_received;
+static VOLATILE SIG_ATOMIC_T signals_processed;
+static VOLATILE SIG_ATOMIC_T fd_pending; /* the fd of the current pending signal */
 
 #ifndef F_SETLEASE
 #define F_SETLEASE	1024
@@ -57,7 +57,7 @@ handle a LEASE signal, incrementing the signals_received and blocking the signal
 static void signal_handler(int signal, siginfo_t *info, void *unused)
 {
 	BlockSignals(True, signal);
-	fd_pending = info->si_fd;
+	fd_pending = (SIG_ATOMIC_T)info->si_fd;
 	signals_received++;
 	sys_select_signal();
 }
@@ -133,8 +133,8 @@ static BOOL linux_oplock_receive_message(fd_set *fds, char *buffer, int buffer_l
 
 	if (signals_received == signals_processed) return False;
 
-	if (sys_fstat(fd_pending,&sbuf) == -1) {
-		DEBUG(0,("Invalid file descriptor %d in kernel oplock break!\n", fd_pending));
+	if (sys_fstat((int)fd_pending,&sbuf) == -1) {
+		DEBUG(0,("Invalid file descriptor %d in kernel oplock break!\n", (int)fd_pending));
 		ret = False;
 		goto out;
 	}
@@ -162,7 +162,7 @@ dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode ));
 
  out:
 	/* now we can receive more signals */
-	fd_pending = -1;
+	fd_pending = (SIG_ATOMIC_T)-1;
 	signals_processed++;
 	BlockSignals(False, RT_SIGNAL_LEASE);
      

@@ -30,7 +30,7 @@
 */
 static int initialised;
 static int select_pipe[2];
-static unsigned pipe_written, pipe_read;
+static VOLATILE SIG_ATOMIC_T pipe_written, pipe_read;
 
 
 /*******************************************************************
