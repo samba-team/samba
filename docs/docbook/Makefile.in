@@ -15,6 +15,7 @@ NSGMLS = @NSGMLS@
 ONSGMLS=@ONSGMLS@
 SGMLSPL=@SGMLSPL@
 HTMLDOC=@HTMLDOC@
+PERL=@PERL@
 #CATALOG = @CATALOG@
 MANDIR=../manpages
 HTMLDIR=../htmldocs
@@ -51,8 +52,10 @@ SGMLMANSRC=manpages/findsmb.1.sgml manpages/smbclient.1.sgml \
 	manpages/wbinfo.1.sgml manpages/smbcacls.1.sgml \
 	manpages/smbsh.1.sgml manpages/winbindd.8.sgml
 
-HOWTOSRC=howto/DOMAIN_MEMBER.sgml howto/NT_Security.sgml \
-	howto/samba-pdc-howto.sgml howto/msdfs_setup.sgml
+HOWTOSRC=projdoc/DOMAIN_MEMBER.sgml projdoc/NT_Security.sgml \
+	projdoc/msdfs_setup.sgml projdoc/printer_driver2.sgml \
+	projdoc/UNIX_INSTALL.sgml
+
 FAQSRC=faq/samba-pdc-faq.sgml
 
 
@@ -80,10 +83,11 @@ HOWTO: $(HOWTOSRC)
 	@(for i in $?; do \
 	   htmlfile=`basename $$i | sed "s/\.sgml/\.html/g"`; \
 	   echo "Making $$htmlfile"; \
+	   cat $$i | $(PERL) projdoc/make-article.pl > /tmp/`basename $$i`; \
 	   $(JADE) -t sgml -V nochunks -d  $(SGML_SHARE)/dsssl/docbook/html/docbook.dsl \
-	      -f /tmp/jade.log $$i > ../htmldocs/$$htmlfile; \
+	      -f /tmp/jade.log /tmp/`basename $$i` > ../htmldocs/$$htmlfile; \
 	   cat /tmp/jade.log | grep -v DTDDECL; \
-	   /bin/rm -f /tmp/jade.log; \
+	   /bin/rm -f /tmp/jade.log /tmp/`basename $$i`; \
 	done)
 
 
@@ -104,6 +108,8 @@ proj-doc:
 		mv $$i.htm $$i.html; \
           done; \
 	  /bin/mv -f *html ../../htmldocs/Samba-HOWTO-Collections/)
+
+	
 
 
 

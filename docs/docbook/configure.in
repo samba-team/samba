@@ -11,6 +11,7 @@ AC_PATH_PROG(NSGMLS, nsgmls)
 AC_PATH_PROG(HTMLDOC, htmldoc)
 AC_PATH_PROG(ONSGMLS, onsgmls)
 AC_PATH_PROG(SGMLSPL, sgmlspl)
+AC_PATH_PROG(PERL, perl)
 
 dnl ----------------------------------------------------------------
 dnl --with-sgml-share
