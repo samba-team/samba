@@ -616,6 +616,8 @@ extern int errno;
 #include "messages.h"
 #include "util_list.h"
 
+#include "smb_readline.h" /* SSS: samba readline support */
+
 #ifndef UBI_BINTREE_H
 #include "ubi_Cache.h"
 #endif /* UBI_BINTREE_H */
@@ -785,24 +787,6 @@ enum nss_status {
 
 #if defined(HAVE_CRYPT16) && defined(HAVE_GETAUTHUID)
 #define ULTRIX_AUTH 1
-#endif
-
-#ifdef HAVE_LIBREADLINE
-#  ifdef HAVE_READLINE_READLINE_H
-#    include <readline/readline.h>
-#    ifdef HAVE_READLINE_HISTORY_H
-#      include <readline/history.h>
-#    endif
-#  else
-#    ifdef HAVE_READLINE_H
-#      include <readline.h>
-#      ifdef HAVE_HISTORY_H
-#        include <history.h>
-#      endif
-#    else
-#      undef HAVE_LIBREADLINE
-#    endif
-#  endif
 #endif
 
 #ifndef HAVE_STRDUP
