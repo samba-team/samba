@@ -229,7 +229,7 @@ enum ndr_err_code {
 
 
 #define NDR_ALLOC_SIZE(ndr, s, size) do { \
-	                       (s) = talloc(ndr, size); \
+	                       (s) = talloc_size(ndr, size); \
                                if ((size) && !(s)) return ndr_pull_error(ndr, NDR_ERR_ALLOC, \
 							       "Alloc %u failed\n", \
 							       size); \
@@ -247,7 +247,7 @@ enum ndr_err_code {
 
 
 #define NDR_PUSH_ALLOC_SIZE(ndr, s, size) do { \
-       (s) = talloc(ndr, size); \
+       (s) = talloc_size(ndr, size); \
        if (!(s)) return ndr_push_error(ndr, NDR_ERR_ALLOC, "push alloc %u failed\n", size); \
 } while (0)
 

@@ -857,7 +857,7 @@ char *talloc_strndup(const void *t, const char *p, size_t n)
 
 	for (len=0; p[len] && len<n; len++) ;
 
-	ret = talloc(t, len + 1);
+	ret = _talloc(t, len + 1);
 	if (!ret) { return NULL; }
 	memcpy(ret, p, len);
 	ret[len] = 0;
@@ -883,7 +883,7 @@ char *talloc_vasprintf(const void *t, const char *fmt, va_list ap)
 
 	len = vsnprintf(NULL, 0, fmt, ap2);
 
-	ret = talloc(t, len+1);
+	ret = _talloc(t, len+1);
 	if (ret) {
 		VA_COPY(ap2, ap);
 		vsnprintf(ret, len+1, fmt, ap2);

@@ -523,11 +523,11 @@ static BOOL test_realloc(void)
 	p1 = talloc_realloc(NULL, p1, 20);
 	CHECK_SIZE(p1, 20);
 
-	talloc(p1, 0);
+	talloc_new(p1);
 
 	p2 = talloc_realloc(p1, NULL, 30);
 
-	talloc(p1, 0);
+	talloc_new(p1);
 
 	p2 = talloc_realloc(p1, p2, 40);
 
