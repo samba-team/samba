@@ -46,6 +46,7 @@ RCSID("$Id$");
 #include <pwd.h>
 
 #include <krb.h>
+#include <kafs.h>
 
 
 #ifndef POSIX_GETPWNAM_R
