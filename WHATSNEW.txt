@@ -208,6 +208,8 @@ versions of the NT logon packet.
 registering names.
 60). Fixed bug where smbd didn't return '.' or '..' on top level
 share directory listing.
+61). Fix for soft quotas not being set (make them equal to hardquota)
+from Norbert Püschel (Pueschel.Norbert@Walzbarren-VAW.ne.uunet.de).
 
 Older release notes for Samba 2.0.x follow.
 
