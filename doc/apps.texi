@@ -136,7 +136,7 @@ the clear, for instance.
 
 The IRIX support is a module that is compatible with Transarc's
 @file{afskauthlib.so}.  It should work with all programs that use this
-library, this should include @file{login} and @file{xdm}.
+library. This should include @command{login} and @command{xdm}.
 
 The interface is not very documented but it seems that you have to copy
 @file{libkafs.so}, @file{libkrb.so}, and @file{libdes.so} to
@@ -146,8 +146,8 @@ The @file{afskauthlib.so} itself is able to reside in
 @file{/usr/vice/etc}, @file{/usr/afsws/lib}, or the current directory
 (wherever that is).
 
-IRIX 6.4 and newer seems to have all programs (including @file{xdm} and
-@file{login}) in the N32 object format, whereas in older versions they
+IRIX 6.4 and newer seems to have all programs (including @command{xdm} and
+@command{login}) in the N32 object format, whereas in older versions they
 were O32. For it to work, the @file{afskauthlib.so} library has to be in
 the same object format as the program that tries to load it. This might
 require that you have to configure and build for O32 in addition to the
@@ -155,6 +155,12 @@ default N32.
 
 Appart from this it should ``just work'', there are no configuration
 files.
+
+Note that recent Irix 6.5 versions (at least 6.5.22) have PAM,
+including a @file{pam_krb5.so} module.  Not all relevant programs use
+PAM, though, e.g.@: @command{ssh}. In particular, for console
+graphical login you need to turn off @samp{visuallogin} and turn on
+@samp{xdm} with @command{chkconfig}.
 
 @node AFS, , Authentication modules, Applications
 @section AFS
