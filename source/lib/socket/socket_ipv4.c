@@ -89,7 +89,6 @@ static NTSTATUS ipv4_tcp_connect(struct socket_context *sock,
 		}
 	}
 
-
 	ret = connect(sock->fd, (const struct sockaddr *)&srv_addr, sizeof(srv_addr));
 	if (ret == -1) {
 		/* TODO: we need to map from errno to NTSTATUS here! */
@@ -296,22 +295,58 @@ static NTSTATUS ipv4_tcp_set_option(struct socket_context *sock, const char *opt
 
 static char *ipv4_tcp_get_peer_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 {
-	return NULL;
+	struct sockaddr_in peer_addr;
+	socklen_t len = sizeof(peer_addr);
+	int ret;
+
+	ret = getpeername(sock->fd, (struct sockaddr *)&peer_addr, &len);
+	if (ret == -1) {
+		return NULL;
+	}
+
+	return talloc_strdup(mem_ctx, inet_ntoa(peer_addr.sin_addr));
 }
 
 static int ipv4_tcp_get_peer_port(struct socket_context *sock)
 {
-	return -1;
+	struct sockaddr_in peer_addr;
+	socklen_t len = sizeof(peer_addr);
+	int ret;
+
+	ret = getpeername(sock->fd, (struct sockaddr *)&peer_addr, &len);
+	if (ret == -1) {
+		return -1;
+	}
+
+	return ntohs(peer_addr.sin_port);
 }
 
 static char *ipv4_tcp_get_my_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 {
-	return NULL;
+	struct sockaddr_in my_addr;
+	socklen_t len = sizeof(my_addr);
+	int ret;
+
+	ret = getsockname(sock->fd, (struct sockaddr *)&my_addr, &len);
+	if (ret == -1) {
+		return NULL;
+	}
+
+	return talloc_strdup(mem_ctx, inet_ntoa(my_addr.sin_addr));
 }
 
 static int ipv4_tcp_get_my_port(struct socket_context *sock)
 {
-	return -1;
+	struct sockaddr_in my_addr;
+	socklen_t len = sizeof(my_addr);
+	int ret;
+
+	ret = getsockname(sock->fd, (struct sockaddr *)&my_addr, &len);
+	if (ret == -1) {
+		return -1;
+	}
+
+	return ntohs(my_addr.sin_port);
 }
 
 static int ipv4_tcp_get_fd(struct socket_context *sock)
