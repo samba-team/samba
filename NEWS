@@ -1,3 +1,17 @@
+Changes in release 0.1e:
+
+ * try to handle old DCE and MIT kdcs
+ * support for older versions of credential cache files and keytabs
+ * postdated tickets work
+ * support for password quality checks in kpasswdd
+ * new flag --enable-kaserver for kdc
+ * renew fixes
+ * prototype su program
+ * updated (some) manpages
+ * support for KDC resource records
+ * should build with --without-krb4
+ * bug fixes
+
 Changes in release 0.1d:
 
  * Support building with DB2 (uses 1.85-compat API)
