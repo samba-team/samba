@@ -1288,7 +1288,6 @@ Error was %s\n", fsp->fsp_name, strerror(errno) ));
     pstring full_name;
     char *p;
     char *fname;
-    char *fname_off;
     size_t remaining_len;
     size_t fullname_len;
     void *dp = OpenDir(cnbp->conn, fsp->fsp_name, True);
@@ -1308,7 +1307,7 @@ Error was %s\n", fsp->fsp_name, strerror(errno) ));
     remaining_len = sizeof(full_name) - fullname_len - 1;
     p = &full_name[fullname_len];
 
-    while(fname = ReadDirName( dp )) {
+    while ((fname = ReadDirName(dp))) {
       if(strequal(fname, ".") || strequal(fname, ".."))
         continue;
 
