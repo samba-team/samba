@@ -3,7 +3,7 @@
 # 
 i pkginfo=./pkginfo
 i copyright=./copyright
-i request=./request
+# i request=./request
 i preremove=./preremove
 i postinstall=./postinstall
 i i.swat=./i.swat
@@ -24,7 +24,6 @@ e swat /etc/inet/inetd.conf=scripts/inetd.conf ? ? ?
 #
 # Create the samba subtree.
 #
-d none $INSTALL_BASE 755 root sys
 d none $DOCDIR 755 root other
 d none $CONFIGDIR 755 root sys
 d none $PRIVATE_DIR 700 root sys
