@@ -546,7 +546,7 @@ struct smbw_server *smbw_server(char *server, char *share)
 	
 	DEBUG(4,(" tconx ok\n"));
 
-	srv = (struct smbw_server *)malloc(sizeof(*srv));
+	srv = SMB_MALLOC_P(struct smbw_server);
 	if (!srv) {
 		errno = ENOMEM;
 		goto failed;
@@ -558,25 +558,25 @@ struct smbw_server *smbw_server(char *server, char *share)
 
 	srv->dev = (dev_t)(str_checksum(server) ^ str_checksum(share));
 
-	srv->server_name = strdup(server);
+	srv->server_name = SMB_STRDUP(server);
 	if (!srv->server_name) {
 		errno = ENOMEM;
 		goto failed;
 	}
 
-	srv->share_name = strdup(share);
+	srv->share_name = SMB_STRDUP(share);
 	if (!srv->share_name) {
 		errno = ENOMEM;
 		goto failed;
 	}
 
-	srv->workgroup = strdup(workgroup);
+	srv->workgroup = SMB_STRDUP(workgroup);
 	if (!srv->workgroup) {
 		errno = ENOMEM;
 		goto failed;
 	}
 
-	srv->username = strdup(username);
+	srv->username = SMB_STRDUP(username);
 	if (!srv->username) {
 		errno = ENOMEM;
 		goto failed;
@@ -664,7 +664,7 @@ int smbw_open(const char *fname, int flags, mode_t mode)
 		return fd;
 	}
 
-	file = (struct smbw_file *)malloc(sizeof(*file));
+	file = SMB_MALLOC_P(struct smbw_file);
 	if (!file) {
 		errno = ENOMEM;
 		goto failed;
@@ -672,7 +672,7 @@ int smbw_open(const char *fname, int flags, mode_t mode)
 
 	ZERO_STRUCTP(file);
 
-	file->f = (struct smbw_filedes *)malloc(sizeof(*(file->f)));
+	file->f = SMB_MALLOC_P(struct smbw_filedes);
 	if (!file->f) {
 		errno = ENOMEM;
 		goto failed;
@@ -681,7 +681,7 @@ int smbw_open(const char *fname, int flags, mode_t mode)
 	ZERO_STRUCTP(file->f);
 
 	file->f->cli_fd = fd;
-	file->f->fname = strdup(path);
+	file->f->fname = SMB_STRDUP(path);
 	if (!file->f->fname) {
 		errno = ENOMEM;
 		goto failed;
@@ -1288,7 +1288,7 @@ int smbw_dup(int fd)
 		goto failed;
 	}
 
-	file2 = (struct smbw_file *)malloc(sizeof(*file2));
+	file2 = SMB_MALLOC_P(struct smbw_file);
 	if (!file2) {
 		close(fd2);
 		errno = ENOMEM;
@@ -1340,7 +1340,7 @@ int smbw_dup2(int fd, int fd2)
 		goto failed;
 	}
 
-	file2 = (struct smbw_file *)malloc(sizeof(*file2));
+	file2 = SMB_MALLOC_P(struct smbw_file);
 	if (!file2) {
 		close(fd2);
 		errno = ENOMEM;

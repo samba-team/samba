@@ -59,7 +59,7 @@ typedef int (*smb_pam_conv_fn)(int, const struct pam_message **, struct pam_resp
 /*
  *  Macros to help make life easy
  */
-#define COPY_STRING(s) (s) ? strdup(s) : NULL
+#define COPY_STRING(s) (s) ? SMB_STRDUP(s) : NULL
 
 /*******************************************************************
  PAM error handler.
