@@ -64,7 +64,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
     krb5_data enc_data;
     int32_t sec, usec;
 
-    out_creds = malloc(sizeof(*out_creds));
+    out_creds = calloc(1, sizeof(*out_creds));
     if (out_creds == NULL)
 	return ENOMEM;
 
