@@ -832,6 +832,9 @@ parameter for details\&.  Note that some are synonyms\&.
 \fBsocket options\fP
 .IP 
 .IP o 
+\fBsource environment\fP
+.IP 
+.IP o 
 \fBssl\fP
 .IP 
 .IP o 
@@ -5856,6 +5859,30 @@ completely\&. Use these options with caution!
 .IP 
 \fBExample:\fP
 \f(CW	socket options = IPTOS_LOWDELAY\fP
+.IP 
+.IP "\fBsource environment (G)\fP" 
+.IP 
+This parameter causes Samba to set environment variables as per the
+content of the file named\&.
+.IP 
+If the value of this parameter starts with a "|" character then Samba will
+treat that value as a pipe command to open and will set the environment
+variables from the oput of the pipe\&.
+.IP 
+The contents of the file or the output of the pipe should be formatted
+as the output of the standard Unix env(1) command\&. This is of the form :
+.IP 
+Example environment entry:
+\f(CW SAMBA_NETBIOS_NAME=myhostname \fP
+.IP 
+\fBDefault:\fP
+\f(CWNo default value\fP
+.IP 
+\fBExamples:\fP
+.IP 
+\f(CW	source environment = |/etc/smb\&.conf\&.sh\fP
+.IP 
+\f(CW	source environment = /usr/local/smb_env_vars\fP
 .IP 
 .IP "\fBssl (G)\fP" 
 .IP 

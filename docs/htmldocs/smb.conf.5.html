@@ -514,6 +514,7 @@ parameter for details.  Note that some are synonyms.
 <p><li > <a href="smb.conf.5.html#smbrun"><strong>smbrun</strong></a>
 <p><li > <a href="smb.conf.5.html#socketaddress"><strong>socket address</strong></a>
 <p><li > <a href="smb.conf.5.html#socketoptions"><strong>socket options</strong></a>
+<p><li > <a href="smb.conf.5.html#sourceenvironment"><strong>source environment</strong></a>
 <p><li > <a href="smb.conf.5.html#ssl"><strong>ssl</strong></a>
 <p><li > <a href="smb.conf.5.html#sslCAcertDir"><strong>ssl CA certDir</strong></a>
 <p><li > <a href="smb.conf.5.html#sslCAcertFile"><strong>ssl CA certFile</strong></a>
@@ -4129,6 +4130,22 @@ completely. Use these options with caution!
 <code>	socket options = TCP_NODELAY</code>
 <p><strong>Example:</strong>
 <code>	socket options = IPTOS_LOWDELAY</code>
+<p><a name="sourceenvironment"></a>
+<p></p><dt><strong><strong>source environment (G)</strong></strong><dd>
+<p>This parameter causes Samba to set environment variables as per the
+content of the file named.
+<p>If the value of this parameter starts with a "|" character then Samba will
+treat that value as a pipe command to open and will set the environment
+variables from the oput of the pipe.
+<p>The contents of the file or the output of the pipe should be formatted
+as the output of the standard Unix env(1) command. This is of the form :
+<p>Example environment entry:
+<code> SAMBA_NETBIOS_NAME=myhostname </code>
+<p><strong>Default:</strong>
+<code>No default value</code>
+<p><strong>Examples:</strong>
+<p><code>	source environment = |/etc/smb.conf.sh</code>
+<p><code>	source environment = /usr/local/smb_env_vars</code>
 <p><a name="ssl"></a>
 <p></p><dt><strong><strong>ssl (G)</strong></strong><dd>
 <p>This variable is part of SSL-enabled Samba. This is only available if
