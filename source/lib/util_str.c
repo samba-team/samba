@@ -133,10 +133,10 @@ char **toktocliplist(int *ctok, char *sep)
 ********************************************************************/
 int StrCaseCmp(const char *s, const char *t)
 {
-   pstring buf1, buf2;
-   unix_strlower(s, strlen(s)+1, buf1, sizeof(buf1));
-   unix_strlower(t, strlen(t)+1, buf2, sizeof(buf2));
-   return strcmp(buf1,buf2);
+	pstring buf1, buf2;
+	unix_strlower(s, strlen(s)+1, buf1, sizeof(buf1));
+	unix_strlower(t, strlen(t)+1, buf2, sizeof(buf2));
+	return strcmp(buf1,buf2);
 }
 
 /*******************************************************************
@@ -155,10 +155,10 @@ int StrnCaseCmp(const char *s, const char *t, size_t n)
 ********************************************************************/
 BOOL strequal(const char *s1, const char *s2)
 {
-  if (s1 == s2) return(True);
-  if (!s1 || !s2) return(False);
+	if (s1 == s2) return(True);
+	if (!s1 || !s2) return(False);
   
-  return(StrCaseCmp(s1,s2)==0);
+	return(StrCaseCmp(s1,s2)==0);
 }
 
 /*******************************************************************
