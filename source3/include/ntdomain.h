@@ -101,7 +101,6 @@ typedef struct pipes_struct
 	uint32 file_offset;
 	uint32 prev_pdu_file_offset;
 	uint32 hdr_offsets;
-	uint32 next_frag_start;
 
 } pipes_struct;
 
