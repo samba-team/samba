@@ -42,14 +42,8 @@
 RCSID("$Id$");
 #endif
 
-#include <stdlib.h>
-#include <string.h>
-
+#include "hash.h"
 #include "sha.h"
-
-#ifndef min
-#define min(a,b) (((a)>(b))?(b):(a))
-#endif
 
 #define A m->counter[0]
 #define B m->counter[1]
@@ -70,13 +64,8 @@ sha_init (struct sha *m)
   E = 0xc3d2e1f0;
 }
 
-static inline u_int32_t
-cshift (u_int32_t x, unsigned int n)
-{
-  return (x << n) | (x >> (32 - n));
-}
 
-#define F0(x,y,z) ((x & y) | (~x & z))
+#define F0(x,y,z) CRAYFIX((x & y) | (~x & z))
 #define F1(x,y,z) (x ^ y ^ z)
 #define F2(x,y,z) ((x & y) | (x & z) | (y & z))
 #define F3(x,y,z) F1(x,y,z)
@@ -226,7 +215,7 @@ swap_u_int32_t (u_int32_t t)
 #define ROL(x,n) ((x)<<(n))|((x)>>(32-(n)))
   u_int32_t temp1, temp2;
 
-  temp1   = ROL(t,16);
+  temp1   = cshift(t, 16);
   temp2   = temp1 >> 8;
   temp1  &= 0x00ff00ff;
   temp2  &= 0x00ff00ff;

@@ -42,14 +42,8 @@
 RCSID("$Id$");
 #endif
 
-#include <stdlib.h>
-#include <string.h>
-
+#include "hash.h"
 #include "md4.h"
-
-#ifndef min
-#define min(a,b) (((a)>(b))?(b):(a))
-#endif
 
 #define A m->counter[0]
 #define B m->counter[1]
@@ -68,13 +62,7 @@ md4_init (struct md4 *m)
   A = 0x67452301;
 }
 
-static inline u_int32_t
-cshift (u_int32_t x, unsigned int n)
-{
-  return (x << n) | (x >> (32 - n));
-}
-
-#define F(x,y,z) ((x & y) | (~x & z))
+#define F(x,y,z) CRAYFIX((x & y) | (~x & z))
 #define G(x,y,z) ((x & y) | (x & z) | (y & z))
 #define H(x,y,z) (x ^ y ^ z)
 
@@ -175,10 +163,9 @@ static inline u_int32_t
 swap_u_int32_t (u_int32_t t)
 {
 #if defined(WORDS_BIGENDIAN)
-#define ROL(x,n) ((x)<<(n))|((x)>>(32-(n)))
   u_int32_t temp1, temp2;
 
-  temp1   = ROL(t,16);
+  temp1   = cshift(t, 16);
   temp2   = temp1 >> 8;
   temp1  &= 0x00ff00ff;
   temp2  &= 0x00ff00ff;
@@ -197,30 +184,30 @@ struct x32{
 void
 md4_update (struct md4 *m, const void *v, size_t len)
 {
-  const unsigned char *p = v;
-  m->sz += len;
-  while(len > 0){
-    size_t l = min(len, 64 - m->offset);
-    memcpy(m->save + m->offset, p, l);
-    m->offset += l;
-    p += l;
-    len -= l;
-    if(m->offset == 64){
+    const unsigned char *p = v;
+    m->sz += len;
+    while(len > 0){
+	size_t l = min(len, 64 - m->offset);
+	memcpy(m->save + m->offset, p, l);
+	m->offset += l;
+	p += l;
+	len -= l;
+	if(m->offset == 64){
 #if defined(WORDS_BIGENDIAN)
-      int i;
-      u_int32_t current[16];
-      struct x32 *u = (struct x32*)m->save;
-      for(i = 0; i < 8; i++){
-	current[2*i+0] = swap_u_int32_t(u[i].a);
-	current[2*i+1] = swap_u_int32_t(u[i].b);
-      }
-      calc(m, current);
+	    int i;
+	    u_int32_t current[16];
+	    struct x32 *u = (struct x32*)m->save;
+	    for(i = 0; i < 8; i++){
+		current[2*i+0] = swap_u_int32_t(u[i].a);
+		current[2*i+1] = swap_u_int32_t(u[i].b);
+	    }
+	    calc(m, current);
 #else
-      calc(m, (u_int32_t*)m->save);
+	    calc(m, (u_int32_t*)m->save);
 #endif
-      m->offset = 0;
+	    m->offset = 0;
+	}
     }
-  }
 }
 
 void

@@ -42,14 +42,8 @@
 RCSID("$Id$");
 #endif
 
-#include <stdlib.h>
-#include <string.h>
-
+#include "hash.h"
 #include "md5.h"
-
-#ifndef min
-#define min(a,b) (((a)>(b))?(b):(a))
-#endif
 
 #define A m->counter[0]
 #define B m->counter[1]
@@ -68,16 +62,10 @@ md5_init (struct md5 *m)
   A = 0x67452301;
 }
 
-static inline u_int32_t
-cshift (u_int32_t x, unsigned int n)
-{
-  return (x << n) | (x >> (32 - n));
-}
-
-#define F(x,y,z) ((x & y) | (~x & z))
-#define G(x,y,z) ((x & z) | (y & ~z))
+#define F(x,y,z) CRAYFIX((x & y) | (~x & z))
+#define G(x,y,z) CRAYFIX((x & z) | (y & ~z))
 #define H(x,y,z) (x ^ y ^ z)
-#define I(x,y,z) (y ^ (x | ~z))
+#define I(x,y,z) CRAYFIX(y ^ (x | ~z))
 
 #define DOIT(a,b,c,d,k,s,i,OP) \
 a = b + cshift(a + OP(b,c,d) + X[k] + (i), s)
@@ -199,10 +187,9 @@ static inline u_int32_t
 swap_u_int32_t (u_int32_t t)
 {
 #if defined(WORDS_BIGENDIAN)
-#define ROL(x,n) ((x)<<(n))|((x)>>(32-(n)))
   u_int32_t temp1, temp2;
 
-  temp1   = ROL(t,16);
+  temp1   = cshift(t, 16);
   temp2   = temp1 >> 8;
   temp1  &= 0x00ff00ff;
   temp2  &= 0x00ff00ff;
