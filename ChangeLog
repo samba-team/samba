@@ -1,3 +1,8 @@
+2004-01-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kuser/kinit.c (renew_validate): if renewable_flag and not time
+	specifed, use "1 month"
+
 2004-01-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/krb5_keyblock.3: add prototypes, describe
