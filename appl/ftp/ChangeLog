@@ -1,5 +1,14 @@
 1999-10-03  Johan Danielsson  <joda@pdc.kth.se>
 
+	* ftpd/ftpd.c (main): make this use getarg; add `list_file'
+
+	* ftpd/ftpcmd.y (LIST): call list_file
+
+	* ftpd/ls.c: add simple built-in ls
+
+	* ftp/security.c: add `sec_vfprintf2' and `sec_fprintf2' that
+	prints to the data stream
+
 	* ftp/kauth.c (kauth): make sure we're using private protection
 	level
 
