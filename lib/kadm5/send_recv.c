@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -70,18 +70,25 @@ _kadm5_client_send(kadm5_client_context *context, krb5_storage *sp)
 kadm5_ret_t
 _kadm5_client_recv(kadm5_client_context *context, krb5_storage *sp)
 {
-    unsigned char buf[1024];
+    unsigned char *buf;
     size_t len;
     krb5_error_code ret;
     krb5_data data, reply;
-    krb5_net_read(context->context, &context->sock, buf, 4);
+    len = krb5_net_read(context->context, &context->sock, buf, 4);
+    if(len != 4)
+	return KADM5_RPC_ERROR;
     len = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
-    if(len > sizeof(buf))
-	return ENOMEM; /* XXX */
-    krb5_net_read(context->context, &context->sock, buf, len);
+    buf = malloc(len);
+    if(buf == NULL)
+	return ENOMEM;
+    if(krb5_net_read(context->context, &context->sock, buf, len) != len) {
+	free(buf);
+	return KADM5_RPC_ERROR;
+    }
     data.length = len;
     data.data = buf;
     ret = krb5_rd_priv(context->context, context->ac, &data, &reply, NULL);
+    krb5_data_free(&data);
     sp->store(sp, reply.data, reply.length);
     sp->seek(sp, 0, SEEK_SET);
     krb5_data_free(&reply);
