@@ -39,14 +39,14 @@ use smbldap_conf;
 # Errors, debug and stats are output to stderr.
 
 sub modify_account
-{
-  my ($login, $basedn, $lmpwd, $ntpwd, $gecos, $homedir) = @_;
+  {
+	my ($login, $basedn, $lmpwd, $ntpwd, $gecos, $homedir) = @_;
 	# bind to a directory with dn and password
 	my $ldap_master=connect_ldap_master();
 	my $modify = $ldap_master->modify ("uid=$login,$basedn",
 		changes => [
-			replace => [lmpassword => "$lmpwd"],
-			replace => [ntpassword => "$ntpwd"],
+			replace => [sambaLMPassword => "$lmpwd"],
+			replace => [sambaNTpassword => "$ntpwd"],
 			replace => [gecos => "$gecos"],
 			replace => [sambaHomePath => "$homedir"]
 		]
@@ -54,7 +54,7 @@ sub modify_account
 	$modify->code && die "failed to modify entry: ", $modify->error ;
 	# take down the session
 	$ldap_master->unbind;
-}
+  }
 
 #####################
 
@@ -64,15 +64,15 @@ my %Options;
 my $ok = getopts('awA:CUW:?h', \%Options);
 
 if ( (!$ok) || ($Options{'?'}) || ($Options{'h'}) ) {
-        print "Usage: $0 [-awAWCU?]\n";
-        print "  -a         process only people, ignore computers\n";
-        print "  -w         process only computers, ignore persons\n";
-        print "  -A <opts>  option string passed verbatim to smbldap-useradd for persons\n";
-        print "  -W <opts>  option string passed verbatim to smbldap-useradd for computers\n";
-        print "  -C         if entry not found, don't create it and log it to stdout (default: create it)\n";
-        print "  -U         if entry found, don't update it and log it to stdout (default: update it)\n";
+  print "Usage: $0 [-awAWCU?]\n";
+  print "  -a         process only people, ignore computers\n";
+  print "  -w         process only computers, ignore persons\n";
+  print "  -A <opts>  option string passed verbatim to smbldap-useradd for persons\n";
+  print "  -W <opts>  option string passed verbatim to smbldap-useradd for computers\n";
+  print "  -C         if entry not found, don't create it and log it to stdout (default: create it)\n";
+  print "  -U         if entry found, don't update it and log it to stdout (default: update it)\n";
   print "  -?|-h      show this help message\n";
-        exit (1);
+  exit (1);
 }
 
 my %processed = ( 'user' => 0, 'machine' => 0);
@@ -90,7 +90,7 @@ while (<>) {
 
   my $entry_type = 'user';
 
-  if ($login =~ m/.*\$$/ ) { # computer
+  if ($login =~ m/.*\$$/ ) {	# computer
     $processed{'machine'}++;
     $entry_type = 'machine';
     if (defined($Options{'a'})) {
@@ -117,14 +117,14 @@ while (<>) {
   }
 
   # normalize homedir
-# uncomment to replace configured share with share from pwdump
-#  if ($homedir eq "") {
-    $homedir = $_userSmbHome;
-#  }
+  # uncomment to replace configured share with share from pwdump
+  #  if ($homedir eq "") {
+  $homedir = $_userSmbHome;
+  #  }
 
   # normalize gecos
   if (!($gecos eq "")) {
-    $gecos =~ tr/ÃÃ€Ã‚Ã„Ã¡Ã Ã¢Ã¤Ã‡Ã§Ã‰ÃˆÃŠÃ‹Ã†Ã©Ã¨ÃªÃ«Ã¦ÃÃŒÃÃÃ­Ã¬Ã®ÃÃ‘Ã±Ã“Ã’Ã”Ã–Ã³Ã²Ã´Ã¶ÃšÃ™ÃœÃ›ÃºÃ¹Ã¼Ã»ÃÃ½Ã¿/AAAAaaaaCcEEEEEeeeeeIIIIiiiiNnOOOOooooUUUUuuuuYyy/;
+    $gecos =~ tr/ÁÀÂÄáàâäÇçÉÈÊËÆéèêëæÍÌÏÎíìîÏÑñÓÒÔÖóòôöÚÙÜÛúùüûİıÿ/AAAAaaaaCcEEEEEeeeeeIIIIiiiiNnOOOOooooUUUUuuuuYyy/;
   } else {
     $gecos = $_userGecos;
   }
@@ -141,12 +141,12 @@ while (<>) {
         print STDERR "error adding $login, skipping\n";
         next;
       }
-	# lem modif... a retirer si pb
+	  # lem modif... a retirer si pb
 	  if ($entry_type eq "user") {
       	modify_account($login, $userbasedn, $lmpwd, $ntpwd, $gecos, $homedir);
-	}
+	  }
 
-      	$created{$entry_type}++;
+	  $created{$entry_type}++;
     } else {					# uid doesn't exist and no create => log
       print "$_";
       $logged{$entry_type}++;
@@ -187,7 +187,7 @@ print STDERR "special users skipped: $specialskipped\n";
 
 =head1 NAME
 
-       smbldap-migrate.pl - Migrate NT accounts to LDAP
+smbldap-migrate.pl - Migrate NT accounts to LDAP
 
 =head1 SYNOPSIS
 
