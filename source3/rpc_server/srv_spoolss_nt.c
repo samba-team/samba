@@ -1042,7 +1042,7 @@ done:
 static BOOL notify2_unpack_msg( SPOOLSS_NOTIFY_MSG *msg, void *buf, size_t len )
 {
 
-	int offset = 0;
+	size_t offset = 0;
 
 	/* Unpack message */
 
