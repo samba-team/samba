@@ -334,10 +334,10 @@ Hope this helps....  (Although it was "fun" for me to uncover this things,
 #define CVAL(buf) ((unsigned char)*((unsigned char *)(buf)))
 
 #define SIVAL(buf, val) \
-                    ((unsigned char)buf[0]=(unsigned char)((val)&0xFF),\
-                     (unsigned char)buf[1]=(unsigned char)(((val)>>8)&0xFF),\
-                     (unsigned char)buf[2]=(unsigned char)(((val)>>16)&0xFF),\
-                     (unsigned char)buf[3]=(unsigned char)((val)>>24))
+            ((((unsigned char *)(buf))[0])=(unsigned char)((val)&0xFF),\
+             (((unsigned char *)(buf))[1])=(unsigned char)(((val)>>8)&0xFF),\
+             (((unsigned char *)(buf))[2])=(unsigned char)(((val)>>16)&0xFF),\
+             (((unsigned char *)(buf))[3])=(unsigned char)((val)>>24))
 
 #define SSVAL(buf, val) \
                     ((unsigned char)buf[0]=(unsigned char)((val)&0xFF),\
@@ -346,7 +346,7 @@ Hope this helps....  (Although it was "fun" for me to uncover this things,
 static int verbose = 0;
 static int print_security = 0;
 static int full_print = 0;
-static char *def_owner_sid_str = NULL;
+static const char *def_owner_sid_str = NULL;
 
 /* 
  * These definitions are for the in-memory registry structure.
@@ -633,7 +633,7 @@ typedef struct regf_struct_s {
   REG_KEY *root;  /* Root of the tree for this file */
   int sk_count, sk_map_size;
   SK_MAP *sk_map;
-  char *owner_sid_str;
+  const char *owner_sid_str;
   SEC_DESC *def_sec_desc;
   /*
    * These next pointers point to the blocks used to contain the 
@@ -1174,10 +1174,10 @@ REG_KEY *nt_create_reg_key1(char *name, REG_KEY *parent)
 /*
  * Convert a string of the form S-1-5-x[-y-z-r] to a SID
  */
-int string_to_sid(DOM_SID **sid, char *sid_str)
+int string_to_sid(DOM_SID **sid, const char *sid_str)
 {
   int i = 0, auth;
-  char *lstr; 
+  const char *lstr; 
 
   *sid = (DOM_SID *)malloc(sizeof(DOM_SID));
   if (!*sid) return 0;
@@ -1217,7 +1217,7 @@ int string_to_sid(DOM_SID **sid, char *sid_str)
 /*
  * Create an ACE
  */
-ACE *nt_create_ace(int type, int flags, unsigned int perms, char *sid)
+ACE *nt_create_ace(int type, int flags, unsigned int perms, const char *sid)
 {
   ACE *ace;
 
@@ -2507,7 +2507,7 @@ HBIN_BLK *nt_create_hbin_blk(REGF *regf, int size)
  * Allocate a unit of space ... and return a pointer as function param
  * and the block's offset as a side effect
  */
-void *nt_alloc_regf_space(REGF *regf, int size, int *off)
+void *nt_alloc_regf_space(REGF *regf, int size, unsigned int *off)
 {
   int tmp = 0;
   void *ret = NULL;
@@ -2885,7 +2885,7 @@ int nt_store_val_list(REGF *regf, VAL_LIST * values)
 int nt_store_reg_key(REGF *regf, REG_KEY *key)
 {
   NK_HDR *nk_hdr; 
-  unsigned int nk_off, sk_off, val_off, clsnam_off, size;
+  unsigned int nk_off, sk_off, size;
 
   if (!regf || !key) return 0;
 
@@ -3815,7 +3815,7 @@ void print_sid(DOM_SID *sid)
   fprintf(stdout, "\n");
 }
 
-void print_acl(ACL *acl, char *prefix)
+void print_acl(ACL *acl, const char *prefix)
 {
   int i;
 
@@ -3924,7 +3924,7 @@ int main(int argc, char *argv[])
       if (!string_to_sid(&lsid, def_owner_sid_str)) {
 	fprintf(stderr, "Default Owner SID: %s is incorrectly formatted\n",
 		def_owner_sid_str);
-	free(def_owner_sid_str);
+	free(&def_owner_sid_str[0]);
 	def_owner_sid_str = NULL;
       }
       else 
