@@ -612,24 +612,6 @@ typedef struct {
 	fstring domain; /* domain that the client specified */
 } userdom_struct;
 
-typedef struct
-{
-	uid_t uid; /* uid of a validated user */
-	gid_t gid; /* gid of a validated user */
-
-	userdom_struct user;
-	BOOL guest;
-
-	/* following groups stuff added by ih */
-	/* This groups info is needed for when we become_user() for this uid */
-	int n_groups;
-	gid_t *groups;
-
-	/* per-user authentication information on NT RPCs */
-	/* lkclXXXX - THIS SHOULD NOT BE HERE! */
-	struct dcinfo dc;
-} user_struct;
-
 enum {LPQ_QUEUED,LPQ_PAUSED,LPQ_SPOOLING,LPQ_PRINTING};
 
 typedef struct _print_queue_struct
@@ -1700,6 +1682,26 @@ struct ntdom_info
 
 #include "client.h"
 #include "rpcclient.h"
+
+typedef struct
+{
+	uid_t uid; /* uid of a validated user */
+	gid_t gid; /* gid of a validated user */
+
+	userdom_struct user;
+	BOOL guest;
+
+	/* following groups stuff added by ih */
+	/* This groups info is needed for when we become_user() for this uid */
+	int n_groups;
+	gid_t *groups;
+
+	NET_USER_INFO_3 usr;
+
+	/* per-user authentication information on NT RPCs */
+	/* lkclXXXX - THIS SHOULD NOT BE HERE! */
+	struct dcinfo dc;
+} user_struct;
 
 /*
  * Size of new password account encoding string. DO NOT CHANGE.
