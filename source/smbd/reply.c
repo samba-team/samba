@@ -530,17 +530,18 @@ static int session_trust_account(connection_struct *conn, char *inbuf, char *out
 
 int smb_create_user(char *unix_user, char *homedir)
 {
-  pstring add_script;
-  int ret;
+	pstring add_script;
+	int ret;
 
-  pstrcpy(add_script, lp_adduser_script());
-  if (! *add_script) return -1;
-  all_string_sub(add_script, "%u", unix_user, sizeof(pstring));
-  if (homedir)
-    all_string_sub(add_script, "%H", homedir, sizeof(pstring));
-  ret = smbrun(add_script,NULL);
-  DEBUG(3,("smb_create_user: Running the command `%s' gave %d\n",add_script,ret));
-  return ret;
+	pstrcpy(add_script, lp_adduser_script());
+	if (! *add_script)
+		return -1;
+	all_string_sub(add_script, "%u", unix_user, sizeof(pstring));
+	if (homedir)
+		all_string_sub(add_script, "%H", homedir, sizeof(pstring));
+	ret = smbrun(add_script,NULL);
+	DEBUG(3,("smb_create_user: Running the command `%s' gave %d\n",add_script,ret));
+	return ret;
 }
 
 /****************************************************************************
@@ -549,15 +550,16 @@ int smb_create_user(char *unix_user, char *homedir)
 
 static int smb_delete_user(char *unix_user)
 {
-  pstring del_script;
-  int ret;
+	pstring del_script;
+	int ret;
 
-  pstrcpy(del_script, lp_deluser_script());
-  if (! *del_script) return -1;
-  all_string_sub(del_script, "%u", unix_user, sizeof(pstring));
-  ret = smbrun(del_script,NULL);
-  DEBUG(3,("smb_delete_user: Running the command `%s' gave %d\n",del_script,ret));
-  return ret;
+	pstrcpy(del_script, lp_deluser_script());
+	if (! *del_script)
+		return -1;
+	all_string_sub(del_script, "%u", unix_user, sizeof(pstring));
+	ret = smbrun(del_script,NULL);
+	DEBUG(3,("smb_delete_user: Running the command `%s' gave %d\n",del_script,ret));
+	return ret;
 }
 
 /****************************************************************************
@@ -615,19 +617,6 @@ static BOOL check_server_security(char *orig_user, char *domain, char *unix_user
 
 		if(lp_adduser_script() && !(pwd = smb_getpwnam(unix_user,True)))
 			smb_create_user(unix_user, NULL);
-
-		if(lp_adduser_script() && pwd) {
-			SMB_STRUCT_STAT st;
-
-			/*
-			 * Also call smb_create_user if the users home directory
-			 * doesn't exist. Used with winbindd to allow the script to
-			 * create the home directory for a user mapped with winbindd.
-			 */
-
-			if (pwd->pw_dir && (sys_stat(pwd->pw_dir, &st) == -1) && (errno == ENOENT))
-				smb_create_user(unix_user, pwd->pw_dir);
-		}
 	}
 
 	return ret;
