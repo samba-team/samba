@@ -858,7 +858,7 @@ static void usage(char *pname)
 	register_dmalloc_msgs();
 
 	/* Setup the main smbd so that we can get messages. */
-	claim_connection(NULL,"",0,True);
+	claim_connection(NULL,"",0,True,FLAG_MSG_GENERAL|FLAG_MSG_SMBD);
 
 	/* 
 	   DO NOT ENABLE THIS TILL YOU COPE WITH KILLING THESE TASKS AND INETD

@@ -578,7 +578,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	if (!claim_connection(conn,
 			      lp_servicename(SNUM(conn)),
 			      lp_max_connections(SNUM(conn)),
-			      False)) {
+			      False,0)) {
 		DEBUG(1,("too many connections - rejected\n"));
 		conn_free(conn);
 		*status = NT_STATUS_INSUFFICIENT_RESOURCES;
