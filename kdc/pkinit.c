@@ -297,7 +297,7 @@ generate_dh_keyblock(krb5_context context, pk_client_params *client_params,
     default:
 	krb5_set_error_string(context, "PKINIT DH, unsupported enctype: %d",
 			      (int)enctype);
-	ret = KDC_ERROR_KEY_TOO_WEAK;
+	ret = KRB5_KDC_ERR_KEY_TOO_WEAK;
 	break;
     }
 
@@ -405,7 +405,7 @@ get_dh_param(krb5_context context, SubjectPublicKeyInfo *dh_key_info,
     if (DH_check(dh, &dhret) != 1) {
 	krb5_set_error_string(context, "PKINIT DH data not ok: %s",
 			      ERR_error_string(ERR_get_error(), NULL));
-	ret = KDC_ERROR_KEY_TOO_WEAK;
+	ret = KRB5_KDC_ERR_KEY_TOO_WEAK;
 	goto out;
     }
 
@@ -535,7 +535,7 @@ pk_rd_padata(krb5_context context,
 	/* XXX will work for heirarchical CA's ? */
 	/* XXX also serial_number should be compared */
 
-	ret = KDC_ERROR_KDC_NOT_TRUSTED;
+	ret = KRB5_KDC_ERR_KDC_NOT_TRUSTED;
 	for (i = 0; i < r.trustedCertifiers->len; i++) {
 	    TrustedCAs *ca = &r.trustedCertifiers->val[i];
 
@@ -553,11 +553,10 @@ pk_rd_padata(krb5_context context,
 		X509_NAME_free(name);
 		break;
 	    }
-	    case choice_TrustedCAs_principalName:
-		/* KerberosName principalName; */
-		break;
 	    case choice_TrustedCAs_issuerAndSerial:
 		/* IssuerAndSerialNumber issuerAndSerial */
+		break;
+	    default:
 		break;
 	    }
 	    if (ret == 0)
@@ -995,7 +994,7 @@ pk_check_client(krb5_context context,
     free(*subject_name);
     *subject_name = NULL;
     krb5_set_error_string(context, "PKINIT no matching principals");
-    return KDC_ERROR_CLIENT_NAME_MISMATCH;
+    return KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
 }
 
 static krb5_error_code

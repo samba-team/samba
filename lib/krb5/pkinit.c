@@ -804,7 +804,7 @@ pk_verify_chain_standard(krb5_context context,
     int i;
     int ret;
 
-    ret = KDC_ERROR_CLIENT_NAME_MISMATCH; /* XXX */
+    ret = KRB5_KDC_ERR_CLIENT_NAME_MISMATCH; /* XXX */
     for (i = 0; i < sk_X509_num(chain); i++) {
 	cert = sk_X509_value(chain, i);
 	if (pk_peer_compare(context, client, cert) == TRUE) {
@@ -842,7 +842,7 @@ pk_verify_chain_standard(krb5_context context,
 	ret = 0;
 	break;
     case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY:
-	ret = KDC_ERROR_CANT_VERIFY_CERTIFICATE;
+	ret = KRB5_KDC_ERR_CANT_VERIFY_CERTIFICATE;
 	break;
     case X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY:
     case X509_V_ERR_CERT_SIGNATURE_FAILURE:
@@ -850,10 +850,10 @@ pk_verify_chain_standard(krb5_context context,
     case X509_V_ERR_CERT_NOT_YET_VALID:
     case X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD:
     case X509_V_ERR_CERT_HAS_EXPIRED:
-	ret = KDC_ERROR_INVALID_CERTIFICATE;
+	ret = KRB5_KDC_ERR_INVALID_CERTIFICATE;
 	break;
     default:
-	ret = KDC_ERROR_INVALID_CERTIFICATE; /* XXX */
+	ret = KRB5_KDC_ERR_INVALID_CERTIFICATE; /* XXX */
 	break;
     }
     if (ret) {
@@ -998,7 +998,7 @@ _krb5_pk_verify_sign(krb5_context context,
 	krb5_set_error_string(context,
 			      "PKINIT: signature information missing from "
 			      "pkinit response");
-	return KDC_ERROR_INVALID_SIG;
+	return KRB5_KDC_ERR_INVALID_SIG;
     }
 
     signer_info = &sd.signerInfos.val[0];
@@ -1035,7 +1035,7 @@ _krb5_pk_verify_sign(krb5_context context,
 	X509_free(cert);
 	krb5_set_error_string(context, "PKINIT: signature missing from"
 			      "pkinit response");
-	return KDC_ERROR_INVALID_SIG; 
+	return KRB5_KDC_ERR_INVALID_SIG; 
     }
 
     public_key = X509_get_pubkey(cert);
@@ -1055,7 +1055,7 @@ _krb5_pk_verify_sign(krb5_context context,
 	free_SignedData(&sd);
 	krb5_set_error_string(context, "The requested digest algorithm is "
 			      "not supported");
-	return KDC_ERROR_INVALID_SIG;
+	return KRB5_KDC_ERR_INVALID_SIG;
     }
 
     EVP_VerifyInit(&md, evp_type);
@@ -1071,7 +1071,7 @@ _krb5_pk_verify_sign(krb5_context context,
 	free_SignedData(&sd);
 	krb5_set_error_string(context, "PKINIT: signature didn't verify: %s",
 			      ERR_error_string(ERR_get_error(), NULL));
-	return KDC_ERROR_INVALID_SIG;
+	return KRB5_KDC_ERR_INVALID_SIG;
     }
 
     ret = copy_oid(&sd.encapContentInfo.eContentType, eContentType);
