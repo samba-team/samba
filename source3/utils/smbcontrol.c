@@ -3,6 +3,7 @@
    Version 3.0
    program to send control messages to Samba processes
    Copyright (C) Andrew Tridgell 1994-1998
+   Copyright (C) 2001 by Martin Pool
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -35,6 +36,7 @@ static struct {
 	{"close-share", MSG_SMB_FORCE_TDIS},
         {"samsync", MSG_SMB_SAM_SYNC},
         {"samrepl", MSG_SMB_SAM_REPL},
+	{"pool-usage", MSG_REQ_POOL_USAGE },
 	{NULL, -1}
 };
 
@@ -64,6 +66,24 @@ static BOOL got_level;
 static BOOL pong_registered = False;
 static BOOL debuglevel_registered = False;
 static BOOL profilelevel_registered = False;
+static BOOL pool_usage_registered = False;
+
+
+/**
+ * Wait for replies for up to @p *max_secs seconds, or until @p
+ * max_replies are received.
+ *
+ * @note This is a pretty lame timeout; all it means is that after
+ * max_secs we won't look for any more messages.
+ **/
+static void wait_for_replies(int max_secs, int *max_replies)
+{
+	time_t timeout_end = time(NULL) + max_secs;
+
+	while (((*max_replies)-- > 0)  &&  (time(NULL) < timeout_end)) {
+		message_dispatch();
+	}
+}
 
 
 /****************************************************************************
@@ -122,9 +142,20 @@ void profilelevel_function(int msg_type, pid_t src, void *buf, size_t len)
 	got_level = True;
 }
 
-/****************************************************************************
-send a message to a named destination
-****************************************************************************/
+/**
+ * Handle reply from POOL_USAGE.
+ **/
+static void pool_usage_cb(int msg_type, pid_t src_pid, void *buf, size_t len)
+{
+	printf("Got POOL_USAGE reply from %u\n", (unsigned int) src_pid);
+}
+
+
+/**
+ * Send a message to a named destination
+ *
+ * @return False if an error occurred.
+ **/
 static BOOL send_message(char *dest, int msg_type, void *buf, int len, BOOL duplicates)
 {
 	pid_t pid;
@@ -132,6 +163,7 @@ static BOOL send_message(char *dest, int msg_type, void *buf, int len, BOOL dupl
 	if (strequal(dest,"smbd")) {
 		TDB_CONTEXT *tdb;
 		BOOL ret;
+		int n_sent = 0;
 
 		tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_DEFAULT, O_RDWR, 0);
 		if (!tdb) {
@@ -139,7 +171,10 @@ static BOOL send_message(char *dest, int msg_type, void *buf, int len, BOOL dupl
 			return False;
 		}
 
-		ret = message_send_all(tdb,msg_type, buf, len, duplicates);
+		ret = message_send_all(tdb,msg_type, buf, len, duplicates,
+				       &n_sent);
+		DEBUG(10,("smbcontrol/send_message: broadcast message to "
+			  "%d processes\n", n_sent));
 		tdb_close(tdb);
 
 		return ret;
@@ -159,6 +194,7 @@ static BOOL send_message(char *dest, int msg_type, void *buf, int len, BOOL dupl
 		}		
 	} 
 
+	DEBUG(10,("smbcontrol/send_message: send message to pid%d\n", pid));
 	return message_send_pid(pid, msg_type, buf, len, duplicates);
 }
 
@@ -182,6 +218,7 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 {
 	int i, n, v;
 	int mtype;
+	int n_sent = 0;
 	BOOL retval=False;
 
 	mtype = parse_type(msg_name);
@@ -353,22 +390,27 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 				retval = send_message(dest, MSG_PING, params[1], strlen(params[1]) + 1, True);
 			else
 				retval = send_message(dest, MSG_PING, NULL, 0, True);
-			if (retval == False) break;
+			if (retval == False)
+				return False;
 		}
-		if (retval) {
-			timeout_start = time(NULL);
-			while (pong_count < n) {
-				message_dispatch();
-				if ((time(NULL) - timeout_start) > MAX_WAIT) {
-					fprintf(stderr,"PING timeout\n");
-					break;
-				}
-			}
+		wait_for_replies(MAX_WAIT, &n);
+		if (n > 0) {
+			fprintf(stderr,"PING timeout\n");
 		}
 		break;
 
+	case MSG_REQ_POOL_USAGE:
+		if (!pool_usage_registered) {
+			message_register(MSG_POOL_USAGE, pool_usage_cb);
+			pool_usage_registered = True;
+		}
+		if (!send_message(dest, MSG_REQ_POOL_USAGE, NULL, 0, True))
+			return False;
+		wait_for_replies(MAX_WAIT, &n_sent);
+		
+		break;
 	}
-	
+
 	return (True);
 }
 
