@@ -69,34 +69,35 @@ char *cli_errstr(struct cli_state *cli)
 {   
 	static fstring cli_error_message;
 	uint32 flgs2 = SVAL(cli->inbuf,smb_flg2), errnum;
-        uint8 errclass;
-        int i;
+	uint8 errclass;
+	int i;
 
-        /* Case #1: RAP error */
-	for (i = 0; rap_errmap[i].message != NULL; i++) {
-		if (rap_errmap[i].err == cli->rap_error) {
-			return rap_errmap[i].message;
+	/* Case #1: RAP error */
+	if (cli->rap_error) {
+		for (i = 0; rap_errmap[i].message != NULL; i++) {
+			if (rap_errmap[i].err == cli->rap_error) {
+				return rap_errmap[i].message;
+			}
 		}
-	} 
 
-        /* Case #2: 32-bit NT errors */
+		slprintf(cli_error_message, sizeof(cli_error_message) - 1, "RAP code %d",
+			cli->rap_error);
+
+		return cli_error_message;
+	}
+
+	/* Case #2: 32-bit NT errors */
 	if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
-                NTSTATUS status = NT_STATUS(IVAL(cli->inbuf,smb_rcls));
+		NTSTATUS status = NT_STATUS(IVAL(cli->inbuf,smb_rcls));
 
-                return get_nt_error_msg(status);
+		return get_nt_error_msg(status);
         }
 
-        cli_dos_error(cli, &errclass, &errnum);
+	cli_dos_error(cli, &errclass, &errnum);
 
-        /* Case #3: SMB error */
+	/* Case #3: SMB error */
 
-        if (errclass != 0)
-                return cli_smb_errstr(cli);
-
-	slprintf(cli_error_message, sizeof(cli_error_message) - 1, "code %d", 
-                 cli->rap_error);
-
-	return cli_error_message;
+	return cli_smb_errstr(cli);
 }
 
 
