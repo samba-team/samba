@@ -117,7 +117,7 @@ BOOL pdb_init_sam(SAM_ACCOUNT **user)
  Initialises a struct sam_passwd with sane values.
  ************************************************************/
 
-BOOL pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, struct passwd *pwd)
+BOOL pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, const struct passwd *pwd)
 {
 	pstring str;
 	extern BOOL sam_logon_in_ssb;

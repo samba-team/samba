@@ -426,7 +426,7 @@ BOOL make_user_info_winbind(auth_usersupplied_info **user_info,
 		/* WATCH OUT. This doesn't work if the incoming password is incorrectly cased. 
 		   We might want to add a check here and only do an LM in that case */
 		
-		SMBNTencrypt((uchar *)password, chal, local_nt_response);
+		SMBNTencrypt((const uchar *)password, chal, local_nt_response);
 
 		local_lm_blob = data_blob(local_lm_response, sizeof(local_lm_response));
 		local_nt_blob = data_blob(local_nt_response, sizeof(local_nt_response));

@@ -167,7 +167,7 @@ void NTLMSSPOWFencrypt(const uchar passwd[8], const uchar *ntlmchalresp, uchar p
 
 /* Does the NT MD4 hash then des encryption. */
  
-void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24)
+void SMBNTencrypt(const uchar *passwd, uchar *c8, uchar *p24)
 {
 	uchar p21[21];
  
