@@ -217,7 +217,11 @@ recv_conn (int sock, kx_context *kc,
 
      if (setgid (passwd->pw_gid) ||
 	 initgroups(passwd->pw_name, passwd->pw_gid) ||
+#ifdef HAVE_GETUDBNAM /* XXX this happens on crays */
+	 setjob(passwd->pw_uid, 0) == -1 ||
+#endif
 	 setuid(passwd->pw_uid)) {
+	 syslog(LOG_ERR, "%m");
 	 fatal (kc, sock, "cannot set uid");
      }
      syslog (LOG_INFO, "from %s(%s): %s -> %s",
@@ -362,6 +366,49 @@ check_user_console (kx_context *kc, int fd)
      if (getuid() != sb.st_uid)
 	 fatal (kc, fd, "Permission denied");
 }
+
+/* close down the new connection with a reasonable error message */
+static void
+close_connection(int fd, const char *message)
+{
+    char buf[264]; /* max message */
+    char *p;
+    int lsb = 0;
+    size_t mlen;
+
+    mlen = strlen(message);
+    if(mlen > 255)
+	mlen = 255;
+    
+    /* read first part of connection packet, to get byte order */
+    if(read(fd, buf, 6) != 6) {
+	close(fd);
+	return;
+    }
+    if(buf[0] == 0x6c)
+	lsb++;
+    p = buf;
+    *p++ = 0;				/* failed */
+    *p++ = mlen;			/* length of message */
+    p += 4;				/* skip protocol version */
+    p += 2;				/* skip additional length */
+    memcpy(p, message, mlen);		/* copy message */
+    p += mlen;
+    while((p - buf) % 4)		/* pad to multiple of 4 bytes */
+	*p++ = 0;
+	
+    /* now fill in length of additional data */
+    if(lsb) { 
+	buf[6] = (p - buf - 8) / 4;
+	buf[7] = 0;
+    }else{
+	buf[6] = 0;
+	buf[7] = (p - buf - 8) / 4;
+    }
+    write(fd, buf, p - buf);
+    close(fd);
+}
+
 
 /*
  * Handle a passive session on `sock'
@@ -523,7 +570,9 @@ doit_passive (kx_context *kc,
 	child = fork ();
 	if (child < 0) {
 	    syslog (LOG_ERR, "fork: %m");
-	    return 1;
+	    if(errno != EAGAIN)
+		return 1;
+	    close_connection(fd, strerror(errno));
 	} else if (child == 0) {
 	    for (i = 0; i < nsockets; ++i)
 		close (sockets[i].fd);
@@ -615,6 +664,7 @@ static int help_flag		= 0;
 struct getargs args[] = {
     { "inetd",		'i',	arg_negative_flag,	&inetd_flag,
       "Not started from inetd" },
+    { "tcp",		't',	arg_flag,	&tcp_flag,	"Use TCP" },
     { "port",		'p',	arg_string,	&port_str,	"Use this port",
       "port" },
     { "version",	0, 	arg_flag,		&version_flag },
