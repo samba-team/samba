@@ -716,15 +716,28 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 		return ERROR_ACCESS_DENIED;
 	}
 		
-	/* Disallow MS AddPrinterWizard if parameter disables it. A Win2k
+	/*
+	   First case: the user is opening the print server:
+
+	   Disallow MS AddPrinterWizard if parameter disables it. A Win2k
 	   client 1st tries an OpenPrinterEx with access==0, MUST be allowed.
+
 	   Then both Win2k and WinNT clients try an OpenPrinterEx with
-	   SERVER_ALL_ACCESS, which we force to fail. Then they try
-	   OpenPrinterEx with SERVER_READ which we allow. This lets the
+	   SERVER_ALL_ACCESS, which we allow only if the user is root (uid=0)
+	   or if the user is listed in the smb.conf printer admin parameter.
+
+	   Then they try OpenPrinterEx with SERVER_READ which we allow. This lets the
 	   client view printer folder, but does not show the MSAPW.
 
 	   Note: this test needs code to check access rights here too. Jeremy
-	   could you look at this? */
+	   could you look at this?
+	   
+	   
+	   Second case: the user is opening a printer:
+	   NT doesn't let us connect to a printer if the connecting user
+	   doesn't have print permission.
+
+	*/
 
 	get_current_user(&user, p);
 
@@ -780,7 +793,7 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 				return result;
 			}
 		}
-}
+	}
 
 	return NT_STATUS_NO_PROBLEMO;
 }
