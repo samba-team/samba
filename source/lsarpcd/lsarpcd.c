@@ -90,6 +90,7 @@ static void update_trust_account(void)
 	if (res2 && time(NULL) >
 	    nt_time_to_unix(&ntlct) + lp_machine_password_timeout())
 	{
+		DEBUG(1,("$MACHINE.ACC password being updated.\n"));
 		trust_pwd_needs_changing = True;
 	}
 
@@ -111,6 +112,10 @@ static void update_trust_account(void)
 
 		res2 = res2 ? (_lsa_set_secret(&pol_sec, &secret, 0x0) ==
 			       NT_STATUS_NOPROBLEMO) : False;
+		if (!res2)
+		{
+			DEBUG(0,("$MACHINE.ACC password update FAILED\n"));
+		}
 	}
 
 	res1 = res1 ? _lsa_close(&pol_sec) : False;
