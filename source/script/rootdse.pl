@@ -146,7 +146,7 @@ system("ldbadd -H newrootdse.ldb newrootdse.ldif");
 
 print "done
 
-Please move newrootdse.ldb to rootdse.ldb in the lib/private/ directory of your
+Please move newrootdse.ldb to rootdse.ldb in the private/ directory of your
 Samba4 installation
 ";
 
