@@ -296,25 +296,11 @@ cp -p $VVS/samba.init $DESTDIR/etc/rc.d/init.d/samba
 ln -s /etc/rc.d/init.d/samba $DESTDIR/usr/sbin
 
 cp -p $VVS/smb.conf.sample $DESTDIR%{EtcSamba}/smb.conf.sample
-#cp -p $VVS/smb.conf.sample $DESTDIR%{EtcSamba}/smb.conf
 cp -p $VVS/smbusers $DESTDIR%{EtcSamba}
-#cp -p $VVS/smbprint $DESTDIR/usr/bin
-#cp -p $VVS/smbadduser.perl $DESTDIR/usr/sbin/smbadduser
-#cp -p $VVS/make_smbpasswd.perl $DESTDIR/usr/sbin/make_smbpasswd
-#cp -p $VVS/convertsmbpasswd.perl $DESTDIR/usr/sbin/convertsmbpasswd
-#cp -p $VVS/updatesmbpasswd.perl $DESTDIR/usr/sbin/updatesmbpasswd
 cp -p $VVS/findsmb $DESTDIR/usr/sbin
 cp -p $VVS/samba.daemon $DESTDIR/etc/sysconfig/daemons/samba
 cp -p $VVS/samba.pam $DESTDIR/etc/pam.d/samba
 cp -p $VVS/samba.logrotate $DESTDIR/etc/logrotate.d/samba
-
-#for f in testparm testprns; do
-#  ln -s $f $DESTDIR/usr/bin/smb$f
-#  ln -s $f.1 $DESTDIR/usr/man/man1/smb$f.1
-#done
-#ln -s make_smbcodepage  $DESTDIR/usr/sbin/mksmbcodepage
-#ln -s make_smbpasswd $DESTDIR/usr/sbin/mksmbpasswd
-#ln -sf convert_smbpasswd $DESTDIR/usr/sbin/convertsmbpasswd
 
 cat <<-'EoH' > $DESTDIR%{EtcSamba}/lmhosts
 	127.0.0.1 localhost
@@ -363,6 +349,10 @@ done
 %{fixUP} -vT $DESTDIR/%{EtcSamba} -e 's:\@samba_home\@:%{LSBservedir}:'
 
 %{fixManPages}
+cd $DESTDIR/usr/share/man/lang
+cp -a . $DESTDIR/usr/share/man/en
+cd ..
+rm -rf lang
 
 %{mkLists} -c samba
 cat << 'EOF' | %{mkLists} -d samba
@@ -391,7 +381,7 @@ pam_*                                   base
 smb(mount|mnt|umount)                   smbfs
 mount.smbfs                             smbfs
 swat                                    swat
-libsmbclient*                           libsmbclient
+libsmbclient                            libsmbclient
 @default@
 EOF
 
