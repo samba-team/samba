@@ -207,9 +207,10 @@ BOOL mod_sam21pwd_entry(struct sam_passwd* pwd, BOOL override)
  **********************************************************/
 
 /************************************************************************
- Routine to search sam passwd by name.
+ Routine to search sam passwd by name.  use this if your database
+ does not have search facilities.
 *************************************************************************/
-struct smb_passwd *getsampwnam(char *name)
+static struct smb_passwd *_getsampwnam(char *name)
 {
 	struct smb_passwd *pwd = NULL;
 	void *fp = NULL;
@@ -239,7 +240,20 @@ struct smb_passwd *getsampwnam(char *name)
 /************************************************************************
  Routine to search sam passwd by name.
 *************************************************************************/
-struct sam_passwd *getsam21pwnam(char *name)
+struct smb_passwd *getsampwnam(char *name)
+{
+#ifdef USE_LDAP
+	return _getsampwnam(name);
+#else
+	return _getsampwnam(name);
+#endif /* USE_LDAP */
+}
+
+/************************************************************************
+ Routine to search sam passwd by name.  use this if your database
+ does not have search facilities.
+*************************************************************************/
+static struct sam_passwd *_getsam21pwnam(char *name)
 {
 	struct sam_passwd *pwd = NULL;
 	void *fp = NULL;
@@ -267,9 +281,22 @@ struct sam_passwd *getsam21pwnam(char *name)
 }
 
 /************************************************************************
- Routine to search sam passwd by uid.
+ Routine to search sam passwd by name.
 *************************************************************************/
-struct smb_passwd *getsampwuid(uid_t smb_userid)
+struct sam_passwd *getsam21pwnam(char *name)
+{
+#ifdef USE_LDAP
+	return _getsam21pwnam(name);
+#else
+	return _getsam21pwnam(name);
+#endif /* USE_LDAP */
+}
+
+/************************************************************************
+ Routine to search sam passwd by uid.  use this if your database
+ does not have search facilities.
+*************************************************************************/
+static struct smb_passwd *_getsampwuid(uid_t smb_userid)
 {
 	struct smb_passwd *pwd = NULL;
 	void *fp = NULL;
@@ -297,9 +324,23 @@ struct smb_passwd *getsampwuid(uid_t smb_userid)
 }
 
 /************************************************************************
- Routine to search sam passwd by rid.
+ Routine to search sam passwd by uid.
 *************************************************************************/
-struct sam_passwd *getsam21pwrid(uint32 rid)
+struct smb_passwd *getsampwuid(uid_t smb_userid)
+{
+#ifdef USE_LDAP
+	return _getsampwuid(smb_userid);
+#else
+	return _getsampwuid(smb_userid);
+#endif /* USE_LDAP */
+}
+
+
+/************************************************************************
+ Routine to search sam passwd by rid.  use this if your database
+ does not have search facilities.
+*************************************************************************/
+struct sam_passwd *_getsam21pwrid(uint32 rid)
 {
 	struct sam_passwd *pwd = NULL;
 	void *fp = NULL;
@@ -324,6 +365,18 @@ struct sam_passwd *getsam21pwrid(uint32 rid)
 
 	endsmbpwent(fp);
 	return pwd;
+}
+
+/************************************************************************
+ Routine to search sam passwd by rid.  
+*************************************************************************/
+struct sam_passwd *getsam21pwrid(uint32 rid)
+{
+#ifdef USE_LDAP
+	return _getsam21pwrid(rid);
+#else
+	return _getsam21pwrid(rid);
+#endif /* USE_LDAP */
 }
 
 
@@ -667,9 +720,6 @@ Error was %s\n", sid_file, strerror(errno) ));
 }   
 
 /*******************************************************************
- XXXX THIS FUNCTION SHOULD NOT BE HERE: IT SHOULD BE A STATIC FUNCTION
- INSIDE smbpass.c
-
  converts NT User RID to a UNIX uid.
  ********************************************************************/
 uid_t user_rid_to_uid(uint32 u_rid)
@@ -678,9 +728,6 @@ uid_t user_rid_to_uid(uint32 u_rid)
 }
 
 /*******************************************************************
- XXXX THIS FUNCTION SHOULD NOT BE HERE: IT SHOULD BE A STATIC FUNCTION
- INSIDE smbpass.c
-
  converts NT Group RID to a UNIX uid.
  ********************************************************************/
 uid_t group_rid_to_uid(uint32 u_gid)
@@ -689,9 +736,6 @@ uid_t group_rid_to_uid(uint32 u_gid)
 }
 
 /*******************************************************************
- XXXX THIS FUNCTION SHOULD NOT BE HERE: IT SHOULD BE A STATIC FUNCTION
- INSIDE smbpass.c
-
  converts UNIX uid to an NT User RID.
  ********************************************************************/
 uint32 uid_to_user_rid(uint32 uid)
@@ -700,9 +744,6 @@ uint32 uid_to_user_rid(uint32 uid)
 }
 
 /*******************************************************************
- XXXX THIS FUNCTION SHOULD NOT BE HERE: IT SHOULD BE A STATIC FUNCTION
- INSIDE smbpass.c
-
  converts NT Group RID to a UNIX uid.
  ********************************************************************/
 uint32 gid_to_group_rid(uint32 gid)
