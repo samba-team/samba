@@ -31,7 +31,7 @@
 .\" 
 .\" $Id$
 .\" 
-.Dd June 27, 2001
+.Dd March 25, 2003
 .Dt KRB5_VERIFY_USER 3
 .Os HEIMDAL
 .Sh NAME
@@ -82,6 +82,17 @@ New tickets will be obtained as a side-effect and stored in
 (if 
 .Dv NULL ,
 the default ccache is used).
+.Fn krb5_verify_user
+will call
+.Fn krb5_cc_initialize
+on the given
+.Fa ccache ,
+so
+.Fa ccache
+must only initialized with
+.Fn krb5_cc_resolve
+or
+.Fn krb5_cc_gen_new .
 If the password is not supplied in
 .Fa password
 (and is given as
@@ -205,6 +216,9 @@ main(int argc, char **argv)
 .Ed
 .Sh SEE ALSO
 .Xr krb5_err 3 ,
+.Xr krb5_cc_gen_new 3 ,
+.Xr krb5_cc_resolve 3 ,
+.Xr krb5_cc_initialize 3 ,
 .Xr krb5_free_principal 3 ,
 .Xr krb5_init_context 3 ,
 .Xr krb5_kt_default 3 ,
