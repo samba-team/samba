@@ -532,6 +532,12 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 				(SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT)) {
 				DLIST_ADD(dir_ace, current_ace);
 
+
+				if( DEBUGLVL( 10 )) {
+					dbgtext("unpack_canon_ace: adding dir ACL:\n");
+					print_canon_ace( current_ace, 0);
+				}
+
 				/*
 				 * If this is not an inherit only ACE we need to add a duplicate
 				 * to the file acl.
@@ -909,13 +915,14 @@ static void free_canon_ace_list( canon_ace *list_head )
 ********************************************************************************/
 
 static canon_ace *unix_canonicalise_acl(files_struct *fsp, SMB_STRUCT_STAT *psbuf,
-										DOM_SID *powner, DOM_SID *pgroup)
+										DOM_SID *powner, DOM_SID *pgroup, BOOL is_directory)
 {
 	extern DOM_SID global_sid_World;
 	canon_ace *list_head = NULL;
 	canon_ace *owner_ace = NULL;
 	canon_ace *group_ace = NULL;
 	canon_ace *other_ace = NULL;
+	mode_t mode;
 
 	/*
 	 * Create 3 linked list entries.
@@ -949,17 +956,14 @@ static canon_ace *unix_canonicalise_acl(files_struct *fsp, SMB_STRUCT_STAT *psbu
 	owner_ace->unix_ug.world = -1;
 	owner_ace->owner_type = WORLD_ACE;
 
-	if (!fsp->is_directory) {
-		owner_ace->perms = unix_perms_to_acl_perms(psbuf->st_mode, S_IRUSR, S_IWUSR, S_IXUSR);
-		group_ace->perms = unix_perms_to_acl_perms(psbuf->st_mode, S_IRGRP, S_IWGRP, S_IXGRP);
-		other_ace->perms = unix_perms_to_acl_perms(psbuf->st_mode, S_IROTH, S_IWOTH, S_IXOTH);
-	} else {
-		mode_t mode = unix_mode( fsp->conn, FILE_ATTRIBUTE_ARCHIVE, fsp->fsp_name);
+	if (is_directory)
+		mode = unix_mode( fsp->conn, FILE_ATTRIBUTE_ARCHIVE, fsp->fsp_name);
+	else
+		mode = psbuf->st_mode;
 
-		owner_ace->perms = unix_perms_to_acl_perms(mode, S_IRUSR, S_IWUSR, S_IXUSR);
-		group_ace->perms = unix_perms_to_acl_perms(mode, S_IRGRP, S_IWGRP, S_IXGRP);
-		other_ace->perms = unix_perms_to_acl_perms(mode, S_IROTH, S_IWOTH, S_IXOTH);
-	}
+	owner_ace->perms = unix_perms_to_acl_perms(mode, S_IRUSR, S_IWUSR, S_IXUSR);
+	group_ace->perms = unix_perms_to_acl_perms(mode, S_IRGRP, S_IWGRP, S_IXGRP);
+	other_ace->perms = unix_perms_to_acl_perms(mode, S_IROTH, S_IWOTH, S_IXOTH);
 
 	DLIST_ADD(list_head, other_ace);
 	DLIST_ADD(list_head, group_ace);
@@ -1357,7 +1361,7 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 	if (posix_acl)
 		file_ace = canonicalise_acl( posix_acl, &sbuf);
 	else
-		file_ace = unix_canonicalise_acl(fsp, &sbuf, &owner_sid, &group_sid);
+		file_ace = unix_canonicalise_acl(fsp, &sbuf, &owner_sid, &group_sid, False);
 
 	num_acls = count_canon_ace_list(file_ace);
 
@@ -1365,7 +1369,7 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 		if (dir_acl)
 			dir_ace = canonicalise_acl( dir_acl, &sbuf);
 		else
-			dir_ace = unix_canonicalise_acl(fsp, &sbuf, &owner_sid, &group_sid);
+			dir_ace = unix_canonicalise_acl(fsp, &sbuf, &owner_sid, &group_sid, True);
 
 		num_dir_acls = count_canon_ace_list(dir_ace);
 	}
