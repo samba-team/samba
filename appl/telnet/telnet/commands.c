@@ -2125,7 +2125,7 @@ tn(int argc, char **argv)
 	memset (&sin6, 0, sizeof(sin6));
 
 	if(inet_pton(AF_INET6, hostp, &sin6.sin6_addr)) {
-	    sin.sin6_family = family = AF_INET6;
+	    sin6.sin6_family = family = AF_INET6;
 	    strcpy(_hostname, hostp);
 	    hostname =_hostname;
 	} else
