@@ -221,13 +221,13 @@ for vh in ${heimdal_versions} ; do
 	heimdal ${vh} \
 	"configure ${wok4} ${wossl}" || \
 	{ failed="${failed} ${v}" ; continue ; }
-    if ! ( ${targetdir}/heimdal-${vh}/bin/krb5-config --libs | \
+    if ( ${targetdir}/heimdal-${vh}/bin/krb5-config --libs | \
 	grep lcrypto) >/dev/null 2>&1 ; then
 	logprint "*** failed to build WITHOUT openssl"
         failed="${failed} ${v}"
 	continue
     fi
-    if ! ( ${targetdir}/heimdal-${vh}/bin/krb5-config --libs | \
+    if ( ${targetdir}/heimdal-${vh}/bin/krb5-config --libs | \
 	grep krb4 ) >/dev/null 2>&1 ; then
 	logprint "*** failed to build WITHOUT krb4"
         failed="${failed} ${v}"
