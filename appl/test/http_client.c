@@ -343,15 +343,17 @@ main(int argc, char **argv)
 		else if (maj_stat & GSS_S_CONTINUE_NEEDED)
 		    gssapi_done = 0;
 		else {
-		    gss_name_t targ_name;
+		    gss_name_t targ_name, src_name;
 		    gss_buffer_desc name_buffer;
 		    gss_OID mech_type;
 
 		    gssapi_done = 1;
 
+		    printf("Negotiate done\n");
+
 		    maj_stat = gss_inquire_context(&min_stat,
 						   context_hdl,
-						   NULL,
+						   &src_name,
 						   &targ_name,
 						   NULL,
 						   &mech_type,
@@ -362,13 +364,26 @@ main(int argc, char **argv)
 			gss_err (1, min_stat, "gss_inquire_context");
 
 		    maj_stat = gss_display_name(&min_stat,
+						src_name,
+						&name_buffer,
+						NULL);
+		    if (GSS_ERROR(maj_stat))
+			gss_err (1, min_stat, "gss_display_name");
+
+		    printf("Source: %.*s\n",
+			   (int)name_buffer.length,
+			   (char *)name_buffer.value);
+
+		    gss_release_buffer(&min_stat, &name_buffer);
+
+		    maj_stat = gss_display_name(&min_stat,
 						targ_name,
 						&name_buffer,
 						NULL);
 		    if (GSS_ERROR(maj_stat))
 			gss_err (1, min_stat, "gss_display_name");
 
-		    printf("Negotiate done, target: %.*s\n",
+		    printf("Target: %.*s\n",
 			   (int)name_buffer.length,
 			   (char *)name_buffer.value);
 
