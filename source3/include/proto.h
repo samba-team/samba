@@ -651,6 +651,9 @@ BOOL api_LsarpcTNP(int cnum,int uid, char *param,char *data,
 		     int mdrcnt,int mprcnt,
 		     char **rdata,char **rparam,
 		     int *rdata_len,int *rparam_len);
+
+/*The following definitions come from  pipesrvsvc.c  */
+
 BOOL api_srvsvcTNP(int cnum,int uid, char *param,char *data,
 		     int mdrcnt,int mprcnt,
 		     char **rdata,char **rparam,
@@ -883,6 +886,12 @@ struct smb_passwd *get_smbpwnam(char *name);
 
 /*The following definitions come from  smbrun.c  */
 
+
+/*The following definitions come from  srvparse.c  */
+
+char* srv_io_q_net_share_enum(BOOL io, SRV_Q_NET_SHARE_ENUM *q_n, char *q, char *base, int align, int depth);
+char* srv_io_r_net_share_enum(BOOL io, SRV_R_NET_SHARE_ENUM *r_n, char *q, char *base, int align, int depth);
+char* srv_io_q_net_share_enum(BOOL io, SRV_Q_NET_SHARE_ENUM *q_n, char *q, char *base, int align, int depth);
 
 /*The following definitions come from  status.c  */
 

@@ -32,6 +32,8 @@
 
 extern int DEBUGLEVEL;
 
+extern BOOL sam_logon_in_ssb;
+extern pstring samlogon_user;
 
 #ifdef NTDOMAIN
 
@@ -505,7 +507,6 @@ static void api_lsa_sam_logon( user_struct *vuser,
 		pstring my_name;
 		pstring my_workgroup;
 		pstring dom_sid;
-		pstring username;
 		extern pstring myname;
 
 		dummy_time.low  = 0xffffffff;
@@ -513,12 +514,16 @@ static void api_lsa_sam_logon( user_struct *vuser,
 
 		get_myname(myname, NULL);
 
+		pstrcpy(samlogon_user, unistr2(q_l.sam_id.auth.id1.uni_user_name.buffer));
+
+		/* hack to get standard_sub_basic() to use the sam logon username */
+		sam_logon_in_ssb = True;
+
 		pstrcpy(logon_script, lp_logon_script());
 		pstrcpy(profile_path, lp_logon_path  ());
 		pstrcpy(dom_sid     , lp_domainsid   ());
 		pstrcpy(my_workgroup, lp_workgroup   ());
 
-		pstrcpy(username, unistr2(q_l.sam_id.auth.id1.uni_user_name.buffer));
 		pstrcpy(my_name     , myname           );
 		strupper(my_name);
 
@@ -528,8 +533,10 @@ static void api_lsa_sam_logon( user_struct *vuser,
 		pstrcpy(home_dir    , vuser->home_share);
 #else
 		pstrcpy(home_dir    , "\\\\%L\\%U");
-		standard_sub_basic(home_dir);
 #endif
+		standard_sub_basic(home_dir);
+
+		sam_logon_in_ssb = False;
 
 		make_lsa_user_info(&usr_info,
 
@@ -540,7 +547,7 @@ static void api_lsa_sam_logon( user_struct *vuser,
 		               &dummy_time, /* pass_can_change_time */
 		               &dummy_time, /* pass_must_change_time */
 
-		               username, /* user_name */
+		               samlogon_user, /* user_name */
 		               vuser->real_name, /* full_name */
 		               logon_script, /* logon_script */
 		               profile_path, /* profile_path */

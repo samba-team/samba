@@ -72,7 +72,12 @@ static enum remote_arch_types ra_type = RA_UNKNOWN;
 fstring remote_proto="UNKNOWN";
 pstring myhostname="";
 pstring user_socket_options="";   
+
 pstring sesssetup_user="";
+pstring samlogon_user="";
+
+BOOL sam_logon_in_ssb = False;
+
 pstring myname = "";
 fstring myworkgroup = "";
 char **my_netbios_names;
@@ -3603,38 +3608,49 @@ Rewritten by Stefaan A Eeckels <Stefaan.Eeckels@ecc.lu> and
 Paul Rippin <pr3245@nopc.eurostat.cec.be>
 ********************************************************************/
 void standard_sub_basic(char *str)
-  {
-  char *s, *p;
-    char pidstr[10];
-  struct passwd *pass;
+{
+	char *s, *p;
+	char pidstr[10];
+	struct passwd *pass;
+	char *username = sam_logon_in_ssb ? samlogon_user : sesssetup_user;
 
-  for (s = str ; (p = strchr(s,'%')) != NULL ; s = p )
-  {
-    switch (*(p+1))
-  {
-      case 'G' : if ((pass = Get_Pwnam(sesssetup_user,False))!=NULL)
-                   string_sub(p,"%G",gidtoname(pass->pw_gid));
-                 else
-                   p += 2;
-                 break;
-      case 'I' : string_sub(p,"%I",client_addr()); break;
-      case 'L' : string_sub(p,"%L",local_machine); break;
-      case 'M' : string_sub(p,"%M",client_name()); break;
-      case 'R' : string_sub(p,"%R",remote_proto); break;
-      case 'T' : string_sub(p,"%T",timestring()); break;
-      case 'U' : string_sub(p,"%U",sesssetup_user); break;
-      case 'a' : string_sub(p,"%a",remote_arch); break;
-      case 'd' : sprintf(pidstr,"%d",(int)getpid());
-                 string_sub(p,"%d",pidstr);
-                 break;
-      case 'h' : string_sub(p,"%h",myhostname); break;
-      case 'm' : string_sub(p,"%m",remote_machine); break;
-      case 'v' : string_sub(p,"%v",VERSION); break;
-      case '\0' : p++; break; /* don't run off end if last character is % */
-      default  : p+=2; break;
-    }
-  }
-  return;
+	for (s = str ; (p = strchr(s,'%')) != NULL ; s = p )
+	{
+		switch (*(p+1))
+		{
+			case 'G' :
+			{
+				if ((pass = Get_Pwnam(sesssetup_user,False))!=NULL)
+				{
+					string_sub(p,"%G",gidtoname(pass->pw_gid));
+				}
+				else
+				{
+					p += 2;
+				}
+				break;
+			}
+			case 'I' : string_sub(p,"%I", client_addr()); break;
+			case 'L' : string_sub(p,"%L", local_machine); break;
+			case 'M' : string_sub(p,"%M", client_name()); break;
+			case 'R' : string_sub(p,"%R", remote_proto); break;
+			case 'T' : string_sub(p,"%T", timestring()); break;
+			case 'U' : string_sub(p,"%U", username); break;
+			case 'a' : string_sub(p,"%a", remote_arch); break;
+			case 'd' :
+			{
+				sprintf(pidstr,"%d",(int)getpid());
+				string_sub(p,"%d", pidstr);
+				break;
+			}
+			case 'h' : string_sub(p,"%h", myhostname); break;
+			case 'm' : string_sub(p,"%m", remote_machine); break;
+			case 'v' : string_sub(p,"%v", VERSION); break;
+			case '\0': p++; break; /* don't run off end if last character is % */
+			default  : p+=2; break;
+		}
+	}
+	return;
 }
 
 /*******************************************************************
