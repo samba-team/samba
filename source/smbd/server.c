@@ -426,6 +426,11 @@ void exit_server(char *reason)
 
 	conn_close_all();
 
+	/* delete our entry in the connections database. */
+	if (lp_status(-1)) {
+		yield_connection(NULL,"",MAXSTATUS);
+	}
+
     respond_to_all_remaining_local_messages();
 
 #ifdef WITH_DFS
