@@ -164,6 +164,7 @@ BOOL vfs_init_custom(connection_struct *conn, const char *vfs_object)
 
 	if (init_fptr == NULL) {
 		DEBUG(0, ("No vfs_init() symbol found in %s\n", vfs_object));
+		sys_dlclose(conn->vfs_private->handle);
 		return False;
 	}
 
@@ -171,12 +172,14 @@ BOOL vfs_init_custom(connection_struct *conn, const char *vfs_object)
 
  	if ((ops = init_fptr(&vfs_version, &conn->vfs_ops, conn->vfs_private)) == NULL) {
  		DEBUG(0, ("vfs_init() function from %s failed\n", vfs_object));
+		sys_dlclose(conn->vfs_private->handle);
  		return False;
  	}
   
  	if ((vfs_version < SMB_VFS_INTERFACE_CASCADED)) {
  		DEBUG(0, ("vfs_init() returned wrong interface version info (was %d, should be no less than %d)\n",
  			vfs_version, SMB_VFS_INTERFACE_VERSION ));
+		sys_dlclose(conn->vfs_private->handle);
   		return False;
   	}
   
@@ -184,6 +187,7 @@ BOOL vfs_init_custom(connection_struct *conn, const char *vfs_object)
  		DEBUG(0, ("Warning: vfs_init() states that module confirms interface version #%d, current interface version is #%d.\n\
 Proceeding in compatibility mode, new operations (since version #%d) will fallback to default ones.\n",
  			vfs_version, SMB_VFS_INTERFACE_VERSION, vfs_version ));
+		sys_dlclose(conn->vfs_private->handle);
   		return False;
   	}
   
@@ -249,6 +253,8 @@ BOOL smbd_vfs_init(connection_struct *conn)
 						DEBUG(0, ("smbd_vfs_init: vfs_init_custom failed for %s\n", vfs_module));
 						string_free(&vfsobj);
 						SAFE_FREE(vfs_module);
+						DLIST_REMOVE(conn->vfs_private, handle);
+						SAFE_FREE(handle);
 						return False;
 					}
 					SAFE_FREE(vfs_module);

@@ -569,7 +569,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	if (!smbd_vfs_init(conn)) {
 		DEBUG(0, ("vfs_init failed for service %s\n", lp_servicename(SNUM(conn))));
 		conn_free(conn);
-		*status = NT_STATUS_UNSUCCESSFUL;
+		*status = NT_STATUS_BAD_NETWORK_NAME;
 		return NULL;
 	}
 
@@ -598,7 +598,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			DEBUG(1,("root preexec gave %d - failing connection\n", ret));
 			yield_connection(conn, lp_servicename(SNUM(conn)));
 			conn_free(conn);
-			*status = NT_STATUS_UNSUCCESSFUL;
+			*status = NT_STATUS_ACCESS_DENIED;
 			return NULL;
 		}
 	}
@@ -627,7 +627,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			change_to_root_user();
 			yield_connection(conn, lp_servicename(SNUM(conn)));
 			conn_free(conn);
-			*status = NT_STATUS_UNSUCCESSFUL;
+			*status = NT_STATUS_ACCESS_DENIED;
 			return NULL;
 		}
 	}
