@@ -1,10 +1,11 @@
 /* 
    Unix SMB/Netbios implementation.
-   Version 2.0
+   Version 2.2
 
    Winbind daemon - user related functions
 
    Copyright (C) Tim Potter 2000
+   Copyright (C) Jeremy Allison 2001.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -96,8 +97,7 @@ static struct winbindd_pw negative_pw_cache_entry;
 /* Return a password structure from a username.  Specify whether cached data 
    can be returned. */
 
-enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state 
-						 *state) 
+enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state *state) 
 {
 	uint32 user_rid, group_rid;
 	SAM_USERINFO_CTR *user_info;
