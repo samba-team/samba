@@ -1,8 +1,9 @@
 !==
-!== DHCP-Server-Configuration.txt for Samba release 2.0.4 18 May 1999
+!== DHCP-Server-Configuration.txt for Samba release 2.2.0-alpha3 24 Mar 2001
 !==
 Subject:	DHCP Server Configuration for SMB Clients
 Date:		March 1, 1998
+Updated:        May 15, 2001
 Contributor:	John H Terpstra <jht@samba.org>
 Support:	This is an unsupported document. Refer to documentation that is
 		supplied with the ISC DHCP Server. Do NOT email the contributor
@@ -13,13 +14,13 @@ Background:
 ===========
 
 We wish to help those folks who wish to use the ISC DHCP Server and provide
-sample configuration settings. Red Hat Linux 5.0 is one operating system that
-comes supplied with the ISC DHCP Server. ISC DHCP is available from
+sample configuration settings. Most operating systems today come ship with
+the ISC DHCP Server. ISC DHCP is available from:
 		ftp://ftp.isc.org/isc/dhcp
 
-Incorrect configuration of MS Windows clients (Windows95, Windows NT Server and
-Workstation) will lead to problems with browsing and with general network
-operation. Windows 95 users often report problems where the TCP/IP and related
+Incorrect configuration of MS Windows clients (Windows9X, Windows ME, Windows
+NT/2000) will lead to problems with browsing and with general network
+operation. Windows 9X/ME users often report problems where the TCP/IP and related
 network settings will inadvertantly become reset at machine start-up resulting
 in loss of configuration settings. This results in increased maintenance
 overheads as well as serious user frustration.
@@ -29,7 +30,8 @@ network operating problems to incorrect configuration of Samba.
 
 One user insisted that the only way to provent Windows95 from periodically
 performing a full system reset and hardware detection process on start-up was
-to install the NetBEUI protocol in addition to TCP/IP.
+to install the NetBEUI protocol in addition to TCP/IP. This assertion is not
+correct.
 
 In the first place, there is NO need for NetBEUI. All Microsoft Windows clients
 natively run NetBIOS over TCP/IP, and that is the only protocol that is
@@ -45,6 +47,25 @@ for many years without any of the melt-down problems that some sensationalists
 would have us believe can be experienced with DHCP. In fact, DHCP in covered by
 rfc1541 and is a very safe method of keeping an MS Windows desktop environment
 under control and for ensuring stable network operation.
+
+Please note that MS Windows systems as of MS Windows NT 3.1 and MS Windows 95
+store all network configuration settings a registry. There are a few reports
+from MS Windows network administrators that warrant mention here. It would appear
+that when one sets certain MS TCP/IP protocol settings (either directly or via
+DHCP) that these do get written to the registry. Even though a subsequent
+change of setting may occur the old value may persist in the registry. This
+has been known to create serious networking problems.
+
+An example of this occurs when a manual TCP/IP environment is configured to
+include a NetBIOS Scope. In this event, when the administrator then changes the
+configuration of the MS TCP/IP protocol stack, without first deleting the
+current settings, by simply checking the box to configure the MS TCP/IP stack
+via DHCP then the NetBIOS Scope that is still persistent in the registry WILL be
+applied to the resulting DHCP offered settings UNLESS the DHCP server also sets
+a NetBIOS Scope. It may therefore be prudent to forcibly apply a NULL NetBIOS
+Scope from your DHCP server. The can be done in the dhcpd.conf file with the
+parameter:
+         option netbios-scope "";
 
 While it is true that the Microsoft DHCP server that comes with Windows NT
 Server provides only a sub-set of rfc1533 functionality this is hardly an issue
@@ -76,9 +97,17 @@ such helper agent is the NetBIOS Name Server (NBNS) or as Microsoft called it
 in their Windows NT Server implementation WINS (Windows Internet Name Server).
 
 A client needs to be configured so that it has a unique Machine (Computer)
-Name. This can NOT be done via DHCP and must be assigned when MS Windows
-networking is first installed. All remaining TCP/IP networking parameters can
-be assigned via DHCP. These include:
+Name.
+
+This can be done, but needs a few NT registry hacks and you need to be able to
+speak UNICODE, which is of course no problem for a True Wizzard(tm) :)
+Instructions on how to do this (including a small util for less capable
+Wizzards) can be found at
+
+	http://www.unixtools.org/~nneul/sw/nt/dhcp-netbios-hostname.html
+
+
+All remaining TCP/IP networking parameters can be assigned via DHCP. These include:
 
 a) IP Address,
 b) Netmask,
@@ -87,11 +116,18 @@ d) DNS Domain Name,
 e) DNS Server addresses,
 f) WINS (NBNS) Server addresses,
 g) IP Forwarding,
-h) Timezone offset, 
+h) Timezone offset,
 i) Node Type,
+j) NetBIOS Scope
 
 Other assignments can be made from a DHCP server too, but the above cover the
 major needs.
+
+Note: IF ever an entry has has been made to the NetBIOS Scope field of the
+TCP/IP configuration panel on an MS Windows machine, and it has then been
+committed, then that setting may become persistent. In such a c ase it is better
+to configure the DHCP server with a NetBIOS Scope consisting of an empty string
+(ie: A NULL scope).
 
 
 DHCP Server Installation:
@@ -135,19 +171,23 @@ subnet 172.16.1.0 netmask 255.255.255.0 {
 	option domain-name "bestnet.com.au";
 	option time-offset 39600;
 	option ip-forwarding off;
-	option netbios-name-servers 172.16.0.1;
+	option netbios-name-servers 172.16.0.1, 172.16.0.1;
 	option netbios-dd-server 172.16.0.1;
 	option netbios-node-type 8;
+        option netbios-scope "";
 }
+
+; Note: The above netbios-scope is purposely an empty (NULL) string.
 
 group {
 	next-server 172.16.1.10;
 	option subnet-mask 255.255.255.0;
 	option domain-name "bestnet.com.au";
 	option domain-name-servers 172.16.1.1, 172.16.0.2;
-	option netbios-name-servers 172.16.0.1;
+	option netbios-name-servers 172.16.0.1, 172.16.0.1;
 	option netbios-dd-server 172.16.0.1;
 	option netbios-node-type 8;
+        option netbios-scope "SomeCrazyScope";
 	option routers 172.16.1.240;
 	option time-offset 39600;
 	host lexmark1 {
@@ -169,7 +209,7 @@ You can do this by typing:	cp /dev/null /etc/dhcpd.leases
 
 Setting up a route table for all-ones addresses:
 ================================================
-Quoting from the README file that comes with th eISC DHCPD Server:
+Quoting from the README file that comes with the ISC DHCPD Server:
 
                               BROADCAST
 
