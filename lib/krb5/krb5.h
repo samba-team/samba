@@ -291,6 +291,7 @@ typedef struct krb5_context_data {
     const char *http_proxy;
     const char *time_fmt;
     krb5_boolean log_utc;
+    const char *default_keytab;
 } krb5_context_data;
 
 enum {
