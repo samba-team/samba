@@ -146,6 +146,7 @@ static int generic_job_submit(int snum, struct printjob *pjob)
 	pstring print_directory;
 	char *wd, *p;
 	pstring jobname;
+	fstring job_page_count, job_size;
 
 	/* we print from the directory path to give the best chance of
            parsing the lpq output */
@@ -164,14 +165,18 @@ static int generic_job_submit(int snum, struct printjob *pjob)
 
 	pstrcpy(jobname, pjob->jobname);
 	pstring_sub(jobname, "'", "_");
+	slprintf(job_page_count, sizeof(job_page_count)-1, "%d", pjob->page_count);
+	slprintf(job_size, sizeof(job_size)-1, "%d", pjob->size);
 
 	/* send it to the system spooler */
 	ret = print_run_command(snum, 
-			  lp_printcommand(snum), NULL,
-			  "%s", p,
-  			  "%J", jobname,
-			  "%f", p,
-			  NULL);
+			lp_printcommand(snum), NULL,
+			"%s", p,
+			"%J", jobname,
+			"%f", p,
+			"%z", job_size,
+			"%c", job_page_count,
+			NULL);
 
 	chdir(wd);
 
