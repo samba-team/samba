@@ -159,8 +159,8 @@ kdb_prop(void *arg, Principal *p)
     strlcpy(pr.name, p->name, sizeof(pr.name));
     strlcpy(pr.instance, p->instance, sizeof(pr.instance));
 
+    copy_to_key(&p->key_low, &p->key_high, pr.key);
     kdb_encrypt_key(&pr.key, &pr.key, &mkey4, msched4, DES_DECRYPT);
-    copy_from_key(pr.key, &p->key_low, &p->key_high);
     pr.exp_date = p->exp_date;
     pr.mod_date = p->mod_date;
     strlcpy(pr.mod_name, p->mod_name, sizeof(pr.mod_name));
@@ -769,10 +769,9 @@ v4_get_masterkey (krb5_context context, char *database)
     if(e)
 	krb5_errx(context, 1, "kdb_get_master_key: %s",
 		  krb_get_err_text(e));
-    e = kdb_verify_master_key(&mkey4, msched4, stdout);
-    if (e)
-	krb5_errx(context, 1, "kdb_verify_master_key: %s",
-		  krb_get_err_text(e));
+    e = kdb_verify_master_key(&mkey4, msched4, NULL);
+    if (e < 0)
+	krb5_errx(context, 1, "kdb_verify_master_key failed");
 }
 
 #endif
