@@ -133,6 +133,8 @@ struct
   {"enumusers",  cmd_sam_enum_users,   "SAM User Database Query (experimental!)"},
   {"addgroupmem",cmd_sam_add_groupmem,"<group rid> [member rid1] [member rid2] ... SAM Add Domain Group Member"},
   {"addaliasmem",cmd_sam_add_aliasmem,"<alias rid> [member sid1] [member sid2] ... SAM Add Domain Alias Member"},
+  {"delgroupmem",cmd_sam_del_groupmem,"<group rid> [member rid1] [member rid2] ... SAM Delete Domain Group Member"},
+  {"delaliasmem",cmd_sam_del_aliasmem,"<alias rid> [member sid1] [member sid2] ... SAM Delete Domain Alias Member"},
   {"creategroup",cmd_sam_create_dom_group,"SAM Create Domain Group"},
   {"createalias",cmd_sam_create_dom_alias,"SAM Create Domain Alias"},
   {"createuser", cmd_sam_create_dom_user,"<username> SAM Create Domain User"},
