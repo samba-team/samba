@@ -222,7 +222,7 @@ static struct cli_state *init_connection(struct cli_state *cli,
  int main(int argc, char **argv)
 {
         BOOL do_sam_sync = False, do_sam_repl = False;
-        pstring servicesf = CONFIGFILE;
+        pstring servicesf = dyn_CONFIGFILE;
         struct cli_state cli;
         NTSTATUS result;
         int opt;
@@ -295,7 +295,7 @@ static struct cli_state *init_connection(struct cli_state *cli,
 
         /* Initialise samba */
 
-	slprintf(debugf, sizeof(debugf) - 1, "%s/log.%s", LOGFILEBASE, 
+	slprintf(debugf, sizeof(debugf) - 1, "%s/log.%s", dyn_LOGFILEBASE, 
                  "samsync");
 
         setup_logging("samsync", interactive);

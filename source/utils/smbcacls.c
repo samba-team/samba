@@ -802,7 +802,6 @@ You can string acls together with spaces, commas or newlines\n\
 	extern int optind;
 	int opt;
 	char *p;
-	static pstring servicesf = CONFIGFILE;
 	struct cli_state *cli=NULL;
 	enum acl_mode mode = SMB_ACL_SET;
 	char *the_acl = NULL;
@@ -832,7 +831,7 @@ You can string acls together with spaces, commas or newlines\n\
 
 	TimeInit();
 
-	lp_load(servicesf,True,False,False);
+	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();
 
 	if (getenv("USER")) {

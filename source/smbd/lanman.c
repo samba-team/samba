@@ -1713,7 +1713,7 @@ static BOOL api_RNetShareAdd(connection_struct *conn,uint16 vuid, char *param,ch
   if (!cmdname || *cmdname == '\0') return False;
 
   asprintf(&command, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
-	   lp_add_share_cmd(), CONFIGFILE, sharename, pathname, comment);
+	   lp_add_share_cmd(), dyn_CONFIGFILE, sharename, pathname, comment);
 
   if (command) {
     DEBUG(10,("api_RNetShareAdd: Running [%s]\n", command ));

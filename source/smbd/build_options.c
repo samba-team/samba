@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "build_env.h"
+#include "dynconfig.h"
 
 static void output(BOOL screen, char *format, ...) PRINTF_ATTRIBUTE(2,3);
 
@@ -184,30 +185,22 @@ void build_options(BOOL screen)
 
        /* Output various paths to files and directories */
        output(screen,"\nPaths:\n");
-#ifdef CONFIGFILE
-       output(screen,"   CONFIGFILE: %s\n",CONFIGFILE);
-#endif
+       output(screen,"   CONFIGFILE: %s\n", dyn_CONFIGFILE);
 #ifdef PRIVATE_DIR
        output(screen,"   PRIVATE_DIR: %s\n",PRIVATE_DIR);
 #endif
 #ifdef LMHOSTSFILE
        output(screen,"   LMHOSTSFILE: %s\n",LMHOSTSFILE);
 #endif
-#ifdef SBINDIR
-       output(screen,"   SBINDIR: %s\n",SBINDIR);
-#endif
-#ifdef BINDIR
-       output(screen,"   BINDIR: %s\n",BINDIR);
-#endif
+       output(screen,"   SBINDIR: %s\n", dyn_SBINDIR);
+       output(screen,"   BINDIR: %s\n", dyn_BINDIR);
 #ifdef LOCKDIR
        output(screen,"   LOCKDIR: %s\n",LOCKDIR);
 #endif
 #ifdef DRIVERFILE
        output(screen,"   DRIVERFILE: %s\n",DRIVERFILE);
 #endif
-#ifdef LOGFILEBASE
-       output(screen,"   LOGFILEBASE: %s\n",LOGFILEBASE);
-#endif
+       output(screen,"   LOGFILEBASE: %s\n", dyn_LOGFILEBASE);
 #ifdef FORMSFILE
        output(screen,"   FORMSFILE: %s\n",FORMSFILE);
 #endif

@@ -1,6 +1,5 @@
 /* 
    Unix SMB/Netbios implementation.
-   Version 1.9.
    Samba Web Administration Tool
    Copyright (C) Andrew Tridgell 1997-1998
    
@@ -19,11 +18,18 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+/**
+ * @group swat SWAT
+ * @{ 
+ * @file swat.c
+ *
+ * @brief Samba Web Administration Tool.
+ **/
+
 #include "includes.h"
 
 #define GLOBALS_SNUM -1
 
-static pstring servicesf = CONFIGFILE;
 static BOOL demo_mode = False;
 static BOOL have_write_access = False;
 static BOOL have_read_access = False;
@@ -370,7 +376,7 @@ static void show_parameters(int snum, int allparameters, int advanced, int print
 static BOOL load_config(BOOL save_def)
 {
 	lp_resetnumservices();
-	return lp_load(servicesf,False,save_def,False);
+	return lp_load(dyn_CONFIGFILE,False,save_def,False);
 }
 
 /****************************************************************************
@@ -393,9 +399,9 @@ static int save_reload(int snum)
 	FILE *f;
 	struct stat st;
 
-	f = sys_fopen(servicesf,"w");
+	f = sys_fopen(dyn_CONFIGFILE,"w");
 	if (!f) {
-		d_printf("failed to open %s for writing\n", servicesf);
+		d_printf("failed to open %s for writing\n", dyn_CONFIGFILE);
 		return 0;
 	}
 
@@ -413,7 +419,7 @@ static int save_reload(int snum)
 	lp_killunused(NULL);
 
 	if (!load_config(False)) {
-                d_printf("Can't reload %s\n", servicesf);
+                d_printf("Can't reload %s\n", dyn_CONFIGFILE);
                 return 0;
         }
 	iNumNonAutoPrintServices = lp_numservices();
@@ -1017,9 +1023,10 @@ static void printers_page(void)
 	d_printf("</FORM>\n");
 }
 
-/****************************************************************************
-  MAIN()
-****************************************************************************/
+
+/**
+ * main function for SWAT.
+ **/
  int main(int argc, char *argv[])
 {
 	extern char *optarg;
@@ -1052,7 +1059,7 @@ static void printers_page(void)
 	while ((opt = getopt(argc, argv,"s:a")) != EOF) {
 		switch (opt) {
 		case 's':
-			pstrcpy(servicesf,optarg);
+			pstrcpy(dyn_CONFIGFILE,optarg);
 			break;	  
 		case 'a':
 			demo_mode = True;
@@ -1065,23 +1072,23 @@ static void printers_page(void)
 	iNumNonAutoPrintServices = lp_numservices();
 	load_printers();
 
-	cgi_setup(SWATDIR, !demo_mode);
+	cgi_setup(dyn_SWATDIR, !demo_mode);
 
 	print_header();
 
 	cgi_load_variables();
 
-	if (!file_exist(servicesf, NULL)) {
+	if (!file_exist(dyn_CONFIGFILE, NULL)) {
 		have_read_access = True;
 		have_write_access = True;
 	} else {
 		/* check if the authenticated user has write access - if not then
 		   don't show write options */
-		have_write_access = (access(servicesf,W_OK) == 0);
+		have_write_access = (access(dyn_CONFIGFILE,W_OK) == 0);
 
 		/* if the user doesn't have read access to smb.conf then
 		   don't let them view it */
-		have_read_access = (access(servicesf,R_OK) == 0);
+		have_read_access = (access(dyn_CONFIGFILE,R_OK) == 0);
 	}
 
 	show_main_buttons();
@@ -1108,3 +1115,5 @@ static void printers_page(void)
 	print_footer();
 	return 0;
 }
+
+/** @} **/

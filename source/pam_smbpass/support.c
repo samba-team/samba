@@ -125,7 +125,7 @@ int make_remark( pam_handle_t * pamh, unsigned int ctrl
 int set_ctrl( int flags, int argc, const char **argv )
 {
     int i = 0;
-    static pstring servicesf = CONFIGFILE;
+    static pstring servicesf = dyn_CONFIGFILE;
     const char *service_file = servicesf;
     unsigned int ctrl;
 

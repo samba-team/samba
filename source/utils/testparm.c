@@ -218,7 +218,7 @@ int main(int argc, char *argv[])
   argc += (1 - optind);
 
   if ((argc == 1) || (argc == 3))
-    pstrcpy(configfile,CONFIGFILE);
+    pstrcpy(configfile, dyn_CONFIGFILE);
   else if ((argc == 2) || (argc == 4))
     pstrcpy(configfile,argv[optind]);
 

@@ -898,8 +898,6 @@ static int process_nonroot(int argc, char *argv[])
 **********************************************************/
 int main(int argc, char **argv)
 {	
-	static pstring servicesf = CONFIGFILE;
-
 #if defined(HAVE_SET_AUTH_PARAMETERS)
 	set_auth_parameters(argc, argv);
 #endif /* HAVE_SET_AUTH_PARAMETERS */
@@ -913,9 +911,9 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	if (!lp_load(servicesf,True,False,False)) {
+	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
-			servicesf);
+			dyn_CONFIGFILE);
 		exit(1);
 	}
 

@@ -23,8 +23,6 @@
 
 #include "winbindd.h"
 
-pstring servicesf = CONFIGFILE;
-
 /* List of all connected clients */
 
 struct winbindd_cli_state *client_list;
@@ -40,14 +38,14 @@ static BOOL reload_services_file(BOOL test)
 		pstring fname;
 
 		pstrcpy(fname,lp_configfile());
-		if (file_exist(fname,NULL) && !strcsequal(fname,servicesf)) {
-			pstrcpy(servicesf,fname);
+		if (file_exist(fname,NULL) && !strcsequal(fname,dyn_CONFIGFILE)) {
+			pstrcpy(dyn_CONFIGFILE,fname);
 			test = False;
 		}
 	}
 
 	reopen_logs();
-	ret = lp_load(servicesf,False,False,True);
+	ret = lp_load(dyn_CONFIGFILE,False,False,True);
 
 	reopen_logs();
 	load_interfaces();
@@ -713,7 +711,7 @@ int main(int argc, char **argv)
 			/* Load a different smb.conf file */
 
 		case 's':
-			pstrcpy(servicesf,optarg);
+			pstrcpy(dyn_CONFIGFILE,optarg);
 			break;
 
 		default:
@@ -722,7 +720,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	snprintf(debugf, sizeof(debugf), "%s/log.winbindd", LOGFILEBASE);
+	snprintf(debugf, sizeof(debugf), "%s/log.winbindd", dyn_LOGFILEBASE);
 	setup_logging("winbindd", interactive);
 	reopen_logs();
 

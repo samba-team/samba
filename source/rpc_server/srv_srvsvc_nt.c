@@ -1320,7 +1320,7 @@ NTSTATUS _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u,
 			return NT_STATUS_ACCESS_DENIED;
 
 		slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
-				lp_change_share_cmd(), CONFIGFILE, share_name, ptr, comment);
+				lp_change_share_cmd(), dyn_CONFIGFILE, share_name, ptr, comment);
 
 		DEBUG(10,("_srv_net_share_set_info: Running [%s]\n", command ));
 		if ((ret = smbrun(command, NULL)) != 0) {
@@ -1436,7 +1436,7 @@ NTSTATUS _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET
 	string_replace(comment, '"', ' ');
 
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
-			lp_add_share_cmd(), CONFIGFILE, share_name, ptr, comment);
+			lp_add_share_cmd(), dyn_CONFIGFILE, share_name, ptr, comment);
 
 	DEBUG(10,("_srv_net_share_add: Running [%s]\n", command ));
 	if ((ret = smbrun(command, NULL)) != 0) {
@@ -1502,7 +1502,7 @@ NTSTATUS _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET
 		return NT_STATUS_ACCESS_DENIED;
 
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\"",
-			lp_delete_share_cmd(), CONFIGFILE, lp_servicename(snum));
+			lp_delete_share_cmd(), dyn_CONFIGFILE, lp_servicename(snum));
 
 	DEBUG(10,("_srv_net_share_del: Running [%s]\n", command ));
 	if ((ret = smbrun(command, NULL)) != 0) {

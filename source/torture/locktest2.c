@@ -535,7 +535,6 @@ static void usage(void)
 	int opt;
 	char *p;
 	int seed;
-	static pstring servicesf = CONFIGFILE;
 
 	setlinebuf(stdout);
 
@@ -561,7 +560,7 @@ static void usage(void)
 
 	TimeInit();
 
-	lp_load(servicesf,True,False,False);
+	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();
 
 	if (getenv("USER")) {

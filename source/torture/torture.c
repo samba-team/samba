@@ -3081,7 +3081,6 @@ static void usage(void)
 	int gotpass = 0;
 	extern char *optarg;
 	extern int optind;
-	static pstring servicesf = CONFIGFILE;
 	BOOL correct = True;
 
 	dbf = x_stdout;
@@ -3090,7 +3089,7 @@ static void usage(void)
 	setbuffer(stdout, NULL, 0);
 #endif
 
-	lp_load(servicesf,True,False,False);
+	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();
 
 	if (argc < 2) {

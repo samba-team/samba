@@ -40,13 +40,12 @@ void pong_message(int msg_type, pid_t src, void *buf, size_t len)
 {
 	pid_t pid;
 	int i, n;
-	static pstring servicesf = CONFIGFILE;
 	char buf[12];
 
 	TimeInit();
 	setup_logging(argv[0],True);
 	
-	lp_load(servicesf,False,False,False);
+	lp_load(dyn_CONFIGFILE,False,False,False);
 
 	message_init();
 

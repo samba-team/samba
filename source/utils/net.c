@@ -1379,7 +1379,7 @@ int main(int argc,char *argv[])
   int argc_new = 0;
   const char ** argv_new;
   poptContext pc;
-  static char *servicesf = CONFIGFILE;
+  static char *servicesf = dyn_CONFIGFILE;
   static char *target_workgroup = NULL;
   static char *comment = "";
   static char *user_name = NULL;

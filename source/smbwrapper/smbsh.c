@@ -37,7 +37,7 @@ static void smbsh_usage(void)
 int main(int argc, char *argv[])
 {
 	char *p, *u;
-	char *libd = BINDIR;	
+	char *libd = dyn_BINDIR;
 	pstring line, wd;
 	int opt;
 	extern char *optarg;
