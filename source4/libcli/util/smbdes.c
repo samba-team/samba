@@ -365,7 +365,7 @@ void des_crypt112_16(uint8_t out[16], uint8_t in[16], const uint8_t key[14], int
 }
 
 /* initialise the arcfour sbox with key */
-void arcfour_init(uint8_t s_box[256], const DATA_BLOB *key) 
+void arcfour_init(uint8_t s_box[258], const DATA_BLOB *key) 
 {
 	int ind;
 	uint8_t j = 0;
