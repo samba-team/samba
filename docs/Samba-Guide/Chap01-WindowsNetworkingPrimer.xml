@@ -288,29 +288,15 @@
 		A screenshot of a later stage of the same capture is shown in <link linkend="pktcap02"/>.
 		</para>
 
-<figure id="pktcap01">
-	<title>Windows Me &smbmdash; Broadcasts &smbmdash; The First 10 Minutes</title>
-	<mediaobject>
-		<imageobject role="latex">
-			<imagedata fileref="guide/images/WINREPRESSME-Capture.png" scale="53" scalefit="1"/>
-		</imageobject>
-		<imageobject>
-			<imagedata fileref="guide/images/WINREPRESSME-Capture.png" scale="53" scalefit="1"/>
-		</imageobject>
-	</mediaobject>
-</figure>
+		<image id="pktcap01">
+			<imagefile scale="53">WINREPRESSME-Capture.png</imagefile>
+			<description>Windows Me &smbmdash; Broadcasts &smbmdash; The First 10 Minutes</description>
+		</image>
 
-<figure id="pktcap02">
-	<title>Windows Me &smbmdash; Later Broadcast Sample</title>
-	<mediaobject>
-		<imageobject role="latex">
-			<imagedata fileref="guide/images/WINREPRESSME-Capture2.png" scale="57" scalefit="1"/>
-		</imageobject>
-		<imageobject>
-			<imagedata fileref="guide/images/WINREPRESSME-Capture2.png" scale="57" scalefit="1"/>
-		</imageobject>
-	</mediaobject>
-</figure>
+		<image id="pktcap02">
+			<description>Windows Me &smbmdash; Later Broadcast Sample</description>
+			<imagefile scale="57">WINREPRESSME-Capture2.png</imagefile>
+		</image>
 
 	  <para><indexterm>
 	      <primary>Local Master Browser</primary>
@@ -614,17 +600,10 @@
 
 		</sect3>
 
-<figure id="hostannounce">
-        <title>Typical Windows 9x/Me Host Announcement</title>
-        <mediaobject>
-                <imageobject role="latex">
-                        <imagedata fileref="guide/images/HostAnnouncment.png" scale="55" scalefit="1"/>
-                </imageobject>
-                <imageobject>
-                        <imagedata fileref="guide/images/HostAnnouncment.png" scale="55" scalefit="1"/>
-                </imageobject>
-        </mediaobject>
-</figure>
+		<image id="hostannounce">
+			<description>Typical Windows 9x/Me Host Announcement</description>
+			<imagefile scale="55">HostAnnouncment.png</imagefile>
+		</image>
 
 	</sect2>
 
@@ -745,17 +724,11 @@
 		<link linkend="nullconnect"/>.
 		</para>
 
-<figure id="nullconnect">
-        <title>Typical Windows 9x/Me NULL SessionSetUp AndX Request</title>
-        <mediaobject>
-                <imageobject role="latex">
-                        <imagedata fileref="guide/images/NullConnect.png" scale="65" scalefit="1"/>
-                </imageobject>
-                <imageobject>
-                        <imagedata fileref="guide/images/NullConnect.png" scale="65" scalefit="1"/>
-                </imageobject>
-        </mediaobject>
-</figure>
+		<image id="nullconnect">
+			<description>Typical Windows 9x/Me NULL SessionSetUp AndX Request</description>
+
+			<imagefile scale="65">NullConnect.png</imagefile>
+		</image>
 
 		<para>
 	    	<indexterm><primary>nobody</primary></indexterm>
@@ -769,17 +742,10 @@
 		is shown in <link linkend="userconnect"/>.
 		</para>
 
-<figure id="userconnect">
-        <title>Typical Windows 9x/Me User SessionSetUp AndX Request</title>
-        <mediaobject>
-                <imageobject role="latex">
-                        <imagedata fileref="guide/images/UserConnect.png" scale="65" scalefit="1"/>
-                </imageobject>
-                <imageobject>
-                        <imagedata fileref="guide/images/UserConnect.png" scale="65" scalefit="1"/>
-                </imageobject>
-        </mediaobject>
-</figure>
+		<image id="userconnect">
+			<description>Typical Windows 9x/Me User SessionSetUp AndX Request</description>
+			<imagefile scale="65">UserConnect.png</imagefile>
+		</image>
 
 	 	<para>
 		<indexterm><primary>encrypted</primary></indexterm>
@@ -931,29 +897,15 @@
 
 	</procedure>
 
-<figure id="XPCap01">
-        <title>Typical Windows XP NULL Session Setup AndX Request</title>
-        <mediaobject>
-                <imageobject role="latex">
-                        <imagedata fileref="guide/images/WindowsXP-NullConnection.png" scale="70" scalefit="1"/>
-                </imageobject>
-                <imageobject>
-                        <imagedata fileref="guide/images/WindowsXP-NullConnection.png" scale="70" scalefit="1"/>
-                </imageobject>
-        </mediaobject>
-</figure>
+	<image id="XPCap01">
+        <description>Typical Windows XP NULL Session Setup AndX Request</description>
+		<imagefile scale="70">WindowsXP-NullConnection.png</imagefile>
+	</image>
 
-<figure id="XPCap02">
-        <title>Typical Windows XP User Session Setup AndX Request</title>
-        <mediaobject>
-                <imageobject role="latex">
-                        <imagedata fileref="guide/images/WindowsXP-UserConnection.png" scale="70" scalefit="1"/>
-                </imageobject>
-                <imageobject>
-                        <imagedata fileref="guide/images/WindowsXP-UserConnection.png" scale="70" scalefit="1"/>
-                </imageobject>
-        </mediaobject>
-</figure>
+	<image id="XPCap02">
+        <description>Typical Windows XP User Session Setup AndX Request</description>
+		<imagefile scale="70">WindowsXP-UserConnection.png</imagefile>
+	</image>
 
 		<sect3>
 		<title>Discussion</title>

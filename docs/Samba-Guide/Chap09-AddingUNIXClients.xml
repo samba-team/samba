@@ -28,17 +28,10 @@
 	<link linkend="ch09openmag"/>.
 	</para>
 
-<figure id="ch09openmag">
-	<title>Open Magazine Samba Survey</title>
-	<mediaobject>
-		<imageobject role="latex">
-			<imagedata fileref="guide/images/openmag.png" scale="60" scalefit="1"/>
-		</imageobject>
-		<imageobject>
-			<imagedata fileref="guide/images/openmag.png" scale="60" scalefit="1"/>
-		</imageobject>
-	</mediaobject>
-</figure>
+	<image id="ch09openmag">
+		<description>Open Magazine Samba Survey</description>
+		<imagefile scale="60">openmag.png</imagefile>
+	</image>
 
 	<para>
 	While Domain Control is an exciting subject, basic file and print sharing remains the staple bread-and-butter
@@ -522,17 +515,10 @@
 	Member server within a Samba Domain Control network.
 	</para>
 
-<figure id="ch9-sambadc">
-	<title>Samba Domain: Samba Member Server</title>
-	<mediaobject>
-		<imageobject role="latex">
-			<imagedata fileref="guide/images/chap9-SambaDC.png" scale="75" scalefit="1"/>
-		</imageobject>
-		<imageobject>
-			<imagedata fileref="guide/images/chap9-SambaDC.png" scale="75" scalefit="1"/>
-		</imageobject>
-	</mediaobject>
-</figure>
+<image id="ch9-sambadc">
+	<description>Samba Domain: Samba Member Server</description>
+	<imagefile scale="75">chap9-SambaDC.png</imagefile>
+</image>
 
 	<para><indexterm>
 	    <primary>IDMAP</primary>
@@ -1111,17 +1097,10 @@ aliases:        files
 	Domain Name is <constant>LONDON</constant> and the server name is <constant>W2K3S</constant>.
 	</para>
 
-<figure id="ch9-adsdc">
-	<title>Active Directory Domain: Samba Member Server</title>
-	<mediaobject>
-		<imageobject role="latex">
-			<imagedata fileref="guide/images/chap9-ADSDC.png" scale="75" scalefit="1"/>
-		</imageobject>
-		<imageobject>
-			<imagedata fileref="guide/images/chap9-SambaDC.png" scale="75" scalefit="1"/>
-		</imageobject>
-	</mediaobject>
-</figure>
+	<image id="ch9-adsdc">
+		<description>Active Directory Domain: Samba Member Server</description>
+		<imagefile scale="75">chap9-ADSDC.png</imagefile>
+	</image>
 
 	<procedure>
 	  <step><para><indexterm>

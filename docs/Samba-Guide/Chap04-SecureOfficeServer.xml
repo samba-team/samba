@@ -162,17 +162,10 @@
 			</tgroup>
 		</table>
 
-<figure id="ch04net">
-	<title>Abmas Network Topology &smbmdash; 130 Users</title>
-	<mediaobject>
-		<imageobject role="latex">
-			<imagedata fileref="guide/images/chap4-net.png" scale="90" scalefit="1"/>
-		</imageobject>
-		<imageobject>
-			<imagedata fileref="guide/images/chap4-net.png" scale="90" scalefit="1"/>
-		</imageobject>
-	</mediaobject>
-</figure>
+		<image id="ch04net">
+			<description>Abmas Network Topology &smbmdash; 130 Users</description>
+			<imagefile scale="90">chap4-net.png</imagefile>
+		</image>
 
 		<para>
 		Christine has recommended that desktop systems should be installed from a single cloned

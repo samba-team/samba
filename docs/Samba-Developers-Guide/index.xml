@@ -39,12 +39,7 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 </abstract>
 
 </bookinfo>
-<preface>
-	<title>Attributions</title>
-
-	<xi:include href="attributions.xml"/>
-</preface>
-	
+<xi:include href="../Samba-Developers-Guide-attributions.xml"/>
 
 <!-- Contents -->
 <toc/>

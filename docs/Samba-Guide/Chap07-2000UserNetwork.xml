@@ -708,33 +708,15 @@
 	    procedures for managing the directory, as retroactive correction of
 	    inconsistent directory information can be exceedingly difficult.</para>
 
-<figure id="chap7net">
-	<title>Network Topology &smbmdash; 2000 User Complex Design A</title>
-	<mediaobject>
-		<imageobject role="latex">
-			<imagedata scale="80" scalefit="1"
-			  fileref="guide/images/chap7-net-Ar.png"/>
-		</imageobject>
-		<imageobject>
-			<imagedata scale="80" scalefit="1"
-			  fileref="guide/images/chap7-net-Ar.png"/>
-		</imageobject>
-	</mediaobject>
-</figure>
+	<image id="chap7net">
+		<description>Network Topology &smbmdash; 2000 User Complex Design A</description>
+		<imagefile scale="80">chap7-net-Ar.png</imagefile>
+	</image>
 
-<figure id="chap7net2">
-	<title>Network Topology &smbmdash; 2000 User Complex Design B</title>
-	<mediaobject>
-		<imageobject role="latex">
-			<imagedata scale="80" scalefit="1"
-			  fileref="guide/images/chap7-net2-Br.png"/>
-		</imageobject>
-		<imageobject>
-			<imagedata scale="80" scalefit="1"
-			  fileref="guide/images/chap7-net2-Br.png"/>
-		</imageobject>
-	</mediaobject>
-</figure>
+	<image id="chap7net2">
+		<description>Network Topology &smbmdash; 2000 User Complex Design B</description>
+		<imagefile scale="80">chap7-net2-Br.png</imagefile>
+	</image>
 
 	</sect3>
 
@@ -776,19 +758,10 @@
 	(obtaining a UNIX UID/GID) using the specific systems shown.
 	</para>
 
-<figure id="chap7idres">
-	<title>Samba and Authentication Backend Search Pathways</title>
-	<mediaobject>
-		<imageobject role="latex">
-			<imagedata scale="80" scalefit="1"
-			  fileref="guide/images/chap7-idresol.png"/>
-		</imageobject>
-		<imageobject>
-			<imagedata scale="80" scalefit="1"
-			  fileref="guide/images/chap7-idresol.png"/>
-		</imageobject>
-	</mediaobject>
-</figure>
+	<image id="chap7idres">
+		<description>Samba and Authentication Backend Search Pathways</description>
+		<imagefile scale="80">chap7-idresol.png</imagefile>
+	</image>
 
       <para><indexterm>
 	  <primary>smbpasswd</primary>
@@ -826,17 +799,10 @@ passdb backend = ldapsam:ldap://master.abmas.biz
 </screen>
 	This configuration tells Samba to use a single LDAP server as shown in
 	<link linkend="ch7singleLDAP"/>.
-	<figure id="ch7singleLDAP">
-		<title>Samba Configuration to Use a Single LDAP Server</title>
-		<mediaobject>
-			<imageobject role="latex">
-				<imagedata fileref="guide/images/ch7-singleLDAP.png" scale="100" scalefit="1"/>
-			</imageobject>
-			<imageobject>
-				<imagedata fileref="guide/images/ch7-singleLDAP.png" scale="100" scalefit="1"/>
-			</imageobject>
-		</mediaobject>
-	</figure>
+	<image id="ch7singleLDAP">
+		<description>Samba Configuration to Use a Single LDAP Server</description>
+		<imagefile scale="100">ch7-singleLDAP.png</imagefile>
+	</image>
 	<indexterm>
 	  <primary>LDAP</primary>
 	  <secondary>fail-over</secondary>
@@ -855,17 +821,10 @@ passdb backend = ldapsam:"ldap://master.abmas.biz \
 </screen>
 	This configuration tells Samba to use a master LDAP server, with fail-over to a slave server if necessary,
 	as shown in <link linkend="ch7dualLDAP"/>.
-	<figure id="ch7dualLDAP">
-		<title>Samba Configuration to Use a Dual (Fail-over) LDAP Server</title>
-		<mediaobject>
-			<imageobject role="latex">
-				<imagedata fileref="guide/images/ch7-fail-overLDAP.png" scale="100" scalefit="1"/>
-			</imageobject>
-			<imageobject>
-				<imagedata fileref="guide/images/ch7-fail-overLDAP.png" scale="100" scalefit="1"/>
-			</imageobject>
-		</mediaobject>
-	</figure>
+	<image id="ch7dualLDAP">
+		<description>Samba Configuration to Use a Dual (Fail-over) LDAP Server</description>
+		<imagefile scale="100">ch7-fail-overLDAP.png</imagefile>
+	</image>
       </para>
 
       <para>Some folks have tried to implement this without the use of
@@ -887,17 +846,10 @@ passdb backend = ldapsam:ldap://master.abmas.biz \
 	configuration is shown in <link linkend="ch7dualadd"/>
 	</para>
 
-	<figure id="ch7dualadd">
-		<title>Samba Configuration to Use Dual LDAP Databases - Broken - Do Not Use!</title>
-		<mediaobject>
-			<imageobject role="latex">
-				<imagedata fileref="guide/images/ch7-dual-additive-LDAP.png" scale="80" scalefit="1"/>
-			</imageobject>
-			<imageobject>
-				<imagedata fileref="guide/images/ch7-dual-additive-LDAP.png" scale="80" scalefit="1"/>
-			</imageobject>
-		</mediaobject>
-	</figure>
+	<image id="ch7dualadd">
+		<description>Samba Configuration to Use Dual LDAP Databases - Broken - Do Not Use!</description>
+		<imagefile scale="80">ch7-dual-additive-LDAP.png</imagefile>
+	</image>
 
 	<para>
 	If, however, each LDAP database contains unique information, this may 
@@ -906,17 +858,10 @@ passdb backend = ldapsam:ldap://master.abmas.biz \
 	An example of this configuration is shown in <link linkend="ch7dualok"/>.
         </para>
 
-	<figure id="ch7dualok">
-		<title>Samba Configuration to Use Two LDAP Databases - The result is additive.</title>
-		<mediaobject>
-			<imageobject role="latex">
-				<imagedata fileref="guide/images/ch7-dual-additive-LDAP-Ok.png" scale="80" scalefit="1"/>
-			</imageobject>
-			<imageobject>
-				<imagedata fileref="guide/images/ch7-dual-additive-LDAP-Ok.png" scale="80" scalefit="1"/>
-			</imageobject>
-		</mediaobject>
-	</figure>
+		<image id="ch7dualok">
+			<description>Samba Configuration to Use Two LDAP Databases - The result is additive.</description>
+			<imagefile scale="80">ch7-dual-additive-LDAP-Ok.png</imagefile>
+		</image>
 
 	<note><para>
 	When the use of ldapsam is specified twice, as shown here, it is imperative

@@ -13,6 +13,15 @@
    <xsl:apply-templates select="@*|node()"/>
 </xsl:template>
 
+<xsl:template match="/">
+	<xsl:element name="preface">
+		<xsl:element name="title"><xsl:text>Attribution</xsl:text></xsl:element>
+		<xsl:element name="para">
+			<xsl:apply-templates/>
+		</xsl:element>
+	</xsl:element>
+</xsl:template>
+
 <xsl:template match="chapter">
 	<xsl:choose>
 		<xsl:when test="chapterinfo/author != ''">

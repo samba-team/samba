@@ -182,17 +182,10 @@
 		from a Windows NT4 Domain to a Samba Domain.
 		</para>
 
-		<figure id="ch8-migration">
-			<title>Schematic Explaining the <command>net rpc vampire</command> Process</title>
-			<mediaobject>
-				<imageobject role="latex">
-					<imagedata fileref="guide/images/ch8-migration.png" scale="80" scalefit="1"/>
-				</imageobject>
-				<imageobject>
-					<imagedata fileref="guide/images/ch8-migration.png" scale="80" scalefit="1"/>
-				</imageobject>
-			</mediaobject>
-		</figure>
+		<image id="ch8-migration">
+			<description>Schematic Explaining the <command>net rpc vampire</command> Process</description>
+			<imagefile scale="80">ch8-migration.png</imagefile>
+		</image>
 
 		<para>
 		In any case, the migration process involves the following steps:
@@ -303,17 +296,10 @@
 		an LDAP backend.
 		</para>
 
-	<figure id="NT4DUM">
-		<title>View of Accounts in NT4 Domain User Manager</title>
-		<mediaobject>
-			<imageobject role="latex">
-				<imagedata fileref="guide/images/UserMgrNT4.png" scale="50" scalefit="1"/>
-			</imageobject>
-			<imageobject>
-				<imagedata fileref="guide/images/UserMgrNT4.png" scale="50" scalefit="1"/>
-			</imageobject>
-		</mediaobject>
-	</figure>
+		<image id="NT4DUM">
+			<description>View of Accounts in NT4 Domain User Manager</description>
+			<imagefile scale="50">UserMgrNT4.png</imagefile>
+		</image>
 
 	</sect2>
 
