@@ -10,6 +10,7 @@ use strict;
 
 use FindBin qw($RealBin);
 use lib "$RealBin";
+use lib "$RealBin/lib";
 use Getopt::Long;
 use idl;
 use dump;
