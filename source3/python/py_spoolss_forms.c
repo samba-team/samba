@@ -219,18 +219,29 @@ PyObject *spoolss_hnd_enumforms(PyObject *self, PyObject *args, PyObject *kw)
 		return NULL;
 	}
 
-	result = PyList_New(num_forms);
+	switch(level) {
+	case 1:
+		result = PyDict_New();
 
-	for (i = 0; i < num_forms; i++) {
-		PyObject *obj = NULL;
+		for (i = 0; i < num_forms; i++) {
+			PyObject *value;
+			fstring name;
 
-		switch(level) {
-		case 1:
-			py_from_FORM_1(&obj, &forms[i]);
-			break;
+			rpcstr_pull(name, forms[i].name.buffer,
+				    sizeof(fstring), -1, STR_TERMINATE);
+
+			py_from_FORM_1(&value, &forms[i]);
+
+			PyDict_SetItemString(
+				value, "level", PyInt_FromLong(1));
+
+			PyDict_SetItemString(result, name, value);
 		}
 
-		PyList_SetItem(result, i, obj);
+		break;
+	default:
+		PyErr_SetString(spoolss_error, "unknown info level");
+		return NULL;
 	}
 
 	return result;
