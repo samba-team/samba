@@ -407,7 +407,7 @@
 		Install and configure the Samba-3 server precisely as shown in Chapter 6 for the server
 		called <constant>MASSIVE</constant>. The Domain name <constant>MEGANET</constant> must
 		match that of the NT4 Domain from which you are about to migrate. Do not execute any Samba
-		executables.
+		executables at this time, the appropriate time to do so is indicated below.
 		</para></step>
 
 	  <step><para><indexterm>
@@ -439,9 +439,7 @@
 <screen>
 &rootprompt; slapadd -v -l preload.LDIF
 added: "dc=abmas,dc=biz" (00000001)
-added: "cn=Manager,dc=abmas,dc=biz" (00000002)
 added: "ou=People,dc=abmas,dc=biz" (00000003)
-added: "ou=Computers,dc=abmas,dc=biz" (00000004)
 added: "ou=Groups,dc=abmas,dc=biz" (00000005)
 added: "ou=Idmap,dc=abmas,dc=biz" (00000006)
 added: "sambaDomainName=MEGANET,dc=abmas,dc=biz" (00000007)
