@@ -103,57 +103,51 @@ static des_cblock session_key;
 static des_key_schedule sched;
 static des_cblock challenge;
 
-	static int
-Data(ap, type, d, c)
-	Authenticator *ap;
-	int type;
-	void *d;
-	int c;
+static int
+Data(Authenticator *ap, int type, void *d, int c)
 {
-	unsigned char *p = str_data + 4;
-	unsigned char *cd = (unsigned char *)d;
+    unsigned char *p = str_data + 4;
+    unsigned char *cd = (unsigned char *)d;
 
-	if (c == -1)
-		c = strlen((char *)cd);
+    if (c == -1)
+	c = strlen((char *)cd);
 
-	if (auth_debug_mode) {
-		printf("%s:%d: [%d] (%d)",
-			str_data[3] == TELQUAL_IS ? ">>>IS" : ">>>REPLY",
-			str_data[3],
-			type, c);
-		printd(d, c);
-		printf("\r\n");
-	}
-	*p++ = ap->type;
-	*p++ = ap->way;
-	*p++ = type;
-	while (c-- > 0) {
-		if ((*p++ = *cd++) == IAC)
-			*p++ = IAC;
-	}
-	*p++ = IAC;
-	*p++ = SE;
-	if (str_data[3] == TELQUAL_IS)
-		printsub('>', &str_data[2], p - (&str_data[2]));
-	return(net_write(str_data, p - str_data));
+    if (auth_debug_mode) {
+	printf("%s:%d: [%d] (%d)",
+	       str_data[3] == TELQUAL_IS ? ">>>IS" : ">>>REPLY",
+	       str_data[3],
+	       type, c);
+	printd(d, c);
+	printf("\r\n");
+    }
+    *p++ = ap->type;
+    *p++ = ap->way;
+    *p++ = type;
+    while (c-- > 0) {
+	if ((*p++ = *cd++) == IAC)
+	    *p++ = IAC;
+    }
+    *p++ = IAC;
+    *p++ = SE;
+    if (str_data[3] == TELQUAL_IS)
+	printsub('>', &str_data[2], p - (&str_data[2]));
+    return(net_write(str_data, p - str_data));
 }
 
-	int
-kerberos4_init(ap, server)
-	Authenticator *ap;
-	int server;
+int
+kerberos4_init(Authenticator *ap, int server)
 {
-	FILE *fp;
+    FILE *fp;
 
-	if (server) {
-		str_data[3] = TELQUAL_REPLY;
-		if ((fp = fopen(KEYFILE, "r")) == NULL)
-			return(0);
-		fclose(fp);
-	} else {
-		str_data[3] = TELQUAL_IS;
-	}
-	return(1);
+    if (server) {
+	str_data[3] = TELQUAL_REPLY;
+	if ((fp = fopen(KEYFILE, "r")) == NULL)
+	    return(0);
+	fclose(fp);
+    } else {
+	str_data[3] = TELQUAL_IS;
+    }
+    return(1);
 }
 
 char dst_realm_buf[REALM_SZ], *dest_realm = NULL;
@@ -162,180 +156,177 @@ int dst_realm_sz = REALM_SZ;
 static int
 kerberos4_send(char *name, Authenticator *ap)
 {
-	KTEXT_ST auth;
-	char instance[INST_SZ];
-	char *realm;
-	char *krb_realmofhost();
-	char *krb_get_phost();
-	CREDENTIALS cred;
-	int r;
+    KTEXT_ST auth;
+    char instance[INST_SZ];
+    char *realm;
+    char *krb_realmofhost(const char *);
+    char *krb_get_phost(const char *);
+    CREDENTIALS cred;
+    int r;
 
-	printf("[ Trying %s ... ]\r\n", name);
-	if (!UserNameRequested) {
-		if (auth_debug_mode) {
-			printf("Kerberos V4: no user name supplied\r\n");
-		}
-		return(0);
+    printf("[ Trying %s ... ]\r\n", name);
+    if (!UserNameRequested) {
+	if (auth_debug_mode) {
+	    printf("Kerberos V4: no user name supplied\r\n");
 	}
+	return(0);
+    }
 
-	memset(instance, 0, sizeof(instance));
+    memset(instance, 0, sizeof(instance));
 
-	if (realm = krb_get_phost(RemoteHostName))
-		strncpy(instance, realm, sizeof(instance));
+    if (realm = krb_get_phost(RemoteHostName))
+	strncpy(instance, realm, sizeof(instance));
 
-	instance[sizeof(instance)-1] = '\0';
+    instance[sizeof(instance)-1] = '\0';
 
-	realm = dest_realm ? dest_realm : krb_realmofhost(RemoteHostName);
+    realm = dest_realm ? dest_realm : krb_realmofhost(RemoteHostName);
 
-	if (!realm) {
-		printf("Kerberos V4: no realm for %s\r\n", RemoteHostName);
-		return(0);
-	}
-	if (r = krb_mk_req(&auth, KRB_SERVICE_NAME, instance, realm, 0L)) {
-		printf("mk_req failed: %s\r\n", krb_get_err_text(r));
-		return(0);
-	}
-	if (r = krb_get_cred(KRB_SERVICE_NAME, instance, realm, &cred)) {
-		printf("get_cred failed: %s\r\n", krb_get_err_text(r));
-		return(0);
-	}
-	if (!auth_sendname(UserNameRequested, strlen(UserNameRequested))) {
-		if (auth_debug_mode)
-			printf("Not enough room for user name\r\n");
-		return(0);
-	}
+    if (!realm) {
+	printf("Kerberos V4: no realm for %s\r\n", RemoteHostName);
+	return(0);
+    }
+    if (r = krb_mk_req(&auth, KRB_SERVICE_NAME, instance, realm, 0L)) {
+	printf("mk_req failed: %s\r\n", krb_get_err_text(r));
+	return(0);
+    }
+    if (r = krb_get_cred(KRB_SERVICE_NAME, instance, realm, &cred)) {
+	printf("get_cred failed: %s\r\n", krb_get_err_text(r));
+	return(0);
+    }
+    if (!auth_sendname(UserNameRequested, strlen(UserNameRequested))) {
 	if (auth_debug_mode)
-		printf("Sent %d bytes of authentication data\r\n", auth.length);
-	if (!Data(ap, KRB_AUTH, (void *)auth.dat, auth.length)) {
-		if (auth_debug_mode)
-			printf("Not enough room for authentication data\r\n");
-		return(0);
-	}
+	    printf("Not enough room for user name\r\n");
+	return(0);
+    }
+    if (auth_debug_mode)
+	printf("Sent %d bytes of authentication data\r\n", auth.length);
+    if (!Data(ap, KRB_AUTH, (void *)auth.dat, auth.length)) {
+	if (auth_debug_mode)
+	    printf("Not enough room for authentication data\r\n");
+	return(0);
+    }
 #ifdef ENCRYPTION
-	/* create challenge */
-	if ((ap->way & AUTH_HOW_MASK)==AUTH_HOW_MUTUAL) {
-	  int i;
+    /* create challenge */
+    if ((ap->way & AUTH_HOW_MASK)==AUTH_HOW_MUTUAL) {
+	int i;
 
-	  des_key_sched(&cred.session, sched);
-	  des_init_random_number_generator(&cred.session);
-	  des_new_random_key(&session_key);
-	  des_ecb_encrypt(&session_key, &session_key, sched, 0);
-	  des_ecb_encrypt(&session_key, &challenge, sched, 0);
+	des_key_sched(&cred.session, sched);
+	des_init_random_number_generator(&cred.session);
+	des_new_random_key(&session_key);
+	des_ecb_encrypt(&session_key, &session_key, sched, 0);
+	des_ecb_encrypt(&session_key, &challenge, sched, 0);
 
-	  /*
-	    old code
-	    Some CERT Advisory thinks this is a bad thing...
+	/*
+	  old code
+	  Some CERT Advisory thinks this is a bad thing...
 	    
-	    des_init_random_number_generator(&cred.session);
-	    des_new_random_key(&challenge);
-	    des_ecb_encrypt(&challenge, &session_key, sched, 1);
-	    */
+	  des_init_random_number_generator(&cred.session);
+	  des_new_random_key(&challenge);
+	  des_ecb_encrypt(&challenge, &session_key, sched, 1);
+	  */
 	  
-	  /*
-	   * Increment the challenge by 1, and encrypt it for
-	   * later comparison.
-	   */
-	  for (i = 7; i >= 0; --i) 
+	/*
+	 * Increment the challenge by 1, and encrypt it for
+	 * later comparison.
+	 */
+	for (i = 7; i >= 0; --i) 
 	    if(++challenge[i] != 0) /* No carry! */
-	      break;
-	  des_ecb_encrypt(&challenge, &challenge, sched, 1);
-	}
+		break;
+	des_ecb_encrypt(&challenge, &challenge, sched, 1);
+    }
 
 #endif
 
-	if (auth_debug_mode) {
-		printf("CK: %d:", kerberos4_cksum(auth.dat, auth.length));
-		printd(auth.dat, auth.length);
-		printf("\r\n");
-		printf("Sent Kerberos V4 credentials to server\r\n");
-	}
-	return(1);
+    if (auth_debug_mode) {
+	printf("CK: %d:", kerberos4_cksum(auth.dat, auth.length));
+	printd(auth.dat, auth.length);
+	printf("\r\n");
+	printf("Sent Kerberos V4 credentials to server\r\n");
+    }
+    return(1);
 }
 int
 kerberos4_send_mutual(Authenticator *ap)
 {
-  return kerberos4_send("mutual KERBEROS4", ap);
+    return kerberos4_send("mutual KERBEROS4", ap);
 }
 
 int
 kerberos4_send_oneway(Authenticator *ap)
 {
-  return kerberos4_send("KERBEROS4", ap);
+    return kerberos4_send("KERBEROS4", ap);
 }
 
-	void
-kerberos4_is(ap, data, cnt)
-	Authenticator *ap;
-	unsigned char *data;
-	int cnt;
+void
+kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
 {
-	char realm[REALM_SZ];
-	char instance[INST_SZ];
-	int r;
+    char realm[REALM_SZ];
+    char instance[INST_SZ];
+    int r;
 
-	if (cnt-- < 1)
-		return;
-	switch (*data++) {
-	case KRB_AUTH:
-		if (krb_get_lrealm(realm, 1) != KSUCCESS) {
-			Data(ap, KRB_REJECT, (void *)"No local V4 Realm.", -1);
-			auth_finished(ap, AUTH_REJECT);
-			if (auth_debug_mode)
-				printf("No local realm\r\n");
-			return;
-		}
-		memmove((void *)auth.dat, (void *)data, auth.length = cnt);
-		if (auth_debug_mode) {
-			printf("Got %d bytes of authentication data\r\n", cnt);
-			printf("CK: %d:", kerberos4_cksum(auth.dat, auth.length));
-			printd(auth.dat, auth.length);
-			printf("\r\n");
-		}
-		k_getsockinst(0, instance); /* Telnetd uses socket 0 */
-		if (r = krb_rd_req(&auth, KRB_SERVICE_NAME,
-				   instance, 0, &adat, "")) {
-			if (auth_debug_mode)
-				printf("Kerberos failed him as %s\r\n", name);
-			Data(ap, KRB_REJECT, (void *)krb_get_err_text(r), -1);
-			auth_finished(ap, AUTH_REJECT);
-			return;
-		}
-		/* save the session key */
-		memmove(session_key, adat.session, sizeof(adat.session));
-		krb_kntoln(&adat, name);
+    if (cnt-- < 1)
+	return;
+    switch (*data++) {
+    case KRB_AUTH:
+	if (krb_get_lrealm(realm, 1) != KSUCCESS) {
+	    Data(ap, KRB_REJECT, (void *)"No local V4 Realm.", -1);
+	    auth_finished(ap, AUTH_REJECT);
+	    if (auth_debug_mode)
+		printf("No local realm\r\n");
+	    return;
+	}
+	memmove((void *)auth.dat, (void *)data, auth.length = cnt);
+	if (auth_debug_mode) {
+	    printf("Got %d bytes of authentication data\r\n", cnt);
+	    printf("CK: %d:", kerberos4_cksum(auth.dat, auth.length));
+	    printd(auth.dat, auth.length);
+	    printf("\r\n");
+	}
+	k_getsockinst(0, instance); /* Telnetd uses socket 0 */
+	if (r = krb_rd_req(&auth, KRB_SERVICE_NAME,
+			   instance, 0, &adat, "")) {
+	    if (auth_debug_mode)
+		printf("Kerberos failed him as %s\r\n", name);
+	    Data(ap, KRB_REJECT, (void *)krb_get_err_text(r), -1);
+	    auth_finished(ap, AUTH_REJECT);
+	    return;
+	}
+	/* save the session key */
+	memmove(session_key, adat.session, sizeof(adat.session));
+	krb_kntoln(&adat, name);
 
-		if (UserNameRequested && !kuserok(&adat, UserNameRequested))
-			Data(ap, KRB_ACCEPT, (void *)0, 0);
-		else {
-			char *msg = malloc(ANAME_SZ + 1 + INST_SZ +
-					   REALM_SZ +
-					   strlen(UserNameRequested) + 80);
+	if (UserNameRequested && !kuserok(&adat, UserNameRequested))
+	    Data(ap, KRB_ACCEPT, (void *)0, 0);
+	else {
+	    char *msg = malloc(ANAME_SZ + 1 + INST_SZ +
+			       REALM_SZ +
+			       strlen(UserNameRequested) + 80);
 			
-			if (msg == NULL)
-				Data(ap, KRB_REJECT, (void *)0, 0);
-			sprintf (msg, "user `%s' is not authorized to "
-				 "login as `%s'", 
-				 krb_unparse_name(adat.pname, 
-						  adat.pinst, 
-						  adat.prealm), 
-				 UserNameRequested);
+	    if (msg == NULL)
+		Data(ap, KRB_REJECT, (void *)0, 0);
+	    sprintf (msg, "user `%s' is not authorized to "
+		     "login as `%s'", 
+		     krb_unparse_name(adat.pname, 
+				      adat.pinst, 
+				      adat.prealm), 
+		     UserNameRequested);
 
-			Data(ap, KRB_REJECT, (void *)msg, -1);
-			free(msg);
-		}
-		auth_finished(ap, AUTH_USER);
-		break;
+	    Data(ap, KRB_REJECT, (void *)msg, -1);
+	    free(msg);
+	}
+	auth_finished(ap, AUTH_USER);
+	break;
 
-	case KRB_CHALLENGE:
+    case KRB_CHALLENGE:
 #ifndef ENCRYPTION
-	  Data(ap, KRB_RESPONSE, (void *)0, 0);
+	Data(ap, KRB_RESPONSE, (void *)0, 0);
 #else
-	  if(!VALIDKEY(session_key)){
+	if(!VALIDKEY(session_key)){
 	    Data(ap, KRB_RESPONSE, NULL, 0);
 	    break;
-	  }
-	  des_key_sched(&session_key, sched);
-	  {
+	}
+	des_key_sched(&session_key, sched);
+	{
 	    des_cblock d_block;
 	    int i;
 	    Session_Key skey;
@@ -352,200 +343,190 @@ kerberos4_is(ap, data, cnt)
 	    /* decrypt challenge, add one and encrypt it */
 	    des_ecb_encrypt(&d_block, &challenge, sched, 0);
 	    for (i = 7; i >= 0; i--)
-	      if(++challenge[i] != 0)
-		break;
+		if(++challenge[i] != 0)
+		    break;
 	    des_ecb_encrypt(&challenge, &challenge, sched, 1);
 	    Data(ap, KRB_RESPONSE, (void *)challenge, sizeof(challenge));
-	  }
-#endif
-	    break;
-
-	default:
-		if (auth_debug_mode)
-			printf("Unknown Kerberos option %d\r\n", data[-1]);
-		Data(ap, KRB_REJECT, 0, 0);
-		break;
 	}
+#endif
+	break;
+
+    default:
+	if (auth_debug_mode)
+	    printf("Unknown Kerberos option %d\r\n", data[-1]);
+	Data(ap, KRB_REJECT, 0, 0);
+	break;
+    }
 }
 
-	void
-kerberos4_reply(ap, data, cnt)
-	Authenticator *ap;
-	unsigned char *data;
-	int cnt;
+void
+kerberos4_reply(Authenticator *ap, unsigned char *data, int cnt)
 {
-	Session_Key skey;
+    Session_Key skey;
 
-	if (cnt-- < 1)
-		return;
-	switch (*data++) {
-	case KRB_REJECT:
-		if (cnt > 0) {
-			printf("[ Kerberos V4 refuses authentication because %.*s ]\r\n",
-				cnt, data);
-		} else
-			printf("[ Kerberos V4 refuses authentication ]\r\n");
-		auth_send_retry();
-		return;
-	case KRB_ACCEPT:
-		printf("[ Kerberos V4 accepts you ]\r\n");
-		if ((ap->way & AUTH_HOW_MASK) == AUTH_HOW_MUTUAL) {
-			/*
-			 * Send over the encrypted challenge.
-		 	 */
-			Data(ap, KRB_CHALLENGE, session_key, 
-			     sizeof(session_key));
+    if (cnt-- < 1)
+	return;
+    switch (*data++) {
+    case KRB_REJECT:
+	if (cnt > 0) {
+	    printf("[ Kerberos V4 refuses authentication because %.*s ]\r\n",
+		   cnt, data);
+	} else
+	    printf("[ Kerberos V4 refuses authentication ]\r\n");
+	auth_send_retry();
+	return;
+    case KRB_ACCEPT:
+	printf("[ Kerberos V4 accepts you ]\r\n");
+	if ((ap->way & AUTH_HOW_MASK) == AUTH_HOW_MUTUAL) {
+	    /*
+	     * Send over the encrypted challenge.
+	     */
+	    Data(ap, KRB_CHALLENGE, session_key, 
+		 sizeof(session_key));
 #ifdef ENCRYPTION
-			des_ecb_encrypt(&session_key, &session_key, sched, 1);
-			skey.type = SK_DES;
-			skey.length = 8;
-			skey.data = session_key;
-			encrypt_session_key(&skey, 0);
+	    des_ecb_encrypt(&session_key, &session_key, sched, 1);
+	    skey.type = SK_DES;
+	    skey.length = 8;
+	    skey.data = session_key;
+	    encrypt_session_key(&skey, 0);
 #endif
-			return;
-		}
-		auth_finished(ap, AUTH_USER);
-		return;
-	case KRB_RESPONSE:
-	  /* make sure the response is correct */
-	  if ((cnt != sizeof(des_cblock)) ||
-	      (memcmp(data, challenge, sizeof(challenge)))){
+	    return;
+	}
+	auth_finished(ap, AUTH_USER);
+	return;
+    case KRB_RESPONSE:
+	/* make sure the response is correct */
+	if ((cnt != sizeof(des_cblock)) ||
+	    (memcmp(data, challenge, sizeof(challenge)))){
 	    printf("[ Kerberos V4 challenge failed!!! ]\r\n");
 	    auth_send_retry();
 	    return;
-	  }
-	  printf("[ Kerberos V4 challenge successful ]\r\n");
-	  auth_finished(ap, AUTH_USER);
-	  break;
-	default:
-		if (auth_debug_mode)
-			printf("Unknown Kerberos option %d\r\n", data[-1]);
-		return;
 	}
+	printf("[ Kerberos V4 challenge successful ]\r\n");
+	auth_finished(ap, AUTH_USER);
+	break;
+    default:
+	if (auth_debug_mode)
+	    printf("Unknown Kerberos option %d\r\n", data[-1]);
+	return;
+    }
 }
 
-	int
-kerberos4_status(ap, name, level)
-	Authenticator *ap;
-	char *name;
-	int level;
+int
+kerberos4_status(Authenticator *ap, char *name, int level)
 {
-	if (level < AUTH_USER)
-		return(level);
+    if (level < AUTH_USER)
+	return(level);
 
-	if (UserNameRequested && !kuserok(&adat, UserNameRequested)) {
-		strcpy(name, UserNameRequested);
-		return(AUTH_VALID);
-	} else
-		return(AUTH_USER);
+    if (UserNameRequested && !kuserok(&adat, UserNameRequested)) {
+	strcpy(name, UserNameRequested);
+	return(AUTH_VALID);
+    } else
+	return(AUTH_USER);
 }
 
 #define	BUMP(buf, len)		while (*(buf)) {++(buf), --(len);}
 #define	ADDC(buf, len, c)	if ((len) > 0) {*(buf)++ = (c); --(len);}
 
-	void
-kerberos4_printsub(data, cnt, buf, buflen)
-	unsigned char *data, *buf;
-	int cnt, buflen;
+void
+kerberos4_printsub(unsigned char *data, int cnt, unsigned char *buf, int buflen)
 {
-	char lbuf[32];
-	register int i;
+    char lbuf[32];
+    register int i;
 
-	buf[buflen-1] = '\0';		/* make sure its NULL terminated */
-	buflen -= 1;
+    buf[buflen-1] = '\0';		/* make sure its NULL terminated */
+    buflen -= 1;
 
-	switch(data[3]) {
-	case KRB_REJECT:		/* Rejected (reason might follow) */
-		strncpy((char *)buf, " REJECT ", buflen);
-		goto common;
+    switch(data[3]) {
+    case KRB_REJECT:		/* Rejected (reason might follow) */
+	strncpy((char *)buf, " REJECT ", buflen);
+	goto common;
 
-	case KRB_ACCEPT:		/* Accepted (name might follow) */
-		strncpy((char *)buf, " ACCEPT ", buflen);
-	common:
-		BUMP(buf, buflen);
-		if (cnt <= 4)
-			break;
-		ADDC(buf, buflen, '"');
-		for (i = 4; i < cnt; i++)
-			ADDC(buf, buflen, data[i]);
-		ADDC(buf, buflen, '"');
-		ADDC(buf, buflen, '\0');
-		break;
+    case KRB_ACCEPT:		/* Accepted (name might follow) */
+	strncpy((char *)buf, " ACCEPT ", buflen);
+    common:
+	BUMP(buf, buflen);
+	if (cnt <= 4)
+	    break;
+	ADDC(buf, buflen, '"');
+	for (i = 4; i < cnt; i++)
+	    ADDC(buf, buflen, data[i]);
+	ADDC(buf, buflen, '"');
+	ADDC(buf, buflen, '\0');
+	break;
 
-	case KRB_AUTH:			/* Authentication data follows */
-		strncpy((char *)buf, " AUTH", buflen);
-		goto common2;
+    case KRB_AUTH:			/* Authentication data follows */
+	strncpy((char *)buf, " AUTH", buflen);
+	goto common2;
 
-	case KRB_CHALLENGE:
-		strncpy((char *)buf, " CHALLENGE", buflen);
-		goto common2;
+    case KRB_CHALLENGE:
+	strncpy((char *)buf, " CHALLENGE", buflen);
+	goto common2;
 
-	case KRB_RESPONSE:
-		strncpy((char *)buf, " RESPONSE", buflen);
-		goto common2;
+    case KRB_RESPONSE:
+	strncpy((char *)buf, " RESPONSE", buflen);
+	goto common2;
 
-	default:
-		sprintf(lbuf, " %d (unknown)", data[3]);
-		strncpy((char *)buf, lbuf, buflen);
-	common2:
-		BUMP(buf, buflen);
-		for (i = 4; i < cnt; i++) {
-			sprintf(lbuf, " %d", data[i]);
-			strncpy((char *)buf, lbuf, buflen);
-			BUMP(buf, buflen);
-		}
-		break;
+    default:
+	sprintf(lbuf, " %d (unknown)", data[3]);
+	strncpy((char *)buf, lbuf, buflen);
+    common2:
+	BUMP(buf, buflen);
+	for (i = 4; i < cnt; i++) {
+	    sprintf(lbuf, " %d", data[i]);
+	    strncpy((char *)buf, lbuf, buflen);
+	    BUMP(buf, buflen);
 	}
+	break;
+    }
 }
 
-	int
-kerberos4_cksum(d, n)
-	unsigned char *d;
-	int n;
+int
+kerberos4_cksum(unsigned char *d, int n)
 {
-	int ck = 0;
+    int ck = 0;
 
-	/*
-	 * A comment is probably needed here for those not
-	 * well versed in the "C" language.  Yes, this is
-	 * supposed to be a "switch" with the body of the
-	 * "switch" being a "while" statement.  The whole
-	 * purpose of the switch is to allow us to jump into
-	 * the middle of the while() loop, and then not have
-	 * to do any more switch()s.
-	 *
-	 * Some compilers will spit out a warning message
-	 * about the loop not being entered at the top.
-	 */
-	switch (n&03)
+    /*
+     * A comment is probably needed here for those not
+     * well versed in the "C" language.  Yes, this is
+     * supposed to be a "switch" with the body of the
+     * "switch" being a "while" statement.  The whole
+     * purpose of the switch is to allow us to jump into
+     * the middle of the while() loop, and then not have
+     * to do any more switch()s.
+     *
+     * Some compilers will spit out a warning message
+     * about the loop not being entered at the top.
+     */
+    switch (n&03)
 	while (n > 0) {
 	case 0:
-		ck ^= (int)*d++ << 24;
-		--n;
+	    ck ^= (int)*d++ << 24;
+	    --n;
 	case 3:
-		ck ^= (int)*d++ << 16;
-		--n;
+	    ck ^= (int)*d++ << 16;
+	    --n;
 	case 2:
-		ck ^= (int)*d++ << 8;
-		--n;
+	    ck ^= (int)*d++ << 8;
+	    --n;
 	case 1:
-		ck ^= (int)*d++;
-		--n;
+	    ck ^= (int)*d++;
+	    --n;
 	}
-	return(ck);
+    return(ck);
 }
 #endif
 
 #ifdef notdef
 
 prkey(msg, key)
-	char *msg;
-	unsigned char *key;
+     char *msg;
+     unsigned char *key;
 {
-	register int i;
-	printf("%s:", msg);
-	for (i = 0; i < 8; i++)
-		printf(" %3d", key[i]);
-	printf("\r\n");
+    register int i;
+    printf("%s:", msg);
+    for (i = 0; i < 8; i++)
+	printf(" %3d", key[i]);
+    printf("\r\n");
 }
 #endif

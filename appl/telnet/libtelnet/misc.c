@@ -45,53 +45,45 @@ char *LocalHostName;
 char *UserNameRequested = 0;
 int ConnectedCount = 0;
 
-	void
-auth_encrypt_init(local, remote, name, server)
-	char *local;
-	char *remote;
-	char *name;
-	int server;
+void
+auth_encrypt_init(char *local, char *remote, char *name, int server)
 {
-	RemoteHostName = remote;
-	LocalHostName = local;
+    RemoteHostName = remote;
+    LocalHostName = local;
 #if	defined(AUTHENTICATION)
-	auth_init(name, server);
+    auth_init(name, server);
 #endif
 #if	defined(ENCRYPTION)
-	encrypt_init(name, server);
+    encrypt_init(name, server);
 #endif
-	if (UserNameRequested) {
-		free(UserNameRequested);
-		UserNameRequested = 0;
-	}
+    if (UserNameRequested) {
+	free(UserNameRequested);
+	UserNameRequested = 0;
+    }
 }
 
-	void
-auth_encrypt_user(name)
-	char *name;
+void
+auth_encrypt_user(char *name)
 {
-	extern char *strdup();
+    extern char *strdup(const char *);
 
-	if (UserNameRequested)
-		free(UserNameRequested);
-	UserNameRequested = name ? strdup(name) : 0;
+    if (UserNameRequested)
+	free(UserNameRequested);
+    UserNameRequested = name ? strdup(name) : 0;
 }
 
-	void
-auth_encrypt_connect(cnt)
-	int cnt;
+void
+auth_encrypt_connect(int cnt)
 {
 }
 
-	void
-printd(data, cnt)
-	unsigned char *data;
-	int cnt;
+void
+printd(unsigned char *data, int cnt)
 {
-	if (cnt > 16)
-		cnt = 16;
-	while (cnt-- > 0) {
-		printf(" %02x", *data);
-		++data;
-	}
+    if (cnt > 16)
+	cnt = 16;
+    while (cnt-- > 0) {
+	printf(" %02x", *data);
+	++data;
+    }
 }
