@@ -4711,7 +4711,8 @@ static BOOL uniarray_2_dosarray(BUFFER5 *buf5, fstring **ar)
 	int n = 0;
 	char *src;
 
-	if (buf5==NULL) return False;
+	if (buf5==NULL)
+		return False;
 
 	src = (char *)buf5->buffer;
 	*ar = NULL;
@@ -4720,8 +4721,10 @@ static BOOL uniarray_2_dosarray(BUFFER5 *buf5, fstring **ar)
 		rpcstr_pull(f, src, sizeof(f)-1, -1, 0);
 		src = skip_unibuf(src, 2*buf5->buf_len - PTR_DIFF(src,buf5->buffer));
 		tar = (fstring *)Realloc(*ar, sizeof(fstring)*(n+2));
-		if (!tar) return False;
-		else *ar = tar;
+		if (!tar)
+			return False;
+		else
+			*ar = tar;
 		fstrcpy((*ar)[n], f);
 		n++;
 	}

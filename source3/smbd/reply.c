@@ -1164,10 +1164,8 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   /* close fd from smb_mkstemp() */
   close(tmpfd);
 
-  if (!fsp)
-  {
-    if((errno == ENOENT) && bad_path)
-    {
+	if (!fsp) {
+		if((errno == ENOENT) && bad_path) {
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
@@ -1208,28 +1206,33 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   return(outsize);
 }
 
-
 /*******************************************************************
-check if a user is allowed to delete a file
+ Check if a user is allowed to delete a file.
 ********************************************************************/
+
 static NTSTATUS can_delete(char *fname,connection_struct *conn, int dirtype)
 {
 	SMB_STRUCT_STAT sbuf;
 	int fmode;
 
-	if (!CAN_WRITE(conn)) return NT_STATUS_MEDIA_WRITE_PROTECTED;
+	if (!CAN_WRITE(conn))
+		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 
-	if (conn->vfs_ops.lstat(conn,fname,&sbuf) != 0) return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	if (conn->vfs_ops.lstat(conn,fname,&sbuf) != 0)
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	fmode = dos_mode(conn,fname,&sbuf);
-	if (fmode & aDIR) return NT_STATUS_FILE_IS_A_DIRECTORY;
+	if (fmode & aDIR)
+		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	if (!lp_delete_readonly(SNUM(conn))) {
-		if (fmode & aRONLY) return NT_STATUS_CANNOT_DELETE;
+		if (fmode & aRONLY)
+			return NT_STATUS_CANNOT_DELETE;
 	}
 	if ((fmode & ~dirtype) & (aHIDDEN | aSYSTEM))
 		return NT_STATUS_CANNOT_DELETE;
 
-	if (!check_file_sharing(conn,fname,False)) return NT_STATUS_SHARING_VIOLATION;
+	if (!check_file_sharing(conn,fname,False))
+		return NT_STATUS_SHARING_VIOLATION;
 
 	return NT_STATUS_OK;
 }
@@ -2685,7 +2688,8 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	srvstr_pull(inbuf, directory, smb_buf(inbuf) + 1, sizeof(directory), -1, STR_TERMINATE);
 
 	status = mkdir_internal(conn, directory);
-	if (!NT_STATUS_IS_OK(status)) return ERROR_NT(status);
+	if (!NT_STATUS_IS_OK(status))
+		return ERROR_NT(status);
 
 	outsize = set_message(outbuf,0,0,True);
 

@@ -31,7 +31,8 @@ BOOL secrets_init(void)
 {
 	pstring fname;
 
-	if (tdb) return True;
+	if (tdb)
+		return True;
 
 	pstrcpy(fname, lp_private_dir());
 	pstrcat(fname,"/secrets.tdb");
@@ -51,11 +52,13 @@ BOOL secrets_init(void)
 void *secrets_fetch(char *key, size_t *size)
 {
 	TDB_DATA kbuf, dbuf;
-	if (!tdb) return False;
+	if (!tdb)
+		return False;
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key);
 	dbuf = tdb_fetch(tdb, kbuf);
-	if (size) *size = dbuf.dsize;
+	if (size)
+		*size = dbuf.dsize;
 	return dbuf.dptr;
 }
 
@@ -64,7 +67,8 @@ void *secrets_fetch(char *key, size_t *size)
 BOOL secrets_store(char *key, void *data, size_t size)
 {
 	TDB_DATA kbuf, dbuf;
-	if (!tdb) return False;
+	if (!tdb)
+		return False;
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key);
 	dbuf.dptr = data;
@@ -78,7 +82,8 @@ BOOL secrets_store(char *key, void *data, size_t size)
 BOOL secrets_delete(char *key)
 {
 	TDB_DATA kbuf;
-	if (!tdb) return False;
+	if (!tdb)
+		return False;
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key);
 	return tdb_delete(tdb, kbuf) == 0;
