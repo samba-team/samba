@@ -135,7 +135,7 @@ password = &lt;value&gt;
 		<varlistentry>
 		<term>port=&lt;arg&gt;</term>
 		<listitem><para>sets the remote SMB port number. The default 
-		is 139. </para></listitem>
+		is 445, fallback is 139. </para></listitem>
 		</varlistentry>
 		
 		

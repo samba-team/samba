@@ -27,7 +27,7 @@
 		<arg choice="opt">-S acls</arg>
 		<arg choice="opt">-C name</arg>
 		<arg choice="opt">-G name</arg>
-		<arg choice="opt">-n</arg>
+		<arg choice="opt">--numeric</arg>
 		<arg choice="opt">-t</arg>
 		<arg choice="opt">-U username</arg>
 		<arg choice="opt">-h</arg>
@@ -131,7 +131,7 @@
 		
 		
 		<varlistentry>
-		<term>-n</term>
+		<term>--numeric</term>
 		<listitem><para>This option displays all ACL information in numeric 
 		format.  The default is to convert SIDs to names and ACE types 
 		and masks to a readable string format.  </para></listitem>
