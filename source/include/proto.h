@@ -1910,6 +1910,7 @@ BOOL lp_dos_filetime_resolution(int );
 BOOL lp_fake_dir_create_times(int );
 BOOL lp_blocking_locks(int );
 BOOL lp_inherit_perms(int );
+BOOL lp_restrict_acl_with_mask(int );
 int lp_create_mask(int );
 int lp_force_create_mode(int );
 int _lp_security_mask(int );

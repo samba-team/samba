@@ -157,7 +157,7 @@ struct cli_state *connect_one(char *share)
 static char *resultp;
 static file_info *finfo;
 
-void listfn(file_info *f, const char *s)
+void listfn(file_info *f, const char *s, void *state)
 {
 	if (strcmp(f->name,".") == 0) {
 		resultp[0] = '+';
@@ -172,7 +172,7 @@ void listfn(file_info *f, const char *s)
 static void get_short_name(struct cli_state *cli, 
 			   char *name, fstring short_name)
 {
-	cli_list(cli, name, aHIDDEN | aDIR, listfn);
+	cli_list(cli, name, aHIDDEN | aDIR, listfn, NULL);
 	if (finfo) {
 		fstrcpy(short_name, finfo->short_name);
 		strlower(short_name);
@@ -202,12 +202,12 @@ static void testpair(struct cli_state *cli, char *mask, char *file)
 	fstrcpy(short_name, "");
 	finfo = NULL;
 	if (old_list) {
-		cli_list_old(cli, mask, aHIDDEN | aDIR, listfn);
+		cli_list_old(cli, mask, aHIDDEN | aDIR, listfn, NULL);
 	} else {
 		get_short_name(cli, file, short_name);
 		finfo = NULL;
 		fstrcpy(res1, "---");
-		cli_list(cli, mask, aHIDDEN | aDIR, listfn);
+		cli_list(cli, mask, aHIDDEN | aDIR, listfn, NULL);
 	}
 
 	res2 = reg_test(mask, file, short_name);

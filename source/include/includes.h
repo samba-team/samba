@@ -357,6 +357,14 @@
 #endif
 #endif /* HAVE_NETGROUP */
 
+#if defined(HAVE_SYS_IPC_H)
+#include <sys/ipc.h>
+#endif /* HAVE_SYS_IPC_H */
+
+#if defined(HAVE_SYS_SHM_H)
+#include <sys/shm.h>
+#endif /* HAVE_SYS_SHM_H */
+
 /*
  * Define VOLATILE if needed.
  */

@@ -22,8 +22,6 @@
 #define NO_SYSLOG
 
 #include "includes.h"
-#include <sys/ipc.h>
-#include <sys/shm.h>
 
 static fstring host, workgroup, share, password, username, myname;
 static int max_protocol = PROTOCOL_NT1;
@@ -1690,7 +1688,7 @@ static void run_randomipc(int dummy)
 
 
 static void browse_callback(const char *sname, uint32 stype, 
-			    const char *comment)
+			    const char *comment, void *state)
 {
 	printf("\t%20.20s %08x %s\n", sname, stype, comment);
 }
@@ -1714,12 +1712,12 @@ static void run_browsetest(int dummy)
 	printf("domain list:\n");
 	cli_NetServerEnum(&cli, cli.server_domain, 
 			  SV_TYPE_DOMAIN_ENUM,
-			  browse_callback);
+			  browse_callback, NULL);
 
 	printf("machine list:\n");
 	cli_NetServerEnum(&cli, cli.server_domain, 
 			  SV_TYPE_ALL,
-			  browse_callback);
+			  browse_callback, NULL);
 
 	close_connection(&cli);
 
@@ -2558,7 +2556,7 @@ static void run_opentest(int dummy)
 
 }
 
-static void list_fn(file_info *finfo, const char *name)
+static void list_fn(file_info *finfo, const char *name, void *state)
 {
 	
 }
@@ -2595,9 +2593,9 @@ static void run_dirtest(int dummy)
 
 	t1 = end_timer();
 
-	printf("Matched %d\n", cli_list(&cli, "a*.*", 0, list_fn));
-	printf("Matched %d\n", cli_list(&cli, "b*.*", 0, list_fn));
-	printf("Matched %d\n", cli_list(&cli, "xyzabc", 0, list_fn));
+	printf("Matched %d\n", cli_list(&cli, "a*.*", 0, list_fn, NULL));
+	printf("Matched %d\n", cli_list(&cli, "b*.*", 0, list_fn, NULL));
+	printf("Matched %d\n", cli_list(&cli, "xyzabc", 0, list_fn, NULL));
 
 	printf("dirtest core %g seconds\n", end_timer() - t1);
 
