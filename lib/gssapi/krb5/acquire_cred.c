@@ -239,7 +239,7 @@ OM_uint32 gss_acquire_cred
 	*actual_mechs = GSS_C_NO_OID_SET;
 
     if (desired_mechs) {
-	OM_uint32 present = 0;
+	int present = 0;
 
 	ret = gss_test_oid_set_member(minor_status, GSS_KRB5_MECHANISM,
 				      desired_mechs, &present); 
