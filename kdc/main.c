@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -62,9 +62,9 @@ main(int argc, char **argv)
     ret = hdb_create(context, &db, database);
     if(ret)
 	krb5_err(context, 1, ret, "hdb_create %s", database);
-    ret = hdb_set_master_key(context, db, keyfile);
+    ret = hdb_set_master_keyfile(context, db, keyfile);
     if (ret)
-	krb5_err(context, 1, ret, "hdb_set_master_key");
+	krb5_err(context, 1, ret, "hdb_set_master_keyfile");
 
 #ifdef HAVE_SIGACTION
     {

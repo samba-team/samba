@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -57,8 +57,8 @@ kadm5_s_init_with_context(krb5_context context,
     ret = hdb_create(ctx->context, &ctx->db, NULL);
     if(ret)
 	return ret;
-    ret = hdb_set_master_key (ctx->context, 
-			      ctx->db, NULL); /* XXX get from conf */
+    ret = hdb_set_master_keyfile (ctx->context, 
+				  ctx->db, NULL); /* XXX get from conf */
     if(ret)
 	return ret;
 
