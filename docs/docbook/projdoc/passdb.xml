@@ -73,6 +73,11 @@ as follows:
 			provide the extended controls that are needed for more comprehensive 
 			interoperation with MS Windows NT4 / 200x servers.
 			</para>
+
+			<para>
+			This backend should be used only for backwards compatibility with older
+			versions of Samba. It may be deprecated in future releases.
+			</para>
 		</listitem>
 	</varlistentry>
 
@@ -82,7 +87,8 @@ as follows:
 			There is a password backend option that allows continued operation with
 			a existing OpenLDAP backend that uses the Samba-2.2.x LDAP schema extension.
 			This option is provided primarily as a migration tool, although there is
-			no reason to force migration at this time.
+			no reason to force migration at this time. Note that this tool will eventually
+			be deprecated.
 			</para>
 		</listitem>
 	</varlistentry>
@@ -94,8 +100,22 @@ Samba-3 introduces the following new password backend capabilities:
 
 <variablelist>
 <title>New Backends</title>
+	<varlistentry><term>guest:</term>
+		<listitem>
+			<para>
+			This is <emphasis>always</emphasis> required as the last backend specified.
+			It provides the ability to handle guest account requirements for access to
+			resources like <parameter>IPC$</paramter> which is used for browsing.
+			</para>
+		<listitem>
 	<varlistentry><term>tdbsam:</term>
 		<listitem>
+			<para>
+			This backend provides a rich database backend for local servers. This
+			backend is NOT suitable for multiple domain controller (ie: PDC + one
+			or more BDC) installations.
+			</para>
+
 			<para>
 			The <emphasis>tdbsam</emphasis> password backend stores the old <emphasis>
 			smbpasswd</emphasis> information PLUS the extended MS Windows NT / 200x
@@ -117,6 +137,10 @@ Samba-3 introduces the following new password backend capabilities:
 
 	<varlistentry><term>ldapsam:</term>
 		<listitem>
+			<para>
+			This provides a rich directory backend for distributed account installation	
+			</para>
+
 			<para>
 			Samba-3 has a new and extended LDAP implementation that requires configuration
 			of OpenLDAP with a new format samba schema. The new format schema file is
