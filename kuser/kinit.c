@@ -34,6 +34,11 @@
 #include "kuser_locl.h"
 RCSID("$Id$");
 
+#ifndef KRB4
+#include "krb5-v4compat.h"
+#endif
+#include "krb5-private.h"
+
 int forwardable_flag	= -1;
 int proxiable_flag	= -1;
 int renewable_flag	= -1;
@@ -53,8 +58,8 @@ struct getarg_strings etype_str;
 int use_keytab		= 0;
 char *keytab_str	= NULL;
 int do_afslog		= -1;
-#ifdef KRB4
 int get_v4_tgt		= -1;
+#ifdef KRB4
 int convert_524;
 #endif
 int fcache_version;
@@ -69,10 +74,9 @@ static struct getargs args[] = {
      * C: v4 cache name?
      * 5: 
      */
-#ifdef KRB4
     { "524init", 	'4', arg_flag, &get_v4_tgt,
       "obtain version 4 TGT" },
-    
+#ifdef KRB4
     { "524convert", 	'9', arg_flag, &convert_524,
       "only convert ticket to version 4" },
 #endif
@@ -283,13 +287,12 @@ get_server(krb5_context context,
 			       KRB5_TGS_NAME, *client_realm, NULL);
 }
 
-#ifdef KRB4
 static krb5_error_code
 do_524init(krb5_context context, krb5_ccache ccache, 
 	   krb5_creds *creds, const char *server)
 {
     krb5_error_code ret;
-    CREDENTIALS c;
+    struct credentials c;
     krb5_creds in_creds, *real_creds;
 
     if(creds != NULL)
@@ -311,9 +314,9 @@ do_524init(krb5_context context, krb5_ccache ccache,
     if(ret)
 	krb5_warn(context, ret, "converting creds");
     else {
-	int tret = tf_setup(&c, c.pname, c.pinst);
+	krb5_error_code tret = _krb5_krb_tf_setup(context, &c, NULL, 0);
 	if(tret)
-	    krb5_warnx(context, "saving v4 creds: %s", krb_get_err_text(tret));
+	    krb5_warn(context, tret, "saving v4 creds");
     }
 
     if(creds == NULL)
@@ -322,7 +325,6 @@ do_524init(krb5_context context, krb5_ccache ccache,
 
     return ret;
 }
-#endif
 
 static int
 renew_validate(krb5_context context, 
@@ -380,11 +382,9 @@ renew_validate(krb5_context context,
     ret = krb5_cc_store_cred(context, cache, out);
 
     if(ret == 0 && server == NULL) {
-#ifdef KRB4
 	/* only do this if it's a general renew-my-tgt request */
 	if(get_v4_tgt)
 	    do_524init(context, cache, out, NULL);
-#endif
 	if(do_afslog && k_hasafs())
 	    krb5_afslog(context, cache, NULL, NULL);
     }
@@ -651,12 +651,10 @@ main (int argc, char **argv)
 
 	ticket_life = tmp;
     }
-#ifdef KRB4
     if(get_v4_tgt == -1)
 	krb5_appdefault_boolean(context, "kinit", 
 				krb5_principal_get_realm(context, principal), 
 				"krb4_get_tickets", TRUE, &get_v4_tgt);
-#endif
     if(do_afslog == -1)
 	krb5_appdefault_boolean(context, "kinit", 
 				krb5_principal_get_realm(context, principal), 
@@ -692,10 +690,8 @@ main (int argc, char **argv)
 #endif
 	get_new_tickets(context, principal, ccache, ticket_life);
 
-#ifdef KRB4
     if(get_v4_tgt)
 	do_524init(context, ccache, NULL, server);
-#endif
     if(do_afslog && k_hasafs())
 	krb5_afslog(context, ccache, NULL, NULL);
     if(argc > 1) {
