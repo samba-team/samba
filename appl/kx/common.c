@@ -99,8 +99,11 @@ get_local_xsocket (int *num)
      int fd;
      struct sockaddr_un addr;
      int dpy;
+     int oldmask;
 
+     oldmask = umask(0);
      mkdir (TMPX11, 01777);
+     umask (oldmask);
 
      fd = socket (AF_UNIX, SOCK_STREAM, 0);
      if (fd < 0) {
