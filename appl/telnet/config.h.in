@@ -63,6 +63,9 @@
 /* Define if you have the revoke function.  */
 #undef HAVE_REVOKE
 
+/* Define if you have the setpgid function.  */
+#undef HAVE_SETPGID
+
 /* Define if you have the setsid function.  */
 #undef HAVE_SETSID
 
@@ -149,7 +152,7 @@
 #define FILIO_H 1
 #define STREAMS 1
 
-#ifdef __svr4__
+#if defined(__svr4__) || defined(__SVR4)
 #define SOLARIS
 #endif
 
