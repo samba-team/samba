@@ -284,8 +284,10 @@ void dump_names(void)
 
 
 /****************************************************************************
-load a netbios name database file
-****************************************************************************/
+  load a netbios name database file
+
+  XXXX we cannot cope with loading Internet Group names, yet
+  ****************************************************************************/
 void load_netbios_names(void)
 {
   struct subnet_record *d = find_subnet(ipgrp);
@@ -332,8 +334,8 @@ void load_netbios_names(void)
 	ptr = line;
 
 	if (next_token(&ptr,name_str    ,NULL)) ++count;
-	if (next_token(&ptr,ip_str      ,NULL)) ++count;
 	if (next_token(&ptr,ttd_str     ,NULL)) ++count;
+	if (next_token(&ptr,ip_str      ,NULL)) ++count;
 	if (next_token(&ptr,nb_flags_str,NULL)) ++count;
 
 	if (count <= 0) continue;
