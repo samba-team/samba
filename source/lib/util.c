@@ -2325,7 +2325,7 @@ BOOL mask_match(const char *string, char *pattern, BOOL is_case_sensitive)
 	if (strcmp(pattern,".") == 0)
 		return False;
 	
-	return ms_fnmatch(pattern, string, Protocol, is_case_sensitive) == 0;
+	return ms_fnmatch(pattern, string, Protocol) == 0;
 }
 
 /*******************************************************************
