@@ -1,33 +1,47 @@
-                 =================================
-                 Release Notes for Samba 3.0.3pre3
-                          XXXXX XX, 2004
-                 =================================
+                 ================================
+                 Release Notes for Samba 3.0.3rc1
+                          April 20, 2004
+                 ================================
 
-This is a preview release of the Samba 3.0.3 code base and is
-provided for testing only.  This release is *not* intended for
-production servers.  Use at your own risk.
+This is a release candidate snapshot of the Samba 3.0.3 code
+base and should be considered for testing only.  A release
+candidate (RC) means that we are close to the final, stable
+release and in provided for Quality Assurance (QA) purposes.
+This release is *not* intended for production servers.  Use
+at your own risk.
 
 There have been several bug fixes since the 3.0.2a release that
 we feel are important to make available to the Samba community
 for wider testings.  See the "Changes" section for details on
 exact updates.
 
-Common bugs fixed in this preview release include:
+Common bugs fixed in this RC include:
 
-  o <FILL ME IN>
+  o Delays in winbindd startup caused by unnecessary 
+    connections to trusted domain controllers.
+  o Various small memory leaks.
+  o Winbindd failing due to expired Kerberos tickets.
 
+New features introduced in this preview release include:
+
+  o Support for local nested groups via winbindd.
+  o Specifying options to be passed directly to 
+    the CUPS libraries.
+    
 
 ######################################################################
 Changes
 #######
 
-Changes since 3.0.3pre1
+Changes since 3.0.3pre2
 -----------------------
 smb.conf changes
 ----------------
 
     Parameter Name              Action
     --------------              ------
+    cups options                New
+    use cracklib                Removed
     winbind nested groups       New
 
     
@@ -35,17 +49,69 @@ commits
 -------
 
 o   Jeremy Allison <jra@samba.org>
+    * BUG 1139: Fix based on suggestion by jdev@panix.com.
+      swap lookups for user and group - group will do an
+      algorithmic lookup if it fails, user won't.
+    * Make EA's lookups case independent.
+    * Fix SETPATHINFO in 'unix extensions' support.
+    * Make 3.x pass the Samba 4.x RAW-SEARCH tests - except for 
+      the UNIX info levels, and the short case preserve names.
 
 
 o   Andrew Bartlet <abartlet@samba.org>
+    * Ensure 'net' honors the 'netbios name' in the smb.conf by 
+      default.
+    * Support SMB signing on connections using only the LANMAN 
+      password and generate the correct the 'session key' for these 
+      connections.
+    * Implement --required-membership-of=, an ntlm_auth option 
+      that restricts all authentication to members of this particular 
+      group.
+    * Improve our fall back code for password changes.
+    * Only send the ntlm_auth 'ntlm-server-1' helper client a '.' 
+      after the server had said something (such as an error).
+    * Add 'ntlm-server-1' helper protocol to ntlm_auth.
+
+      
+o   Alexander Bokovoy <ab@samba.org>
+    * Fix smbfs problem with Tree Disconnect issued before smbfs 
+      starts its work.
 
 
 o   Gerald Carter <jerry@samba.org>
     * Ensure server schannel uses the auth level requested by the 
       client.
+    * Removed --with-cracklib option due to potential crash issue.
+    * Fix -lcrypto linking problem with wbinfo.
+    * BUG 761: allow printing parameter to set defaults on a per 
+      share basis.
+    * Add 'cups options' parameter to allow raw printing without 
+      changing /etc/cups/cupsd.conf.
+    * BUG 1081, 1183: Added remove_duplicate_gids() to smbd and 
+      winbindd.
+    * BUG 1246: Fix typo in Fedora /etc/init.d/winbind.
 
 
 o   Steve French <sfrench@us.ibm.com>
+    * Fix free of incremented pointer in cifsvfs mount helper.
+    * Fix path canonicalization of the mount target path and help 
+      text display in the cifs mount helper.
+    * Add missing guest mount option for mount.cifs.
+
+
+o   Paul Green <paulg@samba.org>
+    * Update VOS _POSIX_C_SOURCE macro to 200112L.
+    * Fix bug in configure.ion by moving the first use of 
+      AC_CHECK_HEADERS so it is always executed.
+    * Fix configure.in to only use $BLDSHARED to select whether to 
+      build static or shared libraries.
+
+o   Pat Haywarrd <Pat.Hayward@propero.net>
+    * Make the session_users list dynamic (max of 128K).
+    
+    
+o   Cal Heldenbrand <calzplace@yahoo.com> 
+    * Fix for for 'pam_smbpass migrate' functionality.
 
 
 o   Krischan Jodies <kj@sernet.de>
@@ -54,12 +120,49 @@ o   Krischan Jodies <kj@sernet.de>
 
 o   Volker Lendecke <vl@samba.org>
     * Add support in winbindd for expanding nested local groups.
-
+    * Fix memleak in winbindd.
+    * Fix msdfs proxy.
+    * Don't list domain groups from BUILTIN.
+    * Fix memleak in policy handle utility functions.
+    * Decrease winbindd startup time by only contacting trusted 
+      domains as necessary.
+    * Allow winbindd to ask the DC for its domain for a trusted 
+      DC.
+    * Fix Netscape DS schema based on comments from 
+      <thomas.mueller@christ-wasser.de>.
+    
 
 o   Jianliang Lu <j.lu@tiesse.com>
-
+    * Don't force an upper case domain name in the ntlmssp code.
     
+
 o   Jim McDonough <jmcd@us.ibm.com>
+    * Remove modifyTimestamp from list of our attributes.  
+    * Fix lsalookupnames to check for domain users as well as local 
+      users. 
+    * Merge struct uuid replacement for GUID from trunk.
+    * BUG 1208: Finish support for handling expired tickets in 
+      winbindd (in conjunction with Guenther Deschner <gd@suse.de>).
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * Implement new VERSION schema based on subversion revision 
+      numbers.
+
+
+o   James Peach <jpeach@sgi.com>
+    * Search IRIX ABI paths for libiconv.  Based on initial fix from 
+      Jason Mader.
+      
+
+o   Kurt Pfeifle <kpfeifle@danka.de>
+    * Add example shell script for migrating drivers and printers 
+      from a Windows print server to a Samba print server using 
+      smbclient/rpcclient (examples/printing/VamireDriversFunctions).
+
+
+o   Richard Sharpe <rsharpe@samba.org>
+    * Add support for printing out the MAC address on nmblookup.
 
 
 o   Andrew Tridgell <tridge@samba.org>
