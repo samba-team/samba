@@ -644,3 +644,13 @@ krb5_get_fcache_version(krb5_context context, int *version)
     *version = context->fcache_vno;
     return 0;
 }
+
+krb5_boolean KRB5_LIB_FUNCTION
+krb5_is_thread_safe(void)
+{
+#ifdef ENABLE_PTHREAD_SUPPORT
+    return TRUE;
+#else
+    return FALSE;
+#endif
+}
