@@ -57,7 +57,7 @@ static NTSTATUS cmd_populate(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int arg
 	size = atoi(argv[2]);
 	vfs->data = (char *)talloc(mem_ctx, size);
 	if (vfs->data == NULL) {
-		printf("read: error=-1 (not enough memory)");
+		printf("populate: error=-1 (not enough memory)");
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	memset(vfs->data, c, size);
@@ -198,13 +198,72 @@ static NTSTATUS cmd_closedir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int arg
 static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	int flags, mode, fd;
+	char *flagstr;
 
-	flags = O_RDWR | O_CREAT;
 	mode = 00400;
 
-	if (argc != 2) {
-		printf("Usage: open <filename>\n");
+	if (argc < 3 || argc > 5) {
+		printf("Usage: open <filename> <flags> <mode>\n");
+		printf("  flags: O = O_RDONLY\n");
+		printf("         R = O_RDWR\n");
+		printf("         W = O_WRONLY\n");
+		printf("         C = O_CREAT\n");
+	       	printf("         E = O_EXCL\n");
+	       	printf("         T = O_TRUNC\n");
+	       	printf("         A = O_APPEND\n");
+	       	printf("         N = O_NONBLOCK/O_NDELAY\n");
+	       	printf("         S = O_SYNC\n");
+	       	printf("         F = O_NOFOLLOW\n");
+		printf("  mode: see open.2\n");
+		printf("        mode is ignored if C flag not present\n");
+		printf("        mode defaults to 00400\n");
 		return NT_STATUS_OK;
+	}
+	flags = 0;
+	flagstr = argv[2];
+	while (*flagstr) {
+		switch (*flagstr) {
+		case 'O':
+			flags |= O_RDONLY;
+			break;
+		case 'R':
+			flags |= O_RDWR;
+			break;
+		case 'W':
+			flags |= O_WRONLY;
+			break;
+		case 'C':
+			flags |= O_CREAT;
+			break;
+		case 'E':
+			flags |= O_EXCL;
+			break;
+		case 'T':
+			flags |= O_TRUNC;
+			break;
+		case 'A':
+			flags |= O_APPEND;
+			break;
+		case 'N':
+			flags |= O_NONBLOCK;
+			break;
+		case 'S':
+			flags |= O_SYNC;
+			break;
+		case 'F':
+			flags |= O_NOFOLLOW;
+			break;
+		default:
+			printf("open: error=-1 (invalid flag!)\n");
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+		flagstr++;
+	}
+	if ((flags & O_CREAT) && argc == 4) {
+		if (sscanf(argv[3], "%o", &mode) == 0) {
+			printf("open: error=-1 (invalid mode!)\n");
+			return NT_STATUS_UNSUCCESSFUL;
+		}
 	}
 
 	fd = vfs->conn->vfs_ops.open(vfs->conn, argv[1], flags, mode);
@@ -300,15 +359,10 @@ static NTSTATUS cmd_read(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	}
 	vfs->data_size = size;
 	
-	rsize = 0;
-	while (rsize < size) {
-		int isize;
-		isize = vfs->conn->vfs_ops.read(vfs->files[fd], fd, vfs->data, size);
-		if (isize == -1) {
-			printf("read: error=%d (%s)\n", errno, strerror(errno));
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-		rsize += isize;
+	rsize = vfs->conn->vfs_ops.read(vfs->files[fd], fd, vfs->data, size);
+	if (rsize == -1) {
+		printf("read: error=%d (%s)\n", errno, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	printf("read: ok\n");
@@ -461,7 +515,7 @@ static NTSTATUS cmd_stat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	printf("  Device: 0x%.10x", st.st_dev);
 	printf(" Inode: %10d", st.st_ino);
 	printf(" Links: %10d\n", st.st_nlink);
-	printf("  Access: %05d     ", (st.st_mode) & 0x7fff);
+	printf("  Access: %05o", (st.st_mode) & 007777);
 	printf(" Uid: %5d/%.16s Gid: %5d/%.16s\n", st.st_uid, user, st.st_gid, group);
 	printf("  Access: %s", ctime(&(st.st_atime)));
 	printf("  Modify: %s", ctime(&(st.st_mtime)));
@@ -523,7 +577,7 @@ static NTSTATUS cmd_fstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	printf("  Device: 0x%10x", st.st_dev);
 	printf(" Inode: %10d", st.st_ino);
 	printf(" Links: %10d\n", st.st_nlink);
-	printf("  Access: %05d     ", (st.st_mode) & 0x7fff);
+	printf("  Access: %05o", (st.st_mode) & 007777);
 	printf(" Uid: %5d/%.16s Gid: %5d/%.16s\n", st.st_uid, user, st.st_gid, group);
 	printf("  Access: %s", ctime(&(st.st_atime)));
 	printf("  Modify: %s", ctime(&(st.st_mtime)));
@@ -573,7 +627,7 @@ static NTSTATUS cmd_lstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	printf("  Device: 0x%10x", st.st_dev);
 	printf(" Inode: %10d", st.st_ino);
 	printf(" Links: %10d\n", st.st_nlink);
-	printf("  Access: %05d     ", (st.st_mode) & 0x7fff);
+	printf("  Access: %05o", (st.st_mode) & 007777);
 	printf(" Uid: %5d/%.16s Gid: %5d/%.16s\n", st.st_uid, user, st.st_gid, group);
 	printf("  Access: %s", ctime(&(st.st_atime)));
 	printf("  Modify: %s", ctime(&(st.st_mtime)));
