@@ -448,6 +448,32 @@ static BOOL test_NetShareGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+static BOOL test_NetShareCheck(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			       const char *device_name)
+{
+	NTSTATUS status;
+	struct srvsvc_NetShareCheck r;
+	BOOL ret = True;
+
+	r.in.server_unc = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.device_name = device_name;
+
+	printf("testing NetShareCheck on device '%s'\n", r.in.device_name);
+
+	status = dcerpc_srvsvc_NetShareCheck(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("dcerpc_srvsvc_NetShareCheck on device '%s' failed - %s\n",
+			r.in.device_name, nt_errstr(status));
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("NetShareCheck on device '%s' failed - %s\n",
+			r.in.device_name, win_errstr(r.out.result));
+		ret = False;
+	}
+
+	return ret;
+}
+
 /**************************/
 /* srvsvc_NetShare        */
 /**************************/
@@ -489,11 +515,16 @@ static BOOL test_NetShareEnumAll(struct dcerpc_pipe *p,
 		}
 
 		/* call srvsvc_NetShareGetInfo for each returned share */
-		if (r.in.level == 1) {
-			for (j=0;j<r.out.ctr.ctr1->count;j++) {
+		if (r.in.level == 2) {
+			for (j=0;j<r.out.ctr.ctr2->count;j++) {
 				const char *name;
-				name = r.out.ctr.ctr1->array[j].name;
+				const char *device;
+				name = r.out.ctr.ctr2->array[j].name;
 				if (!test_NetShareGetInfo(p, mem_ctx, name)) {
+					ret = False;
+				}
+				device = r.out.ctr.ctr2->array[j].path;
+				if (!test_NetShareCheck(p, mem_ctx, device)) {
 					ret = False;
 				}
 			}
