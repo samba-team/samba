@@ -109,6 +109,8 @@ EXTRA_libroken_la_SOURCES =	\
 	rcmd.c			\
 	readv.c			\
 	recvmsg.c		\
+	rtbl.c			\
+	rtbl.h			\
 	sendmsg.c		\
 	setegid.c		\
 	setenv.c		\
@@ -148,7 +150,7 @@ $(LTLIBOBJS) $(libroken_la_OBJECTS): roken.h
 include_HEADERS = $(err_h) base64.h getarg.h		\
 	parse_bytes.h parse_time.h parse_units.h	\
 	resolve.h roken.h roken-common.h		\
-	$(err_h) $(fnmatch_h) $(glob_h) xdbm.h
+	$(err_h) $(fnmatch_h) $(glob_h) rtbl.h xdbm.h
 
 if have_err_h
 err_h =
