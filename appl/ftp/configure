@@ -759,6 +759,85 @@ done
 test -n "$YACC" || YACC="yacc"
 
 
+ac_aux_dir=
+for ac_dir in $srcdir $srcdir/.. $srcdir/../..; do
+  if test -f $ac_dir/install-sh; then
+    ac_aux_dir=$ac_dir
+    ac_install_sh="$ac_aux_dir/install-sh -c"
+    break
+  elif test -f $ac_dir/install.sh; then
+    ac_aux_dir=$ac_dir
+    ac_install_sh="$ac_aux_dir/install.sh -c"
+    break
+  fi
+done
+if test -z "$ac_aux_dir"; then
+  { echo "configure: error: can not find install-sh or install.sh in $srcdir $srcdir/.. $srcdir/../.." 1>&2; exit 1; }
+fi
+ac_config_guess=$ac_aux_dir/config.guess
+ac_config_sub=$ac_aux_dir/config.sub
+ac_configure=$ac_aux_dir/configure # This should be Cygnus configure.
+
+# Find a good install program.  We prefer a C program (faster),
+# so one script is as good as another.  But avoid the broken or
+# incompatible versions:
+# SysV /etc/install, /usr/sbin/install
+# SunOS /usr/etc/install
+# IRIX /sbin/install
+# AIX /bin/install
+# AFS /usr/afsws/bin/install, which mishandles nonexistent args
+# SVR4 /usr/ucb/install, which tries to use the nonexistent group "staff"
+# ./install, which can be erroneously created by make from ./install.sh.
+echo $ac_n "checking for a BSD compatible install""... $ac_c" 1>&6
+if test -z "$INSTALL"; then
+if eval "test \"`echo '$''{'ac_cv_path_install'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+    IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS="${IFS}:"
+  for ac_dir in $PATH; do
+    # Account for people who put trailing slashes in PATH elements.
+    case "$ac_dir/" in
+    /|./|.//|/etc/*|/usr/sbin/*|/usr/etc/*|/sbin/*|/usr/afsws/bin/*|/usr/ucb/*) ;;
+    *)
+      # OSF1 and SCO ODT 3.0 have their own names for install.
+      for ac_prog in ginstall installbsd scoinst install; do
+        if test -f $ac_dir/$ac_prog; then
+	  if test $ac_prog = install &&
+            grep dspmsg $ac_dir/$ac_prog >/dev/null 2>&1; then
+	    # AIX install.  It has an incompatible calling convention.
+	    # OSF/1 installbsd also uses dspmsg, but is usable.
+	    :
+	  else
+	    ac_cv_path_install="$ac_dir/$ac_prog -c"
+	    break 2
+	  fi
+	fi
+      done
+      ;;
+    esac
+  done
+  IFS="$ac_save_ifs"
+
+fi
+  if test "${ac_cv_path_install+set}" = set; then
+    INSTALL="$ac_cv_path_install"
+  else
+    # As a last resort, use the slow shell script.  We don't cache a
+    # path for INSTALL within a source directory, because that will
+    # break other packages using the cache if that directory is
+    # removed, or if the path is relative.
+    INSTALL="$ac_install_sh"
+  fi
+fi
+echo "$ac_t""$INSTALL" 1>&6
+
+# Use test -z because SunOS4 sh mishandles braces in ${var-val}.
+# It thinks the first close brace ends the variable substitution.
+test -z "$INSTALL_PROGRAM" && INSTALL_PROGRAM='${INSTALL}'
+
+test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
+
+
 # If we cannot run a trivial program, we must be cross compiling.
 echo $ac_n "checking whether cross-compiling""... $ac_c" 1>&6
 if eval "test \"`echo '$''{'ac_cv_c_cross'+set}'`\" = set"; then
@@ -768,11 +847,11 @@ else
   ac_cv_c_cross=yes
 else
 cat > conftest.$ac_ext <<EOF
-#line 772 "configure"
+#line 851 "configure"
 #include "confdefs.h"
 main(){return(0);}
 EOF
-{ (eval echo configure:776: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }
+{ (eval echo configure:855: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }
 if test -s conftest && (./conftest; exit) 2>/dev/null; then
   ac_cv_c_cross=no
 else
@@ -791,7 +870,7 @@ if eval "test \"`echo '$''{'krb_cv_ld_flags'+set}'`\" = set"; then
 else
   krb_cv_ld_flags=""
 fi
- LD_FLAGS=${krb_cv_ld_flags}
+ LD_FLAGS="$krb_cv_ld_flags"
    
 for ac_hdr in sys/select.h paths.h bsd/bsd.h
 do
@@ -801,12 +880,12 @@ if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 805 "configure"
+#line 884 "configure"
 #include "confdefs.h"
 #include <$ac_hdr>
 EOF
 ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
-{ (eval echo configure:810: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+{ (eval echo configure:889: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
 ac_err=`grep -v '^ *+' conftest.out`
 if test -z "$ac_err"; then
   rm -rf conftest*
@@ -846,7 +925,7 @@ if eval "test \"\$ac_cv_func_socket\" != yes" ; then
 			LIBS="$ac_lib $ac_save_LIBS"
 		fi
 		cat > conftest.$ac_ext <<EOF
-#line 850 "configure"
+#line 929 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -854,7 +933,7 @@ int t() {
 socket()
 ; return 0; }
 EOF
-if { (eval echo configure:858: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
+if { (eval echo configure:937: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
   rm -rf conftest*
   eval "if test -n \"$ac_lib\";then ac_cv_funclib_socket=$ac_lib; else ac_cv_funclib_socket=yes; fi";break
 fi
@@ -924,7 +1003,7 @@ if eval "test \"\$ac_cv_func_gethostbyname\" != yes" ; then
 			LIBS="$ac_lib $ac_save_LIBS"
 		fi
 		cat > conftest.$ac_ext <<EOF
-#line 928 "configure"
+#line 1007 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -932,7 +1011,7 @@ int t() {
 gethostbyname()
 ; return 0; }
 EOF
-if { (eval echo configure:936: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
+if { (eval echo configure:1015: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
   rm -rf conftest*
   eval "if test -n \"$ac_lib\";then ac_cv_funclib_gethostbyname=$ac_lib; else ac_cv_funclib_gethostbyname=yes; fi";break
 fi
@@ -988,56 +1067,14 @@ EOF
 esac
 
 
-echo $ac_n "checking for ut_host in utmp""... $ac_c" 1>&6
-if eval "test \"`echo '$''{'ac_cv_struct_ut_host'+set}'`\" = set"; then
-  echo $ac_n "(cached) $ac_c" 1>&6
-else
-  
-cat > conftest.$ac_ext <<EOF
-#line 998 "configure"
-#include "confdefs.h"
-
-#include <time.h>
-#include <utmp.h>
-
-int main() { return 0; }
-int t() {
-
-char *p; 
-struct utmp ut; 
-p = ut.ut_host;
-
-; return 0; }
-EOF
-if { (eval echo configure:1013: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
-  rm -rf conftest*
-  ac_cv_struct_ut_host=yes
-else
-  rm -rf conftest*
-  ac_cv_struct_ut_host=no
-fi
-rm -f conftest*
-
-
-fi
-
-echo "$ac_t""$ac_cv_struct_ut_host" 1>&6
-if test "$ac_cv_struct_ut_host" = "yes"; then
-	cat >> confdefs.h <<\EOF
-#define HAVE_UT_HOST 1
-EOF
-
-fi
-	
-
-for ac_func in getcwd setproctitle
+for ac_func in setproctitle
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1041 "configure"
+#line 1078 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -1059,7 +1096,7 @@ $ac_func();
 
 ; return 0; }
 EOF
-if { (eval echo configure:1063: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
+if { (eval echo configure:1100: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
   rm -rf conftest*
   eval "ac_cv_func_$ac_func=yes"
 else
@@ -1081,95 +1118,6 @@ else
 fi
 done
 
-
-if test "$ac_cv_func_getcwd" = yes; then
-echo $ac_n "checking for broken getcwd""... $ac_c" 1>&6
-if eval "test \"`echo '$''{'ac_cv_func_getcwd_broken'+set}'`\" = set"; then
-  echo $ac_n "(cached) $ac_c" 1>&6
-else
-  
-ac_cv_func_getcwd_broken=no
-
-if test "$cross_compiling" = yes; then
-  :
-else
-cat > conftest.$ac_ext <<EOF
-#line 1098 "configure"
-#include "confdefs.h"
-
-#include <errno.h>
-char *getcwd(char*, int);
-
-void *popen(char *cmd, char *mode)
-{
-	errno = ENOTTY;
-	return 0;
-}
-
-int main()
-{
-	char *ret;
-	ret = getcwd(0, 1024);
-	if(ret == 0 && errno == ENOTTY)
-		return 0;
-	return 1;
-}
-
-EOF
-{ (eval echo configure:1120: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }
-if test -s conftest && (./conftest; exit) 2>/dev/null; then
-  ac_cv_func_getcwd_broken=yes
-else
-  :
-fi
-fi
-rm -fr conftest*
-
-fi
-
-echo "$ac_t""$ac_cv_func_getcwd_broken" 1>&6
-if test "$ac_cv_func_getcwd_broken" = yes; then
-	cat >> confdefs.h <<\EOF
-#define BROKEN_GETCWD 1
-EOF
-
-fi
-fi
-
-
-echo $ac_n "checking for __progname""... $ac_c" 1>&6
-if eval "test \"`echo '$''{'ac_cv_var___progname'+set}'`\" = set"; then
-  echo $ac_n "(cached) $ac_c" 1>&6
-else
-  
-cat > conftest.$ac_ext <<EOF
-#line 1147 "configure"
-#include "confdefs.h"
-extern char *__progname;
-int main() { return 0; }
-int t() {
-return strlen(__progname);
-; return 0; }
-EOF
-if { (eval echo configure:1155: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
-  rm -rf conftest*
-  ac_cv_var___progname=yes
-else
-  rm -rf conftest*
-  ac_cv_var___progname=no
-fi
-rm -f conftest*
-
-
-fi
-
-echo "$ac_t""$ac_cv_var___progname" 1>&6
-if test "$ac_cv_var___progname" = "yes"; then
-	cat >> confdefs.h <<\EOF
-#define HAVE___PROGNAME 1
-EOF
-
-fi
 
 trap '' 1 2 15
 cat > confcache <<\EOF
@@ -1256,6 +1204,7 @@ do
 done
 
 ac_given_srcdir=$srcdir
+ac_given_INSTALL="$INSTALL"
 
 trap 'rm -fr `echo "Makefile common/Makefile ftp/Makefile ftpd/Makefile config.h" | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
 EOF
@@ -1291,6 +1240,8 @@ s%@CC@%$CC%g
 s%@RANLIB@%$RANLIB%g
 s%@CPP@%$CPP%g
 s%@YACC@%$YACC%g
+s%@INSTALL_PROGRAM@%$INSTALL_PROGRAM%g
+s%@INSTALL_DATA@%$INSTALL_DATA%g
 s%@LD_FLAGS@%$LD_FLAGS%g
 
 CEOF
@@ -1332,6 +1283,10 @@ for ac_file in .. $CONFIG_FILES; do if test "x$ac_file" != x..; then
     top_srcdir="$ac_dots$ac_given_srcdir" ;;
   esac
 
+  case "$ac_given_INSTALL" in
+  [/$]*) INSTALL="$ac_given_INSTALL" ;;
+  *) INSTALL="$ac_dots$ac_given_INSTALL" ;;
+  esac
   echo creating "$ac_file"
   rm -f "$ac_file"
   configure_input="Generated automatically from `echo $ac_file_in|sed 's%.*/%%'` by configure."
@@ -1344,6 +1299,7 @@ for ac_file in .. $CONFIG_FILES; do if test "x$ac_file" != x..; then
 s%@configure_input@%$configure_input%g
 s%@srcdir@%$srcdir%g
 s%@top_srcdir@%$top_srcdir%g
+s%@INSTALL@%$INSTALL%g
 " -f conftest.subs $ac_given_srcdir/$ac_file_in > $ac_file
 fi; done
 rm -f conftest.subs

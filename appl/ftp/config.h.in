@@ -1,12 +1,10 @@
 /* config.h.in.  Generated automatically from configure.in by autoheader.  */
+/*
+ * $Id$
+ */
 
+#include "../../config.h"
 
-#undef HAVE___PROGNAME
-#undef HAVE_UT_HOST
-#undef BROKEN_GETCWD
-
-/* Define if you have the getcwd function.  */
-#undef HAVE_GETCWD
 
 /* Define if you have the gethostbyname function.  */
 #undef HAVE_GETHOSTBYNAME
@@ -32,16 +30,8 @@
 /* Define if you have the socket library (-lsocket).  */
 #undef HAVE_LIBSOCKET
 
-#undef HAVE___PROGNAME
-#undef HAVE_UT_HOST
-#undef BROKEN_GETCWD
-
-#ifdef __STDC__
-#define RCSID(msg) static const char *rcsid[] = { (char *)rcsid, "\0100(#)" msg }
-#else
-#define RCSID(msg) static char *rcsid[] = { (char *)rcsid, msg }
-#endif
-
+#ifndef WTMP_PATH
 #define WTMP_PATH "/var/adm/wtmp"
+#endif
 
 #define KERBEROS
