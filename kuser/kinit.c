@@ -226,10 +226,11 @@ main (int argc, char **argv)
 					NULL);
 
 #ifdef KRB4
-    get_v4_tgt = krb5_config_get_bool (context, NULL,
-				       "libdefaults",
-				       "krb4_get_tickets",
-				       NULL);
+    get_v4_tgt = krb5_config_get_bool_default (context, NULL,
+					       get_v4_tgt,
+					       "libdefaults",
+					       "krb4_get_tickets",
+					       NULL);
 #endif
 
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
