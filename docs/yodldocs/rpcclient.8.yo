@@ -232,9 +232,15 @@ dit(bf(createalias <alias>))
 Creates a domain alias.
 
 label(CREATEUSER)
-dit(bf(createuser <accountname>))
-Creates an account in the NT domain. This account can be either a user account
-or a workstation trust account (ending in a `$` sign).
+
+dit(bf(createuser <acct_name> [-i] [-s] [-L] [-j] <dom_name> [-p password]))
+Creates an account in the NT domain. To create a machine trust account, append a
+'$' sign.
+
+bf(-i)	Inter-Domain trust
+bf(-s)	Server Trust (BDC)
+bf(-L)	Local Account
+bf(-j)	Password to assign to the account
 
 label(DELUSER)
 dit(bf(deluser <accountname>))
@@ -257,11 +263,40 @@ dit(bf(samquerysec <user name>))
 Query SAM security object
 
 label(SAMUSERSET2)
-dit(bf(samuserset2 <user> [-p password])) and
+dit(bf(samuserset2 <acct_name> [-s acb_bits] [-c acb_bits]))
+
+where acct_name is the account name (append a '$' sign for a machine
+account) and domain_name. The values for acb_bits can be determined by
+adding wanted values from the following:
+
+	1	Enable / Disable Toggle
+	2	Home directory required
+	4	Password not required
+	8	Template Duplicate account
+	16	Normal User Account
+	32	MNS Logon User Account
+	64	Domain Trust Account
+	128	Workstation Trust Account
+	256	Server Trust Account (BDC)
+	512	Password Never Expires
+	1024	Account is Autolocked
+	2048	Password is locked
+
+bf(-c)	clear ACB bits
+bf(-s)	set ACB bits
 
 label(SAMUSERSET)
-dit(bf(samuserset <user> [-p password]))
-Set the a user's password
+dit(bf(samuserset <acct_name> [<-p password> [-F Full Name] [-H Home Dir] [-D Home Drive] [-P profile path] [-L Login script]]))
+
+where acct_name is the account name (append a '$' sign for a machine
+account) and password is the password to change to
+
+bf(-p)	change password to 'password'
+bf(-F)	Change Full name to 'Full Name'
+bf(-H)	Change Home Directory to 'Home Dir'
+bf(-D)	Change Home directory drive to 'Home Drive'
+bf(-P)	Set profile path to 'Profile Path'
+bf(-L)	Set Login script to 'Login Script'
 
 label(SAMUSER)
 dit(bf(samuser <name> [-a | -u | -g]))
@@ -420,4 +455,3 @@ manpageauthor()
 Samba is written by The Samba Team as Open Source. This man page was written
 by Matthew Geddes and has strongly "borrowed" from Luke Kenneth Casson
 Leighton's original rpcclient man page and wise words and the Samba source.
-

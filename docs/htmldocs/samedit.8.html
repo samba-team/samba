@@ -199,11 +199,13 @@ Creates a domainwide (Global) group in the domain.
 <p></p><dt><strong><strong>createalias &lt;alias&gt;</strong></strong><dd>
 Creates a domain alias.
 <p><a name="CREATEUSER"></a>
-<p></p><dt><strong><strong>createuser &lt;accountname&gt; [-s] [-j] DOMAIN</strong></strong><dd>
-Creates an account in the NT domain. This account can be either a user account
-or a machine trust account (ending in a `$` sign). The -s option is for
-server (BDC) account and -j will tell samba to try and join the specified
-machine account to the specified domain.
+<p><p></p><dt><strong><strong>createuser &lt;acct_name&gt; [-i] [-s] [-L] [-j] &lt;dom_name&gt; [-p password]</strong></strong><dd>
+Creates an account in the NT domain. To create a machine trust account, append a
+'$' sign.
+<p><strong>-i</strong>	Inter-Domain trust
+<strong>-s</strong>	Server Trust (BDC)
+<strong>-L</strong>	Local Account
+<strong>-j</strong>	Password to assign to the account
 <p><a name="DELUSER"></a>
 <p></p><dt><strong><strong>deluser &lt;accountname&gt;</strong></strong><dd>
 Removes an account from the domain.
@@ -220,10 +222,34 @@ Change the NT password.
 <p></p><dt><strong><strong>samquerysec &lt;user name&gt;</strong></strong><dd>
 Query SAM security object
 <p><a name="SAMUSERSET2"></a>
-<p></p><dt><strong><strong>samuserset2 &lt;user&gt; [-p password]</strong></strong><dd> and
+<p></p><dt><strong><strong>samuserset2 &lt;acct_name&gt; [-s acb_bits] [-c acb_bits]</strong></strong><dd>
+<p>where acct_name is the account name (append a '$' sign for a machine
+account) and domain_name. The values for acb_bits can be determined by
+adding wanted values from the following:
+<p>1	Enable / Disable Toggle
+	2	Home directory required
+	4	Password not required
+	8	Template Duplicate account
+	16	Normal User Account
+	32	MNS Logon User Account
+	64	Domain Trust Account
+	128	Workstation Trust Account
+	256	Server Trust Account (BDC)
+	512	Password Never Expires
+	1024	Account is Autolocked
+	2048	Password is locked
+<p><strong>-c</strong>	clear ACB bits
+<strong>-s</strong>	set ACB bits
 <p><a name="SAMUSERSET"></a>
-<p></p><dt><strong><strong>samuserset &lt;user&gt; [-p password]</strong></strong><dd>
-Set the a user's password
+<p></p><dt><strong><strong>samuserset &lt;acct_name&gt; [&lt;-p password&gt; [-F Full Name] [-H Home Dir] [-D Home Drive] [-P profile path] [-L Login script]]</strong></strong><dd>
+<p>where acct_name is the account name (append a '$' sign for a machine
+account) and password is the password to change to
+<p><strong>-p</strong>	change password to 'password'
+<strong>-F</strong>	Change Full name to 'Full Name'
+<strong>-H</strong>	Change Home Directory to 'Home Dir'
+<strong>-D</strong>	Change Home directory drive to 'Home Drive'
+<strong>-P</strong>	Set profile path to 'Profile Path'
+<strong>-L</strong>	Set Login script to 'Login Script'
 <p><a name="SAMUSER"></a>
 <p></p><dt><strong><strong>samuser &lt;name&gt; [-a | -u | -g]</strong></strong><dd>
 Do a query on a username in the SAM database. The option that follows the <strong>name</strong> can be an alias <strong>-a</strong>, a user account
