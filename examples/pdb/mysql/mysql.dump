@@ -1,7 +1,7 @@
 # Put this in your MySQL database by running 
 # mysql -u<user> -p<password> -h<host> <database> < mysql.dump
 
-CREATE TABEL user (
+CREATE TABLE user (
 	logon_time int(9),
 	logoff_time int(9),
 	kickoff_time int(9),
