@@ -66,7 +66,7 @@ static void
 append_hex(char *str, krb5_data *data)
 {
     int i;
-    char *p = malloc(data->length * 2 + 1);
+    char *p = calloc(1, data->length * 2 + 1);
     for(i = 0; i < data->length; i++)
 	sprintf(p + 2 * i, "%02x", ((u_char*)data->data)[i]);
     strcat(str, p);
