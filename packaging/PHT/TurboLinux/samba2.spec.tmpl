@@ -309,7 +309,7 @@ fi
 
 # Add swat entry to /etc/inetd.conf if needed
 if !( grep ^[:space:]*swat /etc/inetd.conf > /dev/null ) then
-        echo 'swat      stream  tcp     nowait.400      root    /usr/sbin/swat swat' >> /etc/inetd.conf
+        echo '#swat      stream  tcp     nowait.400      root    /usr/sbin/swat swat' >> /etc/inetd.conf
 	killall -1 inetd || :
 fi
 
