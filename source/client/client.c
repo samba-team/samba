@@ -505,11 +505,13 @@ static void do_get(char *rname,char *lname)
 	}
 
 
-	if (!cli_getattrE(cli, fnum, &attr, &size, NULL, NULL, NULL)) {
-		DEBUG(0,("getattrE: %s\n",cli_errstr(cli)));
+	if (!cli_qfileinfo(cli, fnum, 
+			   &attr, &size, NULL, NULL, NULL, NULL, NULL) &&
+	    !cli_getattrE(cli, fnum, 
+			  &attr, &size, NULL, NULL, NULL)) {
+		DEBUG(0,("getattrib: %s\n",cli_errstr(cli)));
 		return;
 	}
-
 
 	DEBUG(2,("getting file %s of size %.0f as %s ", 
 		 lname, (double)size, lname));

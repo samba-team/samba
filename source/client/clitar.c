@@ -848,7 +848,7 @@ static void do_tar(file_info *finfo)
       }
       ntarf++;  /* Make sure we have a file on there */
       safe_strcpy(mtar_mask,cur_dir, sizeof(pstring));
-      safe_strcat(mtar_mask,"*.*", sizeof(pstring));
+      safe_strcat(mtar_mask,"*", sizeof(pstring));
       do_list(mtar_mask, attribute, do_tar, False, True);
       safe_strcpy(cur_dir,saved_curdir, sizeof(pstring));
     }
