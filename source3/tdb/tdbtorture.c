@@ -17,12 +17,15 @@
 
 
 
-#define DELETE_PROB 10
-#define STORE_PROB 3
-#define TRAVERSE_PROB 8
-#define CULL_PROB 60
+#define REOPEN_PROB 30
+#define DELETE_PROB 8
+#define STORE_PROB 4
+#define LOCKSTORE_PROB 0
+#define TRAVERSE_PROB 20
+#define CULL_PROB 100
 #define KEYLEN 3
 #define DATALEN 100
+#define LOCKLEN 20
 
 static TDB_CONTEXT *db;
 
@@ -74,15 +77,17 @@ static int cull_traverse(TDB_CONTEXT *db, TDB_DATA key, TDB_DATA dbuf,
 
 static void addrec_db(void)
 {
-	int klen, dlen;
-	char *k, *d;
-	TDB_DATA key, data;
+	int klen, dlen, slen;
+	char *k, *d, *s;
+	TDB_DATA key, data, lockkey;
 
 	klen = 1 + (rand() % KEYLEN);
 	dlen = 1 + (rand() % DATALEN);
+	slen = 1 + (rand() % LOCKLEN);
 
 	k = randbuf(klen);
 	d = randbuf(dlen);
+	s = randbuf(slen);
 
 	key.dptr = k;
 	key.dsize = klen+1;
@@ -90,21 +95,54 @@ static void addrec_db(void)
 	data.dptr = d;
 	data.dsize = dlen+1;
 
+	lockkey.dptr = s;
+	lockkey.dsize = slen+1;
+
+#if REOPEN_PROB
+	if (random() % REOPEN_PROB == 0) {
+		tdb_reopen_all();
+		goto next;
+	} 
+#endif
+
+#if DELETE_PROB
 	if (random() % DELETE_PROB == 0) {
 		tdb_delete(db, key);
-	} else if (random() % STORE_PROB == 0) {
+	}
+#endif
+
+#if STORE_PROB
+	if (random() % STORE_PROB == 0) {
 		if (tdb_store(db, key, data, TDB_REPLACE) != 0) {
 			fatal("tdb_store failed");
 		}
-	} else if (random() % TRAVERSE_PROB == 0) {
-		tdb_traverse(db, cull_traverse, NULL);
-	} else {
-		data = tdb_fetch(db, key);
-		if (data.dptr) free(data.dptr);
 	}
+#endif
+
+#if LOCKSTORE_PROB
+	if (random() % LOCKSTORE_PROB == 0) {
+		tdb_chainlock(db, lockkey);
+		data = tdb_fetch(db, key);
+		if (tdb_store(db, key, data, TDB_REPLACE) != 0) {
+			fatal("tdb_store failed");
+		}
+		if (data.dptr) free(data.dptr);
+		tdb_chainunlock(db, lockkey);
+	} 
+#endif
+
+#if TRAVERSE_PROB
+	if (random() % TRAVERSE_PROB == 0) {
+		tdb_traverse(db, cull_traverse, NULL);
+	}
+#endif
+
+	data = tdb_fetch(db, key);
+	if (data.dptr) free(data.dptr);
 
 	free(k);
 	free(d);
+	free(s);
 }
 
 static int traverse_fn(TDB_CONTEXT *db, TDB_DATA key, TDB_DATA dbuf,
@@ -134,7 +172,7 @@ int main(int argc, char *argv[])
 		if ((pids[i+1]=fork()) == 0) break;
 	}
 
-	db = tdb_open("torture.tdb", 0, TDB_CLEAR_IF_FIRST, 
+	db = tdb_open("torture.tdb", 2, TDB_CLEAR_IF_FIRST, 
 		      O_RDWR | O_CREAT, 0600);
 	if (!db) {
 		fatal("db open failed");
