@@ -1211,14 +1211,29 @@ use this machine as the password server.\n"));
  given a name or IP address.
 ************************************************************************/
 
-static BOOL connect_to_domain_password_server(struct cli_state *pcli, char *remote_machine,
+static BOOL connect_to_domain_password_server(struct cli_state *pcli, 
+					      char *server,
                                               unsigned char *trust_passwd)
 {
   struct in_addr dest_ip;
+  fstring remote_machine;
 
   if(cli_initialise(pcli) == False) {
     DEBUG(0,("connect_to_domain_password_server: unable to initialize client connection.\n"));
     return False;
+  }
+
+  if (is_ipaddress(server)) {
+	  struct in_addr to_ip;
+
+	  if (!inet_aton(server, &to_ip) ||
+	      !name_status_find(0x20, to_ip, remote_machine)) {
+		  DEBUG(1, ("connect_to_domain_password_server: Can't "
+			    "resolve name for IP %s\n", server));
+		  return False;
+	  }
+  } else {
+	  fstrcpy(remote_machine, server);
   }
 
   standard_sub_basic(remote_machine);
