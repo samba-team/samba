@@ -100,7 +100,6 @@ struct dcesrv_crypto_ops {
 	NTSTATUS (*start)(struct dcesrv_auth *auth, DATA_BLOB *auth_blob);
 	NTSTATUS (*update)(struct dcesrv_auth *auth, TALLOC_CTX *out_mem_ctx,
 				const DATA_BLOB in, DATA_BLOB *out);
-	NTSTATUS (*session_info)(struct dcesrv_auth *auth, struct auth_session_info **session_info);
 	NTSTATUS (*seal)(struct dcesrv_auth *auth, TALLOC_CTX *sig_mem_ctx,
 				uint8_t *data, size_t length, DATA_BLOB *sig);
 	NTSTATUS (*sign)(struct dcesrv_auth *auth, TALLOC_CTX *sig_mem_ctx,
@@ -119,6 +118,7 @@ struct dcesrv_auth {
 		void *private_data;
 		const struct dcesrv_crypto_ops *ops;
 	} crypto_ctx;
+	struct auth_session_info *session_info;
 };
 
 
@@ -152,9 +152,6 @@ struct dcesrv_connection {
 
 	/* the current authentication state */
 	struct dcesrv_auth auth_state;
-
-	/* the transport level session key, if any */
-	DATA_BLOB session_key;
 };
 
 
