@@ -1134,7 +1134,16 @@ CLASS="PARAMETER"
 ><I
 >homedir map</I
 ></TT
-> </P
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>host msdfs</I
+></TT
+></P
 ></LI
 ><LI
 ><P
@@ -1143,7 +1152,7 @@ CLASS="PARAMETER"
 ><I
 >hosts equiv</I
 ></TT
-> </P
+></P
 ></LI
 ><LI
 ><P
@@ -2176,7 +2185,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN704"
+NAME="AEN707"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -2776,6 +2785,15 @@ CLASS="PARAMETER"
 ><TT
 CLASS="PARAMETER"
 ><I
+>msdfs root</I
+></TT
+> </P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
 >only guest</I
 ></TT
 > </P
@@ -3217,7 +3235,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1050"
+NAME="AEN1056"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -6853,6 +6871,46 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="HOSTMSDFS"
+></A
+>host msdfs (G)</DT
+><DD
+><P
+>This boolean parameter is only available 
+		if Samba has been configured and compiled with the <B
+CLASS="COMMAND"
+>		--with-msdfs</B
+> option. If set to <TT
+CLASS="CONSTANT"
+>yes</TT
+>, 
+		Samba will act as a Dfs server, and  allow Dfs-aware clients 
+		to browse Dfs trees hosted on the server.</P
+><P
+>See also the <A
+HREF="#MSDFSROOT"
+><TT
+CLASS="PARAMETER"
+><I
+>		msdfs root</I
+></TT
+></A
+> share  level  parameter.  For
+		more  information  on  setting  up a Dfs tree on Samba,
+		refer to <A
+HREF="msdfs_setup.html"
+TARGET="_top"
+>msdfs_setup.html</A
+>.
+		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>host msdfs = no</B
+></P
+></DD
+><DT
+><A
 NAME="HOSTSALLOW"
 ></A
 >hosts allow (S)</DT
@@ -9380,8 +9438,8 @@ CLASS="COMMAND"
 ><P
 >Default: <B
 CLASS="COMMAND"
->max smbd processes = 0   ## no limit</B
-></P
+>max smbd processes = 0</B
+>   ## no limit</P
 ><P
 >Example: <B
 CLASS="COMMAND"
@@ -9727,6 +9785,52 @@ CLASS="COMMAND"
 >Default: <B
 CLASS="COMMAND"
 >min wins ttl = 21600</B
+></P
+></DD
+><DT
+><A
+NAME="MSDFSROOT"
+></A
+>msdfs root (S)</DT
+><DD
+><P
+>This boolean parameter is only available if 
+		Samba is configured  and  compiled with the <B
+CLASS="COMMAND"
+>		--with-msdfs</B
+> option.  If set to <TT
+CLASS="CONSTANT"
+>yes&#62;</TT
+>, 
+		Samba treats the share as a Dfs root and  allows clients to browse 
+		the distributed file system tree rooted at the share directory. 
+		Dfs links are specified  in  the share directory by symbolic 
+		links of the form <TT
+CLASS="FILENAME"
+>msdfs:serverA\shareA,serverB\shareB
+		</TT
+> and so on.  For more information on setting up a Dfs tree 
+		on Samba,  refer to <A
+HREF="msdfs_setup.html"
+TARGET="_top"
+>msdfs_setup.html
+		</A
+>.</P
+><P
+>See also <A
+HREF="#HOSTMSDFS"
+><TT
+CLASS="PARAMETER"
+><I
+>host msdfs
+		</I
+></TT
+></A
+></P
+><P
+>Default: <B
+CLASS="COMMAND"
+>msdfs root = no</B
 ></P
 ></DD
 ><DT
@@ -16157,7 +16261,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5100"
+NAME="AEN5133"
 ></A
 ><H2
 >WARNINGS</H2
@@ -16187,7 +16291,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5106"
+NAME="AEN5139"
 ></A
 ><H2
 >VERSION</H2
@@ -16198,7 +16302,7 @@ NAME="AEN5106"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5109"
+NAME="AEN5142"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -16277,7 +16381,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5129"
+NAME="AEN5162"
 ></A
 ><H2
 >AUTHOR</H2

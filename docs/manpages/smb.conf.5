@@ -602,10 +602,13 @@ each parameter for details. Note that some are synonyms.
 \fIhide local users\fR 
 .TP 0.2i
 \(bu
-\fIhomedir map\fR 
+\fIhomedir map\fR
 .TP 0.2i
 \(bu
-\fIhosts equiv\fR 
+\fIhost msdfs\fR
+.TP 0.2i
+\(bu
+\fIhosts equiv\fR
 .TP 0.2i
 \(bu
 \fIinterfaces\fR
@@ -1147,6 +1150,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fImin print space\fR 
+.TP 0.2i
+\(bu
+\fImsdfs root\fR 
 .TP 0.2i
 \(bu
 \fIonly guest\fR 
@@ -2680,6 +2686,18 @@ Default: \fBhomedir map = <empty string>\fR
 
 Example: \fBhomedir map = amd.homedir\fR
 .TP
+\fBhost msdfs (G)\fR
+This boolean parameter is only available 
+if Samba has been configured and compiled with the \fB --with-msdfs\fR option. If set to yes, 
+Samba will act as a Dfs server, and allow Dfs-aware clients 
+to browse Dfs trees hosted on the server.
+
+See also the \fI msdfs root\fR share level parameter. For
+more information on setting up a Dfs tree on Samba,
+refer to msdfs_setup.html <URL:msdfs_setup.html>.
+
+Default: \fBhost msdfs = no\fR
+.TP
 \fBhosts allow (S)\fR
 A synonym for this parameter is \fIallow 
 hosts\fR.
@@ -3715,7 +3733,7 @@ number of connections. Remember that under normal operating
 conditions, each user will have an smbd associated with him or her
 to handle connections to all shares from a given host.
 
-Default: \fBmax smbd processes = 0 ## no limit\fR
+Default: \fBmax smbd processes = 0\fR ## no limit
 
 Example: \fBmax smbd processes = 1000\fR
 .TP
@@ -3856,6 +3874,21 @@ seconds). You should never need to change this parameter. The default
 is 6 hours (21600 seconds).
 
 Default: \fBmin wins ttl = 21600\fR
+.TP
+\fBmsdfs root (S)\fR
+This boolean parameter is only available if 
+Samba is configured and compiled with the \fB --with-msdfs\fR option. If set to yes>, 
+Samba treats the share as a Dfs root and allows clients to browse 
+the distributed file system tree rooted at the share directory. 
+Dfs links are specified in the share directory by symbolic 
+links of the form \fImsdfs:serverA\\shareA,serverB\\shareB
+\fRand so on. For more information on setting up a Dfs tree 
+on Samba, refer to msdfs_setup.html
+ <URL:msdfs_setup.html>.
+
+See also \fIhost msdfs
+\fR
+Default: \fBmsdfs root = no\fR
 .TP
 \fBname resolve order (G)\fR
 This option is used by the programs in the Samba 
