@@ -62,6 +62,7 @@ static BOOL nbt_register_own(TALLOC_CTX *mem_ctx, struct nbt_name *name,
 	io.in.broadcast = True;
 	io.in.ttl = 1234;
 	io.in.timeout = 3;
+	io.in.retries = 0;
 	
 	status = nbt_name_register(nbtsock, mem_ctx, &io);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
@@ -121,6 +122,7 @@ static BOOL nbt_refresh_own(TALLOC_CTX *mem_ctx, struct nbt_name *name,
 	io.in.broadcast = True;
 	io.in.ttl = 1234;
 	io.in.timeout = 3;
+	io.in.retries = 0;
 	
 	status = nbt_name_refresh(nbtsock, mem_ctx, &io);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
@@ -136,6 +138,71 @@ static BOOL nbt_refresh_own(TALLOC_CTX *mem_ctx, struct nbt_name *name,
 	CHECK_STRING(io.out.name.name, name->name);
 	CHECK_VALUE(io.out.name.type, name->type);
 	CHECK_VALUE(io.out.rcode, NBT_RCODE_ACT);
+
+	return ret;
+}
+
+
+/*
+  register names with a WINS server
+*/
+static BOOL nbt_register_wins(TALLOC_CTX *mem_ctx, struct nbt_name *name, 
+			      const char *address)
+{
+	struct nbt_name_refresh_wins io;
+	struct nbt_name_query q;
+	NTSTATUS status;
+	struct nbt_name_socket *nbtsock = nbt_name_socket_init(mem_ctx, NULL);
+	BOOL ret = True;
+
+	printf("Testing name registration to WINS\n");
+
+	io.in.name.name = talloc_asprintf(mem_ctx, "_TORTURE-%5u", 
+					  (unsigned)(random() % (100000)));
+	io.in.name.type = NBT_NAME_CLIENT;
+	io.in.name.scope = NULL;
+	io.in.wins_servers = str_list_make(mem_ctx, address, NULL);
+	io.in.addresses = str_list_make(mem_ctx, BOGUS_ADDRESS1, NULL);
+	io.in.nb_flags = NBT_NODE_M | NBT_NM_ACTIVE;
+	io.in.ttl = 12345;
+	
+	status = nbt_name_refresh_wins(nbtsock, mem_ctx, &io);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		printf("No response from %s for name register\n", address);
+		return False;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Bad response from %s for name register - %s\n",
+		       address, nt_errstr(status));
+		return False;
+	}
+	
+	CHECK_STRING(io.out.wins_server, address);
+	CHECK_VALUE(io.out.rcode, 0);
+
+	/* query the name to make sure its there */
+	q.in.name = io.in.name;
+	q.in.dest_addr = address;
+	q.in.broadcast = False;
+	q.in.wins_lookup = True;
+	q.in.timeout = 3;
+	q.in.retries = 0;
+
+	status = nbt_name_query(nbtsock, mem_ctx, &q);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		printf("No response from %s for name query\n", address);
+		return False;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Bad response from %s for name query - %s\n",
+		       address, nt_errstr(status));
+		return False;
+	}
+	
+	CHECK_STRING(q.out.name.name, q.in.name.name);
+	CHECK_VALUE(q.out.name.type, q.in.name.type);
+	CHECK_VALUE(q.out.num_addrs, 1);
+	CHECK_STRING(q.out.reply_addrs[0], BOGUS_ADDRESS1);
 
 	return ret;
 }
@@ -167,6 +234,7 @@ BOOL torture_nbt_register(void)
 
 	ret &= nbt_register_own(mem_ctx, &name, address);
 	ret &= nbt_refresh_own(mem_ctx, &name, address);
+	ret &= nbt_register_wins(mem_ctx, &name, address);
 
 	talloc_free(mem_ctx);
 
