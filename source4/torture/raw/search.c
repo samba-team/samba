@@ -681,6 +681,7 @@ static BOOL test_many_files(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			}
 			free(fname);
 		}
+		talloc_free(result.list);
 	}
 
 done:
@@ -897,6 +898,8 @@ static BOOL test_sorted(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			goto done;
 		}
 	}
+
+	talloc_free(result.list);
 
 done:
 	smb_raw_exit(cli->session);

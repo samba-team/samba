@@ -24,10 +24,20 @@
 /* this is only needed for compatibility with the old talloc */
 typedef void TALLOC_CTX;
 
+/*
+  this uses a little trick to allow __LINE__ to be stringified
+*/
+#define _STRING_LINE_(s)    #s
+#define _STRING_LINE2_(s)   _STRING_LINE_(s)
+#define __LINESTR__       _STRING_LINE2_(__LINE__)
+#define __location__ __FILE__ ":" __LINESTR__
+
 /* useful macros for creating type checked pointers */
+#define talloc(ctx, size) talloc_named_const(ctx, size, __location__)
+#define talloc_realloc(ptr, size) _talloc_realloc(ptr, size, __location__)
 #define talloc_p(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type)
-#define talloc_array_p(ctx, type, count) (type *)talloc_array(ctx, sizeof(type), count)
-#define talloc_realloc_p(p, type, count) (type *)talloc_realloc_array(p, sizeof(type), count)
+#define talloc_array_p(ctx, type, count) (type *)talloc_array(ctx, sizeof(type), count, __location__)
+#define talloc_realloc_p(p, type, count) (type *)talloc_realloc_array(p, sizeof(type), count, __location__)
 
 #define talloc_destroy(ctx) talloc_free(ctx)
 
