@@ -1008,7 +1008,7 @@ static ubi_dlNewList( dir_cache );
  Output: None.
 *****************************************************************************/
 
-void DirCacheAdd( const char *path, char *name, char *dname, int snum )
+void DirCacheAdd( const char *path, const char *name, const char *dname, int snum )
 {
 	int pathlen;
 	int namelen;
