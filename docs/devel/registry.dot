@@ -1,0 +1,10 @@
+digraph foo {
+	libwinregistry -> libregistry;
+	KConfig -> libregistry;
+	gconf -> libregistry;
+	"TDB (Samba)" -> libwinregistry;
+	"Wine registry files" -> libwinregistry;
+	"RPC (Remote windows server" -> libwinregistry;
+	"NT4-style Registry files" -> libwinregistry;
+	libregistry -> libwinregistry;
+}

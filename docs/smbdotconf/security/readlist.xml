@@ -1,0 +1,20 @@
+<samba:parameter name="read list"
+                 context="S"
+				 type="list"
+                 xmlns:samba="http://samba.org/common">
+<description>
+    <para>This is a list of users that are given read-only 
+    access to a service. If the connecting user is in this list then 
+    they will not be given write access, no matter what the <link linkend="READONLY">
+    <parameter moreinfo="none">read only</parameter></link>
+    option is set to. The list can include group names using the 
+    syntax described in the <link linkend="INVALIDUSERS"><parameter moreinfo="none">
+			invalid users</parameter></link> parameter.</para>
+</description>
+
+<related>write list</related>
+<related>invalid users</related>
+
+<value type="default"></value>
+<value type="example">mary, @students</value>
+</samba:parameter>
