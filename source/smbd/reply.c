@@ -271,7 +271,7 @@ int reply_tcon(connection_struct *conn,
 
 	map_nt_and_unix_username(global_myworkgroup, user);
 
-	conn = make_connection(service,user,password,pwlen,dev,vuid,&ecode);
+	conn = make_connection(service,user,global_myworkgroup, password,pwlen,dev,vuid,&ecode);
   
 	if (!conn) {
 		return(connection_error(inbuf,outbuf,ecode));
@@ -341,7 +341,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
 	map_nt_and_unix_username(global_myworkgroup, user);
 
-	conn = make_connection(service,user,password,passlen,devicename,vuid,&ecode);
+	conn = make_connection(service,user,global_myworkgroup, password,passlen,devicename,vuid,&ecode);
 	
 	if (!conn)
 		return(connection_error(inbuf,outbuf,ecode));
@@ -410,7 +410,9 @@ int reply_ioctl(connection_struct *conn,
 /****************************************************************************
  always return an error: it's just a matter of which one...
  ****************************************************************************/
-static int session_trust_account(connection_struct *conn, char *inbuf, char *outbuf, char *user,
+static int session_trust_account(connection_struct *conn,
+				char *inbuf, char *outbuf,
+				char *user, char *domain,
                                 char *smb_passwd, int smb_passlen,
                                 char *smb_nt_passwd, int smb_nt_passlen)
 {
@@ -442,10 +444,11 @@ static int session_trust_account(connection_struct *conn, char *inbuf, char *out
       SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
       return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
     }
-	if (!last_challenge(last_chal) ||
-            !smb_password_ok(smb_trust_acct, last_chal, NULL, NULL,
-	(unsigned char *)smb_passwd, smb_passlen,
-	(unsigned char *)smb_nt_passwd, smb_nt_passlen, NULL))
+    if (!last_challenge(last_chal) ||
+        !check_domain_security(user, domain,
+            			last_chal, 
+		(unsigned char *)smb_passwd, smb_passlen,
+		(unsigned char *)smb_nt_passwd, smb_nt_passlen, NULL))
     {
       DEBUG(0,("session_trust_account: Trust Account %s - password failed\n", user));
       SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
@@ -480,22 +483,6 @@ static int session_trust_account(connection_struct *conn, char *inbuf, char *out
 }
 
 /****************************************************************************
- Check for a valid username and password in security=server mode.
-****************************************************************************/
-
-static BOOL check_server_security(char *orig_user, char *domain, 
-                                  char *smb_apasswd, int smb_apasslen,
-                                  char *smb_ntpasswd, int smb_ntpasslen)
-{
-  if(lp_security() != SEC_SERVER)
-    return False;
-
-  return server_validate(orig_user, domain, 
-                            smb_apasswd, smb_apasslen, 
-                            smb_ntpasswd, smb_ntpasslen);
-}
-
-/****************************************************************************
 reply to a session setup command
 ****************************************************************************/
 
@@ -510,14 +497,12 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   pstring smb_apasswd;
   int   smb_ntpasslen = 0;   
   pstring smb_ntpasswd;
-  BOOL valid_nt_password = False;
   pstring user;
   pstring orig_user;
   BOOL guest=False;
   static BOOL done_sesssetup = False;
   BOOL doencrypt = SMBENCRYPT();
   char *domain = "";
-	uchar last_chal[8];
 
   *smb_apasswd = 0;
   *smb_ntpasswd = 0;
@@ -649,7 +634,7 @@ user %s attempted down-level SMB connection\n", user));
   /* say yes to everything ending in $. */
   if ((user[strlen(user) - 1] == '$') && (smb_apasslen == 24) && (smb_ntpasslen == 24))
   {
-    return session_trust_account(conn, inbuf, outbuf, user, 
+    return session_trust_account(conn, inbuf, outbuf, user, domain,
                                  smb_apasswd, smb_apasslen,
                                  smb_ntpasswd, smb_ntpasslen);
   }
@@ -698,39 +683,24 @@ user %s attempted down-level SMB connection\n", user));
    * security=domain.
    */
 
-  if (!guest && 
-      !check_server_security(orig_user, domain,
-                             smb_apasswd, smb_apasslen,
-                             smb_ntpasswd, smb_ntpasslen) &&
-      !last_challenge(last_chal) &&
-      !check_domain_security(orig_user, domain,
-                             last_chal,
-                             smb_apasswd, smb_apasslen,
-                             smb_ntpasswd, smb_ntpasslen, user_sess_key) &&
-      !check_hosts_equiv(user)
-     )
+  if (!guest && !check_hosts_equiv(user))
   {
 
     /* 
      * If we get here then the user wasn't guest and the remote
-     * authentication methods failed. Check the authentication
+     * authentication methods failed. Check the SMB authentication
      * methods on this local server.
      *
-     * If an NT password was supplied try and validate with that
-     * first. This is superior as the passwords are mixed case 
-     * 128 length unicode.
-      */
+     */
 
-    if (smb_ntpasslen)
+      DEBUG(10,("Checking SMB password\n"));
+      if(!password_ok(user, domain,
+                      smb_apasswd,smb_apasslen,
+                      smb_ntpasswd,smb_ntpasslen,
+                      NULL, user_sess_key))
     {
-      if(!password_ok(user, smb_ntpasswd,smb_ntpasslen,NULL,user_sess_key))
-        DEBUG(0,("NT Password did not match ! Defaulting to Lanman\n"));
-      else
-        valid_nt_password = True;
-    } 
+        DEBUG(0,("SMB LM/NT Password did not match!\n"));
 
-    if (!valid_nt_password && !password_ok(user, smb_apasswd,smb_apasslen,NULL,user_sess_key))
-    {
       if (lp_security() >= SEC_USER) 
       {
         if (lp_map_to_guest() == NEVER_MAP_TO_GUEST)

@@ -113,18 +113,16 @@ given the current design of the NT Domain system. JRA.
  ****************************************************************************/
 BOOL cli_nt_login_interactive(const char* srv_name, const char* myhostname,
 				const char *domain, const char *username, 
-				uint32 luid_low, char *password,
+				uint32 luid_low,
+				uchar *lm_owf_user_pwd,
+				uchar *nt_owf_user_pwd,
 				NET_ID_INFO_CTR *ctr,
 				NET_USER_INFO_3 *user_info3)
 {
-	uchar lm_owf_user_pwd[16];
-	uchar nt_owf_user_pwd[16];
 	BOOL ret;
 	uint8 sess_key[16];
 
 	DEBUG(5,("cli_nt_login_interactive: %d\n", __LINE__));
-
-	nt_lm_owf_gen(password, nt_owf_user_pwd, lm_owf_user_pwd);
 
 #ifdef DEBUG_PASSWORD
 

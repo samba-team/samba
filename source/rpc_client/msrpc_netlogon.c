@@ -44,9 +44,6 @@ static BOOL domain_client_validate( char *user, char *domain,
 				char *smb_ntpasswd, int smb_ntpasslen,
 				uchar user_sess_key[16])
 {
-	unsigned char local_challenge[8];
-	unsigned char local_lm_response[24];
-	unsigned char local_nt_reponse[24];
 	unsigned char trust_passwd[16];
 	NET_ID_INFO_CTR ctr;
 	NET_USER_INFO_3 info3;
@@ -63,39 +60,11 @@ static BOOL domain_client_validate( char *user, char *domain,
 	* password file.
 	*/
 
-	if(strequal( domain, global_myname))
-	{
-		DEBUG(5,("domain_client_validate: domain is for this machine.\n"));
-		return False;
-	}
-
 	if (!get_any_dc_name(domain, srv_name))
 	{
 		DEBUG(3,("domain_client_validate: could not find domain %s\n",
 				domain));
 		return False;
-	}
-
-	/*
-	 * Next, check that the passwords given were encrypted.
-	 */
-
-	if(((smb_apasslen  != 24) && (smb_apasslen  != 0)) || 
-	   ((smb_ntpasslen <= 24) && (smb_ntpasslen != 0)))
-	{
-		/*
-		 * Not encrypted - do so.
-		 */
-
-		DEBUG(3,("domain_client_validate: User passwords not in encrypted format.\n"));
-		generate_random_buffer( local_challenge, 8, False);
-		SMBencrypt( (uchar *)smb_apasswd, local_challenge, local_lm_response);
-		SMBNTencrypt((uchar *)smb_ntpasswd, local_challenge, local_nt_reponse);
-		smb_apasslen = 24;
-		smb_ntpasslen = 24;
-		smb_apasswd = (char *)local_lm_response;
-		smb_ntpasswd = (char *)local_nt_reponse;
-		challenge = local_challenge;
 	}
 
 	/*
@@ -135,7 +104,19 @@ static BOOL domain_client_validate( char *user, char *domain,
 	/* We really don't care what LUID we give the user. */
 	generate_random_buffer( (unsigned char *)&smb_uid_low, 4, False);
 
-	if (!cli_nt_login_network(srv_name, global_myname, 
+	if (challenge == NULL && !cli_nt_login_interactive(srv_name,
+			global_myname, 
+	                domain, user,
+	                smb_uid_low, 
+			smb_apasswd, smb_ntpasswd, 
+			&ctr, &info3))
+	{
+		DEBUG(0,("domain_client_validate: unable to validate password for user %s in domain \
+		%s to Domain controller %s.\n", user, domain, srv_name));
+		return False;
+	}
+	else if (challenge != NULL && !cli_nt_login_network(srv_name,
+			global_myname, 
 	                domain, user,
 	               smb_uid_low, (char *)challenge,
 			((smb_apasslen != 0) ? smb_apasswd : NULL),
@@ -148,13 +129,19 @@ static BOOL domain_client_validate( char *user, char *domain,
 	}
 
 	/* grab the user session key - really important, this */
-	memcpy(user_sess_key, info3.user_sess_key, sizeof(info3.user_sess_key));
+	if (user_sess_key != NULL)
+	{
+		memcpy(user_sess_key, info3.user_sess_key,
+		       sizeof(info3.user_sess_key));
+	}
 
 	/*
 	 * Here, if we really want it, we have lots of info about the user in info3.
 	 * LKCLXXXX - really important to check things like "is this user acct
 	 * locked out / disabled" etc!!!!
 	 */
+
+	DEBUG(10,("domain_client_validate: user %s\%s OK\n", domain, user));
 
 	return True;
 }
@@ -175,8 +162,10 @@ BOOL check_domain_security(char *orig_user, char *domain,
 	{
 		return False;
 	}
-	
-	if (lp_security() == SEC_DOMAIN && strequal(domain, global_myworkgroup))
+
+	if (lp_security() == SEC_USER ||
+	    (lp_security() == SEC_DOMAIN &&
+	     strequal(domain, global_myworkgroup)))
 	{
 		fstrcpy(acct_name, global_myname);
 		acct_type = SEC_CHAN_WKSTA;
@@ -186,6 +175,8 @@ BOOL check_domain_security(char *orig_user, char *domain,
 		fstrcpy(acct_name, global_myworkgroup);
 		acct_type = SEC_CHAN_DOMAIN;
 	}
+
+	DEBUG(10,("check_domain_security: %s(%d)\n", acct_name, acct_type));
 
 	return domain_client_validate(orig_user, domain, 
 	                        acct_name, acct_type,

@@ -191,7 +191,10 @@ int find_service(char *service)
 /****************************************************************************
   make a connection to a service
 ****************************************************************************/
-connection_struct *make_connection(char *service,char *user,char *password, int pwlen, char *dev,uint16 vuid, int *ecode)
+connection_struct *make_connection(char *service,char *user,
+				char *domain,
+				char *password, int pwlen,
+				char *dev,uint16 vuid, int *ecode)
 {
 	int snum;
 	const struct passwd *pass = NULL;
@@ -219,20 +222,20 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 
 	if (strequal(service,HOMES_NAME)) {
 		if (*user && Get_Pwnam(user,True))
-			return(make_connection(user,user,password,
+			return(make_connection(user,user,domain,password,
 					       pwlen,dev,vuid,ecode));
 
 		if(lp_security() != SEC_SHARE) {
 			if (validated_username(vuid)) {
 				pstrcpy(user,validated_username(vuid));
-				return(make_connection(user,user,password,pwlen,dev,vuid,ecode));
+				return(make_connection(user,user,domain,password,pwlen,dev,vuid,ecode));
 			}
 		} else {
 			/* Security = share. Try with sesssetup_user
 			 * as the username.  */
 			if(*sesssetup_user) {
 				pstrcpy(user,sesssetup_user);
-				return(make_connection(user,user,password,pwlen,dev,vuid,ecode));
+				return(make_connection(user,user,domain,password,pwlen,dev,vuid,ecode));
 			}
 		}
 	}
@@ -271,7 +274,8 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	add_session_user(service);
 
 	/* shall we let them in? */
-	if (!authorise_login(snum,user,password,pwlen,&guest,&force,vuid)) {
+	if (!authorise_login(snum,user,domain,password,pwlen,&guest,&force,vuid))
+	{
 		DEBUG( 2, ( "Invalid username/password for %s\n", service ) );
 		*ecode = ERRbadpw;
 		return NULL;

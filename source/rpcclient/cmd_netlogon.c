@@ -48,10 +48,11 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 #endif
 
 	fstring nt_user_name;
-	fstring password;
 	BOOL res = True;
 	char *nt_password;
-	unsigned char trust_passwd[16];
+	uchar trust_passwd[16];
+	uchar nt_pw[16];
+	uchar lm_pw[16];
 	fstring trust_acct;
 	fstring domain;
 	char *p;
@@ -68,7 +69,7 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 		fstrcpy(domain, info->dom.level3_dom);
 	}
 #if 0
-	/* machine account passwords */
+	/* trust account passwords */
 	pstring new_mach_pwd;
 
 	/* initialisation */
@@ -123,6 +124,8 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 		nt_password = getpass("Enter NT Login password:");
 	}
 
+	nt_lm_owf_gen(nt_pw, lm_pw, nt_password);
+
 	DEBUG(5,("do_nt_login_test: username %s from: %s\n",
 	            nt_user_name, info->myhostname));
 
@@ -132,7 +135,7 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 	res = res ? trust_get_passwd(trust_passwd, domain, info->myhostname) : False;
 
 #if 0
-	/* check whether the user wants to change their machine password */
+	/* check whether the user wants to change their trust password */
 	res = res ? trust_account_check(info->dest_ip, info->dest_host,
 	                                info->myhostname, usr_creds->ntc.domain,
 	                                info->mach_acct, new_mach_pwd) : False;
@@ -143,10 +146,10 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 	                               trust_passwd, SEC_CHAN_WKSTA) == 0x0 : False;
 
 #if 0
-	/* change the machine password? */
+	/* change the trust password? */
 	if (global_machine_password_needs_changing)
 	{
-		unsigned char new_trust_passwd[16];
+		uchar new_trust_passwd[16];
 		generate_random_buffer(new_trust_passwd, 16, True);
 		res = res ? cli_nt_srv_pwset(srv_name, info->myhostname, new_trust_passwd, SEC_CHAN_WKSTA) : False;
 
@@ -164,11 +167,9 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 	/* do an NT login */
 	res = res ? cli_nt_login_interactive(srv_name, info->myhostname,
 	                 usr_creds->ntc.domain, nt_user_name,
-	                 getuid(), nt_password,
+	                 getuid(), lm_pw, nt_pw,
 	                 &info->dom.ctr, &info->dom.user_info3) : False;
 
-	/*** clear out the password ***/
-	memset(password, 0, sizeof(password));
 
 #if 0
 	/* ok!  you're logged in!  do anything you like, then... */
@@ -188,7 +189,7 @@ void cmd_netlogon_domain_test(struct client_info *info, int argc, char *argv[])
 {
 	char *nt_trust_dom;
 	BOOL res = True;
-	unsigned char trust_passwd[16];
+	uchar trust_passwd[16];
 	fstring inter_dom_acct;
 
 	fstring srv_name;

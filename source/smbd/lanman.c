@@ -1554,7 +1554,8 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
    * Older versions of Windows seem to do this.
    */
 
-  if (password_ok(user, pass1,strlen(pass1),NULL, NULL) &&
+  if (password_ok(user, global_myworkgroup, pass1,strlen(pass1), NULL, 0,
+                   NULL, NULL) &&
       chgpasswd(user,pass1,pass2,False))
   {
     SSVAL(*rparam,0,NERR_Success);

@@ -178,6 +178,10 @@ BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_t
     return False;
   }
 
+#ifdef DEBUG_PASSWORD
+      DEBUG(100,("get_trust_account_password:"));
+      dump_data(100, ret_pwd, 16);
+#endif
   /*
    * Get the last changed time.
    */

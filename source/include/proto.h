@@ -1941,7 +1941,9 @@ BOOL cli_nt_srv_pwset(const char* srv_name, const char* myhostname,
 				uint16 sec_chan);
 BOOL cli_nt_login_interactive(const char* srv_name, const char* myhostname,
 				const char *domain, const char *username, 
-				uint32 luid_low, char *password,
+				uint32 luid_low,
+				uchar *lm_owf_user_pwd,
+				uchar *nt_owf_user_pwd,
 				NET_ID_INFO_CTR *ctr,
 				NET_USER_INFO_3 *user_info3);
 BOOL cli_nt_login_network(const char* srv_name, const char* myhostname,
@@ -4326,14 +4328,18 @@ void check_kernel_oplocks(void);
 /*The following definitions come from  smbd/password.c  */
 
 void add_session_user(char *user);
-BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd,
-		uchar user_sess_key[16]);
-BOOL authorise_login(int snum,char *user,char *password, int pwlen, 
+BOOL password_ok(char *orig_user, char *domain,
+				char *smb_apasswd, int smb_apasslen,
+				char *smb_ntpasswd, int smb_ntpasslen,
+				struct passwd *pwd,
+				uchar user_sess_key[16]);
+BOOL authorise_login(int snum,char *user, char *domain,
+				char *password, int pwlen, 
 		     BOOL *guest,BOOL *force,uint16 vuid);
 BOOL check_hosts_equiv(char *user);
 struct cli_state *server_client(void);
 struct cli_state *server_cryptkey(void);
-BOOL server_validate(char *user, char *domain, 
+BOOL check_server_security(char *user, char *domain, 
 		     char *pass, int passlen,
 		     char *ntpass, int ntpasslen);
 
@@ -4438,7 +4444,10 @@ void exit_server(char *reason);
 
 BOOL become_service(connection_struct *conn,BOOL do_chdir);
 int find_service(char *service);
-connection_struct *make_connection(char *service,char *user,char *password, int pwlen, char *dev,uint16 vuid, int *ecode);
+connection_struct *make_connection(char *service,char *user,
+				char *domain,
+				char *password, int pwlen,
+				char *dev,uint16 vuid, int *ecode);
 void close_cnum(connection_struct *conn, uint16 vuid);
 
 /*The following definitions come from  smbd/ssl.c  */

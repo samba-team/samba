@@ -96,29 +96,56 @@ check if a username/password pair is OK either via the system password
 database or the encrypted SMB password database
 return True if the password is correct, False otherwise
 ****************************************************************************/
-BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd,
-		uchar user_sess_key[16])
+BOOL password_ok(char *orig_user, char *domain,
+				char *smb_apasswd, int smb_apasslen,
+				char *smb_ntpasswd, int smb_ntpasslen,
+				struct passwd *pwd,
+				uchar user_sess_key[16])
 {
-	if (pwlen >= 24 || (lp_encrypted_passwords() && (pwlen == 0) && lp_null_passwords()))
-	{
-		/* if 24 bytes or longer assume it is an encrypted password */
-		uchar challenge[8];
+	uchar last_chal[8];
 
-		if (!last_challenge(challenge))
+	/*
+	 * SMB password check
+	 */
+
+	if ((smb_apasslen != 0 && smb_ntpasslen != 0) ||
+	    (lp_encrypted_passwords() && smb_apasslen == 0 &&
+	     lp_null_passwords()))
+	{
+		/* check security = server */
+		if (check_server_security(orig_user, domain,
+					  smb_apasswd, smb_apasslen,
+					  smb_ntpasswd, smb_ntpasslen))
 		{
-			DEBUG(0,("Error: challenge not done for user=%s\n", user));
-			return False;
+			DEBUG(10,("password_ok: server auth succeeded\n"));
+			return True;
 		}
 
-		return pass_check_smb(getsmbpwnam(user), global_myworkgroup,
-		                      challenge, (uchar *)password,
-					pwlen, (uchar *)password, pwlen,
-					pwd, user_sess_key);
-	} 
+		/* check security = user / domain */
+		if (last_challenge(last_chal) &&
+		    check_domain_security(orig_user, domain,
+					  last_chal,
+					  smb_apasswd, smb_apasslen,
+					  smb_ntpasswd, smb_ntpasslen,
+					  user_sess_key))
+		{
+			DEBUG(10,("password_ok: domain auth succeeded\n"));
+			return True;
+		}
+	}
 
-	return pass_check(user, password, pwlen, pwd, 
+	DEBUG(10,("password_ok: check Unix auth\n"));
+	/*
+	 * unix password check
+	 */
+	if (pass_check(orig_user, smb_apasswd, smb_apasslen, pwd, 
 			  lp_update_encrypted() ? 
-			  update_smbpassword_file : NULL);
+			  update_smbpassword_file : NULL))
+	{
+		DEBUG(10,("password_ok: Unix auth succeeded\n"));
+		return True;
+	}
+	return False;
 }
 
 
@@ -137,7 +164,8 @@ static char *validate_group(char *group,char *password,int pwlen,int snum,
     while (getnetgrent(&host, &user, &domain)) {
       if (user) {
 	if (user_ok(user, snum) && 
-	    password_ok(user,password,pwlen,NULL, user_sess_key)) {
+	    password_ok(user,NULL,password,pwlen,NULL,0,NULL,user_sess_key))
+	{
 	  endnetgrent();
 	  return(user);
 	}
@@ -159,7 +187,7 @@ static char *validate_group(char *group,char *password,int pwlen,int snum,
 	    static fstring name;
 	    fstrcpy(name,*member);
 	    if (user_ok(name,snum) &&
-		password_ok(name,password,pwlen,NULL, user_sess_key))
+	password_ok(name,NULL,password,pwlen,NULL,0,NULL, user_sess_key))
 	      return(&name[0]);
 	    member++;
 	  }
@@ -172,7 +200,7 @@ static char *validate_group(char *group,char *password,int pwlen,int snum,
 	  while (pwd = getpwent ()) {
 	    if (*(pwd->pw_passwd) && pwd->pw_gid == gptr->gr_gid) {
 	      /* This Entry have PASSWORD and same GID then check pwd */
-	      if (password_ok(NULL, password, pwlen, pwd, user_sess_key)) {
+	      if (password_ok(NULL, NULL, password, pwlen, NULL, 0, pwd, user_sess_key)) {
 		fstrcpy(tm, pwd->pw_name);
 		endpwent ();
 		return tm;
@@ -193,7 +221,8 @@ static char *validate_group(char *group,char *password,int pwlen,int snum,
 /****************************************************************************
 check for authority to login to a service with a given username/password
 ****************************************************************************/
-BOOL authorise_login(int snum,char *user,char *password, int pwlen, 
+BOOL authorise_login(int snum,char *user, char *domain,
+				char *password, int pwlen, 
 		     BOOL *guest,BOOL *force,uint16 vuid)
 {
   BOOL ok = False;
@@ -225,14 +254,14 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 
       /* check the given username and password */
       if (!ok && (*user) && user_ok(user,snum)) {
-	ok = password_ok(user,password, pwlen, NULL, vuser->user_sess_key);
+	ok = password_ok(user,domain, password, pwlen, NULL, 0, NULL, vuser->user_sess_key);
 	if (ok) DEBUG(3,("ACCEPTED: given username password ok\n"));
       }
 
       /* check for a previously registered guest username */
       if (!ok && (vuser != 0) && vuser->guest) {	  
 	if (user_ok(vuser->name,snum) &&
-	    password_ok(vuser->name, password, pwlen, NULL, vuser->user_sess_key)) {
+	    password_ok(vuser->name, domain, password, pwlen, NULL, 0, NULL, vuser->user_sess_key)) {
 	  fstrcpy(user, vuser->name);
 	  vuser->guest = False;
 	  DEBUG(3,("ACCEPTED: given password with registered user %s\n", user));
@@ -256,7 +285,9 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
         fstrcpy(user2,auser);
         if (!user_ok(user2,snum)) continue;
 		  
-        if (password_ok(user2,password, pwlen, NULL, vuser->user_sess_key)) {
+        if (password_ok(user2, domain, password, pwlen, NULL, 0, NULL,
+                        vuser->user_sess_key))
+        {
           ok = True;
           fstrcpy(user,user2);
           DEBUG(3,("ACCEPTED: session list username and given password ok\n"));
@@ -308,7 +339,8 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 		fstring user2;
 		fstrcpy(user2,auser);
 		if (user_ok(user2,snum) && 
-		    password_ok(user2,password,pwlen,NULL, vuser->user_sess_key))
+		    password_ok(user2,domain,password,pwlen,NULL, 0,
+		                NULL, vuser->user_sess_key))
 		  {
 		    ok = True;
 		    fstrcpy(user,user2);
@@ -511,7 +543,7 @@ struct cli_state *server_cryptkey(void)
 /****************************************************************************
 validate a password with the password server
 ****************************************************************************/
-BOOL server_validate(char *user, char *domain, 
+BOOL check_server_security(char *user, char *domain, 
 		     char *pass, int passlen,
 		     char *ntpass, int ntpasslen)
 {
@@ -520,9 +552,15 @@ BOOL server_validate(char *user, char *domain,
   static BOOL tested_password_server = False;
   static BOOL bad_password_server = False;
 
+  if(lp_security() != SEC_SERVER)
+    return False;
+
+  DEBUG(10,("check_server_security\n"));
+
   cli = server_client();
 
-  if (!cli->initialised) {
+  if (!cli->initialised)
+  {
     DEBUG(1,("password server %s is not connected\n", cli->desthost));
     return False;
   }  

@@ -33,7 +33,6 @@ extern int DEBUGLEVEL;
 BOOL receive_msrpc(int fd, prs_struct *data, unsigned int timeout)
 {
   	BOOL ok;
-  	prs_struct h;
   	size_t len;
   	RPC_HDR hdr;
 
@@ -50,7 +49,7 @@ BOOL receive_msrpc(int fd, prs_struct *data, unsigned int timeout)
 
 	if (!ok)
 	{
-		prs_free_data(&h);
+		prs_free_data(data);
 		return False;
 	}
 
