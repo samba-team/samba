@@ -886,7 +886,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	if (p->ntlmssp_auth_requested)
 		assoc_gid = 0x7a77;
 	else
-		assoc_gid = hdr_rb.bba.assoc_gid;
+		assoc_gid = hdr_rb.bba.assoc_gid ? hdr_rb.bba.assoc_gid : 0x53f0;
 
 	/*
 	 * Create the bind response struct.
