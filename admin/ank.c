@@ -52,7 +52,7 @@ doit2(HDB *db, hdb_entry *ent, int mod)
     ret = db->fetch(context, db, ent);
     
     switch(ret){
-    case KRB5_HDB_NOENTRY:
+    case HDB_ERR_NOENTRY:
 	if(mod){
 	    fprintf(stderr, "Entry not found in database\n");
 	    return;

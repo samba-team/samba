@@ -101,7 +101,7 @@ init(int argc, char **argv)
 	    fprintf(stderr, "Entry already exists\n");
 	    krb5_free_principal(context, ent.principal);
 	    continue;
-	case KRB5_HDB_NOENTRY:
+	case HDB_ERR_NOENTRY:
 	    break;
 	default:
 	    warnx("hdb_fetch: %s", krb5_get_err_text(context, err));

@@ -63,7 +63,7 @@ get_entry(int argc, char **argv)
     ret = db->fetch(context, db, &ent);
     
     switch(ret){
-    case KRB5_HDB_NOENTRY:
+    case HDB_ERR_NOENTRY:
 	fprintf(stderr, "Entry not found in database\n");
 	break;
     case 0: {

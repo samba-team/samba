@@ -243,7 +243,7 @@ change (krb5_context context,
     ret = db->fetch (context, db, &ent);
     
     switch (ret) {
-    case KRB5_HDB_NOENTRY:
+    case HDB_ERR_NOENTRY:
 	syslog (LOG_ERR, "not found in database");
 	reply_priv (context, auth_context, s, addr, 2,
 		    "entry not found in database");
