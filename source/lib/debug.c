@@ -82,6 +82,7 @@
 FILE   *dbf        = NULL;
 pstring debugf     = "";
 BOOL    append_log = False;
+
 int     DEBUGLEVEL_CLASS[DBGC_LAST];
 int     DEBUGLEVEL = DEBUGLEVEL_CLASS;
 
@@ -105,6 +106,12 @@ int     DEBUGLEVEL = DEBUGLEVEL_CLASS;
  *                    to build the formatted output.
  *
  *  format_pos      - Marks the first free byte of the format_bufr.
+ * 
+ *
+ *  log_overflow    - When this variable is True, never attempt to check the
+ *                    size of the log. This is a hack, so that we can write
+ *                    a message using DEBUG, from open_logs() when we
+ *                    are unable to open a new log file for some reason.
  */
 
 static BOOL    stdout_logging = False;
@@ -114,6 +121,7 @@ static int     syslog_level   = 0;
 #endif
 static pstring format_bufr    = { '\0' };
 static size_t     format_pos     = 0;
+static BOOL    log_overflow   = False;
 
 /*
 * Define all the debug class selection names here. Names *MUST NOT* contain 
@@ -289,19 +297,25 @@ void setup_logging(char *pname, BOOL interactive)
 /* ************************************************************************** **
  * reopen the log files
  * note that we now do this unconditionally
+ * We attempt to open the new debug fp before closing the old. This means
+ * if we run out of fd's we just keep using the old fd rather than aborting.
+ * Fix from dgibson@linuxcare.com.
  * ************************************************************************** **
  */
-void reopen_logs( void )
+
+BOOL reopen_logs( void )
 {
 	pstring fname;
 	mode_t oldumask;
+	FILE *new_dbf = NULL;
+	BOOL ret = True;
 
 	if (DEBUGLEVEL_CLASS[ DBGC_ALL ] <= 0) {
 		if (dbf) {
 			(void)fclose(dbf);
 			dbf = NULL;
 		}
-		return;
+		return True;
 	}
 
 	oldumask = umask( 022 );
@@ -311,22 +325,33 @@ void reopen_logs( void )
 		pstrcpy(fname, lp_logfile());
 
 	pstrcpy( debugf, fname );
-	if (dbf)
-		(void)fclose(dbf);
 	if (append_log)
-		dbf = sys_fopen( debugf, "a" );
+		new_dbf = sys_fopen( debugf, "a" );
 	else
-		dbf = sys_fopen( debugf, "w" );
+		new_dbf = sys_fopen( debugf, "w" );
+
+	if (!new_dbf) {
+		log_overflow = True;
+		DEBUG(0, ("Unable to open new log file %s: %s\n", debugf, strerror(errno)));
+		log_overflow = False;
+		fflush(dbf);
+		ret = False;
+	} else {
+		setbuf(new_dbf, NULL);
+		if (dbf)
+			(void) fclose(dbf);
+		dbf = new_dbf;
+	}
+
 	/* Fix from klausr@ITAP.Physik.Uni-Stuttgart.De
 	 * to fix problem where smbd's that generate less
 	 * than 100 messages keep growing the log.
 	 */
 	force_check_log_size();
-	if (dbf)
-		setbuf( dbf, NULL );
 	(void)umask(oldumask);
-}
 
+	return ret;
+}
 
 /* ************************************************************************** **
  * Force a check of the log size.
@@ -363,54 +388,61 @@ BOOL need_to_check_log_size( void )
 
 void check_log_size( void )
 {
-  int         maxlog;
-  SMB_STRUCT_STAT st;
+	int         maxlog;
+	SMB_STRUCT_STAT st;
 
-  /*
-   *  We need to be root to check/change log-file, skip this and let the main
-   *  loop check do a new check as root.
-   */
+	/*
+	 *  We need to be root to check/change log-file, skip this and let the main
+	 *  loop check do a new check as root.
+	 */
 
-  if( geteuid() != 0 )
-    return;
+	if( geteuid() != 0 )
+		return;
 
-  if( !need_to_check_log_size() )
-    return;
+	if(log_overflow || !need_to_check_log_size() )
+		return;
 
-  maxlog = lp_max_log_size() * 1024;
+	maxlog = lp_max_log_size() * 1024;
 
-  if( sys_fstat( fileno( dbf ), &st ) == 0 && st.st_size > maxlog )
-    {
-    (void)fclose( dbf );
-    dbf = NULL;
-    reopen_logs();
-    if( dbf && get_file_size( debugf ) > maxlog )
-      {
-      pstring name;
+	if( sys_fstat( fileno( dbf ), &st ) == 0 && st.st_size > maxlog ) {
+		(void)reopen_logs();
+		if( dbf && get_file_size( debugf ) > maxlog ) {
+			pstring name;
 
-      (void)fclose( dbf );
-      dbf = NULL;
-      slprintf( name, sizeof(name)-1, "%s.old", debugf );
-      (void)rename( debugf, name );
-      reopen_logs();
-      }
-    }
-  /*
-   * Here's where we need to panic if dbf == NULL..
-   */
-  if(dbf == NULL) {
-    dbf = sys_fopen( "/dev/console", "w" );
-    if(dbf) {
-      DEBUG(0,("check_log_size: open of debug file %s failed - using console.\n",
-            debugf ));
-    } else {
-      /*
-       * We cannot continue without a debug file handle.
-       */
-      abort();
-    }
-  }
-  debug_count = 0;
+			slprintf( name, sizeof(name)-1, "%s.old", debugf );
+			(void)rename( debugf, name );
+      
+			if (!reopen_logs()) {
+				/* We failed to reopen a log - continue using the old name. */
+				(void)rename(name, debugf);
+			}
+		}
+	}
+
+	/*
+	 * Here's where we need to panic if dbf == NULL..
+	 */
+
+	if(dbf == NULL) {
+		/* This code should only be reached in very strange
+			circumstances. If we merely fail to open the new log we
+			should stick with the old one. ergo this should only be
+			reached when opening the logs for the first time: at
+			startup or when the log level is increased from zero.
+			-dwg 6 June 2000
+		*/
+		dbf = sys_fopen( "/dev/console", "w" );
+		if(dbf) {
+			DEBUG(0,("check_log_size: open of debug file %s failed - using console.\n",
+					debugf ));
+		} else {
+			/*
+			 * We cannot continue without a debug file handle.
+			 */
+			abort();
+		}
+	}
+	debug_count = 0;
 } /* check_log_size */
 
 /* ************************************************************************** **

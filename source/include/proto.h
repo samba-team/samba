@@ -57,7 +57,7 @@ BOOL debug_parse_levels(char *params_str);
 void debug_message(int msg_type, pid_t src, void *buf, size_t len);
 void debug_message_send(pid_t pid, int level);
 void setup_logging(char *pname, BOOL interactive);
-void reopen_logs( void );
+BOOL reopen_logs( void );
 void force_check_log_size( void );
 BOOL need_to_check_log_size( void );
 void check_log_size( void );
@@ -1873,6 +1873,8 @@ BOOL trust_password_delete(char *domain);
 /*The following definitions come from  passdb/smbpass.c  */
 
 char *format_new_smbpasswd_entry(struct smb_passwd *newpwd);
+struct sam_passwd *smbiterate_getsam21pwrid(uint32 rid);
+struct sam_passwd *smbiterate_getsam21pwuid(uid_t uid);
 struct passdb_ops *file_initialize_password_db(void);
 
 /*The following definitions come from  passdb/smbpasschange.c  */
