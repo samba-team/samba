@@ -73,6 +73,50 @@ DATA_BLOB spnego_gen_negTokenInit(uint8 guid[16],
 	return ret;
 }
 
+/*
+  Generate a negTokenInit as used by the client side ... It has a mechType
+  (OID), and a mechToken (a security blob) ... 
+
+  Really, we need to break out the NTLMSSP stuff as well, because it could be
+  raw in the packets!
+*/
+DATA_BLOB gen_negTokenInit(const char *OID, DATA_BLOB blob)
+{
+	ASN1_DATA data;
+	DATA_BLOB ret;
+
+	memset(&data, 0, sizeof(data));
+
+	asn1_push_tag(&data, ASN1_APPLICATION(0));
+	asn1_write_OID(&data,OID_SPNEGO);
+	asn1_push_tag(&data, ASN1_CONTEXT(0));
+	asn1_push_tag(&data, ASN1_SEQUENCE(0));
+
+	asn1_push_tag(&data, ASN1_CONTEXT(0));
+	asn1_push_tag(&data, ASN1_SEQUENCE(0));
+	asn1_write_OID(&data, OID);
+	asn1_pop_tag(&data);
+	asn1_pop_tag(&data);
+
+	asn1_push_tag(&data, ASN1_CONTEXT(2));
+	asn1_write_OctetString(&data,blob.data,blob.length);
+	asn1_pop_tag(&data);
+
+	asn1_pop_tag(&data);
+	asn1_pop_tag(&data);
+
+	asn1_pop_tag(&data);
+
+	if (data.has_error) {
+		DEBUG(1,("Failed to build negTokenInit at offset %d\n", (int)data.ofs));
+		asn1_free(&data);
+	}
+
+	ret = data_blob(data.data, data.length);
+	asn1_free(&data);
+
+	return ret;
+}
 
 /*
   parse a negTokenInit packet giving a GUID, a list of supported
@@ -553,7 +597,8 @@ BOOL msrpc_gen(DATA_BLOB *blob,
 			}
 			data_ofs += n*2;
 			break;
-			
+
+		case 'A':
 		case 'B':
 			b = va_arg(ap, uint8 *);
 			n = va_arg(ap, int);
