@@ -594,7 +594,71 @@ BOOL cli_unlink(struct cli_state *cli, char *fname)
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;      
 	strcpy(p,fname);
-	p = skip_string(p,1);
+
+	send_smb(cli->fd,cli->outbuf);
+	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
+		return False;
+	}
+
+	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+		return False;
+	}
+
+	return True;
+}
+
+
+/****************************************************************************
+create a directory
+****************************************************************************/
+BOOL cli_mkdir(struct cli_state *cli, char *dname)
+{
+	char *p;
+
+	bzero(cli->outbuf,smb_size);
+	bzero(cli->inbuf,smb_size);
+
+	set_message(cli->outbuf,0, 2 + strlen(dname),True);
+
+	CVAL(cli->outbuf,smb_com) = SMBmkdir;
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	p = smb_buf(cli->outbuf);
+	*p++ = 4;      
+	strcpy(p,dname);
+
+	send_smb(cli->fd,cli->outbuf);
+	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
+		return False;
+	}
+
+	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+		return False;
+	}
+
+	return True;
+}
+
+/****************************************************************************
+remove a directory
+****************************************************************************/
+BOOL cli_rmdir(struct cli_state *cli, char *dname)
+{
+	char *p;
+
+	bzero(cli->outbuf,smb_size);
+	bzero(cli->inbuf,smb_size);
+
+	set_message(cli->outbuf,0, 2 + strlen(dname),True);
+
+	CVAL(cli->outbuf,smb_com) = SMBrmdir;
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	p = smb_buf(cli->outbuf);
+	*p++ = 4;      
+	strcpy(p,dname);
 
 	send_smb(cli->fd,cli->outbuf);
 	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) {

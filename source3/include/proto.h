@@ -66,6 +66,8 @@ BOOL cli_send_tconX(struct cli_state *cli,
 		    char *share, char *dev, char *pass, int passlen);
 BOOL cli_tdis(struct cli_state *cli);
 BOOL cli_unlink(struct cli_state *cli, char *fname);
+BOOL cli_mkdir(struct cli_state *cli, char *dname);
+BOOL cli_rmdir(struct cli_state *cli, char *dname);
 int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode);
 BOOL cli_close(struct cli_state *cli, int fnum);
 BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout);
@@ -77,6 +79,9 @@ BOOL cli_getatr(struct cli_state *cli, char *fname,
 BOOL cli_setatr(struct cli_state *cli, char *fname, int attr, time_t t);
 BOOL cli_qpathinfo(struct cli_state *cli, char *fname, 
 		   time_t *c_time, time_t *a_time, time_t *m_time, uint32 *size);
+BOOL cli_qpathinfo2(struct cli_state *cli, char *fname, 
+		    time_t *c_time, time_t *a_time, time_t *m_time, 
+		    time_t *w_time, uint32 *size);
 BOOL cli_qfileinfo(struct cli_state *cli, int fnum, 
 		   time_t *c_time, time_t *a_time, time_t *m_time, uint32 *size);
 BOOL cli_negprot(struct cli_state *cli);
