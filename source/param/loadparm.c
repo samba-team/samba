@@ -809,7 +809,9 @@ static void init_globals(void)
   /* %N is the NIS auto.home server if -DAUTOHOME is used, else same as %L */
   string_set(&Globals.szLogonHome, "\\\\%N\\%U");
   string_set(&Globals.szLogonPath, "\\\\%N\\%U\\profile");
-
+  /* Set szWINSserver to 127.0.0.1 so that we have something reasonable */
+  /* in case it is not set in the smb.conf                              */
+  string_set(&Globals.szWINSserver, "127.0.0.1");
   string_set(&Globals.szNameResolveOrder, "lmhosts host wins bcast");
 
   Globals.bLoadPrinters = True;
