@@ -424,9 +424,11 @@ void endlmhosts(FILE *fp)
 
 BOOL resolve_name(char *name, struct in_addr *return_ip)
 {
-  char *p;
   int i;
   BOOL pure_address = True;
+  pstring name_resolve_list;
+  fstring tok;
+  char *ptr;
 
   if (strcmp(name,"0.0.0.0") == 0) {
     return_ip->s_addr = 0;
@@ -447,8 +449,10 @@ BOOL resolve_name(char *name, struct in_addr *return_ip)
     return True;
   }
 
-  for (p=strtok(lp_name_resolve_order(),LIST_SEP); p; p = strtok(NULL,LIST_SEP)) {
-    if(strequal(p, "host") || strequal(p, "hosts")) {
+  pstrcpy(name_resolve_list, lp_name_resolve_order());
+  ptr = name_resolve_list;
+  while (next_token(&ptr, tok, LIST_SEP)) {
+    if(strequal(tok, "host") || strequal(tok, "hosts")) {
 
       /*
        * "host" means do a localhost, or dns lookup.
@@ -463,7 +467,7 @@ BOOL resolve_name(char *name, struct in_addr *return_ip)
         return True;
       }
 
-    } else if(strequal( p, "lmhosts")) {
+    } else if(strequal( tok, "lmhosts")) {
 
       /*
        * "lmhosts" means parse the local lmhosts file.
@@ -486,7 +490,7 @@ BOOL resolve_name(char *name, struct in_addr *return_ip)
         endlmhosts(fp);
       }
 
-    } else if(strequal( p, "wins")) {
+    } else if(strequal( tok, "wins")) {
 
       int sock;
 
@@ -524,7 +528,7 @@ BOOL resolve_name(char *name, struct in_addr *return_ip)
       } else {
         DEBUG(3,("resolve_name: WINS server resolution selected and no WINS server present.\n"));
       }
-    } else if(strequal( p, "bcast")) {
+    } else if(strequal( tok, "bcast")) {
 
       int sock;
 
@@ -560,7 +564,7 @@ BOOL resolve_name(char *name, struct in_addr *return_ip)
       }
 
     } else {
-      DEBUG(0,("resolve_name: unknown name switch type %s\n", p));
+      DEBUG(0,("resolve_name: unknown name switch type %s\n", tok));
     }
   }
 
