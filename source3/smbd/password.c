@@ -515,7 +515,7 @@ static BOOL dfs_auth(char *this_user,char *password)
    */
 
   /* Fix for original (broken) code from Brett Wooldridge <brettw@austin.ibm.com> */
-  if (dce_login_atmost_once)
+  if (dcelogin_atmost_once)
     return (False);
   /* This can be ifdefed as the DCE check below is stricter... */
 #ifndef NO_CRYPT
