@@ -1,0 +1,100 @@
+#!/bin/sh
+#
+# chkconfig: - 91 35
+# description: Starts and stops the Samba winbind daemon to provide \
+# user and group information from a domain controller to linux.
+
+# Source function library.
+if [ -f /etc/init.d/functions ] ; then
+  . /etc/init.d/functions
+elif [ -f /etc/rc.d/init.d/functions ] ; then
+  . /etc/rc.d/init.d/functions
+else
+  exit 0
+fi
+
+# Source networking configuration.
+. /etc/sysconfig/network
+
+# Check that networking is up.
+[ ${NETWORKING} = "no" ] && exit 0
+
+# Check that smb.conf exists.
+[ -f /etc/samba/smb.conf ] || exit 0
+
+RETVAL=0
+
+
+start() {
+	export TMPDIR="/var/tmp"
+	#Is nmbd running? If not, we need to start it first.
+	if ! killall -0 nmbd 2>/dev/null; then 
+		echo -n "Starting NMB services: "
+		daemon nmbd -D
+		RETVAL=$?;
+		echo
+	fi
+	echo -n "Starting Winbind services: "
+	daemon winbindd 	
+	RETVAL=$?
+	echo
+	[ $RETVAL -eq 0 ] && touch /var/lock/subsys/winbind || \
+	   RETVAL=1
+	return $RETVAL
+}	
+stop() {
+	#Is smbd running? If not, we need to stop nmbd, since we must have started it.
+	if ! killall -0 smbd 2>/dev/null; then 
+		echo -n "Stopping NMB services: "
+		killproc nmbd
+		RETVAL=$?;
+		echo
+	fi;
+	echo -n "Shutting down Winbind services: "
+	killproc winbindd
+	RETVAL=$?
+	echo
+	[ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/winbind
+	return $RETVAL
+}	
+restart() {
+	stop
+	start
+}	
+reload() {
+	export TMPDIR="/var/tmp"
+        echo -n "Checking domain trusts: "
+	killproc winbindd -HUP
+	RETVAL=$?
+	echo
+	return $RETVAL
+}	
+mdkstatus() {
+	status winbindd
+}	
+
+case "$1" in
+  start)
+  	start
+	;;
+  stop)
+  	stop
+	;;
+  restart)
+  	restart
+	;;
+  reload)
+  	reload
+	;;
+  status)
+  	mdkstatus
+	;;
+  condrestart)
+  	[ -f /var/lock/subsys/winbindd ] && restart || :
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart|status|condrestart}"
+	exit 1
+esac
+
+exit $?
