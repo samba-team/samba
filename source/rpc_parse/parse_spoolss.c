@@ -6368,6 +6368,7 @@ static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps,
 	uint32	valuename_offset,
 		data_offset,
 		current_offset;
+	const uint32 basic_unit = 20; /* size of static portion of enum_values */
 	
 	prs_debug(ps, depth, desc, "spoolss_io_printer_enum_values_ctr");
 	depth++;	
@@ -6378,7 +6379,7 @@ static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps,
 	/* offset data begins at 20 bytes per structure * size_of_array.
 	   Don't forget the uint32 at the beginning */
 	
-	current_offset = 4 + (20*ctr->size_of_array);
+	current_offset = basic_unit * ctr->size_of_array;
 	
 	/* first loop to write basic enum_value information */
 	
@@ -6401,13 +6402,12 @@ static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps,
 		if (!prs_uint32("data_len", ps, depth, &ctr->values[i].data_len))
 			return False;
 			
-		current_offset = data_offset + ctr->values[i].data_len;
-	
+		current_offset = data_offset + ctr->values[i].data_len - basic_unit;
 	}
 
 	/* loop #2 for writing the dynamically size objects
-	   while viewing oncversations between Win2k -> Win2k,
-	   4-byte alignment does not seem to matter here   --jerrty */
+	   while viewing conversations between Win2k -> Win2k,
+	   4-byte alignment does not seem to matter here   --jerry */
 	
 	for (i=0; i<ctr->size_of_array; i++) 
 	{
