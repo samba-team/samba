@@ -73,6 +73,7 @@ Found 4 aliased levels
 #define SMB_QFS_DEVICE_INFO                            0x104
 #define SMB_QFS_ATTRIBUTE_INFO                         0x105
 #define SMB_QFS_UNIX_INFO                              0x200
+#define SMB_QFS_POSIX_INFO                             0x201
 #define SMB_QFS_VOLUME_INFORMATION			1001
 #define SMB_QFS_SIZE_INFORMATION			1003
 #define SMB_QFS_DEVICE_INFORMATION			1004
@@ -207,6 +208,10 @@ Found 13 valid levels
 #define SMB_SFILEINFO_END_OF_FILE_INFO                 0x104
 #define SMB_SFILEINFO_UNIX_BASIC                       0x200
 #define SMB_SFILEINFO_UNIX_LINK                        0x201
+#define SMB_SPATHINFO_UNIX_HLINK                       0x203
+#define SMB_SPATHINFO_POSIX_ACL                        0x204
+#define SMB_SPATHINFO_XATTR                            0x205
+#define SMB_SFILEINFO_ATTR_FLAGS                       0x206	
 #define SMB_SFILEINFO_BASIC_INFORMATION			1004
 #define SMB_SFILEINFO_RENAME_INFORMATION		1010
 #define SMB_SFILEINFO_DISPOSITION_INFORMATION		1013
