@@ -363,15 +363,12 @@ uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO 
 				sid = &global_sam_sid;
 				break;
 			case ROLE_DOMAIN_MEMBER:
+				name = global_myname;
 				if (secrets_fetch_domain_sid(global_myworkgroup,
 					&domain_sid))
-				{
-					/* I'm sure this should be myname, not myworkgroup. JRA. */
-					name = global_myname;
-					sid = &domain_sid;
-				}
+						sid = &domain_sid;
 				else
-					return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+					sid = &global_sam_sid;
 				break;
 			case ROLE_STANDALONE:
 				name = global_myname;
@@ -392,14 +389,12 @@ uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO 
 				sid = &global_sam_sid;
 				break;
 			case ROLE_DOMAIN_MEMBER:
+				name = global_myname;
 				if (secrets_fetch_domain_sid(global_myworkgroup,
 					&domain_sid))
-				{
-					name = global_myname;
-					sid = &domain_sid;
-				}
+						sid = &domain_sid;
 				else
-					return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+					sid = &global_sam_sid;
 				break;
 			case ROLE_STANDALONE:
 				name = global_myname;
