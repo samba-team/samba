@@ -1,27 +1,111 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 6. 
-Samba Backup Domain Controller to Samba Domain Control
-</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.59.1"><link rel="home" href="index.html" title="SAMBA Project Documentation"><link rel="up" href="type.html" title="Part II. Server Configuration Basics"><link rel="previous" href="samba-pdc.html" title="Chapter 5. 
-Samba as an NT4 or Win2k Primary Domain Controller
-"><link rel="next" href="ADS.html" title="Chapter 7. Samba as a ADS domain member"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 6. 
-Samba Backup Domain Controller to Samba Domain Control
-</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="samba-pdc.html">Prev</a> </td><th width="60%" align="center">Part II. Server Configuration Basics</th><td width="20%" align="right"> <a accesskey="n" href="ADS.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><h2 class="title"><a name="samba-bdc"></a>Chapter 6. 
-Samba Backup Domain Controller to Samba Domain Control
-</h2></div><div><div class="author"><h3 class="author">Volker Lendecke</h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt>&lt;<a href="mailto:Volker.Lendecke@SerNet.DE">Volker.Lendecke@SerNet.DE</a>&gt;</tt></p></div></div></div></div><div><p class="pubdate"> (26 Apr 2001) </p></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="samba-bdc.html#id2807541">Prerequisite Reading</a></dt><dt><a href="samba-bdc.html#id2877190">Background</a></dt><dt><a href="samba-bdc.html#id2879061">What qualifies a Domain Controller on the network?</a></dt><dd><dl><dt><a href="samba-bdc.html#id2879083">How does a Workstation find its domain controller?</a></dt><dt><a href="samba-bdc.html#id2879107">When is the PDC needed?</a></dt></dl></dd><dt><a href="samba-bdc.html#id2879127">Can Samba be a Backup Domain Controller to an NT PDC?</a></dt><dt><a href="samba-bdc.html#id2879160">How do I set up a Samba BDC?</a></dt><dd><dl><dt><a href="samba-bdc.html#id2879257">How do I replicate the smbpasswd file?</a></dt><dt><a href="samba-bdc.html#id2879286">Can I do this all with LDAP?</a></dt></dl></dd></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2807541"></a>Prerequisite Reading</h2></div></div><p>
-Before you continue reading in this chapter, please make sure
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML
+><HEAD
+><TITLE
+>How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="SAMBA Project Documentation"
+HREF="samba-howto-collection.html"><LINK
+REL="UP"
+TITLE="Type of installation"
+HREF="type.html"><LINK
+REL="PREVIOUS"
+TITLE="How to Configure Samba as a NT4 Primary Domain Controller"
+HREF="samba-pdc.html"><LINK
+REL="NEXT"
+TITLE="Samba as a ADS domain member"
+HREF="ads.html"></HEAD
+><BODY
+CLASS="CHAPTER"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>SAMBA Project Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="samba-pdc.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="ads.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="SAMBA-BDC">Chapter 7. How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain</H1
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN1127">7.1. Prerequisite Reading</H1
+><P
+>Before you continue reading in this chapter, please make sure
 that you are comfortable with configuring a Samba PDC
-as described in the <a href="Samba-PDC-HOWTO.html" target="_top">Samba-PDC-HOWTO</a>.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2877190"></a>Background</h2></div></div><p>
-What is a Domain Controller? It is a machine that is able to answer
+as described in the <A
+HREF="Samba-PDC-HOWTO.html"
+TARGET="_top"
+>Samba-PDC-HOWTO</A
+>.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN1131">7.2. Background</H1
+><P
+>What is a Domain Controller? It is a machine that is able to answer
 logon requests from workstations in a Windows NT Domain. Whenever a
 user logs into a Windows NT Workstation, the workstation connects to a
 Domain Controller and asks him whether the username and password the
 user typed in is correct.  The Domain Controller replies with a lot of
 information about the user, for example the place where the users
 profile is stored, the users full name of the user. All this
-information is stored in the NT user database, the so-called SAM.
-</p><p>
-There are two kinds of Domain Controller in a NT 4 compatible Domain:
+information is stored in the NT user database, the so-called SAM.</P
+><P
+>There are two kinds of Domain Controller in a NT 4 compatible Domain:
 A Primary Domain Controller (PDC) and one or more Backup Domain
 Controllers (BDC). The PDC contains the master copy of the
 SAM. Whenever the SAM has to change, for example when a user changes
@@ -30,31 +114,47 @@ Controller is a machine that maintains a read-only copy of the
 SAM. This way it is able to reply to logon requests and authenticate
 users in case the PDC is not available. During this time no changes to
 the SAM are possible. Whenever changes to the SAM are done on the PDC,
-all BDC receive the changes from the PDC.
-</p><p>
-Since version 2.2 Samba officially supports domain logons for all
+all BDC receive the changes from the PDC.</P
+><P
+>Since version 2.2 Samba officially supports domain logons for all
 current Windows Clients, including Windows 2000 and XP. This text
 assumes the domain to be named SAMBA. To be able to act as a PDC, some
-parameters in the [global]-section of the smb.conf have to be set:
-</p><pre class="programlisting">
-	workgroup = SAMBA
-	domain master = yes
-	domain logons = yes
-</pre><p>
-Several other things like a [homes] and a [netlogon] share also may be
+parameters in the [global]-section of the smb.conf have to be set:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>workgroup = SAMBA
+domain master = yes
+domain logons = yes</PRE
+></P
+><P
+>Several other things like a [homes] and a [netlogon] share also may be
 set along with settings for the profile path, the users home drive and
-others. This will not be covered in this document.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2879061"></a>What qualifies a Domain Controller on the network?</h2></div></div><p>
-Every machine that is a Domain Controller for the domain SAMBA has to
+others. This will not be covered in this document.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN1139">7.3. What qualifies a Domain Controller on the network?</H1
+><P
+>Every machine that is a Domain Controller for the domain SAMBA has to
 register the NetBIOS group name SAMBA#1c with the WINS server and/or
 by broadcast on the local network. The PDC also registers the unique
 NetBIOS name SAMBA#1b with the WINS server. The name type #1b is
 normally reserved for the domain master browser, a role that has
 nothing to do with anything related to authentication, but the
 Microsoft Domain implementation requires the domain master browser to
-be on the same machine as the PDC.
-</p><div class="sect2" lang="en"><div class="titlepage"><div><h3 class="title"><a name="id2879083"></a>How does a Workstation find its domain controller?</h3></div></div><p>
-A NT workstation in the domain SAMBA that wants a local user to be
+be on the same machine as the PDC.</P
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN1142">7.3.1. How does a Workstation find its domain controller?</H2
+><P
+>A NT workstation in the domain SAMBA that wants a local user to be
 authenticated has to find the domain controller for SAMBA. It does
 this by doing a NetBIOS name query for the group name SAMBA#1c. It
 assumes that each of the machines it gets back from the queries is a
@@ -62,87 +162,187 @@ domain controller and can answer logon requests. To not open security
 holes both the workstation and the selected (TODO: How is the DC
 chosen) domain controller authenticate each other. After that the
 workstation sends the user's credentials (his name and password) to
-the domain controller, asking for approval.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><h3 class="title"><a name="id2879107"></a>When is the PDC needed?</h3></div></div><p>
-Whenever a user wants to change his password, this has to be done on
+the domain controller, asking for approval.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN1145">7.3.2. When is the PDC needed?</H2
+><P
+>Whenever a user wants to change his password, this has to be done on
 the PDC. To find the PDC, the workstation does a NetBIOS name query
 for SAMBA#1b, assuming this machine maintains the master copy of the
 SAM. The workstation contacts the PDC, both mutually authenticate and
-the password change is done.
-</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2879127"></a>Can Samba be a Backup Domain Controller to an NT PDC?</h2></div></div><p>
-With version 2.2, no. The native NT SAM replication protocols have
+the password change is done.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN1148">7.4. Can Samba be a Backup Domain Controller?</H1
+><P
+>With version 2.2, no. The native NT SAM replication protocols have
 not yet been fully implemented. The Samba Team is working on
 understanding and implementing the protocols, but this work has not
-been finished for version 2.2.
-</p><p>
-With version 3.0, the work on both the replication protocols and a
-suitable storage mechanism has progressed, and some form of NT4 BDC
-support is expected soon.
-</p><p>
-Can I get the benefits of a BDC with Samba?  Yes. The main reason for
+been finished for version 2.2.</P
+><P
+>Can I get the benefits of a BDC with Samba?  Yes. The main reason for
 implementing a BDC is availability. If the PDC is a Samba machine,
 a second Samba machine can be set up to
-service logon requests whenever the PDC is down.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2879160"></a>How do I set up a Samba BDC?</h2></div></div><p>
-Several things have to be done:
-</p><div class="itemizedlist"><ul type="disc"><li><p>
-The domain SID has to be the same on the PDC and the BDC. This used to
+service logon requests whenever the PDC is down.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN1152">7.5. How do I set up a Samba BDC?</H1
+><P
+>Several things have to be done:</P
+><P
+></P
+><UL
+><LI
+><P
+>The domain SID has to be the same on the PDC and the BDC. This used to
 be stored in the file private/MACHINE.SID. This file is not created
 anymore since Samba 2.2.5 or even earlier. Nowadays the domain SID is
 stored in the file private/secrets.tdb. Simply copying the secrets.tdb
 from the PDC to the BDC does not work, as the BDC would
 generate a new SID for itself and override the domain SID with this
-new BDC SID.</p><p>
-To retrieve the domain SID from the PDC or an existing BDC and store it in the
-secrets.tdb, execute 'net rpc getsid' on the BDC.
-</p></li><li><p>
-The Unix user database has to be synchronized from the PDC to the
+new BDC SID.</P
+><P
+>To retrieve the domain SID from the PDC or an existing BDC and store it in the
+secrets.tdb, execute 'net rpc getsid' on the BDC.</P
+></LI
+><LI
+><P
+>The Unix user database has to be synchronized from the PDC to the
 BDC. This means that both the /etc/passwd and /etc/group have to be
 replicated from the PDC to the BDC. This can be done manually
 whenever changes are made, or the PDC is set up as a NIS master
 server and the BDC as a NIS slave server. To set up the BDC as a
 mere NIS client would not be enough, as the BDC would not be able to
-access its user database in case of a PDC failure.
-</p></li><li><p>
-The Samba password database in the file private/smbpasswd has to be
+access its user database in case of a PDC failure.</P
+></LI
+><LI
+><P
+>The Samba password database in the file private/smbpasswd has to be
 replicated from the PDC to the BDC. This is a bit tricky, see the
-next section.
-</p></li><li><p>
-Any netlogon share has to be replicated from the PDC to the
+next section.</P
+></LI
+><LI
+><P
+>Any netlogon share has to be replicated from the PDC to the
 BDC. This can be done manually whenever login scripts are changed,
 or it can be done automatically together with the smbpasswd
-synchronization.
-</p></li></ul></div><p>
-Finally, the BDC has to be found by the workstations. This can be done
-by setting
-</p><pre class="programlisting">
-	workgroup = samba
-	domain master = no
-	domain logons = yes
-</pre><p>
-in the [global]-section of the smb.conf of the BDC. This makes the BDC
+synchronization.</P
+></LI
+></UL
+><P
+>Finally, the BDC has to be found by the workstations. This can be done
+by setting</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>workgroup = samba
+domain master = no
+domain logons = yes</PRE
+></P
+><P
+>in the [global]-section of the smb.conf of the BDC. This makes the BDC
 only register the name SAMBA#1c with the WINS server. This is no
 problem as the name SAMBA#1c is a NetBIOS group name that is meant to
 be registered by more than one machine. The parameter 'domain master =
 no' forces the BDC not to register SAMBA#1b which as a unique NetBIOS
-name is reserved for the Primary Domain Controller.
-</p><div class="sect2" lang="en"><div class="titlepage"><div><h3 class="title"><a name="id2879257"></a>How do I replicate the smbpasswd file?</h3></div></div><p>
-Replication of the smbpasswd file is sensitive. It has to be done
+name is reserved for the Primary Domain Controller.</P
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN1169">7.5.1. How do I replicate the smbpasswd file?</H2
+><P
+>Replication of the smbpasswd file is sensitive. It has to be done
 whenever changes to the SAM are made. Every user's password change is
 done in the smbpasswd file and has to be replicated to the BDC. So
-replicating the smbpasswd file very often is necessary.
-</p><p>
-As the smbpasswd file contains plain text password equivalents, it
+replicating the smbpasswd file very often is necessary.</P
+><P
+>As the smbpasswd file contains plain text password equivalents, it
 must not be sent unencrypted over the wire. The best way to set up
 smbpasswd replication from the PDC to the BDC is to use the utility
 rsync. rsync can use ssh as a transport. ssh itself can be set up to
 accept *only* rsync transfer without requiring the user to type a
-password.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><h3 class="title"><a name="id2879286"></a>Can I do this all with LDAP?</h3></div></div><p>The simple answer is YES.  Samba's pdb_ldap code supports
-binding to a replica LDAP server, and will also follow referrals and
-rebind to the master if it ever needs to make a modification to the
-database.  (Normally BDCs are read only, so this will not occur
-often).
-</p></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="samba-pdc.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="type.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ADS.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 5. 
-Samba as an NT4 or Win2k Primary Domain Controller
- </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 7. Samba as a ADS domain member</td></tr></table></div></body></html>
+password.</P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="samba-pdc.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="samba-howto-collection.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="ads.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>How to Configure Samba as a NT4 Primary Domain Controller</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="type.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Samba as a ADS domain member</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

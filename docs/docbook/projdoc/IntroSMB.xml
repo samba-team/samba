@@ -6,10 +6,10 @@
 
 <title>Introduction to Samba</title>
 
-<para><emphasis>
+<para><quote>
 "If you understand what you're doing, you're not learning anything." 
 -- Anonymous
-</emphasis></para>
+</quote></para>
 
 <para>
 Samba is a file and print server for Windows-based clients using TCP/IP as the underlying
@@ -132,7 +132,7 @@ thinking?
 </itemizedlist>
 
 <para>If you plan on getting help, make sure to subscribe to the Samba Mailing List (available at 
-http://www.samba.org).  Optionally, you could just search mailing.unix.samba at http://groups.google.com
+<ulink url="http://www.samba.org/">http://www.samba.org</ulink>). 
 </para>
 
 </sect1>
@@ -171,8 +171,9 @@ nothing to do with acting as a file and print server for SMB/CIFS clients.
 </para>
 
 <para>
-There are other Open Source CIFS client implementations, such as the jCIFS project
-(jcifs.samba.org) which provides an SMB client toolkit written in Java.
+There are other Open Source CIFS client implementations, such as the 
+<ulink url="http://jcifs.samba.org/">jCIFS project</ulink>
+which provides an SMB client toolkit written in Java.
 </para>
 
 
@@ -226,9 +227,9 @@ up a single file. In general, SMB sessions are established in the following orde
 </itemizedlist>
 
 <para>
-A good way to examine this process in depth is to try out SecurityFriday's SWB program
-at http://www.securityfriday.com/ToolDownload/SWB/swb_doc.html.  It allows you to
-walk through the establishment of a SMB/CIFS session step by step.
+A good way to examine this process in depth is to try out 
+<ulink url="http://www.securityfriday.com/ToolDownload/SWB/swb_doc.html">SecurityFriday's SWB program</ulink>.
+It allows you to walk through the establishment of a SMB/CIFS session step by step.
 </para>
 
 </sect1>
@@ -236,8 +237,8 @@ walk through the establishment of a SMB/CIFS session step by step.
 <sect1>
 <title>Epilogue</title>
 
-<para><emphasis>
-"What's fundamentally wrong is that nobody ever had any taste when they
+<para><quote>
+What's fundamentally wrong is that nobody ever had any taste when they
 did it. Microsoft has been very much into making the user interface look good,
 but internally it's just a complete mess. And even people who program for Microsoft
 and who have had years of experience, just don't know how it works internally.
@@ -246,16 +247,16 @@ mess that fixing one bug might just break a hundred programs that depend on
 that bug. And Microsoft isn't interested in anyone fixing bugs -- they're interested
 in making money. They don't have anybody who takes pride in Windows 95 as an
 operating system.
-</emphasis></para>
+</quote></para>
 
-<para><emphasis>
+<para><quote>
 People inside Microsoft know it's a bad operating system and they still
 continue obviously working on it because they want to get the next version out
 because they want to have all these new features to sell more copies of the
 system.
-</emphasis></para>
+</quote></para>
 
-<para><emphasis>
+<para><quote>
 The problem with that is that over time, when you have this kind of approach,
 and because nobody understands it, because nobody REALLY fixes bugs (other than
 when they're really obvious), the end result is really messy. You can't trust
@@ -265,11 +266,11 @@ fine and then once in a blue moon for some completely unknown reason, it's dead,
 and nobody knows why. Not Microsoft, not the experienced user and certainly
 not the completely clueless user who probably sits there shivering thinking
 "What did I do wrong?" when they didn't do anything wrong at all.
-</emphasis></para>
+</quote></para>
 
-<para><emphasis>
+<para><quote>
 That's what's really irritating to me."
-</emphasis></para>
+</quote></para>
 
 <para>-- 
 <ulink url="http://hr.uoregon.edu/davidrl/boot.txt">Linus Torvalds, from an interview with BOOT Magazine, Sept 1998</ulink>
@@ -280,15 +281,10 @@ That's what's really irritating to me."
 <sect1>
 <title>Miscellaneous</title>
 
-<para>
-This chapter was lovingly handcrafted on a Dell Latitude C400 laptop running Slackware Linux 9.0,
-in case anyone asks.
-</para>
-
-<!-- This really needs to go... -->
+<!--FIXME: This really needs to go... -->
 
 <para>
-This chapter is Copyright &copy; 2003 David Lechnyr (david at lechnyr dot com).
+This chapter is Copyright 2003 David Lechnyr (david at lechnyr dot com).
 Permission is granted to copy, distribute and/or modify this document under the terms
 of the GNU Free Documentation License, Version 1.2 or any later version published by the Free
 Software Foundation. A copy of the license is available at http://www.gnu.org/licenses/fdl.txt.

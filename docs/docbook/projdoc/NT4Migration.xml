@@ -44,26 +44,14 @@ should know precisely <emphasis>why</emphasis> the change is important for the o
 Possible motivations to make a change include:
 </para>
 
-<itemizedlist>
-<listitem>
-    <para>Improve network manageability</para>
-</listitem>
-<listitem>
-    <para>Obtain better user level functionality</para>
-</listitem>
-<listitem>
-    <para>Reduce network operating costs</para>
-</listitem>
-<listitem>
-    <para>Reduce exposure caused by Microsoft withdrawal of NT4 support</para>
-</listitem>
-<listitem>
-    <para>Avoid MS License 6 implications</para>
-</listitem>
-<listitem>
-    <para>Reduce organisation's dependency on Microsoft</para>
-</listitem>
-</itemizedlist>
+<simplelist>
+    <member>Improve network manageability</member>
+    <member>Obtain better user level functionality</member>
+    <member>Reduce network operating costs</member>
+    <member>Reduce exposure caused by Microsoft withdrawal of NT4 support</member>
+    <member>Avoid MS License 6 implications</member>
+    <member>Reduce organisation's dependency on Microsoft</member>
+</simplelist>
 
 <para>
 It is vital that it be well recognised that Samba-3 is NOT MS Windows NT4. Samba-3 offers
@@ -77,61 +65,31 @@ MS Windows 2000 and beyond (with or without Active Directory services).
 What are the features that Samba-3 can NOT provide?
 </para>
 
-<itemizedlist>
-<listitem>
-	<para>Active Directory Server</para>
-</listitem>
-<listitem>
-	<para>Group Policy Objects (in Active Direcrtory)</para>
-</listitem>
-<listitem>
-	<para>Machine Policy objects</para>
-</listitem>
-<listitem>
-	<para>Logon Scripts in Active Directorty</para>
-</listitem>
-<listitem>
-	<para>Software Application and Access Controls in Active Directory</para>
-</listitem>
-</itemizedlist>
+<simplelist>
+	<member>Active Directory Server</member>
+	<member>Group Policy Objects (in Active Direcrtory)</member>
+	<member>Machine Policy objects</member>
+	<member>Logon Scripts in Active Directorty</member>
+	<member>Software Application and Access Controls in Active Directory</member>
+</simplelist>
 
 <para>
 The features that Samba-3 DOES provide and that may be of compelling interest to your site
 includes:
 </para>
 
-<itemizedlist>
-<listitem>
-	<para>Lower Cost of Ownership</para>
-</listitem>
-<listitem>
-	<para>Global availability of support with no strings attached</para>
-</listitem>
-<listitem>
-	<para>Dynamic SMB Servers (ie:Can run more than one server per Unix/Linux system)</para>
-</listitem>
-<listitem>
-	<para>Creation of on-the-fly logon scripts</para>
-</listitem>
-<listitem>
-	<para>Creation of on-the-fly Policy Files</para>
-</listitem>
-<listitem>
-	<para>Greater Stability, Reliability, Performance and Availability</para>
-</listitem>
-<listitem>
-	<para>Manageability via an ssh connection</para>
-</listitem>
-<listitem>
-	<para>Flexible choices of back-end authentication technologies (tdbsam, ldapsam, mysqlsam)</para>
-</listitem>
-<listitem>
-	<para>Ability to implement a full single-signon architecture</para>
-</listitem>
-<listitem>
-	<para>Ability to distribute authentication systems for absolute minimum wide area network bandwidth demand</para>
-</listitem>
-</itemizedlist>
+<simplelist>
+	<member>Lower Cost of Ownership</member>
+	<member>Global availability of support with no strings attached</member>
+	<member>Dynamic SMB Servers (ie:Can run more than one server per Unix/Linux system)</member>
+	<member>Creation of on-the-fly logon scripts</member>
+	<member>Creation of on-the-fly Policy Files</member>
+	<member>Greater Stability, Reliability, Performance and Availability</member>
+	<member>Manageability via an ssh connection</member>
+	<member>Flexible choices of back-end authentication technologies (tdbsam, ldapsam, mysqlsam)</member>
+	<member>Ability to implement a full single-signon architecture</member>
+	<member>Ability to distribute authentication systems for absolute minimum wide area network bandwidth demand</member>
+</simplelist>
 
 <para>
 Before migrating a network from MS Windows NT4 to Samba-3 it is vital that all necessary factors are
@@ -221,11 +179,11 @@ all users gain share and printer connections they need.
 Logon scripts can be created on-the-fly so that all commands executed are specific to the
 rights and privilidges granted to the user. The preferred controls should be affected through
 group membership so that group information can be used to custom create a logong script using
-the <filename>root preexec</filename> parameters to the <filename>NETLOGON</filename> share.
+the <parameter>root preexec</parameter> parameters to the <filename>NETLOGON</filename> share.
 </para>
 
 <para>
-Some sites prefer to use a tool such as <filename>kixstart</filename> to establish a controlled
+Some sites prefer to use a tool such as <command>kixstart</command> to establish a controlled
 user environment. In any case you may wish to do a google search for logon script process controls.
 In particular, you may wish to explore the use of the Microsoft knowledgebase article KB189105 that
 deals with how to add printers without user intervention via the logon script process.
@@ -241,7 +199,7 @@ Management.
 </para>
 
 <para>
-Profiles may also be managed using the Samba-3 tool <filename>profiles</filename>. This tool allows
+Profiles may also be managed using the Samba-3 tool <command>profiles</command>. This tool allows
 the MS Windows NT style security identifiers (SIDs) that are stored inside the profile NTuser.DAT file
 to be changed to the SID of the Samba-3 domain.
 </para>
@@ -283,39 +241,39 @@ Samba-3 set up as a DC with netlogon share, profile share, etc.
 		<substeps><step><para>Samba must NOT be running</para></step></substeps></step>
 
 	<step>
-	<para>rpcclient NT4PDC -U Administrator%passwd</para>
+		<para><userinput>rpcclient <replaceable>NT4PDC</replaceable> -U Administrator%<replaceable>passwd</replaceable></userinput></para>
 		<substeps><step><para>lsaquery</para></step>
 		 	  <step><para>Note the SID returned</para></step>
 		</substeps>
 	</step>
 
-	<step><para>net getsid -S NT4PDC -w DOMNAME -U Administrator%passwd</para>
+	<step><para><userinput>net getsid -S <replaceable>NT4PDC</replaceable> -w <replaceable>DOMNAME</replaceable> -U Administrator%<replaceable>passwd</replaceable></userinput></para>
 		<substeps><step><para>Note the SID</para></step></substeps>
 	</step>
 
-	<step><para>net getlocalsid</para>
+	<step><para><userinput>net getlocalsid</userinput></para>
 		<substeps>
 		<step><para>Note the SID, now check that all three SIDS reported are the same!</para></step>
 		</substeps>
 	</step>
 
-	<step><para>net rpc join -S NT4PDC -w DOMNAME -U Administrator%passwd</para></step>
+	<step><para><userinput>net rpc join -S <replaceable>NT4PDC</replaceable> -w <replaceable>DOMNAME</replaceable> -U Administrator%<replaceable>passwd</replaceable></userinput></para></step>
 
-	<step><para>net rpc vampire -S NT4PDC -U administrator%passwd</para></step>
+	<step><para><userinput>net rpc vampire -S <replaceable>NT4PDC</replaceable> -U administrator%<replaceable>passwd</replaceable></userinput></para></step>
 
-	<step><para>pdbedit -l</para>
+	<step><para><userinput>pdbedit -L</userinput></para>
 		<substeps><step><para>Note - did the users migrate?</para></step></substeps>
 	</step>
 
-	<step><para>initGrps.sh DOMNAME</para></step>
+	<step><para><userinput>initGrps.sh <replaceable>DOMNAME</replaceable></userinput></para></step>
 
-	<step><para>net groupmap list</para>
+	<step><para><userinput>net groupmap list</userinput></para>
 		<substeps><step><para>Now check that all groups are recognised</para></step></substeps>
 	</step>
 
-	<step><para>net rpc campire -S NT4PDC -U administrator%passwd</para></step>
+	<step><para><userinput>net rpc campire -S <replaceable>NT4PDC</replaceable> -U administrator%<replaceable>passwd</replaceable></userinput></para></step>
 
-	<step><para>pdbedit -lv</para>
+	<step><para><userinput>pdbedit -Lv</userinput></para>
 		<substeps><step>
 			<para>Note - check that all group membership has been migrated</para>
 		</step></substeps>
@@ -440,6 +398,7 @@ No matter what choice you make, the following rules will minimise down-stream pr
 <sect2>
 <title>Samba Implementation Choices</title>
 
+<!-- FIXME: Either a better layout or more written-out text-->
 <para><programlisting>
 Authentication database back end
 	Winbind (external Samba or NT4/200x server)

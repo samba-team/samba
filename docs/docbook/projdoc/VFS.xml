@@ -9,34 +9,40 @@
 <title>Stackable VFS modules</title>
 
 <sect1>
-<title>Introduction and configuration</title>
+<title>Features and Benefits</title>
 
 <para>
-Since samba 3.0, samba supports stackable VFS(Virtual File System) modules.  
+Since Samba-3, there is support for stackable VFS(Virtual File System) modules.  
 Samba passes each request to access the unix file system thru the loaded VFS modules. 
 This chapter covers all the modules that come with the samba source and references to 
 some external modules.
 </para>
 
+
+</sect1>
+
+<sect1>
+<title>Discussion</title>
+
 <para>
-You may have problems to compile these modules, as shared libraries are
-compiled and linked in different ways on different systems.
-They currently have been tested against GNU/linux and IRIX.
+If not supplied with your platform distribution binary Samba package you may have problems
+to compile these modules, as shared libraries are compiled and linked in different ways
+on different systems.  They currently have been tested against GNU/Linux and IRIX.
 </para>
 
 <para>
 To use the VFS modules, create a share similar to the one below.  The
-important parameter is the <command>vfs object</command> parameter which must point to
+important parameter is the <parameter>vfs object</parameter> parameter which must point to
 the exact pathname of the shared library objects. For example, to log all access 
 to files and use a recycle bin:
 
 <programlisting>
-       [audit]
-                comment = Audited /data directory
-                path = /data
-                vfs object = /path/to/audit.so /path/to/recycle.so
-                writeable = yes
-                browseable = yes
+[audit]
+	comment = Audited /data directory
+    path = /data
+    vfs object = /path/to/audit.so /path/to/recycle.so
+    writeable = yes
+    browseable = yes
 </programlisting>
 </para>
 
@@ -54,117 +60,135 @@ the Samba Developers Guide.
 <sect1>
 <title>Included modules</title>
 
-<sect2>
-<title>audit</title>
-<para>A simple module to audit file access to the syslog
-facility.  The following operations are logged:
-<simplelist>
-<member>share</member>
-<member>connect/disconnect</member>
-<member>directory opens/create/remove</member>
-<member>file open/close/rename/unlink/chmod</member>
-</simplelist>
-</para>
-</sect2>
+	<sect2>
+	<title>audit</title>
 
-<sect2>
-<title>extd_audit</title>
-<para>
-This module is identical with the <emphasis>audit</emphasis> module above except
-that it sends audit logs to both syslog as well as the smbd log file/s. The 
-loglevel for this module is set in the smb.conf file.
-</para>
+		<para>
+		A simple module to audit file access to the syslog
+		facility.  The following operations are logged:
+		<simplelist>
+		<member>share</member>
+		<member>connect/disconnect</member>
+		<member>directory opens/create/remove</member>
+		<member>file open/close/rename/unlink/chmod</member>
+		</simplelist>
+		</para>
 
-<para>
-The logging information that will be written to the smbd log file is controlled by
-the <emphasis>log level</emphasis> parameter in <filename>smb.conf</filename>. The
-following information will be recorded:
-</para>
+	</sect2>
 
-<table frame="all"><title>Extended Auditing Log Information</title>
-<tgroup cols="2" align="center">
-	<thead>
-	<row><entry align="center">Log Level</entry><entry>Log Details - File and Directory Operations</entry></row>
-	</thead>
-	<tbody>
-	<row><entry align="center">0</entry><entry align="left">Creation / Deletion</entry></row>
-	<row><entry align="center">1</entry><entry align="left">Create / Delete / Rename / Permission Changes</entry></row>
-	<row><entry align="center">2</entry><entry align="left">Create / Delete / Rename / Perm Change / Open / Close</entry></row>
-	</tbody>
-</tgroup>
-</table>
+	<sect2>
+	<title>extd_audit</title>
 
-</sect2>
+		<para>
+		This module is identical with the <emphasis>audit</emphasis> module above except
+		that it sends audit logs to both syslog as well as the smbd log file/s. The 
+		loglevel for this module is set in the smb.conf file.
+		</para>
 
-<sect2>
-<title>recycle</title>
-<para>
-A recycle-bin like module. When used any unlink call
-will be intercepted and files moved to the recycle
-directory instead of being deleted.
-</para>
+		<para>
+		The logging information that will be written to the smbd log file is controlled by
+		the <parameter>log level</parameter> parameter in <filename>smb.conf</filename>. The
+		following information will be recorded:
+		</para>
 
-<para>Supported options:
-<variablelist>
-	<varlistentry>
-	<term>vfs_recycle_bin:repository</term>
-	<listitem><para>FIXME</para></listitem>
-	</varlistentry>
+		<table frame="all"><title>Extended Auditing Log Information</title>
+		<tgroup cols="2" align="center">
+			<thead>
+			<row><entry align="center">Log Level</entry><entry>Log Details - File and Directory Operations</entry></row>
+			</thead>
+			<tbody>
+			<row><entry align="center">0</entry><entry align="left">Creation / Deletion</entry></row>
+			<row><entry align="center">1</entry><entry align="left">Create / Delete / Rename / Permission Changes</entry></row>
+			<row><entry align="center">2</entry><entry align="left">Create / Delete / Rename / Perm Change / Open / Close</entry></row>
+			</tbody>
+		</tgroup>
+		</table>
 
-	<varlistentry>
-	<term>vfs_recycle_bin:keeptree</term>
-	<listitem><para>FIXME</para></listitem>
-	</varlistentry>
-	
-	<varlistentry>
-	<term>vfs_recycle_bin:versions</term>
-	<listitem><para>FIXME</para></listitem>
-	</varlistentry>
+	</sect2>
 
-	<varlistentry>
-	<term>vfs_recycle_bin:touch</term>
-	<listitem><para>FIXME</para></listitem>
-	</varlistentry>
+	<sect2>
+	<title>fake_perms</title>
 
-	<varlistentry>
-	<term>vfs_recycle_bin:maxsize</term>
-	<listitem><para>FIXME</para></listitem>
-	</varlistentry>
+		<para>
+		This module was created to allow Roaming Profile files and directories to be set (on the Samba server
+		under Unix) as read only. This module will if installed on the Profiles share will report to the client
+		that the Profile files and directories are writable. This satisfies the client even though the files
+		will never be overwritten as the client logs out or shuts down.
+		</para>
 
-	<varlistentry>
-	<term>vfs_recycle_bin:exclude</term>
-	<listitem><para>FIXME</para></listitem>
-	</varlistentry>
+	</sect2>
 
-	<varlistentry>
-	<term>vfs_recycle_bin:exclude_dir</term>
-	<listitem><para>FIXME</para></listitem>
-	</varlistentry>
+	<sect2>
+	<title>recycle</title>
 
-	<varlistentry>
-	<term>vfs_recycle_bin:noversions</term>
-	<listitem><para>FIXME</para></listitem>
-	</varlistentry>
-</variablelist>
-</para>
+		<para>
+		A recycle-bin like module. When used any unlink call
+		will be intercepted and files moved to the recycle
+		directory instead of being deleted.
+		</para>
 
-</sect2>
+		<para>Supported options:
+		<variablelist>
+			<varlistentry>
+			<term>vfs_recycle_bin:repository</term>
+			<listitem><para>FIXME</para></listitem>
+			</varlistentry>
 
-<sect2>
-<title>netatalk</title>
-<para>
-A netatalk module, that will ease co-existence of samba and
-netatalk file sharing services.
-</para>
+			<varlistentry>
+			<term>vfs_recycle_bin:keeptree</term>
+			<listitem><para>FIXME</para></listitem>
+			</varlistentry>
+			
+			<varlistentry>
+			<term>vfs_recycle_bin:versions</term>
+			<listitem><para>FIXME</para></listitem>
+			</varlistentry>
 
-<para>Advantages compared to the old netatalk module:
-<simplelist>
-<member>it doesn't care about creating of .AppleDouble forks, just keeps them in sync</member>
-<member>if share in smb.conf doesn't contain .AppleDouble item in hide or veto list, it will be added automatically</member>
-</simplelist>
-</para>
+			<varlistentry>
+			<term>vfs_recycle_bin:touch</term>
+			<listitem><para>FIXME</para></listitem>
+			</varlistentry>
 
-</sect2>
+			<varlistentry>
+			<term>vfs_recycle_bin:maxsize</term>
+			<listitem><para>FIXME</para></listitem>
+			</varlistentry>
+
+			<varlistentry>
+			<term>vfs_recycle_bin:exclude</term>
+			<listitem><para>FIXME</para></listitem>
+			</varlistentry>
+
+			<varlistentry>
+			<term>vfs_recycle_bin:exclude_dir</term>
+			<listitem><para>FIXME</para></listitem>
+			</varlistentry>
+
+			<varlistentry>
+			<term>vfs_recycle_bin:noversions</term>
+			<listitem><para>FIXME</para></listitem>
+			</varlistentry>
+		</variablelist>
+		</para>
+
+	</sect2>
+
+	<sect2>
+	<title>netatalk</title>
+
+		<para>
+		A netatalk module, that will ease co-existence of samba and
+		netatalk file sharing services.
+		</para>
+
+		<para>Advantages compared to the old netatalk module:
+		<simplelist>
+		<member>it doesn't care about creating of .AppleDouble forks, just keeps them in sync</member>
+		<member>if a share in &smb.conf; doesn't contain .AppleDouble item in hide or veto list, it will be added automatically</member>
+		</simplelist>
+		</para>
+
+	</sect2>
 
 </sect1>
 
@@ -179,52 +203,60 @@ to have his or her own CVS tree).
 </para>
 
 <para>
-No statemets about the stability or functionality of any module
+No statements about the stability or functionality of any module
 should be implied due to its presence here.
 </para>
 
-<sect2>
-<title>DatabaseFS</title>
+	<sect2>
+	<title>DatabaseFS</title>
 
-<para>
-URL: <ulink url="http://www.css.tayloru.edu/~elorimer/databasefs/index.php">http://www.css.tayloru.edu/~elorimer/databasefs/index.php</ulink>
-</para>
+		<para>
+		URL: <ulink url="http://www.css.tayloru.edu/~elorimer/databasefs/index.php">http://www.css.tayloru.edu/~elorimer/databasefs/index.php</ulink>
+		</para>
 
-<para>By <ulink url="mailto:elorimer@css.tayloru.edu">Eric Lorimer</ulink>.</para>
+		<para>By <ulink url="mailto:elorimer@css.tayloru.edu">Eric Lorimer</ulink>.</para>
 
-<para>
-I have created a VFS module which implements a fairly complete read-only
-filesystem.  It presents information from a database as a filesystem in
-a modular and generic way to allow different databases to be used
-(originally designed for organizing MP3s under directories such as
-"Artists," "Song Keywords," etc... I have since applied it to a student
-roster database very easily).  The directory structure is stored in the
-database itself and the module makes no assumptions about the database
-structure beyond the table it requires to run.
-</para>
+		<para>
+		I have created a VFS module which implements a fairly complete read-only
+		filesystem.  It presents information from a database as a filesystem in
+		a modular and generic way to allow different databases to be used
+		(originally designed for organizing MP3s under directories such as
+		"Artists," "Song Keywords," etc... I have since applied it to a student
+		roster database very easily).  The directory structure is stored in the
+		database itself and the module makes no assumptions about the database
+		structure beyond the table it requires to run.
+		</para>
 
-<para>
-Any feedback would be appreciated: comments, suggestions, patches,
-etc...  If nothing else, hopefully it might prove useful for someone
-else who wishes to create a virtual filesystem.
-</para>
+		<para>
+		Any feedback would be appreciated: comments, suggestions, patches,
+		etc...  If nothing else, hopefully it might prove useful for someone
+		else who wishes to create a virtual filesystem.
+		</para>
 
-</sect2>
+	</sect2>
 
-<sect2>
-<title>vscan</title>
-<para>URL: <ulink url="http://www.openantivirus.org/">http://www.openantivirus.org/</ulink></para>
+	<sect2>
+	<title>vscan</title>
 
-<para>
-samba-vscan is a proof-of-concept module for Samba, which
-uses the VFS (virtual file system) features of Samba 2.2.x/3.0
-alphaX. Of couse, Samba has to be compiled with VFS support. 
-samba-vscan supports various virus scanners and is maintained 
-by Rainer Link.
-</para>
+		<para>URL: <ulink url="http://www.openantivirus.org/">http://www.openantivirus.org/</ulink></para>
 
-</sect2>
+		<para>
+		samba-vscan is a proof-of-concept module for Samba, which
+		uses the VFS (virtual file system) features of Samba 2.2.x/3.0
+		alphaX. Of couse, Samba has to be compiled with VFS support. 
+		samba-vscan supports various virus scanners and is maintained 
+		by Rainer Link.
+		</para>
 
+	</sect2>
 </sect1>
 
+<sect1>
+<title>Common Errors</title>
+
+<para>
+There must be some gotchas we should record here! Jelmer???
+</para>
+
+</sect1>
 </chapter>

@@ -4,7 +4,7 @@
 	<pubdate>April 21, 2003</pubdate>
 </chapterinfo>
 
-<title>SWAT - The Samba Web Admininistration Tool</title>
+<title>SWAT - The Samba Web Administration Tool</title>
 
 <para>
 There are many and varied opinions regarding the usefulness or otherwise of SWAT.
@@ -17,7 +17,7 @@ management.
 </para>
 
 <sect1>
-<title>SWAT Features and Benefits</title>
+<title>Features and Benefits</title>
 
 <para>
 There are network administrators who believe that it is a good idea to write systems
@@ -25,7 +25,7 @@ documentation inside configuration files, for them SWAT will aways be a nasty to
 does not store the configuration file in any intermediate form, rather, it stores only the
 parameter settings, so when SWAT writes the smb.conf file to disk it will write only
 those parameters that are at other than the default settings. The result is that all comments
-will be lost from the smb.conf file. Additionally, the parameters will be written back in
+will be lost from the &smb.conf; file. Additionally, the parameters will be written back in
 internal ordering.
 </para>
 
@@ -40,8 +40,8 @@ and only non-default settings will be written to the file.
 
 <para>
 SWAT should be installed to run via the network super daemon. Depending on which system
-your Unix/Linux system has you will have either an <filename>inetd</filename> or
-<filename>xinetd</filename> based system.
+your Unix/Linux system has you will have either an <command>inetd</command> or
+<command>xinetd</command> based system.
 </para>
 
 <para>
@@ -86,7 +86,7 @@ A control file for the newer style xinetd could be:
 </para>
 
 <para>
-Both the above examples assume that the <filename>swat</filename> binary has been
+Both the above examples assume that the <command>swat</command> binary has been
 located in the <filename>/usr/sbin</filename> directory. In addition to the above
 SWAT will use a directory access point from which it will load it's help files
 as well as other control information. The default location for this on most Linux
@@ -98,14 +98,16 @@ location using samba defaults will be <filename>/usr/local/samba/swat</filename>
 Access to SWAT will prompt for a logon. If you log onto SWAT as any non-root user
 the only permission allowed is to view certain aspects of configuration as well as
 access to the password change facility. The buttons that will be exposed to the non-root
-user are: <emphasis>HOME, STATUS, VIEW, PASSWORD</emphasis>. The only page that allows
-change capability in this case is <emphasis>PASSWORD</emphasis>.
+user are: <guibutton>HOME</guibutton>, <guibutton>STATUS</guibutton>, <guibutton>VIEW</guibutton>, 
+<guibutton>PASSWORD</guibutton>. The only page that allows
+change capability in this case is <guibutton>PASSWORD</guibutton>.
 </para>
 
 <para>
-So long as you log onto SWAT as the user <command>root</command> you should obtain
+So long as you log onto SWAT as the user <emphasis>root</emphasis> you should obtain
 full change and commit ability. The buttons that will be exposed includes:
-<emphasis>HOME, GLOBALS, SHARES, PRINTERS, WIZARD, STATUS, VIEW, PASSWORD</emphasis>.
+<guibutton>HOME</guibutton>, <guibutton>GLOBALS</guibutton>, <guibutton>SHARES</guibutton>, <guibutton>PRINTERS</guibutton>, 
+<guibutton>WIZARD</guibutton>, <guibutton>STATUS</guibutton>, <guibutton>VIEW</guibutton>, <guibutton>PASSWORD</guibutton>.
 </para>
 
 </sect2>
@@ -122,35 +124,35 @@ administration of Samba. Here is a method that works, courtesy of Markus Krieger
 Modifications to the swat setup are as following: 
 </para>
 
-<itemizedlist>
-	<listitem><para>
+<procedure>
+	<step><para>
 	install OpenSSL 
-	</para></listitem>
+	</para></step>
 
-	<listitem><para>
+	<step><para>
 	generate certificate and private key
 
-	<programlisting>
-	root# /usr/bin/openssl req -new -x509 -days 365 -nodes -config \
-	 	/usr/share/doc/packages/stunnel/stunnel.cnf \
-		-out /etc/stunnel/stunnel.pem -keyout /etc/stunnel/stunnel.pem
-	</programlisting></para></listitem>
+	<screen>
+&rootprompt;<userinput>/usr/bin/openssl req -new -x509 -days 365 -nodes -config \
+ 	/usr/share/doc/packages/stunnel/stunnel.cnf \
+	-out /etc/stunnel/stunnel.pem -keyout /etc/stunnel/stunnel.pem</userinput>
+	</screen></para></step>
 
-	<listitem><para>
+	<step><para>
 	remove swat-entry from [x]inetd 
-	</para></listitem>
+	</para></step>
 
-	<listitem><para>
+	<step><para>
 	start stunnel
 
-	<programlisting>
-	root# stunnel -p /etc/stunnel/stunnel.pem -d 901 \
-		 -l /usr/local/samba/bin/swat swat 
-	</programlisting></para></listitem>
-</itemizedlist>
+	<screen>
+&rootprompt;<userinput>stunnel -p /etc/stunnel/stunnel.pem -d 901 \
+	 -l /usr/local/samba/bin/swat swat </userinput>
+	</screen></para></step>
+</procedure>
 
 <para>
-afterwards simply contact to swat by using the URL "https://myhost:901", accept the certificate
+afterwards simply contact to swat by using the URL <ulink url="https://myhost:901">https://myhost:901</ulink>, accept the certificate
 and the SSL connection is up.
 </para>
 
@@ -173,13 +175,13 @@ useful is <command>ethereal</command>, available from <ulink url="http://www.eth
 http://www.ethereal.com</ulink>.
 </para>
 
-<note><para>
+<warning><para>
 SWAT can be configured to run in <emphasis>demo</emphasis> mode. This is NOT recommended
 as it runs SWAT without authentication and with full administrative ability. ie: Allows
 changes to smb.conf as well as general operation with root privilidges. The option that
-creates this ability is the <command>-a</command> flag to swat. DO NOT USE THIS IN ANY
-PRODUCTION ENVIRONMENT - you have been warned!
-</para></note>
+creates this ability is the <option>-a</option> flag to swat. <emphasis>Do not use this in any 
+production environment.</emphasis>
+</para></warning>
 
 </sect2>
 
@@ -193,16 +195,16 @@ in smb.conf. There are three levels of exposure of the parameters:
 
 <itemizedlist>
 	<listitem><para>
-	<command>Basic</command> - exposes common configuration options.
+	<emphasis>Basic</emphasis> - exposes common configuration options.
 	</para></listitem>
 
 	<listitem><para>
-	<command>Advanced</command> - exposes  configuration options needed in more 
+	<emphasis>Advanced</emphasis> - exposes  configuration options needed in more 
 	complex environments.
 	</para></listitem>
 
 	<listitem><para>
-	<command>Developer</command> - exposes configuration options that only the brave
+	<emphasis>Developer</emphasis> - exposes configuration options that only the brave
 	will want to tamper with.
 	</para></listitem>
 </itemizedlist>
@@ -210,18 +212,18 @@ in smb.conf. There are three levels of exposure of the parameters:
 <para>
 To switch to other than <emphasis>Basic</emphasis> editing ability click on either the
 <emphasis>Advanced</emphasis> or the <emphasis>Developer</emphasis> dial, then click the
-<emphasis>Commit Changes</emphasis> button.
+<guibutton>Commit Changes</guibutton> button.
 </para>
 
 <para>
 After making any changes to configuration parameters make sure that you click on the 
-<emphasis>Commit Changes</emphasis> button before moving to another area otherwise
+<guibutton>Commit Changes</guibutton> button before moving to another area otherwise
 your changes will be immediately lost.
 </para>
 
 <note><para>
 SWAT has context sensitive help. To find out what each parameter is for simply click the
-<command>Help</command> link to the left of the configurartion parameter.
+<guibutton>Help</guibutton> link to the left of the configurartion parameter.
 </para></note>
 
 </sect2>
@@ -231,16 +233,16 @@ SWAT has context sensitive help. To find out what each parameter is for simply c
 
 <para>
 To affect a currenly configured share, simply click on the pull down button between the
-<emphasis>Choose Share</emphasis> and the <emphasis>Delete Share</emphasis> buttons,
+<guibutton>Choose Share</guibutton> and the <guibutton>Delete Share</guibutton> buttons,
 select the share you wish to operate on, then to edit the settings click on the
-<emphasis>Choose Share</emphasis> button, to delete the share simply press the
-<emphasis>Delete Share</emphasis> button.
+<guibutton>Choose Share</guibutton> button, to delete the share simply press the
+<guibutton>Delete Share</guibutton> button.
 </para>
 
 <para>
-To create a new share, next to the button labelled <emphasis>Create Share</emphasis> enter
+To create a new share, next to the button labelled <guibutton>Create Share</guibutton> enter
 into the text field the name of the share to be created, then click on the 
-<emphasis>Create Share</emphasis> button.
+<guibutton>Create Share</guibutton> button.
 </para>
 
 </sect2>
@@ -250,16 +252,16 @@ into the text field the name of the share to be created, then click on the
 
 <para>
 To affect a currenly configured printer, simply click on the pull down button between the
-<emphasis>Choose Printer</emphasis> and the <emphasis>Delete Printer</emphasis> buttons,
+<guibutton>Choose Printer</guibutton> and the <guibutton>Delete Printer</guibutton> buttons,
 select the printer you wish to operate on, then to edit the settings click on the
-<emphasis>Choose Printer</emphasis> button, to delete the share simply press the
-<emphasis>Delete Printer</emphasis> button.
+<guibutton>Choose Printer</guibutton> button, to delete the share simply press the
+<guibutton>Delete Printer</guibutton> button.
 </para>
 
 <para>
-To create a new printer, next to the button labelled <emphasis>Create Printer</emphasis> enter
+To create a new printer, next to the button labelled <guibutton>Create Printer</guibutton> enter
 into the text field the name of the share to be created, then click on the 
-<emphasis>Create Printer</emphasis> button.
+<guibutton>Create Printer</guibutton> button.
 </para>
 
 </sect2>
@@ -280,7 +282,7 @@ affected.
 </para>
 
 <para>
-The <emphasis>Edit</emphasis> button permits the editing (setting) of the minimal set of
+The <guibutton>Edit</guibutton> button permits the editing (setting) of the minimal set of
 options that may be necessary to create a working samba server.
 </para>
 
@@ -298,7 +300,7 @@ home directories.
 
 <para>
 The status page serves a limited purpose. Firstly, it allows control of the samba daemons.
-The key daemons that create the samba server environment are: <command> smbd, nmbd, winbindd</command>.
+The key daemons that create the samba server environment are: &smbd;, &nmbd;, &winbindd;.
 </para>
 
 <para>
@@ -319,7 +321,7 @@ free files that may be locked.
 <title>The View Page</title>
 
 <para>
-This page allows the administrator to view the optimised smb.conf file and if you are
+This page allows the administrator to view the optimised &smb.conf; file and if you are
 particularly massochistic will permit you also to see all possible global configuration
 parameters and their settings.
 </para>
@@ -337,7 +339,7 @@ this tool to change a local password for a user account.
 
 <para>
 When logged in as a non-root account the user will have to provide the old password as well as
-the new password (twice). When logged in as <command>root</command> only the new password is
+the new password (twice). When logged in as <emphasis>root</emphasis> only the new password is
 required.
 </para>
 

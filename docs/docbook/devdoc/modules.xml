@@ -40,7 +40,7 @@ the passdb subsystem has:
 </para>
 
 <para><programlisting>
-BOOL smb_register_passdb(const char *name, pdb_init_function init, int version);
+NTSTATUS smb_register_passdb(int version, const char *name, pdb_init_function init);
 </programlisting></para>
 
 <para>
@@ -99,21 +99,21 @@ The prototype for these functions is:
 </para>
 
 <para><programlisting>
-int init_module(void);
+NTSTATUS init_module(void);
 </programlisting></para>
 
 <para>This function should call one or more 
-registration functions. The function should return non-zero on success and zero on 
-failure.</para>
+registration functions. The function should return NT_STATUS_OK on success and  
+NT_STATUS_UNSUCCESSFUL or a more useful nt error code on failure.</para>
 
 <para>For example, pdb_ldap_init() contains: </para>
 
 <para><programlisting>
-int pdb_ldap_init(void)
+NTSTATUS pdb_ldap_init(void)
 {
-    smb_register_passdb("ldapsam", pdb_init_ldapsam, PASSDB_INTERFACE_VERSION);
-    smb_register_passdb("ldapsam_nua", pdb_init_ldapsam_nua, PASSDB_INTERFACE_VERSION);
-	return TRUE;
+smb_register_passdb(PASSDB_INTERFACE_VERSION, "ldapsam", pdb_init_ldapsam);
+smb_register_passdb(PASSDB_INTERFACE_VERSION, "ldapsam_nua", pdb_init_ldapsam_nua);
+	return NT_STATUS_OK;
 }
 </programlisting></para>
 

@@ -2,11 +2,7 @@
 
 <chapterinfo>
 	&author.jelmer;
-	<author>
-		<affiliation>
-			<orgname>Samba Team</orgname>
-		</affiliation>
-	</author>
+	<author><surname>Someone; Tridge or Karl Auer perhaps?</surname></author>
 	<pubdate> 27 June 1997 </pubdate>
 </chapterinfo>
 
@@ -15,7 +11,8 @@
 <sect1>
 <title>Introduction</title>
 
-<para>Please report bugs using <ulink url="https://bugzilla.samba.org/">bugzilla</ulink>.</para>
+<para>Please report bugs using
+	<ulink url="https://bugzilla.samba.org/">bugzilla</ulink>.</para>
 
 <para>
 Please take the time to read this file before you submit a bug
@@ -83,7 +80,7 @@ detail, but may use too much disk space.
 </para>
 
 <para>
-To set the debug level use <command>log level =</command> in your 
+To set the debug level use the <parameter>log level</parameter> in your 
 &smb.conf;. You may also find it useful to set the log 
 level higher for just one machine and keep separate logs for each machine. 
 To do this use:
@@ -100,24 +97,25 @@ then create a file
 <filename>/usr/local/samba/lib/smb.conf.<replaceable>machine</replaceable></filename> where
 <replaceable>machine</replaceable> is the name of the client you wish to debug. In that file
 put any &smb.conf; commands you want, for example 
-<command>log level=</command> may be useful. This also allows you to 
+<parameter>log level</parameter> may be useful. This also allows you to 
 experiment with different security systems, protocol levels etc on just 
 one machine.
 </para>
 
 <para>
-The &smb.conf; entry <command>log level =</command> 
-is synonymous with the entry <command>debuglevel =</command> that has been 
-used in older versions of Samba and is being retained for backwards 
+The &smb.conf; entry <parameter>log level</parameter> 
+is synonymous with the parameter <parameter>debuglevel</parameter> that has
+been used in older versions of Samba and is being retained for backwards 
 compatibility of &smb.conf; files.
 </para>
 
 <para>
-As the <command>log level =</command> value is increased you will record 
+As the <parameter>log level</parameter> value is increased you will record 
 a significantly increasing level of debugging information. For most 
-debugging operations you may not need a setting higher than 3. Nearly 
-all bugs can be tracked at a setting of 10, but be prepared for a VERY 
-large volume of log data.
+debugging operations you may not need a setting higher than 
+<constant>3</constant>. Nearly 
+all bugs can be tracked at a setting of <constant>10</constant>, but be 
+prepared for a VERY large volume of log data.
 </para>
 
 </sect1>
@@ -126,8 +124,8 @@ large volume of log data.
 <title>Internal errors</title>
 
 <para>
-If you get a "INTERNAL ERROR" message in your log files it means that
-Samba got an unexpected signal while running. It is probably a
+If you get a <errorname>INTERNAL ERROR</errorname> message in your log files 
+it means that Samba got an unexpected signal while running. It is probably a
 segmentation fault and almost certainly means a bug in Samba (unless
 you have faulty hardware or system software).
 </para>
@@ -151,17 +149,20 @@ files. This file is the most useful tool for tracking down the bug. To
 use it you do this:
 </para>
 
-<para><command>gdb smbd core</command></para>
+<screen>
+	<prompt>$ </prompt><userinput>gdb smbd core</userinput>
+</screen>
 
 <para>
 adding appropriate paths to smbd and core so gdb can find them. If you
-don't have gdb then try <userinput>dbx</userinput>. Then within the debugger use the
-command <userinput>where</userinput> to give a stack trace of where the problem
-occurred. Include this in your mail.
+don't have gdb then try <userinput>dbx</userinput>. Then within the debugger
+use the command <command>where</command> to give a stack trace of where the
+problem occurred. Include this in your report.
 </para>
 
 <para>
-If you know any assembly language then do a <userinput>disass</userinput> of the routine
+If you know any assembly language then do a 
+<command>disass</command> of the routine
 where the problem occurred (if its in a library routine then
 disassemble the routine that called it) and try to work out exactly
 where the problem is by looking at the surrounding code. Even if you
@@ -177,8 +178,10 @@ useful.
 Unfortunately some unixes (in particular some recent linux kernels)
 refuse to dump a core file if the task has changed uid (which smbd
 does often). To debug with this sort of system you could try to attach
-to the running process using <userinput>gdb smbd <replaceable>PID</replaceable></userinput> where you get <replaceable>PID</replaceable> from
-<application>smbstatus</application>. Then use <userinput>c</userinput> to continue and try to cause the core dump
+to the running process using
+<userinput>gdb smbd <replaceable>PID</replaceable></userinput> where you get
+<replaceable>PID</replaceable> from <application>smbstatus</application>.
+Then use <command>c</command> to continue and try to cause the core dump
 using the client. The debugger should catch the fault and tell you
 where it occurred.
 </para>
@@ -198,4 +201,3 @@ exactly what version you used.
 
 </sect1>
 </chapter>
-

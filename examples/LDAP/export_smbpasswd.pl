@@ -32,7 +32,7 @@ print "##\n";
 ## scheck for the existence of the posixAccount first
 $result = $ldap->search ( base => "$DN",
 			  scope => "sub",
-			  filter => "(objectclass=smbpasswordentry)"
+			  filter => "(objectclass=sambaAccount)"
 			);
 
 

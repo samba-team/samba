@@ -1,8 +1,8 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
-|	$Id: biblio.mod.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $
+|	$Id: biblio.mod.xsl,v 1.1.4.1 2003/06/06 15:08:20 jerry Exp $
 |- #############################################################################
-|	$Author: ab $												
+|	$Author: jerry $												
 |														
 |   PURPOSE: Manage Bibliography.
 + ############################################################################## -->
@@ -19,7 +19,7 @@
     <doc:reference id="biblio" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
-		$Id: biblio.mod.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $
+		$Id: biblio.mod.xsl,v 1.1.4.1 2003/06/06 15:08:20 jerry Exp $
 	    </releaseinfo>
 	    <authorgroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>

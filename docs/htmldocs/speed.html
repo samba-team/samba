@@ -1,108 +1,419 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 35. Samba performance issues</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.59.1"><link rel="home" href="index.html" title="SAMBA Project Documentation"><link rel="up" href="Appendixes.html" title="Part V. Appendixes"><link rel="previous" href="SWAT.html" title="Chapter 34. SWAT - The Samba Web Admininistration Tool"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 35. Samba performance issues</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="SWAT.html">Prev</a> </td><th width="60%" align="center">Part V. Appendixes</th><td width="20%" align="right"> </td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><h2 class="title"><a name="speed"></a>Chapter 35. Samba performance issues</h2></div><div><div class="author"><h3 class="author">Paul Cochrane</h3><div class="affiliation"><span class="orgname">Dundee Limb Fitting Centre<br></span><div class="address"><p><tt>&lt;<a href="mailto:paulc@dth.scot.nhs.uk">paulc@dth.scot.nhs.uk</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author">Jelmer R. Vernooij</h3><div class="affiliation"><span class="orgname">The Samba Team<br></span><div class="address"><p><tt>&lt;<a href="mailto:jelmer@samba.org">jelmer@samba.org</a>&gt;</tt></p></div></div></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="speed.html#id2908657">Comparisons</a></dt><dt><a href="speed.html#id2908548">Socket options</a></dt><dt><a href="speed.html#id2909437">Read size</a></dt><dt><a href="speed.html#id2909480">Max xmit</a></dt><dt><a href="speed.html#id2909533">Log level</a></dt><dt><a href="speed.html#id2909556">Read raw</a></dt><dt><a href="speed.html#id2909613">Write raw</a></dt><dt><a href="speed.html#id2909655">Slow Logins</a></dt><dt><a href="speed.html#id2909676">Client tuning</a></dt></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2908657"></a>Comparisons</h2></div></div><p>
-The Samba server uses TCP to talk to the client. Thus if you are
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML
+><HEAD
+><TITLE
+>Samba performance issues</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="SAMBA Project Documentation"
+HREF="samba-howto-collection.html"><LINK
+REL="UP"
+TITLE="Optional configuration"
+HREF="optional.html"><LINK
+REL="PREVIOUS"
+TITLE="Group mapping HOWTO"
+HREF="groupmapping.html"><LINK
+REL="NEXT"
+TITLE="Appendixes"
+HREF="appendixes.html"></HEAD
+><BODY
+CLASS="CHAPTER"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>SAMBA Project Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="groupmapping.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="appendixes.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="SPEED">Chapter 22. Samba performance issues</H1
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN3055">22.1. Comparisons</H1
+><P
+>The Samba server uses TCP to talk to the client. Thus if you are
 trying to see if it performs well you should really compare it to
 programs that use the same protocol. The most readily available
 programs for file transfer that use TCP are ftp or another TCP based
-SMB server.
-</p><p>
-If you want to test against something like a NT or WfWg server then
+SMB server.</P
+><P
+>If you want to test against something like a NT or WfWg server then
 you will have to disable all but TCP on either the client or
 server. Otherwise you may well be using a totally different protocol
-(such as Netbeui) and comparisons may not be valid.
-</p><p>
-Generally you should find that Samba performs similarly to ftp at raw
+(such as Netbeui) and comparisons may not be valid.</P
+><P
+>Generally you should find that Samba performs similarly to ftp at raw
 transfer speed. It should perform quite a bit faster than NFS,
-although this very much depends on your system.
-</p><p>
-Several people have done comparisons between Samba and Novell, NFS or
+although this very much depends on your system.</P
+><P
+>Several people have done comparisons between Samba and Novell, NFS or
 WinNT. In some cases Samba performed the best, in others the worst. I
 suspect the biggest factor is not Samba vs some other system but the
 hardware and drivers used on the various systems. Given similar
 hardware Samba should certainly be competitive in speed with other
-systems.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2908548"></a>Socket options</h2></div></div><p>
-There are a number of socket options that can greatly affect the
-performance of a TCP based server like Samba.
-</p><p>
-The socket options that Samba uses are settable both on the command
-line with the -O option, or in the smb.conf file.
-</p><p>
-The <b>socket options</b> section of the <tt>smb.conf</tt> manual page describes how
-to set these and gives recommendations.
-</p><p>
-Getting the socket options right can make a big difference to your
+systems.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN3061">22.2. Socket options</H1
+><P
+>There are a number of socket options that can greatly affect the
+performance of a TCP based server like Samba.</P
+><P
+>The socket options that Samba uses are settable both on the command
+line with the -O option, or in the smb.conf file.</P
+><P
+>The "socket options" section of the smb.conf manual page describes how
+to set these and gives recommendations.</P
+><P
+>Getting the socket options right can make a big difference to your
 performance, but getting them wrong can degrade it by just as
-much. The correct settings are very dependent on your local network.
-</p><p>
-The socket option TCP_NODELAY is the one that seems to make the
+much. The correct settings are very dependent on your local network.</P
+><P
+>The socket option TCP_NODELAY is the one that seems to make the
 biggest single difference for most networks. Many people report that
-adding <b>socket options = TCP_NODELAY</b> doubles the read 
-performance of a Samba drive. The best explanation I have seen for this is
-that the Microsoft TCP/IP stack is slow in sending tcp ACKs.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2909437"></a>Read size</h2></div></div><p>
-The option <b>read size</b> affects the overlap of disk
-reads/writes with network reads/writes. If the amount of data being
-transferred in several of the SMB commands (currently SMBwrite, SMBwriteX and
+adding "socket options = TCP_NODELAY" doubles the read performance of
+a Samba drive. The best explanation I have seen for this is that the
+Microsoft TCP/IP stack is slow in sending tcp ACKs.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN3068">22.3. Read size</H1
+><P
+>The option "read size" affects the overlap of disk reads/writes with
+network reads/writes. If the amount of data being transferred in
+several of the SMB commands (currently SMBwrite, SMBwriteX and
 SMBreadbraw) is larger than this value then the server begins writing
 the data before it has received the whole packet from the network, or
 in the case of SMBreadbraw, it begins writing to the network before
-all the data has been read from disk.
-</p><p>
-This overlapping works best when the speeds of disk and network access
+all the data has been read from disk.</P
+><P
+>This overlapping works best when the speeds of disk and network access
 are similar, having very little effect when the speed of one is much
-greater than the other.
-</p><p>
-The default value is 16384, but very little experimentation has been
+greater than the other.</P
+><P
+>The default value is 16384, but very little experimentation has been
 done yet to determine the optimal value, and it is likely that the best
 value will vary greatly between systems anyway. A value over 65536 is
-pointless and will cause you to allocate memory unnecessarily.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2909480"></a>Max xmit</h2></div></div><p>
-At startup the client and server negotiate a <b>maximum transmit</b> size,
+pointless and will cause you to allocate memory unnecessarily.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN3073">22.4. Max xmit</H1
+><P
+>At startup the client and server negotiate a "maximum transmit" size,
 which limits the size of nearly all SMB commands. You can set the
-maximum size that Samba will negotiate using the <b>max xmit = </b> option
-in <tt>smb.conf</tt>. Note that this is the maximum size of SMB requests that 
+maximum size that Samba will negotiate using the "max xmit = " option
+in smb.conf. Note that this is the maximum size of SMB request that 
 Samba will accept, but not the maximum size that the *client* will accept.
 The client maximum receive size is sent to Samba by the client and Samba
-honours this limit.
-</p><p>
-It defaults to 65536 bytes (the maximum), but it is possible that some
+honours this limit.</P
+><P
+>It defaults to 65536 bytes (the maximum), but it is possible that some
 clients may perform better with a smaller transmit unit. Trying values
-of less than 2048 is likely to cause severe problems.
-</p><p>
-In most cases the default is the best option.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2909533"></a>Log level</h2></div></div><p>
-If you set the log level (also known as <b>debug level</b>) higher than 2
+of less than 2048 is likely to cause severe problems.</P
+><P
+>In most cases the default is the best option.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN3078">22.5. Log level</H1
+><P
+>If you set the log level (also known as "debug level") higher than 2
 then you may suffer a large drop in performance. This is because the
 server flushes the log file after each operation, which can be very
-expensive. 
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2909556"></a>Read raw</h2></div></div><p>
-The <b>read raw</b> operation is designed to be an optimised, low-latency
+expensive. </P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN3081">22.6. Read raw</H1
+><P
+>The "read raw" operation is designed to be an optimised, low-latency
 file read operation. A server may choose to not support it,
-however. and Samba makes support for <b>read raw</b> optional, with it
-being enabled by default.
-</p><p>
-In some cases clients don't handle <b>read raw</b> very well and actually
+however. and Samba makes support for "read raw" optional, with it
+being enabled by default.</P
+><P
+>In some cases clients don't handle "read raw" very well and actually
 get lower performance using it than they get using the conventional
-read operations. 
-</p><p>
-So you might like to try <b>read raw = no</b> and see what happens on your
+read operations. </P
+><P
+>So you might like to try "read raw = no" and see what happens on your
 network. It might lower, raise or not affect your performance. Only
-testing can really tell.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2909613"></a>Write raw</h2></div></div><p>
-The <b>write raw</b> operation is designed to be an optimised, low-latency
+testing can really tell.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN3086">22.7. Write raw</H1
+><P
+>The "write raw" operation is designed to be an optimised, low-latency
 file write operation. A server may choose to not support it,
-however. and Samba makes support for <b>write raw</b> optional, with it
-being enabled by default.
-</p><p>
-Some machines may find <b>write raw</b> slower than normal write, in which
-case you may wish to change this option.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2909655"></a>Slow Logins</h2></div></div><p>
-Slow logins are almost always due to the password checking time. Using
-the lowest practical <b>password level</b> will improve things. 
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2909676"></a>Client tuning</h2></div></div><p>
-Often a speed problem can be traced to the client. The client (for
+however. and Samba makes support for "write raw" optional, with it
+being enabled by default.</P
+><P
+>Some machines may find "write raw" slower than normal write, in which
+case you may wish to change this option.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN3090">22.8. Slow Clients</H1
+><P
+>One person has reported that setting the protocol to COREPLUS rather
+than LANMAN2 gave a dramatic speed improvement (from 10k/s to 150k/s).</P
+><P
+>I suspect that his PC's (386sx16 based) were asking for more data than
+they could chew. I suspect a similar speed could be had by setting
+"read raw = no" and "max xmit = 2048", instead of changing the
+protocol. Lowering the "read size" might also help.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN3094">22.9. Slow Logins</H1
+><P
+>Slow logins are almost always due to the password checking time. Using
+the lowest practical "password level" will improve things a lot. You
+could also enable the "UFC crypt" option in the Makefile.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN3097">22.10. Client tuning</H1
+><P
+>Often a speed problem can be traced to the client. The client (for
 example Windows for Workgroups) can often be tuned for better TCP
-performance. Check the sections on the various clients in 
-<a href="Other-Clients.html" title="Chapter 33. Samba and other CIFS clients">Samba and Other Clients</a>.
-</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="SWAT.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="Appendixes.html">Up</a></td><td width="40%" align="right"> </td></tr><tr><td width="40%" align="left" valign="top">Chapter 34. SWAT - The Samba Web Admininistration Tool </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>
+performance.</P
+><P
+>See your client docs for details. In particular, I have heard rumours
+that the WfWg options TCPWINDOWSIZE and TCPSEGMENTSIZE can have a
+large impact on performance.</P
+><P
+>Also note that some people have found that setting DefaultRcvWindow in
+the [MSTCP] section of the SYSTEM.INI file under WfWg to 3072 gives a
+big improvement. I don't know why.</P
+><P
+>My own experience wth DefaultRcvWindow is that I get much better
+performance with a large value (16384 or larger). Other people have
+reported that anything over 3072 slows things down enourmously. One
+person even reported a speed drop of a factor of 30 when he went from
+3072 to 8192. I don't know why.</P
+><P
+>It probably depends a lot on your hardware, and the type of unix box
+you have at the other end of the link.</P
+><P
+>Paul Cochrane has done some testing on client side tuning and come 
+to the following conclusions:</P
+><P
+>Install the W2setup.exe file from www.microsoft.com. This is an 
+update for the winsock stack and utilities which improve performance.</P
+><P
+>Configure the win95 TCPIP registry settings to give better 
+perfomance. I use a program called MTUSPEED.exe which I got off the 
+net. There are various other utilities of this type freely available. 
+The setting which give the best performance for me are:</P
+><P
+></P
+><OL
+TYPE="1"
+><LI
+><P
+>MaxMTU                  Remove</P
+></LI
+><LI
+><P
+>RWIN                    Remove</P
+></LI
+><LI
+><P
+>MTUAutoDiscover         Disable</P
+></LI
+><LI
+><P
+>MTUBlackHoleDetect      Disable</P
+></LI
+><LI
+><P
+>Time To Live            Enabled</P
+></LI
+><LI
+><P
+>Time To Live - HOPS     32</P
+></LI
+><LI
+><P
+>NDI Cache Size          0</P
+></LI
+></OL
+><P
+>I tried virtually all of the items mentioned in the document and 
+the only one which made a difference to me was the socket options. It 
+turned out I was better off without any!!!!!</P
+><P
+>In terms of overall speed of transfer, between various win95 clients 
+and a DX2-66 20MB server with a crappy NE2000 compatible and old IDE 
+drive (Kernel 2.0.30). The transfer rate was reasonable for 10 baseT.</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>The figures are:          Put              Get 
+P166 client 3Com card:    420-440kB/s      500-520kB/s
+P100 client 3Com card:    390-410kB/s      490-510kB/s
+DX4-75 client NE2000:     370-380kB/s      330-350kB/s</PRE
+></P
+><P
+>I based these test on transfer two files a 4.5MB text file and a 15MB 
+textfile. The results arn't bad considering the hardware Samba is 
+running on. It's a crap machine!!!!</P
+><P
+>The updates mentioned in 1 and 2 brought up the transfer rates from 
+just over 100kB/s in some clients.</P
+><P
+>A new client is a P333 connected via a 100MB/s card and hub. The 
+transfer rates from this were good: 450-500kB/s on put and 600+kB/s 
+on get.</P
+><P
+>Looking at standard FTP throughput, Samba is a bit slower (100kB/s 
+upwards). I suppose there is more going on in the samba protocol, but 
+if it could get up to the rate of FTP the perfomance would be quite 
+staggering.</P
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="groupmapping.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="samba-howto-collection.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="appendixes.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Group mapping HOWTO</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="optional.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Appendixes</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

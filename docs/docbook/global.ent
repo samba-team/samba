@@ -463,14 +463,19 @@ an Active Directory environment.
 <!ENTITY AccessControls SYSTEM "projdoc/AccessControls.xml">
 <!ENTITY AdvancedNetworkAdmin SYSTEM "projdoc/AdvancedNetworkAdmin.xml">
 <!ENTITY BUGS SYSTEM "projdoc/Bugs.xml">
+<!ENTITY Backup SYSTEM "projdoc/Backup.xml">
 <!ENTITY CUPS SYSTEM "projdoc/CUPS-printing.xml">
 <!ENTITY CVS-Access SYSTEM "projdoc/CVS-Access.xml">
 <!ENTITY Compiling SYSTEM "projdoc/Compiling.xml">
+<!ENTITY DNS-DHCP-Configuration SYSTEM "projdoc/DNS-DHCP-Configuration.xml">
 <!ENTITY DOMAIN-MEMBER SYSTEM "projdoc/DOMAIN_MEMBER.xml">
 <!ENTITY Diagnosis SYSTEM "projdoc/Diagnosis.xml">
 <!ENTITY ENCRYPTION SYSTEM "projdoc/ENCRYPTION.xml">
+<!ENTITY FastStart SYSTEM "projdoc/FastStart.xml">
+<!ENTITY Further-Resources SYSTEM "projdoc/Further-Resources.xml">
 <!ENTITY Further-Resources SYSTEM "projdoc/Further-Resources.xml">
 <!ENTITY GROUP-MAPPING-HOWTO SYSTEM "projdoc/GROUP-MAPPING-HOWTO.xml">
+<!ENTITY HighAvailability SYSTEM "projdoc/HighAvailability.xml">
 <!ENTITY IntegratingWithWindows SYSTEM "projdoc/Integrating-with-Windows.xml">
 <!ENTITY IntroSMB SYSTEM "projdoc/IntroSMB.xml">
 <!ENTITY MS-Dfs-Setup SYSTEM "projdoc/msdfs_setup.xml">
@@ -493,13 +498,15 @@ an Active Directory environment.
 <!ENTITY StandAloneServer SYSTEM "projdoc/StandAloneServer.xml">
 <!ENTITY Trusts SYSTEM "projdoc/InterdomainTrusts.xml">
 <!ENTITY UNIX-INSTALL SYSTEM "projdoc/UNIX_INSTALL.xml">
+<!ENTITY upgrading SYSTEM "projdoc/upgrading-to-3.0.xml">
 <!ENTITY VFS SYSTEM "projdoc/VFS.xml">
 <!ENTITY WINBIND SYSTEM "projdoc/winbind.xml">
+<!ENTITY ClientConfig SYSTEM "projdoc/WindowsClientConfig.xml">
 <!ENTITY locking SYSTEM "projdoc/locking.xml">
-<!ENTITY pdb-mysql SYSTEM "projdoc/pdb_mysql.xml">
-<!ENTITY pdb.xml SYSTEM "projdoc/pdb.xml.xml">
 <!ENTITY problems SYSTEM "projdoc/Problems.xml">
 <!ENTITY unicode SYSTEM "projdoc/unicode.xml">
-<!ENTITY Further-Resources SYSTEM "projdoc/Further-Resources.xml">
+<!ENTITY attributions SYSTEM "projdoc/attributions.xml">
+<!ENTITY attributions-dev SYSTEM "devdoc/attributions.xml">
 
 <!ENTITY not.implemented "<note><para>Currently NOT implemented.</para></note>">
+<!ENTITY rootprompt "<prompt>root# </prompt>">

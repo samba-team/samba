@@ -54,14 +54,11 @@ packages, Samba, and Linux (and other UNIX-based systems) see
 		
 		<para>Basically, you need three components:</para>
 		
-		<itemizedlist>
-			<listitem><para>The File and Print Client ('IBM Peer')
-			</para></listitem>
-			<listitem><para>TCP/IP ('Internet support') 
-			</para></listitem>
-			<listitem><para>The "NetBIOS over TCP/IP" driver ('TCPBEUI')
-			</para></listitem>
-		</itemizedlist>
+		<simplelist>
+			<member>The File and Print Client ('IBM Peer')</member>
+			<member>TCP/IP ('Internet support') </member>
+			<member>The "NetBIOS over TCP/IP" driver ('TCPBEUI')</member>
+		</simplelist>
 		
 		<para>Installing the first two together with the base operating 
 		system on a blank system is explained in the Warp manual. If Warp 
@@ -114,40 +111,26 @@ packages, Samba, and Linux (and other UNIX-based systems) see
 	</sect2>
 	
 	<sect2>
-		<title>Are there any other issues when OS/2 (any version) 
-		is used as a client?</title>
-		
-		<para>When you do a NET VIEW or use the "File and Print 
-		Client Resource Browser", no Samba servers show up. This can 
-		be fixed by a patch from <ulink
-		url="http://carol.wins.uva.nl/~leeuw/samba/fix.html">
-		http://carol.wins.uva.nl/~leeuw/samba/fix.html</ulink>.
-		The patch will be included in a later version of Samba. It also 
-		fixes a couple of other problems, such as preserving long 
-		filenames when objects are dragged from the Workplace Shell 
-		to the Samba server. </para>
-	</sect2>
-	
-	<sect2>
 		<title>How do I get printer driver download working 
 		for OS/2 clients?</title>
 
-		<para>First, create a share called [PRINTDRV] that is 
+		<para>First, create a share called <parameter>[PRINTDRV]</parameter> that is 
 		world-readable.  Copy your OS/2 driver files there.  Note 
 		that the .EA_ files must still be separate, so you will need 
 		to use the original install files, and not copy an installed 
 		driver from an OS/2 system.</para>
 		
 		<para>Install the NT driver first for that printer.  Then, 
-		add to your smb.conf a parameter, os2 driver map = 
-		<replaceable>filename</replaceable>".  Then, in the file 
+		add to your &smb.conf; a parameter, <parameter>os2 driver map = 
+		<replaceable>filename</replaceable></parameter>.  Then, in the file 
 		specified by <replaceable>filename</replaceable>, map the 
 		name of the NT driver name to the OS/2 driver name as 
 		follows:</para>
 		
-		<para><command>nt driver name = os2 "driver 
-		name"."device name"</command>, e.g.:
-		HP LaserJet 5L = LASERJET.HP LaserJet 5L</para>
+	<para><parameter><replaceable>nt driver name</replaceable> = <replaceable>os2 driver name</replaceable>.<replaceable>device name</replaceable></parameter>, e.g.:</para>
+
+		<para><parameter>
+		HP LaserJet 5L = LASERJET.HP LaserJet 5L</parameter></para>
 
 		<para>You can have multiple drivers mapped in this file.</para>
 	
@@ -176,10 +159,16 @@ for workgroups.
 <para> 
 Microsoft has released an incremental upgrade to their TCP/IP 32-Bit
 VxD drivers.  The latest release can be found on their ftp site at
-ftp.microsoft.com, located in /peropsys/windows/public/tcpip/wfwt32.exe.
+ftp.microsoft.com, located in <filename>/peropsys/windows/public/tcpip/wfwt32.exe</filename>.
 There is an update.txt file there that describes the problems that were
-fixed.  New files include WINSOCK.DLL, TELNET.EXE, WSOCK.386, VNBT.386,
-WSTCP.386, TRACERT.EXE, NETSTAT.EXE, and NBTSTAT.EXE.
+fixed.  New files include <filename>WINSOCK.DLL</filename>, 
+<filename>TELNET.EXE</filename>, 
+<filename>WSOCK.386</filename>, 
+<filename>VNBT.386</filename>,
+<filename>WSTCP.386</filename>, 
+<filename>TRACERT.EXE</filename>, 
+<filename>NETSTAT.EXE</filename>, and 
+<filename>NBTSTAT.EXE</filename>.
 </para>
 
 </sect2>
@@ -210,10 +199,11 @@ Often WfWg will totally ignore a password you give it in a dialog box.
 <para>
 There is a program call admincfg.exe
 on the last disk (disk 8) of the WFW 3.11 disk set.  To install it
-type EXPAND A:\ADMINCFG.EX_ C:\WINDOWS\ADMINCFG.EXE Then add an icon
-for it via the "Progam Manager" "New" Menu.  This program allows you
-to control how WFW handles passwords.  ie disable Password Caching etc
-for use with <command>security = user</command>
+type <userinput>EXPAND A:\ADMINCFG.EX_ C:\WINDOWS\ADMINCFG.EXE</userinput>.
+Then add an icon
+for it via the <application>Program Manager</application> <guimenu>New</guimenu> Menu. 
+This program allows you to control how WFW handles passwords.  ie disable Password Caching etc
+for use with <parameter>security = user</parameter>
 </para>
 
 </sect2>
@@ -221,7 +211,7 @@ for use with <command>security = user</command>
 <sect2>
 <title>Case handling of passwords</title>
 
-<para>Windows for Workgroups uppercases the password before sending it to the server. Unix passwords can be case-sensitive though. Check the <ulink url="smb.conf.5.html">smb.conf(5)</ulink> information on <command>password level</command> to specify what characters samba should try to uppercase when checking.</para>
+<para>Windows for Workgroups uppercases the password before sending it to the server. Unix passwords can be case-sensitive though. Check the <ulink url="smb.conf.5.html">smb.conf(5)</ulink> information on <parameter>password level</parameter> to specify what characters samba should try to uppercase when checking.</para>
 
 </sect2>
 
@@ -240,8 +230,9 @@ It is presumably a WfWg bug.</para>
 <title>Speed improvement</title>
 
 <para>
-Note that some people have found that setting DefaultRcvWindow in
-the [MSTCP] section of the SYSTEM.INI file under WfWg to 3072 gives a
+Note that some people have found that setting <parameter>DefaultRcvWindow</parameter> in
+the <parameter>[MSTCP]</parameter> section of the 
+<filename>SYSTEM.INI</filename> file under WfWg to 3072 gives a
 big improvement. I don't know why.
 </para>
 
@@ -270,16 +261,17 @@ Microsoft Web site for all currently available updates to your specific version
 of Windows 95.
 </para>
 
-<orderedlist>
-<listitem><para>Kernel Update: KRNLUPD.EXE</para></listitem>
-<listitem><para>Ping Fix: PINGUPD.EXE</para></listitem>
-<listitem><para>RPC Update: RPCRTUPD.EXE</para></listitem>
-<listitem><para>TCP/IP Update: VIPUPD.EXE</para></listitem>
-<listitem><para>Redirector Update: VRDRUPD.EXE</para></listitem>
-</orderedlist>
+<simplelist>
+<member>Kernel Update: KRNLUPD.EXE</member>
+<member>Ping Fix: PINGUPD.EXE</member>
+<member>RPC Update: RPCRTUPD.EXE</member>
+<member>TCP/IP Update: VIPUPD.EXE</member>
+<member>Redirector Update: VRDRUPD.EXE</member>
+</simplelist>
 
 <para>
-Also, if using MS OutLook it is desirable to install the OLEUPD.EXE fix. This
+Also, if using <application>MS OutLook</application> it is desirable to 
+install the <command>OLEUPD.EXE</command> fix. This
 fix may stop your machine from hanging for an extended period when exiting
 OutLook and you may also notice a significant speedup when accessing network
 neighborhood services.
@@ -290,7 +282,7 @@ neighborhood services.
 
 <para>
 Configure the win95 TCPIP registry settings to give better
-performance. I use a program called MTUSPEED.exe which I got off the
+performance. I use a program called <command>MTUSPEED.exe</command> which I got off the
 net. There are various other utilities of this type freely available.
 </para>
 
@@ -312,7 +304,7 @@ likely occur if it is not.
 <para> 
 In order to serve profiles successfully to Windows 2000 SP2 
 clients (when not operating as a PDC), Samba must have 
-<command>nt acl support = no</command>
+<parameter>nt acl support = no</parameter>
 added to the file share which houses the roaming profiles.
 If this is not done, then the Windows 2000 SP2 client will
 complain about not being able to access the profile (Access 
@@ -320,7 +312,7 @@ Denied) and create multiple copies of it on disk (DOMAIN.user.001,
 DOMAIN.user.002, etc...).  See the 
 <ulink url="smb.conf.5.html">smb.conf(5)</ulink> man page
 for more details on this option.  Also note that the 
-<command>nt acl support</command> parameter was formally a global parameter in
+<parameter>nt acl support</parameter> parameter was formally a global parameter in
 releases prior to Samba 2.2.2.
 </para>
 
@@ -343,17 +335,17 @@ the security descriptor for the profile which contains
 the Samba server's SID, and not the domain SID.  The client
 compares the SID for SAMBA\user and realizes it is
 different that the one assigned to DOMAIN\user.  Hence the reason
-for the "access denied" message.
+for the <errorname>access denied</errorname> message.
 </para>
 
 <para>
-By disabling the <command>nt acl support</command> parameter, Samba will send
+By disabling the <parameter>nt acl support</parameter> parameter, Samba will send
 the Win2k client a response to the QuerySecurityDescriptor
 trans2 call which causes the client to set a default ACL
 for the profile. This default ACL includes 
 </para>
 
-<para><command>DOMAIN\user 	"Full Control"</command></para>
+<para><emphasis>DOMAIN\user 	"Full Control"</emphasis>></para>
 
 <note><para>This bug does not occur when using winbind to
 create accounts on the Samba host for Domain users.</para></note>

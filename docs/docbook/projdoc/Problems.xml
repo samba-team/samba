@@ -26,15 +26,15 @@ general SMB topics such as browsing.</para>
 
   <para>
 One of the best diagnostic tools for debugging problems is Samba itself.  
-You can use the -d option for both smbd and nmbd to specify what 
-'debug level' at which to run.  See the man pages on smbd, nmbd  and 
+You can use the <option>-d option</option> for both &smbd; and &nmbd; to specify what 
+<parameter>debug level</parameter> at which to run.  See the man pages on smbd, nmbd  and 
 smb.conf for more information on debugging options.  The debug 
 level can range from 1 (the default) to 10 (100 for debugging passwords).
 </para>
 	
 <para>
 Another helpful method of debugging is to compile samba using the 
-<command>gcc -g </command> flag.   This will include debug 
+<userinput>gcc -g </userinput> flag.   This will include debug 
 information in the binaries and allow you to attach gdb to the 
 running smbd / nmbd process.  In order to attach gdb to an smbd 
 process for an NT workstation, first get the workstation to make the 
@@ -51,10 +51,10 @@ typing in your password, you can attach gdb and continue.
 Some useful samba commands worth investigating:
 </para>
 	
-<itemizedlist>
-	<listitem><para>testparam | more</para></listitem>
-	<listitem><para>smbclient -L //{netbios name of server}</para></listitem>
-</itemizedlist>
+<screen>
+	<prompt>$ </prompt><userinput>testparam | more</userinput>
+	<prompt>$ </prompt><userinput>smbclient -L //{netbios name of server}</userinput>
+</screen>
    
 <para>
 An SMB enabled version of tcpdump is available from 
@@ -91,18 +91,18 @@ NT Server 4.0 Install CD and the Workstation 4.0 Install CD.
 </para> 
 
 <para>
-Initially you will need to install 'Network Monitor Tools and Agent' 
+Initially you will need to install <application>Network Monitor Tools and Agent</application>
 on the NT Server.  To do this 
 </para>
 
 <itemizedlist>
-	<listitem><para>Goto Start - Settings - Control Panel - 
-	Network - Services - Add </para></listitem>
+	<listitem><para>Goto <guibutton>Start</guibutton> - <guibutton>Settings</guibutton> - <guibutton>Control Panel</guibutton> - 
+	<guibutton>Network</guibutton> - <guibutton>Services</guibutton> - <guibutton>Add</guibutton> </para></listitem>
 	
-	<listitem><para>Select the 'Network Monitor Tools and Agent' and 
-	click on 'OK'.</para></listitem> 
+	<listitem><para>Select the <guilabel>Network Monitor Tools and Agent</guilabel> and 
+			click on <guibutton>OK</guibutton>.</para></listitem> 
 	
-	<listitem><para>Click 'OK' on the Network Control Panel.
+	<listitem><para>Click <guibutton>OK</guibutton> on the Network Control Panel.
 	</para></listitem> 
 	
 	<listitem><para>Insert the Windows NT Server 4.0 install CD 
@@ -124,13 +124,13 @@ install CD.
 </para>
 
 <itemizedlist>
-	<listitem><para>Goto Start - Settings - Control Panel - 
-	Network - Services - Add</para></listitem> 
+	<listitem><para>Goto <guibutton>Start</guibutton> - <guibutton>Settings</guibutton> - <guibutton>Control Panel</guibutton> - 
+			<guibutton>Network</guibutton> - <guibutton>Services</guibutton> - <guibutton>Add</guibutton></para></listitem> 
 
-	<listitem><para>Select the 'Network Monitor Agent' and click 
-	on 'OK'.</para></listitem> 
+	<listitem><para>Select the <guilabel>Network Monitor Agent</guilabel> and click 
+			on <guibutton>OK</guibutton>.</para></listitem> 
 	
-	<listitem><para>Click 'OK' on the Network Control Panel.
+	<listitem><para>Click <guibutton>OK</guibutton> on the Network Control Panel.
 	</para></listitem> 
 	
 	<listitem><para>Insert the Windows NT Workstation 4.0 install 
@@ -138,15 +138,15 @@ install CD.
 </itemizedlist>
 
 <para>
-Now copy the files from the NT Server in %SYSTEMROOT%\System32\netmon\*.* 
-to %SYSTEMROOT%\System32\netmon\*.* on the Workstation and set 
-permissions as  you deem appropriate for your site. You will need 
+Now copy the files from the NT Server in <filename>%SYSTEMROOT%\System32\netmon\*.*</filename>
+to <filename>%SYSTEMROOT%\System32\netmon\*.*</filename> on the Workstation and set 
+permissions as you deem appropriate for your site. You will need 
 administrative rights on the NT box to run netmon.
 </para>
 
 <para>
 To install Netmon on a Windows 9x box install the network monitor agent 
-from the Windows 9x CD (\admin\nettools\netmon).  There is a readme 
+from the Windows 9x CD (<filename>\admin\nettools\netmon</filename>).  There is a readme 
 file located with the netmon driver files on the CD if you need 
 information on how to do this.  Copy the files from a working 
 Netmon installation.
@@ -158,32 +158,16 @@ Netmon installation.
 <title>Useful URL's</title>
 <itemizedlist>
 
-<listitem><para>Home of Samba site <ulink url="http://samba.org">
-      http://samba.org</ulink>. We have a mirror near you !</para></listitem>
-
-<listitem><para> The <emphasis>Development</emphasis> document 
-on the Samba mirrors might mention your problem. If so,
-it might mean that the developers are working on it.</para></listitem>
-
 <listitem><para>See how Scott Merrill simulates a BDC behavior at 
        <ulink url="http://www.skippy.net/linux/smb-howto.html">
        http://www.skippy.net/linux/smb-howto.html</ulink>. </para></listitem>
-
-<listitem><para>Although 2.0.7 has almost had its day as a PDC, David Bannon will
-       keep the 2.0.7 PDC pages at <ulink url="http://bioserve.latrobe.edu.au/samba">
-       http://bioserve.latrobe.edu.au/samba</ulink> going for a while yet.</para></listitem>
-
-<listitem><para>Misc links to CIFS information 
-       <ulink url="http://samba.org/cifs/">http://samba.org/cifs/</ulink></para></listitem>
-
-<listitem><para>NT Domains for Unix <ulink url="http://mailhost.cb1.com/~lkcl/ntdom/">
-       http://mailhost.cb1.com/~lkcl/ntdom/</ulink></para></listitem>
 
 <listitem><para>FTP site for older SMB specs: 
        <ulink url="ftp://ftp.microsoft.com/developr/drg/CIFS/">
        ftp://ftp.microsoft.com/developr/drg/CIFS/</ulink></para></listitem>
 
 </itemizedlist>
+<!-- FIXME: Merge with Further Resources -->
 
 </sect1>
 

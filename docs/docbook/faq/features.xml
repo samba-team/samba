@@ -3,66 +3,6 @@
 <title>Features</title>
 
 <sect1>
-<title>How can I prevent my samba server from being used to distribute the Nimda worm?</title>
-
-<para>Author: HASEGAWA Yosuke (translated by <ulink url="monyo@samba.gr.jp">TAKAHASHI Motonobu</ulink>)</para>
-
-<para>
-Nimba Worm is infected through shared disks on a network, as well as through
-Microsoft IIS, Internet Explorer and mailer of Outlook series.
-</para>
-
-<para>
-At this time, the worm copies itself by the name *.nws and *.eml on
-the shared disk, moreover, by the name of Riched20.dll in the folder
-where *.doc file is included.
-</para>
-
-<para>
-To prevent infection through the shared disk offered by Samba, set
-up as follows:
-</para>
-
-<para>
-<programlisting>
-[global]
-  ...
-  # This can break Administration installations of Office2k.
-  # in that case, don't veto the riched20.dll
-  veto files = /*.eml/*.nws/riched20.dll/
-</programlisting>
-</para>
-
-<para>
-By setting the "veto files" parameter, matched files on the Samba
-server are completely hidden from the clients and making it impossible
-to access them at all.
-</para>
-
-<para>
-In addition to it, the following setting is also pointed out by the
-samba-jp:09448 thread: when the
-"readme.txt.{3050F4D8-98B5-11CF-BB82-00AA00BDCE0B}" file exists on
-a Samba server, it is visible only as "readme.txt" and dangerous
-code may be executed if this file is double-clicked.
-</para>
-
-<para>
-Setting the following,
-<programlisting>
-  veto files = /*.{*}/
-</programlisting>
-any files having CLSID in its file extension will be inaccessible from any
-clients.
-</para>
-
-<para>
-This technical article is created based on the discussion of
-samba-jp:09448 and samba-jp:10900 threads.
-</para>
-</sect1>
-
-<sect1>
 <title>How can I use samba as a fax server?</title>
 
 <para>Contributor: <ulink url="mailto:zuber@berlin.snafu.de">Gerhard Zuber</ulink></para>

@@ -225,7 +225,7 @@ Server Manager for Domains.
 <para>
 Since version 2.2 Samba officially supports domain logons for all current Windows Clients,
 including Windows NT4, 2003 and XP Professional. For samba to be enabled as a PDC some
-parameters in the [global]-section of the smb.conf have to be set:
+parameters in the <parameter>[global]</parameter>-section of the &smb.conf; have to be set:
 </para>
 
 <para><programlisting>
@@ -235,7 +235,7 @@ parameters in the [global]-section of the smb.conf have to be set:
 </programlisting></para>
 
 <para>
-Several other things like a [homes] and a [netlogon] share also need to be set along with
+Several other things like a <parameter>[homes]</parameter> and a <parameter>[netlogon]</parameter> share also need to be set along with
 settings for the profile path, the users home drive, etc.. This will not be covered in this
 chapter, for more information please refer to the chapter on Domain Control.
 </para>
@@ -343,14 +343,13 @@ Finally, the BDC has to be found by the workstations. This can be done by settin
 </para>
 
 <para><programlisting>
-<title>Essential Parameters for BDC Operation</title>
 	workgroup = SAMBA
 	domain master = no
 	domain logons = yes
 </programlisting></para>
 
 <para>
-in the [global]-section of the smb.conf of the BDC. This makes the BDC
+in the <parameter>[global]</parameter>-section of the &smb.conf; of the BDC. This makes the BDC
 only register the name SAMBA&lt;#1c&gt; with the WINS server. This is no
 problem as the name SAMBA&lt;#1c&gt; is a NetBIOS group name that is meant to
 be registered by more than one machine. The parameter 'domain master =
@@ -365,7 +364,7 @@ name is reserved for the Primary Domain Controller.
 <title>Common Errors</title>
 
 <para>
-As this is a rather new area for Samba there are not many examples thta we may refer to. Keep
+As this is a rather new area for Samba there are not many examples that we may refer to. Keep
 watching for updates to this section.
 </para>
 

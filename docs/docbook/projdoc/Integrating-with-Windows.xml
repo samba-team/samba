@@ -24,6 +24,26 @@ NetBIOS over TCP/IP then this section may help you to resolve networking problem
 </para>
 </note>
 
+<sect1>
+<title>Features and Benefits</title>
+
+<para>
+Many MS Windows network administrators have never been exposed to basic TCP/IP
+networking as it is implemented in a Unix/Linux operating system. Likewise, many Unix and
+Linux adminsitrators have not been exposed to the intricacies of MS Windows TCP/IP based
+networking (and may have no desire to be either).
+</para>
+
+<para>
+This chapter gives a short introduction to the basics of how a name can be resolved to 
+it's IP address for each operating system environment.
+</para>
+
+</sect1>
+
+<sect1>
+<title>Background Information</title>
+
 <para>
 Since the introduction of MS Windows 2000 it is possible to run MS Windows networking
 without the use of NetBIOS over TCP/IP. NetBIOS over TCP/IP uses UDP port 137 for NetBIOS
@@ -48,6 +68,7 @@ Use of DHCP with ADS is recommended as a further means of maintaining central co
 over client workstation network configuration.
 </para>
 
+</sect1>
 
 <sect1>
 <title>Name Resolution in a pure Unix/Linux world</title>
@@ -70,10 +91,10 @@ The key configuration files covered in this section are:
 Contains a static list of IP Addresses and names.
 eg:
 </para>
-<para><programlisting>
+<para><screen>
 	127.0.0.1	localhost localhost.localdomain
 	192.168.1.1	bigbox.caldera.com	bigbox	alias4box
-</programlisting></para>
+</screen></para>
 
 <para>
 The purpose of <filename>/etc/hosts</filename> is to provide a 
@@ -87,7 +108,7 @@ Network packets that are sent over the physical network transport
 layer communicate not via IP addresses but rather using the Media 
 Access Control address, or MAC address. IP Addresses are currently 
 32 bits in length and are typically presented as four (4) decimal 
-numbers that are separated by a dot (or period). eg: 168.192.1.1
+numbers that are separated by a dot (or period). eg: 168.192.1.1.
 </para>
 
 <para>
@@ -97,7 +118,7 @@ as two digit hexadecimal numbers separated by colons. eg:
 </para>
 
 <para>
-Every network interfrace must have an MAC address. Associated with 
+Every network interface must have an MAC address. Associated with 
 a MAC address there may be one or more IP addresses. There is NO 
 relationship between an IP address and a MAC address, all such assignments 
 are arbitary or discretionary in nature. At the most basic level all 
@@ -181,10 +202,10 @@ critical configuration file.  This file controls the order by
 which name resolution may procede. The typical structure is:
 </para>
 
-<para><programlisting>
+<para><screen>
 	order hosts,bind
 	multi on
-</programlisting></para>
+</screen></para>
 
 <para>
 then both addresses should be returned. Please refer to the 
@@ -205,7 +226,7 @@ file typically has resolver object specifications as follows:
 </para>
 
 
-<para><programlisting>
+<para><screen>
 	# /etc/nsswitch.conf
 	#
 	# Name Service Switch configuration file.
@@ -226,7 +247,7 @@ file typically has resolver object specifications as follows:
 	protocols:	nis files
 	rpc:		nis files
 	services:	nis files
-</programlisting></para>
+</screen></para>
 
 <para>
 Of course, each of these mechanisms requires that the appropriate 
@@ -244,8 +265,8 @@ Starting with version 2.2.0 samba has Linux support for extensions to
 the name service switch infrastructure so that linux clients will 
 be able to obtain resolution of MS Windows NetBIOS names to IP 
 Addresses. To gain this functionality Samba needs to be compiled 
-with appropriate arguments to the make command (ie: <command>make 
-nsswitch/libnss_wins.so</command>). The resulting library should 
+with appropriate arguments to the make command (ie: <userinput>make 
+nsswitch/libnss_wins.so</userinput>). The resulting library should 
 then be installed in the <filename>/lib</filename> directory and 
 the "wins" parameter needs to be added to the "hosts:" line in 
 the <filename>/etc/nsswitch.conf</filename> file. At this point it 
@@ -280,7 +301,7 @@ the client/server.
 The following are typical NetBIOS name/service type registrations:
 </para>
 
-<para><programlisting>
+<para><screen>
 	Unique NetBIOS Names:
 		MACHINENAME&lt;00&gt;	= Server Service is running on MACHINENAME
 		MACHINENAME&lt;03&gt; = Generic Machine Name (NetBIOS name)
@@ -292,7 +313,7 @@ The following are typical NetBIOS name/service type registrations:
 		WORKGROUP&lt;1c&gt; = Domain Controllers / Netlogon Servers
 		WORKGROUP&lt;1d&gt; = Local Master Browsers
 		WORKGROUP&lt;1e&gt; = Internet Name Resolvers
-</programlisting></para>
+</screen></para>
 
 <para>
 It should be noted that all NetBIOS machines register their own 
@@ -372,7 +393,7 @@ frustrating for users - but it is a characteristic of the protocol.
 <para>
 The MS Windows utility that allows examination of the NetBIOS 
 name cache is called "nbtstat". The Samba equivalent of this 
-is called "nmblookup".
+is called <command>nmblookup</command>.
 </para>
 
 </sect2>
@@ -392,7 +413,7 @@ to IP address mapping.
 It typically looks like:
 </para>
 
-<para><programlisting>
+<para><screen>
 	# Copyright (c) 1998 Microsoft Corp.
 	#
 	# This is a sample LMHOSTS file used by the Microsoft Wins Client (NetBIOS
@@ -469,7 +490,7 @@ It typically looks like:
 	# so keeping the number of comments to a minimum will improve performance.
 	# Therefore it is not advisable to simply add lmhosts file entries onto the
 	# end of this file.
-</programlisting></para>
+</screen></para>
 
 </sect2>
 
@@ -520,19 +541,19 @@ To configure Samba to be a WINS server the following parameter needs
 to be added to the &smb.conf; file:
 </para>
 
-<para><programlisting>
+<para><screen>
 	wins support = Yes
-</programlisting></para>
+</screen></para>
 
 <para>
 To configure Samba to use a WINS server the following parameters are 
 needed in the &smb.conf; file:
 </para>
 
-<para><programlisting>
+<para><screen>
 	wins support = No
 	wins server = xxx.xxx.xxx.xxx
-</programlisting></para>
+</screen></para>
 
 <para>
 where <replaceable>xxx.xxx.xxx.xxx</replaceable> is the IP address 
@@ -540,6 +561,116 @@ of the WINS server.
 </para>
 
 </sect2>
+</sect1>
+
+<sect1>
+<title>Common Errors</title>
+
+<para>
+TCP/IP network configuration problems find every network administrator sooner or later.
+The cause can be anything from keybaord mishaps, forgetfulness, simple mistakes, and
+carelessness. Of course, noone is every deliberately careless!
+</para>
+
+	<sect2>
+	<title>My Boomerang Won't Come Back</title>
+
+	<para>
+	Well, the real complaint said, "I can ping my samba server from Windows, but I can
+	not ping my Windows machine from the samba server."
+	</para>
+
+	<para>
+	The Windows machine was at IP Address 192.168.1.2 with netmask 255.255.255.0, the
+	Samba server (Linux) was at IP Address 192.168.1.130 with netmast 255.255.255.128.
+	The machines were on a local network with no external connections.
+	</para>
+
+	<para>
+	Due to inconsistent netmasks, the Windows machine was on network 192.168.1.0/24, while
+	the Samba server was on network 192.168.1.128/25 - logically a different network.
+	</para>
+
+	</sect2>
+
+	<sect2>
+	<title>Very Slow Network Connections</title>
+
+	<para>
+	A common causes of slow network response includes:
+	</para>
+
+	<itemizedlist>
+		<listitem><para>Client is configured to use DNS and DNS server is down</para></listitem>
+		<listitem><para>Client is configured to use remote DNS server, but remote connection is down</para></listitem>
+		<listitem><para>Client is configured to use a WINS server, but there is no WINS server</para></listitem>
+		<listitem><para>Client is NOT configured to use a WINS server, but there is a WINS server</para></listitem>
+		<listitem><para>Firewall is filtering our DNS or WINS traffic</para></listitem>
+	</itemizedlist>
+
+	</sect2>
+
+	<sect2>
+	<title>Samba server name change problem</title>
+
+	<para>
+	The name of the samba server was changed, samba was restarted, samba server can not be
+	pinged by new name from MS Windows NT4 Workstation, but it does still respond to ping using
+	the old name. Why?
+	</para>
+
+	<para>
+	From this description three (3) things are rather obvious:
+	</para>
+
+	<itemizedlist>
+		<listitem><para>WINS is NOT in use, only broadcast based name resolution is used</para></listitem>
+		<listitem><para>The samba server was renamed and restarted within the last 10-15 minutes</para></listitem>
+		<listitem><para>The old samba server name is still in the NetBIOS name cache on the MS Windows NT4 Workstation</para></listitem>
+	</itemizedlist>
+
+	<para>
+	To find what names are present in the NetBIOS name cache on the MS Windows NT4 machine,
+	open a cmd shell, then:
+	</para>
+
+	<para>
+	<screen>
+	C:\temp\&gt;nbtstat -n
+
+	              NetBIOS Local Name Table
+
+	   Name                 Type          Status
+	------------------------------------------------
+	SLACK            &lt;03&gt;  UNIQUE      Registered
+	ADMININSTRATOR   &lt;03&gt;  UNIQUE      Registered
+	SLACK            &lt;00&gt;  UNIQUE      Registered
+	SARDON           &lt;00&gt;  GROUP       Registered
+	SLACK            &lt;20&gt;  UNIQUE      Registered
+	SLACK            &lt;1F&gt;  UNIQUE      Registered
+
+
+	C:\Temp\&gt;nbtstat -c
+
+	             NetBIOS Remote Cache Name Table
+
+	   Name                 Type       Host Address     Life [sec]
+	--------------------------------------------------------------
+	FRODO            &lt;20&gt;  UNIQUE      192.168.1.1          240
+
+	C:\Temp\&gt;
+	</screen>
+	</para>
+
+	<para>
+	In the above example, FRODO is the Samba server and SLACK is the MS Windows NT4 Workstation.
+	The first listing shows the contents of the Local Name Table (ie: Identity information on
+	the MS Windows workstation), the second shows the NetBIOS name in the NetBIOS name cache.
+	The name cache contains the remote machines known to this workstation.
+	</para>
+
+	</sect2>
+
 </sect1>
 
 </chapter>

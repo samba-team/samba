@@ -5,7 +5,8 @@
 >Portability</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
@@ -13,8 +14,8 @@ REL="UP"
 TITLE="Appendixes"
 HREF="appendixes.html"><LINK
 REL="PREVIOUS"
-TITLE="Migration from NT4 PDC to Samba-3 PDC"
-HREF="nt4migration.html"><LINK
+TITLE="Appendixes"
+HREF="appendixes.html"><LINK
 REL="NEXT"
 TITLE="Samba and other CIFS clients"
 HREF="other-clients.html"></HEAD
@@ -45,7 +46,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="nt4migration.html"
+HREF="appendixes.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -72,48 +73,7 @@ WIDTH="100%"></DIV
 CLASS="CHAPTER"
 ><H1
 ><A
-NAME="PORTABILITY"
-></A
->Chapter 29. Portability</H1
-><DIV
-CLASS="TOC"
-><DL
-><DT
-><B
->Table of Contents</B
-></DT
-><DT
->29.1. <A
-HREF="portability.html#AEN4444"
->HPUX</A
-></DT
-><DT
->29.2. <A
-HREF="portability.html#AEN4450"
->SCO Unix</A
-></DT
-><DT
->29.3. <A
-HREF="portability.html#AEN4454"
->DNIX</A
-></DT
-><DT
->29.4. <A
-HREF="portability.html#AEN4483"
->RedHat Linux Rembrandt-II</A
-></DT
-><DT
->29.5. <A
-HREF="portability.html#AEN4489"
->AIX</A
-></DT
-><DT
->29.6. <A
-HREF="portability.html#AEN4495"
->Solaris</A
-></DT
-></DL
-></DIV
+NAME="PORTABILITY">Chapter 23. Portability</H1
 ><P
 >Samba works on a wide range of platforms but the interface all the 
 platforms provide is not always compatible. This chapter contains 
@@ -123,9 +83,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4444"
->29.1. HPUX</A
-></H1
+NAME="AEN3139">23.1. HPUX</H1
 ><P
 >HP's implementation of supplementary groups is, er, non-standard (for
 hysterical reasons).  There are two group files, /etc/group and
@@ -153,9 +111,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4450"
->29.2. SCO Unix</A
-></H1
+NAME="AEN3145">23.2. SCO Unix</H1
 ><P
 > 
 If you run an old version of  SCO Unix then you may need to get important 
@@ -170,9 +126,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4454"
->29.3. DNIX</A
-></H1
+NAME="AEN3149">23.3. DNIX</H1
 ><P
 >DNIX has a problem with seteuid() and setegid(). These routines are
 needed for Samba to work correctly, but they were left out of the DNIX
@@ -277,9 +231,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4483"
->29.4. RedHat Linux Rembrandt-II</A
-></H1
+NAME="AEN3178">23.4. RedHat Linux Rembrandt-II</H1
 ><P
 >By default RedHat Rembrandt-II during installation adds an
 entry to /etc/hosts as follows:
@@ -295,60 +247,6 @@ is the master browse list holder and who is the master browser.</P
 ><P
 >Corrective Action:	Delete the entry after the word loopback
 	in the line starting 127.0.0.1</P
-></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN4489"
->29.5. AIX</A
-></H1
-><DIV
-CLASS="SECT2"
-><H2
-CLASS="SECT2"
-><A
-NAME="AEN4491"
->29.5.1. Sequential Read Ahead</A
-></H2
-><P
->Disabling Sequential Read Ahead using <KBD
-CLASS="USERINPUT"
->vmtune -r 0</KBD
-> improves 
-samba performance significally.</P
-></DIV
-></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN4495"
->29.6. Solaris</A
-></H1
-><P
->Some people have been experiencing problems with F_SETLKW64/fcntl 
-when running samba on solaris. The built in file locking mechanism was
-not scalable. Performance would degrade to the point where processes would
-get into loops of trying to lock a file. It woul try a lock, then fail,
-then try again. The lock attempt was failing before the grant was
-occurring. So the visible manifestation of this would be a handful of
-processes stealing all of the CPU, and when they were trussed they would
-be stuck if F_SETLKW64 loops.</P
-><P
->Sun released patches for Solaris 2.6, 8, and 9. The patch for Solaris 7
-has not been released yet.</P
-><P
->The patch revision for 2.6 is 105181-34
-for 8 is 108528-19
-and for 9 is 112233-04</P
-><P
->After the install of these patches it is recommended to reconfigure
-and rebuild samba.</P
-><P
->Thanks to Joe Meslovich for reporting</P
 ></DIV
 ></DIV
 ><DIV
@@ -367,7 +265,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="nt4migration.html"
+HREF="appendixes.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -395,7 +293,7 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->Migration from NT4 PDC to Samba-3 PDC</TD
+>Appendixes</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"

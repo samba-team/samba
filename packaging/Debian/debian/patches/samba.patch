@@ -49,7 +49,7 @@ diff -uNr samba-3.0alpha23.orig/source/script/installbin.sh samba-3.0alpha23/sou
 diff -uNr samba-3.0alpha23.orig/source/smbd/service.c samba-3.0alpha23/source/smbd/service.c
 --- samba-3.0alpha23.orig/source/smbd/service.c	2003-03-30 20:28:31.000000000 -0600
 +++ samba-3.0alpha23/source/smbd/service.c	2003-04-04 21:05:58.000000000 -0600
-@@ -895,6 +895,14 @@
+@@ -888,6 +888,14 @@
  		change_to_root_user();
  	}
  

@@ -299,7 +299,7 @@ Comma Separated list of Files
 		<listitem><para>Execute an EnumPrinters() call.  This lists the various installed 
 		and share printers.  Refer to the MS Platform SDK documentation for 
 		more details of the various flags and calling options. Currently
-		supported info levels are 0, 1, and 2.</para></listitem></varlistentry>
+		supported info levels are 1, 2 and 5.</para></listitem></varlistentry>
 
 
 

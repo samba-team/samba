@@ -1,8 +1,8 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
-|	$Id: graphic.mod.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $
+|	$Id: graphic.mod.xsl,v 1.1.4.1 2003/06/06 15:08:20 jerry Exp $
 |- #############################################################################
-|	$Author: ab $
+|	$Author: jerry $
 |														
 |   PURPOSE:
 + ############################################################################## -->
@@ -18,7 +18,7 @@
     <doc:reference id="graphic" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
-		$Id: graphic.mod.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $
+		$Id: graphic.mod.xsl,v 1.1.4.1 2003/06/06 15:08:20 jerry Exp $
 	    </releaseinfo>
 	<authorgroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>

@@ -1,53 +1,235 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 12. Configuring Group Mapping</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.59.1"><link rel="home" href="index.html" title="SAMBA Project Documentation"><link rel="up" href="optional.html" title="Part III. Advanced Configuration"><link rel="previous" href="unix-permissions.html" title="Chapter 11. UNIX Permission Bits and Windows NT Access Control Lists"><link rel="next" href="printing.html" title="Chapter 13. Printing Support"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 12. Configuring Group Mapping</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="unix-permissions.html">Prev</a> </td><th width="60%" align="center">Part III. Advanced Configuration</th><td width="20%" align="right"> <a accesskey="n" href="printing.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><h2 class="title"><a name="groupmapping"></a>Chapter 12. Configuring Group Mapping</h2></div><div><div class="author"><h3 class="author">Jean François Micouleau</h3></div></div><div><div class="author"><h3 class="author">Gerald (Jerry) Carter</h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt>&lt;<a href="mailto:jerry@samba.org">jerry@samba.org</a>&gt;</tt></p></div></div></div></div></div><p>
-Starting with Samba 3.0 alpha 2, new group mapping functionality
-is available to create associations between Windows SIDs and UNIX
-groups. The <i><tt>groupmap</tt></i> subcommand included with
-the <b>net</b> tool can be used to manage these associations.
-</p><p>
-The first immediate reason to use the group mapping on a Samba PDC, is that
-the <i><tt>domain admin group</tt></i> <tt>smb.conf</tt> has been removed.
-This parameter was used to give the listed users membership in the &quot;Domain Admins&quot;
-Windows group which gave local admin rights on their workstations (in
-default configurations).
-</p><p>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML
+><HEAD
+><TITLE
+>Group mapping HOWTO</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="SAMBA Project Documentation"
+HREF="samba-howto-collection.html"><LINK
+REL="UP"
+TITLE="Optional configuration"
+HREF="optional.html"><LINK
+REL="PREVIOUS"
+TITLE="HOWTO Access Samba source code via CVS"
+HREF="cvs-access.html"><LINK
+REL="NEXT"
+TITLE="Samba performance issues"
+HREF="speed.html"></HEAD
+><BODY
+CLASS="CHAPTER"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>SAMBA Project Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="cvs-access.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="speed.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="GROUPMAPPING">Chapter 21. Group mapping HOWTO</H1
+><P
+> 
+Starting with Samba 3.0 alpha 2, a new group mapping function is available. The
+current method (likely to change) to manage the groups is a new command called
+<B
+CLASS="COMMAND"
+>smbgroupedit</B
+>.</P
+><P
+>The first immediate reason to use the group mapping on a PDC, is that
+the <B
+CLASS="COMMAND"
+>domain admin group</B
+> of <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> is 
+now gone. This parameter was used to give the listed users local admin rights 
+on their workstations. It was some magic stuff that simply worked but didn't
+scale very well for complex setups.</P
+><P
+>Let me explain how it works on NT/W2K, to have this magic fade away.
 When installing NT/W2K on a computer, the installer program creates some users
 and groups. Notably the 'Administrators' group, and gives to that group some
 privileges like the ability to change the date and time or to kill any process
 (or close too) running on the local machine. The 'Administrator' user is a
 member of the 'Administrators' group, and thus 'inherit' the 'Administrators'
 group privileges. If a 'joe' user is created and become a member of the
-'Administrator' group, 'joe' has exactly the same rights as 'Administrator'.
-</p><p>
-When a NT/W2K machine is joined to a domain, the &quot;Domain Adminis&quot; group of the
-PDC is added to the local 'Administrators' group of the workstation. Every
-member of the 'Domain Administrators' group 'inherit' the
-rights of the local 'Administrators' group when logging on the workstation.
-</p><p>
-The following steps describe how to make samba PDC users members of the
-'Domain Admins' group?
-</p><div class="orderedlist"><ol type="1"><li><p>create a unix group (usually in <tt>/etc/group</tt>),
-  let's call it domadm</p></li><li><p>add to this group the users that must be Administrators. For example
-  if you want joe,john and mary, your entry in <tt>/etc/group</tt> will
-  look like:</p><pre class="programlisting">
-  domadm:x:502:joe,john,mary
-  </pre></li><li><p>Map this domadm group to the &quot;Domain Admins&quot; group
-  by running the command:</p><p><tt>root# </tt><b><tt>net groupmap add ntgroup=&quot;Domain Admins&quot; unixgroup=domadm</tt></b></p><p>The quotes around &quot;Domain Admins&quot; are necessary due to the space in the group name.  Also make
-  sure to leave no whitespace surrounding the equal character (=).</p></li></ol></div><p>Now joe, john and mary are domain administrators!</p><p>
-It is possible to map any arbitrary UNIX group to any Windows NT
-group as well as making any UNIX group a Windows domain group.
-For example, if you wanted to include a UNIX group (e.g. acct) in a ACL on a
-local file or printer on a domain member machine, you would flag
-that group as a domain group by running the following on the Samba PDC:
-</p><p><tt>root# </tt><b><tt>net groupmap add rid=1000 ntgroup=&quot;Accounting&quot; unixgroup=acct</tt></b></p><p>Be aware that the rid parmeter is a unsigned 32 bit integer that should
-normally start at 1000.  However, this rid must not overlap with any RID assigned
-to a user.  Verifying this is done differently depending on on the passdb backend 
-you are using.  Future versions of the tools may perform the verification automatically,
-but for now the burden in on you.</p><p>You can list the various groups in the mapping database by executing 
-<b>net groupmap list</b>.  Here is an example:</p><pre class="programlisting"><tt>root# </tt>net groupmap list
-System Administrators (S-1-5-21-2547222302-1596225915-2414751004-1002) -&gt; sysadmin
-Domain Admins (S-1-5-21-2547222302-1596225915-2414751004-512) -&gt; domadmin
-Domain Users (S-1-5-21-2547222302-1596225915-2414751004-513) -&gt; domuser
-Domain Guests (S-1-5-21-2547222302-1596225915-2414751004-514) -&gt; domguest
-</pre><p>For complete details on <b>net groupmap</b>, refer to the 
-net(8) man page.</p></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="unix-permissions.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="optional.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="printing.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 11. UNIX Permission Bits and Windows NT Access Control Lists </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 13. Printing Support</td></tr></table></div></body></html>
+'Administrator' group, 'joe' has exactly the same rights as 'Administrator'.</P
+><P
+>When a NT/W2K machine is joined to a domain, during that phase, the "Domain
+Administrators' group of the PDC is added to the 'Administrators' group of the
+workstation. Every members of the 'Domain Administrators' group 'inherit' the
+rights of the 'Administrators' group when logging on the workstation.</P
+><P
+>You are now wondering how to make some of your samba PDC users members of the
+'Domain Administrators' ? That's really easy.</P
+><P
+></P
+><OL
+TYPE="1"
+><LI
+><P
+>create a unix group (usually in <TT
+CLASS="FILENAME"
+>/etc/group</TT
+>), let's call it domadm</P
+></LI
+><LI
+><P
+>add to this group the users that must be Administrators. For example if you want joe,john and mary, your entry in <TT
+CLASS="FILENAME"
+>/etc/group</TT
+> will look like:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>domadm:x:502:joe,john,mary</PRE
+></P
+></LI
+><LI
+><P
+>Map this domadm group to the <B
+CLASS="COMMAND"
+>domain admins</B
+> group by running the command:</P
+><P
+><B
+CLASS="COMMAND"
+>smbgroupedit -c "Domain Admins" -u domadm</B
+></P
+></LI
+></OL
+><P
+>You're set, joe, john and mary are domain administrators !</P
+><P
+>Like the Domain Admins group, you can map any arbitrary Unix group to any NT
+group. You can also make any Unix group a domain group. For example, on a domain
+member machine (an NT/W2K or a samba server running winbind), you would like to
+give access to a certain directory to some users who are member of a group on
+your samba PDC. Flag that group as a domain group by running:</P
+><P
+><B
+CLASS="COMMAND"
+>smbgroupedit -a unixgroup -td</B
+></P
+><P
+>You can list the various groups in the mapping database like this</P
+><P
+><B
+CLASS="COMMAND"
+>smbgroupedit -v</B
+></P
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="cvs-access.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="samba-howto-collection.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="speed.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>HOWTO Access Samba source code via CVS</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="optional.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Samba performance issues</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

@@ -16,6 +16,25 @@ possible for Samba-3 to NT4 trust (and vice versa), as well as Samba3 to Samba3 
 </para>
 
 <sect1>
+<title>Features and Benefits</title>
+
+<para>
+Samba-3 can participate in Samba-to-Samba as well as in Samba-to-MS Windows NT4 style
+trust relationships. This imparts to Samba similar scalability as is possible with
+MS Windows NT4.
+</para>
+
+<para>
+Given that Samba-3 has the capability to function with a scalable backend authentication
+database such as LDAP, and given it's ability to run in Primary as well as Backup Domain control
+modes, the administrator would be well advised to consider alternatives to the use of
+Interdomain trusts simplt because by the very nature of how this works it is fragile.
+That was after all a key reason for the development and adoption of Microsoft Active Directory.
+</para>
+
+</sect1>
+
+<sect1>
 <title>Trust Relationship Background</title>
 
 <para>
@@ -76,13 +95,15 @@ There are two steps to creating an interdomain trust relationship.
 <title>NT4 as the Trusting Domain (ie. creating the trusted account)</title>
 
 <para>
-For MS Windows NT4, all domain trust relationships are configured using the Domain User Manager.
-To affect a two way trust relationship it is necessary for each domain administrator to make
-available (for use by an external domain) it's security resources. This is done from the Domain
-User Manager Policies entry on the menu bar. From the Policy menu, select Trust Relationships, then
-next to the lower box that is labelled "Permitted to Trust this Domain" are two buttons, "Add" and
-"Remove". The "Add" button will open a panel in which needs to be entered the remote domain that
-will be able to assign user rights to your domain. In addition it is necessary to enter a password
+For MS Windows NT4, all domain trust relationships are configured using the 
+<application>Domain User Manager</application>. To affect a two way trust relationship it is 
+necessary for each domain administrator to make available (for use by an external domain) it's 
+security resources. This is done from the Domain User Manager Policies entry on the menu bar. 
+From the <guimenu>Policy</guimenu> menu, select <guimenuitem>Trust Relationships</guimenuitem>, then
+next to the lower box that is labelled <guilabel>Permitted to Trust this Domain</guilabel> are two 
+buttons, <guibutton>Add</guibutton> and <guibutton>Remove</guibutton>. The <guibutton>Add</guibutton>
+button will open a panel in which needs to be entered the remote domain that will be able to assign
+user rights to your domain. In addition it is necessary to enter a password
 that is specific to this trust relationship. The password needs to be
 typed twice (for standard confirmation).
 </para>
@@ -96,8 +117,9 @@ typed twice (for standard confirmation).
 A trust relationship will work only when the other (trusting) domain makes the appropriate connections
 with the trusted domain. To consumate the trust relationship the administrator will launch the
 Domain User Manager, from the menu select Policies, then select Trust Relationships, then click on the
-"Add" button that is next to the box that is labelled "Trusted Domains". A panel will open in
-which must be entered the name of the remote domain as well as the password assigned to that trust.
+<guibutton>Add</guibutton> button that is next to the box that is labelled 
+<guilabel>Trusted Domains</guilabel>. A panel will open in which must be entered the name of the remote 
+domain as well as the password assigned to that trust.
 </para>
 
 </sect2>
@@ -133,14 +155,14 @@ will be to issue this command from your favourite shell:
 
 <para>
 <screen>
-<prompt>deity#</prompt> <userinput>smbpasswd -a -i rumba</userinput>
+&rootprompt; <userinput>smbpasswd -a -i rumba</userinput>
 	New SMB password: XXXXXXXX
 	Retype SMB password: XXXXXXXX
 	Added user rumba$
 </screen>
 
-where <parameter>-a</parameter> means to add a new account into the
-passdb database and <parameter>-i</parameter> means: ''create this
+where <option>-a</option> means to add a new account into the
+passdb database and <option>-i</option> means: ''create this
 account with the InterDomain trust flag''
 </para>
 
@@ -159,12 +181,15 @@ the trust by establishing it from Windows NT Server.
 </para>
 
 <para>
-Open 'User Manager for Domains' and from menu 'Policies' select 'Trust Relationships...'.
-Right beside 'Trusted domains' list box press 'Add...' button. You will be prompted for
+Open <application>User Manager for Domains</application> and from menu
+<guimenu>Policies</guimenu> select <guimenuitem>Trust Relationships...</guimenuitem>.
+Right beside <guilabel>Trusted domains</guilabel> list box press the 
+<guimenu>Add...</guimenu> button. You will be prompted for
 the trusted domain name and the relationship password. Type in SAMBA, as this is
 your domain name, and the password used at the time of account creation.
-Press OK and, if everything went without incident, you will see 'Trusted domain relationship
-successfully established' message.
+Press OK and, if everything went without incident, you will see 
+<computeroutput>Trusted domain relationship successfully 
+established</computeroutput> message.
 </para>
 
 </sect2>
@@ -181,9 +206,11 @@ The very first thing requirement is to add an account for the SAMBA domain on RU
 </para>
 
 <para>
-Launch the Domain User Manager, then from the menu select 'Policies', 'Trust Relationships'.
-Now, next to 'Trusted Domains' box press the 'Add' button, and type in the name of the trusted
-domain (SAMBA) and password securing the relationship.
+Launch the <application>Domain User Manager</application>, then from the menu select
+<guimenu>Policies</guimenu>, <guimenuitem>Trust Relationships</guimenuitem>.
+Now, next to <guilabel>Trusted Domains</guilabel> box press the <guibutton>Add</guibutton>
+button, and type in the name of the trusted domain (SAMBA) and password securing
+the relationship.
 </para>
 
 <para>
@@ -197,7 +224,7 @@ Using your favourite shell while being logged in as root, issue this command:
 </para>
 
 <para>
-<prompt>deity# </prompt><userinput>net rpc trustdom establish rumba</userinput>
+&rootprompt;<userinput>net rpc trustdom establish rumba</userinput>
 </para>
 
 <para>
@@ -207,8 +234,8 @@ Do not worry if you see an error message that mentions a returned code of
 password you gave is correct and the NT4 Server says the account is
 ready for interdomain connection and not for ordinary
 connection. After that, be patient it can take a while (especially
-in large networks), you should see the 'Success' message. Congratulations! Your trust
-relationship has just been established.
+in large networks), you should see the <computeroutput>Success</computeroutput> message.
+Congratulations! Your trust relationship has just been established.
 </para>
 
 <note><para>
@@ -217,6 +244,50 @@ the <filename>secrets.tdb</filename> file.
 </para></note>
 
 </sect2>
+</sect1>
+
+<sect1>
+<title>Common Errors</title>
+
+<para>
+Interdomain trust relationships should NOT be attempted on networks that are unstable
+or that suffer regular outages. Network stability and integrity are key concerns with
+distributed trusted domains.
+</para>
+
+	<sect2>
+	<title>Tell me about Trust Relationships using Samba</title>
+
+	<para>
+	Like many, I administer multiple LANs connected together using NT trust
+	relationships.  This was implemented about 4 years ago.  I now have the
+	occasion to consider performing this same task again, but this time, I
+	would like to implement it solely through samba - no Microsoft PDCs
+	anywhere.
+	</para>
+
+	<para>
+	I have read documentation on samba.org regarding NT-style trust
+	relationships and am now wondering, can I do what I want to?  I already
+	have successfully implemented 2 samba servers, but they are not PDCs.
+	They merely act as file servers.  I seem to remember, and it appears to
+	be true (according to samba.org) that trust relationships are a
+	challenge.
+	</para>
+
+	<para>
+	Please provide any helpful feedback that you may have.
+	</para>
+
+	<para>
+	These are almost complete in Samba 3.0 snapshots.  The main catch
+	is getting winbindd to be able to allocate uid/gid's for trusted
+	users/groups.  See the updated Samba HOWTO collection for more
+	details.
+	</para>
+
+	</sect2>
+
 </sect1>
 
 </chapter>

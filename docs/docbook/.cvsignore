@@ -2,5 +2,3 @@ Makefile
 config.cache
 config.log
 config.status
-samba-doc.*
-dev-doc.*

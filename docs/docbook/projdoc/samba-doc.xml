@@ -9,10 +9,6 @@
 
 <bookinfo>
 	<authorgroup>
-	<author>
-		<othername>SAMBA Team</othername>
-		<affiliation><address><email>samba@samba.org</email></address></affiliation>
-	</author>
 	<editor>&person.jelmer;</editor>
 	<editor>&person.jht;</editor>
 	<editor>&person.jerry;</editor>
@@ -28,7 +24,7 @@ The most recent version of this document can be found at
 <ulink url="http://www.samba.org/">http://www.samba.org/</ulink>
 on the "Documentation" page.  Please send updates to
 <ulink url="mailto:jelmer@samba.org">Jelmer Vernooij</ulink>,
-<ulink url="mailto:jht@samba.org">John H Terpstra</ulink> or
+<ulink url="mailto:jht@samba.org">John H. Terpstra</ulink> or
 <ulink url="mailto:jerry@samba.org">Gerald (Jerry) Carter</ulink>.
 </para>
 
@@ -50,6 +46,14 @@ version 2.  A copy of the license is included with the Samba source
 distribution.  A copy can be found on-line at <ulink 
 url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</ulink>
 </para>
+
+<formalpara>
+	<title>Attributions</title>
+	<para>
+		&attributions;
+	</para>
+</formalpara>
+
 </legalnotice>
 </bookinfo>
 
@@ -67,6 +71,7 @@ PLEASE read this.</para>
 </partintro>
 &IntroSMB;
 &UNIX-INSTALL;
+&FastStart;
 </part>
 
 <part id="type">
@@ -84,6 +89,7 @@ section carefully.
 &Samba-BDC-HOWTO;
 &DOMAIN-MEMBER;
 &StandAloneServer;
+&ClientConfig;
 </part>
 
 <part id="optional">
@@ -112,6 +118,15 @@ Samba has several features that you might want or might not want to use. The cha
 &Samba-PAM;
 &IntegratingWithWindows;
 &unicode;
+&Backup;
+&HighAvailability;
+</part>
+
+<part id="migration">
+<title>Migration and Updating</title>
+&upgrading;
+&NT4Migration;
+&SWAT;
 </part>
 
 <part id="troubleshooting">
@@ -124,12 +139,13 @@ Samba has several features that you might want or might not want to use. The cha
 <part id="Appendixes">
 <title>Appendixes</title>
 &Compiling;
-&NT4Migration;
 &Portability;
 &Other-Clients;
-&SWAT;
 &SPEED;
+&DNS-DHCP-Configuration;
 &Further-Resources;
 </part>
+
+<index/>
 
 </book>

@@ -1,0 +1,314 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML
+><HEAD
+><TITLE
+>Common errors</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Samba FAQ"
+HREF="samba-faq.html"><LINK
+REL="PREVIOUS"
+TITLE="Specific client application problems"
+HREF="clientapp.html"><LINK
+REL="NEXT"
+TITLE="Features"
+HREF="features.html"></HEAD
+><BODY
+CLASS="CHAPTER"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Samba FAQ</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="clientapp.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="features.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="ERRORS">Chapter 5. Common errors</H1
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN205">5.1. Not listening for calling name</H1
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>Session request failed (131,129) with myname=HOBBES destname=CALVIN
+Not listening for calling name</PRE
+></P
+><P
+>If you get this when talking to a Samba box then it means that your
+global "hosts allow" or "hosts deny" settings are causing the Samba 
+server to refuse the connection. </P
+><P
+>Look carefully at your "hosts allow" and "hosts deny" lines in the
+global section of smb.conf. </P
+><P
+>It can also be a problem with reverse DNS lookups not functioning 
+correctly, leading to the remote host identity not being able to
+be confirmed, but that is less likely.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN212">5.2. System Error 1240</H1
+><P
+>System error 1240 means that the client is refusing to talk
+to a non-encrypting server. Microsoft changed WinNT in service
+pack 3 to refuse to connect to servers that do not support
+SMB password encryption.</P
+><P
+>There are two main solutions:
+<P
+></P
+><TABLE
+BORDER="0"
+><TBODY
+><TR
+><TD
+>enable SMB password encryption in Samba. See the encryption part of 
+the samba HOWTO Collection</TD
+></TR
+><TR
+><TD
+>disable this new behaviour in NT. See the section about 
+Windows NT in the chapter "Portability" of the samba HOWTO collection</TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+></P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN219">5.3. smbclient ignores -N !</H1
+><P
+><SPAN
+CLASS="QUOTE"
+>"When getting the list of shares available on a host using the command
+<B
+CLASS="COMMAND"
+>smbclient -N -L</B
+>
+the program always prompts for the password if the server is a Samba server.
+It also ignores the "-N" argument when querying some (but not all) of our
+NT servers."</SPAN
+></P
+><P
+>No, it does not ignore -N, it is just that your server rejected the 
+null password in the connection, so smbclient prompts for a password
+to try again.</P
+><P
+>To get the behaviour that you probably want use <B
+CLASS="COMMAND"
+>smbclient -L host -U%</B
+></P
+><P
+>This will set both the username and password to null, which is
+an anonymous login for SMB. Using -N would only set the password
+to null, and this is not accepted as an anonymous login for most
+SMB servers.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN228">5.4. The data on the CD-Drive I've shared seems to be corrupted!</H1
+><P
+>Some OSes (notably Linux) default to auto detection of file type on
+cdroms and do cr/lf translation. This is a very bad idea when use with
+Samba. It causes all sorts of stuff ups.</P
+><P
+>To overcome this problem use conv=binary when mounting the cdrom
+before exporting it with Samba.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN232">5.5. Why can users access home directories of other users?</H1
+><P
+><SPAN
+CLASS="QUOTE"
+>"We are unable to keep individual users from mapping to any other user's
+home directory once they have supplied a valid password! They only need
+to enter their own password. I have not found *any* method that I can
+use to configure samba to enforce that only a user may map their own
+home directory."</SPAN
+></P
+><P
+><SPAN
+CLASS="QUOTE"
+>"User xyzzy can map his home directory. Once mapped user xyzzy can also map
+*anyone* elses home directory!"</SPAN
+></P
+><P
+>This is not a security flaw, it is by design. Samba allows
+users to have *exactly* the same access to the UNIX filesystem
+as they would if they were logged onto the UNIX box, except
+that it only allows such views onto the file system as are
+allowed by the defined shares.</P
+><P
+>This means that if your UNIX home directories are set up
+such that one user can happily cd into another users
+directory and do an ls, the UNIX security solution is to 
+change the UNIX file permissions on the users home directories
+such that the cd and ls would be denied.</P
+><P
+>Samba tries very hard not to second guess the UNIX administrators
+security policies, and trusts the UNIX admin to set
+the policies and permissions he or she desires.</P
+><P
+>Samba does allow the setup you require when you have set the
+"only user = yes" option on the share, is that you have not set the
+valid users list for the share.</P
+><P
+>Note that only user works in conjunction with the users= list,
+so to get the behavior you require, add the line :
+<PRE
+CLASS="PROGRAMLISTING"
+>users = %S</PRE
+>
+this is equivalent to:
+<PRE
+CLASS="PROGRAMLISTING"
+>valid users = %S</PRE
+>
+to the definition of the [homes] share, as recommended in
+the smb.conf man page.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN245">5.6. Until a few minutes after samba has started, clients get the error "Domain Controller Unavailable"</H1
+><P
+>A domain controller has to announce on the network who it is. This usually takes a while.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN248">5.7. I'm getting "open_oplock_ipc: Failed to get local UDP socket for address 100007f. Error was Cannot assign requested" in the logs</H1
+><P
+>Your loopback device isn't working correctly. Make sure it's running.</P
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="clientapp.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="samba-faq.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="features.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Specific client application problems</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Features</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

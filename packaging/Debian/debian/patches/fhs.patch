@@ -1,7 +1,7 @@
 diff -uNr samba-3.0alpha23.orig/source/Makefile.in samba-3.0alpha23/source/Makefile.in
 --- samba-3.0alpha23.orig/source/Makefile.in	2003-03-30 20:28:28.000000000 -0600
 +++ samba-3.0alpha23/source/Makefile.in	2003-04-04 21:04:05.000000000 -0600
-@@ -65,6 +65,7 @@
+@@ -67,6 +67,7 @@
  CONFIGDIR = @configdir@
  VARDIR = @localstatedir@
  MANDIR = @mandir@
@@ -9,7 +9,7 @@ diff -uNr samba-3.0alpha23.orig/source/Makefile.in samba-3.0alpha23/source/Makef
  
  # The permissions to give the executables
  INSTALLPERMS = 0755
-@@ -88,6 +89,13 @@
+@@ -90,6 +91,13 @@
  # the directory where lock files go
  LOCKDIR = @lockdir@
  
@@ -23,7 +23,7 @@ diff -uNr samba-3.0alpha23.orig/source/Makefile.in samba-3.0alpha23/source/Makef
  # the directory where pid files go
  PIDDIR = @piddir@
  # man pages language(s)
-@@ -113,7 +121,7 @@
+@@ -115,7 +123,7 @@
  PATH_FLAGS4 = $(PATH_FLAGS3) -DSWATDIR=\"$(SWATDIR)\"  -DLOCKDIR=\"$(LOCKDIR)\" -DPIDDIR=\"$(PIDDIR)\"
  PATH_FLAGS5 = $(PATH_FLAGS4) -DLIBDIR=\"$(LIBDIR)\" \
  	      -DLOGFILEBASE=\"$(LOGFILEBASE)\" -DSHLIBEXT=\"@SHLIBEXT@\"
@@ -192,7 +192,7 @@ diff -uNr samba-3.0alpha23.orig/source/lib/account_pol.c samba-3.0alpha23/source
 diff -uNr samba-3.0alpha23.orig/source/lib/util.c samba-3.0alpha23/source/lib/util.c
 --- samba-3.0alpha23.orig/source/lib/util.c	2003-03-30 20:28:28.000000000 -0600
 +++ samba-3.0alpha23/source/lib/util.c	2003-04-04 21:04:06.000000000 -0600
-@@ -2228,6 +2228,61 @@
+@@ -2241,6 +2241,61 @@
  }
  
  /**
@@ -335,7 +335,7 @@ diff -uNr samba-3.0alpha23.orig/source/param/loadparm.c samba-3.0alpha23/source/
  	char *szLockDir;
  	char *szPidDir;
  	char *szRootdir;
-@@ -1053,8 +1056,13 @@
+@@ -1052,8 +1055,13 @@
  	{"config file", P_STRING, P_GLOBAL, &Globals.szConfigFile, NULL, NULL, FLAG_HIDE},
  	{"preload", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
  	{"auto services", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -365,7 +365,7 @@ diff -uNr samba-3.0alpha23.orig/source/passdb/secrets.c samba-3.0alpha23/source/
 diff -uNr samba-3.0alpha23.orig/source/printing/nt_printing.c samba-3.0alpha23/source/printing/nt_printing.c
 --- samba-3.0alpha23.orig/source/printing/nt_printing.c	2003-03-30 20:28:29.000000000 -0600
 +++ samba-3.0alpha23/source/printing/nt_printing.c	2003-04-04 21:04:07.000000000 -0600
-@@ -271,28 +271,28 @@
+@@ -287,28 +287,28 @@
   
  	if (tdb_drivers)
  		tdb_close(tdb_drivers);

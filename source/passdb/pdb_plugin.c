@@ -1,9 +1,8 @@
 /* 
    Unix SMB/CIFS implementation.
-   Loadable san module interface.
-   Copyright (C) Jelmer Vernooij			2002
-   Copyright (C) Andrew Bartlett			2002
-   Copyright (C) Stefan (metze) Metzmacher		2002
+   Loadable passdb module interface.
+   Copyright (C) Jelmer Vernooij 2002
+   Copyright (C) Andrew Bartlett 2002
       
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,57 +22,57 @@
 #include "includes.h"
 
 #undef DBGC_CLASS
-#define DBGC_CLASS DBGC_SAM
+#define DBGC_CLASS DBGC_PASSDB
 
-NTSTATUS sam_init_plugin(SAM_METHODS *sam_methods, const char *module_params)
+NTSTATUS pdb_init_plugin(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
 {
-	void *dl_handle;
-	char *plugin_params, *plugin_name, *p;
-	sam_init_function plugin_init;
+	void * dl_handle;
+	char *plugin_location, *plugin_name, *p;
+	pdb_init_function plugin_init;
 	int (*plugin_version)(void);
 
-	if (module_params == NULL) {
+	if (location == NULL) {
 		DEBUG(0, ("The plugin module needs an argument!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	plugin_name = smb_xstrdup(module_params);
+	plugin_name = smb_xstrdup(location);
 	p = strchr(plugin_name, ':');
 	if (p) {
 		*p = 0;
-		plugin_params = p+1;
-		trim_string(plugin_params, " ", " ");
-	} else plugin_params = NULL;
+		plugin_location = p+1;
+		trim_string(plugin_location, " ", " ");
+	} else plugin_location = NULL;
 	trim_string(plugin_name, " ", " ");
 
 	DEBUG(5, ("Trying to load sam plugin %s\n", plugin_name));
-	dl_handle = sys_dlopen(plugin_name, RTLD_NOW);
+	dl_handle = sys_dlopen(plugin_name, RTLD_NOW );
 	if (!dl_handle) {
 		DEBUG(0, ("Failed to load sam plugin %s using sys_dlopen (%s)\n", plugin_name, sys_dlerror()));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
     
-	plugin_version = sys_dlsym(dl_handle, "sam_version");
+	plugin_version = sys_dlsym(dl_handle, "pdb_version");
 	if (!plugin_version) {
 		sys_dlclose(dl_handle);
-		DEBUG(0, ("Failed to find function 'sam_version' using sys_dlsym in sam plugin %s (%s)\n", plugin_name, sys_dlerror()));	    
+		DEBUG(0, ("Failed to find function 'pdb_version' using sys_dlsym in sam plugin %s (%s)\n", plugin_name, sys_dlerror()));	    
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (plugin_version()!=SAM_INTERFACE_VERSION) {
+	if (plugin_version() != PASSDB_INTERFACE_VERSION) {
 		sys_dlclose(dl_handle);
-		DEBUG(0, ("Wrong SAM_INTERFACE_VERSION! sam plugin has version %d and version %d is needed! Please update!\n",
-			    plugin_version(),SAM_INTERFACE_VERSION));
+		DEBUG(0, ("Wrong PASSDB_INTERFACE_VERSION! sam plugin has version %d and version %d is needed! Please update!\n",
+			    plugin_version(),PASSDB_INTERFACE_VERSION));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 				    	
-	plugin_init = sys_dlsym(dl_handle, "sam_init");
+	plugin_init = sys_dlsym(dl_handle, "pdb_init");
 	if (!plugin_init) {
 		sys_dlclose(dl_handle);
-		DEBUG(0, ("Failed to find function 'sam_init' using sys_dlsym in sam plugin %s (%s)\n", plugin_name, sys_dlerror()));	    
+		DEBUG(0, ("Failed to find function 'pdb_init' using sys_dlsym in sam plugin %s (%s)\n", plugin_name, sys_dlerror()));	    
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	DEBUG(5, ("Starting sam plugin %s with parameters %s for domain %s\n", plugin_name, plugin_params, sam_methods->domain_name));
-	return plugin_init(sam_methods, plugin_params);
+	DEBUG(5, ("Starting sam plugin %s with location %s\n", plugin_name, plugin_location));
+	return plugin_init(pdb_context, pdb_method, plugin_location);
 }

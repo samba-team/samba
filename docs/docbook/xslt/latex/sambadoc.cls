@@ -13,7 +13,6 @@
 \DeclareOption{cpp}{\@usecppsyntaxtrue}
 \DeclareOption*{\PassOptionsToClass{\CurrentOption}{scrreprt}}
 \ProcessOptions
-%\PassOptionsToClass{12pt}{scrreprt}
 
 \LoadClass{scrreprt}
 
@@ -39,6 +38,12 @@
 \let\old@marginpar=\marginpar
 \def\marginpar#1{
 	\old@marginpar{\def\baselinestretch{1}\em\small #1}}
+
+\renewcommand*{\scr@parskip}{%
+    \setlength{\parskip}{\baselineskip}%
+    \addtolength{\parskip}{\z@ \@plus .5\baselineskip}}
+
+\setlength\parindent{0pt}
 
 %%--Parameters that can be set by the user.
 \def\samba@listtables{y}

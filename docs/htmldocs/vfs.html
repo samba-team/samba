@@ -5,19 +5,20 @@
 >Stackable VFS modules</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
 REL="UP"
-TITLE="Advanced Configuration"
+TITLE="Optional configuration"
 HREF="optional.html"><LINK
 REL="PREVIOUS"
-TITLE="PAM Configuration for Centrally Managed Authentication"
-HREF="pam.html"><LINK
+TITLE="Passdb XML plugin"
+HREF="pdb-xml.html"><LINK
 REL="NEXT"
-TITLE="Hosting a Microsoft Distributed File System tree on Samba"
-HREF="msdfs.html"></HEAD
+TITLE="Storing Samba's User/Machine Account information in an LDAP Directory"
+HREF="samba-ldap-howto.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -45,7 +46,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="pam.html"
+HREF="pdb-xml.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -59,7 +60,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="msdfs.html"
+HREF="samba-ldap-howto.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -72,79 +73,13 @@ WIDTH="100%"></DIV
 CLASS="CHAPTER"
 ><H1
 ><A
-NAME="VFS"
-></A
->Chapter 21. Stackable VFS modules</H1
-><DIV
-CLASS="TOC"
-><DL
-><DT
-><B
->Table of Contents</B
-></DT
-><DT
->21.1. <A
-HREF="vfs.html#AEN3600"
->Introduction and configuration</A
-></DT
-><DT
->21.2. <A
-HREF="vfs.html#AEN3609"
->Included modules</A
-></DT
-><DD
-><DL
-><DT
->21.2.1. <A
-HREF="vfs.html#AEN3611"
->audit</A
-></DT
-><DT
->21.2.2. <A
-HREF="vfs.html#AEN3619"
->extd_audit</A
-></DT
-><DT
->21.2.3. <A
-HREF="vfs.html#AEN3623"
->recycle</A
-></DT
-><DT
->21.2.4. <A
-HREF="vfs.html#AEN3660"
->netatalk</A
-></DT
-></DL
-></DD
-><DT
->21.3. <A
-HREF="vfs.html#AEN3667"
->VFS modules available elsewhere</A
-></DT
-><DD
-><DL
-><DT
->21.3.1. <A
-HREF="vfs.html#AEN3671"
->DatabaseFS</A
-></DT
-><DT
->21.3.2. <A
-HREF="vfs.html#AEN3679"
->vscan</A
-></DT
-></DL
-></DD
-></DL
-></DIV
+NAME="VFS">Chapter 18. Stackable VFS modules</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3600"
->21.1. Introduction and configuration</A
-></H1
+NAME="AEN2640">18.1. Introduction and configuration</H1
 ><P
 >Since samba 3.0, samba supports stackable VFS(Virtual File System) modules.  
 Samba passes each request to access the unix file system thru the loaded VFS modules. 
@@ -183,17 +118,13 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3609"
->21.2. Included modules</A
-></H1
+NAME="AEN2649">18.2. Included modules</H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3611"
->21.2.1. audit</A
-></H2
+NAME="AEN2651">18.2.1. audit</H2
 ><P
 >A simple module to audit file access to the syslog
 facility.  The following operations are logged:
@@ -229,31 +160,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3619"
->21.2.2. extd_audit</A
-></H2
-><P
->This module is identical with the <SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->audit</I
-></SPAN
-> module above except
-that it sends audit logs to both syslog as well as the smbd log file/s. The 
-loglevel for this module is set in the smb.conf file. At loglevel = 0, only file
-and directory deletions and directory and file creations are logged. At loglevel = 1
-file opens are renames and permission changes are logged , while at loglevel = 2 file
-open and close calls are logged also.</P
-></DIV
-><DIV
-CLASS="SECT2"
-><H2
-CLASS="SECT2"
-><A
-NAME="AEN3623"
->21.2.3. recycle</A
-></H2
+NAME="AEN2659">18.2.2. recycle</H2
 ><P
 >A recycle-bin like modules. When used any unlink call
 will be intercepted and files moved to the recycle
@@ -322,9 +229,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3660"
->21.2.4. netatalk</A
-></H2
+NAME="AEN2696">18.2.3. netatalk</H2
 ><P
 >A netatalk module, that will ease co-existence of samba and
 netatalk file sharing services.</P
@@ -355,9 +260,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3667"
->21.3. VFS modules available elsewhere</A
-></H1
+NAME="AEN2703">18.3. VFS modules available elsewhere</H1
 ><P
 >This section contains a listing of various other VFS modules that 
 have been posted but don't currently reside in the Samba CVS 
@@ -371,9 +274,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3671"
->21.3.1. DatabaseFS</A
-></H2
+NAME="AEN2707">18.3.1. DatabaseFS</H2
 ><P
 >URL: <A
 HREF="http://www.css.tayloru.edu/~elorimer/databasefs/index.php"
@@ -405,9 +306,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3679"
->21.3.2. vscan</A
-></H2
+NAME="AEN2715">18.3.2. vscan</H2
 ><P
 >URL: <A
 HREF="http://www.openantivirus.org/"
@@ -439,7 +338,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="pam.html"
+HREF="pdb-xml.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -457,7 +356,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="msdfs.html"
+HREF="samba-ldap-howto.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -467,7 +366,7 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->PAM Configuration for Centrally Managed Authentication</TD
+>Passdb XML plugin</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"
@@ -481,7 +380,7 @@ ACCESSKEY="U"
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Hosting a Microsoft Distributed File System tree on Samba</TD
+>Storing Samba's User/Machine Account information in an LDAP Directory</TD
 ></TR
 ></TABLE
 ></DIV

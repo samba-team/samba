@@ -17,7 +17,7 @@
 <formalpara><title><emphasis>The Essence of Learning:</emphasis></title>
 <para>
 There are many who approach MS Windows networking with incredible misconceptions.
-That's OK, because it give the rest of us plenty of opportunity to be of assistance.
+That's OK, because it gives the rest of us plenty of opportunity to be of assistance.
 Those who really want help would be well advised to become familiar with information
 that is already available.
 </para>
@@ -39,28 +39,28 @@ sections of this HOWTO that deal with it. These are the most common causes of MS
 networking problems:
 </para>
 
-<itemizedlist>
-	<listitem><para>Basic TCP/IP configuration</para></listitem>
-	<listitem><para>NetBIOS name resolution</para></listitem>
-	<listitem><para>Authentication configuration</para></listitem>
-	<listitem><para>User and Group configuration</para></listitem>
-	<listitem><para>Basic File and Directory Permission Control in Unix/Linux</para></listitem>
-	<listitem><para>Understanding of how MS Windows clients interoperate in a network
-	environment</para></listitem>
-</itemizedlist>
+<simplelist>
+	<member>Basic TCP/IP configuration</member>
+	<member>NetBIOS name resolution</member>
+	<member>Authentication configuration</member>
+	<member>User and Group configuration</member>
+	<member>Basic File and Directory Permission Control in Unix/Linux</member>
+	<member>Understanding of how MS Windows clients interoperate in a network
+		environment</member>
+</simplelist>
 
 <para>
-Do not be put off, on the surface of it MS Windows networking seems so simple that any fool
+Do not be put off; on the surface of it MS Windows networking seems so simple that any fool
 can do it. In fact, it is not a good idea to set up an MS Windows network with
 inadequate training and preparation. But let's get our first indelible principle out of the
 way: <emphasis>It is perfectly OK to make mistakes!</emphasis> In the right place and at
 the right time, mistakes are the essence of learning. It is <emphasis>very much</emphasis>
-not Ok to make mistakes that cause loss of productivity and impose an avoidable financial
+not ok to make mistakes that cause loss of productivity and impose an avoidable financial
 burden on an organisation.
 </para>
 
 <para>
-Where is the right place to make mistakes? Only out of harms' way! If you are going to
+Where is the right place to make mistakes? Only out of harm's way! If you are going to
 make mistakes, then please do this on a test network, away from users and in such a way as
 to not inflict pain on others. Do your learning on a test network.
 </para>
@@ -73,7 +73,7 @@ to not inflict pain on others. Do your learning on a test network.
 </para>
 
 <para>
-In a word, <emphasis>Single Sign On</emphasis>, or SSO for short. This to many is the holy
+In a word, <emphasis>Single Sign On</emphasis>, or SSO for short. To many, this is the holy
 grail of MS Windows NT and beyond networking. SSO allows users in a well designed network
 to log onto any workstation that is a member of the domain that their user account is in
 (or in a domain that has an appropriate trust relationship with the domain they are visiting)
@@ -90,8 +90,8 @@ The benefits of Domain security are fully available to those sites that deploy a
 Network clients of an MS Windows Domain security environment must be Domain members to be
 able to gain access to the advanced features provided. Domain membership involves more than just
 setting the workgroup name to the Domain name. It requires the creation of a Domain trust account
-for the workstation (called a machine account). Please refer to the chapter on Domain Membership
-for more information.
+for the workstation (called a machine account). Please refer to the chapter on 
+<link linkend="domain-member">Domain Membership</link> for more information.
 </para></note>
 
 <para>
@@ -106,20 +106,20 @@ The following functionalities are new to the Samba-3 release:
 	<listitem><para>
 	Adding users via the User Manager for Domains. This can be done on any MS Windows
 	client using the Nexus toolkit that is available from Microsoft's web site.
-	At some later date Samba-3 may get support for the use of the Microsoft Manangement
+	At some later date Samba-3 may get support for the use of the Microsoft Management
 	Console for user management.
 	</para></listitem>
 
 	<listitem><para>
 	Introduces replaceable and multiple user account (authentication)
-	back ends. In the case where the back end is placed in an LDAP database
+	back ends. In the case where the back end is placed in an LDAP database,
 	Samba-3 confers the benefits of a back end that can be distributed, replicated,
-	and highly scalable.
+	and is highly scalable.
 	</para></listitem>
 
 	<listitem><para>
 	Implements full Unicode support. This simplifies cross locale internationalisation
-	support. It also opens up the use of protocols that samba-2.2.x had but could not use due
+	support. It also opens up the use of protocols that Samba-2.2.x had but could not use due
 	to the need to fully support Unicode.
 	</para></listitem>
 </itemizedlist>
@@ -140,7 +140,7 @@ The following functionalities are NOT provided by Samba-3:
 	Active Directory Domain Control ability that is at this time
 	purely experimental <emphasis>AND</emphasis> that is certain
 	to change as it becomes a fully supported feature some time
-	during the samba-3 (or later) life cycle.
+	during the Samba-3 (or later) life cycle.
 	</para></listitem>
 </itemizedlist>
 
@@ -149,20 +149,22 @@ Windows 9x / Me / XP Home clients are not true members of a domain for reasons o
 in this chapter.  The protocol for support of Windows 9x / Me style network (domain) logons
 is completely different from NT4 / Win2k type domain logons and has been officially supported
 for some time. These clients use the old LanMan Network Logon facilities that are supported
-in Samba since approximately the samba-1.9.15 series.
+in Samba since approximately the Samba-1.9.15 series.
 </para>
 
 <para>
 Samba-3 has an implementation of group mapping between Windows NT groups
-and Unix groups (this is really quite complicated to explain in a short space) this is 
-discussed more fully in a chapter dedicated to this topic..
+and Unix groups (this is really quite complicated to explain in a short space). This is 
+discussed more fully in the <link linkend="groupmapping">Group Mapping</link> chapter.
 </para>
 
 <para>
-A Samba-3, like an MS Windows NT4 PDC or a Windows 200x Active Directory, needs to store
+Samba-3, like an MS Windows NT4 PDC or a Windows 200x Active Directory, needs to store
 user and machine trust account information in a suitable backend data store. With Samba-3
 there can be multiple back-ends for this including:
 </para>
+
+<!-- FIXME: Doesn't this belong in passdb.xml ? -->
 
 <itemizedlist>
 	<listitem><para>
@@ -176,7 +178,7 @@ there can be multiple back-ends for this including:
 	<listitem><para>
 	<emphasis>tdbsam</emphasis> - a binary database backend that will be
 	stored in the <emphasis>private</emphasis> directory in a file called
-	<emphasis>passwd.tdb</emphasis>. The key benefit of this binary format
+	<emphasis>passdb.tdb</emphasis>. The key benefit of this binary format
 	file is that it can store binary objects that can not be accomodated
 	in the traditional plain text smbpasswd file. These permit the extended
 	account controls that MS Windows NT4 and later also have.
@@ -194,13 +196,13 @@ there can be multiple back-ends for this including:
 	<listitem><para>
 	<emphasis>ldapsam_compat</emphasis> - An LDAP back-end that maintains backwards
 	compatibility with the behaviour of samba-2.2.x. You should use this in the process
-	of mirgrating from samba-2.2.x to samba-3 if you do not want to rebuild your LDAP
+	of migrating from samba-2.2.x to samba-3 if you do not want to rebuild your LDAP
 	database.
 	</para></listitem>
 </itemizedlist>
 
 <para>
-Read the chapter about the <link linkend="passdb">User Database</link> for details
+Read the chapter about <link linkend="passdb">Account Information Database</link> for details
 regarding the choices available and how to configure them.
 </para>
 
@@ -220,8 +222,8 @@ to the default configuration.
 <title>Basics of Domain Control</title>
 
 <para>
-Over the years public perceptions of what Domain Control really is has taken on an
-almost mystical nature. Before we branch into a brief overview of Domain Control
+Over the years, public perceptions of what Domain Control really is has taken on an
+almost mystical nature. Before we branch into a brief overview of Domain Control,
 there are three basic types of domain controllers:
 </para>
 
@@ -238,15 +240,15 @@ there are three basic types of domain controllers:
 The <emphasis>Primary Domain Controller</emphasis> or PDC plays an important role in the MS 
 Windows NT4 and Windows 200x Domain Control architecture, but not in the manner that so many
 expect. There is folk lore that dictates that because of it's role in the MS Windows
-network that the PDC should be the most powerful and most capable machine in the network.
+network, the PDC should be the most powerful and most capable machine in the network.
 As strange as it may seem to say this here, good over all network performance dictates that
 the entire infrastructure needs to be balanced. It is advisable to invest more in the Backup
 Domain Controllers and Stand-Alone (or Domain Member) servers than in the PDC.
 </para>
 
 <para>
-In the case of MS Windows NT4 style domaines it is the PDC seeds the Domain Control database,
-a part of the Windows registry called the SAM (Security Accounts Management). It plays a key
+In the case of MS Windows NT4 style domains, it is the PDC seeds the Domain Control database,
+a part of the Windows registry called the SAM (Security Account Manager). It plays a key
 part in NT4 type domain user authentication and in synchronisation of the domain authentication
 database with Backup Domain Controllers. 
 </para>
@@ -262,9 +264,9 @@ LDAP based user and machine account back end.
 <para>
 New to Samba-3 is the ability to use a back-end database that holds the same type of data as
 the NT4 style SAM (Security Account Manager) database (one of the registry files).
-The samba-3 SAM can be specified via the smb.conf file parameter
-<emphasis>passwd backend</emphasis> and valid options include
-<emphasis>smbpasswd, tdbsam, ldapsam, nisplussam, xmlsam, mysqlsam, plugin, guest</emphasis>.
+The Samba-3 SAM can be specified via the smb.conf file parameter
+<parameter>passwd backend</parameter> and valid options include
+<emphasis>smbpasswd, tdbsam, ldapsam, nisplussam, xmlsam, mysqlsam, guest</emphasis>.
 </para>
 
 <para>
@@ -272,23 +274,23 @@ The <emphasis>Backup Domain Controller</emphasis> or BDC plays a key role in ser
 authentication requests. The BDC is biased to answer logon requests in preference to the PDC.
 On a network segment that has a BDC and a PDC the BDC will be most likely to service network
 logon requests. The PDC will answer network logon requests when the BDC is too busy (high load).
-A BDC can be promoted to a PDC. If the PDC is on line at the time that the BDC is promoted to
-PDC the previous PDC is automatically demoted to a BDC. With Samba-3 this is NOT an automatic
-operation, the PDB and BDC must be manually configured and changes need to be made likewise.
+A BDC can be promoted to a PDC. If the PDC is on line at the time that a BDC is promoted to
+PDC, the previous PDC is automatically demoted to a BDC. With Samba-3 this is NOT an automatic
+operation; the PDB and BDC must be manually configured and changes need to be made likewise.
 </para>
 
 <para>
-With MS Windows NT4 it is an install time decision what type of machine the server will be.
+With MS Windows NT4, it is an install time decision what type of machine the server will be.
 It is possible to change the promote a BDC to a PDC and vica versa only, but the only way
 to convert a domain controller to a domain member server or a stand-alone server is to
 reinstall it. The install time choices offered are:
 </para>
 
 <itemizedlist>
-	<listitem><para>Primary Domain Controller - The one that seeds the domain SAM</para></listitem>
-	<listitem><para>Backup Domain Controller - One that obtains a copy of the domain SAM</para></listitem>
-	<listitem><para>Domain Member Server - One that has NO copy of the domain SAM, rather it obtains authentication from a Domain Controller for all access controls.</para></listitem>
-	<listitem><para>Stand-Alone Server - One that plays NO part is SAM synchronisation, has it's own authentication database and plays no role in Domain security.</para></listitem>
+	<listitem><para><emphasis>Primary Domain Controller</emphasis> - The one that seeds the domain SAM</para></listitem>
+	<listitem><para><emphasis>Backup Domain Controller</emphasis> - One that obtains a copy of the domain SAM</para></listitem>
+	<listitem><para><emphasis>Domain Member Server</emphasis> - One that has NO copy of the domain SAM, rather it obtains authentication from a Domain Controller for all access controls.</para></listitem>
+	<listitem><para><emphasis>Stand-Alone Server</emphasis> - One that plays NO part is SAM synchronisation, has it's own authentication database and plays no role in Domain security.</para></listitem>
 </itemizedlist>
 
 <para>
@@ -300,14 +302,14 @@ Active Directory domain.
 <para>
 New to Samba-3 is the ability to function fully as an MS Windows NT4 style Domain Controller,
 excluding the SAM replication components. However, please be aware that Samba-3 support the
-MS Windows 200x domain control protcols also.
+MS Windows 200x domain control protocols also.
 </para>
 
 <para>
 At this time any appearance that Samba-3 is capable of acting as an
 <emphasis>ADS Domain Controller</emphasis> is limited and experimental in nature.
-This functionality should not be used until the samba-team offers formal support for it.
-At such a time, the documentation will be revised to duely reflect all configuration and
+This functionality should not be used until the Samba-Team offers formal support for it.
+At such a time, the documentation will be revised to duly reflect all configuration and
 management requirements.
 </para>
 
@@ -329,14 +331,14 @@ other than the machine being configured so that the network configuration has a 
 for it's workgroup entry. It is not uncommon for the name WORKGROUP to be used for this. With this
 mode of configuration there are NO machine trust accounts and any concept of membership as such
 is limited to the fact that all machines appear in the network neighbourhood to be logically
-groupped together. Again, just to be clear: WORKGROUP MODE DOES NOT INVOLVE ANY SECURITY MACHINE
-ACCOUNTS.
+grouped together. Again, just to be clear: <emphasis>workgroup mode does not involve any security machine 
+accounts</emphasis>.
 </para>
 
 <para>
 Domain member machines have a machine account in the Domain accounts database. A special procedure
 must be followed on each machine to affect Domain membership. This procedure, which can be done
-only by the local machine Adminisistrator account, will create the Domain machine account (if
+only by the local machine Administrator account, will create the Domain machine account (if
 if does not exist), and then initializes that account. When the client first logs onto the
 Domain it triggers a machine password change.
 </para>
@@ -344,8 +346,9 @@ Domain it triggers a machine password change.
 <note><para>
 When running a Domain all MS Windows NT / 200x / XP Professional clients should be configured
 as full Domain Members - IF A SECURE NETWORK IS WANTED. If the machine is NOT made a member of the
-Domain, then it will operate like a workgroup (stand-alone) machine. Please refer to the chapter
-on Domain Membership for information regarding HOW to make your MS Windows clients Domain members.
+Domain, then it will operate like a workgroup (stand-alone) machine. Please refer the 
+<link linkend="domain-member">Domain Membership</link> chapter for information regarding
+ HOW to make your MS Windows clients Domain members.
 </para></note>
 
 <para>
@@ -353,85 +356,40 @@ The following are necessary for configuring Samba-3 as an MS Windows NT4 style P
 NT4 / 200x / XP clients.
 </para>
 
-<orderedlist>
-	<listitem><para>
-	Configuration of basic TCP/IP and MS Windows Networking
-	</para></listitem>
-
-	<listitem><para>
-	Correct designation of the Server Role (<emphasis>security = user</emphasis>)
-	</para></listitem>
-
-	<listitem><para>
-	Consistent configuration of Name Resolution (See chapter on Browsing and on
-	MS Windows network Integration)
-	</para></listitem>
-
-	<listitem><para>
-	Domain logons for Windows NT4 / 200x / XP Professional clients
-	</para></listitem>
-	
-	<listitem><para>
-	Configuration of Roaming Profiles or explicit configuration to force local profile usage
-	</para></listitem>
-	
-	<listitem><para>
-	Configuration of Network/System Policies
-	</para></listitem>
-
-	<listitem><para>
-	Adding and managing domain user accounts
-	</para></listitem>
-
-	<listitem><para>
-	Configuring MS Windows client machines to become domain members
-	</para></listitem>
-</orderedlist>
+<simplelist>
+	<member>Configuration of basic TCP/IP and MS Windows Networking</member>
+	<member>Correct designation of the Server Role (<parameter>security = user</parameter>)</member>
+	<member>Consistent configuration of Name Resolution (See chapter on <link linkend="NetworkBrowsing">Browsing</link> and on
+	<link linkend="integrate-ms-networks">MS Windows network Integration</link>)</member>
+	<member>Domain logons for Windows NT4 / 200x / XP Professional clients</member>
+	<member>Configuration of Roaming Profiles or explicit configuration to force local profile usage</member>
+	<member>Configuration of Network/System Policies</member>
+	<member>Adding and managing domain user accounts</member>
+	<member>Configuring MS Windows client machines to become domain members</member>
+</simplelist>
 
 <para>
 The following provisions are required to serve MS Windows 9x / Me Clients:
 </para>
 
-<orderedlist>
-	<listitem><para>
-	Configuration of basic TCP/IP and MS Windows Networking
-	</para></listitem>
-
-	<listitem><para>
-	Correct designation of the Server Role (<emphasis>security = user</emphasis>)
-	</para></listitem>
-
-	<listitem><para>
-	Network Logon Configuration (Since Windows 9x / XP Home are not technically domain
-	members, they do not really particpate in  the security aspects of Domain logons as such)
-	</para></listitem>
-
-	<listitem><para>
-	Roaming Profile Configuration
-	</para></listitem>
-
-	<listitem><para>
-	Configuration of System Policy handling
-	</para></listitem>
-
-	<listitem><para>
-	Installation of the Network driver "Client for MS Windows Networks" and configuration
-	to log onto the domain
-	</para></listitem>
-
-	<listitem><para>
-	Placing Windows 9x / Me clients in user level security - if it is desired to allow
-	all client share access to be controlled according to domain user / group identities.
-	</para></listitem>
-
-	<listitem><para>
-	Adding and managing domain user accounts
-	</para></listitem>
-</orderedlist>
+<simplelist>
+	<member>Configuration of basic TCP/IP and MS Windows Networking</member>
+	<member>Correct designation of the Server Role (<parameter>security = user</parameter>)</member>
+	<member>Network Logon Configuration (Since Windows 9x / XP Home are not technically domain
+	members, they do not really particpate in  the security aspects of Domain logons as such)</member>
+	<member>Roaming Profile Configuration</member>
+	<member>Configuration of System Policy handling</member>
+	<member>Installation of the Network driver "Client for MS Windows Networks" and configuration
+	to log onto the domain</member>
+	<member>Placing Windows 9x / Me clients in user level security - if it is desired to allow
+	all client share access to be controlled according to domain user / group identities.</member>
+	<member>Adding and managing domain user accounts</member>
+</simplelist>
 
 <note><para>
 Roaming Profiles and System/Network policies are advanced network administration topics
-that are covered separately in this document.  However, these are not necessarily specific
+that are covered in the <link linkend="ProfileMgmt">Profile Management</link> and 
+<link linkend="PolicyMgmt">Policy Management</link> chapters of this document.  However, these are not necessarily specific
 to a Samba PDC as much as they are related to Windows NT networking concepts.
 </para></note>
 
@@ -441,7 +399,7 @@ A Domain Controller is an SMB/CIFS server that:
 
 <itemizedlist>
 	<listitem><para>
-	Advertises and registers itself as a Domain Controller (Through NetBIOS broadcasts
+	Registers and advertises itself as a Domain Controller (through NetBIOS broadcasts
 	as well as by way of name registrations either by Mailslot Broadcasts over UDP broadcast,
 	to a WINS server over UDP unicast, or via DNS and Active Directory)
 	</para></listitem>
@@ -458,8 +416,8 @@ A Domain Controller is an SMB/CIFS server that:
 </itemizedlist>
 
 <para>
-For samba to provide these is rather easy to configure. Each Samba Domain Controller must provide
-the NETLOGON service which samba calls the <emphasis>domain logons</emphasis> functionality
+For Samba to provide these is rather easy to configure. Each Samba Domain Controller must provide
+the NETLOGON service which Samba calls the <emphasis>domain logons</emphasis> functionality
 (after the name of the parameter in the &smb.conf; file). Additionally, one (1) server in a Samba-3
 Domain must advertise itself as the domain master browser. This causes the Primary Domain Controller
 to claim domain specific NetBIOS name that identifies it as a domain master browser for its given
@@ -557,12 +515,12 @@ There are a couple of points to emphasize in the above configuration.
 <itemizedlist>
 	<listitem><para>
 	Encrypted passwords must be enabled.  For more details on how 
-	to do this, refer to <link linkend="passdb">the User Database chapter</link>.
+	to do this, refer to <link linkend="passdb">Account Information Database chapter</link>.
 	</para></listitem>
 	
 	<listitem><para>
 	The server must support domain logons and have a
-	<filename>[netlogon]</filename> share
+	<parameter>[netlogon]</parameter> share
 	</para></listitem>
 	
 	<listitem><para>
@@ -579,9 +537,9 @@ There are a couple of points to emphasize in the above configuration.
 <title>Samba ADS Domain Control</title>
 
 <para>
-Samba-3 is not and can not act as an Active Directory Server. It can not truely function as
+Samba-3 is not and can not act as an Active Directory Server. It can not truly function as
 an Active Directory Primary Domain Controller. The protocols for some of the functionality
-the Active Directory Domain Controllers is have been partially implemented on an experiemental
+the Active Directory Domain Controllers is have been partially implemented on an experimental
 only basis. Please do NOT expect Samba-3 to support these protocols - nor should you depend
 on any such functionality either now or in the future. The Samba-Team may well remove such
 experiemental features or may change their behaviour.
@@ -602,8 +560,8 @@ an integral part of the essential functionality that is provided by a Domain Con
 
 <para>
 All Domain Controllers must run the netlogon service (<emphasis>domain logons</emphasis>
-in Samba. One Domain Controller must be configured with <emphasis>domain master = Yes</emphasis>
-(the Primary Domain Controller), on ALL Backup Domain Controllers <emphasis>domain master = No</emphasis>
+in Samba). One Domain Controller must be configured with <parameter>domain master = Yes</parameter>
+(the Primary Domain Controller); on ALL Backup Domain Controllers <parameter>domain master = No</parameter>
 must be set.
 </para>
 
@@ -611,18 +569,15 @@ must be set.
 <title>Example Configuration</title>
 
 <programlisting>
-<title> A minimal configuration to support Domain Logons</title>
-<para>
 	[globals]
 		domain logons = Yes
 		domain master = (Yes on PDC, No on BDCs)
 
 	[netlogon]
-	        comment = Network Logon Service
+		comment = Network Logon Service
 		path = /var/lib/samba/netlogon
 		guest ok = Yes
 		browseable = No
-</para>
 </programlisting>
 
 </sect3>
@@ -677,7 +632,7 @@ which are the focus of this section.
 </para>
 
 <para>
-When an SMB client in a domain wishes to logon it broadcast requests for a
+When an SMB client in a domain wishes to logon, it broadcasts requests for a
 logon server.  The first one to reply gets the job, and validates its
 password using whatever mechanism the Samba administrator has installed.
 It is possible (but very stupid) to create a domain where the user
@@ -710,7 +665,7 @@ worthwhile to look at how a Windows 9x/ME client performs a logon:
 	a NetLogon request. This is sent to the NetBIOS name DOMAIN&lt;#1c&gt; at the
 	NetBIOS layer.  The client chooses the first response it receives, which
 	contains the NetBIOS name of the logon server to use in the format of 
-	\\SERVER.
+	<filename>\\SERVER</filename>.
 	</para>
 </listitem>
 
@@ -730,7 +685,7 @@ worthwhile to look at how a Windows 9x/ME client performs a logon:
 
 <listitem>
 	<para>
-	The client then connects to the NetLogon share and searches for this 	
+	The client then connects to the NetLogon share and searches for said script 	
 	and if it is found and can be read, is retrieved and executed by the client.
 	After this, the client disconnects from the NetLogon share.
 	</para>
@@ -740,7 +695,7 @@ worthwhile to look at how a Windows 9x/ME client performs a logon:
 	<para>
 	The client then sends a NetUserGetInfo request to the server, to retrieve
 	the user's home share, which is used to search for profiles. Since the
-	response to the NetUserGetInfo request does not contain much more then	
+	response to the NetUserGetInfo request does not contain much more than	
 	the user's home share, profiles for Win9X clients MUST reside in the user
 	home directory.
 	</para>
@@ -750,7 +705,7 @@ worthwhile to look at how a Windows 9x/ME client performs a logon:
 	<para>
 	The client then connects to the user's home share and searches for the 
 	user's profile. As it turns out, you can specify the user's home share as
-	a sharename and path. For example, \\server\fred\.winprofile.
+	a sharename and path. For example, <filename>\\server\fred\.winprofile</filename>.
 	If the profiles are found, they are implemented.
 	</para>
 </listitem>
@@ -758,7 +713,7 @@ worthwhile to look at how a Windows 9x/ME client performs a logon:
 <listitem>
 	<para>
 	The client then disconnects from the user's home share, and reconnects to
-	the NetLogon share and looks for CONFIG.POL, the policies file. If this is
+	the NetLogon share and looks for <filename>CONFIG.POL</filename>, the policies file. If this is
 	found, it is read and implemented.
 	</para>
 </listitem>
@@ -782,7 +737,7 @@ The main difference between a PDC and a Windows 9x logon server configuration is
 </itemizedlist>
 
 <para>
-A Samba PDC will act as a Windows 9x logon server, after all it does provide the
+A Samba PDC will act as a Windows 9x logon server; after all, it does provide the
 network logon services that MS Windows 9x / Me expect to find.
 </para>
 
@@ -816,12 +771,12 @@ For this reason, it is very wise to configure the Samba DC as the DMB.
 
 <para>
 Now back to the issue of configuring a Samba DC to use a mode other
-than <emphasis>security = user</emphasis>.  If a Samba host is configured to use 
+than <parameter>security = user</parameter>.  If a Samba host is configured to use 
 another SMB server or DC in order to validate user connection 
 requests, then it is a fact that some other machine on the network 
-(the <emphasis>password server</emphasis>) knows more about the user than the Samba host.
+(the <parameter>password server</parameter>) knows more about the user than the Samba host.
 99% of the time, this other host is a domain controller.  Now 
-in order to operate in domain mode security, the <emphasis>workgroup</emphasis> parameter
+in order to operate in domain mode security, the <parameter>workgroup</parameter> parameter
 must be set to the name of the Windows NT domain (which already 
 has a domain controller). If the domain does NOT already have a Domain Controller
 then you do not yet have a Domain!
@@ -830,7 +785,7 @@ then you do not yet have a Domain!
 <para>
 Configuring a Samba box as a DC for a domain that already by definition has a
 PDC is asking for trouble. Therefore, you should always configure the Samba DC
-to be the DMB for its domain and set <emphasis>security = user</emphasis>.
+to be the DMB for its domain and set <parameter>security = user</parameter>.
 This is the only officially supported mode of operation.
 </para>
 
@@ -844,15 +799,15 @@ This is the only officially supported mode of operation.
 <sect2>
 <title>I cannot include a '$' in a machine name</title>
 <para>
-A 'machine name' in (typically) <filename>/etc/passwd</filename> 	
-of the machine name with a '$' appended. FreeBSD (and other BSD 
+A 'machine account', (typically) stored in <filename>/etc/passwd</filename>,
+takes the form of the machine name with a '$' appended. FreeBSD (and other BSD 
 systems?) won't create a user with a '$' in their name.
 </para>
 
 <para>
 The problem is only in the program used to make the entry. Once made, it works perfectly.
-Create a user without the '$' using <command>vipw</command> to edit the entry, adding
-the '$'. Or create the whole entry with vipw if you like, make sure you use a unique User ID!
+Create a user without the '$'. Then use <command>vipw</command> to edit the entry, adding
+the '$'. Or create the whole entry with vipw if you like; make sure you use a unique User ID!
 </para>
 </sect2>
 
@@ -868,9 +823,9 @@ to a share (or IPC$) on the Samba PDC.  The following command
 will remove all network drive connections:
 </para>
 
-<para>
-<prompt>C:\WINNT\></prompt> <command>net use * /d</command>
-</para>
+<screen>
+	<prompt>C:\WINNT\></prompt> <userinput>net use * /d</userinput>
+</screen>
 
 <para>
 Further, if the machine is already a 'member of a workgroup' that 
@@ -884,15 +839,15 @@ does not matter what, reboot, and try again.
 <title>The system can not log you on (C000019B)....</title>
 
 <para>I joined the domain successfully but after upgrading 
-to a newer version of the Samba code I get the message, "The system 
+to a newer version of the Samba code I get the message, <errorname>The system 
 can not log you on (C000019B), Please try again or consult your 
-system administrator" when attempting to logon.
+system administrator</errorname> when attempting to logon.
 </para>
 
 <para>
 This occurs when the domain SID stored in the secrets.tdb database
 is changed. The most common cause of a change in domain SID is when
-the domain name and/or the server name (netbios name) is changed.
+the domain name and/or the server name (NetBIOS name) is changed.
 The only way to correct the problem is to restore the original domain 
 SID or remove the domain client from the domain and rejoin. The domain
 SID may be reset using either the net or rpcclient utilities.
@@ -901,10 +856,10 @@ SID may be reset using either the net or rpcclient utilities.
 <para>
 The reset or change the domain SID you can use the net command as follows:
 
-<programlisting>
-	net getlocalsid 'OLDNAME'
-	net setlocalsid 'SID'
-</programlisting>
+<screen>
+&rootprompt;<userinput>net getlocalsid 'OLDNAME'</userinput>
+&rootprompt;<userinput>net setlocalsid 'SID'</userinput>
+</screen>
 </para>
 
 </sect2>
@@ -914,8 +869,8 @@ The reset or change the domain SID you can use the net command as follows:
 exist or is not accessible.</title>
 
 <para>
-When I try to join the domain I get the message "The machine account 
-for this computer either does not exist or is not accessible". What's 
+When I try to join the domain I get the message <errorname>The machine account 
+for this computer either does not exist or is not accessible</errorname>. What's 
 wrong?
 </para>
 
@@ -933,9 +888,13 @@ correct for the machine trust account in smbpasswd file on the Samba PDC.
 If you added the account using an editor rather than using the smbpasswd 
 utility, make sure that the account name is the machine NetBIOS name 
 with a '$' appended to it ( i.e. computer_name$ ). There must be an entry 
-in both /etc/passwd and the smbpasswd file. Some people have reported 
+in both /etc/passwd and the smbpasswd file.
+</para>
+
+<para>
+Some people have also reported 
 that inconsistent subnet masks between the Samba server and the NT 
-client have caused this problem.   Make sure that these are consistent 
+client can cause this problem.   Make sure that these are consistent 
 for both client and server.
 </para>
 </sect2>
@@ -945,10 +904,18 @@ for both client and server.
 I get a message about my account being disabled.</title>
 
 <para>
-At first be ensure to enable the useraccounts with <command>smbpasswd -e 
-%user%</command>, this is normally done, when you create an account.
+Enable the user accounts with <userinput>smbpasswd -e <replaceable>username</replaceable>
+</userinput>, this is normally done as an account is created.
 </para>
 
 </sect2>
+
+<sect2>
+	<title>Until a few minutes after Samba has started, clients get the error "Domain Controller Unavailable"</title>
+	<para>
+		A domain controller has to announce on the network who it is. This usually takes a while.
+	</para>
+</sect2>
+
 </sect1>
 </chapter>
