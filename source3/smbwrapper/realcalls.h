@@ -64,7 +64,7 @@
 #elif HAVE___SEEKDIR
 #define real_seekdir(d)            	(__seekdir(d,l))
 #else
-#define NO_SEEKDIR
+#define NO_SEEKDIR_WRAPPER
 #endif
 
 #ifdef HAVE__TELLDIR
@@ -74,7 +74,7 @@
 #elif HAVE___TELLDIR
 #define real_telldir(d)            	(__telldir(d))
 #else
-#define NO_TELLDIR
+#define NO_TELLDIR_WRAPPER
 #endif
 
 #ifdef HAVE__DUP
@@ -123,6 +123,26 @@
 #define real_fstat(fd,st)		(syscall(SYS_fstat,(fd),(st)))
 #elif HAVE___FSTAT
 #define real_fstat(fd,st)            	(__fstat(fd,st))
+#endif
+
+#ifdef HAVE__ACL
+#define real_acl(fn,cmd,n,buf)            	(_acl(fn,cmd,n,buf))
+#elif SYS_acl
+#define real_acl(fn,cmd,n,buf)		(syscall(SYS_acl,(fn),(cmd),(n),(buf)))
+#elif HAVE___ACL
+#define real_acl(fn,cmd,n,buf)            	(__acl(fn,cmd,n,buf))
+#else
+#define NO_ACL_WRAPPER
+#endif
+
+#ifdef HAVE__FACL
+#define real_facl(fd,cmd,n,buf)            	(_facl(fd,cmd,n,buf))
+#elif SYS_facl
+#define real_facl(fd,cmd,n,buf)		(syscall(SYS_facl,(fd),(cmd),(n),(buf)))
+#elif HAVE___FACL
+#define real_facl(fd,cmd,n,buf)            	(__facl(fd,cmd,n,buf))
+#else
+#define NO_FACL_WRAPPER
 #endif
 
 

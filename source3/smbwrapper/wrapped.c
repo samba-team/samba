@@ -22,7 +22,9 @@
 
 #include "wrapper.h"
 
-#ifdef linux
+#ifdef HAVE__OPEN
+__asm__(".globl _open; _open = open");
+#elif HAVE___OPEN
 __asm__(".globl __open; __open = open");
 #endif
 
@@ -36,8 +38,10 @@ __asm__(".globl __open; __open = open");
 }
 
 
-#ifdef linux
+#ifdef HAVE___CHDIR
 __asm__(".globl __chdir; __chdir = chdir");
+#elif HAVE__CHDIR
+__asm__(".globl _chdir; _chdir = chdir");
 #endif
 
  int chdir(const char *name)
@@ -47,8 +51,10 @@ __asm__(".globl __chdir; __chdir = chdir");
 
 
 
-#ifdef linux
+#ifdef HAVE___CLOSE
 __asm__(".globl __close; __close = close");
+#elif HAVE__CLOSE
+__asm__(".globl _close; _close = close");
 #endif
 
  ssize_t close(int fd)
@@ -61,8 +67,10 @@ __asm__(".globl __close; __close = close");
 }
 
 
-#ifdef linux
+#ifdef HAVE___FCHDIR
 __asm__(".globl __fchdir; __fchdir = fchdir");
+#elif HAVE__FCHDIR
+__asm__(".globl _fchdir; _fchdir = fchdir");
 #endif
 
  int fchdir(int fd)
@@ -75,8 +83,10 @@ __asm__(".globl __fchdir; __fchdir = fchdir");
 }
 
 
-#ifdef linux
+#ifdef HAVE___FCNTL
 __asm__(".globl __fcntl; __fcntl = fcntl");
+#elif HAVE__FCNTL
+__asm__(".globl _fcntl; _fcntl = fcntl");
 #endif
 
  int fcntl(int fd, int cmd, long arg)
@@ -90,8 +100,10 @@ __asm__(".globl __fcntl; __fcntl = fcntl");
 
 
 
-#ifdef linux
+#ifdef HAVE___GETDENTS
 __asm__(".globl __getdents; __getdents = getdents");
+#elif HAVE__GETDENTS
+__asm__(".globl _getdents; _getdents = getdents");
 #endif
 
  int getdents(int fd, struct dirent *dirp, unsigned int count)
@@ -104,8 +116,10 @@ __asm__(".globl __getdents; __getdents = getdents");
 }
 
 
-#ifdef linux
+#ifdef HAVE___LSEEK
 __asm__(".globl __lseek; __lseek = lseek");
+#elif HAVE__LSEEK
+__asm__(".globl _lseek; _lseek = lseek");
 #endif
 
  ssize_t lseek(int fd, off_t offset, int whence)
@@ -119,8 +133,10 @@ __asm__(".globl __lseek; __lseek = lseek");
 
 
 
-#ifdef linux
+#ifdef HAVE___READ
 __asm__(".globl __read; __read = read");
+#elif HAVE__READ
+__asm__(".globl _read; _read = read");
 #endif
 
  ssize_t read(int fd, void *buf, size_t count)
@@ -133,8 +149,10 @@ __asm__(".globl __read; __read = read");
 }
 
 
-#ifdef linux
+#ifdef HAVE___WRITE
 __asm__(".globl __write; __write = write");
+#elif HAVE__WRITE
+__asm__(".globl _write; _write = write");
 #endif
 
  ssize_t write(int fd, void *buf, size_t count)
@@ -545,7 +563,7 @@ __asm__(".globl __write; __write = write");
 	return real_closedir(dir);
 }
 
-#ifndef NO_TELLDIR
+#ifndef NO_TELLDIR_WRAPPER
  off_t telldir(DIR *dir)
 {
 	if (smbw_dirp(dir)) {
@@ -556,7 +574,7 @@ __asm__(".globl __write; __write = write");
 }
 #endif
 
-#ifndef NO_SEEKDIR
+#ifndef NO_SEEKDIR_WRAPPER
  void seekdir(DIR *dir, off_t offset)
 {
 	if (smbw_dirp(dir)) {
@@ -567,3 +585,45 @@ __asm__(".globl __write; __write = write");
 	real_seekdir(dir, offset);
 }
 #endif
+
+
+#ifndef NO_ACL_WRAPPER
+ int  acl(const char  *pathp,  int  cmd,  int  nentries, aclent_t *aclbufp)
+{
+	if (smbw_path(pathp)) {
+		switch (cmd) {
+		case GETACL:
+		case GETACLCNT:
+			return 0;
+		default:
+			errno = ENOSYS;
+			return -1;
+		}
+	}
+
+	real_acl(pathp, cmd, nentries, aclbufp);
+}
+#endif
+
+#ifndef NO_FACL_WRAPPER
+ int  facl(int fd,  int  cmd,  int  nentries, aclent_t *aclbufp)
+{
+	if (smbw_fd(fd)) {
+		switch (cmd) {
+		case GETACL:
+		case GETACLCNT:
+			return 0;
+		default:
+			errno = ENOSYS;
+			return -1;
+		}
+	}
+
+	real_facl(fd, cmd, nentries, aclbufp);
+}
+#endif
+
+ int creat(const char *path, mode_t mode)
+{
+	return open(path, O_WRONLY | O_CREAT | O_TRUNC, mode);
+}

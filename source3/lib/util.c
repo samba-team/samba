@@ -4844,3 +4844,4 @@ void zero_free(void *p, size_t size)
 	memset(p, 0, size);
 	free(p);
 }
+
