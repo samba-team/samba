@@ -187,7 +187,7 @@ static NTSTATUS cmd_netlogon_sam_sync(struct cli_state *cli,
         /* Synchronise sam database */
 
 	result = cli_netlogon_sam_sync(cli, mem_ctx, &ret_creds, database_id,
-				       &num_deltas, &hdr_deltas, &deltas);
+				       0, &num_deltas, &hdr_deltas, &deltas);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
