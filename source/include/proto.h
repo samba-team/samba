@@ -1332,6 +1332,7 @@ char *lp_smbrun(void);
 char *lp_configfile(void);
 char *lp_tdb_passwd_file(void);
 char *lp_smb_passwd_file(void);
+char *lp_passdb_module_path(void);
 char *lp_serverstring(void);
 char *lp_printcapname(void);
 char *lp_enumports_cmd(void);
@@ -1603,13 +1604,9 @@ BOOL pm_process( char *FileName,
                  BOOL (*sfunc)(char *),
                  BOOL (*pfunc)(char *, char *) );
 
-/*The following definitions come from  passdb/ldap.c  */
+/*The following definitions come from  passdb/machine_sid.c  */
 
-struct passdb_ops *ldap_initialize_password_db(void);
-
-/*The following definitions come from  passdb/nispass.c  */
-
-struct passdb_ops *nisplus_initialize_password_db(void);
+BOOL pdb_generate_sam_sid(void);
 
 /*The following definitions come from  passdb/pass_check.c  */
 
@@ -1619,49 +1616,15 @@ BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
 
 /*The following definitions come from  passdb/passdb.c  */
 
-BOOL initialize_password_db(void);
-struct smb_passwd *iterate_getsmbpwrid(uint32 user_rid);
-struct smb_passwd *iterate_getsmbpwuid(uid_t smb_userid);
-struct smb_passwd *iterate_getsmbpwnam(char *name);
-void *startsmbpwent(BOOL update);
-void endsmbpwent(void *vp);
-struct smb_passwd *getsmbpwent(void *vp);
-BOOL add_smbpwd_entry(struct smb_passwd *newpwd);
-BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override);
-BOOL del_smbpwd_entry(const char *name);
-struct smb_passwd *getsmbpwnam(char *name);
-struct smb_passwd *getsmbpwrid(uint32 user_rid);
-struct smb_passwd *getsmbpwuid(uid_t smb_userid);
-struct sam_passwd *iterate_getsam21pwnam(char *name);
-struct sam_passwd *iterate_getsam21pwrid(uint32 rid);
-struct sam_passwd *iterate_getsam21pwuid(uid_t uid);
-struct sam_disp_info *getsamdisprid(uint32 rid);
-struct sam_passwd *getsam21pwent(void *vp);
-struct sam_passwd *getsam21pwnam(char *name);
-struct sam_passwd *getsam21pwrid(uint32 rid);
-BOOL add_sam21pwd_entry(struct sam_passwd *pwd);
-BOOL mod_sam21pwd_entry(struct sam_passwd *pwd, BOOL override);
-void pdb_init_smb(struct smb_passwd *user);
-void pdb_init_sam(struct sam_passwd *user);
-struct sam_disp_info *pdb_sam_to_dispinfo(struct sam_passwd *user);
-struct smb_passwd *pdb_sam_to_smb(struct sam_passwd *user);
-struct sam_passwd *pdb_smb_to_sam(struct smb_passwd *user);
-void copy_id23_to_sam_passwd(struct sam_passwd *to, SAM_USER_INFO_23 *from);
-void copy_id21_to_sam_passwd(struct sam_passwd *to, SAM_USER_INFO_21 *from);
-void copy_sam_passwd(struct sam_passwd *to, const struct sam_passwd *from);
+BOOL initialize_password_db(BOOL reload);
+void pdb_init_sam(SAM_ACCOUNT *user);
+void pdb_clear_sam(SAM_ACCOUNT *user);
+struct sam_disp_info *pdb_sam_to_dispinfo(SAM_ACCOUNT *user);
 char *pdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length);
 uint16 pdb_decode_acct_ctrl(const char *p);
-time_t pdb_get_last_set_time(const char *p);
-void pdb_set_logon_time(char *p, int max_len, time_t t);
-void pdb_set_logoff_time(char *p, int max_len, time_t t);
-void pdb_set_kickoff_time(char *p, int max_len, time_t t);
-void pdb_set_can_change_time(char *p, int max_len, time_t t);
-void pdb_set_must_change_time(char *p, int max_len, time_t t);
-void pdb_set_last_set_time(char *p, int max_len, time_t t);
 void pdb_sethexpwd(char *p, unsigned char *pwd, uint16 acct_ctrl);
 BOOL pdb_gethexpwd(char *p, unsigned char *pwd);
 BOOL pdb_name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid);
-BOOL pdb_generate_sam_sid(void);
 uid_t pdb_user_rid_to_uid(uint32 user_rid);
 gid_t pdb_user_rid_to_gid(uint32 user_rid);
 uint32 pdb_uid_to_user_rid(uid_t uid);
@@ -1673,6 +1636,78 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid);
 BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type);
 DOM_SID *local_gid_to_sid(DOM_SID *psid, gid_t gid);
 BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type);
+void copy_id23_to_sam_passwd(struct sam_passwd *to, SAM_USER_INFO_23 *from);
+void copy_id21_to_sam_passwd(struct sam_passwd *to, SAM_USER_INFO_21 *from);
+void copy_sam_passwd(struct sam_passwd *to, const struct sam_passwd *from);
+BOOL local_password_change(char *user_name, int local_flags,
+			   char *new_passwd, 
+			   char *err_str, size_t err_str_len,
+			   char *msg_str, size_t msg_str_len);
+uint16 pdb_get_acct_ctrl (SAM_ACCOUNT *sampass);
+time_t pdb_get_logon_time (SAM_ACCOUNT *sampass);
+time_t pdb_get_logoff_time (SAM_ACCOUNT *sampass);
+time_t pdb_get_kickoff_time (SAM_ACCOUNT *sampass);
+time_t pdb_get_pass_last_set_time (SAM_ACCOUNT *sampass);
+time_t pdb_get_pass_can_change_time (SAM_ACCOUNT *sampass);
+time_t pdb_get_pass_must_change_time (SAM_ACCOUNT *sampass);
+uint16 pdb_get_logon_divs (SAM_ACCOUNT *sampass);
+uint32 pdb_get_hours_len (SAM_ACCOUNT *sampass);
+uint8* pdb_get_hours (SAM_ACCOUNT *sampass);
+BYTE* pdb_get_nt_passwd (SAM_ACCOUNT *sampass);
+BYTE* pdb_get_lanman_passwd (SAM_ACCOUNT *sampass);
+uint32 pdb_get_user_rid (SAM_ACCOUNT *sampass);
+uint32 pdb_get_group_rid (SAM_ACCOUNT *sampass);
+uid_t pdb_get_uid (SAM_ACCOUNT *sampass);
+gid_t pdb_get_gid (SAM_ACCOUNT *sampass);
+char* pdb_get_username (SAM_ACCOUNT *sampass);
+char* pdb_get_domain (SAM_ACCOUNT *sampass);
+char* pdb_get_nt_username (SAM_ACCOUNT *sampass);
+char* pdb_get_fullname (SAM_ACCOUNT *sampass);
+char* pdb_get_homedir (SAM_ACCOUNT *sampass);
+char* pdb_get_dirdrive (SAM_ACCOUNT *sampass);
+char* pdb_get_logon_script (SAM_ACCOUNT *sampass);
+char* pdb_get_profile_path (SAM_ACCOUNT *sampass);
+char* pdb_get_acct_desc (SAM_ACCOUNT *sampass);
+char* pdb_get_workstations (SAM_ACCOUNT *sampass);
+char* pdb_get_munged_dial (SAM_ACCOUNT *sampass);
+uint32 pdb_get_unknown3 (SAM_ACCOUNT *sampass);
+uint32 pdb_get_unknown5 (SAM_ACCOUNT *sampass);
+uint32 pdb_get_unknown6 (SAM_ACCOUNT *sampass);
+BOOL pdb_set_acct_ctrl (SAM_ACCOUNT *sampass, uint16 flags);
+BOOL pdb_set_logon_time (SAM_ACCOUNT *sampass, time_t time);
+BOOL pdb_set_logoff_time (SAM_ACCOUNT *sampass, time_t time);
+BOOL pdb_set_kickoff_time (SAM_ACCOUNT *sampass, time_t time);
+BOOL pdb_set_pass_can_change_time (SAM_ACCOUNT *sampass, time_t time);
+BOOL pdb_set_pass_must_change_time (SAM_ACCOUNT *sampass, time_t time);
+BOOL pdb_set_pass_last_set_time (SAM_ACCOUNT *sampass, time_t time);
+BOOL pdb_set_hours_len (SAM_ACCOUNT *sampass, uint32 len);
+BOOL pdb_set_logons_divs (SAM_ACCOUNT *sampass, uint16 hours);
+BOOL pdb_set_uid (SAM_ACCOUNT *sampass, uid_t uid);
+BOOL pdb_set_gid (SAM_ACCOUNT *sampass, gid_t gid);
+BOOL pdb_set_user_rid (SAM_ACCOUNT *sampass, uint32 rid);
+BOOL pdb_set_group_rid (SAM_ACCOUNT *sampass, uint32 grid);
+BOOL pdb_set_username (SAM_ACCOUNT *sampass, char *username);
+BOOL pdb_set_domain (SAM_ACCOUNT *sampass, char *domain);
+BOOL pdb_set_nt_username (SAM_ACCOUNT *sampass, char *nt_username);
+BOOL pdb_set_fullname (SAM_ACCOUNT *sampass, char *fullname);
+BOOL pdb_set_logon_script (SAM_ACCOUNT *sampass, char *logon_script);
+BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, char *profile_path);
+BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, char *dir_drive);
+BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, char *homedir);
+BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, BYTE *pwd);
+BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, BYTE *pwd);
+
+/*The following definitions come from  passdb/pdb_smbpasswd.c  */
+
+BOOL pdb_setsampwent (BOOL update);
+void pdb_endsampwent (void);
+SAM_ACCOUNT* pdb_getsampwent (void);
+SAM_ACCOUNT* pdb_getsampwnam (char *username);
+SAM_ACCOUNT* pdb_getsampwuid (uid_t uid);
+SAM_ACCOUNT* pdb_getsampwrid (uint32 rid);
+BOOL pdb_add_sam_account (SAM_ACCOUNT *sampass);
+BOOL pdb_update_sam_account (SAM_ACCOUNT *sampass, BOOL override);
+BOOL pdb_delete_sam_account (char* username);
 
 /*The following definitions come from  passdb/secrets.c  */
 
@@ -1686,27 +1721,9 @@ BOOL secrets_fetch_trust_account_password(char *domain, uint8 ret_pwd[16],
 					  time_t *pass_last_set_time);
 BOOL secrets_store_trust_account_password(char *domain, uint8 new_pwd[16]);
 
-/*The following definitions come from  passdb/smbpass.c  */
-
-char *format_new_smbpasswd_entry(struct smb_passwd *newpwd);
-struct passdb_ops *file_initialize_password_db(void);
-
-/*The following definitions come from  passdb/smbpasschange.c  */
-
-BOOL local_password_change(char *user_name, int local_flags,
-			   char *new_passwd, 
-			   char *err_str, size_t err_str_len,
-			   char *msg_str, size_t msg_str_len);
-
 /*The following definitions come from  passdb/smbpassfile.c  */
 
-BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth);
-BOOL pw_file_unlock(int fd, int *plock_depth);
 BOOL trust_password_delete(char *domain);
-
-/*The following definitions come from  passdb/tdbpass.c  */
-
-struct passdb_ops *tdb_initialize_password_db(void);
 
 /*The following definitions come from  printing/load.c  */
 
@@ -1731,7 +1748,8 @@ void update_a_form(nt_forms_struct **list, const FORM *form, int count);
 int get_ntdrivers(fstring **list, char *architecture, uint32 version);
 BOOL get_short_archi(char *short_archi, char *long_archi);
 uint32 clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level);
-BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level, struct current_user *user, uint32 *perr);
+BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
+                                  uint32 level, struct current_user *user, uint32 *perr);
 uint32 get_a_printer_driver_9x_compatible(pstring line, fstring model);
 uint32 del_a_printer(char *sharename);
 BOOL add_a_specific_param(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM *param);
@@ -1808,6 +1826,7 @@ BOOL print_queue_purge(struct current_user *user, int snum, int *errcode);
 /*The following definitions come from  profile/profile.c  */
 
 void profile_message(int msg_type, pid_t src, void *buf, size_t len);
+void reqprofile_message(int msg_type, pid_t src, void *buf, size_t len);
 BOOL profile_setup(BOOL rdonly);
 
 /*The following definitions come from  rpc_client/cli_connect.c  */
@@ -2333,38 +2352,12 @@ void init_sam_info(DOM_SAM_INFO *sam,
 				char *logon_srv, char *comp_name, DOM_CRED *clnt_cred,
 				DOM_CRED *rtn_cred, uint16 logon_level,
 				NET_ID_INFO_CTR *ctr);
-void init_net_user_info3(NET_USER_INFO_3 *usr,
-
-	NTTIME *logon_time,
-	NTTIME *logoff_time,
-	NTTIME *kickoff_time,
-	NTTIME *pass_last_set_time,
-	NTTIME *pass_can_change_time,
-	NTTIME *pass_must_change_time,
-
-	char *user_name,
-	char *full_name,
-	char *logon_script,
-	char *profile_path,
-	char *home_dir,
-	char *dir_drive,
-
-	uint16 logon_count,
-	uint16 bad_pw_count,
-
-	uint32 user_id,
-	uint32 group_id,
-	uint32 num_groups,
-	DOM_GID *gids,
-	uint32 user_flgs,
-
-	char *sess_key,
-
-	char *logon_srv,
-	char *logon_dom,
-
-	DOM_SID *dom_sid,
-	char *other_sids);
+void init_net_user_info3(NET_USER_INFO_3 *usr, SAM_ACCOUNT *sampw,
+			 uint16 logon_count, uint16 bad_pw_count,
+ 		 	 uint32 num_groups, DOM_GID *gids,
+			 uint32 user_flgs, char *sess_key,
+ 			 char *logon_srv, char *logon_dom,
+			 DOM_SID *dom_sid, char *other_sids);
 void free_user_info3(NET_USER_INFO_3 *usr);
 BOOL net_io_q_sam_logon(char *desc, NET_Q_SAM_LOGON *q_l, prs_struct *ps, int depth);
 BOOL net_io_r_sam_logon(char *desc, NET_R_SAM_LOGON *r_l, prs_struct *ps, int depth);
@@ -2658,34 +2651,7 @@ void init_sam_user_info11(SAM_USER_INFO_11 *usr,
 				uint32 rid_group,
 				uint16 acct_ctrl);
 BOOL sam_io_user_info11(char *desc,  SAM_USER_INFO_11 *usr, prs_struct *ps, int depth);
-void init_sam_user_info21(SAM_USER_INFO_21 *usr,
-	NTTIME *logon_time,
-	NTTIME *logoff_time,
-	NTTIME *kickoff_time,
-	NTTIME *pass_last_set_time,
-	NTTIME *pass_can_change_time,
-	NTTIME *pass_must_change_time,
-
-	char *user_name,
-	char *full_name,
-	char *home_dir,
-	char *dir_drive,
-	char *logon_script,
-	char *profile_path,
-	char *description,
-	char *workstations,
-	char *unknown_str,
-	char *munged_dial,
-
-	uint32 user_rid,
-	uint32 group_rid,
-	uint16 acb_info, 
-
-	uint32 unknown_3,
-	uint16 logon_divs,
-	LOGON_HRS *hrs,
-	uint32 unknown_5,
-	uint32 unknown_6);
+void init_sam_user_info21(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw);
 void init_samr_r_query_userinfo(SAMR_R_QUERY_USERINFO *r_u,
 				uint16 switch_value, void *info, uint32 status);
 BOOL samr_io_r_query_userinfo(char *desc,  SAMR_R_QUERY_USERINFO *r_u, prs_struct *ps, int depth);
@@ -3233,12 +3199,8 @@ uint32 _spoolss_enumjobs( POLICY_HND *handle, uint32 firstjob, uint32 numofjobs,
 			  NEW_BUFFER *buffer, uint32 offered,
 			  uint32 *needed, uint32 *returned);
 uint32 _spoolss_schedulejob( POLICY_HND *handle, uint32 jobid);
-uint32 _spoolss_setjob( POLICY_HND *handle,
-				uint32 jobid,
-				uint32 level,
-                pipes_struct *p,
-				JOB_INFO *ctr,
-				uint32 command);
+uint32 _spoolss_setjob(POLICY_HND *handle, uint32 jobid, uint32 level,
+		       pipes_struct *p, JOB_INFO *ctr, uint32 command);
 uint32 _spoolss_enumprinterdrivers( UNISTR2 *name, UNISTR2 *environment, uint32 level,
 				    NEW_BUFFER *buffer, uint32 offered,
 				    uint32 *needed, uint32 *returned);
@@ -3392,8 +3354,8 @@ void process_blocking_lock_queue(time_t t);
 BOOL chgpasswd(char *name, char *oldpass, char *newpass, BOOL as_root);
 BOOL chgpasswd(char *name, char *oldpass, char *newpass, BOOL as_root);
 BOOL check_lanman_password(char *user, uchar * pass1,
-			   uchar * pass2, struct smb_passwd **psmbpw);
-BOOL change_lanman_password(struct smb_passwd *smbpw, uchar * pass1,
+			   uchar * pass2, SAM_ACCOUNT **hnd);
+BOOL change_lanman_password(SAM_ACCOUNT *sampass, uchar * pass1,
 			    uchar * pass2);
 BOOL pass_oem_change(char *user,
 		     uchar * lmdata, uchar * lmhash,
@@ -3401,12 +3363,12 @@ BOOL pass_oem_change(char *user,
 BOOL check_oem_password(char *user,
 			uchar * lmdata, uchar * lmhash,
 			uchar * ntdata, uchar * nthash,
-			struct smb_passwd **psmbpw, char *new_passwd,
+			SAM_ACCOUNT **hnd, char *new_passwd,
 			int new_passwd_size);
-BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd,
+BOOL change_oem_password(SAM_ACCOUNT *hnd, char *new_passwd,
 			 BOOL override);
 BOOL check_plaintext_password(char *user, char *old_passwd,
-			      int old_passwd_size, struct smb_passwd **psmbpw);
+			      int old_passwd_size, SAM_ACCOUNT **hnd);
 #endif
 
 /*The following definitions come from  smbd/close.c  */
@@ -3673,11 +3635,10 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
 		     char *domain,BOOL guest);
 void add_session_user(char *user);
 BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned char *c8);
-BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
+BOOL smb_password_ok(SAM_ACCOUNT *sampass, uchar chal[8],
                      uchar lm_pass[24], uchar nt_pass[24]);
-BOOL pass_check_smb(char *user, char *domain,
-		uchar *chal, uchar *lm_pwd, uchar *nt_pwd,
-		struct passwd *pwd);
+BOOL pass_check_smb(char *user, char *domain, uchar *chal, 
+                    uchar *lm_pwd, uchar *nt_pwd, struct passwd *pwd);
 BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd);
 BOOL user_ok(char *user,int snum);
 BOOL authorise_login(int snum,char *user,char *password, int pwlen, 

@@ -2,8 +2,9 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    Password and authentication handling
-   Copyright (C) Jeremy Allison 1996-1998
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1998
+   Copyright (C) Jeremy Allison 		1996-1998
+   Copyright (C) Luke Kenneth Casson Leighton 	1996-1998
+   Copyright (C) Gerald (Jerry) Carter		2000
       
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,6 +21,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include <dlfcn.h>
 #include "includes.h"
 
 extern int DEBUGLEVEL;
@@ -58,711 +60,186 @@ extern fstring global_myworkgroup;
  *
  */
 
-static struct passdb_ops *pdb_ops;
+struct passdb_ops *pdb_ops;
+
+static void* pdb_handle = NULL;
 
 /***************************************************************
  Initialize the password db operations.
 ***************************************************************/
-
-BOOL initialize_password_db(void)
+BOOL initialize_password_db(BOOL reload)
 {
-  if (pdb_ops)
-  {
-    return True;
-  }
 
-#ifdef WITH_NISPLUS
-  pdb_ops =  nisplus_initialize_password_db();
-#elif defined(WITH_LDAP)
-  pdb_ops = ldap_initialize_password_db();
-#elif defined(WITH_TDBPWD)
-  pdb_ops = tdb_initialize_password_db();
-#else 
-  pdb_ops = file_initialize_password_db();
-#endif 
-
-  return (pdb_ops != NULL);
-}
-
-/*
- * Functions that return/manipulate a struct smb_passwd.
- */
-
-/************************************************************************
- Utility function to search smb passwd by rid.  
-*************************************************************************/
-
-struct smb_passwd *iterate_getsmbpwrid(uint32 user_rid)
-{
-	return iterate_getsmbpwuid(pdb_user_rid_to_uid(user_rid));
-}
-
-/************************************************************************
- Utility function to search smb passwd by uid.  use this if your database
- does not have search facilities.
-*************************************************************************/
-
-struct smb_passwd *iterate_getsmbpwuid(uid_t smb_userid)
-{
-	struct smb_passwd *pwd = NULL;
-	void *fp = NULL;
-
-	DEBUG(10, ("search by smb_userid: %x\n", (int)smb_userid));
-
-	/* Open the smb password database - not for update. */
-	fp = startsmbpwent(False);
-
-	if (fp == NULL)
+	char*	modulename = lp_passdb_module_path();
+	
+	return True;
+	
+	/* load another module? */
+	if (reload && pdb_handle)
 	{
-		DEBUG(0, ("unable to open smb password database.\n"));
-		return NULL;
+		dlclose (pdb_handle);
+		pdb_handle = NULL;
 	}
-
-	while ((pwd = getsmbpwent(fp)) != NULL && pwd->smb_userid != smb_userid)
-      ;
-
-	if (pwd != NULL)
+	
+	/* do we have a module defined or use the default? */
+	if (strlen (modulename) != 0)
 	{
-		DEBUG(10, ("found by smb_userid: %x\n", (int)smb_userid));
-	}
-
-	endsmbpwent(fp);
-	return pwd;
-}
-
-/************************************************************************
- Utility function to search smb passwd by name.  use this if your database
- does not have search facilities.
-*************************************************************************/
-
-struct smb_passwd *iterate_getsmbpwnam(char *name)
-{
-	struct smb_passwd *pwd = NULL;
-	void *fp = NULL;
-
-	DEBUG(10, ("search by name: %s\n", name));
-
-	/* Open the sam password file - not for update. */
-	fp = startsmbpwent(False);
-
-	if (fp == NULL)
+		if ((pdb_handle=dlopen (modulename, RTLD_LAZY)) == NULL)
+		{
+			DEBUG(0,("initialize_password_db: ERROR - Unable to open passdb module \"%s\"!\n%s\n",
+				modulename, dlerror()));
+		}
+		else
+			DEBUG(1,("initialize_password_db: passdb module \"%s\" loaded successfully\n", modulename));
+	}	
+	
+	/* either no module name defined or the one that was failed 
+	   to open.  Let's try the default */
+	if (pdb_handle == NULL)
 	{
-		DEBUG(0, ("unable to open smb password database.\n"));
-		return NULL;
+		if ((pdb_handle=dlopen ("libpdbfile.so", RTLD_LAZY)) == NULL)
+		{
+			DEBUG(0,("initialize_password_db: ERROR - Unable to open \"libpdbfile.so\" passdb module!  No user authentication possible!\n%s\n",
+				dlerror()));
+			return False;
+		}
+		else
+			DEBUG(1,("initialize_password_db: passdb module \"libpdbfile.so\" loaded successfully\n"));
 	}
+					
 
-	while ((pwd = getsmbpwent(fp)) != NULL && !strequal(pwd->smb_name, name))
-      ;
-
-	if (pwd != NULL)
-	{
-		DEBUG(10, ("found by name: %s\n", name));
-	}
-
-	endsmbpwent(fp);
-	return pwd;
+	return (pdb_handle != NULL);
 }
-
-/***************************************************************
- Start to enumerate the smb or sam passwd list. Returns a void pointer
- to ensure no modification outside this module.
-
- Note that currently it is being assumed that a pointer returned
- from this function may be used to enumerate struct sam_passwd
- entries as well as struct smb_passwd entries. This may need
- to change. JRA.
-
-****************************************************************/
-
-void *startsmbpwent(BOOL update)
-{
-  return pdb_ops->startsmbpwent(update);
-}
-
-/***************************************************************
- End enumeration of the smb or sam passwd list.
-
- Note that currently it is being assumed that a pointer returned
- from this function may be used to enumerate struct sam_passwd
- entries as well as struct smb_passwd entries. This may need
- to change. JRA.
-
-****************************************************************/
-
-void endsmbpwent(void *vp)
-{
-  pdb_ops->endsmbpwent(vp);
-}
-
-/*************************************************************************
- Routine to return the next entry in the smb passwd list.
- *************************************************************************/
-
-struct smb_passwd *getsmbpwent(void *vp)
-{
-	return pdb_ops->getsmbpwent(vp);
-}
-
-/************************************************************************
- Routine to add an entry to the smb passwd file.
-*************************************************************************/
-
-BOOL add_smbpwd_entry(struct smb_passwd *newpwd)
-{
- 	return pdb_ops->add_smbpwd_entry(newpwd);
-}
-
-/************************************************************************
- Routine to search the smb passwd file for an entry matching the username.
- and then modify its password entry. We can't use the startsampwent()/
- getsampwent()/endsampwent() interfaces here as we depend on looking
- in the actual file to decide how much room we have to write data.
- override = False, normal
- override = True, override XXXXXXXX'd out password or NO PASS
-************************************************************************/
-
-BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
-{
- 	return pdb_ops->mod_smbpwd_entry(pwd, override);
-}
-
-/************************************************************************
- Routine to delete an entry from the smb passwd file.
-*************************************************************************/
-
-BOOL del_smbpwd_entry(const char *name)
-{
-	return pdb_ops->del_smbpwd_entry(name);
-}
-
-/************************************************************************
- Routine to search smb passwd by name.
-*************************************************************************/
-
-struct smb_passwd *getsmbpwnam(char *name)
-{
-	return pdb_ops->getsmbpwnam(name);
-}
-
-/************************************************************************
- Routine to search smb passwd by user rid.
-*************************************************************************/
-
-struct smb_passwd *getsmbpwrid(uint32 user_rid)
-{
-	return pdb_ops->getsmbpwrid(user_rid);
-}
-
-/************************************************************************
- Routine to search smb passwd by uid.
-*************************************************************************/
-
-struct smb_passwd *getsmbpwuid(uid_t smb_userid)
-{
-	return pdb_ops->getsmbpwuid(smb_userid);
-}
-
-/*
- * Functions that manupulate a struct sam_passwd.
- */
-
-/************************************************************************
- Utility function to search sam passwd by name.  use this if your database
- does not have search facilities.
-*************************************************************************/
-
-struct sam_passwd *iterate_getsam21pwnam(char *name)
-{
-	struct sam_passwd *pwd = NULL;
-	void *fp = NULL;
-
-	DEBUG(10, ("search by name: %s\n", name));
-
-	/* Open the smb password database - not for update. */
-	fp = startsmbpwent(False);
-
-	if (fp == NULL)
-	{
-		DEBUG(0, ("unable to open sam password database.\n"));
-		return NULL;
-	}
-
-	while ((pwd = getsam21pwent(fp)) != NULL && !strequal(pwd->smb_name, name))
-	{
-		DEBUG(10, ("iterate: %s 0x%x\n", pwd->smb_name, pwd->user_rid));
-	}
-
-	if (pwd != NULL)
-	{
-		DEBUG(10, ("found by name: %s\n", name));
-	}
-
-	endsmbpwent(fp);
-	return pwd;
-}
-
-/************************************************************************
- Utility function to search sam passwd by rid.  use this if your database
- does not have search facilities.
-
- search capability by both rid and uid are needed as the rid <-> uid
- mapping may be non-monotonic.  
-
-*************************************************************************/
-
-struct sam_passwd *iterate_getsam21pwrid(uint32 rid)
-{
-	struct sam_passwd *pwd = NULL;
-	void *fp = NULL;
-
-	DEBUG(10, ("search by rid: %x\n", rid));
-
-	/* Open the smb password file - not for update. */
-	fp = startsmbpwent(False);
-
-	if (fp == NULL)
-	{
-		DEBUG(0, ("unable to open sam password database.\n"));
-		return NULL;
-	}
-
-	while ((pwd = getsam21pwent(fp)) != NULL && pwd->user_rid != rid)
-	{
-		DEBUG(10, ("iterate: %s 0x%x\n", pwd->smb_name, pwd->user_rid));
-	}
-
-	if (pwd != NULL)
-	{
-		DEBUG(10, ("found by user_rid: %x\n", rid));
-	}
-
-	endsmbpwent(fp);
-	return pwd;
-}
-
-/************************************************************************
- Utility function to search sam passwd by uid.  use this if your database
- does not have search facilities.
-
- search capability by both rid and uid are needed as the rid <-> uid
- mapping may be non-monotonic.  
-
-*************************************************************************/
-
-struct sam_passwd *iterate_getsam21pwuid(uid_t uid)
-{
-	struct sam_passwd *pwd = NULL;
-	void *fp = NULL;
-
-	DEBUG(10, ("search by uid: %x\n", (int)uid));
-
-	/* Open the smb password file - not for update. */
-	fp = startsmbpwent(False);
-
-	if (fp == NULL)
-	{
-		DEBUG(0, ("unable to open sam password database.\n"));
-		return NULL;
-	}
-
-	while ((pwd = getsam21pwent(fp)) != NULL && pwd->smb_userid != uid)
-      ;
-
-	if (pwd != NULL)
-	{
-		DEBUG(10, ("found by smb_userid: %x\n", (int)uid));
-	}
-
-	endsmbpwent(fp);
-	return pwd;
-}
-
-/*************************************************************************
- Routine to return a display info structure, by rid
- *************************************************************************/
-struct sam_disp_info *getsamdisprid(uint32 rid)
-{
-	return pdb_ops->getsamdisprid(rid);
-}
-
-/*************************************************************************
- Routine to return the next entry in the sam passwd list.
- *************************************************************************/
-
-struct sam_passwd *getsam21pwent(void *vp)
-{
-	return pdb_ops->getsam21pwent(vp);
-}
-
-
-/************************************************************************
- Routine to search sam passwd by name.
-*************************************************************************/
-
-struct sam_passwd *getsam21pwnam(char *name)
-{
-	return pdb_ops->getsam21pwnam(name);
-}
-
-/************************************************************************
- Routine to search sam passwd by rid.  
-*************************************************************************/
-
-struct sam_passwd *getsam21pwrid(uint32 rid)
-{
-	return pdb_ops->getsam21pwrid(rid);
-}
-
-/************************************************************************
- Routine to add a SAM entry to the smb passwd file.
-*************************************************************************/
-
-BOOL add_sam21pwd_entry(struct sam_passwd *pwd)
-{
-	return pdb_ops->add_sam21pwd_entry(pwd);
-}
-
-/************************************************************************
- Routine to modify a SAM entry to the smb passwd file.
-*************************************************************************/
-
-BOOL mod_sam21pwd_entry(struct sam_passwd *pwd, BOOL override)
-{
-	return pdb_ops->mod_sam21pwd_entry(pwd, override);
-}
-
-/**********************************************************
- **********************************************************
-
- utility routines which are likely to be useful to all password
- databases
-
- **********************************************************
- **********************************************************/
 
 /*************************************************************
  initialises a struct sam_disp_info.
  **************************************************************/
-
 static void pdb_init_dispinfo(struct sam_disp_info *user)
 {
-	if (user == NULL) return;
-	memset((char *)user, '\0', sizeof(*user));
-}
-
-/*************************************************************
- initialises a struct smb_passwd.
- **************************************************************/
-
-void pdb_init_smb(struct smb_passwd *user)
-{
-	if (user == NULL) return;
-	memset((char *)user, '\0', sizeof(*user));
-	user->pass_last_set_time    = (time_t)-1;
+	if (user == NULL) 
+		return;
+	ZERO_STRUCTP(user);
 }
 
 /*************************************************************
  initialises a struct sam_passwd.
- **************************************************************/
-void pdb_init_sam(struct sam_passwd *user)
+ ************************************************************/
+void pdb_init_sam(SAM_ACCOUNT *user)
 {
-	if (user == NULL) return;
-	memset((char *)user, '\0', sizeof(*user));
+	if (user == NULL) 
+		return;
+	
+	ZERO_STRUCTP(user);
+	
 	user->logon_time            = (time_t)-1;
 	user->logoff_time           = (time_t)-1;
 	user->kickoff_time          = (time_t)-1;
 	user->pass_last_set_time    = (time_t)-1;
 	user->pass_can_change_time  = (time_t)-1;
 	user->pass_must_change_time = (time_t)-1;
+
+	user->unknown_3 = 0x00ffffff; 	/* don't know */
+	user->logon_divs = 168; 	/* hours per week */
+	user->hours_len = 21; 		/* 21 times 8 bits = 168 */
+	memset(user->hours, 0xff, user->hours_len); /* available at all hours */
+	user->unknown_5 = 0x00020000; 	/* don't know */
+	user->unknown_5 = 0x000004ec; 	/* don't know */
+	
 }
+
+/************************************************************
+ free all pointer members and then reinit the SAM_ACCOUNT
+ ***********************************************************/
+void pdb_clear_sam(SAM_ACCOUNT *user)
+{
+	if (user == NULL) 
+		return;
+		
+	/* clear all pointer members */
+	if (user->username)
+		free(user->username);
+	if (user->full_name)
+		free(user->full_name);
+	if (user->home_dir)
+		free(user->home_dir);
+	if (user->dir_drive)
+		free(user->dir_drive);
+	if (user->logon_script)
+		free(user->logon_script);
+	if (user->profile_path)
+		free(user->profile_path);
+	if (user->acct_desc)
+		free(user->acct_desc);
+	if (user->workstations)
+		free(user->workstations);
+	if (user->unknown_str)
+		free(user->unknown_str);
+	if (user->munged_dial)
+		free(user->munged_dial);
+		
+	if (user->lm_pw)
+		free(user->lm_pw);
+	if (user->nt_pw)
+		free(user->nt_pw);
+	
+	
+	/* now initialize */
+	pdb_init_sam(user);
+	
+}
+
 
 /*************************************************************************
  Routine to return the next entry in the sam passwd list.
  *************************************************************************/
-
-struct sam_disp_info *pdb_sam_to_dispinfo(struct sam_passwd *user)
+struct sam_disp_info *pdb_sam_to_dispinfo(SAM_ACCOUNT *user)
 {
 	static struct sam_disp_info disp_info;
 
-	if (user == NULL) return NULL;
+	if (user == NULL) 
+		return NULL;
 
 	pdb_init_dispinfo(&disp_info);
 
-	disp_info.smb_name  = user->smb_name;
+	disp_info.smb_name  = user->username;
 	disp_info.full_name = user->full_name;
 	disp_info.user_rid  = user->user_rid;
 
 	return &disp_info;
 }
 
-/*************************************************************
- converts a sam_passwd structure to a smb_passwd structure.
- **************************************************************/
-
-struct smb_passwd *pdb_sam_to_smb(struct sam_passwd *user)
-{
-	static struct smb_passwd pw_buf;
-
-	if (user == NULL) return NULL;
-
-	pdb_init_smb(&pw_buf);
-
-	pw_buf.smb_userid         = user->smb_userid;
-	pw_buf.smb_name           = user->smb_name;
-	pw_buf.smb_passwd         = user->smb_passwd;
-	pw_buf.smb_nt_passwd      = user->smb_nt_passwd;
-	pw_buf.acct_ctrl          = user->acct_ctrl;
-	pw_buf.pass_last_set_time = user->pass_last_set_time;
-
-	return &pw_buf;
-}
-
-
-/*************************************************************
- converts a smb_passwd structure to a sam_passwd structure.
- **************************************************************/
-
-struct sam_passwd *pdb_smb_to_sam(struct smb_passwd *user)
-{
-	static struct sam_passwd pw_buf;
-
-	if (user == NULL) return NULL;
-
-	pdb_init_sam(&pw_buf);
-
-	pw_buf.smb_userid         = user->smb_userid;
-	pw_buf.smb_name           = user->smb_name;
-	pw_buf.smb_passwd         = user->smb_passwd;
-	pw_buf.smb_nt_passwd      = user->smb_nt_passwd;
-	pw_buf.acct_ctrl          = user->acct_ctrl;
-	pw_buf.pass_last_set_time = user->pass_last_set_time;
-
-	return &pw_buf;
-}
-
-static void select_name(fstring *string, char **name, const UNISTR2 *from)
-{
-	if (from->buffer != 0)
-	{
-		unistr2_to_ascii(*string, from, sizeof(*string));
-		*name = *string;
-	}
-}
-
-/*************************************************************
- copies a sam passwd.
- **************************************************************/
-void copy_id23_to_sam_passwd(struct sam_passwd *to, SAM_USER_INFO_23 *from)
-{
-	static fstring smb_name;
-	static fstring full_name;
-	static fstring home_dir;
-	static fstring dir_drive;
-	static fstring logon_script;
-	static fstring profile_path;
-	static fstring acct_desc;
-	static fstring workstations;
-	static fstring unknown_str;
-	static fstring munged_dial;
-
-	if (from == NULL || to == NULL) return;
-
-	to->logon_time = nt_time_to_unix(&from->logon_time);
-	to->logoff_time = nt_time_to_unix(&from->logoff_time);
-	to->kickoff_time = nt_time_to_unix(&from->kickoff_time);
-	to->pass_last_set_time = nt_time_to_unix(&from->pass_last_set_time);
-	to->pass_can_change_time = nt_time_to_unix(&from->pass_can_change_time);
-	to->pass_must_change_time = nt_time_to_unix(&from->pass_must_change_time);
-
-	select_name(&smb_name    , &to->smb_name    , &from->uni_user_name   );
-	select_name(&full_name   , &to->full_name   , &from->uni_full_name   );
-	select_name(&home_dir    , &to->home_dir    , &from->uni_home_dir    );
-	select_name(&dir_drive   , &to->dir_drive   , &from->uni_dir_drive   );
-	select_name(&logon_script, &to->logon_script, &from->uni_logon_script);
-	select_name(&profile_path, &to->profile_path, &from->uni_profile_path);
-	select_name(&acct_desc   , &to->acct_desc   , &from->uni_acct_desc   );
-	select_name(&workstations, &to->workstations, &from->uni_workstations);
-	select_name(&unknown_str , &to->unknown_str , &from->uni_unknown_str );
-	select_name(&munged_dial , &to->munged_dial , &from->uni_munged_dial );
-
-	to->smb_userid = (uid_t)-1;
-	to->smb_grpid = (gid_t)-1;
-	to->user_rid = from->user_rid;
-	to->group_rid = from->group_rid;
-
-	to->smb_passwd = NULL;
-	to->smb_nt_passwd = NULL;
-
-	to->acct_ctrl = from->acb_info;
-	to->unknown_3 = from->unknown_3;
-
-	to->logon_divs = from->logon_divs;
-	to->hours_len = from->logon_hrs.len;
-	memcpy(to->hours, from->logon_hrs.hours, MAX_HOURS_LEN);
-
-	to->unknown_5 = from->unknown_5;
-	to->unknown_6 = from->unknown_6;
-}
-
-/*************************************************************
- copies a sam passwd.
- **************************************************************/
-void copy_id21_to_sam_passwd(struct sam_passwd *to, SAM_USER_INFO_21 *from)
-{
-	static fstring smb_name;
-	static fstring full_name;
-	static fstring home_dir;
-	static fstring dir_drive;
-	static fstring logon_script;
-	static fstring profile_path;
-	static fstring acct_desc;
-	static fstring workstations;
-	static fstring unknown_str;
-	static fstring munged_dial;
-
-	if (from == NULL || to == NULL) return;
-
-	to->logon_time = nt_time_to_unix(&from->logon_time);
-	to->logoff_time = nt_time_to_unix(&from->logoff_time);
-	to->kickoff_time = nt_time_to_unix(&from->kickoff_time);
-	to->pass_last_set_time = nt_time_to_unix(&from->pass_last_set_time);
-	to->pass_can_change_time = nt_time_to_unix(&from->pass_can_change_time);
-	to->pass_must_change_time = nt_time_to_unix(&from->pass_must_change_time);
-
-	select_name(&smb_name    , &to->smb_name    , &from->uni_user_name   );
-	select_name(&full_name   , &to->full_name   , &from->uni_full_name   );
-	select_name(&home_dir    , &to->home_dir    , &from->uni_home_dir    );
-	select_name(&dir_drive   , &to->dir_drive   , &from->uni_dir_drive   );
-	select_name(&logon_script, &to->logon_script, &from->uni_logon_script);
-	select_name(&profile_path, &to->profile_path, &from->uni_profile_path);
-	select_name(&acct_desc   , &to->acct_desc   , &from->uni_acct_desc   );
-	select_name(&workstations, &to->workstations, &from->uni_workstations);
-	select_name(&unknown_str , &to->unknown_str , &from->uni_unknown_str );
-	select_name(&munged_dial , &to->munged_dial , &from->uni_munged_dial );
-
-	to->smb_userid = (uid_t)-1;
-	to->smb_grpid = (gid_t)-1;
-	to->user_rid = from->user_rid;
-	to->group_rid = from->group_rid;
-
-	to->smb_passwd = NULL;
-	to->smb_nt_passwd = NULL;
-
-	to->acct_ctrl = from->acb_info;
-	to->unknown_3 = from->unknown_3;
-
-	to->logon_divs = from->logon_divs;
-	to->hours_len = from->logon_hrs.len;
-	memcpy(to->hours, from->logon_hrs.hours, MAX_HOURS_LEN);
-
-	to->unknown_5 = from->unknown_5;
-	to->unknown_6 = from->unknown_6;
-}
-
-
-/*************************************************************
- copies a sam passwd.
- **************************************************************/
-void copy_sam_passwd(struct sam_passwd *to, const struct sam_passwd *from)
-{
-	static fstring smb_name="";
-	static fstring full_name="";
-	static fstring home_dir="";
-	static fstring dir_drive="";
-	static fstring logon_script="";
-	static fstring profile_path="";
-	static fstring acct_desc="";
-	static fstring workstations="";
-	static fstring unknown_str="";
-	static fstring munged_dial="";
-
-	if (from == NULL || to == NULL) return;
-
-	memcpy(to, from, sizeof(*from));
-
-	if (from->smb_name != NULL) {
-		fstrcpy(smb_name  , from->smb_name);
-		to->smb_name = smb_name;
-	}
-	
-	if (from->full_name != NULL) {
-		fstrcpy(full_name, from->full_name);
-		to->full_name = full_name;
-	}
-
-	if (from->home_dir != NULL) {
-		fstrcpy(home_dir  , from->home_dir);
-		to->home_dir = home_dir;
-	}
-
-	if (from->dir_drive != NULL) {
-		fstrcpy(dir_drive  , from->dir_drive);
-		to->dir_drive = dir_drive;
-	}
-
-	if (from->logon_script != NULL) {
-		fstrcpy(logon_script  , from->logon_script);
-		to->logon_script = logon_script;
-	}
-
-	if (from->profile_path != NULL) {
-		fstrcpy(profile_path  , from->profile_path);
-		to->profile_path = profile_path;
-	}
-
-	if (from->acct_desc != NULL) {
-		fstrcpy(acct_desc  , from->acct_desc);
-		to->acct_desc = acct_desc;
-	}
-
-	if (from->workstations != NULL) {
-		fstrcpy(workstations  , from->workstations);
-		to->workstations = workstations;
-	}
-
-	if (from->unknown_str != NULL) {
-		fstrcpy(unknown_str  , from->unknown_str);
-		to->unknown_str = unknown_str;
-	}
-
-	if (from->munged_dial != NULL) {
-		fstrcpy(munged_dial  , from->munged_dial);
-		to->munged_dial = munged_dial;
-	}
-}
 
 /**********************************************************
  Encode the account control bits into a string.
  length = length of string to encode into (including terminating
  null). length *MUST BE MORE THAN 2* !
  **********************************************************/
-
 char *pdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length)
 {
-  static fstring acct_str;
-  size_t i = 0;
+	static fstring acct_str;
+	size_t i = 0;
 
-  acct_str[i++] = '[';
+	acct_str[i++] = '[';
 
-  if (acct_ctrl & ACB_PWNOTREQ ) acct_str[i++] = 'N';
-  if (acct_ctrl & ACB_DISABLED ) acct_str[i++] = 'D';
-  if (acct_ctrl & ACB_HOMDIRREQ) acct_str[i++] = 'H';
-  if (acct_ctrl & ACB_TEMPDUP  ) acct_str[i++] = 'T'; 
-  if (acct_ctrl & ACB_NORMAL   ) acct_str[i++] = 'U';
-  if (acct_ctrl & ACB_MNS      ) acct_str[i++] = 'M';
-  if (acct_ctrl & ACB_WSTRUST  ) acct_str[i++] = 'W';
-  if (acct_ctrl & ACB_SVRTRUST ) acct_str[i++] = 'S';
-  if (acct_ctrl & ACB_AUTOLOCK ) acct_str[i++] = 'L';
-  if (acct_ctrl & ACB_PWNOEXP  ) acct_str[i++] = 'X';
-  if (acct_ctrl & ACB_DOMTRUST ) acct_str[i++] = 'I';
+	if (acct_ctrl & ACB_PWNOTREQ ) acct_str[i++] = 'N';
+	if (acct_ctrl & ACB_DISABLED ) acct_str[i++] = 'D';
+	if (acct_ctrl & ACB_HOMDIRREQ) acct_str[i++] = 'H';
+	if (acct_ctrl & ACB_TEMPDUP  ) acct_str[i++] = 'T'; 
+	if (acct_ctrl & ACB_NORMAL   ) acct_str[i++] = 'U';
+	if (acct_ctrl & ACB_MNS      ) acct_str[i++] = 'M';
+	if (acct_ctrl & ACB_WSTRUST  ) acct_str[i++] = 'W';
+	if (acct_ctrl & ACB_SVRTRUST ) acct_str[i++] = 'S';
+	if (acct_ctrl & ACB_AUTOLOCK ) acct_str[i++] = 'L';
+	if (acct_ctrl & ACB_PWNOEXP  ) acct_str[i++] = 'X';
+	if (acct_ctrl & ACB_DOMTRUST ) acct_str[i++] = 'I';
 
-  for ( ; i < length - 2 ; i++ ) { acct_str[i] = ' '; }
+	for ( ; i < length - 2 ; i++ ) { acct_str[i] = ' '; }
 
-  i = length - 2;
-  acct_str[i++] = ']';
-  acct_str[i++] = '\0';
+	i = length - 2;
+	acct_str[i++] = ']';
+	acct_str[i++] = '\0';
 
-  return acct_str;
+	return acct_str;
 }     
 
 /**********************************************************
@@ -812,102 +289,6 @@ uint16 pdb_decode_acct_ctrl(const char *p)
 	return acct_ctrl;
 }
 
-/*******************************************************************
- gets password-database-format time from a string.
- ********************************************************************/
-
-static time_t get_time_from_string(const char *p)
-{
-	int i;
-
-	for (i = 0; i < 8; i++)
-	{
-		if (p[i] == '\0' || !isxdigit((int)(p[i]&0xFF)))
-		break;
-	}
-	if (i == 8)
-	{
-		/*
-		 * p points at 8 characters of hex digits - 
-		 * read into a time_t as the seconds since
-		 * 1970 that the password was last changed.
-		 */
-		return (time_t)strtol(p, NULL, 16);
-	}
-	return (time_t)-1;
-}
-
-/*******************************************************************
- gets password last set time
- ********************************************************************/
-
-time_t pdb_get_last_set_time(const char *p)
-{
-	if (*p && StrnCaseCmp(p, "LCT-", 4))
-	{
-		return get_time_from_string(p + 4);
-	}
-	return (time_t)-1;
-}
-
-
-/*******************************************************************
- sets password-database-format time in a string.
- ********************************************************************/
-static void set_time_in_string(char *p, int max_len, char *type, time_t t)
-{
-	slprintf(p, max_len, ":%s-%08X:", type, (uint32)t);
-}
-
-/*******************************************************************
- sets logon time
- ********************************************************************/
-void pdb_set_logon_time(char *p, int max_len, time_t t)
-{
-	set_time_in_string(p, max_len, "LNT", t);
-}
-
-/*******************************************************************
- sets logoff time
- ********************************************************************/
-void pdb_set_logoff_time(char *p, int max_len, time_t t)
-{
-	set_time_in_string(p, max_len, "LOT", t);
-}
-
-/*******************************************************************
- sets kickoff time
- ********************************************************************/
-void pdb_set_kickoff_time(char *p, int max_len, time_t t)
-{
-	set_time_in_string(p, max_len, "KOT", t);
-}
-
-/*******************************************************************
- sets password can change time
- ********************************************************************/
-void pdb_set_can_change_time(char *p, int max_len, time_t t)
-{
-	set_time_in_string(p, max_len, "CCT", t);
-}
-
-/*******************************************************************
- sets password last set time
- ********************************************************************/
-void pdb_set_must_change_time(char *p, int max_len, time_t t)
-{
-	set_time_in_string(p, max_len, "MCT", t);
-}
-
-/*******************************************************************
- sets password last set time
- ********************************************************************/
-void pdb_set_last_set_time(char *p, int max_len, time_t t)
-{
-	set_time_in_string(p, max_len, "LCT", t);
-}
-
-
 /*************************************************************
  Routine to set 32 hex password characters from a 16 byte array.
 **************************************************************/
@@ -924,6 +305,7 @@ void pdb_sethexpwd(char *p, unsigned char *pwd, uint16 acct_ctrl)
 			safe_strcpy(p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", 33);
 	}
 }
+
 /*************************************************************
  Routine to get the 32 hex characters and turn them
  into a 16 byte array.
@@ -959,10 +341,9 @@ BOOL pdb_gethexpwd(char *p, unsigned char *pwd)
 /*******************************************************************
  Group and User RID username mapping function
  ********************************************************************/
-
 BOOL pdb_name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid)
 {
-    struct passwd *pw = Get_Pwnam(user_name, False);
+	struct passwd *pw = Get_Pwnam(user_name, False);
 
 	if (u_rid == NULL || g_rid == NULL || user_name == NULL)
 	{
@@ -996,243 +377,9 @@ BOOL pdb_name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid)
 	return True;
 }
 
-/****************************************************************************
- Read the machine SID from a file.
-****************************************************************************/
-
-static BOOL read_sid_from_file(int fd, char *sid_file)
-{
-  fstring fline;
-
-  memset(fline, '\0', sizeof(fline));
-
-  if(read(fd, fline, sizeof(fline) -1 ) < 0) {
-    DEBUG(0,("unable to read file %s. Error was %s\n",
-           sid_file, strerror(errno) ));
-    return False;
-  }
-
-  /*
-   * Convert to the machine SID.
-   */
-
-  fline[sizeof(fline)-1] = '\0';
-  if(!string_to_sid( &global_sam_sid, fline)) {
-    DEBUG(0,("unable to generate machine SID.\n"));
-    return False;
-  }
-
-  return True;
-}
-
-/****************************************************************************
- Generate the global machine sid. Look for the MACHINE.SID file first, if
- not found then look in smb.conf and use it to create the MACHINE.SID file.
- Note this function will be replaced soon. JRA.
-****************************************************************************/
-
-BOOL pdb_generate_sam_sid(void)
-{
-	int fd;
-	char *p;
-	pstring sid_file;
-	fstring sid_string;
-	SMB_STRUCT_STAT st;
-	BOOL overwrite_bad_sid = False;
-
-	generate_wellknown_sids();
-
-	pstrcpy(sid_file, lp_smb_passwd_file());
-	p = strrchr(sid_file, '/');
-	if(p != NULL) {
-		*++p = '\0';
-	}
-
-	if (!directory_exist(sid_file, NULL)) {
-		if (mkdir(sid_file, 0700) != 0) {
-			DEBUG(0,("can't create private directory %s : %s\n",
-				 sid_file, strerror(errno)));
-			return False;
-		}
-	}
-
-	pstrcat(sid_file, "MACHINE.SID");
-    
-	if((fd = sys_open(sid_file, O_RDWR | O_CREAT, 0644)) == -1) {
-		DEBUG(0,("unable to open or create file %s. Error was %s\n",
-			 sid_file, strerror(errno) ));
-		return False;
-	} 
-  
-	/*
-	 * Check if the file contains data.
-	 */
-	
-	if(sys_fstat( fd, &st) < 0) {
-		DEBUG(0,("unable to stat file %s. Error was %s\n",
-			 sid_file, strerror(errno) ));
-		close(fd);
-		return False;
-	} 
-  
-	if(st.st_size > 0) {
-		/*
-		 * We have a valid SID - read it.
-		 */
-		if(!read_sid_from_file( fd, sid_file)) {
-			DEBUG(0,("unable to read file %s. Error was %s\n",
-				 sid_file, strerror(errno) ));
-			close(fd);
-			return False;
-		}
-
-		/*
-		 * JRA. Reversed the sense of this test now that I have
-		 * actually done this test *personally*. One more reason
-		 * to never trust third party information you have not
-		 * independently verified.... sigh. JRA.
-		 */
-
-		if(global_sam_sid.num_auths > 0 && global_sam_sid.sub_auths[0] == 0x21) {
-			/*
-			 * Fix and re-write...
-			 */
-			overwrite_bad_sid = True;
-			global_sam_sid.sub_auths[0] = 21;
-			DEBUG(5,("pdb_generate_sam_sid: Old (incorrect) sid id_auth of hex 21 \
-detected - re-writing to be decimal 21 instead.\n" ));
-			sid_to_string(sid_string, &global_sam_sid);
-			if(sys_lseek(fd, (SMB_OFF_T)0, SEEK_SET) != 0) {
-				DEBUG(0,("unable to seek file file %s. Error was %s\n",
-					 sid_file, strerror(errno) ));
-				close(fd);
-				return False;
-			}
-		} else {
-			close(fd);
-			return True;
-		}
-	} else {
-		/*
-		 * The file contains no data - we need to generate our
-		 * own sid.
-		 * Generate the new sid data & turn it into a string.
-		 */
-		int i;
-		uchar raw_sid_data[12];
-		DOM_SID mysid;
-
-		memset((char *)&mysid, '\0', sizeof(DOM_SID));
-		mysid.sid_rev_num = 1;
-		mysid.id_auth[5] = 5;
-		mysid.num_auths = 0;
-		mysid.sub_auths[mysid.num_auths++] = 21;
-
-		generate_random_buffer( raw_sid_data, 12, True);
-		for( i = 0; i < 3; i++)
-			mysid.sub_auths[mysid.num_auths++] = IVAL(raw_sid_data, i*4);
-
-		sid_to_string(sid_string, &mysid);
-	} 
-	
-	fstrcat(sid_string, "\n");
-	
-	/*
-	 * Ensure our new SID is valid.
-	 */
-	
-	if(!string_to_sid( &global_sam_sid, sid_string)) {
-		DEBUG(0,("unable to generate machine SID.\n"));
-		return False;
-	} 
-  
-	/*
-	 * Do an exclusive blocking lock on the file.
-	 */
-	
-	if(!do_file_lock( fd, 60, F_WRLCK)) {
-		DEBUG(0,("unable to lock file %s. Error was %s\n",
-			 sid_file, strerror(errno) ));
-		close(fd);
-		return False;
-	} 
- 
-	if(!overwrite_bad_sid) {
-		/*
-		 * At this point we have a blocking lock on the SID
-		 * file - check if in the meantime someone else wrote
-		 * SID data into the file. If so - they were here first,
-		 * use their data.
-		 */
-	
-		if(sys_fstat( fd, &st) < 0) {
-			DEBUG(0,("unable to stat file %s. Error was %s\n",
-				 sid_file, strerror(errno) ));
-			close(fd);
-			return False;
-		} 
-  
-		if(st.st_size > 0) {
-			/*
-			 * Unlock as soon as possible to reduce
-			 * contention on the exclusive lock.
-			 */ 
-			do_file_lock( fd, 60, F_UNLCK);
-		
-			/*
-			 * We have a valid SID - read it.
-			 */
-		
-			if(!read_sid_from_file( fd, sid_file)) {
-				DEBUG(0,("unable to read file %s. Error was %s\n",
-					 sid_file, strerror(errno) ));
-				close(fd);
-				return False;
-			}
-			close(fd);
-			return True;
-		} 
-	}
-	
-	/*
-	 * The file is still empty and we have an exlusive lock on it,
-	 * or we're fixing an earlier mistake.
-	 * Write out out SID data into the file.
-	 */
-
-	/*
-	 * Use chmod here as some (strange) UNIX's don't
-	 * have fchmod. JRA.
-	 */	
-
-	if(chmod(sid_file, 0644) < 0) {
-		DEBUG(0,("unable to set correct permissions on file %s. \
-Error was %s\n", sid_file, strerror(errno) ));
-		do_file_lock( fd, 60, F_UNLCK);
-		close(fd);
-		return False;
-	} 
-	
-	if(write( fd, sid_string, strlen(sid_string)) != strlen(sid_string)) {
-		DEBUG(0,("unable to write file %s. Error was %s\n",
-			 sid_file, strerror(errno) ));
-		do_file_lock( fd, 60, F_UNLCK);
-		close(fd);
-		return False;
-	} 
-	
-	/*
-	 * Unlock & exit.
-	 */
-	
-	do_file_lock( fd, 60, F_UNLCK);
-	close(fd);
-	return True;
-}   
 /*******************************************************************
  Converts NT user RID to a UNIX uid.
  ********************************************************************/
-
 uid_t pdb_user_rid_to_uid(uint32 user_rid)
 {
 	return (uid_t)(((user_rid & (~USER_RID_TYPE))- 1000)/RID_MULTIPLIER);
@@ -1277,7 +424,6 @@ static BOOL pdb_rid_is_well_known(uint32 rid)
 /*******************************************************************
  Decides if a RID is a user or group RID.
  ********************************************************************/
-  
 BOOL pdb_rid_is_user(uint32 rid)
 {
   /* lkcl i understand that NT attaches an enumeration to a RID
@@ -1300,7 +446,6 @@ BOOL pdb_rid_is_user(uint32 rid)
 /*******************************************************************
  Convert a rid into a name. Used in the lookup SID rpc.
  ********************************************************************/
-
 BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 {
 
@@ -1418,10 +563,9 @@ BOOL local_lookup_name(char *domain, char *user, DOM_SID *psid, enum SID_NAME_US
 /****************************************************************************
  Convert a uid to SID - locally.
 ****************************************************************************/
-
 DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 {
-    extern DOM_SID global_sam_sid;
+	extern DOM_SID global_sam_sid;
 
 	sid_copy(psid, &global_sam_sid);
 	sid_append_rid(psid, pdb_uid_to_user_rid(uid));
@@ -1433,10 +577,10 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 /****************************************************************************
  Convert a SID to uid - locally.
 ****************************************************************************/
-
 BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 {
-    extern DOM_SID global_sam_sid;
+	extern DOM_SID global_sam_sid;
+
 	DOM_SID dom_sid;
 	uint32 rid;
 
@@ -1449,7 +593,6 @@ BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 	 * We can only convert to a uid if this is our local
 	 * Domain SID (ie. we are the controling authority).
 	 */
-
 	if (!sid_equal(&global_sam_sid, &dom_sid))
 		return False;
 
@@ -1458,7 +601,6 @@ BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 	/*
 	 * Ensure this uid really does exist.
 	 */
-
 	if(!sys_getpwuid(*puid))
 		return False;
 
@@ -1468,7 +610,6 @@ BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 /****************************************************************************
  Convert a gid to SID - locally.
 ****************************************************************************/
-
 DOM_SID *local_gid_to_sid(DOM_SID *psid, gid_t gid)
 {
     extern DOM_SID global_sam_sid;
@@ -1482,7 +623,6 @@ DOM_SID *local_gid_to_sid(DOM_SID *psid, gid_t gid)
 /****************************************************************************
  Convert a SID to gid - locally.
 ****************************************************************************/
-
 BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 {
     extern DOM_SID global_sam_sid;
@@ -1513,3 +653,889 @@ BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 
 	return True;
 }
+
+static void select_name(fstring *string, char **name, const UNISTR2 *from)
+{
+	if (from->buffer != 0)
+	{
+		unistr2_to_ascii(*string, from, sizeof(*string));
+		*name = *string;
+	}
+}
+
+/*************************************************************
+ copies a sam passwd.
+ **************************************************************/
+void copy_id23_to_sam_passwd(struct sam_passwd *to, SAM_USER_INFO_23 *from)
+{
+	static fstring smb_name;
+	static fstring full_name;
+	static fstring home_dir;
+	static fstring dir_drive;
+	static fstring logon_script;
+	static fstring profile_path;
+	static fstring acct_desc;
+	static fstring workstations;
+	static fstring unknown_str;
+	static fstring munged_dial;
+
+	if (from == NULL || to == NULL) return;
+
+	to->logon_time = nt_time_to_unix(&from->logon_time);
+	to->logoff_time = nt_time_to_unix(&from->logoff_time);
+	to->kickoff_time = nt_time_to_unix(&from->kickoff_time);
+	to->pass_last_set_time = nt_time_to_unix(&from->pass_last_set_time);
+	to->pass_can_change_time = nt_time_to_unix(&from->pass_can_change_time);
+	to->pass_must_change_time = nt_time_to_unix(&from->pass_must_change_time);
+
+	select_name(&smb_name    , &to->username    , &from->uni_user_name   );
+	select_name(&full_name   , &to->full_name   , &from->uni_full_name   );
+	select_name(&home_dir    , &to->home_dir    , &from->uni_home_dir    );
+	select_name(&dir_drive   , &to->dir_drive   , &from->uni_dir_drive   );
+	select_name(&logon_script, &to->logon_script, &from->uni_logon_script);
+	select_name(&profile_path, &to->profile_path, &from->uni_profile_path);
+	select_name(&acct_desc   , &to->acct_desc   , &from->uni_acct_desc   );
+	select_name(&workstations, &to->workstations, &from->uni_workstations);
+	select_name(&unknown_str , &to->unknown_str , &from->uni_unknown_str );
+	select_name(&munged_dial , &to->munged_dial , &from->uni_munged_dial );
+
+	to->uid = (uid_t)-1;
+	to->gid = (gid_t)-1;
+	to->user_rid = from->user_rid;
+	to->group_rid = from->group_rid;
+
+	to->lm_pw = NULL;
+	to->nt_pw = NULL;
+
+	to->acct_ctrl = from->acb_info;
+	to->unknown_3 = from->unknown_3;
+
+	to->logon_divs = from->logon_divs;
+	to->hours_len = from->logon_hrs.len;
+	memcpy(to->hours, from->logon_hrs.hours, MAX_HOURS_LEN);
+
+	to->unknown_5 = from->unknown_5;
+	to->unknown_6 = from->unknown_6;
+}
+
+/*************************************************************
+ copies a sam passwd.
+ **************************************************************/
+void copy_id21_to_sam_passwd(struct sam_passwd *to, SAM_USER_INFO_21 *from)
+{
+	static fstring smb_name;
+	static fstring full_name;
+	static fstring home_dir;
+	static fstring dir_drive;
+	static fstring logon_script;
+	static fstring profile_path;
+	static fstring acct_desc;
+	static fstring workstations;
+	static fstring unknown_str;
+	static fstring munged_dial;
+
+	if (from == NULL || to == NULL) return;
+
+	to->logon_time = nt_time_to_unix(&from->logon_time);
+	to->logoff_time = nt_time_to_unix(&from->logoff_time);
+	to->kickoff_time = nt_time_to_unix(&from->kickoff_time);
+	to->pass_last_set_time = nt_time_to_unix(&from->pass_last_set_time);
+	to->pass_can_change_time = nt_time_to_unix(&from->pass_can_change_time);
+	to->pass_must_change_time = nt_time_to_unix(&from->pass_must_change_time);
+
+	select_name(&smb_name    , &to->username    , &from->uni_user_name   );
+	select_name(&full_name   , &to->full_name   , &from->uni_full_name   );
+	select_name(&home_dir    , &to->home_dir    , &from->uni_home_dir    );
+	select_name(&dir_drive   , &to->dir_drive   , &from->uni_dir_drive   );
+	select_name(&logon_script, &to->logon_script, &from->uni_logon_script);
+	select_name(&profile_path, &to->profile_path, &from->uni_profile_path);
+	select_name(&acct_desc   , &to->acct_desc   , &from->uni_acct_desc   );
+	select_name(&workstations, &to->workstations, &from->uni_workstations);
+	select_name(&unknown_str , &to->unknown_str , &from->uni_unknown_str );
+	select_name(&munged_dial , &to->munged_dial , &from->uni_munged_dial );
+
+	to->uid = (uid_t)-1;
+	to->gid = (gid_t)-1;
+	to->user_rid = from->user_rid;
+	to->group_rid = from->group_rid;
+
+	to->lm_pw = NULL;
+	to->nt_pw = NULL;
+
+	to->acct_ctrl = from->acb_info;
+	to->unknown_3 = from->unknown_3;
+
+	to->logon_divs = from->logon_divs;
+	to->hours_len = from->logon_hrs.len;
+	memcpy(to->hours, from->logon_hrs.hours, MAX_HOURS_LEN);
+
+	to->unknown_5 = from->unknown_5;
+	to->unknown_6 = from->unknown_6;
+}
+
+
+/*************************************************************
+ copies a sam passwd.
+ 
+ FIXME!  Do we need to use dynamically allocated strings
+ here instead of static strings?     
+ 
+ Why are password hashes not also copied?     --jerry
+ **************************************************************/
+void copy_sam_passwd(struct sam_passwd *to, const struct sam_passwd *from)
+{
+	static fstring smb_name="";
+	static fstring full_name="";
+	static fstring home_dir="";
+	static fstring dir_drive="";
+	static fstring logon_script="";
+	static fstring profile_path="";
+	static fstring acct_desc="";
+	static fstring workstations="";
+	static fstring unknown_str="";
+	static fstring munged_dial="";
+
+	if (from == NULL || to == NULL) return;
+
+	memcpy(to, from, sizeof(*from));
+
+	if (from->username != NULL) {
+		fstrcpy(smb_name  , from->username);
+		to->username = smb_name;
+	}
+	
+	if (from->full_name != NULL) {
+		fstrcpy(full_name, from->full_name);
+		to->full_name = full_name;
+	}
+
+	if (from->home_dir != NULL) {
+		fstrcpy(home_dir  , from->home_dir);
+		to->home_dir = home_dir;
+	}
+
+	if (from->dir_drive != NULL) {
+		fstrcpy(dir_drive  , from->dir_drive);
+		to->dir_drive = dir_drive;
+	}
+
+	if (from->logon_script != NULL) {
+		fstrcpy(logon_script  , from->logon_script);
+		to->logon_script = logon_script;
+	}
+
+	if (from->profile_path != NULL) {
+		fstrcpy(profile_path  , from->profile_path);
+		to->profile_path = profile_path;
+	}
+
+	if (from->acct_desc != NULL) {
+		fstrcpy(acct_desc  , from->acct_desc);
+		to->acct_desc = acct_desc;
+	}
+
+	if (from->workstations != NULL) {
+		fstrcpy(workstations  , from->workstations);
+		to->workstations = workstations;
+	}
+
+	if (from->unknown_str != NULL) {
+		fstrcpy(unknown_str  , from->unknown_str);
+		to->unknown_str = unknown_str;
+	}
+
+	if (from->munged_dial != NULL) {
+		fstrcpy(munged_dial  , from->munged_dial);
+		to->munged_dial = munged_dial;
+	}
+}
+
+/*************************************************************
+ change a password entry in the local smbpasswd file
+
+ FIXME!!  The function needs to be abstracted into the
+ passdb interface or something.  It is currently being called
+ by _api_samr_create_user() in rpc_server/srv_samr.c
+ 
+ --jerry
+ *************************************************************/
+
+BOOL local_password_change(char *user_name, int local_flags,
+			   char *new_passwd, 
+			   char *err_str, size_t err_str_len,
+			   char *msg_str, size_t msg_str_len)
+{
+	struct passwd  *pwd = NULL;
+	SAM_ACCOUNT 	*sam_pass;
+	SAM_ACCOUNT	new_sam_acct;
+	uchar           new_p16[16];
+	uchar           new_nt_p16[16];
+
+	*err_str = '\0';
+	*msg_str = '\0';
+
+	if (local_flags & LOCAL_ADD_USER) {
+	
+		/*
+		 * Check for a local account - if we're adding only.
+		 */
+	
+		if(!(pwd = sys_getpwnam(user_name))) {
+			slprintf(err_str, err_str_len - 1, "User %s does not \
+exist in system password file (usually /etc/passwd). Cannot add \
+account without a valid local system user.\n", user_name);
+			return False;
+		}
+	}
+
+	/* Calculate the MD4 hash (NT compatible) of the new password. */
+	nt_lm_owf_gen(new_passwd, new_nt_p16, new_p16);
+
+	/* Get the smb passwd entry for this user */
+	sam_pass = pdb_getsampwnam(user_name);
+	if (sam_pass == NULL) 
+	{
+		if(!(local_flags & LOCAL_ADD_USER)) 
+		{
+			slprintf(err_str, err_str_len-1,"Failed to find entry for user %s.\n", user_name);
+			return False;
+		}
+
+		/* create the SAM_ACCOUNT struct and call pdb_add_sam_account */
+		pdb_init_sam 	      (&new_sam_acct);
+		pdb_set_username      (&new_sam_acct, user_name);
+		pdb_set_uid	      (&new_sam_acct, pwd->pw_uid);
+		pdb_set_pass_last_set_time(&new_sam_acct, time(NULL));
+
+		/* set account flags */
+		pdb_set_acct_ctrl(&new_sam_acct,((local_flags & LOCAL_TRUST_ACCOUNT) ? ACB_WSTRUST : ACB_NORMAL) );
+		if (local_flags & LOCAL_DISABLE_USER)
+		{
+			pdb_set_acct_ctrl (&new_sam_acct, pdb_get_acct_ctrl(&new_sam_acct)|ACB_DISABLED);
+		}
+		if (local_flags & LOCAL_SET_NO_PASSWORD)
+		{
+			pdb_set_acct_ctrl (&new_sam_acct, pdb_get_acct_ctrl(&new_sam_acct)|ACB_PWNOTREQ);
+		}
+		else
+		{
+			/* set the passwords here.  if we get to here it means
+			   we have a valid, active account */
+			pdb_set_lanman_passwd (&new_sam_acct, new_p16);
+			pdb_set_nt_passwd     (&new_sam_acct, new_nt_p16);
+		}
+		
+			
+		if (pdb_add_sam_account(&new_sam_acct)) 
+		{
+			slprintf(msg_str, msg_str_len-1, "Added user %s.\n", user_name);
+			pdb_clear_sam (&new_sam_acct);
+			return True;
+		} 
+		else 
+		{
+			slprintf(err_str, err_str_len-1, "Failed to add entry for user %s.\n", user_name);
+			return False;
+		}
+	} 
+	else 
+	{
+		/* the entry already existed */
+		local_flags &= ~LOCAL_ADD_USER;
+	}
+
+	/*
+	 * We are root - just write the new password
+	 * and the valid last change time.
+	 */
+
+	if(local_flags & LOCAL_DISABLE_USER) 
+	{
+		pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)|ACB_DISABLED);
+	}
+	else if (local_flags & LOCAL_ENABLE_USER) 
+	{
+		if(pdb_get_lanman_passwd(sam_pass) == NULL) 
+		{
+			pdb_set_lanman_passwd (sam_pass, new_p16);
+			pdb_set_nt_passwd     (sam_pass, new_nt_p16);
+		}
+		pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_DISABLED));
+	} else if (local_flags & LOCAL_SET_NO_PASSWORD) 
+	{
+		pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)|ACB_PWNOTREQ);
+		
+		/* This is needed to preserve ACB_PWNOTREQ in mod_smbfilepwd_entry */
+		pdb_set_lanman_passwd (sam_pass, NULL);
+		pdb_set_nt_passwd     (sam_pass, NULL);
+	} 
+	else 
+	{
+		/*
+		 * If we're dealing with setting a completely empty user account
+		 * ie. One with a password of 'XXXX', but not set disabled (like
+		 * an account created from scratch) then if the old password was
+		 * 'XX's then getsmbpwent will have set the ACB_DISABLED flag.
+		 * We remove that as we're giving this user their first password
+		 * and the decision hasn't really been made to disable them (ie.
+		 * don't create them disabled). JRA.
+		 */
+		if ((pdb_get_lanman_passwd(sam_pass)==NULL) && (pdb_get_acct_ctrl(sam_pass)&ACB_DISABLED))
+			pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_DISABLED));
+		pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_PWNOTREQ));
+		pdb_set_lanman_passwd (sam_pass, new_p16);
+		pdb_set_nt_passwd     (sam_pass, new_nt_p16);
+	}
+	
+	if(local_flags & LOCAL_DELETE_USER) 
+	{
+		if (!pdb_delete_sam_account(user_name)) 
+		{
+			slprintf(err_str,err_str_len-1, "Failed to delete entry for user %s.\n", user_name);
+			return False;
+		}
+		slprintf(msg_str, msg_str_len-1, "Deleted user %s.\n", user_name);
+	} 
+	else 
+	{
+		if(!pdb_update_sam_account(sam_pass, True)) 
+		{
+			slprintf(err_str, err_str_len-1, "Failed to modify entry for user %s.\n", user_name);
+			return False;
+		}
+		if(local_flags & LOCAL_DISABLE_USER)
+			slprintf(msg_str, msg_str_len-1, "Disabled user %s.\n", user_name);
+		else if (local_flags & LOCAL_ENABLE_USER)
+			slprintf(msg_str, msg_str_len-1, "Enabled user %s.\n", user_name);
+		else if (local_flags & LOCAL_SET_NO_PASSWORD)
+			slprintf(msg_str, msg_str_len-1, "User %s password set to none.\n", user_name);
+	}
+
+	return True;
+}
+
+
+/*********************************************************************
+ collection of get...() functions for SAM_ACCOUNT_INFO
+ ********************************************************************/
+uint16 pdb_get_acct_ctrl (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->acct_ctrl);
+	else
+		return (ACB_DISABLED);
+}
+
+time_t pdb_get_logon_time (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->logon_time);
+	else
+		return (-1);
+}
+
+time_t pdb_get_logoff_time (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->logoff_time);
+	else
+		return (-1);
+}
+
+time_t pdb_get_kickoff_time (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->kickoff_time);
+	else
+		return (-1);
+}
+
+time_t pdb_get_pass_last_set_time (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->pass_last_set_time);
+	else
+		return (-1);
+}
+
+time_t pdb_get_pass_can_change_time (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->pass_can_change_time);
+	else
+		return (-1);
+}
+
+time_t pdb_get_pass_must_change_time (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->pass_must_change_time);
+	else
+		return (-1);
+}
+
+uint16 pdb_get_logon_divs (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->logon_divs);
+	else
+		return (-1);
+}
+
+uint32 pdb_get_hours_len (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->hours_len);
+	else
+		return (-1);
+}
+
+uint8* pdb_get_hours (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->hours);
+	else
+		return (NULL);
+}
+
+BYTE* pdb_get_nt_passwd (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->nt_pw);
+	else
+		return (NULL);
+}
+
+BYTE* pdb_get_lanman_passwd (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->lm_pw);
+	else
+		return (NULL);
+}
+
+
+uint32 pdb_get_user_rid (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->user_rid);
+	else
+		return (-1);
+}
+
+uint32 pdb_get_group_rid (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->group_rid);
+	else
+		return (-1);
+}
+
+uid_t pdb_get_uid (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->uid);
+	else
+		return ((uid_t)-1);
+}
+
+gid_t pdb_get_gid (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->gid);
+	else
+		return ((gid_t)-1);
+}
+
+char* pdb_get_username (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->username);
+	else
+		return (NULL);
+}
+
+char* pdb_get_domain (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->domain);
+	else
+		return (NULL);
+}
+
+char* pdb_get_nt_username (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->nt_username);
+	else
+		return (NULL);
+}
+
+char* pdb_get_fullname (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->full_name);
+	else
+		return (NULL);
+}
+
+char* pdb_get_homedir (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->home_dir);
+	else
+		return (NULL);
+}
+
+char* pdb_get_dirdrive (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->dir_drive);
+	else
+		return (NULL);
+}
+
+char* pdb_get_logon_script (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->logon_script);
+	else
+		return (NULL);
+}
+
+char* pdb_get_profile_path (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->profile_path);
+	else
+		return (NULL);
+}
+
+char* pdb_get_acct_desc (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->acct_desc);
+	else
+		return (NULL);
+}
+
+char* pdb_get_workstations (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->workstations);
+	else
+		return (NULL);
+}
+
+char* pdb_get_munged_dial (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->munged_dial);
+	else
+		return (NULL);
+}
+
+uint32 pdb_get_unknown3 (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->unknown_3);
+	else
+		return (-1);
+}
+
+uint32 pdb_get_unknown5 (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->unknown_5);
+	else
+		return (-1);
+}
+
+uint32 pdb_get_unknown6 (SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->unknown_6);
+	else
+		return (-1);
+}
+
+/*********************************************************************
+ collection of set...() functions for SAM_ACCOUNT_INFO
+ ********************************************************************/
+BOOL pdb_set_acct_ctrl (SAM_ACCOUNT *sampass, uint16 flags)
+{
+	if (sampass)
+	{
+		sampass->acct_ctrl = flags;
+		return True;
+	}
+	
+	return False;
+}
+
+BOOL pdb_set_logon_time (SAM_ACCOUNT *sampass, time_t time)
+{
+	if (sampass)
+	{
+		sampass->logon_time = time;
+		return True;
+	}
+	
+	return False;
+}
+
+BOOL pdb_set_logoff_time (SAM_ACCOUNT *sampass, time_t time)
+{
+	if (sampass)
+	{
+		sampass->logoff_time = time;
+		return True;
+	}
+	
+	return False;
+}
+
+BOOL pdb_set_kickoff_time (SAM_ACCOUNT *sampass, time_t time)
+{
+	if (sampass)
+	{
+		sampass->kickoff_time = time;
+		return True;
+	}
+	
+	return False;
+}
+
+BOOL pdb_set_pass_can_change_time (SAM_ACCOUNT *sampass, time_t time)
+{
+	if (sampass)
+	{
+		sampass->pass_can_change_time = time;
+		return True;
+	}
+	
+	return False;
+}
+
+BOOL pdb_set_pass_must_change_time (SAM_ACCOUNT *sampass, time_t time)
+{
+	if (sampass)
+	{
+		sampass->pass_must_change_time = time;
+		return True;
+	}
+	
+	return False;
+}
+
+BOOL pdb_set_pass_last_set_time (SAM_ACCOUNT *sampass, time_t time)
+{
+	if (sampass)
+	{
+		sampass->pass_last_set_time = time;
+		return True;
+	}
+	
+	return False;
+}
+
+BOOL pdb_set_hours_len (SAM_ACCOUNT *sampass, uint32 len)
+{
+	if (sampass)
+	{
+		sampass->hours_len = len;
+		return True;
+	}
+	
+	return False;
+}
+
+BOOL pdb_set_logons_divs (SAM_ACCOUNT *sampass, uint16 hours)
+{
+	if (sampass)
+	{
+		sampass->logon_divs = hours;
+		return True;
+	}
+	
+	return False;
+}
+
+BOOL pdb_set_uid (SAM_ACCOUNT *sampass, uid_t uid)
+{
+	if (sampass)
+	{
+		sampass->uid = uid;
+		return True;
+	}
+	
+	return False;
+}
+
+BOOL pdb_set_gid (SAM_ACCOUNT *sampass, gid_t gid)
+{
+	if (sampass)
+	{
+		sampass->gid = gid;
+		return True;
+	}
+	
+	return False;
+}
+
+BOOL pdb_set_user_rid (SAM_ACCOUNT *sampass, uint32 rid)
+{
+	if (sampass)
+	{
+		sampass->user_rid = rid;
+		return True;
+	}
+	
+	return False;
+}
+
+BOOL pdb_set_group_rid (SAM_ACCOUNT *sampass, uint32 grid)
+{
+	if (sampass)
+	{
+		sampass->group_rid = grid;
+		return True;
+	}
+	
+	return False;
+}
+
+BOOL pdb_set_username (SAM_ACCOUNT *sampass, char *username)
+{
+	if (sampass)
+	{
+		sampass->username = strdup(username);
+		return True;
+	}
+	
+	return False;
+}
+
+BOOL pdb_set_domain (SAM_ACCOUNT *sampass, char *domain)
+{
+	if (sampass)
+	{
+		sampass->username = strdup(domain);
+		return True;
+	}
+	
+	return False;
+}
+
+BOOL pdb_set_nt_username (SAM_ACCOUNT *sampass, char *nt_username)
+{
+	if (sampass)
+	{
+		sampass->username = strdup(nt_username);
+		return True;
+	}
+	
+	return False;
+}
+
+BOOL pdb_set_fullname (SAM_ACCOUNT *sampass, char *fullname)
+{
+	if (sampass)
+	{
+		sampass->full_name = strdup(fullname);
+		return True;
+	}
+	
+	return False;
+}
+
+BOOL pdb_set_logon_script (SAM_ACCOUNT *sampass, char *logon_script)
+{
+	if (sampass)
+	{
+		sampass->logon_script = strdup(logon_script);
+		return True;
+	}
+	
+	return False;
+}
+
+BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, char *profile_path)
+{
+	if (sampass)
+	{
+		sampass->profile_path = strdup(profile_path);
+		return True;
+	}
+	
+	return False;
+}
+
+BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, char *dir_drive)
+{
+	if (sampass)
+	{
+		sampass->dir_drive = strdup(dir_drive);
+		return True;
+	}
+	
+	return False;
+}
+
+BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, char *homedir)
+{
+	if (sampass)
+	{
+		sampass->home_dir = strdup(homedir);
+		return True;
+	}
+	
+	return False;
+}
+
+
+BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, BYTE *pwd)
+{
+
+	if (pwd == NULL)
+		return False;
+		
+	/* allocate space for the password and make a copy of it */
+	if (sampass)
+	{
+		if ((sampass->nt_pw=(BYTE*)malloc(sizeof(BYTE)*16)) == NULL)
+		{
+			DEBUG(0,("pdb_set_nt_passwd: ERROR - out of memory for nt_pw!\n"));
+			return False;
+		}
+		if (memcpy(sampass->nt_pw, pwd, 16))
+			return True;
+	}	
+
+	return False;
+}
+
+BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, BYTE *pwd)
+{
+	if (pwd == NULL)
+		return False;
+	
+	/* allocate space for the password and make a copy of it */
+	if (sampass)
+	{
+		if ((sampass->lm_pw=(BYTE*)malloc(sizeof(BYTE)*16)) == NULL)
+		{
+			DEBUG(0,("pdb_set_lanman_passwd: ERROR - out of memory for lm_pw!\n"));
+			return False;
+		}
+		if (memcpy(sampass->lm_pw, pwd, 16))
+			return True;
+	}	
+
+	return False;
+}
+
+
+
+
+

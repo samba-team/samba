@@ -271,7 +271,7 @@ uint32 lookup_user_name(uint32 rid, char *user_name, uint32 *type)
 
 	/* ok, it's a user.  find the user account */
 	become_root();
-	disp_info = getsamdisprid(rid);
+	disp_info = pdb_sam_to_dispinfo(pdb_getsampwrid(rid));
 	unbecome_root();
 
 	if (disp_info != NULL)
@@ -328,17 +328,17 @@ uint32 lookup_alias_rid(char *alias_name, uint32 *rid)
  ********************************************************************/
 uint32 lookup_user_rid(char *user_name, uint32 *rid)
 {
-	struct sam_passwd *sam_pass;
+	SAM_ACCOUNT *sam_pass;
 	(*rid) = 0;
 
 	/* find the user account */
 	become_root();
-	sam_pass = getsam21pwnam(user_name);
+	sam_pass = pdb_getsampwnam(user_name);
 	unbecome_root();
 
 	if (sam_pass != NULL)
 	{
-		(*rid) = sam_pass->user_rid;
+		*rid = pdb_get_user_rid(sam_pass);
 		return 0x0;
 	}
 

@@ -119,11 +119,12 @@ typedef struct
 	char *szPasswdChat;
 	char *szLogFile;
 	char *szConfigFile;
-/*#ifdef WITH_TDBPWD
+#ifdef WITH_TDBPWD
 	char *szTDBPasswdFile;
-#else*/
+#else
 	char *szSMBPasswdFile;
-/* #endif */
+#endif
+	char *szPassdbModulePath;
 	char *szPasswordServer;
 	char *szSocketOptions;
 	char *szValidChars;
@@ -669,6 +670,7 @@ static struct parm_struct parm_table[] = {
 #else */
 	{"smb passwd file", P_STRING, P_GLOBAL, &Globals.szSMBPasswdFile, NULL, NULL, 0},
 /* #endif */
+	{"passdb module path", P_STRING, P_GLOBAL, &Globals.szPassdbModulePath, NULL, NULL, 0},
 	{"root directory", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, 0},
 	{"root dir", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, 0},
 	{"root", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, 0},
@@ -1131,14 +1133,13 @@ static void init_globals(void)
 
 	DEBUG(3, ("Initialising global parameters\n"));
 
-/* #ifdef WITH_TDBPWD
-	string_set(&Globals.szTDBPasswdFile, TDB_PASSWD_FILE);
-#else */
 #ifdef WITH_TDBPWD
-	string_set(&Globals.szSMBPasswdFile, TDB_PASSWD_FILE);
+	string_set(&Globals.szTDBPasswdFile, TDB_PASSWD_FILE);
 #else
 	string_set(&Globals.szSMBPasswdFile, SMB_PASSWD_FILE);
 #endif
+	string_set(&Globals.szPassdbModulePath, "");
+	
 	/*
 	 * Allow the default PASSWD_CHAT to be overridden in local.h.
 	 */
@@ -1256,7 +1257,8 @@ static void init_globals(void)
 	Globals.sslCompatibility = False;
 #endif /* WITH_SSL */
 
-/* these parameters are set to defaults that are more appropriate
+/* 
+   these parameters are set to defaults that are more appropriate
    for the increasing samba install base:
 
    as a member of the workgroup, that will possibly become a
@@ -1265,7 +1267,6 @@ static void init_globals(void)
 
    doesn't provide WINS server service by default (wsupp = False),
    and doesn't provide domain master browser services by default, either.
-
 */
 
 	Globals.bMsAddPrinterWizard = True;
@@ -1367,11 +1368,12 @@ static char *lp_string(const char *s)
 FN_GLOBAL_STRING(lp_logfile, &Globals.szLogFile)
 FN_GLOBAL_STRING(lp_smbrun, &Globals.szSmbrun)
 FN_GLOBAL_STRING(lp_configfile, &Globals.szConfigFile)
-/* #ifdef WITH_TDBPWD
+#ifdef WITH_TDBPWD
 FN_GLOBAL_STRING(lp_tdb_passwd_file, &Globals.szTDBPasswdFile)
-#else */
+#else
 FN_GLOBAL_STRING(lp_smb_passwd_file, &Globals.szSMBPasswdFile)
-/* #endif */
+#endif
+FN_GLOBAL_STRING(lp_passdb_module_path, &Globals.szPassdbModulePath)
 FN_GLOBAL_STRING(lp_serverstring, &Globals.szServerString)
 FN_GLOBAL_STRING(lp_printcapname, &Globals.szPrintcapname)
 FN_GLOBAL_STRING(lp_enumports_cmd, &Globals.szEnumPortsCommand)

@@ -30,6 +30,7 @@ extern int DEBUGLEVEL;
 extern pstring samlogon_user;
 extern BOOL sam_logon_in_ssb;
 
+#if 0	/* GWC */
 struct tdb_sam_entry
 {
 	time_t logon_time;            /* logon time */
@@ -73,6 +74,8 @@ struct tdb_sam_entry
 	char strings[1]; 
 };
 
+#endif
+
 struct tdb_enum_info
 {
 	TDB_CONTEXT *passwd_tdb;
@@ -88,19 +91,20 @@ static struct tdb_enum_info tdb_ent;
 
 static void *startsamtdbpwent(BOOL update)
 {
-  /* Open tdb passwd */
-  if (!(tdb_ent.passwd_tdb = tdb_open(lp_tdb_passwd_file(), 0, 0, update ? O_RDWR : O_RDONLY, 0600)))
-  {
-     DEBUG(0, ("Unable to open TDB passwd, trying create new!\n"));
-     if (!(tdb_ent.passwd_tdb = tdb_open(lp_tdb_passwd_file(), 0, 0, O_RDWR | O_CREAT | O_EXCL, 0600)))
-     {
-         DEBUG(0, ("Unable to creat TDB passwd (smbpasswd.tdb) !!!"));
-	 return NULL;
-     }
-     return &tdb_ent;
-  }
-  tdb_ent.key = tdb_firstkey(tdb_ent.passwd_tdb);
-  return &tdb_ent;
+	/* Open tdb passwd */
+	if (!(tdb_ent.passwd_tdb = tdb_open(lp_tdb_passwd_file(), 0, 0, update ? O_RDWR : O_RDONLY, 0600)))
+	{
+		DEBUG(0, ("Unable to open TDB passwd, trying create new!\n"));
+		if (!(tdb_ent.passwd_tdb = tdb_open(lp_tdb_passwd_file(), 0, 0, O_RDWR | O_CREAT | O_EXCL, 0600)))
+		{
+			DEBUG(0, ("Unable to creat TDB passwd (smbpasswd.tdb) !!!"));
+			return NULL;
+		}
+		return &tdb_ent;
+	}
+	
+	tdb_ent.key = tdb_firstkey(tdb_ent.passwd_tdb);
+	return &tdb_ent;
 }
 
 /***************************************************************

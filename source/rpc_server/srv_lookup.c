@@ -532,19 +532,19 @@ uint32 lookup_sid(char *name, DOM_SID *sid, uint8 *type)
 uint32 lookup_added_user_rids(char *user_name,
 		uint32 *usr_rid, uint32 *grp_rid)
 {
-	struct sam_passwd *sam_pass;
+	SAM_ACCOUNT *sam_pass;
 	(*usr_rid) = 0;
 	(*grp_rid) = 0;
 
 	/* find the user account */
 	become_root();
-	sam_pass = getsam21pwnam(user_name);
+	sam_pass = getsampwnam(user_name);
 	unbecome_root();
 
 	if (sam_pass != NULL)
 	{
-		(*usr_rid) = sam_pass->user_rid ;
-		(*grp_rid) = sam_pass->group_rid;
+		(*usr_rid) = pdb_get_user_rid(sam_pass);
+		(*grp_rid) = pdb_get_group_rid(sam_pass);
 		return 0x0;
 	}
 
@@ -556,18 +556,18 @@ uint32 lookup_added_user_rids(char *user_name,
  ********************************************************************/
 uint32 lookup_added_user_rid(char *user_name, uint32 *rid, uint8 *type)
 {
-	struct sam_passwd *sam_pass;
+	SAM_ACCOUNT *sam_pass;
 	(*rid) = 0;
 	(*type) = SID_NAME_USER;
 
 	/* find the user account */
 	become_root();
-	sam_pass = getsam21pwnam(user_name);
+	sam_pass = getsampwnam(user_name);
 	unbecome_root();
 
 	if (sam_pass != NULL)
 	{
-		(*rid) = sam_pass->user_rid;
+		(*rid) = pdb_get_user_rid(sam_pass);
 		return 0x0;
 	}
 

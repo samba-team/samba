@@ -640,8 +640,8 @@ static BOOL change_password(const char *remote_machine, char *user_name,
 		return ret;
 	}
 
-	if(!initialize_password_db()) {
-		printf("Can't setup password database vectors.\n<p>");
+	if(!initialize_password_db(True)) {
+		printf("Can't initialize passdb!\n<p>");
 		return False;
 	}
 	

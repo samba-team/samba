@@ -1,6 +1,9 @@
 /*
- * Unix SMB/Netbios implementation. Version 1.9. SMB parameters and setup
- * Copyright (C) Andrew Tridgell 1992-1998 Modified by Jeremy Allison 1995.
+ * Unix SMB/Netbios implementation. 
+ * Version 1.9. SMB parameters and setup
+ * Copyright (C) Andrew Tridgell 1992-1998 
+ * Modified by Jeremy Allison 1995.
+ * Modified by Gerald (Jerry) Carter 2000
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
@@ -21,13 +24,98 @@
 
 #ifdef USE_SMBPASS_DB
 
+
+/* 
+   smb_passwd is analogous to sam_passwd used everywhere
+   else.  However, smb_passwd is limited to the information
+   stored by an smbpasswd entry 
+ */
+ 
+struct smb_passwd
+{
+        uid_t smb_userid;     /* this is actually the unix uid_t */
+        char *smb_name;     /* username string */
+
+        unsigned char *smb_passwd; /* Null if no password */
+        unsigned char *smb_nt_passwd; /* Null if no password */
+
+        uint16 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
+        time_t pass_last_set_time;    /* password last set time */
+};
+
+
 extern int DEBUGLEVEL;
 extern pstring samlogon_user;
 extern BOOL sam_logon_in_ssb;
+extern struct passdb_ops pdb_ops;
 
-static int pw_file_lock_depth;
+
+/* used for maintain locks on the smbpasswd file */
+static int 	pw_file_lock_depth;
+static void 	*global_vp;
+
+/* static memory area used by all passdb search functions
+   in this module */
+static SAM_ACCOUNT 	global_sam_pass;
 
 enum pwf_access_type { PWF_READ, PWF_UPDATE, PWF_CREATE };
+
+/***************************************************************
+ Lock an fd. Abandon after waitsecs seconds.
+****************************************************************/
+
+static BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth)
+{
+  if (fd < 0)
+    return False;
+
+  if(*plock_depth == 0) {
+    if (!do_file_lock(fd, secs, type)) {
+      DEBUG(10,("pw_file_lock: locking file failed, error = %s.\n",
+                 strerror(errno)));
+      return False;
+    }
+  }
+
+  (*plock_depth)++;
+
+  return True;
+}
+
+/***************************************************************
+ Unlock an fd. Abandon after waitsecs seconds.
+****************************************************************/
+
+static BOOL pw_file_unlock(int fd, int *plock_depth)
+{
+  BOOL ret=True;
+
+  if(*plock_depth == 1)
+    ret = do_file_lock(fd, 5, F_UNLCK);
+
+  if (*plock_depth > 0)
+    (*plock_depth)--;
+
+  if(!ret)
+    DEBUG(10,("pw_file_unlock: unlocking file failed, error = %s.\n",
+                 strerror(errno)));
+  return ret;
+}
+
+
+/**************************************************************
+ Intialize a smb_passwd struct
+ *************************************************************/
+static void pdb_init_smb(struct smb_passwd *user)
+{
+        if (user == NULL) 
+		return;
+        ZERO_STRUCTP (user);
+	
+        user->pass_last_set_time    = (time_t)-1;
+}
+
+
 
 /***************************************************************
  Internal fn to enumerate the smbpasswd list. Returns a void pointer
@@ -36,7 +124,7 @@ enum pwf_access_type { PWF_READ, PWF_UPDATE, PWF_CREATE };
  been granted to prevent race conditions. JRA.
 ****************************************************************/
 
-static void *startsmbfilepwent_internal(const char *pfile, enum pwf_access_type type, int *lock_depth)
+static void *startsmbfilepwent(const char *pfile, enum pwf_access_type type, int *lock_depth)
 {
   FILE *fp = NULL;
   const char *open_mode = NULL;
@@ -162,36 +250,15 @@ Error was %s\n.", pfile, strerror(errno) ));
 }
 
 /***************************************************************
- Start to enumerate the smbpasswd list. Returns a void pointer
- to ensure no modification outside this module.
-****************************************************************/
-
-static void *startsmbfilepwent(BOOL update)
-{
-  return startsmbfilepwent_internal(lp_smb_passwd_file(), update ? PWF_UPDATE : PWF_READ, &pw_file_lock_depth);
-}
-
-/***************************************************************
  End enumeration of the smbpasswd list.
 ****************************************************************/
-
-static void endsmbfilepwent_internal(void *vp, int *lock_depth)
+static void endsmbfilepwent(void *vp, int *lock_depth)
 {
   FILE *fp = (FILE *)vp;
 
   pw_file_unlock(fileno(fp), lock_depth);
   fclose(fp);
   DEBUG(7, ("endsmbfilepwent_internal: closed password file.\n"));
-}
-
-/***************************************************************
- End enumeration of the smbpasswd list - operate on the default
- lock_depth.
-****************************************************************/
-
-static void endsmbfilepwent(void *vp)
-{
-  endsmbfilepwent_internal(vp, &pw_file_lock_depth);
 }
 
 /*************************************************************************
@@ -424,135 +491,11 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
   return NULL;
 }
 
-/*************************************************************************
- Routine to return the next entry in the smbpasswd list.
- this function is a nice, messy combination of reading:
- - the smbpasswd file
- - the unix password database
- - smb.conf options (not done at present).
- *************************************************************************/
-
-static struct sam_passwd *getsmbfile21pwent(void *vp)
-{
-	struct smb_passwd *pw_buf = getsmbfilepwent(vp);
-	static struct sam_passwd user;
-	struct passwd *pwfile;
-
-	static pstring full_name;
-	static pstring home_dir;
-	static pstring home_drive;
-	static pstring logon_script;
-	static pstring profile_path;
-	static pstring acct_desc;
-	static pstring workstations;
-	
-	DEBUG(5,("getsmbfile21pwent\n"));
-
-	if (pw_buf == NULL) return NULL;
-
-	pwfile = sys_getpwnam(pw_buf->smb_name);
-	if (pwfile == NULL)
-	{
-		DEBUG(0,("getsmbfile21pwent: smbpasswd database is corrupt!\n"));
-		DEBUG(0,("getsmbfile21pwent: username %s not in unix passwd database!\n", pw_buf->smb_name));
-		return NULL;
-	}
-
-	pdb_init_sam(&user);
-
-	pstrcpy(samlogon_user, pw_buf->smb_name);
-
-	if (samlogon_user[strlen(samlogon_user)-1] != '$')
-	{
-		/* XXXX hack to get standard_sub_basic() to use sam logon username */
-		/* possibly a better way would be to do a become_user() call */
-		sam_logon_in_ssb = True;
-
-		user.smb_userid    = pw_buf->smb_userid;
-		user.smb_grpid     = pwfile->pw_gid;
-
-		user.user_rid  = pdb_uid_to_user_rid (user.smb_userid);
-		user.group_rid = pdb_gid_to_group_rid(user.smb_grpid );
-
-		pstrcpy(full_name    , pwfile->pw_gecos        );
-		pstrcpy(logon_script , lp_logon_script       ());
-		pstrcpy(profile_path , lp_logon_path         ());
-		pstrcpy(home_drive   , lp_logon_drive        ());
-		pstrcpy(home_dir     , lp_logon_home         ());
-		pstrcpy(acct_desc    , "");
-		pstrcpy(workstations , "");
-
-		sam_logon_in_ssb = False;
-	}
-	else
-	{
-		user.smb_userid    = pw_buf->smb_userid;
-		user.smb_grpid     = pwfile->pw_gid;
-
-		user.user_rid  = pdb_uid_to_user_rid (user.smb_userid);
-		user.group_rid = DOMAIN_GROUP_RID_USERS; /* lkclXXXX this is OBSERVED behaviour by NT PDCs, enforced here. */
-
-		pstrcpy(full_name    , "");
-		pstrcpy(logon_script , "");
-		pstrcpy(profile_path , "");
-		pstrcpy(home_drive   , "");
-		pstrcpy(home_dir     , "");
-		pstrcpy(acct_desc    , "");
-		pstrcpy(workstations , "");
-	}
-
-	user.smb_name     = pw_buf->smb_name;
-	user.full_name    = full_name;
-	user.home_dir     = home_dir;
-	user.dir_drive    = home_drive;
-	user.logon_script = logon_script;
-	user.profile_path = profile_path;
-	user.acct_desc    = acct_desc;
-	user.workstations = workstations;
-
-	user.unknown_str = NULL; /* don't know, yet! */
-	user.munged_dial = NULL; /* "munged" dial-back telephone number */
-
-	user.smb_nt_passwd = pw_buf->smb_nt_passwd;
-	user.smb_passwd    = pw_buf->smb_passwd;
-			
-	user.acct_ctrl = pw_buf->acct_ctrl;
-
-	user.unknown_3 = 0xffffff; /* don't know */
-	user.logon_divs = 168; /* hours per week */
-	user.hours_len = 21; /* 21 times 8 bits = 168 */
-	memset(user.hours, 0xff, user.hours_len); /* available at all hours */
-	user.unknown_5 = 0x00020000; /* don't know */
-	user.unknown_5 = 0x000004ec; /* don't know */
-
-	return &user;
-}
-
-/*************************************************************************
- Return the current position in the smbpasswd list as an SMB_BIG_UINT.
- This must be treated as an opaque token.
-*************************************************************************/
-
-static SMB_BIG_UINT getsmbfilepwpos(void *vp)
-{
-  return (SMB_BIG_UINT)sys_ftell((FILE *)vp);
-}
-
-/*************************************************************************
- Set the current position in the smbpasswd list from an SMB_BIG_UINT.
- This must be treated as an opaque token.
-*************************************************************************/
-
-static BOOL setsmbfilepwpos(void *vp, SMB_BIG_UINT tok)
-{
-  return !sys_fseek((FILE *)vp, (SMB_OFF_T)tok, SEEK_SET);
-}
-
 /************************************************************************
  Create a new smbpasswd entry - malloced space returned.
 *************************************************************************/
 
-char *format_new_smbpasswd_entry(struct smb_passwd *newpwd)
+static char *format_new_smbpasswd_entry(struct smb_passwd *newpwd)
 {
   int new_entry_length;
   char *new_entry;
@@ -624,7 +567,7 @@ static BOOL add_smbfilepwd_entry(struct smb_passwd *newpwd)
   SMB_OFF_T offpos;
 
   /* Open the smbpassword file - for update. */
-  fp = startsmbfilepwent(True);
+  fp = startsmbfilepwent(pfile, PWF_UPDATE, &pw_file_lock_depth);
 
   if (fp == NULL) {
     DEBUG(0, ("add_smbfilepwd_entry: unable to open file.\n"));
@@ -635,11 +578,13 @@ static BOOL add_smbfilepwd_entry(struct smb_passwd *newpwd)
    * Scan the file, a line at a time and check if the name matches.
    */
 
-  while ((pwd = getsmbfilepwent(fp)) != NULL) {
-    if (strequal(newpwd->smb_name, pwd->smb_name)) {
-      DEBUG(0, ("add_smbfilepwd_entry: entry with name %s already exists\n", pwd->smb_name));
-      endsmbfilepwent(fp);
-      return False;
+  while ((pwd = getsmbfilepwent(fp)) != NULL) 
+  {
+    if (strequal(newpwd->smb_name, pwd->smb_name)) 
+    {
+      	DEBUG(0, ("add_smbfilepwd_entry: entry with name %s already exists\n", pwd->smb_name));
+      	endsmbfilepwent(fp, &pw_file_lock_depth);
+      	return False;
     }
   }
 
@@ -652,18 +597,20 @@ static BOOL add_smbfilepwd_entry(struct smb_passwd *newpwd)
    */
   fd = fileno(fp);
 
-  if((offpos = sys_lseek(fd, 0, SEEK_END)) == -1) {
-    DEBUG(0, ("add_smbfilepwd_entry(sys_lseek): Failed to add entry for user %s to file %s. \
+  if((offpos = sys_lseek(fd, 0, SEEK_END)) == -1) 
+  {
+    	DEBUG(0, ("add_smbfilepwd_entry(sys_lseek): Failed to add entry for user %s to file %s. \
 Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
-    endsmbfilepwent(fp);
-    return False;
+    	endsmbfilepwent(fp, &pw_file_lock_depth);
+    	return False;
   }
 
-  if((new_entry = format_new_smbpasswd_entry(newpwd)) == NULL) {
-    DEBUG(0, ("add_smbfilepwd_entry(malloc): Failed to add entry for user %s to file %s. \
+  if((new_entry = format_new_smbpasswd_entry(newpwd)) == NULL) 
+  {
+    	DEBUG(0, ("add_smbfilepwd_entry(malloc): Failed to add entry for user %s to file %s. \
 Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
-    endsmbfilepwent(fp);
-    return False;
+	endsmbfilepwent(fp, &pw_file_lock_depth);
+    	return False;
   }
 
   new_entry_length = strlen(new_entry);
@@ -673,24 +620,26 @@ Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
 		             fd, new_entry_length, new_entry));
 #endif
 
-  if ((wr_len = write(fd, new_entry, new_entry_length)) != new_entry_length) {
-    DEBUG(0, ("add_smbfilepwd_entry(write): %d Failed to add entry for user %s to file %s. \
+  if ((wr_len = write(fd, new_entry, new_entry_length)) != new_entry_length) 
+  {
+  	DEBUG(0, ("add_smbfilepwd_entry(write): %d Failed to add entry for user %s to file %s. \
 Error was %s\n", wr_len, newpwd->smb_name, pfile, strerror(errno)));
 
-    /* Remove the entry we just wrote. */
-    if(sys_ftruncate(fd, offpos) == -1) {
-      DEBUG(0, ("add_smbfilepwd_entry: ERROR failed to ftruncate file %s. \
+    	/* Remove the entry we just wrote. */
+    	if(sys_ftruncate(fd, offpos) == -1) 
+	{
+      		DEBUG(0, ("add_smbfilepwd_entry: ERROR failed to ftruncate file %s. \
 Error was %s. Password file may be corrupt ! Please examine by hand !\n", 
-             newpwd->smb_name, strerror(errno)));
-    }
+		newpwd->smb_name, strerror(errno)));
+    	}
 
-    endsmbfilepwent(fp);
-    free(new_entry);
-    return False;
+	endsmbfilepwent(fp, &pw_file_lock_depth);
+	free(new_entry);
+	return False;
   }
 
   free(new_entry);
-  endsmbfilepwent(fp);
+  endsmbfilepwent(fp, &pw_file_lock_depth);
   return True;
 }
 
@@ -1116,7 +1065,7 @@ static BOOL del_smbfilepwd_entry(const char *name)
    * it.
    */
 
-  if((fp = startsmbfilepwent(True)) == NULL) {
+  if((fp = startsmbfilepwent(pfile, PWF_UPDATE, &pw_file_lock_depth)) == NULL) {
     DEBUG(0, ("del_smbfilepwd_entry: unable to open file %s.\n", pfile));
     return False;
   }
@@ -1124,9 +1073,9 @@ static BOOL del_smbfilepwd_entry(const char *name)
   /*
    * Create the replacement password file.
    */
-  if((fp_write = startsmbfilepwent_internal(pfile2, PWF_CREATE, &pfile2_lockdepth)) == NULL) {
+  if((fp_write = startsmbfilepwent(pfile2, PWF_CREATE, &pfile2_lockdepth)) == NULL) {
     DEBUG(0, ("del_smbfilepwd_entry: unable to open file %s.\n", pfile));
-    endsmbfilepwent(fp);
+    endsmbfilepwent(fp, &pw_file_lock_depth);
     return False;
   }
 
@@ -1147,25 +1096,27 @@ static BOOL del_smbfilepwd_entry(const char *name)
      * We need to copy the entry out into the second file.
      */
 
-    if((new_entry = format_new_smbpasswd_entry(pwd)) == NULL) {
-      DEBUG(0, ("del_smbfilepwd_entry(malloc): Failed to copy entry for user %s to file %s. \
+    if((new_entry = format_new_smbpasswd_entry(pwd)) == NULL) 
+    {
+    	DEBUG(0, ("del_smbfilepwd_entry(malloc): Failed to copy entry for user %s to file %s. \
 Error was %s\n", pwd->smb_name, pfile2, strerror(errno)));
-      unlink(pfile2);
-      endsmbfilepwent(fp);
-      endsmbfilepwent_internal(fp_write,&pfile2_lockdepth);
-      return False;
+	unlink(pfile2);
+	endsmbfilepwent(fp, &pw_file_lock_depth);
+	endsmbfilepwent(fp_write, &pfile2_lockdepth);
+	return False;
     }
 
     new_entry_length = strlen(new_entry);
 
-    if(fwrite(new_entry, 1, new_entry_length, fp_write) != new_entry_length) {
-      DEBUG(0, ("del_smbfilepwd_entry(write): Failed to copy entry for user %s to file %s. \
+    if(fwrite(new_entry, 1, new_entry_length, fp_write) != new_entry_length) 
+    {
+    	DEBUG(0, ("del_smbfilepwd_entry(write): Failed to copy entry for user %s to file %s. \
 Error was %s\n", pwd->smb_name, pfile2, strerror(errno)));
-      unlink(pfile2);
-      endsmbfilepwent(fp);
-      endsmbfilepwent_internal(fp_write,&pfile2_lockdepth);
-      free(new_entry);
-      return False;
+      	unlink(pfile2);
+	endsmbfilepwent(fp, &pw_file_lock_depth);
+	endsmbfilepwent(fp_write, &pfile2_lockdepth);
+	free(new_entry);
+	return False;
     }
 
     free(new_entry);
@@ -1175,11 +1126,12 @@ Error was %s\n", pwd->smb_name, pfile2, strerror(errno)));
    * Ensure pfile2 is flushed before rename.
    */
 
-  if(fflush(fp_write) != 0) {
-    DEBUG(0, ("del_smbfilepwd_entry: Failed to flush file %s. Error was %s\n", pfile2, strerror(errno)));
-    endsmbfilepwent(fp);
-    endsmbfilepwent_internal(fp_write,&pfile2_lockdepth);
-    return False;
+  if(fflush(fp_write) != 0) 
+  {
+  	DEBUG(0, ("del_smbfilepwd_entry: Failed to flush file %s. Error was %s\n", pfile2, strerror(errno)));
+	endsmbfilepwent(fp, &pw_file_lock_depth);
+	endsmbfilepwent(fp_write,&pfile2_lockdepth);
+	return False;
   }
 
   /*
@@ -1189,66 +1141,409 @@ Error was %s\n", pwd->smb_name, pfile2, strerror(errno)));
   if(rename(pfile2,pfile) != 0) {
     unlink(pfile2);
   }
-  endsmbfilepwent(fp);
-  endsmbfilepwent_internal(fp_write,&pfile2_lockdepth);
+  
+  endsmbfilepwent(fp, &pw_file_lock_depth);
+  endsmbfilepwent(fp_write,&pfile2_lockdepth);
   return True;
 }
+
+/*********************************************************************
+ Create a SAM_ACCOUNT from a smb_passwd struct
+ ********************************************************************/
+static BOOL build_smb_pass (struct smb_passwd *smb_pw, SAM_ACCOUNT *sampass)
+{
+	BYTE	*ptr;
 	
-/*
- * Stub functions - implemented in terms of others.
- */
+        if (sampass == NULL) 
+		return False;
 
-static BOOL mod_smbfile21pwd_entry(struct sam_passwd* pwd, BOOL override)
-{
- 	return mod_smbfilepwd_entry(pdb_sam_to_smb(pwd), override);
+        ZERO_STRUCTP (smb_pw);
+
+        smb_pw->smb_userid = pdb_get_uid(sampass);
+        smb_pw->smb_name = strdup(pdb_get_username(sampass));
+
+        if ((ptr=pdb_get_lanman_passwd(sampass)) != NULL)
+	{
+		if ((smb_pw->smb_passwd=(BYTE*)malloc(sizeof(BYTE)*16)) == NULL)
+		{
+			DEBUG (0,("build_smb_pass: ERROR - Unable to malloc memory!\n"));
+			return False;
+		}
+		memcpy (smb_pw->smb_passwd, ptr, sizeof(BYTE)*16);
+	}
+
+        if ((ptr=pdb_get_nt_passwd(sampass)) != NULL)
+	{
+		if ((smb_pw->smb_nt_passwd=(BYTE*)malloc(sizeof(BYTE)*16)) == NULL)
+		{
+			DEBUG (0,("build_smb_pass: ERROR - Unable to malloc memory!\n"));
+			return False;
+		}
+		memcpy (smb_pw->smb_nt_passwd, ptr, sizeof(BYTE)*16);
+	}
+		
+        smb_pw->acct_ctrl          = pdb_get_acct_ctrl(sampass);
+        smb_pw->pass_last_set_time = pdb_get_pass_last_set_time(sampass);
+
+        return True;
+
 }
 
-static BOOL add_smbfile21pwd_entry(struct sam_passwd *newpwd)
+/********************************************************************
+ clear out memory allocated for pointer members 
+ *******************************************************************/
+static void clear_smb_pass (struct smb_passwd *smb_pw)
 {
- 	return add_smbfilepwd_entry(pdb_sam_to_smb(newpwd));
+
+	/* valid poiner to begin with? */
+	if (smb_pw == NULL)
+		return;
+		
+	/* clear out members */
+	if (smb_pw->smb_name)
+		free (smb_pw->smb_name);
+		
+	if (smb_pw->smb_passwd)
+		free(smb_pw->smb_passwd);
+
+	if (smb_pw->smb_nt_passwd)
+		free(smb_pw->smb_nt_passwd);
+		
+	return;
+}
+	
+
+/*********************************************************************
+ Create a SAM_ACCOUNT from a smb_passwd struct
+ ********************************************************************/
+static BOOL build_sam_account (SAM_ACCOUNT *sam_pass, 
+			       struct smb_passwd *pw_buf)
+{
+
+	struct passwd 		*pwfile;
+	
+	/* is the user valid?  Verify in system password file...
+	
+	   FIXME!!!  This is where we should look up an internal
+	   mapping of allocated uid for machine accounts as well 
+	   --jerry */ 
+	pwfile = sys_getpwnam(pw_buf->smb_name);
+	if (pwfile == NULL)
+	{
+		DEBUG(0,("build_sam_account: smbpasswd database is corrupt!\n"));
+		DEBUG(0,("build_sam_account: username %s not in unix passwd database!\n", pw_buf->smb_name));
+		return False;
+	}
+		
+	pstrcpy(samlogon_user, pw_buf->smb_name);
+	
+	pdb_set_uid           (sam_pass, pwfile->pw_uid);
+	pdb_set_gid           (sam_pass, pwfile->pw_gid);
+	pdb_set_user_rid      (sam_pass, pdb_uid_to_user_rid (pdb_get_uid(sam_pass)) );
+	pdb_set_username      (sam_pass, pw_buf->smb_name);
+	pdb_set_nt_passwd     (sam_pass, pw_buf->smb_nt_passwd);
+	pdb_set_lanman_passwd (sam_pass, pw_buf->smb_passwd);			
+	pdb_set_acct_ctrl     (sam_pass, pw_buf->acct_ctrl);
+	pdb_set_pass_last_set_time (sam_pass, pw_buf->pass_last_set_time);
+	pdb_set_domain        (sam_pass, lp_workgroup());
+	
+	/* FIXME!!  What should this be set to?  New smb.conf parameter maybe?
+	   max password age?   For now, we'll use the current time + 21 days. 
+	   --jerry */
+	pdb_set_pass_must_change_time (sam_pass, time(NULL)+1814400);
+
+	/* check if this is a user account or a machine account */
+	if (samlogon_user[strlen(samlogon_user)-1] != '$')
+	{
+		pstring 	str;
+		gid_t 		gid;
+		
+	        sam_logon_in_ssb = True;
+	
+	        pstrcpy(str, lp_logon_script());
+       		standard_sub_advanced(-1, pw_buf->smb_name, "", gid, str);
+		pdb_set_logon_script(sam_pass, str);
+	
+	        pstrcpy(str, lp_logon_path());
+       		standard_sub_advanced(-1, pw_buf->smb_name, "", gid, str);
+		pdb_set_profile_path(sam_pass, str);
+	        
+	        pstrcpy(str, lp_logon_home());
+        	standard_sub_advanced(-1, pw_buf->smb_name, "", gid, str);
+		pdb_set_homedir(sam_pass, str);
+        
+		if (lp_unix_realname())
+			pdb_set_fullname(sam_pass, pwfile->pw_gecos);
+		else
+			pdb_set_fullname(sam_pass, "<Full Name>");
+		
+
+		/* set other user information that we have */
+		pdb_set_group_rid     (sam_pass, pdb_gid_to_group_rid(pdb_get_gid(&global_sam_pass)) ); 
+		pdb_set_dir_drive     (sam_pass, lp_logon_drive());
+		
+		sam_logon_in_ssb = False;
+	}
+	else
+	{
+		/* lkclXXXX this is OBSERVED behaviour by NT PDCs, enforced here. */
+		pdb_set_group_rid (sam_pass, DOMAIN_GROUP_RID_USERS); 
+	}
+	
+	return True;
+}
+/*****************************************************************
+ Functions to be implemented by the new passdb API 
+ ****************************************************************/
+BOOL pdb_setsampwent (BOOL update)
+{
+	global_vp = startsmbfilepwent(lp_smb_passwd_file(), 
+	                        update ? PWF_UPDATE : PWF_READ, 
+			        &pw_file_lock_depth);
+				   
+	/* did we fail?  Should we try to create it? */
+	if (!global_vp && update && errno == ENOENT) 
+	{
+		FILE *fp;
+		/* slprintf(msg_str,msg_str_len-1,
+			"smbpasswd file did not exist - attempting to create it.\n"); */
+		DEBUG(0,("smbpasswd file did not exist - attempting to create it.\n"));
+		fp = sys_fopen(lp_smb_passwd_file(), "w");
+		if (fp) 
+		{
+			fprintf(fp, "# Samba SMB password file\n");
+			fclose(fp);
+		}
+		
+		global_vp = startsmbfilepwent(lp_smb_passwd_file(), 
+		                        update ? PWF_UPDATE : PWF_READ, 
+			                &pw_file_lock_depth);
+	}
+	
+	return (global_vp != NULL);		   
 }
 
-static struct sam_disp_info *getsmbfiledispnam(char *name)
+void pdb_endsampwent (void)
 {
-	return pdb_sam_to_dispinfo(getsam21pwnam(name));
+	endsmbfilepwent(global_vp, &pw_file_lock_depth);
+}
+ 
+/*****************************************************************
+ pdb_getsampwent() uses a static memory ares (returning a pointer
+ to this) for all instances.  This is identical behavior to the
+ getpwnam() call.  If the caller wishes to save the SAM_ACCOUNT
+ struct, it should make a copy immediately after calling this
+ function.
+ ****************************************************************/
+SAM_ACCOUNT* pdb_getsampwent (void)
+{
+	struct smb_passwd 	*pw_buf;
+	
+	
+	DEBUG(5,("pdb_getsampwent\n"));
+
+	/* do we have an entry? */
+	pw_buf = getsmbfilepwent(global_vp);
+	if (pw_buf == NULL) 
+		return NULL;
+
+	/* clear out any preexisting information from the last call */
+	pdb_clear_sam (&global_sam_pass);
+
+	/* build the SAM_ACCOUNT entry from the smb_passwd struct */
+	if (!build_sam_account (&global_sam_pass, pw_buf))
+		return NULL;
+
+	/* success */
+	return &global_sam_pass;
 }
 
-static struct sam_disp_info *getsmbfiledisprid(uint32 rid)
+
+/****************************************************************
+ Search smbpasswd file by iterating over the entries.  Do not
+ call getpwnam() for unix account information until we have found
+ the correct entry
+ ***************************************************************/
+SAM_ACCOUNT* pdb_getsampwnam (char *username)
 {
-	return pdb_sam_to_dispinfo(getsam21pwrid(rid));
+	struct smb_passwd	*smb_pw;
+	void 			*fp = NULL;
+	char			*domain = NULL;
+	char			*user = NULL;
+	fstring			name;
+
+	DEBUG(10, ("search by name: %s\n", username));
+
+	/* break the username from the domain if we have 
+	   been given a string in the form 'DOMAIN\user' */
+	fstrcpy (name, username);
+	if ((user=strchr(name, '\\')) != NULL)
+	{
+		domain = name;
+		*user = '\0';
+		user++;
+	}
+	
+	/* if a domain was specified and it wasn't ours
+	   then there is no chance of matching */
+	if ( (domain) && (!StrCaseCmp(domain, lp_workgroup())) )
+		return (NULL);
+
+	/* startsmbfilepwent() is used here as we don't want to lookup
+	   the UNIX account in the local system password file until
+	   we have a match.  */
+	fp = startsmbfilepwent(lp_smb_passwd_file(), PWF_READ, &pw_file_lock_depth);
+
+	if (fp == NULL)
+	{
+		DEBUG(0, ("unable to open passdb database.\n"));
+		return NULL;
+	}
+
+	/* if we have a domain name, then we should map it to a UNIX 
+	   username first */
+	if ( domain )
+		map_username(user);
+
+	while ( ((smb_pw=getsmbfilepwent(fp)) != NULL)&& (!strequal(smb_pw->smb_name, username)) )
+		/* do nothing....another loop */ ;
+	
+	endsmbfilepwent(fp, &pw_file_lock_depth);
+
+
+	/* did we locate the username in smbpasswd  */
+	if (smb_pw == NULL)
+	{
+		return (NULL);
+	}
+	
+	DEBUG(10, ("found by name: %s\n", smb_pw->smb_name));
+		
+	/* now build the SAM_ACCOUNT */
+	pdb_clear_sam (&global_sam_pass);
+	if (!build_sam_account (&global_sam_pass, smb_pw))
+			return NULL;
+
+	/* success */
+	return (&global_sam_pass);
 }
 
-static struct sam_disp_info *getsmbfiledispent(void *vp)
+
+SAM_ACCOUNT* pdb_getsampwuid (uid_t uid)
 {
-	return pdb_sam_to_dispinfo(getsam21pwent(vp));
+	struct smb_passwd	*smb_pw;
+	void 			*fp = NULL;
+
+	DEBUG(10, ("search by uid: %d\n", uid));
+
+	/* Open the sam password file - not for update. */
+	fp = startsmbfilepwent(lp_smb_passwd_file(), PWF_READ, &pw_file_lock_depth);
+
+	if (fp == NULL)
+	{
+		DEBUG(0, ("unable to open passdb database.\n"));
+		return NULL;
+	}
+
+	while ( ((smb_pw=getsmbfilepwent(fp)) != NULL) && (smb_pw->smb_userid != uid) )
+      		/* do nothing */ ;
+
+	endsmbfilepwent(fp, &pw_file_lock_depth);
+
+
+	/* did we locate the username in smbpasswd  */
+	if (smb_pw == NULL)
+	{
+		return (NULL);
+	}
+	
+	DEBUG(10, ("found by name: %s\n", smb_pw->smb_name));
+		
+	/* now build the SAM_ACCOUNT */
+	pdb_clear_sam (&global_sam_pass);
+	if (!build_sam_account (&global_sam_pass, smb_pw))
+			return NULL;
+
+	/* success */
+	return (&global_sam_pass);
 }
 
-static struct passdb_ops file_ops = {
-  startsmbfilepwent,
-  endsmbfilepwent,
-  getsmbfilepwpos,
-  setsmbfilepwpos,
-  iterate_getsmbpwnam,          /* In passdb.c */
-  iterate_getsmbpwuid,          /* In passdb.c */
-  iterate_getsmbpwrid,          /* In passdb.c */
-  getsmbfilepwent,
-  add_smbfilepwd_entry,
-  mod_smbfilepwd_entry,
-  del_smbfilepwd_entry,
-  getsmbfile21pwent,
-  iterate_getsam21pwnam,
-  iterate_getsam21pwuid,
-  iterate_getsam21pwrid, 
-  add_smbfile21pwd_entry,
-  mod_smbfile21pwd_entry,
-  getsmbfiledispnam,
-  getsmbfiledisprid,
-  getsmbfiledispent
-};
+SAM_ACCOUNT* pdb_getsampwrid (uint32 rid)
+{
+	struct smb_passwd	*smb_pw;
+	void 			*fp = NULL;
 
-struct passdb_ops *file_initialize_password_db(void)
-{    
-  return &file_ops;
+	DEBUG(10, ("search by rid: %d\n", rid));
+
+	/* Open the sam password file - not for update. */
+	fp = startsmbfilepwent(lp_smb_passwd_file(), PWF_READ, &pw_file_lock_depth);
+
+	if (fp == NULL)
+	{
+		DEBUG(0, ("unable to open passdb database.\n"));
+		return NULL;
+	}
+
+	while ( ((smb_pw=getsmbfilepwent(fp)) != NULL) && (pdb_uid_to_user_rid(smb_pw->smb_userid) != rid) )
+      		/* do nothing */ ;
+
+	endsmbfilepwent(fp, &pw_file_lock_depth);
+
+
+	/* did we locate the username in smbpasswd  */
+	if (smb_pw == NULL)
+	{
+		return (NULL);
+	}
+	
+	DEBUG(10, ("found by name: %s\n", smb_pw->smb_name));
+		
+	/* now build the SAM_ACCOUNT */
+	pdb_clear_sam (&global_sam_pass);
+	if (!build_sam_account (&global_sam_pass, smb_pw))
+			return NULL;
+
+	/* success */
+	return (&global_sam_pass);
+}
+
+BOOL pdb_add_sam_account (SAM_ACCOUNT *sampass)
+{
+	struct smb_passwd	smb_pw;
+	BOOL			ret;
+	
+	/* convert the SAM_ACCOUNT */
+	build_smb_pass(&smb_pw, sampass);
+	
+	/* add the entry */
+	ret = add_smbfilepwd_entry(&smb_pw);
+	
+	/* clear memory from smb_passwd */
+	clear_smb_pass (&smb_pw);
+	
+	return (ret);
+}
+
+BOOL pdb_update_sam_account (SAM_ACCOUNT *sampass, BOOL override)
+{
+	struct smb_passwd	smb_pw;
+	BOOL			ret;
+	
+	/* convert the SAM_ACCOUNT */
+	build_smb_pass(&smb_pw, sampass);
+	
+	/* update the entry */
+	ret = mod_smbfilepwd_entry(&smb_pw, override);
+	
+	/* clear memory from smb_passwd */
+	clear_smb_pass (&smb_pw);
+	
+	return (ret);
+}
+
+BOOL pdb_delete_sam_account (char* username)
+{
+	return ( del_smbfilepwd_entry(username) );
 }
 
 #else
