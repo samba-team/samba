@@ -1,9 +1,10 @@
 #define OLD_NTDOMAIN 1
 /*
    Unix SMB/Netbios implementation.
-   Version 1.9.
-   SMB NT transaction handling
+   Version 3.0
+   change notify handling
    Copyright (C) Jeremy Allison 1994-1998
+   Copyright (C) Andrew Tridgell 2000
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
