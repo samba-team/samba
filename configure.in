@@ -170,7 +170,7 @@ AC_CHECK_HEADERS(sys/param.h sys/proc.h sys/pty.h sys/ptyio.h)
 AC_CHECK_HEADERS(sys/ptyvar.h sys/resource.h sys/select.h)
 AC_CHECK_HEADERS(sys/socket.h sys/sockio.h sys/stat.h sys/stream.h)
 AC_CHECK_HEADERS(sys/stropts.h sys/sysctl.h sys/time.h sys/timeb.h)
-AC_CHECK_HEADERS(sys/times.h sys/tty.h sys/types.h sys/uio.h)
+AC_CHECK_HEADERS(sys/times.h sys/tty.h sys/types.h sys/uio.h sys/un.h)
 AC_CHECK_HEADERS(sys/utsname.h sys/wait.h syslog.h termio.h)
 AC_CHECK_HEADERS(termios.h tmpdir.h unistd.h util.h utmp.h utmpx.h)
 
