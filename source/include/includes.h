@@ -585,7 +585,7 @@ union semun {
 #define HAVE_PAM 1
 #endif
 
-#if defined(HAVE_YP_GET_DEFAULT_DOMAIN)
+#if defined(HAVE_YP_GET_DEFAULT_DOMAIN) && defined(HAVE_SETNETGRENT) && defined(HAVE_ENDNETGRENT) && defined(HAVE_GETNETGRENT)
 #define HAVE_NETGROUP 1
 #endif
 

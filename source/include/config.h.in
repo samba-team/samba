@@ -387,6 +387,9 @@
 /* Define if you have the dup2 function.  */
 #undef HAVE_DUP2
 
+/* Define if you have the endnetgrent function.  */
+#undef HAVE_ENDNETGRENT
+
 /* Define if you have the execl function.  */
 #undef HAVE_EXECL
 
@@ -425,6 +428,9 @@
 
 /* Define if you have the getgrnam function.  */
 #undef HAVE_GETGRNAM
+
+/* Define if you have the getnetgrent function.  */
+#undef HAVE_GETNETGRENT
 
 /* Define if you have the getprpwnam function.  */
 #undef HAVE_GETPRPWNAM
@@ -527,6 +533,9 @@
 
 /* Define if you have the setluid function.  */
 #undef HAVE_SETLUID
+
+/* Define if you have the setnetgrent function.  */
+#undef HAVE_SETNETGRENT
 
 /* Define if you have the setsid function.  */
 #undef HAVE_SETSID

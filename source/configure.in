@@ -166,7 +166,7 @@ fi
 AC_CHECK_FUNCS(waitpid getcwd strdup strerror chown chmod chroot)
 AC_CHECK_FUNCS(fstat strchr utime utimes getrlimit fsync execl bzero memset)
 AC_CHECK_FUNCS(memmove vsnprintf snprintf setsid glob strpbrk pipe crypt16 getauthuid)
-AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction innetgr)
+AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction innetgr setnetgrent getnetgrent endnetgrent)
 AC_CHECK_FUNCS(initgroups select rdchk getgrnam pathconf putprpwnam)
 AC_CHECK_FUNCS(setuidx setgroups mktime rename ftruncate stat64 fstat64 lstat64 fopen64)
 AC_CHECK_FUNCS(set_auth_parameters atexit grantpt getspnam dup2 lseek64 ftruncate64)
