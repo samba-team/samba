@@ -1,4 +1,4 @@
-AC_INIT(entities/global.entities)
+AC_INIT(settings.xls.in)
 
 PAPERSIZE=""
 DUPLICATE_ULINKS=""
