@@ -50,64 +50,99 @@
 int net_run_function(struct net_context *ctx,
 			int argc, const char **argv,
 			const struct net_functable *functable, 
-			int (*help_fn)(struct net_context *ctx, int argc, const char **argv))
+			int (*usage_fn)(struct net_context *ctx, int argc, const char **argv))
 {
 	int i;
-	
+
 	if (argc < 1) {
 		d_printf("Usage: \n");
-		return help_fn(ctx, argc, argv);
+		return usage_fn(ctx, argc, argv);
 	}
+
 	for (i=0; functable[i].name; i++) {
 		if (StrCaseCmp(argv[0], functable[i].name) == 0)
 			return functable[i].fn(ctx, argc-1, argv+1);
 	}
+
 	d_printf("No command: %s\n", argv[0]);
-	return help_fn(ctx, argc, argv);
+	return usage_fn(ctx, argc, argv);
 }
 
 /*
-  run a help function from a function table. If not found then fail
+  run a usage function from a function table. If not found then fail
+*/
+int net_run_usage(struct net_context *ctx,
+			int argc, const char **argv,
+			const struct net_functable *functable)
+{
+	int i;
+
+	if (argc < 1) {
+		d_printf("net_run_usage: TODO (argc < 1)\n");
+		return 1;
+	}
+
+	for (i=0; functable[i].name; i++) {
+		if (StrCaseCmp(argv[0], functable[i].name) == 0)
+			if (functable[i].usage) {
+				return functable[i].usage(ctx, argc-1, argv+1);
+			}
+	}
+
+	d_printf("No usage for command: %s\n", argv[0]);
+
+	return 1;
+}
+
+/*
+  run a usage function from a function table. If not found then fail
 */
 int net_run_help(struct net_context *ctx,
 			int argc, const char **argv,
 			const struct net_functable *functable)
 {
 	int i;
-	
+
 	if (argc < 1) {
 		d_printf("net_run_help: TODO (argc < 1)\n");
 		return 1;
 	}
+
 	for (i=0; functable[i].name; i++) {
 		if (StrCaseCmp(argv[0], functable[i].name) == 0)
 			if (functable[i].help) {
 				return functable[i].help(ctx, argc-1, argv+1);
 			}
 	}
+
 	d_printf("No help for command: %s\n", argv[0]);
+
 	return 1;
 }
 
-static int net_help_msg(struct net_context *ctx, int argc, const char **argv)
+static int net_help(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("Help: TODO\n");
+	d_printf("net_help: TODO\n");
+	return 0;
+}
+
+static int net_help_usage(struct net_context *ctx, int argc, const char **argv)
+{
+	d_printf("net_help_usage: TODO\n");
 	return 0;	
 }
 
-static int net_help(struct net_context *ctx, int argc, const char **argv);
-
 /* main function table */
-static const struct net_functable net_functable[] = {
-/*	{"password", net_password, net_password_help},*/
+static const struct net_functable const net_functable[] = {
+	{"password", net_password, net_password_usage, net_password_help},
 
-	{"help", net_help_msg, net_help_msg},
+	{"help", net_help, net_help_usage, net_help},
 	{NULL, NULL}
 };
 
-static int net_help(struct net_context *ctx, int argc, const char **argv)
+static int net_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	return net_run_help(ctx, argc, argv, net_functable);
+	return net_run_usage(ctx, argc, argv, net_functable);
 }
 
 /****************************************************************************
@@ -119,7 +154,8 @@ static int binary_net(int argc, const char **argv)
 	int rc;
 	int argc_new;
 	const char **argv_new;
-	struct net_context ctx;
+	TALLOC_CTX *mem_ctx;
+	struct net_context *ctx;
 	poptContext pc;
 
 	setup_logging("net", DEBUG_STDOUT);
@@ -128,11 +164,15 @@ static int binary_net(int argc, const char **argv)
 	setbuffer(stdout, NULL, 0);
 #endif
 
-	ctx.mem_ctx = talloc_init("net_context");
-	if (!ctx.mem_ctx) {
+	mem_ctx = talloc_init("net_context");
+	ctx = talloc_p(mem_ctx, struct net_context);
+	if (!ctx) {
 		d_printf("talloc_init(net_context) failed\n");
 		exit(1);
 	}
+
+	ZERO_STRUCTP(ctx);
+	ctx->mem_ctx		= mem_ctx;
 
 	struct poptOption long_options[] = {
 		{"help",	'h', POPT_ARG_NONE,   0, 'h'},
@@ -146,13 +186,13 @@ static int binary_net(int argc, const char **argv)
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case 'h':
-			net_help(&ctx, argc, argv);
+			net_help(ctx, argc, argv);
 			exit(0);
 			break;
 		default:
 			d_printf("Invalid option %s: %s\n", 
 				 poptBadOption(pc, 0), poptStrerror(opt));
-			net_help(&ctx, argc, argv);
+			net_help(ctx, argc, argv);
 			exit(1);
 		}
 	}
@@ -175,11 +215,13 @@ static int binary_net(int argc, const char **argv)
 		return 1;
 	}
 
-	rc = net_run_function(&ctx, argc_new-1, argv_new+1, net_functable, net_help_msg);
+	rc = net_run_function(ctx, argc_new-1, argv_new+1, net_functable, net_usage);
 
 	if (rc != 0) {
 		DEBUG(0,("return code = %d\n", rc));
 	}
+
+	talloc_destroy(mem_ctx);
 	return rc;
 }
 
