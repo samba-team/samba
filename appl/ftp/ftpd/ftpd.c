@@ -1879,7 +1879,7 @@ find(char *pattern)
 {
     char line[1024];
     FILE *f;
-    sprintf(line, "/bin/locate -d /etc/locatedb %s", pattern);
+    sprintf(line, "/bin/locate -d %s %s", ftp_rooted("/etc/locatedb"), pattern);
     f = ftpd_popen(line, "r", 1, 1);
     if(f == NULL){
 	perror_reply(550, "/bin/locate");
