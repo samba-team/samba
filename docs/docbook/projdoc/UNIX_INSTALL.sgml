@@ -15,10 +15,18 @@
 </sect1>
 
 <sect1>
-	<title>Create the smb configuration file. </title>
-	
-	<!--FIXME: Add notes about different types of configuration -->
+	<title>Configuring samba</title>
 
+	<para>Samba's configuration is stored in the smb.conf file, 
+	that usually resides in <filename>/etc/samba/smb.conf</filename> 
+	or <filename>/usr/local/samba/lib/smb.conf</filename>. You can either 
+	edit this file yourself or do it using one of the many graphical 
+	tools that are available, such as the web-based interface swat, that 
+	is included with samba.</para>
+	
+<sect2>
+	<title>Editing the smb.conf file</title>
+	
 	<para>There are sample configuration files in the examples 
 	subdirectory in the distribution. I suggest you read them 
 	carefully so you can see how the options go together in 
@@ -51,9 +59,8 @@
 
 	<para>For more information about security settings for the 
 	[homes] share please refer to the document UNIX_SECURITY.txt.</para>
-</sect1>
 
-<sect1>
+<sect3>
 	<title>Test your config file with 
 	<command>testparm</command></title>
 
@@ -68,6 +75,28 @@
 	<para>Always run testparm again when you change 
 	<filename>smb.conf</filename>!</para>
 
+</sect3>
+</sect2>
+
+	<sect2>
+	<title>SWAT</title>
+
+	<para>
+	SWAT is a web-based interface that helps you configure samba. 
+	SWAT might not be available in the samba package on your platform, 
+	but in a seperate package. Please read the swat manpage 
+	on compiling, installing and configuring swat from source.
+	</para>
+
+	<para>To launch SWAT just run your favorite web browser and 
+	point it at "http://localhost:901/". Replace <replaceable>localhost</replaceable> with the name of the computer you are running samba on if you 
+	are running samba on a different computer then your browser.</para>
+
+	<para>Note that you can attach to SWAT from any IP connected 
+	machine but connecting from a remote machine leaves your 
+	connection open to password sniffing as passwords will be sent 
+	in the clear over the wire. </para>
+	</sect2>
 </sect1>
 
 <sect1>
@@ -121,6 +150,8 @@
 
 	<para>Try printing. eg:</para>
 
+	
+
 	<para><prompt>C:\WINDOWS\> </prompt><userinput>net use lpt1:
 	\\servername\spoolservice</userinput></para>
 
@@ -133,10 +164,6 @@
 <sect1>
 	<title>What If Things Don't Work?</title>
 	
-	<para>If nothing works and you start to think "who wrote 
-	this pile of trash" then I suggest you do step 2 again (and 
-	again) till you calm down.</para>
-
 	<para>Then you might read the file HOWTO chapter Diagnosis and the 
 	FAQ. If you are still stuck then try the mailing list or 
 	newsgroup (look in the README for details). Samba has been 
@@ -144,18 +171,11 @@
 	someone else has hit your problem and has overcome it. You could 
 	also use the WWW site to scan back issues of the samba-digest.</para>
 
-	<para>When you fix the problem PLEASE send me some updates to the
-	documentation (or source code) so that the next person will find it
-	easier. </para>
+	<para>When you fix the problem <emphasis>please</emphasis> send some 
+	updates of the documentation (or source code) to one of 
+	the documentation maintainers or the list.
+	</para>
 
-	<sect2>
-		<title>Diagnosing Problems</title>
-
-		<para>If you have installation problems then go to the
-		<ulink url="Diagnosis.html">Diagnosis</ulink> chapter to try to find the 
-		problem.</para>
-	</sect2>
-	
 	<sect2>
 		<title>Scope IDs</title>
 
@@ -163,58 +183,8 @@
 		all your windows boxes must also have a blank scope ID. 
 		If you really want to use a non-blank scope ID then you will 
 		need to use the 'netbios scope' smb.conf option.
-                All your PCs will need to have the same setting for 
+        All your PCs will need to have the same setting for 
 		this to work. I do not recommend scope IDs.</para>
-	</sect2>
-
-
-	<sect2>
-		<title>Choosing the Protocol Level</title>
-
-		<para>The SMB protocol has many dialects. Currently 
-		Samba supports 5, called CORE, COREPLUS, LANMAN1, 
-		LANMAN2 and NT1.</para>
-
-		<para>You can choose what maximum protocol to support 
-		in the <filename>smb.conf</filename> file. The default is 
-		NT1 and that is the best for the vast majority of sites.</para>
-
-		<para>In older versions of Samba you may have found it 
-		necessary to use COREPLUS. The limitations that led to 
-		this have mostly been fixed. It is now less likely that you 
-		will want to use less than LANMAN1. The only remaining advantage 
-		of COREPLUS is that for some obscure reason WfWg preserves 
-		the case of passwords in this protocol, whereas under LANMAN1, 
-		LANMAN2 or NT1 it uppercases all passwords before sending them,
-		forcing you to use the "password level=" option in some cases.</para>
-
-		<para>The main advantage of LANMAN2 and NT1 is support for 
-		long filenames with some clients (eg: smbclient, Windows NT 
-		or Win95). </para>
-
-		<para>See the smb.conf(5) manual page for more details.</para>
-
-		<para>Note: To support print queue reporting you may find 
-		that you have to use TCP/IP as the default protocol under 
-		WfWg. For some reason if you leave Netbeui as the default 
-		it may break the print queue reporting on some systems. 
-		It is presumably a WfWg bug.</para>
-	</sect2>
-	
-	<sect2>
-		<title>Printing from UNIX to a Client PC</title>
-
-		<para>To use a printer that is available via a smb-based 
-		server from a unix host with LPR you will need to compile the 
-		smbclient program. You then need to install the script 
-		"smbprint". Read the instruction in smbprint for more details.
-		</para>
-
-		<para>There is also a SYSV style script that does much 
-		the same thing called smbprint.sysv. It contains instructions.</para>
-
-		<para>See the CUPS manual for information about setting up 
-		printing from a unix host with CUPS to a smb-based server. </para>
 	</sect2>
 
 	<sect2>
@@ -273,14 +243,5 @@
 
 		<!-- FIXME: Sync this with oplocks.sgml -->
 	</sect2>
-	
-	<sect2>
-		<title>Mapping Usernames</title>
-	
-		<para>If you have different usernames on the PCs and 
-		the unix server then take a look at the "username map" option. 
-		See the smb.conf man page for details.</para>
-	</sect2>
-
 </sect1>	
 </chapter>
