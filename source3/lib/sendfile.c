@@ -38,7 +38,7 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 {
 	size_t total=0;
 	ssize_t ret;
-	ssize_t hdr_len = 0;
+	size_t hdr_len = 0;
 
 	/*
 	 * Send the header first.
