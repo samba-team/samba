@@ -72,6 +72,8 @@ static NTSTATUS svfs_connect(struct smbsrv_request *req, const char *sharename, 
 	private->next_search_handle = 0;
 	private->connectpath = talloc_strdup(tcon, lp_pathname(tcon->service));
 	private->open_files = NULL;
+	private->ops = ntvfs_backend_byname("simple", NTVFS_DISK);
+	private->search = NULL;
 
 	/* the directory must exist */
 	if (stat(private->connectpath, &st) != 0 || !S_ISDIR(st.st_mode)) {
