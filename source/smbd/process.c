@@ -791,7 +791,7 @@ static int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
 ****************************************************************************/
 static BOOL smbd_process_limit(void)
 {
-	int  total_smbds;
+	int32  total_smbds;
 	
 	if (lp_max_smbd_processes()) {
 
@@ -807,7 +807,7 @@ set. Ignoring max smbd restriction.\n"));
 			return False;
 		}
 
-		if (tdb_change_int_atomic(conn_tdb_ctx(), "INFO/total_smbds", &total_smbds, 1) == -1)
+		if (tdb_change_int32_atomic(conn_tdb_ctx(), "INFO/total_smbds", &total_smbds, 1) == -1)
 			return True;
 
 		return total_smbds > lp_max_smbd_processes();
