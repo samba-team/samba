@@ -1,7 +1,7 @@
 /* 
    Unix SMB/Netbios implementation.
-   Version 3.0
-   handle NLTMSSP, server side
+
+   NLTMSSP code
 
    Copyright (C) Andrew Tridgell      2001
    Copyright (C) Andrew Bartlett 2001-2003
@@ -221,6 +221,7 @@ NTSTATUS ntlmssp_update(struct ntlmssp_state *ntlmssp_state,
 			TALLOC_CTX *out_mem_ctx, 
 			const DATA_BLOB in, DATA_BLOB *out) 
 {
+	NTSTATUS nt_status;
 	DATA_BLOB input;
 	uint32_t ntlmssp_command;
 	int i;
@@ -257,13 +258,15 @@ NTSTATUS ntlmssp_update(struct ntlmssp_state *ntlmssp_state,
 			break;
 		}
 	} else {
-		if (!msrpc_parse(ntlmssp_state->mem_ctx, 
-				 &input, "Cd",
-				 "NTLMSSP",
-				 &ntlmssp_command)) {
+		nt_status = ndr_pull_format_blob(&input, ntlmssp_state->mem_ctx, 
+				 	"Cd",
+				 	"NTLMSSP",
+				 	&ntlmssp_command);
+
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(1, ("Failed to parse NTLMSSP packet, could not extract NTLMSSP command\n"));
 			dump_data(2, (const char *)input.data, input.length);
-			return NT_STATUS_INVALID_PARAMETER;
+			return nt_status;
 		}
 	}
 
@@ -442,6 +445,7 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 					 TALLOC_CTX *out_mem_ctx, 
 					 const DATA_BLOB in, DATA_BLOB *out) 
 {
+	NTSTATUS nt_status;
 	DATA_BLOB struct_blob;
 	fstring dnsname, dnsdomname;
 	uint32_t neg_flags = 0;
@@ -456,16 +460,18 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 #endif
 
 	if (in.length) {
-		if (!msrpc_parse(ntlmssp_state->mem_ctx, 
-				 &in, "CddAA",
-				 "NTLMSSP",
-				 &ntlmssp_command,
-				 &neg_flags,
-				 &cliname,
-				 &domname)) {
+		nt_status = ndr_pull_format_blob(&in, ntlmssp_state->mem_ctx, 
+				"CddAA",
+				"NTLMSSP",
+				&ntlmssp_command,
+				&neg_flags,
+				&cliname,
+				&domname);
+
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(1, ("ntlmssp_server_negotiate: failed to parse NTLMSSP:\n"));
 			dump_data(2, (const char *)in.data, in.length);
-			return NT_STATUS_INVALID_PARAMETER;
+			return nt_status;
 		}
 		
 		debug_ntlmssp_flags(neg_flags);
@@ -515,13 +521,14 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 			target_name_dns = dnsname;
 		}
 
-		msrpc_gen(out_mem_ctx, 
-			  &struct_blob, "aaaaa",
-			  NTLMSSP_NAME_TYPE_DOMAIN, target_name,
-			  NTLMSSP_NAME_TYPE_SERVER, ntlmssp_state->get_global_myname(),
-			  NTLMSSP_NAME_TYPE_DOMAIN_DNS, dnsdomname,
-			  NTLMSSP_NAME_TYPE_SERVER_DNS, dnsname,
-			  0, "");
+		/* TODO: do we need to check the result here? --metze */
+		ndr_push_format_blob(&struct_blob, out_mem_ctx, 
+				"aaaaa",
+				NTLMSSP_NAME_TYPE_DOMAIN, target_name,
+				NTLMSSP_NAME_TYPE_SERVER, ntlmssp_state->get_global_myname(),
+				NTLMSSP_NAME_TYPE_DOMAIN_DNS, dnsdomname,
+				NTLMSSP_NAME_TYPE_SERVER_DNS, dnsname,
+				0, "");
 	} else {
 		struct_blob = data_blob(NULL, 0);
 	}
@@ -534,16 +541,17 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 		} else {
 			gen_string = "CdAdbddB";
 		}
-		
-		msrpc_gen(out_mem_ctx, 
-			  out, gen_string,
-			  "NTLMSSP", 
-			  NTLMSSP_CHALLENGE,
-			  target_name,
-			  chal_flags,
-			  cryptkey, 8,
-			  0, 0,
-			  struct_blob.data, struct_blob.length);
+
+		/* TODO: do we need to check the result here? --metze */
+		ndr_push_format_blob(out, out_mem_ctx, 
+			 	gen_string,
+			 	"NTLMSSP", 
+			 	NTLMSSP_CHALLENGE,
+			 	target_name,
+			 	chal_flags,
+			 	cryptkey, 8,
+			 	0, 0,
+			 	struct_blob.data, struct_blob.length);
 	}
 		
 	ntlmssp_state->expected_state = NTLMSSP_AUTH;
@@ -591,18 +599,20 @@ static NTSTATUS ntlmssp_server_preauth(struct ntlmssp_state *ntlmssp_state,
 	ntlmssp_state->workstation = NULL;
 
 	/* now the NTLMSSP encoded auth hashes */
-	if (!msrpc_parse(ntlmssp_state->mem_ctx, 
-			 &request, parse_string,
-			 "NTLMSSP", 
-			 &ntlmssp_command, 
-			 &ntlmssp_state->lm_resp,
-			 &ntlmssp_state->nt_resp,
-			 &domain, 
-			 &user, 
-			 &workstation,
-			 &ntlmssp_state->encrypted_session_key,
-			 &auth_flags)) {
-		DEBUG(10, ("ntlmssp_server_auth: failed to parse NTLMSSP (nonfatal):\n"));
+	nt_status = ndr_pull_format_blob(&request, ntlmssp_state->mem_ctx, 
+				parse_string,
+				"NTLMSSP", 
+				&ntlmssp_command, 
+				&ntlmssp_state->lm_resp,
+				&ntlmssp_state->nt_resp,
+				&domain, 
+				&user, 
+				&workstation,
+				&ntlmssp_state->encrypted_session_key,
+				&auth_flags);
+	
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(10, ("ntlmssp_server_preauth: failed to parse NTLMSSP (nonfatal):\n"));
 		dump_data(10, (const char *)request.data, request.length);
 
 		/* zero this out */
@@ -617,19 +627,20 @@ static NTSTATUS ntlmssp_server_preauth(struct ntlmssp_state *ntlmssp_state,
 		}
 
 		/* now the NTLMSSP encoded auth hashes */
-		if (!msrpc_parse(ntlmssp_state->mem_ctx, 
-				 &request, parse_string,
-				 "NTLMSSP", 
-				 &ntlmssp_command, 
-				 &ntlmssp_state->lm_resp,
-				 &ntlmssp_state->nt_resp,
-				 &domain, 
-				 &user, 
-				 &workstation)) {
-			DEBUG(1, ("ntlmssp_server_auth: failed to parse NTLMSSP:\n"));
-			dump_data(2, (const char *)request.data, request.length);
+		nt_status = ndr_pull_format_blob(&request, ntlmssp_state->mem_ctx, 
+					parse_string,
+					"NTLMSSP", 
+					&ntlmssp_command, 
+					&ntlmssp_state->lm_resp,
+					&ntlmssp_state->nt_resp,
+					&domain, 
+					&user, 
+					&workstation);
 
-			return NT_STATUS_INVALID_PARAMETER;
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(1, ("ntlmssp_server_preauth: failed to parse NTLMSSP:\n"));
+			dump_data(2, (const char *)request.data, request.length);
+			return nt_status;
 		}
 	}
 
@@ -958,6 +969,8 @@ static NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state,
 				       TALLOC_CTX *out_mem_ctx, 
 				       DATA_BLOB in, DATA_BLOB *out) 
 {
+	NTSTATUS nt_status;
+
 	if (ntlmssp_state->unicode) {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_UNICODE;
 	} else {
@@ -969,13 +982,17 @@ static NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state,
 	}
 
 	/* generate the ntlmssp negotiate packet */
-	msrpc_gen(out_mem_ctx, 
-		  out, "CddAA",
-		  "NTLMSSP",
-		  NTLMSSP_NEGOTIATE,
-		  ntlmssp_state->neg_flags,
-		  ntlmssp_state->get_domain(), 
-		  ntlmssp_state->get_global_myname());
+	nt_status = ndr_push_format_blob(out, out_mem_ctx, 
+		 		"CddAA",
+		 		"NTLMSSP",
+		 		NTLMSSP_NEGOTIATE,
+		 		ntlmssp_state->neg_flags,
+		 		ntlmssp_state->get_domain(), 
+		 		ntlmssp_state->get_global_myname());
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
 
 	ntlmssp_state->expected_state = NTLMSSP_CHALLENGE;
 
@@ -1010,16 +1027,17 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	DATA_BLOB encrypted_session_key = data_blob(NULL, 0);
 	NTSTATUS nt_status;
 
-	if (!msrpc_parse(ntlmssp_state->mem_ctx, 
-			 &in, "CdBd",
-			 "NTLMSSP",
-			 &ntlmssp_command, 
-			 &server_domain_blob,
-			 &chal_flags)) {
+	nt_status = ndr_pull_format_blob(&in, ntlmssp_state->mem_ctx, 
+				"CdBd",
+				"NTLMSSP",
+				&ntlmssp_command, 
+				&server_domain_blob,
+				&chal_flags);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1, ("Failed to parse the NTLMSSP Challenge: (#1)\n"));
 		dump_data(2, (const char *)in.data, in.length);
-
-		return NT_STATUS_INVALID_PARAMETER;
+		return nt_status;
 	}
 	
 	data_blob_free(&server_domain_blob);
@@ -1049,18 +1067,20 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	DEBUG(3, ("NTLMSSP: Set final flags:\n"));
 	debug_ntlmssp_flags(ntlmssp_state->neg_flags);
 
-	if (!msrpc_parse(ntlmssp_state->mem_ctx, 
-			 &in, chal_parse_string,
-			 "NTLMSSP",
-			 &ntlmssp_command, 
-			 &server_domain,
-			 &chal_flags,
-			 &challenge_blob, 8,
-			 &unkn1, &unkn2,
-			 &struct_blob)) {
+	nt_status = ndr_pull_format_blob(&in, ntlmssp_state->mem_ctx, 
+			 	chal_parse_string,
+			 	"NTLMSSP",
+			 	&ntlmssp_command, 
+			 	&server_domain,
+			 	&chal_flags,
+			 	&challenge_blob, 8,
+			 	&unkn1, &unkn2,
+			 	&struct_blob);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1, ("Failed to parse the NTLMSSP Challenge: (#2)\n"));
 		dump_data(2, (const char *)in.data, in.length);
-		return NT_STATUS_INVALID_PARAMETER;
+		return nt_status;
 	}
 
 	ntlmssp_state->server_domain = server_domain;
@@ -1216,19 +1236,20 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	}
 
 	/* this generates the actual auth packet */
-	if (!msrpc_gen(out_mem_ctx, 
-		       out, auth_gen_string, 
-		       "NTLMSSP", 
-		       NTLMSSP_AUTH, 
-		       lm_response.data, lm_response.length,
-		       nt_response.data, nt_response.length,
-		       ntlmssp_state->domain, 
-		       ntlmssp_state->user, 
-		       ntlmssp_state->get_global_myname(), 
-		       encrypted_session_key.data, encrypted_session_key.length,
-		       ntlmssp_state->neg_flags)) {
-		
-		return NT_STATUS_NO_MEMORY;
+	nt_status = ndr_push_format_blob(out, out_mem_ctx, 
+					auth_gen_string, 
+				"NTLMSSP", 
+				NTLMSSP_AUTH, 
+				lm_response.data, lm_response.length,
+				nt_response.data, nt_response.length,
+				ntlmssp_state->domain, 
+				ntlmssp_state->user, 
+				ntlmssp_state->get_global_myname(), 
+				encrypted_session_key.data, encrypted_session_key.length,
+				ntlmssp_state->neg_flags);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {		
+		return nt_status;
 	}
 
 	ntlmssp_state->session_key = session_key;
@@ -1242,7 +1263,9 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 
 	ntlmssp_state->expected_state = NTLMSSP_DONE;
 
-	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_sign_init(ntlmssp_state))) {
+	nt_status = ntlmssp_sign_init(ntlmssp_state);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1, ("Could not setup NTLMSSP signing/sealing system (error was: %s)\n", 
 			  nt_errstr(nt_status)));
 		return nt_status;
