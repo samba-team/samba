@@ -2,16 +2,30 @@
 
 AUTOMAKE_OPTIONS = no-dependencies foreign
 
-INCLUDES = $(WFLAGS) -I$(top_builddir)/include 
+INCLUDES = $(WFLAGS) -I$(top_builddir)/include $(INCLUDE_krb4)
 
 man_MANS = kinit.1 klist.1 kdestroy.1
 
-bin_PROGRAMS = kinit klist kdestroy
+bin_PROGRAMS = kinit kauth klist kdestroy
 
-noinst_PROGRAMS = kfoo krenew kverify
+kinit_SOURCES = kinit.c kinit_options.c
+
+kauth_SOURCES = kinit.c kauth_options.c
+
+noinst_PROGRAMS = kfoo kverify
+
+kauth_LDADD = \
+	$(top_builddir)/lib/kafs/libkafs.a \
+	$(top_builddir)/lib/krb5/libkrb5.la \
+	$(LIB_krb4) \
+	$(top_builddir)/lib/des/libdes.la \
+	$(top_builddir)/lib/asn1/libasn1.la \
+	$(top_builddir)/lib/roken/libroken.la
+
+kinit_LDADD = $(kauth_LDADD)
 
 LDADD = \
 	$(top_builddir)/lib/krb5/libkrb5.la \
-	$(top_builddir)/lib/asn1/libasn1.la \
 	$(top_builddir)/lib/des/libdes.la \
+	$(top_builddir)/lib/asn1/libasn1.la \
 	$(top_builddir)/lib/roken/libroken.la
