@@ -96,6 +96,11 @@ static int lldb_delete(struct ldb_context *ldb, const char *dn)
 {
 	struct lldb_private *lldb = ldb->private_data;
 	int ret = 0;
+
+	/* ignore ltdb specials */
+	if (dn[0] == '@') {
+		return 0;
+	}
 	
 	lldb->last_rc = ldap_delete_s(lldb->ldap, dn);
 	if (lldb->last_rc != LDAP_SUCCESS) {
@@ -202,7 +207,7 @@ static int lldb_add_msg_attr(struct ldb_message *msg,
 */
 static int lldb_search(struct ldb_context *ldb, const char *base,
 		       enum ldb_scope scope, const char *expression,
-		       const char **attrs, struct ldb_message ***res)
+		       char * const *attrs, struct ldb_message ***res)
 {
 	struct lldb_private *lldb = ldb->private_data;
 	int count, msg_count;
@@ -392,6 +397,11 @@ static int lldb_add(struct ldb_context *ldb, const struct ldb_message *msg)
 	LDAPMod **mods;
 	int ret = 0;
 
+	/* ignore ltdb specials */
+	if (msg->dn[0] == '@') {
+		return 0;
+	}
+
 	mods = lldb_msg_to_mods(msg, 0);
 
 	lldb->last_rc = ldap_add_s(lldb->ldap, msg->dn, mods);
@@ -413,6 +423,11 @@ static int lldb_modify(struct ldb_context *ldb, const struct ldb_message *msg)
 	struct lldb_private *lldb = ldb->private_data;
 	LDAPMod **mods;
 	int ret = 0;
+
+	/* ignore ltdb specials */
+	if (msg->dn[0] == '@') {
+		return 0;
+	}
 
 	mods = lldb_msg_to_mods(msg, 1);
 

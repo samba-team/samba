@@ -17,11 +17,12 @@ LIB_FLAGS=-Llib -lldb $(LDAP_LIBS)
 TDB_OBJ=$(TDBDIR)/tdb.o $(TDBDIR)/spinlock.o
 
 LDB_TDB_OBJ=ldb_tdb/ldb_match.o ldb_tdb/ldb_tdb.o \
-	ldb_tdb/ldb_pack.o ldb_tdb/ldb_search.o ldb_tdb/ldb_index.o
+	ldb_tdb/ldb_pack.o ldb_tdb/ldb_search.o ldb_tdb/ldb_index.o \
+	ldb_tdb/ldb_cache.o
 
 
 COMMON_OBJ=common/ldb.o common/ldb_ldif.o common/util.o \
-	   common/ldb_parse.o common/ldb_msg.o
+	   common/ldb_parse.o common/ldb_msg.o common/ldb_utf8.o
 
 OBJS =  $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(LDB_LDAP_OBJ)
 
@@ -66,3 +67,6 @@ proto:
 
 etags:
 	etags */*.[ch]
+
+test:
+	tests/test-tdb.sh

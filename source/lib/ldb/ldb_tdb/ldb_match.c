@@ -33,14 +33,162 @@
  */
 
 #include "includes.h"
+#include "ldb/ldb_tdb/ldb_tdb.h"
 
 
 /*
-  see if two ldb_val structures contain the same data
+  see if two ldb_val structures contain the same data as integers
   return 1 for a match, 0 for a mis-match
 */
-int ldb_val_equal(const struct ldb_val *v1, const struct ldb_val *v2)
+static int ldb_val_equal_integer(const struct ldb_val *v1, const struct ldb_val *v2)
 {
+	int i1, i2;
+
+	i1 = strtol(v1->data, NULL, 0);
+	i2 = strtol(v2->data, NULL, 0);
+
+	return i1 == i2;
+}
+
+/*
+  see if two ldb_val structures contain the same data as case insensitive strings
+  return 1 for a match, 0 for a mis-match
+*/
+static int ldb_val_equal_case_insensitive(const struct ldb_val *v1, 
+					  const struct ldb_val *v2)
+{
+	if (v1->length != v2->length) {
+		return 0;
+	}
+	if (strncasecmp(v1->data, v2->data, v1->length) == 0) {
+		return 1;
+	}
+	return 0;
+}
+
+/*
+  see if two ldb_val structures contain the same data with wildcards 
+  and case insensitive
+  return 1 for a match, 0 for a mis-match
+*/
+static int ldb_val_equal_wildcard_ci(const struct ldb_val *v1, 
+				     const struct ldb_val *v2)
+{
+	char *s1, *s2;
+	int ret;
+
+	if (!v1->data || !v2->data) {
+		return v1->data == v2->data;
+	}
+
+	s1 = ldb_casefold(v1->data);
+	if (!s1) {
+		return -1;
+	}
+
+	s2 = ldb_casefold(v2->data);
+	if (!s2) {
+		return -1;
+	}
+
+	ret = fnmatch(s2, s1, 0);
+
+	free(s1);
+	free(s2);
+
+	if (ret == 0) {
+		return 1;
+	}
+
+	return 0;
+}
+
+/*
+  see if two ldb_val structures contain the same data with wildcards
+  return 1 for a match, 0 for a mis-match
+*/
+static int ldb_val_equal_wildcard(const struct ldb_val *v1, 
+				  const struct ldb_val *v2,
+				  int flags)
+{
+	if (flags & LTDB_FLAG_CASE_INSENSITIVE) {
+		return ldb_val_equal_wildcard_ci(v1, v2);
+	}
+	if (!v1->data || !v2->data) {
+		return v1->data == v2->data;
+	}
+	if (fnmatch(v2->data, v1->data, 0) == 0) {
+		return 1;
+	}
+	return 0;
+}
+
+
+/*
+  see if two objectclasses are considered equal. This handles
+  the subclass attributes
+
+  v1 contains the in-database value, v2 contains the value
+  that the user gave
+
+  return 1 for a match, 0 for a mis-match
+*/
+static int ldb_val_equal_objectclass(struct ldb_context *ldb, 
+				     const struct ldb_val *v1, const struct ldb_val *v2)
+{
+	struct ltdb_private *ltdb = ldb->private_data;
+	int i;
+
+	if (ldb_val_equal_case_insensitive(v1, v2) == 1) {
+		return 1;
+	}
+
+	for (i=0;i<ltdb->cache.subclasses.num_elements;i++) {
+		struct ldb_message_element *el = &ltdb->cache.subclasses.elements[i];
+		if (ldb_attr_cmp(el->name, v2->data) == 0) {
+			int j;
+			for (j=0;j<el->num_values;j++) {
+				if (ldb_val_equal_objectclass(ldb, v1, &el->values[j])) {
+					return 1;
+				}
+			}
+		}
+	}
+
+	return 0;
+}
+				     
+
+/*
+  see if two ldb_val structures contain the same data
+  
+  v1 contains the in-database value, v2 contains the value
+  that the user gave
+  
+  return 1 for a match, 0 for a mis-match
+*/
+int ldb_val_equal(struct ldb_context *ldb,
+		  const char *attr_name,
+		  const struct ldb_val *v1, const struct ldb_val *v2)
+{
+	int flags = ltdb_attribute_flags(ldb, attr_name);
+
+	if (flags & LTDB_FLAG_OBJECTCLASS) {
+		return ldb_val_equal_objectclass(ldb, v1, v2);
+	}
+
+	if (flags & LTDB_FLAG_INTEGER) {
+		return ldb_val_equal_integer(v1, v2);
+	}
+
+	if (flags & LTDB_FLAG_WILDCARD) {
+		return ldb_val_equal_wildcard(v1, v2, flags);
+	}
+
+	if (flags & LTDB_FLAG_CASE_INSENSITIVE) {
+		return ldb_val_equal_case_insensitive(v1, v2);
+	}
+
 	if (v1->length != v2->length) return 0;
 
 	if (v1->length == 0) return 1;
@@ -66,7 +214,7 @@ static int scope_match(const char *dn, const char *base, enum ldb_scope scope)
 	base_len = strlen(base);
 	dn_len = strlen(dn);
 
-	if (strcmp(dn, base) == 0) {
+	if (ldb_dn_cmp(dn, base) == 0) {
 		return 1;
 	}
 
@@ -79,7 +227,7 @@ static int scope_match(const char *dn, const char *base, enum ldb_scope scope)
 		break;
 
 	case LDB_SCOPE_ONELEVEL:
-		if (strcmp(dn + (dn_len - base_len), base) == 0 &&
+		if (ldb_dn_cmp(dn + (dn_len - base_len), base) == 0 &&
 		    dn[dn_len - base_len - 1] == ',' &&
 		    strchr(dn, ',') == &dn[dn_len - base_len - 1]) {
 			return 1;
@@ -88,7 +236,7 @@ static int scope_match(const char *dn, const char *base, enum ldb_scope scope)
 		
 	case LDB_SCOPE_SUBTREE:
 	default:
-		if (strcmp(dn + (dn_len - base_len), base) == 0 &&
+		if (ldb_dn_cmp(dn + (dn_len - base_len), base) == 0 &&
 		    dn[dn_len - base_len - 1] == ',') {
 			return 1;
 		}
@@ -114,20 +262,21 @@ static int match_leaf(struct ldb_context *ldb,
 		return 0;
 	}
 
-	if (strcmp(tree->u.simple.attr, "dn") == 0) {
+	if (ldb_attr_cmp(tree->u.simple.attr, "dn") == 0) {
 		if (strcmp(tree->u.simple.value.data, "*") == 0) {
 			return 1;
 		}
-		return strcmp(msg->dn, tree->u.simple.value.data) == 0;
+		return ldb_dn_cmp(msg->dn, tree->u.simple.value.data) == 0;
 	}
 
 	for (i=0;i<msg->num_elements;i++) {
-		if (strcmp(msg->elements[i].name, tree->u.simple.attr) == 0) {
+		if (ldb_attr_cmp(msg->elements[i].name, tree->u.simple.attr) == 0) {
 			if (strcmp(tree->u.simple.value.data, "*") == 0) {
 				return 1;
 			}
 			for (j=0;j<msg->elements[i].num_values;j++) {
-				if (ldb_val_equal(&msg->elements[i].values[j], 
+				if (ldb_val_equal(ldb, msg->elements[i].name,
+						  &msg->elements[i].values[j], 
 						  &tree->u.simple.value)) {
 					return 1;
 				}

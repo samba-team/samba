@@ -7,11 +7,13 @@ SMB_SUBSYSTEM(LIBLDB,[lib/ldb/common/ldb.o],
 		lib/ldb/common/ldb_parse.o \
 		lib/ldb/common/ldb_msg.o \
 		lib/ldb/common/util.o \
+		lib/ldb/common/ldb_utf8.o \
 		lib/ldb/ldb_tdb/ldb_search.o \
 		lib/ldb/ldb_tdb/ldb_tdb.o \
 		lib/ldb/ldb_tdb/ldb_pack.o \
 		lib/ldb/ldb_tdb/ldb_index.o \
 		lib/ldb/ldb_tdb/ldb_match.o \
+		lib/ldb/ldb_tdb/ldb_cache.o \
 	        \$(LIBLDB_LDAP_OBJS)],
 		lib/ldb/include/ldb.h)
 

@@ -14,6 +14,7 @@
 #include <stdarg.h>
 #include <signal.h>
 #include <unistd.h>
+#include <fnmatch.h>
 #include "ldb.h"
 #include "ldb_parse.h"
 
