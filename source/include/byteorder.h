@@ -175,16 +175,16 @@ it also defines lots of intermediate macros, just ignore those :-)
 
 /* macros for reading / writing arrays */
 
-#define SMBMACRO(macro,buf,pos,val,len,size) \
-{ int l; for (l = 0; l < (len); l++) (val)[l] = macro((buf), (pos) + (size)*l); }
+#define SMBMACRO(macro1,macro2,buf,pos,val,len,size) \
+{ int l; for (l = 0; l < (len); l++) macro1((val),(size)*l,macro2((buf), (pos) + (size)*l)); }
 
 #define SSMBMACRO(macro,buf,pos,val,len,size) \
 { int l; for (l = 0; l < (len); l++) macro((buf), (pos) + (size)*l, (val)[l]); }
 
 /* reads multiple data from an SMB buffer */
-#define PCVAL(buf,pos,val,len) SMBMACRO(CVAL,buf,pos,((uint8 *)(val)),len,1)
-#define PSVAL(buf,pos,val,len) SMBMACRO(SVAL,buf,pos,((uint16 *)(val)),len,2)
-#define PIVAL(buf,pos,val,len) SMBMACRO(IVAL,buf,pos,((uint32 *)(val)),len,4)
+#define PCVAL(buf,pos,val,len) SMBMACRO(SCVAL,CVAL,buf,pos,val,len,1)
+#define PSVAL(buf,pos,val,len) SMBMACRO(SSVAL,SVAL,buf,pos,val,len,2)
+#define PIVAL(buf,pos,val,len) SMBMACRO(SIVAL,IVAL,buf,pos,val,len,4)
 
 /* stores multiple data in an SMB buffer */
 #define PSCVAL(buf,pos,val,len) SSMBMACRO(SCVAL,buf,pos,val,len,1)
@@ -206,8 +206,8 @@ it also defines lots of intermediate macros, just ignore those :-)
 #define RSIVALS(buf,pos,val) SIVALS(buf,pos,IREV(val))
 
 /* reads multiple data from an SMB buffer (big-endian) */
-#define RPSVAL(buf,pos,val,len) SMBMACRO(RSVAL,buf,pos,((uint16 *)(val)),len,2)
-#define RPIVAL(buf,pos,val,len) SMBMACRO(RIVAL,buf,pos,((uint32 *)(val)),len,4)
+#define RPSVAL(buf,pos,val,len) SMBMACRO(SSVAL,RSVAL,buf,pos,val,len,2)
+#define RPIVAL(buf,pos,val,len) SMBMACRO(SIVAL,RIVAL,buf,pos,val,len,4)
 
 /* stores multiple data in an SMB buffer (big-endian) */
 #define RPSSVAL(buf,pos,val,len) SSMBMACRO(RSSVAL,buf,pos,val,len,2)
