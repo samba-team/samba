@@ -148,22 +148,49 @@ terminate client connection
 void cli_connection_free(struct cli_connection *con)
 {
 	BOOL closed;
+	int i;
 
-	cli_nt_session_close(con->cli, con->fnum);
-	cli_net_use_del(con->srv_name, &con->usr_creds, False, &closed);
+	if (con->cli != NULL)
+	{
+		cli_nt_session_close(con->cli, con->fnum);
+		cli_net_use_del(con->srv_name, &con->usr_creds, False, &closed);
+	}
+
+	if (closed)
+	{
+		for (i = 0; i < num_cons; i++)
+		{
+			if (con != con_list[i] && con_list[i]->cli == con->cli)
+			{
+				/* WHOOPS! fnum already open: too bad!!! */
+				con_list[i]->cli = NULL;
+				con_list[i]->fnum = 0xffff;
+			}
+		}
+	}
 
 	con->cli = NULL;
 
 	if (con->srv_name != NULL)
 	{
 		free(con->srv_name);
+		con->srv_name = NULL;
 	}
 	if (con->pipe_name != NULL)
 	{
 		free(con->pipe_name);
+		con->pipe_name = NULL;
 	}
 
 	memset(&con->usr_creds, 0, sizeof(con->usr_creds));
+
+	for (i = 0; i < num_cons; i++)
+	{
+		if (con == con_list[i])
+		{
+			con_list[i] = NULL;
+		}
+	}
 
 	free(con);
 }
