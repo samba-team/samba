@@ -1,3 +1,0 @@
-auth	required	/lib/security/pam_unix_auth.so
-auth	required	/lib/security/pam_pwdb.so nullok shadow
-account	required	/lib/security/pam_unix_acct.so
