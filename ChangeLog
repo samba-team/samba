@@ -1,5 +1,26 @@
 2002-08-19  Johan Danielsson  <joda@pdc.kth.se>
 
+	* fix-export: use make to parse Makefile.am instead of perl
+
+	* configure.in: use argument-less AM_INIT_AUTOMAKE, now that it
+	groks AC_INIT with package name etc.
+
+	* kpasswd/kpasswdd.c: include <kadm5/private.h>
+
+	* lib/asn1/asn1_print.c: include com_right.h
+
+	* lib/krb5/addr_families.c: socklen_t -> krb5_socklen_t
+
+	* include/bits.c: define krb5_socklen_t type; this should really
+	go someplace else, but this was easy
+
+	* lib/krb5/verify_krb5_conf.c: don't bail out if parsing of a file
+	fails, just warn about it
+
+	* kdc/log.c (kdc_openlog): no need for a config_file parameter
+
+	* kdc/config.c: just treat kdc.conf like any other config file
+
 	* lib/krb5/context.c (krb5_get_default_config_files): ignore
 	duplicate files
 
