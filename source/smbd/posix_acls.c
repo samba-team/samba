@@ -1720,14 +1720,14 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 
 	if(default_ace || fsp->is_directory || fsp->fd == -1) {
 		if (sys_acl_set_file(dos_to_unix(fsp->fsp_name,False), the_acl_type, the_acl) == -1) {
-			DEBUG(0,("set_canon_ace_list: sys_acl_set_file type %s failed for file %s (%s).\n",
+			DEBUG(2,("set_canon_ace_list: sys_acl_set_file type %s failed for file %s (%s).\n",
 					the_acl_type == SMB_ACL_TYPE_DEFAULT ? "directory default" : "file",
 					fsp->fsp_name, strerror(errno) ));
 			goto done;
 		}
 	} else {
 		if (sys_acl_set_fd(fsp->fd, the_acl) == -1) {
-			DEBUG(0,("set_canon_ace_list: sys_acl_set_file failed for file %s (%s).\n",
+			DEBUG(2,("set_canon_ace_list: sys_acl_set_file failed for file %s (%s).\n",
 					fsp->fsp_name, strerror(errno) ));
 			goto done;
 		}
