@@ -5429,8 +5429,13 @@ BOOL spoolss_io_q_resetprinter(char *desc, SPOOL_Q_RESETPRINTER *q_u, prs_struct
 	if (!smb_io_pol_hnd("printer handle", &q_u->handle, ps, depth))
 		return False;
 
-	if (!prs_uint32("unknown1", ps, depth, &q_u->unknown1))
+	if (!prs_uint32("datatype_ptr", ps, depth, &q_u->datatype_ptr))
 		return False;
+		
+	if (q_u->datatype_ptr) {
+		if (!smb_io_unistr2("datatype", &q_u->datatype, q_u->datatype_ptr?True:False, ps, depth))
+		return False;
+	}
 
 	if (!spoolss_io_devmode_cont(desc, &q_u->devmode_ctr, ps, depth))
 		return False;
@@ -6449,3 +6454,4 @@ BOOL spoolss_io_r_enumprinterdataex(char *desc, SPOOL_R_ENUMPRINTERDATAEX *r_u, 
 
 
 
+}

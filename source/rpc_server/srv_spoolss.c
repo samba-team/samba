@@ -1105,10 +1105,8 @@ static BOOL api_spoolss_reset_printer(pipes_struct *p)
 		return False;
 	}
 	
-	r_u.status = _spoolss_resetprinter(&q_u.handle, &q_u.devmode_ctr);
+	r_u.status = _spoolss_resetprinter(p, &q_u, &r_u);
 				
-	/* free_spoolss_q_setprinterdata(&q_u); */
-
 	if(!spoolss_io_r_resetprinter("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_setprinterdata: unable to marshall SPOOL_R_RESETPRINTER.\n"));
 		return False;

@@ -1877,6 +1877,7 @@ BOOL print_job_resume(struct current_user *user, int jobid, int *errcode);
 int print_job_write(int jobid, const char *buf, int size);
 int print_queue_length(int snum, print_status_struct *pstatus);
 int print_job_start(struct current_user *user, int snum, char *jobname);
+void print_job_endpage(int jobid);
 BOOL print_job_end(int jobid, BOOL normal_close);
 int print_queue_status(int snum, 
 		       print_queue_struct **queue,
@@ -3520,7 +3521,7 @@ uint32 _spoolss_setprinterdata( pipes_struct *p, POLICY_HND *handle,
 				const uint8 *data,
 				uint32 real_len,
 				uint32 numeric_data);
-uint32 _spoolss_resetprinter( POLICY_HND *handle, DEVMODE_CTR *ctr);
+uint32 _spoolss_resetprinter(pipes_struct *p, SPOOL_Q_RESETPRINTER *q_u, SPOOL_R_RESETPRINTER *r_u);
 uint32 _spoolss_deleteprinterdata( pipes_struct *p, POLICY_HND *handle, const UNISTR2 *value);
 uint32 _spoolss_addform( pipes_struct *p, POLICY_HND *handle,
 				uint32 level,
