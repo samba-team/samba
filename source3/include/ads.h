@@ -208,3 +208,8 @@ typedef void **ADS_MODLIST;
 
 /* Kerberos environment variable names */
 #define KRB5_ENV_CCNAME "KRB5CCNAME"
+
+/* Heimdal uses a slightly different name */
+#if defined(HAVE_ENCTYPE_ARCFOUR_HMAC_MD5)
+#define ENCTYPE_ARCFOUR_HMAC ENCTYPE_ARCFOUR_HMAC_MD5
+#endif

@@ -2254,6 +2254,22 @@ if test x"$samba_cv_HAVE_KRB5_TKT_ENC_PART2" = x"yes"; then
     AC_DEFINE(HAVE_KRB5_TKT_ENC_PART2,1,[Whether the krb5_ticket struct has a enc_part2 property])
 fi
 
+AC_CACHE_CHECK([for keyvalue in krb5_keyblock],samba_cv_HAVE_KRB5_KEYBLOCK_KEYVALUE,[
+AC_TRY_COMPILE([#include <krb5.h>],
+[krb5_keyblock key; key.keyvalue.data = NULL;],
+samba_cv_HAVE_KRB5_KEYBLOCK_KEYVALUE=yes,samba_cv_HAVE_KRB5_KEYBLOCK_KEYVALUE=no)])
+if test x"$samba_cv_HAVE_KRB5_KEYBLOCK_KEYVALUE" = x"yes"; then
+    AC_DEFINE(HAVE_KRB5_KEYBLOCK_KEYVALUE,1,[Whether the krb5_keyblock struct has a keyvalue property])
+fi
+
+AC_CACHE_CHECK([for ENCTYPE_ARCFOUR_HMAC_MD5],samba_cv_HAVE_ENCTYPE_ARCFOUR_HMAC_MD5,[
+AC_TRY_COMPILE([#include <krb5.h>],
+[krb5_enctype enctype; enctype = ENCTYPE_ARCFOUR_HMAC_MD5;],
+samba_cv_HAVE_ENCTYPE_ARCFOUR_HMAC_MD5=yes,samba_cv_HAVE_ENCTYPE_ARCFOUR_HMAC_MD5=no)])
+if test x"$samba_cv_HAVE_ENCTYPE_ARCFOUR_HMAC_MD5" = x"yes"; then
+    AC_DEFINE(HAVE_ENCTYPE_ARCFOUR_HMAC_MD5,1,[Whether the ENCTYPE_ARCFOUR_HMAC_MD5 key type is available])
+fi
+
   ########################################################
   # now see if we can find the krb5 libs in standard paths
   # or as specified above
