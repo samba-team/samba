@@ -972,25 +972,25 @@ struct passwd *smb_getpwnam( char *domuser, fstring save_username, BOOL create )
 {
 	struct passwd *pw = NULL;
 	char *p;
-	fstring mapped_username;
-	fstring strip_username;
+	fstring username;
 	
 	/* we only save a copy of the username it has been mangled 
 	   by winbindd use default domain */
 	   
 	save_username[0] = '\0';
-	
-	/* save a local copy of the username and run it through the 
-	   username map */
 	   
-	fstrcpy( mapped_username, domuser );
-	map_username( mapped_username );	
+	/* don't call map_username() here since it has to be done higher 
+	   up the stack so we don't call it mutliple times */
+
+	fstrcpy( username, domuser );
 	
-	p = strchr_m( mapped_username, *lp_winbind_separator() );
+	p = strchr_m( username, *lp_winbind_separator() );
 	
 	/* code for a DOMAIN\user string */
 	
 	if ( p ) {
+		fstring strip_username;
+
 		pw = Get_Pwnam( domuser );
 		if ( pw ) {	
 			/* make sure we get the case of the username correct */
@@ -999,8 +999,10 @@ struct passwd *smb_getpwnam( char *domuser, fstring save_username, BOOL create )
 			if ( !strchr_m( pw->pw_name, *lp_winbind_separator() ) ) {
 				char *domain;
 				
-				domain = mapped_username;
+				/* split the domain and username into 2 strings */
 				*p = '\0';
+				domain = username;
+
 				fstr_sprintf(save_username, "%s%c%s", domain, *lp_winbind_separator(), pw->pw_name);
 			}
 			else
@@ -1011,26 +1013,26 @@ struct passwd *smb_getpwnam( char *domuser, fstring save_username, BOOL create )
 		}
 
 		/* setup for lookup of just the username */
-		/* remember that p and mapped_username are overlapping memory */
+		/* remember that p and username are overlapping memory */
 
 		p++;
 		fstrcpy( strip_username, p );
-		fstrcpy( mapped_username, strip_username );
+		fstrcpy( username, strip_username );
 	}
 	
 	/* just lookup a plain username */
 	
-	pw = Get_Pwnam(mapped_username);
+	pw = Get_Pwnam(username);
 		
 	/* Create local user if requested. */
 	
 	if ( !pw && create ) {
 		/* Don't add a machine account. */
-		if (mapped_username[strlen(mapped_username)-1] == '$')
+		if (username[strlen(username)-1] == '$')
 			return NULL;
 
-		auth_add_user_script(NULL, mapped_username);
-		pw = Get_Pwnam(mapped_username);
+		auth_add_user_script(NULL, username);
+		pw = Get_Pwnam(username);
 	}
 	
 	/* one last check for a valid passwd struct */
