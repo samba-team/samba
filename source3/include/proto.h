@@ -2407,11 +2407,13 @@ void smbw_setup_shared(void);
 char *smbw_getshared(const char *name);
 void smbw_setshared(const char *name, const char *val);
 int smbw_setenv(const char *name, const char *value);
+int smbw_shared_fd(int fd);
 
 /*The following definitions come from  smbwrapper/smbw.c  */
 
 void smbw_init(void);
 int smbw_fd(int fd);
+int smbw_local_fd(int fd);
 ino_t smbw_inode(const char *name);
 void clean_fname(char *name);
 char *smbw_parse_path(const char *fname, char *server, char *share, char *path);
