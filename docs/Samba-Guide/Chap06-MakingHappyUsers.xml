@@ -2310,17 +2310,17 @@ Domain Computers:x:553:
 		</para></step>
 
 	  <step><para><indexterm>
-		<primary>smbldap-useradd.pl</primary>
+		<primary>smbldap-useradd</primary>
 	      </indexterm><indexterm>
-		<primary>smbldap-passwd.pl</primary>
+		<primary>smbldap-passwd</primary>
 	      </indexterm><indexterm>
 		<primary>smbpasswd</primary>
 	      </indexterm>
 		Our database is now ready for the addition of network users. For each user for
 		whom an account must be created, execute the following:
 <screen>
-&rootprompt; ./smbldap-useradd.pl -m -a <constant>username</constant>
-&rootprompt; ./smbldap-passwd.pl <constant>username</constant>
+&rootprompt; ./smbldap-useradd -m -a <constant>username</constant>
+&rootprompt; ./smbldap-passwd <constant>username</constant>
 Changing password for <constant>username</constant>
 New password : XXXXXXXX
 Retype new password : XXXXXXXX
