@@ -212,7 +212,7 @@ MD4_Update (struct md4 *m, const void *v, size_t len)
 void
 MD4_Final (void *res, struct md4 *m)
 {
-  static unsigned char zeros[72];
+  unsigned char zeros[72];
   unsigned offset = (m->sz[0] / 8) % 64;
   unsigned int dstart = (120 - offset - 1) % 64 + 1;
 
