@@ -497,6 +497,62 @@ int cli_NetGroupGetUsers(struct cli_state * cli, char * group_name, void (*fn)(c
   return res;
 }
 
+int cli_NetUserGetGroups(struct cli_state * cli, char * user_name, void (*fn)(const char *, void *), void *state )
+{
+  char *rparam = NULL;
+  char *rdata = NULL;
+  char *p;
+  int rdrcnt,rprcnt;
+  int res = -1;
+  char param[WORDSIZE                        /* api number    */
+	    +sizeof(RAP_NetUserGetGroups_REQ)/* parm string   */
+	    +sizeof(RAP_GROUP_USERS_INFO_0)  /* return string */
+	    +RAP_USERNAME_LEN               /* user name    */
+	    +WORDSIZE                        /* info level    */
+	    +WORDSIZE];                      /* buffer size   */
+
+  /* now send a SMBtrans command with api GroupGetUsers */
+  p = make_header(param, RAP_WUserGetGroups,
+		  RAP_NetUserGetGroups_REQ, RAP_GROUP_USERS_INFO_0);
+  PUTSTRING(p,user_name,RAP_USERNAME_LEN-1);
+  PUTWORD(p,0); /* info level 0 */
+  PUTWORD(p,0xFFE0); /* return buffer size */
+
+  if (cli_api(cli,
+	      param, PTR_DIFF(p,param),PTR_DIFF(p,param),
+	      NULL, 0, CLI_BUFFER_SIZE,
+	      &rparam, &rprcnt,
+	      &rdata, &rdrcnt)) {
+    res = GETRES(rparam);
+    cli->rap_error = res;
+    if (res != 0) {
+      DEBUG(1,("NetUserGetGroups gave error %d\n", res));
+    }
+  }
+  if (rdata) {
+    if (res == 0 || res == ERRmoredata) {
+      int i, converter, count;
+      fstring groupname;
+      p = rparam +WORDSIZE;
+      GETWORD(p, converter);
+      GETWORD(p, count);
+
+      for (i=0,p=rdata; i<count; i++) {
+    	GETSTRINGF(p, groupname, RAP_USERNAME_LEN);
+	    fn(groupname, state);
+      }
+    } else {
+      DEBUG(4,("NetUserGetGroups res=%d\n", res));
+    }
+  } else {
+    DEBUG(4,("NetUserGetGroups no data returned\n"));
+  }
+  SAFE_FREE(rdata);
+  SAFE_FREE(rparam);
+  return res;
+}
+
+
 /****************************************************************************
  call a NetUserDelete - delete user from remote server
 ****************************************************************************/
@@ -1566,6 +1622,75 @@ int cli_NetPrintQGetInfo(struct cli_state *cli, char *printer, void (*qfn)(char*
 
   return res;  
 }
+
+/****************************************************************************
+call a NetServiceEnum - list running services on a different host
+****************************************************************************/
+int cli_RNetServiceEnum(struct cli_state *cli, void (*fn)(const char *, const char *, void *), void *state)
+{
+  char param[WORDSIZE                     /* api number    */
+	    +sizeof(RAP_NetServiceEnum_REQ) /* parm string   */
+	    +sizeof(RAP_SERVICE_INFO_L2)    /* return string */
+	    +WORDSIZE                     /* info level    */
+	    +WORDSIZE];                   /* buffer size   */
+  char *p;
+  char *rparam = NULL;
+  char *rdata = NULL; 
+  int rprcnt, rdrcnt;
+  int res = -1;
+  
+  
+  bzero(param, sizeof(param));
+  p = make_header(param, RAP_WServiceEnum,
+		  RAP_NetServiceEnum_REQ, RAP_SERVICE_INFO_L2);
+  PUTWORD(p,2); /* Info level 2 */  
+  PUTWORD(p,0xFFE0); /* Return buffer size */
+
+  if (cli_api(cli,
+	      param, PTR_DIFF(p,param),8,
+	      NULL, 0, 0xFFE0 /* data area size */,
+	      &rparam, &rprcnt,
+	      &rdata, &rdrcnt)) {
+    res = GETRES(rparam);
+    cli->rap_error = res;
+    if(cli->rap_error == 234) 
+        DEBUG(1,("Not all service names were returned (such as those longer than 15 characters)\n"));
+    else if (cli->rap_error != 0) {
+      DEBUG(1,("NetServiceEnum gave error %d\n", cli->rap_error));
+    }
+  }
+
+  if (rdata) {
+    if (res == 0 || res == ERRmoredata) {
+      int i, converter, count;
+
+      p = rparam + WORDSIZE; /* skip result */
+      GETWORD(p, converter);
+      GETWORD(p, count);
+
+      for (i=0,p=rdata;i<count;i++) {
+	    pstring comment;
+	    char servicename[RAP_SRVCNAME_LEN];
+
+	    GETSTRINGF(p, servicename, RAP_SRVCNAME_LEN);
+	    p+=8; /* pass status words */
+	    GETSTRINGF(p, comment, RAP_SRVCCMNT_LEN);
+
+	    fn(servicename, comment, cli);  /* BB add status too */
+      }	
+    } else {
+      DEBUG(4,("NetServiceEnum res=%d\n", res));
+    }
+  } else {
+    DEBUG(4,("NetServiceEnum no data returned\n"));
+  }
+    
+  SAFE_FREE(rparam);
+  SAFE_FREE(rdata);
+
+  return res;
+}
+
 
 /****************************************************************************
 call a NetSessionEnum - list workstations with sessions to an SMB server
