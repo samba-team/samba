@@ -1,4 +1,4 @@
-/* include/config.h.in.  Generated automatically from configure.in by autoheader 2.13.  */
+/* include/config.h.in.  Generated automatically from configure.in by autoheader.  */
 
 /* Define if type char is unsigned and you are not using gcc.  */
 #ifndef __CHAR_UNSIGNED__
@@ -896,6 +896,9 @@
 /* Define if you have the <grp.h> header file.  */
 #undef HAVE_GRP_H
 
+/* Define if you have the <gssapi.h> header file.  */
+#undef HAVE_GSSAPI_H
+
 /* Define if you have the <gssapi/gssapi.h> header file.  */
 #undef HAVE_GSSAPI_GSSAPI_H
 
@@ -1600,6 +1603,9 @@
 
 /* Whether KRB5 is available */
 #undef HAVE_KRB5
+
+/* Whether GSSAPI is available */
+#undef HAVE_GSSAPI
 
 /* Whether GSSAPI is available */
 #undef HAVE_GSSAPI

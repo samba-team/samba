@@ -2032,12 +2032,15 @@ fi
 
   # now check for gssapi headers.  This is also done here to allow for
   # different kerberos include paths
-  AC_CHECK_HEADERS(gssapi/gssapi_generic.h gssapi/gssapi.h)
+  AC_CHECK_HEADERS(gssapi.h gssapi/gssapi_generic.h gssapi/gssapi.h)
 
   ##################################################################
   # we might need the k5crypto and com_err libraries on some systems
   AC_CHECK_LIB(com_err, _et_list, [LIBS="$LIBS -lcom_err"])
   AC_CHECK_LIB(k5crypto, krb5_encrypt_data, [LIBS="$LIBS -lk5crypto"])
+  # Heimdal checks.
+  AC_CHECK_LIB(crypto, des_set_key, [LIBS="$LIBS -lcrypto"])
+  AC_CHECK_LIB(asn1, copy_Authenticator, [LIBS="$LIBS -lasn1 -lroken"])
 
   ########################################################
   # now see if we can find the krb5 libs in standard paths
@@ -2048,6 +2051,9 @@ fi
   ########################################################
   # now see if we can find the gssapi libs in standard paths
   AC_CHECK_LIB(gssapi_krb5, gss_display_status, [LIBS="$LIBS -lgssapi_krb5";
+	AC_DEFINE(HAVE_GSSAPI,1,[Whether GSSAPI is available])])
+  # Heimdal checks.
+  AC_CHECK_LIB(gssapi, gss_display_status, [LIBS="$LIBS -lgssapi";
 	AC_DEFINE(HAVE_GSSAPI,1,[Whether GSSAPI is available])])
 fi
 
