@@ -347,7 +347,7 @@ char *timestring(TALLOC_CTX *mem_ctx, time_t t)
 const char *nt_time_string(TALLOC_CTX *mem_ctx, NTTIME nt)
 {
 	time_t t = nt_time_to_unix(nt);
-	return talloc_strdup(mem_ctx, timestring(mem_ctx, t));
+	return timestring(mem_ctx, t);
 }
 
 
