@@ -1121,7 +1121,7 @@ static BOOL run_tcon_devtype_test(int dummy)
 	BOOL retry;
 	int flags = 0;
 	NTSTATUS status;
-	BOOL ret;
+	BOOL ret = True;
 
 	status = cli_full_connection(&cli1, myname,
 				     host, NULL, port_to_use,
