@@ -34,10 +34,12 @@
 /* $Id$ */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <err.h>
 #include <ctype.h>
 #include <limits.h>
 #include <getarg.h>
+#include <vers.h>
 
 #include "slc.h"
 extern FILE *yyin;
