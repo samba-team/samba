@@ -762,7 +762,7 @@ struct getargs args[] = {
       NULL },
     { "encrypt", 'x', arg_flag,		&do_encrypt,	"Encrypt connection",
       NULL },
-    { "encrypt", 'z', arg_negative_flag,      &do_encrypt,
+    { NULL, 	'z', arg_negative_flag,      &do_encrypt,
       "Don't encrypt connection", NULL },
     { "forward", 'f', arg_flag,		&do_forward,	"Forward credentials",
       NULL },
