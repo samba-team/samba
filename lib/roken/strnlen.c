@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -43,10 +43,11 @@ RCSID("$Id$");
 
 #include "roken.h"
 
-int
-strnlen(char *s, int len)
+size_t
+strnlen(const char *s, size_t len)
 {
-    int i;
+    size_t i;
+
     for(i = 0; i < len && s[i]; i++)
 	;
     return i;
