@@ -44,7 +44,7 @@ void samdb_debug(void *context, enum ldb_debug_level level, const char *fmt, va_
 }
 
 /* destroy the last connection to the sam */
-int samdb_destructor(void *ctx)
+static int samdb_destructor(void *ctx)
 {
 	struct samdb_context *sam_ctx = ctx;
 	ldb_close(sam_ctx->ldb);
