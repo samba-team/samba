@@ -1169,6 +1169,48 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	return result;
 }
 
+static void add_sid_to_array_unique(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+				    DOM_SID ***sids, int *num_sids)
+{
+	int i;
+
+	for (i=0; i<(*num_sids); i++) {
+		if (sid_compare(sid, (*sids)[i]) == 0)
+			return;
+	}
+
+	*sids = talloc_realloc(mem_ctx, *sids, sizeof(**sids) * (*num_sids+1));
+
+	if (*sids == NULL)
+		return;
+
+	(*sids)[*num_sids] = talloc(mem_ctx, sizeof(DOM_SID));
+	sid_copy((*sids)[*num_sids], sid);
+	*num_sids += 1;
+	return;
+}
+
+static void add_local_sids_from_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+				    DOM_SID ***user_grpsids,
+				    int *num_groups)
+{
+	DOM_SID *aliases = NULL;
+	int i, num_aliases = 0;
+
+	if (!pdb_enum_alias_memberships(sid, &aliases, &num_aliases))
+		return;
+
+	if (num_aliases == 0)
+		return;
+
+	for (i=0; i<num_aliases; i++)
+		add_sid_to_array_unique(mem_ctx, &aliases[i], user_grpsids,
+					num_groups);
+
+	SAFE_FREE(aliases);
+
+	return;
+}
 
 /* Get user supplementary sids. This is equivalent to the
    winbindd_getgroups() function but it involves a SID->SIDs mapping
@@ -1222,6 +1264,20 @@ enum winbindd_result winbindd_getusersids(struct winbindd_cli_state *state)
 
 	if (num_groups == 0) {
 		goto no_groups;
+	}
+
+	if (lp_winbind_nested_groups()) {
+		int k;
+		/* num_groups is changed during the loop, that's why we have
+		   to count down here.*/
+
+		for (k=num_groups-1; k>=0; k--) {
+			add_local_sids_from_sid(mem_ctx, user_grpsids[k],
+						&user_grpsids, &num_groups);
+		}
+
+		add_local_sids_from_sid(mem_ctx, &user_sid, &user_grpsids,
+					&num_groups);
 	}
 
 	/* work out the response size */
