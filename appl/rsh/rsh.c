@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -441,14 +441,45 @@ proto (int s, int errsock,
 	    return 1;
 	}
 
-	errsock2 = accept (errsock, NULL, NULL);
-	if (errsock2 < 0) {
-	    warn ("accept");
-	    close (errsock);
-	    return 1;
-	}
-	close (errsock);
 
+	for (;;) {
+	    fd_set fdset;
+
+	    FD_ZERO(&fdset);
+	    FD_SET(errsock, &fdset);
+	    FD_SET(s, &fdset);
+
+	    ret = select (max(errsock, s) + 1, &fdset, NULL, NULL, NULL);
+	    if (ret < 0) {
+		if (errno == EINTR)
+		    continue;
+		warn ("select");
+		close (errsock);
+		return 1;
+	    }
+	    if (FD_ISSET(errsock, &fdset)) {
+		errsock2 = accept (errsock, NULL, NULL);
+		close (errsock);
+		if (errsock2 < 0) {
+		    warn ("accept");
+		    return 1;
+		}
+		break;
+	    }
+
+	    /*
+	     * there should not arrive any data on this fd so if it's
+	     * readable it probably indicates that the other side when
+	     * away.
+	     */
+
+	    if (FD_ISSET(s, &fdset)) {
+		warnx ("socket closed");
+		close (errsock);
+		errsock2 = -1;
+		break;
+	    }
+	}
     } else {
 	if (net_write (s, "0", 2) != 2) {
 	    warn ("write");
@@ -490,8 +521,7 @@ proto (int s, int errsock,
 
 /*
  * Return in `res' a copy of the concatenation of `argc, argv' into
- * malloced space.
- */
+ * malloced space.  */
 
 static size_t
 construct_command (char **res, int argc, char **argv)
