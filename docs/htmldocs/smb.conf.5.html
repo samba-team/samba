@@ -924,6 +924,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#ALGORITHMICRIDBASE"
+><TT
+CLASS="PARAMETER"
+><I
+>algorithmic rid base</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#ALLOWTRUSTEDDOMAINS"
 ><TT
 CLASS="PARAMETER"
@@ -3002,7 +3014,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN971"
+NAME="AEN975"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -4445,7 +4457,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1451"
+NAME="AEN1455"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -5016,6 +5028,38 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >.</P
+></DD
+><DT
+><A
+NAME="ALGORITHMICRIDBASE"
+></A
+>algorithmic rid base (G)</DT
+><DD
+><P
+>This determines how Samba will use its
+                algorithmic mapping from uids/gid to the RIDs needed to construct
+                NT Security Identifiers.</P
+><P
+>Setting this option to a larger value could be useful to sites
+                transitioning from WinNT and Win2k, as existing user and 
+                group rids would otherwise clash with sytem users etc. 
+                </P
+><P
+>All UIDs and GIDs must be able to be resolved into SIDs for  
+                the correct operation of ACLs on the server.  As such the algorithmic
+                mapping can't be 'turned off', but pushing it 'out of the way' should
+                resolve the issues.  Users and groups can then be assigned 'low' RIDs
+                in arbitary-rid supporting backends. </P
+><P
+>Default: <B
+CLASS="COMMAND"
+>algorithmic rid base = 1000</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>algorithmic rid base = 100000</B
+></P
 ></DD
 ><DT
 ><A
@@ -12655,10 +12699,10 @@ NAME="PASSDBBACKEND"
 >passdb backend (G)</DT
 ><DD
 ><P
->This option allows the administrator to chose what
-                backend in which to store passwords.  This allows (for example) both 
-                smbpasswd and tdbsam to be used without a recompile.  Only one can
-                be used at a time however, and experimental backends must still be selected
+>This option allows the administrator to chose which backends to retrieve and store passwords with. This allows (for example) both 
+                smbpasswd and tdbsam to be used without a recompile. 
+                Multiple backends can be specified, seperated by spaces. The backends will be searched in the order they are specified. New users are always added to the first backend specified.
+                Experimental backends must still be selected
                 (eg --with-tdbsam) at configure time.
 		</P
 ><P
@@ -12798,7 +12842,7 @@ CLASS="COMMAND"
 ><P
 >Example: <B
 CLASS="COMMAND"
->passdb backend = tdbsam:/etc/samba/private/passdb.tdb</B
+>passdb backend = tdbsam:/etc/samba/private/passdb.tdb smbpasswd:/etc/samba/smbpasswd</B
 ></P
 ><P
 >Example: <B
@@ -12808,7 +12852,7 @@ CLASS="COMMAND"
 ><P
 >Example: <B
 CLASS="COMMAND"
->passdb backend = plugin:/usr/local/samba/lib/my_passdb.so:my_plugin_args</B
+>passdb backend = plugin:/usr/local/samba/lib/my_passdb.so:my_plugin_args tdbsam:/etc/samba/private/passdb.tdb</B
 ></P
 ></DD
 ><DT
@@ -14012,6 +14056,12 @@ HREF="#AEN79"
 >[printers]</A
 > section above for reasons 
 		why you might want to do this.</P
+><P
+>To use the CUPS printing interface set <B
+CLASS="COMMAND"
+>printcap name = cups
+		</B
+>.</P
 ><P
 >On System V systems that use <B
 CLASS="COMMAND"
@@ -18435,14 +18485,18 @@ CLASS="FILENAME"
 > modules for UNIX services.
 		</P
 ><P
+>Please note that setting this parameter to + causes problems
+		with group membership at least on glibc systems, as the character +
+		is used as a special character for NIS in /etc/group.</P
+><P
 >Example: <B
 CLASS="COMMAND"
->winbind separator = \</B
+>winbind separator = \\</B
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
->winbind separator = +</B
+>winbind separator = /</B
 ></P
 ></DD
 ><DT
@@ -18869,7 +18923,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5973"
+NAME="AEN5991"
 ></A
 ><H2
 >WARNINGS</H2
@@ -18899,7 +18953,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5979"
+NAME="AEN5997"
 ></A
 ><H2
 >VERSION</H2
@@ -18910,7 +18964,7 @@ NAME="AEN5979"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5982"
+NAME="AEN6000"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -18989,7 +19043,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6002"
+NAME="AEN6020"
 ></A
 ><H2
 >AUTHOR</H2
