@@ -816,8 +816,8 @@ typedef struct samr_str_entry_info2
 
 typedef struct sam_entry_info_2
 {
-	SAM_ENTRY2 sam[MAX_SAM_ENTRIES];
-	SAM_STR2   str[MAX_SAM_ENTRIES];
+	SAM_ENTRY2 *sam;
+	SAM_STR2   *str;
 
 } SAM_DISPINFO_2;
 
@@ -845,8 +845,8 @@ typedef struct samr_str_entry_info3
 
 typedef struct sam_entry_info_3
 {
-	SAM_ENTRY3 sam[MAX_SAM_ENTRIES];
-	SAM_STR3   str[MAX_SAM_ENTRIES];
+	SAM_ENTRY3 *sam;
+	SAM_STR3   *str;
 
 } SAM_DISPINFO_3;
 
@@ -868,8 +868,8 @@ typedef struct samr_str_entry_info4
 
 typedef struct sam_entry_info_4
 {
-	SAM_ENTRY4 sam[MAX_SAM_ENTRIES];
-	SAM_STR4   str[MAX_SAM_ENTRIES];
+	SAM_ENTRY4 *sam;
+	SAM_STR4   *str;
 
 } SAM_DISPINFO_4;
 
@@ -891,8 +891,8 @@ typedef struct samr_str_entry_info5
 
 typedef struct sam_entry_info_5
 {
-	SAM_ENTRY5 sam[MAX_SAM_ENTRIES];
-	SAM_STR5   str[MAX_SAM_ENTRIES];
+	SAM_ENTRY5 *sam;
+	SAM_STR5   *str;
 
 } SAM_DISPINFO_5;
 
