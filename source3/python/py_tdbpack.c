@@ -27,16 +27,17 @@
 
 #include "Python.h"
 
-static int pytdbpack_calc_reqd_len(char *format_str,
-				   PyObject *val_seq);
+static PyObject * pytdbpack_number(char ch, PyObject *val_iter, PyObject *packed_list);
+static PyObject * pytdbpack_str_850(PyObject *val_iter, PyObject *packed_list);
+static PyObject * pytdbpack_buffer(PyObject *val_iter, PyObject *packed_list);
 
 static PyObject *pytdbpack_unpack_item(char, char **pbuf, int *plen, PyObject *);
 
-static PyObject *pytdbpack_pack_data(const char *format_str,
+static PyObject *pytdbpack_data(const char *format_str,
 				     PyObject *val_seq,
-				     unsigned char *buf);
+				     PyObject *val_list);
 
-
+static void pack_le_uint32(unsigned long val_long, unsigned char *pbuf);
 
 
 static PyObject *pytdbpack_bad_type(char ch,
@@ -57,13 +58,17 @@ tdb/tdbutil module, with appropriate adjustments for Python datatypes.
 Python strings are used to specify the format of data to be packed or
 unpacked.
 
-Strings in TDBs are typically stored in DOS codepages.  The caller of this
-module must make appropriate translations if necessary, typically to and from
-Unicode objects.
+Strings are always stored in codepage 850.  Unicode objects are translated
+to cp850; plain strings are assumed to be in latin-1 and are also
+translated.
+
+This may be a problem in the future if it is different to the Samba codepage.
+It might be better to have the caller do the conversion, but that would conflict
+with existing CMI code.
 
 tdbpack format strings:
 
-    'f':  NULL-terminated string in DOS codepage
+    'f':  NULL-terminated string in codepage 850
 
     'P':  same as 'f'
 
@@ -88,7 +93,7 @@ tdbpack format strings:
 ";
 
 
-static char const pytdbpack_pack_doc[] = 
+static char const pytdbpack_doc[] = 
 "pack(format, values) -> buffer
 Pack Python objects into Samba binary format according to format string.
 
@@ -141,65 +146,274 @@ notes:
 
 
 
-/*
-  Game plan is to first of all walk through the arguments and calculate the
-  total length that will be required.  We allocate a Python string of that
-  size, then walk through again and fill it in.
 
-  We just borrow references to all the passed arguments, since none of them
-  need to be permanently stored.  We transfer ownership to the returned
-  object.
- */	
+/*
+  * Pack objects to bytes.
+  *
+  * All objects are first individually encoded onto a list, and then the list
+  * of strings is concatenated.  This is faster than concatenating strings,
+  * and reasonably simple to code.
+  */
 static PyObject *
-pytdbpack_pack(PyObject *self,
+pytdbpack(PyObject *self,
 	       PyObject *args)
 {
 	char *format_str;
-	PyObject *val_seq, *fast_seq, *buf_str;
-	int reqd_len;
-	char *packed_buf;
+	PyObject *val_seq, *val_iter = NULL,
+		*packed_list = NULL, *packed_str = NULL,
+		*empty_str = NULL;
 
 	/* TODO: Test passing wrong types or too many arguments */
 	if (!PyArg_ParseTuple(args, "sO", &format_str, &val_seq))
 		return NULL;
 
-	/* Convert into a list or tuple (if not already one), so that we can
-	 * index more easily. */
-	fast_seq = PySequence_Fast(val_seq,
-				   __FUNCTION__ ": argument 2 must be sequence");
-	if (!fast_seq)
-		return NULL;
-			
-	reqd_len = pytdbpack_calc_reqd_len(format_str, fast_seq);
-	if (reqd_len == -1)	/* exception was thrown */
-		return NULL;
+	if (!(val_iter = PyObject_GetIter(val_seq)))
+		goto out;
 
-	/* Allocate space.
-	 
-	   This design causes an unnecessary copying of the data when Python
-	   constructs an object, and that might possibly be avoided by using a
-	   Buffer object of some kind instead.  I'm not doing that for now
-	   though.  */
-	packed_buf = malloc(reqd_len);
-	if (!packed_buf) {
-		PyErr_Format(PyExc_MemoryError,
-			     "%s: couldn't allocate %d bytes for packed buffer",
-			     __FUNCTION__, reqd_len);
-		return NULL;
-	}	
-	
-	if (!pytdbpack_pack_data(format_str, fast_seq, packed_buf)) {
-		free(packed_buf);
-		return NULL;
-	}
+	/* Create list to hold strings until we're done, then join them all. */
+	if (!(packed_list = PyList_New(0)))
+		goto out;
 
-	buf_str = PyString_FromStringAndSize(packed_buf, reqd_len);
-	free(packed_buf);	/* get rid of tmp buf */
+	if (!pytdbpack_data(format_str, val_iter, packed_list))
+		goto out;
+
+	/* this function is not officially documented but it works */
+	if (!(empty_str = PyString_InternFromString("")))
+		goto out;
 	
-	return buf_str;
+	packed_str = _PyString_Join(empty_str, packed_list);
+
+  out:
+	Py_XDECREF(empty_str);
+	Py_XDECREF(val_iter);
+	Py_XDECREF(packed_list);
+
+	return packed_str;
 }
 
 
+/*
+  Pack data according to FORMAT_STR from the elements of VAL_SEQ into
+  PACKED_BUF.
+
+  The string has already been checked out, so we know that VAL_SEQ is large
+  enough to hold the packed data, and that there are enough value items.
+  (However, their types may not have been thoroughly checked yet.)
+
+  In addition, val_seq is a Python Fast sequence.
+
+  Returns NULL for error (with exception set), or None.
+*/
+PyObject *
+pytdbpack_data(const char *format_str,
+		    PyObject *val_iter,
+		    PyObject *packed_list)
+{
+	int format_i, val_i = 0;
+
+	for (format_i = 0, val_i = 0; format_str[format_i]; format_i++) {
+		char ch = format_str[format_i];
+
+		switch (ch) {
+			/* dispatch to the appropriate packer for this type,
+			   which should pull things off the iterator, and
+			   append them to the packed_list */
+		case 'w':
+		case 'd':
+		case 'p':
+			if (!(packed_list = pytdbpack_number(ch, val_iter, packed_list)))
+				return NULL;
+			break;
+
+		case 'f':
+		case 'P':
+			if (!(packed_list = pytdbpack_str_850(val_iter, packed_list)))
+				return NULL;
+			break;
+
+		case 'B':
+			if (!(packed_list = pytdbpack_buffer(val_iter, packed_list)))
+				return NULL;
+			break;
+
+		default:
+			PyErr_Format(PyExc_ValueError,
+				     "%s: format character '%c' is not supported",
+				     __FUNCTION__, ch);
+			return NULL;
+		}
+	}
+
+	return packed_list;
+}
+
+
+static PyObject *
+pytdbpack_number(char ch, PyObject *val_iter, PyObject *packed_list)
+{
+	unsigned long val_long;
+	PyObject *val_obj = NULL, *long_obj = NULL, *result_obj = NULL;
+	PyObject *new_list = NULL;
+	unsigned char pack_buf[4];
+
+	if (!(val_obj = PyIter_Next(val_iter)))
+		goto out;
+
+	if (!(long_obj = PyNumber_Long(val_obj))) {
+		pytdbpack_bad_type(ch, "Number", val_obj);
+		goto out;
+	}
+
+	val_long = PyLong_AsUnsignedLong(long_obj);
+	pack_le_uint32(val_long, pack_buf);
+
+	/* pack as 32-bit; if just packing a 'w' 16-bit word then only take
+	   the first two bytes. */
+	
+	if (!(result_obj = PyString_FromStringAndSize(pack_buf, ch == 'w' ? 2 : 4)))
+		goto out;
+
+	if (PyList_Append(packed_list, result_obj) != -1)
+		new_list = packed_list;
+
+  out:
+	Py_XDECREF(val_obj);
+	Py_XDECREF(long_obj);
+	Py_XDECREF(result_obj);
+
+	return new_list;
+}
+
+
+/*
+ * Take one string from the iterator val_iter, convert it to 8-bit CP850, and
+ * return it.
+ *
+ * If the input is neither a string nor Unicode, an exception is raised.
+ *
+ * If the input is Unicode, then it is converted to CP850.
+ *
+ * If the input is a String, then it is converted to Unicode using the default
+ * decoding method, and then converted to CP850.  This in effect gives
+ * conversion from latin-1 (currently the PSA's default) to CP850, without
+ * needing a custom translation table.
+ *
+ * I hope this approach avoids being too fragile w.r.t. being passed either
+ * Unicode or String objects.
+ */
+static PyObject *
+pytdbpack_str_850(PyObject *val_iter, PyObject *packed_list)
+{
+	PyObject *val_obj = NULL;
+	PyObject *unicode_obj = NULL;
+	PyObject *cp850_str = NULL;
+	PyObject *nul_str = NULL;
+	PyObject *new_list = NULL;
+
+	if (!(val_obj = PyIter_Next(val_iter)))
+		goto out;
+
+	if (PyUnicode_Check(val_obj)) {
+		unicode_obj = val_obj;
+	}
+	else {
+		/* string */
+		if (!(unicode_obj = PyString_AsDecodedObject(val_obj, NULL, NULL)))
+			goto out;
+		Py_XDECREF(val_obj);
+		val_obj = NULL;
+	}
+
+	if (!(cp850_str = PyUnicode_AsEncodedString(unicode_obj, "cp850", NULL)))
+		goto out;
+
+	if (!nul_str)
+		/* this is constant and often-used; hold it forever */
+		if (!(nul_str = PyString_FromStringAndSize("", 1)))
+			goto out;
+
+	if ((PyList_Append(packed_list, cp850_str) != -1)
+	    && (PyList_Append(packed_list, nul_str) != -1))
+		new_list = packed_list;
+
+  out:
+	Py_XDECREF(unicode_obj);
+	Py_XDECREF(cp850_str);
+
+	return new_list;
+}
+
+
+/*
+ * Pack (LENGTH, BUFFER) pair onto the list.
+ *
+ * The buffer must already be a String, not Unicode, because it contains 8-bit
+ * untranslated data.  In some cases it will actually be UTF_16_LE data.
+ */
+static PyObject *
+pytdbpack_buffer(PyObject *val_iter, PyObject *packed_list)
+{
+	PyObject *val_obj;
+	PyObject *new_list = NULL;
+	
+	/* pull off integer and stick onto list */
+	if (!(packed_list = pytdbpack_number('d', val_iter, packed_list)))
+		return NULL;
+
+	/* this assumes that the string is the right length; the old code did the same. */
+	if (!(val_obj = PyIter_Next(val_iter)))
+		return NULL;
+
+	if (!PyString_Check(val_obj)) {
+		pytdbpack_bad_type('B', "String", val_obj);
+		goto out;
+	}
+	
+	if (PyList_Append(packed_list, val_obj) != -1)
+		new_list = packed_list;
+
+  out:
+	Py_XDECREF(val_obj);
+	return new_list;
+}
+
+
+#if 0
+else if (ch == 'B') {
+			long size;
+			char *sval;
+
+			if (!PyNumber_Check(val_obj)) {
+				pytdbpack_bad_type(ch, "Number", val_obj);
+				return NULL;
+			}
+
+			if (!(val_obj = PyNumber_Long(val_obj)))
+				return NULL;
+
+			size = PyLong_AsLong(val_obj);
+			pack_le_uint32(size, &packed);
+
+			/* Release the new reference created by the cast */
+			Py_DECREF(val_obj);
+
+			val_obj = PySequence_GetItem(val_seq, val_i++);
+			if (!val_obj)
+				return NULL;
+			
+			sval = PyString_AsString(val_obj);
+			if (!sval)
+				return NULL;
+			
+			pack_bytes(size, sval, &packed); /* do not include nul */
+		}
+		else {
+		
+	}
+		
+	return Py_None;
+}
+#endif
 
 static PyObject *
 pytdbpack_unpack(PyObject *self,
@@ -270,6 +484,8 @@ pytdbpack_unpack(PyObject *self,
 }
 
 
+
+#if 0
 /*
   Internal routine that calculates how many bytes will be required to
   encode the values in the format.
@@ -361,6 +577,7 @@ pytdbpack_calc_reqd_len(char *format_str,
 
 	return len;
 }
+#endif
 
 
 static PyObject *pytdbpack_bad_type(char ch,
@@ -384,13 +601,12 @@ static PyObject *pytdbpack_bad_type(char ch,
   realize this is kind of dumb because we'll almost always be on x86, but
   being safe is important.
 */
-static void pack_uint32(unsigned long val_long, unsigned char **pbuf)
+static void pack_le_uint32(unsigned long val_long, unsigned char *pbuf)
 {
-	(*pbuf)[0] =         val_long & 0xff;
-	(*pbuf)[1] = (val_long >> 8)  & 0xff;
-	(*pbuf)[2] = (val_long >> 16) & 0xff;
-	(*pbuf)[3] = (val_long >> 24) & 0xff;
-	(*pbuf) += 4;
+	pbuf[0] =         val_long & 0xff;
+	pbuf[1] = (val_long >> 8)  & 0xff;
+	pbuf[2] = (val_long >> 16) & 0xff;
+	pbuf[3] = (val_long >> 24) & 0xff;
 }
 
 
@@ -581,126 +797,10 @@ static PyObject *pytdbpack_unpack_item(char ch,
 
 
 
-/*
-  Pack data according to FORMAT_STR from the elements of VAL_SEQ into
-  PACKED_BUF.
-
-  The string has already been checked out, so we know that VAL_SEQ is large
-  enough to hold the packed data, and that there are enough value items.
-  (However, their types may not have been thoroughly checked yet.)
-
-  In addition, val_seq is a Python Fast sequence.
-
-  Returns NULL for error (with exception set), or None.
-*/
-PyObject *
-pytdbpack_pack_data(const char *format_str,
-		    PyObject *val_seq,
-		    unsigned char *packed)
-{
-	int format_i, val_i = 0;
-
-	for (format_i = 0, val_i = 0; format_str[format_i]; format_i++) {
-		char ch = format_str[format_i];
-		PyObject *val_obj;
-
-		/* borrow a reference to the item */
-		val_obj = PySequence_GetItem(val_seq, val_i++);
-		if (!val_obj)
-			return NULL;
-
-		if (ch == 'w') {
-			unsigned long val_long;
-			PyObject *long_obj;
-			
-			if (!(long_obj = PyNumber_Long(val_obj))) {
-				pytdbpack_bad_type(ch, "Long", val_obj);
-				return NULL;
-			}
-			
-			val_long = PyLong_AsUnsignedLong(long_obj);
-			(packed)[0] = val_long & 0xff;
-			(packed)[1] = (val_long >> 8) & 0xff;
-			(packed) += 2;
-			Py_DECREF(long_obj);
-		}
-		else if (ch == 'd') {
-			/* 4-byte LE number */
-			PyObject *long_obj;
-			
-			if (!(long_obj = PyNumber_Long(val_obj))) {
-				pytdbpack_bad_type(ch, "Long", val_obj);
-				return NULL;
-			}
-			
-			pack_uint32(PyLong_AsUnsignedLong(long_obj), &packed);
-
-			Py_DECREF(long_obj);
-		}
-		else if (ch == 'p') {
-			/* "Pointer" value -- in the subset of DCERPC used by Samba,
-			   this is really just an "exists" or "does not exist"
-			   flag. */
-			pack_uint32(PyObject_IsTrue(val_obj), &packed);
-		}
-		else if (ch == 'f' || ch == 'P') {
-			int size;
-			char *sval;
-
-			size = PySequence_Length(val_obj);
-			if (size < 0)
-				return NULL;
-			sval = PyString_AsString(val_obj);
-			if (!sval)
-				return NULL;
-			pack_bytes(size+1, sval, &packed); /* include nul */
-		}
-		else if (ch == 'B') {
-			long size;
-			char *sval;
-
-			if (!PyNumber_Check(val_obj)) {
-				pytdbpack_bad_type(ch, "Number", val_obj);
-				return NULL;
-			}
-
-			if (!(val_obj = PyNumber_Long(val_obj)))
-				return NULL;
-
-			size = PyLong_AsLong(val_obj);
-			pack_uint32(size, &packed);
-
-			/* Release the new reference created by the cast */
-			Py_DECREF(val_obj);
-
-			val_obj = PySequence_GetItem(val_seq, val_i++);
-			if (!val_obj)
-				return NULL;
-			
-			sval = PyString_AsString(val_obj);
-			if (!sval)
-				return NULL;
-			
-			pack_bytes(size, sval, &packed); /* do not include nul */
-		}
-		else {
-			/* this ought to be caught while calculating the length, but
-			   just in case. */
-			PyErr_Format(PyExc_ValueError,
-				     "%s: format character '%c' is not supported",
-				     __FUNCTION__, ch);
-		
-			return NULL;
-		}
-	}
-		
-	return Py_None;
-}
-
 
 
 static PyMethodDef pytdbpack_methods[] = {
-	{ "pack", pytdbpack_pack, METH_VARARGS, (char *) pytdbpack_pack_doc },
+	{ "pack", pytdbpack, METH_VARARGS, (char *) pytdbpack_doc },
 	{ "unpack", pytdbpack_unpack, METH_VARARGS, (char *) pytdbpack_unpack_doc },
 };
 
