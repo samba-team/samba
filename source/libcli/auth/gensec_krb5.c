@@ -353,10 +353,6 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 					      gensec_security->target.principal,
 					      gensec_krb5_state->krb5_ccache, 
 					      &gensec_krb5_state->ticket);
-			if (ret) {
-				DEBUG(1,("ads_krb5_mk_req failed (%s)\n", 
-					 error_message(ret)));
-			}
 		} else {
 			krb5_data in_data;
 			const char *hostname = gensec_get_target_hostname(gensec_security);
@@ -374,10 +370,6 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 					  hostname,
 					  &in_data, gensec_krb5_state->krb5_ccache, 
 					  &gensec_krb5_state->ticket);
-			if (ret) {
-				DEBUG(1,("krb5_mk_req failed (%s)\n", 
-					 error_message(ret)));
-			}
 			
 		}
 		switch (ret) {
@@ -391,13 +383,14 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 		case KRB5KRB_AP_ERR_TKT_EXPIRED:
 		case KRB5_CC_END:
 		{
-			DEBUG(3, ("kerberos: %s\n", 
+			DEBUG(3, ("kerberos (mk_req) failed: %s\n", 
 				  error_message(ret)));
 			/* fall down to remaining code */
 		}
 		/* just don't print a message for these really ordinary messages */
 		case KRB5_FCC_NOFILE:
 		case KRB5_CC_NOTFOUND:
+		case ENOENT:
 		{
 			char *password;
 			time_t kdc_time = 0;

@@ -326,7 +326,7 @@ static BOOL ads_cleanup_expired_creds(krb5_context context,
 	}
 	
 	if ((retval = krb5_cc_get_principal(context, ccache, &creds.client))) {
-		DEBUG(1,("krb5_cc_get_principal failed (%s)\n", 
+		DEBUG(10,("krb5_cc_get_principal failed (%s)\n", 
 			 error_message(retval)));
 		goto cleanup_creds;
 	}
