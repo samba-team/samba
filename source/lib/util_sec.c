@@ -56,10 +56,6 @@ as non-root while catching trapdoor systems
 void sec_init(void)
 {
 	initial_uid = geteuid();
-	if (initial_uid != (uid_t)0) {
-		/* the DEBUG() subsystem has not been initialised when this is called */
-		fprintf(stderr, "WARNING: running as non-root. Some functionality will be missing\n");
-	}
 }
 
 /****************************************************************************
