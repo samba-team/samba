@@ -1220,7 +1220,7 @@ static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state,
 			*/
 			pdb_set_group_sid_from_rid (sam_pass, DOMAIN_GROUP_RID_USERS, PDB_SET); 
 			pdb_set_username (sam_pass, pw_buf->smb_name, PDB_SET);
-			pdb_set_domain (sam_pass, lp_workgroup(), PDB_DEFAULT);
+			pdb_set_domain (sam_pass, get_global_sam_name(), PDB_DEFAULT);
 			
 		} else {
 			DEBUG(0,("build_sam_account: smbpasswd database is corrupt!  username %s with uid %u is not in unix passwd database!\n", pw_buf->smb_name, pw_buf->smb_userid));
