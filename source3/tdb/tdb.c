@@ -325,6 +325,196 @@ static int rec_read(TDB_CONTEXT *tdb, tdb_off offset, struct list_struct *rec)
 	return 0;
 }
 
+/* read a freelist record and check for simple errors */
+static int rec_free_read(TDB_CONTEXT *tdb, tdb_off offset, struct list_struct *rec)
+{
+	if (tdb_read(tdb, offset, (char *)rec, sizeof(*rec)) == -1) return -1;
+	if (rec->magic != TDB_FREE_MAGIC) {
+#if TDB_DEBUG
+		printf("bad magic 0x%08x at offset %d\n",
+		       rec->magic, offset);
+#endif
+		tdb->ecode = TDB_ERR_CORRUPT;
+		return -1;
+	}
+	if (tdb_oob(tdb, rec->next) != 0) {
+		return -1;
+	}
+	return 0;
+}
+
+/* Add an element into the (sorted) freelist. Merge adjacent records
+   if neccessary. */
+
+static int tdb_free(TDB_CONTEXT *tdb, tdb_off rec_offset, struct list_struct *rec)
+{
+	tdb_off curr_offset = 0;
+	struct list_struct curr_rec;
+
+	/* Set rec as free. */
+	rec->magic = TDB_FREE_MAGIC;
+	rec->next = 0;
+
+	tdb_lock(tdb, -1, F_WRLCK);
+
+	/* Find the correct place for this offset in the freelist. */
+
+	if (ofs_read(tdb, FREELIST_TOP, &curr_offset) == -1) {
+		goto fail;
+	}
+
+	/* Special case 1 - no freelist. */
+	if (curr_offset == 0) {
+		if (rec_write(tdb, rec_offset, rec) == -1)
+			goto fail;
+
+		if (ofs_write(tdb, FREELIST_TOP, &rec_offset) == -1) {
+			tdb->ecode = TDB_ERR_CORRUPT;
+			goto fail;
+		}
+
+#if TDB_DEBUG_FREE
+	{
+		extern void tdb_printfreelist(TDB_CONTEXT *);
+
+		tdb_printfreelist(tdb);
+	}
+#endif
+		tdb_unlock(tdb, -1);
+		return 0;
+	}
+		
+	/* Special case 2 - rec should be inserted at start of freelist. */
+	if (rec_offset < curr_offset) {
+
+		/* Link the record being freed into the freelist. */
+		rec->next = curr_offset;
+
+		/* Check for merge with first record. */
+		if (rec_offset + rec->rec_len + sizeof(struct list_struct) == curr_offset ) {
+			
+			/* Read the first freelist record. */
+			if (rec_free_read(tdb, curr_offset, &curr_rec) == -1) {
+				goto fail;
+			}
+
+			rec->rec_len += (curr_rec.rec_len + sizeof(struct list_struct));
+			rec->next = curr_rec.next;
+		}
+
+		/* Write out the new record. */
+		if (rec_write(tdb, rec_offset, rec) == -1)
+			goto fail;
+
+		/* Insert at the start of the freelist. */
+		if (ofs_write(tdb, FREELIST_TOP, &rec_offset) == -1) {
+			tdb->ecode = TDB_ERR_CORRUPT;
+			goto fail;
+		}
+
+#if TDB_DEBUG_FREE
+	{
+		extern void tdb_printfreelist(TDB_CONTEXT *);
+
+		tdb_printfreelist(tdb);
+	}
+#endif
+		tdb_unlock(tdb, -1);
+		return 0;
+	}
+
+	/* Find the correct place to insert into the freelist. */
+
+	/* Read the first freelist record. */
+	if (rec_free_read(tdb, curr_offset, &curr_rec) == -1) {
+		goto fail;
+	}
+
+	while ( curr_rec.next && (rec_offset > curr_rec.next)) {
+
+		curr_offset = curr_rec.next;
+
+		if (tdb_read(tdb, curr_offset, (char *)&curr_rec, sizeof(struct list_struct)) == -1) {
+			goto fail;
+		}
+
+		if (curr_rec.magic != TDB_FREE_MAGIC) {
+#if TDB_DEBUG
+			printf("bad magic in freelist 0x%08x at offset %d\n",
+			       curr_rec.magic, curr_offset);
+#endif
+			tdb->ecode = TDB_ERR_CORRUPT;
+			goto fail;
+		}
+	}
+
+	/* Link the record being freed into the freelist. */
+	rec->next = curr_rec.next;
+	curr_rec.next = rec_offset;
+
+	/* Check for merge with previous record. */
+
+	if (curr_offset + curr_rec.rec_len + sizeof(struct list_struct) == rec_offset) {
+		/* Merge with previous. */
+		curr_rec.rec_len += (rec->rec_len + sizeof(struct list_struct));
+		curr_rec.next = rec->next;
+		rec_offset = curr_offset;
+		*rec = curr_rec;
+	}
+
+
+	/* Check for merge with next record. */
+	if (rec_offset + rec->rec_len + sizeof(struct list_struct) == rec->next ) {
+		struct list_struct next_rec;
+
+		if (rec_free_read(tdb, rec->next, &next_rec) == -1) {
+			goto fail;
+		}
+
+		/* Merge with next. */
+		rec->rec_len += (next_rec.rec_len + sizeof(struct list_struct));
+		rec->next = next_rec.next;
+	}
+
+	/* At this point rec_offset is the offset of the
+		new free record, and rec points at the new record to write. */
+
+#if TDB_DEBUG_FREE
+	printf("tdb free: writing record of size %x at offset %x\n",
+		rec->rec_len, rec_offset );
+#endif
+
+	/* Write the new record. */
+	if (rec_write(tdb, rec_offset, rec) == -1) {
+		tdb->ecode = TDB_ERR_CORRUPT;
+		goto fail;
+	}
+
+	/* Now link into the freelist. */
+	if (rec_offset != curr_offset) {
+		if (rec_write(tdb, curr_offset, &curr_rec) == -1) {
+			tdb->ecode = TDB_ERR_CORRUPT;
+			goto fail;
+		}
+	}
+
+#if TDB_DEBUG_FREE
+	{
+		extern void tdb_printfreelist(TDB_CONTEXT *);
+
+		tdb_printfreelist(tdb);
+	}
+#endif
+
+	tdb_unlock(tdb, -1);
+	return 0;
+
+  fail:
+
+	tdb_unlock(tdb, -1);
+	return -1;
+}
+
 /* expand the database at least length bytes by expanding the
    underlying file and doing the mmap again if necessary */
 static int tdb_expand(TDB_CONTEXT *tdb, tdb_off length)
@@ -346,17 +536,9 @@ static int tdb_expand(TDB_CONTEXT *tdb, tdb_off length)
 	length = ((tdb->map_size + length + TDB_PAGE_SIZE) & ~(TDB_PAGE_SIZE - 1)) - tdb->map_size;
 
 	/* expand the file itself */
-        if (!(tdb->flags & TDB_INTERNAL)) {
+	if (!(tdb->flags & TDB_INTERNAL)) {
 		lseek(tdb->fd, tdb->map_size + length - 1, SEEK_SET);
 		if (write(tdb->fd, &b, 1) != 1) goto fail;
-        }
-
-	/* form a new freelist record */
-	offset = FREELIST_TOP;
-	rec.rec_len = length - sizeof(rec);
-	rec.magic = TDB_FREE_MAGIC;
-	if (ofs_read(tdb, offset, &rec.next) == -1) {
-		goto fail;
 	}
 
 #if HAVE_MMAP
@@ -368,25 +550,24 @@ static int tdb_expand(TDB_CONTEXT *tdb, tdb_off length)
 
 	tdb->map_size += length;
 
-        if (tdb->flags & TDB_INTERNAL) {
+	if (tdb->flags & TDB_INTERNAL) {
 		tdb->map_ptr = realloc(tdb->map_ptr, tdb->map_size);
-        }
-
-	/* write it out */
-	if (rec_write(tdb, tdb->map_size - length, &rec) == -1) {
-		goto fail;
 	}
 
+	/* form a new freelist record */
+	memset(&rec,'\0',sizeof(rec));
+	rec.rec_len = length - sizeof(rec);
+
 	/* link it into the free list */
-	ptr = tdb->map_size - length;
-	if (ofs_write(tdb, offset, &ptr) == -1) goto fail;
+	offset = tdb->map_size - length;
+	if (tdb_free(tdb, offset, &rec) == -1) goto fail;
 
 #if HAVE_MMAP
-        if (!(tdb->flags & TDB_NOMMAP)) {
+	if (!(tdb->flags & TDB_NOMMAP)) {
 		tdb->map_ptr = (void *)mmap(NULL, tdb->map_size, 
 					    PROT_READ|PROT_WRITE,
 					    MAP_SHARED | MAP_FILE, tdb->fd, 0);
-        }
+	}
 #endif
 
 	tdb_unlock(tdb, -1);
@@ -470,6 +651,15 @@ static tdb_off tdb_allocate(TDB_CONTEXT *tdb, tdb_len length)
 
 			/* all done - return the new record offset */
 			tdb_unlock(tdb, -1);
+
+#if TDB_DEBUG_FREE
+			{
+				extern void tdb_printfreelist(TDB_CONTEXT *);
+				printf("tdb_allocate: offset %x, size %x\n", rec_ptr, rec.rec_len);
+
+				tdb_printfreelist(tdb);
+			}
+#endif
 			return rec_ptr;
 		}
 
@@ -978,23 +1168,13 @@ int tdb_delete(TDB_CONTEXT *tdb, TDB_DATA key)
 					}					
 				}
 				tdb_unlock(tdb, BUCKET(hash));
-				tdb_lock(tdb, -1, F_WRLCK);
+
 				/* and recover the space */
-				offset = FREELIST_TOP;
-				if (ofs_read(tdb, offset, &rec.next) == -1) {
+				if (tdb_free(tdb, rec_ptr, &rec) == -1)
 					goto fail2;
-				}
-				rec.magic = TDB_FREE_MAGIC;
-				if (rec_write(tdb, rec_ptr, &rec) == -1) {
-					goto fail2;
-				}
-				if (ofs_write(tdb, offset, &rec_ptr) == -1) {
-					goto fail2;
-				}
 
 				/* yipee - all done */
 				free(data);
-				tdb_unlock(tdb, -1);
 				return 0;
 			}
 
@@ -1016,7 +1196,6 @@ int tdb_delete(TDB_CONTEXT *tdb, TDB_DATA key)
 
  fail2:
 	if (data) free(data);
-	tdb_unlock(tdb, -1);
 	return -1;
 }
 
@@ -1324,6 +1503,7 @@ void tdb_printfreelist(TDB_CONTEXT *tdb)
 		return;
 	}
 
+	printf("freelist top=[0x%08x]\n", rec_ptr );
 	while (rec_ptr) {
 		if (tdb_read(tdb, rec_ptr, (char *)&rec, sizeof(rec)) == -1) {
 			return;
