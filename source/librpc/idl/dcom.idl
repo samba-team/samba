@@ -157,8 +157,8 @@ interface ObjectRpcBaseTypes
 	{
 		uint32 flags; /* STDOBJREF flags (see above) */
 		uint32 cPublicRefs; /* count of references passed */
-		HYPER_T oxid; /* oxid of server with this oid */
-		HYPER_T oid; /* oid of object with this ipid */
+		hyper oxid; /* oxid of server with this oid */
+		hyper oid; /* oid of object with this ipid */
 		GUID ipid; /* ipid of interface pointer to this object */
 	} 	STDOBJREF;
 
@@ -346,9 +346,9 @@ interface IRemUnknown : IUnknown
 ]
 	interface ISystemActivator : IClassActivator
 {
-	WERROR ISystemActivatorRemoteCreateInstance([in] HYPER_T unknown1,  /* OXID ? */
+	WERROR ISystemActivatorRemoteCreateInstance([in] hyper unknown1,  /* OXID ? */
 											  [in] MInterfacePointer iface,
-											  [in] HYPER_T unknown2,
+											  [in] hyper unknown2,
 											  [out] uint32 unknown3, 
 											  [out] MInterfacePointer iface);
 }
