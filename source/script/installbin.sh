@@ -31,6 +31,11 @@ for p in $*; do
  fi
  cp $p $BINDIR/
  chmod $INSTALLPERMS $BINDIR/$p2
+
+ # this is a special case, mount needs this in a specific location
+ if [ $p = smbmount ]; then
+   ln -sf $BINDIR/$p2 /sbin/mount.smb
+ fi
 done
 
 
@@ -44,4 +49,3 @@ binaries, man pages and shell scripts.
 EOF
 
 exit 0
-
