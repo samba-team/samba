@@ -9,15 +9,6 @@ AC_SUBST(SONAMEFLAG)
 AC_SUBST(PICFLAG)
 
 AC_DEFINE([_GNU_SOURCE],[],[Pull in GNU extensions])
-
-# The definition of _GNU_SOURCE potentially causes a change of the value
-# of _XOPEN_SOURCE. So define it only conditionally.
-AH_VERBATIM([_XOPEN_SOURCE],
-[/* Define on UNIX to activate XPG/5 features.  */
-#if !defined(_XOPEN_SOURCE)
-# define _XOPEN_SOURCE
-#endif])
-
 AC_SYS_LARGEFILE
 
 #
