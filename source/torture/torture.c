@@ -986,10 +986,10 @@ test how many open files this server supports on the one socket
 */
 static BOOL run_maxfidtest(struct smbcli_state *cli, int dummy)
 {
-#define MAXFID_TEMPLATE "\\maxfid.%d.%d"
+#define MAXFID_TEMPLATE "\\maxfid\\fid%d\\maxfid.%d.%d"
 	char *fname;
 	int fnums[0x11000], i;
-	int retries=4;
+	int retries=4, maxfid;
 	BOOL correct = True;
 
 	if (retries <= 0) {
@@ -997,10 +997,30 @@ static BOOL run_maxfidtest(struct smbcli_state *cli, int dummy)
 		return False;
 	}
 
+	if (smbcli_deltree(cli->tree, "\\maxfid") == -1) {
+		printf("Failed to deltree \\maxfid - %s\n",
+		       smbcli_errstr(cli->tree));
+		return False;
+	}
+	if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, "\\maxfid"))) {
+		printf("Failed to mkdir \\maxfid, error=%s\n", 
+		       smbcli_errstr(cli->tree));
+		return False;
+	}
+
 	printf("Testing maximum number of open files\n");
 
 	for (i=0; i<0x11000; i++) {
-		asprintf(&fname, MAXFID_TEMPLATE, i,(int)getpid());
+		if (i % 1000 == 0) {
+			asprintf(&fname, "\\maxfid\\fid%d", i/1000);
+			if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, fname))) {
+				printf("Failed to mkdir %s, error=%s\n", 
+				       fname, smbcli_errstr(cli->tree));
+				return False;
+			}
+			free(fname);
+		}
+		asprintf(&fname, MAXFID_TEMPLATE, i/1000, i,(int)getpid());
 		if ((fnums[i] = smbcli_open(cli->tree, fname, 
 					O_RDWR|O_CREAT|O_TRUNC, DENY_NONE)) ==
 		    -1) {
@@ -1015,9 +1035,11 @@ static BOOL run_maxfidtest(struct smbcli_state *cli, int dummy)
 	printf("%6d\n", i);
 	i--;
 
+	maxfid = i;
+
 	printf("cleaning up\n");
-	for (;i>=0;i--) {
-		asprintf(&fname, MAXFID_TEMPLATE, i,(int)getpid());
+	for (i=0;i<maxfid/2;i++) {
+		asprintf(&fname, MAXFID_TEMPLATE, i/1000, i,(int)getpid());
 		if (NT_STATUS_IS_ERR(smbcli_close(cli->tree, fnums[i]))) {
 			printf("Close of fnum %d failed - %s\n", fnums[i], smbcli_errstr(cli->tree));
 		}
@@ -1027,9 +1049,27 @@ static BOOL run_maxfidtest(struct smbcli_state *cli, int dummy)
 			correct = False;
 		}
 		free(fname);
-		printf("%6d\r", i);
+
+		asprintf(&fname, MAXFID_TEMPLATE, (maxfid-i)/1000, maxfid-i,(int)getpid());
+		if (NT_STATUS_IS_ERR(smbcli_close(cli->tree, fnums[maxfid-i]))) {
+			printf("Close of fnum %d failed - %s\n", fnums[maxfid-i], smbcli_errstr(cli->tree));
+		}
+		if (NT_STATUS_IS_ERR(smbcli_unlink(cli->tree, fname))) {
+			printf("unlink of %s failed (%s)\n", 
+			       fname, smbcli_errstr(cli->tree));
+			correct = False;
+		}
+		free(fname);
+
+		printf("%6d %6d\r", i, maxfid-i);
 	}
 	printf("%6d\n", 0);
+
+	if (smbcli_deltree(cli->tree, "\\maxfid") == -1) {
+		printf("Failed to deltree \\maxfid - %s\n",
+		       smbcli_errstr(cli->tree));
+		return False;
+	}
 
 	printf("maxfid test finished\n");
 	if (!torture_close_connection(cli)) {
