@@ -42,8 +42,25 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx, struct ldb_message *msg, c
 	*name = talloc_strdup(mem_ctx, ldb_msg_find_string(msg, "value", NULL));
 	*type = ldb_msg_find_uint(msg, "type", 0);
 	val = ldb_msg_find_ldb_val(msg, "data");
-	*data = talloc_memdup(mem_ctx, val->data, val->length);
-	*len = val->length;
+
+	switch (*type)
+	{
+	case REG_SZ:
+	case REG_EXPAND_SZ:
+		*len = convert_string_talloc(mem_ctx, CH_UTF8, CH_UTF16, val->data, val->length, data);
+		break;
+
+	case REG_DWORD_LE:
+		*len = 4;
+		*data = talloc_p(mem_ctx, uint32);
+		SIVAL(*data, 0, strtol(val->data, NULL, 0));
+		break;
+
+	default:
+		*data = talloc_memdup(mem_ctx, val->data, val->length);
+		*len = val->length;
+		break;
+	}
 }
 
 static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx, TALLOC_CTX *mem_ctx, const char *name, uint32 type, void *data, int len)
@@ -53,9 +70,22 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx, TALLOC_CT
 	char *type_s;
 
 	ldb_msg_add_string(ctx, msg, "value", talloc_strdup(mem_ctx, name));
-	val.length = len;
-	val.data = data;
-	ldb_msg_add_value(ctx, msg, "data", &val);
+
+	switch (type) {
+	case REG_SZ:
+	case REG_EXPAND_SZ:
+		val.length = convert_string_talloc(mem_ctx, CH_UTF16, CH_UTF8, data, len, &val.data);
+		ldb_msg_add_value(ctx, msg, "data", &val);
+		break;
+	case REG_DWORD_LE:
+		ldb_msg_add_string(ctx, msg, "data", talloc_asprintf(mem_ctx, "0x%x", IVAL(data, 0)));
+		break;
+	default:
+		val.length = len;
+		val.data = data;
+		ldb_msg_add_value(ctx, msg, "data", &val);
+	}
+
 
 	type_s = talloc_asprintf(mem_ctx, "%u", type);
 	ldb_msg_add_string(ctx, msg, "type", type_s); 
