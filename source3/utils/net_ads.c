@@ -1456,7 +1456,7 @@ int net_ads(int argc, const char **argv)
 
 #else
 
-static int net_ads_noads(int argc, const char **argv)
+static int net_ads_noads(void)
 {
 	d_printf("ADS support not compiled in\n");
 	return -1;
