@@ -142,7 +142,7 @@ done:
 
 	state->response.data.auth.nt_status = NT_STATUS_V(result);
 	fstrcpy(state->response.data.auth.nt_status_string, nt_errstr(result));
-	fstrcpy(state->response.data.auth.error_string, nt_errstr(result));
+	fstrcpy(state->response.data.auth.error_string, get_friendly_nt_error_msg(result));
 	state->response.data.auth.pam_error = nt_status_to_pam(result);
 
 	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2, ("Plain-text authentication for user %s returned %s (PAM: %d)\n", 

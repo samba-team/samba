@@ -121,7 +121,8 @@ static int pam_winbind_request(enum winbindd_cmd req_type,
 	/* Copy reply data from socket */
 	if (response->result != WINBINDD_OK) {
 		if (response->data.auth.pam_error != PAM_SUCCESS) {
-			_pam_log(LOG_ERR, "request failed, PAM error was %d, NT error was %s", 
+			_pam_log(LOG_ERR, "request failed: %s, PAM error was %d, NT error was %s", 
+				 response->data.auth.error_string,
 				 response->data.auth.pam_error,
 				 response->data.auth.nt_status_string);
 			return response->data.auth.pam_error;
