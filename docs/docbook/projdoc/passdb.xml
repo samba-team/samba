@@ -857,14 +857,14 @@ index   default               sub
 <screen>
 # Organization for Samba Base
 dn: dc=plainjoe,dc=org
-objectclass: dbObject
+objectclass: dcObject
 objectclass: organization
 dc: plainjoe
 o: Terpstra Org Network
 description: The Samba-3 Network LDAP Example
 
 # Organizational Role for Directory Management
-db: cn=Manager,dc=plainjoe,dc=org
+dn: cn=Manager,dc=plainjoe,dc=org
 objectclass: organizationalRole
 cn: Manager
 description: Directory Manager
