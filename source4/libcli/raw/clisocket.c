@@ -109,7 +109,7 @@ void smbcli_sock_set_options(struct smbcli_socket *sock, const char *options)
 /****************************************************************************
  Write to socket. Return amount written.
 ****************************************************************************/
-ssize_t smbcli_sock_write(struct smbcli_socket *sock, const char *data, size_t len)
+ssize_t smbcli_sock_write(struct smbcli_socket *sock, const uint8_t *data, size_t len)
 {
 	NTSTATUS status;
 	DATA_BLOB blob;
@@ -135,7 +135,7 @@ ssize_t smbcli_sock_write(struct smbcli_socket *sock, const char *data, size_t l
 /****************************************************************************
  Read from socket. return amount read
 ****************************************************************************/
-ssize_t smbcli_sock_read(struct smbcli_socket *sock, char *data, size_t len)
+ssize_t smbcli_sock_read(struct smbcli_socket *sock, uint8_t *data, size_t len)
 {
 	NTSTATUS status;
 	size_t nread;

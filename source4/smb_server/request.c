@@ -218,7 +218,7 @@ int req_max_data(struct smbsrv_request *req)
 static void req_grow_allocation(struct smbsrv_request *req, uint_t new_size)
 {
 	int delta;
-	char *buf2;
+	uint8_t *buf2;
 
 	delta = new_size - req->out.data_size;
 	if (delta + req->out.size <= req->out.allocated) {
@@ -378,11 +378,11 @@ void req_reply_error(struct smbsrv_request *req, NTSTATUS status)
 
   if dest_len is -1 then no limit applies
 */
-size_t req_push_str(struct smbsrv_request *req, char *dest, const char *str, int dest_len, uint_t flags)
+size_t req_push_str(struct smbsrv_request *req, uint8_t *dest, const char *str, int dest_len, uint_t flags)
 {
 	size_t len;
 	uint_t grow_size;
-	char *buf0;
+	uint8_t *buf0;
 	const int max_bytes_per_char = 3;
 
 	if (!(flags & (STR_ASCII|STR_UNICODE))) {
@@ -460,7 +460,7 @@ size_t req_append_var_block(struct smbsrv_request *req,
   on failure zero is returned and *dest is set to NULL, otherwise the number
   of bytes consumed in the packet is returned
 */
-static size_t req_pull_ucs2(struct smbsrv_request *req, const char **dest, const char *src, int byte_len, uint_t flags)
+static size_t req_pull_ucs2(struct smbsrv_request *req, const char **dest, const uint8_t *src, int byte_len, uint_t flags)
 {
 	int src_len, src_len2, alignment=0;
 	ssize_t ret;
@@ -518,7 +518,7 @@ static size_t req_pull_ucs2(struct smbsrv_request *req, const char **dest, const
   on failure zero is returned and *dest is set to NULL, otherwise the number
   of bytes consumed in the packet is returned
 */
-static size_t req_pull_ascii(struct smbsrv_request *req, const char **dest, const char *src, int byte_len, uint_t flags)
+static size_t req_pull_ascii(struct smbsrv_request *req, const char **dest, const uint8_t *src, int byte_len, uint_t flags)
 {
 	int src_len, src_len2;
 	ssize_t ret;
@@ -537,7 +537,7 @@ static size_t req_pull_ascii(struct smbsrv_request *req, const char **dest, cons
 		}
 	}
 
-	src_len2 = strnlen(src, src_len);
+	src_len2 = strnlen((const char *)src, src_len);
 	if (src_len2 <= src_len - 1) {
 		/* include the termination if we didn't reach the end of the packet */
 		src_len2++;
@@ -567,7 +567,7 @@ static size_t req_pull_ascii(struct smbsrv_request *req, const char **dest, cons
   on failure zero is returned and *dest is set to NULL, otherwise the number
   of bytes consumed in the packet is returned
 */
-size_t req_pull_string(struct smbsrv_request *req, const char **dest, const char *src, int byte_len, uint_t flags)
+size_t req_pull_string(struct smbsrv_request *req, const char **dest, const uint8_t *src, int byte_len, uint_t flags)
 {
 	if (!(flags & STR_ASCII) && 
 	    (((flags & STR_UNICODE) || (req->flags2 & FLAGS2_UNICODE_STRINGS)))) {
@@ -587,7 +587,7 @@ size_t req_pull_string(struct smbsrv_request *req, const char **dest, const char
   on failure *dest is set to the zero length string. This seems to
   match win2000 behaviour
 */
-size_t req_pull_ascii4(struct smbsrv_request *req, const char **dest, const char *src, uint_t flags)
+size_t req_pull_ascii4(struct smbsrv_request *req, const char **dest, const uint8_t *src, uint_t flags)
 {
 	ssize_t ret;
 
@@ -616,7 +616,7 @@ size_t req_pull_ascii4(struct smbsrv_request *req, const char **dest, const char
 
   return False if any part is outside the data portion of the packet
 */
-BOOL req_pull_blob(struct smbsrv_request *req, const char *src, int len, DATA_BLOB *blob)
+BOOL req_pull_blob(struct smbsrv_request *req, const uint8_t *src, int len, DATA_BLOB *blob)
 {
 	if (len != 0 && req_data_oob(req, src, len)) {
 		return False;
@@ -629,7 +629,7 @@ BOOL req_pull_blob(struct smbsrv_request *req, const char *src, int len, DATA_BL
 
 /* check that a lump of data in a request is within the bounds of the data section of
    the packet */
-BOOL req_data_oob(struct smbsrv_request *req, const char *ptr, uint32_t count)
+BOOL req_data_oob(struct smbsrv_request *req, const uint8_t *ptr, uint32_t count)
 {
 	if (count == 0) {
 		return False;
@@ -649,7 +649,7 @@ BOOL req_data_oob(struct smbsrv_request *req, const char *ptr, uint32_t count)
 /* 
    pull an open file handle from a packet, taking account of the chained_fnum
 */
-uint16_t req_fnum(struct smbsrv_request *req, const char *base, uint_t offset)
+uint16_t req_fnum(struct smbsrv_request *req, const uint8_t *base, uint_t offset)
 {
 	if (req->chained_fnum != -1) {
 		return req->chained_fnum;

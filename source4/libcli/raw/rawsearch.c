@@ -33,7 +33,7 @@ static void smb_raw_search_backend(struct smbcli_request *req,
 {
 	union smb_search_data search_data;
 	int i;
-	char *p;
+	uint8_t *p;
 
 	if (req->in.data_size < 3 + count*43) {
 		req->status = NT_STATUS_INVALID_PARAMETER;

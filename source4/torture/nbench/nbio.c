@@ -293,7 +293,7 @@ void nb_writex(int handle, int offset, int size, int ret_size, NTSTATUS status)
 	union smb_write io;
 	int i;
 	NTSTATUS ret;
-	char *buf;
+	uint8_t *buf;
 
 	i = find_handle(handle);
 
@@ -330,7 +330,7 @@ void nb_write(int handle, int offset, int size, int ret_size, NTSTATUS status)
 	union smb_write io;
 	int i;
 	NTSTATUS ret;
-	char *buf;
+	uint8_t *buf;
 
 	i = find_handle(handle);
 
@@ -420,7 +420,7 @@ void nb_readx(int handle, int offset, int size, int ret_size, NTSTATUS status)
 	union smb_read io;
 	int i;
 	NTSTATUS ret;
-	char *buf;
+	uint8_t *buf;
 
 	i = find_handle(handle);
 

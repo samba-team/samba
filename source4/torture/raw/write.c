@@ -64,7 +64,7 @@
 /*
   setup a random buffer based on a seed
 */
-static void setup_buffer(char *buf, uint_t seed, int len)
+static void setup_buffer(uint8_t *buf, uint_t seed, int len)
 {
 	int i;
 	srandom(seed);
@@ -74,12 +74,12 @@ static void setup_buffer(char *buf, uint_t seed, int len)
 /*
   check a random buffer based on a seed
 */
-static BOOL check_buffer(char *buf, uint_t seed, int len, const char *location)
+static BOOL check_buffer(uint8_t *buf, uint_t seed, int len, const char *location)
 {
 	int i;
 	srandom(seed);
 	for (i=0;i<len;i++) {
-		char v = random();
+		uint8_t v = random();
 		if (buf[i] != v) {
 			printf("Buffer incorrect at %s! ofs=%d buf=0x%x correct=0x%x\n", 
 			       location, i, buf[i], v);
@@ -98,7 +98,7 @@ static BOOL test_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	BOOL ret = True;
 	int fnum;
-	char *buf;
+	uint8_t *buf;
 	const int maxsize = 90000;
 	const char *fname = BASEDIR "\\test.txt";
 	uint_t seed = time(NULL);
@@ -215,7 +215,7 @@ static BOOL test_writex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	BOOL ret = True;
 	int fnum, i;
-	char *buf;
+	uint8_t *buf;
 	const int maxsize = 90000;
 	const char *fname = BASEDIR "\\test.txt";
 	uint_t seed = time(NULL);
@@ -391,7 +391,7 @@ static BOOL test_writeunlock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	BOOL ret = True;
 	int fnum;
-	char *buf;
+	uint8_t *buf;
 	const int maxsize = 90000;
 	const char *fname = BASEDIR "\\test.txt";
 	uint_t seed = time(NULL);
@@ -528,7 +528,7 @@ static BOOL test_writeclose(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	BOOL ret = True;
 	int fnum;
-	char *buf;
+	uint8_t *buf;
 	const int maxsize = 90000;
 	const char *fname = BASEDIR "\\test.txt";
 	uint_t seed = time(NULL);

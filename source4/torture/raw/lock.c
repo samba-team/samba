@@ -366,7 +366,7 @@ static BOOL test_pidhigh(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	BOOL ret = True;
 	int fnum;
 	const char *fname = BASEDIR "\\test.txt";
-	char c = 1;
+	uint8_t c = 1;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
@@ -598,7 +598,7 @@ static BOOL test_changetype(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	BOOL ret = True;
 	int fnum;
-	char c = 0;
+	uint8_t c = 0;
 	const char *fname = BASEDIR "\\test.txt";
 
 	if (!torture_setup_dir(cli, BASEDIR)) {

@@ -187,7 +187,7 @@ struct smbcli_request *smbcli_request_setup(struct smbcli_tree *tree,
 static void smbcli_req_grow_allocation(struct smbcli_request *req, uint_t new_size)
 {
 	int delta;
-	char *buf2;
+	uint8_t *buf2;
 
 	delta = new_size - req->out.data_size;
 	if (delta + req->out.size <= req->out.allocated) {
@@ -295,7 +295,7 @@ BOOL smbcli_request_receive_more(struct smbcli_request *req)
   handle oplock break requests from the server - return True if the request was
   an oplock break
 */
-BOOL handle_oplock_break(struct smbcli_transport *transport, uint_t len, const char *hdr, const char *vwv)
+BOOL handle_oplock_break(struct smbcli_transport *transport, uint_t len, const uint8_t *hdr, const uint8_t *vwv)
 {
 	/* we must be very fussy about what we consider an oplock break to avoid
 	   matching readbraw replies */
@@ -479,7 +479,7 @@ size_t smbcli_req_append_var_block(struct smbcli_request *req, const uint8_t *by
   of bytes consumed in the packet is returned
 */
 static size_t smbcli_req_pull_ucs2(struct smbcli_request *req, TALLOC_CTX *mem_ctx,
-				char **dest, const char *src, int byte_len, uint_t flags)
+				char **dest, const uint8_t *src, int byte_len, uint_t flags)
 {
 	int src_len, src_len2, alignment=0;
 	ssize_t ret;
@@ -532,7 +532,7 @@ static size_t smbcli_req_pull_ucs2(struct smbcli_request *req, TALLOC_CTX *mem_c
   of bytes consumed in the packet is returned
 */
 size_t smbcli_req_pull_ascii(struct smbcli_request *req, TALLOC_CTX *mem_ctx,
-			     char **dest, const char *src, int byte_len, uint_t flags)
+			     char **dest, const uint8_t *src, int byte_len, uint_t flags)
 {
 	int src_len, src_len2;
 	ssize_t ret;
@@ -545,7 +545,7 @@ size_t smbcli_req_pull_ascii(struct smbcli_request *req, TALLOC_CTX *mem_ctx,
 	if (byte_len != -1 && src_len > byte_len) {
 		src_len = byte_len;
 	}
-	src_len2 = strnlen(src, src_len);
+	src_len2 = strnlen((const char *)src, src_len);
 	if (src_len2 < src_len - 1) {
 		/* include the termination if we didn't reach the end of the packet */
 		src_len2++;
@@ -575,7 +575,7 @@ size_t smbcli_req_pull_ascii(struct smbcli_request *req, TALLOC_CTX *mem_ctx,
   of bytes consumed in the packet is returned
 */
 size_t smbcli_req_pull_string(struct smbcli_request *req, TALLOC_CTX *mem_ctx, 
-			   char **dest, const char *src, int byte_len, uint_t flags)
+			   char **dest, const uint8_t *src, int byte_len, uint_t flags)
 {
 	if (!(flags & STR_ASCII) && 
 	    (((flags & STR_UNICODE) || (req->flags2 & FLAGS2_UNICODE_STRINGS)))) {
@@ -592,7 +592,7 @@ size_t smbcli_req_pull_string(struct smbcli_request *req, TALLOC_CTX *mem_ctx,
 
   if byte_len is -1 then limit the blob only by packet size
 */
-DATA_BLOB smbcli_req_pull_blob(struct smbcli_request *req, TALLOC_CTX *mem_ctx, const char *src, int byte_len)
+DATA_BLOB smbcli_req_pull_blob(struct smbcli_request *req, TALLOC_CTX *mem_ctx, const uint8_t *src, int byte_len)
 {
 	int src_len;
 
@@ -611,7 +611,7 @@ DATA_BLOB smbcli_req_pull_blob(struct smbcli_request *req, TALLOC_CTX *mem_ctx, 
 
 /* check that a lump of data in a request is within the bounds of the data section of
    the packet */
-static BOOL smbcli_req_data_oob(struct smbcli_request *req, const char *ptr, uint32_t count)
+static BOOL smbcli_req_data_oob(struct smbcli_request *req, const uint8_t *ptr, uint32_t count)
 {
 	/* be careful with wraparound! */
 	if (ptr < req->in.data ||
@@ -628,7 +628,7 @@ static BOOL smbcli_req_data_oob(struct smbcli_request *req, const char *ptr, uin
 
   return False if any part is outside the data portion of the packet
 */
-BOOL smbcli_raw_pull_data(struct smbcli_request *req, const char *src, int len, char *dest)
+BOOL smbcli_raw_pull_data(struct smbcli_request *req, const uint8_t *src, int len, uint8_t *dest)
 {
 	if (len == 0) return True;
 
@@ -673,14 +673,14 @@ NTTIME smbcli_pull_nttime(void *base, uint16_t offset)
 */
 static size_t smbcli_blob_pull_ucs2(TALLOC_CTX* mem_ctx,
 				 DATA_BLOB *blob, const char **dest, 
-				 const char *src, int byte_len, uint_t flags)
+				 const uint8_t *src, int byte_len, uint_t flags)
 {
 	int src_len, src_len2, alignment=0;
 	ssize_t ret;
 	char *dest2;
 
-	if (src < (const char *)blob->data ||
-	    src >= (const char *)(blob->data + blob->length)) {
+	if (src < blob->data ||
+	    src >= (blob->data + blob->length)) {
 		*dest = NULL;
 		return 0;
 	}
@@ -729,7 +729,7 @@ static size_t smbcli_blob_pull_ucs2(TALLOC_CTX* mem_ctx,
 */
 static size_t smbcli_blob_pull_ascii(TALLOC_CTX *mem_ctx,
 				  DATA_BLOB *blob, const char **dest, 
-				  const char *src, int byte_len, uint_t flags)
+				  const uint8_t *src, int byte_len, uint_t flags)
 {
 	int src_len, src_len2;
 	ssize_t ret;
@@ -743,7 +743,7 @@ static size_t smbcli_blob_pull_ascii(TALLOC_CTX *mem_ctx,
 	if (byte_len != -1 && src_len > byte_len) {
 		src_len = byte_len;
 	}
-	src_len2 = strnlen(src, src_len);
+	src_len2 = strnlen((const char *)src, src_len);
 
 	if (src_len2 < src_len - 1) {
 		/* include the termination if we didn't reach the end of the packet */
