@@ -118,25 +118,44 @@ char **toktocliplist(const char *ptr, int *ctok, const char *sep)
 /**
  Case insensitive string compararison.
 **/
-
-int StrCaseCmp(const char *s, const char *t)
+static int StrCaseCmp_slow(const char *s1, const char *s2)
 {
-	pstring buf1, buf2;
-	unix_strupper(s, strlen(s)+1, buf1, sizeof(buf1));
-	unix_strupper(t, strlen(t)+1, buf2, sizeof(buf2));
-	return strcmp(buf1,buf2);
+	smb_ucs2_t *u1, *u2;
+	int ret;
+
+	convert_string_allocate(CH_UNIX, CH_UTF16, s1, strlen(s1)+1, &u1);
+	convert_string_allocate(CH_UNIX, CH_UTF16, s2, strlen(s2)+1, &u2);
+
+	ret = strcasecmp_w(u1, u2);
+
+	free(u1);
+	free(u2);
+
+	return ret;
 }
 
 /**
- Case insensitive string compararison, length limited.
+ Case insensitive string compararison, accelerated version
 **/
-
-int StrnCaseCmp(const char *s, const char *t, size_t n)
+int StrCaseCmp(const char *s1, const char *s2)
 {
-	pstring buf1, buf2;
-	unix_strupper(s, strlen(s)+1, buf1, sizeof(buf1));
-	unix_strupper(t, strlen(t)+1, buf2, sizeof(buf2));
-	return strncmp(buf1,buf2,n);
+	while (*s1 && *s2 &&
+	       (*s1 & 0x80) == 0 && 
+	       (*s2 & 0x80) == 0) {
+		char u1 = toupper(*s1);
+		char u2 = toupper(*s2);
+		if (u1 != u2) {
+			return u2 - u1;
+		}
+		s1++;
+		s2++;
+	}
+
+	if (*s1 == 0 || *s2 == 0) {
+		return *s2 - *s1;
+	}
+
+	return StrCaseCmp_slow(s1, s2);
 }
 
 /**
@@ -152,21 +171,6 @@ BOOL strequal(const char *s1, const char *s2)
 		return(False);
   
 	return(StrCaseCmp(s1,s2)==0);
-}
-
-/**
- * Compare 2 strings up to and including the nth char.
- *
- * @note The comparison is case-insensitive.
- **/
-BOOL strnequal(const char *s1,const char *s2,size_t n)
-{
-  if (s1 == s2)
-	  return(True);
-  if (!s1 || !s2 || !n)
-	  return(False);
-  
-  return(StrnCaseCmp(s1,s2,n)==0);
 }
 
 /**
@@ -1196,7 +1200,7 @@ size_t strhex_to_str(char *p, size_t len, const char *strhex)
 	char           *p1 = NULL, *p2 = NULL;
 
 	for (i = 0; i < len && strhex[i] != 0; i++) {
-		if (strnequal(hexchars, "0x", 2)) {
+		if (strncasecmp(hexchars, "0x", 2) == 0) {
 			i++; /* skip two chars */
 			continue;
 		}
@@ -1460,3 +1464,48 @@ int strcmp_safe(const char *s1, const char *s2)
 	}
 	return strcmp(s1, s2);
 }
+
+
+/*******************************************************************
+ Return a string representing a CIFS attribute for a file.
+********************************************************************/
+char *attrib_string(TALLOC_CTX *mem_ctx, uint32_t attrib)
+{
+	int i, len;
+	const struct {
+		char c;
+		uint16_t attr;
+	} attr_strs[] = {
+		{'V', FILE_ATTRIBUTE_VOLUME},
+		{'D', FILE_ATTRIBUTE_DIRECTORY},
+		{'A', FILE_ATTRIBUTE_ARCHIVE},
+		{'H', FILE_ATTRIBUTE_HIDDEN},
+		{'S', FILE_ATTRIBUTE_SYSTEM},
+		{'R', FILE_ATTRIBUTE_READONLY},
+		{'d', FILE_ATTRIBUTE_DEVICE},
+		{'t', FILE_ATTRIBUTE_TEMPORARY},
+		{'s', FILE_ATTRIBUTE_SPARSE},
+		{'r', FILE_ATTRIBUTE_REPARSE_POINT},
+		{'c', FILE_ATTRIBUTE_COMPRESSED},
+		{'o', FILE_ATTRIBUTE_OFFLINE},
+		{'n', FILE_ATTRIBUTE_NONINDEXED},
+		{'e', FILE_ATTRIBUTE_ENCRYPTED}
+	};
+	char *ret;
+
+	ret = talloc(mem_ctx, ARRAY_SIZE(attr_strs)+1);
+	if (!ret) {
+		return NULL;
+	}
+
+	for (len=i=0; i<ARRAY_SIZE(attr_strs); i++) {
+		if (attrib & attr_strs[i].attr) {
+			ret[len++] = attr_strs[i].c;
+		}
+	}
+
+	ret[len] = 0;
+
+	return ret;
+}
+
