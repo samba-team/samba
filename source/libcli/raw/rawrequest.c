@@ -49,7 +49,7 @@ NTSTATUS smbcli_request_destroy(struct smbcli_request *req)
 	/* ahh, its so nice to destroy a complex structure in such a
 	   simple way! */
 	status = req->status;
-	talloc_destroy(req->mem_ctx);
+	talloc_free(req);
 	return status;
 }
 
@@ -61,18 +61,8 @@ NTSTATUS smbcli_request_destroy(struct smbcli_request *req)
 struct smbcli_request *smbcli_request_setup_nonsmb(struct smbcli_transport *transport, uint_t size)
 {
 	struct smbcli_request *req;
-	TALLOC_CTX *mem_ctx;
-	
-	/* each request gets its own talloc context. The request
-	   structure itself is also allocated inside this context,
-	   so we need to allocate it before we construct the request
-	*/
-	mem_ctx = talloc_init("smbcli_request");
-	if (!mem_ctx) {
-		return NULL;
-	}
 
-	req = talloc(mem_ctx, sizeof(struct smbcli_request));
+	req = talloc_named(NULL, sizeof(struct smbcli_request), "smcli_request");
 	if (!req) {
 		return NULL;
 	}
@@ -80,7 +70,6 @@ struct smbcli_request *smbcli_request_setup_nonsmb(struct smbcli_transport *tran
 
 	/* setup the request context */
 	req->state = SMBCLI_REQUEST_INIT;
-	req->mem_ctx = mem_ctx;
 	req->transport = transport;
 	req->session = NULL;
 	req->tree = NULL;
@@ -89,7 +78,7 @@ struct smbcli_request *smbcli_request_setup_nonsmb(struct smbcli_transport *tran
 	/* over allocate by a small amount */
 	req->out.allocated = req->out.size + REQ_OVER_ALLOCATION; 
 
-	req->out.buffer = talloc(req->mem_ctx, req->out.allocated);
+	req->out.buffer = talloc(req, req->out.allocated);
 	if (!req->out.buffer) {
 		return NULL;
 	}
