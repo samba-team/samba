@@ -73,6 +73,8 @@ static void sock_dead(struct dcerpc_pipe *p, NTSTATUS status)
 	if (!NT_STATUS_IS_OK(status)) {
 		p->transport.recv_data(p, NULL, status);
 	}
+
+	sock->fde->flags &= ~(EVENT_FD_WRITE | EVENT_FD_READ);
 }
 
 /*
@@ -229,6 +231,10 @@ static NTSTATUS sock_send_request(struct dcerpc_pipe *p, DATA_BLOB *data, BOOL t
 {
 	struct sock_private *sock = p->transport.private;
 	struct sock_blob *blob;
+
+	if (sock->sock == NULL) {
+		return NT_STATUS_CONNECTION_DISCONNECTED;
+	}
 
 	blob = talloc_p(sock, struct sock_blob);
 	if (blob == NULL) {

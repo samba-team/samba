@@ -59,6 +59,9 @@ BOOL torture_rpc_countcalls(void)
 		status = dcerpc_request(p, NULL, i, p, &stub_in, &stub_out);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT) &&
 		    p->last_fault_code == DCERPC_FAULT_OP_RNG_ERROR) break;
+		if (NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_DISCONNECTED)) {
+			break;
+		}
 	}
 	
 	if (i==5000) {
