@@ -1,13 +1,148 @@
                   =============================
-                  Release Notes for Samba 3.0.6
-                           Aug 19, 2004
+                  Release Notes for Samba 3.0.7
+                           Sept 13, 2004
                   =============================
 
 This is the latest stable release of Samba. This is the version
 that production Samba servers should be running for all
-current bug-fixes.  There have been several issues fixes since
-the 3.0.4/5 release and new features have been added as well.
-See the "Changes" section for details on exact updates.
+current bug-fixes.  There have been several important issues 
+fixes since the 3.0.6 release.  See the "Changes" section for 
+details on exact updates.
+
+Common bugs fixed in 3.0.7 include:
+
+  o Winbind failure to return user entries under certain 
+    conditions.
+  o Syntax errors in the OpenLDAP schema file (samba.schema).
+  o Printing errors caused by not setting default values
+    for the various printing commands.
+
+  
+######################################################################
+Changes
+#######
+
+    Parameter Name              	Action
+    --------------              	------
+    winbind enable local accounts	disabled by default
+
+
+
+Changes since 3.0.6
+-------------------
+
+o   Jeremy Allison <jra@samba.org>
+    * Fix parsing of names ending in dot and a few other error 
+      returns.
+    * BUG 1674: Move the symlinks checks into reduce_name().
+    * Fix memleak when checking the valid names smb.conf option.
+    * Fix memleak on error return path in the file open code.
+    * More paranoia checks in the hash2 mangling code.
+    * Fix syntax error in configure.in.
+    * Match Win2k3's behavior for pathname parsing error returns.
+
+  
+o   Andrew Bartlett <abartlet@samba.org>  
+    * Janitor work in loadparm.c -- remove unused parameters.
+
+
+o   Gerald Carter <jerry@samba.org>
+    * BUG 1464: Ensure that printing commands are initialized even
+      if the 'printing' parameter is not explicitly set.
+    * Resolve name conflict on DEC OSF-5.1 (inspired by patch from 
+      Adharsh Praveen <rprav@india.hp.com>)
+    * Work around parsing error in the print change notify code.
+    * remove duplicate declaration of getprintprocdir from 
+      rpcclient.
+    * Only use sAMAccountName and not userPrincipalName when looking
+      up a username in AD since the breaks winbindd (lookup_name() 
+      only works with the sAMAccountName).
+    * Fix bug with winbindd_getpwnam() caused by Microsoft DC's not 
+      filling in the username in the user_info3.
+    * Fix logic bug in the check for creating a user's home directory 
+      in register_vuid(); caused home directory to be mismatched to 
+      the first share in smb.conf under certain conditions.
+    * BUG 1656: rename auto.a to auto.smb.
+    * Ensure that we assign our pid to print jobs (and not our 
+      parent's pid); ensures that spooling jobs from dead smbds 
+      are removed from the tdb.
+    * Disable 'winbind enable local accounts' by default.
+    * Adding some initial checks for DragonFly (same as 
+      FreeBSD 4.1).
+    
+
+o   Guenther Deschner <gd@samba.org> 
+    * Use SMB_ASSERT() to track down NULL printer names in 
+      the tdb open code.
+    * Revert fix for BUG 1474 to avoid unnecessary packaging 
+      dependencies.
+
+
+o   Olaf Flebbe <o.flebbe@science-computing.de>.  
+    * BUG 1627: fix for NIS compiles on HPUX 11.00, AIX 4.3 
+      and 5.1.
+    * BUG 1626: More compile fixes.
+
+
+o   Rob Foehl <rwf@loonybin.net>
+    * Don't clear the PRINT_ATTRIBUTE_PUBLISHED was getting reset 
+      by attempts to sanitize the defined attributes.
+
+
+o   SATOH Fumiyasu <fumiya@miraclelinux.com>
+    * BUG 1546: Preserve errno in MB strupper_m/strlower_m.
+
+
+o   Helmut Heinreichsberger <helmut.heinreichsberger@chello.at>.
+    * BUG 1657: Remove used initialized variable, 
+    * BUG 1658: Add a little bit of const.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * If there's garbage in the pidfile, we should not panic 
+      but assume that no one else is around. We can't find the 
+      other guy anyway.
+
+
+o   Jim McDonough <jmcd@us.ibm.com>
+    * Fixup format string in the tdb error messages.
+
+
+o   Jonas Olsson <lexicon@lysator.liu.se>
+    * BUG 1416: Don't reuncture a users list to NGROUPS_MAX when 
+      reporting the list in usrmgr.exe.
+
+
+o   Tim Potter <tpot@samba.org>
+    * Fix out-of-tree builds (problem with the script to generate 
+      the svn version number).
+    * BUG 1360:  Need to use -Wl when passing flags to the linker.
+    * BUG 1741: Define a struct nss_groupsbymem for HPUX 11 which 
+      doesn't have one of its own.
+
+o   Simo Source <idra@samba.org>
+    * Fixup compile issues on AIX caused by broken strlen() and 
+      strdup().
+    * Update debian packaging files.
+
+
+o   Dimitri van der Spek <dwspek@aboveit.nl>
+    * Use the correct counter when copying group rids from the 
+      user_info3 struct in pam_winbind.
+      
+
+o   Qiao Yang <qyang@stbernard.com>
+    * BUG 1622: Only cache the user
+
+
+Changes for older versions follow below:
+
+      --------------------------------------------------
+      
+                  =============================
+                  Release Notes for Samba 3.0.6
+                           Aug 19, 2004
+                  =============================
 
 Common bugs fixed in 3.0.6 include:
 
@@ -87,69 +222,6 @@ following attributes from access by non-administrative users:
 
 You should refer to your directory server's documentation on how 
 to implement this restriction.
-  
-
-######################################################################
-Changes
-#######
-
-Changes since 3.0.6rc2
-----------------------
-
-o   Jeremy Allison <jra@samba.org>
-    * Ensure we return the same ACL revision on the wire that 
-      W2K3 does.
-    * BUG 1578: Hardcode replacement for invalid characters as '_'
-      (based on fix from Alexander E. Patrakov <patrakov@ums.usu.ru>).
-    * Fix hashed password history for LDAP backends.
-    * Enforce logon hours restrictions if confiogured (based on code 
-      from Richard Renard <rrenard@idealx.com>).
-    * BUG 1606: Force smbd to disable sendfile with DOS clients 
-      and ensure that the chained header is filled in for ...&X 
-      commands.
-    * BUG 1602: Fix access to shares when all symlink support 
-      has been disabled.
-
-
-o   Gerald (Jerry) Carter <jerry@samba.org>
-    * Tighten the cache consistency with the ntprinters.tdb entry 
-      an the in memory cache associated with open printer handles.
-    * Make sure that register_messages_flags() doesn't overwrite 
-      the originally registered flags.
-
-
-o   Guenther Deschner <gd@sernet.de>
-    * Correct infinite loop in pam_winbind's verification of 
-      group membership in the 'other sids' field in the user_info3 
-      struct.
-
-
-o   Steve French <sfrench@us.ibm.com>
-    * prevent infinite recusion in reopen_logs() when expanding 
-      the smb.conf variable %I.
-      
-
-o   Volker Lendecke <vl@samba.org>
-    * Improved NT->AFS ACL mapping VFS module.
-
-
-o   Buchan Milne <bgmilne@mandrake.org>
-    * Mandrake packaging fixes.
-
-
-o   Lars Mueller <lmuelle@suse.de>
-    * Fix compiler warnings in the kerberos client code.
-    
-
-o   James Peach <jpeach@sgi.com>
-    * Prevent smbd from attempting to use sendfile at all if it is 
-      not supported by the server's OS.
-    * Allow SWAT to search for index.html when serving html files 
-      in a directory.
-
-
-o   Jelmer Vernooij <jelmer@samba.org>
-    * BUG 1474: Fix build of --with-expsam stuff on Solaris.
 
 
 Changes since 3.0.5
@@ -232,6 +304,19 @@ o   Jeremy Allison <jra@samba.org>
     * If a account was locked out by an admin (and has a bad 
       password count of zero) leave it locked out until an admin 
       unlocks it (but log a message).
+    * Ensure we return the same ACL revision on the wire that 
+      W2K3 does.
+    * BUG 1578: Hardcode replacement for invalid characters as '_'
+      (based on fix from Alexander E. Patrakov <patrakov@ums.usu.ru>).
+    * Fix hashed password history for LDAP backends.
+    * Enforce logon hours restrictions if confiogured (based on code 
+      from Richard Renard <rrenard@idealx.com>).
+    * BUG 1606: Force smbd to disable sendfile with DOS clients 
+      and ensure that the chained header is filled in for ...&X 
+      commands.
+    * BUG 1602: Fix access to shares when all symlink support 
+      has been disabled.
+
 
 
 o   Tom Alsberg <alsbergt@cs.huji.ac.il>
@@ -314,6 +399,10 @@ o   Gerald Carter <jerry@samba.org>
       3.0.5.
     * Corrected syntax error in the OID for sambaUnixIdPool, 
       sambaSidEntry, & sambaIdmapEntry object classes.
+    * Tighten the cache consistency with the ntprinters.tdb entry 
+      an the in memory cache associated with open printer handles.
+    * Make sure that register_messages_flags() doesn't overwrite 
+      the originally registered flags.
 
 
 o   Fabien Chevalier <fabien.chevalier@supelec.fr>
@@ -337,6 +426,9 @@ o   Guenther Deschner <gd@sernet.de>
       get written in UNICODE strings rather than ASCII.
     * Ensure that the last kerberos error return is not invalid.
     * Display share ACL entries from rpcclient.
+    * Correct infinite loop in pam_winbind's verification of 
+      group membership in the 'other sids' field in the user_info3 
+      struct.
 
 
 o   Fabian Franz <FabianFranz@gmx.de>
@@ -346,6 +438,8 @@ o   Fabian Franz <FabianFranz@gmx.de>
 o   Steve French <sfrench@us.ibm.com>
     * Handle -S and user mount parms in mount.cifs.
     * Fix user unmount of shares mount with suid mount.cifs.
+    * prevent infinite recusion in reopen_logs() when expanding 
+      the smb.conf variable %I.
 
 
 o   Bjoern Jacke <bj@sernet.de>
@@ -412,6 +506,7 @@ o   Volker Lendecke <vl@samba.org>
     * Add 'ldap timeout' parameter.
     * Dont always uppercase 'afs username map'.
     * Expand aliases for getusersids as well.
+    * Improved NT->AFS ACL mapping VFS module.
 
 
 o   Herb Lewis <herb@samba.org>
@@ -430,6 +525,10 @@ o    Jianliang Lu <Jianliang.Lu@getronics.com>
      * Reset the bad password count password counts upon a successful login.
      
      
+o   Jason Mader <jason@ncac.gwu.edu>
+    * BUG 1385: Don't use non-consts in a structure initialization.
+    
+
 o   Jim McDonough <jmcd@us.ibm.com>
     * BUG 1279: SMBjobid fix for Samba print servers running on 
       Big-Endian platforms.
@@ -440,10 +539,6 @@ o   Joe Meadows <jameadows@webopolis.com>
     * Allow get_dc_list() to check the negative cache.
 
 
-o   Jason Mader <jason@ncac.gwu.edu>
-    * BUG 1385: Don't use non-consts in a structure initialization.
-    
-
 o   Stefan Metzmacher <metze@samba.org>    
     * fix a configure logic bug for linux/XFS quotas when 
       using --with-sys-quotas.
@@ -451,15 +546,24 @@ o   Stefan Metzmacher <metze@samba.org>
     * print out the SVN revision by configure,
     
 
+o   Buchan Milne <bgmilne@mandrake.org>
+    * Mandrake packaging fixes.
+    
+    
 o   Lars Mueller <lmuelle@suse.de>
     * BUG 1279: Added 'printcap cache time' parameter.
     * Fix afs related build issues on SuSE.
+    * Fix compiler warnings in the kerberos client code.
 
 
 o   James Peach <jpeach@sgi.com>
     * More iconv detection fixes for IRIX.
     * Compile fixed for systems that do not have C99/UNIX98 compliant 
       vsnprintf by default.
+    * Prevent smbd from attempting to use sendfile at all if it is 
+      not supported by the server's OS.
+    * Allow SWAT to search for index.html when serving html files 
+      in a directory.
 
 
 o   Dan Peterson
@@ -523,10 +627,11 @@ o   James Wilkinson <jwilk@alumni.cse.ucsc.edu>
 o   Jelmer Vernooij <jelmer@samba.org>
     * Additional NT status to unix error mappings.
     * BUG 478: Rename vsnprintf to smb_vsnprintf so we don't 
-     get duplicate symbol errors.
-   * Return an error when the last command read from stdin 
-     fails in smbclient.
-   * Prepare for better error checking in tar.
+      get duplicate symbol errors.
+    * Return an error when the last command read from stdin 
+      fails in smbclient.
+    * Prepare for better error checking in tar.
+    * BUG 1474: Fix build of --with-expsam stuff on Solaris.
       
 
 Changes for older versions follow below:
