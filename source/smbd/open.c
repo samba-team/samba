@@ -1074,7 +1074,7 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
      deleting/renaming? */
   /* 
    * If we got here then either there were no share modes or
-   * all share modes were DENY_DOS and the pid == sys_getpid() or
+   * all share modes were DENY_DOS and the pid == getpid() or
    * delete access was requested and all share modes had the
    * ALLOW_SHARE_DELETE bit set (takes precedence over other
    * share modes).

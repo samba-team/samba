@@ -879,6 +879,49 @@ BOOL make_spoolss_q_closeprinter(SPOOL_Q_CLOSEPRINTER *q_u, POLICY_HND *hnd)
 
 /*******************************************************************
  * read a structure.
+ * called from static spoolss_q_deleteprinter (srv_spoolss.c)
+ * called from spoolss_deleteprinter (cli_spoolss.c)
+ ********************************************************************/
+BOOL spoolss_io_q_deleteprinter(char *desc, SPOOL_Q_DELETEPRINTER *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL) return False;
+
+	prs_debug(ps, depth, desc, "spoolss_io_q_deleteprinter");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!smb_io_pol_hnd("printer handle",&q_u->handle,ps,depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ * write a structure.
+ * called from static spoolss_r_deleteprinter (srv_spoolss.c)
+ * called from spoolss_deleteprinter (cli_spoolss.c)
+ ********************************************************************/
+BOOL spoolss_io_r_deleteprinter(char *desc, SPOOL_R_DELETEPRINTER *r_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_r_deleteprinter");
+	depth++;
+	
+	if (!prs_align(ps))
+		return False;
+
+	if (!smb_io_pol_hnd("printer handle",&r_u->handle,ps,depth))
+		return False;
+	if (!prs_uint32("status", ps, depth, &r_u->status))
+		return False;
+	
+	return True;
+}
+
+
+/*******************************************************************
+ * read a structure.
  * called from static spoolss_q_closeprinter (srv_spoolss.c)
  * called from spoolss_closeprinter (cli_spoolss.c)
  ********************************************************************/

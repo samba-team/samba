@@ -135,6 +135,35 @@ static BOOL api_spoolss_closeprinter(prs_struct *data, prs_struct *rdata)
 }
 
 /********************************************************************
+ * api_spoolss_deleteprinter
+ *
+ * called from the spoolss dispatcher
+ ********************************************************************/
+static BOOL api_spoolss_deleteprinter(prs_struct *data, prs_struct *rdata) 
+{
+	SPOOL_Q_DELETEPRINTER q_u;
+	SPOOL_R_DELETEPRINTER r_u;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if (!spoolss_io_q_deleteprinter("", &q_u, data, 0)) {
+		DEBUG(0,("spoolss_io_q_deleteprinter: unable to unmarshall SPOOL_Q_DELETEPRINTER.\n"));
+		return False;
+	}
+
+	r_u.status = _spoolss_deleteprinter(&q_u.handle);
+	memcpy(&r_u.handle, &q_u.handle, sizeof(r_u.handle));
+
+	if (!spoolss_io_r_deleteprinter("",&r_u,rdata,0)) {
+		DEBUG(0,("spoolss_io_r_deleteprinter: unable to marshall SPOOL_R_DELETEPRINTER.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/********************************************************************
  * api_spoolss_rffpcnex
  * ReplyFindFirstPrinterChangeNotifyEx
  ********************************************************************/

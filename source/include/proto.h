@@ -4260,6 +4260,7 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 				 uint32  user_switch, SPOOL_USER_CTR user_ctr,
 				 POLICY_HND *handle);
 uint32 _spoolss_closeprinter(POLICY_HND *handle);
+uint32 _spoolss_deleteprinter(POLICY_HND *handle);
 uint32 _spoolss_getprinterdata(const POLICY_HND *handle, UNISTR2 *valuename,
 				uint32 in_size,
 				uint32 *type,
