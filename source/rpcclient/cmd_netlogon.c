@@ -87,7 +87,7 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 	argc--;
 	argv++;
 
-	if (argc < 2)
+	if (argc > 0)
 	{
 		nt_password = argv[0];
 	}

@@ -486,10 +486,13 @@ BOOL become_user_permanently(uid_t uid, gid_t gid);
 
 void free_void_array(uint32 num_entries, void **entries,
 		void(free_item)(void*));
-void* add_item_to_array(uint32 *len, void ***array, const void *item,
+void* add_copy_to_array(uint32 *len, void ***array, const void *item,
 	void*(item_dup)(const void*), BOOL alloc_anyway);
+void* add_item_to_array(uint32 *len, void ***array, void *item);
 void free_char_array(uint32 num_entries, char **entries);
 char* add_chars_to_array(uint32 *len, char ***array, const char *name);
+void free_con_array(uint32 num_entries, struct cli_connection **entries);
+struct cli_connection* add_con_to_array(uint32 *len, struct cli_connection ***array, struct cli_connection *con);
 void free_uint32_array(uint32 num_entries, uint32 **entries);
 uint32* add_uint32s_to_array(uint32 *len, uint32 ***array, const uint32 *name);
 void free_unistr_array(uint32 num_entries, UNISTR2 **entries);
@@ -1785,6 +1788,8 @@ BOOL brs_query_info( const char *srv_name, uint32 switch_value,
 
 /*The following definitions come from  rpc_client/cli_connect.c  */
 
+void init_connections(void);
+void free_connections(void);
 void cli_connection_free(struct cli_connection *con);
 void cli_connection_unlink(struct cli_connection *con);
 BOOL cli_connection_init_list(char* servers, const char* pipe_name,

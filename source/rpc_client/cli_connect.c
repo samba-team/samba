@@ -33,10 +33,75 @@ extern pstring global_myname;
 
 struct cli_connection
 {
+	uint32 num_connections;
+	char *srv_name;
+	char *pipe_name;
+	struct user_credentials usr_creds;
 	struct cli_state *cli;
 	uint16 fnum;
 };
 
+static struct cli_connection **con_list = NULL;
+uint32 num_cons = 0;
+
+void init_connections(void)
+{
+	con_list = NULL;
+	num_cons = 0;
+}
+
+void free_connections(void)
+{
+	free_con_array(num_cons, con_list);
+}
+
+static struct cli_connection *cli_con_get(const char* srv_name,
+				const char* pipe_name)
+{
+	struct cli_connection *con = NULL;
+
+	con = (struct cli_connection*)malloc(sizeof(*con));
+
+	if (con == NULL)
+	{
+		return NULL;
+	}
+
+	memset(con, 0, sizeof(*con));
+
+	if (srv_name != NULL)
+	{
+		con->srv_name = strdup(srv_name);
+	}
+	if (pipe_name != NULL)
+	{
+		con->pipe_name = strdup(pipe_name);
+	}
+
+	con->cli = cli_initialise(NULL);
+	con->fnum = 0xffff;
+
+	memcpy(&con->usr_creds, usr_creds, sizeof(*usr_creds));
+
+	if (con->cli == NULL)
+	{
+		cli_connection_free(con);
+		return NULL;
+	}
+
+	/*
+	 * initialise
+	 */
+
+	con->cli->capabilities |= CAP_NT_SMBS | CAP_STATUS32;
+	cli_init_creds(con->cli, usr_creds);
+
+	con->cli->use_ntlmv2 = lp_client_ntlmv2();
+
+	add_con_to_array(&num_cons, &con_list, con);
+
+	return con;
+}
 
 /****************************************************************************
 terminate client connection
@@ -46,6 +111,18 @@ void cli_connection_free(struct cli_connection *con)
 	cli_nt_session_close(con->cli, con->fnum);
 	cli_shutdown(con->cli);
 	free(con->cli);
+
+	if (con->srv_name != NULL)
+	{
+		free(con->srv_name);
+	}
+	if (con->pipe_name != NULL)
+	{
+		free(con->pipe_name);
+	}
+
+	memset(&con->usr_creds, 0, sizeof(con->usr_creds));
+
 	free(con);
 }
 
@@ -73,29 +150,12 @@ BOOL cli_connection_init_list(char* servers, const char* pipe_name,
 	 * allocate
 	 */
 
-	(*con) = (struct cli_connection*)malloc(sizeof(**con));
+	*con = cli_con_get(servers, pipe_name);
 
 	if ((*con) == NULL)
 	{
 		return False;
 	}
-
-	(*con)->cli = cli_initialise(NULL);
-	(*con)->fnum = 0xffff;
-
-	if ((*con)->cli == NULL)
-	{
-		return False;
-	}
-
-	/*
-	 * initialise
-	 */
-
-	(*con)->cli->capabilities |= CAP_NT_SMBS | CAP_STATUS32;
-	cli_init_creds((*con)->cli, usr_creds);
-
-	(*con)->cli->use_ntlmv2 = lp_client_ntlmv2();
 
 	if (!cli_connect_serverlist((*con)->cli, servers))
 	{
@@ -130,29 +190,12 @@ BOOL cli_connection_init(const char* server_name, const char* pipe_name,
 	 * allocate
 	 */
 
-	(*con) = (struct cli_connection*)malloc(sizeof(**con));
+	*con = cli_con_get(server_name, pipe_name);
 
 	if ((*con) == NULL)
 	{
 		return False;
 	}
-
-	(*con)->cli = cli_initialise(NULL);
-	(*con)->fnum = 0xffff;
-
-	if ((*con)->cli == NULL)
-	{
-		return False;
-	}
-
-	/*
-	 * initialise
-	 */
-
-	(*con)->cli->capabilities |= CAP_NT_SMBS | CAP_STATUS32;
-	cli_init_creds((*con)->cli, usr_creds);
-
-	(*con)->cli->use_ntlmv2 = lp_client_ntlmv2();
 
 	if (resolve_srv_name(server_name, dest_host, &ip))
 	{
@@ -195,6 +238,22 @@ obtain client state
 BOOL cli_connection_getsrv(const char* srv_name, const char* pipe_name,
 				struct cli_connection **con)
 {
+	int i;
+	if (con_list == NULL || num_cons == 0)
+	{
+		return False;
+	}
+
+	for (i = 0; i < num_cons; i++)
+	{
+		if (con_list[i] != NULL &&
+		    strequal(con_list[i]->srv_name , srv_name ) &&
+		    strequal(con_list[i]->pipe_name, pipe_name))
+		{
+			(*con) = con_list[i];
+			return True;
+		}
+	}
 	return False;
 }
 
