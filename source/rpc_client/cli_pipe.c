@@ -104,7 +104,7 @@ static BOOL rpc_read(struct cli_state *cli,
 	DEBUG(5,("rpc_read: offset end: 0x%x.  data left to read:0x%x\n",
 	          rdata->data->offset.end, data_to_read));
 
-	return rdata->data.data != NULL;
+	return rdata->data->data != NULL;
 }
 
 /****************************************************************************
