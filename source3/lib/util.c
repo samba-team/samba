@@ -3855,7 +3855,7 @@ my own panic function - not suitable for general use
 ********************************************************************/
 void ajt_panic(void)
 {
-  system("/usr/bin/X11/xedit -display ljus:0 /tmp/ERROR_FAULT");
+  system("/usr/bin/X11/xedit -display solen:0 /tmp/ERROR_FAULT");
 }
 #endif
 

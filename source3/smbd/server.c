@@ -1935,6 +1935,7 @@ dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
 	      !IS_VETO_OPLOCK_PATH(cnum,fname))
       {
         fs_p->granted_oplock = True;
+        fs_p->sent_oplock_break = False;
         global_oplocks_open++;
         port = oplock_port;
 
@@ -2807,7 +2808,7 @@ global_oplocks_open = %d\n", timestring(), dev, inode, global_oplocks_open));
   if(fsp == NULL)
   {
     /* The file could have been closed in the meantime - return success. */
-    DEBUG(3,("%s oplock_break: cannot find open file with dev = %x, inode = %x (fnum = %d) \
+    DEBUG(0,("%s oplock_break: cannot find open file with dev = %x, inode = %x (fnum = %d) \
 allowing break to succeed.\n", timestring(), dev, inode, fnum));
     return True;
   }
@@ -2823,10 +2824,18 @@ allowing break to succeed.\n", timestring(), dev, inode, fnum));
 
   if(!fsp->granted_oplock)
   {
-    DEBUG(3,("%s oplock_break: file %s (fnum = %d, dev = %x, inode = %x) has no oplock. \
-Allowing break to succeed regardless.\n", timestring(), fsp->name, fnum, dev, inode));
+    DEBUG(0,("%s oplock_break: file %s (fnum = %d, dev = %x, inode = %x) has no oplock. Allowing break to succeed regardless.\n", timestring(), fsp->name, fnum, dev, inode));
     return True;
   }
+
+  /* mark the oplock break as sent - we don't want to send twice! */
+  if (fsp->sent_oplock_break)
+  {
+    DEBUG(0,("%s ERROR: oplock_break already sent for file %s (fnum = %d, dev = %x, inode = %x)\n", timestring(), fsp->name, fnum, dev, inode));
+    return True;
+  }
+
+  fsp->sent_oplock_break = True;
 
   /* Now comes the horrid part. We must send an oplock break to the client,
      and then process incoming messages until we get a close or oplock release.
@@ -2923,7 +2932,7 @@ inode = %x).\n", timestring(), fsp->name, fnum, dev, inode));
        from the sharemode. */
     /* Paranoia.... */
     fsp->granted_oplock = False;
-  global_oplocks_open--;
+    global_oplocks_open--;
   }
 
   /* Santity check - remove this later. JRA */
@@ -3599,8 +3608,11 @@ int find_free_file(void )
   /* we start at 1 here for an obscure reason I can't now remember,
      but I think is important :-) */
   for (i=1;i<MAX_OPEN_FILES;i++)
-    if (!Files[i].open)
-      return(i);
+	  if (!Files[i].open) {
+		  /* paranoia */
+		  memset(&Files[i], 0, sizeof(Files[i]));
+		  return(i);
+	  }
   DEBUG(1,("ERROR! Out of file structures - perhaps increase MAX_OPEN_FILES?\n"));
   return(-1);
 }
