@@ -1202,7 +1202,8 @@ machine %s in domain %s.\n", global_myname, global_myworkgroup ));
    * see if they were valid.
    */
 
-  memset(&cli, '\0', sizeof(struct cli_state));
+  ZERO_STRUCT(cli);
+
   if(cli_initialise(&cli) == False) {
     DEBUG(0,("domain_client_validate: unable to initialize client connection.\n"));
     return False;

@@ -68,7 +68,7 @@ static void populate_printers(void)
 
 			/* add it to the cache */
 			if ((ptmp = malloc(sizeof (*ptmp))) != NULL) {
-				memset(ptmp, '\0', sizeof (*ptmp));
+				ZERO_STRUCTP(ptmp);
 				ptmp->name = strdup(name);
 				ptmp->next = printers;
 				printers = ptmp;

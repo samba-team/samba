@@ -506,7 +506,7 @@ static BOOL krb5_auth(char *user,char *password)
 		return(False);
 	}
 
-	memset((char *)&kcreds, 0, sizeof(kcreds));
+	ZERO_STRUCT(kcreds);
 
 	kcreds.client = kprinc;
 	

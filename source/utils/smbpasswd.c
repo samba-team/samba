@@ -430,7 +430,7 @@ int main(int argc, char **argv)
       exit(1);
     }
  
-    memset(&cli, '\0', sizeof(struct cli_state));
+    ZERO_STRUCT(cli);
  
     if (!cli_initialise(&cli) || !cli_connect(&cli, remote_machine, &ip)) {
       fprintf(stderr, "%s: unable to connect to SMB server on machine %s. Error was : %s.\n",

@@ -477,7 +477,7 @@ static BOOL modify_trust_password( char *domain, char *remote_machine,
   struct in_addr dest_ip;
   struct cli_state cli;
 
-  memset(&cli, '\0', sizeof(struct cli_state));
+  ZERO_STRUCT(cli);
   if(cli_initialise(&cli) == False) {
     DEBUG(0,("modify_trust_password: unable to initialize client connection.\n"));
     return False;

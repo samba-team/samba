@@ -108,7 +108,7 @@ connection_struct *conn_new(void)
 	conn = (connection_struct *)malloc(sizeof(*conn));
 	if (!conn) return NULL;
 
-	memset(conn, 0, sizeof(*conn));
+	ZERO_STRUCTP(conn);
 	conn->cnum = i;
 
 	bitmap_set(bmap, i);
@@ -184,6 +184,6 @@ void conn_free(connection_struct *conn)
 	bitmap_clear(bmap, conn->cnum);
 	num_open--;
 
-	memset(conn, 0, sizeof(*conn));
+	ZERO_STRUCTP(conn);
 	free(conn);
 }
