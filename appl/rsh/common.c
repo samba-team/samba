@@ -47,7 +47,7 @@ init_ivecs(int client)
 {
     size_t blocksize;
 
-    krb5_crypto_block_size(context, crypto, &blocksize);
+    krb5_crypto_getblocksize(context, crypto, &blocksize);
 
     ivec_in[0] = malloc(blocksize);
     memset(ivec_in[0], client, blocksize);
