@@ -210,6 +210,10 @@ void inaddr2str(struct in_addr addr, char *s, size_t len);
 
 void mini_inetd (int port);
 
+#ifndef INADDR_NONE
+#define INADDR_NONE 0xffffffff
+#endif
+
 #ifndef SOMAXCONN
 #define SOMAXCONN 5
 #endif
