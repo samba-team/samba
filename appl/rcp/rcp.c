@@ -34,14 +34,14 @@
 #include "rcp_locl.h"
 
 #define RSH_PROGRAM "rsh"
-#define	OPTIONS "5dfKpP:rtxz"
+#define	OPTIONS "5dfFKpP:rtxz"
 
 struct  passwd *pwd;
 uid_t	userid;
 int     errs, remin, remout;
 int     pflag, iamremote, iamrecursive, targetshouldbedirectory;
 int     doencrypt, noencrypt;
-int     usebroken, usekrb5;
+int     usebroken, usekrb5, forwardtkt;
 char    *port;
 
 #define	CMDNEEDS	64
@@ -77,6 +77,9 @@ main(argc, argv)
 		case 'P':
 			port = optarg;
 			break;			
+		case 'F':
+			forwardtkt = 1;
+			break;
 		case 'p':
 			pflag = 1;
 			break;
@@ -780,6 +783,8 @@ do_cmd(char *host, char *remuser, char *cmd, int *fdin, int *fdout)
 			args[i++] = "-K";
 		if (doencrypt)
 			args[i++] = "-x";
+		if (forwardtkt)
+			args[i++] = "-F";
 		if (noencrypt)
 			args[i++] = "-z";
 		if (port != NULL) {
