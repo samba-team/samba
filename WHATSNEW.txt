@@ -92,7 +92,7 @@ Bugfixes added since 2.0.3
 --------------------------
 
 1). Fix for 8 character password problem when using HPUX and
-plaintest passwords.
+plaintext passwords.
 2). --with-pam option added to ./configure.
 3). Client fixes for memory leak and display of 64 bit values.
 4). Fixes for -E and -s option with smbclient.
