@@ -80,7 +80,7 @@ static void daemonize(void)
 		}
 
 		/* If we get here - the child exited with some error status */
-		if (WIFSIGNALLED(status))
+		if (WIFSIGNALED(status))
 			exit(128 + WTERMSIG(status));
 		else
 			exit(WEXITSTATUS(status));
