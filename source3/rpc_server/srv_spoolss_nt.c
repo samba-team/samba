@@ -247,6 +247,9 @@ static BOOL delete_printer_handle(POLICY_HND *hnd)
 		DEBUGADD(10,("Unlinking output file [%s]\n", tmp_file));
 		unlink(tmp_file);
 
+		// Send SIGHUP to process group... is there a better way?
+		kill(0, SIGHUP);
+
 		if ( ( i = lp_servicenumber( Printer->dev.handlename ) ) >= 0 ) {
 			lp_remove_service( i );
 			lp_killservice( i );
