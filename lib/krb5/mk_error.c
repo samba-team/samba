@@ -27,7 +27,7 @@ krb5_mk_error(krb5_principal princ,
 	msg.e_text = &e_text;
     if (e_data)
 	msg.e_data = e_data;
-    err->length = encode_KRB_ERROR(buf + sizeof(buf) - 1, sizeof(buf), &msg);
+    encode_KRB_ERROR(buf + sizeof(buf) - 1, sizeof(buf), &msg, &err->length);
     err->data = malloc(err->length);
     memcpy(err->data, buf + sizeof(buf) - err->length, err->length);
     return 0;

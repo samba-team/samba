@@ -36,10 +36,10 @@ krb5_mk_priv(krb5_context context,
   part.s_address.address   = addr.addrs[0].address;
   part.r_address = NULL;
 
-  len = encode_EncKrbPrivPart (buf + sizeof(buf) - 1, sizeof(buf), &part);
+  r = encode_EncKrbPrivPart (buf + sizeof(buf) - 1, sizeof(buf), &part, &len);
   free (part.seq_number);
-  if (len < 0)
-    return ASN1_PARSE_ERROR;
+  if (r)
+      return r;
 
   s.pvno = 5;
   s.msg_type = krb_priv;
@@ -51,9 +51,9 @@ krb5_mk_priv(krb5_context context,
   if (r)
     return r;
 
-  len = encode_KRB_PRIV (buf + sizeof(buf) - 1, sizeof(buf), &s);
-  if (len < 0)
-    return ASN1_PARSE_ERROR;
+  r = encode_KRB_PRIV (buf + sizeof(buf) - 1, sizeof(buf), &s, &len);
+  if (r)
+    return r;
   outbuf->length = len;
   outbuf->data   = malloc (len);
   if (outbuf->data == NULL)

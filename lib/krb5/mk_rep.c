@@ -32,15 +32,13 @@ krb5_mk_rep(krb5_context context,
 
   ap.enc_part.etype = (*auth_context)->key.keytype;
   ap.enc_part.kvno  = NULL;
-  len = encode_EncAPRepPart (buf + sizeof(buf) - 1,
-			     sizeof(buf), &body);
+  encode_EncAPRepPart (buf + sizeof(buf) - 1, sizeof(buf), &body, &len);
   ret = krb5_encrypt (context, buf + sizeof(buf) - len, len,
 		      &(*auth_context)->key, &ap.enc_part.cipher);
   if (ret)
     return ret;
 
-  len = encode_AP_REP (buf + sizeof(buf) - 1,
-		       sizeof(buf), &ap);
+  encode_AP_REP (buf + sizeof(buf) - 1, sizeof(buf), &ap, &len);
   free (ap.enc_part.cipher.data);
   outbuf->length = len;
   outbuf->data = malloc(len);

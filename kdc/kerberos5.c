@@ -21,6 +21,7 @@ as_rep(krb5_context context,
     EncTicketPart *et = calloc(1, sizeof(*et));
     EncKDCRepPart *ek = calloc(1, sizeof(*ek));
     krb5_principal client_princ;
+    int e;
 
     client = db_fetch(context, b->cname, b->realm);
     server = db_fetch(context, b->sname, b->realm);
@@ -48,9 +49,10 @@ as_rep(krb5_context context,
 	foo.padata_value.length = 0;
 	foo.padata_value.data   = NULL;
 
-	len = encode_PA_DATA(buf + sizeof(buf) - 1,
-			     sizeof(buf),
-			     &foo);
+	encode_PA_DATA(buf + sizeof(buf) - 1,
+		       sizeof(buf),
+		       &foo,
+		       &len);
 	foo_data.length = len;
 	foo_data.data   = buf + sizeof(buf) - len;
 
@@ -64,13 +66,14 @@ as_rep(krb5_context context,
     } else {
 	krb5_data ts_data;
 	PA_ENC_TS_ENC p;
-	int len;
+	size_t len;
 	EncryptedData enc_data;
 
-	len = decode_EncryptedData(req->padata->val->padata_value.data,
-				   req->padata->val->padata_value.length,
-				   &enc_data);
-	if (len < 0) {
+	e = decode_EncryptedData(req->padata->val->padata_value.data,
+				 req->padata->val->padata_value.length,
+				 &enc_data,
+				 &len);
+	if (e) {
 	    krb5_mk_error (client_princ,
 			   KRB5KRB_AP_ERR_BAD_INTEGRITY,
 			   "Couldn't decode",
@@ -84,10 +87,11 @@ as_rep(krb5_context context,
 		      enc_data.cipher.length,
 		      &client->keyblock,
 		      &ts_data);
-	len = decode_PA_ENC_TS_ENC(ts_data.data,
-				   ts_data.length,
-				   &p);
-	if (len < 0) {
+	e = decode_PA_ENC_TS_ENC(ts_data.data,
+				 ts_data.length,
+				 &p,
+				 &len);
+	if (e) {
 	    krb5_mk_error (client_princ,
 			   KRB5KRB_AP_ERR_BAD_INTEGRITY,
 			   "Couldn't decode",
@@ -206,31 +210,31 @@ as_rep(krb5_context context,
     {
 	unsigned char buf[1024]; /* XXX The data could be indefinite */
 	int len;
-	len = encode_EncTicketPart(buf + sizeof(buf) - 1, sizeof(buf), et);
+	e = encode_EncTicketPart(buf + sizeof(buf) - 1, sizeof(buf), et, &len);
 	free_EncTicketPart(et);
 	free(et);
-	if(len < 0)
-	    return ASN1_OVERFLOW;
+	if(e)
+	    return e;
 
 	rep.ticket.enc_part.etype = ETYPE_DES_CBC_CRC;
 	rep.ticket.enc_part.kvno = NULL;
 	krb5_encrypt(context, buf + sizeof(buf) - len, len, &server->keyblock, 
 		     &rep.ticket.enc_part.cipher);
 	
-	len = encode_EncASRepPart(buf + sizeof(buf) - 1, sizeof(buf), ek);
+	e = encode_EncASRepPart(buf + sizeof(buf) - 1, sizeof(buf), ek, &len);
 	free_EncKDCRepPart(ek);
 	free(ek);
-	if(len < 0)
-	    return ASN1_OVERFLOW;
+	if(e)
+	    return e;
 	rep.enc_part.etype = ETYPE_DES_CBC_CRC;
 	rep.enc_part.kvno = NULL;
 
 	krb5_encrypt(context, buf + sizeof(buf) - len, len, &client->keyblock, 
 		     &rep.enc_part.cipher);
 	
-	len = encode_AS_REP(buf + sizeof(buf) - 1, sizeof(buf), &rep);
-	if(len < 0)
-	    return ASN1_OVERFLOW;
+	e = encode_AS_REP(buf + sizeof(buf) - 1, sizeof(buf), &rep, &len);
+	if(e)
+	    return e;
 	free_AS_REP(&rep);
 	
 	krb5_data_copy(data, buf + sizeof(buf) - len, len);
@@ -453,18 +457,21 @@ tgs_rep(krb5_context context,
 	
 	{
 	    unsigned char buf[1024]; /* XXX The data could be indefinite */
-	    int len;
-	    len = encode_EncTicketPart(buf + sizeof(buf) - 1, sizeof(buf), et);
-	    if(len < 0)
-		return ASN1_OVERFLOW;
+	    size_t len;
+	    int e;
+	    e = encode_EncTicketPart(buf + sizeof(buf) - 1, 
+				     sizeof(buf), et, &len);
+	    if(e)
+		return e;
 	    rep.ticket.enc_part.etype = ETYPE_DES_CBC_CRC;
 	    rep.ticket.enc_part.kvno = NULL;
 	    krb5_encrypt(context, buf + sizeof(buf) - len, len, &server->keyblock, 
 			 &rep.ticket.enc_part.cipher);
 	    
-	    len = encode_EncTGSRepPart(buf + sizeof(buf) - 1, sizeof(buf), ek);
-	    if(len < 0)
-		return ASN1_OVERFLOW;
+	    e = encode_EncTGSRepPart(buf + sizeof(buf) - 1, 
+				     sizeof(buf), ek, &len);
+	    if(e)
+		return e;
 	    rep.enc_part.etype = ETYPE_DES_CBC_CRC;
 	    rep.enc_part.kvno = NULL;
 	    {
@@ -475,9 +482,9 @@ tgs_rep(krb5_context context,
 			     &rep.enc_part.cipher);
 	    }
 	    
-	    len = encode_TGS_REP(buf + sizeof(buf) - 1, sizeof(buf), &rep);
-	    if(len < 0)
-		return ASN1_OVERFLOW;
+	    e = encode_TGS_REP(buf + sizeof(buf) - 1, sizeof(buf), &rep, &len);
+	    if(e)
+		return e;
 	    free_TGS_REP(&rep);
 	    krb5_data_copy(data, buf + sizeof(buf) - len, len);
 	}

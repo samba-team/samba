@@ -16,10 +16,10 @@ decrypt_tkt_enc_part (krb5_context context,
     if (ret)
 	return ret;
 
-    len = decode_EncTicketPart(plain.data, plain.length, decr_part);
+    ret = decode_EncTicketPart(plain.data, plain.length, decr_part, &len);
     krb5_data_free (&plain);
-    if (len < 0)
-      return ASN1_PARSE_ERROR;
+    if (ret)
+	return ret;
     return 0;
 }
 
@@ -31,16 +31,16 @@ decrypt_authenticator (krb5_context context,
 {
     krb5_error_code ret;
     krb5_data plain;
-    int len;
+    size_t len;
 
     ret = krb5_decrypt (context, enc_part->cipher.data, enc_part->cipher.length, key, &plain);
     if (ret)
 	return ret;
 
-    len = decode_Authenticator(plain.data, plain.length, authenticator);
+    ret = decode_Authenticator(plain.data, plain.length, authenticator, &len);
     krb5_data_free (&plain);
-    if (len < 0)
-      return ASN1_PARSE_ERROR;
+    if (ret) 
+	return ret;
     return 0;
 }
 
@@ -64,9 +64,9 @@ krb5_rd_req_with_keyblock(krb5_context context,
       return ret;
   }
 
-  len = decode_AP_REQ(inbuf->data, inbuf->length, &ap_req);
-  if (len < 0)
-    return ASN1_PARSE_ERROR;
+  ret = decode_AP_REQ(inbuf->data, inbuf->length, &ap_req, &len);
+  if (ret)
+      return ret;
   if (ap_req.pvno != 5)
     return KRB5KRB_AP_ERR_BADVERSION;
   if (ap_req.msg_type != krb_ap_req)

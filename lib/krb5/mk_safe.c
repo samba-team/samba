@@ -45,10 +45,10 @@ krb5_mk_safe(krb5_context context,
   s.safe_body.s_address = addr.addrs[0];
   s.safe_body.r_address = NULL;
 
-  len = encode_KRB_SAFE (buf + sizeof(buf) - 1, sizeof(buf), &s);
+  r = encode_KRB_SAFE (buf + sizeof(buf) - 1, sizeof(buf), &s, &len);
   free(s.safe_body.seq_number);
-  if (len < 0)
-    return ASN1_PARSE_ERROR;
+  if (r)
+    return r;
   outbuf->length = len;
   outbuf->data   = malloc (len);
   if (outbuf->data == NULL)

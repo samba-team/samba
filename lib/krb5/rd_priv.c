@@ -12,29 +12,29 @@ krb5_rd_priv(krb5_context context,
   krb5_error_code r;
   KRB_PRIV priv;
   EncKrbPrivPart part;
-  int len;
+  size_t len;
   krb5_data plain;
 
-  len = decode_KRB_PRIV (inbuf->data, inbuf->length, &priv);
-  if (len < 0)
-    return ASN1_PARSE_ERROR;
+  r = decode_KRB_PRIV (inbuf->data, inbuf->length, &priv, &len);
+  if (r) 
+      return r;
   if (priv.pvno != 5)
-    return KRB5KRB_AP_ERR_BADVERSION;
+      return KRB5KRB_AP_ERR_BADVERSION;
   if (priv.msg_type != krb_safe)
-    return KRB5KRB_AP_ERR_MSG_TYPE;
+      return KRB5KRB_AP_ERR_MSG_TYPE;
 
   r = krb5_decrypt (context,
 		    priv.enc_part.cipher.data,
 		    priv.enc_part.cipher.length,
 		    &auth_context->key,
 		    &plain);
-  if (r)
-    return r;
+  if (r) 
+      return r;
 
-  len = decode_EncKrbPrivPart (plain.data, plain.length, &part);
-  if (len < 0)
-    return ASN1_PARSE_ERROR;
-
+  r = decode_EncKrbPrivPart (plain.data, plain.length, &part, &len);
+  if (r) 
+      return r;
+  
   /* check timestamp */
   if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_TIME) {
     struct timeval tv;

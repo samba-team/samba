@@ -59,20 +59,15 @@ process_request(krb5_context context,
 {
     KDC_REQ req;
     krb5_error_code err;
-    int i;
+    size_t i;
 
     gettimeofday(&now, NULL);
-    if (maybe_AS_REQ(buf, len)){
-	i = decode_AS_REQ(buf, len, &req);
-	if(i >= 0){
-	    err = as_rep(context, &req, reply);
-	    free_AS_REQ(&req);
-	    return err;
-	}
-    }
-    if (maybe_TGS_REQ(buf, len)){
-	i = decode_TGS_REQ(buf, len, &req);
-	if(i >= 0){
+    if(decode_AS_REQ(buf, len, &req, &i) == 0){
+	err = as_rep(context, &req, reply);
+	free_AS_REQ(&req);
+	return err;
+    }else{
+	if(decode_TGS_REQ(buf, len, &req, &i) == 0){
 	    err = tgs_rep(context, &req, reply);
 	    free_TGS_REQ(&req);
 	    return err;

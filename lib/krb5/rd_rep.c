@@ -16,9 +16,9 @@ krb5_rd_rep(krb5_context context,
   int i;
   krb5_data data;
 
-  len = decode_AP_REP(inbuf->data, inbuf->length, &ap_rep);
-  if (len < 0)
-    return ASN1_PARSE_ERROR;
+  ret = decode_AP_REP(inbuf->data, inbuf->length, &ap_rep, &len);
+  if (ret)
+      return ret;
   if (ap_rep.pvno != 5)
     return KRB5KRB_AP_ERR_BADVERSION;
   if (ap_rep.msg_type != krb_ap_rep)
@@ -35,11 +35,12 @@ krb5_rd_rep(krb5_context context,
   *repl = malloc(sizeof(**repl));
   if (*repl == NULL)
     return ENOMEM;
-  i = decode_EncAPRepPart(data.data,
-			  data.length,
-			  *repl);
-  if (i < 0)
-    return ASN1_PARSE_ERROR;
+  ret = decode_EncAPRepPart(data.data,
+			    data.length,
+			    *repl, 
+			    &i);
+  if (ret)
+      return ret;
   if ((*repl)->ctime != auth_context->authenticator->ctime ||
       (*repl)->cusec != auth_context->authenticator->cusec) {
     printf("KRB5KRB_AP_ERR_MUT_FAIL\n");

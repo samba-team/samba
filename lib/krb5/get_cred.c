@@ -27,7 +27,7 @@ krb5_get_credentials (krb5_context context,
 		      krb5_creds *in_creds,
 		      krb5_creds **out_creds)
 {
-    krb5_error_code err;
+    krb5_error_code ret;
     TGS_REQ a;
     Authenticator auth;
     krb5_data authenticator;
@@ -50,12 +50,12 @@ krb5_get_credentials (krb5_context context,
     *out_creds = malloc(sizeof(**out_creds));
     memset(*out_creds, 0, sizeof(**out_creds));
 
-    err = krb5_cc_retrieve_cred(context, ccache, 0, in_creds, *out_creds);
-    if (err == 0)
-      return err;
-    else if (err != KRB5_CC_END) {
+    ret = krb5_cc_retrieve_cred(context, ccache, 0, in_creds, *out_creds);
+    if (ret == 0)
+      return ret;
+    else if (ret != KRB5_CC_END) {
       free(*out_creds);
-      return err;
+      return ret;
     }
 
     /*
@@ -64,18 +64,18 @@ krb5_get_credentials (krb5_context context,
 
     memset(&a, 0, sizeof(a));
 
-    err = krb5_get_default_in_tkt_etypes (context,
+    ret = krb5_get_default_in_tkt_etypes (context,
 					  (krb5_enctype**)&a.req_body.etype.val);
-    if (err)
-	return err;
+    if (ret)
+	return ret;
     a.req_body.etype.len = 1;
 
 
     a.req_body.addresses = malloc(sizeof(*a.req_body.addresses));
 
-    err = krb5_get_all_client_addrs ((krb5_addresses*)a.req_body.addresses);
-    if (err)
-	return err;
+    ret = krb5_get_all_client_addrs ((krb5_addresses*)a.req_body.addresses);
+    if (ret)
+	return ret;
 
     a.pvno = 5;
     a.msg_type = krb_tgs_req;
@@ -111,38 +111,38 @@ krb5_get_credentials (krb5_context context,
 	int len;
 	krb5_creds tmp_cred;
 
-	len = encode_KDC_REQ_BODY(buf + sizeof(buf) - 1, sizeof(buf),
-				  &a.req_body);
+	ret = encode_KDC_REQ_BODY(buf + sizeof(buf) - 1, sizeof(buf),
+				  &a.req_body, &len);
 	in_data.length = len;
 	in_data.data = buf + sizeof(buf) - len;
 	
 	tmp_cred.client = NULL;
-	err = krb5_build_principal(context,
+	ret = krb5_build_principal(context,
 				   &tmp_cred.server,
 				   strlen(a.req_body.realm),
 				   a.req_body.realm,
 				   "krbtgt",
 				   a.req_body.realm,
 				   NULL);
-	if (err)
-	  return err;
+	if (ret)
+	  return ret;
 
-	err = krb5_get_credentials (context,
+	ret = krb5_get_credentials (context,
 				    0,
 				    ccache,
 				    &tmp_cred,
 				    out_creds);
-	if (err)
-	  return err;
+	if (ret)
+	  return ret;
 
-	err = krb5_mk_req_extended(context,
+	ret = krb5_mk_req_extended(context,
 				   &ac,
 				   0,
 				   &in_data,
 				   *out_creds,
 				   &foo.padata_value);
-	if(err)
-	    return err;
+	if(ret)
+	    return ret;
 
 	foo.padata_type = pa_tgs_req;
     }
@@ -155,8 +155,8 @@ krb5_get_credentials (krb5_context context,
      * Encode
      */
 
-    req.length = encode_TGS_REQ  (buf + sizeof (buf) - 1, sizeof(buf), &a);
-    req.data   = buf + sizeof(buf) - req.length;
+    encode_TGS_REQ  (buf + sizeof (buf) - 1, sizeof(buf), &a, &req.length);
+    req.data = buf + sizeof(buf) - req.length;
 
     for (i = 0; i < a.req_body.addresses->len; ++i)
 	krb5_data_free (&a.req_body.addresses->val[i].address);
@@ -168,21 +168,21 @@ krb5_get_credentials (krb5_context context,
 
     {
 	TGS_REQ xx;
-	decode_TGS_REQ (req.data, req.length, &xx);
+	size_t size;
+	decode_TGS_REQ (req.data, req.length, &xx, &size);
 	req.length = req.length;
     }
 
-    err = krb5_sendto_kdc (context, &req, &in_creds->server->realm, &resp);
-    if (err) {
-	return err;
+    ret = krb5_sendto_kdc (context, &req, &in_creds->server->realm, &resp);
+    if (ret) {
+	return ret;
     }
     switch(((unsigned char*)resp.data)[0] & 0x1f){
     case krb_error:{
 	krb5_principal princ;
 	char *name;
-	len = decode_KRB_ERROR(resp.data, resp.length, &error);
-	if(len < 0)
-	    return ASN1_PARSE_ERROR;
+	ret = decode_KRB_ERROR(resp.data, resp.length, &error, &len);
+	if(ret) return ret;
 	principalname2krb5_principal(&princ, error.sname, error.realm);
 	krb5_unparse_name(context, princ, &name);
 	fprintf(stderr, "Error: %s", name);
@@ -193,16 +193,15 @@ krb5_get_credentials (krb5_context context,
 	break;
     }
     case krb_tgs_rep:
-	len = decode_TGS_REP(resp.data, resp.length, &rep.part1);
-	if(len < 0)
-	    return ASN1_PARSE_ERROR;
-	err = extract_ticket(context, &rep, *out_creds,
+	ret = decode_TGS_REP(resp.data, resp.length, &rep.part1, &len);
+	if(ret) return ret;
+	ret = extract_ticket(context, &rep, *out_creds,
 			     &(*out_creds)->session,
 			     NULL,
 			     NULL,
 			     NULL);
-	if(err)
-	    return err;
+	if(ret)
+	    return ret;
 	return krb5_cc_store_cred (context, ccache, *out_creds);
 	break;
     }

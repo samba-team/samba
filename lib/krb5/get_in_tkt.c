@@ -10,6 +10,7 @@ decrypt_tkt (krb5_context context,
 {
     krb5_error_code ret;
     krb5_data data;
+    size_t size;
 
     ret = krb5_decrypt (context,
 			dec_rep->part1.enc_part.cipher.data,
@@ -17,18 +18,19 @@ decrypt_tkt (krb5_context context,
 			key,
 			&data);
     if (ret)
-      return ret;
+	return ret;
 
     ret = decode_EncASRepPart(data.data,
 			      data.length,
-			      &dec_rep->part2);
-    if (ret < 0)
-      ret = decode_EncTGSRepPart(data.data,
-				 data.length,
-				 &dec_rep->part2);
+			      &dec_rep->part2, 
+			      &size);
+    if (ret)
+	ret = decode_EncTGSRepPart(data.data,
+				   data.length,
+				   &dec_rep->part2, 
+				   &size);
     krb5_data_free (&data);
-    if (ret < 0)
-      return ASN1_PARSE_ERROR;
+    if (ret) return ret;
     return 0;
 }
 
@@ -51,8 +53,8 @@ extract_ticket(krb5_context context,
     {
 	char buf[1024];
 	int len;
-	len = encode_Ticket(buf + sizeof(buf) - 1, sizeof(buf), 
-			    &rep->part1.ticket);
+	encode_Ticket(buf + sizeof(buf) - 1, sizeof(buf), 
+			    &rep->part1.ticket, &len);
 	creds->ticket.data = malloc(len);
 	memcpy(creds->ticket.data, buf + sizeof(buf) - len, len);
 	creds->ticket.length = len;
@@ -144,7 +146,7 @@ krb5_get_in_tkt(krb5_context context,
 		krb5_ccache ccache,
 		krb5_kdc_rep **ret_as_reply)
 {
-    krb5_error_code err;
+    krb5_error_code ret;
     AS_REQ a;
     krb5_kdc_rep rep;
     krb5_data req, resp;
@@ -152,6 +154,7 @@ krb5_get_in_tkt(krb5_context context,
     char buf[BUFSIZ];
     krb5_data salt;
     krb5_keyblock *key;
+    size_t size;
 
     memset(&a, 0, sizeof(a));
 
@@ -175,10 +178,10 @@ krb5_get_in_tkt(krb5_context context,
     if (etypes)
 	abort ();
     else {
-	err = krb5_get_default_in_tkt_etypes (context,
+	ret = krb5_get_default_in_tkt_etypes (context,
 					      (krb5_enctype**)&a.req_body.etype.val);
-	if (err)
-	    return err;
+	if (ret)
+	    return ret;
 	a.req_body.etype.len = 1;
     }
     if (addrs){
@@ -186,9 +189,9 @@ krb5_get_in_tkt(krb5_context context,
     } else {
 	a.req_body.addresses = malloc(sizeof(*a.req_body.addresses));
 
-	err = krb5_get_all_client_addrs ((krb5_addresses*)a.req_body.addresses);
-	if (err)
-	    return err;
+	ret = krb5_get_all_client_addrs ((krb5_addresses*)a.req_body.addresses);
+	if (ret)
+	    return ret;
     }
     a.req_body.enc_authorization_data = NULL;
     a.req_body.additional_tickets = NULL;
@@ -202,16 +205,16 @@ krb5_get_in_tkt(krb5_context context,
 
     salt.length = 0;
     salt.data = NULL;
-    err = krb5_get_salt (creds->client, &salt);
+    ret = krb5_get_salt (creds->client, &salt);
 
-    if (err)
-	return err;
+    if (ret)
+	return ret;
 
-    err = (*key_proc)(context, *(a.req_body.etype.val), &salt,
+    ret = (*key_proc)(context, *(a.req_body.etype.val), &salt,
 		      keyseed, &key);
     krb5_data_free (&salt);
-    if (err)
-	return err;
+    if (ret)
+	return ret;
     
     /* not sure this is the way to use `ptypes' */
     if (ptypes == NULL || *ptypes == KRB5_PADATA_NONE)
@@ -220,7 +223,7 @@ krb5_get_in_tkt(krb5_context context,
 	PA_ENC_TS_ENC p;
 	u_char buf[1024];
 	struct timeval tv;
-	int len;
+	size_t len;
 	unsigned foo;
 	EncryptedData encdata;
 
@@ -229,11 +232,12 @@ krb5_get_in_tkt(krb5_context context,
 	foo = tv.tv_usec;
 	p.pausec      = &foo;
 
-	len = encode_PA_ENC_TS_ENC(buf + sizeof(buf) - 1,
+	ret = encode_PA_ENC_TS_ENC(buf + sizeof(buf) - 1,
 				   sizeof(buf),
-				   &p);
-	if (len < 0)
-	  return ASN1_PARSE_ERROR;
+				   &p,
+				   &len);
+	if (ret)
+	  return ret;
 
 	a.padata = malloc(sizeof(*a.padata));
 	a.padata->len = 1;
@@ -243,59 +247,63 @@ krb5_get_in_tkt(krb5_context context,
 
 	encdata.etype = ETYPE_DES_CBC_CRC;
 	encdata.kvno  = NULL;
-	err = krb5_encrypt (context,
+	ret = krb5_encrypt (context,
 			    buf + sizeof(buf) - len,
 			    len,
 			    key,
 			    &encdata.cipher);
-	if (err)
-	    return err;
+	if (ret)
+	    return ret;
 
-	len = encode_EncryptedData(buf + sizeof(buf) - 1,
+	ret = encode_EncryptedData(buf + sizeof(buf) - 1,
 				   sizeof(buf),
-				   &encdata);
+				   &encdata, 
+				   &len);
 	krb5_data_free(&encdata.cipher);
-	if (len < 0)
-	  return ASN1_PARSE_ERROR;
+	if (ret)
+	    return ret;
 	krb5_data_copy(&a.padata->val->padata_value,
 		       buf + sizeof(buf) - len,
 		       len);
     } else
 	return KRB5_PREAUTH_BAD_TYPE;
 
-    req.length = encode_AS_REQ ((unsigned char*)buf + sizeof(buf) - 1,
-				sizeof(buf),
-				&a);
-    if (req.length < 0){
+    ret = encode_AS_REQ ((unsigned char*)buf + sizeof(buf) - 1,
+			 sizeof(buf),
+			 &a,
+			 &req.length);
+    if (ret){
 	free_AS_REQ(&a);
-	return ASN1_PARSE_ERROR;
+	return ret;
     }
     free_AS_REQ(&a);
     req.data = buf + sizeof(buf) - req.length;
 
-    err = krb5_sendto_kdc (context, &req, &creds->client->realm, &resp);
-    if (err) {
-	return err;
+    ret = krb5_sendto_kdc (context, &req, &creds->client->realm, &resp);
+    if (ret) {
+	return ret;
     }
-    if(decode_AS_REP(resp.data, resp.length, &rep.part1) < 0){
+    if((ret = decode_AS_REP(resp.data, resp.length, &rep.part1, &size))){
 	/* let's try to parse it as a KRB-ERROR */
 	KRB_ERROR error;
+	int ret2;
 
-	if (decode_KRB_ERROR(resp.data, resp.length, &error) >= 0) {
-	    /* XXX */
-	    fprintf (stderr, "get_in_tkt: KRB_ERROR: %s\n",
-		     *(error.e_text));
-	}
+	ret2 = decode_KRB_ERROR(resp.data, resp.length, &error, &size);
 	krb5_data_free(&resp);
-	return ASN1_PARSE_ERROR;
+	if (ret2 == 0) {
+	    /* XXX */
+	    fprintf (stderr, "get_in_tkt: KRB_ERROR: %s\n", *(error.e_text));
+	    return error.error_code;
+	}
+	return ret;
     }
     krb5_data_free(&resp);
-
-    err = extract_ticket(context, &rep, creds, key, keyseed, 
+    
+    ret = extract_ticket(context, &rep, creds, key, keyseed, 
 			 decrypt_proc, decryptarg);
 
     free_KDC_REP(&rep.part1);
-    if(err)
-	return err;
+    if(ret) 
+	return ret;
     return krb5_cc_store_cred (context, ccache, creds);
 }

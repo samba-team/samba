@@ -11,11 +11,11 @@ krb5_rd_safe(krb5_context context,
 {
   krb5_error_code r;
   KRB_SAFE safe;
-  int len;
+  size_t len;
 
-  len = decode_KRB_SAFE (inbuf->data, inbuf->length, &safe);
-  if (len < 0)
-    return ASN1_PARSE_ERROR;
+  r = decode_KRB_SAFE (inbuf->data, inbuf->length, &safe, &len);
+  if (r) 
+      return r;
   if (safe.pvno != 5)
     return KRB5KRB_AP_ERR_BADVERSION;
   if (safe.msg_type != krb_safe)
