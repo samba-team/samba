@@ -394,7 +394,7 @@ static NTSTATUS smb_raw_session_setup_generic_spnego(struct smbcli_session *sess
 	s2.spnego.in.domain = parms->generic.in.domain;
 	s2.spnego.in.os = "Unix";
 	s2.spnego.in.lanman = "Samba";
-	s2.spnego.out.vuid = UID_FIELD_INVALID;
+	s2.spnego.out.vuid = session->vuid;
 
 	smbcli_temp_set_signing(session->transport);
 

@@ -38,6 +38,14 @@
 		goto done; \
 	}} while (0)
 
+#define CHECK_NOT_VALUE(v, correct) do { \
+	if ((v) == (correct)) { \
+		printf("(%d) Incorrect value %s=%d - should be %d\n", \
+		       __LINE__, #v, v, correct); \
+		ret = False; \
+		goto done; \
+	}} while (0)
+
 
 /*
   test session ops
@@ -48,6 +56,8 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	BOOL ret = True;
 	char *username, *domain, *password;
 	struct smbcli_session *session;
+	struct smbcli_session *session2;
+	struct smbcli_session *session3;
 	struct smbcli_tree *tree;
 	union smb_sesssetup setup;
 	union smb_open io;
@@ -73,7 +83,7 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	session = smbcli_session_init(cli->transport);
 	setup.generic.level = RAW_SESSSETUP_GENERIC;
 	setup.generic.in.sesskey = cli->transport->negotiate.sesskey;
-	setup.generic.in.capabilities = 0; /* ignored in secondary session setup */
+	setup.generic.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
 	setup.generic.in.password = password;
 	setup.generic.in.user = username;
 	setup.generic.in.domain = domain;
@@ -83,12 +93,42 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	session->vuid = setup.generic.out.vuid;
 
+	printf("create a third security context on the same transport, with vuid set\n");
+	session2 = smbcli_session_init(cli->transport);
+	session2->vuid = session->vuid;
+	setup.generic.level = RAW_SESSSETUP_GENERIC;
+	setup.generic.in.sesskey = cli->transport->negotiate.sesskey;
+	setup.generic.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
+	setup.generic.in.password = password;
+	setup.generic.in.user = username;
+	setup.generic.in.domain = domain;
+
+	status = smb_raw_session_setup(session2, mem_ctx, &setup);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("vuid1=%d vuid2=%d vuid3=%d\n", cli->session->vuid, session->vuid, session2->vuid);
+	
+	CHECK_NOT_VALUE(session->vuid, session2->vuid);
+
+	if (cli->transport->negotiate.capabilities & CAP_EXTENDED_SECURITY) {
+		printf("create a fourth security context on the same transport, without extended security\n");
+		session3 = smbcli_session_init(cli->transport);
+		session3->vuid = session->vuid;
+		setup.generic.level = RAW_SESSSETUP_GENERIC;
+		setup.generic.in.sesskey = cli->transport->negotiate.sesskey;
+		setup.generic.in.capabilities = 0; /* force a non extended security login (should fail) */
+		setup.generic.in.password = password;
+		setup.generic.in.user = username;
+		setup.generic.in.domain = domain;
+
+		status = smb_raw_session_setup(session3, mem_ctx, &setup);
+		CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+	}
+		
 	printf("use the same tree as the existing connection\n");
 	tree = smbcli_tree_init(session);
 	tree->tid = cli->tree->tid;
 	cli->tree->reference_count++;
-
-	printf("vuid1=%d vuid2=%d\n", cli->session->vuid, session->vuid);
 
 	printf("create a file using the new vuid\n");
 	io.generic.level = RAW_OPEN_NTCREATEX;
