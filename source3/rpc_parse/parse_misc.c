@@ -895,7 +895,15 @@ void init_unistr2(UNISTR2 *str, const char *buf, enum unistr2_term_codes flags)
 	if (buf) {
 		/* We always null terminate the copy. */
 		len = strlen(buf) + 1;
+	} else {
+		/* no buffer -- nothing to do */
+		str->uni_max_len = 0;
+		str->offset = 0;
+		str->uni_str_len = 0;
+
+		return;
 	}
+	
 
 	str->buffer = TALLOC_ZERO_ARRAY(get_talloc_ctx(), uint16, len);
 	if (str->buffer == NULL) {
