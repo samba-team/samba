@@ -719,11 +719,14 @@ main(int argc, char **argv)
     }
 
     if (user == NULL) {
-	struct passwd *pwd = getpwuid (getuid ());
+	user = getenv ("USERNAME");
+	if (user == NULL) {
+	    struct passwd *pwd = getpwuid (getuid ());
 
-	if (pwd == NULL)
-	    errx (1, "who are you?");
-	user = pwd->pw_name;
+	    if (pwd == NULL)
+		errx (1, "who are you?");
+	    user = pwd->pw_name;
+	}
     }
 
     if (!passive_flag)
