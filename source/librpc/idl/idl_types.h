@@ -49,6 +49,11 @@
 #define ascstr2       [flag(STR_ASCII|STR_LEN4)]            string
 
 /*
+  an ascii string prefixed with [size], 32 bits
+*/
+#define asclstr       [flag(STR_ASCII|STR_SIZE4)]                     string
+
+/*
   an ascii string prefixed with [size], 16 bits
   null terminated
 */
