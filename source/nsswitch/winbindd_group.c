@@ -91,7 +91,7 @@ static struct grent_mem_list *sort_groupmem_list(struct grent_mem_list *list,
     /* Sort array */
 
     qsort(groupmem_array, num_gr_mem, sizeof(struct grent_mem_list), 
-          name_comp);
+          QSORT_CAST name_comp);
 
     /* Fix up resulting array to a linked list and return it */
 
