@@ -839,6 +839,9 @@ size_t push_ascii_nstring(void *dest, const char *src)
 		smb_panic("failed to create UCS2 buffer");
 	}
 
+	/* We're using buffer_len below to count ucs2 characters, not bytes. */
+	buffer_len /= sizeof(smb_ucs2_t);
+
 	dest_len = 0;
 	for (i = 0; buffer[i] != 0 && (i < buffer_len); i++) {
 		unsigned char mb[10];
