@@ -96,6 +96,11 @@ ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
 {
   ssize_t ret=0,readret;
 
+  /* you can't read from print files */
+  if (fsp->print_file) {
+	  return -1;
+  }
+
   /*
    * Serve from write cache if we can.
    */
@@ -153,6 +158,10 @@ ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n)
   write_cache *wcp = fsp->wcp;
   ssize_t total_written = 0;
   int write_path = -1; 
+
+  if (fsp->print_file) {
+	  return print_job_write(fsp->print_jobid, data, n);
+  }
 
   if (!fsp->can_write) {
     errno = EPERM;

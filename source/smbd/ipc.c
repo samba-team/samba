@@ -290,6 +290,9 @@ static int getlen(char* p)
     case 'W':			/* word (2 byte) */
       n += 2;
       break;
+    case 'K':			/* status word? (2 byte) */
+      n += 2;
+      break;
     case 'N':			/* count of substructures (word) at end */
       n += 2;
       break;
@@ -385,6 +388,11 @@ va_dcl
     temp = va_arg(args,int);
     if (p->buflen >= needed) SSVAL(p->structbuf,0,temp);
     break;
+  case 'K':			/* status word? (2 byte) */
+    needed = 2;
+    temp = va_arg(args,int);
+    if (p->buflen >= needed) SSVAL(p->structbuf,0,temp);
+    break;
   case 'N':			/* count of substructures (word) at end */
     needed = 2;
     p->subcount = va_arg(args,int);
@@ -474,7 +482,6 @@ static void PACKS(struct pack_desc* desc,char *t,char *v)
 /****************************************************************************
   get a print queue
   ****************************************************************************/
-
 static void PackDriverData(struct pack_desc* desc)
 {
   char drivdata[4+4+32];
@@ -510,6 +517,9 @@ static int check_printq_info(struct pack_desc* desc,
   case 5:
     desc->format = "z";
     break;
+  case 51:
+    desc->format = "K";
+    break;
   case 52:
     desc->format = "WzzzzzzzzN";
     desc->subformat = "z";
@@ -530,7 +540,7 @@ static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
   /* the client expects localtime */
   t -= TimeDiff(t);
 
-  PACKI(desc,"W",printjob_encode(snum, queue->job)); /* uJobId */
+  PACKI(desc,"W",queue->job); /* uJobId */
   if (uLevel == 1) {
     PACKS(desc,"B21",queue->user); /* szUserName */
     PACKS(desc,"B","");		/* pad */
@@ -568,171 +578,187 @@ static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
   }
 }
 
+
+static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
+				struct pack_desc* desc,
+				int count, print_queue_struct* queue,
+				print_status_struct* status)
+{
+	int i,ok=0;
+	pstring tok,driver,datafile,langmon,helpfile,datatype;
+	char *p,*q;
+	FILE *f;
+	pstring fname;
+	
+	pstrcpy(fname,lp_driverfile());
+	f=sys_fopen(fname,"r");
+	if (!f) {
+		DEBUG(3,("fill_printq_info: Can't open %s - %s\n",fname,strerror(errno)));
+		desc->errcode=NERR_notsupported;
+		return;
+	}
+	
+	if((p=(char *)malloc(8192*sizeof(char))) == NULL) {
+		DEBUG(0,("fill_printq_info: malloc fail !\n"));
+		desc->errcode=NERR_notsupported;
+		fclose(f);
+		return;
+	}
+
+	memset(p, '\0',8192*sizeof(char));
+	q=p;
+	
+	/* lookup the long printer driver name in the file
+	   description */
+	while (f && !feof(f) && !ok) {
+		p = q;			/* reset string pointer */
+		fgets(p,8191,f);
+		p[strlen(p)-1]='\0';
+		if (next_token(&p,tok,":",sizeof(tok)) &&
+		    (strlen(lp_printerdriver(snum)) == strlen(tok)) &&
+		    (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum)))))
+			ok=1;
+	}
+	fclose(f);
+	
+	/* driver file name */
+	if (ok && !next_token(&p,driver,":",sizeof(driver))) ok = 0;
+	/* data file name */
+	if (ok && !next_token(&p,datafile,":",sizeof(datafile))) ok = 0;
+	/*
+	 * for the next tokens - which may be empty - I have
+	 * to check for empty tokens first because the
+	 * next_token function will skip all empty token
+	 * fields */
+	if (ok) {
+		/* help file */
+		if (*p == ':') {
+			*helpfile = '\0';
+			p++;
+		} else if (!next_token(&p,helpfile,":",sizeof(helpfile))) ok = 0;
+	}
+	
+	if (ok) {
+		/* language monitor */
+		if (*p == ':') {
+			*langmon = '\0';
+			p++;
+		} else if (!next_token(&p,langmon,":",sizeof(langmon)))
+			ok = 0;
+	}
+	
+	/* default data type */
+	if (ok && !next_token(&p,datatype,":",sizeof(datatype))) 
+		ok = 0;
+	
+	if (ok) {
+		PACKI(desc,"W",0x0400);               /* don't know */
+		PACKS(desc,"z",lp_printerdriver(snum));    /* long printer name */
+		PACKS(desc,"z",driver);                    /* Driverfile Name */
+		PACKS(desc,"z",datafile);                  /* Datafile name */
+		PACKS(desc,"z",langmon);			 /* language monitor */
+		PACKS(desc,"z",lp_driverlocation(snum));   /* share to retrieve files */
+		PACKS(desc,"z",datatype);			 /* default data type */
+		PACKS(desc,"z",helpfile);                  /* helpfile name */
+		PACKS(desc,"z",driver);                    /* driver name */
+		DEBUG(3,("Driver:%s:\n",driver));
+		DEBUG(3,("Data File:%s:\n",datafile));
+		DEBUG(3,("Language Monitor:%s:\n",langmon));
+		DEBUG(3,("Data Type:%s:\n",datatype));
+		DEBUG(3,("Help File:%s:\n",helpfile));
+		PACKI(desc,"N",count);                     /* number of files to copy */
+		for (i=0;i<count;i++) {
+				/* no need to check return value here
+				 * - it was already tested in
+				 * get_printerdrivernumber */
+			next_token(&p,tok,",",sizeof(tok));
+			PACKS(desc,"z",tok);         /* driver files to copy */
+			DEBUG(3,("file:%s:\n",tok));
+		}
+		
+		DEBUG(3,("fill_printq_info on <%s> gave %d entries\n",
+			 SERVICE(snum),count));
+	} else {
+		DEBUG(3,("fill_printq_info: Can't supply driver files\n"));
+		desc->errcode=NERR_notsupported;
+	}
+	free(q);
+}
+
+
 static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
  			     struct pack_desc* desc,
  			     int count, print_queue_struct* queue,
  			     print_status_struct* status)
 {
-  switch (uLevel) {
-    case 1:
-    case 2:
-      PACKS(desc,"B13",SERVICE(snum));
-      break;
-    case 3:
-    case 4:
-    case 5:
-      PACKS(desc,"z",Expand(conn,snum,SERVICE(snum)));
-      break;
-  }
+	switch (uLevel) {
+	case 1:
+	case 2:
+		PACKS(desc,"B13",SERVICE(snum));
+		break;
+	case 3:
+	case 4:
+	case 5:
+		PACKS(desc,"z",Expand(conn,snum,SERVICE(snum)));
+		break;
+	case 51:
+		PACKI(desc,"K",status->status);
+		break;
+	}
 
-  if (uLevel == 1 || uLevel == 2) {
-    PACKS(desc,"B","");		/* alignment */
-    PACKI(desc,"W",5);		/* priority */
-    PACKI(desc,"W",0);		/* start time */
-    PACKI(desc,"W",0);		/* until time */
-    PACKS(desc,"z","");		/* pSepFile */
-    PACKS(desc,"z","lpd");	/* pPrProc */
-    PACKS(desc,"z",SERVICE(snum)); /* pDestinations */
-    PACKS(desc,"z","");		/* pParms */
-    if (snum < 0) {
-      PACKS(desc,"z","UNKNOWN PRINTER");
-      PACKI(desc,"W",LPSTAT_ERROR);
-    }
-    else if (!status || !status->message[0]) {
-      PACKS(desc,"z",Expand(conn,snum,lp_comment(snum)));
-      PACKI(desc,"W",LPSTAT_OK); /* status */
-    } else {
-      PACKS(desc,"z",status->message);
-      PACKI(desc,"W",status->status); /* status */
-    }
-    PACKI(desc,(uLevel == 1 ? "W" : "N"),count);
-  }
-  if (uLevel == 3 || uLevel == 4) {
-    PACKI(desc,"W",5);		/* uPriority */
-    PACKI(desc,"W",0);		/* uStarttime */
-    PACKI(desc,"W",0);		/* uUntiltime */
-    PACKI(desc,"W",5);		/* pad1 */
-    PACKS(desc,"z","");		/* pszSepFile */
-    PACKS(desc,"z","WinPrint");	/* pszPrProc */
-    PACKS(desc,"z","");		/* pszParms */
-    if (!status || !status->message[0]) {
-      PACKS(desc,"z",Expand(conn,snum,lp_comment(snum))); /* pszComment */
-      PACKI(desc,"W",LPSTAT_OK); /* fsStatus */
-    } else {
-      PACKS(desc,"z",status->message); /* pszComment */
-      PACKI(desc,"W",status->status); /* fsStatus */
-    }
-    PACKI(desc,(uLevel == 3 ? "W" : "N"),count);	/* cJobs */
-    PACKS(desc,"z",SERVICE(snum)); /* pszPrinters */
-    PACKS(desc,"z",lp_printerdriver(snum));		/* pszDriverName */
-    PackDriverData(desc);	/* pDriverData */
-  }
-  if (uLevel == 2 || uLevel == 4) {
-    int i;
-    for (i=0;i<count;i++)
-      fill_printjob_info(conn,snum,uLevel == 2 ? 1 : 2,desc,&queue[i],i);
-  }
+	if (uLevel == 1 || uLevel == 2) {
+		PACKS(desc,"B","");		/* alignment */
+		PACKI(desc,"W",5);		/* priority */
+		PACKI(desc,"W",0);		/* start time */
+		PACKI(desc,"W",0);		/* until time */
+		PACKS(desc,"z","");		/* pSepFile */
+		PACKS(desc,"z","lpd");	/* pPrProc */
+		PACKS(desc,"z",SERVICE(snum)); /* pDestinations */
+		PACKS(desc,"z","");		/* pParms */
+		if (snum < 0) {
+			PACKS(desc,"z","UNKNOWN PRINTER");
+			PACKI(desc,"W",LPSTAT_ERROR);
+		}
+		else if (!status || !status->message[0]) {
+			PACKS(desc,"z",Expand(conn,snum,lp_comment(snum)));
+			PACKI(desc,"W",LPSTAT_OK); /* status */
+		} else {
+			PACKS(desc,"z",status->message);
+			PACKI(desc,"W",status->status); /* status */
+		}
+		PACKI(desc,(uLevel == 1 ? "W" : "N"),count);
+	}
 
-  if (uLevel==52) {
-    int i,ok=0;
-    pstring tok,driver,datafile,langmon,helpfile,datatype;
-    char *p,*q;
-    FILE *f;
-    pstring fname;
+	if (uLevel == 3 || uLevel == 4) {
+		PACKI(desc,"W",5);		/* uPriority */
+		PACKI(desc,"W",0);		/* uStarttime */
+		PACKI(desc,"W",0);		/* uUntiltime */
+		PACKI(desc,"W",5);		/* pad1 */
+		PACKS(desc,"z","");		/* pszSepFile */
+		PACKS(desc,"z","WinPrint");	/* pszPrProc */
+		PACKS(desc,"z","");		/* pszParms */
+		if (!status || !status->message[0]) {
+			PACKS(desc,"z",Expand(conn,snum,lp_comment(snum))); /* pszComment */
+			PACKI(desc,"W",LPSTAT_OK); /* fsStatus */
+		} else {
+			PACKS(desc,"z",status->message); /* pszComment */
+			PACKI(desc,"W",status->status); /* fsStatus */
+		}
+		PACKI(desc,(uLevel == 3 ? "W" : "N"),count);	/* cJobs */
+		PACKS(desc,"z",SERVICE(snum)); /* pszPrinters */
+		PACKS(desc,"z",lp_printerdriver(snum));		/* pszDriverName */
+		PackDriverData(desc);	/* pDriverData */
+	}
 
-    pstrcpy(fname,lp_driverfile());
-    f=sys_fopen(fname,"r");
-    if (!f) {
-      DEBUG(3,("fill_printq_info: Can't open %s - %s\n",fname,strerror(errno)));
-      desc->errcode=NERR_notsupported;
-      return;
-    }
+	if (uLevel == 2 || uLevel == 4) {
+		int i;
+		for (i=0;i<count;i++)
+			fill_printjob_info(conn,snum,uLevel == 2 ? 1 : 2,desc,&queue[i],i);
+	}
 
-    if((p=(char *)malloc(8192*sizeof(char))) == NULL) {
-      DEBUG(0,("fill_printq_info: malloc fail !\n"));
-      desc->errcode=NERR_notsupported;
-      fclose(f);
-      return;
-    }
-
-    memset(p, '\0',8192*sizeof(char));
-    q=p;
-
-    /* lookup the long printer driver name in the file description */
-    while (f && !feof(f) && !ok)
-    {
-      p = q;			/* reset string pointer */
-      fgets(p,8191,f);
-      p[strlen(p)-1]='\0';
-      if (next_token(&p,tok,":",sizeof(tok)) &&
-        (strlen(lp_printerdriver(snum)) == strlen(tok)) &&
-        (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum)))))
-	ok=1;
-    }
-    fclose(f);
-
-    /* driver file name */
-    if (ok && !next_token(&p,driver,":",sizeof(driver))) ok = 0;
-    /* data file name */
-    if (ok && !next_token(&p,datafile,":",sizeof(datafile))) ok = 0;
-      /*
-       * for the next tokens - which may be empty - I have to check for empty
-       * tokens first because the next_token function will skip all empty
-       * token fields 
-       */
-    if (ok) {
-      /* help file */
-      if (*p == ':') {
-	  *helpfile = '\0';
-	  p++;
-      } else if (!next_token(&p,helpfile,":",sizeof(helpfile))) ok = 0;
-    }
-
-    if (ok) {
-      /* language monitor */
-      if (*p == ':') {
-	  *langmon = '\0';
-	  p++;
-      } else if (!next_token(&p,langmon,":",sizeof(langmon))) ok = 0;
-    }
-
-    /* default data type */
-    if (ok && !next_token(&p,datatype,":",sizeof(datatype))) ok = 0;
-
-    if (ok) {
-      PACKI(desc,"W",0x0400);                    /* don't know */
-      PACKS(desc,"z",lp_printerdriver(snum));    /* long printer name */
-      PACKS(desc,"z",driver);                    /* Driverfile Name */
-      PACKS(desc,"z",datafile);                  /* Datafile name */
-      PACKS(desc,"z",langmon);			 /* language monitor */
-      PACKS(desc,"z",lp_driverlocation(snum));   /* share to retrieve files */
-      PACKS(desc,"z",datatype);			 /* default data type */
-      PACKS(desc,"z",helpfile);                  /* helpfile name */
-      PACKS(desc,"z",driver);                    /* driver name */
-      DEBUG(3,("Driver:%s:\n",driver));
-      DEBUG(3,("Data File:%s:\n",datafile));
-      DEBUG(3,("Language Monitor:%s:\n",langmon));
-      DEBUG(3,("Data Type:%s:\n",datatype));
-      DEBUG(3,("Help File:%s:\n",helpfile));
-      PACKI(desc,"N",count);                     /* number of files to copy */
-      for (i=0;i<count;i++)
-      {
-	/* no need to check return value here - it was already tested in
-	 * get_printerdrivernumber
-	 */
-        next_token(&p,tok,",",sizeof(tok));
-        PACKS(desc,"z",tok);                        /* driver files to copy */
-        DEBUG(3,("file:%s:\n",tok));
-      }
-
-      DEBUG(3,("fill_printq_info on <%s> gave %d entries\n",
-	    SERVICE(snum),count));
-    } else {
-      DEBUG(3,("fill_printq_info: Can't supply driver files\n"));
-      desc->errcode=NERR_notsupported;
-    }
-    free(q);
-  }
+	if (uLevel==52) {
+		fill_printq_info_52(conn, snum, uLevel, desc, count, queue, status);
+	}
 }
 
 /* This function returns the number of files for a given driver */
@@ -852,7 +878,7 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
 	  count = get_printerdrivernumber(snum);
 	  DEBUG(3,("api_DosPrintQGetInfo: Driver files count: %d\n",count));
   } else {
-	  count = get_printqueue(snum, conn,&queue,&status);
+	  count = print_queue_status(snum, &queue,&status);
   }
 
   if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
@@ -963,7 +989,7 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid, char* param,
     n = 0;
     for (i = 0; i < services; i++)
       if (lp_snum_ok(i) && lp_print_ok(i) && lp_browseable(i)) {
- 	subcntarr[n] = get_printqueue(i, conn,&queue[n],&status[n]);
+ 	subcntarr[n] = print_queue_status(i, &queue[n],&status[n]);
  	subcnt += subcntarr[n];
  	n++;
       }
@@ -1842,60 +1868,46 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 				char **rdata,char **rparam,
 				int *rdata_len,int *rparam_len)
 {
-  int function = SVAL(param,0);
-  char *str1 = param+2;
-  char *str2 = skip_string(str1,1);
-  char *p = skip_string(str2,1);
-  int jobid, snum;
-  int i, count;
+	int function = SVAL(param,0);
+	char *str1 = param+2;
+	char *str2 = skip_string(str1,1);
+	char *p = skip_string(str2,1);
+	int jobid, errcode;
 
-  printjob_decode(SVAL(p,0), &snum, &jobid);
+	jobid = SVAL(p,0);
 
-  /* check it's a supported varient */
-  if (!(strcsequal(str1,"W") && strcsequal(str2,"")))
-    return(False);
+	/* check it's a supported varient */
+	if (!(strcsequal(str1,"W") && strcsequal(str2,"")))
+		return(False);
 
-  *rparam_len = 4;
-  *rparam = REALLOC(*rparam,*rparam_len);
+	*rparam_len = 4;
+	*rparam = REALLOC(*rparam,*rparam_len);	
+	*rdata_len = 0;
 
-  *rdata_len = 0;
+	if (!print_job_exists(jobid)) {
+		errcode = NERR_JobNotFound;
+		goto out;
+	}
 
-  SSVAL(*rparam,0,NERR_Success);
+	errcode = NERR_notsupported;
+	
+	switch (function) {
+	case 81:		/* delete */ 
+		if (print_job_delete(jobid)) errcode = NERR_Success;
+		break;
+	case 82:		/* pause */
+		if (print_job_pause(jobid)) errcode = NERR_Success;
+		break;
+	case 83:		/* resume */
+		if (print_job_resume(jobid)) errcode = NERR_Success;
+		break;
+	}
+	
+ out:
+	SSVAL(*rparam,0,errcode);	
+	SSVAL(*rparam,2,0);		/* converter word */
 
-  if (snum >= 0 && VALID_SNUM(snum))
-    {
-      print_queue_struct *queue=NULL;
-      lpq_reset(snum);
-      count = get_printqueue(snum,conn,&queue,NULL);
-  
-      for (i=0;i<count;i++)
-  	if ((queue[i].job&0xFF) == jobid)
-  	  {
- 	    switch (function) {
-	    case 81:		/* delete */ 
-	      DEBUG(3,("Deleting queue entry %d\n",queue[i].job));
-	      del_printqueue(conn,snum,queue[i].job);
-	      break;
-	    case 82:		/* pause */
-	    case 83:		/* resume */
-	      DEBUG(3,("%s queue entry %d\n",
-		       (function==82?"pausing":"resuming"),queue[i].job));
-	      status_printjob(conn,snum,queue[i].job,
-			      (function==82?LPQ_PAUSED:LPQ_QUEUED));
-	      break;
- 	    }
- 	    break;
-  	  }
-  
-      if (i==count)
-	SSVAL(*rparam,0,NERR_JobNotFound);
-
-      if (queue) free(queue);
-    }
-
-  SSVAL(*rparam,2,0);		/* converter word */
-
-  return(True);
+	return(True);
 }
 
 /****************************************************************************
@@ -1906,59 +1918,45 @@ static BOOL api_WPrintQueuePurge(connection_struct *conn,uint16 vuid, char *para
 				 char **rdata,char **rparam,
 				 int *rdata_len,int *rparam_len)
 {
-  int function = SVAL(param,0);
-  char *str1 = param+2;
-  char *str2 = skip_string(str1,1);
-  char *QueueName = skip_string(str2,1);
-  int snum;
+	int function = SVAL(param,0);
+	char *str1 = param+2;
+	char *str2 = skip_string(str1,1);
+	char *QueueName = skip_string(str2,1);
+	int errcode = NERR_notsupported;
+	int snum;
 
-  /* check it's a supported varient */
-  if (!(strcsequal(str1,"z") && strcsequal(str2,"")))
-    return(False);
+	/* check it's a supported varient */
+	if (!(strcsequal(str1,"z") && strcsequal(str2,"")))
+		return(False);
 
-  *rparam_len = 4;
-  *rparam = REALLOC(*rparam,*rparam_len);
+	*rparam_len = 4;
+	*rparam = REALLOC(*rparam,*rparam_len);
+	*rdata_len = 0;
 
-  *rdata_len = 0;
+	snum = print_queue_snum(QueueName);
 
-  SSVAL(*rparam,0,NERR_Success);
-  SSVAL(*rparam,2,0);		/* converter word */
+	if (snum == -1) {
+		errcode = NERR_JobNotFound;
+		goto out;
+	}
 
-  snum = lp_servicenumber(QueueName);
-  if (snum < 0 && pcap_printername_ok(QueueName,NULL)) {
-    int pnum = lp_servicenumber(PRINTERS_NAME);
-    if (pnum >= 0) {
-      lp_add_printer(QueueName,pnum);
-      snum = lp_servicenumber(QueueName);
-    }
-  }
+	switch (function) {
+	case 74: /* Pause queue */
+		if (print_queue_pause(snum)) errcode = NERR_Success;
+		break;
+	case 75: /* Resume queue */
+		if (print_queue_resume(snum)) errcode = NERR_Success;
+		break;
+	case 103: /* Purge */
+		if (print_queue_purge(snum)) errcode = NERR_Success;
+		break;
+	}
 
-  if (snum >= 0 && VALID_SNUM(snum)) {
-    lpq_reset(snum);
-    
-    switch (function) {
-    case 74: /* Pause queue */
-    case 75: /* Resume queue */
-      status_printqueue(conn,snum,(function==74?LPSTAT_STOPPED:LPSTAT_OK));
-      DEBUG(3,("Print queue %s, queue=%s\n",
-            (function==74?"pause":"resume"),QueueName));
-      break;
-    case 103: /* Purge */
-      {
-        print_queue_struct *queue=NULL;
-        int i, count;
-        count = get_printqueue(snum,conn,&queue,NULL);
-        for (i = 0; i < count; i++)
-          del_printqueue(conn,snum,queue[i].job);
- 
-        if (queue) free(queue);
-        DEBUG(3,("Print queue purge, queue=%s\n",QueueName));
-        break;
-      }
-    }
-  }
+ out:
+	SSVAL(*rparam,0,errcode);
+	SSVAL(*rparam,2,0);		/* converter word */
 
-  return(True);
+	return(True);
 }
 
 
@@ -1972,16 +1970,16 @@ static BOOL api_WPrintQueuePurge(connection_struct *conn,uint16 vuid, char *para
 static int check_printjob_info(struct pack_desc* desc,
 			       int uLevel, char* id)
 {
-  desc->subformat = NULL;
-  switch( uLevel ) {
-  case 0: desc->format = "W"; break;
-  case 1: desc->format = "WB21BB16B10zWWzDDz"; break;
-  case 2: desc->format = "WWzWWDDzz"; break;
-  case 3: desc->format = "WWzWWDDzzzzzzzzzzlz"; break;
-  default: return False;
-  }
-  if (strcmp(desc->format,id) != 0) return False;
-  return True;
+	desc->subformat = NULL;
+	switch( uLevel ) {
+	case 0: desc->format = "W"; break;
+	case 1: desc->format = "WB21BB16B10zWWzDDz"; break;
+	case 2: desc->format = "WWzWWDDzz"; break;
+	case 3: desc->format = "WWzWWDDzzzzzzzzzzlz"; break;
+	default: return False;
+	}
+	if (strcmp(desc->format,id) != 0) return False;
+	return True;
 }
 
 static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,char *data,
@@ -1993,15 +1991,12 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 	char *str1 = param+2;
 	char *str2 = skip_string(str1,1);
 	char *p = skip_string(str2,1);
-	int jobid, snum;
+	int jobid;
 	int uLevel = SVAL(p,2);
-	int function = SVAL(p,4);	/* what is this ?? */
-	int i;
-	char *s = data;
-	files_struct *fsp;
+	int function = SVAL(p,4);
+	int place, errcode;
 
-	printjob_decode(SVAL(p,0), &snum, &jobid);
-   
+	jobid = SVAL(p,0);
 	*rparam_len = 4;
 	*rparam = REALLOC(*rparam,*rparam_len);
   
@@ -2011,87 +2006,37 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 	if ((strcmp(str1,"WWsTP")) || 
 	    (!check_printjob_info(&desc,uLevel,str2)))
 		return(False);
-   
+
+	if (!print_job_exists(jobid)) {
+		errcode=NERR_JobNotFound;
+		goto out;
+	}
+
+	errcode = NERR_notsupported;
+
 	switch (function) {
-	case 0x6:	/* change job place in the queue, 
-			   data gives the new place */
-		if (snum >= 0 && VALID_SNUM(snum)) {
-			print_queue_struct *queue=NULL;
-			int count;
-  
-			lpq_reset(snum);
-			count = get_printqueue(snum,conn,&queue,NULL);
-			for (i=0;i<count;i++)	/* find job */
-				if ((queue[i].job&0xFF) == jobid) break;
- 	    
-			if (i==count) {
-				desc.errcode=NERR_JobNotFound;
-				if (queue) free(queue);
-			} else {
-				desc.errcode=NERR_Success;
-				i++;
-#if 0	
-				{
-					int place= SVAL(data,0);
-					/* we currently have no way of
-					   doing this. Can any unix do it? */
-					if (i < place)	/* move down */;
-					else if (i > place )	/* move up */;
-				}
-#endif
-				desc.errcode=NERR_notsupported; /* not yet 
-								   supported */
-				if (queue) free(queue);
-			}
-		} else {
-			desc.errcode=NERR_JobNotFound;
+	case 0x6:
+		/* change job place in the queue, 
+		   data gives the new place */
+		place = SVAL(data,0);
+		if (print_job_set_place(jobid, place)) {
+			errcode=NERR_Success;
 		}
 		break;
 
-	case 0xb:   /* change print job name, data gives the name */
-		/* jobid, snum should be zero */
-		if (isalpha((int)*s)) {
-			pstring name;
-			int l = 0;
-
-			while (l<64 && *s) {
-				if (issafe(*s)) name[l++] = *s;
-				s++;
-			}      
-			name[l] = 0;
-	
-			DEBUG(3,("Setting print name to %s\n",name));
-	
-			fsp = file_find_print();	
-
-			if (fsp) {
-                            pstring zfrom,zto;
-                            connection_struct *fconn = fsp->conn;
-
-                            unbecome_user();
-	      
-                            if (!become_user(fconn,vuid) || 
-                                !become_service(fconn,True))
-                                break;
-                            
-                            pstrcpy(zfrom, dos_to_unix(fsp->fsp_name,False));
-                            pstrcpy(zto, dos_to_unix(name,False));
-                            
-                            if (fsp->conn->vfs_ops.rename(zfrom,zto) == 0) {
-                                string_set(&fsp->fsp_name,name);
-                            }
-                            
-                            break;
-			}
+	case 0xb:   
+		/* change print job name, data gives the name */
+		if (print_job_set_name(jobid, data)) {
+			errcode=NERR_Success;
 		}
-		desc.errcode=NERR_Success;
 		break;
 
-	default:			/* not implemented */
+	default:
 		return False;
 	}
- 
-	SSVALS(*rparam,0,desc.errcode);
+
+ out:
+	SSVALS(*rparam,0,errcode);
 	SSVAL(*rparam,2,0);		/* converter word */
 	
 	return(True);
@@ -2793,13 +2738,13 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
   if (strcmp(str1,"WWrLh") != 0) return False;
   if (!check_printjob_info(&desc,uLevel,str2)) return False;
 
-  printjob_decode(SVAL(p,0), &snum, &job);
+  job = SVAL(p,0);
 
   if (snum < 0 || !VALID_SNUM(snum)) return(False);
 
-  count = get_printqueue(snum,conn,&queue,&status);
+  count = print_queue_status(snum,&queue,&status);
   for (i = 0; i < count; i++) {
-    if ((queue[i].job & 0xFF) == job) break;
+    if (queue[i].job == job) break;
   }
   if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
   desc.base = *rdata;
@@ -2869,7 +2814,7 @@ static BOOL api_WPrintJobEnumerate(connection_struct *conn,uint16 vuid, char *pa
 
   if (snum < 0 || !VALID_SNUM(snum)) return(False);
 
-  count = get_printqueue(snum,conn,&queue,&status);
+  count = print_queue_status(snum,&queue,&status);
   if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
   desc.base = *rdata;
   desc.buflen = mdrcnt;

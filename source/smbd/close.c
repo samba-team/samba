@@ -100,6 +100,12 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 
 	close_filestruct(fsp);
 
+	if (normal_close && fsp->print_file) {
+		print_fsp_end(fsp);
+		file_free(fsp);
+		return 0;
+	}
+
 	if (lp_share_modes(SNUM(conn))) {
 		lock_share_entry_fsp(fsp);
 		del_share_mode(fsp);
@@ -114,10 +120,6 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 		unlock_share_entry_fsp(fsp);
 
 	err = fd_close(conn, fsp);
-
-	/* NT uses smbclose to start a print - weird */
-	if (normal_close && fsp->print_file)
-		print_file(conn, fsp);
 
 	/* check for magic scripts */
 	if (normal_close) {

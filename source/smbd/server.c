@@ -758,6 +758,10 @@ static void usage(char *pname)
 	if (!locking_init(0))
 		exit(1);
 
+	if (!print_backend_init()) {
+		exit(1);
+	}
+
 	if(!initialize_password_db())
 		exit(1);
 
