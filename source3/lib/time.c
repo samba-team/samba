@@ -43,7 +43,7 @@ int extra_time_offset = 0;
 void get_nttime_max(NTTIME *t)
 {
 	/* FIXME: This is incorrect */
-	unix_to_nt_time(get_time_t_max(),t);
+	unix_to_nt_time(t, get_time_t_max());
 }
 
 /*******************************************************************
