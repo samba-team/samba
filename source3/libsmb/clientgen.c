@@ -249,15 +249,16 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	if (lp_use_spnego())
 		cli->use_spnego = True;
 
+	cli->capabilities = CAP_UNICODE | CAP_STATUS32;
+
 	/* Set the CLI_FORCE_DOSERR environment variable to test
 	   client routines using DOS errors instead of STATUS32
 	   ones.  This intended only as a temporary hack. */	
 	if (getenv("CLI_FORCE_DOSERR"))
 		cli->force_dos_errors = True;
 
-	/* A way to attempt to force SMB signing */
-	if (getenv("CLI_FORCE_SMB_SIGNING"))
-		cli->sign_info.negotiated_smb_signing = True;
+	if (lp_client_signing()) 
+		cli->sign_info.allow_smb_signing = True;
                                    
 	if (!cli->outbuf || !cli->inbuf)
                 goto error;

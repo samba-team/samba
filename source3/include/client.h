@@ -65,6 +65,7 @@ typedef struct smb_sign_info {
 	uint8 mac_key[44];
 	uint32 send_seq_num;
 	uint32 reply_seq_num;
+	BOOL allow_smb_signing;
 } smb_sign_info;
 
 struct cli_state {
