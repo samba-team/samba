@@ -100,6 +100,37 @@ static BOOL api_spoolss_getprinterdata(pipes_struct *p)
 }
 
 /********************************************************************
+ * api_spoolss_deleteprinterdata
+ *
+ * called from the spoolss dispatcher
+ ********************************************************************/
+static BOOL api_spoolss_deleteprinterdata(pipes_struct *p)
+{
+	SPOOL_Q_DELETEPRINTERDATA q_u;
+	SPOOL_R_DELETEPRINTERDATA r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	/* read the stream and fill the struct */
+	if (!spoolss_io_q_deleteprinterdata("", &q_u, data, 0)) {
+		DEBUG(0,("spoolss_io_q_deleteprinterdata: unable to unmarshall SPOOL_Q_DELETEPRINTERDATA.\n"));
+		return False;
+	}
+	
+	r_u.status = _spoolss_deleteprinterdata( &q_u.handle, &q_u.valuename);
+
+	if (!spoolss_io_r_deleteprinterdata("", &r_u, rdata, 0)) {
+		DEBUG(0,("spoolss_io_r_deleteprinterdata: unable to marshall SPOOL_R_DELETEPRINTERDATA.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/********************************************************************
  * api_spoolss_closeprinter
  *
  * called from the spoolss dispatcher
@@ -1328,6 +1359,7 @@ struct api_struct api_spoolss_cmds[] =
  {"SPOOLSS_GETPRINTERDRIVERDIRECTORY", SPOOLSS_GETPRINTERDRIVERDIRECTORY, api_spoolss_getprinterdriverdirectory },
  {"SPOOLSS_ENUMPRINTERDATA",           SPOOLSS_ENUMPRINTERDATA,           api_spoolss_enumprinterdata           },
  {"SPOOLSS_SETPRINTERDATA",            SPOOLSS_SETPRINTERDATA,            api_spoolss_setprinterdata            },
+ {"SPOOLSS_DELETEPRINTERDATA",         SPOOLSS_DELETEPRINTERDATA,         api_spoolss_deleteprinterdata         },
  {"SPOOLSS_ADDFORM",                   SPOOLSS_ADDFORM,                   api_spoolss_addform                   },
  {"SPOOLSS_DELETEFORM",                SPOOLSS_DELETEFORM,                api_spoolss_deleteform                },
  {"SPOOLSS_GETFORM",                   SPOOLSS_GETFORM,                   api_spoolss_getform                   },

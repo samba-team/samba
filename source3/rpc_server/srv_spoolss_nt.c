@@ -4681,6 +4681,48 @@ uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 
 /****************************************************************************
 ****************************************************************************/
+uint32 _spoolss_deleteprinterdata( POLICY_HND *handle, const UNISTR2 *value)
+{
+	NT_PRINTER_INFO_LEVEL *printer = NULL;
+	NT_PRINTER_PARAM param;
+	int snum=0;
+	uint32 status = 0x0;
+	Printer_entry *Printer=find_printer_index_by_hnd(handle);
+	
+	DEBUG(5,("spoolss_deleteprinterdata\n"));
+	
+	if (!OPEN_HANDLE(Printer)) {
+		DEBUG(0,("_spoolss_deleteprinterdata: Invalid handle (%s).\n", OUR_HANDLE(handle)));
+		return ERROR_INVALID_HANDLE;
+	}
+
+	if (!get_printer_snum(handle, &snum))
+		return ERROR_INVALID_HANDLE;
+
+	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
+		DEBUG(3, ("_spoolss_deleteprinterdata: security descriptor change denied by existing "
+			  "security descriptor\n"));
+		return ERROR_ACCESS_DENIED;
+	}
+
+	status = get_a_printer(&printer, 2, lp_servicename(snum));
+	if (status != 0x0)
+		return ERROR_INVALID_NAME;
+
+	ZERO_STRUCTP(&param);
+	unistr2_to_ascii(param.value, value, sizeof(param.value)-1);
+
+	if(!unlink_specific_param_if_exist(printer->info_2, &param))
+		status = ERROR_INVALID_PARAMETER;
+	else
+		status = add_a_printer(*printer, 2);
+
+	free_a_printer(&printer, 2);
+	return status;
+}
+
+/****************************************************************************
+****************************************************************************/
 uint32 _spoolss_addform( POLICY_HND *handle,
 				uint32 level,
 				const FORM *form)

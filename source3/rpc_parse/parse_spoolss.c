@@ -954,7 +954,8 @@ BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
  ********************************************************************/
 BOOL spoolss_io_q_getprinterdata(char *desc, SPOOL_Q_GETPRINTERDATA *q_u, prs_struct *ps, int depth)
 {
-	if (q_u == NULL) return False;
+	if (q_u == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "spoolss_io_q_getprinterdata");
 	depth++;
@@ -970,6 +971,44 @@ BOOL spoolss_io_q_getprinterdata(char *desc, SPOOL_Q_GETPRINTERDATA *q_u, prs_st
 	if (!prs_align(ps))
 		return False;
 	if (!prs_uint32("size", ps, depth, &(q_u->size)))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ * read a structure.
+ * called from spoolss_q_deleteprinterdata (srv_spoolss.c)
+ ********************************************************************/
+BOOL spoolss_io_q_deleteprinterdata(char *desc, SPOOL_Q_DELETEPRINTERDATA *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "spoolss_io_q_deleteprinterdata");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+	if (!smb_io_pol_hnd("printer handle",&(q_u->handle),ps,depth))
+		return False;
+	if (!prs_align(ps))
+		return False;
+	if (!smb_io_unistr2("valuename", &(q_u->valuename),True,ps,depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ * write a structure.
+ * called from spoolss_r_deleteprinterdata (srv_spoolss.c)
+ ********************************************************************/
+BOOL spoolss_io_r_deleteprinterdata(char *desc, SPOOL_R_DELETEPRINTERDATA *r_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_r_deleteprinterdata");
+	depth++;
+	if(!prs_uint32("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -5167,11 +5206,12 @@ BOOL convert_specific_param(NT_PRINTER_PARAM **param, const UNISTR2 *value,
 	
 	(*param)->data_len=len;
 	
-	(*param)->data=(uint8 *)malloc(len * sizeof(uint8));
-	if((*param)->data == NULL)
-		return False;
-			
-	memcpy((*param)->data, data, len);
+	if (len) {
+		(*param)->data=(uint8 *)malloc(len * sizeof(uint8));
+		if((*param)->data == NULL)
+			return False;
+		memcpy((*param)->data, data, len);
+	}
 		
 	DEBUGADD(6,("\tvalue:[%s], len:[%d]\n",(*param)->value, (*param)->data_len));
 
