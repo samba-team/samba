@@ -452,7 +452,7 @@ static int ltdb_index_dn(struct ldb_context *ldb,
 			 const struct ldb_message *index_list,
 			 struct dn_list *list)
 {
-	int ret;
+	int ret = -1;
 
 	switch (tree->operation) {
 	case LDB_OP_SIMPLE:
