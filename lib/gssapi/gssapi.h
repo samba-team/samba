@@ -761,7 +761,7 @@ OM_uint32 gss_krb5_copy_ccache
 	 struct krb5_ccache_data */*out*/);
 
 OM_uint32
-gss_krb5_extract_authz_data_from_sec_context
+gsskrb5_extract_authz_data_from_sec_context
 	(OM_uint32 * /*minor_status*/,
 	 gss_ctx_id_t /*context_handle*/,
 	 int /*ad_type*/,

@@ -62,10 +62,10 @@ gss_krb5_copy_ccache(OM_uint32 *minor_status,
 }
 
 OM_uint32
-gss_krb5_extract_authz_data_from_sec_context(OM_uint32 *minor_status,
-					     gss_ctx_id_t context_handle,
-					     int ad_type,
-					     gss_buffer_t ad_data)
+gsskrb5_extract_authz_data_from_sec_context(OM_uint32 *minor_status,
+					    gss_ctx_id_t context_handle,
+					    int ad_type,
+					    gss_buffer_t ad_data)
 {
     krb5_error_code ret;
     krb5_data data;
