@@ -274,8 +274,9 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 }
 
 /* convert a single name to a sid in a domain */
-static NTSTATUS name_to_sid(struct winbindd_domain *domain,
+NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 			    TALLOC_CTX *mem_ctx,
+			    const char *domain_name,
 			    const char *name,
 			    DOM_SID *sid,
 			    enum SID_NAME_USE *type)
@@ -289,14 +290,14 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 
 	DEBUG(3,("rpc: name_to_sid name=%s\n", name));
 
-	full_name = talloc_asprintf(mem_ctx, "%s\\%s", domain->name, name);
+	full_name = talloc_asprintf(mem_ctx, "%s\\%s", domain_name, name);
 	
 	if (!full_name) {
 		DEBUG(0, ("talloc_asprintf failed!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	DEBUG(3,("name_to_sid [rpc] %s for domain %s\n", name, domain->name ));
+	DEBUG(3,("name_to_sid [rpc] %s for domain %s\n", name, domain_name ));
 
 	retry = 0;
 	do {
@@ -322,9 +323,10 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 /*
   convert a domain SID to a user or group name
 */
-static NTSTATUS sid_to_name(struct winbindd_domain *domain,
+NTSTATUS msrpc_sid_to_name(struct winbindd_domain *domain,
 			    TALLOC_CTX *mem_ctx,
 			    const DOM_SID *sid,
+			    char **domain_name,
 			    char **name,
 			    enum SID_NAME_USE *type)
 {
@@ -350,14 +352,9 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 
 	if (NT_STATUS_IS_OK(result)) {
 		*type = (enum SID_NAME_USE)types[0];
+		*domain_name = domains[0];
 		*name = names[0];
 		DEBUG(5,("Mapped sid to [%s]\\[%s]\n", domains[0], *name));
-
-		/* Paranoia */
-		if (!strequal(domain->name, domains[0])) {
-			DEBUG(1, ("domain name from domain param and PDC lookup return differ! (%s vs %s)\n", domain->name, domains[0]));
-			return NT_STATUS_UNSUCCESSFUL;
-		}
 	}
 
 	return result;
@@ -995,8 +992,8 @@ struct winbindd_methods msrpc_methods = {
 	query_user_list,
 	enum_dom_groups,
 	enum_local_groups,
-	name_to_sid,
-	sid_to_name,
+	msrpc_name_to_sid,
+	msrpc_sid_to_name,
 	query_user,
 	lookup_usergroups,
 	lookup_groupmem,

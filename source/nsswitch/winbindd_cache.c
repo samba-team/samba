@@ -363,6 +363,12 @@ static void refresh_sequence_number(struct winbindd_domain *domain, BOOL force)
 	if ( NT_STATUS_IS_OK(status) )
 		goto done;	
 
+	/* important! make sure that we know if this is a native 
+	   mode domain or not */
+
+	if ( !domain->initialized )
+		set_dc_type_and_flags( domain );
+
 	status = domain->backend->sequence_number(domain, &domain->sequence_number);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -597,7 +603,7 @@ static void centry_end(struct cache_entry *centry, const char *format, ...)
 }
 
 static void wcache_save_name_to_sid(struct winbindd_domain *domain, 
-				    NTSTATUS status, 
+				    NTSTATUS status, const char *domain_name,
 				    const char *name, const DOM_SID *sid, 
 				    enum SID_NAME_USE type)
 {
@@ -612,13 +618,13 @@ static void wcache_save_name_to_sid(struct winbindd_domain *domain,
 	centry_put_sid(centry, sid);
 	fstrcpy(uname, name);
 	strupper_m(uname);
-	centry_end(centry, "NS/%s/%s", domain->name, uname);
+	centry_end(centry, "NS/%s/%s", domain_name, uname);
 	DEBUG(10,("wcache_save_name_to_sid: %s -> %s\n", uname, sid_string));
 	centry_free(centry);
 }
 
 static void wcache_save_sid_to_name(struct winbindd_domain *domain, NTSTATUS status, 
-				    const DOM_SID *sid, const char *name, enum SID_NAME_USE type)
+				    const DOM_SID *sid, const char *domain_name, const char *name, enum SID_NAME_USE type)
 {
 	struct cache_entry *centry;
 	fstring sid_string;
@@ -628,6 +634,7 @@ static void wcache_save_sid_to_name(struct winbindd_domain *domain, NTSTATUS sta
 		return;
 	if (NT_STATUS_IS_OK(status)) {
 		centry_put_uint32(centry, type);
+		centry_put_string(centry, domain_name);
 		centry_put_string(centry, name);
 	}
 	centry_end(centry, "SN/%s", sid_to_string(sid_string, sid));
@@ -745,10 +752,12 @@ do_query:
 			/* when the backend is consistent we can pre-prime some mappings */
 			wcache_save_name_to_sid(domain, NT_STATUS_OK, 
 						(*info)[i].acct_name, 
+						domain->name,
 						(*info)[i].user_sid,
 						SID_NAME_USER);
 			wcache_save_sid_to_name(domain, NT_STATUS_OK, 
 						(*info)[i].user_sid,
+						domain->name,
 						(*info)[i].acct_name, 
 						SID_NAME_USER);
 			wcache_save_user(domain, NT_STATUS_OK, &(*info)[i]);
@@ -920,6 +929,7 @@ skip_save:
 /* convert a single name to a sid in a domain */
 static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 			    TALLOC_CTX *mem_ctx,
+			    const char *domain_name,
 			    const char *name,
 			    DOM_SID *sid,
 			    enum SID_NAME_USE *type)
@@ -935,7 +945,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 
 	fstrcpy(uname, name);
 	strupper_m(uname);
-	centry = wcache_fetch(cache, domain, "NS/%s/%s", domain->name, uname);
+	centry = wcache_fetch(cache, domain, "NS/%s/%s", domain_name, uname);
 	if (!centry)
 		goto do_query;
 	*type = (enum SID_NAME_USE)centry_uint32(centry);
@@ -971,10 +981,10 @@ do_query:
 	DEBUG(10,("name_to_sid: [Cached] - doing backend query for name for domain %s\n",
 		domain->name ));
 
-	status = domain->backend->name_to_sid(domain, mem_ctx, name, sid, type);
+	status = domain->backend->name_to_sid(domain, mem_ctx, domain_name, name, sid, type);
 
 	/* and save it */
-	wcache_save_name_to_sid(domain, status, name, sid, *type);
+	wcache_save_name_to_sid(domain, status, domain_name, name, sid, *type);
 
 	/* We can't save the sid to name mapping as we don't know the
 	   correct case of the name without looking it up */
@@ -987,6 +997,7 @@ do_query:
 static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 			    TALLOC_CTX *mem_ctx,
 			    const DOM_SID *sid,
+			    char **domain_name,
 			    char **name,
 			    enum SID_NAME_USE *type)
 {
@@ -1003,6 +1014,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 		goto do_query;
 	if (NT_STATUS_IS_OK(centry->status)) {
 		*type = (enum SID_NAME_USE)centry_uint32(centry);
+		*domain_name = centry_string(centry, mem_ctx);
 		*name = centry_string(centry, mem_ctx);
 	}
 	status = centry->status;
@@ -1015,6 +1027,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 
 do_query:
 	*name = NULL;
+	*domain_name = NULL;
 
 	/* If the seq number check indicated that there is a problem
 	 * with this DC, then return that status... except for
@@ -1030,12 +1043,12 @@ do_query:
 	DEBUG(10,("sid_to_name: [Cached] - doing backend query for name for domain %s\n",
 		domain->name ));
 
-	status = domain->backend->sid_to_name(domain, mem_ctx, sid, name, type);
+	status = domain->backend->sid_to_name(domain, mem_ctx, sid, domain_name, name, type);
 
 	/* and save it */
 	refresh_sequence_number(domain, False);
-	wcache_save_sid_to_name(domain, status, sid, *name, *type);
-	wcache_save_name_to_sid(domain, status, *name, sid, *type);
+	wcache_save_sid_to_name(domain, status, sid, *domain_name, *name, *type);
+	wcache_save_name_to_sid(domain, status, *domain_name, *name, sid, *type);
 
 	return status;
 }

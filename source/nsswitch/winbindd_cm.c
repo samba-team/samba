@@ -77,6 +77,9 @@ struct winbindd_cm_conn {
 
 static struct winbindd_cm_conn *cm_conns = NULL;
 
+static NTSTATUS get_connection_from_cache(struct winbindd_domain *domain,
+					  const char *pipe_name,
+					  struct winbindd_cm_conn **conn_out);
 
 /* Choose between anonymous or authenticated connections.  We need to use
    an authenticated connection if DCs have the RestrictAnonymous registry
@@ -114,23 +117,89 @@ static void cm_get_ipc_userpass(char **username, char **domain, char **password)
 /*
   setup for schannel on any pipes opened on this connection
 */
-static NTSTATUS setup_schannel(struct cli_state *cli)
+static NTSTATUS setup_schannel( struct cli_state *cli, const char *domain )
 {
 	NTSTATUS ret;
 	uchar trust_password[16];
 	uint32 sec_channel_type;
+	DOM_SID sid;
+	time_t lct;
 
-	if (!secrets_fetch_trust_account_password(lp_workgroup(),
-						  trust_password,
-						  NULL, &sec_channel_type)) {
-		return NT_STATUS_UNSUCCESSFUL;
+	/* use the domain trust password if we're on a DC 
+	   and this is not our domain */
+	
+	if ( IS_DC && !strequal(domain, lp_workgroup()) ) {
+		char *pass = NULL;
+		
+		if ( !secrets_fetch_trusted_domain_password( domain, 
+			&pass, &sid, &lct) )
+		{
+			return NT_STATUS_UNSUCCESSFUL;
+		}	
+
+		sec_channel_type = SEC_CHAN_DOMAIN;
+		E_md4hash(pass, trust_password);
+		SAFE_FREE( pass );
+		
+	} else {
+		if (!secrets_fetch_trust_account_password(lp_workgroup(),
+			trust_password, NULL, &sec_channel_type)) 
+		{
+			return NT_STATUS_UNSUCCESSFUL;
+		}
 	}
 
 	ret = cli_nt_setup_netsec(cli, sec_channel_type, 
-				  AUTH_PIPE_NETSEC | AUTH_PIPE_SIGN, 
-				  trust_password);
+		AUTH_PIPE_NETSEC | AUTH_PIPE_SIGN, trust_password);
 
 	return ret;
+}
+
+static BOOL get_dc_name_via_netlogon(const struct winbindd_domain *domain,
+				     fstring dcname, struct in_addr *dc_ip)
+{
+	struct winbindd_domain *our_domain;
+	NTSTATUS result;
+	struct winbindd_cm_conn *conn;
+	TALLOC_CTX *mem_ctx;
+
+	fstring tmp;
+	char *p;
+
+	if (IS_DC)
+		return False;
+
+	if (domain->primary)
+		return False;
+
+	if ((our_domain = find_our_domain()) == NULL)
+		return False;
+
+	result = get_connection_from_cache(our_domain, PIPE_NETLOGON, &conn);
+	if (!NT_STATUS_IS_OK(result))
+		return False;
+
+	if ((mem_ctx = talloc_init("get_dc_name_via_netlogon")) == NULL)
+		return False;
+
+	result = cli_netlogon_getdcname(conn->cli, mem_ctx, domain->name, tmp);
+
+	talloc_destroy(mem_ctx);
+
+	if (!NT_STATUS_IS_OK(result))
+		return False;
+
+	/* cli_netlogon_getdcname gives us a name with \\ */
+	p = tmp;
+	if (*p == '\\') p+=1;
+	if (*p == '\\') p+=1;
+
+	fstrcpy(dcname, p);
+
+	if (!resolve_name(dcname, dc_ip, 0x20))
+		return False;
+
+	return True;
 }
 
 /* Open a connction to the remote server, cache failures for 30 seconds */
@@ -148,21 +217,26 @@ static NTSTATUS cm_open_connection(const struct winbindd_domain *domain, const i
 	ZERO_STRUCT(dc_ip);
 
 	fstrcpy(new_conn->domain, domain->name);
-	
-	/* connection failure cache has been moved inside of get_dc_name
-	   so we can deal with half dead DC's   --jerry */
 
-	if (!get_dc_name(domain->name, domain->alt_name[0] ? domain->alt_name : NULL, 
-			 new_conn->controller, &dc_ip)) {
-		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
-		add_failed_connection_entry(domain->name, "", result);
-		return result;
+	if (!get_dc_name_via_netlogon(domain, new_conn->controller, &dc_ip)) {
+
+		/* connection failure cache has been moved inside of
+		   get_dc_name so we can deal with half dead DC's --jerry */
+
+		if (!get_dc_name(domain->name, domain->alt_name[0] ?
+				 domain->alt_name : NULL, 
+				 new_conn->controller, &dc_ip)) {
+			result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+			add_failed_connection_entry(domain->name, "", result);
+			return result;
+		}
 	}
 		
 	/* Initialise SMB connection */
 	fstrcpy(new_conn->pipe_name, get_pipe_name_from_index(pipe_index));
 
-/* grab stored passwords */
+	/* grab stored passwords */
+	
 	machine_password = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
 	
 	if (asprintf(&machine_krb5_principal, "%s$@%s", global_myname(), lp_realm()) == -1) {
@@ -281,9 +355,13 @@ static NTSTATUS cm_open_connection(const struct winbindd_domain *domain, const i
 	/* try and use schannel if possible, but continue anyway if it
 	   failed. This allows existing setups to continue working,
 	   while solving the win2003 '100 user' limit for systems that
-	   are joined properly */
-	if (NT_STATUS_IS_OK(result)) {
-		NTSTATUS status = setup_schannel(new_conn->cli);
+	   are joined properly.
+	
+	   Only do this for our own domain or perhaps a trusted domain
+	   if we are on a Samba DC */
+
+	if (NT_STATUS_IS_OK(result) && (domain->primary || IS_DC) ) {
+		NTSTATUS status = setup_schannel( new_conn->cli, domain->name );
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("schannel refused - continuing without schannel (%s)\n", 
 				 nt_errstr(status)));
@@ -461,10 +539,16 @@ void set_dc_type_and_flags( struct winbindd_domain *domain )
 	
 	domain->native_mode = False;
 	domain->active_directory = False;
+
+	if (domain->internal) {
+		domain->initialized = True;
+		return;
+	}
 	
 	if ( !NT_STATUS_IS_OK(result = cm_open_connection(domain, PI_LSARPC_DS, &conn)) ) {
 		DEBUG(5, ("set_dc_type_and_flags: Could not open a connection to %s for PIPE_LSARPC (%s)\n", 
 			  domain->name, nt_errstr(result)));
+		domain->initialized = True;
 		return;
 	}
 	
@@ -551,6 +635,8 @@ done:
 		cli_shutdown( conn.cli );
 	
 	talloc_destroy(mem_ctx);
+
+	domain->initialized = True;
 	
 	return;
 }

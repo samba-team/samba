@@ -1071,7 +1071,7 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
 	uint32 *group_rids, num_rids, *name_types, num_members, 
-               *group_attrs, num_names, *user_rids, GROUP_RID;
+               *group_attrs, GROUP_RID;
 	uint32 flags = 0x000003e8; /* Unknown */
 	/* char **names; */
 	int i;

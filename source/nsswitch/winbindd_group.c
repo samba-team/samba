@@ -292,7 +292,7 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 
 	/* Get rid and name type from name */
         
-	if (!winbindd_lookup_sid_by_name(domain, name_group, &group_sid, 
+	if (!winbindd_lookup_sid_by_name(domain, domain->name, name_group, &group_sid, 
 					 &name_type)) {
 		DEBUG(1, ("group %s in domain %s does not exist\n", 
 			  name_group, name_domain));
@@ -446,17 +446,16 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
 	for (domain = domain_list(); domain != NULL; domain = domain->next) {
 		struct getent_state *domain_state;
 		
-		
+		/* Create a state record for this domain */
+
 		/* don't add our domaina if we are a PDC or if we 
 		   are a member of a Samba domain */
 		
-		if ( (IS_DC || lp_winbind_trusted_domains_only())
-			&& domain->primary )
+		if ( lp_winbind_trusted_domains_only() && domain->primary )
 		{
 			continue;
 		}
 						
-		/* Create a state record for this domain */
 		
 		if ((domain_state = (struct getent_state *)
 		     malloc(sizeof(struct getent_state))) == NULL) {
@@ -943,23 +942,19 @@ static void add_gid_to_array_unique(gid_t gid, gid_t **gids, int *num)
 	*num += 1;
 }
 
-static void add_gids_from_sid(DOM_SID *sid, gid_t **gids, int *num)
+static void add_local_gids_from_sid(DOM_SID *sid, gid_t **gids, int *num)
 {
 	gid_t gid;
 	DOM_SID *aliases;
 	int j, num_aliases;
 
-	DEBUG(10, ("Adding gids from SID: %s\n", sid_string_static(sid)));
+	DEBUG(10, ("Adding local gids from SID: %s\n",
+		   sid_string_static(sid)));
 
-	if (NT_STATUS_IS_OK(idmap_sid_to_gid(sid, &gid, 0)))
-		add_gid_to_array_unique(gid, gids, num);
-
-	/* Don't expand aliases if not explicitly activated -- for now */
-	/* we don't support windows local nested groups if we are a DC.
-           refer to to sid_to_gid() in the smbd server code to see why 
+	/* Don't expand aliases if not explicitly activated -- for now
 	   -- jerry */
 
-	if (!lp_winbind_nested_groups() || IS_DC)
+	if (!lp_winbind_nested_groups())
 		return;
 
 	/* Add nested group memberships */
@@ -968,13 +963,42 @@ static void add_gids_from_sid(DOM_SID *sid, gid_t **gids, int *num)
 		return;
 
 	for (j=0; j<num_aliases; j++) {
+		enum SID_NAME_USE type;
 
-		if (!NT_STATUS_IS_OK(sid_to_gid(&aliases[j], &gid)))
+		if (!local_sid_to_gid(&gid, &aliases[j], &type)) {
+			DEBUG(1, ("Got an alias membership with no alias\n"));
 			continue;
+		}
+
+		if ((type != SID_NAME_ALIAS) && (type != SID_NAME_WKN_GRP)) {
+			DEBUG(1, ("Got an alias membership in a non-alias\n"));
+			continue;
+		}
 
 		add_gid_to_array_unique(gid, gids, num);
 	}
 	SAFE_FREE(aliases);
+}
+
+static void add_gids_from_user_sid(DOM_SID *sid, gid_t **gids, int *num)
+{
+	DEBUG(10, ("Adding gids from user SID: %s\n",
+		   sid_string_static(sid)));
+
+	add_local_gids_from_sid(sid, gids, num);
+}
+
+static void add_gids_from_group_sid(DOM_SID *sid, gid_t **gids, int *num)
+{
+	gid_t gid;
+
+	DEBUG(10, ("Adding gids from group SID: %s\n",
+		   sid_string_static(sid)));
+
+	if (NT_STATUS_IS_OK(idmap_sid_to_gid(sid, &gid, 0)))
+		add_gid_to_array_unique(gid, gids, num);
+
+	add_local_gids_from_sid(sid, gids, num);
 }
 
 /* Get user supplementary groups.  This is much quicker than trying to
@@ -1030,7 +1054,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	
 	/* Get rid and name type from name.  The following costs 1 packet */
 
-	if (!winbindd_lookup_sid_by_name(domain, name_user, &user_sid, 
+	if (!winbindd_lookup_sid_by_name(domain, domain->name, name_user, &user_sid, 
 					 &name_type)) {
 		DEBUG(1, ("user '%s' does not exist\n", name_user));
 		goto done;
@@ -1042,7 +1066,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 		goto done;
 	}
 
-	add_gids_from_sid(&user_sid, &gid_list, &num_gids);
+	add_gids_from_user_sid(&user_sid, &gid_list, &num_gids);
 
 	/* Treat the info3 cache as authoritative as the
 	   lookup_usergroups() function may return cached data. */
@@ -1086,8 +1110,8 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 				continue;
 			}
 
-			add_gids_from_sid(&info3->other_sids[i].sid,
-					  &gid_list, &num_gids);
+			add_gids_from_group_sid(&info3->other_sids[i].sid,
+						&gid_list, &num_gids);
 
 			if (gid_list == NULL)
 				goto done;
@@ -1100,7 +1124,8 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 			sid_copy( &group_sid, &domain->sid );
 			sid_append_rid( &group_sid, info3->gids[i].g_rid );
 
-			add_gids_from_sid(&group_sid, &gid_list, &num_gids);
+			add_gids_from_group_sid(&group_sid, &gid_list,
+						&num_gids);
 
 			if (gid_list == NULL)
 				goto done;
@@ -1119,8 +1144,8 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 			goto done;
 
 		for (i = 0; i < num_groups; i++) {
-			add_gids_from_sid(user_grpsids[i],
-					  &gid_list, &num_gids);
+			add_gids_from_group_sid(user_grpsids[i],
+						&gid_list, &num_gids);
 
 			if (gid_list == NULL)
 				goto done;

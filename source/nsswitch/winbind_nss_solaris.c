@@ -275,7 +275,7 @@ _nss_winbind_getgroupsbymember_solwrap(nss_backend_t* be, void* args)
 	 * return NOTFOUND so nsswitch will continue to get groups
 	 * from the remaining database backends specified in the
 	 * nsswitch.conf file.
-	*/
+	 */
 	return (gmem->numgids == gmem->maxgids ? NSS_STATUS_SUCCESS : NSS_STATUS_NOTFOUND);
 }
 

@@ -1621,9 +1621,6 @@ NTSTATUS cli_nt_setup_netsec(struct cli_state *cli, int sec_chan, int auth_flags
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (lp_client_schannel() != False)
-		neg_flags |= NETLOGON_NEG_SCHANNEL;
-
 	neg_flags |= NETLOGON_NEG_SCHANNEL;
 
 	result = cli_nt_setup_creds(cli, sec_chan, trust_password,
