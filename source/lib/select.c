@@ -58,6 +58,21 @@ int sys_select(int maxfd, fd_set *fds,struct timeval *tval)
 
 	if (initialised != sys_getpid()) {
 		pipe(select_pipe);
+
+		/*
+		 * These next two lines seem to fix a bug with the Linux
+		 * 2.0.x kernel (and probably other UNIXes as well) where
+		 * the one byte read below can block even though the
+		 * select returned that there is data in the pipe and
+		 * the pipe_written variable was incremented. Thanks to
+		 * HP for finding this one. JRA.
+		 */
+
+		if(set_blocking(select_pipe[0],0)==-1)
+			smb_panic("select_pipe[0]: O_NONBLOCK failed.\n");
+		if(set_blocking(select_pipe[1],0)==-1)
+			smb_panic("select_pipe[1]: O_NONBLOCK failed.\n");
+
 		initialised = sys_getpid();
 	}
 
