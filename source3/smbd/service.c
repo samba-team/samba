@@ -546,6 +546,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 				*ecode = ERRaccess;
 				DEBUG(0,( "make_connection: connection to %s denied due to security descriptor.\n",
 					service ));
+				conn_free(conn);
 				return NULL;
 			} else {
 				conn->read_only = True;
@@ -556,6 +557,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 
 	if (!vfs_init(conn)) {
 		DEBUG(0, ("vfs_init failed for service %s\n", lp_servicename(SNUM(conn))));
+		conn_free(conn);
 		return NULL;
 	}
 
