@@ -433,7 +433,7 @@ void add_supplementary_nt_login_groups(int *n_groups, gid_t **pp_groups, NT_USER
 
 /*****************************************************************
  *THE CANONICAL* convert name to SID function.
- Tries winbind first - then uses local lookup.
+ Tries local lookup first - for local domains - then uses winbind.
 *****************************************************************/  
 
 BOOL lookup_name(const char *domain, const char *name, DOM_SID *psid, enum SID_NAME_USE *name_type)
@@ -441,54 +441,51 @@ BOOL lookup_name(const char *domain, const char *name, DOM_SID *psid, enum SID_N
 	extern pstring global_myname;
 	extern fstring global_myworkgroup;
 	fstring sid;
+	BOOL ret = False;
 	
 	*name_type = SID_NAME_UNKNOWN;
 
-	if (!winbind_lookup_name(domain, name, psid, name_type) || (*name_type != SID_NAME_USER) ) {
-		BOOL ret = False;
-
-		DEBUG(10, ("lookup_name: winbind lookup for [%s]\\[%s] failed - trying local\n", domain, name));
-
-		/* If we are looking up a domain user, make sure it is
-		   for the local machine only */
-		
-		switch (lp_server_role()) {
-		case ROLE_DOMAIN_PDC:
-		case ROLE_DOMAIN_BDC:
-			if (strequal(domain, global_myworkgroup)) {
-				ret = local_lookup_name(name, psid, name_type);
-			}
-			/* No break is deliberate here. JRA. */
-		default:
-			if (ret) {
-			} else if (strequal(global_myname, domain)) {
-				ret = local_lookup_name(name, psid, name_type);
-			} else {
-				DEBUG(5, ("lookup_name: domain %s is not local\n", domain));
-			}
+	/* If we are looking up a domain user, make sure it is
+	   for the local machine only */
+	
+	switch (lp_server_role()) {
+	case ROLE_DOMAIN_PDC:
+	case ROLE_DOMAIN_BDC:
+		if (strequal(domain, global_myworkgroup)) {
+			ret = local_lookup_name(name, psid, name_type);
 		}
-
+		/* No break is deliberate here. JRA. */
+	default:
 		if (ret) {
-			DEBUG(10,
-			      ("lookup_name: (local) [%s]\\[%s] -> SID %s (type %u)\n",
-			       domain, name, sid_to_string(sid,psid),
-			       (unsigned int)*name_type ));
+		} else if (strequal(global_myname, domain)) {
+			ret = local_lookup_name(name, psid, name_type);
 		} else {
-			DEBUG(10,("lookup name: (local) [%s]\\[%s] failed.\n", domain, name));
+			DEBUG(5, ("lookup_name: domain %s is not local\n", domain));
 		}
-
-		return ret;
+	}
+	
+	if (ret) {
+		DEBUG(10,
+		      ("lookup_name: (local) [%s]\\[%s] -> SID %s (type %u)\n",
+		       domain, name, sid_to_string(sid,psid),
+		       (unsigned int)*name_type ));
+		return True;
+	} else if (winbind_lookup_name(domain, name, psid, name_type) || (*name_type != SID_NAME_USER) ) {
+		
+		DEBUG(10,("lookup_name (winbindd): [%s]\\[%s] -> SID %s (type %u)\n",
+			  domain, name, sid_to_string(sid, psid), 
+			  (unsigned int)*name_type));
+		return True;
 	}
 
-	DEBUG(10,("lookup_name (winbindd): [%s]\\[%s] -> SID %s (type %u)\n",
-		  domain, name, sid_to_string(sid, psid), 
-		  (unsigned int)*name_type));
-	return True;
+	DEBUG(10, ("lookup_name: winbind and local lookups for [%s]\\[%s] failed\n", domain, name));
+
+	return False;
 }
 
 /*****************************************************************
  *THE CANONICAL* convert SID to name function.
- Tries winbind first - then uses local lookup.
+ Tries local lookup first - for local sids, then tries winbind.
 *****************************************************************/  
 
 BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE *name_type)

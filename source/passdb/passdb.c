@@ -510,6 +510,8 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 {
 	uint32 rid;
 	BOOL is_user;
+	SAM_ACCOUNT *sam_account = NULL;
+	BOOL found = False;
 
 	sid_peek_rid(sid, &rid);
 	is_user = pdb_rid_is_user(rid);
@@ -541,26 +543,44 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 			 */
 			if (lp_hide_local_users())
 				return False;
+
+			if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_account))) {
+				return False;
+			}
+			
+			if (pdb_getsampwrid(sam_account, rid)) {
+				fstrcpy(name, pdb_get_username(sam_account));
+				*psid_name_use = SID_NAME_USER;
+				found = True;
+			}
+			
+			pdb_free_sam(&sam_account);
+			
+			if (found) {
+				return True;
+			}
 			
 			uid = pdb_user_rid_to_uid(rid);
-			pass = sys_getpwuid(uid);
-
+			pass = getpwuid_alloc(uid);
+			
 			*psid_name_use = SID_NAME_USER;
-
+			
 			DEBUG(5,("local_lookup_sid: looking up uid %u %s\n", (unsigned int)uid,
-				pass ? "succeeded" : "failed" ));
-
+				 pass ? "succeeded" : "failed" ));
+			
 			if(!pass) {
 				slprintf(name, sizeof(fstring)-1, "unix_user.%u", (unsigned int)uid);
 				return True;
 			}
-
+			
 			fstrcpy(name, pass->pw_name);
-
+			
 			DEBUG(5,("local_lookup_sid: found user %s for rid %u\n", name,
-				(unsigned int)rid ));
+				 (unsigned int)rid ));
+			
+			passwd_free(&pass);
 		}
-
+		
 	} else {
 		gid_t gid;
 		struct group *gr; 
@@ -617,7 +637,8 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 	DOM_SID local_sid;
 	fstring user;
 	SAM_ACCOUNT *sam_account = NULL;
-
+	BOOL found = False;
+	
 	*psid_name_use = SID_NAME_UNKNOWN;
 
 	/*
@@ -655,14 +676,19 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 	if (pdb_getsampwnam(sam_account, user)) {
 		sid_append_rid( &local_sid, pdb_get_user_rid(sam_account));
 		*psid_name_use = SID_NAME_USER;
-		pdb_free_sam(&sam_account);
+		
+		sid_copy( psid, &local_sid);
+		found = True;
+	}
 
-	} else if((pass = Get_Pwnam(user))) {
+	pdb_free_sam(&sam_account);
+
+	if (!found && (pass = Get_Pwnam(user))) {
 		sid_append_rid( &local_sid, pdb_uid_to_user_rid(pass->pw_uid));
 		*psid_name_use = SID_NAME_USER;
 		pdb_free_sam(&sam_account);
 
-	} else {
+	} else if (!found) {
 		/*
 		 * Maybe it was a group ?
 		 */
