@@ -125,4 +125,9 @@ int _kafs_afslog_all_local_cells(kafs_data*, uid_t);
 int _kafs_get_cred(kafs_data*, const char*, const char*, const char *, 
 		  CREDENTIALS*);
 
+#ifdef _AIX
+int aix_pioctl(char*, int, struct ViceIoctl*, int);
+int aix_setpag(void);
+#endif
+
 #endif /* __KAFS_LOCL_H__ */
