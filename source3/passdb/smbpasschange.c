@@ -36,6 +36,7 @@ static BOOL add_new_user(char *user_name, uid_t uid, int local_flags,
 	new_smb_pwent.smb_name = user_name; 
 	new_smb_pwent.smb_passwd = NULL;
 	new_smb_pwent.smb_nt_passwd = NULL;
+	new_smb_pwent.pass_last_set_time = time(NULL);
 	new_smb_pwent.acct_ctrl = ((local_flags & LOCAL_TRUST_ACCOUNT) ? ACB_WSTRUST : ACB_NORMAL);
 	
 	if(local_flags & LOCAL_DISABLE_USER) {
