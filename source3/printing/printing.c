@@ -1046,15 +1046,16 @@ static void print_queue_update(int snum)
 ****************************************************************************/
 
 #define NOTIFY_PID_LIST_KEY "NOTIFY_PID_LIST"
+#define PRINT_SERVER_ENTRY_NAME "___PRINT_SERVER_ENTRY___"
 
-static TDB_DATA get_printer_notify_pid_list(struct tdb_print_db *pdb, BOOL cleanlist)
+static TDB_DATA get_printer_notify_pid_list(TDB_CONTEXT *tdb, const char *printer_name, BOOL cleanlist)
 {
 	TDB_DATA data;
 	size_t i;
 
 	ZERO_STRUCT(data);
 
-	data = tdb_fetch_by_string( pdb->tdb, NOTIFY_PID_LIST_KEY );
+	data = tdb_fetch_by_string( tdb, NOTIFY_PID_LIST_KEY );
 
 	if (!data.dptr) {
 		ZERO_STRUCT(data);
@@ -1062,9 +1063,8 @@ static TDB_DATA get_printer_notify_pid_list(struct tdb_print_db *pdb, BOOL clean
 	}
 
 	if (data.dsize % 8) {
-		DEBUG(0,("get_printer_notify_pid_list: Size of record for printer %s not a multiple of 8 !\n",
-					pdb->printer_name ));
-		tdb_delete_by_string(pdb->tdb, NOTIFY_PID_LIST_KEY );
+		DEBUG(0,("get_printer_notify_pid_list: Size of record for printer %s not a multiple of 8 !\n", printer_name ));
+		tdb_delete_by_string(tdb, NOTIFY_PID_LIST_KEY );
 		ZERO_STRUCT(data);
 		return data;
 	}
@@ -1089,7 +1089,7 @@ static TDB_DATA get_printer_notify_pid_list(struct tdb_print_db *pdb, BOOL clean
 			/* Refcount == zero is a logic error and should never happen. */
 			if (IVAL(data.dptr, i + 4) == 0) {
 				DEBUG(0,("get_printer_notify_pid_list: Refcount == 0 for pid = %u printer %s !\n",
-							(unsigned int)pid, pdb->printer_name ));
+							(unsigned int)pid, printer_name ));
 			}
 
 			if (data.dsize - i > 8)
@@ -1108,7 +1108,8 @@ static TDB_DATA get_printer_notify_pid_list(struct tdb_print_db *pdb, BOOL clean
 
 BOOL print_notify_pid_list(const char *printername, TALLOC_CTX *mem_ctx, size_t *p_num_pids, pid_t **pp_pid_list)
 {
-	struct tdb_print_db *pdb;
+	struct tdb_print_db *pdb = NULL;
+	TDB_CONTEXT *tdb = NULL;
 	TDB_DATA data;
 	BOOL ret = True;
 	size_t i, num_pids, offset;
@@ -1117,17 +1118,25 @@ BOOL print_notify_pid_list(const char *printername, TALLOC_CTX *mem_ctx, size_t 
 	*p_num_pids = 0;
 	*pp_pid_list = NULL;
 
-	pdb = get_print_db_byname(printername);
-	if (!pdb)
-		return False;
+	if (strequal(printername, PRINT_SERVER_ENTRY_NAME)) {
+		pdb = NULL;
+		tdb = conn_tdb_ctx();
+	} else {
+		pdb = get_print_db_byname(printername);
+		if (!pdb)
+			return False;
+		tdb = pdb->tdb;
+	}
 
-	if (tdb_read_lock_bystring(pdb->tdb, NOTIFY_PID_LIST_KEY, 10) == -1) {
-		DEBUG(0,("print_notify_pid_list: Failed to lock printer %s database\n", printername));
-		release_print_db(pdb);
+	if (tdb_read_lock_bystring(tdb, NOTIFY_PID_LIST_KEY, 10) == -1) {
+		DEBUG(0,("print_notify_pid_list: Failed to lock printer %s database\n",
+					printername));
+		if (pdb)
+			release_print_db(pdb);
 		return False;
 	}
 
-	data = get_printer_notify_pid_list( pdb, True );
+	data = get_printer_notify_pid_list( tdb, printername, True );
 
 	if (!data.dptr) {
 		ret = True;
@@ -1151,8 +1160,9 @@ BOOL print_notify_pid_list(const char *printername, TALLOC_CTX *mem_ctx, size_t 
 
   done:
 
-	tdb_read_unlock_bystring(pdb->tdb, NOTIFY_PID_LIST_KEY);
-	release_print_db(pdb);
+	tdb_read_unlock_bystring(tdb, NOTIFY_PID_LIST_KEY);
+	if (pdb)
+		release_print_db(pdb);
 	SAFE_FREE(data.dptr);
 	return ret;
 }
@@ -1165,23 +1175,34 @@ BOOL print_notify_pid_list(const char *printername, TALLOC_CTX *mem_ctx, size_t 
 BOOL print_notify_register_pid(int snum)
 {
 	TDB_DATA data;
-	struct tdb_print_db *pdb;
-	const char *printername = lp_const_servicename(snum);
+	struct tdb_print_db *pdb = NULL;
+	TDB_CONTEXT *tdb = NULL;
+	const char *printername;
 	uint32 mypid = (uint32)sys_getpid();
 	BOOL ret = False;
 	size_t i;
 
-	pdb = get_print_db_byname(printername);
-	if (!pdb)
-		return False;
+	if (snum != -1) {
+		printername = lp_const_servicename(snum);
+		pdb = get_print_db_byname(printername);
+		if (!pdb)
+			return False;
+		tdb = pdb->tdb;
+	} else {
+		printername = PRINT_SERVER_ENTRY_NAME;
+		pdb = NULL;
+		tdb = conn_tdb_ctx();
+	}
 
-	if (tdb_lock_bystring(pdb->tdb, NOTIFY_PID_LIST_KEY, 10) == -1) {
-		DEBUG(0,("print_notify_register_pid: Failed to lock printer %s\n", printername));
-		release_print_db(pdb);
+	if (tdb_lock_bystring(tdb, NOTIFY_PID_LIST_KEY, 10) == -1) {
+		DEBUG(0,("print_notify_register_pid: Failed to lock printer %s\n",
+					printername));
+		if (pdb)
+			release_print_db(pdb);
 		return False;
 	}
 
-	data = get_printer_notify_pid_list( pdb, True );
+	data = get_printer_notify_pid_list( tdb, printername, True );
 
 	/* Add ourselves and increase the refcount. */
 
@@ -1197,7 +1218,8 @@ BOOL print_notify_register_pid(int snum)
 		/* We weren't in the list. Realloc. */
 		data.dptr = Realloc(data.dptr, data.dsize + 8);
 		if (!data.dptr) {
-			DEBUG(0,("print_notify_register_pid: Relloc fail for printer %s\n", printername));
+			DEBUG(0,("print_notify_register_pid: Relloc fail for printer %s\n",
+						printername));
 			goto done;
 		}
 		data.dsize += 8;
@@ -1206,8 +1228,9 @@ BOOL print_notify_register_pid(int snum)
 	}
 
 	/* Store back the record. */
-	if (tdb_store_by_string(pdb->tdb, NOTIFY_PID_LIST_KEY, data, TDB_REPLACE) == -1) {
-		DEBUG(0,("print_notify_register_pid: Failed to update pid list for printer %s\n", printername));
+	if (tdb_store_by_string(tdb, NOTIFY_PID_LIST_KEY, data, TDB_REPLACE) == -1) {
+		DEBUG(0,("print_notify_register_pid: Failed to update pid \
+list for printer %s\n", printername));
 		goto done;
 	}
 
@@ -1215,8 +1238,9 @@ BOOL print_notify_register_pid(int snum)
 
  done:
 
-	tdb_unlock_bystring(pdb->tdb, NOTIFY_PID_LIST_KEY);
-	release_print_db(pdb);
+	tdb_unlock_bystring(tdb, NOTIFY_PID_LIST_KEY);
+	if (pdb)
+		release_print_db(pdb);
 	SAFE_FREE(data.dptr);
 	return ret;
 }
@@ -1229,23 +1253,34 @@ BOOL print_notify_register_pid(int snum)
 BOOL print_notify_deregister_pid(int snum)
 {
 	TDB_DATA data;
-	struct tdb_print_db *pdb;
-	const char *printername = lp_const_servicename(snum);
+	struct tdb_print_db *pdb = NULL;
+	TDB_CONTEXT *tdb = NULL;
+	const char *printername;
 	uint32 mypid = (uint32)sys_getpid();
 	size_t i;
 	BOOL ret = False;
 
-	pdb = get_print_db_byname(printername);
-	if (!pdb)
-		return False;
+	if (snum != -1) {
+		printername = lp_const_servicename(snum);
+		pdb = get_print_db_byname(printername);
+		if (!pdb)
+			return False;
+		tdb = pdb->tdb;
+	} else {
+		printername = PRINT_SERVER_ENTRY_NAME;
+		pdb = NULL;
+		tdb = conn_tdb_ctx();
+	}
 
-	if (tdb_lock_bystring(pdb->tdb, NOTIFY_PID_LIST_KEY, 10) == -1) {
-		DEBUG(0,("print_notify_register_pid: Failed to lock printer %s database\n", printername));
-		release_print_db(pdb);
+	if (tdb_lock_bystring(tdb, NOTIFY_PID_LIST_KEY, 10) == -1) {
+		DEBUG(0,("print_notify_register_pid: Failed to lock \
+printer %s database\n", printername));
+		if (pdb)
+			release_print_db(pdb);
 		return False;
 	}
 
-	data = get_printer_notify_pid_list( pdb, True );
+	data = get_printer_notify_pid_list( tdb, printername, True );
 
 	/* Reduce refcount. Remove ourselves if zero. */
 
@@ -1271,8 +1306,9 @@ BOOL print_notify_deregister_pid(int snum)
 		SAFE_FREE(data.dptr);
 
 	/* Store back the record. */
-	if (tdb_store_by_string(pdb->tdb, NOTIFY_PID_LIST_KEY, data, TDB_REPLACE) == -1) {
-		DEBUG(0,("print_notify_register_pid: Failed to update pid list for printer %s\n", printername));
+	if (tdb_store_by_string(tdb, NOTIFY_PID_LIST_KEY, data, TDB_REPLACE) == -1) {
+		DEBUG(0,("print_notify_register_pid: Failed to update pid \
+list for printer %s\n", printername));
 		goto done;
 	}
 
@@ -1280,8 +1316,9 @@ BOOL print_notify_deregister_pid(int snum)
 
   done:
 
-	tdb_unlock_bystring(pdb->tdb, NOTIFY_PID_LIST_KEY);
-	release_print_db(pdb);
+	tdb_unlock_bystring(tdb, NOTIFY_PID_LIST_KEY);
+	if (pdb)
+		release_print_db(pdb);
 	SAFE_FREE(data.dptr);
 	return ret;
 }
