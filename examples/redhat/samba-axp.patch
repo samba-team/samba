@@ -1,5 +1,5 @@
-*** samba-1.9.16p10/source/Makefile.RPM	Sat Feb  1 01:25:30 1997
---- samba-1.9.16p10/source/Makefile	Sat Feb  1 01:25:53 1997
+*** samba-1.9.16p11/source/Makefile.RPM	
+--- samba-1.9.16p11/source/Makefile
 ***************
 *** 179,186 ****
   # Use this for Linux without shadow passwords
