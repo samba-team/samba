@@ -298,6 +298,8 @@ NTSTATUS dcerpc_pipe_open_tcp(struct dcerpc_pipe **p,
 		return NT_STATUS_PORT_CONNECTION_REFUSED;
 	}
 
+	set_socket_options(fd, lp_socket_options());
+
 	set_blocking(fd, False);
 
         if (!(*p = dcerpc_pipe_init())) {
