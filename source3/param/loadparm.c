@@ -143,6 +143,7 @@ typedef struct
 	char *szShutdownScript;
 	char *szAbortShutdownScript;
 	char *szWINSHook;
+	char *szWINSPartners;
 #ifdef WITH_UTMP
 	char *szUtmpDir;
 	char *szWtmpDir;
@@ -948,6 +949,7 @@ static struct parm_struct parm_table[] = {
 	{"wins server", P_STRING, P_GLOBAL, &Globals.szWINSserver, handle_wins_server_list, NULL, FLAG_BASIC},
 	{"wins support", P_BOOL, P_GLOBAL, &Globals.bWINSsupport, NULL, NULL, FLAG_BASIC},
 	{"wins hook", P_STRING, P_GLOBAL, &Globals.szWINSHook, NULL, NULL, 0},
+	{"wins partners", P_STRING, P_GLOBAL, &Globals.szWINSPartners, NULL, NULL, 0},
 
 	{"Locking Options", P_SEP, P_SEPARATOR},
 	
@@ -1520,6 +1522,7 @@ FN_GLOBAL_STRING(lp_shutdown_script, &Globals.szShutdownScript)
 FN_GLOBAL_STRING(lp_abort_shutdown_script, &Globals.szAbortShutdownScript)
 
 FN_GLOBAL_STRING(lp_wins_hook, &Globals.szWINSHook)
+FN_GLOBAL_STRING(lp_wins_partners, &Globals.szWINSPartners)
 FN_GLOBAL_STRING(lp_template_homedir, &Globals.szTemplateHomedir)
 FN_GLOBAL_STRING(lp_template_shell, &Globals.szTemplateShell)
 FN_GLOBAL_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)

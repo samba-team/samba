@@ -90,7 +90,7 @@ WINBIND_SPROGS = @WINBIND_STARGETS@
 WINBIND_PAM_PROGS = @WINBIND_PAM_TARGETS@
 WINBIND_LPROGS = @WINBIND_LTARGETS@
 
-SPROGS = bin/smbd bin/nmbd bin/swat @WINBIND_STARGETS@
+SPROGS = bin/smbd bin/nmbd bin/swat bin/wrepld @WINBIND_STARGETS@
 PROGS1 = bin/smbclient bin/net bin/smbspool bin/testparm bin/testprns bin/smbstatus bin/smbcontrol bin/smbtree @RUNPROG@ @WINBIND_TARGETS@
 PROGS2 = bin/smbpasswd bin/rpcclient bin/smbcacls @WRAP@ @WRAP32@ @PAM_MOD@
 MPROGS = @MPROGS@
@@ -255,6 +255,12 @@ NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
 
 NMBD_OBJ = $(NMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
            $(PROFILE_OBJ) $(LIB_OBJ)
+
+WREPL_OBJ1 = wrepld/server.o wrepld/process.o wrepld/parser.o wrepld/socket.o \
+             wrepld/partners.o
+
+WREPL_OBJ = $(WREPL_OBJ1)  $(PARAM_OBJ) $(UBIQX_OBJ) \
+	    $(PROFILE_OBJ) $(LIB_OBJ)
 
 SWAT_OBJ = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
            web/swat.o web/neg_lang.o $(PRINTING_OBJ) $(LIBSMB_OBJ) $(LOCKING_OBJ) \
@@ -554,6 +560,10 @@ bin/nmbd: $(NMBD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NMBD_OBJ) $(LDFLAGS) $(LIBS)
 
+bin/wrepld: $(WREPL_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(WREPL_OBJ) $(LDFLAGS) $(LIBS) 
+
 bin/swat: $(SWAT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(LIBS) 
@@ -798,6 +808,11 @@ winbindd_proto:
 	  -h _WINBINDD_PROTO_H_ nsswitch/winbindd_proto.h \
 	  $(WINBINDD_OBJ1)
 
+wrepld_proto:
+	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
+	  -h _WREPLD_PROTO_H_ $(builddir)/include/wrepld_proto.h \
+	  $(WREPL_OBJ1)
+
 delheaders:
 	@/bin/rm -f $(srcdir)/include/proto.h $(srcdir)/include/build_env.h
 	@/bin/rm -f include/proto.h include/build_env.h
@@ -818,7 +833,7 @@ include/build_env.h:
 
 headers: delheaders include/proto.h include/build_env.h .headers.stamp
 
-proto: headers winbindd_proto
+proto: headers winbindd_proto wrepld_proto
 
 etags:
 	etags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
