@@ -4073,7 +4073,7 @@ SMB_BIG_UINT get_lock_offset( char *data, int data_offset, BOOL large_file_forma
     }
 
     offset = (SMB_BIG_UINT)IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset));
-#endif /* LARGE_SMB_OFF_T */
+#endif /* HAVE_LONGLONG */
   }
 
   return offset;
