@@ -1149,6 +1149,7 @@ BOOL name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid);
 char *dom_sid_to_string(DOM_SID *sid);
 int make_dom_sid2s(char *sids_str, DOM_SID2 *sids, int max_sids);
 int make_dom_gids(char *gids_str, DOM_GID *gids);
+void get_domain_user_groups(char *domain_groups, char *user);
 void create_rpc_request(struct mem_buffer *rdata, int *rdata_off, uint32 call_id, uint8 op_num, int data_len);
 void create_rpc_reply(struct mem_buffer *rdata, int *rdata_off, uint32 call_id, int data_len);
 BOOL rpc_api_pipe(struct cli_state *cli, int t_idx,
@@ -1257,6 +1258,10 @@ void make_samr_r_query_aliasinfo(SAMR_R_QUERY_ALIASINFO *r_u,
 		uint16 switch_value, char *acct_desc,
 		uint32 status);
 void samr_io_r_query_aliasinfo(char *desc, BOOL io, SAMR_R_QUERY_ALIASINFO *r_u, struct mem_buffer *buf, int *q, int depth);
+void samr_io_q_lookup_ids(char *desc, BOOL io, SAMR_Q_LOOKUP_IDS *q_u, struct mem_buffer *buf, int *q, int depth);
+void make_samr_r_lookup_ids(SAMR_R_LOOKUP_IDS *r_u,
+		uint32 num_rids, uint32 *rid, uint32 status);
+void samr_io_r_lookup_ids(char *desc, BOOL io, SAMR_R_LOOKUP_IDS *r_u, struct mem_buffer *buf, int *q, int depth);
 void samr_io_q_lookup_names(char *desc, BOOL io, SAMR_Q_LOOKUP_NAMES *q_u, struct mem_buffer *buf, int *q, int depth);
 void make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
 		uint32 num_rids, uint32 *rid, uint32 status);
@@ -1305,6 +1310,7 @@ void make_unistr(UNISTR *str, char *buf);
 void smb_io_unistr(char *desc, BOOL io, UNISTR *uni, struct mem_buffer *buf, int *q, int depth);
 void make_uninotstr2(UNINOTSTR2 *str, char *buf, int len);
 void smb_io_uninotstr2(char *desc, BOOL io, UNINOTSTR2 *uni2, uint32 buffer, struct mem_buffer *buf, int *q, int depth);
+void make_buf_unistr2(UNISTR2 *str, uint32 *ptr, char *buf);
 void make_unistr2(UNISTR2 *str, char *buf, int len);
 void smb_io_unistr2(char *desc, BOOL io, UNISTR2 *uni2, uint32 buffer, struct mem_buffer *buf, int *q, int depth);
 void make_dom_str_sid(DOM_STR_SID *sid, char *sid_str);
@@ -1481,6 +1487,20 @@ void srv_io_share_info1(char *desc, BOOL io, SH_INFO_1 *sh1, struct mem_buffer *
 void srv_io_share_1_ctr(char *desc, BOOL io, SHARE_INFO_1_CTR *ctr, struct mem_buffer *buf, int *q,  int depth);
 void srv_io_q_net_share_enum(char *desc, BOOL io, SRV_Q_NET_SHARE_ENUM *q_n, struct mem_buffer *buf, int *q,  int depth);
 void srv_io_r_net_share_enum(char *desc, BOOL io, SRV_R_NET_SHARE_ENUM *r_n, struct mem_buffer *buf, int *q,  int depth);
+void make_srv_info_101(SRV_INFO_101 *sv101, uint32 platform_id, char *name,
+				uint32 ver_major, uint32 ver_minor,
+				uint32 srv_type, char *comment);
+void srv_io_info_101(char *desc, BOOL io, SRV_INFO_101 *sv101, struct mem_buffer *buf, int *q,  int depth);
+void make_srv_info_102(SRV_INFO_102 *sv102, uint32 platform_id, char *name,
+				char *comment, uint32 ver_major, uint32 ver_minor,
+				uint32 srv_type, uint32 users, uint32 disc, uint32 hidden,
+				uint32 announce, uint32 ann_delta, uint32 licenses,
+				char *usr_path);
+void srv_io_info_102(char *desc, BOOL io, SRV_INFO_102 *sv102, struct mem_buffer *buf, int *q,  int depth);
+void srv_io_q_net_srv_get_info(char *desc, BOOL io, SRV_Q_NET_SRV_GET_INFO *q_n, struct mem_buffer *buf, int *q,  int depth);
+void make_srv_net_srv_get_info(SRV_R_NET_SRV_GET_INFO *srv,
+				uint32 switch_value, SRV_INFO_CTR *ctr, uint32 status);
+void srv_io_r_net_srv_get_info(char *desc, BOOL io, SRV_R_NET_SRV_GET_INFO *r_n, struct mem_buffer *buf, int *q,  int depth);
 
 /*The following definitions come from  rpc_pipes/wksparse.c  */
 

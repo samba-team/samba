@@ -80,7 +80,7 @@ x SamrEnumerateGroupsInDomain
 x SamrEnumerateUsersInDomain
 SamrGetUserDomainPasswordInformation
 SamrLookupDomainInSamServer
-SamrLookupIdsInDomain
+? SamrLookupIdsInDomain
 x SamrLookupNamesInDomain
 x SamrOpenAlias
 x SamrOpenDomain
@@ -96,7 +96,7 @@ SamrRemoveMemberFromForiegnDomain
 SamrRemoveMemberFromGroup
 SamrRemoveMultipleMembersFromAlias
 SamrSetInformationAlias
-SamrSetInformationDOmain
+SamrSetInformationDomain
 SamrSetInformationGroup
 SamrSetInformationUser
 SamrSetMemberAttributesOfGroup
@@ -109,6 +109,7 @@ SamrTestPrivateFunctionsUser
 
 #define SAMR_CLOSE_HND         0x01
 #define SAMR_OPEN_DOMAIN       0x07
+#define SAMR_LOOKUP_IDS        0x10
 #define SAMR_LOOKUP_NAMES      0x11
 #define SAMR_UNKNOWN_3         0x03
 #define SAMR_QUERY_DISPINFO    0x28
@@ -245,7 +246,8 @@ typedef struct sid_info_2
 /* DOM_SID3 - security id */
 typedef struct sid_info_3
 {
-	uint32 len; /* length, bytes, including length of len :-) */
+	uint16 len; /* length, bytes, including length of len :-) */
+	
 	uint16 unknown_0;
 	uint16 unknown_1;
 
@@ -1227,6 +1229,80 @@ typedef struct r_net_share_enum_info
 
 } SRV_R_NET_SHARE_ENUM;
 
+/* SRV_Q_NET_SRV_GET_INFO */
+typedef struct q_net_srv_get_info
+{
+	uint32  ptr_srv_name;
+	UNISTR2 uni_srv_name; /* "\\server" */
+	uint32  switch_value;
+
+} SRV_Q_NET_SRV_GET_INFO;
+
+/* SRV_INFO_101  */
+typedef struct srv_info_101_info
+{
+
+	uint32 platform_id;     /* 0x500 */
+	uint32 ptr_name;        /* pointer to server name */
+	uint32 ver_major;       /* 0x4 */
+	uint32 ver_minor;       /* 0x2 */
+	uint32 srv_type;        /* browse etc type */
+	uint32 ptr_comment;     /* pointer to server comment */
+
+	UNISTR2 uni_name;       /* server name "server" */
+	UNISTR2 uni_comment;    /* server comment "samba x.x.x blah" */
+
+} SRV_INFO_101;
+
+/* SRV_INFO_102  */
+typedef struct srv_info_102_info
+{
+
+	uint32 platform_id;     /* 0x500 */
+	uint32 ptr_name;        /* pointer to server name */
+	uint32 ptr_comment;     /* pointer to server comment */
+	uint32 ver_major;       /* 0x4 */
+	uint32 ver_minor;       /* 0x2 */
+	uint32 srv_type;        /* browse etc type */
+	uint32 users;           /* 0xffff ffff*/
+	uint32 disc;            /* 0xf */
+	uint32 hidden;          /* 0x0 */
+	uint32 announce;        /* 240 */
+	uint32 ann_delta;       /* 3000 */
+	uint32 licenses;        /* 0 */
+	uint32 ptr_usr_path;    /* pointer to user path */
+
+	UNISTR2 uni_name;       /* server name "server" */
+	UNISTR2 uni_comment;    /* server comment "samba x.x.x blah" */
+	UNISTR2 uni_usr_path;   /* "c:\" (eh?) */
+
+} SRV_INFO_102;
+
+
+/* SRV_INFO_CTR */
+typedef struct srv_info_ctr_info
+{
+	union
+    {
+		SRV_INFO_102 sv102; /* server info level 102 */
+		SRV_INFO_101 sv101; /* server info level 101 */
+
+    } srv;
+
+} SRV_INFO_CTR;
+
+/* SRV_R_NET_SRV_GET_INFO */
+typedef struct r_net_srv_get_info
+{
+	uint32 switch_value;         /* switch value */
+
+	uint32 ptr_srv_ctr;         /* pointer to server info */
+	SRV_INFO_CTR *ctr;
+
+	uint32 status;               /* return status */
+
+} SRV_R_NET_SRV_GET_INFO;
+
 
 /* SAMR_Q_CLOSE_HND - probably a policy handle close */
 typedef struct q_samr_close_hnd_info
@@ -1275,6 +1351,9 @@ typedef struct sid_stuff_info
 	uint16 unknown_7; /* 0x5800 */
 
 	uint32 num_sids;
+
+	uint16 padding2;
+
 	DOM_SID3 sid[MAX_SAM_SIDS];
 
 } SAM_SID_STUFF;
@@ -1600,7 +1679,43 @@ typedef struct r_samr_query_user_info
 
 
 /****************************************************************************
-SAMR_Q_LOOKUP_NAMES - do a conversion (only one!) from name to RID.
+SAMR_Q_LOOKUP_IDS - do a conversion (only one!) from name to RID.
+
+the policy handle allocated by an "samr open secret" call is associated
+with a SID.  this policy handle is what is queried here, *not* the SID
+itself.  the response to the lookup rids is relative to this SID.
+*****************************************************************************/
+/* SAMR_Q_LOOKUP_IDS */
+typedef struct q_samr_lookup_ids_info
+{
+    POLICY_HND pol;       /* policy handle */
+
+	uint32 num_sids1;      /* number of rids being looked up */
+	uint32 ptr;            /* buffer pointer */
+	uint32 num_sids2;      /* number of rids being looked up */
+
+	uint32   ptr_sid[MAX_LOOKUP_SIDS]; /* pointers to sids to be looked up */
+	DOM_SID2 sid    [MAX_LOOKUP_SIDS]; /* sids to be looked up. */
+
+} SAMR_Q_LOOKUP_IDS;
+
+
+/* SAMR_R_LOOKUP_IDS */
+typedef struct r_samr_lookup_ids_info
+{
+	uint32 num_entries;
+	uint32 ptr; /* undocumented buffer pointer */
+
+	uint32 num_entries2; 
+	uint32 rid[MAX_LOOKUP_SIDS]; /* domain RIDs being looked up */
+
+	uint32 status; /* return code */
+
+} SAMR_R_LOOKUP_IDS;
+
+
+/****************************************************************************
+SAMR_Q_LOOKUP_NAMES - do a conversion from SID to RID.
 
 the policy handle allocated by an "samr open secret" call is associated
 with a SID.  this policy handle is what is queried here, *not* the SID
