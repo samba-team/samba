@@ -484,7 +484,7 @@ BOOL cli_dfs_get_referral( struct cli_state *cli, const char *path,
 	char *p;
 	size_t pathlen = 2*(strlen(path)+1);
 	uint16 num_referrals;
-	CLIENT_DFS_REFERRAL *referrals;
+	CLIENT_DFS_REFERRAL *referrals = NULL;
 	
 	memset(param, 0, sizeof(param));
 	SSVAL(param, 0, 0x03);	/* max referral level */
