@@ -42,8 +42,11 @@ RCSID("$Id$");
 
 /* Public principal handling functions */
 
-#define num_components(P) ((P)->name.name_string.len)
+#define princ_num_comp(P) ((P)->name.name_string.len)
 #define princ_type(P) ((P)->name.name_type)
+#define princ_comp(P) ((P)->name.name_string.val)
+#define princ_ncomp(P, N) ((P)->name.name_string.val[(N)])
+#define princ_realm(P) ((P)->realm)
 
 void
 krb5_free_principal(krb5_context context,
@@ -139,39 +142,53 @@ krb5_parse_name(krb5_context context,
     *principal = malloc(sizeof(**principal));
     (*principal)->name.name_type = KRB5_NT_PRINCIPAL;
     (*principal)->name.name_string.val = comp;
-    num_components(*principal) = n;
+    princ_num_comp(*principal) = n;
     (*principal)->realm = realm;
     free(s);
     return 0;
 }
 
-static void quote_string(char *s, int len, char **out)
+static size_t
+quote_string(char *s, char **out)
 {
-    char *q;
-    char *p = *out;
-    int c=0;
-    len = strlen(s);
-    for(q = s; q < s + len; q++){
-	if(*q == '\n')
+    size_t len;
+    char *p;
+    char *tmp;
+    char c = 0;
+    tmp = *out;
+    if(tmp)
+	len = strlen(tmp);
+    else 
+	len = 0;
+    for(p = s; *p; p++){
+	if(*p == '\n')
 	    c = 'n';
-	else if(*q == '\t')
+	else if(*p == '\t')
 	    c = 't';
-	else if(*q == '\b')
+	else if(*p == '\b')
 	    c = 'b';
-	else if(*q == '\0')
+	else if(*p == '\0')
 	    c = '0';
-	else if(*q == '/')
+	else if(*p == '/')
 	    c='/';      
-	else if(*q == '@')
+	else if(*p == '@')
 	    c = '@';
 	if(c){
-	    *p++ = '\\';
-	    *p++ = c;
+	    tmp = realloc(tmp, len + 2);
+	    tmp[len] = '\\';
+	    tmp[len + 1] = c;
+	    len += 2;
 	    c = 0;
-	}else
-	    *p++ = *q;
+	}else{
+	    tmp = realloc(tmp, len + 1);
+	    tmp[len] = *p;
+	    len++;
+	}
     }
-    *out = p;
+    tmp = realloc(tmp, len + 1);
+    tmp[len] = 0;
+    *out = tmp;
+    return len;
 }
 
 
@@ -180,25 +197,23 @@ krb5_unparse_name(krb5_context context,
 		  krb5_principal principal,
 		  char **name)
 {
-    int size;
-    char *p;
+    size_t len;
     char *s;
     int i;
-    int ncomp = num_components(principal);
-    size = 2 * strlen(principal->realm) + 1;
-    for (i = 0; i < ncomp; i++)
-	size += 2 * strlen(principal->name.name_string.val[i]) + 1;
-    s = malloc(size);
-    p = s;
-    for(i = 0; i < ncomp; i++){
-	if(i) *p++ = '/';
-	quote_string(
-		     principal->name.name_string.val[i], 0,
-		     &p);
+    int ncomp = princ_num_comp(principal);
+    s = NULL;
+    for (i = 0; i < ncomp; i++){
+	if(i){
+	    s = realloc(s, len + 1);
+	    s[len] = '/';
+	    s[len + 1] = 0;
+	}
+	len = quote_string(princ_ncomp(principal, i), &s);
     }
-    *p++ = '@';
-    quote_string(principal->realm, 0, &p);
-    *p = 0;
+    s = realloc(s, len + 1);
+    s[len] = '@';
+    s[len + 1] = 0;
+    len = quote_string(princ_realm(principal), &s);
     *name = s;
     return 0;
 }
@@ -219,7 +234,7 @@ krb5_realm*
 krb5_princ_realm(krb5_context context,
 		 krb5_principal principal)
 {
-    return &principal->realm;
+    return &princ_realm(principal);
 }
 
 
@@ -228,7 +243,7 @@ krb5_princ_set_realm(krb5_context context,
 		     krb5_principal principal,
 		     krb5_realm *realm)
 {
-    principal->realm = *realm;
+    princ_realm(principal) = *realm;
 }
 
 
@@ -247,61 +262,45 @@ krb5_build_principal(krb5_context context,
     return ret;
 }
 
-krb5_error_code
-krb5_principal_set_component(krb5_context context, krb5_principal p, 
-			     int n, void *data, size_t len)
+static krb5_error_code
+append_component(krb5_context context, krb5_principal p, 
+		 general_string comp)
 {
-    general_string *tmp = p->name.name_string.val;
-    if(num_components(p) <= n){
-	int s = n + 10;
-	tmp = realloc(tmp, s * sizeof(*tmp));
-	if(!tmp)
-	    return ENOMEM;
-	memset(tmp + num_components(p), 0, 
-	       (s - num_components(p)) * sizeof(*tmp));
-	p->name.name_string.val = tmp;
-	num_components(p)= s;
-    }
-    if(p->name.name_string.val[n])
-	free(p->name.name_string.val[n]);
-    p->name.name_string.val[n] = malloc(len + 1);
-    strncpy(p->name.name_string.val[n], data, len);
-    p->name.name_string.val[n][len] = 0;
+    general_string *tmp;
+    size_t len = princ_num_comp(p);
+    tmp = realloc(princ_comp(p), (len + 1) * sizeof(*tmp));
+    if(tmp == NULL)
+	return ENOMEM;
+    princ_comp(p) = tmp;
+    princ_ncomp(p, len) = strdup(comp);
+    princ_num_comp(p)++;
     return 0;
 }
 
 static void
 va_ext_princ(krb5_context context, krb5_principal p, va_list ap)
 {
-    int n = 0;
     while(1){
 	char *s;
 	int len;
-	len  = va_arg(ap, int);
+	len = va_arg(ap, int);
 	if(len == 0)
 	    break;
 	s = va_arg(ap, char*);
-	krb5_principal_set_component(context, p, n, s, len);
-	n++;
+	append_component(context, p, s);
     }
-    num_components(p) = n;
 }
 
 static void
 va_princ(krb5_context context, krb5_principal p, va_list ap)
 {
-    int n = 0;
     while(1){
 	char *s;
-	int len;
 	s = va_arg(ap, char*);
 	if(s == NULL)
 	    break;
-	len = strlen(s);
-	krb5_principal_set_component(context, p, n, s, len);
-	n++;
+	append_component(context, p, s);
     }
-    num_components(p) = n;
 }
 
 
@@ -321,7 +320,7 @@ build_principal(krb5_context context,
 	return ENOMEM;
     princ_type(p) = KRB5_NT_PRINCIPAL;
 
-    p->realm = strdup(realm);
+    princ_realm(p) = strdup(realm);
     if(p->realm == NULL){
 	free(p);
 	return ENOMEM;
@@ -365,7 +364,6 @@ krb5_build_principal_va(krb5_context context,
     return build_principal(context, principal, rlen, realm, va_princ, ap);
 }
 
-/* Not part of MIT K5 API */
 krb5_error_code
 krb5_build_principal_va_ext(krb5_context context, 
 			    krb5_principal *principal, 
@@ -398,13 +396,10 @@ krb5_copy_principal(krb5_context context,
 		    krb5_const_principal inprinc,
 		    krb5_principal *outprinc)
 {
-    krb5_principal p;
-    int i;
-    p = calloc(1, sizeof(*p));
+    krb5_principal p = malloc(sizeof(*p));
     if (p == NULL)
 	return ENOMEM;
-    copy_PrincipalName(&inprinc->name, &p->name);
-    copy_Realm(&inprinc->realm, &p->realm);
+    copy_Principal(inprinc, p);
     *outprinc = p;
     return 0;
 }
@@ -418,11 +413,10 @@ krb5_principal_compare(krb5_context context,
     int i;
     if(!krb5_realm_compare(context, princ1, princ2))
 	return FALSE;
-    if(num_components(princ1) != num_components(princ2))
+    if(princ_num_comp(princ1) != princ_num_comp(princ2))
 	return FALSE;
-    for(i = 0; i < num_components(princ1); i++){
-	if(strcmp(princ1->name.name_string.val[i], 
-		  princ2->name.name_string.val[i]) != 0)
+    for(i = 0; i < princ_num_comp(princ1); i++){
+	if(strcmp(princ_ncomp(princ1, i), princ_ncomp(princ2, i)) != 0)
 	    return FALSE;
     }
     return TRUE;
@@ -434,7 +428,7 @@ krb5_realm_compare(krb5_context context,
 		   krb5_const_principal princ1,
 		   krb5_const_principal princ2)
 {
-    return strcmp(princ1->realm, princ2->realm) == 0;
+    return strcmp(princ_realm(princ1), princ_realm(princ2)) == 0;
 }
 
 		   
