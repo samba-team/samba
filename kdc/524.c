@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -278,12 +278,12 @@ out:
 	krb5_store_int32(sp, server->kvno); /* is this right? */
 	krb5_store_data(sp, ticket.cipher);
 	/* Aargh! This is coded as a KTEXT_ST. */
-	sp->seek(sp, MAX_KTXT_LEN - ticket.cipher.length, SEEK_CUR);
+	krb5_storage_seek(sp, MAX_KTXT_LEN - ticket.cipher.length, SEEK_CUR);
 	krb5_store_int32(sp, 0); /* mbz */
 	free_EncryptedData(&ticket);
     }
     ret = krb5_storage_to_data(sp, reply);
-    reply->length = (*sp->seek)(sp, 0, SEEK_CUR);
+    reply->length = krb5_storage_seek(sp, 0, SEEK_CUR);
     krb5_storage_free(sp);
     
     if(spn)

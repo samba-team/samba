@@ -393,7 +393,7 @@ do_version4(unsigned char *buf,
 	RCHECK(krb5_ret_int8(sp, &ticket_len), out2);
 	RCHECK(krb5_ret_int8(sp, &req_len), out2);
 	
-	pos = sp->seek(sp, ticket_len + req_len, SEEK_CUR);
+	pos = krb5_storage_seek(sp, ticket_len + req_len, SEEK_CUR);
 	
 	memset(&auth, 0, sizeof(auth));
 	memcpy(&auth.dat, buf, pos);
@@ -625,7 +625,7 @@ encode_v4_ticket(void *buf, size_t len, const EncTicketPart *et,
 		    break;
 		}
 	}
-	sp->store(sp, tmp, sizeof(tmp));
+	krb5_storage_write(sp, tmp, sizeof(tmp));
     }
 
     if((et->key.keytype != ETYPE_DES_CBC_MD5 &&
@@ -633,7 +633,7 @@ encode_v4_ticket(void *buf, size_t len, const EncTicketPart *et,
 	et->key.keytype != ETYPE_DES_CBC_CRC) || 
        et->key.keyvalue.length != 8)
 	return -1;
-    sp->store(sp, et->key.keyvalue.data, 8);
+    krb5_storage_write(sp, et->key.keyvalue.data, 8);
     
     {
 	time_t start = et->starttime ? *et->starttime : et->authtime;
