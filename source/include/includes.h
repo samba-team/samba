@@ -53,10 +53,6 @@
 #include <stddef.h>
 #include <sys/time.h>
 
-#ifdef HAVE_CTYPE_H
-#include <ctype.h>
-#endif
-
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
 #endif
