@@ -305,7 +305,9 @@ static NTSTATUS contact_winbind_auth_crap(const char *username,
 	}
 
 	if (flags & WBFLAG_PAM_UNIX_NAME) {
-		*unix_name = response.extra_data;
+		if (pull_utf8_allocate(unix_name, (char *)response.extra_data) == -1) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	return nt_status;
