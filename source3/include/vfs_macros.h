@@ -152,8 +152,8 @@
 #define SMB_VFS_OPAQUE_REALPATH(conn, path, resolved_path) ((conn)->vfs_opaque.ops.realpath((conn)->vfs_opaque.handles.realpath, (conn), (path), (resolved_path)))
 
 /* NT ACL operations. */
-#define SMB_VFS_OPAQUE_FGET_NT_ACL(fsp, fd, ppdesc) ((fsp)->conn->vfs_opaque.ops.fget_nt_acl((fsp)->conn->vfs_opaque.handles.fget_nt_acl, (fsp), (fd), (ppdesc)))
-#define SMB_VFS_OPAQUE_GET_NT_ACL(fsp, name, ppdesc) ((fsp)->conn->vfs_opaque.ops.get_nt_acl((fsp)->conn->vfs_opaque.handles.get_nt_acl, (fsp), (name), (ppdesc)))
+#define SMB_VFS_OPAQUE_FGET_NT_ACL(fsp, fd, security_info, ppdesc) ((fsp)->conn->vfs_opaque.ops.fget_nt_acl((fsp)->conn->vfs_opaque.handles.fget_nt_acl, (fsp), (fd), (security_info), (ppdesc)))
+#define SMB_VFS_OPAQUE_GET_NT_ACL(fsp, name, security_info, ppdesc) ((fsp)->conn->vfs_opaque.ops.get_nt_acl((fsp)->conn->vfs_opaque.handles.get_nt_acl, (fsp), (name), (security_info), (ppdesc)))
 #define SMB_VFS_OPAQUE_FSET_NT_ACL(fsp, fd, security_info_sent, psd) ((fsp)->conn->vfs_opaque.ops.fset_nt_acl((fsp)->conn->vfs_opaque.handles.fset_nt_acl, (fsp), (fd), (security_info_sent), (psd)))
 #define SMB_VFS_OPAQUE_SET_NT_ACL(fsp, name, security_info_sent, psd) ((fsp)->conn->vfs_opaque.ops.set_nt_acl((fsp)->conn->vfs_opaque.handles.set_nt_acl, (fsp), (name), (security_info_sent), (psd)))
 
@@ -234,8 +234,8 @@
 #define SMB_VFS_NEXT_REALPATH(handle, conn, path, resolved_path) ((handle)->vfs_next.ops.realpath((handle)->vfs_next.handles.realpath, (conn), (path), (resolved_path)))
 
 /* NT ACL operations. */
-#define SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, fd, ppdesc) ((handle)->vfs_next.ops.fget_nt_acl((handle)->vfs_next.handles.fget_nt_acl, (fsp), (fd), (ppdesc)))
-#define SMB_VFS_NEXT_GET_NT_ACL(handle, fsp, name, ppdesc) ((handle)->vfs_next.ops.get_nt_acl((handle)->vfs_next.handles.get_nt_acl, (fsp), (name), (ppdesc)))
+#define SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, fd, security_info, ppdesc) ((handle)->vfs_next.ops.fget_nt_acl((handle)->vfs_next.handles.fget_nt_acl, (fsp), (fd), (security_info), (ppdesc)))
+#define SMB_VFS_NEXT_GET_NT_ACL(handle, fsp, name, security_info, ppdesc) ((handle)->vfs_next.ops.get_nt_acl((handle)->vfs_next.handles.get_nt_acl, (fsp), (name), (security_info), (ppdesc)))
 #define SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, fd, security_info_sent, psd) ((handle)->vfs_next.ops.fset_nt_acl((handle)->vfs_next.handles.fset_nt_acl, (fsp), (fd), (security_info_sent), (psd)))
 #define SMB_VFS_NEXT_SET_NT_ACL(handle, fsp, name, security_info_sent, psd) ((handle)->vfs_next.ops.set_nt_acl((handle)->vfs_next.handles.set_nt_acl, (fsp), (name), (security_info_sent), (psd)))
 
