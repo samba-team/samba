@@ -783,13 +783,13 @@ fetch_alias_mem(uint32 rid, SAM_ALIAS_MEM_INFO *delta, DOM_SID dom_sid)
 
 	if (sid_equal(&dom_sid, &global_sid_Builtin)) {
 		sid_type = SID_NAME_WKN_GRP;
-		if (!get_builtin_group_from_sid(group_sid, &map, False)) {
+		if (!get_builtin_group_from_sid(&group_sid, &map, False)) {
 			DEBUG(0, ("Could not find builtin group %s\n", sid_string_static(&group_sid)));
 			return NT_STATUS_NO_SUCH_GROUP;
 		}
 	} else {
 		sid_type = SID_NAME_ALIAS;
-		if (!get_local_group_from_sid(group_sid, &map, False)) {
+		if (!get_local_group_from_sid(&group_sid, &map, False)) {
 			DEBUG(0, ("Could not find local group %s\n", sid_string_static(&group_sid)));
 			return NT_STATUS_NO_SUCH_GROUP;
 		}

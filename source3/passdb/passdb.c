@@ -1074,7 +1074,7 @@ BOOL local_password_change(const char *user_name, int local_flags,
  Convert a uid to SID - algorithmic.
 ****************************************************************************/
 
-static DOM_SID *algorithmic_uid_to_sid(DOM_SID *psid, uid_t uid)
+DOM_SID *algorithmic_uid_to_sid(DOM_SID *psid, uid_t uid)
 {
 	if ( !lp_enable_rid_algorithm() )
 		return NULL;
