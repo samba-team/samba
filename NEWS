@@ -1,10 +1,12 @@
 Changes in release 0.4f
 
+ * update autoconf to 2.53
+
  * accept addresses with or without ports in krb5_rd_cred
 
  * make it work with recent CVS openssl
 
- * use or own string2key function even with openssl (that handles weak
+ * use our own string2key function even with openssl (that handles weak
    keys incorrectly)
 
  * more system-specific requirements in login
