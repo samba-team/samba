@@ -56,7 +56,7 @@ int net_rpc_join_ok(const char *domain)
 		return 1;
 	}
 
-	if (!cli_nt_session_open(cli, PIPE_NETLOGON)) {
+	if (!cli_nt_session_open(cli, PI_NETLOGON)) {
 		DEBUG(0,("Error connecting to NETLOGON pipe\n"));
 		goto done;
 	}
@@ -150,7 +150,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	/* Fetch domain sid */
 
-	if (!cli_nt_session_open(cli, PIPE_LSARPC)) {
+	if (!cli_nt_session_open(cli, PI_LSARPC)) {
 		DEBUG(0, ("Error connecting to SAM pipe\n"));
 		goto done;
 	}
@@ -170,7 +170,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	cli_nt_session_close(cli); /* Done with this pipe */
 
 	/* Create domain user */
-	if (!cli_nt_session_open(cli, PIPE_SAMR)) {
+	if (!cli_nt_session_open(cli, PI_SAMR)) {
 		DEBUG(0, ("Error connecting to SAM pipe\n"));
 		goto done;
 	}

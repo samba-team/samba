@@ -952,6 +952,8 @@ static BOOL rpc_pipe_set_hnd_state(struct cli_state *cli, const char *pipe_name,
 	return state_set;
 }
 
+#if 0	/* JERRY */
+
 /****************************************************************************
  check the rpc bind acknowledge response
 ****************************************************************************/
@@ -982,32 +984,73 @@ static BOOL valid_pipe_name(const char *pipe_name, RPC_IFACE *abstract, RPC_IFAC
 	return False;
 }
 
+#endif
+
 /****************************************************************************
  check the rpc bind acknowledge response
 ****************************************************************************/
 
-static BOOL check_bind_response(RPC_HDR_BA *hdr_ba, const char *pipe_name, RPC_IFACE *transfer)
+int get_pipe_index( const char *pipe_name )
+{
+	int pipe_idx = 0;
+
+	while (pipe_names[pipe_idx].client_pipe != NULL) {
+		if (strequal(pipe_name, pipe_names[pipe_idx].client_pipe )) 
+			return pipe_idx;
+		pipe_idx++;
+	};
+
+	return -1;
+}
+
+/****************************************************************************
+ check the rpc bind acknowledge response
+****************************************************************************/
+
+static BOOL valid_pipe_name_by_idx(const int pipe_idx, RPC_IFACE *abstract, RPC_IFACE *transfer)
+{
+	if ( pipe_idx >= PI_MAX_PIPES ) {
+		DEBUG(0,("valid_pipe_name_by_idx: Programmer error!  Invalid pipe index [%d]\n",
+			pipe_idx));
+		return False;
+	}
+
+	DEBUG(5,("Bind Abstract Syntax: "));	
+	dump_data(5, (char*)&(pipe_names[pipe_idx].abstr_syntax), 
+	          sizeof(pipe_names[pipe_idx].abstr_syntax));
+	DEBUG(5,("Bind Transfer Syntax: "));
+	dump_data(5, (char*)&(pipe_names[pipe_idx].trans_syntax),
+	          sizeof(pipe_names[pipe_idx].trans_syntax));
+
+	/* copy the required syntaxes out so we can do the right bind */
+	
+	*transfer = pipe_names[pipe_idx].trans_syntax;
+	*abstract = pipe_names[pipe_idx].abstr_syntax;
+
+	return True;
+}
+
+/****************************************************************************
+ check the rpc bind acknowledge response
+****************************************************************************/
+
+static BOOL check_bind_response(RPC_HDR_BA *hdr_ba, const int pipe_idx, RPC_IFACE *transfer)
 {
 	int i = 0;
 
-	while ((pipe_names[i].client_pipe != NULL) && hdr_ba->addr.len > 0) {
-		if ((strequal(pipe_name, pipe_names[i].client_pipe ))) {
-			if (strequal(hdr_ba->addr.str, pipe_names[i].server_pipe )) {
-				DEBUG(5,("bind_rpc_pipe: server pipe_name found: %s\n",
-				         pipe_names[i].server_pipe ));
-				break;
-			} else {
-				DEBUG(4,("bind_rpc_pipe: pipe_name %s != expected pipe %s.  oh well!\n",
-				         pipe_names[i].server_pipe ,
-				         hdr_ba->addr.str));
-				break;
-			}
-		} else {
-			i++;
-		}
+	if ( hdr_ba->addr.len <= 0)
+		return False;
+		
+	if ( !strequal(hdr_ba->addr.str, pipe_names[pipe_idx].server_pipe )) 
+	{
+		DEBUG(4,("bind_rpc_pipe: pipe_name %s != expected pipe %s.  oh well!\n",
+		         pipe_names[i].server_pipe ,hdr_ba->addr.str));
+		return False;
 	}
+	
+	DEBUG(5,("bind_rpc_pipe: server pipe_name found: %s\n", pipe_names[i].server_pipe ));
 
-	if (pipe_names[i].server_pipe == NULL) {
+	if (pipe_names[pipe_idx].server_pipe == NULL) {
 		DEBUG(2,("bind_rpc_pipe: pipe name %s unsupported\n", hdr_ba->addr.str));
 		return False;
 	}
@@ -1120,7 +1163,7 @@ static BOOL rpc_send_auth_reply(struct cli_state *cli, prs_struct *rdata, uint32
  Do an rpc bind.
 ****************************************************************************/
 
-BOOL rpc_pipe_bind(struct cli_state *cli, const char *pipe_name, char *my_name)
+BOOL rpc_pipe_bind(struct cli_state *cli, const int pipe_idx, char *my_name)
 {
 	RPC_IFACE abstract;
 	RPC_IFACE transfer;
@@ -1130,9 +1173,12 @@ BOOL rpc_pipe_bind(struct cli_state *cli, const char *pipe_name, char *my_name)
 	uint32 rpc_call_id;
 	char buffer[MAX_PDU_FRAG_LEN];
 
-	DEBUG(5,("Bind RPC Pipe[%x]: %s\n", cli->nt_pipe_fnum, pipe_name));
+	if ( (pipe_idx < 0) || (pipe_idx >= PI_MAX_PIPES) )
+		return False;
 
-	if (!valid_pipe_name(pipe_name, &abstract, &transfer))
+	DEBUG(5,("Bind RPC Pipe[%x]: %s\n", cli->nt_pipe_fnum, pipe_names[pipe_idx].client_pipe));
+
+	if (!valid_pipe_name_by_idx(pipe_idx, &abstract, &transfer))
 		return False;
 
 	prs_init(&rpc_out, 0, cli->mem_ctx, MARSHALL);
@@ -1165,7 +1211,7 @@ BOOL rpc_pipe_bind(struct cli_state *cli, const char *pipe_name, char *my_name)
 			return False;
 		}
 
-		if(!check_bind_response(&hdr_ba, pipe_name, &transfer)) {
+		if(!check_bind_response(&hdr_ba, pipe_idx, &transfer)) {
 			DEBUG(0,("rpc_pipe_bind: check_bind_response failed.\n"));
 			prs_mem_free(&rdata);
 			return False;
@@ -1205,31 +1251,34 @@ void cli_nt_set_ntlmssp_flgs(struct cli_state *cli, uint32 ntlmssp_flgs)
  Open a session.
  ****************************************************************************/
 
-BOOL cli_nt_session_open(struct cli_state *cli, const char *pipe_name)
+BOOL cli_nt_session_open(struct cli_state *cli, const int pipe_idx)
 {
 	int fnum;
 
 	SMB_ASSERT(cli->nt_pipe_fnum == 0);
+	
+	if ( (pipe_idx < 0) || (pipe_idx >= PI_MAX_PIPES) )
+		return False;
 
 	if (cli->capabilities & CAP_NT_SMBS) {
-		if ((fnum = cli_nt_create(cli, &pipe_name[5], DESIRED_ACCESS_PIPE)) == -1) {
+		if ((fnum = cli_nt_create(cli, &pipe_names[pipe_idx].client_pipe[5], DESIRED_ACCESS_PIPE)) == -1) {
 			DEBUG(0,("cli_nt_session_open: cli_nt_create failed on pipe %s to machine %s.  Error was %s\n",
-				 &pipe_name[5], cli->desthost, cli_errstr(cli)));
+				 &pipe_names[pipe_idx].client_pipe[5], cli->desthost, cli_errstr(cli)));
 			return False;
 		}
 
 		cli->nt_pipe_fnum = (uint16)fnum;
 	} else {
-		if ((fnum = cli_open(cli, pipe_name, O_CREAT|O_RDWR, DENY_NONE)) == -1) {
+		if ((fnum = cli_open(cli, pipe_names[pipe_idx].client_pipe, O_CREAT|O_RDWR, DENY_NONE)) == -1) {
 			DEBUG(0,("cli_nt_session_open: cli_open failed on pipe %s to machine %s.  Error was %s\n",
-				 pipe_name, cli->desthost, cli_errstr(cli)));
+				 pipe_names[pipe_idx].client_pipe, cli->desthost, cli_errstr(cli)));
 			return False;
 		}
 
 		cli->nt_pipe_fnum = (uint16)fnum;
 
 		/**************** Set Named Pipe State ***************/
-		if (!rpc_pipe_set_hnd_state(cli, pipe_name, 0x4300)) {
+		if (!rpc_pipe_set_hnd_state(cli, pipe_names[pipe_idx].client_pipe, 0x4300)) {
 			DEBUG(0,("cli_nt_session_open: pipe hnd state failed.  Error was %s\n",
 				  cli_errstr(cli)));
 			cli_close(cli, cli->nt_pipe_fnum);
@@ -1239,7 +1288,7 @@ BOOL cli_nt_session_open(struct cli_state *cli, const char *pipe_name)
 
 	/******************* bind request on pipe *****************/
 
-	if (!rpc_pipe_bind(cli, pipe_name, global_myname)) {
+	if (!rpc_pipe_bind(cli, pipe_idx, global_myname)) {
 		DEBUG(0,("cli_nt_session_open: rpc bind failed. Error was %s\n",
 		          cli_errstr(cli)));
 		cli_close(cli, cli->nt_pipe_fnum);
@@ -1263,7 +1312,7 @@ BOOL cli_nt_session_open(struct cli_state *cli, const char *pipe_name)
 	strupper(cli->mach_acct);
 
 	/* Remember which pipe we're talking to */
-	fstrcpy(cli->pipe_name, pipe_name);
+	fstrcpy(cli->pipe_name, pipe_names[pipe_idx].client_pipe);
 
 	return True;
 }

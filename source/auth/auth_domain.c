@@ -190,7 +190,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	 * into account also. This patch from "Bjart Kvarme" <bjart.kvarme@usit.uio.no>.
 	 */
 
-	if(cli_nt_session_open(*cli, PIPE_NETLOGON) == False) {
+	if(cli_nt_session_open(*cli, PI_NETLOGON) == False) {
 		DEBUG(0,("connect_to_domain_password_server: unable to open the domain client session to \
 machine %s. Error was : %s.\n", remote_machine, cli_errstr(*cli)));
 		cli_nt_session_close(*cli);

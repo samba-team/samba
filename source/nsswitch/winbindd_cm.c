@@ -460,7 +460,7 @@ static NTSTATUS cm_open_connection(const char *domain,const char *pipe_name,
 		return result;
 	}
 	
-	if (!cli_nt_session_open (new_conn->cli, pipe_name)) {
+	if (!cli_nt_session_open (new_conn->cli, get_pipe_index(pipe_name))) {
 		result = NT_STATUS_PIPE_NOT_AVAILABLE;
 		add_failed_connection_entry(new_conn, result);
 		cli_shutdown(new_conn->cli);
