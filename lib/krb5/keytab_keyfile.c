@@ -104,7 +104,7 @@ get_cell_and_realm (krb5_context context,
     }
     /* uppercase */
     for (cp = buf; *cp != '\0'; cp++)
-	*cp = toupper(*cp);
+	*cp = toupper((unsigned char)*cp);
     
     d->realm = strdup (buf);
     if (d->realm == NULL) {
