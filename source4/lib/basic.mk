@@ -1,6 +1,13 @@
 # LIB BASIC subsystem
 
 ##############################
+# Start SUBSYSTEM LIBREPLACE
+[SUBSYSTEM::LIBREPLACE]
+INIT_OBJ_FILES = lib/replace.o
+# End SUBSYSTEM LIBREPLACE
+##############################
+
+##############################
 # Start SUBSYSTEM LIBBASIC
 [SUBSYSTEM::LIBBASIC]
 INIT_OBJ_FILES = lib/version.o
@@ -11,7 +18,6 @@ ADD_OBJ_FILES = \
 		lib/interface.o \
 		lib/interfaces.o \
 		lib/pidfile.o \
-		lib/replace.o \
 		lib/signal.o \
 		lib/system.o \
 		lib/time.o \
@@ -50,6 +56,6 @@ ADD_OBJ_FILES = \
 		lib/server_mutex.o \
 		lib/idtree.o
 REQUIRED_SUBSYSTEMS = \
-		LIBTDB CHARSET
+		LIBTDB CHARSET LIBREPLACE
 # End SUBSYSTEM LIBBASIC
 ##############################
