@@ -556,6 +556,7 @@ static BOOL rpc_redir_local(rpcsrv_struct *l, prs_struct *req, prs_struct *resp,
 		DEBUG(200,("rpc_redir_local: %d\n", __LINE__));
 		prs_debug_out(resp    , "redir_local resp", 200);
 
+		prs_free_data(&l->data_i);		
 		return True;
 	}
 

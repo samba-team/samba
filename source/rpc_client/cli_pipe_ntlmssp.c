@@ -207,7 +207,7 @@ static BOOL create_ntlmssp_pdu(struct cli_connection *con,
 
 	prs_init(&data_t   , 0       , 4, False);
 	prs_init(&hdr      , frag_len, 4, False);
-	prs_init(&hdr_auth , 8       , 4, False);
+	prs_init(&hdr_auth , 0       , 4, False);
 	prs_init(&auth_verf, auth_len, 4, False);
 
 	prs_append_data(&data_t, prs_data(data, data_start), data_len);
@@ -321,10 +321,10 @@ static BOOL create_ntlmssp_bind_req(struct cli_connection *con,
 		return False;
 	}
 
-	prs_init(&rhdr     , 0x10, 4, False);
-	prs_init(&rhdr_rb  , 0x0 , 4, False);
-	prs_init(&rhdr_auth, 8   , 4, False);
-	prs_init(&auth_req , 0x0 , 4, False);
+	prs_init(&rhdr     , 0x0, 4, False);
+	prs_init(&rhdr_rb  , 0x0, 4, False);
+	prs_init(&rhdr_auth, 0x0, 4, False);
+	prs_init(&auth_req , 0x0, 4, False);
 
 	/* create the bind request RPC_HDR_RB */
 	make_rpc_hdr_rb(&hdr_rb, 0x1630, 0x1630, nt->key.pid,
@@ -509,7 +509,7 @@ static BOOL create_ntlmssp_bind_cont(struct cli_connection *con,
 		return False;
 	}
 
-	prs_init(&hdra     , 0x10, 4, False);
+	prs_init(&hdra     , 0x0, 4, False);
 	prs_init(&hdr_autha, 0x0, 4, False);
 	prs_init(&auth_resp, 0x0, 4, False);
 

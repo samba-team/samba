@@ -144,7 +144,7 @@ static BOOL create_netsec_pdu(struct cli_connection *con,
 
 	prs_init(&data_t   , 0       , 4, False);
 	prs_init(&hdr      , frag_len, 4, False);
-	prs_init(&hdr_auth , 8       , 4, False);
+	prs_init(&hdr_auth , 0       , 4, False);
 	prs_init(&auth_verf, auth_len, 4, False);
 
 	prs_append_data(&data_t, d, data_len);
@@ -221,10 +221,10 @@ static BOOL create_netsec_bind_req(struct cli_connection *con,
 	struct netsec_creds *usr;
 	usr = (struct netsec_creds*)cli_conn_get_auth_creds(con);
 
-	prs_init(&rhdr     , 0x10, 4, False);
-	prs_init(&rhdr_rb  , 0x0 , 4, False);
-	prs_init(&rhdr_auth, 8   , 4, False);
-	prs_init(&auth_req , 0x0 , 4, False);
+	prs_init(&rhdr     , 0x0, 4, False);
+	prs_init(&rhdr_rb  , 0x0, 4, False);
+	prs_init(&rhdr_auth, 0x0, 4, False);
+	prs_init(&auth_req , 0x0, 4, False);
 
 	/* create the bind request RPC_HDR_RB */
 	make_rpc_hdr_rb(&hdr_rb, 0x1630, 0x1630, nt->key.pid,

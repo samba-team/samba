@@ -3223,7 +3223,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		DEBUG(100,("cli_session_setup_x: crypt key\n"));
 		dump_data(100, cli->cryptkey, 8);
 #endif
-		prs_init(&auth_resp, 1024, 4, False);
+		prs_init(&auth_resp, 0x0, 4, False);
 
 		if (cli->use_ntlmv2 != False)
 		{

@@ -40,7 +40,6 @@ BOOL vuid_io_key(char *desc, vuser_key *r_u, prs_struct *ps, int depth)
 
 	prs_uint32("pid ", ps, 0, &r_u->pid);
 	prs_uint16("vuid", ps, 0, &r_u->vuid);
-	prs_align(ps);
 
 	return True;
 }

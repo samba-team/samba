@@ -137,30 +137,29 @@ force write permissions on print services.
 */
 
 
-static prs_struct pdu;
-
 /****************************************************************************
   process an smb from the client - split out from the process() code so
   it can be used by the oplock break code.
 ****************************************************************************/
-static void process_msrpc(rpcsrv_struct *l, const char* name)
+static void process_msrpc(rpcsrv_struct *l, const char* name,
+				prs_struct *pdu)
 {
   static int trans_num;
-  int32 len = prs_buf_len(&pdu);
+  int32 len = prs_buf_len(pdu);
 
   DEBUG( 6, ( "got message of len 0x%x\n", len ) );
 
-	dump_data(10, pdu.data, len);
+	dump_data(10, pdu->data, len);
 
 #ifdef WITH_VTP
-  if(trans_num == 1 && VT_Check(pdu.data)) 
+  if(trans_num == 1 && VT_Check(pdu->data)) 
   {
     VT_Process();
     return;
   }
 #endif
 
-	if (rpc_local(l, pdu.data, len, name) &&
+	if (rpc_local(l, pdu->data, len, name) &&
 	    msrpc_send(l->c, &l->rsmb_pdu))
 	{
 		prs_free_data(&l->rsmb_pdu);
@@ -256,19 +255,24 @@ BOOL get_user_creds(int c, vuser_key *uk)
 #endif
 
  	/* make a static data parsing structure from the api_fd_reply data */
- 	prs_create(&ps, buf, len, 4, True);
+ 	prs_init(&ps, 0, 4, True);
+ 	prs_add_data(&ps, buf, len);
 
 	if (!creds_io_cmd("creds", &cmd, &ps, 0))
 	{
 		DEBUG(0,("Unable to parse credentials\n"));
+		prs_free_data(&ps);
 		return False;
 	}
 
 	if (ps.offset != rl)
 	{
 		DEBUG(0,("Buffer size %d %d!\n", ps.offset, rl));
+		prs_free_data(&ps);
 		return False;
 	}
+
+	prs_free_data(&ps);
 
 	switch (cmd.command)
 	{
@@ -421,6 +425,7 @@ void msrpcd_process(msrpc_service_fns *fn, rpcsrv_struct *l, const char* name)
     int counter;
     int service_load_counter = 0;
     BOOL got_msrpc = False;
+	prs_struct pdu;
 
     errno = 0;      
 
@@ -487,7 +492,8 @@ void msrpcd_process(msrpc_service_fns *fn, rpcsrv_struct *l, const char* name)
 
     if(got_msrpc)
     {
-      process_msrpc(l, name);
+      process_msrpc(l, name, &pdu);
     }
+	prs_free_data(&pdu);
   }
 }

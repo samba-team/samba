@@ -40,9 +40,9 @@ void prs_debug(prs_struct *ps, int depth, const char *desc, const char *fn_name)
 void prs_debug_out(const prs_struct *ps, char *msg, int level)
 {
 	CHECK_STRUCT(ps);
-	DEBUG(level,("%s ps: io %s align %d offset %d err %d data %p len %d\n",
+	DEBUG(level,("%s ps: io %s align %d offset %d err %d data %p\n",
 		msg, BOOLSTR(ps->io), ps->align, ps->offset, ps->error,
-		ps->data, prs_buf_len(ps)));
+		ps->data));
 
 	if (ps->data != NULL)
 	{
@@ -68,12 +68,13 @@ void prs_init(prs_struct *ps, uint32 size, uint8 align,  BOOL io)
 	ps->start = 0;
 	ps->end   = 0;
 
+	ps->next = NULL;
+
 	if (size != 0)
 	{
 		prs_realloc_data(ps, size);
 		ps->end   = 0xffffffff;
 	}
-	ps->next = NULL;
 
 	CHECK_STRUCT(ps);
 }
@@ -272,11 +273,16 @@ void prs_free_data(prs_struct *buf)
 static void *prs_realloc(void *p, size_t size)
 {
 	void *ret;
+	if (size == 0)
+	{
+		safe_free(p);
+		return NULL;
+	}
 	ret = (void *)malloc(size);
 	if (!ret) return NULL;
 	if (p) {
 		memcpy(ret, p, size);
-		*(char*)p = 0;
+		memset(p, 0, 1);
 	}
 	safe_free(p);
 	return ret;
@@ -291,13 +297,15 @@ BOOL prs_realloc_data(prs_struct *buf, size_t new_size)
 
 	CHECK_STRUCT(buf);
 
+	prs_debug_out(buf, "prs_realloc_data - before", 200);
+
 	if (new_size == 0)
 	{
 		prs_free_data(buf);
 		return True;
 	}
 
-	new_data = (char*)prs_realloc(buf->data, new_size);
+	new_data = (char*)Realloc(buf->data, new_size);
 
 	if (new_data != NULL)
 	{
@@ -324,8 +332,7 @@ BOOL prs_realloc_data(prs_struct *buf, size_t new_size)
 
 	buf->end   = buf->start + new_size;
 
-	DEBUG(150,("prs_realloc_data: size: %d start: %d end: %d\n",
-				new_size, buf->start, buf->end));
+	prs_debug_out(buf, "prs_realloc_data - after", 200);
 	return True;
 }
 

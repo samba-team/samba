@@ -84,6 +84,7 @@ BOOL tdb_lookup_vuid( const vuser_key *uk, user_struct **usr)
 	{
 		if (!vuid_init_db())
 		{
+			safe_free((*usr));
 			return False;
 		}
 	}
@@ -93,6 +94,8 @@ BOOL tdb_lookup_vuid( const vuser_key *uk, user_struct **usr)
 	prs_init(&key, 0, 4, False);
 	if (!vuid_io_key("key", &k, &key, 0))
 	{
+		prs_free_data(&key);
+		safe_free((*usr));
 		return False;
 	}
 
@@ -104,6 +107,7 @@ BOOL tdb_lookup_vuid( const vuser_key *uk, user_struct **usr)
 		{
 			prs_free_data(&key);
 			prs_free_data(&data);
+			safe_free((*usr));
 			return False;
 		}
 	}

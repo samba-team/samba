@@ -48,6 +48,7 @@ enum SID_NAME_USE
 #define LSA_OPENPOLICY2        0x2c
 #define LSA_OPENSECRET         0x1c
 #define LSA_QUERYSECRET        0x1e
+#define LSA_SETSECRET        0x1f
 
 #define LSA_MAX_GROUPS 32
 #define LSA_MAX_SIDS 32
@@ -209,6 +210,22 @@ typedef struct lsa_r_query_secret_info
 	uint32 status;
 
 } LSA_R_QUERY_SECRET;
+
+/* LSA_Q_SET_SECRET - LSA Set Secret */
+typedef struct lsa_q_set_secret_info
+{
+	POLICY_HND pol;
+
+	LSA_SECRET_INFO info;    /* [in, out] */
+
+} LSA_Q_SET_SECRET;
+
+/* LSA_R_SET_SECRET - response to LSA Set Secret */
+typedef struct lsa_r_set_secret_info
+{
+	uint32 status;
+
+} LSA_R_SET_SECRET;
 
 /* LSA_Q_ENUM_TRUST_DOM - LSA enumerate trusted domains */
 typedef struct lsa_enum_trust_dom_info

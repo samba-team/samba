@@ -62,12 +62,12 @@ user_struct *get_valid_user_struct(const vuser_key *key)
 	}
 	if (!tdb_lookup_vuid(key, &usr))
 	{
-		vuid_free_user_struct(usr);
 		return NULL;
 	}
 	if (usr->uid == (uid_t)-1 || usr->gid == (gid_t)-1)
 	{
 		vuid_free_user_struct(usr);
+		return NULL;
 	}
 	return usr;
 }

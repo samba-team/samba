@@ -398,7 +398,7 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 
 		DEBUG(10,("rpc_api_pipe: another fragment expected\n"));
 
-		prs_init(&rpdu, 0x18, 4, True);
+		prs_init(&rpdu, 0, 4, True);
 
 		rpc_api_rcv_pdu(con, &rpdu);
 

@@ -469,7 +469,7 @@ static BOOL api_ntlmssp_auth_gen(rpcsrv_struct *l, prs_struct *resp,
 
 	prs_init(&(rhdr ), 0, 4, False);
 	prs_init(&(rauth), 0, 4, False);
-	prs_init(&(rverf), 140, 4, False);
+	prs_init(&(rverf), 0, 4, False);
 	prs_init(&(rntlm), 0, 4, False);
 
 	generate_random_buffer(challenge, 8, False);

@@ -94,7 +94,7 @@ struct policy_cache *init_policy_cache(int num_pol_hnds)
 	struct policy_cache *cache = malloc(sizeof(struct policy_cache));
 	if (cache != NULL)
 	{
-		cache->bmap = bitmap_allocate(num_pol_hnds);
+		cache->bmap = NULL;
 		cache->Policy = NULL;
 	}
 	return cache;
@@ -156,16 +156,8 @@ BOOL register_policy_hnd(struct policy_cache *cache,
 				POLICY_HND *hnd,
 				uint32 access_mask)
 {
-	int i;
 	struct policy *p;
-
-	i = bitmap_find(cache->bmap, 1);
-
-	if (i == -1)
-	{
-		DEBUG(0,("ERROR: out of cache->Policy Handles!\n"));
-		return False;
-	}
+	static int count = 1;
 
 	p = (struct policy *)malloc(sizeof(*p));
 	if (!p)
@@ -177,7 +169,7 @@ BOOL register_policy_hnd(struct policy_cache *cache,
 	ZERO_STRUCTP(p);
 
 	p->open = True;				
-	p->pnum = i;
+	p->pnum = count++;
 	p->access_mask = access_mask;
 	if (key != NULL)
 	{
@@ -190,10 +182,9 @@ BOOL register_policy_hnd(struct policy_cache *cache,
 	}
 
 
-	bitmap_set(cache->bmap, i);
 	DLIST_ADD(cache->Policy, p);
 	
-	DEBUG(4,("Opened policy hnd[%x] ", i));
+	DEBUG(4,("Opened policy hnd[%x] ", p->pnum));
 	DEBUG(10,("register_policy_hnd: vuser [%d, %x]\n",
 	           p->key.pid, p->key.vuid));
 
@@ -300,21 +291,18 @@ BOOL close_policy_hnd(struct policy_cache *cache, POLICY_HND *hnd)
 
 	DLIST_REMOVE(cache->Policy, p);
 
-	bitmap_clear(cache->bmap, p->pnum);
-
 	if (p->free_fn != NULL)
 	{
 		p->free_fn(p->dev);
 	}
 	else
 	{
-		free(p->dev);
+		safe_free(p->dev);
 	}
 
-	ZERO_STRUCTP(p);
-	ZERO_STRUCTP(hnd);
-
 	free(p);
+
+	ZERO_STRUCTP(hnd);
 
 	return True;
 }

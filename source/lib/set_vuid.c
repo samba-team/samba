@@ -36,9 +36,11 @@ void init_vuid(void)
 ****************************************************************************/
 BOOL become_vuser(const vuser_key *k)
 {
-	user_struct *vuser = get_valid_user_struct(k);
+	user_struct *vuser;
+	BOOL ret;
 
 	unbecome_vuser();
+	vuser = get_valid_user_struct(k);
 
 	if (vuser == NULL)
 	{
@@ -47,11 +49,14 @@ BOOL become_vuser(const vuser_key *k)
 
 	if (!check_vuser_ok(&vcache, vuser, -1))
 	{
+		vuid_free_user_struct(vuser);
 		return False;
 	}
 
-	return become_unix_sec_ctx(k, NULL, vuser->uid, vuser->gid,
+	ret = become_unix_sec_ctx(k, NULL, vuser->uid, vuser->gid,
 	                           vuser->n_groups, vuser->groups);
+	vuid_free_user_struct(vuser);
+	return ret;
 }
 
 /****************************************************************************
