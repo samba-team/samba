@@ -9,8 +9,10 @@
 securely forward X conections
 .Sh SYNOPSIS
 .Ar kx
-.Op Fl d
 .Op Fl l Ar username
+.Op Fl d
+.Op Fl t
+.Op Fl p Ar port
 .Ar host
 .Sh DESCRIPTION
 The
@@ -21,9 +23,14 @@ through an authenticated and encrypted stream.  Options supported by
 .Bl -tag -width Ds
 .It Fl l
 Log in on remote the host as user
-.Ar username
+.Ar username .
 .It Fl d
 Do not fork.
+.It Fl t
+Listen not only on a UNIX-domain socket but on a TCP socket as well.
+.It Fl p
+Use the port
+.Ar port .
 .El
 .Pp
 This program is used by
