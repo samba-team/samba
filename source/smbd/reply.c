@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/Netbios implementation.
    Version 1.9.
    Main SMB reply routines
@@ -912,13 +912,20 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
   {
     fstring dom_user;
+    DOM_SID sid;
+    enum SID_NAME_USE sid_type;
 
     /* Work out who's who */
 
     slprintf(dom_user, sizeof(dom_user) - 1,"%s%s%s",
 	     domain, lp_winbind_separator(), user);
 
-    if (sys_getpwnam(dom_user) != NULL) {
+    /* A getpwnam() might not work from winbindd before authentication if 
+       we are win2k with permissions compatible only with win2k servers.
+       Use winbind_lookup_name() as an existence check. */
+
+    if (sys_getpwnam(dom_user) != NULL ||
+	winbind_lookup_name(domain, user, &sid, &sid_type)) {
       fstrcpy(user, dom_user);
       DEBUG(3,("Using unix username %s\n", dom_user));
     }
