@@ -36,7 +36,7 @@
 
 /* Update this when you change the interface.  */
 
-#define WINBIND_INTERFACE_VERSION 3
+#define WINBIND_INTERFACE_VERSION 4
 
 /* Socket commands */
 
@@ -199,6 +199,13 @@ struct winbindd_response {
 			fstring samba_version;
 		} info;
 		fstring domain_name;
+
+		struct auth_reply {
+			uint32 nt_status;
+			fstring nt_status_string;
+			fstring error_string;
+			int pam_error;
+		} auth;
 	} data;
 
 	/* Variable length return data */

@@ -86,6 +86,8 @@ static BOOL smb_pam_nt_status_error_handler(pam_handle_t *pamh, int pam_error,
 	if (smb_pam_error_handler(pamh, pam_error, msg, dbglvl))
 		return True;
 
+	*nt_status = pam_to_nt_status(pam_error);
+
 	if (NT_STATUS_IS_OK(*nt_status)) {
 		/* Complain LOUDLY */
 		DEBUG(0, ("smb_pam_nt_status_error_handler: PAM: BUG: PAM and NT_STATUS \
@@ -507,35 +509,27 @@ static NTSTATUS smb_pam_auth(pam_handle_t *pamh, char *user)
 	switch( pam_error ){
 		case PAM_AUTH_ERR:
 			DEBUG(2, ("smb_pam_auth: PAM: Athentication Error for user %s\n", user));
-			nt_status = NT_STATUS_WRONG_PASSWORD;
 			break;
 		case PAM_CRED_INSUFFICIENT:
 			DEBUG(2, ("smb_pam_auth: PAM: Insufficient Credentials for user %s\n", user));
-			nt_status = NT_STATUS_INSUFFICIENT_LOGON_INFO;
 			break;
 		case PAM_AUTHINFO_UNAVAIL:
 			DEBUG(2, ("smb_pam_auth: PAM: Authentication Information Unavailable for user %s\n", user));
-			nt_status = NT_STATUS_LOGON_FAILURE;
 			break;
 		case PAM_USER_UNKNOWN:
 			DEBUG(2, ("smb_pam_auth: PAM: Username %s NOT known to Authentication system\n", user));
-			nt_status = NT_STATUS_NO_SUCH_USER;
 			break;
 		case PAM_MAXTRIES:
 			DEBUG(2, ("smb_pam_auth: PAM: One or more authentication modules reports user limit for user %s exceeeded\n", user));
-			nt_status = NT_STATUS_REMOTE_SESSION_LIMIT;
 			break;
 		case PAM_ABORT:
 			DEBUG(0, ("smb_pam_auth: PAM: One or more PAM modules failed to load for user %s\n", user));
-			nt_status = NT_STATUS_LOGON_FAILURE;
 			break;
 		case PAM_SUCCESS:
 			DEBUG(4, ("smb_pam_auth: PAM: User %s Authenticated OK\n", user));
-			nt_status = NT_STATUS_OK;
 			break;
 		default:
 			DEBUG(0, ("smb_pam_auth: PAM: UNKNOWN ERROR while authenticating user %s\n", user));
-			nt_status = NT_STATUS_LOGON_FAILURE;
 			break;
 	}
 
@@ -556,30 +550,23 @@ static NTSTATUS smb_pam_account(pam_handle_t *pamh, const char * user)
 	switch( pam_error ) {
 		case PAM_AUTHTOK_EXPIRED:
 			DEBUG(2, ("smb_pam_account: PAM: User %s is valid but password is expired\n", user));
-			nt_status = NT_STATUS_PASSWORD_EXPIRED;
 			break;
 		case PAM_ACCT_EXPIRED:
 			DEBUG(2, ("smb_pam_account: PAM: User %s no longer permitted to access system\n", user));
-			nt_status = NT_STATUS_ACCOUNT_EXPIRED;
 			break;
 		case PAM_AUTH_ERR:
 			DEBUG(2, ("smb_pam_account: PAM: There was an authentication error for user %s\n", user));
-			nt_status = NT_STATUS_LOGON_FAILURE;
 			break;
 		case PAM_PERM_DENIED:
 			DEBUG(0, ("smb_pam_account: PAM: User %s is NOT permitted to access system at this time\n", user));
-			nt_status = NT_STATUS_ACCOUNT_RESTRICTION;
 			break;
 		case PAM_USER_UNKNOWN:
 			DEBUG(0, ("smb_pam_account: PAM: User \"%s\" is NOT known to account management\n", user));
-			nt_status = NT_STATUS_NO_SUCH_USER;
 			break;
 		case PAM_SUCCESS:
 			DEBUG(4, ("smb_pam_account: PAM: Account OK for User: %s\n", user));
-			nt_status = NT_STATUS_OK;
 			break;
 		default:
-			nt_status = NT_STATUS_ACCOUNT_DISABLED;
 			DEBUG(0, ("smb_pam_account: PAM: UNKNOWN PAM ERROR (%d) during Account Management for User: %s\n", pam_error, user));
 			break;
 	}
@@ -607,27 +594,21 @@ static NTSTATUS smb_pam_setcred(pam_handle_t *pamh, char * user)
 	switch( pam_error ) {
 		case PAM_CRED_UNAVAIL:
 			DEBUG(0, ("smb_pam_setcred: PAM: Credentials not found for user:%s\n", user ));
-			 nt_status = NT_STATUS_NO_TOKEN;
 			break;
 		case PAM_CRED_EXPIRED:
 			DEBUG(0, ("smb_pam_setcred: PAM: Credentials for user: \"%s\" EXPIRED!\n", user ));
-			nt_status = NT_STATUS_PASSWORD_EXPIRED;
 			break;
 		case PAM_USER_UNKNOWN:
 			DEBUG(0, ("smb_pam_setcred: PAM: User: \"%s\" is NOT known so can not set credentials!\n", user ));
-			nt_status = NT_STATUS_NO_SUCH_USER;
 			break;
 		case PAM_CRED_ERR:
 			DEBUG(0, ("smb_pam_setcred: PAM: Unknown setcredentials error - unable to set credentials for %s\n", user ));
-			nt_status = NT_STATUS_LOGON_FAILURE;
 			break;
 		case PAM_SUCCESS:
 			DEBUG(4, ("smb_pam_setcred: PAM: SetCredentials OK for User: %s\n", user));
-			nt_status = NT_STATUS_OK;
 			break;
 		default:
 			DEBUG(0, ("smb_pam_setcred: PAM: UNKNOWN PAM ERROR (%d) during SetCredentials for User: %s\n", pam_error, user));
-			nt_status = NT_STATUS_NO_TOKEN;
 			break;
 	}
 
