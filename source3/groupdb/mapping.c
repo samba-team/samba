@@ -223,7 +223,7 @@ static BOOL init_group_mapping(void)
 	local_pid = sys_getpid();
 
 	/* handle a Samba upgrade */
-	tdb_lock_bystring(tdb, vstring);
+	tdb_lock_bystring(tdb, vstring, 0);
 
 	/* Cope with byte-reversed older versions of the db. */
 	vers_id = tdb_fetch_int32(tdb, vstring);
