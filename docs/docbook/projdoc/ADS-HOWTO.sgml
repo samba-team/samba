@@ -14,7 +14,8 @@ This is a rough guide to setting up Samba 3.0 with kerberos authentication again
 Windows2000 KDC. 
 </para>
 
-<para>Pieces you need before you begin:
+<para>Pieces you need before you begin:</para>
+<para>
 <simplelist>
 <member>a Windows 2000 server.</member>
 <member>samba 3.0 or higher.</member>
@@ -26,7 +27,8 @@ Windows2000 KDC.
 <sect1>
 <title>Installing the required packages for Debian</title>
 
-<para>On Debian you need to install the following packages:
+<para>On Debian you need to install the following packages:</para>
+<para>
 <simplelist>
 <member>libkrb5-dev</member>
 <member>krb5-user</member>
@@ -37,7 +39,8 @@ Windows2000 KDC.
 <sect1>
 <title>Installing the required packages for RedHat</title>
 
-<para>On RedHat this means you should have at least: 
+<para>On RedHat this means you should have at least: </para>
+<para>
 <simplelist>
 <member>krb5-workstation (for kinit)</member>
 <member>krb5-libs (for linking with)</member>
@@ -57,7 +60,8 @@ to get them off CD2.</para>
 <para>If your kerberos libraries are in a non-standard location then
   remember to add the configure option --with-krb5=DIR.</para>
 
-<para>After you run configure make sure that include/config.h contains 
+<para>After you run configure make sure that include/config.h it
+  generates contains 
   lines like this:</para>
 
 <para><programlisting>
@@ -86,9 +90,10 @@ In case samba can't figure out your ads server using your realm name, use the
 </programlisting>
 </para>
 
-<para>You do *not* need a smbpasswd file, although it won't do any harm
-  and if you have one then Samba will be able to fall back to normal
-  password security for older clients. I expect that the above
+<para>You do *not* need a smbpasswd file, and older clients will
+  be authenticated as if "security = domain", although it won't do any harm
+  and allows you to have local users not in the domain.
+  I expect that the above
   required options will change soon when we get better active
   directory integration.</para>
 </sect1>
@@ -99,7 +104,7 @@ In case samba can't figure out your ads server using your realm name, use the
 <para>The minimal configuration for krb5.conf is:</para>
 
 <para><programlisting>
-	[realms]
+[realms]
     YOUR.KERBEROS.REALM = {
 	kdc = your.kerberos.server
     }
@@ -128,7 +133,7 @@ to join the realm.
 <para>
 If all you want is kerberos support in smbclient then you can skip
 straight to step 5 now. Step 3 is only needed if you want kerberos
-support in smbd.
+support for smbd and winbindd.
 </para>
 
 </sect1>
@@ -137,9 +142,7 @@ support in smbd.
 <title>Create the computer account</title>
 
 <para>
-Do a "kinit" as a user that has authority to change arbitrary
-passwords on the KDC ("Administrator" is a good choice). Then as a
-user that has write permission on the Samba private directory
+As a user that has write permission on the Samba private directory
 (usually root) run:
 <command>net ads join</command>
 </para>
@@ -149,8 +152,6 @@ user that has write permission on the Samba private directory
 
 <para>
 <variablelist>
-<varlistentry><term>"bash: kinit: command not found"</term>
-<listitem><para>kinit is in the krb5-workstation RPM on RedHat systems, and is in /usr/kerberos/bin, so it won't be in the path until you log in again (or open a new terminal)</para></listitem></varlistentry>
 <varlistentry><term>"ADS support not compiled in"</term>
 <listitem><para>Samba must be reconfigured (remove config.cache) and recompiled (make clean all install) after the kerberos libs and headers are installed.</para></listitem></varlistentry>
 </variablelist>

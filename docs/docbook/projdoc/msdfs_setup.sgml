@@ -4,7 +4,7 @@
 	<author>
 		<firstname>Shirish</firstname><surname>Kalele</surname>
 		<affiliation>
-			<orgname>Samba Team & Veritas Software</orgname>
+			<orgname>Samba Team &amp; Veritas Software</orgname>
 			<address>
 				<email>samba@samba.org</email>
 			</address>

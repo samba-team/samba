@@ -175,4 +175,16 @@ Corrective Action:	Delete the entry after the word loopback
 	in the line starting 127.0.0.1
 </para>
 </sect1>
+
+<sect1>
+<title>AIX</title>
+<sect2>
+<title>Sequential Read Ahead</title>
+<!-- From an email by William Jojo <jojowil@hvcc.edu> -->
+<para>
+Disabling Sequential Read Ahead using "vmtune -r 0" improves 
+samba performance significally.
+</para>
+</sect2>
+</sect1>
 </chapter>

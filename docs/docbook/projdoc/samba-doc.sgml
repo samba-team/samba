@@ -1,17 +1,15 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
 <!ENTITY UNIX-INSTALL SYSTEM "UNIX_INSTALL.sgml">
-<!ENTITY ENCRYPTION SYSTEM "ENCRYPTION.sgml">
 <!ENTITY MS-Dfs-Setup SYSTEM "msdfs_setup.sgml">
 <!ENTITY PRINTER-DRIVER2 SYSTEM "printer_driver2.sgml">
 <!ENTITY DOMAIN-MEMBER SYSTEM "DOMAIN_MEMBER.sgml">
 <!ENTITY WINBIND SYSTEM "winbind.sgml">
 <!ENTITY NT-Security SYSTEM "NT_Security.sgml">
+<!ENTITY ServerType SYSTEM "ServerType.sgml">
 <!ENTITY Samba-PDC-HOWTO SYSTEM "Samba-PDC-HOWTO.sgml">
 <!ENTITY Samba-BDC-HOWTO SYSTEM "Samba-BDC-HOWTO.sgml">
-<!ENTITY CVS-Access SYSTEM "CVS-Access.sgml">
 <!ENTITY IntegratingWithWindows SYSTEM "Integrating-with-Windows.sgml">
 <!ENTITY Samba-PAM SYSTEM "PAM-Authentication-And-Samba.sgml">
-<!ENTITY Samba-LDAP SYSTEM "Samba-LDAP-HOWTO.sgml">
 <!ENTITY Diagnosis SYSTEM "Diagnosis.sgml">
 <!ENTITY BUGS SYSTEM "Bugs.sgml">
 <!ENTITY SECURITY-LEVEL SYSTEM "security_level.sgml">
@@ -22,9 +20,13 @@
 <!ENTITY Portability SYSTEM "Portability.sgml">
 <!ENTITY Other-Clients SYSTEM "Other-Clients.sgml">
 <!ENTITY ADS-HOWTO SYSTEM "ADS-HOWTO.sgml">
-<!ENTITY pdb-mysql SYSTEM "pdb_mysql.sgml">
-<!ENTITY pdb-xml SYSTEM "pdb_xml.sgml">
+<!ENTITY Passdb SYSTEM "passdb.sgml">
 <!ENTITY VFS SYSTEM "VFS.sgml">
+<!ENTITY GroupProfiles SYSTEM "GroupProfiles.sgml">
+<!ENTITY SecuringSamba SYSTEM "securing-samba.sgml">
+<!ENTITY Compiling SYSTEM "Compiling.sgml">
+<!ENTITY unicode SYSTEM "unicode.sgml">
+<!ENTITY CUPS SYSTEM "CUPS-printing.sgml">
 ]>
 
 <book id="Samba-HOWTO-Collection">
@@ -78,9 +80,8 @@ and how to configure the parts of samba you will most likely need.
 PLEASE read this.</para>
 </partintro>
 &UNIX-INSTALL;
-&BROWSING;
 &BROWSING-Quick;
-&ENCRYPTION;
+&Passdb;
 </part>
 
 <part id="type">
@@ -92,6 +93,7 @@ Samba can operate in various SMB networks. This part contains information on con
 for various environments.
 </para>
 </partintro>
+&ServerType;
 &SECURITY-LEVEL;
 &Samba-PDC-HOWTO;
 &Samba-BDC-HOWTO;
@@ -111,20 +113,22 @@ part each cover one specific feature.</para>
 &Samba-PAM;
 &MS-Dfs-Setup;
 &PRINTER-DRIVER2;
+&CUPS;
 &WINBIND;
-&pdb-mysql;
-&pdb-xml;
+&BROWSING;
 &VFS;
-&Samba-LDAP;
-&CVS-Access;
 &GROUP-MAPPING-HOWTO;
 &SPEED;
+&GroupProfiles;
+&SecuringSamba;
+&unicode;
 </part>
 
 <part id="Appendixes">
 <title>Appendixes</title>
 &Portability;
 &Other-Clients;
+&Compiling;
 &BUGS;
 &Diagnosis;
 </part>

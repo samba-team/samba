@@ -233,6 +233,16 @@ for use with <command>security = user</command>
 
 </sect2>
 
+<sect2>
+<title>Use TCP/IP as default protocol</title>
+
+<para>To support print queue reporting you may find
+that you have to use TCP/IP as the default protocol under
+WfWg. For some reason if you leave Netbeui as the default
+it may break the print queue reporting on some systems.
+It is presumably a WfWg bug.</para>
+
+</sect2>
 </sect1>
 
 <sect1>

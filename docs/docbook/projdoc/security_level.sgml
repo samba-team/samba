@@ -9,7 +9,7 @@
 	</author>
 </chapterinfo>
 
-<title>User and Share security level (for servers not in a domain)</title>
+<title>Samba as Stand-Alone server (User and Share security level)</title>
 
 <para>
 A SMB server tells the client at startup what "security level" it is
