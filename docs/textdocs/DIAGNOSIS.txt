@@ -1,5 +1,5 @@
 !==
-!== DIAGNOSIS.txt for Samba release TNG-prealpha 24 Feb 2000
+!== DIAGNOSIS.txt for Samba release TNG-prealpha 28 Feb 2000
 !==
 Contributor:	Andrew Tridgell
 Updated:	October 14, 1997
