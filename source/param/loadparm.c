@@ -160,6 +160,7 @@ typedef struct
   int mangled_stack;
   int max_xmit;
   int max_mux;
+  int max_open_files;
   int max_packet;
   int pwordlevel;
   int unamelevel;
@@ -597,6 +598,7 @@ static struct parm_struct parm_table[] =
   {"lpq cache time",   P_INTEGER, P_GLOBAL, &Globals.lpqcachetime,      NULL,   NULL,  0},
   {"max connections",  P_INTEGER, P_LOCAL,  &sDefault.iMaxConnections,  NULL,   NULL,  0},
   {"max disk size",    P_INTEGER, P_GLOBAL, &Globals.maxdisksize,       NULL,   NULL,  0},
+  {"max open files",   P_INTEGER, P_GLOBAL, &Globals.max_open_files,    NULL,   NULL,  0},
   {"min print space",  P_INTEGER, P_LOCAL,  &sDefault.iMinPrintSpace,   NULL,   NULL,  0},
   {"read prediction",  P_BOOL,    P_GLOBAL, &Globals.bReadPrediction,   NULL,   NULL,  0},
   {"read size",        P_INTEGER, P_GLOBAL, &Globals.ReadSize,          NULL,   NULL,  0},
@@ -824,6 +826,7 @@ static void init_globals(void)
   Globals.unamelevel = 0;
   Globals.deadtime = 0;
   Globals.max_log_size = 5000;
+  Globals.max_open_files = MAX_OPEN_FILES;
   Globals.maxprotocol = PROTOCOL_NT1;
   Globals.security = SEC_USER;
   Globals.bEncryptPasswords = False;
@@ -1169,6 +1172,7 @@ FN_GLOBAL_INTEGER(lp_max_ttl,&Globals.max_ttl)
 FN_GLOBAL_INTEGER(lp_max_wins_ttl,&Globals.max_wins_ttl)
 FN_GLOBAL_INTEGER(lp_min_wins_ttl,&Globals.max_wins_ttl)
 FN_GLOBAL_INTEGER(lp_max_log_size,&Globals.max_log_size)
+FN_GLOBAL_INTEGER(lp_max_open_files,&Globals.max_open_files)
 FN_GLOBAL_INTEGER(lp_maxxmit,&Globals.max_xmit)
 FN_GLOBAL_INTEGER(lp_maxmux,&Globals.max_mux)
 FN_GLOBAL_INTEGER(lp_passwordlevel,&Globals.pwordlevel)

@@ -44,6 +44,17 @@
 #define SHMEM_SIZE (1024*1024)
 #endif
 
+/* 
+ * Default number of maximum open files per smbd. This is
+ * also limited by the maximum available file descriptors
+ * per process and can also be set in smb.conf as "max open files"
+ * in the [global] section.
+ */
+
+#ifndef MAX_OPEN_FILES
+#define MAX_OPEN_FILES 4096
+#endif
+ 
 /* the max number of simultanous connections to the server by all clients */
 #define MAXSTATUS 100000
 
