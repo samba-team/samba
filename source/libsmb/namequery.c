@@ -292,7 +292,7 @@ BOOL name_register(int fd, const char *name, int name_type,
 ****************************************************************************/
 struct in_addr *name_query(int fd,const char *name,int name_type, 
 			   BOOL bcast,BOOL recurse,
-			   struct in_addr to_ip, int *count)
+			   struct in_addr to_ip, int *count, int *flags)
 {
 	BOOL found=False;
 	int i, retries = 3;
@@ -305,6 +305,7 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 
 	memset((char *)&p,'\0',sizeof(p));
 	(*count) = 0;
+	(*flags) = 0;
 
 	nmb->header.name_trn_id = generate_trn_id();
 	nmb->header.opcode = 0;
@@ -428,6 +429,19 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 
 			found=True;
 			retries=0;
+			/* We add the flags back ... */
+			if (nmb2->header.response)
+			  (*flags) |= NM_FLAGS_RS;
+			if (nmb2->header.nm_flags.authoritative)
+			  (*flags) |= NM_FLAGS_AA;
+			if (nmb2->header.nm_flags.trunc)
+			  (*flags) |= NM_FLAGS_TC;
+			if (nmb2->header.nm_flags.recursion_desired)
+			  (*flags) |= NM_FLAGS_RD;
+			if (nmb2->header.nm_flags.recursion_available)
+			  (*flags) |= NM_FLAGS_RA;
+			if (nmb2->header.nm_flags.bcast)
+			  (*flags) |= NM_FLAGS_B;
 			free_packet(p2);
 
 			/*
@@ -655,10 +669,11 @@ BOOL name_resolve_bcast(const char *name, int name_type,
 	 */
 	for( i = num_interfaces-1; i >= 0; i--) {
 		struct in_addr sendto_ip;
+		int flags;
 		/* Done this way to fix compiler error on IRIX 5.x */
 		sendto_ip = *iface_bcast(*iface_n_ip(i));
 		*return_ip_list = name_query(sock, name, name_type, True, 
-				    True, sendto_ip, return_count);
+				    True, sendto_ip, return_count, &flags);
 		if(*return_ip_list != NULL) {
 			close(sock);
 			return True;
@@ -715,10 +730,11 @@ static BOOL resolve_wins(const char *name, int name_type,
 					interpret_addr(lp_socket_address()),
 					True );
 		if (sock != -1) {
+		        int flags;
 			*return_iplist = name_query( sock,      name,
 						     name_type, False, 
 						     True,      wins_ip,
-						     return_count);
+						     return_count, &flags);
 			if(*return_iplist != NULL) {
 				close(sock);
 				return True;
