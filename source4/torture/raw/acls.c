@@ -847,6 +847,10 @@ static BOOL test_owner_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		io.ntcreatex.in.access_mask = bit;
 		status = smb_raw_open(cli->tree, mem_ctx, &io);
 		if (expected_bits & bit) {
+			if (!NT_STATUS_IS_OK(status)) {
+				printf("failed with access mask 0x%08x of expected 0x%08x\n",
+				       bit, expected_bits);
+			}
 			CHECK_STATUS(status, NT_STATUS_OK);
 			CHECK_ACCESS_FLAGS(io.ntcreatex.out.fnum, bit | SEC_FILE_READ_ATTRIBUTE);
 			smbcli_close(cli->tree, io.ntcreatex.out.fnum);
