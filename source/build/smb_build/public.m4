@@ -374,7 +374,10 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
 		if $PKG_CONFIG --atleast-pkgconfig-version 0.9.0; then
         		AC_MSG_CHECKING(for $2)
 
-          		if $PKG_CONFIG --exists '$2' ; then
+          		if test "$SMB_EXT_LIB_$1"x = "NO"x ; then
+				SMB_EXT_LIB_ENABLE($1, NO)
+				AC_MSG_RESULT(disabled)		
+          		elif $PKG_CONFIG --exists '$2' ; then
             			AC_MSG_RESULT(yes)
 
 				SMB_EXT_LIB_ENABLE($1, YES)
