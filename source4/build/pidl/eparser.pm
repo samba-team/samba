@@ -80,9 +80,17 @@ sub ParseStruct($)
 sub ParseUnionElement($)
 {
     my($element) = shift;
-    $res .= "[case($element->{CASE})] ";
-    ParseElement($element->{DATA});
-    $res .= ";\n";
+    
+#    $res .= "void prs_$element->{DATA}->{TYPE}()\n{\n";
+
+#    $res .= "}\n\n";
+
+    $res .= "\tcase $element->{DATA}->{NAME}: \n";
+    $res .= "\t\tprs_$element->{DATA}->{TYPE}();\n\t\tbreak;\n";
+
+#    $res .= "[case($element->{CASE})] ";
+#    ParseElement($element->{DATA});
+#    $res .= ";\n";
 }
 
 #####################################################################
@@ -90,12 +98,17 @@ sub ParseUnionElement($)
 sub ParseUnion($)
 {
     my($union) = shift;
+
+#    print Dumper($union);
+
+    $res .= "\tswitch (level) {\n";
+
     (defined $union->{PROPERTIES}) && ParseProperties($union->{PROPERTIES});
-    $res .= "union {\n";
     foreach my $e (@{$union->{DATA}}) {
 	ParseUnionElement($e);
     }
-    $res .= "}";
+    
+    $res .= "\t}\n";
 }
 
 #####################################################################
@@ -103,6 +116,9 @@ sub ParseUnion($)
 sub ParseType($)
 {
     my($data) = shift;
+
+    print Dumper $data;
+
     if (ref($data) eq "HASH") {
 	($data->{TYPE} eq "STRUCT") &&
 	    ParseStruct($data);
@@ -118,6 +134,7 @@ sub ParseType($)
 sub ParseTypedef($)
 {
     my($typedef) = shift;
+
     $res .= "void prs_$typedef->{NAME}(void)\n{\n";
     ParseType($typedef->{DATA});
     $res .= "}\n\n";
