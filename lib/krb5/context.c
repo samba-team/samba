@@ -265,7 +265,7 @@ krb5_get_default_config_files(char ***pfilenames)
 {
     const char *p, *q;
     char **pp;
-    int n;
+    int n, i;
 
     const char *files = NULL;
     if (pfilenames == NULL)
@@ -294,7 +294,13 @@ krb5_get_default_config_files(char ***pfilenames)
 	    return ENOMEM;
 	}
 	l = strsep_copy(&p, ":", pp[n], l + 1);
+	for(i = 0; i < n; i++)
+	    if(strcmp(pp[i], pp[n]) == 0) {
+		free(pp[n]);
+		goto skip;
+	    }
 	n++;
+    skip:;
     }
     pp[n] = NULL;
     *pfilenames = pp;
