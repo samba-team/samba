@@ -2067,27 +2067,23 @@ uint32 _spoolss_getprinterdriver2( const POLICY_HND *handle,
 	return NT_STATUS_INVALID_INFO_CLASS;
 }
 
-#if 0
-
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_startpageprinter(SPOOL_Q_STARTPAGEPRINTER *q_u, prs_struct *rdata)
+uint32 _spoolss_startpageprinter(const POLICY_HND *handle)
 {
-	SPOOL_R_STARTPAGEPRINTER r_u;
 	int pnum = find_printer_index_by_hnd(handle);
 
 	if (OPEN_HANDLE(pnum))
 	{
 		Printer[pnum].page_started=True;
-		status=0x0;
+		return 0x0;
+	}
 
-		spoolss_io_r_startpageprinter("",&r_u,rdata,0);		
-	}
-	else
-	{
-		DEBUG(3,("Error in startpageprinter printer handle (pnum=%x)\n",pnum));
-	}
+	DEBUG(3,("Error in startpageprinter printer handle (pnum=%x)\n",pnum));
+	return NT_STATUS_INVALID_HANDLE;
 }
+
+#if 0
 
 /****************************************************************************
 ****************************************************************************/
