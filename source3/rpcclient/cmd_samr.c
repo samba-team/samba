@@ -790,6 +790,9 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 			
 			nt_owf_genW(&upw, ntpw);
 
+			strupper(domain);
+			strupper(name);
+
 			report(out_hnd, "Join %s to Domain %s", name, domain);
 			if (create_trust_account_file(domain, name, ntpw))
 			{
