@@ -909,7 +909,8 @@ BOOL reduce_name(connection_struct *conn, const pstring fname)
 		return False;
 	}
 
-	if (strncmp(conn->connectpath, resolved_name, con_path_len) != 0) {
+	/* Check for widelinks allowed. */
+	if (!lp_widelinks(SNUM(conn)) && (strncmp(conn->connectpath, resolved_name, con_path_len) != 0)) {
 		DEBUG(2, ("reduce_name: Bad access attempt: %s is a symlink outside the share path", fname));
 		if (free_resolved_name)
 			SAFE_FREE(resolved_name);
@@ -917,28 +918,23 @@ BOOL reduce_name(connection_struct *conn, const pstring fname)
 		return False;
 	}
 
-	/* Move path the connect path to the last part of the filename. */
-	p = resolved_name + con_path_len;
-	if (*p == '/') {
-		p++;
-	}
-
-	if (!*p) {
-		if (fname[0] == '.' && fname[1] == '/' && fname[2] == '\0') {
-			pstrcpy(resolved_name, "./");
-		} else {
-			pstrcpy(resolved_name, ".");
-		}
-		p = resolved_name;
-	}
-
-	if (!lp_symlinks(SNUM(conn)) && (strcmp(fname, p)!=0)) {
-		DEBUG(3,("reduce_name: denied: file path name %s is a symlink\n",fname));
-		if (free_resolved_name)
-			SAFE_FREE(resolved_name);
-		errno = EACCES;
-		return False;
-	}
+        /* Check if we are allowing users to follow symlinks */
+        /* Patch from David Clerc <David.Clerc@cui.unige.ch>
+                University of Geneva */
+                                                                                                                                                    
+#ifdef S_ISLNK
+        if (!lp_symlinks(SNUM(conn))) {
+                SMB_STRUCT_STAT statbuf;
+                if ( (SMB_VFS_LSTAT(conn,fname,&statbuf) != -1) &&
+                                (S_ISLNK(statbuf.st_mode)) ) {
+			if (free_resolved_name)
+				SAFE_FREE(resolved_name);
+                        DEBUG(3,("reduce_name: denied: file path name %s is a symlink\n",resolved_name));
+                        errno = EACCES;
+			return False;
+                }
+        }
+#endif
 
 	DEBUG(3,("reduce_name: %s reduced to %s\n", fname, p));
 	if (free_resolved_name)
