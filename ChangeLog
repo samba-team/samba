@@ -1,3 +1,14 @@
+Sun Feb 28 18:19:20 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* lib/asn1/gen.c: make `BIT STRING's unsigned
+
+	* lib/asn1/{symbol.h,gen.c}: add TUInteger type
+
+	* lib/krb5/verify_user.c (krb5_verify_user): pass prompter to
+ 	krb5_get_init_creds_password
+
+	* lib/krb5/fcache.c (fcc_gen_new): implement
+
 Sat Feb 27 22:41:23 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* doc/install.texi: krb4 is now automatically detected
