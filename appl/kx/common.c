@@ -601,14 +601,17 @@ find_auth_cookie (FILE *f)
     Xauth *ret = NULL;
     char local_hostname[MaxHostNameLen];
     char *display = getenv("DISPLAY");
+    char d[MaxHostNameLen + 4];
     char *colon;
     struct addrinfo *ai;
     struct addrinfo hints;
     int disp;
     int error;
 
-    if (display == NULL)
+    if(display == NULL)
 	display = ":0";
+    strlcpy(d, display, sizeof(d));
+    display = d;
     colon = strchr (display, ':');
     if (colon == NULL)
 	disp = 0;
