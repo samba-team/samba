@@ -366,7 +366,7 @@ this as a machine trust account.
 Now that the corresponding Unix account has been created, the next step is to create 
 the Samba account for the client containing the well-known initial 
 machine trust account password.  This can be done using the <ulink 
-url="smbpasswd.6.html"><command>smbpasswd(8)</command></ulink> command 
+url="smbpasswd.8.html"><command>smbpasswd(8)</command></ulink> command 
 as shown here:
 </para>
 
