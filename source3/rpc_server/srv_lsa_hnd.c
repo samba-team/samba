@@ -25,19 +25,63 @@
 
 extern int DEBUGLEVEL;
 
-/* This is the max handles per pipe. */
+/* This is the max handles across all instances of a pipe name. */
 #ifndef MAX_OPEN_POLS
-#define MAX_OPEN_POLS 256
+#define MAX_OPEN_POLS 1024
 #endif
 
 /****************************************************************************
-  initialise policy handle states...
+ Initialise a policy handle list on a pipe. Handle list is shared between all
+ pipes of the same name.
 ****************************************************************************/
 
-void init_pipe_handles(pipes_struct *p)
+BOOL init_pipe_handle_list(pipes_struct *p, char *pipe_name)
 {
-	p->pipe_handles.Policy = NULL;
-	p->pipe_handles.count = 0;
+	pipes_struct *plist = get_first_pipe();
+	struct handle_list *hl = NULL;
+
+	for (plist = get_first_pipe(); plist; plist = get_next_pipe(plist)) {
+		if (strequal( plist->name, pipe_name)) {
+			if (!plist->pipe_handles) {
+				pstring msg;
+				slprintf(msg, sizeof(msg)-1, "init_pipe_handles: NULL pipe_handle pointer in pipe %s",
+						pipe_name );
+				smb_panic(msg);
+			}
+			hl = plist->pipe_handles;
+			break;
+		}
+	}
+
+	if (!hl) {
+		/*
+		 * No handle list for this pipe (first open of pipe).
+		 * Create list.
+		 */
+
+		if ((hl = (struct handle_list *)malloc(sizeof(struct handle_list))) == NULL)
+			return False;
+		ZERO_STRUCTP(hl);
+
+		DEBUG(10,("init_pipe_handles: created handle list for pipe %s\n", pipe_name ));
+	}
+
+	/*
+	 * One more pipe is using this list.
+	 */
+
+	hl->pipe_ref_count++;
+
+	/*
+	 * Point this pipe at this list.
+	 */
+
+	p->pipe_handles = hl;
+
+	DEBUG(10,("init_pipe_handles: pipe_handles ref count = %u for pipe %s\n",
+			p->pipe_handles->pipe_ref_count, pipe_name ));
+
+	return True;
 }
 
 /****************************************************************************
@@ -51,8 +95,9 @@ BOOL create_policy_hnd(pipes_struct *p, POLICY_HND *hnd, void (*free_fn)(void *)
 
 	struct policy *pol;
 
-	if (p->pipe_handles.count > MAX_OPEN_POLS) {
-		DEBUG(0,("create_policy_hnd: ERROR: too many handles (%d) on this pipe.\n", (int)p->pipe_handles.count));
+	if (p->pipe_handles->count > MAX_OPEN_POLS) {
+		DEBUG(0,("create_policy_hnd: ERROR: too many handles (%d) on this pipe.\n",
+				(int)p->pipe_handles->count));
 		return False;
 	}
 
@@ -78,12 +123,12 @@ BOOL create_policy_hnd(pipes_struct *p, POLICY_HND *hnd, void (*free_fn)(void *)
     SIVAL(pol->pol_hnd.data5, 0, time(NULL)); /* something random */
     SIVAL(pol->pol_hnd.data5, 4, sys_getpid()); /* something more random */
 
-	DLIST_ADD(p->pipe_handles.Policy, pol);
-	p->pipe_handles.count++;
+	DLIST_ADD(p->pipe_handles->Policy, pol);
+	p->pipe_handles->count++;
 
 	*hnd = pol->pol_hnd;
 	
-	DEBUG(4,("Opened policy hnd[%d] ", (int)p->pipe_handles.count));
+	DEBUG(4,("Opened policy hnd[%d] ", (int)p->pipe_handles->count));
 	dump_data(4, (char *)hnd, sizeof(*hnd));
 
 	return True;
@@ -101,7 +146,7 @@ static struct policy *find_policy_by_hnd_internal(pipes_struct *p, POLICY_HND *h
 	if (data_p)
 		*data_p = NULL;
 
-	for (i = 0, pol=p->pipe_handles.Policy;pol;pol=pol->next, i++) {
+	for (i = 0, pol=p->pipe_handles->Policy;pol;pol=pol->next, i++) {
 		if (memcmp(&pol->pol_hnd, hnd, sizeof(*hnd)) == 0) {
 			DEBUG(4,("Found policy hnd[%d] ", (int)i));
 			dump_data(4, (char *)hnd, sizeof(*hnd));
@@ -144,9 +189,9 @@ BOOL close_policy_hnd(pipes_struct *p, POLICY_HND *hnd)
 	if (pol->free_fn && pol->data_ptr)
 		(*pol->free_fn)(pol->data_ptr);
 
-	pol->p->pipe_handles.count--;
+	pol->p->pipe_handles->count--;
 
-	DLIST_REMOVE(pol->p->pipe_handles.Policy, pol);
+	DLIST_REMOVE(pol->p->pipe_handles->Policy, pol);
 
 	ZERO_STRUCTP(pol);
 
@@ -156,14 +201,25 @@ BOOL close_policy_hnd(pipes_struct *p, POLICY_HND *hnd)
 }
 
 /****************************************************************************
- Close all the pipe handles.
+ Close a pipe - free the handle list if it was the last pipe reference.
 ****************************************************************************/
 
 void close_policy_by_pipe(pipes_struct *p)
 {
-	while (p->pipe_handles.Policy)
-		close_policy_hnd(p, &p->pipe_handles.Policy->pol_hnd);
+	p->pipe_handles->pipe_ref_count--;
 
-	p->pipe_handles.Policy = NULL;
-	p->pipe_handles.count = 0;
+	if (p->pipe_handles->pipe_ref_count == 0) {
+		/*
+		 * Last pipe open on this list - free the list.
+		 */
+		while (p->pipe_handles->Policy)
+			close_policy_hnd(p, &p->pipe_handles->Policy->pol_hnd);
+
+		p->pipe_handles->Policy = NULL;
+		p->pipe_handles->count = 0;
+
+		free(p->pipe_handles);
+		p->pipe_handles = NULL;
+		DEBUG(10,("close_policy_by_pipe: deleted handle list for pipe %s\n", p->name ));
+	}
 }

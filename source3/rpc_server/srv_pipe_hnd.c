@@ -163,7 +163,13 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 		return NULL;
 	}
 
-	init_pipe_handles(p);
+	if (!init_pipe_handle_list(p, pipe_name)) {
+		DEBUG(0,("open_rpc_pipe_p: init_pipe_handles failed.\n"));
+		talloc_destroy(p->mem_ctx);
+		free(p);
+		return NULL;
+	}
+
 
 	DLIST_ADD(Pipes, p);
 

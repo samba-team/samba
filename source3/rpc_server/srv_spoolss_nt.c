@@ -569,7 +569,7 @@ static BOOL open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name)
 		return False;
 	}
 
-	DEBUG(5, ("%d printer handles active\n", (int)p->pipe_handles.count ));
+	DEBUG(5, ("%d printer handles active\n", (int)p->pipe_handles->count ));
 
 	return True;
 }
@@ -634,6 +634,8 @@ void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len)
 	fstring printer;
 	uint32 status;
 	struct pipes_struct *p;
+	struct policy *pol;
+	struct handle_list *hl;
 
 	*printer = '\0';
 	fstrcpy(printer,buf);
@@ -645,32 +647,43 @@ void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len)
 
 	DEBUG(10,("srv_spoolss_receive_message: Got message about printer %s\n", printer ));
 
-	/* We need to enumerate all our pipes and all printers on them. */
-	for ( p = get_first_pipe(); p; get_next_pipe(p)) {
-		struct policy *pol;
+	/*
+	 * We need to enumerate all printers. The handle list is shared
+	 * across pipes of the same name, so just find the first open
+	 * spoolss pipe.
+	 */
 
-		if (!strequal(p->name, "spoolss"))
+	hl = NULL;	
+	for ( p = get_first_pipe(); p; get_next_pipe(p)) {
+		if (strequal(p->name, "spoolss")) {
+			hl = p->pipe_handles;
+			break;
+		}
+	}
+
+	if (!hl) {
+		DEBUG(0,("srv_spoolss_receive_message: no handle list on spoolss pipe !\n"));
+		return;
+	}
+
+	/* Iterate the printer list on this pipe. */
+	for (pol = hl->Policy; pol; pol = pol->next ) {
+		Printer_entry *find_printer = (Printer_entry *)pol->data_ptr;
+
+		if (!find_printer)
 			continue;
 
-		/* Iterate the printer list on this pipe. */
-		for (pol = p->pipe_handles.Policy; pol; pol = pol->next ) {
-			Printer_entry *find_printer = (Printer_entry *)pol->data_ptr;
+		/*
+		 * if the entry is the given printer or if it's a printerserver
+		 * we send the message
+		 */
 
-			if (!find_printer)
+		if (find_printer->printer_type==PRINTER_HANDLE_IS_PRINTER)
+			if (strcmp(find_printer->dev.handlename, printer))
 				continue;
 
-			/*
-			 * if the entry is the given printer or if it's a printerserver
-			 * we send the message
-			 */
-
-			if (find_printer->printer_type==PRINTER_HANDLE_IS_PRINTER)
-				if (strcmp(find_printer->dev.handlename, printer))
-					continue;
-
-			if (find_printer->notify.client_connected==True)
-				cli_spoolss_reply_rrpcn(&cli, &find_printer->notify.client_hnd, PRINTER_CHANGE_ALL, 0x0, &status);
-		}
+		if (find_printer->notify.client_connected==True)
+			cli_spoolss_reply_rrpcn(&cli, &find_printer->notify.client_hnd, PRINTER_CHANGE_ALL, 0x0, &status);
 	}
 }
 
