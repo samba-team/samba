@@ -1,0 +1,78 @@
+#
+# $Id$
+#
+
+SHELL = /bin/sh
+
+srcdir = @srcdir@
+VPATH = @srcdir@
+
+CC = @CC@
+AR = ar
+RANLIB = @RANLIB@
+DEFS = @DEFS@
+CFLAGS = @CFLAGS@
+
+INSTALL = @INSTALL@
+INSTALL_DATA	= @INSTALL_DATA@
+MKDIRHIER = @top_srcdir@/mkdirhier-sh
+
+prefix = @prefix@
+exec_prefix = $(prefix)
+libdir = $(exec_prefix)/lib
+
+PICFLAGS = @PICFLAGS@
+ 
+LIBNAME = libbroken
+LIBEXT = @LIBEXT@
+SHLIBEXT = @SHLIBEXT@
+LIB = $(LIBNAME).$(LIBEXT)
+
+
+OBJECTS = @LIBOBJS@
+
+all: $(LIB)
+
+Wall:
+		make CFLAGS="-g -Wall -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
+
+.c.o:
+	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $(PICFLAGS) $<
+
+install: all
+
+uninstall:
+
+TAGS: $(SOURCES)
+	etags $(SOURCES)
+
+check:
+
+clean:
+	rm -f $(LIB) *.o *.a
+
+mostlyclean: clean
+
+distclean: clean
+	rm -f Makefile *.tab.c *~
+	rm -rf CVS
+
+realclean: distclean
+	rm -f TAGS
+
+dist: $(DISTFILES)
+	for file in $(DISTFILES); do \
+	  ln $$file ../`cat ../.fname`/lib \
+	    || cp -p $$file ../`cat ../.fname`/lib; \
+	done
+
+$(LIBNAME).a: $(OBJECTS)
+	rm -f $@
+	$(AR) cr $@ $(OBJECTS)
+	-$(RANLIB) $@
+
+$(LIBNAME).$(SHLIBEXT): $(OBJECTS)
+	rm -f $@
+	$(CC) $(CFLAGS) $(PICFLAGS) -shared -o $@ $(OBJECTS) -L../../util/et -lcom_err
+
+$(OBJECTS): ../../config.h
