@@ -64,7 +64,7 @@ static int findpty(char **slave)
 #endif /* !HAVE_GRANTPT */
   
 #if defined(HAVE_GRANTPT)
-  if ((master = sys_open("/dev/ptmx", O_RDWR, 0)) >= 1) {
+  if ((master = sys_open("/dev/ptmx", O_RDWR, 0)) >= 0) {
     grantpt(master);
     unlockpt(master);
     *slave = ptsname(master);
