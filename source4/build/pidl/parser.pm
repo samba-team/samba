@@ -444,7 +444,7 @@ sub ParseElementPullSwitch($$$$)
 			pidl "\t\tif (_level != $switch_var) {\n";
 		}
 		pidl "\t\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value %u in $e->{NAME}\");\t\t}\n";
-		if ($switch =~ /r->/) {
+		if ($switch_var =~ /r->/) {
 			pidl "else { $switch_var = _level; }\n";
 		}
 		pidl "\t}\n";

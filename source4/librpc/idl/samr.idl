@@ -14,11 +14,10 @@
 ] interface samr
 {
 	/* a 4 byte aligned 64-bit integer */
-	typedef struct {
+	typedef [public] struct {
 		uint32 low;
 		uint32 high;
 	} ULONG8;
-
 
 	/******************/
 	/* Function: 0x00 */

@@ -143,8 +143,6 @@ BOOL clnt_deal_with_creds(uchar sess_key[8],
 	time_t new_clnt_time;
 	uint32 new_cred;
 
-	DEBUG(5,("clnt_deal_with_creds: %d\n", __LINE__));
-
 	/* increment client time by one second !?! */
 	new_clnt_time = sto_clnt_cred->timestamp + 1;
 
@@ -161,7 +159,6 @@ BOOL clnt_deal_with_creds(uchar sess_key[8],
 	/* store new seed in client credentials */
 	SIVAL(sto_clnt_cred->cred.data, 0, new_cred);
 
-	DEBUG(5,("	new clnt cred: %s\n", credstr(sto_clnt_cred->cred.data)));
 	return True;
 }
 
