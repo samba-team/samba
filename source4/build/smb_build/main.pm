@@ -12,14 +12,16 @@ use smb_build_h;
 use input;
 use config_mk;
 use output;
+use direct;
 use dump;
 use strict;
 
 sub smb_build_main($)
 {
-	my $SMB_BUILD_CTX = shift;
-	input::check($SMB_BUILD_CTX);
+	our $SMB_BUILD_CTX = shift;
 
+	input::check($SMB_BUILD_CTX);
+	
 	depend::create_depend($SMB_BUILD_CTX);
 
 	output::create_output($SMB_BUILD_CTX);
@@ -29,6 +31,7 @@ sub smb_build_main($)
 	smb_build_h::create_smb_build_h($SMB_BUILD_CTX);
 
 	dump::dump_ctx($SMB_BUILD_CTX);
+
 
 	return 0;
 }
