@@ -1,3 +1,8 @@
+1999-08-19  Assar Westerlund  <assar@sics.se>
+
+	* version4.c (kadm_ser_cpw): initialize password
+	(handle_v4): remove unused variable `ret'
+
 1999-08-16  Assar Westerlund  <assar@sics.se>
 
 	* version4.c (handle_v4): more error checking and more correct
