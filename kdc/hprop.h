@@ -46,7 +46,7 @@
 #define HPROP_VERSION "hprop-0.0"
 #define HPROP_NAME "hprop"
 #define HPROP_KEYTAB "FILE:/etc/hprop.keytab"
-#define HPROP_PORT 4712
+#define HPROP_PORT 754
 
 krb5_error_code send_priv(krb5_context, krb5_auth_context, krb5_data*, int);
 krb5_error_code recv_priv(krb5_context, krb5_auth_context, int, krb5_data*);
