@@ -166,7 +166,7 @@ static char *automount_server(char *user_name)
  Do some standard substitutions in a string.
 ****************************************************************************/
 
-void standard_sub_basic(char *str)
+void standard_sub_basic(char *str, int len)
 {
 	extern pstring global_myname;
 	char *p, *s;
@@ -176,7 +176,7 @@ void standard_sub_basic(char *str)
 	for (s=str; (p=strchr(s, '%'));s=p) {
 		fstring tmp_str;
 
-		int l = sizeof(pstring) - (int)(p-str);
+		int l = len - (int)(p-str);
 		
 		switch (*(p+1)) {
 		case 'U' : 
@@ -239,12 +239,12 @@ void standard_sub_basic(char *str)
  Do some standard substitutions in a string.
 ****************************************************************************/
 
-void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *str)
+void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *str, int len)
 {
 	char *p, *s, *home;
 
 	for (s=str; (p=strchr(s, '%'));s=p) {
-		int l = sizeof(pstring) - (int)(p-str);
+		int l = len - (int)(p-str);
 		
 		switch (*(p+1)) {
 		case 'N' : string_sub(p,"%N", automount_server(user),l); break;
@@ -289,16 +289,16 @@ void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, c
 		}
 	}
 
-	standard_sub_basic(str);
+	standard_sub_basic(str,len);
 }
 
 /****************************************************************************
  Do some standard substitutions in a string.
 ****************************************************************************/
 
-void standard_sub_conn(connection_struct *conn, char *str)
+void standard_sub_conn(connection_struct *conn, char *str, int len)
 {
-	standard_sub_advanced(SNUM(conn), conn->user, conn->connectpath, conn->gid, str);
+	standard_sub_advanced(SNUM(conn), conn->user, conn->connectpath, conn->gid, str, len);
 }
 
 /****************************************************************************
@@ -306,12 +306,12 @@ void standard_sub_conn(connection_struct *conn, char *str)
  share. No user specific snum created yet so servicename should be the username.
 ****************************************************************************/
 
-void standard_sub_home(int snum, char *user, char *str)
+void standard_sub_home(int snum, char *user, char *str, int len)
 {
 	char *p, *s;
 
 	for (s=str; (p=strchr(s, '%'));s=p) {
-		int l = sizeof(pstring) - (int)(p-str);
+		int l = len - (int)(p-str);
 		
 		switch (*(p+1)) {
 		case 'S': 
@@ -329,14 +329,14 @@ void standard_sub_home(int snum, char *user, char *str)
 		}
 	}
 
-	standard_sub_advanced(snum, user, "", -1, str);
+	standard_sub_advanced(snum, user, "", -1, str, len);
 }
 
 /****************************************************************************
  Like standard_sub but by snum.
 ****************************************************************************/
 
-void standard_sub_snum(int snum, char *str)
+void standard_sub_snum(int snum, char *str, int len)
 {
 	extern struct current_user current_user;
 	static uid_t cached_uid = -1;
@@ -349,23 +349,23 @@ void standard_sub_snum(int snum, char *str)
 		cached_uid = current_user.uid;
 	}
 
-	standard_sub_advanced(snum, cached_user, "", -1, str);
+	standard_sub_advanced(snum, cached_user, "", -1, str, len);
 }
 
 /*******************************************************************
  Substitute strings with useful parameters.
 ********************************************************************/
 
-void standard_sub_vuser(char *str, user_struct *vuser)
+void standard_sub_vuser(char *str, int len, user_struct *vuser)
 {
-	standard_sub_advanced(-1, vuser->user.unix_name, "", -1, str);
+	standard_sub_advanced(-1, vuser->user.unix_name, "", -1, str, len);
 }
 
 /*******************************************************************
  Substitute strings with useful parameters.
 ********************************************************************/
 
-void standard_sub_vsnum(char *str, user_struct *vuser, int snum)
+void standard_sub_vsnum(char *str, int len, user_struct *vuser, int snum)
 {
-	standard_sub_advanced(snum, vuser->user.unix_name, "", -1, str);
+	standard_sub_advanced(snum, vuser->user.unix_name, "", -1, str, len);
 }

@@ -72,7 +72,7 @@ static int CopyExpanded(connection_struct *conn,
 
 	StrnCpy(buf,src,sizeof(buf)/2);
 	pstring_sub(buf,"%S",lp_servicename(snum));
-	standard_sub_conn(conn,buf);
+	standard_sub_conn(conn,buf,sizeof(buf));
 	StrnCpy(*dst,buf,*n-1);
 	l = strlen(*dst) + 1;
 	(*dst) += l;
@@ -97,7 +97,7 @@ static int StrlenExpanded(connection_struct *conn, int snum, char* s)
 	if (!s) return(0);
 	StrnCpy(buf,s,sizeof(buf)/2);
 	pstring_sub(buf,"%S",lp_servicename(snum));
-	standard_sub_conn(conn,buf);
+	standard_sub_conn(conn,buf,sizeof(buf));
 	return strlen(buf) + 1;
 }
 
@@ -107,7 +107,7 @@ static char* Expand(connection_struct *conn, int snum, char* s)
 	if (!s) return(NULL);
 	StrnCpy(buf,s,sizeof(buf)/2);
 	pstring_sub(buf,"%S",lp_servicename(snum));
-	standard_sub_conn(conn,buf);
+	standard_sub_conn(conn,buf,sizeof(buf));
 	return &buf[0];
 }
 
@@ -2179,7 +2179,7 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
 	SIVAL(p,6,0);
       } else {
 	SIVAL(p,6,PTR_DIFF(p2,*rdata));
-	standard_sub_conn(conn,comment);
+	standard_sub_conn(conn,comment,sizeof(comment));
 	StrnCpy(p2,comment,MAX(mdrcnt - struct_len,0));
 	p2 = skip_string(p2,1);
       }
@@ -2522,7 +2522,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		SIVALS(p,usri11_password_age,-1);		/* password age */
 		SIVAL(p,usri11_homedir,PTR_DIFF(p2,p)); /* home dir */
 		pstrcpy(p2, lp_logon_home());
-		standard_sub_conn(conn, p2);
+		standard_sub_conn(conn, p2,*rdata_len-(p2 - *rdata));
 		p2 = skip_string(p2,1);
 		SIVAL(p,usri11_parms,PTR_DIFF(p2,p)); /* parms */
 		pstrcpy(p2,"");
@@ -2559,14 +2559,14 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		conn->admin_user?USER_PRIV_ADMIN:USER_PRIV_USER);
 		SIVAL(p,44,PTR_DIFF(p2,*rdata)); /* home dir */
 		pstrcpy(p2,lp_logon_home());
-		standard_sub_conn(conn, p2);
+		standard_sub_conn(conn, p2,*rdata_len-(p2 - *rdata));
 		p2 = skip_string(p2,1);
 		SIVAL(p,48,PTR_DIFF(p2,*rdata)); /* comment */
 		*p2++ = 0;
 		SSVAL(p,52,0);		/* flags */
 		SIVAL(p,54,PTR_DIFF(p2,*rdata));		/* script_path */
 		pstrcpy(p2,lp_logon_script());
-		standard_sub_conn( conn, p2 );             
+		standard_sub_conn( conn, p2,*rdata_len-(p2 - *rdata));             
 		p2 = skip_string(p2,1);
 		if (uLevel == 2)
 		{
@@ -2591,7 +2591,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 			SSVALS(p,104,-1);	/* num_logons */
 			SIVAL(p,106,PTR_DIFF(p2,*rdata)); /* logon_server */
 			pstrcpy(p2,"\\\\%L");
-			standard_sub_conn(conn, p2);
+			standard_sub_conn(conn, p2,*rdata_len-(p2 - *rdata));
 			p2 = skip_string(p2,1);
 			SSVAL(p,110,49);	/* country_code */
 			SSVAL(p,112,860);	/* code page */
@@ -2714,7 +2714,7 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
     {
       pstring logon_script;
       pstrcpy(logon_script,lp_logon_script());
-      standard_sub_conn( conn, logon_script );
+      standard_sub_conn( conn, logon_script,sizeof(logon_script) );
       PACKS(&desc,"z", logon_script);		/* script path */
     }
 /* End of JHT mods */

@@ -486,7 +486,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	{
 		pstring s;
 		pstrcpy(s,lp_pathname(snum));
-		standard_sub_conn(conn,s);
+		standard_sub_conn(conn,s,sizeof(s));
 		string_set(&conn->connectpath,s);
 		DEBUG(3,("Connect path is %s\n",s));
 	}
@@ -562,7 +562,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	if (*lp_rootpreexec(SNUM(conn))) {
 		pstring cmd;
 		pstrcpy(cmd,lp_rootpreexec(SNUM(conn)));
-		standard_sub_conn(conn,cmd);
+		standard_sub_conn(conn,cmd,sizeof(cmd));
 		DEBUG(5,("cmd=%s\n",cmd));
 		ret = smbrun(cmd,NULL);
 		if (ret != 0 && lp_rootpreexec_close(SNUM(conn))) {
@@ -586,7 +586,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	if (*lp_preexec(SNUM(conn))) {
 		pstring cmd;
 		pstrcpy(cmd,lp_preexec(SNUM(conn)));
-		standard_sub_conn(conn,cmd);
+		standard_sub_conn(conn,cmd,sizeof(cmd));
 		ret = smbrun(cmd,NULL);
 		if (ret != 0 && lp_preexec_close(SNUM(conn))) {
 			DEBUG(1,("preexec gave %d - failing connection\n", ret));
@@ -709,7 +709,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	    change_to_user(conn, vuid))  {
 		pstring cmd;
 		pstrcpy(cmd,lp_postexec(SNUM(conn)));
-		standard_sub_conn(conn,cmd);
+		standard_sub_conn(conn,cmd,sizeof(cmd));
 		smbrun(cmd,NULL);
 	}
 
@@ -718,7 +718,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	if (*lp_rootpostexec(SNUM(conn)))  {
 		pstring cmd;
 		pstrcpy(cmd,lp_rootpostexec(SNUM(conn)));
-		standard_sub_conn(conn,cmd);
+		standard_sub_conn(conn,cmd,sizeof(cmd));
 		smbrun(cmd,NULL);
 	}
 
