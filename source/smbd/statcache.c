@@ -38,7 +38,7 @@ static int global_stat_cache_hits;
  Stat cache statistics code.
 *****************************************************************************/
 
-void print_stat_cache_statistics(void)
+static void print_stat_cache_statistics(void)
 {
   double eff;
 
@@ -243,9 +243,13 @@ BOOL reset_stat_cache( void )
 	if (!lp_stat_cache()) return True;
 
 	if (!initialised) {
+		if (!hash_table_init(&stat_cache, INIT_STAT_CACHE_SIZE,
+				     (compare_function)(strcmp)))
+			return False;
 		initialised = True;
-		return hash_table_init( &stat_cache, INIT_STAT_CACHE_SIZE, (compare_function)(strcmp));
+		return True;
 	}
-	hash_clear(&stat_cache);
+	if (!hash_clear(&stat_cache))
+		return False;
 	return True;
 } /* reset_stat_cache  */
