@@ -902,7 +902,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     /* Work out who's who */
 
     slprintf(dom_user, sizeof(dom_user) - 1,"%s%s%s",
-               dos_to_unix_static(domain), lp_winbind_separator(), user);
+	     domain, lp_winbind_separator(), user);
 
     if (sys_getpwnam(dom_user) != NULL) {
       pstrcpy(user, dom_user);
