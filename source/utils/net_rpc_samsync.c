@@ -4,6 +4,7 @@
 
    Copyright (C) Andrew Tridgell 2002
    Copyright (C) Tim Potter 2001,2002
+   Modified by Volker Lendecke 2002
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -191,7 +192,6 @@ fail:
 static NTSTATUS
 sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 {
-	DOM_SID sid;
 	fstring s;
 	uchar lm_passwd[16], nt_passwd[16];
 
@@ -227,13 +227,8 @@ sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 
 	/* User and group sid */
 
-	sid_copy(&sid, get_global_sam_sid());
-	sid_append_rid(&sid, delta->user_rid);
-	pdb_set_user_sid(account, &sid);
-
-	sid_copy(&sid, get_global_sam_sid());
-	sid_append_rid(&sid, delta->group_rid);
-	pdb_set_group_sid(account, &sid);
+	pdb_set_user_sid_from_rid(account, delta->user_rid);
+	pdb_set_group_sid_from_rid(account, delta->group_rid);
 
 	/* Logon and password information */
 
@@ -359,16 +354,9 @@ fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
 	fstring sid_string;
 	GROUP_MAP map;
 	int flag = TDB_INSERT;
-	gid_t gid;
 
 	unistr2_to_ascii(name, &delta->uni_grp_name, sizeof(name)-1);
 	unistr2_to_ascii(comment, &delta->uni_grp_desc, sizeof(comment)-1);
-
-	if ((grp = getgrnam(name)) == NULL)
-		smb_create_group(name, &gid);
-
-	if ((grp = getgrgid(gid)) == NULL)
-		return NT_STATUS_ACCESS_DENIED;
 
 	/* add the group to the mapping table */
 	sid_copy(&group_sid, get_global_sam_sid());
@@ -382,17 +370,17 @@ fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
 
 	if (grp == NULL)
 	{
-		gid_t new_gid;
+		gid_t gid;
+
 		/* No group found from mapping, find it from its name. */
 		if ((grp = getgrnam(name)) == NULL) {
 				/* No appropriate group found, create one */
 			d_printf("Creating unix group: '%s'\n", name);
-			if (smb_create_group(name, &new_gid) != 0)
+			if (smb_create_group(name, &gid) != 0)
+				return NT_STATUS_ACCESS_DENIED;
+			if ((grp = getgrgid(gid)) == NULL)
 				return NT_STATUS_ACCESS_DENIED;
 		}
-
-		if ((grp = getgrgid(new_gid)) == NULL)
-			return NT_STATUS_ACCESS_DENIED;
 	}
 
 	map.gid = grp->gr_gid;
@@ -558,22 +546,26 @@ static NTSTATUS fetch_alias_info(uint32 rid, SAM_ALIAS_INFO *delta,
 	}
 
 	if (grp == NULL) {
-		gid_t new_gid;
+		gid_t gid;
+
 		/* No group found from mapping, find it from its name. */
 		if ((grp = getgrnam(name)) == NULL) {
 				/* No appropriate group found, create one */
 			d_printf("Creating unix group: '%s'\n", name);
-			if (smb_create_group(name, &new_gid) != 0)
+			if (smb_create_group(name, &gid) != 0)
+				return NT_STATUS_ACCESS_DENIED;
+			if ((grp = getgrgid(gid)) == NULL)
 				return NT_STATUS_ACCESS_DENIED;
 		}
-
-		if ((grp = getgrgid(new_gid)) == NULL)
-			return NT_STATUS_ACCESS_DENIED;
 	}
 
 	map.gid = grp->gr_gid;
 	map.sid = alias_sid;
-	map.sid_name_use = SID_NAME_ALIAS;
+
+	if (sid_equal(&dom_sid, &global_sid_Builtin))
+		map.sid_name_use = SID_NAME_WKN_GRP;
+	else
+		map.sid_name_use = SID_NAME_ALIAS;
 
 	fstrcpy(map.nt_name, name);
 	fstrcpy(map.comment, comment);
