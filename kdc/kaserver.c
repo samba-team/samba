@@ -186,6 +186,8 @@ krb5_ret_xdr_data(krb5_storage *sp,
     ret = krb5_ret_int32(sp, &size);
     if(ret)
 	return ret;
+    if(size < 0)
+	return ERANGE;
     data->length = size;
     if (size) {
 	u_char foo[4];

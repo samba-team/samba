@@ -324,6 +324,8 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client,
     
 
     pa.len = client->keys.len;
+    if(pa.len > UINT_MAX/sizeof(*pa.val))
+	return ERANGE;
     pa.val = malloc(pa.len * sizeof(*pa.val));
     if(pa.val == NULL)
 	return ENOMEM;
@@ -1078,6 +1080,10 @@ fix_transited_encoding(TransitedEncoding *tr,
 		krb5_warn(context, ret, "Decoding transited encoding");
 		return ret;
 	    }
+	}
+	if (num_realms < 0 || num_realms + 1 > UINT_MAX/sizeof(*realms)) {
+	    ret = ERANGE;
+	    goto free_realms;
 	}
 	tmp = realloc(realms, (num_realms + 1) * sizeof(*realms));
 	if(tmp == NULL){

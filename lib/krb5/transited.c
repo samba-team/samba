@@ -318,8 +318,9 @@ krb5_domain_x500_decode(krb5_context context,
     if(ret)
 	return ret;
     
-    /* remove empty components */
+    /* remove empty components and count realms */
     q = &r;
+    *num_realms = 0;
     for(p = r; p; ){
 	if(p->realm[0] == '\0'){
 	    free(p->realm);
@@ -329,22 +330,20 @@ krb5_domain_x500_decode(krb5_context context,
 	}else{
 	    q = &p->next;
 	    p = p->next;
+	    (*num_realms)++;
 	}
     }
+    if (*num_realms < 0 || *num_realms + 1 > UINT_MAX/sizeof(**realms))
+	return ERANGE;
+
     {
 	char **R;
-	*realms = NULL;
-	*num_realms = 0;
+	R = malloc((*num_realms + 1) * sizeof(*R));
+	if (R == NULL)
+	    return ENOMEM;
+	*realms = R;
 	while(r){
-	    R = realloc(*realms, (*num_realms + 1) * sizeof(**realms));
-	    if(R == NULL) {
-		free(*realms);
-		krb5_set_error_string (context, "malloc: out of memory");
-		return ENOMEM;
-	    }
-	    R[*num_realms] = r->realm;
-	    (*num_realms)++;
-	    *realms = R;
+	    *R++ = r->realm;
 	    p = r->next;
 	    free(r);
 	    r = p;
