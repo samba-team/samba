@@ -5,6 +5,7 @@
 
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003
+   Copyright (C) Gerald (Jerry) Carter 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -39,7 +40,21 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 	ADS_STATUS status;
 
 	if (domain->private) {
-		return (ADS_STRUCT *)domain->private;
+		ads = (ADS_STRUCT *)domain->private;
+
+		/* check for a valid structure */
+		if ( ads->config.realm ) {
+			return ads;
+		}
+		else {
+			/* we own this ADS_STRUCT so make sure it goes away */
+			ads->is_mine = True;
+			ads_destroy( &ads );
+			
+			/* we should always be NULL here */
+			SMB_ASSERT( ads == NULL );
+		}
+		
 	}
 
 	/* we don't want this to affect the users ccache */
@@ -78,6 +93,12 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 		}
 		return NULL;
 	}
+
+	/* set the flag that says we don't own the memory even 
+	   though we do so that ads_destroy() won't destroy the 
+	   structure we pass back by reference */
+
+	ads->is_mine = False;
 
 	domain->private = (void *)ads;
 	return ads;
