@@ -1,5 +1,10 @@
 dnl # LIBCLI subsystem
 
+LIBCLI_RAW_LIBS=
+if test x"$with_ads_support" = x"yes"; then
+	LIBCLI_RAW_LIBS="KRB5"
+fi
+
 SMB_SUBSYSTEM(LIBCLI_RAW,[],
 		[libcli/raw/rawfile.o 
 		libcli/raw/smb_signing.o
@@ -23,7 +28,7 @@ SMB_SUBSYSTEM(LIBCLI_RAW,[],
 		libcli/raw/rawioctl.o 
 		libcli/raw/rawacl.o 
 		libcli/raw/rawdate.o],
-		[KRB5])
+		[${LIBCLI_RAW_LIBS}])
 
 SMB_SUBSYSTEM(LIBCLI_UTILS,[],
 		[libcli/util/asn1.o 
