@@ -49,7 +49,7 @@ static krb5_context context;
 #endif
 
 static char *port_str;
-static int do_verbose;
+static int verbose_level;
 static int do_fork;
 static int do_leave;
 static int do_version;
@@ -66,7 +66,7 @@ struct getargs args[] = {
     { "krb5",	'5', arg_flag,		&use_v5,	"Use Kerberos V5",
       NULL },
 #endif
-    { "verbose",'v', arg_flag,		&do_verbose,	"Verbose",
+    { "verbose",'v', arg_counter,	&verbose_level,	"Verbose",
       NULL },
     { "fork",	'f', arg_flag,		&do_fork,	"Fork deleting proc",
       NULL },
@@ -778,14 +778,14 @@ main(int argc, char **argv)
 #ifdef KRB5
     if (ret && use_v5) {
 	ret = do_v5 (host, port, user, filename, header_str,
-		     do_leave, do_verbose, do_fork);
+		     do_leave, verbose_level, do_fork);
     }
 #endif
 
 #ifdef KRB4
     if (ret && use_v4) {
 	ret = do_v4 (host, port, user, filename, header_str,
-		     do_leave, do_verbose, do_fork);
+		     do_leave, verbose_level, do_fork);
     }
 #endif /* KRB4 */
     return ret;
