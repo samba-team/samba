@@ -51,6 +51,7 @@ BOOL secrets_init(void)
 void *secrets_fetch(char *key, size_t *size)
 {
 	TDB_DATA kbuf, dbuf;
+	secrets_init();
 	if (!tdb)
 		return NULL;
 	kbuf.dptr = key;
@@ -66,6 +67,7 @@ void *secrets_fetch(char *key, size_t *size)
 BOOL secrets_store(char *key, void *data, size_t size)
 {
 	TDB_DATA kbuf, dbuf;
+	secrets_init();
 	if (!tdb)
 		return False;
 	kbuf.dptr = key;
@@ -81,6 +83,7 @@ BOOL secrets_store(char *key, void *data, size_t size)
 BOOL secrets_delete(char *key)
 {
 	TDB_DATA kbuf;
+	secrets_init();
 	if (!tdb)
 		return False;
 	kbuf.dptr = key;
@@ -215,6 +218,8 @@ BOOL trust_password_delete(char *domain)
 void reset_globals_after_fork(void)
 {
 	unsigned char dummy;
+
+	secrets_init();
 
 	/*
 	 * Increment the global seed value to ensure every smbd starts
