@@ -58,8 +58,6 @@ static time_t cli_servertime(const char *host, struct in_addr *ip)
 
 	ret = cli->servertime;
 
-	cli_shutdown(cli);
-
 done:
 	if (cli) cli_shutdown(cli);
 	return ret;
