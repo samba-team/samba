@@ -308,6 +308,40 @@ UNISTR2 *unistr2_new(const char *init)
 	return str;
 }
 
+UNISTR2 *unistr2_assign(UNISTR2 *str, const uint16 *src, size_t len)
+{
+	if (str == NULL)
+	{
+		DEBUG(1, ("NULL unistr2\n"));
+		return NULL;
+	}
+
+	if (src == NULL)
+	{
+		len = 0;
+	}
+
+	if (len >= MAX_UNISTRLEN)
+	{
+		len = MAX_UNISTRLEN - 1;
+	}
+
+	unistr2_grow(str, len + 1);
+
+	/* set up string lengths. */
+	str->uni_max_len = len;
+	str->undoc       = 0;
+	str->uni_str_len = len;
+
+	if (len != 0)
+	{
+		memcpy(str->buffer, src, len * sizeof(uint16));
+	}
+	str->buffer[len] = 0;
+
+	return str;
+}
+
 UNISTR2 *unistr2_assign_ascii(UNISTR2 *str, const char *buf, int len)
 {
 	if (str == NULL)

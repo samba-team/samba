@@ -112,7 +112,6 @@
 #undef WITH_PROFILE
 #undef WITH_SSL
 #undef WITH_LDAP
-#undef WITH_NT5LDAP
 #undef WITH_NISPLUS
 #undef WITH_NISPLUS_HOME
 #undef WITH_AUTOMOUNT
@@ -146,6 +145,15 @@
 #undef HAVE_GETSPNAM
 #undef HAVE_BIGCRYPT
 #undef HAVE_GETPRPWNAM
+
+#undef WITH_LIBMSRPC
+#undef WITH_LIBNMB
+#undef WITH_LIBSAMBA
+#undef WITH_LIBSMB
+#undef WITH_LIBSMBPW
+#undef WITH_LIBUBIQX
+
+#undef WITH_NT5LDAP
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
@@ -756,9 +764,6 @@
 /* Define if you have the <sys/select.h> header file.  */
 #undef HAVE_SYS_SELECT_H
 
-/* Define if you have the <sys/un.h> header file.  */
-#undef HAVE_SYS_UN_H
-
 /* Define if you have the <sys/socket.h> header file.  */
 #undef HAVE_SYS_SOCKET_H
 
@@ -776,6 +781,9 @@
 
 /* Define if you have the <sys/time.h> header file.  */
 #undef HAVE_SYS_TIME_H
+
+/* Define if you have the <sys/un.h> header file.  */
+#undef HAVE_SYS_UN_H
 
 /* Define if you have the <sys/unistd.h> header file.  */
 #undef HAVE_SYS_UNISTD_H

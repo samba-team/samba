@@ -340,7 +340,7 @@ static void api_net_logon_ctrl2( rpcsrv_struct *p,
 /*******************************************************************
  array of \PIPE\NETLOGON operations
  ********************************************************************/
-static struct api_struct api_net_cmds [] =
+static const struct api_struct api_net_cmds [] =
 {
 	{ "NET_REQCHAL"       , NET_REQCHAL       , api_net_req_chal       }, 
 	{ "NET_AUTH"          , NET_AUTH          , api_net_auth           },

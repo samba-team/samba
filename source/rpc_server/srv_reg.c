@@ -282,7 +282,7 @@ static void api_reg_info( rpcsrv_struct *p, prs_struct *data,
 /*******************************************************************
  array of \PIPE\reg operations
  ********************************************************************/
-static struct api_struct api_reg_cmds[] =
+static const struct api_struct api_reg_cmds[] =
 {
 	{ "REG_CLOSE"        , REG_CLOSE        , api_reg_close        },
 	{ "REG_OPEN_ENTRY"   , REG_OPEN_ENTRY   , api_reg_open_entry   },

@@ -30,7 +30,7 @@ extern int DEBUGLEVEL;
 
 #if !defined(KANJI)
 /* lower->upper mapping for IBM Code Page 850 - MS-DOS Latin 1 */
-unsigned char cp_850[][4] = {
+static unsigned char cp_850[][4] = {
 /* dec col/row oct hex  description */
 /* 133  08/05  205  85  a grave */
 /* 183  11/07  267  B7  A grave */ 	{0x85,0xB7,1,1},
@@ -98,14 +98,14 @@ unsigned char cp_850[][4] = {
 };
 #else /* KANJI */ 
 /* lower->upper mapping for IBM Code Page 932 - MS-DOS Japanese SJIS */
-unsigned char cp_932[][4] = {
+static unsigned char cp_932[][4] = {
   {0,0,0,0}
 };
 #endif /* KANJI */
 
-char xx_dos_char_map[256];
-char xx_upper_char_map[256];
-char xx_lower_char_map[256];
+static char xx_dos_char_map[256];
+static char xx_upper_char_map[256];
+static char xx_lower_char_map[256];
 
 char *dos_char_map = xx_dos_char_map;
 char *upper_char_map = xx_upper_char_map;

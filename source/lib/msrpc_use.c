@@ -27,7 +27,6 @@
 #include "trans2.h"
 
 extern int DEBUGLEVEL;
-extern pstring scope;
 extern pstring global_myname;
 
 struct msrpc_use

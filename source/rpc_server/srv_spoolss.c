@@ -760,7 +760,7 @@ static void api_spoolss_getjob(rpcsrv_struct *p, prs_struct *data,
 /*******************************************************************
 \pipe\spoolss commands
 ********************************************************************/
-struct api_struct api_spoolss_cmds[] = 
+static const struct api_struct api_spoolss_cmds[] = 
 {
  {"SPOOLSS_OPENPRINTEREX",             SPOOLSS_OPENPRINTEREX,             api_spoolss_open_printer_ex           },
  {"SPOOLSS_GETPRINTERDATA",            SPOOLSS_GETPRINTERDATA,            api_spoolss_getprinterdata            },

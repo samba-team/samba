@@ -599,11 +599,11 @@ void display_sam_info_1(FILE *out_hnd, enum action_type action,
 			             pwdb_encode_acct_ctrl(e1->acb_info,
 			             NEW_PW_FORMAT_SPACE_PADDED_LEN));
 
-			unistr_to_ascii(tmp, s1->uni_acct_name.buffer, sizeof(tmp)-1);
+			unistr2_to_ascii(tmp, &s1->uni_acct_name, sizeof(tmp)-1);
 			report(out_hnd, "\tAccount Name:\t%s\n", tmp);
-			unistr_to_ascii(tmp, s1->uni_full_name.buffer, sizeof(tmp)-1);
+			unistr2_to_ascii(tmp, &s1->uni_full_name, sizeof(tmp)-1);
 			report(out_hnd, "\tFull Name:\t%s\n", tmp);
-			unistr_to_ascii(tmp, s1->uni_acct_desc.buffer, sizeof(tmp)-1);
+			unistr2_to_ascii(tmp, &s1->uni_acct_desc, sizeof(tmp)-1);
 			report(out_hnd, "\tUser Description:\t%s\n", tmp);
 
 			break;

@@ -59,7 +59,7 @@ static void api_wks_query_info( rpcsrv_struct *p, prs_struct *data,
 /*******************************************************************
  \PIPE\wkssvc commands
  ********************************************************************/
-struct api_struct api_wks_cmds[] =
+static const struct api_struct api_wks_cmds[] =
 {
 	{ "WKS_Q_QUERY_INFO", WKS_QUERY_INFO, api_wks_query_info },
 	{ NULL             , 0            , NULL }

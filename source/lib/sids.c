@@ -24,7 +24,6 @@
 
 
 extern int DEBUGLEVEL;
-extern pstring scope;
 extern pstring global_myname;
 
 /*

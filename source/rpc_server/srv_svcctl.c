@@ -202,7 +202,7 @@ static void api_svc_query_disp_name( rpcsrv_struct *p, prs_struct *data,
 /*******************************************************************
  array of \PIPE\svcctl operations
  ********************************************************************/
-static struct api_struct api_svc_cmds[] =
+static const struct api_struct api_svc_cmds[] =
 {
 	{ "SVC_CLOSE"           , SVC_CLOSE           , api_svc_close            },
 	{ "SVC_OPEN_SC_MAN"     , SVC_OPEN_SC_MAN     , api_svc_open_sc_man      },

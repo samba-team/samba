@@ -915,7 +915,7 @@ static void api_samr_lookup_domain( rpcsrv_struct *p, prs_struct *data, prs_stru
 /*******************************************************************
  array of \PIPE\samr operations
  ********************************************************************/
-static struct api_struct api_samr_cmds [] =
+static const struct api_struct api_samr_cmds [] =
 {
 	{ "SAMR_CLOSE_HND"        , SAMR_CLOSE_HND        , api_samr_close_hnd        },
 	{ "SAMR_CONNECT"          , SAMR_CONNECT          , api_samr_connect          },

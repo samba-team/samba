@@ -214,7 +214,7 @@ static void api_srv_net_remote_tod( rpcsrv_struct *p, prs_struct *data,
 /*******************************************************************
 \PIPE\srvsvc commands
 ********************************************************************/
-struct api_struct api_srv_cmds[] =
+static const struct api_struct api_srv_cmds[] =
 {
 	{ "SRV_NETCONNENUM"     , SRV_NETCONNENUM     , api_srv_net_conn_enum    },
 	{ "SRV_NETSESSENUM"     , SRV_NETSESSENUM     , api_srv_net_sess_enum    },

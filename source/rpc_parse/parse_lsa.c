@@ -113,13 +113,13 @@ int make_dom_ref_uni(DOM_R_REF *ref, const UNISTR2 *uni_domname, const DOM_SID *
 
 int make_dom_ref(DOM_R_REF *ref, const char *domname, const DOM_SID *dom_sid)
 {
-	UNISTR2 uni_domname;
-	int len;
+	UNISTR2 *uni_domname;
+	int ret;
 
-	len = (domname ? strlen(domname) : 0);
-	make_unistr2(&uni_domname, domname, len);
-
-	return make_dom_ref_uni(ref, &uni_domname, dom_sid);
+	uni_domname = unistr2_new(domname);
+	ret = make_dom_ref_uni(ref, uni_domname, dom_sid);
+	unistr2_free(uni_domname);
+	return ret;
 }
 
 /*******************************************************************

@@ -110,11 +110,8 @@ SPROGS = bin/smbd bin/lsarpcd bin/svcctld bin/spoolssd bin/samrd \
          bin/nmbd bin/swat
 PROGS1 = bin/smbclient bin/testparm bin/testprns bin/smbrun bin/smbstatus 
 PROGS2 = bin/rpcclient bin/smbpasswd bin/make_smbcodepage bin/debug2html 
-PROGS3 = @WRAP@ @WRAP32@ @LIBNMB@ @LIBNMB32@ @LIBSAMBA@ @LIBSAMBA32@ \
-	@LIBMSRPC@ @LIBMSRPC32@ @LIBSMB@ @LIBSMB32@ \
-	@LIBSMBPW@ @LIBSMBPW32@ \
-	@LIBUBIQX@ @LIBUBIQX32@
-MPROGS = @MPROGS@
+PROGS3 = @WRAP@ @WRAP32@
+#MPROGS = @MPROGS@
 PROGS = $(PROGS1) $(PROGS2) $(PROGS3) $(MPROGS) bin/nmblookup bin/make_printerdef 
 
 SCRIPTS = script/smbtar script/addtosmbpass script/convert_smbpasswd
@@ -135,10 +132,12 @@ SAMRPASSLIB = bin/libsamrpass.la
 SAMRTDBLIB = bin/libsamrtdb.la
 SAMRNT5LDAPLIB = bin/libsamrnt5ldap.la
 
+SAM_PWDB_LIB = @SAM_PWDB_LIB@
+
 SAMBA_LIBS = $(MSRPCLIB) $(SMBLIB) $(NMBLIB) $(SAMBALIB)
 
-SHARED_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB) $(SMBPWLIB) \
-                $(SAMRPASSLIB) 
+SHARED_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB) \
+		$(SAM_PWDB_LIB)
 
 LIBSTATUS_OBJ = lib/util_status.o 
 
@@ -329,8 +328,7 @@ SVCCTLD_OBJ1 = svcctld/svcctld.o \
 
 LSARPCD_OBJ1 = lsarpcd/lsarpcd.o \
 		lsarpcd/srv_lsa.o \
-		lsarpcd/srv_lsa_samdb.o \
-		rpc_server/srv_lookup.o
+		lsarpcd/srv_lsa_samdb.o
 
 SPOOLSSD_OBJ1 = spoolssd/spoolssd.o \
 		rpc_server/srv_spoolss.o \
@@ -372,7 +370,7 @@ LSARPCD_OBJ = $(MSRPCD_OBJ) $(LSARPCD_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
            $(SIDDB_OBJ) $(LOCKING_OBJ) \
 		$(PROFILE_OBJ) 
-LSARPCD_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB)
+LSARPCD_LIBS = $(SAMBA_LIBS)
 
 SPOOLSSD_OBJ = $(MSRPCD_OBJ) $(SPOOLSSD_OBJ1) \
 		$(PRINTING_OBJ) \
@@ -385,23 +383,11 @@ NETLOGOND_OBJ = $(MSRPCD_OBJ) $(NETLOGOND_OBJ1) \
            $(SIDDB_OBJ) \
 		$(UNIXPASSDB_OBJ) $(LIBSTATUS_OBJ) $(PROFILE_OBJ) 
 
-NETLOGOND_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(SMBPWLIB) $(SAMRPASSLIB)
+NETLOGOND_LIBS        = $(SAMBA_LIBS) $(UBIQXLIB) $(SMBPWLIB) $(SAM_PWDB_LIB)
 
-NETLOGONTDBD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRTDBLIB)  
+NETLOGONTDBD_LIBS     = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRTDBLIB)  
 
 NETLOGONNT5LDAPD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRNT5LDAPLIB)  
-
-SAMRTDBD_OBJ = $(MSRPCD_OBJ) $(SAMRTDBD_OBJ1) \
-           $(RPC_SRVUTIL_OBJ) \
-           $(LOCKING_OBJ) \
-           $(SIDDB_OBJ) \
-		$(PROFILE_OBJ) 
-
-SAMRNT5LDAPD_OBJ = $(MSRPCD_OBJ) $(SAMRNT5LDAPD_OBJ1) \
-           $(RPC_SRVUTIL_OBJ) \
-           $(LOCKING_OBJ) \
-           $(SIDDB_OBJ) \
-		$(PROFILE_OBJ) 
 
 SAMRD_OBJ = $(MSRPCD_OBJ) $(SAMRD_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
@@ -409,9 +395,9 @@ SAMRD_OBJ = $(MSRPCD_OBJ) $(SAMRD_OBJ1) \
            $(SIDDB_OBJ) \
 		$(PROFILE_OBJ) 
 
-SAMRD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(SMBPWLIB) $(SAMRPASSLIB)
+SAMRD_LIBS        = $(SAMBA_LIBS) $(UBIQXLIB) $(SMBPWLIB) $(SAM_PWDB_LIB)
 
-SAMRTDBD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRTDBLIB)
+SAMRTDBD_LIBS     = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRTDBLIB)
 
 SAMRNT5LDAPD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRNT5LDAPLIB)
 

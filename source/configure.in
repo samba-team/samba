@@ -671,6 +671,37 @@ if test x"$samba_cv_HAVE_SYSV_IPC" = x"yes"; then
 fi
 
 #################################################
+# decide for the default sam-password-database
+AC_MSG_CHECKING(which sam password database to use)
+AC_ARG_WITH(sam_pwdb,
+[  --with-sam-pwdb={passdb,tdb,nt5ldap}
+                          which password-database to use (passdb)],
+[ case "$withval" in
+  ""|smbpasswd)
+    SAM_PWDB_LIB='$(SAMRPASSLIB)'
+    sampwlibname="passdb"
+    ;;
+  samtdb)
+    SAM_PWDB_LIB='$(SAMRTDBLIB)'
+    sampwlibname="tdb"
+    ;;
+  nt5ldap)
+    SAM_PWDB_LIB='$(SAMRNT5LDAPLIB)'
+    sampwlibname="nt5ldap (must also specify --with-nt5ldap)"
+    ;;
+  *)
+    SAM_PWDB_LIB='$(SAMRPASSLIB)'
+    sampwlibname="passdb (unknown specified!)"
+    ;;
+esac], [
+  SAM_PWDB_LIB='$(SAMRPASSLIB)'
+  sampwlibname="passdb (default)"
+])
+AC_MSG_RESULT($sampwlibname)
+AC_SUBST(SAM_PWDB_LIB)
+
+
+#################################################
 # check for libmsrpc support
 AC_MSG_CHECKING(whether to use libmsrpc)
 AC_ARG_WITH(libmsrpc,

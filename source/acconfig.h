@@ -94,3 +94,6 @@
 #undef WITH_LIBSAMBA
 #undef WITH_LIBSMB
 #undef WITH_LIBSMBPW
+#undef WITH_LIBUBIQX
+
+#undef WITH_NT5LDAP
