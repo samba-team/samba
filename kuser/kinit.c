@@ -83,6 +83,10 @@ main (int argc, char **argv)
       errx (1, "krb5_cc_initialize: %s",
 	    krb5_get_err_text(context, err));
 
+  memset(&cred, 0, sizeof(cred));
+  cred.client = principal;
+  cred.times.endtime = 0;
+
   err = krb5_build_principal_ext (context,
 				  &server,
 #ifdef USE_ASN1_PRINCIPAL
