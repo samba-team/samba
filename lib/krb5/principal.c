@@ -348,16 +348,19 @@ krb5_build_principal(krb5_context context,
 
 static krb5_error_code
 append_component(krb5_context context, krb5_principal p, 
-		 const general_string comp,
+		 const char *comp,
 		 size_t comp_len)
 {
     general_string *tmp;
     size_t len = princ_num_comp(p);
+
     tmp = realloc(princ_comp(p), (len + 1) * sizeof(*tmp));
     if(tmp == NULL)
 	return ENOMEM;
     princ_comp(p) = tmp;
     princ_ncomp(p, len) = malloc(comp_len + 1);
+    if (princ_ncomp(p, len) == NULL)
+	return ENOMEM;
     memcpy (princ_ncomp(p, len), comp, comp_len);
     princ_ncomp(p, len)[comp_len] = '\0';
     princ_num_comp(p)++;
