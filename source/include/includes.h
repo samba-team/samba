@@ -843,4 +843,13 @@ int crypt(const char *key, const char *salt);
 /* yuck, I'd like a better way of doing this */
 #define DIRP_SIZE (256 + 32)
 
+/*
+ * glibc on linux doesn't seem to have MSG_WAITALL
+ * defined. I think the kernel has it though..
+ */
+
+#ifndef MSG_WAITALL
+#define MSG_WAITALL 0
+#endif
+
 #endif /* _INCLUDES_H */
