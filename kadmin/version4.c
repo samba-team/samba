@@ -38,6 +38,7 @@
 #undef ALLOC
 #include <krb.h>
 #include <kadm.h>
+#include <krb_err.h>
 #include <kadm_err.h>
 
 RCSID("$Id$");
@@ -731,7 +732,7 @@ decode_packet(krb5_context context,
     char sname[] = "changepw", sinst[] = "kerberos";
     unsigned long checksum;
     des_key_schedule schedule;
-    const char *msg = message.data;
+    char *msg = message.data;
     void *kadm_handle;
     
     if(message.length < KADM_VERSIZE
