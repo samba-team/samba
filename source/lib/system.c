@@ -595,13 +595,13 @@ static struct passwd *setup_pwret(struct passwd *pass)
 	if (pass->pw_name)
 	{
 		pw_ret.pw_name = pw_name;
-		pstrcpy(pw_ret.pw_name, pass->pw_name);
+		fstrcpy(pw_ret.pw_name, pass->pw_name);
 	}
 
 	if (pass->pw_passwd)
 	{
 		pw_ret.pw_passwd = pw_passwd;
-		pstrcpy(pw_ret.pw_passwd, pass->pw_passwd);
+		fstrcpy(pw_ret.pw_passwd, pass->pw_passwd);
 	}
 
 	return &pw_ret;
