@@ -111,7 +111,7 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
           lib/getsmbpass.o lib/interface.o lib/kanji.o lib/md4.o \
           lib/interfaces.o lib/pidfile.o lib/replace.o \
           lib/signal.o lib/system.o lib/time.o \
-	  lib/ufc.o lib/genrand.o lib/username.o lib/access.o lib/smbrun.o \
+	  lib/ufc.o lib/genrand.o lib/username.o lib/util_getent.o lib/access.o lib/smbrun.o \
 	  lib/bitmap.o lib/crc32.o lib/snprintf.o lib/wins_srv.o \
 	  lib/util_str.o lib/util_sid.o \
 	  lib/util_unistr.o lib/util_file.o lib/sysacls.o \
@@ -360,7 +360,7 @@ PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
 		lib/wins_srv.o lib/substitute.o lib/select.o lib/util.o \
 		nsswitch/wb_client.o nsswitch/wb_common.o lib/system.o \
 		lib/charset.o lib/util_file.o lib/kanji.o lib/genrand.o \
-		lib/username.o lib/charcnv.o lib/time.o lib/md4.o \
+		lib/username.o lib/util_getent.o lib/charcnv.o lib/time.o lib/md4.o \
 		lib/util_unistr.o lib/signal.o lib/talloc.o lib/ms_fnmatch.o \
 		lib/util_sock.o lib/smbrun.o lib/util_sec.o \
 		ubiqx/ubi_sLinkList.o libsmb/smbencrypt.o libsmb/smbdes.o \
