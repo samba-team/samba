@@ -69,11 +69,12 @@ static size_t sys_iconv(void *cd,
 #endif
 }
 
-/*
-  this is a simple portable iconv() implementaion. It only knows about
-  a very small number of character sets - just enough that Samba works
-  on systems that don't have iconv
- */
+/**
+ * This is a simple portable iconv() implementaion.
+ *
+ * It only knows about a very small number of character sets - just
+ * enough that Samba works on systems that don't have iconv.
+ **/
 size_t smb_iconv(smb_iconv_t cd, 
 		 const char **inbuf, size_t *inbytesleft,
 		 char **outbuf, size_t *outbytesleft)
