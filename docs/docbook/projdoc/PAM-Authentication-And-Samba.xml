@@ -722,7 +722,7 @@ tool on other platforms will need to adapt this appropriately.
 </para>
 
 <sect3>
-<title>Password Synchonisation Configuration</title>
+<title>Password Synchronisation Configuration</title>
 
 <para>
 A sample PAM configuration that shows the use of pam_smbpass to make
