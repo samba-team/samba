@@ -58,7 +58,7 @@ int open_socket(krb5_context context)
 	setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
 	memset(&sin, 0, sizeof(sin));
 	sin.sin_family = AF_INET;
-	sin.sin_port = krb5_getportbyname ("hprop", "tcp", htons(HPROP_PORT));
+	sin.sin_port = krb5_getportbyname (context, "hprop", "tcp", HPROP_PORT);
 	if(bind(s, (struct sockaddr*)&sin, sizeof(sin)) < 0){
 	    krb5_warn(context, errno, "bind");
 	    close(s);
@@ -107,6 +107,8 @@ int main(int argc, char **argv)
     krb5_context context;
     krb5_auth_context ac = NULL;
     krb5_principal server;
+    krb5_principal c1, c2;
+    krb5_authenticator authent;
     krb5_keytab keytab;
     int fd;
     HDB *db;
@@ -155,6 +157,20 @@ int main(int argc, char **argv)
 
     ret = krb5_recvauth(context, &ac, &fd, HPROP_VERSION, server, 0, keytab, NULL);
     if(ret) krb5_err(context, 1, ret, "krb5_recvauth");
+
+    ret = krb5_auth_getauthenticator(context, ac, &authent);
+    if(ret) krb5_err(context, 1, ret, "krb5_auth_getauthenticator");
+    
+    ret = krb5_make_principal(context, &c1, NULL, "kadmin", "hprop", NULL);
+    if(ret) krb5_err(context, 1, ret, "krb5_make_principal");
+    principalname2krb5_principal(&c2, authent->cname, authent->crealm);
+    if(!krb5_principal_compare(context, c1, c2)){
+	char *s;
+	krb5_unparse_name(context, c2, &s);
+	krb5_errx(context, 1, "Unauthorized connection from %s", s);
+    }
+    krb5_free_principal(context, c1);
+    krb5_free_principal(context, c2);
 
     ret = krb5_kt_close(context, keytab);
     if(ret) krb5_err(context, 1, ret, "krb5_kt_close");
