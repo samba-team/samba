@@ -424,8 +424,7 @@ rpc_getsid_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 		 sid_str, lp_workgroup());
 
 	if (!secrets_store_domain_sid(global_myname, domain_sid)) {
-		DEBUG(0,("pdb_generate_sam_sid: "
-			 "Can't store domain SID as a pdc/bdc.\n"));
+		DEBUG(0,("Can't store domain SID\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
