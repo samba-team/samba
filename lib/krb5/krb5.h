@@ -439,6 +439,8 @@ struct krb5_keytab_data;
 
 typedef struct krb5_keytab_data *krb5_keytab;
 
+#define KRB5_KT_PREFIX_MAX_LEN	30
+
 struct krb5_keytab_data {
     const char *prefix;
     krb5_error_code (*resolve)(krb5_context, const char*, krb5_keytab);
