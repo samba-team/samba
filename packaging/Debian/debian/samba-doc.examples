@@ -1,3 +1,2 @@
-examples/
 debian/wins2dns.awk
-source/script/smbadduser
+source/smbadduser

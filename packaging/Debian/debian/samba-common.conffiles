@@ -1,2 +1,3 @@
-/etc/samba/smb.conf
 /etc/pam.d/samba
+/etc/samba/gdbcommands
+/etc/dhcp3/dhclient-enter-hooks.d/samba
