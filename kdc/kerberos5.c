@@ -742,10 +742,13 @@ as_rep(KDC_REQ *req,
 	}
 	fix_time(&b->till);
 	t = *b->till;
+
+	/* be careful not overflowing */
+
 	if(client->max_life)
-	    t = min(t, start + *client->max_life);
+	    t = start + min(t - start, *client->max_life);
 	if(server->max_life)
-	    t = min(t, start + *server->max_life);
+	    t = start + min(t - start, *server->max_life);
 #if 0
 	t = min(t, start + realm->max_life);
 #endif
@@ -764,9 +767,9 @@ as_rep(KDC_REQ *req,
 	    if(t == 0)
 		t = MAX_TIME;
 	    if(client->max_renew)
-		t = min(t, start + *client->max_renew);
+		t = start + min(t - start, *client->max_renew);
 	    if(server->max_renew)
-		t = min(t, start + *server->max_renew);
+		t = start + min(t - start, *client->max_renew);
 #if 0
 	    t = min(t, start + realm->max_renew);
 #endif
