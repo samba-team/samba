@@ -352,7 +352,6 @@ NTSTATUS _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 	int                     value_length;
 	REGISTRY_KEY 		*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
 	REGISTRY_VALUE		*val = NULL;
-	REGISTRY_VALUE		emptyval;
 	REGVAL_CTR		regvals;
 	int			i;
 
@@ -374,8 +373,11 @@ NTSTATUS _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 	/* couple of hard coded registry values */
 	
 	if ( strequal(name, "RefusePasswordChange") ) {
-		ZERO_STRUCTP( &emptyval );
-		val = &emptyval;
+		if ( (val = (REGISTRY_VALUE*)malloc(sizeof(REGISTRY_VALUE))) == NULL ) {
+			DEBUG(0,("_reg_info: malloc() failed!\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+		ZERO_STRUCTP( val );
 	
 		goto out;
 	}
