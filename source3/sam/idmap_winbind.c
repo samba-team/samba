@@ -38,7 +38,6 @@ static NTSTATUS db_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 	struct winbindd_request request;
 	struct winbindd_response response;
 	int result, operation;
-	fstring sid_str;
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
@@ -82,6 +81,8 @@ static NTSTATUS db_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+ 	/* setup request */
+
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
@@ -95,6 +96,9 @@ static NTSTATUS db_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 		default:
 			return NT_STATUS_INVALID_PARAMETER;
 	}
+
+ 	sid_to_string(sid_str, sid);
+ 	fstrcpy(request.data.sid, sid_str);
 
 	/* Make The Request */
 	result = winbindd_request(operation, &request, &response);
@@ -118,7 +122,7 @@ static NTSTATUS db_set_mapping(DOM_SID *sid, unid_t id, int id_type) {
 /*****************************************************************************
  Initialise idmap database. 
 *****************************************************************************/
-static NTSTATUS db_init(const char *db_name) {
+static NTSTATUS db_init(void) {
 	return NT_STATUS_OK;
 }
 
