@@ -12,7 +12,6 @@
 SRCDIR = @srcdir@
 JADE = @JADE@
 NSGMLS = @NSGMLS@
-ONSGMLS=@ONSGMLS@
 SGMLSPL=@SGMLSPL@
 HTMLDOC=@HTMLDOC@
 PERL=@PERL@
@@ -58,7 +57,8 @@ HOWTOSRC=projdoc/DOMAIN_MEMBER.sgml projdoc/NT_Security.sgml \
 	projdoc/msdfs_setup.sgml projdoc/printer_driver2.sgml \
 	projdoc/UNIX_INSTALL.sgml projdoc/winbind.sgml projdoc/OS2-Client-HOWTO.sgml \
 	projdoc/Samba-PDC-HOWTO.sgml projdoc/ENCRYPTION.sgml \
-	projdoc/CVS-Access.sgml projdoc/Integrating-with-Windows.sgml
+	projdoc/CVS-Access.sgml projdoc/Integrating-with-Windows.sgml \
+	projdoc/PAM-Authentication-And-Samba.sgml
 
 FAQSRC=faq/samba-pdc-faq.sgml
 
@@ -67,7 +67,7 @@ FAQSRC=faq/samba-pdc-faq.sgml
 ######################################################################
 # Make instructions
 ######################################################################
-all: man
+all: HOWTO proj-doc man-all man-html-all
 
 man: $(MANPAGES)
 
@@ -102,7 +102,11 @@ HOWTO: $(HOWTOSRC)
 ##
 proj-doc: 
 	echo Building Samba-HOWTO-Collections...
-	@(cd projdoc; $(JADE) -t sgml -i html -V nochunks -d  ../stylesheets/ldp.dsl\#html samba-doc.sgml > ../samba-doc.html)
+	@$(PERL) scripts/collateindex.pl -N -o projdoc/index.sgml
+	@$(JADE) -t sgml -V html-index -d $(SGML_SHARE)/dsssl/docbook/html/docbook.dsl projdoc/samba-doc.sgml
+	@$(PERL) scripts/collateindex.pl -o projdoc/index.sgml HTML.index
+	@/bin/rm HTML.index *.htm
+	@$(JADE) -t sgml -i html -V nochunks -d stylesheets/ldp.dsl\#html projdoc/samba-doc.sgml > samba-doc.html
 	@(cd scripts; ./ldp_print ../samba-doc.html)
 	@mv -f samba-doc.pdf ../Samba-HOWTO-Collection.pdf
 	@/bin/mv -f samba-doc.html ../htmldocs/Samba-HOWTO-Collection.html
@@ -128,7 +132,7 @@ man-all: $(SGMLMANSRC)
 	@(for i in $?; do \
 		manfile=`echo $$i | sed 's,.*/,,' | sed "s/\.sgml//g"`; \
 		echo "Making $$manfile"; \
-		$(ONSGMLS) -f /tmp/docbook2x.log $$i | $(SGMLSPL) \
+		$(NSGMLS) -f /tmp/docbook2x.log $$i | $(SGMLSPL) \
 	           $(SGML_SHARE)/docbook2X/docbook2man-spec.pl; \
 		cat /tmp/docbook2x.log | grep -v DTDDECL; \
 		/bin/rm -f /tmp/docbook2x.log; \
@@ -144,7 +148,7 @@ man-all: $(SGMLMANSRC)
 ##
 $(MANDIR)/findsmb.1:  manpages/findsmb.1.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
 	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
 	@echo "Making HTML version of $@"
@@ -152,7 +156,7 @@ $(MANDIR)/findsmb.1:  manpages/findsmb.1.sgml
 
 $(MANDIR)/smbclient.1: manpages/smbclient.1.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
 	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
 	@echo "Making HTML version of $@"
@@ -160,7 +164,7 @@ $(MANDIR)/smbclient.1: manpages/smbclient.1.sgml
 
 $(MANDIR)/smbspool.8: manpages/smbspool.8.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
 	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
 	@echo "Making HTML version of $@"
@@ -168,7 +172,7 @@ $(MANDIR)/smbspool.8: manpages/smbspool.8.sgml
 
 $(MANDIR)/lmhosts.5: manpages/lmhosts.5.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
 	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
 	@echo "Making HTML version of $@"
@@ -176,7 +180,7 @@ $(MANDIR)/lmhosts.5: manpages/lmhosts.5.sgml
 
 $(MANDIR)/smbcontrol.1: manpages/smbcontrol.1.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
 	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
 	@echo "Making HTML version of $@"
@@ -184,7 +188,7 @@ $(MANDIR)/smbcontrol.1: manpages/smbcontrol.1.sgml
 
 $(MANDIR)/smbstatus.1: manpages/smbstatus.1.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
 	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
 	@echo "Making HTML version of $@"
@@ -192,7 +196,7 @@ $(MANDIR)/smbstatus.1: manpages/smbstatus.1.sgml
 
 $(MANDIR)/make_smbcodepage.1: manpages/make_smbcodepage.1.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
 	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
 	@echo "Making HTML version of $@"
@@ -200,7 +204,7 @@ $(MANDIR)/make_smbcodepage.1: manpages/make_smbcodepage.1.sgml
 
 $(MANDIR)/make_unicodemap.1: manpages/make_unicodemap.1.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
 	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
 	@echo "Making HTML version of $@"
@@ -208,7 +212,7 @@ $(MANDIR)/make_unicodemap.1: manpages/make_unicodemap.1.sgml
 
 $(MANDIR)/smbd.8: manpages/smbd.8.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
 	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
 	@echo "Making HTML version of $@"
@@ -216,7 +220,7 @@ $(MANDIR)/smbd.8: manpages/smbd.8.sgml
 
 $(MANDIR)/smbtar.1: manpages/smbtar.1.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
 	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
 	@echo "Making HTML version of $@"
@@ -224,7 +228,7 @@ $(MANDIR)/smbtar.1: manpages/smbtar.1.sgml
 
 $(MANDIR)/nmbd.8: manpages/nmbd.8.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
 	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
 	@echo "Making HTML version of $@"
@@ -232,7 +236,7 @@ $(MANDIR)/nmbd.8: manpages/nmbd.8.sgml
 
 $(MANDIR)/smbmnt.8: manpages/smbmnt.8.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
 	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
 	@echo "Making HTML version of $@"
@@ -240,7 +244,7 @@ $(MANDIR)/smbmnt.8: manpages/smbmnt.8.sgml
 
 $(MANDIR)/smbumount.8: manpages/smbumount.8.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
 	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
 	@echo "Making HTML version of $@"
@@ -248,7 +252,7 @@ $(MANDIR)/smbumount.8: manpages/smbumount.8.sgml
 
 $(MANDIR)/nmblookup.1: manpages/nmblookup.1.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
 	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
 	@echo "Making HTML version of $@"
@@ -256,7 +260,7 @@ $(MANDIR)/nmblookup.1: manpages/nmblookup.1.sgml
 
 $(MANDIR)/smbmount.8: manpages/smbmount.8.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
 	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
 	@echo "Making HTML version of $@"
@@ -264,7 +268,7 @@ $(MANDIR)/smbmount.8: manpages/smbmount.8.sgml
 
 $(MANDIR)/swat.8: manpages/swat.8.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
 	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
 	@echo "Making HTML version of $@"
@@ -272,7 +276,7 @@ $(MANDIR)/swat.8: manpages/swat.8.sgml
 
 $(MANDIR)/rpcclient.1: manpages/rpcclient.1.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
 	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
 	@echo "Making HTML version of $@"
@@ -280,7 +284,7 @@ $(MANDIR)/rpcclient.1: manpages/rpcclient.1.sgml
 
 $(MANDIR)/smbpasswd.5: manpages/smbpasswd.5.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
 	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
 	@echo "Making HTML version of $@"
@@ -288,7 +292,7 @@ $(MANDIR)/smbpasswd.5: manpages/smbpasswd.5.sgml
 
 $(MANDIR)/testparm.1: manpages/testparm.1.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
 	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
 	@echo "Making HTML version of $@"
@@ -296,7 +300,7 @@ $(MANDIR)/testparm.1: manpages/testparm.1.sgml
 
 $(MANDIR)/samba.7: manpages/samba.7.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
 	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
 	@echo "Making HTML version of $@"
@@ -304,7 +308,7 @@ $(MANDIR)/samba.7: manpages/samba.7.sgml
 
 $(MANDIR)/smbpasswd.8: manpages/smbpasswd.8.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
 	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
 	@echo "Making HTML version of $@"
@@ -312,7 +316,7 @@ $(MANDIR)/smbpasswd.8: manpages/smbpasswd.8.sgml
 
 $(MANDIR)/testprns.1: manpages/testprns.1.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
 	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
 	@echo "Making HTML version of $@"
@@ -320,7 +324,7 @@ $(MANDIR)/testprns.1: manpages/testprns.1.sgml
 
 $(MANDIR)/smb.conf.5: manpages/smb.conf.5.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
 	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
 	@echo "Making HTML version of $@"
@@ -328,7 +332,7 @@ $(MANDIR)/smb.conf.5: manpages/smb.conf.5.sgml
 
 $(MANDIR)/wbinfo.1: manpages/wbinfo.1.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
 	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
 	@echo "Making HTML version of $@"
@@ -336,7 +340,7 @@ $(MANDIR)/wbinfo.1: manpages/wbinfo.1.sgml
 
 $(MANDIR)/smbcacls.1: manpages/smbcacls.1.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
 	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
 	@echo "Making HTML version of $@"
@@ -344,7 +348,7 @@ $(MANDIR)/smbcacls.1: manpages/smbcacls.1.sgml
 
 $(MANDIR)/smbsh.1 : manpages/smbsh.1.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
 	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
 	@echo "Making HTML version of $@"
@@ -352,7 +356,7 @@ $(MANDIR)/smbsh.1 : manpages/smbsh.1.sgml
 
 $(MANDIR)/winbindd.8: manpages/winbindd.8.sgml
 	@echo "Making $@"
-	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
 	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
 	@echo "Making HTML version of $@"

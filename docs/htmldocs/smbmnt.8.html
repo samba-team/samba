@@ -54,10 +54,11 @@ CLASS="COMMAND"
 	<B
 CLASS="COMMAND"
 >smbmnt</B
-> is meant to be installed setuid root 
-	so that normal users can mount their smb shares. It checks 
-	whether the user has write permissions on the mount point and 
-	then mounts the directory.</P
+> can be installed setuid root if you want
+	normal users to be able to mount their SMB shares.</P
+><P
+>A setuid smbmnt will only allow mounts on directories owned
+	by the user, and that the user has write permission on.</P
 ><P
 >The <B
 CLASS="COMMAND"
@@ -72,11 +73,14 @@ CLASS="COMMAND"
 >
 	</A
 >. It should not be invoked directly by users. </P
+><P
+>smbmount searches the normal PATH for smbmnt. You must ensure
+	that the smbmnt version in your path matches the smbmount used.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN28"
+NAME="AEN30"
 ></A
 ><H2
 >OPTIONS</H2
@@ -125,7 +129,7 @@ CLASS="VARIABLELIST"
 ><DD
 ><P
 >		list of options that are passed as-is to smbfs, if this
-		command is run on a 2.4 or higher linux kernel.
+		command is run on a 2.4 or higher Linux kernel.
 		</P
 ></DD
 ></DL
@@ -134,7 +138,7 @@ CLASS="VARIABLELIST"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN55"
+NAME="AEN57"
 ></A
 ><H2
 >AUTHOR</H2

@@ -59,9 +59,9 @@
 		 
 		<varlistentry>
 		<term>Lanman Password Hash</term>
-		<listitem><para>This is the LANMAN hash of the users password, 
+		<listitem><para>This is the LANMAN hash of the user's password, 
 		encoded as 32 hex digits.  The LANMAN hash is created by DES 
-		encrypting a well known string with the users password as the 
+		encrypting a well known string with the user's password as the 
 		DES key. This is the same password used by Windows 95/98 machines. 
 		Note that this password hash is regarded as weak as it is
 		vulnerable to dictionary attacks and if two users choose the 
@@ -69,7 +69,7 @@
 		is not "salted" as the UNIX password is). If the user has a 
 		null password this field will contain the characters "NO PASSWORD" 
 		as the start of the hex string. If the hex string is equal to 
-		32 'X' characters then the users account is marked as 
+		32 'X' characters then the user's account is marked as 
 		<constant>disabled</constant> and the user will not be able to 
 		log onto the Samba server. </para>
 		
@@ -89,14 +89,14 @@
 		
 		<varlistentry>
 		<term>NT Password Hash</term>
-		<listitem><para>This is the Windows NT hash of the users 
+		<listitem><para>This is the Windows NT hash of the user's 
 		password, encoded as 32 hex digits.  The Windows NT hash is 
-		created by taking the users password as represented in 
+		created by taking the user's password as represented in 
 		16-bit, little-endian UNICODE and then applying the MD4 
 		(internet rfc1321) hashing algorithm to it. </para>
 		
 		<para>This password hash is considered more secure than
-		the Lanman Password Hash as it preserves the case of the 
+		the LANMAN Password Hash as it preserves the case of the 
 		password and uses a much higher quality hashing algorithm. 
 		However, it is still the case that if two users choose the same 
 		password this entry will be identical (i.e. the password is 
@@ -132,7 +132,7 @@
 			in the smbpasswd file. </para></listitem>
 			
 			<listitem><para><emphasis>N</emphasis> - This means the
-			account has no password (the passwords in the fields Lanman 
+			account has no password (the passwords in the fields LANMAN 
 			Password Hash and NT Password Hash are ignored). Note that this 
 			will only allow users to log on with no password if the <parameter>
 			null passwords</parameter> parameter is set in the <ulink

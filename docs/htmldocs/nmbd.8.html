@@ -36,7 +36,7 @@ NAME="AEN8"
 ><P
 ><B
 CLASS="COMMAND"
->smbd</B
+>nmbd</B
 >  [-D] [-a] [-o] [-P] [-h] [-V] [-d &#60;debug level&#62;] [-H &#60;lmhosts file&#62;] [-l &#60;log file&#62;] [-n &#60;primary netbios name&#62;] [-p &#60;port number&#62;] [-s &#60;configuration file&#62;]</P
 ></DIV
 ><DIV
@@ -539,7 +539,7 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >nmbd</B
 > will accept SIGHUP, which will cause 
-	it to dump out it's namelists into the file <TT
+	it to dump out its namelists into the file <TT
 CLASS="FILENAME"
 >namelist.debug
 	</TT
@@ -555,27 +555,29 @@ CLASS="FILENAME"
 	cause <B
 CLASS="COMMAND"
 >nmbd</B
-> to dump out it's server database in
+> to dump out its server database in
 	the <TT
 CLASS="FILENAME"
 >log.nmb</TT
-> file. In addition, the debug log level 
-	of nmbd may be raised by sending it a SIGUSR1 (<B
+> file.</P
+><P
+>The debug log level of nmbd may be raised or lowered using
+	<A
+HREF="smbcontrol.1.html"
+TARGET="_top"
+><B
 CLASS="COMMAND"
->kill -USR1
-	&#60;nmbd-pid&#62;</B
->) and lowered by sending it a
-	SIGUSR2 (<B
-CLASS="COMMAND"
->kill -USR2 &#60;nmbd-pid&#62;</B
->). This is to 
-	allow transient problems to be diagnosed, whilst still running at a 
-	normally low log level.</P
+>smbcontrol(1)</B
+>
+	</A
+> (SIGUSR[1|2] signals are no longer used in Samba 2.2). This is
+	to allow transient problems to be diagnosed, whilst still running
+	at a normally low log level.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN186"
+NAME="AEN187"
 ></A
 ><H2
 >VERSION</H2
@@ -586,7 +588,7 @@ NAME="AEN186"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN189"
+NAME="AEN190"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -651,7 +653,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN206"
+NAME="AEN207"
 ></A
 ><H2
 >AUTHOR</H2

@@ -36,23 +36,22 @@ NAME="AEN8"
 ><P
 ><B
 CLASS="COMMAND"
->nmblookup</B
->  [-d debuglevel] [-i] [-S] [-r] [-A] [-h] [-B &#60;broadcast address&#62;] [-U &#60;unicast address&#62;] [-d &#60;debug level&#62;] [-s &#60;smb config file&#62;] [-i &#60;NetBIOS scope&#62;] [-T] {name}</P
+>winbindd</B
+>  [-i] [-d &#60;debug level&#62;] [-s &#60;smb config file&#62;]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN24"
+NAME="AEN14"
 ></A
 ><H2
 >DESCRIPTION</H2
 ><P
->This tool is part of the <A
+>This program is part of the <A
 HREF="samba.7.html"
 TARGET="_top"
 >	Samba</A
-> suite version 3.0 and describes functionality not 
-	yet implemented in the main version of Samba.</P
+> suite.</P
 ><P
 ><B
 CLASS="COMMAND"
@@ -70,7 +69,10 @@ CLASS="FILENAME"
 	of user and group ids specified by the administrator of the 
 	Samba system.</P
 ><P
->The service provided by winbindd is called `winbind' and 
+>The service provided by <B
+CLASS="COMMAND"
+>winbindd</B
+> is called `winbind' and 
 	can be used to resolve user and group information from a 
 	Windows NT server. The service can also provide authentication
 	services via an associated PAM module. </P
@@ -147,7 +149,7 @@ group:          files winbind
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN52"
+NAME="AEN43"
 ></A
 ><H2
 >OPTIONS</H2
@@ -186,7 +188,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN65"
+NAME="AEN56"
 ></A
 ><H2
 >NAME AND ID RESOLUTION</H2
@@ -217,7 +219,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN71"
+NAME="AEN62"
 ></A
 ><H2
 >CONFIGURATION</H2
@@ -252,7 +254,7 @@ CLASS="COMMAND"
 		DOMAIN\username. In some cases this separator character may 
 		cause problems as the '\' character has special meaning in 
 		unix shells.  In that case you can use the winbind separator 
-		option to specify an alternative sepataror character. Good 
+		option to specify an alternative separator character. Good 
 		alternatives may be '/' (although that conflicts
 		with the unix directory separator) or a '+ 'character. 
 		The '+' character appears to be the best choice for 100% 
@@ -276,7 +278,7 @@ CLASS="COMMAND"
 ><P
 >The winbind uid parameter specifies the 
 		range of user ids that are allocated by the winbindd daemon.  
-		This range of ids should have no existing local or nis users 
+		This range of ids should have no existing local or NIS users 
 		within it as strange conflicts can occur otherwise. </P
 ><P
 >Default: <B
@@ -296,7 +298,7 @@ CLASS="COMMAND"
 ><P
 >The winbind gid parameter specifies the 
 		range of group ids that are allocated by the winbindd daemon.  
-		This range of group ids should have no existing local or nis 
+		This range of group ids should have no existing local or NIS 
 		groups within it as strange conflicts can occur otherwise.</P
 ><P
 >Default: <B
@@ -319,7 +321,7 @@ CLASS="COMMAND"
 		seconds the winbindd daemon will cache user and group information 
 		before querying a Windows NT server again. When a item in the 
 		cache is older than this time winbindd will ask the domain 
-		controller for the sequence number of the servers account database. 
+		controller for the sequence number of the server's account database. 
 		If the sequence number has not changed then the cached item is 
 		marked as valid for a further <TT
 CLASS="PARAMETER"
@@ -375,7 +377,10 @@ CLASS="COMMAND"
 ><EM
 >Warning:</EM
 > Turning off user enumeration 
-		may cause some programs to behave oddly.  For example, the finger 
+		may cause some programs to behave oddly.  For example, the <B
+CLASS="COMMAND"
+>finger</B
+> 
 		program relies on having access to the full user list when 
 		searching  for matching usernames. </P
 ><P
@@ -479,7 +484,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN152"
+NAME="AEN144"
 ></A
 ><H2
 >EXAMPLE SETUP</H2
@@ -563,12 +568,13 @@ CLASS="COMMAND"
 >The next step is to join the domain. To do that use the 
 	<B
 CLASS="COMMAND"
->samedit</B
+>smbpasswd</B
 > program like this:  </P
 ><P
 ><B
 CLASS="COMMAND"
->samedit -S '*' -W DOMAIN -UAdministrator</B
+>smbpasswd -j DOMAIN -r PDC -U
+	Administrator</B
 ></P
 ><P
 >The username after the <TT
@@ -576,20 +582,10 @@ CLASS="PARAMETER"
 ><I
 >-U</I
 ></TT
-> can be any Domain 
-	user that has administrator priviliges on the machine. Next from 
-	within <B
-CLASS="COMMAND"
->samedit</B
->, run the command: </P
-><P
-><B
-CLASS="COMMAND"
->createuser MACHINE$ -j DOMAIN -L</B
-></P
-><P
->This assumes your domain is called "DOMAIN" and your Samba 
-	workstation is called "MACHINE". </P
+> can be any
+	Domain user that has administrator privileges on the machine.
+	Substitute your domain name for "DOMAIN" and the name of your PDC
+	for "PDC".</P
 ><P
 >Next copy <TT
 CLASS="FILENAME"
@@ -620,7 +616,10 @@ CLASS="FILENAME"
 >/lib/libnss_winbind.so.1</TT
 >.</P
 ><P
->Finally, setup a smb.conf containing directives like the 
+>Finally, setup a <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> containing directives like the 
 	following:  </P
 ><P
 ><TABLE
@@ -663,10 +662,10 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN194"
+NAME="AEN183"
 ></A
 ><H2
->Notes</H2
+>NOTES</H2
 ><P
 >The following notes are useful when configuring and 
 	running <B
@@ -697,10 +696,8 @@ CLASS="COMMAND"
 >winbindd</B
 >
 	nsswitch module read an environment variable named <TT
-CLASS="PARAMETER"
-><I
->	$WINBINDD_DOMAIN</I
-></TT
+CLASS="ENVAR"
+>	$WINBINDD_DOMAIN</TT
 >.  If this variable contains a comma separated
 	list of Windows NT domain names, then winbindd will only resolve users
 	and groups within those Windows NT domains. </P
@@ -723,10 +720,10 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN210"
+NAME="AEN199"
 ></A
 ><H2
->Signals</H2
+>SIGNALS</H2
 ><P
 >The following signals can be used to manipulate the 
 	<B
@@ -774,10 +771,10 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN227"
+NAME="AEN216"
 ></A
 ><H2
->Files</H2
+>FILES</H2
 ><P
 ></P
 ><DIV
@@ -826,9 +823,11 @@ CLASS="FILENAME"
 >Storage for the Windows NT rid to UNIX user/group 
 		id mapping.  The lock directory is specified when Samba is initially 
 		compiled using the <TT
-CLASS="FILENAME"
->--with-lockdir</TT
-> option.  
+CLASS="PARAMETER"
+><I
+>--with-lockdir</I
+></TT
+> option.
 		This directory is by default <TT
 CLASS="FILENAME"
 >/usr/local/samba/var/locks
@@ -848,19 +847,18 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN256"
+NAME="AEN245"
 ></A
 ><H2
 >VERSION</H2
 ><P
->This man page is correct for version 2.2 of 
-	the Samba suite.  winbindd is however not available in
-	stable release of Samba as of yet.</P
+>This man page is correct for version 2.2 of
+        the Samba suite.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN259"
+NAME="AEN248"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -888,7 +886,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN266"
+NAME="AEN255"
 ></A
 ><H2
 >AUTHOR</H2

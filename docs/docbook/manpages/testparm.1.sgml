@@ -72,7 +72,7 @@
 		
 		<varlistentry>
 		<term>-L servername</term>
-		<listitem><para>Sets the value of the %L macro to servername.
+		<listitem><para>Sets the value of the %L macro to <replaceable>servername</replaceable>.
 		This is useful for testing include files specified with the 
 		%L macro. </para></listitem>
 		</varlistentry>
@@ -90,7 +90,7 @@
 		<varlistentry>
 		<term>hostname</term>
 		<listitem><para>If this parameter and the following are 
-		specified, then testparm will examine the <parameter>hosts
+		specified, then <command>testparm</command> will examine the <parameter>hosts
 		allow</parameter> and <parameter>hosts deny</parameter> 
 		parameters in the <filename>smb.conf</filename> file to 
 		determine if the hostname with this IP address would be
@@ -126,7 +126,7 @@
 	<title>DIAGNOSTICS</title>
 
 	<para>The program will issue a message saying whether the 
-	configuration file loaded OK or not. This message may be preceeded by 
+	configuration file loaded OK or not. This message may be preceded by 
 	errors and warnings if the file did not load. If the file was 
 	loaded OK, the program then dumps all known service details 
 	to stdout. </para>

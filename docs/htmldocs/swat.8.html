@@ -68,15 +68,24 @@ CLASS="FILENAME"
 CLASS="COMMAND"
 >swat</B
 > configuration page has help links 
-	to all the configurable options in the smb.conf file allowing an 
+	to all the configurable options in the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file allowing an 
 	administrator to easily look up the effects of any change. </P
 ><P
->swat is run from inetd </P
+><B
+CLASS="COMMAND"
+>swat</B
+> is run from <B
+CLASS="COMMAND"
+>inetd</B
+> </P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN23"
+NAME="AEN26"
 ></A
 ><H2
 >OPTIONS</H2
@@ -95,7 +104,10 @@ CLASS="VARIABLELIST"
 CLASS="COMMAND"
 >smbd
 		</B
-> server. This is the file that swat will modify. 
+> server. This is the file that <B
+CLASS="COMMAND"
+>swat</B
+> will modify. 
 		The information in this file includes server-specific 
 		information such as what printcap file to use, as well as 
 		descriptions of all the services that the server is to provide.
@@ -110,8 +122,14 @@ CLASS="FILENAME"
 ><DD
 ><P
 >This option disables authentication and puts 
-		swat in demo mode. In that mode anyone will be able to modify 
-		the smb.conf file. </P
+		<B
+CLASS="COMMAND"
+>swat</B
+> in demo mode. In that mode anyone will be able to modify 
+		the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file. </P
 ><P
 ><EM
 >Do NOT enable this option on a production 
@@ -124,7 +142,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN38"
+NAME="AEN44"
 ></A
 ><H2
 >INSTALLATION</H2
@@ -158,7 +176,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT2"
 ><A
-NAME="AEN50"
+NAME="AEN56"
 ></A
 ><H3
 >Inetd Installation</H3
@@ -171,7 +189,10 @@ CLASS="FILENAME"
 CLASS="FILENAME"
 >/etc/services</TT
 >
-		to enable SWAT to be launched via inetd.</P
+		to enable SWAT to be launched via <B
+CLASS="COMMAND"
+>inetd</B
+>.</P
 ><P
 >In <TT
 CLASS="FILENAME"
@@ -228,15 +249,15 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT2"
 ><A
-NAME="AEN71"
+NAME="AEN78"
 ></A
 ><H3
 >Launching</H3
 ><P
->To launch swat just run your favorite web browser and 
+>To launch SWAT just run your favorite web browser and 
 		point it at "http://localhost:901/".</P
 ><P
->Note that you can attach to swat from any IP connected 
+>Note that you can attach to SWAT from any IP connected 
 		machine but connecting from a remote machine leaves your 
 		connection open to password sniffing as passwords will be sent 
 		in the clear over the wire. </P
@@ -245,7 +266,7 @@ NAME="AEN71"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN75"
+NAME="AEN82"
 ></A
 ><H2
 >FILES</H2
@@ -303,7 +324,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN96"
+NAME="AEN103"
 ></A
 ><H2
 >WARNINGS</H2
@@ -335,7 +356,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN104"
+NAME="AEN111"
 ></A
 ><H2
 >VERSION</H2
@@ -346,7 +367,7 @@ NAME="AEN104"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN107"
+NAME="AEN114"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -373,7 +394,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN114"
+NAME="AEN121"
 ></A
 ><H2
 >AUTHOR</H2

@@ -1,5 +1,5 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
-<refentry id="findsmb">
+<refentry id="smbsh">
 
 <refmeta>
 	<refentrytitle>smbsh</refentrytitle>
@@ -28,12 +28,12 @@
 	<para><command>smbsh</command> allows you to access an NT filesystem 
 	using UNIX commands such as <command>ls</command>, <command>
 	egrep</command>, and <command>rcp</command>. You must use a 
-	shell that is dynmanically linked in order for <command>smbsh</command> 
+	shell that is dynamically linked in order for <command>smbsh</command> 
 	to work correctly.</para>
 
 	<para>To use the <command>smbsh</command> command, execute <command>
 	smbsh</command> from the prompt and enter the username and password 
-	that authenticate you to the machine running the Windows NT 
+	that authenticates you to the machine running the Windows NT 
 	operating system.</para>
 
 	<para><programlisting>
@@ -46,8 +46,10 @@
 	<para>Any dynamically linked command you execute from 
 	this shell will access the <filename>/smb</filename> directory 
 	using the smb protocol. For example, the command <command>ls /smb
-	</command> will show all the machines in your workgroup. The command 
-	<command>ls /smb/&lt;machine-name&gt;</command> will show the share 
+	</command> will show a list of workgroups. The command 
+	<command>ls /smb/MYGROUP </command> will show all the machines in 
+	the  workgroup MYGROUP. The command 
+	<command>ls /smb/MYGROUP/&lt;machine-name&gt;</command> will show the share 
 	names for that machine. You could then, for example, use the <command>
 	cd</command> command to change directories, <command>vi</command> to 
 	edit files, and <command>rcp</command>  to copy files.</para>

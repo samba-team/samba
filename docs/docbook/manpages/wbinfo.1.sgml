@@ -149,7 +149,7 @@
 
 	<para>The wbinfo program returns 0 if the operation 
 	succeeded, or 1 if the operation failed.  If the <command>winbindd(8)
-	</command> daemon is not working wbinfo will always return 
+	</command> daemon is not working <command>wbinfo</command> will always return 
 	failure. </para>
 </refsect1>
 
@@ -158,8 +158,7 @@
 	<title>VERSION</title>
 
 	<para>This man page is correct for version 2.2 of 
-	the Samba suite.  winbindd is however not available in
-	stable release of Samba as of yet.</para>
+	the Samba suite.</para>
 </refsect1>
 
 <refsect1>
@@ -177,7 +176,7 @@
 	to the way the Linux kernel is developed.</para>
 	
 	<para><command>wbinfo</command> and <command>winbindd</command>
-	were written by TIm Potter.</para>
+	were written by Tim Potter.</para>
 	
 	<para>The conversion to DocBook for Samba 2.2 was done 
 	by Gerald Carter</para>

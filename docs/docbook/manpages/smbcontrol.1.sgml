@@ -113,6 +113,11 @@
 		any Windows NT clients connected to  a printer.  This message-type 
 		takes an argument of the printer name to  send notify messages to.   
 		This message can only be sent to <constant>smbd</constant>.</para>
+
+		<para>The <constant>close-share</constant> message-type sends a
+		message to smbd which forces smbd to close the share that was
+		specified as an argument. This may be useful if you made changes
+		to the access controls on the share.  </para>
 		</listitem>
 		</varlistentry>
 

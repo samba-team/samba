@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SWAT" "8" "01 June 2001" "" ""
+.TH "SWAT" "8" "10 October 2001" "" ""
 .SH NAME
 swat \- Samba Web Administration Tool
 .SH SYNOPSIS
@@ -16,17 +16,17 @@ This tool is part of the  Sambasuite.
 \fBswat\fR allows a Samba administrator to 
 configure the complex \fI smb.conf(5)\fRfile via a Web browser. In addition, 
 a \fBswat\fR configuration page has help links 
-to all the configurable options in the smb.conf file allowing an 
+to all the configurable options in the \fIsmb.conf\fR file allowing an 
 administrator to easily look up the effects of any change. 
 .PP
-swat is run from inetd 
+\fBswat\fR is run from \fBinetd\fR 
 .SH "OPTIONS"
 .TP
 \fB-s smb configuration file\fR
 The default configuration file path is 
 determined at compile time. The file specified contains 
 the configuration details required by the \fBsmbd
-\fRserver. This is the file that swat will modify. 
+\fRserver. This is the file that \fBswat\fR will modify. 
 The information in this file includes server-specific 
 information such as what printcap file to use, as well as 
 descriptions of all the services that the server is to provide.
@@ -34,8 +34,8 @@ See \fIsmb.conf\fR for more information.
 .TP
 \fB-a\fR
 This option disables authentication and puts 
-swat in demo mode. In that mode anyone will be able to modify 
-the smb.conf file. 
+\fBswat\fR in demo mode. In that mode anyone will be able to modify 
+the \fIsmb.conf\fR file. 
 
 \fBDo NOT enable this option on a production 
 server. \fR
@@ -58,7 +58,7 @@ these in:
 .PP
 You need to edit your \fI/etc/inetd.conf
 \fRand \fI/etc/services\fR
-to enable SWAT to be launched via inetd.
+to enable SWAT to be launched via \fBinetd\fR.
 .PP
 In \fI/etc/services\fR you need to 
 add a line like this: 
@@ -86,10 +86,10 @@ HUP signal to inetd. To do this use \fBkill -1 PID
 \fRwhere PID is the process ID of the inetd daemon. 
 .SS "LAUNCHING"
 .PP
-To launch swat just run your favorite web browser and 
+To launch SWAT just run your favorite web browser and 
 point it at "http://localhost:901/".
 .PP
-Note that you can attach to swat from any IP connected 
+Note that you can attach to SWAT from any IP connected 
 machine but connecting from a remote machine leaves your 
 connection open to password sniffing as passwords will be sent 
 in the clear over the wire. 
@@ -124,7 +124,8 @@ the Samba suite.
 .PP
 \fBinetd(5)\fR,
 \fBsmbd(8)\fR, 
-smb.conf(5).SH "AUTHOR"
+smb.conf(5)
+.SH "AUTHOR"
 .PP
 The original Samba software and related utilities 
 were created by Andrew Tridgell. Samba is now developed

@@ -19,7 +19,7 @@ CLASS="TITLEPAGE"
 ><H1
 CLASS="TITLE"
 ><A
-NAME="AEN1"
+NAME="PRINTING"
 >Printing Support in Samba 2.2.x</A
 ></H1
 ><HR></DIV
@@ -192,14 +192,21 @@ the name is very important (print$ is the service used by
 Windows NT print servers to provide support for printer driver 
 download).</P
 ><P
->You should modify the server's smb.conf file to create the 
+>You should modify the server's smb.conf file to add the global
+parameters and to create the 
 following file share (of course, some of the parameter values,
 such as 'path' are arbitrary and should be replaced with
 appropriate values for your site):</P
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
->[print$]
+>[global]
+    ; members of the ntadmin group should be able
+    ; to add drivers and set printer properties
+    ; root is implicitly a 'printer admin'
+    printer admin = @ntadmin
+
+[print$]
     path = /usr/local/samba/printers
     guest ok = yes
     browseable = yes
@@ -209,7 +216,7 @@ CLASS="PROGRAMLISTING"
     ; sure this account can copy files to the share.  If this
     ; is setup to a non-root account, then it should also exist
     ; as a 'printer admin'
-    write list = ntadmin</PRE
+    write list = @ntadmin,root</PRE
 ></P
 ><P
 >The <A
@@ -224,7 +231,7 @@ CLASS="PARAMETER"
 > is used to allow administrative 
 level user accounts to have write access in order to update files 
 on the share.  See the <A
-HREF="smb./conf.5.html"
+HREF="smb.conf.5.html"
 TARGET="_top"
 >smb.conf(5) 
 man page</A
@@ -514,7 +521,7 @@ Add Printer Wizard icon.  The APW will be show only if</P
 ><P
 >The connected user is able to successfully
 	execute an OpenPrinterEx(\\server) with administrative
-	priviledges (i.e. root or <TT
+	privileges (i.e. root or <TT
 CLASS="PARAMETER"
 ><I
 >printer admin</I
@@ -788,7 +795,7 @@ foreach (supported architecture for a given driver)
 		the Imprints tool set was the name space issues between 
 		various supported client architectures.  For example, Windows 
 		NT includes a driver named "Apple LaserWriter II NTX v51.8" 
-		and Windows 95 callsits version of this driver "Apple 
+		and Windows 95 calls its version of this driver "Apple 
 		LaserWriter II NTX"</P
 ><P
 >The problem is how to know what client drivers have 
@@ -830,52 +837,67 @@ NAME="MIGRATION"
 ><P
 >Given that printer driver management has changed (we hope improved) in 
 2.2 over prior releases, migration from an existing setup to 2.2 can 
-follow several paths.</P
+follow several paths. Here are the possible scenarios for 
+migration:</P
 ><P
->Windows clients have a tendency to remember things for quite a while.
-For example, if a Windows NT client has attached to a Samba 2.0 server,
-it will remember the server as a LanMan printer server.  Upgrading 
-the Samba host to 2.2 makes support for MSRPC printing possible, but 
-the NT client will still remember the previous setting.</P
-><P
->In order to give an NT client printing "amesia" (only necessary if you 
-want to use the newer MSRPC printing functionality in Samba), delete 
-the registry keys associated with the print server contained in 
-<TT
-CLASS="CONSTANT"
->[HKLM\SYSTEM\CurrentControlSet\Control\Print]</TT
->.  The 
-spooler service on the client should be stopped prior to doing this:</P
-><P
-><TT
-CLASS="PROMPT"
->C:\WINNT\ &#62;</TT
-> <TT
-CLASS="USERINPUT"
-><B
->net stop spooler</B
-></TT
 ></P
+><UL
+><LI
 ><P
-><I
-CLASS="EMPHASIS"
->All the normal disclaimers about editing the registry go 
-here.</I
->  Be careful, and know what you are doing.</P
+>If you do not desire the new Windows NT 
+	print driver support, nothing needs to be done.  
+	All existing parameters work the same.</P
+></LI
+><LI
 ><P
->The spooler service should be restarted after you have finished 
-removing the appropriate registry entries by replacing the 
-<B
+>If you want to take advantage of NT printer 
+	driver support but do not want to migrate the 
+	9x drivers to the new setup, the leave the existing 
+	<TT
+CLASS="FILENAME"
+>printers.def</TT
+> file.  When smbd attempts 
+	to locate a 
+	9x driver for the printer in the TDB and fails it 
+	will drop down to using the printers.def (and all 
+	associated parameters).  The <B
 CLASS="COMMAND"
->stop</B
-> command above with <B
-CLASS="COMMAND"
->start</B
->.</P
+>make_printerdef</B
+> 
+	tool will also remain for backwards compatibility but will 
+	be removed in the next major release.</P
+></LI
+><LI
 ><P
->Windows 9x clients will continue to use LanMan printing calls
-with a 2.2 Samba server so there is no need to perform any of these
-modifications on non-NT clients.</P
+>If you install a Windows 9x driver for a printer 
+	on your Samba host (in the printing TDB), this information will 
+	take precedence and the three old printing parameters
+	will be ignored (including print driver location).</P
+></LI
+><LI
+><P
+>If you want to migrate an existing <TT
+CLASS="FILENAME"
+>printers.def</TT
+> 
+	file into the new setup, the current only solution is to use the Windows 
+	NT APW to install the NT drivers and the 9x  drivers.  This can be scripted 
+	using <B
+CLASS="COMMAND"
+>smbclient</B
+> and <B
+CLASS="COMMAND"
+>rpcclient</B
+>.  See the 
+	Imprints installation client at <A
+HREF="http://imprints.sourceforge.net/"
+TARGET="_top"
+>http://imprints.sourceforge.net/</A
+> 
+	for an example.
+	</P
+></LI
+></UL
 ><DIV
 CLASS="WARNING"
 ><P
@@ -895,8 +917,12 @@ ALIGN="CENTER"
 ><TD
 ALIGN="LEFT"
 ><P
->The following smb.conf parameters are considered to be depreciated and will 
-be removed soon.  Do not use them in new installations</P
+>The following <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> parameters are considered to 
+be deprecated and will be removed soon.  Do not use them in new 
+installations</P
 ><P
 ></P
 ><UL
@@ -936,63 +962,22 @@ CLASS="PARAMETER"
 ></TABLE
 ></DIV
 ><P
->Here are the possible scenarios for supporting migration:</P
-><P
-></P
-><UL
-><LI
-><P
->If you do not desire the new Windows NT 
-	print driver support, nothing needs to be done.  
-	All existing parameters work the same.</P
-></LI
-><LI
-><P
->If you want to take advantage of NT printer 
-	driver support but do not want to migrate the 
-	9x drivers to the new setup, the leave the existing 
-	printers.def file.  When smbd attempts to locate a 
-	9x driver for the printer in the TDB and fails it 
-	will drop down to using the printers.def (and all 
-	associated parameters).  The <B
-CLASS="COMMAND"
->make_printerdef</B
-> 
-	tool will also remain for backwards compatibility but will 
-	be moved to the "this tool is the old way of doing it" 
-	pile.</P
-></LI
-><LI
-><P
->If you install a Windows 9x driver for a printer 
-	on your Samba host (in the printing TDB), this information will 
-	take precedence and the three old printing parameters
-	will be ignored (including print driver location).</P
-></LI
-><LI
-><P
->If you want to migrate an existing <TT
-CLASS="FILENAME"
->printers.def</TT
-> 
-	file into the new setup, the current only solution is to use the Windows 
-	NT APW to install the NT drivers and the 9x  drivers.  This can be scripted 
-	using <B
-CLASS="COMMAND"
->smbclient</B
-> and <B
-CLASS="COMMAND"
->rpcclient</B
->.  See the 
-	Imprints installation client at <A
-HREF="http://imprints.sourceforge.net/"
-TARGET="_top"
->http://imprints.sourceforge.net/</A
-> 
-	for an example.
-	</P
-></LI
-></UL
+>The have been two new parameters add in Samba 2.2.2 to for 
+better support of Samba 2.0.x backwards capability (<TT
+CLASS="PARAMETER"
+><I
+>disable
+spoolss</I
+></TT
+>) and for using local printers drivers on Windows 
+NT/2000 clients (<TT
+CLASS="PARAMETER"
+><I
+>use client driver</I
+></TT
+>). Both of 
+these options are described in the smb.coinf(5) man page and are 
+disabled by default.</P
 ></DIV
 ></DIV
 ></BODY

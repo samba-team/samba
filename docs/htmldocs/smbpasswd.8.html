@@ -24,7 +24,7 @@ NAME="AEN5"
 ></A
 ><H2
 >Name</H2
->smbpasswd&nbsp;--&nbsp;change a users SMB password</DIV
+>smbpasswd&nbsp;--&nbsp;change a user's SMB password</DIV
 ><DIV
 CLASS="REFSYNOPSISDIV"
 ><A
@@ -36,7 +36,7 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >smbpasswd</B
->  [-a] [-x] [-d] [-e] [-D debuglevel] [-n] [-r &#60;remote machine&#62;] [-R &#60;name resolve order&#62;] [-m] [-j DOMAIN] [-U username] [-h] [-s] [username]</P
+>  [-a] [-x] [-d] [-e] [-D debuglevel] [-n] [-r &#60;remote machine&#62;] [-R &#60;name resolve order&#62;] [-m] [-j DOMAIN] [-U username[%password]] [-h] [-s] [username]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -61,7 +61,7 @@ TARGET="_top"
 	SMB passwords. </P
 ><P
 >By default (when run with no arguments) it will attempt to 
-	change the current users SMB password on the local machine. This is 
+	change the current user's SMB password on the local machine. This is 
 	similar to the way the <B
 CLASS="COMMAND"
 >passwd(1)</B
@@ -86,10 +86,10 @@ CLASS="FILENAME"
 > file. </P
 ><P
 >When run by an ordinary user with no options. smbpasswd 
-	will prompt them for their old smb password and then ask them 
+	will prompt them for their old SMB password and then ask them 
 	for their new password twice, to ensure that the new password
 	was typed correctly. No passwords will be echoed on the screen 
-	whilst being typed. If you have a blank smb password (specified by 
+	whilst being typed. If you have a blank SMB password (specified by 
 	the string "NO PASSWORD" in the smbpasswd file) then just press 
 	the &#60;Enter&#62; key when asked for your old password. </P
 ><P
@@ -167,7 +167,7 @@ CLASS="CONSTANT"
 		will fail. </P
 ><P
 >If the smbpasswd file is in the 'old' format (pre-Samba 2.0 
-		format) there is no space in the users password entry to write
+		format) there is no space in the user's password entry to write
 		this information and so the user is disabled by writing 'X' characters 
 		into the password space in the smbpasswd file. See <B
 CLASS="COMMAND"
@@ -217,7 +217,7 @@ CLASS="COMMAND"
 ><DD
 ><P
 ><TT
-CLASS="PARAMETER"
+CLASS="REPLACEABLE"
 ><I
 >debuglevel</I
 ></TT
@@ -500,7 +500,7 @@ CLASS="COMMAND"
 ><DD
 ><P
 >This option causes smbpasswd to be silent (i.e. 
-		not issue prompts) and to read it's old and new passwords from 
+		not issue prompts) and to read its old and new passwords from 
 		standard  input, rather than from <TT
 CLASS="FILENAME"
 >/dev/tty</TT

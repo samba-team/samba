@@ -84,7 +84,7 @@
 		datagrams. The reason for this option is a bug in Windows 95 
 		where it ignores the source port of the requesting packet 
 	 	and only replies to UDP port 137. Unfortunately, on most UNIX 
-		systems root privilage is needed to bind to this port, and 
+		systems root privilege is needed to bind to this port, and 
 		in addition, if the <ulink url="nmbd.8.html">nmbd(8)</ulink> 
 		daemon is running on this machine it also binds to this port.
 		</para></listitem>
