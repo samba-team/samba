@@ -80,6 +80,9 @@ static int DLIST_CONTAINS(SMBCFILE * list, SMBCFILE *p) {
 	return False;
 }
 
+static int smbc_close_ctx(SMBCCTX *context, SMBCFILE *file);
+static off_t smbc_lseek_ctx(SMBCCTX *context, SMBCFILE *file, off_t offset, int whence);
+
 extern BOOL in_client;
 
 /*
@@ -968,6 +971,37 @@ static SMBCFILE *smbc_open_ctx(SMBCCTX *context, const char *fname, int flags, m
 		file->file    = True;
 
 		DLIST_ADD(context->internal->_files, file);
+
+                /*
+                 * If the file was opened in O_APPEND mode, all write
+                 * operations should be appended to the file.  To do that,
+                 * though, using this protocol, would require a getattrE()
+                 * call for each and every write, to determine where the end
+                 * of the file is. (There does not appear to be an append flag
+                 * in the protocol.)  Rather than add all of that overhead of
+                 * retrieving the current end-of-file offset prior to each
+                 * write operation, we'll assume that most append operations
+                 * will continuously write, so we'll just set the offset to
+                 * the end of the file now and hope that's adequate.
+                 *
+                 * Note to self: If this proves inadequate, and O_APPEND
+                 * should, in some cases, be forced for each write, add a
+                 * field in the context options structure, for
+                 * "strict_append_mode" which would select between the current
+                 * behavior (if FALSE) or issuing a getattrE() prior to each
+                 * write and forcing the write to the end of the file (if
+                 * TRUE).  Adding that capability will likely require adding
+                 * an "append" flag into the _SMBCFILE structure to track
+                 * whether a file was opened in O_APPEND mode.  -- djl
+                 */
+                if (flags & O_APPEND) {
+                        if (smbc_lseek_ctx(context, file, 0, SEEK_END) < 0) {
+                                (void) smbc_close_ctx(context, file);
+                                errno = ENXIO;
+                                return NULL;
+                        }
+                }
+
 		return file;
 
 	}
@@ -4367,7 +4401,7 @@ int smbc_getxattr_ctx(SMBCCTX *context,
                 /* Yup. */
                 ret = cacl_get(context, ctx, srv,
                                ipc_srv == NULL ? NULL : &ipc_srv->cli, 
-                               &pol, path, (char*)name, (char *) value, size);
+                               &pol, path, (char *) name, (char *) value, size);
                 if (ret < 0 && errno == 0) {
                         errno = smbc_errno(context, &srv->cli);
                 }
