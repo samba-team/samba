@@ -217,7 +217,8 @@ struct dom_sid *dom_sid_dup(TALLOC_CTX *mem_ctx, const struct dom_sid *dom_sid)
 }
 
 /*
-  add a rid to a domain dom_sid to make a full dom_sid
+  add a rid to a domain dom_sid to make a full dom_sid. This function
+  returns a new sid in the suppplied memory context
 */
 struct dom_sid *dom_sid_add_rid(TALLOC_CTX *mem_ctx, 
 				const struct dom_sid *domain_sid, 
@@ -229,14 +230,15 @@ struct dom_sid *dom_sid_add_rid(TALLOC_CTX *mem_ctx,
 	if (!sid) return NULL;
 
 	*sid = *domain_sid;
-	/*TODO: use realloc! */
-	sid->sub_auths = talloc_array_p(mem_ctx, uint32_t, sid->num_auths+1);
+
+	sid->sub_auths = talloc_array_p(sid, uint32_t, sid->num_auths+1);
 	if (!sid->sub_auths) {
 		return NULL;
 	}
 	memcpy(sid->sub_auths, domain_sid->sub_auths, sid->num_auths*sizeof(uint32_t));
 	sid->sub_auths[sid->num_auths] = rid;
 	sid->num_auths++;
+
 	return sid;
 }
 
