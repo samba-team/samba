@@ -25,7 +25,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SAM
 
-NTSTATUS sam_init_plugin(SAM_CONTEXT *sam_context, SAM_METHODS **sam_method, const char *location)
+NTSTATUS sam_init_plugin(const SAM_CONTEXT *sam_context, SAM_METHODS **sam_method, const char *location)
 {
 	void * dl_handle;
 	char *plugin_location, *plugin_name, *p;
