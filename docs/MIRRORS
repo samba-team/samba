@@ -1,0 +1,28 @@
+The main Samba site is nimbus.anu.edu.au in pub/tridge/samba/. Contact
+samba-bugs@anu.edu.au for help with this site.
+
+Mirror sites include:
+
+
+ftp://src.doc.ic.ac.uk/packages/samba
+ftp://ftp.warwick.ac.uk/pub/linux/sunsite.unc-mirror/system/Network/samba
+ftp://sunsite.unc.edu/pub/Linux/system/Network/samba/
+ftp://ftp.choc.apana.org.au/pub/samba
+ftp://ftp.uni-trier.de/pub/unix/network/samba/
+ftp://ftp.spectrum.titan.com/pub/samba
+ftp://ftp.demon.co.uk/pub/unix/unix/samba
+ftp://sunsite.mff.cuni.cz/Net/Protocols/Samba
+
+There are several others. Give archie a try.
+
+SCO binaries available from:
+ftp://ftp.markv.com/pub/samba (built by lance@fox.com)
+
+AIX and DEC OSF/1 binaries are available from:
+ftp://151.99.220.5/pub/samba (built by davide.migliavacca@inferentia.inet.it)
+
+
+Http sites include:
+
+http://lake.canberra.edu.au/pub/samba
+http://www.choc.apana.org.au/pub/samba
