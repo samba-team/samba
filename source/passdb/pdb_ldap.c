@@ -2288,7 +2288,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 
 	{
 		const char *attrs[] = { "memberUid", NULL };
-		rc = smbldap_search(conn, lp_ldap_user_suffix(),
+		rc = smbldap_search(conn, lp_ldap_group_suffix(),
 				    LDAP_SCOPE_SUBTREE, filter, attrs, 0,
 				    &msg);
 	}
