@@ -2141,6 +2141,20 @@ int smbc_fstatdir(int fd, struct stat *st)
 }
 
 /*
+ * Routine to print a file on a remote server ...
+ *
+ * We open the file, which we assume to be on a remote server, and then
+ * copy it to a print file on the share specified by printq.
+ */
+
+int smbc_print_file(const char *fname, const char *printq)
+{
+
+
+
+}
+
+/*
  * Routine to list print jobs on a printer share ...
  */
 
@@ -2179,6 +2193,55 @@ int smbc_list_print_jobs(const char *fname, void (*fn)(struct print_job_info *))
   }
 
   if (cli_print_queue(&srv->cli, fn) < 0) {
+
+    errno = smbc_errno(&srv->cli);
+    return -1;
+
+  }
+
+  return 0;
+
+}
+
+/*
+ * Delete a print job from a remote printer share
+ */
+
+int smbc_unlink_print_job(const char *fname, int id)
+{
+  struct smbc_server *srv;
+  fstring server, share, user, password;
+  pstring path;
+
+  if (!smbc_initialized) {
+
+    errno = EUCLEAN;
+    return -1;
+
+  }
+
+  if (!fname) {
+
+    errno = EINVAL;
+    return -1;
+
+  }
+  
+  DEBUG(4, ("smbc_unlink_print_job(%s)\n", fname));
+
+  smbc_parse_path(fname, server, share, path, user, password); /*FIXME, errors*/
+
+  if (user[0] == (char)0) pstrcpy(user, smbc_user);
+
+  srv = smbc_server(server, share, lp_workgroup(), user, password);
+
+  if (!srv) {
+
+    return -1;  /* errno set by smbc_server */
+
+  }
+
+  if (cli_printjob_del(&srv->cli, id) < 0) {
 
     errno = smbc_errno(&srv->cli);
     return -1;
