@@ -103,9 +103,7 @@
 #include <prot.h>
 #endif
 #include <krb5.h>
-#ifdef KRB4
 #include <kafs.h>
-#endif
 
 #ifndef _PATH_NOLOGIN
 #define _PATH_NOLOGIN   "/etc/nologin"
