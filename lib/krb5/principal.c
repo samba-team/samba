@@ -406,13 +406,11 @@ krb5_copy_principal(krb5_context context,
 
 
 krb5_boolean
-krb5_principal_compare(krb5_context context,
-		       krb5_const_principal princ1,
-		       krb5_const_principal princ2)
+krb5_principal_compare_any_realm(krb5_context context,
+				 krb5_const_principal princ1,
+				 krb5_const_principal princ2)
 {
     int i;
-    if(!krb5_realm_compare(context, princ1, princ2))
-	return FALSE;
     if(princ_num_comp(princ1) != princ_num_comp(princ2))
 	return FALSE;
     for(i = 0; i < princ_num_comp(princ1); i++){
@@ -420,6 +418,16 @@ krb5_principal_compare(krb5_context context,
 	    return FALSE;
     }
     return TRUE;
+}
+
+krb5_boolean
+krb5_principal_compare(krb5_context context,
+		       krb5_const_principal princ1,
+		       krb5_const_principal princ2)
+{
+    if(!krb5_realm_compare(context, princ1, princ2))
+	return FALSE;
+    return krb5_principal_compare_any_realm(context, princ1, princ2);
 }
 
 
@@ -430,18 +438,6 @@ krb5_realm_compare(krb5_context context,
 {
     return strcmp(princ_realm(princ1), princ_realm(princ2)) == 0;
 }
-
-static struct v4_conv {
-    char *from;
-    char *to;
-    int host_convert;
-} inst_conv[] = {
-    { "rcmd", "host", 1 },
-    { "ftp",  "ftp",  1 },
-    { "pop",  "pop",  1 },
-    { NULL,    NULL , 0 }
-};
-
 
 krb5_error_code
 krb5_425_conv_principal(krb5_context context,
