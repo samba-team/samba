@@ -329,6 +329,10 @@ encode_type (char *name, Type *t)
 static void
 generate_type_encode (Symbol *s)
 {
+  fprintf (headerfile,
+	   "int encode_%s(unsigned char *, int, void *);\n",
+	   s->gen_name);
+
   fprintf (codefile, "int\n"
 	   "encode_%s(unsigned char *p, int len, void *d)\n"
 	   "{\n"
@@ -541,6 +545,10 @@ decode_type (char *name, Type *t)
 static void
 generate_type_decode (Symbol *s)
 {
+  fprintf (headerfile,
+	   "int decode_%s(unsigned char *, int, void *);\n",
+	   s->gen_name);
+
   fprintf (codefile, "int\n"
 	   "decode_%s(unsigned char *p, int len, void *d)\n"
 	   "{\n"
