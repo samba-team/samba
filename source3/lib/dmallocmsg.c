@@ -26,7 +26,9 @@
  * over samba messaging.
  **/
 
+#ifdef ENABLE_DMALLOC
 static unsigned long our_dm_mark = 0;
+#endif /* ENABLE_DMALLOC */
 
 
 /**
