@@ -123,7 +123,7 @@ static BOOL make_user_info(auth_usersupplied_info **user_info,
 
 	ZERO_STRUCTP(*user_info);
 
-	DEBUG(5,("makeing strings for %s's user_info struct\n", internal_username));
+	DEBUG(5,("making strings for %s's user_info struct\n", internal_username));
 
 	(*user_info)->smb_name.str = strdup(smb_name);
 	if ((*user_info)->smb_name.str) { 
