@@ -790,8 +790,8 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 			asn1_push_tag(&data, r->mechanism | 0xa0);
 			asn1_write_OctetString(&data, r->creds.SASL.mechanism,
 					       strlen(r->creds.SASL.mechanism));
-			asn1_write_OctetString(&data, r->creds.SASL.creds.data,
-					       r->creds.SASL.creds.length);
+			asn1_write_OctetString(&data, r->creds.SASL.secblob.data,
+					       r->creds.SASL.secblob.length);
 			asn1_pop_tag(&data);
 			break;
 		default:
@@ -1537,6 +1537,7 @@ struct ldap_connection *new_ldap_connection(void)
 	result->search_entries = NULL;
 	result->auth_dn = NULL;
 	result->simple_pw = NULL;
+	result->gensec = NULL;
 
 	return result;
 }
@@ -1740,14 +1741,15 @@ struct ldap_message *ldap_transaction(struct ldap_connection *conn,
 	return ldap_receive(conn, request->messageid, NULL);
 }
 
-struct ldap_message *ldap_bind_simple(struct ldap_connection *conn, const char *userdn, const char *password)
+int ldap_bind_simple(struct ldap_connection *conn, const char *userdn, const char *password)
 {
 	struct ldap_message *response;
 	struct ldap_message *msg;
 	const char *dn, *pw;
+	int result = LDAP_OTHER;
 
-	if (conn == NULL || msg == NULL)
-		return False;
+	if (conn == NULL)
+		return result;
 
 	if (userdn) {
 		dn = userdn;
@@ -1771,33 +1773,152 @@ struct ldap_message *ldap_bind_simple(struct ldap_connection *conn, const char *
 
 	msg =  new_ldap_simple_bind_msg(dn, pw);
 	if (!msg)
-		return False;
+		return result;
 
 	response = ldap_transaction(conn, msg);
+	if (!response) {
+		destroy_ldap_message(msg);
+		return result;
+	}
+		
+	result = response->r.BindResponse.response.resultcode;
 
 	destroy_ldap_message(msg);
-	return response;
+	destroy_ldap_message(response);
+
+	return result;
+}
+
+int ldap_bind_sasl(struct ldap_connection *conn, const char *username, const char *domain, const char *password)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = NULL;
+	struct ldap_message *response;
+	struct ldap_message *msg;
+	DATA_BLOB input = data_blob(NULL, 0);
+	DATA_BLOB output = data_blob(NULL, 0);
+	int result = LDAP_OTHER;
+
+	if (conn == NULL)
+		return result;
+
+	status = gensec_client_start(&conn->gensec);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to start GENSEC engine (%s)\n", nt_errstr(status)));
+		return result;
+	}
+
+	status = gensec_set_domain(conn->gensec, domain);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to start set GENSEC client domain to %s: %s\n", 
+			  domain, nt_errstr(status)));
+		goto done;
+	}
+
+	status = gensec_set_username(conn->gensec, username);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to start set GENSEC client username to %s: %s\n", 
+			  username, nt_errstr(status)));
+		goto done;
+	}
+
+	status = gensec_set_password(conn->gensec, password);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to start set GENSEC client password: %s\n", 
+			  nt_errstr(status)));
+		goto done;
+	}
+
+	status = gensec_set_target_hostname(conn->gensec, conn->host);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to start set GENSEC target hostname: %s\n", 
+			  nt_errstr(status)));
+		goto done;
+	}
+
+	status = gensec_start_mech_by_sasl_name(conn->gensec, "GSS-SPNEGO");
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to start set GENSEC client SPNEGO mechanism: %s\n",
+			  nt_errstr(status)));
+		goto done;
+	}
+
+	mem_ctx = talloc_init("ldap_bind_sasl");
+	if (!mem_ctx)
+		goto done;
+
+	status = gensec_update(conn->gensec, mem_ctx,
+			       input,
+			       &output);
+
+	while(1) {
+		if (NT_STATUS_IS_OK(status) && output.length == 0) {
+			break;
+		}
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) && !NT_STATUS_IS_OK(status)) {
+			break;
+		}
+
+		msg =  new_ldap_sasl_bind_msg("GSS-SPNEGO", &output);
+		if (!msg)
+			goto done;
+
+		response = ldap_transaction(conn, msg);
+		destroy_ldap_message(msg);
+
+		result = response->r.BindResponse.response.resultcode;
+
+		if (result != LDAP_SUCCESS && result != LDAP_SASL_BIND_IN_PROGRESS) {
+			break;
+		}
+
+		status = gensec_update(conn->gensec, mem_ctx,
+				       response->r.BindResponse.SASL.creds,
+				       &output);
+
+		destroy_ldap_message(response);
+	}
+
+done:
+	if (conn->gensec)
+		gensec_end(&conn->gensec);
+	if (mem_ctx)
+		talloc_destroy(mem_ctx);
+
+	return result;
 }
 
 BOOL ldap_setup_connection(struct ldap_connection *conn,
 			   const char *url, const char *userdn, const char *password)
 {
-	struct ldap_message *response;
-	BOOL result;
+	int result;
 
 	if (!ldap_connect(conn, url)) {
 		return False;
 	}
 
-	response = ldap_bind_simple(conn, userdn, password);
-	if (response == NULL) {
-		result = False;
-	} else {
-		result = (response->r.BindResponse.response.resultcode == 0);
+	result = ldap_bind_simple(conn, userdn, password);
+	if (result == LDAP_SUCCESS) {
+		return True;
 	}
 
-	destroy_ldap_message(response);
-	return result;
+	return False;
+}
+
+BOOL ldap_setup_connection_with_sasl(struct ldap_connection *conn, const char *url, const char *username, const char *domain, const char *password)
+{
+	int result;
+
+	if (!ldap_connect(conn, url)) {
+		return False;
+	}
+
+	result = ldap_bind_sasl(conn, username, domain, password);
+	if (result == LDAP_SUCCESS) {
+		return True;
+	}
+
+	return False;
 }
 
 static BOOL ldap_abandon_message(struct ldap_connection *conn, int msgid,
@@ -1853,6 +1974,22 @@ struct ldap_message *new_ldap_simple_bind_msg(const char *dn, const char *pw)
 	res->r.BindRequest.dn = talloc_strdup(res->mem_ctx, dn);
 	res->r.BindRequest.mechanism = LDAP_AUTH_MECH_SIMPLE;
 	res->r.BindRequest.creds.password = talloc_strdup(res->mem_ctx, pw);
+	return res;
+}
+
+struct ldap_message *new_ldap_sasl_bind_msg(const char *sasl_mechanism, DATA_BLOB *secblob)
+{
+	struct ldap_message *res = new_ldap_message();
+
+	if (res == NULL)
+		return NULL;
+
+	res->type = LDAP_TAG_BindRequest;
+	res->r.BindRequest.version = 3;
+	res->r.BindRequest.dn = "";
+	res->r.BindRequest.mechanism = LDAP_AUTH_MECH_SASL;
+	res->r.BindRequest.creds.SASL.mechanism = talloc_strdup(res->mem_ctx, sasl_mechanism);
+	res->r.BindRequest.creds.SASL.secblob = *secblob;
 	return res;
 }
 
