@@ -563,6 +563,25 @@ LIBSMB_LTOBJS = $(LIBSMB_OBJ:.o=.lo)
 
 LIBMSRPC_LTOBJS = $(RPC_CLIENT_OBJ:.o=.lo) $(RPC_PARSE_OBJ:.o=.lo)
 
+WINBINDD_OBJ = nsswitch/winbindd.o \
+rpc_client/cli_lsarpc.o rpc_parse/parse_lsa.o \
+rpc_client/cli_connect.o rpc_client/cli_use.o rpc_client/cli_samr.o \
+rpc_parse/parse_samr.o rpc_client/cli_pipe.o rpc_parse/parse_rpc.o \
+lib/msrpc-client.o rpc_client/cli_pipe_noauth.o lib/set_uid.o \
+rpc_client/cli_netlogon.o rpc_client/msrpc_samr.o \
+rpc_client/cli_pipe_ntlmssp.o lib/msrpc_use.o \
+rpc_parse/parse_sec.o lib/set_vuid.o \
+$(LIBNMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) $(LIB_OBJ) \
+$(NSSWINS_OBJ) 
+
+#msrpc/msrpcd.o browserd/browserd.o \
+#locking/locking.o msrpc/msrpcd_process.o rpc_server/srv_brs.o \
+#rpc_server/srv_pipe_srv.o rpc_parse/parse_brs.o rpc_server/srv_pipe_noauth.o \
+
+NSS_OBJ_O = nsswitch/ntdom.o
+
+NSS_OBJ = $(NSS_OBJ_O:.o=.po)
+
 ######################################################################
 # now the rules...
 ######################################################################
@@ -594,6 +613,10 @@ smbtorture : CHECK bin/smbtorture
 rpctorture : CHECK bin/rpctorture
 
 smbfilter : CHECK bin/smbfilter
+
+winbindd: CHECK bin/winbindd
+
+nsswitch: CHECK nsswitch/ntdom.so
 
 .SUFFIXES:
 .SUFFIXES: .c .o .lo .po .po32
@@ -883,6 +906,14 @@ bin/smbwrapper.32.so: $(SMBWRAPPERPICOBJS32)
 bin/smbsh: $(SAMBALIB) $(SMBSH_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(SMBSH_OBJ) $(SAMBALIB) $(LIBS)
+
+bin/winbindd: $(WINBINDD_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(LINK) -o $@ $(WINBINDD_OBJ) $(LIBS)
+
+nsswitch/ntdom.so: $(NSS_OBJ)
+	@echo "Linking $@"
+	@$(LD) @LDSHFLAGS@ -o $@ $(NSS_OBJ) -lc
 
 install: installdirs \
 	install-libs installbin install-sbin \
