@@ -111,8 +111,7 @@ start_logout_process(void)
 {
     char *prog, *argv0;
     pid_t pid;
-    if(prog == NULL)
-	return 0;
+
     prog = login_conf_get_string("logout_program");
     if(prog == NULL)
 	return 0;
