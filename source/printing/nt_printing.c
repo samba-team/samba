@@ -2998,7 +2998,7 @@ void map_printer_permissions(SEC_DESC *sd)
    PRINTER_ACCESS_USE:
        print_job_start
 
-   JOB_ACCESS_ADMINISTER:
+   PRINTER_ACCESS_ADMINISTER (should really be JOB_ACCESS_ADMINISTER):
        print_job_delete, print_job_pause, print_job_resume,
        print_queue_purge
 
@@ -3038,14 +3038,6 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 
 	nt_printing_getsec(pname, &secdesc);
 	
-	/* Technically print jobs should inherit permissions from the
-	   printer but we cheat and don't do this as unix printing systems
-	   don't really support this at the moment. */
-
-	if (access_type == JOB_ACCESS_ADMINISTER) {
-		access_type = PRINTER_ACE_MANAGE_DOCUMENTS;
-	}
-
 	map_printer_permissions(secdesc->sec);
 
 	result = se_access_check(secdesc->sec, user, access_type,
