@@ -312,7 +312,7 @@ clean_and_exit:
 
   if(fd != -1)
     close(fd);
-  SAFE_FREE((char *)cp_p);
+  SAFE_FREE(cp_p);
   return NULL;
 }
 

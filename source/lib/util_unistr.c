@@ -1782,7 +1782,7 @@ void string_free_w(smb_ucs2_t **s)
 		return;
 	if (*s == null_string)
 		*s = NULL;
-	SAFE_FREE((char *)*s);
+	SAFE_FREE(*s);
 }
 
 /****************************************************************************

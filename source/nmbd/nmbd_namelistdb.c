@@ -90,10 +90,10 @@ void remove_name_from_namelist( struct subnet_record *subrec,
   {
   (void)ubi_trRemove( subrec->namelist, namerec );
 
-  SAFE_FREE((char *)namerec->data.ip);
+  SAFE_FREE(namerec->data.ip);
 
   ZERO_STRUCTP(namerec);
-  SAFE_FREE((char *)namerec);
+  SAFE_FREE(namerec);
 
   subrec->namelist_changed = True;
   } /* remove_name_from_namelist */
@@ -202,7 +202,7 @@ struct name_record *add_name_to_subnet( struct subnet_record *subrec,
      DEBUG( 0, ( "add_name_to_subnet: malloc fail when creating ip_flgs.\n" ) );
 
      ZERO_STRUCTP(namerec);
-     SAFE_FREE( (char *)namerec );
+     SAFE_FREE( namerec );
      return NULL;
   }
 
@@ -349,7 +349,7 @@ void add_ip_to_name_record( struct name_record *namerec, struct in_addr new_ip )
           namerec->data.num_ips * sizeof(struct in_addr) );
   new_list[namerec->data.num_ips] = new_ip;
 
-  SAFE_FREE((char *)namerec->data.ip);
+  SAFE_FREE(namerec->data.ip);
   namerec->data.ip = new_list;
   namerec->data.num_ips += 1;
 
@@ -516,7 +516,7 @@ void add_samba_names_to_subnet( struct subnet_record *subrec )
                            PERMANENT_NAME, num_ips, iplist);
 
   if(iplist != &subrec->myip)
-    SAFE_FREE((char *)iplist);
+    SAFE_FREE(iplist);
 }
 
 /****************************************************************************
