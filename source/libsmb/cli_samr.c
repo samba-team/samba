@@ -1074,3 +1074,47 @@ uint32 cli_samr_set_userinfo2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	return result;
 }
+
+/* Delete domain user */
+
+uint32 cli_samr_delete_dom_user(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				POLICY_HND *user_pol)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_DELETE_DOM_USER q;
+	SAMR_R_DELETE_DOM_USER r;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_delete_dom_user(&q, user_pol);
+
+	if (!samr_io_q_delete_dom_user("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_DELETE_DOM_USER, &qbuf, &rbuf)) {
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_delete_dom_user("", &r, &rbuf, 0)) {
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
