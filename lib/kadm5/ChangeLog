@@ -1,3 +1,16 @@
+2004-05-31  Love  <lha@stacken.kth.se>
+
+	* ad.c: handle create and delete
+	
+2004-05-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ad.c: more code for get, handle attributes
+	
+	* ad.c: more code for get, handle time stamps and bad password
+	counter
+
+	* ad.c: more code for get, only fetches kvno for now
+	
 2004-05-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ad.c: add support for tsasl
