@@ -690,7 +690,6 @@ main(int argc, char **argv)
     int ret = 1;
     char *cmd;
     size_t cmd_len;
-    struct passwd *pwd;
     char *local_user;
     char *host = NULL;
     int host_index = -1;
@@ -763,10 +762,14 @@ main(int argc, char **argv)
 	}
     }
 
-    pwd = getpwuid (getuid());
-    if (pwd == NULL)
-	errx (1, "who are you?");
-    local_user = pwd->pw_name;
+    local_user = getenv ("USERNAME");
+    if (local_user == NULL) {
+	struct passwd *pwd = getpwuid (getuid());
+
+	if (pwd == NULL)
+	    errx (1, "who are you?");
+	local_user = pwd->pw_name;
+    }
 
     if (user == NULL)
 	user = local_user;
