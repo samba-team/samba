@@ -199,6 +199,7 @@ static void print_share_mode(share_mode_entry *e, char *fname)
     {
       if (fread(&crec,sizeof(crec),1,f) != 1)
 	break;
+      if (crec.cnum == -1) continue;
       if ( crec.magic == 0x280267 && process_exists(crec.pid) 
            && Ucrit_checkUsername(uidtoname(crec.uid))                      /* added by OH */
          )

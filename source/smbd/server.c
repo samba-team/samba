@@ -3312,7 +3312,6 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   connection_struct *pcon;
   BOOL guest = False;
   BOOL force = False;
-  static BOOL first_connection = True;
 
   strlower(service);
 
@@ -3518,9 +3517,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
 	}  
 
       if (lp_status(SNUM(cnum)))
-	claim_connection(cnum,"STATUS.",MAXSTATUS,first_connection);
-
-      first_connection = False;
+	claim_connection(cnum,"STATUS.",MAXSTATUS,False);
     } /* IS_IPC */
 
   pcon->open = True;
@@ -4213,183 +4210,6 @@ void close_cnum(int cnum, uint16 vuid)
 }
 
 
-/****************************************************************************
-simple routines to do connection counting
-****************************************************************************/
-BOOL yield_connection(int cnum,char *name,int max_connections)
-{
-  struct connect_record crec;
-  pstring fname;
-  FILE *f;
-  int mypid = getpid();
-  int i;
-
-  DEBUG(3,("Yielding connection to %d %s\n",cnum,name));
-
-  if (max_connections <= 0)
-    return(True);
-
-  bzero(&crec,sizeof(crec));
-
-  pstrcpy(fname,lp_lockdir());
-  standard_sub(cnum,fname);
-  trim_string(fname,"","/");
-
-  strcat(fname,"/");
-  strcat(fname,name);
-  strcat(fname,".LCK");
-
-  f = fopen(fname,"r+");
-  if (!f)
-    {
-      DEBUG(2,("Couldn't open lock file %s (%s)\n",fname,strerror(errno)));
-      return(False);
-    }
-
-  fseek(f,0,SEEK_SET);
-
-  /* find a free spot */
-  for (i=0;i<max_connections;i++)
-    {
-      if (fread(&crec,sizeof(crec),1,f) != 1)
-	{
-	  DEBUG(2,("Entry not found in lock file %s\n",fname));
-	  fclose(f);
-	  return(False);
-	}
-      if (crec.pid == mypid && crec.cnum == cnum)
-	break;
-    }
-
-  if (crec.pid != mypid || crec.cnum != cnum)
-    {
-      fclose(f);
-      DEBUG(2,("Entry not found in lock file %s\n",fname));
-      return(False);
-    }
-
-  bzero((void *)&crec,sizeof(crec));
-  
-  /* remove our mark */
-  if (fseek(f,i*sizeof(crec),SEEK_SET) != 0 ||
-      fwrite(&crec,sizeof(crec),1,f) != 1)
-    {
-      DEBUG(2,("Couldn't update lock file %s (%s)\n",fname,strerror(errno)));
-      fclose(f);
-      return(False);
-    }
-
-  DEBUG(3,("Yield successful\n"));
-
-  fclose(f);
-  return(True);
-}
-
-
-/****************************************************************************
-simple routines to do connection counting
-****************************************************************************/
-BOOL claim_connection(int cnum,char *name,int max_connections,BOOL Clear)
-{
-  struct connect_record crec;
-  pstring fname;
-  FILE *f;
-  int snum = SNUM(cnum);
-  int i,foundi= -1;
-  int total_recs;
-
-  if (max_connections <= 0)
-    return(True);
-
-  DEBUG(5,("trying claim %s %s %d\n",lp_lockdir(),name,max_connections));
-
-  pstrcpy(fname,lp_lockdir());
-  standard_sub(cnum,fname);
-  trim_string(fname,"","/");
-
-  if (!directory_exist(fname,NULL))
-    mkdir(fname,0755);
-
-  strcat(fname,"/");
-  strcat(fname,name);
-  strcat(fname,".LCK");
-
-  if (!file_exist(fname,NULL))
-    {
-      int oldmask = umask(022);
-      f = fopen(fname,"w");
-      if (f) fclose(f);
-      umask(oldmask);
-    }
-
-  total_recs = file_size(fname) / sizeof(crec);
-
-  f = fopen(fname,"r+");
-
-  if (!f)
-    {
-      DEBUG(1,("couldn't open lock file %s\n",fname));
-      return(False);
-    }
-
-  /* find a free spot */
-  for (i=0;i<max_connections;i++)
-    {
-
-      if (i>=total_recs || 
-	  fseek(f,i*sizeof(crec),SEEK_SET) != 0 ||
-	  fread(&crec,sizeof(crec),1,f) != 1)
-	{
-	  if (foundi < 0) foundi = i;
-	  break;
-	}
-
-      if (Clear && crec.pid && !process_exists(crec.pid))
-	{
-	  fseek(f,i*sizeof(crec),SEEK_SET);
-	  bzero((void *)&crec,sizeof(crec));
-	  fwrite(&crec,sizeof(crec),1,f);
-	  if (foundi < 0) foundi = i;
-	  continue;
-	}
-      if (foundi < 0 && (!crec.pid || !process_exists(crec.pid)))
-	{
-	  foundi=i;
-	  if (!Clear) break;
-	}
-    }  
-
-  if (foundi < 0)
-    {
-      DEBUG(3,("no free locks in %s\n",fname));
-      fclose(f);
-      return(False);
-    }      
-
-  /* fill in the crec */
-  bzero((void *)&crec,sizeof(crec));
-  crec.magic = 0x280267;
-  crec.pid = getpid();
-  crec.cnum = cnum;
-  crec.uid = Connections[cnum].uid;
-  crec.gid = Connections[cnum].gid;
-  StrnCpy(crec.name,lp_servicename(snum),sizeof(crec.name)-1);
-  crec.start = time(NULL);
-
-  StrnCpy(crec.machine,remote_machine,sizeof(crec.machine)-1);
-  StrnCpy(crec.addr,client_addr(),sizeof(crec.addr)-1);
-  
-  /* make our mark */
-  if (fseek(f,foundi*sizeof(crec),SEEK_SET) != 0 ||
-      fwrite(&crec,sizeof(crec),1,f) != 1)
-    {
-      fclose(f);
-      return(False);
-    }
-
-  fclose(f);
-  return(True);
-}
 
 #if DUMP_CORE
 /*******************************************************************
@@ -5346,6 +5166,10 @@ static void usage(char *pname)
   /* Setup the oplock IPC socket. */
   if(!open_oplock_ipc())
     exit(1);
+
+  if (lp_status(-1)) {
+	  claim_connection(-1,"STATUS.",MAXSTATUS,True);
+  }
 
   process();
   close_sockets();
