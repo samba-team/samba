@@ -35,7 +35,8 @@ static NTSTATUS ndr_pull_compression_zlib_chunk(struct ndr_pull *ndrpull,
 	uint8_t *plain_chunk;
 	uint32_t plain_chunk_offset;
 	uint32_t plain_chunk_size;
-	uint16_t unknown_marker;
+	uint8_t C_CK_marker;
+	uint8_t K_CK_marker;
 	int ret;
 
 	/* I don't know why, this is needed... --metze */
@@ -44,15 +45,20 @@ static NTSTATUS ndr_pull_compression_zlib_chunk(struct ndr_pull *ndrpull,
 	NDR_CHECK(ndr_pull_uint32(ndrpull, NDR_SCALARS, &plain_chunk_size));
 	if (plain_chunk_size > 0x00008000) {
 		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION, "Bad ZLIB plain chunk size %08X > 0x00008000 (PULL)", 
-				      plain_chunk_size);	
+				      plain_chunk_size);
 	}
 
 	NDR_CHECK(ndr_pull_uint32(ndrpull, NDR_SCALARS, &comp_chunk_size));
 
-	NDR_CHECK(ndr_pull_uint16(ndrpull, NDR_SCALARS, &unknown_marker));
+	NDR_CHECK(ndr_pull_uint8(ndrpull, NDR_SCALARS, &C_CK_marker));
+	NDR_CHECK(ndr_pull_uint8(ndrpull, NDR_SCALARS, &K_CK_marker));
+	if (!(C_CK_marker == (uint8_t)'C' && K_CK_marker == (uint8_t)'K')) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION, "Bad ZLIB invalid CK marker C[%02X] K[%02X] (PULL)", 
+				      C_CK_marker, K_CK_marker);
+	}
 
-	DEBUG(10,("plain_chunk_size: %08X (%u) comp_chunk_size: %08X (%u) unknown_marker: %04X (%u)\n",
-		  plain_chunk_size, plain_chunk_size, comp_chunk_size, comp_chunk_size, unknown_marker, unknown_marker));
+	DEBUG(10,("plain_chunk_size: %08X (%u) comp_chunk_size: %08X (%u)\n",
+		  plain_chunk_size, plain_chunk_size, comp_chunk_size, comp_chunk_size));
 
 	comp_chunk_offset = ndrpull->offset;
 	NDR_CHECK(ndr_pull_advance(ndrpull, comp_chunk_size));
@@ -61,6 +67,8 @@ static NTSTATUS ndr_pull_compression_zlib_chunk(struct ndr_pull *ndrpull,
 	plain_chunk_offset = ndrpush->offset;
 	NDR_CHECK(ndr_push_zero(ndrpush, plain_chunk_size));
 	plain_chunk = ndrpush->data + plain_chunk_offset;
+
+	dump_data(10, comp_chunk, 16);
 
 	zs->avail_in = comp_chunk_size;
 	zs->next_in = comp_chunk;
