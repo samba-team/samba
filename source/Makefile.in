@@ -859,7 +859,7 @@ dangerous-installcheck:
 	mkdir -p $(BASEDIR)/var
 	PATH=$(BINDIR):$(SBINDIR):$(PATH) \
 	SATYR_DISCOURAGE=1 \
-	SATYR_SUITEDIR=../testsuite/build_farm/ prefix=$(BASEDIR) \
-	LIBSMB_PROG=$(BINDIR)/smbd \
+	SATYR_SUITEDIR=../testsuite/satyr/ prefix=$(BASEDIR) \
+	LIBSMB_PROG=$(SBINDIR)/smbd \
 	testdir=./testdir $(SHELL) satyr
 
