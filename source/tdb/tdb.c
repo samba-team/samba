@@ -1379,7 +1379,7 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 static int tdb_already_open(dev_t device,
 			    ino_t ino)
 {
-	TDB_CONTEXT *i;
+	TDB_CONTEXT *i = NULL;
 	
 	for (i = tdbs; i; i = i->next) {
 		if (i->device == device && i->inode == ino) {
@@ -1411,7 +1411,7 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 			 int open_flags, mode_t mode,
 			 tdb_log_func log_fn)
 {
-	TDB_CONTEXT *tdb;
+	TDB_CONTEXT *tdb = NULL;
 	struct stat st;
 	int rev = 0, locked;
 
@@ -1571,7 +1571,7 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 /* close a database */
 int tdb_close(TDB_CONTEXT *tdb)
 {
-	TDB_CONTEXT **i;
+	TDB_CONTEXT **i = NULL;
 	int ret = 0;
 
 	if (tdb->map_ptr) {
@@ -1728,7 +1728,7 @@ fail:
 /* reopen all tdb's */
 int tdb_reopen_all(void)
 {
-	TDB_CONTEXT *tdb;
+	TDB_CONTEXT *tdb = NULL;
 
 	for (tdb=tdbs; tdb; tdb = tdb->next) {
 		if (tdb_reopen(tdb) != 0) return -1;
