@@ -2,10 +2,21 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += -I$(srcdir)/../krb5 $(INCLUDE_des) $(INCLUDE_krb4)
+INCLUDES += -I../asn1 -I$(srcdir)/../asn1 -I$(srcdir)/../krb5 $(INCLUDE_des) $(INCLUDE_krb4)
+
+BUILT_SOURCES =					\
+	asn1_ContextFlags.c			\
+	asn1_MechType.c				\
+	asn1_MechTypeList.c			\
+	asn1_NegTokenInit.c			\
+	asn1_NegTokenTarg.c
+
+foo = asn1_ContextFlags.x asn1_MechType.x asn1_MechTypeList.x asn1_NegTokenInit.x asn1_NegTokenTarg.x
+
+CLEANFILES = $(BUILT_SOURCES) $(foo) spnego_asn1.h asn1_files
 
 lib_LTLIBRARIES = libgssapi.la
-libgssapi_la_LDFLAGS = -version-info 3:4:2
+libgssapi_la_LDFLAGS = -version-info 3:5:2
 libgssapi_la_LIBADD  = ../krb5/libkrb5.la $(LIB_des) ../asn1/libasn1.la ../roken/libroken.la
 
 include_HEADERS = gssapi.h
@@ -48,4 +59,12 @@ libgssapi_la_SOURCES =		\
 	v1.c			\
 	verify_mic.c		\
         wrap.c                  \
-        address_to_krb5addr.c
+        address_to_krb5addr.c	\
+	$(BUILT_SOURCES)
+
+$(foo) spnego_asn1.h: asn1_files
+
+asn1_files: ../asn1/asn1_compile$(EXEEXT) $(srcdir)/spnego.asn1
+	../asn1/asn1_compile$(EXEEXT) $(srcdir)/spnego.asn1 spnego_asn1
+
+$(libgssapi_la_OBJECTS): spnego_asn1.h
