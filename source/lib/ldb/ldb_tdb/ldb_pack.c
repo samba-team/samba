@@ -41,13 +41,16 @@
 /*
   pack a ldb message into a linear buffer in a TDB_DATA
 
+  note that this routine avoids saving elements with zero values,
+  as these are equivalent to having no element
+
   caller frees the data buffer after use
 */
 int ltdb_pack_data(struct ldb_context *ctx,
 		   const struct ldb_message *message,
 		   struct TDB_DATA *data)
 {
-	int i;
+	int i, j;
 	size_t size;
 	char *p;
 
@@ -55,8 +58,13 @@ int ltdb_pack_data(struct ldb_context *ctx,
 	size = 8;
 
 	for (i=0;i<message->num_elements;i++) {
-		size += 1 + strlen(message->elements[i].name);
-		size += 4 + message->elements[i].value.length + 1;
+		if (message->elements[i].num_values == 0) {
+			continue;
+		}
+		size += 1 + strlen(message->elements[i].name) + 4;
+		for (j=0;j<message->elements[i].num_values;j++) {
+			size += 4 + message->elements[i].values[j].length + 1;
+		}
 	}
 
 	/* allocate it */
@@ -73,17 +81,38 @@ int ltdb_pack_data(struct ldb_context *ctx,
 	p += 8;
 	
 	for (i=0;i<message->num_elements;i++) {
-		size_t len = strlen(message->elements[i].name);
+		size_t len;
+		if (message->elements[i].num_values == 0) {
+			continue;
+		}
+		len = strlen(message->elements[i].name);
 		memcpy(p, message->elements[i].name, len+1);
 		p += len + 1;
-		SIVAL(p, 0, message->elements[i].value.length);
-		memcpy(p+4, message->elements[i].value.data, 
-		       message->elements[i].value.length);
-		p[4+message->elements[i].value.length] = 0;
-		p += 4 + message->elements[i].value.length + 1;
+		SIVAL(p, 0, message->elements[i].num_values);
+		p += 4;
+		for (j=0;j<message->elements[i].num_values;j++) {
+			SIVAL(p, 0, message->elements[i].values[j].length);
+			memcpy(p+4, message->elements[i].values[j].data, 
+			       message->elements[i].values[j].length);
+			p[4+message->elements[i].values[j].length] = 0;
+			p += 4 + message->elements[i].values[j].length + 1;
+		}
 	}
 
 	return 0;
+}
+
+/*
+  free the memory allocated from a ltdb_unpack_data()
+*/
+void ltdb_unpack_data_free(struct ldb_message *message)
+{
+	int i;
+
+	for (i=0;i<message->num_elements;i++) {
+		if (message->elements[i].values) free(message->elements[i].values);
+	}
+	if (message->elements) free(message->elements);
 }
 
 
@@ -92,9 +121,10 @@ int ltdb_pack_data(struct ldb_context *ctx,
 
   note that this does not fill in the class and key elements
 
-  caller frees. Memory for the elements[] array is malloced, 
-  but the memory for the elements is re-used from the TDB_DATA
-  data. This means the caller only has to free the elements array
+  caller frees. Memory for the elements[] and values[] arrays are
+  malloced, but the memory for the elements is re-used from the
+  TDB_DATA data. This means the caller only has to free the elements
+  and values arrays. This can be done with ltdb_unpack_data_free()
 */
 int ltdb_unpack_data(struct ldb_context *ctx,
 		     const struct TDB_DATA *data,
@@ -102,7 +132,7 @@ int ltdb_unpack_data(struct ldb_context *ctx,
 {
 	char *p;
 	unsigned int remaining;
-	int i;
+	int i, j;
 
 	message->elements = NULL;
 
@@ -145,30 +175,44 @@ int ltdb_unpack_data(struct ldb_context *ctx,
 
 	for (i=0;i<message->num_elements;i++) {
 		size_t len;
-		if (remaining < 6) {
+		if (remaining < 10) {
 			errno = EIO;
 			goto failed;
 		}
 		len = strnlen(p, remaining-6);
+		message->elements[i].flags = 0;
 		message->elements[i].name = p;
 		remaining -= len + 1;
 		p += len + 1;
-		len = IVAL(p, 0);
-		if (len > remaining-5) {
-			errno = EIO;
-			goto failed;
+		message->elements[i].num_values = IVAL(p, 0);
+		message->elements[i].values = NULL;
+		if (message->elements[i].num_values != 0) {
+			message->elements[i].values = malloc_array_p(struct ldb_val, 
+								     message->elements[i].num_values);
+			if (!message->elements[i].values) {
+				errno = ENOMEM;
+				goto failed;
+			}
 		}
-		message->elements[i].value.length = len;
-		message->elements[i].value.data = p+4;
-		remaining -= len+4+1;
-		p += len+4+1;
+		p += 4;
+		for (j=0;j<message->elements[i].num_values;j++) {
+			len = IVAL(p, 0);
+			if (len > remaining-5) {
+				errno = EIO;
+				goto failed;
+			}
+
+			message->elements[i].values[j].length = len;
+			message->elements[i].values[j].data = p+4;
+			remaining -= len+4+1;
+			p += len+4+1;
+		}
 	}
 
 	return 0;
 
 failed:
-	if (message->elements) {
-		free(message->elements);
-	}
+	ltdb_unpack_data_free(message);
+
 	return -1;
 }

@@ -18,7 +18,7 @@ OBJS =  $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(LDB_LDAP_OBJ)
 
 LDB_LIB = lib/libldb.a
 
-BINS = bin/ldbadd bin/ldbsearch bin/ldbdel
+BINS = bin/ldbadd bin/ldbsearch bin/ldbdel bin/ldbmodify
 
 LIBS = $(LDB_LIB)($(OBJS))
 
@@ -42,6 +42,9 @@ bin/ldbsearch: tools/ldbsearch.o $(LIBS)
 
 bin/ldbdel: tools/ldbdel.o $(LIBS)
 	$(CC) -o bin/ldbdel tools/ldbdel.o $(LIB_FLAGS)
+
+bin/ldbmodify: tools/ldbmodify.o $(LIBS)
+	$(CC) -o bin/ldbmodify tools/ldbmodify.o $(LIB_FLAGS)
 
 clean:
 	rm -f */*.o *~ */*~ $(BINS) $(LDB_LIB)

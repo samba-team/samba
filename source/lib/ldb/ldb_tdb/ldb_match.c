@@ -39,7 +39,7 @@
   see if two ldb_val structures contain the same data
   return 1 for a match, 0 for a mis-match
 */
-static int ldb_val_equal(struct ldb_val *v1, struct ldb_val *v2)
+int ldb_val_equal(const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	if (v1->length != v2->length) return 0;
 
@@ -108,7 +108,7 @@ static int match_leaf(struct ldb_context *ldb,
 		      const char *base,
 		      enum ldb_scope scope)
 {
-	int i;
+	int i, j;
 
 	if (!scope_match(msg->dn, base, scope)) {
 		return 0;
@@ -122,10 +122,16 @@ static int match_leaf(struct ldb_context *ldb,
 	}
 
 	for (i=0;i<msg->num_elements;i++) {
-		if (strcmp(msg->elements[i].name, tree->u.simple.attr) == 0 &&
-		    (strcmp(tree->u.simple.value.data, "*") == 0 ||
-		     ldb_val_equal(&msg->elements[i].value, &tree->u.simple.value))) {
-			return 1;
+		if (strcmp(msg->elements[i].name, tree->u.simple.attr) == 0) {
+			if (strcmp(tree->u.simple.value.data, "*") == 0) {
+				return 1;
+			}
+			for (j=0;j<msg->elements[i].num_values;j++) {
+				if (ldb_val_equal(&msg->elements[i].values[j], 
+						  &tree->u.simple.value)) {
+					return 1;
+				}
+			}
 		}
 	}
 
