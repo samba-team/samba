@@ -40,10 +40,10 @@ host name of the server ! The name required is a NetBIOS server name,
 which may or may not be the same as the IP hostname of the machine
 running the server.
 
-The server name is looked up according to the link(bf(name resolve
-order))(name resolve order) parameter in the smb.conf file, allowing
-an administrator to change the order and methods by which server names
-are looked up.
+The server name is looked up according to the url(bf(name resolve
+order))(smbclient.1.html#name_resolve_order) parameter in the smb.conf
+file, allowing an administrator to change the order and methods by
+which server names are looked up.
 
 dit(bf(password)) password is the password required to access the
 specified service on the specified server. If this parameter is
@@ -74,7 +74,7 @@ socket. See the url(socket options)(smb.conf.5.html#socket options)
 parameter in the url(bf(smb.conf (5)))(smb.conf.5.html) manpage for
 the list of valid options.
 
-label(name resolve order)
+label(name_resolve_order)
 dit(bf(-R name resolve order)) This option allows the user of
 smbclient to determine what name resolution services to use when
 looking up the NetBIOS name of the host being connected to.
@@ -202,7 +202,7 @@ connect to. It should be specified in standard "a.b.c.d" notation.
 
 Normally the client would attempt to locate a named SMB/CIFS server by
 looking it up via the NetBIOS name resolution mechanism described
-above in the link(name resolve order)(name resolve order) parameter
+above in the url(bf(name resolve order))(smbclient.1.html#name_resolve_order) parameter
 above. Using this parameter will force the client to assume that the
 server is on the machine with the specified IP address and the NetBIOS
 name component of the resource being connected to will be ignored.
@@ -321,7 +321,7 @@ share. The secondary tar flags that can be given to this option are :
 	dit(bf(c)) Create a tar file on UNIX. Must be followed by the
 	name of a tar file, tape device or tt("-") for standard output. If
 	using standard output you must turn the log level to its lowest value
-        tt(-d0) to avoid corrupting your tar file. This flag is
+    tt(-d0) to avoid corrupting your tar file. This flag is
 	mutually exclusive with the bf(x) flag.
 
 	dit(bf(x)) Extract (restore) a local tar file back to a
@@ -605,11 +605,11 @@ label(rmdir) dit(bf(rmdir <directory name>)) Remove the specified
 directory (user access privileges permitting) from the server.
 
 label(tar) dit(bf(tar <c|x>[IXbgNa])) Performs a tar operation - see
-the link(bf(-T))(minus_T) command line option above. Behaviour may be
-affected by the link(bf(tarmode))(tarmode) command (see below). Using
-g (incremental) and N (newer) will affect tarmode settings. Note that
-using the "-" option with tar x may not work - use the command line
-option instead.
+the url(bf(-T))(smbclient.1.html#minus_T) command line option
+above. Behaviour may be affected by the link(bf(tarmode))(tarmode)
+command (see below). Using g (incremental) and N (newer) will affect
+tarmode settings. Note that using the "-" option with tar x may not
+work - use the command line option instead.
 
 label(blocksize) dit(bf(blocksize <blocksize>)) Blocksize. Must be
 followed by a valid (greater than zero) blocksize. Causes tar file to
@@ -689,18 +689,28 @@ The number and nature of diagnostics available depends on the debug
 level used by the client. If you have problems, set the debug level to
 3 and peruse the log files.
 
+label(VERSION)
+manpagesection(VERSION)
+
+This man page is (mostly) correct for version 2.0 of the Samba suite,
+plus some of the recent patches to it. These notes will necessarily
+lag behind development of the software, so it is possible that your
+version of the server has extensions or parameter semantics that
+differ from or are not covered by this man page. Please notify these
+to the address below for rectification.
+
 label(AUTHOR)
 manpageauthor()
 
 The original Samba software and related utilities were created by
-Andrew Tridgell (samba-bugs@samba.anu.edu.au). Samba is now developed
+Andrew Tridgell email(samba-bugs@samba.anu.edu.au). Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed.
 
 The original Samba man pages were written by Karl Auer. The man page
 sources were converted to YODL format (another excellent piece of Open
 Source software) and updated for the Samba2.0 release by Jeremy
-Allison.
+Allison, email(samba-bugs@samba.anu.edu.au).
 
 See url(bf(samba (8)))(samba.7.html) to find out how to get a full
 list of contributors and details on how to submit bug reports,
