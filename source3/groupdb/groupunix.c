@@ -85,8 +85,8 @@ BOOL get_unixgroup_members(struct group *grp,
 	{
 		DOM_NAME_MAP gmep;
 
-		if (!lookupsmbgrpnam(unix_name, &gmep) &&
-		    !lookupsmbpwnam (unix_name, &gmep))
+		if (!lookupsmbpwnam (unix_name, &gmep) &&
+		    !lookupsmbgrpnam(unix_name, &gmep))
 		{
 			continue;
 		}
