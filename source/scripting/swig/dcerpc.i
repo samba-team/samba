@@ -118,17 +118,17 @@ int64 int64_from_python(PyObject *obj, char *name)
 		return 0;
 	}
 
-	if (!PyInt_Check(obj)) {
-		PyErr_Format(PyExc_TypeError, "Expecting int value for %s", name);
+	if (!PyLong_Check(obj)) {
+		PyErr_Format(PyExc_TypeError, "Expecting long value for %s", name);
 		return 0;
 	}
 
-	return (int64)PyLong_AsLong(obj);
+	return (int64)PyLong_AsLongLong(obj);
 }
 
 PyObject *int64_to_python(int64 obj)
 {
-	return PyLong_FromLong(obj);
+	return PyLong_FromLongLong(obj);
 }
 
 uint64 uint64_from_python(PyObject *obj, char *name)
@@ -138,17 +138,17 @@ uint64 uint64_from_python(PyObject *obj, char *name)
 		return 0;
 	}
 
-	if (!PyInt_Check(obj)) {
-		PyErr_Format(PyExc_TypeError, "Expecting int value for %s", name);
+	if (!PyLong_Check(obj)) {
+		PyErr_Format(PyExc_TypeError, "Expecting long value for %s", name);
 		return 0;
 	}
 
-	return (uint64)PyLong_AsLong(obj);
+	return (uint64)PyLong_AsUnsignedLongLong(obj);
 }
 
 PyObject *uint64_to_python(uint64 obj)
 {
-	return PyLong_FromLong(obj);
+	return PyLong_FromUnsignedLongLong(obj);
 }
 
 NTTIME NTTIME_from_python(PyObject *obj, char *name)
@@ -158,17 +158,17 @@ NTTIME NTTIME_from_python(PyObject *obj, char *name)
 		return 0;
 	}
 
-	if (!PyInt_Check(obj)) {
-		PyErr_Format(PyExc_TypeError, "Expecting integer value for %s", name);
+	if (!PyLong_Check(obj)) {
+		PyErr_Format(PyExc_TypeError, "Expecting long value for %s", name);
 		return 0;
 	}
 
-	return (NTTIME)PyLong_AsLong(obj);
+	return (NTTIME)PyLong_AsUnsignedLongLong(obj);
 }
 
 PyObject *NTTIME_to_python(NTTIME obj)
 {
-	return PyLong_FromLong(obj);
+	return PyLong_FromUnsignedLongLong(obj);
 }
 
 HYPER_T HYPER_T_from_python(PyObject *obj, char *name)
@@ -178,17 +178,17 @@ HYPER_T HYPER_T_from_python(PyObject *obj, char *name)
 		return 0;
 	}
 
-	if (!PyInt_Check(obj)) {
-		PyErr_Format(PyExc_TypeError, "Expecting integer value for %s", name);
+	if (!PyLong_Check(obj)) {
+		PyErr_Format(PyExc_TypeError, "Expecting long value for %s", name);
 		return 0;
 	}
 
-	return (HYPER_T)PyLong_AsLong(obj);
+	return (HYPER_T)PyLong_AsUnsignedLongLong(obj);
 }
 
 PyObject *HYPER_T_to_python(HYPER_T obj)
 {
-	return PyLong_FromLong(obj);
+	return PyLong_FromUnsignedLongLong(obj);
 }
 
 /* Conversion functions for types that we don't want generated automatically.
