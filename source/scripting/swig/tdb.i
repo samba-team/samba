@@ -40,7 +40,7 @@ typedef int SIG_ATOMIC_T;
 
 /* Include tdb headers */
 
-#include "tdb/tdb.h"
+#include "lib/tdb/include/tdb.h"
 
 %}
 
@@ -100,7 +100,8 @@ TDB_CONTEXT *tdb_open(const char *name, int hash_size, int tdb_flags,
 
 TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 			 int open_flags, mode_t mode,
-			 tdb_log_func log_fn);
+			 tdb_log_func log_fn,
+			 tdb_hash_func hash_fn);
 
 int tdb_reopen(TDB_CONTEXT *tdb);
 int tdb_reopen_all(void);
