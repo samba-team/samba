@@ -65,19 +65,20 @@ static void gtk_show_werror(WERROR err)
 
 static void expand_key(GtkTreeView *treeview, GtkTreeIter *parent, GtkTreePath *arg2)
 {
-	GtkTreeIter iter, tmpiter;
+	GtkTreeIter firstiter, iter, tmpiter;
 	REG_KEY *k, *sub;
 	char *name;
 	GValue value;
 	WERROR error;
 	int i;
 
+    gtk_tree_model_iter_children(GTK_TREE_MODEL(store_keys), &firstiter, parent);
+
     /* See if this row has ever had a name gtk_tree_store_set()'ed to it.
        If not, read the directory contents */
-    gtk_tree_model_get(GTK_TREE_MODEL(store_keys), parent,
-                       0, &name, -1);
+    gtk_tree_model_get(GTK_TREE_MODEL(store_keys), &firstiter, 0, &name, -1);
 
-	if(!name) return;
+	if(name) return;
 
 	gtk_tree_model_get(GTK_TREE_MODEL(store_keys), parent, 1, &k, -1);
 
@@ -91,8 +92,7 @@ static void expand_key(GtkTreeView *treeview, GtkTreeIter *parent, GtkTreePath *
            node GTK gets confused and won't expand the parent row. */
 
 		if(i == 0) {
-		    gtk_tree_model_iter_children(GTK_TREE_MODEL(store_keys), 
-                                     &iter, parent);
+			iter = firstiter;
 		} else {
 			gtk_tree_store_append(store_keys, &iter, parent);
 		}

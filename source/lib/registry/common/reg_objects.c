@@ -34,31 +34,8 @@
 
 REG_VAL* reg_val_dup( REG_VAL *val )
 {
-	REG_VAL 	*copy = NULL;
-	TALLOC_CTX *new_mem_ctx = talloc_init(val->name);
-	
-	if ( !val ) 
-		return NULL;
-	
-	if ( !(copy = talloc( new_mem_ctx, sizeof(REG_VAL) )) ) {
-		DEBUG(0,("dup_registry_value: malloc() failed!\n"));
-		return NULL;
-	}
-	
-	/* copy all the non-pointer initial data */
-	
-	memcpy( copy, val, sizeof(REG_VAL) );
-	if ( val->data_blk ) 
-	{
-		if ( !(copy->data_blk = talloc_memdup( new_mem_ctx, val->data_blk, val->data_len )) ) {
-			DEBUG(0,("dup_registry_value: memdup() failed for [%d] bytes!\n",
-				val->data_len));
-			SAFE_FREE( copy );
-		}
-	}
-	copy->mem_ctx = new_mem_ctx;
-	
-	return copy;	
+	val->ref++;
+	return val;	
 }
 
 /**********************************************************************
