@@ -73,7 +73,7 @@ check: ./destest
 	./destest
 
 clean:
-	rm -f $(LIB) *.o *.a
+	rm -f $(LIB) *.o *.a $(PROGS)
 
 mostlyclean: clean
 
