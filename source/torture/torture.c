@@ -2567,6 +2567,50 @@ static void usage(poptContext pc)
 	poptPrintUsage(pc, stdout, 0);
 	printf("\n");
 
+	printf("The binding format is:\n\n");
+
+	printf("  TRANSPORT:host[flags]\n\n");
+
+	printf("  where TRANSPORT is either ncacn_np for SMB or ncacn_ip_tcp for RPC/TCP\n\n");
+
+	printf("  'host' is an IP or hostname or netbios name. If the binding string\n");
+	printf("  identifies the server side of an endpoint, 'host' may be an empty\n");
+	printf("  string.\n\n");
+
+	printf("  'flags' can include a SMB pipe name if using the ncacn_np transport or\n");
+	printf("  a TCP port number if using the ncacn_ip_tcp transport, otherwise they\n");
+	printf("  will be auto-determined.\n\n");
+
+	printf("  other recognised flags are:\n\n");
+
+	printf("    sign : enable ntlmssp signing\n");
+	printf("    seal : enable ntlmssp sealing\n");
+	printf("    connect : enable rpc connect level auth (auth, but no sign or seal)\n");
+	printf("    validate: enable the NDR validator\n");
+	printf("    print: enable debugging of the packets\n");
+	printf("    bigendian: use bigendian RPC\n");
+	printf("    padcheck: check reply data for non-zero pad bytes\n\n");
+
+	printf("  For example, these all connect to the samr pipe:\n\n");
+
+	printf("    ncacn_np:myserver\n");
+	printf("    ncacn_np:myserver[samr]\n");
+	printf("    ncacn_np:myserver[\\pipe\\samr]\n");
+	printf("    ncacn_np:myserver[/pipe/samr]\n");
+	printf("    ncacn_np:myserver[samr,sign,print]\n");
+	printf("    ncacn_np:myserver[\\pipe\\samr,sign,seal,bigendian]\n");
+	printf("    ncacn_np:myserver[/pipe/samr,seal,validate]\n");
+	printf("    ncacn_np:\n");
+	printf("    ncacn_np:[/pipe/samr]\n\n");
+
+	printf("    ncacn_ip_tcp:myserver\n");
+	printf("    ncacn_ip_tcp:myserver[1024]\n");
+	printf("    ncacn_ip_tcp:myserver[1024,sign,seal]\n\n");
+
+	printf("The unc format is:\n\n");
+
+	printf("    //server/share\n\n");
+
 	printf("tests are:");
 	for (i=0;torture_ops[i].name;i++) {
 		if ((i%perline)==0) {
@@ -2577,7 +2621,7 @@ static void usage(poptContext pc)
 	printf("\n\n");
 
 	printf("default test is ALL\n");
-	
+
 	exit(1);
 }
 
