@@ -696,7 +696,7 @@ void debug_ntlmssp_flags(uint32 neg_flags)
 		DEBUG(4, ("  NTLMSSP_REQUEST_TARGET\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_SIGN) 
 		DEBUG(4, ("  NTLMSSP_NEGOTIATE_SIGN\n"));
-	if (neg_flags & NTLMSSP_NEGOTIATE_SIGN) 
+	if (neg_flags & NTLMSSP_NEGOTIATE_SEAL) 
 		DEBUG(4, ("  NTLMSSP_NEGOTIATE_SEAL\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) 
 		DEBUG(4, ("  NTLMSSP_NEGOTIATE_LM_KEY\n"));
