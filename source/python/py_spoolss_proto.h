@@ -14,7 +14,7 @@ void initspoolss(void);
 
 PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 				     PyObject *kw);
-PyObject *spoolss_getprinterdriver(PyObject *self, PyObject *args,
+PyObject *spoolss_hnd_getprinterdriver(PyObject *self, PyObject *args,
 				   PyObject *kw);
 PyObject *spoolss_getprinterdriverdir(PyObject *self, PyObject *args, 
 				      PyObject *kw);
@@ -42,11 +42,11 @@ BOOL py_to_DRIVER_DIRECTORY_1(DRIVER_DIRECTORY_1 *info, PyObject *dict);
 
 /* The following definitions come from python/py_spoolss_forms.c  */
 
-PyObject *spoolss_addform(PyObject *self, PyObject *args, PyObject *kw);
-PyObject *spoolss_getform(PyObject *self, PyObject *args, PyObject *kw);
-PyObject *spoolss_setform(PyObject *self, PyObject *args, PyObject *kw);
-PyObject *spoolss_deleteform(PyObject *self, PyObject *args, PyObject *kw);
-PyObject *spoolss_enumforms(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_hnd_addform(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_hnd_getform(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_hnd_setform(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_hnd_deleteform(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_hnd_enumforms(PyObject *self, PyObject *args, PyObject *kw);
 
 /* The following definitions come from python/py_spoolss_forms_conv.c  */
 
@@ -55,14 +55,14 @@ BOOL py_to_FORM(FORM *form, PyObject *dict);
 
 /* The following definitions come from python/py_spoolss_jobs.c  */
 
-PyObject *spoolss_enumjobs(PyObject *self, PyObject *args, PyObject *kw);
-PyObject *spoolss_setjob(PyObject *self, PyObject *args, PyObject *kw);
-PyObject *spoolss_getjob(PyObject *self, PyObject *args, PyObject *kw);
-PyObject *spoolss_startpageprinter(PyObject *self, PyObject *args, PyObject *kw);
-PyObject *spoolss_endpageprinter(PyObject *self, PyObject *args, PyObject *kw);
-PyObject *spoolss_startdocprinter(PyObject *self, PyObject *args, PyObject *kw);
-PyObject *spoolss_enddocprinter(PyObject *self, PyObject *args, PyObject *kw);
-PyObject *spoolss_writeprinter(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_hnd_enumjobs(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_hnd_setjob(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_hnd_getjob(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_hnd_startpageprinter(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_hnd_endpageprinter(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_hnd_startdocprinter(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_hnd_enddocprinter(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_hnd_writeprinter(PyObject *self, PyObject *args, PyObject *kw);
 
 /* The following definitions come from python/py_spoolss_jobs_conv.c  */
 
@@ -86,18 +86,18 @@ BOOL py_to_PORT_INFO_2(PORT_INFO_2 *info, PyObject *dict);
 
 /* The following definitions come from python/py_spoolss_printerdata.c  */
 
-PyObject *spoolss_getprinterdata(PyObject *self, PyObject *args, PyObject *kw);
-PyObject *spoolss_setprinterdata(PyObject *self, PyObject *args, PyObject *kw);
-PyObject *spoolss_enumprinterdata(PyObject *self, PyObject *args, PyObject *kw);
-PyObject *spoolss_deleteprinterdata(PyObject *self, PyObject *args, PyObject *kw);
-PyObject *spoolss_deleteprinterdataex(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_hnd_getprinterdata(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_hnd_setprinterdata(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_hnd_enumprinterdata(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_hnd_deleteprinterdata(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_hnd_deleteprinterdataex(PyObject *self, PyObject *args, PyObject *kw);
 
 /* The following definitions come from python/py_spoolss_printers.c  */
 
 PyObject *spoolss_openprinter(PyObject *self, PyObject *args, PyObject *kw);
 PyObject *spoolss_closeprinter(PyObject *self, PyObject *args);
-PyObject *spoolss_getprinter(PyObject *self, PyObject *args, PyObject *kw);
-PyObject *spoolss_setprinter(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_hnd_getprinter(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_hnd_setprinter(PyObject *self, PyObject *args, PyObject *kw);
 PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw);
 PyObject *spoolss_addprinterex(PyObject *self, PyObject *args, PyObject *kw);
 

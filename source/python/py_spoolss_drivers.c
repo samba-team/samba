@@ -167,7 +167,7 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 
 /* Fetch printer driver */
 
-PyObject *spoolss_getprinterdriver(PyObject *self, PyObject *args,
+PyObject *spoolss_hnd_getprinterdriver(PyObject *self, PyObject *args,
 				   PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;

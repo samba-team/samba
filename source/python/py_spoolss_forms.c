@@ -22,7 +22,7 @@
 
 /* Add a form */
 
-PyObject *spoolss_addform(PyObject *self, PyObject *args, PyObject *kw)
+PyObject *spoolss_hnd_addform(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
@@ -71,7 +71,7 @@ PyObject *spoolss_addform(PyObject *self, PyObject *args, PyObject *kw)
 
 /* Get form properties */
 
-PyObject *spoolss_getform(PyObject *self, PyObject *args, PyObject *kw)
+PyObject *spoolss_hnd_getform(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
@@ -117,7 +117,7 @@ PyObject *spoolss_getform(PyObject *self, PyObject *args, PyObject *kw)
 
 /* Set form properties */
 
-PyObject *spoolss_setform(PyObject *self, PyObject *args, PyObject *kw)
+PyObject *spoolss_hnd_setform(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
@@ -158,7 +158,7 @@ PyObject *spoolss_setform(PyObject *self, PyObject *args, PyObject *kw)
 
 /* Delete a form */
 
-PyObject *spoolss_deleteform(PyObject *self, PyObject *args, PyObject *kw)
+PyObject *spoolss_hnd_deleteform(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
@@ -187,7 +187,7 @@ PyObject *spoolss_deleteform(PyObject *self, PyObject *args, PyObject *kw)
 
 /* Enumerate forms */
 
-PyObject *spoolss_enumforms(PyObject *self, PyObject *args, PyObject *kw)
+PyObject *spoolss_hnd_enumforms(PyObject *self, PyObject *args, PyObject *kw)
 {
 	PyObject *result;
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;

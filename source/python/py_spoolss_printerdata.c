@@ -87,7 +87,7 @@ static BOOL py_to_printerdata(char **value, uint32 *data_type,
 	return True;
 }
 
-PyObject *spoolss_getprinterdata(PyObject *self, PyObject *args, PyObject *kw)
+PyObject *spoolss_hnd_getprinterdata(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	static char *kwlist[] = { "value", NULL };
@@ -123,7 +123,7 @@ PyObject *spoolss_getprinterdata(PyObject *self, PyObject *args, PyObject *kw)
 	return result;
 }
 
-PyObject *spoolss_setprinterdata(PyObject *self, PyObject *args, PyObject *kw)
+PyObject *spoolss_hnd_setprinterdata(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	static char *kwlist[] = { "data", NULL };
@@ -154,7 +154,7 @@ PyObject *spoolss_setprinterdata(PyObject *self, PyObject *args, PyObject *kw)
 	return Py_None;
 }
 
-PyObject *spoolss_enumprinterdata(PyObject *self, PyObject *args, PyObject *kw)
+PyObject *spoolss_hnd_enumprinterdata(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	static char *kwlist[] = { NULL };
@@ -199,7 +199,7 @@ PyObject *spoolss_enumprinterdata(PyObject *self, PyObject *args, PyObject *kw)
 	return result;
 }
 
-PyObject *spoolss_deleteprinterdata(PyObject *self, PyObject *args, PyObject *kw)
+PyObject *spoolss_hnd_deleteprinterdata(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	static char *kwlist[] = { "value", NULL };
@@ -225,7 +225,7 @@ PyObject *spoolss_deleteprinterdata(PyObject *self, PyObject *args, PyObject *kw
 	return Py_None;
 }
 
-PyObject *spoolss_deleteprinterdataex(PyObject *self, PyObject *args, PyObject *kw)
+PyObject *spoolss_hnd_deleteprinterdataex(PyObject *self, PyObject *args, PyObject *kw)
 {
 	/* Not supported by Samba server */
 
