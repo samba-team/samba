@@ -1,3 +1,11 @@
+2005-03-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Make editline a non-static library and let libtool
+	decide (same with libel_compat). This way libedit will build
+	shared version is the library that is possible to link with other
+	shared lib if its needed.  Also make libed_compat a libtool
+	convenience library.
+
 2002-08-22  Assar Westerlund  <assar@kth.se>
 
 	* testit.c: make it use getarg so that it can handle --help and
