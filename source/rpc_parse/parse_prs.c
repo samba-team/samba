@@ -730,7 +730,6 @@ BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 	else { /* unmarshalling */
 	
 		uint32 alloc_len = 0;
-		len = -1;
 		q = prs_data_p(ps) + prs_offset(ps);
 
 		/*
@@ -738,43 +737,52 @@ BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 		 */
 		max_len = (ps->buffer_size - ps->data_offset)/sizeof(uint16);
 
+		/* the test of the value of *ptr helps to catch the circumstance
+		   where we have an emtpty (non-existent) string in the buffer */
 		for ( ptr = (uint16 *)q; *ptr && (alloc_len <= max_len); alloc_len++)
+			/* do nothing */ 
 			;
-		if (alloc_len > 0)
+
+		/* should we allocate anything at all? */
+		str->buffer = (uint16 *)prs_alloc_mem(ps,alloc_len * sizeof(uint16));
+		if ((str->buffer == NULL) && (alloc_len > 0))
+			return False;
+
+		p = (unsigned char *)str->buffer;
+
+		len = 0;
+		/* the (len < alloc_len) test is to prevent us from overwriting
+		   memory that is not ours...if we get that far, we have a non-null
+		   terminated string in the buffer and have messed up somewhere */
+		while ((len < alloc_len) && (*q != '\0'))
 		{
-			str->buffer = (uint16 *)prs_alloc_mem(ps,alloc_len * sizeof(uint16));
-			if (str->buffer == NULL)
-				return False;
-
-			p = (unsigned char *)str->buffer;
-
-			do 
+			if(ps->bigendian_data) 
 			{
-				len++;
+				RW_SVAL(ps->io, ps->bigendian_data, q, *p, 0);
+				p += 2;
+				q += 2;
+			} else {
+				RW_CVAL(ps->io, q, *p, 0);
+				p++;
+				q++;
+				RW_CVAL(ps->io, q, *p, 0);
+				p++;
+				q++;
+			}
 
-				if(ps->bigendian_data) 
-				{
-					RW_SVAL(ps->io, ps->bigendian_data, q, *p, 0);
-					p += 2;
-					q += 2;
-				} else {
-					RW_CVAL(ps->io, q, *p, 0);
-					p++;
-					q++;
-					RW_CVAL(ps->io, q, *p, 0);
-					p++;
-					q++;
-				}
-			} while (len < alloc_len && str->buffer[len] != 0);
-		}
-		else
+			len++;
+		} 
+		if (len < alloc_len)
 		{
-			len = 0;
-			str->buffer = NULL;
+			/* NULL terminate the UNISTR */
+			str->buffer[len++] = '\0';
 		}
 	}
 
-	ps->data_offset += len*2;
+	/* set the offset in the prs_struct; 'len' points to the
+	   terminiating NULL in the UNISTR so we need to go one more
+	   uint16 */
+	ps->data_offset += (len)*2;
 	
 	return True;
 }
