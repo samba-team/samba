@@ -85,7 +85,7 @@ typedef enum krb5_address_type {
 
 enum {
   AP_OPTS_USE_SESSION_KEY = 1,
-  AP_OPTS_MUTUAL_REQUIRED = 2
+  AP_OPTS_MUTUAL_REQUIRED = 2,
 };
 
 typedef HostAddress krb5_address;
@@ -590,6 +590,8 @@ krb5_sendauth(krb5_context context,
 	      krb5_ap_rep_enc_part **rep_result,
 	      krb5_creds ** out_creds);
 
+#define KRB5_RECVAUTH_IGNORE_VERSION 1
+
 krb5_error_code
 krb5_recvauth(krb5_context context,
 	      krb5_auth_context *auth_context,
@@ -599,6 +601,8 @@ krb5_recvauth(krb5_context context,
 	      int32_t flags,
 	      krb5_keytab keytab,
 	      krb5_ticket **ticket);
+
+#define KRB5_SENDAUTH_VERSION "KRB5_SENDAUTH_V1.0"
 
 krb5_error_code
 krb5_parse_name(krb5_context context,
@@ -695,6 +699,10 @@ krb5_error_code
 krb5_free_krbhst (krb5_context context,
 		  char *const *hostlist);
 
+krb5_boolean
+krb5_kuserok (krb5_context context,
+	      krb5_principal principal,
+	      const char *luser);
 
 /* variables */
 
