@@ -10,7 +10,7 @@ static char *make_creds_key(const char *domain, const char* wks, int *klen)
 	int domlen = strlen(domain);
 	int wkslen = strlen(wks);
 
-	(*klen) = domlen + wkslen + 1;
+	(*klen) = domlen + wkslen + 2;
 	k = malloc((*klen) * sizeof(char));
 
 	if (k != NULL)
@@ -40,7 +40,7 @@ BOOL cred_get(const char *domain, const char* wks, struct dcinfo *dc)
 	if (k == NULL) return False;
 
 	key.dptr  = k;
-	key.dsize = klen+1;
+	key.dsize = klen;
 
 	data = tdb_fetch(db, key);
 
@@ -51,7 +51,7 @@ BOOL cred_get(const char *domain, const char* wks, struct dcinfo *dc)
 		DEBUG(10,("cred_get: NULL data\n"));
 		return False;
 	}
-	if (data.dsize != sizeof(*dc)+1)
+	if (data.dsize != sizeof(*dc))
 	{
 		DEBUG(10,("cred_get: data size mismatch\n"));
 		free(data.dptr);
@@ -79,12 +79,12 @@ BOOL cred_store(const char *domain, const char* wks, struct dcinfo *dc)
 	if (k == NULL) return False;
 
 	key.dptr  = k;
-	key.dsize = klen+1;
+	key.dsize = klen;
 
 	data.dptr  = (char*)dc;
-	data.dsize = sizeof(*dc)+1;
+	data.dsize = sizeof(*dc);
 
-	ret = tdb_store(db, key, data, TDB_REPLACE) == 0;
+	ret = (tdb_store(db, key, data, TDB_REPLACE) == 0);
 
 	free(k);
 
