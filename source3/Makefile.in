@@ -99,7 +99,7 @@ SBIN_PROGS = bin/smbd bin/nmbd bin/swat bin/wrepld @EXTRA_SBIN_PROGS@
 
 BIN_PROGS1 = bin/smbclient bin/net bin/smbspool bin/testparm bin/testprns bin/smbstatus 
 BIN_PROGS2 = bin/smbcontrol bin/smbtree bin/tdbbackup bin/nmblookup bin/pdbedit
-BIN_PROGS3 = bin/smbpasswd bin/rpcclient bin/smbcacls bin/profiles bin/smbgroupedit
+BIN_PROGS3 = bin/smbpasswd bin/rpcclient bin/smbcacls bin/profiles bin/smbgroupedit bin/ntlm_auth
 
 TORTURE_PROGS = bin/smbtorture bin/msgtest bin/masktest bin/locktest \
 	bin/locktest2 bin/nsstest bin/vfstest
@@ -533,6 +533,8 @@ POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
 
 TDBBACKUP_OBJ = tdb/tdbbackup.o $(TDBBASE_OBJ)
 
+NTLM_AUTH_OBJ = utils/ntlm_auth.o $(POPT_LIB_OBJ)
+
 ######################################################################
 # now the rules...
 ######################################################################
@@ -871,6 +873,12 @@ bin/wbinfo: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
 	@echo Linking $@
 	@$(LINK) -o $@ $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
 		$(UBIQX_OBJ) $(SECRETS_OBJ) $(LIBS) @BUILD_POPT@
+
+bin/ntlm_auth: $(NTLM_AUTH_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
+		$(UBIQX_OBJ) @BUILD_POPT@ bin/.dummy
+	@echo Linking $@
+	@$(LINK) -o $@ $(NTLM_AUTH_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
+		$(UBIQX_OBJ) $(LIBS) @BUILD_POPT@
 
 bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_PICOOBJ)
 	@echo "Linking shared library $@"

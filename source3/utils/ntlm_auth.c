@@ -1,0 +1,416 @@
+/* 
+   Unix SMB/CIFS implementation.
+
+   Winbind status program.
+
+   Copyright (C) Tim Potter      2000-2002
+   Copyright (C) Andrew Bartlett 2002
+   Copyright (C) Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it> 2000 
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+#include "includes.h"
+
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_WINBIND
+
+#define SQUID_BUFFER_SIZE 2010
+
+extern int winbindd_fd;
+
+static const char *helper_protocol;
+static const char *username;
+static const char *domain;
+static const char *workstation;
+static const char *hex_challenge;
+static const char *hex_lm_response;
+static const char *hex_nt_response;
+static unsigned char *challenge;
+static size_t challenge_len;
+static unsigned char *lm_response;
+static size_t lm_response_len;
+static unsigned char *nt_response;
+static size_t nt_response_len;
+
+static char *password;
+
+static char winbind_separator(void)
+{
+	struct winbindd_response response;
+	static BOOL got_sep;
+	static char sep;
+
+	if (got_sep)
+		return sep;
+
+	ZERO_STRUCT(response);
+
+	/* Send off request */
+
+	if (winbindd_request(WINBINDD_INFO, NULL, &response) !=
+	    NSS_STATUS_SUCCESS) {
+		d_printf("could not obtain winbind separator!\n");
+		return '\\';
+	}
+
+	sep = response.data.info.winbind_separator;
+	got_sep = True;
+
+	if (!sep) {
+		d_printf("winbind separator was NULL!\n");
+		return '\\';
+	}
+	
+	return sep;
+}
+
+static const char *get_winbind_domain(void)
+{
+	struct winbindd_response response;
+
+	static fstring winbind_domain;
+
+	ZERO_STRUCT(response);
+
+	/* Send off request */
+
+	if (winbindd_request(WINBINDD_DOMAIN_NAME, NULL, &response) !=
+	    NSS_STATUS_SUCCESS) {
+		d_printf("could not obtain winbind domain name!\n");
+		return NULL;
+	}
+
+	fstrcpy(winbind_domain, response.data.domain_name);
+
+	return winbind_domain;
+
+}
+
+/* Authenticate a user with a plaintext password */
+
+static BOOL check_plaintext_auth(const char *user, const char *pass, BOOL stdout_diagnostics)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+        NSS_STATUS result;
+
+	/* Send off request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	fstrcpy(request.data.auth.user, user);
+	fstrcpy(request.data.auth.pass, pass);
+
+	result = winbindd_request(WINBINDD_PAM_AUTH, &request, &response);
+
+	/* Display response */
+	
+	if (stdout_diagnostics) {
+		if ((result != NSS_STATUS_SUCCESS) && (response.data.auth.nt_status == 0)) {
+			d_printf("Reading winbind reply failed! (0x01)\n");
+		}
+		
+		d_printf("%s (0x%x)\n", 
+			 response.data.auth.nt_status_string, 
+			 response.data.auth.nt_status);
+	} else {
+		if ((result != NSS_STATUS_SUCCESS) && (response.data.auth.nt_status == 0)) {
+			DEBUG(1, ("Reading winbind reply failed! (0x01)\n"));
+		}
+		
+		DEBUG(3, ("%s (0x%x)\n", 
+			 response.data.auth.nt_status_string, 
+			 response.data.auth.nt_status));		
+	}
+		
+        return (result == NSS_STATUS_SUCCESS);
+}
+
+static void manage_squid_2_5_basic_request() 
+{
+	char buf[SQUID_BUFFER_SIZE+1];
+	int length;
+	char *c, *user, *pass;
+	static BOOL err;
+  
+	if (x_fgets(buf, sizeof(buf)-1, x_stdin) == NULL) {
+		DEBUG(1, ("fgets() failed! dying..... errno=%d (%s)\n", errno,
+			  strerror(errno)));
+		exit(1);    /* BIIG buffer */
+	}
+    
+	c=memchr(buf,'\n',sizeof(buf)-1);
+	if (c) {
+		*c = '\0';
+		length = c-buf;
+	} else {
+		err = 1;
+		return;
+	}
+	if (err) {
+		DEBUG(2, ("Oversized message\n"));
+		x_fprintf(x_stderr, "ERR\n");
+		err = 0;
+		return;
+	}
+
+	DEBUG(10, ("Got '%s' from squid (length: %d).\n",buf,length));
+
+	if (buf[0] == '\0') {
+		DEBUG(2, ("Invalid Request\n"));
+		x_fprintf(x_stderr, "ERR\n");
+		return;
+	}
+
+	user=buf;
+
+	pass=memchr(buf,' ',length);
+	if (!pass) {
+		DEBUG(2, ("Password not found. Denying access\n"));
+		x_fprintf(x_stderr, "ERR\n");
+		return;
+	}
+	*pass='\0';
+	pass++;
+
+	rfc1738_unescape(user);
+	rfc1738_unescape(pass);
+
+	if (check_plaintext_auth(user, pass, False)) {
+		x_fprintf(x_stdout, "OK\n");
+	} else {
+		x_fprintf(x_stdout, "ERR\n");
+	}
+}
+
+
+static void squid_2_5_basic(void) {
+	/* initialize FDescs */
+	x_setbuf(x_stdout, NULL);
+	x_setbuf(x_stderr, NULL);
+	while(1) {
+		manage_squid_2_5_basic_request();
+	}
+}
+
+
+/* Authenticate a user with a challenge/response */
+
+static BOOL check_auth_crap(void)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+        NSS_STATUS result;
+	/* Send off request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	fstrcpy(request.data.auth_crap.user, username);
+
+	fstrcpy(request.data.auth_crap.domain, domain);
+	fstrcpy(request.data.auth_crap.workstation, workstation);
+	
+	memcpy(request.data.auth_crap.chal, challenge, MIN(challenge_len, 8));
+
+	memcpy(request.data.auth_crap.lm_resp, lm_response, MIN(lm_response_len, sizeof(request.data.auth_crap.lm_resp)));
+        
+	memcpy(request.data.auth_crap.nt_resp, nt_response, MIN(nt_response_len, sizeof(request.data.auth_crap.nt_resp)));
+        
+        request.data.auth_crap.lm_resp_len = lm_response_len;
+        request.data.auth_crap.nt_resp_len = nt_response_len;
+
+	result = winbindd_request(WINBINDD_PAM_AUTH_CRAP, &request, &response);
+
+	/* Display response */
+
+	if ((result != NSS_STATUS_SUCCESS) && (response.data.auth.nt_status == 0)) {
+		d_printf("Reading winbind reply failed! (0x01)\n");
+	}
+
+	d_printf("%s (0x%x)\n", 
+		 response.data.auth.nt_status_string, 
+		 response.data.auth.nt_status);
+
+        return result == NSS_STATUS_SUCCESS;
+}
+
+/* Main program */
+
+enum {
+	OPT_USERNAME = 1000,
+	OPT_DOMAIN,
+	OPT_WORKSTATION,
+	OPT_CHALLENGE,
+	OPT_RESPONSE,
+	OPT_LM,
+	OPT_NT,
+	OPT_PASSWORD
+};
+
+/*************************************************************
+ Routine to set hex password characters into an allocated array.
+**************************************************************/
+
+void hex_encode(const unsigned char *buff_in, size_t len, char **out_hex_buffer)
+{
+	int i;
+	char *hex_buffer;
+
+	*out_hex_buffer = smb_xmalloc((len*2)+1);
+	hex_buffer = *out_hex_buffer;
+
+	for (i = 0; i < len; i++)
+		slprintf(&hex_buffer[i*2], 3, "%02X", buff_in[i]);
+}
+
+/*************************************************************
+ Routine to get the 32 hex characters and turn them
+ into a 16 byte array.
+**************************************************************/
+
+BOOL hex_decode(const char *hex_buf_in, unsigned char **out_buffer, size_t *size)
+{
+	int i;
+	size_t hex_buf_in_len = strlen(hex_buf_in);
+	unsigned char  partial_byte_hex;
+	unsigned char  partial_byte;
+	char           *hexchars = "0123456789ABCDEF";
+	char           *p;
+	BOOL           high = True;
+	
+	if (!hex_buf_in) 
+		return (False);
+	
+	*size = (hex_buf_in_len + 1) / 2;
+
+	*out_buffer = smb_xmalloc(*size);
+	
+	for (i = 0; i < hex_buf_in_len; i++) {
+		partial_byte_hex = toupper(hex_buf_in[i]);
+
+		p = strchr(hexchars, partial_byte_hex);
+
+		if (!p)
+			return (False);
+
+		partial_byte = PTR_DIFF(p, hexchars);
+
+		if (high) {
+			(*out_buffer)[i / 2] = (partial_byte << 4);
+		} else {
+			(*out_buffer)[i / 2] |= partial_byte;
+		}
+		high = !high;
+	}
+	return (True);
+}
+
+
+int main(int argc, const char **argv)
+{
+	int opt;
+
+	poptContext pc;
+	struct poptOption long_options[] = {
+		POPT_AUTOHELP
+
+		{ "helper-protocol", 0, POPT_ARG_STRING, &helper_protocol, OPT_DOMAIN, "operate as a stdio-based helper", "helper protocol to use"},
+ 		{ "username", 0, POPT_ARG_STRING, &username, OPT_USERNAME, "username"},
+ 		{ "domain", 0, POPT_ARG_STRING, &domain, OPT_DOMAIN, "domain name"},
+ 		{ "workstation", 0, POPT_ARG_STRING, &domain, OPT_WORKSTATION, "workstation"},
+ 		{ "challenge", 0, POPT_ARG_STRING, &hex_challenge, OPT_CHALLENGE, "challenge (HEX encoded)"},
+		{ "lm-response", 0, POPT_ARG_STRING, &hex_lm_response, OPT_LM, "LM Response to the challenge (HEX encoded)"},
+		{ "nt-response", 0, POPT_ARG_STRING, &hex_nt_response, OPT_NT, "NT or NTLMv2 Response to the challenge (HEX encoded)"},
+		{ "password", 0, POPT_ARG_STRING, &password, OPT_PASSWORD, "User's plaintext password"},		
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
+		{ 0, 0, 0, 0 }
+	};
+
+	/* Samba client initialisation */
+
+	dbf = x_stderr;
+	
+	/* Parse options */
+
+	pc = poptGetContext("ntlm_auth", argc, argv, long_options, 0);
+
+	/* Parse command line options */
+
+	if (argc == 1) {
+		poptPrintHelp(pc, stderr, 0);
+		return 1;
+	}
+
+	pc = poptGetContext(NULL, argc, (const char **)argv, long_options, 
+			    POPT_CONTEXT_KEEP_FIRST);
+
+	while((opt = poptGetNextOpt(pc)) != -1) {
+		switch (opt) {
+		case OPT_CHALLENGE:
+			if (!hex_decode(hex_challenge, &challenge, &challenge_len)) {
+				fprintf(stderr, "hex decode of %s failed!\n", hex_challenge);
+				exit(1);
+			}
+			break;
+		case OPT_LM: 
+			if (!hex_decode(hex_lm_response, &lm_response, &lm_response_len)) {
+				fprintf(stderr, "hex decode of %s failed!\n", lm_response);
+				exit(1);
+			}
+			break;
+		case OPT_NT:
+			if (!hex_decode(hex_lm_response, &lm_response, &lm_response_len)) {
+				fprintf(stderr, "hex decode of %s failed!\n", lm_response);
+				exit(1);
+			}
+			break;
+		}
+	}
+
+	if (helper_protocol) {
+		if (strcmp(helper_protocol, "squid-2.5-basic")== 0) {
+			squid_2_5_basic();
+		}
+	}
+
+	if (domain == NULL) {
+		domain = get_winbind_domain();
+	}
+
+	if (workstation == NULL) {
+		workstation = "";
+	}
+
+	if (challenge) {
+		if (!check_auth_crap()) {
+			exit(1);
+		}
+	} else if (password) {
+		fstring user;
+		snprintf(user, sizeof(user)-1, "%s%c%s", domain, winbind_separator(), username);
+		if (!check_plaintext_auth(user, password, True)) {
+			exit(1);
+		}
+	}
+
+	/* Exit code */
+
+	poptFreeContext(pc);
+	return 0;
+}
