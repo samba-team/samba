@@ -222,7 +222,6 @@ NTSTATUS odb_open_file(struct odb_lock *lck, void *file_handle,
 	struct odb_context *odb = lck->odb;
 	TDB_DATA dbuf;
 	struct odb_entry e;
-	char *tp;
 	int i, count;
 	struct odb_entry *elist;
 		
@@ -249,13 +248,13 @@ NTSTATUS odb_open_file(struct odb_lock *lck, void *file_handle,
 		}
 	}
 
-	tp = Realloc(dbuf.dptr, (count+1) * sizeof(struct odb_entry));
-	if (tp == NULL) {
+	elist = realloc_p(dbuf.dptr, struct odb_entry, count+1);
+	if (elist == NULL) {
 		if (dbuf.dptr) free(dbuf.dptr);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	dbuf.dptr = tp;
+	dbuf.dptr = (char *)elist;
 	dbuf.dsize = (count+1) * sizeof(struct odb_entry);
 
 	memcpy(dbuf.dptr + (count*sizeof(struct odb_entry)),
@@ -279,7 +278,6 @@ NTSTATUS odb_open_file_pending(struct odb_lock *lck, void *private)
 	struct odb_context *odb = lck->odb;
 	TDB_DATA dbuf;
 	struct odb_entry e;
-	char *tp;
 	struct odb_entry *elist;
 	int count;
 		
@@ -299,13 +297,13 @@ NTSTATUS odb_open_file_pending(struct odb_lock *lck, void *private)
 	elist = (struct odb_entry *)dbuf.dptr;
 	count = dbuf.dsize / sizeof(struct odb_entry);
 
-	tp = Realloc(dbuf.dptr, (count+1) * sizeof(struct odb_entry));
-	if (tp == NULL) {
+	elist = realloc_p(dbuf.dptr, struct odb_entry, count+1);
+	if (elist == NULL) {
 		if (dbuf.dptr) free(dbuf.dptr);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	dbuf.dptr = tp;
+	dbuf.dptr = (char *)elist;
 	dbuf.dsize = (count+1) * sizeof(struct odb_entry);
 
 	memcpy(dbuf.dptr + (count*sizeof(struct odb_entry)),

@@ -359,7 +359,7 @@ static void test_locks(char *share1, char *share2, char *nfspath1, char *nfspath
 	ZERO_STRUCT(fnum);
 	ZERO_STRUCT(cli);
 
-	recorded = (struct record *)malloc(sizeof(*recorded) * numops);
+	recorded = malloc_array_p(struct record, numops);
 
 	for (n=0; n<numops; n++) {
 		recorded[n].conn = random() % NCONNECTIONS;

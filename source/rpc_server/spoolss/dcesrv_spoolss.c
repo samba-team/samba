@@ -33,7 +33,7 @@ static WERROR spoolss_EnumPrinters1(TALLOC_CTX *mem_ctx,
 	struct spoolss_PrinterInfo1 *info;
 	int i;
 
-	info = talloc(mem_ctx, num_msgs * sizeof(struct spoolss_PrinterInfo1));
+	info = talloc_array_p(mem_ctx, struct spoolss_PrinterInfo1, num_msgs);
 
 	if (!info)
 		return WERR_NOMEM;
@@ -59,7 +59,7 @@ static WERROR spoolss_EnumPrinters2(TALLOC_CTX *mem_ctx,
 	struct spoolss_PrinterInfo2 *info;
 	int i;
 
-	info = talloc(mem_ctx, num_msgs * sizeof(struct spoolss_PrinterInfo1));
+	info = talloc_array_p(mem_ctx, struct spoolss_PrinterInfo2, num_msgs);
 
 	if (!info)
 		return WERR_NOMEM;
@@ -102,7 +102,7 @@ static WERROR spoolss_EnumPrinters5(TALLOC_CTX *mem_ctx,
 	struct spoolss_PrinterInfo5 *info;
 	int i;
 
-	info = talloc(mem_ctx, num_msgs * sizeof(struct spoolss_PrinterInfo1));
+	info = talloc_array_p(mem_ctx, struct spoolss_PrinterInfo5, num_msgs);
 
 	if (!info)
 		return WERR_NOMEM;

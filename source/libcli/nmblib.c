@@ -548,24 +548,21 @@ static struct packet_struct *copy_nmb_packet(struct packet_struct *packet)
 
   if (nmb->answers)
   {
-    if((copy_nmb->answers = (struct res_rec *)
-                  malloc(nmb->header.ancount * sizeof(struct res_rec))) == NULL)
+    if((copy_nmb->answers = malloc_array_p(struct res_rec, nmb->header.ancount)) == NULL)
       goto free_and_exit;
     memcpy((char *)copy_nmb->answers, (char *)nmb->answers, 
            nmb->header.ancount * sizeof(struct res_rec));
   }
   if (nmb->nsrecs)
   {
-    if((copy_nmb->nsrecs = (struct res_rec *)
-                  malloc(nmb->header.nscount * sizeof(struct res_rec))) == NULL)
+    if((copy_nmb->nsrecs = malloc_array_p(struct res_rec, nmb->header.nscount)) == NULL)
       goto free_and_exit;
     memcpy((char *)copy_nmb->nsrecs, (char *)nmb->nsrecs, 
            nmb->header.nscount * sizeof(struct res_rec));
   }
   if (nmb->additional)
   {
-    if((copy_nmb->additional = (struct res_rec *)
-                  malloc(nmb->header.arcount * sizeof(struct res_rec))) == NULL)
+    if((copy_nmb->additional = malloc_array_p(struct res_rec, nmb->header.arcount)) == NULL)
       goto free_and_exit;
     memcpy((char *)copy_nmb->additional, (char *)nmb->additional, 
            nmb->header.arcount * sizeof(struct res_rec));
@@ -591,7 +588,7 @@ static struct packet_struct *copy_dgram_packet(struct packet_struct *packet)
 { 
   struct packet_struct *pkt_copy;
 
-  if(( pkt_copy = (struct packet_struct *)malloc(sizeof(*packet))) == NULL)
+  if(( pkt_copy = malloc_p(struct packet_struct)) == NULL)
   {
     DEBUG(0,("copy_dgram_packet: malloc fail.\n"));
     return NULL;
@@ -663,7 +660,7 @@ struct packet_struct *parse_packet(char *buf,int length,
 	struct packet_struct *p;
 	BOOL ok=False;
 
-	p = (struct packet_struct *)malloc(sizeof(*p));
+	p = malloc_p(struct packet_struct);
 	if (!p) return(NULL);
 
 	p->next = NULL;

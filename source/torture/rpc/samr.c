@@ -2136,7 +2136,7 @@ static BOOL test_EnumDomainUsers(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("Testing LookupNames\n");
 	n.in.domain_handle = handle;
 	n.in.num_names = r.out.sam->count;
-	n.in.names = talloc(mem_ctx, r.out.sam->count * sizeof(struct samr_String));
+	n.in.names = talloc_array_p(mem_ctx, struct samr_String, r.out.sam->count);
 	for (i=0;i<r.out.sam->count;i++) {
 		n.in.names[i] = r.out.sam->entries[i].name;
 	}
@@ -2150,7 +2150,7 @@ static BOOL test_EnumDomainUsers(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("Testing LookupRids\n");
 	lr.in.domain_handle = handle;
 	lr.in.num_rids = r.out.sam->count;
-	lr.in.rids = talloc(mem_ctx, r.out.sam->count * sizeof(uint32_t));
+	lr.in.rids = talloc_array_p(mem_ctx, uint32_t, r.out.sam->count);
 	for (i=0;i<r.out.sam->count;i++) {
 		lr.in.rids[i] = r.out.sam->entries[i].idx;
 	}

@@ -63,7 +63,7 @@ static struct node_status *parse_node_status(char *p, int *num_names)
 
 	if (*num_names == 0) return NULL;
 
-	ret = (struct node_status *)malloc(sizeof(struct node_status)* (*num_names));
+	ret = malloc_array_p(struct node_status, *num_names);
 	if (!ret) return NULL;
 
 	p++;
@@ -619,7 +619,7 @@ static BOOL resolve_hosts(const char *name,
 	if (((hp = sys_gethostbyname(name)) != NULL) && (hp->h_addr != NULL)) {
 		struct ipv4_addr return_ip;
 		putip((char *)&return_ip,(char *)hp->h_addr);
-		*return_iplist = (struct ipv4_addr *)malloc(sizeof(struct ipv4_addr));
+		*return_iplist = malloc_p(struct ipv4_addr);
 		if(*return_iplist == NULL) {
 			DEBUG(3,("resolve_hosts: malloc fail !\n"));
 			return False;
@@ -657,7 +657,7 @@ static BOOL internal_resolve_name(TALLOC_CTX *mem_ctx, const char *name, int nam
   DEBUG(10, ("internal_resolve_name: looking up %s#%x\n", name, name_type));
 
   if (allzeros || allones || is_address) {
-	*return_iplist = (struct ipv4_addr *)malloc(sizeof(struct ipv4_addr));
+	*return_iplist = malloc_p(struct ipv4_addr);
 	if(*return_iplist == NULL) {
 		DEBUG(3,("internal_resolve_name: malloc fail !\n"));
 		return False;
@@ -731,8 +731,7 @@ static BOOL internal_resolve_name(TALLOC_CTX *mem_ctx, const char *name, int nam
      controllers including the PDC in iplist[1..n].  Iterating over
      the iplist when the PDC is down will cause two sets of timeouts. */
 
-  if (*return_count && (nodupes_iplist = (struct ipv4_addr *)
-       malloc(sizeof(struct ipv4_addr) * (*return_count)))) {
+  if (*return_count && (nodupes_iplist = malloc_array_p(struct ipv4_addr, *return_count))) {
 	  int nodupes_count = 0;
 
 	  /* Iterate over return_iplist looking for duplicates */
@@ -1156,7 +1155,7 @@ BOOL get_dc_list(TALLOC_CTX *mem_ctx, const char *domain, struct ipv4_addr **ip_
 		if ( (num_addresses == 0) && !done_auto_lookup )
 			return internal_resolve_name(mem_ctx, domain, 0x1C, ip_list, count);
 
-		return_iplist = (struct ipv4_addr *)malloc(num_addresses * sizeof(struct ipv4_addr));
+		return_iplist = malloc_array_p(struct ipv4_addr, num_addresses);
 
 		if (return_iplist == NULL) {
 			DEBUG(3,("get_dc_list: malloc fail !\n"));

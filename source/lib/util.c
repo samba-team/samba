@@ -796,3 +796,20 @@ BOOL all_zero(const uint8_t *ptr, uint_t size)
 	}
 	return True;
 }
+
+/*
+  realloc an array, checking for integer overflow in the array size
+*/
+void *realloc_array(void *ptr, size_t el_size, unsigned count)
+{
+#define MAX_MALLOC_SIZE 0x7fffffff
+	if (count == 0 ||
+	    count >= MAX_MALLOC_SIZE/el_size) {
+		return NULL;
+	}
+	if (!ptr) {
+		return malloc(el_size * count);
+	}
+	return realloc(ptr, el_size * count);
+}
+

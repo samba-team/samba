@@ -195,7 +195,7 @@ BOOL ldap_send_msg(struct ldap_connection *conn, struct ldap_message *msg,
 	    (msg->type == LDAP_TAG_UnbindRequest))
 		return True;
 
-	entry = malloc(sizeof(*entry));	
+	entry = malloc_p(struct ldap_queue_entry);
 
 	if (entry == NULL)
 		return False;
@@ -243,7 +243,7 @@ static struct ldap_message *recv_from_queue(struct ldap_connection *conn,
 static void add_search_entry(struct ldap_connection *conn,
 			     struct ldap_message *msg)
 {
-	struct ldap_queue_entry *e = malloc(sizeof *e);
+	struct ldap_queue_entry *e = malloc_p(struct ldap_queue_entry);
 
 	if (e == NULL)
 		return;

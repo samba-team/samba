@@ -1449,7 +1449,7 @@ static int file_find(struct file_list **list, const char *directory,
 					return -1;
 				}
 			}
-			entry = (struct file_list *) malloc(sizeof (struct file_list));
+			entry = malloc_p(struct file_list);
 			if (!entry) {
 				d_printf("Out of memory in file_find\n");
 				closedir(dir);

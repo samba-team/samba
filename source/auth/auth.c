@@ -400,7 +400,7 @@ NTSTATUS make_auth_context_fixed(TALLOC_CTX *mem_ctx,
 }
 
 /* the list of currently registered AUTH backends */
-static struct {
+static struct auth_backend {
 	const struct auth_operations *ops;
 } *backends = NULL;
 static int num_backends;
@@ -423,7 +423,8 @@ NTSTATUS auth_register(const void *_ops)
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	backends = Realloc(backends, sizeof(backends[0]) * (num_backends+1));
+
+	backends = realloc_p(backends, struct auth_backend, num_backends+1);
 	if (!backends) {
 		smb_panic("out of memory in auth_register");
 	}

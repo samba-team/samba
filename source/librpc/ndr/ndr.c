@@ -125,7 +125,7 @@ struct ndr_push *ndr_push_init_ctx(TALLOC_CTX *mem_ctx)
 {
 	struct ndr_push *ndr;
 
-	ndr = talloc(mem_ctx, sizeof(*ndr));
+	ndr = talloc_p(mem_ctx, struct ndr_push);
 	if (!ndr) {
 		return NULL;
 	}

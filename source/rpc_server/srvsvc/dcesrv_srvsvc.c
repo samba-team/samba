@@ -904,7 +904,9 @@ static WERROR srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX
 
 		if (r->out.ctr.ctr0->count == 0) break;
 
-		r->out.ctr.ctr0->array = talloc(mem_ctx, r->out.ctr.ctr0->count*sizeof(struct srvsvc_NetShareInfo0));
+		r->out.ctr.ctr0->array = talloc_array_p(mem_ctx, 
+							struct srvsvc_NetShareInfo0, 
+							r->out.ctr.ctr0->count);
 		WERR_TALLOC_CHECK(r->out.ctr.ctr0->array);
 
 		for (i=0;i<r->out.ctr.ctr0->count;i++) {
@@ -926,7 +928,9 @@ static WERROR srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX
 
 		if (r->out.ctr.ctr1->count == 0) break;
 
-		r->out.ctr.ctr1->array = talloc(mem_ctx, r->out.ctr.ctr1->count*sizeof(struct srvsvc_NetShareInfo1));
+		r->out.ctr.ctr1->array = talloc_array_p(mem_ctx, 
+							struct srvsvc_NetShareInfo1, 
+							r->out.ctr.ctr1->count);
 		WERR_TALLOC_CHECK(r->out.ctr.ctr1->array);
 
 		for (i=0;i<r->out.ctr.ctr1->count;i++) {
@@ -949,7 +953,9 @@ static WERROR srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX
 
 		if (r->out.ctr.ctr2->count == 0) break;
 
-		r->out.ctr.ctr2->array = talloc(mem_ctx, r->out.ctr.ctr2->count*sizeof(struct srvsvc_NetShareInfo2));
+		r->out.ctr.ctr2->array = talloc_array_p(mem_ctx, 
+							struct srvsvc_NetShareInfo2,
+							r->out.ctr.ctr2->count);
 		WERR_TALLOC_CHECK(r->out.ctr.ctr2->array);
 
 		for (i=0;i<r->out.ctr.ctr2->count;i++) {
@@ -977,7 +983,9 @@ static WERROR srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX
 
 		if (r->out.ctr.ctr501->count == 0) break;
 
-		r->out.ctr.ctr501->array = talloc(mem_ctx, r->out.ctr.ctr501->count*sizeof(struct srvsvc_NetShareInfo501));
+		r->out.ctr.ctr501->array = talloc_array_p(mem_ctx, 
+							  struct srvsvc_NetShareInfo501,
+							  r->out.ctr.ctr501->count);
 		WERR_TALLOC_CHECK(r->out.ctr.ctr501->array);
 
 		for (i=0;i<r->out.ctr.ctr501->count;i++) {
@@ -1001,7 +1009,9 @@ static WERROR srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX
 
 		if (r->out.ctr.ctr502->count == 0) break;
 
-		r->out.ctr.ctr502->array = talloc(mem_ctx, r->out.ctr.ctr502->count*sizeof(struct srvsvc_NetShareInfo502));
+		r->out.ctr.ctr502->array = talloc_array_p(mem_ctx, 
+							  struct srvsvc_NetShareInfo502,
+							  r->out.ctr.ctr502->count);
 		WERR_TALLOC_CHECK(r->out.ctr.ctr502->array);
 
 		for (i=0;i<r->out.ctr.ctr502->count;i++) {

@@ -1422,7 +1422,7 @@ static BOOL run_pipe_number(void)
 
 	printf("Opening %d connections\n", torture_numops);
 	
-	cli = malloc(sizeof(struct smbcli_state *) * torture_numops);
+	cli = malloc_array_p(struct smbcli_state *, torture_numops);
 
 	for (i=0;i<torture_numops;i++) {
 		if (!torture_open_connection(&cli[i])) {
