@@ -2205,12 +2205,100 @@ static int cmd_reput(void)
 }
 
 
-/****************************************************************************
-try and browse available connections on a host
-****************************************************************************/
-static BOOL browse_host(BOOL sort)
+/*
+  return a string representing a share type
+*/
+static const char *share_type_str(uint32 type)
 {
-	d_printf("REWRITE: host browsing not implemented\n");
+	switch (type & 0x3) {
+	case 0: 
+		return "Disk";
+	case 1: 
+		return "Printer";
+	case 3: 
+		return "IPC";
+	default:
+		return "Unknown";
+	}
+}
+
+
+/*
+  display a list of shares from a level 1 share enum
+*/
+static void display_share_result(struct srvsvc_NetShareCtr1 *ctr1)
+{
+	int i;
+
+	for (i=0;i<ctr1->count;i++) {
+		struct srvsvc_NetShareInfo1 *info = ctr1->array+i;
+
+		printf("\t%-15s %-10.10s %s\n", 
+		       info->name, 
+		       share_type_str(info->type), 
+		       info->comment);
+	}
+}
+
+
+
+/****************************************************************************
+try and browse available shares on a host
+****************************************************************************/
+static BOOL browse_host(const char *query_host)
+{
+	struct dcerpc_pipe *p;
+	char *binding;
+	NTSTATUS status;
+	struct srvsvc_NetShareEnumAll r;
+	uint32 resume_handle = 0;
+	TALLOC_CTX *mem_ctx = talloc_init("browse_host");
+	struct srvsvc_NetShareCtr1 ctr1;
+
+	binding = talloc_asprintf(mem_ctx, "ncacn_np:%s", query_host);
+
+	status = dcerpc_pipe_connect(&p, binding, 
+				     DCERPC_SRVSVC_UUID, 
+				     DCERPC_SRVSVC_VERSION,
+				     lp_workgroup(), 
+				     username, password);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Failed to connect to %s - %s\n", 
+			 binding, nt_errstr(status));
+		talloc_destroy(mem_ctx);
+		return False;
+	}
+
+	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
+	r.in.level = 1;
+	r.in.ctr.ctr1 = &ctr1;
+	r.in.max_buffer = ~0;
+	r.in.resume_handle = &resume_handle;
+	r.out.resume_handle = &resume_handle;
+	r.out.ctr.ctr1 = &ctr1;
+
+	d_printf("\n\tSharename       Type      Comment\n");
+	d_printf("\t---------       ----      -------\n");
+
+	do {
+		ZERO_STRUCT(ctr1);
+		status = dcerpc_srvsvc_NetShareEnumAll(p, mem_ctx, &r);
+
+		if (NT_STATUS_IS_OK(status) && 
+		    (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA) ||
+		     W_ERROR_IS_OK(r.out.result)) &&
+		    r.out.ctr.ctr1) {
+			display_share_result(r.out.ctr.ctr1);
+			resume_handle += r.out.ctr.ctr1->count;
+		}
+	} while (NT_STATUS_IS_OK(status) && W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA));
+
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
+		d_printf("Failed NetShareEnumAll %s - %s/%s\n", 
+			 binding, nt_errstr(status), win_errstr(r.out.result));
+		talloc_destroy(mem_ctx);
+		return False;
+	}
 
 	return False;
 }
@@ -2807,7 +2895,7 @@ static int do_host_query(char *query_host)
 	if (!cli)
 		return 1;
 
-	browse_host(True);
+	browse_host(query_host);
 	list_servers(lp_workgroup());
 
 	cli_shutdown(cli);
