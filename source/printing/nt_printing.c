@@ -1026,11 +1026,11 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	fstrcpy(info.datatype, "RAW");
 
 	info.attributes = PRINTER_ATTRIBUTE_SHARED   \
-						| PRINTER_ATTRIBUTE_LOCAL  \
-						| PRINTER_ATTRIBUTE_RAW_ONLY ;            /* attributes */
+			 | PRINTER_ATTRIBUTE_LOCAL  \
+			 | PRINTER_ATTRIBUTE_RAW_ONLY ;            /* attributes */
 
 	info.starttime = 0; /* Minutes since 12:00am GMT */
-	info.untiltime = 1440; /* Minutes since 12:00am GMT */
+	info.untiltime = 0; /* Minutes since 12:00am GMT */
 
 	if ((info.devmode = construct_nt_devicemode()) == NULL)
 		goto fail;
