@@ -2203,6 +2203,7 @@ _krb5_aes_cts_encrypt(const unsigned char *in, unsigned char *out,
 
 	len -= AES_BLOCK_SIZE;
 
+	memcpy(tmp, in, AES_BLOCK_SIZE); /* save last iv */
 	AES_decrypt(in, tmp2, key);
 
 	memcpy(tmp3, in + AES_BLOCK_SIZE, len);
@@ -2214,6 +2215,7 @@ _krb5_aes_cts_encrypt(const unsigned char *in, unsigned char *out,
 	AES_decrypt(tmp3, out, key);
 	for (i = 0; i < AES_BLOCK_SIZE; i++)
 	    out[i] ^= ivec[i];
+	memcpy(ivec, tmp, AES_BLOCK_SIZE);
     }
 }
 
