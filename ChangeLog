@@ -1,3 +1,16 @@
+2002-08-16  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/krb5.h: turn strings into pointers, so we can assign to
+	them
+
+	* lib/krb5/constants.c: turn strings into pointers, so we can
+	assign to them
+
+	* lib/krb5/get_addrs.c (get_addrs_int): initialise res if
+	SCAN_INTERFACES is not set
+
+	* lib/krb5/context.c: fix various borked stuff in previous commits
+
 2002-08-16  Jacques Vidrine <n@nectar.com>
 
 	* lib/krb5/krbhst.c (kpasswd_get_next): if we fall back to using
@@ -5,6 +18,12 @@
 	to be UDP.
 
 2002-08-15  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/auth_context.c: check return value of
+	krb5_sockaddr2address
+
+	* lib/krb5/addr_families.c: check return value of
+	krb5_sockaddr2address
 
 	* lib/krb5/context.c: get the default keytab from KRB5_KTNAME
 

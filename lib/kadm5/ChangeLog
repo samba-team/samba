@@ -1,3 +1,9 @@
+2002-08-16  Johan Danielsson  <joda@pdc.kth.se>
+
+	* private.h: rename header file flag macro
+
+	* Makefile.am: generate kadm5-{protos,private}.h
+
 2002-08-15  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ipropd_master.c: check return value of krb5_sockaddr2address
