@@ -493,6 +493,7 @@ int StrnCaseCmp(const char *s, const char *t, size_t n);
 BOOL strequal(const char *s1, const char *s2);
 BOOL strnequal(const char *s1,const char *s2,size_t n);
 BOOL strcsequal(const char *s1,const char *s2);
+int strwicmp(char *psz1, char *psz2);
 void strlower(char *s);
 void strupper(char *s);
 void strnorm(char *s);

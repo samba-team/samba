@@ -285,6 +285,13 @@ that this may be very insecure on some systems but on others allows
 users to script smbclient commands without having a password appear in
 the command line of a process listing\&.
 .IP 
+A third option is to use a credentials file which contains
+the plaintext of the username and password\&.  This option is
+mainly provided for scripts where the admin doesn\'t desire to
+pass the credentials on the command line or via environment variables\&.
+If this method is used, make certain that the permissions on the file
+restrict access from unwanted users\&.  See the \fB-A\fP for more details\&.
+.IP 
 Note: Some servers (including OS/2 and Windows for Workgroups) insist
 on an uppercase password\&. Lowercase or mixed case passwords may be
 rejected by these servers\&.
@@ -294,6 +301,19 @@ Be cautious about including passwords in scripts or in the
 line of a running process may be seen via the \f(CWps\fP command to be
 safe always allow smbclient to prompt for a password and type it in
 directly\&.
+.IP 
+.IP "\fB-A <filename>\fP" 
+This option allows you to specify a file from which
+to read the username and password used in the connection\&.  The format
+of the file is
+.IP 
+\f(CWusername = <value>\fP 
+.br 
+\f(CWpassword = <value\fP 
+.br 
+.IP 
+Make certain that the permissions on the file restrict access from
+unwanted users\&.
 .IP 
 .IP "\fB-L\fP" 
 This option allows you to look at what services are
@@ -760,7 +780,7 @@ This man page is correct for version 2\&.0 of the Samba suite\&.
 .SH "AUTHOR" 
 .PP 
 The original Samba software and related utilities were created by
-Andrew Tridgell samba@samba\&.org\&. Samba is now developed
+Andrew Tridgell \fIsamba@samba\&.org\fP\&. Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed\&.
 .PP 
@@ -769,7 +789,7 @@ sources were converted to YODL format (another excellent piece of Open
 Source software, available at
 \fBftp://ftp\&.icce\&.rug\&.nl/pub/unix/\fP)
 and updated for the Samba2\&.0 release by Jeremy Allison\&.
-samba@samba\&.org\&.
+\fIsamba@samba\&.org\fP\&.
 .PP 
 See \fBsamba (7)\fP to find out how to get a full
 list of contributors and details on how to submit bug reports,
