@@ -35,7 +35,6 @@
 
 RCSID("$Id$");
 
-#ifdef KRB4
 static time_t
 time_parse(const char *cp)
 {
@@ -82,6 +81,7 @@ time_parse(const char *cp)
     return(tm2time(tp, local));
 }
 
+/* convert a version 4 dump file */
 int
 v4_prop_dump(void *arg, const char *file)
 {
@@ -96,17 +96,17 @@ v4_prop_dump(void *arg, const char *file)
     while(fgets(buf, sizeof(buf), f)) {
 	int ret;
 	unsigned long key[2]; /* yes, long */
-	int life, kkvno, kvno;
 	char exp_date[64], mod_date[64];
-	Principal pr;
+	struct v4_principal pr;
+	int attributes;
     
 	memset(&pr, 0, sizeof(pr));
 	errno = 0;
 	lineno++;
-	ret = sscanf(buf, "%s %s %d %d %d %hd %lx %lx %s %s %s %s",
+	ret = sscanf(buf, "%s %s %d %d %d %d %lx %lx %s %s %s %s",
 		     pr.name, pr.instance,
-		     &life, &kkvno, &kvno,
-		     &pr.attributes,
+		     &pr.max_life, &pr.mkvno, &pr.kvno,
+		     &attributes,
 		     &key[0], &key[1],
 		     exp_date, mod_date,
 		     pr.mod_name, pr.mod_instance);
@@ -114,11 +114,19 @@ v4_prop_dump(void *arg, const char *file)
 	    warnx("Line %d malformed (ignored)", lineno);
 	    continue;
 	}
-	pr.key_low = ntohl (key[0]);
-	pr.key_high = ntohl (key[1]);
-	pr.max_life = life;
-	pr.kdc_key_ver = kkvno;
-	pr.key_version = kvno;
+	if(attributes != 0) {
+	    warnx("Line %d (%s.%s) has non-zero attributes - skipping", 
+		  lineno, pr.name, pr.instance);
+	    continue;
+	}
+	pr.key[0] = (key[0] >> 24) & 0xff;
+	pr.key[1] = (key[0] >> 16) & 0xff;
+	pr.key[2] = (key[0] >> 8) & 0xff;
+	pr.key[3] = (key[0] >> 0) & 0xff;
+	pr.key[4] = (key[1] >> 24) & 0xff;
+	pr.key[5] = (key[1] >> 16) & 0xff;
+	pr.key[6] = (key[1] >> 8) & 0xff;
+	pr.key[7] = (key[1] >> 0) & 0xff;
 	pr.exp_date = time_parse(exp_date);
 	pr.mod_date = time_parse(mod_date);
 	if (pr.instance[0] == '*')
@@ -132,4 +140,3 @@ v4_prop_dump(void *arg, const char *file)
     }
     return 0;
 }
-#endif
