@@ -635,7 +635,7 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 	tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_DEFAULT, O_RDONLY, 0);
 	if (!tdb) {
 		d_printf("connections.tdb not initialised\n");
-	}  else 
+	}  else  {
 		if (verbose) {
 			d_printf("Opened status file %s\n", fname);
 		}
