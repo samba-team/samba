@@ -15,7 +15,7 @@ CFLAGS = $(XINCS) @CFLAGS@
 LD_FLAGS = @LD_FLAGS@
 INSTALL = @INSTALL@
 LIBS = $(XLIBS) @LIBS@
-MKDIRHIER = @top_srcdir@/mkdirhier-sh
+MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 
 prefix = @prefix@
 exec_prefix = $(prefix)
@@ -49,7 +49,7 @@ Wall:
 	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $<
 
 install: all
-	$(MKDIRHIER) $(bindir)
+	$(MKINSTALLDIRS) $(bindir)
 	for x in $(PROG_BIN); do $(INSTALL) $$x $(bindir); done
 	for x in $(PROG_LIBEXEC); do $(INSTALL) $$x $(libexecdir); done
 

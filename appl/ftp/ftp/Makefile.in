@@ -14,7 +14,7 @@ DEFS 	= @DEFS@
 CFLAGS 	= @CFLAGS@
 LD_FLAGS = @LD_FLAGS@
 LIBS = @LIBS@
-MKDIRHIER = $(top_srcdir)/mkdirhier-sh
+MKINSTALLDIRS = $(top_srcdir)/mkinstalldirs
 
 INSTALL = @INSTALL@
 
@@ -38,7 +38,7 @@ all: ftp
 	$(CC) -c $(CFLAGS) -I$(srcdir) -I../../.. -I$(srcdir)/../common -I$(INCTOP) $(DEFS) $<
 
 install: all
-	$(MKDIRHIER) $(prefix)/bin
+	$(MKINSTALLDIRS) $(prefix)/bin
 	for x in $(PROGS); do $(INSTALL) $$x $(prefix)/bin; done
 
 ftp: $(ftp_OBJS) ../common/libcommon.a

@@ -18,7 +18,7 @@ CFLAGS 	= @CFLAGS@ @SKEYINCLUDE@
 LD_FLAGS = @LD_FLAGS@
 LIBS	= @LIBS@
 SKEYLIB = @SKEYLIB@
-MKDIRHIER = $(top_srcdir)/mkdirhier-sh
+MKINSTALLDIRS = $(top_srcdir)/mkinstalldirs
 
 INSTALL = @INSTALL@
 
@@ -47,7 +47,7 @@ all: ftpd
 	$(CC) -c $(CFLAGS) -I$(srcdir) -I../../.. -I$(srcdir)/../common -I$(INCTOP) $(DEFS) $<
 
 install: all
-	$(MKDIRHIER) $(prefix)/libexec
+	$(MKINSTALLDIRS) $(prefix)/libexec
 	for x in $(PROGS); do $(INSTALL) $$x $(prefix)/libexec; done
 
 

@@ -18,7 +18,7 @@ LD_FLAGS = @LD_FLAGS@
 LIBS = $(XLIBS) @LIBS@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
-MKDIRHIER = @top_srcdir@/mkdirhier-sh
+MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 
 prefix = @prefix@
 exec_prefix = $(prefix)
@@ -46,9 +46,9 @@ Wall:
 	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $<
 
 install: all
-	$(MKDIRHIER) $(bindir)
+	$(MKINSTALLDIRS) $(bindir)
 	for x in $(PROG_BIN); do $(INSTALL) $$x $(bindir); done
-	$(MKDIRHIER) $(prefix)/man/man1
+	$(MKINSTALLDIRS) $(prefix)/man/man1
 	(cd $(srcdir); \
 	for x in $(MAN1); do \
 		$(INSTALL_DATA) $$x $(prefix)/man/man1/`echo $$x | sed 's/\.man/.1/'`; \

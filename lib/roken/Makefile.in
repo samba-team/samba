@@ -16,7 +16,7 @@ CFLAGS	= @CFLAGS@
 
 INSTALL = @INSTALL@
 INSTALL_DATA	= @INSTALL_DATA@
-MKDIRHIER = @top_srcdir@/mkdirhier-sh
+MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 
 prefix = @prefix@
 exec_prefix = $(prefix)

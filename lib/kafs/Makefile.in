@@ -15,7 +15,7 @@ CFLAGS = @CFLAGS@
 
 INSTALL = @INSTALL@
 INSTALL_DATA	= @INSTALL_DATA@
-MKDIRHIER = @top_srcdir@/mkdirhier-sh
+MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 
 prefix = @prefix@
 exec_prefix = $(prefix)
@@ -43,7 +43,7 @@ Wall:
 	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $(PICFLAGS) $<
 
 install: all
-	$(MKDIRHIER) $(libdir)
+	$(MKINSTALLDIRS) $(libdir)
 	$(INSTALL) -m 0555 $(LIB) $(libdir)
 
 uninstall:

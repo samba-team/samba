@@ -16,7 +16,7 @@ LD_FLAGS = @LD_FLAGS@
 
 INSTALL = @INSTALL@
 INSTALL_DATA	= @INSTALL_DATA@
-MKDIRHIER = @top_srcdir@/mkdirhier-sh
+MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 
 prefix = @prefix@
 exec_prefix = $(prefix)
@@ -59,9 +59,9 @@ speed.o: speed.c
 	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $<
 
 install: all
-	$(MKDIRHIER) $(libdir)
+	$(MKINSTALLDIRS) $(libdir)
 	$(INSTALL) -m 0555 $(LIB) $(libdir)
-	$(MKDIRHIER) $(prefix)/bin
+	$(MKINSTALLDIRS) $(prefix)/bin
 	for x in $(PROGS2INSTALL); do $(INSTALL) $$x $(prefix)/bin; done
 
 uninstall:

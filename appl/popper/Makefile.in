@@ -14,7 +14,7 @@ LD_FLAGS = @LD_FLAGS@
 INSTALL = @INSTALL@
 LIBS = @LIBS@
 SKEYLIB = @SKEYLIB@
-MKDIRHIER = @top_srcdir@/mkdirhier-sh
+MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 
 prefix = @prefix@
 exec_prefix = $(prefix)
@@ -48,7 +48,7 @@ Wall:
 	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $<
 
 install: all
-	$(MKDIRHIER) $(bindir)
+	$(MKINSTALLDIRS) $(bindir)
 	for x in $(PROG_LIBEXEC); do $(INSTALL) $$x $(prefix)/libexec; done
 
 uninstall:

@@ -14,7 +14,7 @@ CFLAGS = @CFLAGS@
 LD_FLAGS = @LD_FLAGS@
 LIBS = @LIBS@
 INSTALL = @INSTALL@
-MKDIRHIER = @top_srcdir@/mkdirhier-sh
+MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 
 PROGS = telnet
 
@@ -48,7 +48,7 @@ telnet: $(OBJECTS)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o telnet $(OBJECTS) ../libtelnet/libtelnet.a $(KLIB) $(LIBS)
 
 install: all
-	$(MKDIRHIER) $(prefix)/bin
+	$(MKINSTALLDIRS) $(prefix)/bin
 	for x in $(PROGS); do $(INSTALL) $$x $(prefix)/bin; done
 
 clean cleandir:
