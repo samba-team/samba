@@ -61,6 +61,7 @@ char *opt_requester_name = NULL;
 char *opt_host = NULL; 
 char *opt_password = NULL;
 char *opt_user_name = NULL;
+BOOL opt_user_specified = False;
 char *opt_workgroup = NULL;
 int opt_long_list_entries = 0;
 int opt_reboot = 0;
@@ -394,6 +395,7 @@ static struct functable net_func[] = {
 				opt_have_ip = True;
 			break;
 		case 'U':
+			opt_user_specified = True;
 			opt_user_name = strdup(opt_user_name);
 			p = strchr(opt_user_name,'%');
 			if (p) {
