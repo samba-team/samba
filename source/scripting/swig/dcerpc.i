@@ -49,8 +49,13 @@ void set_ntstatus_exception(int status)
 
 /* Conversion functions for scalar types */
 
-uint8 uint8_from_python(PyObject *obj)
+uint8 uint8_from_python(PyObject *obj, char *name)
 {
+	if (!PyInt_Check(obj)) {
+		PyErr_Format(PyExc_TypeError, "Expecting int value for %s", name);
+		return 0;
+	}
+
 	return (uint8)PyInt_AsLong(obj);
 }
 
@@ -59,8 +64,13 @@ PyObject *uint8_to_python(uint8 obj)
 	return PyInt_FromLong(obj);
 }
 
-uint16 uint16_from_python(PyObject *obj)
+uint16 uint16_from_python(PyObject *obj, char *name)
 {
+	if (!PyInt_Check(obj)) {
+		PyErr_Format(PyExc_TypeError, "Expecting int value for %s", name);
+		return 0;
+	}
+
 	return (uint16)PyInt_AsLong(obj);
 }
 
@@ -69,8 +79,13 @@ PyObject *uint16_to_python(uint16 obj)
 	return PyInt_FromLong(obj);
 }
 
-uint32 uint32_from_python(PyObject *obj)
+uint32 uint32_from_python(PyObject *obj, char *name)
 {
+	if (!PyInt_Check(obj)) {
+		PyErr_Format(PyExc_TypeError, "Expecting int value for %s", name);
+		return 0;
+	}
+
 	return (uint32)PyInt_AsLong(obj);
 }
 
@@ -79,8 +94,13 @@ PyObject *uint32_to_python(uint32 obj)
 	return PyInt_FromLong(obj);
 }
 
-int64 int64_from_python(PyObject *obj)
+int64 int64_from_python(PyObject *obj, char *name)
 {
+	if (!PyInt_Check(obj)) {
+		PyErr_Format(PyExc_TypeError, "Expecting int value for %s", name);
+		return 0;
+	}
+
 	return (int64)PyLong_AsLong(obj);
 }
 
@@ -89,8 +109,13 @@ PyObject *int64_to_python(int64 obj)
 	return PyLong_FromLong(obj);
 }
 
-uint64 uint64_from_python(PyObject *obj)
+uint64 uint64_from_python(PyObject *obj, char *name)
 {
+	if (!PyInt_Check(obj)) {
+		PyErr_Format(PyExc_TypeError, "Expecting int value for %s", name);
+		return 0;
+	}
+
 	return (uint64)PyLong_AsLong(obj);
 }
 
@@ -99,8 +124,13 @@ PyObject *uint64_to_python(uint64 obj)
 	return PyLong_FromLong(obj);
 }
 
-NTTIME NTTIME_from_python(PyObject *obj)
+NTTIME NTTIME_from_python(PyObject *obj, char *name)
 {
+	if (!PyInt_Check(obj)) {
+		PyErr_Format(PyExc_TypeError, "Expecting integer value for %s", name);
+		return 0;
+	}
+
 	return (NTTIME)PyLong_AsLong(obj);
 }
 
@@ -109,8 +139,13 @@ PyObject *NTTIME_to_python(NTTIME obj)
 	return PyLong_FromLong(obj);
 }
 
-HYPER_T HYPER_T_from_python(PyObject *obj)
+HYPER_T HYPER_T_from_python(PyObject *obj, char *name)
 {
+	if (!PyInt_Check(obj)) {
+		PyErr_Format(PyExc_TypeError, "Expecting integer value for %s", name);
+		return 0;
+	}
+
 	return (HYPER_T)PyLong_AsLong(obj);
 }
 
@@ -122,10 +157,15 @@ PyObject *HYPER_T_to_python(HYPER_T obj)
 /* Conversion functions for types that we don't want generated automatically.
    This is mostly security realted stuff in misc.idl */
 
-char *string_ptr_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)
+char *string_ptr_from_python(TALLOC_CTX *mem_ctx, PyObject *obj, char *name)
 {
 	if (obj == Py_None)
 		return NULL;
+
+	if (!PyString_Check(obj)) {
+		PyErr_Format(PyExc_TypeError, "Expecting string value for %s", name);
+		return 0;
+	}
 
 	return PyString_AsString(obj);
 }
