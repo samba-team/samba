@@ -135,17 +135,22 @@ static size_t sys_iconv(void *cd,
  * enough that Samba works on systems that don't have iconv.
  **/
 size_t smb_iconv(smb_iconv_t cd, 
-		 const char **inbuf, size_t *inbytesleft,
-		 char **outbuf, size_t *outbytesleft)
+                 const char **inbuffer, size_t *inbytesleft,
+                 char **outbuf, size_t *outbytesleft)
 {
 	char cvtbuf[2048];
 	char *bufp = cvtbuf;
 	size_t bufsize;
+	/* make a copy to ensure inbuffer is const-ed */
+	char* inbuf = smb_xstrdup(*inbuffer);
+	size_t result;
 
 	/* in many cases we can go direct */
 	if (cd->direct) {
-		return cd->direct(cd->cd_direct, 
-				  (char **)inbuf, inbytesleft, outbuf, outbytesleft);
+		result = cd->direct(cd->cd_direct, 
+				            &inbuf, inbytesleft, outbuf, outbytesleft);
+		SAFE_FREE(inbuf);
+		return result;
 	}
 
 
@@ -154,18 +159,23 @@ size_t smb_iconv(smb_iconv_t cd,
 		bufp = cvtbuf;
 		bufsize = sizeof(cvtbuf);
 		
-		if (cd->pull(cd->cd_pull, 
-			     (char **)inbuf, inbytesleft, &bufp, &bufsize) == -1
-		    && errno != E2BIG) return -1;
+		if (cd->pull(cd->cd_pull,
+		             &inbuf, inbytesleft, &bufp, &bufsize) == -1 && errno != E2BIG) {
+			SAFE_FREE(inbuf);
+			return -1;
+		}
 
 		bufp = cvtbuf;
 		bufsize = sizeof(cvtbuf) - bufsize;
 
-		if (cd->push(cd->cd_push, 
-			     &bufp, &bufsize, 
-			     outbuf, outbytesleft) == -1) return -1;
+		if (cd->push(cd->cd_push,
+		             &bufp, &bufsize, outbuf, outbytesleft) == -1) {
+			SAFE_FREE(inbuf);
+			return -1;
+		}
 	}
-
+	
+	SAFE_FREE(inbuf);
 	return 0;
 }
 
