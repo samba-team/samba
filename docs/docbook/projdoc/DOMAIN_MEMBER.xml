@@ -370,7 +370,7 @@ Below is an example for a RedHat Linux system.
 <sect2><title>Making an MS Windows Workstation or Server a Domain Member</title>
 
 <para>
-The procedure for making an MS Windows workstation of server a member of the domain varies
+The procedure for making an MS Windows workstation or server a member of the domain varies
 with the version of Windows:
 </para>
 
