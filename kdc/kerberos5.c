@@ -9,6 +9,8 @@ struct timeval now;
 #define MIN(A,B) ((A)<(B)?(A):(B))
 #endif
 
+#define MAX_TIME ((time_t)((1U << 31) - 1))
+
 hdb_entry*
 db_fetch(krb5_context context, PrincipalName *principal, char *realm)
 {
@@ -72,10 +74,10 @@ mk_des_keyblock(EncryptionKey *kb)
 krb5_error_code
 as_rep(krb5_context context, 
        KDC_REQ *req, 
-       KDC_REP *rep,
        krb5_data *data)
 {
     KDC_REQ_BODY *b = &req->req_body;
+    AS_REP rep;
     KDCOptions f = b->kdc_options;
     hdb_entry *client, *server;
     int use_etype;
@@ -88,8 +90,11 @@ as_rep(krb5_context context,
 
     if(client == NULL)
 	return KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
-    if(server == NULL)
+    if(server == NULL){
+	hdb_free_entry(context, client);
+	free(client);
 	return KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
+    }
 
     principalname2krb5_principal (&client_princ, *(b->cname), b->realm);
 
@@ -155,14 +160,14 @@ as_rep(krb5_context context,
 	return KRB5KDC_ERR_ETYPE_NOSUPP; /* XXX */
     use_etype = b->etype.val[0];
 
-    memset(rep, 0, sizeof(*rep));
-    rep->pvno = 5;
-    rep->msg_type = krb_as_rep;
-    copy_Realm(&b->realm, &rep->crealm);
-    copy_PrincipalName(b->cname, &rep->cname);
-    rep->ticket.tkt_vno = 5;
-    copy_Realm(&b->realm, &rep->ticket.realm);
-    copy_PrincipalName(b->sname, &rep->ticket.sname);
+    memset(&rep, 0, sizeof(rep));
+    rep.pvno = 5;
+    rep.msg_type = krb_as_rep;
+    copy_Realm(&b->realm, &rep.crealm);
+    copy_PrincipalName(b->cname, &rep.cname);
+    rep.ticket.tkt_vno = 5;
+    copy_Realm(&b->realm, &rep.ticket.realm);
+    copy_PrincipalName(b->sname, &rep.ticket.sname);
 
     if(f.renew || f.validate || f.proxy || f.forwarded || f.enc_tkt_in_skey)
 	return KRB5KDC_ERR_BADOPTION;
@@ -188,11 +193,13 @@ as_rep(krb5_context context,
 	    et->flags.invalid = 1;
 	    et->flags.postdated = 1; /* XXX ??? */
 	}
-	t = b->till;
 	if(b->till == 0)
-	    t = start + client->max_life;
-	t = MIN(t, start + client->max_life);
-	t = MIN(t, start + server->max_life);
+	    b->till = MAX_TIME;
+	t = b->till;
+	if(client->max_life)
+	    t = MIN(t, start + client->max_life);
+	if(server->max_life)
+	    t = MIN(t, start + server->max_life);
 #if 0
 	t = MIN(t, start + realm->max_life);
 #endif
@@ -209,9 +216,11 @@ as_rep(krb5_context context,
 	if(f.renewable && b->rtime){
 	    t = *b->rtime;
 	    if(t == 0)
-		t = start + client->max_renew;
-	    t = MIN(t, start + client->max_renew);
-	    t = MIN(t, start + server->max_renew);
+		t = MAX_TIME;
+	    if(client->max_renew)
+		t = MIN(t, start + client->max_renew);
+	    if(server->max_renew)
+		t = MIN(t, start + server->max_renew);
 #if 0
 	    t = MIN(t, start + realm->max_renew);
 #endif
@@ -237,8 +246,8 @@ as_rep(krb5_context context,
     ek->starttime = et->starttime;
     ek->endtime = et->endtime;
     ek->renew_till = et->renew_till;
-    copy_Realm(&rep->ticket.realm, &ek->srealm);
-    copy_PrincipalName(&rep->ticket.sname, &ek->sname);
+    copy_Realm(&rep.ticket.realm, &ek->srealm);
+    copy_PrincipalName(&rep.ticket.sname, &ek->sname);
     if(et->caddr){
 	ek->caddr = malloc(sizeof(*ek->caddr));
 	copy_HostAddresses(et->caddr, ek->caddr);
@@ -253,25 +262,26 @@ as_rep(krb5_context context,
 	if(len < 0)
 	    return ASN1_OVERFLOW;
 
-	rep->ticket.enc_part.etype = ETYPE_DES_CBC_CRC;
-	rep->ticket.enc_part.kvno = NULL;
+	rep.ticket.enc_part.etype = ETYPE_DES_CBC_CRC;
+	rep.ticket.enc_part.kvno = NULL;
 	krb5_encrypt(context, buf + sizeof(buf) - len, len, &server->keyblock, 
-		     &rep->ticket.enc_part.cipher);
+		     &rep.ticket.enc_part.cipher);
 	
 	len = encode_EncASRepPart(buf + sizeof(buf) - 1, sizeof(buf), ek);
 	free_EncKDCRepPart(ek);
 	free(ek);
 	if(len < 0)
 	    return ASN1_OVERFLOW;
-	rep->enc_part.etype = ETYPE_DES_CBC_CRC;
-	rep->enc_part.kvno = NULL;
+	rep.enc_part.etype = ETYPE_DES_CBC_CRC;
+	rep.enc_part.kvno = NULL;
 
 	krb5_encrypt(context, buf + sizeof(buf) - len, len, &client->keyblock, 
-		     &rep->enc_part.cipher);
+		     &rep.enc_part.cipher);
 	
-	len = encode_AS_REP(buf + sizeof(buf) - 1, sizeof(buf), rep);
+	len = encode_AS_REP(buf + sizeof(buf) - 1, sizeof(buf), &rep);
 	if(len < 0)
 	    return ASN1_OVERFLOW;
+	free_AS_REP(&rep);
 	
 	krb5_data_copy(data, buf + sizeof(buf) - len, len);
 	
@@ -283,13 +293,13 @@ as_rep(krb5_context context,
 krb5_error_code
 tgs_rep(krb5_context context, 
 	KDC_REQ *req, 
-	KDC_REP *rep,
 	krb5_data *data)
 {
     KDC_REQ_BODY *b = &req->req_body;
     KDCOptions f = req->req_body.kdc_options;
     EncTicketPart *tgt;
     hdb_entry *server, *krbtgt, *client;
+    TGS_REP rep;
     EncTicketPart *et = calloc(1, sizeof(*et));
     EncKDCRepPart *ek = calloc(1, sizeof(*ek));
     
@@ -349,14 +359,14 @@ tgs_rep(krb5_context context,
 	if(client == NULL)
 	    return KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
 
-	memset(rep, 0, sizeof(*rep));
-	rep->pvno = 5;
-	rep->msg_type = krb_tgs_rep;
-	rep->crealm = tgt->crealm;
-	rep->cname = tgt->cname;
-	rep->ticket.tkt_vno = 5;
-	rep->ticket.sname = *b->sname;
-	rep->ticket.realm = b->realm;
+	memset(&rep, 0, sizeof(rep));
+	rep.pvno = 5;
+	rep.msg_type = krb_tgs_rep;
+	rep.crealm = tgt->crealm;
+	rep.cname = tgt->cname;
+	rep.ticket.tkt_vno = 5;
+	rep.ticket.sname = *b->sname;
+	rep.ticket.realm = b->realm;
 
 	et->caddr = ticket->tkt.caddr;
 	
@@ -429,9 +439,11 @@ tgs_rep(krb5_context context,
 	    *et->starttime = kdc_time;
 	    till = b->till;
 	    if(till == 0)
-		till = *et->starttime + client->max_life;
-	    till = MIN(till, *et->starttime + client->max_life);
-	    till = MIN(till, *et->starttime + server->max_life);
+		till = MAX_TIME;
+	    if(client->max_life)
+		till = MIN(till, *et->starttime + client->max_life);
+	    if(server->max_life)
+		till = MIN(till, *et->starttime + server->max_life);
 	    till = MIN(till, tgt->endtime);
 #if 0
 	    till = MIN(till, et->starttime + realm->max_life);
@@ -449,10 +461,12 @@ tgs_rep(krb5_context context,
 	    time_t rtime;
 	    rtime = *b->rtime;
 	    if(rtime == 0)
-		rtime = *et->starttime + client->max_renew;
+		rtime = MAX_TIME;
 	    et->flags.renewable = 1;
-	    rtime = MIN(rtime, *et->starttime + client->max_renew);
-	    rtime = MIN(rtime, *et->starttime + server->max_renew);
+	    if(client->max_renew)
+		rtime = MIN(rtime, *et->starttime + client->max_renew);
+	    if(server->max_renew)
+		rtime = MIN(rtime, *et->starttime + server->max_renew);
 	    rtime = MIN(rtime, *tgt->renew_till);
 #if 0
 	    rtime = MIN(rtime, *et->starttime + realm->max_renew);
@@ -483,8 +497,8 @@ tgs_rep(krb5_context context,
 	ek->starttime = et->starttime;
 	ek->endtime = et->endtime;
 	ek->renew_till = et->renew_till;
-	ek->srealm = rep->ticket.realm;
-	ek->sname = rep->ticket.sname;
+	ek->srealm = rep.ticket.realm;
+	ek->sname = rep.ticket.sname;
 	ek->caddr = et->caddr;
 	
 	{
@@ -493,28 +507,28 @@ tgs_rep(krb5_context context,
 	    len = encode_EncTicketPart(buf + sizeof(buf) - 1, sizeof(buf), et);
 	    if(len < 0)
 		return ASN1_OVERFLOW;
-	    rep->ticket.enc_part.etype = ETYPE_DES_CBC_CRC;
-	    rep->ticket.enc_part.kvno = NULL;
+	    rep.ticket.enc_part.etype = ETYPE_DES_CBC_CRC;
+	    rep.ticket.enc_part.kvno = NULL;
 	    krb5_encrypt(context, buf + sizeof(buf) - len, len, &server->keyblock, 
-			 &rep->ticket.enc_part.cipher);
+			 &rep.ticket.enc_part.cipher);
 	    
 	    len = encode_EncTGSRepPart(buf + sizeof(buf) - 1, sizeof(buf), ek);
 	    if(len < 0)
 		return ASN1_OVERFLOW;
-	    rep->enc_part.etype = ETYPE_DES_CBC_CRC;
-	    rep->enc_part.kvno = NULL;
+	    rep.enc_part.etype = ETYPE_DES_CBC_CRC;
+	    rep.enc_part.kvno = NULL;
 	    {
 		krb5_keyblock kb;
 		kb.keytype = tgt->key.keytype;
 		kb.contents = tgt->key.keyvalue;
 		krb5_encrypt(context, buf + sizeof(buf) - len, len, &kb, 
-			     &rep->enc_part.cipher);
+			     &rep.enc_part.cipher);
 	    }
 	    
-	    len = encode_TGS_REP(buf + sizeof(buf) - 1, sizeof(buf), rep);
+	    len = encode_TGS_REP(buf + sizeof(buf) - 1, sizeof(buf), &rep);
 	    if(len < 0)
 		return ASN1_OVERFLOW;
-
+	    free_TGS_REP(&rep);
 	    krb5_data_copy(data, buf + sizeof(buf) - len, len);
 	}
 	
@@ -529,28 +543,14 @@ process_request(krb5_context context,
     KDC_REQ *req, 
     krb5_data *reply)
 {
-    krb5_error_code err;
-    krb5_principal princ;
-    unsigned char key_buf[1024];
-    unsigned char *q;
-
-    
-    KDC_REP rep;
-
-
-    hdb_entry *cname, *sname;
-    
     gettimeofday(&now, NULL);
 
     if(req->msg_type == krb_as_req)
-	as_rep(context, req, &rep, reply);
+	return as_rep(context, req, reply);
     else if(req->msg_type == krb_tgs_req)
-	tgs_rep(context, req, &rep, reply);
+	return tgs_rep(context, req, reply);
     else
-	/* XXX */
-	return KRB5KRB_AP_ERR_MSG_TYPE;
-    
-    return 0;
+	return KRB5KRB_AP_ERR_MSG_TYPE;	/* XXX */
 }
 
 int
@@ -560,14 +560,19 @@ kerberos(krb5_context context,
 	 krb5_data *reply)
 {
     KDC_REQ req;
+    krb5_error_code err;
     int i;
     i = decode_AS_REQ(buf, len, &req);
     if(i >= 0){
-	return process_request(context, &req, reply);
+	err = process_request(context, &req, reply);
+	free_AS_REQ(&req);
+	return err;
     }
     i = decode_TGS_REQ(buf, len, &req);
     if(i >= 0){
-	return process_request(context, &req, reply);
+	err = process_request(context, &req, reply);
+	free_TGS_REQ(&req);
+	return err;
     }
     return -1;
 }
@@ -608,10 +613,13 @@ main(int argc, char **argv)
 	    krb5_data reply;
 	    len = recvfrom(s, buf, sizeof(buf), 0, 
 			   (struct sockaddr*)&from, &from_len);
+	    fprintf(stderr, "%d byte packet from %s\n", 
+		    len, inet_ntoa(from.sin_addr));
 	    err = kerberos(context, buf, len, &reply);
 	    if(err){
 		fprintf(stderr, "%s\n", krb5_get_err_text(context, err));
 	    }else{
+		fprintf(stderr, "sending %d bytes\n", reply.length);
 		sendto(s, reply.data, reply.length, 0, 
 		       (struct sockaddr*)&from, from_len);
 		krb5_data_free(&reply);
