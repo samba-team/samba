@@ -867,6 +867,61 @@ static int rpc_share_usage(int argc, const char **argv)
 	return net_help_share(argc, argv);
 }
 
+static NTSTATUS 
+rpc_share_add_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+			TALLOC_CTX *mem_ctx,int argc, const char **argv)
+{
+	WERROR result;
+	char *sharename=talloc_strdup(mem_ctx, argv[0]);
+	char *path;
+	uint32 type=0; /* only allow disk shares to be added */
+	uint32 num_users=0, perms=0;
+	char *password=NULL; /* don't allow a share password */
+
+	path = strchr(sharename, '=');
+	if (!path)
+		return NT_STATUS_UNSUCCESSFUL;
+	*path++ = '\0';
+
+	result = cli_srvsvc_net_share_add(cli, mem_ctx, sharename, type,
+					  opt_comment, perms, opt_maxusers,
+					  num_users, path, password);
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+static int rpc_share_add(int argc, const char **argv)
+{
+	if ((argc < 1) || !strchr(argv[0], '=')) {
+		DEBUG(1,("Sharename or path not specified on add\n"));
+		return rpc_share_usage(argc, argv);
+	}
+	return run_rpc_command(PIPE_SRVSVC, 0, 
+			       rpc_share_add_internals,
+			       argc, argv);
+}
+
+static NTSTATUS 
+rpc_share_del_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+			TALLOC_CTX *mem_ctx,int argc, const char **argv)
+{
+	WERROR result;
+
+	result = cli_srvsvc_net_share_del(cli, mem_ctx, argv[0]);
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+static int rpc_share_delete(int argc, const char **argv)
+{
+	if (argc < 1) {
+		DEBUG(1,("Sharename not specified on delete\n"));
+		return rpc_share_usage(argc, argv);
+	}
+	return run_rpc_command(PIPE_SRVSVC, 0, 
+			       rpc_share_del_internals,
+			       argc, argv);
+}
+
+
 static void display_share_info_1(SRV_SHARE_INFO_1 *info1)
 {
 	fstring netname = "", remark = "";
@@ -940,10 +995,8 @@ rpc_share_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 int net_rpc_share(int argc, const char **argv) 
 {
 	struct functable func[] = {
-#if 0
 		{"add", rpc_share_add},
 		{"delete", rpc_share_delete},
-#endif
 		{NULL, NULL}
 	};
 

@@ -99,9 +99,9 @@ int net_help_share(int argc, const char **argv)
 	 "\nnet <method> share [misc. options] [targets] \n"
 	 "\tenumerates all exported resources (network shares) "
 	 "on target server\n"
-	 "\nnet [rap] share ADD <name=serverpath> [misc. options] [targets]"
+	 "\nnet <method> share ADD <name=serverpath> [misc. options] [targets]"
 	 "\n\tAdds a share from a server (makes the export active)\n"
-	 "\nnet [rap] share DELETE <sharename> [misc. options] [targets]\n"
+	 "\nnet <method> share DELETE <sharename> [misc. options] [targets]\n"
 	 "\n\tDeletes a share from a server (makes the export inactive)\n");
 	net_common_methods_usage(argc, argv);
 	net_common_flags_usage(argc, argv);
