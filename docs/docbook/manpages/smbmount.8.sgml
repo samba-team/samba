@@ -9,7 +9,7 @@
 
 <refnamediv>
 	<refname>smbmount</refname>
-	<refpurpose>mount and smbfs filesystem</refpurpose>
+	<refpurpose>mount an smbfs filesystem</refpurpose>
 </refnamediv>
 
 <refsynopsisdiv>
