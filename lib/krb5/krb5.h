@@ -441,6 +441,7 @@ typedef struct krb5_context_data {
     char *default_cc_name;
     int pkinit_flags;
     void *mutex;			/* protects error_string/error_buf */
+    int large_msg_size;
 } krb5_context_data;
 
 enum {
