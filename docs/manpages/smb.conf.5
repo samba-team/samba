@@ -686,6 +686,9 @@ parameter for details\&.  Note that some are synonyms\&.
 \fBmessage command\fP
 .IP 
 .IP o 
+\fBmin passwd length\fP
+.IP 
+.IP o 
 \fBmin wins ttl\fP
 .IP 
 .IP o 
@@ -3721,6 +3724,18 @@ See also the \fBprinting\fP parameter\&.
 .IP 
 \fBExample:\fP
 \f(CW	min print space = 2000\fP
+.IP 
+.IP "\fBmin passwd length (G)\fP" 
+.IP 
+This option sets the minimum length in characters of a plaintext password
+than smbd will accept when performing UNIX password changing\&.
+.IP 
+See also \fB"unix password sync"\fP,
+\fB"passwd program"\fP and \fB"passwd chat
+debug"\fP\&.
+.IP 
+\fBDefault:\fP
+\f(CW	min passwd length = 5\fP
 .IP 
 .IP "\fBmin wins ttl (G)\fP" 
 .IP 

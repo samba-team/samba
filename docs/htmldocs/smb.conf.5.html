@@ -466,6 +466,7 @@ parameter for details.  Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#maxwinsttl"><strong>max wins ttl</strong></a>
 <p><br><li > <a href="smb.conf.5.html#maxxmit"><strong>max xmit</strong></a>
 <p><br><li > <a href="smb.conf.5.html#messagecommand"><strong>message command</strong></a>
+<p><br><li > <a href="smb.conf.5.html#minpasswdlength"><strong>min passwd length</strong></a>
 <p><br><li > <a href="smb.conf.5.html#minwinsttl"><strong>min wins ttl</strong></a>
 <p><br><li > <a href="smb.conf.5.html#nameresolveorder"><strong>name resolve order</strong></a>
 <p><br><li > <a href="smb.conf.5.html#netbiosaliases"><strong>netbios aliases</strong></a>
@@ -2545,6 +2546,15 @@ job.
 <code>	min print space = 0</code>
 <p><br><strong>Example:</strong>
 <code>	min print space = 2000</code>
+<p><br><a name="minpasswdlength"></a>
+<li><strong><strong>min passwd length (G)</strong></strong>
+<p><br>This option sets the minimum length in characters of a plaintext password
+than smbd will accept when performing UNIX password changing.
+<p><br>See also <a href="smb.conf.5.html#unixpasswordsync"><strong>"unix password sync"</strong></a>,
+<a href="smb.conf.5.html#passwdprogram"><strong>"passwd program"</strong></a> and <a href="smb.conf.5.html#passwdchatdebug"><strong>"passwd chat
+debug"</strong></a>.
+<p><br><strong>Default:</strong>
+<code>	min passwd length = 5</code>
 <p><br><a name="minwinsttl"></a>
 <li><strong><strong>min wins ttl (G)</strong></strong>
 <p><br>This option tells <a href="nmbd.8.html"><strong>nmbd</strong></a> when acting as a WINS
