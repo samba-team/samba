@@ -331,12 +331,12 @@ sub type_align($)
     if (need_wire_pointer($e)) {
 	    return 4;
     }
-    if (my $ret = $type_alignments{$type}) {
-	    return $ret;
-    }
 
     if (is_enum($type)) {
-	    my $ret = type_align(get_enum($type));
+	    $type = enum_type_fn(get_enum($type));
+    }
+
+    if (my $ret = $type_alignments{$type}) {
 	    return $ret;
     }
 
