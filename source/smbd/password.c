@@ -192,27 +192,40 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups,
 
 	psids = token->user_sids;
 
-	sid_copy( &psids[psid_ndx++], &global_sid_World);
-	sid_copy( &psids[psid_ndx++], &global_sid_Network);
-
 	/*
-	 * The only difference between guest and "anonymous" (which we
-	 * don't really support) is the addition of Authenticated_Users.
+	 * Note - user SID *MUST* be first in token !
+	 * se_access_check depends on this.
 	 */
 
-	if (is_guest)
-		sid_copy( &psids[psid_ndx++], &global_sid_Builtin_Guests);
-	else
-		sid_copy( &psids[psid_ndx++], &global_sid_Authenticated_Users);
-
 	uid_to_sid( &psids[psid_ndx++], uid);
+
+	/*
+	 * Primary group SID is second in token. Convention.
+	 */
+
 	gid_to_sid( &psids[psid_ndx++], gid);
+
+	/* Now add the group SIDs. */
 
 	for (i = 0; i < ngroups; i++) {
 		if (groups[i] != gid) {
 			gid_to_sid( &psids[psid_ndx++], groups[i]);
 		}
 	}
+
+	/*
+	 * Finally add the "standard" SIDs.
+	 * The only difference between guest and "anonymous" (which we
+	 * don't really support) is the addition of Authenticated_Users.
+	 */
+
+	sid_copy( &psids[psid_ndx++], &global_sid_World);
+	sid_copy( &psids[psid_ndx++], &global_sid_Network);
+
+	if (is_guest)
+		sid_copy( &psids[psid_ndx++], &global_sid_Builtin_Guests);
+	else
+		sid_copy( &psids[psid_ndx++], &global_sid_Authenticated_Users);
 
 	token->num_sids = psid_ndx;
 
