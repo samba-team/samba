@@ -331,6 +331,10 @@ main(int argc, char **argv)
      disp = getenv("DISPLAY");
      passivep = disp != NULL && 
        (*disp == ':' || strncmp(disp, "unix", 4) == 0);
+     /* non passive mode has not been tested and I'm not sure it works
+      *	at all, so better disable it.
+      */
+     passivep = 1;
      signal (SIGCHLD, childhandler);
      return doit (argv[1], passivep);
 }
