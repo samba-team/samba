@@ -7,7 +7,12 @@ krb5_storage *krb5_storage_from_fd(int fd);
 
 krb5_storage *krb5_storage_from_mem(void *buf, size_t len);
 
+krb5_storage *krb5_storage_emem(void);
+
 krb5_error_code krb5_storage_free(krb5_storage *sp);
+
+krb5_error_code krb5_storage_to_data(krb5_storage *sp, krb5_data *data);
+
 
 #define __PT(N, T) krb5_error_code krb5_store_##N(krb5_storage*, T); krb5_error_code krb5_ret_##N(krb5_storage *, T*)
 
