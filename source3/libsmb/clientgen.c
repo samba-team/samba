@@ -272,8 +272,8 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	memset(cli->inbuf, 0, cli->bufsize);
 
 	/* just becouse we over-allocate, doesn't mean it's right to use it */
-	clobber_region(__FUNCTION__, __LINE__, cli->outbuf+cli->bufsize, SAFETY_MARGIN);
-	clobber_region(__FUNCTION__, __LINE__, cli->inbuf+cli->bufsize, SAFETY_MARGIN);
+	clobber_region(FUNCTION_MACRO, __LINE__, cli->outbuf+cli->bufsize, SAFETY_MARGIN);
+	clobber_region(FUNCTION_MACRO, __LINE__, cli->inbuf+cli->bufsize, SAFETY_MARGIN);
 
 	/* initialise signing */
 	cli_null_set_signing(cli);
