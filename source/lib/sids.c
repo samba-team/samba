@@ -227,7 +227,7 @@ void generate_wellknown_sids(void)
 	string_to_sid(&global_sid_S_1_1_0 , "S-1-1-0" );
 	string_to_sid(&global_sid_S_1_3   , "S-1-3"   );
 	string_to_sid(&global_sid_S_1_5   , "S-1-5"   );
-	string_to_sid(&global_sid_S_1_5_17, "S-1-5-17");
+	string_to_sid(&global_sid_system  , "S-1-5-17");
 }
 
 /****************************************************************************
