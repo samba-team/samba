@@ -109,6 +109,7 @@ static struct printjob *print_job_find(int jobid)
 
 	memcpy(&pjob, ret.dptr, sizeof(pjob));
 	SAFE_FREE(ret.dptr);
+	unix_to_dos(pjob.queuename);
 	return &pjob;
 }
 
@@ -119,10 +120,14 @@ static struct printjob *print_job_find(int jobid)
 static BOOL print_job_store(int jobid, struct printjob *pjob)
 {
 	TDB_DATA d;
+	BOOL ret;
+
+	dos_to_unix(pjob->queuename);
 	d.dptr = (void *)pjob;
 	d.dsize = sizeof(*pjob);
-
-	return (tdb_store(tdb, print_key(jobid), d, TDB_REPLACE) == 0);
+	ret = (tdb_store(tdb, print_key(jobid), d, TDB_REPLACE) == 0);
+	unix_to_dos(pjob->queuename);
+	return ret;
 }
 
 /****************************************************************************
@@ -189,8 +194,9 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 	if (data.dsize != sizeof(pjob) || key.dsize != sizeof(int)) return 0;
 	memcpy(&jobid, key.dptr, sizeof(jobid));
 	memcpy(&pjob,  data.dptr, sizeof(pjob));
+	unix_to_dos(pjob.queuename);
 
-	if (!strequal(lp_servicename(ts->snum), pjob.queuename)) {
+	if (ts->snum != lp_servicenumber(pjob.queuename)) {
 		/* this isn't for the queue we are looking at */
 		ts->total_jobs++;
 		return 0;
@@ -1143,9 +1149,10 @@ static int traverse_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *
 	if (data.dsize != sizeof(pjob) || key.dsize != sizeof(int)) return 0;
 	memcpy(&jobid, key.dptr, sizeof(jobid));
 	memcpy(&pjob,  data.dptr, sizeof(pjob));
+	unix_to_dos(pjob.queuename);
 
 	/* maybe it isn't for this queue */
-	if (!strequal(lp_servicename(ts->snum), pjob.queuename))
+	if (ts->snum != lp_servicenumber(pjob.queuename))
 		return 0;
 
 	if (ts->qcount >= ts->maxcount) return 0;
@@ -1180,9 +1187,10 @@ static int traverse_count_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, 
 	if (data.dsize != sizeof(pjob) || key.dsize != sizeof(int)) return 0;
 	memcpy(&jobid, key.dptr, sizeof(jobid));
 	memcpy(&pjob,  data.dptr, sizeof(pjob));
+	unix_to_dos(pjob.queuename);
 
 	/* maybe it isn't for this queue */
-	if (!strequal(lp_servicename(ts->snum), pjob.queuename))
+	if (ts->snum != lp_servicenumber(pjob.queuename))
 		return 0;
 
 	ts->count++;
