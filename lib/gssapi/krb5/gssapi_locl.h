@@ -182,4 +182,17 @@ _gss_DES3_get_mic_compat(OM_uint32 *minor_status, gss_ctx_id_t ctx);
 OM_uint32
 gssapi_lifetime_left(OM_uint32 *, OM_uint32, OM_uint32 *);
 
+/* sequence */
+
+struct gss_msg_order;
+
+OM_uint32
+gssapi_msg_order_create(OM_uint32 *, struct gss_msg_order **, 
+			OM_uint32, OM_uint32, OM_uint32);
+OM_uint32
+gssapi_msg_order_destroy(struct gss_msg_order **);
+
+OM_uint32
+gssapi_msg_order_check(struct gss_msg_order *, OM_uint32);
+
 #endif
