@@ -130,6 +130,7 @@ endif
 
 ## these are controlled by configure
 XHEADERS = $(err_h) $(fnmatch_h) $(glob_h) $(ifaddrs_h) $(vis_h)
+CLEANFILES += err.h fnmatch.h glob.h ifaddrs.h vis.h
 
 include_HEADERS = 				\
 	base64.h				\
