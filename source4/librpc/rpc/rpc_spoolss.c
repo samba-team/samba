@@ -5,16 +5,10 @@
 
 NTSTATUS dcerpc_spoolss_EnumPrinters(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct spoolss_EnumPrinters *r)
 {
-	NTSTATUS status;
-	status = dcerpc_ndr_request(p, DCERPC_SPOOLSS_ENUMPRINTERS, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_spoolss_EnumPrinters,
-				    (ndr_pull_fn_t) ndr_pull_spoolss_EnumPrinters,
-				    r);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	
-	return r->out.result;
+	return dcerpc_ndr_request(p, DCERPC_SPOOLSS_ENUMPRINTERS, mem_ctx,
+				  (ndr_push_fn_t) ndr_push_spoolss_EnumPrinters,
+				  (ndr_pull_fn_t) ndr_pull_spoolss_EnumPrinters,
+				  r);
 }
 
 NTSTATUS dcerpc_spoolss_01(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct spoolss_01 *r)

@@ -84,6 +84,17 @@ NTSTATUS ndr_pull_NTSTATUS(struct ndr_pull *ndr, NTSTATUS *status)
 }
 
 /*
+  pull a WERROR
+*/
+NTSTATUS ndr_pull_WERROR(struct ndr_pull *ndr, WERROR *status)
+{
+	uint32 v;
+	NDR_CHECK(ndr_pull_uint32(ndr, &v));
+	*status = W_ERROR(v);
+	return NT_STATUS_OK;
+}
+
+/*
   parse a set of bytes
 */
 NTSTATUS ndr_pull_bytes(struct ndr_pull *ndr, char *data, uint32 n)
