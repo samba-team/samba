@@ -192,6 +192,13 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 		 BOOLSTR(fsp->can_read), BOOLSTR(fsp->can_write),
 		 conn->num_files_open + 1));
 
+	/*
+	 * Take care of inherited ACLs on created files. JRA.
+	 */
+
+	if (flags & O_CREAT)
+		fchmod_acl(fsp->fd, mode);
+
 	return True;
 }
 
