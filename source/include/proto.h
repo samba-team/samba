@@ -1519,7 +1519,7 @@ BOOL trust_get_passwd( unsigned char trust_passwd[16], char *domain, char *mynam
 
 int get_ntforms(nt_forms_struct **list);
 int write_ntforms(nt_forms_struct **list, int number);
-void add_a_form(nt_forms_struct **list, const FORM *form, int *count);
+BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count);
 void update_a_form(nt_forms_struct **list, const FORM *form, int count);
 int get_ntdrivers(fstring **list, char *architecture);
 void get_short_archi(char *short_archi, char *long_archi);
@@ -2369,7 +2369,7 @@ BOOL new_smb_io_job_info_1(char *desc, NEW_BUFFER *buffer, JOB_INFO_1 *info, int
 BOOL new_smb_io_job_info_2(char *desc, NEW_BUFFER *buffer, JOB_INFO_2 *info, int depth);
 BOOL new_smb_io_form_1(char *desc, NEW_BUFFER *buffer, FORM_1 *info, int depth);
 void new_spoolss_move_buffer(NEW_BUFFER *src, NEW_BUFFER **dest);
-void new_spoolss_allocate_buffer(NEW_BUFFER **buffer);
+BOOL new_spoolss_allocate_buffer(NEW_BUFFER **buffer);
 void new_spoolss_free_buffer(NEW_BUFFER *buffer);
 uint32 new_get_buffer_size(NEW_BUFFER *buffer);
 BOOL new_smb_io_driverdir_1(char *desc, NEW_BUFFER *buffer, DRIVER_DIRECTORY_1 *info, int depth);

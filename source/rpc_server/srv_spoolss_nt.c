@@ -227,7 +227,9 @@ static BOOL open_printer_hnd(POLICY_HND *hnd)
 {
 	Printer_entry *new_printer;
 
-	new_printer=(Printer_entry *)malloc(sizeof(Printer_entry));
+	if((new_printer=(Printer_entry *)malloc(sizeof(Printer_entry))) == NULL)
+		return False;
+
 	ZERO_STRUCTP(new_printer);
 	
 	new_printer->open = True;
@@ -342,6 +344,9 @@ static BOOL set_printer_hnd_printername(POLICY_HND *hnd, char *printername)
 
 		if (get_a_printer(&printer, 2, lp_servicename(snum))!=0)
 			continue;
+
+		DEBUG(10,("set_printer_hnd_printername: printername [%s], aprinter [%s]\n", 
+				printer.info_2->printername, aprinter ));
 
 		if ( strlen(printer.info_2->printername) != strlen(aprinter) ) {
 			free_a_printer(printer, 2);
@@ -551,7 +556,8 @@ static BOOL convert_devicemode(DEVICEMODE devmode, NT_DEVICEMODE *nt_devmode)
 		/* if we had a previous private delete it and make a new one */
 		if (nt_devmode->private != NULL)
 			free(nt_devmode->private);
-		nt_devmode->private=(uint8 *)malloc(nt_devmode->driverextra * sizeof(uint8));
+		if((nt_devmode->private=(uint8 *)malloc(nt_devmode->driverextra * sizeof(uint8))) == NULL)
+			return False;
 		memcpy(nt_devmode->private, devmode.private, nt_devmode->driverextra);
 	}
 
@@ -581,7 +587,8 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 *type, uint8 **d
 	if (!strcmp(value, "BeepEnabled"))
 	{
 		*type = 0x4;
-		*data = (uint8 *)malloc( 4*sizeof(uint8) );
+		if((*data = (uint8 *)malloc( 4*sizeof(uint8) )) == NULL)
+			return False;
 		SIVAL(*data, 0, 0x01);
 		*needed = 0x4;			
 		return True;
@@ -590,7 +597,8 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 *type, uint8 **d
 	if (!strcmp(value, "EventLog"))
 	{
 		*type = 0x4;
-		*data = (uint8 *)malloc( 4*sizeof(uint8) );
+		if((*data = (uint8 *)malloc( 4*sizeof(uint8) )) == NULL)
+			return False;
 		SIVAL(*data, 0, 0x1B);
 		*needed = 0x4;			
 		return True;
@@ -599,7 +607,8 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 *type, uint8 **d
 	if (!strcmp(value, "NetPopup"))
 	{
 		*type = 0x4;
-		*data = (uint8 *)malloc( 4*sizeof(uint8) );
+		if((*data = (uint8 *)malloc( 4*sizeof(uint8) )) == NULL)
+			return False;
 		SIVAL(*data, 0, 0x01);
 		*needed = 0x4;
 		return True;
@@ -608,7 +617,8 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 *type, uint8 **d
 	if (!strcmp(value, "MajorVersion"))
 	{
 		*type = 0x4;
-		*data = (uint8 *)malloc( 4*sizeof(uint8) );
+		if((*data = (uint8 *)malloc( 4*sizeof(uint8) )) == NULL)
+			return False;
 		SIVAL(*data, 0, 0x02);
 		*needed = 0x4;
 		return True;
@@ -619,7 +629,8 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 *type, uint8 **d
 		pstring string="You are using a Samba server";
 		*type = 0x1;			
 		*needed = 2*(strlen(string)+1);		
-		*data  = (uint8 *)malloc( ((*needed > in_size) ? *needed:in_size) *sizeof(uint8));
+		if((*data  = (uint8 *)malloc( ((*needed > in_size) ? *needed:in_size) *sizeof(uint8))) == NULL)
+			return False;
 		memset(*data, 0, (*needed > in_size) ? *needed:in_size);
 		
 		/* it's done by hand ready to go on the wire */
@@ -636,7 +647,8 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 *type, uint8 **d
 		pstring string="Windows NT x86";
 		*type = 0x1;			
 		*needed = 2*(strlen(string)+1);	
-		*data  = (uint8 *)malloc( ((*needed > in_size) ? *needed:in_size) *sizeof(uint8));
+		if((*data  = (uint8 *)malloc( ((*needed > in_size) ? *needed:in_size) *sizeof(uint8))) == NULL)
+			return False;
 		memset(*data, 0, (*needed > in_size) ? *needed:in_size);
 		for (i=0; i<strlen(string); i++)
 		{
@@ -667,8 +679,11 @@ static BOOL getprinterdata_printer(const POLICY_HND *handle,
 	if (!OPEN_HANDLE(Printer))
 		return False;
 
-	get_printer_snum(handle, &snum);		
-	get_a_printer(&printer, 2, lp_servicename(snum));
+	if(!get_printer_snum(handle, &snum))
+		return False;
+
+	if(get_a_printer(&printer, 2, lp_servicename(snum)) != 0)
+		return False;
 
 	if (!get_specific_param(printer, 2, value, &idata, type, &len)) {
 		free_a_printer(printer, 2);
@@ -677,7 +692,11 @@ static BOOL getprinterdata_printer(const POLICY_HND *handle,
 
 	DEBUG(5,("getprinterdata_printer:allocating %d\n", in_size));
 
-	*data  = (uint8 *)malloc( in_size *sizeof(uint8) );
+	if((*data  = (uint8 *)malloc( in_size *sizeof(uint8) )) == NULL) {
+		free_a_printer(printer, 2);
+		return False;
+	}
+
 	memset(*data, 0, in_size *sizeof(uint8));
 	/* copy the min(in_size, len) */
 	memcpy(*data, idata, (len>in_size)?in_size:len *sizeof(uint8));
@@ -722,7 +741,8 @@ uint32 _spoolss_getprinterdata(const POLICY_HND *handle, UNISTR2 *valuename,
 	DEBUG(4,("_spoolss_getprinterdata\n"));
 	
 	if (!OPEN_HANDLE(Printer)) {
-		*data=(uint8 *)malloc(4*sizeof(uint8));
+		if((*data=(uint8 *)malloc(4*sizeof(uint8))) == NULL)
+			return ERROR_NOT_ENOUGH_MEMORY;
 		return ERROR_INVALID_HANDLE;
 	}
 	
@@ -736,7 +756,8 @@ uint32 _spoolss_getprinterdata(const POLICY_HND *handle, UNISTR2 *valuename,
 	if (found==False) {
 		DEBUG(5, ("value not found, allocating %d\n", *out_size));
 		/* reply this param doesn't exist */
-		*data=(uint8 *)malloc(*out_size*sizeof(uint8));
+		if((*data=(uint8 *)malloc(*out_size*sizeof(uint8))) == NULL)
+			return ERROR_NOT_ENOUGH_MEMORY;
 		memset(*data, 0x0, *out_size*sizeof(uint8));
 		return ERROR_INVALID_PARAMETER;
 	}
@@ -1250,7 +1271,10 @@ static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int snum, SPO
 		if (!search_notify(type, field, &j) )
 			continue;
 		
-		info->data=Realloc(info->data, (info->count+1)*sizeof(SPOOL_NOTIFY_INFO_DATA));
+		if((info->data=Realloc(info->data, (info->count+1)*sizeof(SPOOL_NOTIFY_INFO_DATA))) == NULL) {
+			free_a_printer(printer, 2);
+			return False;
+		}
 		current_data=&(info->data[info->count]);
 
 		construct_info_data(current_data, type, field, id);		
@@ -1297,7 +1321,11 @@ static BOOL construct_notify_jobs_info(print_queue_struct *queue, SPOOL_NOTIFY_I
 		if (!search_notify(type, field, &j) )
 			continue;
 
-		info->data=Realloc(info->data, (info->count+1)*sizeof(SPOOL_NOTIFY_INFO_DATA));
+		if((info->data=Realloc(info->data, (info->count+1)*sizeof(SPOOL_NOTIFY_INFO_DATA))) == NULL) {
+			free_a_printer(printer, 2);
+			return False;
+		}
+
 		current_data=&(info->data[info->count]);
 
 		construct_info_data(current_data, type, field, id);
@@ -1531,7 +1559,8 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum, pstring 
 
 	/* it's the first time, add it to the list */
 	if (session_counter==NULL) {
-		session_counter=(counter_printer_0 *)malloc(sizeof(counter_printer_0));
+		if((session_counter=(counter_printer_0 *)malloc(sizeof(counter_printer_0))) == NULL)
+			return False;
 		ZERO_STRUCTP(session_counter);
 		session_counter->snum=snum;
 		session_counter->counter=0;
@@ -1635,7 +1664,7 @@ static BOOL construct_printer_info_1(fstring server, uint32 flags, PRINTER_INFO_
 
 /****************************************************************************
 ****************************************************************************/
-static void construct_dev_mode(DEVICEMODE *devmode, int snum, char *servername)
+static BOOL construct_dev_mode(DEVICEMODE *devmode, int snum, char *servername)
 {
 	char adevice[32];
 	char aform[32];
@@ -1686,11 +1715,16 @@ static void construct_dev_mode(DEVICEMODE *devmode, int snum, char *servername)
 
 	if (ntdevmode->private != NULL)
 	{
-		devmode->private=(uint8 *)malloc(devmode->driverextra*sizeof(uint8));
+		if((devmode->private=(uint8 *)malloc(devmode->driverextra*sizeof(uint8))) == NULL) {
+			free_a_printer(printer, 2);
+			return False;
+		}
 		memcpy(devmode->private, ntdevmode->private, devmode->driverextra);
 	}
 
 	free_a_printer(printer, 2);
+
+	return True;
 }
 
 /********************************************************************
@@ -1749,14 +1783,25 @@ static BOOL construct_printer_info_2(pstring servername, PRINTER_INFO_2 *printer
 	printer->cjobs = count;							/* jobs */
 	printer->averageppm = ntprinter.info_2->averageppm;			/* average pages per minute */
 			
-	devmode=(DEVICEMODE *)malloc(sizeof(DEVICEMODE));
+	if((devmode=(DEVICEMODE *)malloc(sizeof(DEVICEMODE))) == NULL) 
+		goto err;
+
 	ZERO_STRUCTP(devmode);	
-	construct_dev_mode(devmode, snum, servername);			
+
+	if(!construct_dev_mode(devmode, snum, servername)) 
+		goto err;
+
 	printer->devmode=devmode;
 	
 	safe_free(queue);
 	free_a_printer(ntprinter, 2);
 	return True;
+
+  err:
+
+	safe_free(queue);
+	free_a_printer(ntprinter, 2);
+	return False;
 }
 
 /********************************************************************
@@ -1777,7 +1822,10 @@ static BOOL enum_all_printers_info_1(fstring server, uint32 flags, NEW_BUFFER *b
 			DEBUG(4,("Found a printer in smb.conf: %s[%x]\n", lp_servicename(snum), snum));
 				
 			if (construct_printer_info_1(server, flags, &current_prt, snum)) {
-				printers=Realloc(printers, (*returned +1)*sizeof(PRINTER_INFO_1));
+				if((printers=Realloc(printers, (*returned +1)*sizeof(PRINTER_INFO_1))) == NULL) {
+					*returned=0;
+					return ERROR_NOT_ENOUGH_MEMORY;
+				}
 				DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_1\n", *returned));		
 				memcpy(&(printers[*returned]), &current_prt, sizeof(PRINTER_INFO_1));
 				(*returned)++;
@@ -1863,7 +1911,8 @@ static BOOL enum_all_printers_info_1_remote(fstring name, NEW_BUFFER *buffer, ui
 	 * We should have a TDB here. The registration is done thru an undocumented RPC call.
 	 */
 	
-	printer=(PRINTER_INFO_1 *)malloc(sizeof(PRINTER_INFO_1));
+	if((printer=(PRINTER_INFO_1 *)malloc(sizeof(PRINTER_INFO_1))) == NULL)
+		return ERROR_NOT_ENOUGH_MEMORY;
 
 	*returned=1;
 	
@@ -1930,7 +1979,8 @@ static BOOL enum_all_printers_info_2(fstring servername, NEW_BUFFER *buffer, uin
 			DEBUG(4,("Found a printer in smb.conf: %s[%x]\n", lp_servicename(snum), snum));
 				
 			if (construct_printer_info_2(servername, &current_prt, snum)) {
-				printers=Realloc(printers, (*returned +1)*sizeof(PRINTER_INFO_2));
+				if((printers=Realloc(printers, (*returned +1)*sizeof(PRINTER_INFO_2))) == NULL)
+					return ERROR_NOT_ENOUGH_MEMORY;
 				DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_2\n", *returned));		
 				memcpy(&(printers[*returned]), &current_prt, sizeof(PRINTER_INFO_2));
 				(*returned)++;
@@ -2093,7 +2143,8 @@ static uint32 getprinter_level_0(pstring servername, int snum, NEW_BUFFER *buffe
 {
 	PRINTER_INFO_0 *printer=NULL;
 
-	printer=(PRINTER_INFO_0*)malloc(sizeof(PRINTER_INFO_0));
+	if((printer=(PRINTER_INFO_0*)malloc(sizeof(PRINTER_INFO_0))) == NULL)
+		return ERROR_NOT_ENOUGH_MEMORY;
 
 	construct_printer_info_0(printer, snum, servername);
 	
@@ -2124,7 +2175,9 @@ static uint32 getprinter_level_1(pstring servername, int snum, NEW_BUFFER *buffe
 {
 	PRINTER_INFO_1 *printer=NULL;
 
-	printer=(PRINTER_INFO_1*)malloc(sizeof(PRINTER_INFO_1));
+	if((printer=(PRINTER_INFO_1*)malloc(sizeof(PRINTER_INFO_1))) == NULL)
+		return ERROR_NOT_ENOUGH_MEMORY;
+
 	construct_printer_info_1(servername, PRINTER_ENUM_ICON8, printer, snum);
 	
 	/* check the required size. */	
@@ -2155,7 +2208,8 @@ static uint32 getprinter_level_2(pstring servername, int snum, NEW_BUFFER *buffe
 	PRINTER_INFO_2 *printer=NULL;
 	fstring temp;
 
-	printer=(PRINTER_INFO_2*)malloc(sizeof(PRINTER_INFO_2));
+	if((printer=(PRINTER_INFO_2*)malloc(sizeof(PRINTER_INFO_2)))==NULL)
+		return ERROR_NOT_ENOUGH_MEMORY;
 	
 	fstrcpy(temp, "\\\\");
 	fstrcat(temp, servername);
@@ -2313,7 +2367,10 @@ static void init_unistr_array(uint16 **uni_array, char **char_array, char *where
 	for (v=char_array[i]; *v!='\0'; v=char_array[i]) {
 		snprintf(line, sizeof(line)-1, "%s%s", where, v);
 		DEBUGADD(6,("%d:%s:%d\n", i, line, strlen(line)));
-		*uni_array=Realloc(*uni_array, (j+strlen(line)+2)*sizeof(uint16));
+		if((*uni_array=Realloc(*uni_array, (j+strlen(line)+2)*sizeof(uint16))) == NULL) {
+			DEBUG(0,("init_unistr_array: Realloc error\n" ));
+			return;
+		}
 		ascii_to_unistr( *uni_array+j, line , strlen(line));
 		j+=strlen(line)+1;			
 		i++;
@@ -2392,7 +2449,8 @@ static uint32 getprinterdriver2_level1(pstring servername, pstring architecture,
 {
 	DRIVER_INFO_1 *info=NULL;
 	
-	info=(DRIVER_INFO_1 *)malloc(sizeof(DRIVER_INFO_1));
+	if((info=(DRIVER_INFO_1 *)malloc(sizeof(DRIVER_INFO_1))) == NULL)
+		return ERROR_NOT_ENOUGH_MEMORY;
 	
 	construct_printer_driver_info_1(info, snum, servername, architecture);
 
@@ -2422,7 +2480,8 @@ static uint32 getprinterdriver2_level2(pstring servername, pstring architecture,
 {
 	DRIVER_INFO_2 *info=NULL;
 	
-	info=(DRIVER_INFO_2 *)malloc(sizeof(DRIVER_INFO_2));
+	if((info=(DRIVER_INFO_2 *)malloc(sizeof(DRIVER_INFO_2))) == NULL)
+		return ERROR_NOT_ENOUGH_MEMORY;
 	
 	construct_printer_driver_info_2(info, snum, servername, architecture);
 
@@ -2452,7 +2511,8 @@ static uint32 getprinterdriver2_level3(pstring servername, pstring architecture,
 {
 	DRIVER_INFO_3 *info=NULL;
 	
-	info=(DRIVER_INFO_3 *)malloc(sizeof(DRIVER_INFO_3));
+	if((info=(DRIVER_INFO_3 *)malloc(sizeof(DRIVER_INFO_3)))==NULL)
+		return ERROR_NOT_ENOUGH_MEMORY;
 	
 	construct_printer_driver_info_3(info, snum, servername, architecture);
 
@@ -2971,9 +3031,16 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 	job_info->timeelapsed=0;
 	job_info->pagesprinted=0;
 
-	devmode=(DEVICEMODE *)malloc(sizeof(DEVICEMODE));
+	if((devmode=(DEVICEMODE *)malloc(sizeof(DEVICEMODE))) == NULL) {
+		free_a_printer(ntprinter, 2);
+		return False;
+	}
+
 	ZERO_STRUCTP(devmode);	
-	construct_dev_mode(devmode, snum, global_myname);			
+	if(!construct_dev_mode(devmode, snum, global_myname)) {
+		free_a_printer(ntprinter, 2);
+		return False;
+	}
 	job_info->devmode=devmode;
 
 	free_a_printer(ntprinter, 2);
@@ -3189,7 +3256,9 @@ static uint32 enumprinterdrivers_level1(fstring *list, fstring servername, fstri
 	int i;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
 	DRIVER_INFO_1 *driver_info_1=NULL;
-	driver_info_1=(DRIVER_INFO_1 *)malloc(*returned * sizeof(DRIVER_INFO_1));
+
+	if((driver_info_1=(DRIVER_INFO_1 *)malloc(*returned * sizeof(DRIVER_INFO_1))) == NULL)
+		return ERROR_NOT_ENOUGH_MEMORY;
 
 	for (i=0; i<*returned; i++) {
 		get_a_printer_driver(&driver, 3, list[i], architecture);
@@ -3234,7 +3303,9 @@ static uint32 enumprinterdrivers_level2(fstring *list, fstring servername, fstri
 	int i;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
 	DRIVER_INFO_2 *driver_info_2=NULL;
-	driver_info_2=(DRIVER_INFO_2 *)malloc(*returned * sizeof(DRIVER_INFO_2));
+
+	if((driver_info_2=(DRIVER_INFO_2 *)malloc(*returned * sizeof(DRIVER_INFO_2))) == NULL)
+		return ERROR_NOT_ENOUGH_MEMORY;
 
 	for (i=0; i<*returned; i++) {
 		get_a_printer_driver(&driver, 3, list[i], architecture);
@@ -3279,7 +3350,9 @@ static uint32 enumprinterdrivers_level3(fstring *list, fstring servername, fstri
 	int i;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
 	DRIVER_INFO_3 *driver_info_3=NULL;
-	driver_info_3=(DRIVER_INFO_3 *)malloc((*returned)*sizeof(DRIVER_INFO_3));
+
+	if((driver_info_3=(DRIVER_INFO_3 *)malloc((*returned)*sizeof(DRIVER_INFO_3))) == NULL)
+		return ERROR_NOT_ENOUGH_MEMORY;
 
 	for (i=0; i<*returned; i++) {
 		get_a_printer_driver(&driver, 3, list[i], architecture);
@@ -3340,6 +3413,9 @@ uint32 _spoolss_enumprinterdrivers( UNISTR2 *name, UNISTR2 *environment, uint32 
 	*returned=get_ntdrivers(&list, architecture);
 
 	DEBUGADD(4,("we have: [%d] drivers in environment [%s]\n", *returned, architecture));
+	if(*returned == -1)
+		return ERROR_NOT_ENOUGH_MEMORY;
+
 	for (i=0; i<*returned; i++)
 		DEBUGADD(5,("driver: [%s]\n", list[i]));
 	
@@ -3393,7 +3469,10 @@ uint32 _new_spoolss_enumforms( const POLICY_HND *handle, uint32 level,
 
 	switch (level) {
 	case 1:
-		forms_1=(FORM_1 *)malloc(*numofforms * sizeof(FORM_1));
+		if((forms_1=(FORM_1 *)malloc(*numofforms * sizeof(FORM_1))) == NULL) {
+			*numofforms=0;
+			return ERROR_NOT_ENOUGH_MEMORY;
+		}
 
 		/* construct the list of form structures */
 		for (i=0; i<*numofforms; i++) {
@@ -3472,7 +3551,8 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		if ( lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) )
 			(*returned)++;
 
-	ports=(PORT_INFO_1 *)malloc( (*returned+1) * sizeof(PORT_INFO_1) );
+	if((ports=(PORT_INFO_1 *)malloc( (*returned+1) * sizeof(PORT_INFO_1) )) == NULL)
+		return ERROR_NOT_ENOUGH_MEMORY;
 	
 	for (snum=0; snum<n_services; snum++) {
 		if ( lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) ) {
@@ -3525,7 +3605,8 @@ static uint32 enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		if ( lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) )
 			(*returned)++;
 
-	ports=(PORT_INFO_2 *)malloc( (*returned+1) * sizeof(PORT_INFO_2) );
+	if((ports=(PORT_INFO_2 *)malloc( (*returned+1) * sizeof(PORT_INFO_2) )) == NULL)
+		return ERROR_NOT_ENOUGH_MEMORY;
 	
 	for (snum=0; snum<n_services; snum++) {
 		if ( lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) ) {
@@ -3691,7 +3772,8 @@ static uint32 getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 	pstring short_archi;
 	DRIVER_DIRECTORY_1 *info=NULL;
 	
-	info=(DRIVER_DIRECTORY_1 *)malloc(sizeof(DRIVER_DIRECTORY_1));
+	if((info=(DRIVER_DIRECTORY_1 *)malloc(sizeof(DRIVER_DIRECTORY_1))) == NULL)
+		return ERROR_NOT_ENOUGH_MEMORY;
 	
 	unistr2_to_ascii(long_archi, uni_environment, sizeof(long_archi)-1);
 	get_short_archi(short_archi, long_archi);
@@ -3822,9 +3904,10 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 idx,
 
 	if (!get_specific_param_by_index(printer, 2, idx, value, &data, &type, &data_len)) {
 		free_a_printer(printer, 2);
+		safe_free(data);
 		return ERROR_NO_MORE_ITEMS;
 	}
-			
+
 	/* 
 	 * the value is:
 	 * - counted in bytes in the request
@@ -3835,7 +3918,11 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 idx,
 	 */
 	 
 	*out_max_value_len=in_value_len/2;
-	*out_value=(uint16 *)malloc(in_value_len*sizeof(uint8));
+	if((*out_value=(uint16 *)malloc(in_value_len*sizeof(uint8))) == NULL) {
+		free_a_printer(printer, 2);
+		safe_free(data);
+		return ERROR_NOT_ENOUGH_MEMORY;
+	}
 	ascii_to_unistr(*out_value, value, *out_max_value_len);
 	*out_value_len=2*(1+strlen(value));
 
@@ -3843,7 +3930,11 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 idx,
 
 	/* the data is counted in bytes */
 	*out_max_data_len=in_data_len;
-	*data_out=(uint8 *)malloc(in_data_len*sizeof(uint8));
+	if((*data_out=(uint8 *)malloc(in_data_len*sizeof(uint8))) == NULL) {
+		free_a_printer(printer, 2);
+		safe_free(data);
+		return ERROR_NOT_ENOUGH_MEMORY;
+	}
 	memcpy(*data_out, data, data_len);
 	*out_data_len=data_len;
 
@@ -3912,7 +4003,8 @@ uint32 _spoolss_addform( const POLICY_HND *handle,
 		return ERROR_INVALID_HANDLE;
 
 	count=get_ntforms(&list);
-	add_a_form(&list, form, &count);
+	if(!add_a_form(&list, form, &count))
+		return ERROR_NOT_ENOUGH_MEMORY;
 	write_ntforms(&list, count);
 
 	safe_free(list);
@@ -3953,7 +4045,9 @@ static uint32 enumprintprocessors_level_1(NEW_BUFFER *buffer, uint32 offered, ui
 {
 	PRINTPROCESSOR_1 *info_1=NULL;
 	
-	info_1 = (PRINTPROCESSOR_1 *)malloc(sizeof(PRINTPROCESSOR_1));
+	if((info_1 = (PRINTPROCESSOR_1 *)malloc(sizeof(PRINTPROCESSOR_1))) == NULL)
+		return ERROR_NOT_ENOUGH_MEMORY;
+
 	(*returned) = 0x1;
 	
 	init_unistr(&(info_1->name), "winprint");
@@ -4010,7 +4104,9 @@ static uint32 enumprintprocdatatypes_level_1(NEW_BUFFER *buffer, uint32 offered,
 {
 	PRINTPROCDATATYPE_1 *info_1=NULL;
 	
-	info_1 = (PRINTPROCDATATYPE_1 *)malloc(sizeof(PRINTPROCDATATYPE_1));
+	if((info_1 = (PRINTPROCDATATYPE_1 *)malloc(sizeof(PRINTPROCDATATYPE_1))) == NULL)
+		return ERROR_NOT_ENOUGH_MEMORY;
+
 	(*returned) = 0x1;
 	
 	init_unistr(&(info_1->name), "RAW");
@@ -4060,7 +4156,9 @@ static uint32 enumprintmonitors_level_1(NEW_BUFFER *buffer, uint32 offered, uint
 {
 	PRINTMONITOR_1 *info_1=NULL;
 	
-	info_1 = (PRINTMONITOR_1 *)malloc(sizeof(PRINTMONITOR_1));
+	if((info_1 = (PRINTMONITOR_1 *)malloc(sizeof(PRINTMONITOR_1))) == NULL)
+		return ERROR_NOT_ENOUGH_MEMORY;
+
 	(*returned) = 0x1;
 	
 	init_unistr(&(info_1->name), "Local Port");
@@ -4089,7 +4187,9 @@ static uint32 enumprintmonitors_level_2(NEW_BUFFER *buffer, uint32 offered, uint
 {
 	PRINTMONITOR_2 *info_2=NULL;
 	
-	info_2 = (PRINTMONITOR_2 *)malloc(sizeof(PRINTMONITOR_2));
+	if((info_2 = (PRINTMONITOR_2 *)malloc(sizeof(PRINTMONITOR_2))) == NULL)
+		return ERROR_NOT_ENOUGH_MEMORY;
+
 	(*returned) = 0x1;
 	
 	init_unistr(&(info_2->name), "Local Port");
@@ -4151,6 +4251,7 @@ static uint32 getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 	int i=0;
 	BOOL found=False;
 	JOB_INFO_1 *info_1=NULL;
+
 	info_1=(JOB_INFO_1 *)malloc(sizeof(JOB_INFO_1));
 
 	if (info_1 == NULL) {
