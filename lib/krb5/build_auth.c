@@ -48,10 +48,25 @@ krb5_build_authenticator (krb5_context context,
 			  Authenticator **auth_result,
 			  krb5_data *result)
 {
-  Authenticator *auth = malloc(sizeof(*auth));
+  Authenticator *auth;
   char buf[1024];
   size_t len;
   krb5_error_code ret;
+  krb5_enctype enctype;
+
+  if (auth_context->enctype)
+      enctype = auth_context->enctype;
+  else {
+      ret = krb5_keytype_to_etype(context,
+				  cred->session.keytype,
+				  &enctype);
+      if (ret)
+	  return ret;
+  }
+
+  auth = malloc(sizeof(*auth));
+  if (auth == NULL)
+      return ENOMEM;
 
   auth->authenticator_vno = 5;
   copy_Realm(&cred->client->realm, &auth->crealm);
@@ -94,7 +109,7 @@ krb5_build_authenticator (krb5_context context,
   ret = encode_Authenticator (buf + sizeof(buf) - 1, sizeof(buf), auth, &len);
 
   ret = krb5_encrypt (context, buf + sizeof(buf) - len, len,
-		      auth_context->enctype,
+		      enctype,
 		      &cred->session,
 		      result);
 
