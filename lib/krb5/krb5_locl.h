@@ -61,6 +61,7 @@
 #include <krb5_err.h>
 #include <asn1_err.h>
 
+void		krb5_data_zero(krb5_data *);
 void 		krb5_data_free(krb5_data *);
 krb5_error_code krb5_data_alloc(krb5_data *, int);
 krb5_error_code krb5_data_realloc(krb5_data *, int);
