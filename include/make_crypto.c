@@ -74,18 +74,18 @@ main(int argc, char **argv)
 #ifdef HAVE_OLD_HASH_NAMES
     fputs("\n", f);
     fputs("    typedef struct md4 MD4_CTX;\n", f);
-    fputs("#define MD4_Init(C) md4_init((C))\n", f);
-    fputs("#define MD4_Update(C, D, L) md4_update((C), (D), (L))\n", f);
+    fputs("#define MD4_Init md4_init\n", f);
+    fputs("#define MD4_Update md4_update\n", f);
     fputs("#define MD4_Final(D, C) md4_finito((C), (D))\n", f);
     fputs("\n", f);
     fputs("    typedef struct md5 MD5_CTX;\n", f);
-    fputs("#define MD5_Init(C) md5_init((C))\n", f);
-    fputs("#define MD5_Update(C, D, L) md5_update((C), (D), (L))\n", f);
+    fputs("#define MD5_Init md5_init\n", f);
+    fputs("#define MD5_Update md5_update\n", f);
     fputs("#define MD5_Final(D, C) md5_finito((C), (D))\n", f);
     fputs("\n", f);
     fputs("    typedef struct sha SHA_CTX;\n", f);
-    fputs("#define SHA1_Init(C) sha_init((C))\n", f);
-    fputs("#define SHA1_Update(C, D, L) sha_update((C), (D), (L))\n", f);
+    fputs("#define SHA1_Init sha_init\n", f);
+    fputs("#define SHA1_Update sha_update\n", f);
     fputs("#define SHA1_Final(D, C) sha_finito((C), (D))\n", f);
 #endif
 #endif
