@@ -21,7 +21,7 @@ ATHENA	= /usr/athena
 
 LIBTOP = ../../../lib
 
-LIBS = ../common/libcommon.a $(LIBTOP)/kafs/libkafs.a $(LIBTOP)/krb/libkrb.a $(LIBTOP)/des/libdes.a $(LIBTOP)/broken/libbroken.a
+LIBS = ../common/libcommon.a $(LIBTOP)/kafs/libkafs.a $(LIBTOP)/krb/libkrb.a $(LIBTOP)/des/libdes.a $(LIBTOP)/roken/libroken.a
 
 ftpd_OBJS = ftpd.o ftpcmd.o logwtmp.o popen.o auth.o krb4.o kauth.o klogin.o
 
