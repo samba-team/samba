@@ -1153,13 +1153,12 @@ static BOOL check_user_equiv(char *user, char *remote, char *equiv_file)
 	  BOOL host_ok = False;
 
 #ifdef NETGROUP	  
-	  /* THIS IS UNTESTED!! */
 	  if (is_group)
 	    {
 	      static char *mydomain = NULL;
 	      if (!mydomain)
 		yp_get_default_domain(&mydomain);
-	      if (mydomain && innetgr(remote,file_host,user,mydomain))
+	      if (mydomain && innetgr(file_host,remote,user,mydomain))
 		host_ok = True;
 	    }
 #else
