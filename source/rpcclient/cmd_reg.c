@@ -904,14 +904,6 @@ static NTSTATUS cmd_reg_shutdown(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	uint16 flgs = 0;
 	int opt;
 	int ret;
-	char *srv_name;
-
-	ret = asprintf (&srv_name, "\\\\%s", cli->desthost);
-	if (ret < 0) {
-		DEBUG(0,("cmd_reg_shutdown: Not enough memory!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	strupper(srv_name);
 
 	*msg = 0;
 	optind = 0; /* TODO: test if this hack works on other systems too --simo */
@@ -948,7 +940,7 @@ static NTSTATUS cmd_reg_shutdown(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	}
 
 	/* create an entry */
-	result = cli_reg_shutdown(cli, mem_ctx, srv_name, msg, timeout, flgs);
+	result = cli_reg_shutdown(cli, mem_ctx, msg, timeout, flgs);
 
 	if (NT_STATUS_IS_OK(result))
 		DEBUG(5,("cmd_reg_shutdown: query succeeded\n"));
@@ -967,16 +959,8 @@ static NTSTATUS cmd_reg_abort_shutdown(struct cli_state *cli,
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	int ret;
-	char *srv_name;
 
-	ret = asprintf(&srv_name, "\\\\%s", cli->desthost);
-	if (ret < 0) {
-		DEBUG(0,("cmd_reg_shutdown: Not enough memory!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	strupper(srv_name);
-
-	result = cli_reg_abort_shutdown(cli, mem_ctx, srv_name);
+	result = cli_reg_abort_shutdown(cli, mem_ctx);
 
 	if (NT_STATUS_IS_OK(result))
 		DEBUG(5,("cmd_reg_abort_shutdown: query succeeded\n"));

@@ -7,7 +7,7 @@
    Copyright (C) Luke Kenneth Casson Leighton 1996-1998,
    Copyright (C) Paul Ashton                  1997-1998.
    Copyright (C) Jeremy Allison                    1999.
-   Copyright (C) Simo Sorce                        2000
+   Copyright (C) Simo Sorce                        2001
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -38,8 +38,7 @@ struct cli_state *cli_winreg_initialise(struct cli_state *cli,
 /* Shutdown a server */
 
 NTSTATUS cli_reg_shutdown(struct cli_state * cli, TALLOC_CTX *mem_ctx,
-                          const char *srv_name, const char *msg,
-                          uint32 timeout, uint16 flags)
+                          const char *msg, uint32 timeout, uint16 flags)
 {
 	prs_struct qbuf;
 	prs_struct rbuf; 
@@ -78,8 +77,7 @@ done:
 
 /* Abort a server shutdown */
 
-NTSTATUS cli_reg_abort_shutdown(struct cli_state * cli, TALLOC_CTX *mem_ctx,
-                                const char *srv_name)
+NTSTATUS cli_reg_abort_shutdown(struct cli_state * cli, TALLOC_CTX *mem_ctx)
 {
 	prs_struct rbuf;
 	prs_struct qbuf; 
