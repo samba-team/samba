@@ -125,6 +125,16 @@ find_encryption_type(int etype)
     return NULL;
 }
 
+krb5_boolean
+krb5_etype_valid(krb5_context context,
+		 krb5_enctype etype)
+{
+    struct encryption_type *e;
+
+    e = find_encryption_type(etype);
+    return e != NULL && etype != ETYPE_NULL;
+}
+
 krb5_error_code
 krb5_etype_to_string(krb5_context context,
 		     krb5_enctype etype,
