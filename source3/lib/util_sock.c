@@ -740,7 +740,7 @@ int open_socket_out(int type, struct in_addr *addr, int port ,int timeout)
 	/* Some systems return EAGAIN when they mean EINPROGRESS */
 	if (ret < 0 && (errno == EINPROGRESS || errno == EALREADY ||
 			errno == EAGAIN) && (connect_loop < timeout) ) {
-		msleep(connect_loop);
+		smb_msleep(connect_loop);
 		connect_loop += increment;
 		if (increment < 250) {
 			/* After 8 rounds we end up at a max of 255 msec */

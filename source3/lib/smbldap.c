@@ -888,7 +888,7 @@ int smbldap_retry_open(struct smbldap_state *ldap_state, int *attempts)
 		 */
 		DEBUG(3, ("Sleeping for %u milliseconds before reconnecting\n", 
 			  sleep_time));
-		msleep(sleep_time);
+		smb_msleep(sleep_time);
 	}
 	(*attempts)++;
 
@@ -935,7 +935,7 @@ int smbldap_search(struct smbldap_state *ldap_state,
 		if (sleep_time > 0) {
 			/* we wait for the LDAP replication */
 			DEBUG(5,("smbldap_search: waiting %d milliseconds for LDAP replication.\n",sleep_time));
-			msleep(sleep_time);
+			smb_msleep(sleep_time);
 			DEBUG(5,("smbldap_search: go on!\n"));
 			ZERO_STRUCT(ldap_state->last_rebind);
 		}

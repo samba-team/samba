@@ -408,7 +408,7 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 			uint32 ecode;
 			cli_dos_error(cli, &eclass, &ecode);
 			if (eclass != ERRSRV || ecode != ERRerror) break;
-			msleep(100);
+			smb_msleep(100);
 		}
 	} while (count-- && ret==False);
 
@@ -715,7 +715,7 @@ NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname, fstrin
 			uint32 ecode;
 			cli_dos_error(cli, &eclass, &ecode);
 			if (eclass != ERRSRV || ecode != ERRerror) break;
-			msleep(100);
+			smb_msleep(100);
 		}
 	} while (count-- && ret==False);
 

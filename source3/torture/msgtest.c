@@ -63,7 +63,7 @@ void pong_message(int msg_type, pid_t src, void *buf, size_t len)
 
 	while (pong_count < i) {
 		message_dispatch();
-		msleep(1);
+		smb_msleep(1);
 	}
 
 	/* Now test that the duplicate filtering code works. */
@@ -78,7 +78,7 @@ void pong_message(int msg_type, pid_t src, void *buf, size_t len)
 
 	for (i=0;i<n;i++) {
 		message_dispatch();
-		msleep(1);
+		smb_msleep(1);
 	}
 
 	if (pong_count != 2) {
