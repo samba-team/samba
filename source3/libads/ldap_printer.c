@@ -79,6 +79,7 @@ static BOOL map_sz(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 			    const REGISTRY_VALUE *value)
 {
 	char *str_value = NULL;
+	ADS_STATUS status;
 
 	if (value->type != REG_SZ)
 		return False;
@@ -86,8 +87,8 @@ static BOOL map_sz(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 	if (value->size && *((smb_ucs2_t *) value->data_p)) {
 		pull_ucs2_talloc(ctx, (void **) &str_value, 
 				 (const smb_ucs2_t *) value->data_p);
-		return ADS_ERR_OK(ads_mod_str(ctx, mods, value->valuename, 
-					      str_value));
+		status = ads_mod_str(ctx, mods, value->valuename, str_value);
+		return ADS_ERR_OK(status);
 	}
 	return True;
 		
@@ -100,11 +101,13 @@ static BOOL map_dword(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 		      const REGISTRY_VALUE *value)
 {
 	char *str_value = NULL;
+	ADS_STATUS status;
 
 	if (value->type != REG_DWORD)
 		return False;
 	str_value = talloc_asprintf(ctx, "%d", *((uint32 *) value->data_p));
-	return ADS_ERR_OK(ads_mod_str(ctx, mods, value->valuename, str_value));
+	status = ads_mod_str(ctx, mods, value->valuename, str_value);
+	return ADS_ERR_OK(status);
 }
 
 /*
@@ -114,12 +117,14 @@ static BOOL map_bool(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 		     const REGISTRY_VALUE *value)
 {
 	char *str_value;
+	ADS_STATUS status;
 
 	if ((value->type != REG_BINARY) || (value->size != 1))
 		return False;
 	str_value =  talloc_asprintf(ctx, "%s", 
 				     *(value->data_p) ? "TRUE" : "FALSE");
-	return ADS_ERR_OK(ads_mod_str(ctx, mods, value->valuename, str_value));
+	status = ads_mod_str(ctx, mods, value->valuename, str_value);
+	return ADS_ERR_OK(status);
 }
 
 /*
@@ -131,6 +136,7 @@ static BOOL map_multi_sz(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 	char **str_values = NULL;
 	smb_ucs2_t *cur_str = (smb_ucs2_t *) value->data_p;
         uint32 size = 0, num_vals = 0, i=0;
+	ADS_STATUS status;
 
 	if (value->type != REG_MULTI_SZ)
 		return False;
@@ -153,8 +159,9 @@ static BOOL map_multi_sz(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 						    (void **) &str_values[i], 
 						    cur_str);
 
-		return ADS_ERR_OK(ads_mod_strlist(ctx, mods, value->valuename, 
-						  (const char **) str_values));
+		status = ads_mod_strlist(ctx, mods, value->valuename, 
+					 (const char **) str_values);
+		return ADS_ERR_OK(status);
 	} 
 	return True;
 }
