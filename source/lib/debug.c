@@ -86,7 +86,7 @@ BOOL    append_log = False;
 int     DEBUGLEVEL_CLASS[DBGC_LAST];
 int     DEBUGLEVEL = DEBUGLEVEL_CLASS;
 BOOL	AllowDebugChange = True;
-
+int	parsed_debuglevel_class[DBGC_LAST];
 
 /* -------------------------------------------------------------------------- **
  * Internal variables.
@@ -214,12 +214,6 @@ BOOL debug_parse_levels(char *params_str)
 	char *params[DBGC_LAST];
 	int  debuglevel_class[DBGC_LAST];	
 
-	if (AllowDebugChange == False) {
-		DEBUG(1,("INFO: Debug class %s level = %d\n",
-			classname_table[DBGC_ALL],
-			DEBUGLEVEL_CLASS[DBGC_ALL]));
-		return True;
-	}
 	ZERO_ARRAY(params);
 	ZERO_ARRAY(debuglevel_class);
 
@@ -232,8 +226,19 @@ BOOL debug_parse_levels(char *params_str)
 	else
 		return False;
 
+	if (AllowDebugChange == False) {
+		int old_debuglevel_class[DBGC_LAST];
+
+		/* save current debug level */
+		memcpy(old_debuglevel_class, DEBUGLEVEL_CLASS, sizeof(DEBUGLEVEL_CLASS));
+		if (debug_parse_params(params, debuglevel_class))
+			debug_message(0, getpid(), (void*)debuglevel_class, sizeof(debuglevel_class));
+		memcpy(parsed_debuglevel_class, DEBUGLEVEL_CLASS, sizeof(DEBUGLEVEL_CLASS)); 
+		memcpy(DEBUGLEVEL_CLASS, old_debuglevel_class, sizeof(old_debuglevel_class));
+		return True;
+	}
 	if (debug_parse_params(params, debuglevel_class)) {
-		debug_message(0, getpid(), (void*)debuglevel_class, sizeof(debuglevel_class));
+		debug_message(DEBUGLEVEL, getpid(), (void*)debuglevel_class, sizeof(debuglevel_class));
 		return True;
 	} else
 		return False;
@@ -242,14 +247,14 @@ BOOL debug_parse_levels(char *params_str)
 /****************************************************************************
 receive a "set debug level" message
 ****************************************************************************/
-void debug_message(int msg_type, pid_t src, void *buf, size_t len)
+void debug_message(int msg_level, pid_t src, void *buf, size_t len)
 {
 	int i;
 
 	/* Set the new DEBUGLEVEL_CLASS array from the pased array */
 	memcpy(DEBUGLEVEL_CLASS, buf, sizeof(DEBUGLEVEL_CLASS));
 	
-	DEBUG(1,("INFO: Debug class %s level = %d   (pid %u from pid %u)\n",
+	DEBUG(msg_level,("INFO: Debug class %s level = %d   (pid %u from pid %u)\n",
 			classname_table[DBGC_ALL],
 			DEBUGLEVEL_CLASS[DBGC_ALL], (unsigned int)getpid(), (unsigned int)src));
 

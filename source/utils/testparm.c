@@ -36,6 +36,7 @@
 #include "smb.h"
 
 extern BOOL AllowDebugChange;
+extern int parsed_debuglevel_class[DBGC_LAST];
 
 /* these live in util.c */
 extern FILE *dbf;
@@ -281,6 +282,7 @@ Level II oplocks can only be set if oplocks are also set.\n",
       fflush(stdout);
       getc(stdin);
     }
+    memcpy(DEBUGLEVEL_CLASS,parsed_debuglevel_class,sizeof(parsed_debuglevel_class));
     lp_dump(stdout,True, lp_numservices(), _dos_to_unix);
   }
   
