@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "04 November 2001" "" ""
+.TH "SMB.CONF" "5" "11 November 2001" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -4468,7 +4468,7 @@ Default: \fBmin wins ttl = 21600\fR
 .TP
 \fBmsdfs root (S)\fR
 This boolean parameter is only available if 
-Samba is configured and compiled with the \fB --with-msdfs\fR option. If set to yes>, 
+Samba is configured and compiled with the \fB --with-msdfs\fR option. If set to yes, 
 Samba treats the share as a Dfs root and allows clients to browse 
 the distributed file system tree rooted at the share directory. 
 Dfs links are specified in the share directory by symbolic 
@@ -4503,7 +4503,7 @@ name to IP address resolution, using the system \fI/etc/hosts
 \fR, NIS, or DNS lookups. This method of name resolution 
 is operating system depended for instance on IRIX or Solaris this 
 may be controlled by the \fI/etc/nsswitch.conf\fR 
-file). Note that this method is only used if the NetBIOS name 
+file. Note that this method is only used if the NetBIOS name 
 type being queried is the 0x20 (server) name type, otherwise 
 it is ignored.
 .TP 0.2i
@@ -4822,7 +4822,7 @@ if the expect string is a full stop then no string is expected.
 
 If the \fIpam
 password change\fR parameter is set to true, the chat pairs
-may be matched in any order, and sucess is determined by the PAM result, 
+may be matched in any order, and success is determined by the PAM result, 
 not any particular output. The \\n macro is ignored for PAM conversions.
 
 See also \fIunix password 
