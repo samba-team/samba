@@ -306,7 +306,7 @@ typedef struct sid_info
  *
  * token->user_sids[0] = primary user SID.
  * token->user_sids[1] = primary group SID.
- * token->user_sids[2-num_sids] = supplementary group SIDS.
+ * token->user_sids[2..num_sids] = supplementary group SIDS.
  */
 
 #define PRIMARY_USER_SID_INDEX 0
