@@ -115,7 +115,11 @@ details:
 59) Remove code in idmap_ldap that searches the user suffix and group 
     suffix.  It's not needed and provides inconsistent functionality 
     from the tdb backend.
-    
+60) Patch to handle munged dial string for Windows 200 TSE.
+61) Correct the "smbldap_open: cannot access when not root error" 
+    messages when looking up group information (bug 281).
+
+
     
 Changes since 3.0.0
 -------------------

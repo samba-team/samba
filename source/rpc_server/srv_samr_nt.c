@@ -894,7 +894,9 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 	/* well-known aliases */
 	if (sid_equal(sid, &global_sid_Builtin) && !lp_hide_local_users()) {
 		
+		become_root();
 		pdb_enum_group_mapping(SID_NAME_WKN_GRP, &map, (int *)&num_entries, ENUM_ONLY_MAPPED);
+		unbecome_root();
 		
 		if (num_entries != 0) {		
 			*d_grp=(DOMAIN_GRP *)talloc_zero(ctx, num_entries*sizeof(DOMAIN_GRP));
@@ -914,6 +916,7 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 		struct sys_grent *grp;
 		gid_t winbind_gid_low, winbind_gid_high;
 		BOOL winbind_groups_exist = lp_idmap_gid(&winbind_gid_low, &winbind_gid_high);
+		BOOL ret;
 
 		/* local aliases */
 		/* we return the UNIX groups here.  This seems to be the right */
@@ -930,7 +933,10 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 		for (; (num_entries < max_entries) && (grp != NULL); grp = grp->next) {
 			uint32 trid;
 			
-			if(!pdb_getgrgid(&smap, grp->gr_gid))
+			become_root();
+			ret = pdb_getgrgid(&smap, grp->gr_gid);
+			unbecome_root();
+			if( !ret )
 				continue;
 			
 			if (smap.sid_name_use!=SID_NAME_ALIAS) {
@@ -2789,6 +2795,38 @@ static BOOL set_unix_primary_group(SAM_ACCOUNT *sampass)
 	
 
 /*******************************************************************
+ set_user_info_20
+ ********************************************************************/
+
+static BOOL set_user_info_20(SAM_USER_INFO_20 *id20, DOM_SID *sid)
+{
+	SAM_ACCOUNT *pwd = NULL;
+ 
+	if (id20 == NULL) {
+		DEBUG(5, ("set_user_info_20: NULL id20\n"));
+		return False;
+	}
+ 
+	pdb_init_sam(&pwd);
+ 
+	if (!pdb_getsampwsid(pwd, sid)) {
+		pdb_free_sam(&pwd);
+		return False;
+	}
+ 
+	copy_id20_to_sam_passwd(pwd, id20);
+
+	/* write the change out */
+	if(!pdb_update_sam_account(pwd)) {
+		pdb_free_sam(&pwd);
+		return False;
+ 	}
+
+	pdb_free_sam(&pwd);
+
+	return True;
+}
+/*******************************************************************
  set_user_info_21
  ********************************************************************/
 
@@ -3089,6 +3127,10 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 	switch (switch_value) {
 		case 21:
 			if (!set_user_info_21(ctr->info.id21, &sid))
+				return NT_STATUS_ACCESS_DENIED;
+			break;
+		case 20:
+			if (!set_user_info_20(ctr->info.id20, &sid))
 				return NT_STATUS_ACCESS_DENIED;
 			break;
 		case 16:
@@ -4075,6 +4117,7 @@ NTSTATUS _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAM
 	int num_uids=0;
 	GROUP_INFO_CTR *ctr;
 	uint32 acc_granted;
+	BOOL ret;
 
 	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &group_sid, &acc_granted)) 
 		return NT_STATUS_INVALID_HANDLE;
@@ -4083,7 +4126,10 @@ NTSTATUS _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAM
 		return r_u->status;
 	}
 		
-	if (!get_domain_group_from_sid(group_sid, &map))
+	become_root();
+	ret = get_domain_group_from_sid(group_sid, &map);
+	unbecome_root();
+	if (!ret)
 		return NT_STATUS_INVALID_HANDLE;
 
 	ctr=(GROUP_INFO_CTR *)talloc_zero(p->mem_ctx, sizeof(GROUP_INFO_CTR));
@@ -4235,6 +4281,7 @@ NTSTATUS _samr_open_group(pipes_struct *p, SAMR_Q_OPEN_GROUP *q_u, SAMR_R_OPEN_G
 	size_t            sd_size;
 	NTSTATUS          status;
 	fstring sid_string;
+	BOOL ret;
 
 	if (!get_lsa_policy_samr_sid(p, &q_u->domain_pol, &sid, &acc_granted)) 
 		return NT_STATUS_INVALID_HANDLE;
@@ -4269,7 +4316,10 @@ NTSTATUS _samr_open_group(pipes_struct *p, SAMR_Q_OPEN_GROUP *q_u, SAMR_R_OPEN_G
 	DEBUG(10, ("_samr_open_group:Opening SID: %s\n", sid_string));
 
 	/* check if that group really exists */
-	if (!get_domain_group_from_sid(info->sid, &map))
+	become_root();
+	ret = get_domain_group_from_sid(info->sid, &map);
+	unbecome_root();
+	if (!ret)
 		return NT_STATUS_NO_SUCH_GROUP;
 
 	/* get a (unique) handle.  open a policy on it. */
@@ -4537,4 +4587,3 @@ NTSTATUS _samr_set_dom_info(pipes_struct *p, SAMR_Q_SET_DOMAIN_INFO *q_u, SAMR_R
 
 	return r_u->status;
 }
-
