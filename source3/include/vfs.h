@@ -48,7 +48,7 @@
 #define SMB_VFS_INTERFACE_VERSION 5
 
 
-/* Version of supported cascaded interface backward copmatibility.
+/* Version of supported cascaded interface backward compatibility.
    (version 5 corresponds to SMB_VFS_INTERFACE_VERSION 5)
    It is used in vfs_init_custom() to detect VFS modules which conform to cascaded 
    VFS interface but implement elder version than current version of Samba uses.
@@ -77,7 +77,7 @@
     is unloaded from smbd process using sys_dlclose().
     
     Prototypes:
-    vfs_op_tuple *vfs_init(int *vfs_version, const struct vfs_ops *def_vfs_ops,
+    vfs_op_tuple *vfs_init(const struct vfs_ops *def_vfs_ops,
 			    struct smb_vfs_handle_struct *vfs_handle);
     void	  vfs_done(connection_struct *conn);
     

@@ -3,7 +3,7 @@
    Main SMB server routines
    Copyright (C) Andrew Tridgell		1992-1998
    Copyright (C) Martin Pool			2002
-   Copyright (C) Jelmer Vernooij		2002
+   Copyright (C) Jelmer Vernooij		2002-2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
