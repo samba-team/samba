@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 /*
   This test checks that 
@@ -81,7 +82,7 @@ BOOL torture_unlinktest(void)
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
 	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_DELETE;
-	io.ntcreatex.in.access_mask  = GENERIC_RIGHTS_FILE_ALL_ACCESS;
+	io.ntcreatex.in.access_mask  = SEC_RIGHTS_FULL_CONTROL;
 
 	status = smb_raw_open(cli->tree, cli, &io);
 	if (!NT_STATUS_IS_OK(status)) {

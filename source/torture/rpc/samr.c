@@ -1469,7 +1469,7 @@ static BOOL test_CreateAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	init_samr_String(&name, TEST_ALIASNAME);
 	r.in.domain_handle = domain_handle;
 	r.in.aliasname = &name;
-	r.in.access_mask = SEC_RIGHT_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	r.out.alias_handle = alias_handle;
 	r.out.rid = &rid;
 

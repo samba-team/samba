@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 extern BOOL torture_showall;
 extern int torture_failures;
@@ -1699,49 +1700,53 @@ static NTSTATUS predict_share_conflict(uint32_t sa1, uint32_t am1, uint32_t sa2,
 	}} while (0)
 
 	*res = A_0;
-	if (am2 & SA_RIGHT_FILE_WRITE_APPEND) {
+	if (am2 & (SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA)) {
 		*res += A_W;
 	}
-	if (am2 & SA_RIGHT_FILE_READ_DATA) {
+	if (am2 & SEC_FILE_READ_DATA) {
 		*res += A_R;
-	} else if ((am2 & SA_RIGHT_FILE_EXECUTE) && 
+	} else if ((am2 & SEC_FILE_EXECUTE) && 
 		   (flags2 & FLAGS2_READ_PERMIT_EXECUTE)) {
 		*res += A_R;
 	}
 
 	/* if either open involves no read.write or delete access then
 	   it can't conflict */
-	if (!(am1 & (SA_RIGHT_FILE_WRITE_APPEND | 
-		     SA_RIGHT_FILE_READ_EXEC | 
-		     STD_RIGHT_DELETE_ACCESS))) {
+	if (!(am1 & (SEC_FILE_WRITE_DATA | 
+		     SEC_FILE_APPEND_DATA |
+		     SEC_FILE_READ_DATA | 
+		     SEC_FILE_EXECUTE | 
+		     SEC_STD_DELETE))) {
 		return NT_STATUS_OK;
 	}
-	if (!(am2 & (SA_RIGHT_FILE_WRITE_APPEND | 
-		     SA_RIGHT_FILE_READ_EXEC | 
-		     STD_RIGHT_DELETE_ACCESS))) {
+	if (!(am2 & (SEC_FILE_WRITE_DATA | 
+		     SEC_FILE_APPEND_DATA |
+		     SEC_FILE_READ_DATA | 
+		     SEC_FILE_EXECUTE | 
+		     SEC_STD_DELETE))) {
 		return NT_STATUS_OK;
 	}
 
 	/* check the basic share access */
 	CHECK_MASK(am1, sa2, 
-		   SA_RIGHT_FILE_WRITE_APPEND, 
+		   SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA, 
 		   NTCREATEX_SHARE_ACCESS_WRITE);
 	CHECK_MASK(am2, sa1, 
-		   SA_RIGHT_FILE_WRITE_APPEND, 
+		   SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA, 
 		   NTCREATEX_SHARE_ACCESS_WRITE);
 
 	CHECK_MASK(am1, sa2, 
-		   SA_RIGHT_FILE_READ_EXEC, 
+		   SEC_FILE_READ_DATA | SEC_FILE_EXECUTE, 
 		   NTCREATEX_SHARE_ACCESS_READ);
 	CHECK_MASK(am2, sa1, 
-		   SA_RIGHT_FILE_READ_EXEC, 
+		   SEC_FILE_READ_DATA | SEC_FILE_EXECUTE, 
 		   NTCREATEX_SHARE_ACCESS_READ);
 
 	CHECK_MASK(am1, sa2, 
-		   STD_RIGHT_DELETE_ACCESS, 
+		   SEC_STD_DELETE, 
 		   NTCREATEX_SHARE_ACCESS_DELETE);
 	CHECK_MASK(am2, sa1, 
-		   STD_RIGHT_DELETE_ACCESS, 
+		   SEC_STD_DELETE, 
 		   NTCREATEX_SHARE_ACCESS_DELETE);
 
 	return NT_STATUS_OK;
@@ -1758,14 +1763,14 @@ static BOOL torture_ntdenytest(struct smbcli_state *cli1, struct smbcli_state *c
 		{ NTCREATEX_SHARE_ACCESS_DELETE, "S_D" }
 	};
 	const struct bit_value access_mask_bits[] = {
-		{ SA_RIGHT_FILE_READ_DATA,        "R_DATA" },
-		{ SA_RIGHT_FILE_WRITE_DATA,       "W_DATA" },
-		{ SA_RIGHT_FILE_READ_ATTRIBUTES,  "R_ATTR" },
-		{ SA_RIGHT_FILE_WRITE_ATTRIBUTES, "W_ATTR" },
-		{ SA_RIGHT_FILE_READ_EA,          "R_EAS " },
-		{ SA_RIGHT_FILE_WRITE_EA,         "W_EAS " },
-		{ SA_RIGHT_FILE_APPEND_DATA,      "A_DATA" },
-		{ SA_RIGHT_FILE_EXECUTE,          "EXEC  " }
+		{ SEC_FILE_READ_DATA,        "R_DATA" },
+		{ SEC_FILE_WRITE_DATA,       "W_DATA" },
+		{ SEC_FILE_READ_ATTRIBUTE,   "R_ATTR" },
+		{ SEC_FILE_WRITE_ATTRIBUTE,  "W_ATTR" },
+		{ SEC_FILE_READ_EA,          "R_EAS " },
+		{ SEC_FILE_WRITE_EA,         "W_EAS " },
+		{ SEC_FILE_APPEND_DATA,      "A_DATA" },
+		{ SEC_FILE_EXECUTE,          "EXEC  " }
 	};
 	int fnum1;
 	int i;

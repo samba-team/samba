@@ -380,11 +380,11 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		return NT_STATUS_CANNOT_DELETE;
 	}
 	
-	if (access_mask & SEC_RIGHT_MAXIMUM_ALLOWED) {
-		access_mask = GENERIC_RIGHTS_FILE_READ | GENERIC_RIGHTS_FILE_WRITE;
+	if (access_mask & SEC_FLAG_MAXIMUM_ALLOWED) {
+		access_mask = SEC_RIGHTS_FILE_READ | SEC_RIGHTS_FILE_WRITE;
 	}
 
-	if (access_mask & SA_RIGHT_FILE_WRITE_APPEND) {
+	if (access_mask & (SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA)) {
 		flags = O_RDWR;
 	} else {
 		flags = O_RDONLY;
@@ -460,7 +460,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		union smb_setfileinfo set;
 
 		set.set_secdesc.file.fnum = fnum;
-		set.set_secdesc.in.secinfo_flags = DACL_SECURITY_INFORMATION;
+		set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
 		set.set_secdesc.in.sd = io->ntcreatex.in.sec_desc;
 
 		status = pvfs_acl_set(pvfs, req, name, fd, &set);
@@ -676,7 +676,7 @@ static NTSTATUS pvfs_open_deny_dos(struct ntvfs_module_context *ntvfs,
 		    (f2->handle->create_options & 
 		     (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS |
 		      NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) &&
-		    (f2->access_mask & SA_RIGHT_FILE_WRITE_DATA) &&
+		    (f2->access_mask & SEC_FILE_WRITE_DATA) &&
 		    StrCaseCmp(f2->handle->name->original_name, 
 			       io->generic.in.fname)==0) {
 			break;
@@ -862,17 +862,17 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	share_access   = io->generic.in.share_access;
 	access_mask    = io->generic.in.access_mask;
 
-	if (access_mask & SEC_RIGHT_MAXIMUM_ALLOWED) {
+	if (access_mask & SEC_FLAG_MAXIMUM_ALLOWED) {
 		if (name->exists && (name->dos.attrib & FILE_ATTRIBUTE_READONLY)) {
-			access_mask = GENERIC_RIGHTS_FILE_READ;
+			access_mask = SEC_RIGHTS_FILE_READ;
 		} else {
-			access_mask = GENERIC_RIGHTS_FILE_READ | GENERIC_RIGHTS_FILE_WRITE;
+			access_mask = SEC_RIGHTS_FILE_READ | SEC_RIGHTS_FILE_WRITE;
 		}
 	}
 
 	/* certain create options are not allowed */
 	if ((create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
-	    !(access_mask & STD_RIGHT_DELETE_ACCESS)) {
+	    !(access_mask & SEC_STD_DELETE)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -914,7 +914,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (access_mask & SA_RIGHT_FILE_WRITE_APPEND) {
+	if (access_mask & (SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA)) {
 		flags |= O_RDWR;
 	} else {
 		flags |= O_RDONLY;
@@ -1240,7 +1240,7 @@ NTSTATUS pvfs_can_delete(struct pvfs_state *pvfs, struct pvfs_filename *name)
 			      NTCREATEX_SHARE_ACCESS_WRITE | 
 			      NTCREATEX_SHARE_ACCESS_DELETE, 
 			      NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 
-			      STD_RIGHT_DELETE_ACCESS);
+			      SEC_STD_DELETE);
 
 	return status;
 }
@@ -1263,7 +1263,7 @@ NTSTATUS pvfs_can_rename(struct pvfs_state *pvfs, struct pvfs_filename *name)
 			      NTCREATEX_SHARE_ACCESS_READ |
 			      NTCREATEX_SHARE_ACCESS_WRITE,
 			      0,
-			      STD_RIGHT_DELETE_ACCESS);
+			      SEC_STD_DELETE);
 
 	return status;
 }

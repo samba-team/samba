@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 static void list_fn(struct file_info *finfo, const char *name, void *state)
 {
@@ -109,8 +110,11 @@ BOOL torture_dirtest2(void)
 	for (i=0;i<torture_entries;i++) {
 		char *fname;
 		asprintf(&fname, "\\LISTDIR\\f%d", i);
-		fnum = smbcli_nt_create_full(cli->tree, fname, 0, GENERIC_RIGHTS_FILE_ALL_ACCESS, FILE_ATTRIBUTE_ARCHIVE,
-				   NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
+		fnum = smbcli_nt_create_full(cli->tree, fname, 0, 
+					     SEC_RIGHTS_FULL_CONTROL,
+					     FILE_ATTRIBUTE_ARCHIVE,
+					     NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE, 
+					     NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 		if (fnum == -1) {
 			fprintf(stderr,"(%s) Failed to open %s, error=%s\n", 
 				__location__, fname, smbcli_errstr(cli->tree));

@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 extern int torture_failures;
 
@@ -103,7 +104,9 @@ BOOL torture_openattrtest(void)
 	for (k = 0, i = 0; i < sizeof(open_attrs_table)/sizeof(uint32_t); i++) {
 		smbcli_setatr(cli1->tree, fname, 0, 0);
 		smbcli_unlink(cli1->tree, fname);
-		fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, SA_RIGHT_FILE_WRITE_DATA, open_attrs_table[i],
+		fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
+					      SEC_FILE_WRITE_DATA, 
+					      open_attrs_table[i],
 					      NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 		
 		if (fnum1 == -1) {
@@ -118,10 +121,11 @@ BOOL torture_openattrtest(void)
 
 		for (j = 0; j < ARRAY_SIZE(open_attrs_table); j++) {
 			fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
-						   SA_RIGHT_FILE_READ_DATA|SA_RIGHT_FILE_WRITE_DATA, 
-						   open_attrs_table[j],
-						   NTCREATEX_SHARE_ACCESS_NONE, 
-						   NTCREATEX_DISP_OVERWRITE, 0, 0);
+						      SEC_FILE_READ_DATA|
+						      SEC_FILE_WRITE_DATA, 
+						      open_attrs_table[j],
+						      NTCREATEX_SHARE_ACCESS_NONE, 
+						      NTCREATEX_DISP_OVERWRITE, 0, 0);
 
 			if (fnum1 == -1) {
 				for (l = 0; l < ARRAY_SIZE(attr_results); l++) {

@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 
 /*
@@ -47,9 +48,11 @@ BOOL torture_test_delete(void)
 	smbcli_setatr(cli1->tree, fname, 0, 0);
 	smbcli_unlink(cli1->tree, fname);
 	
-	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, GENERIC_RIGHTS_FILE_ALL_ACCESS, FILE_ATTRIBUTE_NORMAL,
-				   NTCREATEX_SHARE_ACCESS_DELETE, NTCREATEX_DISP_OVERWRITE_IF, 
-				   NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
+				      SEC_RIGHTS_FULL_CONTROL,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_DELETE, NTCREATEX_DISP_OVERWRITE_IF, 
+				      NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
 	
 	if (fnum1 == -1) {
 		printf("(%s) open of %s failed (%s)\n", 
@@ -80,9 +83,10 @@ BOOL torture_test_delete(void)
 	smbcli_setatr(cli1->tree, fname, 0, 0);
 	smbcli_unlink(cli1->tree, fname);
 	
-	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, GENERIC_RIGHTS_FILE_ALL_ACCESS,
-				   FILE_ATTRIBUTE_NORMAL, NTCREATEX_SHARE_ACCESS_NONE, 
-				   NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
+				      SEC_RIGHTS_FULL_CONTROL,
+				      FILE_ATTRIBUTE_NORMAL, NTCREATEX_SHARE_ACCESS_NONE, 
+				      NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 	
 	if (fnum1 == -1) {
 		printf("(%s) open of %s failed (%s)\n", 
@@ -124,7 +128,7 @@ BOOL torture_test_delete(void)
 	smbcli_unlink(cli1->tree, fname);
 
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
-				      GENERIC_RIGHTS_FILE_ALL_ACCESS, 
+				      SEC_RIGHTS_FULL_CONTROL,
 				      FILE_ATTRIBUTE_NORMAL,
 				      NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE, 
 				      NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
@@ -140,7 +144,7 @@ BOOL torture_test_delete(void)
 	   with SHARE_DELETE. */
 
 	fnum2 = smbcli_nt_create_full(cli1->tree, fname, 0, 
-				      GENERIC_RIGHTS_FILE_READ, 
+				      SEC_RIGHTS_FILE_READ, 
 				      FILE_ATTRIBUTE_NORMAL,
 				      NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE, 
 				      NTCREATEX_DISP_OPEN, 0, 0);
@@ -154,8 +158,11 @@ BOOL torture_test_delete(void)
 
 	/* This should succeed. */
 
-	fnum2 = smbcli_nt_create_full(cli1->tree, fname, 0, GENERIC_RIGHTS_FILE_READ, FILE_ATTRIBUTE_NORMAL,
-			NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE, NTCREATEX_DISP_OPEN, 0, 0);
+	fnum2 = smbcli_nt_create_full(cli1->tree, fname, 0, 
+				      SEC_RIGHTS_FILE_READ, 
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE, 
+				      NTCREATEX_DISP_OPEN, 0, 0);
 
 	if (fnum2 == -1) {
 		printf("(%s) open  - 2 of %s failed (%s)\n", 
@@ -211,12 +218,12 @@ BOOL torture_test_delete(void)
 	}
 
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
-				   SA_RIGHT_FILE_READ_DATA  | 
-				   SA_RIGHT_FILE_WRITE_DATA |
-				   STD_RIGHT_DELETE_ACCESS,
-				   FILE_ATTRIBUTE_NORMAL, 
-				   NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE, 
-				   NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
+				      SEC_FILE_READ_DATA  | 
+				      SEC_FILE_WRITE_DATA |
+				      SEC_STD_DELETE,
+				      FILE_ATTRIBUTE_NORMAL, 
+				      NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE, 
+				      NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 								
 	if (fnum1 == -1) {
 		printf("(%s) open of %s failed (%s)\n", 
@@ -226,7 +233,8 @@ BOOL torture_test_delete(void)
 	}
 
 	/* This should succeed. */
-	fnum2 = smbcli_nt_create_full(cli1->tree, fname, 0, GENERIC_RIGHTS_FILE_READ,
+	fnum2 = smbcli_nt_create_full(cli1->tree, fname, 0, 
+				      SEC_RIGHTS_FILE_READ,
 				      FILE_ATTRIBUTE_NORMAL, 
 				      NTCREATEX_SHARE_ACCESS_READ  | 
 				      NTCREATEX_SHARE_ACCESS_WRITE |
@@ -255,7 +263,7 @@ BOOL torture_test_delete(void)
 	
 	/* This should fail - no more opens once delete on close set. */
 	fnum2 = smbcli_nt_create_full(cli1->tree, fname, 0, 
-				      GENERIC_RIGHTS_FILE_READ,
+				      SEC_RIGHTS_FILE_READ,
 				      FILE_ATTRIBUTE_NORMAL, 
 				      NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE,
 				      NTCREATEX_DISP_OPEN, 0, 0);
@@ -309,7 +317,7 @@ BOOL torture_test_delete(void)
 	smbcli_unlink(cli1->tree, fname);
 	
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
-				   SA_RIGHT_FILE_READ_DATA | SA_RIGHT_FILE_WRITE_DATA,
+				   SEC_FILE_READ_DATA | SEC_FILE_WRITE_DATA,
 				   FILE_ATTRIBUTE_NORMAL, 
 				   NTCREATEX_SHARE_ACCESS_READ  |
 				   NTCREATEX_SHARE_ACCESS_WRITE |
@@ -346,10 +354,11 @@ BOOL torture_test_delete(void)
 	smbcli_unlink(cli1->tree, fname);
 	
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
-				   SA_RIGHT_FILE_READ_DATA  | 
-				   SA_RIGHT_FILE_WRITE_DATA |
-				   STD_RIGHT_DELETE_ACCESS,
-				   FILE_ATTRIBUTE_NORMAL, 0, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
+				      SEC_FILE_READ_DATA  | 
+				      SEC_FILE_WRITE_DATA |
+				      SEC_STD_DELETE,
+				      FILE_ATTRIBUTE_NORMAL, 0, 
+				      NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 								
 	if (fnum1 == -1) {
 		printf("(%s) open of %s failed (%s)\n", 
@@ -409,9 +418,13 @@ BOOL torture_test_delete(void)
 		goto fail;
 	}
 
-	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, SA_RIGHT_FILE_READ_DATA|SA_RIGHT_FILE_WRITE_DATA|STD_RIGHT_DELETE_ACCESS,
-				   FILE_ATTRIBUTE_NORMAL, NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE,
-				   NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
+				      SEC_FILE_READ_DATA|
+				      SEC_FILE_WRITE_DATA|
+				      SEC_STD_DELETE,
+				      FILE_ATTRIBUTE_NORMAL, 
+				      NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 	
 	if (fnum1 == -1) {
 		printf("(%s) open of %s failed (%s)\n", 
@@ -420,9 +433,13 @@ BOOL torture_test_delete(void)
 		goto fail;
 	}
 
-	fnum2 = smbcli_nt_create_full(cli2->tree, fname, 0, SA_RIGHT_FILE_READ_DATA|SA_RIGHT_FILE_WRITE_DATA|STD_RIGHT_DELETE_ACCESS,
-				   FILE_ATTRIBUTE_NORMAL, NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE,
-				   NTCREATEX_DISP_OPEN, 0, 0);
+	fnum2 = smbcli_nt_create_full(cli2->tree, fname, 0, 
+				      SEC_FILE_READ_DATA|
+				      SEC_FILE_WRITE_DATA|
+				      SEC_STD_DELETE,
+				      FILE_ATTRIBUTE_NORMAL, 
+				      NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN, 0, 0);
 	
 	if (fnum2 == -1) {
 		printf("(%s) open of %s failed (%s)\n", 
@@ -464,7 +481,7 @@ BOOL torture_test_delete(void)
 
 	/* This should fail - we need to set DELETE_ACCESS. */
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0,
-				      SA_RIGHT_FILE_READ_DATA|SA_RIGHT_FILE_WRITE_DATA,
+				      SEC_FILE_READ_DATA|SEC_FILE_WRITE_DATA,
 				      FILE_ATTRIBUTE_NORMAL, 
 				      NTCREATEX_SHARE_ACCESS_NONE, 
 				      NTCREATEX_DISP_OVERWRITE_IF, 
@@ -480,7 +497,9 @@ BOOL torture_test_delete(void)
 	printf("ninth delete on close test succeeded.\n");
 
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
-				      SA_RIGHT_FILE_READ_DATA|SA_RIGHT_FILE_WRITE_DATA|STD_RIGHT_DELETE_ACCESS,
+				      SEC_FILE_READ_DATA|
+				      SEC_FILE_WRITE_DATA|
+				      SEC_STD_DELETE,
 				      FILE_ATTRIBUTE_NORMAL, 
 				      NTCREATEX_SHARE_ACCESS_NONE, 
 				      NTCREATEX_DISP_OVERWRITE_IF, 
@@ -514,9 +533,9 @@ BOOL torture_test_delete(void)
 
 	smbcli_setatr(cli1->tree, fname, 0, 0);
 	smbcli_unlink(cli1->tree, fname);
-                                                                                                                                        
+
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
-				      GENERIC_RIGHTS_FILE_ALL_ACCESS,
+				      SEC_RIGHTS_FULL_CONTROL,
 				      FILE_ATTRIBUTE_READONLY, 
 				      NTCREATEX_SHARE_ACCESS_NONE, 
 				      NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
@@ -551,9 +570,11 @@ BOOL torture_test_delete(void)
 
 	/* test 12 - does having read only attribute still allow delete on close at time of open. */
 
-	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, GENERIC_RIGHTS_FILE_ALL_ACCESS, FILE_ATTRIBUTE_READONLY,
-				   NTCREATEX_SHARE_ACCESS_DELETE, NTCREATEX_DISP_OVERWRITE_IF, 
-				   NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
+				      SEC_RIGHTS_FULL_CONTROL,
+				      FILE_ATTRIBUTE_READONLY,
+				      NTCREATEX_SHARE_ACCESS_DELETE, NTCREATEX_DISP_OVERWRITE_IF, 
+				      NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
 	
 	if (fnum1 != -1) {
 		printf("(%s) open of %s succeeded. Should fail with NT_STATUS_CANNOT_DELETE.\n", 
