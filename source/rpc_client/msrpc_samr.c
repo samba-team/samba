@@ -1845,7 +1845,6 @@ BOOL msrpc_sam_query_dispinfo(const char* srv_name, const char* domain,
 				DISP_FN(disp_fn))
 {
 	BOOL res = True;
-	BOOL res1 = True;
 	uint32 ace_perms = 0x304; /* absolutely no idea. */
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
