@@ -126,7 +126,28 @@ static NTSTATUS WKSSVC_NETRWKSTAUSERSETINFO(struct dcesrv_call_state *dce_call, 
 static NTSTATUS wkssvc_NetWkstaTransportEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct wkssvc_NetWkstaTransportEnum *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	r->out.level = r->in.level;
+	r->out.totalentries = 0;
+	r->out.resume_handle = NULL;
+	r->out.result = WERR_OK;
+
+	switch (r->in.level) {
+	case 0: {
+		r->out.ctr.ctr0 = talloc_p(mem_ctx, struct wkssvc_NetWkstaTransportCtr0);
+		WERR_TALLOC_CHECK(r->out.ctr.ctr0);
+
+		r->out.ctr.ctr0->count = 0;
+		r->out.ctr.ctr0->array = NULL;
+
+		r->out.result = WERR_NOT_SUPPORTED;
+		break;
+		}
+	default:
+		r->out.result = WERR_UNKNOWN_LEVEL;
+		break;
+	}
+
+	return NT_STATUS_OK;
 }
 
 

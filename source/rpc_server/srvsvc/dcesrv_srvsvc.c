@@ -360,7 +360,7 @@ static NTSTATUS srvsvc_NetSessEnum(struct dcesrv_call_state *dce_call, TALLOC_CT
 		WERR_TALLOC_CHECK(r->out.ctr.ctr0);
 
 		r->out.ctr.ctr0->count = 0;
-		r->out.ctr.ctr0->array = talloc(mem_ctx, r->out.ctr.ctr0->count*sizeof(struct srvsvc_NetSessInfo0));
+		r->out.ctr.ctr0->array = NULL;
 
 		r->out.result = WERR_NOT_SUPPORTED;
 		break;
@@ -497,7 +497,7 @@ static NTSTATUS srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, TALLO
 
 		if (r->out.ctr.ctr0->count == 0) break;
 
-		r->out.ctr.ctr0->array = talloc(mem_ctx, r->out.ctr.ctr0->count*sizeof(struct srvsvc_NetShareInfo0));
+		r->out.ctr.ctr0->array = talloc_array_p(mem_ctx, struct srvsvc_NetShareInfo0, r->out.ctr.ctr0->count);
 		WERR_TALLOC_CHECK(r->out.ctr.ctr0->array);
 
 		for (i=0;i<r->out.ctr.ctr0->count;i++) {
@@ -519,7 +519,7 @@ static NTSTATUS srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, TALLO
 
 		if (r->out.ctr.ctr1->count == 0) break;
 
-		r->out.ctr.ctr1->array = talloc(mem_ctx, r->out.ctr.ctr1->count*sizeof(struct srvsvc_NetShareInfo1));
+		r->out.ctr.ctr1->array = talloc_array_p(mem_ctx, struct srvsvc_NetShareInfo1, r->out.ctr.ctr1->count);
 		WERR_TALLOC_CHECK(r->out.ctr.ctr1->array);
 
 		for (i=0;i<r->out.ctr.ctr1->count;i++) {
@@ -542,7 +542,7 @@ static NTSTATUS srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, TALLO
 
 		if (r->out.ctr.ctr2->count == 0) break;
 
-		r->out.ctr.ctr2->array = talloc(mem_ctx, r->out.ctr.ctr2->count*sizeof(struct srvsvc_NetShareInfo2));
+		r->out.ctr.ctr2->array = talloc_array_p(mem_ctx, struct srvsvc_NetShareInfo2, r->out.ctr.ctr2->count);
 		WERR_TALLOC_CHECK(r->out.ctr.ctr2->array);
 
 		for (i=0;i<r->out.ctr.ctr2->count;i++) {
@@ -570,7 +570,7 @@ static NTSTATUS srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, TALLO
 
 		if (r->out.ctr.ctr501->count == 0) break;
 
-		r->out.ctr.ctr501->array = talloc(mem_ctx, r->out.ctr.ctr501->count*sizeof(struct srvsvc_NetShareInfo501));
+		r->out.ctr.ctr501->array = talloc_array_p(mem_ctx, struct srvsvc_NetShareInfo501, r->out.ctr.ctr501->count);
 		WERR_TALLOC_CHECK(r->out.ctr.ctr501->array);
 
 		for (i=0;i<r->out.ctr.ctr501->count;i++) {
@@ -594,7 +594,7 @@ static NTSTATUS srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, TALLO
 
 		if (r->out.ctr.ctr502->count == 0) break;
 
-		r->out.ctr.ctr502->array = talloc(mem_ctx, r->out.ctr.ctr502->count*sizeof(struct srvsvc_NetShareInfo502));
+		r->out.ctr.ctr502->array = talloc_array_p(mem_ctx, struct srvsvc_NetShareInfo502, r->out.ctr.ctr502->count);
 		WERR_TALLOC_CHECK(r->out.ctr.ctr502->array);
 
 		for (i=0;i<r->out.ctr.ctr502->count;i++) {
@@ -790,8 +790,57 @@ static NTSTATUS srvsvc_NETRSERVERTRANSPORTADD(struct dcesrv_call_state *dce_call
 static NTSTATUS srvsvc_NetTransportEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetTransportEnum *r)
 {
-	ZERO_STRUCT(r->out);
-	r->out.result = WERR_NOT_SUPPORTED;
+	r->out.level = r->in.level;
+	r->out.totalentries = 0;
+	r->out.resume_handle = NULL;
+	r->out.result = WERR_OK;
+
+	switch (r->in.level) {
+	case 0: {
+		r->out.ctr.ctr0 = talloc_p(mem_ctx, struct srvsvc_NetTransportCtr0);
+		WERR_TALLOC_CHECK(r->out.ctr.ctr0);
+
+		r->out.ctr.ctr0->count = 0;
+		r->out.ctr.ctr0->array = NULL;
+
+		r->out.result = WERR_NOT_SUPPORTED;
+		break;
+		}
+	case 1: {
+		r->out.ctr.ctr1 = talloc_p(mem_ctx, struct srvsvc_NetTransportCtr1);
+		WERR_TALLOC_CHECK(r->out.ctr.ctr1);
+
+		r->out.ctr.ctr1->count = 0;
+		r->out.ctr.ctr1->array = NULL;
+
+		r->out.result = WERR_NOT_SUPPORTED;
+		break;
+		}
+	case 2: {
+		r->out.ctr.ctr2 = talloc_p(mem_ctx, struct srvsvc_NetTransportCtr2);
+		WERR_TALLOC_CHECK(r->out.ctr.ctr2);
+
+		r->out.ctr.ctr2->count = 0;
+		r->out.ctr.ctr2->array = NULL;
+
+		r->out.result = WERR_NOT_SUPPORTED;
+		break;
+		}
+	case 3: {
+		r->out.ctr.ctr3 = talloc_p(mem_ctx, struct srvsvc_NetTransportCtr3);
+		WERR_TALLOC_CHECK(r->out.ctr.ctr3);
+
+		r->out.ctr.ctr3->count = 0;
+		r->out.ctr.ctr3->array = NULL;
+
+		r->out.result = WERR_NOT_SUPPORTED;
+		break;
+		}
+	default:
+		r->out.result = WERR_UNKNOWN_LEVEL;
+		break;
+	}
+
 	return NT_STATUS_OK;
 }
 
