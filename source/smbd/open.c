@@ -655,6 +655,7 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 	BOOL delete_on_close = GET_DELETE_ON_CLOSE_FLAG(share_mode);
 	BOOL file_existed = VALID_STAT(*psbuf);
 	BOOL fcbopen = False;
+	BOOL def_acl = False;
 	SMB_DEV_T dev = 0;
 	SMB_INO_T inode = 0;
 	int num_share_modes = 0;
@@ -809,6 +810,14 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 		 */
 	}
 
+	/*
+	 * Ensure we pay attention to default ACLs on directories if required.
+	 */
+
+        if ((flags2 & O_CREAT) && lp_inherit_acls(SNUM(conn)) &&
+			(def_acl = directory_has_default_acl(dos_to_unix(parent_dirname(fname),False))))
+                mode = 0777;
+
 	DEBUG(4,("calling open_file with flags=0x%X flags2=0x%X mode=0%o\n",
 			flags,flags2,(int)mode));
 
@@ -959,10 +968,11 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 	}
 	
 	/*
-	 * Take care of inherited ACLs on created files. JRA.
+	 * Take care of inherited ACLs on created files - if default ACL not
+	 * selected.
 	 */
 
-	if (!file_existed && (conn->vfs_ops.fchmod_acl != NULL)) {
+	if (!file_existed && !def_acl && (conn->vfs_ops.fchmod_acl != NULL)) {
 		int saved_errno = errno; /* We might get ENOSYS in the next call.. */
 		if (conn->vfs_ops.fchmod_acl(fsp, fsp->fd, mode) == -1 && errno == ENOSYS)
 			errno = saved_errno; /* Ignore ENOSYS */

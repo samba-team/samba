@@ -95,19 +95,23 @@ struct dirent *vfswrap_readdir(connection_struct *conn, DIR *dirp)
 
 int vfswrap_mkdir(connection_struct *conn, char *path, mode_t mode)
 {
-    int result;
+	int result;
+	BOOL has_dacl = False;
 
-    START_PROFILE(syscall_mkdir);
+	START_PROFILE(syscall_mkdir);
 
 #ifdef VFS_CHECK_NULL
-    if (path == NULL) {
-	smb_panic("NULL pointer passed to vfswrap_mkdir()\n");
-    }
+	if (path == NULL) {
+		smb_panic("NULL pointer passed to vfswrap_mkdir()\n");
+	}
 #endif
 
-    result = mkdir(path, mode);
+	if (lp_inherit_acls(SNUM(conn)) && (has_dacl = directory_has_default_acl(parent_dirname(path))))
+		mode = 0777;
 
-	if (result == 0) {
+	result = mkdir(path, mode);
+
+	if (result == 0 && !has_dacl) {
 		/*
 		 * We need to do this as the default behavior of POSIX ACLs	
 		 * is to set the mask to be the requested group permission
@@ -122,8 +126,8 @@ int vfswrap_mkdir(connection_struct *conn, char *path, mode_t mode)
 		}
 	}
 
-    END_PROFILE(syscall_mkdir);
-    return result;
+	END_PROFILE(syscall_mkdir);
+	return result;
 }
 
 int vfswrap_rmdir(connection_struct *conn, char *path)
@@ -164,19 +168,19 @@ int vfswrap_closedir(connection_struct *conn, DIR *dirp)
     
 int vfswrap_open(connection_struct *conn, char *fname, int flags, mode_t mode)
 {
-    int result;
+	int result;
 
-    START_PROFILE(syscall_open);
+	START_PROFILE(syscall_open);
 
 #ifdef VFS_CHECK_NULL
-    if (fname == NULL) {
-	smb_panic("NULL pointer passed to vfswrap_open()\n");
-    }
+	if (fname == NULL) {
+		smb_panic("NULL pointer passed to vfswrap_open()\n");
+	}
 #endif
 
-    result = sys_open(fname, flags, mode);
-    END_PROFILE(syscall_open);
-    return result;
+	result = sys_open(fname, flags, mode);
+	END_PROFILE(syscall_open);
+	return result;
 }
 
 int vfswrap_close(files_struct *fsp, int fd)

@@ -4397,6 +4397,7 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc);
 BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd);
 int chmod_acl(const char *name, mode_t mode);
 int fchmod_acl(int fd, mode_t mode);
+BOOL directory_has_default_acl(const char *fname);
 
 /*The following definitions come from  smbd/process.c  */
 
