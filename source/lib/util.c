@@ -2485,29 +2485,31 @@ BOOL receive_local_message(int fd, char *buffer, int buffer_len, int timeout)
 }
 
 /****************************************************************************
- structure to hold a linked list of local udp messages.
+ structure to hold a linked list of local messages.
  for processing.
 ****************************************************************************/
 
-typedef struct _udp_message_list {
-   struct _udp_message_list *msg_next;
+typedef struct _message_list {
+   struct _message_list *msg_next;
    char *msg_buf;
    int msg_len;
-} udp_message_list;
+} pending_message_list;
 
-static udp_message_list *udp_msg_head = NULL;
+static pending_message_list *smb_msg_head = NULL;
 
 /****************************************************************************
- Function to push a linked list of local udp messages ready
+ Function to push a linked list of local messages ready
  for processing.
 ****************************************************************************/
-BOOL push_local_message(char *buf, int msg_len)
+
+static BOOL push_local_message(pending_message_list **pml, char *buf, int msg_len)
 {
-  udp_message_list *msg = (udp_message_list *)malloc(sizeof(udp_message_list));
+  pending_message_list *msg = (pending_message_list *)
+                               malloc(sizeof(pending_message_list));
 
   if(msg == NULL)
   {
-    DEBUG(0,("push_local_message: malloc fail (1)\n"));
+    DEBUG(0,("push_message: malloc fail (1)\n"));
     return False;
   }
 
@@ -2522,10 +2524,20 @@ BOOL push_local_message(char *buf, int msg_len)
   memcpy(msg->msg_buf, buf, msg_len);
   msg->msg_len = msg_len;
 
-  msg->msg_next = udp_msg_head;
-  udp_msg_head = msg;
+  msg->msg_next = *pml;
+  *pml = msg;
 
   return True;
+}
+
+/****************************************************************************
+ Function to push a linked list of local smb messages ready
+ for processing.
+****************************************************************************/
+
+BOOL push_smb_message(char *buf, int msg_len)
+{
+  return push_local_message(&smb_msg_head, buf, msg_len);
 }
 
 /****************************************************************************
@@ -2534,6 +2546,10 @@ BOOL push_local_message(char *buf, int msg_len)
   If a local udp message has been pushed onto the
   queue (this can only happen during oplock break
   processing) return this first.
+
+  If a pending smb message has been pushed onto the
+  queue (this can only happen during oplock break
+  processing) return this next.
 
   If the first smbfd is ready then read an smb from it.
   if the second (loopback UDP) fd is ready then read a message
@@ -2555,19 +2571,22 @@ BOOL receive_message_or_smb(int smbfd, int oplock_fd,
   *got_smb = False;
 
   /*
-   * Check to see if we already have a message on the udp queue.
+   * Check to see if we already have a message on the smb queue.
    * If so - copy and return it.
    */
-
-  if(udp_msg_head)
+  
+  if(smb_msg_head)
   {
-    udp_message_list *msg = udp_msg_head;
+    pending_message_list *msg = smb_msg_head;
     memcpy(buffer, msg->msg_buf, MIN(buffer_len, msg->msg_len));
-    udp_msg_head = msg->msg_next;
-
+    smb_msg_head = msg->msg_next;
+  
     /* Free the message we just copied. */
     free((char *)msg->msg_buf);
     free((char *)msg);
+    *got_smb = True;
+
+    DEBUG(5,("receive_message_or_smb: returning queued smb message.\n"));
     return True;
   }
 

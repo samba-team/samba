@@ -2963,6 +2963,16 @@ inode = %x).\n", timestring(), fsp->name, fnum, dev, inode));
       shutdown_server = True;
       break;
     }
+
+    /*
+     * There are certain SMB requests that we shouldn't allow
+     * to recurse. opens, renames and deletes are the obvious
+     * ones. This is handled in the switch_message() function.
+     * If global_oplock_break is set they will push the packet onto
+     * the pending smb queue and return -1 (no reply).
+     * JRA.
+     */
+
     process_smb(inbuf, outbuf);
 
     /*
@@ -3036,6 +3046,8 @@ BOOL request_oplock_break(share_mode_entry *share_entry,
   char op_break_msg[OPLOCK_BREAK_MSG_LEN];
   struct sockaddr_in addr_out;
   int pid = getpid();
+  time_t start_time;
+  int time_left;
 
   if(pid == share_entry->pid)
   {
@@ -3089,7 +3101,10 @@ to pid %d on port %d for dev = %x, inode = %x. Error was %s\n",
    * While we get messages that aren't ours, loop.
    */
 
-  while(1)
+  start_time = time(NULL);
+  time_left = OPLOCK_BREAK_TIMEOUT+OPLOCK_BREAK_TIMEOUT_FUDGEFACTOR;
+
+  while(time_left >= 0)
   {
     char op_break_reply[UDP_CMD_HEADER_LEN+OPLOCK_BREAK_MSG_LEN];
     int32 reply_msg_len;
@@ -3097,7 +3112,7 @@ to pid %d on port %d for dev = %x, inode = %x. Error was %s\n",
     char *reply_msg_start;
 
     if(receive_local_message(oplock_sock, op_break_reply, sizeof(op_break_reply),
-               (OPLOCK_BREAK_TIMEOUT+OPLOCK_BREAK_TIMEOUT_FUDGEFACTOR) * 1000) == False)
+               time_left ? time_left * 1000 : 1) == False)
     {
       if(smb_read_error == READ_TIMEOUT)
       {
@@ -3120,23 +3135,6 @@ pid %d on port %d for dev = %x, inode = %x. Error was (%s).\n", timestring, shar
       return False;
     }
 
-    /* 
-     * If the response we got was not an answer to our message, but
-     * was a completely different request, push it onto the pending
-     * udp message stack so that we can deal with it in the main loop.
-     * It may be another oplock break request to us.
-     */
-
-    /*
-     * Local note from JRA. There exists the possibility of a denial
-     * of service attack here by allowing non-root processes running
-     * on a local machine sending many of these pending messages to
-     * a smbd port. Currently I'm not sure how to restrict the messages
-     * I will queue (although I could add a limit to the queue) to
-     * those received by root processes only. There should be a 
-     * way to make this bulletproof....
-     */
-
     reply_msg_len = IVAL(op_break_reply,UDP_CMD_LEN_OFFSET);
     reply_from_port = SVAL(op_break_reply,UDP_CMD_PORT_OFFSET);
 
@@ -3150,21 +3148,37 @@ pid %d on port %d for dev = %x, inode = %x. Error was (%s).\n", timestring, shar
       continue;
     }
 
-    if(((SVAL(reply_msg_start,UDP_MESSAGE_CMD_OFFSET) & CMD_REPLY) == 0) ||
-       (reply_from_port != share_entry->op_port) ||
+    /*
+     * Test to see if this is the reply we are awaiting.
+     */
+
+    if((SVAL(reply_msg_start,UDP_MESSAGE_CMD_OFFSET) & CMD_REPLY) &&
+       (reply_from_port == share_entry->op_port) && 
        (memcmp(&reply_msg_start[OPLOCK_BREAK_PID_OFFSET], 
                &op_break_msg[OPLOCK_BREAK_PID_OFFSET],
-               OPLOCK_BREAK_MSG_LEN - OPLOCK_BREAK_PID_OFFSET) != 0))
+               OPLOCK_BREAK_MSG_LEN - OPLOCK_BREAK_PID_OFFSET) == 0))
     {
-      DEBUG(3,("%s request_oplock_break: received other message whilst awaiting \
-oplock break response from pid %d on port %d for dev = %x, inode = %x.\n",
-             timestring(), share_entry->pid, share_entry->op_port, dev, inode));
-      if(push_local_message(op_break_reply, sizeof(op_break_reply)) == False)
-        return False;
-      continue;
+      /*
+       * This is the reply we've been waiting for.
+       */
+      break;
+    }
+    else
+    {
+      /*
+       * This is another message - probably a break request.
+       * Process it to prevent potential deadlock.
+       * Note that the code in switch_message() prevents
+       * us from recursing into here as any SMB requests
+       * we might process that would cause another oplock
+       * break request to be made will be queued.
+       * JRA.
+       */
+
+      process_local_message(oplock_sock, op_break_reply, sizeof(op_break_reply));
     }
 
-    break;
+    time_left -= (time(NULL) - start_time);
   }
 
   DEBUG(3,("%s request_oplock_break: broke oplock.\n", timestring()));
@@ -4522,7 +4536,7 @@ force write permissions on print services.
 #define TIME_INIT (1<<2)
 #define CAN_IPC (1<<3)
 #define AS_GUEST (1<<5)
-
+#define QUEUE_IN_OPLOCK (1<<6)
 
 /* 
    define a list of possible SMB messages and their corresponding
@@ -4556,20 +4570,20 @@ struct smb_message_struct
    {SMBsetatr,"SMBsetatr",reply_setatr,AS_USER | NEED_WRITE},
    {SMBchkpth,"SMBchkpth",reply_chkpth,AS_USER},
    {SMBsearch,"SMBsearch",reply_search,AS_USER},
-   {SMBopen,"SMBopen",reply_open,AS_USER},
+   {SMBopen,"SMBopen",reply_open,AS_USER | QUEUE_IN_OPLOCK },
 
    /* note that SMBmknew and SMBcreate are deliberately overloaded */   
    {SMBcreate,"SMBcreate",reply_mknew,AS_USER},
    {SMBmknew,"SMBmknew",reply_mknew,AS_USER}, 
 
-   {SMBunlink,"SMBunlink",reply_unlink,AS_USER | NEED_WRITE},
+   {SMBunlink,"SMBunlink",reply_unlink,AS_USER | NEED_WRITE | QUEUE_IN_OPLOCK},
    {SMBread,"SMBread",reply_read,AS_USER},
    {SMBwrite,"SMBwrite",reply_write,AS_USER},
    {SMBclose,"SMBclose",reply_close,AS_USER | CAN_IPC},
    {SMBmkdir,"SMBmkdir",reply_mkdir,AS_USER | NEED_WRITE},
    {SMBrmdir,"SMBrmdir",reply_rmdir,AS_USER | NEED_WRITE},
    {SMBdskattr,"SMBdskattr",reply_dskattr,AS_USER},
-   {SMBmv,"SMBmv",reply_mv,AS_USER | NEED_WRITE},
+   {SMBmv,"SMBmv",reply_mv,AS_USER | NEED_WRITE | QUEUE_IN_OPLOCK},
 
    /* this is a Pathworks specific call, allowing the 
       changing of the root path */
@@ -4577,8 +4591,8 @@ struct smb_message_struct
 
    {SMBlseek,"SMBlseek",reply_lseek,AS_USER},
    {SMBflush,"SMBflush",reply_flush,AS_USER},
-   {SMBctemp,"SMBctemp",reply_ctemp,AS_USER},
-   {SMBsplopen,"SMBsplopen",reply_printopen,AS_USER},
+   {SMBctemp,"SMBctemp",reply_ctemp,AS_USER | QUEUE_IN_OPLOCK },
+   {SMBsplopen,"SMBsplopen",reply_printopen,AS_USER | QUEUE_IN_OPLOCK },
    {SMBsplclose,"SMBsplclose",reply_printclose,AS_USER},
    {SMBsplretq,"SMBsplretq",reply_printqueue,AS_USER|AS_GUEST},
    {SMBsplwr,"SMBsplwr",reply_printwrite,AS_USER},
@@ -4605,10 +4619,10 @@ struct smb_message_struct
    {SMBtrans,"SMBtrans",reply_trans,AS_USER | CAN_IPC},
    {SMBtranss,"SMBtranss",NULL,AS_USER | CAN_IPC},
    {SMBioctls,"SMBioctls",NULL,AS_USER},
-   {SMBcopy,"SMBcopy",reply_copy,AS_USER | NEED_WRITE},
-   {SMBmove,"SMBmove",NULL,AS_USER | NEED_WRITE},
+   {SMBcopy,"SMBcopy",reply_copy,AS_USER | NEED_WRITE | QUEUE_IN_OPLOCK },
+   {SMBmove,"SMBmove",NULL,AS_USER | NEED_WRITE | QUEUE_IN_OPLOCK },
    
-   {SMBopenX,"SMBopenX",reply_open_and_X,AS_USER | CAN_IPC},
+   {SMBopenX,"SMBopenX",reply_open_and_X,AS_USER | CAN_IPC | QUEUE_IN_OPLOCK },
    {SMBreadX,"SMBreadX",reply_read_and_X,AS_USER},
    {SMBwriteX,"SMBwriteX",reply_write_and_X,AS_USER},
    {SMBlockingX,"SMBlockingX",reply_lockingX,AS_USER},
@@ -4620,7 +4634,7 @@ struct smb_message_struct
    /* LANMAN2.0 PROTOCOL FOLLOWS */
    {SMBfindnclose, "SMBfindnclose", reply_findnclose, AS_USER},
    {SMBfindclose, "SMBfindclose", reply_findclose,AS_USER},
-   {SMBtrans2, "SMBtrans2", reply_trans2, AS_USER},
+   {SMBtrans2, "SMBtrans2", reply_trans2, AS_USER | QUEUE_IN_OPLOCK },
    {SMBtranss2, "SMBtranss2", reply_transs2, AS_USER},
 
    /* messaging routines */
@@ -4702,6 +4716,20 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
   else
     {
       DEBUG(3,("switch message %s (pid %d)\n",smb_messages[match].name,pid));
+
+      if(global_oplock_break && (smb_messages[match].flags & QUEUE_IN_OPLOCK))
+      {
+        /* 
+         * Queue this message as we are the process of an oplock break.
+         */
+
+        DEBUG(2,("%s: switch_message: queueing message due to being in oplock break state.\n",
+               timestring() ));
+
+        push_smb_message( inbuf, size);
+        return -1;
+      }          
+
       if (smb_messages[match].fn)
 	{
 	  int cnum = SVAL(inbuf,smb_tid);
