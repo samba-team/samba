@@ -55,7 +55,8 @@ static int
 process_request(krb5_context context, 
 		unsigned char *buf, 
 		size_t len, 
-		krb5_data *reply)
+		krb5_data *reply,
+		const char *from)
 {
     KDC_REQ req;
     krb5_error_code err;
@@ -63,18 +64,13 @@ process_request(krb5_context context,
 
     gettimeofday(&now, NULL);
     if(decode_AS_REQ(buf, len, &req, &i) == 0){
-	err = as_rep(context, &req, reply);
+	err = as_rep(context, &req, reply, from);
 	free_AS_REQ(&req);
 	return err;
-    }else{
-	if(decode_TGS_REQ(buf, len, &req, &i) == 0){
-	    err = tgs_rep(context, &req, reply);
-	    free_TGS_REQ(&req);
-	    return err;
-	}
-    }
-    if (maybe_version4(buf, len)){
-	return do_version4(buf, len, reply);
+    }else if(decode_TGS_REQ(buf, len, &req, &i) == 0){
+	err = tgs_rep(context, &req, reply, from);
+	free_TGS_REQ(&req);
+	return err;
     }
     return -1;
 }
@@ -85,13 +81,15 @@ do_request(krb5_context context, void *buf, size_t len,
 {
     krb5_error_code ret;
     krb5_data reply;
-
+    
+    char addr[128] = "<unknown address>";
+    if(from->sa_family == AF_INET)
+	strcpy(addr, inet_ntoa(((struct sockaddr_in*)from)->sin_addr));
+    
     reply.length = 0;
-    ret = process_request(context, buf, len, &reply);
-    if(ret)
-	warnx("%s", krb5_get_err_text(context, ret));
-    else{
-	warnx("sending %d bytes", reply.length);
+    ret = process_request(context, buf, len, &reply, addr);
+    if(reply.length){
+	kdc_log(5, "sending %d bytes to %s", reply.length, addr);
 	sendto(socket, reply.data, reply.length, 0, from, from_len);
 	krb5_data_free(&reply);
     }
@@ -208,7 +206,7 @@ loop(krb5_context context)
     struct descr *d;
     int ndescr;
     ndescr = init_sockets(&d);
-    while(1){
+    while(exit_flag == 0){
 	struct fd_set fds;
 	int min_free = -1;
 	int max_fd = 0;
