@@ -930,7 +930,7 @@ static void init_globals(void)
   Globals.bStripDot = False;
   Globals.syslog = 1;
   Globals.bSyslogOnly = False;
-  Globals.bTimestampLogs = True;
+  Globals.bTimestampLogs = False;
   Globals.os_level = 32;
   Globals.max_ttl = 60*60*24*3; /* 3 days default. */
   Globals.max_wins_ttl = 60*60*24*6; /* 6 days default. */
