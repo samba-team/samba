@@ -3214,8 +3214,8 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 {
 	BOOL reply    = False;
 
-	int pnum;
-	int subcommand;
+	uint16 pnum;
+	uint16 subcommand;
 	pipes_struct *p = NULL;
 	prs_struct pd;
 
