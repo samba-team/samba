@@ -1,6 +1,10 @@
-#include "bsd_locl.h"
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 RCSID("$Id$");
+
+#include <signal.h>
 
 /*
  * We would like to always use this signal but there is a link error
@@ -12,6 +16,8 @@ RCSID("$Id$");
  *
  * Do we need any extra hacks for SIGCLD and/or SIGCHLD?
  */
+
+typedef RETSIGTYPE (*SigAction)(/* int??? */);
 
 SigAction
 signal(int iSig, SigAction pAction)
