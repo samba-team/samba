@@ -78,7 +78,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
     ctrl = set_ctrl(flags, argc, argv);
 
     /* Get a few bytes so we can pass our return value to
-       pam_sm_setcred(). */
+       pam_sm_setcred(). Used in AUTH_RETURN macro */
     ret_data = malloc(sizeof(int));
 
     /* get the username */
