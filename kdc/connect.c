@@ -133,7 +133,7 @@ do_request(krb5_context context, void *buf, size_t len,
     reply.length = 0;
     ret = process_request(context, buf, len, &reply, addr, from);
     if(reply.length){
-	kdc_log(5, "sending %d bytes to %s", reply.length, addr);
+	kdc_log(context, 5, "sending %d bytes to %s", reply.length, addr);
 	sendto(socket, reply.data, reply.length, 0, from, from_len);
 	krb5_data_free(&reply);
     }

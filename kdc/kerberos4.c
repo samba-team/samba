@@ -40,6 +40,8 @@
 
 RCSID("$Id$");
 
+#ifdef KRB4
+
 static u_int32_t
 swap32(u_int32_t x)
 {
@@ -97,7 +99,7 @@ do_version4(krb5_context context,
     sp = krb5_storage_from_mem(buf, len);
     RCHECK(krb5_ret_int8(sp, &pvno), out);
     if(pvno != 4){
-	kdc_log(0, "Protocol version mismatch (%d)", pvno);
+	kdc_log(context, 0, "Protocol version mismatch (%d)", pvno);
 	make_err_reply(reply, KDC_PKT_VER, NULL);
 	goto out;
     }
@@ -115,14 +117,14 @@ do_version4(krb5_context context,
 	RCHECK(krb5_ret_int8(sp, &life), out1);
 	RCHECK(krb5_ret_stringz(sp, &sname), out1);
 	RCHECK(krb5_ret_stringz(sp, &sinst), out1);
-	kdc_log(0, "AS-REQ %s.%s@%s from %s for %s.%s", 
+	kdc_log(context, 0, "AS-REQ %s.%s@%s from %s for %s.%s", 
 		name, inst, realm, from, sname, sinst);
 
 	ret = krb5_425_conv_principal(context, name, inst, realm,
 				      &client_princ);
 
 	if(ret){
-	    kdc_log(0, "Converting client principal: %s", 
+	    kdc_log(context, 0, "Converting client principal: %s", 
 		    krb5_get_err_text(context, ret));
 	    make_err_reply(reply, KFAILURE, 
 			   "Failed to convert v4 principal (client)");
@@ -132,7 +134,7 @@ do_version4(krb5_context context,
 	ret = krb5_425_conv_principal(context, sname, sinst, v4_realm,
 				      &server_princ);
 	if(ret){
-	    kdc_log(0, "Converting server principal: %s", 
+	    kdc_log(context, 0, "Converting server principal: %s", 
 		    krb5_get_err_text(context, ret));
 	    make_err_reply(reply, KFAILURE, 
 			   "Failed to convert v4 principal (server)");
@@ -141,14 +143,14 @@ do_version4(krb5_context context,
 
 	client = db_fetch(context, client_princ);
 	if(client == NULL){
-	    kdc_log(0, "Client not found in database: %s.%s@%s", 
+	    kdc_log(context, 0, "Client not found in database: %s.%s@%s", 
 		    name, inst, realm);
 	    make_err_reply(reply, KERB_ERR_PRINCIPAL_UNKNOWN, NULL);
 	    goto out1;
 	}
 	server = db_fetch(context, server_princ);
 	if(server == NULL){
-	    kdc_log(0, "Server not found in database: %s.%s@%s", 
+	    kdc_log(context, 0, "Server not found in database: %s.%s@%s", 
 		    sname, sinst, v4_realm);
 	    make_err_reply(reply, KERB_ERR_PRINCIPAL_UNKNOWN, NULL);
 	    goto out1;
@@ -156,7 +158,7 @@ do_version4(krb5_context context,
 
 	ret = hdb_keytype2key(context, client, KEYTYPE_DES, &ckey);
 	if(ret){
-	    kdc_log(0, "%s", krb5_get_err_text(context, ret));
+	    kdc_log(context, 0, "%s", krb5_get_err_text(context, ret));
 	    /* XXX */
 	    make_err_reply(reply, KDC_NULL_KEY, 
 			   "No DES key in database (client)");
@@ -167,7 +169,7 @@ do_version4(krb5_context context,
 	while(ckey->salt == NULL || ckey->salt->length != 0)
 	    ret = hdb_next_keytype2key(context, client, KEYTYPE_DES, &ckey);
 	if(ret){
-	    kdc_log(0, "No version-4 salted key in database -- %s.%s@%s", 
+	    kdc_log(context, 0, "No version-4 salted key in database -- %s.%s@%s", 
 		    name, inst, realm);
 	    make_err_reply(reply, KDC_NULL_KEY, 
 			   "No version-4 salted key in database");
@@ -176,7 +178,7 @@ do_version4(krb5_context context,
 	
 	ret = hdb_keytype2key(context, server, KEYTYPE_DES, &skey);
 	if(ret){
-	    kdc_log(0, "%s", krb5_get_err_text(context, ret));
+	    kdc_log(context, 0, "%s", krb5_get_err_text(context, ret));
 	    /* XXX */
 	    make_err_reply(reply, KDC_NULL_KEY, 
 			   "No DES key in database (server)");
@@ -236,7 +238,7 @@ do_version4(krb5_context context,
 	ret = krb5_425_conv_principal(context, "krbtgt", realm, v4_realm,
 				      &tgt_princ);
 	if(ret){
-	    kdc_log(0, "Converting krbtgt principal: %s", 
+	    kdc_log(context, 0, "Converting krbtgt principal: %s", 
 		    krb5_get_err_text(context, ret));
 	    make_err_reply(reply, KFAILURE, 
 			   "Failed to convert v4 principal (krbtgt)");
@@ -246,7 +248,7 @@ do_version4(krb5_context context,
 	tgt = db_fetch(context, tgt_princ);
 	if(tgt == NULL){
 	    char *s;
-	    s = kdc_log_msg(0, "Ticket-granting ticket not "
+	    s = kdc_log_msg(context, 0, "Ticket-granting ticket not "
 			    "found in database: krbtgt.%s@%s", 
 			    realm, v4_realm);
 	    make_err_reply(reply, KFAILURE, s);
@@ -260,7 +262,7 @@ do_version4(krb5_context context,
 
 	ret = hdb_keytype2key(context, tgt, KEYTYPE_DES, &tkey);
 	if(ret){
-	    kdc_log(0, "%s", krb5_get_err_text(context, ret));
+	    kdc_log(context, 0, "%s", krb5_get_err_text(context, ret));
 	    /* XXX */
 	    make_err_reply(reply, KDC_NULL_KEY, 
 			   "No DES key in database (krbtgt)");
@@ -284,7 +286,7 @@ do_version4(krb5_context context,
 	    e = krb_rd_req(&auth, "krbtgt", realm, 
 			   addr->sin_addr.s_addr, &ad, 0);
 	    if(e){
-		kdc_log(0, "krb_rd_req: %s", krb_get_err_text(e));
+		kdc_log(context, 0, "krb_rd_req: %s", krb_get_err_text(e));
 		make_err_reply(reply, ret, NULL);
 		goto out2;
 	    }
@@ -296,18 +298,18 @@ do_version4(krb5_context context,
 	RCHECK(krb5_ret_int8(sp, &life), out2);
 	RCHECK(krb5_ret_stringz(sp, &sname), out2);
 	RCHECK(krb5_ret_stringz(sp, &sinst), out2);
-	kdc_log(0, "TGS-REQ %s.%s@%s from %s for %s.%s", 
+	kdc_log(context, 0, "TGS-REQ %s.%s@%s from %s for %s.%s", 
 		ad.pname, ad.pinst, ad.prealm, from, sname, sinst);
 	
 	if(strcmp(ad.prealm, realm)){
-	    kdc_log(0, "Can't hop realms %s -> %s", realm, ad.prealm);
+	    kdc_log(context, 0, "Can't hop realms %s -> %s", realm, ad.prealm);
 	    make_err_reply(reply, KERB_ERR_PRINCIPAL_UNKNOWN, 
 			   "Can't hop realms");
 	    goto out2;
 	}
 
 	if(strcmp(sname, "changepw") == 0){
-	    kdc_log(0, "Bad request for changepw ticket");
+	    kdc_log(context, 0, "Bad request for changepw ticket");
 	    make_err_reply(reply, KERB_ERR_PRINCIPAL_UNKNOWN, 
 			   "Can't authorize password change based on TGT");
 	    goto out2;
@@ -316,7 +318,7 @@ do_version4(krb5_context context,
 	ret = krb5_425_conv_principal(context, ad.pname, ad.pinst, ad.prealm, 
 				      &client_princ);
 	if(ret){
-	    kdc_log(0, "Converting client principal: %s", 
+	    kdc_log(context, 0, "Converting client principal: %s", 
 		    krb5_get_err_text(context, ret));
 	    make_err_reply(reply, KFAILURE, 
 			   "Failed to convert v4 principal (client)");
@@ -326,7 +328,8 @@ do_version4(krb5_context context,
 	client = db_fetch(context, client_princ);
 	if(client == NULL){
 	    char *s;
-	    s = kdc_log_msg(0, "Client not found in database: %s.%s@%s", 
+	    s = kdc_log_msg(context, 0, 
+			    "Client not found in database: %s.%s@%s", 
 			    ad.pname, ad.pinst, ad.prealm);
 	    make_err_reply(reply, KERB_ERR_PRINCIPAL_UNKNOWN, s);
 	    free(s);
@@ -336,7 +339,7 @@ do_version4(krb5_context context,
 	ret = krb5_425_conv_principal(context, sname, sinst, v4_realm, 
 				      &server_princ);
 	if(ret){
-	    kdc_log(0, "Converting server principal: %s", 
+	    kdc_log(context, 0, "Converting server principal: %s", 
 		    krb5_get_err_text(context, ret));
 	    make_err_reply(reply, KFAILURE, 
 			   "Failed to convert v4 principal (server)");
@@ -345,7 +348,8 @@ do_version4(krb5_context context,
 	server = db_fetch(context, server_princ);
 	if(server == NULL){
 	    char *s;
-	    s = kdc_log_msg(0, "Server not found in database: %s.%s@%s", 
+	    s = kdc_log_msg(context, 0, 
+			    "Server not found in database: %s.%s@%s", 
 			    sname, sinst, v4_realm);
 	    make_err_reply(reply, KERB_ERR_PRINCIPAL_UNKNOWN, s);
 	    free(s);
@@ -354,7 +358,7 @@ do_version4(krb5_context context,
 
 	ret = hdb_keytype2key(context, server, KEYTYPE_DES, &skey);
 	if(ret){
-	    kdc_log(0, "%s", krb5_get_err_text(context, ret));
+	    kdc_log(context, 0, "%s", krb5_get_err_text(context, ret));
 	    /* XXX */
 	    make_err_reply(reply, KDC_NULL_KEY, 
 			   "No DES key in database (server)");
@@ -406,7 +410,7 @@ do_version4(krb5_context context,
     case AUTH_MSG_ERR_REPLY:
 	break;
     default:
-	kdc_log(0, "Unknown message type: %d from %s", 
+	kdc_log(context, 0, "Unknown message type: %d from %s", 
 		msg_type, from);
 	
 	make_err_reply(reply, KFAILURE, "Unknown message type");
@@ -433,3 +437,5 @@ out:
     krb5_storage_free(sp);
     return 0;
 }
+
+#endif

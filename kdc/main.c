@@ -71,15 +71,15 @@ main(int argc, char **argv)
 	EncryptionKey key;
 	f = fopen(keyfile, "r");
 	if(f == NULL){
-	    kdc_log(0, "Failed to open master key file %s", 
+	    kdc_log(context, 0, "Failed to open master key file %s", 
 		    keyfile);
 	    exit(1);
 	}
 	len = fread(buf, 1, sizeof(buf), f);
 	fclose(f);
 	if(decode_EncryptionKey(buf, len, &key, &len)){
-	    kdc_log(0, "Failed to parse contents of master key file %s", 
-		    keyfile);
+	    kdc_log(context, 0, 
+		    "Failed to parse contents of master key file %s", keyfile);
 	    exit(1);
 	}	    
 	set_master_key(&key);

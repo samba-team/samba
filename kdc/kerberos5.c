@@ -80,14 +80,15 @@ as_rep(krb5_context context,
 	principalname2krb5_principal (&client_princ, *(b->cname), b->realm);
 	krb5_unparse_name(context, client_princ, &client_name);
     }
-    kdc_log(0, "AS-REQ %s from %s for %s", client_name, from, server_name);
+    kdc_log(context, 0, "AS-REQ %s from %s for %s", 
+	    client_name, from, server_name);
 
     if(ret)
 	goto out;
 
     client = db_fetch(context, client_princ);
     if(client == NULL){
-	kdc_log(0, "UNKNOWN -- %s", client_name);
+	kdc_log(context, 0, "UNKNOWN -- %s", client_name);
 	ret = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
 	goto out;
     }
@@ -95,7 +96,7 @@ as_rep(krb5_context context,
     server = db_fetch(context, server_princ);
 
     if(server == NULL){
-	kdc_log(0, "UNKNOWN -- %s", server_name);
+	kdc_log(context, 0, "UNKNOWN -- %s", server_name);
 	ret = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
 	goto out;
     }
@@ -103,12 +104,13 @@ as_rep(krb5_context context,
 
     if(!client->flags.client){
 	ret = KRB5KDC_ERR_POLICY;
-	kdc_log(0, "Principal may not act as client -- %s", client_name);
+	kdc_log(context, 0, "Principal may not act as client -- %s", 
+		client_name);
 	goto out;
     }
     if(!server->flags.server){
 	ret = KRB5KDC_ERR_POLICY;
-	kdc_log(0, "Principal (%s) may not act as server -- %s", 
+	kdc_log(context, 0, "Principal (%s) may not act as server -- %s", 
 		server_name, client_name);
 	goto out;
     }
@@ -126,7 +128,7 @@ as_rep(krb5_context context,
 
     if(ret){
 	ret = KRB5KDC_ERR_ETYPE_NOSUPP;
-	kdc_log(0, "No support for etypes -- %s", client_name);
+	kdc_log(context, 0, "No support for etypes -- %s", client_name);
 	goto out;
     }
     
@@ -139,7 +141,7 @@ as_rep(krb5_context context,
 	int i;
 	PA_DATA *pa;
 	int found_pa = 0;
-	kdc_log(5, "Looking for pa-data -- %s", client_name);
+	kdc_log(context, 5, "Looking for pa-data -- %s", client_name);
 	for(i = 0; i < req->padata->len; i++){
 	    PA_DATA *pa = &req->padata->val[i];
 	    if(pa->padata_type == pa_enc_timestamp){
@@ -149,7 +151,8 @@ as_rep(krb5_context context,
 		size_t len;
 		EncryptedData enc_data;
 		
-		kdc_log(5, "Found pa-enc-timestamp -- %s", client_name);
+		kdc_log(context, 5, "Found pa-enc-timestamp -- %s", 
+			client_name);
 		found_pa = 1;
 		
 		ret = decode_EncryptedData(pa->padata_value.data,
@@ -158,7 +161,8 @@ as_rep(krb5_context context,
 					   &len);
 		if (ret) {
 		    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
-		    kdc_log(5, "Failed to decode PA-DATA -- %s", client_name);
+		    kdc_log(context, 5, "Failed to decode PA-DATA -- %s", 
+			    client_name);
 		    goto out;
 		}
 
@@ -174,7 +178,7 @@ as_rep(krb5_context context,
 		free_EncryptedData(&enc_data);
 		if(ret){
 		    e_text = "Failed to decrypt PA-DATA";
-		    kdc_log (5, "Failed to decrypt PA-DATA -- %s",
+		    kdc_log (context, 5, "Failed to decrypt PA-DATA -- %s",
 			     client_name);
 		    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
 		    continue;
@@ -187,7 +191,7 @@ as_rep(krb5_context context,
 		if(ret){
 		    e_text = "Failed to decode PA-ENC-TS-ENC";
 		    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
-		    kdc_log (5, "Failed to decode PA-ENC-TS_ENC -- %s",
+		    kdc_log (context, 5, "Failed to decode PA-ENC-TS_ENC -- %s",
 			     client_name);
 		    continue;
 		}
@@ -203,14 +207,16 @@ as_rep(krb5_context context,
 				   server_princ,
 				   0,
 				   reply);
-		    kdc_log(0, "Too large time skew -- %s", client_name);
+		    kdc_log(context, 0, "Too large time skew -- %s", 
+			    client_name);
 		    goto out2;
 		}
 		et.flags.pre_authent = 1;
-		kdc_log(2, "Pre-authentication succeded -- %s", client_name);
+		kdc_log(context, 2, "Pre-authentication succeded -- %s", 
+			client_name);
 		break;
 	    } else {
-		kdc_log(5, "Found pa-data of type %d -- %s", 
+		kdc_log(context, 5, "Found pa-data of type %d -- %s", 
 			pa->padata_type, client_name);
 	    }
 	}
@@ -220,7 +226,7 @@ as_rep(krb5_context context,
 	/* We come here if we found a pa-enc-timestamp, but if there
            was some problem with it, other than too large skew */
 	if(et.flags.pre_authent == 0){
-	    kdc_log(0, "%s -- %s", e_text, client_name);
+	    kdc_log(context, 0, "%s -- %s", e_text, client_name);
 	    e_text = NULL;
 	    goto out;
 	}
@@ -256,11 +262,11 @@ as_rep(krb5_context context,
 		      0,
 		      reply);
 	
-	kdc_log(0, "No PA-ENC-TIMESTAMP -- %s", client_name);
+	kdc_log(context, 0, "No PA-ENC-TIMESTAMP -- %s", client_name);
 	goto out2;
     }
 
-    kdc_log(2, "Using etype %d -- %s", etype, client_name);
+    kdc_log(context, 2, "Using etype %d -- %s", etype, client_name);
     
     memset(&rep, 0, sizeof(rep));
     rep.pvno = 5;
@@ -273,7 +279,7 @@ as_rep(krb5_context context,
 
     if(f.renew || f.validate || f.proxy || f.forwarded || f.enc_tkt_in_skey){
 	ret = KRB5KDC_ERR_BADOPTION;
-	kdc_log(0, "Bad KDC options -- %s", client_name);
+	kdc_log(context, 0, "Bad KDC options -- %s", client_name);
 	goto out;
     }
     
@@ -282,21 +288,21 @@ as_rep(krb5_context context,
 	et.flags.forwardable = f.forwardable;
     else{
 	ret = KRB5KDC_ERR_POLICY;
-	kdc_log(0, "Ticket may not be forwardable -- %s", client_name);
+	kdc_log(context, 0, "Ticket may not be forwardable -- %s", client_name);
 	goto out;
     }
     if(client->flags.proxiable && server->flags.proxiable)
 	et.flags.proxiable = f.proxiable;
     else{
 	ret = KRB5KDC_ERR_POLICY;
-	kdc_log(0, "Ticket may not be proxiable -- %s", client_name);
+	kdc_log(context, 0, "Ticket may not be proxiable -- %s", client_name);
 	goto out;
     }
     if(client->flags.postdate && server->flags.postdate)
 	et.flags.may_postdate = f.allow_postdate;
     else{
 	ret = KRB5KDC_ERR_POLICY;
-	kdc_log(0, "Ticket may not be postdatable -- %s", client_name);
+	kdc_log(context, 0, "Ticket may not be postdatable -- %s", client_name);
 	goto out;
     }
 
@@ -315,7 +321,8 @@ as_rep(krb5_context context,
 	    start = *et.starttime = *req->req_body.from;
 	    et.flags.invalid = 1;
 	    et.flags.postdated = 1; /* XXX ??? */
-	    kdc_log(2, "Postdated ticket requested -- %s", client_name);
+	    kdc_log(context, 2, "Postdated ticket requested -- %s", 
+		    client_name);
 	}
 	if(b->till == 0)
 	    b->till = MAX_TIME;
@@ -360,7 +367,13 @@ as_rep(krb5_context context,
     }
 
     copy_EncryptionKey(&et.key, &ek.key);
-    /* MIT must have at least one last_req */
+
+    /* The MIT ASN.1 library (obviously) doesn't tell lengths encoded
+     * as 0 and as 0x80 (meaning indefinite length) apart, and is thus
+     * incapable to correctly decode vectors of zero length.
+     *
+     * To fix this, always send at least one no-op last_req
+     */
     ek.last_req.len = 1;
     ALLOC(ek.last_req.val);
     ek.last_req.val->lr_type = 0;
@@ -394,7 +407,7 @@ as_rep(krb5_context context,
 				   &et, &len);
 	free_EncTicketPart(&et);
 	if(ret) {
-	    kdc_log(0, "Failed to encode ticket -- %s", client);
+	    kdc_log(context, 0, "Failed to encode ticket -- %s", client);
 	    goto out;
 	}
 	
@@ -411,7 +424,7 @@ as_rep(krb5_context context,
 				  &ek, &len);
 	free_EncKDCRepPart(&ek);
 	if(ret) {
-	    kdc_log(0, "Failed to encode KDC-REP -- %s", client_name);
+	    kdc_log(context, 0, "Failed to encode KDC-REP -- %s", client_name);
 	    goto out;
 	}
 	ekey = unseal_key(ckey);
@@ -433,7 +446,7 @@ as_rep(krb5_context context,
 	ret = encode_AS_REP(buf + sizeof(buf) - 1, sizeof(buf), &rep, &len);
 	free_AS_REP(&rep);
 	if(ret) {
-	    kdc_log(0, "Failed to encode AS-REP -- %s", client_name);
+	    kdc_log(context, 0, "Failed to encode AS-REP -- %s", client_name);
 	    goto out;
 	}
 	
@@ -476,30 +489,30 @@ check_tgs_flags(krb5_context context, KDC_REQ_BODY *b,
 	
     if(f.validate){
 	if(!tgt->flags.invalid || tgt->starttime == NULL){
-	    kdc_log(0, "Bad request to validate ticket");
+	    kdc_log(context, 0, "Bad request to validate ticket");
 	    return KRB5KDC_ERR_BADOPTION;
 	}
 	if(*tgt->starttime < kdc_time){
-	    kdc_log(0, "Early request to validate ticket");
+	    kdc_log(context, 0, "Early request to validate ticket");
 	    return KRB5KRB_AP_ERR_TKT_NYV;
 	}
 	/* XXX  tkt = tgt */
 	et->flags.invalid = 0;
     }else if(tgt->flags.invalid){
-	kdc_log(0, "Ticket-granting ticket has INVALID flag set");
+	kdc_log(context, 0, "Ticket-granting ticket has INVALID flag set");
 	return KRB5KRB_AP_ERR_TKT_INVALID;
     }
 
     if(f.forwardable){
 	if(!tgt->flags.forwardable){
-	    kdc_log(0, "Bad request for forwardable ticket");
+	    kdc_log(context, 0, "Bad request for forwardable ticket");
 	    return KRB5KDC_ERR_BADOPTION;
 	}
 	et->flags.forwardable = 1;
     }
     if(f.forwarded){
 	if(!tgt->flags.forwardable){
-	    kdc_log(0, "Request to forward non-forwardable ticket");
+	    kdc_log(context, 0, "Request to forward non-forwardable ticket");
 	    return KRB5KDC_ERR_BADOPTION;
 	}
 	et->flags.forwarded = 1;
@@ -510,14 +523,14 @@ check_tgs_flags(krb5_context context, KDC_REQ_BODY *b,
 	
     if(f.proxiable){
 	if(!tgt->flags.proxiable){
-	    kdc_log(0, "Bad request for proxiable ticket");
+	    kdc_log(context, 0, "Bad request for proxiable ticket");
 	    return KRB5KDC_ERR_BADOPTION;
 	}
 	et->flags.proxiable = 1;
     }
     if(f.proxy){
 	if(!tgt->flags.proxiable){
-	    kdc_log(0, "Request to proxy non-proxiable ticket");
+	    kdc_log(context, 0, "Request to proxy non-proxiable ticket");
 	    return KRB5KDC_ERR_BADOPTION;
 	}
 	et->flags.proxy = 1;
@@ -528,14 +541,14 @@ check_tgs_flags(krb5_context context, KDC_REQ_BODY *b,
 
     if(f.allow_postdate){
 	if(!tgt->flags.may_postdate){
-	    kdc_log(0, "Bad request for post-datable ticket");
+	    kdc_log(context, 0, "Bad request for post-datable ticket");
 	    return KRB5KDC_ERR_BADOPTION;
 	}
 	et->flags.may_postdate = 1;
     }
     if(f.postdated){
 	if(!tgt->flags.may_postdate){
-	    kdc_log(0, "Bad request for postdated ticket");
+	    kdc_log(context, 0, "Bad request for postdated ticket");
 	    return KRB5KDC_ERR_BADOPTION;
 	}
 	if(b->from)
@@ -543,13 +556,13 @@ check_tgs_flags(krb5_context context, KDC_REQ_BODY *b,
 	et->flags.postdated = 1;
 	et->flags.invalid = 1;
     }else if(b->from && *b->from > kdc_time + context->max_skew){
-	kdc_log(0, "Ticket cannot be postdated");
+	kdc_log(context, 0, "Ticket cannot be postdated");
 	return KRB5KDC_ERR_CANNOT_POSTDATE;
     }
 
     if(f.renewable){
 	if(!tgt->flags.renewable){
-	    kdc_log(0, "Bad request for renewable ticket");
+	    kdc_log(context, 0, "Bad request for renewable ticket");
 	    return KRB5KDC_ERR_BADOPTION;
 	}
 	et->flags.renewable = 1;
@@ -559,7 +572,7 @@ check_tgs_flags(krb5_context context, KDC_REQ_BODY *b,
     if(f.renew){
 	time_t old_life;
 	if(!tgt->flags.renewable || tgt->renew_till == NULL){
-	    kdc_log(0, "Request to renew non-renewable ticket");
+	    kdc_log(context, 0, "Request to renew non-renewable ticket");
 	    return KRB5KDC_ERR_BADOPTION;
 	}
 	old_life = tgt->endtime;
@@ -595,7 +608,7 @@ tgs_make_reply(krb5_context context, KDC_REQ_BODY *b, EncTicketPart *tgt,
     }
 	
     if(ret){
-	kdc_log(0, "Failed to find requested etype");
+	kdc_log(context, 0, "Failed to find requested etype");
 	return KRB5KDC_ERR_ETYPE_NOSUPP;
     }
 	
@@ -704,7 +717,7 @@ tgs_make_reply(krb5_context context, KDC_REQ_BODY *b, EncTicketPart *tgt,
 	ret = encode_EncTicketPart(buf + sizeof(buf) - 1, 
 				   sizeof(buf), &et, &len);
 	if(ret){
-	    kdc_log(0, "Failed to encode EncTicketPart: %s", 
+	    kdc_log(context, 0, "Failed to encode EncTicketPart: %s", 
 		    krb5_get_err_text(context, ret));
 	    goto out;
 	}
@@ -718,7 +731,7 @@ tgs_make_reply(krb5_context context, KDC_REQ_BODY *b, EncTicketPart *tgt,
 	ret = encode_EncTGSRepPart(buf + sizeof(buf) - 1, 
 				   sizeof(buf), &ek, &len);
 	if(ret){
-	    kdc_log(0, "Failed to encode EncTicketPart: %s", 
+	    kdc_log(context, 0, "Failed to encode EncTicketPart: %s", 
 		    krb5_get_err_text(context, ret));
 	    goto out;
 	}
@@ -743,7 +756,7 @@ tgs_make_reply(krb5_context context, KDC_REQ_BODY *b, EncTicketPart *tgt,
 	
 	ret = encode_TGS_REP(buf + sizeof(buf) - 1, sizeof(buf), &rep, &len);
 	if(ret){
-	    kdc_log(0, "Failed to encode TGS-REP: %s", 
+	    kdc_log(context, 0, "Failed to encode TGS-REP: %s", 
 		    krb5_get_err_text(context, ret));
 	    goto out;
 	}
@@ -772,7 +785,7 @@ tgs_check_authenticator(krb5_context context, krb5_auth_context ac,
     
     krb5_auth_getauthenticator(context, ac, &auth);
     if(auth->cksum == NULL){
-	kdc_log(0, "No authenticator in request");
+	kdc_log(context, 0, "No authenticator in request");
 	ret = KRB5KRB_AP_ERR_INAPP_CKSUM;
 	goto out;
     }
@@ -780,7 +793,7 @@ tgs_check_authenticator(krb5_context context, krb5_auth_context ac,
     if (auth->cksum->cksumtype != CKSUMTYPE_RSA_MD4 &&
 	auth->cksum->cksumtype != CKSUMTYPE_RSA_MD5 &&
 	auth->cksum->cksumtype != CKSUMTYPE_RSA_MD5_DES){
-	kdc_log(0, "Bad checksum type in authenticator: %d", 
+	kdc_log(context, 0, "Bad checksum type in authenticator: %d", 
 		auth->cksum->cksumtype);
 	ret =  KRB5KRB_AP_ERR_INAPP_CKSUM;
 	goto out;
@@ -790,7 +803,7 @@ tgs_check_authenticator(krb5_context context, krb5_auth_context ac,
     ret = encode_KDC_REQ_BODY(buf + sizeof(buf) - 1, sizeof(buf),
 			      b, &len);
     if(ret){
-	kdc_log(0, "Failed to encode KDC-REQ-BODY: %s", 
+	kdc_log(context, 0, "Failed to encode KDC-REQ-BODY: %s", 
 		krb5_get_err_text(context, ret));
 	goto out;
     }
@@ -798,7 +811,7 @@ tgs_check_authenticator(krb5_context context, krb5_auth_context ac,
 			       key,
 			       auth->cksum);
     if(ret){
-	kdc_log(0, "Failed to verify checksum: %s", 
+	kdc_log(context, 0, "Failed to verify checksum: %s", 
 		krb5_get_err_text(context, ret));
     }
 out:
@@ -833,14 +846,14 @@ tgs_rep2(krb5_context context,
 
     ret = krb5_decode_ap_req(context, &pa_data->padata_value, &ap_req);
     if(ret){
-	kdc_log(0, "Failed to decode AP-REQ: %s", 
+	kdc_log(context, 0, "Failed to decode AP-REQ: %s", 
 		krb5_get_err_text(context, ret));
 	goto out;
     }
     
     if(ap_req.ticket.sname.name_string.len != 2 ||
        strcmp(ap_req.ticket.sname.name_string.val[0], "krbtgt")){
-	kdc_log(0, "PA-DATA is not a ticket-granting ticket");
+	kdc_log(context, 0, "PA-DATA is not a ticket-granting ticket");
 	ret = KRB5KDC_ERR_POLICY; /* ? */
 	goto out;
     }
@@ -854,7 +867,8 @@ tgs_rep2(krb5_context context,
     if(krbtgt == NULL) {
 	char *p;
 	krb5_unparse_name(context, princ, &p);
-	kdc_log(0, "Ticket-granting ticket not found in database: %s", p);
+	kdc_log(context, 0, "Ticket-granting ticket not found in database: %s",
+		p);
 	free(p);
 	ret = KRB5KRB_AP_ERR_NOT_US;
 	goto out;
@@ -872,7 +886,7 @@ tgs_rep2(krb5_context context,
 			     
     krb5_free_principal(context, princ);
     if(ret) {
-	kdc_log(0, "Failed to verify AP-REQ: %s", 
+	kdc_log(context, 0, "Failed to verify AP-REQ: %s", 
 		krb5_get_err_text(context, ret));
 	goto out;
     }
@@ -884,7 +898,7 @@ tgs_rep2(krb5_context context,
     krb5_auth_con_free(context, ac);
 
     if(ret){
-	kdc_log(0, "Failed to verify authenticator: %s", 
+	kdc_log(context, 0, "Failed to verify authenticator: %s", 
 		krb5_get_err_text(context, ret));
 	goto out;
     }
@@ -928,17 +942,17 @@ tgs_rep2(krb5_context context,
 	krb5_unparse_name(context, cp, &cpn);
 	client = db_fetch(context, cp);
 
-	kdc_log(0, "TGS-REQ %s from %s for %s", cpn, from, spn);
+	kdc_log(context, 0, "TGS-REQ %s from %s for %s", cpn, from, spn);
 	
 	if(server == NULL){
-	    kdc_log(0, "Server not found in database: %s", spn);
+	    kdc_log(context, 0, "Server not found in database: %s", spn);
 	    /* do foreign realm stuff */
 	    ret = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
 	    goto out;
 	}
 
 	if(client == NULL){
-	    kdc_log(0, "Client not found in database: %s", cpn);
+	    kdc_log(context, 0, "Client not found in database: %s", cpn);
 	    ret = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
 	    goto out;
 	}
@@ -947,7 +961,7 @@ tgs_rep2(krb5_context context,
 	   !krb5_principal_compare(context, 
 				   krbtgt->principal,
 				   server->principal)){
-	    kdc_log(0, "Inconsistent request.");
+	    kdc_log(context, 0, "Inconsistent request.");
 	    ret = KRB5KDC_ERR_SERVER_NOMATCH;
 	    goto out;
 	}
@@ -1026,7 +1040,7 @@ tgs_rep(krb5_context context,
 
     if(req->padata == NULL){
 	ret = KRB5KDC_ERR_PREAUTH_REQUIRED; /* XXX ??? */
-	kdc_log(0, "TGS-REQ from %s without PA-DATA", from);
+	kdc_log(context, 0, "TGS-REQ from %s without PA-DATA", from);
 	goto out;
     }
     
@@ -1038,7 +1052,7 @@ tgs_rep(krb5_context context,
     if(pa_data == NULL){
 	ret = KRB5KDC_ERR_PADATA_TYPE_NOSUPP;
 	
-	kdc_log(0, "TGS-REQ from %s without PA-TGS-REQ", from);
+	kdc_log(context, 0, "TGS-REQ from %s without PA-TGS-REQ", from);
 	goto out;
     }
     ret = tgs_rep2(context, &req->req_body, server, pa_data, data, from);
