@@ -3624,7 +3624,7 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, char *printername, SEC_DESC_BUF **secde
 		for (i = 0; i < the_acl->num_aces; i++) {
 			fstring sid_str;
 
-			sid_to_string(sid_str, &the_acl->ace[i].sid);
+			sid_to_string(sid_str, &the_acl->ace[i].trustee);
 
 			DEBUG(10, ("%s %d %d 0x%08x\n", sid_str,
 				   the_acl->ace[i].type, the_acl->ace[i].flags, 

@@ -163,7 +163,7 @@ static void print_ace(FILE *f, SEC_ACE *ace)
 	int do_print = 0;
 	uint32 got_mask;
 
-	SidToString(sidstr, &ace->sid);
+	SidToString(sidstr, &ace->trustee);
 
 	fprintf(f, "%s:", sidstr);
 
@@ -525,12 +525,24 @@ static int owner_set(struct cli_state *cli, enum chown_mode change_mode,
 
 static int ace_compare(SEC_ACE *ace1, SEC_ACE *ace2)
 {
-	if (sec_ace_equal(ace1, ace2)) return 0;
-	if (ace1->type != ace2->type) return ace2->type - ace1->type;
-	if (sid_compare(&ace1->sid, &ace2->sid)) return sid_compare(&ace1->sid, &ace2->sid);
-	if (ace1->flags != ace2->flags) return ace1->flags - ace2->flags;
-	if (ace1->info.mask != ace2->info.mask) return ace1->info.mask - ace2->info.mask;
-	if (ace1->size != ace2->size) return ace1->size - ace2->size;
+	if (sec_ace_equal(ace1, ace2)) 
+		return 0;
+
+	if (ace1->type != ace2->type) 
+		return ace2->type - ace1->type;
+
+	if (sid_compare(&ace1->trustee, &ace2->trustee)) 
+		return sid_compare(&ace1->trustee, &ace2->trustee);
+
+	if (ace1->flags != ace2->flags) 
+		return ace1->flags - ace2->flags;
+
+	if (ace1->info.mask != ace2->info.mask) 
+		return ace1->info.mask - ace2->info.mask;
+
+	if (ace1->size != ace2->size) 
+		return ace1->size - ace2->size;
+
 	return memcmp(ace1, ace2, sizeof(SEC_ACE));
 }
 
@@ -627,8 +639,8 @@ static int cacl_set(struct cli_state *cli, char *filename,
 			BOOL found = False;
 
 			for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
-				if (sid_equal(&sd->dacl->ace[i].sid,
-					      &old->dacl->ace[j].sid)) {
+				if (sid_equal(&sd->dacl->ace[i].trustee,
+					      &old->dacl->ace[j].trustee)) {
 					old->dacl->ace[j] = sd->dacl->ace[i];
 					found = True;
 				}
@@ -637,7 +649,7 @@ static int cacl_set(struct cli_state *cli, char *filename,
 			if (!found) {
 				fstring str;
 
-				SidToString(str, &sd->dacl->ace[i].sid);
+				SidToString(str, &sd->dacl->ace[i].trustee);
 				printf("ACL for SID %s not found\n", str);
 			}
 		}
