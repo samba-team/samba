@@ -9,6 +9,7 @@ SMB_SUBSYSTEM(LIBNDR_RAW,[],
 		librpc/gen_ndr/ndr_audiosrv.o
 		librpc/gen_ndr/ndr_dcerpc.o
 		librpc/gen_ndr/ndr_echo.o
+		librpc/gen_ndr/ndr_exchange.o
 		librpc/gen_ndr/ndr_misc.o
 		librpc/gen_ndr/ndr_lsa.o
 		librpc/gen_ndr/ndr_lsads.o
