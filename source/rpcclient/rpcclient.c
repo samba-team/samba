@@ -208,7 +208,7 @@ void fetch_domain_sid(struct cli_state *cli)
 	if (!(mem_ctx=talloc_init()))
 	{
 		DEBUG(0,("fetch_domain_sid: talloc_init returned NULL!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+		goto error;
 	}
 
 

@@ -118,7 +118,7 @@ static void do_node_status(int fd, char *name, int type, struct in_addr ip)
 		for (i=0;i<count;i++) {
 			fstrcpy(cleanname, status[i].name);
 			for (j=0;cleanname[j];j++) {
-				if (!isprint(cleanname[j])) cleanname[j] = '.';
+				if (!isprint((int)cleanname[j])) cleanname[j] = '.';
 			}
 			printf("\t%-15s <%02x> - %s\n",
 			       cleanname,status[i].type,
