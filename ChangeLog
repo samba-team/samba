@@ -1,5 +1,9 @@
 1999-08-04  Assar Westerlund  <assar@sics.se>
 
+	* Release 0.1m
+
+1999-08-04  Assar Westerlund  <assar@sics.se>
+
 	* kuser/kinit.c (main): some more KRB4-conditionalizing
 
 	* lib/krb5/get_in_tkt.c: type correctness
