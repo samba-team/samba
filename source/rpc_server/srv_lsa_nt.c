@@ -284,7 +284,7 @@ uint32 _lsa_open_policy2(pipes_struct *p, LSA_Q_OPEN_POL2 *q_u, LSA_R_OPEN_POL2 
 
 	/* set up the LSA QUERY INFO response */
 	if (!create_policy_hnd(p, &r_u->pol, NULL, NULL))
-		NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	return NT_STATUS_NOPROBLEMO;
 }
@@ -299,7 +299,7 @@ uint32 _lsa_open_policy(pipes_struct *p, LSA_Q_OPEN_POL *q_u, LSA_R_OPEN_POL *r_
 
 	/* set up the LSA QUERY INFO response */
 	if (!create_policy_hnd(p, &r_u->pol, NULL, NULL))
-		NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	return NT_STATUS_NOPROBLEMO;
 }

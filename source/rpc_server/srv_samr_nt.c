@@ -852,7 +852,7 @@ static BOOL get_group_domain_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 sta
 uint32 _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u, SAMR_R_ENUM_DOM_GROUPS *r_u)
 {
 	DOMAIN_GRP grp[2];
-	int num_entries;
+	uint32 num_entries;
 	DOM_SID sid;
 
 	r_u->status = NT_STATUS_NOPROBLEMO;
@@ -881,7 +881,7 @@ uint32 _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u, SAMR_
 uint32 _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, SAMR_R_ENUM_DOM_ALIASES *r_u)
 {
 	DOMAIN_GRP grp[MAX_SAM_ENTRIES];
-	int num_entries = 0;
+	uint32 num_entries = 0;
 	fstring sid_str;
 	DOM_SID sid;
 	
@@ -914,7 +914,7 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 	SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES];
 	DOMAIN_GRP grps[MAX_SAM_ENTRIES];
 	uint16 acb_mask = ACB_NORMAL;
-    int num_entries = 0;
+    uint32 num_entries = 0;
     int orig_num_entries = 0;
     int total_entries = 0;
     uint32 data_size = 0;
