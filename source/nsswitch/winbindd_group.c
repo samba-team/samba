@@ -1098,7 +1098,7 @@ enum winbindd_result winbindd_getusersids(struct winbindd_cli_state *state)
 	enum winbindd_result result = WINBINDD_ERROR;
 	unsigned int i;
 	TALLOC_CTX *mem_ctx;
-	char *ret;
+	char *ret = NULL;
 	uint32 num_groups;
 	unsigned ofs, ret_size = 0;
 
