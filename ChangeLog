@@ -1,3 +1,21 @@
+2003-07-22  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* lib/krb5/krb5.3: add ticket access functions
+	* lib/krb5/krb5_ticket.3: ditto
+	* lib/krb5/ticket.c: ditto
+	* lib/krb5/Makefile.am: ditto
+	
+	* lib/krb5/mit_glue.c: add some more krb5_c functions
+	
+	* lib/krb5/krb5_c_make_checksum.3: add some more krb5_c functions
+	
+	* lib/krb5/crypto.c (krb5_cksumtype_valid): check is checksum type
+	is a valid one
+
+	* lib/krb5/crypto.c (krb5_checksum_is_keyed): only set extented
+	error string when there is a context
+	(krb5_checksum_is_collision_proof): ditto
+
 2003-07-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/mit_glue.c (krb5_c_get_checksum): make type and data
