@@ -983,12 +983,18 @@ alias|alias|alias|alias...
 		driver location" parameter is included for backwards compatibility
 		only.  The remaining fields in the structure are generated from answers
 		to the APW questions.</para>
-		
+
 		<para>Once the <parameter>addprinter command</parameter> has 
 		been executed, <command>smbd</command> will reparse the <filename>
 		smb.conf</filename> to determine if the share defined by the APW
 		exists.  If the sharename is still invalid, then <command>smbd
 		</command> will return an ACCESS_DENIED error to the client.</para>
+
+		<para>
+		The "add printer command" program can output a single line of text,
+		which Samba will set as the port the new printer is connected to. 
+		If this line isn't output, Samba won't reload its printer shares.
+		</para>
 		
 		<para>See also <link linkend="DELETEPRINTERCOMMAND"><parameter>
 		deleteprinter command</parameter></link>, <link 
