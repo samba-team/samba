@@ -1,0 +1,79 @@
+/*
+   Unix SMB/Netbios implementation.
+   Version 1.9.
+   SMB parameters and setup
+   Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Luke Kenneth Casson Leighton 1996-1998
+   Copyright (C) Jeremy Allison 1998
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+#ifndef _CLIENT_H
+#define _CLIENT_H
+
+/*
+ * These definitions depend on smb.h
+ */
+
+struct cli_state {
+  int fd;
+  int cnum;
+  int pid;
+  int mid;
+  int uid;
+  int protocol;
+  int sec_mode;
+  int rap_error;
+  int privilages;
+
+  fstring eff_name;
+  fstring desthost;
+  fstring user_name;
+  fstring domain;
+
+  fstring share;
+  fstring dev;
+  struct nmb_name called;
+  struct nmb_name calling;
+  fstring full_dest_host_name;
+  struct in_addr dest_ip;
+
+  struct pwd_info pwd;
+  char cryptkey[8];
+  uint32 sesskey;
+  int serverzone;
+  uint32 servertime;
+  int readbraw_supported;
+  int writebraw_supported;
+  int timeout;
+  int max_xmit;
+  char *outbuf;
+  char *inbuf;
+  int bufsize;
+  int initialised;
+  /*
+   * Only used in NT domain calls.
+   */
+  uint32 nt_error;                   /* NT RPC error code. */
+  uint16 nt_pipe_fnum;               /* Pipe handle. */
+  unsigned char sess_key[16];        /* Current session key. */
+  DOM_CRED clnt_cred;                /* Client credential. */
+  fstring mach_acct;                 /* MYNAME$. */
+  fstring srv_name_slash;            /* \\remote server. */
+  fstring clnt_name_slash;            /* \\local client. */
+};
+
+#endif /* _CLIENT_H */
