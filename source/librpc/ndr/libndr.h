@@ -47,6 +47,8 @@ struct ndr_pull {
 	uint32_t offset;
 
 	struct ndr_token_list *relative_list;
+	struct ndr_token_list *array_size_list;
+	struct ndr_token_list *array_length_list;
 
 	/* this is used to ensure we generate unique reference IDs
 	   between request and reply */
@@ -149,7 +151,8 @@ enum ndr_err_code {
 	NDR_ERR_VALIDATE,
 	NDR_ERR_BUFSIZE,
 	NDR_ERR_ALLOC,
-	NDR_ERR_RANGE
+	NDR_ERR_RANGE,
+	NDR_ERR_TOKEN
 };
 
 /*
@@ -236,29 +239,19 @@ enum ndr_err_code {
 
 
 #define NDR_ALLOC_N_SIZE(ndr, s, n, elsize) do { \
-				if ((n) == 0) { \
-					(s) = NULL; \
-				} else { \
-					(s) = talloc_array(ndr, elsize, n, __location__); \
-                               		if (!(s)) return ndr_pull_error(ndr, \
-									NDR_ERR_ALLOC, \
-									"Alloc %u * %u failed\n", \
-									n, elsize); \
-				} \
-                           } while (0)
+	(s) = talloc_array(ndr, elsize, n, __location__); \
+	if (!(s)) return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Alloc %u * %u failed\n", n, elsize); \
+} while (0)
 
 #define NDR_ALLOC_N(ndr, s, n) NDR_ALLOC_N_SIZE(ndr, s, n, sizeof(*(s)))
 
 
 #define NDR_PUSH_ALLOC_SIZE(ndr, s, size) do { \
-	                       (s) = talloc(ndr, size); \
-                               if ((size) && !(s)) return ndr_push_error(ndr, NDR_ERR_ALLOC, \
-							       "push alloc %u failed\n",\
-							       size); \
-                           } while (0)
+       (s) = talloc(ndr, size); \
+       if (!(s)) return ndr_push_error(ndr, NDR_ERR_ALLOC, "push alloc %u failed\n", size); \
+} while (0)
 
 #define NDR_PUSH_ALLOC(ndr, s) NDR_PUSH_ALLOC_SIZE(ndr, s, sizeof(*(s)))
-
 
 /* these are used when generic fn pointers are needed for ndr push/pull fns */
 typedef NTSTATUS (*ndr_push_fn_t)(struct ndr_push *, void *);

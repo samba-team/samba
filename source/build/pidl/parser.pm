@@ -269,6 +269,25 @@ sub ParseArrayPrint($$)
 }
 
 #####################################################################
+# check the size_is and length_is constraints
+sub CheckArraySizes($$)
+{
+	my $e = shift;
+	my $var_prefix = shift;
+
+	if (util::has_property($e, "size_is")) {
+		my $size = find_size_var($e, util::array_size($e), $var_prefix);
+		pidl "\tNDR_CHECK(ndr_check_array_size(ndr, (void*)&$var_prefix$e->{NAME}, $size));\n";
+	}
+
+	if (my $length = util::has_property($e, "length_is")) {
+		$length = find_size_var($e, $length, $var_prefix);
+		pidl "\tNDR_CHECK(ndr_check_array_length(ndr, (void*)&$var_prefix$e->{NAME}, $length));\n";
+	}
+}
+
+
+#####################################################################
 # parse an array - pull side
 sub ParseArrayPull($$$)
 {
@@ -294,47 +313,28 @@ sub ParseArrayPull($$$)
 		}
 
 		# non fixed arrays encode the size just before the array
-		pidl "\t{\n";
-		pidl "\t\tuint32_t _array_size;\n";
-		pidl "\t\tNDR_CHECK(ndr_pull_uint32(ndr, &_array_size));\n";
-		if ($size =~ /r->in/) {
-			pidl "\t\tif (!(ndr->flags & LIBNDR_FLAG_REF_ALLOC) && _array_size != $size) {\n";
-		} else {
-			pidl "\t\tif ($size != _array_size) {\n";
-		}
-		pidl "\t\t\treturn ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, \"Bad array size %u should be %u\", _array_size, $size);\n";
-		pidl "\t\t}\n";
-		if ($size =~ /r->in/) {
-			pidl "else { $size = _array_size; }\n";
-		}
-		pidl "\t}\n";
+		pidl "\t\tNDR_CHECK(ndr_pull_array_size(ndr, &$var_prefix$e->{NAME}));\n";
+		$alloc_size = "ndr_get_array_size(ndr, &$var_prefix$e->{NAME})";
 	}
 
 	if ((util::need_alloc($e) && !util::is_fixed_array($e)) ||
 	    ($var_prefix eq "r->in." && util::has_property($e, "ref"))) {
 		if (!util::is_inline_array($e) || $ndr_flags eq "NDR_SCALARS") {
-			pidl "\t\tNDR_ALLOC_N(ndr, $var_prefix$e->{NAME}, MAX(1, $alloc_size));\n";
+			pidl "\t\tNDR_ALLOC_N(ndr, $var_prefix$e->{NAME}, $alloc_size);\n";
 		}
 	}
 
 	if (($var_prefix eq "r->out." && util::has_property($e, "ref"))) {
 		if (!util::is_inline_array($e) || $ndr_flags eq "NDR_SCALARS") {
 			pidl "\tif (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {";
-			pidl "\t\tNDR_ALLOC_N(ndr, $var_prefix$e->{NAME}, MAX(1, $alloc_size));\n";
+			pidl "\t\tNDR_ALLOC_N(ndr, $var_prefix$e->{NAME}, $alloc_size);\n";
 			pidl "\t}\n";
 		}
 	}
 
-	pidl "\t{\n";
-
 	if (my $length = util::has_property($e, "length_is")) {
-		$length = find_size_var($e, $length, $var_prefix);
-		pidl "\t\tuint32_t _offset, _length;\n";
-		pidl "\t\tNDR_CHECK(ndr_pull_uint32(ndr, &_offset));\n";
-		pidl "\t\tNDR_CHECK(ndr_pull_uint32(ndr, &_length));\n";
-		pidl "\t\tif (_offset != 0) return ndr_pull_error(ndr, NDR_ERR_OFFSET, \"Bad array offset 0x%08x\", _offset);\n";
-		pidl "\t\tif (_length > $size || _length != $length) return ndr_pull_error(ndr, NDR_ERR_LENGTH, \"Bad array length 0x%08x > size 0x%08x\", _offset, $size);\n\n";
-		$size = "_length";
+		pidl "\t\tNDR_CHECK(ndr_pull_array_length(ndr, &$var_prefix$e->{NAME}));\n";
+		$size = "ndr_get_array_length(ndr, &$var_prefix$e->{NAME})";
 	}
 
 	if (util::is_scalar_type($e->{TYPE})) {
@@ -342,8 +342,6 @@ sub ParseArrayPull($$$)
 	} else {
 		pidl "\t\tNDR_CHECK(ndr_pull_array(ndr, $ndr_flags, (void **)$var_prefix$e->{NAME}, sizeof($var_prefix$e->{NAME}\[0]), $size, (ndr_pull_flags_fn_t)ndr_pull_$e->{TYPE}));\n";
 	}
-
-	pidl "\t}\n";
 }
 
 
@@ -835,6 +833,10 @@ sub ParseStructPull($)
 		ParseElementPullBuffer($e, "r->", "NDR_BUFFERS");
 	}
 
+	foreach my $e (@{$struct->{ELEMENTS}}) {
+		CheckArraySizes($e, "r->");
+	}
+
 	pidl "\tndr_pull_struct_end(ndr);\n";
 
 	pidl "done:\n";
@@ -844,7 +846,6 @@ sub ParseStructPull($)
 
 #####################################################################
 # calculate size of ndr struct
-
 sub ParseStructNdrSize($)
 {
 	my $t = shift;
@@ -855,7 +856,6 @@ sub ParseStructNdrSize($)
 	pidl "{\n";
 
 	if (util::has_property($t->{DATA}, "flag")) {
-		
 		pidl "\tflags = flags | " . $t->{DATA}->{PROPERTIES}->{flag} . ";\n";	
 	}
 
@@ -1398,7 +1398,7 @@ sub AllocateRefVars($)
 
 	# its an array
 	my $size = find_size_var($e, $asize, "r->out.");
-	pidl "\tNDR_ALLOC_N(ndr, r->out.$e->{NAME}, MAX(1, $size));\n";
+	pidl "\tNDR_ALLOC_N(ndr, r->out.$e->{NAME}, $size);\n";
 	if (util::has_property($e, "in")) {
 		pidl "\tmemcpy(r->out.$e->{NAME},r->in.$e->{NAME},$size * sizeof(*r->in.$e->{NAME}));\n";
 	} else {
@@ -1448,12 +1448,24 @@ sub ParseFunctionPull($)
 		}
 	}
 
+	foreach my $e (@{$fn->{DATA}}) {
+		if (util::has_property($e, "in")) {
+			CheckArraySizes($e, "r->in.");
+		}
+	}
+
 	pidl "\nndr_out:\n";
 	pidl "\tif (!(flags & NDR_OUT)) goto done;\n\n";
 
 	foreach my $e (@{$fn->{DATA}}) {
 		if (util::has_property($e, "out")) {
 			ParseFunctionElementPull($e, "out");
+		}
+	}
+
+	foreach my $e (@{$fn->{DATA}}) {
+		if (util::has_property($e, "out")) {
+			CheckArraySizes($e, "r->out.");
 		}
 	}
 

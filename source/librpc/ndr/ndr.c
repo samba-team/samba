@@ -48,15 +48,11 @@ struct ndr_pull *ndr_pull_init_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
 {
 	struct ndr_pull *ndr;
 
-	ndr = talloc_p(mem_ctx, struct ndr_pull);
+	ndr = talloc_zero_p(mem_ctx, struct ndr_pull);
 	if (!ndr) return NULL;
 
-	ndr->flags = 0;
 	ndr->data = blob->data;
 	ndr->data_size = blob->length;
-	ndr->offset = 0;
-	ndr->ptr_count = 0;
-	ndr->relative_list = NULL;
 
 	return ndr;
 }
@@ -125,7 +121,7 @@ struct ndr_push *ndr_push_init_ctx(TALLOC_CTX *mem_ctx)
 {
 	struct ndr_push *ndr;
 
-	ndr = talloc_p(mem_ctx, struct ndr_push);
+	ndr = talloc_zero_p(mem_ctx, struct ndr_push);
 	if (!ndr) {
 		return NULL;
 	}
@@ -136,9 +132,6 @@ struct ndr_push *ndr_push_init_ctx(TALLOC_CTX *mem_ctx)
 	if (!ndr->data) {
 		return NULL;
 	}
-	ndr->offset = 0;
-	ndr->ptr_count = 0;
-	ndr->relative_list = NULL;
 
 	return ndr;
 }
@@ -381,8 +374,12 @@ static NTSTATUS ndr_map_error(enum ndr_err_code err)
 	switch (err) {
 	case NDR_ERR_BUFSIZE:
 		return NT_STATUS_BUFFER_TOO_SMALL;
+	case NDR_ERR_TOKEN:
+		return NT_STATUS_INTERNAL_ERROR;
 	case NDR_ERR_ALLOC:
 		return NT_STATUS_NO_MEMORY;
+	case NDR_ERR_ARRAY_SIZE:
+		return NT_STATUS_ARRAY_BOUNDS_EXCEEDED;
 	default:
 		break;
 	}
@@ -655,18 +652,109 @@ static NTSTATUS ndr_token_store(TALLOC_CTX *mem_ctx,
 /*
   retrieve a token from a ndr context
 */
-static uint32_t ndr_token_retrieve(struct ndr_token_list **list, const void *key)
+static NTSTATUS ndr_token_retrieve(struct ndr_token_list **list, const void *key, uint32_t *v)
 {
 	struct ndr_token_list *tok;
 	for (tok=*list;tok;tok=tok->next) {
 		if (tok->key == key) {
 			DLIST_REMOVE((*list), tok);
+			*v = tok->value;
+			return NT_STATUS_OK;
+		}
+	}
+	return ndr_map_error(NDR_ERR_TOKEN);
+}
+
+/*
+  peek at but don't removed a token from a ndr context
+*/
+static uint32_t ndr_token_peek(struct ndr_token_list **list, const void *key)
+{
+	struct ndr_token_list *tok;
+	for (tok=*list;tok;tok=tok->next) {
+		if (tok->key == key) {
 			return tok->value;
 		}
 	}
 	return 0;
 }
 
+/*
+  pull an array size field and add it to the array_size_list token list
+*/
+NTSTATUS ndr_pull_array_size(struct ndr_pull *ndr, const void *p)
+{
+	uint32_t size;
+	NDR_CHECK(ndr_pull_uint32(ndr, &size));
+	return ndr_token_store(ndr, &ndr->array_size_list, p, size);
+}
+
+/*
+  get the stored array size field
+*/
+uint32_t ndr_get_array_size(struct ndr_pull *ndr, const void *p)
+{
+	return ndr_token_peek(&ndr->array_size_list, p);
+}
+
+/*
+  check the stored array size field
+*/
+NTSTATUS ndr_check_array_size(struct ndr_pull *ndr, const void **p, uint32_t size)
+{
+	uint32 stored;
+	if (*p == NULL) {
+		return NT_STATUS_OK;
+	}
+	NDR_CHECK(ndr_token_retrieve(&ndr->array_size_list, p, &stored));
+	if (stored != size) {
+		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, 
+				      "Bad array size - got %u expected %u\n",
+				      stored, size);
+	}
+	return NT_STATUS_OK;
+}
+
+/*
+  pull an array length field and add it to the array_length_list token list
+*/
+NTSTATUS ndr_pull_array_length(struct ndr_pull *ndr, const void *p)
+{
+	uint32_t length, offset;
+	NDR_CHECK(ndr_pull_uint32(ndr, &offset));
+	if (offset != 0) {
+		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, 
+				      "non-zero array offset %u\n", offset);
+	}
+	NDR_CHECK(ndr_pull_uint32(ndr, &length));
+	return ndr_token_store(ndr, &ndr->array_length_list, p, length);
+}
+
+/*
+  get the stored array length field
+*/
+uint32_t ndr_get_array_length(struct ndr_pull *ndr, const void *p)
+{
+	return ndr_token_peek(&ndr->array_length_list, p);
+}
+
+/*
+  check the stored array length field
+*/
+NTSTATUS ndr_check_array_length(struct ndr_pull *ndr, void *p, uint32_t length)
+{
+	uint32_t stored;
+	if (*(void **)p == NULL) {
+		return NT_STATUS_OK;
+	}
+	NDR_CHECK(ndr_token_retrieve(&ndr->array_length_list, p, &stored));
+	if (stored != length) {
+		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, 
+				      "Bad array length - got %u expected %u\n",
+				      stored, length);
+	}
+	return NT_STATUS_OK;
+}
 
 /*
   pull a relative object - stage1
@@ -689,10 +777,7 @@ NTSTATUS ndr_pull_relative1(struct ndr_pull *ndr, const void *p, uint32_t rel_of
 NTSTATUS ndr_pull_relative2(struct ndr_pull *ndr, const void *p)
 {
 	uint32_t rel_offset;
-	rel_offset = ndr_token_retrieve(&ndr->relative_list, p);
-	if (rel_offset == 0) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
+	NDR_CHECK(ndr_token_retrieve(&ndr->relative_list, p, &rel_offset));
 	return ndr_pull_set_offset(ndr, rel_offset);
 }
 
@@ -723,10 +808,7 @@ NTSTATUS ndr_push_relative2(struct ndr_push *ndr, const void *p)
 	}
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	ndr_push_save(ndr, &save);
-	ndr->offset = ndr_token_retrieve(&ndr->relative_list, p);
-	if (ndr->offset == 0) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
+	NDR_CHECK(ndr_token_retrieve(&ndr->relative_list, p, &ndr->offset));
 	if (ndr->flags & LIBNDR_FLAG_RELATIVE_CURRENT) {
 		NDR_CHECK(ndr_push_uint32(ndr, save.offset - ndr->offset));
 	} else {
