@@ -99,20 +99,23 @@ int sys_select(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, s
 			FD_ZERO(writefds);
 		if (errorfds)
 			FD_ZERO(errorfds);
-	}
-
-	if (FD_ISSET(select_pipe[0], readfds2)) {
+	} else if (FD_ISSET(select_pipe[0], readfds2)) {
 		char c;
 		saved_errno = errno;
 		if (read(select_pipe[0], &c, 1) == 1) {
 			pipe_read++;
-		}
-		errno = saved_errno;
-		FD_CLR(select_pipe[0], readfds2);
-		ret--;
-		if (ret == 0) {
+			/* Mark Weaver <mark-clist@npsl.co.uk> pointed out a critical
+			   fix to ensure we don't lose signals. We must always
+			   return -1 when the select pipe is set, otherwise if another
+			   fd is also ready (so ret == 2) then we used to eat the
+			   byte in the pipe and lose the signal. JRA.
+			*/
 			ret = -1;
 			errno = EINTR;
+		} else {
+			FD_CLR(select_pipe[0], readfds2);
+			ret--;
+			errno = saved_errno;
 		}
 	}
 
@@ -167,7 +170,12 @@ int sys_select_intr(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorf
 			ptval->tv_usec = tdif % 1000000;
 		}
 
-		ret = sys_select(maxfd, readfds2, writefds2, errorfds2, ptval);
+		/* We must use select and not sys_select here. If we use
+		   sys_select we'd lose the fact a signal occurred when sys_select
+		   read a byte from the pipe. Fix from Mark Weaver
+		   <mark-clist@npsl.co.uk>
+		*/
+		ret = select(maxfd, readfds2, writefds2, errorfds2, ptval);
 	} while (ret == -1 && errno == EINTR);
 
 	if (readfds)
