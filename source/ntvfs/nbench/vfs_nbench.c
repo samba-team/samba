@@ -286,6 +286,9 @@ static void nbench_open_send(struct smbsrv_request *req)
 
 	switch (io->generic.level) {
 	case RAW_OPEN_NTCREATEX:
+		if (!NT_STATUS_IS_OK(req->async_states->status)) {
+			ZERO_STRUCT(io->ntcreatex.out);
+		}
 		nbench_log(req, "NTCreateX \"%s\" 0x%x 0x%x %d %s\n", 
 			   io->ntcreatex.in.fname, 
 			   io->ntcreatex.in.create_options, 
@@ -417,20 +420,17 @@ static NTSTATUS nbench_copy(struct ntvfs_module_context *ntvfs,
 static void nbench_read_send(struct smbsrv_request *req)
 {
 	union smb_read *rd = req->async_states->private_data;
-	uint32_t nread;
 	
 	switch (rd->generic.level) {
 	case RAW_READ_READX:
-		if (NT_STATUS_IS_OK(req->async_states->status)) {
-			nread = rd->readx.out.nread;
-		} else {
-			nread = 0;
+		if (!NT_STATUS_IS_OK(req->async_states->status)) {
+			ZERO_STRUCT(rd->readx.out);
 		}
 		nbench_log(req, "ReadX %d %d %d %d %s\n", 
 			   rd->readx.in.fnum, 
 			   (int)rd->readx.in.offset,
 			   rd->readx.in.maxcnt,
-			   nread,
+			   rd->readx.out.nread,
 			   get_nt_error_c_code(req->async_states->status));
 		break;
 	default:
@@ -461,6 +461,9 @@ static void nbench_write_send(struct smbsrv_request *req)
 
 	switch (wr->generic.level) {
 	case RAW_WRITE_WRITEX:
+		if (!NT_STATUS_IS_OK(req->async_states->status)) {
+			ZERO_STRUCT(wr->writex.out);
+		}
 		nbench_log(req, "WriteX %d %d %d %d %s\n", 
 			   wr->writex.in.fnum, 
 			   (int)wr->writex.in.offset,
@@ -470,6 +473,9 @@ static void nbench_write_send(struct smbsrv_request *req)
 		break;
 
 	case RAW_WRITE_WRITE:
+		if (!NT_STATUS_IS_OK(req->async_states->status)) {
+			ZERO_STRUCT(wr->write.out);
+		}
 		nbench_log(req, "Write %d %d %d %d %s\n", 
 			   wr->write.in.fnum, 
 			   wr->write.in.offset,
@@ -756,6 +762,9 @@ static void nbench_search_first_send(struct smbsrv_request *req)
 	
 	switch (io->generic.level) {
 	case RAW_SEARCH_BOTH_DIRECTORY_INFO:
+		if (NT_STATUS_IS_ERR(req->async_states->status)) {
+			ZERO_STRUCT(io->t2ffirst.out);
+		}
 		nbench_log(req, "FIND_FIRST \"%s\" %d %d %d %s\n", 
 			   io->t2ffirst.in.pattern,
 			   io->generic.level,
