@@ -3224,7 +3224,7 @@ static BOOL set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
 	kbuf.dsize = strlen(key)+1;
 
 	dbuf = tdb_fetch(tdb_drivers, kbuf);
-    if (!dbuf.dptr) {
+	if (!dbuf.dptr) {
 		/*
 		 * When changing to a driver that has no init info in the tdb, remove
 		 * the previous drivers init info and leave the new on blank.
@@ -3243,17 +3243,18 @@ static BOOL set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
 	 * The saved DEVMODE contains the devicename from the printer used during
 	 * the initialization save. Change it to reflect the new printer.
 	 */
-	 
-	ZERO_STRUCT(info.devmode->devicename);
-	fstrcpy(info.devmode->devicename, info_ptr->printername);
 
-
+	if ( info.devmode ) {
+		ZERO_STRUCT(info.devmode->devicename);
+		fstrcpy(info.devmode->devicename, info_ptr->printername);
+	}
+	
 	/*
 	 * NT/2k does not change out the entire DeviceMode of a printer
 	 * when changing the driver.  Only the driverextra, private, & 
 	 * driverversion fields.   --jerry  (Thu Mar 14 08:58:43 CST 2002)
 	 *
-	 * Later e4xamination revealed that Windows NT/2k does reset the
+	 * Later examination revealed that Windows NT/2k does reset the
 	 * the printer's device mode, bit **only** when you change a 
 	 * property of the device mode such as the page orientation.
 	 * --jerry
@@ -3265,10 +3266,8 @@ static BOOL set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
 	free_nt_devicemode(&info_ptr->devmode);
 	info_ptr->devmode = info.devmode;
 
-
-
-	DEBUG(10,("set_driver_init_2: Set printer [%s] init DEVMODE for driver [%s]\n",
-			info_ptr->printername, info_ptr->drivername));
+	DEBUG(10,("set_driver_init_2: Set printer [%s] init %s DEVMODE for driver [%s]\n",
+		info_ptr->printername, info_ptr->devmode?"VALID":"NULL", info_ptr->drivername));
 
 	/* Add the printer data 'values' to the new printer */
 
@@ -3405,18 +3404,16 @@ uint32 update_driver_init(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 	{
 		case 2:
 		{
-			result=update_driver_init_2(printer.info_2);
+			result = update_driver_init_2(printer.info_2);
 			break;
 		}
 		default:
-			result=1;
+			result = 1;
 			break;
 	}
 	
 	return result;
 }
-
-#if 0	/* TO BE DELETED - as soon as I get the ok from jreilly */
 
 /****************************************************************************
  Convert the printer data value, a REG_BINARY array, into an initialization 
@@ -3424,7 +3421,7 @@ uint32 update_driver_init(NT_PRINTER_INFO_LEVEL printer, uint32 level)
  got to keep the endians happy :).
 ****************************************************************************/
 
-static BOOL convert_driver_init(NT_PRINTER_PARAM *param, TALLOC_CTX *ctx, NT_DEVICEMODE *nt_devmode)
+static BOOL convert_driver_init( TALLOC_CTX *ctx, NT_DEVICEMODE *nt_devmode, uint8 *data, uint32 data_len )
 {
 	BOOL       result = False;
 	prs_struct ps;
@@ -3433,8 +3430,8 @@ static BOOL convert_driver_init(NT_PRINTER_PARAM *param, TALLOC_CTX *ctx, NT_DEV
 	ZERO_STRUCT(devmode);
 
 	prs_init(&ps, 0, ctx, UNMARSHALL);
-	ps.data_p      = (char *)param->data;
-	ps.buffer_size = param->data_len;
+	ps.data_p      = (char *)data;
+	ps.buffer_size = data_len;
 
 	if (spoolss_io_devmode("phantom DEVMODE", &ps, 0, &devmode))
 		result = convert_devicemode("", &devmode, &nt_devmode);
@@ -3466,7 +3463,7 @@ static BOOL convert_driver_init(NT_PRINTER_PARAM *param, TALLOC_CTX *ctx, NT_DEV
  about it and you will realize why.  JRR 010720
 ****************************************************************************/
 
-static WERROR save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, NT_PRINTER_PARAM *param)
+static WERROR save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, uint8 *data, uint32 data_len )
 {
 	WERROR        status       = WERR_OK;
 	TALLOC_CTX    *ctx         = NULL;
@@ -3477,7 +3474,8 @@ static WERROR save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, NT_PRINTER_PARA
 	 * When the DEVMODE is already set on the printer, don't try to unpack it.
 	 */
 
-	if (!printer->info_2->devmode && param->data_len) {
+	if ( !printer->info_2->devmode && data_len ) 
+	{
 		/*
 		 * Set devmode on printer info, so entire printer initialization can be
 		 * saved to tdb.
@@ -3497,7 +3495,7 @@ static WERROR save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, NT_PRINTER_PARA
 		 * The DEVMODE is held in the 'data' component of the param in raw binary.
 		 * Convert it to to a devmode structure
 		 */
-		if (!convert_driver_init(param, ctx, nt_devmode)) {
+		if ( !convert_driver_init( ctx, nt_devmode, data, data_len )) {
 			DEBUG(10,("save_driver_init_2: error converting DEVMODE\n"));
 			status = WERR_INVALID_PARAM;
 			goto done;
@@ -3512,7 +3510,7 @@ static WERROR save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, NT_PRINTER_PARA
 	 * 
 	 */
 
-	if (update_driver_init(*printer, 2)!=0) {
+	if ( update_driver_init(*printer, 2) != 0 ) {
 		DEBUG(10,("save_driver_init_2: error updating DEVMODE\n"));
 		status = WERR_NOMEM;
 		goto done;
@@ -3531,9 +3529,8 @@ static WERROR save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, NT_PRINTER_PARA
 	
   done:
 	talloc_destroy(ctx);
-	if (nt_devmode)
-		SAFE_FREE(nt_devmode->private);
-	SAFE_FREE(nt_devmode);
+	free_nt_devicemode( &nt_devmode );
+	
 	printer->info_2->devmode = tmp_devmode;
 
 	return status;
@@ -3543,7 +3540,7 @@ static WERROR save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, NT_PRINTER_PARA
  Update the driver init info (DEVMODE and specifics) for a printer
 ****************************************************************************/
 
-static WERROR save_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level, NT_PRINTER_PARAM *param)
+WERROR save_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level, uint8 *data, uint32 data_len)
 {
 	WERROR status = WERR_OK;
 	
@@ -3551,18 +3548,16 @@ static WERROR save_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level, NT_
 	{
 		case 2:
 		{
-			status=save_driver_init_2(printer, param);
+			status = save_driver_init_2( printer, data, data_len );
 			break;
 		}
 		default:
-			status=WERR_UNKNOWN_LEVEL;
+			status = WERR_UNKNOWN_LEVEL;
 			break;
 	}
 	
 	return status;
 }
-
-#endif	/* TO BE DELETED */
 
 /****************************************************************************
  Get a NT_PRINTER_INFO_LEVEL struct. It returns malloced memory.

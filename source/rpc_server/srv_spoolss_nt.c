@@ -5353,22 +5353,6 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 		goto done;
 	}
 
-#if 0	/* JERRY */
-	
-	/*
-	 * Another one of those historical misunderstandings...
-	 * This is reminisent of a similar call we had in _spoolss_setprinterdata()
-	 * I'm leaving it here as a reminder.  --jerry
-	 */
-
-	if (nt_printer_info_level_equal(printer, old_printer)) {
-		DEBUG(3, ("update_printer: printer info has not changed\n"));
-		result = WERR_OK;
-		goto done;
-	}
-
-#endif
-
 	/* Check calling user has permission to update printer description */
 
 	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
@@ -5385,51 +5369,24 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 			goto done;
 		}
 	}
-	
+
 	/*
-	 * Set the DRIVER_INIT info in the tdb; trigger on magic value for the
-	 * DEVMODE.displayfrequency, which is not used for printer drivers. This
-	 * requires Win32 client code (see other notes elsewhere in the code).
+	 * When a *new* driver is bound to a printer, the drivername is used to
+	 * lookup previously saved driver initialization info, which is then
+	 * bound to the printer, simulating what happens in the Windows arch.
 	 */
-	if (printer->info_2->devmode &&
-		printer->info_2->devmode->displayfrequency == MAGIC_DISPLAY_FREQUENCY) 
+	if (!strequal(printer->info_2->drivername, old_printer->info_2->drivername))
 	{
- 
-		DEBUG(10,("update_printer: Save printer driver init data\n"));
-		printer->info_2->devmode->displayfrequency = 0;
- 
-		if (update_driver_init(*printer, 2)!=0) {
-			DEBUG(10,("update_printer: error updating printer driver init DEVMODE\n"));
-			result = WERR_ACCESS_DENIED;
-			goto done;
-		}
-		
-		/* we need to reset all driver init data for all printers 
-		   bound to this driver */
-		
-		srv_spoolss_reset_printerdata( printer->info_2->drivername );
-		
-	} 
-	else 
-	{
-		/*
-		 * When a *new* driver is bound to a printer, the drivername is used to
-		 * lookup previously saved driver initialization info, which is then
-		 * bound to the printer, simulating what happens in the Windows arch.
-		 */
-		if (!strequal(printer->info_2->drivername, old_printer->info_2->drivername))
+		if (!set_driver_init(printer, 2)) 
 		{
-			if (!set_driver_init(printer, 2)) 
-			{
-				DEBUG(5,("update_printer: Error restoring driver initialization data for driver [%s]!\n",
-					printer->info_2->drivername));
-			}
-			
-			DEBUG(10,("update_printer: changing driver [%s]!  Sending event!\n",
+			DEBUG(5,("update_printer: Error restoring driver initialization data for driver [%s]!\n",
 				printer->info_2->drivername));
-				
-			notify_printer_driver(snum, printer->info_2->drivername);
 		}
+			
+		DEBUG(10,("update_printer: changing driver [%s]!  Sending event!\n",
+			printer->info_2->drivername));
+				
+		notify_printer_driver(snum, printer->info_2->drivername);
 	}
 
 	/* Update printer info */
@@ -7164,8 +7121,6 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 
 	unistr2_to_dos( valuename, value, sizeof(valuename)-1 );
 
-#if 0	/* TO BE DELETED */
-
 	/*
 	 * When client side code sets a magic printer data key, detect it and save
 	 * the current printer data and the magic key's data (its the DEVMODE) for
@@ -7173,21 +7128,18 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 	 */
 	if ( (type == REG_BINARY) && strequal( valuename, PHANTOM_DEVMODE_KEY)) 
 	{
-		/*
-		 * Set devmode and printer initialization info
-		 */
-		status = save_driver_init(printer, 2, param);
+		/* Set devmode and printer initialization info */
+		status = save_driver_init( printer, 2, data, real_len );
+		
+		srv_spoolss_reset_printerdata( printer->info_2->drivername );
 	}
 	else 
 	{
-#endif
 		status = set_printer_dataex( printer, SPOOL_PRINTERDATA_KEY, valuename, 
 						type, data, real_len );
 		if ( W_ERROR_IS_OK(status) )
 			status = mod_a_printer(*printer, 2);
-#if 0
 	}
-#endif
 
  done:
 	free_a_printer(&printer, 2);
