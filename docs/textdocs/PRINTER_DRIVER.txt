@@ -1,10 +1,11 @@
 !==
-!== PRINTER_DRIVER.txt for Samba release 1.9.18alpha14 24 Dec 1997
+!== PRINTER_DRIVER.txt for Samba release 1.9.18alpha15 and later
 !==
 ==========================================================================
 	Supporting the famous PRINTER$ share
  
  	Jean-Francois.Micouleau@utc.fr, 10/26/97
+	modified by herb@sgi.com 1/2/98
 
 ===========================================================================
 
@@ -45,7 +46,8 @@ How To:
 		
 	mkprinterdef msprint.def "Apple LaserWriter" >>/usr/local/samba/lib/printers.def
 	 
-	Copy also all the files into the directory you created in step 1     
+	The program will print out a list of required files to stderr.
+	Copy all the files listed into the directory you created in step 1     
 	
 	Third, you need to add 2 new parameters in smb.conf. One is in the
 	[global] section, called 'printer driver file' pointing to the file description,
@@ -65,9 +67,9 @@ How To:
 		   writable = no
 		   create mode = 0700
 		   printer driver=Apple LaserWriter
-		   printer driver location=\\JOKER\PRINTER$
+		   printer driver location=\\%h\PRINTER$
 
-	JOKER is in my case my computer name, and PRINTER$ is the name of the
+	%h will expand to the computer name, and PRINTER$ is the name of the
 	share created in step one.
 	
 	
@@ -75,3 +77,17 @@ If it doesn't work for you, don't send flame ! It worked for me. In case of
 trouble don't hesitate to send me a mail with your smb.conf file and 
 printers.def
 
+
+*******  added by herb@sgi.com
+
+For those of you who like to know the details, and in case I have guessed
+wrong on some of the fields - The following is the format of the entries 
+in the printers.def file: (entries are 1 single line - they are split here 
+for readability)
+
+<Long Printer Name>:<Driver File Name>:<Data File Name>:<Help File Name>:
+<Language Monitor Name>:<Default Data Type>:<Comma Separated list of Files>
+
+The <Help File Name> and the <Language Monitor Name> can be empty.
+If no <Driver File Name> or <Data File Name> are specified in the inf file,
+these will default to the section name for the printer.
