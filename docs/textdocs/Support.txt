@@ -850,16 +850,6 @@ SAMBA Experience : SunOS, Solaris, SCO-Unix, Free BSD, Win95/NT/3.1
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
-BRISBANE - AUSTRALIA
-
-Brett Worth
-Select Computer Technology - Brisbane
-431 Logan Road
-Stones Corner   QLD   4120
-E-Mail: brett@sct.com.au
-------------------------------------------------------------------------------
-
-------------------------------------------------------------------------------
 CANBERRA - AUSTRALIA
 
 Paul Blackman (ictinus@lake.canberra.edu.au, Ph. 06 2012518) is
