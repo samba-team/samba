@@ -449,7 +449,7 @@ void print_acl(ACL *acl, char *prefix)
   }
 } 
 
-void usage(voi)
+void usage(void)
 {
   fprintf(stderr, "usage: profiles [-c <OLD-SID> -n <NEW-SID>] <profilefile>\n");
   fprintf(stderr, "Version: %s\n", VERSION);
