@@ -24,7 +24,13 @@
  *
  * -------------------------------------------------------------------------- **
  *
- * Log: ubi_sLinkList.c,v
+ * Log: ubi_sLinkList.c,v 
+ * Revision 0.10  1999/06/19 16:58:06  crh
+ * Renamed the ubi_slRemove() function in ubi_sLinkList to
+ * ubi_slRemoveNext().  I was bothered by the fact that it didn't
+ * match the functionality of the ubi_dlRemove() function in
+ * ubi_dLinkList.  The new name is more 'correct'.
+ *
  * Revision 0.9  1998/07/24 07:30:20  crh
  * Added the ubi_slNewList() macro.
  *
@@ -88,9 +94,9 @@
  *          - In this module, if the list is empty, the tail pointer will
  *            point back to the head of the list as described above.  This
  *            is not done in ubi_dLinkList.
- *          - The ubi_slRemove() function, by necessity, removed the 'next'
- *            node.  In ubi_dLinkList, the ubi_dlRemove() function removes
- *            the 'current' node.
+ *          - The ubi_slRemoveNext() function, by necessity, removes the
+ *            'next' node.  In ubi_dLinkList, the ubi_dlRemove() function
+ *            removes the 'current' node.
  *
  * ========================================================================== **
  */
@@ -148,14 +154,14 @@ ubi_slNodePtr ubi_slInsert( ubi_slListPtr ListPtr,
   return( New );
   } /* ubi_slInsert */
 
-ubi_slNodePtr ubi_slRemove( ubi_slListPtr ListPtr, ubi_slNodePtr After )
+ubi_slNodePtr ubi_slRemoveNext( ubi_slListPtr ListPtr, ubi_slNodePtr AfterMe )
   /* ------------------------------------------------------------------------ **
-   * Remove the node followng <After>.  If <After> is NULL, remove from the
-   * head of the list.
+   * Remove the node followng <AfterMe>.  If <AfterMe> is NULL, remove from
+   * the head of the list.
    *
    *  Input:  ListPtr - A pointer to the list from which the node is to be
    *                    removed.
-   *          After   - Pointer to the node preceeding the node to be
+   *          AfterMe - Pointer to the node preceeding the node to be
    *                    removed.
    *
    *  Output: A pointer to the node that was removed, or NULL if the list is
@@ -166,16 +172,16 @@ ubi_slNodePtr ubi_slRemove( ubi_slListPtr ListPtr, ubi_slNodePtr After )
   {
   ubi_slNodePtr DelNode;
 
-  After   = After ? After : (ubi_slNodePtr)ListPtr;
-  DelNode = After->Next;
+  AfterMe = AfterMe ? AfterMe : (ubi_slNodePtr)ListPtr;
+  DelNode = AfterMe->Next;
   if( DelNode )
     {
     if( !(DelNode->Next) )
-      ListPtr->Tail = After;
-    After->Next  = DelNode->Next;
+      ListPtr->Tail = AfterMe;
+    AfterMe->Next  = DelNode->Next;
     (ListPtr->count)--;
     }
   return( DelNode );
-  } /* ubi_slRemove */
+  } /* ubi_slRemoveNext */
 
 /* ================================ The End ================================= */
