@@ -3,7 +3,7 @@ CFLAGS		= @CFLAGS@
 CPPFLAGS	= @CPPFLAGS@
 LDFLAGS		= @LDFLAGS@
 LDSHFLAGS	= -shared
-srcdir		= @builddir@
+srcdir		= ../../source/
 FLAGS		=  $(CFLAGS) -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/smbwrapper  -I. $(CPPFLAGS) -I$(srcdir)
 
 # Auto target

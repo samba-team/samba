@@ -70,14 +70,14 @@ int net_help_user(int argc, const char **argv)
 		 "\n\tDelete specified user\n");
 	d_printf("\nnet [<method>] user INFO <name> [misc. options] [targets]"\
 		 "\n\tList the domain groups of the specified user\n");
-	d_printf("\nnet [<method>] user ADD <name> [password] "\
+	d_printf("\nnet [<method>] user ADD <name> [password] [-c container] "\
 		 "[-F user flags] [misc. options]"\
 		 " [targets]\n\tAdd specified user\n");
 
 	net_common_methods_usage(argc, argv);
 	net_common_flags_usage(argc, argv);
-	d_printf(
-	 "\t-C or --comment=<comment>\tdescriptive comment (for add only)\n");
+	d_printf("\t-C or --comment=<comment>\tdescriptive comment (for add only)\n");
+	d_printf("\t-c or --container=<container>\tLDAP container, defaults to cn=Users (for add in ADS only)\n");
 	return -1;
 }
 
@@ -88,12 +88,12 @@ int net_help_group(int argc, const char **argv)
 	d_printf("net [<method>] group DELETE <name> "\
 		 "[misc. options] [targets]"\
 		 "\n\tDelete specified group\n");
-	d_printf("\nnet [<method>] group ADD <name> [-C comment]"\
+	d_printf("\nnet [<method>] group ADD <name> [-C comment] [-c container]"\
 		 " [misc. options] [targets]\n\tCreate specified group\n");
 	net_common_methods_usage(argc, argv);
 	net_common_flags_usage(argc, argv);
-	d_printf(
-	 "\t-C or --comment=<comment>\tdescriptive comment (for add only)\n");
+	d_printf("\t-C or --comment=<comment>\tdescriptive comment (for add only)\n");
+	d_printf("\t-c or --container=<container>\tLDAP container, defaults to cn=Users (for add in ADS only)\n");
 	return -1;
 }
 

@@ -68,6 +68,7 @@ int opt_force = 0;
 int opt_port = 0;
 int opt_maxusers = -1;
 const char *opt_comment = "";
+char *opt_container = "cn=Users";
 int opt_flags = -1;
 int opt_jobid = 0;
 int opt_timeout = 0;
@@ -525,6 +526,7 @@ static struct functable net_func[] = {
 		{"myname",	'n', POPT_ARG_STRING, &opt_requester_name},
 		{"conf",	's', POPT_ARG_STRING, &servicesf},
 		{"server",	'S', POPT_ARG_STRING, &opt_host},
+		{"container",	'c', POPT_ARG_STRING, &opt_container},
 		{"comment",	'C', POPT_ARG_STRING, &opt_comment},
 		{"maxusers",	'M', POPT_ARG_INT,    &opt_maxusers},
 		{"flags",	'F', POPT_ARG_INT,    &opt_flags},
