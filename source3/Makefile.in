@@ -672,11 +672,13 @@ MAKEDIR = || exec false; \
 # but since we also require "make install prefix=/opt/samba" *not* to
 # rebuild it's a bit hard.
 
-dynconfig.o: dynconfig.c Makefile modules_clean
+dynconfig.o: dynconfig.c Makefile
+	@$(MAKE) modules_clean
 	@echo Compiling $*.c
 	@$(CC) $(FLAGS) $(PATH_FLAGS) -c $< -o $@ 
 
-dynconfig.po: dynconfig.c Makefile modules_clean
+dynconfig.po: dynconfig.c Makefile
+	@$(MAKE) modules_clean
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
 	@echo Compiling $*.c with @PICFLAG@
