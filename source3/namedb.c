@@ -379,7 +379,7 @@ struct domain_record *find_domain(struct in_addr source_ip)
 /****************************************************************************
   dump a copy of the workgroup/domain database
   **************************************************************************/
-static void dump_workgroups(void)
+void dump_workgroups(void)
 {
   struct domain_record *d;
   
