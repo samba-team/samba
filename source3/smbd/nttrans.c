@@ -254,7 +254,12 @@ static void my_wcstombs(char *dst, uint16 *src, size_t len)
 
 static void get_filename( char *fname, char *inbuf, int data_offset, int data_len, int fname_len)
 {
-  if((data_len - fname_len >= 1) || (inbuf[data_offset] == '\0')) {
+  /*
+   * We need various heuristics here to detect a unicode string... JRA.
+   */
+  DEBUG(10,("data_offset = %d, data_len = %d, fname_len = %d\n", data_offset, data_len, fname_len ));
+
+  if((data_len - fname_len > 1) || (inbuf[data_offset] == '\0')) {
     /*
      * NT 5.0 Beta 2 or Windows 2000 final release (!) has kindly sent us a UNICODE string
      * without bothering to set the unicode bit. How kind.
@@ -1770,13 +1775,26 @@ static SEC_ACCESS map_unix_perms( int *pacl_type, mode_t perm, int r_mask, int w
 }
 
 /****************************************************************************
+ Function to create owner and group SIDs from a SMB_STRUCT_STAT.
+****************************************************************************/
+
+static void create_file_sids(SMB_STRUCT_STAT *psbuf, DOM_SID *powner_sid, DOM_SID *pgroup_sid)
+{
+  extern DOM_SID global_sam_sid;
+
+  sid_copy(powner_sid, &global_sam_sid);
+  sid_copy(pgroup_sid, &global_sam_sid);
+  sid_append_rid(powner_sid, pdb_uid_to_user_rid(psbuf->st_uid));
+  sid_append_rid(pgroup_sid, pdb_gid_to_group_rid(psbuf->st_gid));
+}
+
+/****************************************************************************
  Reply to query a security descriptor from an fsp. If it succeeds it allocates
  the space for the return elements and returns True.
 ****************************************************************************/
 
 static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 {
-  extern DOM_SID global_sam_sid;
   extern DOM_SID global_sid_World;
   SMB_STRUCT_STAT sbuf;
   SEC_ACE ace_list[6];
@@ -1813,10 +1831,7 @@ static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
      * Get the owner, group and world SIDs.
      */
 
-    sid_copy(&owner_sid, &global_sam_sid);
-    sid_copy(&group_sid, &global_sam_sid);
-    sid_append_rid(&owner_sid, pdb_uid_to_user_rid(sbuf.st_uid));
-    sid_append_rid(&group_sid, pdb_gid_to_group_rid(sbuf.st_gid));
+    create_file_sids(&sbuf, &owner_sid, &group_sid);
 
     /*
      * Create the generic 3 element UNIX acl.
@@ -2065,12 +2080,14 @@ static mode_t map_nt_perms( SEC_ACCESS sec_access, int type)
  Unpack a SEC_DESC into a owner, group and set of UNIX permissions.
 ****************************************************************************/
 
-static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, uint32 security_info_sent,
-                                  SEC_DESC *psd, BOOL is_directory)
+static BOOL unpack_nt_permissions(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, mode_t *pmode,
+                                  uint32 security_info_sent, SEC_DESC *psd, BOOL is_directory)
 {
   extern DOM_SID global_sid_World;
   DOM_SID owner_sid;
   DOM_SID grp_sid;
+  DOM_SID file_owner_sid;
+  DOM_SID file_grp_sid;
   uint32 owner_rid;
   uint32 grp_rid;
   SEC_ACL *dacl = psd->dacl;
@@ -2085,6 +2102,15 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, uint
     DEBUG(0,("unpack_nt_permissions: no security info sent !\n"));
     return False;
   }
+
+  /*
+   * Windows 2000 sends the owner and group SIDs as the logged in
+   * user, not the connected user. But it still sends the file
+   * owner SIDs on an ACL set. So we need to check for the file
+   * owner and group SIDs as well as the owner SIDs. JRA.
+   */
+ 
+  create_file_sids(psbuf, &file_owner_sid, &file_grp_sid);
 
   /*
    * Validate the owner and group SID's.
@@ -2155,9 +2181,15 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, uint
        */
 
       all_aces_are_inherit_only = False;
-
-      psa->flags &= ~(SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT);
     }
+
+    /*
+     * Windows 2000 sets these flags even on *file* ACE's. This is wrong
+     * but we can ignore them for now. Revisit this when we go to POSIX
+     * ACLs on directories.
+     */
+
+    psa->flags &= ~(SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT);
 
     if(psa->flags != 0) {
       DEBUG(1,("unpack_nt_permissions: unable to set ACE flags (%x).\n", 
@@ -2180,7 +2212,7 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, uint
 
     sid_copy(&ace_sid, &psa->sid);
 
-    if(sid_equal(&ace_sid, &owner_sid)) {
+    if(sid_equal(&ace_sid, &file_owner_sid)) {
       /*
        * Map the desired permissions into owner perms.
        */
@@ -2190,7 +2222,7 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, uint
       else
         *pmode &= ~(map_nt_perms( psa->info, S_IRUSR));
 
-    } else if( sid_equal(&ace_sid, &grp_sid)) {
+    } else if( sid_equal(&ace_sid, &file_grp_sid)) {
       /*
        * Map the desired permissions into group perms.
        */
@@ -2295,25 +2327,12 @@ security descriptor.\n"));
   }
 
   /*
-   * Unpack the user/group/world id's and permissions.
-   */
-
-  if(!unpack_nt_permissions( &user, &grp, &perms, security_info_sent, psd, fsp->is_directory)) {
-    free_sec_desc(&psd);
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-  }
-
-  if (psd->dacl != NULL)
-    got_dacl = True;
-
-  free_sec_desc(&psd);
-
-  /*
    * Get the current state of the file.
    */
 
   if(fsp->is_directory) {
     if(dos_stat(fsp->fsp_name, &sbuf) != 0) {
+      free_sec_desc(&psd);
       return(UNIXERROR(ERRDOS,ERRnoaccess));
     }
   } else {
@@ -2326,9 +2345,24 @@ security descriptor.\n"));
       ret = conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf);
 
     if(ret != 0) {
+      free_sec_desc(&psd);
       return(UNIXERROR(ERRDOS,ERRnoaccess));
     }
   }
+
+  /*
+   * Unpack the user/group/world id's and permissions.
+   */
+
+  if(!unpack_nt_permissions( &sbuf, &user, &grp, &perms, security_info_sent, psd, fsp->is_directory)) {
+    free_sec_desc(&psd);
+    return(UNIXERROR(ERRDOS,ERRnoaccess));
+  }
+
+  if (psd->dacl != NULL)
+    got_dacl = True;
+
+  free_sec_desc(&psd);
 
   /*
    * Do we need to chown ?
