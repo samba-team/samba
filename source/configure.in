@@ -480,7 +480,7 @@ main() {
        /* Ensure this is kernel 2.4 or higher */
 
        uname(&uts);
-       release = uts.release;
+       release = strdup(uts.release);
        major = atoi(strsep(&release, "."));
        minor = atoi(strsep(&release, "."));
 
