@@ -3144,7 +3144,7 @@ static NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_met
 		ldap_state->uri = "ldap://localhost";
 	}
 
-	ldap_state->domain_name = talloc_strdup(pdb_context->mem_ctx, lp_workgroup());
+	ldap_state->domain_name = talloc_strdup(pdb_context->mem_ctx, get_global_sam_name());
 	if (!ldap_state->domain_name) {
 		return NT_STATUS_NO_MEMORY;
 	}
