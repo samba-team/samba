@@ -41,6 +41,8 @@ struct dcerpc_pipe *dcerpc_pipe_init(void)
 	p->reference_count = 0;
 	p->mem_ctx = mem_ctx;
 	p->call_id = 1;
+	p->auth_info = NULL;
+	p->ntlmssp_state = NULL;
 
 	return p;
 }
@@ -61,7 +63,8 @@ void dcerpc_pipe_close(struct dcerpc_pipe *p)
    parse a data blob into a dcerpc_packet structure. This handles both
    input and output packets
 */
-NTSTATUS dcerpc_pull(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, struct dcerpc_packet *pkt)
+static NTSTATUS dcerpc_pull(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
+			    struct dcerpc_packet *pkt)
 {
 	struct ndr_pull *ndr;
 
@@ -73,15 +76,132 @@ NTSTATUS dcerpc_pull(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, struct dcerpc_packet 
 	return ndr_pull_dcerpc_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
 }
 
+/* 
+   parse a possibly signed blob into a dcerpc request packet structure
+*/
+static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p, 
+					 DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
+					 struct dcerpc_packet *pkt)
+{
+	struct ndr_pull *ndr;
+	NTSTATUS status;
+	struct dcerpc_auth auth;
+	DATA_BLOB auth_blob;
+
+	/* non-signed packets are simpler */
+	if (!p->auth_info || !p->ntlmssp_state) {
+		return dcerpc_pull(blob, mem_ctx, pkt);
+	}
+
+	ndr = ndr_pull_init_blob(blob, mem_ctx);
+	if (!ndr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* pull the basic packet */
+	status = ndr_pull_dcerpc_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (pkt->ptype != DCERPC_PKT_RESPONSE) {
+		return status;
+	}
+
+	auth_blob.length = 8 + pkt->auth_length;
+
+	/* check for a valid length */
+	if (pkt->u.response.stub_and_verifier.length < auth_blob.length) {
+		return NT_STATUS_INFO_LENGTH_MISMATCH;
+	}
+
+	auth_blob.data = 
+		pkt->u.response.stub_and_verifier.data + 
+		pkt->u.response.stub_and_verifier.length - auth_blob.length;
+	pkt->u.response.stub_and_verifier.length -= auth_blob.length;
+
+	/* pull the auth structure */
+	ndr = ndr_pull_init_blob(&auth_blob, mem_ctx);
+	if (!ndr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = ndr_pull_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, &auth);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* check the signature */
+	status = ntlmssp_check_packet(p->ntlmssp_state, 
+				      pkt->u.response.stub_and_verifier.data, 
+				      pkt->u.response.stub_and_verifier.length, 
+				      &auth.credentials);
+
+	/* remove the indicated amount of paddiing */
+	if (pkt->u.response.stub_and_verifier.length < auth.auth_pad_length) {
+		return NT_STATUS_INFO_LENGTH_MISMATCH;
+	}
+	pkt->u.response.stub_and_verifier.length -= auth.auth_pad_length;
+
+	return status;
+}
+
 
 /* 
    push a dcerpc_packet into a blob. This handles both input and
    output packets
 */
-NTSTATUS dcerpc_push(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, struct dcerpc_packet *pkt)
+static NTSTATUS dcerpc_push(struct dcerpc_pipe *p, 
+			    DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
+			    struct dcerpc_packet *pkt)
 {
-	struct ndr_push *ndr;
 	NTSTATUS status;
+	struct ndr_push *ndr;
+
+	ndr = ndr_push_init_ctx(mem_ctx);
+	if (!ndr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (p->auth_info) {
+		pkt->auth_length = p->auth_info->credentials.length;
+	} else {
+		pkt->auth_length = 0;
+	}
+
+	status = ndr_push_dcerpc_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (p->auth_info) {
+		status = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, 
+					      p->auth_info);
+	}
+
+	*blob = ndr_push_blob(ndr);
+
+	/* fill in the frag length */
+	SSVAL(blob->data, 8, blob->length);
+
+	return NT_STATUS_OK;
+}
+
+
+/* 
+   push a dcerpc request packet into a blob, possibly signing it.
+*/
+static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p, 
+					 DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
+					 struct dcerpc_packet *pkt)
+{
+	NTSTATUS status;
+	struct ndr_push *ndr;
+
+	/* non-signed packets are simpler */
+	if (!p->auth_info || !p->ntlmssp_state) {
+		return dcerpc_push(p, blob, mem_ctx, pkt);
+	}
 
 	ndr = ndr_push_init_ctx(mem_ctx);
 	if (!ndr) {
@@ -93,12 +213,32 @@ NTSTATUS dcerpc_push(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, struct dcerpc_packet 
 		return status;
 	}
 
+	/* pad to 8 byte multiple */
+	p->auth_info->auth_pad_length = NDR_ALIGN(ndr, 8);
+	ndr_push_zero(ndr, p->auth_info->auth_pad_length);
+
+	/* sign the packet */
+	status = ntlmssp_sign_packet(p->ntlmssp_state, 
+				     ndr->data+24, ndr->offset-24,
+				     &p->auth_info->credentials);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}	
+
+	/* add the auth verifier */
+	status = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, p->auth_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* extract the whole packet as a blob */
 	*blob = ndr_push_blob(ndr);
 
-	/* fill in the frag length */
-	SSVAL(blob->data, 8, blob->length);
+	/* fill in the fragment length and auth_length */
+	SSVAL(blob->data,  8, blob->length);
+	SSVAL(blob->data, 10, p->auth_info->credentials.length);
 
-	return status;
+	return NT_STATUS_OK;
 }
 
 
@@ -118,28 +258,25 @@ static void init_dcerpc_hdr(struct dcerpc_packet *pkt)
 
 /* 
    perform a bind using the given syntax 
+
+   the auth_info structure is updated with the reply authentication info
+   on success
 */
 NTSTATUS dcerpc_bind(struct dcerpc_pipe *p, 
+		     TALLOC_CTX *mem_ctx,
 		     const struct dcerpc_syntax_id *syntax,
 		     const struct dcerpc_syntax_id *transfer_syntax)
 {
-	TALLOC_CTX *mem_ctx;
 	struct dcerpc_packet pkt;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	DATA_BLOB blob_out;
 	struct dcerpc_syntax_id tsyntax;
-
-	mem_ctx = talloc_init("dcerpc_bind");
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	init_dcerpc_hdr(&pkt);
 
 	pkt.ptype = DCERPC_PKT_BIND;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
-	pkt.call_id = p->call_id++;
+	pkt.call_id = p->call_id;
 	pkt.auth_length = 0;
 
 	pkt.u.bind.max_xmit_frag = 0x2000;
@@ -148,7 +285,6 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 	pkt.u.bind.num_contexts = 1;
 	pkt.u.bind.ctx_list = talloc(mem_ctx, sizeof(pkt.u.bind.ctx_list[0]));
 	if (!pkt.u.bind.ctx_list) {
-		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 	pkt.u.bind.ctx_list[0].context_id = 0;
@@ -156,23 +292,23 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 	pkt.u.bind.ctx_list[0].abstract_syntax = *syntax;
 	tsyntax = *transfer_syntax;
 	pkt.u.bind.ctx_list[0].transfer_syntaxes = &tsyntax;
-	pkt.u.bind.auth_verifier = data_blob(NULL, 0);
+	pkt.u.bind.auth_info = data_blob(NULL, 0);
 
-	status = dcerpc_push(&blob, mem_ctx, &pkt);
+	/* construct the NDR form of the packet */
+	status = dcerpc_push(p, &blob, mem_ctx, &pkt);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_destroy(mem_ctx);
 		return status;
 	}
 
-	status = p->transport.full_request(p, mem_ctx, &blob, &blob_out);
+	/* send it on its way */
+	status = p->transport.full_request(p, mem_ctx, &blob, &blob);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_destroy(mem_ctx);
 		return status;
 	}
 
-	status = dcerpc_pull(&blob_out, mem_ctx, &pkt);
+	/* unmarshall the NDR */
+	status = dcerpc_pull(&blob, mem_ctx, &pkt);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_destroy(mem_ctx);
 		return status;
 	}
 
@@ -185,13 +321,55 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 	p->srv_max_xmit_frag = pkt.u.bind_ack.max_xmit_frag;
 	p->srv_max_recv_frag = pkt.u.bind_ack.max_recv_frag;
 
-	talloc_destroy(mem_ctx);
+	/* the bind_ack might contain a reply set of credentials */
+	if (p->auth_info && pkt.u.bind_ack.auth_info.length) {
+		status = ndr_pull_struct_blob(&pkt.u.bind_ack.auth_info,
+					      mem_ctx,
+					      p->auth_info,
+					      (ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
+	}
 
 	return status;	
 }
 
-/* Perform a bind using the given UUID and version */
+/* 
+   perform a continued bind (and auth3)
+*/
+NTSTATUS dcerpc_auth3(struct dcerpc_pipe *p, 
+		      TALLOC_CTX *mem_ctx)
+{
+	struct dcerpc_packet pkt;
+	NTSTATUS status;
+	DATA_BLOB blob;
+
+	init_dcerpc_hdr(&pkt);
+
+	pkt.ptype = DCERPC_PKT_AUTH3;
+	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
+	pkt.call_id = p->call_id++;
+	pkt.auth_length = 0;
+	pkt.u.auth._pad = 0;
+	pkt.u.auth.auth_info = data_blob(NULL, 0);
+
+	/* construct the NDR form of the packet */
+	status = dcerpc_push(p, &blob, mem_ctx, &pkt);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* send it on its way */
+	status = p->transport.initial_request(p, mem_ctx, &blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return status;	
+}
+
+
+/* perform a dcerpc bind, using the uuid as the key */
 NTSTATUS dcerpc_bind_byuuid(struct dcerpc_pipe *p, 
+			    TALLOC_CTX *mem_ctx,
 			    const char *uuid, unsigned version)
 {
 	struct dcerpc_syntax_id syntax;
@@ -215,7 +393,7 @@ NTSTATUS dcerpc_bind_byuuid(struct dcerpc_pipe *p,
 	transfer_syntax.major_version = 2;
 	transfer_syntax.minor_version = 0;
 
-	return dcerpc_bind(p, &syntax, &transfer_syntax);
+	return dcerpc_bind(p, mem_ctx, &syntax, &transfer_syntax);
 }
 
 /*
@@ -230,7 +408,7 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 	
 	struct dcerpc_packet pkt;
 	NTSTATUS status;
-	DATA_BLOB blob_in, blob_out, payload;
+	DATA_BLOB blob, payload;
 	uint32 remaining, chunk_size;
 
 	init_dcerpc_hdr(&pkt);
@@ -261,12 +439,12 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 			(stub_data_in->length - remaining);
 		pkt.u.request.stub_and_verifier.length = chunk_size;
 
-		status = dcerpc_push(&blob_in, mem_ctx, &pkt);
+		status = dcerpc_push_request_sign(p, &blob, mem_ctx, &pkt);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
 		
-		status = p->transport.initial_request(p, mem_ctx, &blob_in);
+		status = p->transport.initial_request(p, mem_ctx, &blob);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}		
@@ -285,15 +463,18 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 		(stub_data_in->length - remaining);
 	pkt.u.request.stub_and_verifier.length = remaining;
 
-	status = dcerpc_push(&blob_in, mem_ctx, &pkt);
+	status = dcerpc_push_request_sign(p, &blob, mem_ctx, &pkt);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
 	/* send the pdu and get the initial response pdu */
-	status = p->transport.full_request(p, mem_ctx, &blob_in, &blob_out);
+	status = p->transport.full_request(p, mem_ctx, &blob, &blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
-	status = dcerpc_pull(&blob_out, mem_ctx, &pkt);
+	status = dcerpc_pull_request_sign(p, &blob, mem_ctx, &pkt);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -317,12 +498,12 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 	while (!(pkt.pfc_flags & DCERPC_PFC_FLAG_LAST)) {
 		uint32 length;
 
-		status = p->transport.secondary_request(p, mem_ctx, &blob_out);
+		status = p->transport.secondary_request(p, mem_ctx, &blob);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
 
-		status = dcerpc_pull(&blob_out, mem_ctx, &pkt);
+		status = dcerpc_pull_request_sign(p, &blob, mem_ctx, &pkt);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -567,6 +748,9 @@ NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
+
+	/* possibly check the packet signature */
+	
 
 	if (p->flags & DCERPC_DEBUG_VALIDATE_OUT) {
 		status = dcerpc_ndr_validate_out(mem_ctx, struct_ptr, struct_size, 

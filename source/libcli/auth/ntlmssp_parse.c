@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    simple kerberos5/SPNEGO routines
    Copyright (C) Andrew Tridgell 2001
-   Copyright (C) Jim McDonough   2002
+   Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002
    Copyright (C) Andrew Bartlett 2002-2003
    
    This program is free software; you can redistribute it and/or modify
@@ -31,7 +31,7 @@
   format specifiers are:
 
   U = unicode string (input is unix string)
-  a = address (input is BOOL unicode, char *unix_string)
+  a = address (input is char *unix_string)
       (1 byte type, 1 byte length, unicode/ASCII string, all inline)
   A = ASCII string (input is unix string)
   B = data blob (pointer + length)
@@ -49,7 +49,6 @@ BOOL msrpc_gen(DATA_BLOB *blob,
 	uint8 *b;
 	int head_size=0, data_size=0;
 	int head_ofs, data_ofs;
-	BOOL unicode;
 
 	/* first scan the format to work out the header and body size */
 	va_start(ap, format);
@@ -66,14 +65,9 @@ BOOL msrpc_gen(DATA_BLOB *blob,
 			data_size += str_ascii_charnum(s);
 			break;
 		case 'a':
-			unicode = va_arg(ap, BOOL);
 			n = va_arg(ap, int);
 			s = va_arg(ap, char *);
-			if (unicode) {
-				data_size += (str_charnum(s) * 2) + 4;
-			} else {
-				data_size += (str_ascii_charnum(s)) + 4;
-			}
+			data_size += (str_charnum(s) * 2) + 4;
 			break;
 		case 'B':
 			b = va_arg(ap, uint8 *);
@@ -124,27 +118,16 @@ BOOL msrpc_gen(DATA_BLOB *blob,
 			data_ofs += n;
 			break;
 		case 'a':
-			unicode = va_arg(ap, BOOL);
 			n = va_arg(ap, int);
 			SSVAL(blob->data, data_ofs, n); data_ofs += 2;
 			s = va_arg(ap, char *);
-			if (unicode) {
-				n = str_charnum(s);
-				SSVAL(blob->data, data_ofs, n*2); data_ofs += 2;
-				if (0 < n) {
-					push_string(NULL, blob->data+data_ofs, s, n*2,
-						    STR_UNICODE|STR_NOALIGN);
-				}
-				data_ofs += n*2;
-			} else {
-				n = str_ascii_charnum(s);
-				SSVAL(blob->data, data_ofs, n); data_ofs += 2;
-				if (0 < n) {
-					push_string(NULL, blob->data+data_ofs, s, n,
-						    STR_ASCII|STR_NOALIGN);
-				}
-				data_ofs += n;
+			n = str_charnum(s);
+			SSVAL(blob->data, data_ofs, n*2); data_ofs += 2;
+			if (0 < n) {
+				push_string(NULL, blob->data+data_ofs, s, n*2,
+					    STR_UNICODE|STR_NOALIGN);
 			}
+			data_ofs += n*2;
 			break;
 
 		case 'B':
@@ -153,7 +136,8 @@ BOOL msrpc_gen(DATA_BLOB *blob,
 			SSVAL(blob->data, head_ofs, n); head_ofs += 2;
 			SSVAL(blob->data, head_ofs, n); head_ofs += 2;
 			SIVAL(blob->data, head_ofs, data_ofs); head_ofs += 4;
-			memcpy(blob->data+data_ofs, b, n);
+			if (n && b) /* don't follow null pointers... */
+				memcpy(blob->data+data_ofs, b, n);
 			data_ofs += n;
 			break;
 		case 'd':
@@ -220,23 +204,27 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 			len2 = SVAL(blob->data, head_ofs); head_ofs += 2;
 			ptr =  IVAL(blob->data, head_ofs); head_ofs += 4;
 
-			/* make sure its in the right format - be strict */
-			if (len1 != len2 || ptr + len1 > blob->length) {
-				return False;
-			}
-			if (len1 & 1) {
-				/* if odd length and unicode */
-				return False;
-			}
-
 			ps = va_arg(ap, char **);
-			if (0 < len1) {
-				pull_string(NULL, p, blob->data + ptr, sizeof(p), 
-					    len1, 
-					    STR_UNICODE|STR_NOALIGN);
-				(*ps) = smb_xstrdup(p);
+			if (len1 == 0 && len2 == 0) {
+				*ps = smb_xstrdup("");
 			} else {
-				(*ps) = smb_xstrdup("");
+				/* make sure its in the right format - be strict */
+				if ((len1 != len2) || (ptr + len1 < ptr) || (ptr + len1 < len1) || (ptr + len1 > blob->length)) {
+					return False;
+				}
+				if (len1 & 1) {
+					/* if odd length and unicode */
+					return False;
+				}
+				
+				if (0 < len1) {
+					pull_string(NULL, p, blob->data + ptr, sizeof(p), 
+						    len1, 
+						    STR_UNICODE|STR_NOALIGN);
+					(*ps) = smb_xstrdup(p);
+				} else {
+					(*ps) = smb_xstrdup("");
+				}
 			}
 			break;
 		case 'A':
@@ -245,19 +233,23 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 			len2 = SVAL(blob->data, head_ofs); head_ofs += 2;
 			ptr =  IVAL(blob->data, head_ofs); head_ofs += 4;
 
-			/* make sure its in the right format - be strict */
-			if (len1 != len2 || ptr + len1 > blob->length) {
-				return False;
-			}
-
 			ps = va_arg(ap, char **);
-			if (0 < len1) {
-				pull_string(NULL, p, blob->data + ptr, sizeof(p), 
-					    len1, 
-					    STR_ASCII|STR_NOALIGN);
-				(*ps) = smb_xstrdup(p);
+			/* make sure its in the right format - be strict */
+			if (len1 == 0 && len2 == 0) {
+				*ps = smb_xstrdup("");
 			} else {
-				(*ps) = smb_xstrdup("");
+				if ((len1 != len2) || (ptr + len1 < ptr) || (ptr + len1 < len1) || (ptr + len1 > blob->length)) {
+					return False;
+				}
+				
+				if (0 < len1) {
+					pull_string(NULL, p, blob->data + ptr, sizeof(p), 
+						    len1, 
+						    STR_ASCII|STR_NOALIGN);
+					(*ps) = smb_xstrdup(p);
+				} else {
+					(*ps) = smb_xstrdup("");
+				}
 			}
 			break;
 		case 'B':
@@ -265,12 +257,17 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 			len1 = SVAL(blob->data, head_ofs); head_ofs += 2;
 			len2 = SVAL(blob->data, head_ofs); head_ofs += 2;
 			ptr =  IVAL(blob->data, head_ofs); head_ofs += 4;
-			/* make sure its in the right format - be strict */
-			if (len1 != len2 || ptr + len1 > blob->length) {
-				return False;
-			}
+
 			b = (DATA_BLOB *)va_arg(ap, void *);
-			*b = data_blob(blob->data + ptr, len1);
+			if (len1 == 0 && len2 == 0) {
+				*b = data_blob(NULL, 0);
+			} else {
+				/* make sure its in the right format - be strict */
+				if ((len1 != len2) || (ptr + len1 < ptr) || (ptr + len1 < len1) || (ptr + len1 > blob->length)) {
+					return False;
+				}
+				*b = data_blob(blob->data + ptr, len1);
+			}
 			break;
 		case 'b':
 			b = (DATA_BLOB *)va_arg(ap, void *);
@@ -300,4 +297,3 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 
 	return True;
 }
-

@@ -301,9 +301,7 @@ static const char *smb_peer_name(struct dcerpc_pipe *p)
 */
 NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe **p, 
 			      struct cli_tree *tree,
-			      const char *pipe_name,
-			      const char *pipe_uuid, 
-			      uint32 pipe_version)
+			      const char *pipe_name)
 {
 	struct smb_private *smb;
         NTSTATUS status;
@@ -374,13 +372,6 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe **p,
 
 	(*p)->transport.private = smb;
 	tree->reference_count++;
-
-	/* bind to the pipe, using the uuid as the key */
-	status = dcerpc_bind_byuuid(*p, pipe_uuid, pipe_version);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		dcerpc_pipe_close(*p);
-	}
 
         return NT_STATUS_OK;
 }

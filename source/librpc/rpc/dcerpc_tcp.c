@@ -146,12 +146,9 @@ static const char *tcp_peer_name(struct dcerpc_pipe *p)
 */
 NTSTATUS dcerpc_pipe_open_tcp(struct dcerpc_pipe **p, 
 			      const char *server,
-			      uint32 port,
-			      const char *pipe_uuid, 
-			      uint32 pipe_version)
+			      uint32 port)
 {
 	struct tcp_private *tcp;
-        NTSTATUS status;
 	int fd;
 	struct in_addr addr;
 
@@ -193,14 +190,6 @@ NTSTATUS dcerpc_pipe_open_tcp(struct dcerpc_pipe **p,
 	tcp->server_name = talloc_strdup((*p)->mem_ctx, server);
 
 	(*p)->transport.private = tcp;
-
-	/* bind to the pipe, using the uuid as the key */
-	status = dcerpc_bind_byuuid(*p, pipe_uuid, pipe_version);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		dcerpc_pipe_close(*p);
-		return status;
-	}
 
         return NT_STATUS_OK;
 }

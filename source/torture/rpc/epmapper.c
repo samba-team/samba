@@ -72,6 +72,14 @@ static void display_tower(TALLOC_CTX *mem_ctx, struct epm_towers *twr)
 			break;
 
 		case 0x1f:
+			printf(" TCP2:");
+			if (rhs->rhs_data.length == 2) {
+				printf("%d", RSVAL(rhs->rhs_data.data, 0));
+			}
+			break;
+
+		case 0x07:
+			/* what is the difference between this and 0x1f? */
 			printf(" TCP:");
 			if (rhs->rhs_data.length == 2) {
 				printf("%d", RSVAL(rhs->rhs_data.data, 0));

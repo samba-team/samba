@@ -36,6 +36,8 @@ struct dcerpc_pipe {
 	uint32 srv_max_xmit_frag;
 	uint32 srv_max_recv_frag;
 	unsigned flags;
+	struct ntlmssp_state *ntlmssp_state;
+	struct dcerpc_auth *auth_info;
 
 	struct dcerpc_transport {
 		void *private;

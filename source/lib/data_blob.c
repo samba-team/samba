@@ -91,6 +91,8 @@ free a data blob
 *******************************************************************/
 void data_blob_free(DATA_BLOB *d)
 {
+	return;
+
 	if (d) {
 		if (d->free) {
 			(d->free)(d);

@@ -31,12 +31,14 @@
 
 #define NDR_BASE_MARSHALL_SIZE 1024
 
+/*
+  only include interfaces that contain callable dcerpc functions here
+*/
 const struct dcerpc_interface_table *dcerpc_pipes[] = {
 	&dcerpc_table_samr,
 	&dcerpc_table_lsarpc,
 	&dcerpc_table_netdfs,
 	&dcerpc_table_atsvc,
-	&dcerpc_table_dcerpc,
 	&dcerpc_table_rpcecho,
 	&dcerpc_table_epmapper,
 	&dcerpc_table_eventlog,
@@ -89,31 +91,6 @@ NTSTATUS ndr_pull_subcontext(struct ndr_pull *ndr, struct ndr_pull *ndr2, uint32
 	ndr2->offset = 0;
 	ndr2->data_size = size;
 	ndr2->flags = ndr->flags;
-	return NT_STATUS_OK;
-}
-
-
-/* limit the remaining size of the current ndr parse structure to the
-   given size, starting at the given offset 
-
-   this is used when a ndr packet has an explicit size on the wire, and we
-   need to make sure that we don't use more data than is indicated
-
-   the 'ofs' parameter indicates how many bytes back from the current
-   offset in the buffer the 'size' number of bytes starts
-*/
-NTSTATUS ndr_pull_limit_size(struct ndr_pull *ndr, uint32 size, uint32 ofs)
-{
-	uint32 new_size;
-	new_size = ndr->offset + size - ofs;
-
-	if (new_size > ndr->data_size) {
-		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE, 
-				      "ndr_pull_limit_size %s %u failed",
-				      size, ofs);
-	}
-	ndr->data_size = new_size;
-
 	return NT_STATUS_OK;
 }
 
@@ -780,7 +757,7 @@ NTSTATUS ndr_pull_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, uint32 level,
   pull a struct from a blob using NDR
 */
 NTSTATUS ndr_pull_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
-			      NTSTATUS (*fn)(struct ndr_pull *, int ndr_flags, void *))
+			      NTSTATUS (*fn)(struct ndr_pull *, int , void *))
 {
 	struct ndr_pull *ndr;
 	ndr = ndr_pull_init_blob(blob, mem_ctx);
@@ -790,4 +767,24 @@ NTSTATUS ndr_pull_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
 	return fn(ndr, NDR_SCALARS|NDR_BUFFERS, p);
 }
 
+/*
+  push a struct to a blob using NDR
+*/
+NTSTATUS ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
+			      NTSTATUS (*fn)(struct ndr_push *, int , void *))
+{
+	NTSTATUS status;
+	struct ndr_push *ndr;
+	ndr = ndr_push_init_ctx(mem_ctx);
+	if (!ndr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	status = fn(ndr, NDR_SCALARS|NDR_BUFFERS, p);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
+	*blob = ndr_push_blob(ndr);
+
+	return NT_STATUS_OK;
+}

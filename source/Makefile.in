@@ -1,6 +1,6 @@
 #########################################################################
 # Makefile.in for Samba - rewritten for autoconf support
-# Copyright Andrew Tridgell 1992-1998
+# Copyright Andrew Tridgell 1992-2003
 # Copyright (C) 2001 by Martin Pool <mbp@samba.org>
 # Copyright (C) 2002 Andrew Bartlett <abartlet@samba.org>
 # Copyright (C) 2003 Anthony Liguori <aliguor@us.ibm.com>
@@ -179,7 +179,7 @@ SECRETS_OBJ = passdb/secrets.o
 LIBNMB_OBJ = libcli/unexpected.o libcli/namecache.o libcli/nmblib.o \
 	     libcli/namequery.o 
 
-LIBNTLMSSP_OBJ = libcli/ntlmssp.o libcli/ntlmssp_parse.o libcli/util/ntlmssp_sign.o
+LIBNTLMSSP_OBJ = libcli/auth/ntlmssp.o libcli/auth/ntlmssp_parse.o libcli/auth/ntlmssp_sign.o
 
 LIBSAMBA_OBJ = libcli/util/nterr.o libcli/util/smbdes.o libcli/util/smbencrypt.o
 
@@ -199,7 +199,7 @@ LIBRAW_NDR_OBJ = librpc/ndr/ndr.o librpc/ndr/ndr_basic.o librpc/ndr/ndr_sec.o \
 		librpc/gen_ndr/ndr_epmapper.o librpc/gen_ndr/ndr_winreg.o \
 		librpc/gen_ndr/ndr_mgmt.o
 
-LIBRAW_RPC_OBJ = librpc/rpc/dcerpc.o \
+LIBRAW_RPC_OBJ = librpc/rpc/dcerpc.o librpc/rpc/dcerpc_auth.o \
 		librpc/rpc/dcerpc_smb.o librpc/rpc/dcerpc_tcp.o \
 		librpc/gen_rpc/rpc_echo.o librpc/gen_rpc/rpc_lsa.o \
 		librpc/gen_rpc/rpc_dfs.o librpc/gen_rpc/rpc_spoolss.o \
@@ -260,8 +260,6 @@ AUTH_OBJ = auth/auth.o auth/auth_sam.o \
 	   auth/auth_unix.o auth/auth_util.o	\
 	   auth/auth_builtin.o auth/auth_compat.o \
 	   $(PLAINTEXT_AUTH_OBJ) $(UNIGRP_OBJ)
-
-# auth/auth_server.o auth/auth_domain.o auth/auth_winbind.o auth/auth_ntlmssp.o 
 
 MANGLE_OBJ = smbd/mangle.o smbd/mangle_hash.o smbd/mangle_map.o smbd/mangle_hash2.o
 

@@ -28,7 +28,7 @@ interface dcerpc
 		uint8 num_contexts;
 		dcerpc_ctx_list ctx_list[num_contexts];
 		[flag(NDR_ALIGN8)]    DATA_BLOB _pad;
-		[flag(NDR_REMAINING)] DATA_BLOB auth_verifier;
+		[flag(NDR_REMAINING)] DATA_BLOB auth_info;
 	} dcerpc_bind;
 
 	typedef struct {
@@ -53,8 +53,7 @@ interface dcerpc
 		[flag(NDR_ALIGN4)]    DATA_BLOB _pad1;
 		uint8 num_results;
 		dcerpc_ack_ctx ctx_list[num_results];
-		[flag(NDR_ALIGN8)]    DATA_BLOB _pad2;
-		[flag(NDR_REMAINING)] DATA_BLOB auth_verifier;
+		[flag(NDR_REMAINING)] DATA_BLOB auth_info;
 	} dcerpc_bind_ack;
 
 	typedef struct {
@@ -75,21 +74,64 @@ interface dcerpc
 		uint32 status;
 	} dcerpc_fault;
 
+
+	const uint8 DCERPC_AUTH_TYPE_NONE    = 0;
+	const uint8 DCERPC_AUTH_TYPE_KRB5    = 1;
+	const uint8 DCERPC_AUTH_TYPE_NTLMSSP = 10;
+	
+	const uint8 DCERPC_AUTH_LEVEL_NONE      = 1;
+	const uint8 DCERPC_AUTH_LEVEL_CONNECT   = 2;
+	const uint8 DCERPC_AUTH_LEVEL_CALL      = 3;
+	const uint8 DCERPC_AUTH_LEVEL_PACKET    = 4;
+	const uint8 DCERPC_AUTH_LEVEL_INTEGRITY = 5;
+	const uint8 DCERPC_AUTH_LEVEL_PRIVACY   = 6;
+
+	typedef [public] struct {
+		uint8  auth_type; 
+		uint8  auth_level;
+		uint8  auth_pad_length;
+		uint8  auth_reserved;
+		uint32 auth_context_id;
+		[flag(NDR_REMAINING)] DATA_BLOB credentials;
+	} dcerpc_auth;
+
+	typedef [public] struct {
+		uint32 _pad;
+		[flag(NDR_REMAINING)] DATA_BLOB auth_info;
+	} dcerpc_auth3;
+
 	typedef enum {
-		DCERPC_PKT_REQUEST=0,
-		DCERPC_PKT_RESPONSE=2,
-		DCERPC_PKT_FAULT=3,
-		DCERPC_PKT_BIND=11,
-		DCERPC_PKT_BIND_ACK=12,
-		DCERPC_PKT_BIND_NAK=13
+		DCERPC_PKT_REQUEST     =  0,
+		DCERPC_PKT_PING        =  1,
+		DCERPC_PKT_RESPONSE    =  2,
+		DCERPC_PKT_FAULT       =  3,
+		DCERPC_PKT_WORKING     =  4,
+		DCERPC_PKT_NOCALL      =  5,
+		DCERPC_PKT_REJECT      =  6,
+		DCERPC_PKT_ACK         =  7,
+		DCERPC_PKT_CL_CANCEL   =  8,
+		DCERPC_PKT_FACK        =  9,
+		DCERPC_PKT_CANCEL_ACK  = 10,
+		DCERPC_PKT_BIND        = 11,
+		DCERPC_PKT_BIND_ACK    = 12,
+		DCERPC_PKT_BIND_NAK    = 13,
+		DCERPC_PKT_ALTER       = 14,
+		DCERPC_PKT_ALTER_ACK   = 15,
+		DCERPC_PKT_AUTH3       = 16,
+		DCERPC_PKT_SHUTDOWN    = 17,
+		DCERPC_PKT_CO_CANCEL   = 18,
+		DCERPC_PKT_ORPHANED    = 19
 	} dcerpc_pkt_type;
 
 	typedef [nodiscriminant] union {
-		[case(DCERPC_PKT_REQUEST)]  dcerpc_request  request;
-		[case(DCERPC_PKT_RESPONSE)] dcerpc_response response;
-		[case(DCERPC_PKT_BIND)]     dcerpc_bind     bind;
-		[case(DCERPC_PKT_BIND_ACK)] dcerpc_bind_ack bind_ack;
-		[case(DCERPC_PKT_FAULT)]    dcerpc_fault    fault;
+		[case(DCERPC_PKT_REQUEST)]   dcerpc_request  request;
+		[case(DCERPC_PKT_RESPONSE)]  dcerpc_response response;
+		[case(DCERPC_PKT_BIND)]      dcerpc_bind     bind;
+		[case(DCERPC_PKT_BIND_ACK)]  dcerpc_bind_ack bind_ack;
+		[case(DCERPC_PKT_ALTER)]     dcerpc_bind     alter;
+		[case(DCERPC_PKT_ALTER_ACK)] dcerpc_bind_ack alter_ack;
+		[case(DCERPC_PKT_FAULT)]     dcerpc_fault    fault;
+		[case(DCERPC_PKT_AUTH3)]     dcerpc_auth3    auth;
 	} dcerpc_payload;
 
 

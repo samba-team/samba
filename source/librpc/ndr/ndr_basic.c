@@ -257,6 +257,17 @@ NTSTATUS ndr_push_bytes(struct ndr_push *ndr, const char *data, uint32 n)
 }
 
 /*
+  push some zero bytes
+*/
+NTSTATUS ndr_push_zero(struct ndr_push *ndr, uint32 n)
+{
+	NDR_PUSH_NEED_BYTES(ndr, n);
+	memset(ndr->data + ndr->offset, 0, n);
+	ndr->offset += n;
+	return NT_STATUS_OK;
+}
+
+/*
   push an array of uint8
 */
 NTSTATUS ndr_push_array_uint8(struct ndr_push *ndr, int ndr_flags, const char *data, uint32 n)
@@ -296,27 +307,6 @@ void ndr_push_save(struct ndr_push *ndr, struct ndr_push_save *save)
 void ndr_push_restore(struct ndr_push *ndr, struct ndr_push_save *save)
 {
 	ndr->offset = save->offset;
-}
-
-/*
-  this is used when a packet has a 4 byte length field. We remember the start position
-  and come back to it later to fill in the size
-*/
-NTSTATUS ndr_push_length4_start(struct ndr_push *ndr, struct ndr_push_save *save)
-{
-	NDR_PUSH_ALIGN(ndr, 4);
-	ndr_push_save(ndr, save);
-	return ndr_push_uint32(ndr, 0);
-}
-
-NTSTATUS ndr_push_length4_end(struct ndr_push *ndr, struct ndr_push_save *save)
-{
-	struct ndr_push_save save2;
-	ndr_push_save(ndr, &save2);
-	ndr_push_restore(ndr, save);
-	NDR_CHECK(ndr_push_uint32(ndr, save2.offset - ndr->offset));
-	ndr_push_restore(ndr, &save2);
-	return NT_STATUS_OK;
 }
 
 /*
@@ -577,34 +567,6 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 }
 
 /*
-  push a 4 byte offset pointer, remembering where we are so we can later fill
-  in the correct value
-*/
-NTSTATUS ndr_push_offset(struct ndr_push *ndr, struct ndr_push_save *ofs)
-{
-	NDR_PUSH_ALIGN(ndr, 4);
-	ndr_push_save(ndr, ofs);
-	return ndr_push_uint32(ndr, 0);
-}
-
-/*
-  fill in the correct offset in a saved offset pointer
-  the offset is taken relative to 'save'
-*/
-NTSTATUS ndr_push_offset_ptr(struct ndr_push *ndr, 
-			     struct ndr_push_save *ofs, 
-			     struct ndr_push_save *save)
-{
-	struct ndr_push_save save2;
-	ndr_push_save(ndr, &save2);
-	ndr_push_restore(ndr, ofs);
-	NDR_CHECK(ndr_push_uint32(ndr, save2.offset - save->offset));
-	ndr_push_restore(ndr, &save2);
-	return NT_STATUS_OK;
-}
-
-
-/*
   push a GUID
 */
 NTSTATUS ndr_push_GUID(struct ndr_push *ndr, int ndr_flags, GUID *guid)
@@ -761,7 +723,9 @@ NTSTATUS GUID_from_string(const char *s, struct GUID *guid)
         return NT_STATUS_OK;
 }
 
-
+/*
+  its useful to be able to display these in debugging messages
+*/
 const char *GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 {
 	return talloc_asprintf(mem_ctx, 
