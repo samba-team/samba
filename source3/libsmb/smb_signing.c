@@ -370,7 +370,7 @@ We were expecting seq %u\n", reply_seq_number, saved_seq ));
 #endif /* JRATEST */
 
 	} else {
-		DEBUG(10, ("client_check_incoming_message:: seq %u: got good SMB signature of\n", (unsigned int)reply_seq_number));
+		DEBUG(10, ("client_check_incoming_message: seq %u: got good SMB signature of\n", (unsigned int)reply_seq_number));
 		dump_data(10, (const char *)server_sent_mac, 8);
 	}
 	return signing_good(inbuf, si, good, saved_seq);
@@ -743,7 +743,24 @@ We were expecting seq %u\n", reply_seq_number, saved_seq ));
 		DEBUG(10, ("srv_check_incoming_message: seq %u: (current is %u) got good SMB signature of\n", (unsigned int)reply_seq_number, (unsigned int)data->send_seq_num));
 		dump_data(10, (const char *)server_sent_mac, 8);
 	}
-	return signing_good(inbuf, si, good, saved_seq);
+
+	if (!signing_good(inbuf, si, good, saved_seq)) {
+		if (si->mandatory_signing) {
+			/* Mandatory signing - fail and disconnect. */
+			return False;
+		} else {
+			/* Non-mandatory signing - just turn off. */
+			DEBUG(5, ("srv_check_incoming_message: signing negotiated but not required and client \
+isn't sending correct signatures. Turning off.\n"));
+			si->negotiated_smb_signing = False;
+			si->allow_smb_signing = False;
+			si->doing_signing = False;
+			free_signing_context(si);
+			return True;
+		}
+	} else {
+		return True;
+	}
 }
 
 /***********************************************************
@@ -966,6 +983,10 @@ void srv_set_signing(const DATA_BLOB user_session_key, const DATA_BLOB response)
 		memcpy(&data->mac_key.data[user_session_key.length],response.data, response.length);
 
 	dump_data_pw("MAC ssession key is:\n", data->mac_key.data, data->mac_key.length);
+
+	DEBUG(3,("srv_set_signing: turning on SMB signing: signing negotiated = %s, mandatory_signing = %s.\n",
+				BOOLSTR(srv_sign_info.negotiated_smb_signing),
+			 	BOOLSTR(srv_sign_info.mandatory_signing) ));
 
 	/* Initialise the sequence number */
 	data->send_seq_num = 0;
