@@ -731,8 +731,7 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *
 
 	tower->floors[0].lhs.lhs_data = dcerpc_floor_pack_lhs_data(mem_ctx, &binding->object, binding->object_version);
 
-	tower->floors[0].rhs.uuid.unknown = data_blob_talloc(mem_ctx, NULL, 0);
-
+	tower->floors[0].rhs.uuid.unknown = data_blob_talloc_zero(mem_ctx, 2);
 	
 	/* Floor 1 */
 	tower->floors[1].lhs.protocol = EPM_PROTOCOL_UUID;
@@ -744,7 +743,7 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *
 
 	tower->floors[1].lhs.lhs_data = dcerpc_floor_pack_lhs_data(mem_ctx, &ndr_guid, NDR_GUID_VERSION);
 	
-	tower->floors[1].rhs.uuid.unknown = data_blob_talloc(mem_ctx, NULL, 0);
+	tower->floors[1].rhs.uuid.unknown = data_blob_talloc_zero(mem_ctx, 2);
 	
 	/* Floor 2 to num_protocols */
 	for (i = 0; i < num_protocols; i++) {
