@@ -924,15 +924,7 @@ void string_replace(char *s,char oldc,char newc)
 ****************************************************************************/
 void unix_format(char *fname)
 {
-  pstring namecopy;
   string_replace(fname,'\\','/');
-
-  if (*fname == '/')
-    {
-      pstrcpy(namecopy,fname);
-      pstrcpy(fname,".");
-      pstrcat(fname,namecopy);
-    }  
 }
 
 /****************************************************************************
