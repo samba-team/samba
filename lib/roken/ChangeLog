@@ -1,7 +1,5 @@
 1999-08-09  Johan Danielsson  <joda@pdc.kth.se>
 
-	* roken-common.h: add simple_exec{ve,le}
-
 	* simple_exec.c: add simple_exec{ve,le}
 
 	* getcap.c: getcap from NetBSD
