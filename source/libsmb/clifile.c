@@ -176,7 +176,7 @@ int cli_nt_delete_on_close(struct cli_state *cli, int fnum, BOOL flag)
 	int param_len = 6;
 	uint16 setup = TRANSACT2_SETFILEINFO;
 	pstring param;
-	unsigned char data;
+	char data;
 	char *rparam=NULL, *rdata=NULL;
 
 	memset(param, 0, param_len);
