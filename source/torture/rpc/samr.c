@@ -332,7 +332,7 @@ static BOOL test_SetUserPass(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	union samr_UserInfo u;
 	BOOL ret = True;
 	uint8 session_key[16];
-	char *newpass = samr_rand_pass(mem_ctx);	
+	char *newpass = samr_rand_pass(mem_ctx);
 
 	s.in.handle = handle;
 	s.in.info = &u;
@@ -351,6 +351,57 @@ static BOOL test_SetUserPass(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	SamOEMhash(u.info24.password.data, session_key, 516);
 
 	printf("Testing SetUserInfo level 24 (set password)\n");
+
+	status = dcerpc_samr_SetUserInfo(p, mem_ctx, &s);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetUserInfo level %u failed - %s\n",
+		       s.in.level, nt_errstr(status));
+		ret = False;
+	} else {
+		*password = newpass;
+	}
+
+	return ret;
+}
+
+
+static BOOL test_SetUserPassEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			       struct policy_handle *handle, char **password)
+{
+	NTSTATUS status;
+	struct samr_SetUserInfo s;
+	union samr_UserInfo u;
+	BOOL ret = True;
+	uint8 session_key[16];
+	uint8 confounder[16];
+	char *newpass = samr_rand_pass(mem_ctx);	
+	struct MD5Context ctx;
+
+	s.in.handle = handle;
+	s.in.info = &u;
+	s.in.level = 26;
+
+	encode_pw_buffer(u.info26.password.data, newpass, STR_UNICODE);
+	u.info26.pw_len = strlen(newpass);
+
+	status = dcerpc_fetch_session_key(p, session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetUserInfo level %u - no session key - %s\n",
+		       s.in.level, nt_errstr(status));
+		return False;
+	}
+
+	generate_random_buffer((unsigned char *)confounder, 16, False);
+
+	MD5Init(&ctx);
+	MD5Update(&ctx, confounder, 16);
+	MD5Update(&ctx, session_key, 16);
+	MD5Final(session_key, &ctx);
+
+	SamOEMhash(u.info26.password.data, session_key, 516);
+	memcpy(&u.info26.password.data[516], confounder, 16);
+
+	printf("Testing SetUserInfo level 26 (set password ex)\n");
 
 	status = dcerpc_samr_SetUserInfo(p, mem_ctx, &s);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1196,6 +1247,10 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_SetUserPass(p, mem_ctx, user_handle, &password)) {
+		ret = False;
+	}	
+
+	if (!test_SetUserPassEx(p, mem_ctx, user_handle, &password)) {
 		ret = False;
 	}	
 
