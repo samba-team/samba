@@ -343,6 +343,17 @@ top of the tree. If you don't call this function first then passing
 NULL to talloc_report() or talloc_report_full() won't give you the
 full tree printout.
 
+Here is a typical talloc report:
+
+talloc report on 'null_context' (total 267 bytes in 15 blocks)
+        libcli/auth/spnego_parse.c:55  contains     31 bytes in   2 blocks
+        libcli/auth/spnego_parse.c:55  contains     31 bytes in   2 blocks
+        iconv(UTF8,CP850)              contains     42 bytes in   2 blocks
+        libcli/auth/spnego_parse.c:55  contains     31 bytes in   2 blocks
+        iconv(CP850,UTF8)              contains     42 bytes in   2 blocks
+        iconv(UTF8,UTF-16LE)           contains     45 bytes in   2 blocks
+        iconv(UTF-16LE,UTF8)           contains     45 bytes in   2 blocks
+
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 void talloc_enable_leak_report_full(void);
@@ -356,6 +367,17 @@ talloc function as it establishes a "null context" that acts as the
 top of the tree. If you don't call this function first then passing
 NULL to talloc_report() or talloc_report_full() won't give you the
 full tree printout.
+
+Here is a typical full report:
+
+full talloc report on 'root' (total 18 bytes in 8 blocks)
+    p1                             contains     18 bytes in   7 blocks (ref 0)
+        r1                             contains     13 bytes in   2 blocks (ref 0)
+            reference to: p2
+        p2                             contains      1 bytes in   1 blocks (ref 1)
+        x3                             contains      1 bytes in   1 blocks (ref 0)
+        x2                             contains      1 bytes in   1 blocks (ref 0)
+        x1                             contains      1 bytes in   1 blocks (ref 0)
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
