@@ -153,6 +153,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	uint8 session_key[16];
 	uint8 tok_id[2];
 	BOOL foreign = False;
+	DATA_BLOB nullblob = data_blob(NULL, 0);
 
 	ZERO_STRUCT(ticket);
 	ZERO_STRUCT(auth_data);
@@ -235,7 +236,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	memcpy(server_info->session_key, session_key, sizeof(session_key));
 
 	/* register_vuid keeps the server info */
-	sess_vuid = register_vuid(server_info, user);
+	sess_vuid = register_vuid(server_info, nullblob, user);
 
 	free(user);
 
@@ -250,6 +251,10 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		}
 		
 		SSVAL(outbuf, smb_uid, sess_vuid);
+
+		if (!server_info->guest && !srv_check_sign_mac(inbuf)) {
+			exit_server("reply_spnego_kerberos: bad smb signature");
+		}
 	}
 
         /* wrap that up in a nice GSS-API wrapping */
@@ -275,7 +280,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
  End the NTLMSSP exchange context if we are OK/complete fail
 ***************************************************************************/
 
-static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *outbuf,
+static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *inbuf, char *outbuf,
 				 AUTH_NTLMSSP_STATE **auth_ntlmssp_state,
 				 DATA_BLOB *ntlmssp_blob, NTSTATUS nt_status) 
 {
@@ -294,8 +299,10 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *outbuf,
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		int sess_vuid;
+		DATA_BLOB nullblob = data_blob(NULL, 0);
+
 		/* register_vuid keeps the server info */
-		sess_vuid = register_vuid(server_info, (*auth_ntlmssp_state)->ntlmssp_state->user);
+		sess_vuid = register_vuid(server_info, nullblob, (*auth_ntlmssp_state)->ntlmssp_state->user);
 		(*auth_ntlmssp_state)->server_info = NULL;
 
 		if (sess_vuid == -1) {
@@ -310,6 +317,11 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *outbuf,
 			}
 			
 			SSVAL(outbuf,smb_uid,sess_vuid);
+
+			if (!server_info->guest && !srv_check_sign_mac(inbuf)) {
+				exit_server("reply_spnego_ntlmssp: bad smb signature");
+			}
+
 		}
 	}
 
@@ -382,7 +394,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 
 	data_blob_free(&secblob);
 
-	reply_spnego_ntlmssp(conn, outbuf, &global_ntlmssp_state,
+	reply_spnego_ntlmssp(conn, inbuf, outbuf, &global_ntlmssp_state,
 			     &chal, nt_status);
 		
 	data_blob_free(&chal);
@@ -419,7 +431,7 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 
 	data_blob_free(&auth);
 
-	reply_spnego_ntlmssp(conn, outbuf, &global_ntlmssp_state,
+	reply_spnego_ntlmssp(conn, inbuf, outbuf, &global_ntlmssp_state,
 			     &auth_reply, nt_status);
 		
 	data_blob_free(&auth_reply);
@@ -742,7 +754,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	free_user_info(&user_info);
 	
 	data_blob_free(&lm_resp);
-	data_blob_free(&nt_resp);
 	data_blob_clear_free(&plaintext_password);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -750,9 +761,10 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	}
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		data_blob_free(&nt_resp);
 		return ERROR_NT(nt_status_squash(nt_status));
 	}
-	
+
 	/* it's ok - setup a reply */
 	set_message(outbuf,3,0,True);
 	if (Protocol >= PROTOCOL_NT1) {
@@ -770,10 +782,15 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	   to a uid can get through without a password, on the same VC */
 
 	/* register_vuid keeps the server info */
-	sess_vuid = register_vuid(server_info, sub_user);
-  
+	sess_vuid = register_vuid(server_info, nt_resp, sub_user);
+	data_blob_free(&nt_resp);
+
 	if (sess_vuid == -1) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
+
+ 	if (!server_info->guest && !srv_check_sign_mac(inbuf)) {
+		exit_server("reply_sesssetup_and_X: bad smb signature");
 	}
 
 	SSVAL(outbuf,smb_uid,sess_vuid);
