@@ -85,9 +85,17 @@ static NTSTATUS open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY
 	REGISTRY_KEY 	*regkey = NULL;
 	NTSTATUS     	result = NT_STATUS_OK;
 	REGSUBKEY_CTR	subkeys;
+	pstring		subkeyname2;
+	int		subkey_len;
 	
 	DEBUG(7,("open_registry_key: name = [%s][%s]\n", 
 		parent ? parent->name : "NULL", subkeyname));
+
+	/* strip any trailing '\'s */
+	pstrcpy( subkeyname2, subkeyname );
+	subkey_len = strlen ( subkeyname2 );
+	if ( subkey_len && subkeyname2[subkey_len-1] == '\\' )
+		subkeyname2[subkey_len-1] = '\0';
 
 	if ((regkey=(REGISTRY_KEY*)malloc(sizeof(REGISTRY_KEY))) == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -101,7 +109,7 @@ static NTSTATUS open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY
 	 * not do this stupidity.   --jerry
 	 */
 	
-	if (!subkeyname || !*subkeyname ) {
+	if ( !subkey_len ) {
 		pstrcpy( regkey->name, parent->name );	
 	}
 	else {
@@ -110,7 +118,7 @@ static NTSTATUS open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY
 			pstrcat( regkey->name, parent->name );
 			pstrcat( regkey->name, "\\" );
 		}
-		pstrcat( regkey->name, subkeyname );
+		pstrcat( regkey->name, subkeyname2 );
 	}
 	
 	/* Look up the table of registry I/O operations */
