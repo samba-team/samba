@@ -100,15 +100,18 @@ static BOOL ldap_idmap_init(void)
 #ifdef WITH_LDAP_SAMCONFIG
 	{
 		int ldap_port = lp_ldap_port();
-
+		char *uri;
 		/* remap default port if not using SSL */
 		if (lp_ldap_ssl() != LDAP_SSL_ON && ldap_port == 636) {
 			ldap_port = 389;
 		}
+		
+		uri = NULL;
 
-		ldap_state->uri = asprintf("%s://%s:d", 
-					   lp_ldap_ssl() == LDAP_SSL_ON ? "ldaps" : "ldap", 
-					   lp_ldap_server(), ldap_port);
+		asprintf(&uri, "%s://%s:%d", 
+			 lp_ldap_ssl() == LDAP_SSL_ON ? "ldaps" : "ldap", 
+			 lp_ldap_server(), ldap_port);
+		ldap_state->uri = uri;
 		if (!ldap_state->uri) {
 			DEBUG(0,("Out of memory\n"));
 			return False;
