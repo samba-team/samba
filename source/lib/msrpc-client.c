@@ -93,6 +93,10 @@ BOOL msrpc_send(int fd, prs_struct *ps)
 	DEBUG(10,("msrpc_send_prs: data: %p len %d\n", outbuf, len));
 	dbgflush();
 
+	if (outbuf == NULL)
+	{
+		return True;
+	}
 	dump_data(10, outbuf, len);
 
 	while (nwritten < len)

@@ -1007,6 +1007,7 @@ static BOOL api_pipe_request(rpcsrv_struct *l, const char* name,
 
 	if (l->auth != NULL && l->auth_validated)
 	{
+		DEBUG(10,("api_pipe_request: validated auth\n"));
 		if (!api_pipe_auth_process(l)) return False;
 
 		DEBUG(0,("api_pipe_request: **** MUST CALL become_user() HERE **** \n"));
@@ -1263,7 +1264,7 @@ BOOL rpc_local(rpcsrv_struct *l, char *data, int len, char *name)
 		if (l->rdata.data == NULL || l->rdata.data_size == 0)
 		{
 			DEBUG(10,("rpc_local: no data to send\n"));
-			return False;
+			return True;
 		}
 		prs_free_data(&l->smb_pdu);
 		prs_init(&l->smb_pdu, 0, 4, True);
