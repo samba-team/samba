@@ -529,12 +529,12 @@ static BOOL resolve_wins(const char *name, int name_type,
 
 	DEBUG(3,("resolve_wins: Attempting wins lookup for name %s<0x%x>\n", name, name_type));
 
-	if(!*lp_wins_server()) {
-		DEBUG(3,("resolve_wins: WINS server resolution selected and no WINS server present.\n"));
+	if( wins_srv_count() < 1 ) {
+		DEBUG(3,("resolve_wins: WINS server resolution selected and no WINS servers listed.\n"));
 		return False;
 	}
 
-	wins_ip = *interpret_addr2(lp_wins_server());
+	wins_ip = *interpret_addr2( wins_srv() );
 	wins_ismyip = ismyip(wins_ip);
 
 	DEBUG(3, ("resolve_wins: WINS server == <%s>\n", inet_ntoa(wins_ip)) );

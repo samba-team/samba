@@ -56,7 +56,7 @@ struct in_addr *lookup_backend(const char *name, int *count)
 
 	set_socket_options(fd,"SO_BROADCAST");
 
-	p = lp_wins_server();
+	p = wins_srv();
 	if (p && *p) {
 		ret = name_query(fd,name,0x20,False,True, *interpret_addr2(p), count);
 		goto out;
