@@ -394,6 +394,9 @@ dit(Event Log)
 
 dit(Service Control)
 
+	These commands provide functionality similar to the Windows
+	NT Service Control Manager.
+
 	It is possible to use command-line completion (if you have
 	the GNU readline library) for Service names, by pressing the
 	tab key.
@@ -401,7 +404,7 @@ dit(Service Control)
 	startdit()
 
 	label(svcenum)	dit(bf(svcenum))
-		[-i] Lists Services Manager
+		[-i] Lists Services.
 
 	label(svcinfo)	dit(bf(svcinfo))
 		<service> Service Information
@@ -472,13 +475,17 @@ dit(Printing)
 	startdit()
 
 	label(spoolenum)	dit(bf(spoolenum))
-		Enumerate Printers
+		Enumerate Printers.  This experimental command lists
+		all printers available on a remote spooler service.
 
 	label(spooljobs)	dit(bf(spooljobs))
-		<printer name> Enumerate Printer Jobs
+		<printer name> Enumerate Printer Jobs.  This
+		experimental command lists all jobs, and their
+		status, currently queued on a remote spooler
+		service.
 
 	label(spoolopen)	dit(bf(spoolopen))
-		<printer name> Spool Printer Open Test
+		<printer name> Spool Printer Open Test.  Experimental.
 
 	enddit()
 
@@ -520,19 +527,54 @@ dit(Local Security Authority)
 	startdit()
 
 	label(lsaquery)	dit(bf(lsaquery))
-		Query Info Policy (domain member or server)
+		Query Info Policy (domain member or server).  Obtains
+		the SID and name of the SAM database that a server
+		is responsible for (i.e a workstation's local SAM
+		database or the PDC SAM database).  Also obtains the
+		SID and name of the SAM database that a server is
+		a member of.
 
 	label(lsaenumdomains)	dit(bf(lsaenumdomains))
-		Enumerate Trusted Domains
+		Enumerate Trusted Domains.  Lists all Trusted and
+		Trusting Domains with which the remote PDC has
+		trust relationships established.
 
 	label(lookupsids)	dit(bf(lookupsids))
-		Resolve names from SIDs
+		<rid1 or sid1> <rid1 or sid2> ... Resolve names from SIDs.
+		Mostly to be used by developers or for troubleshooting,
+		this command can take either Security Identifiers or Relative
+		Identifiers, and look them up in the local SAM database
+		(or look them up in a remote Trusting or Trusted PDC's SAM
+		database if there is an appropriate Trust Relationship
+		established).  The result is a list of names, of the
+		format: nl()
+		tt([TRUST_DOMAIN\]name). nl()
+		the link(bf(lsaquery))(lsaquery) command must have been
+		issued first if you wish to use lookupsids to resolve
+		RIDs.  The only RIDs that will be resolved will be those
+		in the SAM database of the server to which you are connected.
 
 	label(lookupnames)	dit(bf(lookupnames))
-		Resolve SIDs from names
+		<name1> <name2> ... Resolve SIDs from names.
+		Mostly to be used by developers or for troubleshooting,
+		this command can take names of the following format: nl()
+		tt([DOMAIN_NAME\]name). nl()
+		The names, which can be user, group or alias names, will
+		either be looked up in the local SAM database or in a remote
+		Trusting or Trusted PDC's SAM database, if there is an
+		appropriate Trust Relationship established.  The optional
+		Domain name component is the name of a SAM database, which
+		can include a workstation's local SAM database or a Trusted
+		Domain.
+		Example Usage: nl()
+		tt(lookupnames WKSTANAME\Administrator "Domain Guests") nl()
 
 	label(querysecret)	dit(bf(querysecret))
-		LSA Query Secret (developer use)
+		LSA Query Secret (developer use).  This command only appears
+		to work against NT4 SP3 and below.  Due to its potential
+		for misuse, it looks like Microsoft modified their
+		implementation of the LsaRetrievePrivateData call to
+		always return NT_STATUS_ACCESS_DENIED.
 
 	enddit()
 
@@ -541,13 +583,24 @@ dit(NETLOGON)
 	startdit()
 
 	label(ntlogin)	dit(bf(ntlogin))
-		[username] [password] NT Domain login test
+		[username] [password] NT Domain login test.  Demonstrates
+		how NT-style logins work.  Mainly for developer usage,
+		it can also be used to verify that a user can log in
+		from a workstation.  If you cannot ever get pam_ntdom
+		to work, try this command first.
 
 	label(domtrust)	dit(bf(domtrust))
-		<domain> NT Inter-Domain test
+		<domain> NT Inter-Domain test.  Demonstrates how NT-style
+		Inter-Domain Trust relationships work.  Mainly for
+		developer usage, it can also be used to verify that a
+		Trust Relationship is correctly established with a
+		remote PDC.
 
 	label(samsync)	dit(bf(samsync))
-		SAM Synchronization Test (experimental)
+		SAM Synchronisation Test (experimental).  This command
+		is used to manually synchronise a SAM database from a
+		remote PDC, when Samba is set up as a Backup Domain
+		Controller.
 
 	enddit()
 
@@ -735,15 +788,23 @@ illegal, accidental, deliberate, intentional, malicious, curious, etc.
 dit(Command Completion)
 Command-completion (available if you have the GNU readline library) used on
 certain commands may not operate correctly if the word being completed (such as a registry key) contains a space.  Typically, the name will be completed, but
-you will have to go back and put quotes round it, yourself.
+you will have to go back and put quotes round it, yourself.  
 
 dit(SAM Database command-completion)
 Command-completion (available if you have the GNU readline library) of user,
 group and alias names does not work on remote Domains, which would normally
 be specified like this: nl()
-tt(DOMAIN_name\\user_name). nl()
+tt(DOMAIN_name\user_name). nl()
 The only names that can be completed in this fashion are the local names
 in the SAM database of the target server.
+
+dit(link(bf(spoolenum)(spoolenum))
+Due to current limitations in the rpcclient MSRPC / SMB code, and due to
+the extremely poor MSRPC implementation (by Microsoft) of the spooler
+service, if there are a large number of printers (or the names / comment
+fields associated with the printers), this command will fail.  The
+limitations require further research to be carried out; we're stuck with
+the poor \PIPE\spoolss design.
 
 endit()
 
