@@ -110,6 +110,8 @@ if test "$crypto_lib" = "unknown"; then
 
 fi
 
+AM_CONDITIONAL(HAVE_OPENSSL, test "$crypto_lib" = libcrypto)dnl
+
 AC_SUBST(DIR_des)
 AC_SUBST(INCLUDE_des)
 AC_SUBST(LIB_des)
