@@ -102,7 +102,7 @@ check_acl (krb5_context context, const char *name)
     if (fp == NULL)
 	return 1;
     while (fgets(buf, sizeof(buf), fp) != NULL) {
-	if (buf[strlen(buf) - 1 ] == '\0')
+	if (buf[strlen(buf) - 1 ] == '\n')
 	    buf[strlen(buf) - 1 ] = '\0';
 	if (strcmp (buf, name) == 0) {
 	    ret = 0;
@@ -216,7 +216,7 @@ send_diffs (krb5_context context, slave *s, int log_fd)
 	if (kadm5_log_previous (sp, &ver, &timestamp, &op, &len))
 	    abort ();
 	left = sp->seek(sp, -16, SEEK_CUR);
-	if (ver == s->version)
+	if (ver == s->version + 1)
 	    break;
     }
     krb5_data_alloc (&data, right - left + 4);
@@ -370,11 +370,6 @@ main(int argc, char **argv)
 	    else
 		krb5_err (context, 1, errno, "select");
 	}
-	kadm5_log_get_version (log_fd, &current_version);
-	if (current_version > old_version) {
-	    for (p = slaves; p != NULL; p = p->next)
-		send_diffs (context, p, log_fd);
-	}
 	if (ret && FD_ISSET(signal_fd, &readset)) {
 	    struct sockaddr_un peer_addr;
 	    size_t peer_len = sizeof(peer_addr);
@@ -387,16 +382,24 @@ main(int argc, char **argv)
 	    printf ("signal: %u\n", vers);
 	    --ret;
 	}
+	kadm5_log_get_version (log_fd, &current_version);
+
+	for(p = slaves; p != NULL && ret--; p = p->next)
+	    if (FD_ISSET(p->fd, &readset)) {
+		if(process_msg (context, p, log_fd))
+		    remove_slave (context, p, &slaves);
+	    }
+
+	if (current_version > old_version) {
+	    for (p = slaves; p != NULL; p = p->next)
+		send_diffs (context, p, log_fd);
+	}
+
 	if (ret && FD_ISSET(listen_fd, &readset)) {
 	    add_slave (context, &slaves, listen_fd);
 	    --ret;
 	}
 
-	for(p = slaves; ret-- && p != NULL; p = p->next)
-	    if (FD_ISSET(p->fd, &readset)) {
-		if(process_msg (context, p, log_fd))
-		    remove_slave (context, p, &slaves);
-	    }
     }
 
     return 0;
