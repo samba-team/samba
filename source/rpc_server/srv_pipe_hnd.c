@@ -72,6 +72,9 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	pipes_struct *p;
 	static int next_pipe;
 
+	DEBUG(4,("Open pipe requested %s (pipes_open=%d)\n",
+		 pipe_name, pipes_open));
+	
 	/* not repeating pipe numbers makes it easier to track things in 
 	   log files and prevents client bugs where pipe numbers are reused
 	   over connection restarts */
@@ -88,9 +91,15 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 
 	next_pipe = (i+1) % MAX_OPEN_PIPES;
 
+	for (p = Pipes; p; p = p->next)
+	{
+		DEBUG(5,("open pipes: name %s pnum=%x\n", p->name, p->pnum));  
+	}
+
 	p = (pipes_struct *)malloc(sizeof(*p));
 	if (!p) return NULL;
 
+	ZERO_STRUCTP(p);
 	DLIST_ADD(Pipes, p);
 
 	bitmap_set(bmap, i);
@@ -98,7 +107,6 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 
 	pipes_open++;
 
-	ZERO_STRUCTP(p);
 	p->pnum = i;
 
 	p->open = True;
@@ -123,7 +131,13 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	
 	chain_p = p;
 	
-	return p;
+	/* OVERWRITE p as a temp variable, to display all open pipes */ 
+	for (p = Pipes; p; p = p->next)
+	{
+		DEBUG(5,("open pipes: name %s pnum=%x\n", p->name, p->pnum));  
+	}
+
+	return chain_p;
 }
 
 
@@ -304,8 +318,18 @@ pipes_struct *get_rpc_pipe(int pnum)
 {
 	pipes_struct *p;
 
-	for (p=Pipes;p;p=p->next) {
-		if (p->pnum == pnum) {
+	DEBUG(4,("search for pipe pnum=%x\n", pnum));
+
+	for (p=Pipes;p;p=p->next)
+	{
+		DEBUG(5,("pipe name %s pnum=%x (pipes_open=%d)\n", 
+		          p->name, p->pnum, pipes_open));  
+	}
+
+	for (p=Pipes;p;p=p->next)
+	{
+		if (p->pnum == pnum)
+		{
 			chain_p = p;
 			return p;
 		}
