@@ -45,6 +45,7 @@ o   Stefan Metzmacher <metze@samba.org>
     * Fix disk_free calculation with group quotas.
     * Add debug class 'quota' and a lot of DEBUG()'s 
       to the quota code.
+    * Fix sys_chown() when no chown() is presend
 
 o   Tim Potter <tpot@samba.org>
 
