@@ -7,9 +7,11 @@
 [ uuid("6bffd098-a112-3610-9833-46c3f87e345a"),
   version(1.0),
   pointer_default(unique),
-  helpstring("Workstation Service")
+  helpstring("Workstation Service"),
+  depends(srvsvc)
 ] interface wkssvc
 {
+	declare enum srvsvc_PlatformId;
 
 #define BOOL uint32
 
@@ -17,7 +19,7 @@
 	/* Function: 0x00 */
 
 	typedef struct {
-		uint32 platform_id;
+		srvsvc_PlatformId platform_id;
 		unistr *server_name;
 		unistr *domain_name;
 		uint32 version_major;
@@ -25,7 +27,7 @@
 	} wkssvc_NetWkstaInfo100;
 
 	typedef struct {
-		uint32 platform_id;
+		srvsvc_PlatformId platform_id;
 		unistr *server_name;
 		unistr *domain_name;
 		uint32 version_major;
@@ -34,7 +36,7 @@
 	} wkssvc_NetWkstaInfo101;
 
 	typedef struct {
-		uint32 platform_id;
+		srvsvc_PlatformId platform_id;
 		unistr *server_name;
 		unistr *domain_name;
 		uint32 version_major;

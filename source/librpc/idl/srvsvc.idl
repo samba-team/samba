@@ -8,9 +8,11 @@
   version(3.0),
   pointer_default(unique),
   helpstring("Server Service"),
-  depends(security)
+  depends(security,svcctl)
 ] interface srvsvc
 {
+	declare bitmap svcctl_ServerType;
+
 /**************************/
 /* srvsvc_NetCharDev      */
 /**************************/
@@ -374,12 +376,23 @@
 /**************************/
 
 	/* share types */
-	const int STYPE_DISKTREE = 0;
-	const int STYPE_PRINTQ   = 1;
-	const int STYPE_DEVICE   = 2;	/* Serial device */
-	const int STYPE_IPC      = 3;	/* Interprocess communication (IPC) */
-	const int STYPE_TEMPORARY= 0x40000000; /* share is a temporary one */
-	const int STYPE_HIDDEN   = 0x80000000; /* share is a hidden one */
+	const uint32 STYPE_TEMPORARY = 0x40000000; /* share is a temporary one */
+	const uint32 STYPE_HIDDEN    = 0x80000000; /* share is a hidden one */
+
+	typedef [v1_enum, flag(NDR_PAHEX)] enum {
+		STYPE_DISKTREE = 0,
+		STYPE_DISKTREE_TEMPORARY = STYPE_DISKTREE|STYPE_TEMPORARY,
+		STYPE_DISKTREE_HIDDEN    = STYPE_DISKTREE|STYPE_HIDDEN,
+		STYPE_PRINTQ   = 1,
+		STYPE_PRINTQ_TEMPORARY = STYPE_PRINTQ|STYPE_TEMPORARY,
+		STYPE_PRINTQ_HIDDEN    = STYPE_PRINTQ|STYPE_HIDDEN,
+		STYPE_DEVICE   = 2,	/* Serial device */
+		STYPE_DEVICE_TEMPORARY = STYPE_DEVICE|STYPE_TEMPORARY,
+		STYPE_DEVICE_HIDDEN    = STYPE_DEVICE|STYPE_HIDDEN,
+		STYPE_IPC      = 3,	/* Interprocess communication (IPC) */
+		STYPE_IPC_TEMPORARY = STYPE_IPC|STYPE_TEMPORARY,
+		STYPE_IPC_HIDDEN    = STYPE_IPC|STYPE_HIDDEN
+	} srvsvc_ShareType;
 
 	typedef struct {
 		unistr *name;
@@ -392,7 +405,7 @@
 
 	typedef struct {
 		unistr *name;
-		uint32 type;
+		srvsvc_ShareType type;
 		unistr *comment;
 	} srvsvc_NetShareInfo1;
 
@@ -403,7 +416,7 @@
 
 	typedef struct {
 		unistr *name;
-		uint32 type;
+		srvsvc_ShareType type;
 		unistr *comment;
 		uint32 permissions;
 		uint32 max_users;
@@ -419,7 +432,7 @@
 
 	typedef struct {
 		unistr *name;
-		uint32 type;
+		srvsvc_ShareType type;
 		unistr *comment;
 		uint32 csc_policy;
 	} srvsvc_NetShareInfo501;
@@ -431,7 +444,7 @@
 
 	typedef struct {
 		unistr *name;
-		uint32 type;
+		srvsvc_ShareType type;
 		unistr *comment;
 		uint32 permissions;
 		int32 max_users;
@@ -546,32 +559,36 @@
 	WERROR srvsvc_NetShareCheck(
 		[in]   unistr *server_unc,
 		[in]   unistr device_name,
-		[out]   uint32 type
+		[out]  srvsvc_ShareType type
 		);
 
 /**************************/
 /* srvsvc_NetSrv          */
 /**************************/
+	typedef [public] enum {
+		PLATFORM_ID_NT	= 500
+	} srvsvc_PlatformId;
+
 	typedef struct {
-		uint32 platform_id;
+		srvsvc_PlatformId platform_id;
 		unistr *server_name;
 	} srvsvc_NetSrvInfo100;
 
 	typedef struct {
-		uint32 platform_id;
+		srvsvc_PlatformId platform_id;
 		unistr *server_name;
 		uint32 version_major;
 		uint32 version_minor;
-		uint32 server_type;
+		svcctl_ServerType server_type;
 		unistr *comment;
 	} srvsvc_NetSrvInfo101;
 
 	typedef struct {
-		uint32 platform_id;
+		srvsvc_PlatformId platform_id;
 		unistr *server_name;
 		uint32 ver_major;
 		uint32 ver_minor;
-		uint32 server_type;
+		svcctl_ServerType server_type;
 		unistr *comment;
 		uint32 users;
 		uint32 disc;
