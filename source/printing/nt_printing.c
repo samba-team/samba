@@ -3,7 +3,7 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Jean François Micouleau      1998-2000.
- *  Copyright (C) Gerald Carter	                    2002.
+ *  Copyright (C) Gerald Carter                     2002.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -315,12 +315,11 @@ BOOL nt_printing_init(void)
 
 	update_c_setprinter(True);
 
-	/* 
+	/*
 	 * register callback to handle updating printers as new
-  	 * drivers are installed
+	 * drivers are installed
 	 */
 	message_register(MSG_PRINTER_DRVUPGRADE, do_drv_upgrade_printer);
-
 	return True;
 }
 
@@ -436,25 +435,29 @@ int get_ntforms(nt_forms_struct **list)
 
 	for (kbuf = tdb_firstkey(tdb_forms);
 	     kbuf.dptr;
-	     newkey = tdb_nextkey(tdb_forms, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
-		if (strncmp(kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) != 0) continue;
+	     newkey = tdb_nextkey(tdb_forms, kbuf), safe_free(kbuf.dptr), kbuf=newkey) 
+	{
+		if (strncmp(kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) != 0) 
+			continue;
 		
 		dbuf = tdb_fetch(tdb_forms, kbuf);
-		if (!dbuf.dptr) continue;
+		if (!dbuf.dptr) 
+			continue;
 
 		fstrcpy(form.name, kbuf.dptr+strlen(FORMS_PREFIX));
 		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "dddddddd",
 				 &i, &form.flag, &form.width, &form.length, &form.left,
 				 &form.top, &form.right, &form.bottom);
 		SAFE_FREE(dbuf.dptr);
-		if (ret != dbuf.dsize) continue;
+		if (ret != dbuf.dsize) 
+			continue;
 
 		tl = Realloc(*list, sizeof(nt_forms_struct)*(n+1));
 		if (!tl) {
 			DEBUG(0,("get_ntforms: Realloc fail.\n"));
 			return 0;
 		}
-        *list = tl;
+		*list = tl;
 		(*list)[n] = form;
 		n++;
 	}
@@ -1428,7 +1431,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	 */
 
 	if (!become_user(conn, conn->vuid)) {
-		DEBUG(0,("move_driver_to_download_area: Can't become user %s\n", user_name ));
+		DEBUG(0,("move_driver_to_download_area: Can't become user!\n"));
 		return False;
 	}
 
@@ -1904,7 +1907,7 @@ static uint32 dump_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 
 				
 				for (i=0; info3->dependentfiles &&
 					  *info3->dependentfiles[i]; i++) {
-					DEBUGADD(106,("dependentfile:[%s]\n",
+					DEBUGADD(20,("dependentfile:[%s]\n",
 						      info3->dependentfiles[i]));
 				}
 				result=0;
@@ -2667,7 +2670,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", get_called_name(),
 			info.printername);
 	fstrcpy(info.printername, printername);
-	
+
 	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
 
 	/*
@@ -2903,7 +2906,7 @@ static BOOL set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
 	kbuf.dsize = strlen(key)+1;
 
 	dbuf = tdb_fetch(tdb_drivers, kbuf);
-	if (!dbuf.dptr) {
+    if (!dbuf.dptr) {
 		/*
 		 * When changing to a driver that has no init info in the tdb, remove
 		 * the previous drivers init info and leave the new on blank.
@@ -2992,7 +2995,7 @@ BOOL set_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
 {
 	BOOL result = False;
 	
-	switch (level) 
+	switch (level)
 	{
 		case 2:
 			result=set_driver_init_2(printer->info_2);
@@ -3189,7 +3192,7 @@ static WERROR save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, NT_PRINTER_PARA
 			status = WERR_NOMEM;
 			goto done;
 		}
-		
+	
 		ZERO_STRUCTP(nt_devmode);
 
 		/*
@@ -3474,7 +3477,7 @@ BOOL printer_driver_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i )
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 
 	if ( !i ) 
-			return False;
+		return False;
 
 	DEBUG(5,("printer_driver_in_use: Beginning search through ntprinters.tdb...\n"));
 	
@@ -3484,10 +3487,10 @@ BOOL printer_driver_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i )
 	{
 		if ( !(lp_snum_ok(snum) && lp_print_ok(snum) ) )
 			continue;
-
+		
 		if ( !W_ERROR_IS_OK(get_a_printer(&printer, 2, lp_servicename(snum))) )
 			continue;
-
+		
 		if ( !StrCaseCmp(i->name, printer->info_2->drivername) ) {
 			free_a_printer( &printer, 2 );
 			return True;
@@ -3653,34 +3656,34 @@ BOOL printer_driver_files_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info )
 
 		if (ndrivers == -1)
 			continue;
-
+			
 		/* check each driver for overlap in files */
 		
 		for (i=0; i<ndrivers; i++) 
 		{
 			DEBUGADD(5,("\tdriver: [%s]\n", list[i]));
-
+			
 			ZERO_STRUCT(driver);
-
+			
 			if ( !W_ERROR_IS_OK(get_a_printer_driver(&driver, 3, list[i], 
 				info->environment, version)) )
 			{
 				SAFE_FREE(list);
 				return True;
-		}
-		
+			}
+			
 			/* check if d2 uses any files from d1 */
 			/* only if this is a different driver than the one being deleted */
 			
 			if ( !strequal(info->name, driver.info_3->name) 
 				|| (info->cversion != driver.info_3->cversion) )
-		{
+			{
 				if ( trim_overlap_drv_files(info, driver.info_3) ) {
 					free_a_printer_driver(driver, 3);
 					SAFE_FREE( list );
-			return True;
-		}	
-	}
+					return True;
+				}
+			}
 	
 			free_a_printer_driver(driver, 3);
 		}	
@@ -3738,12 +3741,12 @@ static BOOL delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i, struct curre
 		DEBUG(0,("delete_driver_files: Unable to connect\n"));
 		return False;
 	}
-	
+
         /* Save who we are - we are temporarily becoming the connection user. */
-	
+
 	if ( !become_user(conn, conn->vuid) ) {
 		DEBUG(0,("delete_driver_files: Can't become user!\n"));
-	return False;
+		return False;
 	}
 
 	/* now delete the files; must strip the '\print$' string from 
@@ -3827,7 +3830,7 @@ static WERROR delete_printer_driver_internal( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i,
 		DEBUG (0,("delete_printer_driver: fail to delete %s!\n", key));
 		return WERR_ACCESS_DENIED;
 	}
-	
+
 	/*
 	 * now delete any associated files if delete_files == True
 	 * even if this part failes, we return succes because the
@@ -3839,7 +3842,7 @@ static WERROR delete_printer_driver_internal( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i,
 
 	DEBUG(5,("delete_printer_driver: [%s] driver delete successful.\n",
 		i->name));
-	
+
 	return WERR_OK;
 }
 
@@ -3876,7 +3879,7 @@ WERROR delete_printer_driver( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i, struct current_
 BOOL get_specific_param_by_index(NT_PRINTER_INFO_LEVEL printer, uint32 level, uint32 param_index,
                                  fstring value, uint8 **data, uint32 *type, uint32 *len)
 {
-	/* right now that's enough ! */	
+	/* right now that's enough ! */
 	NT_PRINTER_PARAM *param;
 	int i=0;
 	
@@ -3950,7 +3953,7 @@ BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level,
  Store a security desc for a printer.
 ****************************************************************************/
 
-WERROR nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
+WERROR nt_printing_setsec(const char *printername, SEC_DESC_BUF *secdesc_ctr)
 {
 	SEC_DESC_BUF *new_secdesc_ctr = NULL;
 	SEC_DESC_BUF *old_secdesc_ctr = NULL;
@@ -4069,8 +4072,8 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 	} else {
 
 		/* Backup plan - make printer owned by admins.
-		   This should emulate a lanman printer as security
-		   settings can't be changed. */
+ 		   This should emulate a lanman printer as security
+ 		   settings can't be changed. */
 
 		if (!lookup_name("root", &owner_sid, &name_type)) {
 			sid_copy(&owner_sid, &global_sam_sid);
@@ -4115,7 +4118,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
  Get a security desc for a printer.
 ****************************************************************************/
 
-BOOL nt_printing_getsec(TALLOC_CTX *ctx, char *printername, SEC_DESC_BUF **secdesc_ctr)
+BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *printername, SEC_DESC_BUF **secdesc_ctr)
 {
 	prs_struct ps;
 	fstring key;
@@ -4143,7 +4146,7 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, char *printername, SEC_DESC_BUF **secde
 		prs_init(&ps, (uint32)sec_desc_size((*secdesc_ctr)->sec) +
 				sizeof(SEC_DESC_BUF), ctx, MARSHALL);
 
-		if (sec_io_desc_buf("nt_printing_setsec", secdesc_ctr, &ps, 1))
+		if (sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1))
 			tdb_prs_store(tdb_printers, key, &ps);
 
 		prs_mem_free(&ps);
@@ -4286,7 +4289,7 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 	uint32 access_granted;
 	NTSTATUS status;
 	BOOL result;
-	char *pname;
+	const char *pname;
 	TALLOC_CTX *mem_ctx = NULL;
 	extern struct current_user current_user;
 	
