@@ -92,7 +92,8 @@ Server) for the domain.
 
 By default the trust will be non-transitive. This means that only users
 directly from the trusted domain may authenticate. This can be changed
-to transitive by using the @code{netdom.exe} tool.
+to transitive by using the @code{netdom.exe} tool. @code{netdom.exe} 
+can also be used to add the trust between two realms.
 
 You need to tell Windows 2000 on what hosts to find the KDCs for the
 non-Windows realm with @code{ksetup}, see @xref{Configuring Windows 2000
@@ -111,6 +112,13 @@ password. When prompted if this is a non-Windows Kerberos realm, press
 OK.
 
 Do not forget to add trusts in both directions.
+
+If you want to use @code{netdom.exe} instead of the Domain Tree
+Management tool, you do it like this,
+
+@example
+netdom trust NT.REALM.EXAMPLE.COM /Domain:EXAMPLE.COM /add /realm /passwordt:TrustPassword
+@end example
 
 You also need to add the inter-realm keys to the Heimdal KDC. There are
 some tweaks that you need to do to @file{krb5.conf} beforehand.
