@@ -51,11 +51,12 @@ otp_challenge (OtpContext *ctx, char *user, char *str, size_t len)
 
   ctx->challengep = 0;
   ctx->err = NULL;
-  ctx->user = strdup(user);
+  ctx->user = malloc(strlen(user) + 1);
   if (ctx->user == NULL) {
     ctx->err = "Out of memory";
     return -1;
   }
+  strcpy(ctx->user, user);
   dbm = otp_db_open ();
   if (dbm == NULL) {
     ctx->err = "Cannot open database";
