@@ -189,16 +189,6 @@ extern char *sys_errlist[];
 extern int errno;
 #endif
 
-#ifdef HAVE_BROKEN_GETGROUPS
-#define GID_T int
-#else
-#define GID_T gid_t
-#endif
-
-#ifndef NGROUPS_MAX
-#define NGROUPS_MAX 32 /* Guess... */
-#endif
-
 /* Our own pstrings and fstrings */
 #include "pstring.h"
 
