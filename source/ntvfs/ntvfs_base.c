@@ -88,14 +88,17 @@ struct ntvfs_ops *ntvfs_backend_byname(const char *name, enum ntvfs_type type)
   This can be used by backends to either detect compilation errors, or provide
   multiple implementations for different smbd compilation options in one module
 */
-int ntvfs_interface_version(struct ntvfs_critical_sizes *sizes)
+const struct ntvfs_critical_sizes *ntvfs_interface_version(void)
 {
-	sizes->sizeof_ntvfs_ops = sizeof(struct ntvfs_ops);
-	sizes->sizeof_SMB_OFF_T = sizeof(SMB_OFF_T);
-	sizes->sizeof_tcon_context = sizeof(struct tcon_context);
-	sizes->sizeof_request_context = sizeof(struct request_context);
+	static const struct ntvfs_critical_sizes critical_sizes = {
+		NTVFS_INTERFACE_VERSION,
+		sizeof(struct ntvfs_ops),
+		sizeof(SMB_OFF_T),
+		sizeof(struct tcon_context),
+		sizeof(struct request_context),
+	};
 
-	return NTVFS_INTERFACE_VERSION;
+	return &critical_sizes;
 }
 
 
