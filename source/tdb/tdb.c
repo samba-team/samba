@@ -517,17 +517,20 @@ int tdb_printfreelist(TDB_CONTEXT *tdb)
 
 	/* read in the freelist top */
 	if (ofs_read(tdb, offset, &rec_ptr) == -1) {
+		tdb_unlock(tdb, -1, F_WRLCK);
 		return 0;
 	}
 
 	printf("freelist top=[0x%08x]\n", rec_ptr );
 	while (rec_ptr) {
 		if (tdb_read(tdb, rec_ptr, (char *)&rec, sizeof(rec), DOCONV()) == -1) {
+			tdb_unlock(tdb, -1, F_WRLCK);
 			return -1;
 		}
 
 		if (rec.magic != TDB_FREE_MAGIC) {
 			printf("bad magic 0x%08x in free list\n", rec.magic);
+			tdb_unlock(tdb, -1, F_WRLCK);
 			return -1;
 		}
 
