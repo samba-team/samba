@@ -522,7 +522,10 @@ void listen_for_packets(BOOL run_election)
 	timeout.tv_sec = (run_election||num_response_packets) ? 1:NMBD_SELECT_LOOP;
 	timeout.tv_usec = 0;
 
+        /* We can only take term signals when we are in the select. */
+        BlockSignals(False, SIGTERM);
 	selrtn = sys_select(&fds,&timeout);
+        BlockSignals(True, SIGTERM);
 
 	if (FD_ISSET(ClientNMB,&fds))
 	{

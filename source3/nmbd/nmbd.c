@@ -571,6 +571,8 @@ static void usage(char *pname)
 
   DEBUG(3,("Dumped names\n"));
 
+  /* We can only take sigterm signals in the select. */
+  BlockSignals(True,SIGTERM);
   process();
   close_sockets();
 
