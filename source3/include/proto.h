@@ -833,11 +833,10 @@ BOOL smb_shm_get_usage(int *bytes_free,
 
 /*The following definitions come from  smbdes.c  */
 
-void str_to_key(unsigned char *str,unsigned char *key);
 void E_P16(unsigned char *p14,unsigned char *p16);
 void E_P24(unsigned char *p21, unsigned char *c8, unsigned char *p24);
-void cred_hash1(char *out, char *in, char *key);
-void cred_hash2(char *out, char *in, char *key);
+void cred_hash1(unsigned char *out,unsigned char *in,unsigned char *key);
+void cred_hash2(unsigned char *out,unsigned char *in,unsigned char *key);
 
 /*The following definitions come from  smbencrypt.c  */
 
@@ -1115,5 +1114,5 @@ void pstrcpy(char *dest, char *src);
 char *align4(char *q, char *base);
 char *align2(char *q, char *base);
 char *align_offset(char *q, char *base, int align_offset_len);
-void dump_data(int level,unsigned char *buf,int len);
+void dump_data(int level,char *buf1,int len);
 char *tab_depth(int depth);
