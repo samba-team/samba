@@ -88,7 +88,7 @@ extern int
 
 #if	defined(ENCRYPTION)
 extern void
-	ring_encrypt (Ring *ring, void (*func)()),
+	ring_encrypt (Ring *ring, void (*func)(unsigned char *, int)),
 	ring_clearto (Ring *ring);
 #endif
 

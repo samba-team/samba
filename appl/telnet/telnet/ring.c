@@ -288,7 +288,7 @@ ring_consume_data(Ring *ring, unsigned char *buffer, int count)
 
 #if	defined(ENCRYPTION)
 void
-ring_encrypt(Ring *ring, void (*encryptor)())
+ring_encrypt(Ring *ring, void (*encryptor)(unsigned char *, int))
 {
     unsigned char *s, *c;
 
