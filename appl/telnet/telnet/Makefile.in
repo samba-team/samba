@@ -41,8 +41,7 @@ KLIB=$(LIBKRB) $(LIBDES) $(LIBROKEN)
 all: telnet
 
 .c.o:
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DEFS) \
-	-I../../../include -I.. -I../../.. -I$(srcdir)/.. $<
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DEFS) -I../../../include -I.. -I../../.. -I$(srcdir)/.. $<
 
 telnet: $(OBJECTS)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o telnet $(OBJECTS) ../libtelnet/libtelnet.a $(KLIB) $(LIBS) @LIB_tgetent@ @LIB_setupterm@
