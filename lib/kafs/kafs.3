@@ -102,6 +102,18 @@ initializes a new PAG.
 .Fn k_unlog
 removes destroys all tokens in the current PAG.
 
+.Sh ENVIRONMENT
+The following environment variable affect the mode of operation of
+.Nm kafs :
+.Bl -tag
+.It Ev AFS_SYSCALL
+Normally,
+.Nm kafs
+will try to figure out the correct system call(s) that are used by AFS
+by itself.  If it does not manage to do that, or does it incorrectly,
+you can set this variable to the system call number or list of system
+call numbers that should be used.
+.El
 .Sh RETURN VALUES
 .Fn k_hasafs
 returns 1 if AFS is present in the kernel, 0 otherwise.
@@ -141,3 +153,6 @@ usually (depending on the operating system) receive a SIGSYS signal.
 .%T File Server/Cache Manager Interface
 .%D 1991
 .Re
+.Sh BUGS
+.Ev AFS_SYSCALL
+has no effect under AIX.
