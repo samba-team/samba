@@ -29,6 +29,13 @@
 
 	* server.c: use krb5_read_priv_message; (v5_loop): check for EOF
 
+2000-07-21  Assar Westerlund  <assar@sics.se>
+
+	* kadm_conn.c: remove sys/select.h.  make signal handlers
+	type-correct and static
+
+	* kadmin_locl.h: add limits.h and sys/select.h
+
 2000-07-20  Assar Westerlund  <assar@sics.se>
 
 	* init.c (init): also create `kadmin/hprop'
