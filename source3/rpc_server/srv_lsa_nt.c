@@ -334,7 +334,7 @@ static NTSTATUS lsa_get_generic_sd(TALLOC_CTX *mem_ctx, SEC_DESC **sd, size_t *s
 	if((psa = make_sec_acl(mem_ctx, NT4_ACL_REVISION, 3, ace)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	if((*sd = make_sec_desc(mem_ctx, SEC_DESC_REVISION, &adm_sid, NULL, NULL, psa, sd_size)) == NULL)
+	if((*sd = make_sec_desc(mem_ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, &adm_sid, NULL, NULL, psa, sd_size)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	return NT_STATUS_OK;
