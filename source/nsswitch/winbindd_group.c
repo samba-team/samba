@@ -936,7 +936,7 @@ static void add_local_gids_from_sid(DOM_SID *sid, gid_t **gids, int *num)
 
 	/* Add nested group memberships */
 
-	if (!pdb_enum_alias_memberships(sid, &aliases, &num_aliases))
+	if (!pdb_enum_alias_memberships(sid, 1, &aliases, &num_aliases))
 		return;
 
 	for (j=0; j<num_aliases; j++) {

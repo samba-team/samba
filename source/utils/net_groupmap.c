@@ -689,7 +689,7 @@ static int net_groupmap_memberships(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!pdb_enum_alias_memberships(&member, &aliases, &num)) {
+	if (!pdb_enum_alias_memberships(&member, 1, &aliases, &num)) {
 		d_printf("Could not list memberships for sid %s: %s\n",
 			 argv[0], nt_errstr(result));
 		return -1;

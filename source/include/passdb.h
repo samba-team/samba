@@ -364,9 +364,10 @@ typedef struct pdb_context
 				      DOM_SID **members, int *num_members);
 
 	NTSTATUS (*pdb_enum_alias_memberships)(struct pdb_context *context,
-					       const DOM_SID *alias,
+					       const DOM_SID *members,
+					       int num_members,
 					       DOM_SID **aliases,
-					       int *num);
+					       int *num_aliases);
 
 	/* group functions */
 
@@ -507,7 +508,8 @@ typedef struct pdb_methods
 				  const DOM_SID *alias, DOM_SID **members,
 				  int *num_members);
 	NTSTATUS (*enum_alias_memberships)(struct pdb_methods *methods,
-					   const DOM_SID *sid,
+					   const DOM_SID *members,
+					   int num_members,
 					   DOM_SID **aliases, int *num);
 
 	/* group functions */
