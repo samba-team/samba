@@ -69,6 +69,7 @@ int fcache_version;
 char *pk_cert_file	= NULL;
 char *pk_key_file	= NULL;
 char *pk_ca_dir		= NULL;
+int pk_use_dh		= -1;
 
 static char *krb4_cc_name;
 
@@ -153,6 +154,9 @@ static struct getargs args[] = {
 
     {  "ca-dir",       'D',  arg_string, &pk_ca_dir,
        "directory with CA certificates", "directory" },
+
+    {  "pkinit-use-dh",       0,  arg_negative_flag, &pk_use_dh,
+       "make pkinit use DH" },
 #endif
     { "version", 	0,   arg_flag, &version_flag },
     { "help",		0,   arg_flag, &help_flag }
@@ -453,10 +457,14 @@ get_new_tickets(krb5_context context,
 	krb5_get_init_creds_opt_set_paq_request(context, opt, 
 						pac_flag ? TRUE : FALSE);
     if (pk_cert_file || pk_key_file) {
+	int flags = 0;
+	if (pk_use_dh == 1)
+	    flags |= 1;
 	ret = krb5_get_init_creds_opt_set_pkinit(context, opt,
 						 pk_cert_file,
 						 pk_key_file,
 						 pk_ca_dir,
+						 flags,
 						 NULL);
 	if (ret)
 	    krb5_err(context, 1, ret, "set_pkinit");
@@ -712,6 +720,13 @@ main (int argc, char **argv)
 	krb5_appdefault_string(context, "kinit",
 			       krb5_principal_get_realm(context, principal), 
 			       "pkinit-ca-dir", NULL, &pk_ca_dir);
+
+#ifdef PKINIT
+    if(pk_use_dh == -1)
+	krb5_appdefault_boolean(context, "kinit", 
+				krb5_principal_get_realm(context, principal), 
+				"pkinit-use-dh", TRUE, &pk_use_dh);
+#endif
 
     if(!addrs_flag && extra_addresses.num_strings > 0)
 	krb5_errx(context, 1, "specifying both extra addresses and "
