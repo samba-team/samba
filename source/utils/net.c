@@ -485,24 +485,24 @@ struct cli_state *connect_to_ipc(char *server)
 
 void usage(void)
 {
-  printf(NET_USAGE);
+  d_printf(NET_USAGE);
 }
 
 void file_usage(void)
 {
-  printf(NET_FILE_USAGE); /* command syntax */
+  d_printf(NET_FILE_USAGE); /* command syntax */
   
-  printf(TARGET_USAGE, LOCAL_HOST); /* target options */
-  printf(SERVER_USAGE);
-  printf(IPADDRESS_USAGE);
+  d_printf(TARGET_USAGE, LOCAL_HOST); /* target options */
+  d_printf(SERVER_USAGE);
+  d_printf(IPADDRESS_USAGE);
 
-  printf(MISC_OPT_USAGE); /* misc options */
-  printf(PORT_USAGE);
-  printf(MYWORKGROUP_USAGE);
-  printf(DEBUG_USAGE);
-  printf(MYNAME_USAGE);
-  printf(USER_USAGE);
-  printf(CONF_USAGE);
+  d_printf(MISC_OPT_USAGE); /* misc options */
+  d_printf(PORT_USAGE);
+  d_printf(MYWORKGROUP_USAGE);
+  d_printf(DEBUG_USAGE);
+  d_printf(MYNAME_USAGE);
+  d_printf(USER_USAGE);
+  d_printf(CONF_USAGE);
 }
 
 /***************************************************************************
@@ -510,13 +510,13 @@ void file_usage(void)
 ***************************************************************************/
 static void file_fn(const char * pPath, const char * pUser, uint16 perms, uint16 locks, uint32 id)
 {
-  printf("\t%-7.1d %-20.20s 0x%-4.2x %-6.1d %s\n",
+  d_printf("\t%-7.1d %-20.20s 0x%-4.2x %-6.1d %s\n",
 	 id, pUser, perms, locks, pPath);
 }
 
 static void one_file_fn(const char *pPath, const char *pUser, uint16 perms, uint16 locks, uint32 id)
 {
-  printf(FILE_INFO_DISPLAY, id, pUser, locks, pPath, perms);
+  d_printf(FILE_INFO_DISPLAY, id, pUser, locks, pPath, perms);
 }
 
 int net_file(int subfunct, const char * id)
@@ -535,18 +535,18 @@ int net_file(int subfunct, const char * id)
   if(host[0] == 0) strncpy(host, inet_ntoa(dest_ip),16);
   cli = connect_to_ipc(host);
   if(!cli) {
-    printf(ERRMSG_NOCONN_TARGET_SRVR);
+    d_printf(ERRMSG_NOCONN_TARGET_SRVR);
     return -2;
   }
 
   if(subfunct == DELETE_SF) { /* close open file on remote server */
     if(id == NULL) {
-      printf(ERRMSG_FILEID_MISSING);
+      d_printf(ERRMSG_FILEID_MISSING);
       return -1;
     } else 
       return cli_NetFileClose(cli, atoi(id));
   } else if(subfunct == LIST_SF) {
-    printf(FILE_ENUM_DISPLAY); /* file list header */
+    d_printf(FILE_ENUM_DISPLAY); /* file list header */
     return cli_NetFileEnum(cli, NULL, NULL, file_fn);
   } else if ((subfunct == OTHER_SF) && id) {
     return cli_NetFileGetInfo(cli, atoi(id), one_file_fn);
@@ -556,31 +556,31 @@ int net_file(int subfunct, const char * id)
 		       
 void share_usage(void)
 {
-  printf(NET_SHARE_USAGE); /* command syntax */
+  d_printf(NET_SHARE_USAGE); /* command syntax */
 
-  printf(TARGET_USAGE, LOCAL_HOST); /* target options */
-  printf(SERVER_USAGE);
-  printf(IPADDRESS_USAGE);
+  d_printf(TARGET_USAGE, LOCAL_HOST); /* target options */
+  d_printf(SERVER_USAGE);
+  d_printf(IPADDRESS_USAGE);
 
-  printf(MISC_OPT_USAGE); /* misc options */
-  printf(PORT_USAGE);
-  printf(COMMENT_USAGE);
-  printf(MAXUSERS_USAGE);
-  printf(MYWORKGROUP_USAGE);
-  printf(DEBUG_USAGE);
-  printf(MYNAME_USAGE);
-  printf(USER_USAGE);
-  printf(CONF_USAGE);
+  d_printf(MISC_OPT_USAGE); /* misc options */
+  d_printf(PORT_USAGE);
+  d_printf(COMMENT_USAGE);
+  d_printf(MAXUSERS_USAGE);
+  d_printf(MYWORKGROUP_USAGE);
+  d_printf(DEBUG_USAGE);
+  d_printf(MYNAME_USAGE);
+  d_printf(USER_USAGE);
+  d_printf(CONF_USAGE);
 }
 
 void long_share_fn(const char *share_name, uint32 type, const char *comment, void *state)
 {
-   printf("%-12.12s %-8.8s %-50.50s\n", share_name, share_type[type], comment);
+   d_printf("%-12.12s %-8.8s %-50.50s\n", share_name, share_type[type], comment);
 }
 
 void share_fn(const char *share_name, uint32 type, const char *comment, void *state)
 {
-   printf("%-12.12s\n", share_name);
+   d_printf("%-12.12s\n", share_name);
 }
 
 int net_share(int subfunct, const char * sharename, const char * comment, int maxusers)
@@ -601,25 +601,25 @@ int net_share(int subfunct, const char * sharename, const char * comment, int ma
     strncpy(host, inet_ntoa(dest_ip),16);
   cli = connect_to_ipc(host);
   if(!cli) {
-    printf(ERRMSG_NOCONN_TARGET_SRVR);
+    d_printf(ERRMSG_NOCONN_TARGET_SRVR);
     return -2;
   }
   if (subfunct == DELETE_SF) {
     if (sharename == NULL) {
-      printf(ERRMSG_SHARENAME_MISSING);
+      d_printf(ERRMSG_SHARENAME_MISSING);
       return -1;
     } else
       return cli_NetShareDelete(cli, sharename);
   } else if (subfunct == LIST_SF) {
       if(long_list_entries) {
-       printf(SHARE_ENUM_DISPLAY);
+       d_printf(SHARE_ENUM_DISPLAY);
        return cli_RNetShareEnum(cli, long_share_fn, NULL);
       } else {      
        return cli_RNetShareEnum(cli, share_fn, NULL);
       }
   } else if (subfunct == ADD_SF) {
     if (sharename == NULL) {
-      printf(ERRMSG_SHARENAME_MISSING);
+      d_printf(ERRMSG_SHARENAME_MISSING);
       return -1;
     } else {
       RAP_SHARE_INFO_2 sinfo;
@@ -640,26 +640,26 @@ int net_share(int subfunct, const char * sharename, const char * comment, int ma
       return cli_NetShareAdd(cli, &sinfo);
     }
   } else
-    printf(ERRMSG_NOT_IMPLEMENTED);
+    d_printf(ERRMSG_NOT_IMPLEMENTED);
   return -1;
 }
 		    
 		
 void session_usage(void)
 {
-  printf(NET_SESSION_USAGE); /* command syntax */
+  d_printf(NET_SESSION_USAGE); /* command syntax */
 
-  printf(TARGET_USAGE, LOCAL_HOST); /* Target options */
-  printf(SERVER_USAGE);
-  printf(IPADDRESS_USAGE);
+  d_printf(TARGET_USAGE, LOCAL_HOST); /* Target options */
+  d_printf(SERVER_USAGE);
+  d_printf(IPADDRESS_USAGE);
 
-  printf(MISC_OPT_USAGE); /* Misc options */
-  printf(PORT_USAGE);
-  printf(MYWORKGROUP_USAGE);
-  printf(DEBUG_USAGE);
-  printf(MYNAME_USAGE);
-  printf(USER_USAGE);
-  printf(CONF_USAGE);
+  d_printf(MISC_OPT_USAGE); /* Misc options */
+  d_printf(PORT_USAGE);
+  d_printf(MYWORKGROUP_USAGE);
+  d_printf(DEBUG_USAGE);
+  d_printf(MYNAME_USAGE);
+  d_printf(USER_USAGE);
+  d_printf(CONF_USAGE);
 }
     
 void list_sessions_func(char *wsname, char *username, uint16 conns,
@@ -670,7 +670,7 @@ void list_sessions_func(char *wsname, char *username, uint16 conns,
   int min = (idle_time / 60) % 60;
   int sec = idle_time % 60;
 
-  printf("\\\\%-18.18s %-20.20s %-18.18s %5d %2.2d:%2.2d:%2.2d\n",
+  d_printf("\\\\%-18.18s %-20.20s %-18.18s %5d %2.2d:%2.2d:%2.2d\n",
 	 wsname, username, clitype, opens, hrs, min, sec);
 }
 
@@ -684,14 +684,14 @@ void display_session_func(const char *wsname, const char *username, uint16 conns
   int shrs = sess_time / 3600;
   int smin = (sess_time / 60) % 60;
   int ssec = sess_time % 60;
-  printf(SESSION_DISPLAY_ONE, username, wsname, 
+  d_printf(SESSION_DISPLAY_ONE, username, wsname, 
 	 (user_flags&0x0)?YES_STRING:NO_STRING, clitype,
 	 shrs, smin, ssec, ihrs, imin, isec);
 }
 
 void display_conns_func(uint16 conn_id, uint16 conn_type, uint16 opens, uint16 users, uint32 conn_time, const char *username, const char *netname)
 {
-  printf("%-14.14s %-8.8s %5d\n", netname, share_type[conn_type], opens);
+  d_printf("%-14.14s %-8.8s %5d\n", netname, share_type[conn_type], opens);
 }
 
 int net_session(int subfunct, const char * sessname)
@@ -713,7 +713,7 @@ int net_session(int subfunct, const char * sessname)
     strncpy(host, inet_ntoa(dest_ip),16);
   cli = connect_to_ipc(host);
   if(!cli) {
-    printf(ERRMSG_NOCONN_TARGET_SRVR);
+    d_printf(ERRMSG_NOCONN_TARGET_SRVR);
     return -2;
   }
   switch(subfunct){
@@ -721,18 +721,18 @@ int net_session(int subfunct, const char * sessname)
       if (sessname) {
 	res = cli_NetSessionGetInfo(cli, sessname, display_session_func);
 	if (res >= 0) {
-	  printf(SESSION_DISPLAY_CONNS);
+	  d_printf(SESSION_DISPLAY_CONNS);
 	  return cli_NetConnectionEnum(cli, sessname, display_conns_func);
 	} else 
 	  return res;
       } else {
-	printf(SESSION_ENUM_DISPLAY);
+	d_printf(SESSION_ENUM_DISPLAY);
 	return cli_NetSessionEnum(cli, list_sessions_func);
       }
     case DELETE_SF:
       return cli_NetSessionDel(cli, sessname);
     default:
-      printf(ERRMSG_NOT_IMPLEMENTED);
+      d_printf(ERRMSG_NOT_IMPLEMENTED);
       session_usage();
   }
   return -1;
@@ -743,26 +743,26 @@ list a server name
 ****************************************************************************/
 static void display_server_func(const char *name, uint32 m, const char *comment, void * reserved)
 {
-  printf("\t%-16.16s     %s\n", name, comment);
+  d_printf("\t%-16.16s     %s\n", name, comment);
 }
 
 
 void server_usage(void)
 {
-  printf(NET_SERVER_USAGE); /* command syntax */
+  d_printf(NET_SERVER_USAGE); /* command syntax */
 
-  printf(TARGET_USAGE, DOMAIN_MASTER); /* Target options */
-  printf(SERVER_USAGE);
-  printf(IPADDRESS_USAGE);
-  printf(WORKGROUP_USAGE);
+  d_printf(TARGET_USAGE, DOMAIN_MASTER); /* Target options */
+  d_printf(SERVER_USAGE);
+  d_printf(IPADDRESS_USAGE);
+  d_printf(WORKGROUP_USAGE);
 
-  printf(MISC_OPT_USAGE); /* Misc options */
-  printf(PORT_USAGE);
-  printf(MYWORKGROUP_USAGE);
-  printf(DEBUG_USAGE);
-  printf(MYNAME_USAGE);
-  printf(USER_USAGE);
-  printf(CONF_USAGE);
+  d_printf(MISC_OPT_USAGE); /* Misc options */
+  d_printf(PORT_USAGE);
+  d_printf(MYWORKGROUP_USAGE);
+  d_printf(DEBUG_USAGE);
+  d_printf(MYNAME_USAGE);
+  d_printf(USER_USAGE);
+  d_printf(CONF_USAGE);
 }
 		    
 int net_server(char * temp_workgroup, int subfunct)
@@ -790,10 +790,10 @@ int net_server(char * temp_workgroup, int subfunct)
   if(host[0] == 0) strncpy(host, inet_ntoa(dest_ip),16);
   cli = connect_to_ipc(host);
   if(!cli) {
-    printf(ERRMSG_NOCONN_BROWSE_MSTR);
+    d_printf(ERRMSG_NOCONN_BROWSE_MSTR);
     return -2;
   }
-  printf(SERVER_ENUM_DISPLAY); /* header for list of servers */
+  d_printf(SERVER_ENUM_DISPLAY); /* header for list of servers */
   return cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_ALL, display_server_func,NULL); 
 	
   /* BB add mechanism to find PDC for our domain and send enum to it in this error case */ 
@@ -803,19 +803,19 @@ int net_server(char * temp_workgroup, int subfunct)
 		      
 void domain_usage(void)
 {
-  printf(NET_DOMAIN_USAGE); /* command syntax */
+  d_printf(NET_DOMAIN_USAGE); /* command syntax */
 
-  printf(TARGET_USAGE, GLBL_LCL_MASTER); /* target options */
-  printf(SERVER_USAGE);
-  printf(IPADDRESS_USAGE);
+  d_printf(TARGET_USAGE, GLBL_LCL_MASTER); /* target options */
+  d_printf(SERVER_USAGE);
+  d_printf(IPADDRESS_USAGE);
     
-  printf(MISC_OPT_USAGE); /* misc options */
-  printf(PORT_USAGE);
-  printf(MYWORKGROUP_USAGE);
-  printf(DEBUG_USAGE);
-  printf(MYNAME_USAGE);
-  printf(USER_USAGE);
-  printf(CONF_USAGE);
+  d_printf(MISC_OPT_USAGE); /* misc options */
+  d_printf(PORT_USAGE);
+  d_printf(MYWORKGROUP_USAGE);
+  d_printf(DEBUG_USAGE);
+  d_printf(MYNAME_USAGE);
+  d_printf(USER_USAGE);
+  d_printf(CONF_USAGE);
 }
 
 		  
@@ -845,30 +845,30 @@ int net_domain(void)
     strncpy(host, inet_ntoa(dest_ip),16);
   cli = connect_to_ipc(host);
   if(!cli) {
-    printf(ERRMSG_NOCONN_BROWSE_MSTR);
+    d_printf(ERRMSG_NOCONN_BROWSE_MSTR);
     return -2;
   }
-  printf(DOMAIN_ENUM_DISPLAY); /* header for list of domains */
+  d_printf(DOMAIN_ENUM_DISPLAY); /* header for list of domains */
   return cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_DOMAIN_ENUM, display_server_func,NULL);	
 	   
 }
 		      
 void printq_usage(void)
 {
-  printf(NET_PRINTQ_USAGE);
+  d_printf(NET_PRINTQ_USAGE);
 
-  printf(TARGET_USAGE, LOCAL_HOST);
-  printf(SERVER_USAGE);
-  printf(IPADDRESS_USAGE);
+  d_printf(TARGET_USAGE, LOCAL_HOST);
+  d_printf(SERVER_USAGE);
+  d_printf(IPADDRESS_USAGE);
 
-  printf(MISC_OPT_USAGE);
-  printf(PORT_USAGE);
-  printf(JOBID_USAGE);
-  printf(MYWORKGROUP_USAGE);
-  printf(DEBUG_USAGE);
-  printf(MYNAME_USAGE);
-  printf(USER_USAGE);
-  printf(CONF_USAGE);
+  d_printf(MISC_OPT_USAGE);
+  d_printf(PORT_USAGE);
+  d_printf(JOBID_USAGE);
+  d_printf(MYWORKGROUP_USAGE);
+  d_printf(DEBUG_USAGE);
+  d_printf(MYNAME_USAGE);
+  d_printf(USER_USAGE);
+  d_printf(CONF_USAGE);
 }	
 
 void enum_queue(const char *queuename, uint16 pri, uint16 start, uint16 until, const char *sep, const char *pproc, const char *dest, const char *qparms, const char *qcomment, uint16 status, uint16 jobcount) {
@@ -894,7 +894,7 @@ void enum_queue(const char *queuename, uint16 pri, uint16 start, uint16 until, c
     default:
       pstrcpy(statcol, PRINTQ_PRINTER_STATUNK);
   }
-  printf(PRINTQ_DISPLAY_ONE, queuecol, jobcount, statcol);
+  d_printf(PRINTQ_DISPLAY_ONE, queuecol, jobcount, statcol);
 }
 
 void enum_jobs(uint16 jobid, const char *ownername, const char *notifyname, const char *datatype, const char *jparms, uint16 pos, uint16 status, const char *jstatus, uint submitted, uint jobsize, const char *comment) {
@@ -916,7 +916,7 @@ void enum_jobs(uint16 jobid, const char *ownername, const char *notifyname, cons
     default:
       pstrcpy(statcol, PRINTQ_PRINTER_STATUNK);
   }
-  printf(PRINTQ_DISPLAY_JOB, ownername, jobid, jobsize, statcol);
+  d_printf(PRINTQ_DISPLAY_JOB, ownername, jobid, jobsize, statcol);
 }
 
 int net_printq(int subfunct, const char *printq, int jobid)
@@ -937,12 +937,12 @@ int net_printq(int subfunct, const char *printq, int jobid)
     strncpy(host, inet_ntoa(dest_ip),16);
   cli = connect_to_ipc(host);
   if(!cli) {
-    printf(ERRMSG_NOCONN_TARGET_SRVR);
+    d_printf(ERRMSG_NOCONN_TARGET_SRVR);
     return -2;
   }
   switch(subfunct) {
     case LIST_SF:
-	printf(PRINTQ_ENUM_DISPLAY, host);
+	d_printf(PRINTQ_ENUM_DISPLAY, host);
       if (printq)
 	return cli_NetPrintQGetInfo(cli, printq, enum_queue, enum_jobs);
       else
@@ -950,7 +950,7 @@ int net_printq(int subfunct, const char *printq, int jobid)
     case DELETE_SF:
       return cli_printjob_del(cli, jobid);
     default:
-      printf(ERRMSG_NOT_IMPLEMENTED);
+      d_printf(ERRMSG_NOT_IMPLEMENTED);
       return -1;
   }
 }
@@ -959,37 +959,37 @@ int net_printq(int subfunct, const char *printq, int jobid)
 	
 void user_usage(void)
 {
-  printf(NET_USER_USAGE); /* command syntax */
+  d_printf(NET_USER_USAGE); /* command syntax */
 
-  printf(TARGET_USAGE, LOCAL_HOST); /* target options */
-  printf(SERVER_USAGE);
-  printf(IPADDRESS_USAGE);
-  printf(WORKGROUP_USAGE);
+  d_printf(TARGET_USAGE, LOCAL_HOST); /* target options */
+  d_printf(SERVER_USAGE);
+  d_printf(IPADDRESS_USAGE);
+  d_printf(WORKGROUP_USAGE);
     
-  printf(MISC_OPT_USAGE); /* misc options */
-  printf(PORT_USAGE);
-  printf(COMMENT_USAGE);
-  printf(MYWORKGROUP_USAGE);
-  printf(DEBUG_USAGE);
-  printf(MYNAME_USAGE);
-  printf(USER_USAGE);
-  printf(CONF_USAGE);
-  printf(LONG_USAGE);
+  d_printf(MISC_OPT_USAGE); /* misc options */
+  d_printf(PORT_USAGE);
+  d_printf(COMMENT_USAGE);
+  d_printf(MYWORKGROUP_USAGE);
+  d_printf(DEBUG_USAGE);
+  d_printf(MYNAME_USAGE);
+  d_printf(USER_USAGE);
+  d_printf(CONF_USAGE);
+  d_printf(LONG_USAGE);
 } 
 	
 void user_fn(const char *user_name, const char *comment, const char * home_dir, const char * logon_script, void *state)
 {
-   printf("%-21.21s\n", user_name);
+   d_printf("%-21.21s\n", user_name);
 }
 
 void long_user_fn(const char *user_name, const char *comment, const char * home_dir, const char * logon_script, void *state)
 {
-   printf("%-21.21s %-47.47s %-35.35s %35.35s\n", user_name, comment, home_dir, logon_script);
+   d_printf("%-21.21s %-47.47s %-35.35s %35.35s\n", user_name, comment, home_dir, logon_script);
 }
       		  
 void group_member_fn(const char *user_name, void *state)
 {
-   printf("%-21.21s\n", user_name);
+   d_printf("%-21.21s\n", user_name);
 }
 
 int net_user(int subfunct, const char * username, const char * comment, int flags)
@@ -1010,25 +1010,25 @@ int net_user(int subfunct, const char * username, const char * comment, int flag
     strncpy(host, inet_ntoa(dest_ip),16);
   cli = connect_to_ipc(host);
   if(!cli) {
-    printf(ERRMSG_NOCONN_TARGET_SRVR);
+    d_printf(ERRMSG_NOCONN_TARGET_SRVR);
     return -2;
   }
   if (subfunct == DELETE_SF) {
     if (username == NULL) {
-      printf(ERRMSG_USERNAME_MISSING);
+      d_printf(ERRMSG_USERNAME_MISSING);
       return -1;
     } else
       return cli_NetUserDelete(cli, username);
   } else if (subfunct == LIST_SF) {
       if(long_list_entries) {
-        printf(USER_ENUM_DISPLAY);
+        d_printf(USER_ENUM_DISPLAY);
 	    return cli_RNetUserEnum(cli, long_user_fn, NULL);
       }
       else
 	    return cli_RNetUserEnum(cli, user_fn, NULL); 
   } else if (subfunct == ADD_SF) {
     if (username == NULL) {
-      printf(ERRMSG_USERNAME_MISSING);
+      d_printf(ERRMSG_USERNAME_MISSING);
       return -1;
     } else {
       RAP_USER_INFO_1 userinfo;
@@ -1047,7 +1047,7 @@ int net_user(int subfunct, const char * username, const char * comment, int flag
     }
   } else if (subfunct == INFO_SF) {
     if (username == NULL) {
-      printf(ERRMSG_USERNAME_MISSING);
+      d_printf(ERRMSG_USERNAME_MISSING);
       return -1;
     } else {
       /*  RAP_USER_INFO_1 userinfo;
@@ -1056,7 +1056,7 @@ int net_user(int subfunct, const char * username, const char * comment, int flag
     }
   }
   else
-    printf(ERRMSG_NOT_IMPLEMENTED);
+    d_printf(ERRMSG_NOT_IMPLEMENTED);
   return -1;
 
 }
@@ -1064,32 +1064,32 @@ int net_user(int subfunct, const char * username, const char * comment, int flag
 
 void group_usage(void)
 {
-  printf(NET_GROUP_USAGE); /* command syntax */
+  d_printf(NET_GROUP_USAGE); /* command syntax */
 
-  printf(TARGET_USAGE, LOCAL_HOST); /* target options */
-  printf(SERVER_USAGE);
-  printf(IPADDRESS_USAGE);
+  d_printf(TARGET_USAGE, LOCAL_HOST); /* target options */
+  d_printf(SERVER_USAGE);
+  d_printf(IPADDRESS_USAGE);
 
-  printf(MISC_OPT_USAGE); /* misc options */
-  printf(PORT_USAGE);
-  printf(COMMENT_USAGE);
-  printf(MYWORKGROUP_USAGE);
-  printf(DEBUG_USAGE);
-  printf(MYNAME_USAGE);
-  printf(USER_USAGE);
-  printf(WORKGROUP_USAGE);
-  printf(CONF_USAGE);
-  printf(LONG_USAGE);
+  d_printf(MISC_OPT_USAGE); /* misc options */
+  d_printf(PORT_USAGE);
+  d_printf(COMMENT_USAGE);
+  d_printf(MYWORKGROUP_USAGE);
+  d_printf(DEBUG_USAGE);
+  d_printf(MYNAME_USAGE);
+  d_printf(USER_USAGE);
+  d_printf(WORKGROUP_USAGE);
+  d_printf(CONF_USAGE);
+  d_printf(LONG_USAGE);
 }
 
 void long_group_fn(const char *group_name, const char *comment, void *state)
 {
-   printf("%-21.21s %-50.50s\n", group_name, comment);
+   d_printf("%-21.21s %-50.50s\n", group_name, comment);
 }
 
 void group_fn(const char *group_name, const char *comment, void *state)
 {
-   printf("%-21.21s\n", group_name);
+   d_printf("%-21.21s\n", group_name);
 }
 
 int net_group(int subfunct, const char * groupname, const char * comment)
@@ -1110,26 +1110,26 @@ int net_group(int subfunct, const char * groupname, const char * comment)
     strncpy(host, inet_ntoa(dest_ip),16);
   cli = connect_to_ipc(host);
   if(!cli) {
-    printf(ERRMSG_NOCONN_TARGET_SRVR);
+    d_printf(ERRMSG_NOCONN_TARGET_SRVR);
     return -2;
   }
   if (subfunct == DELETE_SF) {
     if (groupname == NULL) {
-      printf(ERRMSG_GROUPNAME_MISSING);
+      d_printf(ERRMSG_GROUPNAME_MISSING);
       return -1;
     } else
       return cli_NetGroupDelete(cli, groupname);
   } else if (subfunct == LIST_SF) {
     if(long_list_entries) {
-	  printf("%-21.21s %-50.50s\n", GROUP_STR, COMMENT_STR); 
-      printf("-----------------------------\n");
+	  d_printf("%-21.21s %-50.50s\n", GROUP_STR, COMMENT_STR); 
+      d_printf("-----------------------------\n");
 	  return cli_RNetGroupEnum(cli, long_group_fn, NULL);
     }
     else
       return cli_RNetGroupEnum(cli, group_fn, NULL); 
   } else if (subfunct == ADD_SF) {
     if (groupname == NULL) {
-      printf(ERRMSG_GROUPNAME_MISSING);
+      d_printf(ERRMSG_GROUPNAME_MISSING);
       return -1;
     } else {
       RAP_GROUP_INFO_1 grinfo;
@@ -1142,26 +1142,26 @@ int net_group(int subfunct, const char * groupname, const char * comment)
       return cli_NetGroupAdd(cli, &grinfo);
     }
   } else
-    printf(ERRMSG_NOT_IMPLEMENTED);
+    d_printf(ERRMSG_NOT_IMPLEMENTED);
   return -1;
 }
 
 void groupmember_usage(void)
 {
-  printf(NET_GROUPMEMBER_USAGE); /* command syntax */
+  d_printf(NET_GROUPMEMBER_USAGE); /* command syntax */
 
-  printf(TARGET_USAGE, LOCAL_HOST); /* target options */
-  printf(SERVER_USAGE);
-  printf(IPADDRESS_USAGE);
+  d_printf(TARGET_USAGE, LOCAL_HOST); /* target options */
+  d_printf(SERVER_USAGE);
+  d_printf(IPADDRESS_USAGE);
 
-  printf(MISC_OPT_USAGE); /* misc options */
-  printf(PORT_USAGE);
-  printf(MYWORKGROUP_USAGE);
-  printf(DEBUG_USAGE);
-  printf(MYNAME_USAGE);
-  printf(USER_USAGE);
-  printf(WORKGROUP_USAGE);
-  printf(CONF_USAGE);
+  d_printf(MISC_OPT_USAGE); /* misc options */
+  d_printf(PORT_USAGE);
+  d_printf(MYWORKGROUP_USAGE);
+  d_printf(DEBUG_USAGE);
+  d_printf(MYNAME_USAGE);
+  d_printf(USER_USAGE);
+  d_printf(WORKGROUP_USAGE);
+  d_printf(CONF_USAGE);
 }
 
 
@@ -1182,11 +1182,11 @@ int net_groupmember(int subfunct, const char * groupname, const char * username)
         strncpy(host, inet_ntoa(dest_ip),16);
     cli = connect_to_ipc(host);
     if(!cli) {
-        printf(ERRMSG_NOCONN_TARGET_SRVR);
+        d_printf(ERRMSG_NOCONN_TARGET_SRVR);
         return -2;
     }
     if (groupname == NULL) {
-      printf(ERRMSG_GROUPNAME_MISSING);
+      d_printf(ERRMSG_GROUPNAME_MISSING);
       return -1;
     }
 
@@ -1194,7 +1194,7 @@ int net_groupmember(int subfunct, const char * groupname, const char * username)
       return cli_NetGroupGetUsers(cli, groupname, group_member_fn, NULL ); 
 
     if (username == NULL) {
-      printf(ERRMSG_USERNAME_MISSING);
+      d_printf(ERRMSG_USERNAME_MISSING);
       return -1;
     }
 
@@ -1203,50 +1203,50 @@ int net_groupmember(int subfunct, const char * groupname, const char * username)
     else if (subfunct == ADD_SF)
       return cli_NetGroupAddUser(cli, groupname, username);
     else
-      printf(ERRMSG_NOT_IMPLEMENTED);
+      d_printf(ERRMSG_NOT_IMPLEMENTED);
     return -1;
 
 }
 
 void validate_usage(void)
 {
-  printf(NET_VALIDATE_USAGE); /* command syntax */
+  d_printf(NET_VALIDATE_USAGE); /* command syntax */
   
-  printf(TARGET_USAGE, GLBL_LCL_MASTER); /* target options */
-  printf(SERVER_USAGE);
-  printf(IPADDRESS_USAGE);
-  printf(WORKGROUP_USAGE);
+  d_printf(TARGET_USAGE, GLBL_LCL_MASTER); /* target options */
+  d_printf(SERVER_USAGE);
+  d_printf(IPADDRESS_USAGE);
+  d_printf(WORKGROUP_USAGE);
     
-  printf(MISC_OPT_USAGE); /* misc options */
-  printf(PORT_USAGE);
-  printf(MYWORKGROUP_USAGE);
-  printf(DEBUG_USAGE);
-  printf(MYNAME_USAGE);
-  printf(USER_USAGE);
-  printf(CONF_USAGE);
+  d_printf(MISC_OPT_USAGE); /* misc options */
+  d_printf(PORT_USAGE);
+  d_printf(MYWORKGROUP_USAGE);
+  d_printf(DEBUG_USAGE);
+  d_printf(MYNAME_USAGE);
+  d_printf(USER_USAGE);
+  d_printf(CONF_USAGE);
 }
 
 int net_validate(char * username)
 {
-  printf(ERRMSG_NOT_IMPLEMENTED);
+  d_printf(ERRMSG_NOT_IMPLEMENTED);
   return 0;
 }
 
 void service_usage(void)
 {
-  printf(NET_SERVICE_USAGE); /* command syntax */
+  d_printf(NET_SERVICE_USAGE); /* command syntax */
   
-  printf(TARGET_USAGE, GLBL_LCL_MASTER); /* target options */
-  printf(SERVER_USAGE);
-  printf(IPADDRESS_USAGE);
+  d_printf(TARGET_USAGE, GLBL_LCL_MASTER); /* target options */
+  d_printf(SERVER_USAGE);
+  d_printf(IPADDRESS_USAGE);
     
-  printf(MISC_OPT_USAGE); /* misc options */
-  printf(PORT_USAGE);
-  printf(MYWORKGROUP_USAGE);
-  printf(DEBUG_USAGE);
-  printf(MYNAME_USAGE);
-  printf(USER_USAGE);
-  printf(CONF_USAGE);
+  d_printf(MISC_OPT_USAGE); /* misc options */
+  d_printf(PORT_USAGE);
+  d_printf(MYWORKGROUP_USAGE);
+  d_printf(DEBUG_USAGE);
+  d_printf(MYNAME_USAGE);
+  d_printf(USER_USAGE);
+  d_printf(CONF_USAGE);
 }
 
 
@@ -1267,20 +1267,20 @@ if(host[0] == 0)
   strncpy(host, inet_ntoa(dest_ip),16);
 cli = connect_to_ipc(host);
 if(!cli) {
-  printf(ERRMSG_NOCONN_TARGET_SRVR);
+  d_printf(ERRMSG_NOCONN_TARGET_SRVR);
   return -2;
 }
 
 if (subfunct == LIST_SF) {
   if(long_list_entries) {
-    printf("%-15.15s %-50.50s\n", SERVICE_STR, COMMENT_STR); 
-    printf("-----------------------------\n");
+    d_printf("%-15.15s %-50.50s\n", SERVICE_STR, COMMENT_STR); 
+    d_printf("-----------------------------\n");
     return cli_RNetServiceEnum(cli, long_group_fn, NULL);
   }
   else
     return cli_RNetServiceEnum(cli, group_fn, NULL); 
 } else
-  printf(ERRMSG_NOT_IMPLEMENTED);
+  d_printf(ERRMSG_NOT_IMPLEMENTED);
 return -1;
 
 }
@@ -1303,7 +1303,7 @@ int net_password(const char * username, const char * old_password, const char * 
       strncpy(host, inet_ntoa(dest_ip),16);
     cli = connect_to_ipc(host);
     if(!cli) {
-      printf(ERRMSG_NOCONN_TARGET_SRVR);
+      d_printf(ERRMSG_NOCONN_TARGET_SRVR);
       return -2;
     }
 
@@ -1313,45 +1313,45 @@ int net_password(const char * username, const char * old_password, const char * 
 
 void password_usage(void)
 {
-  printf(NET_PASSWORD_USAGE); /* command syntax */
+  d_printf(NET_PASSWORD_USAGE); /* command syntax */
   
-  printf(TARGET_USAGE, GLBL_LCL_MASTER); /* target options */
-  printf(SERVER_USAGE);
-  printf(IPADDRESS_USAGE);
-  printf(WORKGROUP_USAGE);
+  d_printf(TARGET_USAGE, GLBL_LCL_MASTER); /* target options */
+  d_printf(SERVER_USAGE);
+  d_printf(IPADDRESS_USAGE);
+  d_printf(WORKGROUP_USAGE);
     
-  printf(MISC_OPT_USAGE); /* misc options */
-  printf(PORT_USAGE);
-  printf(MYWORKGROUP_USAGE);
-  printf(DEBUG_USAGE);
-  printf(MYNAME_USAGE);
-  printf(USER_USAGE);
-  printf(CONF_USAGE);
+  d_printf(MISC_OPT_USAGE); /* misc options */
+  d_printf(PORT_USAGE);
+  d_printf(MYWORKGROUP_USAGE);
+  d_printf(DEBUG_USAGE);
+  d_printf(MYNAME_USAGE);
+  d_printf(USER_USAGE);
+  d_printf(CONF_USAGE);
 }
 
 
 void admin_usage(void)
 {
-  printf(NET_ADMIN_USAGE); /* command syntax */
+  d_printf(NET_ADMIN_USAGE); /* command syntax */
   
-  printf(TARGET_USAGE, GLBL_LCL_MASTER); /* target options */
-  printf(SERVER_USAGE);
-  printf(IPADDRESS_USAGE);
-  printf(WORKGROUP_USAGE);
+  d_printf(TARGET_USAGE, GLBL_LCL_MASTER); /* target options */
+  d_printf(SERVER_USAGE);
+  d_printf(IPADDRESS_USAGE);
+  d_printf(WORKGROUP_USAGE);
     
-  printf(MISC_OPT_USAGE); /* misc options */
-  printf(PORT_USAGE);
-  printf(MYWORKGROUP_USAGE);
-  printf(DEBUG_USAGE);
-  printf(MYNAME_USAGE);
-  printf(USER_USAGE);
-  printf(CONF_USAGE);
+  d_printf(MISC_OPT_USAGE); /* misc options */
+  d_printf(PORT_USAGE);
+  d_printf(MYWORKGROUP_USAGE);
+  d_printf(DEBUG_USAGE);
+  d_printf(MYNAME_USAGE);
+  d_printf(USER_USAGE);
+  d_printf(CONF_USAGE);
 }
 
 
 int net_admin(const char * command, const char * cmd_args, const char * environment)
 {
-  printf(ERRMSG_NOT_IMPLEMENTED);
+  d_printf(ERRMSG_NOT_IMPLEMENTED);
   return 0;
 
 }
@@ -1421,7 +1421,7 @@ int main(int argc,char *argv[])
       case 'I':
 	dest_ip = *interpret_addr2(poptGetOptArg(pc));
 	if(zero_ip(dest_ip))
-	  printf(ERRMSG_INVALID_IPADDRESS);
+	  d_printf(ERRMSG_INVALID_IPADDRESS);
 	else
 	  have_ip = True;
 	break;
@@ -1435,7 +1435,7 @@ int main(int argc,char *argv[])
 	}
 	break;
       default:
-	printf(ERRMSG_INVALID_OPTION, (char)opt, opt);
+	d_printf(ERRMSG_INVALID_OPTION, (char)opt, opt);
 	usage();
     }
   }
@@ -1518,7 +1518,7 @@ int main(int argc,char *argv[])
 	    usage();
 	    break;
       default:
-	    printf(ERRMSG_INVALID_HELP_OPTION);
+	    d_printf(ERRMSG_INVALID_HELP_OPTION);
 	    usage();
     }
     return 0;
@@ -1546,7 +1546,7 @@ int main(int argc,char *argv[])
     pstrcpy(host, dest_host);
 
   if((have_ip) && (host[0]))
-    printf(ERRMSG_BOTH_SERVER_IPADDRESS);
+    d_printf(ERRMSG_BOTH_SERVER_IPADDRESS);
 
   while (!got_pass) {    /* BB if nulluser operation. why bother to ask for pword BB */
     p = getpass(PASSWORD_PROMPT);
@@ -1585,7 +1585,7 @@ int main(int argc,char *argv[])
       break;
     case DOMAINF:
       if(subfunc != LIST_SF)
-	    printf(ERRMSG_INVALID_DOMAIN_ACTION);
+	    d_printf(ERRMSG_INVALID_DOMAIN_ACTION);
       rc = net_domain();
       break;
     case USERF:
