@@ -229,12 +229,6 @@ string_to_key_test(krb5_context context)
 	opaque.length = sizeof(iter);
 	_krb5_put_int(iter, keys[i].iterations, 4);
 	
-#if 0
-	if (verbose)
-	    printf("%d: password: %s salt: %s\n",
-		   i, keys[i].password, keys[i].salt);
-#endif
-
 #ifdef ENABLE_AES
 	if (keys[i].pbkdf2) {
 #ifdef HAVE_OPENSSL
