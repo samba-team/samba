@@ -676,7 +676,7 @@ static int rebindproc_with_state  (LDAP * ld, char **whop, char **credp,
 		*methodp = LDAP_AUTH_SIMPLE;
 	}
 
-	gettimeofday(&(ldap_state->last_rebind),NULL);
+	GetTimeOfDay(&ldap_state->last_rebind);
 		
 	return 0;
 }
@@ -704,7 +704,7 @@ static int rebindproc_connect_with_state (LDAP *ldap_struct,
 
 	rc = ldap_simple_bind_s(ldap_struct, ldap_state->bind_dn, ldap_state->bind_secret);
 	
-	gettimeofday(&(ldap_state->last_rebind),NULL);
+	GetTimeOfDay(&ldap_state->last_rebind);
 
 	return rc;
 }
@@ -755,8 +755,7 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state, LDAP * ldap_
 	char *ldap_secret;
 
 	/* get the password */
-	if (!fetch_ldap_pw(&ldap_dn, &ldap_secret))
-	{
+	if (!fetch_ldap_pw(&ldap_dn, &ldap_secret)) {
 		DEBUG(0, ("ldap_connect_system: Failed to retrieve password from secrets.tdb\n"));
 		return LDAP_INVALID_CREDENTIALS;
 	}
@@ -854,7 +853,7 @@ static int smbldap_open(struct smbldap_state *ldap_state)
 
 
 	ldap_state->last_ping = time(NULL);
-	DEBUG(4,("The LDAP server is succesful connected\n"));
+	DEBUG(4,("The LDAP server is succesfully connected\n"));
 
 	return LDAP_SUCCESS;
 }
@@ -933,25 +932,25 @@ int smbldap_search(struct smbldap_state *ldap_state,
 
 	if (ldap_state->last_rebind.tv_sec > 0) {
 		struct timeval	tval;
-		int 		tdiff = 0;
+		SMB_BIG_INT	tdiff = 0;
 		int		sleep_time = 0;
 
 		ZERO_STRUCT(tval);
+		GetTimeOfDay(&tval);
 
-		gettimeofday(&tval,NULL);
+		tdiff = usec_time_diff(&tval, &ldap_state->last_rebind.tv_sec);
+		tdiff /= 1000; /* Convert to milliseconds. */
 
-		tdiff = 1000000 *(tval.tv_sec - ldap_state->last_rebind.tv_sec) + 
-			(tval.tv_usec - ldap_state->last_rebind.tv_usec);
-
-		sleep_time = ((1000*lp_ldap_replication_sleep())-tdiff)/1000;
+		sleep_time = lp_ldap_replication_sleep()-(int)tdiff;
+		sleep_time = MIN(sleep_time, MAX_LDAP_REPLICATION_SLEEP_TIME);
 
 		if (sleep_time > 0) {
 			/* we wait for the LDAP replication */
 			DEBUG(5,("smbldap_search: waiting %d milliseconds for LDAP replication.\n",sleep_time));
 			smb_msleep(sleep_time);
 			DEBUG(5,("smbldap_search: go on!\n"));
-			ZERO_STRUCT(ldap_state->last_rebind);
 		}
+		ZERO_STRUCT(ldap_state->last_rebind);
 	}
 
 	if (push_utf8_allocate(&utf8_filter, filter) == (size_t)-1) {
