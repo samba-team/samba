@@ -2126,12 +2126,16 @@ tn(int argc, char **argv)
 
 	if(inet_pton(AF_INET6, hostp, &sin6.sin6_addr)) {
 	    sin6.sin6_family = family = AF_INET6;
+	    sa = (struct sockaddr *)&sin6;
+	    sa_size = sizeof(sin6);
 	    strcpy(_hostname, hostp);
 	    hostname =_hostname;
 	} else
 #endif
 	if(inet_aton(hostp, &sin.sin_addr)){
 	    sin.sin_family = family = AF_INET;
+	    sa = (struct sockaddr *)&sin;
+	    sa_size = sizeof(sin);
 	    strcpy(_hostname, hostp);
 	    hostname = _hostname;
 	} else {
