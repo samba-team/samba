@@ -67,14 +67,15 @@ struct getargs args[] = {
 
 int num_args = sizeof(args) / sizeof(args[0]);
 
-void
+static void
 usage(int status)
 {
     arg_printusage (args, num_args, "password");
     exit(status);
 }
 
-int main(int argc, char **argv)
+int
+main(int argc, char **argv)
 {
     krb5_context context;
     krb5_principal princ;

@@ -40,7 +40,8 @@
 
 RCSID("$Id$");
 
-int open_socket(krb5_context context)
+static int
+open_socket(krb5_context context)
 {
     int s, s2;
     int sin_len;
@@ -96,7 +97,8 @@ struct getargs args[] = {
 
 static int num_args = sizeof(args) / sizeof(args[0]);
 
-void usage(int ret)
+static void
+usage(int ret)
 {
     arg_printusage (args, num_args, "");
     exit (ret);

@@ -58,7 +58,7 @@ printable_time_long(time_t t)
     return s;
 }
 
-void
+static void
 print_cred(krb5_context context, krb5_creds *cred)
 {
     char *str;
@@ -84,7 +84,7 @@ print_cred(krb5_context context, krb5_creds *cred)
     free (str);
 }
 
-void
+static void
 print_cred_verbose(krb5_context context, krb5_creds *cred)
 {
     int j;

@@ -45,7 +45,8 @@ RCSID("$Id$");
 #include <stdlib.h>
 #include <ctype.h>
 
-void strupr(char *s)
+static void
+strupr(char *s)
 {
     char *p = s;
     while(*p){

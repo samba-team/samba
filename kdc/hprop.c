@@ -61,7 +61,8 @@ static krb5_data msched5;
 static int v4_db;
 #endif
 
-int open_socket(krb5_context context, const char *hostname)
+static int
+open_socket(krb5_context context, const char *hostname)
 {
     int s;
     struct hostent *hp;
@@ -97,7 +98,7 @@ struct prop_data{
 
 int hdb_entry2value(krb5_context, hdb_entry*, krb5_data*);
 
-krb5_error_code
+static krb5_error_code
 v5_prop(krb5_context context, HDB *db, hdb_entry *entry, void *appdata)
 {
     krb5_error_code ret;
@@ -231,13 +232,14 @@ struct getargs args[] = {
 
 static int num_args = sizeof(args) / sizeof(args[0]);
 
-void usage(int ret)
+static void
+usage(int ret)
 {
     arg_printusage (args, num_args, "host ...");
     exit (ret);
 }
 
-void
+static void
 get_creds(krb5_context context, krb5_ccache *cache)
 {
     krb5_keytab keytab;
