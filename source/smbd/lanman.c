@@ -1813,18 +1813,6 @@ static BOOL api_SetUserPassword(connection_struct * conn, uint16 vuid,
 
 	DEBUG(3, ("Set password for <%s>\n", user));
 
-	/*
-	 * Pass the user through the NT -> unix user mapping
-	 * function.
-	 */
-
-	(void)map_username(user);
-
-	/*
-	 * Do any UNIX username case mangling.
-	 */
-	(void)Get_Pwnam(user, True);
-
 	if (strequal(param + 2, "zb16b16WW"))
 	{
 		/*
@@ -1837,8 +1825,8 @@ static BOOL api_SetUserPassword(connection_struct * conn, uint16 vuid,
 			if (make_oem_passwd_hash
 			    (pwbuf, pass1, 16, NULL, False)
 			    && msrpc_sam_ntpasswd_set("\\\\.", user, NULL,
-						      pwbuf, pass2,	/* lm pw */
-						      NULL, NULL))	/* nt pw */
+						      pwbuf, pass2, /* lm pw */
+						      NULL, NULL)) /* nt pw */
 			{
 				SSVAL(*rparam, 0, NERR_Success);
 			}
@@ -1847,7 +1835,7 @@ static BOOL api_SetUserPassword(connection_struct * conn, uint16 vuid,
 	else
 	{
 		/*
-		 * Attempt the plaintext password change first.
+		 * Attempt the plaintext password change.
 		 * Older versions of Windows seem to do this.
 		 */
 
@@ -1911,7 +1899,8 @@ static BOOL api_SamOEMChangePassword(connection_struct * conn, uint16 vuid,
 	      ("api_SamOEMChangePassword: Change password for <%s>\n", user));
 
 	if (msrpc_sam_ntpasswd_set("\\\\.", user, NULL,
-				   (uchar *) data, (uchar *) & data[516],	/* lm pw */
+				   (uchar *) data,
+				   (uchar *) & data[516],	/* lm pw */
 				   NULL, NULL))	/* nt pw */
 	{
 		SSVAL(*rparam, 0, NERR_Success);

@@ -993,6 +993,9 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 	if (!strequal(nt_samname, global_sam_name) &&
 	    !strequal(nt_samname, global_myname))
 	{
+		DEBUG(5,("remote-auth: SAM name: %s my name: %s\n",
+					global_sam_name, global_myname));
+
 		if (validation_level != 3)
 		{
 			/*
