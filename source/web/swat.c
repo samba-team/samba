@@ -32,6 +32,7 @@ static pstring servicesf = CONFIGFILE;
 static BOOL demo_mode = False;
 static BOOL have_write_access = False;
 static BOOL have_read_access = False;
+static int iNumNonAutoPrintServices = 0;
 
 /*
  * Password Management Globals
@@ -309,13 +310,13 @@ static void write_config(FILE *f, BOOL show_defaults)
 	fprintf(f, "# from %s (%s)\n", cgi_remote_host(), cgi_remote_addr());
 	fprintf(f, "# Date: %s\n\n", timestring());
 	
-	lp_dump(f, show_defaults);	
+	lp_dump(f, show_defaults, iNumNonAutoPrintServices);	
 }
 
 /****************************************************************************
   save and reoad the smb.conf config file 
 ****************************************************************************/
-static int save_reload(void)
+static int save_reload(int snum)
 {
 	FILE *f;
 
@@ -326,6 +327,8 @@ static int save_reload(void)
 	}
 
 	write_config(f, False);
+	if (snum)
+		lp_dump_one(f, False, snum);
 	fclose(f);
 
 	lp_killunused(NULL);
@@ -464,7 +467,7 @@ static void globals_page(void)
 
 	if (cgi_variable("Commit")) {
 		commit_parameters(GLOBALS_SNUM);
-		save_reload();
+		save_reload(0);
 	}
 
 	printf("<FORM name=\"swatform\" method=post>\n");
@@ -513,19 +516,19 @@ static void shares_page(void)
 
 	if (cgi_variable("Commit") && snum >= 0) {
 		commit_parameters(snum);
-		save_reload();
+		save_reload(0);
 	}
 
 	if (cgi_variable("Delete") && snum >= 0) {
 		lp_remove_service(snum);
-		save_reload();
+		save_reload(0);
 		share = NULL;
 		snum = -1;
 	}
 
 	if (cgi_variable("createshare") && (share=cgi_variable("newshare"))) {
 		lp_copy_service(GLOBALS_SNUM, share);
-		save_reload();
+		save_reload(0);
 		snum = lp_servicenumber(share);
 	}
 
@@ -817,12 +820,15 @@ static void printers_page(void)
 
 	if (cgi_variable("Commit") && snum >= 0) {
 		commit_parameters(snum);
-		save_reload();
+		if (snum >= iNumNonAutoPrintServices)
+		    save_reload(snum);
+		else
+		    save_reload(0);
 	}
 
 	if (cgi_variable("Delete") && snum >= 0) {
 		lp_remove_service(snum);
-		save_reload();
+		save_reload(0);
 		share = NULL;
 		snum = -1;
 	}
@@ -831,7 +837,7 @@ static void printers_page(void)
 		lp_copy_service(GLOBALS_SNUM, share);
 		snum = lp_servicenumber(share);
 		lp_do_parameter(snum, "print ok", "Yes");
-		save_reload();
+		save_reload(0);
 		snum = lp_servicenumber(share);
 	}
 
@@ -914,6 +920,8 @@ static void printers_page(void)
 
 	charset_initialise();
 	load_config();
+	iNumNonAutoPrintServices = lp_numservices();
+	load_printers();
 
 	cgi_setup(SWATDIR, !demo_mode);
 

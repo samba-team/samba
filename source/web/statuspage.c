@@ -173,7 +173,7 @@ void status_page(void)
 	if (smbd_running()) {
 		printf("<tr><td>smbd:</td><td>running</td><td><input type=submit name=\"smbd_stop\" value=\"Stop smbd\"></td><td><input type=submit name=\"smbd_restart\" value=\"Restart smbd\"></td></tr>\n");
 	} else {
-		printf("<tr><td>smbd:</td><td>not running</td><td><input type=submit name=\"smbd_start\" value=\"Start smbd\"></td>><td><input type=submit name=\"smbd_restart\" value=\"Restart smbd\"></td></tr>\n");
+		printf("<tr><td>smbd:</td><td>not running</td><td><input type=submit name=\"smbd_start\" value=\"Start smbd\"></td><td><input type=submit name=\"smbd_restart\" value=\"Restart smbd\"></td></tr>\n");
 	}
 
 	fflush(stdout);

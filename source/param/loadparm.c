@@ -2539,7 +2539,7 @@ int lp_numservices(void)
 /***************************************************************************
 Display the contents of the services array in human-readable form.
 ***************************************************************************/
-void lp_dump(FILE *f, BOOL show_defaults)
+void lp_dump(FILE *f, BOOL show_defaults, int maxtoprint)
 {
    int iService;
 
@@ -2551,15 +2551,21 @@ void lp_dump(FILE *f, BOOL show_defaults)
    
    dump_a_service(&sDefault, f);
 
-   for (iService = 0; iService < iNumServices; iService++)
-   {
-     if (VALID(iService))
-       {
-	 if (iSERVICE(iService).szService[0] == '\0')
-	   break;
-	 dump_a_service(pSERVICE(iService), f);
-       }
-   }
+   for (iService = 0; iService < maxtoprint; iService++)
+     lp_dump_one(f, show_defaults, iService);
+}
+
+/***************************************************************************
+Display the contents of one service in human-readable form.
+***************************************************************************/
+void lp_dump_one(FILE *f, BOOL show_defaults, int snum)
+{
+   if (VALID(snum))
+     {
+       if (iSERVICE(snum).szService[0] == '\0')
+	 return;
+       dump_a_service(pSERVICE(snum), f);
+     }
 }
 
 

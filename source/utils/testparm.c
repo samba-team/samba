@@ -161,7 +161,7 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 	fflush(stdout);
 	getc(stdin);
       }
-      lp_dump(stdout,True);
+      lp_dump(stdout,True, lp_numservices());
     }
   
   if (argc >= 3)
