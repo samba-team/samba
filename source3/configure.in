@@ -2069,6 +2069,17 @@ if test x"$with_ldap_support" = x"yes"; then
   fi
 fi
 
+########################################################
+# Compile with MySQL support?
+AM_PATH_MYSQL()
+CFLAGS="$CFLAGS $MYSQL_CFLAGS"
+
+
+########################################################
+# Compile with XML support?
+AM_PATH_XML2()
+CFLAGS="$CFLAGS $XML_CFLAGS"
+
 #################################################
 # check for automount support
 AC_MSG_CHECKING(whether to use AUTOMOUNT)
