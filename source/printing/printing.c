@@ -286,12 +286,12 @@ static time_t LPRng_time(fstring tok[],int pos)
 {
   time_t jobtime;
   struct tm *t;
-  char tmp_time[9];
+  fstring tmp_time;
 
   jobtime = time(NULL);         /* default case: take current time */
   t = localtime(&jobtime);
   t->tm_hour = atoi(tok[pos]);
-  StrnCpy(tmp_time,tok[pos],sizeof(tmp_time));
+  fstrcpy(tmp_time,tok[pos]);
   t->tm_min = atoi(tmp_time+3);
   t->tm_sec = atoi(tmp_time+6);
   jobtime = mktime(t);

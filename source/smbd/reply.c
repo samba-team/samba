@@ -444,6 +444,23 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     passlen1 = MIN(passlen1, MAX_PASS_LEN);
     passlen2 = MIN(passlen2, MAX_PASS_LEN);
 
+    if(!doencrypt) {
+       /* both Win95 and WinNT stuff up the password lengths for
+          non-encrypting systems. Uggh. 
+      
+          if passlen1==24 its a win95 system, and its setting the
+          password length incorrectly. Luckily it still works with the
+          default code because Win95 will null terminate the password
+          anyway 
+
+          if passlen1>0 and passlen2>0 then maybe its a NT box and its
+          setting passlen2 to some random value which really stuffs
+          things up. we need to fix that one.  */
+
+      if (passlen1 > 0 && passlen2 > 0 && passlen2 != 24 && passlen2 != 1)
+        passlen2 = 0;
+    }
+
     if(doencrypt || (lp_security() == SEC_SERVER)) {
       /* Save the lanman2 password and the NT md4 password. */
       smb_apasslen = passlen1;
@@ -453,21 +470,6 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
       memcpy(smb_ntpasswd,p+passlen1,smb_ntpasslen);
       smb_ntpasswd[smb_ntpasslen] = 0;
     } else {
-      /* both Win95 and WinNT stuff up the password lengths for
-	 non-encrypting systems. Uggh. 
-      
-	 if passlen1==24 its a win95 system, and its setting the
-	 password length incorrectly. Luckily it still works with the
-	 default code because Win95 will null terminate the password
-	 anyway 
-
-	 if passlen1>0 and passlen2>0 then maybe its a NT box and its
-	 setting passlen2 to some random value which really stuffs
-	 things up. we need to fix that one.  */
-      if (passlen1 > 0 && passlen2 > 0 && passlen2 != 24 &&
-	  passlen2 != 1) {
-	passlen2 = 0;
-      }
       /* we use the first password that they gave */
       smb_apasslen = passlen1;
       StrnCpy(smb_apasswd,p,smb_apasslen);      
