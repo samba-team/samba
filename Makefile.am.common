@@ -7,10 +7,10 @@ SUFFIXES += .x
 .x.c:
 	@cmp -s $< $@ 2> /dev/null || cp $< $@
 
-CHECK_LOCAL = $(PROGRAMS)
-
 check-local::
-	@foo='$(CHECK_LOCAL)'; \
+	@if test '$(CHECK_LOCAL)'; then \
+	  foo='$(CHECK_LOCAL)'; else \
+	  foo='$(PROGRAMS)'; fi; \
 	  if test "$$foo"; then \
 	  failed=0; all=0; \
 	  for i in $$foo; do \
