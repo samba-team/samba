@@ -46,9 +46,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 	}
 
 	/* we don't want this to affect the users ccache */
-	ccache = lock_path("winbindd_ccache");
-	SETENV("KRB5CCNAME", ccache, 1);
-	unlink(ccache);
+	setenv("KRB5CCNAME", "MEMORY:winbind_ccache", 1);
 
 	ads = ads_init(domain->alt_name, domain->name, NULL);
 	if (!ads) {
