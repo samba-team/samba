@@ -328,7 +328,7 @@ WERROR _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY 
 	if ( !key )
 		return WERR_BADFID; /* This will be reported as an RPC fault anyway. */
 
-	rpcstr_pull(name,q_u->uni_name.buffer,sizeof(name),q_u->uni_name.uni_str_len*2,0);
+	rpcstr_pull( name, q_u->name.string->buffer, sizeof(name), q_u->name.string->uni_str_len*2, 0 );
 	
 	result = open_registry_key( p, &pol, key, name, 0x0 );
 	

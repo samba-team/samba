@@ -939,7 +939,9 @@ void init_unistr2(UNISTR2 *str, const char *buf, enum unistr2_term_codes flags)
 
 void init_unistr4(UNISTR4 *uni4, const char *buf, enum unistr2_term_codes flags)
 {
+	uni4->string = TALLOC_P( get_talloc_ctx(), UNISTR2 );
 	init_unistr2( uni4->string, buf, flags );
+
 	uni4->length = 2 * (uni4->string->uni_str_len);
 	uni4->size   = 2 * (uni4->string->uni_max_len);
 }
@@ -1052,7 +1054,7 @@ void init_unistr2_from_datablob(UNISTR2 *str, DATA_BLOB *blob)
  See SPOOL_USER_1 in include/rpc_spoolss.h for an example.
 ********************************************************************/
 
-BOOL prs_io_unistr2_p(const char *desc, UNISTR2 **uni2, prs_struct *ps, int depth)
+BOOL prs_io_unistr2_p(const char *desc, prs_struct *ps, int depth, UNISTR2 **uni2)
 {
 	uint32 data_p;
 
@@ -1078,11 +1080,18 @@ BOOL prs_io_unistr2_p(const char *desc, UNISTR2 **uni2, prs_struct *ps, int dept
 
 /*******************************************************************
  now read/write the actual UNISTR2.  Memory for the UNISTR2 (but
- not UNISTR2.buffer) has been allocated previously by prs_io_unistr2_p()
+ not UNISTR2.buffer) has been allocated previously by prs_unistr2_p()
 ********************************************************************/
 
-BOOL prs_io_unistr2(const char *desc, UNISTR2 *uni2, prs_struct *ps, int depth)
+BOOL prs_io_unistr2(const char *desc, prs_struct *ps, int depth, UNISTR2 *uni2 )
 {
+	/* just return true if there is no pointer to deal with.
+	   the memory must have been previously allocated on unmarshalling
+	   by prs_unistr2_p() */
+
+	if ( !uni2 )
+		return True;
+
 	/* just pass off to smb_io_unstr2() passing the uni2 address as 
 	   the pointer (like you would expect) */
 
@@ -1136,7 +1145,7 @@ BOOL smb_io_unistr2(const char *desc, UNISTR2 *uni2, uint32 buffer, prs_struct *
  now read/write UNISTR4
 ********************************************************************/
 
-BOOL prs_unistr4(const char *desc, UNISTR4 *uni4, prs_struct *ps, int depth)
+BOOL prs_unistr4(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4)
 {
 
 	if ( !prs_uint16("length", ps, depth, &uni4->length ))
@@ -1144,42 +1153,12 @@ BOOL prs_unistr4(const char *desc, UNISTR4 *uni4, prs_struct *ps, int depth)
 	if ( !prs_uint16("size", ps, depth, &uni4->size ))
 		return False;
 		
-	if ( !prs_io_unistr2_p( desc, &uni4->string, ps, depth ) )
-		return False;
-	if ( !prs_io_unistr2( desc, uni4->string, ps, depth ) )
+	if ( !prs_pointer( desc, ps, depth, (void**)&uni4->string, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2 ) )
 		return False;
 		
 	return True;
 }
 
-
-/*******************************************************************
- Read/Write a UNISTR4*
-********************************************************************/
-
-BOOL prs_unistr4_p(const char *desc, UNISTR4 **uni4, prs_struct *ps, int depth)
-{
-	uint32 data_p;
-
-	/* caputure the pointer value to stream */
-
-	data_p = (uint32) *uni4;
-
-	if ( !prs_uint32("ptr", ps, depth, &data_p ))
-		return False;
-
-	/* we're done if there is no data */
-
-	if ( !data_p )
-		return True;
-
-	if (UNMARSHALLING(ps)) {
-		if ( !(*uni4 = PRS_ALLOC_MEM(ps, UNISTR4, 1)) )
-			return False;
-	}
-
-	return prs_unistr4( desc, *uni4, ps, depth );
-}
 
 /********************************************************************
   initialise a UNISTR_ARRAY from a char**

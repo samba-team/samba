@@ -28,6 +28,9 @@
 
 #define SMB_RPC_INTERFACE_VERSION 1
 
+#define PRS_POINTER_CAST BOOL (*)(const char*, prs_struct*, int, void*)
+
+
 /* well-known RIDs - Relative IDs */
 
 /* RIDs - Well-known users ... */

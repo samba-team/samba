@@ -4,7 +4,8 @@
    Copyright (C) Andrew Tridgell                 1992-1997.
    Copyright (C) Luke Kenneth Casson Leighton    1996-1997.
    Copyright (C) Paul Ashton                          1997.
-   Copyright (C) Gerald Carter                        2002.
+   Copyright (C) Jeremy Cooper                        2004.
+   Copyright (C) Gerald Carter                   2002-2005.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -89,6 +90,10 @@
 #define REG_FULL_RESOURCE_DESCRIPTOR   9
 #define REG_RESOURCE_REQUIREMENTS_LIST 10
 
+/*
+ * INTERNAL REGISTRY STRUCTURES 
+ */
+
 /* structure to contain registry values */
 
 typedef struct {
@@ -98,7 +103,7 @@ typedef struct {
 	uint8           *data_p;
 } REGISTRY_VALUE;
 
-/* container for regostry values */
+/* container for registry values */
 
 typedef struct {
 	TALLOC_CTX      *ctx;
@@ -147,331 +152,226 @@ typedef struct _RegistryKey {
 	
 } REGISTRY_KEY;
 
+/*
+ * RPC REGISTRY STRUCTURES
+ */
 
-/* REG_Q_OPEN_HIVE   */
-typedef struct q_reg_open_hive_info
-{
-	uint32 ptr;
-	uint16 unknown_0; /* varies depending on hive */
-	uint16 unknown_1; /* random.  changes */
-	uint32 level;     
+/***********************************************/
 
+typedef struct {
+	uint16 *server;
+	uint32 access;     
 } REG_Q_OPEN_HIVE;
 
-/* REG_R_OPEN_HIVE   */
-typedef struct r_reg_open_hive_info
-{
-	POLICY_HND pol;       /* policy handle */
-	WERROR status;         /* return status */
-
+typedef struct {
+	POLICY_HND pol;
+	WERROR status; 
 } REG_R_OPEN_HIVE;
 
 
-/* REG_Q_FLUSH_KEY */
-typedef struct q_reg_open_flush_key_info
-{
-	POLICY_HND pol;       /* policy handle */
+/***********************************************/
 
+typedef struct {
+	POLICY_HND pol;
 } REG_Q_FLUSH_KEY;
 
-/* REG_R_FLUSH_KEY */
-typedef struct r_reg_open_flush_key_info
-{
-	WERROR status;         /* return status */
-
+typedef struct {
+	WERROR status; 
 } REG_R_FLUSH_KEY;
 
 
-/* REG_Q_SET_KEY_SEC */
-typedef struct q_reg_set_key_sec_info
-{
-	POLICY_HND pol;         /* policy handle */
+/***********************************************/
 
-	uint32 sec_info;       /* xxxx_SECURITY_INFORMATION */
-
-	uint32 ptr;       /* pointer */
-	BUFHDR hdr_sec;    /* header for security data */
-	SEC_DESC_BUF *data;    /* security data */
-	
+typedef struct {
+	POLICY_HND pol;
+	uint32 sec_info;
+	uint32 ptr; 
+	BUFHDR hdr_sec;
+	SEC_DESC_BUF *data;
 } REG_Q_SET_KEY_SEC;
 
-/* REG_R_SET_KEY_SEC */
-typedef struct r_reg_set_key_sec_info
-{
+typedef struct {
 	WERROR status;
-	
 } REG_R_SET_KEY_SEC;
 
 
-/* REG_Q_GET_KEY_SEC */
-typedef struct q_reg_get_key_sec_info
-{
-	POLICY_HND pol;         /* policy handle */
+/***********************************************/
 
-	uint32 sec_info;       /* xxxx_SECURITY_INFORMATION */
-
-	uint32 ptr;       /* pointer */
-	BUFHDR hdr_sec;    /* header for security data */
-	SEC_DESC_BUF *data;    /* security data */
-	
+typedef struct {
+	POLICY_HND pol;
+	uint32 sec_info;
+	uint32 ptr; 
+	BUFHDR hdr_sec; 
+	SEC_DESC_BUF *data; 
 } REG_Q_GET_KEY_SEC;
 
-/* REG_R_GET_KEY_SEC */
-typedef struct r_reg_get_key_sec_info
-{
-	uint32 sec_info;       /* xxxx_SECURITY_INFORMATION */
-
-	uint32 ptr;       /* pointer */
-	BUFHDR hdr_sec;    /* header for security data */
-	SEC_DESC_BUF *data;    /* security data */
-
+typedef struct {
+	uint32 sec_info; 
+	uint32 ptr; 
+	BUFHDR hdr_sec; 
+	SEC_DESC_BUF *data;
 	WERROR status;
-	
 } REG_R_GET_KEY_SEC;
 
-/* REG_Q_CREATE_VALUE */
-typedef struct q_reg_create_value_info
-{
-	POLICY_HND pol;    /* policy handle */
+/***********************************************/
 
-	UNIHDR hdr_name;   /* name of value */
-	UNISTR2 uni_name;
-
-	uint32 type;       /* 1 = UNISTR, 3 = BYTES, 4 = DWORD, 7 = MULTI_UNISTR */
-
-	BUFFER3 *buf_value; /* value, in byte buffer */
-
+typedef struct {
+	POLICY_HND pol;   
+	UNISTR4 name;   	
+	uint32 type;  
+	BUFFER3 *value; 
 } REG_Q_CREATE_VALUE;
 
-/* REG_R_CREATE_VALUE */
-typedef struct r_reg_create_value_info
-{ 
-	WERROR status;         /* return status */
-
+typedef struct { 
+	WERROR status;
 } REG_R_CREATE_VALUE;
 
-/* REG_Q_ENUM_VALUE */
-typedef struct q_reg_query_value_info
-{
-	POLICY_HND pol;    /* policy handle */
+/***********************************************/
 
-	uint32 val_index;  /* index */
-
-	UNIHDR hdr_name;   /* name of value */
-	UNISTR2 uni_name;
-
-	uint32 ptr_type;   /* pointer */
-	uint32 type;       /* 1 = UNISTR, 3 = BYTES, 4 = DWORD, 7 = MULTI_UNISTR */
-
+typedef struct {
+	POLICY_HND pol;
+	uint32 val_index;
+	UNISTR4 name;
+	uint32 *type;  
 	uint32 ptr_value;  /* pointer */
 	BUFFER2 buf_value; /* value, in byte buffer */
-
-	uint32 ptr1;       /* pointer */
-	uint32 len_value1; /* */
-
-	uint32 ptr2;       /* pointer */
-	uint32 len_value2; /* */
-
-
+	uint32 *len_value1; 
+	uint32 *len_value2; 
 } REG_Q_ENUM_VALUE;
 
-/* REG_R_ENUM_VALUE */
-typedef struct r_reg_enum_value_info
-{ 
-	UNIHDR hdr_name;        /* name of value */
-	UNISTR2 uni_name;
-
-	uint32 ptr_type;            /* pointer */
-	uint32 type;        /* 1 = UNISTR, 3 = BYTES, 4 = DWORD, 7 = MULTI_UNISTR */
-
-	uint32 ptr_value;       /* pointer */
-	BUFFER2 buf_value;    /* value, in byte buffer */
-
-	uint32 ptr1;            /* pointer */
-	uint32 len_value1;       /* */
-
-	uint32 ptr2;            /* pointer */
-	uint32 len_value2;       /* */
-
-	WERROR status;         /* return status */
-
+typedef struct { 
+	UNISTR4 name;
+	uint32 *type;
+	uint32 ptr_value;
+	BUFFER2 buf_value;
+	uint32 *len_value1;
+	uint32 *len_value2;
+	WERROR status;
 } REG_R_ENUM_VALUE;
 
-/* REG_Q_CREATE_KEY */
-typedef struct q_reg_create_key_info
-{
-	POLICY_HND pnt_pol;       /* parent key policy handle */
+/***********************************************/
 
-	UNIHDR hdr_name;
-	UNISTR2 uni_name;
-
-	UNIHDR hdr_class;
-	UNISTR2 uni_class;
-
-	uint32 reserved; /* 0x0000 0000 */
-	SEC_ACCESS sam_access; /* access rights flags, see rpc_secdes.h */
-
-	uint32 ptr1;
-	uint32 sec_info; /* xxxx_SECURITY_INFORMATION */
-
-	uint32 ptr2;       /* pointer */
-	BUFHDR hdr_sec;    /* header for security data */
-	uint32 ptr3;       /* pointer */
+typedef struct {
+	POLICY_HND pnt_pol;
+	UNISTR4 name;
+	UNISTR4 class;
+	uint32 reserved;
+	uint32 access;
+	uint32 *sec_info;
+	uint32 ptr2;
+	BUFHDR hdr_sec;
+	uint32 ptr3;
 	SEC_DESC_BUF *data;
-
 	uint32 unknown_2; /* 0x0000 0000 */
-
 } REG_Q_CREATE_KEY;
 
-/* REG_R_CREATE_KEY */
-typedef struct r_reg_create_key_info
-{
-	POLICY_HND key_pol;       /* policy handle */
-	uint32 unknown; /* 0x0000 0000 */
-
-	WERROR status;         /* return status */
-
+typedef struct {
+	POLICY_HND key_pol;
+	uint32 unknown;
+	WERROR status; 
 } REG_R_CREATE_KEY;
 
-/* REG_Q_DELETE_KEY */
-typedef struct q_reg_delete_key_info
-{
-	POLICY_HND pnt_pol;       /* parent key policy handle */
+/***********************************************/
 
-	UNIHDR hdr_name;
-	UNISTR2 uni_name;
+typedef struct {
+	POLICY_HND pnt_pol;
+	UNISTR4 name;
 } REG_Q_DELETE_KEY;
 
-/* REG_R_DELETE_KEY */
-typedef struct r_reg_delete_key_info
-{
-	POLICY_HND key_pol;       /* policy handle */
-
-	WERROR status;         /* return status */
-
+typedef struct {
+	POLICY_HND key_pol;
+	WERROR status; 
 } REG_R_DELETE_KEY;
 
-/* REG_Q_DELETE_VALUE */
-typedef struct q_reg_delete_val_info
-{
-	POLICY_HND pnt_pol;       /* parent key policy handle */
+/***********************************************/
 
-	UNIHDR hdr_name;
-	UNISTR2 uni_name;
-
+typedef struct {
+	POLICY_HND pnt_pol;
+	UNISTR4 name;
 } REG_Q_DELETE_VALUE;
 
-/* REG_R_DELETE_VALUE */
-typedef struct r_reg_delete_val_info
-{
-	POLICY_HND key_pol;       /* policy handle */
-
-	WERROR status;         /* return status */
-
+typedef struct {
+	POLICY_HND key_pol;
+	WERROR status;
 } REG_R_DELETE_VALUE;
 
-/* REG_Q_QUERY_KEY */
-typedef struct q_reg_query_info
-{
-	POLICY_HND pol;       /* policy handle */
-	UNIHDR hdr_class;
-	UNISTR2 uni_class;
+/***********************************************/
 
+typedef struct {
+	POLICY_HND pol;
+	UNISTR4 class;
 } REG_Q_QUERY_KEY;
 
-/* REG_R_QUERY_KEY */
-typedef struct r_reg_query_key_info
-{
-	UNIHDR hdr_class;
-	UNISTR2 uni_class;
-
+typedef struct {
+	UNISTR4 class;
 	uint32 num_subkeys;
 	uint32 max_subkeylen;
-	uint32 reserved; /* 0x0000 0000 - according to MSDN (max_subkeysize?) */
+	uint32 reserved; 	/* 0x0000 0000 - according to MSDN (max_subkeysize?) */
 	uint32 num_values;
 	uint32 max_valnamelen;
 	uint32 max_valbufsize; 
-	uint32 sec_desc; /* 0x0000 0078 */
-	NTTIME mod_time;  /* modified time */
-
-	WERROR status;         /* return status */
-
+	uint32 sec_desc; 	/* 0x0000 0078 */
+	NTTIME mod_time;  	/* modified time */
+	WERROR status;         
 } REG_R_QUERY_KEY;
 
 
-/* REG_Q_GETVERSION */
+/***********************************************/
+
 typedef struct {
 	POLICY_HND pol;       /* policy handle */
 } REG_Q_GETVERSION;
 
-/* REG_R_GETVERSION */
 typedef struct {
 	uint32 unknown;         /* 0x0500 0000 */
 	WERROR status;         /* return status */
 } REG_R_GETVERSION;
 
 
-/* REG_Q_SAVE_KEY */
+/***********************************************/
+
 typedef struct {
-	POLICY_HND pol;       /* policy handle */
-	
-	UNIHDR  hdr_file;	/* unicode product type header */
-	UNISTR2 uni_file;	/* local filename to save key as from regedt32.exe */
-				/* e.g. "c:\temp\test.dat" */
-	
+	POLICY_HND pol; 
+	UNISTR4 filename;
 	uint32 unknown;		/* 0x0000 0000 */
 } REG_Q_SAVE_KEY;
 
 
-/* REG_R_SAVE_KEY */
 typedef struct {
 	WERROR status;         /* return status */
 } REG_R_SAVE_KEY;
 
 
 
-/* REG_Q_CLOSE */
-typedef struct reg_q_close_info
-{
-	POLICY_HND pol; /* policy handle */
+/***********************************************/
 
+typedef struct {
+	POLICY_HND pol; /* policy handle */
 } REG_Q_CLOSE;
 
-/* REG_R_CLOSE */
-typedef struct reg_r_close_info
-{
-	POLICY_HND pol; /* policy handle.  should be all zeros. */
-
-	WERROR status; /* return code */
-
+typedef struct {
+	POLICY_HND pol; 
+	WERROR status; 
 } REG_R_CLOSE;
 
 
-/* REG_Q_ENUM_KEY */
-typedef struct q_reg_enum_value_info
-{
-	POLICY_HND pol;         /* policy handle */
+/***********************************************/
 
+typedef struct {
+	POLICY_HND pol; 
 	uint32 key_index;       
-
 	uint16 key_name_len;    /* 0x0000 */
 	uint16 unknown_1;       /* 0x0414 */
-
 	uint32 ptr1;            /* pointer */
 	uint32 unknown_2;       /* 0x0000 020A */
 	uint8  pad1[8];         /* padding - zeros */
-
 	uint32 ptr2;            /* pointer */
 	uint8  pad2[8];         /* padding - zeros */
-
 	uint32 ptr3;            /* pointer */
 	NTTIME time;            /* current time? */
-
 } REG_Q_ENUM_KEY;
 
-/* REG_R_ENUM_KEY */
-typedef struct r_reg_enum_key_info
-{ 
+typedef struct { 
 	uint16 key_name_len;    /* number of bytes in key name */
 	uint16 unknown_1;       /* 0x0414 - matches with query unknown_1 */
 
@@ -488,13 +388,12 @@ typedef struct r_reg_enum_key_info
 	NTTIME time;            /* current time? */
 
 	WERROR status;         /* return status */
-
 } REG_R_ENUM_KEY;
 
 
-/* REG_Q_INFO */
-typedef struct q_reg_info_info
-{
+/***********************************************/
+
+typedef struct {
 	POLICY_HND pol;		/* policy handle */
 
 	UNIHDR  hdr_type;	/* unicode product type header */
@@ -516,47 +415,29 @@ typedef struct q_reg_info_info
 
 } REG_Q_INFO;
 
-/* REG_R_INFO */
 typedef struct r_reg_info_info
 { 
-	uint32 ptr_type;	/* key type pointer */
-	uint32 type;		/* key datatype  */
-
+	uint32 *type;
 	uint32 ptr_uni_val;	/* key value pointer */
 	BUFFER2 uni_val;	/* key value */
-
-	uint32 ptr_max_len;
-	uint32 buf_max_len;
-
-	uint32 ptr_len;
-	uint32 buf_len;
-  
+	uint32 *buf_max_len;
+	uint32 *buf_len;
 	WERROR status;	/* return status */
-
 } REG_R_INFO;
 
 
-/* REG_Q_OPEN_ENTRY */
-typedef struct q_reg_open_entry_info
-{
-	POLICY_HND pol;        /* policy handle */
+/***********************************************/
 
-	UNIHDR  hdr_name;       /* unicode registry string header */
-	UNISTR2 uni_name;       /* unicode registry string name */
-
+typedef struct {
+	POLICY_HND pol;
+	UNISTR4 name; 
 	uint32 unknown_0;       /* 32 bit unknown - 0x0000 0000 */
-	uint32 access_desired; 
-
+	uint32 access; 
 } REG_Q_OPEN_ENTRY;
 
-
-
-/* REG_R_OPEN_ENTRY */
-typedef struct r_reg_open_entry_info
-{
-	POLICY_HND pol;       /* policy handle */
-	WERROR status;         /* return status */
-
+typedef struct {
+	POLICY_HND pol;
+	WERROR status;
 } REG_R_OPEN_ENTRY;
 
 /***********************************************/

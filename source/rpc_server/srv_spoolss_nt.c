@@ -1491,10 +1491,10 @@ static void convert_to_openprinterex(TALLOC_CTX *ctx, SPOOL_Q_OPEN_PRINTER_EX *q
 
 	DEBUG(8,("convert_to_openprinterex\n"));
 				
-	q_u_ex->printername_ptr = q_u->printername_ptr;
-	
-	if (q_u->printername_ptr)
-		copy_unistr2(&q_u_ex->printername, &q_u->printername);
+	if ( q_u->printername ) {
+		q_u_ex->printername = TALLOC_P( ctx, UNISTR2 );
+		copy_unistr2(q_u_ex->printername, q_u->printername);
+	}
 	
 	copy_printer_default(ctx, &q_u_ex->printer_default, &q_u->printer_default);
 }
@@ -1588,7 +1588,6 @@ WERROR _spoolss_open_printer(pipes_struct *p, SPOOL_Q_OPEN_PRINTER *q_u, SPOOL_R
 
 WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, SPOOL_R_OPEN_PRINTER_EX *r_u)
 {
-	UNISTR2 		*printername = NULL;
 	PRINTER_DEFAULT 	*printer_default = &q_u->printer_default;
 	POLICY_HND 		*handle = &r_u->handle;
 
@@ -1597,15 +1596,13 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 	struct current_user user;
 	Printer_entry *Printer=NULL;
 
-	if (q_u->printername_ptr != 0)
-		printername = &q_u->printername;
-
-	if (printername == NULL)
+	if ( !q_u->printername )
 		return WERR_INVALID_PRINTER_NAME;
 
 	/* some sanity check because you can open a printer or a print server */
 	/* aka: \\server\printer or \\server */
-	unistr2_to_ascii(name, printername, sizeof(name)-1);
+
+	unistr2_to_ascii(name, q_u->printername, sizeof(name)-1);
 
 	DEBUGADD(3,("checking name: %s\n",name));
 
@@ -7595,7 +7592,7 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 
 WERROR _spoolss_addprinterex( pipes_struct *p, SPOOL_Q_ADDPRINTEREX *q_u, SPOOL_R_ADDPRINTEREX *r_u)
 {
-	UNISTR2 *uni_srv_name = &q_u->server_name;
+	UNISTR2 *uni_srv_name = q_u->server_name;
 	uint32 level = q_u->level;
 	SPOOL_PRINTER_INFO_LEVEL *info = &q_u->info;
 	DEVICEMODE *devmode = q_u->devmode_ctr.devmode;

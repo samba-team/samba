@@ -32,7 +32,7 @@
 
 static WERROR cli_reg_open_hive_int(struct cli_state *cli,
                                       TALLOC_CTX *mem_ctx, uint16 op_code,
-                                      const char *op_name, uint16 unknown_0,
+                                      const char *op_name,
                                       uint32 access_mask, POLICY_HND *hnd)
 {
 	prs_struct rbuf;
@@ -47,7 +47,7 @@ static WERROR cli_reg_open_hive_int(struct cli_state *cli,
 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
-	init_reg_q_open_hive(&q_o, unknown_0, access_mask);
+	init_reg_q_open_hive(&q_o, access_mask);
 
 	/* Marshall the query parameters */
 	if (!reg_io_q_open_hive("", &q_o, &qbuf, 0))
@@ -153,9 +153,7 @@ done:
 WERROR cli_reg_connect(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                          uint32 reg_type, uint32 access_mask,
                          POLICY_HND *reg_hnd)
-{
-	uint16 unknown_0;
-	uint16 op_code;
+{	uint16 op_code;
 	const char *op_name;
 
 	ZERO_STRUCTP(reg_hnd);
@@ -165,28 +163,24 @@ WERROR cli_reg_connect(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	case HKEY_CLASSES_ROOT:
 		op_code = REG_OPEN_HKCR;
 		op_name = "REG_OPEN_HKCR";
-		unknown_0 = 0x5428;
 		break;
 	case HKEY_LOCAL_MACHINE:
 		op_code = REG_OPEN_HKLM;
 		op_name = "REG_OPEN_HKLM";
-		unknown_0 = 0x84e0;
 		break;
 	case HKEY_USERS:
 		op_code = REG_OPEN_HKU;
 		op_name = "REG_OPEN_HKU";
-		unknown_0 = 0x84e0;
 		break;
 	case HKEY_PERFORMANCE_DATA:
 		op_code = REG_OPEN_HKPD;
 		op_name = "REG_OPEN_HKPD";
-		unknown_0 = 0x86e8;
 		break;
 	default:
 		return WERR_INVALID_PARAM;
 	}
 
-	return cli_reg_open_hive_int(cli, mem_ctx, op_code, op_name, unknown_0,
+	return cli_reg_open_hive_int(cli, mem_ctx, op_code, op_name,
                                      access_mask, reg_hnd);
 }
 
@@ -244,7 +238,6 @@ WERROR cli_reg_query_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_struct qbuf; 
 	REG_Q_QUERY_KEY q_o;
 	REG_R_QUERY_KEY r_o;
-	UNISTR2 class_uni2;
 	uint32 saved_class_len = *class_len;
 	WERROR result = WERR_GENERAL_FAILURE;
 
@@ -253,14 +246,7 @@ WERROR cli_reg_query_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Marshall data and send request */
 
-	/*
-	 * Construct a temporary UNISTR2 structure just to communicate
-	 * the maximum desired return size for the key class.
-	 */
-	class_uni2.uni_str_len = 0;
-	class_uni2.uni_max_len = *class_len;
-
-	init_reg_q_query_key(&q_o, hnd, &class_uni2);
+	init_reg_q_query_key( &q_o, hnd, key_class );
 
 	if (!reg_io_q_query_key("", &q_o, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, PI_WINREG, REG_QUERY_KEY, &qbuf, &rbuf))
@@ -275,13 +261,13 @@ WERROR cli_reg_query_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	result = r_o.status;
 	if (NT_STATUS_EQUAL(result, ERROR_INSUFFICIENT_BUFFER)) {
-		*class_len = r_o.hdr_class.uni_max_len;
+		*class_len = r_o.class.string->uni_max_len;
 		goto done;
 	} else if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	*class_len      = r_o.hdr_class.uni_max_len;
-	unistr2_to_ascii(key_class, &r_o.uni_class, saved_class_len-1);
+	*class_len      = r_o.class.string->uni_max_len;
+	unistr2_to_ascii(key_class, r_o.class.string, saved_class_len-1);
 	*num_subkeys    = r_o.num_subkeys   ;
 	*max_subkeylen  = r_o.max_subkeylen ;
 	*num_values     = r_o.num_values    ;
@@ -374,7 +360,7 @@ WERROR cli_reg_query_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	result = r_o.status;
 	if (NT_STATUS_IS_OK(result)) {
-		*type = r_o.type;
+		*type = *r_o.type;
 		*buffer = r_o.uni_val;
 	}
 
@@ -567,7 +553,7 @@ do a REG Create Key
 ****************************************************************************/
 WERROR cli_reg_create_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                             POLICY_HND *hnd, char *key_name, char *key_class,
-                            SEC_ACCESS *sam_access, POLICY_HND *key)
+                            uint32 access_desired, POLICY_HND *key)
 {
 	prs_struct rbuf;
 	prs_struct qbuf; 
@@ -592,8 +578,7 @@ WERROR cli_reg_create_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Marshall data and send request */
 
-	init_reg_q_create_key(&q_o, hnd, key_name, key_class, sam_access,
-	                      sec_buf);
+	init_reg_q_create_key(&q_o, hnd, key_name, key_class, access_desired, sec_buf);
 
 	if (!reg_io_q_create_key("", &q_o, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, PI_WINREG, REG_CREATE_KEY, &qbuf, &rbuf))
@@ -714,23 +699,14 @@ WERROR cli_reg_enum_val(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_struct qbuf; 
 	REG_Q_ENUM_VALUE q_o;
 	REG_R_ENUM_VALUE r_o;
-	UNISTR2 value_name_uni2;
 	WERROR result = WERR_GENERAL_FAILURE;
 
 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
-	/*
-	 * Construct a temporary UNISTR2 structure just to communicate
-	 * the maximum desired return size for the value name.
-	 */
-	value_name_uni2.uni_str_len = 0;
-	value_name_uni2.uni_max_len = sizeof(fstring);
-
 	/* Marshall data and send request */
 
-	init_reg_q_enum_val(&q_o, hnd, val_index, &value_name_uni2,
-	                    max_valbufsize);
+	init_reg_q_enum_val(&q_o, hnd, val_index, val_name, max_valbufsize);
 
 	if (!reg_io_q_enum_val("", &q_o, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, PI_WINREG, REG_ENUM_VALUE, &qbuf, &rbuf))
@@ -747,8 +723,8 @@ WERROR cli_reg_enum_val(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	result = r_o.status;
 	if (NT_STATUS_IS_OK(result) ||
 	    NT_STATUS_EQUAL(result, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		(*val_type) = r_o.type;
-		unistr2_to_ascii(val_name, &r_o.uni_name, sizeof(fstring)-1);
+		(*val_type) = *r_o.type;
+		unistr2_to_ascii(val_name, r_o.name.string, sizeof(fstring)-1);
 		*value = r_o.buf_value;
 	}
 

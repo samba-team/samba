@@ -72,30 +72,30 @@ static BOOL svcctl_io_service_config( const char *desc, SERVICE_CONFIG *config, 
 	if(!prs_uint32("error_control", ps, depth, &config->error_control))
 		return False;
 
-	if (!prs_io_unistr2_p("", &config->executablepath, ps, depth))
+	if (!prs_io_unistr2_p("", ps, depth, &config->executablepath))
 		return False;
-	if (!prs_io_unistr2_p("", &config->loadordergroup, ps, depth))
+	if (!prs_io_unistr2_p("", ps, depth, &config->loadordergroup))
 		return False;
 
 	if(!prs_uint32("tag_id", ps, depth, &config->tag_id))
 		return False;
 
-	if (!prs_io_unistr2_p("", &config->dependencies, ps, depth))
+	if (!prs_io_unistr2_p("", ps, depth, &config->dependencies))
 		return False;
-	if (!prs_io_unistr2_p("", &config->startname, ps, depth))
+	if (!prs_io_unistr2_p("", ps, depth, &config->startname))
 		return False;
-	if (!prs_io_unistr2_p("", &config->displayname, ps, depth))
+	if (!prs_io_unistr2_p("", ps, depth, &config->displayname))
 		return False;
 
-	if (!prs_io_unistr2("", config->executablepath, ps, depth))
+	if (!prs_io_unistr2("", ps, depth, config->executablepath))
 		return False;
-	if (!prs_io_unistr2("", config->loadordergroup, ps, depth))
+	if (!prs_io_unistr2("", ps, depth, config->loadordergroup))
 		return False;
-	if (!prs_io_unistr2("", config->dependencies, ps, depth))
+	if (!prs_io_unistr2("", ps, depth, config->dependencies))
 		return False;
-	if (!prs_io_unistr2("", config->startname, ps, depth))
+	if (!prs_io_unistr2("", ps, depth, config->startname))
 		return False;
-	if (!prs_io_unistr2("", config->displayname, ps, depth))
+	if (!prs_io_unistr2("", ps, depth, config->displayname))
 		return False;
 
 	return True;
@@ -426,7 +426,7 @@ BOOL svcctl_io_q_enum_services_status(const char *desc, SVCCTL_Q_ENUM_SERVICES_S
 	if(!prs_uint32("buffer_size", ps, depth, &q_u->buffer_size))
 		return False;
 
-	if(!prs_uint32_p("resume", ps, depth, &q_u->resume))
+	if(!prs_pointer("resume", ps, depth, (void**)&q_u->resume, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
 		return False;
 	
 	return True;
@@ -457,7 +457,7 @@ BOOL svcctl_io_r_enum_services_status(const char *desc, SVCCTL_R_ENUM_SERVICES_S
 	if(!prs_uint32("returned", ps, depth, &r_u->returned))
 		return False;
 
-	if(!prs_uint32_p("resume", ps, depth, &r_u->resume))
+	if(!prs_pointer("resume", ps, depth, (void**)&r_u->resume, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
 		return False;
 
 	if(!prs_werror("status", ps, depth, &r_u->status))
