@@ -139,11 +139,13 @@ v4_prop(void *arg, Principal *p)
     ret = krb5_425_conv_principal(pd->context, p->name, p->instance, realm,
 				  &ent.principal);
     if(ret){
-	krb5_warn(pd->context, ret, "%s.%s@%s", p->name, p->instance, realm);
+	krb5_warn(pd->context, ret,
+		  "krb5_425_conv_principal %s.%s@%s",
+		  p->name, p->instance, realm);
 	return 0;
     }
 
-    if(verbose_flag){
+    if(verbose_flag) {
 	char *s;
 	krb5_unparse_name_short(pd->context, ent.principal, &s);
 	krb5_warnx(pd->context, "%s.%s -> %s", p->name, p->instance, s);
@@ -164,7 +166,8 @@ v4_prop(void *arg, Principal *p)
 	unsigned char null_key[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 	memcpy(key, &p->key_low, 4);
 	memcpy(key + 4, &p->key_high, 4);
-	kdb_encrypt_key((des_cblock*)key, (des_cblock*)key, &mkey4, msched4, 0);
+	kdb_encrypt_key((des_cblock*)key, (des_cblock*)key,
+			&mkey4, msched4, DES_DECRYPT);
 	if(memcmp(key, null_key, sizeof(null_key)) == 0) {
 	    free_Key(&ent.keys.val[0]);
 	    ent.keys.val = 0;
@@ -439,21 +442,135 @@ get_creds(krb5_context context, krb5_ccache *cache)
     if(ret) krb5_err(context, 1, ret, "krb5_cc_store_cred");
 }
 
-int main(int argc, char **argv)
+static void
+iterate (krb5_context context,
+	 const char *database,
+	 const char *afs_cell,
+	 HDB *db,
+	 int v4_db, int ka_db,
+	 struct prop_data *pd)
+{
+#ifdef KRB4
+    if(v4_db) {
+	int e = kerb_db_iterate ((k_iter_proc_t)v4_prop, pd);
+	if(e)
+	    krb5_errx(context, 1, "kerb_db_iterate: %s", 
+		      krb_get_err_text(e));
+#ifdef KASERVER_DB
+    } else if(ka_db) {
+	int e = ka_dump(pd, database, afs_cell);
+	if(e)
+	    krb5_errx(context, 1, "ka_dump: %s", krb_get_err_text(e));
+#endif
+    } else
+#endif
+    {
+	krb5_error_code ret = hdb_foreach(context, db, HDB_F_DECRYPT,
+					  v5_prop, pd);
+	if(ret)
+	    krb5_err(context, 1, ret, "hdb_foreach");
+    }
+}
+
+static int
+dump_database (krb5_context context, int v4_db, int ka_db,
+	       const char *database, const char *afs_cell,
+	       HDB *db)
+{
+    struct prop_data pd;
+
+    pd.context      = context;
+    pd.auth_context = NULL;
+    pd.sock         = STDOUT_FILENO;
+	
+    iterate (context, database, afs_cell, db, v4_db, ka_db, &pd);
+    return 0;
+}
+
+static int
+propagate_database (krb5_context context, int v4_db, int ka_db,
+		    const char *database, const char *afs_cell,
+		    HDB *db, krb5_ccache ccache,
+		    int optind, int argc, char **argv)
+{
+    krb5_principal server;
+    krb5_error_code ret;
+    int i;
+
+    for(i = optind; i < argc; i++){
+	krb5_auth_context auth_context;
+	int fd;
+	struct prop_data pd;
+	krb5_data data;
+
+	fd = open_socket(context, argv[i]);
+	if(fd < 0) {
+	    krb5_warn (context, errno, "connect %s", argv[i]);
+	    continue;
+	}
+
+	ret = krb5_sname_to_principal(context, argv[i],
+				      HPROP_NAME, KRB5_NT_SRV_HST, &server);
+	if(ret) {
+	    krb5_warn(context, ret, "krb5_sname_to_principal(%s)", argv[i]);
+	    close(fd);
+	    continue;
+	}
+    
+	auth_context = NULL;
+	ret = krb5_sendauth(context,
+			    &auth_context,
+			    &fd,
+			    HPROP_VERSION,
+			    NULL,
+			    server,
+			    AP_OPTS_MUTUAL_REQUIRED,
+			    NULL, /* in_data */
+			    NULL, /* in_creds */
+			    ccache,
+			    NULL,
+			    NULL,
+			    NULL);
+
+	if(ret) {
+	    krb5_warn(context, ret, "krb5_sendauth");
+	    close(fd);
+	    continue;
+	}
+
+	pd.context      = context;
+	pd.auth_context = NULL;
+	pd.sock         = fd;
+
+	iterate (context, database, afs_cell, db,
+		 v4_db, ka_db, &pd);
+
+	data.data = NULL;
+	data.length = 0;
+	ret = send_priv(context, auth_context, &data, fd);
+	if(ret)
+	    krb5_warn(context, ret, "send_priv");
+
+	ret = recv_priv(context, auth_context, fd, &data);
+	if(ret)
+	    krb5_warn(context, ret, "recv_priv");
+	else
+	    krb5_data_free (&data);
+	
+	krb5_auth_con_free(context, auth_context);
+	close(fd);
+    }
+    return 0;
+}
+
+int
+main(int argc, char **argv)
 {
     krb5_error_code ret;
     krb5_context context;
-    krb5_auth_context ac;
-    krb5_principal server;
     krb5_ccache ccache;
-    int fd;
     HDB *db;
     int optind = 0;
-    int i;
-#ifdef KRB4
-    int e;
-#endif
-
 
     set_progname(argv[0]);
 
@@ -482,29 +599,36 @@ int main(int argc, char **argv)
     ret = hdb_read_master_key(context, mkeyfile, &mkey5);
     if(ret && ret != ENOENT)
 	krb5_err(context, 1, ret, "hdb_read_master_key");
-    if(ret){
+    if(ret) {
 	if(encrypt_flag || decrypt_flag)
 	    krb5_errx(context, 1, "No master key file found");
-    }else{
+    } else {
 	ret = hdb_process_master_key(context, mkey5, &msched5);
 	if(ret)
 	    krb5_err(context, 1, ret, "hdb_process_master_key");
     }
     
 #ifdef KRB4
-    if(v4_db){
-	e = kerb_db_set_name (database);
-	if(e) krb5_errx(context, 1, "kerb_db_set_name: %s", krb_get_err_text(e));
+    if(v4_db) {
+	int e = kerb_db_set_name (database);
+	if(e)
+	    krb5_errx(context, 1, "kerb_db_set_name: %s",
+		      krb_get_err_text(e));
 	e = kdb_get_master_key(0, &mkey4, msched4);
-	if(e) krb5_errx(context, 1, "kdb_get_master_key: %s", krb_get_err_text(e));
+	if(e)
+	    krb5_errx(context, 1, "kdb_get_master_key: %s",
+		      krb_get_err_text(e));
 	e = krb_get_lrealm(realm, 1);
-	if(e) krb5_errx(context, 1, "krb_get_lrealm: %s", krb_get_err_text(e));
+	if(e)
+	    krb5_errx(context, 1, "krb_get_lrealm: %s",
+		      krb_get_err_text(e));
 #ifdef KASERVER_DB
-    }else if(ka_db) {
-	e = krb_get_lrealm(realm, 1);
-	if(e) krb5_errx(context, 1, "krb_get_lrealm: %s", krb_get_err_text(e));
+    } else if(ka_db) {
+	int e = krb_get_lrealm(realm, 1);
+	if(e)
+	    krb5_errx(context, 1, "krb_get_lrealm: %s", krb_get_err_text(e));
 #endif
-    }else
+    } else
 #endif
 	{
 	    ret = hdb_create (context, &db, database);
@@ -515,108 +639,13 @@ int main(int argc, char **argv)
 		krb5_err(context, 1, ret, "db->open");
 	}
 
-    if(to_stdout){
-	struct prop_data pd;
-	pd.context = context;
-	pd.auth_context = ac;
-	pd.sock = fd;
-	
-#ifdef KRB4
-	if(v4_db){
-	    e = kerb_db_iterate ((k_iter_proc_t)v4_prop, &pd);
-	    if(e)
-		krb5_errx(context, 1, "kerb_db_iterate: %s", 
-			  krb_get_err_text(e));
-#ifdef KASERVER_DB
-	} else if(ka_db) {
-	    e = ka_dump(&pd, database, afs_cell);
-	    if(e) krb5_errx(context, 1, "ka_dump: %s", krb_get_err_text(e));
-#endif
-	} else
-#endif
-	{
-	    ret = hdb_foreach(context, db, HDB_F_DECRYPT, v5_prop, &pd);
-	    if(ret)
-		krb5_err(context, 1, ret, "hdb_foreach");
-	}
-    }else{
-
-	for(i = optind; i < argc; i++){
-	    fd = open_socket(context, argv[i]);
-	    if(fd < 0)
-		continue;
-
-	    ret = krb5_sname_to_principal(context, argv[i], 
-					  HPROP_NAME, KRB5_NT_SRV_HST, &server);
-	    if(ret) {
-		krb5_warn(context, ret, "krb5_sname_to_principal(%s)", argv[i]);
-		close(fd);
-		continue;
-	    }
-    
-	    ac = NULL;
-	    ret = krb5_sendauth(context,
-				&ac,
-				&fd,
-				HPROP_VERSION,
-				NULL,
-				server,
-				AP_OPTS_MUTUAL_REQUIRED,
-				NULL, /* in_data */
-				NULL, /* in_creds */
-				ccache,
-				NULL,
-				NULL,
-				NULL);
-
-	    if(ret){
-		krb5_warn(context, ret, "krb5_sendauth");
-		close(fd);
-		continue;
-	    }
-
-	    {
-		struct prop_data pd;
-		pd.context = context;
-		pd.auth_context = ac;
-		pd.sock = fd;
-	
-#ifdef KRB4
-		if(v4_db)
-		    e = kerb_db_iterate ((k_iter_proc_t)v4_prop, &pd);
-#ifdef KASERVER_DB
-		else if(ka_db) {
-		    e = ka_dump(&pd, database, afs_cell);
-		    if(e) krb5_errx(context, 1, "ka_dump: %s", 
-				    krb_get_err_text(e));
-		}
-#endif
-		else
-#endif
-		    ret = hdb_foreach(context, db, HDB_F_DECRYPT, 
-				      v5_prop, &pd);
-	    }
-	    if(ret)
-		krb5_warn(context, ret, "krb5_sendauth");
-	    else {
-		krb5_data data;
-		data.data = NULL;
-		data.length = 0;
-		ret = send_priv(context, ac, &data, fd);
-	    }
-
-	    {
-		krb5_data data;
-		ret = recv_priv(context, ac, fd, &data);
-		if(ret) krb5_warn(context, ret, "recv_priv");
-		if(data.length != 0)
-		    krb5_data_free(&data); /* XXX */
-	    }
-	
-	    if(ret) krb5_warn(context, ret, "send_priv");
-	    krb5_auth_con_free(context, ac);
-	    close(fd);
-	}
-    }
-    exit(0);
+    if (to_stdout)
+	dump_database (context, v4_db, ka_db,
+		       database, afs_cell, db);
+    else
+	propagate_database (context, v4_db, ka_db,
+			    database, afs_cell,
+			    db, ccache,
+			    optind, argc, argv);
+    return 0;
 }
