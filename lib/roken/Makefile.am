@@ -12,26 +12,28 @@ noinst_PROGRAMS = make-roken make-print-version
 
 make_print_version_LDADD = $(LIB_krb4)
 
-libroken_la_SOURCES =				\
-	base64.c				\
-	concat.c				\
-	get_window_size.c			\
-	getarg.c				\
-	inaddr2str.c				\
-	issuid.c				\
-	k_getpwnam.c				\
-	k_getpwuid.c				\
-	mini_inetd.c				\
-	parse_time.c				\
-	parse_units.c				\
-	print_version.c				\
-	resolve.c				\
-	roken_gethostby.c			\
-	signal.c				\
-	snprintf.c				\
-	strcat_truncate.c			\
-	strcpy_truncate.c			\
-	verify.c				\
+libroken_la_SOURCES =		\
+	base64.c		\
+	concat.c		\
+	get_window_size.c	\
+	getarg.c		\
+	inaddr2str.c		\
+	issuid.c		\
+	k_getpwnam.c		\
+	k_getpwuid.c		\
+	net_read.c		\
+	net_write.c		\
+	mini_inetd.c		\
+	parse_time.c		\
+	parse_units.c		\
+	print_version.c		\
+	resolve.c		\
+	roken_gethostby.c	\
+	signal.c		\
+	snprintf.c		\
+	strcat_truncate.c	\
+	strcpy_truncate.c	\
+	verify.c		\
 	warnerr.c
 
 libroken_la_LIBADD = @LTLIBOBJS@
