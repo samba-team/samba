@@ -458,6 +458,7 @@ void make_nmb_name( struct nmb_name *n, char *name, int type, char *this_scope )
 BOOL nmb_name_equal(struct nmb_name *n1, struct nmb_name *n2);
 BOOL send_packet(struct packet_struct *p);
 struct packet_struct *receive_packet(int fd,enum packet_type type,int t);
+void sort_query_replies(char *data, int n, struct in_addr ip);
 
 /*The following definitions come from  libsmb/nterr.c  */
 

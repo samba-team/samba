@@ -908,3 +908,47 @@ struct packet_struct *receive_packet(int fd,enum packet_type type,int t)
 }
 
 
+/****************************************************************************
+return the number of bits that match between two 4 character buffers
+  ***************************************************************************/
+static int matching_bits(uchar *p1, uchar *p2)
+{
+	int i, j, ret = 0;
+	for (i=0; i<4; i++) {
+		if (p1[i] != p2[i]) break;
+		ret += 8;
+	}
+
+	if (i==4) return ret;
+
+	for (j=0; j<8; j++) {
+		if ((p1[i] & (1<<(7-j))) != (p2[i] & (1<<(7-j)))) break;
+		ret++;
+	}	
+	
+	return ret;
+}
+
+
+static uchar sort_ip[4];
+
+/****************************************************************************
+compare two query reply records
+  ***************************************************************************/
+static int name_query_comp(uchar *p1, uchar *p2)
+{
+	return matching_bits(p2+2, sort_ip) - matching_bits(p1+2, sort_ip);
+}
+
+/****************************************************************************
+sort a set of 6 byte name query response records so that the IPs that
+have the most leading bits in common with the specified address come first
+  ***************************************************************************/
+void sort_query_replies(char *data, int n, struct in_addr ip)
+{
+	if (n <= 1) return;
+
+	putip(sort_ip, (char *)&ip);
+
+	qsort(data, n, 6, name_query_comp);
+}

@@ -555,6 +555,9 @@ on the same subnet (%s) as the requestor. Not replying.\n",
         set_nb_flags(&prdata[i*6],namerec->data.nb_flags);
         putip((char *)&prdata[2+(i*6)], &namerec->data.ip[i]);
       }
+
+      sort_query_replies(prdata, i, p->ip);
+      
       reply_data_len = namerec->data.num_ips * 6;
       success = True;
     }

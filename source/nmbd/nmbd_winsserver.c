@@ -1261,15 +1261,12 @@ void send_wins_name_query_response(int rcode, struct packet_struct *p,
   char *prdata = rdata;
   int reply_data_len = 0;
   int ttl = 0;
-  int i = 0;
-  int j;
+  int i;
 
   bzero(rdata,6);
 
   if(rcode == 0)
   {
-    int same_net_index = -1;
-
     ttl = (namerec->data.death_time != PERMANENT_TTL) ?
              namerec->data.death_time - p->timestamp : lp_max_wins_ttl();
 
@@ -1286,44 +1283,17 @@ void send_wins_name_query_response(int rcode, struct packet_struct *p,
         DEBUG(0,("send_wins_name_query_response: malloc fail !\n"));
         return;
       }
-
-      /* 
-       * Look over the known IP addresses and see if one of them
-       * is on the same (local) net as the requesting IP address. If so then
-       * put that IP address into the packet as the first IP.
-       * We can only do this for local nets as they're the only
-       * ones we know the netmask for.
-       */
-
-      i = 0;
-
-      if(is_local_net(p->ip))
-      {
-        struct in_addr *n_mask = iface_nmask(p->ip);
-
-        for( j = 0; j < namerec->data.num_ips; j++)
-        {
-          if(same_net( namerec->data.ip[j], p->ip, *n_mask))
-          {
-            set_nb_flags(&prdata[0],namerec->data.nb_flags);
-            putip((char *)&prdata[2], &namerec->data.ip[j]);
-            same_net_index = j;
-            i = 1;
-          }
-        }
-      }
     }
 
-    for(j = 0; j < namerec->data.num_ips; j++)
+    for(i = 0; i < namerec->data.num_ips; i++)
     {
-      if(j == same_net_index)
-        continue;
       set_nb_flags(&prdata[i*6],namerec->data.nb_flags);
-      putip((char *)&prdata[2+(i*6)], &namerec->data.ip[j]);
-      i++;
+      putip((char *)&prdata[2+(i*6)], &namerec->data.ip[i]);
     }
-    reply_data_len = namerec->data.num_ips * 6;
 
+    sort_query_replies(prdata, i, p->ip);
+
+    reply_data_len = namerec->data.num_ips * 6;
   }
 
   reply_netbios_packet(p,                             /* Packet to reply to. */
