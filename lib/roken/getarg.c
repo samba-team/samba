@@ -545,6 +545,12 @@ getarg(struct getargs *args, size_t num_args,
     return ret;
 }
 
+void
+free_getarg_strings (getarg_strings *s)
+{
+    free (s->strings);
+}
+
 #if TEST
 int foo_flag = 2;
 int flag1 = 0;
