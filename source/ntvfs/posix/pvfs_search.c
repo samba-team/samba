@@ -562,6 +562,10 @@ NTSTATUS pvfs_search_next(struct ntvfs_module_context *ntvfs,
 		talloc_free(search);
 	}
 
+	if (reply_count == 0) {
+		return NT_STATUS_NO_SUCH_FILE;
+	}
+
 	return NT_STATUS_OK;
 }
 
