@@ -256,8 +256,8 @@ void smbcli_session_set_user_session_key(struct smbcli_session *session,
 /*
   setup signing for a NT1 style session setup
 */
-static void use_nt1_session_keys(struct smbcli_session *session, 
-				 const char *password, const DATA_BLOB  *nt_response)
+void smb_session_use_nt1_session_keys(struct smbcli_session *session, 
+				      const char *password, const DATA_BLOB *nt_response)
 {
 	struct smbcli_transport *transport = session->transport; 
 	uint8_t nt_hash[16];
@@ -352,7 +352,7 @@ static NTSTATUS smb_raw_session_setup_generic_nt1(struct smbcli_session *session
 						  session->transport->negotiate.secblob);
 		s2.nt1.in.password2 = nt_blob(parms->generic.in.password, 
 					      session->transport->negotiate.secblob);
-		use_nt1_session_keys(session, parms->generic.in.password, &s2.nt1.in.password2);
+		smb_session_use_nt1_session_keys(session, parms->generic.in.password, &s2.nt1.in.password2);
 
 	} else {
 		s2.nt1.in.password1 = data_blob(parms->generic.in.password, 

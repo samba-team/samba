@@ -87,3 +87,31 @@ struct smb_composite_savefile {
 		uint32_t size;
 	} in;
 };
+
+
+/*
+  a composite request for a full connection to a remote server. Includes
+
+    - socket establishment
+    - session request
+    - negprot
+    - session setup
+    - tree connect
+*/
+struct smb_composite_connect {
+	struct {
+		const char *dest_host;
+		int port;
+		const char *called_name;
+		const char *calling_name;
+		const char *service;
+		const char *service_type;
+		const char *user;
+		const char *domain;
+		const char *password;
+	} in;
+	struct {
+		struct smbcli_tree *tree;
+	} out;
+};
+
