@@ -1951,27 +1951,28 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 	  auth_serversupplied_info *server_info = NULL;
 	  DATA_BLOB password = data_blob(pass1, strlen(pass1)+1);
 	  if (NT_STATUS_IS_OK(check_plaintext_password(user,password,&server_info))) {
-		  if (change_oem_password(server_info->sam_account,pass2))
-		  {
-			  SSVAL(*rparam,0,NERR_Success);
-		  }
-		  
+
 		  /*
 		   * If unix password sync was requested, attempt to change
-		   * the /etc/passwd database also. Return failure if this cannot
+		   * the /etc/passwd database first. Return failure if this cannot
 		   * be done.
 		   *
-		   * This occours regardless of the previous result, becouse 
-		   * It might not have been testing the password against the SAM backend.
-		   * (and therefore the change_oem_password would fail).
+		   * This occurs before the oem change, becouse we don't want to
+                   * update it if chgpasswd failed.
 		   *
 		   * Conditional on lp_unix_password_sync() becouse we don't want
                    * to touch the unix db unless we have admin permission.
 		   */
 		  
-		  if(lp_unix_password_sync() && !chgpasswd(pdb_get_username(server_info->sam_account),
-							   pass1,pass2,False)) {
+		  if(lp_unix_password_sync() && IS_SAM_UNIX_USER(server->sam_account) 
+		     && !chgpasswd(pdb_get_username(server_info->sam_account),
+				   pass1,pass2,False)) {
 			  SSVAL(*rparam,0,NERR_badpass);
+		  }
+		  
+		  if (change_oem_password(server_info->sam_account,pass2))
+		  {
+			  SSVAL(*rparam,0,NERR_Success);
 		  }
 		  
 		  free_server_info(&server_info);
