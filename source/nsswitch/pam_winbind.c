@@ -19,6 +19,7 @@
 #define MODULE_NAME "pam_winbind"
 #define PAM_SM_AUTH
 #define PAM_SM_ACCOUNT
+#define PAM_SM_PASSWORD
 #include <security/pam_modules.h>
 #include <security/_pam_macros.h>
 
@@ -69,36 +70,76 @@ static int _pam_parse(int argc, const char **argv)
      return ctrl;
 }
 
+static int winbind_request(enum winbindd_cmd req_type,
+                           struct winbindd_request *request,
+                           struct winbindd_response *response)
+{
+	/* Fill in request and send down pipe */
+	init_request(request, req_type);
+	
+	if (write_sock(request, sizeof(*request)) == -1) {
+		return -2;
+	}
+	
+	/* Wait for reply */
+	if (read_reply(response) == -1) {
+		return -2;
+	}
+
+	/* Copy reply data from socket */
+	if (response->result != WINBINDD_OK) {
+		return 1;
+	}
+	
+	return 0;
+}
 
 /* talk to winbindd */
-static int winbind_request(int req_type, const char *user, const char *pass)
+static int winbind_auth_request(const char *user, const char *pass)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
 
 	ZERO_STRUCT(request);
 
-	strncpy(request.data.auth.user, user, sizeof(request.data.auth.user)-1);
-	strncpy(request.data.auth.pass, pass, sizeof(request.data.auth.pass)-1);
-	
-	/* Fill in request and send down pipe */
-	init_request(&request, req_type);
-	
-	if (write_sock(&request, sizeof(request)) == -1) {
-		return -2;
-	}
-	
-	/* Wait for reply */
-	if (read_reply(&response) == -1) {
-		return -2;
-	}
+	strncpy(request.data.auth.user, user, 
+                sizeof(request.data.auth.user)-1);
 
-	/* Copy reply data from socket */
-	if (response.result != WINBINDD_OK) {
-		return 1;
-	}
+	strncpy(request.data.auth.pass, pass, 
+                sizeof(request.data.auth.pass)-1);
 	
-	return 0;
+        return winbind_request(WINBINDD_PAM_AUTH, &request, &response);
+}
+
+/* talk to winbindd */
+static int winbind_chauthtok_request(const char *user, const char *oldpass,
+                                     const char *newpass)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+
+	ZERO_STRUCT(request);
+
+        if (request.data.chauthtok.user == NULL) return -2;
+
+	strncpy(request.data.chauthtok.user, user, 
+                sizeof(request.data.chauthtok.user) - 1);
+
+        if (oldpass != NULL) {
+            strncpy(request.data.chauthtok.oldpass, oldpass, 
+                    sizeof(request.data.chauthtok.oldpass) - 1);
+        } else {
+            request.data.chauthtok.oldpass[0] = '\0';
+        }
+	
+        if (newpass != NULL) {
+            strncpy(request.data.chauthtok.newpass, newpass, 
+                    sizeof(request.data.chauthtok.newpass) - 1);
+        } else {
+            request.data.chauthtok.newpass[0] = '\0';
+        }
+	
+        return winbind_request(WINBINDD_PAM_CHAUTHTOK, &request, &response);
 }
 
 /*
@@ -112,7 +153,7 @@ static int winbind_request(int req_type, const char *user, const char *pass)
  */
 static int user_lookup(const char *user, const char *pass)
 {
-	return winbind_request(WINBINDD_PAM_AUTH, user, pass);
+	return winbind_auth_request(user, pass);
 }
 
 /*
@@ -131,11 +172,9 @@ static int valid_user(const char *user)
 
 /* --- authentication management functions --- */
 
-/*
- * dummy conversation function sending exactly one prompt
- * and expecting exactly one response from the other party
- */
-static int converse(pam_handle_t *pamh,
+/* Attempt a conversation */
+
+static int converse(pam_handle_t *pamh, int nargs,
 		    struct pam_message **message,
 		    struct pam_response **response)
 {
@@ -143,9 +182,10 @@ static int converse(pam_handle_t *pamh,
     struct pam_conv *conv;
 
     retval = pam_get_item(pamh, PAM_CONV, (const void **) &conv ) ;
-    if (retval == PAM_SUCCESS)
-	retval = conv->conv(1, (const struct pam_message **)message,
+    if (retval == PAM_SUCCESS) {
+	retval = conv->conv(nargs, (const struct pam_message **)message,
 			    response, conv->appdata_ptr);
+    }
 	
     return retval; /* propagate error status */
 }
@@ -161,20 +201,20 @@ static char *_pam_delete(register char *xx)
 /*
  * This is a conversation function to obtain the user's password
  */
-static int conversation(pam_handle_t *pamh)
+static int auth_conversation(pam_handle_t *pamh)
 {
-    struct pam_message msg[2],*pmsg[2];
+    struct pam_message msg, *pmsg;
     struct pam_response *resp;
     int retval;
     char * token;
     
-    pmsg[0] = &msg[0];
-    msg[0].msg_style = PAM_PROMPT_ECHO_OFF;
-    msg[0].msg = "Password: ";
+    pmsg = &msg;
+    msg.msg_style = PAM_PROMPT_ECHO_OFF;
+    msg.msg = "Password: ";
 
     /* so call the conversation expecting i responses */
     resp = NULL;
-    retval = converse(pamh, pmsg, &resp);
+    retval = converse(pamh, 1, &pmsg, &resp);
 
     if (resp != NULL) {
 	char * const item;
@@ -203,7 +243,6 @@ static int conversation(pam_handle_t *pamh)
     return retval;
 }
 
-
 PAM_EXTERN
 int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 			int argc, const char **argv)
@@ -225,7 +264,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
      
      if ((ctrl & PAM_USE_AUTHTOK_ARG) == 0) {
 	 /* Converse just to be sure we have the password */
-	 retval = conversation(pamh);
+	 retval = auth_conversation(pamh);
 	 if (retval != PAM_SUCCESS) {
 	     _pam_log(LOG_ERR, "could not obtain password for `%s'",
 		      username);
@@ -336,24 +375,134 @@ int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags,
 }
 
 
+PAM_EXTERN
+int pam_sm_chauthtok(pam_handle_t *pamh, int flags, int argc, 
+                     const char **argv)
+{
+    int retval;
+    char *newpw, *oldpw;
+    const char *user;
+
+    /* Get name of a user */
+
+    retval = pam_get_user(pamh, &user, "Username: ");
+
+    if (retval != PAM_SUCCESS) {
+        return retval;
+    }
+
+    /* XXX check in domain format */
+
+    /* Perform preliminary check and store requested password for updating
+       later on */
+
+    if (flags & PAM_PRELIM_CHECK) {
+        struct pam_message msg[3], *pmsg[3];
+        struct pam_response *resp;
+
+        /* Converse to ensure we have the current password */
+
+        retval = auth_conversation(pamh);
+
+        if (retval != PAM_SUCCESS) {
+            return retval;
+        }
+
+        /* Obtain and verify current password */
+
+        pmsg[0] = &msg[0];
+        msg[0].msg_style = PAM_TEXT_INFO;
+        msg[0].msg = "Changing password for user %s";
+
+        pmsg[1] = &msg[1];
+        msg[1].msg_style = PAM_PROMPT_ECHO_OFF;
+        msg[1].msg = "New NT password: ";
+
+        pmsg[2] = &msg[2];
+        msg[2].msg_style = PAM_PROMPT_ECHO_OFF;
+        msg[2].msg = "Retype new NT password: ";
+
+        resp = NULL;
+
+        retval = converse(pamh, 3, pmsg, &resp);
+
+        if (resp != NULL) {
+
+            if (retval == PAM_SUCCESS) {
+
+                /* Check password entered correctly */
+
+                if (strcmp(resp[1].resp, resp[2].resp) != 0) { 
+                    struct pam_response *resp2;
+
+                    msg[0].msg_style = PAM_ERROR_MSG;
+                    msg[0].msg = "Sorry, passwords do not match";
+
+                    converse(pamh, 1, pmsg, &resp2);
+
+                    _pam_drop_reply(resp, 3);
+                    _pam_drop_reply(resp2, 1);
+
+                    return PAM_AUTHTOK_RECOVER_ERR;
+                }
+
+                /* Store passwords */
+
+                retval = pam_set_item(pamh, PAM_OLDAUTHTOK, resp[1].resp);
+                _pam_drop_reply(resp, 3);
+            }
+        }
+
+        /* XXX What happens if root? */
+        /* XXX try first pass and use first pass args */
+
+        return retval;
+    }
+
+    if (flags & PAM_UPDATE_AUTHTOK) {
+
+        retval = pam_get_item(pamh, PAM_OLDAUTHTOK, (const void **)&newpw);
+        if (retval != PAM_SUCCESS) {
+            return PAM_AUTHTOK_ERR;
+        }
+
+        retval = pam_get_item(pamh, PAM_AUTHTOK, (const void **)&oldpw);
+        if (retval != PAM_SUCCESS) {
+            return PAM_AUTHTOK_ERR;
+        }
+
+        fprintf(stderr, "oldpw = %s, newpw = %s\n", oldpw, newpw);
+
+        if (retval == PAM_SUCCESS && 
+            winbind_chauthtok_request(user, oldpw, newpw) == 0) {
+            return PAM_SUCCESS;
+        }
+
+        return PAM_AUTHTOK_ERR;
+    }
+
+    return PAM_SERVICE_ERR;
+}
+
 #ifdef PAM_STATIC
 
 /* static module data */
 
-struct pam_module _pam_userdb_modstruct = {
+struct pam_module _pam_winbind_modstruct = {
      MODULE_NAME,
      pam_sm_authenticate,
      pam_sm_setcred,
      pam_sm_acct_mgmt,
      NULL,
      NULL,
-     NULL,
+     pam_sm_chauthtok
 };
 
 #endif
 
 /*
  * Copyright (c) Andrew Tridgell <tridge@samba.org> 2000
+ * Copyright (c) Tim Potter      <tpot@samba.org>   2000
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions

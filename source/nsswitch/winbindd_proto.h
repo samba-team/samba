@@ -73,6 +73,7 @@ void winbindd_idmap_dump_status(void);
 /*The following definitions come from  nsswitch/winbindd_pam.c  */
 
 enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state) ;
+enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state);
 
 /*The following definitions come from  nsswitch/winbindd_user.c  */
 

@@ -264,8 +264,13 @@ static void process_request(struct winbindd_cli_state *state)
         break;
 
 	/* pam auth functions */
+
     case WINBINDD_PAM_AUTH:
         state->response.result = winbindd_pam_auth(state);
+        break;
+
+    case WINBINDD_PAM_CHAUTHTOK:
+        state->response.result = winbindd_pam_chauthtok(state);
         break;
 
         /* Oops */

@@ -42,7 +42,8 @@ enum winbindd_cmd {
     WINBINDD_SETGRENT,               /* get/set/endgrent */
     WINBINDD_ENDGRENT,
     WINBINDD_GETGRENT,
-    WINBINDD_PAM_AUTH
+    WINBINDD_PAM_AUTH,               /* validate user */
+    WINBINDD_PAM_CHAUTHTOK           /* change password */
 };
 
 /* Winbind request structure */
@@ -57,10 +58,14 @@ struct winbindd_request {
 		uid_t uid;           /* getpwuid() */
 		gid_t gid;           /* getgrgid() */
 		struct {
-			/* the following is used by pam_winbind */
 			fstring user;
 			fstring pass;
-		} auth;
+		} auth;              /* pam_winbind auth module */
+                struct {
+                    fstring user;
+                    fstring oldpass;
+                    fstring newpass;
+                } chauthtok;         /* pam_winbind passwd module */
 	} data;
         fstring domain;      /* {set,get,end}{pw,gr}ent() */
 };

@@ -607,6 +607,10 @@ char *winbindd_cmd_to_string(enum winbindd_cmd cmd)
         result = "pam_auth";
         break;
 
+    case WINBINDD_PAM_CHAUTHTOK:
+        result = "pam_chauthtok";
+        break;
+
     default:
         result = "invalid command";
         break;

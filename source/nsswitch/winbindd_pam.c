@@ -34,9 +34,9 @@ static char *trust_keystr(char *domain)
 
 /************************************************************************
  Routine to get the trust account password for a domain.
- The user of this function must have locked the trust password file.
 ************************************************************************/
-static BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd, time_t *pass_last_set_time)
+static BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd, 
+                                        time_t *pass_last_set_time)
 {
 	struct machine_acct_pass *pass;
 	size_t size;
@@ -49,7 +49,6 @@ static BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd, ti
 	free(pass);
 	return True;
 }
-
 
 /* Return a password structure from a username.  Specify whether cached data 
    can be returned. */
@@ -69,14 +68,19 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 		 state->request.data.auth.user));
 
 	/* Parse domain and username */
-	parse_domain_user(state->request.data.auth.user, name_domain, name_user);
+	parse_domain_user(state->request.data.auth.user, name_domain, 
+                          name_user);
 
 	/* don't allow the null domain */
 	if (strcmp(name_domain,"") == 0) return WINBINDD_ERROR;
 
 	ZERO_STRUCT(info3);
 
-	if (!_get_trust_account_password(lp_workgroup(), trust_passwd, NULL)) return WINBINDD_ERROR;
+	if (!_get_trust_account_password(lp_workgroup(), trust_passwd, NULL)) {
+            DEBUG(1, ("could not get trust password for domain %s\n",
+                      name_domain));
+            return WINBINDD_ERROR;
+        }
 
 	nt_lm_owf_gen(state->request.data.auth.pass, ntpw, lmpw);
 
@@ -95,3 +99,33 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	return WINBINDD_OK;
 }
 
+/* Change a user password */
+
+enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
+{
+    char *oldpass, *newpass;
+    fstring domain, user;
+    uchar nt_oldhash[16];
+    uchar lm_oldhash[16];
+
+    /* Setup crap */
+
+    if (state == NULL) return WINBINDD_ERROR;
+
+    parse_domain_user(state->request.data.chauthtok.user, domain, user);
+
+    oldpass = state->request.data.chauthtok.oldpass;
+    newpass = state->request.data.chauthtok.newpass;
+
+    nt_lm_owf_gen(oldpass, nt_oldhash, lm_oldhash);
+
+    /* Change password */
+
+    if (!msrpc_sam_ntchange_pwd(server_state.controller, domain, user,
+                               lm_oldhash, nt_oldhash, newpass)) {
+        DEBUG(0, ("password change failed for user %s/%s\n", domain, user));
+        return WINBINDD_ERROR;
+    }
+    
+    return WINBINDD_OK;
+}
