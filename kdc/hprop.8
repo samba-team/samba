@@ -1,0 +1,42 @@
+.\" $Id$
+.\"
+.Dd Aug 27, 1997
+.Dt HPROP 8
+.Os HEIMDAL
+.Sh NAME
+.Nm hprop
+.Nd
+propagate the KDC database
+.Sh SYNOPSIS
+.Nm
+.Op Fl d Ar file
+.Op Fl -database= Ns Ar file
+.Op Fl 4
+.Op Fl -v4-db
+.Op Fl k Ar keytab
+.Op Fl -keytab= Ns Ar keytab
+.Ar host ...
+.Sh DESCRIPTION
+.Nm
+propagates the database from a master KDC to a slave. It connects to
+all hosts specified on the command by opening a TCP connection to port
+4712 (service hprop) and sending over the database in encrypted form.
+.Pp
+Options supported:
+.Bl -tag -width Ds
+.It Fl d Ar file
+.It Fl -database= Ns Ar file
+The database to be propagated.
+.It Fl 4
+.It Fl -v4-db
+Use a version 4 database. This option is only available if the code is
+compiled with Kerberos 4 support.
+.It Fl k
+.It Fl -keytab= Ns Ar keytab
+The keytab to use for fetching the key to be used for authenticating
+to the propagation daemon(s). The key
+.Pa kadmin/hprop
+is used from this keytab.
+.El
+.Sh SEE ALSO
+.Xr hpropd 8

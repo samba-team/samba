@@ -1,0 +1,25 @@
+.\" $Id$
+.\"
+.Dd Aug 27, 1997
+.Dt KPASSWDD 8
+.Os HEIMDAL
+.Sh NAME
+.Nm kpasswdd
+.Nd
+Kerberos 5 password changing server
+.Sh SYNOPSIS
+.Nm
+.Sh DESCRIPTION
+.Nm
+servers request for password changes. It listens on UDP port 464
+(service kpasswd) and processes requests when they arrive. It changes
+the database directly and should thus only run on the master KDC.
+.Sh DIAGNOSTICS
+If an error occurs, the error message is returned to the user and/or
+logged to syslog.
+.Sh BUGS
+The password quality checks are too basic. It should probably use
+cracklib or something similar.
+.Sh SEE ALSO
+.Xr kdc 8 ,
+.Xr kpasswd 1

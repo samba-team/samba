@@ -1,0 +1,44 @@
+.\" $Id$
+.\"
+.Dd Aug 27, 1997
+.Dt KINIT 1
+.Os HEIMDAL
+.Sh NAME
+.Nm kinit
+.Nd
+acquire initial tickets
+.Sh SYNOPSIS
+.Nm
+.Op Fl f
+.Op Fl -forwardable
+.Op Fl r
+.Op Fl -renewable
+.Op Fl l Ar lifetime
+.Op Fl -lifetime= Ns Ar lifetime
+.Op Ar principal
+.Sh DESCRIPTION
+.Nm
+is used to authenticate to the kerberos server as
+.Ar principal ,
+or if none is given, a system generated default, and acquire a ticket
+granting ticket that can later be used to obtain tickets for other
+services.
+.Pp
+Options supported:
+.Bl -tag -width Ds
+.It Fl f
+.It Fl -forwardable
+Ask for forwardable tickets.
+.It Fl r
+.It Fl -renewable
+Ask for renewable tickets.
+.It Fl l Ar lifetime
+.It Fl -lifetime= Ns Ar lifetime
+Ask for tickets valids for
+.Ar lifetime .
+The default is in
+.Xr /etc/krb5.conf 5 .
+.Sh SEE ALSO
+.Xr krb5.conf 5 ,
+.Xr klist 1 ,
+.Xr kdestroy 1

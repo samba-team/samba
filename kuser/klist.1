@@ -1,0 +1,26 @@
+.\" $Id$
+.\"
+.Dd Aug 27, 1997
+.Dt KLIST 1
+.Os HEIMDAL
+.Sh NAME
+.Nm klist
+.Nd
+list the current tickets
+.Sh SYNOPSIS
+.Nm
+.Op Fl v
+.Op Fl -verbose
+.Sh DESCRIPTION
+.Nm
+reads and displays the current tickets in the ticket file.
+.Pp
+Options supported:
+.Bl -tag -width Ds
+.It Fl v
+.It Fl -verbose
+Verbose output. Include all information from tickets.
+.El
+.Sh SEE ALSO
+.Xr kinit 1 ,
+.Xr kdestroy 1
