@@ -30,6 +30,8 @@ extern char *protection_names[];
 extern char *ftp_command;
 extern int prot_level;
 
+void delete_ftp_command(void);
+
 extern int data_protection;
 extern int buffer_size;
 extern unsigned char *data_buffer;
