@@ -1,5 +1,5 @@
 !==
-!== Tracing.txt for Samba release 1.9.18alpha14 24 Dec 1997
+!== Tracing.txt for Samba release 1.9.18 08 Jan 1998
 !==
 Contributor:	Andrew Tridgell <samba-bugs@samba.anu.edu.au>
 Date:		Old
