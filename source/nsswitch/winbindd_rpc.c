@@ -177,17 +177,28 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	DOM_SID *sids = NULL;
 	uint32 *types = NULL;
 	int num_sids;
-	const char *domain_name = domain->name; 
+	const char *full_name;
 
-	if (!(mem_ctx = talloc_init_named("name_to_sid[rpc]")))
+	if (!(mem_ctx = talloc_init_named("name_to_sid[rpc] for [%s]\\[%s]", domain->name, name))) {
+		DEBUG(0, ("talloc_init failed!\n"));
 		return NT_STATUS_NO_MEMORY;
+	}
         
-	if (!(hnd = cm_get_lsa_handle(domain->name)))
+	if (!(hnd = cm_get_lsa_handle(domain->name))) {
+		talloc_destroy(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
+	}
         
+	full_name = talloc_asprintf(mem_ctx, "%s\\%s", domain->name, name);
+	
+	if (!full_name) {
+		DEBUG(0, ("talloc_asprintf failed!\n"));
+		talloc_destroy(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	status = cli_lsa_lookup_names(hnd->cli, mem_ctx, &hnd->pol, 1, 
-				      &domain_name, &name, 
-				      &sids, &types, &num_sids);
+				      &full_name, &sids, &types, &num_sids);
         
 	/* Return rid and type if lookup successful */        
 	if (NT_STATUS_IS_OK(status)) {

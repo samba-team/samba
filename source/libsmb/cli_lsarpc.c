@@ -336,7 +336,7 @@ NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /** Lookup a list of names */
 
 NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                              POLICY_HND *pol, int num_names, const char **dom_names, const char **names, 
+                              POLICY_HND *pol, int num_names, const char **names, 
                               DOM_SID **sids, uint32 **types, int *num_sids)
 {
 	prs_struct qbuf, rbuf;
@@ -356,7 +356,7 @@ NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Marshall data and send request */
 
-	init_q_lookup_names(mem_ctx, &q, pol, num_names, dom_names, names);
+	init_q_lookup_names(mem_ctx, &q, pol, num_names, names);
 
 	if (!lsa_io_q_lookup_names("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, LSA_LOOKUPNAMES, &qbuf, &rbuf)) {

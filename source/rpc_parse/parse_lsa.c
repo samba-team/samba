@@ -1045,7 +1045,7 @@ makes a structure.
 ********************************************************************/
 
 void init_q_lookup_names(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_NAMES *q_l, 
-			 POLICY_HND *hnd, int num_names, const char **dom_names, const char **names)
+			 POLICY_HND *hnd, int num_names, const char **names)
 {
 	int i;
 
@@ -1071,19 +1071,11 @@ void init_q_lookup_names(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_NAMES *q_l,
 	}
 
 	for (i = 0; i < num_names; i++) {
-		char *full_name;
 		int len;
-
-		full_name = talloc_asprintf(mem_ctx, "%s\\%s", dom_names[i], names[i]);
-		if (!full_name) {
-			DEBUG(0, ("init_q_lookup_names(): out of memory doing talloc_asprintf\n"));
-			return;
-		}
-
-		len = strlen(full_name);
+		len = strlen(names[i]);
 
 		init_uni_hdr(&q_l->hdr_name[i], len);
-		init_unistr2(&q_l->uni_name[i], full_name, len);
+		init_unistr2(&q_l->uni_name[i], names[i], len);
 	}
 }
 
