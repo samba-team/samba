@@ -354,6 +354,7 @@ krb5_domain_x500_encode(char **realms, int num_realms, krb5_data *encoding)
     }
     len += num_realms - 1;
     s = malloc(len + 1);
+    *s = 0;
     for(i = 0; i < num_realms; i++){
 	if(i && i < num_realms - 1)
 	    strcat(s, ",");
