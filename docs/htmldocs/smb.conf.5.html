@@ -89,7 +89,7 @@ CLASS="REPLACEABLE"
 >Section and parameter names are not case sensitive.</P
 ><P
 >Only the first equals sign in a parameter is significant. 
-	Whitespace before or after the first equals sign is discarded. 
+	Whitespace before or after the first equals sign is discarded.
 	Leading, trailing and internal whitespace in section and parameter 
 	names is irrelevant. Leading and trailing whitespace in a parameter 
 	value is discarded. Internal whitespace within a parameter value 
@@ -140,7 +140,7 @@ NAME="AEN28"
 ><P
 >Sections may be designated <EM
 >guest</EM
-> services, 
+> services,
 	in which case no password is required to access them. A specified 
 	UNIX <EM
 >guest account</EM
@@ -632,7 +632,7 @@ CLASS="VARIABLELIST"
 >%d</DT
 ><DD
 ><P
->The process id of the current server 
+>The process id of the current server
 		process.</P
 ></DD
 ><DT
@@ -756,7 +756,7 @@ CLASS="VARIABLELIST"
 >short preserve case = yes/no</DT
 ><DD
 ><P
->controls if new files which conform to 8.3 syntax, 
+>controls if new files which conform to 8.3 syntax,
 		that is all in upper case and of suitable length, are created 
 		upper case, or if they are forced to be the "default" 
 		case. This option can be use with "preserve case = yes" 
@@ -785,8 +785,9 @@ NAME="AEN236"
 	steps fail, then the connection request is rejected.  However, if one of the 
 	steps succeeds, then the following steps are not checked.</P
 ><P
->If the service is marked "guest only = yes" then
-	steps 1 to 5 are skipped.</P
+>If the service is marked "guest only = yes" and the
+	server is running with share-level security ("security = share")
+	then steps 1 to 5 are skipped.</P
 ><P
 ></P
 ><OL
@@ -917,6 +918,18 @@ HREF="#ADDMACHINESCRIPT"
 CLASS="PARAMETER"
 ><I
 >add machine script</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#ALGORITHMICRIDBASE"
+><TT
+CLASS="PARAMETER"
+><I
+>algorithmic rid base</I
 ></TT
 ></A
 ></P
@@ -1572,6 +1585,42 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#LOCKSPINCOUNT"
+><TT
+CLASS="PARAMETER"
+><I
+>lock spin count</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#LOCKSPINTIME"
+><TT
+CLASS="PARAMETER"
+><I
+>lock spin time</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#PIDDIRECTORY"
+><TT
+CLASS="PARAMETER"
+><I
+>pid directory</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#LOGFILE"
 ><TT
 CLASS="PARAMETER"
@@ -1937,6 +1986,18 @@ HREF="#NTPIPESUPPORT"
 CLASS="PARAMETER"
 ><I
 >nt pipe support</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#NTSTATUSSUPPORT"
+><TT
+CLASS="PARAMETER"
+><I
+>nt status support</I
 ></TT
 ></A
 ></P
@@ -3002,7 +3063,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN971"
+NAME="AEN991"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -3152,6 +3213,18 @@ HREF="#CREATEMODE"
 CLASS="PARAMETER"
 ><I
 >create mode</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#CSCPOLICY"
+><TT
+CLASS="PARAMETER"
+><I
+>csc policy</I
 ></TT
 ></A
 ></P
@@ -3548,6 +3621,18 @@ HREF="#INCLUDE"
 CLASS="PARAMETER"
 ><I
 >include</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#INHERITACLS"
+><TT
+CLASS="PARAMETER"
+><I
+>inherit acls</I
 ></TT
 ></A
 ></P
@@ -4179,6 +4264,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#SHAREMODES"
+><TT
+CLASS="PARAMETER"
+><I
+>share modes</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#SHORTPRESERVECASE"
 ><TT
 CLASS="PARAMETER"
@@ -4445,7 +4542,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1451"
+NAME="AEN1483"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -5016,6 +5113,38 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >.</P
+></DD
+><DT
+><A
+NAME="ALGORITHMICRIDBASE"
+></A
+>algorithmic rid base (G)</DT
+><DD
+><P
+>This determines how Samba will use its
+                algorithmic mapping from uids/gid to the RIDs needed to construct
+                NT Security Identifiers.</P
+><P
+>Setting this option to a larger value could be useful to sites
+                transitioning from WinNT and Win2k, as existing user and 
+                group rids would otherwise clash with sytem users etc. 
+                </P
+><P
+>All UIDs and GIDs must be able to be resolved into SIDs for  
+                the correct operation of ACLs on the server.  As such the algorithmic
+                mapping can't be 'turned off', but pushing it 'out of the way' should
+                resolve the issues.  Users and groups can then be assigned 'low' RIDs
+                in arbitary-rid supporting backends. </P
+><P
+>Default: <B
+CLASS="COMMAND"
+>algorithmic rid base = 1000</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>algorithmic rid base = 100000</B
+></P
 ></DD
 ><DT
 ><A
@@ -5924,6 +6053,40 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >.</P
+></DD
+><DT
+><A
+NAME="CSCPOLICY"
+></A
+>csc policy (S)</DT
+><DD
+><P
+>This stands for <EM
+>client-side caching 
+		policy</EM
+>, and specifies how clients capable of offline
+		caching will cache the files in the share. The valid values
+		are: manual, documents, programs, disable.</P
+><P
+>These values correspond to those used on Windows
+		servers.</P
+><P
+>For example, shares containing roaming profiles can have
+		offline caching disabled using <B
+CLASS="COMMAND"
+>csc policy = disable
+		</B
+>.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>csc policy = manual</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>csc policy = programs</B
+></P
 ></DD
 ><DT
 ><A
@@ -8813,6 +8976,28 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="INHERITACLS"
+></A
+>inherit acls (S)</DT
+><DD
+><P
+>This parameter can be used to ensure
+		that if default acls exist on parent directories,
+		they are always honored when creating a subdirectory.
+		The default behavior is to use the mode specified
+		when creating the directory.  Enabling this option
+		sets the mode to 0777, thus guaranteeing that 
+		default directory acls are propagated.
+		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>inherit acls = no</B
+>
+		</P
+></DD
+><DT
+><A
 NAME="INHERITPERMISSIONS"
 ></A
 >inherit permissions (S)</DT
@@ -9831,6 +10016,56 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="LOCKSPINCOUNT"
+></A
+>lock spin count (G)</DT
+><DD
+><P
+>This parameter controls the number of times
+		that smbd should attempt to gain a byte range lock on the 
+		behalf of a client request.  Experiments have shown that
+		Windows 2k servers do not reply with a failure if the lock
+		could not be immediately granted, but try a few more times
+		in case the lock could later be aquired.  This behavior
+		is used to support PC database formats such as MS Access
+		and FoxPro.
+		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>lock spin count = 2</B
+>
+		</P
+></DD
+><DT
+><A
+NAME="LOCKSPINTIME"
+></A
+>lock spin time (G)</DT
+><DD
+><P
+>The time in microseconds that smbd should 
+		pause before attempting to gain a failed lock.  See
+		<A
+HREF="#LOCKSPINCOUNT"
+><TT
+CLASS="PARAMETER"
+><I
+>lock spin 
+		count</I
+></TT
+></A
+> for more details.
+		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>lock spin time = 10</B
+>
+		</P
+></DD
+><DT
+><A
 NAME="LOCKING"
 ></A
 >locking (S)</DT
@@ -10360,8 +10595,8 @@ CLASS="COMMAND"
 		takes a printer name as its only parameter and outputs printer 
 		status information.</P
 ><P
->Currently eight styles of printer status information 
-		are supported; BSD, AIX, LPRNG, PLP, SYSV, HPUX, QNX and SOFTQ. 
+>Currently nine styles of printer status information 
+		are supported; BSD, AIX, LPRNG, PLP, SYSV, HPUX, QNX, CUPS, and SOFTQ. 
 		This covers most UNIX systems. You control which type is expected 
 		using the <TT
 CLASS="PARAMETER"
@@ -10395,7 +10630,15 @@ CLASS="PARAMETER"
 CLASS="ENVAR"
 >$PATH
 		</TT
-> may not be available to the server.</P
+> may not be available to the server.  When compiled with
+		the CUPS libraries, no <TT
+CLASS="PARAMETER"
+><I
+>lpq command</I
+></TT
+> is
+		needed because smbd will make a library call to obtain the 
+		print queue listing.</P
 ><P
 >See also the <A
 HREF="#PRINTING"
@@ -12230,6 +12473,34 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="NTSTATUSSUPPORT"
+></A
+>nt status support (G)</DT
+><DD
+><P
+>This boolean parameter controls whether <A
+HREF="smbd.8.html"
+TARGET="_top"
+>smbd(8)</A
+> will negotiate NT specific status
+		support with Windows NT/2k/XP clients. This is a developer
+		debugging option and should be left alone.
+	 	If this option is set to <TT
+CLASS="CONSTANT"
+>no</TT
+> then Samba offers
+		exactly the same DOS error codes that versions prior to Samba 2.2.3
+		reported.</P
+><P
+>You should not need to ever disable this parameter.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>nt status support = yes</B
+></P
+></DD
+><DT
+><A
 NAME="NULLPASSWORDS"
 ></A
 >null passwords (G)</DT
@@ -12655,10 +12926,10 @@ NAME="PASSDBBACKEND"
 >passdb backend (G)</DT
 ><DD
 ><P
->This option allows the administrator to chose what
-                backend in which to store passwords.  This allows (for example) both 
-                smbpasswd and tdbsam to be used without a recompile.  Only one can
-                be used at a time however, and experimental backends must still be selected
+>This option allows the administrator to chose which backends to retrieve and store passwords with. This allows (for example) both 
+                smbpasswd and tdbsam to be used without a recompile. 
+                Multiple backends can be specified, seperated by spaces. The backends will be searched in the order they are specified. New users are always added to the first backend specified.
+                Experimental backends must still be selected
                 (eg --with-tdbsam) at configure time.
 		</P
 ><P
@@ -12798,7 +13069,7 @@ CLASS="COMMAND"
 ><P
 >Example: <B
 CLASS="COMMAND"
->passdb backend = tdbsam:/etc/samba/private/passdb.tdb</B
+>passdb backend = tdbsam:/etc/samba/private/passdb.tdb smbpasswd:/etc/samba/smbpasswd</B
 ></P
 ><P
 >Example: <B
@@ -12808,7 +13079,7 @@ CLASS="COMMAND"
 ><P
 >Example: <B
 CLASS="COMMAND"
->passdb backend = plugin:/usr/local/samba/lib/my_passdb.so:my_plugin_args</B
+>passdb backend = plugin:/usr/local/samba/lib/my_passdb.so:my_plugin_args tdbsam:/etc/samba/private/passdb.tdb</B
 ></P
 ></DD
 ><DT
@@ -13461,6 +13732,27 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="PIDDIRECTORY"
+></A
+>pid directory (G)</DT
+><DD
+><P
+>This option specifies the directory where pid 
+		files will be placed.  </P
+><P
+>Default: <B
+CLASS="COMMAND"
+>pid directory = ${prefix}/var/locks</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>pid directory = /var/run/</B
+>
+		</P
+></DD
+><DT
+><A
 NAME="POSIXLOCKING"
 ></A
 >posix locking (S)</DT
@@ -13789,33 +14081,22 @@ CLASS="COMMAND"
 		manually remove old spool files.</P
 ><P
 >The print command is simply a text string. It will be used 
-		verbatim, with two exceptions: All occurrences of <TT
-CLASS="PARAMETER"
-><I
->%s
-		</I
-></TT
-> and <TT
-CLASS="PARAMETER"
-><I
->%f</I
-></TT
-> will be replaced by the 
-		appropriate spool file name, and all occurrences of <TT
-CLASS="PARAMETER"
-><I
->%p
-		</I
-></TT
-> will be replaced by the appropriate printer name. The 
-		spool file name is generated automatically by the server.  The 
-		<TT
-CLASS="PARAMETER"
-><I
->%J</I
-></TT
-> macro can be used to access the job 
+		verbatim after macro substitutions have been made:</P
+><P
+>s, %p - the path to the spool
+		file name</P
+><P
+>%p - the appropriate printer 
+		name</P
+><P
+>%J - the job 
 		name as transmitted by the client.</P
+><P
+>%c - The number of printed pages
+		of the spooled job (if known).</P
+><P
+>%z - the size of the spooled
+		print job (in bytes)</P
 ><P
 >The print command <EM
 >MUST</EM
@@ -13923,6 +14204,25 @@ CLASS="COMMAND"
 >print command = lp -d%p -s %s; rm %s</B
 ></P
 ><P
+>For printing = CUPS :   If SAMBA is compiled against
+		libcups, then <A
+HREF="#PRINTING"
+>printcap = cups</A
+> 
+		uses the CUPS API to
+		submit jobs, etc.  Otherwise it maps to the System V
+		commands with the -oraw option for printing, i.e. it
+		uses <B
+CLASS="COMMAND"
+>lp -c -d%p -oraw; rm %s</B
+>.   
+		With <B
+CLASS="COMMAND"
+>printing = cups</B
+>,
+		and if SAMBA is compiled against libcups, any manually 
+		set print command will be ignored.</P
+><P
 >Example: <B
 CLASS="COMMAND"
 >print command = /usr/local/samba/bin/myprintscript
@@ -14012,6 +14312,23 @@ HREF="#AEN79"
 >[printers]</A
 > section above for reasons 
 		why you might want to do this.</P
+><P
+>To use the CUPS printing interface set <B
+CLASS="COMMAND"
+>printcap name = cups
+		</B
+>. This should be supplemented by an addtional setting 
+		<A
+HREF="#PRINTING"
+>printing = cups</A
+> in the [global] 
+		section.  <B
+CLASS="COMMAND"
+>printcap name = cups</B
+> will use the  
+		"dummy" printcap created by CUPS, as specified in your CUPS
+		configuration file.
+		</P
 ><P
 >On System V systems that use <B
 CLASS="COMMAND"
@@ -15850,6 +16167,64 @@ CLASS="COMMAND"
 >Default: <B
 CLASS="COMMAND"
 >set directory = no</B
+></P
+></DD
+><DT
+><A
+NAME="SHAREMODES"
+></A
+>share modes (S)</DT
+><DD
+><P
+>This enables or disables the honoring of 
+		the <TT
+CLASS="PARAMETER"
+><I
+>share modes</I
+></TT
+> during a file open. These 
+		modes are used by clients to gain exclusive read or write access 
+		to a file.</P
+><P
+>These open modes are not directly supported by UNIX, so
+		they are simulated using shared memory, or lock files if your 
+		UNIX doesn't support shared memory (almost all do).</P
+><P
+>The share modes that are enabled by this option are 
+		<TT
+CLASS="CONSTANT"
+>DENY_DOS</TT
+>, <TT
+CLASS="CONSTANT"
+>DENY_ALL</TT
+>,
+		<TT
+CLASS="CONSTANT"
+>DENY_READ</TT
+>, <TT
+CLASS="CONSTANT"
+>DENY_WRITE</TT
+>,
+		<TT
+CLASS="CONSTANT"
+>DENY_NONE</TT
+> and <TT
+CLASS="CONSTANT"
+>DENY_FCB</TT
+>.
+		</P
+><P
+>This option gives full share compatibility and enabled 
+		by default.</P
+><P
+>You should <EM
+>NEVER</EM
+> turn this parameter 
+		off as many Windows applications will break if you do so.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>share modes = yes</B
 ></P
 ></DD
 ><DT
@@ -18258,7 +18633,7 @@ CLASS="COMMAND"
 ><A
 NAME="WINBINDCACHETIME"
 ></A
->winbind cache time</DT
+>winbind cache time (G)</DT
 ><DD
 ><P
 >This parameter specifies the number of seconds the
@@ -18279,8 +18654,7 @@ CLASS="COMMAND"
 ><A
 NAME="WINBINDENUMUSERS"
 ></A
->winbind enum
-		users</DT
+>winbind enum users (G)</DT
 ><DD
 ><P
 >On large installations using
@@ -18331,8 +18705,7 @@ CLASS="COMMAND"
 ><A
 NAME="WINBINDENUMGROUPS"
 ></A
->winbind enum
-		groups</DT
+>winbind enum groups (G)</DT
 ><DD
 ><P
 >On large installations using
@@ -18382,7 +18755,7 @@ CLASS="COMMAND"
 ><A
 NAME="WINBINDGID"
 ></A
->winbind gid</DT
+>winbind gid (G)</DT
 ><DD
 ><P
 >The winbind gid parameter specifies the range of group 
@@ -18409,7 +18782,7 @@ CLASS="COMMAND"
 ><A
 NAME="WINBINDSEPARATOR"
 ></A
->winbind separator</DT
+>winbind separator (G)</DT
 ><DD
 ><P
 >This parameter allows an admin to define the character 
@@ -18439,21 +18812,21 @@ CLASS="FILENAME"
 		with group membership at least on glibc systems, as the character +
 		is used as a special character for NIS in /etc/group.</P
 ><P
->Example: <B
+>Default: <B
 CLASS="COMMAND"
->winbind separator = \\</B
+>winbind separator = '\'</B
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
->winbind separator = /</B
+>winbind separator = +</B
 ></P
 ></DD
 ><DT
 ><A
 NAME="WINBINDUID"
 ></A
->winbind uid</DT
+>winbind uid (G)</DT
 ><DD
 ><P
 >The winbind gid parameter specifies the range of group 
@@ -18873,7 +19246,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5974"
+NAME="AEN6101"
 ></A
 ><H2
 >WARNINGS</H2
@@ -18903,7 +19276,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5980"
+NAME="AEN6107"
 ></A
 ><H2
 >VERSION</H2
@@ -18914,7 +19287,7 @@ NAME="AEN5980"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5983"
+NAME="AEN6110"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -18993,7 +19366,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6003"
+NAME="AEN6130"
 ></A
 ><H2
 >AUTHOR</H2

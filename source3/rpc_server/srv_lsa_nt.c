@@ -3,8 +3,9 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997.
- *  Copyright (C) Jeremy Allison                    2001.
+ *  Copyright (C) Paul Ashton                       1997,
+ *  Copyright (C) Jeremy Allison                    2001,
+ *  Copyright (C) Rafal Szczesniak                  2002.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -25,7 +26,9 @@
 
 #include "includes.h"
 
-extern DOM_SID global_sam_sid;
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_SRV
+
 extern fstring global_myworkgroup;
 extern pstring global_myname;
 extern PRIVS privs[];
@@ -164,7 +167,7 @@ static void init_lsa_rid2s(DOM_R_REF *ref, DOM_RID2 *rid2,
 		DEBUG(5, ("init_lsa_rid2s: %s\n", status ? "found" : 
 			  "not found"));
 
-		if (status) {
+		if (status && name_type != SID_NAME_UNKNOWN) {
 			sid_split_rid(&sid, &rid);
 			dom_idx = init_dom_ref(ref, dom_name, &sid);
 			(*mapped_count)++;
@@ -258,6 +261,8 @@ static void init_lsa_trans_names(TALLOC_CTX *ctx, DOM_R_REF *ref, LSA_TRANS_NAME
 
 		if (!status) {
 			sid_name_use = SID_NAME_UNKNOWN;
+		} else {
+			(*mapped_count)++;
 		}
 
 		/* Store domain sid in ref array */
@@ -270,8 +275,6 @@ static void init_lsa_trans_names(TALLOC_CTX *ctx, DOM_R_REF *ref, LSA_TRANS_NAME
 
 		DEBUG(10,("init_lsa_trans_names: added user '%s\\%s' to "
 			  "referenced list.\n", dom_name, name ));
-
-		(*mapped_count)++;
 
 		init_lsa_trans_name(&trn->name[total], &trn->uni_name[total],
 					sid_name_use, name, dom_idx);
@@ -319,7 +322,7 @@ static NTSTATUS lsa_get_generic_sd(TALLOC_CTX *mem_ctx, SEC_DESC **sd, size_t *s
 	init_sec_access(&mask, POLICY_EXECUTE);
 	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
 
-	sid_copy(&adm_sid, &global_sam_sid);
+	sid_copy(&adm_sid, get_global_sam_sid());
 	sid_append_rid(&adm_sid, DOMAIN_GROUP_RID_ADMINS);
 	init_sec_access(&mask, POLICY_ALL_ACCESS);
 	init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
@@ -366,7 +369,7 @@ NTSTATUS _lsa_open_policy2(pipes_struct *p, LSA_Q_OPEN_POL2 *q_u, LSA_R_OPEN_POL
 		return NT_STATUS_NO_MEMORY;
 
 	ZERO_STRUCTP(info);
-	info->sid = global_sam_sid;
+	sid_copy(&info->sid,get_global_sam_sid());
 	info->access = acc_granted;
 
 	/* set up the LSA QUERY INFO response */
@@ -404,7 +407,7 @@ NTSTATUS _lsa_open_policy(pipes_struct *p, LSA_Q_OPEN_POL *q_u, LSA_R_OPEN_POL *
 		return NT_STATUS_NO_MEMORY;
 
 	ZERO_STRUCTP(info);
-	info->sid = global_sam_sid;
+	sid_copy(&info->sid,get_global_sam_sid());
 	info->access = acc_granted;
 
 	/* set up the LSA QUERY INFO response */
@@ -416,14 +419,22 @@ NTSTATUS _lsa_open_policy(pipes_struct *p, LSA_Q_OPEN_POL *q_u, LSA_R_OPEN_POL *
 
 /***************************************************************************
  _lsa_enum_trust_dom - this needs fixing to do more than return NULL ! JRA.
+ ufff, done :)  mimir
  ***************************************************************************/
 
 NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_ENUM_TRUST_DOM *r_u)
 {
 	struct lsa_info *info;
-	uint32 enum_context = 0;
-	char *dom_name = NULL;
-	DOM_SID *dom_sid = NULL;
+	uint32 enum_context = q_u->enum_context;
+
+	/*
+	 * preferred length is set to 5 as a "our" preferred length
+	 * nt sets this parameter to 2
+	 */
+	uint32 max_num_domains = q_u->preferred_len < 5 ? q_u->preferred_len : 10;
+	TRUSTDOM **trust_doms;
+	uint32 num_domains;
+	NTSTATUS nt_status;
 
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
@@ -432,9 +443,18 @@ NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_E
 	if (!(info->access & POLICY_VIEW_LOCAL_INFORMATION))
 		return NT_STATUS_ACCESS_DENIED;
 
-	/* set up the LSA QUERY INFO response */
-	init_r_enum_trust_dom(p->mem_ctx, r_u, enum_context, dom_name, dom_sid,
-	      dom_name != NULL ? NT_STATUS_OK : NT_STATUS_NO_MORE_ENTRIES);
+	nt_status = secrets_get_trusted_domains(p->mem_ctx, &enum_context, max_num_domains, &num_domains, &trust_doms);
+
+	if (!NT_STATUS_IS_OK(nt_status) &&
+	    !NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES) &&
+	    !NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_MORE_ENTRIES)) {
+		return nt_status;
+	} else {
+		r_u->status = nt_status;
+	}
+
+	/* set up the lsa_enum_trust_dom response */
+	init_r_enum_trust_dom(p->mem_ctx, r_u, enum_context, max_num_domains, num_domains, trust_doms);
 
 	return r_u->status;
 }
@@ -484,7 +504,7 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 			case ROLE_DOMAIN_PDC:
 			case ROLE_DOMAIN_BDC:
 				name = global_myworkgroup;
-				sid = &global_sam_sid;
+				sid = get_global_sam_sid();
 				break;
 			case ROLE_DOMAIN_MEMBER:
 				name = global_myworkgroup;
@@ -514,15 +534,15 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 			case ROLE_DOMAIN_PDC:
 			case ROLE_DOMAIN_BDC:
 				name = global_myworkgroup;
-				sid = &global_sam_sid;
+				sid = get_global_sam_sid();
 				break;
 			case ROLE_DOMAIN_MEMBER:
 				name = global_myname;
-				sid = &global_sam_sid;
+				sid = get_global_sam_sid();
 				break;
 			case ROLE_STANDALONE:
 				name = global_myname;
-				sid = &global_sam_sid;
+				sid = get_global_sam_sid();
 				break;
 			default:
 				return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;

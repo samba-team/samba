@@ -53,8 +53,8 @@ static void terminate(void)
 	/* Write out wins.dat file if samba is a WINS server */
 	wins_write_database(False);
   
-	/* Remove all SELF registered names. */
-	release_my_names();
+	/* Remove all SELF registered names from WINS */
+	release_wins_names();
   
 	/* Announce all server entries as 0 time-to-live, 0 type. */
 	announce_my_servers_removed();
@@ -78,7 +78,7 @@ static void nmbd_terminate(int msg_type, pid_t src, void *buf, size_t len)
  Catch a SIGTERM signal.
  **************************************************************************** */
 
-static VOLATILE sig_atomic_t got_sig_term;
+static SIG_ATOMIC_T got_sig_term;
 
 static void sig_term(int sig)
 {
@@ -90,7 +90,7 @@ static void sig_term(int sig)
  Catch a SIGHUP signal.
  **************************************************************************** */
 
-static VOLATILE sig_atomic_t reload_after_sighup;
+static SIG_ATOMIC_T reload_after_sighup;
 
 static void sig_hup(int sig)
 {
@@ -291,15 +291,6 @@ static BOOL reload_nmbd_services(BOOL test)
 	if ( !test ) {
 		DEBUG( 3, ( "services not loaded\n" ) );
 		reload_nmbd_services( True );
-	}
-
-	/* Do a sanity check for a misconfigured nmbd */
-	if( lp_wins_support() && wins_srv_count() ) {
-		if( DEBUGLVL(0) ) {
-			dbgtext( "ERROR: 'wins support = true' and 'wins server = <server>'\n" );
-			dbgtext( "are conflicting settings.  nmbd aborting.\n" );
-		}
-		exit(10);
 	}
 
 	return(ret);
@@ -853,7 +844,7 @@ static void usage(char *pname)
 #ifndef SYNC_DNS
   /* Setup the async dns. We do it here so it doesn't have all the other
      stuff initialised and thus chewing memory and sockets */
-  if(lp_we_are_a_wins_server()) {
+  if(lp_we_are_a_wins_server() && lp_dns_proxy()) {
 	  start_async_dns();
   }
 #endif

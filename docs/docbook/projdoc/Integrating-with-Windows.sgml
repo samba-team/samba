@@ -132,7 +132,7 @@ by the TCP/IP configuration control files. The file
 
 <para>
 When the IP address of the destination interface has been 
-determined a protocol called ARP/RARP isused to identify 
+determined a protocol called ARP/RARP is used to identify 
 the MAC address of the target interface. ARP stands for Address 
 Resolution Protocol, and is a broadcast oriented method that 
 uses UDP (User Datagram Protocol) to send a request to all 
@@ -335,7 +335,7 @@ architecture of the MS Windows network. The term "workgroup" indicates
 that the primary nature of the network environment is that of a 
 peer-to-peer design. In a WORKGROUP all machines are responsible for 
 their own security, and generally such security is limited to use of 
-just a password (known as SHARE MORE security). In most situations 
+just a password (known as SHARE MODE security). In most situations 
 with peer-to-peer networking the users who control their own machines 
 will simply opt to have no security at all. It is possible to have 
 USER MODE security in a WORKGROUP environment, thus requiring use 
@@ -366,8 +366,8 @@ limited to this area.
 
 <para>
 All MS Windows machines employ an in memory buffer in which is 
-stored the NetBIOS names and their IP addresses for all external 
-machines that that the local machine has communicated with over the 
+stored the NetBIOS names and IP addresses for all external 
+machines that that machine has communicated with over the 
 past 10-15 minutes. It is more efficient to obtain an IP address 
 for a machine from the local cache than it is to go through all the 
 configured name resolution mechanisms.
@@ -377,7 +377,7 @@ configured name resolution mechanisms.
 If a machine whose name is in the local name cache has been shut 
 down before the name had been expired and flushed from the cache, then 
 an attempt to exchange a message with that machine will be subject 
-to time-out delays. ie: It's name is in the cache, so a name resolution 
+to time-out delays. i.e.: Its name is in the cache, so a name resolution 
 lookup will succeed, but the machine can not respond. This can be 
 frustrating for users - but it is a characteristic of the protocol.
 </para>
@@ -563,7 +563,7 @@ dependable browsing using Samba</title>
 
 <para>
 As stated above, MS Windows machines register their NetBIOS names 
-(ie: the machine name for each service type in operation) on start 
+(i.e.: the machine name for each service type in operation) on start 
 up. Also, as stated above, the exact method by which this name registration 
 takes place is determined by whether or not the MS Windows client/server 
 has been given a WINS server address, whether or not LMHOSTS lookup 
@@ -594,7 +594,7 @@ Instead, the domain master browser serves the role of contacting each local
 master browser (found by asking WINS or from LMHOSTS) and exchanging browse 
 list contents. This way every master browser will eventually obtain a complete 
 list of all machines that are on the network. Every 11-15 minutes an election 
-is held to determine which machine will be the master browser. By nature of 
+is held to determine which machine will be the master browser. By the nature of 
 the election criteria used, the machine with the highest uptime, or the 
 most senior protocol version, or other criteria, will win the election 
 as domain master browser.
@@ -679,8 +679,8 @@ these versions no longer support plain text passwords by default.
 <para>
 MS Windows clients have a habit of dropping network mappings that 
 have been idle for 10 minutes or longer. When the user attempts to 
-use the mapped drive connection that has been dropped the SMB protocol 
-has a mechanism by which the connection can be re-established using 
+use the mapped drive connection that has been dropped, the client
+re-establishes the connection using 
 a cached copy of the password.
 </para>
 
@@ -835,7 +835,7 @@ this HOWTO collection.
 
 <para>
 This mode of authentication demands that there be on the 
-Unix/Linux system both a Unix style account as well as and 
+Unix/Linux system both a Unix style account as well as an 
 smbpasswd entry for the user. The Unix system account can be 
 locked if required as only the encrypted password will be 
 used for SMB client authentication.

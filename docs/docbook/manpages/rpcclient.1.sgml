@@ -26,6 +26,7 @@
 		<arg choice="opt">-U username[%password]</arg>
 		<arg choice="opt">-W workgroup</arg>
 		<arg choice="opt">-N</arg>
+		<arg choice="opt">-I destinationIP</arg>
 		<arg choice="req">server</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
@@ -104,6 +105,23 @@
 		</varlistentry>
 
 
+		<varlistentry>
+		<term>-I IP-address</term>
+		<listitem><para><replaceable>IP address</replaceable> is the address of the server to connect to. 
+		It should be specified in standard "a.b.c.d" notation. </para>
+
+		<para>Normally the client would attempt to locate a named 
+		SMB/CIFS server by looking it up via the NetBIOS name resolution 
+		mechanism described above in the <parameter>name resolve order</parameter> 
+		parameter above. Using this parameter will force the client
+		to assume that the server is on the machine with the specified IP 
+		address and the NetBIOS name component of the resource being 
+		connected to will be ignored. </para>
+
+		<para>There is no default for this parameter. If not supplied, 
+		it will be determined automatically by the client as described 
+		above. </para></listitem>
+		</varlistentry>
 
 		
 		<varlistentry>

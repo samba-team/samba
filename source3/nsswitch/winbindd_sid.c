@@ -21,7 +21,9 @@
 */
 
 #include "winbindd.h"
-#include "sids.h"
+
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_WINBIND
 
 /* Convert a string  */
 

@@ -1,5 +1,6 @@
 *.po
 *.po32
+tdbbackup
 tdbdump
 tdbtest
 tdbtool

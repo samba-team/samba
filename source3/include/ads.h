@@ -7,6 +7,7 @@
 typedef struct {
 	void *ld;
 	char *realm;
+	char *workgroup;
 	char *ldap_server;
 	char *ldap_server_name;
 	char *kdc_server;

@@ -24,8 +24,8 @@
 
 static unsigned char hash[258];
 static uint32 counter;
-unsigned char *reseed_data;
-size_t reseed_data_size;
+static unsigned char *reseed_data;
+static size_t reseed_data_size;
 
 /**************************************************************** 
  Copy any user given reseed data.

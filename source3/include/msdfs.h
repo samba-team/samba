@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 3.0
    MSDfs services for Samba
    Copyright (C) Shirish Kalele 2000
 
@@ -16,6 +17,7 @@
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   
 */
 
 #ifndef _MSDFS_H
@@ -52,26 +54,32 @@ struct junction_map
 
 struct dfs_path
 {
-  pstring hostname;
-  pstring servicename;
-  pstring volumename;
-  pstring restofthepath;
+	pstring hostname;
+	pstring servicename;
+	pstring reqpath;
 };
 
-#define RESOLVE_DFSPATH(name, conn, inbuf, outbuf) \
-{ if(((SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES)) && \
-     dfs_redirect(name,conn)) \
-     return ERROR_NT(NT_STATUS_PATH_NOT_COVERED); }
+#define RESOLVE_DFSPATH(name, conn, inbuf, outbuf)           	\
+{ if ((SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES) &&       	\
+      lp_host_msdfs() && lp_msdfs_root(SNUM(conn)) &&		\
+      dfs_redirect(name,conn,False))				\
+             return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED,	\
+			       ERRSRV, ERRbadpath);; }		
 
-#define RESOLVE_FINDFIRST_DFSPATH(name, conn, inbuf, outbuf) \
-{ if((SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES) || \
-     get_remote_arch()==RA_WIN95) \
-      if(dfs_findfirst_redirect(directory,conn)) \
-	 return ERROR_NT(NT_STATUS_PATH_NOT_COVERED); }
+#define RESOLVE_FINDFIRST_DFSPATH(name, conn, inbuf, outbuf) 		\
+{ if ( (SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES) ||      		\
+       ((get_remote_arch() == RA_WIN95) && lp_msdfs_root(SNUM(conn))) )	\
+	 if (lp_host_msdfs() && dfs_redirect(name,conn,True))       	\
+	         return	ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED,		\
+				   ERRSRV, ERRbadpath);; }          
+
  
-#define init_dfsroot(conn, inbuf, outbuf) \
-{ if(lp_msdfs_root(SNUM(conn)) && lp_host_msdfs())  \
-	SSVAL(outbuf, smb_vwv2, SMB_SHARE_IN_DFS | SMB_SUPPORT_SEARCH_BITS); \
-}
+#define init_dfsroot(conn, inbuf, outbuf)                    	\
+{ if (lp_msdfs_root(SNUM(conn)) && lp_host_msdfs()) {        	\
+        DEBUG(2,("Serving %s as a Dfs root\n", 			\
+		 lp_servicename(SNUM(conn)) )); 		\
+	SSVAL(outbuf, smb_vwv2, SMB_SHARE_IN_DFS 		\
+	      | SVAL(outbuf, smb_vwv2));   			\
+} }
 
 #endif /* _MSDFS_H */

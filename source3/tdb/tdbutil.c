@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include <fnmatch.h>
 
 /* these are little tdb utility functions that are meant to make
    dealing with a tdb database a little less cumbersome in Samba */
@@ -207,6 +208,20 @@ TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, char *keystr)
 }
 
 /****************************************************************************
+ Delete a buffer using a null terminated string key.
+****************************************************************************/
+
+int tdb_delete_by_string(TDB_CONTEXT *tdb, char *keystr)
+{
+	TDB_DATA key;
+
+	key.dptr = keystr;
+	key.dsize = strlen(keystr) + 1;
+
+	return tdb_delete(tdb, key);
+}
+
+/****************************************************************************
  Atomic integer change. Returns old value. To create, set initial value in *oldval. 
 ****************************************************************************/
 
@@ -219,15 +234,22 @@ int32 tdb_change_int32_atomic(TDB_CONTEXT *tdb, char *keystr, int32 *oldval, int
 		return -1;
 
 	if ((val = tdb_fetch_int32(tdb, keystr)) == -1) {
-		if (tdb_error(tdb) != TDB_ERR_NOEXIST)
+		/* The lookup failed */
+		if (tdb_error(tdb) != TDB_ERR_NOEXIST) {
+			/* but not becouse it didn't exist */
 			goto err_out;
-
+		}
+		
+		/* Start with 'old' value */
 		val = *oldval;
 
 	} else {
+		/* It worked, set return value (oldval) to tdb data */
 		*oldval = val;
-		val += change_val;
 	}
+
+	/* Increment value for storage and return next time */
+	val += change_val;
 		
 	if (tdb_store_int32(tdb, keystr, val) == -1)
 		goto err_out;
@@ -253,15 +275,23 @@ BOOL tdb_change_uint32_atomic(TDB_CONTEXT *tdb, char *keystr, uint32 *oldval, ui
 		return False;
 
 	if (!tdb_fetch_uint32(tdb, keystr, &val)) {
-		if (tdb_error(tdb) != TDB_ERR_NOEXIST)
+		/* It failed */
+		if (tdb_error(tdb) != TDB_ERR_NOEXIST) { 
+			/* and not becouse it didn't exist */
 			goto err_out;
+		}
 
+		/* Start with 'old' value */
 		val = *oldval;
 
 	} else {
+		/* it worked, set return value (oldval) to tdb data */
 		*oldval = val;
-		val += change_val;
+
 	}
+
+	/* get a new value to store */
+	val += change_val;
 		
 	if (!tdb_store_uint32(tdb, keystr, val))
 		goto err_out;
@@ -509,3 +539,74 @@ int tdb_traverse_delete_fn(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf,
 {
     return tdb_delete(the_tdb, key);
 }
+
+
+
+/**
+ * Search across the whole tdb for keys that match the given pattern
+ * return the result as a list of keys
+ *
+ * @param tdb pointer to opened tdb file context
+ * @param pattern searching pattern used by fnmatch(3) functions
+ *
+ * @return list of keys found by looking up with given pattern
+ **/
+TDB_LIST_NODE *tdb_search_keys(TDB_CONTEXT *tdb, const char* pattern)
+{
+	TDB_DATA key, next;
+	TDB_LIST_NODE *list = NULL;
+	TDB_LIST_NODE *rec = NULL;
+	TDB_LIST_NODE *tmp = NULL;
+	
+	for (key = tdb_firstkey(tdb); key.dptr; key = next) {
+		/* duplicate key string to ensure null-termination */
+		char *key_str = (char*) strndup(key.dptr, key.dsize);
+		if (!key_str) {
+			DEBUG(0, ("tdb_search_keys: strndup() failed!\n"));
+			smb_panic("strndup failed!\n");
+		}
+		
+		DEBUG(18, ("checking %s for match to pattern %s\n", key_str, pattern));
+		
+		next = tdb_nextkey(tdb, key);
+
+		/* do the pattern checking */
+		if (fnmatch(pattern, key_str, 0) == 0) {
+			rec = (TDB_LIST_NODE*) malloc(sizeof(*rec));
+			ZERO_STRUCTP(rec);
+
+			rec->node_key = key;
+	
+			DLIST_ADD_END(list, rec, tmp);
+		
+			DEBUG(18, ("checking %s matched pattern %s\n", key_str, pattern));
+		} else {
+			free(key.dptr);
+		}
+		
+		/* free duplicated key string */
+		free(key_str);
+	}
+	
+	return list;
+
+};
+
+
+/**
+ * Free the list returned by tdb_search_keys
+ *
+ * @param node list of results found by tdb_search_keys
+ **/
+void tdb_search_list_free(TDB_LIST_NODE* node)
+{
+	TDB_LIST_NODE *next_node;
+	
+	while (node) {
+		next_node = node->next;
+		SAFE_FREE(node);
+		node = next_node;
+	};
+};
+
+

@@ -120,7 +120,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
-	ads = ads_init(NULL, NULL, NULL, NULL);
+	ads = ads_init_simple();
 
 	ret = ads_verify_ticket(ads, &ticket, &client, &auth_data);
 	if (!NT_STATUS_IS_OK(ret)) {
@@ -235,11 +235,12 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	char *OIDs[ASN1_MAX_OIDS];
 	DATA_BLOB secblob;
 	int i;
-	uint32 ntlmssp_command, neg_flags;
-	DATA_BLOB sess_key, chal, spnego_chal;
+	uint32 ntlmssp_command, neg_flags, chal_flags;
+	DATA_BLOB chal, spnego_chal, extra_data;
 	const uint8 *cryptkey;
 	BOOL got_kerberos = False;
 	NTSTATUS nt_status;
+	extern pstring global_myname;
 
 	/* parse out the OIDs and the first sec blob */
 	if (!parse_negTokenTarg(blob1, OIDs, &secblob)) {
@@ -274,18 +275,23 @@ static int reply_spnego_negotiate(connection_struct *conn,
 			 "NTLMSSP",
 			 &ntlmssp_command,
 			 &neg_flags,
-			 &sess_key)) {
+			 &extra_data)) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
+       
+	DEBUG(5, ("Extra data: \n"));
+	dump_data(5, extra_data.data, extra_data.length);
 
 	data_blob_free(&secblob);
-	data_blob_free(&sess_key);
+	data_blob_free(&extra_data);
 
 	if (ntlmssp_command != NTLMSSP_NEGOTIATE) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
-	DEBUG(3,("Got neg_flags=%08x\n", neg_flags));
+	DEBUG(3,("Got neg_flags=0x%08x\n", neg_flags));
+
+	debug_ntlmssp_flags(neg_flags);
 
 	if (ntlmssp_auth_context) {
 		(ntlmssp_auth_context->free)(&ntlmssp_auth_context);
@@ -300,22 +306,47 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	/* Give them the challenge. For now, ignore neg_flags and just
 	   return the flags we want. Obviously this is not correct */
 	
-	neg_flags = NTLMSSP_NEGOTIATE_UNICODE | 
+	chal_flags = NTLMSSP_NEGOTIATE_UNICODE | 
 		NTLMSSP_NEGOTIATE_LM_KEY | 
-		NTLMSSP_NEGOTIATE_NTLM;
+		NTLMSSP_NEGOTIATE_NTLM |
+		NTLMSSP_CHAL_TARGET_INFO;
+	
+	{
+		DATA_BLOB domain_blob, netbios_blob, realm_blob;
+		
+		msrpc_gen(&domain_blob, 
+			  "U",
+			  lp_workgroup());
 
-	msrpc_gen(&chal, "Cddddbdddd",
-		  "NTLMSSP", 
-		  NTLMSSP_CHALLENGE,
-		  0,
-		  0x30, /* ?? */
-		  neg_flags,
-		  cryptkey, 8,
-		  0, 0, 0,
-		  0x3000); /* ?? */
+		msrpc_gen(&netbios_blob, 
+			  "U",
+			  global_myname);
+		
+		msrpc_gen(&realm_blob, 
+			  "U",
+			  lp_realm());
+		
+
+		msrpc_gen(&chal, "CddddbBBBB",
+			  "NTLMSSP", 
+			  NTLMSSP_CHALLENGE,
+			  0,
+			  0x30, /* ?? */
+			  chal_flags,
+			  cryptkey, 8,
+			  domain_blob.data, domain_blob.length,
+			  domain_blob.data, domain_blob.length,
+			  netbios_blob.data, netbios_blob.length,
+			  realm_blob.data, realm_blob.length);
+
+		data_blob_free(&domain_blob);
+		data_blob_free(&netbios_blob);
+		data_blob_free(&realm_blob);
+	}
 
 	if (!spnego_gen_challenge(&spnego_chal, &chal, &chal)) {
 		DEBUG(3,("Failed to generate challenge\n"));
+		data_blob_free(&chal);
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
@@ -346,9 +377,14 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 	int sess_vuid;
 	BOOL as_guest;
 	uint32 auth_flags = AUTH_FLAG_NONE;
-
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
+
+	/* we must have setup the auth context by now */
+	if (!ntlmssp_auth_context) {
+		DEBUG(2,("ntlmssp_auth_context is NULL in reply_spnego_auth\n"));
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
 
 	if (!spnego_parse_auth(blob1, &auth)) {
 #if 0
@@ -606,7 +642,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			plaintext_password.data[passlen1] = 0;
 		}
 
-		srvstr_pull(inbuf, user, smb_buf(inbuf)+passlen1, sizeof(user), -1, STR_TERMINATE);
+		srvstr_pull_buf(inbuf, user, smb_buf(inbuf)+passlen1, sizeof(user), STR_TERMINATE);
 		*domain = 0;
   
 	} else {
@@ -669,14 +705,10 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		}
 		
 		p += passlen1 + passlen2;
-		p += srvstr_pull(inbuf, user, p, sizeof(user), -1,
-				 STR_TERMINATE);
-		p += srvstr_pull(inbuf, domain, p, sizeof(domain), 
-				 -1, STR_TERMINATE);
-		p += srvstr_pull(inbuf, native_os, p, sizeof(native_os), 
-				 -1, STR_TERMINATE);
-		p += srvstr_pull(inbuf, native_lanman, p, sizeof(native_lanman),
-				 -1, STR_TERMINATE);
+		p += srvstr_pull_buf(inbuf, user, p, sizeof(user), STR_TERMINATE);
+		p += srvstr_pull_buf(inbuf, domain, p, sizeof(domain), STR_TERMINATE);
+		p += srvstr_pull_buf(inbuf, native_os, p, sizeof(native_os), STR_TERMINATE);
+		p += srvstr_pull_buf(inbuf, native_lanman, p, sizeof(native_lanman), STR_TERMINATE);
 		DEBUG(3,("Domain=[%s]  NativeOS=[%s] NativeLanMan=[%s]\n",
 			 domain,native_os,native_lanman));
 	}

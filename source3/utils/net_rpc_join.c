@@ -53,7 +53,6 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	/* libsmb variables */
 
 	struct cli_state *cli;
-	fstring acct_name;
 	TALLOC_CTX *mem_ctx;
         uint32 acb_info;
 
@@ -81,7 +80,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	fstring domain;
 	uint32 num_rids, *name_types, *user_rids;
 	uint32 flags = 0x3e8;
-	char *names;
+	const char *acct_name;
 	
 	/* Connect to remote machine */
 
@@ -132,8 +131,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 		      "could not open domain");
 
 	/* Create domain user */
-	fstrcpy(acct_name, global_myname);
-	fstrcat(acct_name, "$");
+	acct_name = talloc_asprintf(mem_ctx, "%s$", global_myname); 
 	strlower(acct_name);
 
         acb_info = ((lp_server_role() == ROLE_DOMAIN_BDC) || lp_server_role() == ROLE_DOMAIN_PDC) ? ACB_SVRTRUST : ACB_WSTRUST;
@@ -162,11 +160,9 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	if (NT_STATUS_IS_OK(result))
 		cli_samr_close(cli, mem_ctx, &user_pol);
 
-	names = (char *)&acct_name[0];
-
 	CHECK_RPC_ERR_DEBUG(cli_samr_lookup_names(cli, mem_ctx,
 						  &domain_pol, flags,
-						  1, &names, &num_rids,
+						  1, &acct_name, &num_rids,
 						  &user_rids, &name_types),
 			    ("error looking up rid for user %s: %s\n",
 			     acct_name, nt_errstr(result)));

@@ -20,6 +20,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 /****************************************************************************
  Read the a hosts.equiv or .rhosts file and check if it
  allows this user from this machine.
@@ -176,14 +179,14 @@ static NTSTATUS check_hostsequiv_security(const struct auth_context *auth_contex
 }
 
 /* module initialisation */
-BOOL auth_init_hostsequiv(struct auth_context *auth_context, auth_methods **auth_method) 
+NTSTATUS auth_init_hostsequiv(struct auth_context *auth_context, const char* param, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method)) {
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	(*auth_method)->auth = check_hostsequiv_security;
-	return True;
+	return NT_STATUS_OK;
 }
 
 
@@ -220,12 +223,12 @@ static NTSTATUS check_rhosts_security(const struct auth_context *auth_context,
 }
 
 /* module initialisation */
-BOOL auth_init_rhosts(struct auth_context *auth_context, auth_methods **auth_method) 
+NTSTATUS auth_init_rhosts(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method)) {
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	(*auth_method)->auth = check_rhosts_security;
-	return True;
+	return NT_STATUS_OK;
 }

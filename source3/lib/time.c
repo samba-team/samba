@@ -44,11 +44,6 @@ int extra_time_offset = 0;
  External access to time_t_min and time_t_max.
 ********************************************************************/
 
-time_t get_time_t_min(void)
-{
-	return TIME_T_MIN;
-}
-
 time_t get_time_t_max(void)
 {
 	return TIME_T_MAX;
@@ -413,7 +408,7 @@ void unix_to_nt_time(NTTIME *nt, time_t t)
 	}		
 
 	/* this converts GMT to kludge-GMT */
-	t -= LocTimeDiff(t) - get_serverzone(); 
+	t -= TimeDiff(t) - get_serverzone(); 
 
 	d = (double)(t);
 	d += TIME_FIXUP_CONSTANT;

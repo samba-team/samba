@@ -25,6 +25,9 @@
 #include "rpc_parse.h"
 #include "nterr.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_CLI
+
 /****************************************************************************
 do a SPOOLSS Enum Printer Drivers
 ****************************************************************************/

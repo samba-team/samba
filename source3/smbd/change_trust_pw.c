@@ -35,7 +35,6 @@ static NTSTATUS modify_trust_password( char *domain, char *remote_machine,
 {
   struct cli_state *cli;
   DOM_SID domain_sid;
-  struct in_addr dest_ip;
   NTSTATUS nt_status;
 
   /*
@@ -43,17 +42,12 @@ static NTSTATUS modify_trust_password( char *domain, char *remote_machine,
    */
 
   if (!secrets_fetch_domain_sid(domain, &domain_sid)) {
-    DEBUG(0, ("domain_client_validate: unable to fetch domain sid.\n"));
+    DEBUG(0, ("modify_trust_password: unable to fetch domain sid.\n"));
     return NT_STATUS_UNSUCCESSFUL;
   }
 
-  if(!resolve_name( remote_machine, &dest_ip, 0x20)) {
-	  DEBUG(0,("modify_trust_password: Can't resolve address for %s\n", remote_machine));
-	  return NT_STATUS_UNSUCCESSFUL;
-  }
-  
   if (!NT_STATUS_IS_OK(cli_full_connection(&cli, global_myname, remote_machine, 
-					   &dest_ip, 0,
+					   NULL, 0,
 					   "IPC$", "IPC",  
 					   "", "",
 					   "", 0))) {

@@ -39,6 +39,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_SRV
+
 static void NTLMSSPcalc_p( pipes_struct *p, unsigned char *data, int len)
 {
     unsigned char *hash = p->ntlmssp_hash;
@@ -432,7 +435,7 @@ failed authentication on named pipe %s.\n", domain, user_name, wks, p->name ));
 
 	/* Set up pipe user group membership. */
 	initialise_groups(p->pipe_user_name, p->pipe_user.uid, p->pipe_user.gid);
-	get_current_groups( &p->pipe_user.ngroups, &p->pipe_user.groups);
+	get_current_groups(p->pipe_user.gid, &p->pipe_user.ngroups, &p->pipe_user.groups);
 
 	if (server_info->ptok)
 		add_supplementary_nt_login_groups(&p->pipe_user.ngroups, &p->pipe_user.groups, &server_info->ptok);
@@ -1148,7 +1151,7 @@ BOOL api_pipe_request(pipes_struct *p)
  ********************************************************************/
 
 BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, 
-		struct api_struct *api_rpc_cmds)
+		const struct api_struct *api_rpc_cmds)
 {
 	int fn_num;
 	fstring name;

@@ -147,7 +147,7 @@ ssize_t vfswrap_read(files_struct *fsp, int fd, void *data, size_t n)
     ssize_t result;
 
     START_PROFILE_BYTES(syscall_read, n);
-    result = read(fd, data, n);
+    result = sys_read(fd, data, n);
     END_PROFILE(syscall_read);
     return result;
 }
@@ -157,7 +157,7 @@ ssize_t vfswrap_write(files_struct *fsp, int fd, const void *data, size_t n)
     ssize_t result;
 
     START_PROFILE_BYTES(syscall_write, n);
-    result = write(fd, data, n);
+    result = sys_write(fd, data, n);
     END_PROFILE(syscall_write);
     return result;
 }

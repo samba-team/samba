@@ -36,12 +36,15 @@ int d_vfprintf(FILE *f, const char *format, va_list ap)
 	char *p, *p2;
 	int ret, maxlen, clen;
 	const char *msgstr;
+	va_list ap2;
 
 	/* do any message translations */
 	msgstr = lang_msg(format);
 	if (!msgstr) return -1;
 
-	ret = vasprintf(&p, msgstr, ap);
+	VA_COPY(ap2, ap);
+
+	ret = vasprintf(&p, msgstr, ap2);
 
 	lang_msg_free(msgstr);
 

@@ -117,7 +117,7 @@ test_smbpasswd_local() {
 
 test_listfilesauth() {
 	remote_name="$1"
-	echo $prefix/bin/smbclient//$remote_name/samba  -n buildclient -U$whoami%$password -c 'ls'
+	echo $prefix/bin/smbclient //$remote_name/samba  -n buildclient -U$whoami%$password -c 'ls'
 	$prefix/bin/smbclient //$remote_name/samba  -n buildclient -U$whoami%$password -c 'ls'
 	status=$?
 	if [ $status = 0 ]; then

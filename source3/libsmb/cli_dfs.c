@@ -20,14 +20,6 @@
 
 #include "includes.h"
 
-/* Opens a SMB connection to the netdfs pipe */
-
-struct cli_state *cli_dfs_initialise(struct cli_state *cli, char *system_name,
-				     struct ntuser_creds *creds)
-{
-        return cli_pipe_initialise(cli, system_name, PIPE_NETDFS, creds);
-}
-
 /* Query DFS support */
 
 NTSTATUS cli_dfs_exist(struct cli_state *cli, TALLOC_CTX *mem_ctx,

@@ -33,7 +33,7 @@ EOF
 
 	if [ ! -z "$PKG_INSTALL_ROOT" ]
 	then
-		CAT <<EOF
+		cat <<EOF
 The SWAT settings will not take effect till you send a hangup (HUP) signal 
 to inetd on the target system.
 

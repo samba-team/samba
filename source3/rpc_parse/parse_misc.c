@@ -22,6 +22,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_PARSE
+
 /****************************************************************************
  A temporary TALLOC context for things like unistrs, that is valid for
  the life of a complete RPC call.
@@ -211,9 +214,6 @@ BOOL smb_io_dom_sid(char *desc, DOM_SID *sid, prs_struct *ps, int depth)
 	prs_debug(ps, depth, desc, "smb_io_dom_sid");
 	depth++;
 
-	if(!prs_align(ps))
-		return False;
-	
 	if(!prs_uint8 ("sid_rev_num", ps, depth, &sid->sid_rev_num))
 		return False;
 	if(!prs_uint8 ("num_auths  ", ps, depth, &sid->num_auths))
@@ -551,8 +551,6 @@ BOOL smb_io_unistr(char *desc, UNISTR *uni, prs_struct *ps, int depth)
 	prs_debug(ps, depth, desc, "smb_io_unistr");
 	depth++;
 
-	if(!prs_align(ps))
-		return False;
 	if(!prs_unistr("unistr", ps, depth, uni))
 		return False;
 
@@ -914,6 +912,51 @@ void init_unistr2(UNISTR2 *str, const char *buf, size_t len)
 		return;
 
 	rpcstr_push((char *)str->buffer, buf, len, STR_TERMINATE);
+}
+
+/** 
+ *  Inits a UNISTR2 structure.
+ *  @param  ctx talloc context to allocate string on
+ *  @param  str pointer to string to create
+ *  @param  buf UCS2 null-terminated buffer to init from
+*/
+
+void init_unistr2_w(TALLOC_CTX *ctx, UNISTR2 *str, const smb_ucs2_t *buf)
+{
+	uint32 len = strlen_w(buf);
+	uint32 max_len = len;
+	uint32 alloc_len;
+
+	ZERO_STRUCTP(str);
+
+	/* set up string lengths. */
+	str->uni_max_len = len;
+	str->undoc       = 0;
+	str->uni_str_len = len;
+
+	if (max_len < MAX_UNISTRLEN)
+		max_len = MAX_UNISTRLEN;
+
+	alloc_len = (max_len + 1) * sizeof(uint16);
+
+	str->buffer = (uint16 *)talloc_zero(ctx, alloc_len);
+	if ((str->buffer == NULL) && (alloc_len > 0))
+	{
+		smb_panic("init_unistr2_w: malloc fail\n");
+		return;
+	}
+	
+	/*
+	 * don't move this test above ! The UNISTR2 must be initialized !!!
+	 * jfm, 7/7/2001.
+	 */
+	if (buf==NULL)
+		return;
+	
+	/* Yes, this is a strncpy( foo, bar, strlen(bar)) - but as
+           long as the buffer above is talloc()ed correctly then this
+           is the correct thing to do */
+	strncpy_w(str->buffer, buf, len + 1);
 }
 
 /*******************************************************************

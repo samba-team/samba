@@ -22,50 +22,6 @@
 
 #include "includes.h"
 
-struct passwd *make_modifyable_passwd(const struct passwd *from)
-{
-	struct passwd *ret = smb_xmalloc(sizeof(*ret));
-/*  This is the assumed shape of the members by certain parts of the code...
-	fstring 	pw_name;
-	fstring 	pw_passwd;
-	fstring		pw_gecos;
-	pstring		pw_dir;
-	pstring		pw_shell;
-*/
-	char *pw_name = smb_xmalloc(sizeof(fstring));
-	char *pw_passwd = smb_xmalloc(sizeof(fstring));
-	char *pw_gecos = smb_xmalloc(sizeof(fstring));
-	char *pw_dir = smb_xmalloc(sizeof(pstring));
-	char *pw_shell = smb_xmalloc(sizeof(pstring));
-
-	ZERO_STRUCTP(ret);
-
-	/* 
-	 * Now point the struct's members as the 
-	 * newly allocated buffers:
-	 */
-
-	ret->pw_name = pw_name;
-	fstrcpy(ret->pw_name, from->pw_name);
-
-	ret->pw_passwd = pw_passwd;
-	fstrcpy(ret->pw_passwd, from->pw_passwd);
-
-	ret->pw_uid = from->pw_uid;
-	ret->pw_gid = from->pw_gid;
-
-	ret->pw_gecos = pw_gecos;
-	fstrcpy(ret->pw_gecos, from->pw_gecos);
-
-	ret->pw_dir = pw_dir;
-	pstrcpy(ret->pw_dir, from->pw_dir);
-
-	ret->pw_shell = pw_shell;
-	pstrcpy(ret->pw_shell, from->pw_shell);
-
-	return ret;
-}
-
 static struct passwd *alloc_copy_passwd(const struct passwd *from) 
 {
 	struct passwd *ret = smb_xmalloc(sizeof(struct passwd));
@@ -100,7 +56,7 @@ struct passwd *getpwnam_alloc(const char *name)
 {
 	struct passwd *temp;
 
-	temp = getpwnam(name);
+	temp = sys_getpwnam(name);
 	
 	if (!temp) {
 #if 0
@@ -118,7 +74,7 @@ struct passwd *getpwuid_alloc(uid_t uid)
 {
 	struct passwd *temp;
 
-	temp = getpwuid(uid);
+	temp = sys_getpwuid(uid);
 	
 	if (!temp) {
 #if 0

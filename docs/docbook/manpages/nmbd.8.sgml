@@ -177,13 +177,14 @@
 		<listitem><para>The -l parameter specifies a directory 
 		into which the "log.nmbd" log file will be created
 		for operational data from the running
-		<command>nmbd</command> server.</para>
-
-		<para>The default log directory is compiled into Samba
+		<command>nmbd</command> server. The default log directory is compiled into Samba
 		as part of the build process. Common defaults are <filename>
 		/usr/local/samba/var/log.nmb</filename>, <filename>
 		/usr/samba/var/log.nmb</filename> or
-		<filename>/var/log/log.nmb</filename>.</para></listitem>
+		<filename>/var/log/log.nmb</filename>.  <emphasis>Beware:</emphasis>
+                If the directory specified does not exist, <command>nmbd</command>
+                will log to the default debug log location defined at compile time.
+		</para></listitem>
 		</varlistentry>
 		
 		
@@ -198,25 +199,25 @@
 		<filename>smb.conf</filename>.</para></listitem>
 		</varlistentry>
 
-		
+
 		<varlistentry>
 		<term>-p &lt;UDP port number&gt;</term>
 		<listitem><para>UDP port number is a positive integer value.
-		This option changes the default UDP port number (normally 137) 
-		that <command>nmbd</command> responds to name queries on. Don't 
-		use this option unless you are an expert, in which case you 
+		This option changes the default UDP port number (normally 137)
+		that <command>nmbd</command> responds to name queries on. Don't
+		use this option unless you are an expert, in which case you
 		won't need help!</para></listitem>
 		</varlistentry>
-		
+
 		<varlistentry>
 		<term>-s &lt;configuration file&gt;</term>
-		<listitem><para>The default configuration file name 
+		<listitem><para>The default configuration file name
 		is set at build time, typically as <filename>
 		/usr/local/samba/lib/smb.conf</filename>, but
 		this may be changed when Samba is autoconfigured.</para>
 
-		<para>The file specified contains the configuration details 
-		required by the server. See <ulink url="smb.conf.5.html"> 
+		<para>The file specified contains the configuration details
+		required by the server. See <ulink url="smb.conf.5.html">
 		<filename>smb.conf(5)</filename></ulink> for more information.
 		</para></listitem>
 		</varlistentry>
@@ -229,55 +230,55 @@
 	<variablelist>
 		<varlistentry>
 		<term><filename>/etc/inetd.conf</filename></term>
-		<listitem><para>If the server is to be run by the 
-		<command>inetd</command> meta-daemon, this file 
-		must contain suitable startup information for the 
+		<listitem><para>If the server is to be run by the
+		<command>inetd</command> meta-daemon, this file
+		must contain suitable startup information for the
 		meta-daemon. See the <ulink
 		url="UNIX_INSTALL.html">UNIX_INSTALL.html</ulink> document
 		for details.
 		</para></listitem>
 		</varlistentry>
-		
+
 		<varlistentry>
 		<term><filename>/etc/rc</filename></term>
-		<listitem><para>or whatever initialization script your 
+		<listitem><para>or whatever initialization script your
 		system uses).</para>
 
-		<para>If running the server as a daemon at startup, 
-		this file will need to contain an appropriate startup 
+		<para>If running the server as a daemon at startup,
+		this file will need to contain an appropriate startup
 		sequence for the server. See the <ulink
 		url="UNIX_INSTALL.html">UNIX_INSTALL.html</ulink> document
 		for details.</para></listitem>
 		</varlistentry>
-		
+
 		<varlistentry>
 		<term><filename>/etc/services</filename></term>
-		<listitem><para>If running the server via the 
-		meta-daemon <command>inetd</command>, this file 
-		must contain a mapping of service name (e.g., netbios-ssn) 
-		to service port (e.g., 139) and protocol type (e.g., tcp). 
+		<listitem><para>If running the server via the
+		meta-daemon <command>inetd</command>, this file
+		must contain a mapping of service name (e.g., netbios-ssn)
+		to service port (e.g., 139) and protocol type (e.g., tcp).
 		See the <ulink url="UNIX_INSTALL.html">UNIX_INSTALL.html</ulink>
 		document for details.</para></listitem>
 		</varlistentry>
-		
+
 		<varlistentry>
 		<term><filename>/usr/local/samba/lib/smb.conf</filename></term>
-		<listitem><para>This is the default location of the 
+		<listitem><para>This is the default location of the
 		<ulink url="smb.conf.5.html"><filename>smb.conf</filename></ulink>
-		server configuration file. Other common places that systems 
-		install this file are <filename>/usr/samba/lib/smb.conf</filename> 
+		server configuration file. Other common places that systems
+		install this file are <filename>/usr/samba/lib/smb.conf</filename>
 		and <filename>/etc/smb.conf</filename>.</para>
-		
-		<para>When run as a WINS server (see the 
+
+		<para>When run as a WINS server (see the
 		<ulink url="smb.conf.5.html#WINSSUPPORT">wins support</ulink>
 		parameter in the <filename>smb.conf(5)</filename> man page),
 		<command>nmbd</command>
-		will store the WINS database in the file <filename>wins.dat</filename> 
-		in the <filename>var/locks</filename> directory configured under 
+		will store the WINS database in the file <filename>wins.dat</filename>
+		in the <filename>var/locks</filename> directory configured under
 		wherever Samba was configured to install itself.</para>
 
 		<para>If <command>nmbd</command> is acting as a <emphasis>
-		browse master</emphasis> (see the <ulink 
+		browse master</emphasis> (see the <ulink
 		url="smb.conf.5.html#LOCALMASTER">local master</ulink>
 		parameter in the <filename>smb.conf(5)</filename> man page,
 		<command>nmbd</command>
@@ -292,20 +293,20 @@
 <refsect1>
 	<title>SIGNALS</title>
 
-	<para>To shut down an <command>nmbd</command> process it is recommended 
-	that SIGKILL (-9) <emphasis>NOT</emphasis> be used, except as a last 
-	resort, as this may leave the name database in an inconsistent state. 
-	The correct way to terminate <command>nmbd</command> is to send it 
+	<para>To shut down an <command>nmbd</command> process it is recommended
+	that SIGKILL (-9) <emphasis>NOT</emphasis> be used, except as a last
+	resort, as this may leave the name database in an inconsistent state.
+	The correct way to terminate <command>nmbd</command> is to send it
 	a SIGTERM (-15) signal and wait for it to die on its own.</para>
 
-	<para><command>nmbd</command> will accept SIGHUP, which will cause 
+	<para><command>nmbd</command> will accept SIGHUP, which will cause
 	it to dump out its namelists into the file <filename>namelist.debug
-	</filename> in the <filename>/usr/local/samba/var/locks</filename> 
-	directory (or the <filename>var/locks</filename> directory configured 
-	under wherever Samba was configured to install itself). This will also 
+	</filename> in the <filename>/usr/local/samba/var/locks</filename>
+	directory (or the <filename>var/locks</filename> directory configured
+	under wherever Samba was configured to install itself). This will also
 	cause <command>nmbd</command> to dump out its server database in
 	the <filename>log.nmb</filename> file.</para>
-	
+
 	<para>The debug log level of nmbd may be raised or lowered using
 	<ulink url="smbcontrol.1.html"><command>smbcontrol(1)</command>
 	</ulink> (SIGUSR[1|2] signals are no longer used in Samba 2.2). This is

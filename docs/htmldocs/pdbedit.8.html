@@ -36,12 +36,12 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >pdbedit</B
->  [-l] [-v] [-w] [-u username] [-f fullname] [-h homedir] [-d drive] [-s script] [-p profile] [-a] [-m] [-x] [-i file]</P
+>  [-l] [-v] [-w] [-u username] [-f fullname] [-h homedir] [-d drive] [-s script] [-p profile] [-a] [-m] [-x] [-i passdb-backend] [-e passdb-backend] [-D debuglevel]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN24"
+NAME="AEN26"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -67,7 +67,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN31"
+NAME="AEN33"
 ></A
 ><H2
 >OPTIONS</H2
@@ -337,21 +337,32 @@ CLASS="COMMAND"
 ></P
 ></DD
 ><DT
->-i file</DT
+>-i passdb-backend</DT
 ><DD
 ><P
->This command is used to import a smbpasswd
-		file into the database.</P
+>Use a different passdb backend to retrieve users than the one specified in smb.conf.</P
 ><P
->This option will ease migration from the plain smbpasswd
-		file database to more powerful backend databases like tdb and
-		ldap.</P
+>This option will ease migration from one passdb backend to another.
+		</P
 ><P
 >Example: <B
 CLASS="COMMAND"
->pdbedit -i /etc/smbpasswd.old</B
+>pdbedit -i smbpasswd:/etc/smbpasswd.old -e tdbsam:/etc/samba/passwd.tdb</B
 >
 		</P
+></DD
+><DT
+>-e passdb-backend</DT
+><DD
+><P
+>Export all currently available users to the specified password database backend.</P
+><P
+>This option will ease migration from one passdb backend to another and will ease backupping</P
+><P
+>Example: <B
+CLASS="COMMAND"
+>pdbedit -e smbpasswd:/root/samba-users.backup</B
+></P
 ></DD
 ></DL
 ></DIV
@@ -359,7 +370,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN124"
+NAME="AEN133"
 ></A
 ><H2
 >NOTES</H2
@@ -369,7 +380,7 @@ NAME="AEN124"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN127"
+NAME="AEN136"
 ></A
 ><H2
 >VERSION</H2
@@ -380,7 +391,7 @@ NAME="AEN127"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN130"
+NAME="AEN139"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -400,7 +411,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN135"
+NAME="AEN144"
 ></A
 ><H2
 >AUTHOR</H2

@@ -23,6 +23,9 @@
 
 #include "winbindd.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_WINBIND
+
 /* Use our own create socket code so we don't recurse.... */
 
 static int wins_lookup_open_socket_in(void)
@@ -84,25 +87,18 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 {
 	int fd;
 	struct in_addr *ret = NULL;
-	struct in_addr  p;
-	int j;
+	int j, flags = 0;
 
 	*count = 0;
 
-	fd = wins_lookup_open_socket_in();
-	if (fd == -1)
-		return NULL;
-
-	p = wins_srv_ip();
-	if( !is_zero_ip(p) ) {
-		ret = name_query(fd,name,0x20,False,True, p, count);
-		goto out;
+	/* always try with wins first */
+	if (resolve_wins(name,0x20,&ret,count)) {
+		return ret;
 	}
 
-	if (lp_wins_support()) {
-		/* we are our own WINS server */
-		ret = name_query(fd,name,0x20,False,True, *interpret_addr2("127.0.0.1"), count);
-		goto out;
+	fd = wins_lookup_open_socket_in();
+	if (fd == -1) {
+		return NULL;
 	}
 
 	/* uggh, we have to broadcast to each interface in turn */
@@ -110,11 +106,9 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 	     j >= 0;
 	     j--) {
 		struct in_addr *bcast = iface_n_bcast(j);
-		ret = name_query(fd,name,0x20,True,True,*bcast,count);
+		ret = name_query(fd,name,0x20,True,True,*bcast,count, &flags, NULL);
 		if (ret) break;
 	}
-
- out:
 
 	close(fd);
 	return ret;

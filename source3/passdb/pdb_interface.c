@@ -1,24 +1,28 @@
 /* 
    Unix SMB/CIFS implementation.
    Password and authentication handling
-   Copyright (C) Andrew Bartlett		    2002
-      
+   Copyright (C) Andrew Bartlett			2002
+   Copyright (C) Jelmer Vernooij			2002
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
 #include "includes.h"
+
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_PASSDB
 
 /** List of various built-in passdb modules */
 
@@ -29,102 +33,199 @@ const struct pdb_init_function_entry builtin_pdb_init_functions[] = {
 	{ "tdbsam_nua", pdb_init_tdbsam_nua },
 	{ "ldapsam", pdb_init_ldapsam },
 	{ "ldapsam_nua", pdb_init_ldapsam_nua },
-#if 0
-	{ "nisplus", pdb_init_nisplus },	
-	{ "unix", pdb_init_unix },
-#endif
+	{ "unixsam", pdb_init_unixsam },
 	{ "plugin", pdb_init_plugin },
 	{ NULL, NULL}
 };
 
 static BOOL context_setsampwent(struct pdb_context *context, BOOL update)
 {
-	if ((!context) || (!context->pdb_selected)) {
+	if ((!context) || (!context->pdb_methods) || (!context->pdb_methods->setsampwent)) {
 		DEBUG(0, ("invalid pdb_context specified!\n"));
 		return False;
 	}
-	
-	return context->pdb_selected->setsampwent(context, update);
+
+	context->pwent_methods = context->pdb_methods;
+
+	if (!context->pwent_methods) {
+		/* No passdbs at all */
+		return True;
+	}
+
+	while (!(context->pwent_methods->setsampwent(context->pwent_methods, update))) {
+		context->pwent_methods = context->pwent_methods->next;
+		if (context->pwent_methods == NULL) 
+			return False;
+	}
+	return True;
 }
 
 static void context_endsampwent(struct pdb_context *context)
 {
-	if ((!context) || (!context->pdb_selected)) {
+	if ((!context)){
 		DEBUG(0, ("invalid pdb_context specified!\n"));
 		return;
 	}
-	
-	context->pdb_selected->endsampwent(context);
+
+	if (context->pwent_methods && context->pwent_methods->endsampwent)
+		context->pwent_methods->endsampwent(context->pwent_methods);
+
+	/* So we won't get strange data when calling getsampwent now */
+	context->pwent_methods = NULL;
 }
 
 static BOOL context_getsampwent(struct pdb_context *context, SAM_ACCOUNT *user)
 {
-	if ((!context) || (!context->pdb_selected)) {
+	if ((!context) || (!context->pwent_methods)) {
 		DEBUG(0, ("invalid pdb_context specified!\n"));
 		return False;
 	}
+	/* Loop until we find something useful */
+	while ((!context->pwent_methods->getsampwent) || 
+		  context->pwent_methods->getsampwent(context->pwent_methods, user) == False){
+
+		if (context->pwent_methods->endsampwent)
+			context->pwent_methods->endsampwent(context->pwent_methods);
+
+		context->pwent_methods = context->pwent_methods->next;
+
+		/* All methods are checked now. There are no more entries */
+		if (context->pwent_methods == NULL)
+			return False;
 	
-	return context->pdb_selected->getsampwent(context, user);
+		if (!context->pwent_methods->setsampwent){
+			DEBUG(5, ("next backend does not implment setsampwent\n"));
+			return False;
+		}
+
+		context->pwent_methods->setsampwent(context->pwent_methods, False);
+	}
+	user->methods = context->pwent_methods;
+	return True;
 }
 
 static BOOL context_getsampwnam(struct pdb_context *context, SAM_ACCOUNT *sam_acct, const char *username)
 {
-	if ((!context) || (!context->pdb_selected)) {
+	struct pdb_methods *curmethods;
+	if ((!context)) {
 		DEBUG(0, ("invalid pdb_context specified!\n"));
 		return False;
 	}
-	
-	return context->pdb_selected->getsampwnam(context, sam_acct, username);
+	curmethods = context->pdb_methods;
+	while (curmethods){
+		if (curmethods->getsampwnam && curmethods->getsampwnam(curmethods, sam_acct, username) == True){
+			sam_acct->methods = curmethods;
+			return True;
+		}
+		curmethods = curmethods->next;
+	}
+
+	return False;
 }
 
-static BOOL context_getsampwrid(struct pdb_context *context, SAM_ACCOUNT *sam_acct, uint32 rid)
+static BOOL context_getsampwsid(struct pdb_context *context, SAM_ACCOUNT *sam_acct, DOM_SID *sid)
 {
-	if ((!context) || (!context->pdb_selected)) {
+	struct pdb_methods *curmethods;
+	if ((!context)) {
 		DEBUG(0, ("invalid pdb_context specified!\n"));
 		return False;
 	}
 	
-	return context->pdb_selected->getsampwrid(context, sam_acct, rid);
+	curmethods = context->pdb_methods;
+
+	while (curmethods){
+		if (curmethods->getsampwsid && curmethods->getsampwsid(curmethods, sam_acct, sid) == True){
+			sam_acct->methods = curmethods;
+			return True;
+		}
+		curmethods = curmethods->next;
+	}
+
+	return False;
 }
 
 static BOOL context_add_sam_account(struct pdb_context *context, SAM_ACCOUNT *sam_acct)
 {
-	if ((!context) || (!context->pdb_selected)) {
+	if ((!context) || (!context->pdb_methods) || (!context->pdb_methods->add_sam_account)) {
 		DEBUG(0, ("invalid pdb_context specified!\n"));
 		return False;
 	}
-	
+
 	/** @todo  This is where a 're-read on add' should be done */
-  
-	return context->pdb_selected->add_sam_account(context, sam_acct);
+	/* We now add a new account to the first database listed. 
+	 * Should we? */
+
+	return context->pdb_methods->add_sam_account(context->pdb_methods, sam_acct);
 }
 
 static BOOL context_update_sam_account(struct pdb_context *context, SAM_ACCOUNT *sam_acct)
 {
-	if ((!context) || (!context->pdb_selected)) {
+	if (!context) {
 		DEBUG(0, ("invalid pdb_context specified!\n"));
 		return False;
 	}
-	
+
+	if (!sam_acct || !sam_acct->methods){
+		DEBUG(0, ("invalid sam_acct specified\n"));
+		return False;
+	}
+
+	if (!sam_acct->methods->update_sam_account){
+		DEBUG(0, ("invalid sam_acct->methods\n"));
+		return False;
+	}
+
 	/** @todo  This is where a 're-read on update' should be done */
-	
-	return context->pdb_selected->update_sam_account(context, sam_acct);
+
+	return sam_acct->methods->update_sam_account(sam_acct->methods, sam_acct);
 }
 
 static BOOL context_delete_sam_account(struct pdb_context *context, SAM_ACCOUNT *sam_acct)
 {
-	if ((!context) || (!context->pdb_selected)) {
+	struct pdb_methods *pdb_selected;
+	if (!context) {
 		DEBUG(0, ("invalid pdb_context specified!\n"));
 		return False;
 	}
+
+	if (!sam_acct->methods){
+		pdb_selected = context->pdb_methods;
+		/* There's no passdb backend specified for this account.
+		 * Try to delete it in every passdb available 
+		 * Needed to delete accounts in smbpasswd that are not
+		 * in /etc/passwd.
+		 */
+		while (pdb_selected){
+			if (pdb_selected->delete_sam_account && pdb_selected->delete_sam_account(pdb_selected, sam_acct)){
+				return True;
+			}
+			pdb_selected = pdb_selected->next;
+		}
+		return False;
+	}
+
+	if (!sam_acct->methods->delete_sam_account){
+		DEBUG(0,("invalid sam_acct->methods->delete_sam_account\n"));
+		return False;
+	}
 	
-	return context->pdb_selected->delete_sam_account(context, sam_acct);
+	return sam_acct->methods->delete_sam_account(sam_acct->methods, sam_acct);
 }
+
+/******************************************************************
+  Free and cleanup a pdb context, any associated data and anything
+  that the attached modules might have associated.
+ *******************************************************************/
 
 static void free_pdb_context(struct pdb_context **context)
 {
-	if (((*context)->pdb_selected) && ((*context)->pdb_selected->free_private_data)) {
-		(*context)->pdb_selected->free_private_data((*context)->pdb_selected->private_data);
+	struct pdb_methods *pdb_selected = (*context)->pdb_methods;
+
+	while (pdb_selected){
+		if (pdb_selected->free_private_data) {
+			pdb_selected->free_private_data(&(pdb_selected->private_data));
+		}
+		pdb_selected = pdb_selected->next;
 	}
 
 	talloc_destroy((*context)->mem_ctx);
@@ -132,13 +233,57 @@ static void free_pdb_context(struct pdb_context **context)
 }
 
 /******************************************************************
- Make a pdb_context from scratch.
-*******************************************************************/
+  Make a pdb_methods from scratch
+ *******************************************************************/
+
+static NTSTATUS make_pdb_methods_name(struct pdb_methods **methods, struct pdb_context *context, const char *selected)
+{
+	char *module_name = smb_xstrdup(selected);
+	char *module_location = NULL, *p;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	int i;
+
+	p = strchr(module_name, ':');
+
+	if (p) {
+		*p = 0;
+		module_location = p+1;
+		trim_string(module_location, " ", " ");
+	}
+
+	trim_string(module_name, " ", " ");
+
+	DEBUG(5,("Attempting to find an passdb backend to match %s (%s)\n", selected, module_name));
+	for (i = 0; builtin_pdb_init_functions[i].name; i++)
+	{
+		if (strequal(builtin_pdb_init_functions[i].name, module_name))
+		{
+			DEBUG(5,("Found pdb backend %s (at pos %d)\n", module_name, i));
+			nt_status = builtin_pdb_init_functions[i].init(context, methods, module_location);
+			if (NT_STATUS_IS_OK(nt_status)) {
+				DEBUG(5,("pdb backend %s has a valid init\n", selected));
+			} else {
+				DEBUG(0,("pdb backend %s did not correctly init (error was %s)\n", selected, nt_errstr(nt_status)));
+			}
+			SAFE_FREE(module_name);
+			return nt_status;
+			break; /* unreached */
+		}
+	}
+
+	/* No such backend found */
+	SAFE_FREE(module_name);
+	return NT_STATUS_INVALID_PARAMETER;
+}
+
+/******************************************************************
+  Make a pdb_context from scratch.
+ *******************************************************************/
 
 static NTSTATUS make_pdb_context(struct pdb_context **context) 
 {
 	TALLOC_CTX *mem_ctx;
-	
+
 	mem_ctx = talloc_init_named("pdb_context internal allocation context");
 
 	if (!mem_ctx) {
@@ -160,81 +305,59 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 	(*context)->pdb_endsampwent = context_endsampwent;
 	(*context)->pdb_getsampwent = context_getsampwent;
 	(*context)->pdb_getsampwnam = context_getsampwnam;
-	(*context)->pdb_getsampwrid = context_getsampwrid;
+	(*context)->pdb_getsampwsid = context_getsampwsid;
 	(*context)->pdb_add_sam_account = context_add_sam_account;
 	(*context)->pdb_update_sam_account = context_update_sam_account;
 	(*context)->pdb_delete_sam_account = context_delete_sam_account;
 
 	(*context)->free_fn = free_pdb_context;
-	
+
 	return NT_STATUS_OK;
 }
 
 
 /******************************************************************
- Make a pdb_context, given a text string.
-*******************************************************************/
+  Make a pdb_context, given an array of strings
+ *******************************************************************/
 
-NTSTATUS make_pdb_context_name(struct pdb_context **context, const char *selected) 
+NTSTATUS make_pdb_context_list(struct pdb_context **context, char **selected) 
 {
-	/* HINT: Don't store 'selected' becouse its often an lp_ string and
-	   will 'go away' */
+	int i = 0;
+	struct pdb_methods *curmethods, *tmpmethods;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	int i;
-	char *module_name = smb_xstrdup(selected);
-	char *module_location = NULL;
-	char *p;
 
-	p = strchr(module_name, ':');
-	
-	if (p) {
-		*p = 0;
-	
-		module_location = p+1;
-		
-		trim_string(module_location, " ", " ");
+	if (!NT_STATUS_IS_OK(nt_status = make_pdb_context(context))) {
+		return nt_status;
 	}
 
-	trim_string(module_name, " ", " ");
-
-	if (!NT_STATUS_IS_OK(nt_status = make_pdb_context(context)))
-		goto done;
-	
-	DEBUG(5,("Attempting to find an passdb backend to match %s (%s)\n", 
-		 selected, module_name));
-
-	for (i = 0; builtin_pdb_init_functions[i].name; i++) {
-		if (strequal(builtin_pdb_init_functions[i].name, 
-			     module_name)) {
-
-			DEBUG(5,("Found pdb backend %s (at pos %d)\n", 
-				 module_name, i));
-
-			if (NT_STATUS_IS_OK(nt_status = builtin_pdb_init_functions[i].init(*context, &(*context)->pdb_selected, module_location))) {
-				DEBUG(5,("pdb backend %s has a valid init\n", selected));
-			} else {
-				DEBUG(0,("pdb backend %s did not correctly init (error was %s)\n", selected, nt_errstr(nt_status)));
-				(*context)->pdb_selected = NULL;
-			}
-			break;
+	while (selected[i]){
+		/* Try to initialise pdb */
+		DEBUG(5,("Trying to load: %s\n", selected[i]));
+		if (!NT_STATUS_IS_OK(nt_status = make_pdb_methods_name(&curmethods, *context, selected[i]))) {
+			DEBUG(1, ("Loading %s failed!\n", selected[i]));
+			free_pdb_context(context);
+			return nt_status;
 		}
-	}
-    
-	if (!(*context)->pdb_selected) {
-		DEBUG(0,("failed to select passdb backed!\n"));
-		talloc_destroy((*context)->mem_ctx);
-		*context = NULL;
-		goto done;
+		curmethods->parent = *context;
+		DLIST_ADD_END((*context)->pdb_methods, curmethods, tmpmethods);
+		i++;
 	}
 
-	nt_status = NT_STATUS_OK;
-
- done:
-	SAFE_FREE(module_name);
-
-	return nt_status;
+	return NT_STATUS_OK;
 }
 
+/******************************************************************
+  Make a pdb_context, given a text string.
+ *******************************************************************/
+
+NTSTATUS make_pdb_context_string(struct pdb_context **context, const char *selected) 
+{
+	NTSTATUS ret;
+	char **newsel = str_list_make(selected);
+	ret = make_pdb_context_list(context, newsel);
+	str_list_free(&newsel);
+	return ret;
+}
 
 /******************************************************************
  Return an already initialised pdb_context, to facilitate backward 
@@ -244,20 +367,20 @@ NTSTATUS make_pdb_context_name(struct pdb_context **context, const char *selecte
 static struct pdb_context *pdb_get_static_context(BOOL reload) 
 {
 	static struct pdb_context *pdb_context = NULL;
-	
+
 	if ((pdb_context) && (reload)) {
 		pdb_context->free_fn(&pdb_context);
-		if (!NT_STATUS_IS_OK(make_pdb_context_name(&pdb_context, lp_passdb_backend()))) {
+		if (!NT_STATUS_IS_OK(make_pdb_context_list(&pdb_context, lp_passdb_backend()))) {
 			return NULL;
 		}
 	}
-	
+
 	if (!pdb_context) {
-		if (!NT_STATUS_IS_OK(make_pdb_context_name(&pdb_context, lp_passdb_backend()))) {
+		if (!NT_STATUS_IS_OK(make_pdb_context_list(&pdb_context, lp_passdb_backend()))) {
 			return NULL;
 		}
 	}
-	
+
 	return pdb_context;
 }
 
@@ -311,7 +434,7 @@ BOOL pdb_getsampwnam(SAM_ACCOUNT *sam_acct, const char *username)
 	return pdb_context->pdb_getsampwnam(pdb_context, sam_acct, username);
 }
 
-BOOL pdb_getsampwrid(SAM_ACCOUNT *sam_acct, uint32 rid) 
+BOOL pdb_getsampwsid(SAM_ACCOUNT *sam_acct, DOM_SID *sid) 
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
 
@@ -319,7 +442,7 @@ BOOL pdb_getsampwrid(SAM_ACCOUNT *sam_acct, uint32 rid)
 		return False;
 	}
 
-	return pdb_context->pdb_getsampwrid(pdb_context, sam_acct, rid);
+	return pdb_context->pdb_getsampwsid(pdb_context, sam_acct, sid);
 }
 
 BOOL pdb_add_sam_account(SAM_ACCOUNT *sam_acct) 
@@ -347,21 +470,21 @@ BOOL pdb_update_sam_account(SAM_ACCOUNT *sam_acct)
 BOOL pdb_delete_sam_account(SAM_ACCOUNT *sam_acct) 
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
-	
+
 	if (!pdb_context) {
 		return False;
 	}
-	
+
 	return pdb_context->pdb_delete_sam_account(pdb_context, sam_acct);
 }
 
 #endif /* !defined(WITH_NISPLUS_SAM) */
 
 /***************************************************************
- Initialize the static context (at smbd startup etc). 
+  Initialize the static context (at smbd startup etc). 
 
- If uninitialised, context will auto-init on first use.
-***************************************************************/
+  If uninitialised, context will auto-init on first use.
+ ***************************************************************/
 
 BOOL initialize_password_db(BOOL reload)
 {	
@@ -381,11 +504,3 @@ NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods)
 
 	return NT_STATUS_OK;
 }
-
-
-
-
-
-
-
-

@@ -127,9 +127,8 @@ static BOOL          ct_initialized = False;
 
 static ubi_cacheRoot mangled_cache[1] =  { { { 0, 0, 0, 0 }, 0, 0, 0, 0, 0, 0 } };
 static BOOL          mc_initialized   = False;
-#define MANGLED_CACHE_MAX_ENTRIES 0
-#define MANGLED_CACHE_MAX_MEMORY  16384
-
+#define MANGLED_CACHE_MAX_ENTRIES 1024
+#define MANGLED_CACHE_MAX_MEMORY 0
 
 /* -------------------------------------------------------------------------- **
  * External Variables...
@@ -140,16 +139,19 @@ extern BOOL case_mangle;    /* If true, all chars in 8.3 should be same case. */
 
 /* -------------------------------------------------------------------- */
 
-static NTSTATUS has_valid_chars(const smb_ucs2_t *s)
+static NTSTATUS has_valid_chars(const smb_ucs2_t *s, BOOL allow_wildcards)
 {
-	if (!s || !*s) return NT_STATUS_INVALID_PARAMETER;
+	if (!s || !*s)
+		return NT_STATUS_INVALID_PARAMETER;
 
 	/* CHECK: this should not be necessary if the ms wild chars
 	   are not valid in valid.dat  --- simo */
-	if (ms_has_wild_w(s)) return NT_STATUS_UNSUCCESSFUL;
+	if (!allow_wildcards && ms_has_wild_w(s))
+		return NT_STATUS_UNSUCCESSFUL;
 
 	while (*s) {
-		if(!isvalid83_w(*s)) return NT_STATUS_UNSUCCESSFUL;
+		if(!isvalid83_w(*s))
+			return NT_STATUS_UNSUCCESSFUL;
 		s++;
 	}
 
@@ -159,7 +161,9 @@ static NTSTATUS has_valid_chars(const smb_ucs2_t *s)
 /* return False if something fail and
  * return 2 alloced unicode strings that contain prefix and extension
  */
-static NTSTATUS mangle_get_prefix(const smb_ucs2_t *ucs2_string, smb_ucs2_t **prefix, smb_ucs2_t **extension)
+
+static NTSTATUS mangle_get_prefix(const smb_ucs2_t *ucs2_string, smb_ucs2_t **prefix,
+		smb_ucs2_t **extension, BOOL allow_wildcards)
 {
 	size_t ext_len;
 	smb_ucs2_t *p;
@@ -169,12 +173,10 @@ static NTSTATUS mangle_get_prefix(const smb_ucs2_t *ucs2_string, smb_ucs2_t **pr
 	if (!*prefix) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	if ((p = strrchr_w(*prefix, UCS2_CHAR('.'))))
-	{
+	if ((p = strrchr_w(*prefix, UCS2_CHAR('.')))) {
 		ext_len = strlen_w(p+1);
 		if ((ext_len > 0) && (ext_len < 4) && (p != *prefix) &&
-		    (NT_STATUS_IS_OK(has_valid_chars(p+1)))) /* check extension */
-		{
+		    (NT_STATUS_IS_OK(has_valid_chars(p+1,allow_wildcards)))) /* check extension */ {
 			*p = 0;
 			*extension = strdup_w(p+1);
 			if (!*extension) {
@@ -197,20 +199,34 @@ static NTSTATUS mangle_get_prefix(const smb_ucs2_t *ucs2_string, smb_ucs2_t **pr
  *
  * ************************************************************************** **
  */
-static NTSTATUS is_valid_name(const smb_ucs2_t *fname)
+
+static NTSTATUS is_valid_name(const smb_ucs2_t *fname, BOOL allow_wildcards)
 {
 	smb_ucs2_t *str, *p;
 	NTSTATUS ret = NT_STATUS_OK;
 
-	if (!fname || !*fname) return NT_STATUS_INVALID_PARAMETER;
+	if (!fname || !*fname)
+		return NT_STATUS_INVALID_PARAMETER;
 
-	if (*fname == UCS2_CHAR('.')) return NT_STATUS_UNSUCCESSFUL;
+	/* . and .. are valid names. */
+	if (strcmp_wa(fname, ".")==0 || strcmp_wa(fname, "..")==0)
+		return NT_STATUS_OK;
+
+	/* Name cannot start with '.' */
+	if (*fname == UCS2_CHAR('.'))
+		return NT_STATUS_UNSUCCESSFUL;
 	
-	ret = has_valid_chars(fname);
-	if (NT_STATUS_IS_ERR(ret)) return ret;
+	ret = has_valid_chars(fname, allow_wildcards);
+	if (NT_STATUS_IS_ERR(ret))
+		return ret;
 
 	str = strdup_w(fname);
 	p = strchr_w(str, UCS2_CHAR('.'));
+	if (p && p[1] == UCS2_CHAR(0)) {
+		/* Name cannot end in '.' */
+		SAFE_FREE(str);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 	if (p) *p = 0;
 	strupper_w(str);
 	p = &(str[1]);
@@ -254,27 +270,34 @@ static NTSTATUS is_valid_name(const smb_ucs2_t *fname)
 	return ret;
 }
 
-static NTSTATUS is_8_3_w(const smb_ucs2_t *fname)
+static NTSTATUS is_8_3_w(const smb_ucs2_t *fname, BOOL allow_wildcards)
 {
 	smb_ucs2_t *pref = 0, *ext = 0;
 	size_t plen;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
-	if (!fname || !*fname) return NT_STATUS_INVALID_PARAMETER;
+	if (!fname || !*fname)
+		return NT_STATUS_INVALID_PARAMETER;
 
-	if (strlen_w(fname) > 12) return NT_STATUS_UNSUCCESSFUL;
+	if (strlen_w(fname) > 12)
+		return NT_STATUS_UNSUCCESSFUL;
 	
 	if (strcmp_wa(fname, ".") == 0 || strcmp_wa(fname, "..") == 0)
 		return NT_STATUS_OK;
 
-	if (NT_STATUS_IS_ERR(is_valid_name(fname))) goto done;
+	if (NT_STATUS_IS_ERR(is_valid_name(fname, allow_wildcards)))
+		goto done;
 
-	if (NT_STATUS_IS_ERR(mangle_get_prefix(fname, &pref, &ext))) goto done;
+	if (NT_STATUS_IS_ERR(mangle_get_prefix(fname, &pref, &ext, allow_wildcards)))
+		goto done;
 	plen = strlen_w(pref);
 
-	if (strchr_wa(pref, '.')) goto done;
-	if (plen < 1 || plen > 8) goto done;
-	if (ext) if (strlen_w(ext) > 3) goto done;
+	if (strchr_wa(pref, '.'))
+		goto done;
+	if (plen < 1 || plen > 8)
+		goto done;
+	if (ext && (strlen_w(ext) > 3))
+		goto done;
 
 	ret = NT_STATUS_OK;
 
@@ -284,26 +307,29 @@ done:
 	return ret;
 }
 
-static BOOL is_8_3(const char *fname, BOOL check_case)
+static BOOL is_8_3(const char *fname, BOOL check_case, BOOL allow_wildcards)
 {
 	const char *f;
 	smb_ucs2_t *ucs2name;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
-	if (!fname || !*fname) return False;
-	if ((f = strrchr(fname, '/')) == NULL) f = fname;
-	else f++;
+	if (!fname || !*fname)
+		return False;
+	if ((f = strrchr(fname, '/')) == NULL)
+		f = fname;
+	else
+		f++;
 
-	if (strlen(f) > 12) return False;
+	if (strlen(f) > 12)
+		return False;
 	
 	ucs2name = acnv_uxu2(f);
-	if (!ucs2name)
-	{
+	if (!ucs2name) {
 		DEBUG(0,("is_8_3: internal error acnv_uxu2() failed!\n"));
 		goto done;
 	}
 
-	ret = is_8_3_w(ucs2name);
+	ret = is_8_3_w(ucs2name, allow_wildcards);
 
 done:
 	SAFE_FREE(ucs2name);
@@ -334,21 +360,20 @@ done:
  * ************************************************************************** **
  */
 static void init_chartest( void )
-  {
-  char          *illegalchars = "*\\/?<>|\":";
-  unsigned char *s;
+{
+	char          *illegalchars = "*\\/?<>|\":";
+	unsigned char *s;
   
-  memset( (char *)chartest, '\0', 256 );
+	memset( (char *)chartest, '\0', 256 );
 
-  for( s = (unsigned char *)illegalchars; *s; s++ )
-    chartest[*s] = ILLEGAL_MASK;
+	for( s = (unsigned char *)illegalchars; *s; s++ )
+		chartest[*s] = ILLEGAL_MASK;
 
-  for( s = (unsigned char *)basechars; *s; s++ )
-    chartest[*s] |= BASECHAR_MASK;
+	for( s = (unsigned char *)basechars; *s; s++ )
+		chartest[*s] |= BASECHAR_MASK;
 
-  ct_initialized = True;
-  } /* init_chartest */
-
+	ct_initialized = True;
+}
 
 /* ************************************************************************** **
  * Return True if the name *could be* a mangled name.
@@ -368,24 +393,22 @@ static void init_chartest( void )
  * ************************************************************************** **
  */
 static BOOL is_mangled(const char *s)
-  {
-  char *magic;
+{
+	char *magic;
 
-  if( !ct_initialized )
-    init_chartest();
+	if( !ct_initialized )
+		init_chartest();
 
-  magic = strchr_m( s, magic_char );
-  while( magic && magic[1] && magic[2] )          /* 3 chars, 1st is magic. */
-    {
-    if( ('.' == magic[3] || '/' == magic[3] || !(magic[3]))          /* Ends with '.' or nul or '/' ?  */
-     && isbasechar( toupper(magic[1]) )           /* is 2nd char basechar?  */
-     && isbasechar( toupper(magic[2]) ) )         /* is 3rd char basechar?  */
-      return( True );                           /* If all above, then true, */
-    magic = strchr_m( magic+1, magic_char );      /*    else seek next magic. */
-    }
-  return( False );
-  } /* is_mangled */
-
+	magic = strchr_m( s, magic_char );
+	while( magic && magic[1] && magic[2] ) {         /* 3 chars, 1st is magic. */
+		if( ('.' == magic[3] || '/' == magic[3] || !(magic[3]))          /* Ends with '.' or nul or '/' ?  */
+				&& isbasechar( toupper(magic[1]) )           /* is 2nd char basechar?  */
+				&& isbasechar( toupper(magic[2]) ) )         /* is 3rd char basechar?  */
+			return( True );                           /* If all above, then true, */
+		magic = strchr_m( magic+1, magic_char );      /*    else seek next magic. */
+	}
+	return( False );
+}
 
 /* ************************************************************************** **
  * Compare two cache keys and return a value indicating their ordinal
@@ -407,12 +430,12 @@ static BOOL is_mangled(const char *s)
  * ************************************************************************** **
  */
 static signed int cache_compare( ubi_btItemPtr ItemPtr, ubi_btNodePtr NodePtr )
-  {
-  char *Key1 = (char *)ItemPtr;
-  char *Key2 = (char *)(((ubi_cacheEntryPtr)NodePtr) + 1);
+{
+	char *Key1 = (char *)ItemPtr;
+	char *Key2 = (char *)(((ubi_cacheEntryPtr)NodePtr) + 1);
 
-  return( StrCaseCmp( Key1, Key2 ) );
-  } /* cache_compare */
+	return( StrCaseCmp( Key1, Key2 ) );
+}
 
 /* ************************************************************************** **
  * Free a cache entry.
@@ -428,10 +451,10 @@ static signed int cache_compare( ubi_btItemPtr ItemPtr, ubi_btNodePtr NodePtr )
  * ************************************************************************** **
  */
 static void cache_free_entry( ubi_trNodePtr WarrenZevon )
-  {
-	  ZERO_STRUCTP(WarrenZevon);
-	  SAFE_FREE( WarrenZevon );
-  } /* cache_free_entry */
+{
+	ZERO_STRUCTP(WarrenZevon);
+	SAFE_FREE( WarrenZevon );
+}
 
 /* ************************************************************************** **
  * Initializes or clears the mangled cache.
@@ -449,28 +472,25 @@ static void cache_free_entry( ubi_trNodePtr WarrenZevon )
  *
  * ************************************************************************** **
  */
+
 static void mangle_reset( void )
-  {
-  if( !mc_initialized )
-    {
-    (void)ubi_cacheInit( mangled_cache,
-                         cache_compare,
-                         cache_free_entry,
-                         MANGLED_CACHE_MAX_ENTRIES,
-                         MANGLED_CACHE_MAX_MEMORY );
-    mc_initialized = True;
-    }
-  else
-    {
-    (void)ubi_cacheClear( mangled_cache );
-    }
+{
+	if( !mc_initialized ) {
+		(void)ubi_cacheInit( mangled_cache,
+				cache_compare,
+				cache_free_entry,
+				MANGLED_CACHE_MAX_ENTRIES,
+				MANGLED_CACHE_MAX_MEMORY );
+		mc_initialized = True;
+	} else {
+		(void)ubi_cacheClear( mangled_cache );
+	}
 
-  /*
-  (void)ubi_cacheSetMaxEntries( mangled_cache, lp_mangled_cache_entries() );
-  (void)ubi_cacheSetMaxMemory(  mangled_cache, lp_mangled_cache_memory() );
-  */
-  } /* reset_mangled_cache  */
-
+	/*
+	(void)ubi_cacheSetMaxEntries( mangled_cache, lp_mangled_cache_entries() );
+	(void)ubi_cacheSetMaxMemory(  mangled_cache, lp_mangled_cache_memory() );
+	*/
+}
 
 /* ************************************************************************** **
  * Add a mangled name into the cache.
@@ -497,51 +517,49 @@ static void mangle_reset( void )
  * ************************************************************************** **
  */
 static void cache_mangled_name( char *mangled_name, char *raw_name )
-  {
-  ubi_cacheEntryPtr new_entry;
-  char             *s1;
-  char             *s2;
-  size_t               mangled_len;
-  size_t               raw_len;
-  size_t               i;
+{
+	ubi_cacheEntryPtr new_entry;
+	char             *s1;
+	char             *s2;
+	size_t               mangled_len;
+	size_t               raw_len;
+	size_t               i;
 
-  /* If the cache isn't initialized, give up. */
-  if( !mc_initialized )
-    return;
+	/* If the cache isn't initialized, give up. */
+	if( !mc_initialized )
+		return;
 
-  /* Init the string lengths. */
-  mangled_len = strlen( mangled_name );
-  raw_len     = strlen( raw_name );
+	/* Init the string lengths. */
+	mangled_len = strlen( mangled_name );
+	raw_len     = strlen( raw_name );
 
-  /* See if the extensions are unmangled.  If so, store the entry
-   * without the extension, thus creating a "group" reverse map.
-   */
-  s1 = strrchr( mangled_name, '.' );
-  if( s1 && (s2 = strrchr( raw_name, '.' )) )
-    {
-    i = 1;
-    while( s1[i] && (tolower( s1[i] ) == s2[i]) )
-      i++;
-    if( !s1[i] && !s2[i] )
-      {
-      mangled_len -= i;
-      raw_len     -= i;
-      }
-    }
+	/* See if the extensions are unmangled.  If so, store the entry
+	 * without the extension, thus creating a "group" reverse map.
+	 */
+	s1 = strrchr( mangled_name, '.' );
+	if( s1 && (s2 = strrchr( raw_name, '.' )) ) {
+		i = 1;
+		while( s1[i] && (tolower( s1[i] ) == s2[i]) )
+			i++;
+		if( !s1[i] && !s2[i] ) {
+			mangled_len -= i;
+			raw_len     -= i;
+		}
+	}
 
-  /* Allocate a new cache entry.  If the allocation fails, just return. */
-  i = sizeof( ubi_cacheEntry ) + mangled_len + raw_len + 2;
-  new_entry = malloc( i );
-  if( !new_entry )
-    return;
+	/* Allocate a new cache entry.  If the allocation fails, just return. */
+	i = sizeof( ubi_cacheEntry ) + mangled_len + raw_len + 2;
+	new_entry = malloc( i );
+	if( !new_entry )
+		return;
 
-  /* Fill the new cache entry, and add it to the cache. */
-  s1 = (char *)(new_entry + 1);
-  s2 = (char *)&(s1[mangled_len + 1]);
-  (void)StrnCpy( s1, mangled_name, mangled_len );
-  (void)StrnCpy( s2, raw_name,     raw_len );
-  ubi_cachePut( mangled_cache, i, new_entry, s1 );
-  } /* cache_mangled_name */
+	/* Fill the new cache entry, and add it to the cache. */
+	s1 = (char *)(new_entry + 1);
+	s2 = (char *)&(s1[mangled_len + 1]);
+	(void)StrnCpy( s1, mangled_name, mangled_len );
+	(void)StrnCpy( s2, raw_name,     raw_len );
+	ubi_cachePut( mangled_cache, i, new_entry, s1 );
+}
 
 /* ************************************************************************** **
  * Check for a name on the mangled name stack
@@ -560,63 +578,57 @@ static void cache_mangled_name( char *mangled_name, char *raw_name )
 
 static BOOL check_cache( char *s )
 {
-  ubi_cacheEntryPtr FoundPtr;
-  char             *ext_start = NULL;
-  char             *found_name;
-  char             *saved_ext = NULL;
+	ubi_cacheEntryPtr FoundPtr;
+	char             *ext_start = NULL;
+	char             *found_name;
+	char             *saved_ext = NULL;
 
-  /* If the cache isn't initialized, give up. */
-  if( !mc_initialized )
-    return( False );
+	/* If the cache isn't initialized, give up. */
+	if( !mc_initialized )
+		return( False );
 
-  FoundPtr = ubi_cacheGet( mangled_cache, (ubi_trItemPtr)s );
+	FoundPtr = ubi_cacheGet( mangled_cache, (ubi_trItemPtr)s );
 
-  /* If we didn't find the name *with* the extension, try without. */
-  if( !FoundPtr )
-  {
-    ext_start = strrchr( s, '.' );
-    if( ext_start )
-    {
-      if((saved_ext = strdup(ext_start)) == NULL)
-        return False;
+	/* If we didn't find the name *with* the extension, try without. */
+	if( !FoundPtr ) {
+		ext_start = strrchr( s, '.' );
+		if( ext_start ) {
+			if((saved_ext = strdup(ext_start)) == NULL)
+				return False;
 
-      *ext_start = '\0';
-      FoundPtr = ubi_cacheGet( mangled_cache, (ubi_trItemPtr)s );
-      /* 
-       * At this point s is the name without the
-       * extension. We re-add the extension if saved_ext
-       * is not null, before freeing saved_ext.
-       */
-    }
-  }
+			*ext_start = '\0';
+			FoundPtr = ubi_cacheGet( mangled_cache, (ubi_trItemPtr)s );
+			/* 
+			 * At this point s is the name without the
+			 * extension. We re-add the extension if saved_ext
+			 * is not null, before freeing saved_ext.
+			 */
+		}
+	}
 
-  /* Okay, if we haven't found it we're done. */
-  if( !FoundPtr )
-  {
-    if(saved_ext)
-    {
-      /* Replace the saved_ext as it was truncated. */
-      (void)pstrcat( s, saved_ext );
-      SAFE_FREE(saved_ext);
-    }
-    return( False );
-  }
+	/* Okay, if we haven't found it we're done. */
+	if( !FoundPtr ) {
+		if(saved_ext) {
+			/* Replace the saved_ext as it was truncated. */
+			(void)pstrcat( s, saved_ext );
+			SAFE_FREE(saved_ext);
+		}
+		return( False );
+	}
 
-  /* If we *did* find it, we need to copy it into the string buffer. */
-  found_name = (char *)(FoundPtr + 1);
-  found_name += (strlen( found_name ) + 1);
+	/* If we *did* find it, we need to copy it into the string buffer. */
+	found_name = (char *)(FoundPtr + 1);
+	found_name += (strlen( found_name ) + 1);
 
-  (void)pstrcpy( s, found_name );
-  if( saved_ext )
-  {
-    /* Replace the saved_ext as it was truncated. */
-    (void)pstrcat( s, saved_ext );
-    SAFE_FREE(saved_ext);
-  }
+	(void)pstrcpy( s, found_name );
+	if( saved_ext ) {
+		/* Replace the saved_ext as it was truncated. */
+		(void)pstrcat( s, saved_ext );
+		SAFE_FREE(saved_ext);
+	}
 
-  return( True );
-} /* check_mangled_cache */
-
+	return( True );
+}
 
 /*****************************************************************************
  * do the actual mangling to 8.3 format
@@ -624,77 +636,67 @@ static BOOL check_cache( char *s )
  *****************************************************************************
  */
 static void to_8_3(char *s)
-  {
-  int csum;
-  char *p;
-  char extension[4];
-  char base[9];
-  int baselen = 0;
-  int extlen = 0;
+{
+	int csum;
+	char *p;
+	char extension[4];
+	char base[9];
+	int baselen = 0;
+	int extlen = 0;
 
-  extension[0] = 0;
-  base[0] = 0;
+	extension[0] = 0;
+	base[0] = 0;
 
-  p = strrchr(s,'.');  
-  if( p && (strlen(p+1) < (size_t)4) )
-    {
-    BOOL all_normal = ( strisnormal(p+1) ); /* XXXXXXXXX */
+	p = strrchr(s,'.');  
+	if( p && (strlen(p+1) < (size_t)4) ) {
+		BOOL all_normal = ( strisnormal(p+1) ); /* XXXXXXXXX */
 
-    if( all_normal && p[1] != 0 )
-      {
-      *p = 0;
-      csum = str_checksum( s );
-      *p = '.';
-      }
-    else
-      csum = str_checksum(s);
-    }
-  else
-    csum = str_checksum(s);
+		if( all_normal && p[1] != 0 ) {
+			*p = 0;
+			csum = str_checksum( s );
+			*p = '.';
+		} else
+			csum = str_checksum(s);
+	} else
+		csum = str_checksum(s);
 
-  strupper( s );
+	strupper( s );
 
-  if( p )
-  {
-	  if( p == s )
-		  safe_strcpy( extension, "___", 3 );
-	  else
-	  {
-		  *p++ = 0;
-		  while( *p && extlen < 3 )
-		  {
-			  if ( *p != '.') {
-				  extension[extlen++] = p[0];
-			  }
-			  p++;
-		  }
-		  extension[extlen] = 0;
-      }
-  }
+	if( p ) {
+		if( p == s )
+			safe_strcpy( extension, "___", 3 );
+		else {
+			*p++ = 0;
+			while( *p && extlen < 3 ) {
+				if ( *p != '.') {
+					extension[extlen++] = p[0];
+				}
+				p++;
+			}
+			extension[extlen] = 0;
+		}
+	}
   
-  p = s;
+	p = s;
 
-  while( *p && baselen < 5 )
-  {
-	  if (*p != '.') {
-		  base[baselen++] = p[0];
-	  }
-	  p++;
-  }
-  base[baselen] = 0;
+	while( *p && baselen < 5 ) {
+		if (*p != '.') {
+			base[baselen++] = p[0];
+		}
+		p++;
+	}
+	base[baselen] = 0;
   
-  csum = csum % (MANGLE_BASE*MANGLE_BASE);
+	csum = csum % (MANGLE_BASE*MANGLE_BASE);
   
-  (void)slprintf(s, 12, "%s%c%c%c",
-                 base, magic_char, mangle( csum/MANGLE_BASE ), mangle( csum ) );
+	(void)slprintf(s, 12, "%s%c%c%c",
+		base, magic_char, mangle( csum/MANGLE_BASE ), mangle( csum ) );
   
-  if( *extension )
-  {
-	  (void)pstrcat( s, "." );
-	  (void)pstrcat( s, extension );
-  }
-  
-  } /* mangle_name_83 */
+	if( *extension ) {
+		(void)pstrcat( s, "." );
+		(void)pstrcat( s, extension );
+	}
+}
 
 /*****************************************************************************
  * Convert a filename to DOS format.  Return True if successful.
@@ -721,7 +723,8 @@ static void to_8_3(char *s)
  *
  * ****************************************************************************
  */
-static BOOL name_map(char *OutName, BOOL need83, BOOL cache83)
+
+static void name_map(char *OutName, BOOL need83, BOOL cache83)
 {
 	smb_ucs2_t *OutName_ucs2;
 	DEBUG(5,("name_map( %s, need83 = %s, cache83 = %s)\n", OutName,
@@ -729,11 +732,14 @@ static BOOL name_map(char *OutName, BOOL need83, BOOL cache83)
 	
 	if (push_ucs2_allocate((void **)&OutName_ucs2, OutName) < 0) {
 		DEBUG(0, ("push_ucs2_allocate failed!\n"));
-		return False;
+		return;
 	}
 
+	if( !need83 && NT_STATUS_IS_ERR(is_valid_name(OutName_ucs2, False)))
+		need83 = True;
+
 	/* check if it's already in 8.3 format */
-	if (need83 && !NT_STATUS_IS_OK(is_8_3_w(OutName_ucs2))) {
+	if (need83 && !NT_STATUS_IS_OK(is_8_3_w(OutName_ucs2, False))) {
 		char *tmp = NULL; 
 
 		/* mangle it into 8.3 */
@@ -750,9 +756,7 @@ static BOOL name_map(char *OutName, BOOL need83, BOOL cache83)
 
 	DEBUG(5,("name_map() ==> [%s]\n", OutName));
 	SAFE_FREE(OutName_ucs2);
-	return(True);
-} /* name_map */
-
+}
 
 /*
   the following provides the abstraction layer to make it easier

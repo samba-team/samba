@@ -16,6 +16,8 @@
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
+
+#include "../utils/net_proto.h"
  
 #define NET_FLAGS_MASTER 1
 #define NET_FLAGS_DMB 2
@@ -49,3 +51,6 @@ extern char *opt_host;
 extern char *opt_user_name;
 extern char *opt_password;
 extern BOOL opt_user_specified;
+
+extern const char *share_type[];
+

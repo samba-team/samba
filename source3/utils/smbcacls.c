@@ -42,6 +42,9 @@ enum acl_mode {SMB_ACL_SET, SMB_ACL_DELETE, SMB_ACL_MODIFY, SMB_ACL_ADD };
 enum chown_mode {REQUEST_NONE, REQUEST_CHOWN, REQUEST_CHGRP};
 enum exit_values {EXIT_OK, EXIT_FAILED, EXIT_PARSE_ERROR};
 
+extern pstring global_myname;
+extern fstring global_myworkgroup;
+
 struct perm_value {
 	char *perm;
 	uint32 mask;
@@ -66,24 +69,25 @@ static struct perm_value standard_values[] = {
 	{ NULL, 0 },
 };
 
-struct cli_state lsa_cli;
-POLICY_HND pol;
-struct ntuser_creds creds;
-BOOL got_policy_hnd;
+static struct cli_state *global_hack_cli;
+static POLICY_HND pol;
+static BOOL got_policy_hnd;
+
+static struct cli_state *connect_one(char *share);
 
 /* Open cli connection and policy handle */
 
 static BOOL cacls_open_policy_hnd(void)
 {
-	creds.pwd.null_pwd = 1;
-
 	/* Initialise cli LSA connection */
 
-	if (!lsa_cli.initialised && 
-	    !cli_lsa_initialise(&lsa_cli, server, &creds)) {
-		return False;
+	if (!global_hack_cli) {
+		global_hack_cli = connect_one("IPC$");
+		if (!cli_nt_session_open (global_hack_cli, PIPE_LSARPC)) {
+				return False;
+		}
 	}
-
+	
 	/* Open policy handle */
 
 	if (!got_policy_hnd) {
@@ -91,7 +95,7 @@ static BOOL cacls_open_policy_hnd(void)
 		/* Some systems don't support SEC_RIGHTS_MAXIMUM_ALLOWED,
 		   but NT sends 0x2000000 so we might as well do it too. */
 
-		if (!NT_STATUS_IS_OK(cli_lsa_open_policy(&lsa_cli, lsa_cli.mem_ctx, True, 
+		if (!NT_STATUS_IS_OK(cli_lsa_open_policy(global_hack_cli, global_hack_cli->mem_ctx, True, 
 							 GENERIC_EXECUTE_ACCESS, &pol))) {
 			return False;
 		}
@@ -116,7 +120,7 @@ static void SidToString(fstring str, DOM_SID *sid)
 	/* Ask LSA to convert the sid to a name */
 
 	if (!cacls_open_policy_hnd() ||
-	    !NT_STATUS_IS_OK(cli_lsa_lookup_sids(&lsa_cli, lsa_cli.mem_ctx,  
+	    !NT_STATUS_IS_OK(cli_lsa_lookup_sids(global_hack_cli, global_hack_cli->mem_ctx,  
 						 &pol, 1, sid, &domains, 
 						 &names, &types)) ||
 	    !domains || !domains[0] || !names || !names[0]) {
@@ -143,7 +147,7 @@ static BOOL StringToSid(DOM_SID *sid, const char *str)
 	}
 
 	if (!cacls_open_policy_hnd() ||
-	    !NT_STATUS_IS_OK(cli_lsa_lookup_names(&lsa_cli, lsa_cli.mem_ctx, 
+	    !NT_STATUS_IS_OK(cli_lsa_lookup_names(global_hack_cli, global_hack_cli->mem_ctx, 
 						  &pol, 1, &str, &sids, 
 						  &types))) {
 		result = False;
@@ -151,7 +155,6 @@ static BOOL StringToSid(DOM_SID *sid, const char *str)
 	}
 
 	sid_copy(sid, &sids[0]);
-
  done:
 
 	return result;
@@ -700,80 +703,31 @@ static int cacl_set(struct cli_state *cli, char *filename,
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-struct cli_state *connect_one(char *share)
+static struct cli_state *connect_one(char *share)
 {
 	struct cli_state *c;
-	struct nmb_name called, calling;
 	struct in_addr ip;
-	extern pstring global_myname;
-
-	fstrcpy(server,share+2);
-	share = strchr_m(server,'\\');
-	if (!share) return NULL;
-	*share = 0;
-	share++;
-
-        zero_ip(&ip);
-
-	make_nmb_name(&calling, global_myname, 0x0);
-	make_nmb_name(&called , server, 0x20);
-
- again:
-        zero_ip(&ip);
-
-	/* have to open a new connection */
-	if (!(c=cli_initialise(NULL)) || !cli_connect(c, server, &ip)) {
-		DEBUG(0,("Connection to %s failed\n", server));
-		cli_shutdown(c);
-		return NULL;
-	}
-
-	if (!cli_session_request(c, &calling, &called)) {
-		DEBUG(0,("session request to %s failed\n", called.name));
-		cli_shutdown(c);
-		if (strcmp(called.name, "*SMBSERVER")) {
-			make_nmb_name(&called , "*SMBSERVER", 0x20);
-			goto again;
-		}
-		return NULL;
-	}
-
-	DEBUG(4,(" session request ok\n"));
-
-	if (!cli_negprot(c)) {
-		DEBUG(0,("protocol negotiation failed\n"));
-		cli_shutdown(c);
-		return NULL;
-	}
-
+	NTSTATUS nt_status;
+	zero_ip(&ip);
+	
 	if (!got_pass) {
 		char *pass = getpass("Password: ");
 		if (pass) {
 			pstrcpy(password, pass);
+			got_pass = True;
 		}
 	}
 
-	if (!cli_session_setup(c, username, 
-			       password, strlen(password),
-			       password, strlen(password),
-			       lp_workgroup())) {
-		DEBUG(0,("session setup failed: %s\n", cli_errstr(c)));
-		cli_shutdown(c);
+	if (NT_STATUS_IS_OK(nt_status = cli_full_connection(&c, global_myname, server, 
+							    &ip, 0,
+							    share, "?????",  
+							    username, global_myworkgroup,
+							    password, 0))) {
+		return c;
+	} else {
+		DEBUG(0,("cli_full_connection failed! (%s)\n", nt_errstr(nt_status)));
 		return NULL;
 	}
-
-	DEBUG(4,(" session setup ok\n"));
-
-	if (!cli_send_tconX(c, share, "?????",
-			    password, strlen(password)+1)) {
-		DEBUG(0,("tree connect failed: %s\n", cli_errstr(c)));
-		cli_shutdown(c);
-		return NULL;
-	}
-
-	DEBUG(4,(" tconx ok\n"));
-
-	return c;
 }
 
 
@@ -811,11 +765,12 @@ You can string acls together with spaces, commas or newlines\n\
 	extern int optind;
 	int opt;
 	char *p;
-	struct cli_state *cli=NULL;
 	enum acl_mode mode = SMB_ACL_SET;
 	char *the_acl = NULL;
 	enum chown_mode change_mode = REQUEST_NONE;
 	int result;
+
+	struct cli_state *cli;
 
 	ctx=talloc_init();
 
@@ -921,7 +876,7 @@ You can string acls together with spaces, commas or newlines\n\
 
 	argc -= optind;
 	argv += optind;
-	
+
 	if (argc > 0) {
 		usage();
 		talloc_destroy(ctx);
@@ -930,12 +885,26 @@ You can string acls together with spaces, commas or newlines\n\
 
 	/* Make connection to server */
 
+	fstrcpy(server,share+2);
+	share = strchr_m(server,'\\');
+	if (!share) {
+		share = strchr_m(server,'/');
+		if (!share) {
+			return -1;
+		}
+	}
+
+	*share = 0;
+	share++;
+
 	if (!test_args) {
 		cli = connect_one(share);
 		if (!cli) {
 			talloc_destroy(ctx);
 			exit(EXIT_FAILED);
 		}
+	} else {
+		exit(0);
 	}
 
 	all_string_sub(filename, "/", "\\", 0);
@@ -960,3 +929,4 @@ You can string acls together with spaces, commas or newlines\n\
 
 	return result;
 }
+

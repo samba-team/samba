@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "../web/swat_proto.h"
 
 #define PIDMAP		struct PidMap
 

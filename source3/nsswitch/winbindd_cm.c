@@ -4,6 +4,7 @@
    Winbind daemon connection manager
 
    Copyright (C) Tim Potter 2001
+   Copyright (C) Andrew Bartlett 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -59,6 +60,9 @@
  */
 
 #include "winbindd.h"
+
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_WINBIND
 
 /* Global list of connections.	Initially a DLIST but can become a hash
    table or whatever later. */
@@ -348,7 +352,7 @@ static NTSTATUS cm_open_connection(const char *domain,const char *pipe_name,
 	result = cli_full_connection(&(new_conn->cli), global_myname, new_conn->controller, 
 				     &dc_ip, 0, "IPC$", 
 				     "IPC", ipc_username, ipc_domain, 
-				     ipc_password, strlen(ipc_password));
+				     ipc_password, 0);
 
 	SAFE_FREE(ipc_username);
 	SAFE_FREE(ipc_domain);

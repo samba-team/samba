@@ -25,6 +25,11 @@
 #include "includes.h"
 #include "nsswitch/nss.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_WINBIND
+
+extern DOM_SID global_sid_NULL;            		/* NULL sid */
+
 NSS_STATUS winbindd_request(int req_type,
                                  struct winbindd_request *request,
                                  struct winbindd_response *response);

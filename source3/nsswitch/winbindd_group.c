@@ -23,6 +23,9 @@
 
 #include "winbindd.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_WINBIND
+
 /***************************************************************
  Empty static struct for negative caching.
 ****************************************************************/
@@ -72,7 +75,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 	*num_gr_mem = 0;
 	
 	if (group_name_type != SID_NAME_DOM_GRP) {
-		DEBUG(1, ("rid %d in domain %s isn't a " "domain group\n", 
+		DEBUG(1, ("rid %d in domain %s isn't a domain group\n", 
 			  group_rid, domain->name));
                 goto done;
 	}
@@ -81,8 +84,8 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 	status = domain->methods->lookup_groupmem(domain, mem_ctx, group_rid, &num_names, 
 						  &rid_mem, &names, &name_types);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("could not lookup membership for group rid %d in domain %s\n", 
-			  group_rid, domain->name));
+		DEBUG(1, ("could not lookup membership for group rid %d in domain %s (error: %s)\n", 
+			  group_rid, domain->name, nt_errstr(status)));
 
 		goto done;
 	}
@@ -228,7 +231,8 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 	}
 
 	/* Fill in group structure */
-	sid_peek_rid(&group_sid, &group_rid);
+	if (!sid_peek_check_rid(&domain->sid, &group_sid, &group_rid))
+		return WINBINDD_ERROR;
 
 	if (!winbindd_idmap_get_gid_from_sid(&group_sid, &gid)) {
 		DEBUG(1, ("error converting unix gid to sid\n"));
@@ -359,8 +363,10 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
 		/* Create a state record for this domain */
 		
 		if ((domain_state = (struct getent_state *)
-		     malloc(sizeof(struct getent_state))) == NULL)
+		     malloc(sizeof(struct getent_state))) == NULL) {
+			DEBUG(1, ("winbindd_setgrent: malloc failed for domain_state!\n"));
 			return WINBINDD_ERROR;
+		}
 		
 		ZERO_STRUCTP(domain_state);
 		
@@ -407,8 +413,10 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 		return False;
 
 	if (!(mem_ctx = talloc_init_named("get_sam_group_entries(%s)",
-					  ent->domain_name)))
+					  ent->domain_name))) {
+		DEBUG(1, ("get_sam_group_entries: could not create talloc context!\n")); 
 		return False;
+	}
 		
 	/* Free any existing group info */
 
@@ -431,6 +439,7 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 						  &sam_grp_entries);
 	
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("get_sam_group_entries: could not enumerate domain groups! Error: %s", nt_errstr(status)));
 		result = False;
 		goto done;
 	}
@@ -571,14 +580,21 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 				goto done;
 			}
 
-			/* Get group membership */
+			group_list[group_list_ndx].num_gr_mem = 0;
+			gr_mem = NULL;
+			gr_mem_len = 0;
 			
-			result = fill_grent_mem(
-				domain,
-				name_list[ent->sam_entry_index].rid,
-				SID_NAME_DOM_GRP,
-				&group_list[group_list_ndx].num_gr_mem, 
-				&gr_mem, &gr_mem_len);
+			/* Get group membership */			
+			if (state->request.cmd == WINBINDD_GETGRLST) {
+				result = True;
+			} else {
+				result = fill_grent_mem(
+					domain,
+					name_list[ent->sam_entry_index].rid,
+					SID_NAME_DOM_GRP,
+					&group_list[group_list_ndx].num_gr_mem, 
+					&gr_mem, &gr_mem_len);
+			}
 		}
 
 		if (result) {

@@ -2997,6 +2997,34 @@ static BOOL run_rename(int dummy)
 	return correct;
 }
 
+static BOOL run_pipe_number(int dummy)
+{
+	static struct cli_state cli1;
+	char *pipe_name = "\\SPOOLSS";
+	int fnum;
+	int num_pipes = 0;
+
+	printf("starting pipenumber test\n");
+	if (!torture_open_connection(&cli1)) {
+		return False;
+	}
+
+	cli_sockopt(&cli1, sockops);
+	while(1) {
+		fnum = cli_nt_create_full(&cli1, pipe_name,FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN_IF, 0);
+
+		if (fnum == -1) {
+			printf("Open of pipe %s failed with error (%s)\n", pipe_name, cli_errstr(&cli1));
+			break;
+		}
+		num_pipes++;
+	}
+
+	printf("pipe_number test - we can open %d %s pipes.\n", num_pipes, pipe_name );
+	torture_close_connection(&cli1);
+	return True;
+}
 
 /*
   Test open mode returns on read-only files.
@@ -3701,6 +3729,7 @@ static struct {
 	{"UTABLE", torture_utable, 0},
 	{"CASETABLE", torture_casetable, 0},
 	{"ERRMAPEXTRACT", run_error_map_extract, 0},
+	{"PIPE_NUMBER", run_pipe_number, 0},
 	{NULL, NULL, 0}};
 
 

@@ -47,6 +47,7 @@ do {								\
 static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
                          const char *name, SAM_ACCOUNT *sampass, BOOL exist);
 
+
 /*
  * pam_sm_authenticate() authenticates users against the samba password file.
  *
@@ -67,13 +68,11 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
     BOOL found;
 
     /* Points to memory managed by the PAM library. Do not free. */
-    const char *p = NULL;
+    char *p = NULL;
 
 
     /* Samba initialization. */
     setup_logging("pam_smbpass",False);
-    charset_initialise();
-    codepage_initialise(lp_client_code_page());
     in_client = True;
 
     ctrl = set_ctrl(flags, argc, argv);

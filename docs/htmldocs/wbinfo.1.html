@@ -36,12 +36,12 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >wbinfo</B
->  [-u] [-g] [-n name] [-s sid] [-U uid] [-G gid] [-S sid] [-Y sid] [-t] [-m] [-a user%password] [-p]</P
+>  [-u] [-g] [-h name] [-i ip] [-n name] [-s sid] [-U uid] [-G gid] [-S sid] [-Y sid] [-t] [-m] [-r user] [-a user%password] [-A user%password]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN23"
+NAME="AEN26"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -78,7 +78,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN34"
+NAME="AEN37"
 ></A
 ><H2
 >OPTIONS</H2
@@ -120,6 +120,52 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >winbindd(8)</B
 >. </P
+></DD
+><DT
+>-h name</DT
+><DD
+><P
+>The <TT
+CLASS="PARAMETER"
+><I
+>-h</I
+></TT
+> option 
+		queries <B
+CLASS="COMMAND"
+>winbindd(8)</B
+> to query the WINS
+		server for the IP address associated with the NetBIOS name
+		specified by the <TT
+CLASS="PARAMETER"
+><I
+>name</I
+></TT
+> parameter.
+		</P
+></DD
+><DT
+>-i ip</DT
+><DD
+><P
+>The <TT
+CLASS="PARAMETER"
+><I
+>-i</I
+></TT
+> option 
+		queries <B
+CLASS="COMMAND"
+>winbindd(8)</B
+> to send a node status
+		request to get the NetBIOS name associated with the IP address
+		specified by the <TT
+CLASS="PARAMETER"
+><I
+>ip</I
+></TT
+> parameter.
+		</P
 ></DD
 ><DT
 >-n name</DT
@@ -228,6 +274,15 @@ CLASS="COMMAND"
 		</P
 ></DD
 ><DT
+>-r username</DT
+><DD
+><P
+>Try to obtain the list of UNIX group ids
+		to which the user belongs.  This only works for users
+		defined on a Domain Controller.
+		</P
+></DD
+><DT
 >-a username%password</DT
 ><DD
 ><P
@@ -236,11 +291,14 @@ CLASS="COMMAND"
 		</P
 ></DD
 ><DT
->-p</DT
+>-A username%password</DT
 ><DD
 ><P
->Attempt a simple 'ping' check that the winbindd
-                is indeed alive.
+>Store username and password used by winbindd 
+		during session setup to a domain controller.  This enables
+		winbindd to operate in a Windows 2000 domain with Restrict
+		Anonymous turned on (a.k.a. Permissions compatiable with
+		Windows 2000 servers only).
 		</P
 ></DD
 ></DL
@@ -249,7 +307,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN98"
+NAME="AEN119"
 ></A
 ><H2
 >EXIT STATUS</H2
@@ -268,7 +326,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN103"
+NAME="AEN124"
 ></A
 ><H2
 >VERSION</H2
@@ -279,7 +337,7 @@ NAME="AEN103"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN106"
+NAME="AEN127"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -297,7 +355,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN111"
+NAME="AEN132"
 ></A
 ><H2
 >AUTHOR</H2

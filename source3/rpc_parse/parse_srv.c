@@ -5,6 +5,7 @@
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997.
  *  Copyright (C) Jeremy Allison		    1999.
+ *  Copyright (C) Jim McDonough (jmcd@us.ibm.com)   2002
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,6 +23,9 @@
  */
 
 #include "includes.h"
+
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_PARSE
 
 /*******************************************************************
  Inits a SH_INFO_1_STR structure
@@ -108,10 +112,14 @@ void init_srv_share_info2_str(SH_INFO_2_STR *sh2,
 {
 	DEBUG(5,("init_srv_share_info2_str\n"));
 
-	init_unistr2(&sh2->uni_netname, net_name, strlen(net_name)+1);
-	init_unistr2(&sh2->uni_remark, remark, strlen(remark)+1);
-	init_unistr2(&sh2->uni_path, path, strlen(path)+1);
-	init_unistr2(&sh2->uni_passwd, passwd, strlen(passwd)+1);
+	if (net_name)
+		init_unistr2(&sh2->uni_netname, net_name, strlen(net_name)+1);
+	if (remark)
+		init_unistr2(&sh2->uni_remark, remark, strlen(remark)+1);
+	if (path)
+		init_unistr2(&sh2->uni_path, path, strlen(path)+1);
+	if (passwd)
+		init_unistr2(&sh2->uni_passwd, passwd, strlen(passwd)+1);
 }
 
 /*******************************************************************
@@ -658,7 +666,9 @@ void init_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n,
 	init_buf_unistr2(&q_n->uni_srv_name, &q_n->ptr_srv_name, srv_name);
 
 	q_n->ctr.info_level = q_n->ctr.switch_value = info_level;
-	q_n->ctr.ptr_share_info = 0;
+	q_n->ctr.ptr_share_info = 1;
+	q_n->ctr.num_entries = 0;
+	q_n->ctr.ptr_entries = 0;
 	q_n->preferred_len = preferred_len;
 
 	memcpy(&q_n->enum_hnd, hnd, sizeof(*hnd));
@@ -952,8 +962,33 @@ BOOL srv_io_q_net_share_add(char *desc, SRV_Q_NET_SHARE_ADD *q_n, prs_struct *ps
 	if(!srv_io_srv_share_info("info  ", ps, depth, &q_n->info))
 		return False;
 
+	if(!prs_uint32("ptr_err_index", ps, depth, &q_n->ptr_err_index))
+		return False;
+	if (q_n->ptr_err_index)
+		if (!prs_uint32("err_index", ps, depth, &q_n->err_index))
+			return False;
+
 	return True;
 }
+
+void init_srv_q_net_share_add(SRV_Q_NET_SHARE_ADD *q, char *srvname,
+			      char *netname, uint32 type, char *remark, 
+			      uint32 perms, uint32 max_uses, uint32 num_uses,
+			      char *path, char *passwd)
+{
+	q->ptr_srv_name = 1;
+	init_unistr2(&q->uni_srv_name, srvname, strlen(srvname) +1);
+	q->info.switch_value = q->info_level = 2;
+
+	q->info.ptr_share_ctr = 1;
+	init_srv_share_info2(&q->info.share.info2.info_2, netname, type,
+			     remark, perms, max_uses, num_uses, path, passwd);
+	init_srv_share_info2_str(&q->info.share.info2.info_2_str, netname,
+				 remark, path, passwd);
+	q->ptr_err_index = 1;
+	q->err_index = 0;
+}
+
 
 /*******************************************************************
  Reads or writes a structure.
@@ -978,6 +1013,14 @@ BOOL srv_io_r_net_share_add(char *desc, SRV_R_NET_SHARE_ADD *q_n, prs_struct *ps
 	return True;
 }	
 
+void init_srv_q_net_share_del(SRV_Q_NET_SHARE_DEL *del, const char *srvname,
+			      const char *sharename)
+{
+	del->ptr_srv_name = 1;
+	init_unistr2(&del->uni_srv_name, srvname, strlen(srvname) +1 );
+	init_unistr2(&del->uni_share_name, sharename, strlen(sharename) + 1);
+}
+
 /*******************************************************************
  Reads or writes a structure.
 ********************************************************************/
@@ -999,6 +1042,11 @@ BOOL srv_io_q_net_share_del(char *desc, SRV_Q_NET_SHARE_DEL *q_n, prs_struct *ps
 		return False;
 
 	if(!smb_io_unistr2("", &q_n->uni_share_name, True, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("reserved", ps, depth, &q_n->reserved))
 		return False;
 
 	return True;
@@ -1148,7 +1196,7 @@ void init_srv_sess_info1_str(SESS_INFO_1_STR *ss1, char *name, char *user)
 	DEBUG(5,("init_srv_sess_info1_str\n"));
 
 	init_unistr2(&ss1->uni_name, name, strlen(name)+1);
-	init_unistr2(&ss1->uni_user, name, strlen(user)+1);
+	init_unistr2(&ss1->uni_user, user, strlen(user)+1);
 }
 
 /*******************************************************************
@@ -1329,10 +1377,10 @@ static BOOL srv_io_srv_sess_ctr(char *desc, SRV_SESS_INFO_CTR **pp_ctr, prs_stru
 ********************************************************************/
 
 void init_srv_q_net_sess_enum(SRV_Q_NET_SESS_ENUM *q_n, 
-				char *srv_name, char *qual_name,
-				uint32 sess_level, SRV_SESS_INFO_CTR *ctr,
-				uint32 preferred_len,
-				ENUM_HND *hnd)
+			      char *srv_name, char *qual_name,
+			      char *user_name, uint32 sess_level, 
+			      SRV_SESS_INFO_CTR *ctr, uint32 preferred_len,
+			      ENUM_HND *hnd)
 {
 	q_n->ctr = ctr;
 
@@ -1340,6 +1388,7 @@ void init_srv_q_net_sess_enum(SRV_Q_NET_SESS_ENUM *q_n,
 
 	init_buf_unistr2(&q_n->uni_srv_name, &q_n->ptr_srv_name, srv_name);
 	init_buf_unistr2(&q_n->uni_qual_name, &q_n->ptr_qual_name, qual_name);
+	init_buf_unistr2(&q_n->uni_user_name, &q_n->ptr_user_name, user_name);
 
 	q_n->sess_level    = sess_level;
 	q_n->preferred_len = preferred_len;
@@ -1373,6 +1422,13 @@ BOOL srv_io_q_net_sess_enum(char *desc, SRV_Q_NET_SESS_ENUM *q_n, prs_struct *ps
 	if(!prs_uint32("ptr_qual_name", ps, depth, &q_n->ptr_qual_name))
 		return False;
 	if(!smb_io_unistr2("", &q_n->uni_qual_name, q_n->ptr_qual_name, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("ptr_user_name", ps, depth, &q_n->ptr_user_name))
+		return False;
+	if(!smb_io_unistr2("", &q_n->uni_user_name, q_n->ptr_user_name, ps, depth))
 		return False;
 
 	if(!prs_align(ps))
@@ -1879,91 +1935,67 @@ static BOOL srv_io_file_info3(char *desc, FILE_INFO_3 *fl3, prs_struct *ps, int 
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_srv_file_info_3(char *desc, SRV_FILE_INFO_3 *fl3, prs_struct *ps, int depth)
+static BOOL srv_io_srv_file_ctr(char *desc, SRV_FILE_INFO_CTR *ctr, prs_struct *ps, int depth)
 {
-	if (fl3 == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "srv_io_file_3_fl3");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint32("num_entries_read", ps, depth, &fl3->num_entries_read))
-		return False;
-	if(!prs_uint32("ptr_file_fl3", ps, depth, &fl3->ptr_file_info))
-		return False;
-
-	if (fl3->ptr_file_info != 0) {
-		int i;
-		int num_entries = fl3->num_entries_read;
-
-		if (num_entries > MAX_FILE_ENTRIES) {
-			num_entries = MAX_FILE_ENTRIES; /* report this! */
-		}
-
-		if(!prs_uint32("num_entries_read2", ps, depth, &fl3->num_entries_read2))
-			return False;
-
-		for (i = 0; i < num_entries; i++) {
-			if(!srv_io_file_info3("", &fl3->info_3[i], ps, depth))
-				return False;
-		}
-
-		for (i = 0; i < num_entries; i++) {
-			if(!srv_io_file_info3_str("", &fl3->info_3_str[i], ps, depth))
-				return False;
-		}
-
-		if(!prs_align(ps))
-			return False;
-	}
-
-	return True;
-}
-
-/*******************************************************************
- Reads or writes a structure.
-********************************************************************/
-
-static BOOL srv_io_srv_file_ctr(char *desc, SRV_FILE_INFO_CTR **pp_ctr, prs_struct *ps, int depth)
-{
-	SRV_FILE_INFO_CTR *ctr = *pp_ctr;
-
-	if (UNMARSHALLING(ps)) {
-		ctr = *pp_ctr = (SRV_FILE_INFO_CTR *)prs_alloc_mem(ps, sizeof(SRV_FILE_INFO_CTR));
-		if (ctr == NULL)
-			return False;
-	}
-
 	if (ctr == NULL)
 		return False;
 
 	prs_debug(ps, depth, desc, "srv_io_srv_file_ctr");
 	depth++;
 
+	if (UNMARSHALLING(ps)) {
+		memset(ctr, '\0', sizeof(SRV_FILE_INFO_CTR));
+	}
+
 	if(!prs_align(ps))
 		return False;
 
 	if(!prs_uint32("switch_value", ps, depth, &ctr->switch_value))
 		return False;
-	if(!prs_uint32("ptr_file_ctr", ps, depth, &ctr->ptr_file_ctr))
+	if (ctr->switch_value != 3) {
+		DEBUG(5,("%s File info %d level not supported\n",
+			 tab_depth(depth), ctr->switch_value));
+	}
+	if(!prs_uint32("ptr_file_info", ps, depth, &ctr->ptr_file_info))
+		return False;
+	if(!prs_uint32("num_entries", ps, depth, &ctr->num_entries))
+		return False;
+	if(!prs_uint32("ptr_entries", ps, depth, &ctr->ptr_entries))
+		return False;
+	if (ctr->ptr_entries == 0)
+		return True;
+	if(!prs_uint32("num_entries2", ps, depth, 
+		       &ctr->num_entries2))
 		return False;
 
-	if (ctr->ptr_file_ctr != 0) {
-		switch (ctr->switch_value) {
-		case 3:
-			if(!srv_io_srv_file_info_3("", &ctr->file.info3, ps, depth))
-				return False;
-			break;
-		default:
-			DEBUG(5,("%s no file info at switch_value %d\n",
-			         tab_depth(depth), ctr->switch_value));
-			break;
-		}
-	}
+	switch (ctr->switch_value) {
+	case 3: {
+		SRV_FILE_INFO_3 *info3 = ctr->file.info3;
+		int num_entries = ctr->num_entries;
+		int i;
 
+		if (UNMARSHALLING(ps)) {
+			if (!(info3 = (SRV_FILE_INFO_3 *)prs_alloc_mem(ps, num_entries * sizeof(SRV_FILE_INFO_3))))
+				return False;
+			ctr->file.info3 = info3;
+		}
+
+		for (i = 0; i < num_entries; i++) {
+			if(!srv_io_file_info3("", &ctr->file.info3[i].info_3, ps, depth))
+				return False;
+		}
+		for (i = 0; i < num_entries; i++) {
+			if(!srv_io_file_info3_str("", &ctr->file.info3[i].info_3_str, ps, depth))
+				return False;
+		}
+		break;
+	}
+	default:
+		DEBUG(5,("%s no file info at switch_value %d\n",
+			 tab_depth(depth), ctr->switch_value));
+		break;
+	}
+			
 	return True;
 }
 
@@ -1972,20 +2004,22 @@ static BOOL srv_io_srv_file_ctr(char *desc, SRV_FILE_INFO_CTR **pp_ctr, prs_stru
 ********************************************************************/
 
 void init_srv_q_net_file_enum(SRV_Q_NET_FILE_ENUM *q_n, 
-				char *srv_name, char *qual_name,
-				uint32 file_level, SRV_FILE_INFO_CTR *ctr,
-				uint32 preferred_len,
-				ENUM_HND *hnd)
+			      char *srv_name, char *qual_name, char *user_name,
+			      uint32 file_level, SRV_FILE_INFO_CTR *ctr,
+			      uint32 preferred_len,
+			      ENUM_HND *hnd)
 {
 	DEBUG(5,("init_q_net_file_enum\n"));
 
-	q_n->ctr = ctr;
-
 	init_buf_unistr2(&q_n->uni_srv_name, &q_n->ptr_srv_name, srv_name);
 	init_buf_unistr2(&q_n->uni_qual_name, &q_n->ptr_qual_name, qual_name);
+	init_buf_unistr2(&q_n->uni_user_name, &q_n->ptr_user_name, user_name);
 
-	q_n->file_level    = file_level;
+	q_n->file_level    = q_n->ctr.switch_value = file_level;
 	q_n->preferred_len = preferred_len;
+	q_n->ctr.ptr_file_info = 1;
+	q_n->ctr.num_entries = 0;
+	q_n->ctr.num_entries2 = 0;
 
 	memcpy(&q_n->enum_hnd, hnd, sizeof(*hnd));
 }
@@ -2021,6 +2055,13 @@ BOOL srv_io_q_net_file_enum(char *desc, SRV_Q_NET_FILE_ENUM *q_n, prs_struct *ps
 	if(!prs_align(ps))
 		return False;
 
+	if(!prs_uint32("ptr_user_name", ps, depth, &q_n->ptr_user_name))
+		return False;
+	if(!smb_io_unistr2("", &q_n->uni_user_name, q_n->ptr_user_name, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
 	if(!prs_uint32("file_level", ps, depth, &q_n->file_level))
 		return False;
 
@@ -2070,6 +2111,68 @@ BOOL srv_io_r_net_file_enum(char *desc, SRV_R_NET_FILE_ENUM *r_n, prs_struct *ps
 
 	return True;
 }
+
+/*******************************************************************
+ Initialize a net file close request
+********************************************************************/
+void init_srv_q_net_file_close(SRV_Q_NET_FILE_CLOSE *q_n, char *server,
+			       uint32 file_id)
+{
+	q_n->ptr_srv_name = 1;
+	init_unistr2(&q_n->uni_srv_name, server, strlen(server) + 1);
+	q_n->file_id = file_id;
+}
+
+/*******************************************************************
+ Reads or writes a structure.
+********************************************************************/
+BOOL srv_io_q_net_file_close(char *desc, SRV_Q_NET_FILE_CLOSE *q_n,
+			     prs_struct *ps, int depth)
+{
+	if (q_n == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "srv_io_q_net_file_close");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("ptr_srv_name", ps, depth, &q_n->ptr_srv_name))
+		return False;
+	if(!smb_io_unistr2("", &q_n->uni_srv_name, True, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("file_id", ps, depth, &q_n->file_id))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes a structure.
+********************************************************************/
+
+BOOL srv_io_r_net_file_close(char *desc, SRV_R_NET_FILE_CLOSE *q_n, 
+			     prs_struct *ps, int depth)
+{
+	if (q_n == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "srv_io_r_net_file_close");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_werror("status", ps, depth, &q_n->status))
+		return False;
+
+	return True;
+}	
 
 /*******************************************************************
  Inits a SRV_INFO_100 structure.
@@ -2907,3 +3010,14 @@ BOOL srv_io_r_net_file_set_secdesc(char *desc, SRV_R_NET_FILE_SET_SECDESC *r_n, 
 
 	return True;
 }
+
+/*******************************************************************
+ Inits a structure
+********************************************************************/
+
+void init_srv_q_net_remote_tod(SRV_Q_NET_REMOTE_TOD *q_u, char *server)
+{
+	q_u->ptr_srv_name = 1;
+	init_unistr2(&q_u->uni_srv_name, server, strlen(server) + 1);
+}
+

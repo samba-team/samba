@@ -169,6 +169,7 @@ static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset,
 		      int rw_type, int lck_type, int probe)
 {
 	struct flock fl;
+	int ret;
 
 	if (tdb->flags & TDB_NOLOCK)
 		return 0;
@@ -183,8 +184,12 @@ static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset,
 	fl.l_len = 1;
 	fl.l_pid = 0;
 
-	if (fcntl(tdb->fd,lck_type,&fl) == -1) {
-		if (!probe) {
+	do {
+		ret = fcntl(tdb->fd,lck_type,&fl);
+	} while (ret == -1 && errno == EINTR);
+
+	if (ret == -1) {
+		if (!probe && lck_type != F_SETLK) {
 			TDB_LOG((tdb, 5,"tdb_brlock failed (fd=%d) at offset %d rw_type=%d lck_type=%d\n", 
 				 tdb->fd, offset, rw_type, lck_type));
 		}
@@ -407,6 +412,17 @@ static int rec_free_read(TDB_CONTEXT *tdb, tdb_off off, struct list_struct *rec)
 {
 	if (tdb_read(tdb, off, rec, sizeof(*rec),DOCONV()) == -1)
 		return -1;
+
+	if (rec->magic == TDB_MAGIC) {
+		/* this happens when a app is showdown while deleting a record - we should
+		   not completely fail when this happens */
+		TDB_LOG((tdb, 0,"rec_free_read non-free magic at offset=%d - fixing\n", 
+			 rec->magic, off));
+		rec->magic = TDB_FREE_MAGIC;
+		if (tdb_write(tdb, off, rec, sizeof(*rec)) == -1)
+			return -1;
+	}
+
 	if (rec->magic != TDB_FREE_MAGIC) {
 		TDB_LOG((tdb, 0,"rec_free_read bad magic 0x%x at offset=%d\n", 
 			   rec->magic, off));
@@ -1466,6 +1482,8 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	TDB_CONTEXT *tdb;
 	struct stat st;
 	int rev = 0, locked;
+	unsigned char *vp;
+	u32 vertest;
 
 	if (!(tdb = calloc(1, sizeof *tdb))) {
 		/* Can't log this */
@@ -1543,6 +1561,10 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 		}
 		rev = (tdb->flags & TDB_CONVERT);
 	}
+	vp = (unsigned char *)&tdb->header.version;
+	vertest = (((u32)vp[0]) << 24) | (((u32)vp[1]) << 16) |
+		  (((u32)vp[2]) << 8) | (u32)vp[3];
+	tdb->flags |= (vertest==TDB_VERSION) ? TDB_BIGENDIAN : 0;
 	if (!rev)
 		tdb->flags &= ~TDB_CONVERT;
 	else {

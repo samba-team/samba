@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    client connect/disconnect routines
    Copyright (C) Andrew Tridgell 1994-1998
+   Copyright (C) Andrew Barteltt 2001-2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,28 +25,27 @@
 
 
 static const struct {
-    int prot;
-    const char *name;
-  }
-prots[] = 
-    {
-      {PROTOCOL_CORE,"PC NETWORK PROGRAM 1.0"},
-      {PROTOCOL_COREPLUS,"MICROSOFT NETWORKS 1.03"},
-      {PROTOCOL_LANMAN1,"MICROSOFT NETWORKS 3.0"},
-      {PROTOCOL_LANMAN1,"LANMAN1.0"},
-      {PROTOCOL_LANMAN2,"LM1.2X002"},
-      {PROTOCOL_LANMAN2,"Samba"},
-      {PROTOCOL_NT1,"NT LANMAN 1.0"},
-      {PROTOCOL_NT1,"NT LM 0.12"},
-      {-1,NULL}
-    };
-
+	int prot;
+	const char *name;
+} prots[] = {
+	{PROTOCOL_CORE,"PC NETWORK PROGRAM 1.0"},
+	{PROTOCOL_COREPLUS,"MICROSOFT NETWORKS 1.03"},
+	{PROTOCOL_LANMAN1,"MICROSOFT NETWORKS 3.0"},
+	{PROTOCOL_LANMAN1,"LANMAN1.0"},
+	{PROTOCOL_LANMAN2,"LM1.2X002"},
+	{PROTOCOL_LANMAN2,"DOS LANMAN2.1"},
+	{PROTOCOL_LANMAN2,"Samba"},
+	{PROTOCOL_NT1,"NT LANMAN 1.0"},
+	{PROTOCOL_NT1,"NT LM 0.12"},
+	{-1,NULL}
+};
 
 /****************************************************************************
-do an old lanman2 style session setup
+ Do an old lanman2 style session setup.
 ****************************************************************************/
+
 static BOOL cli_session_setup_lanman2(struct cli_state *cli, char *user, 
-				      char *pass, int passlen)
+				      char *pass, int passlen, const char *workgroup)
 {
 	fstring pword;
 	char *p;
@@ -54,17 +54,19 @@ static BOOL cli_session_setup_lanman2(struct cli_state *cli, char *user,
 		return False;
 	}
 
+	/* Lanman2 cannot use SMB signing. */
+	cli->sign_info.use_smb_signing = False;
+
 	/* if in share level security then don't send a password now */
-	if (!(cli->sec_mode & 1)) {
+	if (!(cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL)) {
 		passlen = 0;
 	}
 
-	if (passlen > 0 && (cli->sec_mode & 2) && passlen != 24) {
+	if (passlen > 0 && (cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) && passlen != 24) {
 		/* Encrypted mode needed, and non encrypted password supplied. */
 		passlen = 24;
-		clistr_push(cli, pword, pass, -1, STR_TERMINATE);
-		SMBencrypt((uchar *)pword,cli->secblob.data,(uchar *)pword);
-	} else if ((cli->sec_mode & 2) && passlen == 24) {
+		SMBencrypt(pass,cli->secblob.data,(uchar *)pword);
+	} else if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) && passlen == 24) {
 		/* Encrypted mode needed, and encrypted password supplied. */
 		memcpy(pword, pass, passlen);
 	} else if (passlen > 0) {
@@ -88,7 +90,10 @@ static BOOL cli_session_setup_lanman2(struct cli_state *cli, char *user,
 	p = smb_buf(cli->outbuf);
 	memcpy(p,pword,passlen);
 	p += passlen;
-	p += clistr_push(cli, p, user, -1, STR_TERMINATE);
+	p += clistr_push(cli, p, user, -1, STR_TERMINATE|STR_UPPER);
+	p += clistr_push(cli, p, workgroup, -1, STR_TERMINATE|STR_UPPER);
+	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
+	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE);
 	cli_setup_bcc(cli, p);
 
 	cli_send_smb(cli);
@@ -108,10 +113,10 @@ static BOOL cli_session_setup_lanman2(struct cli_state *cli, char *user,
 	return True;
 }
 
-
 /****************************************************************************
-work out suitable capabilities to offer the server
+ Work out suitable capabilities to offer the server.
 ****************************************************************************/
+
 static uint32 cli_session_setup_capabilities(struct cli_state *cli)
 {
 	uint32 capabilities = CAP_NT_SMBS;
@@ -131,10 +136,10 @@ static uint32 cli_session_setup_capabilities(struct cli_state *cli)
 	return capabilities;
 }
 
-
 /****************************************************************************
-do a NT1 guest session setup
+ Do a NT1 guest session setup.
 ****************************************************************************/
+
 static BOOL cli_session_setup_guest(struct cli_state *cli)
 {
 	char *p;
@@ -181,10 +186,10 @@ static BOOL cli_session_setup_guest(struct cli_state *cli)
 	return True;
 }
 
-
 /****************************************************************************
-do a NT1 plaintext session setup
+ Do a NT1 plaintext session setup.
 ****************************************************************************/
+
 static BOOL cli_session_setup_plaintext(struct cli_state *cli, char *user, 
 					char *pass, char *workgroup)
 {
@@ -237,9 +242,15 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, char *user,
 }
 
 
-/****************************************************************************
-do a NT1 NTLM/LM encrypted session setup
-****************************************************************************/
+/**
+   do a NT1 NTLM/LM encrypted session setup
+   @param cli client state to create do session setup on
+   @param user username
+   @param pass *either* cleartext password (passlen !=24) or LM response.
+   @param ntpass NT response, implies ntpasslen >=24, implies pass is not clear
+   @param workgroup The user's domain.
+*/
+
 static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user, 
 				  char *pass, int passlen,
 				  char *ntpass, int ntpasslen,
@@ -248,6 +259,7 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 	uint32 capabilities = cli_session_setup_capabilities(cli);
 	fstring pword, ntpword;
 	char *p;
+	BOOL tried_signing = False;
 
 	if (passlen > sizeof(pword)-1 || ntpasslen > sizeof(ntpword)-1) {
 		return False;
@@ -257,12 +269,12 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 		/* non encrypted password supplied. Ignore ntpass. */
 		passlen = 24;
 		ntpasslen = 24;
-		clistr_push(cli, pword, 
-			    pass?pass:"", sizeof(pword), STR_TERMINATE|STR_ASCII);
-		clistr_push(cli, ntpword, 
-			    pass?pass:"", sizeof(ntpword), STR_TERMINATE|STR_ASCII);
-		SMBencrypt((uchar *)pword,cli->secblob.data,(uchar *)pword);
-		SMBNTencrypt((uchar *)ntpword,cli->secblob.data,(uchar *)ntpword);
+		SMBencrypt((uchar *)pass,cli->secblob.data,(uchar *)pword);
+		SMBNTencrypt((uchar *)pass,cli->secblob.data,(uchar *)ntpword);
+		if (!cli->sign_info.use_smb_signing && cli->sign_info.negotiated_smb_signing) {
+			cli_calculate_mac_key(cli, (uchar *)pass, (uchar *)ntpword);
+			tried_signing = True;
+		}
 	} else {
 		memcpy(pword, pass, passlen);
 		memcpy(ntpword, ntpass, ntpasslen);
@@ -298,10 +310,15 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 
 	show_msg(cli->inbuf);
 
+	if (tried_signing && (cli_is_error(cli) || SVAL(cli->inbuf,smb_vwv2) /* guest */)) {
+		/* We only use it if we have a successful non-guest connect */
+		cli->sign_info.use_smb_signing = False;
+	}
+
 	if (cli_is_error(cli)) {
 		return False;
 	}
-	
+
 	/* use the returned vuid from now on */
 	cli->vuid = SVAL(cli->inbuf,smb_uid);
 	
@@ -315,10 +332,10 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 	return True;
 }
 
-
 /****************************************************************************
-send a extended security session setup blob, returning a reply blob
+ Send a extended security session setup blob, returning a reply blob.
 ****************************************************************************/
+
 static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
 {
 	uint32 capabilities = cli_session_setup_capabilities(cli);
@@ -382,8 +399,9 @@ static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
 
 #ifdef HAVE_KRB5
 /****************************************************************************
-do a spnego/kerberos encrypted session setup
+ Do a spnego/kerberos encrypted session setup.
 ****************************************************************************/
+
 static BOOL cli_session_setup_kerberos(struct cli_state *cli, char *principal, char *workgroup)
 {
 	DATA_BLOB blob2, negTokenTarg;
@@ -411,8 +429,9 @@ static BOOL cli_session_setup_kerberos(struct cli_state *cli, char *principal, c
 #endif
 
 /****************************************************************************
-do a spnego/NTLMSSP encrypted session setup
+ Do a spnego/NTLMSSP encrypted session setup.
 ****************************************************************************/
+
 static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, char *user, 
 				      char *pass, char *workgroup)
 {
@@ -501,10 +520,10 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, char *user,
 	return !cli_is_error(cli);
 }
 
-
 /****************************************************************************
-do a spnego encrypted session setup
+ Do a spnego encrypted session setup.
 ****************************************************************************/
+
 static BOOL cli_session_setup_spnego(struct cli_state *cli, char *user, 
 				     char *pass, char *workgroup)
 {
@@ -513,6 +532,9 @@ static BOOL cli_session_setup_spnego(struct cli_state *cli, char *user,
 	uint8 guid[16];
 	int i;
 	BOOL got_kerberos_mechanism = False;
+
+	/* spnego security cannot use SMB signing (for now). */
+	cli->sign_info.use_smb_signing = False;
 
 	DEBUG(2,("Doing spnego session setup (blob length=%d)\n", cli->secblob.length));
 
@@ -558,12 +580,12 @@ ntlmssp:
 	return cli_session_setup_ntlmssp(cli, user, pass, workgroup);
 }
 
-
 /****************************************************************************
  Send a session setup. The username and workgroup is in UNIX character
  format and must be converted to DOS codepage format before sending. If the
  password is in plaintext, the same should be done.
 ****************************************************************************/
+
 BOOL cli_session_setup(struct cli_state *cli, 
 		       char *user, 
 		       char *pass, int passlen,
@@ -591,7 +613,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 
 	/* if its an older server then we have to use the older request format */
 	if (cli->protocol < PROTOCOL_NT1) {
-		return cli_session_setup_lanman2(cli, user, pass, passlen);
+		return cli_session_setup_lanman2(cli, user, pass, passlen, workgroup);
 	}
 
 	/* if no user is supplied then we have to do an anonymous connection.
@@ -603,13 +625,13 @@ BOOL cli_session_setup(struct cli_state *cli,
 	/* if the server is share level then send a plaintext null
            password at this point. The password is sent in the tree
            connect */
-	if ((cli->sec_mode & 1) == 0) {
+	if ((cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) == 0) {
 		return cli_session_setup_plaintext(cli, user, "", workgroup);
 	}
 
-	/* if the server doesn't support encryption then we have to use plaintext. The 
-	   second password is ignored */
-	if ((cli->sec_mode & 2) == 0) {
+	/* if the server doesn't support encryption then we have to use 
+	   plaintext. The second password is ignored */
+	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0) {
 		return cli_session_setup_plaintext(cli, user, pass, workgroup);
 	}
 
@@ -630,27 +652,28 @@ BOOL cli_session_setup(struct cli_state *cli,
 
 BOOL cli_ulogoff(struct cli_state *cli)
 {
-        memset(cli->outbuf,'\0',smb_size);
-        set_message(cli->outbuf,2,0,True);
-        SCVAL(cli->outbuf,smb_com,SMBulogoffX);
-        cli_setup_packet(cli);
+	memset(cli->outbuf,'\0',smb_size);
+	set_message(cli->outbuf,2,0,True);
+	SCVAL(cli->outbuf,smb_com,SMBulogoffX);
+	cli_setup_packet(cli);
 	SSVAL(cli->outbuf,smb_vwv0,0xFF);
 	SSVAL(cli->outbuf,smb_vwv2,0);  /* no additional info */
 
-        cli_send_smb(cli);
-        if (!cli_receive_smb(cli))
-                return False;
+	cli_send_smb(cli);
+	if (!cli_receive_smb(cli))
+		return False;
 
-        return !cli_is_error(cli);
+	return !cli_is_error(cli);
 }
 
 /****************************************************************************
-send a tconX
+ Send a tconX.
 ****************************************************************************/
+
 BOOL cli_send_tconX(struct cli_state *cli, 
 		    const char *share, const char *dev, const char *pass, int passlen)
 {
-	fstring fullshare, pword, dos_pword;
+	fstring fullshare, pword;
 	char *p;
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
@@ -658,20 +681,19 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	fstrcpy(cli->share, share);
 
 	/* in user level security don't send a password now */
-	if (cli->sec_mode & 1) {
+	if (cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) {
 		passlen = 1;
 		pass = "";
 	}
 
-	if ((cli->sec_mode & 2) && *pass && passlen != 24) {
+	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) && *pass && passlen != 24) {
 		/*
 		 * Non-encrypted passwords - convert to DOS codepage before encryption.
 		 */
 		passlen = 24;
-		clistr_push(cli, dos_pword, pass, -1, STR_TERMINATE);
-		SMBencrypt((uchar *)dos_pword,cli->secblob.data,(uchar *)pword);
+		SMBencrypt(pass,cli->secblob.data,(uchar *)pword);
 	} else {
-		if((cli->sec_mode & 3) == 0) {
+		if((cli->sec_mode & (NEGOTIATE_SECURITY_USER_LEVEL|NEGOTIATE_SECURITY_CHALLENGE_RESPONSE)) == 0) {
 			/*
 			 * Non-encrypted passwords - convert to DOS codepage before using.
 			 */
@@ -728,10 +750,10 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	return True;
 }
 
-
 /****************************************************************************
-send a tree disconnect
+ Send a tree disconnect.
 ****************************************************************************/
+
 BOOL cli_tdis(struct cli_state *cli)
 {
 	memset(cli->outbuf,'\0',smb_size);
@@ -747,14 +769,18 @@ BOOL cli_tdis(struct cli_state *cli)
 	return !cli_is_error(cli);
 }
 
-
 /****************************************************************************
-send a negprot command
+ Send a negprot command.
 ****************************************************************************/
+
 void cli_negprot_send(struct cli_state *cli)
 {
 	char *p;
 	int numprots;
+
+	if (cli->protocol < PROTOCOL_NT1) {
+		cli->use_spnego = False;
+	}
 
 	memset(cli->outbuf,'\0',smb_size);
 
@@ -778,15 +804,24 @@ void cli_negprot_send(struct cli_state *cli)
 	cli_send_smb(cli);
 }
 
-
 /****************************************************************************
-send a negprot command
+ Send a negprot command.
 ****************************************************************************/
+
 BOOL cli_negprot(struct cli_state *cli)
 {
 	char *p;
 	int numprots;
 	int plength;
+
+	if (cli->sign_info.use_smb_signing) {
+		DEBUG(0, ("Cannot send negprot again, particularly after setting up SMB Signing\n"));
+		return False;
+	}
+
+	if (cli->protocol < PROTOCOL_NT1) {
+		cli->use_spnego = False;
+	}
 
 	memset(cli->outbuf,'\0',smb_size);
 
@@ -822,7 +857,7 @@ BOOL cli_negprot(struct cli_state *cli)
 		return(False);
 	}
 
-	cli->protocol = prots[SVAL(cli->inbuf,smb_vwv0)].prot;
+	cli->protocol = prots[SVAL(cli->inbuf,smb_vwv0)].prot;	
 
 	if (cli->protocol >= PROTOCOL_NT1) {    
 		/* NT protocol */
@@ -847,7 +882,16 @@ BOOL cli_negprot(struct cli_state *cli)
 				    smb_buf(cli->inbuf)+8, sizeof(cli->server_domain),
 				    smb_buflen(cli->inbuf)-8, STR_UNICODE|STR_NOALIGN);
 		}
+
+		/* A way to attempt to force SMB signing */
+		if (getenv("CLI_FORCE_SMB_SIGNING"))
+			cli->sign_info.negotiated_smb_signing = True;
+                                   
+		if (cli->sign_info.negotiated_smb_signing && !(cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED))
+			cli->sign_info.negotiated_smb_signing = False;
+
 	} else if (cli->protocol >= PROTOCOL_LANMAN1) {
+		cli->use_spnego = False;
 		cli->sec_mode = SVAL(cli->inbuf,smb_vwv1);
 		cli->max_xmit = SVAL(cli->inbuf,smb_vwv2);
 		cli->sesskey = IVAL(cli->inbuf,smb_vwv6);
@@ -860,6 +904,7 @@ BOOL cli_negprot(struct cli_state *cli)
 		cli->secblob = data_blob(smb_buf(cli->inbuf),smb_buflen(cli->inbuf));
 	} else {
 		/* the old core protocol */
+		cli->use_spnego = False;
 		cli->sec_mode = 0;
 		cli->serverzone = TimeDiff(time(NULL));
 	}
@@ -874,10 +919,10 @@ BOOL cli_negprot(struct cli_state *cli)
 	return True;
 }
 
-
 /****************************************************************************
-  send a session request.  see rfc1002.txt 4.3 and 4.3.2
+ Send a session request. See rfc1002.txt 4.3 and 4.3.2.
 ****************************************************************************/
+
 BOOL cli_session_request(struct cli_state *cli,
 			 struct nmb_name *calling, struct nmb_name *called)
 {
@@ -887,6 +932,11 @@ BOOL cli_session_request(struct cli_state *cli,
 
 	/* 445 doesn't have session request */
 	if (cli->port == 445) return True;
+
+	if (cli->sign_info.use_smb_signing) {
+		DEBUG(0, ("Cannot send session resquest again, particularly after setting up SMB Signing\n"));
+		return False;
+	}
 
 	/* send a session request (RFC 1002) */
 	memcpy(&(cli->calling), calling, sizeof(*calling));
@@ -902,7 +952,7 @@ BOOL cli_session_request(struct cli_state *cli,
 	name_mangle(cli->calling.name, p, cli->calling.name_type);
 	len += name_len(p);
 
-        /* setup the packet length
+	/* setup the packet length
          * Remove four bytes from the length count, since the length
          * field in the NBT Session Service header counts the number
          * of bytes which follow.  The cli_send_smb() function knows
@@ -912,10 +962,6 @@ BOOL cli_session_request(struct cli_state *cli,
         len -= 4;
 	_smb_setlen(cli->outbuf,len);
 	SCVAL(cli->outbuf,0,0x81);
-
-#ifdef WITH_SSL
-retry:
-#endif /* WITH_SSL */
 
 	cli_send_smb(cli);
 	DEBUG(5,("Sent session request\n"));
@@ -962,15 +1008,6 @@ retry:
 		}
 	} /* C. Hoch 9/14/95 End */
 
-#ifdef WITH_SSL
-    if (CVAL(cli->inbuf,0) == 0x83 && CVAL(cli->inbuf,4) == 0x8e){ /* use ssl */
-        if (!sslutil_fd_is_ssl(cli->fd)){
-            if (sslutil_connect(cli->fd) == 0)
-                goto retry;
-        }
-    }
-#endif /* WITH_SSL */
-
 	if (CVAL(cli->inbuf,0) != 0x82) {
                 /* This is the wrong place to put the error... JRA. */
 		cli->rap_error = CVAL(cli->inbuf,4);
@@ -980,8 +1017,9 @@ retry:
 }
 
 /****************************************************************************
-open the client sockets
+ Open the client sockets.
 ****************************************************************************/
+
 BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 {
 	extern pstring user_socket_options;
@@ -1034,155 +1072,11 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 }
 
 /****************************************************************************
-establishes a connection right up to doing tconX, password in cache.
+ Initialise client credentials for authenticated pipe access.
 ****************************************************************************/
-BOOL cli_establish_connection(struct cli_state *cli, 
-				char *dest_host, struct in_addr *dest_ip,
-				struct nmb_name *calling, struct nmb_name *called,
-				char *service, char *service_type,
-				BOOL do_shutdown, BOOL do_tcon)
-{
-	DEBUG(5,("cli_establish_connection: %s connecting to %s (%s) - %s [%s]\n",
-		          nmb_namestr(calling), nmb_namestr(called), inet_ntoa(*dest_ip),
-	              cli->user_name, cli->domain));
-
-	/* establish connection */
-
-	if ((!cli->initialised))
-	{
-		return False;
-	}
-
-	/* cli_establish_connection() can't handle spnego yet. Once we get rid of
-	   pwd_cache and other horrors we can get rid of this */
-	cli->use_spnego = False;
-
-	if (cli->fd == -1)
-	{
-		if (!cli_connect(cli, dest_host, dest_ip))
-		{
-			DEBUG(1,("cli_establish_connection: failed to connect to %s (%s)\n",
-					  nmb_namestr(called), inet_ntoa(*dest_ip)));
-			return False;
-		}
-	}
-
-	if (!cli_session_request(cli, calling, called))
-	{
-		DEBUG(1,("failed session request\n"));
-		if (do_shutdown)
-			cli_shutdown(cli);
-		return False;
-	}
-
-	if (!cli_negprot(cli))
-	{
-		DEBUG(1,("failed negprot\n"));
-		if (do_shutdown)
-          		cli_shutdown(cli);
-		return False;
-	}
-
-	if (cli->pwd.cleartext || cli->pwd.null_pwd)
-	{
-		fstring passwd;
-		int pass_len;
-
-		if (cli->pwd.null_pwd)
-		{
-			/* attempt null session */
-			passwd[0] = 0;
-			pass_len = 1;
-		}
-		else
-		{
-			/* attempt clear-text session */
-			pwd_get_cleartext(&(cli->pwd), passwd);
-			pass_len = strlen(passwd);
-		}
-
-		/* attempt clear-text session */
-		if (!cli_session_setup(cli, cli->user_name,
-	                       passwd, pass_len,
-	                       NULL, 0,
-	                       cli->domain))
-		{
-			DEBUG(1,("failed session setup\n"));
-			if (do_shutdown)
-			{
-				cli_shutdown(cli);
-			}
-			return False;
-		}
-		if (do_tcon)
-		{
-			if (!cli_send_tconX(cli, service, service_type,
-			                    (char*)passwd, strlen(passwd)))
-			{
-				DEBUG(1,("failed tcon_X\n"));
-				if (do_shutdown)
-				{
-					cli_shutdown(cli);
-				}
-				return False;
-			}
-		}
-	}
-	else
-	{
-		/* attempt encrypted session */
-		unsigned char nt_sess_pwd[24];
-		unsigned char lm_sess_pwd[24];
-
-		/* creates (storing a copy of) and then obtains a 24 byte password OWF */
-		pwd_make_lm_nt_owf(&(cli->pwd), cli->secblob.data);
-		pwd_get_lm_nt_owf(&(cli->pwd), lm_sess_pwd, nt_sess_pwd);
-
-		/* attempt encrypted session */
-		if (!cli_session_setup(cli, cli->user_name,
-	                       (char*)lm_sess_pwd, sizeof(lm_sess_pwd),
-	                       (char*)nt_sess_pwd, sizeof(nt_sess_pwd),
-	                       cli->domain))
-		{
-			DEBUG(1,("failed session setup\n"));
-			if (do_shutdown)
-		              cli_shutdown(cli);
-			return False;
-		}
-
-    		DEBUG(1,("session setup ok\n"));
-    
-    		if (*cli->server_domain || *cli->server_os || *cli->server_type)
-    		{
-    			DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
-				 cli->server_domain,
-				 cli->server_os,
-				 cli->server_type));
-    		}
-		
-		if (do_tcon)
-		{
-			if (!cli_send_tconX(cli, service, service_type,
-			                    (char*)nt_sess_pwd, sizeof(nt_sess_pwd)))
-			{
-				DEBUG(1,("failed tcon_X\n"));
-				if (do_shutdown)
-					cli_shutdown(cli);
-				return False;
-			}
-		}
-	}
-
-	if (do_shutdown)
-		cli_shutdown(cli);
-
-	return True;
-}
-
-/* Initialise client credentials for authenticated pipe access */
 
 static void init_creds(struct ntuser_creds *creds, char* username,
-		       char* domain, char* password, int pass_len)
+		       char* domain, char* password)
 {
 	ZERO_STRUCTP(creds);
 
@@ -1196,15 +1090,26 @@ static void init_creds(struct ntuser_creds *creds, char* username,
 	}
 }
 
-/****************************************************************************
-establishes a connection right up to doing tconX, password specified.
-****************************************************************************/
+/**
+   establishes a connection right up to doing tconX, password specified.
+   @param output_cli A fully initialised cli structure, non-null only on success
+   @param dest_host The netbios name of the remote host
+   @param dest_ip (optional) The the destination IP, NULL for name based lookup
+   @param port (optional) The destination port (0 for default)
+   @param service (optional) The share to make the connection to.  Should be 'unqualified' in any way.
+   @param service_type The 'type' of serivice. 
+   @param user Username, unix string
+   @param domain User's domain
+   @param password User's password, unencrypted unix string.
+*/
+
 NTSTATUS cli_full_connection(struct cli_state **output_cli, 
-			     const char *my_name, const char *dest_host, 
+			     const char *my_name, 
+			     const char *dest_host, 
 			     struct in_addr *dest_ip, int port,
 			     char *service, char *service_type,
 			     char *user, char *domain, 
-			     char *password, int pass_len) 
+			     char *password, int flags) 
 {
 	struct ntuser_creds creds;
 	NTSTATUS nt_status;
@@ -1212,32 +1117,40 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 	struct nmb_name called;
 	struct cli_state *cli;
 	struct in_addr ip;
-	
-	if (!output_cli)
-		DEBUG(0, ("output_cli is NULL!?!"));
+	extern pstring global_myname;
 
-	*output_cli = NULL;
+	if (!output_cli) {
+		DEBUG(0, ("output_cli is NULL!?!"));
+		SMB_ASSERT("output_cli for cli_full_connection was NULL.\n");
+	}
+
+	if (!my_name) 
+		my_name = global_myname;
+	
+	if (!(cli = cli_initialise(NULL)))
+		return NT_STATUS_NO_MEMORY;
 	
 	make_nmb_name(&calling, my_name, 0x0);
 	make_nmb_name(&called , dest_host, 0x20);
 
-again:
-
-	if (!(cli = cli_initialise(NULL)))
-		return NT_STATUS_NO_MEMORY;
-	
 	if (cli_set_port(cli, port) != port) {
 		cli_shutdown(cli);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	ip = *dest_ip;
-	
+	if (dest_ip) {
+		ip = *dest_ip;
+	} else {
+		ZERO_STRUCT(ip);
+	}
+
+again:
+
 	DEBUG(3,("Connecting to host=%s share=%s\n", dest_host, service));
 	
 	if (!cli_connect(cli, dest_host, &ip)) {
-		DEBUG(1,("cli_establish_connection: failed to connect to %s (%s)\n",
-			 nmb_namestr(&called), inet_ntoa(*dest_ip)));
+		DEBUG(1,("cli_full_connection: failed to connect to %s (%s)\n",
+			 nmb_namestr(&called), inet_ntoa(ip)));
 		cli_shutdown(cli);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -1258,6 +1171,12 @@ again:
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
+	if (flags & CLI_FULL_CONNECTION_DONT_SPNEGO) {
+		cli->use_spnego = False;
+	} else if (flags & CLI_FULL_CONNECTION_USE_KERBEROS) {
+		cli->use_kerberos = True;
+	}
+
 	if (!cli_negprot(cli)) {
 		DEBUG(1,("failed negprot\n"));
 		nt_status = NT_STATUS_UNSUCCESSFUL;
@@ -1265,29 +1184,36 @@ again:
 		return nt_status;
 	}
 
-	if (!cli_session_setup(cli, user, password, pass_len, password, pass_len, 
+	if (!cli_session_setup(cli, user, password, strlen(password)+1, 
+			       password, strlen(password)+1, 
 			       domain)) {
-		DEBUG(1,("failed session setup\n"));
-		nt_status = cli_nt_error(cli);
-		cli_shutdown(cli);
-		if (NT_STATUS_IS_OK(nt_status)) 
-			nt_status = NT_STATUS_UNSUCCESSFUL;
-		return nt_status;
-	} 
-
-	if (service) {
-		if (!cli_send_tconX(cli, service, service_type,
-				    (char*)password, pass_len)) {
-			DEBUG(1,("failed tcon_X\n"));
+		if (!(flags & CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK) 
+		    || cli_session_setup(cli, "", "", 0, 
+					 "", 0, domain)) {
+		} else {
 			nt_status = cli_nt_error(cli);
+			DEBUG(1,("failed session setup with %s\n", nt_errstr(nt_status)));
 			cli_shutdown(cli);
 			if (NT_STATUS_IS_OK(nt_status)) 
 				nt_status = NT_STATUS_UNSUCCESSFUL;
 			return nt_status;
 		}
+	} 
+
+	if (service) {
+		if (!cli_send_tconX(cli, service, service_type,
+				    (char*)password, strlen(password)+1)) {
+			DEBUG(1,("failed tcon_X with %s\n", nt_errstr(nt_status)));
+			nt_status = cli_nt_error(cli);
+			cli_shutdown(cli);
+			if (NT_STATUS_IS_OK(nt_status)) {
+				nt_status = NT_STATUS_UNSUCCESSFUL;
+			}
+			return nt_status;
+		}
 	}
 
-	init_creds(&creds, user, domain, password, pass_len);
+	init_creds(&creds, user, domain, password);
 	cli_init_creds(cli, &creds);
 
 	*output_cli = cli;
@@ -1301,55 +1227,53 @@ again:
 BOOL attempt_netbios_session_request(struct cli_state *cli, char *srchost, char *desthost,
                                      struct in_addr *pdest_ip)
 {
-  struct nmb_name calling, called;
+	struct nmb_name calling, called;
 
-  make_nmb_name(&calling, srchost, 0x0);
+	make_nmb_name(&calling, srchost, 0x0);
 
-  /*
-   * If the called name is an IP address
-   * then use *SMBSERVER immediately.
-   */
+	/*
+	 * If the called name is an IP address
+	 * then use *SMBSERVER immediately.
+	 */
 
-  if(is_ipaddress(desthost))
-    make_nmb_name(&called, "*SMBSERVER", 0x20);
-  else
-    make_nmb_name(&called, desthost, 0x20);
+	if(is_ipaddress(desthost))
+		make_nmb_name(&called, "*SMBSERVER", 0x20);
+	else
+		make_nmb_name(&called, desthost, 0x20);
 
-  if (!cli_session_request(cli, &calling, &called)) {
-    struct nmb_name smbservername;
+	if (!cli_session_request(cli, &calling, &called)) {
+		struct nmb_name smbservername;
 
-    make_nmb_name(&smbservername , "*SMBSERVER", 0x20);
+		make_nmb_name(&smbservername , "*SMBSERVER", 0x20);
 
-    /*
-     * If the name wasn't *SMBSERVER then
-     * try with *SMBSERVER if the first name fails.
-     */
+		/*
+		 * If the name wasn't *SMBSERVER then
+		 * try with *SMBSERVER if the first name fails.
+		 */
 
-    if (nmb_name_equal(&called, &smbservername)) {
+		if (nmb_name_equal(&called, &smbservername)) {
 
-        /*
-         * The name used was *SMBSERVER, don't bother with another name.
-         */
+			/*
+			 * The name used was *SMBSERVER, don't bother with another name.
+			 */
 
-        DEBUG(0,("attempt_netbios_session_request: %s rejected the session for name *SMBSERVER \
+			DEBUG(0,("attempt_netbios_session_request: %s rejected the session for name *SMBSERVER \
 with error %s.\n", desthost, cli_errstr(cli) ));
-	cli_shutdown(cli);
-	return False;
-    }
+			cli_shutdown(cli);
+			return False;
+		}
 
-    cli_shutdown(cli);
+		cli_shutdown(cli);
 
-    if (!cli_initialise(cli) ||
-        !cli_connect(cli, desthost, pdest_ip) ||
-        !cli_session_request(cli, &calling, &smbservername)) {
-          DEBUG(0,("attempt_netbios_session_request: %s rejected the session for \
+		if (!cli_initialise(cli) ||
+				!cli_connect(cli, desthost, pdest_ip) ||
+				!cli_session_request(cli, &calling, &smbservername)) {
+			DEBUG(0,("attempt_netbios_session_request: %s rejected the session for \
 name *SMBSERVER with error %s\n", desthost, cli_errstr(cli) ));
-          cli_shutdown(cli);
-          return False;
-    }
-  }
+			cli_shutdown(cli);
+			return False;
+		}
+	}
 
-  return True;
+	return True;
 }
-
-

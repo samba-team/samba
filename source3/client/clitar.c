@@ -37,6 +37,7 @@
 
 #include "includes.h"
 #include "clitar.h"
+#include "../client/client_proto.h"
 
 static int clipfind(char **aret, int ret, char *tok);
 
@@ -65,8 +66,6 @@ typedef struct
 
 } stack;
 
-stack dir_stack = {NULL, 0}; /* Want an empty stack */
-
 #define SEPARATORS " \t\n\r"
 extern struct cli_state *cli;
 
@@ -85,25 +84,25 @@ static char *tarbuf, *buffer_p;
 static int tp, ntarf, tbufsiz;
 static double ttarf;
 /* Incremental mode */
-BOOL tar_inc=False;
+static BOOL tar_inc=False;
 /* Reset archive bit */
-BOOL tar_reset=False;
+static BOOL tar_reset=False;
 /* Include / exclude mode (true=include, false=exclude) */
-BOOL tar_excl=True;
+static BOOL tar_excl=True;
 /* use regular expressions for search on file names */
-BOOL tar_re_search=False;
+static BOOL tar_re_search=False;
 #ifdef HAVE_REGEX_H
 regex_t *preg;
 #endif
 /* Do not dump anything, just calculate sizes */
-BOOL dry_run=False;
+static BOOL dry_run=False;
 /* Dump files with System attribute */
-BOOL tar_system=True;
+static BOOL tar_system=True;
 /* Dump files with Hidden attribute */
-BOOL tar_hidden=True;
+static BOOL tar_hidden=True;
 /* Be noisy - make a catalogue */
-BOOL tar_noisy=True;
-BOOL tar_real_noisy=False;  /* Don't want to be really noisy by default */
+static BOOL tar_noisy=True;
+static BOOL tar_real_noisy=False;  /* Don't want to be really noisy by default */
 
 char tar_type='\0';
 static char **cliplist=NULL;
@@ -119,8 +118,8 @@ extern pstring cur_dir;
 extern int get_total_time_ms;
 extern int get_total_size;
 
-int blocksize=20;
-int tarhandle;
+static int blocksize=20;
+static int tarhandle;
 
 static void writetarheader(int f,  char *aname, int size, time_t mtime,
 			   char *amode, unsigned char ftype);

@@ -22,6 +22,9 @@
 
 #include "winbindd.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_WINBIND
+
 /* High water mark keys */
 
 #define HWM_GROUP  "GROUP HWM"
@@ -364,6 +367,7 @@ fail:
 static BOOL idmap_convert(const char *idmap_name)
 {
 	int32 vers = tdb_fetch_int32(idmap_tdb, "IDMAP_VERSION");
+	BOOL bigendianheader = (idmap_tdb->flags & TDB_BIGENDIAN) ? True : False;
 
 	if (vers == IDMAP_VERSION)
 		return True;
@@ -374,28 +378,34 @@ static BOOL idmap_convert(const char *idmap_name)
 		return False;
 #endif
 
-	if (IREV(vers) == IDMAP_VERSION) {
-		/* Arrggghh ! Bytereversed - make order independent ! */
+	if (((vers == -1) && bigendianheader) || (IREV(vers) == IDMAP_VERSION)) {
+		/* Arrggghh ! Bytereversed or old big-endian - make order independent ! */
+		/*
+		 * high and low records were created on a
+		 * big endian machine and will need byte-reversing.
+		 */
+
 		int32 wm;
 
 		wm = tdb_fetch_int32(idmap_tdb, HWM_USER);
 
-		if (wm != -1)
+		if (wm != -1) {
 			wm = IREV(wm);
-		else
+		}  else
 			wm = server_state.uid_low;
 
-		if (tdb_store_int32(idmap_tdb, HWM_USER, server_state.uid_low) == -1) {
+		if (tdb_store_int32(idmap_tdb, HWM_USER, wm) == -1) {
 			DEBUG(0, ("idmap_convert: Unable to byteswap user hwm in idmap database\n"));
 			return False;
 		}
 
 		wm = tdb_fetch_int32(idmap_tdb, HWM_GROUP);
-		if (wm != -1)
+		if (wm != -1) {
 			wm = IREV(wm);
-		else
+		} else
 			wm = server_state.gid_low;
-		if (tdb_store_int32(idmap_tdb, HWM_GROUP, server_state.gid_low) == -1) {
+
+		if (tdb_store_int32(idmap_tdb, HWM_GROUP, wm) == -1) {
 			DEBUG(0, ("idmap_convert: Unable to byteswap group hwm in idmap database\n"));
 			return False;
 		}
@@ -404,7 +414,7 @@ static BOOL idmap_convert(const char *idmap_name)
 	/* the old format stored as DOMAIN/rid - now we store the SID direct */
 	tdb_traverse(idmap_tdb, convert_fn, NULL);
 
-        if (tdb_store_int32(idmap_tdb, "IDMAP_VERSION", IDMAP_VERSION) == -1) {
+	if (tdb_store_int32(idmap_tdb, "IDMAP_VERSION", IDMAP_VERSION) == -1) {
 		DEBUG(0, ("idmap_convert: Unable to byteswap group hwm in idmap database\n"));
 		return False;
 	}

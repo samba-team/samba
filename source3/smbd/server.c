@@ -53,7 +53,7 @@ int smbd_server_fd(void)
 	return server_fd;
 }
 
-void smbd_set_server_fd(int fd)
+static void smbd_set_server_fd(int fd)
 {
 	server_fd = fd;
 	client_setfd(fd);
@@ -63,7 +63,7 @@ void smbd_set_server_fd(int fd)
  Terminate signal.
 ****************************************************************************/
 
-VOLATILE sig_atomic_t got_sig_term = 0;
+SIG_ATOMIC_T got_sig_term = 0;
 
 static void sig_term(void)
 {
@@ -75,7 +75,7 @@ static void sig_term(void)
  Catch a sighup.
 ****************************************************************************/
 
-VOLATILE sig_atomic_t reload_after_sighup = 0;
+SIG_ATOMIC_T reload_after_sighup = 0;
 
 static void sig_hup(int sig)
 {
@@ -382,6 +382,8 @@ BOOL reload_services(BOOL test)
 {
 	BOOL ret;
 	
+	set_register_printer_fn();
+
 	if (lp_loaded()) {
 		pstring fname;
 		pstrcpy(fname,lp_configfile());
@@ -531,6 +533,7 @@ void exit_server(char *reason)
 	}    
 
 	locking_end();
+	printing_end();
 
 	DEBUG(3,("Server exit (%s)\n", (reason ? reason : "")));
 	exit(0);
@@ -782,15 +785,6 @@ static void usage(char *pname)
 	}
 #endif
 
-#ifdef WITH_SSL
-	{
-		extern BOOL sslEnabled;
-		sslEnabled = lp_ssl_enabled();
-		if(sslEnabled)
-			sslutil_init(True);
-	}
-#endif        /* WITH_SSL */
-
 	fstrcpy(global_myworkgroup, lp_workgroup());
 
 	DEBUG(3,( "loaded services\n"));
@@ -861,6 +855,9 @@ static void usage(char *pname)
 	if (!share_info_db_init())
 		exit(1);
 
+	if (!init_registry())
+		exit(1);
+
 	if(!initialize_password_db(False))
 		exit(1);
 
@@ -869,7 +866,7 @@ static void usage(char *pname)
 	/* possibly reload the services file. */
 	reload_services(True);
 
-	if(!pdb_generate_sam_sid()) {
+	if(!get_global_sam_sid()) {
 		DEBUG(0,("ERROR: Samba cannot create a SAM SID.\n"));
 		exit(1);
 	}

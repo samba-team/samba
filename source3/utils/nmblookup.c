@@ -25,6 +25,7 @@
 
 extern BOOL AllowDebugChange;
 
+static BOOL give_flags = False;
 static BOOL use_bcast = True;
 static BOOL got_bcast = False;
 static struct in_addr bcast_addr;
@@ -63,6 +64,7 @@ static void usage(void)
   d_printf("Version %s\n",VERSION);
   d_printf("\t-d debuglevel         set the debuglevel\n");
   d_printf("\t-B broadcast address  the address to use for broadcasts\n");
+  d_printf("\t-f                    list the NMB flags returned\n");
   d_printf("\t-U unicast   address  the address to use for unicast\n");
   d_printf("\t-M                    searches for a master browser\n");
   d_printf("\t-R                    set recursion desired in packet\n");
@@ -99,6 +101,24 @@ static char *node_status_flags(unsigned char flags)
 }
 
 /****************************************************************************
+turn the NMB Query flags into a string
+****************************************************************************/
+static char *query_flags(int flags)
+{
+	static fstring ret1;
+	fstrcpy(ret1, "");
+
+	if (flags & NM_FLAGS_RS) fstrcat(ret1, "Response ");
+	if (flags & NM_FLAGS_AA) fstrcat(ret1, "Authoritative ");
+	if (flags & NM_FLAGS_TC) fstrcat(ret1, "Truncated ");
+	if (flags & NM_FLAGS_RD) fstrcat(ret1, "Recursion_Desired ");
+	if (flags & NM_FLAGS_RA) fstrcat(ret1, "Recursion_Available ");
+	if (flags & NM_FLAGS_B)  fstrcat(ret1, "Broadcast ");
+
+	return ret1;
+}
+
+/****************************************************************************
 do a node status query
 ****************************************************************************/
 static void do_node_status(int fd, char *name, int type, struct in_addr ip)
@@ -132,14 +152,14 @@ send out one query
 ****************************************************************************/
 static BOOL query_one(char *lookup, unsigned int lookup_type)
 {
-	int j, count;
+	int j, count, flags = 0;
 	struct in_addr *ip_list=NULL;
 
 	if (got_bcast) {
 		d_printf("querying %s on %s\n", lookup, inet_ntoa(bcast_addr));
 		ip_list = name_query(ServerFD,lookup,lookup_type,use_bcast,
 				     use_bcast?True:recursion_desired,
-				     bcast_addr,&count);
+				     bcast_addr,&count, &flags, NULL);
 	} else {
 		struct in_addr *bcast;
 		for (j=iface_count() - 1;
@@ -151,11 +171,14 @@ static BOOL query_one(char *lookup, unsigned int lookup_type)
 			ip_list = name_query(ServerFD,lookup,lookup_type,
 					     use_bcast,
 					     use_bcast?True:recursion_desired,
-					     *bcast,&count);
+					     *bcast,&count, &flags, NULL);
 		}
 	}
 
 	if (!ip_list) return False;
+
+	if (give_flags)
+	  d_printf("Flags: %s\n", query_flags(flags));
 
 	for (j=0;j<count;j++) {
 		if (translate_addresses) {
@@ -203,13 +226,16 @@ int main(int argc,char *argv[])
 
   setup_logging(argv[0],True);
 
-  while ((opt = getopt(argc, argv, "d:B:U:i:s:SMrhART")) != EOF)
+  while ((opt = getopt(argc, argv, "d:fB:U:i:s:SMrhART")) != EOF)
     switch (opt)
       {
       case 'B':
 	bcast_addr = *interpret_addr2(optarg);
 	got_bcast = True;
 	use_bcast = True;
+	break;
+      case 'f':
+	give_flags = True;
 	break;
       case 'U':
 	bcast_addr = *interpret_addr2(optarg);

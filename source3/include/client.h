@@ -57,6 +57,15 @@ struct print_job_info
 	time_t t;
 };
 
+typedef struct smb_sign_info {
+	BOOL use_smb_signing;
+	BOOL negotiated_smb_signing;
+	size_t mac_key_len;
+	uint8 mac_key[44];
+	uint32 send_seq_num;
+	uint32 reply_seq_num;
+} smb_sign_info;
+
 struct cli_state {
 	int port;
 	int fd;
@@ -69,7 +78,6 @@ struct cli_state {
 	int rap_error;
 	int privileges;
 
-	fstring eff_name;
 	fstring desthost;
 	fstring user_name;
 	fstring domain;
@@ -109,6 +117,8 @@ struct cli_state {
 
 	TALLOC_CTX *mem_ctx;
 
+	smb_sign_info sign_info;
+
 	/*
 	 * Only used in NT domain calls.
 	 */
@@ -144,5 +154,9 @@ struct cli_state {
 	/* Name of the pipe we're talking to, if any */
 	fstring pipe_name;
 };
+
+#define CLI_FULL_CONNECTION_DONT_SPNEGO 0x0001
+#define CLI_FULL_CONNECTION_USE_KERBEROS 0x0002
+#define CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK 0x0004
 
 #endif /* _CLIENT_H */

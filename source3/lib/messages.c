@@ -79,21 +79,11 @@ static void sig_usr1(void)
  A useful function for testing the message system.
 ****************************************************************************/
 
-void ping_message(int msg_type, pid_t src, void *buf, size_t len)
+static void ping_message(int msg_type, pid_t src, void *buf, size_t len)
 {
 	char *msg = buf ? buf : "none";
 	DEBUG(1,("INFO: Received PING message from PID %u [%s]\n",(unsigned int)src, msg));
 	message_send_pid(src, MSG_PONG, buf, len, True);
-}
-
-/****************************************************************************
- Return current debug level.
-****************************************************************************/
-
-void debuglevel_message(int msg_type, pid_t src, void *buf, size_t len)
-{
-	DEBUG(1,("INFO: Received REQ_DEBUGLEVEL message from PID %u\n",(unsigned int)src));
-	message_send_pid(src, MSG_DEBUGLEVEL, DEBUGLEVEL_CLASS, sizeof(DEBUGLEVEL_CLASS), True);
 }
 
 /****************************************************************************
@@ -116,7 +106,6 @@ BOOL message_init(void)
 	CatchSignal(SIGUSR1, SIGNAL_CAST sig_usr1);
 
 	message_register(MSG_PING, ping_message);
-	message_register(MSG_REQ_DEBUGLEVEL, debuglevel_message);
 
 	return True;
 }
@@ -340,8 +329,8 @@ void message_dispatch(void)
 			}
 		}
 		if (!n_handled) {
-			DEBUG(5,("message_dispatch: warning: no handlers registed for "
-				 "msg_type %d in pid%d\n",
+			DEBUG(5,("message_dispatch: warning: no handlers registered for "
+				 "msg_type %d in pid %d\n",
 				 msg_type, sys_getpid()));
 		}
 		SAFE_FREE(buf);
@@ -464,7 +453,7 @@ BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type,
 	return True;
 }
 
-static VOLATILE sig_atomic_t gotalarm;
+static SIG_ATOMIC_T gotalarm;
 
 /***************************************************************
  Signal function to tell us we timed out.
@@ -486,6 +475,7 @@ BOOL message_named_mutex(char *name, unsigned int timeout)
 {
 	TDB_DATA key;
 	int ret;
+	void (*oldsig_handler)(int) = NULL;
 
 	if (!message_init())
 		return False;
@@ -495,7 +485,7 @@ BOOL message_named_mutex(char *name, unsigned int timeout)
 
 	if (timeout) {
 		gotalarm = 0;
-		CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+		oldsig_handler = CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
 		alarm(timeout);
 	}
 
@@ -503,7 +493,7 @@ BOOL message_named_mutex(char *name, unsigned int timeout)
 
 	if (timeout) {
 		alarm(0);
-		CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
+		CatchSignal(SIGALRM, SIGNAL_CAST oldsig_handler);
 		if (gotalarm)
 			return False;
 	}

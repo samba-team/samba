@@ -33,20 +33,22 @@ int net_ads_usage(int argc, const char **argv)
 "\nnet ads leave"\
 "\n\tremoves the local machine from a ADS realm\n"\
 "\nnet ads user"\
-"\n\tlist users in the realm\n"\
+"\n\tlist, add, or delete users in the realm\n"\
 "\nnet ads group"\
-"\n\tlist groups in the realm\n"\
+"\n\tlist, add, or delete groups in the realm\n"\
 "\nnet ads info"\
 "\n\tshows some info on the server\n"\
 "\nnet ads status"\
 "\n\tdump the machine account details to stdout\n"
 "\nnet ads password <username@realm> -Uadmin_username@realm%%admin_pass"\
-"\n\tchange a user's password using an admin account"
-"\n\t(note: use realm in UPPERCASE)\n"
-"\nnet ads chostpass"
-"\n\tchange the trust account password of this machine in the AD tree\n"
-"\nnet ads printer [info | publish | remove] <printername> <servername>"
-"\n\t lookup, add, or remove directory entry for a printer\n"
+"\n\tchange a user's password using an admin account"\
+"\n\t(note: use realm in UPPERCASE)\n"\
+"\nnet ads chostpass"\
+"\n\tchange the trust account password of this machine in the AD tree\n"\
+"\nnet ads printer [info | publish | remove] <printername> <servername>"\
+"\n\t lookup, add, or remove directory entry for a printer\n"\
+"\nnet ads search"\
+"\n\tperform a raw LDAP search and dump the results\n"
 		);
 	return -1;
 }
@@ -56,7 +58,7 @@ static int net_ads_info(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 
-	ads = ads_init(NULL, opt_host, NULL, NULL);
+	ads = ads_init(NULL, NULL, opt_host, NULL, NULL);
 	ads_connect(ads);
 
 	if (!ads) {
@@ -81,7 +83,7 @@ static ADS_STRUCT *ads_startup(void)
 	BOOL need_password = False;
 	BOOL second_time = False;
 	
-	ads = ads_init(NULL, opt_host, NULL, NULL);
+	ads = ads_init(NULL, NULL, opt_host, NULL, NULL);
 
 	if (!opt_user_name) {
 		opt_user_name = "administrator";
@@ -135,27 +137,30 @@ int net_ads_check(void)
 }
 
 
-static void usergrp_display(char *field, void **values, void *data_area)
+static BOOL usergrp_display(char *field, void **values, void *data_area)
 {
 	char **disp_fields = (char **) data_area;
 
 	if (!field) { /* must be end of record */
 		if (!strchr_m(disp_fields[0], '$')) {
 			if (disp_fields[1])
-				printf("%-21.21s %-50.50s\n", 
+				d_printf("%-21.21s %-50.50s\n", 
 				       disp_fields[0], disp_fields[1]);
 			else
-				printf("%-21.21s\n", disp_fields[0]);
+				d_printf("%s\n", disp_fields[0]);
 		}
 		SAFE_FREE(disp_fields[0]);
 		SAFE_FREE(disp_fields[1]);
-		return;
+		return True;
 	}
+	if (!values) /* must be new field, indicate string field */
+		return True;
 	if (StrCaseCmp(field, "sAMAccountName") == 0) {
-		disp_fields[0] = strdup(((struct berval *) values[0])->bv_val);
+		disp_fields[0] = strdup((char *) values[0]);
 	}
 	if (StrCaseCmp(field, "description") == 0)
-		disp_fields[1] = strdup(((struct berval *) values[0])->bv_val);
+		disp_fields[1] = strdup((char *) values[0]);
+	return True; /* always strings here */
 }
 
 static int net_ads_user_usage(int argc, const char **argv)
@@ -167,6 +172,7 @@ static int ads_user_add(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
+	char *upn, *userdn;
 	void *res=NULL;
 	int rc = -1;
 
@@ -183,18 +189,43 @@ static int ads_user_add(int argc, const char **argv)
 	
 	if (ads_count_replies(ads, res)) {
 		d_printf("ads_user_add: User %s already exists\n", argv[0]);
-		ads_msgfree(ads, res);
 		goto done;
 	}
 
 	status = ads_add_user_acct(ads, argv[0], opt_comment);
 
+	if (!ADS_ERR_OK(status)) {
+		d_printf("Could not add user %s: %s\n", argv[0],
+			 ads_errstr(status));
+		goto done;
+	}
+
+	/* if no password is to be set, we're done */
+	if (argc == 1) { 
+		d_printf("User %s added\n", argv[0]);
+		rc = 0;
+		goto done;
+	}
+
+	/* try setting the password */
+	asprintf(&upn, "%s@%s", argv[0], ads->realm);
+	status = krb5_set_password(ads->kdc_server, upn, argv[1]);
+	safe_free(upn);
 	if (ADS_ERR_OK(status)) {
 		d_printf("User %s added\n", argv[0]);
 		rc = 0;
-	} else {
-		d_printf("Could not add user %s: %s\n", argv[0],
-			 ads_errstr(status));
+		goto done;
+	}
+
+	/* password didn't set, delete account */
+	d_printf("Could not add user %s.  Error setting password %s\n",
+		 argv[0], ads_errstr(status));
+	ads_msgfree(ads, res);
+	status=ads_find_user_acct(ads, &res, argv[0]);
+	if (ADS_ERR_OK(status)) {
+		userdn = ads_get_dn(ads, res);
+		ads_del_dn(ads, userdn);
+		ads_memfree(ads, userdn);
 	}
 
  done:
@@ -233,7 +264,7 @@ static int ads_user_info(int argc, const char **argv)
 		char **groupname;
 		for (i=0;grouplist[i];i++) {
 			groupname = ldap_explode_dn(grouplist[i], 1);
-			printf("%s\n", groupname[0]);
+			d_printf("%s\n", groupname[0]);
 			ldap_value_free(groupname);
 		}
 		ldap_value_free(grouplist);
@@ -308,26 +339,111 @@ int net_ads_user(int argc, const char **argv)
 	return net_run_function(argc, argv, func, net_ads_user_usage);
 }
 
-static int net_ads_group(int argc, const char **argv)
+static int net_ads_group_usage(int argc, const char **argv)
 {
+	return net_help_group(argc, argv);
+} 
+
+static int ads_group_add(int argc, const char **argv)
+{
+	ADS_STRUCT *ads;
+	ADS_STATUS status;
+	void *res=NULL;
+	int rc = -1;
+
+	if (argc < 1) return net_ads_group_usage(argc, argv);
+	
+	if (!(ads = ads_startup())) return -1;
+
+	status = ads_find_user_acct(ads, &res, argv[0]);
+
+	if (!ADS_ERR_OK(status)) {
+		d_printf("ads_group_add: %s\n", ads_errstr(status));
+		goto done;
+	}
+	
+	if (ads_count_replies(ads, res)) {
+		d_printf("ads_group_add: Group %s already exists\n", argv[0]);
+		ads_msgfree(ads, res);
+		goto done;
+	}
+
+	status = ads_add_group_acct(ads, argv[0], opt_comment);
+
+	if (ADS_ERR_OK(status)) {
+		d_printf("Group %s added\n", argv[0]);
+		rc = 0;
+	} else {
+		d_printf("Could not add group %s: %s\n", argv[0],
+			 ads_errstr(status));
+	}
+
+ done:
+	if (res)
+		ads_msgfree(ads, res);
+	ads_destroy(&ads);
+	return rc;
+}
+
+static int ads_group_delete(int argc, const char **argv)
+{
+	ADS_STRUCT *ads;
+	ADS_STATUS rc;
+	void *res;
+	char *groupdn;
+
+	if (argc < 1) return net_ads_group_usage(argc, argv);
+	
+	if (!(ads = ads_startup())) return -1;
+
+	rc = ads_find_user_acct(ads, &res, argv[0]);
+	if (!ADS_ERR_OK(rc)) {
+		DEBUG(0, ("Group %s does not exist\n", argv[0]));
+		return -1;
+	}
+	groupdn = ads_get_dn(ads, res);
+	ads_msgfree(ads, res);
+	rc = ads_del_dn(ads, groupdn);
+	ads_memfree(ads, groupdn);
+	if (!ADS_ERR_OK(rc)) {
+		d_printf("Group %s deleted\n", argv[0]);
+		return 0;
+	}
+	d_printf("Error deleting group %s: %s\n", argv[0], 
+		 ads_errstr(rc));
+	return -1;
+}
+
+int net_ads_group(int argc, const char **argv)
+{
+	struct functable func[] = {
+		{"ADD", ads_group_add},
+		{"DELETE", ads_group_delete},
+		{NULL, NULL}
+	};
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
 	const char *shortattrs[] = {"sAMAccountName", NULL};
 	const char *longattrs[] = {"sAMAccountName", "description", NULL};
 	char *disp_fields[2] = {NULL, NULL};
 
-	if (!(ads = ads_startup())) return -1;
+	if (argc == 0) {
+		if (!(ads = ads_startup())) return -1;
 
-	if (opt_long_list_entries)
-		d_printf("\nGroup name            Comment"\
-			 "\n-----------------------------\n");
-	rc = ads_do_search_all_fn(ads, ads->bind_path, LDAP_SCOPE_SUBTREE, 
-				  "(objectclass=group)", opt_long_list_entries
-				  ? longattrs : shortattrs, usergrp_display, 
-				  disp_fields);
+		if (opt_long_list_entries)
+			d_printf("\nGroup name            Comment"\
+				 "\n-----------------------------\n");
+		rc = ads_do_search_all_fn(ads, ads->bind_path, 
+					  LDAP_SCOPE_SUBTREE, 
+					  "(objectclass=group)", 
+					  opt_long_list_entries ? longattrs : 
+					  shortattrs, usergrp_display, 
+					  disp_fields);
 
-	ads_destroy(&ads);
-	return 0;
+		ads_destroy(&ads);
+		return 0;
+	}
+	return net_run_function(argc, argv, func, net_ads_group_usage);
 }
 
 static int net_ads_status(int argc, const char **argv)
@@ -485,7 +601,7 @@ static int net_ads_printer_info(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
-	char *servername, *printername;
+	const char *servername, *printername;
 	extern pstring global_myname;
 	void *res = NULL;
 
@@ -521,6 +637,11 @@ static int net_ads_printer_info(int argc, const char **argv)
 	return 0;
 }
 
+void do_drv_upgrade_printer(int msg_type, pid_t src, void *buf, size_t len)
+{
+	return;
+}
+
 static int net_ads_printer_publish(int argc, const char **argv)
 {
         ADS_STRUCT *ads;
@@ -528,6 +649,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
 	char *uncname, *servername;
 	ADS_PRINTER_ENTRY prt;
 	extern pstring global_myname;
+	char *ports[2] = {"Samba", NULL};
 
 	/* 
 	   these const strings are only here as an example.  The attributes
@@ -536,7 +658,6 @@ static int net_ads_printer_publish(int argc, const char **argv)
 	const char *bins[] = {"Tray 21", NULL};
 	const char *media[] = {"Letter", NULL};
 	const char *orients[] = {"PORTRAIT", NULL};
-	const char *ports[] = {"Samba", NULL};
 
 	if (!(ads = ads_startup())) return -1;
 
@@ -545,6 +666,9 @@ static int net_ads_printer_publish(int argc, const char **argv)
 
 	memset(&prt, 0, sizeof(ADS_PRINTER_ENTRY));
 
+	/* we don't sue the servername or unc name provided by 
+	   get_a_printer, because the server name might be
+	   localhost or an ip address */
 	prt.printerName = argv[0];
 	asprintf(&servername, "%s.%s", global_myname, ads->realm);
 	prt.serverName = servername;
@@ -557,7 +681,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
 	prt.printOrientationsSupported = (char **) orients;
 	prt.portName = (char **) ports;
 	prt.printSpooling = "PrintAfterSpooled";
- 
+
         rc = ads_add_printer(ads, &prt);
         if (!ADS_ERR_OK(rc)) {
                 d_printf("ads_publish_printer: %s\n", ads_errstr(rc));
@@ -650,7 +774,7 @@ static int net_ads_password(int argc, const char **argv)
 
     /* use the realm so we can eventually change passwords for users 
     in realms other than default */
-    if (!(ads = ads_init(realm, NULL, NULL, NULL))) return -1;
+    if (!(ads = ads_init(realm, NULL, NULL, NULL, NULL))) return -1;
 
     asprintf(&prompt, "Enter new password for %s:", argv[0]);
 
@@ -681,8 +805,7 @@ static int net_ads_change_localhost_pass(int argc, const char **argv)
     char *hostname;
     ADS_STATUS ret;
 
-
-    if (!(ads = ads_init(NULL, NULL, NULL, NULL))) return -1;
+    if (!(ads = ads_init_simple())) return -1;
 
     hostname = strdup(global_myname);
     strlower(hostname);
@@ -706,19 +829,79 @@ static int net_ads_change_localhost_pass(int argc, const char **argv)
     return 0;
 }
 
+/*
+  help for net ads search
+*/
+static int net_ads_search_usage(int argc, const char **argv)
+{
+	d_printf(
+		"\nnet ads search <expression> <attributes...>\n"\
+		"\nperform a raw LDAP search on a ADS server and dump the results\n"\
+		"The expression is a standard LDAP search expression, and the\n"\
+		"attributes are a list of LDAP fields to show in the results\n\n"\
+		"Example: net ads search '(objectCategory=group)' sAMAccountName\n\n"
+		);
+	net_common_flags_usage(argc, argv);
+	return -1;
+}
+
+
+/*
+  general ADS search function. Useful in diagnosing problems in ADS
+*/
+static int net_ads_search(int argc, const char **argv)
+{
+	ADS_STRUCT *ads;
+	ADS_STATUS rc;
+	const char *exp;
+	const char **attrs;
+	void *res = NULL;
+
+	if (argc < 1) {
+		return net_ads_search_usage(argc, argv);
+	}
+
+	if (!(ads = ads_startup())) {
+		return -1;
+	}
+
+	exp = argv[0];
+	attrs = (argv + 1);
+
+	rc = ads_do_search_all(ads, ads->bind_path, 
+			       LDAP_SCOPE_SUBTREE,
+			       exp, attrs, &res);
+	if (!ADS_ERR_OK(rc)) {
+		d_printf("search failed: %s\n", ads_errstr(rc));
+		return -1;
+	}	
+
+	d_printf("Got %d replies\n\n", ads_count_replies(ads, res));
+
+	/* dump the results */
+	ads_dump(ads, res);
+
+	ads_msgfree(ads, res);
+	ads_destroy(&ads);
+
+	return 0;
+}
+
+
 int net_ads_help(int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"USER", net_ads_user_usage},
+		{"GROUP", net_ads_group_usage},
+		{"PRINTER", net_ads_printer_usage},
+		{"SEARCH", net_ads_search_usage},
 #if 0
 		{"INFO", net_ads_info},
 		{"JOIN", net_ads_join},
 		{"LEAVE", net_ads_leave},
 		{"STATUS", net_ads_status},
-		{"GROUP", net_ads_group},
 		{"PASSWORD", net_ads_password},
 		{"CHOSTPASS", net_ads_change_localhost_pass},
-		{"PRINTER", net_ads_printer},
 #endif
 		{NULL, NULL}
 	};
@@ -738,6 +921,7 @@ int net_ads(int argc, const char **argv)
 		{"PASSWORD", net_ads_password},
 		{"CHOSTPASS", net_ads_change_localhost_pass},
 		{"PRINTER", net_ads_printer},
+		{"SEARCH", net_ads_search},
 		{"HELP", net_ads_help},
 		{NULL, NULL}
 	};
@@ -769,6 +953,11 @@ int net_ads_join(int argc, const char **argv)
 }
 
 int net_ads_user(int argc, const char **argv)
+{
+	return net_ads_noads();
+}
+
+int net_ads_group(int argc, const char **argv)
 {
 	return net_ads_noads();
 }

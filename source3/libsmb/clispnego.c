@@ -549,7 +549,7 @@ BOOL msrpc_gen(DATA_BLOB *blob,
 
   format specifiers are:
 
-  U = unicode string (input is unix string)
+  U = unicode string (output is unix string)
   B = data blob
   b = data blob in header
   d = word (4 bytes)
@@ -620,3 +620,44 @@ BOOL msrpc_parse(DATA_BLOB *blob,
 
 	return True;
 }
+
+/**
+ * Print out the NTLMSSP flags for debugging 
+ */
+
+void debug_ntlmssp_flags(uint32 neg_flags)
+{
+	if (neg_flags & NTLMSSP_NEGOTIATE_UNICODE) 
+		DEBUG(4, ("  NTLMSSP_NEGOTIATE_UNICODE\n"));
+	if (neg_flags & NTLMSSP_NEGOTIATE_OEM) 
+		DEBUG(4, ("  NTLMSSP_NEGOTIATE_OEM\n"));
+	if (neg_flags & NTLMSSP_REQUEST_TARGET) 
+		DEBUG(4, ("  NTLMSSP_REQUEST_TARGET\n"));
+	if (neg_flags & NTLMSSP_NEGOTIATE_SIGN) 
+		DEBUG(4, ("  NTLMSSP_NEGOTIATE_SIGN\n"));
+	if (neg_flags & NTLMSSP_NEGOTIATE_SIGN) 
+		DEBUG(4, ("  NTLMSSP_NEGOTIATE_SEAL\n"));
+	if (neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) 
+		DEBUG(4, ("  NTLMSSP_NEGOTIATE_LM_KEY\n"));
+	if (neg_flags & NTLMSSP_NEGOTIATE_NETWARE) 
+		DEBUG(4, ("  NTLMSSP_NEGOTIATE_NETWARE\n"));
+	if (neg_flags & NTLMSSP_NEGOTIATE_NTLM) 
+		DEBUG(4, ("  NTLMSSP_NEGOTIATE_NTLM\n"));
+	if (neg_flags & NTLMSSP_NEGOTIATE_DOMAIN_SUPPLIED) 
+		DEBUG(4, ("  NTLMSSP_NEGOTIATE_DOMAIN_SUPPLIED\n"));
+	if (neg_flags & NTLMSSP_NEGOTIATE_WORKSTATION_SUPPLIED) 
+		DEBUG(4, ("  NTLMSSP_NEGOTIATE_WORKSTATION_SUPPLIED\n"));
+	if (neg_flags & NTLMSSP_NEGOTIATE_THIS_IS_LOCAL_CALL) 
+		DEBUG(4, ("  NTLMSSP_NEGOTIATE_THIS_IS_LOCAL_CALL\n"));
+	if (neg_flags & NTLMSSP_NEGOTIATE_ALWAYS_SIGN) 
+		DEBUG(4, ("  NTLMSSP_NEGOTIATE_ALWAYS_SIGN\n"));
+	if (neg_flags & NTLMSSP_NEGOTIATE_NTLM2) 
+		DEBUG(4, ("  NTLMSSP_NEGOTIATE_NTLM2\n"));
+	if (neg_flags & NTLMSSP_CHAL_TARGET_INFO) 
+		DEBUG(4, ("  NTLMSSP_CHAL_TARGET_INFO\n"));
+	if (neg_flags & NTLMSSP_NEGOTIATE_128) 
+		DEBUG(4, ("  NTLMSSP_NEGOTIATE_128\n"));
+	if (neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH) 
+		DEBUG(4, ("  NTLMSSP_NEGOTIATE_KEY_EXCH\n"));
+}
+

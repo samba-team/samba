@@ -396,50 +396,18 @@ static void usage(void)
 	printf("\n");
 }
 
-/* Initialise client credentials for authenticated pipe access */
-
-void init_rpcclient_creds(struct ntuser_creds *creds, char* username,
-			  char* domain, char* password)
-{
-	ZERO_STRUCTP(creds);
-
-	if (lp_encrypted_passwords()) {
-		pwd_make_lm_nt_16(&creds->pwd, password);
-	} else {
-		pwd_set_cleartext(&creds->pwd, password);
-	}
-
-	fstrcpy(creds->user_name, username);
-	fstrcpy(creds->domain, domain);
-
-	if (! *username) {
-		creds->pwd.null_pwd = True;
-	}
-}
-
 /* Connect to primary domain controller */
 
-static struct cli_state *init_connection(struct cli_state *cli,
+static struct cli_state *init_connection(struct cli_state **cli,
                                          char *username, char *domain,
                                          char *password)
 {
-        struct ntuser_creds creds;
         extern pstring global_myname;
         struct in_addr *dest_ip;
-        struct nmb_name calling, called;
         int count;
         fstring dest_host;
 
 	/* Initialise cli_state information */
-
-        ZERO_STRUCTP(cli);
-
-	if (!cli_initialise(cli)) {
-		return NULL;
-	}
-
-        init_rpcclient_creds(&creds, username, domain, password);
-	cli_init_creds(cli, &creds);
 
         /* Look up name of PDC controller */
 
@@ -456,20 +424,15 @@ static struct cli_state *init_connection(struct cli_state *cli,
                 return NULL;
         }
 
-	get_myname((*global_myname)?NULL:global_myname);
-	strupper(global_myname);
-
-	make_nmb_name(&called, dns_to_netbios_name(dest_host), 0x20);
-	make_nmb_name(&calling, dns_to_netbios_name(global_myname), 0);
-
-	/* Establish a SMB connection */
-
-	if (!cli_establish_connection(cli, dest_host, dest_ip, &calling, 
-				      &called, "IPC$", "IPC", False, True)) {
+	if (NT_STATUS_IS_OK(cli_full_connection(cli, global_myname, dest_host,
+						dest_ip, 0,
+						"IPC$", "IPC",  
+						username, domain,
+						password, 0))) {
+		return *cli;
+	} else {
 		return NULL;
 	}
-	
-	return cli;
 }
 
 /* Main function */
@@ -477,7 +440,7 @@ static struct cli_state *init_connection(struct cli_state *cli,
  int main(int argc, char **argv)
 {
         BOOL do_sam_sync = False, do_sam_repl = False;
-        struct cli_state cli;
+        struct cli_state *cli;
         NTSTATUS result;
         int opt;
         pstring logfile;
@@ -605,10 +568,10 @@ static struct cli_state *init_connection(struct cli_state *cli,
                 return 1;
 
         if (do_sam_sync)
-                result = sam_sync(&cli, trust_passwd, do_smbpasswd_output, verbose);
+                result = sam_sync(cli, trust_passwd, do_smbpasswd_output, verbose);
 
         if (do_sam_repl)
-                result = sam_repl(&cli, trust_passwd, low_serial);
+                result = sam_repl(cli, trust_passwd, low_serial);
 
         if (!NT_STATUS_IS_OK(result)) {
                 DEBUG(0, ("%s\n", nt_errstr(result)));

@@ -31,15 +31,15 @@
 
 #include "includes.h"
 
-static XFILE _x_stdin =  { 0, NULL, NULL, 0, 0, O_RDONLY, X_IOFBF, 0 };
-static XFILE _x_stdout = { 1, NULL, NULL, 0, 0, O_WRONLY, X_IOLBF, 0 };
+#define XBUFSIZE BUFSIZ
+
+static XFILE _x_stdin =  { 0, NULL, NULL, XBUFSIZE, 0, O_RDONLY, X_IOFBF, 0 };
+static XFILE _x_stdout = { 1, NULL, NULL, XBUFSIZE, 0, O_WRONLY, X_IOLBF, 0 };
 static XFILE _x_stderr = { 2, NULL, NULL, 0, 0, O_WRONLY, X_IONBF, 0 };
 
 XFILE *x_stdin = &_x_stdin;
 XFILE *x_stdout = &_x_stdout;
 XFILE *x_stderr = &_x_stderr;
-
-#define XBUFSIZE BUFSIZ
 
 #define X_FLAG_EOF 1
 #define X_FLAG_ERROR 2
@@ -187,7 +187,11 @@ int x_vfprintf(XFILE *f, const char *format, va_list ap)
 {
 	char *p;
 	int len, ret;
-	len = vasprintf(&p, format, ap);
+	va_list ap2;
+
+	VA_COPY(ap2, ap);
+
+	len = vasprintf(&p, format, ap2);
 	if (len <= 0) return len;
 	ret = x_fwrite(p, 1, len, f);
 	SAFE_FREE(p);

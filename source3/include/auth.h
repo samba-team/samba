@@ -141,11 +141,12 @@ typedef struct auth_methods
 
 } auth_methods;
 
-struct auth_init_function {
+typedef NTSTATUS (*auth_init_function)(struct auth_context *, const char *, struct auth_methods **);
+
+struct auth_init_function_entry {
 	char *name;
 	/* Function to create a member of the authmethods list */
-	BOOL (*init)(struct auth_context *auth_context, struct auth_methods **auth_method);
+
+	auth_init_function init;
 };
-
-
 #endif /* _SMBAUTH_H_ */

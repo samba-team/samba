@@ -224,6 +224,21 @@ static int verify_tdb(const char *fname, const char *bak_name)
 }
 
 
+/*
+  see if one file is newer than another
+*/
+static int file_newer(const char *fname1, const char *fname2)
+{
+	struct stat st1, st2;
+	if (stat(fname1, &st1) != 0) {
+		return 0;
+	}
+	if (stat(fname2, &st2) != 0) {
+		return 1;
+	}
+	return (st1.st_mtime > st2.st_mtime);
+}
+
 static void usage(void)
 {
 	printf("Usage: tdbbackup [options] <fname...>\n\n");
@@ -276,7 +291,8 @@ static void usage(void)
 				ret = 1;
 			}
 		} else {
-			if (backup_tdb(fname, bak_name) != 0) {
+			if (file_newer(fname, bak_name) &&
+			    backup_tdb(fname, bak_name) != 0) {
 				ret = 1;
 			}
 		}

@@ -35,7 +35,7 @@
 #define ERRMSG_BOTH_SERVER_IPADDRESS    "\nTarget server and IP address both "\
   "specified. Do not set both at the same time.  The target IP address was used\n"
 
-static const char *share_type[] = {
+const char *share_type[] = {
   "Disk",
   "Print",
   "Dev",
@@ -50,15 +50,7 @@ static int errmsg_not_implemented(void)
 
 int net_rap_file_usage(int argc, const char **argv)
 {
-	d_printf("net rap file [misc. options] [targets]\n"\
-		 "\tlists all open files on file server\n\n");
-	d_printf("net rap file USER <username> [misc. options] [targets]\n"\
-		 "\tlists all files opened by username on file server\n\n");
-	d_printf("net rap file CLOSE <id> [misc. options] [targets]\n"\
-		 "\tcloses specified file on target server\n");
-
-	net_common_flags_usage(argc, argv);
-	return -1;
+	return net_help_file(argc, argv);
 }
 
 /***************************************************************************
@@ -67,7 +59,7 @@ int net_rap_file_usage(int argc, const char **argv)
 static void file_fn(const char * pPath, const char * pUser, uint16 perms, 
 		    uint16 locks, uint32 id)
 {
-	d_printf("\t%-7.1d %-20.20s 0x%-4.2x %-6.1d %s\n",
+	d_printf("%-7.1d %-20.20s 0x%-4.2x %-6.1d %s\n",
 		 id, pUser, perms, locks, pPath);
 }
 
@@ -143,8 +135,8 @@ int net_rap_file(int argc, const char **argv)
 		/* list open files */
 		d_printf(
 		 "\nEnumerating open files on remote server:\n\n"\
-		 "\n\tFileId  Opened by            Perms  Locks  Path \n"\
-		 "\t------  ---------            -----  -----  ---- \n");
+		 "\nFileId  Opened by            Perms  Locks  Path \n"\
+		 "------  ---------            -----  -----  ---- \n");
 		ret = cli_NetFileEnum(cli, NULL, NULL, file_fn);
 		cli_shutdown(cli);
 		return ret;
@@ -155,23 +147,7 @@ int net_rap_file(int argc, const char **argv)
 		       
 int net_rap_share_usage(int argc, const char **argv)
 {
-	d_printf(
-	 "\nnet [rap] share [misc. options] [targets] \n"\
-	 "\tenumerates all exported resources (network shares) "\
-	 "on target server\n");
-	d_printf(
-	 "\nnet rap share ADD <name=serverpath> [misc. options] [targets]"\
-	 "\n\tAdds a share from a server (makes the export active)\n");
-	d_printf(
-	 "\nnet rap share DELETE <sharename> [misc. options] [targets]\n"\
-	 "\tor"\
-	 "\nnet rap share CLOSE <sharename> [misc. options] [targets]"\
-	 "\n\tDeletes a share from a server (makes the export inactive)\n");
-	net_common_flags_usage(argc, argv);
-	d_printf(
-	 "\t-C or --comment=<comment>\tdescriptive comment (for add only)\n");
-	d_printf("\t-M or --maxusers=<num>\t\tmax users allowed for share\n");
-	return -1;
+	return net_help_share(argc, argv);
 }
 
 static void long_share_fn(const char *share_name, uint32 type, 
@@ -518,7 +494,7 @@ static void enum_queue(const char *queuename, uint16 pri, uint16 start,
 static void enum_jobs(uint16 jobid, const char *ownername, 
 		      const char *notifyname, const char *datatype,
 		      const char *jparms, uint16 pos, uint16 status, 
-		      const char *jstatus, uint submitted, uint jobsize, 
+		      const char *jstatus, unsigned int submitted, unsigned int jobsize, 
 		      const char *comment)
 {
 	d_printf("     %-23.23s %5d %9d            ",
@@ -672,8 +648,9 @@ static int rap_user_add(int argc, const char **argv)
 	userinfo.priv = 1; 
 	userinfo.home_dir = NULL;
 	userinfo.logon_script = NULL;
-	
+
 	ret = cli_NetUserAdd(cli, &userinfo);
+
 	cli_shutdown(cli);
 	return ret;
 }
@@ -732,17 +709,7 @@ int net_rap_user(int argc, const char **argv)
 
 int net_rap_group_usage(int argc, const char **argv)
 {
-	d_printf("net rap group [misc. options] [targets]"\
-		 "\n\tList user groups\n");
-	d_printf("\nnet rap group DELETE <name> [misc. options] [targets]"\
-		 "\n\tDelete specified group\n");
-	d_printf("\nnet rap group ADD <name> [-C comment] [misc. options]"\
-		 " [targets]\n\tCreate specified group\n");
-
-	net_common_flags_usage(argc, argv);
-	d_printf(
-	 "\t-C or --comment=<comment>\tdescriptive comment (for add only)\n");
-	return -1;
+	return net_help_group(argc, argv);
 }
 
 static void long_group_fn(const char *group_name, const char *comment,

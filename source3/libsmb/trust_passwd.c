@@ -39,7 +39,7 @@ static NTSTATUS just_change_the_password(struct cli_state *cli, TALLOC_CTX *mem_
 				   SEC_CHAN_WKSTA : SEC_CHAN_BDC, orig_trust_passwd_hash);
 	
 	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(0,("just_change_the_password: unable to setup creds (%s)!\n",
+		DEBUG(1,("just_change_the_password: unable to setup creds (%s)!\n",
 			 nt_errstr(result)));
 		return result;
 	}
@@ -71,13 +71,14 @@ NTSTATUS trust_pw_change_and_store_it(struct cli_state *cli, TALLOC_CTX *mem_ctx
 	str = generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
 	new_trust_passwd = talloc_strdup(mem_ctx, str);
 	
-	E_md4hash((uchar *)new_trust_passwd, new_trust_passwd_hash);
+	E_md4hash(new_trust_passwd, new_trust_passwd_hash);
 
 	nt_status = just_change_the_password(cli, mem_ctx, orig_trust_passwd_hash,
 					     new_trust_passwd_hash);
 	
 	if (NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(3,("%s : change_trust_account_password: Changed password.\n", timestring(False)));
+		DEBUG(3,("%s : trust_pw_change_and_store_it: Changed password.\n", 
+			 timestring(False)));
 		/*
 		 * Return the result of trying to write the new password
 		 * back into the trust account file.
@@ -96,7 +97,8 @@ NTSTATUS trust_pw_change_and_store_it(struct cli_state *cli, TALLOC_CTX *mem_ctx
  already setup the connection to the NETLOGON pipe
 **********************************************************/
 
-NTSTATUS trust_pw_find_change_and_store_it(struct cli_state *cli, TALLOC_CTX *mem_ctx, char *domain) 
+NTSTATUS trust_pw_find_change_and_store_it(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+					   char *domain) 
 {
 	unsigned char old_trust_passwd_hash[16];
 	char *up_domain;

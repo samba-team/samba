@@ -295,9 +295,7 @@ CLASS="FILENAME"
 		<B
 CLASS="COMMAND"
 >nmbd</B
-> server.</P
-><P
->The default log directory is compiled into Samba
+> server. The default log directory is compiled into Samba
 		as part of the build process. Common defaults are <TT
 CLASS="FILENAME"
 >		/usr/local/samba/var/log.nmb</TT
@@ -308,7 +306,15 @@ CLASS="FILENAME"
 		<TT
 CLASS="FILENAME"
 >/var/log/log.nmb</TT
->.</P
+>.  <EM
+>Beware:</EM
+>
+                If the directory specified does not exist, <B
+CLASS="COMMAND"
+>nmbd</B
+>
+                will log to the default debug log location defined at compile time.
+		</P
 ></DD
 ><DT
 >-n &#60;primary NetBIOS name&#62;</DT
@@ -340,31 +346,30 @@ CLASS="FILENAME"
 ><DD
 ><P
 >UDP port number is a positive integer value.
-		This option changes the default UDP port number (normally 137) 
+		This option changes the default UDP port number (normally 137)
 		that <B
 CLASS="COMMAND"
 >nmbd</B
-> responds to name queries on. Don't 
-		use this option unless you are an expert, in which case you 
+> responds to name queries on. Don't
+		use this option unless you are an expert, in which case you
 		won't need help!</P
 ></DD
 ><DT
 >-s &#60;configuration file&#62;</DT
 ><DD
 ><P
->The default configuration file name 
+>The default configuration file name
 		is set at build time, typically as <TT
 CLASS="FILENAME"
 >		/usr/local/samba/lib/smb.conf</TT
 >, but
 		this may be changed when Samba is autoconfigured.</P
 ><P
->The file specified contains the configuration details 
+>The file specified contains the configuration details
 		required by the server. See <A
 HREF="smb.conf.5.html"
 TARGET="_top"
-> 
-		<TT
+>		<TT
 CLASS="FILENAME"
 >smb.conf(5)</TT
 ></A
@@ -377,7 +382,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN130"
+NAME="AEN131"
 ></A
 ><H2
 >FILES</H2
@@ -393,12 +398,12 @@ CLASS="FILENAME"
 ></DT
 ><DD
 ><P
->If the server is to be run by the 
+>If the server is to be run by the
 		<B
 CLASS="COMMAND"
 >inetd</B
-> meta-daemon, this file 
-		must contain suitable startup information for the 
+> meta-daemon, this file
+		must contain suitable startup information for the
 		meta-daemon. See the <A
 HREF="UNIX_INSTALL.html"
 TARGET="_top"
@@ -414,11 +419,11 @@ CLASS="FILENAME"
 ></DT
 ><DD
 ><P
->or whatever initialization script your 
+>or whatever initialization script your
 		system uses).</P
 ><P
->If running the server as a daemon at startup, 
-		this file will need to contain an appropriate startup 
+>If running the server as a daemon at startup,
+		this file will need to contain an appropriate startup
 		sequence for the server. See the <A
 HREF="UNIX_INSTALL.html"
 TARGET="_top"
@@ -433,13 +438,13 @@ CLASS="FILENAME"
 ></DT
 ><DD
 ><P
->If running the server via the 
+>If running the server via the
 		meta-daemon <B
 CLASS="COMMAND"
 >inetd</B
->, this file 
-		must contain a mapping of service name (e.g., netbios-ssn) 
-		to service port (e.g., 139) and protocol type (e.g., tcp). 
+>, this file
+		must contain a mapping of service name (e.g., netbios-ssn)
+		to service port (e.g., 139) and protocol type (e.g., tcp).
 		See the <A
 HREF="UNIX_INSTALL.html"
 TARGET="_top"
@@ -454,7 +459,7 @@ CLASS="FILENAME"
 ></DT
 ><DD
 ><P
->This is the default location of the 
+>This is the default location of the
 		<A
 HREF="smb.conf.5.html"
 TARGET="_top"
@@ -463,17 +468,17 @@ CLASS="FILENAME"
 >smb.conf</TT
 ></A
 >
-		server configuration file. Other common places that systems 
+		server configuration file. Other common places that systems
 		install this file are <TT
 CLASS="FILENAME"
 >/usr/samba/lib/smb.conf</TT
-> 
+>
 		and <TT
 CLASS="FILENAME"
 >/etc/smb.conf</TT
 >.</P
 ><P
->When run as a WINS server (see the 
+>When run as a WINS server (see the
 		<A
 HREF="smb.conf.5.html#WINSSUPPORT"
 TARGET="_top"
@@ -490,11 +495,11 @@ CLASS="COMMAND"
 		will store the WINS database in the file <TT
 CLASS="FILENAME"
 >wins.dat</TT
-> 
+>
 		in the <TT
 CLASS="FILENAME"
 >var/locks</TT
-> directory configured under 
+> directory configured under
 		wherever Samba was configured to install itself.</P
 ><P
 >If <B
@@ -532,7 +537,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN177"
+NAME="AEN178"
 ></A
 ><H2
 >SIGNALS</H2
@@ -540,21 +545,21 @@ NAME="AEN177"
 >To shut down an <B
 CLASS="COMMAND"
 >nmbd</B
-> process it is recommended 
+> process it is recommended
 	that SIGKILL (-9) <EM
 >NOT</EM
-> be used, except as a last 
-	resort, as this may leave the name database in an inconsistent state. 
+> be used, except as a last
+	resort, as this may leave the name database in an inconsistent state.
 	The correct way to terminate <B
 CLASS="COMMAND"
 >nmbd</B
-> is to send it 
+> is to send it
 	a SIGTERM (-15) signal and wait for it to die on its own.</P
 ><P
 ><B
 CLASS="COMMAND"
 >nmbd</B
-> will accept SIGHUP, which will cause 
+> will accept SIGHUP, which will cause
 	it to dump out its namelists into the file <TT
 CLASS="FILENAME"
 >namelist.debug
@@ -562,12 +567,12 @@ CLASS="FILENAME"
 > in the <TT
 CLASS="FILENAME"
 >/usr/local/samba/var/locks</TT
-> 
+>
 	directory (or the <TT
 CLASS="FILENAME"
 >var/locks</TT
-> directory configured 
-	under wherever Samba was configured to install itself). This will also 
+> directory configured
+	under wherever Samba was configured to install itself). This will also
 	cause <B
 CLASS="COMMAND"
 >nmbd</B
@@ -593,7 +598,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN193"
+NAME="AEN194"
 ></A
 ><H2
 >VERSION</H2
@@ -604,7 +609,7 @@ NAME="AEN193"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN196"
+NAME="AEN197"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -669,7 +674,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN213"
+NAME="AEN214"
 ></A
 ><H2
 >AUTHOR</H2

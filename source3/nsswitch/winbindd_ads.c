@@ -24,6 +24,9 @@
 
 #ifdef HAVE_ADS
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_WINBIND
+
 /* the realm of our primary LDAP server */
 static char *primary_realm;
 
@@ -58,7 +61,7 @@ ADS_STATUS ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope
 
 		if (*res) ads_msgfree(ads, *res);
 		*res = NULL;
-		DEBUG(1,("Reopening ads connection to %s after error %s\n", 
+		DEBUG(3,("Reopening ads connection to %s after error %s\n", 
 			 ads->ldap_server, ads_errstr(status)));
 		if (ads->ld) {
 			ldap_unbind(ads->ld); 
@@ -119,6 +122,8 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 
 	if (resolve_name(domain->name, &server_ip, 0x1b)) {
 		sname = inet_ntoa(server_ip);
+	} else if (resolve_name(domain->name, &server_ip, 0x1c)) {
+		sname = inet_ntoa(server_ip);
 	} else {
 		if (strcasecmp(domain->name, lp_workgroup()) != 0) {
 			DEBUG(1,("can't find domain controller for %s\n", domain->name));
@@ -127,7 +132,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 		sname = NULL;
 	}
 
-	ads = ads_init(primary_realm, sname, NULL, NULL);
+	ads = ads_init(primary_realm, domain->name, NULL, NULL, NULL);
 	if (!ads) {
 		DEBUG(1,("ads_init for domain %s failed\n", domain->name));
 		return NULL;
@@ -138,7 +143,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 	ads->password = secrets_fetch_machine_password();
 
 	status = ads_connect(ads);
-	if (!ADS_ERR_OK(status)) {
+	if (!ADS_ERR_OK(status) || !ads->realm) {
 		extern struct winbindd_methods msrpc_methods;
 		DEBUG(1,("ads_connect for domain %s failed: %s\n", 
 			 domain->name, ads_errstr(status)));
@@ -186,6 +191,24 @@ static enum SID_NAME_USE ads_atype_map(uint32 atype)
 	return SID_NAME_UNKNOWN;
 }
 
+/* 
+   in order to support usernames longer than 21 characters we need to 
+   use both the sAMAccountName and the userPrincipalName attributes 
+   It seems that not all users have the userPrincipalName attribute set
+*/
+static char *pull_username(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, void *msg)
+{
+	char *ret, *p;
+
+	ret = ads_pull_string(ads, mem_ctx, msg, "userPrincipalName");
+	if (ret && (p = strchr(ret, '@'))) {
+		*p = 0;
+		return ret;
+	}
+	return ads_pull_string(ads, mem_ctx, msg, "sAMAccountName");
+}
+
+
 /* Query display info for a realm. This is the basic user list fn */
 static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			       TALLOC_CTX *mem_ctx,
@@ -193,7 +216,9 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			       WINBIND_USERINFO **info)
 {
 	ADS_STRUCT *ads = NULL;
-	const char *attrs[] = {"sAMAccountName", "name", "objectSid", "primaryGroupID", 
+	const char *attrs[] = {"userPrincipalName",
+			       "sAMAccountName",
+			       "name", "objectSid", "primaryGroupID", 
 			       "sAMAccountType", NULL};
 	int i, count;
 	ADS_STATUS rc;
@@ -240,7 +265,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			continue;
 		}
 
-		name = ads_pull_string(ads, mem_ctx, msg, "sAMAccountName");
+		name = pull_username(ads, mem_ctx, msg);
 		gecos = ads_pull_string(ads, mem_ctx, msg, "name");
 		if (!ads_pull_sid(ads, msg, "objectSid", &sid)) {
 			DEBUG(1,("No sid for %s !?\n", name));
@@ -251,7 +276,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			continue;
 		}
 
-		if (!sid_peek_rid(&sid, &rid)) {
+		if (!sid_peek_check_rid(&domain->sid, &sid, &rid)) {
 			DEBUG(1,("No rid for %s !?\n", name));
 			continue;
 		}
@@ -281,7 +306,8 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 				struct acct_info **info)
 {
 	ADS_STRUCT *ads = NULL;
-	const char *attrs[] = {"sAMAccountName", "name", "objectSid", 
+	const char *attrs[] = {"userPrincipalName", "sAMAccountName",
+			       "name", "objectSid", 
 			       "sAMAccountType", NULL};
 	int i, count;
 	ADS_STATUS rc;
@@ -298,13 +324,13 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 
 	rc = ads_search_retry(ads, &res, "(objectCategory=group)", attrs);
 	if (!ADS_ERR_OK(rc)) {
-		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
+		DEBUG(1,("enum_dom_groups ads_search: %s\n", ads_errstr(rc)));
 		goto done;
 	}
 
 	count = ads_count_replies(ads, res);
 	if (count == 0) {
-		DEBUG(1,("query_user_list: No users found\n"));
+		DEBUG(1,("enum_dom_groups: No groups found\n"));
 		goto done;
 	}
 
@@ -326,14 +352,14 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 				     &account_type) ||
 		    !(account_type & ATYPE_GROUP)) continue;
 
-		name = ads_pull_string(ads, mem_ctx, msg, "sAMAccountName");
+		name = pull_username(ads, mem_ctx, msg);
 		gecos = ads_pull_string(ads, mem_ctx, msg, "name");
 		if (!ads_pull_sid(ads, msg, "objectSid", &sid)) {
 			DEBUG(1,("No sid for %s !?\n", name));
 			continue;
 		}
 
-		if (!sid_peek_rid(&sid, &rid)) {
+		if (!sid_peek_check_rid(&domain->sid, &sid, &rid)) {
 			DEBUG(1,("No rid for %s !?\n", name));
 			continue;
 		}
@@ -377,7 +403,9 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	ads = ads_cached_connection(domain);
 	if (!ads) goto done;
 
-	asprintf(&exp, "(sAMAccountName=%s)", name);
+	/* accept either the win2000 or the pre-win2000 username */
+	asprintf(&exp, "(|(sAMAccountName=%s)(userPrincipalName=%s@%s))", 
+		 name, name, ads->realm);
 	rc = ads_search_retry(ads, &res, exp, attrs);
 	free(exp);
 	if (!ADS_ERR_OK(rc)) {
@@ -421,7 +449,9 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 			    enum SID_NAME_USE *type)
 {
 	ADS_STRUCT *ads = NULL;
-	const char *attrs[] = {"sAMAccountName", "sAMAccountType", NULL};
+	const char *attrs[] = {"userPrincipalName", 
+			       "sAMAccountName",
+			       "sAMAccountType", NULL};
 	ADS_STATUS rc;
 	void *msg = NULL;
 	char *exp;
@@ -448,7 +478,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	*name = ads_pull_string(ads, mem_ctx, msg, "sAMAccountName");
+	*name = pull_username(ads, mem_ctx, msg);
 	*type = ads_atype_map(atype);
 
 	status = NT_STATUS_OK;
@@ -459,6 +489,50 @@ done:
 	if (msg) ads_msgfree(ads, msg);
 
 	return status;
+}
+
+
+/* convert a DN to a name, rid and name type 
+   this might become a major speed bottleneck if groups have
+   lots of users, in which case we could cache the results
+*/
+static BOOL dn_lookup(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
+		      const char *dn,
+		      char **name, uint32 *name_type, uint32 *rid)
+{
+	char *exp;
+	void *res = NULL;
+	const char *attrs[] = {"userPrincipalName", "sAMAccountName",
+			       "objectSid", "sAMAccountType", NULL};
+	ADS_STATUS rc;
+	uint32 atype;
+	DOM_SID sid;
+
+	asprintf(&exp, "(distinguishedName=%s)", dn);
+	rc = ads_search_retry(ads, &res, exp, attrs);
+	free(exp);
+	if (!ADS_ERR_OK(rc)) {
+		goto failed;
+	}
+
+	(*name) = pull_username(ads, mem_ctx, res);
+
+	if (!ads_pull_uint32(ads, res, "sAMAccountType", &atype)) {
+		goto failed;
+	}
+	(*name_type) = ads_atype_map(atype);
+
+	if (!ads_pull_sid(ads, res, "objectSid", &sid) || 
+	    !sid_peek_rid(&sid, rid)) {
+		goto failed;
+	}
+
+	if (res) ads_msgfree(ads, res);
+	return True;
+
+failed:
+	if (res) ads_msgfree(ads, res);
+	return False;
 }
 
 
@@ -511,7 +585,9 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 			   WINBIND_USERINFO *info)
 {
 	ADS_STRUCT *ads = NULL;
-	const char *attrs[] = {"sAMAccountName", "name", "objectSid", 
+	const char *attrs[] = {"userPrincipalName", 
+			       "sAMAccountName",
+			       "name", "objectSid", 
 			       "primaryGroupID", NULL};
 	ADS_STATUS rc;
 	int count;
@@ -544,7 +620,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	info->acct_name = ads_pull_string(ads, mem_ctx, msg, "sAMAccountName");
+	info->acct_name = pull_username(ads, mem_ctx, msg);
 	info->full_name = ads_pull_string(ads, mem_ctx, msg, "name");
 	if (!ads_pull_sid(ads, msg, "objectSid", &sid)) {
 		DEBUG(1,("No sid for %d !?\n", user_rid));
@@ -555,7 +631,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		goto done;
 	}
 	
-	if (!sid_peek_rid(&sid, &info->user_rid)) {
+	if (!sid_peek_check_rid(&domain->sid,&sid, &info->user_rid)) {
 		DEBUG(1,("No rid for %d !?\n", user_rid));
 		goto done;
 	}
@@ -633,7 +709,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 	for (i=1;i<count;i++) {
 		uint32 rid;
-		if (!sid_peek_rid(&sids[i-1], &rid)) continue;
+		if (!sid_peek_check_rid(&domain->sid, &sids[i-1], &rid)) continue;
 		(*user_gids)[*num_groups] = rid;
 		(*num_groups)++;
 	}
@@ -646,7 +722,9 @@ done:
 	return status;
 }
 
-
+/*
+  find the members of a group, given a group rid and domain
+ */
 static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
 				uint32 group_rid, uint32 *num_names, 
@@ -654,13 +732,16 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				uint32 **name_types)
 {
 	DOM_SID group_sid;
-	const char *attrs[] = {"sAMAccountName", "objectSid", "sAMAccountType", NULL};
 	ADS_STATUS rc;
 	int count;
-	void *res=NULL, *msg=NULL;
+	void *res=NULL;
 	ADS_STRUCT *ads = NULL;
-	char *exp, *dn = NULL;
+	char *exp;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	char *sidstr;
+	const char *attrs[] = {"member", NULL};
+	char **members;
+	int i, num_members;
 
 	*num_names = 0;
 
@@ -668,17 +749,14 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	if (!ads) goto done;
 
 	sid_from_rid(domain, group_rid, &group_sid);
-	status = sid_to_distinguished_name(domain, mem_ctx, &group_sid, &dn);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3,("Failed to find distinguishedName for %s\n", sid_string_static(&group_sid)));
-		return status;
-	}
+	sidstr = sid_binstring(&group_sid);
 
-	/* search for all users who have that group sid as primary group or as member */
-	asprintf(&exp, "(&(objectCategory=user)(|(primaryGroupID=%d)(memberOf=%s)))",
-		 group_rid, dn);
+	/* search for all members of the group */
+	asprintf(&exp, "(objectSid=%s)",sidstr);
 	rc = ads_search_retry(ads, &res, exp, attrs);
 	free(exp);
+	free(sidstr);
+
 	if (!ADS_ERR_OK(rc)) {
 		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
 		goto done;
@@ -690,29 +768,33 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	(*rid_mem) = talloc_zero(mem_ctx, sizeof(uint32) * count);
-	(*name_types) = talloc_zero(mem_ctx, sizeof(uint32) * count);
-	(*names) = talloc_zero(mem_ctx, sizeof(char *) * count);
+	members = ads_pull_strings(ads, mem_ctx, res, "member");
+	if (!members) {
+		/* no members? ok ... */
+		status = NT_STATUS_OK;
+		goto done;
+	}
 
-	for (msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
-		uint32 atype, rid;
-		DOM_SID sid;
+	/* now we need to turn a list of members into rids, names and name types 
+	   the problem is that the members are in the form of distinguised names
+	*/
+	for (i=0;members[i];i++) /* noop */ ;
+	num_members = i;
 
-		(*names)[*num_names] = ads_pull_string(ads, mem_ctx, msg, "sAMAccountName");
-		if (!ads_pull_uint32(ads, msg, "sAMAccountType", &atype)) {
-			continue;
+	(*rid_mem) = talloc_zero(mem_ctx, sizeof(uint32) * num_members);
+	(*name_types) = talloc_zero(mem_ctx, sizeof(uint32) * num_members);
+	(*names) = talloc_zero(mem_ctx, sizeof(char *) * num_members);
+
+	for (i=0;i<num_members;i++) {
+		uint32 name_type, rid;
+		char *name;
+
+		if (dn_lookup(ads, mem_ctx, members[i], &name, &name_type, &rid)) {
+		    (*names)[*num_names] = name;
+		    (*name_types)[*num_names] = name_type;
+		    (*rid_mem)[*num_names] = rid;
+		    (*num_names)++;
 		}
-		(*name_types)[*num_names] = ads_atype_map(atype);
-		if (!ads_pull_sid(ads, msg, "objectSid", &sid)) {
-			DEBUG(1,("No sid for %s !?\n", (*names)[*num_names]));
-			continue;
-		}
-		if (!sid_peek_rid(&sid, &rid)) {
-			DEBUG(1,("No rid for %s !?\n", (*names)[*num_names]));
-			continue;
-		}
-		(*rid_mem)[*num_names] = rid;
-		(*num_names)++;
 	}	
 
 	status = NT_STATUS_OK;
@@ -722,6 +804,7 @@ done:
 
 	return status;
 }
+
 
 /* find the sequence number for a domain */
 static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)

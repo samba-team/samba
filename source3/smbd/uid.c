@@ -465,11 +465,11 @@ BOOL lookup_name(const char *domain, const char *name, DOM_SID *psid, enum SID_N
 	
 	if (ret) {
 		DEBUG(10,
-		      ("lookup_name: (local) [%s]\\[%s] -> SID %s (type %u)\n",
+		      ("lookup_name: (local) [%s]\\[%s] -> SID %s (type %s: %u)\n",
 		       domain, name, sid_to_string(sid,psid),
-		       (unsigned int)*name_type ));
+		       sid_type_lookup(*name_type), (unsigned int)*name_type));
 		return True;
-	} else if (winbind_lookup_name(domain, name, psid, name_type) || (*name_type != SID_NAME_USER) ) {
+	} else if (winbind_lookup_name(domain, name, psid, name_type)) {
 		
 		DEBUG(10,("lookup_name (winbindd): [%s]\\[%s] -> SID %s (type %u)\n",
 			  domain, name, sid_to_string(sid, psid), 
@@ -504,7 +504,7 @@ BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE 
 		sid_copy(&tmp_sid, sid);
 		sid_split_rid(&tmp_sid, &rid);
 
-		if (sid_equal(&global_sam_sid, &tmp_sid)) {
+		if (sid_equal(get_global_sam_sid(), &tmp_sid)) {
 
 			return map_domain_sid_to_name(&tmp_sid, dom_name) &&
 				local_lookup_sid(sid, name, name_type);
@@ -521,7 +521,7 @@ BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE 
 		sid_copy(&tmp_sid, sid);
 		sid_split_rid(&tmp_sid, &rid);
 		return map_domain_sid_to_name(&tmp_sid, dom_name) &&
-				lookup_known_rid(&tmp_sid, rid, name, name_type);
+			lookup_known_rid(&tmp_sid, rid, name, name_type);
 	}
 	return True;
 }
@@ -578,7 +578,8 @@ DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid)
 		}
 	}
 
-	local_gid_to_sid(psid, gid);
+	/* Make sure we report failure, (when psid == NULL) */
+	psid = local_gid_to_sid(psid, gid);
         
 	DEBUG(10,("gid_to_sid: local %u -> %s\n", (unsigned int)gid, sid_to_string(sid, psid)));
 
@@ -597,7 +598,7 @@ BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 	fstring sid_str;
 
 	/* if we know its local then don't try winbindd */
-	if (sid_compare_domain(&global_sam_sid, psid) == 0) {
+	if (sid_compare_domain(get_global_sam_sid(), psid) == 0) {
 		return local_sid_to_uid(puid, psid, sidtype);
 	}
 

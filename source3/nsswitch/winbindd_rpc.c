@@ -23,6 +23,9 @@
 
 #include "winbindd.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_WINBIND
+
 /* Query display info for a domain.  This returns enough information plus a
    bit extra to give an overview of domain users for the User Manager
    application. */
@@ -37,6 +40,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	BOOL got_dom_pol = False;
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	int i;
+
+	DEBUG(3,("rpc: query_user_list\n"));
 
 	*num_entries = 0;
 	*info = NULL;
@@ -130,6 +135,8 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	*num_entries = 0;
 	*info = NULL;
 
+	DEBUG(3,("rpc: enum_dom_groups\n"));
+
 	if (!(hnd = cm_get_sam_handle(domain->name))) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -189,6 +196,8 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	uint32 *types = NULL;
 	const char *full_name;
 
+	DEBUG(3,("rpc: name_to_sid name=%s\n", name));
+
 	if (!(mem_ctx = talloc_init_named("name_to_sid[rpc] for [%s]\\[%s]", domain->name, name))) {
 		DEBUG(0, ("talloc_init failed!\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -210,7 +219,8 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	status = cli_lsa_lookup_names(hnd->cli, mem_ctx, &hnd->pol, 1, 
 				      &full_name, &sids, &types);
         
-	/* Return rid and type if lookup successful */        
+	/* Return rid and type if lookup successful */
+
 	if (NT_STATUS_IS_OK(status)) {
 		sid_copy(sid, &sids[0]);
 		*type = types[0];
@@ -234,6 +244,8 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	char **names;
 	uint32 *types;
 	NTSTATUS status;
+
+	DEBUG(3,("rpc: sid_to_name\n"));
 
 	if (!(hnd = cm_get_lsa_handle(domain->name)))
 		return NT_STATUS_UNSUCCESSFUL;
@@ -267,6 +279,8 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	BOOL got_dom_pol = False, got_user_pol = False;
 	SAM_USERINFO_CTR *ctr;
 
+	DEBUG(3,("rpc: query_user rid=%u\n", user_rid));
+
 	/* Get sam handle */
 	if (!(hnd = cm_get_sam_handle(domain->name)))
 		goto done;
@@ -294,6 +308,9 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	/* Get user info */
 	result = cli_samr_query_userinfo(hnd->cli, mem_ctx, &user_pol, 
 					 0x15, &ctr);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
 
 	cli_samr_close(hnd->cli, mem_ctx, &user_pol);
 	got_user_pol = False;
@@ -328,6 +345,8 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	BOOL got_dom_pol = False, got_user_pol = False;
 	DOM_GID *user_groups;
 	int i;
+
+	DEBUG(3,("rpc: lookup_usergroups rid=%u\n", user_rid));
 
 	*num_groups = 0;
 
@@ -399,6 +418,8 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
         POLICY_HND dom_pol, group_pol;
         uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
         BOOL got_dom_pol = False, got_group_pol = False;
+
+	DEBUG(3,("rpc: lookup_groupmem rid=%u\n", group_rid));
 
 	*num_names = 0;
 
@@ -502,6 +523,8 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	BOOL got_dom_pol = False;
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
 
+	DEBUG(3,("rpc: sequence_number\n"));
+
 	*seq = DOM_SEQUENCE_NONE;
 
 	if (!(mem_ctx = talloc_init_named("sequence_number[rpc]")))
@@ -557,6 +580,9 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	CLI_POLICY_HND *hnd;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 enum_ctx = 0;
+	uint32 pref_num_domains = 5;
+
+	DEBUG(3,("rpc: trusted_domains\n"));
 
 	*num_domains = 0;
 
@@ -564,8 +590,8 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 		goto done;
 
 	result = cli_lsa_enum_trust_dom(hnd->cli, mem_ctx,
-					&hnd->pol, &enum_ctx, num_domains, 
-					names, dom_sids);
+					&hnd->pol, &enum_ctx, &pref_num_domains,
+					num_domains, names, dom_sids);
 done:
 	return result;
 }
@@ -577,6 +603,8 @@ static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
 	TALLOC_CTX *mem_ctx;
 	CLI_POLICY_HND *hnd;
 	fstring level5_dom;
+
+	DEBUG(3,("rpc: domain_sid\n"));
 
 	if (!(mem_ctx = talloc_init_named("domain_sid[rpc]")))
 		return NT_STATUS_NO_MEMORY;

@@ -38,8 +38,10 @@
  */
 int  Debug1( char *, ... ) PRINTF_ATTRIBUTE(1,2);
 BOOL dbgtext( char *, ... ) PRINTF_ATTRIBUTE(1,2);
+BOOL dbghdr( int level, char *file, char *func, int line );
 
 extern XFILE *dbf;
+extern pstring debugf;
 
 /* If we have these macros, we can add additional info to the header. */
 #ifdef HAVE_FILE_MACRO
@@ -64,7 +66,7 @@ extern XFILE *dbf;
  * because some references would expand incorrectly.
  */
 #define DEBUGLEVEL *debug_level
-
+extern int DEBUGLEVEL;
 
 /*
  * Define all new debug classes here. A class is represented by an entry in
@@ -77,26 +79,27 @@ extern XFILE *dbf;
  * at the start of the file (after #include "includes.h") will default to
  * using index zero, so it will behaive just like it always has. 
  */
+#define DBGC_ALL		0 /* index equivalent to DEBUGLEVEL */
+
+#define DBGC_TDB		1
+#define DBGC_PRINTDRIVERS	2
+#define DBGC_LANMAN		3
+#define DBGC_SMB		4
+#define DBGC_RPC_PARSE		5
+#define DBGC_RPC_SRV		6
+#define DBGC_RPC_CLI		7
+#define DBGC_PASSDB		8
+#define DBGC_AUTH		9
+#define DBGC_WINBIND		10
+
+
+/* So you can define DBGC_CLASS before including debug.h */
+#ifndef DBGC_CLASS
 #define DBGC_CLASS            0     /* override as shown above */
-#define DBGC_ALL              0     /* index equivalent to DEBUGLEVEL */
+#endif
 
-#define DBGC_TDB              1
-#define DBGC_PRINTDRIVERS     2
-#define DBGC_LANMAN           3
-#define DBGC_SMB              4
-#define DBGC_RPC              5
-#define DBGC_RPC_HDR          6
-#define DBGC_BDC              7
-
-#define DBGC_LAST             8     /* MUST be last class value + 1 */
-
-extern int DEBUGLEVEL_CLASS[DBGC_LAST];
-extern BOOL DEBUGLEVEL_CLASS_ISSET[DBGC_LAST];
-
-struct debuglevel_message {
-	int debuglevel_class[DBGC_LAST];
-	BOOL debuglevel_class_isset[DBGC_LAST];
-};
+extern int  *DEBUGLEVEL_CLASS;
+extern BOOL *DEBUGLEVEL_CLASS_ISSET;
 
 /* Debugging macros
  *
@@ -151,7 +154,7 @@ struct debuglevel_message {
 #define DEBUGLVL( level ) \
   ( ((level) <= MAX_DEBUG_LEVEL) && \
      ((DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))||  \
-     (!DEBUGLEVEL_CLASS[ DBGC_CLASS ] && \
+     (!DEBUGLEVEL_CLASS_ISSET[ DBGC_CLASS ] && \
       DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
    && dbghdr( level, FILE_MACRO, FUNCTION_MACRO, (__LINE__) ) )
 

@@ -230,6 +230,10 @@ Byte offset   Type     name                description
 #define SMB_SET_FILE_ALLOCATION_INFO	0x103
 #define SMB_SET_FILE_END_OF_FILE_INFO	0x104
 
+/* Query FS info. */
+#define SMB_INFO_ALLOCATION		1
+#define SMB_INFO_VOLUME			2
+
 /*
  * Thursby MAC extensions....
  */
@@ -336,6 +340,12 @@ Byte offset   Type     name                description
 #define SMB_UID_NO_CHANGE                  0xFFFFFFFF
 #define SMB_GID_NO_CHANGE                  0xFFFFFFFF
 
+#define SMB_SIZE_NO_CHANGE_LO              0xFFFFFFFF
+#define SMB_SIZE_NO_CHANGE_HI              0xFFFFFFFF
+ 
+#define SMB_TIME_NO_CHANGE_LO              0xFFFFFFFF
+#define SMB_TIME_NO_CHANGE_HI              0xFFFFFFFF
+
 /*
 Offset Size         Name
 0      LARGE_INTEGER EndOfFile                File size
@@ -416,7 +426,7 @@ Offset Size         Name
  64-bits worth of capability fun :-).
 */
 
-#define SMB_CIFS_UNIX_QUERY_INFO      0x200
+#define SMB_QUERY_CIFS_UNIX_INFO      0x200
 
 /* Returns the following.
 

@@ -238,6 +238,7 @@ winbind_callback(nsd_file_t **rqp, int fd)
 		free_response(&response);
 		return(do_list(1,rq));
 	    case WINBINDD_GETGRENT:
+	    case WINBINDD_GETGRLST:
 		nsd_logprintf(NSD_LOG_MIN, 
 			"callback (winbind) - %d GETGRENT responses\n",
 			response.data.num_entries);
@@ -1053,13 +1054,15 @@ _nss_winbind_endgrent(void)
 
 /* Get next entry from ntdom group database */
 
-NSS_STATUS
-_nss_winbind_getgrent_r(struct group *result,
-			char *buffer, size_t buflen, int *errnop)
+static NSS_STATUS
+winbind_getgrent(enum winbindd_cmd cmd,
+		 struct group *result,
+		 char *buffer, size_t buflen, int *errnop)
 {
 	NSS_STATUS ret;
 	static struct winbindd_request request;
 	static int called_again;
+	
 
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: getgrent\n", getpid());
@@ -1083,7 +1086,7 @@ _nss_winbind_getgrent_r(struct group *result,
 
 	request.data.num_entries = MAX_GETGRENT_USERS;
 
-	ret = winbindd_request(WINBINDD_GETGRENT, &request, 
+	ret = winbindd_request(cmd, &request, 
 			       &getgrent_response);
 
 	if (ret == NSS_STATUS_SUCCESS) {
@@ -1139,6 +1142,21 @@ _nss_winbind_getgrent_r(struct group *result,
 	}
 
 	return ret;
+}
+
+
+NSS_STATUS
+_nss_winbind_getgrent_r(struct group *result,
+			char *buffer, size_t buflen, int *errnop)
+{
+	return winbind_getgrent(WINBINDD_GETGRENT, result, buffer, buflen, errnop);
+}
+
+NSS_STATUS
+_nss_winbind_getgrlst_r(struct group *result,
+			char *buffer, size_t buflen, int *errnop)
+{
+	return winbind_getgrent(WINBINDD_GETGRLST, result, buffer, buflen, errnop);
 }
 
 /* Return group struct from group name */
