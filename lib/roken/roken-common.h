@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -239,6 +239,10 @@
 
 #ifndef SHUT_RDWR
 #define SHUT_RDWR 2
+#endif
+
+#ifndef HAVE___ATTRIBUTE__
+#define __attribute__(x)
 #endif
 
 ROKEN_CPP_START
