@@ -418,6 +418,11 @@ int smbd_server_fd(void)
 		return server_fd;
 }
 
+void reload_printers(void)
+{
+	return;
+}
+
 /****************************************************************************
  Reload the services file.
 **************************************************************************/
@@ -444,8 +449,6 @@ BOOL reload_services(BOOL test)
 	lp_killunused(conn_snum_used);
 	
 	ret = lp_load(dyn_CONFIGFILE, False, False, True);
-
-	load_printers();
 
 	/* perhaps the config filename is now set */
 	if (!test)
