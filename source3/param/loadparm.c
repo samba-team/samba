@@ -166,6 +166,7 @@ typedef struct
 	char *szGuestaccount;
 	char *szManglingMethod;
 	int max_log_size;
+	char *szLogLevel;
 	int mangled_stack;
 	int max_xmit;
 	int max_mux;
@@ -767,8 +768,8 @@ static struct parm_struct parm_table[] = {
 	{"Logging Options", P_SEP, P_SEPARATOR},
 
 	{"admin log", P_BOOL, P_GLOBAL, &Globals.bAdminLog, NULL, NULL, 0},
-	{"log level", P_STRING, P_GLOBAL, NULL, handle_debug_list, NULL, 0},
-	{"debuglevel", P_STRING, P_GLOBAL, NULL, handle_debug_list, NULL, 0},
+	{"log level", P_STRING, P_GLOBAL, &Globals.szLogLevel, handle_debug_list, NULL, 0},
+	{"debuglevel", P_STRING, P_GLOBAL, &Globals.szLogLevel, handle_debug_list, NULL, 0},
 	{"syslog", P_INTEGER, P_GLOBAL, &Globals.syslog, NULL, NULL, 0},
 	{"syslog only", P_BOOL, P_GLOBAL, &Globals.bSyslogOnly, NULL, NULL, 0},
 	{"log file", P_STRING, P_GLOBAL, &Globals.szLogFile, NULL, NULL, 0},
@@ -1277,6 +1278,7 @@ static void init_globals(void)
 	Globals.bSyslogOnly = False;
 	Globals.bAdminLog = False;
 	Globals.bTimestampLogs = True;
+	string_set(&Globals.szLogLevel, "0");
 	Globals.bDebugHiresTimestamp = False;
 	Globals.bDebugPid = False;
 	Globals.bDebugUid = False;
@@ -2642,6 +2644,7 @@ static BOOL handle_debug_list( char *pszParmValueIn, char **ptr )
 	pstring pszParmValue;
 
 	pstrcpy(pszParmValue, pszParmValueIn);
+	string_set(ptr, pszParmValueIn);
 	return debug_parse_levels( pszParmValue );
 }
 
