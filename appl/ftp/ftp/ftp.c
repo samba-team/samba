@@ -351,7 +351,7 @@ getreply (int expecteof)
 	    continue;
 	case '\n':
 	    *p++ = '\0';
-	    if(isdigit(buf[0])){
+	    if(isdigit((unsigned char)buf[0])){
 		sscanf(buf, "%d", &code);
 		if(code == 631){
 		    code = 0;
