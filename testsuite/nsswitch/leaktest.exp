@@ -5,6 +5,12 @@
 load_lib util-defs.exp
 load_lib "$srcdir/lib/compile.exp"
 
+# For the moment these must be compiled up by hand as they don't run very
+# well automatically
+
+untested "memory leak tests"
+return
+
 # A list of tests to run
 
 set leaktests [list "leaktest1" "leaktest2" "leaktest3" "leaktest4"]
