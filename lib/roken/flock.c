@@ -38,15 +38,14 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id$");
 #endif
 
+#ifndef HAVE_GETUID
+
 #include "roken.h"
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
-#ifdef HAVE_ERRNO_H
-#include <errno.h>
+
+#ifdef HAVE_CONFIG_H
+RCSID("$Id$");
 #endif
 
 #define OP_MASK (LOCK_SH | LOCK_EX | LOCK_UN)
@@ -90,3 +89,6 @@ flock(int fd, int operation)
   return -1;
 #endif
 }
+
+#endif
+
