@@ -186,7 +186,7 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t
 	ZERO_STRUCTP(token);
 
 	/* We always have uid/gid plus World and Network and Authenticated Users or Guest SIDs. */
-	num_sids = 5 + ngroups;
+	num_sids = 5 + num_info3_rids + ngroups;
 
 	if ((token->user_sids = (DOM_SID *)malloc( num_sids*sizeof(DOM_SID))) == NULL) {
 		free(token);
