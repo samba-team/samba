@@ -11,10 +11,10 @@ DEFS	= -DHOST=\"@CANONICAL_HOST@\"
 LN_S = ln -s
 
 all:
-	for i in $(HEADERS) ; do \
-	if [ ! -h $$i -a ! -e $$i ]; then X="$$X $$i"; fi \
+	for i in $(HEADERS); do \
+	if test ! -h $$i -a ! -f $$i ; then X="$$X $$i"; fi \
 	done; \
-	if [ ! -z "$$X" ]; then $(MAKE) $$X; fi
+	if test ! -z "$$X" ; then $(MAKE) $$X; fi
 
 .c.o:
 	$(CC) $(CFLAGS) $(DEFS) -c $< 
