@@ -41,7 +41,7 @@ extern pstring global_myname;
 typedef struct _Printer{
 	BOOL document_started;
 	BOOL page_started;
-    int jobid; /* jobid in printing backend */
+	int jobid; /* jobid in printing backend */
 	BOOL printer_type;
 	union {
 	  	fstring handlename;
