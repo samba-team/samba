@@ -37,6 +37,8 @@ libkrb5_a_SOURCES = \
 	get_host_realm.c \
 	get_in_tkt.c \
 	get_in_tkt_pw.c \
+	get_in_tkt_with_keytab.c \
+	get_in_tkt_with_skey.c \
 	get_port.c \
 	init_creds.c \
 	init_creds_pw.c \
@@ -88,7 +90,7 @@ libkrb5_a_SOURCES = \
 $(libkrb5_a_OBJECTS): $(srcdir)/krb5-protos.h
 
 $(srcdir)/krb5-protos.h:
-	cd $(srcdir); perl ../../aux/make-proto.pl $(libkrb5_a_SOURCES) > krb5-protos.h || rm -f krb5-protos.h
+	cd $(srcdir); /opt/perl5/bin/perl ../../aux/make-proto.pl $(libkrb5_a_SOURCES) > krb5-protos.h || rm -f krb5-protos.h
 
 INCLUDES = $(INCLUDE_krb4)
 
