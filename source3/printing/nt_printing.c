@@ -278,12 +278,12 @@ void get_short_archi(char *short_archi, char *long_archi)
 	
 	struct table archi_table[]=
 	{
-		{"Windows 4.0",          ""       },
-		{"Windows NT x86",       "W32X86" },
-		{"Windows NT R4000",     ""       },
-		{"Windows NT Alpha_AXP", ""       },
-		{"Windows NT PowerPC",   ""       },
-		{NULL,                   ""       }
+		{"Windows 4.0",          "WIN40"    },
+		{"Windows NT x86",       "W32X86"   },
+		{"Windows NT R4000",     "W32mips"  },
+		{"Windows NT Alpha_AXP", "W32alpha" },
+		{"Windows NT PowerPC",   "W32ppc"   },
+		{NULL,                   ""         }
 	};
 	
 	int i=-1;

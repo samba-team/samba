@@ -2939,9 +2939,7 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 	time_t unixdate = time(NULL);
 
 	if (get_a_printer(&ntprinter, 2, lp_servicename(snum)) !=0 )
-	{
-		return (False);
-	}	
+		return False;
 	
 	t=gmtime(&unixdate);
 	snprintf(temp_name, sizeof(temp_name), "\\\\%s", global_myname);
@@ -2993,25 +2991,31 @@ static uint32 enumjobs_level1(print_queue_struct *queue, int snum,
 	int i;
 	
 	info=(JOB_INFO_1 *)malloc(*returned*sizeof(JOB_INFO_1));
+	if (info==NULL) {
+		safe_free(queue);
+		*returned=0;
+		return ERROR_NOT_ENOUGH_MEMORY;
+	}
 	
 	for (i=0; i<*returned; i++)
-	{
 		fill_job_info_1(&(info[i]), &(queue[i]), i, snum);
-	}
+
+	safe_free(queue);
 
 	/* check the required size. */	
 	for (i=0; i<*returned; i++)
 		(*needed) += spoolss_size_job_info_1(&(info[i]));
 
-	if (!alloc_buffer_size(buffer, *needed))
+	if (!alloc_buffer_size(buffer, *needed)) {
+		safe_free(info);
 		return ERROR_INSUFFICIENT_BUFFER;
+	}
 
 	/* fill the buffer with the structures */
 	for (i=0; i<*returned; i++)
 		new_smb_io_job_info_1("", buffer, &(info[i]), 0);	
 
 	/* clear memory */
-	safe_free(queue);
 	safe_free(info);
 
 	if (*needed > offered) {
@@ -3033,25 +3037,31 @@ static uint32 enumjobs_level2(print_queue_struct *queue, int snum,
 	int i;
 	
 	info=(JOB_INFO_2 *)malloc(*returned*sizeof(JOB_INFO_2));
+	if (info==NULL) {
+		safe_free(queue);
+		*returned=0;
+		return ERROR_NOT_ENOUGH_MEMORY;
+	}
 	
 	for (i=0; i<*returned; i++)
-	{
 		fill_job_info_2(&(info[i]), &(queue[i]), i, snum);
-	}
+
+	safe_free(queue);
 
 	/* check the required size. */	
 	for (i=0; i<*returned; i++)
 		(*needed) += spoolss_size_job_info_2(&(info[i]));
 
-	if (!alloc_buffer_size(buffer, *needed))
+	if (!alloc_buffer_size(buffer, *needed)) {
+		safe_free(info);
 		return ERROR_INSUFFICIENT_BUFFER;
+	}
 
 	/* fill the buffer with the structures */
 	for (i=0; i<*returned; i++)
 		new_smb_io_job_info_2("", buffer, &(info[i]), 0);	
 
 	/* clear memory */
-	safe_free(queue);
 	safe_free(info);
 
 	if (*needed > offered) {
@@ -3081,9 +3091,7 @@ uint32 _spoolss_enumjobs( POLICY_HND *handle, uint32 firstjob, uint32 numofjobs,
 	*returned=0;
 
 	if (!get_printer_snum(handle, &snum))
-	{
 		return ERROR_INVALID_HANDLE;
-	}
 
 	*returned = get_printqueue(snum, NULL, &queue, &prt_status);
 	DEBUGADD(4,("count:[%d], status:[%d], [%s]\n", *returned, prt_status.status, prt_status.message));
@@ -3096,11 +3104,12 @@ uint32 _spoolss_enumjobs( POLICY_HND *handle, uint32 firstjob, uint32 numofjobs,
 		return enumjobs_level2(queue, snum, buffer, offered, needed, returned);
 		break;				
 	default:
+		safe_free(queue);
+		*returned=0;
 		return ERROR_INVALID_LEVEL;
 		break;
 	}
 }
-
 
 
 /****************************************************************************
@@ -4156,16 +4165,21 @@ static uint32 getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 	
 	if (found==False) {
 		safe_free(queue);
+		safe_free(info_1);
 		/* I shoud reply something else ... I can't find the good one */
 		return NT_STATUS_NO_PROBLEMO;
 	}
 	
-	fill_job_info_1(info_1, &(queue[i]), i, snum);
+	fill_job_info_1(info_1, &(queue[i-1]), i, snum);
+	
+	safe_free(queue);
 	
 	*needed += spoolss_size_job_info_1(info_1);
 
-	if (!alloc_buffer_size(buffer, *needed))
+	if (!alloc_buffer_size(buffer, *needed)) {
+		safe_free(info_1);
 		return ERROR_INSUFFICIENT_BUFFER;
+	}
 
 	new_smb_io_job_info_1("", buffer, info_1, 0);
 
@@ -4199,16 +4213,21 @@ static uint32 getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 	
 	if (found==False) {
 		safe_free(queue);
+		safe_free(info_2);
 		/* I shoud reply something else ... I can't find the good one */
 		return NT_STATUS_NO_PROBLEMO;
 	}
 	
-	fill_job_info_2(info_2, &(queue[i]), i, snum);
+	fill_job_info_2(info_2, &(queue[i-1]), i, snum);
+	
+	safe_free(queue);
 	
 	*needed += spoolss_size_job_info_2(info_2);
 
-	if (!alloc_buffer_size(buffer, *needed))
+	if (!alloc_buffer_size(buffer, *needed)) {
+		safe_free(info_2);
 		return ERROR_INSUFFICIENT_BUFFER;
+	}
 
 	new_smb_io_job_info_2("", buffer, info_2, 0);
 
