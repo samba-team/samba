@@ -330,7 +330,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 
 	/* allow for workgroups as part of the username */
 	fstrcpy(user2, user);
-	if ((p=strchr(user2,'\\')) || (p=strchr(user2,'/'))) {
+	if ((p=strchr(user2,'\\')) || (p=strchr(user2,'/')) || (p=strchr(user2,*lp_winbind_separator())) ) {
 		*p = 0;
 		user = p+1;
 		workgroup = user2;
