@@ -122,7 +122,8 @@ static struct cli_state *connect_to_ipc(struct in_addr *server_ip, const char *s
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return c;
 	} else {
-		DEBUG(1,("Cannot connect to server.  Error was %s\n", get_nt_error_msg(nt_status)));
+		DEBUG(0,("Cannot connect to server.  Error was %s\n", 
+			 get_nt_error_msg(nt_status)));
 		return NULL;
 	}
 }
@@ -144,7 +145,7 @@ static struct cli_state *connect_to_ipc_anonymous(struct in_addr *server_ip, con
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return c;
 	} else {
-		DEBUG(1,("Cannot connect to server (anonymously).  Error was %s\n", get_nt_error_msg(nt_status)));
+		DEBUG(0,("Cannot connect to server (anonymously).  Error was %s\n", get_nt_error_msg(nt_status)));
 		return NULL;
 	}
 }
@@ -238,10 +239,6 @@ struct cli_state *net_make_ipc_connection(unsigned flags)
 		cli = connect_to_ipc(&server_ip, server_name);
 	}
 	SAFE_FREE(server_name);
-	if(!cli) {
-		d_printf("\nUnable to connect to target server\n");
-		return NULL;
-	}
 	return cli;
 }
 
