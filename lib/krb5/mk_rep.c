@@ -79,6 +79,8 @@ krb5_mk_rep(krb5_context context,
   free (ap.enc_part.cipher.data);
   outbuf->length = len;
   outbuf->data = malloc(len);
+  if (outbuf->data == NULL)
+      return ENOMEM;
   memcpy(outbuf->data, buf + sizeof(buf) - len, len);
   return 0;
 }

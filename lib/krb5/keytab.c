@@ -54,8 +54,10 @@ krb5_kt_resolve(krb5_context context,
   if (k == NULL)
     return ENOMEM;
   k->filename = strdup(name + 5);
-  if (k->filename == NULL)
+  if (k->filename == NULL) {
+    free(k);
     return ENOMEM;
+  }
   *id = k;
   return 0;
 }
@@ -248,9 +250,11 @@ krb5_kt_ret_data(krb5_storage *sp,
 	return ret;
     data->length = size;
     data->data = malloc(size);
+    if (data->data == NULL)
+	return ENOMEM;
     ret = sp->fetch(sp, data->data, size);
     if(ret != size)
-	return (ret < 0)? errno : KRB5_CC_END;
+	return (ret < 0)? errno : KRB5_KT_END;
     return 0;
 }
 
@@ -264,10 +268,12 @@ krb5_kt_ret_string(krb5_storage *sp,
     if(ret)
 	return ret;
     *data = malloc(size + 1);
+    if (*data == NULL)
+	return ENOMEM;
     ret = sp->fetch(sp, *data, size);
     (*data)[size] = '\0';
     if(ret != size)
-	return (ret < 0)? errno : KRB5_CC_END;
+	return (ret < 0)? errno : KRB5_KT_END;
     return 0;
 }
 
@@ -285,7 +291,8 @@ krb5_kt_ret_principal(krb5_storage *sp,
 	return ENOMEM;
 
     ret = krb5_ret_int16(sp, &tmp);
-    if(ret) return ret;
+    if(ret)
+	return ret;
     p->name.name_type = KRB5_NT_SRV_HST;
     p->name.name_string.len = tmp;
     ret = krb5_kt_ret_string(sp, &p->realm);
@@ -327,7 +334,7 @@ krb5_kt_store_data(krb5_storage *sp,
     if(ret != data.length){
 	if(ret < 0)
 	    return errno;
-	return KRB5_CC_END;
+	return KRB5_KT_END;
     }
     return 0;
 }
@@ -345,7 +352,7 @@ krb5_kt_store_string(krb5_storage *sp,
     if(ret != len){
 	if(ret < 0)
 	    return errno;
-	return KRB5_CC_END;
+	return KRB5_KT_END;
     }
     return 0;
 }

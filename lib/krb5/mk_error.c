@@ -81,6 +81,8 @@ krb5_mk_error(krb5_context context,
     }
     encode_KRB_ERROR(buf + sizeof(buf) - 1, sizeof(buf), &msg, &reply->length);
     reply->data = malloc(reply->length);
+    if (reply->data == NULL)
+	return ENOMEM;
     memcpy(reply->data, buf + sizeof(buf) - reply->length, reply->length);
     return 0;
 }
