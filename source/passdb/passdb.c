@@ -1287,6 +1287,7 @@ BOOL local_sid_to_gid(gid_t *pgid, const DOM_SID *psid, enum SID_NAME_USE *name_
 	}
 
 	*pgid = group.gid;
+	*name_type = group.sid_name_use;
 
 	DEBUG(10,("local_sid_to_gid: SID %s -> gid (%u)\n", sid_string_static(psid),
 		(unsigned int)*pgid));
