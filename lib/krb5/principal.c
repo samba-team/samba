@@ -254,7 +254,7 @@ unparse_name(krb5_context context,
 	len++;
     }
     *name = malloc(len);
-    if(*name == NULL)
+    if(len != 0 && *name == NULL)
 	return ENOMEM;
     ret = unparse_name_fixed(context, principal, *name, len, short_flag);
     if(ret)
