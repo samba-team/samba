@@ -1,0 +1,12 @@
+Thu Oct 30 16:00:06 GMT 1997
+
+Files in the subdirectory rpc_pipes/ of the Samba distribution are
+licensed under the terms of the GNU LIBRARY GENERAL PUBLIC LICENSE
+(LGPL).  A copy of the LGPL should also be included in this directory
+under the name COPYING.LGPL.  If this file is not present, you can
+obtain a copy of the LGPL by writing to the Free Software Foundation,
+Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Luke Kenneth Casson Leighton
+Samba Team
+samba-bugs@samba.anu.edu.au
