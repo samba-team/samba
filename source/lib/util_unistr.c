@@ -201,11 +201,10 @@ char *dos_unistr2_to_str(UNISTR2 *str)
 	char *lbuf = lbufs[nexti];
 	char *p;
 	uint16 *src = str->buffer;
-	int max_size = MIN(MAXUNI-3, str->uni_str_len);
 
 	nexti = (nexti+1)%8;
 
-	for (p = lbuf; (p-lbuf < max_size) && *src; src++) {
+	for (p = lbuf; (p - lbuf < MAXUNI-3) && (src - str->buffer < str->uni_str_len) && *src; src++) {
 		uint16 ucs2_val = SVAL(src,0);
 		uint16 cp_val = ucs2_to_doscp[ucs2_val];
 
@@ -227,24 +226,20 @@ char *dos_unistr2_to_str(UNISTR2 *str)
  ********************************************************************/
 void ascii_to_unistr(uint16 *dest, const char *src, int maxlen)
 {
-        uint16 *destend = dest + maxlen;
-        register char c;
+	uint16 *destend = dest + maxlen;
+	char c;
 
-        while (dest < destend)
-        {
-                c = *(src++);
-                if (c == 0)
-                {
-                        break;
-                }
+	while (dest < destend) {
+		c = *(src++);
+		if (c == 0)
+			break;
 
 		SSVAL(dest, 0, c);
-                dest++;
-        }
+		dest++;
+	}
 
-        *dest = 0;
+	*dest = 0;
 }
-
 
 /*******************************************************************
  Pull an ASCII string out of a UNICODE array (uint16's).
@@ -252,24 +247,20 @@ void ascii_to_unistr(uint16 *dest, const char *src, int maxlen)
 
 void unistr_to_ascii(char *dest, const uint16 *src, int len)
 {
-        char *destend = dest + len;
-        register uint16 c;
+	char *destend = dest + len;
+	uint16 c;
 	
-	if (src == NULL)
-	{
+	if (src == NULL) {
 		*dest = '\0';
 		return;
 	}
 
 	/* normal code path for a valid 'src' */
-	while (dest < destend)
-	{
+	while (dest < destend) {
 		c = SVAL(src, 0);
 		src++;
 		if (c == 0)
-		{
 			break;
-		}
 
 		*(dest++) = (char)c;
 	}
@@ -339,11 +330,10 @@ char *dos_buffer2_to_str(BUFFER2 *str)
 	char *lbuf = lbufs[nexti];
 	char *p;
 	uint16 *src = str->buffer;
-	int max_size = MIN(sizeof(str->buffer)-3, str->buf_len/2);
 
 	nexti = (nexti+1)%8;
 
-	for (p = lbuf; (p-lbuf < max_size) && *src; src++) {
+	for (p = lbuf; (p - lbuf < sizeof(str->buffer)-3) && (src - str->buffer < str->buf_len/2) && *src; src++) {
 		uint16 ucs2_val = SVAL(src,0);
 		uint16 cp_val = ucs2_to_doscp[ucs2_val];
 
@@ -368,11 +358,10 @@ char *dos_buffer2_to_multistr(BUFFER2 *str)
 	char *lbuf = lbufs[nexti];
 	char *p;
 	uint16 *src = str->buffer;
-	int max_size = MIN(sizeof(str->buffer)-3, str->buf_len/2);
 
 	nexti = (nexti+1)%8;
 
-	for (p = lbuf; p-lbuf < max_size; src++) {
+	for (p = lbuf; (p - lbuf < sizeof(str->buffer)-3) && (src - str->buffer < str->buf_len/2); src++) {
 		if (*src == 0) {
 			*p++ = ' ';
 		} else {
@@ -481,8 +470,6 @@ int unistrcpy(char *dst, char *src)
 	return num_wchars;
 }
 
-
-
 /*******************************************************************
  Free any existing maps.
 ********************************************************************/
@@ -504,7 +491,6 @@ static void free_maps(smb_ucs2_t **pp_cp_to_ucs2, uint16 **pp_ucs2_to_cp)
 		*pp_ucs2_to_cp = NULL;
 	}
 }
-
 
 /*******************************************************************
  Build a default (null) codepage to unicode map.
