@@ -411,8 +411,8 @@ static BOOL parse_lpq_aix(char *line,print_queue_struct *buf,BOOL first)
 
   /* handle the case of "(standard input)" as a filename */
   string_sub(line,"standard input","STDIN");
-  string_sub(line,"(","\"");
-  string_sub(line,")","\"");
+  all_string_sub(line,"(","\"");
+  all_string_sub(line,")","\"");
 
   for (count=0; 
        count<10 && 
@@ -528,8 +528,8 @@ static BOOL parse_lpq_hpux(char * line, print_queue_struct *buf, BOOL first)
     if (!header_line_ok) return (False); /* incorrect header line */
     /* handle the case of "(standard input)" as a filename */
     string_sub(line,"standard input","STDIN");
-    string_sub(line,"(","\"");
-    string_sub(line,")","\"");
+    all_string_sub(line,"(","\"");
+    all_string_sub(line,")","\"");
     
     for (count=0; count<2 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++) ;
     /* we must get 2 tokens */
@@ -666,18 +666,18 @@ static BOOL parse_lpq_qnx(char *line,print_queue_struct *buf,BOOL first)
   fstring tok[7];
   int count=0;
 
-  DEBUG(0,("antes [%s]\n", line));
+  DEBUG(4,("antes [%s]\n", line));
 
   /* handle the case of "-- standard input --" as a filename */
   string_sub(line,"standard input","STDIN");
-  DEBUG(0,("despues [%s]\n", line));
-  string_sub(line,"-- ","\"");
-  string_sub(line," --","\"");
-  DEBUG(0,("despues 1 [%s]\n", line));
+  DEBUG(4,("despues [%s]\n", line));
+  all_string_sub(line,"-- ","\"");
+  all_string_sub(line," --","\"");
+  DEBUG(4,("despues 1 [%s]\n", line));
 
   string_sub(line,"[job #","");
   string_sub(line,"]","");
-  DEBUG(0,("despues 2 [%s]\n", line));
+  DEBUG(4,("despues 2 [%s]\n", line));
 
   
   
@@ -733,8 +733,8 @@ static BOOL parse_lpq_plp(char *line,print_queue_struct *buf,BOOL first)
 
   /* handle the case of "(standard input)" as a filename */
   string_sub(line,"stdin","STDIN");
-  string_sub(line,"(","\"");
-  string_sub(line,")","\"");
+  all_string_sub(line,"(","\"");
+  all_string_sub(line,")","\"");
   
   for (count=0; count<11 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++) ;
 

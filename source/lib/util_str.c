@@ -998,7 +998,7 @@ enough room!
 This routine looks for pattern in s and replaces it with 
 insert. It may do multiple replacements.
 
-any of " ; or ` in the insert string are replaced with _
+any of " ; ' or ` in the insert string are replaced with _
 ****************************************************************************/
 void string_sub(char *s,const char *pattern,const char *insert)
 {
@@ -1019,6 +1019,7 @@ void string_sub(char *s,const char *pattern,const char *insert)
 			switch (insert[i]) {
 			case '`':
 			case '"':
+			case '\'':
 			case ';':
 				p[i] = '_';
 				break;
