@@ -17,17 +17,6 @@
  * Mass Ave, Cambridge, MA 02139, USA.
  */
 
-/*X*X*X*X*X*X*X**X*X*X*X*X*X*X**X*X*X*X*X*X*X*X*X*X*X*X*X*X*X*X*
- *X*X*X*X*X*X*X**X*X*X*X*X*X*X**X*X*X*X*X*X*X*X*X*X*X*X*X*X*X*X*
- *X*X*X*X*X*X*X**X*X*X*X*X*X*X**X*X*X*X*X*X*X*X*X*X*X*X*X*X*X*X*
-
-     DO NOT CALL ANY OF THE ROUTINES IN THIS MODULE DIRECTLY.
-                       USE passdb.c INSTEAD.
-
- *X*X*X*X*X*X*X**X*X*X*X*X*X*X**X*X*X*X*X*X*X*X*X*X*X*X*X*X*X*X*
- *X*X*X*X*X*X*X**X*X*X*X*X*X*X**X*X*X*X*X*X*X*X*X*X*X*X*X*X*X*X*
- *X*X*X*X*X*X*X**X*X*X*X*X*X*X**X*X*X*X*X*X*X*X*X*X*X*X*X*X*X*X*/
-
 #include "includes.h"
 
 extern int DEBUGLEVEL;

@@ -28,7 +28,6 @@ static int initial_gid;
 
 /* what user is current? */
 struct current_user current_user;
-extern pstring sesssetup_user;
 
 pstring OriginalDir;
 
@@ -277,11 +276,6 @@ BOOL become_user(connection_struct *conn, int cnum, uint16 vuid)
 
   current_user.cnum = cnum;
   current_user.vuid = vuid;
-
-  /* Ensure sesssetup_user is set correctly if we are using
-     user security. */
-  if(vuser != NULL)
-    pstrcpy( sesssetup_user, vuser->requested_name);
 
   DEBUG(5,("become_user uid=(%d,%d) gid=(%d,%d)\n",
 	   getuid(),geteuid(),getgid(),getegid()));
