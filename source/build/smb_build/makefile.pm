@@ -83,7 +83,7 @@ sub _prepare_compiler_linker($)
 
 	$output = "
 CC=\@CC\@
-CC_FLAGS=-Iinclude -I. -I\$(srcdir)/include -I\$(srcdir) -Ilib \@CFLAGS\@ \@CPPFLAGS\@
+CC_FLAGS=-Iinclude -I. -I\$(srcdir)/include -I\$(srcdir) -D_SAMBA_BUILD_ -Ilib \@CFLAGS\@ \@CPPFLAGS\@
 
 LD=\@CC\@
 LD_FLAGS=\@LDFLAGS\@ \@CFLAGS\@
