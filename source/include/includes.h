@@ -613,14 +613,16 @@ char *mktemp(char *); /* No standard include */
 #include <sys/termios.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>                /* needed for inet_ntoa proto */
-#include <stropts.h>
 #ifdef HPUX_10_TRUSTED
 #include <hpsecurity.h>
 #include <prot.h>
 #define NEED_AUTH_PARAMETERS
 #endif
 #define SIGNAL_CAST (void (*)(__harg))
-#ifndef HPUX10 /* This is only needed for HPUX 9.x */
+#ifdef HPUX10
+#include <stropts.h>
+#else /* HPUX10 */
+/* This is only needed for HPUX 9.x */
 #define SELECT_CAST (int *)
 #endif /* HPUX10 */
 #define SYSV
