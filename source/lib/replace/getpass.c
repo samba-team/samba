@@ -213,13 +213,14 @@ char *getsmbpass(const char *prompt)
 			tcsetattr (fileno (in), TCSANOW, &t);
 	}
 
+	fprintf(out, "\n");
+	fflush(out);
+
 	if (in != stdin) /* We opened the terminal; now close it.  */
 		fclose(in);
 
 	/* Catch problematic signals */
 	catch_signal(SIGINT, SIGNAL_CAST SIG_DFL);
-
-	printf("\n");
 
 	if (gotintr) {
 		printf("Interupted by signal.\n");
