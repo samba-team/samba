@@ -741,6 +741,7 @@ int open_socket_out(int type, struct in_addr *addr, int port ,int timeout)
 	if (ret < 0 && (errno == EINPROGRESS || errno == EALREADY ||
 			errno == EAGAIN) && (connect_loop < timeout) ) {
 		smb_msleep(connect_loop);
+		timeout -= connect_loop;
 		connect_loop += increment;
 		if (increment < 250) {
 			/* After 8 rounds we end up at a max of 255 msec */
