@@ -92,9 +92,9 @@ If you want to contribute to the development of the software then
 please join the mailing list. The Samba team accepts patches
 (preferably in "diff -u" format, see docs/BUGS.txt for more details)
 and are always glad to receive feedback or suggestions to the address
-samba-bugs@samba.org. We have recently put a new bug tracking
-system into place which should help the throughput quite a lot. You
-can also get the Samba sourcecode straight from the CVS tree - see
+samba@lists.samba.org.
+
+You can also get the Samba sourcecode straight from the CVS tree - see
 http://samba.org/cvs.html.
 
 You could also send hardware/software/money/jewelry or pizza
