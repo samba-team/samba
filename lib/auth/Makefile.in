@@ -9,7 +9,7 @@ SHELL		= /bin/sh
 
 @SET_MAKE@
 
-SUBDIRS		= sia
+SUBDIRS		= pam sia
 
 all:
 		for i in $(SUBDIRS); \
