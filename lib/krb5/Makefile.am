@@ -17,6 +17,7 @@ ERR_FILES = krb5_err.c heim_err.c
 libkrb5_la_SOURCES = \
 	addr_families.c \
 	address.c \
+	aname_to_localname.c \
 	asn1_glue.c \
 	auth_context.c \
 	build_ap_req.c \
