@@ -62,6 +62,19 @@
 
 #define DOMAIN_ALIAS_RID_REPLICATOR    (0x00000228L)
 
+/*
+ * Masks for mappings between unix uid and gid types and
+ * NT RIDS.
+ */
+
+/* Take the 3 bottom bits. */
+#define RID_TYPE_MASK 7
+#define RID_MULTIPLIER 8
+
+/* The two common types for now. */
+#define USER_RID_TYPE 0
+#define GROUP_RID_TYPE 1
+
 /* ENUM_HND */
 typedef struct enum_hnd_info
 {

@@ -1611,6 +1611,7 @@ uid_t pdb_user_rid_to_uid(uint32 u_rid);
 gid_t pdb_group_rid_to_gid(uint32 g_rid);
 uint32 pdb_uid_to_user_rid(uid_t uid);
 uint32 pdb_gid_to_group_rid(gid_t gid);
+BOOL pdb_rid_is_well_known(uint32 rid);
 BOOL pdb_rid_is_user(uint32 rid);
 
 /*The following definitions come from  password.c  */

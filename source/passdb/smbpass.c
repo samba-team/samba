@@ -433,9 +433,9 @@ static BOOL add_smbfilepwd_entry(struct smb_passwd *newpwd)
 
   int fd;
   int new_entry_length;
-  unsigned char *new_entry;
+  char *new_entry;
   long offpos;
-  unsigned char *p;
+  char *p;
 
   /* Open the smbpassword file - for update. */
   fp = startsmbfilepwent(True);

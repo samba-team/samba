@@ -1058,7 +1058,7 @@ Error was %s\n", sid_file, strerror(errno) ));
 
 uid_t pdb_user_rid_to_uid(uint32 u_rid)
 {
-	return (uid_t)(u_rid - 1000);
+  return (uid_t)((u_rid / RID_MULTIPLIER) - 1000);
 }
 
 /*******************************************************************
@@ -1067,7 +1067,7 @@ uid_t pdb_user_rid_to_uid(uint32 u_rid)
 
 gid_t pdb_group_rid_to_gid(uint32 g_rid)
 {
-	return (gid_t)(g_rid - 1000);
+  return (gid_t)((g_rid / RID_MULTIPLIER) - 1000);
 }
 
 /*******************************************************************
@@ -1076,7 +1076,7 @@ gid_t pdb_group_rid_to_gid(uint32 g_rid)
 
 uint32 pdb_uid_to_user_rid(uid_t uid)
 {
-	return (uint32)(uid + 1000);
+	return (((((uint32)uid)*RID_MULTIPLIER) + 1000) | USER_RID_TYPE);
 }
 
 /*******************************************************************
@@ -1085,7 +1085,16 @@ uint32 pdb_uid_to_user_rid(uid_t uid)
 
 uint32 pdb_gid_to_group_rid(gid_t gid)
 {
-	return (uint32)(gid + 1000);
+  return (((((uint32)gid)*RID_MULTIPLIER) + 1000) | GROUP_RID_TYPE);
+}
+
+/*******************************************************************
+ Decides if a RID is a well known RID.
+ ********************************************************************/
+
+BOOL pdb_rid_is_well_known(uint32 rid)
+{
+  return (rid < 1000);
 }
 
 /*******************************************************************
@@ -1094,10 +1103,19 @@ uint32 pdb_gid_to_group_rid(gid_t gid)
   
 BOOL pdb_rid_is_user(uint32 rid)
 {
-  /* Punt for now - we need to look at the encoding here. JRA. */
   /* lkcl i understand that NT attaches an enumeration to a RID
    * such that it can be identified as either a user, group etc
    * type.  there are 5 such categories, and they are documented.
    */
-  return True;
+   if(pdb_rid_is_well_known(rid)) {
+      /*
+       * The only well known user RIDs are DOMAIN_USER_RID_ADMIN
+       * and DOMAIN_USER_RID_GUEST.
+       */
+     if(rid == DOMAIN_USER_RID_ADMIN || rid == DOMAIN_USER_RID_GUEST)
+       return True;
+   } else if((rid & RID_TYPE_MASK) == USER_RID_TYPE) {
+     return True;
+   }
+   return False;
 }
