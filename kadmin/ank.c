@@ -67,10 +67,10 @@ add_new_key(int argc, char **argv)
     int optind = 0;
     int mask = 0;
     krb5_error_code ret;
-    krb5_principal princ_ent = NULL;
-    char *max_ticket_life;
-    char *max_renewable_life;
-    char *attributes;
+    krb5_principal princ_ent	= NULL;
+    char *max_ticket_life	= NULL;
+    char *max_renewable_life	= NULL;
+    char *attributes		= NULL;
 
     args[0].value = &rkey;
     args[1].value = &password;
