@@ -9,8 +9,8 @@
 #%define prelease %(date +%Y%m%d)
 
 #Check to see if p(version|release) has been replaced (1 if replaced)
-%define have_pversion %(if [ "%pversion" = "PVERSION" ];then echo 0; else echo 1; fi)
-%define have_prelease %(if [ "%prelease" = "PRELEASE" ];then echo 0; else echo 1; fi)
+%define have_pversion %(if [ "%pversion" = `echo "pversion" |tr '[:lower:]' '[:upper:]'` ];then echo 0; else echo 1; fi)
+%define have_prelease %(if [ "%prelease" = `echo "prelease" |tr '[:lower:]' '[:upper:]'` ];then echo 0; else echo 1; fi)
 
 # We now do detection of the Mandrake release we are building on:
 %define build_cooker %(if [ `awk '{print $3}' /etc/mandrake-release` = "Cooker" ];then echo 1; else echo 0; fi)
@@ -108,16 +108,16 @@ Patch: samba-2.2.0-makefilepath.patch.bz2
 Patch1: smbw.patch.bz2
 Patch2: samba-glibc21.patch.bz2
 #Patch3: network-recycle_bin.patch.bz2
-Patch4: samba-nsl.patch.bz2
+#Patch4: samba-nsl.patch.bz2
 Patch5: samba-2.2.0-gawk.patch.bz2
 Patch6: system-auth-winbind.pamd.patch.bz2
-Patch7: samba-2.2.3a-init.patch.bz2
-Patch11: samba-2.0.7-smbspool-guest.patch.bz2
+#Patch11: samba-2.0.7-smbspool-guest.patch.bz2
 Patch12: samba-2.2.0-buildroot.patch.bz2
 #Patch16: samba-mkdir.patch.bz2
 Patch17: smbmount-sbin.patch.bz2
 %if !%have_pversion
 # Version specific patches: current version
+Patch7: samba-2.2.3a-init.patch.bz2
 Patch20: samba-2.2.3a-LDAP-schema.patch.bz2
 Patch21: samba-2.2.3a-cli_spoolss_notify.patch.bz2
 Patch22: samba-2.2.3a-pam_smbpass.patch.bz2
@@ -279,11 +279,11 @@ echo "This rpm was built with default options">%{SOURCE7}
 #%patch111 -p1
 %patch1 -p1 -b .smbw
 #%patch3 -p1 -b .net-r_bin
-%patch4 -p1 -b .nsl
+#%patch4 -p1 -b .nsl
 %patch5 -p1 -b .gawk
 #%patch6 -p1
-%patch7 -p1
-%patch11 -p0 -b .smbspool
+#%patch7 -p1
+#%patch11 -p0 -b .smbspool
 %patch12 -p1 -b .buildroot
 %patch17 -p1
 # Version specific patches: current version
@@ -809,6 +809,11 @@ fi
 %endif
 
 %changelog
+* Fri Apr 26 2002 Buchan Milne <bgmilne@cae.co.za> 2.2.3a-12mdk
+- Final changes for 2.2.4 release
+- Removed patches 4(nsl),11(smbspool-guest)
+- Made patch 7 (2.2.3a-init) release specific
+
 * Sun Apr 21 2002 Buchan Milne <bgmilne@cae.co.za> 2.2.3a-11mdk
 - Tested with CVS snapshot (upcoming relaese, sync packaging)
 - Added detection of samba-official release (so we can keep one spec
