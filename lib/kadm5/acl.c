@@ -70,7 +70,7 @@ _kadm5_privs_to_string(u_int32_t privs, char *string, size_t len)
 
 /*
  * retrieve the right for the current caller on `princ' (NULL means all)
- * and store them in `flags'
+ * and store them in `ret_flags'
  * return 0 or an error.
  */
 
@@ -83,18 +83,14 @@ fetch_acl (kadm5_server_context *context,
     FILE *f = fopen(context->config.acl_file, "r");
     krb5_error_code ret = 0;
 
-    if(f != NULL){
+    if(f != NULL) {
 	char buf[256];
-	char princ_name[256];
-
-	if (princ != NULL)
-	    krb5_unparse_name_fixed (context->context, princ,
-				     princ_name, sizeof(princ_name));
 
 	while(fgets(buf, sizeof(buf), f) != NULL){
 	    char *foo = NULL, *p;
 	    krb5_principal this_princ;
 
+	    flags = -1;
 	    p = strtok_r(buf, " \t\n", &foo);
 	    if(p == NULL)
 		continue;
@@ -115,17 +111,23 @@ fetch_acl (kadm5_server_context *context,
 		break;
 	    p = strtok_r(NULL, "\n", &foo);
 	    if (p == NULL) {
-		if (princ == NULL) {
+		ret = 0;
+		break;
+	    }
+	    if (princ != NULL) {
+		krb5_principal pattern_princ;
+		krb5_boolean tmp;
+
+		ret = krb5_parse_name (context->context, p, &pattern_princ);
+		if (ret)
+		    break;
+		tmp = krb5_principal_match (context->context,
+					    princ, pattern_princ);
+		krb5_free_principal (context->context, pattern_princ);
+		if (tmp) {
 		    ret = 0;
 		    break;
-		} else {
-		    continue;
 		}
-	    }
-	    if(princ != NULL
-	       && fnmatch (p, princ_name, FNM_PATHNAME) == 0) {
-		ret = _kadm5_string_to_privs(p, &flags);
-		break;
 	    }
 	}
 	fclose(f);
