@@ -8,8 +8,11 @@
 CC = gcc
 LIBTOOL = libtool
 
-SAMBA_SRC = ../../source/include
-CFLAGS = -I$(SAMBA_SRC)
+SAMBA_SRC = ../../source
+SAMBA_INCL = ../../source/include
+UBIQX_SRC = ../../source/ubiqx
+SMBWR_SRC = ../../source/smbwrapper
+CFLAGS = -I$(SAMBA_SRC) -I$(SAMBA_INCL) -I$(UBIQX_SRC) -I$(SMBWR_SRC) -Wall -g
 VFS_OBJS = audit.so skel.so
 
 # Default target

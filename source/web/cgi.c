@@ -394,6 +394,7 @@ static BOOL cgi_handle_authorization(char *line)
 
 		/* Save the users name */
 		C_user = strdup(user);
+		return True;
 	}
 
   err:
