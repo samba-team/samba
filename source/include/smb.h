@@ -584,6 +584,24 @@ struct interface
 	struct in_addr nmask;
 };
 
+/* struct used by share mode violation error processing */
+typedef struct {
+	pid_t pid;
+	uint16 mid;
+	struct timeval time;
+	SMB_DEV_T dev;
+	SMB_INO_T inode;
+	uint16 port;
+} deferred_open_entry;
+
+/* Internal message queue for deferred opens. */
+struct pending_message_list {
+	struct pending_message_list *next, *prev;
+	struct timeval msg_time; /* The timeout time */
+	DATA_BLOB buf;
+	DATA_BLOB private_data;
+};
+
 /* struct returned by get_share_modes */
 typedef struct {
 	pid_t pid;
@@ -663,28 +681,14 @@ struct locking_key {
 	SMB_INO_T inode;
 };
 
-struct locking_data {
-	union {
-		int num_share_mode_entries;
-		share_mode_entry dummy; /* Needed for alignment. */
-	} u;
-	/* the following two entries are implicit 
-	   share_mode_entry modes[num_share_mode_entries];
-           char file_name[];
-	*/
-};
-
-
 /* the following are used by loadparm for option lists */
-typedef enum
-{
-  P_BOOL,P_BOOLREV,P_CHAR,P_INTEGER,P_OCTAL,P_LIST,
-  P_STRING,P_USTRING,P_GSTRING,P_UGSTRING,P_ENUM,P_SEP
+typedef enum {
+	P_BOOL,P_BOOLREV,P_CHAR,P_INTEGER,P_OCTAL,P_LIST,
+	P_STRING,P_USTRING,P_GSTRING,P_UGSTRING,P_ENUM,P_SEP
 } parm_type;
 
-typedef enum
-{
-  P_LOCAL,P_GLOBAL,P_SEPARATOR,P_NONE
+typedef enum {
+	P_LOCAL,P_GLOBAL,P_SEPARATOR,P_NONE
 } parm_class;
 
 /* passed to br lock code */
@@ -1410,6 +1414,7 @@ extern int chain_size;
 #define EXCLUSIVE_OPLOCK 1
 #define BATCH_OPLOCK 2
 #define LEVEL_II_OPLOCK 4
+#define INTERNAL_OPEN_ONLY 8
 
 #define EXCLUSIVE_OPLOCK_TYPE(lck) ((lck) & (EXCLUSIVE_OPLOCK|BATCH_OPLOCK))
 #define BATCH_OPLOCK_TYPE(lck) ((lck) & BATCH_OPLOCK)
@@ -1460,6 +1465,25 @@ extern int chain_size;
 #define KERNEL_OPLOCK_BREAK_CMD 0x2
 #define LEVEL_II_OPLOCK_BREAK_CMD 0x3
 #define ASYNC_LEVEL_II_OPLOCK_BREAK_CMD 0x4
+
+/* Add the "deferred open" message. */
+#define RETRY_DEFERRED_OPEN_CMD 0x5
+
+/*
+ * And the message format for it. Keep the same message length.
+ *
+ *  0     2       2+pid   2+pid+dev 2+pid+dev+ino
+ *  +----+--------+-------+--------+---------+
+ *  | cmd| pid    | dev   |  inode | mid     |
+ *  +----+--------+-------+--------+---------+
+ */
+
+#define DEFERRED_OPEN_CMD_OFFSET 0
+#define DEFERRED_OPEN_PID_OFFSET 2 /* pid we're *sending* from. */
+#define DEFERRED_OPEN_DEV_OFFSET (DEFERRED_OPEN_PID_OFFSET + sizeof(pid_t))
+#define DEFERRED_OPEN_INODE_OFFSET (DEFERRED_OPEN_DEV_OFFSET + sizeof(SMB_DEV_T))
+#define DEFERRED_OPEN_MID_OFFSET (DEFERRED_OPEN_INODE_OFFSET + sizeof(SMB_INO_T))
+#define DEFERRED_OPEN_MSG_LEN OPLOCK_BREAK_MSG_LEN
 
 /*
  * Capabilities abstracted for different systems.

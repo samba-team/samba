@@ -230,4 +230,7 @@
 /* size of listen() backlog in smbd */
 #define SMBD_LISTEN_BACKLOG 50
 
+/* Number of microseconds to wait before a sharing violation. */
+#define SHARING_VIOLATION_USEC_WAIT 950000
+
 #endif

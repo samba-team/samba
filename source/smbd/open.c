@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    file opening and share modes
    Copyright (C) Andrew Tridgell 1992-1998
-   Copyright (C) Jeremy Allison 2001
+   Copyright (C) Jeremy Allison 2001-2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,6 +25,11 @@ extern userdom_struct current_user_info;
 extern uint16 global_oplock_port;
 extern uint16 global_smbpid;
 extern BOOL global_client_failed_oplock_break;
+
+struct dev_inode_bundle {
+	SMB_DEV_T dev;
+	SMB_INO_T inode;
+};
 
 /****************************************************************************
  fd support routines - attempt to do a dos_open.
@@ -243,7 +248,7 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 }
 
 /*******************************************************************
-return True if the filename is one of the special executable types
+ Return True if the filename is one of the special executable types.
 ********************************************************************/
 
 static BOOL is_executable(const char *fname)
@@ -262,12 +267,13 @@ static BOOL is_executable(const char *fname)
 enum {AFAIL,AREAD,AWRITE,AALL};
 
 /*******************************************************************
-reproduce the share mode access table
-this is horrendoously complex, and really can't be justified on any
-rational grounds except that this is _exactly_ what NT does. See
-the DENY1 and DENY2 tests in smbtorture for a comprehensive set of
-test routines.
+ Reproduce the share mode access table.
+ This is horrendoously complex, and really can't be justified on any
+ rational grounds except that this is _exactly_ what NT does. See
+ the DENY1 and DENY2 tests in smbtorture for a comprehensive set of
+ test routines.
 ********************************************************************/
+
 static int access_table(int new_deny,int old_deny,int old_mode,
 			BOOL same_pid, BOOL isexe)
 {
@@ -353,9 +359,8 @@ static int access_table(int new_deny,int old_deny,int old_mode,
 	  return(AFAIL);      
 }
 
-
 /****************************************************************************
-check if we can open a file with a share mode
+ Check if we can open a file with a share mode.
 ****************************************************************************/
 
 static BOOL check_share_mode(connection_struct *conn, share_mode_entry *share, int share_mode, uint32 desired_access,
@@ -770,9 +775,101 @@ after break ! For file %s, dev = %x, inode = %.0f. Deleting it to continue...\n"
 }
 
 /****************************************************************************
-set a kernel flock on a file for NFS interoperability
-this requires a patch to Linux
+ Delete the record for a handled deferred open entry.
 ****************************************************************************/
+
+static void delete_defered_open_entry_record(connection_struct *conn, SMB_DEV_T dev, SMB_INO_T inode)
+{
+	uint16 mid = get_current_mid();
+	pid_t mypid = sys_getpid();
+	deferred_open_entry *de_array = NULL;
+	int num_de_entries, i;
+
+	num_de_entries = get_deferred_opens(conn, dev, inode, &de_array);
+	for (i = 0; i < num_de_entries; i++) {
+		deferred_open_entry *entry = &de_array[i];
+		if (entry->pid == mypid && entry->mid == mid && entry->dev == dev &&
+			entry->inode == inode) {
+
+			/* Remove the deferred open entry from the array. */
+			delete_deferred_open_entry(entry);
+			SAFE_FREE(de_array);
+			return;
+		}
+	}
+	SAFE_FREE(de_array);
+}
+
+/****************************************************************************
+ Handle the 1 second delay in returning a SHARING_VIOLATION error.
+****************************************************************************/
+
+void defer_open_sharing_error(connection_struct *conn, struct timeval *ptv,
+		char *fname, SMB_DEV_T dev, SMB_INO_T inode)
+{
+	uint16 mid = get_current_mid();
+	pid_t mypid = sys_getpid();
+	deferred_open_entry *de_array = NULL;
+	int num_de_entries, i;
+	struct dev_inode_bundle dib;
+
+	dib.dev = dev;
+	dib.inode = inode;
+
+	num_de_entries = get_deferred_opens(conn, dev, inode, &de_array);
+	for (i = 0; i < num_de_entries; i++) {
+		deferred_open_entry *entry = &de_array[i];
+		if (entry->pid == mypid && entry->mid == mid) {
+			/*
+			 * Check if a 1 second timeout has expired.
+			 */
+			if (usec_time_diff(ptv, &entry->time) > SHARING_VIOLATION_USEC_WAIT) {
+				DEBUG(10,("defer_open_sharing_error: Deleting deferred open entry for mid %u, \
+file %s\n",
+					(unsigned int)mid, fname ));
+
+				/* Expired, return a real error. */
+				/* Remove the deferred open entry from the array. */
+
+				delete_deferred_open_entry(entry);
+				SAFE_FREE(de_array);
+				return;
+			}
+			/*
+			 * If the timeout hasn't expired yet and we still have a sharing violation,
+			 * just leave the entry in the deferred open array alone. We do need to
+			 * reschedule this open call though (with the original created time).
+			 */
+			DEBUG(10,("defer_open_sharing_error: time [%u.%06u] updating \
+deferred open entry for mid %u, file %s\n",
+				(unsigned int)entry->time.tv_sec,
+				(unsigned int)entry->time.tv_usec,
+				(unsigned int)mid, fname ));
+
+			push_sharing_violation_open_smb_message(&entry->time, (char *)&dib, sizeof(dib));
+			SAFE_FREE(de_array);
+			return;
+		}
+	}
+
+	DEBUG(10,("defer_open_sharing_error: time [%u.%06u] adding deferred open entry for mid %u, file %s\n",
+		(unsigned int)ptv->tv_sec, (unsigned int)ptv->tv_usec, (unsigned int)mid, fname ));
+
+	if (!push_sharing_violation_open_smb_message(ptv, (char *)&dib, sizeof(dib))) {
+		SAFE_FREE(de_array);
+		return;
+	}
+	if (!add_deferred_open(mid, ptv, dev, inode, global_oplock_port, fname)) {
+		remove_sharing_violation_open_smb_message(mid);
+	}
+	SAFE_FREE(de_array);
+}
+
+/****************************************************************************
+ Set a kernel flock on a file for NFS interoperability.
+ This requires a patch to Linux.
+****************************************************************************/
+
 static void kernel_flock(files_struct *fsp, int deny_mode)
 {
 #if HAVE_KERNEL_SHARE_MODES
@@ -847,6 +944,7 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 	BOOL fcbopen = False;
 	BOOL def_acl = False;
 	BOOL add_share_mode = True;
+	BOOL internal_only_open = False;
 	SMB_DEV_T dev = 0;
 	SMB_INO_T inode = 0;
 	int num_share_modes = 0;
@@ -858,8 +956,49 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 	mode_t new_mode = (mode_t)0;
 	int action;
 	uint32 existing_dos_mode = 0;
+	struct pending_message_list *pml = NULL;
+	uint16 mid = get_current_mid();
 	/* We add aARCH to this as this mode is only used if the file is created new. */
 	mode_t mode = unix_mode(conn,new_dos_mode | aARCH,fname);
+
+	if (oplock_request == INTERNAL_OPEN_ONLY) {
+		internal_only_open = True;
+		oplock_request = 0;
+	}
+
+	if ((pml = get_open_deferred_message(mid)) != NULL) {
+		struct dev_inode_bundle dib;
+
+		memcpy(&dib, pml->private_data.data, sizeof(dib));
+
+		/* There could be a race condition where the dev/inode pair
+			has changed since we deferred the message. If so, just
+			remove the deferred open entry and return sharing violation. */
+
+		/* If the timeout value is non-zero, we need to just
+			return sharing violation. Don't retry the open
+			as we were not notified of a close and we don't want to
+			trigger another spurious oplock break. */
+
+		if (!file_existed || dib.dev != psbuf->st_dev || dib.inode != psbuf->st_ino ||
+				pml->msg_time.tv_sec || pml->msg_time.tv_usec) {
+			/* Ensure we don't reprocess this message. */
+			remove_sharing_violation_open_smb_message(mid);
+
+			/* Now remove the deferred open entry under lock. */
+			lock_share_entry(conn, dib.dev, dib.inode);
+			delete_defered_open_entry_record(conn, dib.dev, dib.inode);
+			unlock_share_entry(conn, dib.dev, dib.inode);
+
+			unix_ERR_class = ERRDOS;
+			unix_ERR_code = ERRbadshare;
+			unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
+			return NULL;
+		}
+		/* Ensure we don't reprocess this message. */
+		remove_sharing_violation_open_smb_message(mid);
+
+	}
 
 	if (conn->printer) {
 		/* printers are handled completely differently. Most of the passed parameters are
@@ -1043,17 +1182,28 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 				unix_ERR_ntstatus = NT_STATUS_ACCESS_DENIED;
 			}
 
-			unlock_share_entry(conn, dev, inode);
-			if (fsp_open)
-				fd_close(conn, fsp);
-			file_free(fsp);
-			/*
-			 * We have detected a sharing violation here
-			 * so return the correct error code
+			/* 
+			 * If we're returning a share violation, ensure we cope with
+			 * the braindead 1 second delay.
 			 */
-                        unix_ERR_class = ERRDOS;
-                        unix_ERR_code = ERRbadshare;
-                        unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
+
+			if (!internal_only_open && NT_STATUS_EQUAL(unix_ERR_ntstatus,NT_STATUS_SHARING_VIOLATION)) {
+				/* The fsp->open_time here represents the current time of day. */
+				defer_open_sharing_error(conn, &fsp->open_time, fname, dev, inode);
+			}
+
+			unlock_share_entry(conn, dev, inode);
+			if (fsp_open) {
+				fd_close(conn, fsp);
+				/*
+				 * We have detected a sharing violation here
+				 * so return the correct error code
+				 */
+				unix_ERR_class = ERRDOS;
+				unix_ERR_code = ERRbadshare;
+				unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
+			}
+			file_free(fsp);
 			return NULL;
 		}
 
@@ -1118,6 +1268,16 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 						  &flags, &oplock_request, &all_current_opens_are_level_II);
 
 		if(num_share_modes == -1) {
+			/* 
+			 * If we're returning a share violation, ensure we cope with
+			 * the braindead 1 second delay.
+			 */
+
+			if (!internal_only_open && NT_STATUS_EQUAL(unix_ERR_ntstatus,NT_STATUS_SHARING_VIOLATION)) {
+				/* The fsp->open_time here represents the current time of day. */
+				defer_open_sharing_error(conn, &fsp->open_time, fname, dev, inode);
+			}
+
 			unlock_share_entry_fsp(fsp);
 			fd_close(conn,fsp);
 			file_free(fsp);
@@ -1286,6 +1446,8 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 				fname, (int)new_mode));
 	}
 
+	/* If this is a successful open, we must remove any deferred open records. */
+	delete_defered_open_entry_record(conn, fsp->dev, fsp->inode);
 	unlock_share_entry_fsp(fsp);
 
 	conn->num_files_open++;
