@@ -100,8 +100,9 @@ __ivaliduser(FILE *hostf, u_int32_t raddr, const char *luser, const char *ruser)
 #define	ypdomain NULL
 #endif
 	/* We need to get the damn hostname back for netgroup matching. */
-	if ((hp = gethostbyaddr((char *)&raddr, sizeof(u_long),
-							AF_INET)) == NULL)
+	if ((hp = gethostbyaddr((char *)&raddr,
+				sizeof(u_long),
+				AF_INET)) == NULL)
 		return (-1);
 	strncpy(hname, hp->h_name, sizeof(hname));
 	hname[sizeof(hname) - 1] = '\0';

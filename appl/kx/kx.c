@@ -128,7 +128,7 @@ connect_host (char *host, char *user, des_cblock *key,
      for(p = hostent->h_addr_list; *p; ++p) {
 	 int one = 1;
 
-	 memcpy (&thataddr.sin_addr, *p, hostent->h_length);
+	 memcpy (&thataddr.sin_addr, *p, sizeof(thataddr.sin_addr));
 
 	 s = socket (AF_INET, SOCK_STREAM, 0);
 	 if (s < 0) {

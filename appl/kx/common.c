@@ -150,7 +150,7 @@ get_xsockets (int *unix_socket, int *tcp_socket)
 
      h = gethostbyname ("localhost");
      if (h)
-	 memcpy (&local, h->h_addr, h->h_length);
+	 memcpy (&local, h->h_addr, sizeof(local));
      else
 	 local.s_addr = INADDR_LOOPBACK;
 

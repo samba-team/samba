@@ -68,7 +68,7 @@ inaddr2str(struct in_addr addr, char *s, size_t len)
     h = gethostbyname (h->h_name);
     if(h)
       while ((p = *(h->h_addr_list)++))
-	if (memcmp (p, &addr, h->h_length) == 0) {
+	if (memcmp (p, &addr, sizeof(addr)) == 0) {
 	  strncpy (s, h->h_name, len);
 	  s[len - 1] = '\0';
 	  return;

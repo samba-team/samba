@@ -60,7 +60,7 @@ hookup(char *host, int port)
 	int s, len, tos;
 	static char hostnamebuf[80];
 
-	memset((char *)&hisctladdr, 0, sizeof (hisctladdr));
+	memset(&hisctladdr, 0, sizeof (hisctladdr));
 	hisctladdr.sin_addr.s_addr = inet_addr(host);
 	if (hisctladdr.sin_addr.s_addr != INADDR_NONE) {
 		hisctladdr.sin_family = AF_INET;
@@ -73,9 +73,9 @@ hookup(char *host, int port)
 			return ((char *) 0);
 		}
 		hisctladdr.sin_family = hp->h_addrtype;
-		memmove((caddr_t)&hisctladdr.sin_addr,
-				hp->h_addr_list[0], hp->h_length);
-		memcpy(&hisctladdr.sin_addr, hp->h_addr, hp->h_length);
+		memmove(&hisctladdr.sin_addr,
+			hp->h_addr_list[0],
+			sizeof(hisctladdr.sin_addr));
 		strncpy(hostnamebuf, hp->h_name, sizeof(hostnamebuf));
 	}
 	hostname = hostnamebuf;
@@ -95,8 +95,9 @@ hookup(char *host, int port)
 			errno = oerrno;
 			warn("connect to address %s", ia);
 			hp->h_addr_list++;
-			memmove((caddr_t)&hisctladdr.sin_addr,
-					hp->h_addr_list[0], hp->h_length);
+			memmove(&hisctladdr.sin_addr,
+				hp->h_addr_list[0],
+				sizeof(hisctladdr.sin_addr));
 			fprintf(stdout, "Trying %s...\n",
 				inet_ntoa(hisctladdr.sin_addr));
 			close(s);
