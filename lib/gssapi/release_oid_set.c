@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000, 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -40,6 +40,8 @@ OM_uint32 gss_release_oid_set
             gss_OID_set * set
            )
 {
+  if (minor_status)
+      *minor_status = 0;
   free ((*set)->elements);
   free (*set);
   *set = GSS_C_NO_OID_SET;
