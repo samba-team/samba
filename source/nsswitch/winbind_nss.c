@@ -773,8 +773,6 @@ _nss_winbind_initgroups(char *user, gid_t group, long int *start,
 
 		for (i = 0; i < num_gids; i++) {
 
-			fprintf(stderr, "processing gid %d\n", gid_list[i]);
-
 			/* Skip primary group */
 
 			if (gid_list[i] == group) continue;
