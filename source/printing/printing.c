@@ -891,7 +891,7 @@ static void store_queue_struct(struct tdb_print_db *pdb, struct traverse_struct 
 	key.dptr = "INFO/linear_queue_array";
 	key.dsize = strlen(key.dptr);
 	tdb_store(pdb->tdb, key, data, TDB_REPLACE);
-	SAFE_FREE(data);
+	SAFE_FREE(data.dptr);
 	return;
 }
 
