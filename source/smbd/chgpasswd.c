@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    Samba utility functions
    Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Andrew Bartlett 2001-2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -50,7 +51,7 @@
 
 extern struct passdb_ops pdb_ops;
 
-static BOOL check_oem_password(const char *user,
+static NTSTATUS check_oem_password(const char *user,
 			       uchar * lmdata, const uchar * lmhash,
 			       const uchar * ntdata, const uchar * nthash,
 			       SAM_ACCOUNT **hnd, char *new_passwd,
@@ -478,6 +479,10 @@ BOOL chgpasswd(const char *name, const char *oldpass, const char *newpass, BOOL 
 		DEBUG(1, ("NULL username specfied to chgpasswd()!\n"));
 	}
 
+	if (!oldpass) {
+		oldpass = "";
+	}
+
 	DEBUG(3, ("Password change for user: %s\n", name));
 
 #if DEBUG_PASSWORD
@@ -732,15 +737,19 @@ BOOL change_lanman_password(SAM_ACCOUNT *sampass, uchar * pass1,
 /***********************************************************
  Code to check and change the OEM hashed password.
 ************************************************************/
-BOOL pass_oem_change(char *user,
-		     uchar * lmdata, uchar * lmhash,
-		     uchar * ntdata, uchar * nthash)
+NTSTATUS pass_oem_change(char *user,
+			 uchar * lmdata, uchar * lmhash,
+			 uchar * ntdata, uchar * nthash)
 {
 	fstring new_passwd;
 	const char *unix_user;
 	SAM_ACCOUNT *sampass = NULL;
-	BOOL ret = check_oem_password(user, lmdata, lmhash, ntdata, nthash,
-				      &sampass, new_passwd, sizeof(new_passwd));
+	NTSTATUS nt_status 
+		= check_oem_password(user, lmdata, lmhash, ntdata, nthash,
+				     &sampass, new_passwd, sizeof(new_passwd));
+
+	if (NT_STATUS_IS_OK(nt_status))
+		return nt_status;
 
 	/* 
 	 * At this point we have the new case-sensitive plaintext
@@ -753,17 +762,13 @@ BOOL pass_oem_change(char *user,
 
 	unix_user = pdb_get_username(sampass);
 
-	if ((ret) && (unix_user) && (*unix_user) && lp_unix_password_sync())
-		ret = chgpasswd(unix_user, "", new_passwd, True);
-
-	if (ret)
-		ret = change_oem_password(sampass, new_passwd);
+	nt_status = change_oem_password(sampass, NULL, new_passwd);
 
 	memset(new_passwd, 0, sizeof(new_passwd));
 
 	pdb_free_sam(&sampass);
 
-	return ret;
+	return nt_status;
 }
 
 /***********************************************************
@@ -773,7 +778,7 @@ BOOL pass_oem_change(char *user,
  but does use the lm OEM password to check the nt hashed-hash.
 
 ************************************************************/
-static BOOL check_oem_password(const char *user,
+static NTSTATUS check_oem_password(const char *user,
 			       uchar * lmdata, const uchar * lmhash,
 			       const uchar * ntdata, const uchar * nthash,
 			       SAM_ACCOUNT **hnd, char *new_passwd,
@@ -802,7 +807,11 @@ static BOOL check_oem_password(const char *user,
 
 	if (ret == False) {
 		DEBUG(0, ("check_oem_password: getsmbpwnam returned NULL\n"));
-		return False;
+		return NT_STATUS_WRONG_PASSWORD;
+		/*
+		  TODO: check what Win2k returns for this:
+		  return NT_STATUS_NO_SUCH_USER; 
+		*/
 	}
 
 	*hnd = sampass;
@@ -811,7 +820,7 @@ static BOOL check_oem_password(const char *user,
 	
 	if (acct_ctrl & ACB_DISABLED) {
 		DEBUG(0,("check_lanman_password: account %s disabled.\n", user));
-		return False;
+		return NT_STATUS_ACCOUNT_DISABLED;
 	}
 
 	/* construct a null password (in case one is needed */
@@ -827,14 +836,14 @@ static BOOL check_oem_password(const char *user,
 	if (lanman_pw == NULL) {
 		if (!(acct_ctrl & ACB_PWNOTREQ)) {
 			DEBUG(0,("check_oem_password: no lanman password !\n"));
-			return False;
+			return NT_STATUS_WRONG_PASSWORD;
 		}
 	}
 	
 	if (pdb_get_nt_passwd(sampass) == NULL && nt_pass_set) {
 		if (!(acct_ctrl & ACB_PWNOTREQ)) {
 			DEBUG(0,("check_oem_password: no ntlm password !\n"));
-			return False;
+			return NT_STATUS_WRONG_PASSWORD;
 		}
 	}
 	
@@ -851,7 +860,7 @@ static BOOL check_oem_password(const char *user,
 	new_pw_len = IVAL(lmdata, 512);
 	if (new_pw_len < 0 || new_pw_len > new_passwd_size - 1) {
 		DEBUG(0,("check_oem_password: incorrect password length (%d).\n", new_pw_len));
-		return False;
+		return NT_STATUS_WRONG_PASSWORD;
 	}
 
 	if (nt_pass_set) {
@@ -884,14 +893,14 @@ static BOOL check_oem_password(const char *user,
 		if (memcmp(lanman_pw, unenc_old_pw, 16))
 		{
 			DEBUG(0,("check_oem_password: old lm password doesn't match.\n"));
-			return False;
+			return NT_STATUS_WRONG_PASSWORD;
 		}
 
 #ifdef DEBUG_PASSWORD
 		DEBUG(100,
 		      ("check_oem_password: password %s ok\n", new_passwd));
 #endif
-		return True;
+		return NT_STATUS_OK;
 	}
 
 	/*
@@ -904,31 +913,76 @@ static BOOL check_oem_password(const char *user,
 	if (memcmp(lanman_pw, unenc_old_pw, 16))
 	{
 		DEBUG(0,("check_oem_password: old lm password doesn't match.\n"));
-		return False;
+		return NT_STATUS_WRONG_PASSWORD;
 	}
 
 	if (memcmp(nt_pw, unenc_old_ntpw, 16))
 	{
 		DEBUG(0,("check_oem_password: old nt password doesn't match.\n"));
-		return False;
+		return NT_STATUS_WRONG_PASSWORD;
 	}
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("check_oem_password: password %s ok\n", new_passwd));
 #endif
-	return True;
+	return NT_STATUS_OK;
 }
 
 /***********************************************************
  Code to change the oem password. Changes both the lanman
- and NT hashes.
+ and NT hashes.  Old_passwd is almost always NULL.
 ************************************************************/
 
-BOOL change_oem_password(SAM_ACCOUNT *hnd, char *new_passwd)
+NTSTATUS change_oem_password(SAM_ACCOUNT *hnd, char *old_passwd, char *new_passwd)
 {
 	BOOL ret;
+	uint32 min_len;
+
+	if (time(NULL) < pdb_get_pass_can_change_time(hnd)) {
+		DEBUG(1, ("user %s cannot change password now, must wait until %s\n", 
+			  pdb_get_username(hnd), http_timestring(pdb_get_pass_can_change_time(hnd))));
+		return NT_STATUS_PASSWORD_RESTRICTION;
+	}
+
+	if (account_policy_get(AP_MIN_PASSWORD_LEN, &min_len) && (strlen(new_passwd) < min_len)) {
+		DEBUG(1, ("user %s cannot change password - password too short\n", 
+			  pdb_get_username(hnd)));
+		DEBUGADD(1, (" account policy min password len = %d\n", min_len));
+		return NT_STATUS_PASSWORD_RESTRICTION;
+/* 		return NT_STATUS_PWD_TOO_SHORT; */
+	}
+
+	/* Take the passed information and test it for minimum criteria */
+	/* Minimum password length */
+	if (strlen(new_passwd) < lp_min_passwd_length()) {
+		/* too short, must be at least MINPASSWDLENGTH */
+		DEBUG(1, ("Password Change: user %s, New password is shorter than minimum password length = %d\n",
+		       pdb_get_username(hnd), lp_min_passwd_length()));
+		return NT_STATUS_PASSWORD_RESTRICTION;
+/* 		return NT_STATUS_PWD_TOO_SHORT; */
+	}
+
+	/* TODO:  Add cracklib support here */
+
+	/*
+	 * If unix password sync was requested, attempt to change
+	 * the /etc/passwd database first. Return failure if this cannot
+	 * be done.
+	 *
+	 * This occurs before the oem change, becouse we don't want to
+	 * update it if chgpasswd failed.
+	 *
+	 * Conditional on lp_unix_password_sync() becouse we don't want
+	 * to touch the unix db unless we have admin permission.
+	 */
+	
+	if(lp_unix_password_sync() && IS_SAM_UNIX_USER(hnd) 
+	   && !chgpasswd(pdb_get_username(hnd),
+			 old_passwd, new_passwd, False)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	if (!pdb_set_plaintext_passwd (hnd, new_passwd)) {
-		return False;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* Now write it into the file. */
@@ -936,7 +990,11 @@ BOOL change_oem_password(SAM_ACCOUNT *hnd, char *new_passwd)
 	ret = pdb_update_sam_account (hnd);
 	unbecome_root();
 
-	return ret;
+	if (!ret) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+	
+	return NT_STATUS_OK;
 }
 
 
