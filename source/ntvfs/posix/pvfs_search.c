@@ -73,12 +73,12 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 		memcpy(file->search.id.name, shortname, 
 		       MIN(strlen(shortname)+1, sizeof(file->search.id.name)));
 		file->search.id.handle        = search->handle;
-		file->search.id.server_cookie = dir_index+1;
+		file->search.id.server_cookie = dir_index;
 		file->search.id.client_cookie = 0;
 		return NT_STATUS_OK;
 
 	case RAW_SEARCH_STANDARD:
-		file->standard.resume_key   = dir_index+1;
+		file->standard.resume_key   = dir_index;
 		file->standard.create_time  = nt_time_to_unix(name->dos.create_time);
 		file->standard.access_time  = nt_time_to_unix(name->dos.access_time);
 		file->standard.write_time   = nt_time_to_unix(name->dos.write_time);
@@ -89,7 +89,7 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 		return NT_STATUS_OK;
 
 	case RAW_SEARCH_EA_SIZE:
-		file->ea_size.resume_key   = dir_index+1;
+		file->ea_size.resume_key   = dir_index;
 		file->ea_size.create_time  = nt_time_to_unix(name->dos.create_time);
 		file->ea_size.access_time  = nt_time_to_unix(name->dos.access_time);
 		file->ea_size.write_time   = nt_time_to_unix(name->dos.write_time);
@@ -101,7 +101,7 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 		return NT_STATUS_OK;
 
 	case RAW_SEARCH_DIRECTORY_INFO:
-		file->directory_info.file_index   = dir_index+1;
+		file->directory_info.file_index   = dir_index;
 		file->directory_info.create_time  = name->dos.create_time;
 		file->directory_info.access_time  = name->dos.access_time;
 		file->directory_info.write_time   = name->dos.write_time;
@@ -113,7 +113,7 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 		return NT_STATUS_OK;
 
 	case RAW_SEARCH_FULL_DIRECTORY_INFO:
-		file->full_directory_info.file_index   = dir_index+1;
+		file->full_directory_info.file_index   = dir_index;
 		file->full_directory_info.create_time  = name->dos.create_time;
 		file->full_directory_info.access_time  = name->dos.access_time;
 		file->full_directory_info.write_time   = name->dos.write_time;
@@ -131,7 +131,7 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 		return NT_STATUS_OK;
 
 	case RAW_SEARCH_BOTH_DIRECTORY_INFO:
-		file->both_directory_info.file_index   = dir_index+1;
+		file->both_directory_info.file_index   = dir_index;
 		file->both_directory_info.create_time  = name->dos.create_time;
 		file->both_directory_info.access_time  = name->dos.access_time;
 		file->both_directory_info.write_time   = name->dos.write_time;
@@ -145,7 +145,7 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 		return NT_STATUS_OK;
 
 	case RAW_SEARCH_ID_FULL_DIRECTORY_INFO:
-		file->id_full_directory_info.file_index   = dir_index+1;
+		file->id_full_directory_info.file_index   = dir_index;
 		file->id_full_directory_info.create_time  = name->dos.create_time;
 		file->id_full_directory_info.access_time  = name->dos.access_time;
 		file->id_full_directory_info.write_time   = name->dos.write_time;
@@ -159,7 +159,7 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 		return NT_STATUS_OK;
 
 	case RAW_SEARCH_ID_BOTH_DIRECTORY_INFO:
-		file->id_both_directory_info.file_index   = dir_index+1;
+		file->id_both_directory_info.file_index   = dir_index;
 		file->id_both_directory_info.create_time  = name->dos.create_time;
 		file->id_both_directory_info.access_time  = name->dos.access_time;
 		file->id_both_directory_info.write_time   = name->dos.write_time;
@@ -192,22 +192,32 @@ static NTSTATUS pvfs_search_fill(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 				 void *search_private, 
 				 BOOL (*callback)(void *, union smb_search_data *))
 {
-	int i;
 	struct pvfs_dir *dir = search->dir;
 	NTSTATUS status;
 
 	*reply_count = 0;
 
-	for (i = search->current_index; i < dir->count;i++) {
+	if (max_count == 0) {
+		max_count = 1;
+	}
+
+	while ((*reply_count) < max_count) {
 		union smb_search_data *file;
+		const char *name;
+
+		name = pvfs_list_next(dir, search->current_index);
+		if (name == NULL) break;
+
+		search->current_index++;
 
 		file = talloc_p(mem_ctx, union smb_search_data);
 		if (!file) {
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		status = fill_search_info(pvfs, level, dir->unix_path, dir->names[i], 
-					  search, i, file);
+		status = fill_search_info(pvfs, level, 
+					  pvfs_list_unix_path(dir), name, 
+					  search, search->current_index, file);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(file);
 			continue;
@@ -215,17 +225,13 @@ static NTSTATUS pvfs_search_fill(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 
 		if (!callback(search_private, file)) {
 			talloc_free(file);
+			search->current_index--;
 			break;
 		}
+
 		(*reply_count)++;
 		talloc_free(file);
-
-		/* note that this deliberately allows a reply_count of
-		   1 for a max_count of 0. w2k3 allows this too. */
-		if (*reply_count >= max_count) break;
 	}
-
-	search->current_index = i;
 
 	return NT_STATUS_OK;
 }
@@ -275,7 +281,7 @@ static NTSTATUS pvfs_search_first_old(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* do the actual directory listing */
-	status = pvfs_list(pvfs, name, dir);
+	status = pvfs_list_start(pvfs, name, dir);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -406,7 +412,7 @@ NTSTATUS pvfs_search_first(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* do the actual directory listing */
-	status = pvfs_list(pvfs, name, dir);
+	status = pvfs_list_start(pvfs, name, dir);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -438,7 +444,7 @@ NTSTATUS pvfs_search_first(struct ntvfs_module_context *ntvfs,
 
 	io->t2ffirst.out.count = reply_count;
 	io->t2ffirst.out.handle = search->handle;
-	io->t2ffirst.out.end_of_search = (search->current_index == dir->count) ? 1 : 0;
+	io->t2ffirst.out.end_of_search = pvfs_list_eos(dir, search->current_index) ? 1 : 0;
 
 	/* work out if we are going to keep the search state
 	   and allow for a search continue */
@@ -465,7 +471,6 @@ NTSTATUS pvfs_search_next(struct ntvfs_module_context *ntvfs,
 	uint_t reply_count;
 	uint16_t handle;
 	NTSTATUS status;
-	int i;
 
 	if (io->generic.level >= RAW_SEARCH_SEARCH) {
 		return pvfs_search_next_old(ntvfs, req, io, search_private, callback);
@@ -483,28 +488,14 @@ NTSTATUS pvfs_search_next(struct ntvfs_module_context *ntvfs,
 
 	/* work out what type of continuation is being used */
 	if (io->t2fnext.in.last_name && *io->t2fnext.in.last_name) {
-		/* look backwards first */
-		for (i=search->current_index; i > 0; i--) {
-			if (strcmp(io->t2fnext.in.last_name, dir->names[i-1]) == 0) {
-				search->current_index = i;
-				goto found;
-			}
-		}
-
-		/* then look forwards */
-		for (i=search->current_index+1; i <= dir->count; i++) {
-			if (strcmp(io->t2fnext.in.last_name, dir->names[i-1]) == 0) {
-				search->current_index = i;
-				goto found;
-			}
-		}
+		search->current_index = pvfs_list_seek(dir, io->t2fnext.in.last_name, 
+						       search->current_index);
 	} else if (io->t2fnext.in.flags & FLAG_TRANS2_FIND_CONTINUE) {
 		/* plain continue - nothing to do */
 	} else {
 		search->current_index = io->t2fnext.in.resume_key;
 	}
 
-found:	
 	status = pvfs_search_fill(pvfs, req, io->t2fnext.in.max_count, search, io->generic.level,
 				  &reply_count, search_private, callback);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -517,7 +508,7 @@ found:
 	}
 
 	io->t2fnext.out.count = reply_count;
-	io->t2fnext.out.end_of_search = (search->current_index == dir->count) ? 1 : 0;
+	io->t2fnext.out.end_of_search = pvfs_list_eos(dir, search->current_index) ? 1 : 0;
 
 	/* work out if we are going to keep the search state */
 	if ((io->t2fnext.in.flags & FLAG_TRANS2_FIND_CLOSE) ||

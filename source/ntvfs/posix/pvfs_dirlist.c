@@ -57,12 +57,11 @@ static NTSTATUS pvfs_list_no_wildcard(struct pvfs_state *pvfs, struct pvfs_filen
 }
 
 /*
-  read a directory and find all matching file names, returning them in
-  the structure *dir. The returned names are relative to the directory
+  start to read a directory 
 
   if the pattern matches no files then we return NT_STATUS_OK, with dir->count = 0
 */
-NTSTATUS pvfs_list(struct pvfs_state *pvfs, struct pvfs_filename *name, struct pvfs_dir *dir)
+NTSTATUS pvfs_list_start(struct pvfs_state *pvfs, struct pvfs_filename *name, struct pvfs_dir *dir)
 {
 	DIR *odir;
 	struct dirent *dent;
@@ -134,3 +133,38 @@ NTSTATUS pvfs_list(struct pvfs_state *pvfs, struct pvfs_filename *name, struct p
 	return NT_STATUS_OK;
 }
 
+
+/*
+  return unix directory of an open search
+*/
+const char *pvfs_list_unix_path(struct pvfs_dir *dir)
+{
+	return dir->unix_path;
+}
+
+/*
+  return True if end of search has been reached
+*/
+BOOL pvfs_list_eos(struct pvfs_dir *dir, uint_t ofs)
+{
+	return ofs >= dir->count;
+}
+
+/* 
+   return the next entry
+*/
+const char *pvfs_list_next(struct pvfs_dir *dir, uint_t ofs)
+{
+	if (ofs >= dir->count) return NULL;
+	return dir->names[ofs];
+}
+
+/*
+  seek to the given name
+*/
+uint_t pvfs_list_seek(struct pvfs_dir *dir, const char *name, uint_t ofs)
+{
+	/* not correct, needs to be replaced with real search when 
+	   DIR* implementation is done */
+	return ofs;
+}
