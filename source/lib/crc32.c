@@ -60,7 +60,7 @@ static unsigned long CRCTable[256] =
 
 uint32 crc32_calc_buffer( uint32 count, char *buffer)
 {
-        unsigned long crc=0xffffffff;
+        uint32 crc=0xffffffff;
 	int i;
         for(i=0;i<count;i++)
 	{

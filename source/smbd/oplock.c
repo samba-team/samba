@@ -54,7 +54,7 @@ BOOL open_oplock_ipc(void)
   if (oplock_sock == -1)
   {
     DEBUG(0,("open_oplock_ipc: Failed to get local UDP socket for \
-address %x. Error was %s\n", htonl(INADDR_LOOPBACK), strerror(errno)));
+address %lx. Error was %s\n", htonl(INADDR_LOOPBACK), strerror(errno)));
     global_oplock_port = 0;
     return(False);
   }
