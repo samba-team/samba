@@ -1048,6 +1048,28 @@ uint32 _srv_net_srv_get_info(pipes_struct *p, SRV_Q_NET_SRV_GET_INFO *q_u, SRV_R
 }
 
 /*******************************************************************
+net server set info
+********************************************************************/
+
+uint32 _srv_net_srv_set_info(pipes_struct *p, SRV_Q_NET_SRV_SET_INFO *q_u, SRV_R_NET_SRV_SET_INFO *r_u)
+{
+	/* NT gives "Windows NT error 0xc00000022" if we return
+	   NT_STATUS_ACCESS_DENIED here so just pretend everything is OK. */
+
+	uint32 status = NT_STATUS_NOPROBLEMO;
+
+	DEBUG(5,("srv_net_srv_set_info: %d\n", __LINE__));
+
+	/* Set up the net server set info structure. */
+
+	init_srv_r_net_srv_set_info(r_u, 0x0, status);
+
+	DEBUG(5,("srv_net_srv_set_info: %d\n", __LINE__));
+
+	return r_u->status;
+}
+
+/*******************************************************************
 net file enum
 ********************************************************************/
 
