@@ -12,7 +12,11 @@ def test_Connect(handle):
     r['access_mask'] = 0x02000000
 
     result = dcerpc.samr_Connect(pipe, r)
-    dcerpc.samr_Close(pipe, result)
+
+    s = {}
+    s['handle'] = result['connect_handle']
+
+    dcerpc.samr_Close(pipe, s)
 
     print 'testing samr_Connect2'
 
@@ -21,7 +25,11 @@ def test_Connect(handle):
     r['access_mask'] = 0x02000000
 
     result = dcerpc.samr_Connect2(pipe, r)
-    dcerpc.samr_Close(pipe, result)
+
+    s = {}
+    s['handle'] = result['connect_handle']
+
+    dcerpc.samr_Close(pipe, s)
     
     print 'testing samr_Connect3'
 
@@ -31,7 +39,11 @@ def test_Connect(handle):
     r['access_mask'] = 0x02000000
 
     result = dcerpc.samr_Connect3(pipe, r)
-    dcerpc.samr_Close(pipe, result)
+
+    s = {}
+    s['handle'] = result['connect_handle']
+
+    dcerpc.samr_Close(pipe, s)
 
     print 'testing samr_Connect4'
 
@@ -41,7 +53,11 @@ def test_Connect(handle):
     r['access_mask'] = 0x02000000
 
     result = dcerpc.samr_Connect4(pipe, r)
-    dcerpc.samr_Close(pipe, result)
+
+    s = {}
+    s['handle'] = result['connect_handle']
+    
+    dcerpc.samr_Close(pipe, s)
 
     print 'testing samr_Connect5'
 
@@ -56,7 +72,7 @@ def test_Connect(handle):
 
     result = dcerpc.samr_Connect5(pipe, r)
 
-    return result['handle']
+    return result['connect_handle']
     
 def test_QuerySecurity(pipe, handle):
 
@@ -105,7 +121,7 @@ def test_GetDomPwInfo(pipe, domain):
 def test_RemoveMemberFromForeignDomain(pipe, domain_handle):
 
     r = {}
-    r['handle'] = domain_handle
+    r['domain_handle'] = domain_handle
     r['sid'] = {}
     r['sid']['sid_rev_num'] = 1
     r['sid']['id_auth'] = [1, 2, 3, 4, 5, 6]
@@ -120,7 +136,7 @@ def test_CreateUser2(pipe, domain_handle):
 def test_LookupName(pipe, domain_handle, name):
 
     r = {}
-    r['handle'] = domain_handle
+    r['domain_handle'] = domain_handle
     r['num_names'] = 1
     r['names'] = []
     r['names'].append({'name_len': 0, 'name_size': 0, 'name': name})
@@ -145,25 +161,25 @@ def test_LookupName(pipe, domain_handle, name):
 
     return rid
 
-def test_OpenUser_byname(pipe, domain_handle, name):
+def test_OpenUser_byname(pipe, domain_handle, user_name):
 
-    rid = test_LookupName(pipe, domain_handle, name)
+    rid = test_LookupName(pipe, domain_handle, user_name)
 
     r = {}
-    r['handle'] = domain_handle
+    r['domain_handle'] = domain_handle
     r['access_mask'] = 0x02000000
     r['rid'] = rid
 
     result = dcerpc.samr_OpenUser(pipe, r)
 
-    return result['acct_handle']
+    return result['user_handle']
 
-def test_DeleteUser_byname(pipe, domain_handle, name):
+def test_DeleteUser_byname(pipe, domain_handle, user_name):
 
-    user_handle = test_OpenUser_byname(pipe, domain_handle, name)
+    user_handle = test_OpenUser_byname(pipe, domain_handle, user_name)
     
     r = {}
-    r['handle'] = user_handle
+    r['user_handle'] = user_handle
 
     dcerpc.samr_DeleteUser(pipe, r)
 
@@ -173,7 +189,7 @@ def test_QueryUserInfo(pipe, user_handle):
 
     for level in levels:
         r = {}
-        r['handle'] = user_handle
+        r['user_handle'] = user_handle
         r['level'] = level
 
         result = dcerpc.samr_QueryUserInfo(pipe, r)
@@ -184,7 +200,7 @@ def test_QueryUserInfo2(pipe, user_handle):
 
     for level in levels:
         r = {}
-        r['handle'] = user_handle
+        r['user_handle'] = user_handle
         r['level'] = level
 
         result = dcerpc.samr_QueryUserInfo2(pipe, r)
@@ -195,14 +211,14 @@ def test_SetUserInfo(pipe, user_handle):
 def test_GetUserPwInfo(pipe, user_handle):
 
     r = {}
-    r['handle'] = user_handle
+    r['user_handle'] = user_handle
 
     result = dcerpc.samr_GetUserPwInfo(pipe, r)
 
 def test_TestPrivateFunctionsUser(pipe, user_handle):
 
     r = {}
-    r['handle'] = user_handle
+    r['user_handle'] = user_handle
 
     try:
         result = dcerpc.samr_TestPrivateFunctionsUser(pipe, r)
@@ -227,7 +243,7 @@ def test_user_ops(pipe, user_handle):
 def test_CreateUser(pipe, domain_handle):
 
     r = {}
-    r['handle'] = domain_handle
+    r['domain_handle'] = domain_handle
     r['account_name'] = {}
     r['account_name']['name_len'] = 0
     r['account_name']['name_size'] = 0
@@ -245,10 +261,10 @@ def test_CreateUser(pipe, domain_handle):
         else:
             raise dcerpc.NTSTATUS(arg)
 
-    user_handle = result['acct_handle']
+    user_handle = result['user_handle']
 
     q = {}
-    q['handle'] = user_handle
+    q['user_handle'] = user_handle
     q['level'] = 16
 
     result = dcerpc.samr_QueryUserInfo(pipe, q)
@@ -257,14 +273,62 @@ def test_CreateUser(pipe, domain_handle):
 
     return user_handle
 
-def test_CreateAlias(pipe, domain_handle):
+def test_DeleteAlias_byname(pipe, domain_handle, alias_name):
+
+    rid = test_LookupName(pipe, domain_handle, alias_name)
+
+    r = {}
+    r['domain_handle'] = domain_handle
+    r['access_mask'] = 0x02000000
+    r['rid'] = rid
+
+    result = dcerpc.samr_OpenAlias(pipe, r)
+
+    s = {}
+    s['alias_handle'] = result['alias_handle']
+
+    dcerpc.samr_DeleteDomAlias(pipe, s)
+
+def test_alias_ops(pipe, alias_handle, domain_handle, domain_sid):
     pass
+
+def test_CreateAlias(pipe, domain_handle, domain_sid):
+
+    r = {}
+    r['domain_handle'] = domain_handle
+    r['aliasname'] = {}
+    r['aliasname']['name_len'] = 0
+    r['aliasname']['name_size'] = 0
+    r['aliasname']['name'] = 'samrtorturetestalias'
+    r['access_mask'] = 0x02000000
+
+    try:
+        result = dcerpc.samr_CreateDomAlias(pipe, r)
+    except dcerpc.NTSTATUS, arg:
+        if arg[0] != 0xc0000154:
+            raise dcerpc.NTSTATUS(arg)
+        test_DeleteAlias_byname(pipe, domain_handle, 'samrtorturetestalias')
+        result = dcerpc.samr_CreateDomAlias(pipe, r)
+
+    alias_handle = result['alias_handle']
+
+    test_alias_ops(pipe, alias_handle, domain_handle, domain_sid)
+
+    return result['alias_handle']
 
 def test_CreateDomainGroup(pipe, domain_handle):
-    pass
 
-def test_CreateAlias(pipe, domain_handle):
-    pass
+    r = {}
+    r['domain_handle'] = domain_handle
+    r['name'] = {}
+    r['name']['name_len'] = 0
+    r['name']['name_size'] = 0
+    r['name']['name'] = 'samrtorturetestgroup'
+    r['access_mask'] = 0x02000000
+
+    result = dcerpc.samr_CreateDomGroup(pipe, r)
+
+    return result['group_handle']
 
 def test_CreateDomainGroup(pipe, domain_handle):
     pass
@@ -323,12 +387,12 @@ def test_DeleteDomainGroup(pipe, group_handle):
 def test_Close(pipe, domain_handle):
     pass
 
-def test_OpenDomain(pipe, handle, domain_sid):
+def test_OpenDomain(pipe, connect_handle, domain_sid):
 
     print 'testing samr_OpenDomain'
 
     r = {}
-    r['handle'] = handle
+    r['connect_handle'] = connect_handle
     r['access_mask'] = 0x02000000
     r['sid'] = domain_sid
 
@@ -344,7 +408,10 @@ def test_OpenDomain(pipe, handle, domain_sid):
 
     user_handle = test_CreateUser(pipe, domain_handle)
 
-    alias_handle = test_CreateAlias(pipe, domain_handle)
+    alias_handle = test_CreateAlias(pipe, domain_handle, domain_sid)
+
+    print alias_handle
+    sys.exit(1)
 
     group_handle = test_CreateDomainGroup(pipe, domain_handle)
 
@@ -384,12 +451,12 @@ def test_OpenDomain(pipe, handle, domain_sid):
 
     test_Close(pipe, domain_handle)
     
-def test_LookupDomain(pipe, handle, domain):
+def test_LookupDomain(pipe, connect_handle, domain):
 
     print 'testing samr_LookupDomain'
 
     r = {}
-    r['handle'] = handle
+    r['connect_handle'] = connect_handle
     r['domain'] = {}
     r['domain']['name_len'] = 0
     r['domain']['name_size'] = 0
@@ -417,12 +484,12 @@ def test_LookupDomain(pipe, handle, domain):
 
     test_OpenDomain(pipe, handle, result['sid'])
     
-def test_EnumDomains(pipe, handle):
+def test_EnumDomains(pipe, connect_handle):
 
     print 'testing samr_EnumDomains'
 
     r = {}
-    r['handle'] = handle
+    r['connect_handle'] = handle
     r['resume_handle'] = 0
     r['buf_size'] = -1
 
