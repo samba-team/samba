@@ -49,6 +49,65 @@
 
 #include "includes.h"
 
+struct talloc_chunk {
+	struct talloc_chunk *next;
+	size_t size;
+	void *ptr;
+};
+
+
+struct talloc_ctx {
+	struct talloc_chunk *list;
+	size_t total_alloc_size;
+
+	/** The name recorded for this pool, if any.  Should describe
+	 * the purpose for which it was allocated.  The string is
+	 * allocated within the pool. **/
+	char *name;
+
+	/** Pointer to the next allocate talloc pool, so that we can
+	 * summarize all talloc memory usage. **/
+	struct talloc_ctx *next_ctx;
+};
+
+
+/**
+ * Start of linked list of all talloc pools.
+ **/
+TALLOC_CTX *list_head = NULL;
+
+
+/**
+ * Add to the global list
+ **/
+static void talloc_enroll(TALLOC_CTX *t)
+{
+	t->next_ctx = list_head;
+	list_head = t;
+}
+
+
+static void talloc_disenroll(TALLOC_CTX *t)
+{
+	TALLOC_CTX **ttmp;
+
+	/* Use a double-* so that no special case is required for the
+	 * list head. */
+	for (ttmp = &list_head; *ttmp; ttmp = &((*ttmp)->next_ctx))
+		if (*ttmp == t) {
+			/* ttmp is the link that points to t, either
+			 * list_head or the next_ctx link in its
+			 * predecessor */
+			*ttmp = t->next_ctx;
+			t->next_ctx = NULL;	/* clobber */
+			return;
+		}
+	abort();		/* oops, this talloc was already
+				 * clobbered or something else went
+				 * wrong. */
+}
+
+
 /** Create a new talloc context. **/
 TALLOC_CTX *talloc_init(void)
 {
@@ -59,6 +118,8 @@ TALLOC_CTX *talloc_init(void)
 
 	t->list = NULL;
 	t->total_alloc_size = 0;
+	t->name = NULL;
+	talloc_enroll(t);
 
 	return t;
 }
@@ -75,10 +136,12 @@ TALLOC_CTX *talloc_init(void)
 	va_list ap;
 
 	t = talloc_init();
-	va_start(ap, fmt);
-	t->name = talloc_vasprintf(t, fmt, ap);
-	va_end(ap);
-
+	if (fmt) {
+		va_start(ap, fmt);
+		t->name = talloc_vasprintf(t, fmt, ap);
+		va_end(ap);
+	}
+	
 	return t;
 }
 
@@ -161,6 +224,7 @@ void talloc_destroy(TALLOC_CTX *t)
 	if (!t)
 		return;
 	talloc_destroy_pool(t);
+	talloc_disenroll(t);
 	memset(t, 0, sizeof(*t));
 	SAFE_FREE(t);
 }
@@ -170,6 +234,12 @@ size_t talloc_pool_size(TALLOC_CTX *t)
 {
 	return t->total_alloc_size;
 }
+
+const char * talloc_pool_name(TALLOC_CTX const *t)
+{
+	return t->name;
+}
+
 
 /** talloc and zero memory. */
 void *talloc_zero(TALLOC_CTX *t, size_t size)

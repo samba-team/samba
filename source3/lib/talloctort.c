@@ -41,16 +41,21 @@ int main(void)
 			p = talloc(ctx[i], size);
 			if (!p) {
 				fprintf(stderr,
-					"failed to talloc %0.f bytes\n", size);
+					"failed to talloc %.0f bytes\n",
+					(double) size);
 				exit(1);
 			}
 		}
 	}
 
 	for (i = 0; i < NCTX; i++) {
-		printf("talloc@%p %-40s %db\n", ctx[i], ctx[i]->name,
-		       ctx[i]->total_alloc_size);
+		printf("talloc@%p %-40s %db\n", ctx[i],
+		       talloc_pool_name(ctx[i]),
+		       talloc_pool_size(ctx[i]));
 	}
+
+	for (i = NCTX - 1; i >= 0; i--)
+		talloc_destroy(ctx[i]);
 
 	return 0;
 }
