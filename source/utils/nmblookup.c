@@ -198,6 +198,9 @@ int main(int argc,char *argv[])
   BOOL lookup_by_ip = False;
 
   DEBUGLEVEL = 1;
+  /* Prevent smb.conf setting from overridding */
+  AllowDebugChange = False;
+
   *lookup = 0;
 
   TimeInit();
@@ -240,8 +243,6 @@ int main(int argc,char *argv[])
 	break;
       case 'd':
 	DEBUGLEVEL = atoi(optarg);
-	/* Prevent smb.conf setting from overridding */
-	AllowDebugChange = False;
 	break;
       case 's':
 	pstrcpy(servicesf, optarg);

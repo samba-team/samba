@@ -2297,6 +2297,7 @@ static int do_message_op(void)
 	*new_name_resolve_order = 0;
 
 	DEBUGLEVEL = 2;
+	AllowDebugChange = False;
  
 	setup_logging(pname,True);
 
@@ -2323,7 +2324,6 @@ static int do_message_op(void)
 			}
 		}
 		else if(strncmp(argv[opt], "-d", 2) == 0) {
-			AllowDebugChange = False;
 			if(argv[opt][2] != '\0') {
 				if (argv[opt][2] == 'A')
 					DEBUGLEVEL = 10000;
@@ -2463,7 +2463,6 @@ static int do_message_op(void)
 				DEBUGLEVEL = 10000;
 			else
 				DEBUGLEVEL = atoi(optarg);
-			AllowDebugChange = False;
 			break;
 		case 'P':
 			/* not needed anymore */
