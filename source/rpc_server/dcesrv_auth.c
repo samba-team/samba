@@ -157,11 +157,11 @@ BOOL dcesrv_auth_auth3(struct dcesrv_call_state *call)
 	/* We can't work without an existing gensec state, and an new blob to feed it */
 	if (!dce_conn->auth_state.auth_info ||
 	    !dce_conn->auth_state.gensec_security ||
-	    pkt->u.auth.auth_info.length == 0) {
+	    pkt->u.auth3.auth_info.length == 0) {
 		return False;
 	}
 
-	status = ndr_pull_struct_blob(&pkt->u.auth.auth_info,
+	status = ndr_pull_struct_blob(&pkt->u.auth3.auth_info,
 				      call,
 				      dce_conn->auth_state.auth_info,
 				      (ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);

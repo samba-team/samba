@@ -681,8 +681,8 @@ NTSTATUS dcerpc_auth3(struct dcerpc_pipe *p,
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	pkt.call_id = next_call_id(p);
 	pkt.auth_length = 0;
-	pkt.u.auth._pad = 0;
-	pkt.u.auth.auth_info = data_blob(NULL, 0);
+	pkt.u.auth3._pad = 0;
+	pkt.u.auth3.auth_info = data_blob(NULL, 0);
 
 	/* construct the NDR form of the packet */
 	status = dcerpc_push_auth(&blob, mem_ctx, &pkt, p->security_state.auth_info);
