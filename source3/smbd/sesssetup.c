@@ -77,7 +77,7 @@ static NTSTATUS check_guest_password(auth_serversupplied_info **server_info)
 	auth_usersupplied_info *user_info = NULL;
 	
 	NTSTATUS nt_status;
-	char chal[8];
+	unsigned char chal[8];
 
 	ZERO_STRUCT(chal);
 

@@ -1116,7 +1116,6 @@ NTSTATUS _lsa_query_secobj(pipes_struct *p, LSA_Q_QUERY_SEC_OBJ *q_u, LSA_R_QUER
 		break;
 	default:
 		return NT_STATUS_INVALID_LEVEL;
-		break;
 	}
 
 	r_u->ptr=1;

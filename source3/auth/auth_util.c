@@ -279,7 +279,7 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 					 char *smb_name, 
 					 char *client_domain, 
 					 char *wksta_name, 
-					 char chal[8], 
+					 uchar chal[8], 
 					 uchar lm_interactive_pwd[16], 
 					 uchar nt_interactive_pwd[16], 
 					 uchar *dc_sess_key)
@@ -360,7 +360,7 @@ BOOL make_user_info_winbind(auth_usersupplied_info **user_info,
                             const char *username,
                             const char *domain, 
                             const char *password,
-			    char chal[8] /* Give winbind back the challenge we used */
+			    uchar chal[8] /* Give winbind back the challenge we used */
 	)
 {
 	unsigned char local_lm_response[24];
@@ -468,7 +468,7 @@ BOOL make_user_info_winbind_crap(auth_usersupplied_info **user_info,
 BOOL make_user_info_for_reply(auth_usersupplied_info **user_info, 
 			      char *smb_name, 
 			      char *client_domain,
-			      char chal[8],
+			      unsigned char chal[8],
 			      DATA_BLOB plaintext_password)
 {
 
