@@ -15,6 +15,21 @@
 
 	* kdc/headers.h: util.h
 
+2000-08-04  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/principal.c (krb5_425_conv_principal_ext): always put
+	hostnames in lower case
+	(default_v4_name_convert): add imap
+
+2000-08-03  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/crc.c (_krb5_crc_update): const-ize (finally)
+
+2000-07-29  Assar Westerlund  <assar@sics.se>
+
+	* kdc/kerberos5.c (check_tgs_flags): set endtime correctly when
+	renewing, From Derrick J Brashear <shadow@dementia.org>
+
 2000-07-28  Assar Westerlund  <assar@juguete.sics.se>
 
 	* Release 0.3a
