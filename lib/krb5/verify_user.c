@@ -154,7 +154,7 @@ krb5_verify_user_lrealm(krb5_context context,
 	    krb5_free_host_realm (context, realms);
 	    return ENOMEM;
 	}
-	free (krb5_princ_realm (context, principal));
+	free (*krb5_princ_realm (context, principal));
 	krb5_princ_set_realm (context, principal, &tmp);
 
 	ret = krb5_get_init_creds_password (context,
