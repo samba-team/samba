@@ -1,6 +1,5 @@
 /* 
    Unix SMB/Netbios implementation.
-   Version 2.2
    RPC pipe client
    Copyright (C) Tim Potter                        2000-2001,
    Copyright (C) Andrew Tridgell              1992-1997,2000,
@@ -25,7 +24,7 @@
 
 #include "includes.h"
 
-/** @defgroup lsa LSA rpc client routines
+/** @defgroup lsa LSA - Local Security Architecture
  *  @ingroup rpc_client
  *
  * @{
@@ -1137,4 +1136,5 @@ Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
 	cli_shutdown(&cli);
 	return ret;
 }
+
 /** @} **/
