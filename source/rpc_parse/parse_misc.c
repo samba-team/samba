@@ -873,45 +873,37 @@ void init_unistr2(UNISTR2 *str, const char *buf, size_t len)
 void init_unistr2_from_unistr (UNISTR2 *to, UNISTR *from)
 {
 
-	BOOL found;
-	uint32 i = 0;
+	uint32 i;
 
-	if ((to == NULL) || (from == NULL) || (from->buffer == NULL))
-		return;
-		
+	/* the destination UNISTR2 should never be NULL.
+	   if it is it is a programming error */
+
+	/* if the source UNISTR is NULL, then zero out
+	   the destination string and return */
 	ZERO_STRUCTP (to);
-
-	/* get the length; UNISTR **are** NULL terminated */
-	found = False;
-	while (!found)
-	{
-		if ((from->buffer)[i]=='\0')
-			found = True;
-		else
-			i++;
-	}
-	i++;
-
-	if (!found)
-	{
-		DEBUG(0,("init_unistr2_from_unistr: non-null terminiated UNISTR!\n"));
+	if ((from == NULL) || (from->buffer == NULL))
 		return;
-	}
 
-	/* set up string lengths. */
-	to->uni_max_len = i;
+	/* get the length; UNISTR must be NULL terminated */
+	i = 0;
+	while ((from->buffer)[i]!='\0')
+		i++;
+
+	/* set up string lengths; uni_max_len is set to i+1
+           because we need to account for the final NULL termination */
+	to->uni_max_len = i+1;
 	to->undoc       = 0;
-	to->uni_str_len = i;
+	to->uni_str_len = i+1;
 
 	if (!parse_misc_talloc)
 		parse_misc_talloc = talloc_init();
 	
-	/* copy the string now */
+	/* allocate the space and copy the string buffer */
 	to->buffer = (uint16 *)talloc(parse_misc_talloc, sizeof(uint16)*(to->uni_str_len));
 	if (to->buffer == NULL)
 		smb_panic("init_unistr2_from_unistr: malloc fail\n");
-
-	memcpy( to->buffer, from->buffer, to->uni_str_len*sizeof(uint16) );	
+	memcpy(to->buffer, from->buffer, to->uni_max_len*sizeof(uint16));
+		
 	return;
 }
 
