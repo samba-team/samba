@@ -3166,17 +3166,18 @@ static void dump_copy_map(BOOL *pcopymap)
 #endif
 
 /***************************************************************************
-Return TRUE if the passed service number is within range.
+ Return TRUE if the passed service number is within range.
 ***************************************************************************/
+
 BOOL lp_snum_ok(int iService)
 {
 	return (LP_SNUM_OK(iService) && ServicePtrs[iService]->bAvailable);
 }
 
-
 /***************************************************************************
-auto-load some home services
+ Auto-load some home services.
 ***************************************************************************/
+
 static void lp_add_auto_services(char *str)
 {
 	char *s;
@@ -3192,34 +3193,30 @@ static void lp_add_auto_services(char *str)
 
 	homes = lp_servicenumber(HOMES_NAME);
 
-	for (p = strtok(s, LIST_SEP); p; p = strtok(NULL, LIST_SEP))
-	{
-		char *home = get_user_home_dir(p);
+	for (p = strtok(s, LIST_SEP); p; p = strtok(NULL, LIST_SEP)) {
+		char *home = get_user_service_home_dir(p);
 
 		if (lp_servicenumber(p) >= 0)
 			continue;
 
 		if (home && homes >= 0)
-		{
 			lp_add_home(p, homes, home);
-		}
 	}
 	SAFE_FREE(s);
 }
 
 /***************************************************************************
-auto-load one printer
+ Auto-load one printer.
 ***************************************************************************/
+
 void lp_add_one_printer(char *name, char *comment)
 {
 	int printers = lp_servicenumber(PRINTERS_NAME);
 	int i;
 
-	if (lp_servicenumber(name) < 0)
-	{
+	if (lp_servicenumber(name) < 0) {
 		lp_add_printer(name, printers);
-		if ((i = lp_servicenumber(name)) >= 0)
-		{
+		if ((i = lp_servicenumber(name)) >= 0) {
 			string_set(&ServicePtrs[i]->comment, comment);
 			unix_to_dos(ServicePtrs[i]->comment, True);
 			ServicePtrs[i]->autoloaded = True;

@@ -1025,7 +1025,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   if (!strequal(user,lp_guestaccount(-1)) &&
       lp_servicenumber(user) < 0)      
   {
-	add_home_service(user,get_user_home_dir(user));
+	add_home_service(user,get_user_service_home_dir(user));
   }
 
 

@@ -1038,6 +1038,7 @@ char *ufc_crypt(const char *key,const char *salt);
 
 BOOL name_is_local(const char *name);
 char *get_user_home_dir(char *user);
+char *get_user_service_home_dir(char *user);
 BOOL map_username(char *user);
 struct passwd *Get_Pwnam(char *user,BOOL allow_change);
 BOOL user_in_group_list(char *user,char *gname);

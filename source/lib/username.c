@@ -43,6 +43,21 @@ BOOL name_is_local(const char *name)
 char *get_user_home_dir(char *user)
 {
 	static struct passwd *pass;
+
+	pass = Get_Pwnam(user, False);
+	if (!pass)
+		return(NULL);
+	/* Return home directory from struct passwd. */
+	return(pass->pw_dir);      
+}
+
+/****************************************************************************
+ Get a users home service directory.
+****************************************************************************/
+
+char *get_user_service_home_dir(char *user)
+{
+	static struct passwd *pass;
 	int snum;
 
 	/* Ensure the user exists. */

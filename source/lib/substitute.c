@@ -94,15 +94,11 @@ static size_t expand_env_var(char *p, int len)
 static char *automount_path(char *user_name)
 {
 	static pstring server_path;
-	struct passwd *pass;
 
 	/* use the passwd entry as the default */
 	/* this will be the default if WITH_AUTOMOUNT is not used or fails */
 
-	if (((pass = Get_Pwnam(user_name, False))!=NULL) && (pass->pw_dir != NULL))
-		pstrcpy(server_path, pass->pw_dir );
-	else
-		*server_path = '\0';
+	pstrcpy(server_path, get_user_home_dir(user_name));
 
 #if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
 
@@ -230,8 +226,7 @@ void standard_sub_basic(char *str)
 
 void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *str)
 {
-	char *p, *s;
-	struct passwd *pw;
+	char *p, *s, *home;
 
 	for (s=str; (p=strchr(s, '%'));s=p) {
 		int l = sizeof(pstring) - (int)(p-str);
@@ -239,8 +234,8 @@ void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, c
 		switch (*(p+1)) {
 		case 'N' : string_sub(p,"%N", automount_server(user),l); break;
 		case 'H':
-			if ((pw=Get_Pwnam(user, False)) != NULL) {
-				string_sub(p,"%H",pw->pw_dir, l);
+			if ((home = get_user_home_dir(user))) {
+				string_sub(p,"%H",home, l);
 			} else {
 				p += 2;
 			}

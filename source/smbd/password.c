@@ -988,32 +988,31 @@ static BOOL check_user_equiv(char *user, char *remote, char *equiv_file)
 
 BOOL check_hosts_equiv(char *user)
 {
-  char *fname = NULL;
-  pstring rhostsfile;
-  struct passwd *pass = Get_Pwnam(user,True);
+	char *fname = NULL;
+	pstring rhostsfile;
+	struct passwd *pass = Get_Pwnam(user,True);
 
-  if (!pass) 
-    return(False);
+	if (!pass) 
+		return(False);
 
-  fname = lp_hosts_equiv();
+	fname = lp_hosts_equiv();
 
-  /* note: don't allow hosts.equiv on root */
-  if (fname && *fname && (pass->pw_uid != 0)) {
-	  if (check_user_equiv(user,client_name(),fname))
-		  return(True);
-  }
+	/* note: don't allow hosts.equiv on root */
+	if (fname && *fname && (pass->pw_uid != 0)) {
+		if (check_user_equiv(user,client_name(),fname))
+			return(True);
+	}
   
-  if (lp_use_rhosts())
-    {
-      char *home = get_user_home_dir(user);
-      if (home) {
-	      slprintf(rhostsfile, sizeof(rhostsfile)-1, "%s/.rhosts", home);
-	      if (check_user_equiv(user,client_name(),rhostsfile))
-		      return(True);
-      }
-    }
+	if (lp_use_rhosts()) {
+		char *home = get_user_service_home_dir(user);
+		if (home) {
+			slprintf(rhostsfile, sizeof(rhostsfile)-1, "%s/.rhosts", home);
+			if (check_user_equiv(user,client_name(),rhostsfile))
+				return(True);
+		}
+	}
 
-  return(False);
+	return(False);
 }
 
 /****************************************************************************
