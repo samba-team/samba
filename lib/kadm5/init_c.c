@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -71,6 +71,7 @@ _kadm5_c_init_context(kadm5_client_context **ctx,
     if(*ctx == NULL)
 	return ENOMEM;
     memset(*ctx, 0, sizeof(**ctx));
+    initialize_kadm5_error_table_r(&context->et_list);
     set_funcs(*ctx);
     (*ctx)->context = context;
     if(params->mask & KADM5_CONFIG_REALM)
@@ -91,7 +92,6 @@ _kadm5_c_init_context(kadm5_client_context **ctx,
 	(*ctx)->admin_server = strdup(h);
     }
 	    
-    initialize_kadm5_error_table_r(&context->et_list);
     return 0;
 }
 
