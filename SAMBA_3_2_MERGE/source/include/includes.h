@@ -1277,6 +1277,7 @@ int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 
 #if !defined(HAVE_SNPRINTF) || !defined(HAVE_C99_VSNPRINTF)
 #define snprintf smb_snprintf
+#define vsnprintf smb_vsnprintf
 #endif
 
 void sys_adminlog(int priority, const char *format_str, ...) PRINTF_ATTRIBUTE(2,3);
@@ -1329,6 +1330,10 @@ krb5_error_code krb5_set_default_tgs_ktypes(krb5_context ctx, const krb5_enctype
 
 #if defined(HAVE_KRB5_AUTH_CON_SETKEY) && !defined(HAVE_KRB5_AUTH_CON_SETUSERUSERKEY)
 krb5_error_code krb5_auth_con_setuseruserkey(krb5_context context, krb5_auth_context auth_context, krb5_keyblock *keyblock);
+#endif
+
+#ifndef HAVE_KRB5_FREE_UNPARSED_NAME
+void krb5_free_unparsed_name(krb5_context ctx, char *val);
 #endif
 
 /* Samba wrapper function for krb5 functionality. */

@@ -645,10 +645,8 @@ NTTIME pull_nttime(void *base, uint16_t offset)
 	return ret;
 }
 
-/*
-  parse a nttime as a large integer in a string and return a NTTIME
-*/
-NTTIME nttime_from_string(const char *s)
+SMB_BIG_INT usec_time_diff(struct timeval *larget, struct timeval *smallt)
 {
-	return strtoull(s, NULL, 0);
+	SMB_BIG_INT sec_diff = larget->tv_sec - smallt->tv_sec;
+	return (sec_diff * 1000000) + (SMB_BIG_INT)(larget->tv_usec - smallt->tv_usec);
 }

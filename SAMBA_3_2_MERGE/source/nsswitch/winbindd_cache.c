@@ -363,6 +363,12 @@ static void refresh_sequence_number(struct winbindd_domain *domain, BOOL force)
 	if ( NT_STATUS_IS_OK(status) )
 		goto done;	
 
+	/* important! make sure that we know if this is a native 
+	   mode domain or not */
+
+	if ( !domain->initialized )
+		set_dc_type_and_flags( domain );
+
 	status = domain->backend->sequence_number(domain, &domain->sequence_number);
 
 	if (!NT_STATUS_IS_OK(status)) {

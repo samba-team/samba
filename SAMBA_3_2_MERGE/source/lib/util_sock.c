@@ -52,6 +52,23 @@ static char *get_socket_addr(int fd)
 	return addr_buf;
 }
 
+static int get_socket_port(int fd)
+{
+	struct sockaddr sa;
+	struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
+	socklen_t length = sizeof(sa);
+
+	if (fd == -1)
+		return -1;
+	
+	if (getsockname(fd, &sa, &length) < 0) {
+		DEBUG(0,("getpeername failed. Error was %s\n", strerror(errno) ));
+		return -1;
+	}
+	
+	return ntohs(sockin->sin_port);
+}
+
 /****************************************************************************
  Determine if a file descriptor is in fact a socket.
 ****************************************************************************/
@@ -615,56 +632,6 @@ BOOL receive_smb_raw(int fd,char *buffer, unsigned int timeout)
 }
 
 /****************************************************************************
- Wrapper for receive_smb_raw().
- Checks the MAC on signed packets.
-****************************************************************************/
-
-BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
-{
-	if (!receive_smb_raw(fd, buffer, timeout)) {
-		return False;
-	}
-
-	/* Check the incoming SMB signature. */
-	if (!srv_check_sign_mac(buffer, True)) {
-		DEBUG(0, ("receive_smb: SMB Signature verification failed on incoming packet!\n"));
-		if (smb_read_error == 0)
-			smb_read_error = READ_BAD_SIG;
-		return False;
-	};
-
-	return(True);
-}
-
-/****************************************************************************
- Send an smb to a fd.
-****************************************************************************/
-
-BOOL send_smb(int fd,char *buffer)
-{
-	size_t len;
-	size_t nwritten=0;
-	ssize_t ret;
-
-	/* Sign the outgoing packet if required. */
-	srv_calculate_sign_mac(buffer);
-
-	len = smb_len(buffer) + 4;
-
-	while (nwritten < len) {
-		ret = write_socket(fd,buffer+nwritten,len - nwritten);
-		if (ret <= 0) {
-			DEBUG(0,("Error writing %d bytes to client. %d. (%s)\n",
-				(int)len,(int)ret, strerror(errno) ));
-			return False;
-		}
-		nwritten += ret;
-	}
-
-	return True;
-}
-
-/****************************************************************************
  Open a socket of the specified type, port, and address for incoming data.
 ****************************************************************************/
 
@@ -858,6 +825,11 @@ char *client_addr(void)
 char *client_socket_addr(void)
 {
 	return get_socket_addr(client_fd);
+}
+
+int client_socket_port(void)
+{
+	return get_socket_port(client_fd);
 }
 
 struct in_addr *client_inaddr(struct sockaddr *sa)

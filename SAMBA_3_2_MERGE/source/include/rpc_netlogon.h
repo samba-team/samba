@@ -199,7 +199,7 @@ typedef struct netlogon_2_info
 	uint32  flags;            /* 0x0 - undocumented */
 	uint32  pdc_status;       /* 0x0 - undocumented */
 	uint32  ptr_trusted_dc_name; /* pointer to trusted domain controller name */
-	uint32  tc_status;           /* 0x051f - ERROR_NO_LOGON_SERVERS */
+	uint32  tc_status;           
 	UNISTR2 uni_trusted_dc_name; /* unicode string - trusted dc name */
 
 } NETLOGON_INFO_2;
@@ -250,6 +250,26 @@ typedef struct net_r_logon_ctrl_info
 	NTSTATUS status;
 } NET_R_LOGON_CTRL;
 
+
+typedef struct ctrl_data_info_5
+{
+	uint32 		function_code;
+	
+	uint32		ptr_domain;
+	UNISTR2		domain;
+	
+} CTRL_DATA_INFO_5;
+
+typedef struct ctrl_data_info_6
+{
+	uint32 		function_code;
+	
+	uint32		ptr_domain;
+	UNISTR2		domain;
+	
+} CTRL_DATA_INFO_6;
+
+
 /********************************************************
  Logon Control2 Query
 
@@ -261,13 +281,16 @@ typedef struct net_r_logon_ctrl_info
 /* NET_Q_LOGON_CTRL2 - LSA Netr Logon Control 2 */
 typedef struct net_q_logon_ctrl2_info
 {
-	uint32       ptr;             /* undocumented buffer pointer */
-	UNISTR2      uni_server_name; /* server name, starting with two '\'s */
+	uint32       	ptr;             /* undocumented buffer pointer */
+	UNISTR2      	uni_server_name; /* server name, starting with two '\'s */
 	
-	uint32       function_code; /* 0x1 */
-	uint32       query_level;   /* 0x1, 0x3 */
-	uint32       switch_value;  /* 0x1 */
-
+	uint32       	function_code; 
+	uint32       	query_level;   
+	union {
+		CTRL_DATA_INFO_5 info5;
+		CTRL_DATA_INFO_6 info6;;
+	} info;
+	
 } NET_Q_LOGON_CTRL2;
 
 /*******************************************************

@@ -203,7 +203,7 @@ LIB_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/util.o lib/util_sock.o lib/sock_exec.o lib/util_sec.o \
 	  lib/talloc.o lib/hash.o lib/substitute.o lib/fsusage.o \
 	  lib/ms_fnmatch.o lib/select.o lib/messages.o \
-	  lib/tallocmsg.o lib/dmallocmsg.o libsmb/smb_signing.o \
+	  lib/tallocmsg.o lib/dmallocmsg.o \
 	  lib/md5.o lib/hmacmd5.o lib/iconv.o \
 	  nsswitch/wb_client.o $(WBCOMMON_OBJ) \
 	  lib/pam_errors.o intl/lang_tdb.o lib/account_pol.o \
@@ -228,7 +228,7 @@ KRBCLIENT_OBJ = libads/kerberos.o libads/ads_status.o
 
 LIBADS_OBJ = libads/ldap.o libads/ldap_printer.o libads/sasl.o \
 	     libads/krb5_setpw.o libads/ldap_user.o \
-	     libads/ads_struct.o \
+	     libads/ads_struct.o libads/kerberos_keytab.o \
              libads/disp_sec.o libads/ads_utils.o libads/ldap_utils.o \
 	     libads/ads_ldap.o libads/authdata.o
 
@@ -634,7 +634,7 @@ BASIC_OBJ = lib/util_str.o lib/debug.o lib/xfile.o lib/util.o \
             lib/util_file.o lib/interface.o lib/interfaces.o lib/ms_fnmatch.o \
             lib/util_sid.o lib/signal.o lib/genrand.o lib/md4.o lib/crc32.o \
             intl/lang_tdb.o lib/dummysmbd.o lib/clobber.o lib/smbrun.o \
-            lib/util_sec.o libsmb/smb_signing.o lib/getsmbpass.o lib/pidfile.o \
+            lib/util_sec.o lib/getsmbpass.o lib/pidfile.o \
 			lib/replace.o lib/bitmap.o lib/util_uuid.o lib/fsusage.o  \
 			lib/messages.o lib/tallocmsg.o lib/dmallocmsg.o lib/pam_errors.o \
 			

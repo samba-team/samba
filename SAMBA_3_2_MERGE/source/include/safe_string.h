@@ -46,6 +46,20 @@
 #endif /* sprintf */
 #define sprintf __ERROR__XX__NEVER_USE_SPRINTF__;
 
+/*
+ * strcasecmp/strncasecmp aren't an error, but it means you're not thinking about
+ * multibyte. Don't use them. JRA.
+ */
+#ifdef strcasecmp
+#undef strcasecmp
+#endif
+#define strcasecmp __ERROR__XX__NEVER_USE_STRCASECMP__;
+
+#ifdef strncasecmp
+#undef strncasecmp
+#endif
+#define strncasecmp __ERROR__XX__NEVER_USE_STRNCASECMP__;
+
 #endif /* !_SPLINT_ */
 
 char * __unsafe_string_function_usage_here__(void);

@@ -233,6 +233,7 @@ typedef struct
 	char *szLdapFilter;
 	char *szLdapAdminDn;
 	char *szAclCompat;
+	char *szCupsServer;
 	int ldap_passwd_sync; 
 	int ldap_replication_sleep;
 	BOOL ldap_delete_dn;
@@ -288,6 +289,7 @@ typedef struct
 	BOOL bUnixExtensions;
 	BOOL bDisableNetbios;
 	BOOL bKernelChangeNotify;
+	BOOL bUseKerberosKeytab;
 	int restrict_anonymous;
 	int name_cache_timeout;
 	int client_signing;
@@ -365,7 +367,7 @@ typedef struct
 	int iBlock_size;
 	BOOL bPreexecClose;
 	BOOL bRootpreexecClose;
-	BOOL bCaseSensitive;
+	int  iCaseSensitive;
 	BOOL bCasePreserve;
 	BOOL bShortCasePreserve;
 	BOOL bHideDotFiles;
@@ -488,7 +490,7 @@ static service sDefault = {
 	1024,           /* iBlock_size */
 	False,			/* bPreexecClose */
 	False,			/* bRootpreexecClose */
-	False,			/* case sensitive */
+	Auto,			/* case sensitive */
 	True,			/* case preserve */
 	True,			/* short case preserve */
 	True,			/* bHideDotFiles */
@@ -863,6 +865,7 @@ static struct parm_struct parm_table[] = {
 	{"hosts deny", P_LIST, P_LOCAL, &sDefault.szHostsdeny, NULL, NULL, FLAG_GLOBAL | FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
 	{"deny hosts", P_LIST, P_LOCAL, &sDefault.szHostsdeny, NULL, NULL, FLAG_HIDE}, 
 	{"preload modules", P_LIST, P_GLOBAL, &Globals.szPreloadModules, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL}, 
+	{"use kerberos keytab", P_BOOL, P_GLOBAL, &Globals.bUseKerberosKeytab, NULL, NULL, FLAG_ADVANCED}, 
 
 	{N_("Logging Options"), P_SEP, P_SEPARATOR}, 
 
@@ -956,6 +959,7 @@ static struct parm_struct parm_table[] = {
 	{"print ok", P_BOOL, P_LOCAL, &sDefault.bPrint_ok, NULL, NULL, FLAG_HIDE}, 
 	{"printing", P_ENUM, P_LOCAL, &sDefault.iPrinting, handle_printing, enum_printing, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
 	{"cups options", P_STRING, P_LOCAL, &sDefault.szCupsOptions, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
+	{"cups server", P_STRING, P_GLOBAL, &Globals.szCupsServer, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
 	{"print command", P_STRING, P_LOCAL, &sDefault.szPrintcommand, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
 	{"disable spoolss", P_BOOL, P_GLOBAL, &Globals.bDisableSpoolss, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
 	{"lpq command", P_STRING, P_LOCAL, &sDefault.szLpqcommand, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
@@ -981,8 +985,8 @@ static struct parm_struct parm_table[] = {
 	{"mangle prefix", P_INTEGER, P_GLOBAL, &Globals.mangle_prefix, NULL, NULL, FLAG_ADVANCED}, 
 
 	{"default case", P_ENUM, P_LOCAL, &sDefault.iDefaultCase, NULL, enum_case, FLAG_ADVANCED | FLAG_SHARE}, 
-	{"case sensitive", P_BOOL, P_LOCAL, &sDefault.bCaseSensitive, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
-	{"casesignames", P_BOOL, P_LOCAL, &sDefault.bCaseSensitive, NULL, NULL, FLAG_HIDE}, 
+	{"case sensitive", P_ENUM, P_LOCAL, &sDefault.iCaseSensitive, NULL, enum_bool_auto, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
+	{"casesignames", P_ENUM, P_LOCAL, &sDefault.iCaseSensitive, NULL, enum_bool_auto, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL | FLAG_HIDE}, 
 	{"preserve case", P_BOOL, P_LOCAL, &sDefault.bCasePreserve, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"short preserve case", P_BOOL, P_LOCAL, &sDefault.bShortCasePreserve, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"mangling char", P_CHAR, P_LOCAL, &sDefault.magic_char, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
@@ -1292,6 +1296,13 @@ static void init_globals(void)
 
 	if (!done_init) {
 		int i;
+
+		/* The logfile can be set before this is invoked. Free it if so. */
+		if (Globals.szLogFile != NULL) {
+			string_free(&Globals.szLogFile);
+			Globals.szLogFile = NULL;
+		}
+
 		memset((void *)&Globals, '\0', sizeof(Globals));
 
 		for (i = 0; parm_table[i].label; i++)
@@ -1510,6 +1521,7 @@ static void init_globals(void)
 	string_set(&Globals.szTemplatePrimaryGroup, "nobody");
 	string_set(&Globals.szWinbindSeparator, "\\");
 	string_set(&Globals.szAclCompat, "");
+	string_set(&Globals.szCupsServer, "");
 
 	Globals.winbind_cache_time = 300;	/* 5 minutes */
 	Globals.bWinbindEnableLocalAccounts = True;
@@ -1765,6 +1777,7 @@ FN_GLOBAL_BOOL(lp_use_spnego, &Globals.bUseSpnego)
 FN_GLOBAL_BOOL(lp_client_use_spnego, &Globals.bClientUseSpnego)
 FN_GLOBAL_BOOL(lp_hostname_lookups, &Globals.bHostnameLookups)
 FN_GLOBAL_BOOL(lp_kernel_change_notify, &Globals.bKernelChangeNotify)
+FN_GLOBAL_BOOL(lp_use_kerberos_keytab, &Globals.bUseKerberosKeytab)
 FN_GLOBAL_INTEGER(lp_os_level, &Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl, &Globals.max_ttl)
 FN_GLOBAL_INTEGER(lp_max_wins_ttl, &Globals.max_wins_ttl)
@@ -1809,6 +1822,7 @@ FN_LOCAL_LIST(lp_invalid_users, szInvalidUsers)
 FN_LOCAL_LIST(lp_valid_users, szValidUsers)
 FN_LOCAL_LIST(lp_admin_users, szAdminUsers)
 FN_LOCAL_STRING(lp_cups_options, szCupsOptions)
+FN_GLOBAL_STRING(lp_cups_server, &Globals.szCupsServer)
 FN_LOCAL_STRING(lp_printcommand, szPrintcommand)
 FN_LOCAL_STRING(lp_lpqcommand, szLpqcommand)
 FN_LOCAL_STRING(lp_lprmcommand, szLprmcommand)
@@ -1839,7 +1853,7 @@ FN_LOCAL_BOOL(lp_msdfs_root, bMSDfsRoot)
 FN_LOCAL_BOOL(lp_autoloaded, autoloaded)
 FN_LOCAL_BOOL(lp_preexec_close, bPreexecClose)
 FN_LOCAL_BOOL(lp_rootpreexec_close, bRootpreexecClose)
-FN_LOCAL_BOOL(lp_casesensitive, bCaseSensitive)
+FN_LOCAL_INTEGER(lp_casesensitive, iCaseSensitive)
 FN_LOCAL_BOOL(lp_preservecase, bCasePreserve)
 FN_LOCAL_BOOL(lp_shortpreservecase, bShortCasePreserve)
 FN_LOCAL_BOOL(lp_hide_dot_files, bHideDotFiles)
@@ -2321,6 +2335,8 @@ BOOL lp_add_home(const char *pszHomename, int iDefaultService,
 	/* set the browseable flag from the gloabl default */
 
 	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
+
+	ServicePtrs[i]->autoloaded = True;
 
 	DEBUG(3, ("adding home's share [%s] for user '%s' at '%s'\n", pszHomename, 
 	       user, newHomedir));
@@ -2987,10 +3003,8 @@ static void lp_set_enum_parm( struct parm_struct *parm, const char *pszParmValue
 {
 	int i;
 
-	for (i = 0; parm->enum_list[i].name; i++) 
-	{
-		if ( strequal(pszParmValue, parm->enum_list[i].name)) 
-		{
+	for (i = 0; parm->enum_list[i].name; i++) {
+		if ( strequal(pszParmValue, parm->enum_list[i].name)) {
 			*ptr = parm->enum_list[i].value;
 			break;
 		}
@@ -3310,9 +3324,9 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 				char **list = *(char ***)ptr;
 				
 				for (; *list; list++) {
-					/* surround strings with whitespace in single quotes */
+					/* surround strings with whitespace in double quotes */
 					if ( strchr_m( *list, ' ' ) )
-						fprintf(f, "\'%s\'%s", *list, ((*(list+1))?", ":""));
+						fprintf(f, "\"%s\"%s", *list, ((*(list+1))?", ":""));
 					else
 						fprintf(f, "%s%s", *list, ((*(list+1))?", ":""));
 				}
@@ -3717,6 +3731,10 @@ void lp_killunused(BOOL (*snumused) (int))
 		if (!VALID(i))
 			continue;
 
+		/* don't kill autoloaded services */
+		if ( ServicePtrs[i]->autoloaded )
+			continue;
+
 		if (!snumused || !snumused(i)) {
 			ServicePtrs[i]->valid = False;
 			free_service(ServicePtrs[i]);
@@ -3878,11 +3896,12 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 	
 	/* get the username for substituion -- preference to the current_user_info */
 	
-	if ( strlen( current_user_info.smb_name ) != 0 )
+	if ( strlen( current_user_info.smb_name ) != 0 ) {
 		username = current_user_info.smb_name;
-	else
+	} else {
 		username = sub_get_smb_name();
-		
+	}
+
 	standard_sub_basic( username, n2,sizeof(n2) );
 
 	add_to_file_list(pszFname, n2);
@@ -3896,8 +3915,7 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 
 	init_globals();
 
-	if (save_defaults)
-	{
+	if (save_defaults) {
 		init_locals();
 		lp_save_defaults();
 	}
@@ -4264,7 +4282,10 @@ const char *get_called_name(void)
 	extern fstring local_machine;
 	static fstring called_name;
 
-	if (!*local_machine) {
+	if ( (!*local_machine) ||
+	     (client_socket_port() == 445) ) {
+		/* Everybody coming in on 445 should be able to live with the
+		 * IP address */
 		fstrcpy(called_name, client_socket_addr());
 		DEBUG(8,("get_called_name: assuming that client used IP address [%s] as called name.\n",
 			 called_name));
@@ -4293,9 +4314,9 @@ int lp_maxprintjobs(int snum)
 
 BOOL lp_use_sendfile(int snum)
 {
-	return (_lp_use_sendfile(snum) && !srv_is_signing_active());
+	return (_lp_use_sendfile(snum));
+	/* FIXME && !srv_is_signing_active()); */
 }
-
 
 /*******************************************************************
  set the socket options strings
@@ -4305,4 +4326,15 @@ void lp_set_socket_options( const char *opt )
 {
 	if ( opt )
 		string_set(&Globals.socket_options, opt );
+}
+
+/*******************************************************************
+ Turn off storing DOS attributes if this share doesn't support it.
+********************************************************************/
+
+void set_store_dos_attributes(int snum, BOOL val)
+{
+	if (!LP_SNUM_OK(snum))
+		return;
+	ServicePtrs[(snum)]->bStoreDosAttributes = val;
 }
