@@ -541,14 +541,23 @@ typedef EncAPRepPart krb5_ap_rep_enc_part;
 extern const char krb5_config_file[];
 extern const char krb5_defkeyname[];
 
+typedef enum {
+    KRB5_PROMPT_TYPE_PASSWORD		= 0x1,
+    KRB5_PROMPT_TYPE_NEW_PASSWORD	= 0x2,
+    KRB5_PROMPT_TYPE_NEW_PASSWORD_AGAIN = 0x3,
+    KRB5_PROMPT_TYPE_PREAUTH		= 0x4
+} krb5_prompt_type;
+
 typedef struct _krb5_prompt {
     char *prompt;
     int hidden;
     krb5_data *reply;
+    krb5_prompt_type type;
 } krb5_prompt;
 
 typedef int (*krb5_prompter_fct)(krb5_context context,
 				 void *data,
+				 const char *name,
 				 const char *banner,
 				 int num_prompts,
 				 krb5_prompt prompts[]);
