@@ -195,7 +195,6 @@ parse_auth_level(char *str)
  * Print usage and die.
  */
 
-static int debug_flag;
 static int interactive_flag;
 static char *guest_umask_string;
 static char *port_string;
@@ -216,8 +215,8 @@ struct getargs args[] = {
     { NULL, 't', arg_integer, &ftpd_timeout, "initial timeout" },
     { NULL, 'T', arg_integer, &maxtimeout, "max timeout" },
     { NULL, 'u', arg_string, &umask_string, "umask for user logins" },
-    { NULL, 'd', arg_flag, &debug_flag, "enable debugging" },
-    { NULL, 'v', arg_flag, &debug_flag, "enable debugging" },
+    { NULL, 'd', arg_flag, &debug, "enable debugging" },
+    { NULL, 'v', arg_flag, &debug, "enable debugging" },
     { "builtin-ls", 'B', arg_flag, &use_builtin_ls, "use built-in ls to list files" },
     { "version", 0, arg_flag, &version_flag },
     { "help", 'h', arg_flag, &help_flag }
