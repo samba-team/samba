@@ -32,6 +32,7 @@ SMB_SUBSYSTEM(LIBNDR_RAW,[],
 		librpc/gen_ndr/ndr_netlogon.o
 		librpc/gen_ndr/ndr_trkwks.o
 		librpc/gen_ndr/ndr_keysvc.o
+		librpc/gen_ndr/ndr_krb5pac.o
 		librpc/gen_ndr/ndr_schannel.o])
 
 SMB_SUBSYSTEM(LIBRPC_RAW,[],

@@ -1,0 +1,153 @@
+/*
+  krb5 PAC
+*/
+
+#include "idl_types.h"
+
+[
+  uuid(46746756-7567-7567-5677-756756756756),
+  version(0.0),
+  pointer_default(unique)
+]
+interface krb5pac
+{
+	typedef struct {
+		NTTIME unknown_time;
+		uint16 size;
+		uint16 account_name[size/2];
+	} UNKNOWN_TYPE_10;
+
+	typedef struct {
+		uint32 type;
+		uint8 signature[16];
+	} PAC_SIGNATURE_DATA;
+
+	typedef struct {
+		uint32 rid;
+		uint32 attrs;
+	} GROUP_MEMBERSHIP;
+
+	typedef struct {
+		uint32 sid_ptr;
+		uint32 attrs;
+		dom_sid2 *sid;
+	} KRB_SID_AND_ATTRS;
+
+	typedef struct {
+		uint16 size;
+		uint16 length;
+		uint32 ptr;
+	} pac_String;
+
+	/* This is awfully similar to a samr_user_info_23, but not identical.
+	   Many of the field names have been swiped from there, because it is
+	   so similar that they are likely the same, but many have been verified.
+	   Some are in a different order, though... */
+	typedef struct {
+		NTTIME logon_time;            /* logon time */
+		NTTIME logoff_time;           /* logoff time */
+		NTTIME kickoff_time;          /* kickoff time */
+		NTTIME pass_last_set_time;    /* password last set time */
+		NTTIME pass_can_change_time;  /* password can change time */
+		NTTIME pass_must_change_time; /* password must change time */
+
+		pac_String account_name_ptr;
+		pac_String full_name_ptr;
+		pac_String logon_script_ptr;
+		pac_String profile_path_ptr;
+		pac_String home_directory_ptr;
+		pac_String home_drive_ptr;
+
+		uint16 logon_count; /* number of times user has logged onto domain */
+		uint16 reserved12;
+
+		uint32 user_rid;
+		uint32 group_rid;
+
+		uint32 groups_count;
+		uint32 groups_ptr;
+
+		uint32 user_flags;
+
+		uint32 reserved13[4];
+		pac_String dom_controller_ptr;
+		pac_String dom_name_ptr;
+
+		uint32 dom_sid_ptr;
+
+		uint32 reserved16[2];
+		uint32 reserved17;      /* looks like it may be acb_info */
+		uint32 reserved18[7];
+
+		uint32 extra_sids_count;
+		uint32 extra_sids_ptr;
+
+		uint32 res_group_dom_sid_ptr;
+
+		uint32 res_groups_count;
+		uint32 res_groups_ptr;
+
+		unistr_noterm account_name;
+		unistr_noterm full_name;
+		unistr_noterm logon_script;
+		unistr_noterm profile_path;
+		unistr_noterm home_directory;
+		unistr_noterm home_drive;
+
+		uint32 groups_count2;
+		GROUP_MEMBERSHIP groups[groups_count];
+
+		unistr_noterm dom_controller;
+		unistr_noterm dom_name;
+
+		dom_sid2 dom_sid;
+
+/*		uint32 extra_sids_count2;
+		KRB_SID_AND_ATTRS extra_sids[extra_sids_count];
+
+		dom_sid2 res_group_dom_sid;
+
+		uint32 res_groups_count2;
+		GROUP_MEMBERSHIP res_groups[res_groups_count];
+*/	} PAC_LOGON_INFO;
+
+	const uint8 PAC_TYPE_LOGON_INFO = 1;
+	const uint8 PAC_TYPE_SERVER_CHECKSUM = 6;
+	const uint8 PAC_TYPE_PRIVSVR_CHECKSUM = 7;
+	const uint8 PAC_TYPE_UNKNOWN_10 = 10;
+
+	typedef [nodiscriminant] union {
+		[case(PAC_TYPE_LOGON_INFO)]		PAC_LOGON_INFO logon_info;
+		[case(PAC_TYPE_SERVER_CHECKSUM)]	PAC_SIGNATURE_DATA srv_cksum;
+		[case(PAC_TYPE_PRIVSVR_CHECKSUM)]	PAC_SIGNATURE_DATA privsrv_cksum;
+		[case(PAC_TYPE_UNKNOWN_10)]		UNKNOWN_TYPE_10 type_10;
+	} PAC_INFO;
+
+	typedef struct {
+		uint32 type;
+		uint32 size;
+		uint64 offset;
+	} PAC_INFO_HDR;
+
+	typedef [public] struct {
+		uint32 num_buffers;
+		uint32 version;
+		PAC_INFO_HDR pac_info_hdr_ptr[num_buffers];
+		uint32 dummy1[5];
+		[switch_is(1)] PAC_INFO info1;
+		uint32 dummy2[1];
+		[switch_is(10)] PAC_INFO info10;
+		[switch_is(6)] PAC_INFO info6;
+		uint32 dummy4[1];
+		[switch_is(7)] PAC_INFO info7;
+		uint32 dummy5[1];
+	} PAC_DATA;
+
+	void decode_pac(
+		[in] PAC_DATA pac
+		);
+
+	void decode_login_info(
+		[in] PAC_LOGON_INFO logon_info
+		);
+}
