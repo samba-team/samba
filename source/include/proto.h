@@ -256,7 +256,7 @@ void initialize_multibyte_vectors( int client_codepage);
 
 /*The following definitions come from  lib/md4.c  */
 
-void mdfour(unsigned char *out, unsigned char *in, int n);
+void mdfour(unsigned char *out, const unsigned char *in, int n);
 
 /*The following definitions come from  lib/md5.c  */
 
@@ -853,6 +853,12 @@ void SMBOWFencrypt_ntv2(const uchar kr[16],
 				const uchar *srv_chal, int srv_chal_len,
 				const uchar *cli_chal, int cli_chal_len,
 				char resp_buf[16]);
+void SMBsesskeygen_ntv2(const uchar kr[16], 
+				const uchar *nt_resp, 
+				char sess_key[16]);
+void SMBsesskeygen_ntv1(const uchar kr[16], 
+				const uchar *nt_resp, 
+				char sess_key[16]);
 void SMBgenclientchals(char *lm_cli_chal,
 				char *nt_cli_chal, int *nt_cli_chal_len,
 				const char *srv, const char *dom);
@@ -4016,7 +4022,8 @@ void add_session_user(char *user);
 BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
 				const char *user, const char *domain,
 				uchar *lm_pass, size_t lm_pwd_len,
-				uchar *nt_pass, size_t nt_pwd_len);
+				uchar *nt_pass, size_t nt_pwd_len,
+				uchar sess_key[16]);
 BOOL pass_check_smb(struct smb_passwd *smb_pass, char *domain, uchar *chal,
 		uchar *lm_pwd, size_t lm_pwd_len,
 		uchar *nt_pwd, size_t nt_pwd_len,

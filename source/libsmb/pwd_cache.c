@@ -203,8 +203,6 @@ void pwd_make_lm_nt_owf2(struct pwd_info *pwd, const uchar srv_key[8],
 		const char *user, const char *server, const char *domain)
 {
 	uchar kr[16];
-	struct MD5Context ctx5;
-	HMACMD5Context ctx;
 
 	DEBUG(10,("pwd_make_lm_nt_owf2: user %s, srv %s, dom %s\n",
 		user, server, domain));
@@ -233,14 +231,7 @@ void pwd_make_lm_nt_owf2(struct pwd_info *pwd, const uchar srv_key[8],
 	memcpy(&pwd->smb_nt_owf[16], pwd->nt_cli_chal, pwd->nt_cli_chal_len);
 	pwd->nt_owf_len = pwd->nt_cli_chal_len + 16;
 
-	hmac_md5_init_limK_to_64(kr, 16, &ctx);
-	hmac_md5_update(pwd->smb_nt_owf, 16, &ctx);
-	hmac_md5_final(pwd->sess_key, &ctx);
-#if 0
-        MD5Init(&ctx5);
-        MD5Update(&ctx5, pwd->smb_nt_owf, 16);  
-        MD5Final(pwd->sess_key, &ctx5);          
-#endif
+	SMBsesskeygen_ntv2(kr, pwd->smb_nt_owf, pwd->sess_key);
 
 #if DEBUG_PASSWORD
 #endif
@@ -288,14 +279,12 @@ void pwd_make_lm_nt_owf(struct pwd_info *pwd, uchar cryptkey[8])
 	}
 	pwd_deobfuscate(pwd);
 
-	/* generate session key */
-	mdfour(pwd->sess_key, pwd->smb_nt_pwd, 16);
-
 	/* generate 24-byte hashes */
-
 	SMBOWFencrypt(pwd->smb_lm_pwd, cryptkey, pwd->smb_lm_owf);
 	SMBOWFencrypt(pwd->smb_nt_pwd, cryptkey, pwd->smb_nt_owf);
 	pwd->nt_owf_len = 24;
+
+	SMBsesskeygen_ntv1(pwd->smb_nt_pwd, pwd->smb_nt_owf, pwd->sess_key);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("client cryptkey: "));

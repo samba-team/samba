@@ -294,7 +294,8 @@ static BOOL update_smbpassword_file(char *user, char *password)
 core of smb password checking routine.
 ****************************************************************************/
 static BOOL smb_pwd_check_ntlmv1(char *password, unsigned char *part_passwd,
-				unsigned char *c8)
+				unsigned char *c8,
+				uchar sess_key[16])
 {
   /* Finish the encryption of part_passwd. */
   unsigned char p24[24];
@@ -306,6 +307,11 @@ static BOOL smb_pwd_check_ntlmv1(char *password, unsigned char *part_passwd,
     return True;
 
   SMBOWFencrypt(part_passwd, c8, p24);
+	if (sess_key != NULL)
+	{
+		SMBsesskeygen_ntv1(part_passwd, NULL, sess_key);
+	}
+
 #if DEBUG_PASSWORD
 	DEBUG(100,("Part password (P16) was |"));
 	dump_data(100, part_passwd, 16);
@@ -325,10 +331,12 @@ core of smb password checking routine.
 static BOOL smb_pwd_check_ntlmv2(char *password, size_t pwd_len,
 				unsigned char *part_passwd,
 				unsigned char const *c8,
-				const char *user, const char *domain)
+				const char *user, const char *domain,
+				char *sess_key)
 {
 	/* Finish the encryption of part_passwd. */
 	unsigned char kr[16];
+	unsigned char resp[16];
 
 	if (part_passwd == NULL)
 	{
@@ -341,7 +349,11 @@ static BOOL smb_pwd_check_ntlmv2(char *password, size_t pwd_len,
 	}
 
 	ntv2_owf_gen(part_passwd, user, domain, kr);
-	SMBOWFencrypt_ntv2(kr, c8, 8, password+16, pwd_len-16, kr);
+	SMBOWFencrypt_ntv2(kr, c8, 8, password+16, pwd_len-16, resp);
+	if (sess_key != NULL)
+	{
+		SMBsesskeygen_ntv2(kr, resp, sess_key);
+	}
 
 #if DEBUG_PASSWORD
 	DEBUG(100,("Part password (P16) was |"));
@@ -351,10 +363,10 @@ static BOOL smb_pwd_check_ntlmv2(char *password, size_t pwd_len,
 	DEBUG(100,("Given challenge was |"));
 	dump_data(100, c8, 8);
 	DEBUG(100,("Value from encryption was |"));
-	dump_data(100, kr, 16);
+	dump_data(100, resp, 16);
 #endif
 
-	return (memcmp(kr, password, 16) == 0);
+	return (memcmp(resp, password, 16) == 0);
 }
 
 /****************************************************************************
@@ -364,7 +376,8 @@ static BOOL smb_pwd_check_ntlmv2(char *password, size_t pwd_len,
 BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
 				const char *user, const char *domain,
 				uchar *lm_pass, size_t lm_pwd_len,
-				uchar *nt_pass, size_t nt_pwd_len)
+				uchar *nt_pass, size_t nt_pwd_len,
+				uchar sess_key[16])
 {
 	uchar challenge[8];
 
@@ -408,7 +421,8 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
 			DEBUG(4,("smb_password_ok: Check NTLMv2 password\n"));
 			if (smb_pwd_check_ntlmv2(nt_pass, nt_pwd_len,
 				       (uchar *)smb_pass->smb_nt_passwd, 
-					challenge, user, domain))
+					challenge, user, domain,
+			                sess_key))
 			{
 				return True;
 			}
@@ -418,7 +432,8 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
 			DEBUG(4,("smb_password_ok: Check NT MD4 password\n"));
 			if (smb_pwd_check_ntlmv1((char *)nt_pass, 
 				       (uchar *)smb_pass->smb_nt_passwd, 
-				       challenge))
+				       challenge,
+			               sess_key))
 			{
 				DEBUG(4,("NT MD4 password check succeeded\n"));
 				return True;
@@ -449,7 +464,7 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
 	if ((smb_pass->smb_passwd != NULL) && 
 	   smb_pwd_check_ntlmv1((char *)lm_pass, 
 			      (uchar *)smb_pass->smb_passwd,
-				challenge))
+				challenge, NULL))
 	{
 		DEBUG(4,("LM MD4 password check succeeded\n"));
 		return(True);
@@ -527,11 +542,11 @@ BOOL pass_check_smb(struct smb_passwd *smb_pass, char *domain, uchar *chal,
 
 	if (smb_password_ok(smb_pass, chal, user, domain,
 	                                    lm_pwd, lm_pwd_len,
-		                            nt_pwd, nt_pwd_len))
+		                            nt_pwd, nt_pwd_len,
+	                                    user_sess_key))
 	{
 		if (user_sess_key != NULL)
 		{
-			mdfour(user_sess_key, smb_pass->smb_nt_passwd, 16);
 #ifdef DEBUG_PASSWORD
 		DEBUG(100,("user session key: "));
 		dump_data(100, user_sess_key, 16);
