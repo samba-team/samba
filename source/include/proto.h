@@ -753,11 +753,6 @@ ssize_t cli_write(struct cli_state *cli,
 ssize_t cli_smbwrite(struct cli_state *cli,
 		     int fnum, char *buf, off_t offset, size_t size1);
 
-/*The following definitions come from  libsmb/clisecdesc.c  */
-
-SEC_DESC *cli_query_secdesc(struct cli_state *cli,int fd);
-BOOL cli_set_secdesc(struct cli_state *cli,int fd, SEC_DESC *sd);
-
 /*The following definitions come from  libsmb/clitrans.c  */
 
 BOOL cli_send_trans(struct cli_state *cli, int trans, 
@@ -928,10 +923,10 @@ BOOL locking_init(int read_only);
 BOOL locking_end(void);
 BOOL lock_share_entry(connection_struct *conn,
 		      SMB_DEV_T dev, SMB_INO_T inode);
-BOOL unlock_share_entry(connection_struct *conn,
+void unlock_share_entry(connection_struct *conn,
 			SMB_DEV_T dev, SMB_INO_T inode);
 BOOL lock_share_entry_fsp(files_struct *fsp);
-BOOL unlock_share_entry_fsp(files_struct *fsp);
+void unlock_share_entry_fsp(files_struct *fsp);
 int get_share_modes(connection_struct *conn, 
 		    SMB_DEV_T dev, SMB_INO_T inode, 
 		    share_mode_entry **shares);
@@ -4060,7 +4055,7 @@ void tdb_chainunlock(TDB_CONTEXT *tdb, TDB_DATA key);
 /*The following definitions come from  tdb/tdbutil.c  */
 
 int tdb_lock_bystring(TDB_CONTEXT *tdb, char *keyval);
-int tdb_unlock_bystring(TDB_CONTEXT *tdb, char *keyval);
+void tdb_unlock_bystring(TDB_CONTEXT *tdb, char *keyval);
 int tdb_fetch_int_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len);
 int tdb_fetch_int(TDB_CONTEXT *tdb, char *keystr);
 int tdb_store_int_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, int v);

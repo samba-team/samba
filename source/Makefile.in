@@ -119,7 +119,7 @@ PARAM_OBJ = param/loadparm.o param/params.o
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clirap.o libsmb/clierror.o libsmb/climessage.o \
 	     libsmb/clireadwrite.o libsmb/clilist.o libsmb/cliprint.o \
-	     libsmb/clitrans.o libsmb/clisecdesc.o \
+	     libsmb/clitrans.o \
 	     libsmb/namequery.o libsmb/nmblib.o \
              libsmb/nterr.o libsmb/smbdes.o libsmb/smbencrypt.o \
              libsmb/smberr.o libsmb/credentials.o libsmb/pwd_cache.o \
@@ -297,7 +297,7 @@ LOCKTEST_OBJ = utils/locktest.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
 
-SMBCACLS_OBJ = utils/smbcacls.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
+SMBCACLS_OBJ = utils/smbcacls.o utils/clisecdesc.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
 				$(UBIQX_OBJ) $(LIB_OBJ)
 
 
@@ -647,10 +647,10 @@ rpc_client_proto:
 	  $(RPC_CLIENT_OBJ)
 
 etags:
-	etags `find . -name "*.[ch]" | grep -v /CVS/`
+	etags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
 
 ctags:
-	ctags `find . -name "*.[ch]" | grep -v /CVS/`
+	ctags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
 
 realclean: clean
 	-rm -f config.log $(PROGS) $(SPROGS) bin/.dummy

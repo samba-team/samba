@@ -467,9 +467,9 @@ int vfswrap_ftruncate(files_struct *fsp, int fd, SMB_OFF_T len)
 	if(vfs_ops->lseek(fsp, currpos, SEEK_SET) != currpos) {
 		goto done;
 	}
-#endif
-
   done:
+
+#endif
 
     END_PROFILE(syscall_ftruncate);
     return result;

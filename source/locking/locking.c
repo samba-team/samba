@@ -280,10 +280,10 @@ BOOL lock_share_entry(connection_struct *conn,
 /*******************************************************************
  Unlock a hash bucket entry.
 ******************************************************************/
-BOOL unlock_share_entry(connection_struct *conn,
+void unlock_share_entry(connection_struct *conn,
 			SMB_DEV_T dev, SMB_INO_T inode)
 {
-	return tdb_chainunlock(tdb, locking_key(dev, inode)) == 0;
+	tdb_chainunlock(tdb, locking_key(dev, inode));
 }
 
 
@@ -298,9 +298,9 @@ BOOL lock_share_entry_fsp(files_struct *fsp)
 /*******************************************************************
  Unlock a hash bucket entry.
 ******************************************************************/
-BOOL unlock_share_entry_fsp(files_struct *fsp)
+void unlock_share_entry_fsp(files_struct *fsp)
 {
-	return tdb_chainunlock(tdb, locking_key(fsp->dev, fsp->inode)) == 0;
+	tdb_chainunlock(tdb, locking_key(fsp->dev, fsp->inode));
 }
 
 /*******************************************************************
