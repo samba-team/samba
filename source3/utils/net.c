@@ -519,7 +519,7 @@ static void one_file_fn(const char *pPath, const char *pUser, uint16 perms, uint
   printf(FILE_INFO_DISPLAY, id, pUser, locks, pPath, perms);
 }
 
-int net_file(int subfunct, char * id)
+int net_file(int subfunct, const char * id)
 {
   struct in_addr target_ip;
 	
@@ -583,7 +583,7 @@ void share_fn(const char *share_name, uint32 type, const char *comment, void *st
    printf("%-12.12s\n", share_name);
 }
 
-int net_share(int subfunct, char * sharename, char * comment, int maxusers)
+int net_share(int subfunct, const char * sharename, const char * comment, int maxusers)
 {
   struct in_addr target_ip;
  
@@ -634,7 +634,7 @@ int net_share(int subfunct, char * sharename, char * comment, int maxusers)
       sinfo.maximum_users = maxusers;
       sinfo.active_users = 0;
       sinfo.path = p+1;
-      bzero(sinfo.password, sizeof(sinfo.password));
+      memset(sinfo.password, '\0', sizeof(sinfo.password));
       sinfo.reserved2 = '\0';
 
       return cli_NetShareAdd(cli, &sinfo);
@@ -674,9 +674,9 @@ void list_sessions_func(char *wsname, char *username, uint16 conns,
 	 wsname, username, clitype, opens, hrs, min, sec);
 }
 
-void display_session_func(char *wsname, char *username, uint16 conns,
+void display_session_func(const char *wsname, const char *username, uint16 conns,
 			  uint16 opens, uint16 users, uint32 sess_time,
-			  uint32 idle_time, uint32 user_flags, char *clitype)
+			  uint32 idle_time, uint32 user_flags, const char *clitype)
 {
   int ihrs = idle_time / 3600;
   int imin = (idle_time / 60) % 60;
@@ -689,12 +689,12 @@ void display_session_func(char *wsname, char *username, uint16 conns,
 	 shrs, smin, ssec, ihrs, imin, isec);
 }
 
-void display_conns_func(uint16 conn_id, uint16 conn_type, uint16 opens, uint16 users, uint32 conn_time, char *username, char *netname)
+void display_conns_func(uint16 conn_id, uint16 conn_type, uint16 opens, uint16 users, uint32 conn_time, const char *username, const char *netname)
 {
   printf("%-14.14s %-8.8s %5d\n", netname, share_type[conn_type], opens);
 }
 
-int net_session(int subfunct, char * sessname)
+int net_session(int subfunct, const char * sessname)
 {
   struct in_addr target_ip;
   int res;
@@ -871,7 +871,7 @@ void printq_usage(void)
   printf(CONF_USAGE);
 }	
 
-void enum_queue(char *queuename, uint16 pri, uint16 start, uint16 until, char *sep, char *pproc, char *dest, char *qparms, char *qcomment, uint16 status, uint16 jobcount) {
+void enum_queue(const char *queuename, uint16 pri, uint16 start, uint16 until, const char *sep, const char *pproc, const char *dest, const char *qparms, const char *qcomment, uint16 status, uint16 jobcount) {
   pstring queuecol;
   pstring statcol;
 
@@ -897,7 +897,7 @@ void enum_queue(char *queuename, uint16 pri, uint16 start, uint16 until, char *s
   printf(PRINTQ_DISPLAY_ONE, queuecol, jobcount, statcol);
 }
 
-void enum_jobs(uint16 jobid, char *ownername, char *notifyname, char *datatype, char *jparms, uint16 pos, uint16 status, char *jstatus, uint submitted, uint jobsize, char *comment) {
+void enum_jobs(uint16 jobid, const char *ownername, const char *notifyname, const char *datatype, const char *jparms, uint16 pos, uint16 status, const char *jstatus, uint submitted, uint jobsize, const char *comment) {
   pstring statcol;
 
   switch (status) {
@@ -919,7 +919,7 @@ void enum_jobs(uint16 jobid, char *ownername, char *notifyname, char *datatype, 
   printf(PRINTQ_DISPLAY_JOB, ownername, jobid, jobsize, statcol);
 }
 
-int net_printq(int subfunct, char * printq, int jobid)
+int net_printq(int subfunct, const char *printq, int jobid)
 {
   struct in_addr target_ip;
  
@@ -992,7 +992,7 @@ void group_member_fn(const char *user_name, void *state)
    printf("%-21.21s\n", user_name);
 }
 
-int net_user(int subfunct, char * username, char * comment, int flags)
+int net_user(int subfunct, const char * username, const char * comment, int flags)
 {
   struct in_addr target_ip;
  
@@ -1092,7 +1092,7 @@ void group_fn(const char *group_name, const char *comment, void *state)
    printf("%-21.21s\n", group_name);
 }
 
-int net_group(int subfunct, char * groupname, char * comment)
+int net_group(int subfunct, const char * groupname, const char * comment)
 {
   struct in_addr target_ip;
  
@@ -1165,7 +1165,7 @@ void groupmember_usage(void)
 }
 
 
-int net_groupmember(int subfunct, char * groupname, char * username)
+int net_groupmember(int subfunct, const char * groupname, const char * username)
 {
     struct in_addr target_ip;
 
@@ -1250,7 +1250,7 @@ void service_usage(void)
 }
 
 
-int net_service(int subfunct, char * servicename, char * srvc_args)
+int net_service(int subfunct, const char * servicename, const char * srvc_args)
 {
 struct in_addr target_ip;
 
@@ -1285,7 +1285,7 @@ return -1;
 
 }
 
-int net_password(char * username, char * old_password, char * new_password)
+int net_password(const char * username, const char * old_password, const char * new_password)
 {
     struct in_addr target_ip;
 
@@ -1349,7 +1349,7 @@ void admin_usage(void)
 }
 
 
-int net_admin(char * command, char * cmd_args, char * environment)
+int net_admin(const char * command, const char * cmd_args, const char * environment)
 {
   printf(ERRMSG_NOT_IMPLEMENTED);
   return 0;
@@ -1367,7 +1367,7 @@ int main(int argc,char *argv[])
   int func = 0;
   int subfunc = LIST_SF;
   int argc_new = 0;
-  char ** argv_new;
+  const char ** argv_new;
   poptContext pc;
   static char *servicesf = CONFIGFILE;
   static char *target_workgroup = NULL;
@@ -1442,7 +1442,7 @@ int main(int argc,char *argv[])
 
   lp_load(servicesf,True,False,False);       
 
-  argv_new = (char **)poptGetArgs(pc);
+  argv_new = (const char **)poptGetArgs(pc);
 
   argc_new = argc;
   for (i=0; i<argc; i++) {
