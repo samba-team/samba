@@ -1,3 +1,7 @@
+Wed Nov 18 21:47:55 1998  Assar Westerlund  <assar@sics.se>
+
+	* ftp/main.c (main): new option `-p' for enable passive mode.
+
 Mon Nov  2 01:57:49 1998  Assar Westerlund  <assar@sics.se>
 
 	* ftp/ftp.c (getreply): remove extra `break'
