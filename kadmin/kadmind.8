@@ -31,7 +31,7 @@
 .\" 
 .\" $Id$
 .\"
-.Dd March 5, 2002
+.Dd May 13, 2004
 .Dt KADMIND 8
 .Os HEIMDAL
 .Sh NAME
@@ -70,11 +70,7 @@ option causes
 .Nm
 to accept exactly one connection, which is useful for debugging.
 .Pp
-If built with krb4 support, it implements both the Heimdal Kerberos 5
-administrative protocol and the Kerberos 4 protocol. Password changes
-via the Kerberos 4 protocol are also performed by
-.Nm kadmind ,
-but the
+The
 .Xr kpasswdd 8
 daemon is responsible for the Kerberos 5 password changing protocol
 (used by
@@ -148,13 +144,12 @@ enable debugging
 .Fl p Ar port ,
 .Fl -ports= Ns Ar port
 .Xc
-ports to listen to. By default, if run as a daemon, it listens to ports
-749, and 751 (if Kerberos 4 support is built and enabled), but you can
-add any number of ports with this option. The port string is a
-whitespace separated list of port specifications, with the special
-string
+ports to listen to. By default, if run as a daemon, it listens to port
+749, but you can add any number of ports with this option. The port
+string is a whitespace separated list of port specifications, with the
+special string
 .Dq +
-representing the default set of ports.
+representing the default port.
 .El
 .\".Sh ENVIRONMENT
 .Sh FILES
