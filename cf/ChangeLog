@@ -1,3 +1,8 @@
+Fri Apr  9 20:37:18 1999  Assar Westerlund  <assar@sics.se>
+
+	* shared-libs.m4: quote $@
+	(freebsd3): add install_symlink_command2
+
 Wed Apr  7 20:40:22 1999  Assar Westerlund  <assar@sics.se>
 
 	* shared-libs.m4 (hpux): no library dependencies
