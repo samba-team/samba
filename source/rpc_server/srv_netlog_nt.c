@@ -495,13 +495,12 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	NET_USER_INFO_3 *usr_info = NULL;
 	NET_ID_INFO_CTR *ctr = q_u->sam_id.ctr;
 	DOM_CRED srv_cred;
-	SAM_ACCOUNT *sampass = NULL;
 	UNISTR2 *uni_samlogon_user = NULL;
 	UNISTR2 *uni_samlogon_domain = NULL;
 	UNISTR2 *uni_samlogon_workstation = NULL;
 	fstring nt_username, nt_domain, nt_workstation;
-	auth_usersupplied_info *user_info;
-	auth_serversupplied_info *server_info;
+	auth_usersupplied_info *user_info = NULL;
+	auth_serversupplied_info *server_info = NULL;
 	        
 	usr_info = (NET_USER_INFO_3 *)talloc(p->mem_ctx, sizeof(NET_USER_INFO_3));
 	if (!usr_info)
@@ -585,7 +584,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 					   nt_username, nt_domain, 
 					   nt_workstation, 
 					   ctr->auth.id1.lm_owf.data, 16, 
-					   ctr->auth.id1.lm_owf.data, 16, 
+					   ctr->auth.id1.nt_owf.data, 16, 
 					   p->dc.sess_key);
 		break;
 	}
@@ -649,7 +648,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
         
 		sam_logon_in_ssb = False;
         
-		init_net_user_info3(p->mem_ctx, usr_info, sampass,
+		init_net_user_info3(p->mem_ctx, usr_info, server_info->sam_account,
                             0, /* logon_count */
                             0, /* bad_pw_count */
                             num_gids,    /* uint32 num_groups */

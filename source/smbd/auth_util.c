@@ -368,8 +368,8 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 		ret = make_user_info_map(user_info, 
 					 smb_name, client_domain, 
 					 wksta_name, sec_blob, 
-					 local_nt_blob,
 					 local_lm_blob,
+					 local_nt_blob,
 					 plaintext_blob, 
 					 ntlmssp_flags, True);
 		
