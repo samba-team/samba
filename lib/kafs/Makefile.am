@@ -44,7 +44,7 @@ endif # KRB4
 libkafs_la_LIBADD = ../krb5/libkrb5.la ../roken/libroken.la $(DEPLIB_krb4)
 
 lib_LTLIBRARIES = $(AFSLIBS)
-libkafs_la_LDFLAGS = -version-info 2:4:2
+libkafs_la_LDFLAGS = -version-info 3:0:3
 foodir = $(libdir)
 foo_DATA = $(AFS_EXTRA_LIBS)
 # EXTRA_DATA = afslib.so
