@@ -1018,7 +1018,12 @@ static BOOL test_GetDomainInfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct creds_CredentialState creds_async[ASYNC_COUNT];
 	struct rpc_request *req[ASYNC_COUNT];
 	int i;
-	int async_counter = 0;
+	int *async_counter = talloc_p(mem_ctx, int);
+
+	if (!lp_parm_bool(-1, "torture", "dangerous", False)) {
+		printf("test_GetDomainInfo_async disabled - enable dangerous tests to use\n");
+		return True;
+	}
 
 	if (!test_SetupCredentials3(p, mem_ctx, NETLOGON_NEG_AUTH2_ADS_FLAGS, 
 				    TEST_MACHINE_NAME, machine_password, &creds)) {
@@ -1049,6 +1054,8 @@ static BOOL test_GetDomainInfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	printf("Testing netr_LogonGetDomainInfo - async count %d\n", ASYNC_COUNT);
 
+	*async_counter = 0;
+
 	for (i=0;i<ASYNC_COUNT;i++) {
 		creds_client_authenticator(&creds, &a);
 
@@ -1056,7 +1063,7 @@ static BOOL test_GetDomainInfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		req[i] = dcerpc_netr_LogonGetDomainInfo_send(p, mem_ctx, &r);
 
 		req[i]->async.callback = async_callback;
-		req[i]->async.private = &async_counter;
+		req[i]->async.private = async_counter;
 
 		/* even with this flush per request a w2k3 server seems to 
 		   clag with multiple outstanding requests. bleergh. */
@@ -1079,9 +1086,9 @@ static BOOL test_GetDomainInfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		}
 	}
 
-	printf("Testing netr_LogonGetDomainInfo - async count %d OK\n", async_counter);
+	printf("Testing netr_LogonGetDomainInfo - async count %d OK\n", *async_counter);
 
-	return async_counter == ASYNC_COUNT;
+	return (*async_counter) == ASYNC_COUNT;
 }
 
 
@@ -1110,77 +1117,24 @@ BOOL torture_rpc_netlogon(void)
 		return False;
 	}
 
-	if (!test_LogonUasLogon(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_LogonUasLogoff(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_SamLogon(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_SetPassword(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_GetDomainInfo(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_DatabaseSync(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_DatabaseDeltas(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_AccountDeltas(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_AccountSync(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_GetDcName(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_LogonControl(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_GetAnyDCName(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_LogonControl2(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_DatabaseSync2(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_LogonControl2Ex(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_DsrEnumerateDomainTrusts(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_GetDomainInfo_async(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_netr_DrsGetDCNameEx2(p, mem_ctx)) {
-		ret = False;
-	}
+	ret &= test_LogonUasLogon(p, mem_ctx);
+	ret &= test_LogonUasLogoff(p, mem_ctx);
+	ret &= test_SamLogon(p, mem_ctx);
+	ret &= test_SetPassword(p, mem_ctx);
+	ret &= test_GetDomainInfo(p, mem_ctx);
+	ret &= test_DatabaseSync(p, mem_ctx);
+	ret &= test_DatabaseDeltas(p, mem_ctx);
+	ret &= test_AccountDeltas(p, mem_ctx);
+	ret &= test_AccountSync(p, mem_ctx);
+	ret &= test_GetDcName(p, mem_ctx);
+	ret &= test_LogonControl(p, mem_ctx);
+	ret &= test_GetAnyDCName(p, mem_ctx);
+	ret &= test_LogonControl2(p, mem_ctx);
+	ret &= test_DatabaseSync2(p, mem_ctx);
+	ret &= test_LogonControl2Ex(p, mem_ctx);
+	ret &= test_DsrEnumerateDomainTrusts(p, mem_ctx);
+	ret &= test_GetDomainInfo_async(p, mem_ctx);
+	ret &= test_netr_DrsGetDCNameEx2(p, mem_ctx);
 
 	talloc_destroy(mem_ctx);
 

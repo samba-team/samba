@@ -1,14 +1,15 @@
 #!/bin/sh
 
+# tests that should pass against a w2k3 DC, as administrator
+
 # add tests to this list as they start passing, so we test
 # that they stay passing
-ncacn_np_tests="RPC-SCHANNEL RPC-ECHO RPC-DSSETUP"
-ncalrpc_tests="RPC-SCHANNEL RPC-ECHO RPC-DSSETUP"
-ncacn_ip_tcp_tests="RPC-SCHANNEL RPC-ECHO"
+ncacn_np_tests="RPC-DSSETUP RPC-EPMAPPER RPC-SAMR RPC-WKSSVC RPC-SRVSVC RPC-EVENTLOG RPC-NETLOGON"
+ncacn_ip_tcp_tests="RPC-EPMAPPER RPC-SAMR RPC-NETLOGON"
 
 if [ $# -lt 4 ]; then
 cat <<EOF
-Usage: test_rpc.sh SERVER USERNAME PASSWORD DOMAIN
+Usage: test_w2k3.sh SERVER USERNAME PASSWORD DOMAIN
 EOF
 exit 1;
 fi
@@ -31,10 +32,9 @@ testit() {
    rm -f test.$$;
 }
 
-for transport in ncalrpc ncacn_np ncacn_ip_tcp; do
- for bindoptions in connect sign seal sign,seal validate padcheck bigendian bigendian,seal; do
+for transport in ncacn_ip_tcp ncacn_np; do
+ for bindoptions in connect sign seal validate bigendian; do
      case $transport in
-	 ncalrpc) tests=$ncalrpc_tests ;;
 	 ncacn_np) tests=$ncacn_np_tests ;;
 	 ncacn_ip_tcp) tests=$ncacn_ip_tcp_tests ;;
      esac
@@ -44,5 +44,10 @@ for transport in ncalrpc ncacn_np ncacn_ip_tcp; do
    done
  done
 done
+
+echo Testing RPC-DRSUAPI on ncacn_ip_tcp with seal
+testit bin/smbtorture ncacn_ip_tcp:"$server[seal]" -U"$username"%"$password" -W $domain RPC-DRSUAPI "$*"
+echo Testing RPC-DRSUAPI on ncacn_ip_tcp with seal,bigendian
+testit bin/smbtorture ncacn_ip_tcp:"$server[seal,bigendian]" -U"$username"%"$password" -W $domain RPC-DRSUAPI "$*"
 
 echo "ALL OK";
