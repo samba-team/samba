@@ -1284,8 +1284,7 @@ BOOL get_dc_list(const char *domain, struct in_addr **ip_list, int *count, BOOL 
 
 		/* fill in the return list now with real IP's */
 				
-		while ( (local_count<num_addresses) && next_token(&p,name,LIST_SEP,sizeof(name)) ) 
-		{
+		while ( (local_count<num_addresses) && next_token(&p,name,LIST_SEP,sizeof(name)) ) {
 			struct in_addr name_ip;
 			
 			/* copy any addersses from the auto lookup */
@@ -1308,13 +1307,9 @@ BOOL get_dc_list(const char *domain, struct in_addr **ip_list, int *count, BOOL 
 		/* need to remove duplicates in the list if we have 
 		   any explicit password servers */
 		   
-		if ( *ordered )
-		{		
-			int hole_index = -1;
-
+		if ( *ordered ) {		
 			/* one loop to remove duplicates */
-			for ( i=0; i<local_count; i++ )
-			{
+			for ( i=0; i<local_count; i++ ) {
 				if ( is_zero_ip(return_iplist[i]) )
 					continue;
 					
@@ -1325,31 +1320,18 @@ BOOL get_dc_list(const char *domain, struct in_addr **ip_list, int *count, BOOL 
 			}
 			
 			/* one loop to clean up any holes we left */
-			/* first ip can never be a zero_ip() */
-			i = 0;
-			while ( i<local_count )
-			{
-				if ( !is_zero_ip(return_iplist[i]) ) {
-					i++;
+			/* first ip should never be a zero_ip() */
+			for (i = 0; i<local_count; ) {
+				if ( is_zero_ip(return_iplist[i]) ) {
+					if (i != local_count-1 )
+						memmove(&return_iplist[i], &return_iplist[i+1],
+							(local_count - i - 1)*sizeof(return_iplist[i]));
+					local_count--;
 					continue;
 				}
-				
-				hole_index = i;
 				i++;
-				
-				while ( i<local_count ) {
-					if ( !is_zero_ip(return_iplist[i]) )
-						return_iplist[hole_index++] = return_iplist[i];
-					i++;
-				}
-				
-				/* we should exit the loop implicitly here, but ... */
-				break;
-			}
-			
-			local_count = hole_index;
+			}	
 		}
-		
 		
 		DEBUG(4,("get_dc_list: returning %d ip addresses in an %sordered list\n", local_count, 
 			*ordered ? "":"un"));
