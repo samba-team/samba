@@ -24,7 +24,6 @@
 #include "includes.h"
 
 extern int Protocol;
-extern BOOL case_sensitive;
 extern int smb_read_error;
 extern fstring local_machine;
 extern int global_oplock_break;
@@ -883,8 +882,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 
 		pstrcpy(fname,dname);      
 
-		if(!(got_match = *got_exact_match = exact_match(fname, mask, case_sensitive)))
-			got_match = mask_match(fname, mask, case_sensitive);
+		if(!(got_match = *got_exact_match = exact_match(fname, mask, conn->case_sensitive)))
+			got_match = mask_match(fname, mask, conn->case_sensitive);
 
 		if(!got_match && !mangle_is_8_3(fname, False)) {
 
@@ -898,8 +897,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			pstring newname;
 			pstrcpy( newname, fname);
 			mangle_map( newname, True, False, SNUM(conn));
-			if(!(got_match = *got_exact_match = exact_match(newname, mask, case_sensitive)))
-				got_match = mask_match(newname, mask, case_sensitive);
+			if(!(got_match = *got_exact_match = exact_match(newname, mask, conn->case_sensitive)))
+				got_match = mask_match(newname, mask, conn->case_sensitive);
 		}
 
 		if(got_match) {
@@ -1433,7 +1432,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		a different TRANS2 call. */
   
 	DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n", conn->dirpath,lp_dontdescend(SNUM(conn))));
-	if (in_list(conn->dirpath,lp_dontdescend(SNUM(conn)),case_sensitive))
+	if (in_list(conn->dirpath,lp_dontdescend(SNUM(conn)),conn->case_sensitive))
 		dont_descend = True;
     
 	p = pdata;
@@ -1633,7 +1632,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 		a different TRANS2 call. */
 
 	DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",conn->dirpath,lp_dontdescend(SNUM(conn))));
-	if (in_list(conn->dirpath,lp_dontdescend(SNUM(conn)),case_sensitive))
+	if (in_list(conn->dirpath,lp_dontdescend(SNUM(conn)),conn->case_sensitive))
 		dont_descend = True;
     
 	p = pdata;

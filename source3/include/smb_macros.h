@@ -122,9 +122,9 @@
 #define MAP_HIDDEN(conn)   ((conn) && lp_map_hidden((conn)->service))
 #define MAP_SYSTEM(conn)   ((conn) && lp_map_system((conn)->service))
 #define MAP_ARCHIVE(conn)   ((conn) && lp_map_archive((conn)->service))
-#define IS_HIDDEN_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->hide_list))
-#define IS_VETO_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->veto_list))
-#define IS_VETO_OPLOCK_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->veto_oplock_list))
+#define IS_HIDDEN_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->hide_list,(conn)->case_sensitive))
+#define IS_VETO_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->veto_list,(conn)->case_sensitive))
+#define IS_VETO_OPLOCK_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->veto_oplock_list,(conn)->case_sensitive))
 
 /* 
  * Used by the stat cache code to check if a returned
