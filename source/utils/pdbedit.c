@@ -49,6 +49,7 @@
 #define BIT_EXPORT	0x02000000
 #define BIT_FIX_INIT    0x04000000
 #define BIT_BADPWRESET	0x08000000
+#define BIT_LOGONHOURS	0x10000000
 
 #define MASK_ALWAYS_GOOD	0x0000001F
 #define MASK_USER_GOOD		0x00401F00
@@ -130,6 +131,9 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
 	if (!sam_pwent) return -1;
 	
 	if (verbosity) {
+		pstring temp;
+		const uint8 *hours;
+		
 		printf ("Unix username:        %s\n", pdb_get_username(sam_pwent));
 		printf ("NT username:          %s\n", pdb_get_nt_username(sam_pwent));
 		printf ("Account Flags:        %s\n", pdb_encode_acct_ctrl(pdb_get_acct_ctrl(sam_pwent), NEW_PW_FORMAT_SPACE_PADDED_LEN));
@@ -169,6 +173,10 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
 		printf ("Last bad password   : %s\n", tmp ? http_timestring(tmp) : "0");
 		printf ("Bad password count  : %d\n", 
 			pdb_get_bad_password_count(sam_pwent));
+		
+		hours = pdb_get_hours(sam_pwent);
+		pdb_sethexhours(temp, (const char *)hours);
+		printf ("Logon hours         : %s\n", temp);
 		
 	} else if (smbpwdstyle) {
 		char lm_passwd[33];
@@ -294,7 +302,7 @@ static int set_user_info (struct pdb_context *in, const char *username,
 			  const char *drive, const char *script, 
 			  const char *profile, const char *account_control,
 			  const char *user_sid, const char *group_sid,
-			  const BOOL badpw)
+			  const BOOL badpw, const BOOL hours)
 {
 	BOOL updated_autolock = False, updated_badpw = False;
 	SAM_ACCOUNT *sam_pwent=NULL;
@@ -307,6 +315,16 @@ static int set_user_info (struct pdb_context *in, const char *username,
 		fprintf (stderr, "Username not found!\n");
 		pdb_free_sam(&sam_pwent);
 		return -1;
+	}
+
+	if (hours) {
+		uint8 hours_array[MAX_HOURS_LEN];
+		uint32 hours_len;
+		
+		hours_len = pdb_get_hours_len(sam_pwent);
+		memset(hours_array, 0xff, hours_len);
+		
+		pdb_set_hours(sam_pwent, hours_array, PDB_CHANGED);
 	}
 	
 	if (!pdb_update_autolock_flag(sam_pwent, &updated_autolock)) {
@@ -631,6 +649,7 @@ int main (int argc, char **argv)
 	static long int account_policy_value = 0;
 	BOOL account_policy_value_set = False;
 	static BOOL badpw_reset = False;
+	static BOOL hours_reset = False;
 
 	struct pdb_context *bin;
 	struct pdb_context *bout;
@@ -662,6 +681,7 @@ int main (int argc, char **argv)
 		{"account-control",	'c', POPT_ARG_STRING, &account_control, 0, "Values of account control", NULL},
 		{"force-initialized-passwords", 0, POPT_ARG_NONE, &force_initialised_password, 0, "Force initialization of corrupt password strings in a passdb backend", NULL},
 		{"bad-password-count-reset", 'z', POPT_ARG_NONE, &badpw_reset, 0, "reset bad password count", NULL},
+		{"logon-hours-reset", 'Z', POPT_ARG_NONE, &hours_reset, 0, "reset logon hours", NULL},
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
@@ -715,7 +735,8 @@ int main (int argc, char **argv)
 			(account_policy_value_set ? BIT_ACCPOLVAL : 0) +
 			(backend_in ? BIT_IMPORT : 0) +
 			(backend_out ? BIT_EXPORT : 0) +
-			(badpw_reset ? BIT_BADPWRESET : 0);
+			(badpw_reset ? BIT_BADPWRESET : 0) +
+			(hours_reset ? BIT_LOGONHOURS : 0);
 
 	if (setparms & BIT_BACKEND) {
 		if (!NT_STATUS_IS_OK(make_pdb_context_string(&bdef, backend))) {
@@ -829,6 +850,12 @@ int main (int argc, char **argv)
 		checkparms |= BIT_MODIFY;
 		checkparms &= ~BIT_BADPWRESET;
 	}
+
+	/* if logon hours is reset, must modify */
+	if (checkparms & BIT_LOGONHOURS) {
+		checkparms |= BIT_MODIFY;
+		checkparms &= ~BIT_LOGONHOURS;
+	}
 	
 	/* account operation */
 	if ((checkparms & BIT_CREATE) || (checkparms & BIT_MODIFY) || (checkparms & BIT_DELETE)) {
@@ -866,7 +893,7 @@ int main (int argc, char **argv)
 					      logon_script,
 					      profile_path, account_control,
 					      user_sid, group_sid,
-					      badpw_reset);
+					      badpw_reset, hours_reset);
 		}
 	}
 

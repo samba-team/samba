@@ -96,6 +96,7 @@
 #define LDAP_ATTR_PWD_HISTORY		39
 #define LDAP_ATTR_SID_LIST		40
 #define LDAP_ATTR_MOD_TIMESTAMP		41
+#define LDAP_ATTR_LOGON_HOURS		42
 
 typedef struct _attrib_map_entry {
 	int		attrib;
