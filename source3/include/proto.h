@@ -2182,6 +2182,7 @@ BOOL cli_net_use_del(const char* srv_name,
 				BOOL force_close,
 				BOOL *connection_closed);
 void cli_net_use_enum(uint32 *num_cons, struct use_info ***use);
+void cli_use_wait_keyboard(void);
 
 /*The following definitions come from  rpc_client/cli_wkssvc.c  */
 

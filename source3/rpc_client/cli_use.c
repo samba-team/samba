@@ -382,3 +382,47 @@ void cli_net_use_enum(uint32 *num_cons, struct use_info ***use)
 	}
 }
 
+
+/****************************************************************************
+wait for keyboard activity, swallowing network packets on all client states.
+****************************************************************************/
+void cli_use_wait_keyboard(void)
+{
+	fd_set fds;
+	struct timeval timeout;
+  
+	while (1)
+	{
+		int i;
+		int maxfd = fileno(stdin);
+		FD_ZERO(&fds);
+		FD_SET(fileno(stdin),&fds);
+		for (i = 0; i < num_clis; i++)
+		{
+			if (clis[i] != NULL && clis[i]->cli != NULL)
+			{
+				int fd = clis[i]->cli->fd;
+				FD_SET(fd,&fds);
+				maxfd = MAX(fd, maxfd);
+			}
+		}
+
+		timeout.tv_sec = 20;
+		timeout.tv_usec = 0;
+		sys_select(maxfd+1,NULL, &fds,&timeout);
+      
+		if (FD_ISSET(fileno(stdin),&fds))
+			return;
+
+		/* We deliberately use receive_smb instead of
+		   client_receive_smb as we want to receive
+		   session keepalives and then drop them here.
+		*/
+		for (i = 0; i < num_clis; i++)
+		{
+			int fd = clis[i]->cli->fd;
+			if (FD_ISSET(fd,&fds))
+					receive_smb(fd,clis[i]->cli->inbuf,0);
+		}
+	}  
+}
