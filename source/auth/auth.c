@@ -249,7 +249,7 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 
 		nt_status = auth_method->auth(auth_context, auth_method->private_data, mem_ctx, user_info, server_info);
 		if (NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(3, ("check_ntlm_password: %s authentication for user [%s] suceeded\n", 
+			DEBUG(3, ("check_ntlm_password: %s authentication for user [%s] succeeded\n", 
 				  auth_method->name, user_info->smb_name.str));
 		} else {
 			DEBUG(5, ("check_ntlm_password: %s authentication for user [%s] FAILED with error %s\n", 
