@@ -3658,7 +3658,6 @@ uint32 _spoolss_startdocprinter(POLICY_HND *handle, uint32 level,
 	Printer->document_started=True;
 	(*jobid) = Printer->jobid;
 
-	srv_spoolss_sendnotify(handle);
 	return 0x0;
 }
 
@@ -3679,8 +3678,6 @@ uint32 _spoolss_enddocprinter(POLICY_HND *handle)
 	Printer->document_started=False;
 	print_job_end(Printer->jobid);
 	/* error codes unhandled so far ... */
-
-	srv_spoolss_sendnotify(handle);
 
 	return 0x0;
 }
