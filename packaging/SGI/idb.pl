@@ -111,7 +111,7 @@ system("cp -f ../swat/README ../packaging/SGI/swat");
 chdir $curdir;
 
 # add my local files to the list of binaries to install
-@bins = sort byfilename (@sprogs,@progs,@progs1,@progs2,@mprogs,@scripts,@winbind_progs,@winbind_sprogs,("/findsmb","/sambalp","/smbprint"));
+@bins = sort byfilename (@sprogs,@progs,@progs1,@progs2,@mprogs,@scripts,@winbind_progs,@winbind_sprogs,("/sambalp","/smbprint"));
 
 @nsswitch = sort byfilename (@winbind_lprogs,@winbind_pam_progs);
 
