@@ -11,7 +11,7 @@ CC = @CC@
 AR = ar
 LN_S = @LN_S@
 RANLIB = @RANLIB@
-DEFS = @DEFS@
+DEFS = @DEFS@ -DROKEN_RENAME
 CFLAGS = @CFLAGS@
 
 INSTALL = @INSTALL@
@@ -37,7 +37,11 @@ install_symlink_command = @install_symlink_command@
 
 SOURCES = edit_compat.c editline.c complete.c sysunix.c
 
-OBJECTS = @editline_OBJS@
+EXTRA_SOURCES = strdup.c 
+EXTRA_OBJECTS = strdup.o
+
+OBJECTS = @editline_OBJS@ $(EXTRA_OBJECTS)
+
 
 all: $(LIB)
 
@@ -45,7 +49,7 @@ Wall:
 	make CFLAGS="-g -Wall -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
 
 .c.o:
-	$(CC) -c $(DEFS) -I../../include -I$(srcdir) $(CFLAGS) $(CPPFLAGS) $(PICFLAGS) $<
+	$(CC) -c $(DEFS) -I../../include -I$(srcdir) -I. $(CFLAGS) $(CPPFLAGS) $(PICFLAGS) $<
 
 install: all
 	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
@@ -66,7 +70,7 @@ clean:
 mostlyclean: clean
 
 distclean: clean
-	rm -f Makefile *.tab.c *~
+	rm -f Makefile *.tab.c *~ roken_rename.h
 
 realclean: distclean
 	rm -f TAGS
@@ -89,5 +93,8 @@ $(LIBNAME).$(SHLIBEXT): $(OBJECTS)
 	@build_symlink_command@
 
 $(OBJECTS): ../../include/config.h
+
+strdup.c: $(srcdir)/../roken/strdup.c
+	$(LN_S) $(srcdir)/../roken/strdup.c .
 
 .PHONY: all Wall install uninstall check clean mostlyclean distclean realclean dist

@@ -11,7 +11,7 @@ CC = @CC@
 AR = ar
 RANLIB = @RANLIB@
 LN_S = @LN_S@
-DEFS = @DEFS@
+DEFS = @DEFS@ -DROKEN_RENAME
 CFLAGS = @CFLAGS@
 LDFLAGS = @LDFLAGS@
 LD_FLAGS = @LD_FLAGS@
@@ -44,16 +44,23 @@ PROGS = otptest$(EXECSUFFIX)
 LIB_SOURCES = otp.c otp_challenge.c otp_db.c otp_md.c \
 	  otp_parse.c otp_print.c otp_verify.c
 
+EXTRA_LIB_SOURCES = snprintf.c strlwr.c strcasecmp.c
+
 OTPTEST_SOURCES = otptest.c
 
-SOURCES = $(LIB_SOURCES) $(OTPTEST_SOURCES)
+SOURCES = $(LIB_SOURCES) $(EXTRA_LIB_SOURCES) $(OTPTEST_SOURCES)
 
 LIB_OBJECTS = otp.o otp_challenge.o otp_db.o otp_md.o \
 	  otp_parse.o otp_print.o otp_verify.o
 
+LIBADD = \
+	snprintf.o \
+	strcasecmp.o \
+	strlwr.o
+
 OTPTEST_OBJECTS = otptest.o
 
-OBJECTS = $(LIB_OBJECTS) $(OTPTEST_OBJECTS)
+OBJECTS = $(LIB_OBJECTS) $(LIBADD) $(OTPTEST_OBJECTS)
 LIBROKEN=-L../../lib/roken -lroken
 
 all: $(LIB) $(PROGS)
@@ -87,21 +94,28 @@ distclean: clean
 	rm -f Makefile *~
 
 realclean: distclean
-	rm -f TAGS
+	rm -f TAGS $(EXTRA_LIB_SOURCES)
 
 otptest$(EXECSUFFIX): $(OTPTEST_OBJECTS) $(LIB)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OTPTEST_OBJECTS) -L. -lotp -L../des -ldes $(LIBROKEN) $(LIB_DBM) $(LIBS) $(LIBROKEN)
 
-$(LIBNAME).a: $(LIB_OBJECTS)
+$(LIBNAME).a: $(LIB_OBJECTS) $(LIBADD)
 	rm -f $@
-	$(AR) cr $@ $(LIB_OBJECTS)
+	$(AR) cr $@ $(LIB_OBJECTS) $(LIBADD)
 	-$(RANLIB) $@
 
-$(LIBNAME).$(SHLIBEXT): $(LIB_OBJECTS)
+$(LIBNAME).$(SHLIBEXT): $(LIB_OBJECTS) $(LIBADD)
 	rm -f $@
-	$(LDSHARED) -o $@ $(LIB_OBJECTS) $(LIB_DEPS)
+	$(LDSHARED) -o $@ $(LIB_OBJECTS) $(LIBADD) $(LIB_DEPS)
 	@build_symlink_command@
 
 $(OBJECTS): ../../include/config.h
+
+snprintf.c:
+	$(LN_S) $(srcdir)/../roken/snprintf.c .
+strcasecmp.c:
+	$(LN_S) $(srcdir)/../roken/strcasecmp.c .
+strlwr.c:
+	$(LN_S) $(srcdir)/../roken/strlwr.c .
 
 .PHONY: all Wall install uninstall check clean mostlyclean distclean realclean
