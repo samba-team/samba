@@ -449,6 +449,7 @@ typedef struct connection_struct
 	struct vfs_ops vfs_ops;                   /* Filesystem operations */
 	/* Handle on dlopen() call */
 	void *dl_handle;
+	void *vfs_private;
 
 	char *user; /* name of user who *opened* this connection */
 	uid_t uid; /* uid of user who *opened* this connection */

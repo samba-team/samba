@@ -1261,7 +1261,7 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 	
 	p = strrchr_m(name,'/');
 	if (!p) {
-		pstrcpy(directory,"./");
+		pstrcpy(directory,".");
 		pstrcpy(mask,name);
 	} else {
 		*p = 0;
