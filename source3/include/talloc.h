@@ -29,9 +29,8 @@
 
 struct talloc_chunk {
 	struct talloc_chunk *next;
+	size_t size;
 	void *ptr;
-	size_t alloc_size;
-	size_t total_size;
 };
 
 typedef struct {
