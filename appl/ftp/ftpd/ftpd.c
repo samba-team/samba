@@ -33,22 +33,9 @@
  * SUCH DAMAGE.
  */
 
-#ifndef lint
-static char copyright[] =
-"@(#) Copyright (c) 1985, 1988, 1990, 1992, 1993, 1994\n\
-	The Regents of the University of California.  All rights reserved.\n";
-#endif /* not lint */
-
-#ifndef lint
-#if 0
-static char sccsid[] = "@(#)ftpd.c	8.4 (Berkeley) 4/16/94";
-#else
-static char rcsid[] = "$NetBSD: ftpd.c,v 1.15 1995/06/03 22:46:47 mycroft Exp $";
-#endif
-#endif /* not lint */
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
+RCSID("$Id$");
 #endif
 
 /*
@@ -94,6 +81,12 @@ static char rcsid[] = "$NetBSD: ftpd.c,v 1.15 1995/06/03 22:46:47 mycroft Exp $"
 #include "common.h"
 
 #include "auth.h"
+
+#include <krb.h>
+#include <kafs.h>
+#include "roken.h"
+
+void yyparse();
 
 
 #ifndef LOG_FTP
@@ -254,7 +247,7 @@ main(int argc, char **argv, char **envp)
 	    
 	char tkfile[1024];
 
-	/* detach from and tickets and tokens */
+	/* detach from any tickets and tokens */
 
 	sprintf(tkfile, "/tmp/ftp_%d", getpid());
 	krb_set_tkt_string(tkfile);
@@ -538,7 +531,7 @@ user(char *name)
 	    reply(530, "Only authorized and anonymous login allowed.");
 	    return;
 	}
-	if (pw = sgetpwnam(name)) {
+	if ((pw = sgetpwnam(name))) {
 		if ((shell = pw->pw_shell) == NULL || *shell == 0)
 			shell = _PATH_BSHELL;
 		while ((cp = getusershell()) != NULL)
@@ -770,7 +763,6 @@ skip:
 	if(!do_login(230, passwd))
 	  return;
 	
-bad:
 	/* Forget all about it... */
 	end_login();
 }
@@ -1143,7 +1135,6 @@ file_err:
 static int
 receive_data(FILE *instr, FILE *outstr)
 {
-    int c;
     int cnt, bare_lfs = 0;
     char buf[BUFSIZ];
 
@@ -1382,7 +1373,7 @@ yyerror(char *s)
 {
 	char *cp;
 
-	if (cp = strchr(cbuf,'\n'))
+	if ((cp = strchr(cbuf,'\n')))
 		*cp = '\0';
 	reply(500, "'%s': command not understood.", cbuf);
 }
@@ -1534,7 +1525,9 @@ void abor(void)
 static void
 myoob(int signo)
 {
+#if 0
 	char *cp;
+#endif
 
 	/* only process if transfer occurring */
 	if (!transflag)
@@ -1701,7 +1694,7 @@ send_file_list(char *whichf)
 		transflag = 0;
 		goto out;
 	}
-	while (dirname = *dirlist++) {
+	while ((dirname = *dirlist++)) {
 		if (stat(dirname, &st) < 0) {
 			/*
 			 * If user typed "ls -l", etc, and the client
