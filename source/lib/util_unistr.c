@@ -94,7 +94,7 @@ void ascii_to_unistr(uint16 *dest, const char *src, int maxlen)
 			break;
 		}
 
-		*(dest++) = (uint16)c;
+		*(dest++) = ((uint16)c & 0xff);
 	}
 
 	*dest = 0;
