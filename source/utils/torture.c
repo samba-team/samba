@@ -106,7 +106,7 @@ static BOOL check_error(struct cli_state *c,
 	uint8 class;
 	uint32 num;
 	int eno;
-	eno = cli_error(c, &eclass, &num);
+	eno = cli_error(c, &class, &num);
 	if ((eclass != class || ecode != num) &&
 	    num != (nterr&0xFFFFFF)) {
 		printf("unexpected error code class=%d code=%d\n", 
@@ -596,6 +596,59 @@ static void run_unlinktest(void)
 	printf("unlink test finished\n");
 }
 
+
+/*
+test how many open files this server supports on the one socket
+*/
+static void run_maxfidtest(int n)
+{
+	static struct cli_state cli;
+	char *template = "\\maxfid.%d.%d";
+	fstring fname;
+	int fnum;
+	int retries=4;
+
+	srandom(getpid());
+
+	while (!open_connection(&cli) && retries--) msleep(random() % 2000);
+
+	if (retries <= 0) {
+		printf("failed to connect\n");
+		return;
+	}
+
+	cli_sockopt(&cli, sockops);
+
+	printf("starting maxfid test\n");
+
+	fnum = 0;
+	while (1) {
+		slprintf(fname,sizeof(fname)-1,template, fnum,getpid());
+		if (cli_open(&cli, fname, 
+			     O_RDWR|O_CREAT|O_TRUNC, DENY_NONE) ==
+		    -1) {
+			printf("open of %s failed (%s)\n", 
+			       fname, cli_errstr(&cli));
+			printf("maximum fnum is %d\n", fnum);
+			break;
+		}
+		fnum++;
+	}
+
+	printf("cleaning up\n");
+	while (fnum > n) {
+		fnum--;
+		slprintf(fname,sizeof(fname)-1,template, fnum,getpid());
+		if (cli_unlink(&cli, fname)) {
+			printf("unlink of %s failed (%s)\n", 
+			       fname, cli_errstr(&cli));
+		}
+	}
+
+	printf("maxfid test finished\n");
+	close_connection(&cli);
+}
+
 /* generate a random buffer */
 static void rand_buf(char *buf, int len)
 {
@@ -621,9 +674,9 @@ static void run_randomipc(void)
 		return;
 	}
 
-	for (i=0;i<1000;i++) {
+	for (i=0;i<50000;i++) {
 		api = sys_random() % 500;
-		param_len = (sys_random() % 64) + 4;
+		param_len = (sys_random() % 64);
 
 		rand_buf(param, param_len);
   
@@ -837,7 +890,7 @@ static void run_trans2test(void)
 }
 
 
-static void create_procs(int nprocs, int numops)
+static void create_procs(int nprocs, int numops, void (*fn)(int ))
 {
 	int i, status;
 
@@ -845,7 +898,7 @@ static void create_procs(int nprocs, int numops)
 		if (fork() == 0) {
 			int mypid = getpid();
 			sys_srandom(mypid ^ time(NULL));
-			run_torture(numops);
+			fn(numops);
 			_exit(0);
 		}
 	}
@@ -950,12 +1003,6 @@ static void create_procs(int nprocs, int numops)
 	printf("host=%s share=%s user=%s myname=%s\n", 
 	       host, share, username, myname);
 
-	run_randomipc();
-
-	start_timer();
-	create_procs(nprocs, numops);
-	printf("rw_torture: %g secs\n", end_timer());
-
 	run_locktest1();
 	run_locktest2();
 	run_locktest3(numops);
@@ -963,6 +1010,14 @@ static void create_procs(int nprocs, int numops)
 	run_browsetest();
 	run_attrtest();
 	run_trans2test();
+
+	create_procs(nprocs, numops, run_maxfidtest);
+
+	start_timer();
+	create_procs(nprocs, numops, run_torture);
+	printf("rw_torture: %g secs\n", end_timer());
+
+	run_randomipc();        
 
 	return(0);
 }
