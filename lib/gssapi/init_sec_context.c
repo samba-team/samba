@@ -100,7 +100,7 @@ init_auth
 
   kret = krb5_cc_get_principal (gssapi_krb5_context,
 				ccache,
-				(*context_handle)->source);
+				&(*context_handle)->source);
   if (kret) {
     ret = GSS_S_FAILURE;
     goto failure;
@@ -108,7 +108,7 @@ init_auth
 
   kret = krb5_copy_principal (gssapi_krb5_context,
 			      target_name,
-			      (*context_handle)->target);
+			      &(*context_handle)->target);
   if (kret) {
     ret = GSS_S_FAILURE;
     goto failure;
@@ -159,7 +159,6 @@ init_auth
 			    ap_options,
 			    authenticator,
 			    &outbuf);
-  krb5_data_free (&authenticator);
 
   if (kret) {
     ret = GSS_S_FAILURE;
