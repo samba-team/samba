@@ -1,0 +1,11 @@
+#! /bin/sh
+
+echo "fixing distribution in $1..."
+
+cd $1
+aclocal
+autoconf
+autoheader
+automake
+(cd doc; makeinfo heimdal.texi)
+rm fix-export
