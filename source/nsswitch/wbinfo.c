@@ -101,10 +101,11 @@ static BOOL wbinfo_check_secret(void)
 
         if (result) {
 
-                if (response.data.num_entries) {
+                if (response.data.num_entries == 0) {
                         printf("Secret is good\n");
                 } else {
-                        printf("Secret is bad\n");
+                        printf("Secret is bad\n%d\n", 
+			       response.data.num_entries);
                 }
 
                 return True;
