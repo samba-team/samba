@@ -1,3 +1,8 @@
+2001-07-06  Assar Westerlund  <assar@sics.se>
+
+	* accept_sec_context.c (gsskrb5_register_acceptor_identity): set
+	the keytab to be used for gss_acquire_cred too'
+
 2001-07-03  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am (libgssapi_la_LDFLAGS): set version to 3:2:2
