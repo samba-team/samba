@@ -26,37 +26,32 @@
 /*
   see if two endpoints match
 */
-static BOOL endpoints_match(const struct dcesrv_ep_description *ep1,
-			    const struct dcesrv_ep_description *ep2)
+static BOOL endpoints_match(const struct dcerpc_binding *ep1,
+			    const struct dcerpc_binding *ep2)
 {
-	if (ep1->type != ep2->type) {
+	if (ep1->transport != ep2->transport) {
 		return False;
 	}
 
-	switch (ep1->type) {
-		case NCACN_NP:
-			if (strcasecmp(ep1->info.smb_pipe,ep2->info.smb_pipe)==0) {
-				return True;
-			}			
-			break;
-		case NCACN_IP_TCP:
-			if (ep1->info.tcp_port == ep2->info.tcp_port) {
-				return True;
-			}
-			break;
-		default: 
-			/* Not supported yet */
-			return False;
+	if (!ep1->options || !ep2->options) {
+		return ep1->options == ep2->options;
 	}
 
-	return False;
+	if (!ep1->options[0] || !ep2->options[0]) {
+		return ep1->options[0] == ep2->options[0];
+	}
+
+	if (strcasecmp(ep1->options[0], ep2->options[0]) != 0) 
+		return False;
+
+	return True;
 }
 
 /*
   find an endpoint in the dcesrv_context
 */
 static struct dcesrv_endpoint *find_endpoint(struct dcesrv_context *dce_ctx,
-					     const struct dcesrv_ep_description *ep_description)
+					     const struct dcerpc_binding *ep_description)
 {
 	struct dcesrv_endpoint *ep;
 	for (ep=dce_ctx->endpoint_list; ep; ep=ep->next) {
@@ -153,7 +148,6 @@ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 				   const struct dcesrv_interface *iface,
 				   const struct security_descriptor *sd)
 {
-	struct dcesrv_ep_description ep_description;
 	struct dcesrv_endpoint *ep;
 	struct dcesrv_if_list *ifl;
 	struct dcerpc_binding binding;
@@ -167,46 +161,15 @@ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 		return status;
 	}
 
-	ep_description.type = binding.transport;
-	switch (binding.transport) {
-	case NCACN_IP_TCP:
-		ep_description.info.tcp_port = 0;
-
-		if (binding.options && binding.options[0]) {
-			ep_description.info.tcp_port = atoi(binding.options[0]);
-		}
-		break;
-	case NCACN_NP:
-		ep_description.info.smb_pipe = binding.options[0];
-		break;
-	default:
-		DEBUG(0, ("Unsupported transport type '%d'\n", binding.transport));
-		return NT_STATUS_NOT_SUPPORTED;
-	}
-
 	/* check if this endpoint exists
 	 */
-	if ((ep=find_endpoint(dce_ctx, &ep_description))==NULL) {
+	if ((ep=find_endpoint(dce_ctx, &binding))==NULL) {
 		ep = talloc_p(dce_ctx, struct dcesrv_endpoint);
 		if (!ep) {
 			return NT_STATUS_NO_MEMORY;
 		}
 		ZERO_STRUCTP(ep);
-		ep->ep_description.type = binding.transport;
-		switch (binding.transport) { 
-		case NCACN_IP_TCP:
-			ep->ep_description.info.tcp_port = 0;
-
-			if (binding.options && binding.options[0]) {
-				ep->ep_description.info.tcp_port = atoi(binding.options[0]);
-			}
-			break;
-		case NCACN_NP:
-			ep->ep_description.info.smb_pipe = binding.options[0];
-			break;
-		default:
-			return NT_STATUS_NOT_SUPPORTED;
-		}
+		ep->ep_description = binding;
 		add_ep = True;
 	}
 
@@ -352,7 +315,7 @@ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
   search and connect to a dcerpc endpoint
 */
 NTSTATUS dcesrv_endpoint_search_connect(struct dcesrv_context *dce_ctx,
-					const struct dcesrv_ep_description *ep_description,
+					const struct dcerpc_binding *ep_description,
 					struct auth_session_info *session_info,
 					struct dcesrv_connection **dce_conn_p)
 {
@@ -1192,7 +1155,6 @@ const struct dcesrv_critical_sizes *dcerpc_module_version(void)
 		sizeof(struct dcesrv_context),
 		sizeof(struct dcesrv_endpoint),
 		sizeof(struct dcesrv_endpoint_server),
-		sizeof(struct dcesrv_ep_description),
 		sizeof(struct dcesrv_interface),
 		sizeof(struct dcesrv_if_list),
 		sizeof(struct dcesrv_connection),

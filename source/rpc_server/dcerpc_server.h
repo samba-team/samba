@@ -31,16 +31,6 @@
 /* version 1 - initial version - metze */
 #define DCERPC_MODULE_VERSION 1
 
-/* a description of a single dcerpc endpoint. Not as flexible as a full epm tower,
-   but much easier to work with */
-struct dcesrv_ep_description {
-	enum dcerpc_transport_t type;
-	union {
-		const char *smb_pipe;
-		uint16_t tcp_port;
-	} info;
-};
-
 struct dcesrv_connection;
 struct dcesrv_call_state;
 struct dcesrv_auth;
@@ -146,13 +136,13 @@ struct dcesrv_endpoint_server {
 
 	/* this function can be used by other endpoint servers to
 	 * ask for a dcesrv_interface implementation
-	 * - iface must be referenz to an allready existent struct !
+	 * - iface must be reference to an already existing struct !
 	 */
 	BOOL (*interface_by_uuid)(struct dcesrv_interface *iface, const char *, uint32_t);
 
 	/* this function can be used by other endpoint servers to
 	 * ask for a dcesrv_interface implementation
-	 * - iface must be referenz to an allready existent struct !
+	 * - iface must be reference to an already existeng struct !
 	 */
 	BOOL (*interface_by_name)(struct dcesrv_interface *iface, const char *);
 };
@@ -166,7 +156,7 @@ struct dcesrv_context {
 	struct dcesrv_endpoint {
 		struct dcesrv_endpoint *next, *prev;
 		/* the type and location of the endpoint */
-		struct dcesrv_ep_description ep_description;
+		struct dcerpc_binding ep_description;
 		/* the security descriptor for smb named pipes */
 		struct security_descriptor *sd;
 		/* the list of interfaces available on this endpoint */
@@ -183,7 +173,6 @@ struct dcesrv_critical_sizes {
 	int sizeof_dcesrv_context;
 	int sizeof_dcesrv_endpoint;
 	int sizeof_dcesrv_endpoint_server;
-	int sizeof_dcesrv_ep_description;
 	int sizeof_dcesrv_interface;
 	int sizeof_dcesrv_if_list;
 	int sizeof_dcesrv_connection;

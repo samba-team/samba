@@ -176,7 +176,7 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 {
 	struct pipe_state *p;
 	NTSTATUS status;
-	struct dcesrv_ep_description ep_description;
+	struct dcerpc_binding ep_description;
 	struct auth_session_info *session_info = NULL;
 	struct ipc_private *private = ntvfs->private_data;
 	int fnum;
@@ -211,8 +211,10 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 	  will need to do that once the credentials infrastructure is
 	  finalised for Samba4
 	*/
-	ep_description.type = NCACN_NP;
-	ep_description.info.smb_pipe = p->pipe_name;
+	ep_description.transport = NCACN_NP;
+	ep_description.options = talloc_array_p(req, char *, 2);
+	ep_description.options[0] = p->pipe_name;
+	ep_description.options[1] = NULL;
 
 	/* tell the RPC layer the session_info */
 	if (req->session) {
