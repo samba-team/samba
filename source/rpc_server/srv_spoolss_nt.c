@@ -94,7 +94,8 @@ static ubi_dlList counter_list;
 static struct cli_state cli;
 static uint32 smb_connections=0;
 
-#define OUR_HANDLE(hnd) ((hnd==NULL)?"NULL":(IVAL(hnd->data5,4)==(uint32)sys_getpid()?"OURS":"OTHER"))
+#define OUR_HANDLE(hnd) (((hnd)==NULL)?"NULL":(IVAL((hnd)->data5,4)==(uint32)sys_getpid()?"OURS":"OTHER")), \
+((unsigned int)IVAL((hnd)->data5,4))
 
 /* translate between internal status numbers and NT status numbers */
 static int nt_printj_status(int v)
@@ -287,7 +288,7 @@ static BOOL close_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 	Printer_entry *Printer = find_printer_index_by_hnd(p, hnd);
 
 	if (!Printer) {
-		DEBUG(0,("close_printer_handle: Invalid handle (%s)\n", OUR_HANDLE(hnd)));
+		DEBUG(0,("close_printer_handle: Invalid handle (%s:%u)\n", OUR_HANDLE(hnd)));
 		return False;
 	}
 
@@ -356,7 +357,7 @@ static uint32 delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 	Printer_entry *Printer = find_printer_index_by_hnd(p, hnd);
 
 	if (!Printer) {
-		DEBUG(0,("delete_printer_handle: Invalid handle (%s)\n", OUR_HANDLE(hnd)));
+		DEBUG(0,("delete_printer_handle: Invalid handle (%s:%u)\n", OUR_HANDLE(hnd)));
 		return ERROR_INVALID_HANDLE;
 	}
 
@@ -386,7 +387,7 @@ static BOOL get_printer_snum(pipes_struct *p, POLICY_HND *hnd, int *number)
 	Printer_entry *Printer = find_printer_index_by_hnd(p, hnd);
 		
 	if (!Printer) {
-		DEBUG(0,("get_printer_snum: Invalid handle (%s)\n", OUR_HANDLE(hnd)));
+		DEBUG(0,("get_printer_snum: Invalid handle (%s:%u)\n", OUR_HANDLE(hnd)));
 		return False;
 	}
 	
@@ -410,7 +411,7 @@ static BOOL set_printer_hnd_accesstype(pipes_struct *p,POLICY_HND *hnd, uint32 a
 	Printer_entry *Printer = find_printer_index_by_hnd(p, hnd);
 
 	if (!Printer) {
-		DEBUG(0,("set_printer_hnd_accesstype: Invalid handle (%s)", OUR_HANDLE(hnd)));
+		DEBUG(0,("set_printer_hnd_accesstype: Invalid handle (%s:%u)", OUR_HANDLE(hnd)));
 		return False;
 	}
 
@@ -1149,7 +1150,7 @@ static BOOL getprinterdata_printer(pipes_struct *p, POLICY_HND *handle,
 	DEBUG(5,("getprinterdata_printer\n"));
 
 	if (!Printer) {
-		DEBUG(0,("getprinterdata_printer: Invalid handle (%s).\n", OUR_HANDLE(handle)));
+		DEBUG(0,("getprinterdata_printer: Invalid handle (%s:%u).\n", OUR_HANDLE(handle)));
 		return False;
 	}
 
@@ -1221,7 +1222,7 @@ uint32 _spoolss_getprinterdata(pipes_struct *p, POLICY_HND *handle, UNISTR2 *val
 	if (!Printer) {
 		if((*data=(uint8 *)malloc(4*sizeof(uint8))) == NULL)
 			return ERROR_NOT_ENOUGH_MEMORY;
-		DEBUG(0,("_spoolss_getprinterdata: Invalid handle (%s).\n", OUR_HANDLE(handle)));
+		DEBUG(0,("_spoolss_getprinterdata: Invalid handle (%s:%u).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
 	
@@ -1304,7 +1305,7 @@ uint32 _spoolss_rffpcnex(pipes_struct *p, POLICY_HND *handle, uint32 flags, uint
 	Printer_entry *Printer=find_printer_index_by_hnd(p, handle);
 
 	if (!Printer) {
-		DEBUG(0,("_spoolss_rffpcnex: Invalid handle (%s).\n", OUR_HANDLE(handle)));
+		DEBUG(0,("_spoolss_rffpcnex: Invalid handle (%s:%u).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
 
@@ -2368,7 +2369,7 @@ uint32 _spoolss_rfnpcnex( pipes_struct *p, POLICY_HND *handle, uint32 change,
 	uint32 result = ERROR_INVALID_HANDLE;
 
 	if (!Printer) {
-		DEBUG(0,("_spoolss_rfnpcnex: Invalid handle (%s).\n",
+		DEBUG(0,("_spoolss_rfnpcnex: Invalid handle (%s:%u).\n",
 			 OUR_HANDLE(handle)));
 		goto done;
 	}
@@ -3757,7 +3758,7 @@ uint32 _spoolss_endpageprinter(pipes_struct *p, POLICY_HND *handle)
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
 	if (!Printer) {
-		DEBUG(0,("_spoolss_endpageprinter: Invalid handle (%s).\n",OUR_HANDLE(handle)));
+		DEBUG(0,("_spoolss_endpageprinter: Invalid handle (%s:%u).\n",OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
 	
@@ -3784,7 +3785,7 @@ uint32 _spoolss_startdocprinter(POLICY_HND *handle, uint32 level,
 	struct current_user user;
 
 	if (!Printer) {
-		DEBUG(0,("_spoolss_startdocprinter: Invalid handle (%s)\n", OUR_HANDLE(handle)));
+		DEBUG(0,("_spoolss_startdocprinter: Invalid handle (%s:%u)\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
 
@@ -3842,7 +3843,7 @@ uint32 _spoolss_enddocprinter(pipes_struct *p, POLICY_HND *handle)
 	Printer_entry *Printer=find_printer_index_by_hnd(p, handle);
 	
 	if (!Printer) {
-		DEBUG(0,("_spoolss_enddocprinter: Invalid handle (%s)\n", OUR_HANDLE(handle)));
+		DEBUG(0,("_spoolss_enddocprinter: Invalid handle (%s:%u)\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
 	
@@ -3863,7 +3864,7 @@ uint32 _spoolss_writeprinter( pipes_struct *p, POLICY_HND *handle,
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 	
 	if (!Printer) {
-		DEBUG(0,("_spoolss_writeprinter: Invalid handle (%s)\n",OUR_HANDLE(handle)));
+		DEBUG(0,("_spoolss_writeprinter: Invalid handle (%s:%u)\n",OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
 
@@ -3888,7 +3889,7 @@ static uint32 control_printer(POLICY_HND *handle, uint32 command,
 	get_current_user(&user, p);
 
 	if (!Printer) {
-		DEBUG(0,("control_printer: Invalid handle (%s)\n", OUR_HANDLE(handle)));
+		DEBUG(0,("control_printer: Invalid handle (%s:%u)\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
 
@@ -3944,7 +3945,7 @@ static uint32 update_printer_sec(POLICY_HND *handle, uint32 level,
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
 	if (!Printer || !get_printer_snum(p, handle, &snum)) {
-		DEBUG(0,("update_printer_sec: Invalid handle (%s)\n",
+		DEBUG(0,("update_printer_sec: Invalid handle (%s:%u)\n",
 			 OUR_HANDLE(handle)));
 
 		result = ERROR_INVALID_HANDLE;
@@ -4462,7 +4463,6 @@ static uint32 update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 		printer->info_2->devmode->displayfrequency == MAGIC_DISPLAY_FREQUENCY) {
 
 		DEBUG(10,("update_printer: Save printer driver init data\n"));
-		printer->info_2->devmode->displayfrequency = 0;
 
 		if (update_driver_init(*printer, 2)!=0) {
 			DEBUG(10,("update_printer: error updating printer driver init DEVMODE\n"));
@@ -4509,7 +4509,7 @@ uint32 _spoolss_setprinter(POLICY_HND *handle, uint32 level,
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 	
 	if (!Printer) {
-		DEBUG(0,("_spoolss_setprinter: Invalid handle (%s)\n", OUR_HANDLE(handle)));
+		DEBUG(0,("_spoolss_setprinter: Invalid handle (%s:%u)\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
 
@@ -4534,7 +4534,7 @@ uint32 _spoolss_fcpn(pipes_struct *p, POLICY_HND *handle)
 	Printer_entry *Printer= find_printer_index_by_hnd(p, handle);
 	
 	if (!Printer) {
-		DEBUG(0,("_spoolss_fcpn: Invalid handle (%s)\n", OUR_HANDLE(handle)));
+		DEBUG(0,("_spoolss_fcpn: Invalid handle (%s:%u)\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
 
@@ -5792,7 +5792,7 @@ uint32 _spoolss_enumprinterdata(pipes_struct *p, POLICY_HND *handle, uint32 idx,
 	DEBUG(5,("spoolss_enumprinterdata\n"));
 
 	if (!Printer) {
-		DEBUG(0,("_spoolss_enumprinterdata: Invalid handle (%s).\n", OUR_HANDLE(handle)));
+		DEBUG(0,("_spoolss_enumprinterdata: Invalid handle (%s:%u).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
 
@@ -5872,7 +5872,8 @@ uint32 _spoolss_enumprinterdata(pipes_struct *p, POLICY_HND *handle, uint32 idx,
 		if((*out_value=(uint16 *)malloc(in_value_len*sizeof(uint8))) == NULL)
 			return ERROR_NOT_ENOUGH_MEMORY;
 		
-		ZERO_STRUCTP(*out_value);
+		memset(*out_value, '\0', in_value_len);
+
 		*out_value_len = (uint32)dos_PutUniCode((char *)*out_value, "", in_value_len, True);
 
 		/* magic ending value? 
@@ -5906,7 +5907,7 @@ uint32 _spoolss_enumprinterdata(pipes_struct *p, POLICY_HND *handle, uint32 idx,
 		return ERROR_NOT_ENOUGH_MEMORY;
 	}
 	
-	ZERO_STRUCTP(*out_value);
+	memset(*out_value, '\0', in_value_len);
 	*out_value_len = (uint32)dos_PutUniCode((char *)*out_value, value, in_value_len, True);
 
 	*out_type=type;
@@ -5946,7 +5947,7 @@ uint32 _spoolss_setprinterdata( pipes_struct *p, POLICY_HND *handle,
 	DEBUG(5,("spoolss_setprinterdata\n"));
 
 	if (!Printer) {
-		DEBUG(0,("_spoolss_setprinterdata: Invalid handle (%s).\n", OUR_HANDLE(handle)));
+		DEBUG(0,("_spoolss_setprinterdata: Invalid handle (%s:%u).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
 
@@ -6006,7 +6007,7 @@ uint32 _spoolss_setprinterdata( pipes_struct *p, POLICY_HND *handle,
 	 * the current printer data and the magic key's data (its the DEVMODE) for
 	 * future printer/driver initializations.
 	 */
-	if (param->type==3 && !strcmp( param->value, PHANTOM_DEVMODE_KEY)) {
+	if (param->type==REG_BINARY && !strcmp( param->value, PHANTOM_DEVMODE_KEY)) {
 		/*
 		 * Set devmode and printer initialization info
 		 */
@@ -6048,7 +6049,7 @@ uint32 _spoolss_deleteprinterdata( pipes_struct *p, POLICY_HND *handle, const UN
 	DEBUG(5,("spoolss_deleteprinterdata\n"));
 	
 	if (!Printer) {
-		DEBUG(0,("_spoolss_deleteprinterdata: Invalid handle (%s).\n", OUR_HANDLE(handle)));
+		DEBUG(0,("_spoolss_deleteprinterdata: Invalid handle (%s:%u).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
 
@@ -6095,7 +6096,7 @@ uint32 _spoolss_addform( pipes_struct *p, POLICY_HND *handle,
 	DEBUG(5,("spoolss_addform\n"));
 
 	if (!Printer) {
-		DEBUG(0,("_spoolss_addform: Invalid handle (%s).\n", OUR_HANDLE(handle)));
+		DEBUG(0,("_spoolss_addform: Invalid handle (%s:%u).\n", OUR_HANDLE(handle)));
 		result = ERROR_INVALID_HANDLE;
 		goto done;
 	}
@@ -6175,7 +6176,7 @@ uint32 _spoolss_deleteform( pipes_struct *p, POLICY_HND *handle, UNISTR2 *form_n
 	DEBUG(5,("spoolss_deleteform\n"));
 
 	if (!Printer) {
-		DEBUG(0,("_spoolss_deleteform: Invalid handle (%s).\n", OUR_HANDLE(handle)));
+		DEBUG(0,("_spoolss_deleteform: Invalid handle (%s:%u).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
 
@@ -6230,7 +6231,7 @@ uint32 _spoolss_setform( pipes_struct *p, POLICY_HND *handle,
  	DEBUG(5,("spoolss_setform\n"));
 
 	if (!Printer) {
-		DEBUG(0,("_spoolss_setform: Invalid handle (%s).\n", OUR_HANDLE(handle)));
+		DEBUG(0,("_spoolss_setform: Invalid handle (%s:%u).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
 	/* can't set if builtin */
@@ -6636,7 +6637,7 @@ uint32 _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 	if (!Printer) {
 		if((*data=(uint8 *)talloc(p->mem_ctx, 4*sizeof(uint8))) == NULL)
 			return NT_STATUS_NO_MEMORY;
-		DEBUG(0,("_spoolss_getprinterdata: Invalid handle (%s).\n", OUR_HANDLE(handle)));
+		DEBUG(0,("_spoolss_getprinterdata: Invalid handle (%s:%u).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
 
@@ -6804,7 +6805,7 @@ uint32 _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 	DEBUG(4,("_spoolss_enumprinterdataex\n"));
 
 	if (!Printer) {
-		DEBUG(0,("_spoolss_enumprinterdata: Invalid handle (%s).\n", OUR_HANDLE(handle)));
+		DEBUG(0,("_spoolss_enumprinterdata: Invalid handle (%s:%u).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
 
