@@ -26,7 +26,10 @@
 #include "include/secrets.h"
 #include "lib/ldb/include/ldb.h"
 
-/* Create a new credentials structure, on the specified TALLOC_CTX */
+/**
+ * Create a new credentials structure
+ * @param mem_ctx TALLOC_CTX parent for credentials structure 
+ */
 struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx) 
 {
 	struct cli_credentials *cred = talloc_zero(mem_ctx, struct cli_credentials);
@@ -37,6 +40,12 @@ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 	return cred;
 }
 
+/**
+ * Obtain the username for this credentials context.
+ * @param cred credentials context
+ * @retval The username set on this context.
+ * @note Return value will never be NULL except by programmer error.
+ */
 const char *cli_credentials_get_username(struct cli_credentials *cred)
 {
 	if (cred->machine_account_pending) {
@@ -62,6 +71,11 @@ BOOL cli_credentials_set_username(struct cli_credentials *cred, const char *val,
 	return False;
 }
 
+/**
+ * Obtain the password for this credentials context.
+ * @param cred credentials context
+ * @retval If set, the cleartext password, otherwise NULL
+ */
 const char *cli_credentials_get_password(struct cli_credentials *cred)
 {
 	if (cred->machine_account_pending) {
@@ -87,6 +101,12 @@ BOOL cli_credentials_set_password(struct cli_credentials *cred, const char *val,
 	return False;
 }
 
+/**
+ * Obtain the 'short' or 'NetBIOS' domain for this credentials context.
+ * @param cred credentials context
+ * @retval The domain set on this context. 
+ * @note Return value will never be NULL except by programmer error.
+ */
 const char *cli_credentials_get_domain(struct cli_credentials *cred)
 {
 	if (cred->machine_account_pending) {
@@ -113,6 +133,12 @@ BOOL cli_credentials_set_domain(struct cli_credentials *cred, const char *val, e
 	return False;
 }
 
+/**
+ * Obtain the Kerberos realm for this credentials context.
+ * @param cred credentials context
+ * @retval The realm set on this context. 
+ * @note Return value will never be NULL except by programmer error.
+ */
 const char *cli_credentials_get_realm(struct cli_credentials *cred)
 {	
 	if (cred->machine_account_pending) {
@@ -127,8 +153,15 @@ const char *cli_credentials_get_realm(struct cli_credentials *cred)
 	return cred->realm;
 }
 
+/**
+ * Obtain the user's Kerberos principal for this credentials context.
+ * @param cred credentials context
+ * @param mem_ctx A talloc context to return the prinipal name on.
+ * @retval The user's Kerberos principal
+ * @note Return value may be NULL due to out-of memeory or invalid mem_ctx
+ */
 char *cli_credentials_get_principal(struct cli_credentials *cred,
-					   TALLOC_CTX *mem_ctx)
+				    TALLOC_CTX *mem_ctx)
 {
 	return talloc_asprintf(mem_ctx, "%s@%s", 
 			       cli_credentials_get_username(cred),
@@ -146,6 +179,13 @@ BOOL cli_credentials_set_realm(struct cli_credentials *cred, const char *val, en
 	return False;
 }
 
+/**
+ * Obtain the 'short' or 'NetBIOS' workstation name for this credentials context.
+ *
+ * @param cred credentials context
+ * @retval The workstation name set on this context. 
+ * @note Return value will never be NULL except by programmer error.
+ */
 const char *cli_credentials_get_workstation(struct cli_credentials *cred)
 {
 	if (cred->workstation_obtained == CRED_CALLBACK) {
@@ -166,6 +206,14 @@ BOOL cli_credentials_set_workstation(struct cli_credentials *cred, const char *v
 
 	return False;
 }
+
+/**
+ * Read a file descriptor, and parse it for a password (eg from a file or stdin)
+ *
+ * @param credentials Credentials structure on which to set the password
+ * @param fd open file descriptor to read the password from 
+ * @param obtained This enum describes how 'specified' this password is
+ */
 
 BOOL cli_credentials_parse_password_fd(struct cli_credentials *credentials, int fd, enum credentials_obtained obtained)
 {
@@ -201,6 +249,14 @@ BOOL cli_credentials_parse_password_fd(struct cli_credentials *credentials, int 
 	return True;
 }
 
+/**
+ * Read a named file, and parse it for a password
+ *
+ * @param credentials Credentials structure on which to set the password
+ * @param file a named file to read the password from 
+ * @param obtained This enum describes how 'specified' this password is
+ */
+
 BOOL cli_credentials_parse_password_file(struct cli_credentials *credentials, const char *file, enum credentials_obtained obtained)
 {
 	int fd = open(file, O_RDONLY, 0);
@@ -218,6 +274,14 @@ BOOL cli_credentials_parse_password_file(struct cli_credentials *credentials, co
 	
 	return ret;
 }
+
+/**
+ * Read a named file, and parse it for username, domain, realm and password
+ *
+ * @param credentials Credentials structure on which to set the password
+ * @param file a named file to read the details from 
+ * @param obtained This enum describes how 'specified' this password is
+ */
 
 BOOL cli_credentials_parse_file(struct cli_credentials *cred, const char *file, enum credentials_obtained obtained) 
 {
@@ -278,6 +342,16 @@ BOOL cli_credentials_parse_file(struct cli_credentials *cred, const char *file, 
 }
 
 
+/**
+ * Given a string, typically obtained from a -U argument, parse it into domain, username, realm and password fields
+ *
+ * The format accepted is [domain\\]user[%password] or user[@realm][%password]
+ *
+ * @param credentials Credentials structure on which to set the password
+ * @param data the string containing the username, password etc
+ * @param obtained This enum describes how 'specified' this password is
+ */
+
 void cli_credentials_parse_string(struct cli_credentials *credentials, const char *data, enum credentials_obtained obtained)
 {
 	char *uname, *p;
@@ -299,7 +373,12 @@ void cli_credentials_parse_string(struct cli_credentials *credentials, const cha
 	cli_credentials_set_username(credentials, uname, obtained);
 }
 
-/* Initialise defaults from the lp_*() functions */
+/**
+ * Specifies default values for domain, workstation and realm
+ * from the smb.conf configuration file
+ *
+ * @param cred Credentials structure to fill in
+ */
 void cli_credentials_set_conf(struct cli_credentials *cred)
 {
 	cli_credentials_set_domain(cred, lp_workgroup(), CRED_GUESSED);
@@ -307,6 +386,12 @@ void cli_credentials_set_conf(struct cli_credentials *cred)
 	cli_credentials_set_realm(cred, lp_realm(), CRED_GUESSED);
 }
 
+/**
+ * Guess defaults for credentials from environment variables, 
+ * and from the configuration file
+ * 
+ * @param cred Credentials structure to fill in
+ */
 void cli_credentials_guess(struct cli_credentials *cred)
 {
 	char *p;
@@ -342,6 +427,12 @@ void cli_credentials_guess(struct cli_credentials *cred)
 	}
 }
 
+/**
+ * Fill in credentials for the machine trust account, from the secrets database.
+ * 
+ * @param cred Credentials structure to fill in
+ * @retval NTSTATUS error detailing any failure
+ */
 NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
 {
 	TALLOC_CTX *mem_ctx;
@@ -424,11 +515,23 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
 	return NT_STATUS_OK;
 }
 
+/**
+ * Ask that when required, the credentials system will be filled with
+ * machine trust account, from the secrets database.
+ * 
+ * @param cred Credentials structure to fill in
+ * @note This function is used to call the above function after, rather 
+ *       than during, popt processing.
+ *
+ */
 void cli_credentials_set_machine_account_pending(struct cli_credentials *cred)
 {
 	cred->machine_account_pending = True;
 }
-/* Attach NETLOGON credentials for use with SCHANNEL */
+
+/**
+ * Attach NETLOGON credentials for use with SCHANNEL
+ */
 
 void cli_credentials_set_netlogon_creds(struct cli_credentials *cred, 
 					struct creds_CredentialState *netlogon_creds)
@@ -436,20 +539,29 @@ void cli_credentials_set_netlogon_creds(struct cli_credentials *cred,
 	cred->netlogon_creds = talloc_reference(cred, netlogon_creds);
 }
 
-/* Return attached NETLOGON credentials */
+/**
+ * Return attached NETLOGON credentials 
+ */
 
 struct creds_CredentialState *cli_credentials_get_netlogon_creds(struct cli_credentials *cred)
 {
 	return cred->netlogon_creds;
 }
 
-/* Fill in a credentails structure as anonymous */
+/**
+ * Fill in a credentials structure as the anonymous user
+ */
 void cli_credentials_set_anonymous(struct cli_credentials *cred) 
 {
 	cli_credentials_set_username(cred, "", CRED_SPECIFIED);
 	cli_credentials_set_domain(cred, "", CRED_SPECIFIED);
 	cli_credentials_set_password(cred, NULL, CRED_SPECIFIED);
 }
+
+/**
+ * Describe a credentials context as anonymous or authenticated
+ * @retval True if anonymous, False if a username is specified
+ */
 
 BOOL cli_credentials_is_anonymous(struct cli_credentials *cred)
 {
