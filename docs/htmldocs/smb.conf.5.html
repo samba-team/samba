@@ -150,7 +150,7 @@ NAME="AEN28"
 >Sections other than guest services will require a password 
 	to access them. The client provides the username. As older clients 
 	only provide passwords and not usernames, you may specify a list 
-	of usernames to check against the password using the "user=" 
+	of usernames to check against the password using the "user =" 
 	option in the share definition. For modern clients such as 
 	Windows 95/98/ME/NT/2000, this should not be necessary.</P
 ><P
@@ -272,7 +272,7 @@ NAME="AEN53"
 ></UL
 ><P
 >If you decide to use a <EM
->path=</EM
+>path =</EM
 > line 
 		in your [homes] section then you may find it useful 
 		to use the %S macro. For example :</P
@@ -280,7 +280,7 @@ NAME="AEN53"
 ><TT
 CLASS="USERINPUT"
 ><B
->path=/data/pchome/%S</B
+>path = /data/pchome/%S</B
 ></TT
 ></P
 ><P
@@ -336,14 +336,16 @@ CLASS="COMPUTEROUTPUT"
 > flag for 
 		auto home directories will be inherited from the global browseable 
 		flag, not the [homes] browseable flag. This is useful as 
-		it means setting browseable=no in the [homes] section 
-		will hide the [homes] share but make any auto home 
-		directories visible.</P
+		it means setting <EM
+>browseable = no</EM
+> in
+		the [homes] section will hide the [homes] share but make
+		any auto home directories visible.</P
 ></DIV
 ><DIV
 CLASS="REFSECT2"
 ><A
-NAME="AEN78"
+NAME="AEN79"
 ></A
 ><H3
 >The [printers] section</H3
@@ -460,7 +462,7 @@ CLASS="COMPUTEROUTPUT"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN101"
+NAME="AEN102"
 ></A
 ><H2
 >PARAMETERS</H2
@@ -498,7 +500,7 @@ NAME="AEN101"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN111"
+NAME="AEN112"
 ></A
 ><H2
 >VARIABLE SUBSTITUTIONS</H2
@@ -684,7 +686,7 @@ CLASS="REPLACEABLE"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN201"
+NAME="AEN202"
 ></A
 ><H2
 >NAME MANGLING</H2
@@ -707,7 +709,7 @@ NAME="AEN201"
 CLASS="VARIABLELIST"
 ><DL
 ><DT
->mangle case= yes/no</DT
+>mangle case = yes/no</DT
 ><DD
 ><P
 > controls if names that have characters that 
@@ -769,7 +771,7 @@ CLASS="VARIABLELIST"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN234"
+NAME="AEN235"
 ></A
 ><H2
 >NOTE ABOUT USERNAME/PASSWORD VALIDATION</H2
@@ -828,9 +830,9 @@ CLASS="FILENAME"
 > file for the service and the client 
 		has supplied a password, and that password matches (according to 
 		the UNIX system's password checking) with one of the usernames 
-		from the "user=" field then the connection is made as 
-		the username in the "user=" line. If one 
-		of the username in the "user=" list begins with a
+		from the "user =" field then the connection is made as 
+		the username in the "user =" line. If one 
+		of the username in the "user =" list begins with a
 		'@' then that name expands to a list of names in 
 		the group of the same name.</P
 ></LI
@@ -846,7 +848,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN253"
+NAME="AEN254"
 ></A
 ><H2
 >COMPLETE LIST OF GLOBAL PARAMETERS</H2
@@ -856,6 +858,18 @@ NAME="AEN253"
 ><P
 ></P
 ><UL
+><LI
+><P
+><A
+HREF="#ABORTSHUTDOWNSCRIPT"
+><TT
+CLASS="PARAMETER"
+><I
+>abort shutdown script</I
+></TT
+></A
+></P
+></LI
 ><LI
 ><P
 ><A
@@ -2263,6 +2277,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#SHUTDOWNSCRIPT"
+><TT
+CLASS="PARAMETER"
+><I
+>shutdown script</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#SMBPASSWDFILE"
 ><TT
 CLASS="PARAMETER"
@@ -2829,7 +2855,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN913"
+NAME="AEN922"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -4236,7 +4262,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1381"
+NAME="AEN1390"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -4245,6 +4271,43 @@ NAME="AEN1381"
 ><DIV
 CLASS="VARIABLELIST"
 ><DL
+><DT
+><A
+NAME="ABORTSHUTDOWNSCRIPT"
+></A
+>abort shutdown script (G) - ONLY IN HEAD</DT
+><DD
+><P
+>This a full path name to a script called by
+		<A
+HREF="smbd.8.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>smbd(8)</B
+></A
+>  that
+		should stop a shutdown procedure issued by the <A
+HREF="#SHUTDOWNSCRIPT"
+><TT
+CLASS="PARAMETER"
+><I
+>shutdown script</I
+></TT
+></A
+>.</P
+><P
+>This command will be run as user.</P
+><P
+>Default: <EM
+>None</EM
+>.</P
+><P
+>Example: <B
+CLASS="COMMAND"
+>abort shutdown script = /sbin/shutdown -c</B
+></P
+></DD
 ><DT
 ><A
 NAME="ADDPRINTERCOMMAND"
@@ -4591,12 +4654,12 @@ TARGET="_top"
 		must be set to <TT
 CLASS="PARAMETER"
 ><I
->security=server</I
+>security = server</I
 ></TT
 > or <TT
 CLASS="PARAMETER"
 ><I
->		security=domain</I
+>		security = domain</I
 ></TT
 > and <TT
 CLASS="PARAMETER"
@@ -5203,7 +5266,7 @@ NAME="CASESENSITIVE"
 ><DD
 ><P
 >See the discussion in the section <A
-HREF="#AEN201"
+HREF="#AEN202"
 >NAME MANGLING</A
 >.</P
 ><P
@@ -6055,7 +6118,7 @@ HREF="#DIRECTORYMODE"
 >		<TT
 CLASS="PARAMETER"
 ><I
->directory mode"</I
+>directory mode</I
 ></TT
 ></A
 > parameter for masking 
@@ -6298,14 +6361,14 @@ NAME="DEFAULTCASE"
 ><DD
 ><P
 >See the section on <A
-HREF="#AEN201"
+HREF="#AEN202"
 >		NAME MANGLING</A
 >. Also note the <A
 HREF="#SHORTPRESERVECASE"
 >		<TT
 CLASS="PARAMETER"
 ><I
->short preserve case"</I
+>short preserve case</I
 ></TT
 ></A
 > parameter.</P
@@ -6658,7 +6721,7 @@ CLASS="COMMAND"
 		set to <TT
 CLASS="PARAMETER"
 ><I
->security=domain</I
+>security = domain</I
 ></TT
 > and <TT
 CLASS="PARAMETER"
@@ -6688,13 +6751,13 @@ CLASS="PARAMETER"
 		which will work with the <TT
 CLASS="PARAMETER"
 ><I
->security=server</I
+>security = server</I
 ></TT
 > option 
 		as well as <TT
 CLASS="PARAMETER"
 ><I
->security=domain</I
+>security = domain</I
 ></TT
 >. The reason for this
 		is only when Samba is a domain member does it get the information
@@ -6702,7 +6765,7 @@ CLASS="PARAMETER"
 		<TT
 CLASS="PARAMETER"
 ><I
->security=server</I
+>security = server</I
 ></TT
 > mode a missing user
 		is treated the same as an invalid password logon attempt. Deleting
@@ -6757,7 +6820,7 @@ CLASS="PARAMETER"
 ><P
 >See also <A
 HREF="#SECURITYEQUALSDOMAIN"
->security=domain</A
+>security = domain</A
 >,
 		<A
 HREF="#PASSWORDSERVER"
@@ -7660,7 +7723,7 @@ CLASS="COMMAND"
 > program for information on how to set up 
  		and maintain this file), or set the <A
 HREF="#SECURITY"
->security=[server|domain]</A
+>security = [server|domain]</A
 > parameter which 
 		causes <B
 CLASS="COMMAND"
@@ -9240,7 +9303,7 @@ CLASS="PARAMETER"
 		the value <TT
 CLASS="PARAMETER"
 ><I
->&#38;+group"</I
+>&#38;+group</I
 ></TT
 > means check the NIS
 		netgroup database, followed by the UNIX group database (the 
@@ -9659,7 +9722,7 @@ NAME="LOADPRINTERS"
 >A boolean variable that controls whether all 
 		printers in the printcap will be loaded for browsing by default. 
 		See the <A
-HREF="#AEN78"
+HREF="#AEN79"
 >printers</A
 > section for 
 		more details.</P
@@ -9933,7 +9996,7 @@ CLASS="COMMAND"
 		in a NetUserGetInfo request.  Win9X clients truncate the info to
 		\\server\share when a user does <B
 CLASS="COMMAND"
->net use /home"</B
+>net use /home</B
 >
 		but use the whole string when dealing with profiles.</P
 ><P
@@ -10542,7 +10605,7 @@ NAME="MACHINEPASSWORDTIMEOUT"
 >If a Samba server is a member of a Windows 
 		NT Domain (see the <A
 HREF="#SECURITYEQUALSDOMAIN"
->security=domain</A
+>security = domain</A
 >) 
 		parameter) then periodically a running <A
 HREF="smbd.8.html"
@@ -10567,7 +10630,7 @@ CLASS="COMMAND"
 ></A
 >, and the <A
 HREF="#SECURITYEQUALSDOMAIN"
->		security=domain</A
+>		security = domain</A
 >) parameter.</P
 ><P
 >Default: <B
@@ -10674,7 +10737,7 @@ NAME="MANGLECASE"
 ><DD
 ><P
 >See the section on <A
-HREF="#AEN201"
+HREF="#AEN202"
 >		NAME MANGLING</A
 ></P
 ><P
@@ -10746,7 +10809,7 @@ NAME="MANGLEDNAMES"
 		or whether non-DOS names should simply be ignored.</P
 ><P
 >See the section on <A
-HREF="#AEN201"
+HREF="#AEN202"
 >		NAME MANGLING</A
 > for details on how to control the mangling process.</P
 ><P
@@ -10867,7 +10930,7 @@ NAME="MANGLINGCHAR"
 		the <EM
 >magic</EM
 > character in <A
-HREF="#AEN201"
+HREF="#AEN202"
 >name mangling</A
 >. The default is a '~'
 		but this may interfere with some software. Use this option to set 
@@ -10996,7 +11059,7 @@ HREF="#SECURITY"
 > modes other than <TT
 CLASS="PARAMETER"
 ><I
->security=share</I
+>security = share</I
 ></TT
 > 
 		- i.e. <TT
@@ -11465,7 +11528,7 @@ HREF="#WINSSUPPORT"
 >		<TT
 CLASS="PARAMETER"
 ><I
->wins support=yes</I
+>wins support = yes</I
 ></TT
 ></A
 >) what the maximum
@@ -11482,7 +11545,7 @@ HREF="#MINWINSTTL"
 CLASS="PARAMETER"
 ><I
 >min 
-		wins ttl"</I
+		wins ttl</I
 ></TT
 ></A
 > parameter.</P
@@ -13146,7 +13209,7 @@ CLASS="COMMAND"
 >.  This is a 
 			restriction of the SMB/CIFS protocol when in <B
 CLASS="COMMAND"
->security=server
+>security = server
 			</B
 > mode and cannot be fixed in Samba.</P
 ></LI
@@ -13156,9 +13219,9 @@ CLASS="COMMAND"
 			password server then you will have to ensure that your users 
 			are able to login from the Samba server, as when in <B
 CLASS="COMMAND"
->			security=server</B
+>			security = server</B
 >  mode the network logon will appear to 
-			come from there rather than from the user's workstation.</P
+			come from there rather than from the users workstation.</P
 ></LI
 ></UL
 ><P
@@ -13549,7 +13612,7 @@ CLASS="COMMAND"
 ></P
 ><P
 >See the section on <A
-HREF="#AEN201"
+HREF="#AEN202"
 >NAME 
 		MANGLING</A
 > for a fuller discussion.</P
@@ -13673,7 +13736,7 @@ CLASS="PARAMETER"
 ><P
 >Default: For <B
 CLASS="COMMAND"
->printing= BSD, AIX, QNX, LPRNG 
+>printing = BSD, AIX, QNX, LPRNG 
 		or PLP :</B
 ></P
 ><P
@@ -13684,7 +13747,7 @@ CLASS="COMMAND"
 ><P
 >For <B
 CLASS="COMMAND"
->printing= SYS or HPUX :</B
+>printing = SYS or HPUX :</B
 ></P
 ><P
 ><B
@@ -13694,7 +13757,7 @@ CLASS="COMMAND"
 ><P
 >For <B
 CLASS="COMMAND"
->printing=SOFTQ :</B
+>printing = SOFTQ :</B
 ></P
 ><P
 ><B
@@ -13787,7 +13850,7 @@ NAME="PRINTCAPNAME"
 CLASS="FILENAME"
 >		/etc/printcap</TT
 >). See the discussion of the <A
-HREF="#AEN78"
+HREF="#AEN79"
 >[printers]</A
 > section above for reasons 
 		why you might want to do this.</P
@@ -14211,7 +14274,7 @@ TARGET="_top"
 >This option can be set on a per printer basis</P
 ><P
 >See also the discussion in the <A
-HREF="#AEN78"
+HREF="#AEN79"
 >		[printers]</A
 > section.</P
 ></DD
@@ -15045,7 +15108,7 @@ CLASS="COMMAND"
 >security = server</B
 > or <B
 CLASS="COMMAND"
->security=domain
+>security = domain
 		</B
 >.</P
 ><P
@@ -15262,7 +15325,7 @@ CLASS="PARAMETER"
 		be used in granting access.</P
 ><P
 >See also the section <A
-HREF="#AEN234"
+HREF="#AEN235"
 >		NOTE ABOUT USERNAME/PASSWORD VALIDATION</A
 >.</P
 ><P
@@ -15275,7 +15338,7 @@ NAME="SECURITYEQUALSUSER"
 ></P
 ><P
 >This is the default security setting in Samba 2.2. 
-		With user-level security a client must first "log=on" with a 
+		With user-level security a client must first "log-on" with a 
 		valid username and password (which can be mapped using the <A
 HREF="#USERNAMEMAP"
 ><TT
@@ -15343,7 +15406,7 @@ CLASS="PARAMETER"
 > parameter for details on doing this.</P
 ><P
 >See also the section <A
-HREF="#AEN234"
+HREF="#AEN235"
 >		NOTE ABOUT USERNAME/PASSWORD VALIDATION</A
 >.</P
 ><P
@@ -15419,7 +15482,7 @@ CLASS="PARAMETER"
 > parameter for details on doing this.</P
 ><P
 >See also the section <A
-HREF="#AEN234"
+HREF="#AEN235"
 >		NOTE ABOUT USERNAME/PASSWORD VALIDATION</A
 >.</P
 ><P
@@ -15534,7 +15597,7 @@ CLASS="COMMAND"
 		Domain Controller. This issue will be addressed in a future release.</P
 ><P
 >See also the section <A
-HREF="#AEN234"
+HREF="#AEN235"
 >		NOTE ABOUT USERNAME/PASSWORD VALIDATION</A
 >.</P
 ><P
@@ -15740,7 +15803,7 @@ CLASS="COMMAND"
 		names are lowered. </P
 ><P
 >See the section on <A
-HREF="#AEN201"
+HREF="#AEN202"
 >		NAME MANGLING</A
 >.</P
 ><P
@@ -15820,6 +15883,112 @@ CLASS="PARAMETER"
 CLASS="COMMAND"
 >show add printer wizard = yes</B
 ></P
+></DD
+><DT
+><A
+NAME="SHUTDOWNSCRIPT"
+></A
+>shutdown script (G) - ONLY IN HEAD</DT
+><DD
+><P
+>This a full path name to a script called by
+		<A
+HREF="smbd.8.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>smbd(8)</B
+></A
+> that
+		should start a shutdown procedure.</P
+><P
+>This command will be run as the user connected to the
+		server.</P
+><P
+>%m %t %r %f parameters are expanded</P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>%m</I
+></TT
+> will be substituted with the
+		shutdown message sent to the server.</P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>%t</I
+></TT
+> will be substituted with the
+		number of seconds to wait before effectively starting the
+		shutdown procedure.</P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>%r</I
+></TT
+> will be substituted with the
+		switch <EM
+>-r</EM
+>. It means reboot after shutdown
+		for NT.
+		</P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>%f</I
+></TT
+> will be substituted with the
+		switch <EM
+>-f</EM
+>. It means force the shutdown
+		even if applications do not respond for NT.</P
+><P
+>Default: <EM
+>None</EM
+>.</P
+><P
+>Example: <B
+CLASS="COMMAND"
+>abort shutdown script = /usr/local/samba/sbin/shutdown %m %t %r %f</B
+></P
+><P
+>Shutdown script example:
+		<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>		#!/bin/bash
+		
+		$time=0
+		let "time/60"
+		let "time++"
+
+		/sbin/shutdown $3 $4 +$time $1 &#38;
+		</PRE
+></TD
+></TR
+></TABLE
+>
+		Shutdown does not return so we need to launch it in background.
+		</P
+><P
+>See also <A
+HREF="#ABORTSHUTDOWNSCRIPT"
+><TT
+CLASS="PARAMETER"
+><I
+>abort shutdown script</I
+></TT
+></A
+>.</P
 ></DD
 ><DT
 ><A
@@ -15957,10 +16126,10 @@ TARGET="_top"
 		or disable the option, by default they will be enabled if you 
 		don't specify 1 or 0.</P
 ><P
->To specify an argument use the syntax SOME_OPTION=VALUE 
+>To specify an argument use the syntax SOME_OPTION = VALUE 
 		for example <B
 CLASS="COMMAND"
->SO_SNDBUF=8192</B
+>SO_SNDBUF = 8192</B
 >. Note that you must 
 		not have any spaces before or after the = sign.</P
 ><P
@@ -16020,7 +16189,7 @@ CLASS="COMMAND"
 ><P
 ><B
 CLASS="COMMAND"
->SAMBA_NETBIOS_NAME=myhostname</B
+>SAMBA_NETBIOS_NAME = myhostname</B
 ></P
 ><P
 >Default: <EM
@@ -16092,7 +16261,7 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->ssl=no</B
+>ssl = no</B
 ></P
 ></DD
 ><DT
@@ -17385,7 +17554,7 @@ CLASS="PARAMETER"
 		search.</P
 ><P
 >See the section <A
-HREF="#AEN234"
+HREF="#AEN235"
 >NOTE ABOUT 
 		USERNAME/PASSWORD VALIDATION</A
 > for more information on how 
@@ -18379,7 +18548,7 @@ NAME="WORKGROUP"
 HREF="#SECURITYEQUALSDOMAIN"
 ><B
 CLASS="COMMAND"
->security=domain</B
+>security = domain</B
 ></A
 >
 		setting.</P
@@ -18574,7 +18743,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5862"
+NAME="AEN5913"
 ></A
 ><H2
 >WARNINGS</H2
@@ -18604,7 +18773,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5868"
+NAME="AEN5919"
 ></A
 ><H2
 >VERSION</H2
@@ -18615,7 +18784,7 @@ NAME="AEN5868"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5871"
+NAME="AEN5922"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -18694,7 +18863,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5891"
+NAME="AEN5942"
 ></A
 ><H2
 >AUTHOR</H2
