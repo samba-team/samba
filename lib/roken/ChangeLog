@@ -1,3 +1,13 @@
+2003-03-07  Love  <lha@stacken.kth.se>
+
+	* parse_bytes.c: use struct units instead of units
+	
+	* parse_time.c: use struct units instead of units
+	
+2003-03-04  Love  <lha@stacken.kth.se>
+
+	* roken.awk: use full prototype for main
+	
 2002-10-15  Johan Danielsson  <joda@pdc.kth.se>
 
 	* resolve.c: check length of txt records
