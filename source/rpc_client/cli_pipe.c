@@ -1342,11 +1342,18 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, int pipe_idx, const char *my_na
 		if (!NT_STATUS_IS_OK(nt_status))
 			return False;
 
-		pwd_get_cleartext(&cli->pwd, password);
-		nt_status = ntlmssp_set_password(cli->ntlmssp_pipe_state, 
-						 password);
-		if (!NT_STATUS_IS_OK(nt_status))
-			return False;
+		if (cli->pwd.null_pwd) {
+			nt_status = ntlmssp_set_password(cli->ntlmssp_pipe_state, 
+							 NULL);
+			if (!NT_STATUS_IS_OK(nt_status))
+				return False;
+		} else {
+			pwd_get_cleartext(&cli->pwd, password);
+			nt_status = ntlmssp_set_password(cli->ntlmssp_pipe_state, 
+							 password);
+			if (!NT_STATUS_IS_OK(nt_status))
+				return False;
+		}
 
 		if (cli->pipe_auth_flags & AUTH_PIPE_SIGN) {
 			cli->ntlmssp_pipe_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;

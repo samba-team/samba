@@ -45,8 +45,14 @@ static void pwd_make_lm_nt_16(struct pwd_info *pwd, const char *clr)
 {
 	pwd_init(pwd);
 
-	nt_lm_owf_gen(clr, pwd->smb_nt_pwd, pwd->smb_lm_pwd);
-	pwd->null_pwd  = False;
+	if (!clr) {
+		ZERO_STRUCT(pwd->smb_nt_pwd);
+		ZERO_STRUCT(pwd->smb_lm_pwd);
+		pwd->null_pwd  = True;
+	} else {
+		nt_lm_owf_gen(clr, pwd->smb_nt_pwd, pwd->smb_lm_pwd);
+		pwd->null_pwd  = False;
+	}
 	pwd->crypted = False;
 }
 
