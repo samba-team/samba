@@ -41,6 +41,7 @@
 #ifndef __ROKEN_H__
 #define __ROKEN_H__
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
@@ -158,6 +159,10 @@ int strnlen(char*, int);
 
 #ifndef HAVE_STRSEP
 char *strsep(char**, const char*);
+#endif
+
+#ifdef NEED_FCLOSE_PROTO
+int fclose(FILE *);
 #endif
 
 #ifdef NEED_STRTOK_R_PROTO
