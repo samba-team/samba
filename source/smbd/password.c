@@ -1501,9 +1501,9 @@ BOOL domain_client_validate( char *user, char *domain,
   /*
    * Get the machine account password for our primary domain
    */
-  if (!secrets_fetch_trust_account_password(domain, trust_passwd, &last_change_time))
+  if (!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd, &last_change_time))
   {
-	  DEBUG(0, ("domain_client_validate: could not fetch trust account password for domain %s\n", domain));
+	  DEBUG(0, ("domain_client_validate: could not fetch trust account password for domain %s\n", lp_workgroup()));
 	  return False;
   }
 
