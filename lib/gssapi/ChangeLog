@@ -1,4 +1,4 @@
-2003-01-27  Love  <lha@stacken.kth.se>
+2003-01-27  Love Hörquist Åstrand <lha@it.su.se>
 
 	* verify_mic.c (verify_mic_des3): fix 3des verify_mic to conform
 	to rfc (and mit kerberos), provide backward compat hook
