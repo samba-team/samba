@@ -338,7 +338,7 @@ static void refresh_sequence_number(struct winbindd_domain *domain, BOOL force)
 	/* see if we have to refetch the domain sequence number */
 	if (!force && (time_diff < cache_time)) {
 		DEBUG(10, ("refresh_sequence_number: %s time ok\n", domain->name));
-		return;
+		goto done;
 	}
 	
 	/* try to get the sequence number from the tdb cache first */
