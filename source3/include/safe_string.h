@@ -21,6 +21,11 @@
 #ifndef _SAFE_STRING_H
 #define _SAFE_STRING_H
 
+#ifndef _SPLINT_ /* http://www.splint.org */
+
+/* Some macros to ensure people don't use buffer overflow vulnerable string
+   functions. */
+
 #ifdef strcpy
 #undef strcpy
 #endif /* strcpy */
@@ -35,6 +40,8 @@
 #undef sprintf
 #endif /* sprintf */
 #define sprintf __ERROR__XX__NEVER_USE_SPRINTF__;
+
+#endif /* !_SPLINT_ */
 
 #define pstrcpy(d,s) safe_strcpy((d), (s),sizeof(pstring)-1)
 #define pstrcat(d,s) safe_strcat((d), (s),sizeof(pstring)-1)
