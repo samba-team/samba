@@ -688,9 +688,10 @@ BOOL smb_io_buffer5(char *desc, BUFFER5 *buf5, prs_struct *ps, int depth)
 	if(!prs_uint32("buf_len", ps, depth, &buf5->buf_len))
 		return False;
 
-
-	if(!prs_buffer5(True, "buffer" , ps, depth, buf5))
-		return False;
+	if(buf5->buf_len) {
+		if(!prs_buffer5(True, "buffer" , ps, depth, buf5))
+			return False;
+	}
 
 	return True;
 }
