@@ -2095,6 +2095,12 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid, const
 		   is correctly installed (incl. driver ???) */
 		init_unistr( &ctr_dst.printers_2->portname, SAMBA_PRINTER_PORT_NAME);
 
+		/* check if printer is published -> no publish-migration for the moment */
+		if (ctr_enum.printers_2[i].attributes & PRINTER_ATTRIBUTE_PUBLISHED) {
+			printf("printer on originating server was published, ignoring that\n");
+			ctr_dst.printers_2->attributes = PRINTER_ATTRIBUTE_SAMBA;
+		}
+
 		/* copy devmode (info level 2) */
 		ctr_dst.printers_2->devmode = talloc_memdup(mem_ctx, 
 			ctr_enum.printers_2[i].devmode, sizeof(DEVICEMODE));
