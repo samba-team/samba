@@ -37,18 +37,32 @@
 
 <sect1>
 	<title>Introduction</title>
+
+	<para>Old windows clients send plain text passwords over the wire. 
+	Samba can check these passwords by crypting them and comparing them 
+	to the hash stored in the unix user database.
+	</para>
 	
-	<para>Newer windows clients send encrypted passwords over 
+	<para>
+	Newer windows clients send encrypted passwords (so-called 
+	Lanman and NT hashes) over 
 	the wire, instead of plain text passwords. The newest clients 
 	will only send encrypted passwords and refuse to send plain text 
-	passwords, unless their registry is tweaked.</para>
+	passwords, unless their registry is tweaked.
+	</para>
 
 	<para>These passwords can't be converted to unix style encrypted 
 	passwords. Because of that you can't use the standard unix 
 	user database, and you have to store the Lanman and NT hashes 
-	somewhere else. Also, windows stores some data for each user 
-	that is not stored by unix. Thus, samba has it's own user database.
-	This user database is maintained by a "passdb backend". Commonly
+	somewhere else. </para>
+	
+	<para>Next to a differently encrypted passwords, 
+	windows also stores certain data for each user 
+	that is not stored in a unix user database, e.g. 
+	workstations the user may logon from, the location where his/her 
+	profile is stored, etc.
+	Samba retrieves and stores this information using a "passdb backend".
+	Commonly
 	available backends are LDAP, plain text file, MySQL and nisplus.
 	For more information, see the documentation about the 
 	<command>passdb backend = </command> parameter.
@@ -68,7 +82,8 @@
 	password from them, but they could potentially be used in a modified 
 	client to gain access to a server. This would require considerable 
 	technical knowledge on behalf of the attacker but is perfectly possible. 
-	You should thus treat the smbpasswd file as though it contained the 
+	You should thus treat the data stored in whatever 
+	passdb backend you use (smbpasswd file, ldap, mysql) as though it contained the 
 	cleartext passwords of all your users. Its contents must be kept 
 	secret, and the file should be protected accordingly.</para>
 	
@@ -89,17 +104,17 @@
 		<para>Other Microsoft operating systems which also exhibit 
 		this behavior includes</para>
 		
-		<itemizedlist>
-			<listitem><para>MS DOS Network client 3.0 with 
-			the basic network redirector installed</para></listitem>
+		<simplelist>
+			<member>MS DOS Network client 3.0 with 
+			the basic network redirector installed</member>
 			
-			<listitem><para>Windows 95 with the network redirector 
-			update installed</para></listitem>
+			<member>Windows 95 with the network redirector 
+			update installed</member>
 			
-			<listitem><para>Windows 98 [se]</para></listitem>
+			<member>Windows 98 [se]</member>
 			
-			<listitem><para>Windows 2000</para></listitem>
-		</itemizedlist>
+			<member>Windows 2000</member>
+		</simplelist>
 		
 		<para><emphasis>Note :</emphasis>All current release of 
 		Microsoft SMB/CIFS clients support authentication via the
@@ -111,38 +126,37 @@
 	<sect2>
 		<title>Advantages of SMB Encryption</title>
 
-		<itemizedlist>
-			<listitem><para>plain text passwords are not passed across 
+		<simplelist>
+			<member>plain text passwords are not passed across 
 			the network. Someone using a network sniffer cannot just 
-			record passwords going to the SMB server.</para>
-			</listitem>
+			record passwords going to the SMB server.</member>
 		 
-			<listitem><para>WinNT doesn't like talking to a server 
+			<member>WinNT doesn't like talking to a server 
 			that isn't using SMB encrypted passwords. It will refuse 
 			to browse the server if the server is also in user level 
 			security mode. It will insist on prompting the user for the 
 			password on each connection, which is very annoying. The
 			only things you can do to stop this is to use SMB encryption.
-			</para></listitem>
-		</itemizedlist>
+			</member>
+		</simplelist>
 	</sect2>
 
 
 	<sect2>
 		<title>Advantages of non-encrypted passwords</title>
 
-		<itemizedlist>
-			<listitem><para>plain text passwords are not kept 
-			on disk. </para></listitem>
+		<simplelist>
+			<member>plain text passwords are not kept 
+			on disk. </member>
 			
-			<listitem><para>uses same password file as other unix 
-			services such as login and ftp</para></listitem>
+			<member>uses same password file as other unix 
+			services such as login and ftp</member>
 			
-			<listitem><para>you are probably already using other 
+			<member>you are probably already using other 
 			services (such as telnet and ftp) which send plain text 
 			passwords over the net, so sending them for SMB isn't 
-			such a big deal.</para></listitem>
-		</itemizedlist>
+			such a big deal.</member>
+		</simplelist>
 	</sect2>
 </sect1>
 
@@ -150,17 +164,16 @@
 <sect1>
 	<title>The smbpasswd Command</title>
 	
-	<para>The smbpasswd command maintains the two 32 byte password fields 
-	in the smbpasswd file. If you wish to make it similar to the unix 
-	<command>passwd</command> or <command>yppasswd</command> programs, 
-	install it in <filename>/usr/local/samba/bin/</filename> (or your 
-	main Samba binary directory).</para> FIXME
+	<para>The smbpasswd utility is a utility similar to the 
+	<command>passwd</command> or <command>yppasswd</command> programs.
+	It maintains the two 32 byte password fields 
+	in the passdb backend. </para>
 
-	<para><command>smbpasswd</command> now works in a client-server mode 
+	<para><command>smbpasswd</command> works in a client-server mode 
 	where it contacts the local smbd to change the user's password on its 
 	behalf. This has enormous benefits - as follows.</para>
 
-	<para><command>smbpasswd</command> now has the capability 
+	<para><command>smbpasswd</command> has the capability 
 	to change passwords on Windows NT servers (this only works when 
 	the request is sent to the NT Primary Domain Controller if you 
 	are changing an NT Domain user's password).</para>
@@ -205,7 +218,20 @@ FIXME
 
 <sect1>
 <title>Plain text</title>
-FIXME
+<para>
+Older versions of samba retrieved user information from the unix user database 
+and eventually some other fields from the file <filename>/etc/samba/smbpasswd</filename>
+or <filename>/etc/smbpasswd</filename>. When password encryption is disabled, no 
+data is stored at all.
+</para>
+</sect1>
+
+<sect1>
+<title>TDB</title>
+<para>Samba can also store the user data in a "TDB" (Trivial Database). Using this backend 
+doesn't require any additional configuration. This backend is recommended for new installations who 
+don't require LDAP.
+</para>
 </sect1>
 
 <sect1>
@@ -759,7 +785,7 @@ ntPassword: 878D8014606CDA29677A44EFA1353FC7
 </sect1>
 
 <sect1>
-<title>Passdb MySQL plugin</title>
+<title>MySQL</title>
 
 <sect2>
 <title>Building</title>
