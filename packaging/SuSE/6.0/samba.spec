@@ -96,7 +96,6 @@ fi
 /usr/bin/smbclient
 /usr/bin/testparm
 /usr/bin/testprns
-/usr/bin/smbrun
 /usr/bin/smbstatus
 /usr/bin/rpcclient
 /usr/bin/smbpasswd
@@ -152,8 +151,6 @@ Samba includes the following programs (in summary):
 * smbd, the SMB server. This handles actual connections from clients.
 * nmbd, the Netbios name server, which helps clients locate servers.
 * smbclient, the Unix-hosted client program.
-* smbrun, a little 'glue' program to help the server run external
-programs. 
 * testprns, a program to test server access to printers.
 * testparm, a program to test the Samba configuration file for correctness.
 * smb.conf, the Samba configuration file.
