@@ -126,6 +126,7 @@ typedef struct
   char *szDomainHostsallow; 
   char *szDomainHostsdeny;
   char *szUsernameMap;
+  char *szGroupnameMap;
   char *szCharacterSet;
   char *szLogonScript;
   char *szLogonPath;
@@ -591,6 +592,7 @@ static struct parm_struct parm_table[] =
   {"domain guest group",P_STRING, P_GLOBAL, &Globals.szDomainGuestGroup, NULL,   NULL,  0},
   {"domain admin users",P_STRING, P_GLOBAL, &Globals.szDomainAdminUsers, NULL,   NULL,  0},
   {"domain guest users",P_STRING, P_GLOBAL, &Globals.szDomainGuestUsers, NULL,   NULL,  0},
+  {"groupname map",     P_STRING, P_GLOBAL, &Globals.szGroupnameMap,     NULL,   NULL,  0},
   {"machine password timeout", P_INTEGER, P_GLOBAL, &Globals.machine_password_timeout,  NULL,   NULL,  0},
 
   {"Logon Options", P_SEP, P_SEPARATOR},
@@ -967,6 +969,7 @@ FN_GLOBAL_STRING(lp_passwordserver,&Globals.szPasswordServer)
 FN_GLOBAL_STRING(lp_name_resolve_order,&Globals.szNameResolveOrder)
 FN_GLOBAL_STRING(lp_workgroup,&Globals.szWorkGroup)
 FN_GLOBAL_STRING(lp_username_map,&Globals.szUsernameMap)
+FN_GLOBAL_STRING(lp_groupname_map,&Globals.szGroupnameMap)
 FN_GLOBAL_STRING(lp_character_set,&Globals.szCharacterSet) 
 FN_GLOBAL_STRING(lp_logon_script,&Globals.szLogonScript) 
 FN_GLOBAL_STRING(lp_logon_path,&Globals.szLogonPath) 

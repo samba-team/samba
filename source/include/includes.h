@@ -1219,6 +1219,7 @@ extern char *sys_errlist[];
 #endif
 
 /* Lists, trees, caching, datbase... */
+#include "ubi_sLinkList.h"
 #include "ubi_dLinkList.h"
 #ifndef UBI_BINTREE_H
 #include "ubi_Cache.h"

@@ -200,6 +200,10 @@ void generate_random_buffer( unsigned char *out, int len, BOOL re_seed);
 
 char *getsmbpass(char *prompt)    ;
 
+/*The following definitions come from  groupname.c  */
+
+void load_groupname_map(void);
+
 /*The following definitions come from  interface.c  */
 
 void load_interfaces(void);
@@ -902,6 +906,7 @@ BOOL api_srvsvc_rpc(pipes_struct *p, prs_struct *data);
 
 /*The following definitions come from  lib/rpc/server/srv_util.c  */
 
+BOOL lookup_wellknown_sid_from_name(char *windows_name, DOM_SID *psid);
 int make_dom_gids(char *gids_str, DOM_GID **ppgids);
 BOOL create_rpc_reply(pipes_struct *p,
 				uint32 data_start, uint32 data_end);
@@ -941,6 +946,7 @@ char *lp_passwordserver(void);
 char *lp_name_resolve_order(void);
 char *lp_workgroup(void);
 char *lp_username_map(void);
+char *lp_groupname_map(void);
 char *lp_character_set(void);
 char *lp_logon_script(void);
 char *lp_logon_path(void);
@@ -1942,7 +1948,6 @@ char *get_home_dir(char *user);
 BOOL map_username(char *user);
 struct passwd *Get_Pwnam(char *user,BOOL allow_change);
 BOOL user_in_list(char *user,char *list);
-void load_groupname_map(void);
 
 /*The following definitions come from  util.c  */
 
