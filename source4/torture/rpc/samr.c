@@ -497,7 +497,10 @@ BOOL torture_rpc_samr(int dummy)
 
 	mem_ctx = talloc_init("torture_rpc_samr");
 
-	status = torture_rpc_connection(&p, "samr");
+	status = torture_rpc_connection(&p, 
+					DCERPC_SAMR_NAME,
+					DCERPC_SAMR_UUID,
+					DCERPC_SAMR_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}

@@ -193,7 +193,10 @@ BOOL torture_rpc_echo(int dummy)
 
 	mem_ctx = talloc_init("torture_rpc_echo");
 
-	status = torture_rpc_connection(&p, "rpcecho");
+	status = torture_rpc_connection(&p, 
+					DCERPC_RPCECHO_NAME,
+					DCERPC_RPCECHO_UUID,
+					DCERPC_RPCECHO_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}

@@ -5,7 +5,7 @@
 [ uuid(12345778-1234-abcd-ef00-0123456789ac),
   version(1.0),
   pointer_default(unique)
-] interface lsarpc
+] interface samr
 {
 	/******************/
 	/* Function: 0x00 */

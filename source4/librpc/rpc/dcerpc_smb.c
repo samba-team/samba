@@ -26,7 +26,10 @@
 /* 
    open a rpc connection to a named pipe 
 */
-NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe *p, const char *pipe_name)
+NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe *p, 
+			      const char *pipe_name,
+			      const char *pipe_uuid, 
+			      uint32 pipe_version)
 {
         NTSTATUS status;
 	char *name = NULL;
@@ -73,7 +76,7 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe *p, const char *pipe_name)
 	p->fnum = io.ntcreatex.out.fnum;
 
 	/* bind to the pipe, using the pipe_name as the key */
-	status = dcerpc_bind_byname(p, pipe_name);
+	status = dcerpc_bind_byuuid(p, pipe_uuid, pipe_version);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		union smb_close c;

@@ -261,7 +261,10 @@ BOOL torture_rpc_spoolss(int dummy)
 
 	mem_ctx = talloc_init("torture_rpc_spoolss");
 
-	status = torture_rpc_connection(&p, "spoolss");
+	status = torture_rpc_connection(&p, 
+					DCERPC_SPOOLSS_NAME,
+					DCERPC_SPOOLSS_UUID,
+					DCERPC_SPOOLSS_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
