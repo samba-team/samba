@@ -3370,10 +3370,11 @@ duplicate a string
  char *strdup(char *s)
 {
   char *ret = NULL;
+  int len;
   if (!s) return(NULL);
-  ret = (char *)malloc(strlen(s)+1);
+  ret = (char *)malloc((len = strlen(s))+1);
   if (!ret) return(NULL);
-  pstrcpy(ret,s);
+  safe_strcpy(ret,s,len);
   return(ret);
 }
 #endif
@@ -4793,68 +4794,9 @@ int unistrcpy(char *dst, char *src)
 	return num_wchars;
 }
 
-#if 0
 /*******************************************************************
-safe string copy into a fstring
-********************************************************************/
-void fstrcpy(char *dest, char *src)
-{
-    int maxlength = sizeof(fstring) - 1;
-    int len;
-    if (!dest) {
-        DEBUG(0,("ERROR: NULL dest in fstrcpy\n"));
-        return;
-    }
-
-    if (!src) {
-        *dest = 0;
-        return;
-    }  
-
-    len = strlen(src);
-
-    if (len > maxlength) {
-	    DEBUG(0,("ERROR: string overflow by %d in fstrcpy [%.50s]\n",
-		     len-maxlength, src));
-	    len = maxlength;
-    }
-      
-    memcpy(dest, src, len);
-    dest[len] = 0;
-}   
-
-/*******************************************************************
-safe string cat into a fstring
-********************************************************************/
-void fstrcat(char *dest, char *src)
-{
-    int maxlength = sizeof(fstring) - 1;
-    int src_len, dest_len;
-    if (!dest) {
-        DEBUG(0,("ERROR: NULL dest in fstrcat\n"));
-        return;
-    }
-
-    if (!src) {
-        return;
-    }  
-
-    src_len = strlen(src);
-    dest_len = strlen(dest);
-
-    if (src_len + dest_len > maxlength) {
-	    DEBUG(0,("ERROR: string overflow by %d in fstrcat [%.50s]\n",
-		     src_len + dest_len - maxlength, src));
-	    src_len = maxlength - dest_len;
-    }
-      
-    memcpy(&dest[dest_len], src, src_len);
-    dest[dest_len + src_len] = 0;
-}
-#endif
-
-/*******************************************************************
-safe string copy into a known length string
+safe string copy into a known length string. maxlength does not
+include the terminating zero.
 ********************************************************************/
 char *safe_strcpy(char *dest, char *src, int maxlength)
 {
@@ -4884,7 +4826,8 @@ char *safe_strcpy(char *dest, char *src, int maxlength)
 }  
 
 /*******************************************************************
-safe string cat into a string
+safe string cat into a string. maxlength does not
+include the terminating zero.
 ********************************************************************/
 char *safe_strcat(char *dest, char *src, int maxlength)
 {

@@ -94,7 +94,7 @@ int clean_data( char **buf, uint32 *size)
     if(*cp == '\0')
       continue;
 
-    pstrcpy(newbuf_p, cp);
+    safe_strcpy(newbuf_p, cp, *size - (newbuf_p - newbuf));
     num_lines++;
     newbuf_p += (strlen(newbuf_p) + 1);
   }

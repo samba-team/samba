@@ -263,6 +263,7 @@ Here come some platform specific sections
 #include <sys/acct.h>
 #include <sys/vfs.h>
 #include <string.h>
+#include <strings.h>
 #include <errno.h>
 #include <sys/wait.h>
 #include <signal.h>
@@ -291,6 +292,7 @@ typedef unsigned short mode_t;
 #define USE_SYSV_IPC
 /* SunOS doesn't have POSIX atexit */
 #define atexit on_exit
+#define NOSTRCASECMP
 #endif
 
 
@@ -335,7 +337,6 @@ extern int innetgr (const char *, const char *, const char *, const char *);
 #ifndef QSORT_CAST
 #define QSORT_CAST (int (*)(const void *, const void *))
 #endif /* QSORT_CAST */
-#define HAVE_VSNPRINTF
 #endif
 
 
@@ -1372,7 +1373,7 @@ extern int errno;
 #ifdef sprintf
 #undef sprintf
 #endif /* sprintf */
-#define sprintf __ERROR__XX__NEVER_USE_SPRINTF__>;
+#define sprintf __ERROR__XX__NEVER_USE_SPRINTF__;
 
 #define pstrcpy(d,s) safe_strcpy((d),(s),sizeof(pstring)-1)
 #define pstrcat(d,s) safe_strcat((d),(s),sizeof(pstring)-1)

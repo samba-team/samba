@@ -426,7 +426,7 @@ static int process_tok(fstring tok)
 /****************************************************************************
 help
 ****************************************************************************/
-void cmd_help(void)
+void cmd_help(char *dum_in, char *dum_out)
 {
   int i=0,j;
   fstring buf;
@@ -636,7 +636,7 @@ static BOOL process(char *base_directory)
 	DEBUG(0,("%s: command not found\n",CNV_LANG(tok)));
     }
   
-  cli_send_logout();
+  cli_send_logout(InBuffer,OutBuffer);
   return(True);
 }
 
