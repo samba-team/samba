@@ -2364,6 +2364,7 @@ static void dump_globals(FILE *f)
 		if (parm_table[i].class == P_GLOBAL &&
 		    parm_table[i].ptr &&
 		    (i == 0 || (parm_table[i].ptr != parm_table[i-1].ptr))) {
+			if (parm_table[i].flags & FLAG_DEPRECATED) continue;
 			if (defaults_saved && is_default(i)) continue;
 			fprintf(f,"\t%s = ",parm_table[i].label);
 			print_parameter(&parm_table[i],parm_table[i].ptr, f);
@@ -2400,6 +2401,7 @@ static void dump_a_service(service *pService, FILE *f)
 		    (i == 0 || (parm_table[i].ptr != parm_table[i-1].ptr))) {
 			int pdiff = PTR_DIFF(parm_table[i].ptr,&sDefault);
 			
+			if (parm_table[i].flags & FLAG_DEPRECATED) continue;
 			if (pService == &sDefault) {
 				if (defaults_saved && is_default(i)) continue;
 			} else {
