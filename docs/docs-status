@@ -71,3 +71,5 @@ sam backend		 // security
 kernel change notify     // tuning
 lpq cache time           // tuning
 -valid			 // misc
+idmap uid		 // winbind
+idmap gid		 // winbind
