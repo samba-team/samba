@@ -43,7 +43,7 @@ NTSTATUS new_cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal,
         /* create and send a MSRPC command with api NET_REQCHAL */
 
         DEBUG(4,("new_cli_net_req_chal: LSA Request Challenge from %s to %s: %s\n",
-                 cli->desthost, global_myname, credstr(clnt_chal->data)));
+                 global_myname, cli->desthost, credstr(clnt_chal->data)));
         
         /* store the parameters */
         init_q_req_chal(&q, cli->srv_name_slash, global_myname, clnt_chal);
