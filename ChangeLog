@@ -1,3 +1,7 @@
+Sun Jul 20 06:35:46 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* kpasswd/kpasswd.c: Avoid using non-standard struct names.
+
 Sat Jul 19 04:07:39 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/asn1/k5.asn1: Update with more pa-data types from
