@@ -428,3 +428,69 @@ char *rep_inet_ntoa(struct in_addr ip)
 }
 #endif /* HAVE_SYSLOG */
 #endif /* HAVE_VSYSLOG */
+
+
+#ifndef HAVE_GETGROUPLIST
+/*
+  This is a *much* faster way of getting the list of groups for a user
+  without changing the current supplemenrary group list. The old
+  method used getgrent() which could take 20 minutes on a really big
+  network with hundeds of thousands of groups and users. The new method
+  takes a couple of seconds.
+
+  NOTE!! this function only works if it is called as root!
+  */
+ int getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grpcnt)
+{
+	gid_t *gids_saved;
+	int ret, ngrp_saved;
+
+	/* work out how many groups we need to save */
+	ngrp_saved = getgroups(0, NULL);
+	if (ngrp_saved == -1) {
+		/* this shouldn't happen */
+		return -1;
+	}
+	
+	gids_saved = (gid_t *)malloc(sizeof(gid_t) * (ngrp_saved+1));
+	if (!gids_saved) {
+		errno = ENOMEM;
+		return -1;
+	}
+
+	ngrp_saved = getgroups(ngrp_saved, gids_saved);
+	if (ngrp_saved == -1) {
+		free(gids_saved);
+		/* very strange! */
+		return -1;
+	}
+
+	if (initgroups(user, gid) != 0) {
+		free(gids_saved);
+		return -1;
+	}
+
+	/* this must be done to cope with systems that put the current egid in the
+	   return from getgroups() */
+	save_re_gid();
+	set_effective_gid(gid);
+	setgid(gid);
+
+	ret = getgroups(*grpcnt, groups);
+	if (ret >= 0) {
+		*grpcnt = ret;
+	}
+
+	restore_re_gid();
+
+	if (setgroups(ngrp_saved, gids_saved) != 0) {
+		/* yikes! */
+		DEBUG(0,("ERROR: getgrouplist: failed to reset group list!\n"));
+		free(gids_saved);
+		return -1;
+	}
+
+	free(gids_saved);
+	return ret;
+}
+#endif
