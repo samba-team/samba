@@ -49,7 +49,7 @@ krb5_sendauth(krb5_context context,
   krb5_creds *creds;
 
   len = strlen(version) + 1;
-  net_len = htonl(net_len);
+  net_len = htonl(len);
   if (krb5_net_write (context, fd, &net_len, 4) != 4
       || krb5_net_write (context, fd, version, len) != len)
     return errno;
