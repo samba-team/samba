@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -686,7 +686,7 @@ sec_login(char *host)
 	    }else if(code == 534){
 		printf("%s rejected as security mechanism.\n", (*m)->name);
 	    }else if(ret == ERROR) {
-		printf("The server doesn't understand the FTP "
+		printf("The server doesn't support the FTP "
 		       "security extensions.\n");
 		verbose = old_verbose;
 		return -1;
@@ -696,7 +696,9 @@ sec_login(char *host)
 
 	ret = (*(*m)->auth)(app_data, host);
 	
-	if(ret != 0){
+	if(ret == AUTH_CONTINUE)
+	    continue;
+	else if(ret != AUTH_OK){
 	    /* mechanism is supposed to output error string */
 	    verbose = old_verbose;
 	    return -1;
