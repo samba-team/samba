@@ -255,21 +255,21 @@ NTSTATUS dcerpc_samr_EnumDomainGroups(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx
 	return status;
 }
 
-NTSTATUS dcerpc_samr_CREATE_USER_IN_DOMAIN(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_CREATE_USER_IN_DOMAIN *r)
+NTSTATUS dcerpc_samr_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_CreateUser *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(samr_CREATE_USER_IN_DOMAIN, r);		
+		NDR_PRINT_IN_DEBUG(samr_CreateUser, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_SAMR_CREATE_USER_IN_DOMAIN, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_samr_CREATE_USER_IN_DOMAIN,
-				    (ndr_pull_fn_t) ndr_pull_samr_CREATE_USER_IN_DOMAIN,
+	status = dcerpc_ndr_request(p, DCERPC_SAMR_CREATEUSER, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_samr_CreateUser,
+				    (ndr_pull_fn_t) ndr_pull_samr_CreateUser,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(samr_CREATE_USER_IN_DOMAIN, r);		
+		NDR_PRINT_OUT_DEBUG(samr_CreateUser, r);		
 	}
 	if (NT_STATUS_IS_OK(status)) status = r->out.result;
 
@@ -339,21 +339,21 @@ NTSTATUS dcerpc_samr_EnumDomainAliases(struct dcerpc_pipe *p, TALLOC_CTX *mem_ct
 	return status;
 }
 
-NTSTATUS dcerpc_samr_GET_ALIAS_MEMBERSHIP(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_GET_ALIAS_MEMBERSHIP *r)
+NTSTATUS dcerpc_samr_GetAliasMembership(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_GetAliasMembership *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(samr_GET_ALIAS_MEMBERSHIP, r);		
+		NDR_PRINT_IN_DEBUG(samr_GetAliasMembership, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_SAMR_GET_ALIAS_MEMBERSHIP, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_samr_GET_ALIAS_MEMBERSHIP,
-				    (ndr_pull_fn_t) ndr_pull_samr_GET_ALIAS_MEMBERSHIP,
+	status = dcerpc_ndr_request(p, DCERPC_SAMR_GETALIASMEMBERSHIP, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_samr_GetAliasMembership,
+				    (ndr_pull_fn_t) ndr_pull_samr_GetAliasMembership,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(samr_GET_ALIAS_MEMBERSHIP, r);		
+		NDR_PRINT_OUT_DEBUG(samr_GetAliasMembership, r);		
 	}
 	if (NT_STATUS_IS_OK(status)) status = r->out.result;
 
@@ -738,21 +738,21 @@ NTSTATUS dcerpc_samr_OpenUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct
 	return status;
 }
 
-NTSTATUS dcerpc_samr_DELETE_DOM_USER(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_DELETE_DOM_USER *r)
+NTSTATUS dcerpc_samr_DeleteUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_DeleteUser *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(samr_DELETE_DOM_USER, r);		
+		NDR_PRINT_IN_DEBUG(samr_DeleteUser, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_SAMR_DELETE_DOM_USER, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_samr_DELETE_DOM_USER,
-				    (ndr_pull_fn_t) ndr_pull_samr_DELETE_DOM_USER,
+	status = dcerpc_ndr_request(p, DCERPC_SAMR_DELETEUSER, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_samr_DeleteUser,
+				    (ndr_pull_fn_t) ndr_pull_samr_DeleteUser,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(samr_DELETE_DOM_USER, r);		
+		NDR_PRINT_OUT_DEBUG(samr_DeleteUser, r);		
 	}
 	if (NT_STATUS_IS_OK(status)) status = r->out.result;
 

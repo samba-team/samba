@@ -4,40 +4,40 @@
 #define DCERPC_WKSSVC_VERSION 1.0
 #define DCERPC_WKSSVC_NAME "wkssvc"
 
-#define DCERPC_WKS_QUERYINFO 0
-#define DCERPC_WKS_SETINFO 1
-#define DCERPC_WKS_NETRWKSTAUSERENUM 2
-#define DCERPC_WKS_NETRWKSTAUSERGETINFO 3
-#define DCERPC_WKS_NETRWKSTAUSERSETINFO 4
-#define DCERPC_WKS_TRANSPORTENUM 5
-#define DCERPC_WKS_NETRWKSTATRANSPORTADD 6
-#define DCERPC_WKS_NETRWKSTATRANSPORTDEL 7
-#define DCERPC_WKS_NETRUSEADD 8
-#define DCERPC_WKS_NETRUSEGETINFO 9
-#define DCERPC_WKS_NETRUSEDEL 10
-#define DCERPC_WKS_NETRUSEENUM 11
-#define DCERPC_WKS_NETRMESSAGEBUFFERSEND 12
-#define DCERPC_WKS_NETRWORKSTATIONSTATISTICSGET 13
-#define DCERPC_WKS_NETRLOGONDOMAINNAMEADD 14
-#define DCERPC_WKS_NETRLOGONDOMAINNAMEDEL 15
-#define DCERPC_WKS_NETRJOINDOMAIN 16
-#define DCERPC_WKS_NETRUNJOINDOMAIN 17
-#define DCERPC_WKS_NETRRENAMEMACHINEINDOMAIN 18
-#define DCERPC_WKS_NETRVALIDATENAME 19
-#define DCERPC_WKS_NETRGETJOININFORMATION 20
-#define DCERPC_WKS_NETRGETJOINABLEOUS 21
-#define DCERPC_WKS_NETRJOINDOMAIN2 22
-#define DCERPC_WKS_NETRUNJOINDOMAIN2 23
-#define DCERPC_WKS_NETRRENAMEMACHINEINDOMAIN2 24
-#define DCERPC_WKS_NETRVALIDATENAME2 25
-#define DCERPC_WKS_NETRGETJOINABLEOUS2 26
-#define DCERPC_WKS_NETRADDALTERNATECOMPUTERNAME 27
-#define DCERPC_WKS_NETRREMOVEALTERNATECOMPUTERNAME 28
-#define DCERPC_WKS_NETRSETPRIMARYCOMPUTERNAME 29
-#define DCERPC_WKS_NETRENUMERATECOMPUTERNAMES 30
+#define DCERPC_WKSSVC_QUERYINFO 0
+#define DCERPC_WKSSVC_SETINFO 1
+#define DCERPC_WKSSVC_NETRWKSTAUSERENUM 2
+#define DCERPC_WKSSVC_NETRWKSTAUSERGETINFO 3
+#define DCERPC_WKSSVC_NETRWKSTAUSERSETINFO 4
+#define DCERPC_WKSSVC_TRANSPORTENUM 5
+#define DCERPC_WKSSVC_NETRWKSTATRANSPORTADD 6
+#define DCERPC_WKSSVC_NETRWKSTATRANSPORTDEL 7
+#define DCERPC_WKSSVC_NETRUSEADD 8
+#define DCERPC_WKSSVC_NETRUSEGETINFO 9
+#define DCERPC_WKSSVC_NETRUSEDEL 10
+#define DCERPC_WKSSVC_NETRUSEENUM 11
+#define DCERPC_WKSSVC_NETRMESSAGEBUFFERSEND 12
+#define DCERPC_WKSSVC_NETRWORKSTATIONSTATISTICSGET 13
+#define DCERPC_WKSSVC_NETRLOGONDOMAINNAMEADD 14
+#define DCERPC_WKSSVC_NETRLOGONDOMAINNAMEDEL 15
+#define DCERPC_WKSSVC_NETRJOINDOMAIN 16
+#define DCERPC_WKSSVC_NETRUNJOINDOMAIN 17
+#define DCERPC_WKSSVC_NETRRENAMEMACHINEINDOMAIN 18
+#define DCERPC_WKSSVC_NETRVALIDATENAME 19
+#define DCERPC_WKSSVC_NETRGETJOININFORMATION 20
+#define DCERPC_WKSSVC_NETRGETJOINABLEOUS 21
+#define DCERPC_WKSSVC_NETRJOINDOMAIN2 22
+#define DCERPC_WKSSVC_NETRUNJOINDOMAIN2 23
+#define DCERPC_WKSSVC_NETRRENAMEMACHINEINDOMAIN2 24
+#define DCERPC_WKSSVC_NETRVALIDATENAME2 25
+#define DCERPC_WKSSVC_NETRGETJOINABLEOUS2 26
+#define DCERPC_WKSSVC_NETRADDALTERNATECOMPUTERNAME 27
+#define DCERPC_WKSSVC_NETRREMOVEALTERNATECOMPUTERNAME 28
+#define DCERPC_WKSSVC_NETRSETPRIMARYCOMPUTERNAME 29
+#define DCERPC_WKSSVC_NETRENUMERATECOMPUTERNAMES 30
 
 
-struct wks_Info100 {
+struct wkssvc_Info100 {
 	uint32 platform_id;
 	const char *server;
 	const char *domain;
@@ -45,7 +45,7 @@ struct wks_Info100 {
 	uint32 ver_minor;
 };
 
-struct wks_Info101 {
+struct wkssvc_Info101 {
 	uint32 platform_id;
 	const char *server;
 	const char *domain;
@@ -54,7 +54,7 @@ struct wks_Info101 {
 	const char *lan_root;
 };
 
-struct wks_Info102 {
+struct wkssvc_Info102 {
 	uint32 platform_id;
 	const char *server;
 	const char *domain;
@@ -64,26 +64,26 @@ struct wks_Info102 {
 	uint32 logged_on_users;
 };
 
-union wks_Info {
-/* [case(100)] */ struct wks_Info100 *info100;
-/* [case(101)] */ struct wks_Info101 *info101;
-/* [case(102)] */ struct wks_Info102 *info102;
+union wkssvc_Info {
+/* [case(100)] */ struct wkssvc_Info100 *info100;
+/* [case(101)] */ struct wkssvc_Info101 *info101;
+/* [case(102)] */ struct wkssvc_Info102 *info102;
 };
 
-struct wks_QueryInfo {
+struct wkssvc_QueryInfo {
 	struct {
 		const char *server_name;
 		uint32 level;
 	} in;
 
 	struct {
-		union wks_Info info;
+		union wkssvc_Info info;
 		WERROR result;
 	} out;
 
 };
 
-struct wks_SetInfo {
+struct wkssvc_SetInfo {
 	struct {
 	} in;
 
@@ -93,7 +93,7 @@ struct wks_SetInfo {
 
 };
 
-struct WKS_NETRWKSTAUSERENUM {
+struct WKSSVC_NETRWKSTAUSERENUM {
 	struct {
 	} in;
 
@@ -103,7 +103,7 @@ struct WKS_NETRWKSTAUSERENUM {
 
 };
 
-struct WKS_NETRWKSTAUSERGETINFO {
+struct WKSSVC_NETRWKSTAUSERGETINFO {
 	struct {
 	} in;
 
@@ -113,7 +113,7 @@ struct WKS_NETRWKSTAUSERGETINFO {
 
 };
 
-struct WKS_NETRWKSTAUSERSETINFO {
+struct WKSSVC_NETRWKSTAUSERSETINFO {
 	struct {
 	} in;
 
@@ -123,7 +123,7 @@ struct WKS_NETRWKSTAUSERSETINFO {
 
 };
 
-struct wks_TransportInfo0 {
+struct wkssvc_TransportInfo0 {
 	uint32 quality_of_service;
 	uint32 vc_count;
 	const char *name;
@@ -131,30 +131,30 @@ struct wks_TransportInfo0 {
 	uint32 wan_link;
 };
 
-struct wks_TransportInfoArray {
+struct wkssvc_TransportInfoArray {
 	uint32 count;
-	struct wks_TransportInfo0 *transports;
+	struct wkssvc_TransportInfo0 *transports;
 };
 
-union wks_TransportUnion {
-/* [case(0)] */ struct wks_TransportInfoArray *array;
+union wkssvc_TransportUnion {
+/* [case(0)] */ struct wkssvc_TransportInfoArray *array;
 };
 
-struct wks_TransportInfo {
+struct wkssvc_TransportInfo {
 	uint32 level;
-	union wks_TransportUnion u;
+	union wkssvc_TransportUnion u;
 };
 
-struct wks_TransportEnum {
+struct wkssvc_TransportEnum {
 	struct {
 		const char *server_name;
-		struct wks_TransportInfo *info;
+		struct wkssvc_TransportInfo *info;
 		uint32 max_buffer;
 		uint32 *resume_handle;
 	} in;
 
 	struct {
-		struct wks_TransportInfo *info;
+		struct wkssvc_TransportInfo *info;
 		uint32 unknown;
 		uint32 *resume_handle;
 		WERROR result;
@@ -162,7 +162,7 @@ struct wks_TransportEnum {
 
 };
 
-struct WKS_NETRWKSTATRANSPORTADD {
+struct WKSSVC_NETRWKSTATRANSPORTADD {
 	struct {
 	} in;
 
@@ -172,7 +172,7 @@ struct WKS_NETRWKSTATRANSPORTADD {
 
 };
 
-struct WKS_NETRWKSTATRANSPORTDEL {
+struct WKSSVC_NETRWKSTATRANSPORTDEL {
 	struct {
 	} in;
 
@@ -182,7 +182,7 @@ struct WKS_NETRWKSTATRANSPORTDEL {
 
 };
 
-struct WKS_NETRUSEADD {
+struct WKSSVC_NETRUSEADD {
 	struct {
 	} in;
 
@@ -192,7 +192,7 @@ struct WKS_NETRUSEADD {
 
 };
 
-struct WKS_NETRUSEGETINFO {
+struct WKSSVC_NETRUSEGETINFO {
 	struct {
 	} in;
 
@@ -202,7 +202,7 @@ struct WKS_NETRUSEGETINFO {
 
 };
 
-struct WKS_NETRUSEDEL {
+struct WKSSVC_NETRUSEDEL {
 	struct {
 	} in;
 
@@ -212,7 +212,7 @@ struct WKS_NETRUSEDEL {
 
 };
 
-struct WKS_NETRUSEENUM {
+struct WKSSVC_NETRUSEENUM {
 	struct {
 	} in;
 
@@ -222,7 +222,7 @@ struct WKS_NETRUSEENUM {
 
 };
 
-struct WKS_NETRMESSAGEBUFFERSEND {
+struct WKSSVC_NETRMESSAGEBUFFERSEND {
 	struct {
 	} in;
 
@@ -232,7 +232,7 @@ struct WKS_NETRMESSAGEBUFFERSEND {
 
 };
 
-struct WKS_NETRWORKSTATIONSTATISTICSGET {
+struct WKSSVC_NETRWORKSTATIONSTATISTICSGET {
 	struct {
 	} in;
 
@@ -242,7 +242,7 @@ struct WKS_NETRWORKSTATIONSTATISTICSGET {
 
 };
 
-struct WKS_NETRLOGONDOMAINNAMEADD {
+struct WKSSVC_NETRLOGONDOMAINNAMEADD {
 	struct {
 	} in;
 
@@ -252,7 +252,7 @@ struct WKS_NETRLOGONDOMAINNAMEADD {
 
 };
 
-struct WKS_NETRLOGONDOMAINNAMEDEL {
+struct WKSSVC_NETRLOGONDOMAINNAMEDEL {
 	struct {
 	} in;
 
@@ -262,7 +262,7 @@ struct WKS_NETRLOGONDOMAINNAMEDEL {
 
 };
 
-struct WKS_NETRJOINDOMAIN {
+struct WKSSVC_NETRJOINDOMAIN {
 	struct {
 	} in;
 
@@ -272,7 +272,7 @@ struct WKS_NETRJOINDOMAIN {
 
 };
 
-struct WKS_NETRUNJOINDOMAIN {
+struct WKSSVC_NETRUNJOINDOMAIN {
 	struct {
 	} in;
 
@@ -282,7 +282,7 @@ struct WKS_NETRUNJOINDOMAIN {
 
 };
 
-struct WKS_NETRRENAMEMACHINEINDOMAIN {
+struct WKSSVC_NETRRENAMEMACHINEINDOMAIN {
 	struct {
 	} in;
 
@@ -292,7 +292,7 @@ struct WKS_NETRRENAMEMACHINEINDOMAIN {
 
 };
 
-struct WKS_NETRVALIDATENAME {
+struct WKSSVC_NETRVALIDATENAME {
 	struct {
 	} in;
 
@@ -302,7 +302,7 @@ struct WKS_NETRVALIDATENAME {
 
 };
 
-struct WKS_NETRGETJOININFORMATION {
+struct WKSSVC_NETRGETJOININFORMATION {
 	struct {
 	} in;
 
@@ -312,7 +312,7 @@ struct WKS_NETRGETJOININFORMATION {
 
 };
 
-struct WKS_NETRGETJOINABLEOUS {
+struct WKSSVC_NETRGETJOINABLEOUS {
 	struct {
 	} in;
 
@@ -322,7 +322,7 @@ struct WKS_NETRGETJOINABLEOUS {
 
 };
 
-struct WKS_NETRJOINDOMAIN2 {
+struct WKSSVC_NETRJOINDOMAIN2 {
 	struct {
 	} in;
 
@@ -332,7 +332,7 @@ struct WKS_NETRJOINDOMAIN2 {
 
 };
 
-struct WKS_NETRUNJOINDOMAIN2 {
+struct WKSSVC_NETRUNJOINDOMAIN2 {
 	struct {
 	} in;
 
@@ -342,7 +342,7 @@ struct WKS_NETRUNJOINDOMAIN2 {
 
 };
 
-struct WKS_NETRRENAMEMACHINEINDOMAIN2 {
+struct WKSSVC_NETRRENAMEMACHINEINDOMAIN2 {
 	struct {
 	} in;
 
@@ -352,7 +352,7 @@ struct WKS_NETRRENAMEMACHINEINDOMAIN2 {
 
 };
 
-struct WKS_NETRVALIDATENAME2 {
+struct WKSSVC_NETRVALIDATENAME2 {
 	struct {
 	} in;
 
@@ -362,7 +362,7 @@ struct WKS_NETRVALIDATENAME2 {
 
 };
 
-struct WKS_NETRGETJOINABLEOUS2 {
+struct WKSSVC_NETRGETJOINABLEOUS2 {
 	struct {
 	} in;
 
@@ -372,7 +372,7 @@ struct WKS_NETRGETJOINABLEOUS2 {
 
 };
 
-struct WKS_NETRADDALTERNATECOMPUTERNAME {
+struct WKSSVC_NETRADDALTERNATECOMPUTERNAME {
 	struct {
 	} in;
 
@@ -382,7 +382,7 @@ struct WKS_NETRADDALTERNATECOMPUTERNAME {
 
 };
 
-struct WKS_NETRREMOVEALTERNATECOMPUTERNAME {
+struct WKSSVC_NETRREMOVEALTERNATECOMPUTERNAME {
 	struct {
 	} in;
 
@@ -392,7 +392,7 @@ struct WKS_NETRREMOVEALTERNATECOMPUTERNAME {
 
 };
 
-struct WKS_NETRSETPRIMARYCOMPUTERNAME {
+struct WKSSVC_NETRSETPRIMARYCOMPUTERNAME {
 	struct {
 	} in;
 
@@ -402,7 +402,7 @@ struct WKS_NETRSETPRIMARYCOMPUTERNAME {
 
 };
 
-struct WKS_NETRENUMERATECOMPUTERNAMES {
+struct WKSSVC_NETRENUMERATECOMPUTERNAMES {
 	struct {
 	} in;
 

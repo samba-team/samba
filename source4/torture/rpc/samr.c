@@ -400,6 +400,12 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
+#if 0
+	if (!test_CreateUser(p, mem_ctx, &domain_handle)) {
+		ret = False;
+	}
+#endif
+
 	if (!test_QuerySecurity(p, mem_ctx, &domain_handle)) {
 		ret = False;
 	}

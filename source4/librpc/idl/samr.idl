@@ -211,7 +211,13 @@
 
 	/************************/
 	/* Function    0x0c     */
-	NTSTATUS samr_CREATE_USER_IN_DOMAIN();
+	NTSTATUS samr_CreateUser(
+		[in,ref]      policy_handle *handle,
+		[in]          samr_Name *username,
+		[in]          uint32 access_mask,
+		[out]         policy_handle *acct_handle,
+		[out]         uint32 *rid
+		);
 
 	/************************/
 	/* Function    0x0d     */
@@ -240,7 +246,22 @@
 
 	/************************/
 	/* Function    0x10     */
-	NTSTATUS samr_GET_ALIAS_MEMBERSHIP();
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] dom_sid2 *sids;
+	} samr_Sids;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] uint32 *rids;
+	} samr_Rids;
+
+	NTSTATUS samr_GetAliasMembership(
+		[in,ref]      policy_handle *handle,
+		[in]          samr_Sids *sids,
+		[out]         samr_Rids *rids
+		);
 
 	/************************/
 	/* Function    0x11     */
@@ -390,7 +411,9 @@
 
 	/************************/
 	/* Function    0x23     */
-	NTSTATUS samr_DELETE_DOM_USER();
+	NTSTATUS samr_DeleteUser(
+		[in,out]      policy_handle *handle
+		);
 
 	/************************/
 	/* Function    0x24     */
