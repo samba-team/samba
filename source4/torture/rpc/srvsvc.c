@@ -123,7 +123,7 @@ static BOOL test_NetShareEnumAll(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	struct srvsvc_NetShareEnumAll r;
 	struct srvsvc_NetShareCtr0 c0;
-	uint32 levels[] = {0, 1, 2, 501, 502};
+	uint32 levels[] = {0, 1, 2, 501, 502, 1004};
 	int i;
 	BOOL ret = True;
 

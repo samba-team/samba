@@ -877,6 +877,40 @@ done:
 	return NT_STATUS_OK;
 }
 
+NTSTATUS ndr_push_srvsvc_NetShare1004(struct ndr_push *ndr, int ndr_flags, struct srvsvc_NetShare1004 *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
+	NDR_CHECK(ndr_push_align(ndr, 4));
+	NDR_CHECK(ndr_push_ptr(ndr, r->comment));
+	ndr_push_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->comment) {
+		NDR_CHECK(ndr_push_unistr(ndr, r->comment));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_srvsvc_NetShareCtr1004(struct ndr_push *ndr, int ndr_flags, struct srvsvc_NetShareCtr1004 *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
+	NDR_CHECK(ndr_push_align(ndr, 4));
+	NDR_CHECK(ndr_push_uint32(ndr, r->count));
+	NDR_CHECK(ndr_push_ptr(ndr, r->array));
+	ndr_push_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->array) {
+		NDR_CHECK(ndr_push_uint32(ndr, r->count));
+		NDR_CHECK(ndr_push_array(ndr, NDR_SCALARS|NDR_BUFFERS, r->array, sizeof(r->array[0]), r->count, (ndr_push_flags_fn_t)ndr_push_srvsvc_NetShare1004));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
 NTSTATUS ndr_push_srvsvc_NetShareCtr(struct ndr_push *ndr, int ndr_flags, uint16 level, union srvsvc_NetShareCtr *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -900,6 +934,10 @@ NTSTATUS ndr_push_srvsvc_NetShareCtr(struct ndr_push *ndr, int ndr_flags, uint16
 
 	case 502:
 	NDR_CHECK(ndr_push_ptr(ndr, r->ctr502));
+	break;
+
+	case 1004:
+	NDR_CHECK(ndr_push_ptr(ndr, r->ctr1004));
 	break;
 
 	default:
@@ -937,6 +975,12 @@ buffers:
 	case 502:
 	if (r->ctr502) {
 		NDR_CHECK(ndr_push_srvsvc_NetShareCtr502(ndr, NDR_SCALARS|NDR_BUFFERS, r->ctr502));
+	}
+	break;
+
+	case 1004:
+	if (r->ctr1004) {
+		NDR_CHECK(ndr_push_srvsvc_NetShareCtr1004(ndr, NDR_SCALARS|NDR_BUFFERS, r->ctr1004));
 	}
 	break;
 
@@ -2646,6 +2690,59 @@ done:
 	return NT_STATUS_OK;
 }
 
+NTSTATUS ndr_pull_srvsvc_NetShare1004(struct ndr_pull *ndr, int ndr_flags, struct srvsvc_NetShare1004 *r)
+{
+	uint32 _ptr_comment;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_comment));
+	if (_ptr_comment) {
+		NDR_ALLOC(ndr, r->comment);
+	} else {
+		r->comment = NULL;
+	}
+	ndr_pull_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->comment) {
+		NDR_CHECK(ndr_pull_unistr(ndr, &r->comment));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_srvsvc_NetShareCtr1004(struct ndr_pull *ndr, int ndr_flags, struct srvsvc_NetShareCtr1004 *r)
+{
+	uint32 _ptr_array;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->count));
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_array));
+	if (_ptr_array) {
+		NDR_ALLOC(ndr, r->array);
+	} else {
+		r->array = NULL;
+	}
+	ndr_pull_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->array) {
+	{
+		uint32 _array_size;
+		NDR_CHECK(ndr_pull_uint32(ndr, &_array_size));
+		if (r->count > _array_size) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should be %u", _array_size, r->count);
+		}
+	}
+		NDR_ALLOC_N_SIZE(ndr, r->array, r->count, sizeof(r->array[0]));
+		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->array, sizeof(r->array[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_srvsvc_NetShare1004));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
 NTSTATUS ndr_pull_srvsvc_NetShareCtr(struct ndr_pull *ndr, int ndr_flags, uint16 level, union srvsvc_NetShareCtr *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -2701,6 +2798,16 @@ NTSTATUS ndr_pull_srvsvc_NetShareCtr(struct ndr_pull *ndr, int ndr_flags, uint16
 	}
 	break; }
 
+	case 1004: {
+		uint32 _ptr_ctr1004;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_ctr1004));
+	if (_ptr_ctr1004) {
+		NDR_ALLOC(ndr, r->ctr1004);
+	} else {
+		r->ctr1004 = NULL;
+	}
+	break; }
+
 	default: {
 	break; }
 
@@ -2736,6 +2843,12 @@ buffers:
 	case 502:
 	if (r->ctr502) {
 		NDR_CHECK(ndr_pull_srvsvc_NetShareCtr502(ndr, NDR_SCALARS|NDR_BUFFERS, r->ctr502));
+	}
+	break;
+
+	case 1004:
+	if (r->ctr1004) {
+		NDR_CHECK(ndr_pull_srvsvc_NetShareCtr1004(ndr, NDR_SCALARS|NDR_BUFFERS, r->ctr1004));
 	}
 	break;
 
@@ -4378,6 +4491,33 @@ void ndr_print_srvsvc_NetShareCtr502(struct ndr_print *ndr, const char *name, st
 	ndr->depth--;
 }
 
+void ndr_print_srvsvc_NetShare1004(struct ndr_print *ndr, const char *name, struct srvsvc_NetShare1004 *r)
+{
+	ndr_print_struct(ndr, name, "srvsvc_NetShare1004");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "comment", r->comment);
+	ndr->depth++;
+	if (r->comment) {
+		ndr_print_unistr(ndr, "comment", r->comment);
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
+void ndr_print_srvsvc_NetShareCtr1004(struct ndr_print *ndr, const char *name, struct srvsvc_NetShareCtr1004 *r)
+{
+	ndr_print_struct(ndr, name, "srvsvc_NetShareCtr1004");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "count", r->count);
+	ndr_print_ptr(ndr, "array", r->array);
+	ndr->depth++;
+	if (r->array) {
+		ndr_print_array(ndr, "array", r->array, sizeof(r->array[0]), r->count, (ndr_print_fn_t)ndr_print_srvsvc_NetShare1004);
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
 void ndr_print_srvsvc_NetShareCtr(struct ndr_print *ndr, const char *name, uint16 level, union srvsvc_NetShareCtr *r)
 {
 	ndr_print_union(ndr, name, level, "srvsvc_NetShareCtr");
@@ -4423,6 +4563,15 @@ void ndr_print_srvsvc_NetShareCtr(struct ndr_print *ndr, const char *name, uint1
 	ndr->depth++;
 	if (r->ctr502) {
 		ndr_print_srvsvc_NetShareCtr502(ndr, "ctr502", r->ctr502);
+	}
+	ndr->depth--;
+	break;
+
+	case 1004:
+	ndr_print_ptr(ndr, "ctr1004", r->ctr1004);
+	ndr->depth++;
+	if (r->ctr1004) {
+		ndr_print_srvsvc_NetShareCtr1004(ndr, "ctr1004", r->ctr1004);
 	}
 	ndr->depth--;
 	break;
