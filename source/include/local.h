@@ -216,4 +216,12 @@
 /* Max number of open RPC pipes. */
 #define MAX_OPEN_PIPES 2048
 
+/* Tuning for server auth mutex. */
+#define CLI_AUTH_TIMEOUT 5000 /* In milli-seconds. */
+#define NUM_CLI_AUTH_CONNECT_RETRIES 3
+/* Number in seconds to wait for the mutex. This must be less than 30 seconds. */
+#define SERVER_MUTEX_WAIT_TIME ( ((NUM_CLI_AUTH_CONNECT_RETRIES) * ((CLI_AUTH_TIMEOUT)/1000)) + 5)
+/* Number in seconds for winbindd to wait for the mutex. Make this 2 * smbd wait time. */
+#define WINBIND_SERVER_MUTEX_WAIT_TIME (( ((NUM_CLI_AUTH_CONNECT_RETRIES) * ((CLI_AUTH_TIMEOUT)/1000)) + 5)*2)
+
 #endif
