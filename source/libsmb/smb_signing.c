@@ -46,15 +46,23 @@ static void store_sequence_for_reply(struct outstanding_packet_lookup **list,
 				     uint16 mid, uint32 reply_seq_num)
 {
 	struct outstanding_packet_lookup *t;
-	struct outstanding_packet_lookup *tmp;
-	
+
 	t = smb_xmalloc(sizeof(*t));
 	ZERO_STRUCTP(t);
 
-	DLIST_ADD_END(*list, t, tmp);
 	t->mid = mid;
 	t->reply_seq_num = reply_seq_num;
 
+	/*
+	 * Add to the *start* of the list not the end of the list.
+	 * This ensures that the *last* send sequence with this mid
+	 * is returned by preference.
+	 * This can happen if the mid wraps and one of the early
+	 * mid numbers didn't get a reply and is still lurking on
+	 * the list. JRA. Found by Fran Fabrizio <fran@cis.uab.edu>.
+	 */
+
+	DLIST_ADD(*list, t);
 	DEBUG(10,("store_sequence_for_reply: stored seq = %u mid = %u\n",
 			(unsigned int)reply_seq_num, (unsigned int)mid ));
 }
