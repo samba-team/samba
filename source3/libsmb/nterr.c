@@ -521,12 +521,11 @@ nt_err_code_struct nt_errs[] =
 /*****************************************************************************
  returns an NT error message.  not amazingly helpful, but better than a number.
  *****************************************************************************/
-char *get_nt_error_msg(uint32 nt_code)
+void get_safe_nt_error_msg(uint32 nt_code, char *msg, size_t len)
 {
-	static pstring msg;
 	int idx = 0;
 
-	snprintf(msg, sizeof(msg), "%08x", nt_code);
+	snprintf(msg, len, "NT code %08x", nt_code);
 
         nt_code &= 0xFFFF;
 
@@ -534,11 +533,19 @@ char *get_nt_error_msg(uint32 nt_code)
 	{
 		if (nt_errs[idx].nt_errcode == nt_code)
 		{
-			pstrcpy(msg, nt_errs[idx].nt_errstr);
-			return msg;
+			safe_strcpy(msg, nt_errs[idx].nt_errstr, len);
+			return;
 		}
 		idx++;
 	}
-	return msg;
 }
 
+/*****************************************************************************
+ returns an NT error message.  not amazingly helpful, but better than a number.
+ *****************************************************************************/
+char *get_nt_error_msg(uint32 nt_code)
+{
+	static pstring msg;
+	get_safe_nt_error_msg(nt_code, msg, sizeof(msg));
+	return msg;
+}

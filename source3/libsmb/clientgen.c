@@ -90,6 +90,26 @@ static BOOL cli_send_smb(struct cli_state *cli, BOOL show)
 	return True;
 }
 
+/******************************************************
+ Return an error message - either an SMB error or a RAP
+ error.
+*******************************************************/
+    
+char *cli_errstr(struct cli_state *cli)
+{   
+	static fstring error_message;
+	cli_safe_errstr(cli, error_message, sizeof(error_message));
+	return error_message;
+}
+
+/****************************************************************************
+  return a description of an SMB error
+****************************************************************************/
+void cli_safe_smb_errstr(struct cli_state *cli, char *msg, size_t len)
+{
+	smb_safe_errstr(cli->inbuf, msg, len);
+}
+
 /*****************************************************
  RAP error codes - a small start but will be extended.
 *******************************************************/
@@ -112,24 +132,32 @@ struct
 };  
 
 /****************************************************************************
-  return a description of an SMB error
+  return a description of a RAP error
 ****************************************************************************/
-static char *cli_smb_errstr(struct cli_state *cli)
+BOOL get_safe_rap_errstr(int rap_error, char *err_msg, size_t msglen)
 {
-	return smb_errstr(cli->inbuf);
+	int i;
+
+	slprintf(err_msg, msglen - 1, "RAP code %d", rap_error);
+
+	for (i = 0; rap_errmap[i].message != NULL; i++)
+	{
+		if (rap_errmap[i].err == rap_error)
+		{
+			safe_strcpy( err_msg, rap_errmap[i].message, msglen);
+			return True;
+		}
+	} 
+	return False;
 }
 
-/******************************************************
- Return an error message - either an SMB error or a RAP
- error.
-*******************************************************/
-    
-char *cli_errstr(struct cli_state *cli)
+/****************************************************************************
+  return a description of an SMB error
+****************************************************************************/
+void cli_safe_errstr(struct cli_state *cli, char *err_msg, size_t msglen)
 {   
-	static fstring error_message;
 	uint8 errclass;
 	uint32 errnum;
-	int i;      
 
 	/*  
 	 * Errors are of three kinds - smb errors,
@@ -142,47 +170,24 @@ char *cli_errstr(struct cli_state *cli)
 
 	if (errclass != 0)
 	{
-		return cli_smb_errstr(cli);
+		cli_safe_smb_errstr(cli, err_msg, msglen);
 	}
-
-	/*
-	 * Was it an NT error ?
-	 */
-
-	if (cli->nt_error)
+	else if (cli->nt_error)
 	{
-		char *nt_msg = get_nt_error_msg(cli->nt_error);
+		/*
+		 * Was it an NT error ?
+		 */
 
-		if (nt_msg == NULL)
-		{
-			slprintf(error_message, sizeof(fstring) - 1, "NT code %d", cli->nt_error);
-		}
-		else
-		{
-			fstrcpy(error_message, nt_msg);
-		}
-
-		return error_message;
+		(void)get_safe_nt_error_msg(cli->nt_error, err_msg, msglen);
 	}
-
-	/*
-	 * Must have been a rap error.
-	 */
-
-	slprintf(error_message, sizeof(error_message) - 1, "code %d", cli->rap_error);
-
-	for (i = 0; rap_errmap[i].message != NULL; i++)
+	else
 	{
-		if (rap_errmap[i].err == cli->rap_error)
-		{
-			fstrcpy( error_message, rap_errmap[i].message);
-			break;
-		}
-	} 
-
-	return error_message;
+		/*
+		 * Must have been a rap error.
+		 */
+		(void)get_safe_rap_errstr(cli->rap_error, err_msg, msglen);
+	}
 }
-
 /****************************************************************************
 setup basics in a outgoing packet
 ****************************************************************************/

@@ -39,8 +39,6 @@ extern pstring user_socket_options;
 extern int DEBUGLEVEL;
 
 
-extern file_info def_finfo;
-
 #define CNV_LANG(s) dos2unix_format(s,False)
 #define CNV_INPUT(s) unix2dos_format(s,True)
 
