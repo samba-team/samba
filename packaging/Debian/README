@@ -1,6 +1,21 @@
 Building Samba Packages for Debian GNU/Linux
 --------------------------------------------
 
+Building Debian packages is not as hard as some people might think. The
+following instructions will allow you to build your own Samba Debian
+packages. These instructions, and the files in packaging/Debian/, should
+be current as of Samba 3.0beta1, and should allow you to build Debian
+packages for Debian unstable.
+
+We try to maintain as much compatibility with previous releases
+of Debian as possible, so it is possible that the files in
+packaging/Debian/ can also be used to build Samba Debian packages for
+other Debian releases. However, sometimes this is just not possible
+because we need to use stuff that is only available on Debian unstable.
+
+Instructions
+------------
+
 If you want to build Samba packages for Debian and you just want to use
 upstream sources, i.e. you don't want to wait for us to put official
 packages out, or you want packages for a Debian version for which we
@@ -8,35 +23,45 @@ don't provide deb's, or you don't want to use official packages, or
 you want to add --this-cool-switch to configure, or whatever, follow
 these instructions:
 
-0) Make sure you have the following packages installed:
-   debhelper
-   libpam0g-dev
-   libreadline4-dev
-   libcupsys2-dev
-   + the minimum Debian development stuff (dpkg-dev, libc6-dev, etc.)
-   Note: libcupsys2-dev is not available for Potato. It's safe
-   to not install it if you don't need CUPS support.
-1) cd samba[-<version>]
+0) Make sure you have the following packages installed (in addition
+to the normal Debian development packages -- dpkg-dev, libc6-dev,
+devscripts, etc.):
+
+  debhelper
+  libpam0g-dev
+  libreadline4-dev
+  libcupsys2-dev
+  autoconf
+
+  Notes about the packages required to build Samba Debian packages:
+
+  * The libcupsys2-dev is not available in Debian Potato (Debian 2.2).
+  That's fine; the configure script won't detect CUPS support and the
+  resulting binaries won't support CUPS.
+
+1) cd samba[-<version>]. For example, "cd samba-2.2.5".
 2) cp -a packaging/Debian/debian/ debian
   It's important that you copy instead of symlink because the build
   tools in Potato have a problem that prevents the build to work with
   a symlink.
-3) dch -i
+3) dch -i (this is completely optional - only do it if you understand
+   Debian version numbers! Don't complain later if you can't upgrade
+   to official versions of the Samba packages for Debian.)
   - Edit the changelog and make sure the version is right. For example,
-  for Samba 2.2.3, the version number should be 2.2.3-0.1 (use
-  a number less than 1 like 0.1, 0.2, etc. so there is no conflict
+  for Samba 2.2.4, the version number should something like 2.2.4-0.1
+  (use a number less than 1 like 0.1, 0.2, etc. so there is no conflict
   with future upgrades to the official Debian packages.)
 4) Run 'debian/rules binary'.
   - It is better that you prefix the above command with 'fakeroot'.
     If you have problems you might try building as root.
 5) That's it. Your new packages should be in ../. Install with dpkg.
 
-Please e-mail samba@packages.debian.org with comments, question or
-usggestions. Please talk to us and not to the Samba Team. They have
+Please e-mail samba@packages.debian.org with comments, questions or
+suggestions. Please talk to us and not to the Samba Team. They have
 better things to do and know nothing about the Debian packaging system.
 
 Eloy A. Paris <peloy@debian.org>
 Steve Langasek <vorlon@debian.org>
 
-Sat Feb  2 00:44:42 CET 2002
+$Id: README,v 1.3 2003/06/01 07:12:51 peloy Exp $
 

@@ -1,0 +1,84 @@
+--- samba-3.0alpha23.orig/source/script/installswat.sh	2001-10-17 16:00:14.000000000 -0400
++++ samba-3.0alpha23/source/script/installswat.sh	2003-04-06 03:18:29.000000000 -0400
+@@ -9,7 +9,7 @@
+ echo Installing the Samba Web Administration Tool
+ 
+ LANGS=". `cd $SRCDIR../swat/; /bin/echo lang/??`"
+-echo Installing langs are `cd $SRCDIR../swat/lang/; /bin/echo ??`
++echo Installing the following additional langs: `cd $SRCDIR../swat/lang/; /bin/echo ??`
+ 
+ for ln in $LANGS; do 
+  SWATLANGDIR=$SWATDIR/$ln
+@@ -23,21 +23,17 @@
+ 	fi
+     fi
+  done
+-done
+-
+-# Install images
+-for ln in $LANGS; do
+ 
+-for f in $SRCDIR../swat/$ln/images/*.gif; do
++ # Install images
++ for f in $SRCDIR../swat/$ln/images/*.gif; do
+       FNAME=$SWATDIR/$ln/images/`basename $f`
+       echo $FNAME
+       cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
+       chmod 0644 $FNAME
+-done
+-
+-# Install html help
++ done
+ 
+-for f in $SRCDIR../swat/$ln/help/*.html; do
++ # Install html help
++ for f in $SRCDIR../swat/$ln/help/*.html; do
+       FNAME=$SWATDIR/$ln/help/`basename $f`
+       echo $FNAME
+       if [ "x$BOOKDIR" = "x" ]; then
+@@ -49,31 +45,31 @@
+       cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
+       rm -f $f
+       chmod 0644 $FNAME
+-done
+-
+-# Install html documentation
+-
+-for f in $SRCDIR../docs/htmldocs/*.html; do
+-      FNAME=$SWATDIR/help/`basename $f`
+-      echo $FNAME
+-      cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
+-      chmod 0644 $FNAME
+-done
+-
+-# Install "server-side" includes
++ done
+ 
+-for f in $SRCDIR../swat/$ln/include/*.html; do
++ # Install "server-side" includes
++ for f in $SRCDIR../swat/$ln/include/*.html; do
+       FNAME=$SWATDIR/$ln/include/`basename $f`
+       echo $FNAME
+       cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
+       chmod 0644 $FNAME
++ done
+ done
+ 
++# Install html documentation
++for f in $SRCDIR../docs/htmldocs/*.html; do
++      FNAME=$SWATDIR/help/`basename $f`
++      echo $FNAME
++      ln -s ../../../doc/samba-doc/htmldocs/`basename $f` $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
++#      chmod 0644 $FNAME
+ done
+ 
+ # Install Using Samba book
+ 
+-if [ "x$BOOKDIR" != "x" ]; then
++# For Debian we do not install anything here, we just create a symlink
++#	pointing to /usr/share/doc/samba-doc/htmldocs/using_samba/ in
++#	debian/rules (peloy@debian.org)
++if /bin/false; then
+ 
+     # Create directories
+ 
