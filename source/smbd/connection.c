@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/Netbios implementation.
    Version 1.9.
    connection claim routines
    Copyright (C) Andrew Tridgell 1998
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -73,7 +73,7 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 	TDB_DATA kbuf, dbuf;
 
 	if (!tdb) {
-		tdb = tdb_open(lock_path("connections.tdb"), 0, TDB_CLEAR_IF_FIRST, 
+		tdb = tdb_open(lock_path("connections.tdb"), 0, TDB_CLEAR_IF_FIRST,
 			       O_RDWR | O_CREAT, 0644);
 	}
 	if (!tdb) return False;
@@ -115,6 +115,54 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 #endif
 
 	return True;
+}
+
+
+static struct {
+	int msg_type;
+	void *buf;
+	size_t len;
+	BOOL duplicates;
+} msg_all;
+
+/****************************************************************************
+send one of the messages for the broadcast
+****************************************************************************/
+static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
+{
+	struct connections_data crec;
+
+	memcpy(&crec, dbuf.dptr, sizeof(crec));
+
+	if (crec.cnum != -1) return 0;
+	message_send_pid(crec.pid, msg_all.msg_type, msg_all.buf, msg_all.len, msg_all.duplicates);
+	return 0;
+}
+
+/****************************************************************************
+this is a useful function for sending messages to all smbd processes.
+It isn't very efficient, but should be OK for the sorts of applications that
+use it. When we need efficient broadcast we can add it.
+
+*HACK* JRR 001213: This 'message' function is here, because this module keeps
+the connection tdb open, and the current tdb_open code prevents multiple opens.
+****************************************************************************/
+BOOL message_send_all(int msg_type, void *buf, size_t len, BOOL duplicates_allowed)
+{
+	msg_all.msg_type = msg_type;
+	msg_all.buf = buf;
+	msg_all.len = len;
+	msg_all.duplicates = duplicates_allowed;
+
+	if (tdb) {
+		tdb_traverse(tdb, traverse_fn, NULL);
+		return True;
+	}
+	else
+	{
+		DEBUG(2,("message_send_all: connections.tdb is not open. errno = %d\n", errno));
+		return False;
+	}
 }
 
 #ifdef WITH_UTMP
@@ -159,7 +207,7 @@ OS observations and status:
 
 	FreeBSD:
 		No "putut*()" type of interface.
-		No "ut_type" and associated defines. 
+		No "ut_type" and associated defines.
 		Write files directly.  Alternatively use its login(3)/logout(3).
 	SunOS 4:
 		Not tested.  Resembles FreeBSD, but no login()/logout().
@@ -231,7 +279,7 @@ obtain/release a small number (0 upwards) unique within and across smbds
  * claim:
  *	Start at 0, hunt up for free, unique number "unum" by attempting to
  *	store it as a key in a tdb database:
- *		key: unum		data: pid+conn  
+ *		key: unum		data: pid+conn
  *	Also store its inverse, ready for yield function:
  *		key: pid+conn		data: unum
  *
@@ -439,7 +487,7 @@ static int utmp_fill(struct utmp *u, const connection_struct *conn, pid_t pid,
 #endif /* defined(HAVE_UT_UT_PID) */
 
 /*
- * ut_time, ut_tv: 
+ * ut_time, ut_tv:
  *	Some have one, some the other.  Many have both, but defined (aliased).
  *	It is easier and clearer simply to let the following take its course.
  *	But note that we do the more precise ut_tv as the final assignment.
