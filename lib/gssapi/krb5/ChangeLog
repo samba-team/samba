@@ -1,3 +1,9 @@
+2003-09-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* init_sec_context.c (spnego_initial): add #if 0 out version of
+	the CHOICE branch encoding, also where here, free no longer used
+	memory
+
 2003-09-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* accept_sec_context.c: Add support for SPNEGO on the initator
