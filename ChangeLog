@@ -1,3 +1,7 @@
+Thu Feb 25 11:16:49 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* configure.in: -O does not belong in WFLAGS
+
 Tue Feb 23 20:35:12 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* configure.in: use AC_BROKEN_GLOB
