@@ -5,7 +5,7 @@ include $(top_srcdir)/Makefile.am.common
 lib_LTLIBRARIES = libdes.la
 libdes_la_LDFLAGS = -version-info 0:2:0
 
-include_HEADERS = des.h md4.h md5.h sha.h
+include_HEADERS = des.h md4.h md5.h sha.h rc4.h
 
 build_HEADERZ = $(include_HEADERS)
 
@@ -45,6 +45,7 @@ libdes_la_SOURCES =	\
 	pcbc_enc.c	\
 	podd.h		\
 	qud_cksm.c	\
+	rc4_skey.c	\
 	read_pwd.c	\
 	rnd_keys.c	\
 	set_key.c	\
