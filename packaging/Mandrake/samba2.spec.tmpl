@@ -335,7 +335,7 @@ CFLAGS="$RPM_OPT_FLAGS"
 #make CFLAGS="$RPM_OPT_FLAGS -D_GNU_SOURCE" all
 make CFLAGS="$RPM_OPT_FLAGS -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE" all smbfilter smbwrapper smbcacls pam_smbpass nsswitch nsswitch/libnss_wins.so debug2html
 
-cd ../example/VFS
+cd ../examples/VFS
 %configure      --prefix=%{prefix} \
                 --with-fhs \
                 --libdir=/etc/samba \
@@ -476,11 +476,11 @@ done
         install -m644 $RPM_SOURCE_DIR/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
 
 # Install VFS Modules
-	install -m755 example/VFS/audit.so $RPM_BUILD_ROOT/lib/samba/
-	install -m755 example/VFS/recycle.so $RPM_BUILD_ROOT/lib/samba/
-	install -m755 example/VFS/block/block.so $RPM_BUILD_ROOT/lib/samba/
-	install -m644 example/VFS/block/smb-block.conf $RPM_BUILD_ROOT/etc/samba/
-	install -m644 example/VFS/block/smb.conf $RPM_BUILD_ROOT/etc/samba/smb.conf.example-with-block
+	install -m755 examples/VFS/audit.so $RPM_BUILD_ROOT/lib/samba/
+	install -m755 examples/VFS/recycle.so $RPM_BUILD_ROOT/lib/samba/
+	install -m755 examples/VFS/block/block.so $RPM_BUILD_ROOT/lib/samba/
+	install -m644 examples/VFS/block/smb-block.conf $RPM_BUILD_ROOT/etc/samba/
+	install -m644 examples/VFS/block/smb.conf $RPM_BUILD_ROOT/etc/samba/smb.conf.example-with-block
 
 # Link smbmount to /sbin/mount.smb and /sbin/mount.smbfs
 
