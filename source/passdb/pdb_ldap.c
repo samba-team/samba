@@ -912,27 +912,41 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 	if ((pdb_get_acct_ctrl(sampass)&(ACB_WSTRUST|ACB_SVRTRUST|ACB_DOMTRUST))
 			|| (lp_ldap_passwd_sync()!=LDAP_PASSWD_SYNC_ONLY)) {
 
-		pdb_sethexpwd(temp, pdb_get_lanman_passwd(sampass),
-			       pdb_get_acct_ctrl(sampass));
+		if (need_update(sampass, PDB_LMPASSWD)) {
+			uchar *lm_pw =  pdb_get_lanman_passwd(sampass);
+			if (lm_pw) {
+				pdb_sethexpwd(temp, lm_pw,
+					      pdb_get_acct_ctrl(sampass));
+				smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods,
+						 get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_LMPW), 
+						 temp);
+			} else {
+				smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods,
+						 get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_LMPW), 
+						 NULL);
+			}
+		}
+		if (need_update(sampass, PDB_NTPASSWD)) {
+			uchar *nt_pw =  pdb_get_nt_passwd(sampass);
+			if (nt_pw) {
+				pdb_sethexpwd(temp, nt_pw,
+					      pdb_get_acct_ctrl(sampass));
+				smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods,
+						 get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_NTPW), 
+						 temp);
+			} else {
+				smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods,
+						 get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_NTPW), 
+						 NULL);
+			}
+		}
 
-		if (need_update(sampass, PDB_LMPASSWD))
-			smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods,
-				get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_LMPW), 
-				temp);
-
-		pdb_sethexpwd (temp, pdb_get_nt_passwd(sampass),
-			       pdb_get_acct_ctrl(sampass));
-
-		if (need_update(sampass, PDB_NTPASSWD))
-			smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods,
-				get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_NTPW), 
-				temp);
-
-		slprintf (temp, sizeof (temp) - 1, "%li", pdb_get_pass_last_set_time(sampass));
-		if (need_update(sampass, PDB_PASSLASTSET))
+		if (need_update(sampass, PDB_PASSLASTSET)) {
+			slprintf (temp, sizeof (temp) - 1, "%li", pdb_get_pass_last_set_time(sampass));
 			smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods,
 				get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PWD_LAST_SET), 
 				temp);
+		}
 	}
 
 	/* FIXME: Hours stuff goes in LDAP  */

@@ -553,7 +553,6 @@ static int default_server_announce;
 /* prototypes for the special type handlers */
 static BOOL handle_include(const char *pszParmValue, char **ptr);
 static BOOL handle_copy(const char *pszParmValue, char **ptr);
-static BOOL handle_source_env(const char *pszParmValue, char **ptr);
 static BOOL handle_netbios_name(const char *pszParmValue, char **ptr);
 static BOOL handle_idmap_uid(const char *pszParmValue, char **ptr);
 static BOOL handle_idmap_gid(const char *pszParmValue, char **ptr);
@@ -2788,46 +2787,6 @@ static BOOL source_env(char **lines)
 
 	DEBUG(4, ("source_env: returning successfully\n"));
 	return (True);
-}
-
-/***************************************************************************
- Handle the source environment operation.
-***************************************************************************/
-
-static BOOL handle_source_env(const char *pszParmValue, char **ptr)
-{
-	pstring fname;
-	char *p = fname;
-	BOOL result;
-	char **lines;
-
-	pstrcpy(fname, pszParmValue);
-
-	standard_sub_basic(current_user_info.smb_name, fname,sizeof(fname));
-
-	string_set(ptr, pszParmValue);
-
-	DEBUG(4, ("handle_source_env: checking env type\n"));
-
-	/*
-	 * Filename starting with '|' means popen and read from stdin.
-	 */
-
-	if (*p == '|')
-		lines = file_lines_pload(p + 1, NULL);
-	else
-		lines = file_lines_load(fname, NULL);
-
-	if (!lines) {
-		DEBUG(0, ("handle_source_env: Failed to open file %s, Error was %s\n",
-		       fname, strerror(errno)));
-		return (False);
-	}
-
-	result = source_env(lines);
-	file_lines_free(lines);
-
-	return (result);
 }
 
 /***************************************************************************
