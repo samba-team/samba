@@ -5305,7 +5305,7 @@ uint32 _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 	FORM_1 form_1;
 	fstring form_name;
 	int buffer_size=0;
-	int numofforms=0, i;
+	int numofforms=0, i=0;
 
 	/* that's an [in out] buffer */
 	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
