@@ -59,6 +59,12 @@ struct units kdb_attrs[] = {
     { NULL }
 };
 
+/*
+ * Convert the time `t' to a string representation in `str' (of max
+ * size `len').  If include_time also include time, otherwise just
+ * date.
+ */
+
 void
 timeval2str(time_t t, char *str, size_t len, int include_time)
 {
@@ -69,6 +75,40 @@ timeval2str(time_t t, char *str, size_t len, int include_time)
 	    strftime(str, len, "%Y-%m-%d", gmtime(&t));
     } else
 	snprintf(str, len, "never");
+}
+
+/*
+ * Convert the time representation in `str' to a time in `time'.
+ * Return 0 if succesful, else 1.
+ */
+
+int
+str2timeval (const char *str, time_t *time)
+{
+    const char *p;
+    struct tm tm;
+
+    memset (&tm, 0, sizeof (tm));
+
+    if(strcasecmp(str, "never") == 0) {
+	*time = 0;
+	return 0;
+    }
+
+    p = strptime (str, "%Y-%m-%d", &tm);
+
+    if (p == NULL)
+	return 1;
+
+    /* Do it on the end of the day */
+    tm.tm_hour = 23;
+    tm.tm_min  = 59;
+    tm.tm_sec  = 59;
+
+    strptime (p, "%H:%M:%S", &tm);
+
+    *time = tm2time (tm, 0);
+    return 0;
 }
 
 void
@@ -143,7 +183,7 @@ get_deltat(const char *prompt, const char *def, unsigned *delta)
 }
 
 static int
-edit_time (const char *prompt, krb5_deltat *value, int *mask, int bit)
+edit_deltat (const char *prompt, krb5_deltat *value, int *mask, int bit)
 {
     char buf[1024], resp[1024];
 
@@ -161,6 +201,33 @@ edit_time (const char *prompt, krb5_deltat *value, int *mask, int bit)
 	    break;
 	} else if(*resp == '?') {
 	    print_time_table (stderr);
+	} else {
+	    fprintf (stderr, "Unable to parse time '%s'\n", resp);
+	}
+    }
+    return 0;
+}
+
+static int
+edit_time (const char *prompt, krb5_timestamp *value, int *mask, int bit)
+{
+    char buf[1024], resp[1024];
+
+    if (*mask & bit)
+	return 0;
+
+    timeval2str (*value, buf, sizeof (buf), 0);
+
+    for (;;) {
+	time_t tmp;
+
+	get_response(prompt, buf, resp, sizeof(resp));
+	if (str2timeval(resp, &tmp) == 0) {
+	    *value = tmp;
+	    *mask |= bit;
+	    break;
+	} else if(*resp == '?') {
+	    printf ("Print date on format YYYY-mm-dd [hh:mm:ss]\n");
 	} else {
 	    fprintf (stderr, "Unable to parse time '%s'\n", resp);
 	}
@@ -202,12 +269,24 @@ edit_entry(kadm5_principal_ent_t ent, int *mask,
 {
     if (default_ent && (default_mask & KADM5_MAX_LIFE))
 	ent->max_life = default_ent->max_life;
-    edit_time ("Max ticket life", &ent->max_life, mask,
-	       KADM5_MAX_LIFE);
+    edit_deltat ("Max ticket life", &ent->max_life, mask,
+		 KADM5_MAX_LIFE);
+
     if (default_ent && (default_mask & KADM5_MAX_RLIFE))
 	ent->max_renewable_life = default_ent->max_renewable_life;
-    edit_time ("Max renewable life", &ent->max_renewable_life, mask,
-	       KADM5_MAX_RLIFE);
+    edit_deltat ("Max renewable life", &ent->max_renewable_life, mask,
+		 KADM5_MAX_RLIFE);
+
+    if (default_ent && (default_mask & KADM5_PRINC_EXPIRE_TIME))
+	ent->princ_expire_time = default_ent->princ_expire_time;
+    edit_time ("Principal expiration time", &ent->princ_expire_time, mask,
+	       KADM5_PRINC_EXPIRE_TIME);
+
+    if (default_ent && (default_mask & KADM5_PW_EXPIRATION))
+	ent->pw_expiration = default_ent->pw_expiration;
+    edit_time ("Password expiration time", &ent->pw_expiration, mask,
+	       KADM5_PW_EXPIRATION);
+
     if (default_ent && (default_mask & KADM5_ATTRIBUTES))
 	ent->attributes = default_ent->attributes & ~KRB5_KDB_DISALLOW_ALL_TIX;
     edit_attributes ("Attributes", &ent->attributes, mask,
