@@ -64,6 +64,7 @@ DB_op(krb5_context context, HDB *db, hdb_entry *entry, int op)
     key.size = data.length;
     switch(op){
     case 0:
+	krb5_free_principal (context, entry->principal);
 	err = d->get(d, &key, &value, 0);
 	break;
     case 1:
@@ -74,6 +75,7 @@ DB_op(krb5_context context, HDB *db, hdb_entry *entry, int op)
 	krb5_data_free(&data);
 	break;
     case 2:
+	krb5_free_principal (context, entry->principal);
 	err = d->del(d, &key, 0);
 	break;
     }
@@ -116,8 +118,9 @@ DB_seq(krb5_context context, HDB *db, hdb_entry *entry, int flag)
 {
     DB *d = (DB*)db->db;
     DBT key, value;
-    krb5_data data;
+    krb5_data key_data, data;
     int err;
+    krb5_principal principal;
 
     err = d->seq(d, &key, &value, flag);
     if(err == -1)
@@ -125,13 +128,15 @@ DB_seq(krb5_context context, HDB *db, hdb_entry *entry, int flag)
     if(err == 1)
 	return KRB5_HDB_NOENTRY;
 
-    data.data = key.data;
-    data.length = key.size;
-    entry->principal = malloc(sizeof(*entry->principal));
-    hdb_key2principal(context, &data, &entry->principal);
+    key_data.data = key.data;
+    key_data.length = key.size;
     data.data = value.data;
     data.length = value.size;
     hdb_value2entry(context, &data, entry);
+    if (entry->principal == NULL) {
+	entry->principal = malloc(sizeof(*entry->principal));
+	hdb_key2principal(context, &key_data, &entry->principal);
+    }
     return 0;
 }
 

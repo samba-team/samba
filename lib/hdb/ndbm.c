@@ -59,6 +59,7 @@ NDBM_fetch(krb5_context context, HDB *db, hdb_entry *entry)
     krb5_data data;
 
     hdb_principal2key(context, entry->principal, &data);
+    krb5_free_principal (context, entry->principal);
 
     key.dptr = data.data;
     key.dsize = data.length;
@@ -121,7 +122,8 @@ NDBM_seq(krb5_context context, HDB *db, hdb_entry *entry, int first)
 {
     DBM *d = (DBM*)db->db;
     datum key, value;
-    krb5_data data;
+    krb5_data key_data, data;
+    krb5_principal principal;
 
     if(first)
 	key = dbm_firstkey(d);
@@ -129,15 +131,17 @@ NDBM_seq(krb5_context context, HDB *db, hdb_entry *entry, int first)
 	key = dbm_nextkey(d);
     if(key.dptr == NULL)
 	return KRB5_HDB_NOENTRY;
-    data.data = key.dptr;
-    data.length = key.dsize;
-    entry->principal = malloc(sizeof(*entry->principal));
-    hdb_key2principal(context, &data, entry->principal);
+    key_data.data = key.dptr;
+    key_data.length = key.dsize;
     value = dbm_fetch(d, key);
     /* krb5_data_free(&data); */
     data.data = value.dptr;
     data.length = value.dsize;
     hdb_value2entry(context, &data, entry);
+    if (entry->principal == NULL) {
+	entry->principal = malloc (sizeof(*entry->principal));
+	hdb_key2principal (context, &key_data, entry->principal);
+    }
     /* krb5_data_free(&data); */
     return 0;
 }
