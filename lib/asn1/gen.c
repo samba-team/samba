@@ -475,13 +475,20 @@ generate_type (const Symbol *s)
 	     "#include <asn1_err.h>\n"
 	     "#include <der.h>\n"
 	     "#include <parse_units.h>\n\n");
-    generate_type_header (s);
-    generate_type_encode (s);
-    generate_type_decode (s);
-    generate_type_free (s);
-    generate_type_length (s);
-    generate_type_copy (s);
-    generate_glue (s);
+
+    if (s->stype == Stype && s->type->type == TChoice) {
+	fprintf(codefile,
+		"/* CHOICE */\n"
+		"int asn1_%s_dummy_holder = 1;\n", s->gen_name);
+    } else {
+	generate_type_header (s);
+	generate_type_encode (s);
+	generate_type_decode (s);
+	generate_type_free (s);
+	generate_type_length (s);
+	generate_type_copy (s);
+	generate_glue (s);
+    }
     fprintf(headerfile, "\n\n");
     fclose(codefile);
 }
