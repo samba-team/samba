@@ -853,16 +853,6 @@ static BOOL lsa_io_trans_names(char *desc, LSA_TRANS_NAME_ENUM *trn,
 			if(!prs_align(ps))
 				return False;
 		}
-
-		/* Free memory if we've sent it */
-
-		if (MARSHALLING(ps)) {
-			safe_free(trn->name);
-			safe_free(trn->uni_name);
-
-			trn->name = NULL;
-			trn->uni_name = NULL;
-		}
 	}
 
 	return True;

@@ -300,7 +300,7 @@ void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 		return;
 	}
 
-	for (p = dest; *src && p-dest < len; src++) {
+	for (p = dest; (p-dest < len) && *src; src++) {
 		uint16 ucs2_val = SVAL(src,0);
 		uint16 cp_val = ucs2_to_doscp[ucs2_val];
 
@@ -341,7 +341,7 @@ char *dos_buffer2_to_str(BUFFER2 *str)
 
 	nexti = (nexti+1)%8;
 
-	for (p = lbuf; *src && p-lbuf < max_size; src++) {
+	for (p = lbuf; (p-lbuf < max_size) && *src; src++) {
 		uint16 ucs2_val = SVAL(src,0);
 		uint16 cp_val = ucs2_to_doscp[ucs2_val];
 
@@ -405,7 +405,7 @@ size_t dos_struni2(char *dst, const char *src, size_t max_len)
 		return 0;
 
 	if (src != NULL) {
-		for (; *src && len < max_len-2; len++, dst +=2) {
+		for (; (len < max_len-2) && *src; len++, dst +=2) {
 			size_t skip = get_character_len(*src);
 			smb_ucs2_t val = (*src & 0xff);
 
@@ -444,7 +444,7 @@ char *dos_unistr(char *buf)
 
 	nexti = (nexti+1)%8;
 
-	for (p = lbuf; *src && p-lbuf < MAXUNI-3; src++) {
+	for (p = lbuf; (p-lbuf < MAXUNI-3) && *src; src++) {
 		uint16 ucs2_val = SVAL(src,0);
 		uint16 cp_val = ucs2_to_doscp[ucs2_val];
 
@@ -712,7 +712,7 @@ static char *unicode_to_multibyte(char *dst, const smb_ucs2_t *src,
 {
 	size_t dst_pos;
 
-	for(dst_pos = 0; *src && (dst_pos < dst_len - 1);) {
+	for(dst_pos = 0; (dst_pos < dst_len - 1) && *src;) {
 		smb_ucs2_t val = ucs2_to_cp[*src++];
 		if(val < 256) {
 			dst[dst_pos++] = (char)val;
