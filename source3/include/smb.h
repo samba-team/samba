@@ -438,8 +438,8 @@ typedef struct id_info_1
   DOM_LOGON_ID      logon_id;            /* logon ID */
   UNIHDR            hdr_user_name;       /* user name unicode header */
   UNIHDR            hdr_workgroup_name;  /* workgroup name unicode header */
-  ARC4_OWF          arc4_lm_owf;         /* rc4 LM OWF Password */
-  ARC4_OWF          arc4_nt_owf;         /* rc4 NT OWF Password */
+  ARC4_OWF          arc4_lm_owf;         /* arc4 LM OWF Password */
+  ARC4_OWF          arc4_nt_owf;         /* arc4 NT OWF Password */
   UNISTR2           uni_domain_name;     /* domain name unicode string */
   UNISTR2           uni_user_name;       /* user name unicode string */
   UNISTR2           uni_workgroup_name;  /* workgroup name unicode string */
@@ -1305,23 +1305,38 @@ struct connect_record
 #define SMBfindnclose    0x35   /* Terminate a TRANSACT2_FINDNOTIFYFIRST */
 #define SMBulogoffX      0x74   /* user logoff */
 
+/* NT SMB extensions. */
+#define SMBnttrans       0xA0   /* NT transact */
+#define SMBnttranss      0xA1   /* NT transact secondary */
+#define SMBntcreateX     0xA2   /* NT create and X */
+#define SMBntcancel      0xA4   /* NT cancel */
 
-/* these are the TRANS2 sub commands */
-#define TRANSACT2_OPEN          0
-#define TRANSACT2_FINDFIRST     1
-#define TRANSACT2_FINDNEXT      2
-#define TRANSACT2_QFSINFO       3
-#define TRANSACT2_SETFSINFO     4
-#define TRANSACT2_QPATHINFO     5
-#define TRANSACT2_SETPATHINFO   6
-#define TRANSACT2_QFILEINFO     7
-#define TRANSACT2_SETFILEINFO   8
-#define TRANSACT2_FSCTL         9
-#define TRANSACT2_IOCTL           10
-#define TRANSACT2_FINDNOTIFYFIRST 11
-#define TRANSACT2_FINDNOTIFYNEXT  12
-#define TRANSACT2_MKDIR           13
+/* These are the TRANS2 sub commands */
+#define TRANSACT2_OPEN                        0
+#define TRANSACT2_FINDFIRST                   1
+#define TRANSACT2_FINDNEXT                    2
+#define TRANSACT2_QFSINFO                     3
+#define TRANSACT2_SETFSINFO                   4
+#define TRANSACT2_QPATHINFO                   5
+#define TRANSACT2_SETPATHINFO                 6
+#define TRANSACT2_QFILEINFO                   7
+#define TRANSACT2_SETFILEINFO                 8
+#define TRANSACT2_FSCTL                       9
+#define TRANSACT2_IOCTL                     0xA
+#define TRANSACT2_FINDNOTIFYFIRST           0xB
+#define TRANSACT2_FINDNOTIFYNEXT            0xC
+#define TRANSACT2_MKDIR                     0xD
+#define TRANSACT2_SESSION_SETUP             0xE
+#define TRANSACT2_GET_DFS_REFERRAL         0x10
+#define TRANSACT2_REPORT_DFS_INCONSISTANCY 0x11
 
+/* These are the NT transact sub commands. */
+#define NT_TRANSACT_CREATE                1
+#define NT_TRANSACT_IOCTL                 2
+#define NT_TRANSACT_SET_SECURITY_DESC     3
+#define NT_TRANSACT_NOTIFY_CHANGE         4
+#define NT_TRANSACT_RENAME                5
+#define NT_TRANSACT_QUERY_SECURITY_DESC   6
 
 /* these are the trans2 sub fields for primary requests */
 #define smb_tpscnt smb_vwv0
