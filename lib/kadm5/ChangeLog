@@ -1,3 +1,7 @@
+2003-07-02  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* truncate_log.c (main): add missing ``if (ret)''
+	
 2003-06-26  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* set_keys.c (make_keys): add AES support
