@@ -646,3 +646,64 @@ Here are the possible scenarios for supporting migration:
 </sect1>
 
 </chapter>
+
+
+<!--
+
+  This comment from rpc_server/srv_spoolss_nt.c:_spoolss_open_printer_ex()
+  needs to be added into a section probably.  This is to remind me it needs 
+  to be done.  --jerry
+
+                /*
+                 * If the openprinterex rpc call contains a devmode,
+                 * it's a per-user one. This per-user devmode is derivated
+                 * from the global devmode. Openprinterex() contains a per-user
+                 * devmode for when you do EMF printing and spooling.
+                 * In the EMF case, the NT workstation is only doing half the job
+                 * of rendering the page. The other half is done by running the printer
+                 * driver on the server.
+                 * The EMF file doesn't contain the page description (paper size, orientation, ...).
+                 * The EMF file only contains what is to be printed on the page.
+                 * So in order for the server to know how to print, the NT client sends
+                 * a devicemode attached to the openprinterex call.
+                 * But this devicemode is short lived, it's only valid for the current print job.
+                 *
+                 * If Samba would have supported EMF spooling, this devicemode would
+                 * have been attached to the handle, to sent it to the driver to correctly
+                 * rasterize the EMF file.
+                 *
+                 * As Samba only supports RAW spooling, we only receive a ready-to-print file,
+                 * we just act as a pass-thru between windows and the printer.
+                 *
+                 * In order to know that Samba supports only RAW spooling, NT has to call
+                 * getprinter() at level 2 (attribute field) or NT has to call startdoc()
+                 * and until NT sends a RAW job, we refuse it.
+                 *
+                 * But to call getprinter() or startdoc(), you first need a valid handle,
+                 * and to get an handle you have to call openprintex(). Hence why you have
+                 * a devicemode in the openprinterex() call.
+                 *
+                 *
+                 * Differences between NT4 and NT 2000.
+                 * NT4:
+                 * 
+                 * On NT4, you only have a global devicemode. This global devicemode can be changed
+                 * by the administrator (or by a user with enough privs). Everytime a user
+                 * wants to print, the devicemode is resetted to the default. In Word, everytime
+                 * you print, the printer's characteristics are always reset to the global devicemode.
+                 *
+                 * NT 2000:
+                 * 
+                 * In W2K, there is the notion of per-user devicemode. The first time you use
+                 * a printer, a per-user devicemode is build from the global devicemode.
+                 * If you change your per-user devicemode, it is saved in the registry, under the
+                 * H_KEY_CURRENT_KEY sub_tree. So that everytime you print, you have your default
+                 * printer preferences available.
+                 *
+                 * To change the per-user devicemode: it's the "Printing Preferences ..." button
+                 * on the General Tab of the printer properties windows.
+                 *
+                 * To change the global devicemode: it's the "Printing Defaults..." button
+                 * on the Advanced Tab of the printer properties window.
+-->
+
