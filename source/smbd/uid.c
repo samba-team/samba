@@ -186,6 +186,7 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 	int snum;
     gid_t gid;
 	uid_t uid;
+	char group_c;
 
 	if (!conn) {
 		DEBUG(2,("Connection not open\n"));
@@ -230,16 +231,41 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 			return(False);
 		}
 		uid = vuser->uid;
-		if(!*lp_force_group(snum)) {
-			gid = vuser->gid;
-		} else {
-			gid = conn->gid;
-		}
+		gid = vuser->gid;
 		current_user.ngroups = vuser->n_groups;
 		current_user.groups  = vuser->groups;
 	}
+
+	/*
+	 * See if we should force group for this service.
+	 * If so this overrides any group set in the force
+	 * user code.
+	 */
+
+	if((group_c = *lp_force_group(snum))) {
+		if(group_c == '+') {
+
+			/*
+			 * Only force group if the user is a member of
+			 * the service group. Check the group memberships for
+			 * this user (we already have this) to
+			 * see if we should force the group.
+			 */
+
+			int i;
+			for (i = 0; i < current_user.ngroups; i++) {
+				if (current_user.groups[i] == conn->gid) {
+					gid = conn->gid;
+					break;
+				}
+			}
+		} else {
+			gid = conn->gid;
+		}
+	}
 	
-	if (!become_gid(gid)) return(False);
+	if (!become_gid(gid))
+		return(False);
 
 #ifdef HAVE_SETGROUPS      
 	if (!(conn && conn->ipc)) {
