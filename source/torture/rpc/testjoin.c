@@ -31,7 +31,7 @@ struct test_join {
 	TALLOC_CTX *mem_ctx;
 	struct dcerpc_pipe *p;
 	const char *machine_password;
-	struct policy_handle acct_handle;
+	struct policy_handle user_handle;
 };
 
 
@@ -40,7 +40,7 @@ static NTSTATUS DeleteUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_DeleteUser d;
-	struct policy_handle acct_handle;
+	struct policy_handle user_handle;
 	uint32_t rid;
 	struct samr_LookupNames n;
 	struct samr_Name sname;
@@ -48,7 +48,7 @@ static NTSTATUS DeleteUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	sname.name = name;
 
-	n.in.handle = handle;
+	n.in.domain_handle = handle;
 	n.in.num_names = 1;
 	n.in.names = &sname;
 
@@ -59,10 +59,10 @@ static NTSTATUS DeleteUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	r.in.handle = handle;
+	r.in.domain_handle = handle;
 	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	r.in.rid = rid;
-	r.out.acct_handle = &acct_handle;
+	r.out.user_handle = &user_handle;
 
 	status = dcerpc_samr_OpenUser(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -70,8 +70,8 @@ static NTSTATUS DeleteUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	d.in.handle = &acct_handle;
-	d.out.handle = &acct_handle;
+	d.in.user_handle = &user_handle;
+	d.out.user_handle = &user_handle;
 	status = dcerpc_samr_DeleteUser(p, mem_ctx, &d);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -135,7 +135,7 @@ void *torture_join_domain(const char *machine_name,
 
 	c.in.system_name = NULL;
 	c.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	c.out.handle = &handle;
+	c.out.connect_handle = &handle;
 
 	status = dcerpc_samr_Connect(join->p, mem_ctx, &c);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -150,7 +150,7 @@ void *torture_join_domain(const char *machine_name,
 	printf("Opening domain %s\n", domain);
 
 	name.name = domain;
-	l.in.handle = &handle;
+	l.in.connect_handle = &handle;
 	l.in.domain = &name;
 
 	status = dcerpc_samr_LookupDomain(join->p, mem_ctx, &l);
@@ -159,7 +159,7 @@ void *torture_join_domain(const char *machine_name,
 		goto failed;
 	}
 
-	o.in.handle = &handle;
+	o.in.connect_handle = &handle;
 	o.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	o.in.sid = l.out.sid;
 	o.out.domain_handle = &domain_handle;
@@ -174,11 +174,11 @@ void *torture_join_domain(const char *machine_name,
 
 again:
 	name.name = talloc_asprintf(mem_ctx, "%s$", machine_name);
-	r.in.handle = &domain_handle;
+	r.in.domain_handle = &domain_handle;
 	r.in.account_name = &name;
 	r.in.acct_flags = acct_flags;
 	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	r.out.acct_handle = &join->acct_handle;
+	r.out.user_handle = &join->user_handle;
 	r.out.access_granted = &access_granted;
 	r.out.rid = &rid;
 
@@ -196,7 +196,7 @@ again:
 		goto failed;
 	}
 
-	pwp.in.handle = &join->acct_handle;
+	pwp.in.user_handle = &join->user_handle;
 
 	status = dcerpc_samr_GetUserPwInfo(join->p, mem_ctx, &pwp);
 	if (NT_STATUS_IS_OK(status)) {
@@ -207,7 +207,7 @@ again:
 
 	printf("Setting machine account password '%s'\n", join->machine_password);
 
-	s.in.handle = &join->acct_handle;
+	s.in.user_handle = &join->user_handle;
 	s.in.info = &u;
 	s.in.level = 24;
 
@@ -230,7 +230,7 @@ again:
 		goto failed;
 	}
 
-	s.in.handle = &join->acct_handle;
+	s.in.user_handle = &join->user_handle;
 	s.in.info = &u;
 	s.in.level = 16;
 
@@ -263,9 +263,9 @@ void torture_leave_domain(void *join_ctx)
 	struct samr_DeleteUser d;
 	NTSTATUS status;
 
-	if (!uuid_all_zero(&join->acct_handle.uuid)) {
-		d.in.handle = &join->acct_handle;
-		d.out.handle = &join->acct_handle;
+	if (!uuid_all_zero(&join->user_handle.uuid)) {
+		d.in.user_handle = &join->user_handle;
+		d.out.user_handle = &join->user_handle;
 		
 		status = dcerpc_samr_DeleteUser(join->p, join->mem_ctx, &d);
 		if (!NT_STATUS_IS_OK(status)) {

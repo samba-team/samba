@@ -34,7 +34,7 @@ static BOOL get_policy_handle(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r.in.system_name = 0;
 	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	r.out.handle = handle;
+	r.out.connect_handle = handle;
 
 	status = dcerpc_samr_Connect(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {

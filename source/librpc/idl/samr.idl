@@ -34,7 +34,7 @@
 		/* notice the lack of [string] */
 		[in]       uint16 *system_name,
 		[in]       uint32 access_mask,
-		[out,ref]  policy_handle *handle
+		[out,ref]  policy_handle *connect_handle
 		);
 
 
@@ -74,7 +74,7 @@
 	  shutdown the SAM - once you call this the SAM will be dead
 	*/
 	NTSTATUS samr_Shutdown (
-		[in,ref]   policy_handle *handle
+		[in,ref]   policy_handle *connect_handle
 		);
 
 	/******************/
@@ -86,7 +86,7 @@
 	} samr_Name;	
 
 	NTSTATUS samr_LookupDomain (
-		[in,ref]  policy_handle *handle,		
+		[in,ref]  policy_handle *connect_handle,		
 		[in,ref]  samr_Name *domain,
 		[out]     dom_sid2 *sid
 		);
@@ -106,7 +106,7 @@
 	} samr_SamArray;
 
 	NTSTATUS samr_EnumDomains (
-		[in,ref]      policy_handle *handle,
+		[in,ref]      policy_handle *connect_handle,
 		[in,out,ref]  uint32 *resume_handle,
 		[in]          uint32 buf_size,
 		[out]         samr_SamArray *sam,
@@ -117,7 +117,7 @@
 	/************************/
 	/* Function    0x07     */
 	NTSTATUS samr_OpenDomain(
-		[in,ref]      policy_handle *handle,
+		[in,ref]      policy_handle *connect_handle,
 		[in]          uint32 access_mask,
 		[in,ref]      dom_sid2 *sid,
 		[out,ref]     policy_handle *domain_handle
@@ -235,7 +235,7 @@
 	} samr_DomainInfo;
 
 	NTSTATUS samr_QueryDomainInfo(
-		[in,ref]      policy_handle *handle,
+		[in,ref]      policy_handle *domain_handle,
 		[in]          uint16 level,
 		[out,switch_is(level)] samr_DomainInfo *info
 		);
@@ -247,7 +247,7 @@
 	  call in w2k3
 	*/
 	NTSTATUS samr_SetDomainInfo(
-		[in,ref]      policy_handle *handle,
+		[in,ref]      policy_handle *domain_handle,
 		[in]          uint16 level,
 		[in,switch_is(level),ref] samr_DomainInfo *info
 		);
@@ -256,7 +256,7 @@
 	/************************/
 	/* Function    0x0a     */
 	NTSTATUS samr_CreateDomainGroup(
-		[in,ref]      policy_handle *handle,
+		[in,ref]      policy_handle *domain_handle,
 		[in,ref]      samr_Name *name,
 		[in]          uint32 access_mask,
 		[out,ref]     policy_handle *group_handle,
@@ -267,7 +267,7 @@
 	/************************/
 	/* Function    0x0b     */
 	NTSTATUS samr_EnumDomainGroups(
-		[in,ref]      policy_handle *handle,
+		[in,ref]      policy_handle *domain_handle,
 		[in,out,ref]  uint32 *resume_handle,
 		[in]          uint32 max_size,
 		[out]         samr_SamArray *sam,
@@ -277,10 +277,10 @@
 	/************************/
 	/* Function    0x0c     */
 	NTSTATUS samr_CreateUser(
-		[in,ref]      policy_handle *handle,
+		[in,ref]      policy_handle *domain_handle,
 		[in,ref]      samr_Name *account_name,
 		[in]          uint32 access_mask,
-		[out,ref]     policy_handle *acct_handle,
+		[out,ref]     policy_handle *user_handle,
 		[out,ref]     uint32 *rid
 		);
 
@@ -294,7 +294,7 @@
 	const int SAMR_ENUM_USERS_MULTIPLIER = 54;
 
 	NTSTATUS samr_EnumDomainUsers(
-		[in,ref]      policy_handle *handle,
+		[in,ref]      policy_handle *domain_handle,
 		[in,out,ref]  uint32 *resume_handle,
 		[in]          uint32 acct_flags,
 		[in]          uint32 max_size,
@@ -305,17 +305,17 @@
 	/************************/
 	/* Function    0x0e     */
 	NTSTATUS samr_CreateDomAlias(
-		[in,ref]      policy_handle *handle,
+		[in,ref]      policy_handle *domain_handle,
 		[in,ref]      samr_Name     *aliasname,
 		[in]          uint32         access_mask,
-		[out,ref]     policy_handle *acct_handle,
+		[out,ref]     policy_handle *alias_handle,
 		[out,ref]     uint32        *rid
 		);
 
 	/************************/
 	/* Function    0x0f     */
 	NTSTATUS samr_EnumDomainAliases(
-		[in,ref]      policy_handle *handle,
+		[in,ref]      policy_handle *domain_handle,
 		[in,out,ref]  uint32 *resume_handle,
 		[in]          uint32 account_flags,
 		[out]         samr_SamArray *sam,
@@ -343,7 +343,7 @@
 	} samr_Ids;
 
 	NTSTATUS samr_GetAliasMembership(
-		[in,ref]      policy_handle *handle,
+		[in,ref]      policy_handle *alias_handle,
 		[in,ref]      lsa_SidArray  *sids,
 		[out]         samr_Ids *rids
 		);
@@ -352,7 +352,7 @@
 	/* Function    0x11     */
 
 	NTSTATUS samr_LookupNames(
-		[in,ref]      policy_handle *handle,
+		[in,ref]      policy_handle *domain_handle,
 		[in]          uint32 num_names,
 		[in,ref,size_is(1000),length_is(num_names)] samr_Name *names,
 		[out]         samr_Ids rids,
@@ -369,7 +369,7 @@
 	} samr_Names;
 
 	NTSTATUS samr_LookupRids(
-		[in,ref]      policy_handle *handle,
+		[in,ref]      policy_handle *domain_handle,
 		[in]          uint32 num_rids,
 		[in,ref,size_is(1000),length_is(num_rids)] uint32 *rids,
 		[out]         samr_Names names,
@@ -379,10 +379,10 @@
 	/************************/
 	/* Function    0x13     */
 	NTSTATUS samr_OpenGroup(
-		[in,ref]      policy_handle *handle,
+		[in,ref]      policy_handle *domain_handle,
 		[in]          uint32 access_mask,
 		[in]          uint32 rid,
-		[out,ref]     policy_handle *acct_handle
+		[out,ref]     policy_handle *group_handle
 		);
 
 
@@ -419,7 +419,7 @@
 	} samr_GroupInfo;
 
 	NTSTATUS samr_QueryGroupInfo(
-		[in,ref]                  policy_handle *handle,
+		[in,ref]                  policy_handle *group_handle,
 		[in]                      uint16 level,
 		[out,switch_is(level)]    samr_GroupInfo *info
 		);
@@ -427,7 +427,7 @@
 	/************************/
 	/* Function    0x15     */
 	NTSTATUS samr_SetGroupInfo(
-		[in,ref]                  policy_handle *handle,
+		[in,ref]                  policy_handle *group_handle,
 		[in]                      uint16 level,
 		[in,switch_is(level),ref] samr_GroupInfo *info
 		);
@@ -435,7 +435,7 @@
 	/************************/
 	/* Function    0x16     */
 	NTSTATUS samr_AddGroupMember(
-		[in,ref]                  policy_handle *handle,
+		[in,ref]                  policy_handle *group_handle,
 		[in]                      uint32 rid,
 		[in]                      uint32 flags
 		);
@@ -443,13 +443,13 @@
 	/************************/
 	/* Function    0x17     */
 	NTSTATUS samr_DeleteDomainGroup(
-		[in,out,ref]   policy_handle *handle
+		[in,out,ref]   policy_handle *group_handle
 		);
 
 	/************************/
 	/* Function    0x18     */
 	NTSTATUS samr_DeleteGroupMember(
-		[in,ref]                  policy_handle *handle,
+		[in,ref]                  policy_handle *group_handle,
 		[in]                      uint32 rid
 		);
 
@@ -471,7 +471,7 @@
 	} samr_ridArray;
 
 	NTSTATUS samr_QueryGroupMember(
-		[in,ref]  policy_handle *handle,
+		[in,ref]  policy_handle *group_handle,
 		[out]     uint32 *count,
 		[out]     samr_ridArray rids
 		);
@@ -487,7 +487,7 @@
 	  and the second to be the attributes for that rid member.
 	*/
 	NTSTATUS samr_SetMemberAttributesOfGroup(
-		[in,ref]  policy_handle *handle,
+		[in,ref]  policy_handle *group_handle,
 		[in]      uint32 unknown1,
 		[in]      uint32 unknown2
 		);
@@ -496,10 +496,10 @@
 	/************************/
 	/* Function    0x1b     */
 	NTSTATUS samr_OpenAlias (
-		[in,ref]      policy_handle *handle,
+		[in,ref]      policy_handle *domain_handle,
 		[in]          uint32 access_mask,
 		[in]          uint32 rid,
-		[out,ref]     policy_handle *acct_handle
+		[out,ref]     policy_handle *alias_handle
 		);
 
 
@@ -519,7 +519,7 @@
 	} samr_AliasInfo;
 
 	NTSTATUS samr_QueryAliasInfo(
-		[in,ref]                  policy_handle *handle,
+		[in,ref]                  policy_handle *alias_handle,
 		[in]                      uint16 level,
 		[out,switch_is(level)]    samr_AliasInfo *info
 		);
@@ -527,7 +527,7 @@
 	/************************/
 	/* Function    0x1d     */
 	NTSTATUS samr_SetAliasInfo(
-		[in,ref]                  policy_handle  *handle,
+		[in,ref]                  policy_handle  *alias_handle,
 		[in]                      uint16          level,
 		[in,switch_is(level)]     samr_AliasInfo  info
 		);
@@ -535,43 +535,43 @@
 	/************************/
 	/* Function    0x1e     */
 	NTSTATUS samr_DeleteDomAlias(
-		[in,out,ref]  policy_handle *handle
+		[in,out,ref]  policy_handle *alias_handle
 		);
 
 	/************************/
 	/* Function    0x1f     */
 	NTSTATUS samr_AddAliasMember(
-		[in,ref]  policy_handle *handle,
+		[in,ref]  policy_handle *alias_handle,
 		[in,ref]  dom_sid2      *sid
 		);
 
 	/************************/
 	/* Function    0x20     */
 	NTSTATUS samr_DeleteAliasMember(
-		[in,ref] policy_handle *handle,
+		[in,ref] policy_handle *alias_handle,
 		[in,ref] dom_sid2      *sid
 		);
 
 	/************************/
 	/* Function    0x21     */
 	NTSTATUS samr_GetMembersInAlias(
-		[in,ref]   policy_handle *handle,
+		[in,ref]   policy_handle *alias_handle,
 		[out,ref]  lsa_SidArray    *sids
 		);
 
 	/************************/
 	/* Function    0x22     */
 	NTSTATUS samr_OpenUser(
-		[in,ref]      policy_handle *handle,
+		[in,ref]      policy_handle *domain_handle,
 		[in]          uint32 access_mask,
 		[in]          uint32 rid,
-		[out,ref]     policy_handle *acct_handle
+		[out,ref]     policy_handle *user_handle
 		);
 
 	/************************/
 	/* Function    0x23     */
 	NTSTATUS samr_DeleteUser(
-		[in,out,ref]   policy_handle *handle
+		[in,out,ref]   policy_handle *user_handle
 		);
 
 	/************************/
@@ -791,7 +791,7 @@
 	} samr_UserInfo;
 
 	NTSTATUS samr_QueryUserInfo(
-		[in,ref]                  policy_handle *handle,
+		[in,ref]                  policy_handle *user_handle,
 		[in]                      uint16 level,
 		[out,switch_is(level)]    samr_UserInfo *info
 		);
@@ -800,7 +800,7 @@
 	/************************/
 	/* Function    0x25     */
 	NTSTATUS samr_SetUserInfo(
-		[in,ref]                   policy_handle *handle,
+		[in,ref]                   policy_handle *user_handle,
 		[in]                       uint16 level,
 		[in,ref,switch_is(level)]  samr_UserInfo *info
 		);
@@ -813,7 +813,7 @@
 	  the server the plaintext password. Depricated.
 	*/
 	NTSTATUS samr_ChangePasswordUser(
-		[in,ref]    policy_handle *handle,
+		[in,ref]    policy_handle *user_handle,
 		[in]        bool8 lm_present,
 		[in]        samr_Password *old_lm_crypted,
 		[in]        samr_Password *new_lm_crypted,
@@ -840,7 +840,7 @@
 	} samr_RidArray;
 
 	NTSTATUS samr_GetGroupsForUser(
-		[in,ref]   policy_handle *handle,
+		[in,ref]   policy_handle *user_handle,
 		[out]      samr_RidArray  *rids
 		);
 
@@ -899,7 +899,7 @@
 	} samr_DispInfo;
 
 	NTSTATUS samr_QueryDisplayInfo(
-		[in,ref]    policy_handle *handle,
+		[in,ref]    policy_handle *domain_handle,
 		[in]        uint16 level,
 		[in]        uint32 start_idx,
 		[in]        uint32 max_entries,
@@ -923,7 +923,7 @@
 	  The level corresponds to the samr_QueryDisplayInfo level
 	*/
 	NTSTATUS samr_GetDisplayEnumerationIndex(
-		[in,ref]    policy_handle *handle,
+		[in,ref]    policy_handle *domain_handle,
 		[in]        uint16 level,
 		[in]        samr_Name name,
 		[out]       uint32 idx
@@ -938,7 +938,7 @@
 	  w2k3 returns NT_STATUS_NOT_IMPLEMENTED for this
 	*/
 	NTSTATUS samr_TestPrivateFunctionsDomain(
-		[in,ref]    policy_handle *handle
+		[in,ref]    policy_handle *domain_handle
 		);
 
 
@@ -949,7 +949,7 @@
 	  w2k3 returns NT_STATUS_NOT_IMPLEMENTED for this
 	*/
 	NTSTATUS samr_TestPrivateFunctionsUser(
-		[in,ref]    policy_handle *handle
+		[in,ref]    policy_handle *user_handle
 		);
 
 
@@ -969,14 +969,14 @@
 	} samr_PwInfo;
 
 	NTSTATUS samr_GetUserPwInfo(
-		[in,ref]    policy_handle *handle,
+		[in,ref]    policy_handle *user_handle,
 		[out]       samr_PwInfo info
 		);
 
 	/************************/
 	/* Function    0x2d     */
 	NTSTATUS samr_RemoveMemberFromForeignDomain(
-		[in,ref]    policy_handle *handle,
+		[in,ref]    policy_handle *domain_handle,
 		[in,ref]    dom_sid2 *sid
 		);
 
@@ -987,7 +987,7 @@
 	  how is this different from QueryDomainInfo ??
 	*/
 	NTSTATUS samr_QueryDomainInfo2(
-		[in,ref]      policy_handle *handle,
+		[in,ref]      policy_handle *domain_handle,
 		[in]          uint16 level,
 		[out,switch_is(level)] samr_DomainInfo *info
 		);
@@ -999,7 +999,7 @@
 	  how is this different from QueryUserInfo ??
 	*/
 	NTSTATUS samr_QueryUserInfo2(
-		[in,ref]                  policy_handle *handle,
+		[in,ref]                  policy_handle *user_handle,
 		[in]                      uint16 level,
 		[out,switch_is(level)]    samr_UserInfo *info
 		);
@@ -1011,7 +1011,7 @@
 	  how is this different from QueryDisplayInfo??
 	*/
 	NTSTATUS samr_QueryDisplayInfo2(
-		[in,ref]    policy_handle *handle,
+		[in,ref]    policy_handle *domain_handle,
 		[in]        uint16 level,
 		[in]        uint32 start_idx,
 		[in]        uint32 max_entries,
@@ -1028,7 +1028,7 @@
 	  how is this different from GetDisplayEnumerationIndex ??
 	*/
 	NTSTATUS samr_GetDisplayEnumerationIndex2(
-		[in,ref]    policy_handle *handle,
+		[in,ref]    policy_handle *domain_handle,
 		[in]        uint16 level,
 		[in]        samr_Name name,
 		[out]       uint32 idx
@@ -1038,11 +1038,11 @@
 	/************************/
 	/* Function    0x32     */
 	NTSTATUS samr_CreateUser2(
-		[in,ref]      policy_handle *handle,
+		[in,ref]      policy_handle *domain_handle,
 		[in,ref]      samr_Name *account_name,
 		[in]          uint32 acct_flags,
 		[in]          uint32 access_mask,
-		[out,ref]     policy_handle *acct_handle,
+		[out,ref]     policy_handle *user_handle,
 		[out,ref]     uint32 *access_granted,
 		[out,ref]     uint32 *rid
 		);
@@ -1055,7 +1055,7 @@
 	  another duplicate. There must be a reason ....
 	*/
 	NTSTATUS samr_QueryDisplayInfo3(
-		[in,ref]    policy_handle *handle,
+		[in,ref]    policy_handle *domain_handle,
 		[in]        uint16 level,
 		[in]        uint32 start_idx,
 		[in]        uint32 max_entries,
@@ -1068,14 +1068,14 @@
 	/************************/
 	/* Function    0x34     */
 	NTSTATUS samr_AddMultipleMembersToAlias(
-		[in,ref]    policy_handle *handle,
+		[in,ref]    policy_handle *alias_handle,
 		[in,ref]    lsa_SidArray *sids
 		);
 
 	/************************/
 	/* Function    0x35     */
 	NTSTATUS samr_RemoveMultipleMembersFromAlias(
-		[in,ref]    policy_handle *handle,
+		[in,ref]    policy_handle *alias_handle,
 		[in,ref]    lsa_SidArray *sids
 		);
 
@@ -1113,7 +1113,7 @@
 	NTSTATUS samr_Connect2(
 		[in] unistr *system_name,
 		[in] uint32 access_mask,
-		[out,ref]  policy_handle *handle
+		[out,ref]  policy_handle *connect_handle
 		);
 
 	/************************/
@@ -1122,7 +1122,7 @@
 	  seems to be an exact alias for samr_SetUserInfo() 
 	*/
 	NTSTATUS samr_SetUserInfo2(
-		[in,ref]                   policy_handle *handle,
+		[in,ref]                   policy_handle *user_handle,
 		[in]                       uint16 level,
 		[in,ref,switch_is(level)]  samr_UserInfo *info
 		);
@@ -1133,7 +1133,7 @@
 	  this one is mysterious. I have a few guesses, but nothing working yet
 	*/
 	NTSTATUS samr_SetBootKeyInformation(
-		[in,ref]   policy_handle *handle,
+		[in,ref]   policy_handle *connect_handle,
 		[in]       uint32 unknown1,
 		[in]       uint32 unknown2,
 		[in]       uint32 unknown3
@@ -1142,7 +1142,7 @@
 	/************************/
 	/* Function    0x3c     */
 	NTSTATUS samr_GetBootKeyInformation(
-		[in,ref]   policy_handle *handle,
+		[in,ref]   policy_handle *domain_handle,
 		[out]      uint32 unknown
 		);
 
@@ -1153,7 +1153,7 @@
 		/* this unknown value seems to be completely ignored by w2k3 */
 		[in] uint32 unknown,
 		[in] uint32 access_mask,
-		[out,ref]  policy_handle *handle
+		[out,ref]  policy_handle *connect_handle
 		);
 
 	/************************/
@@ -1162,7 +1162,7 @@
 		[in] unistr *system_name,
 		[in] uint32 unknown,
 		[in] uint32 access_mask,
-		[out,ref]  policy_handle *handle
+		[out,ref]  policy_handle *connect_handle
 		);
 
 	/************************/
@@ -1208,13 +1208,13 @@
 		[in]       uint32             access_mask,
 		[in,out]   uint32             level,
 		[in,out,switch_is(level),ref] samr_ConnectInfo *info,
-		[out,ref]  policy_handle      *handle
+		[out,ref]  policy_handle      *connect_handle
 		);
 
 	/************************/
 	/* Function    0x41     */
 	NTSTATUS samr_RidToSid(
-		[in,ref]    policy_handle *handle,
+		[in,ref]    policy_handle *domain_handle,
 		[in]        uint32        rid,
 		[out]       dom_sid2      *sid
 		);
