@@ -273,19 +273,11 @@ struct in_addr *name_query(int fd,const char *name,int name_type, BOOL bcast,BOO
   p.timestamp = time(NULL);
   p.packet_type = packet_type;
 
-  GetTimeOfDay(&tval);
-
-  if (!send_packet(&p)) 
-	{	
-		if (packet_type == NMB_SOCK_PACKET) close(fd);
-    return NULL;
-	}
+	ZERO_STRUCT(tval);
 
   while (retries >= 0)
   {
     struct timeval tval2;
-
-	retries--;
 
     GetTimeOfDay(&tval2);
     if (TvalDiff(&tval,&tval2) > retry_time) 
@@ -319,6 +311,8 @@ struct in_addr *name_query(int fd,const char *name,int name_type, BOOL bcast,BOO
         continue;
       }
 	  
+	retries--;
+
       if (nmb2->header.opcode != 0 ||
           nmb2->header.nm_flags.bcast ||
           nmb2->header.rcode ||
