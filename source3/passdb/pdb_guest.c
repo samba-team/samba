@@ -110,7 +110,10 @@ static NTSTATUS guestsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT
 
 static NTSTATUS guestsam_update_sam_account (struct pdb_methods *methods, SAM_ACCOUNT *newpwd)
 {
-#if 0	/* JERRY */
+#if 1	/* JERRY */
+
+	/* apparently thr build farm relies upon this heavior :-( */
+
 	return methods->parent->pdb_add_sam_account(methods->parent, newpwd);
 #else
 	/* I don't think we should allow any modification of 
