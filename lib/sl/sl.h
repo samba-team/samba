@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -36,6 +36,8 @@
 #ifndef _SL_H
 #define _SL_H
 
+#define SL_BADCOMMAND -1
+
 typedef int (*cmd_func)(int, char **);
 
 struct sl_cmd {
@@ -52,6 +54,7 @@ int  sl_loop (SL_cmd *, char *prompt);
 int  sl_command_loop (SL_cmd *cmds, char *prompt, void **data);
 int  sl_command (SL_cmd *cmds, int argc, char **argv);
 int sl_make_argv(char*, int*, char***);
+void sl_apropos (SL_cmd *cmd, char *topic);
 
 
 #endif /* _SL_H */
