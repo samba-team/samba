@@ -480,7 +480,12 @@ authentication failed. Denying the request.\n", p->name));
 		 * size as the current offset.
 		 */
 
-		prs_set_buffer_size(&p->in_data.data, prs_offset(&p->in_data.data));
+ 		if(!prs_set_buffer_size(&p->in_data.data, prs_offset(&p->in_data.data)))
+		{
+			DEBUG(0,("process_request_pdu: Call to prs_set_buffer_size failed!\n"));
+			set_incoming_fault(p);
+			return False;
+		}
 
 		/*
 		 * Set the parse offset to the start of the data and set the
