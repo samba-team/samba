@@ -611,6 +611,19 @@ krb5_ret_authdata(krb5_storage *sp, krb5_authdata *auth)
     return ret;
 }
 
+static int32_t
+bitswap32(int32_t b)
+{
+    int32_t r = 0;
+    int i;
+    for (i = 0; i < 32; i++) {
+	r = r << 1 | (b & 1);
+	b = b >> 1;
+    }
+    return r;
+}
+
+
 /*
  * store `creds' on `sp' returning error or zero
  */
@@ -618,6 +631,7 @@ krb5_ret_authdata(krb5_storage *sp, krb5_authdata *auth)
 krb5_error_code
 krb5_store_creds(krb5_storage *sp, krb5_creds *creds)
 {
+    int32_t dummy32;
     int ret;
 
     ret = krb5_store_principal(sp, creds->client);
@@ -636,7 +650,10 @@ krb5_store_creds(krb5_storage *sp, krb5_creds *creds)
 				enc-tkt-in-skey bit from KDCOptions */
     if(ret)
 	return ret;
-    ret = krb5_store_int32(sp, creds->flags.i);
+    dummy32 = creds->flags.i;
+    if (0) /* change heimdal major version 0.7 or 0.8 ? */
+	dummy32 = bitswap32(dummy32);
+    ret = krb5_store_int32(sp, dummy32);
     if(ret)
 	return ret;
     ret = krb5_store_addrs(sp, creds->addresses);
@@ -677,15 +694,8 @@ krb5_ret_creds(krb5_storage *sp, krb5_creds *creds)
      * this code need to be removed), or its a MIT cache (or new
      * Heimdal cache), lets change it to our current format.
      */
-    if (dummy32 & 0xffff0000) {
-	int32_t rdummy32 = 0;
-	int i;
-	for (i = 0; i < 32; i++) {
-	    rdummy32 = rdummy32 << 1 | (dummy32 & 1);
-	    dummy32 = dummy32 >> 1;
-	}
-	dummy32 = rdummy32;
-    }
+    if (dummy32 & 0xffff0000)
+	dummy32 = bitswap32(dummy32);
     creds->flags.i = dummy32;
     ret = krb5_ret_addrs (sp,  &creds->addresses);
     if(ret) goto cleanup;
