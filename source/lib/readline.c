@@ -23,45 +23,58 @@
 #include "includes.h"
 
 /****************************************************************************
-display the prompt and wait for input. Call callback() regularly
+ Display the prompt and wait for input. Call callback() regularly
 ****************************************************************************/
+
 char *smb_readline(char *prompt, void (*callback)(void), 
 		   char **(completion_fn)(const char *text, int start, int end))
 {
 	char *ret;
-#if HAVE_LIBREADLINE
-	if (completion_fn) {
-		rl_attempted_completion_function = completion_fn;
-	}
-
-	if (callback) rl_event_hook = (Function *)callback;
-	ret = readline(prompt);
-	if (ret && *ret) add_history(ret);
-	return ret;
-#else
-	fd_set fds;
-	extern FILE *dbf;
-	static pstring line;
-	struct timeval timeout;
 	int fd = fileno(stdin);
 
-	fprintf(dbf, "%s", prompt);
-	fflush(dbf);
+#if HAVE_LIBREADLINE
 
-	while (1) {
-		timeout.tv_sec = 5;
-		timeout.tv_usec = 0;
+	/*
+	 * Current versions of readline on Linux seem to have
+	 * problems with EOF on a pipe.
+	 */
 
-		FD_ZERO(&fds);
-		FD_SET(fd,&fds);
-	
-		if (sys_select_intr(fd+1,&fds,&timeout) == 1) {
-			ret = fgets(line, sizeof(line), stdin);
-			return ret;
-		}
-		if (callback) callback();
-	}
+	if (isatty(fd)) {
+		if (completion_fn)
+			rl_attempted_completion_function = completion_fn;
+
+		if (callback)
+			rl_event_hook = (Function *)callback;
+		ret = readline(prompt);
+		if (ret && *ret)
+			add_history(ret);
+		return ret;
+	} else
 #endif
+	{
+		fd_set fds;
+		extern FILE *dbf;
+		static pstring line;
+		struct timeval timeout;
+
+		fprintf(dbf, "%s", prompt);
+		fflush(dbf);
+
+		while (1) {
+			timeout.tv_sec = 5;
+			timeout.tv_usec = 0;
+
+			FD_ZERO(&fds);
+			FD_SET(fd,&fds);
+	
+			if (sys_select_intr(fd+1,&fds,&timeout) == 1) {
+				ret = fgets(line, sizeof(line), stdin);
+				return ret;
+			}
+			if (callback)
+				callback();
+		}
+	}
 }
 
 /****************************************************************************
