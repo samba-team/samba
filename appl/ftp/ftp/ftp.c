@@ -176,14 +176,11 @@ login(char *host)
 		return (0);
 	}
 	while (user == NULL) {
-		char *myname = getlogin();
+		char *myname = NULL;
+		struct passwd *pp = getpwuid(getuid());
 
-		if (myname == NULL) {
-			struct passwd *pp = getpwuid(getuid());
-
-			if (pp != NULL)
-				myname = pp->pw_name;
-		}
+		if (pp != NULL)
+		        myname = pp->pw_name;
 		if (myname)
 			printf("Name (%s:%s): ", host, myname);
 		else
