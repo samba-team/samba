@@ -3863,6 +3863,7 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 	struct samr_info *info;
 	uint32 acc_granted;
 	gid_t gid;
+	NTSTATUS result;
 
 	/* Find the policy handle. Open a policy on it. */
 	if (!get_lsa_policy_samr_sid(p, &q_u->dom_pol, &dom_sid, &acc_granted)) 
@@ -3880,8 +3881,10 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 	unistr2_to_ascii(name, &q_u->uni_acct_desc, sizeof(name)-1);
 
 	/* Have passdb create the alias */
-	if (!pdb_create_alias(name, &r_u->rid))
-		return NT_STATUS_ACCESS_DENIED;
+	result = pdb_create_alias(name, &r_u->rid);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
 
 	sid_copy(&info_sid, get_global_sam_sid());
 	sid_append_rid(&info_sid, r_u->rid);
