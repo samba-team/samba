@@ -470,12 +470,6 @@ static const struct enum_list enum_announce_as[] = {
 	{-1, NULL}
 };
 
-static const struct enum_list enum_case[] = {
-	{CASE_LOWER, "lower"},
-	{CASE_UPPER, "upper"},
-	{-1, NULL}
-};
-
 static const struct enum_list enum_bool_auto[] = {
 	{False, "No"},
 	{False, "False"},
