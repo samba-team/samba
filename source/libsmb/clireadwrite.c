@@ -71,10 +71,9 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 	 */
 
 	readsize = (cli->max_xmit - (smb_size+32)) & ~1023;
-	if (readsize > size )
-		readsize = size;
 
 	while (total < size) {
+		readsize = MIN(readsize, size-total);
 
 		/* Issue a read and receive a reply */
 
