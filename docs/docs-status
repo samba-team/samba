@@ -30,13 +30,9 @@ docs/textdocs/README.jis - Seems to need updating - possibly obsoleted by a newe
 docs/textdocs/RoutedNetworks.txt - still valid, but shouldn't this go into Other_clients.sgml ? This text originally comes from microsoft, what about copyright?
 
 These still need to be checked:
-docs/docbook/manpages/smbd.8.sgml
 docs/docbook/manpages/smbmnt.8.sgml
 docs/docbook/manpages/smbmount.8.sgml
-docs/docbook/manpages/smbpasswd.8.sgml
-docs/docbook/manpages/smbsh.1.sgml
 docs/docbook/manpages/smbspool.8.sgml
-docs/docbook/manpages/smbstatus.1.sgml
 docs/docbook/manpages/smbtar.1.sgml
 docs/docbook/manpages/smbumount.8.sgml
 docs/docbook/manpages/swat.8.sgml
