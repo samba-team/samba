@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -45,6 +45,8 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+#include <roken.h>
+
 extern char *filename;
 extern char *table_name;
 extern int numerror;
@@ -65,5 +67,10 @@ struct string_list {
 };
 
 void add_command(char*, char*, struct string_list*, unsigned);
+
+void error_message(const char *, ...)
+    __attribute__ ((format (printf, 1,2)));
+
+int yylex (void);
 
 #endif /* __MAKE_CMDS_H__ */
