@@ -32,17 +32,24 @@ static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CT
 		       struct spoolss_EnumPrinters *r)
 {
 	struct ndr_push *buf;
-	struct spoolss_PrinterInfo1 info;
+	struct spoolss_PrinterInfo1 info[2];
 	WERROR result;
 
-	info.flags = 0;
-	info.name = "p";
-	info.description = "a printer";
-	info.comment = "a comment";
+	info[0].flags = 0x80;
+	info[0].name = "p";
+	info[0].description = "a printer";
+	info[0].comment = "a comment";
+
+	info[1].flags = 0x80;
+	info[1].name = "p2";
+	info[1].description = "spottyfoot";
+	info[1].comment = "the doggy";
 
 	buf = ndr_push_init();
 	
-	ndr_push_spoolss_PrinterInfo1(buf, NDR_SCALARS|NDR_BUFFERS, &info);
+	ndr_push_array(buf, NDR_SCALARS|NDR_BUFFERS, info,
+		       sizeof(struct spoolss_PrinterInfo1), 2,
+		        (ndr_push_const_fn_t)ndr_push_spoolss_PrinterInfo1);
 
 	if (*r->in.buf_size < buf->offset) {
 		*r->out.buf_size = buf->offset;
@@ -59,7 +66,7 @@ static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 	*r->out.buffer = data_blob_talloc(mem_ctx, buf->data, buf->offset);
 
-	r->out.count = 1;
+	r->out.count = 2;
 	*r->out.buf_size = buf->offset;
 
 	result = WERR_OK;
