@@ -3,6 +3,7 @@
    Version 2.0
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000.
    Copyright (C) Tim Potter 2000.
+   Copyright (C) Jeremy Allison 2000.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,6 +25,22 @@
 #include "sids.h"
 
 extern int DEBUGLEVEL;
+
+/*
+ * Guest token used when there is no NT_USER_TOKEN available.
+ */
+
+static DOM_SID builtin_guest = {
+	1, /* sid_rev_num */
+	2, /* num_auths */
+	{ 0, 0, 0, 0, 0, 5}, /* id_auth[6] */
+	{ 32, 546, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} /* sub_auth[15] */
+};
+
+static NT_USER_TOKEN guest_token = {
+	1,
+	&builtin_guest
+};
 
 /* Process an access allowed ACE */
 
@@ -207,14 +224,11 @@ static BOOL check_ace(SEC_ACE *ace, BOOL is_owner, DOM_SID *sid,
 BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 		     uint32 acc_desired, uint32 *acc_granted, uint32 *status)
 {
-	DOM_SID user_sid, group_sid;
-	DOM_SID owner_sid;
-	DOM_SID **group_sids = NULL;
 	int i, j;
-	uint ngroup_sids = 0;
 	SEC_ACL *acl;
 	uint8 check_ace_type;
 	fstring sid_str;
+	NT_USER_TOKEN *token = user->nt_user_token ? user->nt_user_token : &guest_token;
 
 	if (!status || !acc_granted)
 		return False;
@@ -250,70 +264,21 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 		goto done;
 	}
 
-	/* Create user sid */
+	/* The user sid is the first in the token */
 
-	if (!uid_to_sid(&user_sid, user->uid)) {
-		DEBUG(3, ("could not lookup sid for uid %d\n", user->uid));
-		goto done;
-	}
-
-	DEBUG(3, ("se_access_check: user sid is %s\n", sid_to_string(sid_str, &user_sid) ));
+	DEBUG(3, ("se_access_check: user sid is %s\n", sid_to_string(sid_str, &token->user_sids[0]) ));
 
 	/* If we're the owner, then we can do anything */
 
-	if (sid_equal(&user_sid, sd->owner_sid)) {
+	if (sid_equal(&token->user_sids[0], sd->owner_sid)) {
 		*status = NT_STATUS_NOPROBLEMO;
 		*acc_granted = acc_desired;
 		acc_desired = 0;
 		DEBUG(3, ("is owner, access allowed\n"));
-
-                goto done;
-	}
-
-	/* Create group sid */
-
-	if (!gid_to_sid(&group_sid, user->gid)) {
-		DEBUG(3, ("could not lookup sid for gid %d\n", user->gid));
 		goto done;
 	}
 
-	sid_to_string(sid_str, &group_sid);
-	DEBUG(3, ("group sid is %s\n", sid_str));
-
-	/* Create array of group sids */
-
-	add_sid_to_array(&ngroup_sids, &group_sids, &group_sid);
-
-	for (i = 0; i < user->ngroups; i++) {
-		if (user->groups[i] != user->gid) {
-			if (gid_to_sid(&group_sid, user->groups[i])) {
-
-				/* If we're a group member then we can also
-				   do anything */
-
-				if (sid_equal(&group_sid, sd->grp_sid)) {
-					*status = NT_STATUS_NOPROBLEMO;
-					*acc_granted = acc_desired;
-					acc_desired = 0;
-					DEBUG(3, ("is group member "
-						  "access allowed\n"));
-
-					goto done;
-				}
-
-				add_sid_to_array(&ngroup_sids, &group_sids, 
-						 &group_sid);
-			} else {
-				DEBUG(3, ("could not lookup sid for gid %d\n", 
-					  user->gid));
-			}
-
-			sid_to_string(sid_str, &group_sid);
-			DEBUG(3, ("supplementary group %s\n", sid_str));
-		}
-	}
-
-        /* ACL must have something in it */
+	/* ACL must have something in it */
 
 	acl = sd->dacl;
 
@@ -340,34 +305,21 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 
 	check_ace_type = SEC_ACE_TYPE_ACCESS_DENIED;
 
-    check_aces:
+  check_aces:
 
-        for (i = 0; i < acl->num_aces; i++) {
-                SEC_ACE *ace = &acl->ace[i];
-		BOOL is_group_owner;
+	for (i = 0; i < acl->num_aces; i++) {
+		SEC_ACE *ace = &acl->ace[i];
 
-		/* Check user sid */
+		/* Check sids */
 
-                if (ace->type == check_ace_type &&
-		    check_ace(ace, False, &user_sid, &acc_desired,
-			      acc_granted, status)) {
-			goto done;
-                }
+		for (j = 0; j < token->num_sids; j++) {
+			BOOL is_owner = sid_equal(&token->user_sids[j], sd->owner_sid);
 
-                /* Check group sids */
-
-                for (j = 0; j < ngroup_sids; j++) {
-
-			is_group_owner = sd->grp_sid ? 
-				sid_equal(group_sids[j], sd->grp_sid) : False;
-
-                        if (ace->type == check_ace_type &&
-			    check_ace(ace, is_group_owner, group_sids[j], 
-				      &acc_desired, acc_granted, status)) {
+			if (ace->type == check_ace_type && check_ace(ace, is_owner, &token->user_sids[j], &acc_desired, acc_granted, status)) {
 				goto done;
-                        }
-                }
-        }
+			}
+		}
+	}
 
 	/* Check access allowed ACEs */
 
@@ -378,8 +330,6 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 
  done:
 
-	free_sid_array(ngroup_sids, group_sids);
-	
 	/* If any access desired bits are still on, return access denied
 	   and turn off any bits already granted. */
 
