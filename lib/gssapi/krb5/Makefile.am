@@ -17,6 +17,7 @@ libgssapi_la_SOURCES =		\
 	canonicalize_name.c	\
 	compare_name.c		\
 	context_time.c		\
+	copy_ccache.c		\
 	create_emtpy_oid_set.c	\
 	decapsulate.c		\
 	delete_sec_context.c	\

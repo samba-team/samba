@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -770,5 +770,10 @@ OM_uint32 gss_unseal
 
 OM_uint32 gsskrb5_register_acceptor_identity
         (char *identity);
+
+OM_uint32 gss_krb5_copy_ccache
+	(OM_uint32 *minor,
+	 gss_cred_id_t cred,
+	 struct krb5_ccache_data *out);
 
 #endif /* GSSAPI_H_ */
