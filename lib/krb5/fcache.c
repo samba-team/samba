@@ -346,10 +346,10 @@ fcc_get_principal(krb5_context context,
     ret = init_fcc (context, f, &sp, &fd);
     if (ret)
 	return ret;
-    krb5_ret_principal(sp, principal);
+    ret = krb5_ret_principal(sp, principal);
     krb5_storage_free(sp);
     close(fd);
-    return 0;
+    return ret;
 }
 
 static krb5_error_code
