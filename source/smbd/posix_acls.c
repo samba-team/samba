@@ -391,14 +391,16 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 							canon_ace **ppfile_ace, canon_ace **ppdir_ace,
 							uint32 security_info_sent, SEC_DESC *psd)
 {
+#if !defined(HAVE_NO_ACLS)
 	extern DOM_SID global_sid_World;
-	SEC_ACL *dacl = psd->dacl;
 	BOOL all_aces_are_inherit_only = (fsp->is_directory ? True : False);
 	canon_ace *file_ace = NULL;
 	canon_ace *dir_ace = NULL;
 	canon_ace *current_ace = NULL;
 	enum SID_NAME_USE sid_type;
 	int i;
+#endif /* HAVE_NO_ACLS */
+	SEC_ACL *dacl = psd->dacl;
 
 	*ppfile_ace = NULL;
 	*ppdir_ace = NULL;
@@ -414,6 +416,13 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 
 	if(!(security_info_sent & DACL_SECURITY_INFORMATION) || !dacl)
 		return True;
+
+#if defined(HAVE_NO_ACLS)
+
+	/* No point in doing this if we have no ACL support. */
+	return False;
+
+#else /* HAVE_NO_ACLS */
 
 	/*
 	 * Now go through the DACL and create the canon_ace lists.
@@ -623,6 +632,8 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 	*ppfile_ace = file_ace;
 	*ppdir_ace = dir_ace;
 	return True;
+
+#endif /* HAVE_NO_ACLS */
 }
 
 /****************************************************************************
@@ -704,7 +715,7 @@ static BOOL unpack_posix_permissions(files_struct *fsp, SMB_STRUCT_STAT *psbuf, 
      * ACLs on directories.
      */
 
-    psa->flags &= ~(SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT);
+    psa->flags &= ~(SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_INHERITED_ACE);
 
     if(psa->flags != 0) {
       DEBUG(1,("unpack_posix_permissions: unable to set ACE flags (%x).\n", 
@@ -1554,7 +1565,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 		 * If we cannot set using POSIX ACLs we fall back to checking if we need to chmod.
 		 */
 
-		if(!acl_set_support && (sbuf.st_mode != perms)) {
+		if(!acl_set_support && posix_perms && (sbuf.st_mode != perms)) {
 
 			free_canon_ace_list(file_ace_list);
 			free_canon_ace_list(dir_ace_list); 
