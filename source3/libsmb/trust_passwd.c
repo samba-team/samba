@@ -1,6 +1,5 @@
 /* 
- *  Unix SMB/Netbios implementation.
- *  Version 3.0
+ *  Unix SMB/CIFS implementation.
  *  Routines to change trust account passwords.
  *  Copyright (C) Andrew Bartlett                   2001.
  *

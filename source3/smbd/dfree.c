@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    functions to calculate the free disk space
    Copyright (C) Andrew Tridgell 1998
    

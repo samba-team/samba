@@ -1,8 +1,7 @@
 #ifndef _NSSWITCH_NSS_H
 #define _NSSWITCH_NSS_H
 /* 
-   Unix SMB/Netbios implementation.
-   Version 2.0
+   Unix SMB/CIFS implementation.
 
    a common place to work out how to define NSS_STATUS on various
    platforms

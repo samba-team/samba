@@ -1,5 +1,5 @@
 /* 
-   samba -- Unix SMB/Netbios implementation.
+   samba -- Unix SMB/CIFS implementation.
    Copyright (C) 2002 by Martin Pool
    
    This program is free software; you can redistribute it and/or modify

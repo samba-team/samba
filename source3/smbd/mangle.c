@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    Name mangling with persistent tdb
    Copyright (C) Simo Sorce 2001
    

@@ -1,7 +1,6 @@
 /* 
-   Unix SMB/Netbios implementation.
+   Unix SMB/CIFS implementation.
    Network neighbourhood browser.
-   Version 3.0
    
    Copyright (C) Tim Potter      2000
    

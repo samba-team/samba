@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    test printer setup
    Copyright (C) Karl Auer 1993, 1994-1998
    

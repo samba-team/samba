@@ -1,6 +1,5 @@
 /*
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    change notify handling - hash based implementation
    Copyright (C) Jeremy Allison 1994-1998
    Copyright (C) Andrew Tridgell 2000

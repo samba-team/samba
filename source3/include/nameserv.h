@@ -1,8 +1,7 @@
 #ifndef _NAMESERV_H_
 #define _NAMESERV_H_
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    NBT netbios header - version 2
    Copyright (C) Andrew Tridgell 1994-1998
    

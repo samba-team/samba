@@ -1,5 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
+   Unix SMB/CIFS implementation.
    Safe string handling routines.
    Copyright (C) Andrew Tridgell 1994-1998
    

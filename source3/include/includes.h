@@ -1,7 +1,7 @@
 #ifndef _INCLUDES_H
 #define _INCLUDES_H
 /* 
-   Unix SMB/Netbios implementation.
+   Unix SMB/CIFS implementation.
    Machine customisation and include handling
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) 2002 by Martin Pool <mbp@samba.org>

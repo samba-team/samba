@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    Password cacheing.  obfuscation is planned
    Copyright (C) Luke Kenneth Casson Leighton 1996-1998
    

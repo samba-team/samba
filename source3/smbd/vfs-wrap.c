@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    Wrap disk only vfs functions to sidestep dodgy compilers.
    Copyright (C) Tim Potter 1998
    

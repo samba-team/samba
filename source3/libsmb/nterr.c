@@ -1,6 +1,5 @@
 /* 
- *  Unix SMB/Netbios implementation.
- *  Version 1.9.
+ *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
  *  Copyright (C) Luke Kenneth Casson Leighton 1997-2001.
  *  

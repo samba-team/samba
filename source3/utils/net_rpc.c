@@ -1,6 +1,5 @@
 /* 
    Samba Unix/Linux SMB client library 
-   Version 3.0
    Distributed SMB/CIFS Server Management Utility 
    Copyright (C) 2001 Andrew Bartlett (abartlet@samba.org)
 

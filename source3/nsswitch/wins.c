@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 2.0
+   Unix SMB/CIFS implementation.
    a WINS nsswitch module 
    Copyright (C) Andrew Tridgell 1999
    

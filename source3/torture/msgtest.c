@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    Copyright (C) Andrew Tridgell 2000
    
    This program is free software; you can redistribute it and/or modify

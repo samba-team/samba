@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    code to manipulate domain credentials
    Copyright (C) Andrew Tridgell 1997-1998
    

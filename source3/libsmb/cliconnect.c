@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    client connect/disconnect routines
    Copyright (C) Andrew Tridgell 1994-1998
    

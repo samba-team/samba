@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    printing backend routines for smbd - using files_struct rather
    than only snum
    Copyright (C) Andrew Tridgell 1992-2000

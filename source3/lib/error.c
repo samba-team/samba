@@ -1,6 +1,5 @@
 /* 
- *  Unix SMB/Netbios implementation.
- *  Version 1.9
+ *  Unix SMB/CIFS implementation.
  *  Unix/DOS/NT error code conversions
  *  Copyright (C) Tim Potter 2000
  *  

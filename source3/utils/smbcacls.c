@@ -1,7 +1,6 @@
 /* 
-   Unix SMB/Netbios implementation.
+   Unix SMB/CIFS implementation.
    ACL get/set utility
-   Version 3.0
    
    Copyright (C) Andrew Tridgell 2000
    Copyright (C) Tim Potter      2000

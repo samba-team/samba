@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    process incoming packets - main loop
    Copyright (C) Jean François Micouleau      1998-2002.
    

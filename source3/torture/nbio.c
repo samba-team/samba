@@ -1,8 +1,7 @@
 #define NBDEBUG 0
 
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    SMB torture tester
    Copyright (C) Andrew Tridgell 1997-1998
    

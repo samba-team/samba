@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 2.9.
+   Unix SMB/CIFS implementation.
    LDAP protocol helper functions for SAMBA
    Copyright (C) Gerald Carter 2001
    Copyright (C) Shahms King 2001

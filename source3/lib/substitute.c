@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    string substitution functions
    Copyright (C) Andrew Tridgell 1992-2000
    

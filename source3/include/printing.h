@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    printing definitions
    Copyright (C) Andrew Tridgell 1992-2000
    

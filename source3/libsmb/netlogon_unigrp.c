@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    Universal groups helpers
    Copyright (C) Alexander Bokovoy                    2002.
    Copyright (C) Andrew Bartlett                      2002.

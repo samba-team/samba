@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    passdb structures and parameters
    Copyright (C) Gerald Carter 2001
    Copyright (C) Luke Kenneth Casson Leighton 1998 - 2000

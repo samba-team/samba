@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    messages.c header
    Copyright (C) Andrew Tridgell 2000
    Copyright (C) 2001, 2002 by Martin Pool

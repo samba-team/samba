@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    SMB transaction2 handling
    Copyright (C) Jeremy Allison 1994-2002.
 

@@ -1,5 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
+   Unix SMB/CIFS implementation.
    SMB parameters and setup, plus a whole lot more.
    
    Copyright (C) Andrew Tridgell              1992-2000

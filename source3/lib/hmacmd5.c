@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    HMAC MD5 code for use in NTLMv2
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    Copyright (C) Andrew Tridgell 1992-2000

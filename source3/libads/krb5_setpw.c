@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    krb5 set password implementation
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Remus Koos 2001 (remuskoos@yahoo.com)

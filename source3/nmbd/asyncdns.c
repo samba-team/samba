@@ -1,5 +1,5 @@
 /*
-   Unix SMB/Netbios implementation.
+   Unix SMB/CIFS implementation.
    a async DNS handler
    Copyright (C) Andrew Tridgell 1997-1998
    

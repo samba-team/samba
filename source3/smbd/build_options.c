@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 2.2
+   Unix SMB/CIFS implementation.
    Build Options for Samba Suite
    Copyright (C) Vance Lankhaar <vlankhaar@hotmail.com> 2001
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2001

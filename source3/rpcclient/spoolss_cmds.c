@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    SMB client
    Copyright (C) Andrew Tridgell              1994-2000
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000

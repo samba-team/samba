@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    store smbd profiling information in shared memory
    Copyright (C) Andrew Tridgell 1999
    

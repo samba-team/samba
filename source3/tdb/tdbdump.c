@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    simple tdb dump util
    Copyright (C) Andrew Tridgell              2001
 

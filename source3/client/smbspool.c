@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 2.0.
+   Unix SMB/CIFS implementation.
    SMB backend for the Common UNIX Printing System ("CUPS")
    Copyright 1999 by Easy Software Products
    Copyright Andrew Tridgell 1994-1998

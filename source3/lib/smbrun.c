@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    run a command as a specified user
    Copyright (C) Andrew Tridgell 1992-1998
    

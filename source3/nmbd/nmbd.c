@@ -1,5 +1,5 @@
 /*
-   Unix SMB/Netbios implementation.
+   Unix SMB/CIFS implementation.
    NBT netbios routines and daemon - version 2
    Copyright (C) Andrew Tridgell 1994-1998
    

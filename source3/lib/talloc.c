@@ -1,5 +1,5 @@
 /* 
-   Samba Unix SMB/Netbios implementation.
+   Samba Unix SMB/CIFS implementation.
    Samba temporary memory allocation functions
    Copyright (C) Andrew Tridgell 2000
    Copyright (C) 2001, 2002 by Martin Pool <mbp@samba.org>

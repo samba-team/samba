@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 2.0
+   Unix SMB/CIFS implementation.
    session handling for recording currently vailid vuids
    Copyright (C) tridge@samba.org 2001
    Copyright (C) Andew Bartlett <abartlet@samba.org> 2001

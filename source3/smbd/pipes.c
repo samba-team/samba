@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    Pipe SMB reply routines
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Luke Kenneth Casson Leighton 1996-1998

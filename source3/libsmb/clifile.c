@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    client file operations
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Jeremy Allison 2001-2002

@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    Tar Extensions
    Copyright (C) Ricky Poulten 1995-1998
    Copyright (C) Richard Sharpe 1998

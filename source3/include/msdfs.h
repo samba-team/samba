@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    MSDfs services for Samba
    Copyright (C) Shirish Kalele 2000
 
