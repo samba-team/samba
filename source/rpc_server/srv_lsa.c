@@ -392,7 +392,7 @@ static void api_lsa_lookup_names( int uid, prs_struct *data,
 	ZERO_STRUCT(sid_S_1_1);
 	ZERO_STRUCT(sid_S_1_3);
 	ZERO_STRUCT(sid_S_1_5);
-	ZERO_STRUCT(dom_rids);	
+	ZERO_ARRAY(dom_rids);	
 
 	/* grab the info class and policy handle */
 	lsa_io_q_lookup_rids("", &q_l, data, 0);
