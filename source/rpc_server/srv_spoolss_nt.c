@@ -4234,6 +4234,7 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 	int numlines;
 	int ret;
 	int fd;
+	fstring remote_machine = "%m";
 
 	/* build driver path... only 9X architecture is needed for legacy reasons */
 	slprintf(driverlocation, sizeof(driverlocation)-1, "\\\\%s\\print$\\WIN40\\0",
@@ -4241,10 +4242,10 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 	/* change \ to \\ for the shell */
 	all_string_sub(driverlocation,"\\","\\\\",sizeof(pstring));
 
-	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
+	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
 			cmd, printer->info_2->printername, printer->info_2->sharename,
 			printer->info_2->portname, printer->info_2->drivername,
-			printer->info_2->location, driverlocation);
+			printer->info_2->location, driverlocation, remote_machine);
 
 	/* Convert script args to unix-codepage */
 	dos_to_unix(command, True);
@@ -4609,6 +4610,14 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 		result = WERR_ACCESS_DENIED;
 		goto done;
 	}
+
+	/*
+	 * When a *new* driver is bound to a printer, the drivername is used to 
+	 * lookup previously saved driver initialization info, which is then 
+	 * bound to the printer, simulating what happens in the Windows arch.
+	 */
+	if (strequal(printer->info_2->drivername, old_printer->info_2->drivername))
+		set_driver_init(printer, 2);
 
 	/* Call addprinter hook */
 
