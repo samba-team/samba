@@ -60,14 +60,16 @@ static int
 loop (int s, int errsock)
 {
     fd_set real_readset;
-    int count = 2;
+    int count = 1;
 
     FD_ZERO(&real_readset);
     FD_SET(s, &real_readset);
-    FD_SET(errsock, &real_readset);
-    if(input) {
-	FD_SET(STDIN_FILENO, &real_readset);
+    if (errsock != -1) {
+	FD_SET(errsock, &real_readset);
+	++count;
     }
+    if(input)
+	FD_SET(STDIN_FILENO, &real_readset);
 
     for (;;) {
 	int ret;
@@ -94,7 +96,7 @@ loop (int s, int errsock)
 	    } else
 		net_write (STDOUT_FILENO, buf, ret);
 	}
-	if (FD_ISSET(errsock, &readset)) {
+	if (errsock != -1 && FD_ISSET(errsock, &readset)) {
 	    ret = do_read (errsock, buf, sizeof(buf));
 	    if (ret < 0)
 		err (1, "read");
@@ -397,33 +399,43 @@ proto (int s, int errsock,
 	return 1;
     }
 
-    addrlen = sizeof(erraddr);
-    if (getsockname (errsock, (struct sockaddr *)&erraddr, &addrlen) < 0) {
-	warn ("getsockname");
-	return 1;
-    }
+    if (errsock != -1) {
 
-    if (listen (errsock, 1) < 0) {
-	warn ("listen");
-	return 1;
-    }
+	addrlen = sizeof(erraddr);
+	if (getsockname (errsock, (struct sockaddr *)&erraddr, &addrlen) < 0) {
+	    warn ("getsockname");
+	    return 1;
+	}
 
-    p = buf;
-    snprintf (p, sizeof(buf), "%u", ntohs(erraddr.sin_port));
-    len = strlen(buf) + 1;
-    if(net_write (s, buf, len) != len) {
-	warn ("write");
+	if (listen (errsock, 1) < 0) {
+	    warn ("listen");
+	    return 1;
+	}
+
+	p = buf;
+	snprintf (p, sizeof(buf), "%u", ntohs(erraddr.sin_port));
+	len = strlen(buf) + 1;
+	if(net_write (s, buf, len) != len) {
+	    warn ("write");
+	    close (errsock);
+	    return 1;
+	}
+
+	errsock2 = accept (errsock, NULL, NULL);
+	if (errsock2 < 0) {
+	    warn ("accept");
+	    close (errsock);
+	    return 1;
+	}
 	close (errsock);
-	return 1;
-    }
 
-    errsock2 = accept (errsock, NULL, NULL);
-    if (errsock2 < 0) {
-	warn ("accept");
-	close (errsock);
-	return 1;
+    } else {
+	if (net_write (s, "0", 2) != 2) {
+	    warn ("write");
+	    return 1;
+	}
+	errsock2 = -1;
     }
-    close (errsock);
 
     if ((*auth_func)(s, thisaddr, thataddr, hostname,
 		     remote_user, local_user,
@@ -494,7 +506,7 @@ doit_broken (int argc,
     struct hostent *hostent;
     struct sockaddr_in addr;
 
-    if (priv_socket1 < 0 || priv_socket2 < 0) {
+    if (priv_socket1 < 0) {
 	warnx ("unable to bind reserved port: is rsh setuid root?");
 	return 1;
     }
@@ -575,6 +587,7 @@ doit (const char *hostname,
       int port,
       const char *cmd,
       size_t cmd_len,
+      int do_errsock,
       int (*auth_func)(int s,
 		       struct sockaddr_in this, struct sockaddr_in that,
 		       const char *hostname, const char *remote_user,
@@ -611,14 +624,18 @@ doit (const char *hostname,
 	    close (s);
 	    continue;
 	}
-	errsock = socket (AF_INET, SOCK_STREAM, 0);
-	if (errsock < 0)
-	    err (1, "socket");
-	memset (&erraddr, 0, sizeof(erraddr));
-	erraddr.sin_family = AF_INET;
-	erraddr.sin_addr.s_addr = INADDR_ANY;
-	if (bind (errsock, (struct sockaddr *)&erraddr, sizeof(erraddr)) < 0)
-	    err (1, "bind");
+	if (do_errsock) {
+	    errsock = socket (AF_INET, SOCK_STREAM, 0);
+	    if (errsock < 0)
+		err (1, "socket");
+	    memset (&erraddr, 0, sizeof(erraddr));
+	    erraddr.sin_family = AF_INET;
+	    erraddr.sin_addr.s_addr = INADDR_ANY;
+	    if (bind (errsock, (struct sockaddr *)&erraddr,
+		      sizeof(erraddr)) < 0)
+		err (1, "bind");
+	} else
+	    errsock = -1;
     
 	ret = proto (s, errsock,
 		     hostname,
@@ -640,6 +657,7 @@ static char *port_str;
 static const char *user;
 static int do_version;
 static int do_help;
+static int do_errsock = 1;
 
 struct getargs args[] = {
 #ifdef KRB4
@@ -662,6 +680,7 @@ struct getargs args[] = {
       "number-or-service" },
     { "user",	'l', arg_string,	&user,		"Run as this user",
       NULL },
+    { "stderr", 'e', arg_negative_flag, &do_errsock,	"don't open stderr"},
     { "version", 0,  arg_flag,		&do_version,	"Print version",
       NULL },
     { "help",	 0,  arg_flag,		&do_help,	NULL,
@@ -787,6 +806,7 @@ main(int argc, char **argv)
 
 	auth_method = AUTH_KRB5;
 	ret = doit (host, user, local_user, tmp_port, cmd, cmd_len,
+		    do_errsock,
 		    send_krb5_auth);
     }
 #ifdef KRB4
@@ -802,6 +822,7 @@ main(int argc, char **argv)
 
 	auth_method = AUTH_KRB4;
 	ret = doit (host, user, local_user, tmp_port, cmd, cmd_len,
+		    do_errsock,
 		    send_krb4_auth);
     }
 #endif
@@ -817,7 +838,7 @@ main(int argc, char **argv)
 			   user, local_user,
 			   tmp_port,
 			   priv_socket1,
-			   priv_socket2,
+			   do_errsock ? priv_socket2 : -1,
 			   cmd, cmd_len);
     }
     return ret;
