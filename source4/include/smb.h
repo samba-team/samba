@@ -421,6 +421,7 @@ struct vuid_cache {
 #include "smb_acls.h"
 #include "enums.h"
 #include "events.h"
+#include "rpc_server/dcerpc_server.h"
 #include "context.h"
 #include "smb_interfaces.h"
 #include "ntvfs.h"

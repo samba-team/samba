@@ -762,6 +762,9 @@ void init_smbsession(struct event_context *ev, struct model_ops *model_ops, int 
 	fde.flags = EVENT_FD_READ;
 
 	event_add_fd(ev, &fde);
+
+	/* setup the DCERPC server subsystem */
+	dcesrv_init(smb);
 }
 
 

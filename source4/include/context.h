@@ -331,6 +331,8 @@ struct server_context {
 
 	struct timers_context timers;
 
+	struct dcesrv_context dcesrv;
+
 	/* the pid of the process handling this session */
 	pid_t pid;
 	
