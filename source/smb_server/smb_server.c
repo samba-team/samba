@@ -558,7 +558,6 @@ static void construct_reply(struct request_context *req)
 		return;
 	}
 
-
 	/* Make sure this is an SMB packet */	
 	if (memcmp(req->in.hdr,"\377SMB",4) != 0) {
 		DEBUG(2,("Non-SMB packet of length %d. Terminating connection\n", 
@@ -583,6 +582,11 @@ static void construct_reply(struct request_context *req)
 	req->smbpid = SVAL(req->in.hdr,HDR_PID);	
 	req->flags = CVAL(req->in.hdr, HDR_FLG);
 	req->flags2 = SVAL(req->in.hdr, HDR_FLG2);
+
+	if (!req_signing_check_incoming(req)) {
+		req_reply_error(req, NT_STATUS_ACCESS_DENIED);
+		return;
+	}
 
 	switch_message(type, req);
 }
@@ -733,7 +737,7 @@ void init_smbsession(struct event_context *ev, struct model_ops *model_ops, int 
 
 	mem_ctx = talloc_init("server_context");
 
-	smb = (struct server_context *)talloc(mem_ctx, sizeof(*smb));
+	smb = talloc_p(mem_ctx, struct server_context);
 	if (!smb) return;
 
 	ZERO_STRUCTP(smb);

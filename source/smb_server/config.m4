@@ -13,4 +13,5 @@ SMB_SUBSYSTEM(SMB,smb_server/smb_server.o,
 		smb_server/session.o
 		smb_server/sesssetup.o
 		smb_server/srvtime.o
-		smb_server/trans2.o])
+		smb_server/trans2.o
+		smb_server/signing.o])

@@ -127,6 +127,8 @@ static NTSTATUS sesssetup_nt1(struct request_context *req, union smb_sesssetup *
 				 &sess->nt1.out.lanman,
 				 &sess->nt1.out.domain);
 
+	srv_setup_signing(req->smb, &session_key, &sess->nt1.in.password2);
+
 	return NT_STATUS_OK;
 }
 

@@ -288,6 +288,20 @@ static void reply_nt1(struct request_context *req, uint16 choice)
 	if (req->smb->negotiate.encrypted_passwords) {
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 	}
+
+	req->smb->signing.signing_state = lp_server_signing();
+
+	switch (req->smb->signing.signing_state) {
+	case SMB_SIGNING_OFF:
+		break;
+	case SMB_SIGNING_SUPPORTED:
+		secword |= NEGOTIATE_SECURITY_SIGNATURES_ENABLED;
+		break;
+	case SMB_SIGNING_REQUIRED:
+		secword |= NEGOTIATE_SECURITY_SIGNATURES_ENABLED |
+			NEGOTIATE_SECURITY_SIGNATURES_REQUIRED;
+		break;
+	}
 	
 	req->smb->negotiate.protocol = PROTOCOL_NT1;
 
@@ -334,7 +348,7 @@ static void reply_nt1(struct request_context *req, uint16 choice)
 #endif
 	}
 	
-	req_send_reply(req);	
+	req_send_reply_nosign(req);	
 }
 
 /* these are the protocol lists used for auto architecture detection:
