@@ -24,6 +24,13 @@ RCSID("$Id$");
 #include <sys/socket.h>
 #include <netdb.h>
 
+#ifdef HAVE_RESOLV_H
+#include <resolv.h>
+#endif
+#ifdef HAVE_ARPA_NAMESER_H
+#include <arpa/nameser.h>
+#endif
+
 #include <krb.h>
 #include <kafs.h>
 
@@ -84,6 +91,62 @@ static u_int32_t ip_aton(char *ip)
   return addr;
 }
 
+/* Try to get a db-server for an AFS cell from a AFSDB record */
+static int
+dns_find_cell(char *cell, char *dbserver)
+{
+#if defined(HAVE_DN_EXPAND) && defined(HAVE_RES_SEARCH)
+#ifndef T_AFSDB
+#define T_AFSDB 18
+#endif
+    unsigned char data[1024];
+    unsigned char host[MaxHostNameLen];
+    int len;
+
+    int status;
+    unsigned char *p;
+
+    len = res_search(cell, C_IN, T_AFSDB, data, sizeof(data));
+    if(len < 0)
+	return -1;
+    p = data + sizeof(HEADER);
+    status = dn_expand(data, data + len, p, host, sizeof(host));
+    if(status < 0)
+	return -1;
+    p += status;
+    p += 4; /* type and class */
+    while(p < data + len){
+	int type, subtype, class, ttl, size;
+	status = dn_expand(data, data + len, p, host, sizeof(host));
+	if(status < 0)
+	    return -1;
+	p += status;
+	type = (p[0] << 8) | p[1];
+	p += 2;
+	class = (p[0] << 8) | p[1];
+	p += 2;
+	ttl = (p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3];
+	p += 4;
+	size = (p[0] << 8) | p[1];
+	p += 2;
+	if(type == T_AFSDB){
+	    subtype = (p[0] << 8) | p[1];
+	    if(subtype == 1){
+		p += 2;
+		status = dn_expand(data, data + len, p, host, sizeof(host));
+		if(status < 0)
+		    return -1;
+		strncpy(dbserver, host, MaxHostNameLen);
+		dbserver[MaxHostNameLen] = 0;
+		return 0;
+	    }
+	}
+	p += size;
+    }
+#endif
+    return -1;
+}
+
 /* Find the realm associated with cell. Do this by opening
    /usr/vice/etc/CellServDB and getting the realm-of-host for the
    first VL-server for the cell.
@@ -123,6 +186,11 @@ realm_of_cell(char *cell)
   }
   if(F)
     fclose(F);
+
+  if(realm == NULL){
+      if(dns_find_cell(cell, buf) == 0)
+	  realm = krb_realmofhost(buf);
+  }
   return realm;
 }
 
@@ -180,26 +248,37 @@ aix_setup(void)
  */
 
 static int
+k_afslog_file(char *file, char *krealm)
+{
+    FILE *f;
+    char cell[64];
+    int err = KSUCCESS;
+    f = fopen(file, "r");
+    if(f == NULL)
+	return -1;
+    while(fgets(cell, sizeof(cell), f) && err == KSUCCESS){
+	char *nl = strchr(cell, '\n');
+	if(nl)
+	    *nl = 0;
+	err = k_afsklog(cell, krealm);
+    }
+    fclose(f);
+    return err;
+}
+
+static int
 k_afsklog_all_local_cells (char *krealm)
 {
-  FILE *f;
-  char cell[64];
-  int err;
+    int err = KFAILURE;
+    char *p, home[MaxPathLen];
 
-  f = fopen(_PATH_THESECELLS, "r");
-  if (f == NULL)
-    f = fopen(_PATH_THISCELL, "r");
-  if (f == NULL)
-    return KSUCCESS;
-  err = KSUCCESS;
-  while(fgets(cell, sizeof(cell), f) && err == KSUCCESS) {
-    char *nl = strchr(cell, '\n');
-    if (nl != 0)
-      *nl = 0;
-    err = k_afsklog (cell, krealm);
-  }
-  fclose(f);
-  return err;
+    if((p = getenv("HOME"))){
+	sprintf(home, "%s/.TheseCells", p);
+	err = err && k_afslog_file(home, krealm);
+    }
+    k_afslog_file(_PATH_THESECELLS, krealm);
+    k_afslog_file(_PATH_THISCELL, krealm);
+    return err;
 }
 
 int
@@ -231,16 +310,15 @@ k_afsklog(char *cell, char *krealm)
   /* We're about to find the the realm that holds the key for afs in
    * the specified cell. The problem is that null-instance
    * afs-principals are common and that hitting the wrong realm might
-   * yield the wrong afs key. These thoughts leads to the following
-   * code.
+   * yield the wrong afs key. The following assumptions were made.
    *
    * Any realm passed to us is preferred.
    *
    * If there is a realm with the same name as the cell, it is most
    * likely the correct realm to talk to.
    *
-   * In most (maybe even all) cases the volume location servers of the
-   * cell will live in the realm we are looking for.
+   * In most (maybe even all) cases the database servers of the cell
+   * will live in the realm we are looking for.
    *
    * Try the local realm, but if the previous cases fail, this is
    * really a long shot.
