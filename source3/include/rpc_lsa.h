@@ -64,6 +64,15 @@ typedef struct dom_query_info
 typedef DOM_QUERY DOM_QUERY_3;
 typedef DOM_QUERY DOM_QUERY_5;
 
+typedef struct seq_qos_info
+{
+	uint32 len; /* 12 */
+	uint16 sec_imp_level; /* 0x02 - impersonation level */
+	uint8  sec_ctxt_mode; /* 0x01 - context tracking mode */
+	uint8  effective_only; /* 0x00 - effective only */
+	uint32 unknown;        /* 0x2000 0000 - not known */
+
+} LSA_SEC_QOS;
 
 typedef struct obj_attr_info
 {
@@ -72,7 +81,8 @@ typedef struct obj_attr_info
 	uint32 ptr_obj_name; /* 0 - object name (pointer) */
 	uint32 attributes;   /* 0 - attributes (undocumented) */
 	uint32 ptr_sec_desc; /* 0 - security descriptior (pointer) */
-	uint32 sec_qos;      /* 0 - security quality of service */
+	uint32 ptr_sec_qos;  /* security quality of service */
+	LSA_SEC_QOS *sec_qos;
 
 } LSA_OBJ_ATTR;
 
@@ -165,33 +175,44 @@ typedef struct lsa_r_close_info
 
 #define MAX_REF_DOMAINS 10
 
+/* DOM_TRUST_HDR */
+typedef struct dom_trust_hdr
+{
+	UNIHDR hdr_dom_name; /* referenced domain unicode string headers */
+	uint32 ptr_dom_sid;
+
+} DOM_TRUST_HDR;
+	
+/* DOM_TRUST_INFO */
+typedef struct dom_trust_info
+{
+	UNISTR2  uni_dom_name; /* domain name unicode string */
+	DOM_SID2 ref_dom     ; /* referenced domain SID */
+
+} DOM_TRUST_INFO;
+	
 /* DOM_R_REF */
 typedef struct dom_ref_info
 {
 	uint32 undoc_buffer; /* undocumented buffer pointer. */
 	uint32 num_ref_doms_1; /* num referenced domains */
-	uint32 buffer_dom_name; /* undocumented domain name buffer pointer. */
+	uint32 undoc_buffer2; /* undocumented domain name buffer pointer. */
 	uint32 max_entries; /* 32 - max number of entries */
 	uint32 num_ref_doms_2; /* num referenced domains */
 
-
-	UNIHDR2 hdr_dom_name; /* domain name unicode string header */
-	UNIHDR2 hdr_ref_dom[MAX_REF_DOMAINS]; /* referenced domain unicode string headers */
-
-	UNISTR uni_dom_name; /* domain name unicode string */
-	DOM_SID2 ref_dom[MAX_REF_DOMAINS]; /* referenced domain SIDs */
+	DOM_TRUST_HDR  hdr_ref_dom[MAX_REF_DOMAINS]; /* referenced domains */
+	DOM_TRUST_INFO ref_dom    [MAX_REF_DOMAINS]; /* referenced domains */
 
 } DOM_R_REF;
+
+/* the domain_idx points to a SID associated with the name */
 
 /* LSA_TRANS_NAME - translated name */
 typedef struct lsa_trans_name_info
 {
 	uint32 sid_name_use; /* value is 5 for a well-known group; 2 for a domain group; 1 for a user... */
-
-	UNIHDR  hdr_name; 
-	UNISTR2 uni_name; 
-
-	uint32 domain_idx;
+	UNIHDR hdr_name; 
+	uint32 domain_idx; /* index into DOM_R_REF array of SIDs */
 
 } LSA_TRANS_NAME;
 
@@ -204,8 +225,8 @@ typedef struct lsa_trans_name_enum_info
 	uint32 ptr_trans_names;
 	uint32 num_entries2;
 	
-    uint32         ptr_name[MAX_LOOKUP_SIDS]; /* translated name pointers */
-    LSA_TRANS_NAME name    [MAX_LOOKUP_SIDS]; /* translated names  */
+	LSA_TRANS_NAME name    [MAX_LOOKUP_SIDS]; /* translated names  */
+	UNISTR2        uni_name[MAX_LOOKUP_SIDS]; 
 
 } LSA_TRANS_NAME_ENUM;
 
@@ -216,15 +237,15 @@ typedef struct lsa_sid_enum_info
 	uint32 ptr_sid_enum;
 	uint32 num_entries2;
 	
-    uint32   ptr_sid[MAX_LOOKUP_SIDS]; /* domain SID pointers to be looked up. */
-    DOM_SID2 sid    [MAX_LOOKUP_SIDS]; /* domain SIDs to be looked up. */
+	uint32   ptr_sid[MAX_LOOKUP_SIDS]; /* domain SID pointers to be looked up. */
+	DOM_SID2 sid    [MAX_LOOKUP_SIDS]; /* domain SIDs to be looked up. */
 
 } LSA_SID_ENUM;
 
 /* LSA_Q_LOOKUP_SIDS - LSA Lookup SIDs */
 typedef struct lsa_q_lookup_sids
 {
-	POLICY_HND          pol_hnd; /* policy handle */
+	POLICY_HND          pol; /* policy handle */
 	LSA_SID_ENUM        sids;
 	LSA_TRANS_NAME_ENUM names;
 	LOOKUP_LEVEL        level;
@@ -257,7 +278,7 @@ typedef struct dom_name_info
 /* LSA_Q_LOOKUP_RIDS - LSA Lookup RIDs */
 typedef struct lsa_q_lookup_rids
 {
-    POLICY_HND pol_hnd; /* policy handle */
+    POLICY_HND pol; /* policy handle */
     uint32 num_entries;
     uint32 num_entries2;
     uint32 buffer_dom_sid; /* undocumented domain SID buffer pointer */

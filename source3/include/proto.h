@@ -1204,7 +1204,13 @@ BOOL cli_nt_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr);
 /*The following definitions come from  rpc_client/cli_lsarpc.c  */
 
 BOOL do_lsa_open_policy(struct cli_state *cli,
-			char *server_name, POLICY_HND *hnd);
+			char *server_name, POLICY_HND *hnd,
+			BOOL sec_qos);
+BOOL do_lsa_lookup_sids(struct cli_state *cli,
+			POLICY_HND *hnd,
+			int num_sids,
+			DOM_SID **sids,
+			char **names);
 BOOL do_lsa_query_info_pol(struct cli_state *cli,
 			POLICY_HND *hnd, uint16 info_class,
 			fstring domain_name, fstring domain_sid);
@@ -1274,10 +1280,13 @@ BOOL do_wks_query_info(struct cli_state *cli,
 /*The following definitions come from  rpc_parse/parse_lsa.c  */
 
 void make_lsa_trans_name(LSA_TRANS_NAME *trn, uint32 sid_name_use, char *name, uint32 idx);
-void make_lsa_obj_attr(LSA_OBJ_ATTR *attr, uint32 attributes, uint32 sec_qos);
+void make_lsa_sec_qos(LSA_SEC_QOS *qos, uint16 imp_lev, uint8 ctxt, uint8 eff,
+				uint32 unknown);
+void make_lsa_obj_attr(LSA_OBJ_ATTR *attr, uint32 attributes, LSA_SEC_QOS *qos);
 void make_q_open_pol(LSA_Q_OPEN_POL *r_q, char *server_name,
-			uint32 attributes, uint32 sec_qos,
-			uint32 desired_access);
+			uint32 attributes,
+			uint32 desired_access,
+			LSA_SEC_QOS *qos);
 void lsa_io_q_open_pol(char *desc,  LSA_Q_OPEN_POL *r_q, prs_struct *ps, int depth);
 void lsa_io_r_open_pol(char *desc,  LSA_R_OPEN_POL *r_p, prs_struct *ps, int depth);
 void make_q_query(LSA_Q_QUERY_INFO *q_q, POLICY_HND *hnd, uint16 info_class);
@@ -1288,6 +1297,10 @@ void make_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e,
                            uint32 status);
 void lsa_io_r_enum_trust_dom(char *desc,  LSA_R_ENUM_TRUST_DOM *r_e, prs_struct *ps, int depth);
 void lsa_io_r_query(char *desc,  LSA_R_QUERY_INFO *r_q, prs_struct *ps, int depth);
+void make_lsa_sid_enum(LSA_SID_ENUM *sen, int num_entries, DOM_SID **sids);
+void make_q_lookup_sids(LSA_Q_LOOKUP_SIDS *q_l, POLICY_HND *hnd,
+				int num_sids, DOM_SID **sids,
+				uint16 level);
 void lsa_io_q_lookup_sids(char *desc, LSA_Q_LOOKUP_SIDS *q_s, prs_struct *ps, int depth);
 void lsa_io_r_lookup_sids(char *desc,  LSA_R_LOOKUP_SIDS *r_s, prs_struct *ps, int depth);
 void lsa_io_q_lookup_rids(char *desc,  LSA_Q_LOOKUP_RIDS *q_r, prs_struct *ps, int depth);
@@ -1779,6 +1792,7 @@ BOOL api_wkssvc_rpc(pipes_struct *p, prs_struct *data);
 /*The following definitions come from  rpcclient/cmd_lsarpc.c  */
 
 void cmd_lsa_query_info(struct client_info *info);
+void cmd_lsa_lookup_sids(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_samr.c  */
 

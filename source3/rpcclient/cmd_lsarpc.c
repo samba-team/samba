@@ -67,7 +67,7 @@ void cmd_lsa_query_info(struct client_info *info)
 	/* lookup domain controller; receive a policy handle */
 	res = res ? do_lsa_open_policy(smb_cli,
 				srv_name,
-				&info->dom.lsa_info_pol) : False;
+				&info->dom.lsa_info_pol, False) : False;
 
 	/* send client info query, level 3.  receive domain name and sid */
 	res = res ? do_lsa_query_info_pol(smb_cli, 
@@ -113,7 +113,88 @@ void cmd_lsa_query_info(struct client_info *info)
 	}
 	else
 	{
-		DEBUG(5,("cmd_lsa_query_info: query succeeded\n"));
+		DEBUG(5,("cmd_lsa_query_info: query failed\n"));
+	}
+}
+
+/****************************************************************************
+nt lsa query
+****************************************************************************/
+void cmd_lsa_lookup_sids(struct client_info *info)
+{
+	fstring temp;
+	fstring sid_name;
+	fstring srv_name;
+	DOM_SID sid;
+	DOM_SID *sids[1];
+	char **names;
+
+	BOOL res = True;
+
+	DEBUG(5, ("cmd_lsa_lookup_sids: smb_cli->fd:%d\n", smb_cli->fd));
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->myhostname);
+	strupper(srv_name);
+
+	fstrcpy(sid_name, info->dom.level5_sid);
+
+	if (next_token(NULL, temp, NULL, sizeof(temp)))
+	{
+		if (info->dom.level5_sid[0] == 0)
+		{
+			fprintf(out_hnd, "please use lsaquery first or specify a complete SID\n");
+			return;
+		}
+			
+		if (strnequal("S-", temp, 2))
+		{
+			fstrcpy(sid_name, temp);
+		}
+		else
+		{
+			fstrcat(sid_name, "-");
+			fstrcat(sid_name, temp);
+		}
+	}
+	else
+	{
+		fprintf(out_hnd, "lsalookup RID or SID\n");
+		return;
+	}
+
+	DEBUG(4,("cmd_lsa_lookup_sids: server: %s sid:%s\n",
+			srv_name, sid_name));
+
+	make_dom_sid(&sid, sid_name);
+
+	sids[0] = &sid;
+
+	/* open LSARPC session. */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_LSARPC, False) : False;
+
+	/* lookup domain controller; receive a policy handle */
+	res = res ? do_lsa_open_policy(smb_cli,
+				srv_name,
+				&info->dom.lsa_info_pol, True) : False;
+
+	/* send client info query, level 3.  receive domain name and sid */
+	res = res ? do_lsa_lookup_sids(smb_cli, 
+	            &info->dom.lsa_info_pol, 1, sids, names) : False;
+
+	res = res ? do_lsa_close(smb_cli, &info->dom.lsa_info_pol) : False;
+
+	/* close the session */
+	cli_nt_session_close(smb_cli);
+
+	if (res)
+	{
+		DEBUG(5,("cmd_lsa_lookup_sids: query succeeded\n"));
+
+	}
+	else
+	{
+		DEBUG(5,("cmd_lsa_lookup_sids: query failed\n"));
 	}
 }
 

@@ -36,12 +36,14 @@ extern int DEBUGLEVEL;
 do a LSA Open Policy
 ****************************************************************************/
 BOOL do_lsa_open_policy(struct cli_state *cli,
-			char *server_name, POLICY_HND *hnd)
+			char *server_name, POLICY_HND *hnd,
+			BOOL sec_qos)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
 	LSA_Q_OPEN_POL q_o;
-    BOOL valid_pol = False;
+	LSA_SEC_QOS qos;
+	BOOL valid_pol = False;
 
 	if (hnd == NULL) return False;
 
@@ -53,7 +55,15 @@ BOOL do_lsa_open_policy(struct cli_state *cli,
 	DEBUG(4,("LSA Open Policy\n"));
 
 	/* store the parameters */
-	make_q_open_pol(&q_o, server_name, 0, 0, 0x1);
+	if (sec_qos)
+	{
+		make_lsa_sec_qos(&qos, 2, 1, 0, 0x20000000);
+		make_q_open_pol(&q_o, server_name, 0, 0, &qos);
+	}
+	else
+	{
+		make_q_open_pol(&q_o, server_name, 0, 0x1, NULL);
+	}
 
 	/* turn parameters into data stream */
 	lsa_io_q_open_pol("", &q_o, &buf, 0);
@@ -89,6 +99,69 @@ BOOL do_lsa_open_policy(struct cli_state *cli,
 }
 
 /****************************************************************************
+do a LSA Lookup SIDs
+****************************************************************************/
+BOOL do_lsa_lookup_sids(struct cli_state *cli,
+			POLICY_HND *hnd,
+			int num_sids,
+			DOM_SID **sids,
+			char **names)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	LSA_Q_LOOKUP_SIDS q_l;
+	BOOL valid_response = False;
+
+	if (hnd == NULL || num_sids == 0 || sids == NULL) return False;
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api LSA_LOOKUP_SIDS */
+
+	DEBUG(4,("LSA Lookup SIDs\n"));
+
+	/* store the parameters */
+	make_q_lookup_sids(&q_l, hnd, num_sids, sids, 1);
+
+	/* turn parameters into data stream */
+	lsa_io_q_lookup_sids("", &q_l, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, LSA_LOOKUPSIDS, &buf, &rbuf))
+	{
+		LSA_R_LOOKUP_SIDS r_l;
+		DOM_R_REF ref;
+		LSA_TRANS_NAME_ENUM t_names;
+		BOOL p;
+
+		r_l.dom_ref = &ref;
+		r_l.names   = &t_names;
+
+		lsa_io_r_lookup_sids("", &r_l, &rbuf, 0);
+		p = rbuf.offset != 0;
+		
+		if (p && r_l.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("LSA_LOOKUP_SIDS: %s\n", get_nt_error_msg(r_l.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_response = True;
+			*names = NULL;
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_response;
+}
+
+/****************************************************************************
 do a LSA Query Info Policy
 ****************************************************************************/
 BOOL do_lsa_query_info_pol(struct cli_state *cli,
@@ -98,7 +171,7 @@ BOOL do_lsa_query_info_pol(struct cli_state *cli,
 	prs_struct rbuf;
 	prs_struct buf; 
 	LSA_Q_QUERY_INFO q_q;
-    BOOL valid_response = False;
+	BOOL valid_response = False;
 
 	if (hnd == NULL || domain_name == NULL || domain_sid == NULL) return False;
 
