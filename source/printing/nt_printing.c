@@ -3037,27 +3037,34 @@ static uint32 save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, NT_PRINTER_PARA
 	NT_DEVICEMODE *tmp_devmode = printer->info_2->devmode;
 	
 	/*
-	 * Set devmode on printer info, so entire printer initialization can be 
-	 * saved to tdb.
+	 * When the DEVMODE is already set on the printer, don't try to unpack it.
 	 */
-	if ((ctx = talloc_init()) == NULL)
-		return ERROR_NOT_ENOUGH_MEMORY;
-
-	if ((nt_devmode = (NT_DEVICEMODE*)malloc(sizeof(NT_DEVICEMODE))) == NULL) {
-		status = ERROR_NOT_ENOUGH_MEMORY;
-		goto done;
-	}
+	if (!printer->info_2->devmode) {
+		/*
+		 * Set devmode on printer info, so entire printer initialization can be 
+		 * saved to tdb.
+		 */
+		if ((ctx = talloc_init()) == NULL)
+			return ERROR_NOT_ENOUGH_MEMORY;
 	
-	ZERO_STRUCTP(nt_devmode);
-
-	/*
-	 * The DEVMODE is held in the 'data' component of the param in raw binary.
-	 * Convert it to to a devmode structure
-	 */
-	if (!convert_driver_init(param, ctx, nt_devmode)) {
-		DEBUG(10,("save_driver_init_2: error converting DEVMODE\n"));
-		status = ERROR_INVALID_PARAMETER;
-		goto done;
+		if ((nt_devmode = (NT_DEVICEMODE*)malloc(sizeof(NT_DEVICEMODE))) == NULL) {
+			status = ERROR_NOT_ENOUGH_MEMORY;
+			goto done;
+		}
+		
+		ZERO_STRUCTP(nt_devmode);
+	
+		/*
+		 * The DEVMODE is held in the 'data' component of the param in raw binary.
+		 * Convert it to to a devmode structure
+		 */
+		if (!convert_driver_init(param, ctx, nt_devmode)) {
+			DEBUG(10,("save_driver_init_2: error converting DEVMODE\n"));
+			status = ERROR_INVALID_PARAMETER;
+			goto done;
+		}
+	
+		printer->info_2->devmode = nt_devmode;
 	}
 
 	/*
@@ -3065,7 +3072,6 @@ static uint32 save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, NT_PRINTER_PARA
 	 * a 'driver init' element in the tdb
 	 * 
 	 */
-	printer->info_2->devmode = nt_devmode;
 	if (update_driver_init(*printer, 2)!=0) {
 		DEBUG(10,("save_driver_init_2: error updating DEVMODE\n"));
 		status = ERROR_NOT_ENOUGH_MEMORY;
