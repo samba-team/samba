@@ -1789,6 +1789,25 @@ static char *unix_mode_to_str(char *s, mode_t m)
 }
 
 /****************************************************************************
+ Utility function for UNIX getfacl.
+****************************************************************************/
+
+static char *perms_to_string(fstring permstr, unsigned char perms)
+{
+	fstrcpy(permstr, "---");
+	if (perms & SMB_POSIX_ACL_READ) {
+		permstr[0] = 'r';
+	}
+	if (perms & SMB_POSIX_ACL_WRITE) {
+		permstr[1] = 'w';
+	}
+	if (perms & SMB_POSIX_ACL_EXECUTE) {
+		permstr[2] = 'x';
+	}
+	return permstr;
+}
+
+/****************************************************************************
  UNIX getfacl.
 ****************************************************************************/
 
@@ -1798,6 +1817,11 @@ static int cmd_getfacl(void)
 	uint16 major, minor;
 	uint32 caplow, caphigh;
 	char *retbuf = NULL;
+	size_t rb_size = 0;
+	SMB_STRUCT_STAT sbuf;
+	uint16 num_file_acls = 0;
+	uint16 num_dir_acls = 0;
+	uint16 i;
  
 	if (!SERVER_HAS_UNIX_CIFS(cli)) {
 		d_printf("Server doesn't support UNIX CIFS calls.\n");
@@ -1823,14 +1847,120 @@ static int cmd_getfacl(void)
 
 	pstrcat(src,name);
 
-	if (!cli_unix_getfacl(cli, src, &retbuf)) {
+	if (!cli_unix_stat(cli, src, &sbuf)) {
+		d_printf("%s getfacl doing a stat on file %s\n",
+			cli_errstr(cli), src);
+		return 1;
+	} 
+
+	if (!cli_unix_getfacl(cli, src, &rb_size, &retbuf)) {
 		d_printf("%s getfacl file %s\n",
 			cli_errstr(cli), src);
 		return 1;
 	} 
 
 	/* ToDo : Print out the ACL values. */
-	SAFE_FREE(retbuf);	
+	if (SVAL(retbuf,0) != SMB_POSIX_ACL_VERSION || rb_size < 6) {
+		d_printf("getfacl file %s, unknown POSIX acl version %u.\n",
+			src, (unsigned int)CVAL(retbuf,0) );
+		SAFE_FREE(retbuf);
+		return 1;
+	}
+
+	num_file_acls = SVAL(retbuf,2);
+	num_dir_acls = SVAL(retbuf,4);
+	if (rb_size != SMB_POSIX_ACL_HEADER_SIZE + SMB_POSIX_ACL_ENTRY_SIZE*(num_file_acls+num_dir_acls)) {
+		d_printf("getfacl file %s, incorrect POSIX acl buffer size (should be %u, was %u).\n",
+			src,
+			(unsigned int)(SMB_POSIX_ACL_HEADER_SIZE + SMB_POSIX_ACL_ENTRY_SIZE*(num_file_acls+num_dir_acls)),
+			(unsigned int)rb_size);
+
+		SAFE_FREE(retbuf);
+		return 1;
+	}
+
+	d_printf("# file: %s\n", src);
+	d_printf("# owner: %u\n# group: %u\n", (unsigned int)sbuf.st_uid, (unsigned int)sbuf.st_gid);
+
+	if (num_file_acls == 0 && num_dir_acls == 0) {
+		d_printf("No acls found.\n");
+	}
+
+	for (i = 0; i < num_file_acls; i++) {
+		uint32 uorg;
+		fstring permstring;
+		unsigned char tagtype = CVAL(retbuf, SMB_POSIX_ACL_HEADER_SIZE+(i*SMB_POSIX_ACL_ENTRY_SIZE));
+		unsigned char perms = CVAL(retbuf, SMB_POSIX_ACL_HEADER_SIZE+(i*SMB_POSIX_ACL_ENTRY_SIZE)+1);
+
+		switch(tagtype) {
+			case SMB_POSIX_ACL_USER_OBJ:
+				d_printf("user::");
+				break;
+			case SMB_POSIX_ACL_USER:
+				uorg = IVAL(retbuf,SMB_POSIX_ACL_HEADER_SIZE+(i*SMB_POSIX_ACL_ENTRY_SIZE)+2);
+				d_printf("user:%u:", uorg);
+				break;
+			case SMB_POSIX_ACL_GROUP_OBJ:
+				d_printf("group::");
+				break;
+			case SMB_POSIX_ACL_GROUP:
+				uorg = IVAL(retbuf,SMB_POSIX_ACL_HEADER_SIZE+(i*SMB_POSIX_ACL_ENTRY_SIZE)+2);
+				d_printf("group:%u", uorg);
+				break;
+			case SMB_POSIX_ACL_MASK:
+				d_printf("mask::");
+				break;
+			case SMB_POSIX_ACL_OTHER:
+				d_printf("other::");
+				break;
+			default:
+				d_printf("getfacl file %s, incorrect POSIX acl tagtype (%u).\n",
+					src, (unsigned int)tagtype );
+				SAFE_FREE(retbuf);
+				return 1;
+		}
+
+		d_printf("%s\n", perms_to_string(permstring, perms));
+	}
+
+	for (i = 0; i < num_dir_acls; i++) {
+		uint32 uorg;
+		fstring permstring;
+		unsigned char tagtype = CVAL(retbuf, SMB_POSIX_ACL_HEADER_SIZE+((i+num_file_acls)*SMB_POSIX_ACL_ENTRY_SIZE));
+		unsigned char perms = CVAL(retbuf, SMB_POSIX_ACL_HEADER_SIZE+((i+num_file_acls)*SMB_POSIX_ACL_ENTRY_SIZE)+1);
+
+		switch(tagtype) {
+			case SMB_POSIX_ACL_USER_OBJ:
+				d_printf("default:user::");
+				break;
+			case SMB_POSIX_ACL_USER:
+				uorg = IVAL(retbuf,SMB_POSIX_ACL_HEADER_SIZE+((i+num_file_acls)*SMB_POSIX_ACL_ENTRY_SIZE)+2);
+				d_printf("default:user:%u:", uorg);
+				break;
+			case SMB_POSIX_ACL_GROUP_OBJ:
+				d_printf("default:group::");
+				break;
+			case SMB_POSIX_ACL_GROUP:
+				uorg = IVAL(retbuf,SMB_POSIX_ACL_HEADER_SIZE+((i+num_file_acls)*SMB_POSIX_ACL_ENTRY_SIZE)+2);
+				d_printf("default:group:%u", uorg);
+				break;
+			case SMB_POSIX_ACL_MASK:
+				d_printf("default:mask::");
+				break;
+			case SMB_POSIX_ACL_OTHER:
+				d_printf("default:other::");
+				break;
+			default:
+				d_printf("getfacl file %s, incorrect POSIX acl tagtype (%u).\n",
+					src, (unsigned int)tagtype );
+				SAFE_FREE(retbuf);
+				return 1;
+		}
+
+		d_printf("%s\n", perms_to_string(permstring, perms));
+	}
+
+	SAFE_FREE(retbuf);
 	return 0;
 }
 
