@@ -24,8 +24,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
 
-#define IDMAP_RID_SUPPORT_TRUSTED_DOMAINS 0
-
 NTSTATUS init_module(void);
 
 struct dom_entry {
@@ -271,12 +269,16 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 					i, trusted_domain_names[i], sid_str));
 	}
 
+	int own_domains = 2;
+	if (!sid_equal(domain_sid, get_global_sam_sid()))
+		++own_domains;
+
 	/* put the results together */
-	*num_domains = trusted_num_domains + 2;
+	*num_domains = trusted_num_domains + own_domains;
 	*domain_names = (fstring *) realloc(*domain_names, sizeof(fstring) * *num_domains);
 	*domain_sids = (DOM_SID *) realloc(*domain_sids, sizeof(DOM_SID) * *num_domains); 
 
-	/* first add myself */
+	/* first add mydomain */
 	fstrcpy((*domain_names)[0], domain_name);
 	sid_copy(&(*domain_sids)[0], domain_sid);
 
@@ -285,10 +287,16 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 	fstrcpy((*domain_names)[1], "BUILTIN");
 	sid_copy(&(*domain_sids)[1], &builtin_sid);
 
+	/* then add my local sid */
+	if (!sid_equal(domain_sid, get_global_sam_sid())) {
+		fstrcpy((*domain_names)[2], global_myname());
+		sid_copy(&(*domain_sids)[2], get_global_sam_sid());
+	}
+
 	/* add trusted domains */
 	for (i=0; i<trusted_num_domains; i++) {
-		fstrcpy((*domain_names)[i+2], trusted_domain_names[i]);
-		sid_copy(&((*domain_sids)[i+2]), &(trusted_domain_sids[i]));
+		fstrcpy((*domain_names)[i+own_domains], trusted_domain_names[i]);
+		sid_copy(&((*domain_sids)[i+own_domains]), &(trusted_domain_sids[i]));
 	}
 
 	/* show complete domain list */
@@ -477,11 +485,15 @@ static NTSTATUS rid_idmap_get_id_from_sid(unid_t *unid, int *id_type, const DOM_
 	unid->uid = rid + trust.dom[i].min_id;
 
 	if (unid->uid > trust.dom[i].max_id) {
-		DEBUG(0,("rid_idmap_get_id_from_sid: rid: %d too high for mapping of domain: %s\n", rid, trust.dom[i].name));
+		DEBUG(0,("rid_idmap_get_id_from_sid: rid: %d (%s: %d) too high for mapping of domain: %s (%d-%d)\n", 
+			rid, (*id_type == ID_GROUPID) ? "GID" : "UID", unid->uid, trust.dom[i].name, 
+			trust.dom[i].min_id, trust.dom[i].max_id));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	if (unid->uid < trust.dom[i].min_id) {
-		DEBUG(0,("rid_idmap_get_id_from_sid: rid: %d too low for mapping of domain: %s\n", rid, trust.dom[i].name));
+		DEBUG(0,("rid_idmap_get_id_from_sid: rid: %d (%s: %d) too low for mapping of domain: %s (%d-%d)\n", 
+			rid, (*id_type == ID_GROUPID) ? "GID" : "UID", unid->uid, 
+			trust.dom[i].name, trust.dom[i].min_id, trust.dom[i].max_id));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
