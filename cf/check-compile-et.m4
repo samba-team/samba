@@ -27,7 +27,7 @@ if ${COMPILE_ET} conftest_et.et >/dev/null 2>&1; then
     CPPFLAGS="-I/usr/include/et ${CPPFLAGS}"
   fi
   dnl Check that the `prefix' and `index' directives were honored.
-  AC_TRY_RUN([
+  AC_RUN_IFELSE([
 #include <com_err.h>
 #include <string.h>
 #include "conftest_et.h"
@@ -36,7 +36,8 @@ int main(){
 #error compile_et does not handle error_table N M
 #endif
 return (CONFTEST_CODE2 - CONFTEST_CODE1) != 127;}
-  ], [krb_cv_compile_et="yes"],[CPPFLAGS="${save_CPPFLAGS}"])
+  ], [krb_cv_compile_et="yes"],[CPPFLAGS="${save_CPPFLAGS}"],
+  [krb_cv_compile_et="no"] )
 fi
 AC_MSG_RESULT(${krb_cv_compile_et})
 if test "${krb_cv_compile_et}" = "yes"; then
