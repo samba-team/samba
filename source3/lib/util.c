@@ -4965,3 +4965,30 @@ char *dom_sid_to_string(DOM_SID *sid)
   DEBUG(7,("dom_sid_to_string returning %s\n", sidstr));
   return sidstr;
 }
+
+/*************************************************************
+ Routine to get the next 32 hex characters and turn them
+ into a 16 byte array.
+**************************************************************/
+int gethexpwd(char *p, char *pwd)
+{
+  int i;
+  unsigned char   lonybble, hinybble;
+  char           *hexchars = "0123456789ABCDEF";
+  char           *p1, *p2;
+
+  for (i = 0; i < 32; i += 2) {
+    hinybble = toupper(p[i]);
+    lonybble = toupper(p[i + 1]);
+ 
+    p1 = strchr(hexchars, hinybble);
+    p2 = strchr(hexchars, lonybble);
+    if (!p1 || !p2)
+      return (False);
+    hinybble = PTR_DIFF(p1, hexchars);
+    lonybble = PTR_DIFF(p2, hexchars);
+ 
+    pwd[i / 2] = (hinybble << 4) | lonybble;
+  }
+  return (True);
+}

@@ -637,13 +637,13 @@ int main(int argc, char **argv)
   /*
    * Open the smbpaswd file.
    */
-  vp = startsmbpwent(True);
+  vp = startsampwent(True);
   if (!vp && errno == ENOENT) {
 	  fp = fopen(lp_smb_passwd_file(), "w");
 	  if (fp) {
 		  fprintf(fp, "# Samba SMB password file\n");
 		  fclose(fp);
-		  vp = startsmbpwent(True);
+		  vp = startsampwent(True);
 	  }
   }
   if (!fp) {
@@ -656,12 +656,12 @@ int main(int argc, char **argv)
   }
   
   /* Get the smb passwd entry for this user */
-  smb_pwent = getsmbpwnam(user_name);
+  smb_pwent = getsampwnam(user_name);
   if (smb_pwent == NULL) {
     if(add_user == False) {
       fprintf(stderr, "%s: Failed to find entry for user %s.\n",
   	      prog_name, pwd->pw_name);
-      endsmbpwent(vp);
+      endsampwent(vp);
       exit(1);
     }
 
@@ -684,14 +684,14 @@ int main(int argc, char **argv)
         new_smb_pwent.smb_nt_passwd = new_nt_p16;
       }
 
-      if(add_smbpwd_entry(&new_smb_pwent) == False) {
+      if(add_sampwd_entry(&new_smb_pwent) == False) {
         fprintf(stderr, "%s: Failed to add entry for user %s.\n", 
                 prog_name, pwd->pw_name);
-        endsmbpwent(vp);
+        endsampwent(vp);
         exit(1);
       }
       
-      endsmbpwent(vp);
+      endsampwent(vp);
       printf("%s: Added user %s.\n", prog_name, user_name);
       exit(0);
     }
@@ -726,14 +726,14 @@ int main(int argc, char **argv)
     smb_pwent->smb_nt_passwd = new_nt_p16;
   }
 
-  if(mod_smbpwd_entry(smb_pwent,True) == False) {
+  if(mod_sampwd_entry(smb_pwent,True) == False) {
     fprintf(stderr, "%s: Failed to modify entry for user %s.\n",
             prog_name, pwd->pw_name);
-    endsmbpwent(vp);
+    endsampwent(vp);
     exit(1);
   }
 
-  endsmbpwent(vp);
+  endsampwent(vp);
   if(disable_user)
     printf("User %s disabled.\n", user_name);
   else if (set_no_password)
