@@ -272,13 +272,39 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 		  struct nmb_packet *nmb2 = &p2->packet.nmb;
 		  debug_nmb_packet(p2);
 
+		  /* If we get a Negative Name Query Response from a WINS
+		   * server, we should report it and give up.
+		   */
 		  if( 0 == nmb2->header.opcode		/* A query response   */
 		      && !(bcast)			/* from a WINS server */
-		      && 0x03 == nmb2->header.rcode	/* Name doesn't exist */
+		      && nmb2->header.rcode		/* Error returned     */
 		    ) {
-		    /* If we get a Negative Name Query Response from a WINS
-		     * server, we should give up.
-		     */
+
+		    if( DEBUGLVL( 3 ) ) {
+		      /* Only executed if DEBUGLEVEL >= 3 */
+		      dbgtext( "Negative name query response, rcode 0x%02x: ",
+				nmb2->header.rcode );
+		      switch( nmb2->header.rcode ) {
+		        case 0x01:
+			  dbgtext( "Request was invalidly formatted.\n" );
+			  break;
+		        case 0x02:
+			  dbgtext( "Problem with NBNS, cannot process name.\n");
+			  break;
+		        case 0x03:
+			  dbgtext( "The name requested does not exist.\n" );
+			  break;
+		        case 0x04:
+			  dbgtext( "Unsupported request error.\n" );
+			  break;
+		        case 0x05:
+			  dbgtext( "Refused error.\n" );
+			  break;
+		        default:
+			  dbgtext( "Unrecognized error code.\n" );
+			  break;
+		      }
+		    }
 		    free_packet(p2);
 		    return( NULL );
 		    }
@@ -295,17 +321,18 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 			  continue;
 		  }
 
-		  ip_list = (struct in_addr *)Realloc(ip_list, sizeof(ip_list[0]) * 
-						      ((*count)+nmb2->answers->rdlength/6));
+		  ip_list = (struct in_addr *)Realloc( ip_list,
+				sizeof( ip_list[0] )
+				* ( (*count) + nmb2->answers->rdlength/6 ) );
 		  if (ip_list) {
 			  DEBUG(2,("Got a positive name query response from %s ( ",
 				   inet_ntoa(p2->ip)));
 			  for (i=0;i<nmb2->answers->rdlength/6;i++) {
 				  putip((char *)&ip_list[(*count)],&nmb2->answers->rdata[2+i*6]);
-				  DEBUG(2,("%s ",inet_ntoa(ip_list[(*count)])));
+				  DEBUGADD(2,("%s ",inet_ntoa(ip_list[(*count)])));
 				  (*count)++;
 			  }
-			  DEBUG(2,(")\n"));
+			  DEBUGADD(2,(")\n"));
 		  }
 
 		  found=True;
