@@ -58,6 +58,7 @@
 
 static GUMS_FUNCTIONS *gums_backend = NULL;
 
+#if 0
 static PRIVS gums_privs[] = {
 	{PRIV_NONE,			"no_privs",				"No privilege"}, /* this one MUST be first */
 	{PRIV_CREATE_TOKEN,		"SeCreateToken",			"Create Token"},
@@ -88,6 +89,7 @@ static PRIVS gums_privs[] = {
 	{PRIV_ENABLE_DELEGATION,	"SeEnableDelegation",			"Enable Delegation"},
 	{PRIV_ALL,			"SaAllPrivs",				"All Privileges"}
 };
+#endif
 
 static struct gums_init_function_entry *backends = NULL;
 

@@ -22,7 +22,9 @@
 #include "tdbsam2.h"
 #include "tdbsam2_parse_info.h"
 
+#if 0
 static int gums_tdbsam2_debug_class = DBGC_ALL;
+#endif
 /*
 #undef DBGC_CLASS
 #define DBGC_CLASS gums_tdbsam2_debug_class
@@ -1182,6 +1184,7 @@ static NTSTATUS tdbsam2_set_object(const GUMS_OBJECT *go)
 	return ret;
 }
 
+#if 0
 	/* set object values function */
 static NTSTATUS (*set_object_values) (DOM_SID *sid, uint32 count, GUMS_DATA_SET *data_set);
 
@@ -1203,6 +1206,7 @@ static NTSTATUS (*enumerate_privilege_members) (DOM_SID **members, const LUID_AT
 static NTSTATUS (*get_sid_privileges) (DOM_SID **privs, const DOM_SID *sid);
 	/* warning!: set_privilege will overwrite a prior existing privilege if such exist */
 static NTSTATUS (*set_privilege) (GUMS_PRIVILEGE *priv);
+#endif
 
 static void free_tdbsam2_private_data(void **vp) 
 {
