@@ -325,9 +325,14 @@ NTSTATUS domain_client_validate(const auth_usersupplied_info *user_info,
 
 	ZERO_STRUCT(info3);
 
+        /*
+         * If this call succeeds, we now have lots of info about the user
+         * in the info3 structure.  
+         */
+
 	status = cli_nt_login_network(&cli, user_info, smb_uid_low, 
 				      &ctr, &info3);
-
+        
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("domain_client_validate: unable to validate password "
                          "for user %s in domain %s to Domain controller %s. "
@@ -335,13 +340,20 @@ NTSTATUS domain_client_validate(const auth_usersupplied_info *user_info,
                          user_info->domain.str, cli.srv_name_slash, 
                          get_nt_error_msg(status)));
 	} else {
+                char *dom_user;
 
-		/*
-		 * Here, if we really want it, we have lots of info about the user
-		 * in info3.  
-		 */
+                /* Check DOMAIN\username first to catch winbind users, then
+                   just the username for local users. */
 
-		pass = Get_Pwnam(user_info->internal_username.str);
+                asprintf(&dom_user, "%s%s%s", user_info->domain.str,
+                         lp_winbind_separator(),
+                         user_info->internal_username.str);
+
+                if (!(pass = Get_Pwnam(dom_user)))
+                        pass = Get_Pwnam(user_info->internal_username.str);
+
+                free(dom_user);
+
 		if (pass) {
 			make_server_info_pw(server_info, pass);
 			if (!server_info) {
