@@ -179,6 +179,7 @@ static int parse_nmb_name(char *inbuf,int offset,int length, struct nmb_name *na
   unsigned char *ubuf = (unsigned char *)inbuf;
   int ret = 0;
   BOOL got_pointer=False;
+  int loop_count=0;
 
   if (length - offset < 2)
     return(0);  
@@ -231,6 +232,11 @@ static int parse_nmb_name(char *inbuf,int offset,int length, struct nmb_name *na
       return(0);
 
     m = ubuf[offset];
+    /*
+     * Don't allow null domain parts.
+     */
+    if (!m)
+      return(0);
     if (!got_pointer)
       ret += m+1;
     if (n)
@@ -240,6 +246,12 @@ static int parse_nmb_name(char *inbuf,int offset,int length, struct nmb_name *na
     offset++;
     while (m--)
       name->scope[n++] = (char)ubuf[offset++];
+
+    /*
+     * Watch for malicious loops.
+     */
+    if (loop_count++ == 10)
+      return 0;
   }
   name->scope[n++] = 0;  
 
@@ -334,6 +346,7 @@ static BOOL parse_alloc_res_rec(char *inbuf,int *offset,int length,
     (*offset) += l;
     if (!l || (*offset)+10 > length) {
       free(*recs);
+      *recs = NULL;
       return(False);
     }
     (*recs)[i].rr_type = RSVAL(inbuf,(*offset));
@@ -344,6 +357,7 @@ static BOOL parse_alloc_res_rec(char *inbuf,int *offset,int length,
     if ((*recs)[i].rdlength>sizeof((*recs)[i].rdata) || 
 	(*offset)+(*recs)[i].rdlength > length) {
       free(*recs);
+      *recs = NULL;
       return(False);
     }
     memcpy((*recs)[i].rdata,inbuf+(*offset),(*recs)[i].rdlength);
@@ -566,12 +580,18 @@ static struct packet_struct *copy_nmb_packet(struct packet_struct *packet)
 
 free_and_exit:
 
-  if(copy_nmb->answers)
+  if(copy_nmb->answers) {
     free((char *)copy_nmb->answers);
-  if(copy_nmb->nsrecs)
+    copy_nmb->answers = NULL;
+  }
+  if(copy_nmb->nsrecs) {
     free((char *)copy_nmb->nsrecs);
-  if(copy_nmb->additional)
+    copy_nmb->nsrecs = NULL;
+  }
+  if(copy_nmb->additional) {
     free((char *)copy_nmb->additional);
+    copy_nmb->additional = NULL;
+  }
   free((char *)pkt_copy);
 
   DEBUG(0,("copy_nmb_packet: malloc fail in resource records.\n"));
@@ -620,9 +640,18 @@ struct packet_struct *copy_packet(struct packet_struct *packet)
   ******************************************************************/
 static void free_nmb_packet(struct nmb_packet *nmb)
 {  
-  if (nmb->answers) free(nmb->answers);
-  if (nmb->nsrecs) free(nmb->nsrecs);
-  if (nmb->additional) free(nmb->additional);
+  if (nmb->answers) {
+    free(nmb->answers);
+    nmb->answers = NULL;
+  }
+  if (nmb->nsrecs) {
+    free(nmb->nsrecs);
+    nmb->nsrecs = NULL;
+  }
+  if (nmb->additional) {
+    free(nmb->additional);
+    nmb->additional = NULL;
+  }
 }
 
 /*******************************************************************
