@@ -243,7 +243,7 @@ static void interpret_dos_date(uint32_t date,int *year,int *month,int *day,int *
   create a unix date (int GMT) from a dos date (which is actually in
   localtime)
 ********************************************************************/
-time_t pull_dos_date(const uint8 *date_ptr, int zone_offset)
+time_t pull_dos_date(const uint8_t *date_ptr, int zone_offset)
 {
 	uint32_t dos_date=0;
 	struct tm t;
@@ -267,7 +267,7 @@ time_t pull_dos_date(const uint8 *date_ptr, int zone_offset)
 /*******************************************************************
 like make_unix_date() but the words are reversed
 ********************************************************************/
-time_t pull_dos_date2(const uint8 *date_ptr, int zone_offset)
+time_t pull_dos_date2(const uint8_t *date_ptr, int zone_offset)
 {
 	uint32_t x,x2;
 
@@ -282,7 +282,7 @@ time_t pull_dos_date2(const uint8 *date_ptr, int zone_offset)
   create a unix GMT date from a dos date in 32 bit "unix like" format
   these generally arrive as localtimes, with corresponding DST
   ******************************************************************/
-time_t pull_dos_date3(const uint8 *date_ptr, int zone_offset)
+time_t pull_dos_date3(const uint8_t *date_ptr, int zone_offset)
 {
 	time_t t = (time_t)IVAL(date_ptr,0);
 	if (!null_mtime(t)) {

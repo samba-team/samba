@@ -174,7 +174,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			     const char *username, 
 			     const char *client_username, 
 			     const char *client_domain,
-			     const uint8 *lm_pw, const uint8 *nt_pw, 
+			     const uint8_t *lm_pw, const uint8_t *nt_pw, 
 			     DATA_BLOB *user_sess_key, 
 			     DATA_BLOB *lm_sess_key)
 {
@@ -326,7 +326,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 				   so use it only if we otherwise allow LM authentication */
 
 				if (lp_lanman_auth() && lm_pw) {
-					uint8 first_8_lm_hash[16];
+					uint8_t first_8_lm_hash[16];
 					memcpy(first_8_lm_hash, lm_pw, 8);
 					memset(first_8_lm_hash + 8, '\0', 8);
 					*lm_sess_key = data_blob(first_8_lm_hash, 16);
@@ -367,7 +367,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 		if (smb_pwd_check_ntlmv1(lm_response, 
 					 lm_pw, challenge,
 					 NULL)) {
-			uint8 first_8_lm_hash[16];
+			uint8_t first_8_lm_hash[16];
 			memcpy(first_8_lm_hash, lm_pw, 8);
 			memset(first_8_lm_hash + 8, '\0', 8);
 			*user_sess_key = data_blob(first_8_lm_hash, 16);
@@ -427,7 +427,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			   allow LM authentication */
 
 			if (lp_lanman_auth() && lm_pw) {
-				uint8 first_8_lm_hash[16];
+				uint8_t first_8_lm_hash[16];
 				memcpy(first_8_lm_hash, lm_pw, 8);
 				memset(first_8_lm_hash + 8, '\0', 8);
 				*user_sess_key = data_blob(first_8_lm_hash, 16);

@@ -33,7 +33,7 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 				TALLOC_CTX *mem_ctx,
 				const char *username,
 				uint16_t acct_flags,
-				const uint8 lm_pw[16], const uint8 nt_pw[16],
+				const uint8_t lm_pw[16], const uint8_t nt_pw[16],
 				const auth_usersupplied_info *user_info, 
 				DATA_BLOB *user_sess_key, 
 				DATA_BLOB *lm_sess_key)
@@ -188,7 +188,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	NTSTATUS nt_status;
 	DATA_BLOB user_sess_key = data_blob(NULL, 0);
 	DATA_BLOB lm_sess_key = data_blob(NULL, 0);
-	uint8 *lm_pwd, *nt_pwd;
+	uint8_t *lm_pwd, *nt_pwd;
 
 	const char *attrs[] = {"unicodePwd", "lmPwdHash", "ntPwdHash", 
 			       "userAccountControl",

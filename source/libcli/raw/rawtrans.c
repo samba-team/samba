@@ -206,7 +206,7 @@ NTSTATUS smb_raw_trans_recv(struct cli_request *req,
 ****************************************************************************/
 struct cli_request *smb_raw_trans_send_backend(struct cli_tree *tree,
 					       struct smb_trans2 *parms,
-					       uint8 command)
+					       uint8_t command)
 {
 	int wct = 14 + parms->in.setup_count;
 	struct cli_request *req; 

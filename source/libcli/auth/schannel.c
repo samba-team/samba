@@ -286,7 +286,7 @@ void schannel_end(struct schannel_state **state)
   create an schannel context state
 */
 NTSTATUS schannel_start(struct schannel_state **state,
-			uint8 session_key[16],
+			uint8_t session_key[16],
 			BOOL initiator)
 {
 	TALLOC_CTX *mem_ctx;

@@ -21,7 +21,7 @@
 */
 
 struct creds_CredentialState {
-	uint8 session_key[8];
+	uint8_t session_key[8];
 	uint32_t sequence;
 	struct netr_Credential seed;
 	struct netr_Credential client;

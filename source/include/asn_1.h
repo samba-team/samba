@@ -28,7 +28,7 @@ struct nesting {
 };
 
 typedef struct {
-	uint8 *data;
+	uint8_t *data;
 	size_t length;
 	off_t ofs;
 	struct nesting *nesting;

@@ -103,7 +103,7 @@ struct cli_request *cli_request_setup_nonsmb(struct cli_transport *transport, ui
   setup a SMB packet at transport level
 */
 struct cli_request *cli_request_setup_transport(struct cli_transport *transport,
-						uint8 command, unsigned wct, unsigned buflen)
+						uint8_t command, unsigned wct, unsigned buflen)
 {
 	struct cli_request *req;
 
@@ -149,7 +149,7 @@ struct cli_request *cli_request_setup_transport(struct cli_transport *transport,
   way. This interface is used before a session is setup.
 */
 struct cli_request *cli_request_setup_session(struct cli_session *session,
-					      uint8 command, unsigned wct, unsigned buflen)
+					      uint8_t command, unsigned wct, unsigned buflen)
 {
 	struct cli_request *req;
 	uint16_t flags2;
@@ -189,7 +189,7 @@ struct cli_request *cli_request_setup_session(struct cli_session *session,
   setup a request for tree based commands
 */
 struct cli_request *cli_request_setup(struct cli_tree *tree,
-				      uint8 command, 
+				      uint8_t command, 
 				      unsigned wct, unsigned buflen)
 {
 	struct cli_request *req;
@@ -343,7 +343,7 @@ static BOOL handle_oplock_break(struct cli_transport *transport, uint_t len, con
 	if (transport->oplock.handler) {
 		uint16_t tid = SVAL(hdr, HDR_TID);
 		uint16_t fnum = SVAL(vwv,VWV(2));
-		uint8 level = CVAL(vwv,VWV(3)+1);
+		uint8_t level = CVAL(vwv,VWV(3)+1);
 		transport->oplock.handler(transport, tid, fnum, level, transport->oplock.private);
 	}
 
@@ -599,7 +599,7 @@ size_t cli_req_append_string_len(struct cli_request *req, const char *str, unsig
 size_t cli_req_append_ascii4(struct cli_request *req, const char *str, unsigned flags)
 {
 	size_t size;
-	cli_req_append_bytes(req, (const uint8 *)"\4", 1);
+	cli_req_append_bytes(req, (const uint8_t *)"\4", 1);
 	size = cli_req_append_string(req, str, flags);
 	return size + 1;
 }
@@ -623,7 +623,7 @@ size_t cli_req_append_blob(struct cli_request *req, const DATA_BLOB *blob)
   append raw bytes into the data portion of the request packet
   return the number of bytes added
 */
-size_t cli_req_append_bytes(struct cli_request *req, const uint8 *bytes, size_t byte_len)
+size_t cli_req_append_bytes(struct cli_request *req, const uint8_t *bytes, size_t byte_len)
 {
 	cli_req_grow_allocation(req, byte_len + req->out.data_size);
 	memcpy(req->out.data + req->out.data_size, bytes, byte_len);
@@ -635,7 +635,7 @@ size_t cli_req_append_bytes(struct cli_request *req, const uint8 *bytes, size_t 
   append variable block (type 5 buffer) into the data portion of the request packet
   return the number of bytes added
 */
-size_t cli_req_append_var_block(struct cli_request *req, const uint8 *bytes, uint16_t byte_len)
+size_t cli_req_append_var_block(struct cli_request *req, const uint8_t *bytes, uint16_t byte_len)
 {
 	cli_req_grow_allocation(req, byte_len + 3 + req->out.data_size);
 	SCVAL(req->out.data + req->out.data_size, 0, 5);

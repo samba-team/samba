@@ -2289,7 +2289,7 @@ void reply_sendtxt(struct request_context *req)
 ****************************************************************************/
 void reply_special(struct request_context *req)
 {
-	uint8 msg_type;
+	uint8_t msg_type;
 	char buf[4];
 	
 	msg_type = CVAL(req->in.buffer,0);

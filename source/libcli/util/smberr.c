@@ -128,7 +128,7 @@ static const struct err_code_struct hard_msgs[] = {
 
 
 static const struct {
-	uint8 class;
+	uint8_t class;
 	const char *class_name;
 	const struct err_code_struct *err_msgs;
 } err_classes[] = { 
@@ -145,7 +145,7 @@ static const struct {
 
 
 /* return a dos error string given a error class and error code */
-const char *dos_errstr(uint8 class, uint16_t code)
+const char *dos_errstr(uint8_t class, uint16_t code)
 {
 	static char *msg;
 	int i, j;

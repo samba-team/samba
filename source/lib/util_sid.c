@@ -309,7 +309,7 @@ char *sid_binstring(const struct dom_sid *sid)
 /*******************************************************************
  Check if ACE has OBJECT type.
 ********************************************************************/
-BOOL sec_ace_object(uint8 type)
+BOOL sec_ace_object(uint8_t type)
 {
 	if (type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT ||
             type == SEC_ACE_TYPE_ACCESS_DENIED_OBJECT ||

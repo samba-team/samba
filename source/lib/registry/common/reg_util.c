@@ -105,7 +105,7 @@ WERROR reg_key_get_subkey_val(REG_KEY *key, const char *subname, const char *val
 	return reg_key_get_value_by_name(k, valname, val);
 }
 
-WERROR reg_key_set_subkey_val(REG_KEY *key, const char *subname, const char *valname, uint32_t type, uint8 *data, int real_len)
+WERROR reg_key_set_subkey_val(REG_KEY *key, const char *subname, const char *valname, uint32_t type, uint8_t *data, int real_len)
 {
 	REG_KEY *k;
 	REG_VAL *v;

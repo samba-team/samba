@@ -1110,7 +1110,7 @@ struct uuid {
         uint32_t   i1;
         uint16_t   i2;
         uint16_t   i3;
-        uint8    s[8];
+        uint8_t    s[8];
 };
 
 static void dump_guid(const char *field, struct berval **values)

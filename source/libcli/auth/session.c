@@ -37,7 +37,7 @@ void sess_crypt_blob(DATA_BLOB *out, const DATA_BLOB *in, const DATA_BLOB *sessi
 	for (i=0,k=0;
 	     i<in->length;
 	     i += 8, k += 7) {
-		uint8 bin[8], bout[8], key[7];
+		uint8_t bin[8], bout[8], key[7];
 
 		memset(bin, 0, 8);
 		memcpy(bin,  &in->data[i], MIN(8, in->length-i));

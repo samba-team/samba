@@ -50,7 +50,7 @@
 /* structure for storing machine account password
    (ie. when samba server is member of a domain */
 struct machine_acct_pass {
-	uint8 hash[16];
+	uint8_t hash[16];
 	time_t mod_time;
 };
 

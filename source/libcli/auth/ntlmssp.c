@@ -105,7 +105,7 @@ void debug_ntlmssp_flags(uint32_t neg_flags)
  *
  */
    
-static const uint8 *get_challenge(const struct ntlmssp_state *ntlmssp_state)
+static const uint8_t *get_challenge(const struct ntlmssp_state *ntlmssp_state)
 {
 	static uchar chal[8];
 	generate_random_buffer(chal, sizeof(chal), False);
@@ -430,7 +430,7 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 	uint32_t neg_flags = 0;
 	uint32_t ntlmssp_command, chal_flags;
 	char *cliname=NULL, *domname=NULL;
-	const uint8 *cryptkey;
+	const uint8_t *cryptkey;
 	const char *target_name;
 
 	/* parse the NTLMSSP packet */
@@ -1184,7 +1184,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	   the password-derived key */
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH) {
 		/* Make up a new session key */
-		uint8 client_session_key[16];
+		uint8_t client_session_key[16];
 		generate_random_buffer(client_session_key, sizeof(client_session_key), False);
 
 		/* Encrypt the new session key with the old one */

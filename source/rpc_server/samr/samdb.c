@@ -485,7 +485,7 @@ uint_t samdb_result_hashes(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 }
 
 NTSTATUS samdb_result_passwords(TALLOC_CTX *mem_ctx, struct ldb_message *msg, 
-				uint8 **lm_pwd, uint8 **nt_pwd) 
+				uint8_t **lm_pwd, uint8_t **nt_pwd) 
 {
 
 	const char *unicodePwd = samdb_result_string(msg, "unicodePwd", NULL);

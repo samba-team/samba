@@ -70,7 +70,7 @@ static struct {
 	BOOL got_break;
 	uint16_t fnum;
 	uint16_t handle;
-	uint8 level;
+	uint8_t level;
 	BOOL do_close;
 } oplocks[NSERVERS][NINSTANCES];
 
@@ -94,7 +94,7 @@ static struct {
 
 #define BAD_HANDLE 0xFFFE
 
-static BOOL oplock_handler(struct cli_transport *transport, uint16_t tid, uint16_t fnum, uint8 level, void *private);
+static BOOL oplock_handler(struct cli_transport *transport, uint16_t tid, uint16_t fnum, uint8_t level, void *private);
 static void idle_func(struct cli_transport *transport, void *private);
 
 /*
@@ -704,7 +704,7 @@ static void async_notify(struct cli_request *req)
 /*
   the oplock handler will either ack the break or close the file
 */
-static BOOL oplock_handler(struct cli_transport *transport, uint16_t tid, uint16_t fnum, uint8 level, void *private)
+static BOOL oplock_handler(struct cli_transport *transport, uint16_t tid, uint16_t fnum, uint8_t level, void *private)
 {
 	union smb_close io;
 	NTSTATUS status;

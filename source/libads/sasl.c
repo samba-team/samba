@@ -31,8 +31,8 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 	const char *mechs[] = {OID_NTLMSSP, NULL};
 	DATA_BLOB msg1;
 	DATA_BLOB blob, chal1, chal2, auth;
-	uint8 challenge[8];
-	uint8 nthash[24], lmhash[24], sess_key[16];
+	uint8_t challenge[8];
+	uint8_t nthash[24], lmhash[24], sess_key[16];
 	uint32_t neg_flags;
 	struct berval cred, *scred;
 	ADS_STATUS status;
@@ -245,7 +245,7 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	struct berval *scred;
 	int i=0;
 	int gss_rc, rc;
-	uint8 *p;
+	uint8_t *p;
 	uint32_t max_msg_size;
 	char *sname;
 	unsigned sec_layer;
@@ -343,7 +343,7 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 
 	gss_release_buffer(&minor_status, &input_token);
 
-	p = (uint8 *)output_token.value;
+	p = (uint8_t *)output_token.value;
 
 	file_save("sasl_gssapi.dat", output_token.value, output_token.length);
 

@@ -142,7 +142,7 @@ struct cli_transport {
 		enum {ETYPE_NONE, ETYPE_DOS, ETYPE_NT, ETYPE_SOCKET, ETYPE_NBT} etype;
 		union {
 			struct {
-				uint8 eclass;
+				uint8_t eclass;
 				uint16_t ecode;
 			} dos;
 			NTSTATUS nt_status;
@@ -154,7 +154,7 @@ struct cli_transport {
 	struct {
 		/* a oplock break request handler */
 		BOOL (*handler)(struct cli_transport *transport, 
-				uint16_t tid, uint16_t fnum, uint8 level, void *private);
+				uint16_t tid, uint16_t fnum, uint8_t level, void *private);
 		/* private data passed to the oplock handler */
 		void *private;
 	} oplock;

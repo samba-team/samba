@@ -453,8 +453,12 @@ typedef int socklen_t;
    as signed and unsigned int will work.
 */
 
-#ifndef uint8
-#define uint8 unsigned char
+#if !defined(int8)
+#define int8 int8_t
+#endif
+
+#if !defined(uint8)
+#define uint8 uint8_t
 #endif
 
 #if !defined(int16)

@@ -25,7 +25,7 @@
    at startup either via mmap() or read() from the lib directory */
 static smb_ucs2_t *upcase_table;
 static smb_ucs2_t *lowcase_table;
-static uint8 *valid_table;
+static uint8_t *valid_table;
 
 
 /*******************************************************************
@@ -116,7 +116,7 @@ void init_valid_table(void)
 	static int mapped_file;
 	int i;
 	const char *allowed = ".!#$%&'()_-@^`~";
-	uint8 *valid_file;
+	uint8_t *valid_file;
 	TALLOC_CTX *mem_ctx;
 
 	if (mapped_file) {

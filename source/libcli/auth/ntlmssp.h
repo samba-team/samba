@@ -121,7 +121,7 @@ typedef struct ntlmssp_state
 	 * @return 8 bytes of challnege data, determined by the server to be the challenge for NTLM authentication
 	 *
 	 */
-	const uint8 *(*get_challenge)(const struct ntlmssp_state *ntlmssp_state);
+	const uint8_t *(*get_challenge)(const struct ntlmssp_state *ntlmssp_state);
 
 	/**
 	 * Callback to find if the challenge used by NTLM authentication may be modified 

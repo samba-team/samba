@@ -34,8 +34,8 @@ static void mark_packet_signed(struct request_context *req)
 /*
   calculate the signature for a message
 */
-static void calc_signature(uint8 *buffer, size_t length,
-			   DATA_BLOB *mac_key, uint8 signature[8])
+static void calc_signature(uint8_t *buffer, size_t length,
+			   DATA_BLOB *mac_key, uint8_t signature[8])
 {
 	unsigned char calc_md5_mac[16];
 	struct MD5Context md5_ctx;
