@@ -294,7 +294,7 @@ sub _prepare_subsystem_obj_list($)
 # $module_ctx->{OBJ_LIST} -	the list of objectfiles which sould be linked to this module
 #
 # $output -		the resulting output buffer
-sub _prepare_module_objlist($)
+sub _prepare_module_obj_list($)
 {
 	my $ctx = shift;
 
