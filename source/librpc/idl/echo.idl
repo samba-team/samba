@@ -1,0 +1,26 @@
+[
+uuid(60a15ec5-4de8-11d7-a637-005056a20182),
+version(1.0)
+]
+interface rpcecho
+{
+	/* Add one to an integer */
+	void echo_AddOne(
+		[in,out,ref] uint32 *v
+	);
+	/* Echo an array of bytes back at the caller */
+	void echo_EchoData(
+		[in] uint32 len,
+		[in,out,ref,size_is(len)] uint8 *data
+	);
+	/* Sink data to the server */
+	void echo_SinkData(
+		[in] uint32 len,
+		[in,ref,size_is(len)] uint8 *data
+	);
+	/* Source data from server */
+	void echo_SourceData(
+		[in] uint32 len,
+		[out,ref,size_is(len)] uint8 *data
+	);
+}
