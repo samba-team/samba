@@ -78,7 +78,7 @@ static int *pids;
 static int fds;
 
 FILE *
-ftpd_popen(char *program, char *type, int do_stderr)
+ftpd_popen(char *program, char *type, int do_stderr, int no_glob)
 {
 	char *cp;
 	FILE *iop;
@@ -115,7 +115,7 @@ ftpd_popen(char *program, char *type, int do_stderr)
 		int flags = GLOB_BRACE|GLOB_NOCHECK|GLOB_QUOTE|GLOB_TILDE;
 
 		memset(&gl, 0, sizeof(gl));
-		if (glob(argv[argc], flags, NULL, &gl))
+		if (no_glob || glob(argv[argc], flags, NULL, &gl))
 			gargv[gargc++] = strdup(argv[argc]);
 		else
 			for (pop = gl.gl_pathv; *pop; pop++)
