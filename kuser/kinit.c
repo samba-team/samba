@@ -37,6 +37,10 @@ RCSID("$Id$");
 #ifndef KRB4
 #include "krb5-v4compat.h"
 #endif
+
+struct krb5_pk_identity;
+struct krb5_pk_cert;
+struct ContentInfo;
 #include "krb5-private.h"
 
 int forwardable_flag	= -1;
