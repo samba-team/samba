@@ -28,37 +28,12 @@
  * does a decent job of converting Samba logs into HTML.
  * -------------------------------------------------------------------------- **
  *
- * $Log: debug2html.c,v $
- * Revision 1.4  1998/11/13 03:37:01  tridge
- * fixes for OSF1 compilation
- *
- * Revision 1.3  1998/10/28 20:33:35  crh
- * I've moved the debugparse module files into the ubiqx directory because I
- * know that 'make proto' will ignore them there.  The debugparse.h header
- * file is included in includes.h, and includes.h is included in debugparse.c,
- * so all of the pieces "see" each other.  I've compiled and tested this,
- * and it does seem to work.  It's the same compromise model I used when
- * adding the ubiqx modules into the system, which is why I put it all into
- * the same directory.
- *
- * Chris -)-----
- *
- * Revision 1.1  1998/10/26 23:21:37  crh
- * Here is the simple debug parser and the debug2html converter.  Still to do:
- *
- *   * Debug message filtering.
- *   * I need to add all this to Makefile.in
- *     (If it looks at all strange I'll ask for help.)
- *
- * If you want to compile debug2html, you'll need to do it by hand until I
- * make the changes to Makefile.in.  Sorry.
- *
- * Chris -)-----
+ * $Revision: 1.5 $
  *
  * ========================================================================== **
  */
 
-#include "debugparse.h"
+#include "include.h"
 
 /* -------------------------------------------------------------------------- **
  * The size of the read buffer.

@@ -172,6 +172,7 @@ void reopen_logs( void );
 void force_check_log_size( void );
 void dbgflush( void );
 BOOL dbghdr( int level, char *file, char *func, int line );
+dbg_Token dbg_char2token( dbg_Token *state, int c );
 
 /*The following definitions come from  lib/domain_namemap.c  */
 
