@@ -27,7 +27,7 @@ static struct auth_init_function_entry *backends = NULL;
 
 static struct auth_init_function_entry *auth_find_backend_entry(const char *name);
 
-NTSTATUS smb_register_auth(uint16 version, const char *name, auth_init_function init)
+NTSTATUS smb_register_auth(int version, const char *name, auth_init_function init)
 {
 	struct auth_init_function_entry *entry = backends;
 

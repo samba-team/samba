@@ -153,7 +153,7 @@ static struct vfs_init_function_entry *vfs_find_backend_entry(const char *name)
    return NULL;
 }
 
-NTSTATUS smb_register_vfs(uint16 version, const char *name, vfs_op_tuple *(*init)(const struct vfs_ops *, struct smb_vfs_handle_struct *))
+NTSTATUS smb_register_vfs(int version, const char *name, vfs_op_tuple *(*init)(const struct vfs_ops *, struct smb_vfs_handle_struct *))
 {
    struct vfs_init_function_entry *entry = backends;
 
