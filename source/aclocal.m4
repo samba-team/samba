@@ -36,6 +36,31 @@ if test $ac_cv_dirent_d_off = yes; then
 fi
 ])
 
+dnl Mark specified module as shared
+dnl SMB_MODULE(type,name,static_files,shared_files,subsystem)
+AC_DEFUN(SMB_MODULE,
+[
+	AC_MSG_CHECKING([how to build $2])
+	if test x"$1" = xSHARED; then
+		AC_DEFINE([$2][_init], [init_module], [Whether to build $2 as shared module])
+		$5_MODULES="$$5_MODULES $4"
+		AC_MSG_RESULT([shared])
+	elif test x"$1" = xSTATIC; then
+		[init_static_modules_]translit([$5], [A-Z], [a-z])="$[init_static_modules_]translit([$5], [A-Z], [a-z]) $2_init();"
+		$5_STATIC="$$5_STATIC $3"
+		AC_SUBST($5_STATIC)
+		AC_MSG_RESULT([static])
+	else
+		AC_MSG_RESULT([not])
+	fi
+])
+
+AC_DEFUN(SMB_SUBSYSTEM,
+[
+	AC_SUBST($1_STATIC)
+	AC_SUBST($1_MODULES)
+	AC_DEFINE_UNQUOTED([static_init_]translit([$1], [A-Z], [a-z]), ["$init_static_modules_]translit([$1], [A-Z], [a-z])["], [Static init functions])
+])
 
 dnl AC_PROG_CC_FLAG(flag)
 AC_DEFUN(AC_PROG_CC_FLAG,
