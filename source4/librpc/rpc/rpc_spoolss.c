@@ -1526,7 +1526,6 @@ NTSTATUS dcerpc_spoolss_EnumPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
 		NDR_PRINT_OUT_DEBUG(spoolss_EnumPrinterData, r);		
 	}
-	if (NT_STATUS_IS_OK(status)) status = r->out.result;
 
 	return status;
 }

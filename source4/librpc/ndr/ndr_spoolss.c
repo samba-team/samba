@@ -852,11 +852,7 @@ NTSTATUS ndr_push_spoolss_EnumPrinterData(struct ndr_push *ndr, struct spoolss_E
 	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
 	NDR_CHECK(ndr_push_uint32(ndr, r->in.enum_index));
 	NDR_CHECK(ndr_push_uint32(ndr, r->in.value_offered));
-	NDR_CHECK(ndr_push_ptr(ndr, r->in.buffer));
-	if (r->in.buffer) {
-		NDR_CHECK(ndr_push_DATA_BLOB(ndr, *r->in.buffer));
-	}
-	NDR_CHECK(ndr_push_uint32(ndr, *r->in.buf_size));
+	NDR_CHECK(ndr_push_uint32(ndr, *r->in.data_size));
 
 	return NT_STATUS_OK;
 }
@@ -1797,31 +1793,12 @@ NTSTATUS ndr_pull_spoolss_47(struct ndr_pull *ndr, struct spoolss_47 *r)
 
 NTSTATUS ndr_pull_spoolss_EnumPrinterData(struct ndr_pull *ndr, struct spoolss_EnumPrinterData *r)
 {
-	uint32 _ptr_value_name;
-	uint32 _ptr_buffer;
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.value_len));
-	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_value_name));
-	if (_ptr_value_name) {
-		NDR_ALLOC(ndr, r->out.value_name);
-	} else {
-		r->out.value_name = NULL;
-	}
-	if (r->out.value_name) {
-		NDR_CHECK(ndr_pull_unistr(ndr, &r->out.value_name));
-	}
+	NDR_CHECK(ndr_pull_DATA_BLOB(ndr, &r->out.value));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.value_needed));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.printerdata_type));
-	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_buffer));
-	if (_ptr_buffer) {
-		NDR_ALLOC(ndr, r->out.buffer);
-	} else {
-		r->out.buffer = NULL;
-	}
-	if (r->out.buffer) {
-		NDR_CHECK(ndr_pull_DATA_BLOB(ndr, r->out.buffer));
-	}
-	NDR_CHECK(ndr_pull_uint32(ndr, r->out.buf_size));
-	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
+	NDR_CHECK(ndr_pull_DATA_BLOB(ndr, &r->out.data));
+	NDR_CHECK(ndr_pull_uint32(ndr, r->out.data_size));
+	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
 }
@@ -3680,41 +3657,24 @@ void ndr_print_spoolss_EnumPrinterData(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 	ndr_print_uint32(ndr, "enum_index", r->in.enum_index);
 	ndr_print_uint32(ndr, "value_offered", r->in.value_offered);
-	ndr_print_ptr(ndr, "buffer", r->in.buffer);
+	ndr_print_ptr(ndr, "data_size", r->in.data_size);
 	ndr->depth++;
-	if (r->in.buffer) {
-		ndr_print_DATA_BLOB(ndr, "buffer", *r->in.buffer);
-	}
-	ndr->depth--;
-	ndr_print_ptr(ndr, "buf_size", r->in.buf_size);
-	ndr->depth++;
-		ndr_print_uint32(ndr, "buf_size", *r->in.buf_size);
+		ndr_print_uint32(ndr, "data_size", *r->in.data_size);
 	ndr->depth--;
 	ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_EnumPrinterData");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "value_len", r->out.value_len);
-	ndr_print_ptr(ndr, "value_name", r->out.value_name);
-	ndr->depth++;
-	if (r->out.value_name) {
-		ndr_print_unistr(ndr, "value_name", r->out.value_name);
-	}
-	ndr->depth--;
+	ndr_print_DATA_BLOB(ndr, "value", r->out.value);
 	ndr_print_uint32(ndr, "value_needed", r->out.value_needed);
 	ndr_print_uint32(ndr, "printerdata_type", r->out.printerdata_type);
-	ndr_print_ptr(ndr, "buffer", r->out.buffer);
+	ndr_print_DATA_BLOB(ndr, "data", r->out.data);
+	ndr_print_ptr(ndr, "data_size", r->out.data_size);
 	ndr->depth++;
-	if (r->out.buffer) {
-		ndr_print_DATA_BLOB(ndr, "buffer", *r->out.buffer);
-	}
+		ndr_print_uint32(ndr, "data_size", *r->out.data_size);
 	ndr->depth--;
-	ndr_print_ptr(ndr, "buf_size", r->out.buf_size);
-	ndr->depth++;
-		ndr_print_uint32(ndr, "buf_size", *r->out.buf_size);
-	ndr->depth--;
-	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
+	ndr_print_WERROR(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;

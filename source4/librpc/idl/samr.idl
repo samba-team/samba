@@ -44,7 +44,7 @@
 	/* Function: 0x05 */
 	typedef struct {
 		[value(2*strlen_m(r->name))] uint16 name_len;
-		[value(r->name_len)] uint16 name_size;
+		[value(2*strlen_m(r->name))] uint16 name_size;
 		unistr_noterm *name;
 	} samr_Name;	
 
@@ -213,10 +213,10 @@
 	/* Function    0x0c     */
 	NTSTATUS samr_CreateUser(
 		[in,ref]      policy_handle *handle,
-		[in]          samr_Name *username,
+		[in,ref]      samr_Name *username,
 		[in]          uint32 access_mask,
-		[out]         policy_handle *acct_handle,
-		[out]         uint32 *rid
+		[out,ref]     policy_handle *acct_handle,
+		[out,ref]     uint32 *rid
 		);
 
 	/************************/
@@ -412,7 +412,7 @@
 	/************************/
 	/* Function    0x23     */
 	NTSTATUS samr_DeleteUser(
-		[in,out]      policy_handle *handle
+		[in,out,ref]   policy_handle *handle
 		);
 
 	/************************/
