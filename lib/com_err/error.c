@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -43,7 +43,7 @@ RCSID("$Id$");
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <error.h>
+#include <com_right.h>
 
 const char *
 com_right(struct error_table *list, long code)

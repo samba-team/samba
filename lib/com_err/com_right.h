@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -38,8 +38,8 @@
 
 /* $Id$ */
 
-#ifndef __ERROR_H__
-#define __ERROR_H__
+#ifndef __COM_RIGHT_H__
+#define __COM_RIGHT_H__
 
 struct error_table {
     char const * const * msgs;
@@ -52,4 +52,4 @@ const char *com_right(struct error_table *list, long code);
 void initialize_error_table_r(struct error_table**, const char**, int, long);
 void free_error_table(struct error_table*);
 
-#endif /* __ERROR_H__ */
+#endif /* __COM_RIGHT_H__ */

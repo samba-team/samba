@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -55,7 +55,7 @@
 #endif
 #endif
 
-#include <error.h>
+#include <com_right.h>
 
 typedef void (*errf) __P((const char *, long, const char *, va_list));
 
