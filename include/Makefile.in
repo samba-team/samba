@@ -1,4 +1,5 @@
-HEADERS = krb5.h asn1.h des.h md4.h bits.h cache.h keytab.h config_file.h
+HEADERS = krb5.h krb5_err.h asn1_err.h asn1.h des.h md4.h \
+	bits.h cache.h keytab.h config_file.h
 
 srcdir	= @srcdir@
 VPATH	= $(srcdir)
@@ -23,6 +24,12 @@ clean:
 
 krb5.h:
 	$(LN_S) $(top_srcdir)/lib/krb5/krb5.h .
+
+krb5_err.h:
+	$(LN_S) ../lib/krb5/error/krb5_err.h .
+
+asn1_err.h:
+	$(LN_S) ../lib/krb5/error/asn1_err.h .
 
 cache.h:
 	$(LN_S) $(top_srcdir)/lib/krb5/cache.h .
