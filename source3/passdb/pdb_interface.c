@@ -34,6 +34,8 @@ static void lazy_initialize_passdb(void)
 	initialized = True;
 }
 
+static struct pdb_init_function_entry *pdb_find_backend_entry(const char *name);
+
 BOOL smb_register_passdb(const char *name, pdb_init_function init, int version) 
 {
 	struct pdb_init_function_entry *entry = backends;
