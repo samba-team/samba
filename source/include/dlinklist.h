@@ -47,7 +47,7 @@
 		if ((p)->prev) (p)->prev->next = (p)->next; \
 		if ((p)->next) (p)->next->prev = (p)->prev; \
 	} \
-	(p)->next = (p)->prev = NULL; \
+	if ((p)) (p)->next = (p)->prev = NULL; \
 }
 
 /* promote an element to the top of the list */
