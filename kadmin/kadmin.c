@@ -51,7 +51,7 @@ static struct getargs args[] = {
     {	"principal", 	'p',	arg_string,	&client_name,
 	"principal to authenticate as" },
     {   "keytab",	'K',	arg_string,	&keytab,
-   	"keytab for authentication pricipal" },
+   	"keytab for authentication principal" },
     { 
 	"config-file",	'c',	arg_string,	&config_file, 
 	"location of config file",	"file" 
