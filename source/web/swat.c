@@ -337,6 +337,8 @@ static int save_reload(int snum)
                 printf("Can't reload %s\n", servicesf);
                 return 0;
         }
+	iNumNonAutoPrintServices = lp_numservices();
+	load_printers();
 
 	return 1;
 }
