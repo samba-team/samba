@@ -56,7 +56,7 @@ struct pvfs_pending_lock {
 	struct smbsrv_request *req;
 	int pending_lock;
 	void *wait_handle;
-	time_t end_time;
+	struct timeval end_time;
 };
 
 /*
@@ -301,8 +301,9 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 		pending->f = f;
 		pending->req = req;
 
-		/* round up to the nearest second */
-		pending->end_time = time(NULL) + ((lck->lockx.in.timeout+999)/1000);
+		pending->end_time = 
+			timeval_current_ofs(lck->lockx.in.timeout/1000,
+					    1000*(lck->lockx.in.timeout%1000));
 	}
 
 	if (lck->lockx.in.mode & LOCKING_ANDX_SHARED_LOCK) {

@@ -36,18 +36,18 @@
 #ifdef _STANDALONE_
 typedef enum {False=0,True=1} BOOL;
 
-static struct timeval tp1,tp2;
-
-static void start_timer(void)
+static struct timeval current_time(void)
 {
-	gettimeofday(&tp1,NULL);
+	struct timeval tv;
+	GetTimeOfDay(&tv);
+	return tv;
 }
 
-static double end_timer(void)
+static double elapsed_time(struct timeval *tv)
 {
-	gettimeofday(&tp2,NULL);
-	return((tp2.tv_sec - tp1.tv_sec) + 
-	       (tp2.tv_usec - tp1.tv_usec)*1.0e-6);
+	struct timeval tv2 = current_time();
+	return (tv2.tv_sec - tv->tv_sec) + 
+	       (tv2.tv_usec - tv->tv_usec)*1.0e-6;
 }
 #endif /* _STANDALONE_ */
 
@@ -642,10 +642,11 @@ static BOOL test_speed(void)
 {
 	void *ctx = talloc(NULL, 0);
 	unsigned count;
+	struct timeval tv;
 
 	printf("MEASURING TALLOC VS MALLOC SPEED\n");
 
-	start_timer();
+	tv = timeval_current();
 	count = 0;
 	do {
 		void *p1, *p2, *p3;
@@ -654,13 +655,13 @@ static BOOL test_speed(void)
 		p3 = talloc(p1, 300);
 		talloc_free(p1);
 		count += 3;
-	} while (end_timer() < 5.0);
+	} while (timeval_elapsed(&tv) < 5.0);
 
-	printf("talloc: %.0f ops/sec\n", count/end_timer());
+	printf("talloc: %.0f ops/sec\n", count/timeval_elapsed(&tv));
 
 	talloc_free(ctx);
 
-	start_timer();
+	tv = timeval_current();
 	count = 0;
 	do {
 		void *p1, *p2, *p3;
@@ -671,9 +672,9 @@ static BOOL test_speed(void)
 		free(p2);
 		free(p3);
 		count += 3;
-	} while (end_timer() < 5.0);
+	} while (timeval_elapsed(&tv) < 5.0);
 
-	printf("malloc: %.0f ops/sec\n", count/end_timer());
+	printf("malloc: %.0f ops/sec\n", count/timeval_elapsed(&tv));
 
 	return True;	
 }

@@ -333,17 +333,14 @@ static void brl_notify_unlock(struct brl_context *brl,
 	for (i=0;i<count;i++) {
 		if (locks[i].lock_type >= PENDING_READ_LOCK &&
 		    brl_overlap(&locks[i], removed_lock)) {
-			DATA_BLOB data;
-
 			if (last_notice != -1 && brl_overlap(&locks[i], &locks[last_notice])) {
 				continue;
 			}
 			if (locks[i].lock_type == PENDING_WRITE_LOCK) {
 				last_notice = i;
 			}
-			data.data = (void *)&locks[i].notify_ptr;
-			data.length = sizeof(void *);
-			messaging_send(brl->messaging_ctx, locks[i].context.server, MSG_BRL_RETRY, &data);
+			messaging_send_ptr(brl->messaging_ctx, locks[i].context.server, 
+					   MSG_BRL_RETRY, locks[i].notify_ptr);
 		}
 	}
 }

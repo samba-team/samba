@@ -58,10 +58,9 @@ static void pvfs_wait_dispatch(struct messaging_context *msg, void *private, uin
 	struct pvfs_wait *pwait = private;
 	struct smbsrv_request *req;
 
-	/* we need to check that this one is for us. This sender sends
-	   the private pointer as the body of the message. This might
-	   seem a little unusual, but as the pointer is guaranteed
-	   unique for this server, it is a good token */
+	/* we need to check that this one is for us. See
+	   messaging_send_ptr() for the other side of this.
+	 */
 	if (data->length != sizeof(void *) ||
 	    *(void **)data->data != pwait->private) {
 		return;
@@ -82,7 +81,8 @@ static void pvfs_wait_dispatch(struct messaging_context *msg, void *private, uin
 /*
   receive a timeout on a message wait
 */
-static void pvfs_wait_timeout(struct event_context *ev, struct timed_event *te, time_t t)
+static void pvfs_wait_timeout(struct event_context *ev, 
+			      struct timed_event *te, struct timeval t)
 {
 	struct pvfs_wait *pwait = te->private;
 	struct smbsrv_request *req = pwait->req;
@@ -116,7 +116,7 @@ static int pvfs_wait_destructor(void *ptr)
 void *pvfs_wait_message(struct pvfs_state *pvfs, 
 			struct smbsrv_request *req, 
 			int msg_type, 
-			time_t end_time,
+			struct timeval end_time,
 			void (*fn)(void *, BOOL),
 			void *private)
 {

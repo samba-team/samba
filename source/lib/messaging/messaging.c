@@ -29,6 +29,9 @@
 /* change the message version with any incompatible changes in the protocol */
 #define MESSAGING_VERSION 1
 
+/* the number of microseconds to backoff in retrying to send a message */
+#define MESSAGING_BACKOFF 250000
+
 struct messaging_context {
 	servid_t server_id;
 	struct socket_context *sock;
@@ -119,7 +122,7 @@ static void messaging_dispatch(struct messaging_context *msg, struct messaging_r
   handle IO for a single message
 */
 static void messaging_recv_handler(struct event_context *ev, struct fd_event *fde, 
-				 time_t t, uint16_t flags)
+				   struct timeval t, uint16_t flags)
 {
 	struct messaging_rec *rec = fde->private;
 	struct messaging_context *msg = rec->msg;
@@ -200,7 +203,7 @@ static int rec_destructor(void *ptr)
   handle a new incoming connection
 */
 static void messaging_listen_handler(struct event_context *ev, struct fd_event *fde, 
-				     time_t t, uint16_t flags)
+				     struct timeval t, uint16_t flags)
 {
 	struct messaging_context *msg = fde->private;
 	struct messaging_rec *rec;
@@ -272,7 +275,7 @@ void messaging_deregister(struct messaging_context *msg, uint32_t msg_type, void
   handle IO for sending a message
 */
 static void messaging_send_handler(struct event_context *ev, struct fd_event *fde, 
-				   time_t t, uint16_t flags)
+				   struct timeval t, uint16_t flags)
 {
 	struct messaging_rec *rec = fde->private;
 	NTSTATUS status;
@@ -324,19 +327,33 @@ static void messaging_send_handler(struct event_context *ev, struct fd_event *fd
 
 
 /*
+  wrapper around socket_connect with raised privileges
+*/
+static NTSTATUS try_connect(struct messaging_rec *rec)
+{
+	NTSTATUS status;
+	void *priv = root_privileges();
+	status = socket_connect(rec->sock, NULL, 0, rec->path, 0, 0);
+	talloc_free(priv);
+	return status;
+}
+
+
+/*
   when the servers listen queue is full we use this to backoff the message
 */
-static void messaging_backoff_handler(struct event_context *ev, struct timed_event *te, time_t t)
+static void messaging_backoff_handler(struct event_context *ev, struct timed_event *te, 
+				      struct timeval t)
 {
 	struct messaging_rec *rec = te->private;
 	struct messaging_context *msg = rec->msg;
 	NTSTATUS status;
 	struct fd_event fde;
 
-	status = socket_connect(rec->sock, NULL, 0, rec->path, 0, 0);
+	status = try_connect(rec);
 	if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
 		/* backoff again */
-		te->next_event = t+1;
+		te->next_event = timeval_add(&t, 0, MESSAGING_BACKOFF);
 		return;
 	}
 
@@ -356,7 +373,7 @@ static void messaging_backoff_handler(struct event_context *ev, struct timed_eve
 
 	talloc_set_destructor(rec, rec_destructor);
 
-	messaging_send_handler(msg->event.ev, rec->fde, 0, EVENT_FD_WRITE);
+	messaging_send_handler(msg->event.ev, rec->fde, timeval_zero(), EVENT_FD_WRITE);
 }
 
 
@@ -396,11 +413,11 @@ NTSTATUS messaging_send(struct messaging_context *msg, servid_t server, uint32_t
 
 	rec->path = messaging_path(rec, server);
 
-	status = socket_connect(rec->sock, NULL, 0, rec->path, 0, 0);
+	status = try_connect(rec);
 	if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
 		/* backoff on this message - the servers listen queue is full */
 		struct timed_event te;
-		te.next_event = time(NULL)+1;
+		te.next_event = timeval_current_ofs(0, MESSAGING_BACKOFF);
 		te.handler = messaging_backoff_handler;
 		te.private = rec;
 		event_add_timed(msg->event.ev, &te);
@@ -421,9 +438,23 @@ NTSTATUS messaging_send(struct messaging_context *msg, servid_t server, uint32_t
 
 	talloc_set_destructor(rec, rec_destructor);
 
-	messaging_send_handler(msg->event.ev, rec->fde, 0, EVENT_FD_WRITE);
+	messaging_send_handler(msg->event.ev, rec->fde, timeval_zero(), EVENT_FD_WRITE);
 
 	return NT_STATUS_OK;
+}
+
+/*
+  Send a message to a particular server, with the message containing a single pointer
+*/
+NTSTATUS messaging_send_ptr(struct messaging_context *msg, servid_t server, 
+			    uint32_t msg_type, void *ptr)
+{
+	DATA_BLOB blob;
+
+	blob.data = (void *)&ptr;
+	blob.length = sizeof(void *);
+
+	return messaging_send(msg, server, msg_type, &blob);
 }
 
 

@@ -248,7 +248,7 @@ void dcesrv_sock_accept(struct server_connection *conn)
 	return;	
 }
 
-void dcesrv_sock_recv(struct server_connection *conn, time_t t, uint16_t flags)
+void dcesrv_sock_recv(struct server_connection *conn, struct timeval t, uint16_t flags)
 {
 	NTSTATUS status;
 	struct dcesrv_connection *dce_conn = conn->private_data;
@@ -288,7 +288,7 @@ void dcesrv_sock_recv(struct server_connection *conn, time_t t, uint16_t flags)
 	return;	
 }
 
-void dcesrv_sock_send(struct server_connection *conn, time_t t, uint16_t flags)
+void dcesrv_sock_send(struct server_connection *conn, struct timeval t, uint16_t flags)
 {
 	struct dcesrv_connection *dce_conn = conn->private_data;
 	NTSTATUS status;
@@ -306,14 +306,6 @@ void dcesrv_sock_send(struct server_connection *conn, time_t t, uint16_t flags)
 	}
 
 	return;
-}
-
-void dcesrv_sock_idle(struct server_connection *conn, time_t t)
-{
-	DEBUG(10,("dcesrv_sock_idle\n"));
-	conn->event.idle->next_event = t + 5;
-
-	return;	
 }
 
 void dcesrv_sock_close(struct server_connection *conn, const char *reason)

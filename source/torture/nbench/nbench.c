@@ -37,6 +37,9 @@ static BOOL run_netbench(struct smbcli_state *cli, int client)
 	fstring params[20];
 	const char *p;
 	BOOL correct = True;
+	struct timeval tv;
+
+	tv = timeval_current();
 
 	nb_setup(cli, client, warmup);
 
@@ -52,15 +55,15 @@ static BOOL run_netbench(struct smbcli_state *cli, int client)
 again:
 	while (fgets(line, sizeof(line)-1, f)) {
 		NTSTATUS status;
-		double t = end_timer();
 
-		if (warmup && t >= warmup) {
+		if (warmup && 
+		    timeval_elapsed(&tv) >= warmup) {
 			warmup = 0;
 			nb_warmup_done();
-			start_timer();
+			tv = timeval_current();
 		}
 
-		if (end_timer() >= timelimit) {
+		if (timeval_elapsed(&tv) >= timelimit) {
 			goto done;
 		}
 

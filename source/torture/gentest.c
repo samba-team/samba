@@ -189,7 +189,7 @@ static BOOL connect_servers(void)
 			}
 
 			smbcli_oplock_handler(servers[i].cli[j]->transport, oplock_handler, NULL);
-			smbcli_transport_idle_handler(servers[i].cli[j]->transport, idle_func, 1, NULL);
+			smbcli_transport_idle_handler(servers[i].cli[j]->transport, idle_func, 50000, NULL);
 		}
 	}
 
