@@ -3,7 +3,7 @@
  *  Version 1.9.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1998,
- *  Copyright (C) Jeremy R. Allison            1995-2003.
+ *  Copyright (C) Jeremy R. Allison            1995-2005.
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1998,
  *  Copyright (C) Paul Ashton                  1997-1998.
  *  
@@ -94,8 +94,24 @@ BOOL sec_io_ace(const char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
 			return False;
 	}
 
+	/* Theorectically an ACE can have a size greater than the
+	   sum of its components. When marshalling, pad with extra null bytes up to the
+	   correct size. */
+
+	if (MARSHALLING(ps) && (psa->size > prs_offset(ps) - old_offset)) {
+		uint32 extra_len = psa->size - (prs_offset(ps) - old_offset);
+		uint32 i;
+		uint8 c = 0;
+
+		for (i = 0; i < extra_len; i++) {
+			if (!prs_uint8("ace extra space", ps, depth, &c))
+				return False;
+		}
+	}
+
 	if(!prs_uint16_post("size ", ps, depth, &psa->size, offset_ace_size, old_offset))
 		return False;
+
 	return True;
 }
 
@@ -165,6 +181,20 @@ BOOL sec_io_acl(const char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 			return False;
 	}
 
+	/* Theorectically an ACL can have a size greater than the
+	   sum of its components. When marshalling, pad with extra null bytes up to the
+	   correct size. */
+
+	if (MARSHALLING(ps) && (psa->size > prs_offset(ps) - old_offset)) {
+		uint32 extra_len = psa->size - (prs_offset(ps) - old_offset);
+		uint8 c = 0;
+
+		for (i = 0; i < extra_len; i++) {
+			if (!prs_uint8("acl extra space", ps, depth, &c))
+				return False;
+		}
+	}
+
 	if(!prs_uint16_post("size     ", ps, depth, &psa->size, offset_acl_size, old_offset))
 		return False;
 
@@ -181,7 +211,7 @@ BOOL sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 	uint32 old_offset;
 	uint32 max_offset = 0; /* after we're done, move offset to end */
 	uint32 tmp_offset = 0;
-	
+
 	SEC_DESC *psd;
 
 	if (ppsd == NULL)
@@ -203,16 +233,6 @@ BOOL sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 	prs_debug(ps, depth, desc, "sec_io_desc");
 	depth++;
 
-#if 0	
-	/*
-	 * if alignment is needed, should be done by the the 
-	 * caller.  Not here.  This caused me problems when marshalling
-	 * printer info into a buffer.   --jerry
-	 */
-	if(!prs_align(ps))
-		return False;
-#endif
-	
 	/* start of security descriptor stored for back-calc offset purposes */
 	old_offset = prs_offset(ps);
 
@@ -221,6 +241,42 @@ BOOL sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 	if(!prs_uint16("type     ", ps, depth, &psd->type))
 		return False;
+
+	if (MARSHALLING(ps)) {
+		uint32 offset = SEC_DESC_HEADER_SIZE;
+
+		/*
+		 * Work out the offsets here, as we write it out.
+		 */
+
+		if (psd->sacl != NULL) {
+			psd->off_sacl = offset;
+			offset += psd->sacl->size;
+		} else {
+			psd->off_sacl = 0;
+		}
+
+		if (psd->dacl != NULL) {
+			psd->off_dacl = offset;
+			offset += psd->dacl->size;
+		} else {
+			psd->off_dacl = 0;
+		}
+
+		if (psd->owner_sid != NULL) {
+			psd->off_owner_sid = offset;
+			offset += sid_size(psd->owner_sid);
+		} else {
+			psd->off_owner_sid = 0;
+		}
+
+		if (psd->grp_sid != NULL) {
+			psd->off_grp_sid = offset;
+			offset += sid_size(psd->grp_sid);
+		} else {
+			psd->off_grp_sid = 0;
+		}
+	}
 
 	if(!prs_uint32("off_owner_sid", ps, depth, &psd->off_owner_sid))
 		return False;
@@ -289,7 +345,6 @@ BOOL sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 			return False;
 	}
 
-
 	if ((psd->type & SEC_DESC_DACL_PRESENT) && psd->off_dacl != 0) {
 		tmp_offset = prs_offset(ps);
 		if(!prs_set_offset(ps, old_offset + psd->off_dacl))
@@ -303,6 +358,7 @@ BOOL sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 	if(!prs_set_offset(ps, max_offset))
 		return False;
+
 	return True;
 }
 
