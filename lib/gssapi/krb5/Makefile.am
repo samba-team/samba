@@ -50,6 +50,7 @@ libgssapi_la_SOURCES =		\
 	release_cred.c		\
 	release_name.c		\
 	release_oid_set.c	\
+	sequence.c		\
 	process_context_token.c \
 	test_oid_set_member.c	\
 	unwrap.c		\
@@ -58,8 +59,10 @@ libgssapi_la_SOURCES =		\
         wrap.c                  \
         address_to_krb5addr.c
 
-noinst_PROGRAMS = test_acquire_cred
+noinst_PROGRAMS = test_acquire_cred test_sequence
 
 test_acquire_cred_SOURCES = test_acquire_cred.c
 
 test_acquire_cred_LDADD = libgssapi.la
+
+test_sequence_SOURCES = test_sequence.c sequence.c
