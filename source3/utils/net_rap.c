@@ -1112,7 +1112,7 @@ static int rap_help_usage(int argc, const char **argv)
 }
 
 /*
-  handle "net help *" subcommands
+  handle "net help rap *" subcommands
 */
 static int rap_help(int argc, const char **argv)
 {
