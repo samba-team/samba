@@ -40,6 +40,136 @@
 #include "config_file.h"
 RCSID("$Id$");
 
+/*
+ * Netinfo implementation from Luke Howard <lukeh@xedoc.com.au>
+ */
+
+#ifdef HAVE_NETINFO_NI_H
+#include <netinfo/ni.h>
+static ni_status
+ni_proplist2binding(ni_proplist *pl, krb5_config_section **ret)
+{
+    int i;
+    
+    for (i = 0; i < pl->ni_proplist_len; i++) {
+	krb5_config_binding *b;
+	if (!strcmp(pl->nipl_val[i].nip_name, "name")) continue;
+	b = malloc(sizeof(*b));
+	if (b == NULL) return NI_FAILED;
+	if (i == pl->ni_proplist_len)
+	    b->next = NULL;
+	else
+	    b->next = *ret;
+	b->type = STRING;
+	b->name = ni_name_dup(pl->nipl_val[i].nip_name);
+	b->u.string = ni_name_dup(pl->nipl_val[i].nip_val.ninl_val[0]);
+	*ret = b;
+    }
+    return NI_OK;
+}
+
+static ni_status
+ni_idlist2binding(void *ni, ni_idlist *idlist, krb5_config_section **ret)
+{
+    int i;
+    ni_status nis;
+    krb5_config_section **next;
+
+    for (i = 0; i < idlist->ni_idlist_len; i++) {
+	ni_proplist pl;
+        ni_id nid;
+	ni_idlist children;
+	krb5_config_binding *b;
+	ni_index index;
+
+	nid.nii_instance = 0;
+	nid.nii_object = idlist->ni_idlist_val[i];
+
+	nis = ni_read(ni, &nid, &pl);
+
+	if (nis != NI_OK) {
+	     return nis;
+	}
+	index = ni_proplist_match(pl, "name", NULL);
+	b = malloc(sizeof(*b));
+	if (b == NULL) return NI_FAILED;
+
+	if (i == 0) {
+	    *ret = b;
+	} else {
+	    *next = b;
+	}
+
+	b->type = LIST;
+	b->name = ni_name_dup(pl.nipl_val[index].nip_val.ninl_val[0]);
+	b->next = NULL;
+	b->u.list = NULL;
+	nis = ni_proplist2binding(&pl, &b->u.list);
+	ni_proplist_free(&pl);
+	if (nis != NI_OK) return nis;
+
+	nis = ni_children(ni, &nid, &children);
+	if (nis == NI_OK) {
+	    krb5_config_binding **node;
+	    if (b->u.list == NULL)
+		node = &b->u.list;
+	    else
+		node = &b->u.list->next;
+	    nis = ni_idlist2binding(ni, &children, node);
+	}
+	next = &b->next;
+    }
+    ni_idlist_free(idlist);
+    return NI_OK;
+}
+
+krb5_error_code
+krb5_config_parse_file (const char *fname, krb5_config_section **res)
+{
+    void *ni = NULL, *lastni = NULL;
+    int i;
+    ni_status nis;
+    ni_id nid;
+    ni_idlist children;
+
+    krb5_config_section *s;
+    int ret;
+
+    s = NULL;
+
+    for (i = 0; i < 256; i++) {
+	if (i == 0) {
+	    nis = ni_open(NULL, ".", &ni);
+	} else {
+	    if (lastni != NULL) ni_free(lastni);
+	    lastni = ni;
+	    nis = ni_open(lastni, "..", &ni);
+	}
+	if (nis != NI_OK)
+	    break;
+	nis = ni_pathsearch(ni, &nid, "/locations/kerberos");
+	if (nis == NI_OK) {
+	    nis = ni_children(ni, &nid, &children);
+	    if (nis != NI_OK)
+		break;
+	    nis = ni_idlist2binding(ni, &children, &s);
+	    break;
+	}
+    }
+
+    if (ni != NULL) ni_free(ni);
+    if (ni != lastni && lastni != NULL) ni_free(lastni);
+
+    ret = (nis == NI_OK) ? 0 : -1;
+    if (ret == 0) {
+	*res = s;
+    } else {
+	*res = NULL;
+    }
+    return ret;
+}
+#else /* !NETINFO_NI_H */
+
 static int parse_section(char *p, krb5_config_section **s,
 			 krb5_config_section **res);
 static int parse_binding(FILE *f, unsigned *lineno, char *p,
@@ -187,6 +317,8 @@ krb5_config_parse_file (const char *fname, krb5_config_section **res)
     fclose (f);
     return 0;
 }
+
+#endif /* HAVE_NETINFO_NI_H */
 
 static void
 free_binding (krb5_config_binding *b)
