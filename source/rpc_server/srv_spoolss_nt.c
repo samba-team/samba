@@ -2310,7 +2310,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 	DEBUG(8,("getprinterdata_printer_server:%s\n", value));
 		
 	if (!StrCaseCmp(value, "W3SvcInstalled")) {
-		*type = 0x4;
+		*type = REG_DWORD;
 		if((*data = (uint8 *)TALLOC_ZERO(ctx, 4*sizeof(uint8) )) == NULL)
 			return WERR_NOMEM;
 		*needed = 0x4;
@@ -2318,7 +2318,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 	}
 
 	if (!StrCaseCmp(value, "BeepEnabled")) {
-		*type = 0x4;
+		*type = REG_DWORD;
 		if((*data = (uint8 *)TALLOC(ctx, 4*sizeof(uint8) )) == NULL)
 			return WERR_NOMEM;
 		SIVAL(*data, 0, 0x00);
@@ -2327,7 +2327,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 	}
 
 	if (!StrCaseCmp(value, "EventLog")) {
-		*type = 0x4;
+		*type = REG_DWORD;
 		if((*data = (uint8 *)TALLOC(ctx, 4 )) == NULL)
 			return WERR_NOMEM;
 		/* formally was 0x1b */
@@ -2337,7 +2337,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 	}
 
 	if (!StrCaseCmp(value, "NetPopup")) {
-		*type = 0x4;
+		*type = REG_DWORD;
 		if((*data = (uint8 *)TALLOC(ctx, 4 )) == NULL)
 			return WERR_NOMEM;
 		SIVAL(*data, 0, 0x00);
@@ -2346,7 +2346,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 	}
 
 	if (!StrCaseCmp(value, "MajorVersion")) {
-		*type = 0x4;
+		*type = REG_DWORD;
 		if((*data = (uint8 *)TALLOC(ctx, 4 )) == NULL)
 			return WERR_NOMEM;
 
@@ -2365,7 +2365,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 	}
 
 	if (!StrCaseCmp(value, "MinorVersion")) {
-		*type = 0x4;
+		*type = REG_DWORD;
 		if((*data = (uint8 *)TALLOC(ctx, 4 )) == NULL)
 			return WERR_NOMEM;
 		SIVAL(*data, 0, 0);
@@ -2381,7 +2381,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 	 *  extra unicode string = e.g. "Service Pack 3"
 	 */
 	if (!StrCaseCmp(value, "OSVersion")) {
-		*type = 0x3;
+		*type = REG_BINARY;
 		*needed = 0x114;
 
 		if((*data = (uint8 *)TALLOC(ctx, *needed)) == NULL)
@@ -2401,7 +2401,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 
    	if (!StrCaseCmp(value, "DefaultSpoolDirectory")) {
 		const char *string="C:\\PRINTERS";
-		*type = 0x1;			
+		*type = REG_SZ;
 		*needed = 2*(strlen(string)+1);		
 		if((*data  = (uint8 *)TALLOC(ctx, (*needed > in_size) ? *needed:in_size )) == NULL)
 			return WERR_NOMEM;
@@ -2417,7 +2417,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 
 	if (!StrCaseCmp(value, "Architecture")) {			
 		const char *string="Windows NT x86";
-		*type = 0x1;			
+		*type = REG_SZ;
 		*needed = 2*(strlen(string)+1);	
 		if((*data  = (uint8 *)TALLOC(ctx, (*needed > in_size) ? *needed:in_size )) == NULL)
 			return WERR_NOMEM;
@@ -2430,10 +2430,18 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 	}
 
 	if (!StrCaseCmp(value, "DsPresent")) {
-		*type = 0x4;
+		*type = REG_DWORD;
 		if((*data = (uint8 *)TALLOC(ctx, 4 )) == NULL)
 			return WERR_NOMEM;
-		SIVAL(*data, 0, 0x01);
+
+		/* only show the publish check box if we are a 
+		   memeber of a AD domain */
+
+		if ( lp_security() == SEC_ADS )
+			SIVAL(*data, 0, 0x01);
+		else
+			SIVAL(*data, 0, 0x00);
+
 		*needed = 0x4;
 		return WERR_OK;
 	}
@@ -2443,7 +2451,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 		
 		if (!get_mydnsfullname(hostname))
 			return WERR_BADFILE;
-		*type = 0x1;			
+		*type = REG_SZ;
 		*needed = 2*(strlen(hostname)+1);	
 		if((*data  = (uint8 *)TALLOC(ctx, (*needed > in_size) ? *needed:in_size )) == NULL)
 			return WERR_NOMEM;
