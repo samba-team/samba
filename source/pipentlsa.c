@@ -34,6 +34,9 @@ extern int DEBUGLEVEL;
 
 #ifdef NTDOMAIN
 
+/***************************************************************************
+lsa_reply_open_policy
+ ***************************************************************************/
 static int lsa_reply_open_policy(char *q, char *base)
 {
 	int i;
@@ -54,6 +57,9 @@ static int lsa_reply_open_policy(char *q, char *base)
 	return PTR_DIFF(q, base);
 }
 
+/***************************************************************************
+make_dom_query
+ ***************************************************************************/
 static void make_dom_query(DOM_QUERY *d_q, char *dom_name, char *dom_sid)
 {
 	int domlen = strlen(dom_name);
@@ -70,6 +76,9 @@ static void make_dom_query(DOM_QUERY *d_q, char *dom_name, char *dom_sid)
 	make_dom_sid(&(d_q->dom_sid), dom_sid);
 }
 
+/***************************************************************************
+lsa_reply_query_info
+ ***************************************************************************/
 static int lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, char *q, char *base,
 				char *dom_name, char *dom_sid)
 {
@@ -91,7 +100,12 @@ static int lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, char *q, char *base,
 	return PTR_DIFF(q, base);
 }
 
-/* pretty much hard-coded choice of "other" sids, unfortunately... */
+/***************************************************************************
+make_dom_ref
+
+ pretty much hard-coded choice of "other" sids, unfortunately...
+
+ ***************************************************************************/
 static void make_dom_ref(DOM_R_REF *ref,
 				char *dom_name, char *dom_sid,
 				char *other_sid1, char *other_sid2, char *other_sid3)
@@ -123,6 +137,9 @@ static void make_dom_ref(DOM_R_REF *ref,
 	make_dom_sid(&(ref->ref_dom[3]), other_sid3);
 }
 
+/***************************************************************************
+make_reply_lookup_rids
+ ***************************************************************************/
 static void make_reply_lookup_rids(LSA_R_LOOKUP_RIDS *r_l,
 				int num_entries, uint32 dom_rids[MAX_LOOKUP_SIDS],
 				char *dom_name, char *dom_sid,
@@ -145,6 +162,9 @@ static void make_reply_lookup_rids(LSA_R_LOOKUP_RIDS *r_l,
 	r_l->num_entries3 = num_entries;
 }
 
+/***************************************************************************
+make_reply_lookup_sids
+ ***************************************************************************/
 static void make_reply_lookup_sids(LSA_R_LOOKUP_SIDS *r_l,
 				int num_entries, fstring dom_sids[MAX_LOOKUP_SIDS],
 				char *dom_name, char *dom_sid,
@@ -167,6 +187,9 @@ static void make_reply_lookup_sids(LSA_R_LOOKUP_SIDS *r_l,
 	r_l->num_entries3 = num_entries;
 }
 
+/***************************************************************************
+lsa_reply_lookup_sids
+ ***************************************************************************/
 static int lsa_reply_lookup_sids(char *q, char *base,
 				int num_entries, fstring dom_sids[MAX_LOOKUP_SIDS],
 				char *dom_name, char *dom_sid,
@@ -186,6 +209,9 @@ static int lsa_reply_lookup_sids(char *q, char *base,
 	return PTR_DIFF(q, base);
 }
 
+/***************************************************************************
+lsa_reply_lookup_rids
+ ***************************************************************************/
 static int lsa_reply_lookup_rids(char *q, char *base,
 				int num_entries, uint32 dom_rids[MAX_LOOKUP_SIDS],
 				char *dom_name, char *dom_sid,
@@ -205,6 +231,9 @@ static int lsa_reply_lookup_rids(char *q, char *base,
 	return PTR_DIFF(q, base);
 }
 
+/***************************************************************************
+api_lsa_open_policy
+ ***************************************************************************/
 static void api_lsa_open_policy( char *param, char *data,
                              char **rdata, int *rdata_len )
 {
@@ -215,6 +244,9 @@ static void api_lsa_open_policy( char *param, char *data,
 	*rdata_len = lsa_reply_open_policy(*rdata + 0x18, *rdata);
 }
 
+/***************************************************************************
+api_lsa_query_info
+ ***************************************************************************/
 static void api_lsa_query_info( char *param, char *data,
                                 char **rdata, int *rdata_len )
 {
@@ -233,6 +265,9 @@ static void api_lsa_query_info( char *param, char *data,
 									 dom_name, dom_sid);
 }
 
+/***************************************************************************
+api_lsa_lookup_sids
+ ***************************************************************************/
 static void api_lsa_lookup_sids( char *param, char *data,
                                  char **rdata, int *rdata_len )
 {
@@ -261,6 +296,9 @@ static void api_lsa_lookup_sids( char *param, char *data,
 				"S-1-1", "S-1-3", "S-1-5"); /* the three other SIDs */
 }
 
+/***************************************************************************
+api_lsa_lookup_names
+ ***************************************************************************/
 static void api_lsa_lookup_names( char *param, char *data,
                                   char **rdata, int *rdata_len )
 {
@@ -295,6 +333,9 @@ static void api_lsa_lookup_names( char *param, char *data,
 				"S-1-1", "S-1-3", "S-1-5"); /* the three other SIDs */
 }
 
+/***************************************************************************
+api_ntLsarpcTNP
+ ***************************************************************************/
 BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 		     int mdrcnt,int mprcnt,
 		     char **rdata,char **rparam,
