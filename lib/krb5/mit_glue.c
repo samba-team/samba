@@ -91,16 +91,21 @@ krb5_c_get_checksum(krb5_context context, const krb5_checksum *cksum,
 {
     krb5_error_code ret;
 
-    *data = malloc(sizeof(**data));
-    if (data == NULL)
-	return ENOMEM;
-    *type = cksum->cksumtype;
-    ret = copy_octet_string(&cksum->checksum, *data);
-    if (ret) {
-	free(*data);
-	*data = NULL;
+    if (type)
+	*type = cksum->cksumtype;
+    if (data) {
+	*data = malloc(sizeof(**data));
+	if (*data == NULL)
+	    return ENOMEM;
+
+	ret = copy_octet_string(&cksum->checksum, *data);
+	if (ret) {
+	    free(*data);
+	    *data = NULL;
+	    return ret;
+	}
     }
-    return ret;
+    return 0;
 }
 
 krb5_error_code
@@ -197,7 +202,7 @@ krb5_c_decrypt(krb5_context context,
 	
 	if (blocksize > ivec->length) {
 	    krb5_crypto_destroy(context, crypto);
-	    return EINVAL; /* XXX */
+	    return KRB5_BAD_MSIZE;
 	}
     }
 
@@ -237,7 +242,7 @@ krb5_c_encrypt(krb5_context context,
 
 	if (blocksize > ivec->length) {
 	    krb5_crypto_destroy(context, crypto);
-	    return EINVAL; /* XXX */
+	    return KRB5_BAD_MSIZE;
 	}
     }
 
