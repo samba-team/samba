@@ -3210,7 +3210,7 @@ int rename_internals(connection_struct *conn,
 		if (!count) exists = file_exist(directory,NULL);
 		if (!count && exists && file_exist(newname,NULL)) {
 			exists = True;
-			error = 183;
+			error = ERRrename;
 		}
 	} else {
 		/*
