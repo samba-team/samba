@@ -48,7 +48,7 @@ BEGIN {
 }
 END {
   fmt = "%s:%s:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:";
-  fmt = fmt   "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:[U]:LCT-00000000:%s:\n";
+  fmt = fmt   "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:[U          ]:LCT-00000000:%s:\n";
   for(name in names) {
     while ((getline < pwdf) > 0) {
       if ($1 == name) {
