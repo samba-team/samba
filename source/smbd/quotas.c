@@ -94,23 +94,30 @@ typedef struct _LINUX_SMB_DISK_QUOTA {
 
 static int get_smb_linux_xfs_quota(char *path, uid_t euser_id, LINUX_SMB_DISK_QUOTA *dp)
 {
-       int ret = -1;
+	int ret = -1;
 #ifdef HAVE_LINUX_XQM_H
-       struct fs_disk_quota D;
-       ZERO_STRUCT(D);
+	struct fs_disk_quota D;
 
-       if ((ret = quotactl(QCMD(Q_XGETQUOTA,USRQUOTA), path, euser_id, (caddr_t)&D)))
-               return ret;
+	ZERO_STRUCT(D);
 
-       dp->bsize = (SMB_BIG_UINT)512;
-       dp->softlimit = (SMB_BIG_UINT)D.d_blk_softlimit;
-       dp->hardlimit = (SMB_BIG_UINT)D.d_blk_hardlimit;
-       dp->ihardlimit = (SMB_BIG_UINT)D.d_ino_hardlimit;
-       dp->isoftlimit = (SMB_BIG_UINT)D.d_ino_softlimit;
-       dp->curinodes = (SMB_BIG_UINT)D.d_icount;
-       dp->curblocks = (SMB_BIG_UINT)D.d_bcount;
+	ret = quotactl(QCMD(Q_XGETQUOTA,USRQUOTA), path, euser_id, (caddr_t)&D);
+
+	/* As XFS has group quotas, if getting the user quota fails, try getting the group instead. */
+	if (ret) {
+		ret = quotactl(QCMD(Q_XGETQUOTA,GRPQUOTA), path, getegid(), (caddr_t)&D);
+		if (ret)
+			return ret;
+	}
+
+	dp->bsize = (SMB_BIG_UINT)512;
+	dp->softlimit = (SMB_BIG_UINT)D.d_blk_softlimit;
+	dp->hardlimit = (SMB_BIG_UINT)D.d_blk_hardlimit;
+	dp->ihardlimit = (SMB_BIG_UINT)D.d_ino_hardlimit;
+	dp->isoftlimit = (SMB_BIG_UINT)D.d_ino_softlimit;
+	dp->curinodes = (SMB_BIG_UINT)D.d_icount;
+	dp->curblocks = (SMB_BIG_UINT)D.d_bcount;
 #endif
-       return ret;
+	return ret;
 }
 
 /****************************************************************************
@@ -119,7 +126,7 @@ static int get_smb_linux_xfs_quota(char *path, uid_t euser_id, LINUX_SMB_DISK_QU
 
 static int get_smb_linux_vfs_quota(char *path, uid_t euser_id, LINUX_SMB_DISK_QUOTA *dp)
 {
-	int ret;
+	int ret = 0;
 #ifdef LINUX_QUOTAS_1
 	struct dqblk D;
 	ZERO_STRUCT(D);
@@ -133,8 +140,14 @@ static int get_smb_linux_vfs_quota(char *path, uid_t euser_id, LINUX_SMB_DISK_QU
 	dp->bsize = (SMB_BIG_UINT)QUOTABLOCK_SIZE;
 #endif
 
-	if ((ret = quotactl(QCMD(Q_GETQUOTA,USRQUOTA), path, euser_id, (caddr_t)&D)))
-		return -1;
+	ret = quotactl(QCMD(Q_GETQUOTA,USRQUOTA), path, euser_id, (caddr_t)&D);
+
+	/* Linux can have group quotas, if getting the user quota fails, try getting the group instead. */
+	if (ret) {
+		ret = quotactl(QCMD(Q_GETQUOTA,GRPQUOTA), path, getegid(), (caddr_t)&D);
+		if (ret)
+			return ret;
+	}
 
 	dp->softlimit = (SMB_BIG_UINT)D.dqb_bsoftlimit;
 	dp->hardlimit = (SMB_BIG_UINT)D.dqb_bhardlimit;
@@ -148,7 +161,7 @@ static int get_smb_linux_vfs_quota(char *path, uid_t euser_id, LINUX_SMB_DISK_QU
 	dp->curblocks = ((SMB_BIG_UINT)D.dqb_curspace)/ dp->bsize;
 #endif
 
-	return 0;
+	return ret;
 }
 
 /****************************************************************************
