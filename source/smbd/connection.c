@@ -166,7 +166,11 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 		}
 		
 		if (Clear && crec.pid && !process_exists(crec.pid)) {
-			sys_lseek(fd,i*sizeof(crec),SEEK_SET);
+			if(sys_lseek(fd,i*sizeof(crec),SEEK_SET) != i*sizeof(crec)) {
+              DEBUG(0,("claim_connection: ERROR: sys_lseek failed to seek \
+to %d\n", i*sizeof(crec) ));
+              continue;
+            }
 			bzero((void *)&crec,sizeof(crec));
 			write(fd, &crec,sizeof(crec));
 			if (foundi < 0) foundi = i;
