@@ -192,7 +192,7 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
                 } else
                         token = create_nt_token(uid, gid, current_user.ngroups,
                                                 current_user.groups, is_guest, 
-                                                0, NULL);
+                                                NULL);
 
 		must_free_token = True;
 	}

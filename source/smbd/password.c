@@ -167,15 +167,14 @@ char *validated_domain(uint16 vuid)
 ****************************************************************************/
 
 NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t
-                               *groups, BOOL is_guest, int num_info3_rids,
-                               uint32 *info3_rids)
+                               *groups, BOOL is_guest, NT_USER_TOKEN *sup_tok)
 {
 	extern DOM_SID global_sid_World;
 	extern DOM_SID global_sid_Network;
 	extern DOM_SID global_sid_Builtin_Guests;
 	extern DOM_SID global_sid_Authenticated_Users;
 	NT_USER_TOKEN *token;
-	DOM_SID *psids, domain_sid;
+	DOM_SID *psids;
 	int i, psid_ndx = 0;
 	size_t num_sids = 0;
 	fstring sid_str;
@@ -186,7 +185,11 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t
 	ZERO_STRUCTP(token);
 
 	/* We always have uid/gid plus World and Network and Authenticated Users or Guest SIDs. */
-	num_sids = 5 + num_info3_rids + ngroups;
+	num_sids = 5 + ngroups;
+
+	/* Add in any space needed for the suplementary token sids. */
+	if (sup_tok)
+		num_sids += sup_tok->num_sids;
 
 	if ((token->user_sids = (DOM_SID *)malloc( num_sids*sizeof(DOM_SID))) == NULL) {
 		free(token);
@@ -200,13 +203,15 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t
 	 * se_access_check depends on this.
 	 */
 
-	uid_to_sid( &psids[psid_ndx++], uid);
+	uid_to_sid( &psids[PRIMARY_USER_SID_INDEX], uid);
+	psid_ndx++;
 
 	/*
 	 * Primary group SID is second in token. Convention.
 	 */
 
-	gid_to_sid( &psids[psid_ndx++], gid);
+	gid_to_sid( &psids[PRIMARY_GROUP_SID_INDEX], gid);
+	psid_ndx++;
 
 	/* Now add the group SIDs. */
 
@@ -216,16 +221,15 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t
 		}
 	}
 
-        /* Now add the extra groups - we will probably have duplicates here
-           but this shouldn't hurt much at all. */
+	if (sup_tok && sup_tok->num_sids) {
+		/* Now add the extra groups - we will probably have duplicates here
+			but this shouldn't hurt much at all. */
 
-        secrets_fetch_domain_sid(lp_workgroup(), &domain_sid);
-
-        for (i = 0; i < num_info3_rids; i++) {
-                sid_copy(&psids[psid_ndx], &domain_sid);
-                sid_append_rid(&psids[psid_ndx], info3_rids[i]);
-                psid_ndx++;
-        }
+		for (i = 0; i < sup_tok->num_sids; i++) {
+			sid_copy(&psids[psid_ndx], &sup_tok->user_sids[i]);
+			psid_ndx++;
+		}
+	}
 
 	/*
 	 * Finally add the "standard" SIDs.
@@ -260,8 +264,7 @@ tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
 
 uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, 
-                     char *requested_name, char *domain,BOOL guest,
-                     uint32 num_info3_rids, uint32 *info3_rids)
+                     char *requested_name, char *domain,BOOL guest, NT_USER_TOKEN *ptok)
 {
 	user_struct *vuser = NULL;
 	struct passwd *pwfile; /* for getting real name from passwd file */
@@ -313,7 +316,7 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name,
 	/* Create an NT_USER_TOKEN struct for this user. */
 	vuser->nt_user_token = 
                 create_nt_token(uid,gid, vuser->n_groups, vuser->groups, 
-                                guest, num_info3_rids, info3_rids);
+                                guest, ptok);
 
 	next_vuid++;
 	num_validated_vuids++;
@@ -1453,8 +1456,7 @@ static BOOL find_connect_pdc(struct cli_state *pcli, unsigned char *trust_passwd
 BOOL domain_client_validate( char *user, char *domain, 
                              char *smb_apasswd, int smb_apasslen, 
                              char *smb_ntpasswd, int smb_ntpasslen,
-                             BOOL *user_exists, int *num_info3_rids,
-                             uint32 **info3_rids)
+                             BOOL *user_exists, NT_USER_TOKEN **pptoken)
 {
   unsigned char local_challenge[8];
   unsigned char local_lm_response[24];
@@ -1468,6 +1470,9 @@ BOOL domain_client_validate( char *user, char *domain,
   uint32 smb_uid_low;
   BOOL connected_ok = False;
   time_t last_change_time;
+
+  if (pptoken)
+    *pptoken = NULL;
 
   if(user_exists != NULL)
     *user_exists = True; /* Only set false on a very specific error. */
@@ -1604,20 +1609,41 @@ BOOL domain_client_validate( char *user, char *domain,
 
   /* Return group membership as returned by NT.  This contains group
      membership in nested groups which doesn't seem to be accessible by any
-     other means.  We merge this into the NT_USER_TOKEN later on. */
+     other means.  We merge this into the NT_USER_TOKEN associated with the vuid
+     later on. */
 
-  *num_info3_rids = info3.num_groups2;
+  if (pptoken) {
+    NT_USER_TOKEN *ptok;
+    int i;
+    DOM_SID domain_sid;
 
-  if ((*info3_rids = malloc(info3.num_groups2 * sizeof(uint32))) == NULL) {
-          DEBUG(3, ("Out of memory allocating group rids\n"));
-          return False;
-  }
+    *pptoken = NULL;
 
-  { 
-          int i;
+    if (info3.num_groups2 != 0) {
+      if ((ptok = (NT_USER_TOKEN *)malloc( sizeof(NT_USER_TOKEN) ) ) == NULL) {
+        DEBUG(0, ("domain_client_validate: Out of memory allocating NT_USER_TOKEN\n"));
+        return False;
+      }
+ 
+      ptok->num_sids = (size_t)info3.num_groups2;
+      if ((ptok->user_sids = (DOM_SID *)malloc( sizeof(DOM_SID) * ptok->num_sids )) == NULL) {
+        DEBUG(0, ("domain_client_validate: Out of memory allocating group SIDS\n"));
+        free(ptok);
+        return False;
+      }
 
-          for (i = 0; i < info3.num_groups2; i++)
-                  (*info3_rids)[i] = info3.gids[i].g_rid;
+      if (!secrets_fetch_domain_sid(lp_workgroup(), &domain_sid)) {
+        DEBUG(0, ("domain_client_validate: unable to fetch domain sid.\n"));
+        delete_nt_token(&ptok);
+        return False;
+      }
+
+      for (i = 0; i < ptok->num_sids; i++) {
+        sid_copy(&ptok->user_sids[i], &domain_sid);
+        sid_append_rid(&ptok->user_sids[i], info3.gids[i].g_rid);
+      }
+      *pptoken = ptok;
+    }
   }
 
 #if 0

@@ -3761,11 +3761,9 @@ void invalidate_vuid(uint16 vuid);
 char *validated_username(uint16 vuid);
 char *validated_domain(uint16 vuid);
 NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t
-                               *groups, BOOL is_guest, int num_info3_rids,
-                               uint32 *info3_rids);
+                               *groups, BOOL is_guest, NT_USER_TOKEN *sup_tok);
 uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, 
-                     char *requested_name, char *domain,BOOL guest,
-                     uint32 num_info3_rids, uint32 *info3_rids);
+                     char *requested_name, char *domain,BOOL guest, NT_USER_TOKEN *ptok);
 void add_session_user(char *user);
 BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned char *c8);
 BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
@@ -3786,8 +3784,7 @@ BOOL server_validate(char *user, char *domain,
 BOOL domain_client_validate( char *user, char *domain, 
                              char *smb_apasswd, int smb_apasslen, 
                              char *smb_ntpasswd, int smb_ntpasslen,
-                             BOOL *user_exists, int *num_info3_rids,
-                             uint32 **info3_rids);
+                             BOOL *user_exists, NT_USER_TOKEN **pptoken);
 #endif
 
 /*The following definitions come from  smbd/pipes.c  */
@@ -3897,8 +3894,8 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 int get_current_groups(int *p_ngroups, gid_t **p_groups);
 void delete_nt_token(NT_USER_TOKEN **pptoken);
 NT_USER_TOKEN *dup_nt_token(NT_USER_TOKEN *ptoken);
-void nt_token_set_user(NT_USER_TOKEN *tok, uid_t uid);
-void nt_token_set_group(NT_USER_TOKEN *tok, gid_t gid);
+void nt_token_set_user(NT_USER_TOKEN *token, uid_t uid);
+void nt_token_set_group(NT_USER_TOKEN *token, gid_t gid);
 BOOL initialise_groups(char *user, uid_t uid, gid_t gid);
 BOOL push_sec_ctx(void);
 void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN *token);

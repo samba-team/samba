@@ -489,7 +489,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
                 conn->nt_user_token = 
                         create_nt_token(conn->uid, conn->gid,
                                         conn->ngroups, conn->groups, 
-                                        guest, 0, NULL);
+                                        guest, NULL);
 
 	/* Initialise VFS function pointers */
 
