@@ -26,7 +26,7 @@ check if a uid has been validated, and return an pointer to the user_struct
 if it has. NULL if not. vuid is biased by an offset. This allows us to
 tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
-user_struct *get_valid_user_struct(struct server_context *smb, uint16 vuid)
+struct user_struct *get_valid_user_struct(struct server_context *smb, uint16 vuid)
 {
 	user_struct *usp;
 	int count=0;

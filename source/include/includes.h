@@ -631,9 +631,9 @@ typedef int socklen_t;
 
 #ifndef SMB_STRUCT_DIRENT
 #  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_DIRENT64)
-#    define SMB_STRUCT_DIRENT struct dirent64
+#    define smb_dirent dirent64
 #  else
-#    define SMB_STRUCT_DIRENT struct dirent
+#    define smb_dirent dirent
 #  endif
 #endif
 
