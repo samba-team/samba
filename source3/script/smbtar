@@ -7,6 +7,8 @@
 #
 # (May need to change shell to ksh for HPUX or OSF for better getopts)
 #
+# sandy nov 3 '98 added -a flag
+#
 # Richard Sharpe, added -c 'tarmode full' so that we back up all files to
 # fix a bug in clitar when a patch was added to stop system and hidden files
 # being backed up.
@@ -43,6 +45,7 @@ Function: backup/restore a Windows PC directories to a local tape file
 Options:         (Description)                 (Default)
   -r             Restore from tape file to PC  Save from PC to tapefile
   -i             Incremental mode              Full backup mode
+  -a             Reset archive bit mode        Don't reset archive bit
   -v             Verbose mode: echo command    Don't echo anything
   -s <server>    Specify PC Server             $server
   -p <password>  Specify PC Password           $password
@@ -69,13 +72,16 @@ if [ $# = 0 ]; then
 
 fi
 
-while getopts rivl:b:d:N:s:p:x:u:Xt: c; do
+while getopts riavl:b:d:N:s:p:x:u:Xt: c; do
   case $c in
    r) # [r]estore to Windows (instead of the default "Save from Windows")
       tarcmd="x"
       ;;
    i) # [i]ncremental
       tarargs=${tarargs}g
+      ;;
+   a) # [a]rchive
+      tarargs=${tarargs}a
       ;;
    l) # specify [l]og file
       log="-d $OPTARG"
