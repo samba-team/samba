@@ -1,5 +1,5 @@
 !==
-!== File-Cacheing.txt for Samba release 2.0.4b 20 May 1999
+!== File-Cacheing.txt for Samba release 2.0.5 21 Jul 1999
 !==
 Some people report problems with "cacheing" of data. Generally the bug report 
 goes like this:
