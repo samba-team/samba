@@ -249,7 +249,9 @@ void server_destroy_connection(struct server_connection *srv_conn)
 	close(srv_conn->event.fde->fd);
 
 	event_remove_fd(srv_conn->event.ctx, srv_conn->event.fde);
+	srv_conn->event.fde = NULL;
 	event_remove_timed(srv_conn->event.ctx, srv_conn->event.idle);
+	srv_conn->event.idle = NULL;
 
 	talloc_destroy(srv_conn->mem_ctx);
 }
@@ -262,6 +264,7 @@ void server_io_handler(struct event_context *ev, struct fd_event *fde, time_t t,
 
 	if (flags & EVENT_FD_WRITE) {
 		conn->service->ops->send_handler(conn, t, flags);
+		return;
 	}
 
 	if (flags & EVENT_FD_READ) {
