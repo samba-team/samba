@@ -22,7 +22,6 @@ $1 == "error_table" || $1 == "et" {
 	split(name, x, "\\.")
 	name=x[1]
 	c_file = name "_err.c"
-	c_file_compat = name "_err_compat.c"
 	h_file = name "_err.h"
 	h = ""
 #	gsub("[^a-zA-Z0-9]", "_", H_FILE)
@@ -37,7 +36,7 @@ $1 == "error_table" || $1 == "et" {
 	print "/* Generated from " FILENAME " */" > c_file
 	if(id_str != "")
 		print id_str > c_file
-	print "" > c_file_compat
+	print "" > c_file
 	print "#include <stddef.h>" > c_file # NULL
 	print "#include <error.h>" > c_file
 	print "#include <" h_file ">" > c_file
@@ -55,7 +54,7 @@ $1 == "error_table" || $1 == "et" {
 	print "" > h_file
 	print "void initialize_" name "_error_table_r(struct error_table**);" > h_file
 	print "" > h_file
-	print "void initialize_" name "_error_table(void); /* MIT compatible, don't use */" > h_file
+	print "void initialize_" name "_error_table(void);" > h_file
 	print "" > h_file
 	print "typedef enum " name "_error_number{" > h_file
 	print "\tERROR_TABLE_BASE_" name " = " base "," > h_file
@@ -77,7 +76,7 @@ $1 == "prefix" {
 	next
 }
 
-$1 == "error_code" {
+$1 == "error_code" || $1 == "ec" {
 	code = $2
 	split(code, x, ",")
 	code = prefix x[1]
