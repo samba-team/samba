@@ -1,5 +1,25 @@
-2003-06-17  Love  <lha@stacken.kth.se>
+2003-06-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/aes-test.c: add a test for aes kcrypto encrypted data
+	
+	* lib/krb5/crypto.c: clean up AES code to use a structure instead
+	of a key array
+	(_krb5_AES_string_to_default_iterator): set to 4096 as described in
+	aes draft -04
+	(derive_key): always remove the key->schedule since its
+	will contain the wrong (parent key) info
+
+2003-06-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/aes-test.c: add aes256 test vectors from Ken Raeburn
+	* doc/setup.texi: add more kdc's to the example
+	
+2003-06-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/hdb-ldap.c: use int2HDBFlags/HDBFlags2int From: Alberto
+	Patino <jalbertop@aranea.com.mx>, Luke Howard <lukeh@PADL.COM>
+	Pointed out by Andrew Bartlett of Samba
+	
 	* lib/krb5/heim_threads.h: remove freebsd comment, don't use debug
 	pthread stubs by default
 
