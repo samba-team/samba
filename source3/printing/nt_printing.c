@@ -667,8 +667,8 @@ static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 
 	safe_free(buf);
 
-	DEBUG(8,("packed printer [%s] with form [%s] len=%d\n", 
-		 info->portname, info->devmode->formname, len));
+	DEBUG(8,("packed printer [%s] with printprocessor [%s] parameters=[%s] len=%d\n", 
+		 info->portname, info->printprocessor, info->parameters, len));
 
 	return ret;
 }
@@ -1081,8 +1081,18 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 
 	nt_printing_getsec(sharename, &info.secdesc_buf);
 
+	/* the following should not be necessary - why are these values
+	   getting corrupted? */
+	fstrcpy(info.printprocessor, "winprint");
+	fstrcpy(info.datatype, "RAW");
+	fstrcpy(info.parameters,"");
+	
 	safe_free(dbuf.dptr);
 	*info_ptr=memdup(&info, sizeof(info));
+
+	DEBUG(9,("Unpacked printprocessor for [%s] of [%s]\n",
+		 sharename, info.printprocessor));
+
 	
 	return 0;	
 }
