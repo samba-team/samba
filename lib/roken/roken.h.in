@@ -448,27 +448,29 @@ typedef unsigned short sa_family_t;
 
 #if HAVE_STRUCT_SOCKADDR_SA_LEN
 
-#define _SS_PAD1SIZE   (_SS_ALIGNSIZE - sizeof (sa_family_t) - sizeof(unsigned char))
-#define _SS_PAD2SIZE   (_SS_MAXSIZE - (sizeof (sa_family_t) + _SS_PAD1SIZE + _SS_ALIGNSIZE))
+typedef unsigned char roken_sa_family_t;
+
+#define _SS_PAD1SIZE   (_SS_ALIGNSIZE - sizeof (roken_sa_family_t) - sizeof(unsigned char))
+#define _SS_PAD2SIZE   (_SS_MAXSIZE - (sizeof (roken_sa_family_t) + sizeof(unsigned char) + _SS_PAD1SIZE + _SS_ALIGNSIZE))
 
 struct sockaddr_storage {
     unsigned char	ss_len;
-    sa_family_t		ss_family;
+    roken_sa_family_t	ss_family;
     char		__ss_pad1[_SS_PAD1SIZE];
-    unsigned long	__ss_align;
-    char		__ss_pad2[_SS_PAD2SIZE];
+    unsigned long	__ss_align[_SS_PAD2SIZE / sizeof(unsigned long) + 1];
 };
 
 #else /* !HAVE_STRUCT_SOCKADDR_SA_LEN */
 
-#define _SS_PAD1SIZE   (_SS_ALIGNSIZE - sizeof (sa_family_t))
-#define _SS_PAD2SIZE   (_SS_MAXSIZE - (sizeof (sa_family_t) + _SS_PAD1SIZE + _SS_ALIGNSIZE))
+typedef unsigned short roken_sa_family_t;
+
+#define _SS_PAD1SIZE   (_SS_ALIGNSIZE - sizeof (roken_sa_family_t))
+#define _SS_PAD2SIZE   (_SS_MAXSIZE - (sizeof (roken_sa_family_t) + _SS_PAD1SIZE + _SS_ALIGNSIZE))
 
 struct sockaddr_storage {
-    sa_family_t		ss_family;
+    roken_sa_family_t	ss_family;
     char		__ss_pad1[_SS_PAD1SIZE];
-    unsigned long	__ss_align;
-    char		__ss_pad2[_SS_PAD2SIZE];
+    unsigned long	__ss_align[_SS_PAD2SIZE / sizeof(unsigned long) + 1];
 };
 
 #endif /* HAVE_STRUCT_SOCKADDR_SA_LEN */
