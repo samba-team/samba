@@ -63,7 +63,7 @@ connect_to_master (krb5_context context, const char *master)
 }
 
 static void
-get_creds(krb5_context context, krb5_ccache *cache)
+get_creds(krb5_context context, krb5_ccache *cache, const char *host)
 {
     krb5_keytab keytab;
     krb5_principal client;
@@ -71,13 +71,14 @@ get_creds(krb5_context context, krb5_ccache *cache)
     krb5_get_init_creds_opt init_opts;
     krb5_preauthtype preauth = KRB5_PADATA_ENC_TIMESTAMP;
     krb5_creds creds;
-    char hostname[128];
+    char my_hostname[128];
+    char *server;
     
     ret = krb5_kt_default(context, &keytab);
     if(ret) krb5_err(context, 1, ret, "krb5_kt_default");
 
-    gethostname (hostname, sizeof(hostname));
-    ret = krb5_sname_to_principal (context, hostname, IPROP_NAME,
+    gethostname (my_hostname, sizeof(my_hostname));
+    ret = krb5_sname_to_principal (context, my_hostname, IPROP_NAME,
 				   KRB5_NT_SRV_HST, &client);
     if (ret) krb5_err(context, 1, ret, "krb5_sname_to_principal");
 
@@ -86,8 +87,13 @@ get_creds(krb5_context context, krb5_ccache *cache)
     krb5_get_init_creds_opt_set_preauth_list(&init_opts, &preauth, 1);
 #endif
 
+    asprintf (&server, "%s/%s", IPROP_NAME, host);
+    if (server == NULL)
+	krb5_errx (context, 1, "malloc: no memory");
+
     ret = krb5_get_init_creds_keytab(context, &creds, client, keytab,
-				     0, NULL, &init_opts);
+				     0, server, &init_opts);
+    free (server);
     if(ret) krb5_err(context, 1, ret, "krb5_get_init_creds");
     
     ret = krb5_kt_close(context, keytab);
@@ -122,17 +128,12 @@ ihave (krb5_context context, krb5_auth_context auth_context,
     ret = krb5_mk_priv (context, auth_context, &data, &priv_data, NULL);
     if (ret)
 	krb5_err (context, 1, ret, "krb_mk_priv");
-    buf[0] = (priv_data.length >> 24) & 0xFF;
-    buf[1] = (priv_data.length >> 16) & 0xFF;
-    buf[2] = (priv_data.length >>  8) & 0xFF;
-    buf[3] = (priv_data.length >>  0) & 0xFF;
-    ret = krb5_net_write (context, &fd, buf, 4);
-    if (ret < 0)
-	krb5_err (context, 1, ret, "krb_net_write");
-    ret = krb5_net_write (context, &fd, priv_data.data, priv_data.length);
+
+    ret = krb5_write_message (context, &fd, &priv_data);
+    if (ret)
+	krb5_err (context, 1, ret, "krb5_write_message");
+
     krb5_data_free (&priv_data);
-    if (ret < 0)
-	krb5_err (context, 1, ret, "krb_net_write");
 }
 
 static void
@@ -209,7 +210,7 @@ main(int argc, char **argv)
     if (ret)
 	krb5_err (context, 1, ret, "kadm5_log_init");
 
-    get_creds(context, &ccache);
+    get_creds(context, &ccache, argv[1]);
 
     master_fd = connect_to_master (context, argv[1]);
 
@@ -237,19 +238,15 @@ main(int argc, char **argv)
 	krb5_storage *sp;
 	int32_t tmp;
 
-	ret = krb5_net_read (context, &master_fd, buf, 4);
-	if (ret != 4)
-	    krb5_err (context, 1, ret, "krb5_net_read");
-	len = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
-	ret = krb5_data_alloc (&data, len);
+	ret = krb5_read_message (context, &master_fd, &data);
 	if (ret)
-	    krb5_err (context, 1, ret, "krb5_data_alloc");
-	ret = krb5_net_read (context, &master_fd, data.data, data.length);
-	if (ret != data.length)
-	    krb5_err (context, 1, ret, "krb5_net_read");
+	    krb5_err (context, 1, ret, "krb5_read_message");
+
 	ret = krb5_rd_priv (context, auth_context,  &data, &out, NULL);
+	krb5_data_free (&data);
 	if (ret)
 	    krb5_err (context, 1, ret, "krb5_rd_priv");
+
 	sp = krb5_storage_from_mem (out.data, out.length);
 	krb5_ret_int32 (sp, &tmp);
 	switch (tmp) {
@@ -263,6 +260,7 @@ main(int argc, char **argv)
 	    krb5_warnx (context, "Ignoring command %d", tmp);
 	    break;
 	}
+	krb5_data_free (&out);
     }
 
     return 0;
