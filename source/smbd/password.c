@@ -1485,6 +1485,8 @@ BOOL domain_client_validate( char *user, char *domain,
   /* We really don't care what LUID we give the user. */
   generate_random_buffer( (unsigned char *)&smb_uid_low, 4, False);
 
+  ZERO_STRUCT(info3);
+
   if(cli_nt_login_network(&cli, domain, user, smb_uid_low, (char *)local_challenge,
                           ((smb_apasslen != 0) ? smb_apasswd : NULL),
                           ((smb_ntpasslen != 0) ? smb_ntpasswd : NULL),
