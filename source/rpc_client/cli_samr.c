@@ -74,7 +74,7 @@ BOOL get_samr_query_userinfo(struct cli_state *cli,
 	POLICY_HND pol_open_user;
 	if (pol_open_domain == NULL || usr == NULL) return False;
 
-	bzero(usr, sizeof(*usr));
+	memset((char *)usr, '\0', sizeof(*usr));
 
 	/* send open domain (on user sid) */
 	if (!do_samr_open_user(cli,
@@ -344,7 +344,7 @@ BOOL do_samr_enum_dom_users(struct cli_state *cli,
 				}
 				else
 				{
-					bzero((*sam)[i].acct_name, sizeof((*sam)[i].acct_name));
+					memset((char *)(*sam)[i].acct_name, '\0', sizeof((*sam)[i].acct_name));
 				}
 				DEBUG(5,("do_samr_enum_dom_users: idx: %4d rid: %8x acct: %s\n",
 				          i, (*sam)[i].smb_userid, (*sam)[i].acct_name));

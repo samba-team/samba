@@ -203,8 +203,8 @@ ssize_t read_udp_socket(int fd,char *buf,size_t len)
   int socklen;
   
   socklen = sizeof(sock);
-  bzero((char *)&sock,socklen);
-  bzero((char *)&lastip,sizeof(lastip));
+  memset((char *)&sock,'\0',socklen);
+  memset((char *)&lastip,'\0',sizeof(lastip));
   ret = (ssize_t)recvfrom(fd,buf,len,0,(struct sockaddr *)&sock,&socklen);
   if (ret <= 0) {
     DEBUG(2,("read socket failed. ERRNO=%s\n",strerror(errno)));
@@ -485,7 +485,7 @@ BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
 
   smb_read_error = 0;
 
-  bzero(buffer,smb_size + 100);
+  memset(buffer,'\0',smb_size + 100);
 
   len = read_smb_length_return_keepalive(fd,buffer,timeout);
   if (len < 0)
@@ -594,7 +594,7 @@ BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type)
     }
 
   /* set the address and port */
-  bzero((char *)&sock_out,sizeof(sock_out));
+  memset((char *)&sock_out,'\0',sizeof(sock_out));
   putip((char *)&sock_out.sin_addr,(char *)&ip);
   sock_out.sin_port = htons( port );
   sock_out.sin_family = AF_INET;
@@ -636,7 +636,7 @@ int open_socket_in(int type, int port, int dlevel,uint32 socket_addr)
       return -1;
     }
   
-  bzero((char *)&sock,sizeof(sock));
+  memset((char *)&sock,'\0',sizeof(sock));
   memcpy((char *)&sock.sin_addr,(char *)hp->h_addr, hp->h_length);
 
 #ifdef HAVE_SOCK_SIN_LEN
@@ -695,7 +695,7 @@ int open_socket_out(int type, struct in_addr *addr, int port ,int timeout)
 
   if (type != SOCK_STREAM) return(res);
   
-  bzero((char *)&sock_out,sizeof(sock_out));
+  memset((char *)&sock_out,'\0',sizeof(sock_out));
   putip((char *)&sock_out.sin_addr,(char *)addr);
   
   sock_out.sin_port = htons( port );

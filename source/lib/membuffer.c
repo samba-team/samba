@@ -118,7 +118,7 @@ BOOL mem_alloc_data(struct mem_buf *buf, int size)
 		return False;
 	}
 
-	bzero(buf->data, buf->data_size);
+	memset((char *)buf->data, '\0', buf->data_size);
 
 	return True;
 }

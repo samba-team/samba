@@ -528,7 +528,7 @@ void smb_io_buffer2(char *desc,  BUFFER2 *buf2, uint32 buffer, prs_struct *ps, i
 	{
 		prs_debug(ps, depth, desc, "smb_io_buffer2 - NULL");
 		depth++;
-		bzero(buf2, sizeof(*buf2));
+		memset((char *)buf2, '\0', sizeof(*buf2));
 	}
 }
 
@@ -611,7 +611,7 @@ void smb_io_string2(char *desc,  STRING2 *str2, uint32 buffer, prs_struct *ps, i
 	{
 		prs_debug(ps, depth, desc, "smb_io_string2 - NULL");
 		depth++;
-		bzero(str2, sizeof(*str2));
+		memset((char *)str2, '\0', sizeof(*str2));
 	}
 }
 
@@ -664,7 +664,7 @@ void smb_io_unistr2(char *desc,  UNISTR2 *uni2, uint32 buffer, prs_struct *ps, i
 	{
 		prs_debug(ps, depth, desc, "smb_io_unistr2 - NULL");
 		depth++;
-		bzero(uni2, sizeof(*uni2));
+		memset((char *)uni2, '\0', sizeof(*uni2));
 	}
 }
 
@@ -993,7 +993,7 @@ void make_owf_info(OWF_INFO *hash, uint8 data[16])
 	}
 	else
 	{
-		bzero(hash->data, sizeof(hash->data));
+		memset((char *)hash->data, '\0', sizeof(hash->data));
 	}
 }
 
@@ -1069,7 +1069,7 @@ static void smb_io_dom_query(char *desc,  DOM_QUERY *d_q, prs_struct *ps, int de
 	}
 	else
 	{
-		bzero(&(d_q->dom_sid), sizeof(d_q->dom_sid));
+		memset((char *)&(d_q->dom_sid), '\0', sizeof(d_q->dom_sid));
 	}
 }
 

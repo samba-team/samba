@@ -979,7 +979,7 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
 				cli->ntlmssp_hash[257] = 0;
 			}
 /*			NTLMSSPhash(cli->ntlmssp_hash, p24); */
-			bzero(lm_hash, sizeof(lm_hash));
+			memset((char *)lm_hash, '\0', sizeof(lm_hash));
 
 			/* this is a hack due to limitations in rpc_api_pipe */
 			prs_init(&dataa, mem_buf_len(hdra.data), 4, 0x0, False);

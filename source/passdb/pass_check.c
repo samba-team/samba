@@ -136,6 +136,10 @@ static BOOL pam_auth(char *user,char *password)
 
 
 #ifdef WITH_AFS
+
+#include <afs/stds.h>
+#include <afs/kautils.h>
+
 /*******************************************************************
 check on AFS authentication
 ********************************************************************/
@@ -164,6 +168,9 @@ static BOOL afs_auth(char *user,char *password)
 
 
 #ifdef WITH_DFS
+
+#include <dce/dce_error.h>
+#include <dce/sec_login.h>
 
 /*****************************************************************
  This new version of the DFS_AUTH code was donated by Karsten Muuss
@@ -467,6 +474,9 @@ void dfs_unlogin(void)
 #endif
 
 #ifdef KRB5_AUTH
+
+#include <krb5.h>
+
 /*******************************************************************
 check on Kerberos authentication
 ********************************************************************/

@@ -444,7 +444,7 @@ static void make_sam_sid_stuff(SAM_SID_STUFF *stf,
 	stf->unknown_2 = unknown_2;
 	stf->unknown_3 = unknown_3;
 
-	bzero(stf->padding1, sizeof(stf->padding1));
+	memset((char *)stf->padding1, '\0', sizeof(stf->padding1));
 
 	stf->unknown_4 = unknown_4;
 	stf->unknown_5 = unknown_4;
@@ -2254,20 +2254,20 @@ void make_sam_user_info11(SAM_USER_INFO_11 *usr,
 	len_mach_acct = strlen(mach_acct);
 
 	memcpy(&(usr->expiry),expiry, sizeof(usr->expiry)); /* expiry time or something? */
-	bzero(usr->padding_1, sizeof(usr->padding_1)); /* 0 - padding 24 bytes */
+	memset((char *)usr->padding_1, '\0', sizeof(usr->padding_1)); /* 0 - padding 24 bytes */
 
 	make_uni_hdr(&(usr->hdr_mach_acct), len_mach_acct, len_mach_acct, 4);  /* unicode header for machine account */
 	usr->padding_2 = 0;               /* 0 - padding 4 bytes */
 
 	usr->ptr_1        = 1;            /* pointer */
-	bzero(usr->padding_3, sizeof(usr->padding_3)); /* 0 - padding 32 bytes */
+	memset((char *)usr->padding_3, '\0', sizeof(usr->padding_3)); /* 0 - padding 32 bytes */
 	usr->padding_4    = 0;            /* 0 - padding 4 bytes */
 
 	usr->ptr_2        = 1;            /* pointer */
 	usr->padding_5    = 0;            /* 0 - padding 4 bytes */
 
 	usr->ptr_3        = 1;          /* pointer */
-	bzero(usr->padding_6, sizeof(usr->padding_6)); /* 0 - padding 32 bytes */
+	memset((char *)usr->padding_6, '\0', sizeof(usr->padding_6)); /* 0 - padding 32 bytes */
 
 	usr->rid_user     = rid_user; 
 	usr->rid_group    = rid_group;
@@ -2278,12 +2278,12 @@ void make_sam_user_info11(SAM_USER_INFO_11 *usr,
 	usr->unknown_4    = 0x003f;       /* 0x003f      - 16 bit unknown */
 	usr->unknown_5    = 0x003c;       /* 0x003c      - 16 bit unknown */
 
-	bzero(usr->padding_7, sizeof(usr->padding_7)); /* 0 - padding 16 bytes */
+	memset((char *)usr->padding_7, '\0', sizeof(usr->padding_7)); /* 0 - padding 16 bytes */
 	usr->padding_8    = 0;            /* 0 - padding 4 bytes */
 	
 	make_unistr2(&(usr->uni_mach_acct), mach_acct, len_mach_acct);  /* unicode string for machine account */
 
-	bzero(usr->padding_9, sizeof(usr->padding_9)); /* 0 - padding 48 bytes */
+	memset((char *)usr->padding_9, '\0', sizeof(usr->padding_9)); /* 0 - padding 48 bytes */
 }
 
 /*******************************************************************
@@ -2399,8 +2399,8 @@ void make_sam_user_info21(SAM_USER_INFO_21 *usr,
 	make_uni_hdr(&(usr->hdr_unknown_str ), len_unknown_str , len_unknown_str , 1);
 	make_uni_hdr(&(usr->hdr_munged_dial ), len_munged_dial , len_munged_dial , 1);
 
-	bzero(usr->nt_pwd, sizeof(usr->nt_pwd));
-	bzero(usr->lm_pwd, sizeof(usr->lm_pwd));
+	memset((char *)usr->nt_pwd, '\0', sizeof(usr->nt_pwd));
+	memset((char *)usr->lm_pwd, '\0', sizeof(usr->lm_pwd));
 
 	usr->user_rid  = user_rid;
 	usr->group_rid = group_rid;
@@ -2411,7 +2411,7 @@ void make_sam_user_info21(SAM_USER_INFO_21 *usr,
 	usr->ptr_logon_hrs = hrs ? 1 : 0;
 	usr->unknown_5 = unknown_5; /* 0x0002 0000 */
 
-	bzero(usr->padding1, sizeof(usr->padding1));
+	memset((char *)usr->padding1, '\0', sizeof(usr->padding1));
 
 	make_unistr2(&(usr->uni_user_name   ), user_name   , len_user_name   );
 	make_unistr2(&(usr->uni_full_name   ), full_name   , len_full_name   );

@@ -418,7 +418,7 @@ struct sam_passwd *getsam21pwrid(uint32 rid)
 static void pdb_init_dispinfo(struct sam_disp_info *user)
 {
 	if (user == NULL) return;
-	bzero(user, sizeof(*user));
+	memset((char *)user, '\0', sizeof(*user));
 }
 
 /*************************************************************
@@ -428,7 +428,7 @@ static void pdb_init_dispinfo(struct sam_disp_info *user)
 void pdb_init_smb(struct smb_passwd *user)
 {
 	if (user == NULL) return;
-	bzero(user, sizeof(*user));
+	memset((char *)user, '\0', sizeof(*user));
 	user->pass_last_set_time    = (time_t)-1;
 }
 
@@ -438,7 +438,7 @@ void pdb_init_smb(struct smb_passwd *user)
 void pdb_init_sam(struct sam_passwd *user)
 {
 	if (user == NULL) return;
-	bzero(user, sizeof(*user));
+	memset((char *)user, '\0', sizeof(*user));
 	user->logon_time            = (time_t)-1;
 	user->logoff_time           = (time_t)-1;
 	user->kickoff_time          = (time_t)-1;

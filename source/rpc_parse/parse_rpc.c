@@ -620,7 +620,7 @@ void make_rpc_auth_ntlmssp_chal(RPC_AUTH_NTLMSSP_CHAL *chl,
 	chl->neg_flags = neg_flags; /* 0x0082b1 */
 
 	memcpy(chl->challenge, challenge, sizeof(chl->challenge)); 
-	bzero (chl->reserved ,            sizeof(chl->reserved)); 
+	memset((char *)chl->reserved , '\0', sizeof(chl->reserved)); 
 }
 
 /*******************************************************************

@@ -374,8 +374,8 @@ BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root)
 {
   pstring passwordprogram;
   pstring chatsequence;
-  int i;
-  int len;
+  size_t i;
+  size_t len;
 
   strlower(name); 
   DEBUG(3,("Password change for user: %s\n",name));

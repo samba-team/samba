@@ -58,7 +58,7 @@ initialise smb client structure
 ****************************************************************************/
 void rpcclient_init(void)
 {
-	bzero(smb_cli, sizeof(smb_cli));
+	memset((char *)smb_cli, '\0', sizeof(smb_cli));
 	cli_initialise(smb_cli);
 	smb_cli->capabilities |= CAP_NT_SMBS | CAP_STATUS32;
 }
@@ -743,7 +743,7 @@ enum client_action
 	}
 
 	/* paranoia: destroy the local copy of the password */
-	bzero(password, sizeof(password)); 
+	memset((char *)password, '\0', sizeof(password)); 
 
 	/* establish connections.  nothing to stop these being re-established. */
 	rpcclient_connect(&cli_info);

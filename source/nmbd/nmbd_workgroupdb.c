@@ -80,7 +80,7 @@ static struct work_record *create_workgroup(char *name, int ttl)
     DEBUG(0,("create_workgroup: malloc fail !\n"));
     return NULL;
   }
-  bzero((char *)work, sizeof(*work));
+  memset((char *)work, '\0', sizeof(*work));
  
   StrnCpy(work->work_group,name,sizeof(work->work_group)-1);
   work->serverlist = NULL;

@@ -1253,7 +1253,7 @@ void send_wins_name_query_response(int rcode, struct packet_struct *p,
   int ttl = 0;
   int i;
 
-  bzero(rdata,6);
+  memset(rdata,'\0',6);
 
   if(rcode == 0)
   {

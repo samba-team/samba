@@ -50,7 +50,7 @@ void cmd_wks_query_info(struct client_info *info)
 
 	BOOL res = True;
 
-	bzero(&ctr, sizeof(ctr));
+	memset((char *)&ctr, '\0', sizeof(ctr));
 
 	fstrcpy(dest_wks, "\\\\");
 	fstrcat(dest_wks, info->dest_host);

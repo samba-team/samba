@@ -138,7 +138,7 @@ void nt_lm_owf_gen(char *pwd, uchar nt_p16[16], uchar p16[16])
 	dump_data(100, p16, 16);
 #endif
 	/* clear out local copy of user's password (just being paranoid). */
-	bzero(passwd, sizeof(passwd));
+	memset(passwd, '\0', sizeof(passwd));
 }
 
 /* Does the des encryption from the NT or LM MD4 hash. */

@@ -170,7 +170,7 @@ static struct subnet_record *make_subnet(char *name, enum subnet_type type,
     return(NULL);
   }
   
-  bzero( (char *)subrec, sizeof(*subrec) );
+  memset( (char *)subrec, '\0', sizeof(*subrec) );
   (void)ubi_trInitTree( subrec->namelist,
                         namelist_entry_compare,
                         ubi_trOVERWRITE );

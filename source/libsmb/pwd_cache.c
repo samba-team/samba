@@ -29,11 +29,11 @@ initialises a password structure
 ****************************************************************************/
 void pwd_init(struct pwd_info *pwd)
 {
-	bzero(pwd->password  , sizeof(pwd->password  ));
-	bzero(pwd->smb_lm_pwd, sizeof(pwd->smb_lm_pwd));
-	bzero(pwd->smb_nt_pwd, sizeof(pwd->smb_nt_pwd));
-	bzero(pwd->smb_lm_owf, sizeof(pwd->smb_lm_owf));
-	bzero(pwd->smb_nt_owf, sizeof(pwd->smb_nt_owf));
+	memset((char *)pwd->password  , '\0', sizeof(pwd->password  ));
+	memset((char *)pwd->smb_lm_pwd, '\0', sizeof(pwd->smb_lm_pwd));
+	memset((char *)pwd->smb_nt_pwd, '\0', sizeof(pwd->smb_nt_pwd));
+	memset((char *)pwd->smb_lm_owf, '\0', sizeof(pwd->smb_lm_owf));
+	memset((char *)pwd->smb_nt_owf, '\0', sizeof(pwd->smb_nt_owf));
 
 	pwd->null_pwd  = True; /* safest option... */
 	pwd->cleartext = False;
@@ -143,7 +143,7 @@ void pwd_set_lm_nt_16(struct pwd_info *pwd, uchar lm_pwd[16], uchar nt_pwd[16])
 	}
 	else
 	{
-		bzero(pwd->smb_lm_pwd, 16);
+		memset((char *)pwd->smb_lm_pwd, '\0', 16);
 	}
 
 	if (nt_pwd)
@@ -152,7 +152,7 @@ void pwd_set_lm_nt_16(struct pwd_info *pwd, uchar lm_pwd[16], uchar nt_pwd[16])
 	}
 	else
 	{
-		bzero(pwd->smb_nt_pwd, 16);
+		memset((char *)pwd->smb_nt_pwd, '\0', 16);
 	}
 
 	pwd->null_pwd  = False;

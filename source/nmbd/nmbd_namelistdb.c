@@ -199,7 +199,7 @@ struct name_record *add_name_to_subnet( struct subnet_record *subrec,
     return( NULL );
   }
 
-  bzero( (char *)namerec, sizeof(*namerec) );
+  memset( (char *)namerec, '\0', sizeof(*namerec) );
   namerec->data.ip = (struct in_addr *)malloc( sizeof(struct in_addr) 
                                                * num_ips );
   if( NULL == namerec->data.ip )

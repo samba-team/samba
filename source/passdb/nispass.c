@@ -295,12 +295,12 @@ static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 	fstring pwdlchg_t;
 	fstring pwdmchg_t;
 
-	bzero(logon_t  , sizeof(logon_t  ));
-	bzero(logoff_t , sizeof(logoff_t ));
-	bzero(kickoff_t, sizeof(kickoff_t));
-	bzero(pwdlset_t, sizeof(pwdlset_t));
-	bzero(pwdlchg_t, sizeof(pwdlchg_t));
-	bzero(pwdmchg_t, sizeof(pwdmchg_t));
+	memset((char *)logon_t  , '\0', sizeof(logon_t  ));
+	memset((char *)logoff_t , '\0', sizeof(logoff_t ));
+	memset((char *)kickoff_t, '\0', sizeof(kickoff_t));
+	memset((char *)pwdlset_t, '\0', sizeof(pwdlset_t));
+	memset((char *)pwdlchg_t, '\0', sizeof(pwdlchg_t));
+	memset((char *)pwdmchg_t, '\0', sizeof(pwdmchg_t));
 
 	pfile = lp_smb_passwd_file();
 

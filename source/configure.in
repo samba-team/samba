@@ -36,6 +36,14 @@ case "$host_os" in
       if test $ac_cv_prog_cc_Ae = yes; then
         CPPFLAGS="$CPPFLAGS -Ae"
       fi
+#
+# Defines needed for HPUX large file support..
+#
+      case `uname =r` in
+			*10*|*11*)
+				CPPFLAGS="$CPPFLAGS -D_LARGEFILE64_SOURCE"
+				;;
+      esac
       ;;
 #
 # AIX4.x doesn't even admit to having large
@@ -52,16 +60,6 @@ case "$host_os" in
 		case `uname -r` in
 			5.6*|5.7*)
 				CPPFLAGS="$CPPFLAGS -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
-				;;
-		esac
-		;;
-#
-# Defines needed for HPUX large file support..
-#
-	*hpux*)
-		case `uname =r` in
-			*10*|*11*)
-				CPPFLAGS="$CPPFLAGS -D_LARGEFILE64_SOURCE"
 				;;
 		esac
 		;;
@@ -106,6 +104,19 @@ AC_CHECK_HEADERS(sys/wait.h sys/resource.h sys/ioctl.h sys/mode.h)
 AC_CHECK_HEADERS(sys/filio.h string.h strings.h stdlib.h sys/socket.h)
 AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h)
 AC_CHECK_HEADERS(sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h sys/sockio.h)
+#
+# HPUX has a bug in that including shadow.h causes a re-definition of MAXINT.
+# This causes configure to fail to detect it. Check for shadow separately on HPUX.
+#
+case "$host_os" in
+    *hpux*)
+		AC_TRY_COMPILE([#include <shadow.h>],[struct spwd testme],
+			ac_cv_header_shadow_h=yes,ac_cv_header_shadow_h=no)
+		if test x"$ac_cv_header_shadow_h" = x"yes"; then
+		   AC_DEFINE(HAVE_SHADOW_H)
+		fi
+	;;
+esac
 AC_CHECK_HEADERS(shadow.h netinet/tcp.h sys/security.h security/pam_appl.h)
 AC_CHECK_HEADERS(stropts.h poll.h readline.h history.h readline/readline.h)
 AC_CHECK_HEADERS(readline/history.h sys/capability.h syscall.h sys/syscall.h)

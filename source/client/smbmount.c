@@ -150,7 +150,7 @@ static BOOL chkpath(char *path,BOOL report)
   trim_string(path2,NULL,"\\");
   if (!*path2) *path2 = '\\';
 
-  bzero(outbuf,smb_size);
+  memset(outbuf,'\0',smb_size);
   set_message(outbuf,0,4 + strlen(path2),True);
   SCVAL(outbuf,smb_com,SMBchkpth);
   SSVAL(outbuf,smb_tid,cnum);
@@ -499,7 +499,7 @@ static BOOL process(char *base_directory)
   if ((InBuffer == NULL) || (OutBuffer == NULL)) 
     return(False);
   
-  bzero(OutBuffer,smb_size);
+  memset(OutBuffer,'\0',smb_size);
 
   if (!mount_send_login(InBuffer,OutBuffer))
     return(False);
@@ -546,7 +546,7 @@ static BOOL process(char *base_directory)
       fstring tok;
       int i;
 
-      bzero(OutBuffer,smb_size);
+      memset(OutBuffer,'\0',smb_size);
 
       /* display a prompt */
       DEBUG(0,("smb: %s> ", CNV_LANG(cur_dir)));

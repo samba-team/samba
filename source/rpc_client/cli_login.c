@@ -53,7 +53,7 @@ BOOL cli_nt_setup_creds(struct cli_state *cli, unsigned char mach_pwd[16])
 
   /* calculate the session key */
   cred_session_key(&clnt_chal, &srv_chal, (char *)mach_pwd, cli->sess_key);
-  bzero(cli->sess_key+8, 8);
+  memset((char *)cli->sess_key+8, '\0', 8);
 
   /******************* Authenticate 2 ********************/
 

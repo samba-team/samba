@@ -42,7 +42,7 @@ BOOL yield_connection(connection_struct *conn,char *name,int max_connections)
 	if (max_connections <= 0)
 		return(True);
 
-	bzero(&crec,sizeof(crec));
+	memset((char *)&crec,'\0',sizeof(crec));
 
 	pstrcpy(fname,lp_lockdir());
 	trim_string(fname,"","/");
@@ -85,7 +85,7 @@ BOOL yield_connection(connection_struct *conn,char *name,int max_connections)
 		return(False);
 	}
 
-	bzero((void *)&crec,sizeof(crec));
+	memset((void *)&crec,'\0',sizeof(crec));
   
 	/* remove our mark */
 	if (sys_lseek(fd,i*sizeof(crec),SEEK_SET) != i*sizeof(crec) ||
@@ -171,7 +171,7 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 to %d\n", i*sizeof(crec) ));
               continue;
             }
-			bzero((void *)&crec,sizeof(crec));
+			memset((void *)&crec,'\0',sizeof(crec));
 			write(fd, &crec,sizeof(crec));
 			if (foundi < 0) foundi = i;
 			continue;
@@ -192,7 +192,7 @@ to %d\n", i*sizeof(crec) ));
 	}      
 	
 	/* fill in the crec */
-	bzero((void *)&crec,sizeof(crec));
+	memset((void *)&crec,'\0',sizeof(crec));
 	crec.magic = 0x280267;
 	crec.pid = getpid();
 	if (conn) {

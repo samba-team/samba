@@ -192,7 +192,7 @@ static struct packet_struct *create_and_init_netbios_packet(struct nmb_name *nmb
     return NULL;
   }
     
-  bzero((char *)packet,sizeof(*packet));
+  memset((char *)packet,'\0',sizeof(*packet));
 
   nmb = &packet->packet.nmb;
 
@@ -239,7 +239,7 @@ static BOOL create_and_init_additional_record(struct packet_struct *packet,
     return False;
   }
 
-  bzero((char *)nmb->additional,sizeof(struct res_rec));
+  memset((char *)nmb->additional,'\0',sizeof(struct res_rec));
 
   nmb->additional->rr_name  = nmb->question.question_name;
   nmb->additional->rr_type  = RR_TYPE_NB;
@@ -923,10 +923,10 @@ for id %hu\n",
   nmb->header.nscount = 0;
   nmb->header.arcount = 0;
   
-  bzero((char*)&nmb->question,sizeof(nmb->question));
+  memset((char*)&nmb->question,'\0',sizeof(nmb->question));
   
   nmb->answers = &answers;
-  bzero((char*)nmb->answers,sizeof(*nmb->answers));
+  memset((char*)nmb->answers,'\0',sizeof(*nmb->answers));
   
   nmb->answers->rr_name  = orig_nmb->question.question_name;
   nmb->answers->rr_type  = orig_nmb->question.question_type;
@@ -1887,7 +1887,7 @@ BOOL send_mailslot(BOOL unique, char *mailslot,char *buf,int len,
   char *ptr,*p2;
   char tmp[4];
 
-  bzero((char *)&p,sizeof(p));
+  memset((char *)&p,'\0',sizeof(p));
 
   if(ismyip(dest_ip))
     loopback_this_packet = True;

@@ -99,7 +99,7 @@ struct browse_cache_record *create_browser_in_lmb_cache( char *work_name,
     return( NULL );
     }
 
-  bzero( (char *)browc, sizeof( *browc ) );
+  memset( (char *)browc, '\0', sizeof( *browc ) );
   
   /* For a new lmb entry we want to sync with it after one minute. This
      will allow it time to send out a local announce and build its

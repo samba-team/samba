@@ -100,7 +100,7 @@ BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
   struct nmb_packet *nmb = &p.packet.nmb;
   static int name_trn_id = 0;
 
-  bzero((char *)&p,sizeof(p));
+  memset((char *)&p,'\0',sizeof(p));
 
   if (!name_trn_id) name_trn_id = ((unsigned)time(NULL)%(unsigned)0x7FFF) + 
     ((unsigned)getpid()%(unsigned)100);
@@ -207,7 +207,7 @@ struct in_addr *name_query(int fd,const char *name,int name_type, BOOL bcast,BOO
   static int name_trn_id = 0;
   struct in_addr *ip_list = NULL;
 
-  bzero((char *)&p,sizeof(p));
+  memset((char *)&p,'\0',sizeof(p));
   (*count) = 0;
 
   if (!name_trn_id) name_trn_id = ((unsigned)time(NULL)%(unsigned)0x7FFF) + 

@@ -190,7 +190,7 @@ static int parse_nmb_name(char *inbuf,int offset,int length, struct nmb_name *na
   if (!m) return(0);
   if ((m & 0xC0) || offset+m+2 > length) return(0);
 
-  bzero((char *)name,sizeof(*name));
+  memset((char *)name,'\0',sizeof(*name));
 
   /* the "compressed" part */
   if (!got_pointer) ret += m + 2;
@@ -251,7 +251,7 @@ static int put_nmb_name(char *buf,int offset,struct nmb_name *name)
 
   if (strcmp(name->name,"*") == 0) {
     /* special case for wildcard name */
-    bzero(buf1,20);
+    memset(buf1,'\0',20);
     buf1[0] = '*';
     buf1[15] = name->name_type;
   } else {
@@ -315,7 +315,7 @@ static BOOL parse_alloc_res_rec(char *inbuf,int *offset,int length,
   *recs = (struct res_rec *)malloc(sizeof(**recs)*count);
   if (!*recs) return(False);
 
-  bzero(*recs,sizeof(**recs)*count);
+  memset((char *)*recs,'\0',sizeof(**recs)*count);
 
   for (i=0;i<count;i++) {
     int l = parse_nmb_name(inbuf,*offset,length,&(*recs)[i].rr_name);
@@ -396,7 +396,7 @@ static BOOL parse_dgram(char *inbuf,int length,struct dgram_packet *dgram)
   int offset;
   int flags;
 
-  bzero((char *)dgram,sizeof(*dgram));
+  memset((char *)dgram,'\0',sizeof(*dgram));
 
   if (length < 14) return(False);
 
@@ -438,7 +438,7 @@ static BOOL parse_nmb(char *inbuf,int length,struct nmb_packet *nmb)
 {
   int nm_flags,offset;
 
-  bzero((char *)nmb,sizeof(*nmb));
+  memset((char *)nmb,'\0',sizeof(*nmb));
 
   if (length < 12) return(False);
 
@@ -697,7 +697,7 @@ static BOOL send_udp(int fd,char *buf,int len,struct in_addr ip,int port)
   struct sockaddr_in sock_out;
 
   /* set the address and port */
-  bzero((char *)&sock_out,sizeof(sock_out));
+  memset((char *)&sock_out,'\0',sizeof(sock_out));
   putip((char *)&sock_out.sin_addr,(char *)&ip);
   sock_out.sin_port = htons( port );
   sock_out.sin_family = AF_INET;
@@ -866,7 +866,7 @@ BOOL send_packet(struct packet_struct *p)
   char buf[1024];
   int len=0;
 
-  bzero(buf,sizeof(buf));
+  memset(buf,'\0',sizeof(buf));
 
   switch (p->packet_type) 
     {

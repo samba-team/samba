@@ -310,7 +310,7 @@ static void api_net_req_chal( uint16 vuid,
 
 		memcpy(vuser->dc.srv_cred.challenge.data, vuser->dc.srv_chal.data, 8);
 
-		bzero(vuser->dc.sess_key, sizeof(vuser->dc.sess_key));
+		memset((char *)vuser->dc.sess_key, '\0', sizeof(vuser->dc.sess_key));
 
 		/* from client / server challenges and md4 password, generate sess key */
 		cred_session_key(&(vuser->dc.clnt_chal), &(vuser->dc.srv_chal),

@@ -38,7 +38,7 @@ static void reg_reply_close(REG_Q_CLOSE *q_r,
 	REG_R_CLOSE r_u;
 
 	/* set up the REG unknown_1 response */
-	bzero(r_u.pol.data, POL_HND_SIZE);
+	memset((char *)r_u.pol.data, '\0', POL_HND_SIZE);
 
 	/* close the policy handle */
 	if (close_lsa_policy_hnd(&(q_r->pol)))

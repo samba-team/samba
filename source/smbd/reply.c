@@ -76,7 +76,7 @@ int reply_special(char *inbuf,char *outbuf)
 	
 	*name1 = *name2 = 0;
 	
-	bzero(outbuf,smb_size);
+	memset(outbuf,'\0',smb_size);
 
 	smb_setlen(outbuf,0);
 	
@@ -1148,7 +1148,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
       if (strlen(directory) == 0)
         pstrcpy(directory,"./");
-      bzero(status,21);
+      memset((char *)status,'\0',21);
       CVAL(status,0) = dirtype;
     }
   else

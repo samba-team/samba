@@ -156,7 +156,7 @@ workgroup %s. This is a bug.\n", name, work->work_group));
     return NULL;
   }
 
-  bzero((char *)servrec,sizeof(*servrec));
+  memset((char *)servrec,'\0',sizeof(*servrec));
  
   servrec->subnet = work->subnet;
  

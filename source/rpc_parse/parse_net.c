@@ -920,7 +920,7 @@ void make_net_user_info3(NET_USER_INFO_3 *usr,
 	}
 	else
 	{
-		bzero(usr->user_sess_key, sizeof(usr->user_sess_key));
+		memset((char *)usr->user_sess_key, '\0', sizeof(usr->user_sess_key));
 	}
 
 	make_uni_hdr(&(usr->hdr_logon_srv), len_logon_srv, len_logon_srv, 4);
@@ -928,7 +928,7 @@ void make_net_user_info3(NET_USER_INFO_3 *usr,
 
 	usr->buffer_dom_id = dom_sid ? 1 : 0; /* yes, we're bothering to put a domain SID in */
 
-	bzero(usr->padding, sizeof(usr->padding));
+	memset((char *)usr->padding, '\0', sizeof(usr->padding));
 
 	num_other_sids = make_dom_sid2s(other_sids, usr->other_sids, LSA_MAX_SIDS);
 

@@ -50,7 +50,7 @@ void cmd_srv_query_info(struct client_info *info)
 
 	BOOL res = True;
 
-	bzero(&ctr, sizeof(ctr));
+	memset((char *)&ctr, '\0', sizeof(ctr));
 
 	fstrcpy(dest_srv, "\\\\");
 	fstrcat(dest_srv, info->dest_host);
@@ -104,7 +104,7 @@ void cmd_srv_enum_conn(struct client_info *info)
 
 	BOOL res = True;
 
-	bzero(&ctr, sizeof(ctr));
+	memset((char *)&ctr, '\0', sizeof(ctr));
 
 	fstrcpy(qual_srv, "\\\\");
 	fstrcat(qual_srv, info->myhostname);
@@ -168,7 +168,7 @@ void cmd_srv_enum_shares(struct client_info *info)
 
 	BOOL res = True;
 
-	bzero(&ctr, sizeof(ctr));
+	memset((char *)&ctr, '\0', sizeof(ctr));
 
 	fstrcpy(dest_srv, "\\\\");
 	fstrcat(dest_srv, info->dest_host);
@@ -228,7 +228,7 @@ void cmd_srv_enum_sess(struct client_info *info)
 
 	BOOL res = True;
 
-	bzero(&ctr, sizeof(ctr));
+	memset((char *)&ctr, '\0', sizeof(ctr));
 
 	fstrcpy(dest_srv, "\\\\");
 	fstrcat(dest_srv, info->dest_host);
@@ -280,7 +280,7 @@ void cmd_srv_enum_files(struct client_info *info)
 
 	BOOL res = True;
 
-	bzero(&ctr, sizeof(ctr));
+	memset((char *)&ctr, '\0', sizeof(ctr));
 
 	fstrcpy(dest_srv, "\\\\");
 	fstrcat(dest_srv, info->dest_host);

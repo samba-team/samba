@@ -366,7 +366,7 @@ subnet %s - name not found.\n", nmb_namestr(&nmb->question.question_name),
            strequal(qname, namerec->name.name)))
       {
         /* Start with the name. */
-        bzero(buf,18);
+        memset(buf,'\0',18);
         slprintf(buf, 17, "%-15.15s",namerec->name.name);
         strupper(buf);
         
@@ -421,7 +421,7 @@ subnet %s - name not found.\n", nmb_namestr(&nmb->question.question_name),
   
   /* We don't send any stats as they could be used to attack
      the protocol. */
-  bzero(buf,46);
+  memset(buf,'\0',46);
   
   buf += 46;
   

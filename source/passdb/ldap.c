@@ -225,8 +225,8 @@ static void ldap_get_smb_passwd(LDAP *ldap_struct,LDAPMessage *entry,
 
 	pdb_init_smb(user);
 
-	bzero(smblmpwd, sizeof(smblmpwd));
-	bzero(smbntpwd, sizeof(smbntpwd));
+	memset((char *)smblmpwd, '\0', sizeof(smblmpwd));
+	memset((char *)smbntpwd, '\0', sizeof(smbntpwd));
 
 	get_single_attribute(ldap_struct, entry, "cn", user_name);
 	DEBUG(2,("ldap_get_smb_passwd: user: %s\n",user_name));
@@ -234,15 +234,15 @@ static void ldap_get_smb_passwd(LDAP *ldap_struct,LDAPMessage *entry,
 #ifdef LDAP_PLAINTEXT_PASSWORD
 	get_single_attribute(ldap_struct, entry, "userPassword", temp);
 	nt_lm_owf_gen(temp, user->smb_nt_passwd, user->smb_passwd);
-	bzero(temp, sizeof(temp)); /* destroy local copy of the password */
+	memset((char *)temp, '\0', sizeof(temp)); /* destroy local copy of the password */
 #else
 	get_single_attribute(ldap_struct, entry, "unicodePwd", temp);
 	pdb_gethexpwd(temp, smbntpwd);		
-	bzero(temp, sizeof(temp)); /* destroy local copy of the password */
+	memset((char *)temp, '\0', sizeof(temp)); /* destroy local copy of the password */
 
 	get_single_attribute(ldap_struct, entry, "dBCSPwd", temp);
 	pdb_gethexpwd(temp, smblmpwd);		
-	bzero(temp, sizeof(temp)); /* destroy local copy of the password */
+	memset((char *)temp, '\0', sizeof(temp)); /* destroy local copy of the password */
 #endif
 	
 	get_single_attribute(ldap_struct, entry, "userAccountControl", temp);

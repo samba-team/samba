@@ -80,7 +80,7 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
 		make_uni_hdr(&(pw_buf[(*num_entries)].hdr_user_name), user_name_len, 
 		               user_name_len, 1);
 		pw_buf[(*num_entries)].user_rid = pwd->user_rid;
-		bzero( pw_buf[(*num_entries)].nt_pwd , 16);
+		memset((char *)pw_buf[(*num_entries)].nt_pwd, '\0', 16);
 
 		/* Now check if the NT compatible password is available. */
 		if (pwd->smb_nt_passwd != NULL)
@@ -121,7 +121,7 @@ static void samr_reply_close_hnd(SAMR_Q_CLOSE_HND *q_u,
 	SAMR_R_CLOSE_HND r_u;
 
 	/* set up the SAMR unknown_1 response */
-	bzero(r_u.pol.data, POL_HND_SIZE);
+	memset((char *)r_u.pol.data, '\0', POL_HND_SIZE);
 
 	/* close the policy handle */
 	if (close_lsa_policy_hnd(&(q_u->pol)))
@@ -946,7 +946,7 @@ static void samr_reply_open_user(SAMR_Q_OPEN_USER *q_u,
 	BOOL pol_open = False;
 
 	/* set up the SAMR open_user response */
-	bzero(r_u.user_pol.data, POL_HND_SIZE);
+	memset((char *)r_u.user_pol.data, '\0', POL_HND_SIZE);
 
 	r_u.status = 0x0;
 
@@ -1368,7 +1368,7 @@ static void samr_reply_unknown_32(SAMR_Q_UNKNOWN_32 *q_u,
 	SAMR_R_UNKNOWN_32 r_u;
 
 	/* set up the SAMR unknown_32 response */
-	bzero(r_u.pol.data, POL_HND_SIZE);
+	memset((char *)r_u.pol.data, '\0', POL_HND_SIZE);
 	if (status == 0)
 	{
 		for (i = 4; i < POL_HND_SIZE; i++)

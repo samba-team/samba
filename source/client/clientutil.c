@@ -221,7 +221,7 @@ BOOL cli_send_trans_request(char *outbuf,int trans,
   this_lparam = MIN(lparam,max_xmit - (500+lsetup*SIZEOFWORD)); /* hack */
   this_ldata = MIN(ldata,max_xmit - (500+lsetup*SIZEOFWORD+this_lparam));
 
-  bzero(outbuf,smb_size);
+  memset(outbuf,'\0',smb_size);
   set_message(outbuf,14+lsetup,0,True);
   CVAL(outbuf,smb_com) = trans;
   SSVAL(outbuf,smb_tid,cnum);
@@ -464,7 +464,7 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, 
   int tries=0;
   struct connection_options opt;
 
-  bzero(&opt, sizeof(opt));
+  memset((char *)&opt, '\0', sizeof(opt));
 
   if (was_null)
   {
@@ -496,7 +496,7 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, 
       return(False);
     }
 
-  bzero(outbuf,smb_size);
+  memset(outbuf,'\0',smb_size);
 
   /* setup the protocol strings */
   {
@@ -636,7 +636,7 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, 
     if (!(opt.sec_mode & 1)) {fstrcpy(pword, "");passlen=1;} 
 
     /* send a session setup command */
-    bzero(outbuf,smb_size);
+    memset(outbuf,'\0',smb_size);
 
     if (Protocol < PROTOCOL_NT1)
     {
@@ -740,7 +740,7 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, 
   }
 
   /* now we've got a connection - send a tcon message */
-  bzero(outbuf,smb_size);
+  memset(outbuf,'\0', smb_size);
 
   if (strncmp(service,"\\\\",2) != 0)
     {
@@ -867,7 +867,7 @@ void cli_send_logout(char *dum_in, char *dum_out)
 
   DEBUG(5,("cli_send_logout\n"));
 
-  bzero(outbuf,smb_size);
+  memset(outbuf,'\0',smb_size);
   set_message(outbuf,0,0,True);
   CVAL(outbuf,smb_com) = SMBtdis;
   SSVAL(outbuf,smb_tid,cnum);

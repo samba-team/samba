@@ -549,7 +549,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
   int len;
   struct server_record *servrec;
 
-  bzero(outbuf,sizeof(outbuf));
+  memset(outbuf,'\0',sizeof(outbuf));
 
   DEBUG(3,("send_backup_list_response: sending backup list for workgroup %s to %s IP %s\n",
 	   work->work_group, nmb_namestr(send_to_name), inet_ntoa(sendto_ip)));

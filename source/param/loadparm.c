@@ -799,7 +799,7 @@ static void init_globals(void)
   if (!done_init)
     {
       int i;
-      bzero((void *)&Globals,sizeof(Globals));
+      memset((void *)&Globals,'\0',sizeof(Globals));
 
       for (i = 0; parm_table[i].label; i++) 
 	if ((parm_table[i].type == P_STRING ||
@@ -1330,7 +1330,7 @@ initialise a service to the defaults
 ***************************************************************************/
 static void init_service(service *pservice)
 {
-  bzero((char *)pservice,sizeof(service));
+  memset((char *)pservice,'\0',sizeof(service));
   copy_service(pservice,&sDefault,NULL);
 }
 

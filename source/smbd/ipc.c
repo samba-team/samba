@@ -649,7 +649,7 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
       return;
     }
 
-    bzero(p, 8192*sizeof(char));
+    memset(p, '\0',8192*sizeof(char));
     q=p;
 
     /* lookup the long printer driver name in the file description */
@@ -802,8 +802,8 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
   print_queue_struct *queue=NULL;
   print_status_struct status;
   
-  bzero(&status,sizeof(status));
-  bzero(&desc,sizeof(desc));
+  memset((char *)&status,'\0',sizeof(status));
+  memset((char *)&desc,'\0',sizeof(desc));
  
   p = skip_string(p,1);
   uLevel = SVAL(p,0);
@@ -914,7 +914,7 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid, char* param,
   int* subcntarr = NULL;
   int queuecnt, subcnt=0, succnt=0;
  
-  bzero(&desc,sizeof(desc));
+  memset((char *)&desc,'\0',sizeof(desc));
 
   DEBUG(3,("DosPrintQEnum uLevel=%d\n",uLevel));
  
@@ -1076,7 +1076,7 @@ static int get_server_info(uint32 servertype,
       (*servers) = (struct srv_info_struct *)
 	Realloc(*servers,sizeof(**servers)*alloced);
       if (!(*servers)) return(0);
-      bzero((char *)((*servers)+count),sizeof(**servers)*(alloced-count));
+      memset((char *)((*servers)+count),'\0',sizeof(**servers)*(alloced-count));
     }
     s = &(*servers)[count];
     
@@ -1316,7 +1316,7 @@ static BOOL api_RNetServerEnum(connection_struct *conn, uint16 vuid, char *param
 
   *rdata_len = fixed_len + string_len;
   *rdata = REALLOC(*rdata,*rdata_len);
-  bzero(*rdata,*rdata_len);
+  memset(*rdata,'\0',*rdata_len);
   
   p2 = (*rdata) + fixed_len;	/* auxilliary data (strings) will go here */
   p = *rdata;
@@ -1721,8 +1721,8 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
     }
   }
 
-  bzero(pass1,sizeof(fstring));
-  bzero(pass2,sizeof(fstring));	 
+  memset((char *)pass1,'\0',sizeof(fstring));
+  memset((char *)pass2,'\0',sizeof(fstring));	 
 	 
   return(True);
 }
@@ -2613,7 +2613,7 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
   uLevel = SVAL(p,0);
   name = p + 2;
 
-  bzero(&desc,sizeof(desc));
+  memset((char *)&desc,'\0',sizeof(desc));
 
   DEBUG(3,("WWkstaUserLogon uLevel=%d name=%s\n",uLevel,name));
 
@@ -2724,8 +2724,8 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
 
   uLevel = SVAL(p,2);
 
-  bzero(&desc,sizeof(desc));
-  bzero(&status,sizeof(status));
+  memset((char *)&desc,'\0',sizeof(desc));
+  memset((char *)&status,'\0',sizeof(status));
 
   DEBUG(3,("WPrintJobGetInfo uLevel=%d uJobId=0x%X\n",uLevel,SVAL(p,0)));
 
@@ -2785,8 +2785,8 @@ static BOOL api_WPrintJobEnumerate(connection_struct *conn,uint16 vuid, char *pa
   print_queue_struct *queue=NULL;
   print_status_struct status;
 
-  bzero(&desc,sizeof(desc));
-  bzero(&status,sizeof(status));
+  memset((char *)&desc,'\0',sizeof(desc));
+  memset((char *)&status,'\0',sizeof(status));
 
   p = skip_string(p,1);
   uLevel = SVAL(p,0);
@@ -2898,7 +2898,7 @@ static BOOL api_WPrintDestGetInfo(connection_struct *conn,uint16 vuid, char *par
   struct pack_desc desc;
   int snum;
 
-  bzero(&desc,sizeof(desc));
+  memset((char *)&desc,'\0',sizeof(desc));
 
   p = skip_string(p,1);
   uLevel = SVAL(p,0);
@@ -2957,7 +2957,7 @@ static BOOL api_WPrintDestEnum(connection_struct *conn,uint16 vuid, char *param,
   struct pack_desc desc;
   int services = lp_numservices();
 
-  bzero(&desc,sizeof(desc));
+  memset((char *)&desc,'\0',sizeof(desc));
 
   uLevel = SVAL(p,0);
 
@@ -3012,7 +3012,7 @@ static BOOL api_WPrintDriverEnum(connection_struct *conn,uint16 vuid, char *para
   int succnt;
   struct pack_desc desc;
 
-  bzero(&desc,sizeof(desc));
+  memset((char *)&desc,'\0',sizeof(desc));
 
   uLevel = SVAL(p,0);
 
@@ -3056,7 +3056,7 @@ static BOOL api_WPrintQProcEnum(connection_struct *conn,uint16 vuid, char *param
   int succnt;
   struct pack_desc desc;
 
-  bzero(&desc,sizeof(desc));
+  memset((char *)&desc,'\0',sizeof(desc));
 
   uLevel = SVAL(p,0);
 
@@ -3101,7 +3101,7 @@ static BOOL api_WPrintPortEnum(connection_struct *conn,uint16 vuid, char *param,
   int succnt;
   struct pack_desc desc;
 
-  bzero(&desc,sizeof(desc));
+  memset((char *)&desc,'\0',sizeof(desc));
 
   uLevel = SVAL(p,0);
 
@@ -3112,7 +3112,7 @@ static BOOL api_WPrintPortEnum(connection_struct *conn,uint16 vuid, char *param,
   if (uLevel != 0 || strcmp(str2,"B9") != 0) return False;
 
   if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
-  bzero(&desc,sizeof(desc));
+  memset((char *)&desc,'\0',sizeof(desc));
   desc.base = *rdata;
   desc.buflen = mdrcnt;
   desc.format = str2;
@@ -3424,8 +3424,8 @@ static int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data
         break;
       }
 
-  rdata = (char *)malloc(1024); if (rdata) bzero(rdata,1024);
-  rparam = (char *)malloc(1024); if (rparam) bzero(rparam,1024);
+  rdata = (char *)malloc(1024); if (rdata) memset(rdata,'\0',1024);
+  rparam = (char *)malloc(1024); if (rparam) memset(rparam,'\0',1024);
 
   if(!rdata || !rparam) {
     DEBUG(0,("api_reply: malloc fail !\n"));
@@ -3525,7 +3525,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	int dsoff = SVAL(inbuf,smb_vwv12);
 	int suwcnt = CVAL(inbuf,smb_vwv13);
 
-	bzero(name, sizeof(name));
+	memset(name, '\0',sizeof(name));
 	fstrcpy(name,smb_buf(inbuf));
 
 	if (dscnt > tdscnt || pscnt > tpscnt) {
