@@ -704,3 +704,50 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 				  NULL);
 }
 
+
+/*
+  set password via a samr_CryptPasswordEx buffer
+  this will in the 'msg' with modify operations that will update the user
+  password when applied
+*/
+NTSTATUS samr_set_password_ex(struct dcesrv_call_state *dce_call,
+			      void *sam_ctx,
+			      const char *account_dn, const char *domain_dn,
+			      TALLOC_CTX *mem_ctx,
+			      struct ldb_message *msg, 
+			      struct samr_CryptPasswordEx *pwbuf)
+{
+	char new_pass[512];
+	uint32_t new_pass_len;
+	DATA_BLOB co_session_key;
+	DATA_BLOB session_key = dce_call->conn->session_key;
+	struct MD5Context ctx;
+
+	co_session_key = data_blob_talloc(mem_ctx, NULL, 16);
+	if (!co_session_key.data) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	MD5Init(&ctx);
+	MD5Update(&ctx, &pwbuf->data[516], 16);
+	MD5Update(&ctx, session_key.data, session_key.length);
+	MD5Final(co_session_key.data, &ctx);
+	
+	SamOEMhashBlob(pwbuf->data, 516, &co_session_key);
+
+	if (!decode_pw_buffer(pwbuf->data, new_pass, sizeof(new_pass),
+			      &new_pass_len, STR_UNICODE)) {
+		DEBUG(3,("samr: failed to decode password buffer\n"));
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/* set the password - samdb needs to know both the domain and user DNs,
+	   so the domain password policy can be used */
+	return samdb_set_password(sam_ctx, mem_ctx,
+				  account_dn, domain_dn, 
+				  msg, new_pass, 
+				  NULL, NULL,
+				  False,
+				  NULL);
+}
+
