@@ -119,7 +119,7 @@ void load_groupname_map(void)
   for (i=0; lines[i]; i++) {
     pstring unixname;
     pstring windows_name;
-    struct group *gptr;
+    gid_t gid;
     DOM_SID tmp_sid;
     char *s = lines[i];
 
@@ -150,8 +150,8 @@ void load_groupname_map(void)
      * Attempt to get the unix gid_t for this name.
      */
 
-    if((gptr = (struct group *)getgrnam(unixname)) == NULL) {
-      DEBUG(0,("load_groupname_map: getgrnam for group %s failed.\
+	if ((gid = nametogid(unixname)) == (gid_t)-1)
+      DEBUG(0,("load_groupname_map: nametogid for group %s failed.\
 Error was %s.\n", unixname, strerror(errno) ));
       continue;
     }
@@ -167,7 +167,7 @@ Error was %s.\n", unixname, strerror(errno) ));
        */
       tmp_sid = global_sam_sid;
       tmp_sid.sub_auths[tmp_sid.num_auths++] = 
-                    pdb_gid_to_group_rid((gid_t)gptr->gr_gid);
+                    pdb_gid_to_group_rid(gid);
     }
 
     /*
@@ -180,7 +180,7 @@ Error was %s.\n", unixname, strerror(errno) ));
       return;
     } 
 
-    new_ep->unix_gid = gptr->gr_gid;
+    new_ep->unix_gid = gid;
     new_ep->windows_sid = tmp_sid;
     new_ep->windows_name = strdup( windows_name );
     new_ep->unix_name = strdup( unixname );

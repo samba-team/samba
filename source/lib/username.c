@@ -260,34 +260,129 @@ static BOOL user_in_netgroup_list(char *user,char *ngname)
 }
 
 /****************************************************************************
- Check if a user is in a UNIX user list.
+ Check if a user is in a winbind group.
+****************************************************************************/
+  
+static BOOL user_in_winbind_group_list(char *user,char *gname, BOOL *winbind_answered)
+{
+	int num_groups;
+	int i;
+ 	gid_t *groups = NULL;
+ 	gid_t gid;
+ 	DOM_SID g_sid;
+ 	enum SID_NAME_USE name_type;
+ 	BOOL ret = False;
+ 
+ 	*winbind_answered = False;
+ 
+ 	/*
+ 	 * Get the gid's that this user belongs to.
+ 	 */
+ 
+ 	if ((num_groups = winbind_getgroups(user, 0, NULL)) == -1)
+ 		return False;
+ 
+ 	if (num_groups == 0) {
+ 		*winbind_answered = True;
+ 		return False;
+ 	}
+ 
+ 	if ((groups = (gid_t *)malloc(sizeof(gid_t) * num_groups )) == NULL) {
+ 		DEBUG(0,("user_in_winbind_group_list: malloc fail.\n"));
+ 		goto err;
+ 	}
+ 
+ 	if ((num_groups = winbind_getgroups(user, num_groups, groups)) == -1) {
+ 		DEBUG(0,("user_in_winbind_group_list: second winbind_getgroups call \
+failed with error %s\n", strerror(errno) ));
+ 		goto err;
+	}
+ 
+ 	/*
+ 	 * Now we have the gid list for this user - convert the gname
+ 	 * to a gid_t via winbind and do the comparison.
+ 	 */
+ 
+	if (!winbind_nametogid(&gid, gname)) {
+ 		DEBUG(0,("user_in_winbind_group_list: winbind_lookup_name for group %s failed.\n",
+ 			gname ));
+ 		goto err;
+ 	}
+ 
+ 	for (i = 0; i < num_groups; i++) {
+ 		if (gid == groups[i]) {
+ 			ret = True;
+ 			break;
+ 		}
+ 	}
+ 
+ 	*winbind_answered = True;
+ 	safe_free(groups);
+ 	return ret;
+ 
+   err:
+ 
+ 	*winbind_answered = False;
+ 	safe_free(groups);
+ 	return False;
+}	      
+ 
+/****************************************************************************
+ Check if a user is in a UNIX group.
 ****************************************************************************/
 
-static BOOL user_in_group_list(char *user,char *gname)
+static BOOL user_in_unix_group_list(char *user,char *gname)
 {
 	struct group *gptr;
 	char **member;  
 	struct passwd *pass = Get_Pwnam(user,False);
 
-	if (pass) {
-		gptr = getgrgid(pass->pw_gid);
-		if (gptr && strequal(gptr->gr_name,gname))
-			return True;
-	}
+	DEBUG(10,("user_in_unix_group_list: checking user %s in group %s\n", user, gname));
 
-	if ((gptr = (struct group *)getgrnam(gname)) == NULL)
-		return False;
-
-	member = gptr->gr_mem;
-	while (member && *member) {
-		if (strequal(*member,user)) {
-			return(True);
-		}
+ 	/*
+ 	 * We need to check the users primary group as this
+ 	 * group is implicit and often not listed in the group database.
+ 	 */
+ 
+ 	if (pass) {
+ 		gptr = getgrgid(pass->pw_gid);
+ 		if (gptr && strequal(gptr->gr_name,gname)) {
+ 			DEBUG(10,("user_in_unix_group_list: group %s is primary group.\n", gname ));
+ 			return True;
+ 		}
+ 	}
+ 
+ 	if ((gptr = (struct group *)getgrnam(gname)) == NULL) {
+ 		DEBUG(10,("user_in_unix_group_list: no such group %s\n", gname ));
+ 		return False;
+ 	}
+ 
+ 	member = gptr->gr_mem;
+  	while (member && *member) {
+ 		DEBUG(10,("user_in_unix_group_list: checking user %s against member %s\n", user, *member ));
+  		if (strequal(*member,user)) {
+  			return(True);
+  		}
 		member++;
 	}
 
 	return False;
 }	      
+
+/****************************************************************************
+ Check if a user is in a group list. Ask winbind first, then use UNIX.
+****************************************************************************/
+
+BOOL user_in_group_list(char *user,char *gname)
+{
+	BOOL winbind_answered = False;
+	BOOL ret = user_in_winbind_group_list(user, gname, &winbind_answered);
+
+	if (winbind_answered)
+		return ret;
+
+	return user_in_unix_group_list(user, gname);	
+}
 
 /****************************************************************************
  Check if a user is in a user list - can check combinations of UNIX
@@ -298,6 +393,8 @@ BOOL user_in_list(char *user,char *list)
 {
   pstring tok;
   char *p=list;
+
+  DEBUG(10,("user_in_list: checking user %s in list %s\n", user, list));
 
   while (next_token(&p,tok,LIST_SEP, sizeof(tok))) {
     /*
@@ -447,4 +544,3 @@ struct passwd *smb_getpwnam(char *user, BOOL allow_change)
 
 	return NULL;
 }
-

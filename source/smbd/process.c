@@ -633,9 +633,7 @@ void process_smb(char *inbuf, char *outbuf)
   int32 len = smb_len(inbuf);
   int nread = len + 4;
 
-#ifdef WITH_PROFILE
-  profile_p->smb_count++;
-#endif
+  DO_PROFILE_INC(smb_count);
 
   if (trans_num == 0) {
 	  /* on the first packet, check the global hosts allow/ hosts

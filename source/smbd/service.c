@@ -401,7 +401,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	 */
 	
 	if (*lp_force_group(snum)) {
-		struct group *gptr;
+		gid_t gid;
 		pstring gname;
 		pstring tmp_gname;
 		BOOL user_must_be_member = False;
@@ -416,9 +416,9 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		}
 		/* default service may be a group name 		*/
 		pstring_sub(gname,"%S",service);
-		gptr = (struct group *)getgrnam(gname);
+		gid = nametogid(gname);
 		
-		if (gptr) {
+		if (gid != (gid_t)-1) {
 			/*
 			 * If the user has been forced and the forced group starts
 			 * with a '+', then we only set the group to be the forced
@@ -426,16 +426,12 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 			 * Otherwise, the meaning of the '+' would be ignored.
 			 */
 			if (conn->force_user && user_must_be_member) {
-				int i;
-				for (i = 0; gptr->gr_mem[i] != NULL; i++) {
-					if (strcmp(user,gptr->gr_mem[i]) == 0) {
-						conn->gid = gptr->gr_gid;
+				if (user_in_group_list( user, gname )) {
+						conn->gid = gid;
 						DEBUG(3,("Forced group %s for member %s\n",gname,user));
-						break;
-					}
 				}
 			} else {
-				conn->gid = gptr->gr_gid;
+				conn->gid = gid;
 				DEBUG(3,("Forced group %s\n",gname));
 			}
 		} else {

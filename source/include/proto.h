@@ -306,6 +306,7 @@ char *ufc_crypt(char *key,char *salt);
 char *get_user_home_dir(char *user);
 BOOL map_username(char *user);
 struct passwd *Get_Pwnam(char *user,BOOL allow_change);
+BOOL user_in_group_list(char *user,char *gname);
 BOOL user_in_list(char *user,char *list);
 struct passwd *smb_getpwnam(char *user, BOOL allow_change);
 
@@ -347,8 +348,8 @@ struct hostent *Get_Hostbyname(const char *name);
 BOOL process_exists(pid_t pid);
 char *uidtoname(uid_t uid);
 char *gidtoname(gid_t gid);
-uid_t nametouid(const char *name);
-gid_t nametogid(const char *name);
+uid_t nametouid(char *name);
+gid_t nametogid(char *name);
 void smb_panic(char *why);
 char *readdirname(DIR *p);
 BOOL is_in_path(char *name, name_compare_entry *namelist);
@@ -1284,14 +1285,16 @@ void expire_workgroups_and_servers(time_t t);
 
 BOOL winbind_lookup_name(char *name, DOM_SID *sid, enum SID_NAME_USE *name_type);
 BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE *name_type);
+BOOL winbind_sid_to_uid(uid_t *puid, DOM_SID *sid);
+BOOL winbind_uid_to_sid(DOM_SID *sid, uid_t uid);
+BOOL winbind_sid_to_gid(gid_t *pgid, DOM_SID *sid);
+BOOL winbind_gid_to_sid(DOM_SID *sid, gid_t gid);
 int winbind_initgroups(char *user, gid_t gid);
 int winbind_getgroups(char *user, int size, gid_t *list);
-BOOL lookup_name(char *name, DOM_SID *psid, enum SID_NAME_USE *name_type);
-BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE *name_type);
-DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid);
-DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid);
-BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype);
-BOOL sid_to_gid(DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype);
+BOOL winbind_uidtoname(fstring name, uid_t uid);
+BOOL winbind_gidtoname(fstring name, gid_t gid);
+BOOL winbind_nametouid(uid_t *puid, char *name);
+BOOL winbind_nametogid(gid_t *pgid, char *gname);
 
 /*The following definitions come from  nsswitch/wb_common.c  */
 
@@ -3811,6 +3814,12 @@ BOOL become_authenticated_pipe_user(pipes_struct *p);
 BOOL unbecome_authenticated_pipe_user(pipes_struct *p);
 void become_root(void);
 void unbecome_root(void);
+BOOL lookup_name(char *name, DOM_SID *psid, enum SID_NAME_USE *name_type);
+BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE *name_type);
+DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid);
+DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid);
+BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype);
+BOOL sid_to_gid(DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype);
 #endif
 
 /*The following definitions come from  smbd/unix_acls.c  */
