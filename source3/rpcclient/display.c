@@ -170,7 +170,7 @@ char *get_server_type_str(uint32 type)
 server info level 101 display function
 ****************************************************************************/
 void display_srv_info_101(FILE *out_hnd, enum action_type action,
-		SRV_INFO_101 *sv101)
+		const SRV_INFO_101 *sv101)
 {
 	if (sv101 == NULL)
 	{
@@ -211,7 +211,7 @@ void display_srv_info_101(FILE *out_hnd, enum action_type action,
 /****************************************************************************
 server info level 102 display function
 ****************************************************************************/
-void display_srv_info_102(FILE *out_hnd, enum action_type action,SRV_INFO_102 *sv102)
+void display_srv_info_102(FILE *out_hnd, enum action_type action,const SRV_INFO_102 *sv102)
 {
 	if (sv102 == NULL)
 	{
@@ -260,7 +260,7 @@ void display_srv_info_102(FILE *out_hnd, enum action_type action,SRV_INFO_102 *s
 /****************************************************************************
 server info container display function
 ****************************************************************************/
-void display_srv_info_ctr(FILE *out_hnd, enum action_type action,SRV_INFO_CTR *ctr)
+void display_srv_info_ctr(FILE *out_hnd, enum action_type action,const SRV_INFO_CTR *ctr)
 {
 	if (ctr == NULL || ctr->ptr_srv_ctr == 0)
 	{
@@ -292,7 +292,7 @@ void display_srv_info_ctr(FILE *out_hnd, enum action_type action,SRV_INFO_CTR *c
 connection info level 0 display function
 ****************************************************************************/
 void display_conn_info_0(FILE *out_hnd, enum action_type action,
-		CONN_INFO_0 *info0)
+		const CONN_INFO_0 *info0)
 {
 	if (info0 == NULL)
 	{
@@ -326,7 +326,7 @@ void display_conn_info_0(FILE *out_hnd, enum action_type action,
 connection info level 1 display function
 ****************************************************************************/
 void display_conn_info_1(FILE *out_hnd, enum action_type action,
-		CONN_INFO_1 *info1, CONN_INFO_1_STR *str1)
+		const CONN_INFO_1 *info1, const CONN_INFO_1_STR *str1)
 {
 	if (info1 == NULL || str1 == NULL)
 	{
@@ -373,7 +373,7 @@ void display_conn_info_1(FILE *out_hnd, enum action_type action,
 connection info level 0 container display function
 ****************************************************************************/
 void display_srv_conn_info_0_ctr(FILE *out_hnd, enum action_type action,
-				SRV_CONN_INFO_0 *ctr)
+				const SRV_CONN_INFO_0 *ctr)
 {
 	if (ctr == NULL)
 	{
@@ -410,7 +410,7 @@ void display_srv_conn_info_0_ctr(FILE *out_hnd, enum action_type action,
 connection info level 1 container display function
 ****************************************************************************/
 void display_srv_conn_info_1_ctr(FILE *out_hnd, enum action_type action,
-				SRV_CONN_INFO_1 *ctr)
+				const SRV_CONN_INFO_1 *ctr)
 {
 	if (ctr == NULL)
 	{
@@ -447,7 +447,7 @@ void display_srv_conn_info_1_ctr(FILE *out_hnd, enum action_type action,
 connection info container display function
 ****************************************************************************/
 void display_srv_conn_info_ctr(FILE *out_hnd, enum action_type action,
-				SRV_CONN_INFO_CTR *ctr)
+				const SRV_CONN_INFO_CTR *ctr)
 {
 	if (ctr == NULL || ctr->ptr_conn_ctr == 0)
 	{
@@ -482,7 +482,7 @@ void display_srv_conn_info_ctr(FILE *out_hnd, enum action_type action,
 transport info level 0 display function
 ****************************************************************************/
 void display_tprt_info_0(FILE *out_hnd, enum action_type action,
-		TPRT_INFO_0 *info0, TPRT_INFO_0_STR *str0)
+		const TPRT_INFO_0 *info0, const TPRT_INFO_0_STR *str0)
 {
 	if (info0 == NULL || str0 == NULL)
 	{
@@ -527,7 +527,7 @@ void display_tprt_info_0(FILE *out_hnd, enum action_type action,
 transport info level 0 container display function
 ****************************************************************************/
 void display_srv_tprt_info_0_ctr(FILE *out_hnd, enum action_type action,
-				SRV_TPRT_INFO_0 *ctr)
+				const SRV_TPRT_INFO_0 *ctr)
 {
 	if (ctr == NULL)
 	{
@@ -564,7 +564,7 @@ void display_srv_tprt_info_0_ctr(FILE *out_hnd, enum action_type action,
 transport info container display function
 ****************************************************************************/
 void display_srv_tprt_info_ctr(FILE *out_hnd, enum action_type action,
-				SRV_TPRT_INFO_CTR *ctr)
+				const SRV_TPRT_INFO_CTR *ctr)
 {
 	if (ctr == NULL || ctr->ptr_tprt_ctr == 0)
 	{
@@ -593,7 +593,7 @@ void display_srv_tprt_info_ctr(FILE *out_hnd, enum action_type action,
 share info level 1 display function
 ****************************************************************************/
 void display_share_info_1(FILE *out_hnd, enum action_type action,
-		SH_INFO_1 *info1, SH_INFO_1_STR *str1)
+		const SH_INFO_1 *info1, const SH_INFO_1_STR *str1)
 {
 	if (info1 == NULL || str1 == NULL)
 	{
@@ -633,7 +633,7 @@ void display_share_info_1(FILE *out_hnd, enum action_type action,
 share info level 2 display function
 ****************************************************************************/
 void display_share_info_2(FILE *out_hnd, enum action_type action,
-		SH_INFO_2 *info2, SH_INFO_2_STR *str2)
+		const SH_INFO_2 *info2, const SH_INFO_2_STR *str2)
 {
 	if (info2 == NULL || str2 == NULL)
 	{
@@ -679,7 +679,7 @@ void display_share_info_2(FILE *out_hnd, enum action_type action,
 share info level 1 container display function
 ****************************************************************************/
 void display_srv_share_info_1_ctr(FILE *out_hnd, enum action_type action,
-				SRV_SHARE_INFO_1 *ctr)
+				const SRV_SHARE_INFO_1 *ctr)
 {
 	if (ctr == NULL)
 	{
@@ -716,7 +716,7 @@ void display_srv_share_info_1_ctr(FILE *out_hnd, enum action_type action,
 share info level 2 container display function
 ****************************************************************************/
 void display_srv_share_info_2_ctr(FILE *out_hnd, enum action_type action,
-				SRV_SHARE_INFO_2 *ctr)
+				const SRV_SHARE_INFO_2 *ctr)
 {
 	if (ctr == NULL)
 	{
@@ -753,7 +753,7 @@ void display_srv_share_info_2_ctr(FILE *out_hnd, enum action_type action,
 share info container display function
 ****************************************************************************/
 void display_srv_share_info_ctr(FILE *out_hnd, enum action_type action,
-				SRV_SHARE_INFO_CTR *ctr)
+				const SRV_SHARE_INFO_CTR *ctr)
 {
 	if (ctr == NULL || ctr->ptr_share_ctr == 0)
 	{
@@ -788,7 +788,7 @@ void display_srv_share_info_ctr(FILE *out_hnd, enum action_type action,
 file info level 3 display function
 ****************************************************************************/
 void display_file_info_3(FILE *out_hnd, enum action_type action,
-		FILE_INFO_3 *info3, FILE_INFO_3_STR *str3)
+		const FILE_INFO_3 *info3, const FILE_INFO_3_STR *str3)
 {
 	if (info3 == NULL || str3 == NULL)
 	{
@@ -835,7 +835,7 @@ void display_file_info_3(FILE *out_hnd, enum action_type action,
 file info level 3 container display function
 ****************************************************************************/
 void display_srv_file_info_3_ctr(FILE *out_hnd, enum action_type action,
-				SRV_FILE_INFO_3 *ctr)
+				const SRV_FILE_INFO_3 *ctr)
 {
 	if (ctr == NULL)
 	{
@@ -872,7 +872,7 @@ void display_srv_file_info_3_ctr(FILE *out_hnd, enum action_type action,
 file info container display function
 ****************************************************************************/
 void display_srv_file_info_ctr(FILE *out_hnd, enum action_type action,
-				SRV_FILE_INFO_CTR *ctr)
+				const SRV_FILE_INFO_CTR *ctr)
 {
 	if (ctr == NULL || ctr->ptr_file_ctr == 0)
 	{
@@ -900,7 +900,7 @@ void display_srv_file_info_ctr(FILE *out_hnd, enum action_type action,
 sess info level 0 display function
 ****************************************************************************/
 void display_sess_info_0(FILE *out_hnd, enum action_type action,
-		SESS_INFO_0 *info0, SESS_INFO_0_STR *str0)
+		const SESS_INFO_0 *info0, const SESS_INFO_0_STR *str0)
 {
 	if (info0 == NULL || str0 == NULL)
 	{
@@ -939,7 +939,7 @@ void display_sess_info_0(FILE *out_hnd, enum action_type action,
 sess info level 1 display function
 ****************************************************************************/
 void display_sess_info_1(FILE *out_hnd, enum action_type action,
-		SESS_INFO_1 *info1, SESS_INFO_1_STR *str1)
+		const SESS_INFO_1 *info1, const SESS_INFO_1_STR *str1)
 {
 	if (info1 == NULL || str1 == NULL)
 	{
@@ -988,7 +988,7 @@ void display_sess_info_1(FILE *out_hnd, enum action_type action,
 sess info level 0 container display function
 ****************************************************************************/
 void display_srv_sess_info_0_ctr(FILE *out_hnd, enum action_type action,
-				SRV_SESS_INFO_0 *ctr)
+				const SRV_SESS_INFO_0 *ctr)
 {
 	if (ctr == NULL)
 	{
@@ -1025,7 +1025,7 @@ void display_srv_sess_info_0_ctr(FILE *out_hnd, enum action_type action,
 sess info level 1 container display function
 ****************************************************************************/
 void display_srv_sess_info_1_ctr(FILE *out_hnd, enum action_type action,
-				SRV_SESS_INFO_1 *ctr)
+				const SRV_SESS_INFO_1 *ctr)
 {
 	if (ctr == NULL)
 	{
@@ -1062,7 +1062,7 @@ void display_srv_sess_info_1_ctr(FILE *out_hnd, enum action_type action,
 sess info container display function
 ****************************************************************************/
 void display_srv_sess_info_ctr(FILE *out_hnd, enum action_type action,
-				SRV_SESS_INFO_CTR *ctr)
+				const SRV_SESS_INFO_CTR *ctr)
 {
 	if (ctr == NULL || ctr->ptr_sess_ctr == 0)
 	{
@@ -1096,7 +1096,7 @@ void display_srv_sess_info_ctr(FILE *out_hnd, enum action_type action,
  print browse connection on a host
  ****************************************************************************/
 void display_server(FILE *out_hnd, enum action_type action,
-				char *sname, uint32 type, char *comment)
+				const char *sname, uint32 type, const char *comment)
 {
 	switch (action)
 	{
@@ -1121,7 +1121,7 @@ void display_server(FILE *out_hnd, enum action_type action,
 print shares on a host
 ****************************************************************************/
 void display_share(FILE *out_hnd, enum action_type action,
-				char *sname, uint32 type, char *comment)
+				const char *sname, uint32 type, const char *comment)
 {
 	switch (action)
 	{
@@ -1147,9 +1147,9 @@ void display_share(FILE *out_hnd, enum action_type action,
 print shares on a host, level 2
 ****************************************************************************/
 void display_share2(FILE *out_hnd, enum action_type action,
-				char *sname, uint32 type, char *comment,
+				const char *sname, uint32 type, const char *comment,
 				uint32 perms, uint32 max_uses, uint32 num_uses,
-				char *path, char *passwd)
+				const char *path, const char *passwd)
 {
 	switch (action)
 	{
@@ -1176,7 +1176,7 @@ void display_share2(FILE *out_hnd, enum action_type action,
 print name info
 ****************************************************************************/
 void display_name(FILE *out_hnd, enum action_type action,
-				char *sname)
+				const char *sname)
 {
 	switch (action)
 	{
@@ -1201,8 +1201,8 @@ void display_name(FILE *out_hnd, enum action_type action,
  display alias members
  ****************************************************************************/
 void display_alias_members(FILE *out_hnd, enum action_type action,
-				uint32 num_mem, char **sid_mem,
-				uint8 *type)
+				uint32 num_mem, const char **sid_mem,
+				const uint8 *type)
 {
 	switch (action)
 	{
@@ -1248,8 +1248,8 @@ void display_alias_members(FILE *out_hnd, enum action_type action,
  display alias rid info
  ****************************************************************************/
 void display_alias_rid_info(FILE *out_hnd, enum action_type action,
-				DOM_SID *sid,
-				uint32 num_rids, uint32 *rid)
+				const DOM_SID *sid,
+				uint32 num_rids, const uint32 *rid)
 {
 	switch (action)
 	{
@@ -1291,7 +1291,7 @@ void display_alias_rid_info(FILE *out_hnd, enum action_type action,
  display group members
  ****************************************************************************/
 void display_group_members(FILE *out_hnd, enum action_type action,
-				uint32 num_mem, char **name, uint32 *type)
+				uint32 num_mem, const char **name, const uint32 *type)
 {
 	switch (action)
 	{
@@ -1332,7 +1332,7 @@ void display_group_members(FILE *out_hnd, enum action_type action,
 /****************************************************************************
  display group info
  ****************************************************************************/
-void display_group_info1(FILE *out_hnd, enum action_type action, GROUP_INFO1 *info1)
+void display_group_info1(FILE *out_hnd, enum action_type action, const GROUP_INFO1 *info1)
 				
 {
 	switch (action)
@@ -1363,7 +1363,7 @@ void display_group_info1(FILE *out_hnd, enum action_type action, GROUP_INFO1 *in
 /****************************************************************************
  display group info
  ****************************************************************************/
-void display_group_info4(FILE *out_hnd, enum action_type action, GROUP_INFO4 *info4)
+void display_group_info4(FILE *out_hnd, enum action_type action, const GROUP_INFO4 *info4)
 				
 {
 	switch (action)
@@ -1392,7 +1392,7 @@ void display_group_info4(FILE *out_hnd, enum action_type action, GROUP_INFO4 *in
  display sam sync structure
  ****************************************************************************/
 void display_group_info_ctr(FILE *out_hnd, enum action_type action,
-				GROUP_INFO_CTR *ctr)
+				const GROUP_INFO_CTR *ctr)
 {
 	switch (action)
 	{
@@ -1436,7 +1436,7 @@ void display_group_info_ctr(FILE *out_hnd, enum action_type action,
  display group rid info
  ****************************************************************************/
 void display_group_rid_info(FILE *out_hnd, enum action_type action,
-				uint32 num_gids, DOM_GID *gid)
+				uint32 num_gids, const DOM_GID *gid)
 {
 	switch (action)
 	{
@@ -1478,7 +1478,7 @@ void display_group_rid_info(FILE *out_hnd, enum action_type action,
  display alias name info
  ****************************************************************************/
 void display_alias_name_info(FILE *out_hnd, enum action_type action,
-				uint32 num_aliases, fstring *alias_name, uint32 *num_als_usrs)
+				uint32 num_aliases, const fstring *alias_name, const uint32 *num_als_usrs)
 {
 	switch (action)
 	{
@@ -1518,7 +1518,7 @@ void display_alias_name_info(FILE *out_hnd, enum action_type action,
 /****************************************************************************
  display alias info
  ****************************************************************************/
-void display_alias_info3(FILE *out_hnd, enum action_type action, ALIAS_INFO3 *info3)
+void display_alias_info3(FILE *out_hnd, enum action_type action, const ALIAS_INFO3 *info3)
 				
 {
 	switch (action)
@@ -1546,7 +1546,7 @@ void display_alias_info3(FILE *out_hnd, enum action_type action, ALIAS_INFO3 *in
  display sam sync structure
  ****************************************************************************/
 void display_alias_info_ctr(FILE *out_hnd, enum action_type action,
-				ALIAS_INFO_CTR *ctr)
+				const ALIAS_INFO_CTR *ctr)
 {
 	switch (action)
 	{
@@ -1583,7 +1583,7 @@ void display_alias_info_ctr(FILE *out_hnd, enum action_type action,
 /****************************************************************************
  display sam_user_info_21 structure
  ****************************************************************************/
-void display_sam_user_info_21(FILE *out_hnd, enum action_type action, SAM_USER_INFO_21 *usr)
+void display_sam_user_info_21(FILE *out_hnd, enum action_type action, const SAM_USER_INFO_21 *usr)
 {
 	switch (action)
 	{
@@ -1730,7 +1730,7 @@ char *get_sec_mask_str(uint32 type)
 /****************************************************************************
  display sec_access structure
  ****************************************************************************/
-void display_sec_access(FILE *out_hnd, enum action_type action, SEC_ACCESS *info)
+void display_sec_access(FILE *out_hnd, enum action_type action, const SEC_ACCESS *info)
 {
 	switch (action)
 	{
@@ -1753,7 +1753,7 @@ void display_sec_access(FILE *out_hnd, enum action_type action, SEC_ACCESS *info
 /****************************************************************************
  display sec_ace structure
  ****************************************************************************/
-void display_sec_ace(FILE *out_hnd, enum action_type action, SEC_ACE *ace)
+void display_sec_ace(FILE *out_hnd, enum action_type action, const SEC_ACE *ace)
 {
 	switch (action)
 	{
@@ -1783,7 +1783,7 @@ void display_sec_ace(FILE *out_hnd, enum action_type action, SEC_ACE *ace)
 /****************************************************************************
  display sec_acl structure
  ****************************************************************************/
-void display_sec_acl(FILE *out_hnd, enum action_type action, SEC_ACL *sec_acl)
+void display_sec_acl(FILE *out_hnd, enum action_type action, const SEC_ACL *sec_acl)
 {
 	switch (action)
 	{
@@ -1821,7 +1821,7 @@ void display_sec_acl(FILE *out_hnd, enum action_type action, SEC_ACL *sec_acl)
 /****************************************************************************
  display sec_desc structure
  ****************************************************************************/
-void display_sec_desc(FILE *out_hnd, enum action_type action, SEC_DESC *sec)
+void display_sec_desc(FILE *out_hnd, enum action_type action, const SEC_DESC *sec)
 {
 	switch (action)
 	{
@@ -1913,7 +1913,7 @@ char *get_reg_val_type_str(uint32 type)
 
 
 static void print_reg_value(FILE *out_hnd, const char *val_name,
-				uint32 val_type, BUFFER2 *value)
+				uint32 val_type, const BUFFER2 *value)
 {
 	fstring type;
 	fstring valstr;
@@ -1936,12 +1936,14 @@ static void print_reg_value(FILE *out_hnd, const char *val_name,
 			if (value->buf_len <= 8)
 			{
 				fprintf(out_hnd,"\t%s:\t%s:\t", val_name, type);
-				out_data(out_hnd, (char*)value->buffer, value->buf_len, 8);
+				out_data(out_hnd, (const char*)value->buffer,
+				         value->buf_len, 8);
 			}
 			else
 			{
 				fprintf(out_hnd,"\t%s:\t%s:\n", val_name, type);
-				out_data(out_hnd, (char*)value->buffer, value->buf_len, 16);
+				out_data(out_hnd, (const char*)value->buffer,
+				         value->buf_len, 16);
 			}
 			break;
 		}
@@ -1966,7 +1968,7 @@ static void print_reg_value(FILE *out_hnd, const char *val_name,
  ****************************************************************************/
 void display_reg_value_info(FILE *out_hnd, enum action_type action,
 				const char *val_name,
-				uint32 val_type, BUFFER2 *value)
+				uint32 val_type, const BUFFER2 *value)
 {
 	switch (action)
 	{
@@ -2036,7 +2038,7 @@ char *get_svc_start_type_str(uint32 type)
  display structure
  ****************************************************************************/
 void display_query_svc_cfg(FILE *out_hnd, enum action_type action,
-				QUERY_SERVICE_CONFIG *cfg)
+				const QUERY_SERVICE_CONFIG *cfg)
 {
 	switch (action)
 	{
@@ -2083,7 +2085,7 @@ void display_query_svc_cfg(FILE *out_hnd, enum action_type action,
 /****************************************************************************
  display structure
  ****************************************************************************/
-void display_svc_info(FILE *out_hnd, enum action_type action, ENUM_SRVC_STATUS *svc)
+void display_svc_info(FILE *out_hnd, enum action_type action, const ENUM_SRVC_STATUS *svc)
 {
 	switch (action)
 	{
@@ -2186,7 +2188,7 @@ static char *get_at_days_str(uint32 monthdays, uint8 weekdays, uint8 flags)
  display scheduled jobs
  ****************************************************************************/
 void display_at_enum_info(FILE *out_hnd, enum action_type action,
-		     uint32 num_jobs, AT_ENUM_INFO *jobs, fstring *commands)
+		     uint32 num_jobs, const AT_ENUM_INFO *jobs, const fstring *commands)
 {
 	switch (action)
 	{
@@ -2209,7 +2211,7 @@ void display_at_enum_info(FILE *out_hnd, enum action_type action,
 
 			for (i = 0; i < num_jobs; i++)
 			{
-				AT_JOB_INFO *job = &jobs[i].info;
+				const AT_JOB_INFO *job = &jobs[i].info;
 
 				fprintf(out_hnd, "\t%d\t%s\t%s\t%s\n",
 					jobs[i].jobid,
@@ -2234,7 +2236,7 @@ void display_at_enum_info(FILE *out_hnd, enum action_type action,
  display information about a scheduled job
  ****************************************************************************/
 void display_at_job_info(FILE *out_hnd, enum action_type action,
-		     AT_JOB_INFO *job, fstring command)
+		     const AT_JOB_INFO *job, fstring command)
 {
 	switch (action)
 	{
@@ -2279,7 +2281,7 @@ void display_at_job_info(FILE *out_hnd, enum action_type action,
 /****************************************************************************
  display structure
  ****************************************************************************/
-void display_eventlog_eventrecord(FILE *out_hnd, enum action_type action, EVENTLOGRECORD *ev)
+void display_eventlog_eventrecord(FILE *out_hnd, enum action_type action, const EVENTLOGRECORD *ev)
 {
 	switch (action)
 	{
@@ -2356,8 +2358,8 @@ void display_eventlog_eventrecord(FILE *out_hnd, enum action_type action, EVENTL
  display sam sync structure
  ****************************************************************************/
 void display_sam_sync_ctr(FILE *out_hnd, enum action_type action,
-				SAM_DELTA_HDR *delta,
-				SAM_DELTA_CTR *ctr)
+				const SAM_DELTA_HDR *delta,
+				const SAM_DELTA_CTR *ctr)
 {
 	fstring name;
 
@@ -2411,8 +2413,8 @@ void display_sam_sync_ctr(FILE *out_hnd, enum action_type action,
  display sam sync structure
  ****************************************************************************/
 void display_sam_sync(FILE *out_hnd, enum action_type action,
-				SAM_DELTA_HDR *deltas,
-				SAM_DELTA_CTR *ctr,
+				const SAM_DELTA_HDR *deltas,
+				const SAM_DELTA_CTR *ctr,
 				uint32 num)
 {
 	switch (action)
@@ -2447,7 +2449,7 @@ void display_sam_sync(FILE *out_hnd, enum action_type action,
  display sam sync structure
  ****************************************************************************/
 void display_sam_unk_info_2(FILE *out_hnd, enum action_type action,
-				SAM_UNK_INFO_2 *info2)
+				const SAM_UNK_INFO_2 *info2)
 {
 	switch (action)
 	{
@@ -2492,7 +2494,7 @@ void display_sam_unk_info_2(FILE *out_hnd, enum action_type action,
  display sam sync structure
  ****************************************************************************/
 void display_sam_unk_ctr(FILE *out_hnd, enum action_type action,
-				uint32 switch_value, SAM_UNK_CTR *ctr)
+				uint32 switch_value, const SAM_UNK_CTR *ctr)
 {
 	switch (action)
 	{
@@ -2529,7 +2531,7 @@ void display_sam_unk_ctr(FILE *out_hnd, enum action_type action,
 printer info level 0 display function
 ****************************************************************************/
 void display_print_info_0(FILE *out_hnd, enum action_type action,
-		PRINTER_INFO_0 *i0)
+		const PRINTER_INFO_0 *i0)
 {
 	if (i0 == NULL)
 	{
@@ -2571,7 +2573,7 @@ void display_print_info_0(FILE *out_hnd, enum action_type action,
 printer info level 1 display function
 ****************************************************************************/
 void display_print_info_1(FILE *out_hnd, enum action_type action,
-		PRINTER_INFO_1 *i1)
+		const PRINTER_INFO_1 *i1)
 {
 	if (i1 == NULL)
 	{
@@ -2616,7 +2618,7 @@ void display_print_info_1(FILE *out_hnd, enum action_type action,
 connection info level 0 container display function
 ****************************************************************************/
 void display_printer_info_0_ctr(FILE *out_hnd, enum action_type action,
-				uint32 count, PRINTER_INFO_0 **ctr)
+				uint32 count, const PRINTER_INFO_0 **ctr)
 {
 	if (ctr == NULL)
 	{
@@ -2653,7 +2655,7 @@ void display_printer_info_0_ctr(FILE *out_hnd, enum action_type action,
 connection info level 1 container display function
 ****************************************************************************/
 void display_printer_info_1_ctr(FILE *out_hnd, enum action_type action,
-				uint32 count, PRINTER_INFO_1 **ctr)
+				uint32 count, const PRINTER_INFO_1 **ctr)
 {
 	if (ctr == NULL)
 	{
@@ -2690,7 +2692,7 @@ void display_printer_info_1_ctr(FILE *out_hnd, enum action_type action,
 connection info container display function
 ****************************************************************************/
 void display_printer_info_ctr(FILE *out_hnd, enum action_type action,
-				uint32 level, uint32 count, void **ctr)
+				uint32 level, uint32 count, const void **ctr)
 {
 	if (ctr == NULL)
 	{
@@ -2703,13 +2705,13 @@ void display_printer_info_ctr(FILE *out_hnd, enum action_type action,
 		case 0:
 		{
 			display_printer_info_0_ctr(out_hnd, action,
-			                   count, (PRINTER_INFO_0**)ctr);
+			                   count, (const PRINTER_INFO_0**)ctr);
 			break;
 		}
 		case 1:
 		{
 			display_printer_info_1_ctr(out_hnd, action,
-			                   count, (PRINTER_INFO_1**)ctr);
+			                   count, (const PRINTER_INFO_1**)ctr);
 			break;
 		}
 		default:
