@@ -77,9 +77,6 @@ ext_keytab(int argc, char **argv)
     }
 
     key_entry.principal = principal;
-#if 0
-    krb5_copy_principal (context, ent.principal, &key_entry.principal);
-#endif
     key_entry.vno = ent.kvno;
     /* XXX XXX XXX XXX */
     k = unseal_key(&ent.keys.val[0]);
@@ -108,7 +105,6 @@ ext_keytab(int argc, char **argv)
     ret = krb5_kt_add_entry(context,
 			    kid,
 			    &key_entry);
-    /* XXX - krb5_kt_free_entry? */
 
     if (ret) {
 	krb5_warn(context, ret, "krb5_kt_add_entry");
