@@ -76,7 +76,6 @@ struct cli_state {
 	int rap_error;
 	int privileges;
 
-	fstring eff_name;
 	fstring desthost;
 	fstring user_name;
 	fstring domain;
