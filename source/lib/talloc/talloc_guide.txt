@@ -409,6 +409,14 @@ full talloc report on 'root' (total 18 bytes in 8 blocks)
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+void talloc_enable_null_tracking(void);
+
+This enables tracking of the NULL memory context without enabling leak
+reporting on exit. Useful for when you want to do your own leak
+reporting call via talloc_report_null_full();
+
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 (type *)talloc_zero(const void *ctx, type);
 
 The talloc_zero() macro is equivalent to:
