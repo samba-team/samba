@@ -115,9 +115,9 @@ struct dgram_mailslot_handler *dgram_mailslot_temp(struct nbt_dgram_socket *dgms
 
 	/* try a 100 times at most */
 	for (i=0;i<100;i++) {
-		name = talloc_asprintf(dgmsock, "%s%u", 
+		name = talloc_asprintf(dgmsock, "%s%03u", 
 				       mailslot_name,
-				       generate_random() % UINT16_MAX);
+				       generate_random() % 1000);
 		if (name == NULL) return NULL;
 		if (dgram_mailslot_find(dgmsock, name)) {
 			talloc_free(name);
@@ -129,4 +129,61 @@ struct dgram_mailslot_handler *dgram_mailslot_temp(struct nbt_dgram_socket *dgms
 	}
 	DEBUG(2,("Unable to create temporary mailslot from %s\n", mailslot_name));
 	return NULL;
+}
+
+
+/*
+  send a mailslot request
+*/
+NTSTATUS dgram_mailslot_send(struct nbt_dgram_socket *dgmsock,
+			     enum dgram_msg_type msg_type,
+			     const char *mailslot_name,
+			     struct nbt_name *dest_name,
+			     const char *dest_address,
+			     struct nbt_name *src_name,
+			     DATA_BLOB *request)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(dgmsock);
+	struct nbt_dgram_packet packet;
+	struct dgram_message *msg;
+	struct dgram_smb_packet *smb;
+	struct smb_trans_body *trans;
+	NTSTATUS status;
+
+	ZERO_STRUCT(packet);
+	packet.msg_type = msg_type;
+	packet.flags = DGRAM_FLAG_FIRST;
+	packet.dgram_id = generate_random() % UINT16_MAX;
+	packet.source = socket_get_my_addr(dgmsock->sock, tmp_ctx);
+	packet.src_port = socket_get_my_port(dgmsock->sock);
+
+	msg = &packet.data.msg;
+	/* this length calculation is very crude - it should be based on gensize
+	   calls */
+	msg->length = 138 + strlen(mailslot_name) + request->length; 
+	msg->offset = 0;
+
+	msg->source_name = *src_name;
+	msg->dest_name = *dest_name;
+	msg->dgram_body_type = DGRAM_SMB;
+
+	smb = &msg->body.smb;
+	smb->smb_command = SMB_TRANSACTION;
+
+	trans = &smb->body.trans;
+	trans->total_data_count = request->length;
+	trans->timeout     = (uint32_t)-1;
+	trans->data_count  = request->length;
+	trans->data_offset = 70 + strlen(mailslot_name);
+	trans->opcode      = 1; /* write mail slot */
+	trans->priority    = 1;
+	trans->class       = 2;
+	trans->mailslot_name = mailslot_name;
+	trans->data = *request;
+
+	status = nbt_dgram_send(dgmsock, &packet, dest_address, lp_dgram_port());
+
+	talloc_free(tmp_ctx);
+
+	return status;
 }

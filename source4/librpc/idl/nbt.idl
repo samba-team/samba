@@ -200,16 +200,16 @@ interface nbt
 	} dgram_msg_type;
 
 	typedef [bitmap8bit] bitmap {
-		DGRAM_FLAG_MORE         = 0x80,
-		DGRAM_FLAG_FIRST        = 0x40,
-		DGRAM_FLAG_NODE_TYPE    = 0x30
+		DGRAM_FLAG_MORE         = 0x01,
+		DGRAM_FLAG_FIRST        = 0x02,
+		DGRAM_FLAG_NODE_TYPE    = 0x0C
 	} dgram_flags;
 
 	typedef [enum8bit] enum {
 		DGRAM_NODE_B    = 0x00,
-		DGRAM_NODE_P    = 0x10,
-		DGRAM_NODE_M    = 0x20,
-		DGRAM_NODE_NBDD = 0x30
+		DGRAM_NODE_P    = 0x04,
+		DGRAM_NODE_M    = 0x08,
+		DGRAM_NODE_NBDD = 0x0C
 	} dgram_node_type;
 
 	/* a dgram_message is the main dgram body in general use */
@@ -317,4 +317,30 @@ interface nbt
 		uint16         src_port;
 		[switch_is(msg_type)] dgram_data data;
 	} nbt_dgram_packet;
+
+
+	/* \MAILSLOT\NET\NETLOGON mailslot requests */
+	typedef [enum8bit] enum {
+		NETLOGON_QUERY_FOR_PDC = 0x7		
+	} nbt_netlogon_command;
+
+	/* query for pdc request */
+	typedef struct {
+		astring              computer_name;
+		astring              mailslot_name;
+		nstring              unicode_name;
+		uint32               nt_version;
+		uint16               lmnt_token;
+		uint16               lm20_token;
+	} nbt_netlogon_query_for_pdc;
+
+	typedef [nodiscriminant] union {
+		[case(NETLOGON_QUERY_FOR_PDC)] nbt_netlogon_query_for_pdc pdc;
+	} nbt_netlogon_request;
+
+	typedef [flag(NDR_NOALIGN),public] struct {
+		nbt_netlogon_command command;
+		uint8                pad;
+		[switch_is(command)] nbt_netlogon_request req;
+	} nbt_netlogon_packet;
 }

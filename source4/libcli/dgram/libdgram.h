@@ -111,8 +111,18 @@ struct dgram_mailslot_handler *dgram_mailslot_temp(struct nbt_dgram_socket *dgms
 						   void *private);
 
 
+NTSTATUS dgram_mailslot_send(struct nbt_dgram_socket *dgmsock,
+			     enum dgram_msg_type msg_type,
+			     const char *mailslot_name,
+			     struct nbt_name *dest_name,
+			     const char *dest_address,
+			     struct nbt_name *src_name,
+			     DATA_BLOB *request);
 
-
-
+NTSTATUS dgram_mailslot_netlogon_send(struct nbt_dgram_socket *dgmsock,
+				      struct nbt_name *dest_name,
+				      const char *dest_address,
+				      struct nbt_name *src_name,
+				      struct nbt_netlogon_packet *request);
 
 
