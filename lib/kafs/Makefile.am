@@ -6,17 +6,21 @@ INCLUDES += $(AFS_EXTRA_DEFS) $(ROKEN_RENAME)
 
 if KRB4
 DEPLIB_krb4 = $(LIB_krb4) $(LIB_des)
-INCLUDES += $(INCLUDE_krb4)
+krb4_am_workaround = $(INCLUDE_krb4)
 else
 DEPLIB_krb4  =
+krb4_am_workaround = 
 endif # KRB4
+INCLUDES += $(krb4_am_workaround)
 
 if KRB5
 DEPLIB_krb5 = ../krb5/libkrb5.la 
-INCLUDES += $(INCLUDE_des) -I$(top_srcdir)/lib/krb5
+krb5_am_workaround = $(INCLUDE_des) -I$(top_srcdir)/lib/krb5
 else
 DEPLIB_krb5  =
+krb5_am_workaround = 
 endif # KRB5
+INCLUDES += $(krb5_am_workaround)
 
 
 if AIX
