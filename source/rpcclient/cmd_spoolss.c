@@ -109,16 +109,18 @@ void cmd_spoolss_open_printer_ex(struct client_info *info, int argc, char *argv[
 {
 	uint16 nt_pipe_fnum;
 	fstring srv_name;
-	fstring printer_name;
+	char *printer_name;
 	PRINTER_HND hnd;
 
 	BOOL res = True;
 
-	if (!next_token(NULL, printer_name, NULL, sizeof(printer_name)))
+	if (argc < 2)
 	{
 		report(out_hnd, "spoolopen <printer name>\n");
 		return;
 	}
+
+	printer_name = argv[1];
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->myhostname);
@@ -234,17 +236,19 @@ nt spoolss query
 void cmd_spoolss_enum_jobs(struct client_info *info, int argc, char *argv[])
 {
 	fstring srv_name;
-	fstring printer_name;
+	char *printer_name;
 
 	void **ctr = NULL;
 	uint32 num = 0;
 	uint32 level = 1;
 
-	if (!next_token(NULL, printer_name, NULL, sizeof(printer_name)))
+	if (argc < 2)
 	{
-		report(out_hnd, "spoolopen <printer name>\n");
+		report(out_hnd, "spoolenum <printer name>\n");
 		return;
 	}
+
+	printer_name = argv[1];
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->myhostname);
