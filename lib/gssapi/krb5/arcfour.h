@@ -36,6 +36,12 @@
 #ifndef GSSAPI_ARCFOUR_H_
 #define GSSAPI_ARCFOUR_H_ 1
 
+/*
+ * The arcfour message have the following formats, these are only here
+ * for reference and is not used.
+ */
+
+#if 0
 typedef struct gss_arcfour_mic_token {
     u_char TOK_ID[2]; /* 01 01 */
     u_char SGN_ALG[2]; /* 11 00 */
@@ -53,6 +59,9 @@ typedef struct gss_arcfour_wrap_token {
     u_char SGN_CKSUM[8];
     u_char Confounder[8];
 } gss_arcfour_wrap_token_desc, *gss_arcfour_wrap_token;
+#endif
+
+#define GSS_ARCFOUR_WRAP_TOKEN_SIZE 32
 
 OM_uint32 _gssapi_wrap_arcfour(OM_uint32 *minor_status,
 			       const gss_ctx_id_t context_handle,
