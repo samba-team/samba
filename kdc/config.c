@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -181,7 +181,8 @@ get_dbinfo(krb5_config_section *cf)
 	}
 	*dt = di;
 	dt = &di->next;
-    } else {
+    } else if(databases == NULL) {
+	/* if there are none specified, use some default */
 	di = calloc(1, sizeof(*di));
 	di->dbname = strdup(default_dbname);
 	di->mkey_file = strdup(default_mkey);
