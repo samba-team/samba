@@ -152,7 +152,9 @@ static void process_options(int argc, char **argv, BOOL amroot)
 		case 'j':
 			if (!amroot) goto bad_args;
 			new_domain = optarg;
+			unix_to_dos(new_domain);
 			strupper(new_domain);
+			dos_to_unix(new_domain);
 			joining_domain = True;
 			break;
 		case 'r':
@@ -530,8 +532,6 @@ static int join_domain_byuser(char *domain, char *remote,
 					sess_key, &ctr);
 
 	/* Now store the secret in the secrets database */
-
-	strupper(domain);
 
 	if (!secrets_store_domain_sid(domain, &domain_sid) ||
 	    !secrets_store_trust_account_password(domain, ntpw)) {
@@ -1083,7 +1083,6 @@ int main(int argc, char **argv)
 
 	charset_initialise();
 	
-	process_options(argc, argv, amroot);
 	TimeInit();
 	
 	setup_logging("smbpasswd", True);
@@ -1110,9 +1109,14 @@ int main(int argc, char **argv)
 		p = strchr(global_myname, '.' );
 		if (p) *p = 0;
 	}           
-	strupper(global_myname);
 
 	codepage_initialise(lp_client_code_page());
+
+	unix_to_dos(global_myname);
+	strupper(global_myname);
+	dos_to_unix(global_myname);
+
+	process_options(argc, argv, amroot);
 
 	/* Check the effective uid - make sure we are not setuid */
 	if ((geteuid() == (uid_t)0) && (getuid() != (uid_t)0)) {
