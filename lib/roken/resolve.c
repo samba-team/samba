@@ -47,7 +47,8 @@
 
 RCSID("$Id$");
 
-#if defined(HAVE_RES_SEARCH) && defined(HAVE_DN_EXPAND)
+#undef HAVE_RES_NSEARCH
+#if (defined(HAVE_RES_SEARCH) || defined(HAVE_RES_NSEARCH)) && defined(HAVE_DN_EXPAND)
 
 #define DECL(X) {#X, T_##X}
 
@@ -369,19 +370,18 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
 {
     unsigned char reply[1024];
     int len;
-#if defined(HAVE__RES) || defined(HAVE_RES_NSEARCH)
-    u_long old_options = 0;
-#endif
 #ifdef HAVE_RES_NSEARCH
-    res_state statp;
-    if(res_ninit(statp))
+    struct __res_state stat;
+    memset(&stat, 0, sizeof(stat));
+    if(res_ninit(&stat))
 	return NULL; /* is this the best we can do? */
+#elif defined(HAVE__RES)
+    u_long old_options = 0;
 #endif
     
     if (_resolve_debug) {
 #ifdef HAVE_RES_NSEARCH
-        old_options = statp.options;
-	statp.options |= RES_DEBUG;
+	stat.options |= RES_DEBUG;
 #elif defined(HAVE__RES)
         old_options = _res.options;
 	_res.options |= RES_DEBUG;
@@ -390,21 +390,19 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
 		rr_class, dns_type_to_string(rr_type));
     }
 #ifdef HAVE_RES_NSEARCH
-    len = res_nsearch(statp, domain, rr_class, rr_type, reply, sizeof(reply));
+    len = res_nsearch(&stat, domain, rr_class, rr_type, reply, sizeof(reply));
 #else
     len = res_search(domain, rr_class, rr_type, reply, sizeof(reply));
 #endif
     if (_resolve_debug) {
-#ifdef HAVE_RES_NSEARCH
-	statp.options = old_options;
-#elif defined(HAVE__RES)
+#if defined(HAVE__RES) && !defined(HAVE_RES_NSEARCH)
         _res.options = old_options;
 #endif
 	fprintf(stderr, "dns_lookup(%s, %d, %s) --> %d\n",
 		domain, rr_class, dns_type_to_string(rr_type), len);
     }
 #ifdef HAVE_RES_NSEARCH
-    res_nclose(statp);
+    res_nclose(&stat);
 #endif    
     if(len < 0) {
 	return NULL;
