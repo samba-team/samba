@@ -142,8 +142,140 @@ static void usergrp_display(char *field, void **values, void *data_area)
 		disp_fields[1] = strdup(((struct berval *) values[0])->bv_val);
 }
 
+static int net_ads_user_usage(int argc, const char **argv)
+{
+	d_printf("\nnet ads user \n\tList users\n");
+	d_printf("\nnet ads user DELETE <name>"\
+		 "\n\tDelete specified user\n");
+	d_printf("\nnet ads user INFO <name>"\
+		 "\n\tList the domain groups of the specified user\n");
+	d_printf("\nnet ads user ADD <name> [-F user flags]"\
+		 "\n\tAdd specified user\n");
+	net_common_flags_usage(argc, argv);
+
+	return -1;
+} 
+
+static int ads_user_add(int argc, const char **argv)
+{
+	ADS_STRUCT *ads;
+	ADS_STATUS status;
+	void *res=NULL;
+	int rc = -1;
+	extern char *opt_comment;
+
+	if (argc < 1) return net_ads_user_usage(argc, argv);
+	
+	if (!(ads = ads_startup())) return -1;
+
+	status = ads_find_user_acct(ads, &res, argv[0]);
+
+	if (!ADS_ERR_OK(status)) {
+		d_printf("ads_user_add: %s\n", ads_err2string(status));
+		goto done;
+	}
+	
+	if (ads_count_replies(ads, res)) {
+		d_printf("ads_user_add: User %s already exists\n", argv[0]);
+		ads_msgfree(ads, res);
+		goto done;
+	}
+
+	status = ads_add_user_acct(ads, argv[0], opt_comment);
+
+	if (ADS_ERR_OK(status)) {
+		d_printf("User %s added\n", argv[0]);
+		rc = 0;
+	} else {
+		d_printf("Could not add user %s: %s\n", argv[0],
+			 ads_err2string(status));
+	}
+
+ done:
+	if (res)
+		ads_msgfree(ads, res);
+	ads_destroy(&ads);
+	return rc;
+}
+
+static int ads_user_info(int argc, const char **argv)
+{
+	ADS_STRUCT *ads;
+	ADS_STATUS rc;
+	void *res;
+	const char *attrs[] = {"memberOf", NULL};
+	char *searchstring=NULL;
+	char **grouplist;
+
+	if (argc < 1) return net_ads_user_usage(argc, argv);
+	
+	if (!(ads = ads_startup())) return -1;
+
+	asprintf(&searchstring, "(sAMAccountName=%s)", argv[0]);
+	rc = ads_search(ads, &res, searchstring, attrs);
+	safe_free(searchstring);
+
+	if (!ADS_ERR_OK(rc)) {
+		d_printf("ads_search: %s\n", ads_errstr(rc));
+		return -1;
+	}
+	
+	grouplist = ldap_get_values(ads->ld, res, "memberOf");
+
+	if (grouplist) {
+		int i;
+		char **groupname;
+		for (i=0;grouplist[i];i++) {
+			groupname = ldap_explode_dn(grouplist[i], 1);
+			printf("%s\n", groupname[0]);
+			ldap_value_free(groupname);
+		}
+		ldap_value_free(grouplist);
+	}
+	
+	ads_msgfree(ads, res);
+
+	ads_destroy(&ads);
+	return 0;
+}
+
+static int ads_user_delete(int argc, const char **argv)
+{
+	ADS_STRUCT *ads;
+	ADS_STATUS rc;
+	void *res;
+	char *userdn;
+
+	if (argc < 1) return net_ads_user_usage(argc, argv);
+	
+	if (!(ads = ads_startup())) return -1;
+
+	rc = ads_find_user_acct(ads, &res, argv[0]);
+	if (!ADS_ERR_OK(rc)) {
+		DEBUG(0, ("User %s does not exist\n", argv[0]));
+		return -1;
+	}
+	userdn = ads_get_dn(ads, res);
+	ads_msgfree(ads, res);
+	rc = ads_del_dn(ads, userdn);
+	ads_memfree(ads, userdn);
+	if (!ADS_ERR_OK(rc)) {
+		d_printf("User %s deleted\n", argv[0]);
+		return 0;
+	}
+	d_printf("Error deleting user %s: %s\n", argv[0], 
+		 ldap_err2string(rc.rc));
+	return -1;
+}
+
 static int net_ads_user(int argc, const char **argv)
 {
+	struct functable func[] = {
+		{"ADD", ads_user_add},
+		{"INFO", ads_user_info},
+		{"DELETE", ads_user_delete},
+		{NULL, NULL}
+	};
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
 	void *res;
@@ -152,25 +284,30 @@ static int net_ads_user(int argc, const char **argv)
 	extern int opt_long_list_entries;
 	char *disp_fields[2] = {NULL, NULL};
 	
-	if (!(ads = ads_startup())) return -1;
+	if (argc == 0) {
+		if (!(ads = ads_startup())) return -1;
 
-	rc = ads_do_search_all(ads, ads->bind_path, LDAP_SCOPE_SUBTREE, 
-			       "(objectclass=user)", opt_long_list_entries ?
-			       longattrs : shortattrs, &res);
+		rc = ads_do_search_all(ads, ads->bind_path, LDAP_SCOPE_SUBTREE,
+				       "(objectclass=user)", 
+				       opt_long_list_entries ?
+				       longattrs : shortattrs, &res);
 
-	if (!ADS_ERR_OK(rc)) {
-		d_printf("ads_search: %s\n", ads_errstr(rc));
-		return -1;
-	}
+		if (!ADS_ERR_OK(rc)) {
+			d_printf("ads_search: %s\n", ads_errstr(rc));
+			return -1;
+		}
 	
-	if (opt_long_list_entries)
-		d_printf("\nUser name             Comment"\
-			 "\n-----------------------------\n");
-	ads_process_results(ads, res, usergrp_display, disp_fields);
-	ads_msgfree(ads, res);
+		if (opt_long_list_entries)
+			d_printf("\nUser name             Comment"\
+				 "\n-----------------------------\n");
+		ads_process_results(ads, res, usergrp_display, disp_fields);
+		ads_msgfree(ads, res);
 
-	ads_destroy(&ads);
-	return 0;
+		ads_destroy(&ads);
+		return 0;
+	}
+
+	return net_run_function(argc, argv, func, net_ads_user_usage);
 }
 
 static int net_ads_group(int argc, const char **argv)
@@ -584,6 +721,25 @@ static int net_ads_change_localhost_pass(int argc, const char **argv)
     return 0;
 }
 
+int net_ads_help(int argc, const char **argv)
+{
+	struct functable func[] = {
+		{"USER", net_ads_user_usage},
+#if 0
+		{"INFO", net_ads_info},
+		{"JOIN", net_ads_join},
+		{"LEAVE", net_ads_leave},
+		{"STATUS", net_ads_status},
+		{"GROUP", net_ads_group},
+		{"PASSWORD", net_ads_password},
+		{"CHOSTPASS", net_ads_change_localhost_pass},
+		{"PRINTER", net_ads_printer},
+#endif
+		{NULL, NULL}
+	};
+
+	return net_run_function(argc, argv, func, net_ads_usage);
+}
 
 int net_ads(int argc, const char **argv)
 {
@@ -597,6 +753,7 @@ int net_ads(int argc, const char **argv)
 		{"PASSWORD", net_ads_password},
 		{"CHOSTPASS", net_ads_change_localhost_pass},
 		{"PRINTER", net_ads_printer},
+		{"HELP", net_ads_help},
 		{NULL, NULL}
 	};
 	
