@@ -41,16 +41,6 @@ if test "$sunos" != no; then
 		[Define to what version of SunOS you are running.])
 fi
 
-aix=no
-case "$host" in 
-*-*-aix3*)
-	aix=3
-	;;
-*-*-aix4*)
-	aix=4
-	;;
-esac
-
 dnl
 dnl this is needed to run the configure tests against glibc
 dnl
@@ -94,14 +84,14 @@ if test "$openldap_libdir"; then
 	LIB_openldap="-R $openldap_libdir $LIB_openldap"
 fi
 
-AC_TEST_PACKAGE_NEW(krb4,[#include <krb.h>],-lkrb,-ldes,/usr/athena, KRB4)
+AC_TEST_PACKAGE_NEW(krb4,[#include <krb.h>],-lkrb,-ldes,/usr/athena, KRB4, krb4-config)
 
 LIB_kdb=
 if test "$with_krb4" != "no"; then
 	save_CFLAGS="$CFLAGS"
 	CFLAGS="$CFLAGS $INCLUDE_krb4"
 	save_LIBS="$LIBS"
-	LIBS="$LIB_krb4 -ldes $LIBS"
+	LIBS="$LIB_krb4 $LIBS"
 	EXTRA_LIB45=lib45.a
 	AC_SUBST(EXTRA_LIB45)
 	AC_CACHE_CHECK(for four valued krb_put_int, ac_cv_func_krb_put_int_four,
@@ -234,8 +224,8 @@ AC_TEST_PACKAGE_NEW(hesiod,[#include <hesiod.h>],-lhesiod,,, HESIOD)
 KRB_C_BIGENDIAN
 AC_C_INLINE
 
-KRB_AIX
-KRB_IRIX
+rk_AIX
+rk_IRIX
 
 KRB_CHECK_X
 
@@ -402,68 +392,7 @@ KRB_CRYPTO
 
 KRB_READLINE
 
-dnl telnet muck --------------------------------------------------
-
-AC_DEFINE(AUTHENTICATION, 1, 
-	[Define if you want authentication support in telnet.])dnl
-AC_DEFINE(ENCRYPTION, 1,
-	[Define if you want encryption support in telnet.])dnl
-AC_DEFINE(DES_ENCRYPTION, 1,
-	[Define if you want to use DES encryption in telnet.])dnl
-AC_DEFINE(DIAGNOSTICS, 1,
-	[Define this to enable diagnostics in telnet.])dnl
-AC_DEFINE(OLD_ENVIRON, 1,
-	[Define this to enable old environment option in telnet.])dnl
-if false; then
-AC_DEFINE(ENV_HACK, 1,
-	[Define this if you want support for broken ENV_{VAR,VAL} telnets.])
-fi
-
-# Simple test for streamspty, based on the existance of getmsg(), alas
-# this breaks on SunOS4 which have streams but BSD-like ptys
-#
-# And also something wierd has happend with dec-osf1, fallback to bsd-ptys
-
-AC_CHECK_FUNC(getmsg)
-
-if test "$ac_cv_func_getmsg" = "yes"; then
-
-AC_CACHE_CHECK(for working getmsg, ac_cv_func_getmsg_work,
-AC_TRY_RUN(
-[
-#include <stdio.h>
-#include <errno.h>
-
-int main()
-{
-  int ret;
-  ret = getmsg(open("/dev/null", 0), NULL, NULL, NULL);
-  if(ret < 0 && errno == ENOSYS)
-    return 1;
-  return 0;
-}
-], ac_cv_func_getmsg_work=yes, ac_cv_func_getmsg_work=no,
-ac_cv_func_getmsg_work=no))
-test "$ac_cv_func_getmsg_work" = "yes" &&
-AC_DEFINE(HAVE_GETMSG, 1, [Define if you have a working getmsg.])
-
-fi
-
-if test "$ac_cv_func_getmsg_work" = yes; then
-AC_MSG_CHECKING(for streamspty)
-case "$host" in
-*-*-aix3*|*-*-sunos4*|*-*-osf*|*-*-hpux1[[01]]*)
-	krb_cv_sys_streamspty=no
-	;;
-*)
-	krb_cv_sys_streamspty=yes
-	;;
-esac
-AC_MSG_RESULT($krb_cv_sys_streamspty)
-fi
-if test "$krb_cv_sys_streamspty" = yes; then
-	AC_DEFINE(STREAMSPTY, 1, [Define if you have streams ptys.])
-fi
+rk_TELNET
 
 dnl Some operating systems already have com_err and compile_et
 CHECK_COMPILE_ET
@@ -475,6 +404,11 @@ rk_DESTDIRS
 LTLIBOBJS=`echo "$LIB@&t@OBJS" |
 	sed 's,\.[[^.]]* ,.lo ,g;s,\.[[^.]]*$,.lo,'`
 AC_SUBST(LTLIBOBJS)
+
+AH_BOTTOM([#ifdef ROKEN_RENAME
+#include "roken_rename.h"
+#endif])
+
 AC_CONFIG_FILES(Makefile 		\
 	include/Makefile		\
 	include/kadm5/Makefile		\
