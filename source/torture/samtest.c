@@ -379,7 +379,6 @@ int main(int argc, char *argv[])
 	setlinebuf(stdout);
 
 	DEBUGLEVEL = 1;
-	AllowDebugChange = False;
 
 	pc = poptGetContext("samtest", argc, (const char **) argv,
 			    long_options, 0);
