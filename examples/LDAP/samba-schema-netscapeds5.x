@@ -1,10 +1,30 @@
 ##
-## Garren Chew <darren.chew at vicscouts dot asn dot au>
+## Darren Chew <darren.chew at vicscouts dot asn dot au>
+## Andre Fiebach <andre dot fiebach at stud dot uni-rostock dot de>
 ##
 ## Samba 3.0 schema file for Netscape DS 5.x
 ##
 ## INSTALL-DIRECTORY/slapd-your_name/config/schema/samba-schema-netscapeds5.ldif
-
+####################################################################
+# Sun One DS do not load the schema without this lines
+# André Fiebach <af123@uni-rostock.de> 
+dn: cn=schema
+objectClass: top
+objectClass: ldapSubentry
+objectClass: subschema
+cn: schema
+aci: (target="ldap:///cn=schema")(targetattr !="aci")(version 3.0;acl "anonymo
+ us, no acis"; allow (read, search, compare) userdn = "ldap:///anyone";)
+aci: (targetattr = "*")(version 3.0; acl "Configuration Administrator"; allow 
+ (all) userdn = "ldap:///uid=admin,ou=Administrators, ou=TopologyManagement, 
+ o=NetscapeRoot";)
+aci: (targetattr = "*")(version 3.0; acl "Local Directory Administrators Group
+ "; allow (all) groupdn = "ldap:///cn=Directory Administrators, dc=samba,dc=org";)
+aci: (targetattr = "*")(version 3.0; acl "SIE Group"; allow (all)groupdn = "ld
+ ap:///cn=slapd-sambaldap, cn=iPlanet Directory Server, cn=Server Group, cn=iPlanetDirectory.samba.org, ou=samba.org, o=NetscapeRoot";)
+modifiersName: cn=directory manager
+modifyTimestamp: 20020322124844Z
+####################################################################
 objectClasses: ( 1.3.6.1.4.1.7165.2.2.6 NAME 'sambaSamAccount' SUP top AUXILIARY DESC 'Samba 3.0 Auxilary SAM Account' MUST ( uid $ sambaSID ) MAY  ( cn $ sambaLMPassword $ sambaNTPassword $ sambaPwdLastSet $ sambaLogonTime $ sambaLogoffTime $ sambaKickoffTime $ sambaPwdCanChange $ sambaPwdMustChange $ sambaAcctFlags $ displayName $ sambaHomePath $ sambaHomeDrive $ sambaLogonScript $ sambaProfilePath $ description $ sambaUserWorkstations $ sambaPrimaryGroupSID $ sambaDomainName ) X-ORIGIN 'user defined' )
 objectClasses: ( 1.3.6.1.4.1.7165.2.2.4 NAME 'sambaGroupMapping' SUP top AUXILIARY DESC 'Samba Group Mapping' MUST ( gidNumber $ sambaSID $ sambaGroupType ) MAY  ( displayName $ description ) X-ORIGIN 'user defined' )
 objectClasses: ( 1.3.6.1.4.1.7165.2.2.5 NAME 'sambaDomain' SUP top STRUCTURAL DESC 'Samba Domain Information' MUST ( sambaDomainName $ sambaSID ) MAY ( sambaNextRid $ sambaNextGroupRid $ sambaNextUserRid $ sambaAlgorithmicRidBase ) X-ORIGIN 'user defined' )
