@@ -216,7 +216,7 @@ static void send_message(void)
 		int l=0;
 		int c;
 
-		ZERO_ARRAY(msg);
+		ZERO_STRUCT(msg);
 
 		for (l=0;l<maxlen && (c=fgetc(stdin))!=EOF;l++) {
 			if (c == '\n')

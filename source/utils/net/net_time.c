@@ -64,7 +64,7 @@ int net_time(struct net_context *ctx, int argc, const char **argv)
 		return -1;
 	}
 
-	ZERO_ARRAY(timestr);
+	ZERO_STRUCT(timestr);
 	tm = localtime(&r.generic.out.time);
 	strftime(timestr, sizeof(timestr)-1, "%c %Z",tm);
 

@@ -410,7 +410,7 @@ uint32_t interpret_addr(const char *str)
 			DEBUG(3,("sys_gethostbyname: host address is invalid for host %s\n",str));
 			return 0;
 		}
-		putip((char *)&res,(char *)hp->h_addr);
+		memcpy((char *)&res,(char *)hp->h_addr, 4);
 	}
 
 	if (res == (uint32_t)-1)
@@ -436,9 +436,7 @@ struct ipv4_addr interpret_addr2(const char *str)
 
 BOOL is_zero_ip(struct ipv4_addr ip)
 {
-	uint32_t a;
-	putip((char *)&a,(char *)&ip);
-	return(a == 0);
+	return ip.addr == 0;
 }
 
 /*******************************************************************

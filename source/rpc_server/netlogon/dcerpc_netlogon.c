@@ -535,7 +535,7 @@ static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_
 	NT_STATUS_HAVE_NO_MEMORY(sam->domain_sid);
 	sam->domain_sid->num_auths--;
 
-	ZERO_ARRAY(sam->unknown);
+	ZERO_STRUCT(sam->unknown);
 
 	ZERO_STRUCT(sam->key);
 	if (server_info->user_session_key.length == sizeof(sam->key.key)) {
@@ -1101,7 +1101,7 @@ static NTSTATUS netr_ServerPasswordSet2(struct dcesrv_call_state *dce_call, TALL
 				       False, /* This is not considered a password change */
 				       False, /* don't restrict this password change (match w2k3) */
 				       NULL);
-	ZERO_ARRAY(new_pass);
+	ZERO_STRUCT(new_pass);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	ret = samdb_replace(sam_ctx, mem_ctx, mod);

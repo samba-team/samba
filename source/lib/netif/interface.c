@@ -272,8 +272,9 @@ BOOL interfaces_changed(void)
 BOOL ismyip(struct ipv4_addr ip)
 {
 	struct interface *i;
-	for (i=local_interfaces;i;i=i->next)
-		if (ipv4_equal(i->ip,ip)) return True;
+	for (i=local_interfaces;i;i=i->next) {
+		if (i->ip.addr == ip.addr) return True;
+	}
 	return False;
 }
 
