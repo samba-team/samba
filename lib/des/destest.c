@@ -292,7 +292,7 @@ char *argv[];
 	unsigned char cbc_in[40];
 	unsigned char cbc_out[40];
 	DES_LONG cs;
-	unsigned char qret[4][4],cret[8];
+	unsigned char cret[8];
 	DES_LONG lqret[4];
 	int num;
 	char *str;
@@ -583,59 +583,35 @@ char *argv[];
 		}
 
 	printf("Doing quad_cksum\n");
-	cs=quad_cksum((C_Block *)cbc_data,(C_Block *)qret,
+	cs=quad_cksum((C_Block *)cbc_data,(C_Block *)lqret,
 		(long)strlen(cbc_data),2,(C_Block *)cbc_iv);
-	{
-	static DES_LONG l=1;
-	static unsigned char *c=(unsigned char *)&l;
-	if (!c[0])
-		{
-			for (i=0; i<4; i++)
-			{
-			lqret[i] = (qret[3-i][0] << 24) |
-				(qret[3-i][1] << 16) |
-				(qret[3-i][2] << 8) |
-				(qret[3-i][3] << 0);
-			}
-		}	
-	else
-		{
-			for (i=0; i<4; i++)
-			{
-			lqret[i] = (qret[i][3] << 24) |
-				(qret[i][2] << 16) |
-				(qret[i][1] << 8) |
-				(qret[i][0] << 0);
-			}
-		}	
-	}
 	if (cs != 0x70d7a63aL)
 		{
 		printf("quad_cksum error, ret %08lx should be 70d7a63a\n",cs);
 		err=1;
 		}
-	if (lqret[0] != 0x8dba7e32L)
+	if (lqret[0] != 0x327eba8dL)
 		{
 		printf("quad_cksum error, out[0] %08lx is not %08lx\n",
-			lqret[0],0x8dba7e32L);
+			lqret[0],0x327eba8dL);
 		err=1;
 		}
-	if (lqret[1] != 0xcc491a20L)
+	if (lqret[1] != 0x201a49ccL)
 		{
 		printf("quad_cksum error, out[1] %08lx is not %08lx\n",
-			lqret[1],0xcc491a20L);
+			lqret[1],0x201a49ccL);
 		err=1;
 		}
-	if (lqret[2] != 0x3aa6d770L)
+	if (lqret[2] != 0x70d7a63aL)
 		{
 		printf("quad_cksum error, out[2] %08lx is not %08lx\n",
-			lqret[2],0x3aa6d770L);
+			lqret[2],0x70d7a63aL);
 		err=1;
 		}
-	if (lqret[3] != 0x262c1c50L)
+	if (lqret[3] != 0x501c2c26L)
 		{
 		printf("quad_cksum error, out[3] %08lx is not %08lx\n",
-			lqret[3],0x262c1c50L);
+			lqret[3],0x501c2c26L);
 		err=1;
 		}
 
