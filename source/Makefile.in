@@ -95,6 +95,7 @@ PROGS2 = bin/smbpasswd bin/make_smbcodepage bin/rpcclient bin/make_unicodemap bi
 MPROGS = @MPROGS@
 LPROGS = $(WINBIND_PAM_PROGS) $(WINBIND_LPROGS)
 PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup
+TORTURE_PROGS = bin/smbtorture bin/msgtest bin/masktest bin/locktest bin/locktest2
 SHLIBS = libsmbclient
 
 SCRIPTS = $(srcdir)/script/smbtar 
@@ -412,6 +413,8 @@ everything : CHECK $(SPROGS) $(PROGS) $(SHLIBS) nsswitch smbwrapper smbtorture d
 pam_smbpass : CHECK bin/pam_smbpass.@SHLIBEXT@
 
 smbwrapper : CHECK bin/smbsh bin/smbwrapper.@SHLIBEXT@ @WRAP32@
+
+torture : CHECK $(TORTURE_PROGS)
 
 smbtorture : CHECK bin/smbtorture
 
