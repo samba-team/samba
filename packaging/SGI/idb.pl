@@ -102,7 +102,6 @@ chdir $curdir;
 @docs = sort byfilename grep (!/^docs\/$/ & (/^source\/.*\.doc$/ | /^docs\//),@allfiles);
 @docs = grep(!/htmldocs\/using_samba/, @docs);
 @docs = grep(!/docbook/, @docs);
-@docs = grep(!/yodldocs/, @docs);
 
 @swatfiles = sort grep(/^packaging\/SGI\/swat/, @allfiles);
 @catman = sort grep(/^packaging\/SGI\/catman/ & !/\/$/, @allfiles);
