@@ -36,7 +36,7 @@ extern int DEBUGLEVEL;
 do a LSA Open Policy
 ****************************************************************************/
 BOOL lsa_open_policy(struct cli_state *cli, uint16 fnum,
-			char *server_name, POLICY_HND *hnd,
+			const char *server_name, POLICY_HND *hnd,
 			BOOL sec_qos)
 {
 	prs_struct rbuf;
