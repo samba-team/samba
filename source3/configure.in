@@ -458,6 +458,24 @@ AC_ARG_WITH(syslog,
   AC_MSG_RESULT(no)
 )
 
+#################################################
+# check for experimental netatalk resource fork support
+AC_MSG_CHECKING(whether to support netatalk)
+AC_ARG_WITH(netatalk,
+[  --with-netatalk     Include experimental Netatalk support
+  --without-netatalk  Don't include experimental Netatalk support (default)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_NETATALK)
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
 
 #################################################
 # these tests are taken from the GNU fileutils package
