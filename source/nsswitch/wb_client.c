@@ -1192,8 +1192,6 @@ static BOOL wb_enumusers(struct wb_client_state *state, TALLOC_CTX *mem_ctx,
 	}
 
 	return True;
-
-	
 }
 
 void wb_setpwent(struct wb_client_state *state)
@@ -1262,11 +1260,13 @@ void wb_endpwent(struct wb_client_state *state)
 {
 	if (state->domains_ctx != NULL)
 		talloc_destroy(state->domains_ctx);
+	state->domains_ctx = NULL;
 	state->num_domains = 0;
 	state->current_domain = 0;
 
 	if (state->users_ctx != NULL)
 		talloc_destroy(state->users_ctx);
+	state->users_ctx = NULL;
 	state->num_users = 0;
 	state->current_user = 0;
 
