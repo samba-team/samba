@@ -168,7 +168,8 @@ AM_CONDITIONAL(do_roken_rename, true)
 AC_DEFINE(KRB5, 1, [Enable Kerberos 5 support in applications.])dnl
 AC_SUBST(LIB_kdb)dnl
 
-AC_ARG_ENABLE(dce, [  --enable-dce	if you want support for DCE/DFS PAG's.])
+AC_ARG_ENABLE(dce, 
+	AC_HELP_STRING([--enable-dce],[if you want support for DCE/DFS PAG's]))
 if test "$enable_dce" = yes; then
     AC_DEFINE(DCE, 1, [Define if you want support for DCE/DFS PAG's.])
 fi
@@ -186,20 +187,14 @@ fi
 AC_SUBST(dpagaix_CFLAGS)
 AC_SUBST(dpagaix_LDADD)
 
-otp=yes
 AC_ARG_ENABLE(otp,
-[  --disable-otp          if you don't want OTP support],
-[
-if test "$enableval" = "no"; then
-	otp=no
-fi
-])
-if test "$otp" = "yes"; then
+	AC_HELP_STRING([--disable-otp],[if you don't want OTP support]))
+if test "$enable_otp" != no; then
 	AC_DEFINE(OTP, 1, [Define if you want OTP support in applications.])
 	LIB_otp='$(top_builddir)/lib/otp/libotp.la'
 fi
 AC_SUBST(LIB_otp)
-AM_CONDITIONAL(OTP, test "$otp" = yes)dnl
+AM_CONDITIONAL(OTP, test "$enable_otp" ! no)dnl
 
 AC_CHECK_OSFC2
 
@@ -333,9 +328,8 @@ AC_CHECK_HEADERS([\
 
 CHECK_NETINET_IP_AND_TCP
 
-
 AC_ARG_ENABLE(netinfo,
-[  --enable-netinfo      enable netinfo for configuration lookup])
+	AC_HELP_STRING([--enable-netinfo],[enable netinfo for configuration lookup]))
 
 if test "$ac_cv_header_netinfo_ni_h" = yes -a "$enable_netinfo" = yes; then
        AC_DEFINE(HAVE_NETINFO, 1,
