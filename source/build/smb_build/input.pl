@@ -75,13 +75,13 @@ sub _check_modules($)
 
 		if ($build eq "SHARED") {
 			$CTX->{INPUT}{MODULES}{$mod}{BUILD} = "SHARED";
-			printf("Module: %s...SHARED\n",$mod);
+			printf("Module: %s...shared\n",$mod);
 		} elsif ($build eq "STATIC") {
 			$CTX->{INPUT}{MODULES}{$mod}{BUILD} = "STATIC";
-			printf("Module: %s...STATIC\n",$mod);
+			printf("Module: %s...static\n",$mod);
 		} else {
 			$CTX->{INPUT}{MODULES}{$mod}{BUILD} = "NOT";
-			printf("Module: %s...NOT\n",$mod);
+			printf("Module: %s...not\n",$mod);
 			next;
 		}
 	}
@@ -95,7 +95,7 @@ sub _check_libraries($)
 
 	foreach my $lib (sort keys %{$CTX->{INPUT}{LIBRARIES}}) {
 		if ($CTX->{INPUT}{LIBRARIES}{$lib}{ENABLE} ne "YES") {
-			printf("Library: %s disabled!\n",$CTX->{INPUT}{LIBRARIES}{$lib}{NAME});
+			printf("Library: %s...disabled\n",$CTX->{INPUT}{LIBRARIES}{$lib}{NAME});
 			next;
 		}
 	}
@@ -109,7 +109,7 @@ sub _check_binaries($)
 
 	foreach my $bin (sort keys %{$CTX->{INPUT}{BINARIES}}) {
 		if ($CTX->{INPUT}{BINARIES}{$bin}{ENABLE} ne "YES") {
-			printf("Binary: %s disabled!\n",$CTX->{INPUT}{BINARIES}{$bin}{NAME});
+			printf("Binary: %s...disabled\n",$CTX->{INPUT}{BINARIES}{$bin}{NAME});
 			next;
 		}
 	}
