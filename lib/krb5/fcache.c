@@ -87,12 +87,41 @@ fcc_resolve(krb5_context context, krb5_ccache *id, const char *res)
  * Try to scrub the contents of `filename' safely.
  */
 
+static int
+scrub_file (int fd)
+{
+    off_t pos;
+    char buf[128];
+
+    pos = lseek(fd, 0, SEEK_END);
+    if (pos < 0)
+        return errno;
+    pos = lseek(fd, 0, SEEK_SET);
+    if (pos < 0)
+        return errno;
+    memset(buf, 0, sizeof(buf));
+    while(pos > 0) {
+        ssize_t tmp = write(fd, buf, min(sizeof(buf), pos));
+
+	if (tmp < 0)
+	    return errno;
+	pos -= tmp;
+    }
+    fsync (fd);
+    return 0;
+}
+
+/*
+ * Erase `filename' if it exists, trying to remove the contents if
+ * it's `safe'.  We always try to remove the file, it it exists.  It's
+ * only overwritten if it's a regular file (not a symlink and not a
+ * hardlink)
+ */
+
 static krb5_error_code
 erase_file(const char *filename)
 {
     int fd;
-    off_t pos;
-    char buf[128];
     struct stat sb1, sb2;
     int ret;
 
@@ -107,32 +136,34 @@ erase_file(const char *filename)
 	else
 	    return errno;
     }
+    if (unlink(filename) < 0) {
+        close (fd);
+        return errno;
+    }
+
     ret = fstat (fd, &sb2);
     if (ret < 0) {
 	close (fd);
 	return errno;
     }
 
-    /* someone was playing with symlinks */
+    /* check if someone was playing with symlinks */
 
     if (sb1.st_dev != sb2.st_dev || sb1.st_ino != sb2.st_ino) {
 	close (fd);
 	return EPERM;
     }
 
-    /* XXX - uid checks? */
+    /* there are still hard links to this file */
 
-    pos = lseek(fd, 0, SEEK_END);
-    lseek(fd, 0, SEEK_SET);
-    memset(buf, 0, sizeof(buf));
-    while(pos > 0)
-	pos -= write(fd, buf, sizeof(buf));
-    close(fd);
-#ifdef HAVE_REVOKE
-    revoke(filename);
-#endif
-    unlink(filename);
-    return 0;
+    if (sb2.st_nlink != 0) {
+        close (fd);
+        return 0;
+    }
+
+    ret = scrub_file (fd);
+    close (fd);
+    return ret;
 }
 
 static krb5_error_code
@@ -144,7 +175,7 @@ fcc_gen_new(krb5_context context, krb5_ccache *id)
     f = malloc(sizeof(*f));
     if(f == NULL)
 	return KRB5_CC_NOMEM;
-    asprintf(&file, "/tmp/krb5cc_XXXXXX"); /* XXX */
+    file = strdup (KRB5_DEFAULT_CCFILE_ROOT);
     if(file == NULL) {
 	free(f);
 	return KRB5_CC_NOMEM;
