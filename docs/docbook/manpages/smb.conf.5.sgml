@@ -3467,7 +3467,7 @@
 		</para>
 	
 		
-		<para>Default : <command>ldap filter = (&(uid=%u)(objectclass=sambaAccount))</command></para>
+		<para>Default : <command>ldap filter = (&amp;(uid=%u)(objectclass=sambaAccount))</command></para>
 		</listitem>
 		</varlistentry>
 

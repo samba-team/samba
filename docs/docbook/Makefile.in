@@ -51,16 +51,18 @@ all:
 	@echo "ps - Build PostScript version of HOWTO Collection"
 	@echo "pdf - Build PDF version of HOWTO Collection"
 	@echo -n "html-single - Build single file HTML version of HOWTO Collection"
-	@echo "and developers guide"
-	@echo "html - Build HTML version of HOWTO Collection and manpages"
+	@echo " and developers guide"
+	@echo "html - Build HTML version of HOWTO Collection"
+	@echo "htmlman - Build html version of manpages"
 	@echo "txt - Build plain text version of HOWTO Collection"
 
 manpages: $(MANPAGES)
 pdf: ../Samba-HOWTO-Collection.pdf
 ps: ../Samba-HOWTO-Collection.ps
 txt: ../Samba-HOWTO-Collection.txt
-html: $(MANPAGES_HTML)
-	$(DOCBOOK2HTML) -d samba.dsl -o $(HTMLDIR) $<
+htmlman:  $(MANPAGES_HTML)
+html:
+	$(DOCBOOK2HTML) -d samba.dsl -o $(HTMLDIR) projdoc/samba-doc.sgml
 html-single: ../Samba-HOWTO-Collection.html  ../Samba-Developers-Guide.html
 
 ../Samba-HOWTO-Collection.txt: $(SGMLDIR)/samba-doc.sgml
@@ -85,6 +87,7 @@ html-single: ../Samba-HOWTO-Collection.html  ../Samba-Developers-Guide.html
 
 $(HTMLDIR)/%.html: $(MANSGMLDIR)/%.sgml
 	$(DOCBOOK2HTML) -o $(HTMLDIR) $<
+	mv $(HTMLDIR)/index.html $@
 
 $(MANDIR)/%: $(MANSGMLDIR)/%.sgml 
 	$(DOCBOOK2MAN) -o $(MANDIR) $<

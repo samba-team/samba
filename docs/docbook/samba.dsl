@@ -44,13 +44,10 @@
 (define %section-autolabel% #t)
 (define (toc-depth nd) 3)
 
-(define %root-filename% "index")	;; name for the root html file
+(define %root-filename% "Samba-HOWTO")	;; name for the root html file
 (define %html-ext% ".html")		;; default extension for html output files
 (define %html-prefix% "")               ;; prefix for all filenames generated (except root)
-(define %use-id-as-filename% #t)        ;; if #t uses ID value, if present, as filename
-                                        ;;   otherwise a code is used to indicate level
-                                        ;;   of chunk, and general element number
-                                        ;;   (nth element in the document)
+(define %use-id-as-filename% #t)
 
 ; === HTML settings ===
 (define %html-pubid% "-//W3C//DTD HTML 4.01 Transitional//EN") ;; Nearly true :-(
