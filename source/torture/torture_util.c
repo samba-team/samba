@@ -230,8 +230,8 @@ void dump_all_info(TALLOC_CTX *mem_ctx, union smb_fileinfo *finfo)
 	d_printf("\twrite_time:     %s\n", nt_time_string(mem_ctx, finfo->all_info.out.write_time));
 	d_printf("\tchange_time:    %s\n", nt_time_string(mem_ctx, finfo->all_info.out.change_time));
 	d_printf("\tattrib:         0x%x\n", finfo->all_info.out.attrib);
-	d_printf("\talloc_size:     %llu\n", (unsigned long long)finfo->all_info.out.alloc_size);
-	d_printf("\tsize:           %llu\n", (unsigned long long)finfo->all_info.out.size);
+	d_printf("\talloc_size:     %llu\n", (uint64_t)finfo->all_info.out.alloc_size);
+	d_printf("\tsize:           %llu\n", (uint64_t)finfo->all_info.out.size);
 	d_printf("\tnlink:          %u\n", finfo->all_info.out.nlink);
 	d_printf("\tdelete_pending: %u\n", finfo->all_info.out.delete_pending);
 	d_printf("\tdirectory:      %u\n", finfo->all_info.out.directory);
