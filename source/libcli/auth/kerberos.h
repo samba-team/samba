@@ -68,6 +68,6 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 			   krb5_auth_context auth_context,
 			   const char *realm, const DATA_BLOB *ticket, 
 			   char **principal, DATA_BLOB *auth_data,
-			   DATA_BLOB *ap_rep)
+			   DATA_BLOB *ap_rep);
 #endif /* HAVE_KRB5 */
 
