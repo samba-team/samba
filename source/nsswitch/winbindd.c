@@ -303,7 +303,7 @@ static struct dispatch_table dispatch_table[] = {
 	/* PAM auth functions */
 
 	{ WINBINDD_PAM_AUTH, winbindd_pam_auth, "PAM_AUTH" },
-/*	{ WINBINDD_PAM_AUTH_CRAP, winbindd_pam_auth_crap, "AUTH_CRAP" }, not yet ported. JRA */
+	{ WINBINDD_PAM_AUTH_CRAP, winbindd_pam_auth_crap, "AUTH_CRAP" },
 	{ WINBINDD_PAM_CHAUTHTOK, winbindd_pam_chauthtok, "CHAUTHTOK" },
 
 	/* Enumeration functions */

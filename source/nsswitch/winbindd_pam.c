@@ -88,6 +88,63 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	return result ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
+/* Challenge Response Authentication Protocol */
+
+enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state) 
+{
+	NTSTATUS result;
+	fstring name_domain, name_user;
+	unsigned char trust_passwd[16];
+	time_t last_change_time;
+        uint32 smb_uid_low;
+        NET_USER_INFO_3 info3;
+	NET_ID_INFO_CTR ctr;
+        struct cli_state *cli;
+
+	DEBUG(3, ("[%5d]: pam auth crap %s\n", state->pid,
+		  state->request.data.auth_crap.user));
+
+	/* Parse domain and username */
+
+	wb_parse_domain_user(state->request.data.auth_crap.user, name_domain, 
+                          name_user);
+
+	/*
+	 * Get the machine account password for our primary domain
+	 */
+
+	if (!secrets_fetch_trust_account_password(
+                lp_workgroup(), trust_passwd, &last_change_time)) {
+		DEBUG(0, ("winbindd_pam_auth_crap: could not fetch trust account "
+                          "password for domain %s\n", lp_workgroup()));
+		return WINBINDD_ERROR;
+	}
+
+	/* We really don't care what LUID we give the user. */
+
+	generate_random_buffer( (unsigned char *)&smb_uid_low, 4, False);
+
+	ZERO_STRUCT(info3);
+
+        result = cm_get_netlogon_cli(lp_workgroup(), trust_passwd, &cli);
+
+        if (!NT_STATUS_IS_OK(result)) {
+                DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
+                goto done;
+        }
+
+	result = cli_nt_login_network(cli, name_domain, name_user, smb_uid_low,
+			state->request.data.auth_crap.chal,
+			state->request.data.auth_crap.lm_resp,
+			state->request.data.auth_crap.nt_resp,
+			&ctr, &info3);
+
+        cli_shutdown(cli);
+
+ done:
+	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
+}
+
 /* Change a user password */
 
 enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)

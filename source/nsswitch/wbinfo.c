@@ -310,7 +310,6 @@ static BOOL wbinfo_auth(char *username)
         return result == NSS_STATUS_SUCCESS;
 }
 
-#if 0 /* JRA - not yet ported. */
 /* Authenticate a user with a challenge/response */
 
 static BOOL wbinfo_auth_crap(char *username)
@@ -362,7 +361,6 @@ static BOOL wbinfo_auth_crap(char *username)
 
         return result == NSS_STATUS_SUCCESS;
 }
-#endif
 
 /* Print domain users */
 
@@ -561,13 +559,11 @@ int main(int argc, char **argv)
                                 got_error = True;
                         }
 
-#if 0 /* JRA - not yet ported. */
                         if (!wbinfo_auth_crap(optarg)) {
                                 printf("Could not authenticate user %s with "
                                        "challenge/response\n", optarg);
                                 got_error = True;
                         }
-#endif
 
                         if (got_error)
                                 return 1;
