@@ -496,7 +496,7 @@ display_tokens(int do_verbose)
 		break;
 	    continue;
 	}
-	if(parms.out_size >= sizeof(t))
+	if(parms.out_size > sizeof(t))
 	    continue;
 	if(parms.out_size < sizeof(size_secret_tok))
 	    continue;
