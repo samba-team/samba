@@ -4,6 +4,8 @@ function start_module(name)
 {
 	module=name;
 	num_structs=0;
+	num_elements=0;
+	num_unions=0;
 }
 
 function start_struct(name) 
@@ -21,44 +23,59 @@ function end_struct()
 	current_struct="";
 }
 
-function add_elem(type, elem,
-		  LOCAL, elem_num)
+function add_element(type, elem, case,
+		     LOCAL, elem_num, i, v)
 {
-	elem_num=structs[current_struct, "num_elems"];
-	structs[current_struct, elem_num, "type"] = type;
-	structs[current_struct, elem_num, "elem"] = elem;
-	structs[current_struct, elem_num, "array_len"] = "";
-	structs[current_struct, "num_elems"]++;
+	elem_num=num_elements;
+
+	if (substr(elem, 1, 1) == "*") {
+		elem=substr(elem, 2);
+		elements[elem_num, "ptr"]=1;
+	}
+
+	i=match(elem,"[[]");
+	if (i != 0) {
+		v = substr(elem, i+1, length(elem)-i-1);
+		elem=substr(elem, 1, i-1);
+		if (type=="union") {
+			elements[elem_num, "switch"] = v;
+		} else {
+			elements[elem_num, "array_len"] = v;
+		}
+	}
+
+	elements[elem_num, "type"] = type;
+	elements[elem_num, "elem"] = elem;
+	elements[elem_num, "case"] = case;
+
+	num_elements++;
 	return elem_num;
 }
 
-function add_array(array_len, type, elem,
-		   LOCAL, elem_num)
+function add_struct_elem(type, elem, case,
+			 LOCAL, elem_num)
 {
-	elem_num=add_elem(type, elem);
-	structs[current_struct, elem_num, "array_len"] = array_len;
+	elem_num=structs[current_struct, "num_elems"];
+	structs[current_struct, elem_num] = add_element(type, elem, case);
+	structs[current_struct, "num_elems"]++;
+	return structs[current_struct, elem_num];
 }
 
-function start_union(switch, elem) 
+function start_union(elem)
 {
-	current_union=elem;
-	add_elem("union", elem);
-	structs[current_struct, "unions", current_union, "switch"] = switch;
-	structs[current_struct, "unions", current_union, "num_elems"] = 0;
+	current_union = add_struct_elem("union", elem);
+	unions[current_union, "num_elems"] = 0;
 }
 
-function parse_case(value, type, elem,
+function parse_case(case, type, elem,
 		    LOCAL, elem_num) 
 {
-	elem_num =structs[current_struct, "unions", current_union, "num_elems"];
-	structs[current_struct, "unions", current_union, elem_num, "type"] = type;
-	structs[current_struct, "unions", current_union, elem_num, "elem"] = elem;
-	structs[current_struct, "unions", current_union, elem_num, "value"] = value;
-	structs[current_struct, "unions", current_union, "num_elems"]++;
+	elem_num = unions[current_union, "num_elems"];
+	unions[current_union, elem_num] = add_element(type, elem, case);
+	unions[current_union, "num_elems"]++;
 }
 
 function end_union() 
 {
 	current_union="";
 }
-

@@ -130,7 +130,7 @@ char *prs_mem_get(prs_struct *ps, uint32 extra_size)
  Stream a uint32.
  ********************************************************************/
 
-BOOL prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32)
+BOOL prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32, BOOL scalars)
 {
 	char *q = prs_mem_get(ps, sizeof(uint32));
 	if (q == NULL)
@@ -267,10 +267,10 @@ void dump_data(int level,char *buf1,int len)
 /*******************************************************************
  Stream a pointer
  ********************************************************************/
-BOOL prs_pointer(char *desc, prs_struct *ps, int depth, void **p)
+BOOL prs_pointer(char *desc, prs_struct *ps, int depth, void **p, BOOL scalars)
 {
 	uint32 v = (*p) ? 1 : 0;
-	if (!prs_uint32(desc, ps, depth, &v)) return False;
+	if (!prs_uint32(desc, ps, depth, &v, True)) return False;
 	*p = (void *) (v ? 1 : 0);
 	return True;
 }
@@ -311,7 +311,7 @@ BOOL prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *d
  Stream a uint16.
  ********************************************************************/
 
-BOOL prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16)
+BOOL prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16, BOOL scalars)
 {
 	char *q = prs_mem_get(ps, sizeof(uint16));
 	if (q == NULL)

@@ -1,18 +1,16 @@
 module spool
-test SPOOL_NOTIFY_INFO
+test PRINTER_DRIVER_INFO_LEVEL_6
 
 struct BUFFER5 {
-       .align 4;
        uint32 buf_len;
-       {buf_len} uint16 buffer;
+       uint16 *buffer[buf_len];
 };
 
 struct UNISTR2 {
-       .align 4;
        uint32 max_len;
        uint32 undoc;
        uint32 str_len;
-       {str_len} uint16 buffer;
+       uint16 *buffer[str_len];
 };
 
 struct UINT64_S {
@@ -26,7 +24,6 @@ struct NTTIME {
 };
 
 struct PRINTER_DRIVER_INFO_LEVEL_3 {
-        .align 4;
 	uint32 cversion;
 	UNISTR2 *name;
 	UNISTR2 *environment;
@@ -41,7 +38,6 @@ struct PRINTER_DRIVER_INFO_LEVEL_3 {
 };
 
 struct PRINTER_DRIVER_INFO_LEVEL_6 {
-  .align 4;
   uint32   dummy1; 
   uint32   version; 
   UNISTR2  *name;       
@@ -67,41 +63,9 @@ struct PRINTER_DRIVER_INFO_LEVEL_6 {
 
 
 struct PRINTER_DRIVER_INFO {
-       .align 4;
        uint32 level;
-       union level *info {
+       union *info[level] {
 	      case 3 PRINTER_DRIVER_INFO_LEVEL_3 info_3;
 	      case 6 PRINTER_DRIVER_INFO_LEVEL_6 info_6;
        }
-};
-
-
-struct NOTIFY_DATA_VALUE {
-       uint32 value0;
-       uint32 value1;
-};
-
-struct NOTIFY_DATA_STRING {
-       uint32 length;
-       {length} uint16 string;
-};
-
-struct SPOOL_NOTIFY_INFO_DATA {
-	uint16 type;
-	uint16 field;
-	uint32 reserved;
-	uint32 id;
-	union enc_type *notify_data {
-		case 1 NOTIFY_DATA_VALUE value;
-		case 0 NOTIFY_DATA_STRING string;
-	}
-	uint32 size;
-	uint32 enc_type;
-};
-
-struct SPOOL_NOTIFY_INFO {
-	uint32 version;
-	uint32 flags;
-	uint32 count;
-	SPOOL_NOTIFY_INFO_DATA *data;
 };
