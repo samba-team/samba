@@ -231,18 +231,24 @@ all : CHECK $(SPROGS) $(PROGS)
 smbwrapper : CHECK smbwrapper/smbsh smbwrapper/smbwrapper.so
 
 .SUFFIXES:
-.SUFFIXES: .c .o .h .po
+.SUFFIXES: .c .o .po
 
 CHECK:
 	@echo "Using FLAGS = $(FLAGS)"
 	@echo "Using LIBS = $(LIBS)"
 
+MAKEDIR = || exec false; \
+	  if test -d "$$dir"; then :; else \
+	  echo mkdir "$$dir"; \
+	  mkdir -p "$$dir" >/dev/null 2>&1 || \
+	  test -d "$$dir" || \
+	  mkdir "$$dir" || \
+	  exec false; fi || exec false
+
 .c.o: @MAINT@ .deps/.dummy
+	@if (: > $@) >/dev/null 2>&1; then :; else \
+	 dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
 	@echo Compiling $*.c
-	@dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` && \
-	   if test ! -d "$$dir"; then \
-	     echo mkdir "$$dir" && mkdir "$$dir" || true; \
-	   else true; fi
 	@$(CC) -I. -I$(srcdir) $(FLAGS) -c $< -o $@ \
 	@MAINT@ -Wp,-MD,.deps/`echo $* | sed s,/,_,g`.P && : >.deps/.stamp
 # the line above is for atomatic dependency tracking
@@ -250,17 +256,16 @@ CHECK:
 
 
 .c.po: @MAINT@ .deps/.dummy
+	@if (: > $@) >/dev/null 2>&1; then :; else \
+	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
 	@echo Compiling $*.c with -fpic
-	@dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` && \
-	   if test ! -d "$$dir"; then \
-	     echo mkdir "$$dir" && mkdir "$$dir" || true; \
-	   else true; fi
 	@$(CC) -I. -I$(srcdir) $(FLAGS) -fpic -c $< -o $@ \
 	@MAINT@ -Wp,-MD,.deps/`echo $* | sed s,/,_,g`.P && : >.deps/.stamp
 
 bin/.dummy:
-	if test ! -d bin; then echo mkdir bin && mkdir bin || true; else true; fi
-	@: > $@ # create it
+	@if (: > $@) >/dev/null 2>&1; then :; else \
+	  dir=bin $(MAKEDIR); fi
+	@: > $@ # create it (what a fancy emoticon :-)
 
 bin/smbd: $(SMBD_OBJ) bin/.dummy
 	@echo Linking $@
@@ -332,7 +337,7 @@ bin/smbtorture: $(SMBTORTURE_OBJ) bin/.dummy
 
 smbwrapper/smbwrapper.so: $(PICOBJS)
 	@echo Linking shared library $@
-	@$(LD) @LDSHFLAGS@ -o $@ $(PICOBJS)
+	@$(LD) @LDSHFLAGS@ -o $@ $(PICOBJS) $(LIBS)
 
 smbwrapper/smbsh: smbwrapper/smbsh.in config.status
 	CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
@@ -394,12 +399,13 @@ ctags:
 	ctags `find . -name "*.[ch]"`
 
 realclean: clean
-	-rm -f config.log $(PROGS) $(SPROGS) smbsh
+	-rm -f config.log $(PROGS) $(SPROGS) bin/.dummy
+	-rm -f smbwrapper/smbsh smbwrapper/smbwrapper.so
 
 distclean: realclean
 	-rm -f include/config.h include/stamp-h Makefile
 	-rm -f config.status config.cache
-	-rm -rf .deps
+	-rm -rf .deps bin
 
 # this target is really just for my use. It only works on a limited
 # range of machines and is used to produce a list of potentially
@@ -442,8 +448,10 @@ $(srcdir)/include/stamp-h.in: @MAINT@ $(srcdir)/acconfig.h $(srcdir)/configure.i
 
 # automatic dependency tracking rules
 .deps/.dummy:
-	@-if test ! -d .deps; then mkdir .deps || true; else true; fi
-	@: >$@
+	@if (: > $@) >/dev/null 2>&1; then :; else \
+	  dir=.deps $(MAKEDIR); fi
+	@: > $@ # create it (what a fancy emoticon :-)
+	@: > $@ # create it (what a fancy emoticon :-)
 
 .deps/.stamp: .deps/.dummy
 	@:
