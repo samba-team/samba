@@ -1461,7 +1461,7 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 		 * in use.
 		 */
 
-		case SMB_CIFS_UNIX_QUERY_INFO:
+		case SMB_QUERY_CIFS_UNIX_INFO:
 
 			if (!lp_unix_extensions())
 				return ERROR_DOS(ERRDOS,ERRunknownlevel);

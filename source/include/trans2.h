@@ -417,7 +417,7 @@ Offset Size         Name
  64-bits worth of capability fun :-).
 */
 
-#define SMB_CIFS_UNIX_QUERY_INFO      0x200
+#define SMB_QUERY_CIFS_UNIX_INFO      0x200
 
 /* Returns the following.
 
