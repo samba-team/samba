@@ -45,7 +45,7 @@ krb5_build_ap_req (krb5_context context,
 		   krb5_creds *cred,
 		   krb5_flags ap_options,
 		   krb5_data authenticator,
-		   krb5_data *ret)
+		   krb5_data *retdata)
 {
   krb5_error_code ret = 0;
   AP_REQ ap;
@@ -70,13 +70,13 @@ krb5_build_ap_req (krb5_context context,
   ap.authenticator.kvno  = NULL;
   ap.authenticator.cipher = authenticator;
 
-  ret->length = length_AP_REQ(&ap);
-  ret->data = malloc(ret->length);
-  if(ret->data == NULL)
+  retdata->length = length_AP_REQ(&ap);
+  retdata->data = malloc(retdata->length);
+  if(retdata->data == NULL)
       ret = ENOMEM;
   else
-      encode_AP_REQ((unsigned char *)ret->data + ret->length - 1,
-		    ret->length, &ap, &len);
+      encode_AP_REQ((unsigned char *)retdata->data + retdata->length - 1,
+		    retdata->length, &ap, &len);
   free_AP_REQ(&ap);
   
   return ret;
