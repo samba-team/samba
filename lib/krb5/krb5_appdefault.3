@@ -5,7 +5,8 @@
 .Os HEIMDAL
 .Sh NAME
 .Nm krb5_appdefault_boolean ,
-.Nm krb5_appdefault_string
+.Nm krb5_appdefault_string ,
+.Nm krb5_appdefault_time
 .Nd Get application configuration value
 
 .Sh SYNOPSIS
@@ -15,6 +16,8 @@
 .Fn krb5_appdefault_boolean "krb5_context context" "const char *appname" "krb5_realm realm" "const char *option" "krb5_boolean def_val" "krb5_boolean *ret_val"
 .Ft void
 .Fn krb5_appdefault_string "krb5_context context" "const char *appname" "krb5_realm realm" "const char *option" "const char *def_val" "char **ret_val"
+.Ft void
+.Fn krb5_appdefault_time "krb5_context context" "const char *appname" "krb5_realm realm" "const char *option" "time_t def_val" "time_t *ret_val"
 
 .Sh DESCRIPTION
 
@@ -43,14 +46,10 @@ in order of descending importance.
 	option = value
 .Ed
 
-.Fa appname
-is the name of the application, and
-.Fa realm
-is the realm name. If the realm is omitted it will not be used for
-resolving values. 
+If the realm is omitted it will not be used for resolving values.  If
+no value can be found,
 .Fa def_val
-is the value to return if no value is found in
-.Xr krb5.conf 5 .
+is returned instead.
 
 .Sh SEE ALSO
 .Xr krb5_config 3 ,
