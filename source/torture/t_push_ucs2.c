@@ -1,0 +1,40 @@
+/*
+ * Copyright (C) 2003 by Martin Pool
+ * Copyright (C) 2003 by Andrew Bartlett
+ *
+ * Test harness for push_ucs2
+ */
+
+#include "includes.h"
+
+static int check_push_ucs2(const char *orig) 
+{
+	smb_ucs2_t *dest = NULL;
+	char *orig2 = NULL;
+	int ret;
+
+	push_ucs2_allocate(&dest, orig);
+	pull_ucs2_allocate(&orig2, dest);
+	ret = strcmp(orig, orig2);
+	SAFE_FREE(dest);
+	SAFE_FREE(orig2);
+}
+
+int main(int argc, char *argv[])
+{
+	int i, ret;
+	
+	if (argc != 2) {
+		fprintf(stderr, "usage: %s STRING1\n"
+			"Converts a string, prints the results of memcmp\n",
+			argv[0]);
+		return 2;
+	}
+
+	for (i = 0; i < 10000; i++)
+		ret = check_push_ucs2(argv[1]);
+
+	printf("%d\n", ret);
+	
+	return 0;
+}

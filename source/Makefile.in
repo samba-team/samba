@@ -893,7 +893,7 @@ bin/libsmbclient.a: $(LIBSMBCLIENT_PICOBJS)
 bin/libbigballofmud.@SHLIBEXT@: $(LIBBIGBALLOFMUD_PICOBJS)
 	@echo Linking bigballofmud shared library $@
 	$(SHLD) $(LDSHFLAGS) -o $@ $(LIBBIGBALLOFMUD_PICOBJS) $(LIBS) \
-		@SONAMEFLAG@`basename $@`.$(LIBBIGBALLOFMUD_MAJOR)
+		@SONAMEFLAG@`basename $@`.$(LIBBIGBALLOFMUD_MAJOR) $(PASSDBLIBS) $(ADSLIBS)
 
 # It would be nice to build a static bigballofmud too, but when I try
 # I get linker errors about dl_open and similar things.  I'm not sure
@@ -1091,6 +1091,9 @@ bin/t_stringoverflow@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_stringove
 
 bin/t_doschar@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_doschar.o
 	$(CC) $(FLAGS) -o $@ $(LIBS) torture/t_doschar.o -L ./bin -lbigballofmud
+
+bin/t_push_ucs2@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_push_ucs2.o
+	$(CC) $(FLAGS) -o $@ $(LIBS) torture/t_push_ucs2.o -L ./bin -lbigballofmud
 
 install: installbin installman installscripts installdat installswat installmodules installclientlib
 
