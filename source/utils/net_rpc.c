@@ -1098,10 +1098,460 @@ rpc_group_add_internals(const DOM_SID *domain_sid, const char *domain_name,
 	return result;
 }
 
+static NTSTATUS 
+rpc_alias_add_internals(const DOM_SID *domain_sid, const char *domain_name, 
+			struct cli_state *cli,
+			TALLOC_CTX *mem_ctx, int argc, const char **argv)
+{
+	POLICY_HND connect_pol, domain_pol, alias_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	ALIAS_INFO_CTR alias_info;
+
+	if (argc != 1) {
+		d_printf("Group name must be specified\n");
+		rpc_group_usage(argc, argv);
+		return NT_STATUS_OK;
+	}
+
+	/* Get sam policy handle */
+	
+	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				  &connect_pol);
+	if (!NT_STATUS_IS_OK(result)) goto done;
+	
+	/* Get domain policy handle */
+	
+	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      domain_sid, &domain_pol);
+	if (!NT_STATUS_IS_OK(result)) goto done;
+
+	/* Create the group */
+
+	result = cli_samr_create_dom_alias(cli, mem_ctx, &domain_pol,
+					   argv[0], &alias_pol);
+	if (!NT_STATUS_IS_OK(result)) goto done;
+
+	if (strlen(opt_comment) == 0) goto done;
+
+	/* We've got a comment to set */
+
+	alias_info.switch_value1 = 3;
+	alias_info.switch_value2 = 3;
+	init_samr_alias_info3(&alias_info.alias.info3, opt_comment);
+
+	result = cli_samr_set_aliasinfo(cli, mem_ctx, &alias_pol, &alias_info);
+	if (!NT_STATUS_IS_OK(result)) goto done;
+	
+ done:
+	if (NT_STATUS_IS_OK(result))
+		DEBUG(5, ("add group succeeded\n"));
+	else
+		d_printf("add group failed: %s\n", nt_errstr(result));
+
+	return result;
+}
+
 static int rpc_group_add(int argc, const char **argv)
 {
+	if (opt_localgroup)
+		return run_rpc_command(NULL, PI_SAMR, 0,
+				       rpc_alias_add_internals,
+				       argc, argv);
+
 	return run_rpc_command(NULL, PI_SAMR, 0,
 			       rpc_group_add_internals,
+			       argc, argv);
+}
+
+static NTSTATUS
+get_sid_from_name(struct cli_state *cli, TALLOC_CTX *mem_ctx, const char *name,
+		  DOM_SID *sid, enum SID_NAME_USE *type)
+{
+	int current_pipe = cli->pipe_idx;
+
+	DOM_SID *sids = NULL;
+	uint32 *types = NULL;
+	POLICY_HND lsa_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	if (current_pipe != PI_LSARPC) {
+
+		if (current_pipe != -1)
+			cli_nt_session_close(cli);
+
+		if (!cli_nt_session_open(cli, PI_LSARPC))
+			goto done;
+	}
+
+	result = cli_lsa_open_policy(cli, mem_ctx, False,
+				     SEC_RIGHTS_MAXIMUM_ALLOWED, &lsa_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = cli_lsa_lookup_names(cli, mem_ctx, &lsa_pol, 1,
+				      &name, &sids, &types);
+
+	if (NT_STATUS_IS_OK(result)) {
+		sid_copy(sid, &sids[0]);
+		*type = types[0];
+	}
+
+	cli_lsa_close(cli, mem_ctx, &lsa_pol);
+
+ done:
+	if (current_pipe != PI_LSARPC) {
+		cli_nt_session_close(cli);
+		if (current_pipe != -1)
+			cli_nt_session_open(cli, current_pipe);
+	}
+
+	if (!NT_STATUS_IS_OK(result) && (StrnCaseCmp(name, "S-", 2) == 0)) {
+
+		/* Try as S-1-5-whatever */
+
+		DOM_SID tmp_sid;
+
+		if (string_to_sid(&tmp_sid, name)) {
+			sid_copy(sid, &tmp_sid);
+			*type = SID_NAME_UNKNOWN;
+			result = NT_STATUS_OK;
+		}
+	}
+
+	return result;
+}
+
+static NTSTATUS
+rpc_add_groupmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+		 const DOM_SID *group_sid, const char *member)
+{
+	POLICY_HND connect_pol, domain_pol;
+	NTSTATUS result;
+	uint32 group_rid;
+	POLICY_HND group_pol;
+
+	uint32 num_rids;
+	uint32 *rids = NULL;
+	uint32 *rid_types = NULL;
+
+	DOM_SID sid;
+
+	sid_copy(&sid, group_sid);
+
+	if (!sid_split_rid(&sid, &group_rid))
+		return NT_STATUS_UNSUCCESSFUL;
+
+	/* Get sam policy handle */	
+	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				  &connect_pol);
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+	
+	/* Get domain policy handle */
+	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &sid, &domain_pol);
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	result = cli_samr_lookup_names(cli, mem_ctx, &domain_pol, 1000,
+				       1, &member,
+				       &num_rids, &rids, &rid_types);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		d_printf("Could not lookup up group member %s\n", member);
+		goto done;
+	}
+
+	result = cli_samr_open_group(cli, mem_ctx, &domain_pol,
+				     MAXIMUM_ALLOWED_ACCESS,
+				     group_rid, &group_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = cli_samr_add_groupmem(cli, mem_ctx, &group_pol, rids[0]);
+
+ done:
+	cli_samr_close(cli, mem_ctx, &connect_pol);
+	return result;
+}
+
+static NTSTATUS
+rpc_add_aliasmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+		 const DOM_SID *alias_sid, const char *member)
+{
+	POLICY_HND connect_pol, domain_pol;
+	NTSTATUS result;
+	uint32 alias_rid;
+	POLICY_HND alias_pol;
+
+	DOM_SID member_sid;
+	enum SID_NAME_USE member_type;
+
+	DOM_SID sid;
+
+	sid_copy(&sid, alias_sid);
+
+	if (!sid_split_rid(&sid, &alias_rid))
+		return NT_STATUS_UNSUCCESSFUL;
+
+	result = get_sid_from_name(cli, mem_ctx, member,
+				   &member_sid, &member_type);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		d_printf("Could not lookup up group member %s\n", member);
+		return result;
+	}
+
+	/* Get sam policy handle */	
+	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				  &connect_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+	
+	/* Get domain policy handle */
+	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &sid, &domain_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = cli_samr_open_alias(cli, mem_ctx, &domain_pol,
+				     MAXIMUM_ALLOWED_ACCESS,
+				     alias_rid, &alias_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	result = cli_samr_add_aliasmem(cli, mem_ctx, &alias_pol, &member_sid);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+ done:
+	cli_samr_close(cli, mem_ctx, &connect_pol);
+	return result;
+}
+
+static NTSTATUS 
+rpc_group_addmem_internals(const DOM_SID *domain_sid, const char *domain_name, 
+			   struct cli_state *cli,
+			   TALLOC_CTX *mem_ctx, int argc, const char **argv)
+{
+	DOM_SID group_sid;
+	enum SID_NAME_USE group_type;
+
+	if (argc != 2) {
+		d_printf("Usage: 'net rpc group addmem <group> <member>\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (!NT_STATUS_IS_OK(get_sid_from_name(cli, mem_ctx, argv[0],
+					       &group_sid, &group_type))) {
+		d_printf("Could not lookup group name %s\n", argv[0]);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (group_type == SID_NAME_DOM_GRP) {
+		NTSTATUS result = rpc_add_groupmem(cli, mem_ctx,
+						   &group_sid, argv[1]);
+
+		if (!NT_STATUS_IS_OK(result)) {
+			d_printf("Could not add %s to %s: %s\n",
+				 argv[1], argv[0], nt_errstr(result));
+			return result;
+		}
+	}
+
+	if (group_type == SID_NAME_ALIAS) {
+		NTSTATUS result = rpc_add_aliasmem(cli, mem_ctx,
+						   &group_sid, argv[1]);
+
+		if (!NT_STATUS_IS_OK(result)) {
+			d_printf("Could not add %s to %s: %s\n",
+				 argv[1], argv[0], nt_errstr(result));
+			return result;
+		}
+	}
+
+	return NT_STATUS_UNSUCCESSFUL;
+}
+
+static int rpc_group_addmem(int argc, const char **argv)
+{
+	return run_rpc_command(NULL, PI_SAMR, 0,
+			       rpc_group_addmem_internals,
+			       argc, argv);
+}
+
+static NTSTATUS
+rpc_del_groupmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+		 const DOM_SID *group_sid, const char *member)
+{
+	POLICY_HND connect_pol, domain_pol;
+	NTSTATUS result;
+	uint32 group_rid;
+	POLICY_HND group_pol;
+
+	uint32 num_rids;
+	uint32 *rids = NULL;
+	uint32 *rid_types = NULL;
+
+	DOM_SID sid;
+
+	sid_copy(&sid, group_sid);
+
+	if (!sid_split_rid(&sid, &group_rid))
+		return NT_STATUS_UNSUCCESSFUL;
+
+	/* Get sam policy handle */	
+	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				  &connect_pol);
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+	
+	/* Get domain policy handle */
+	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &sid, &domain_pol);
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	result = cli_samr_lookup_names(cli, mem_ctx, &domain_pol, 1000,
+				       1, &member,
+				       &num_rids, &rids, &rid_types);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		d_printf("Could not lookup up group member %s\n", member);
+		goto done;
+	}
+
+	result = cli_samr_open_group(cli, mem_ctx, &domain_pol,
+				     MAXIMUM_ALLOWED_ACCESS,
+				     group_rid, &group_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = cli_samr_del_groupmem(cli, mem_ctx, &group_pol, rids[0]);
+
+ done:
+	cli_samr_close(cli, mem_ctx, &connect_pol);
+	return result;
+}
+
+static NTSTATUS
+rpc_del_aliasmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+		 const DOM_SID *alias_sid, const char *member)
+{
+	POLICY_HND connect_pol, domain_pol;
+	NTSTATUS result;
+	uint32 alias_rid;
+	POLICY_HND alias_pol;
+
+	DOM_SID member_sid;
+	enum SID_NAME_USE member_type;
+
+	DOM_SID sid;
+
+	sid_copy(&sid, alias_sid);
+
+	if (!sid_split_rid(&sid, &alias_rid))
+		return NT_STATUS_UNSUCCESSFUL;
+
+	result = get_sid_from_name(cli, mem_ctx, member,
+				   &member_sid, &member_type);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		d_printf("Could not lookup up group member %s\n", member);
+		return result;
+	}
+
+	/* Get sam policy handle */	
+	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				  &connect_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+	
+	/* Get domain policy handle */
+	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &sid, &domain_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = cli_samr_open_alias(cli, mem_ctx, &domain_pol,
+				     MAXIMUM_ALLOWED_ACCESS,
+				     alias_rid, &alias_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	result = cli_samr_del_aliasmem(cli, mem_ctx, &alias_pol, &member_sid);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+ done:
+	cli_samr_close(cli, mem_ctx, &connect_pol);
+	return result;
+}
+
+static NTSTATUS 
+rpc_group_delmem_internals(const DOM_SID *domain_sid, const char *domain_name, 
+			   struct cli_state *cli,
+			   TALLOC_CTX *mem_ctx, int argc, const char **argv)
+{
+	DOM_SID group_sid;
+	enum SID_NAME_USE group_type;
+
+	if (argc != 2) {
+		d_printf("Usage: 'net rpc group delmem <group> <member>\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (!NT_STATUS_IS_OK(get_sid_from_name(cli, mem_ctx, argv[0],
+					       &group_sid, &group_type))) {
+		d_printf("Could not lookup group name %s\n", argv[0]);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (group_type == SID_NAME_DOM_GRP) {
+		NTSTATUS result = rpc_del_groupmem(cli, mem_ctx,
+						   &group_sid, argv[1]);
+
+		if (!NT_STATUS_IS_OK(result)) {
+			d_printf("Could not del %s to %s: %s\n",
+				 argv[1], argv[0], nt_errstr(result));
+			return result;
+		}
+	}
+
+	if (group_type == SID_NAME_ALIAS) {
+		NTSTATUS result = rpc_del_aliasmem(cli, mem_ctx, 
+						   &group_sid, argv[1]);
+
+		if (!NT_STATUS_IS_OK(result)) {
+			d_printf("Could not add %s to %s: %s\n",
+				 argv[1], argv[0], nt_errstr(result));
+			return result;
+		}
+	}
+
+	return NT_STATUS_UNSUCCESSFUL;
+}
+
+static int rpc_group_delmem(int argc, const char **argv)
+{
+	return run_rpc_command(NULL, PI_SAMR, 0,
+			       rpc_group_delmem_internals,
 			       argc, argv);
 }
 
@@ -1563,6 +2013,8 @@ int net_rpc_group(int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"add", rpc_group_add},
+		{"addmem", rpc_group_addmem},
+		{"delmem", rpc_group_delmem},
 #if 0
 		{"delete", rpc_group_delete},
 #endif
