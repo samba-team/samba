@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -564,6 +564,7 @@ match_local_auth (Xauth* auth, struct addrinfo *ai, int disp_nr)
 {
     int auth_disp;
     char *tmp_disp;
+    struct addrinfo *a;
     
     tmp_disp = strndup (auth->number, auth->number_length);
     if (tmp_disp == NULL)
@@ -572,13 +573,15 @@ match_local_auth (Xauth* auth, struct addrinfo *ai, int disp_nr)
     free (tmp_disp);
     if (auth_disp != disp_nr)
 	return 1;
-    if ((auth->family == FamilyLocal
-	|| auth->family == FamilyWild)
-	&& ai->ai_canonname != NULL
-	&& strncmp (auth->address,
-		    ai->ai_canonname,
-		    auth->address_length) == 0)
+    for (a = ai; a != NULL; a = a->ai_next) {
+	if ((auth->family == FamilyLocal
+	     || auth->family == FamilyWild)
+	    && a->ai_canonname != NULL
+	    && strncmp (auth->address,
+			a->ai_canonname,
+			auth->address_length) == 0)
 	    return 0;
+    }
     return 1;
 }
 
