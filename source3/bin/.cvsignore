@@ -5,6 +5,7 @@ debug2html
 editreg
 locktest
 locktest2
+log2pcap
 make_printerdef
 make_smbcodepage
 make_unicodemap
@@ -28,6 +29,7 @@ smbcquotas
 smbd
 smbfilter
 smbgroupedit
+smbiconv
 smbmnt
 smbmount
 smbpasswd
@@ -37,7 +39,6 @@ smbstatus
 smbtorture
 smbtree
 smbumount
-smbiconv
 swat
 t_push_ucs2
 t_snprintf
@@ -45,10 +46,10 @@ t_strcmp
 t_stringoverflow
 talloctort
 tdbbackup
+tdbdump
 testparm
 testprns
 vfstest
-log2pcap
 wbinfo
 winbindd
 wrepld
