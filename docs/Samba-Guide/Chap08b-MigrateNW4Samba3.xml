@@ -104,7 +104,7 @@
 		<title>Assignment Tasks</title>
 
 	<para>
-	Kristal tells her own story in the following words:
+	Kristal's story sis encapsulated in this chapter.
 	</para>
 
 	<para>
@@ -138,6 +138,9 @@
 		</member>
 	</simplelist>
 
+	<para>
+	The new system has been operating for six months without problems.
+	</para>
 
 	</sect2>
 </sect1>
@@ -186,6 +189,1175 @@
 
 	<para>
 	</para>
+
+	<para>
+	The following software must be installed on the SUSE Linux Enterprise Server to perform
+	this migration:
+	</para>
+
+	<simplelist>
+		<member><para>openldap2</para></member>
+		<member><para>openldap2-client</para></member>
+		<member><para>openldap2-devel (only for Samba compilation)</para></member>
+		<member><para>nss_ldap</para></member>
+		<member><para>smbldap-tools Version 0.8.7</para></member>
+		<member><para>perl-ldap</para></member>
+		<member><para>samba-3.0.12 or later</para></member>
+		<member><para>samba-client-3.0.12 or later</para></member>
+		<member><para>samba-winbind-3.0.12 or later</para></member>
+	</simplelist>
+
+	<para>
+	Each software application must be carefully configured in preparation for migration.
+	The configuration used at BabbleOrg are provided as a guide and should be modified
+	to meet needs at your site.
+	</para>
+
+	<sect3>
+	<title>LDAP Server Configuration</title>
+
+	<para>
+	The <filename>/etc/openldap/slapd.conf</filename> Kristal used is shown here:
+<screen>
+#/usr/local/etc/openldap/slapd.conf
+#
+# See slapd.conf(5) for details on configuration options.
+# This file should NOT be world readable.
+#
+include   /usr/local/etc/openldap/schema/core.schema
+include   /usr/local/etc/openldap/schema/cosine.schema
+include   /usr/local/etc/openldap/schema/inetorgperson.schema
+include   /usr/local/etc/openldap/schema/nis.schema
+include   /usr/local/etc/openldap/schema/samba.schema
+include   /usr/local/etc/openldap/schema/dhcp.schema
+include   /usr/local/etc/openldap/schema/misc.schema
+include   /usr/local/etc/openldap/schema/idpool.schema
+include   /usr/local/etc/openldap/schema/eduperson.schema
+include   /usr/local/etc/openldap/schema/commURI.schema
+include   /usr/local/etc/openldap/schema/local.schema
+include   /usr/local/etc/openldap/schema/authldap.schema
+
+pidfile   /var/run/slapd/run/slapd.pid
+argsfile  /var/run/slapd/run/slapd.args
+
+replogfile  /var/log/ldap/slapd.replog
+
+# Load dynamic backend modules:
+modulepath  /usr/lib/openldap/modules
+
+#######################################################################
+# Logging parameters
+#######################################################################
+loglevel 256
+#######################################################################
+# SASL and TLS options
+#######################################################################
+sasl-host     ldap.corp.borkholder.com
+sasl-realm    DIGEST-MD5
+sasl-secprops   none
+TLSCipherSuite HIGH:MEDIUM:+SSLV2
+TLSCertificateFile  /usr/local/etc/openldap/bork-cert.pem
+TLSCertificateKeyFile /usr/local/etc/openldap/bork-key.pem
+password-hash   {SSHA}
+defaultsearchbase "dc=borkholder,dc=com"
+
+#######################################################################
+# bdb database definitions
+#######################################################################
+database  bdb
+suffix    "dc=borkholder,dc=com"
+rootdn    "cn=manager,dc=borkholder,dc=com"
+rootpw    {SSHA}gdo/dUvoT4ZJmULz3rUt6A3H/hBEduJ5
+directory /var/lib/ldap/borkholder.com
+mode    0600
+# The following is for BDB to make it flush its data to disk every
+# 500 seconds or 5kb of data
+checkpoint 500 5
+
+## For running slapindex
+#readonly on
+
+## Indexes for often-requested attributes
+index   objectClass     eq
+index     cn        eq,sub
+index   sn        eq,sub
+index   uid       eq,sub
+index           uidNumber     eq
+index   gidNumber     eq
+index   memberUID     eq
+index           sambaSID                        eq
+index           sambaPrimaryGroupSID            eq
+index           sambaDomainName                 eq
+index           default                         sub
+cachesize 2000
+
+replica         host=baa.corp.borkholder.com:389
+                suffix="dc=borkholder,dc=com"
+                binddn="cn=replica,dc=borkholder,dc=com"
+                credentials=verysecret
+                bindmethod=simple
+                tls=yes
+replica         host=ns.borkholder.com:389
+                suffix="dc=borkholder,dc=com"
+                binddn="cn=replica,dc=borkholder,dc=com"
+                credentials=verysecret
+                bindmethod=simple
+                tls=yes
+
+#######################################################################
+# ACL section
+#######################################################################
+## MOST RESTRICTIVE RULES MUST GO FIRST!
+
+## Users can change their own passwords.  Nobody else can read the password
+access to attrs=userPassword
+  by group/groupOfUniqueNames/uniqueMember="cn=LDAP Administrators,dc=borkholder,dc=com" write
+  by self write
+  by * auth
+
+## Home contact info restricted to the logged-in user
+access to attrs=hometelephoneNumber,homePostalAddress,mobileTelephoneNumber,pagerTelephoneNumber
+  by group/groupOfUniqueNames/uniqueMember="cn=LDAP Administrators,dc=borkholder,dc=com" write
+  by self write
+  by * none
+
+## Only admins can manage email aliases
+access to dn.sub="ou=Email Aliases,dc=borkholder,dc=com"
+  filter=(roleOccupant=*)
+  attrs=maildrop
+  by dnattr=roleOccupant write
+  by * read
+
+## Allow delegated management of certain aliases which are for mailman-style
+## mailing lists.
+access to dn.sub="ou=Email Aliases,dc=borkholder,dc=com"
+  by group/groupOfUniqueNames/uniqueMember="cn=LDAP Administrators,dc=borkholder,dc=com" write
+  by * read
+
+## Default to read-only access
+access to *
+  by dn.base="cn=replica,ou=people,ou=corp,dc=borkholder,dc=com" write
+  by group/groupOfUniqueNames/uniqueMember="cn=LDAP Administrators,dc=borkholder,dc=com" write
+  by * read
+access to attrs=namingcontexts
+  by anonymous read
+</screen>
+	</para>
+
+	<para>
+	The <filename>/etc/ldap.conf</filename> file used is listed here:
+<screen>
+# /etc/ldap.conf
+# This file is present on every *NIX client that authenticates to LDAP.
+# For me, most of the defaults are fine.  There is an amazing amount of customization
+# that can be done – see the man page for info.
+
+# Your LDAP server. Must be resolvable without using LDAP.
+# The following is for the LDAP server – all others use the FQDN of the server
+URI ldap://127.0.0.1
+
+# The distinguished name of the search base.
+base ou=corp,dc=borkholder,dc=com
+
+# The LDAP version to use (defaults to 3
+# if supported by client library)
+ldap_version 3
+
+# The distinguished name to bind to the server with
+# if the effective user ID is root. Password is
+# stored in /etc/ldap.secret (mode 600)
+rootbinddn cn=Manager,dc=borkholder,dc=com
+
+# Filter to AND with uid=%s
+pam_filter objectclass=posixAccoun
+
+# The user ID attribute (defaults to uid)
+pam_login_attribute uid
+
+# Group member attribute
+pam_member_attribute memberUID
+
+# Use the OpenLDAP password change
+# extended operation to update the password.
+pam_password exop
+
+# OpenLDAP SSL mechanism
+# start_tls mechanism uses the normal LDAP port, LDAPS typically 636
+ssl start_tls
+
+tls_cacertfile /etc/openldap/bork-cert.pem
+...
+</screen>
+	</para>
+
+	<para>
+	The Name Server Switch control file has the following contents:
+<screen>
+# /etc/nsswitch.conf
+# This file controls the resolve order for system databases.
+
+# the following two lines obviate the "+" entry in /etc/passwd and /etc/group.
+passwd:   files ldap
+group:    files ldap
+shadow:   files ldap
+# The above are all that I store in LDAP at this point.  There are possibilities to store
+# hosts, services, ethers, and lots of other things.
+</screen>
+	</para>
+
+	<para>
+	In my setup, users authenticate via PAM and NSS using LDAP-based accounts.
+	This works out of the box with the configuration files in this chapter. It
+	enables you to have no local accounts for users (it is highly advisable 
+	to have a local account for the root user).  Gotchas include:
+	</para>
+
+	<itemizedlist>
+		<listitem>
+			<para>
+			If your LDAP database goes down, nobody can authenticate except for root.
+			</para>
+		</listitem>
+
+		<listitem>
+			<para>
+			If failover is configured incorrectly weird behavior can occur. For example, 
+			DNS failing to resolve.
+			</para>
+		</listitem>
+	</itemizedlist>
+
+	<para>
+	I do have two LDAP slave servers configured. That subject is beyond the scope
+	of this document and steps for implementing it are well-documented.
+	</para>
+
+	<para>
+	The following services authenticate using LDAP:
+	<simplelist>
+		<member><para>UNIX login/ssh</para></member>
+		<member><para>Postfix (SMTP)</para></member>
+		<member><para>Courier-IMAP/IMAPS/POP3/POP3S</para></member>
+	</simplelist>
+	</para>
+
+	<para>
+	Company-wide White-Pages can be searched using a LDAP client
+	such as the one in the Windows Address Book.
+	</para>
+
+	<para>
+	Having gained a solid understanding of LDAP, and a relatively workable LDAP tree
+	thus far, it was time to configure Samba. I compiled the latest stable SAMBA and
+	also installed the latest <command>smbldap-tools</command> from 
+	<ulink url="http://idealx.com">Idealx</ulink>.
+	</para>
+
+	<para>
+	The Samba &smb.conf; file was configured as shown here:
+<screen>
+# Global parameters
+[global]
+	workgroup = CORP
+	netbios name = CORPSRV
+	server string = Corp File Server
+	passdb backend = ldapsam:ldap://localhost
+	pam password change = Yes
+	username map = /usr/local/samba/lib/smbusers
+	log level = 5
+	log file = /data/samba/log/%m.log
+	name resolve order = bcast wins lmhosts host
+	time server = Yes
+	deadtime = 60
+	socket options = TCP_NODELAY SO_RCVBUF=8192 SO_SNDBUF=8192
+	printcap cache time = 60
+	printcap name = cups
+	show add printer wizard = No
+	add user script = /usr/local/sbin/smbldap-useradd -m "%u"
+	add group script = /usr/local/sbin/smbldap-groupadd -p "%g"
+	add user to group script = /usr/local/sbin/smbldap-groupmod -m "%u" "%g"
+	delete user from group script = /usr/local/sbin/smbldap-groupmod -x "%u" "%g"
+	set primary group script = /usr/local/sbin/smbldap-usermod -g "%g" "%u"
+	add machine script = /usr/local/sbin/smbldap-useradd -w "%m"
+	logon script = logon.bat
+	logon path = \\%L\profiles\%U\%a
+	logon drive = H:
+	logon home = \\%L\%U
+	domain logons = Yes
+	os level = 100
+	preferred master = Yes
+	domain master = Yes
+	wins support = Yes
+	ldap admin dn = cn=Manager,dc=borkholder,dc=com
+	ldap group suffix = ou=Groups
+	ldap idmap suffix = ou=People
+	ldap machine suffix = ou=Computers
+	ldap passwd sync = Yes
+	ldap suffix = ou=CORP,dc=borkholder,dc=com
+	ldap ssl = no
+	ldap user suffix = ou=People
+	remote announce = 192.168.2.255/CORP
+	remote browse sync = 192.168.2.255
+	admin users = root, "@Domain Admins"
+	printer admin = "@Domain Admins"
+	force printername = Yes
+	preexec = /bin/echo %u at %m connected to //%L/%S on %T >>/tmp/smblog
+
+[netlogon]
+	comment = Network logon service
+	path = /data/samba/netlogon
+	write list = "@Domain Admins"
+	guest ok = Yes
+
+[profiles]
+	comment = Roaming Profile Share
+	path = /data/samba/profiles/
+	read only = No
+	profile acls = Yes
+	veto files = desktop.ini
+	browseable = No
+
+[homes]
+	comment = Home Directories
+	valid users = %S
+	read only = No
+	create mask = 0770
+	veto files = desktop.ini
+	hide files = desktop.ini
+	browseable = No
+
+[software]
+	comment = Software for %a computers
+	path = /data/samba/shares/software/%a
+	guest ok = Yes
+
+[public]
+	comment = Public Files
+	path = /data/samba/shares/public
+	read only = No
+	guest ok = Yes
+
+[PDF]
+	comment = Location of documents printed to PDFCreator printer
+	path = /data/samba/shares/pdf
+	guest ok = Yes
+
+[EVERYTHING]
+	comment = All shares
+	path = /data/samba
+	valid users = "@Domain Admins"
+	read only = No
+
+[CDROM]
+	comment = CD-ROM on CORPSRV
+	path = /mnt
+	guest ok = Yes
+
+[print$]
+	comment = Printer Drivers Share
+	path = /data/samba/drivers
+	write list = root
+	browseable = No
+
+[printers]
+	comment = All Printers
+	path = /data/samba/spool
+	create mask = 0644
+	printable = Yes
+	browseable = No
+
+[acct_hp8500]
+	comment = "Accounting Color Laser Printer"
+	path = /data/samba/spool/private
+	valid users = @acct, @acct_admin, @hr, "@Domain Admins", @Receptionist, dwayne, terri, danae, jerry
+	create mask = 0644
+	printable = Yes
+	copy = printers
+
+[plotter]
+	comment = Engineering Plotter
+	path = /data/samba/spool
+	create mask = 0644
+	printable = Yes
+	use client driver = Yes
+	copy = printers
+
+[APPS]
+	path = /data/samba/shares/Apps
+	force group = "Domain Users"
+	read only = No
+
+[ACCT]
+	path = /data/samba/shares/Accounting
+	valid users = @acct, "@Domain Admins"
+	force group = acct
+	read only = No
+	create mask = 0660
+	directory mask = 0770
+
+[ACCT_ADMIN]
+	path = /data/samba/shares/Acct_Admin
+	valid users = @”acct_admin”
+	force group = acct_admin
+
+[HR_PR]
+	path = /data/samba/shares/HR_PR
+	valid users = @hr, @acct_admin
+	force group = hr
+
+[ENGR]
+	path = /data/samba/shares/Engr
+	valid users = @engr, @receptionist, @truss, "@Domain Admins", cheri
+	force group = engr
+	read only = No
+	create mask = 0770
+
+[DATA]
+	path = /data/samba/shares/DATA
+	valid users = @engr, @receptionist, @truss, "@Domain Admins", cheri
+	force group = engr
+	read only = No
+	create mask = 0770
+	copy = engr
+
+[X]
+	path = /data/samba/shares/X
+	valid users = @engr, @acct
+	force group = engr
+	read only = No
+	create mask = 0770
+	copy = engr
+
+[NETWORK]
+	path = /data/samba/shares/network
+	valid users = "@Domain Users"
+	read only = No
+	create mask = 0770
+	guest ok = Yes
+
+[UTILS]
+	path = /data/samba/shares/Utils
+	write list = "@Domain Admins"
+
+[SYS]
+	path = /data/samba/shares/SYS
+	valid users = chad
+	read only = No
+	browseable = No
+</screen>
+	</para>
+
+	<para>
+	Most of these shares are only used by one company group, but they are required
+	because of some ancient Qbasic and Rbase applications were that written expecting
+	their own drive lettes.
+	</para>
+
+	<para>
+	One note: During the process of building the new server, I kept it up-to-date
+	with the Novell server via use of rsync.  On a separate system (my workstation
+	in fact) which could be rebooted whenever necessary, I set up a mount point to the
+	Novell server via ncpmount.  I then created a rsyncd.conf to share that mount point
+	out to my new server, and synchronized once an hour.  The script I used to synchronize
+	is quite nice, so I will include it in an appendix.  The reason I had to have the
+	rsync daemon running on a system which could be rebooted frequently is because ncpfs
+	has a nasty habit of creating stale mountpoints which cannot be recovered without
+	a reboot.  The reason I only synchronized once an hour is because some part of the
+	chain was very slow and performance-heavy (whether rsync itself, the network, or
+	the Novell server I am not sure – probably the Novell server).
+	</para>
+
+	<para>
+	Anyway, after I had Samba configured, I had to put the information that was necessary
+	into the LDAP database.  So the first thing I had to do was to store the LDAP password
+	in the Samba configuration by issuing the command (as root):
+<screen>
+&rootprompt; smbpasswd –-w verysecret
+</screen>
+	where “verysecret” is replaced by my LDAP bind password, of course.
+	</para>
+
+	<para>
+	Now Samba is good, I need to configure smbldap-tools. There are two relevant files,
+	which are usually put into /etc/smbldap-tools. The main one is smbldap.conf. Mine 
+	is shown below:
+<screen>
+##############################################################################
+#
+# General Configuration
+#
+##############################################################################
+
+# Put your own SID
+# to obtain this number do: net getlocalsid
+SID="S-1-5-21-725326080-1709766072-2910717368"
+
+##############################################################################
+#
+# LDAP Configuration
+#
+##############################################################################
+
+# Notes: to use to dual ldap servers backend for Samba, you must patch
+# Samba with the dual-head patch from IDEALX. If not using this patch
+# just use the same server for slaveLDAP and masterLDAP.
+# Those two servers declarations can also be used when you have
+# . one master LDAP server where all writing operations must be done
+# . one slave LDAP server where all reading operations must be done
+#   (typically a replication directory)
+
+# Ex: slaveLDAP=127.0.0.1
+slaveLDAP="127.0.0.1"
+slavePort="389"
+
+# Master LDAP : needed for write operations
+# Ex: masterLDAP=127.0.0.1
+masterLDAP="127.0.0.1"
+masterPort="389"
+
+# Use TLS for LDAP
+# If set to 1, this option will use start_tls for connection
+# (you should also used the port 389)
+ldapTLS="0"
+
+# How to verify the server's certificate (none, optional or require)
+# see "man Net::LDAP" in start_tls section for more details
+verify=""
+
+# CA certificate
+# see "man Net::LDAP" in start_tls section for more details
+cafile=""
+ certificate to use to connect to the ldap server
+# see "man Net::LDAP" in start_tls section for more details
+clientcert=""
+
+# key certificate to use to connect to the ldap server
+# see "man Net::LDAP" in start_tls section for more details
+clientkey=""
+
+# LDAP Suffix
+# Ex: suffix=dc=IDEALX,dc=ORG
+suffix="ou=CORP,dc=borkholder,dc=com"
+
+# Where are stored Users
+# Ex: usersdn="ou=Users,dc=IDEALX,dc=ORG"
+usersdn="ou=People,${suffix}"
+
+# Where are stored Computers
+# Ex: computersdn="ou=Computers,dc=IDEALX,dc=ORG"
+computersdn="ou=Computers,${suffix}"
+
+# Where are stored Groups
+# Ex groupsdn="ou=Groups,dc=IDEALX,dc=ORG"
+groupsdn="ou=Groups,${suffix}"
+# Where are stored Idmap entries (used if samba is a domain member server)
+# Ex groupsdn="ou=Idmap,dc=IDEALX,dc=ORG"
+idmapdn="ou=People,${suffix}"
+
+# Where to store next uidNumber and gidNumber available
+sambaUnixIdPooldn="ou=People,${suffix}"
+
+# Default scope Used
+scope="sub"
+
+# Unix password encryption (CRYPT, MD5, SMD5, SSHA, SHA)
+hash_encrypt="SSHA"
+
+# if hash_encrypt is set to CRYPT, you may set a salt format.
+# default is "%s", but many systems will generate MD5 hashed
+# passwords if you use "$1$%.8s". This parameter is optional!
+crypt_salt_format="%s"
+##############################################################################
+#
+# Unix Accounts Configuration
+#
+##############################################################################
+
+# Login defs
+# Default Login Shell
+# Ex: userLoginShell="/bin/bash"
+userLoginShell="/bin/false"
+
+# Home directory
+# Ex: userHome="/home/%U"
+userHome="/home/%U"
+
+# Gecos
+userGecos="Samba User"
+
+# Default User (POSIX and Samba) GID
+defaultUserGid="513"
+
+# Default Computer (Samba) GID
+defaultComputerGid="515"
+
+# Skel dir
+skeletonDir="/etc/skel"
+
+# Default password validation time (time in days) Comment the next line if
+# you don't want password to be enable for defaultMaxPasswordAge days (be
+# careful to the sambaPwdMustChange attribute's value)
+defaultMaxPasswordAge="45"
+
+
+##############################################################################
+#
+# SAMBA Configuration
+#
+##############################################################################
+
+# The UNC path to home drives location (%U username substitution)
+# Ex: \\My-PDC-netbios-name\homes\%U
+# Just set it to a null string if you want to use the smb.conf 'logon home'
+# directive and/or disable roaming profiles
+userSmbHome=""
+
+# The UNC path to profiles locations (%U username substitution)
+# Ex: \\My-PDC-netbios-name\profiles\%U
+# Just set it to a null string if you want to use the smb.conf 'logon path'
+# directive and/or disable roaming profiles
+userProfile=""
+
+# The default Home Drive Letter mapping
+# (will be automatically mapped at logon time if home directory exist)
+# Ex: H: for H:
+userHomeDrive=""
+
+# The default user netlogon script name (%U username substitution)
+# if not used, will be automatically username.cmd
+# make sure script file is edited under dos
+# Ex: %U.cmd
+# userScript="startup.cmd" # make sure script file is edited under dos
+userScript=""
+
+# Domain appended to the users "mail"-attribute
+# when smbldap-useradd -M is used
+mailDomain="borkholder.com"
+
+##############################################################################
+#
+# SMBLDAP-TOOLS Configuration (default are ok for a RedHat)
+#
+##############################################################################
+# Allows not to use smbpasswd (if with_smbpasswd == 0 in smbldap_conf.pm) but
+# prefer Crypt::SmbHash library
+with_smbpasswd="0"
+smbpasswd="/usr/bin/smbpasswd"
+</screen>
+	</para>
+
+	<para>
+	NOTES: I chose not to take advantage of the TLS capability of this. 
+	Eventually I may go back and tweak it.  Also I chose not to take advantage
+	of the master/slave configuration as I heard horror stories that it was
+	unstable.  My slave servers are replicas only, as it is.
+	</para>
+
+	<para>
+	The /etc/smbldap-tools/smbldap_bind.conf file is shown here:
+<screen>
+# smbldap_bind.conf
+# This file simply tells smbldap-tools how to bind to your LDAP server.  It has to be
+# a DN with full write access to the Samba portion of the database.
+
+############################
+# Credential Configuration #
+############################
+# Notes: you can specify two differents configuration if you use a
+# master ldap for writing access and a slave ldap server for reading access
+# By default, we will use the same DN (so it will work for standard Samba
+# release)
+slaveDN="cn=Manager,dc=borkholder,dc=com"
+slavePw="verysecret"
+masterDN="cn=Manager,dc=borkholder,dc=com"
+masterPw="verysecret”
+</screen>
+	</para>
+
+	<para>
+	We can now run the “smbldap-populate” command which will populate our LDAP tree
+	with the appropriate default users, groups, and UID and GID pools. It will create
+	a user called Administrator with UID nf 0 and GID matching the Domain Admins group.
+	This is fine you can still log in a root to a Windows system, but it will break
+	cached credentials if you need to log in as the administrator to a system that
+	is not on the network for whatever reason. If smbldap-populate works, then you
+	will see the entries in your LDAP database. If not, look in your LDAP logs to see
+	what is wrong.
+	</para>
+
+	<para>
+	The next thing is to add group mappings to LDAP. The easiest way to do this is
+	to use “smbldap-groupadd” command. It will create the group with the posixGroup
+	and sambaGroupMapping attributes, a unique GID, and an automatically-determined
+	RID. I learned the hard way not to try to do this by hand.
+	</para>
+
+	<para>
+	After I had my group mappings in place, I added users to the groups (the users
+	don't really have to exist yet or have Samba information in their Dns yet). I used
+	the “smbldap-groupmod” command to accomplish this. It can also be done manually by
+	adding “memberUID” atttributes to the group entries in LDAP.
+	</para>
+
+	<para>
+	The most monumental task of all was adding the sambaSamAccount information to each
+	already-existent posixAccount entry.  I did it one at a time as I moved people onto
+	the new server, by issuing the command “smbldap-usermod -a -P username” after asking
+	the person what their current Novell password was.  The wiser way to have done it
+	would probably be to dump the entire database to an LDIF file (by using “slapcat &gt;
+	somefile.ldif” command, using a Perl script to parse and add the appropriate
+	attributes and objectClasses to each entry, and re-importing the entire database
+	from that file by shutting down the database, moving the physical database files
+	out of the way, and issuing the command “slapadd -l somefile.ldif”.  This can be
+	done at any time and for any reason, with no harm to the database.
+	</para>
+
+	<para>
+	So first I added a test user, of course. The LDIF for this test user looks like
+	this, to give you an idea:
+<screen>
+# Entry 1: cn=Test User,ou=people,ou=corp,dc=borkholder,dc=com
+dn:cn=Test User,ou=people,ou=corp,dc=borkholder,dc=com
+cn: Test User
+gecos: Test User
+gidNumber: 513
+givenName: Test
+homeDirectory: /home/test.user
+homePhone: 555
+l: Somewhere
+l: ST
+mail: test.user
+o: Corp
+objectClass: top
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: sambaSamAccount
+postalCode: 12345
+sn: User
+street: 10 Some St.
+uid: test.user
+uidNumber: 1074
+sambaLogonTime: 0
+sambaLogoffTime: 2147483647
+sambaKickoffTime: 2147483647
+sambaPwdCanChange: 0
+displayName: Samba User
+sambaSID: S-1-5-21-725326080-1709766072-2910717368-3148
+sambaLMPassword: 9D29C287C58448F9AAD3B435B51404EE
+sambaAcctFlags: [U]
+sambaNTPassword: D062088E99C95E37D7702287BB35E770
+sambaPwdLastSet: 1102537694
+sambaPwdMustChange: 1106425694
+userPassword: {SSHA}UzFZ2VxRGdwUueLnTGtsTBtnsvMO1oj8
+loginShell: /bin/false
+</screen>
+	</para>
+
+	<para>
+	Then I went over to a spare Windows NT machine and joined it to the CORP domain.
+	It worked, and the machine's account entry under OU=COMPUTERS looks like this:
+<screen>
+dn:uid=w2kengrspare$,ou=Computers,ou=CORP,dc=borkholder,dc=com
+objectClass: top
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: sambaSamAccount
+cn: w2kengrspare$
+sn: w2kengrspare$
+uid: w2kengrspare$
+uidNumber: 1104
+gidNumber: 515
+homeDirectory: /dev/null
+loginShell: /bin/false
+description: Computer
+gecos: Computer
+sambaSID: S-1-5-21-725326080-1709766072-2910717368-3208
+sambaPrimaryGroupSID: S-1-5-21-725326080-1709766072-2910717368-2031
+displayName: W2KENGRSPARE$
+sambaPwdCanChange: 1103149236
+sambaPwdMustChange: 2147483647
+sambaNTPassword: CA199C45CB6737035DB6D9D9F6CD1834
+sambaPwdLastSet: 1103149236
+sambaAcctFlags: [W          ]
+</screen>
+	</para>
+
+	<para>
+	So now I can log in with test.user from the machine w2kengrspare. It's all fine and
+	good, but that user is in no groups yet so has pretty boring access.  We can fix that
+	by writing the login script! To write the login script, I used Kixtart
+	(http://www.kixtart.org). I used it because it will work with every architecture of
+	Windows, has an active and helpful user base, and was both easier to learn and more
+	powerful than the standard netlogon scripts I have seen. I also did not have to do a
+	logon script per user or per group.
+	</para>
+
+	<para>
+	I downloaded Kixtart and put the following files in my [netlogon] share:
+<screen>
+KIX32.EXE
+KX32.dll
+KX95.dll &lt;-- Not needed unless you are running Win9x clients.
+kx16.dll &lt;-- Probably not needed unless you are running DOS clients.
+kxrpc.exe  &lt;-- Probably useless as it has to run on the server and can only be run on NT.
+                It's for Windows 95 to become group-aware.  We can get around the need.
+</screen>
+	</para>
+
+	<para>
+	I then wrote the folloowing logon.kix file. I chose to keep it all in one file,
+	but it can be split up and linked via include directives.
+<screen>
+break on
+
+$RETURNCODE = EXISTKEY("HKEY_CURRENT_USER\Borkholder")
+IF NOT $RETURNCODE = 0
+; Add key for Borkholder-specific things on the first login
+  ADDKEY("HKEY_CURRENT_USER\Borkholder")
+  ; The following key gets deleted at the end of the first login
+  ADDKEY("HKEY_CURRENT_USER\Borkholder\FIRST_LOGIN")
+ENDIF
+
+SETTITLE("Logging on @USERID to @LDOMAIN at @TIME")
+
+; Set the time on the workstation
+$Timeserver = "\\corpsrv"
+Settime $TimeServer
+
+
+; Make sure they don't get someone else's home directory
+USE H: /DELETE
+
+; We need the home directory set up for the rest of the script to work
+USE H: @HOMESHR ; connect to user's home share
+IF @ERROR = 0
+  H:
+  CD @HOMEDIR ; change directory to user's home directory
+ENDIF
+
+; People with laptops need My Documents to be in their profile.  People with
+; desktops can have My Documents redirected to their home directory to avoid
+; long delays with logging out and out-of-sync files.
+; The way that profiles are stored (per architecture) is taken advantage of here.
+
+; Check to see if this is the first login -- doesn't make sense to do this
+; at the very first login
+
+$RETURNCODE = EXISTKEY("HKEY_CURRENT_USER\Borkholder\FIRST_LOGIN")
+IF NOT $RETURNCODE = 0
+
+  IF NOT INGROUP("CORPSRV\Laptop")
+    $RETURNCODE=EXISTKEY("HKEY_CURRENT_USER\Borkholder\profile_copied")
+    IF NOT $RETURNCODE = 0
+      IF EXIST("\\corpsrv\profiles\@userID\WinXP")
+        copy "\\corpsrv\profiles\@userID\WinXP\My Documents\*" "\\corpsrv\@userID\"
+      ENDIF
+      IF EXIST("\\corpsrv\profiles\@userID\Win2K")
+        copy "\\corpsrv\profiles\@userID\Win2K\My Documents\*" "\\corpsrv\@userID\"
+      ENDIF
+      IF EXIST("\\corpsrv\profiles\@userID\WinNT")
+        copy "\\corpsrv\profiles\@userID\WinNT\My Documents\*" "\\corpsrv\@userID\"
+      ENDIF
+
+      ADDKEY("HKEY_CURRENT_USER\Borkholder\profile_copied")
+      WRITEVALUE("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\
+User Shell Folders", "Personal","\\corpsrv\@userID","REG_SZ")
+      WRITEVALUE("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\
+User Shell Folders", "My Pictures", "\\corpsrv\@userID\My Pictures", "REG_SZ")
+      IF @PRODUCTTYPE="Windows 2000 Professional" or @PRODUCTTYPE="Windows XP Professio
+nal"
+      WRITEVALUE("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\
+User Shell Folders", "My Videos", "\\corpsrv\@userID\My Videos", "REG_SZ")
+      WRITEVALUE("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\
+User Shell Folders", "My Music", "\\corpsrv\@userID\My Music", "REG_SZ")
+      WRITEVALUE("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\
+User Shell Folders", "My eBooks", "\\corpsrv\@userID\My eBooks", "REG_SZ")
+      ENDIF
+      $SELECTION =MESSAGEBOX("Changes were made to your registry.  You must now log out
+.Please save any open files and click OK", "Log Out Necessary", 0)
+      IF $SELECTION = 1
+      IF $SELECTION = 1
+        LOGOFF(Force)
+      ENDIF
+    ENDIF
+  ENDIF
+ENDIF
+
+IF INGROUP("CORP\Domain Admins")
+  USE Z: \\corpsrv\everything
+  SETCONSOLE("show")
+ELSE
+  ; Nobody cares about seeing the login script except admins
+  SETCONSOLE("hide")
+ENDIF
+
+
+IF INGROUP("CORPSRV\Acct_Admin","CORPSRV\HR")
+  USE I: \\CORP\HR_PR
+  ; Eventually ABRA mapping will be here
+ENDIF
+
+IF INGROUP("CORP\Acct")
+; Set up printer
+$RETURNVALUE = existkey("HKEY_CURRENT_USER\Printers\,,corpsrv,acct_hp8500")
+IF NOT $RETURNVALUE = 0
+  ADDPRINTERCONNECTION("\\corpsrv\acct_hp8500")
+  SETDEFAULTPRINTER("\\corpsrv\acct_hp8500")
+ENDIF
+; Set up drive mappings
+  USE M: \\corpsrv\ACCT
+
+ENDIF
+
+IF INGROUP("CORP\Engr","CORP\Truss","CORP\Receptionist")
+$RETURNVALUE = EXISTKEY("HKEY_CURRENT_USER\Printers\,,corpsrv,engr_hp1300")
+IF NOT $RETURNVALUE = 0
+  ADDPRINTERCONNECTION("\\corpsrv\engr_hp1300")
+ENDIF
+USE LPT3: "\\corpsrv\engr_legacy_printer"
+; Make sure the user can run MATLIST -- they need a .get file and it gets
+; created automatically if they don't have one (copied from one that works)
+  IF NOT EXIST("\\corpsrv\data\batch\paths\@USERID.get")
+    copy \\corpsrv\data\batch\paths\jenny.get \\corpsrv\data\batch\paths\@USERID.get
+  ENDIF
+
+; The program was written to use a variable that exists in Novell but not NT, so we set it here
+  SET "LINAME=@USERID"
+  ?  "LINAME set to @USERID" ; for MATLIST program -- look in %L\DATA\BATCH\PATHS\username.get
+
+; Set up drive mappings here (X will go away eventually)
+  USE L: \\corpsrv\engr
+  USE G: \\corpsrv\apps
+  USE Q: \\corpsrv\data
+  USE U: \\corpsrv\utils
+  use X: \\corpsrv\X
+
+;SET "PATH=L:\ENGINEER\MATLST;u:;h:;g:\ifsapp\runtime;c:\orawin95\bin;%PATH%;"
+ENDIF
+
+IF INGROUP("CORP\Truss")
+  ; Don't set up a default printer, they choose which one they want
+  $RETURNVALUE = EXISTKEY("HKEY_CURRENT_USER\Printers\Connections\,,corpsrv,truss_hp4")
+  IF NOT $RETURNVALUE = 0
+    ADDPRINTERCONNECTION("\\corpsrv\truss_hp4")
+  ENDIF
+  $RETURNVALUE = EXISTKEY("HKEY_CURRENT_USER\Printers\Connections\,,corpsrv,truss_hp5n")
+  IF NOT $RETURNVALUE = 0
+    ADDPRINTERCONNECTION("\\corpsrv\truss_hp5n")
+  ENDIF
+  $RETURNVALUE = EXISTKEY("HKEY_CURRENT_USER\Printers\Connections\,,corpsrv,truss_hp4050")
+  IF NOT $RETURNVALUE = 0
+    ADDPRINTERCONNECTION("\\corpsrv\truss_hp4050")
+  ENDIF
+
+ENDIF
+
+; Everyone gets the N drive
+USE N: \\corpsrv\network
+
+$RETURNVALUE = EXISTKEY("HKEY_CURRENT_USER\Borkholder\FIRST_LOGIN")
+IF $RETURNVALUE = 0
+  DELKEY("HKEY_CURRENT_USER\Borkholder\FIRST_LOGIN")
+ENDIF
+</screen>
+
+	<para>
+	As you can see in the script, I redirect the My Documents to the user's home
+	share if they are not in the “Laptop” group. I also add printers on a
+	group-by-group basis, and if applicable I setthe group printer. For this to
+	be effective, the print drivers must be installed on the Samba server in the
+	[print$] share. Ample documentation exists about how to do that so I did not
+	cover it.
+	</para>
+
+	<para>
+	I actually call this script via the logon.bat script in the [netlogon] directory:
+<screen>
+\\corpsrv\netlogon\kix32 \\corpsrv\netlogon\logon.kix /f
+</screen>
+	I only had to fully qualify the paths for Windows 9x, as Windows NT and
+	greater automatically add [NETLOGON] to the path.
+	</para>
+
+	<para>
+	Also of note for Win9x is that the drive mappings and printer setup will not
+	work because they rely on RPC. One merely has to put the appropriate settings
+	into the c:\autoexec.bat file or map the drives manually.  One option would
+	be to check the OS as part of the Kixtart script, and if it is Win9x and if
+	it is the first login, copy a pre-made autoexec.bat to the C: drive. I only
+	have three such machines and one is going away in the very near future, so it
+	was easier to do it by hand.
+	</para>
+
+	<para>
+	At this point I was able to add the users. This is the part that really falls
+	into “upgrade. I moved the users over one group at a time, starting with the
+	people who used the least amount of resources on the network. With each group
+	that I moved, I first logged in as a “standard” user in that group and took
+	careful note of their environment, mainly the printers they used, their PATH,
+	and what network resources they had access to (most importantly which ones
+	they actually needed access to).
+	</para>
+
+	<para>
+	I would then add the user's SambaSamAccount information as mentioned earlier,
+	and join the computer to the domain. The very first thing I had to do was to
+	copy the user's profile to the new server. This was very important, and I really
+	struggled with the most effective way to do it.  Here is the method that worked
+	for every one of my users on Windows NT, 2000, and XP:
+	</para>
+
+	<procedure>
+		<step><para>
+			Log in as the user on the domain. This creates the local copy
+			of the user's profile and copies it to the server as they log out.
+		</para></step>
+
+		<step><para>
+			Reboot the computer and log in as the LOCAL administrator.
+		</para></step>
+
+		<step><para>
+			Right-click My Computer, click Properties, and navigate to the
+			appropriate tab which perttains to user profiles (varies per
+			version of Windows).
+		</para></step>
+
+		<step><para>
+			Select the user's LOCAL profile (COMPUTERNAME\username), and
+			click the “Copy To” button.
+		</para></step>
+
+		<step><para>
+			In the next dialog, copy it to“C:\Documents and Settings\username.DOMAIN
+			(could be username.000, username.001, it seems to depend with no rhyme
+			or reason. If unsure, use Windows Explorer to view the permissions on
+			the directories. This one will be owned by DOMAIN\user) or in the case
+			of Windows NT, C:\WINNT\PROFILES\user.DOMAIN. In the very rare case
+			that such a directory was notcreated (this happened two times out of
+			about 60), copy it directly to the domain share
+			(\\PDCname\profiles\user\&lt;architecture&gt; in my case) where profiles are
+			stored. You will have to have made a connection to the share as that
+			user already (in Windows Explorer type \\PDCname\profiles\username or
+			the appropriate thing for your setup, and when prompted for a
+			username/password use the one of the user whose profile you are copying).
+		</para></step>
+
+		<step><para>
+			When the copy is complete (it can take a while) log out, and log back in
+			as the user. All his/her settings and all contents of My Documents,
+			Favorites, and the registry should have been copied successfully.
+		</para></step>
+
+		<step><para>
+			If it doesn't look right (the dead giveaway is the desktop background)
+			shut down the computer without logging out (powercycle) and try logging
+			in as the user again. If it still doesn't work, repeat the steps above.
+			I only had to ever repeat it once.
+		</para></step>
+
+	</procedure>
+
+	<para>
+	WORDS TO THE WISE:
+	</para>
+
+	<itemizedlist>
+		<listitem><para>
+			If the user was anything other than a standard user on his/her system
+			before, you will save yourself some headaches by giving them identical
+			permissions (on the local machine) as their domain account, BEFORE
+			copying their profile over. Do this through the User Administrator
+			in the Control Panel, after joining the computer to the domain and
+			before logging as that user for the first time. Otherwise they will
+			have trouble with permissions on their registry keys.
+		</para></listitem>
+
+		<listitem><para>
+			If any application was installed for the user only, rather than for
+			the entire system, it will probably not work without being reinstalled.
+		</para></listitem>
+	</itemizedlist>
+
+	<para>
+	After all these steps are accomplished, only cleanup details are left. Make sure user's
+	shortcuts and “Network Places” point to the appropriate place on the new server, check
+	the important applications to be sure they work as expected and troubleshoot any problems
+	that might arise, check to be sure the user's printers are present and working. By the
+	way, if there are any network printers installed as system printers (the Novell way)
+	you will need to log in as a local administrator and delete them.
+	</para>
+
+	<para>
+	For my non-laptop systems, I would then log in and out a couple times as the user,
+	to be sure that their registry settings were modified, then I was finished.
+	</para>
+
+	<para>
+	Some compatibility issues that cropped up included:
+	</para>
+
+	<para>
+	Blackberry client – It did not like having its registry settings moved around,
+	and had to be reinstalled. Also it needed write permissions to a portion of
+	the hard drive, and I had to give it those manually on the one system where
+	this was an issue.
+	</para>
+	CAMedia digital camera software for Canon cameras I had all kinds of trouble
+	with the registry. I had to use the “Runas” service to open the registry of
+	the local user while logged in as the domain user, and give the domain user
+	the appropriate permissions to some registry keys, then export that portion
+	of the registry to a file. Then as the domain user I had to import that file
+	into the registry.
+	</para>
+
+	<para>
+	Crystal Reports version 7 More registry problems that were solved by re-copying
+	the user's profile.
+	</para>
+
+	<para>
+	Printing from legacy applications I found out that Novell sent its jobs to
+	the printer in a raw format. CUPS sends them in Postscript by default. I had
+	to make a second printer definition forone printer and tell CUPS specifically
+	to send raw data to the printer, and assign this printer to the LPT port with
+	Kixtart's version of the “net use” command.
+	</para>
+
+	<para>
+	These were all eventually solved by elbow grease, queries to the Samba mailing
+	list and others, and diligence. I started transferring users to the new server
+	just before Thanksgiving, and by Decembe 29 I had every user transferred over.
+	My userbase is relatively small, but includes multiple versions of Windows,
+	multiple Linux member servers, a mechanized saw, a pen plotter, and legacy
+	applications written in Qbasic and R:Base, just to name a few. I actually
+	ended up making some of these applications work better (or work again, as
+	some of them had stopped functioning on the oldserver) because as part of
+	the process I had to find out how things were supposed to work.
+	</para>
+
+	<para>
+	The one thing I have not been able to get working is a very old database that
+	we had around for reference purposes which uses Novell's Btrieve engine.
+	</para>
+
+	<para>
+	As the resources compare, I went from 95% disk usage to just around 10%.
+	I went from a very high load on the server to an average load of between 1
+	and 2 runnable processes on the server. I have improved the security and
+	robustness of the system. I have also implemented ClamAV Autivirus
+	(http://www.clamav.net) which scans the entire Samba server for viruses
+	every two hours and quarantines them. I have found it much less problematic
+	than our ancient version of Norton Antivirus Corporate Edition, and much
+	ore up-to-date.
+	</para>
+
+	<para>
+	In short, my users are much happier with the new server, and I was told
+	several times that the transition was amazingly smooth
+	</para>
+
+	</sect3>
 
 	</sect2>
 
