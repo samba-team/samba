@@ -26,19 +26,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-/************************************************************************
- Routine to get the trust account password for a domain
-************************************************************************/
-static BOOL _get_trust_account_password(const char *domain, unsigned char *ret_pwd, 
-					time_t *pass_last_set_time)
-{
-	if (!secrets_fetch_trust_account_password(domain, ret_pwd, pass_last_set_time)) {
-                return False;
-	}
-
-	return True;
-}
-
 /* Check the machine account password is valid */
 
 enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *state)
@@ -52,8 +39,8 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
 	/* Get trust account password */
 
  again:
-	if (!_get_trust_account_password(lp_workgroup(), trust_passwd, 
-                                         NULL)) {
+	if (!secrets_fetch_trust_account_password(
+		    lp_workgroup(), trust_passwd, NULL)) {
 		result = NT_STATUS_INTERNAL_ERROR;
 		goto done;
 	}
