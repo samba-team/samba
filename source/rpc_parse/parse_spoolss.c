@@ -1559,7 +1559,7 @@ static BOOL new_smb_io_relstr(char *desc, NEW_BUFFER *buffer, int depth, UNISTR 
 			return False;
 
 		/* read the string */
-		if (!smb_io_unistr(desc, string, ps, depth))
+		if (!spoolss_smb_io_unistr(desc, string, ps, depth))
 			return False;
 
 		if(!prs_set_offset(ps, old_offset))
@@ -1649,7 +1649,7 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 			return False;
 	
 		do {
-			if (!smb_io_unistr(desc, &chaine, ps, depth))
+			if (!spoolss_smb_io_unistr(desc, &chaine, ps, depth))
 				return False;
 			
 			l_chaine=str_len_uni(&chaine);
