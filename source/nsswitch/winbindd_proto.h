@@ -77,6 +77,11 @@ void winbindd_idmap_dump_status(void);
 enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state) ;
 enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state);
 
+/*The following definitions come from  nsswitch/winbindd_sid.c  */
+
+enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state);
+enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state);
+
 /*The following definitions come from  nsswitch/winbindd_user.c  */
 
 enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state *state) ;
@@ -93,11 +98,9 @@ BOOL domain_handles_open(struct winbindd_domain *domain);
 void establish_connections(void) ;
 BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain);
 BOOL get_domain_info(struct winbindd_domain *domain);
-BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain,
-                                 char *name, DOM_SID *sid,
+BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid,
                                  enum SID_NAME_USE *type);
-BOOL winbindd_lookup_name_by_sid(struct winbindd_domain *domain,
-                                 DOM_SID *sid, char *name,
+BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name,
                                  enum SID_NAME_USE *type);
 BOOL winbindd_lookup_userinfo(struct winbindd_domain *domain,
                               uint32 user_rid, SAM_USERINFO_CTR *user_info);
