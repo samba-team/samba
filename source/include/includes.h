@@ -1349,7 +1349,9 @@ void free_kerberos_etypes(krb5_context context, krb5_enctype *enctypes);
 BOOL get_krb5_smb_session_key(krb5_context context, krb5_auth_context auth_context, DATA_BLOB *session_key, BOOL remote);
 krb5_error_code smb_krb5_kt_free_entry(krb5_context context, krb5_keytab_entry *kt_entry);
 krb5_principal kerberos_fetch_salt_princ_for_host_princ(krb5_context context, krb5_principal host_princ, int enctype);
-
+void kerberos_set_creds_enctype(krb5_creds *pcreds, int enctype);
+BOOL kerberos_compatible_enctypes(krb5_context context, krb5_enctype enctype1, krb5_enctype enctype2);
+void kerberos_free_data_contents(krb5_context context, krb5_data *pdata);
 #endif /* HAVE_KRB5 */
 
 
