@@ -34,6 +34,7 @@
 #define NMB_PORT 137
 #define DGRAM_PORT 138
 #define SMB_PORT 139
+#define SMB_PORT2 445
 
 #define False (0)
 #define True (1)
