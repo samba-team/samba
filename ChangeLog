@@ -1,3 +1,10 @@
+2001-10-29  Jacques Vidrine <n@nectar.com>
+
+	* admin/get.c: fix a bug in which a reference to a data
+	structure on the stack was being kept after the containing
+	function's lifetime, resulting in a segfault during `ktutil
+	get'.
+
 2001-10-22  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/crypto.c: make all high-level encrypting and decrypting
