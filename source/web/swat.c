@@ -31,6 +31,7 @@
 static pstring servicesf = CONFIGFILE;
 static BOOL demo_mode = False;
 static BOOL have_write_access = False;
+static BOOL have_read_access = False;
 
 /*
  * Password Management Globals
@@ -403,12 +404,13 @@ static void image_link(char *name,char *hlink, char *src)
 static void show_main_buttons(void)
 {
 	image_link("Home", "", "images/home.gif");
-
-	image_link("Globals", "globals", "images/globals.gif");
-	image_link("Shares", "shares", "images/shares.gif");
-	image_link("Printers", "printers", "images/printers.gif");
-	image_link("Status", "status", "images/status.gif");
-	image_link("View Config", "viewconfig","images/viewconfig.gif");
+	if (have_read_access) {
+		image_link("Globals", "globals", "images/globals.gif");
+		image_link("Shares", "shares", "images/shares.gif");
+		image_link("Printers", "printers", "images/printers.gif");
+		image_link("Status", "status", "images/status.gif");
+		image_link("View Config", "viewconfig","images/viewconfig.gif");
+	}
 	image_link("Password Management", "passwd", "images/passwd.gif");
 
 	printf("<HR>\n");
@@ -919,24 +921,28 @@ static void printers_page(void)
 	
 	cgi_load_variables(NULL);
 
-	show_main_buttons();
-
-	page = cgi_pathinfo();
-
 	/* check if the authenticated user has write access - if not then
 	   don't show write options */
 	have_write_access = (access(servicesf,W_OK) == 0);
 
+	/* if the user doesn't have read access to smb.conf then
+	   don't let them view it */
+	have_read_access = (access(servicesf,R_OK) == 0);
+
+	show_main_buttons();
+
+	page = cgi_pathinfo();
+
 	/* Root gets full functionality */
-	if (strcmp(page, "globals")==0) {
+	if (have_read_access && strcmp(page, "globals")==0) {
 		globals_page();
-	} else if (strcmp(page,"shares")==0) {
+	} else if (have_read_access && strcmp(page,"shares")==0) {
 		shares_page();
-	} else if (strcmp(page,"printers")==0) {
+	} else if (have_read_access && strcmp(page,"printers")==0) {
 		printers_page();
-	} else if (strcmp(page,"status")==0) {
+	} else if (have_read_access && strcmp(page,"status")==0) {
 		status_page();
-	} else if (strcmp(page,"viewconfig")==0) {
+	} else if (have_read_access && strcmp(page,"viewconfig")==0) {
 		viewconfig_page();
 	} else if (strcmp(page,"passwd")==0) {
 		passwd_page();
