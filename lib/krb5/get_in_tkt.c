@@ -2,6 +2,38 @@
 
 RCSID("$Id$");
 
+krb5_error_code
+krb5_init_etype (krb5_context context,
+		 unsigned *len,
+		 unsigned **val,
+		 const krb5_enctype *etypes)
+{
+    int i;
+    krb5_error_code ret;
+    const krb5_enctype *tmp;
+
+    if (etypes)
+	tmp = etypes;
+    else {
+	ret = krb5_get_default_in_tkt_etypes(context,
+					     &tmp);
+	if (ret)
+	    return ret;
+    }
+
+    for (i = 0; tmp[i]; ++i)
+	;
+    *len = i;
+    *val = malloc(i * sizeof(unsigned));
+    memmove (*val,
+	     tmp,
+	     i * sizeof(*tmp));
+    if (etypes == NULL)
+	free (tmp);
+    return 0;
+}
+
+
 static krb5_error_code
 decrypt_tkt (krb5_context context,
 	     const krb5_keyblock *key,
@@ -165,16 +197,11 @@ krb5_get_in_tkt(krb5_context context,
 
     a.req_body.till  = creds->times.endtime;
     krb5_generate_random_block (&a.req_body.nonce, sizeof(a.req_body.nonce));
-    if (etypes)
-	abort ();
-    else {
-	ret = krb5_get_default_in_tkt_etypes (context,
-					      (krb5_enctype**)&a.req_body.etype.val);
-	if (ret)
-	    return ret;
-	a.req_body.etype.len = 1;
-    }
-    
+    krb5_init_etype (context,
+		     &a.req_body.etype.len,
+		     &a.req_body.etype.val,
+		     etypes);
+
     a.req_body.addresses = malloc(sizeof(*a.req_body.addresses));
 
     if (addrs)
@@ -236,7 +263,13 @@ krb5_get_in_tkt(krb5_context context,
 	a.padata->val->padata_type = pa_enc_timestamp;
 	a.padata->val->padata_value.length = 0;
 
-	encdata.etype = ETYPE_DES_CBC_CRC;
+	/*
+	 * According to the spec this is the only encryption method
+	 * that must be supported so it's the safest choice.  On the
+	 * other hand, old KDCs might not support it.
+	 */
+
+	encdata.etype = ETYPE_DES_CBC_MD5;
 	encdata.kvno  = NULL;
 	ret = krb5_encrypt (context,
 			    buf + sizeof(buf) - len,
