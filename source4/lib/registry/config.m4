@@ -15,8 +15,6 @@ if test t$SMB_EXT_LIB_ENABLE_gconf = tYES; then
 	SMB_MODULE_DEFAULT(registry_gconf, STATIC)
 fi
 
-SMB_EXT_LIB_FROM_PKGCONFIG(gtk, [glib-2.0 gtk+-2.0])
-
 SMB_MODULE_MK(registry_nt4, REGISTRY, STATIC, lib/registry/config.mk)
 SMB_MODULE_MK(registry_w95, REGISTRY, STATIC, lib/registry/config.mk)
 SMB_MODULE_MK(registry_dir, REGISTRY, STATIC, lib/registry/config.mk)
