@@ -2669,7 +2669,7 @@ int smbw_stat(const char *fname, struct stat *st);
 void cgi_load_variables(FILE *f1);
 char *cgi_variable(char *name);
 BOOL am_root(void);
-char *get_user_name(void);
+char *cgi_user_name(void);
 void cgi_setup(char *rootdir, int auth_required);
 char *cgi_baseurl(void);
 char *cgi_pathinfo(void);

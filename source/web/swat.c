@@ -30,6 +30,7 @@
 
 static pstring servicesf = CONFIGFILE;
 static BOOL demo_mode = False;
+static BOOL have_write_access = False;
 
 /*
  * Password Management Globals
@@ -469,7 +470,10 @@ static void globals_page(void)
 
 	printf("<FORM name=\"swatform\" method=post>\n");
 
-	printf("<input type=submit name=\"Commit\" value=\"Commit Changes\">\n");
+	if (have_write_access) {
+		printf("<input type=submit name=\"Commit\" value=\"Commit Changes\">\n");
+	}
+
 	printf("<input type=reset name=\"Reset Values\" value=\"Reset Values\">\n");
 	if (advanced == 0) {
 		printf("<input type=submit name=\"Advanced\" value=\"Advanced View\">\n");
@@ -549,7 +553,10 @@ static void shares_page(void)
 
 
 	if (snum >= 0) {
-		printf("<input type=submit name=\"Commit\" value=\"Commit Changes\">\n");
+		if (have_write_access) {
+			printf("<input type=submit name=\"Commit\" value=\"Commit Changes\">\n");
+		}
+
 		printf("<input type=submit name=\"Delete\" value=\"Delete Share\">\n");
 		if (advanced == 0) {
 			printf("<input type=submit name=\"Advanced\" value=\"Advanced View\">\n");
@@ -848,7 +855,9 @@ static void printers_page(void)
 
 
 	if (snum >= 0) {
-		printf("<input type=submit name=\"Commit\" value=\"Commit Changes\">\n");
+		if (have_write_access) {
+			printf("<input type=submit name=\"Commit\" value=\"Commit Changes\">\n");
+		}
 		printf("<input type=submit name=\"Delete\" value=\"Delete Printer\">\n");
 		if (advanced == 0) {
 			printf("<input type=submit name=\"Advanced\" value=\"Advanced View\">\n");
@@ -916,6 +925,10 @@ static void printers_page(void)
 	show_main_buttons();
 
 	page = cgi_pathinfo();
+
+	/* check if the authenticated user has write access - if not then
+	   don't show write options */
+	have_write_access = (access(servicesf,W_OK) == 0);
 
 	/* Root gets full functionality */
 	if (strcmp(page, "globals")==0) {
