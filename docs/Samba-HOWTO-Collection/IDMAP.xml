@@ -868,6 +868,13 @@ Joined 'GOODELF' to realm 'SNOWSHOW.COM'
 		</para></step>
 
 		<step><para>
+		Store the LDAP server access password in the Samba <filename>secrets.tdb</filename> file as follows:
+<screen>
+&rootprompt; smbpasswd -w not24get
+</screen>
+		</para></step>
+
+		<step><para>
 		Start the <command>nmbd, winbind,</command> and <command>smbd</command> daemons in the order shown.
 		</para></step>
 	</procedure>
