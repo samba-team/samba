@@ -62,7 +62,7 @@ static void reply_corep(struct smbsrv_request *req, uint16_t choice)
 
 	if (req->smb_conn->signing.mandatory_signing) {
 		smbsrv_terminate_connection(req->smb_conn, 
-					    "CORE does not support SMB signing, and it is mandetory\n");
+					    "CORE does not support SMB signing, and it is mandatory\n");
 		return;
 	}
 
@@ -95,7 +95,7 @@ static void reply_coreplus(struct smbsrv_request *req, uint16_t choice)
 
 	if (req->smb_conn->signing.mandatory_signing) {
 		smbsrv_terminate_connection(req->smb_conn, 
-					    "COREPLUS does not support SMB signing, and it is mandetory\n");
+					    "COREPLUS does not support SMB signing, and it is mandatory\n");
 		return;
 	}
 
@@ -146,7 +146,7 @@ static void reply_lanman1(struct smbsrv_request *req, uint16_t choice)
 
 	if (req->smb_conn->signing.mandatory_signing) {
 		smbsrv_terminate_connection(req->smb_conn, 
-					    "LANMAN1 does not support SMB signing, and it is mandetory\n");
+					    "LANMAN1 does not support SMB signing, and it is mandatory\n");
 		return;
 	}
 
@@ -195,7 +195,7 @@ static void reply_lanman2(struct smbsrv_request *req, uint16_t choice)
 
 	if (req->smb_conn->signing.mandatory_signing) {
 		smbsrv_terminate_connection(req->smb_conn, 
-					    "LANMAN2 does not support SMB signing, and it is mandetory\n");
+					    "LANMAN2 does not support SMB signing, and it is mandatory\n");
 		return;
 	}
 
