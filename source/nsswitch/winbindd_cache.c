@@ -61,18 +61,19 @@ static void set_cache_time(char *domain_name, char *cache_type)
 static BOOL cache_time_expired(char *domain_name, char *cache_type)
 {
     fstring keystr;
-    int stamp;
+    time_t stamp;
+    time_t t = time(NULL);
 
     /* Get timestamp */
 
     slprintf(keystr, sizeof(keystr), "%s CACHE/%s", cache_type, domain_name);
-    stamp = tdb_get_int(cache_tdb, keystr);
+    stamp = (time_t)tdb_get_int(cache_tdb, keystr);
     
     /* Has it expired? */
 
-    if (time(NULL) > (stamp + lp_winbind_cache_time())) {
-        DEBUG(3, ("cache timeout for %s %s has expired\n",
-                  domain_name, cache_type));
+    if (t > (stamp + lp_winbind_cache_time())) {
+        DEBUG(4, ("cache timeout for %s %s has expired (%d secs)\n",
+                  domain_name, cache_type, (int)(t - stamp)));
     }                
 
     return time(NULL) > (stamp + lp_winbind_cache_time());
@@ -192,7 +193,7 @@ void winbindd_fill_group_cache_entry(char *domain, char *group_name,
 
 void expire_cache(char *domain_name, char *cache_type)
 {
-    TDB_DATA data, key;
+    TDB_DATA key;
     fstring keystr;
 
     DEBUG(3, ("expiring cached %s data for domain %s\n", 
@@ -204,10 +205,7 @@ void expire_cache(char *domain_name, char *cache_type)
     key.dptr = keystr;
     key.dsize = strlen(keystr);
 
-    data.dptr = NULL;
-    data.dsize = 0;
-
-    tdb_store(cache_tdb, key, data, TDB_REPLACE);
+    tdb_delete(cache_tdb, key);
 }
 
 /* Fetch some cached user or group data */
@@ -223,7 +221,7 @@ static BOOL fetch_cache(char *domain_name, char *cache_type,
 
     /* Check cache data is current */
     
-    if (!cache_time_expired(domain_name, CACHE_TYPE_USER)) {
+    if (!cache_time_expired(domain_name, cache_type)) {
         TDB_DATA data, key;
         fstring keystr;
 
@@ -253,7 +251,7 @@ static BOOL fetch_cache(char *domain_name, char *cache_type,
 
             return True;
         }
-    } else expire_cache(domain_name, CACHE_TYPE_USER);
+    } else expire_cache(domain_name, cache_type);
 
     return False;
 }
