@@ -22,25 +22,19 @@
 
 #include "includes.h"
 #include "ntdomain.h"
-
-extern int DEBUGLEVEL;
+#include "rpcclient.h"
 
  int main(int argc, char *argv[])
 {
-	extern struct command_set reg_commands[];
-	extern struct command_set sam_commands[];
-	extern struct command_set svc_commands[];
-	extern struct command_set ntl_commands[];
-	extern struct command_set lsa_commands[];
-	extern struct command_set net_commands[];
-	extern struct command_set evt_commands[];
+	add_lsa_commands();
+	add_net_commands();
+	add_evt_commands();
+	add_sam_commands();
+	add_svc_commands();
+	add_reg_commands();
+	add_ntl_commands();
+	add_at_commands();
+	add_spl_commands();
 
-	add_command_set(lsa_commands);
-	add_command_set(net_commands);
-	add_command_set(evt_commands);
-	add_command_set(sam_commands);
-	add_command_set(svc_commands);
-	add_command_set(reg_commands);
-	add_command_set(ntl_commands);
 	return command_main(argc, argv);
 }

@@ -21,8 +21,7 @@
 */
 
 #include "includes.h"
-
-extern int DEBUGLEVEL;
+#include "rpcclient.h"
 
 /****************************************************************************
  This defines the commands supported by this client
@@ -30,7 +29,7 @@ extern int DEBUGLEVEL;
 
  int main(int argc, char *argv[])
 {
-	extern struct command_set evt_commands[];
-	add_command_set(evt_commands);
+	add_evt_commands();
+
 	return command_main(argc, argv);
 }

@@ -112,7 +112,7 @@ uint32 num_commands = 0;
 /****************************************************************************
  add in individual command-sets.
  ****************************************************************************/
-void add_command_set(struct command_set *cmds)
+void add_command_set(const struct command_set *cmds)
 {
 	while (cmds->fn != NULL)
 	{

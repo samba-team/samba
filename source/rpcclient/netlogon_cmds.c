@@ -28,7 +28,7 @@ extern int DEBUGLEVEL;
 /****************************************************************************
  This defines the commands supported by this client
  ****************************************************************************/
-struct command_set ntl_commands[] = 
+static const struct command_set ntl_commands[] = 
 {
 	/*
 	 * netlogon
@@ -64,3 +64,8 @@ struct command_set ntl_commands[] =
 		{NULL, NULL}
 	}
 };
+
+void add_ntl_commands(void)
+{
+	add_command_set(ntl_commands);
+}

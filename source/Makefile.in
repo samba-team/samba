@@ -547,6 +547,8 @@ RPCCLIENT_OBJ = lib/cmd_interp.o \
 		rpcclient/net_cmds.o \
 		rpcclient/eventlog_cmds.o \
 		rpcclient/netlogon_cmds.o \
+		rpcclient/cmdat_cmds.o \
+		rpcclient/spoolss_cmds.o \
 		rpcclient/display_at.o \
 		rpcclient/display_event.o \
 		rpcclient/display_reg.o \

@@ -23,12 +23,10 @@
 #include "includes.h"
 #include "ntdomain.h"
 
-extern int DEBUGLEVEL;
-
 /****************************************************************************
  This defines the commands supported by this client
  ****************************************************************************/
-struct command_set evt_commands[] = 
+static const struct command_set evt_commands[] = 
 {
 	/*
 	 * eventlog
@@ -53,3 +51,7 @@ struct command_set evt_commands[] =
 	}
 };
 
+void add_evt_commands(void)
+{
+	add_command_set(evt_commands);
+}

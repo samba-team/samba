@@ -22,13 +22,12 @@
 
 #include "includes.h"
 #include "ntdomain.h"
-
-extern int DEBUGLEVEL;
+#include "rpcclient.h"
 
 /****************************************************************************
  This defines the commands supported by this client
  ****************************************************************************/
-struct command_set svc_commands[] = 
+static const struct command_set svc_commands[] = 
 {
 	/*
 	 * service control
@@ -80,3 +79,8 @@ struct command_set svc_commands[] =
 		{NULL, NULL}
 	}
 };
+
+void add_svc_commands(void)
+{
+	add_command_set(svc_commands);
+}

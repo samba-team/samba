@@ -22,13 +22,12 @@
 
 #include "includes.h"
 #include "ntdomain.h"
-
-extern int DEBUGLEVEL;
+#include "rpcclient.h"
 
 /****************************************************************************
  This defines the commands supported by this client
  ****************************************************************************/
-struct command_set lsa_commands[] = 
+static const struct command_set lsa_commands[] = 
 {
 	/*
 	 * lsa
@@ -88,3 +87,8 @@ struct command_set lsa_commands[] =
 		{NULL, NULL}
 	}
 };
+
+void add_lsa_commands(void)
+{
+	add_command_set(lsa_commands);
+}

@@ -312,11 +312,7 @@ static BOOL api_lsa_open_policy( rpcsrv_struct *p, prs_struct *data,
 
 	r_o.status = _lsa_open_policy(NULL, &r_o.pol,
 	                              &q_o.attr, q_o.des_access);
-	lsa_io_r_open_pol("", &r_o, rdata, 0);
-	{
-		return False;
-	}
-	return True;
+	return lsa_io_r_open_pol("", &r_o, rdata, 0);
 }
 
 /***************************************************************************

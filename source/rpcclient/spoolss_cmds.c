@@ -22,13 +22,12 @@
 
 #include "includes.h"
 #include "ntdomain.h"
-
-extern int DEBUGLEVEL;
+#include "rpcclient.h"
 
 /****************************************************************************
  This defines the commands supported by this client
  ****************************************************************************/
-struct command_set spl_commands[] = 
+static const struct command_set spl_commands[] = 
 {
 	/*
 	 * printer testing
@@ -65,3 +64,7 @@ struct command_set spl_commands[] =
 	}
 };
 
+void add_spl_commands(void)
+{
+	add_command_set(spl_commands);
+}

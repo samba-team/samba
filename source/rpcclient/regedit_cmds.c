@@ -21,13 +21,12 @@
 */
 
 #include "includes.h"
-
-extern int DEBUGLEVEL;
+#include "rpcclient.h"
 
 /****************************************************************************
  This defines the commands supported by this client
  ****************************************************************************/
-struct command_set reg_commands[] = 
+static const struct command_set reg_commands[] = 
 {
 	/*
 	 * registry
@@ -105,3 +104,7 @@ struct command_set reg_commands[] =
 	}
 };
 
+void add_reg_commands(void)
+{
+	add_command_set(reg_commands);
+}

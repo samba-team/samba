@@ -60,7 +60,7 @@ BOOL tdb_lookup_secret( TDB_CONTEXT *tdb, const UNISTR2 *uk, LSA_SECRET **usr)
 
 	if (usr != NULL)
 	{
-		(*usr) = (LSA_SECRET *)malloc(sizeof(**usr));
+		(*usr) = g_new(LSA_SECRET, 1);
 		if ((*usr) == NULL)
 		{
 			return False;
