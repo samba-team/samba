@@ -52,8 +52,10 @@ void
 krb5_free_keyblock(krb5_context context,
 		   krb5_keyblock *keyblock)
 {
-    krb5_free_keyblock_contents(context, keyblock);
-    free(keyblock);
+    if(keyblock){
+	krb5_free_keyblock_contents(context, keyblock);
+	free(keyblock);
+    }
 }
 
 krb5_error_code
