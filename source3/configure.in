@@ -149,14 +149,41 @@ AC_SUBST(SMBWRAPPER)
 AC_SUBST(EXTRA_BIN_PROGS)
 AC_SUBST(EXTRA_SBIN_PROGS)
 AC_SUBST(EXTRA_ALL_TARGETS)
-AC_SUBST(LSA_DYNAMIC)
-AC_SUBST(NETLOG_DYNAMIC)
-AC_SUBST(SAMR_DYNAMIC)
-AC_SUBST(SVC_DYNAMIC)
-AC_SUBST(WKS_DYNAMIC)
-AC_SUBST(REG_DYNAMIC)
-AC_SUBST(SPOOLSS_DYNAMIC)
-AC_SUBST(DFS_DYNAMIC)
+dnl For the DYNAMIC RPC stuff
+dnl The complicated _YES and _NO stuff allows us to avoid a dependency
+dnl on GNU Make.
+AC_SUBST(LSA_DYNAMIC_YES)
+AC_SUBST(LSA_DYNAMIC_NO)
+LSA_DYNAMIC_YES="#"
+LSA_DYNAMIC_NO=
+AC_SUBST(NETLOG_DYNAMIC_YES)
+AC_SUBST(NETLOG_DYNAMIC_NO)
+NETLOG_DYNAMIC_YES="#"
+NETLOG_DYNAMIC_NO=
+AC_SUBST(SAMR_DYNAMIC_YES)
+AC_SUBST(SAMR_DYNAMIC_NO)
+SAMR_DYNAMIC_YES="#"
+SAMR_DYNAMIC_NO=
+AC_SUBST(SVC_DYNAMIC_YES)
+AC_SUBST(SVC_DYNAMIC_NO)
+SVC_DYNAMIC_YES="#"
+SVC_DYNAMIC_NO=
+AC_SUBST(WKS_DYNAMIC_YES)
+AC_SUBST(WKS_DYNAMIC_NO)
+WKS_DYNAMIC_YES="#"
+WKS_DYNAMIC_NO=
+AC_SUBST(REG_DYNAMIC_YES)
+AC_SUBST(REG_DYNAMIC_NO)
+REG_DYNAMIC_YES="#"
+REG_DYNAMIC_NO=
+AC_SUBST(SPOOLSS_DYNAMIC_YES)
+AC_SUBST(SPOOLSS_DYNAMIC_NO)
+SPOOLSS_DYNAMIC_YES="#"
+SPOOLSS_DYNAMIC_NO=
+AC_SUBST(DFS_DYNAMIC_YES)
+AC_SUBST(DFS_DYNAMIC_NO)
+DFS_DYNAMIC_YES="#"
+DFS_DYNAMIC_NO=
 
 # compile with optimization and without debugging by default
 CFLAGS="-O ${CFLAGS}"
@@ -198,35 +225,43 @@ if test x$enable_dynrpc != xno
 then
 	for i in `echo $enable_dynrpc | sed -e's/,/ /g'` 
          do case $i in lsa)
-	  LSA_DYNAMIC=yes
+	  LSA_DYNAMIC_YES=
+	  LSA_DYNAMIC_NO="#"
           AC_DEFINE(RPC_LSA_DYNAMIC, 1,
                     [Define to make the LSA pipe dynamic])
 	 ;; samr)
-          SAMR_DYNAMIC=yes
+          SAMR_DYNAMIC_YES=
+          SAMR_DYNAMIC_NO="#"
 	  AC_DEFINE(RPC_SAMR_DYNAMIC, 1, 
 	            [Define to make the SAMR pipe dynamic])
 	 ;; svc)
-          SVC_DYNAMIC=yes
+          SVC_DYNAMIC_YES=
+          SVC_DYNAMIC_NO="#"
 	  AC_DEFINE(RPC_SVC_DYNAMIC, 1, 
 	            [Define to make the SRVSVC pipe dynamic])
 	 ;; wks)
-          WKS_DYNAMIC=yes
+          WKS_DYNAMIC_YES=
+          WKS_DYNAMIC_NO="#"
 	  AC_DEFINE(RPC_WKS_DYNAMIC, 1, 
 	            [Define to make the WKSSVC pipe dynamic])
 	 ;; netlog)
-          NETLOG_DYNAMIC=yes
+          NETLOG_DYNAMIC_YES=
+          NETLOG_DYNAMIC_NO="#"
 	  AC_DEFINE(RPC_NETLOG_DYNAMIC, 1, 
 	            [Define to make the NETLOGON pipe dynamic])
 	 ;; reg)
-          REG_DYNAMIC=yes
+          REG_DYNAMIC_YES=
+          REG_DYNAMIC_NO="#"
 	  AC_DEFINE(RPC_REG_DYNAMIC, 1, 
 	            [Define to make the WINREG pipe dynamic])
 	 ;; spoolss)
-          SPOOLSS_DYNAMIC=yes
+          SPOOLSS_DYNAMIC_YES=
+          SPOOLSS_DYNAMIC_NO="#"
 	  AC_DEFINE(RPC_SPOOLSS_DYNAMIC, 1, 
 	            [Define to make the SPOOLSS pipe dynamic])
 	 ;; dfs)
-          DFS_DYNAMIC=yes
+          DFS_DYNAMIC_YES=
+          DFS_DYNAMIC_NO="#"
 	  AC_DEFINE(RPC_DFS_DYNAMIC, 1, 
 	            [Define to make the NETDFS pipe dynamic])
 	 ;; esac
