@@ -7,7 +7,7 @@
 	<pubdate>2002</pubdate>
 </chapterinfo>
 
-<title>Using samba 3.0 with ActiveDirectory support</title>
+<title>Samba as a ADS domain member</title>
 
 <para>
 This is a VERY ROUGH guide to setting up the current (November 2001)

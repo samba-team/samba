@@ -3,15 +3,17 @@
 <title>How to Install and Test SAMBA</title>
 
 <sect1>
-	<title>Step 0: Read the man pages</title>
+	<title>Read the man pages</title>
 	
 	<para>The man pages distributed with SAMBA contain 
 	lots of useful info that will help to get you started. 
 	If you don't know how to read man pages then try 
 	something like:</para>
 
-	<para><prompt>$ </prompt><userinput>nroff -man smbd.8 | more
-	</userinput></para>
+	<para><prompt>$ </prompt><userinput>man smbd.8</userinput>
+	or 
+	<prompt>$ </prompt><userinput>nroff -man smbd.8 | more
+	</userinput> on older unixes.</para>
 	
 	<para>Other sources of information are pointed to 
 	by the Samba web site,<ulink url="http://www.samba.org/">
@@ -19,7 +21,7 @@
 </sect1>
 
 <sect1>
-	<title>Step 1: Building the Binaries</title>
+	<title>Building the Binaries</title>
 	
 	<para>To do this, first run the program <command>./configure
 	</command> in the source directory. This should automatically 
@@ -62,7 +64,7 @@
 </sect1>
 
 <sect1>
-	<title>Step 2: The all important step</title>
+	<title>The all important step</title>
 	
 	<para>At this stage you must fetch yourself a 
 	coffee or other drink you find stimulating. Getting the rest 
@@ -74,7 +76,7 @@
 </sect1>
 
 <sect1>
-	<title>Step 3: Create the smb configuration file. </title>
+	<title>Create the smb configuration file. </title>
 
 	<para>There are sample configuration files in the examples 
 	subdirectory in the distribution. I suggest you read them 
@@ -91,7 +93,7 @@
 	   [homes]
 	      guest ok = no
 	      read only = no
-	</programlisting</para>
+	</programlisting></para>
 	
 	<para>which would allow connections by anyone with an 
 	account on the server, using either their login name or 
@@ -111,7 +113,7 @@
 </sect1>
 
 <sect1>
-	<title>Step 4: Test your config file with 
+	<title>Test your config file with 
 	<command>testparm</command></title>
 
 	<para>It's important that you test the validity of your
@@ -122,10 +124,13 @@
 	<para>Make sure it runs OK and that the services look 
 	reasonable before proceeding. </para>
 
+	<para>Always run testparm again when you change 
+	<filename>smb.conf</filename>!</para>
+
 </sect1>
 
 <sect1>
-	<title>Step 5: Starting the smbd and nmbd</title>
+	<title>Starting the smbd and nmbd</title>
 
 	<para>You must choose to start smbd and nmbd either
 	as daemons or from <command>inetd</command>. Don't try
@@ -144,7 +149,7 @@
 	request.</para>
 
 	<sect2>
-		<title>Step 5a: Starting from inetd.conf</title>
+		<title>Starting from inetd.conf</title>
 
 		<para>NOTE; The following will be different if 
 		you use NIS or NIS+ to distributed services maps.</para>
@@ -196,7 +201,7 @@
 	</sect2>
 	
 	<sect2>
-		<title>Step 5b. Alternative: starting it as a daemon</title>
+		<title>Alternative: starting it as a daemon</title>
 
 		<para>To start the server as a daemon you should create 
 		a script something like this one, perhaps calling 
@@ -225,7 +230,7 @@
 </sect1>
 
 <sect1>
-	<title>Step 6: Try listing the shares available on your 
+	<title>Try listing the shares available on your 
 	server</title>
 
 	<para><prompt>$ </prompt><userinput>smbclient -L 
@@ -245,7 +250,7 @@
 </sect1>
 
 <sect1>
-	<title>Step 7: Try connecting with the unix client</title>
+	<title>Try connecting with the unix client</title>
 	
 	<para><prompt>$ </prompt><userinput>smbclient <replaceable>
 	//yourhostname/aservice</replaceable></userinput></para>
@@ -265,7 +270,7 @@
 </sect1>
 
 <sect1>
-	<title>Step 8: Try connecting from a DOS, WfWg, Win9x, WinNT, 
+	<title>Try connecting from a DOS, WfWg, Win9x, WinNT, 
 	Win2k, OS/2, etc... client</title>
 	
 	<para>Try mounting disks. eg:</para>
@@ -305,8 +310,8 @@
 	<sect2>
 		<title>Diagnosing Problems</title>
 
-		<para>If you have installation problems then go to 
-		<filename>DIAGNOSIS.txt</filename> to try to find the 
+		<para>If you have installation problems then go to the
+		<ulink url="Diagnosis.html">Diagnosis</ulink> chapter to try to find the 
 		problem.</para>
 	</sect2>
 	
@@ -424,6 +429,8 @@
 		its open. A client may ask for DENY_NONE, DENY_READ, DENY_WRITE 
 		or DENY_ALL. There are also special compatibility modes called 
 		DENY_FCB and  DENY_DOS.</para>
+
+		<!-- FIXME: Sync this with oplocks.sgml -->
 	</sect2>
 	
 	<sect2>
