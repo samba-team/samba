@@ -772,7 +772,7 @@ static int cmd_get(void)
 	
 	if (!next_token_nr(NULL,p,NULL,sizeof(rname)-strlen(rname))) {
 		d_printf("get <filename>\n");
-		return;
+		return 1;
 	}
 	pstrcpy(lname,p);
 	dos_clean_name(rname);
@@ -1393,7 +1393,7 @@ static int cmd_print(void)
 
 	if (!next_token_nr(NULL,lname,NULL, sizeof(lname))) {
 		d_printf("print <filename>\n");
-		return;
+		return 1;
 	}
 
 	pstrcpy(rname,lname);
@@ -1462,7 +1462,7 @@ static int cmd_del(void)
 	
 	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		d_printf("del <filename>\n");
-		return;
+		return 1;
 	}
 	pstrcat(mask,buf);
 
@@ -1553,7 +1553,7 @@ static int cmd_prompt(void)
 	prompt = !prompt;
 	DEBUG(2,("prompting is now %s\n",prompt?"on":"off"));
 	
-	return;
+	return 1;
 }
 
 
@@ -2647,11 +2647,7 @@ static int do_message_op(void)
 			io_bufsize = MAX(1, atoi(optarg));
 			break;
 		default:
-		
-	printf("########## mangle test code ###########\n");
-	mangle_test_code();
-
-		/*	usage(pname);*/
+			usage(pname);
 			exit(1);
 		}
 	}
