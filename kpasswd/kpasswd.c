@@ -47,9 +47,69 @@ static struct getargs args[] = {
 static void
 usage (int ret, struct getargs *a, int num_args)
 {
-    arg_printusage (a, num_args, NULL, "[principal]");
+    arg_printusage (a, num_args, NULL, "[principal ...]");
     exit (ret);
 }
+
+static int
+change_password(krb5_context context,
+		krb5_principal principal,
+		krb5_ccache id)
+{
+    krb5_data result_code_string, result_string;
+    int result_code;
+    krb5_error_code ret;
+    char pwbuf[BUFSIZ];
+    char *msg, *name;
+
+    krb5_data_zero (&result_code_string);
+    krb5_data_zero (&result_string);
+
+    name = msg = NULL;
+    if (principal == NULL)
+	asprintf(&msg, "New password: ");
+    else {
+	ret = krb5_unparse_name(context, principal, &name);
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_unparse_name");
+
+	asprintf(&msg, "New password for %s: ", name);
+    }
+
+    if (msg == NULL)
+	krb5_errx (context, 1, "out of memory");
+
+    ret = des_read_pw_string (pwbuf, sizeof(pwbuf), msg, 1);
+    free(msg);
+    if (name)
+	free(name);
+    if (ret != 0) {
+	return 1;
+    }
+
+    ret = krb5_set_password (context, id, pwbuf,
+			     principal,
+			     &result_code,
+			     &result_code_string,
+			     &result_string);
+    if (ret) {
+	krb5_warn (context, ret, "krb5_set_password");
+	free(name);
+	return 1;
+    }
+
+    printf ("%s%s%.*s\n", krb5_passwd_result_to_string(context,
+						       result_code),
+	    result_string.length > 0 ? " : " : "",
+	    (int)result_string.length,
+	    (char *)result_string.data);
+
+    krb5_data_free (&result_code_string);
+    krb5_data_free (&result_string);
+
+    return ret != 0;
+}
+
 
 int
 main (int argc, char **argv)
@@ -61,10 +121,8 @@ main (int argc, char **argv)
     int optind = 0;
     krb5_get_init_creds_opt opt;
     krb5_creds cred;
-    int result_code;
-    krb5_data result_code_string, result_string;
-    char pwbuf[BUFSIZ];
     krb5_ccache id;
+    int exit_value;
 
     optind = krb5_program_setup(&context, argc, argv,
 				args, sizeof(args) / sizeof(args[0]), usage);
@@ -138,38 +196,31 @@ main (int argc, char **argv)
     if (ret)
 	krb5_err(context, 1, ret, "krb5_cc_store_cred");
 
+    krb5_free_creds_contents (context, &cred);
 
+    if (argc == 0) {
+	exit_value = change_password(context, NULL, id);
+    } else {
+	exit_value = 0;
 
-    if(argv[0]) {
-	ret = krb5_parse_name (context, argv[0], &principal);
-	if (ret)
-	    krb5_err (context, 1, ret, "krb5_parse_name");
+	while (argc-- > 0) {
+
+	    ret = krb5_parse_name (context, argv[0], &principal);
+	    if (ret)
+		krb5_err (context, 1, ret, "krb5_parse_name");
+
+	    ret = change_password(context, principal, id);
+	    if (ret)
+		exit_value = 1;
+	    krb5_free_principal(context, principal);
+	    argv++;
+	}
     }
 
-    krb5_data_zero (&result_code_string);
-    krb5_data_zero (&result_string);
-
-    if(des_read_pw_string (pwbuf, sizeof(pwbuf), "New password: ", 1) != 0)
-	return 1;
-
-    ret = krb5_set_password (context, id, pwbuf,
-			     principal,
-			     &result_code,
-			     &result_code_string,
-			     &result_string);
+    ret = krb5_cc_destroy(context, id);
     if (ret)
-	krb5_err (context, 1, ret, "krb5_set_password");
+	krb5_err (context, 1, ret, "krb5_cc_destroy");
 
-    printf ("%s%s%.*s\n", krb5_passwd_result_to_string(context,
-						       result_code),
-	    result_string.length > 0 ? " : " : "",
-	    (int)result_string.length,
-	    (char *)result_string.data);
-
-    krb5_data_free (&result_code_string);
-    krb5_data_free (&result_string);
-    
-    krb5_free_creds_contents (context, &cred);
     krb5_free_context (context);
-    return result_code;
+    return ret;
 }
