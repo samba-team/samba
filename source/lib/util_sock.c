@@ -486,22 +486,12 @@ char *get_socket_addr(TALLOC_CTX *mem_ctx, int fd)
 	struct sockaddr sa;
 	struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
 	int     length = sizeof(sa);
-	char *addr_buf;
 
-	addr_buf = talloc_strdup(mem_ctx, "0.0.0.0");
-
-	if (fd == -1) {
-		return addr_buf;
+	if (fd == -1 || getpeername(fd, &sa, &length) == -1) {
+		return talloc_strdup(mem_ctx, "0.0.0.0");
 	}
 	
-	if (getpeername(fd, &sa, &length) < 0) {
-		DEBUG(0,("getpeername failed. Error was %s\n", strerror(errno) ));
-		return addr_buf;
-	}
-	
-	addr_buf = talloc_strdup(mem_ctx, (char *)inet_ntoa(sockin->sin_addr));
-	
-	return addr_buf;
+	return talloc_strdup(mem_ctx, (char *)inet_ntoa(sockin->sin_addr));
 }
 
 
