@@ -34,8 +34,8 @@
 #include "kadm5_locl.h"
 #ifdef OPENLDAP
 #include <ldap.h>
-#if 0
-#include <sasl.h>
+#ifdef HAVE_TSASL
+#include <tsasl.h>
 #endif
 #include <resolve.h>
 #include <base64.h>
@@ -48,24 +48,129 @@ RCSID("$Id$");
 #define CTX2LP(context) ((LDAP *)((context)->ldap_conn))
 #define CTX2BASE(context) ((context)->base_dn)
 
+/*
+ *
+ */
+
+#ifndef TSASL
 static int
 sasl_interact(LDAP *ld, unsigned flags, void *defaults, void *interact)
 {
 #if 0
-    char *dflt;
     sasl_interact_t *in = interact;
+    char *defresult;
 
     while (interact->id != SASL_CB_LIST_END) {
-        dflt = in->defresult;
-	if (dflt == NULL && dflt[0] == '\0')
-	    dflt = "";
-	in->result = strdup(dflt);
+        defresult = in->defresult;
+	if (defresult == NULL)
+	    defresult = "";
+	in->result = strdup(defresult);
         in->len = strlen(in->result);
         in++;
     }
 #endif
     return LDAP_SUCCESS;
 }
+#endif
+
+#if 0
+static Sockbuf_IO ldap_tsasl_io = {
+    NULL,			/* sbi_setup */
+    NULL,			/* sbi_remove */
+    NULL,			/* sbi_ctrl */
+    NULL,			/* sbi_read */
+    NULL,			/* sbi_write */
+    NULL			/* sbi_close */
+};
+#endif
+
+#ifdef HAVE_TSASL
+static int
+ldap_tsasl_bind_s(LDAP *ld,
+		  LDAP_CONST char *dn,
+		  LDAPControl **serverControls,
+		  LDAPControl **clientControls,
+		  const char *host)
+{
+    struct tsasl_peer *peer = NULL;
+    struct tsasl_buffer in, out;
+    struct berval ccred, *scred;
+    char *mech = "GSSAPI"; /* XXX ? */
+    int ret, rc;
+
+    ret = tsasl_peer_init(TSASL_FLAGS_INITIATOR |
+			  TSASL_FLAGS_CONFIDENTIALITY | 
+			  TSASL_FLAGS_INTEGRITY,
+			  "ldap",
+			  host,
+			  &peer);
+    if (ret != TSASL_DONE) {
+	rc = LDAP_LOCAL_ERROR;
+	goto out;
+    }
+
+    ret = tsasl_select_mech(peer, mech);
+    if (ret != TSASL_DONE) {
+	rc = LDAP_LOCAL_ERROR;
+	goto out;
+    }
+
+    in.tb_data = NULL;
+    in.tb_size = 0;
+
+    do {
+	ret = tsasl_request(peer, &in, &out);
+	if (in.tb_size != 0) {
+	    free(in.tb_data);
+	    in.tb_data = NULL; 
+	    in.tb_size = 0;
+	}
+	if (ret != TSASL_DONE && ret != TSASL_CONTINUE) {
+	    rc = LDAP_AUTH_UNKNOWN;
+	    goto out;
+	}
+
+	ccred.bv_val = out.tb_data;
+	ccred.bv_len = out.tb_size;
+
+	rc = ldap_sasl_bind_s(ld, dn, mech, &ccred,
+			      serverControls, clientControls, &scred);
+	tsasl_buffer_free(&out);
+
+	if (rc != LDAP_SUCCESS && rc != LDAP_SASL_BIND_IN_PROGRESS) {
+	    if(scred && scred->bv_len)
+		ber_bvfree(scred);
+	    goto out;
+	}
+
+	in.tb_data = malloc(scred->bv_len);
+	if (in.tb_data == NULL) {
+	    rc = LDAP_LOCAL_ERROR;
+	    goto out;
+	}
+	memcpy(in.tb_data, scred->bv_val, scred->bv_len);
+	in.tb_size = scred->bv_len;
+	ber_bvfree(scred);
+
+    } while (rc == LDAP_SASL_BIND_IN_PROGRESS);
+
+ out:
+    if (rc == LDAP_SUCCESS) {
+#if 0
+	ber_sockbuf_add_io(ld->ld_conns->lconn_sb, &ldap_tsasl_io,
+			   LBER_SBIOD_LEVEL_APPLICATION, peer);
+
+#endif
+    } else if (peer != NULL)
+	tsasl_peer_free(peer);
+
+    return rc;
+}
+#endif /* HAVE_TSASL */
+
+/*
+ *
+ */
 
 void static
 laddattr(char ***al, int *attrlen, char *attr)
@@ -144,13 +249,20 @@ _kadm5_ad_connect(void *server_handle)
 	    continue;
 	}
 	
+#ifdef HAVE_TSASL
+	lret = ldap_tsasl_bind_s(lp, NULL, NULL, NULL,
+				 servers[i].server);
+				 
+#else
 	lret = ldap_sasl_interactive_bind_s(lp, NULL, NULL, NULL, NULL, 
 					    LDAP_SASL_QUIET,
 					    sasl_interact, NULL);
+#endif
 	if (lret != LDAP_SUCCESS) {
 	    ldap_unbind(lp);
 	    continue;
 	}
+
 	context->ldap_conn = lp;
 	break;
     }
@@ -343,7 +455,7 @@ kadm5_ad_get_principal(void *server_handle,
 		       u_int32_t mask)
 {
     kadm5_ad_context *context = server_handle;
-    LDAPMessage *m;
+    LDAPMessage *m, *m0;
     char **attr = NULL;
     int attrlen = 0;
     char *filter, *p;
@@ -366,10 +478,18 @@ kadm5_ad_get_principal(void *server_handle,
 	laddattr(&attr, &attrlen, "userPrincipalName");
 	laddattr(&attr, &attrlen, "servicePrincipalName");
     }
+    laddattr(&attr, &attrlen, "objectClass");
+    laddattr(&attr, &attrlen, "whenChanged");
+    laddattr(&attr, &attrlen, "whenCreated");
+    laddattr(&attr, &attrlen, "accountExpires");
+    laddattr(&attr, &attrlen, "cn");
+    laddattr(&attr, &attrlen, "userAccountControl");
 
     krb5_unparse_name(context->context, principal, &p);
 
-    asprintf(&filter, "(|(userPrincipalName=%s)(servicePrincipalName=%s))",
+    asprintf(&filter, 
+	     "(|(userPrincipalName=%s)"
+	     "(servicePrincipalName=%s))",
 	     p, p);
     free(p);
 
@@ -377,6 +497,31 @@ kadm5_ad_get_principal(void *server_handle,
 			LDAP_SCOPE_SUBTREE, 
 			filter, attr, 0, &m);
     free(attr);
+
+    if (ldap_count_entries(CTX2LP(context), m) > 0) {
+	char **vals;
+	m0 = ldap_first_entry(CTX2LP(context), m);
+	if (m0 == NULL) {
+	    ldap_msgfree(m);
+	    goto fail;
+	}
+	vals = ldap_get_values(CTX2LP(context), m0, "cn");
+	if (vals)
+	    printf("cn %s\n", vals[0]);
+	vals = ldap_get_values(CTX2LP(context), m0, "servicePrincipalName");
+	if (vals)
+	    printf("servicePrincipalName %s\n", vals[0]);
+	vals = ldap_get_values(CTX2LP(context), m0, "userPrincipalName");
+	if (vals)
+	    printf("userPrincipalName %s\n", vals[0]);
+	vals = ldap_get_values(CTX2LP(context), m0, "userAccountControl");
+	if (vals)
+	    printf("userAccountControl %s\n", vals[0]);
+	vals = ldap_get_values(CTX2LP(context), m0, "accountExpires");
+	if (vals)
+	    printf("accountExpires %s\n", vals[0]);
+    } else
+	goto fail;
 
     if (mask & KADM5_KVNO)
 	entry->kvno = 0; /* XXX */
@@ -386,6 +531,8 @@ kadm5_ad_get_principal(void *server_handle,
 	krb5_copy_principal(context->context, principal, &entry->principal);
 
     return 0;
+ fail:
+    return KADM5_RPC_ERROR;
 #else
     krb5_set_error_string(context->context, "Function not implemented");
     return KADM5_RPC_ERROR;
