@@ -362,11 +362,15 @@ if [ $1 = 0 ] ; then
     cd /etc
     tmpfile=/etc/tmp.$$
 	if [ -f /etc/inetd.conf ]; then
+      # preserve inetd.conf permissions.
+      cp -p /etc/inetd.conf $tmpfile
       sed -e '/^[:space:]*swat.*$/d' /etc/inetd.conf > $tmpfile
       mv $tmpfile inetd.conf
 	fi
+    # preserve services permissions.
+    cp -p /etc/services $tmpfile
     sed -e '/^[:space:]*swat.*$/d' /etc/services > $tmpfile
-    mv $tmpfile services
+    mv $tmpfile /etc/services
 
 	# Remove swat entry from /etc/xinetd.d
 	if [ -f /etc/xinetd.d/swat ]; then
