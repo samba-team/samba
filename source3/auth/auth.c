@@ -23,27 +23,45 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
-/** List of various built-in authentication modules */
+static struct auth_init_function_entry *backends = NULL;
 
-static const struct auth_init_function_entry builtin_auth_init_functions[] = {
-	{ "guest", auth_init_guest },
-	{ "rhosts", auth_init_rhosts },
-	{ "hostsequiv", auth_init_hostsequiv },
-	{ "sam", auth_init_sam },	
-	{ "samstrict", auth_init_samstrict },
-	{ "samstrict_dc", auth_init_samstrict_dc },
-	{ "unix", auth_init_unix },
-	{ "smbserver", auth_init_smbserver },
-	{ "ntdomain", auth_init_ntdomain },
-	{ "trustdomain", auth_init_trustdomain },
-	{ "winbind", auth_init_winbind },
-#ifdef DEVELOPER
-	{ "name_to_ntstatus", auth_init_name_to_ntstatus },
-	{ "fixed_challenge", auth_init_fixed_challenge },
-#endif
-	{ "plugin", auth_init_plugin },
-	{ NULL, NULL}
-};
+BOOL smb_register_auth(const char *name, auth_init_function init, int version)
+{
+	struct auth_init_function_entry *entry = backends;
+
+	if(version != AUTH_INTERFACE_VERSION)
+		return False;
+
+	DEBUG(5,("Attempting to register auth backend %s\n", name));
+
+	while(entry) {
+		if (strequal(name, entry->name)) {
+			DEBUG(0,("There already is an auth backend registered with the name %s!\n", name));
+			return False;
+		}
+		entry = entry->next;
+	}
+	
+	entry = smb_xmalloc(sizeof(struct auth_init_function_entry));
+	entry->name = smb_xstrdup(name);
+	entry->init = init;
+
+	DLIST_ADD(backends, entry);
+	DEBUG(5,("Successfully added auth backend '%s'\n", name));
+	return True;
+}
+
+static struct auth_init_function_entry *auth_find_backend_entry(const char *name)
+{
+	struct auth_init_function_entry *entry = backends;
+
+	while(entry) {
+		if (strequal(entry->name, name)) return entry;
+		entry = entry->next;
+	}
+	
+	return NULL;
+}
 
 /****************************************************************************
  Try to get a challenge out of the various authentication modules.
@@ -325,8 +343,8 @@ static NTSTATUS make_auth_context_text_list(struct auth_context **auth_context, 
 	auth_methods *list = NULL;
 	auth_methods *t = NULL;
 	auth_methods *tmp;
-	int i;
 	NTSTATUS nt_status;
+	static BOOL initialised_static_modules = False;
 
 	if (!text_list) {
 		DEBUG(2,("make_auth_context_text_list: No auth method list!?\n"));
@@ -335,11 +353,17 @@ static NTSTATUS make_auth_context_text_list(struct auth_context **auth_context, 
 	
 	if (!NT_STATUS_IS_OK(nt_status = make_auth_context(auth_context)))
 		return nt_status;
+
+	/* Initialise static modules if not done so yet */
+	if(!initialised_static_modules) {
+		static_init_auth;
+		initialised_static_modules = True;
+	}
 	
 	for (;*text_list; text_list++) { 
 		DEBUG(5,("make_auth_context_text_list: Attempting to find an auth method to match %s\n",
 					*text_list));
-		for (i = 0; builtin_auth_init_functions[i].name; i++) {
+			struct auth_init_function_entry *entry;
 			char *module_name = smb_xstrdup(*text_list);
 			char *module_params = NULL;
 			char *p;
@@ -353,20 +377,20 @@ static NTSTATUS make_auth_context_text_list(struct auth_context **auth_context, 
 
 			trim_string(module_name, " ", " ");
 
-			if (strequal(builtin_auth_init_functions[i].name, module_name)) {
-				DEBUG(5,("make_auth_context_text_list: Found auth method %s (at pos %d)\n", *text_list, i));
-				if (NT_STATUS_IS_OK(builtin_auth_init_functions[i].init(*auth_context, module_params, &t))) {
-					DEBUG(5,("make_auth_context_text_list: auth method %s has a valid init\n",
-								*text_list));
-					DLIST_ADD_END(list, t, tmp);
-				} else {
-					DEBUG(0,("make_auth_context_text_list: auth method %s did not correctly init\n",
-								*text_list));
-				}
-				break;
+			entry = auth_find_backend_entry(module_name);
+
+			if(!(entry = auth_find_backend_entry(module_name)) && !smb_probe_module("auth", module_name) && 
+			   !(entry = auth_find_backend_entry(module_name))) {
+				DEBUG(0,("make_auth_context_text_list: can't find auth method %s!\n", module_name));
+			} else if (!NT_STATUS_IS_OK(entry->init(*auth_context, module_params, &t))) {
+				DEBUG(0,("make_auth_context_text_list: auth method %s did not correctly init\n",
+							*text_list));
+			} else {
+				DEBUG(5,("make_auth_context_text_list: auth method %s has a valid init\n",
+							*text_list));
+				DLIST_ADD_END(list, t, tmp);
 			}
 			SAFE_FREE(module_name);
-		}
 	}
 	
 	(*auth_context)->auth_method_list = list;

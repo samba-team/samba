@@ -51,11 +51,11 @@ AC_DEFUN(SMB_MODULE,
 	
 	if test x"$DEST" = xSHARED; then
 		AC_DEFINE([$1][_init], [init_module], [Whether to build $1 as shared module])
-		$5_MODULES="$$4_MODULES $3"
+		$4_MODULES="$$4_MODULES $3"
 		AC_MSG_RESULT([shared])
 	elif test x"$DEST" = xSTATIC; then
 		[init_static_modules_]translit([$4], [A-Z], [a-z])="$[init_static_modules_]translit([$4], [A-Z], [a-z]) $1_init();"
-		$5_STATIC="$$4_STATIC $2"
+		$4_STATIC="$$4_STATIC $2"
 		AC_SUBST($4_STATIC)
 		AC_MSG_RESULT([static])
 	else

@@ -130,3 +130,7 @@ NTSTATUS auth_init_unix(struct auth_context *auth_context, const char* param, au
 	return NT_STATUS_OK;
 }
 
+int auth_unix_init(void)
+{
+	return smb_register_auth("unix", auth_init_unix, AUTH_INTERFACE_VERSION);
+}

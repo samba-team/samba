@@ -562,3 +562,11 @@ NTSTATUS auth_init_samstrict_dc(struct auth_context *auth_context, const char *p
 	(*auth_method)->name = "samstrict_dc";
 	return NT_STATUS_OK;
 }
+
+int auth_sam_init(void)
+{
+	smb_register_auth("samstrict_dc", auth_init_samstrict_dc, AUTH_INTERFACE_VERSION);
+	smb_register_auth("samstrict", auth_init_samstrict, AUTH_INTERFACE_VERSION);
+	smb_register_auth("sam", auth_init_sam, AUTH_INTERFACE_VERSION);
+	return True;
+}

@@ -545,3 +545,10 @@ NTSTATUS auth_init_trustdomain(struct auth_context *auth_context, const char* pa
 	(*auth_method)->auth = check_trustdomain_security;
 	return NT_STATUS_OK;
 }
+
+int auth_domain_init(void) 
+{
+	smb_register_auth("trustdomain", auth_init_trustdomain, AUTH_INTERFACE_VERSION);
+	smb_register_auth("ntdomain", auth_init_ntdomain, AUTH_INTERFACE_VERSION);
+	return True;
+}
