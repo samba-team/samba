@@ -40,6 +40,18 @@
 
 RCSID("$Id$");
 
+static char *op_names[] = {
+    "get",
+    "delete",
+    "create",
+    "rename",
+    "chpass",
+    "modify",
+    "randkey",
+    "get_privs",
+    "get_princs"
+};
+
 static void
 print_entry(u_int32_t ver,
 	    time_t timestamp,
@@ -50,8 +62,8 @@ print_entry(u_int32_t ver,
     char *p = ctime(&timestamp);
     p[strlen(p) - 1] = '\0';
 
-    printf ("ver = %u, timestamp = %s, op = %d, len = %u\n",
-	    ver, p, op, len);
+    printf ("ver = %u, timestamp = %s, op = %d (%s), len = %u\n",
+	    ver, p, op, op_names[op], len);
     sp->seek (sp, len, SEEK_CUR);
 }
 
@@ -63,7 +75,6 @@ main(int argc, char **argv)
     void *kadm_handle;
     kadm5_server_context *server_context;
     kadm5_config_params conf;
-
 
     set_progname(argv[0]);
 
