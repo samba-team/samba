@@ -52,6 +52,38 @@ add_dynamic_entries()
       echo f none samba/bin/$binfile=source/bin/$binfile 0755 root other
     fi
   done
+
+  # Add the scripts to bin/
+  echo "#\n# Scripts \n#"
+  cd $DISTR_BASE/source/script
+  for shfile in *
+  do
+    if [ -f $shfile ]; then
+ 	echo f none samba/bin/$shfile=source/script/$shfile 0755 root other
+    fi
+  done
+
+  # Add the manpages
+  echo "#\n# man pages \n#"
+  echo d none /usr ? ? ?
+  echo d none /usr/share ? ? ?
+  echo d none /usr/share/man ? ? ?
+
+  # Create directories for man page sections if nonexistent
+  cd $DISTR_BASE/docs/manpages
+  for i in 1 2 3 4 5 6 7 8 9
+  do
+     manpages=`ls *.$i 2>/dev/null`
+     if [ $? -eq 0 ]
+     then
+	echo d none /usr/share/man/man$i ? ? ?
+	for manpage in $manpages 
+	do
+		echo f none /usr/share/man/man${i}/${manpage}=docs/manpages/$manpage 0644 root other
+	done
+     fi
+  done
+
   echo "#\n# HTML documentation \n#"
   cd $DISTR_BASE
   list=`find docs/htmldocs -type d | grep -v "/CVS$"`
@@ -151,4 +183,3 @@ then
 	pkgtrans /tmp samba.pkg samba
 fi
 echo The samba package is in /tmp
-rm -f prototype
