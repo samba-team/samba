@@ -12,6 +12,8 @@ SMB_MODULE(ntvfs_ipc, NTVFS, STATIC, [ntvfs/ipc/vfs_ipc.o])
 
 SMB_MODULE(ntvfs_posix, NTVFS, NOT, [ntvfs/posix/vfs_posix.o])
 
+SMB_MODULE(ntvfs_nbench, NTVFS, STATIC, [ntvfs/nbench/vfs_nbench.o])
+
 SMB_SUBSYSTEM(NTVFS,ntvfs/ntvfs_base.o,
 		[ntvfs/ntvfs_generic.o ntvfs/ntvfs_util.o],
 		ntvfs_public_proto.h)
