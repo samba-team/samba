@@ -350,6 +350,7 @@ cp -p $VVS/smbadduser $DESTDIR/usr/bin/smbadduser
 
 cp -p $VVS/findsmb $DESTDIR/usr/bin
 cp -p $VVS/samba.daemon $DESTDIR/etc/sysconfig/daemons/samba
+cp -p $VVS/samba.winbind $DESTDIR/etc/sysconfig/daemons/winbind
 cp -p $VVS/samba.pam $DESTDIR/etc/pam.d/samba
 cp -p $VVS/samba.logrotate $DESTDIR/etc/logrotate.d/samba
 cp -p $VVS/README.home $DESTDIR/etc/skel/Samba/README.txt
@@ -358,7 +359,8 @@ cp -p $VVS/README.profiles $DESTDIR/%{LSBservedir}/profiles/README.txt
 
 
 #lsb: cp -p $VVS/samba.init $DESTDIR/etc/rc.d/init.d/samba
-install -m 755 $VVS/samba.init-lsb $DESTDIR/%{SVIdir}/%{Name}
+install -m 755 $VVS/samba.init-lsb $DESTDIR/%{SVIdir}/samba
+install -m 755 $VVS/winbind.init $DESTDIR/%{SVIdir}/winbind
 ln -s /etc/rc.d/init.d/samba $DESTDIR/usr/sbin
 
 for f in testparm testprns; do

@@ -348,6 +348,7 @@ cp -p $VVS/smbusers $DESTDIR%{EtcSamba}
 cp -p $VVS/smbprint $DESTDIR/usr/bin
 cp -p $VVS/findsmb $DESTDIR/usr/bin
 cp -p $VVS/samba.daemon $DESTDIR/etc/sysconfig/daemons/samba
+cp -p $VVS/winbind.daemon $DESTDIR/etc/sysconfig/daemons/winbind
 cp -p $VVS/samba.pam $DESTDIR/etc/pam.d/samba
 cp -p $VVS/samba.logrotate $DESTDIR/etc/logrotate.d/samba
 cp -p $VVS/README.home $DESTDIR/etc/skel/Samba/README.txt
@@ -357,6 +358,7 @@ cp -p $VVS/README.profiles $DESTDIR/%{LSBservedir}/profiles/README.txt
 
 install -m 755 $VVS/samba.init-lsb $DESTDIR/%{SVIdir}/%{Name}
 #lsb: cp -p $VVS/samba.init $DESTDIR/etc/rc.d/init.d/samba
+#lsb: cp -p $VVS/winbind.init $DESTDIR/etc/rc.d/init.d/winbind
 ln -s /etc/rc.d/init.d/samba $DESTDIR/usr/sbin
 
 
