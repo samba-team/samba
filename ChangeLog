@@ -1,5 +1,8 @@
 2004-10-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/pkinit.c: filter out dup openssl engine keys, parse
+	user options first
+
 	* lib/krb5/pkinit.c: stop using AlgorithmIdentifierNonOpt, add
 	openssl engine support for private key
 
