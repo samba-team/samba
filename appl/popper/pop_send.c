@@ -79,7 +79,7 @@ POP     *   p;
 	     return_path_adr++)
 	    ;
 	if (return_path_adr < buffer + return_path_linlen) {
-	    if ((return_path_end = index(return_path_adr, ' ')) != NULL)
+	    if ((return_path_end = strchr(return_path_adr, ' ')) != NULL)
 		*return_path_end = '\0';
 	    if (strlen(return_path_adr) != 0 && *return_path_adr != '\n') {
 		static char tmpbuf[MAXMSGLINELEN + 20];
@@ -136,7 +136,7 @@ char        *   buffer;
     if (*buffer == POP_TERMINATE) (void)fputc(POP_TERMINATE,p->output);
 
     /*  Look for a <NL> in the buffer */
-    if (bp = index(buffer,NEWLINE)) *bp = 0;
+    if (bp = strchr(buffer,NEWLINE)) *bp = 0;
 
     /*  Send the line to the client */
     (void)fputs(buffer,p->output);
