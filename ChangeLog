@@ -1,5 +1,8 @@
 2001-05-11  Assar Westerlund  <assar@sics.se>
 
+	* kdc/kerberos5.c (tsg_rep): fix typo in variable name
+
+	* kpasswd/kpasswd-generator.c (nop_prompter): update prototype
 	* lib/krb5/init_creds_pw.c: update to new prompter, use prompter
 	types and send two prompts at once when changning password
 	* lib/krb5/prompter_posix.c (krb5_prompter_posix): add name

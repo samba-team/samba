@@ -1,3 +1,7 @@
+2001-05-12  Assar Westerlund  <assar@sics.se>
+
+	* glob.c: add limits.h, from <shadow@dementia.org>
+
 2001-05-11  Johan Danielsson  <joda@pdc.kth.se>
 
 	* Makefile.am: bswap.c
