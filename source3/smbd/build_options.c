@@ -523,6 +523,9 @@ void build_options(BOOL screen)
        output(screen,"   sizeof(uint32):  %d\n",sizeof(uint32));
        output(screen,"   sizeof(short):   %d\n",sizeof(short));
        output(screen,"   sizeof(void*):   %d\n",sizeof(void*));
+
+	   output(screen,"\nBuiltin modules:\n");
+	   output(screen,"%s\n", STRING_STATIC_MODULES);
 }
 
 

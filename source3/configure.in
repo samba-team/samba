@@ -3398,6 +3398,8 @@ SMB_MODULE(auth_domain, auth/auth_domain.o, bin/domain.so, AUTH)
 SMB_MODULE(auth_builtin, auth/auth_builtin.o, bin/builtin.so, AUTH)
 SMB_SUBSYSTEM(AUTH)
 
+AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
+
 #################################################
 # do extra things if we are running insure
 
