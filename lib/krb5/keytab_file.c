@@ -70,7 +70,7 @@ krb5_kt_ret_data(krb5_context context,
 static krb5_error_code
 krb5_kt_ret_string(krb5_context context,
 		   krb5_storage *sp,
-		   general_string *data)
+		   heim_general_string *data)
 {
     int ret;
     int16_t size;
@@ -109,7 +109,7 @@ krb5_kt_store_data(krb5_context context,
 
 static krb5_error_code
 krb5_kt_store_string(krb5_storage *sp,
-		     general_string data)
+		     heim_general_string data)
 {
     int ret;
     size_t len = strlen(data);

@@ -692,7 +692,7 @@ get_cred_from_kdc_flags(krb5_context context,
     }
     /* XXX this can loop forever */
     while(1){
-	general_string tgt_inst;
+	heim_general_string tgt_inst;
 
 	ret = get_cred_from_kdc_flags(context, flags, ccache, &tmp_creds, 
 				      &tgt, ret_tgts);

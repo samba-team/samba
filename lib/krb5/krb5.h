@@ -69,7 +69,7 @@ typedef u_int32_t krb5_flags;
 typedef void *krb5_pointer;
 typedef const void *krb5_const_pointer;
 
-typedef octet_string krb5_data;
+typedef heim_octet_string krb5_data;
 
 struct krb5_crypto_data;
 typedef struct krb5_crypto_data *krb5_crypto;

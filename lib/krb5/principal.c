@@ -89,8 +89,8 @@ krb5_parse_name(krb5_context context,
 		krb5_principal *principal)
 {
     krb5_error_code ret;
-    general_string *comp;
-    general_string realm;
+    heim_general_string *comp;
+    heim_general_string realm;
     int ncomp;
 
     const char *p;
@@ -398,7 +398,7 @@ append_component(krb5_context context, krb5_principal p,
 		 const char *comp,
 		 size_t comp_len)
 {
-    general_string *tmp;
+    heim_general_string *tmp;
     size_t len = princ_num_comp(p);
 
     tmp = realloc(princ_comp(p), (len + 1) * sizeof(*tmp));
