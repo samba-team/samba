@@ -1,9 +1,53 @@
-            What's new in Samba 2.2.8 - 14th March 2003
+            What's new in Samba 2.2.8a - 7th April 2003
             ===========================================
 
 This is the latest stable release of Samba. This is the version that
 all production Samba servers should be running for all current
 bug-fixes.
+
+            ****************************************
+            * IMPORTANT: Security bugfix for Samba *
+            ****************************************
+
+Summary
+-------
+
+Digital Defense, Inc. has alerted the Samba Team to a serious 
+vulnerability in all stable versions of Samba currently shipping. 
+The Common Vulnerabilities and Exposures (CVE) project has assigned 
+the ID CAN-2003-0201 to this defect.
+
+This vulnerability, if exploited correctly, leads to an anonymous 
+user gaining root access on a Samba serving system. All versions 
+of Samba up to and including Samba 2.2.8 are vulnerable. An active 
+exploit of the bug has been reported in the wild. Alpha versions of 
+Samba 3.0 and above are *NOT* vulnerable.
+
+
+Credit
+------
+
+The Samba Team would like to thank Erik Parker and the team at
+Digital Defense, Inc. for their efforts spent in the responsible 
+and timely reporting of this bug.
+
+
+Patch Availability
+------------------
+
+The Samba 2.2.8a release contains only updates to address this 
+security issue. A roll-up patch for release 2.2.7a and 2.0.10 
+addressing both CAN-2003-0201 and CAN-2003-0085 can be obtained 
+from http://www.samba.org/samba/ftp/patches/security/.
+
+
+            ========================================
+
+
+Older releases notes for 2.2.x distributions follow
+
+-----------------------------------------------------------------
+The release notes for 2.2.8 follow:
 
             ****************************************
             * IMPORTANT: Security bugfix for Samba *
@@ -204,7 +248,6 @@ Protecting an unpatched Samba server
             ****************************************
             ****************************************
 
------------------------------------------------------------------
 
 Changes since 2.2.7a
 ---------------------
@@ -333,11 +376,7 @@ See the cvs log for SAMBA_2_2 for more details
 6)  Correctly handle querygroup rpcclient command
 7)  fix broken incremental tar in smbtar command
 
-              =========================================
 
-Older releases notes for 2.2.x distributions follow
-
------------------------------------------------------------------
 The release notes for 2.2.7 follow :
 
 IMPORTANT: Security bugfix for Samba

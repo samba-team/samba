@@ -1502,6 +1502,9 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
         for (i=numentries;(i<maxentries) && !finished;i++)
         {
+	  /* check to make sure we have room in the buffer */
+	  if ( ((PTR_DIFF(p, outbuf))+DIR_STRUCT_SIZE) > BUFFER_SIZE )
+	  	break;
           finished = 
             !get_dir_entry(conn,mask,dirtype,fname,&size,&mode,&date,check_descend);
           if (!finished)
@@ -3530,6 +3533,9 @@ int reply_printqueue(connection_struct *conn,
     
 
 		for (i=first;i<first+num_to_get;i++) {
+			/* check to make sure we have room in the buffer */
+			if ( (PTR_DIFF(p, outbuf)+28) > BUFFER_SIZE )
+				break;
 			put_dos_date2(p,0,queue[i].time);
 			SCVAL(p,4,(queue[i].status==LPQ_PRINTING?2:3));
 			SSVAL(p,5, queue[i].job);
