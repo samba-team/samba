@@ -314,8 +314,8 @@ BOOL smbd_vfs_init(connection_struct *conn)
 {
 	const char **vfs_objects;
 	char *vfs_module, *vfs_path;
-	unsigned int i;
-	unsigned int j = 0;
+	unsigned int i = 0;
+	int j = 0;
 	struct smb_vfs_handle_struct *handle;
 	
 	/* Normal share - initialise with disk access functions */
@@ -334,7 +334,9 @@ BOOL smbd_vfs_init(connection_struct *conn)
 
 	vfs_path = lp_vfs_path(SNUM(conn));
 	
-	for (j=0; vfs_objects[j]; j++) {
+	for (i=0; vfs_objects[i]; i++); /* count passed modules */
+        
+	for (j=i-1; j >= 0; j--) {
 		conn->vfs_private = NULL;
 		handle = (struct smb_vfs_handle_struct *) smb_xmalloc(sizeof(smb_vfs_handle_struct));
 		/* Loadable object file */
