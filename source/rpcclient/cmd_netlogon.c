@@ -268,7 +268,6 @@ static NTSTATUS cmd_netlogon_sam_logon(struct cli_state *cli,
                                        TALLOC_CTX *mem_ctx, int argc,
                                        const char **argv)
 {
-        unsigned char trust_passwd[16];
         NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         int logon_type = NET_LOGON_TYPE;
         const char *username, *password;
