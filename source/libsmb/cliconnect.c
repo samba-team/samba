@@ -486,11 +486,12 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, char *user,
 	memset(sess_key, 0, 16);
 
 	/* generate the ntlmssp negotiate packet */
-	msrpc_gen(&blob, "CddB",
+	msrpc_gen(&blob, "CddAA",
 		  "NTLMSSP",
 		  NTLMSSP_NEGOTIATE,
 		  neg_flags,
-		  sess_key, 16);
+		  workgroup, strlen(workgroup),
+		  cli->calling.name, strlen(cli->calling.name));
 
 	/* and wrap it in a SPNEGO wrapper */
 	msg1 = gen_negTokenTarg(mechs, blob);
