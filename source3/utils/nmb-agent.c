@@ -56,19 +56,18 @@ terminate sockent connection
 ****************************************************************************/
 static void sock_redir_free(struct sock_redir *sock)
 {
-	close(sock->c);
-	sock->c = -1;
+	DEBUG(10,("sock_redir_free: %d\n", sock->c));
+	if (sock->c != -1)
+	{
+		close(sock->c);
+		sock->c = -1;
+	}
 	if (sock->n != NULL)
 	{
-#if 0
 		free(sock->n);
-#endif
 		sock->n = NULL;
 	}
-#if 0
 	free(sock);
-#endif
-	ZERO_STRUCTP(sock);
 }
 
 /****************************************************************************
