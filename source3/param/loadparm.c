@@ -1487,8 +1487,8 @@ FN_GLOBAL_STRING(lp_winbind_gid, &Globals.szWinbindGID)
 FN_GLOBAL_STRING(lp_template_homedir, &Globals.szTemplateHomedir)
 FN_GLOBAL_STRING(lp_template_shell, &Globals.szTemplateShell)
 FN_GLOBAL_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
-FN_GLOBAL_BOOL(lp_winbind_enum_users, &Globals.bWinbindEnumUsers);
-FN_GLOBAL_BOOL(lp_winbind_enum_groups, &Globals.bWinbindEnumGroups);
+FN_GLOBAL_BOOL(lp_winbind_enum_users, &Globals.bWinbindEnumUsers)
+FN_GLOBAL_BOOL(lp_winbind_enum_groups, &Globals.bWinbindEnumGroups)
 FN_GLOBAL_STRING(lp_codepagedir,&Globals.szCodePageDir)
 #ifdef WITH_LDAP
 FN_GLOBAL_STRING(lp_ldap_server, &Globals.szLdapServer)
