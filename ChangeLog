@@ -1,3 +1,11 @@
+2004-07-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/hdb-ldap.c (LDAP_seq): try handling errors better
+	
+2004-07-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/get_in_tkt.c (set_ptypes): make ptypes const
+	
 2004-07-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/hdb/hdb-ldap.c (LDAP__connect): call ldap_initialize with
