@@ -1,6 +1,8 @@
 <chapter id="Packaging">
 <chapterinfo>
-	&author.jelmer;
+	<author>
+		<firstname>Jelmer</firstname><surname>Vernooij</surname>
+	</author>
 </chapterinfo>
 
 <title>Notes to packagers</title>

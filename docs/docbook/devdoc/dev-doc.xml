@@ -1,21 +1,21 @@
-<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
-<!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
-<!ENTITY NetBIOS SYSTEM "NetBIOS.sgml">
-<!ENTITY Architecture SYSTEM "architecture.sgml">
-<!ENTITY debug SYSTEM "debug.sgml">
-<!ENTITY internals SYSTEM "internals.sgml">
-<!ENTITY parsing SYSTEM "parsing.sgml">
-<!ENTITY unix-smb SYSTEM "unix-smb.sgml">
-<!ENTITY CodingSuggestions SYSTEM "CodingSuggestions.sgml">
-<!ENTITY Tracing SYSTEM "Tracing.sgml">
-<!ENTITY cifsntdomain SYSTEM "cifsntdomain.sgml">
-<!ENTITY printing SYSTEM "printing.sgml">
-<!ENTITY wins SYSTEM "wins.sgml">
-<!ENTITY sam SYSTEM "sam.sgml">
-<!ENTITY encryption SYSTEM "encryption.sgml">
-<!ENTITY rpc-plugin SYSTEM "rpc_plugin.sgml">
-<!ENTITY modules SYSTEM "modules.sgml">
-<!ENTITY packagers SYSTEM "packagers.sgml">
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE book SYSTEM "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+<!ENTITY NetBIOS SYSTEM "NetBIOS.xml">
+<!ENTITY Architecture SYSTEM "architecture.xml">
+<!ENTITY debug SYSTEM "debug.xml">
+<!ENTITY internals SYSTEM "internals.xml">
+<!ENTITY parsing SYSTEM "parsing.xml">
+<!ENTITY unix-smb SYSTEM "unix-smb.xml">
+<!ENTITY CodingSuggestions SYSTEM "CodingSuggestions.xml">
+<!ENTITY Tracing SYSTEM "Tracing.xml">
+<!ENTITY cifsntdomain SYSTEM "cifsntdomain.xml">
+<!ENTITY printing SYSTEM "printing.xml">
+<!ENTITY wins SYSTEM "wins.xml">
+<!ENTITY sam SYSTEM "sam.xml">
+<!ENTITY encryption SYSTEM "encryption.xml">
+<!ENTITY rpc-plugin SYSTEM "rpc_plugin.xml">
+<!ENTITY modules SYSTEM "modules.xml">
+<!ENTITY packagers SYSTEM "packagers.xml">
 ]>
 
 <book id="Samba-Developers-Guide">
@@ -27,7 +27,6 @@
 		<surname>SAMBA Team</surname>
 	</author>
 	<address><email>samba@samba.org</email></address>
-    <editor>&person.jelmer;</editor>
 </bookinfo>
 
 <dedication>
@@ -45,7 +44,7 @@ the internals of various parts of samba and the SMB protocol. It's still incompl
 The most recent version of this document
 can be found at <ulink url="http://devel.samba.org/">http://devel.samba.org/</ulink>.
 Please send updates to <ulink 
-url="mailto:jelmer@samba.org">jelmer@samba.org</ulink>.
+url="mailto:jelmer@samba.org">Jelmer Veenrooij</ulink>.
 </para>
 
 <para>
