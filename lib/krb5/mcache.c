@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -48,6 +48,8 @@ typedef struct krb5_mcache {
     } *creds;
 } krb5_mcache;
 
+#define MCC_CURSOR(C) ((struct link*)(C))
+
 static char*
 mcc_get_name(krb5_context context,
 	     krb5_ccache id)
@@ -58,7 +60,7 @@ mcc_get_name(krb5_context context,
 static krb5_error_code
 mcc_resolve(krb5_context context, krb5_ccache *id, const char *res)
 {
-    abort ();
+    krb5_abortx(context, "unimplemented mcc_resolve called");
 }
 
 static krb5_error_code
@@ -165,7 +167,9 @@ mcc_get_first (krb5_context context,
 {
     krb5_mcache *m = (krb5_mcache *)id->data.data;
 
-    cursor->u.v = m->creds;
+    *cursor = malloc(sizeof(struct link*));
+
+    MCC_CURSOR(*cursor) = m->creds;
     return 0;
 }
 
@@ -177,9 +181,9 @@ mcc_get_next (krb5_context context,
 {
     struct link *l;
 
-    l = (struct link *)cursor->u.v;
+    l = MCC_CURSOR(cursor);
     if (l != NULL) {
-	cursor->u.v = l->next;
+	MCC_CURSOR(*cursor) = l->next;
 	return krb5_copy_creds_contents (context,
 					 &l->cred,
 					 creds);
@@ -192,6 +196,7 @@ mcc_end_get (krb5_context context,
 	     krb5_ccache id,
 	     krb5_cc_cursor *cursor)
 {
+    free(*cursor);
     return 0;
 }
 
