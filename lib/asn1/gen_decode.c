@@ -314,9 +314,8 @@ generate_type_decode (const Symbol *s)
     fprintf (codefile,
 	     "size_t ret = 0, reallen;\n"
 	     "size_t l;\n"
-	     "int i, e;\n\n");
+	     "int e;\n\n");
     fprintf (codefile, "memset(data, 0, sizeof(*data));\n");
-    fprintf (codefile, "i = 0;\n"); /* hack to avoid `unused variable' */
     fprintf (codefile, "reallen = 0;\n"); /* hack to avoid `unused variable' */
 
     decode_type ("data", s->type);
