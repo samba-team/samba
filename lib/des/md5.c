@@ -214,7 +214,7 @@ swap_u_int32_t (u_int32_t t)
 }
 
 void
-md5_update (struct md5 *m, void *v, size_t len)
+md5_update (struct md5 *m, const void *v, size_t len)
 {
   u_char *p = (u_char *)v;
   m->sz += len;
@@ -299,7 +299,7 @@ MD5Update (MD5_CTX *mdContext, const unsigned char *inBuf, unsigned int inLen)
 }
 
 void
-MD5Final (MD5_CTX *mdContext)
+MD5Final (unsigned char digest[16], MD5_CTX *mdContext)
 {
-  md5_finito(&mdContext->m.d5, mdContext->digest);
+  md5_finito(&mdContext->m.d5, digest);
 }

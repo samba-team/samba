@@ -55,8 +55,8 @@ struct md5 {
 };
 
 void md5_init (struct md5 *m);
-void md5_update (struct md5 *m, void *p, size_t len);
-void md5_finito (struct md5 *m, void *res); /* u_int32_t res[2] */
+void md5_update (struct md5 *m, const void *p, size_t len);
+void md5_finito (struct md5 *m, void *res); /* u_int32_t res[4] */
 
 /*
  * Functions for compatibility that have never been tested.
@@ -72,17 +72,16 @@ typedef struct {
     MD5_CTX_PREAMBLE preamble_;
     struct md5 d5;
   } m;
-  unsigned char digest[16];     /* actual digest after MD5Final call */
 } MD5_CTX;
 
 void MD5Init (MD5_CTX *mdContext);
 void MD5Update (MD5_CTX *mdContext,
 		const unsigned char *inBuf,
 		unsigned int inLen);
-void MD5Final (MD5_CTX *mdContext);
+void MD5Final (unsigned char digest[16], MD5_CTX *mdContext);
 
 #ifndef NO_MD5_MACROS
 #define MD5Init(mdContext) md5_init(&(mdContext)->m.d5)
 #define MD5Update(mdCtx, inBuf, inLen) md5_update(&(mdCtx)->m.d5, inBuf, inLen)
-#define MD5Final(mdCtx) md5_finito(&(mdCtx)->m.d5, (mdCtx)->digest)
+#define MD5Final(digest, mdCtx) md5_finito(&(mdCtx)->m.d5, (digest))
 #endif
