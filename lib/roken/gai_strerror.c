@@ -43,13 +43,17 @@ static struct gai_error {
     char *str;
 } errors[] = {
 {EAI_NOERROR,		"no error"},
+#ifndef EAI_ADDRFAMILY
 {EAI_ADDRFAMILY,	"address family for nodename not supported"},
+#endif
 {EAI_AGAIN,		"temporary failure in name resolution"},
 {EAI_BADFLAGS,		"invalid value for ai_flags"},
 {EAI_FAIL,		"non-recoverable failure in name resolution"},
 {EAI_FAMILY,		"ai_family not supported"},
 {EAI_MEMORY,		"memory allocation failure"},
+#ifdef EAI_NODATA
 {EAI_NODATA,		"no address associated with nodename"},
+#endif
 {EAI_NONAME,		"nodename nor servname provided, or not known"},
 {EAI_SERVICE,		"servname not supported for ai_socktype"},
 {EAI_SOCKTYPE,		"ai_socktype not supported"},
