@@ -70,7 +70,7 @@ OM_uint32
 gssapi_krb5_decapsulate(
 			gss_buffer_t input_token_buffer,
 			krb5_data *out_data,
-			u_char *type);
+			char *type);
 
 void
 gssapi_krb5_encap_length (size_t data_len,
@@ -85,7 +85,7 @@ gssapi_krb5_make_header (u_char *p,
 OM_uint32
 gssapi_krb5_verify_header(u_char **str,
 			  size_t total_len,
-			  u_char *type);
+			  char *type);
 
 OM_uint32
 gss_krb5_getsomekey(const gss_ctx_id_t context_handle,
