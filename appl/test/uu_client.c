@@ -88,6 +88,8 @@ proto (int sock, const char *hostname, const char *service)
     if (status)
 	krb5_err(context, 1, status, "krb5_auth_con_setaddr");
 
+    krb5_cc_clear_mcred(&mcred);
+
     status = krb5_cc_get_principal(context, ccache, &client);
     if(status)
 	krb5_err(context, 1, status, "krb5_cc_get_principal");
