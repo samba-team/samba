@@ -251,6 +251,9 @@ typedef struct
   BOOL bDebugHiresTimestamp;
   BOOL bDebugPid;
   BOOL bDebugUid;
+#ifdef MS_DFS
+  BOOL bHostMSDfs;
+#endif
 } global;
 
 static global Globals;
@@ -363,6 +366,10 @@ typedef struct
   BOOL bFakeDirCreateTimes;
   BOOL bBlockingLocks;
   BOOL bInheritPerms; 
+#ifdef MS_DFS
+  char *szDfsMap;
+  BOOL bDfsMapLoaded;
+#endif
   char dummy[3]; /* for alignment */
 } service;
 
@@ -471,6 +478,10 @@ static service sDefault =
   False, /* bFakeDirCreateTimes */
   True,  /* bBlockingLocks */
   False, /* bInheritPerms */
+#ifdef MS_DFS
+  NULL,    /* MS Dfs map path */
+  False, /* bDfsMapLoaded */
+#endif
   ""     /* dummy */
 };
 
@@ -873,6 +884,12 @@ static struct parm_struct parm_table[] =
 
   {"vfs object",       P_STRING,  P_LOCAL,  &sDefault.szVfsObjectFile,  handle_vfs_object,   NULL,  0},
   {"vfs options",      P_STRING,  P_LOCAL,  &sDefault.szVfsOptions,     NULL,   NULL,  0}, 
+
+#ifdef MS_DFS
+  {"dfs map",	       P_STRING,  P_LOCAL,  &sDefault.szDfsMap,        NULL,   NULL,  FLAG_SHARE},
+  {"host msdfs",      P_BOOL,    P_GLOBAL, &Globals.bHostMSDfs,        NULL,   NULL, FLAG_GLOBAL},
+#endif
+
   {NULL,               P_BOOL,    P_NONE,   NULL,                       NULL,   NULL, 0}
 };
 
@@ -1298,7 +1315,9 @@ FN_GLOBAL_BOOL(lp_nt_acl_support,&Globals.bNTAclSupport)
 FN_GLOBAL_BOOL(lp_stat_cache,&Globals.bStatCache)
 FN_GLOBAL_BOOL(lp_allow_trusted_domains,&Globals.bAllowTrustedDomains)
 FN_GLOBAL_BOOL(lp_restrict_anonymous,&Globals.bRestrictAnonymous)
-
+#ifdef MS_DFS
+FN_GLOBAL_BOOL(lp_host_msdfs,&Globals.bHostMSDfs)
+#endif
 FN_GLOBAL_INTEGER(lp_os_level,&Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl,&Globals.max_ttl)
 FN_GLOBAL_INTEGER(lp_max_wins_ttl,&Globals.max_wins_ttl)
@@ -1370,6 +1389,11 @@ FN_LOCAL_STRING(lp_veto_files,szVetoFiles)
 FN_LOCAL_STRING(lp_hide_files,szHideFiles)
 FN_LOCAL_STRING(lp_veto_oplocks,szVetoOplockFiles)
 FN_LOCAL_STRING(lp_driverlocation,szPrinterDriverLocation)
+
+#ifdef MS_DFS
+FN_LOCAL_STRING(lp_dfsmap,szDfsMap)
+FN_LOCAL_BOOL(lp_dfsmap_loaded,bDfsMapLoaded)
+#endif
 
 FN_LOCAL_BOOL(lp_preexec_close,bPreexecClose)
 FN_LOCAL_BOOL(lp_rootpreexec_close,bRootpreexecClose)
@@ -2041,6 +2065,16 @@ static BOOL handle_source_env(char *pszParmValue,char **ptr)
 	return(result);
 }
 
+
+
+#ifdef MS_DFS
+void set_dfsmap_loaded(int i,BOOL b)
+{
+  pSERVICE(i)->bDfsMapLoaded = b;
+}
+
+#endif
+
 /***************************************************************************
   handle the interpretation of the vfs object parameter
   *************************************************************************/
@@ -2182,7 +2216,6 @@ static BOOL handle_copy(char *pszParmValue,char **ptr)
    free_service(&serviceTemp);
    return (bRetval);
 }
-
 
 /***************************************************************************
 initialise a copymap
@@ -3079,3 +3112,5 @@ int lp_force_dir_security_mode(int snum)
     return lp_force_dir_mode(snum);
   return val;
 }
+
+

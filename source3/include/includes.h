@@ -914,4 +914,6 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #include <dlfcn.h>
 #endif
 
+#include "msdfs.h"
+
 #endif /* _INCLUDES_H */

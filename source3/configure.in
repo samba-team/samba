@@ -1424,6 +1424,25 @@ AC_ARG_WITH(utmp,
 )
 
 #################################################
+# check for MS Dfs support
+
+AC_MSG_CHECKING(whether to support MS Dfs)
+AC_ARG_WITH(msdfs,
+[  --with-msdfs		Include MS Dfs support
+  --without-msdfs	Don't include MS Dfs support (default)],
+[ case "$withval" in
+  yes)
+     AC_MSG_RESULT(yes)
+     AC_DEFINE(MS_DFS)
+     ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+#################################################
 # set private directory location
 AC_ARG_WITH(privatedir,
 [  --with-privatedir=DIR     Where to put smbpasswd ($ac_default_prefix/private)],
