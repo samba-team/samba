@@ -44,6 +44,13 @@ void yyerror (char *s);
 long name2number(const char *str);
 
 extern char *yytext;
+
+/* This is for bison */
+
+#if !defined(alloca) && !defined(HAVE_ALLOCA)
+#define alloca(x) malloc(x)
+#endif
+
 %}
 
 %union {

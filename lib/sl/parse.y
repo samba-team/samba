@@ -46,6 +46,13 @@ long name2number(const char *str);
 struct string_list* append_string(struct string_list*, char*);
 void free_string_list(struct string_list *list);
 unsigned string_to_flag(const char *);
+
+/* This is for bison */
+
+#if !defined(alloca) && !defined(HAVE_ALLOCA)
+#define alloca(x) malloc(x)
+#endif
+
 %}
 
 %union {
