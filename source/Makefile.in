@@ -1423,7 +1423,7 @@ include/tdbsam2_parse_info.h:
 	@if test -n "$(PERL)"; then \
 		cd $(srcdir) && @PERL@ -w script/genstruct.pl \
 		-o include/tdbsam2_parse_info.h $(CC) -E -O2 -g \
-		include/tdbsam2.h; \
+		include/gums.h; \
 	else \
 		echo Unable to build $@, continuing; \
 	fi

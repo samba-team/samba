@@ -111,7 +111,6 @@ static NTSTATUS row_to_sam_account(MYSQL_RES * r, SAM_ACCOUNT * u)
 		pdb_set_plaintext_passwd(u, row[22]);
 
 	pdb_set_acct_ctrl(u, xatol(row[23]), PDB_SET);
-	pdb_set_unknown_3(u, xatol(row[24]), PDB_SET);
 	pdb_set_logon_divs(u, xatol(row[25]), PDB_SET);
 	pdb_set_hours_len(u, xatol(row[26]), PDB_SET);
 	pdb_set_bad_password_count(u, xatol(row[27]), PDB_SET);

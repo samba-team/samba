@@ -474,14 +474,6 @@ const uint8 *gums_get_user_hours(const GUMS_OBJECT *obj)
 	return obj->data.user->hours;
 }
 
-uint32 gums_get_user_unknown_3(const GUMS_OBJECT *obj)
-{
-	if (!obj || obj->type != GUMS_OBJ_NORMAL_USER)
-		return 0;
-
-	return obj->data.user->unknown_3;
-}
-
 uint16 gums_get_user_bad_password_count(const GUMS_OBJECT *obj)
 {
 	if (!obj || obj->type != GUMS_OBJ_NORMAL_USER)
@@ -777,18 +769,6 @@ NTSTATUS gums_set_user_hours(GUMS_OBJECT *obj, uint32 hours_len, const uint8 *ho
 	if (hours_len)
 		memcpy(obj->data.user->hours, hours, hours_len);
 
-	return NT_STATUS_OK;
-}
-
-NTSTATUS gums_set_user_unknown_3(GUMS_OBJECT *obj, uint32 unknown_3)
-{
-	if (!obj)
-		return NT_STATUS_INVALID_PARAMETER;
-
-	if (obj->type != GUMS_OBJ_NORMAL_USER)
-		return NT_STATUS_OBJECT_TYPE_MISMATCH;
-
-	obj->data.user->unknown_3 = unknown_3;
 	return NT_STATUS_OK;
 }
 

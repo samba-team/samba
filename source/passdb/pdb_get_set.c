@@ -306,14 +306,6 @@ const char* pdb_get_munged_dial (const SAM_ACCOUNT *sampass)
 		return (NULL);
 }
 
-uint32 pdb_get_unknown_3 (const SAM_ACCOUNT *sampass)
-{
-	if (sampass)
-		return (sampass->private.unknown_3);
-	else
-		return (-1);
-}
-
 uint16 pdb_get_bad_password_count(const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
@@ -982,16 +974,6 @@ BOOL pdb_set_plaintext_pw_only (SAM_ACCOUNT *sampass, const char *password, enum
 	return pdb_set_init_flags(sampass, PDB_PLAINTEXT_PW, flag);
 }
 
-BOOL pdb_set_unknown_3 (SAM_ACCOUNT *sampass, uint32 unkn, enum pdb_value_state flag)
-{
-	if (!sampass)
-		return False;
-
-	sampass->private.unknown_3 = unkn;
-	
-	return pdb_set_init_flags(sampass, PDB_UNKNOWN3, flag);
-}
-
 BOOL pdb_set_bad_password_count(SAM_ACCOUNT *sampass, uint16 bad_password_count, enum pdb_value_state flag)
 {
 	if (!sampass)
@@ -1128,3 +1110,11 @@ BOOL pdb_set_plaintext_passwd (SAM_ACCOUNT *sampass, const char *plaintext)
 
 	return True;
 }
+
+/* check for any PDB_SET/CHANGED field and fill the appropriate mask bit */
+uint32 pdb_build_fields_present (SAM_ACCOUNT *sampass)
+{
+	/* value set to all for testing */
+	return 0x00ffffff;
+}
+

@@ -1,7 +1,12 @@
 /*
+<<<<<<< pdb_gums.c
+ * 'Gums' password backend for samba
+ * Copyright (C) Simo Sorce 2003
+=======
  * GUMS password backend for samba
  * Copyright (C) Jelmer Vernooij 2002
  * Copyright (C) Andrew Bartlett 2003
+>>>>>>> 1.4
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
@@ -95,7 +100,6 @@ static NTSTATUS gums_object_to_sam_account(SAM_ACCOUNT *sa, GUMS_OBJECT *go)
 	}
 	data_blob_clear_free(&pwd);
 
-	BOOL_SET_OR_FAIL(pdb_set_unknown_3(sa, gums_get_user_unknown_3(go), PDB_SET), error); 
 	BOOL_SET_OR_FAIL(pdb_set_bad_password_count(sa, gums_get_user_bad_password_count(go), PDB_SET), error); 
 	BOOL_SET_OR_FAIL(pdb_set_unknown_6(sa, gums_get_user_unknown_6(go), PDB_SET), error); 
 	BOOL_SET_OR_FAIL(pdb_set_hours(sa, gums_get_user_hours(go), PDB_SET), error); 
@@ -155,7 +159,6 @@ static NTSTATUS sam_account_to_gums_object(GUMS_OBJECT *go, SAM_ACCOUNT *sa)
 	SET_OR_FAIL(gums_set_user_logon_divs(go, pdb_get_logon_divs(sa)), error);
 	if (pdb_get_hours(sa))
 		SET_OR_FAIL(gums_set_user_hours(go, pdb_get_hours_len(sa), pdb_get_hours(sa)), error);
-	SET_OR_FAIL(gums_set_user_unknown_3(go, pdb_get_unknown_3(sa)), error);
 	SET_OR_FAIL(gums_set_user_bad_password_count(go, pdb_get_bad_password_count(sa)), error);
 	SET_OR_FAIL(gums_set_user_unknown_6(go, pdb_get_unknown_6(sa)), error);
 

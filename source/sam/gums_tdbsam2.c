@@ -19,7 +19,6 @@
  */
 
 #include "includes.h"
-#include "tdbsam2.h"
 #include "tdbsam2_parse_info.h"
 
 #if 0
@@ -36,7 +35,9 @@ static int gums_tdbsam2_debug_class = DBGC_ALL;
 #define SIDPREFIX		"SID_"
 #define PRIVILEGEPREFIX		"PRIV_"
 
-#define TDB_FORMAT_STRING	"ddB"
+#define TDB_BASIC_OBJ_STRING	"ddd"
+#define TDB_FORMAT_STRING	"dddB"
+#define TDB_PRIV_FORMAT_STRING	"ddB"
 
 #define TALLOC_CHECK(ptr, err, label) do { if ((ptr) == NULL) { DEBUG(0, ("%s: Out of memory!\n", FUNCTION_MACRO)); err = NT_STATUS_NO_MEMORY; goto label; } } while(0)
 #define SET_OR_FAIL(func, label) do { if (!NT_STATUS_IS_OK(func)) { DEBUG(0, ("%s: Setting gums object data failed!\n", FUNCTION_MACRO)); goto label; } } while(0)
@@ -51,19 +52,6 @@ struct tdbsam2_enum_objs {
 	struct tdbsam2_enum_objs *next;
 };
 
-union tdbsam2_data {
-	struct tdbsam2_domain_data *domain;
-	struct tdbsam2_user_data *user;
-	struct tdbsam2_group_data *group;
-	struct tdbsam2_priv_data *priv;
-};
-
-struct tdbsam2_object {
-	uint32 type;
-	uint32 version;
-	union tdbsam2_data data;
-};
-
 struct tdbsam2_private_data {
 
 	const char *storage;
@@ -71,7 +59,6 @@ struct tdbsam2_private_data {
 };
 
 static struct tdbsam2_private_data *ts2_privs;
-
 
 static NTSTATUS init_object_from_buffer(GUMS_OBJECT **go, char *buffer, int size)
 {
@@ -81,7 +68,7 @@ static NTSTATUS init_object_from_buffer(GUMS_OBJECT **go, char *buffer, int size
 	int iret;
 	char *obj_data = NULL;
 	int data_size = 0;
-	int version, type;
+	int version, type, seqnum;
 	int len;
 
 	mem_ctx = talloc_init("init_object_from_buffer");
@@ -93,16 +80,17 @@ static NTSTATUS init_object_from_buffer(GUMS_OBJECT **go, char *buffer, int size
 	len = tdb_unpack (buffer, size, TDB_FORMAT_STRING,
 			  &version,
 			  &type,
+			  &seqnum,
 			  &data_size, &obj_data);
 
 	if (len == -1 || data_size <= 0)
 		goto done;
 
-	/* version is checked inside this function so that backward compatibility code can be
-	   called eventually.
-	   this way we can easily handle database format upgrades */
+	/* version is checked inside this function so that backward
+	   compatibility code can be called eventually.
+	   This way we can easily handle database format upgrades */
 	if (version != TDBSAM_VERSION) {
-		DEBUG(3,("init_tdbsam2_object_from_buffer: Error, db object has wrong tdbsam version!\n"));
+		DEBUG(3,("init_object_from_buffer: Error, db object has wrong tdbsam version!\n"));
 		goto done;
 	}
 
@@ -116,20 +104,16 @@ static NTSTATUS init_object_from_buffer(GUMS_OBJECT **go, char *buffer, int size
 	switch (type) {
 
 		case GUMS_OBJ_DOMAIN:
-			iret = gen_parse(mem_ctx, pinfo_tdbsam2_domain_data, (char *)(*go), obj_data);
+			iret = gen_parse(mem_ctx, pinfo_gums_domain, (char *)(*go), obj_data);
 			break;
 
 		case GUMS_OBJ_GROUP:
 		case GUMS_OBJ_ALIAS:
-			iret = gen_parse(mem_ctx, pinfo_tdbsam2_group_data, (char *)(*go), obj_data);
+			iret = gen_parse(mem_ctx, pinfo_gums_group, (char *)(*go), obj_data);
 			break;
 
 		case GUMS_OBJ_NORMAL_USER:
-			iret = gen_parse(mem_ctx, pinfo_tdbsam2_user_data, (char *)(*go), obj_data);
-			break;
-
-		case GUMS_OBJ_PRIVILEGE:
-			iret = gen_parse(mem_ctx, pinfo_tdbsam2_priv_data, (char *)(*go), obj_data);
+			iret = gen_parse(mem_ctx, pinfo_gums_user, (char *)(*go), obj_data);
 			break;
 
 		default:
@@ -151,6 +135,62 @@ done:
 	return ret;
 }
 
+static NTSTATUS init_privilege_from_buffer(GUMS_PRIVILEGE **priv, char *buffer, int size)
+{
+
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	TALLOC_CTX *mem_ctx;
+	int iret;
+	char *obj_data = NULL;
+	int data_size = 0;
+	int version, seqnum;
+	int len;
+
+	mem_ctx = talloc_init("init_privilege_from_buffer");
+	if (!mem_ctx) {
+		DEBUG(0, ("init_privilege_from_buffer: Out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	len = tdb_unpack (buffer, size, TDB_PRIV_FORMAT_STRING,
+			  &version,
+			  &seqnum,
+			  &data_size, &obj_data);
+
+	if (len == -1 || data_size <= 0)
+		goto done;
+
+	/* version is checked inside this function so that backward
+	   compatibility code can be called eventually.
+	   This way we can easily handle database format upgrades */
+	if (version != TDBSAM_VERSION) {
+		DEBUG(3,("init_privilege_from_buffer: Error, db object has wrong tdbsam version!\n"));
+		goto done;
+	}
+
+	/* be sure the string is terminated before trying to parse it */
+	if (obj_data[data_size - 1] != '\0')
+		obj_data[data_size - 1] = '\0';
+
+	*priv = (GUMS_PRIVILEGE *)talloc_zero(mem_ctx, sizeof(GUMS_PRIVILEGE));
+	TALLOC_CHECK(*priv, ret, done);
+
+	iret = gen_parse(mem_ctx, pinfo_gums_privilege, (char *)(*priv), obj_data);
+
+	if (iret != 0) {
+		DEBUG(0, ("init_privilege_from_buffer: Fatal Error! Unable to parse object!\n"));
+		DEBUG(0, ("init_privilege_from_buffer: DB Corrupt ?"));
+		goto done;
+	}
+
+	(*priv)->mem_ctx = mem_ctx;
+
+	ret = NT_STATUS_OK;
+done:
+	SAFE_FREE(obj_data);
+	return ret;
+}
+
 static NTSTATUS init_buffer_from_object(char **buffer, size_t *len, TALLOC_CTX *mem_ctx, GUMS_OBJECT *object)
 {
 
@@ -164,20 +204,16 @@ static NTSTATUS init_buffer_from_object(char **buffer, size_t *len, TALLOC_CTX *
 	switch (gums_get_object_type(object)) {
 
 		case GUMS_OBJ_DOMAIN:
-			genbuf = gen_dump(mem_ctx, pinfo_tdbsam2_domain_data, (char *)object, 0);
+			genbuf = gen_dump(mem_ctx, pinfo_gums_domain, (char *)object, 0);
 			break;
 
 		case GUMS_OBJ_GROUP:
 		case GUMS_OBJ_ALIAS:
-			genbuf = gen_dump(mem_ctx, pinfo_tdbsam2_group_data, (char *)object, 0);
+			genbuf = gen_dump(mem_ctx, pinfo_gums_group, (char *)object, 0);
 			break;
 
 		case GUMS_OBJ_NORMAL_USER:
-			genbuf = gen_dump(mem_ctx, pinfo_tdbsam2_user_data, (char *)object, 0);
-			break;
-
-		case GUMS_OBJ_PRIVILEGE:
-			genbuf = gen_dump(mem_ctx, pinfo_tdbsam2_priv_data, (char *)object, 0);
+			genbuf = gen_dump(mem_ctx, pinfo_gums_user, (char *)object, 0);
 			break;
 
 		default:
@@ -193,6 +229,7 @@ static NTSTATUS init_buffer_from_object(char **buffer, size_t *len, TALLOC_CTX *
 	buflen = tdb_pack(NULL, 0,  TDB_FORMAT_STRING,
 			TDBSAM_VERSION,
 			object->type,
+			object->seq_num,
 			strlen(genbuf) + 1, genbuf);
 
 	*buffer = talloc(mem_ctx, buflen);
@@ -201,10 +238,54 @@ static NTSTATUS init_buffer_from_object(char **buffer, size_t *len, TALLOC_CTX *
 	*len = tdb_pack(*buffer, buflen, TDB_FORMAT_STRING,
 			TDBSAM_VERSION,
 			object->type,
+			object->seq_num,
 			strlen(genbuf) + 1, genbuf);
 
 	if (*len != buflen) {
 		DEBUG(0, ("init_buffer_from_object: something odd is going on here: bufflen (%d) != len (%d) in tdb_pack operations!\n", 
+			  buflen, *len));
+		*buffer = NULL;
+		ret = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	ret = NT_STATUS_OK;
+done:
+	return ret;
+}
+
+static NTSTATUS init_buffer_from_privilege(char **buffer, size_t *len, TALLOC_CTX *mem_ctx, GUMS_PRIVILEGE *priv)
+{
+
+	NTSTATUS ret;
+	char *genbuf = NULL;
+	size_t buflen;
+
+	if (!buffer || !len || !mem_ctx || !priv)
+		return NT_STATUS_INVALID_PARAMETER;
+
+	genbuf = gen_dump(mem_ctx, pinfo_gums_privilege, (char *)priv, 0);
+	
+	if (genbuf == NULL) {
+		DEBUG(0, ("init_buffer_from_privilege: Fatal Error! Unable to dump object!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	buflen = tdb_pack(NULL, 0,  TDB_PRIV_FORMAT_STRING,
+			TDBSAM_VERSION,
+			priv->seq_num,
+			strlen(genbuf) + 1, genbuf);
+
+	*buffer = talloc(mem_ctx, buflen);
+	TALLOC_CHECK(*buffer, ret, done);
+
+	*len = tdb_pack(*buffer, buflen, TDB_PRIV_FORMAT_STRING,
+			TDBSAM_VERSION,
+			priv->seq_num,
+			strlen(genbuf) + 1, genbuf);
+
+	if (*len != buflen) {
+		DEBUG(0, ("init_buffer_from_privilege: something odd is going on here: bufflen (%d) != len (%d) in tdb_pack operations!\n", 
 			  buflen, *len));
 		*buffer = NULL;
 		ret = NT_STATUS_UNSUCCESSFUL;
@@ -266,7 +347,46 @@ done:
 	return ret;
 }
 
-static NTSTATUS get_object_by_name(TDB_CONTEXT *tdb, GUMS_OBJECT **obj, const char* name)
+static NTSTATUS make_full_object_name(TDB_CONTEXT *tdb, fstring objname, GUMS_OBJECT *object)
+{
+	NTSTATUS ret;
+
+	objname[0] = '\0';
+
+	if (gums_get_object_type(object) == GUMS_OBJ_DOMAIN) {
+
+		fstrcpy(objname, gums_get_object_name(object));
+
+	} else {
+		GUMS_OBJECT *domain_object;
+		DOM_SID domain_sid;
+		uint32 *discard_rid;
+
+		sid_copy(&domain_sid, gums_get_object_sid(object));
+		sid_split_rid(&domain_sid, discard_rid);
+
+		if (!NT_STATUS_IS_OK(get_object_by_sid(tdb,
+							&domain_object,
+							&domain_sid))) {
+
+			DEBUG(3, ("Object's domain not found!\n"));
+			ret = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
+
+		fstrcpy(objname, gums_get_object_name(domain_object));
+		fstrcat(objname, "\\");
+		fstrcat(objname, gums_get_object_name(object));
+	}
+
+	ret = NT_STATUS_OK;
+
+done:
+	return ret;
+}
+
+/* name should be in DOMAIN\NAME format */
+static NTSTATUS get_object_by_name(TDB_CONTEXT *tdb, GUMS_OBJECT **obj, const char *fullname)
 {
 
 	NTSTATUS ret = NT_STATUS_OK;
@@ -277,14 +397,15 @@ static NTSTATUS get_object_by_name(TDB_CONTEXT *tdb, GUMS_OBJECT **obj, const ch
 	fstring sidstr;
 	int sidstr_len;
 
-	if (!obj || !name)
+	if (!obj || !fullname)
 		return NT_STATUS_INVALID_PARAMETER;
 
 	/* Data is stored in all lower-case */
-	fstrcpy(objname, name);
+	fstrcpy(objname, fullname);
 	strlower_m(objname);
 
 	slprintf(keystr, sizeof(keystr)-1, "%s%s", NAMEPREFIX, objname);
+
 	key.dptr = keystr;
 	key.dsize = strlen(keystr) + 1;
 
@@ -320,13 +441,52 @@ done:
 	return ret;
 }
 
-/* store a tdbsam2_object
+/* Get object's sequence number */
+
+static NTSTATUS get_object_seq_num(TDB_CONTEXT *tdb, GUMS_OBJECT *object, int *seq_num)
+{
+
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	TDB_DATA data, key;
+	fstring keystr;
+	fstring sidstr;
+	int version, type, seqnum;
+
+	if (!object || !seq_num)
+		return NT_STATUS_INVALID_PARAMETER;
+
+	fstrcpy(sidstr, sid_string_static(gums_get_object_sid(object)));
+	slprintf(keystr, sizeof(keystr)-1, "%s%s", SIDPREFIX, sidstr);
+
+	key.dptr = keystr;
+	key.dsize = strlen(keystr) + 1;
+
+	data = tdb_fetch(tdb, key);
+	if (!data.dptr) {
+		DEBUG(5, ("get_object_seq_num: Entry not found!\n"));
+		DEBUGADD(5, (" Error: %s\n", tdb_errorstr(tdb)));
+		DEBUGADD(5, (" Key: %s\n", keystr));
+		ret = NT_STATUS_NOT_FOUND;
+		goto done;
+	}
+
+	if (tdb_unpack (data.dptr, data.dsize, TDB_BASIC_OBJ_STRING, &version, &type, &seqnum) == -1)
+		goto done;
+
+	*seq_num = seqnum;
+	ret = NT_STATUS_OK;
+
+done:
+	SAFE_FREE(data.dptr);
+	return ret;
+}
+
+/* store a gums object
  * flag: TDB_REPLACE or TDB_MODIFY or TDB_INSERT
  */
 
-static NTSTATUS store_object(TDB_CONTEXT *tdb, const GUMS_OBJECT *object, int flag)
+static NTSTATUS store_object(TDB_CONTEXT *tdb, GUMS_OBJECT *object, int flag)
 {
-
 	NTSTATUS ret = NT_STATUS_OK;
 	TDB_DATA data, data2, key, key2;
 	TALLOC_CTX *mem_ctx;
@@ -346,79 +506,56 @@ static NTSTATUS store_object(TDB_CONTEXT *tdb, const GUMS_OBJECT *object, int fl
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	make_full_object_name(tdb, objname, object);
+
+	/* Data is stored in all lower-case */
+	strlower_m(objname);
+
+	if (flag == TDB_MODIFY) {
+		if (!NT_STATUS_IS_OK(ret = get_object_seq_num(tdb, object, &(object->seq_num))))
+			goto done;
+		object->seq_num += 1;
+	}
+
 	if (!NT_STATUS_IS_OK(ret = init_buffer_from_object(&(data.dptr), &(data.dsize), mem_ctx, object)))
 		goto done;
 
-	switch (object->type) {
-
-		case GUMS_OBJ_DOMAIN:
-		case GUMS_OBJ_GROUP:
-		case GUMS_OBJ_ALIAS:
-		case GUMS_OBJ_NORMAL_USER:
-
-			fstrcpy(sidstr, sid_string_static(gums_get_object_sid(object)));
-			slprintf(keystr, sizeof(keystr) - 1, "%s%s", SIDPREFIX, sidstr);
-			break;
-
-		default:
-			ret = NT_STATUS_UNSUCCESSFUL;
-			goto done;
-	}
-
-	/* Data is stored in all lower-case */
-	fstrcpy(objname, gums_get_object_name(object));
-	strlower_m(objname);
-
+	fstrcpy(sidstr, sid_string_static(gums_get_object_sid(object)));
+	slprintf(keystr, sizeof(keystr) - 1, "%s%s", SIDPREFIX, sidstr);
 	slprintf(namestr, sizeof(namestr) - 1, "%s%s", NAMEPREFIX, objname);
 
-	if (object->type != GUMS_OBJ_PRIVILEGE) {
-		key.dptr = keystr;
-		key.dsize = strlen(keystr) + 1;
+	key.dptr = keystr;
+	key.dsize = strlen(keystr) + 1;
 
-		if ((r = tdb_store(tdb, key, data, flag)) != TDB_SUCCESS) {
-			DEBUG(0, ("store_object: Unable to modify TDBSAM!\n"));
-			DEBUGADD(0, (" Error: %s", tdb_errorstr(tdb)));
-			DEBUGADD(0, (" occured while storing sid record (%s)\n", keystr));
-			if (r == TDB_ERR_EXISTS)
-				ret = NT_STATUS_UNSUCCESSFUL;
-			else
-				ret = NT_STATUS_INTERNAL_DB_ERROR;
-			goto done;
+	if ((r = tdb_store(tdb, key, data, flag)) != TDB_SUCCESS) {
+		DEBUG(0, ("store_object: Unable to modify TDBSAM!\n"));
+		DEBUGADD(0, (" Error: %s", tdb_errorstr(tdb)));
+		DEBUGADD(0, (" occured while storing sid record (%s)\n", keystr));
+		if (r == TDB_ERR_EXISTS)
+			ret = NT_STATUS_UNSUCCESSFUL;
+		else
+			ret = NT_STATUS_INTERNAL_DB_ERROR;
+		goto done;
+	}
+
+	data2.dptr = sidstr;
+	data2.dsize = strlen(sidstr) + 1;
+	key2.dptr = namestr;
+	key2.dsize = strlen(namestr) + 1;
+
+	if ((r = tdb_store(tdb, key2, data2, flag)) != TDB_SUCCESS) {
+		DEBUG(0, ("store_object: Unable to modify TDBSAM!\n"));
+		DEBUGADD(0, (" Error: %s", tdb_errorstr(tdb)));
+		DEBUGADD(0, (" occured while storing name record (%s)\n", keystr));
+		DEBUGADD(0, (" attempting rollback operation.\n"));
+		if ((tdb_delete(tdb, key)) != TDB_SUCCESS) {
+			DEBUG(0, ("store_object: Unable to rollback! Check database consitency!\n"));
 		}
-
-		data2.dptr = sidstr;
-		data2.dsize = strlen(sidstr) + 1;
-		key2.dptr = namestr;
-		key2.dsize = strlen(namestr) + 1;
-
-		if ((r = tdb_store(tdb, key2, data2, flag)) != TDB_SUCCESS) {
-			DEBUG(0, ("store_object: Unable to modify TDBSAM!\n"));
-			DEBUGADD(0, (" Error: %s", tdb_errorstr(tdb)));
-			DEBUGADD(0, (" occured while storing name record (%s)\n", keystr));
-			DEBUGADD(0, (" attempting rollback operation.\n"));
-			if ((tdb_delete(tdb, key)) != TDB_SUCCESS) {
-				DEBUG(0, ("store_object: Unable to rollback! Check database consitency!\n"));
-			}
-			if (r == TDB_ERR_EXISTS)
-				ret = NT_STATUS_UNSUCCESSFUL;
-			else
-				ret = NT_STATUS_INTERNAL_DB_ERROR;
-			goto done;
-		}
-	} else {
-		key.dptr = namestr;
-		key.dsize = strlen(keystr) + 1;
-
-		if ((r = tdb_store(tdb, key, data, flag)) != TDB_SUCCESS) {
-			DEBUG(0, ("store_object: Unable to modify TDBSAM!\n"));
-			DEBUGADD(0, (" Error: %s", tdb_errorstr(tdb)));
-			DEBUGADD(0, (" occured while storing sid record (%s)\n", keystr));
-			if (r == TDB_ERR_EXISTS)
-				ret = NT_STATUS_UNSUCCESSFUL;
-			else
-				ret = NT_STATUS_INTERNAL_DB_ERROR;
-			goto done;
-		}
+		if (r == TDB_ERR_EXISTS)
+			ret = NT_STATUS_UNSUCCESSFUL;
+		else
+			ret = NT_STATUS_INTERNAL_DB_ERROR;
+		goto done;
 	}
 
 /* TODO: update the general database counter */
@@ -428,226 +565,6 @@ done:
 	talloc_destroy(mem_ctx);
 	return ret;
 }
-
-#if 0
-static NTSTATUS user_data_to_gums_object(GUMS_OBJECT **object, struct tdbsam2_user_data *userdata)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	DATA_BLOB pwd;
-
-	if (!object || !userdata) {
-		DEBUG(0, ("tdbsam2_user_data_to_gums_object: no NULL pointers are accepted here!\n"));
-		return ret;
-	}
-
-	/* userdata->xcounter */
-	/* userdata->sec_desc */
-
-	SET_OR_FAIL(gums_set_object_sid(*object, userdata->user_sid), error);
-	SET_OR_FAIL(gums_set_object_name(*object, userdata->name), error);
-
-	SET_OR_FAIL(gums_set_user_pri_group(*object, userdata->group_sid), error);
-
-	if (userdata->description)
-		SET_OR_FAIL(gums_set_object_description(*object, userdata->description), error);
-
-	if (userdata->full_name)
-		SET_OR_FAIL(gums_set_user_fullname(*object, userdata->full_name), error);
-	
-	if (userdata->home_dir)
-		SET_OR_FAIL(gums_set_user_homedir(*object, userdata->home_dir), error);
-
-	if (userdata->dir_drive)
-		SET_OR_FAIL(gums_set_user_dir_drive(*object, userdata->dir_drive), error);
-
-	if (userdata->logon_script)
-		SET_OR_FAIL(gums_set_user_logon_script(*object, userdata->logon_script), error);
-	
-	if (userdata->profile_path) 
-		SET_OR_FAIL(gums_set_user_profile_path(*object, userdata->profile_path), error);
-
-	if (userdata->workstations)
-		SET_OR_FAIL(gums_set_user_workstations(*object, userdata->workstations), error);
-
-	if (userdata->unknown_str)
-		SET_OR_FAIL(gums_set_user_unknown_str(*object, userdata->unknown_str), error);
-
-	if (userdata->munged_dial)
-		SET_OR_FAIL(gums_set_user_munged_dial(*object, userdata->munged_dial), error);
-
-	SET_OR_FAIL(gums_set_user_logon_divs(*object, userdata->logon_divs), error);
-
-	if (userdata->hours)
-		SET_OR_FAIL(gums_set_user_hours(*object, userdata->hours_len, userdata->hours), error);
-
-	SET_OR_FAIL(gums_set_user_unknown_3(*object, userdata->unknown_3), error);
-	SET_OR_FAIL(gums_set_user_unknown_5(*object, userdata->unknown_5), error);
-	SET_OR_FAIL(gums_set_user_unknown_6(*object, userdata->unknown_6), error);
-
-	SET_OR_FAIL(gums_set_user_logon_time(*object, *(userdata->logon_time)), error);
-	SET_OR_FAIL(gums_set_user_logoff_time(*object, *(userdata->logoff_time)), error);
-	SET_OR_FAIL(gums_set_user_kickoff_time(*object, *(userdata->kickoff_time)), error);
-	SET_OR_FAIL(gums_set_user_pass_last_set_time(*object, *(userdata->pass_last_set_time)), error);
-	SET_OR_FAIL(gums_set_user_pass_can_change_time(*object, *(userdata->pass_can_change_time)), error);
-	SET_OR_FAIL(gums_set_user_pass_must_change_time(*object, *(userdata->pass_must_change_time)), error);
-
-	pwd = data_blob(userdata->nt_pw_ptr, NT_HASH_LEN);
-	ret = gums_set_user_nt_pwd(*object, pwd);
-	data_blob_clear_free(&pwd);
-	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(5, ("user_data_to_gums_object: failed to set nt password!\n"));
-		goto error;
-	}
-	pwd = data_blob(userdata->lm_pw_ptr, LM_HASH_LEN);
-	ret = gums_set_user_lm_pwd(*object, pwd);
-	data_blob_clear_free(&pwd);
-	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(5, ("user_data_to_gums_object: failed to set lanman password!\n"));
-		goto error;
-	}
-
-	ret = NT_STATUS_OK;
-	return ret;
-	
-error:
-	talloc_destroy((*object)->mem_ctx);
-	*object = NULL;
-	return ret;
-}
-
-static NTSTATUS group_data_to_gums_object(GUMS_OBJECT **object, struct tdbsam2_group_data *groupdata)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if (!object || !groupdata) {
-		DEBUG(0, ("tdbsam2_group_data_to_gums_object: no NULL pointers are accepted here!\n"));
-		return ret;
-	}
-
-	/* groupdata->xcounter */
-	/* groupdata->sec_desc */
-
-	SET_OR_FAIL(gums_set_object_sid(*object, groupdata->group_sid), error);
-	SET_OR_FAIL(gums_set_object_name(*object, groupdata->name), error);
-
-	if (groupdata->description)
-		SET_OR_FAIL(gums_set_object_description(*object, groupdata->description), error);
-
-	if (groupdata->count)
-		SET_OR_FAIL(gums_set_group_members(*object, groupdata->count, groupdata->members), error);
-
-	ret = NT_STATUS_OK;
-	return ret;
-	
-error:
-	talloc_destroy((*object)->mem_ctx);
-	*object = NULL;
-	return ret;
-}
-
-static NTSTATUS domain_data_to_gums_object(GUMS_OBJECT **object, struct tdbsam2_domain_data *domdata)
-{
-
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if (!object || !*object || !domdata) {
-		DEBUG(0, ("tdbsam2_domain_data_to_gums_object: no NULL pointers are accepted here!\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	/* domdata->xcounter */
-	/* domdata->sec_desc */
-
-	SET_OR_FAIL(gums_set_object_sid(*object, domdata->dom_sid), error);
-	SET_OR_FAIL(gums_set_object_name(*object, domdata->name), error);
-
-	if (domdata->description)
-		SET_OR_FAIL(gums_set_object_description(*object, domdata->description), error);
-
-	ret = NT_STATUS_OK;
-	return ret;
-	
-error:
-	talloc_destroy((*object)->mem_ctx);
-	*object = NULL;
-	return ret;
-}
-
-static NTSTATUS priv_data_to_gums_object(GUMS_OBJECT **object, struct tdbsam2_priv_data *privdata)
-{
-
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if (!object || !*object || !privdata) {
-		DEBUG(0, ("tdbsam2_priv_data_to_gums_object: no NULL pointers are accepted here!\n"));
-		return ret;
-	}
-
-	/* domdata->xcounter */
-	/* domdata->sec_desc */
-
-	SET_OR_FAIL(gums_set_priv_luid_attr(*object, privdata->privilege), error);
-	SET_OR_FAIL(gums_set_object_name(*object, privdata->name), error);
-
-	if (privdata->description)
-		SET_OR_FAIL(gums_set_object_description(*object, privdata->description), error);
-
-	if (privdata->count)
-		SET_OR_FAIL(gums_set_priv_members(*object, privdata->count, privdata->members), error);
-
-	ret = NT_STATUS_OK;
-	return ret;
-	
-error:
-	talloc_destroy((*object)->mem_ctx);
-	*object = NULL;
-	return ret;
-}
-
-static NTSTATUS data_to_gums_object(GUMS_OBJECT **object, struct tdbsam2_object *data)
-{
-
-	NTSTATUS ret;
-
-	if (!object || !data) {
-		DEBUG(0, ("tdbsam2_user_data_to_gums_object: no NULL structure pointers are accepted here!\n"));
-		ret = NT_STATUS_INVALID_PARAMETER;
-		goto done;
-	}
-
-	ret = gums_create_object(object, data->type);
-	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(5, ("tdbsam2_user_data_to_gums_object: error creating gums object!\n"));
-		goto done;
-	}
-
-	switch (data->type) {
-
-		case GUMS_OBJ_DOMAIN:
-			ret = domain_data_to_gums_object(object, data->data.domain);
-			break;
-
-		case GUMS_OBJ_NORMAL_USER:
-			ret = user_data_to_gums_object(object, data->data.user);
-			break;
-
-		case GUMS_OBJ_GROUP:
-		case GUMS_OBJ_ALIAS:
-			ret = group_data_to_gums_object(object, data->data.group);
-			break;
-
-		case GUMS_OBJ_PRIVILEGE:
-			ret = priv_data_to_gums_object(object, data->data.priv);
-			break;
-
-		default:
-			ret = NT_STATUS_UNSUCCESSFUL;
-	}
-
-done:
-	return ret;
-}
-#endif
 
 /* GUMM object functions */
 
@@ -788,26 +705,18 @@ static NTSTATUS tdbsam2_new_object(DOM_SID *sid, const char *name, const int obj
 		goto done;
 	}
 
-	if (obj_type != GUMS_OBJ_PRIVILEGE) {
-		if (!sid) {
-			ret = NT_STATUS_INVALID_PARAMETER;
+	if (obj_type == GUMS_OBJ_DOMAIN) {
+		sid_copy(sid, get_global_sam_sid());
+	} else {
+		if (!NT_STATUS_IS_OK(ret = get_next_sid(tdb, sid)))
 			goto done;
-		}
-
-		if (obj_type == GUMS_OBJ_DOMAIN) {
-			sid_copy(sid, get_global_sam_sid());
-		} else {
-			if (!NT_STATUS_IS_OK(ret = get_next_sid(tdb, sid)))
-				goto done;
-		}
-
-		gums_set_object_sid(go, sid);
 	}
 
+	gums_set_object_sid(go, sid);
 	gums_set_object_name(go, name);
 	gums_set_object_seq_num(go, 1);
 
-	/*obj.data.domain->sec_desc*/
+	/*obj.domain->sec_desc*/
 
 	switch (obj_type) {
 		case GUMS_OBJ_NORMAL_USER:
@@ -829,7 +738,6 @@ static NTSTATUS tdbsam2_new_object(DOM_SID *sid, const char *name, const int obj
 			gums_set_user_logon_divs(go, 168);
 			gums_set_user_hours(go, 21, defhours);
 
-			gums_set_user_unknown_3(go, 0x00ffffff);
 			gums_set_user_bad_password_count(go, 0);
 			gums_set_user_logon_count(go, 0);
 			gums_set_user_unknown_6(go, 0x000004ec);
@@ -846,10 +754,6 @@ static NTSTATUS tdbsam2_new_object(DOM_SID *sid, const char *name, const int obj
 
 			break;	
 
-		case GUMS_OBJ_PRIVILEGE:
-
-			break;
-
 		default:
 			ret = NT_STATUS_OBJECT_TYPE_MISMATCH;
 			goto done;
@@ -863,6 +767,8 @@ done:
 	tdb_close(tdb);
 	return ret;
 }
+
+/* TODO: handle privileges objects */
 
 static NTSTATUS tdbsam2_delete_object(const DOM_SID *sid)
 {
@@ -882,7 +788,7 @@ static NTSTATUS tdbsam2_delete_object(const DOM_SID *sid)
 		return ret;
 	}
 
-	slprintf(keystr, sizeof(keystr)-1, "%s%s", SIDPREFIX, sid_string_static(sid));
+	slprintf(keystr, sizeof(keystr) - 1, "%s%s", SIDPREFIX, sid_string_static(sid));
 	key.dptr = keystr;
 	key.dsize = strlen(keystr) + 1;
 
@@ -909,18 +815,7 @@ static NTSTATUS tdbsam2_delete_object(const DOM_SID *sid)
 		goto done;
 	}
 
-	switch (go->type) {
-		case GUMS_OBJ_DOMAIN:
-			/* FIXME: SHOULD WE ALLOW TO DELETE DOMAINS ? */
-		case GUMS_OBJ_GROUP:
-		case GUMS_OBJ_ALIAS:
-		case GUMS_OBJ_NORMAL_USER:
-			slprintf(keystr, sizeof(keystr) - 1, "%s%s", NAMEPREFIX, gums_get_object_name(go));
-			break;
-		default:
-			ret = NT_STATUS_OBJECT_TYPE_MISMATCH;
-			goto done;
-	}
+	slprintf(keystr, sizeof(keystr) - 1, "%s%s", NAMEPREFIX, gums_get_object_name(go));
 
 	key.dptr = keystr;
 	key.dsize = strlen(keystr) + 1;
@@ -956,8 +851,12 @@ static NTSTATUS tdbsam2_get_object_from_sid(GUMS_OBJECT **object, const DOM_SID 
 	}
 
 	ret = get_object_by_sid(tdb, object, sid);
-	if (!NT_STATUS_IS_OK(ret) || (obj_type && gums_get_object_type(*object) != obj_type)) {
+	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0, ("tdbsam2_get_object_from_sid: %s\n", nt_errstr(ret)));
+		goto error;
+	}
+	if (obj_type && gums_get_object_type(*object) != obj_type) {
+		DEBUG(0, ("tdbsam2_get_object_from_sid: the object is not of the rerquested type!\n"));
 		goto error;
 	}
 
@@ -970,10 +869,11 @@ error:
 	return ret;
 }
 
-static NTSTATUS tdbsam2_get_object_from_name(GUMS_OBJECT **object, const char *name, const int obj_type)
+static NTSTATUS tdbsam2_get_object_from_name(GUMS_OBJECT **object, const char *domain, const char *name, const int obj_type)
 {
 	NTSTATUS ret;
 	TDB_CONTEXT *tdb;
+	fstring objname;
 
 	if (!object || !name) {
 		DEBUG(0, ("tdbsam2_get_object_from_name: no NULL pointers are accepted here!\n"));
@@ -984,10 +884,25 @@ static NTSTATUS tdbsam2_get_object_from_name(GUMS_OBJECT **object, const char *n
 		return ret;
 	}
 
+	if (obj_type == GUMS_OBJ_DOMAIN) {
+		fstrcpy(objname, name);
+	} else {
+		if (!domain) {
+			domain = global_myname();
+		}
+		fstrcpy(objname, domain);
+		fstrcat(objname, "\\");
+		fstrcat(objname, name);
+	}
+
 	*object = NULL;
 	ret = get_object_by_name(tdb, object, name);
-	if (!NT_STATUS_IS_OK(ret) || (obj_type && gums_get_object_type(*object) != obj_type)) {
+	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0, ("tdbsam2_get_object_from_name: %s\n", nt_errstr(ret)));
+		goto error;
+	}
+	if (obj_type && gums_get_object_type(*object) != obj_type) {
+		DEBUG(0, ("tdbsam2_get_object_from_name: the object is not of the rerquested type!\n"));
 		goto error;
 	}
 
@@ -1072,7 +987,7 @@ static NTSTATUS tdbsam2_enumerate_objects_get_next(GUMS_OBJECT **object, void *h
 	}	
 
 	while ((teo->key.dptr != NULL)) {
-		int len, version, type, size;
+		int len, version, type, size, seqnum;
 		char *ptr;
 
 		if (strncmp(teo->key.dptr, prefix, preflen)) {
@@ -1099,6 +1014,7 @@ static NTSTATUS tdbsam2_enumerate_objects_get_next(GUMS_OBJECT **object, void *h
 		len = tdb_unpack (data.dptr, data.dsize, TDB_FORMAT_STRING,
 			  &version,
 			  &type,
+			  &seqnum,
 			  &size, &ptr);
 
 		if (len == -1) {
@@ -1166,7 +1082,7 @@ static NTSTATUS tdbsam2_enumerate_objects_stop(void *handle)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS tdbsam2_set_object(const GUMS_OBJECT *go)
+static NTSTATUS tdbsam2_set_object(GUMS_OBJECT *go)
 {
 	NTSTATUS ret;
 	TDB_CONTEXT *tdb;
@@ -1200,12 +1116,14 @@ static NTSTATUS (*unlock_sid) (const DOM_SID *sid);
 
 	/* privileges related functions */
 
-static NTSTATUS (*add_members_to_privilege) (const LUID_ATTR *priv, const DOM_SID **members);
-static NTSTATUS (*delete_members_from_privilege) (const LUID_ATTR *priv, const DOM_SID **members);
-static NTSTATUS (*enumerate_privilege_members) (DOM_SID **members, const LUID_ATTR *priv);
-static NTSTATUS (*get_sid_privileges) (DOM_SID **privs, const DOM_SID *sid);
+static	NTSTATUS (*get_privilege) (GUMS_OBJECT **object, const char *name);
+static	NTSTATUS (*add_members_to_privilege) (const char *name, const DOM_SID **members);
+static	NTSTATUS (*delete_members_from_privilege) (const char *name, const DOM_SID **members);
+static	NTSTATUS (*enumerate_privilege_members) (const char *name, DOM_SID **members);
+static	NTSTATUS (*get_sid_privileges) (const DOM_SID *sid, const char **privs);
+
 	/* warning!: set_privilege will overwrite a prior existing privilege if such exist */
-static NTSTATUS (*set_privilege) (GUMS_PRIVILEGE *priv);
+static	NTSTATUS (*set_privilege) (GUMS_PRIVILEGE *priv);
 #endif
 
 static void free_tdbsam2_private_data(void **vp) 
@@ -1243,6 +1161,7 @@ static NTSTATUS init_tdbsam2(GUMS_FUNCTIONS *fns, const char *storage)
 	fns->get_sid_groups = tdbsam2_get_sid_groups;
 	fns->lock_sid = tdbsam2_lock_sid;
 	fns->unlock_sid = tdbsam2_unlock_sid;
+	fns->get_privilege = tdbsam2_get_privilege;
 	fns->add_members_to_privilege = tdbsam2_add_members_to_privilege;
 	fns->delete_members_from_privilege = tdbsam2_delete_members_from_privilege;
 	fns->enumerate_privilege_members = tdbsam2_enumerate_privilege_members;
@@ -1280,7 +1199,7 @@ static NTSTATUS init_tdbsam2(GUMS_FUNCTIONS *fns, const char *storage)
 			gums_init_builtin_domain();
 		}
 
-		gums_init_domain(get_global_sam_sid(), global_myname());
+		gums_init_domain(get_global_sam_sid(), global_myname(), "The Domain");
 	}
 
 	fns->private_data = &ts2_privs;
