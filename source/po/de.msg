@@ -108,7 +108,7 @@ msgstr "Aktuelle Konfiguration"
 
 #: ../web/swat.c:558
 msgid "Normal View"
-msgstr "Normale Ansich"
+msgstr "Normale Ansicht"
 
 #: ../web/swat.c:560
 msgid "Full View"
@@ -308,7 +308,7 @@ msgstr "Lösche Benutzer"
 
 #: ../web/swat.c:1108
 msgid "Disable User"
-msgstr "Desaktiviere Benutzer"
+msgstr "Deaktiviere Benutzer"
 
 #: ../web/swat.c:1110
 msgid "Enable User"
