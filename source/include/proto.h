@@ -2377,7 +2377,7 @@ BOOL wks_query_info( char *srv_name, uint32 switch_value,
 
 /*The following definitions come from  rpc_client/msrpc_lsarpc.c  */
 
-uint32 lookup_lsa_names(const char *srv_name, const DOM_SID *sid,
+uint32 lookup_lsa_names(const char *srv_name,
 			uint32 num_names, char **names,
 			uint32 *num_sids, DOM_SID **sids, uint8 **types);
 uint32 lookup_lsa_name(const char *domain,
@@ -2400,6 +2400,8 @@ uint32 check_domain_security(char *orig_user, char *domain,
 
 /*The following definitions come from  rpc_client/msrpc_samr.c  */
 
+uint32 lookup_sam_domainname(const char *srv_name,
+			     const char *domain, DOM_SID *sid);
 uint32 lookup_sam_name(const char *domain, DOM_SID *sid,
 				char *name, uint32 *rid, uint8 *type);
 uint32 lookup_sam_rid(const char *domain, DOM_SID *sid,
@@ -3200,6 +3202,8 @@ BOOL make_samr_r_create_dom_group(SAMR_R_CREATE_DOM_GROUP *r_u, POLICY_HND *pol,
 BOOL samr_io_r_create_dom_group(char *desc,  SAMR_R_CREATE_DOM_GROUP *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_delete_dom_group(SAMR_Q_DELETE_DOM_GROUP *q_c, POLICY_HND *hnd);
 BOOL samr_io_q_delete_dom_group(char *desc,  SAMR_Q_DELETE_DOM_GROUP *q_u, prs_struct *ps, int depth);
+BOOL make_samr_r_delete_dom_group(SAMR_R_DELETE_DOM_GROUP *r_u,
+		uint32 status);
 BOOL samr_io_r_delete_dom_group(char *desc,  SAMR_R_DELETE_DOM_GROUP *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_del_groupmem(SAMR_Q_DEL_GROUPMEM *q_e,
 				POLICY_HND *pol,
