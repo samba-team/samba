@@ -2260,24 +2260,26 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 
 	/* determine which user right we need to check based on the acb_info */
 	
-	if ( (acb_info & ACB_WSTRUST) == ACB_WSTRUST ) 
+	if ( acb_info & ACB_WSTRUST )
 	{
 		pstrcpy(add_script, lp_addmachine_script());
 		se_priv_copy( &se_rights, &se_machine_account );
 		can_add_account = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
 	} 
-	else if ( (acb_info & ACB_WSTRUST) == ACB_NORMAL ) 
+	else if ( acb_info & ACB_NORMAL )
 	{
 		pstrcpy(add_script, lp_adduser_script());
 		se_priv_copy( &se_rights, &se_add_users );
 		can_add_account = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
 	} 
-	else if ( ((acb_info & ACB_SVRTRUST) == ACB_SVRTRUST) ||  ((acb_info & ACB_DOMTRUST) == ACB_DOMTRUST) ) 
+	else if ( acb_info & (ACB_SVRTRUST|ACB_DOMTRUST) ) 
 	{
 		pstrcpy(add_script, lp_addmachine_script());
-		/* only Domain Admins can add a BDC or domain trust */
-		se_priv_copy( &se_rights, &se_priv_none );
-		can_add_account = nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS );
+		if ( lp_enable_privileges() ) {
+			/* only Domain Admins can add a BDC or domain trust */
+			se_priv_copy( &se_rights, &se_priv_none );
+			can_add_account = nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS );
+		}
 	}
 	
 	DEBUG(5, ("_samr_create_user: %s can add this account : %s\n",
@@ -2996,7 +2998,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 	uint32 acc_required;
 	BOOL ret;
 	BOOL has_enough_rights;
-	SE_PRIV se_rights;
+	uint32 acb_info;
 
 	DEBUG(5, ("_samr_set_userinfo: %d\n", __LINE__));
 
@@ -3033,16 +3035,18 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
  	}
 	
 	/* deal with machine password changes differently from userinfo changes */
-	
-	if ( pdb_get_acct_ctrl(pwd) & ACB_WSTRUST )
-		se_priv_copy( &se_rights, &se_machine_account );
-	else
-		se_priv_copy( &se_rights, &se_add_users );
-
 	/* check to see if we have the sufficient rights */
 	
-	has_enough_rights = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
-	
+	acb_info = pdb_get_acct_ctrl(pwd);
+	if ( acb_info & ACB_WSTRUST ) 
+		has_enough_rights = user_has_privileges( p->pipe_user.nt_user_token, &se_machine_account);
+	else if ( acb_info & ACB_NORMAL )
+		has_enough_rights = user_has_privileges( p->pipe_user.nt_user_token, &se_add_users );
+	else if ( acb_info & (ACB_SVRTRUST|ACB_DOMTRUST) ) {
+		if ( lp_enable_privileges() )
+			has_enough_rights = nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS );
+	}
+		
 	DEBUG(5, ("_samr_set_userinfo: %s does%s possess sufficient rights\n",
 		p->pipe_user_name, has_enough_rights ? "" : " not"));
 
@@ -3135,7 +3139,7 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 	uint32 acc_required;
 	BOOL ret;
 	BOOL has_enough_rights;
-	SE_PRIV se_rights;
+	uint32 acb_info;
 
 	DEBUG(5, ("samr_reply_set_userinfo2: %d\n", __LINE__));
 
@@ -3173,17 +3177,16 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 		return NT_STATUS_NO_SUCH_USER;
  	}
 	
-	/* deal with machine password changes differently from userinfo changes */
-	
-	if ( pdb_get_acct_ctrl(pwd) & ACB_WSTRUST )
-		se_priv_copy( &se_rights, &se_machine_account );
-	else
-		se_priv_copy( &se_rights, &se_add_users );
-
-	/* check to see if we have the sufficient rights */
-	
-	has_enough_rights = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
-	
+	acb_info = pdb_get_acct_ctrl(pwd);
+	if ( acb_info & ACB_WSTRUST ) 
+		has_enough_rights = user_has_privileges( p->pipe_user.nt_user_token, &se_machine_account);
+	else if ( acb_info & ACB_NORMAL )
+		has_enough_rights = user_has_privileges( p->pipe_user.nt_user_token, &se_add_users );
+	else if ( acb_info & (ACB_SVRTRUST|ACB_DOMTRUST) ) {
+		if ( lp_enable_privileges() )
+			has_enough_rights = nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS );
+	}
+		
 	DEBUG(5, ("_samr_set_userinfo: %s does%s possess sufficient rights\n",
 		p->pipe_user_name, has_enough_rights ? "" : " not"));
 
