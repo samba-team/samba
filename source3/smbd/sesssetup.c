@@ -332,12 +332,11 @@ static int reply_spnego_negotiate(connection_struct *conn,
 		fstrcat(dnsname, lp_realm());
 		strlower(dnsname);
 
-		msrpc_gen(&struct_blob, "aaaaa",
+		msrpc_gen(&struct_blob, "aaaa",
 			  2, lp_workgroup(),
 			  1, global_myname,
 			  4, dnsdomname,
-			  3, dnsname,
-			  0, NULL);
+			  3, dnsname);
 
 		msrpc_gen(&chal, "CdUdbddB",
 			  "NTLMSSP", 
