@@ -587,7 +587,6 @@ union semun {
 #endif
 
 #if defined (HAVE_NETGROUP) && defined(HAVE_RPCSVC_YPCLNT_H)
-#include "rpcsvc/yp_prot.h"
 #include "rpcsvc/ypclnt.h"
 #endif
 
