@@ -1,1 +1,1 @@
-#define VERSION "3.0.0rc1"
+#define VERSION "CVS 3.0.0rc2"
