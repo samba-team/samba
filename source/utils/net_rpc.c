@@ -3979,9 +3979,10 @@ static NTSTATUS rpc_shutdown_abort_internals(const DOM_SID *domain_sid,
 	
 	result = cli_shutdown_abort(cli, mem_ctx);
 	
-	if (NT_STATUS_IS_OK(result))
+	if (NT_STATUS_IS_OK(result)) {
+		d_printf("\nShutdown successfully aborted\n");
 		DEBUG(5,("cmd_shutdown_abort: query succeeded\n"));
-	else
+	} else
 		DEBUG(5,("cmd_shutdown_abort: query failed\n"));
 	
 	return result;
@@ -4014,9 +4015,10 @@ static NTSTATUS rpc_reg_shutdown_abort_internals(const DOM_SID *domain_sid,
 	
 	result = cli_reg_abort_shutdown(cli, mem_ctx);
 	
-	if (NT_STATUS_IS_OK(result))
+	if (NT_STATUS_IS_OK(result)) {
+		d_printf("\nShutdown successfully aborted\n");
 		DEBUG(5,("cmd_reg_abort_shutdown: query succeeded\n"));
-	else
+	} else
 		DEBUG(5,("cmd_reg_abort_shutdown: query failed\n"));
 	
 	return result;
@@ -4049,7 +4051,7 @@ static int rpc_shutdown_abort(int argc, const char **argv)
 }
 
 /** 
- * Shut down a remote RPC Server
+ * Shut down a remote RPC Server via initshutdown pipe
  *
  * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
@@ -4064,10 +4066,57 @@ static int rpc_shutdown_abort(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_shutdown_internals(const DOM_SID *domain_sid, 
-				       const char *domain_name, 
-				       struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-				       int argc, const char **argv) 
+static NTSTATUS rpc_init_shutdown_internals(const DOM_SID *domain_sid, 
+					    const char *domain_name, 
+					    struct cli_state *cli, 
+					    TALLOC_CTX *mem_ctx, 
+					    int argc, const char **argv) 
+{
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+        const char *msg = "This machine will be shutdown shortly";
+	uint32 timeout = 20;
+
+	if (opt_comment) {
+		msg = opt_comment;
+	}
+	if (opt_timeout) {
+		timeout = opt_timeout;
+	}
+
+	/* create an entry */
+	result = cli_shutdown_init(cli, mem_ctx, msg, timeout, opt_reboot, 
+				   opt_force);
+
+	if (NT_STATUS_IS_OK(result)) {
+		d_printf("\nShutdown of remote machine succeeded\n");
+		DEBUG(5,("Shutdown of remote machine succeeded\n"));
+	} else
+		DEBUG(0,("Shutdown of remote machine failed!\n"));
+
+	return result;
+}
+
+/** 
+ * Shut down a remote RPC Server via winreg pipe
+ *
+ * All parameters are provided by the run_rpc_command function, except for
+ * argc, argv which are passes through. 
+ *
+ * @param domain_sid The domain sid aquired from the remote server
+ * @param cli A cli_state connected to the server.
+ * @param mem_ctx Talloc context, destoyed on compleation of the function.
+ * @param argc  Standard main() style argc
+ * @param argc  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return Normal NTSTATUS return.
+ **/
+
+static NTSTATUS rpc_reg_shutdown_internals(const DOM_SID *domain_sid, 
+					   const char *domain_name, 
+					   struct cli_state *cli, 
+					   TALLOC_CTX *mem_ctx, 
+					   int argc, const char **argv) 
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         const char *msg = "This machine will be shutdown shortly";
@@ -4107,8 +4156,10 @@ static NTSTATUS rpc_shutdown_internals(const DOM_SID *domain_sid,
 	/* create an entry */
 	result = cli_reg_shutdown(cli, mem_ctx, msg, timeout, opt_reboot, opt_force);
 
-	if (NT_STATUS_IS_OK(result))
+	if (NT_STATUS_IS_OK(result)) {
+		d_printf("\nShutdown of remote machine succeeded\n");
 		DEBUG(5,("Shutdown of remote machine succeeded\n"));
+	}
 	else
 		DEBUG(0,("Shutdown of remote machine failed!\n"));
 
@@ -4127,7 +4178,15 @@ static NTSTATUS rpc_shutdown_internals(const DOM_SID *domain_sid,
 
 static int rpc_shutdown(int argc, const char **argv) 
 {
-	return run_rpc_command(NULL, PI_WINREG, 0, rpc_shutdown_internals,
+	int rc = run_rpc_command(NULL, PI_SHUTDOWN, 0, 
+				 rpc_init_shutdown_internals,
+				 argc, argv);
+	if (rc == 0)
+		return rc;
+
+	DEBUG(1, ("initshutdown pipe didn't work, trying winreg pipe\n"));
+
+	return run_rpc_command(NULL, PI_WINREG, 0, rpc_reg_shutdown_internals,
 				       argc, argv);
 }
 
