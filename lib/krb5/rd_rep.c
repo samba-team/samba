@@ -113,5 +113,6 @@ void
 krb5_free_ap_rep_enc_part (krb5_context context,
 			   krb5_ap_rep_enc_part *val)
 {
-  free (val);
+    free_EncAPRepPart (val);
+    free (val);
 }
