@@ -28,6 +28,8 @@
 extern int DEBUGLEVEL;
 extern pstring user_socket_options;
 
+static void cli_process_oplock(struct cli_state *cli);
+
 /*
  * Change the port number used to call on 
  */
@@ -44,7 +46,19 @@ recv an smb
 ****************************************************************************/
 static BOOL cli_receive_smb(struct cli_state *cli)
 {
-	return client_receive_smb(cli->fd,cli->inbuf,cli->timeout);
+	BOOL ret;
+ again:
+	ret = client_receive_smb(cli->fd,cli->inbuf,cli->timeout);
+	
+	if (ret && cli->use_oplocks) {
+		/* it might be an oplock break request */
+		if (CVAL(cli->inbuf,smb_com) == SMBlockingX) {
+			cli_process_oplock(cli);
+			goto again;
+		}
+	}
+
+	return ret;
 }
 
 /****************************************************************************
@@ -79,6 +93,56 @@ static BOOL cli_send_smb(struct cli_state *cli)
 	
 	return True;
 }
+
+/****************************************************************************
+setup basics in a outgoing packet
+****************************************************************************/
+static void cli_setup_packet(struct cli_state *cli)
+{
+        cli->rap_error = 0;
+        cli->nt_error = 0;
+	SSVAL(cli->outbuf,smb_pid,cli->pid);
+	SSVAL(cli->outbuf,smb_uid,cli->vuid);
+	SSVAL(cli->outbuf,smb_mid,cli->mid);
+	if (cli->protocol > PROTOCOL_CORE) {
+		SCVAL(cli->outbuf,smb_flg,0x8);
+		SSVAL(cli->outbuf,smb_flg2,0x1);
+	}
+}
+
+
+
+/****************************************************************************
+process an oplock break request from the server
+****************************************************************************/
+static void cli_process_oplock(struct cli_state *cli)
+{
+	char *oldbuf = cli->outbuf;
+	pstring buf;
+	int fnum;
+
+	cli->outbuf = buf;
+
+	fnum = SVAL(cli->inbuf,smb_vwv2);
+        memset(buf,'\0',smb_size);
+        set_message(buf,8,0,True);
+
+        CVAL(buf,smb_com) = SMBlockingX;
+	SSVAL(buf,smb_tid, cli->cnum);
+        cli_setup_packet(cli);
+	SSVAL(buf,smb_vwv0,0xFF);
+	SSVAL(buf,smb_vwv1,0);
+	SSVAL(buf,smb_vwv2,fnum);
+	SSVAL(buf,smb_vwv3,2); /* oplock break ack */
+	SIVAL(buf,smb_vwv4,0); /* timoeut */
+	SSVAL(buf,smb_vwv6,0); /* unlockcount */
+	SSVAL(buf,smb_vwv7,0); /* lockcount */
+
+        cli_send_smb(cli);	
+
+	cli->outbuf = oldbuf;
+}
+
 
 /*****************************************************
  RAP error codes - a small start but will be extended.
@@ -173,23 +237,6 @@ char *cli_errstr(struct cli_state *cli)
 
 	return error_message;
 }
-
-/****************************************************************************
-setup basics in a outgoing packet
-****************************************************************************/
-static void cli_setup_packet(struct cli_state *cli)
-{
-        cli->rap_error = 0;
-        cli->nt_error = 0;
-	SSVAL(cli->outbuf,smb_pid,cli->pid);
-	SSVAL(cli->outbuf,smb_uid,cli->vuid);
-	SSVAL(cli->outbuf,smb_mid,cli->mid);
-	if (cli->protocol > PROTOCOL_CORE) {
-		SCVAL(cli->outbuf,smb_flg,0x8);
-		SSVAL(cli->outbuf,smb_flg2,0x1);
-	}
-}
-
 
 /*****************************************************************************
  Convert a character pointer in a cli_call_api() response to a form we can use.
@@ -1162,6 +1209,14 @@ int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 	SSVAL(cli->outbuf,smb_vwv4,aSYSTEM | aHIDDEN);
 	SSVAL(cli->outbuf,smb_vwv5,0);
 	SSVAL(cli->outbuf,smb_vwv8,openfn);
+
+	if (cli->use_oplocks) {
+		/* if using oplocks then ask for a batch oplock via
+                   core and extended methods */
+		CVAL(cli->outbuf,smb_flg) |= 
+			FLAG_REQUEST_OPLOCK|FLAG_REQUEST_BATCH_OPLOCK;
+		SSVAL(cli->outbuf,smb_vwv2,SVAL(cli->outbuf,smb_vwv2) | 6);
+	}
   
 	p = smb_buf(cli->outbuf);
 	pstrcpy(p,fname);

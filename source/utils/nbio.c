@@ -50,6 +50,8 @@ static int sigsegv(int sig)
 void nb_setup(struct cli_state *cli)
 {
 	signal(SIGSEGV, sigsegv);
+	/* to be like a true Windows client we need to negotiate oplocks */
+	cli->use_oplocks = True;
 	c = cli;
 }
 
