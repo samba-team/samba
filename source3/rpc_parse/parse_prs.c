@@ -283,6 +283,21 @@ BOOL prs_append_prs_data(prs_struct *dst, prs_struct *src)
 }
 
 /*******************************************************************
+ Append some data from one parse_struct into another.
+ ********************************************************************/
+
+BOOL prs_append_some_prs_data(prs_struct *dst, prs_struct *src, uint32 len)
+{
+	if(!prs_grow(dst, len))
+		return False;
+
+	memcpy(&dst->data_p[dst->data_offset], prs_data_p(src), (size_t)len);
+	dst->data_offset += len;
+
+	return True;
+}
+
+/*******************************************************************
  Append the data from a buffer into a parse_struct.
  ********************************************************************/
 
@@ -352,6 +367,25 @@ char *prs_mem_get(prs_struct *ps, uint32 extra_size)
 }
 
 /*******************************************************************
+ Change the struct type.
+ ********************************************************************/
+
+BOOL prs_switch_type(prs_struct *ps, BOOL io)
+{
+	if ((ps->io ^ io) == True)
+		ps->io=io;
+}
+
+/*******************************************************************
+ Force a prs_struct to be dynamic even when it's size is 0.
+ ********************************************************************/
+
+void prs_force_dynamic(prs_struct *ps)
+{
+	ps->is_dynamic=True;
+}
+
+/*******************************************************************
  Stream a uint8.
  ********************************************************************/
 
@@ -412,6 +446,22 @@ BOOL prs_uint8s(BOOL charmode, char *name, prs_struct *ps, int depth, uint8 *dat
 
 	DBG_RW_PCVAL(charmode, name, depth, ps->data_offset, ps->io, q, data8s, len)
 	ps->data_offset += (len * sizeof(uint8));
+
+	return True;
+}
+
+/******************************************************************
+ Stream an array of uint16s. Length is number of uint16s.
+ ********************************************************************/
+
+BOOL prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *data16s, int len)
+{
+	char *q = prs_mem_get(ps, len * sizeof(uint16));
+	if (q == NULL)
+		return False;
+
+	DBG_RW_PSVAL(charmode, name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, data16s, len)
+	ps->data_offset += (len * sizeof(uint16));
 
 	return True;
 }
