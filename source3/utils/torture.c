@@ -745,15 +745,17 @@ static void rand_buf(char *buf, int len)
 	}
 }
 
+#define TORT_BUFFER_SIZE 1024
+
 /* send random IPC commands */
 static void run_randomipc(int numops)
 {
 	char *rparam = NULL;
 	char *rdata = NULL;
 	int rdrcnt,rprcnt;
-	char param[BUFFER_SIZE];
+	char param[TORT_BUFFER_SIZE];
 	int api, param_len, i;
-	int reconnect_count = 50;
+	int reconnect_count = 500;
 	static struct cli_state cli;
 
 	DEBUG(0,("starting random ipc test\n"));
@@ -761,7 +763,7 @@ static void run_randomipc(int numops)
 	while (reconnect_count > 0 && open_connection(&cli) != 0)
 	{
 		DEBUG(0,("connection failed: retrying %d\n", reconnect_count));
-		msleep(sys_random() % 1000);
+		msleep(sys_random() % 5000);
 		reconnect_count--;
 	}
 
@@ -775,7 +777,7 @@ static void run_randomipc(int numops)
 		api = sys_random() % 500;
 		if ((sys_random() % 10) == 0)
 		{
-			param_len = (sys_random() % BUFFER_SIZE);
+			param_len = (sys_random() % TORT_BUFFER_SIZE);
 		}
 		else
 		{
@@ -801,9 +803,9 @@ static void run_randomipc(int numops)
 /* send random IPC commands */
 static void run_randomipc_nowait(int numops)
 {
-	char param[BUFFER_SIZE];
+	char param[TORT_BUFFER_SIZE];
 	int api, param_len, i;
-	int reconnect_count = 50;
+	int reconnect_count = 500;
 	static struct cli_state cli;
 
 	DEBUG(0,("start random ipc test no waiting for SMBtrans response\n"));
@@ -811,7 +813,7 @@ static void run_randomipc_nowait(int numops)
 	while (reconnect_count > 0 && open_connection(&cli) != 0)
 	{
 		DEBUG(0,("connection failed: retrying %d\n", reconnect_count));
-		msleep(sys_random() % 1000);
+		msleep(sys_random() % 5000);
 		reconnect_count--;
 	}
 
@@ -825,7 +827,7 @@ static void run_randomipc_nowait(int numops)
 		api = sys_random() % 500;
 		if ((sys_random() % 10) == 0)
 		{
-			param_len = (sys_random() % BUFFER_SIZE);
+			param_len = (sys_random() % TORT_BUFFER_SIZE);
 		}
 		else
 		{
@@ -1219,11 +1221,11 @@ static void create_procs(int nprocs, int numops, void (*fn)(int ))
 	printf("host=%s share=%s user=%s myname=%s procs=%d ops=%d\n", 
 	       host, share, username, myname, nprocs, numops);
 
-	create_procs(nprocs, numops, run_connection);
+	create_procs(nprocs, numops, run_randomipc_nowait);
 /*
 
+	create_procs(nprocs, numops, run_connection);
 	create_procs(nprocs, numops, run_randomipc);
-	create_procs(nprocs, numops, run_randomipc_nowait);
 
 	run_fdpasstest();
 	run_locktest1();
