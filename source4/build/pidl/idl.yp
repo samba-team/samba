@@ -20,7 +20,7 @@ idl:
 	| idl coclass { push(@{$_[1]}, $_[2]); $_[1] }
 ;
 
-coclass: property_list 'coclass' identifier '{' interfaces '}' optional_semicolon
+coclass: property_list 'coclass' identifier '{' interface_names '}' optional_semicolon
           {$_[3] => {
                "TYPE" => "COCLASS", 
 	       "PROPERTIES" => $_[1],
@@ -29,9 +29,9 @@ coclass: property_list 'coclass' identifier '{' interfaces '}' optional_semicolo
           }}
 ;
 
-interfaces:
+interface_names:
 	#empty { {} }
-	| interfaces interface { push(@{$_[1]}, $_[2]); $_[1] }
+	| interface_names 'interface' identifier ';' { push(@{$_[1]}, $_[2]); $_[1] }
 ;
 
 interface: property_list 'interface' identifier base_interface '{' definitions '}' optional_semicolon
