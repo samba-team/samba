@@ -179,8 +179,8 @@ compile time.</para></listitem>
 <!ENTITY stdarg.version '
 <varlistentry>
 <term>-V</term>
-<listitem><para>Prints the version number for 
-<command>smbd</command>.</para></listitem>
+<listitem><para>Prints the program version number.
+</para></listitem>
 </varlistentry>'>
 
 <!ENTITY stdarg.logfile '
