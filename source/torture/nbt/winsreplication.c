@@ -131,6 +131,12 @@ static BOOL nbt_test_wins_replication(TALLOC_CTX *mem_ctx, const char *address)
 
 	status = wrepl_request(wrepl_socket, mem_ctx, &request, &reply);
 	CHECK_STATUS(status, NT_STATUS_OK);
+	if (reply->mess_type == WREPL_STOP_ASSOCIATION) {
+		printf("server refused table query - reason %d\n",
+		       reply->message.stop.reason);
+		ret = False;
+		goto done;
+	}
 	CHECK_VALUE(reply->mess_type, WREPL_REPLICATION);
 	CHECK_VALUE(reply->message.replication.command, WREPL_REPL_TABLE_REPLY);	
 
