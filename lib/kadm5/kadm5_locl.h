@@ -77,6 +77,7 @@
 #include "admin.h"
 #include "kadm5_err.h"
 #include <hdb.h>
+#include <der.h>
 #include <roken.h>
 #include <parse_units.h>
 #include "private.h"
