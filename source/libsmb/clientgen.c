@@ -104,7 +104,6 @@ setup basics in a outgoing packet
 void cli_setup_packet(struct cli_state *cli)
 {
         cli->rap_error = 0;
-        cli->nt_error = 0;
 	SSVAL(cli->outbuf,smb_pid,cli->pid);
 	SSVAL(cli->outbuf,smb_uid,cli->vuid);
 	SSVAL(cli->outbuf,smb_mid,cli->mid);

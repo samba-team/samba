@@ -187,8 +187,7 @@ void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24)
 #endif
 }
 
-BOOL make_oem_passwd_hash(const char *passwd, uchar old_pw_hash[16], 
-                          BOOL unicode, char data[516])
+BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[16], BOOL unicode)
 {
 	int new_pw_len = strlen(passwd) * (unicode ? 2 : 1);
 

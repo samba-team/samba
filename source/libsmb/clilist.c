@@ -204,12 +204,13 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 		if (!cli_receive_trans(cli, SMBtrans2, 
 				       &rparam, &param_len,
-				       &rdata, &data_len)) {
+				       &rdata, &data_len) &&
+                    cli_is_dos_error(cli)) {
 			/* we need to work around a Win95 bug - sometimes
 			   it gives ERRSRV/ERRerror temprarily */
 			uint8 eclass;
 			uint32 ecode;
-			cli_error(cli, &eclass, &ecode, NULL);
+			cli_dos_error(cli, &eclass, &ecode);
 			if (eclass != ERRSRV || ecode != ERRerror) break;
 			msleep(100);
 			continue;
