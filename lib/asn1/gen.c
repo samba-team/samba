@@ -39,12 +39,18 @@ FILE *headerfile, *codefile, *logfile;
 
 #define STEM "asn1"
 
-static char *orig_filename;
+static const char *orig_filename;
 static char header[1024];
 static char headerbase[1024] = STEM;
 
+const char *
+filename (void)
+{
+    return orig_filename;
+}
+
 void
-init_generate (char *filename, char *base)
+init_generate (const char *filename, const char *base)
 {
     orig_filename = filename;
     if(base)
@@ -91,7 +97,7 @@ init_generate (char *filename, char *base)
 }
 
 void
-close_generate ()
+close_generate (void)
 {
     fprintf (headerfile, "#endif /* __%s_h__ */\n", headerbase);
 
