@@ -63,8 +63,10 @@
 /* Define if you have setupterm() */
 #undef HAVE_SETUPTERM
 
+/* Define if you have tgetent() */
+#undef HAVE_TGETENT
 
-/* */
+/* Define if there are working stream ptys */
 #undef STREAMSPTY
 
 @BOTTOM@
@@ -81,38 +83,7 @@
 #endif
 
 
-#ifdef HAVE_TGETENT
-#define TERMCAP 1
-#endif
-
-#if defined(HAVE_TERMIOS_H) || defined(HAVE_TERMIO_H)
-#define USE_TERMIO 1
-
-/* If this is not a POSIX boxen use SYSV, this may not work on CRAY
- * se telnetd/desf.h */
-#ifndef HAVE_TERMIOS_H
-#define SYSV_TERMIO
-#endif
-
-#endif /* defined(HAVE_TERMIOS_H) || defined(HAVE_TERMIO_H) */
-
-#ifndef HAVE_VFORK
-#define vfork fork
-#endif
-
-/* os specific tests ahead */
-
-#ifdef sun
-
-#define FILIO_H 1
-#define STREAMS 1
-
-#if defined(__svr4__) || defined(__SVR4)
-#define SOLARIS
-#endif
-
-#endif /* sun */
-
+/* this is left for hysteric reasons :-) */
 #ifdef _AIX
 #define unix /* well, ok... */
 #endif

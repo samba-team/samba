@@ -8,11 +8,11 @@ Solaris 2.4	X	X
 DEC OSF/1 2&3	X	X
 Ultrix 4.4	X	(not tested)
 AIX 3.2		X	X
-AIX 4.1		X	(doesn't work well)
+AIX 4.1		X	X
 HPUX ?		X	X
 NetBSD		X	X
 Linux		X	X
-IRIX 5		X	(not tested)
+IRIX 5		X	X
 
 
 See README.ORIG for further details. Some of the options aren't

@@ -11,6 +11,9 @@
 #define T_CONFIG_H
 
 
+/* Define as the return type of signal handlers (int or void).  */
+#undef RETSIGTYPE
+
 /* define this if you want authentication */
 #undef AUTHENTICATION
 
@@ -32,9 +35,6 @@
 /* define this if you want diagnostics in telnetd */
 #undef DIAGNOSTICS
 
-/* define this if you want support for broken ENV_{VALUE,VAR} systems  */
-#undef ENV_HACK
-
 /* define this if you want support for 4.3BSD kludged line mode  */
 #undef KLUDGELINEMODE
 
@@ -44,21 +44,38 @@
 /* Define if you have setupterm() */
 #undef HAVE_SETUPTERM
 
-/* */
-#undef STREAMSPTY
+/* Define if you have tgetent() */
+#undef HAVE_TGETENT
 
-#ifdef HAVE_TGETENT
-#define TERMCAP 1
-#endif
+/* Define if there are working stream ptys */
+#undef STREAMSPTY
 
 /* Define if you have the cgetent function.  */
 #undef HAVE_CGETENT
+
+/* Define if you have the cgetstr function.  */
+#undef HAVE_CGETSTR
 
 /* Define if you have the frevoke function.  */
 #undef HAVE_FREVOKE
 
 /* Define if you have the gethostbyname function.  */
 #undef HAVE_GETHOSTBYNAME
+
+/* Define if you have the getmsg function.  */
+#undef HAVE_GETMSG
+
+/* Define if you have the getstr function.  */
+#undef HAVE_GETSTR
+
+/* Define if you have the grantpt function.  */
+#undef HAVE_GRANTPT
+
+/* Define if you have the mktime function.  */
+#undef HAVE_MKTIME
+
+/* Define if you have the ptsname function.  */
+#undef HAVE_PTSNAME
 
 /* Define if you have the revoke function.  */
 #undef HAVE_REVOKE
@@ -78,20 +95,38 @@
 /* Define if you have the tgetent function.  */
 #undef HAVE_TGETENT
 
+/* Define if you have the ttyname function.  */
+#undef HAVE_TTYNAME
+
 /* Define if you have the uname function.  */
 #undef HAVE_UNAME
 
-/* Define if you have the vfork function.  */
-#undef HAVE_VFORK
+/* Define if you have the unlockpt function.  */
+#undef HAVE_UNLOCKPT
 
 /* Define if you have the vhangup function.  */
 #undef HAVE_VHANGUP
+
+/* Define if you have the <sys/filio.h> header file.  */
+#undef HAVE_SYS_FILIO_H
+
+/* Define if you have the <sys/ioctl.h> header file.  */
+#undef HAVE_SYS_IOCTL_H
+
+/* Define if you have the <sys/ptyvar.h> header file.  */
+#undef HAVE_SYS_PTYVAR_H
 
 /* Define if you have the <sys/resource.h> header file.  */
 #undef HAVE_SYS_RESOURCE_H
 
 /* Define if you have the <sys/select.h> header file.  */
 #undef HAVE_SYS_SELECT_H
+
+/* Define if you have the <sys/stream.h> header file.  */
+#undef HAVE_SYS_STREAM_H
+
+/* Define if you have the <sys/strtty.h> header file.  */
+#undef HAVE_SYS_STRTTY_H
 
 /* Define if you have the <sys/tty.h> header file.  */
 #undef HAVE_SYS_TTY_H
@@ -126,38 +161,7 @@
 #endif
 
 
-#ifdef HAVE_TGETENT
-#define TERMCAP 1
-#endif
-
-#if defined(HAVE_TERMIOS_H) || defined(HAVE_TERMIO_H)
-#define USE_TERMIO 1
-
-/* If this is not a POSIX boxen use SYSV, this may not work on CRAY
- * se telnetd/desf.h */
-#ifndef HAVE_TERMIOS_H
-#define SYSV_TERMIO
-#endif
-
-#endif /* defined(HAVE_TERMIOS_H) || defined(HAVE_TERMIO_H) */
-
-#ifndef HAVE_VFORK
-#define vfork fork
-#endif
-
-/* os specific tests ahead */
-
-#ifdef sun
-
-#define FILIO_H 1
-#define STREAMS 1
-
-#if defined(__svr4__) || defined(__SVR4)
-#define SOLARIS
-#endif
-
-#endif /* sun */
-
+/* this is left for hysteric reasons :-) */
 #ifdef _AIX
 #define unix /* well, ok... */
 #endif
