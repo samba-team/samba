@@ -65,6 +65,7 @@ BOOLEAN			{ return BOOLEAN; }
 IMPORTS			{ return IMPORTS; }
 FROM			{ return FROM; }
 SEQUENCE		{ return SEQUENCE; }
+CHOICE			{ return CHOICE; }
 OF			{ return OF; }
 OCTET			{ return OCTET; }
 STRING			{ return STRING; }

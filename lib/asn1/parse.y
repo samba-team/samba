@@ -61,7 +61,7 @@ static void append (Member *l, Member *r);
   char *defval;
 }
 
-%token INTEGER SEQUENCE OF OCTET STRING GeneralizedTime GeneralString 
+%token INTEGER SEQUENCE CHOICE OF OCTET STRING GeneralizedTime GeneralString 
 %token BIT APPLICATION OPTIONAL EEQUAL TBEGIN END DEFINITIONS ENUMERATED
 %token UTF8String NULLTYPE
 %token EXTERNAL DEFAULT
@@ -161,6 +161,11 @@ type		: INTEGER     { $$ = new_type(TInteger); }
 		| SEQUENCE '{' memberdecls '}'
 		{
 		  $$ = new_type(TSequence);
+		  $$->members = $3;
+		}
+		| CHOICE '{' memberdecls '}'
+		{
+		  $$ = new_type(TChoice);
 		  $$->members = $3;
 		}
 		| BIT STRING '{' bitdecls '}'
