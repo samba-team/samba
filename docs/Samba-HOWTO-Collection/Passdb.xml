@@ -1565,8 +1565,7 @@ access to attrs=SambaLMPassword,SambaNTPassword
 
 			<para>
 			You can put a colon (:) after the name of each column, which 
-			should specify the column to update when updating the table. You can also
-			specify nothing behind the colon. Then the field data will not be updated. Setting a column name to <parameter>NULL</parameter> means the field should not be used.
+			should specify the column to update when updating the table. One can also specify nothing behind the colon, in which case the field data will not be updated. Setting a column name to <parameter>NULL</parameter> means the field should not be used.
 			</para>
 
 			<para><link linkend="mysqlsam">An example configuration</link> looks like:
