@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -81,3 +81,5 @@
 extern char *service;
 int server_setup(krb5_context*, int, char**);
 int client_setup(krb5_context*, int*, char**);
+int client_doit (const char *hostname, int port, const char *service,
+		 int (*func)(int, const char *hostname, const char *service));
