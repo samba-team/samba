@@ -187,7 +187,7 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 		case KRB5_CC_NOTFOUND:
 		{
 			char *password;
-			time_t kdc_time;
+			time_t kdc_time = 0;
 			nt_status = gensec_get_password(gensec_security, 
 							gensec_security->mem_ctx, 
 							&password);
@@ -284,11 +284,15 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security, TALL
 			nt_status = NT_STATUS_LOGON_FAILURE;
 		} else {
 			DATA_BLOB unwrapped_out;
+
+#ifndef GENSEC_SEND_UNWRAPPED_KRB5 /* This should be a switch for the torture code to set */
 			unwrapped_out = data_blob_talloc(out_mem_ctx, gensec_krb5_state->ticket.data, gensec_krb5_state->ticket.length);
 			
 			/* wrap that up in a nice GSS-API wrapping */
 			*out = gensec_gssapi_gen_krb5_wrap(out_mem_ctx, &unwrapped_out, TOK_ID_KRB_AP_REQ);
-
+#else
+			*out = data_blob_talloc(out_mem_ctx, gensec_krb5_state->ticket.data, gensec_krb5_state->ticket.length);
+#endif
 			gensec_krb5_state->state_position = GENSEC_KRB5_CLIENT_MUTUAL_AUTH;
 			nt_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 		}
