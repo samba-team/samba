@@ -1,5 +1,13 @@
 2000-04-08  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/rd_safe.c (krb5_rd_safe): increment sequence number
+	after comparing
+	* lib/krb5/rd_priv.c (krb5_rd_priv): increment sequence number
+	after comparing
+	* lib/krb5/mk_safe.c (krb5_mk_safe): make `tmp_seq' unsigned
+	* lib/krb5/mk_priv.c (krb5_mk_priv): make `tmp_seq' unsigned
+	* lib/krb5/generate_seq_number.c (krb5_generate_seq_number): make
+	`seqno' be unsigned
 	* lib/krb5/mk_safe.c (krb5_mk_safe): increment local sequence
 	number after the fact and only increment it if we were successful
 	* lib/krb5/mk_priv.c (krb5_mk_priv): increment local sequence

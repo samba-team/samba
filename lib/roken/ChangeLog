@@ -1,3 +1,9 @@
+2000-04-05  Assar Westerlund  <assar@sics.se>
+
+	* resolve.c (_resolve_debug): explicitly set to zero.  this moves
+	the variable from bss to data and the dynamic linker on MacOS
+	X/Darwin seems unhappy with stuff in the bss segment.
+
 2000-04-03  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: set version to 8:0:3
