@@ -107,7 +107,7 @@ on this system just substitute the correct package name
 	</para>
 
 	<para>
-	<command>cvs -d :pserver:cvs@samba.org:/cvsroot login</command>
+	<userinput>cvs -d :pserver:cvs@samba.org:/cvsroot login</userinput>
 	</para>
 	
 	<para>
@@ -122,7 +122,7 @@ on this system just substitute the correct package name
 	</para>
 	
 	<para>
-	<command>cvs -d :pserver:cvs@samba.org:/cvsroot co samba</command>
+	<userinput>cvs -d :pserver:cvs@samba.org:/cvsroot co samba</userinput>
 	</para>
 	
 	<para>
@@ -135,11 +135,11 @@ on this system just substitute the correct package name
 	CVS branches other HEAD can be obtained by using the <parameter>-r</parameter>
 	and defining a tag name.  A list of branch tag names can be found on the
 	"Development" page of the samba web site.  A common request is to obtain the
-	latest 2.2 release code.  This could be done by using the following command.
+	latest 2.2 release code.  This could be done by using the following userinput.
 	</para>
 	
 	<para>
-	<command>cvs -d :pserver:cvs@samba.org:/cvsroot co -r SAMBA_2_2 samba</command>
+	<userinput>cvs -d :pserver:cvs@samba.org:/cvsroot co -r SAMBA_2_2 samba</userinput>
 	</para>
 </listitem>
 
@@ -150,7 +150,7 @@ on this system just substitute the correct package name
 	</para>
 	
 	<para>
-	<command>cvs update -d -P</command>
+	<userinput>cvs update -d -P</userinput>
 	</para>
 </listitem>
 </orderedlist>
@@ -180,8 +180,8 @@ on this system just substitute the correct package name
 <sect1>
 	<title>Building the Binaries</title>
 	
-	<para>To do this, first run the program <command>./configure
-	</command> in the source directory. This should automatically 
+	<para>To do this, first run the program <userinput>./configure
+	</userinput> in the source directory. This should automatically 
 	configure Samba for your operating system. If you have unusual 
 	needs then you may wish to run</para>
 	
@@ -282,18 +282,18 @@ on this system just substitute the correct package name
 	<title>Starting the smbd and nmbd</title>
 
 	<para>You must choose to start smbd and nmbd either
-	as daemons or from <command>inetd</command>. Don't try
+	as daemons or from <application>inetd</application>Don't try
 	to do both!  Either you can put them in <filename>
 	inetd.conf</filename> and have them started on demand
-	by <command>inetd</command>, or you can start them as
+	by <application>inetd</application>, or you can start them as
 	daemons either from the command line or in <filename>
 	/etc/rc.local</filename>. See the man pages for details
 	on the command line options. Take particular care to read
 	the bit about what user you need to be in order to start
 	Samba.  In many cases you must be root.</para>
 
-	<para>The main advantage of starting <command>smbd</command>
-	and <command>nmbd</command> using the recommended daemon method
+	<para>The main advantage of starting <application>smbd</application>
+	and <application>nmbd</application> using the recommended daemon method
 	is that they will respond slightly more quickly to an initial connection
 	request.</para>
 
@@ -332,21 +332,21 @@ on this system just substitute the correct package name
 
 		<para>NOTE: On many systems you may need to use the 
 		"interfaces" option in smb.conf to specify the IP address 
-		and netmask of your interfaces. Run <command>ifconfig</command> 
+		and netmask of your interfaces. Run <application>ifconfig</application> 
 		as root if you don't know what the broadcast is for your
-		net. <command>nmbd</command> tries to determine it at run 
-		time, but fails on some unixes. See the section on "testing nmbd" 
-		for a method of finding if you need to do this.</para>
+		net. <application>nmbd</application> tries to determine it at run 
+		time, but fails on some unixes. 
+		</para>
 
-		<para>!!!WARNING!!! Many unixes only accept around 5 
+		<warning><para>Many unixes only accept around 5 
 		parameters on the command line in <filename>inetd.conf</filename>. 
 		This means you shouldn't use spaces between the options and 
 		arguments, or you should use a script, and start the script 
-		from <command>inetd</command>.</para>
+		from <command>inetd</command>.</para></warning>
 
 		<para>Restart <command>inetd</command>, perhaps just send 
-		it a HUP. If you have installed an earlier version of <command>
-		nmbd</command> then you may need to kill nmbd as well.</para>
+		it a HUP. If you have installed an earlier version of <application>
+		nmbd</application> then you may need to kill nmbd as well.</para>
 	</sect2>
 	
 	<sect2>
@@ -372,9 +372,9 @@ on this system just substitute the correct package name
 		<para>To kill it send a kill signal to the processes 
 		<command>nmbd</command> and <command>smbd</command>.</para>
 
-		<para>NOTE: If you use the SVR4 style init system then 
+		<note><para>If you use the SVR4 style init system then 
 		you may like to look at the <filename>examples/svr4-startup</filename>
-		script to make Samba fit into that system.</para>
+		script to make Samba fit into that system.</para></note>
 	</sect2>
 </sect1>
 </chapter>

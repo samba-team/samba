@@ -16,7 +16,7 @@
 
 <para>
 SMB networking provides a mechanism by which clients can access a list
-of machines in a network, a so-called "browse list".  This list
+of machines in a network, a so-called <command>browse list</command>.  This list
 contains machines that are ready to offer file and/or print services
 to other machines within the network. Thus it does not include
 machines which aren't currently able to do server tasks.  The browse
@@ -26,7 +26,7 @@ document.
 </para>
 
 <para>
-MS Windows 2000 and later, as with Samba-3 and later, can be
+MS Windows 2000 and later, as with Samba 3 and later, can be
 configured to not use NetBIOS over TCP/IP. When configured this way
 it is imperative that name resolution (using DNS/LDAP/ADS) be correctly
 configured and operative. Browsing will NOT work if name resolution
@@ -80,15 +80,16 @@ recommended that you use one and only one Samba server as your WINS server.
 
 <para>
 To get browsing to work you need to run nmbd as usual, but will need
-to use the "workgroup" option in smb.conf to control what workgroup
-Samba becomes a part of.
+to use the <command>workgroup</command> option in <filename>smb.conf</filename>
+to control what workgroup Samba becomes a part of.
 </para>
 
 <para>
 Samba also has a useful option for a Samba server to offer itself for
 browsing on another subnet.  It is recommended that this option is only
 used for 'unusual' purposes: announcements over the internet, for
-example.  See "remote announce" in the smb.conf man page.  
+example.  See <command>remote announce</command> in the 
+<filename>smb.conf</filename> man page.  
 </para>
 </sect1>
 
@@ -99,19 +100,19 @@ example.  See "remote announce" in the smb.conf man page.
 If something doesn't work then hopefully the log.nmb file will help
 you track down the problem.  Try a debug level of 2 or 3 for finding
 problems. Also note that the current browse list usually gets stored
-in text form in a file called browse.dat.
+in text form in a file called <filename>browse.dat</filename>.
 </para>
 
 <para>
 Note that if it doesn't work for you, then you should still be able to
-type the server name as \\SERVER in filemanager then hit enter and
-filemanager should display the list of available shares.
+type the server name as <filename>\\SERVER</filename> in filemanager then
+hit enter and filemanager should display the list of available shares.
 </para>
 
 <para>
 Some people find browsing fails because they don't have the global
-"guest account" set to a valid account.  Remember that the IPC$
-connection that lists the shares is done as guest, and thus you must
+<command>guest account</command> set to a valid account.  Remember that the
+IPC$ connection that lists the shares is done as guest, and thus you must
 have a valid guest account.
 </para>
 
@@ -123,15 +124,6 @@ name of the currently logged in user to query the IPC$ share. MS Windows
 9X clients are not able to do this and thus will NOT be able to browse
 server resources.
 </emphasis></para>
-
-<para>
-Also, a lot of people are getting bitten by the problem of too many
-parameters on the command line of nmbd in inetd.conf.  This trick is to
-not use spaces between the option and the parameter (eg: -d2 instead
-of -d 2), and to not use the -B and -N options.  New versions of nmbd
-are now far more likely to correctly find your broadcast and network
-address, so in most cases these aren't needed.
-</para>
 
 <para>
 The other big problem people have is that their broadcast address,
@@ -436,13 +428,13 @@ least set the parameter to 'no' on all these machines.
 </para>
 
 <para>
-Machines with "<command>wins support = yes</command>" will keep a list of 
+Machines with <command>wins support = yes</command> will keep a list of 
 all NetBIOS names registered with them, acting as a DNS for NetBIOS names.
 </para>
 
 <para>
 You should set up only ONE wins server.  Do NOT set the
-"<command>wins support = yes</command>" option on more than one Samba 
+<command>wins support = yes</command> option on more than one Samba 
 server.
 </para>
 
@@ -455,8 +447,8 @@ refuse to document these replication protocols Samba cannot currently
 participate in these replications.  It is possible in the future that
 a Samba->Samba WINS replication protocol may be defined, in which
 case more than one Samba machine could be set up as a WINS server
-but currently only one Samba server should have the "wins support = yes"
-parameter set.
+but currently only one Samba server should have the 
+<command>wins support = yes</command> parameter set.
 </para>
 
 <para>
@@ -482,8 +474,8 @@ machine or its IP address.
 <para>
 Note that this line MUST NOT BE SET in the smb.conf file of the Samba
 server acting as the WINS server itself.  If you set both the
-"<command>wins support = yes</command>" option and the 
-"<command>wins server = &lt;name&gt;</command>" option then
+<command>wins support = yes</command> option and the 
+<command>wins server = &lt;name&gt;</command> option then
 nmbd will fail to start.
 </para>
 
@@ -572,17 +564,18 @@ master browser.
 </para>
 
 <para>
-The "local master" parameter allows Samba to act as a local master
-browser.  The "preferred master" causes nmbd to force a browser
-election on startup and the "os level" parameter sets Samba high
-enough so that it should win any browser elections.
+The <command>local master</command> parameter allows Samba to act as a
+local master browser.  The <command>preferred master</command> causes nmbd
+to force a browser election on startup and the <command>os level</command>
+parameter sets Samba high enough so that it should win any browser elections.
 </para>
 
 <para>
 If you have an NT machine on the subnet that you wish to
 be the local master browser then you can disable Samba from
 becoming a local master browser by setting the following
-options in the [global] section of the smb.conf file :
+options in the <command>[global]</command> section of the 
+<filename>smb.conf</filename> file :
 </para>
 
 <para>
@@ -605,15 +598,16 @@ you must not set up a Samba server as a domain master browser.
 By default, a Windows NT Primary Domain Controller for a Domain
 name is also the Domain master browser for that name, and many
 things will break if a Samba server registers the Domain master
-browser NetBIOS name (DOMAIN&lt;1B&gt;) with WINS instead of the PDC.
+browser NetBIOS name (<replaceable>DOMAIN</replaceable>&lt;1B&gt;)
+with WINS instead of the PDC.
 </para>
 
 <para>
 For subnets other than the one containing the Windows NT PDC
 you may set up Samba servers as local master browsers as
 described.  To make a Samba server a local master browser set 
-the following options in the [global] section of the smb.conf 
-file :
+the following options in the <command>[global]</command> section 
+of the <filename>smb.conf</filename> file :
 </para>
 
 <para>
@@ -627,10 +621,11 @@ os level = 65
 
 <para>
 If you wish to have a Samba server fight the election with machines
-on the same subnet you may set the "os level" parameter to lower
-levels.  By doing this you can tune the order of machines that
+on the same subnet you may set the <command>os level</command> parameter
+to lower levels.  By doing this you can tune the order of machines that
 will become local master browsers if they are running.  For
-more details on this see the section "FORCING SAMBA TO BE THE MASTER"
+more details on this see the section <link linkend="browse-force-master">
+Forcing samba to be the master browser</link>
 below.
 </para>
 
@@ -639,7 +634,8 @@ If you have Windows NT machines that are members of the domain
 on all subnets, and you are sure they will always be running then
 you can disable Samba from taking part in browser elections and
 ever becoming a local master browser by setting following options 
-in the [global] section of the smb.conf file :
+in the <command>[global]</command> section of the <filename>smb.conf</filename>
+file :
 </para>
 
 <para>
@@ -653,26 +649,26 @@ in the [global] section of the smb.conf file :
 
 </sect1>
 
-<sect1>
+<sect1 id="browse-force-master">
 <title>Forcing samba to be the master</title>
 
 <para>
-Who becomes the "master browser" is determined by an election process
-using broadcasts.  Each election packet contains a number of parameters
+Who becomes the <command>master browser</command> is determined by an election
+process using broadcasts.  Each election packet contains a number of parameters
 which determine what precedence (bias) a host should have in the
 election.  By default Samba uses a very low precedence and thus loses
 elections to just about anyone else.
 </para>
 
 <para>
-If you want Samba to win elections then just set the "os level" global
-option in smb.conf to a higher number.  It defaults to 0.  Using 34
+If you want Samba to win elections then just set the <command>os level</command> global
+option in <filename>smb.conf</filename> to a higher number.  It defaults to 0.  Using 34
 would make it win all elections over every other system (except other
 samba systems!)
 </para>
 
 <para>
-A "os level" of 2 would make it beat WfWg and Win95, but not MS Windows
+A <command>os level</command> of 2 would make it beat WfWg and Win95, but not MS Windows
 NT/2K Server.  A MS Windows NT/2K Server domain controller uses level 32.
 </para>
 
@@ -680,18 +676,18 @@ NT/2K Server.  A MS Windows NT/2K Server domain controller uses level 32.
 
 <para>
 If you want samba to force an election on startup, then set the
-"preferred master" global option in smb.conf to "yes".  Samba will
+<command>preferred master</command> global option in <filename>smb.conf</filename> to "yes".  Samba will
 then have a slight advantage over other potential master browsers
 that are not preferred master browsers.  Use this parameter with
 care, as if you have two hosts (whether they are windows 95 or NT or
-samba) on the same local subnet both set with "preferred master" to
+samba) on the same local subnet both set with <command>preferred master</command> to
 "yes", then periodically and continually they will force an election
 in order to become the local master browser.
 </para>
 
 <para>
-If you want samba to be a "domain master browser", then it is
-recommended that you also set "preferred master" to "yes", because
+If you want samba to be a <command>domain master browser</command>, then it is
+recommended that you also set <command>preferred master</command> to "yes", because
 samba will not become a domain master browser for the whole of your
 LAN or WAN if it is not also a local master browser on its own
 broadcast isolated subnet.
@@ -715,8 +711,8 @@ the current domain master browser fail.
 <para>
 The domain master is responsible for collating the browse lists of
 multiple subnets so that browsing can occur between subnets.  You can
-make samba act as the domain master by setting "domain master = yes"
-in smb.conf.  By default it will not be a domain master.
+make samba act as the domain master by setting <command>domain master = yes</command>
+in <filename>smb.conf</filename>.  By default it will not be a domain master.
 </para>
 
 <para>
@@ -733,8 +729,8 @@ browse lists.
 
 <para>
 If you want samba to be the domain master then I suggest you also set
-the "os level" high enough to make sure it wins elections, and set
-"preferred master" to "yes", to get samba to force an election on
+the <command>os level</command> high enough to make sure it wins elections, and set
+<command>preferred master</command> to "yes", to get samba to force an election on
 startup.
 </para>
 
@@ -804,8 +800,8 @@ that browsing and name lookups won't work.
 
 <para>
 Samba now supports machines with multiple network interfaces.  If you
-have multiple interfaces then you will need to use the "interfaces"
-option in smb.conf to configure them.  See smb.conf(5) for details.
+have multiple interfaces then you will need to use the <command>interfaces</command>
+option in smb.conf to configure them.  See <filename>smb.conf(5)</filename> for details.
 </para>
 </sect1>
 </chapter>

@@ -129,18 +129,18 @@ step will be to issue this command from your favourite shell:
 </para>
 
 <para>
-<screen>
-<prompt>deity#</prompt> <userinput>smbpasswd -a -i rumba</userinput>
+<programlisting>
+	deity# smbpasswd -a -i rumba
 	New SMB password: XXXXXXXX
 	Retype SMB password: XXXXXXXX
 	Added user rumba$
-</screen>
 
-where <parameter>-a</parameter> means to add a new account into the passdb database and <parameter>-i</parameter> means create this account with the Inter-Domain trust flag. 
-</para>
+	where:
+		-a means to add a new account into the passdb database
+		-i means create this account with the Inter-Domain trust flag
 
-<para>
-The account name will be 'rumba$' (the name of the remote domain)
+	The account name will be 'rumba$' (the name ofthe remote domain)
+</programlisting>
 </para>
 
 <para>
@@ -192,13 +192,15 @@ Using your favourite shell while being logged on as root, issue this command:
 </para>
 
 <para>
-<prompt>deity# </prompt><userinput>net rpc trustdom establish rumba</userinput>
+<programlisting>
+	deity#  net rpc trustdom establish rumba
+</programlisting>
 </para>
 
 <para>
 You'll be prompted for password you've just typed on your Windows NT4 Server box.
 Don't worry if you will see the error message with returned code of
-<errorname>NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT</errorname>. It means the
+<filename>NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT</filename>. It means the
 password you gave is correct and the NT4 Server says the account is ready for trusting your domain
 and not for ordinary connection. After that, be patient it can take a while (especially
 in large networks), you should see 'Success' message. Contgratulations! Your trust
@@ -207,7 +209,7 @@ relationship has just been established.
 
 <note><para>
 Note that you have to run this command as root, since you need write access to
-your <filename>secrets.tdb</filename> file.
+your secrets.tdb file.
 </para></note>
 
 </sect2>
