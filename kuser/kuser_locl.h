@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -79,5 +79,16 @@
 #include <parse_time.h>
 #include <err.h>
 #include <krb5.h>
+
+#ifdef KRB4
+#include <krb.h>
+#endif
+#if defined(HAVE_SYS_IOCTL_H) && SunOS != 4
+#include <sys/ioctl.h>
+#endif
+#ifdef HAVE_SYS_IOCCOM_H
+#include <sys/ioccom.h>
+#endif
+#include <kafs.h>
 
 #endif /* __KUSER_LOCL_H__ */
