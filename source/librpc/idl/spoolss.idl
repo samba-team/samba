@@ -214,7 +214,9 @@
 
 	/******************/
 	/* Function: 0x05 */
-	WERROR spoolss_05(
+	WERROR spoolss_AddPrinter(
+		/* This function is not implemented in Samba 3 as no
+		   clients have been observed using it. */
 	);
 
 	/******************/
@@ -242,9 +244,47 @@
 	WERROR spoolss_09(
 	);
 
+	typedef struct {
+		[relative] nstring *driver_name;
+	} spoolss_DriverInfo1;
+
+	typedef struct {
+		uint32 version;
+		[relative] nstring *driver_name;
+		[relative] nstring *architecture;
+		[relative] nstring *driver_path;
+		[relative] nstring *data_file;
+		[relative] nstring *config_file;
+	} spoolss_DriverInfo2;
+
+	typedef struct {
+		uint32 version;
+		[relative] nstring *driver_name;
+		[relative] nstring *architecture;
+		[relative] nstring *driver_path;
+		[relative] nstring *data_file;
+		[relative] nstring *config_file;
+		[relative] nstring *help_file;
+		[relative] nstring *dependent_files; /* array */
+		[relative] nstring *monitor_name;
+		[relative] nstring *default_datatype;
+	} spoolss_DriverInfo3;
+
+	typedef [nodiscriminant,public] union {
+		[case(1)] spoolss_DriverInfo1 info1;
+		[case(2)] spoolss_DriverInfo2 info2;
+		[case(3)] spoolss_DriverInfo3 info3;
+	} spoolss_DriverInfo;
+
 	/******************/
 	/* Function: 0x0a */
-	WERROR spoolss_0a(
+	WERROR spoolss_EnumPrinterDrivers(
+		[in] unistr *server,
+		[in] unistr *environment,
+		[in] uint32 level,
+		[in,out] DATA_BLOB *buffer,
+		[in,out,ref] uint32 *buf_size,
+		[out] uint32 count
 	);
 
 	/******************/
@@ -259,7 +299,11 @@
 
 	/******************/
 	/* Function: 0x0d */
-	WERROR spoolss_0d(
+	WERROR spoolss_DeletePrinterDriver(
+		[in,ref] policy_handle *handle,
+		[in] unistr *server,
+		[in] unistr architecture,
+		[in] unistr driver
 	);
 
 	/******************/
@@ -511,7 +555,16 @@
 
 	/******************/
 	/* Function: 0x35 */
-	WERROR spoolss_35(
+	WERROR spoolss_GetPrinterDriver2(
+		[in,ref] policy_handle *handle,
+		[in] unistr *architecture,
+		[in] uint32 level,
+		[in,out] DATA_BLOB *buffer,
+		[in,out,ref] uint32 *buf_size,
+		[in] uint32 client_major_version,
+		[in] uint32 client_minor_version,
+		[out] uint32 server_major_version,
+		[out] uint32 server_minor_version
 	);
 
 	/******************/
@@ -626,7 +679,14 @@
 
 	/******************/
 	/* Function: 0x46 */
-	WERROR spoolss_46(
+	WERROR spoolss_AddPrinterEx(
+		[in] unistr *server,
+		[in] uint32 level,
+		[in,switch_is(level)] spoolss_PrinterInfo *info,
+		[in] spoolss_DevmodeContainer devmode_ctr,
+		[in] security_descriptor *secdesc,
+		[in] uint32 ulevel,
+		[in,switch_is(ulevel)] spoolss_UserLevel userlevel
 	);
 
 	/******************/
