@@ -651,21 +651,6 @@ struct in_addr wins_srv_ip( void );
 void wins_srv_died( struct in_addr boothill_ip );
 unsigned long wins_srv_count( void );
 
-/*The following definitions come from  libsmb/cli_lsarpc.c  */
-
-struct cli_state *cli_lsa_initialise(struct cli_state *cli, char *system_name,
-				     struct ntuser_creds *creds);
-void cli_lsa_shutdown(struct cli_state *cli);
-uint32 cli_lsa_open_policy(struct cli_state *cli, BOOL sec_qos, 
-			   uint32 des_access, POLICY_HND *hnd);
-uint32 cli_lsa_close(struct cli_state *cli, POLICY_HND *hnd);
-uint32 cli_lsa_lookup_sids(struct cli_state *cli, POLICY_HND *hnd,
-			   int num_sids, DOM_SID *sids, char ***names, 
-			   uint32 **types, int *num_names);
-uint32 cli_lsa_lookup_names(struct cli_state *cli, POLICY_HND *hnd,
-			    int num_names, char **names, DOM_SID **sids,
-			    uint32 **types, int *num_sids);
-
 /*The following definitions come from  libsmb/cliconnect.c  */
 
 BOOL cli_session_setup(struct cli_state *cli, 
