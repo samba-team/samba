@@ -111,7 +111,7 @@ BIN_PROGS1 = bin/smbclient@EXEEXT@ bin/net@EXEEXT@ bin/smbspool@EXEEXT@ \
 BIN_PROGS2 = bin/smbcontrol@EXEEXT@ bin/smbtree@EXEEXT@ bin/tdbbackup@EXEEXT@ \
 	bin/nmblookup@EXEEXT@ bin/pdbedit@EXEEXT@
 BIN_PROGS3 = bin/smbpasswd@EXEEXT@ bin/rpcclient@EXEEXT@ bin/smbcacls@EXEEXT@ \
-	bin/smbgroupedit@EXEEXT@
+	bin/profiles@EXEEXT@ bin/smbgroupedit@EXEEXT@
 
 TORTURE_PROGS = bin/smbtorture@EXEEXT@ bin/msgtest@EXEEXT@ \
 	bin/masktest@EXEEXT@ bin/locktest@EXEEXT@ \
@@ -675,6 +675,10 @@ bin/smbclient@EXEEXT@: $(CLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 bin/net@EXEEXT@: $(NET_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NET_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @BUILD_POPT@
+
+bin/profiles@EXEEXT@: utils/profiles.o bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ utils/profiles.o $(LDFLAGS) $(LIBS)
 
 bin/smbspool@EXEEXT@: $(CUPS_OBJ) bin/.dummy
 	@echo Linking $@
