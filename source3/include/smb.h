@@ -175,6 +175,7 @@ implemented */
 #define ERRbadshare 32 /* Share mode on file conflict with open mode */
 #define ERRlock 33 /* Lock request conflicts with existing lock */
 #define ERRfilexists 80 /* File in operation already exists */
+#define ERRcannotopen 110 /* Cannot open the file specified */
 #define ERRunknownlevel 124
 #define ERRbadpipe 230 /* Named pipe invalid */
 #define ERRpipebusy 231 /* All instances of pipe are busy */
@@ -183,7 +184,7 @@ implemented */
 #define ERRmoredata 234 /* More data to be returned */
 #define ERRbaddirectory 267 /* Invalid directory name in a path. */
 #define ERROR_EAS_DIDNT_FIT 275 /* Extended attributes didn't fit */
-#define ERROR_EAS_NOT_SUPPORTED 282 /* Extended attributes not suppored */
+#define ERROR_EAS_NOT_SUPPORTED 282 /* Extended attributes not supported */
 #define ERRunknownipc 2142
 
 
