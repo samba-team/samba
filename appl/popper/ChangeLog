@@ -1,3 +1,7 @@
+2002-02-07  Johan Danielsson  <joda@pdc.kth.se>
+
+	* pop_debug.c: only claim krb5 support if really present
+
 2001-09-10  Johan Danielsson  <joda@pdc.kth.se>
 
 	* maildir.c: replace MAXDROPLEN with MAXPATHLEN

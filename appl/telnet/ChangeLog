@@ -1,3 +1,8 @@
+2002-02-07  Johan Danielsson  <joda@pdc.kth.se>
+
+	* telnet/telnet.c: print a more informative message than "done"
+	after negotiating encryption
+
 2001-09-17  Assar Westerlund  <assar@sics.se>
 
 	* telnetd/telnetd.c: add a kludge to make it build on aix (that
