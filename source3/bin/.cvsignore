@@ -38,3 +38,5 @@ testprns
 wbinfo
 winbindd
 wrepld
+vfstest
+samtest
