@@ -7,7 +7,7 @@
 #include <popper.h>
 RCSID("$Id$");
 
-#ifdef UIDL
+#if defined(UIDL) || defined(XOVER)
 
 /*
  * Copy the string found after after : into a malloced buffer. Stop
@@ -64,7 +64,7 @@ pop_dropinfo(POP *p)
     int                     nchar;                  /*  Bytes written/read */
     int blank_line = 1; /* previous line was blank */
     int in_header = 0; /* if we are in a header block */
-#ifdef UIDL
+#if defined(UIDL) || defined(XOVER)
     /* msg_idp points to the current Message-Id to be filled in. The
      * pointer is moved every time we find a From line and we fill in
      * msg_id whenever we encounter the corresponding Message-Id or
