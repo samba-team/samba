@@ -463,7 +463,6 @@ static int recycle_unlink(connection_struct *conn, const char *inname)
 	/* extract filename and path */
 	path_name = (char *)malloc(PATH_MAX);
 	ALLOC_CHECK(path_name, done);
-	*path_name = '\0';
 	safe_strcpy(path_name, file_name, PATH_MAX);
 	base = strrchr(path_name, '/');
 	if (base == NULL) {
