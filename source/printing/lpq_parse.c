@@ -938,6 +938,51 @@ static char *stat0_strings[] = { "enabled", "online", "idle", "no entries", "fre
 static char *stat1_strings[] = { "offline", "disabled", "down", "off", "waiting", "no daemon", NULL };
 static char *stat2_strings[] = { "jam", "paper", "error", "responding", "not accepting", "not running", "turned off", NULL };
 
+#ifdef DEVELOPER
+
+/****************************************************************************
+parse a vlp line
+****************************************************************************/
+static BOOL parse_lpq_vlp(char *line,print_queue_struct *buf,BOOL first)
+{
+	int toknum = 0;
+	fstring tok;
+
+	/* First line is printer status */
+
+	if (!isdigit(line[0])) return False;
+
+	/* Parse a print job entry */
+
+	while(next_token(&line, tok, NULL, sizeof(fstring))) {
+		switch (toknum) {
+		case 0:
+			buf->job = atoi(tok);
+			break;
+		case 1:
+			buf->size = atoi(tok);
+			break;
+		case 2:
+			buf->status = atoi(tok);
+			break;
+		case 3:
+			buf->time = atoi(tok);
+			break;
+		case 4:
+			fstrcpy(buf->user, tok);
+			break;
+		case 5:
+			fstrcpy(buf->file, tok);
+			break;
+		}
+		toknum++;
+	}
+
+	return True;
+}
+
+#endif /* DEVELOPER */
+
 /****************************************************************************
 parse a lpq line. Choose printing style
 ****************************************************************************/
@@ -976,6 +1021,12 @@ BOOL parse_lpq_entry(int snum,char *line,
     case PRINT_LPROS2:
       ret = parse_lpq_os2(line,buf,first);
       break;
+#ifdef DEVELOPER
+    case PRINT_VLP:
+    case PRINT_TEST:
+	    ret = parse_lpq_vlp(line,buf,first);
+	    break;
+#endif /* DEVELOPER */
     default:
       ret = parse_lpq_bsd(line,buf,first);
       break;

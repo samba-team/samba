@@ -1,4 +1,4 @@
 #!/bin/sh
-CFLAGS="-g -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -DDEBUG_PASSWORD"
+CFLAGS="-g -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -DDEVELOPER"
 export CFLAGS
 ./configure $*
