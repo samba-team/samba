@@ -1,3 +1,8 @@
+2000-11-09  Johan Danielsson  <joda@pdc.kth.se>
+
+	* get.c: don't try to print modifier name if it isn't set (from
+	Jacques A. Vidrine" <n@nectar.com>)
+
 2000-09-19  Assar Westerlund  <assar@sics.se>
 
 	* server.c (kadmind_loop): send in keytab to v4 handling function
