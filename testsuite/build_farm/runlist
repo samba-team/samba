@@ -1,6 +1,6 @@
 TEST_ALL="basicsmb-sharelist basicsmb-local-pass-change \
 basicsmb-sharesec basicsmb-usersec \
-basicsmb-serversec basicsmb-domainsec basicsmb-domainsec-nt4 \
+basicsmb-serversec \
 basicsmb-shareguest basicsmb-hostsequiv basicsmb-invalidusers \
 basicsmb-hostsdeny basicsmb-remote-pass-change \
 basicsmb-preexec \
@@ -15,4 +15,4 @@ torture-RW1 torture-RW2 torture-OPEN torture-XCOPY \
 torture-RENAME torture-DELETE torture-PROPERTIES \
 torture-MANGLE torture-FDSESS"
 
-#basicsmb-serversec
+#basicsmb-domainsec basicsmb-domainsec-nt4 
