@@ -86,7 +86,7 @@ size_t smb_iconv(smb_iconv_t cd,
 	/* in many cases we can go direct */
 	if (cd->direct) {
 		return cd->direct(cd->cd_direct, 
-				  inbuf, inbytesleft, outbuf, outbytesleft);
+				  (char **)inbuf, inbytesleft, outbuf, outbytesleft);
 	}
 
 
@@ -96,7 +96,7 @@ size_t smb_iconv(smb_iconv_t cd,
 		bufsize = sizeof(cvtbuf);
 		
 		if (cd->pull(cd->cd_pull, 
-			     inbuf, inbytesleft, &bufp, &bufsize) == -1
+			     (char **)inbuf, inbytesleft, &bufp, &bufsize) == -1
 		    && errno != E2BIG) return -1;
 
 		bufp = cvtbuf;

@@ -1568,7 +1568,6 @@ void mangle_name_83(char *s)
 {
 	smb_ucs2_t *u2, *res;
 	size_t slen, u2len;
-	BOOL ret = False;
 
 	DEBUG(10,("mangle_name_83: I'm so ugly, please remove me!\n"));
 	DEBUG(10,("mangle_name_83: testing -> [%s]\n", s));

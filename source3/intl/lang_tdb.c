@@ -122,7 +122,7 @@ BOOL lang_tdb_init(const char *lang)
 	/* if no lang then we don't translate */
 	if (!lang) return True;
 
-	asprintf(&msg_path, "%s.msg", lib_path(lang));
+	asprintf(&msg_path, "%s.msg", lib_path((char *)lang));
 	if (stat(msg_path, &st) != 0) {
 		/* the msg file isn't available */
 		free(msg_path);
@@ -202,7 +202,7 @@ const char *lang_msg_rotate(const char *msgid)
 	static pstring bufs[NUM_LANG_BUFS];
 	static int next;
 
-	msgstr = lang_msg(msgid);
+	msgstr = (char *)lang_msg(msgid);
 	if (!msgstr) return msgid;
 
 	pstrcpy(bufs[next], msgstr);
