@@ -23,7 +23,7 @@
 
 #define MAX_INTERFACES 128
 
-static struct iface_struct probed_ifaces[MAX_INTERFACES];
+static struct iface_struct *probed_ifaces;
 static int total_probed;
 
 extern int DEBUGLEVEL;
@@ -160,26 +160,44 @@ static void interpret_interface(char *token)
 
 
 /****************************************************************************
-load a list of network interfaces
+load the list of network interfaces
 ****************************************************************************/
-static void interpret_interfaces(char *s, struct interface **interfaces,
-				 char *description)
+void load_interfaces(void)
 {
 	char *ptr;
 	fstring token;
 	int i;
+	struct iface_struct ifaces[MAX_INTERFACES];
 
-	ptr = s;
+	ptr = lp_interfaces();
+
 	ipzero = *interpret_addr2("0.0.0.0");
 	allones_ip = *interpret_addr2("255.255.255.255");
 	loopback_ip = *interpret_addr2("127.0.0.1");
 
+	if (probed_ifaces) {
+		free(probed_ifaces);
+		probed_ifaces = NULL;
+	}
+
+	/* dump the current interfaces if any */
+	while (local_interfaces) {
+		struct interface *iface = local_interfaces;
+		DLIST_REMOVE(local_interfaces, local_interfaces);
+		ZERO_STRUCTPN(iface);
+		free(iface);
+	}
+
 	/* probe the kernel for interfaces */
-	total_probed = get_interfaces(probed_ifaces, MAX_INTERFACES);
+	total_probed = get_interfaces(ifaces, MAX_INTERFACES);
+
+	if (total_probed > 0) {
+		probed_ifaces = memdup(ifaces, sizeof(ifaces[0])*total_probed);
+	}
 
 	/* if we don't have a interfaces line then use all broadcast capable 
 	   interfaces except loopback */
-	if (!s || !*s) {
+	if (!ptr || !*ptr) {
 		if (total_probed <= 0) {
 			DEBUG(0,("ERROR: Could not determine network interfaces, you must use a interfaces config line\n"));
 			exit(1);
@@ -205,12 +223,21 @@ static void interpret_interfaces(char *s, struct interface **interfaces,
 
 
 /****************************************************************************
-load the remote and local interfaces
+return True if the list of probed interfaces has changed
 ****************************************************************************/
-void load_interfaces(void)
+BOOL interfaces_changed(void)
 {
-	/* add the machine's interfaces to local interface structure*/
-	interpret_interfaces(lp_interfaces(), &local_interfaces,"interface");
+	int n;
+	struct iface_struct ifaces[MAX_INTERFACES];
+
+	n = get_interfaces(ifaces, MAX_INTERFACES);
+
+	if (n != total_probed ||
+	    memcmp(ifaces, probed_ifaces, sizeof(ifaces[0])*n)) {
+		return True;
+	}
+	
+	return False;
 }
 
 
