@@ -226,7 +226,7 @@ char *strerror(int eno);
 #if !defined(HAVE_HSTRERROR) || defined(NEED_HSTRERROR_PROTO)
 /* This causes a fatal error under Psoriasis */
 #if !(defined(SunOS) && (SunOS >= 5))
-char *hstrerror(int herr);
+const char *hstrerror(int herr);
 #endif
 #endif
 
@@ -279,6 +279,10 @@ int chown(const char *path, uid_t owner, gid_t group);
 #ifndef HAVE_RCMD
 int rcmd(char **ahost, unsigned short inport, const char *locuser,
 	 const char *remuser, const char *cmd, int *fd2p);
+#endif
+
+#if !defined(HAVE_INNETGR) || defined(NEED_INNETGR_PROTO)
+int innetgr(const char*, const char*, const char*, const char*);
 #endif
 
 #ifndef HAVE_IRUSEROK
