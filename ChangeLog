@@ -1,8 +1,6 @@
-Fri May 14 23:09:42 1999  Assar Westerlund  <assar@juguete.sics.se>
+1999-05-14  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.1g
-
-1999-05-14  Assar Westerlund  <assar@sics.se>
 
 	* admin/ktutil.c (kt_remove): -t should be -e
 
