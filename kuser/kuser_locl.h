@@ -13,6 +13,7 @@
 #include <pwd.h>
 #include <sys/types.h>
 #include <sys/time.h>
+#include <roken.h>
 #include <krb5.h>
 
 #endif /* __KUSER_LOCL_H__ */
