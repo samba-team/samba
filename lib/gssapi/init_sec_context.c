@@ -872,6 +872,21 @@ spnego_initial
     ni.mechListMIC = NULL;
 
 
+#if 0
+    {
+	int ret;
+	NegotiationToken nt;
+
+	nt.element = choice_NegotiationToken_negTokenInit;
+	nt.u.negTokenInit = ni;
+
+	ASN1_MALLOC_ENCODE(NegotiationToken, buf, buf_size,
+			   &nt, &buf_len, ret);
+
+	data.data   = buf;
+	data.length = buf_len;
+    }
+#else
     buf_size = 1024;
     buf = malloc(buf_size);
     if (buf == NULL) {
@@ -921,6 +936,12 @@ spnego_initial
 
     data.data   = buf + buf_size - buf_len;
     data.length = buf_len;
+#endif
+    if (mech_token.length != 0)
+	gss_release_buffer(&minor, &mech_token);
+    free_NegTokenInit(&ni);
+    if (ret)
+	return ret;
 
     sub = _gssapi_encapsulate(minor_status,
 			      &data,
