@@ -608,7 +608,7 @@ BOOL net_io_r_srv_pwset(char *desc, NET_R_SRV_PWSET *r_s, prs_struct *ps, int de
  Init DOM_SID2 array from a string containing multiple sids
  *************************************************************************/
 
-static int init_dom_sid2s(char *sids_str, DOM_SID2 *sids, int max_sids)
+static int init_dom_sid2s(char *sids_str, DOM_SID2 **ppsids)
 {
 	char *ptr;
 	pstring s2;
@@ -616,12 +616,29 @@ static int init_dom_sid2s(char *sids_str, DOM_SID2 *sids, int max_sids)
 
 	DEBUG(4,("init_dom_sid2s: %s\n", sids_str ? sids_str:""));
 
+	*ppsids = NULL;
+
 	if(sids_str) {
+		int number;
+		DOM_SID2 *sids;
+
+		/* Count the number of SIDs. */
 		for (count = 0, ptr = sids_str; 
-	   	  next_token(&ptr, s2, NULL, sizeof(s2)) && count < max_sids; count++) {
+	   	  next_token(&ptr, s2, NULL, sizeof(s2)); count++)
+			;
+
+		/* Now allocate space for them. */
+		*ppsids = (DOM_SID2 *)malloc(count * sizeof(DOM_SID2));
+		if (*ppsids == NULL)
+			return 0;
+
+		sids = *ppsids;
+
+		for (number = 0, ptr = sids_str; 
+	   	  next_token(&ptr, s2, NULL, sizeof(s2)); number++) {
 			DOM_SID tmpsid;
 			string_to_sid(&tmpsid, s2);
-			init_dom_sid2(&sids[count], &tmpsid);
+			init_dom_sid2(&sids[number], &tmpsid);
 		}
 	}
 
@@ -1056,7 +1073,7 @@ void init_net_user_info3(NET_USER_INFO_3 *usr,
 
 	memset((char *)usr->padding, '\0', sizeof(usr->padding));
 
-	num_other_sids = init_dom_sid2s(other_sids, usr->other_sids, LSA_MAX_SIDS);
+	num_other_sids = init_dom_sid2s(other_sids, &usr->other_sids);
 
 	usr->num_other_sids = num_other_sids;
 	usr->buffer_other_sids = (num_other_sids != 0) ? 1 : 0; 
@@ -1070,8 +1087,7 @@ void init_net_user_info3(NET_USER_INFO_3 *usr,
 
 	usr->num_groups2 = num_groups;
 
-	if (num_groups > 0)
-	{
+	if (num_groups > 0) {
 		usr->gids = (DOM_GID *)malloc(sizeof(DOM_GID) * num_groups);
 		if (usr->gids == NULL)
 			return;
@@ -1086,6 +1102,15 @@ void init_net_user_info3(NET_USER_INFO_3 *usr,
 	/* "other" sids are set up above */
 }
 
+/*******************************************************************
+ Delete any memory allocated by init_user_info_3...
+********************************************************************/
+
+void free_user_info3(NET_USER_INFO_3 *usr)
+{
+	safe_free(usr->gids);
+	safe_free(usr->other_sids);
+}
 
 /*******************************************************************
  Reads or writes a structure.
@@ -1188,9 +1213,8 @@ static BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 *usr, prs_struct *ps, 
 	if(!prs_uint32("num_groups2   ", ps, depth, &usr->num_groups2))        /* num groups */
 		return False;
 
-	if (UNMARSHALLING(ps) && usr->num_groups2 > 0)
-	{
-		usr->gids = (DOM_GID *)malloc(sizeof(DOM_GID)*usr->num_groups2);
+	if (UNMARSHALLING(ps) && usr->num_groups2 > 0) {
+		usr->gids = (DOM_GID *)prs_alloc_mem(ps, sizeof(DOM_GID)*usr->num_groups2);
 		if (usr->gids == NULL)
 			return False;
 	}
@@ -1208,11 +1232,31 @@ static BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 *usr, prs_struct *ps, 
 	if(!smb_io_dom_sid2("", &usr->dom_sid, ps, depth))           /* domain SID */
 		return False;
 
-	SMB_ASSERT_ARRAY(usr->other_sids, usr->num_other_sids);
+	if (usr->num_other_sids) {
 
-	for (i = 0; i < usr->num_other_sids; i++) {
-		if(!smb_io_dom_sid2("", &usr->other_sids[i], ps, depth)) /* other domain SIDs */
+		if (UNMARSHALLING(ps)) {
+			usr->other_sids = (DOM_SID2 *)prs_alloc_mem(ps, sizeof(DOM_SID2)*usr->num_other_sids);
+			if (usr->other_sids == NULL)
+				return False;
+		}
+	
+		if(!prs_uint32("num_other_groups", ps, depth, &usr->num_other_groups))
 			return False;
+
+		if (UNMARSHALLING(ps)) {
+			usr->other_gids = (DOM_GID *)prs_alloc_mem(ps, sizeof(DOM_GID)*usr->num_other_groups);
+			if (usr->other_gids == NULL)
+				return False;
+		}
+	
+		for (i = 0; i < usr->num_other_groups; i++) {
+			if(!smb_io_gid("", &usr->other_gids[i], ps, depth)) /* other GIDs */
+				return False;
+		}
+		for (i = 0; i < usr->num_other_sids; i++) {
+			if(!smb_io_dom_sid2("", &usr->other_sids[i], ps, depth)) /* other domain SIDs */
+				return False;
+		}
 	}
 
 	return True;

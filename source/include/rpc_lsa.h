@@ -52,7 +52,7 @@ enum SID_NAME_USE
 #define LSA_LOOKUPRIDS      0xFD
 
 #define LSA_MAX_GROUPS 96
-#define LSA_MAX_SIDS 32
+#define LSA_MAX_SIDS 128
 
 /* DOM_QUERY - info class 3 and 5 LSA Query response */
 typedef struct dom_query_info
