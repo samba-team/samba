@@ -26,7 +26,7 @@
 typedef struct canon_ace {
 	struct canon_ace *next, *prev;
 	SMB_ACL_TAG_T type;
-	SMB_ACL_PERM_T perms;
+	SMB_ACL_PERMSET_T perms;
 	DOM_SID sid;
 } canon_ace;
 
@@ -309,9 +309,9 @@ static BOOL unpack_nt_permissions(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *p
  Map generic UNIX permissions to POSIX ACL perms.
 ****************************************************************************/
 
-static SMB_ACL_PERM_T unix_perms_to_acl_perms(mode_t mode, int r_mask, int w_mask, int x_mask)
+static SMB_ACL_PERMSET_T unix_perms_to_acl_perms(mode_t mode, int r_mask, int w_mask, int x_mask)
 {
-	acl_perm_t ret = 0;
+	SMB_ACL_PERMSET_T  ret = 0;
 
 	ret |= (mode & r_mask) ? SMB_ACL_READ : 0;
 	ret |= (mode & w_mask) ? SMB_ACL_WRITE : 0;
@@ -360,6 +360,9 @@ static canon_ace *unix_canonicalise_acl(files_struct *fsp, SMB_STRUCT_STAT *psbu
 	canon_ace *owner_ace = NULL;
 	canon_ace *group_ace = NULL;
 	canon_ace *other_ace = NULL;
+	SMB_ACL_TAG_T type;
+	SMB_ACL_PERMSET_T perms;
+	DOM_SID sid;
 
 	/*
 	 * Create 3 linked list entries.
@@ -377,10 +380,6 @@ static canon_ace *unix_canonicalise_acl(files_struct *fsp, SMB_STRUCT_STAT *psbu
 	ZERO_STRUCTP(owner_ace);
 	ZERO_STRUCTP(group_ace);
 	ZERO_STRUCTP(other_ace);
-
-	acl_tag_t type;
-	acl_perm_t perms;
-	DOM_SID sid;
 
 	owner_ace->type = SMB_ACL_USER_OBJ;
 	owner_ace->sid = *powner;
@@ -423,10 +422,10 @@ static canon_ace *unix_canonicalise_acl(files_struct *fsp, SMB_STRUCT_STAT *psbu
  entries are at the front of the list, as NT requires.
 ****************************************************************************/
 
-static canon_ace *canonicalise_acl( acl_t posix_acl, SMB_STRUCT_STAT *psbuf)
+static canon_ace *canonicalise_acl( SMB_ACL_T posix_acl, SMB_STRUCT_STAT *psbuf)
 {
 	extern DOM_SID global_sid_World;
-	SMB_ACL_PERMSET_T acl_mask = (ACL_READ|ACL_WRITE|ACL_EXECUTE);
+	SMB_ACL_PERMSET_T acl_mask = (SMB_ACL_READ|SMB_ACL_WRITE|SMB_ACL_EXECUTE);
 	canon_ace *list_head = NULL;
 	canon_ace *ace = NULL;
 	canon_ace *next_ace = NULL;
@@ -443,10 +442,10 @@ static canon_ace *canonicalise_acl( acl_t posix_acl, SMB_STRUCT_STAT *psbuf)
 			entry_id = SMB_ACL_NEXT_ENTRY;
 
 		/* Is this a MASK entry ? */
-		if (acl_get_tag_type(entry, &tagtype) == -1)
+		if (sys_acl_get_tag_type(entry, &tagtype) == -1)
 			continue;
 
-		if (acl_get_permset(entry, &permset) == -1)
+		if (sys_acl_get_permset(entry, &permset) == -1)
 			continue;
 
 		/* Decide which SID to use based on the ACL type. */
