@@ -172,12 +172,8 @@ NTSTATUS gid_to_sid(DOM_SID *sid, gid_t gid)
 	if (NT_STATUS_IS_ERR(ret = idmap_get_sid_from_id(sid, id, flags))) {
 		DEBUG(10, ("gid_to_sid: Failed to map sid = [%s]\n", sid_string_static(sid)));
 		if (flags & ID_NOMAP) {
-			if (pdb_getgrgid(&map, gid, MAPPING_WITHOUT_PRIV)) {
-				sid_copy(sid, &map.sid);
-			} else {
-				sid_copy(sid, get_global_sam_sid());
-				sid_append_rid(sid, pdb_gid_to_group_rid(gid));
-			}
+			sid_copy(sid, get_global_sam_sid());
+			sid_append_rid(sid, pdb_gid_to_group_rid(gid));
 
 			DEBUG(10,("gid_to_sid: Fall back to algorithmic mapping: %u -> %s\n", (unsigned int)gid, sid_string_static(sid)));
 			ret = NT_STATUS_OK;
@@ -274,25 +270,13 @@ NTSTATUS sid_to_gid(const DOM_SID *sid, gid_t *gid)
 
 		DEBUG(10,("sid_to_gid: Fall back to algorithmic mapping\n"));
 
-		/* the group mapping code should register mappings in idmap
-		 * and have the following if() eliminated */
-		if (pdb_getgrsid(&map, *sid, MAPPING_WITHOUT_PRIV)) {
-			/* the SID is in the mapping table but not mapped */
-			if (map.gid==(gid_t)-1) {
-				ret = NT_STATUS_UNSUCCESSFUL;
-			} else {
-				*gid = map.gid;
-				ret = NT_STATUS_OK;
-			}
+		if (fallback_pdb_rid_is_user(rid)) {
+			DEBUG(3, ("sid_to_gid: SID %s is *NOT* a group\n", sid_string_static(sid)));
+			ret = NT_STATUS_UNSUCCESSFUL;
 		} else {
-			if (fallback_pdb_rid_is_user(rid)) {
-				DEBUG(3, ("sid_to_gid: SID %s is *NOT* a group\n", sid_string_static(sid)));
-				ret = NT_STATUS_UNSUCCESSFUL;
-			} else {
-				*gid = pdb_group_rid_to_gid(rid);
-				DEBUG(10,("sid_to_gid: mapping: %s -> %u\n", sid_string_static(sid), (unsigned int)(*gid)));
-				ret = NT_STATUS_OK;
-			}
+			*gid = pdb_group_rid_to_gid(rid);
+			DEBUG(10,("sid_to_gid: mapping: %s -> %u\n", sid_string_static(sid), (unsigned int)(*gid)));
+			ret = NT_STATUS_OK;
 		}
 	}
 
@@ -305,6 +289,8 @@ BOOL idmap_init_wellknown_sids(void)
 {
 	const char *guest_account = lp_guestaccount();
 	struct passwd *pass;
+	GROUP_MAP *map=NULL;
+	int num_entries=0;
 	DOM_SID sid;
 	unid_t id;
 	int flags;
@@ -326,6 +312,16 @@ BOOL idmap_init_wellknown_sids(void)
 	if (NT_STATUS_IS_ERR(idmap_set_mapping(&sid, id, flags))) {
 		passwd_free(&pass);
 		return False;
+	}
+
+	/* now fill in group mappings */
+	if(pdb_enum_group_mapping(SID_NAME_UNKNOWN, &map, &num_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV)) {
+		int i;
+
+		for (i = 0; i < num_entries; i++) {
+			id.gid = map[i].gid;
+			idmap_set_mapping(&(map[i].sid), id, ID_GROUPID);
+		}
 	}
 
 	/* check if DOMAIN_GROUP_RID_GUESTS SID is set, if not store the
