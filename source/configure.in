@@ -299,9 +299,26 @@ if test "$ac_cv_prog_gnu_ld" = "yes"; then
 	ac_cv_gnu_ld_date=`echo $ac_cv_gnu_ld_version | sed -n 's,^.*\([2-9][0-9][0-9][0-9]\)[-]*\([01][0-9]\)[-]*\([0-3][0-9]\).*$,\1\2\3,p'`
 	changequote([,])dnl
 	AC_MSG_RESULT(${ac_cv_gnu_ld_date})
+        if test -n "$ac_cv_gnu_ld_date"; then
  	if test "$ac_cv_gnu_ld_date" -lt 20030217; then
  		ac_cv_gnu_ld_no_default_allow_shlib_undefined=yes
  	fi
+        else
+           AC_MSG_CHECKING(GNU ld release version)
+           changequote(,)dnl
+           ac_cv_gnu_ld_vernr=`echo $ac_cv_gnu_ld_version | sed -n 's,^.*\([1-9][0-9]*\.[0-9][0-9]*\).*$,\1,p'`
+           ac_cv_gnu_ld_vernr_major=`echo $ac_cv_gnu_ld_vernr | cut -d '.' -f 1`
+           ac_cv_gnu_ld_vernr_minor=`echo $ac_cv_gnu_ld_vernr | cut -d '.' -f 2`
+           changequote([,])dnl
+           AC_MSG_RESULT(${ac_cv_gnu_ld_vernr})
+           AC_MSG_CHECKING(GNU ld release version major)
+           AC_MSG_RESULT(${ac_cv_gnu_ld_vernr_major})
+           AC_MSG_CHECKING(GNU ld release version minor)
+           AC_MSG_RESULT(${ac_cv_gnu_ld_vernr_minor})
+           if test "$ac_cv_gnu_ld_vernr_major" -lt 2 || test "$ac_cv_gnu_ld_vernr_minor" -lt 14; then
+             ac_cv_gnu_ld_no_default_allow_shlib_undefined=yes
+           fi
+        fi
 fi
 
 dnl needed before AC_TRY_COMPILE
@@ -430,7 +447,6 @@ case "$host_os" in
 				AC_DEFINE(_MAX_ALIGNMENT, 4, [Maximum alignment])
 				;;
       esac
-      DYNEXP="-Wl,-E"
       ;;
 
 #
@@ -462,7 +478,7 @@ case "$host_os" in
 	*solaris*)
 		AC_DEFINE(SYSV, 1, [Whether to enable System V compatibility])
 		case `uname -r` in
-			5.0*|5.1*|5.2*|5.3*|5.5*)
+			5.0|5.0.*|5.1|5.1.*|5.2|5.2.*|5.3|5.3.*|5.5|5.5.*)
 	  			AC_MSG_RESULT([no large file support])
 				;;
 			5.*)
@@ -473,17 +489,20 @@ case "$host_os" in
 				rm -fr conftest.c
 				case "$ac_cv_gcc_compiler_version_number" in
 					*"gcc version 2.6"*|*"gcc version 2.7"*)
-						CPPFLAGS="$CPPFLAGS -D_LARGEFILE64_SOURCE"
+						CPPFLAGS="$CPPFLAGS -D_LARGEFILE64_SOURCE -D_REENTRANT"
+						LDFLAGS="$LDFLAGS -lthread"
 						AC_DEFINE(_LARGEFILE64_SOURCE, 1, [Whether to enable large file support])
 						;;
 					*)
-						CPPFLAGS="$CPPFLAGS -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
+						CPPFLAGS="$CPPFLAGS -D_LARGEFILE_SOURCE -D_REENTRANT -D_FILE_OFFSET_BITS=64"
+						LDFLAGS="$LDFLAGS -lthread"
 						AC_DEFINE(_LARGEFILE64_SOURCE, 1, [Whether to enable large file support])
 						AC_DEFINE(_FILE_OFFSET_BITS, 64, [File offset bits])
 						;;
 				esac
 			else
-				CPPFLAGS="$CPPFLAGS -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
+				CPPFLAGS="$CPPFLAGS -D_LARGEFILE_SOURCE -D_REENTRANT -D_FILE_OFFSET_BITS=64"
+				LDFLAGS="$LDFLAGS -lthread"
 				AC_DEFINE(_LARGEFILE64_SOURCE, 1, [Whether to enable large file support])
 				AC_DEFINE(_FILE_OFFSET_BITS, 64, [File offset bits])
 			fi
@@ -653,13 +672,13 @@ AC_HEADER_DIRENT
 AC_HEADER_TIME
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(arpa/inet.h sys/fcntl.h sys/select.h fcntl.h sys/time.h sys/unistd.h)
-AC_CHECK_HEADERS(unistd.h utime.h grp.h sys/id.h limits.h memory.h net/if.h)
+AC_CHECK_HEADERS(unistd.h utime.h grp.h sys/id.h limits.h memory.h)
 AC_CHECK_HEADERS(rpc/rpc.h rpcsvc/nis.h rpcsvc/yp_prot.h rpcsvc/ypclnt.h)
 AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/ipc.h sys/mode.h)
 AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h sys/socket.h)
 AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)
 AC_CHECK_HEADERS(sys/termio.h sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h sys/sockio.h)
-AC_CHECK_HEADERS(sys/sysmacros.h security/pam_modules.h security/_pam_macros.h dlfcn.h)
+AC_CHECK_HEADERS(sys/sysmacros.h security/_pam_macros.h dlfcn.h)
 AC_CHECK_HEADERS(sys/syslog.h syslog.h execinfo.h)
 AC_CHECK_HEADERS(langinfo.h locale.h)
 
@@ -686,11 +705,13 @@ case "$host_os" in
 		fi
 	;;
 esac
-AC_CHECK_HEADERS(shadow.h netinet/ip.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
-AC_CHECK_HEADERS(nss.h nss_common.h nsswitch.h ns_api.h sys/security.h security/pam_appl.h security/pam_modules.h)
+AC_CHECK_HEADERS(shadow.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
+AC_CHECK_HEADERS(nss.h nss_common.h nsswitch.h ns_api.h sys/security.h security/pam_appl.h)
 AC_CHECK_HEADERS(stropts.h poll.h)
 AC_CHECK_HEADERS(sys/capability.h syscall.h sys/syscall.h)
 AC_CHECK_HEADERS(sys/acl.h sys/attributes.h attr/xattr.h sys/xattr.h sys/cdefs.h glob.h)
+# These faile to compile on Solaris so just check for their presence
+AC_CHECK_HEADERS(security/pam_modules.h net/if.h netinet/ip.h, [], [], -)
 
 # For experimental utmp support (lastlog on some BSD-like systems)
 AC_CHECK_HEADERS(utmp.h utmpx.h lastlog.h)
@@ -1225,7 +1246,6 @@ if test "$enable_shared" = "yes"; then
 			if test "${GCC}" != "yes"; then
 				## for funky AIX compiler using strncpy()
 				CFLAGS="$CFLAGS -D_LINUX_SOURCE_COMPAT -qmaxmem=32000"
-				PICSUFFIX="po.o"
 			fi
 
 			AC_DEFINE(STAT_ST_BLOCKSIZE,DEV_BSIZE,[The size of a block])

@@ -3,7 +3,7 @@
    Password and authentication handling
    Copyright (C) Andrew Bartlett			2002
    Copyright (C) Jelmer Vernooij			2002
-   Copyright (C) SImo Sorce				2003
+   Copyright (C) Simo Sorce				2003
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -233,12 +233,25 @@ static NTSTATUS context_getsampwsid(struct pdb_context *context, SAM_ACCOUNT *sa
 static NTSTATUS context_add_sam_account(struct pdb_context *context, SAM_ACCOUNT *sam_acct)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	const char *lm_pw, *nt_pw;
+	uint16 acb_flags;
 
 	if ((!context) || (!context->pdb_methods)) {
 		DEBUG(0, ("invalid pdb_context specified!\n"));
 		return ret;
 	}
 
+	/* disable acccounts with no passwords (that has not 
+	   been allowed by the  ACB_PWNOTREQ bit */
+	
+	lm_pw = pdb_get_lanman_passwd( sam_acct );
+	nt_pw = pdb_get_nt_passwd( sam_acct );
+	acb_flags = pdb_get_acct_ctrl( sam_acct );
+	if ( !lm_pw && !nt_pw && !(acb_flags&ACB_PWNOTREQ) ) {
+		acb_flags |= ACB_DISABLED;
+		pdb_set_acct_ctrl( sam_acct, acb_flags, PDB_CHANGED );
+	}
+	
 	/** @todo  This is where a 're-read on add' should be done */
 	/* We now add a new account to the first database listed. 
 	 * Should we? */
@@ -249,6 +262,8 @@ static NTSTATUS context_add_sam_account(struct pdb_context *context, SAM_ACCOUNT
 static NTSTATUS context_update_sam_account(struct pdb_context *context, SAM_ACCOUNT *sam_acct)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	const char *lm_pw, *nt_pw;
+	uint16 acb_flags;
 
 	if (!context) {
 		DEBUG(0, ("invalid pdb_context specified!\n"));
@@ -260,6 +275,17 @@ static NTSTATUS context_update_sam_account(struct pdb_context *context, SAM_ACCO
 		return ret;
 	}
 
+	/* disable acccounts with no passwords (that has not 
+	   been allowed by the  ACB_PWNOTREQ bit */
+	
+	lm_pw = pdb_get_lanman_passwd( sam_acct );
+	nt_pw = pdb_get_nt_passwd( sam_acct );
+	acb_flags = pdb_get_acct_ctrl( sam_acct );
+	if ( !lm_pw && !nt_pw && !(acb_flags&ACB_PWNOTREQ) ) {
+		acb_flags |= ACB_DISABLED;
+		pdb_set_acct_ctrl( sam_acct, acb_flags, PDB_CHANGED );
+	}
+	
 	/** @todo  This is where a 're-read on update' should be done */
 
 	return sam_acct->methods->update_sam_account(sam_acct->methods, sam_acct);
@@ -1156,10 +1182,7 @@ static struct pdb_context *pdb_get_static_context(BOOL reload)
 }
 
 /******************************************************************
- Wrapper functions for context-based passdb interface (help to avoid
- creating pdb_context every time).
- Partly, a backward compatibility functions for the original passdb
- interface.
+ Backward compatibility functions for the original passdb interface
 *******************************************************************/
 
 BOOL pdb_setsampwent(BOOL update) 
@@ -1236,46 +1259,20 @@ BOOL pdb_getsampwsid(SAM_ACCOUNT *sam_acct, const DOM_SID *sid)
 BOOL pdb_add_sam_account(SAM_ACCOUNT *sam_acct) 
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
-	const char *lm_pw, *nt_pw;
-	uint16 acb_flags;
 
 	if (!pdb_context) {
 		return False;
 	}
 	
-	/* disable acccounts with no passwords (that has not 
-	   been allowed by the  ACB_PWNOTREQ bit */
-
-	lm_pw = pdb_get_lanman_passwd( sam_acct );
-	nt_pw = pdb_get_nt_passwd( sam_acct );
-	acb_flags = pdb_get_acct_ctrl( sam_acct );
-	if ( !lm_pw && !nt_pw && !(acb_flags&ACB_PWNOTREQ) ) {
-		acb_flags |= ACB_DISABLED;
-		pdb_set_acct_ctrl( sam_acct, acb_flags, PDB_CHANGED );
-	}
-
 	return NT_STATUS_IS_OK(pdb_context->pdb_add_sam_account(pdb_context, sam_acct));
 }
 
 BOOL pdb_update_sam_account(SAM_ACCOUNT *sam_acct) 
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
-	const char *lm_pw, *nt_pw;
-	uint16 acb_flags;
 
 	if (!pdb_context) {
 		return False;
-	}
-
-	/* disable acccounts with no passwords (that has not 
-	   been allowed by the  ACB_PWNOTREQ bit */
-	
-	lm_pw = pdb_get_lanman_passwd( sam_acct );
-	nt_pw = pdb_get_nt_passwd( sam_acct );
-	acb_flags = pdb_get_acct_ctrl( sam_acct );
-	if ( !lm_pw && !nt_pw && !(acb_flags&ACB_PWNOTREQ) ) {
-		acb_flags |= ACB_DISABLED;
-		pdb_set_acct_ctrl( sam_acct, acb_flags, PDB_CHANGED );
 	}
 
 	if (sam_account_cache != NULL) {
