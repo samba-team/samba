@@ -36,7 +36,6 @@
 */
 
 #include "includes.h"
-extern int DEBUGLEVEL;
 uint16 global_smbpid;
 
 /* the locking database handle */
@@ -362,10 +361,6 @@ static TDB_DATA locking_key_fsp(files_struct *fsp)
 	return locking_key(fsp->dev, fsp->inode);
 }
 
-#ifndef LOCK_SHARE_ENTRY_SPIN_COUNT
-#define LOCK_SHARE_ENTRY_SPIN_COUNT 100
-#endif
-
 /*******************************************************************
  Lock a hash bucket entry.
 ******************************************************************/
@@ -449,6 +444,9 @@ static void fill_share_mode(char *p, files_struct *fsp, uint16 port, uint16 op_t
 	e->op_port = port;
 	e->op_type = op_type;
 	memcpy(x, &fsp->open_time, sizeof(struct timeval));
+	e->share_file_id = fsp->file_id;
+	e->dev = fsp->dev;
+	e->inode = fsp->inode;
 }
 
 /*******************************************************************
@@ -458,10 +456,24 @@ static void fill_share_mode(char *p, files_struct *fsp, uint16 port, uint16 op_t
 
 BOOL share_modes_identical( share_mode_entry *e1, share_mode_entry *e2)
 {
+#if 1 /* JRA PARANOIA TEST - REMOVE LATER */
+	if (e1->pid == e2->pid &&
+		e1->share_file_id == e2->share_file_id &&
+		e1->dev == e2->dev &&
+		e1->inode == e2->inode &&
+		(e1->share_mode & ~DELETE_ON_CLOSE_FLAG) != (e2->share_mode & ~DELETE_ON_CLOSE_FLAG)) {
+			DEBUG(0,("PANIC: share_modes_identical: share_mode missmatch (e1 = %u, e2 = %u). Logic error.\n",
+				(unsigned int)(e1->share_mode & ~DELETE_ON_CLOSE_FLAG),
+				(unsigned int)(e2->share_mode & ~DELETE_ON_CLOSE_FLAG) ));
+		smb_panic("PANIC: share_modes_identical logic error.\n");
+	}
+#endif
+
 	return (e1->pid == e2->pid &&
 		(e1->share_mode & ~DELETE_ON_CLOSE_FLAG) == (e2->share_mode & ~DELETE_ON_CLOSE_FLAG) &&
-		e1->time.tv_sec == e2->time.tv_sec &&
-		e1->time.tv_usec == e2->time.tv_usec );
+		e1->dev == e2->dev &&
+		e1->inode == e2->inode &&
+		e1->share_file_id == e2->share_file_id );
 }
 
 /*******************************************************************

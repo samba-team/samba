@@ -24,8 +24,6 @@
 #include "includes.h"
 
 
-extern int DEBUGLEVEL;
-
 #ifndef O_NONBLOCK
 #define O_NONBLOCK
 #endif

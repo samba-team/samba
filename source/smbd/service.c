@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 extern struct timeval smb_last_time;
 extern int case_default;
 extern BOOL case_preserve;

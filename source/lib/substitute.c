@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 fstring local_machine="";
 fstring remote_arch="UNKNOWN";
 userdom_struct current_user_info;

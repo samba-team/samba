@@ -26,8 +26,6 @@
 #include "nterr.h"
 #include "rpc_parse.h"   
 
-extern int DEBUGLEVEL;
-
 /*************************************************************
  Read/write a DFS_Q_DFS_EXIST structure - dummy...
  ************************************************************/

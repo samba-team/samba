@@ -39,8 +39,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /*
  * A list of the rids of well known BUILTIN and Domain users
  * and groups.

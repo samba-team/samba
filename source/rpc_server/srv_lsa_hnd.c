@@ -23,8 +23,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /* This is the max handles across all instances of a pipe name. */
 #ifndef MAX_OPEN_POLS
 #define MAX_OPEN_POLS 1024

@@ -28,8 +28,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 #if defined(VXFS_QUOTA)
 
 /*

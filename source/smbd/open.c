@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 extern userdom_struct current_user_info;
 extern uint16 global_oplock_port;
 extern BOOL global_client_failed_oplock_break;
@@ -184,7 +182,6 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 	fsp->mode = psbuf->st_mode;
 	fsp->inode = psbuf->st_ino;
 	fsp->dev = psbuf->st_dev;
-	GetTimeOfDay(&fsp->open_time);
 	fsp->vuid = current_user.vuid;
 	fsp->size = psbuf->st_size;
 	fsp->pos = -1;
@@ -500,7 +497,7 @@ dev = %x, inode = %.0f\n", *p_oplock_request, share_entry->op_type, fname, (unsi
 				/* Oplock break - unlock to request it. */
 				unlock_share_entry(conn, dev, inode);
 
-				opb_ret = request_oplock_break(share_entry, dev, inode);
+				opb_ret = request_oplock_break(share_entry);
 
 				/* Now relock. */
 				lock_share_entry(conn, dev, inode);
@@ -956,11 +953,9 @@ files_struct *open_file_stat(connection_struct *conn, char *fname,
 	 * Setup the files_struct for it.
 	 */
 	
-	fsp->fd = -1;
 	fsp->mode = psbuf->st_mode;
 	fsp->inode = psbuf->st_ino;
 	fsp->dev = psbuf->st_dev;
-	GetTimeOfDay(&fsp->open_time);
 	fsp->size = psbuf->st_size;
 	fsp->vuid = current_user.vuid;
 	fsp->pos = -1;
@@ -1128,11 +1123,9 @@ files_struct *open_directory(connection_struct *conn, char *fname,
 	 * Setup the files_struct for it.
 	 */
 	
-	fsp->fd = -1;
 	fsp->mode = psbuf->st_mode;
 	fsp->inode = psbuf->st_ino;
 	fsp->dev = psbuf->st_dev;
-	GetTimeOfDay(&fsp->open_time);
 	fsp->size = psbuf->st_size;
 	fsp->vuid = current_user.vuid;
 	fsp->pos = -1;
@@ -1256,7 +1249,7 @@ dev = %x, inode = %.0f\n", share_entry->op_type, fname, (unsigned int)dev, (doub
 
             /* Oplock break.... */
             unlock_share_entry(conn, dev, inode);
-            if(request_oplock_break(share_entry, dev, inode) == False)
+            if(request_oplock_break(share_entry) == False)
             {
               DEBUG(0,("check_file_sharing: FAILED when breaking oplock (%x) on file %s, \
 dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (double)inode));

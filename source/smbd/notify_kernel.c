@@ -23,7 +23,6 @@
 
 #if HAVE_KERNEL_CHANGE_NOTIFY
 
-extern int DEBUGLEVEL;
 static VOLATILE sig_atomic_t fd_pending;
 static VOLATILE sig_atomic_t signals_received;
 static VOLATILE sig_atomic_t signals_processed;

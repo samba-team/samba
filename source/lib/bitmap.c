@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /* these functions provide a simple way to allocate integers from a
    pool without repitition */
 

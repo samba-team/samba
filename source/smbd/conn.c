@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /* set these to define the limits of the server. NOTE These are on a
    per-client basis. Thus any one machine can't connect to more than
    MAX_CONNECTIONS services, but any number of machines may connect at

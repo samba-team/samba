@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
  smb_ucs2_t wchar_list_sep[] = { (smb_ucs2_t)' ', (smb_ucs2_t)'\t', (smb_ucs2_t)',',
 								(smb_ucs2_t)';', (smb_ucs2_t)':', (smb_ucs2_t)'\n',
 								(smb_ucs2_t)'\r', 0 };

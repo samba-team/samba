@@ -47,8 +47,6 @@ struct printif	generic_printif =
 		  generic_job_submit,
 		};
 
-extern int DEBUGLEVEL;
-
 /****************************************************************************
 run a given print command 
 a null terminated list of value/substitute pairs is provided

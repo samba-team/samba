@@ -24,8 +24,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 extern char **my_netbios_names;
 
 uint16 samba_nb_type = 0; /* samba's NetBIOS name type */

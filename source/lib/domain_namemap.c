@@ -47,7 +47,6 @@
 
 
 #include "includes.h"
-extern int DEBUGLEVEL;
 
 extern fstring global_myworkgroup;
 extern DOM_SID global_member_sid;

@@ -40,8 +40,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 static void NTLMSSPcalc_p( pipes_struct *p, unsigned char *data, int len)
 {
     unsigned char *hash = p->ntlmssp_hash;

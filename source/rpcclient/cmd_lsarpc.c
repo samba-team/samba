@@ -22,7 +22,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern pstring server;
 
 /* Look up domain related information on a remote host */

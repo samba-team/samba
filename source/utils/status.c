@@ -44,7 +44,6 @@ struct session_record{
   struct session_record *next;
 } *srecs;
 
-extern int DEBUGLEVEL;
 extern FILE *dbf;
 
 static pstring Ucrit_username = "";                   /* added by OH */

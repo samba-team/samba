@@ -21,7 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern int Protocol;
 extern int smb_read_error;
 extern int global_oplock_break;

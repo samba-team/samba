@@ -21,8 +21,6 @@
 */
 
 #include "includes.h"
-extern int DEBUGLEVEL;
-
 
 /***************************************************************************
 open a print file and setup a fsp for it. This is a wrapper around

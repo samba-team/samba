@@ -26,7 +26,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern DOM_SID global_sam_sid;
 extern fstring global_myworkgroup;
 extern pstring global_myname;

@@ -25,7 +25,6 @@
 #include "rpc_client.h"
 #include "nterr.h"
 
-extern int DEBUGLEVEL;
 extern pstring global_myname;
 
 /*********************************************************

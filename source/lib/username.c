@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-extern int DEBUGLEVEL;
 
 /* internal functions */
 static struct passwd *uname_string_combinations(char *s, struct passwd * (*fn) (char *), int N);

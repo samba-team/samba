@@ -24,7 +24,6 @@
 */
 
 #include "includes.h"
-extern int DEBUGLEVEL;
 
 /*
  * The POSIX locking database handle.

@@ -28,7 +28,6 @@
 #include <linux/smb_fs.h>
 
 extern struct in_addr ipzero;
-extern int DEBUGLEVEL;
 
 extern BOOL in_client;
 extern pstring user_socket_options;

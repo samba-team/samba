@@ -34,8 +34,6 @@ int last_message = -1;
 /* a useful macro to debug the last message processed */
 #define LAST_MESSAGE() smb_fn_name(last_message)
 
-extern int DEBUGLEVEL;
-
 extern pstring user_socket_options;
 
 #ifdef WITH_DFS

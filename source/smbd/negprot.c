@@ -21,7 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern int Protocol;
 extern int max_recv;
 extern fstring global_myworkgroup;

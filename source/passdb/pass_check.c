@@ -24,8 +24,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /* these are kept here to keep the string_combinations function simple */
 static fstring this_user;
 static fstring this_salt;

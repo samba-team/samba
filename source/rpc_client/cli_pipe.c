@@ -24,7 +24,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern struct pipe_id_info pipe_names[];
 extern fstring global_myworkgroup;
 extern pstring global_myname;

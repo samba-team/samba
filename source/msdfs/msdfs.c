@@ -22,7 +22,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern pstring global_myname;
 extern uint32 global_client_caps;
 

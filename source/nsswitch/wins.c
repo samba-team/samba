@@ -24,8 +24,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 #ifndef INADDRSZ
 #define INADDRSZ 4
 #endif

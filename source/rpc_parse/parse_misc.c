@@ -24,8 +24,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /****************************************************************************
  A temporary TALLOC context for things like unistrs, that is valid for
  the life of a complete RPC call.

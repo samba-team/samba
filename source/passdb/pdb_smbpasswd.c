@@ -44,7 +44,6 @@ struct smb_passwd
 };
 
 
-extern int DEBUGLEVEL;
 extern pstring samlogon_user;
 extern BOOL sam_logon_in_ssb;
 extern struct passdb_ops pdb_ops;

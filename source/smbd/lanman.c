@@ -33,8 +33,6 @@
 #endif
 #define CHECK_TYPES 0
 
-extern int DEBUGLEVEL;
-
 extern fstring local_machine;
 extern pstring global_myname;
 extern fstring global_myworkgroup;

@@ -26,7 +26,6 @@
 #define WINS_LIST "wins.dat"
 #define WINS_VERSION 1
 
-extern int DEBUGLEVEL;
 extern struct in_addr ipzero;
 
 

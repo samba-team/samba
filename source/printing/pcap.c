@@ -65,8 +65,6 @@
 
 #include "smb.h"
 
-extern int DEBUGLEVEL;
-
 #ifdef AIX
 /*  ******************************************
      Extend for AIX system and qconfig file

@@ -10,8 +10,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /* Delimiters for lists of daemons or clients. */
 static char *sep = ", \t";
 

@@ -23,9 +23,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
-
 static unsigned char hash[258];
 static uint32 counter;
 unsigned char *reseed_data;

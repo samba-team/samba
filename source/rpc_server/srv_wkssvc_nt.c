@@ -26,7 +26,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern pstring global_myname;
 
 /*******************************************************************

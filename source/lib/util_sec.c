@@ -21,7 +21,6 @@
 
 #ifndef AUTOCONF_TEST
 #include "includes.h"
-extern int DEBUGLEVEL;
 #else
 /* we are running this code in autoconf test mode to see which type of setuid
    function works */

@@ -27,7 +27,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern BOOL case_sensitive;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;

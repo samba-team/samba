@@ -26,9 +26,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
-
 /*******************************************************************
 interface/version dce/rpc pipe identification
 ********************************************************************/

@@ -28,7 +28,6 @@ extern fstring smbw_prefix;
 static struct smbw_dir *smbw_dirs;
 
 extern struct bitmap *smbw_file_bmap;
-extern int DEBUGLEVEL;
 
 extern int smbw_busy;
 

@@ -24,9 +24,6 @@
 #include "includes.h"
 
 
-extern int DEBUGLEVEL;
-
-
 /*****************************************************
  RAP error codes - a small start but will be extended.
 *******************************************************/

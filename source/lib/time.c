@@ -30,8 +30,6 @@
 int serverzone=0;
 int extra_time_offset = 0;
 
-extern int DEBUGLEVEL;
-
 #ifndef CHAR_BIT
 #define CHAR_BIT 8
 #endif

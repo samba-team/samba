@@ -23,7 +23,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern int Protocol;
 extern BOOL case_sensitive;
 extern int smb_read_error;

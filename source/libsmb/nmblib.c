@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 int num_good_sends = 0;
 int num_good_receives = 0;
 

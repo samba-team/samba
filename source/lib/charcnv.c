@@ -21,7 +21,6 @@
 */
 #include "includes.h"
 #define CTRLZ 26
-extern int DEBUGLEVEL;
 
 static char cvtbuf[sizeof(pstring)];
 

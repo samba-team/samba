@@ -24,8 +24,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 extern pstring global_myname;
 extern fstring global_myworkgroup;
 extern BOOL found_lm_clients;

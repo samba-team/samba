@@ -24,7 +24,6 @@
 #include "includes.h"
 
 
-extern int DEBUGLEVEL;
 static void cli_process_oplock(struct cli_state *cli);
 
 /*

@@ -36,8 +36,6 @@
 static char *netbiosname;
 static char packet[BUFFER_SIZE];
 
-extern int DEBUGLEVEL;
-
 static void filter_reply(char *buf)
 {
 	int msg_type = CVAL(buf,0);

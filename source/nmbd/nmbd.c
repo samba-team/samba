@@ -27,8 +27,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 extern pstring debugf;
 pstring servicesf = CONFIGFILE;
 

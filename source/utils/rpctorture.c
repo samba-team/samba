@@ -35,7 +35,6 @@ extern pstring user_socket_options;
 
 
 extern pstring debugf;
-extern int DEBUGLEVEL;
 
 
 extern file_info def_finfo;

@@ -31,8 +31,6 @@ extern int ClientNMB;
 extern int ClientDGRAM;
 extern int global_nmb_port;
 
-extern int DEBUGLEVEL;
-
 extern fstring myworkgroup;
 extern char **my_netbios_names;
 extern struct in_addr ipzero;

@@ -22,8 +22,6 @@
 #define CHARSET_C
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /*
  * Codepage definitions.
  */

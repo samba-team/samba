@@ -37,7 +37,6 @@
 
 /* these live in util.c */
 extern FILE *dbf;
-extern int DEBUGLEVEL;
 
 /***********************************************
  Here we do a set of 'hard coded' checks for bad

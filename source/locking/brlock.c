@@ -28,8 +28,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /* This contains elements that differentiate locks. The smbpid is a
    client supplied pid, and is essentially the locking context for
    this client */

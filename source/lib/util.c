@@ -59,8 +59,6 @@ extern SSL  *ssl;
 extern int  sslFd;
 #endif  /* WITH_SSL */
 
-extern int DEBUGLEVEL;
-
 int Protocol = PROTOCOL_COREPLUS;
 
 /* a default finfo structure to ensure all fields are sensible */

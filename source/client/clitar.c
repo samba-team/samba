@@ -69,7 +69,6 @@ typedef struct
 stack dir_stack = {NULL, 0}; /* Want an empty stack */
 
 #define SEPARATORS " \t\n\r"
-extern int DEBUGLEVEL;
 extern struct cli_state *cli;
 extern FILE *dbf;
 

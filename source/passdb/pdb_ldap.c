@@ -51,8 +51,6 @@
 #define SAM_ACCOUNT struct sam_passwd
 #endif
 
-extern int DEBUGLEVEL;
-
 struct ldap_enum_info
 {
 	LDAP *ldap_struct;

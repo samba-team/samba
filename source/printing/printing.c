@@ -21,8 +21,6 @@
 
 #include "printing.h"
 
-extern int DEBUGLEVEL;
-
 /* Current printer interface */
 struct printif *current_printif = &generic_printif;
 

@@ -31,8 +31,6 @@
 #define	PIPE		"\\PIPE\\"
 #define	PIPELEN		strlen(PIPE)
 
-extern int DEBUGLEVEL;
-
 extern struct pipe_id_info pipe_names[];
 
 /****************************************************************************

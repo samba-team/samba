@@ -49,7 +49,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern struct passdb_ops pdb_ops;
 
 #if ALLOW_CHANGE_PASSWORD

@@ -27,8 +27,6 @@
 
 extern int ClientNMB;
 
-extern int DEBUGLEVEL;
-
 extern pstring global_myname;
 extern fstring global_myworkgroup;
 extern char **my_netbios_names;

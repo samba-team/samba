@@ -29,7 +29,6 @@
 
 #define MAX_MSDFS_JUNCTIONS 256
 
-extern int DEBUGLEVEL;
 extern pstring global_myname;
 
 #ifdef WITH_MSDFS

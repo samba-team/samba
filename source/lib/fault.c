@@ -20,8 +20,6 @@
 */
 
 #include "includes.h"
-extern int DEBUGLEVEL;
-
 
 static void (*cont_fn)(void *);
 

@@ -22,7 +22,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern pstring debugf;
 
 DOM_SID domain_sid;

@@ -25,8 +25,6 @@
 extern fstring remote_machine;
 static TDB_CONTEXT *tdb;
 
-extern int DEBUGLEVEL;
-
 /****************************************************************************
  Return the connection tdb context (used for message send all).
 ****************************************************************************/

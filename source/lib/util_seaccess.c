@@ -24,8 +24,6 @@
 #include "nterr.h"
 #include "sids.h"
 
-extern int DEBUGLEVEL;
-
 /**********************************************************************************
  Check if this ACE has a SID in common with the token.
 **********************************************************************************/

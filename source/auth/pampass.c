@@ -30,8 +30,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 #ifdef WITH_PAM
 
 /*******************************************************************

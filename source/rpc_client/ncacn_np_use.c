@@ -28,7 +28,6 @@
 #include "rpc_client.h"
 #include "trans2.h"
 
-extern int DEBUGLEVEL;
 extern pstring global_myname;
 
 struct ncacn_np_use

@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /* error code stuff - put together by Merik Karman
    merik@blackadder.dsh.oz.au */
 

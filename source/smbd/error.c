@@ -21,7 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern uint32 global_client_caps;
 
 /* these can be set by some functions to override the error codes */

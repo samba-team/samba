@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-extern int DEBUGLEVEL;
 extern char *OutBuffer;
 
 /****************************************************************************

@@ -369,6 +369,7 @@ typedef struct files_struct
 	time_t pending_modtime;
 	int oplock_type;
 	int sent_oplock_break;
+	unsigned long file_id;
 	BOOL can_lock;
 	BOOL can_read;
 	BOOL can_write;
@@ -518,13 +519,15 @@ struct interface
 };
 
 /* struct returned by get_share_modes */
-typedef struct
-{
-  pid_t pid;
-  uint16 op_port;
-  uint16 op_type;
-  int share_mode;
-  struct timeval time;
+typedef struct {
+	pid_t pid;
+	uint16 op_port;
+	uint16 op_type;
+	int share_mode;
+	struct timeval time;
+	SMB_DEV_T dev;
+	SMB_INO_T inode;
+	unsigned long share_file_id;
 } share_mode_entry;
 
 
@@ -1397,19 +1400,18 @@ extern int chain_size;
  * 
  * The form of this is :
  *
- *  0     2       6        10       14    14+devsize 14+devsize+inodesize
- *  +----+--------+--------+--------+-------+--------+
- *  | cmd| pid    | sec    | usec   | dev   |  inode |
- *  +----+--------+--------+--------+-------+--------+
+ *  0     2       2+pid   2+pid+dev 2+pid+dev+ino
+ *  +----+--------+-------+--------+---------+
+ *  | cmd| pid    | dev   |  inode | fileid  |
+ *  +----+--------+-------+--------+---------+
  */
 
 #define OPLOCK_BREAK_CMD 0x1
 #define OPLOCK_BREAK_PID_OFFSET 2
-#define OPLOCK_BREAK_SEC_OFFSET (OPLOCK_BREAK_PID_OFFSET + sizeof(pid_t))
-#define OPLOCK_BREAK_USEC_OFFSET (OPLOCK_BREAK_SEC_OFFSET + sizeof(time_t))
-#define OPLOCK_BREAK_DEV_OFFSET (OPLOCK_BREAK_USEC_OFFSET + sizeof(long))
+#define OPLOCK_BREAK_DEV_OFFSET (OPLOCK_BREAK_PID_OFFSET + sizeof(pid_t))
 #define OPLOCK_BREAK_INODE_OFFSET (OPLOCK_BREAK_DEV_OFFSET + sizeof(SMB_DEV_T))
-#define OPLOCK_BREAK_MSG_LEN (OPLOCK_BREAK_INODE_OFFSET + sizeof(SMB_INO_T))
+#define OPLOCK_BREAK_FILEID_OFFSET (OPLOCK_BREAK_INODE_OFFSET + sizeof(SMB_INO_T))
+#define OPLOCK_BREAK_MSG_LEN (OPLOCK_BREAK_FILEID_OFFSET + sizeof(unsigned long))
 
 #define KERNEL_OPLOCK_BREAK_CMD 0x2
 #define LEVEL_II_OPLOCK_BREAK_CMD 0x3
@@ -1426,13 +1428,14 @@ extern int chain_size;
  * Form of this is :
  *
  *  0     2       2+devsize 2+devsize+inodesize
- *  +----+--------+--------+
- *  | cmd| dev    |  inode |
- *  +----+--------+--------+
+ *  +----+--------+--------+----------+
+ *  | cmd| dev    |  inode |  fileid  |
+ *  +----+--------+--------+----------+
  */
 #define KERNEL_OPLOCK_BREAK_DEV_OFFSET 2
 #define KERNEL_OPLOCK_BREAK_INODE_OFFSET (KERNEL_OPLOCK_BREAK_DEV_OFFSET + sizeof(SMB_DEV_T))
-#define KERNEL_OPLOCK_BREAK_MSG_LEN (KERNEL_OPLOCK_BREAK_INODE_OFFSET + sizeof(SMB_INO_T))
+#define KERNEL_OPLOCK_BREAK_FILEID_OFFSET (KERNEL_OPLOCK_BREAK_INODE_OFFSET + sizeof(SMB_INO_T))
+#define KERNEL_OPLOCK_BREAK_MSG_LEN (KERNEL_OPLOCK_BREAK_FILEID_OFFSET + sizeof(unsigned long))
 
 
 /* if a kernel does support oplocks then a structure of the following
@@ -1441,7 +1444,7 @@ struct kernel_oplocks {
 	BOOL (*receive_message)(fd_set *fds, char *buffer, int buffer_len);
 	BOOL (*set_oplock)(files_struct *fsp, int oplock_type);
 	void (*release_oplock)(files_struct *fsp);
-	BOOL (*parse_message)(char *msg_start, int msg_len, SMB_INO_T *inode, SMB_DEV_T *dev);
+	BOOL (*parse_message)(char *msg_start, int msg_len, SMB_INO_T *inode, SMB_DEV_T *dev, unsigned long *file_id);
 	BOOL (*msg_waiting)(fd_set *fds);
 	int notification_fd;
 };

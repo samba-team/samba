@@ -23,8 +23,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /*
  * This is set on startup - it defines the SID for this
  * machine, and therefore the SAM database for which it is

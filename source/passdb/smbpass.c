@@ -21,7 +21,6 @@
 
 #ifdef USE_SMBPASS_DB
 
-extern int DEBUGLEVEL;
 extern pstring samlogon_user;
 extern BOOL sam_logon_in_ssb;
 

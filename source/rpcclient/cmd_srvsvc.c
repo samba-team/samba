@@ -24,8 +24,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /* Display server query info */
 
 static char *get_server_type_str(uint32 type)

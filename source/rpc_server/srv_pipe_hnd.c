@@ -28,7 +28,6 @@
 #define	PIPE		"\\PIPE\\"
 #define	PIPELEN		strlen(PIPE)
 
-extern int DEBUGLEVEL;
 static pipes_struct *chain_p;
 static int pipes_open;
 

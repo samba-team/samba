@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 static char *last_ptr=NULL;
 
 void set_first_token(char *ptr)
