@@ -328,10 +328,46 @@ buffers:
 	g_free(subtrees);
 }
 
-void ndr_pull_relative(struct ndr_pull *ndr, void *data, int size,
+void ndr_pull_save(struct ndr_pull *ndr, struct ndr_pull_save *save)
+{
+	save->offset = ndr->offset;
+}
+
+void ndr_pull_restore(struct ndr_pull *ndr, struct ndr_pull_save *save)
+{
+	ndr->offset = save->offset;
+}
+
+void ndr_pull_set_offset(struct ndr_pull *ndr, guint32 ofs)
+{
+	ndr->offset = ofs;
+}
+
+static int hf_relative_ofs = -1;
+
+void ndr_pull_relative(struct ndr_pull *ndr, proto_tree *tree,
+		       void *data, int size,
 		       void (*fn)(struct ndr_pull *, int ndr_flags, 
 				  char *name))
 {
+	struct ndr_pull ndr2;
+	guint32 ofs;
+	struct ndr_pull_save save;
+
+	ndr_pull_uint32(ndr, tree, hf_relative_ofs, &ofs);
+	if (ofs == 0) {
+		return;
+	}
+	ndr_pull_save(ndr, &save);
+	ndr_pull_set_offset(ndr, ofs + ndr->ofs_list->offset);
+	ndr_pull_subcontext(ndr, &ndr2, tvb_length(ndr->tvb) - ndr->offset);
+	/* strings must be allocated by the backend functions */
+	if (ndr->flags & LIBNDR_STRING_FLAGS) {
+		fn(&ndr2, tree, NDR_SCALARS|NDR_BUFFERS);
+	} else {
+		fn(&ndr2, tree, NDR_SCALARS|NDR_BUFFERS);
+	}
+	ndr_pull_restore(ndr, &save);
 }
 
 void ndr_pull_uint8(struct ndr_pull *ndr, proto_tree *tree, int hf, uint8 *data)
@@ -364,22 +400,29 @@ void ndr_pull_uint64(struct ndr_pull *ndr, proto_tree *tree, int hf, uint64 *dat
 
 void ndr_pull_int8(struct ndr_pull *ndr, proto_tree *tree, int hf, int8 *data)
 {
+	ndr_pull_uint8(ndr, tree, hf, data);
 }
 
 void ndr_pull_int16(struct ndr_pull *ndr, proto_tree *tree, int hf, int16 *data)
 {
+	ndr_pull_uint16(ndr, tree, hf, data);
 }
 
 void ndr_pull_int32(struct ndr_pull *ndr, proto_tree *tree, int hf, int32 *data)
 {
+	ndr_pull_uint32(ndr, tree, hf, data);
+
 }
 
 void ndr_pull_int64(struct ndr_pull *ndr, proto_tree *tree, int hf, int64 *data)
 {
+	ndr_pull_uint64(ndr, tree, hf, data);
+
 }
 
 void ndr_pull_NTTIME(struct ndr_pull *ndr, proto_tree *tree, int hf, NTTIME *data)
 {
+	g_warning("%d: ndr_pull_NTTIME() not implemented", ndr->pinfo->fd->num);
 }
 
 void ndr_pull_NTSTATUS(struct ndr_pull *ndr, proto_tree *tree, int hf, NTSTATUS *data)
@@ -391,10 +434,21 @@ void ndr_pull_NTSTATUS(struct ndr_pull *ndr, proto_tree *tree, int hf, NTSTATUS 
 
 void ndr_pull_HYPER_T(struct ndr_pull *ndr, proto_tree *tree, int hf, HYPER_T *data)
 {
+	g_warning("%d: ndr_pull_HYPER_T() not implemented", ndr->pinfo->fd->num);
 }
+
+static int hf_num_auths = -1;
 
 void ndr_pull_dom_sid2(struct ndr_pull *ndr, int ndr_flags, proto_tree *tree, struct dom_sid2 *data)
 {
+	guint32 num_auths;
+
+	if (!(ndr_flags & NDR_SCALARS))
+		return;
+
+	ndr_pull_uint32(ndr, tree, hf_num_auths, &num_auths);
+
+	ndr_pull_dom_sid(ndr, ndr_flags, tree, data);
 }
 
 void ndr_pull_subcontext_flags_fn(struct ndr_pull *ndr, proto_tree *tree,
@@ -521,10 +575,11 @@ void proto_register_eparser(void)
         { &hf_string4_len, { "String4 length", "eparser.string4_length", FT_UINT32, BASE_DEC, NULL, 0x0, "String4 length", HFILL }},
         { &hf_string4_offset, { "String4 offset", "eparser.string4_offset", FT_UINT32, BASE_DEC, NULL, 0x0, "String4 offset", HFILL }},
         { &hf_string4_len2, { "String4 length2", "eparser.string4_length2", FT_UINT32, BASE_DEC, NULL, 0x0, "String4 length2", HFILL }},
+        { &hf_num_auths, { "Num auths", "eparser.num_auths", FT_UINT32, BASE_DEC, NULL, 0x0, "Num auths", HFILL }},
         { &hf_string_data, { "String data", "eparser.string_data", FT_BYTES, BASE_NONE, NULL, 0x0, "String data", HFILL }},
         { &hf_subcontext_size_2, { "Subcontext size2", "eparser.subcontext_size2", FT_UINT16, BASE_DEC, NULL, 0x0, "Subcontext size2", HFILL }},
         { &hf_subcontext_size_4, { "Subcontext size4", "eparser.subcontext_size4", FT_UINT16, BASE_DEC, NULL, 0x0, "Subcontext size4", HFILL }},
-//        { &hf_relative_ofs, { "Relative offset", "eparser.relative_offset", FT_UINT32, BASE_DEC, NULL, 0x0, "Relative offset", HFILL }},
+        { &hf_relative_ofs, { "Relative offset", "eparser.relative_offset", FT_UINT32, BASE_DEC, NULL, 0x0, "Relative offset", HFILL }},
 //        { &hf_subtree_list, { "Subtree list", "", FT_UINT64, BASE_DEC, NULL, 0,"", HFILL }},
         };
 
