@@ -1836,9 +1836,8 @@ struct passdb_ops *nisplus_initialize_password_db(void);
 
 /*The following definitions come from  passdb/pampass.c  */
 
-BOOL PAM_session(BOOL instance, const connection_struct *conn, char *tty);
+BOOL pam_session(BOOL flag, const connection_struct *conn, char *tty);
 BOOL pam_passcheck(char * user, char * password);
-BOOL pam_passcheck( char * user, char * password );
 
 /*The following definitions come from  passdb/pass_check.c  */
 
@@ -3629,7 +3628,7 @@ BOOL api_srvsvc_rpc(pipes_struct *p);
 
 BOOL share_info_db_init(void);
 void map_generic_share_sd_bits(SEC_DESC *psd);
-BOOL share_access_check(int snum, uint16 vuid, uint32 desired_access);
+BOOL share_access_check(connection_struct *conn, int snum, uint16 vuid, uint32 desired_access);
 uint32 _srv_net_srv_get_info(pipes_struct *p, SRV_Q_NET_SRV_GET_INFO *q_u, SRV_R_NET_SRV_GET_INFO *r_u);
 uint32 _srv_net_file_enum(pipes_struct *p, SRV_Q_NET_FILE_ENUM *q_u, SRV_R_NET_FILE_ENUM *r_u);
 uint32 _srv_net_conn_enum(pipes_struct *p, SRV_Q_NET_CONN_ENUM *q_u, SRV_R_NET_CONN_ENUM *r_u);

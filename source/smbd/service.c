@@ -344,28 +344,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 
 	conn->read_only = lp_readonly(snum);
 
-	/*
-	 * New code to check if there's a share security descripter
-	 * added from NT server manager. This is an additional check
-	 * before the smb.conf checks are done. JRA.
-	 */
-
-	{
-		BOOL can_write = share_access_check(snum, vuid, FILE_WRITE_DATA);
-
-		if (!can_write) {
-			if (!share_access_check(snum, vuid, FILE_READ_DATA)) {
-				/* No access, read or write. */
-				*ecode = ERRaccess;
-				DEBUG(0,( "make_connection: connection to %s denied due to security descriptor.\n",
-					service ));
-				conn_free(conn);
-				return NULL;
-			} else {
-				conn->read_only = True;
-			}
-		}
-	}
 
 	{
 		pstring list;
@@ -528,6 +506,28 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 					      conn->ngroups, conn->groups,
 					      guest);
 
+	/*
+	 * New code to check if there's a share security descripter
+	 * added from NT server manager. This is done after the
+	 * smb.conf checks are done as we need a uid and token. JRA.
+	 */
+
+	{
+		BOOL can_write = share_access_check(conn, snum, vuid, FILE_WRITE_DATA);
+
+		if (!can_write) {
+			if (!share_access_check(conn, snum, vuid, FILE_READ_DATA)) {
+				/* No access, read or write. */
+				*ecode = ERRaccess;
+				DEBUG(0,( "make_connection: connection to %s denied due to security descriptor.\n",
+					service ));
+				conn_free(conn);
+				return NULL;
+			} else {
+				conn->read_only = True;
+			}
+		}
+	}
 	/* Initialise VFS function pointers */
 
 #if WITH_VFS
