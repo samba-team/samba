@@ -90,6 +90,12 @@ struct vfs_connection_struct {
     gid_t *groups;
 };
 
+/* Avoid conflict with an AIX include file */
+
+#ifdef vfs_ops
+#undef vfs_ops
+#endif
+
 /* VFS operations structure */
 
 struct vfs_ops {
