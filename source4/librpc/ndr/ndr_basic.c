@@ -81,6 +81,24 @@ NTSTATUS ndr_pull_uint32(struct ndr_pull *ndr, uint32 *v)
 }
 
 /*
+  parse a HYPER_T
+*/
+NTSTATUS ndr_pull_HYPER_T(struct ndr_pull *ndr, HYPER_T *v)
+{
+	NDR_PULL_ALIGN(ndr, 8);
+	NDR_PULL_NEED_BYTES(ndr, 8);
+	if (ndr->flags & LIBNDR_FLAG_BIGENDIAN) {
+		v->low = RIVAL(ndr->data, ndr->offset);
+		v->high = RIVAL(ndr->data, ndr->offset+4);
+	} else {
+		v->low = IVAL(ndr->data, ndr->offset);
+		v->high = IVAL(ndr->data, ndr->offset+4);
+	}
+	ndr->offset += 8;
+	return NT_STATUS_OK;
+}
+
+/*
   pull a NTSTATUS
 */
 NTSTATUS ndr_pull_NTSTATUS(struct ndr_pull *ndr, NTSTATUS *status)
@@ -152,14 +170,11 @@ NTSTATUS ndr_pull_array_uint32(struct ndr_pull *ndr, uint32 *data, uint32 n)
 /*
   parse a GUID
 */
-NTSTATUS ndr_pull_guid(struct ndr_pull *ndr, GUID *guid)
+NTSTATUS ndr_pull_GUID(struct ndr_pull *ndr, int ndr_flags, GUID *guid)
 {
-	int i;
-	NDR_PULL_NEED_BYTES(ndr, GUID_SIZE);
-	for (i=0;i<GUID_SIZE;i++) {
-		guid->info[i] = CVAL(ndr->data, ndr->offset + i);
+	if (ndr_flags & NDR_SCALARS) {
+		return ndr_pull_bytes(ndr, guid->info, GUID_SIZE);
 	}
-	ndr->offset += i;
 	return NT_STATUS_OK;
 }
 
@@ -203,6 +218,19 @@ NTSTATUS ndr_push_uint32(struct ndr_push *ndr, uint32 v)
 	NDR_PUSH_NEED_BYTES(ndr, 4);
 	SIVAL(ndr->data, ndr->offset, v);
 	ndr->offset += 4;
+	return NT_STATUS_OK;
+}
+
+/*
+  push a HYPER_T
+*/
+NTSTATUS ndr_push_HYPER_T(struct ndr_push *ndr, HYPER_T v)
+{
+	NDR_PUSH_ALIGN(ndr, 8);
+	NDR_PUSH_NEED_BYTES(ndr, 8);
+	SIVAL(ndr->data, ndr->offset, v.low);
+	SIVAL(ndr->data, ndr->offset+4, v.high);
+	ndr->offset += 8;
 	return NT_STATUS_OK;
 }
 
@@ -385,7 +413,7 @@ NTSTATUS ndr_push_offset_ptr(struct ndr_push *ndr,
 /*
   push a GUID
 */
-NTSTATUS ndr_push_guid(struct ndr_push *ndr, GUID *guid)
+NTSTATUS ndr_push_GUID(struct ndr_push *ndr, GUID *guid)
 {
 	return ndr_push_bytes(ndr, guid->info, GUID_SIZE);
 }
@@ -429,6 +457,11 @@ void ndr_print_uint16(struct ndr_print *ndr, const char *name, uint16 v)
 void ndr_print_uint32(struct ndr_print *ndr, const char *name, uint32 v)
 {
 	ndr->print(ndr, "%-25s: 0x%08x (%u)", name, v, v);
+}
+
+void ndr_print_HYPER_T(struct ndr_print *ndr, const char *name, HYPER_T v)
+{
+	ndr->print(ndr, "%-25s: 0x%08x%08x", name, v.high, v.low);
 }
 
 void ndr_print_ptr(struct ndr_print *ndr, const char *name, const void *p)
@@ -481,4 +514,14 @@ void ndr_print_array_uint32(struct ndr_print *ndr, const char *name,
 		}
 	}
 	ndr->depth--;	
+}
+
+void ndr_print_GUID(struct ndr_print *ndr, const char *name, struct GUID *guid)
+{
+	ndr->print(ndr, "%-25s: %08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x", 
+		   name,
+		   IVAL(guid->info, 0), SVAL(guid->info, 4), SVAL(guid->info, 6),
+		   guid->info[8], guid->info[9],
+		   guid->info[10], guid->info[11], guid->info[12], guid->info[13], 
+		   guid->info[14], guid->info[15]);
 }

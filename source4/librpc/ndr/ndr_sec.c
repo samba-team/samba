@@ -45,10 +45,10 @@ NTSTATUS ndr_pull_security_ace(struct ndr_pull *ndr, struct security_ace *ace)
 		NDR_ALLOC(ndr, ace->obj);
 		NDR_CHECK(ndr_pull_uint32(ndr, &ace->obj->flags));
 		if (ace->obj->flags & SEC_ACE_OBJECT_PRESENT) {
-			NDR_CHECK(ndr_pull_guid(ndr, &ace->obj->object_guid));
+			NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &ace->obj->object_guid));
 		}
 		if (ace->obj->flags & SEC_ACE_OBJECT_INHERITED_PRESENT) {
-			NDR_CHECK(ndr_pull_guid(ndr, &ace->obj->inherit_guid));
+			NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &ace->obj->inherit_guid));
 		}
 	}
 
@@ -203,10 +203,10 @@ NTSTATUS ndr_push_security_ace(struct ndr_push *ndr, struct security_ace *ace)
 	if (sec_ace_object(ace->type)) {
 		NDR_CHECK(ndr_push_uint32(ndr, ace->obj->flags));
 		if (ace->obj->flags & SEC_ACE_OBJECT_PRESENT) {
-			NDR_CHECK(ndr_push_guid(ndr, &ace->obj->object_guid));
+			NDR_CHECK(ndr_push_GUID(ndr, &ace->obj->object_guid));
 		}
 		if (ace->obj->flags & SEC_ACE_OBJECT_INHERITED_PRESENT) {
-			NDR_CHECK(ndr_push_guid(ndr, &ace->obj->inherit_guid));
+			NDR_CHECK(ndr_push_GUID(ndr, &ace->obj->inherit_guid));
 		}
 	}
 
@@ -361,9 +361,8 @@ void ndr_print_security_descriptor(struct ndr_print *ndr,
 				   const char *name,
 				   struct security_descriptor *sd)
 {
-	ndr->print(ndr->depth, "%-25s: ndr_print_security_descriptor not implemented", 
+	ndr->print(ndr, "%-25s: ndr_print_security_descriptor not implemented", 
 		   name);
 }
-
 
 

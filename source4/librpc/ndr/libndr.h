@@ -75,7 +75,6 @@ struct ndr_print {
 #define NDR_PRINT_UNION_DEBUG(type, level, p) ndr_print_union_debug((ndr_print_union_fn_t)ndr_print_ ##type, #p, level, p)
 
 
-
 /*
   flags passed to control parse flow
 */
