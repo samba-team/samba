@@ -42,9 +42,17 @@ RCSID("$Id$");
 
 typedef struct krb5_fcache{
     char *filename;
+    int version;
 }krb5_fcache;
 
+#define KRB5_FCC_FVNO_3 0x503
+#define KRB5_FCC_FVNO_4 0x504
+
+#define FCC_TAG_DELTATIME 1
+
 #define FILENAME(X) (((krb5_fcache*)(X)->data.data)->filename)
+
+#define FCACHE(X) ((krb5_fcache*)(X)->data.data)
 
 static char*
 fcc_get_name(krb5_context context,
@@ -65,6 +73,7 @@ fcc_resolve(krb5_context context, krb5_ccache *id, const char *res)
 	free(f);
 	return KRB5_CC_NOMEM;
     }
+    f->version = 0;
     (*id)->data.data = f;
     (*id)->data.length = sizeof(*f);
     return 0;
@@ -105,23 +114,32 @@ fcc_initialize(krb5_context context,
 	       krb5_ccache id,
 	       krb5_principal primary_principal)
 {
+    krb5_fcache *f = FCACHE(id);
     int ret;
     int fd;
+    char *filename = f->filename;
 
-    char *f;
-    
-    f = FILENAME(id);
-  
-    if((ret = erase_file(f)))
+    if((ret = erase_file(filename)))
 	return ret;
   
-    fd = open(f, O_RDWR | O_CREAT | O_EXCL, 0600);
+    fd = open(filename, O_RDWR | O_CREAT | O_EXCL, 0600);
     if(fd == -1)
 	return errno;
     {
 	krb5_storage *sp;    
 	sp = krb5_storage_from_fd(fd);
-	krb5_store_int16(sp, 0x503);
+	f->version = KRB5_FCC_FVNO_4;
+	krb5_store_int16(sp, f->version);
+	/* V4 stuff */
+	if (context->kdc_sec_offset) {
+	    krb5_store_int16 (sp, 12); /* length */
+	    krb5_store_int16 (sp, FCC_TAG_DELTATIME); /* Tag */
+	    krb5_store_int16 (sp, 8); /* length of data */
+	    krb5_store_int32 (sp, context->kdc_sec_offset);
+	    krb5_store_int32 (sp, context->kdc_usec_offset);
+	} else {
+	    krb5_store_int16 (sp, 0);
+	}
 	krb5_store_principal(sp, primary_principal);
 	krb5_storage_free(sp);
     }
@@ -222,19 +240,72 @@ cleanup:
 }
 
 static krb5_error_code
-fcc_get_principal(krb5_context context,
-		      krb5_ccache id,
-		      krb5_principal *principal)
+init_fcc (krb5_context context,
+	  krb5_fcache *fcache,
+	  krb5_storage **ret_sp,
+	  int *ret_fd)
 {
     int fd;
     int16_t tag;
     krb5_storage *sp;
 
-    fd = open(FILENAME(id), O_RDONLY);
+    fd = open(fcache->filename, O_RDONLY);
     if(fd < 0)
 	return errno;
     sp = krb5_storage_from_fd(fd);
     krb5_ret_int16(sp, &tag);
+    fcache->version = tag;
+    switch (tag) {
+    case KRB5_FCC_FVNO_4 : {
+	int16_t length;
+
+	krb5_ret_int16 (sp, &length);
+	while(length > 0) {
+	    int16_t tag, data_len;
+	    int i;
+	    int8_t dummy;
+
+	    krb5_ret_int16 (sp, &tag);
+	    krb5_ret_int16 (sp, &data_len);
+	    switch (tag) {
+	    case FCC_TAG_DELTATIME :
+		krb5_ret_int32 (sp, &context->kdc_sec_offset);
+		krb5_ret_int32 (sp, &context->kdc_usec_offset);
+		break;
+	    default :
+		for (i = 0; i < data_len; ++i)
+		    krb5_ret_int8 (sp, &dummy);
+		break;
+	    }
+	    length -= 4 + data_len;
+	}
+	break;
+    }
+    case KRB5_FCC_FVNO_3 :
+	break;
+    default :
+	krb5_storage_free (sp);
+	close (fd);
+	return KRB5_CCACHE_BADVNO;
+    }
+    *ret_sp = sp;
+    *ret_fd = fd;
+    return 0;
+}
+
+static krb5_error_code
+fcc_get_principal(krb5_context context,
+		  krb5_ccache id,
+		  krb5_principal *principal)
+{
+    krb5_error_code ret;
+    krb5_fcache *f = FCACHE(id);
+    int fd;
+    krb5_storage *sp;
+
+    ret = init_fcc (context, f, &sp, &fd);
+    if (ret)
+	return ret;
     krb5_ret_principal(sp, principal);
     krb5_storage_free(sp);
     close(fd);
@@ -246,15 +317,14 @@ fcc_get_first (krb5_context context,
 	       krb5_ccache id,
 	       krb5_cc_cursor *cursor)
 {
-    int16_t tag;
+    krb5_error_code ret;
     krb5_principal principal;
     krb5_storage *sp;
+    krb5_fcache *f = FCACHE(id);
 
-    cursor->u.fd = open (krb5_cc_get_name (context, id), O_RDONLY);
-    if (cursor->u.fd < 0)
-	return errno;
-    sp = krb5_storage_from_fd(cursor->u.fd);
-    krb5_ret_int16 (sp, &tag);
+    ret = init_fcc (context, f, &sp, &cursor->u.fd);
+    if (ret)
+	return ret;
     krb5_ret_principal (sp, &principal);
     krb5_storage_free(sp);
     krb5_free_principal (context, principal);
