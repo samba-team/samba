@@ -300,12 +300,12 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p)
 	{
 		DEBUG(5,("user: %s domain: %s wks: %s\n", p->user_name, p->domain, p->wks));
 		become_root(True);
-		p->ntlmssp_validated = pass_check_smb(p->user_name, p->domain,
+		smb_pass = getsmbpwnam(p->user_name);
+		p->ntlmssp_validated = pass_check_smb(smb_pass, p->domain,
 				      (uchar*)p->ntlmssp_chal.challenge,
 				      lm_owf, lm_owf_len,
 				      nt_owf, nt_owf_len,
 				      NULL, vuser->dc.user_sess_key);
-		smb_pass = getsmbpwnam(p->user_name);
 		unbecome_root(True);
 
 		if (smb_pass != NULL)

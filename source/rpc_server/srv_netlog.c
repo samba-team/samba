@@ -666,8 +666,8 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
 	dump_data(100, nt_pwd, 16);
 #endif
 
-	SamOEMhash((uchar *)lm_pwd, key, False);
-	SamOEMhash((uchar *)nt_pwd, key, False);
+	SamOEMhash((uchar *)lm_pwd, key, 0);
+	SamOEMhash((uchar *)nt_pwd, key, 0);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("decrypt of lm owf password:"));
@@ -697,8 +697,9 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
  net_login_network:
  *************************************************************************/
 static uint32 net_login_network(NET_ID_INFO_2 *id2,
-				struct sam_passwd *smb_pass,
-				user_struct *vuser)
+				struct sam_passwd *sam_pass,
+				user_struct *vuser,
+				char sess_key[16])
 {
 	fstring user;
 	fstring domain;
@@ -712,11 +713,33 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 	DEBUG(5,("net_login_network: lm_len:%d nt_len:%d user:%s domain:%s\n",
 		lm_pw_len, nt_pw_len, user, domain));
 
-	if (smb_password_ok(pwdb_sam_to_smb(smb_pass), id2->lm_chal, 
-	                    user, domain,
+	if (pass_check_smb(pwdb_sam_to_smb(sam_pass),
+	                    domain,
+	                    id2->lm_chal, 
 	                    (uchar *)id2->lm_chal_resp.buffer, lm_pw_len, 
-	                    (uchar *)id2->nt_chal_resp.buffer, nt_pw_len)) 
+	                    (uchar *)id2->nt_chal_resp.buffer, nt_pw_len,
+	                    NULL, sess_key)) 
 	{
+		unsigned char key[16];
+
+		memset(key, 0, 16);
+		memcpy(key, vuser->dc.sess_key, 8);
+
+#ifdef DEBUG_PASSWORD
+		DEBUG(100,("key:"));
+		dump_data(100, key, 16);
+
+		DEBUG(100,("user sess key:"));
+		dump_data(100, sess_key, 16);
+#endif
+
+		SamOEMhash((uchar *)sess_key, key, 0);
+
+#ifdef DEBUG_PASSWORD
+		DEBUG(100,("encrypt of user session key:"));
+		dump_data(100, sess_key, 16);
+#endif
+
                   return 0x0;
 	}
 
@@ -733,6 +756,8 @@ static uint32 reply_net_sam_logon( NET_Q_SAM_LOGON *q_l, user_struct *vuser,
 	UNISTR2 *uni_samusr = NULL;
 	UNISTR2 *uni_domain = NULL;
 	fstring nt_username;
+	char *enc_user_sess_key = NULL;
+	char sess_key[16];
 
 	NTTIME logon_time           ;
 	NTTIME logoff_time          ;
@@ -845,7 +870,8 @@ static uint32 reply_net_sam_logon( NET_Q_SAM_LOGON *q_l, user_struct *vuser,
 			case NET_LOGON_TYPE:
 			{
 				/* network login.  lm challenge and 24 byte responses */
-				status = net_login_network(&q_l->sam_id.ctr->auth.id2, sam_pass, vuser);
+				status = net_login_network(&q_l->sam_id.ctr->auth.id2, sam_pass, vuser, sess_key);
+				enc_user_sess_key = sess_key;
 				break;
 			}
 		}
@@ -896,7 +922,7 @@ static uint32 reply_net_sam_logon( NET_Q_SAM_LOGON *q_l, user_struct *vuser,
 		gids    , /* DOM_GID *gids */
 		0x20    , /* uint32 user_flgs (?) */
 
-		NULL, /* char sess_key[16] */
+		enc_user_sess_key, /* char sess_key[16] */
 
 		global_myname  , /* char *logon_srv */
 		global_sam_name, /* char *logon_dom */

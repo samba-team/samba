@@ -467,16 +467,24 @@ SMB hash
 return True if the password is correct, False otherwise
 ****************************************************************************/
 
-BOOL pass_check_smb(char *user, char *domain, uchar *chal,
+BOOL pass_check_smb(struct smb_passwd *smb_pass, char *domain, uchar *chal,
 		uchar *lm_pwd, size_t lm_pwd_len,
 		uchar *nt_pwd, size_t nt_pwd_len,
 		struct passwd *pwd, uchar user_sess_key[16])
 {
 	const struct passwd *pass;
 	struct passwd pw;
-	struct smb_passwd *smb_pass;
+	char *user = NULL;
 
-	if (!lm_pwd || !nt_pwd)
+	if (smb_pass == NULL)
+	{
+		DEBUG(3,("Couldn't find user %s in smb_passwd file.\n", user));
+		return False;
+	}
+
+	user = smb_pass->unix_name;
+
+	if (lm_pwd == NULL || nt_pwd == NULL)
 	{
 		return False;
 	}
@@ -496,14 +504,6 @@ BOOL pass_check_smb(char *user, char *domain, uchar *chal,
 		}
 		memcpy(&pw, pass, sizeof(struct passwd));
 		pass = &pw;
-	}
-
-	smb_pass = getsmbpwnam(user);
-
-	if (smb_pass == NULL)
-	{
-		DEBUG(3,("Couldn't find user %s in smb_passwd file.\n", user));
-		return False;
 	}
 
 	/* Quit if the account was disabled. */
@@ -563,7 +563,7 @@ BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd,
 			return False;
 		}
 
-		return pass_check_smb(user, global_myworkgroup,
+		return pass_check_smb(getsmbpwnam(user), global_myworkgroup,
 		                      challenge, (uchar *)password,
 					pwlen, (uchar *)password, pwlen,
 					pwd, user_sess_key);
