@@ -65,7 +65,7 @@ dist: $(DISTFILES)
 $(LIB): $(OBJECTS)
 	rm -f $@
 	$(AR) cr $@ $(OBJECTS)
-	if [ "$(AIX_SYSCALL_MAGIC)" = yes ] ; then $(AR) cr $@ $(srcdir)/afsl.exp ; fi
+	-if [ "$(AIX_SYSCALL_MAGIC)" = yes ] ; then $(AR) cr $@ $(srcdir)/afsl.exp ; fi
 	-$(RANLIB) $@
 
 $(OBJECTS): ../../config.h
