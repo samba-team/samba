@@ -3337,7 +3337,8 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *sh
 			info.parameters);
 
 	/* Samba has to have shared raw drivers. */
-	info.attributes = PRINTER_ATTRIBUTE_SAMBA;
+	info.attributes |= PRINTER_ATTRIBUTE_SAMBA;
+	info.attributes &= ~PRINTER_ATTRIBUTE_NOT_SAMBA;
 
 	/* Restore the stripped strings. */
 	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", get_called_name());

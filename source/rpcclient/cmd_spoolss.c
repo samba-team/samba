@@ -2416,7 +2416,6 @@ struct cmd_set spoolss_commands[] = {
 	{ "getdriver",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_getdriver,		PI_SPOOLSS, "Get print driver information",        "" },
 	{ "getdriverdir",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_getdriverdir,	PI_SPOOLSS, "Get print driver upload directory",   "" },
 	{ "getprinter", 	RPC_RTYPE_WERROR, NULL, cmd_spoolss_getprinter, 	PI_SPOOLSS, "Get printer info",                    "" },
-	{ "getprintprocdir",RPC_RTYPE_WERROR, NULL, cmd_spoolss_getprintprocdir,    PI_SPOOLSS, "Get print processor directory",       "" },
 	{ "openprinter",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_open_printer_ex,	PI_SPOOLSS, "Open printer handle",                 "" },
 	{ "setdriver", 	RPC_RTYPE_WERROR, NULL, cmd_spoolss_setdriver,		PI_SPOOLSS, "Set printer driver",                  "" },
 	{ "getprintprocdir",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_getprintprocdir,    PI_SPOOLSS, "Get print processor directory",       "" },
