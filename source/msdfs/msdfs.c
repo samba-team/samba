@@ -589,6 +589,13 @@ int setup_dfs_referral(char* pathname, int max_referral_level, char** ppdata)
 	if (!pathname)
 		return -1;
 
+	/* Some buggy Dfs clients (seen in Win9X) can't handle replies
+	 containing the exact pathnames they send for referrals. They screw up
+	 if there are two backslashes in front. - kalele 2002.3.21
+	 */
+	while (strlen(pathname) > 1 && pathname[1] == '\\')
+		safe_strcpy(pathname, &pathname[1], strlen(pathname) - 1);
+
 	safe_strcpy(buf, pathname, sizeof(buf));
 	if (!get_referred_path(buf, &junction, &consumedcnt,
 			       &self_referral))
