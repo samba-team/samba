@@ -684,7 +684,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			 * a Win2k client bug. JRA.
 			 */
 			memset(p,'\0',26);
-			if (!was_8_3) {
+			if (!was_8_3 && lp_manglednames(SNUM(conn))) {
 				pstring mangled_name;
 				pstrcpy(mangled_name, fname);
 				mangle_map(mangled_name,True,True,SNUM(conn));
@@ -806,7 +806,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			 * a Win2k client bug. JRA.
 			 */
 			memset(p,'\0',26);
-			if (!was_8_3) {
+			if (!was_8_3 && lp_manglednames(SNUM(conn))) {
 				pstring mangled_name;
 				pstrcpy(mangled_name, fname);
 				mangle_map(mangled_name,True,True,SNUM(conn));
