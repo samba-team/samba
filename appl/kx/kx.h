@@ -152,6 +152,7 @@ int copy_encrypted (int fd1, int fd2, des_cblock *iv,
 		    des_key_schedule schedule);
 
 int get_xsockets (int *number, struct x_socket **sockets, int tcpp);
+int chown_xsockets (int n, struct x_socket *sockets, uid_t uid, gid_t gid);
 
 int connect_local_xsocket (unsigned dnr);
 int create_and_write_cookie (char *xauthfile,
