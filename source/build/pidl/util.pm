@@ -353,6 +353,17 @@ sub is_constant($)
 	return 0;
 }
 
+# return 1 if this is a fixed array
+sub is_fixed_array($)
+{
+	my $e = shift;
+	my $len = $e->{"ARRAY_LEN"};
+	if (defined $len && is_constant($len)) {
+		return 1;
+	}
+	return 0;
+}
+
 sub dump($)
 {
 	print Dumper shift;
