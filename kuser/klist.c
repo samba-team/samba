@@ -357,7 +357,7 @@ main (int argc, char **argv)
 	krb5_err (context, 1, ret, "krb5_cc_default");
 
     ret = krb5_cc_get_principal (context, ccache, &principal);
-    if(ret == ENOENT)
+    if(ret == ENOENT && !do_test)
 	krb5_errx(context, 1, "No ticket file: %s", 
 		  krb5_cc_get_name(context, ccache));
     if (ret)
