@@ -1533,7 +1533,8 @@ AC_ARG_WITH(libiconv,
     AC_MSG_ERROR(I won't take no for an answer)
   else
      if test "$withval" != "yes" ; then
-        LOOK_DIRS="$withval $LOOK_DIRS"
+	ICONV_PATH_SPEC=yes
+        LOOK_DIRS="$withval"
      fi
   fi
 ])
@@ -1544,7 +1545,10 @@ for i in $LOOK_DIRS ; do
     save_LDFLAGS=$LDFLAGS
     save_CPPFLAGS=$CPPFLAGS
     CPPFLAGS="-I$i/include"
-    LDFLAGS="-L$i/lib"
+dnl This is here to handle -withval stuff for --with-libiconv
+    if test x"$ICONV_PATH_SPEC" = "xyes" ; then
+       LDFLAGS="-L$i/lib"
+    fi
     LIBS=
     export LDFLAGS LIBS CPPFLAGS
 dnl Try to find iconv(3)
@@ -1562,7 +1566,9 @@ dnl there might be a working iconv further down the list of LOOK_DIRS
         ############
         # check for iconv in libc
         ic_save_LIBS="$LIBS"
-        LIBS="$LIBS -L$ICONV_LOCATION/lib"
+        if test x"$ICONV_PATH_SPEC" = "xyes" ; then
+           LIBS="$LIBS -L$ICONV_LOCATION/lib"
+        fi
         AC_CACHE_CHECK([for working iconv],samba_cv_HAVE_NATIVE_ICONV,[
         AC_TRY_RUN([
 #include <$jm_cv_include>
@@ -1573,7 +1579,7 @@ main(){
        if (cd == 0 || cd == (iconv_t)-1) {
           cd = iconv_open("IBM850", "UCS-2LE"); /* Solaris has this */
           if (cd == 0 || cd == (iconv_t)-1) {
-             cd = iconv_open("ISO-8859-1", "UTF-8"); /* IRIX has this */
+             cd = iconv_open("ISO8859-1", "UTF-8"); /* IRIX has this */
              if (cd == 0 || cd == (iconv_t)-1) {
                 return -1;
 	     }
