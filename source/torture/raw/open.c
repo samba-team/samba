@@ -740,6 +740,79 @@ done:
 	return ret;
 }
 
+/*
+  test RAW_OPEN_NTCREATEX with an already opened and byte range locked file
+
+  I've got an application that does a similar sequence of ntcreate&x,
+  locking&x and another ntcreate&x with
+  open_disposition==NTCREATEX_DISP_OVERWRITE_IF. Windows 2003 allows the
+  second open.
+*/
+static BOOL test_ntcreatex_brlocked(struct cli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	union smb_open io, io1;
+	union smb_lock io2;
+	struct smb_lock_entry lock[1];
+	const char *fname = BASEDIR "\\torture_ntcreatex.txt";
+	NTSTATUS status;
+	BOOL ret = True;
+
+	/* reasonable default parameters */
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.access_mask = 0x2019f;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_NON_DIRECTORY_FILE;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_IMPERSONATION;
+	io.ntcreatex.in.security_flags = NTCREATEX_SECURITY_DYNAMIC |
+		NTCREATEX_SECURITY_ALL;
+	io.ntcreatex.in.fname = fname;
+
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	io2.lockx.level = RAW_LOCK_LOCKX;
+	io2.lockx.in.fnum = io.ntcreatex.out.fnum;
+	io2.lockx.in.mode = LOCKING_ANDX_LARGE_FILES;
+	io2.lockx.in.timeout = 0;
+	io2.lockx.in.ulock_cnt = 0;
+	io2.lockx.in.lock_cnt = 1;
+	lock[0].pid = cli->session->pid;
+	lock[0].offset = 0;
+	lock[0].count = 0x1;
+	io2.lockx.in.locks = &lock[0];
+	status = smb_raw_lock(cli->tree, &io2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	io1.generic.level = RAW_OPEN_NTCREATEX;
+	io1.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
+	io1.ntcreatex.in.root_fid = 0;
+	io1.ntcreatex.in.access_mask = 0x20196;
+	io1.ntcreatex.in.alloc_size = 0;
+	io1.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io1.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	io1.ntcreatex.in.open_disposition = NTCREATEX_DISP_OVERWRITE_IF;
+	io1.ntcreatex.in.create_options = 0;
+	io1.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_IMPERSONATION;
+	io1.ntcreatex.in.security_flags = NTCREATEX_SECURITY_DYNAMIC |
+		NTCREATEX_SECURITY_ALL;
+	io1.ntcreatex.in.fname = fname;
+
+	status = smb_raw_open(cli->tree, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+ done:
+	cli_close(cli->tree, io.ntcreatex.out.fnum);
+	cli_close(cli->tree, io1.ntcreatex.out.fnum);
+	cli_unlink(cli->tree, fname);
+	return ret;
+}
 
 /*
   test RAW_OPEN_MKNEW
@@ -914,6 +987,10 @@ BOOL torture_raw_open(int dummy)
 	}
 	if (NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR))) {
 		printf("Failed to create " BASEDIR " - %s\n", cli_errstr(cli->tree));
+		return False;
+	}
+
+	if (!test_ntcreatex_brlocked(cli, mem_ctx)) {
 		return False;
 	}
 

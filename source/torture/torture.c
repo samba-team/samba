@@ -1489,6 +1489,8 @@ static BOOL run_locktest7(int dummy)
 	struct cli_state *cli1;
 	const char *fname = "\\lockt7.lck";
 	int fnum1;
+	int fnum2;
+	size_t size;
 	char buf[200];
 	BOOL correct = False;
 
@@ -1603,11 +1605,38 @@ static BOOL run_locktest7(int dummy)
 		goto fail;
 	}
 
-	cli_unlock(cli1->tree, fnum1, 130, 0);
+	printf("Testing truncate of locked file.\n");
+
+	fnum2 = cli_open(cli1->tree, fname, O_RDWR|O_TRUNC, DENY_NONE);
+
+	if (fnum2 == -1) {
+		printf("Unable to truncate locked file.\n");
+		correct = False;
+		goto fail;
+	} else {
+		printf("Truncated locked file.\n");
+	}
+
+	if (NT_STATUS_IS_ERR(cli_getatr(cli1->tree, fname, NULL, &size, NULL))) {
+		printf("getatr failed (%s)\n", cli_errstr(cli1->tree));
+		correct = False;
+		goto fail;
+	}
+
+	if (size != 0) {
+		printf("Unable to truncate locked file. Size was %u\n", size);
+		correct = False;
+		goto fail;
+	}
+
+	cli1->session->pid = 1;
+
+	cli_unlock(cli1->tree, fnum1, 130, 4);
 	correct = True;
 
 fail:
 	cli_close(cli1->tree, fnum1);
+	cli_close(cli1->tree, fnum2);
 	cli_unlink(cli1->tree, fname);
 	torture_close_connection(cli1);
 
@@ -3225,7 +3254,9 @@ error_test60:
 	}
 
 	printf("non-io open test #7 passed.\n");
+
 error_test70:
+
 	cli_unlink(cli1->tree, fname);
 
 	if (!torture_close_connection(cli1)) {
