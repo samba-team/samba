@@ -222,6 +222,10 @@ BOOL initialise_groups(char *user, uid_t uid, gid_t gid)
 	struct sec_ctx *prev_ctx_p;
 	BOOL result = True;
 
+	if (non_root_mode()) {
+		return True;
+	}
+
 	become_root();
 
 	/* Call initgroups() to get user groups */
