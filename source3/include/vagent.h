@@ -36,14 +36,14 @@ struct sock_redir
 struct vagent_ops
 {
 	void (*free_sock)(void* sock);
-	int (*get_agent_sock)(void* id);
+	int (*get_agent_sock)(char* id);
 
 	BOOL (*process_cli_sock)(struct sock_redir **socks, uint32 num_socks,
 				struct sock_redir *sock);
 	BOOL (*process_srv_sock)(struct sock_redir **socks, uint32 num_socks,
 				int fd);
 
-	void* id;
+	char* id;
 	struct sock_redir **socks;
 	uint32 num_socks;
 };

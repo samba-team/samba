@@ -138,12 +138,6 @@ BOOL allow_access(char *deny_list,char *allow_list,
 		  char *cname,char *caddr);
 BOOL check_access(int sock, char *allow_list, char *deny_list);
 
-/*The following definitions come from  lib/agent.c  */
-
-void init_sock_redir(struct vagent_ops*va);
-void free_sock_redir(struct vagent_ops*va);
-void start_agent(struct vagent_ops *va);
-
 /*The following definitions come from  lib/bitmap.c  */
 
 struct bitmap *bitmap_allocate(int n);
@@ -620,6 +614,8 @@ void reset_globals_after_fork(void);
 char *client_name(int fd);
 char *client_addr(int fd);
 int open_pipe_sock(char *path);
+int create_pipe_socket(char *dir, int dir_perms,
+				char *path, int path_perms);
 
 /*The following definitions come from  lib/util_status.c  */
 
@@ -680,6 +676,12 @@ void buffer4_to_str(char *dest, const BUFFER4 *str, size_t maxlen);
 BOOL copy_unistr2(UNISTR2 *str, const UNISTR2 *from);
 UNISTR2 *unistr2_dup(const UNISTR2 *name);
 void unistr2_free(UNISTR2 *name);
+
+/*The following definitions come from  lib/vagent.c  */
+
+void init_sock_redir(struct vagent_ops*va);
+void free_sock_redir(struct vagent_ops*va);
+void start_agent(struct vagent_ops *va);
 
 /*The following definitions come from  libsmb/clientgen.c  */
 

@@ -167,63 +167,15 @@ static BOOL process_srv_sock(struct sock_redir **socks,
 	return True;
 }
 
-static int get_agent_sock(void*id)
+static int get_agent_sock(char *id)
 {
-	int s;
-	struct sockaddr_un sa;
-	fstring path;
 	fstring dir;
-
-	CatchChild();
+	fstring path;
 
 	slprintf(dir, sizeof(dir)-1, "/tmp/.nmb");
-	mkdir(dir, 0777);
-
 	slprintf(path, sizeof(path)-1, "%s/agent", dir);
-	if (chmod(dir, 0777) < 0)
-	{
-		fprintf(stderr, "chmod on %s failed\n", sa.sun_path);
-		return -1;
-	}
 
-
-	/* start listening on unix socket */
-	s = socket(AF_UNIX, SOCK_STREAM, 0);
-
-	if (s < 0)
-	{
-		fprintf(stderr, "socket open failed\n");
-		return -1;
-	}
-
-	ZERO_STRUCT(sa);
-	sa.sun_family = AF_UNIX;
-	safe_strcpy(sa.sun_path, path, sizeof(sa.sun_path)-1);
-
-	if (bind(s, (struct sockaddr*) &sa, sizeof(sa)) < 0)
-	{
-		fprintf(stderr, "socket bind to %s failed\n", sa.sun_path);
-		close(s);
-		remove(path);
-		return -1;
-	}
-
-	if (s == -1)
-	{
-		DEBUG(0,("bind failed\n"));
-		remove(path);
-		return -1;
-	}
-
-	chmod(path, 0777);
-
-	if (listen(s, 5) == -1)
-	{
-		DEBUG(0,("listen failed\n"));
-		return -1;
-	}
-
-	return s;
+	return create_pipe_socket(dir, 0777, path, 0777);
 }
 
 static void start_nmb_agent(void)
