@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -474,11 +474,12 @@ doit_active (char *host, char *user,
 		break;
 	    }
 	fd = accept (thisfd, NULL, &zero);
-	if (fd < 0)
+	if (fd < 0) {
 	    if (errno == EINTR)
 		continue;
 	    else
 		err(1, "accept");
+	}
 
 	p = msg;
 	*p++ = NEW_CONN;
