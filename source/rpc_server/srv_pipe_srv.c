@@ -38,8 +38,9 @@ static BOOL create_rpc_reply(rpcsrv_struct * l, uint32 data_start,
 {
 	BOOL ret;
 
-	if ((l->auth != NULL) && (l->auth->api_create_pdu != NULL))
+	if (l->auth != NULL)
 	{
+                SMB_ASSERT(l->auth->api_create_pdu != NULL);
 		ret = l->auth->api_create_pdu(l, data_start, resp);
 	}
 	else
@@ -315,8 +316,8 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct * l,
 
 	if (l->auth != NULL)
 	{
-		if ((l->auth->api_auth_chk != NULL) &&
-                    !l->auth->api_auth_chk(l, pkt_type))
+               SMB_ASSERT(l->auth->api_auth_chk != NULL);
+		if (!l->auth->api_auth_chk(l, pkt_type))
 		{
 			if (l->auth_info != NULL)
 			{
@@ -344,11 +345,13 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct * l,
 	smb_io_rpc_hdr_ba("", &l->hdr_ba, &l->rdata, 0);
 	prs_realloc_data(&l->rdata, l->rdata.offset);
 
-	if ((l->auth != NULL) && (l->auth->api_auth_gen != NULL))
+	if (l->auth != NULL)
 	{
 		/***/
 		/*** now the authentication ***/
 		/***/
+
+                SMB_ASSERT(l->auth->api_auth_gen != NULL);
 
 		ret = l->auth->api_auth_gen(l, resp, pkt_type);
 
@@ -446,10 +449,12 @@ static BOOL api_pipe_request(rpcsrv_struct * l, const char *name,
 {
 	int i = 0;
 
-	if ((l->auth != NULL) && (l->auth->api_decode_pdu != NULL) && 
-            l->auth_validated)
+	if ((l->auth != NULL) && l->auth_validated)
 	{
 		DEBUG(10, ("api_pipe_request: validated auth\n"));
+
+                SMB_ASSERT(l->auth->api_decode_pdu != NULL);
+
 		if (!l->auth->api_decode_pdu(l))
 			return False;
 	}
@@ -615,9 +620,10 @@ static BOOL rpc_redir_local(rpcsrv_struct * l, prs_struct * req,
 		}
 		case RPC_BINDRESP:	/* not the real name! */
 		{
-                        if ((l->auth != NULL) && 
-                            (l->auth->api_auth_chk != NULL))
+                        if (l->auth != NULL) 
 			{
+                                SMB_ASSERT(l->auth->api_auth_chk != NULL);
+
 				reply = l->auth->api_auth_chk(l,
 							      l->hdr.
 							      pkt_type);

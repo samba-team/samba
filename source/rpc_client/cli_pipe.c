@@ -278,9 +278,10 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 		DEBUG(10, ("rpc_api_pipe_req: start: %d off: %d\n",
 			   data_start, data->offset));
 
-		if ((auth->cli_create_pdu != NULL) &&
-                    !auth->cli_create_pdu(con, opnum, data, data_start,
-					  &data_end, &data_t, &flags))
+                SMB_ASSERT(auth->cli_create_pdu != NULL);
+
+		if (!auth->cli_create_pdu(con, opnum, data, data_start, 
+                                          &data_end, &data_t, &flags))
 		{
 			return False;
 		}
@@ -356,7 +357,9 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 		smb_io_rpc_hdr_resp("rpc_hdr_resp", &rhdr_resp, &rpdu, 0);
 	}
 
-	if (rhdr.auth_len != 0 && (auth->cli_decode_pdu != NULL) &&
+        SMB_ASSERT(auth->cli_decode_pdu != NULL);
+
+	if (rhdr.auth_len != 0 &&
 	    !auth->cli_decode_pdu(con, &rpdu, rhdr.frag_len,
                                   rhdr.auth_len))
 	{
@@ -414,7 +417,9 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 			return False;
 		}
 
-		if (rhdr.auth_len != 0 && (auth->cli_decode_pdu != NULL) &&
+                SMB_ASSERT(auth->cli_decode_pdu != NULL);
+
+		if (rhdr.auth_len != 0 &&
 		    !auth->cli_decode_pdu(con, &rpdu, rhdr.frag_len,
 					  rhdr.auth_len))
 		{
@@ -578,7 +583,10 @@ BOOL cli_send_and_rcv_pdu_trans(struct cli_connection *con,
 		{
 			return False;
 		}
-		if (rhdr.auth_len != 0 && (auth->cli_decode_pdu != NULL) &&
+                
+                SMB_ASSERT(auth->cli_decode_pdu != NULL);
+
+		if (rhdr.auth_len != 0 &&
 		    !auth->cli_decode_pdu(con, rdata, rhdr.frag_len,
 					  rhdr.auth_len))
 		{
@@ -696,7 +704,9 @@ BOOL cli_send_and_rcv_pdu_rw(struct cli_connection *con,
 		}
 	}
 
-	if (rhdr.auth_len != 0 && (auth->cli_decode_pdu != NULL) &&
+        SMB_ASSERT(auth->cli_decode_pdu != NULL);
+
+	if (rhdr.auth_len != 0 &&
 	    !auth->cli_decode_pdu(con, rdata, rhdr.frag_len,
                                   rhdr.auth_len))
 	{
@@ -761,7 +771,9 @@ BOOL cli_rcv_pdu(struct cli_connection *con,
 		return False;
 	}
 
-	if (rhdr.auth_len != 0 && (auth->cli_decode_pdu != NULL) &&
+        SMB_ASSERT(auth->cli_decode_pdu != NULL);
+
+	if (rhdr.auth_len != 0 &&
 	    !auth->cli_decode_pdu(con, rdata, rhdr.frag_len, rhdr.auth_len))
 	{
 		return False;
@@ -961,9 +973,10 @@ BOOL rpc_pipe_bind(struct cli_connection *con,
 
 	rpc_call_id = get_rpc_call_id();
 
-	if ((auth->create_bind_req != NULL) &&
-            !auth->create_bind_req(con, &data,
-				   rpc_call_id, abstract, transfer))
+        SMB_ASSERT(auth->create_bind_req != NULL);
+
+	if (!auth->create_bind_req(con, &data, rpc_call_id, abstract, 
+                                   transfer))
 	{
 		return False;
 	}
@@ -993,17 +1006,22 @@ BOOL rpc_pipe_bind(struct cli_connection *con,
 			nt->max_recv_frag = hdr_ba.bba.max_rsize;
 		}
 
-		if (valid_ack && auth->decode_bind_resp != NULL)
+		if (valid_ack)
 		{
+                        SMB_ASSERT(auth->decode_bind_resp != NULL);
+
 			valid_ack = auth->decode_bind_resp(con, &rdata);
-			if (valid_ack && auth->create_bind_cont != NULL)
+
+			if (valid_ack)
 			{
 				prs_struct dataa;
 				prs_init(&dataa, 0, 4, False);
 
-				valid_ack = auth->create_bind_cont(con,
-								   &dataa,
-								   rpc_call_id);
+                                SMB_ASSERT(auth->create_bind_cont != NULL);
+
+				valid_ack = 
+                                    auth->create_bind_cont(con, &dataa,
+                                                           rpc_call_id);
 				if (valid_ack)
 				{
 					valid_ack =
