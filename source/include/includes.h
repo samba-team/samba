@@ -25,19 +25,6 @@
 #include "config.h"
 #endif
 
-#ifdef NO_PROTO
-/* get rid of prototypes for smbwrapper */
-#define _NO_PROTO
-
-#ifdef HAVE_SYS_CDEFS_H
-#include <sys/cdefs.h>
-#ifdef __P
-#undef __P
-#define __P(x) ()
-#endif
-#endif
-#endif
-
 #include "local.h"
 
 #ifdef AIX

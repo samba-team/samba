@@ -19,6 +19,12 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#if HAVE_SYS_SYSCALL_H
+#include <sys/syscall.h>
+#elif HAVE_SYSCALL_H
+#include <syscall.h>
+#endif
+
 #ifdef IRIX
 /* amazingly, IRIX gets its own syscall numbers wrong! */
 #ifdef SYSVoffset
@@ -63,19 +69,19 @@
 #endif
 
 #ifdef HAVE__OPENDIR
-#define real_opendir(fn)            	((DIR *)_opendir(fn))
+#define real_opendir(fn)            	(_opendir(fn))
 #elif SYS_opendir
-#define real_opendir(fn)		((DIR *)syscall(SYS_opendir,(fn)))
+#define real_opendir(fn)		(syscall(SYS_opendir,(fn)))
 #elif HAVE___OPENDIR
-#define real_opendir(fn)            	((DIR *)__opendir(fn))
+#define real_opendir(fn)            	(__opendir(fn))
 #endif
 
 #ifdef HAVE__READDIR
-#define real_readdir(d)            	((struct dirent *)_readdir(d))
+#define real_readdir(d)            	(_readdir(d))
 #elif HAVE___READDIR
-#define real_readdir(d)            	((struct dirent *)__readdir(d))
+#define real_readdir(d)            	(__readdir(d))
 #elif SYS_readdir
-#define real_readdir(d)		((struct dirent *)syscall(SYS_readdir,(d)))
+#define real_readdir(d)		(syscall(SYS_readdir,(d)))
 #endif
 
 #ifdef HAVE__CLOSEDIR
@@ -192,9 +198,9 @@
 #endif
 
 #ifdef HAVE__READDIR64
-#define real_readdir64(d)            	((struct dirent64 *)_readdir64(d))
+#define real_readdir64(d)            	(_readdir64(d))
 #elif HAVE___READDIR64
-#define real_readdir64(d)            	((struct dirent64 *)__readdir64(d))
+#define real_readdir64(d)            	(__readdir64(d))
 #endif
 
 #ifdef HAVE__LLSEEK
