@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -585,6 +585,7 @@ do_getticket (struct rx_header *hdr,
     krb5_data times;
     int32_t max_seq_len;
     hdb_entry *server_entry = NULL;
+    hdb_entry *client_entry = NULL;
     hdb_entry *krbtgt_entry = NULL;
     Key *kkey = NULL;
     Key *skey = NULL;
@@ -598,6 +599,7 @@ do_getticket (struct rx_header *hdr,
     char pinst[INST_SZ];
     char prealm[REALM_SZ];
     char server_name[256];
+    char client_name[256];
 
     krb5_data_zero (&aticket);
     krb5_data_zero (&times);
@@ -618,14 +620,6 @@ do_getticket (struct rx_header *hdr,
 	kdc_log(0, "Server not found in database: %s: %s",
 		server_name, krb5_get_err_text(context, ret));
 	make_error_reply (hdr, KANOENT, reply);
-	goto out;
-    }
-
-    ret = check_flags (NULL, NULL,
-		       server_entry, server_name,
-		       FALSE);
-    if (ret) {
-	make_error_reply (hdr, KAPWEXPIRED, reply);
 	goto out;
     }
 
@@ -700,6 +694,26 @@ do_getticket (struct rx_header *hdr,
 	}
     }
 
+    snprintf (client_name, sizeof(client_name),
+	      "%s.%s@%s", pname, pinst, prealm);
+
+    ret = db_fetch4 (pname, pinst, prealm, &client_entry);
+    if(ret != HDB_ERR_NOENTRY || 
+       (ret == HDB_ERR_NOENTRY && strcmp(prealm, v4_realm) == 0)) {
+	kdc_log(0, "Client not found in database: %s: %s",
+		client_name, krb5_get_err_text(context, ret));
+	make_error_reply (hdr, KANOENT, reply);
+	goto out;
+    }
+
+    ret = check_flags (client_entry, client_name,
+		       server_entry, server_name,
+		       FALSE);
+    if (ret) {
+	make_error_reply (hdr, KAPWEXPIRED, reply);
+	goto out;
+    }
+
     /* decrypt the times */
     des_set_key (&session, schedule);
     des_ecb_encrypt (times.data,
@@ -731,6 +745,10 @@ do_getticket (struct rx_header *hdr,
 	max_life = min(max_life, *krbtgt_entry->max_life);
     if (server_entry->max_life)
 	max_life = min(max_life, *server_entry->max_life);
+    /* if this is a cross realm request, the client_entry will likely
+       be NULL */
+    if (client_entry && client_entry->max_life)
+	max_life = min(max_life, *client_entry->max_life);
 
     life = krb_time_to_life(kdc_time, kdc_time + max_life);
 
