@@ -490,9 +490,13 @@ uint32 cli_net_sam_logon(const char *srv_name, const char *cli_hostname,
 
 		net_io_r_sam_logon("", &r_s, &rbuf, 0);
 
-		if (rbuf.offset == 0)
+		if (rbuf.offset != 0)
 		{
 			status = NT_STATUS_INVALID_PARAMETER;
+		}
+		else
+		{
+			status = r_s.status;
 		}
 
 		if (status != 0x0)
@@ -500,16 +504,7 @@ uint32 cli_net_sam_logon(const char *srv_name, const char *cli_hostname,
 			/* report error code */
 			DEBUG(5,
 			      ("cli_net_sam_logon: %s\n",
-			       get_nt_error_msg(r_s.status)));
-		}
-
-		if (status == 0x0)
-		{
-			/* report error code */
-			DEBUG(5,
-			      ("cli_net_sam_logon: %s\n",
-			       get_nt_error_msg(r_s.status)));
-			status = r_s.status;
+			       get_nt_error_msg(status)));
 		}
 
 		/* Update the credentials. */
