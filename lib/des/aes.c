@@ -43,6 +43,8 @@ RCSID("$Id$");
 #include <ktypes.h>
 #endif
 
+#include <string.h>
+
 #include "rijndael-alg-fst.h"
 #include "aes.h"
 
@@ -74,4 +76,51 @@ void
 AES_decrypt(const unsigned char *in, unsigned char *out, const AES_KEY *key)
 {
     rijndaelDecrypt(key->key, key->rounds, in, out);
+}
+
+void
+AES_cbc_encrypt(const unsigned char *in, unsigned char *out,
+		unsigned long size, const AES_KEY *key,
+		unsigned char *iv, int encrypt)
+{
+    char tmp[AES_BLOCK_SIZE];
+    int i;
+
+    if (encrypt) {
+	while (size >= AES_BLOCK_SIZE) {
+	    for (i = 0; i < AES_BLOCK_SIZE; i++)
+		tmp[i] = in[i] ^ iv[i];
+	    AES_encrypt(tmp, out, key);
+	    memcpy(iv, out, AES_BLOCK_SIZE);
+	    size -= AES_BLOCK_SIZE;
+	    in += AES_BLOCK_SIZE;
+	    out += AES_BLOCK_SIZE;
+	}
+	if (size) {
+	    for (i = 0; i < size; i++)
+		tmp[i] = in[i] ^ iv[i];
+	    for (i = size; i < AES_BLOCK_SIZE; i++)
+		tmp[i] = iv[i];
+	    AES_encrypt(tmp, out, key);
+	    memcpy(iv, out, AES_BLOCK_SIZE);
+	}
+    } else {
+	while (size >= AES_BLOCK_SIZE) {
+	    memcpy(tmp, in, AES_BLOCK_SIZE);
+	    AES_decrypt(tmp, out, key);
+	    for (i = 0; i < AES_BLOCK_SIZE; i++)
+		out[i] ^= iv[i];
+	    memcpy(iv, tmp, AES_BLOCK_SIZE);
+	    size -= AES_BLOCK_SIZE;
+	    in += AES_BLOCK_SIZE;
+	    out += AES_BLOCK_SIZE;
+	}
+	if (size) {
+	    memcpy(tmp, in, AES_BLOCK_SIZE);
+	    AES_decrypt(tmp, out, key);
+	    for (i = 0; i < size; i++)
+		out[i] ^= iv[i];
+	    memcpy(iv, tmp, AES_BLOCK_SIZE);
+	}
+    }
 }
