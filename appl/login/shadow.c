@@ -72,6 +72,9 @@ check_shadow(struct passwd *pw, struct spwd *sp)
 
   today = time(0)/(24L * 60 * 60);
   
+  if (sp == NULL)
+      return;
+
   if (sp->sp_expire > 0) {
         if (today >= sp->sp_expire) {
             printf("Your account has expired.\n");
