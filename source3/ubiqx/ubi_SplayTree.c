@@ -34,73 +34,17 @@
  *
  * -------------------------------------------------------------------------- **
  *
- * Revision 2.5  1997/07/26 04:15:42  crh
- * + Cleaned up a few minor syntax annoyances that gcc discovered for me.
- * + Changed ubi_TRUE and ubi_FALSE to ubi_trTRUE and ubi_trFALSE.
+ * Log: ubi_SplayTree.c,v
+ * Revision 3.0  1997/12/08 05:32:28  crh
+ * This is a new major revision level because of a redesign of the handling
+ * of the pointers in the ubi_trNode structure.  See ubi_BinTree for more
+ * info.
  *
- * Revision 2.4  1997/06/03 04:42:21  crh
- * Changed TRUE and FALSE to ubi_TRUE and ubi_FALSE to avoid causing
- * problems.
+ * Revision 2;  1995/02/27 - 1997/12/07:
+ * Major changes: added the function ubi_sptSplay().
  *
- * Revision 2.3  1995/10/03 22:19:07  CRH
- * Ubisized!
- * Also, added the function ubi_sptSplay().
- *
- * Revision 2.1  95/03/09  23:54:42  CRH
- * Added the ModuleID static string and function.  These modules are now
- * self-identifying.
- * 
- * Revision 2.0  95/02/27  22:34:46  CRH
- * This module was updated to match the interface changes made to the
- * ubi_BinTree module.  In particular, the interface to the Locate() function
- * has changed.  See ubi_BinTree for more information on changes and new
- * functions.
- *
- * The revision number was also upped to match ubi_BinTree.
- *
- * Revision 1.1  93/10/18  20:35:16  CRH
- * I removed the hard-coded logical device names from the include file
- * specifications.  CRH
- *
- * Revision 1.0  93/10/15  23:00:15  CRH
- * With this revision, I have added a set of #define's that provide a single,
- * standard API to all existing tree modules.  Until now, each of the three
- * existing modules had a different function and typedef prefix, as follows:
- *
- *       Module        Prefix
- *     ubi_BinTree     ubi_bt
- *     ubi_AVLtree     ubi_avl
- *     ubi_SplayTree   ubi_spt
- *
- * To further complicate matters, only those portions of the base module
- * (ubi_BinTree) that were superceeded in the new module had the new names.
- * For example, if you were using ubi_AVLtree, the AVL node structure was
- * named "ubi_avlNode", but the root structure was still "ubi_btRoot".  Using
- * SplayTree, the locate function was called "ubi_sptLocate", but the next
- * and previous functions remained "ubi_btNext" and "ubi_btPrev".
- *
- * This was not too terrible if you were familiar with the modules and knew
- * exactly which tree model you wanted to use.  If you wanted to be able to
- * change modules (for speed comparisons, etc), things could get messy very
- * quickly.
- *
- * So, I have added a set of defined names that get redefined in any of the
- * descendant modules.  To use this standardized interface in your code,
- * simply replace all occurances of "ubi_bt", "ubi_avl", and "ubi_spt" with
- * "ubi_tr".  The "ubi_tr" names will resolve to the correct function or
- * datatype names for the module that you are using.  Just remember to
- * include the header for that module in your program file.  Because these
- * names are handled by the preprocessor, there is no added run-time
- * overhead.
- *
- * Note that the original names do still exist, and can be used if you wish
- * to write code directly to a specific module.  This should probably only be
- * done if you are planning to implement a new descendant type, such as
- * red/black trees.  CRH
- *
- * Revision 0.1  93/04/25  22:03:32  CRH
- * Simply changed the <exec/types.h> #include reference the .c file to
- * use <stdlib.h> instead.  The latter is portable, the former is not.
+ * Revision 1; 93/10/15 - 95/02/27:
+ * Added the ubi_tr defines.  See ubi_BinTree.h for more info.
  *
  * Revision 0.0  93/04/21  23:05:52  CRH
  * Initial version, written by Christopher R. Hertel.
@@ -117,8 +61,8 @@
  */
 
 static char ModuleID[] = "ubi_SplayTree\n\
-\tRevision: 2.5\n\
-\tDate: 1997/07/26 04:15:42\n\
+\tRevision: 3.0\n\
+\tDate: 1997/12/08 05:32:28\n\
 \tAuthor: crh\n";
 
 
@@ -143,33 +87,33 @@ static void Rotate( ubi_btNodePtr p )
   {
   ubi_btNodePtr parentp;
   ubi_btNodePtr tmp;
-  char          way;
-  char          revway;
+  signed char   way;
+  signed char   revway;
 
-  parentp = p->Link[PARENT];    /* Find parent. */
+  parentp = p->Link[ubi_trPARENT];    /* Find parent. */
 
   if( parentp )                 /* If no parent, then we're already the root. */
     {
     way     = p->gender;
-    revway  = RevWay(way);
+    revway  = ubi_trRevWay(way);
     tmp     = p->Link[revway];
 
     parentp->Link[way]  = tmp;
     if( tmp )
       {
-      tmp->Link[PARENT] = parentp;
-      tmp->gender       = way;
+      tmp->Link[ubi_trPARENT] = parentp;
+      tmp->gender             = way;
       }
 
-    tmp                 = parentp->Link[PARENT];
-    p->Link[PARENT]     = tmp;
-    p->gender           = parentp->gender;
+    tmp                   = parentp->Link[ubi_trPARENT];
+    p->Link[ubi_trPARENT] = tmp;
+    p->gender             = parentp->gender;
     if( tmp )
       tmp->Link[p->gender] = p;
 
-    parentp->Link[PARENT] = p;
-    parentp->gender       = revway;
-    p->Link[revway]       = parentp;
+    parentp->Link[ubi_trPARENT] = p;
+    parentp->gender             = revway;
+    p->Link[revway]             = parentp;
     }
   } /* Rotate */
 
@@ -187,17 +131,17 @@ static ubi_btNodePtr Splay( ubi_btNodePtr SplayWithMe )
   {
   ubi_btNodePtr parent;
 
-  while( (parent = SplayWithMe->Link[PARENT]) )
+  while( (parent = SplayWithMe->Link[ubi_trPARENT]) )
     {
     if( parent->gender == SplayWithMe->gender )       /* Zig-Zig */
       Rotate( parent );
     else
       {
-      if( EQUAL != parent->gender )                   /* Zig-Zag */
+      if( ubi_trEQUAL != parent->gender )             /* Zig-Zag */
         Rotate( SplayWithMe );
       }
     Rotate( SplayWithMe );                            /* Zig */
-    } /* while */
+    } 
   return( SplayWithMe );
   } /* Splay */
 
@@ -289,24 +233,24 @@ ubi_btNodePtr ubi_sptRemove( ubi_btRootPtr RootPtr, ubi_btNodePtr DeadNode )
   ubi_btNodePtr p;
 
   (void)Splay( DeadNode );                  /* Move dead node to root.        */
-  if( (p = DeadNode->Link[LEFT]) )          /* If left subtree exists...      */
+  if( (p = DeadNode->Link[ubi_trLEFT]) )    /* If left subtree exists...      */
     {
-    ubi_btNodePtr q = DeadNode->Link[RIGHT];
+    ubi_btNodePtr q = DeadNode->Link[ubi_trRIGHT];
 
-    p->Link[PARENT] = NULL;                 /* Left subtree node becomes root.*/
-    p->gender       = PARENT;
+    p->Link[ubi_trPARENT] = NULL;           /* Left subtree node becomes root.*/
+    p->gender       = ubi_trPARENT;
     p               = ubi_btLast( p );      /* Find rightmost left tree node..*/
-    p->Link[RIGHT]  = q;                    /* ...attach right tree.          */
+    p->Link[ubi_trRIGHT]  = q;              /* ...attach right tree.          */
     if( q )
-      q->Link[PARENT] = p;
+      q->Link[ubi_trPARENT] = p;
     RootPtr->root   = Splay( p );           /* Resplay at p.                  */
     }
   else
     {
-    if( (p = DeadNode->Link[RIGHT]) )       /* No left, but right subtree...  */
+    if( (p = DeadNode->Link[ubi_trRIGHT]) ) /* No left, but right subtree...  */
       {                                     /* ...exists...                   */
-      p->Link[PARENT] = NULL;               /* Right subtree root becomes...  */
-      p->gender       = PARENT;             /* ...overall tree root.          */
+      p->Link[ubi_trPARENT] = NULL;         /* Right subtree root becomes...  */
+      p->gender       = ubi_trPARENT;       /* ...overall tree root.          */
       RootPtr->root   = p;
       }
     else
@@ -424,7 +368,7 @@ void ubi_sptSplay( ubi_btRootPtr RootPtr,
    *          Splaying the tree will not damage it (assuming that I've done
    *          *my* job), but there is overhead involved.  I don't recommend
    *          that you use this function unless you understand the underlying
-   *          Splay Tree principles involved.
+   *          Splay Tree.
    * ------------------------------------------------------------------------ **
    */
   {

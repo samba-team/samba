@@ -6,12 +6,7 @@
  *  Email:  crh@ubiqx.mn.org
  * -------------------------------------------------------------------------- **
  *
- *  ubi_BinTree manages a simple binary tree.  Nothing fancy here.  No height
- *  balancing, no restructuring.  Still, a good tool for creating short, low-
- *  overhead sorted lists of things that need to be found in a hurry.
- *
- *  In addition, this module provides a good basis for creating other types
- *  of binary tree handling modules.
+ *  This module implements simple binary trees.
  *
  * -------------------------------------------------------------------------- **
  *
@@ -31,64 +26,73 @@
  *
  * -------------------------------------------------------------------------- **
  *
- * Revision 2.4  1997/07/26 04:11:10  crh
- * + Just to be annoying I changed ubi_TRUE and ubi_FALSE to ubi_trTRUE
- *   and ubi_trFALSE.
- * + There is now a type ubi_trBool to go with ubi_trTRUE and ubi_trFALSE.
- * + There used to be something called "ubi_TypeDefs.h".  I got rid of it.
- * + Added function ubi_btLeafNode().
+ * Log: ubi_BinTree.c,v
+ * Revision 3.0  1997/12/08 06:49:11  crh
+ * This is a new major revision level for all ubiqx binary tree modules.
+ * In previous releases, the ubi_trNode structure looked like this:
  *
- * Revision 2.3  1997/06/03 05:16:17  crh
- * Changed TRUE and FALSE to ubi_TRUE and ubi_FALSE to avoid conflicts.
- * Also changed the interface to function InitTree().  See the comments
- * for this function for more information.
+ *   typedef struct ubi_btNodeStruct
+ *     {
+ *     struct ubi_btNodeStruct *Link[3];
+ *     signed char              gender;
+ *     } ubi_btNode;
  *
- * Revision 2.2  1995/10/03 22:00:07  CRH
- * Ubisized!
- * 
- * Revision 2.1  95/03/09  23:37:10  CRH
- * Added the ModuleID static string and function.  These modules are now
- * self-identifying.
- * 
- * Revision 2.0  95/02/27  22:00:17  CRH
- * Revision 2.0 of this program includes the following changes:
+ * As a result, the pointers were indexed as
  *
- *     1)  A fix to a major typo in the RepaceNode() function.
- *     2)  The addition of the static function Border().
- *     3)  The addition of the public functions FirstOf() and LastOf(), which
- *         use Border(). These functions are used with trees that allow
- *         duplicate keys.
- *     4)  A complete rewrite of the Locate() function.  Locate() now accepts
- *         a "comparison" operator.
- *     5)  Overall enhancements to both code and comments.
+ *   Link[0] == Left Child
+ *   Link[1] == Parent
+ *   Link[2] == Right Child
  *
- * I decided to give this a new major rev number because the interface has
- * changed.  In particular, there are two new functions, and changes to the
- * Locate() function.
+ * With this release, the node structure changes to:
  *
- * Revision 1.0  93/10/15  22:44:59  CRH
- * With this revision, I have added a set of #define's that provide a single,
- * standard API to all existing tree modules.  Until now, each of the three
- * existing modules had a different function and typedef prefix, as follows:
+ *   typedef struct ubi_btNodeStruct
+ *     {
+ *     struct ubi_btNodeStruct *leftlink
+ *     struct ubi_btNodeStruct *Link[2];
+ *     signed char              gender;
+ *     } ubi_btNode;
+ *
+ * The leftlink field is used as a place holder, and the pointers are now
+ * index as
+ *
+ *   Link[-1] == Left Child  (aka. leftlink)
+ *   Link[ 0] == Parent
+ *   Link[ 1] == Right Child
+ *
+ * which is much nicer.  Doing things this way removes the need to shift
+ * values between the two numbering schemes, thus removing one macro,
+ * simplifying another, and getting rid of a whole bunch of increment &
+ * decrement operations.
+ *
+ * Revision 2; 1995/02/27 - 1997/12/07 included:
+ *  - The addition of the ModuleID static string and ubi_ModuleID() function.
+ *  - The addition of the public functions FirstOf() and LastOf(). These
+ *    functions are used with trees that allow duplicate keys.
+ *  - The addition of the ubi_btLeafNode() function.
+ *  - A rewrite of the Locate() function.
+ *  - A change to the parameter list in function ubi_btInitTree().
+ *  - Bugfixes.
+ *
+ * Revision 1; 93/10/15 - 95/02/27:
+ * Revision 1 introduced a set of #define's that provide a single API to all
+ * of the existing tree modules.  Each of these modules has a different name
+ * prefix, as follows:
  *
  *       Module        Prefix
  *     ubi_BinTree     ubi_bt
  *     ubi_AVLtree     ubi_avl
  *     ubi_SplayTree   ubi_spt
  *
- * To further complicate matters, only those portions of the base module
- * (ubi_BinTree) that were superceeded in the new module had the new names.
- * For example, if you were using ubi_AVLtree, the AVL node structure was
- * named "ubi_avlNode", but the root structure was still "ubi_btRoot".  Using
- * SplayTree, the locate function was called "ubi_sptLocate", but the next
- * and previous functions remained "ubi_btNext" and "ubi_btPrev".
+ * Only those portions of the base module (ubi_BinTree) that are superceeded
+ * in the descendant module have new names.  For example, the AVL node
+ * structure in ubi_AVLtree.h is named "ubi_avlNode", but the root structure
+ * is still "ubi_btRoot".  Using SplayTree, the locate function is called
+ * "ubi_sptLocate", but the next and previous functions remained "ubi_btNext"
+ * and "ubi_btPrev".
  *
- * This was not too terrible if you were familiar with the modules and knew
- * exactly which tree model you wanted to use.  If you wanted to be able to
- * change modules (for speed comparisons, etc), things could get messy very
- * quickly.
+ * This is confusing.
  *
- * So, I have added a set of defined names that get redefined in any of the
+ * So, I added a set of defined names that get redefined in any of the
  * descendant modules.  To use this standardized interface in your code,
  * simply replace all occurances of "ubi_bt", "ubi_avl", and "ubi_spt" with
  * "ubi_tr".  The "ubi_tr" names will resolve to the correct function or
@@ -100,7 +104,8 @@
  * Note that the original names do still exist, and can be used if you wish
  * to write code directly to a specific module.  This should probably only be
  * done if you are planning to implement a new descendant type, such as
- * red/black trees.  CRH
+ * red/black trees, or if you plan to use two or more specific tree types
+ * in the same piece of code.  CRH
  *
  *  V0.0 - June, 1991   -  Written by Christopher R. Hertel (CRH).
  *
@@ -115,8 +120,8 @@
  */
 
 static char ModuleID[] = "ubi_BinTree\n\
-\tRevision: 2.4\n\
-\tDate: 1997/07/26 04:11:10\n\
+\tRevision: 3.0\n\
+\tDate: 1997/12/08 06:49:11\n\
 \tAuthor: crh\n";
 
 /* ========================================================================== **
@@ -129,7 +134,7 @@ static ubi_btNodePtr qFind( ubi_btCompFunc cmp,
   /* ------------------------------------------------------------------------ **
    * This function performs a non-recursive search of a tree for a node
    * matching a specific key.  It is called "qFind()" because it is
-   * faster that TreeFind (below).
+   * (probably a little bit) faster that TreeFind (below).
    *
    *  Input:
    *     cmp      -  a pointer to the tree's comparison function.
@@ -148,9 +153,9 @@ static ubi_btNodePtr qFind( ubi_btCompFunc cmp,
    * ------------------------------------------------------------------------ **
    */
   {
-  char tmp;
+  signed char tmp;
 
-  while( p && (( tmp = AbNormal((*cmp)(FindMe, p)) ) != EQUAL) )
+  while( p && (( tmp = ubi_trNormalize((*cmp)(FindMe, p)) ) != ubi_trEQUAL) )
     p = p->Link[tmp];
 
   return( p );
@@ -159,7 +164,7 @@ static ubi_btNodePtr qFind( ubi_btCompFunc cmp,
 static ubi_btNodePtr TreeFind( ubi_btItemPtr  findme,
                                ubi_btNodePtr  p,
                                ubi_btNodePtr *parentp,
-                               char          *gender,
+                               signed char   *gender,
                                ubi_btCompFunc CmpFunc )
   /* ------------------------------------------------------------------------ **
    * TreeFind() searches a tree for a given value (findme).  It will return a
@@ -189,25 +194,27 @@ static ubi_btNodePtr TreeFind( ubi_btItemPtr  findme,
    */
   {
   register ubi_btNodePtr tmp_p = p;
-  ubi_btNodePtr tmp_pp = NULL;
-  char tmp_sex = EQUAL;
-  char tmp_cmp;
+  ubi_btNodePtr tmp_pp         = NULL;
+  signed char   tmp_gender     = ubi_trEQUAL;
+  signed char   tmp_cmp;
 
-  while( tmp_p && (EQUAL != (tmp_cmp = AbNormal((*CmpFunc)(findme, tmp_p)))) )
+  while( tmp_p
+      && (ubi_trEQUAL != (tmp_cmp = ubi_trNormalize((*CmpFunc)(findme, tmp_p))))
+       )
     {
     tmp_pp  = tmp_p;                /* Keep track of previous node. */
-    tmp_sex = tmp_cmp;              /* Keep track of sex of child.  */
+    tmp_gender = tmp_cmp;           /* Keep track of sex of child.  */
     tmp_p = tmp_p->Link[tmp_cmp];   /* Go to child. */
     }
   *parentp = tmp_pp;                /* Return results. */
-  *gender  = tmp_sex;
+  *gender  = tmp_gender;
   return( tmp_p );
   } /* TreeFind */
 
 static void ReplaceNode( ubi_btNodePtr *parent,
                          ubi_btNodePtr  oldnode,
                          ubi_btNodePtr  newnode )
-  /* ------------------------------------------------------------------ *
+  /* ------------------------------------------------------------------------ **
    * Remove node oldnode from the tree, replacing it with node newnode.
    *
    * Input:
@@ -220,12 +227,8 @@ static void ReplaceNode( ubi_btNodePtr *parent,
    *             place of <*oldnode>.
    *
    * Notes:    Don't forget to free oldnode.
-   *           Also, this function used to have a really nasty typo
-   *           bug.  "oldnode" and "newnode" were swapped in the line
-   *           that now reads:
-   *     ((unsigned char *)newnode)[i] = ((unsigned char *)oldnode)[i];
-   *           Bleah!
-   * ------------------------------------------------------------------ *
+   *
+   * ------------------------------------------------------------------------ **
    */
   {
   register int i;
@@ -233,10 +236,17 @@ static void ReplaceNode( ubi_btNodePtr *parent,
 
   for( i = 0; i < btNodeSize; i++ ) /* Copy node internals to new node. */
     ((unsigned char *)newnode)[i] = ((unsigned char *)oldnode)[i];
-  (*parent) = newnode;              /* Old node's parent points to new child. */
+
+  /* Old node's parent points to new child. */
+  (*parent) = newnode;
+
   /* Now tell the children about their new step-parent. */
-  if( oldnode->Link[LEFT ] ) (oldnode->Link[LEFT ])->Link[PARENT] = newnode;
-  if( oldnode->Link[RIGHT] ) (oldnode->Link[RIGHT])->Link[PARENT] = newnode;
+  if( oldnode->Link[ubi_trLEFT ] )
+    (oldnode->Link[ubi_trLEFT ])->Link[ubi_trPARENT] = newnode;
+
+  if( oldnode->Link[ubi_trRIGHT] )
+    (oldnode->Link[ubi_trRIGHT])->Link[ubi_trPARENT] = newnode;
+
   } /* ReplaceNode */
 
 static void SwapNodes( ubi_btRootPtr RootPtr,
@@ -263,22 +273,22 @@ static void SwapNodes( ubi_btRootPtr RootPtr,
   ubi_btNodePtr  dummy_p = &dummy;
 
   /* Replace Node 1 with the dummy, thus removing Node1 from the tree. */
-  if( Node1->Link[PARENT] )
-    Parent = &((Node1->Link[PARENT])->Link[Node1->gender]);
+  if( Node1->Link[ubi_trPARENT] )
+    Parent = &((Node1->Link[ubi_trPARENT])->Link[Node1->gender]);
   else
     Parent = &(RootPtr->root);
   ReplaceNode( Parent, Node1, dummy_p );
 
   /* Swap Node 1 with Node 2, placing Node 1 back into the tree. */
-  if( Node2->Link[PARENT] )
-    Parent = &((Node2->Link[PARENT])->Link[Node2->gender]);
+  if( Node2->Link[ubi_trPARENT] )
+    Parent = &((Node2->Link[ubi_trPARENT])->Link[Node2->gender]);
   else
     Parent = &(RootPtr->root);
   ReplaceNode( Parent, Node2, Node1 );
 
   /* Swap Node 2 and the dummy, thus placing Node 2 back into the tree. */
-  if( dummy_p->Link[PARENT] )
-    Parent = &((dummy_p->Link[PARENT])->Link[dummy_p->gender]);
+  if( dummy_p->Link[ubi_trPARENT] )
+    Parent = &((dummy_p->Link[ubi_trPARENT])->Link[dummy_p->gender]);
   else
     Parent = &(RootPtr->root);
   ReplaceNode( Parent, dummy_p, Node2 );
@@ -289,7 +299,7 @@ static void SwapNodes( ubi_btRootPtr RootPtr,
  */
 
 static ubi_btNodePtr SubSlide( register ubi_btNodePtr P,
-                               register char  whichway )
+                               register signed char   whichway )
   /* ------------------------------------------------------------------------ **
    * Slide down the side of a subtree.
    *
@@ -317,7 +327,7 @@ static ubi_btNodePtr SubSlide( register ubi_btNodePtr P,
   } /* SubSlide */
 
 static ubi_btNodePtr Neighbor( register ubi_btNodePtr P,
-                               register char  whichway )
+                               register signed char   whichway )
   /* ------------------------------------------------------------------------ **
    * Given starting point p, return the (key order) next or preceeding node
    * in the tree.
@@ -336,14 +346,14 @@ static ubi_btNodePtr Neighbor( register ubi_btNodePtr P,
   if( P )
     {
     if( P->Link[ whichway ] )
-      return( SubSlide( P->Link[ whichway ], (char)RevWay(whichway) ) );
+      return( SubSlide( P->Link[ whichway ], ubi_trRevWay(whichway) ) );
     else
-      while( P->Link[ PARENT ] )
+      while( P->Link[ ubi_trPARENT ] )
         {
-        if( (P->Link[ PARENT ])->Link[ whichway ] == P )
-          P = P->Link[ PARENT ];
+        if( (P->Link[ ubi_trPARENT ])->Link[ whichway ] == P )
+          P = P->Link[ ubi_trPARENT ];
         else
-          return( P->Link[ PARENT ] );
+          return( P->Link[ ubi_trPARENT ] );
         }
     }
   return( NULL );
@@ -352,7 +362,7 @@ static ubi_btNodePtr Neighbor( register ubi_btNodePtr P,
 static ubi_btNodePtr Border( ubi_btRootPtr RootPtr,
                              ubi_btItemPtr FindMe,
                              ubi_btNodePtr p,
-                             char          whichway )
+                             signed char   whichway )
   /* ------------------------------------------------------------------------ **
    * Given starting point p, which has a key value equal to *FindMe, locate
    * the first (index order) node with the same key value.
@@ -384,17 +394,17 @@ static ubi_btNodePtr Border( ubi_btRootPtr RootPtr,
   register ubi_btNodePtr q;
 
   /* Exit if there's nothing that can be done. */
-  if( !Dups_OK( RootPtr ) || (PARENT == whichway) )
+  if( !ubi_trDups_OK( RootPtr ) || (ubi_trPARENT == whichway) )
     return( p );
 
   /* First, if needed, move up the tree.  We need to get to the root of the
    * subtree that contains all of the matching nodes.
    */
-  q = p->Link[PARENT];
-  while( q && (EQUAL == AbNormal( (*(RootPtr->cmp))(FindMe, q) )) )
+  q = p->Link[ubi_trPARENT];
+  while( q && (ubi_trEQUAL == ubi_trNormalize( (*(RootPtr->cmp))(FindMe, q) )) )
     {
     p = q;
-    q = p->Link[PARENT];
+    q = p->Link[ubi_trPARENT];
     }
 
   /* Next, move back down in the "whichway" direction. */
@@ -421,15 +431,15 @@ long ubi_btSgn( register long x )
    *
    *  Input:  x - a signed long integer value.
    *
-   *  Output: the "sign" of x, represented as follows:
+   *  Output: -1, 0, or 1 representing the "sign" of x as follows:
    *            -1 == negative
    *             0 == zero (no sign)
    *             1 == positive
    *
-   * Note: This utility is provided in order to facilitate the conversion
-   *       of C comparison function return values into BinTree direction
-   *       values: {LEFT, PARENT, EQUAL}.  It is INCORPORATED into the
-   *       AbNormal() conversion macro!
+   * Note:    This utility is provided in order to facilitate the conversion
+   *          of C comparison function return values into BinTree direction
+   *          values: {ubi_trLEFT, ubi_trPARENT, ubi_trEQUAL}.  It is
+   *          incorporated into the ubi_trNormalize() conversion macro.
    *
    * ------------------------------------------------------------------------ **
    */
@@ -447,10 +457,10 @@ ubi_btNodePtr ubi_btInitNode( ubi_btNodePtr NodePtr )
    * ------------------------------------------------------------------------ **
    */
   {
-  NodePtr->Link[ LEFT ]   = NULL;
-  NodePtr->Link[ PARENT ] = NULL;
-  NodePtr->Link[ RIGHT ]  = NULL;
-  NodePtr->gender         = EQUAL;
+  NodePtr->Link[ ubi_trLEFT ]   = NULL;
+  NodePtr->Link[ ubi_trPARENT ] = NULL;
+  NodePtr->Link[ ubi_trRIGHT ]  = NULL;
+  NodePtr->gender               = ubi_trEQUAL;
   return( NodePtr );
   } /* ubi_btInitNode */
 
@@ -543,7 +553,7 @@ ubi_trBool ubi_btInsert( ubi_btRootPtr  RootPtr,
   {
   ubi_btNodePtr OtherP,
                 parent = NULL;
-  char          tmp;
+  signed char   tmp;
 
   if( !(OldNode) )       /* If they didn't give us a pointer, supply our own. */
     OldNode = &OtherP;
@@ -560,9 +570,9 @@ ubi_trBool ubi_btInsert( ubi_btRootPtr  RootPtr,
       RootPtr->root = NewNode;
     else
       {
-      parent->Link[tmp]     = NewNode;
-      NewNode->Link[PARENT] = parent;
-      NewNode->gender       = tmp;
+      parent->Link[tmp]           = NewNode;
+      NewNode->Link[ubi_trPARENT] = parent;
+      NewNode->gender             = tmp;
       }
     (RootPtr->count)++;
     return( ubi_trTRUE );
@@ -571,24 +581,25 @@ ubi_trBool ubi_btInsert( ubi_btRootPtr  RootPtr,
   /* If we reach this point, we know that a duplicate node exists.  This
    * section adds the node to the tree if duplicate keys are allowed.
    */
-  if( Dups_OK(RootPtr) )    /* Key exists, add duplicate */
+  if( ubi_trDups_OK(RootPtr) )    /* Key exists, add duplicate */
     {
     ubi_btNodePtr q;
 
-    tmp = RIGHT;
+    tmp = ubi_trRIGHT;
     q = (*OldNode);
     *OldNode = NULL;
     while( q )
       {
       parent = q;
-      if( tmp == EQUAL ) tmp = RIGHT;
+      if( tmp == ubi_trEQUAL )
+        tmp = ubi_trRIGHT;
       q = q->Link[tmp];
       if ( q )
-        tmp = AbNormal( (*(RootPtr->cmp))(ItemPtr, q) );
+        tmp = ubi_trNormalize( (*(RootPtr->cmp))(ItemPtr, q) );
       }
-    parent->Link[tmp]      = NewNode;
-    NewNode->Link[PARENT]  = parent;
-    NewNode->gender        = tmp;
+    parent->Link[tmp]            = NewNode;
+    NewNode->Link[ubi_trPARENT]  = parent;
+    NewNode->gender              = tmp;
     (RootPtr->count)++;
     return( ubi_trTRUE );
     }
@@ -597,7 +608,7 @@ ubi_trBool ubi_btInsert( ubi_btRootPtr  RootPtr,
    * duplicate nodes, but our node keys match, so... may we replace the
    * old one?
    */
-  if( Ovwt_OK(RootPtr) )    /* Key exists, we replace */
+  if( ubi_trOvwt_OK(RootPtr) )    /* Key exists, we replace */
     {
     if (!(parent))
       ReplaceNode( &(RootPtr->root), *OldNode, NewNode );
@@ -628,32 +639,32 @@ ubi_btNodePtr ubi_btRemove( ubi_btRootPtr RootPtr,
   {
   ubi_btNodePtr p,
                *parentp;
-  char          tmp;
+  signed char   tmp;
 
   /* if the node has both left and right subtrees, then we have to swap
    * it with another node.  The other node we choose will be the Prev()ious
    * node, which is garunteed to have no RIGHT child.
    */
-  if( (DeadNode->Link[LEFT]) && (DeadNode->Link[RIGHT]) )
+  if( (DeadNode->Link[ubi_trLEFT]) && (DeadNode->Link[ubi_trRIGHT]) )
     SwapNodes( RootPtr, DeadNode, ubi_btPrev( DeadNode ) );
 
   /* The parent of the node to be deleted may be another node, or it may be
    * the root of the tree.  Since we're not sure, it's best just to have
    * a pointer to the parent pointer, whatever it is.
    */
-  if (DeadNode->Link[PARENT])
-    parentp = &((DeadNode->Link[PARENT])->Link[DeadNode->gender]);
+  if (DeadNode->Link[ubi_trPARENT])
+    parentp = &((DeadNode->Link[ubi_trPARENT])->Link[DeadNode->gender]);
   else
     parentp = &( RootPtr->root );
 
   /* Now link the parent to the only grand-child and patch up the gender. */
-  tmp = ((DeadNode->Link[LEFT])?LEFT:RIGHT);
+  tmp = ((DeadNode->Link[ubi_trLEFT]) ? ubi_trLEFT : ubi_trRIGHT);
 
   p = (DeadNode->Link[tmp]);
   if( p )
     {
-    p->Link[PARENT] = DeadNode->Link[PARENT];
-    p->gender       = DeadNode->gender;
+    p->Link[ubi_trPARENT] = DeadNode->Link[ubi_trPARENT];
+    p->gender             = DeadNode->gender;
     }
   (*parentp) = p;
 
@@ -716,7 +727,7 @@ ubi_btNodePtr ubi_btLocate( ubi_btRootPtr RootPtr,
   {
   register ubi_btNodePtr p;
   ubi_btNodePtr   parent;
-  char            whichkid;
+  signed char     whichkid;
 
   /* Start by searching for a matching node. */
   p = TreeFind( FindMe,
@@ -730,13 +741,13 @@ ubi_btNodePtr ubi_btLocate( ubi_btRootPtr RootPtr,
     switch( CompOp )
       {
       case ubi_trLT:            /* It's just a jump to the left...  */
-        p = Border( RootPtr, FindMe, p, LEFT );
-        return( Neighbor( p, LEFT ) );
+        p = Border( RootPtr, FindMe, p, ubi_trLEFT );
+        return( Neighbor( p, ubi_trLEFT ) );
       case ubi_trGT:            /* ...and then a jump to the right. */
-        p = Border( RootPtr, FindMe, p, RIGHT );
-        return( Neighbor( p, RIGHT ) );
+        p = Border( RootPtr, FindMe, p, ubi_trRIGHT );
+        return( Neighbor( p, ubi_trRIGHT ) );
       }
-    p = Border( RootPtr, FindMe, p, LEFT );
+    p = Border( RootPtr, FindMe, p, ubi_trLEFT );
     return( p );
     }
 
@@ -750,9 +761,9 @@ ubi_btNodePtr ubi_btLocate( ubi_btRootPtr RootPtr,
    * Remaining possibilities are LT and GT (including LE & GE).
    */
   if( (ubi_trLT == CompOp) || (ubi_trLE == CompOp) )
-    return( (LEFT  == whichkid) ? Neighbor( parent, whichkid ) : parent );
+    return( (ubi_trLEFT  == whichkid) ? Neighbor( parent, whichkid ) : parent );
   else
-    return( (RIGHT == whichkid) ? Neighbor( parent, whichkid ) : parent );
+    return( (ubi_trRIGHT == whichkid) ? Neighbor( parent, whichkid ) : parent );
   } /* ubi_btLocate */
 
 ubi_btNodePtr ubi_btFind( ubi_btRootPtr RootPtr,
@@ -789,7 +800,7 @@ ubi_btNodePtr ubi_btNext( ubi_btNodePtr P )
    * ------------------------------------------------------------------------ **
    */
   {
-  return( Neighbor( P, RIGHT ) );
+  return( Neighbor( P, ubi_trRIGHT ) );
   } /* ubi_btNext */
 
 ubi_btNodePtr ubi_btPrev( ubi_btNodePtr P )
@@ -802,7 +813,7 @@ ubi_btNodePtr ubi_btPrev( ubi_btNodePtr P )
    * ------------------------------------------------------------------------ **
    */
   {
-  return( Neighbor( P, LEFT ) );
+  return( Neighbor( P, ubi_trLEFT ) );
   } /* ubi_btPrev */
 
 ubi_btNodePtr ubi_btFirst( ubi_btNodePtr P )
@@ -817,7 +828,7 @@ ubi_btNodePtr ubi_btFirst( ubi_btNodePtr P )
    * ------------------------------------------------------------------------ **
    */
   {
-  return( SubSlide( P, LEFT ) );
+  return( SubSlide( P, ubi_trLEFT ) );
   } /* ubi_btFirst */
 
 ubi_btNodePtr ubi_btLast( ubi_btNodePtr P )
@@ -832,7 +843,7 @@ ubi_btNodePtr ubi_btLast( ubi_btNodePtr P )
    * ------------------------------------------------------------------------ **
    */
   {
-  return( SubSlide( P, RIGHT ) );
+  return( SubSlide( P, ubi_trRIGHT ) );
   } /* ubi_btLast */
 
 ubi_btNodePtr ubi_btFirstOf( ubi_btRootPtr RootPtr,
@@ -855,9 +866,9 @@ ubi_btNodePtr ubi_btFirstOf( ubi_btRootPtr RootPtr,
    */
   {
   /* If our starting point is invalid, return NULL. */
-  if( !p || AbNormal( (*(RootPtr->cmp))( MatchMe, p ) != EQUAL ) )
+  if( !p || ubi_trNormalize( (*(RootPtr->cmp))( MatchMe, p ) != ubi_trEQUAL ) )
     return( NULL );
-  return( Border( RootPtr, MatchMe, p, LEFT ) );
+  return( Border( RootPtr, MatchMe, p, ubi_trLEFT ) );
   } /* ubi_btFirstOf */
 
 ubi_btNodePtr ubi_btLastOf( ubi_btRootPtr RootPtr,
@@ -880,9 +891,9 @@ ubi_btNodePtr ubi_btLastOf( ubi_btRootPtr RootPtr,
    */
   {
   /* If our starting point is invalid, return NULL. */
-  if( !p || AbNormal( (*(RootPtr->cmp))( MatchMe, p ) != EQUAL ) )
+  if( !p || ubi_trNormalize( (*(RootPtr->cmp))( MatchMe, p ) != ubi_trEQUAL ) )
     return( NULL );
-  return( Border( RootPtr, MatchMe, p, RIGHT ) );
+  return( Border( RootPtr, MatchMe, p, ubi_trRIGHT ) );
   } /* ubi_btLastOf */
 
 ubi_trBool ubi_btTraverse( ubi_btRootPtr   RootPtr,
@@ -941,11 +952,11 @@ ubi_trBool ubi_btKillTree( ubi_btRootPtr     RootPtr,
   while( p )
     {
     q = p;
-    while( q->Link[RIGHT] )
-      q = SubSlide( q->Link[RIGHT], LEFT );
-    p = q->Link[PARENT];
+    while( q->Link[ubi_trRIGHT] )
+      q = SubSlide( q->Link[ubi_trRIGHT], ubi_trLEFT );
+    p = q->Link[ubi_trPARENT];
     if( p )
-      p->Link[ ((p->Link[LEFT] == q)?LEFT:RIGHT) ] = NULL;
+      p->Link[ ((p->Link[ubi_trLEFT] == q)?ubi_trLEFT:ubi_trRIGHT) ] = NULL;
     FreeNode((void *)q);
     }
 
@@ -979,20 +990,24 @@ ubi_btNodePtr ubi_btLeafNode( ubi_btNodePtr leader )
    *          in pointers to nodes other than the root node each time.  A
    *          pointer to any node in the tree will do.  Of course, if you
    *          pass a pointer to a leaf node you'll get the same thing back.
+   *        + If using a splay tree, splaying the tree will tend to randomize
+   *          things a bit too.  See ubi_SplayTree for more info.
    *
    * ------------------------------------------------------------------------ **
    */
   {
   ubi_btNodePtr follower = NULL;
-  int           whichway = LEFT;
+  int           whichway = ubi_trLEFT;
 
   while( NULL != leader )
     {
+    /* The next line is a weak attempt at randomizing. */
+    whichway = ((int)leader & 0x0010) ? whichway : ubi_trRevWay(whichway);
     follower = leader;
-    leader   = follower->Link[ whichway ];
+    leader   = leader->Link[ whichway ];
     if( NULL == leader )
       {
-      whichway = RevWay( whichway );
+      whichway = ubi_trRevWay( whichway );
       leader   = follower->Link[ whichway ];
       }
     }
@@ -1027,6 +1042,5 @@ int ubi_btModuleID( int size, char *list[] )
     }
   return( 0 );
   } /* ubi_btModuleID */
-
 
 /* ========================================================================== */
