@@ -128,12 +128,8 @@
 #include <memory.h>
 #endif
 
-#ifdef MEM_MAN
-#include "../mem_man/mem_man.h"
-#else
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
-#endif
 #endif
 
 #ifdef HAVE_FCNTL_H

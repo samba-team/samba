@@ -674,7 +674,6 @@ static void usage(char *pname)
 
   /* If we are using the malloc debug code we can't use
      SIGUSR1 and SIGUSR2 to do debug level changes. */
-#ifndef MEM_MAN
 #if defined(SIGUSR1)
   CatchSignal( SIGUSR1, SIGNAL_CAST sig_usr1 );
 #endif /* SIGUSR1 */
@@ -682,7 +681,6 @@ static void usage(char *pname)
 #if defined(SIGUSR2)
   CatchSignal( SIGUSR2, SIGNAL_CAST sig_usr2 );
 #endif /* SIGUSR2 */
-#endif /* MEM_MAN */
 
   while( EOF != 
          (opt = getopt( argc, argv, "Vaos:T:I:C:bAi:B:N:Rn:l:d:Dp:hSH:G:f:" )) )
