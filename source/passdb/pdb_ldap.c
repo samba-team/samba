@@ -2208,6 +2208,39 @@ static void add_rid_to_array_unique(TALLOC_CTX *mem_ctx,
 	*num += 1;
 }
 
+static BOOL ldapsam_extract_rid_from_entry(LDAP *ldap_struct,
+					   LDAPMessage *entry,
+					   const DOM_SID *domain_sid,
+					   uint32 *rid)
+{
+	fstring str;
+	DOM_SID sid;
+
+	if (!smbldap_get_single_attribute(ldap_struct, entry, "sambaSID",
+					  str, sizeof(str)-1)) {
+		DEBUG(10, ("Could not find sambaSID attribute\n"));
+		return False;
+	}
+
+	if (!string_to_sid(&sid, str)) {
+		DEBUG(10, ("Could not convert string %s to sid\n", str));
+		return False;
+	}
+
+	if (sid_compare_domain(&sid, domain_sid) != 0) {
+		DEBUG(10, ("SID %s is not in expected domain %s\n",
+			   str, sid_string_static(domain_sid)));
+		return False;
+	}
+
+	if (!sid_peek_rid(&sid, rid)) {
+		DEBUG(10, ("Could not peek into RID\n"));
+		return False;
+	}
+
+	return True;
+}
+
 static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 					   TALLOC_CTX *mem_ctx,
 					   const DOM_SID *group,
@@ -2254,25 +2287,15 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 	     entry != NULL;
 	     entry = ldap_next_entry(conn->ldap_struct, entry))
 	{
-		fstring str;
-		DOM_SID sid;
 		uint32 rid;
 
-		if (!smbldap_get_single_attribute(conn->ldap_struct,
-						  entry, "sambaSID",
-						  str, sizeof(str)-1))
-			continue;
-
-		if (!string_to_sid(&sid, str))
-			goto done;
-
-		if (!sid_check_is_in_our_domain(&sid)) {
-			DEBUG(1, ("Inconsistent SAM -- group member uid not "
-				  "in our domain\n"));
+		if (!ldapsam_extract_rid_from_entry(conn->ldap_struct,
+						    entry,
+						    get_global_sam_sid(),
+						    &rid)) {
+			DEBUG(2, ("Could not find sid from ldap entry\n"));
 			continue;
 		}
-
-		sid_peek_rid(&sid, &rid);
 
 		add_rid_to_array_unique(mem_ctx, rid, member_rids,
 					num_members);
@@ -3112,6 +3135,196 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
+				    TALLOC_CTX *mem_ctx,
+				    const DOM_SID *domain_sid,
+				    int num_rids,
+				    uint32 *rids,
+				    const char ***names,
+				    uint32 **attrs)
+{
+	struct ldapsam_privates *ldap_state =
+		(struct ldapsam_privates *)methods->private_data;
+	LDAP *ldap_struct = ldap_state->smbldap_state->ldap_struct;
+	LDAPMessage *msg = NULL;
+	LDAPMessage *entry;
+	char *allsids = NULL;
+	char *tmp;
+	int i, rc, num_mapped;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	if (!lp_parm_bool(-1, "ldapsam", "trusted", False))
+		return pdb_default_lookup_rids(methods, mem_ctx, domain_sid,
+					       num_rids, rids, names, attrs);
+
+	if (!sid_equal(domain_sid, get_global_sam_sid())) {
+		/* TODO: Sooner or later we need to look up BUILTIN rids as
+		 * well. -- vl */
+		goto done;
+	}
+
+	(*names) = TALLOC_ZERO_ARRAY(mem_ctx, const char *, num_rids);
+	(*attrs) = TALLOC_ARRAY(mem_ctx, uint32, num_rids);
+
+	if ((num_rids != 0) && (((*names) == NULL) || ((*attrs) == NULL)))
+		return NT_STATUS_NO_MEMORY;
+
+	for (i=0; i<num_rids; i++)
+		(*attrs)[i] = SID_NAME_UNKNOWN;
+
+	allsids = strdup("");
+	if (allsids == NULL) return NT_STATUS_NO_MEMORY;
+
+	for (i=0; i<num_rids; i++) {
+		DOM_SID sid;
+		sid_copy(&sid, domain_sid);
+		sid_append_rid(&sid, rids[i]);
+		tmp = allsids;
+		asprintf(&allsids, "%s(sambaSid=%s)", allsids,
+			 sid_string_static(&sid));
+		if (allsids == NULL) return NT_STATUS_NO_MEMORY;
+		free(tmp);
+	}
+
+	/* First look for users */
+
+	{
+		char *filter;
+		const char *ldap_attrs[] = { "uid", "sambaSid", NULL };
+
+		asprintf(&filter, ("(&(objectClass=sambaSamAccount)(|%s))"),
+			 allsids);
+		if (filter == NULL) return NT_STATUS_NO_MEMORY;
+
+		rc = smbldap_search(ldap_state->smbldap_state,
+				    lp_ldap_user_suffix(),
+				    LDAP_SCOPE_SUBTREE, filter, ldap_attrs, 0,
+				    &msg);
+
+		SAFE_FREE(filter);
+	}
+
+	if (rc != LDAP_SUCCESS)
+		goto done;
+
+	num_mapped = 0;
+
+	for (entry = ldap_first_entry(ldap_struct, msg);
+	     entry != NULL;
+	     entry = ldap_next_entry(ldap_struct, entry))
+	{
+		uint32 rid;
+		int rid_index;
+		fstring str;
+
+		if (!ldapsam_extract_rid_from_entry(ldap_struct, entry,
+						    get_global_sam_sid(),
+						    &rid)) {
+			DEBUG(2, ("Could not find sid from ldap entry\n"));
+			continue;
+		}
+
+		if (!smbldap_get_single_attribute(ldap_struct, entry,
+						  "uid", str, sizeof(str)-1)) {
+			DEBUG(2, ("Could not retrieve uid attribute\n"));
+			continue;
+		}
+
+		for (rid_index = 0; rid_index < num_rids; rid_index++) {
+			if (rid == rids[rid_index])
+				break;
+		}
+
+		if (rid_index == num_rids) {
+			DEBUG(2, ("Got a RID not asked for: %d\n", rid));
+			continue;
+		}
+
+		(*attrs)[rid_index] = SID_NAME_USER;
+		(*names)[rid_index] = talloc_strdup(mem_ctx, str);
+		if ((*names)[rid_index] == NULL) return NT_STATUS_NO_MEMORY;
+
+		num_mapped += 1;
+	}
+
+	if (num_mapped == num_rids) {
+		/* No need to look for groups anymore -- we're done */
+		result = NT_STATUS_OK;
+		goto done;
+	}
+
+	/* Same game for groups */
+
+	{
+		char *filter;
+		const char *ldap_attrs[] = { "cn", "sambaSid", NULL };
+
+		asprintf(&filter, ("(&(objectClass=sambaGroupMapping)(|%s))"),
+			 allsids);
+		if (filter == NULL) return NT_STATUS_NO_MEMORY;
+
+		rc = smbldap_search(ldap_state->smbldap_state,
+				    lp_ldap_group_suffix(),
+				    LDAP_SCOPE_SUBTREE, filter, ldap_attrs, 0,
+				    &msg);
+
+		SAFE_FREE(filter);
+	}
+
+	if (rc != LDAP_SUCCESS)
+		goto done;
+
+	for (entry = ldap_first_entry(ldap_struct, msg);
+	     entry != NULL;
+	     entry = ldap_next_entry(ldap_struct, entry))
+	{
+		uint32 rid;
+		int rid_index;
+		fstring str;
+
+		if (!ldapsam_extract_rid_from_entry(ldap_struct, entry,
+						    get_global_sam_sid(),
+						    &rid)) {
+			DEBUG(2, ("Could not find sid from ldap entry\n"));
+			continue;
+		}
+
+		if (!smbldap_get_single_attribute(ldap_struct, entry,
+						  "cn", str, sizeof(str)-1)) {
+			DEBUG(2, ("Could not retrieve cn attribute\n"));
+			continue;
+		}
+
+		for (rid_index = 0; rid_index < num_rids; rid_index++) {
+			if (rid == rids[rid_index])
+				break;
+		}
+
+		if (rid_index == num_rids) {
+			DEBUG(2, ("Got a RID not asked for: %d\n", rid));
+			continue;
+		}
+
+		(*attrs)[rid_index] = SID_NAME_DOM_GRP;
+		(*names)[rid_index] = talloc_strdup(mem_ctx, str);
+		if ((*names)[rid_index] == NULL) return NT_STATUS_NO_MEMORY;
+		num_mapped += 1;
+	}
+
+	result = NT_STATUS_NONE_MAPPED;
+
+	if (num_mapped > 0)
+		result = (num_mapped == num_rids) ?
+			NT_STATUS_OK : STATUS_SOME_UNMAPPED;
+ done:
+	SAFE_FREE(allsids);
+
+	if (msg != NULL)
+		ldap_msgfree(msg);
+
+	return result;
+}
+
 /**********************************************************************
  Housekeeping
  *********************************************************************/
@@ -3169,6 +3382,7 @@ static NTSTATUS pdb_init_ldapsam_common(PDB_CONTEXT *pdb_context, PDB_METHODS **
 	(*pdb_method)->enum_group_mapping = ldapsam_enum_group_mapping;
 	(*pdb_method)->enum_group_members = ldapsam_enum_group_members;
 	(*pdb_method)->enum_group_memberships = ldapsam_enum_group_memberships;
+	(*pdb_method)->lookup_rids = ldapsam_lookup_rids;
 
 	/* TODO: Setup private data and free */
 
