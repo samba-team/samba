@@ -678,9 +678,10 @@ struct shmem_ops *sysv_shm_open(int ronly)
 		return NULL;
 	}
 
-	/* to find out if some other process is already mapping the file,
-	   we use a registration file containing the processids of the file
-	   mapping processes */
+	/*
+	 * Get information on what process created the shared memory segment.
+	 */
+
 	if (shmctl(shm_id, IPC_STAT, &shm_ds) != 0) {
 		DEBUG(0,("ERROR shmctl : can't IPC_STAT. Error was %s\n", strerror(errno)));
         global_unlock();

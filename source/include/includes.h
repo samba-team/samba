@@ -198,7 +198,6 @@
 #endif
 
 #include <pwd.h>
-#include <grp.h>
 
 #ifdef HAVE_STDARG_H
 #include <stdarg.h>
