@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -68,8 +68,6 @@ init_auth
   krb5_data authenticator;
   Checksum cksum;
   krb5_enctype enctype;
-
-  gssapi_krb5_init ();
 
   outbuf.length = 0;
   outbuf.data   = NULL;
@@ -155,12 +153,13 @@ init_auth
   }
 
   memset(&this_cred, 0, sizeof(this_cred));
-  this_cred.client = (*context_handle)->source;
-  this_cred.server = (*context_handle)->target;
-  this_cred.times.endtime = 0;
-
+  this_cred.client          = (*context_handle)->source;
+  this_cred.server          = (*context_handle)->target;
+  this_cred.times.endtime   = 0;
+  this_cred.session.keytype = KEYTYPE_DES;
+  
   kret = krb5_get_credentials (gssapi_krb5_context,
-			       0,
+			       KRB5_TC_MATCH_KEYTYPE,
 			       ccache,
 			       &this_cred,
 			       &cred);
