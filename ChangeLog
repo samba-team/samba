@@ -1,3 +1,17 @@
+Fri Feb 27 05:02:21 1998  Assar Westerlund  <assar@sics.se>
+
+	* configure.in: more WFLAGS and WFLAGS_NOUNUSED added missing
+ 	headers and functions error -> com_err
+
+ 	(krb5_get_init_creds_keytab): use krb5_keytab_key_proc
+
+	* lib/krb5/get_in_tkt_with_keytab.c: make `krb5_keytab_key_proc'
+ 	global
+
+	* lib/kadm5/marshall.c (ret_principal_ent): set `n_tl_data'
+
+	* lib/hdb/ndbm.c: use `struct ndbm_db' everywhere.
+
 Fri Feb 27 04:49:24 1998  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/mk_priv.c (krb5_mk_priv): bump static limit to 10240.
