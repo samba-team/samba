@@ -70,6 +70,102 @@ done:
 	return werror_to_ntstatus(result);
 }	
 
+/********************************************************************
+********************************************************************/
+
+static NTSTATUS rpc_service_status_internal( const DOM_SID *domain_sid, const char *domain_name, 
+                                           struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+                                           int argc, const char **argv )
+{
+	POLICY_HND hSCM, hService;
+	WERROR result = WERR_GENERAL_FAILURE;
+	fstring servicename;
+	SERVICE_STATUS service_status;
+	SERVICE_CONFIG config;
+	fstring ascii_string;
+	
+	if (argc != 1 ) {
+		d_printf("Usage: net rpc service status <service>\n");
+		return NT_STATUS_OK;
+	}
+
+	fstrcpy( servicename, argv[0] );
+
+	/* Open the Service Control Manager */
+	
+	result = cli_svcctl_open_scm( cli, mem_ctx, &hSCM, SC_RIGHT_MGR_ENUMERATE_SERVICE  );
+	if ( !W_ERROR_IS_OK(result) ) {
+		d_printf("Failed to open Service Control Manager.  [%s]\n", dos_errstr(result));
+		return werror_to_ntstatus(result);
+	}
+	
+	/* Open the Service */
+	
+	result = cli_svcctl_open_service( cli, mem_ctx, &hSCM, &hService, servicename, 
+		(SC_RIGHT_SVC_QUERY_STATUS|SC_RIGHT_SVC_QUERY_CONFIG) );
+
+	if ( !W_ERROR_IS_OK(result) ) {
+		d_printf("Failed to open service.  [%s]\n", dos_errstr(result));
+		goto done;
+	}
+	
+	/* get the status */
+
+	result = cli_svcctl_query_status( cli, mem_ctx, &hService, &service_status  );
+	if ( !W_ERROR_IS_OK(result) ) {
+		d_printf("Query status request failed.  [%s]\n", dos_errstr(result));
+		goto done;
+	}
+	
+	d_printf("%s service is %s.\n", servicename, svc_status_string(service_status.state));
+
+	/* get the config */
+
+	result = cli_svcctl_query_config( cli, mem_ctx, &hService, &config  );
+	if ( !W_ERROR_IS_OK(result) ) {
+		d_printf("Query config request failed.  [%s]\n", dos_errstr(result));
+		goto done;
+	}
+
+	/* print out the configuration information for the service */
+
+	d_printf("Configuration details:\n");
+	d_printf("\tService Type         = 0x%x\n", config.service_type);
+	d_printf("\tStart Type           = 0x%x\n", config.start_type);
+	d_printf("\tError Control        = 0x%x\n", config.error_control);
+	d_printf("\tTag ID               = 0x%x\n", config.tag_id);
+
+	if ( config.executablepath ) {
+		rpcstr_pull( ascii_string, config.executablepath->buffer, sizeof(ascii_string), -1, STR_TERMINATE );
+		d_printf("\tExecutable Path      = %s\n", ascii_string);
+	}
+
+	if ( config.loadordergroup ) {
+		rpcstr_pull( ascii_string, config.loadordergroup->buffer, sizeof(ascii_string), -1, STR_TERMINATE );
+		d_printf("\tLoad Order Group     = %s\n", ascii_string);
+	}
+
+	if ( config.dependencies ) {
+		rpcstr_pull( ascii_string, config.dependencies->buffer, sizeof(ascii_string), -1, STR_TERMINATE );
+		d_printf("\tDependencies         = %s\n", ascii_string);
+	}
+
+	if ( config.startname ) {
+		rpcstr_pull( ascii_string, config.startname->buffer, sizeof(ascii_string), -1, STR_TERMINATE );
+		d_printf("\tStart Name           = %s\n", ascii_string);
+	}
+
+	if ( config.displayname ) {
+		rpcstr_pull( ascii_string, config.displayname->buffer, sizeof(ascii_string), -1, STR_TERMINATE );
+		d_printf("\tDisplay Name         = %s\n", ascii_string);
+	}
+
+done:	
+	close_service_handle( cli, mem_ctx, &hService  );
+	close_service_handle( cli, mem_ctx, &hSCM  );
+		
+	return werror_to_ntstatus(result);
+}	
 
 /********************************************************************
 ********************************************************************/
@@ -112,8 +208,8 @@ static int rpc_service_pause( int argc, const char **argv )
 
 static int rpc_service_status( int argc, const char **argv )
 {
-	d_printf("not implemented\n");
-	return 0;
+	return run_rpc_command( NULL, PI_SVCCTL, 0, 
+		rpc_service_status_internal, argc, argv );
 }
 
 /********************************************************************
