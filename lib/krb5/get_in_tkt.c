@@ -57,6 +57,7 @@ extract_ticket(krb5_context context,
 	memcpy(creds->ticket.data, buf + sizeof(buf) - len, len);
 	creds->ticket.length = len;
 	creds->second_ticket.length = 0;
+	creds->second_ticket.data   = NULL;
     }
     /*     krb5_free_principal (context, rep->part1.ticket.sprinc);*/
 
