@@ -368,7 +368,7 @@ PyObject *DATA_BLOB_to_python(DATA_BLOB obj)
 	/* Set REF_ALLOC flag so we don't have to do too much extra
 	   mucking around with ref variables in ndr unmarshalling. */
 
-	(*$1)->flags |= DCERPC_NDR_REF_ALLOC;
+	(*$1)->conn->flags |= DCERPC_NDR_REF_ALLOC;
 
 	/* Return swig handle on dcerpc_pipe */
 
@@ -399,14 +399,12 @@ const char *dcerpc_server_name(struct dcerpc_pipe *p);
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_samr.h"
-#include "librpc/gen_ndr/ndr_winreg.h"
 #include "librpc/gen_ndr/ndr_spoolss.h"
 %}
 
 %include "librpc/gen_ndr/misc.i"
 %include "librpc/gen_ndr/lsa.i"
 %include "librpc/gen_ndr/samr.i"
-%include "librpc/gen_ndr/winreg.i"
 %include "librpc/gen_ndr/spoolss.i"
 
 /* The status codes must be included last otherwise the automatically
