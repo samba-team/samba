@@ -434,9 +434,9 @@ domain = &lt;value&gt;
 		
 		<varlistentry>
 		<term>-W WORKGROUP</term>
-		<listitem><para>Override the default workgroup specified in the 
-		workgroup parameter of the <filename>smb.conf</filename> file 
-		for this connection. This may be needed to connect to some 
+		<listitem><para>Override the default workgroup (domain) specified
+		in the workgroup parameter of the <filename>smb.conf</filename>
+		file for this connection. This may be needed to connect to some
 		servers. </para></listitem>
 		</varlistentry>
 		
