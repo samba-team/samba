@@ -1,5 +1,4 @@
 module spool
-test PRINTER_DRIVER_INFO_LEVEL_6
 
 struct BUFFER5 {
        uint32 buf_len;
