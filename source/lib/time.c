@@ -311,16 +311,6 @@ char *ldap_timestring(TALLOC_CTX *mem_ctx, time_t t)
 			       tm->tm_sec);
 }
 
-/*
-  a hack to move the stupid gcc strftime warning to one place - see manual page
-*/
-#ifdef HAVE_STRFTIME
-size_t sys_strftime(char *s, size_t max, const char *fmt, const struct tm *tm) 
-{
-	return strftime(s, max, fmt, tm);
-}
-#endif
-
 /****************************************************************************
  Return the date and time as a string
 ****************************************************************************/
@@ -342,7 +332,7 @@ char *timestring(TALLOC_CTX *mem_ctx, time_t t)
 	   in the gcc warning, not a bug in this code. See a recent
 	   strftime() manual page for details.
 	 */
-	sys_strftime(tempTime,sizeof(tempTime)-1,"%c %Z",tm);
+	strftime(tempTime,sizeof(tempTime)-1,"%c %Z",tm);
 	TimeBuf = talloc_strdup(mem_ctx, tempTime);
 #else
 	TimeBuf = talloc_strdup(mem_ctx, asctime(tm));

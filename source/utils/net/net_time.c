@@ -66,7 +66,7 @@ int net_time(struct net_context *ctx, int argc, const char **argv)
 
 	ZERO_ARRAY(timestr);
 	tm = localtime(&r.generic.out.time);
-	sys_strftime(timestr, sizeof(timestr)-1, "%c %Z",tm);
+	strftime(timestr, sizeof(timestr)-1, "%c %Z",tm);
 
 	printf("%s\n",timestr);
 
