@@ -153,6 +153,12 @@ do_version4(unsigned char *buf,
     char client_name[256];
     char server_name[256];
 
+    if(!enable_v4) {
+	kdc_log(0, "Rejected version 4 request from %s", from);
+	make_err_reply(reply, KDC_GEN_ERR, "function not enabled");
+	return 0;
+    }
+
     sp = krb5_storage_from_mem(buf, len);
     RCHECK(krb5_ret_int8(sp, &pvno), out);
     if(pvno != 4){
