@@ -95,6 +95,36 @@ static BOOL test_CreateKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
+static BOOL test_GetKeySecurity(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			  struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct winreg_GetKeySecurity r;
+
+	printf("\ntesting GetKeySecurity\n");
+
+	ZERO_STRUCT(r);
+
+	r.in.handle = handle;
+	r.in.data = r.out.data =  talloc_zero_p(mem_ctx, struct KeySecurityData);
+	r.in.data->size = 0xffff;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+
+	status = dcerpc_winreg_GetKeySecurity(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("GetKeySecurity failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("GetKeySecurity failed - %s\n", win_errstr(r.out.result));
+		return False;
+	}
+
+	return False;
+}
+
 static BOOL test_CloseKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			  struct policy_handle *handle)
 {
@@ -540,11 +570,16 @@ static BOOL test_key(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	if (!test_QueryInfoKey(p, mem_ctx, handle, NULL)) {
 	}
 
+
+	if (!test_GetKeySecurity(p, mem_ctx, handle)) {
+	}
+
 	if (!test_EnumKey(p, mem_ctx, handle, depth)) {
 	}
 
 	if (!test_EnumValue(p, mem_ctx, handle, 0xFF, 0xFFFF)) {
 	}
+
 
 	test_CloseKey(p, mem_ctx, handle);
 
