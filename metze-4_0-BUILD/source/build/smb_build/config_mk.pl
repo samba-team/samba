@@ -27,7 +27,8 @@ sub _parse_config_mk($)
 	my $result;
 	my $linenum = -1;
 	my $waiting = 0;
-	my $key;	
+	my $section = "GLOBAL";
+	my $key;
 
 	$result->{ERROR_CODE} = -1;
 
@@ -47,6 +48,14 @@ sub _parse_config_mk($)
 		}
 
 		#
+		#
+		#
+		if (($waiting == 0) && ($line =~ /^\[([a-zA-Z0-9_:]+)\][\t ]*$/)) {
+			$section = $1;
+			next;
+		}
+		
+		#
 		# 1.)	lines with an aplhanumeric character indicate
 		# 	a new variable, 
 		# 2.)	followed by zero or more whitespaces or tabs
@@ -55,7 +64,7 @@ sub _parse_config_mk($)
 		# 5.)	a newline ('\n') can be escaped by a '\' before the newline
 		#	and the next line needs to start with a tab ('\t')
 		#
-		if ($line =~ /^([a-zA-Z0-9_]+)[\t ]*=(.*)$/) {
+		if (($waiting == 0) && ($line =~ /^([a-zA-Z0-9_]+)[\t ]*=(.*)$/)) {
 			$key = $1;
 			$val = $2;
 
@@ -70,8 +79,8 @@ sub _parse_config_mk($)
 				$waiting = 0;
 			}
 
-			$result->{$key}{KEY} = $key;
-			$result->{$key}{VAL} = $val;
+			$result->{$section}{$key}{KEY} = $key;
+			$result->{$section}{$key}{VAL} = $val;
 			next;
 		}
 
@@ -93,8 +102,8 @@ sub _parse_config_mk($)
 				$waiting = 0;
 			}
 
-			$result->{$key}{VAL} .= " ";
-			$result->{$key}{VAL} .= $val;
+			$result->{$section}{$key}{VAL} .= " ";
+			$result->{$section}{$key}{VAL} .= $val;
 			next;
 		}
 
@@ -154,17 +163,20 @@ sub _get_parse_results($)
 # The fetching function to fetch the value of a variable 
 # out of the file
 #
-# $value = _fetch_var_from_config_mk($filename,$variable)
+# $value = _fetch_var_from_config_mk($filename,$section,$variable)
 #
 # $filename -	the path of the config.mk file
 #		which should be parsed
 #
+# $section  -	the section name of the variable
+#
 # $variable -	the variable name of which we want the value
 #
 # $value -	the value of the variable
-sub _fetch_var_from_config_mk($$)
+sub _fetch_var_from_config_mk($$$)
 {
 	my $filename = shift;
+	my $section = shift;
 	my $key = shift;
 	my $val = "";
 	my $result;
@@ -175,8 +187,10 @@ sub _fetch_var_from_config_mk($$)
 		die ($result->{ERROR_STR});
 	}
 
-	if (defined($result->{$key})) {
-		$val = $result->{$key}{VAL};
+	if (defined($result->{$section}{$key})) {
+		$val = $result->{$section}{$key}{VAL};
+	} elsif (defined($result->{DEFAULT}{$key})) {
+		$val = $result->{DEFAULT}{$key}{VAL};
 	}
 
 	return $val;
@@ -186,17 +200,20 @@ sub _fetch_var_from_config_mk($$)
 # The fetching function to fetch the array of values of a variable 
 # out of the file
 #
-# $array = _fetch_array_from_config_mk($filename,$variable)
+# $array = _fetch_array_from_config_mk($filename,$section,$variable)
 #
 # $filename -	the path of the config.mk file
 #		which should be parsed
 #
+# $section  -	the section name of the variable
+#
 # $variable -	the variable name of which we want the value
 #
 # $array -	the array of values of the variable
-sub _fetch_array_from_config_mk($$)
+sub _fetch_array_from_config_mk($$$)
 {
 	my $filename = shift;
+	my $section = shift;
 	my $key = shift;
 	my @val = ();
 	my $result;
@@ -207,9 +224,11 @@ sub _fetch_array_from_config_mk($$)
 		die ($result->{ERROR_STR});
 	}
 
-	if (defined($result->{$key})) {
-		@val = str2array($result->{$key}{VAL});
-	}
+	if (defined($result->{$section}{$key})) {
+		@val = str2array($result->{$section}{$key}{VAL});
+	} elsif (defined($result->{DEFAULT}{$key})) {
+		@val = str2array($result->{DEFAULT}{$key}{VAL});
+	}	
 
 	return @val;
 }
@@ -232,11 +251,11 @@ sub module_get_var($$$)
 {
 	my $filename = shift;
 	my $module = shift;
-	my $_var = shift;
+	my $var = shift;
 
-	my $var = "MODULE_".$module."_".$_var;
+	my $section = "MODULE::".$module;
 
-	return _fetch_var_from_config_mk($filename,$var);
+	return _fetch_var_from_config_mk($filename,$section,$var);
 }
 
 ###########################################################
@@ -257,11 +276,11 @@ sub module_get_array($$$)
 {
 	my $filename = shift;
 	my $module = shift;
-	my $_var = shift;
+	my $var = shift;
 
-	my $var = "MODULE_".$module."_".$_var;
+	my $section = "MODULE::".$module;
 
-	return _fetch_array_from_config_mk($filename,$var);
+	return _fetch_array_from_config_mk($filename,$section,$var);
 }
 
 ###########################################################
@@ -282,11 +301,11 @@ sub subsystem_get_var($$$)
 {
 	my $filename = shift;
 	my $subsystem = shift;
-	my $_var = shift;
+	my $var = shift;
 
-	my $var = "SUBSYSTEM_".$subsystem."_".$_var;
+	my $section = "SUBSYSTEM::".$subsystem;
 
-	return _fetch_var_from_config_mk($filename,$var);
+	return _fetch_var_from_config_mk($filename,$section,$var);
 }
 
 ###########################################################
@@ -307,11 +326,11 @@ sub subsystem_get_array($$$)
 {
 	my $filename = shift;
 	my $subsystem = shift;
-	my $_var = shift;
+	my $var = shift;
 
-	my $var = "SUBSYSTEM_".$subsystem."_".$_var;
+	my $section = "SUBSYSTEM::".$subsystem;
 
-	return _fetch_array_from_config_mk($filename,$var);
+	return _fetch_array_from_config_mk($filename,$section,$var);
 }
 
 ###########################################################
@@ -332,11 +351,11 @@ sub library_get_var($$$)
 {
 	my $filename = shift;
 	my $library = shift;
-	my $_var = shift;
+	my $var = shift;
 
-	my $var = "LIBRARY_".$library."_".$_var;
+	my $section = "LIBRARY::".$library;
 
-	return _fetch_var_from_config_mk($filename,$var);
+	return _fetch_var_from_config_mk($filename,$section,$var);
 }
 
 ###########################################################
@@ -357,11 +376,11 @@ sub library_get_array($$$)
 {
 	my $filename = shift;
 	my $library = shift;
-	my $_var = shift;
+	my $var = shift;
 
-	my $var = "LIBRARY_".$library."_".$_var;
+	my $section = "LIBRARY::".$library;
 
-	return _fetch_array_from_config_mk($filename,$var);
+	return _fetch_array_from_config_mk($filename,$section,$var);
 }
 
 ###########################################################
@@ -382,11 +401,11 @@ sub binary_get_var($$$)
 {
 	my $filename = shift;
 	my $binary = shift;
-	my $_var = shift;
+	my $var = shift;
 
-	my $var = "BINARY_".$binary."_".$_var;
+	my $section = "BINARY::".$binary;
 
-	return _fetch_var_from_config_mk($filename,$var);
+	return _fetch_var_from_config_mk($filename,$section,$var);
 }
 
 ###########################################################
@@ -407,9 +426,9 @@ sub binary_get_array($$$)
 {
 	my $filename = shift;
 	my $binary = shift;
-	my $_var = shift;
+	my $var = shift;
 
-	my $var = "BINARY_".$binary."_".$_var;
+	my $section = "BINARY::".$binary;
 
-	return _fetch_array_from_config_mk($filename,$var);
+	return _fetch_array_from_config_mk($filename,$section,$var);
 }
