@@ -55,22 +55,7 @@ extern uint16 samba_nb_type; /* Samba's NetBIOS name type. */
 
 static void add_subnet(struct subnet_record *subrec)
 {
-  struct subnet_record *subrec2;
-
-  if (!subnetlist)
-  {
-    subnetlist = subrec;
-    subrec->prev = NULL;
-    subrec->next = NULL;
-    return;
-  }
-
-  for (subrec2 = subnetlist; subrec2->next; subrec2 = subrec2->next)
-    ;
-
-  subrec2->next = subrec;
-  subrec->next = NULL;
-  subrec->prev = subrec2;
+	DLIST_ADD(subnetlist, subrec);
 }
 
 /* ************************************************************************** **
@@ -107,8 +92,8 @@ static int namelist_entry_compare( ubi_trItemPtr Item, ubi_trNodePtr Node )
   ****************************************************************************/
 
 static struct subnet_record *make_subnet(char *name, enum subnet_type type,
-                                         struct in_addr myip, struct in_addr bcast_ip, 
-                                         struct in_addr mask_ip)
+					 struct in_addr myip, struct in_addr bcast_ip, 
+					 struct in_addr mask_ip)
 {
   struct subnet_record *subrec = NULL;
   int nmb_sock, dgram_sock;
@@ -202,6 +187,23 @@ static struct subnet_record *make_subnet(char *name, enum subnet_type type,
   return subrec;
 }
 
+
+/****************************************************************************
+  Create a normal subnet
+**************************************************************************/
+struct subnet_record *make_normal_subnet(struct interface *iface)
+{
+	struct subnet_record *subrec;
+
+	subrec = make_subnet(inet_ntoa(iface->ip), NORMAL_SUBNET,
+			     iface->ip, iface->bcast, iface->nmask);
+	if (subrec) {
+		add_subnet(subrec);
+	}
+	return subrec;
+}
+
+
 /****************************************************************************
   Create subnet entries.
 **************************************************************************/
@@ -228,10 +230,7 @@ BOOL create_subnets(void)
     struct subnet_record *subrec;
     struct interface *iface = get_interface(i);
 
-    if((subrec = make_subnet(inet_ntoa(iface->ip), NORMAL_SUBNET,
-                 iface->ip, iface->bcast,iface->nmask)) == NULL)
-      return False;
-    add_subnet(subrec);
+    if (!(subrec = make_normal_subnet(iface))) return False;
   }
 
   /* 
