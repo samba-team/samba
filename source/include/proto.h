@@ -2220,6 +2220,8 @@ BOOL lsa_lookup_sids(POLICY_HND *hnd,
 		     int num_sids,
 		     DOM_SID ** sids,
 		     char ***names, uint32 ** types, int *num_names);
+BOOL lsa_query_sec_obj(const POLICY_HND *hnd, uint32 sec_info,
+				SEC_DESC_BUF *sec_buf);
 BOOL lsa_query_info_pol(POLICY_HND *hnd, uint16 info_class,
 			fstring domain_name, DOM_SID * domain_sid);
 BOOL lsa_enum_trust_dom(POLICY_HND *hnd, uint32 * enum_ctx,
@@ -2556,6 +2558,7 @@ uint32 lookup_lsa_sid(const char *domain,
 BOOL msrpc_lsa_create_secret(const char *srv_name, const char *secret_name,
 			     uint32 access_rights);
 void secret_store_data(STRING2 * secret, const char* data, int len);
+void secret_store_data2(STRING2 * secret, const char* data, int len);
 BOOL msrpc_lsa_set_secret(const char *srv_name,
 			  const char *secret_name, const char *data, int len);
 BOOL msrpc_lsa_query_secret(const char *srv_name,
@@ -3349,6 +3352,7 @@ void cmd_lsa_lookup_names(struct client_info *info, int argc, char *argv[]);
 void cmd_lsa_lookup_sids(struct client_info *info, int argc, char *argv[]);
 void cmd_lsa_set_secret(struct client_info *info, int argc, char *argv[]);
 void cmd_lsa_create_secret(struct client_info *info, int argc, char *argv[]);
+void cmd_lsa_query_secret_secobj(struct client_info *info, int argc, char *argv[]);
 void cmd_lsa_query_secret(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_netlogon.c  */

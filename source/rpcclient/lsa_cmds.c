@@ -70,6 +70,13 @@ static const struct command_set lsa_commands[] =
 		{NULL, NULL}
 	},
 	{
+		"querysecretsecobj",
+		cmd_lsa_query_secret_secobj,
+		"LSA Query Secret Security Descriptor (developer use)",
+		{NULL, NULL}
+	},
+
+	{
 		"querysecret",
 		cmd_lsa_query_secret,
 		"LSA Query Secret (developer use)",

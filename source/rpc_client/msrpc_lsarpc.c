@@ -238,6 +238,20 @@ void secret_store_data(STRING2 * secret, const char* data, int len)
 }
 
 /****************************************************************************
+put data into secret buffer.
+****************************************************************************/
+void secret_store_data2(STRING2 * secret, const char* data, int len)
+{
+	ZERO_STRUCTP(secret);
+
+	secret->str_max_len = len;
+	secret->undoc = 0;
+	secret->str_str_len = len;
+
+	memcpy(secret->buffer, data, len);
+}
+
+/****************************************************************************
 nt lsa query secret
 ****************************************************************************/
 BOOL msrpc_lsa_set_secret(const char *srv_name,

@@ -342,6 +342,7 @@ void cmd_lsa_set_secret(struct client_info *info, int argc, char *argv[])
 	fstring srv_name;
 	char *data;
 	int len;
+	UNISTR2 uni_data;
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
@@ -357,7 +358,10 @@ void cmd_lsa_set_secret(struct client_info *info, int argc, char *argv[])
 	data = argv[2];
 	len = strlen(argv[2]);
 
-	if (msrpc_lsa_set_secret(srv_name, secret_name, data, len))
+	make_unistr2(&uni_data, data, len);
+
+	if (msrpc_lsa_set_secret(srv_name, secret_name,
+	    (const char*)uni_data.buffer, uni_data.uni_str_len * 2))
 	{
 		report(out_hnd, "LSA Set Secret: OK\n");
 	}
@@ -395,6 +399,66 @@ void cmd_lsa_create_secret(struct client_info *info, int argc, char *argv[])
 	{
 		report(out_hnd, "LSA Query Secret: failed\n");
 	}
+}
+
+/****************************************************************************
+nt lsa query
+****************************************************************************/
+void cmd_lsa_query_secret_secobj(struct client_info *info, int argc, char *argv[])
+{
+	char *secret_name;
+	fstring srv_name;
+
+	BOOL res = True;
+	BOOL res1;
+	BOOL res2;
+
+	POLICY_HND pol_sec;
+	POLICY_HND lsa_pol;
+	SEC_DESC_BUF buf;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	ZERO_STRUCT(buf);
+
+	if (argc > 2)
+	{
+		report(out_hnd, "querysecretsecdes <secret name>\n");
+		return;
+	}
+
+	secret_name = argv[1];
+
+	/* lookup domain controller; receive a policy handle */
+	res = res ? lsa_open_policy(srv_name,
+				     &lsa_pol, False, 0x02000000) : False;
+
+	/* lookup domain controller; receive a policy handle */
+	res1 = res ? lsa_open_secret(&lsa_pol,
+				     secret_name, 0x02000000,
+				     &pol_sec) : False;
+
+	res2 = res1 ? lsa_query_sec_obj(&pol_sec, 0x07, &buf) : False;
+
+	if (buf.sec != NULL)
+	{
+		display_sec_desc(out_hnd, ACTION_HEADER   , buf.sec);
+		display_sec_desc(out_hnd, ACTION_ENUMERATE, buf.sec);
+		display_sec_desc(out_hnd, ACTION_FOOTER   , buf.sec);
+	}
+	else
+	{
+		report(out_hnd, "LSA Query Secret: failed\n");
+	}
+
+	free_sec_desc_buf(&buf);
+
+	res1 = res1 ? lsa_close(&pol_sec) : False;
+	res = res ? lsa_close(&lsa_pol) : False;
+
+
 }
 
 /****************************************************************************

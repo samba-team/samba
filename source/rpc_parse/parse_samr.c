@@ -730,15 +730,6 @@ BOOL samr_io_r_query_dom_info(char *desc, SAMR_R_QUERY_DOMAIN_INFO *r_u, prs_str
 
 /*******************************************************************
 reads or writes a SAMR_R_QUERY_SEC_OBJ structure.
-
-this one's odd, because the daft buggers use a different mechanism
-for writing out the array of sids. they put the number of sids in
-only one place: they've calculated the length of each sid and jumped
-by that amount.  then, retrospectively, the length of the whole buffer
-is put at the beginning of the data stream.
-
-wierd.  
-
 ********************************************************************/
 BOOL samr_io_r_query_sec_obj(char *desc,  SAMR_R_QUERY_SEC_OBJ *r_u, prs_struct *ps, int depth)
 {

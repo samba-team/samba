@@ -933,6 +933,62 @@ BOOL lsa_lookup_sids(POLICY_HND *hnd,
 /****************************************************************************
 do a LSA Query Info Policy
 ****************************************************************************/
+BOOL lsa_query_sec_obj(const POLICY_HND *hnd, uint32 sec_info,
+				SEC_DESC_BUF *sec_buf)
+{
+	prs_struct rbuf;
+	prs_struct buf;
+	LSA_Q_QUERY_SEC_OBJ q_q;
+	BOOL valid_response = False;
+
+	if (hnd == NULL || sec_buf == NULL)
+		return False;
+
+	prs_init(&buf, 0, 4, False);
+	prs_init(&rbuf, 0, 4, True);
+
+	/* create and send a MSRPC command with api LSA_QUERY_SECOBJ */
+
+	DEBUG(4, ("LSA Query Info Policy\n"));
+
+	/* store the parameters */
+	make_q_query_sec_obj(&q_q, hnd, sec_info);
+
+	/* turn parameters into data stream */
+	if (lsa_io_q_query_sec_obj("", &q_q, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, LSA_QUERYSECOBJECT, &buf, &rbuf))
+	{
+		LSA_R_QUERY_SEC_OBJ r_q;
+		BOOL p = False;
+
+		lsa_io_r_query_sec_obj("", &r_q, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_q.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,
+			      ("LSA_QUERY_SECOBJ: %s\n",
+			       get_nt_error_msg(r_q.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_response = True;
+			sec_buf->sec = r_q.buf.sec;
+		}
+	}
+
+	prs_free_data(&rbuf);
+	prs_free_data(&buf);
+
+	return valid_response;
+}
+
+/****************************************************************************
+do a LSA Query Info Policy
+****************************************************************************/
 BOOL lsa_query_info_pol(POLICY_HND *hnd, uint16 info_class,
 			fstring domain_name, DOM_SID * domain_sid)
 {
