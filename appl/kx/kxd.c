@@ -364,8 +364,12 @@ doit(int sock, int tcpp)
 	  int len;
 
 	  tmp = get_xsockets (&nsockets, &sockets, tcpp);
-	  if (tmp < 0)
-	       return 1;
+	  if (tmp < 0) {
+             fatal (sock, &key, schedule, &me, &him,
+		    "Cannot create X socket(s): %s",
+		    strerror(errno));
+	     return 1;
+	  }
 	  display_num = tmp;
 	  if (tcpp)
 	       snprintf (display, display_size, "localhost:%u", display_num);
@@ -373,11 +377,10 @@ doit(int sock, int tcpp)
 	       snprintf (display, display_size, ":%u", display_num);
 	  if(create_and_write_cookie (xauthfile, xauthfile_size, 
 				      cookie, cookie_len)) {
-             syslog(LOG_ERR, "create_and_write_cookie: %m");
+             cleanup(nsockets, sockets);
              fatal (sock, &key, schedule, &me, &him,
                     "Cookie-creation failed with: %s",
 		    strerror(errno));
-             cleanup(nsockets, sockets);
 	     return 1;
 	  }
 
