@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_REVISION($Revision$)
 AC_INIT(lib/krb5/send_to_kdc.c)
-AM_CONFIG_HEADER(config.h)
+AM_CONFIG_HEADER(include/config.h)
 
 AC_CANONICAL_HOST
 CANONICAL_HOST=$host
@@ -63,7 +63,7 @@ AC_STRUCT_TM
 AC_DECL_YYTEXT
 
 dnl Checks for library functions.
-AC_CHECK_FUNCS(gethostname mktime select socket strdup strstr)
+AC_CHECK_FUNCS(gethostname mktime select strdup strstr)
 AC_CHECK_FUNCS(random rand setitimer)
 
 AC_TYPE_SIGNAL
@@ -71,11 +71,6 @@ if test "$ac_cv_type_signal" = "void" ; then
 	AC_DEFINE(VOID_RETSIGTYPE, 1)
 fi
 AC_SUBST(VOID_RETSIGTYPE)
-
-dnl How to figure out where in the timezone world we are
-
-AC_HAVE_STRUCT_FIELD([#include <time.h>], [tm], [int], [tm_gmtoff])
-AC_KRB_VAR_TIMEZONE
 
 AC_GROK_TYPES(int8_t int16_t int32_t int64_t)
 AC_GROK_TYPES(u_int8_t u_int16_t u_int32_t u_int64_t)
@@ -89,5 +84,7 @@ AC_OUTPUT(Makefile 		\
 	lib/krb5/error/Makefile	\
 	lib/krb5/error/compile_et \
 	lib/hdb/Makefile	\
+	lib/gssapi/Makefile	\
 	kuser/Makefile		\
+	admin/Makefile		\
 	kdc/Makefile)
