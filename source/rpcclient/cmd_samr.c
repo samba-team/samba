@@ -1281,7 +1281,9 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 		
 		/* attempt to create, and if already exist, open */
 		if (lsa_local) {
-			res2 = res1 = res = lsa_local_set_secret(domain, ntpw);
+			res2 = res1 = res = 
+				(lsa_local_set_secret(domain, ntpw) &&
+				 secrets_store_domain_sid(domain, &sid1));
 			status = res ? NT_STATUS_NOPROBLEMO : NT_STATUS_ACCESS_DENIED;
 		} else {
 			res1 = lsa_create_secret(&lsa_pol, "$MACHINE.ACC",
