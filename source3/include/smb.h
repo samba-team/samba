@@ -298,7 +298,7 @@ enum RPC_PKT_TYPE
 #define LSA_AUTH2           0x0f
 #define LSA_CLOSE           0x00
 
-/* unknown .... */
+/* XXXX these are just here to get a compile!!! */
 #define LSA_OPENSECRET      0xFF
 #define LSA_LOOKUPSIDS      0xFE
 #define LSA_LOOKUPNAMES     0xFD
