@@ -117,6 +117,47 @@ static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 	return NT_STATUS_OK;
 }
 
+/* Set the HWM if necessary */
+/* This is not transaction safe, but the tdb should be locked
+   in db_set_mapping anyway. */
+static NTSTATUS db_adjust_hwm(unid_t id, int id_type)
+{
+	int32 hwm;
+
+	switch (id_type & ID_TYPEMASK) {
+	case ID_USERID:
+		hwm = tdb_fetch_int32(idmap_tdb, HWM_USER);
+		if (hwm == -1)
+			return NT_STATUS_INTERNAL_DB_ERROR;
+
+		if ((id.uid < hwm) || (id.uid > idmap_state.uid_high))
+			return NT_STATUS_OK;
+
+		if (tdb_store_int32(idmap_tdb, HWM_USER, id.uid+1) != 0)
+			return NT_STATUS_UNSUCCESSFUL;
+
+		break;
+
+	case ID_GROUPID:
+		hwm = tdb_fetch_int32(idmap_tdb, HWM_GROUP);
+		if (hwm == -1)
+			return NT_STATUS_INTERNAL_DB_ERROR;
+
+		if ((id.gid < hwm) || (id.gid > idmap_state.gid_high))
+			return NT_STATUS_OK;
+
+		if (tdb_store_int32(idmap_tdb, HWM_GROUP, id.gid+1) != 0)
+			return NT_STATUS_UNSUCCESSFUL;
+
+		break;
+
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return NT_STATUS_OK;
+}
+
 /* Get a sid from an id */
 static NTSTATUS db_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 {
@@ -283,7 +324,7 @@ static NTSTATUS db_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 		DEBUG(0, ("idb_set_mapping: tdb_store 2 error: %s\n", tdb_errorstr(idmap_tdb)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	return NT_STATUS_OK;
+	return db_adjust_hwm(id, id_type);
 }
 
 /*****************************************************************************

@@ -376,6 +376,16 @@ static int net_idmap_dump_one_entry(TDB_CONTEXT *tdb,
 				    TDB_DATA data,
 				    void *unused)
 {
+	if (strcmp(key.dptr, "USER HWM") == 0) {
+		printf("USER HWM %d\n", IVAL(data.dptr,0));
+		return 0;
+	}
+
+	if (strcmp(key.dptr, "GROUP HWM") == 0) {
+		printf("GROUP HWM %d\n", IVAL(data.dptr,0));
+		return 0;
+	}
+
 	if (strncmp(key.dptr, "S-", 2) != 0)
 		return 0;
 
@@ -408,6 +418,63 @@ static int net_idmap_dump(int argc, const char **argv)
 }
 
 /***********************************************************
+ Write entries from stdin to current local idmap
+ **********************************************************/
+static int net_idmap_restore(int argc, const char **argv)
+{
+	if (!idmap_init()) {
+		d_printf("Could not init idmap\n");
+		return -1;
+	}
+
+	while (!feof(stdin)) {
+		fstring line, sid_string;
+		int len;
+		unid_t id;
+		int type = ID_EMPTY;
+		DOM_SID sid;
+
+		if (fgets(line, sizeof(line)-1, stdin) == NULL)
+			break;
+
+		len = strlen(line);
+
+		if ( (len > 0) && (line[len-1] == '\n') )
+			line[len-1] = '\0';
+
+		if (sscanf(line, "GID %d %s", &id.gid, sid_string) == 2) {
+			type = ID_GROUPID;
+		}
+
+		if (sscanf(line, "UID %d %s", &id.uid, sid_string) == 2) {
+			type = ID_USERID;
+		}
+
+		if (type == ID_EMPTY) {
+			d_printf("ignoring invalid line [%s]\n", line);
+			continue;
+		}
+
+		if (!string_to_sid(&sid, sid_string)) {
+			d_printf("ignoring invalid sid [%s]\n", sid_string);
+			continue;
+		}
+
+		if (!NT_STATUS_IS_OK(idmap_set_mapping(&sid, id, type))) {
+			d_printf("Could not set mapping of %s %d to sid %s\n",
+				 (type == ID_GROUPID) ? "GID" : "UID",
+				 (type == ID_GROUPID) ? id.gid : id.uid,
+				 sid_string_static(&sid));
+			continue;
+		}
+				 
+	}
+
+	idmap_close();
+	return 0;
+}
+
+/***********************************************************
  Look at the current idmap
  **********************************************************/
 static int net_idmap(int argc, const char **argv)
@@ -417,6 +484,9 @@ static int net_idmap(int argc, const char **argv)
 
 	if ( !StrCaseCmp( argv[0], "dump" ) )
 		return net_idmap_dump(argc-1, argv+1);
+
+	if ( !StrCaseCmp( argv[0], "restore" ) )
+		return net_idmap_restore(argc-1, argv+1);
 
 	return net_help_idmap( argc, argv );
 }
