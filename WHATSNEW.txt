@@ -1,6 +1,6 @@
                  =============================
                  Release Notes for Samba 3.0.4
-                        April 29, 2004
+                          May 8, 2004
                  =============================
 
 This is the latest stable release of Samba. This is the version 
