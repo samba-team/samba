@@ -1,5 +1,7 @@
 2000-07-01  Assar Westerlund  <assar@sics.se>
 
+	* ftpd/ftpd_locl.h: krb5.h before kafs.h
+	* ftpd/ftpd.c (krb5_verify): static-ize
 	* ftpd/ftpd.c (krb5_verify): conditionalize on KRB5
 
 2000-06-21  Assar Westerlund  <assar@sics.se>
