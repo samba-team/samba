@@ -67,7 +67,7 @@
 		<listitem><para>Test your patch. It might take a while before one of us looks 
 		at your patch so it will take longer before your patch when your patch 
 		needs to go thru the review cycle again.</para></listitem>
-		<listitem><para>Don't put seperate patches in one large diff file. This makes 
+		<listitem><para>Don't put separate patches in one large diff file. This makes 
 		it harder to read, understand and test the patch. You might 
 		also risk not getting a good patch committed because you mixed it 
 		with one that had issues. </para></listitem>

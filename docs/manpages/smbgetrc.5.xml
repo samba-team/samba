@@ -27,7 +27,7 @@
 		This manual page documents the format and options of the <emphasis>smbgetrc</emphasis> 
 		file. This is the configuration file used by the <citerefentry><refentrytitle>smbget</refentrytitle><manvolnum>1</manvolnum></citerefentry> 
 		utility. The file contains of key-value pairs, one pair on each line. The key 
-			and value should be seperated by a space.
+			and value should be separated by a space.
 	</para>
 
 	<para>By default, smbget reads its configuration from <emphasis>$HOME/.smbgetrc</emphasis>, though 

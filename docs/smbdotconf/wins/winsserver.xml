@@ -15,7 +15,7 @@
 	<para>If you want to work in multiple namespaces, you can 
 	give every wins server a 'tag'. For each tag, only one 
 	(working) server will be queried for a name. The tag should be 
-	seperated from the ip address by a colon.
+	separated from the ip address by a colon.
 	</para>
 
 	<note><para>You need to set up Samba to point 
