@@ -1418,7 +1418,12 @@ NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LO
 				
 			if (sid_equal(&sid, &pol_sid)) {
 				rid[i]=local_rid;
-				type[i]=local_type;
+
+				/* Windows does not return WKN_GRP here, even
+				 * on lookups in builtin */
+				type[i] = (local_type == SID_NAME_WKN_GRP) ?
+					SID_NAME_ALIAS : local_type;
+
                 		r_u->status = NT_STATUS_OK;
 			}
             	}
