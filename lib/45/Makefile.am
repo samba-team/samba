@@ -8,4 +8,4 @@ EXTRA_LIBRARIES = lib45.a
 
 INCLUDES = $(INCLUDE_krb4)
 
-lib45_a_SOURCES = get_ad_tkt.c
+lib45_a_SOURCES = get_ad_tkt.c mk_req.c
