@@ -1746,12 +1746,10 @@ static int cmd_allinfo(const char **cmd_ptr)
 	if (NT_STATUS_IS_OK(status)) {
 		int i;
 		for (i=0;i<finfo.all_eas.out.num_eas;i++) {
-			d_printf("\tEA[%d] flags=%d %s=%*.*s\n", i,
+			d_printf("\tEA[%d] flags=%d len=%d '%s'\n", i,
 				 finfo.all_eas.out.eas[i].flags,
-				 finfo.all_eas.out.eas[i].name.s,
 				 finfo.all_eas.out.eas[i].value.length,
-				 finfo.all_eas.out.eas[i].value.length,
-				 finfo.all_eas.out.eas[i].value.data);
+				 finfo.all_eas.out.eas[i].name.s);
 		}
 	}
 
@@ -1784,6 +1782,58 @@ static int cmd_allinfo(const char **cmd_ptr)
 	talloc_destroy(mem_ctx);
 
 done:
+	return ret;
+}
+
+
+/****************************************************************************
+shows EA contents
+****************************************************************************/
+static int cmd_eainfo(const char **cmd_ptr)
+{
+	pstring fname;
+	fstring buf;
+	int ret = 0;
+	TALLOC_CTX *mem_ctx;
+	union smb_fileinfo finfo;
+	NTSTATUS status;
+	int i;
+
+	pstrcpy(fname,cur_dir);
+	
+	if (!next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
+		d_printf("eainfo <filename>\n");
+		return 1;
+	}
+	pstrcat(fname,buf);
+
+	mem_ctx = talloc_init("%s", fname);
+
+	finfo.generic.in.fname = fname;
+	finfo.generic.level = RAW_FILEINFO_ALL_EAS;
+	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
+	
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("RAW_FILEINFO_ALL_EAS - %s\n", nt_errstr(status));
+		talloc_destroy(mem_ctx);
+		return 1;
+	}
+
+	d_printf("%s has %d EAs\n", fname, finfo.all_eas.out.num_eas);
+
+	for (i=0;i<finfo.all_eas.out.num_eas;i++) {
+		d_printf("\tEA[%d] flags=%d len=%d '%s'\n", i,
+			 finfo.all_eas.out.eas[i].flags,
+			 finfo.all_eas.out.eas[i].value.length,
+			 finfo.all_eas.out.eas[i].name.s);
+		fflush(stdout);
+		dump_data(0, 
+			  finfo.all_eas.out.eas[i].value.data,
+			  finfo.all_eas.out.eas[i].value.length);
+	}
+
+	talloc_destroy(mem_ctx);
+
 	return ret;
 }
 
@@ -2591,6 +2641,7 @@ static struct
   {"deltree",cmd_deltree,"<dir> delete a whole directory tree",{COMPL_REMOTE,COMPL_NONE}},
   {"dir",cmd_dir,"<mask> list the contents of the current directory",{COMPL_REMOTE,COMPL_NONE}},
   {"du",cmd_du,"<mask> computes the total size of the current directory",{COMPL_REMOTE,COMPL_NONE}},
+  {"eainfo",cmd_eainfo,"<file> show EA contents for a file",{COMPL_NONE,COMPL_NONE}},
   {"exit",cmd_quit,"logoff the server",{COMPL_NONE,COMPL_NONE}},
   {"get",cmd_get,"<remote name> [local name] get a file",{COMPL_REMOTE,COMPL_LOCAL}},
   {"help",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
