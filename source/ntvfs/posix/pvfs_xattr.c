@@ -131,7 +131,7 @@ static NTSTATUS pvfs_xattr_ndr_save(struct pvfs_state *pvfs,
 	DATA_BLOB blob;
 	NTSTATUS status;
 
-	status = ndr_push_struct_blob(&blob, mem_ctx, p, (ndr_push_flags_fn_t)push_fn);
+	status = ndr_push_struct_blob(&blob, mem_ctx, p, push_fn);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return status;
