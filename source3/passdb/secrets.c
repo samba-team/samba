@@ -151,7 +151,7 @@ BOOL secrets_fetch_domain_guid(const char *domain, GUID *guid)
 	DEBUG(6,("key is %s, size is %d\n", key, (int)size));
 
 	if ((NULL == dyn_guid) && (ROLE_DOMAIN_PDC == lp_server_role())) {
-		uuid_generate_random(&new_guid);
+		smb_uuid_generate_random(&new_guid);
 		if (!secrets_store_domain_guid(domain, &new_guid))
 			return False;
 		dyn_guid = (GUID *)secrets_fetch(key, &size);
