@@ -72,6 +72,53 @@ NTSTATUS cli_samr_connect(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/* Connect to SAMR database */
+
+NTSTATUS cli_samr_connect4(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			   uint32 access_mask, POLICY_HND *connect_pol)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_CONNECT4 q;
+	SAMR_R_CONNECT4 r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_connect4(&q, cli->desthost, access_mask);
+
+	if (!samr_io_q_connect4("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_CONNECT4, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_connect4("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	if (NT_STATUS_IS_OK(result = r.status)) {
+		*connect_pol = r.connect_pol;
+#ifdef __INSURE__
+		connect_pol->marker = malloc(1);
+#endif
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
 /* Close SAMR handle */
 
 NTSTATUS cli_samr_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,

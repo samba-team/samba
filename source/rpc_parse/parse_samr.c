@@ -6719,6 +6719,28 @@ BOOL samr_io_r_connect(char *desc, SAMR_R_CONNECT * r_u,
 }
 
 /*******************************************************************
+inits a SAMR_Q_CONNECT4 structure.
+********************************************************************/
+
+void init_samr_q_connect4(SAMR_Q_CONNECT4 * q_u,
+			  char *srv_name, uint32 access_mask)
+{
+	int len_srv_name = strlen(srv_name);
+
+	DEBUG(5, ("init_samr_q_connect\n"));
+
+	/* make PDC server name \\server */
+	q_u->ptr_srv_name = len_srv_name > 0 ? 1 : 0;
+	init_unistr2(&q_u->uni_srv_name, srv_name, len_srv_name + 1);
+
+	/* Only value we've seen, possibly an address type ? */
+	q_u->unk_0 = 2;
+
+	/* example values: 0x0000 0002 */
+	q_u->access_mask = access_mask;
+}
+
+/*******************************************************************
 reads or writes a structure.
 ********************************************************************/
 
