@@ -155,8 +155,7 @@ BOOL req_user_info( const POLICY_HND *pol_dom,
 {
 	SAM_USER_INFO_21 usr;
 	/* send user info query, level 0x15 */
-	if (get_samr_query_userinfo(
-				    pol_dom,
+	if (get_samr_query_userinfo( pol_dom,
 				    0x15, user_rid, &usr))
 	{
 		if (usr_inf != NULL)
@@ -171,8 +170,7 @@ BOOL req_user_info( const POLICY_HND *pol_dom,
 /****************************************************************************
 SAM Query User Groups.
 ****************************************************************************/
-uint32 sam_query_usergroups(
-				const POLICY_HND *pol_dom,
+uint32 sam_query_usergroups( const POLICY_HND *pol_dom,
 				const char *domain,
 				const DOM_SID *sid,
 				uint32 user_rid,
@@ -186,8 +184,7 @@ uint32 sam_query_usergroups(
 	uint32 num_names = 0;
 	(*gid) = NULL;
 	/* send user group query */
-	if (get_samr_query_usergroups(
-				      pol_dom,
+	if (get_samr_query_usergroups( pol_dom,
 				      user_rid, num_groups, gid) &&
 	    gid != NULL)
 	{
@@ -208,8 +205,7 @@ uint32 sam_query_usergroups(
 			rid_mem[i] = (*gid)[i].g_rid;
 		}
 
-		if (samr_query_lookup_rids(
-				pol_dom, 0x3e8,
+		if (samr_query_lookup_rids( pol_dom, 0x3e8,
 				(*num_groups), rid_mem, 
 				&num_names, name, type))
 		{
@@ -222,8 +218,7 @@ uint32 sam_query_usergroups(
 	return num_names;
 }
 
-static uint32 req_group_info(
-				const POLICY_HND *pol_dom,
+static uint32 req_group_info( const POLICY_HND *pol_dom,
 				const char *domain, const DOM_SID *sid,
 				uint32 user_rid, const char *user_name,
 				USER_MEM_FN(usr_mem))
@@ -254,8 +249,7 @@ static uint32 req_group_info(
 	return num_names;
 }
 
-static void req_alias_info(
-				const POLICY_HND *pol_dom,
+static void req_alias_info( const POLICY_HND *pol_dom,
 				const char *domain,
 				const DOM_SID *sid1, uint32 user_rid,
 				const char *user_name,
@@ -281,8 +275,7 @@ static void req_alias_info(
 	ptr_sid[0] = 1;
 
 	/* send user alias query */
-	if (samr_query_useraliases(
-				pol_dom,
+	if (samr_query_useraliases( pol_dom,
 				ptr_sid, als_sid, &num_aliases, &rid_mem))
 	{
 		uint32 num_names;
@@ -491,8 +484,7 @@ int msrpc_sam_enum_users( const char* srv_name,
 		/* read some users */
 		do
 		{
-			status = samr_enum_dom_users(
-			     &pol_dom,
+			status = samr_enum_dom_users( &pol_dom,
 			     &start_idx, acb_mask, unk_1, 0x100000,
 			     sam, num_sam_entries);
 
@@ -562,8 +554,7 @@ BOOL sam_query_dominfo(const char* srv_name,
 	            &pol_dom) : False;
 
 	/* send a samr 0x8 command */
-	res2 = res ? samr_query_dom_info(
-	            &pol_dom, switch_value, ctr) : False;
+	res2 = res ? samr_query_dom_info( &pol_dom, switch_value, ctr) : False;
 
 	res1 = res1 ? samr_close( &sam_pol) : False;
 
@@ -582,8 +573,7 @@ BOOL sam_query_dominfo(const char* srv_name,
 }
 
 
-BOOL query_aliasinfo(
-				const POLICY_HND *pol_dom,
+BOOL query_aliasinfo( const POLICY_HND *pol_dom,
 				const char *domain,
 				const DOM_SID *sid,
 				uint32 alias_rid,
@@ -592,8 +582,7 @@ BOOL query_aliasinfo(
 	ALIAS_INFO_CTR ctr;
 
 	/* send alias info query */
-	if (get_samr_query_aliasinfo(
-				      pol_dom,
+	if (get_samr_query_aliasinfo( pol_dom,
 				      3, /* info level */
 	                              alias_rid, &ctr))
 	{
@@ -708,8 +697,7 @@ BOOL req_aliasmem_info(const char* srv_name,
 	return False;
 }
 
-BOOL sam_query_groupmem(
-				const POLICY_HND *pol_dom,
+BOOL sam_query_groupmem( const POLICY_HND *pol_dom,
 				uint32 group_rid,
 				uint32 *num_names,
 				uint32 **rid_mem,
@@ -743,8 +731,7 @@ BOOL sam_query_groupmem(
 				rid_copy[i] = (*rid_mem)[i];
 			}
 			/* resolve names */
-			res3 = samr_query_lookup_rids(
-		                   pol_dom, 1000,
+			res3 = samr_query_lookup_rids( pol_dom, 1000,
 		                   num_mem, rid_copy, num_names, name, type);
 		}
 	}
@@ -791,8 +778,7 @@ BOOL query_groupinfo( const POLICY_HND *pol_dom,
 	GROUP_INFO_CTR ctr;
 
 	/* send group info query */
-	if (get_samr_query_groupinfo(
-				      pol_dom,
+	if (get_samr_query_groupinfo( pol_dom,
 				      1, /* info level */
 	                              group_rid, &ctr))
 	{
@@ -958,8 +944,7 @@ uint32 msrpc_sam_enum_groups( const char* srv_name,
 		/* read some groups */
 		do
 		{
-			status = samr_enum_dom_groups(
-			     &pol_dom,
+			status = samr_enum_dom_groups( &pol_dom,
 			     &start_idx, 0x100000,
 			     sam, num_sam_entries);
 
@@ -1036,8 +1021,7 @@ uint32 msrpc_sam_enum_aliases( const char* srv_name,
 				&sam_pol) : False;
 
 	/* connect to the domain */
-	res = res ? samr_open_domain(
-	            &sam_pol, ace_perms, sid1,
+	res = res ? samr_open_domain( &sam_pol, ace_perms, sid1,
 	            &pol_dom) : False;
 
 	(*sam) = NULL;
@@ -1050,8 +1034,7 @@ uint32 msrpc_sam_enum_aliases( const char* srv_name,
 		/* read some groups */
 		do
 		{
-			status = samr_enum_dom_aliases(
-			     &pol_dom,
+			status = samr_enum_dom_aliases( &pol_dom,
 			     &start_idx, 0x100000,
 			     sam, num_sam_entries);
 
@@ -1218,8 +1201,7 @@ BOOL create_samr_domain_alias( POLICY_HND *pol_open_domain,
 	if (pol_open_domain == NULL || acct_name == NULL || acct_desc == NULL) return False;
 
 	/* send create alias */
-	if (!samr_create_dom_alias(
-				pol_open_domain,
+	if (!samr_create_dom_alias( pol_open_domain,
 				acct_name,
 				&pol_open_alias, rid))
 	{
@@ -1233,8 +1215,7 @@ BOOL create_samr_domain_alias( POLICY_HND *pol_open_domain,
 	make_samr_alias_info3(&ctr.alias.info3, acct_desc);
 
 	/* send set alias info */
-	if (!samr_set_aliasinfo(
-				&pol_open_alias,
+	if (!samr_set_aliasinfo( &pol_open_alias,
 				&ctr))
 	{
 		DEBUG(5,("create_samr_domain_alias: error in samr_set_aliasinfo\n"));
@@ -1247,8 +1228,7 @@ BOOL create_samr_domain_alias( POLICY_HND *pol_open_domain,
 /****************************************************************************
 do a SAMR create domain group
 ****************************************************************************/
-BOOL create_samr_domain_group(
-				POLICY_HND *pol_open_domain,
+BOOL create_samr_domain_group( POLICY_HND *pol_open_domain,
 				const char *acct_name, const char *acct_desc,
 				uint32 *rid)
 {
@@ -1259,8 +1239,7 @@ BOOL create_samr_domain_group(
 	if (pol_open_domain == NULL || acct_name == NULL || acct_desc == NULL) return False;
 
 	/* send create group*/
-	if (!samr_create_dom_group(
-				pol_open_domain,
+	if (!samr_create_dom_group( pol_open_domain,
 				acct_name,
 				&pol_open_group, rid))
 	{
@@ -1275,8 +1254,7 @@ BOOL create_samr_domain_group(
 	make_samr_group_info4(&ctr.group.info4, acct_desc);
 
 	/* send user groups query */
-	if (!samr_set_groupinfo(
-				&pol_open_group,
+	if (!samr_set_groupinfo( &pol_open_group,
 				&ctr))
 	{
 		DEBUG(5,("create_samr_domain_group: error in samr_set_groupinfo\n"));
@@ -1299,8 +1277,7 @@ BOOL get_samr_query_usergroups( const POLICY_HND *pol_open_domain,
 	if (pol_open_domain == NULL || num_groups == NULL || gid == NULL) return False;
 
 	/* send open domain (on user sid) */
-	if (!samr_open_user(
-				pol_open_domain,
+	if (!samr_open_user( pol_open_domain,
 				0x02011b, user_rid,
 				&pol_open_user))
 	{
@@ -1308,9 +1285,7 @@ BOOL get_samr_query_usergroups( const POLICY_HND *pol_open_domain,
 	}
 
 	/* send user groups query */
-	if (!samr_query_usergroups(
-				&pol_open_user,
-				num_groups, gid))
+	if (!samr_query_usergroups( &pol_open_user, num_groups, gid))
 	{
 		DEBUG(5,("samr_query_usergroups: error in query user groups\n"));
 		ret = False;
@@ -1322,8 +1297,7 @@ BOOL get_samr_query_usergroups( const POLICY_HND *pol_open_domain,
 /****************************************************************************
 do a SAMR delete group 
 ****************************************************************************/
-BOOL delete_samr_dom_group(
-				POLICY_HND *pol_open_domain,
+BOOL delete_samr_dom_group( POLICY_HND *pol_open_domain,
 				uint32 group_rid)
 {
 	POLICY_HND pol_open_group;
@@ -1459,8 +1433,7 @@ BOOL set_samr_set_userinfo2(
 	if (pol_open_domain == NULL || usr == NULL) return False;
 
 	/* send open domain (on user sid) */
-	if (!samr_open_user(
-				pol_open_domain,
+	if (!samr_open_user( pol_open_domain,
 				0x000601b4, user_rid,
 				&pol_open_user))
 	{
@@ -1468,9 +1441,7 @@ BOOL set_samr_set_userinfo2(
 	}
 
 	/* send user info query */
-	if (!samr_set_userinfo2(
-				&pol_open_user,
-				info_level, usr))
+	if (!samr_set_userinfo2( &pol_open_user, info_level, usr))
 	{
 		DEBUG(5,("samr_set_userinfo: error in query user info, level 0x%x\n",
 		          info_level));
@@ -1494,8 +1465,7 @@ BOOL set_samr_set_userinfo(
 	if (pol_open_domain == NULL || usr == NULL) return False;
 
 	/* send open domain (on user sid) */
-	if (!samr_open_user(
-				pol_open_domain,
+	if (!samr_open_user( pol_open_domain,
 				0x000601b4, user_rid,
 				&pol_open_user))
 	{
@@ -1503,8 +1473,7 @@ BOOL set_samr_set_userinfo(
 	}
 
 	/* send user info query */
-	if (!samr_set_userinfo(
-				&pol_open_user,
+	if (!samr_set_userinfo( &pol_open_user,
 				info_level, usr))
 	{
 		DEBUG(5,("samr_set_userinfo: error in query user info, level 0x%x\n",
@@ -1529,8 +1498,7 @@ BOOL get_samr_query_userinfo(
 	if (pol_open_domain == NULL || usr == NULL) return False;
 
 	/* send open domain (on user sid) */
-	if (!samr_open_user(
-				pol_open_domain,
+	if (!samr_open_user( pol_open_domain,
 				0x02011b, user_rid,
 				&pol_open_user))
 	{
@@ -1538,9 +1506,7 @@ BOOL get_samr_query_userinfo(
 	}
 
 	/* send user info query */
-	if (!samr_query_userinfo(
-				&pol_open_user,
-				info_level, usr))
+	if (!samr_query_userinfo( &pol_open_user, info_level, usr))
 	{
 		DEBUG(5,("samr_query_userinfo: error in query user info, level 0x%x\n",
 		          info_level));
@@ -1566,17 +1532,14 @@ BOOL get_samr_query_groupinfo(
 	bzero(ctr, sizeof(*ctr));
 
 	/* send open domain (on group sid) */
-	if (!samr_open_group(
-				pol_open_domain,
+	if (!samr_open_group( pol_open_domain,
 				0x02000000, group_rid, &pol_open_group))
 	{
 		return False;
 	}
 
 	/* send group info query */
-	if (!samr_query_groupinfo(
-				&pol_open_group,
-				info_level, ctr))
+	if (!samr_query_groupinfo( &pol_open_group, info_level, ctr))
 	{
 		DEBUG(5,("samr_query_groupinfo: error in query group info, level 0x%x\n",
 		          info_level));
@@ -1602,17 +1565,14 @@ BOOL get_samr_query_aliasinfo(
 	bzero(ctr, sizeof(*ctr));
 
 	/* send open domain (on alias sid) */
-	if (!samr_open_alias(
-				pol_open_domain,
+	if (!samr_open_alias( pol_open_domain,
 				0x02000000, alias_rid, &pol_open_alias))
 	{
 		return False;
 	}
 
 	/* send alias info query */
-	if (!samr_query_aliasinfo(
-				&pol_open_alias,
-				info_level, ctr))
+	if (!samr_query_aliasinfo( &pol_open_alias, info_level, ctr))
 	{
 		DEBUG(5,("samr_query_aliasinfo: error in query alias info, level 0x%x\n",
 		          info_level));
@@ -1644,8 +1604,7 @@ BOOL msrpc_sam_create_dom_user(const char* srv_name, DOM_SID *sid1,
 				&sam_pol) : False;
 
 	/* connect to the domain */
-	res1 = res ? samr_open_domain( 
-	            &sam_pol, ace_perms, sid1,
+	res1 = res ? samr_open_domain( &sam_pol, ace_perms, sid1,
 	            &pol_dom) : False;
 
 	/* create a domain user */
