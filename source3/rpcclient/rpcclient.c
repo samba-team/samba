@@ -103,6 +103,7 @@ static void rpcclient_stop(void)
 #define COMPL_REGKEY 1
 #define COMPL_SAMUSR 3
 #define COMPL_SAMGRP 4
+#define COMPL_SVCLST 5
 
 /****************************************************************************
  This defines the commands supported by this client
@@ -142,7 +143,7 @@ commands[] =
 		"svcinfo",
 		cmd_svc_info,
 		"<service> Service Information",
-		{COMPL_NONE, COMPL_NONE}
+		{COMPL_SVCLST, COMPL_NONE}
 	},
 
 	/*
@@ -954,6 +955,46 @@ static char *complete_samenum_grp(char *text, int state)
 	return NULL;
 }
 
+static char *complete_svcenum(char *text, int state)
+{
+	static uint32 i = 0;
+	static uint32 num_svcs = 0;
+	static ENUM_SRVC_STATUS *svc = NULL;
+    
+	if (state == 0)
+	{
+		free(svc);
+		svc = NULL;
+		num_svcs = 0;
+
+		/* Iterate all users */
+		if (msrpc_svc_enum(&cli_info, &svc, &num_svcs,
+		                   NULL, NULL) == 0)
+		{
+			return NULL;
+		}
+
+		i = 0;
+    	}
+
+	for (; i < num_svcs; i++)
+	{
+		fstring svc_name;
+		unistr_to_ascii(svc_name, svc[i].uni_srvc_name.buffer,
+			sizeof(svc_name)-1);
+
+		if (text == NULL || text[0] == 0 ||
+		    strnequal(text, svc_name, strlen(text)))
+		{
+			char *name = strdup(svc_name);
+			i++;
+			return name;
+		}
+	}
+	
+	return NULL;
+}
+
 /* Complete an rpcclient command */
 
 static char *complete_cmd(char *text, int state)
@@ -1050,6 +1091,9 @@ static char **completion_fn(char *text, int start, int end)
 
         case COMPL_SAMUSR:
           return completion_matches(text, complete_samenum_usr);
+
+        case COMPL_SVCLST:
+          return completion_matches(text, complete_svcenum);
 
         case COMPL_REGKEY:
           return completion_matches(text, complete_regenum);

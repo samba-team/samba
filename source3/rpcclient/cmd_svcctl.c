@@ -187,12 +187,6 @@ BOOL msrpc_svc_enum(struct client_info *info,
 
 	} while (res1 && dos_error == ERRmoredata);
 
-	if (res1 && dos_error == 0x0 && (*num_svcs) > 0 && (*svcs) != NULL)
-	{
-		report(out_hnd,"Services\n");
-		report(out_hnd,"--------\n");
-	}
-
 	for (i = 0; i < (*num_svcs) && (*svcs) != NULL && res1; i++)
 	{
 		fstring svc_name;
@@ -233,6 +227,9 @@ void cmd_svc_enum(struct client_info *info)
 	{
 		request_info = strequal(tmp, "-i");
 	}
+
+	report(out_hnd,"Services\n");
+	report(out_hnd,"--------\n");
 
 	msrpc_svc_enum(info, &svcs, &num_svcs,
 	               request_info ? NULL : svc_display_svc_info,
