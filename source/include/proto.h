@@ -36,7 +36,7 @@ void interpret_character_set(char *str);
 
 /*The following definitions come from  charset.c  */
 
-void charset_initialise();
+void charset_initialise(void);
 void codepage_initialise(int client_codepage);
 void add_char_string(char *s);
 
@@ -280,7 +280,6 @@ BOOL lp_nis_home_map(void);
 BOOL lp_time_server(void);
 BOOL lp_bind_interfaces_only(void);
 BOOL lp_net_wksta_user_logon(void);
-BOOL lp_win95_bug_compatibility(void);
 int lp_os_level(void);
 int lp_max_ttl(void);
 int lp_max_wins_ttl(void);
@@ -370,6 +369,7 @@ BOOL lp_delete_readonly(int );
 BOOL lp_fake_oplocks(int );
 BOOL lp_recursive_veto_delete(int );
 BOOL lp_dos_filetimes(int );
+BOOL lp_dos_filetime_resolution(int );
 int lp_create_mode(int );
 int lp_force_create_mode(int );
 int lp_dir_mode(int );
@@ -1342,7 +1342,6 @@ time_t make_unix_date2(void *date_ptr);
 time_t make_unix_date3(void *date_ptr);
 char *timestring(void );
 time_t get_create_time(struct stat *st);
-time_t get_access_time(struct stat *st);
 
 /*The following definitions come from  trans2.c  */
 
