@@ -38,6 +38,8 @@ samba_cflags = ""
 if os.environ.has_key("PYTHON_CFLAGS"):
     samba_cflags = os.environ.get("PYTHON_CFLAGS")
 
+print "FLAGS =", samba_cflags
+
 # These variables are filled in by configure
 
 samba_libs = "@LIBS@"
@@ -66,8 +68,8 @@ setup(
 
     # Build info
     
-    include_dirs = [".", "include", "ubiqx", "nsswitch", "smbwrapper",
-                    "popt", "/usr/kerberos/include"],
+    include_dirs = [".", "include", "ubiqx", "smbwrapper",
+                    "popt", "/usr/kerberos/include", "/usr/local/include"],
     
     # Module list
     
