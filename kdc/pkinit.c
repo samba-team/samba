@@ -601,19 +601,16 @@ pk_mk_pa_reply_enckey(krb5_context context,
 {
     KeyTransRecipientInfo *ri;
     EnvelopedData ed;
-
     krb5_error_code ret;
     krb5_crypto crypto;
-
     krb5_data buf, sd_data, enc_sd_data;
-
     krb5_keyblock tmp_key;
-    krb5_enctype enctype = ETYPE_DES3_CBC_NONE;
+    krb5_enctype enveloped_enctype;
     heim_oid *enc_type_oid = NULL;
     X509_NAME *issuer_name;
     heim_integer *serial;
-
     size_t size;
+    int i;
 
     krb5_data_zero(&enc_sd_data);
     krb5_data_zero(&sd_data);
@@ -621,12 +618,26 @@ pk_mk_pa_reply_enckey(krb5_context context,
     memset(&tmp_key, 0, sizeof(tmp_key));
     memset(&ed, 0, sizeof(ed));
 
-    switch (enctype) {
+    /* default to DES3 if client doesn't tell us */
+    enveloped_enctype = ETYPE_DES3_CBC_NONE;
+
+    for (i = 0; i < req->req_body.etype.len; i++) {
+	switch(req->req_body.etype.val[i]) {
+	case 15: /* des-ede3-cbc-Env-OID */
+	    enveloped_enctype = ETYPE_DES3_CBC_NONE;	    
+	    break;
+	default:
+	    break;
+	}
+    }
+
+    switch (enveloped_enctype) {
     case ETYPE_DES3_CBC_NONE:
 	enc_type_oid = &heim_des_ede3_cbc_oid;
 	break;
     default:
-	krb5_set_error_string(context, "not support for enctype %d", enctype);
+	krb5_set_error_string(context, "not support for enctype %d",
+			      enveloped_enctype);
 	return KRB5_PROG_KEYTYPE_NOSUPP;
     }
 
@@ -665,7 +676,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
     if (ret) 
 	goto out;
 
-    ret = krb5_generate_random_keyblock(context, enctype, &tmp_key);
+    ret = krb5_generate_random_keyblock(context, enveloped_enctype, &tmp_key);
     if (ret)
 	goto out;
 
