@@ -26,6 +26,7 @@
 /* srvsvc pipe */
 #define SRV_NET_CONN_ENUM          0x08
 #define SRV_NET_FILE_ENUM          0x09
+#define SRV_NET_FILE_CLOSE         0x0b
 #define SRV_NET_SESS_ENUM          0x0c
 #define SRV_NET_SHARE_ADD          0x0e
 #define SRV_NET_SHARE_ENUM_ALL     0x0f
@@ -647,6 +648,21 @@ typedef struct r_net_file_enum_info
 	WERROR status;        /* return status */
 
 } SRV_R_NET_FILE_ENUM;
+
+/* SRV_Q_NET_FILE_CLOSE */
+typedef struct q_net_file_close
+{
+	uint32 ptr_srv_name;         /* pointer to server name */
+	UNISTR2 uni_srv_name;        /* server name */
+	
+	uint32 file_id;
+} SRV_Q_NET_FILE_CLOSE;
+
+/* SRV_R_NET_FILE_CLOSE */
+typedef struct r_net_file_close
+{
+	WERROR status;               /* return status */
+} SRV_R_NET_FILE_CLOSE;
 
 /* SRV_INFO_100 */
 typedef struct srv_info_100_info
