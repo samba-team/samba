@@ -677,13 +677,16 @@ NTSTATUS cli_samr_enum_dom_groups(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	*num_dom_groups = r.num_entries2;
 
+	if (*num_dom_groups == 0)
+		goto done;
+
 	if (!((*dom_groups) = (struct acct_info *)
 	      talloc(mem_ctx, sizeof(struct acct_info) * *num_dom_groups))) {
-		result = NT_STATUS_UNSUCCESSFUL;
+		result = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
-	memset(*dom_groups, 0, sizeof(struct acct_info) * *num_dom_groups);
+	memset(*dom_groups, 0, sizeof(struct acct_info) * (*num_dom_groups));
 
 	name_idx = 0;
 
@@ -712,8 +715,8 @@ NTSTATUS cli_samr_enum_dom_groups(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 NTSTATUS cli_samr_enum_als_groups(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
                                   POLICY_HND *pol, uint32 *start_idx, 
-                                  uint32 size, struct acct_info **dom_groups,
-                                  uint32 *num_dom_groups)
+                                  uint32 size, struct acct_info **dom_aliases,
+                                  uint32 *num_dom_aliases)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_ENUM_DOM_ALIASES q;
@@ -753,24 +756,27 @@ NTSTATUS cli_samr_enum_als_groups(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	*num_dom_groups = r.num_entries2;
+	*num_dom_aliases = r.num_entries2;
 
-	if (!((*dom_groups) = (struct acct_info *)
-	      talloc(mem_ctx, sizeof(struct acct_info) * *num_dom_groups))) {
-		result = NT_STATUS_UNSUCCESSFUL;
+	if (*num_dom_aliases == 0)
+		goto done;
+
+	if (!((*dom_aliases) = (struct acct_info *)
+	      talloc(mem_ctx, sizeof(struct acct_info) * *num_dom_aliases))) {
+		result = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
-	memset(*dom_groups, 0, sizeof(struct acct_info) * *num_dom_groups);
+	memset(*dom_aliases, 0, sizeof(struct acct_info) * *num_dom_aliases);
 
 	name_idx = 0;
 
-	for (i = 0; i < *num_dom_groups; i++) {
+	for (i = 0; i < *num_dom_aliases; i++) {
 
-		(*dom_groups)[i].rid = r.sam[i].rid;
+		(*dom_aliases)[i].rid = r.sam[i].rid;
 
 		if (r.sam[i].hdr_name.buffer) {
-			unistr2_to_ascii((*dom_groups)[i].acct_name,
+			unistr2_to_ascii((*dom_aliases)[i].acct_name,
 					 &r.uni_grp_name[name_idx],
 					 sizeof(fstring) - 1);
 			name_idx++;
