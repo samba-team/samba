@@ -397,6 +397,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	if (tpscnt) {
 		if((params = (char *)malloc(tpscnt)) == NULL) {
 			DEBUG(0,("reply_trans: param malloc fail for %u bytes !\n", tpscnt));
+			SAFE_FREE(data);
 			END_PROFILE(SMBtrans);
 			return(ERROR_DOS(ERRDOS,ERRnomem));
 		} 
@@ -412,6 +413,8 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 		int i;
 		if((setup = (uint16 *)malloc(suwcnt*sizeof(uint16))) == NULL) {
 			DEBUG(0,("reply_trans: setup malloc fail for %u bytes !\n", (unsigned int)(suwcnt * sizeof(uint16))));
+			SAFE_FREE(data);
+			SAFE_FREE(params);
 			END_PROFILE(SMBtrans);
 			return(ERROR_DOS(ERRDOS,ERRnomem));
 		} 
