@@ -883,7 +883,7 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
 		*rdata_len = 0;
 		*rparam_len = 6;
 		*rparam = REALLOC(*rparam,*rparam_len);
-		SSVALS(*rparam,0,ERROR_INVALID_LEVEL);
+		SSVALS(*rparam,0,ERRunknownlevel);
 		SSVAL(*rparam,2,0);
 		SSVAL(*rparam,4,0);
 		return(True);
@@ -989,7 +989,7 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid, char* param,
     *rdata_len = 0;
     *rparam_len = 6;
     *rparam = REALLOC(*rparam,*rparam_len);
-    SSVALS(*rparam,0,ERROR_INVALID_LEVEL);
+    SSVALS(*rparam,0,ERRunknownlevel);
     SSVAL(*rparam,2,0);
     SSVAL(*rparam,4,0);
     return(True);

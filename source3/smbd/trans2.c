@@ -1374,7 +1374,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
   if (total_data > 0 && IVAL(pdata,0) == total_data) {
     /* uggh, EAs for OS2 */
     DEBUG(4,("Rejecting EA request with total_data=%d\n",total_data));
-    return(ERROR(ERRDOS,ERROR_EAS_NOT_SUPPORTED));
+    return(ERROR(ERRDOS,ERReasnotsupported));
   }
 
   memset((char *)pdata,'\0',data_size);
@@ -1813,7 +1813,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
   if (total_data > 4 && IVAL(pdata,0) == total_data) {
     /* uggh, EAs for OS2 */
     DEBUG(4,("Rejecting EA request with total_data=%d\n",total_data));
-    return(ERROR(ERRDOS,ERROR_EAS_NOT_SUPPORTED));
+    return(ERROR(ERRDOS,ERReasnotsupported));
   }
 
   switch (info_level)
