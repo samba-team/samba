@@ -333,7 +333,6 @@ getreply (int expecteof)
 	    }
 	    code = 421;
 	    return (4);
-	    break;
 	case IAC:
 	    c = getc (cin);
 	    if (c == WILL || c == WONT)
