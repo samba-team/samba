@@ -48,26 +48,30 @@ sub _check_modules($)
 	foreach my $mod (sort keys %{$CTX->{INPUT}{MODULES}}) {
 		my $subsys = $CTX->{INPUT}{MODULES}{$mod}{SUBSYSTEM};
 		my $default_build = $CTX->{INPUT}{MODULES}{$mod}{DEFAULT_BUILD};
-		my $chosen_build = $CTX->{INPUT}{MODULES}{$mod}{CHOSEN_BUILD};
-		my $build = "";
+		my $build = $CTX->{INPUT}{MODULES}{$mod}{CHOSEN_BUILD};
+		my $use_default = 0;
 
 		if (!(defined($CTX->{INPUT}{SUBSYSTEMS}{$subsys}))) {
+			$CTX->{INPUT}{MODULES}{$mod}{BUILD} = "NOT";
 			printf("Module: %s...PARENT SUBSYSTEM DISABLED\n",$mod);
 			next;
 		}
 
-		if ($chosen_build eq "DEFAULT") {
-			if ($default_build eq "SHARED") {
-				$CTX->{INPUT}{MODULES}{$mod}{BUILD} = "SHARED";
-				printf("Module: %s...SHARED\n",$mod);
-			} elsif ($default_build eq "STATIC") {
-				$CTX->{INPUT}{MODULES}{$mod}{BUILD} = "STATIC";
-				printf("Module: %s...STATIC\n",$mod);
-			} else {
-				$CTX->{INPUT}{MODULES}{$mod}{BUILD} = "NOT";
-				printf("Module: %s...NOT\n",$mod);
-				next;
-			}
+		if ($build eq "DEFAULT") {
+			$build = $default_build;
+			$use_default = 1;
+		}
+
+		if ($build eq "SHARED") {
+			$CTX->{INPUT}{MODULES}{$mod}{BUILD} = "SHARED";
+			printf("Module: %s...SHARED\n",$mod);
+		} elsif ($build eq "STATIC") {
+			$CTX->{INPUT}{MODULES}{$mod}{BUILD} = "STATIC";
+			printf("Module: %s...STATIC\n",$mod);
+		} else {
+			$CTX->{INPUT}{MODULES}{$mod}{BUILD} = "NOT";
+			printf("Module: %s...NOT\n",$mod);
+			next;
 		}
 	}
 
