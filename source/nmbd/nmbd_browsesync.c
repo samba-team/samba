@@ -146,7 +146,7 @@ As a local master browser, do a sync with a domain master browser.
 
 static void sync_with_dmb(struct work_record *work)
 {
-	nstring dmb_name;
+	fstring dmb_name;
 
 	if( DEBUGLVL( 2 ) ) {
 		dbgtext( "sync_with_dmb:\n" );
@@ -156,7 +156,7 @@ static void sync_with_dmb(struct work_record *work)
 		dbgtext( "for workgroup %s\n", work->work_group );
 	}
 
-	pull_ascii_nstring(dmb_name, work->dmb_name.name);
+	pull_ascii_nstring(dmb_name, sizeof(fstring), work->dmb_name.name);
 	sync_browse_lists(work, dmb_name, work->dmb_name.name_type, 
 		work->dmb_addr, False, True);
 }
@@ -197,11 +197,11 @@ static void domain_master_node_status_success(struct subnet_record *subrec,
 		p += 1;
 
 		while (numnames--) {
-			nstring qname;
+			fstring qname;
 			uint16 nb_flags;
 			int name_type;
 
-			pull_ascii_nstring(qname, p);
+			pull_ascii_nstring(qname, sizeof(qname), p);
 			name_type = CVAL(p,15);
 			nb_flags = get_nb_flags(&p[16]);
 			trim_char(qname,'\0',' ');
@@ -278,9 +278,9 @@ static void find_domain_master_name_query_success(struct subnet_record *subrec,
 	struct nmb_name nmbname;
 	struct userdata_struct *userdata;
 	size_t size = sizeof(struct userdata_struct) + sizeof(fstring)+1;
-	nstring qname;
+	fstring qname;
 
-	pull_ascii_nstring(qname, q_name->name);
+	pull_ascii_nstring(qname, sizeof(qname), q_name->name);
 	if( !(work = find_workgroup_on_subnet(subrec, qname)) ) {
 		if( DEBUGLVL( 0 ) ) {
 			dbgtext( "find_domain_master_name_query_success:\n" );
@@ -420,11 +420,11 @@ static void get_domain_master_name_node_status_success(struct subnet_record *sub
 		p += 1;
 
 		while (numnames--) {
-			nstring qname;
+			fstring qname;
 			uint16 nb_flags;
 			int name_type;
 
-			pull_ascii_nstring(qname, p);
+			pull_ascii_nstring(qname, sizeof(qname), p);
 			name_type = CVAL(p,15);
 			nb_flags = get_nb_flags(&p[16]);
 			trim_char(qname,'\0',' ');
@@ -460,7 +460,7 @@ static void get_domain_master_name_node_status_success(struct subnet_record *sub
 						return;
 
 					/* remember who the master is */
-					nstrcpy(work->local_master_browser_name, server_name);
+					fstrcpy(work->local_master_browser_name, server_name);
 					make_nmb_name(&nmbname, server_name, 0x20);
 					work->dmb_name = nmbname;
 					work->dmb_addr = from_ip;
@@ -647,7 +647,7 @@ void sync_all_dmbs(time_t t)
 	/* sync with a probability of 1/count */
 	for (work=unicast_subnet->workgrouplist; work; work = work->next) {
 		if (strncmp(lp_workgroup(), work->work_group, sizeof(nstring))) {
-			nstring dmb_name;
+			fstring dmb_name;
 
 			if (((unsigned)sys_random()) % count != 0)
 				continue;
@@ -662,7 +662,7 @@ void sync_all_dmbs(time_t t)
 					      0x20);
 			}
 
-			pull_ascii_nstring(dmb_name, work->dmb_name.name);
+			pull_ascii_nstring(dmb_name, sizeof(dmb_name), work->dmb_name.name);
 
 			DEBUG(3,("Initiating DMB<->DMB sync with %s(%s)\n",
 				 dmb_name, inet_ntoa(work->dmb_addr)));

@@ -1787,7 +1787,7 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 			if (!is_ipaddress(server) &&  /* Not an IP addr so check next */
 			    (resolve_name(server, &rem_ip, 0x1d) ||   /* Found LMB */
                                     resolve_name(server, &rem_ip, 0x1b) )) { /* Found DMB */
-				pstring buserver;
+				fstring buserver;
 
 				dir->dir_type = SMBC_SERVER;
 

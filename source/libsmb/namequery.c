@@ -163,7 +163,7 @@ struct node_status *node_status_query(int fd,struct nmb_name *name,
  a servers name given its IP. Return the matched name in *name.
 **************************************************************************/
 
-BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr to_ip, char *name)
+BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr to_ip, fstring name)
 {
 	struct node_status *status = NULL;
 	struct nmb_name nname;
@@ -202,7 +202,7 @@ BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr t
 	if (i == count)
 		goto done;
 
-	pull_ascii_nstring(name, status[i].name);
+	pull_ascii_nstring(name, sizeof(fstring), status[i].name);
 
 	/* Store the result in the cache. */
 	/* but don't store an entry for 0x1c names here.  Here we have 

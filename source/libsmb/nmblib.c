@@ -285,7 +285,7 @@ static void put_name(char *dest, const char *name, int pad, unsigned int name_ty
 static int put_nmb_name(char *buf,int offset,struct nmb_name *name)
 {
 	int ret,m;
-	fstring buf1;
+	nstring buf1;
 	char *p;
 
 	if (strcmp(name->name,"*") == 0) {
@@ -1230,17 +1230,24 @@ static int name_interpret(char *in, fstring name)
 int name_mangle( char *In, char *Out, char name_type )
 {
 	int   i;
-	int   c;
 	int   len;
-	char  buf[20];
+	nstring buf;
 	char *p = Out;
 
 	/* Safely copy the input string, In, into buf[]. */
-	memset( buf, 0, 20 );
-	if (strcmp(In,"*") == 0) {
-		buf[0] = '*';
-	} else {
-		slprintf( buf, sizeof(buf) - 1, "%-15.15s%c", In, name_type );
+	if (strcmp(In,"*") == 0)
+		put_name(buf, "*", '\0', 0x00);
+	else {
+		/* We use an fstring here as mb dos names can expend x3 when
+		   going to utf8. */
+		fstring buf_unix;
+		nstring buf_dos;
+
+		pull_ascii_fstring(buf_unix, In);
+		strupper_m(buf_unix);
+
+		push_ascii_nstring(buf_dos, buf_unix);
+		put_name(buf, buf_dos, ' ', name_type);
 	}
 
 	/* Place the length of the first field into the output buffer. */
@@ -1249,9 +1256,8 @@ int name_mangle( char *In, char *Out, char name_type )
 
 	/* Now convert the name to the rfc1001/1002 format. */
 	for( i = 0; i < MAX_NETBIOSNAME_LEN; i++ ) {
-		c = toupper( buf[i] );
-		p[i*2]     = ( (c >> 4) & 0x000F ) + 'A';
-		p[(i*2)+1] = (c & 0x000F) + 'A';
+		p[i*2]     = ( (buf[i] >> 4) & 0x000F ) + 'A';
+		p[(i*2)+1] = (buf[i] & 0x000F) + 'A';
 	}
 	p += 32;
 	p[0] = '\0';
