@@ -132,6 +132,8 @@ details:
 30) Force winbindd to periodically update the trusted domain cache.
 31) Remove outdated import/export script to convert an smbpasswd file
     to and from and LDAP directory.  Use the pdbedit tool instead.
+32) Ensure that %U substitution is restored on next valid packet
+    if a logon fails.
 
 
 
