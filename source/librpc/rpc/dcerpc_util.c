@@ -23,32 +23,6 @@
 #include "includes.h"
 
 /*
-  this ndr_size_* stuff should really be auto-generated ....
-*/
-
-static size_t ndr_size_epm_floor(struct epm_floor *fl)
-{
-	size_t ret = 5;
-	if (fl->lhs.protocol == EPM_PROTOCOL_UUID) {
-		ret += 18;
-	} else {
-		ret += fl->lhs.info.lhs_data.length;
-	}
-	ret += fl->rhs.rhs_data.length;
-	return ret;
-}
-
-size_t ndr_size_epm_towers(struct epm_towers *towers)
-{
-	size_t ret = 2;
-	int i;
-	for (i=0;i<towers->num_floors;i++) {
-		ret += ndr_size_epm_floor(&towers->floors[i]);
-	}
-	return ret;
-}
-
-/*
   work out what TCP port to use for a given interface on a given host
 */
 NTSTATUS dcerpc_epm_map_tcp_port(const char *server, 
@@ -96,28 +70,28 @@ NTSTATUS dcerpc_epm_map_tcp_port(const char *server,
 	twr.towers.floors[0].lhs.protocol = EPM_PROTOCOL_UUID;
 	GUID_from_string(uuid, &twr.towers.floors[0].lhs.info.uuid.uuid);
 	twr.towers.floors[0].lhs.info.uuid.version = version;
-	twr.towers.floors[0].rhs.rhs_data = data_blob_talloc_zero(p, 2);
+	twr.towers.floors[0].rhs.uuid.unknown = 0;
 
 	/* encoded with NDR ... */
 	twr.towers.floors[1].lhs.protocol = EPM_PROTOCOL_UUID;
 	GUID_from_string(NDR_GUID, &twr.towers.floors[1].lhs.info.uuid.uuid);
 	twr.towers.floors[1].lhs.info.uuid.version = NDR_GUID_VERSION;
-	twr.towers.floors[1].rhs.rhs_data = data_blob_talloc_zero(p, 2);
+	twr.towers.floors[1].rhs.uuid.unknown = 0;
 
 	/* on an RPC connection ... */
 	twr.towers.floors[2].lhs.protocol = EPM_PROTOCOL_NCACN;
 	twr.towers.floors[2].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr.towers.floors[2].rhs.rhs_data = data_blob_talloc_zero(p, 2);
+	twr.towers.floors[2].rhs.ncacn.minor_version = 0;
 
 	/* on a TCP port ... */
 	twr.towers.floors[3].lhs.protocol = EPM_PROTOCOL_TCP;
 	twr.towers.floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr.towers.floors[3].rhs.rhs_data = data_blob_talloc_zero(p, 2);
+	twr.towers.floors[3].rhs.tcp.port = 0;
 
 	/* on an IP link ... */
 	twr.towers.floors[4].lhs.protocol = EPM_PROTOCOL_IP;
 	twr.towers.floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr.towers.floors[4].rhs.rhs_data = data_blob_talloc_zero(p, 4);
+	twr.towers.floors[4].rhs.ip.address = 0;
 
 	/* with some nice pretty paper around it of course */
 	r.in.object = &guid;
@@ -143,13 +117,12 @@ NTSTATUS dcerpc_epm_map_tcp_port(const char *server,
 	}
 
 	if (twr_r->towers.num_floors != 5 ||
-	    twr_r->towers.floors[3].lhs.protocol != twr.towers.floors[3].lhs.protocol ||
-	    twr_r->towers.floors[3].rhs.rhs_data.length != 2) {
+	    twr_r->towers.floors[3].lhs.protocol != twr.towers.floors[3].lhs.protocol) {
 		dcerpc_pipe_close(p);
 		return NT_STATUS_PORT_UNREACHABLE;
 	}
 
-	*port = RSVAL(twr_r->towers.floors[3].rhs.rhs_data.data, 0);
+	*port = twr_r->towers.floors[3].rhs.tcp.port;
 
 	dcerpc_pipe_close(p);
 

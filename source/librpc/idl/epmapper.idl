@@ -75,17 +75,112 @@ interface epmapper
 	} epm_protocol_info;
 
 	typedef struct {
+		//FIXME	
+	} epm_rhs_dnet_nsp;
+
+	typedef struct {
+		//FIXME
+	} epm_rhs_osi_tp4;
+
+	typedef struct {
+		//FIXME
+	} epm_rhs_osi_clns;
+	
+	typedef struct {
+		uint16 port;
+	} epm_rhs_udp;
+
+	typedef struct {
+		uint16 port;
+	} epm_rhs_tcp;
+
+	typedef struct {
+		uint32 address;
+	} epm_rhs_ip;
+
+	typedef struct {
+		uint16 minor_version;
+	} epm_rhs_ncadg;
+
+	typedef struct {
+		uint16 minor_version;
+	} epm_rhs_ncacn;
+
+	typedef struct {
+		uint16 unknown;
+	} epm_rhs_uuid;
+
+	typedef struct {
+		//FIXME	
+	} epm_rhs_ipx;
+
+	typedef struct {
+		astring unc;
+	} epm_rhs_smb;
+
+	typedef struct {
+		astring path;	
+	} epm_rhs_pipe;
+
+	typedef struct {
+		astring name;
+	} epm_rhs_netbios;
+
+	typedef struct {
+	} epm_rhs_nb_nb;
+
+	typedef struct {
+	} epm_rhs_spx;
+
+	typedef struct {
+	} epm_rhs_nb_ipx;
+
+	typedef struct {
+		uint16 port;
+	} epm_rhs_http;
+
+	typedef struct {
+		astring path;
+	} epm_rhs_unix_ds;
+
+	typedef struct {
+	} epm_rhs_null;
+
+	typedef struct {
+	} epm_rhs_ncalrpc;
+
+	typedef [nodiscriminant] union {
+		[case(EPM_PROTOCOL_DNET_NSP)] epm_rhs_dnet_nsp dnet_nsp;
+		[case(EPM_PROTOCOL_OSI_TP4)] epm_rhs_osi_tp4 osi_tp4;
+		[case(EPM_PROTOCOL_OSI_CLNS)] epm_rhs_osi_clns osi_clns;
+		[case(EPM_PROTOCOL_TCP)] epm_rhs_tcp tcp;
+		[case(EPM_PROTOCOL_UDP)] epm_rhs_udp udp;
+		[case(EPM_PROTOCOL_IP)] epm_rhs_ip ip;
+		[case(EPM_PROTOCOL_NCADG)] epm_rhs_ncadg ncadg;
+		[case(EPM_PROTOCOL_NCACN)] epm_rhs_ncacn ncacn;
+		[case(EPM_PROTOCOL_NCALRPC)] epm_rhs_ncalrpc ncalrpc;
+		[case(EPM_PROTOCOL_UUID)] epm_rhs_uuid uuid;
+		[case(EPM_PROTOCOL_IPX)] epm_rhs_ipx ipx;
+		[case(EPM_PROTOCOL_SMB)] epm_rhs_smb smb;
+		[case(EPM_PROTOCOL_PIPE)] epm_rhs_pipe pipe;
+		[case(EPM_PROTOCOL_NETBIOS)] epm_rhs_netbios netbios;
+		[case(EPM_PROTOCOL_NB_NB)] epm_rhs_nb_nb nb_nb;
+		[case(EPM_PROTOCOL_SPX)] epm_rhs_spx spx;
+		[case(EPM_PROTOCOL_NB_IPX)] epm_rhs_nb_ipx nb_ipx;
+		[case(EPM_PROTOCOL_HTTP)] epm_rhs_http http;
+		[case(EPM_PROTOCOL_UNIX_DS)] epm_rhs_unix_ds unix_ds;
+		[case(EPM_PROTOCOL_NULL)] epm_rhs_null null;
+		[default]  [flag(NDR_REMAINING)] DATA_BLOB unknown;
+	} epm_rhs;
+
+	typedef struct {
 		uint8  protocol;
 		[switch_is(protocol)] epm_protocol_info info;
 	} epm_lhs;
 
 	typedef struct {
-		[flag(NDR_REMAINING)] DATA_BLOB rhs_data;
-	} epm_rhs;
-
-	typedef struct {
 		[subcontext(2)] epm_lhs lhs;
-		[subcontext(2)] epm_rhs rhs;
+		[subcontext(2),switch_is(lhs.protocol)] epm_rhs rhs;
 	} epm_floor;
 
 	/* note that the NDR_NOALIGN flag is inherited by all nested
@@ -99,7 +194,7 @@ interface epmapper
 	} epm_towers;
 
 	typedef struct {
-		[value(ndr_size_epm_towers(&r->towers))] uint32  tower_length;
+		uint32 tower_length;
 		[subcontext(4)] epm_towers towers;
 	} epm_twr_t;
 
