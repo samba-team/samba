@@ -666,7 +666,16 @@ static WERROR srvsvc_NetShareCheck(struct dcesrv_call_state *dce_call, TALLOC_CT
 static WERROR srvsvc_NetSrvGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetSrvGetInfo *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	if (r->in.level != 100)
+		return WERR_UNKNOWN_LEVEL;
+
+	r->out.info.info100 = talloc_p(mem_ctx, struct srvsvc_NetSrvInfo100);
+	if (r->out.info.info100 == NULL)
+		return WERR_NOMEM;
+
+	r->out.info.info100->platform_id = 500;	/* W2k3 returns this */
+	r->out.info.info100->server_unc = lp_netbios_name();
+	return WERR_OK;
 }
 
 

@@ -55,6 +55,49 @@ int samdb_search(void *ctx,
 }
 
 /*
+  search the sam for the specified attributes in a specific domain, filter on
+  objectSid being in domain_sid.
+*/
+int samdb_search_domain(void *ctx,
+			TALLOC_CTX *mem_ctx, 
+			const char *basedn,
+			struct ldb_message ***res,
+			const char * const *attrs,
+			const struct dom_sid *domain_sid,
+			const char *format, ...)  _PRINTF_ATTRIBUTE(7,8)
+{
+	struct ldb_wrap *sam_ctx = ctx;
+	va_list ap;
+	int i, count;
+
+	va_start(ap, format);
+	count = gendb_search_v(sam_ctx->ldb, mem_ctx, basedn, res, attrs,
+			       format, ap);
+	va_end(ap);
+
+	i=0;
+
+	while (i<count) {
+		struct dom_sid *entry_sid;
+
+		entry_sid = samdb_result_dom_sid(mem_ctx, (*res)[i],
+						 "objectSid");
+
+		if ((entry_sid == NULL) ||
+		    (!dom_sid_in_domain(domain_sid, entry_sid))) {
+
+			/* Delete that entry from the result set */
+			(*res)[i] = (*res)[count-1];
+			count -= 1;
+			continue;
+		}
+		i += 1;
+	}
+
+	return count;
+}
+
+/*
   free up a search result
 */
 int samdb_search_free(void *ctx,
