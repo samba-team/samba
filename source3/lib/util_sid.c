@@ -494,7 +494,6 @@ DOM_SID *sid_dup(DOM_SID *src)
 /*****************************************************************
  Write a sid out into on-the-wire format.
 *****************************************************************/  
-
 BOOL sid_linearize(char *outbuf, size_t len, DOM_SID *sid)
 {
 	size_t i;
@@ -508,6 +507,23 @@ BOOL sid_linearize(char *outbuf, size_t len, DOM_SID *sid)
 	for(i = 0; i < sid->num_auths; i++)
 		SIVAL(outbuf, 8 + (i*4), sid->sub_auths[i]);
 
+	return True;
+}
+
+/*****************************************************************
+ parse a on-the-wire SID to a DOM_SID
+*****************************************************************/  
+BOOL sid_parse(char *inbuf, size_t len, DOM_SID *sid)
+{
+	int i;
+	if (len < 8) return False;
+	sid->sid_rev_num = CVAL(inbuf, 0);
+	sid->num_auths = CVAL(inbuf, 1);
+	memcpy(sid->id_auth, inbuf+2, 6);
+	if (len < 8 + sid->num_auths*4) return False;
+	for (i=0;i<sid->num_auths;i++) {
+		sid->sub_auths[i] = IVAL(inbuf, 8+i*4);
+	}
 	return True;
 }
 

@@ -228,7 +228,7 @@ static void dump_string(const char *field, struct berval **values)
 void ads_dump(ADS_STRUCT *ads, void *res)
 {
 	char *field;
-	LDAPMessage *msg;
+	void *msg;
 	BerElement *b;
 	struct {
 		char *name;
@@ -239,15 +239,14 @@ void ads_dump(ADS_STRUCT *ads, void *res)
 		{NULL, NULL}
 	};
     
-	for (msg = ldap_first_entry(ads->ld, (LDAPMessage *)res); 
-	     msg; msg = ldap_next_entry(ads->ld, msg)) {
-		for (field = ldap_first_attribute(ads->ld, msg, &b); 
+	for (msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
+		for (field = ldap_first_attribute(ads->ld, (LDAPMessage *)msg, &b); 
 		     field;
-		     field = ldap_next_attribute(ads->ld, msg, b)) {
+		     field = ldap_next_attribute(ads->ld, (LDAPMessage *)msg, b)) {
 			struct berval **values;
 			int i;
 
-			values = ldap_get_values_len(ads->ld, msg, field);
+			values = ldap_get_values_len(ads->ld, (LDAPMessage *)msg, field);
 
 			for (i=0; handlers[i].name; i++) {
 				if (StrCaseCmp(handlers[i].name, field) == 0) {
@@ -365,8 +364,79 @@ NTSTATUS ads_set_machine_password(ADS_STRUCT *ads,
 	return ret;
 }
 
+/*
+  pull the first entry from a ADS result
+*/
+void *ads_first_entry(ADS_STRUCT *ads, void *res)
+{
+	return (void *)ldap_first_entry(ads->ld, (LDAPMessage *)res);
+}
+
+/*
+  pull the next entry from a ADS result
+*/
+void *ads_next_entry(ADS_STRUCT *ads, void *res)
+{
+	return (void *)ldap_next_entry(ads->ld, (LDAPMessage *)res);
+}
+
+/*
+  pull a single string from a ADS result
+*/
+char *ads_pull_string(ADS_STRUCT *ads, 
+		      TALLOC_CTX *mem_ctx, void *msg, const char *field)
+{
+	char **values;
+	char *ret;
+
+	values = ldap_get_values(ads->ld, msg, field);
+
+	if (!values || !values[0]) return NULL;
+
+	ret = talloc_strdup(mem_ctx, values[0]);
+	ldap_value_free(values);
+	return ret;
+}
+
+/*
+  pull a single uint32 from a ADS result
+*/
+BOOL ads_pull_uint32(ADS_STRUCT *ads, 
+		     void *msg, const char *field, uint32 *v)
+{
+	char **values;
+
+	values = ldap_get_values(ads->ld, msg, field);
+
+	if (!values || !values[0]) return False;
+
+	*v = atoi(values[0]);
+	ldap_value_free(values);
+	return True;
+}
+
+/*
+  pull a single DOM_SID from a ADS result
+*/
+BOOL ads_pull_sid(ADS_STRUCT *ads, 
+		  void *msg, const char *field, DOM_SID *sid)
+{
+	struct berval **values;
+	BOOL ret;
+
+	values = ldap_get_values_len(ads->ld, msg, field);
+
+	if (!values || !values[0]) return False;
+
+	ret = sid_parse(values[0]->bv_val, values[0]->bv_len, sid);
+	
+	ldap_value_free_len(values);
+	return ret;
+}
+
+
 /* find the update serial number - this is the core of the ldap cache */
-BOOL ads_USN(ADS_STRUCT *ads, unsigned *usn)
+BOOL ads_USN(ADS_STRUCT *ads, uint32 *usn)
 {
 	const char *attrs[] = {"highestCommittedUSN", NULL};
 	int rc;
@@ -375,7 +445,9 @@ BOOL ads_USN(ADS_STRUCT *ads, unsigned *usn)
 	rc = ldap_search_s(ads->ld, ads->bind_path, 
 			   LDAP_SCOPE_BASE, "(objectclass=*)", (char **)attrs, 0, (LDAPMessage **)&res);
 	if (rc || ads_count_replies(ads, res) != 1) return False;
-	return False;
+	return ads_pull_uint32(ads, res, "highestCommittedUSN", usn);
 }
+
+
 
 #endif

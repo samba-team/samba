@@ -26,10 +26,10 @@
 /* Query display info for a domain.  This returns enough information plus a
    bit extra to give an overview of domain users for the User Manager
    application. */
-static NTSTATUS winbindd_query_dispinfo(struct winbindd_domain *domain,
-					TALLOC_CTX *mem_ctx,
-					uint32 *start_ndx, uint32 *num_entries, 
-					WINBIND_DISPINFO **info)
+static NTSTATUS query_dispinfo(struct winbindd_domain *domain,
+			       TALLOC_CTX *mem_ctx,
+			       uint32 *start_ndx, uint32 *num_entries, 
+			       WINBIND_DISPINFO **info)
 {
 	CLI_POLICY_HND *hnd;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -89,10 +89,10 @@ static NTSTATUS winbindd_query_dispinfo(struct winbindd_domain *domain,
 }
 
 /* list all domain groups */
-static NTSTATUS winbindd_enum_dom_groups(struct winbindd_domain *domain,
-					TALLOC_CTX *mem_ctx,
-					uint32 *start_ndx, uint32 *num_entries, 
-					struct acct_info **info)
+static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				uint32 *start_ndx, uint32 *num_entries, 
+				struct acct_info **info)
 {
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	CLI_POLICY_HND *hnd;
@@ -124,7 +124,7 @@ static NTSTATUS winbindd_enum_dom_groups(struct winbindd_domain *domain,
 
 /* the rpc backend methods are exposed via this structure */
 struct winbindd_methods msrpc_methods = {
-	winbindd_query_dispinfo,
-	winbindd_enum_dom_groups
+	query_dispinfo,
+	enum_dom_groups
 };
 
