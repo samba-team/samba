@@ -66,7 +66,7 @@ change_passwd(const struct passwd *who)
 }
 
 void 
-check_shadow(const struct passwd *pw, struct spwd *sp)
+check_shadow(const struct passwd *pw, const struct spwd *sp)
 {
   long today;
 
