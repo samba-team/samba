@@ -14,7 +14,7 @@ DB_close(krb5_context context, HDB *db)
 }
 
 static krb5_error_code
-DB_fetch(krb5_context context, HDB *db, hdb_entry *entry)
+DB_op(krb5_context context, HDB *db, hdb_entry *entry, int op)
 {
     DB *d = (DB*)db->db;
     DBT key, value;
@@ -22,63 +22,53 @@ DB_fetch(krb5_context context, HDB *db, hdb_entry *entry)
     int err;
 
     hdb_principal2key(context, entry->principal, &data);
-
     key.data = data.data;
     key.size = data.length;
-    err = d->get(d, &key, &value, 0);
+    switch(op){
+    case 0:
+	err = d->get(d, &key, &value, 0);
+	break;
+    case 1:
+	hdb_entry2value(context, entry, &data);
+	value.data = data.data;
+	value.size = data.length;
+	err = d->put(d, &key, &value, 0);
+	krb5_data_free(&data);
+	break;
+    case 2:
+	err = d->del(d, &key, 0);
+	break;
+    }
     krb5_data_free(&data);
     if(err < 0)
 	return errno;
     if(err == 1)
 	return KRB5_HDB_NOENTRY;
-
-    data.data = value.data;
-    data.length = value.size;
-    
-    hdb_value2entry(context, &data, entry);
+    if(op == 0){
+	data.data = value.data;
+	data.length = value.size;
+	hdb_value2entry(context, &data, entry);
+	krb5_data_free(&data);
+    }
     return 0;
+}
+
+static krb5_error_code
+DB_fetch(krb5_context context, HDB *db, hdb_entry *entry)
+{
+    return DB_op(context, db, entry, 0);
 }
 
 static krb5_error_code
 DB_store(krb5_context context, HDB *db, hdb_entry *entry)
 {
-    DB *d = (DB*)db->db;
-    krb5_data data;
-    int err;
-    DBT key, value;
-    hdb_principal2key(context, entry->principal, &data);
-    key.data = data.data;
-    key.size = data.length;
-    hdb_entry2value(context, entry, &data);
-    value.data = data.data;
-    value.size = data.length;
-    err = d->put(d, &key, &value, 0);
-    free(key.data);
-    free(value.data);
-    if(err == -1)
-	return errno;
-    return 0;
+    return DB_op(context, db, entry, 1);
 }
 
 static krb5_error_code
 DB_delete(krb5_context context, HDB *db, hdb_entry *entry)
 {
-    DB *d = (DB*)db->db;
-    DBT key;
-    krb5_data data;
-    int err;
-
-    hdb_principal2key(context, entry->principal, &data);
-
-    key.data = data.data;
-    key.size = data.length;
-    err = d->del(d, &key, 0);
-    krb5_data_free(&data);
-    if(err < 0)
-	return errno;
-    if(err == 1)
-	return KRB5_HDB_NOENTRY;
-    return 0;
+    return DB_op(context, db, entry, 2);
 }
 
 static krb5_error_code
