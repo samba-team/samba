@@ -24,7 +24,6 @@
 #if 1
 int smbrun(char *cmd, int *outfd)
 {
-	#warning smbrun() needs a rewrite: struct current_user is gone!
 	DEBUG(0,("smbrun() needs a rewrite: struct current_user is gone!\n"));
 	return -1;
 }
