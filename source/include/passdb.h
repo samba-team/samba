@@ -280,7 +280,7 @@ typedef struct sam_trust_passwd {
  * this SAMBA will load. Increment this if *ANY* changes are made to the interface. 
  */
 
-#define PASSDB_INTERFACE_VERSION 10
+#define PASSDB_INTERFACE_VERSION 11
 
 typedef struct pdb_context 
 {
@@ -417,6 +417,12 @@ typedef struct pdb_context
 	
 	NTSTATUS (*pdb_delete_trust_passwd)(struct pdb_context *context, SAM_TRUST_PASSWD* trust);
 
+	NTSTATUS (*pdb_get_account_policy)(struct pdb_context *context,
+					   int policy_index, int *value);
+
+	NTSTATUS (*pdb_set_account_policy)(struct pdb_context *context,
+					   int policy_index, int value);
+
 	void (*free_fn)(struct pdb_context **);
 	
 	TALLOC_CTX *mem_ctx;
@@ -533,6 +539,12 @@ typedef struct pdb_methods
 	NTSTATUS (*get_group_info_by_nt_name)(struct pdb_methods *methods, GROUP_INFO *info, const char *nt_name);
 
 	NTSTATUS (*get_group_uids)(struct pdb_methods *methods, const DOM_SID *group, uid_t **members, int *num_members);
+
+	NTSTATUS (*get_account_policy)(struct pdb_methods *methods,
+				       int policy_index, int *value);
+
+	NTSTATUS (*set_account_policy)(struct pdb_methods *methods,
+				       int policy_index, int value);
 
 	void *private_data;  /* Private data of some kind */
 	

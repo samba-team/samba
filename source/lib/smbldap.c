@@ -220,6 +220,15 @@ ATTRIB_MAP_ENTRY trustpw_attr_list[] = {
 	{ LDAP_ATTR_LIST_END,           NULL                    }
 };
 
+/* attributes used for account policies */
+
+ATTRIB_MAP_ENTRY acctpol_attr_list[] = {
+	{ LDAP_ATTR_OBJCLASS,		"objectClass"			},
+	{ LDAP_ATTR_ACCOUNT_POLICY_NAME,"sambaAccountPolicyName"	},
+	{ LDAP_ATTR_ACCOUNT_POLICY_VAL,	"sambaAccountPolicyValue"	},
+	{ LDAP_ATTR_LIST_END,		NULL				},
+};
+
 /**********************************************************************
  perform a simple table lookup and return the attribute name 
  **********************************************************************/

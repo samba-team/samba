@@ -945,7 +945,7 @@ static BOOL check_passwd_history(SAM_ACCOUNT *sampass, const char *plaintext)
 	BOOL found = False;
 	int i, pwHisLen, curr_pwHisLen;
 
-	account_policy_get(AP_PASSWORD_HISTORY, &pwHisLen);
+	pdb_get_account_policy(AP_PASSWORD_HISTORY, &pwHisLen);
 	if (pwHisLen == 0) {
 		return False;
 	}
@@ -1017,7 +1017,7 @@ NTSTATUS change_oem_password(SAM_ACCOUNT *hnd, char *old_passwd, char *new_passw
 	}
 
 	/* FIXME: AP_MIN_PASSWORD_LEN and lp_min_passwd_length() need to be merged - gd */
-	if (account_policy_get(AP_MIN_PASSWORD_LEN, &min_len) && (str_charnum(new_passwd) < min_len)) {
+	if (pdb_get_account_policy(AP_MIN_PASSWORD_LEN, &min_len) && (str_charnum(new_passwd) < min_len)) {
 		DEBUG(1, ("user %s cannot change password - password too short\n", 
 			  username));
 		DEBUGADD(1, (" account policy min password len = %d\n", min_len));

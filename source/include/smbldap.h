@@ -39,6 +39,7 @@
 #define LDAP_OBJ_IDMAP_ENTRY		"sambaIdmapEntry"
 #define LDAP_OBJ_SID_ENTRY		"sambaSidEntry"
 #define LDAP_OBJ_TRUST_PASSWORD         "sambaTrustPassword"
+#define LDAP_OBJ_ACCOUNT_POLICY		"sambaAccountPolicy"
 
 #define LDAP_OBJ_ACCOUNT		"account"
 #define LDAP_OBJ_POSIXACCOUNT		"posixAccount"
@@ -98,8 +99,10 @@
 #define LDAP_ATTR_SID_LIST		40
 #define LDAP_ATTR_MOD_TIMESTAMP         41
 #define LDAP_ATTR_LOGON_HOURS		42 
+#define LDAP_ATTR_TRUST_PASSWD_FLAGS    43
+#define LDAP_ATTR_ACCOUNT_POLICY_NAME	44
+#define LDAP_ATTR_ACCOUNT_POLICY_VAL	45
 
-#define LDAP_ATTR_TRUST_PASSWD_FLAGS    42
 
 typedef struct _attrib_map_entry {
 	int		attrib;
@@ -119,6 +122,8 @@ extern ATTRIB_MAP_ENTRY groupmap_attr_list_to_delete[];
 extern ATTRIB_MAP_ENTRY idpool_attr_list[];
 extern ATTRIB_MAP_ENTRY sidmap_attr_list[];
 extern ATTRIB_MAP_ENTRY trustpw_attr_list[];
+extern ATTRIB_MAP_ENTRY acctpol_attr_list[];
+
 
 /* Function declarations -- not included in proto.h so we don't
    have to worry about LDAP structure types */
