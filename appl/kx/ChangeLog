@@ -1,3 +1,7 @@
+2002-12-11  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kx.c (connect_host): pass size of thisaddr_ss to getsockname
+
 2002-10-15  Johan Danielsson  <joda@pdc.kth.se>
 
 	* some ipv6 support (from Love)
