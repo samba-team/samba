@@ -524,6 +524,24 @@ doit_active (char *host, char *user,
     }
 }
 
+/*
+ *
+ */
+
+static int
+check_for_passive (const char *disp)
+{
+    char local_hostname[MaxHostNameLen];
+
+    gethostname (local_hostname, sizeof(local_hostname));
+
+    return disp != NULL &&
+	(*disp == ':'
+	 || strncmp(disp, "unix", 4) == 0
+	 || strncmp(disp, "localhost", 9) == 0
+	 || strncmp(disp, local_hostname, strlen(local_hostname) == 0));
+}
+
 static void
 usage(void)
 {
@@ -535,20 +553,20 @@ usage(void)
 /*
  * kx - forward x connection over a kerberos-encrypted channel.
  *
- * passive mode if $DISPLAY begins with : */
+ */
 
 int
 main(int argc, char **argv)
 {
-     int passivep;
+     int force_passive = 0;
      int keepalivep = 1;
-     char *disp, *user = NULL;
+     char *user = NULL;
      int debugp = 0, tcpp = 0;
      int c;
      int port = 0;
 
      set_progname (argv[0]);
-     while((c = getopt(argc, argv, "ktdl:p:")) != EOF) {
+     while((c = getopt(argc, argv, "ktdl:p:P")) != EOF) {
 	 switch(c) {
 	 case 'd' :
 	     debugp = 1;
@@ -564,6 +582,9 @@ main(int argc, char **argv)
 	     break;
 	 case 'p' :
 	     port = htons(atoi (optarg));
+	     break;
+	 case 'P' :
+	     force_passive = 1;
 	     break;
 	 case '?':
 	 default:
@@ -584,13 +605,10 @@ main(int argc, char **argv)
      }
      if (port == 0)
 	 port = k_getportbyname ("kx", "tcp", htons(KX_PORT));
-     disp = getenv("DISPLAY");
-     passivep = disp != NULL && 
-       (*disp == ':' || strncmp(disp, "unix", 4) == 0);
      signal (SIGCHLD, childhandler);
      signal (SIGUSR1, usr1handler);
      signal (SIGUSR2, usr2handler);
-     if (passivep)
+     if (check_for_passive(getenv("DISPLAY")))
 	 return doit_passive (argv[0], user, debugp, keepalivep, port);
      else
 	 return doit_active  (argv[0], user, debugp, keepalivep, tcpp, port);
