@@ -596,8 +596,8 @@ smb_ucs2_t *string_truncate_w(smb_ucs2_t *s, size_t length);
 /*The following definitions come from  lib/wins_srv.c  */
 
 BOOL wins_srv_load_list( char *src );
-char *wins_srv( void );
-void wins_srv_died( char *boothill );
+struct in_addr wins_srv_ip( void );
+void wins_srv_died( struct in_addr boothill_ip );
 unsigned long wins_srv_count( void );
 
 /*The following definitions come from  libsmb/cliconnect.c  */

@@ -1,8 +1,9 @@
 /*
    Unix SMB/Netbios implementation.
-   Version 1.9.
+   Version 2.
    Samba utility functions
    Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Christopher R. Hertel 2000
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -52,8 +53,7 @@
  * 42 (TCP? UDP? ...dunno off hand) and see what two MS WINS servers do. 
  *
  * At this stage, only failover is implemented.  The next thing is to add
- * support for multi-WINS server registration and query
- * (multi-membership).
+ * support for multi-WINS server registration and query (multi-membership).
  *
  * Multi-membership is a little wierd.  The idea is that the client can
  * register itself with multiple non-replicated WINS servers, and query
@@ -88,9 +88,10 @@
 
 typedef struct
   {
-  ubi_slNode node;      /* Linked list node structure.                        */
-  time_t     mourning;  /* If greater than current time server is dead, Jim.  */
-  char      *server;    /* DNS name or IP of NBNS server to query.            */
+  ubi_slNode     node;      /* Linked list node structure.                  */
+  time_t         mourning;  /* If > current time then  server is dead, Jim. */
+  char          *server;    /* DNS name or IP of NBNS server to query.      */
+  struct in_addr ip_addr;   /* Cache translated IP.                         */
   } list_entry;
 
 /* -------------------------------------------------------------------------- **
@@ -107,6 +108,18 @@ static ubi_slNewList( wins_srv_list );
 BOOL wins_srv_load_list( char *src )
   /* ------------------------------------------------------------------------ **
    * Create or recreate the linked list of failover WINS servers.
+   *
+   *  Input:  src - String of DNS names and/or IP addresses delimited by the
+   *                characters listed in LIST_SEP (see include/local.h).
+   *
+   *  Output: True if at least one name or IP could be parsed out of the
+   *          list, else False.
+   *
+   *  Notes:  There is no syntax checking done on the names or IPs.  We do
+   *          check to see if the field is an IP, in which case we copy it
+   *          to the ip_addr field of the entry.  Don't bother to to a host
+   *          name lookup on all names now.  They're done as needed in
+   *          wins_srv_ip().
    */
   {
   list_entry   *entry;
@@ -124,7 +137,7 @@ BOOL wins_srv_load_list( char *src )
   (void)ubi_slInitList( wins_srv_list );  /* shouldn't be needed */
 
   /* Parse out the DNS names or IP addresses of the WINS servers. */
-  DEBUG( 4, ("wins_srv: Building WINS server list:\n") );
+  DEBUG( 4, ("wins_srv_load_list(): Building WINS server list:\n") );
   while( next_token( &p, wins_id_bufr, LIST_SEP, sizeof( wins_id_bufr ) ) )
     {
     entry = (list_entry *)malloc( sizeof( list_entry ) );
@@ -143,66 +156,85 @@ BOOL wins_srv_load_list( char *src )
       else
         {
         /* Add server to list. */
+        if( is_ipaddress( wins_id_bufr ) )
+          entry->ip_addr = *interpret_addr2( wins_id_bufr );
+        else
+          entry->ip_addr = *interpret_addr2( "0.0.0.0" );
         (void)ubi_slAddTail( wins_srv_list, entry );
-        DEBUGADD( 4, ("\t\t%s,\n", wins_id_bufr) );
+        DEBUGADD( 4, ("%s,\n", wins_id_bufr) );
         }
       }
     }
 
   count = ubi_slCount( wins_srv_list );
-  DEBUGADD( 4, ( "\t\t%d WINS server%s listed.\n", count, (1==count)?"":"s" ) );
+  DEBUGADD( 4, ( "%d WINS server%s listed.\n", count, (1==count)?"":"s" ) );
 
   return( (count > 0) ? True : False );
   } /* wins_srv_load_list */
 
 
-char *wins_srv( void )
+struct in_addr wins_srv_ip( void )
   /* ------------------------------------------------------------------------ **
    */
   {
   time_t      now     = time(NULL);
   list_entry *entry   = (list_entry *)ubi_slFirst( wins_srv_list );
-  list_entry *coldest = entry;
 
-  /* Go through the list.  Look for the first live entry. */
-  while( (NULL != entry) && (now < entry->mourning) )
+  while( NULL != entry )
     {
+    if( now >= entry->mourning )        /* Found a live one. */
+      {
+      /* If we don't have the IP, look it up. */
+      if( zero_ip( entry->ip_addr ) )
+        entry->ip_addr = *interpret_addr2( entry->server );
+
+      /* If we still don't have the IP then kill it, else return it. */
+      if( zero_ip( entry->ip_addr ) )
+        entry->mourning = now + NECROMANCYCLE;
+      else
+        return( entry->ip_addr );
+      }
     entry = (list_entry *)ubi_slNext( entry );
-    if( entry->mourning < coldest->mourning )
-      coldest = entry;
     }
 
-  /* If they were all dead, then return the one that's been dead longest. */
-  if( NULL == entry )
-    {
-    entry = coldest;
-    DEBUG( 4, ("wins_srv: All WINS servers appear to have failed.\n") );
-    }
-
-  /* The list could be empty.  Check it. */
-  if( NULL == entry )
-    return( NULL );
-  return( entry->server );
-  } /* wins_srv */
+  /* If there are no live entries, return the zero IP. */
+  return( *interpret_addr2( "0.0.0.0" ) );
+  } /* wins_srv_ip */
 
 
-void wins_srv_died( char *boothill )
+void wins_srv_died( struct in_addr boothill_ip )
   /* ------------------------------------------------------------------------ **
    * Called to indicate that a specific WINS server has died.
    */
   {
-  list_entry *entry = (list_entry *)ubi_slFirst( wins_srv_list );
+  list_entry *entry;
 
+  if( zero_ip( boothill_ip ) )
+    {
+    DEBUG( 4, ("wins_srv_died(): Got request to mark zero IP down.\n") );
+    return;
+    }
+
+  entry = (list_entry *)ubi_slFirst( wins_srv_list );
   while( NULL != entry )
     {
-    /* Match based on server ID [DNS name or IP]. */
-    if( 0 == strcmp( boothill, entry->server ) )
+    /* Match based on IP. */
+    if( ip_equal( boothill_ip, entry->ip_addr ) )
       {
       entry->mourning = time(NULL) + NECROMANCYCLE;
-      DEBUG( 2, ("wins_srv: WINS server %s appears to be down.\n", boothill) );
+      entry->ip_addr.s_addr = 0;  /* Force a re-lookup at re-birth. */
+      DEBUG( 2, ( "wins_srv_died(): WINS server %s appears to be down.\n", 
+                  entry->server ) );
       return;
       }
     entry = (list_entry *)ubi_slNext( entry );
+    }
+
+  if( DEBUGLVL( 1 ) )
+    {
+    dbgtext( "wins_srv_died(): Could not mark WINS server %s down.\n",
+              inet_ntoa( boothill_ip ) );
+    dbgtext( "Address not found in server list.\n" );
     }
   } /* wins_srv_died */
 
@@ -212,7 +244,27 @@ unsigned long wins_srv_count( void )
    * Return the total number of entries in the list, dead or alive.
    */
   {
-  return( ubi_slCount( wins_srv_list ) );
+  unsigned long count = ubi_slCount( wins_srv_list );
+
+  if( DEBUGLVL( 8 ) )
+    {
+    list_entry *entry = (list_entry *)ubi_slFirst( wins_srv_list );
+    time_t      now   = time(NULL);
+
+    dbgtext( "wins_srv_count: WINS status: %ld servers.\n", count );
+    while( NULL != entry )
+      {
+      dbgtext( "  %s <%s>: ", entry->server, inet_ntoa( entry->ip_addr ) );
+      if( now >= entry->mourning )
+        dbgtext( "alive\n" );
+      else
+        dbgtext( "dead for %d more seconds\n", (int)(entry->mourning - now) );
+
+      entry = (list_entry *)ubi_slNext( entry );
+      }
+    }
+
+  return( count );
   } /* wins_srv_count */
 
 /* ========================================================================== */
