@@ -53,7 +53,7 @@ struct	utmpx wtmp;
 struct	utmp wtmp;
 #endif /* HAVE_UTMPX_H */
 
-#ifdef HAVE_UT_HOST
+#ifdef HAVE_STRUCT_UTMP_UT_HOST
 int	utmp_len = sizeof(wtmp.ut_host);
 #else
 int	utmp_len = MaxHostNameLen;
@@ -1087,7 +1087,7 @@ clean_ttyname (char *tty)
  * Generate a name usable as an `ut_id', typically without `tty'.
  */
 
-#ifdef HAVE_UT_ID
+#ifdef HAVE_STRUCT_UTMP_UT_ID
 static char *
 make_id (char *tty)
 {
@@ -1265,7 +1265,7 @@ start_login(char *host, int autologin, char *name)
     memset(&utmpx, 0, sizeof(utmpx));
     strncpy(utmpx.ut_user,  ".telnet", sizeof(utmpx.ut_user));
     strncpy(utmpx.ut_line,  clean_tty, sizeof(utmpx.ut_line));
-#ifdef HAVE_UT_ID
+#ifdef HAVE_STRUCT_UTMP_UT_ID
     strncpy(utmpx.ut_id, make_id(clean_tty), sizeof(utmpx.ut_id));
 #endif
     utmpx.ut_pid = pid;
@@ -1396,7 +1396,7 @@ rmut(void)
     if (utxp) {
 	utxp->ut_user[0] = '\0';
 	utxp->ut_type = DEAD_PROCESS;
-#ifdef HAVE_UT_EXIT
+#ifdef HAVE_STRUCT_UTMPX_UT_EXIT
 #ifdef _STRUCT___EXIT_STATUS
 	utxp->ut_exit.__e_termination = 0;
 	utxp->ut_exit.__e_exit = 0;
@@ -1420,7 +1420,7 @@ rmut(void)
 	  if (f >= 0) {
 	    strncpy(wtmp.ut_line,  clean_tty, sizeof(wtmp.ut_line));
 	    strncpy(wtmp.ut_name,  "", sizeof(wtmp.ut_name));
-#ifdef HAVE_UT_HOST
+#ifdef HAVE_STRUCT_UTMP_UT_HOST
 	    strncpy(wtmp.ut_host,  "", sizeof(wtmp.ut_host));
 #endif
 	    time(&wtmp.ut_time);
@@ -1465,7 +1465,7 @@ rmut(void)
 		    continue;
 		lseek(f, ((long)u)-((long)utmp), L_SET);
 		strncpy(u->ut_name,  "", sizeof(u->ut_name));
-#ifdef HAVE_UT_HOST
+#ifdef HAVE_STRUCT_UTMP_UT_HOST
 		strncpy(u->ut_host,  "", sizeof(u->ut_host));
 #endif
 		time(&u->ut_time);
@@ -1480,7 +1480,7 @@ rmut(void)
 	if (f >= 0) {
 	    strncpy(wtmp.ut_line,  clean_tty, sizeof(wtmp.ut_line));
 	    strncpy(wtmp.ut_name,  "", sizeof(wtmp.ut_name));
-#ifdef HAVE_UT_HOST
+#ifdef HAVE_STRUCT_UTMP_UT_HOST
 	    strncpy(wtmp.ut_host,  "", sizeof(wtmp.ut_host));
 #endif
 	    time(&wtmp.ut_time);

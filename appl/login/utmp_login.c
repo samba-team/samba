@@ -50,11 +50,11 @@ prepare_utmp (struct utmp *utmp, char *tty, char *username, char *hostname)
     strncpy(utmp->ut_line, ttyx, sizeof(utmp->ut_line));
     strncpy(utmp->ut_name, username, sizeof(utmp->ut_name));
 
-# ifdef HAVE_UT_USER
+# ifdef HAVE_STRUCT_UTMP_UT_USER
     strncpy(utmp->ut_user, username, sizeof(utmp->ut_user));
 # endif
 
-# ifdef HAVE_UT_ADDR
+# ifdef HAVE_STRUCT_UTMP_UT_ADDR
     if (hostname[0]) {
         struct hostent *he;
 	if ((he = gethostbyname(hostname)))
@@ -63,19 +63,19 @@ prepare_utmp (struct utmp *utmp, char *tty, char *username, char *hostname)
     }
 # endif
 
-# ifdef HAVE_UT_HOST
+# ifdef HAVE_STRUCT_UTMP_UT_HOST
     strncpy(utmp->ut_host, hostname, sizeof(utmp->ut_host));
 # endif
 
-# ifdef HAVE_UT_TYPE
+# ifdef HAVE_STRUCT_UTMP_UT_TYPE
     utmp->ut_type = USER_PROCESS;
 # endif
 
-# ifdef HAVE_UT_PID
+# ifdef HAVE_STRUCT_UTMP_UT_PID
     utmp->ut_pid = getpid();
 # endif
 
-# ifdef HAVE_UT_ID
+# ifdef HAVE_STRUCT_UTMP_UT_ID
     strncpy(utmp->ut_id, make_id(ttyx), sizeof(utmp->ut_id));
 # endif
 }
