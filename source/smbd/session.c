@@ -159,6 +159,9 @@ void session_yield(uint16 vuid)
 		   &sessionid.username, &sessionid.hostname, &sessionid.id_str,
 		   &sessionid.id_num, &sessionid.pid);
 
+	safe_free(data.dptr);
+	data.dptr = NULL;
+
 #if WITH_UTMP	
 	if (lp_utmp()) {
 		sys_utmp_yield(sessionid.username, sessionid.hostname, 
