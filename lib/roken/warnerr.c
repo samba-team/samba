@@ -48,6 +48,19 @@ const char *__progname;
 #endif
 
 void
+set_progname(char *argv0)
+{
+#ifndef HAVE___PROGNAME
+    char *p = strrchr(argv0, '/');
+    if(p == NULL)
+	p = argv0;
+    else
+	p++;
+    __progname = p;
+#endif
+}
+
+void
 warnerr(int doexit, int eval, int doerrno, const char *fmt, va_list ap)
 {
     int sverrno = errno;
