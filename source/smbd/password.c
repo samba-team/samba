@@ -24,8 +24,6 @@
 extern int DEBUGLEVEL;
 extern int Protocol;
 
-BOOL global_machine_pasword_needs_changing;
-
 /* users from session setup */
 static pstring session_users="";
 
@@ -1136,7 +1134,6 @@ BOOL domain_client_validate( char *user, char *domain,
   unsigned char local_lm_response[24];
   unsigned char local_nt_reponse[24];
   unsigned char trust_passwd[16];
-  time_t lct;
   fstring remote_machine;
   char *p;
   struct in_addr dest_ip;
@@ -1193,28 +1190,10 @@ BOOL domain_client_validate( char *user, char *domain,
   /*
    * Get the machine account password.
    */
-  if(!trust_password_lock( global_myworkgroup, global_myname, False)) {
-    DEBUG(0,("domain_client_validate: unable to open the machine account password file for \
-machine %s in domain %s.\n", global_myname, global_myworkgroup ));
+  if (!trust_get_passwd( trust_passwd, global_myworkgroup, global_myname))
+  {
     return False;
   }
-
-  if(get_trust_account_password( trust_passwd, &lct) == False) {
-    DEBUG(0,("domain_client_validate: unable to read the machine account password for \
-machine %s in domain %s.\n", global_myname, global_myworkgroup ));
-    trust_password_unlock();
-    return False;
-  }
-
-  trust_password_unlock();
-
-  /* 
-   * Here we check the last change time to see if the machine
-   * password needs changing. JRA. 
-   */
-
-  if(time(NULL) > lct + lp_machine_password_timeout())
-    global_machine_pasword_needs_changing = True;
 
   /*
    * At this point, smb_apasswd points to the lanman response to

@@ -2494,15 +2494,25 @@ BOOL cli_establish_connection(struct cli_state *cli,
 
 	if (cli->pwd.cleartext || cli->pwd.null_pwd)
 	{
-		/* attempt clear-text session */
-
 		fstring passwd;
+		int pass_len;
 
-		pwd_get_cleartext(&(cli->pwd), passwd);
+		if (cli->pwd.null_pwd)
+		{
+			/* attempt null session */
+			passwd[0] = 0;
+			pass_len = 1;
+		}
+		else
+		{
+			/* attempt clear-text session */
+			pwd_get_cleartext(&(cli->pwd), passwd);
+			pass_len = strlen(passwd);
+		}
 
 		/* attempt clear-text session */
 		if (!cli_session_setup(cli, cli->user_name,
-	                       passwd, strlen(passwd),
+	                       passwd, pass_len,
 	                       NULL, 0,
 	                       cli->domain))
 		{

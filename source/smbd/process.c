@@ -49,7 +49,7 @@ extern char *InBuffer;
 extern char *OutBuffer;
 extern int smb_read_error;
 extern BOOL reload_after_sighup;
-extern BOOL global_machine_pasword_needs_changing;
+extern BOOL global_machine_password_needs_changing;
 extern fstring global_myworkgroup;
 extern pstring global_myname;
 extern int max_send;
