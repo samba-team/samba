@@ -293,7 +293,7 @@ AC_HEADER_TIME
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(arpa/inet.h sys/select.h fcntl.h sys/fcntl.h sys/time.h)
 AC_CHECK_HEADERS(unistd.h utime.h grp.h sys/id.h limits.h memory.h net/if.h)
-AC_CHECK_HEADERS(compat.h rpc/rpc.h rpcsvc/nis.h rpcsvc/yp_prot.h rpcsvc/ypclnt.h)
+AC_CHECK_HEADERS(compat.h)
 AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/ipc.h sys/mode.h)
 AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h sys/socket.h)
 AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)
@@ -1165,77 +1165,6 @@ main() {
 samba_cv_HAVE_IRIX_SPECIFIC_CAPABILITIES=yes,samba_cv_HAVE_IRIX_SPECIFIC_CAPABILITIES=no,samba_cv_HAVE_IRIX_SPECIFIC_CAPABILITIES=cross)])
 if test x"$samba_cv_HAVE_IRIX_SPECIFIC_CAPABILITIES" = x"yes"; then
     AC_DEFINE(HAVE_IRIX_SPECIFIC_CAPABILITIES,1,[Whether IRIX specific capabilities are available])
-fi
-
-#
-# Check for int16, uint16, int32 and uint32 in rpc/types.h included from rpc/rpc.h
-# This is *really* broken but some systems (DEC OSF1) do this.... JRA.
-#
-
-AC_CACHE_CHECK([for int16 typedef included by rpc/rpc.h],samba_cv_HAVE_INT16_FROM_RPC_RPC_H,[
-AC_TRY_COMPILE([#include <sys/types.h>
-#if defined(HAVE_RPC_RPC_H)
-#include <rpc/rpc.h>
-#endif],
-[int16 testvar;],
-samba_cv_HAVE_INT16_FROM_RPC_RPC_H=yes,samba_cv_HAVE_INT16_FROM_RPC_RPC_H=no)])
-if test x"$samba_cv_HAVE_INT16_FROM_RPC_RPC_H" = x"yes"; then
-    AC_DEFINE(HAVE_INT16_FROM_RPC_RPC_H,1,[Whether int16 typedef is included by rpc/rpc.h])
-fi
-
-AC_CACHE_CHECK([for uint16 typedef included by rpc/rpc.h],samba_cv_HAVE_UINT16_FROM_RPC_RPC_H,[
-AC_TRY_COMPILE([#include <sys/types.h>
-#if defined(HAVE_RPC_RPC_H)
-#include <rpc/rpc.h>
-#endif],
-[uint16 testvar;],
-samba_cv_HAVE_UINT16_FROM_RPC_RPC_H=yes,samba_cv_HAVE_UINT16_FROM_RPC_RPC_H=no)])
-if test x"$samba_cv_HAVE_UINT16_FROM_RPC_RPC_H" = x"yes"; then
-    AC_DEFINE(HAVE_UINT16_FROM_RPC_RPC_H,1,[Whether uint16 typedef is included by rpc/rpc.h])
-fi
-
-AC_CACHE_CHECK([for int32 typedef included by rpc/rpc.h],samba_cv_HAVE_INT32_FROM_RPC_RPC_H,[
-AC_TRY_COMPILE([#include <sys/types.h>
-#if defined(HAVE_RPC_RPC_H)
-#include <rpc/rpc.h>
-#endif],
-[int32 testvar;],
-samba_cv_HAVE_INT32_FROM_RPC_RPC_H=yes,samba_cv_HAVE_INT32_FROM_RPC_RPC_H=no)])
-if test x"$samba_cv_HAVE_INT32_FROM_RPC_RPC_H" = x"yes"; then
-    AC_DEFINE(HAVE_INT32_FROM_RPC_RPC_H,1,[Whether int32 typedef is included by rpc/rpc.h])
-fi
-
-AC_CACHE_CHECK([for uint32 typedef included by rpc/rpc.h],samba_cv_HAVE_UINT32_FROM_RPC_RPC_H,[
-AC_TRY_COMPILE([#include <sys/types.h>
-#if defined(HAVE_RPC_RPC_H)
-#include <rpc/rpc.h>
-#endif],
-[uint32 testvar;],
-samba_cv_HAVE_UINT32_FROM_RPC_RPC_H=yes,samba_cv_HAVE_UINT32_FROM_RPC_RPC_H=no)])
-if test x"$samba_cv_HAVE_UINT32_FROM_RPC_RPC_H" = x"yes"; then
-    AC_DEFINE(HAVE_UINT32_FROM_RPC_RPC_H,1,[Whether uint32 typedef is included by rpc/rpc.h])
-fi
-
-dnl
-dnl Some systems (SCO) have a problem including
-dnl <prot.h> and <rpc/rpc.h> due to AUTH_ERROR being defined
-dnl as a #define in <prot.h> and as part of an enum
-dnl in <rpc/rpc.h>.
-dnl
-
-AC_CACHE_CHECK([for conflicting AUTH_ERROR define in rpc/rpc.h],samba_cv_HAVE_RPC_AUTH_ERROR_CONFLICT,[
-AC_TRY_COMPILE([#include <sys/types.h>
-#ifdef HAVE_SYS_SECURITY_H
-#include <sys/security.h>
-#include <prot.h>
-#endif  /* HAVE_SYS_SECURITY_H */
-#if defined(HAVE_RPC_RPC_H)
-#include <rpc/rpc.h>
-#endif],
-[int testvar;],
-samba_cv_HAVE_RPC_AUTH_ERROR_CONFLICT=no,samba_cv_HAVE_RPC_AUTH_ERROR_CONFLICT=yes)])
-if test x"$samba_cv_HAVE_RPC_AUTH_ERROR_CONFLICT" = x"yes"; then
-    AC_DEFINE(HAVE_RPC_AUTH_ERROR_CONFLICT,1,[Whether there is a conflicting AUTH_ERROR define in rpc/rpc.h])
 fi
 
 AC_MSG_CHECKING([for test routines])

@@ -309,24 +309,7 @@ BOOL user_ok(const char *user,int snum, gid_t *groups, size_t n_groups)
 validate a group username entry. Return the username or NULL
 ****************************************************************************/
 static const char *validate_group(struct server_context *smb, const char *group, DATA_BLOB password,int snum)
-{
-#ifdef HAVE_NETGROUP
-	{
-		char *host, *user, *domain;
-		setnetgrent(group);
-		while (getnetgrent(&host, &user, &domain)) {
-			if (user) {
-				if (user_ok(user, snum, NULL, 0) && 
-				    password_ok(smb, user,password)) {
-					endnetgrent();
-					return(user);
-				}
-			}
-		}
-		endnetgrent();
-	}
-#endif
-  
+{  
 #ifdef HAVE_GETGRENT
 	{
 		struct group *gptr;
