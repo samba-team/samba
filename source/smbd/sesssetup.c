@@ -372,8 +372,10 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
-	nt_status = auth_ntlmssp_update(global_ntlmssp_state, 
-					  auth, &auth_reply);
+	if ( global_ntlmssp_state ) {
+		nt_status = auth_ntlmssp_update(global_ntlmssp_state, 
+			auth, &auth_reply);
+	}
 
 	data_blob_free(&auth);
 
@@ -398,6 +400,10 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 	DATA_BLOB blob1;
 	int ret;
 	size_t bufrem;
+	fstring native_os, native_lanman;
+	char *p2;
+	uint16 data_blob_len = SVAL(inbuf, smb_vwv7);
+	enum remote_arch_types ra_type = get_remote_arch();
 
 	DEBUG(3,("Doing spnego session setup\n"));
 
@@ -407,18 +413,26 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 		
 	p = (uint8 *)smb_buf(inbuf);
 
-	if (SVAL(inbuf, smb_vwv7) == 0) {
+	if (data_blob_len == 0) {
 		/* an invalid request */
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
 	bufrem = smb_bufrem(inbuf, p);
 	/* pull the spnego blob */
-	blob1 = data_blob(p, MIN(bufrem, SVAL(inbuf, smb_vwv7)));
+	blob1 = data_blob(p, MIN(bufrem, data_blob_len));
 
 #if 0
 	file_save("negotiate.dat", blob1.data, blob1.length);
 #endif
+
+	p2 = inbuf + smb_vwv13 + data_blob_len;
+	p2 += srvstr_pull_buf(inbuf, native_os, p2, sizeof(native_os), STR_TERMINATE);
+	p2 += srvstr_pull_buf(inbuf, native_lanman, p2, sizeof(native_lanman), STR_TERMINATE);
+	DEBUG(3,("NativeOS=[%s] NativeLanMan=[%s]\n", native_os, native_lanman));
+
+	if ( ra_type == RA_WIN2K )
+		ra_lanman_string( native_lanman );
 
 	if (blob1.data[0] == ASN1_APPLICATION(0)) {
 		/* its a negTokenTarg packet */
@@ -582,21 +596,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		DEBUG(3,("Domain=[%s]  NativeOS=[%s] NativeLanMan=[%s]\n",
 			 domain,native_os,native_lanman));
 
-		/* 
-		 * we distinguish between 2K and XP by the "Native Lan Manager" string
-		 *   WinXP => "Windows 2002 5.1"
-		 *   Win2k => "Windows 2000 5.0"
-		 *   NT4   => "Windows NT 4.0" 
-		 *   Win9x => "Windows 4.0"
-		 */
-		 
-		if ( ra_type == RA_WIN2K ) {
-			if ( 0 == strcmp( native_lanman, "Windows 2002 5.1" ) )
-				set_remote_arch( RA_WINXP );
-			else if ( 0 == strcmp( native_lanman, "Windows .NET 5.2" ) )
-				set_remote_arch( RA_WIN2K3 );
-		}
-		
+		if ( ra_type == RA_WIN2K )
+			ra_lanman_string( native_lanman );
 
 	}
 	

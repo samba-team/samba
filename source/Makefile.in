@@ -85,6 +85,7 @@ PIDDIR = @piddir@
 # man pages language(s)
 man_langs = "@manlangs@"
 
+LIBSMBCLIENT=bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
 LIBSMBCLIENT_MAJOR=0
 LIBSMBCLIENT_MINOR=1
 
@@ -869,7 +870,7 @@ bin/libbigballofmud.@SHLIBEXT@: $(LIBBIGBALLOFMUD_PICOBJS)
 	$(SHLD) $(LDSHFLAGS) -o $@ $(LIBBIGBALLOFMUD_PICOBJS) $(LIBS) \
 		@SONAMEFLAG@`basename $@`.$(LIBBIGBALLOFMUD_MAJOR)
 
-libsmbclient: bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
+libsmbclient: $(LIBSMBCLIENT)
 
 bin/librpc_lsarpc.@SHLIBEXT@: $(RPC_LSA_OBJ)
 	@echo "Linking $@"
@@ -1098,7 +1099,7 @@ TOPFILES=dynconfig.o dynconfig.po
 
 clean: delheaders python_clean
 	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@ \
-		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(TORTURE_PROGS) .headers.stamp
+		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(TORTURE_PROGS) .headers.stamp $(LIBSMBCLIENT)
 
 # Making this target will just make sure that the prototype files
 # exist, not necessarily that they are up to date.  Since they're
