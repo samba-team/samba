@@ -1,3 +1,7 @@
+1999-12-14  Assar Westerlund  <assar@sics.se>
+
+	* push.c (do_connect): remove bogus local block variable
+
 1999-12-05  Assar Westerlund  <assar@sics.se>
 
 	* push.c (do_connect): use `getaddrinfo'
