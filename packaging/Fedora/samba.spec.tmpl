@@ -183,7 +183,7 @@ install -m 755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/%{_lib}/libnss_win
 # make install puts libsmbclient.so in the wrong place on x86_64
 rm -f $RPM_BUILD_ROOT/usr/lib || true
 mkdir -p $RPM_BUILD_ROOT%{_libdir} $RPM_BUILD_ROOT%{_includedir}
-install -m 644 source/bin/libsmbclient.so $RPM_BUILD_ROOT%{_libdir}/libsmbclient.so
+install -m 755 source/bin/libsmbclient.so $RPM_BUILD_ROOT%{_libdir}/libsmbclient.so
 install -m 644 source/bin/libsmbclient.a $RPM_BUILD_ROOT%{_libdir}/libsmbclient.a
 install -m 644 source/include/libsmbclient.h $RPM_BUILD_ROOT%{_includedir}
 
