@@ -295,16 +295,16 @@ The following are typical NetBIOS name/service type registrations:
 
 <para><programlisting>
 	Unique NetBIOS Names:
-		MACHINENAME<00>	= Server Service is running on MACHINENAME
-		MACHINENAME<03> = Generic Machine Name (NetBIOS name)
-		MACHINENAME<20> = LanMan Server service is running on MACHINENAME
-		WORKGROUP<1b> = Domain Master Browser
+		MACHINENAME&lt;00&gt;	= Server Service is running on MACHINENAME
+		MACHINENAME&lt;03&gt; = Generic Machine Name (NetBIOS name)
+		MACHINENAME&lt;20&gt; = LanMan Server service is running on MACHINENAME
+		WORKGROUP&lt;1b&gt; = Domain Master Browser
 
 	Group Names:
-		WORKGROUP<03> = Generic Name registered by all members of WORKGROUP
-		WORKGROUP<1c> = Domain Controllers / Netlogon Servers
-		WORKGROUP<1d> = Local Master Browsers
-		WORKGROUP<1e> = Internet Name Resolvers
+		WORKGROUP&lt;03&gt; = Generic Name registered by all members of WORKGROUP
+		WORKGROUP&lt;1c&gt; = Domain Controllers / Netlogon Servers
+		WORKGROUP&lt;1d&gt; = Local Master Browsers
+		WORKGROUP&lt;1e&gt; = Internet Name Resolvers
 </programlisting></para>
 
 <para>
@@ -323,7 +323,7 @@ be needed. An example of this is what happens when an MS Windows client
 wants to locate a domain logon server. It find this service and the IP 
 address of a server that provides it by performing a lookup (via a 
 NetBIOS broadcast) for enumeration of all machines that have 
-registered the name type *<1c>. A logon request is then sent to each 
+registered the name type *&lt;1c&gt;. A logon request is then sent to each 
 IP address that is returned in the enumerated list of IP addresses. Which 
 ever machine first replies then ends up providing the logon services.
 </para>

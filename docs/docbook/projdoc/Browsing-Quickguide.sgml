@@ -126,8 +126,9 @@ simultaneously the LMB on it's network segment.
 
 <para>
 The syntax of the "remote browse  sync" parameter is:
+
 <programlisting>
-	remote browse sync = a.b.c.d
+remote browse sync = a.b.c.d
 </programlisting>
 
 where a.b.c.d is either the IP address of the remote LMB or else is the network broadcast address of the remote segment.
@@ -243,36 +244,35 @@ The safest rule of all to follow it this - USE ONLY ONE PROTOCOL!
 <para>
 Resolution of NetBIOS names to IP addresses can take place using a number
 of methods. The only ones that can provide NetBIOS name_type information
-are:
+are:</para>
+
 <simplelist>
 <member>WINS: the best tool!</member>
 <member>LMHOSTS: is static and hard to maintain.</member>
 <member>Broadcast: uses UDP and can not resolve names across remote segments.</member>
 </simplelist>
-</para>
 
 <para>
-Alternative means of name resolution includes:
+Alternative means of name resolution includes:</para>
 <simplelist>
 <member>/etc/hosts: is static, hard to maintain, and lacks name_type info</member>
 <member>DNS: is a good choice but lacks essential name_type info.</member>
 </simplelist>
-</para>
 
 <para>
 Many sites want to restrict DNS lookups and want to avoid broadcast name
 resolution traffic. The "name resolve order" parameter is of great help here.
 The syntax of the "name resolve order" parameter is:
 <programlisting>
-	name resolve order = wins lmhosts bcast host
+name resolve order = wins lmhosts bcast host
 </programlisting>
 _or_
 <programlisting>
-	name resolve order = wins lmhosts  	(eliminates bcast and host)
+name resolve order = wins lmhosts  	(eliminates bcast and host)
 </programlisting>
 The default is:
 <programlisting>
-	name  resolve order = host lmhost wins bcast
+name  resolve order = host lmhost wins bcast
 </programlisting>.
 where "host" refers the the native methods used by the Unix system
 to implement the gethostbyname() function call. This is normally

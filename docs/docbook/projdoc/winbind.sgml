@@ -2,6 +2,7 @@
 
 
 <chapterinfo>
+	<authorgroup>
 	<author>
 		<firstname>Tim</firstname><surname>Potter</surname>
 		<affiliation>
@@ -10,7 +11,7 @@
 		</affiliation>
 	</author>
 	<author>
-		<firstname>Andrew</firstname><surname>Trigdell</surname>
+		<firstname>Andrew</firstname><surname>Tridgell</surname>
 		<affiliation>
 			<orgname>Samba Team</orgname>
 			<address><email>tridge@linuxcare.com.au</email></address>
@@ -35,6 +36,7 @@
 			<address><email>jelmer@nl.linux.org</email></address>
 		</affiliation>
 	</author>
+	</authorgroup>
 	<pubdate>27 June 2002</pubdate>
 </chapterinfo>
 
@@ -552,7 +554,7 @@ include the following entries in the [global] section:
 
 <para><programlisting>
 [global]
-     <...>
+     &lt;...&gt;
      # separate domain and username with '+', like DOMAIN+username
      <ulink url="winbindd.8.html#WINBINDSEPARATOR">winbind separator</ulink> = +
      # use uids from 10000 to 20000 for domain users
@@ -733,7 +735,7 @@ start() {
         daemon /usr/local/samba/bin/winbindd
         RETVAL3=$?
         echo
-        [ $RETVAL -eq 0 -a $RETVAL2 -eq 0 -a $RETVAL3 -eq 0 ] && touch /var/lock/subsys/smb || \
+        [ $RETVAL -eq 0 -a $RETVAL2 -eq 0 -a $RETVAL3 -eq 0 ] &amp;&amp; touch /var/lock/subsys/smb || \
            RETVAL=1
         return $RETVAL
 }
@@ -760,7 +762,7 @@ stop() {
         echo -n $"Shutting down $KIND services: "
         killproc winbindd
         RETVAL3=$?
-        [ $RETVAL -eq 0 -a $RETVAL2 -eq 0 -a $RETVAL3 -eq 0 ] && rm -f /var/lock/subsys/smb
+        [ $RETVAL -eq 0 -a $RETVAL2 -eq 0 -a $RETVAL3 -eq 0 ] &amp;&amp; rm -f /var/lock/subsys/smb
         echo ""
         return $RETVAL
 }
@@ -791,7 +793,7 @@ killproc() {            # kill the named process(es)
         pid=`/usr/bin/ps -e |
              /usr/bin/grep -w $1 |
              /usr/bin/sed -e 's/^  *//' -e 's/ .*//'`
-        [ "$pid" != "" ] && kill $pid
+        [ "$pid" != "" ] &amp;&amp; kill $pid
 }
  
 # Start/stop processes required for samba server
@@ -1042,7 +1044,7 @@ annoying double prompts for passwords.
 </para>
 
 <para>
-Now restart your Samba & try connecting through your application that you
+Now restart your Samba and try connecting through your application that you
 configured in the pam.conf.
 </para>
 

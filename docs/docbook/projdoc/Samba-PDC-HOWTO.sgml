@@ -142,7 +142,7 @@ Implementing a Samba PDC can basically be divided into 2 broad
 steps.
 </para>
 
-<orderedlist numeration="Arabic">
+<orderedlist numeration="arabic">
 	<listitem><para>
 	Configuring the Samba PDC
 	</para></listitem>
@@ -426,7 +426,7 @@ be created manually.
 
 <para><programlisting>
 [global]
-   # <...remainder of parameters...>
+   # &lt;...remainder of parameters...&gt;
    add user script = /usr/sbin/useradd -d /dev/null -g 100 -s /bin/false -M %u 
 </programlisting></para>
 
@@ -496,7 +496,7 @@ version of Windows.
 	</para>
     
 	<para>
-	A 'machine name' in (typically) <filename>/etc/passwd</> 	
+	A 'machine name' in (typically) <filename>/etc/passwd</filename> 	
 	of the machine name with a '$' appended. FreeBSD (and other BSD 
 	systems?) won't create a user with a '$' in their name.
 	</para>
@@ -504,7 +504,7 @@ version of Windows.
 	<para>
 	The problem is only in the program used to make the entry, once 
 	made, it works perfectly. So create a user without the '$' and 
-	use <command>vipw</> to edit the entry, adding the '$'. Or create 
+	use <command>vipw</command> to edit the entry, adding the '$'. Or create 
 	the whole entry with vipw if you like, make sure you use a 
 	unique User ID !
 	</para>
@@ -673,8 +673,8 @@ Here are some additional details:
 	Policy Editor can be installed on an NT Workstation/Server, it will not
 	work with NT policies because the registry key that are set by the policy templates. 
 	However, the files from the NT Server will run happily enough on an NTws. 	
-	You need <filename>poledit.exe, common.adm</> and <filename>winnt.adm</>. It is convenient
-	to put the two *.adm files in <filename>c:\winnt\inf</> which is where
+	You need <filename>poledit.exe, common.adm</filename> and <filename>winnt.adm</filename>. It is convenient
+	to put the two *.adm files in <filename>c:\winnt\inf</filename> which is where
 	the binary will look for them unless told otherwise. Note also that that 
 	directory is 'hidden'.
 	</para>
@@ -928,7 +928,7 @@ general SMB topics such as browsing.</para>
  
 	<listitem><para>See how Scott Merrill simulates a BDC behavior at 
         <ulink url="http://www.skippy.net/linux/smb-howto.html">
-        http://www.skippy.net/linux/smb-howto.html</>. </para></listitem>
+        http://www.skippy.net/linux/smb-howto.html</ulink>. </para></listitem>
 
 	<listitem><para>Although 2.0.7 has almost had its day as a PDC, David Bannon will
         keep the 2.0.7 PDC pages at <ulink url="http://bioserve.latrobe.edu.au/samba">
@@ -958,8 +958,8 @@ general SMB topics such as browsing.</para>
 	<para>
 	There are a number of Samba related mailing lists. Go to <ulink 
 	url="http://samba.org">http://samba.org</ulink>, click on your nearest mirror
-	and then click on <command>Support</> and then click on <command>
-	Samba related mailing lists</>.
+	and then click on <command>Support</command> and then click on <command>
+	Samba related mailing lists</command>.
 	</para>
 
 	<para>
@@ -1028,8 +1028,8 @@ general SMB topics such as browsing.</para>
 	<para>To have your name removed from a samba mailing list, go to the
 	same place you went to to get on it. Go to <ulink 
 	url="http://lists.samba.org/">http://lists.samba.org</ulink>, 
-	click on your nearest mirror and then click on <command>Support</> and 
-	then click on <command> Samba related mailing lists</>. Or perhaps see 
+	click on your nearest mirror and then click on <command>Support</command> and 
+	then click on <command> Samba related mailing lists</command>. Or perhaps see 
 	<ulink url="http://lists.samba.org/mailman/roster/samba-ntdom">here</ulink>
 	</para>
 
@@ -1112,7 +1112,7 @@ worthwhile lookingat how a Windows 9x/ME client performs a logon:
 <listitem>
 	<para>
 	The client broadcasts (to the IP broadcast address of the subnet it is in)
-	a NetLogon request. This is sent to the NetBIOS name DOMAIN<1c> at the
+	a NetLogon request. This is sent to the NetBIOS name DOMAIN&lt;1c&gt; at the
 	NetBIOS layer.  The client chooses the first response it receives, which
 	contains the NetBIOS name of the logon server to use in the format of 
 	\\SERVER.
@@ -1704,7 +1704,7 @@ contrast to w95, where it _does_ transfer / update profiles correctly].
 
 <sect1>
 <title>
-DOMAIN_CONTROL.txt : Windows NT Domain Control & Samba
+DOMAIN_CONTROL.txt : Windows NT Domain Control &amp; Samba
 </title>
 
 <warning>
