@@ -22,7 +22,7 @@
 #include "includes.h"
 
 #if (defined(NETGROUP) && defined (AUTOMOUNT))
-#ifdef NISPLUS
+#ifdef NISPLUS_HOME
 #include <rpcsvc/nis.h>
 #else
 #include "rpcsvc/ypclnt.h"
@@ -3829,7 +3829,7 @@ char *client_addr(int fd)
 *******************************************************************/
 
 #if (defined(NETGROUP) && defined(AUTOMOUNT))
-#ifdef NISPLUS
+#ifdef NISPLUS_HOME
 static char *automount_lookup(char *user_name)
 {
   static fstring last_key = "";
@@ -3880,7 +3880,7 @@ static char *automount_lookup(char *user_name)
   DEBUG(4, ("NIS+ Lookup: %s resulted in %s\n", user_name, last_value));
   return last_value;
 }
-#else /* NISPLUS */
+#else /* NISPLUS_HOME */
 static char *automount_lookup(char *user_name)
 {
   static fstring last_key = "";
@@ -3927,7 +3927,7 @@ static char *automount_lookup(char *user_name)
   DEBUG(4, ("YP Lookup: %s resulted in %s\n", user_name, last_value));
   return last_value;
 }
-#endif /* NISPLUS */
+#endif /* NISPLUS_HOME */
 #endif
 
 /*******************************************************************

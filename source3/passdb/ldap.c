@@ -29,7 +29,7 @@ extern int DEBUGLEVEL;
 /*******************************************************************
  open a connection to the ldap serve.
 ******************************************************************/	
-BOOL ldap_open_connection(LDAP **ldap_struct)
+static BOOL ldap_open_connection(LDAP **ldap_struct)
 {
 	if ( (*ldap_struct = ldap_open(lp_ldap_server(),lp_ldap_port()) )== NULL)
 	{
@@ -59,7 +59,7 @@ static BOOL ldap_connect_anonymous(LDAP *ldap_struct)
 /*******************************************************************
  connect to the ldap server under system privileg.
 ******************************************************************/	
-BOOL ldap_connect_system(LDAP *ldap_struct)
+static BOOL ldap_connect_system(LDAP *ldap_struct)
 {
 	if ( ldap_simple_bind_s(ldap_struct,lp_ldap_root(),lp_ldap_rootpasswd()) != LDAP_SUCCESS)
 	{
@@ -107,7 +107,7 @@ static BOOL ldap_search_one_user(LDAP *ldap_struct, char *filter, LDAPMessage **
 /*******************************************************************
  run the search by name.
 ******************************************************************/	
-BOOL ldap_search_one_user_by_name(LDAP *ldap_struct, char *user, LDAPMessage **result)
+static BOOL ldap_search_one_user_by_name(LDAP *ldap_struct, char *user, LDAPMessage **result)
 {	
 	pstring filter;
 	/*
@@ -127,7 +127,7 @@ BOOL ldap_search_one_user_by_name(LDAP *ldap_struct, char *user, LDAPMessage **r
 /*******************************************************************
  run the search by uid.
 ******************************************************************/	
-BOOL ldap_search_one_user_by_uid(LDAP *ldap_struct, int uid, LDAPMessage **result)
+static BOOL ldap_search_one_user_by_uid(LDAP *ldap_struct, int uid, LDAPMessage **result)
 {	
 	pstring filter;
 	/*
@@ -146,7 +146,7 @@ BOOL ldap_search_one_user_by_uid(LDAP *ldap_struct, int uid, LDAPMessage **resul
 /*******************************************************************
  search an attribute and return the first value found.
 ******************************************************************/
-void get_single_attribute(LDAP *ldap_struct, LDAPMessage *entry, char *attribute, char *value)
+static void get_single_attribute(LDAP *ldap_struct, LDAPMessage *entry, char *attribute, char *value)
 {
 	char **valeurs;
 	
@@ -165,7 +165,7 @@ void get_single_attribute(LDAP *ldap_struct, LDAPMessage *entry, char *attribute
 /*******************************************************************
  check if the returned entry is a sambaAccount objectclass.
 ******************************************************************/	
-BOOL ldap_check_user(LDAP *ldap_struct, LDAPMessage *entry)
+static BOOL ldap_check_user(LDAP *ldap_struct, LDAPMessage *entry)
 {
 	BOOL sambaAccount=False;
 	char **valeur;
@@ -188,7 +188,7 @@ BOOL ldap_check_user(LDAP *ldap_struct, LDAPMessage *entry)
 /*******************************************************************
  check if the returned entry is a sambaMachine objectclass.
 ******************************************************************/	
-BOOL ldap_check_trust(LDAP *ldap_struct, LDAPMessage *entry)
+static BOOL ldap_check_trust(LDAP *ldap_struct, LDAPMessage *entry)
 {
 	BOOL sambaMachine=False;
 	char **valeur;
@@ -235,10 +235,10 @@ static void ldap_get_smb_passwd(LDAP *ldap_struct,LDAPMessage *entry,
 	bzero(temp, sizeof(temp)); /* destroy local copy of the password */
 #else
 	get_single_attribute(ldap_struct, entry, "ntPasswordHash", temp);
-	gethexpwd(temp, user->smb_nt_passwd);		
+	pdb_gethexpwd(temp, user->smb_nt_passwd);		
 
 	get_single_attribute(ldap_struct, entry, "lmPasswordHash", temp);
-	gethexpwd(temp, user->smb_passwd);		
+	pdb_gethexpwd(temp, user->smb_passwd);		
 	bzero(temp, sizeof(temp)); /* destroy local copy of the password */
 #endif
 			
@@ -379,6 +379,18 @@ static void ldap_get_sam_passwd(LDAP *ldap_struct, LDAPMessage *entry,
  do not call this function directly.  use passdb.c instead.
 
 *************************************************************************/
+BOOL add_ldap21pwd_entry(struct smb_passwd *newpwd)
+{
+	DEBUG(0,("add_ldap21pwd_entry - currently not supported\n"));
+	return True;
+}
+
+/************************************************************************
+ Routine to add an entry to the ldap passwd file.
+
+ do not call this function directly.  use passdb.c instead.
+
+*************************************************************************/
 BOOL add_ldappwd_entry(struct smb_passwd *newpwd)
 {
 	DEBUG(0,("add_ldappwd_entry - currently not supported\n"));
@@ -399,6 +411,23 @@ BOOL add_ldappwd_entry(struct smb_passwd *newpwd)
 BOOL mod_ldappwd_entry(struct smb_passwd* pwd, BOOL override)
 {
 	DEBUG(0,("mod_ldappwd_entry - currently not supported\n"));
+    return False;
+}
+
+/************************************************************************
+ Routine to search the ldap passwd file for an entry matching the username.
+ and then modify its password entry. We can't use the startldappwent()/
+ getldappwent()/endldappwent() interfaces here as we depend on looking
+ in the actual file to decide how much room we have to write data.
+ override = False, normal
+ override = True, override XXXXXXXX'd out password or NO PASS
+
+ do not call this function directly.  use passdb.c instead.
+
+************************************************************************/
+BOOL mod_ldap21pwd_entry(struct smb_passwd* pwd, BOOL override)
+{
+	DEBUG(0,("mod_ldap21pwd_entry - currently not supported\n"));
     return False;
 }
 

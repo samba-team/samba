@@ -225,23 +225,16 @@ void initialize_multibyte_vectors( int client_codepage);
 
 /*The following definitions come from  ldap.c  */
 
-#ifdef USE_LDAP
-BOOL ldap_open_connection(LDAP **ldap_struct);
-BOOL ldap_connect_system(LDAP *ldap_struct);
-BOOL ldap_search_one_user_by_name(LDAP *ldap_struct, char *user, LDAPMessage **result);
-BOOL ldap_search_one_user_by_uid(LDAP *ldap_struct, int uid, LDAPMessage **result);
-void get_single_attribute(LDAP *ldap_struct, LDAPMessage *entry, char *attribute, char *value);
-BOOL ldap_check_user(LDAP *ldap_struct, LDAPMessage *entry);
-BOOL ldap_check_trust(LDAP *ldap_struct, LDAPMessage *entry);
+BOOL add_ldap21pwd_entry(struct smb_passwd *newpwd);
 BOOL add_ldappwd_entry(struct smb_passwd *newpwd);
 BOOL mod_ldappwd_entry(struct smb_passwd* pwd, BOOL override);
+BOOL mod_ldap21pwd_entry(struct smb_passwd* pwd, BOOL override);
 void *startldappwent(BOOL update);
 struct smb_passwd *getldappwent(void *vp);
 struct sam_passwd *getldap21pwent(void *vp);
 void endldappwent(void *vp);
 unsigned long getldappwpos(void *vp);
 BOOL setldappwpos(void *vp, unsigned long tok);
-#endif /* USE_LDAP */
 
 /*The following definitions come from  lib/rpc/client/cli_login.c  */
 
@@ -1218,6 +1211,21 @@ BOOL getlmhostsent( FILE *fp, char *name, int *name_type, struct in_addr *ipaddr
 void endlmhosts(FILE *fp);
 BOOL resolve_name(char *name, struct in_addr *return_ip);
 
+/*The following definitions come from  nisppass.c  */
+
+void *startnisppwent(BOOL update);
+void endnisppwent(void *vp);
+struct sam_passwd *getnisp21pwent(void *vp);
+struct smb_passwd *getnisppwent(void *vp);
+unsigned long getnisppwpos(void *vp);
+BOOL setnisppwpos(void *vp, unsigned long tok);
+BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd);
+BOOL add_nisppwd_entry(struct smb_passwd *newpwd);
+BOOL mod_nisp21pwd_entry(struct sam_passwd* pwd, BOOL override);
+BOOL mod_nisppwd_entry(struct smb_passwd* pwd, BOOL override);
+struct smb_passwd *getnisppwnam(char *name);
+struct smb_passwd *getnisppwuid(int smb_userid);
+
 /*The following definitions come from  nmbd.c  */
 
 BOOL reload_services(BOOL test);
@@ -1570,6 +1578,7 @@ BOOL pm_process( char *FileName,
 void *startsampwent(BOOL update);
 void endsampwent(void *vp);
 struct smb_passwd *getsampwent(void *vp);
+struct sam_disp_info *getsamdispent(void *vp);
 struct sam_passwd *getsam21pwent(void *vp);
 unsigned long getsampwpos(void *vp);
 BOOL setsampwpos(void *vp, unsigned long tok);
@@ -1581,15 +1590,17 @@ struct smb_passwd *getsampwnam(char *name);
 struct sam_passwd *getsam21pwnam(char *name);
 struct smb_passwd *getsampwuid(uid_t smb_userid);
 struct sam_passwd *getsam21pwrid(uint32 rid);
-char *encode_acct_ctrl(uint16 acct_ctrl);
-uint16 decode_acct_ctrl(char *p);
-int gethexpwd(char *p, char *pwd);
-BOOL name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid);
-BOOL generate_machine_sid(void);
-uid_t user_rid_to_uid(uint32 u_rid);
-uid_t group_rid_to_uid(uint32 u_gid);
-uint32 uid_to_user_rid(uint32 uid);
-uint32 gid_to_group_rid(uint32 gid);
+time_t pdb_get_last_set_time(char *p);
+void pdb_set_last_set_time(char *p, int max_len, time_t t);
+char *pdb_encode_acct_ctrl(uint16 acct_ctrl);
+uint16 pdb_decode_acct_ctrl(char *p);
+int pdb_gethexpwd(char *p, char *pwd);
+BOOL pdb_name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid);
+BOOL pdb_generate_machine_sid(void);
+uid_t pdb_user_rid_to_uid(uint32 u_rid);
+uid_t pdb_group_rid_to_uid(uint32 u_gid);
+uint32 pdb_uid_to_user_rid(uint32 uid);
+uint32 pdb_gid_to_group_rid(uint32 gid);
 
 /*The following definitions come from  password.c  */
 
@@ -1823,7 +1834,9 @@ struct sam_passwd *getsmb21pwent(void *vp);
 struct smb_passwd *getsmbpwent(void *vp);
 unsigned long getsmbpwpos(void *vp);
 BOOL setsmbpwpos(void *vp, unsigned long tok);
+BOOL add_smb21pwd_entry(struct sam_passwd *newpwd);
 BOOL add_smbpwd_entry(struct smb_passwd *newpwd);
+BOOL mod_smb21pwd_entry(struct sam_passwd* pwd, BOOL override);
 BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override);
 BOOL trust_password_lock( char *domain, char *name, BOOL update);
 BOOL trust_password_unlock(void);

@@ -766,7 +766,7 @@ static void init_globals(void)
   Globals.bUnixRealname = False;
 #if (defined(NETGROUP) && defined(AUTOMOUNT))
   Globals.bNISHomeMap = False;
-#ifdef NISPLUS
+#ifdef NISPLUS_HOME
   string_set(&Globals.szNISHomeMapName, "auto_home.org_dir");
 #else
   string_set(&Globals.szNISHomeMapName, "auto.home");
