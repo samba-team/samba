@@ -85,7 +85,7 @@ BOOL smb_register_charset(struct charset_functions *funcs)
 	/* Check whether we already have this charset... */
 
 	if (find_charset_functions(funcs->name)) {
-		DEBUG(2, ("Duplicate charset %s, not registering\n", funcs->name));
+		DEBUG(0, ("Duplicate charset %s, not registering\n", funcs->name));
 		return False;
 	}
 
