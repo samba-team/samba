@@ -21,6 +21,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
+#include <roken.h>
 #include "hdb.h"
 
 extern struct timeval now;
