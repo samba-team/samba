@@ -40,7 +40,7 @@
 
 RCSID("$Id$");
 
-char *keyfile = "m-key";
+char *keyfile = HDB_DB_DIR "/m-key";
 char *v4_keyfile;
 int help_flag;
 int version_flag;
