@@ -298,6 +298,28 @@ void display_printer_info_ctr(FILE *out_hnd, enum action_type action, uint32 lev
 /****************************************************************************
 connection info level 3 container display function
 ****************************************************************************/
+static void display_port_info_1_ctr(FILE *out_hnd, enum action_type action, 
+				    uint32 count,  PORT_INFO_CTR *ctr)
+{
+	uint32	i = 0;
+	switch (action)
+	{
+		case ACTION_HEADER:
+			report(out_hnd, "Port Info Level 1:\n");
+			break;
+		case ACTION_ENUMERATE:
+			for (i=0; i<count; i++)
+				display_port_info_1(out_hnd, action, &ctr->port.info_1[i]);
+			break;
+		case ACTION_FOOTER:
+			report(out_hnd, "\n");
+			break;
+	}
+}
+
+/****************************************************************************
+connection info level 3 container display function
+****************************************************************************/
 static void display_port_info_2_ctr(FILE *out_hnd, enum action_type action, 
 				    uint32 count,  PORT_INFO_CTR *ctr)
 {
@@ -324,6 +346,9 @@ void display_port_info_ctr(FILE *out_hnd, enum action_type action, uint32 level,
 				uint32 count, PORT_INFO_CTR *ctr)
 {
 	switch (level) {
+		case 1:
+			display_port_info_1_ctr(out_hnd, action, count, ctr);
+			break;
 		case 2:
 			display_port_info_2_ctr(out_hnd, action, count, ctr);
 			break;
@@ -333,6 +358,27 @@ void display_port_info_ctr(FILE *out_hnd, enum action_type action, uint32 level,
 	}
 }
 
+/****************************************************************************
+connection info container display function
+****************************************************************************/
+void display_port_info_1(FILE *out_hnd, enum action_type action, PORT_INFO_1 *i1)
+{
+	fstring buffer;
+	
+	switch (action)
+	{
+		case ACTION_HEADER:
+			report(out_hnd, "Port:\n");
+			break;
+		case ACTION_ENUMERATE:
+			unistr_to_ascii(buffer, i1->port_name.buffer, sizeof(buffer)-1);
+			fprintf (out_hnd, "\tPort Name:\t[%s]\n\n", buffer);
+			break;
+		case ACTION_FOOTER:
+			report(out_hnd, "\n");
+			break;
+	}
+}
 
 /****************************************************************************
 connection info container display function

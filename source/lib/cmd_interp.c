@@ -221,7 +221,7 @@ help
 ****************************************************************************/
 static uint32 cmd_help(struct client_info *info, int argc, char *argv[])
 {
-	int i = 0, j = 0;
+	int i = 0;
 
 	/* get help on a specific command */
 	if (argc > 0)
@@ -1159,9 +1159,7 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 		       srv_name, usr.ntc.user_name, usr.ntc.domain);
 		report(out_hnd, "Connection:\t");
 
-		if (cli_net_use_add(srv_name, &usr.ntc, info->reuse,
-					&isnew)
-		    != NULL)
+		if (cli_net_use_add(srv_name, &usr.ntc, info->reuse, &isnew) != NULL)
 		{
 			report(out_hnd, "OK\n");
 		}

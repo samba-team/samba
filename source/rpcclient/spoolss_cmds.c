@@ -38,7 +38,7 @@ static const struct command_set spl_commands[] = {
 	 {NULL, NULL}},
 
 	{"spoolenumports", cmd_spoolss_enum_ports,
-	 "Enumerate Ports",
+	 "<port info level> Enumerate Ports",
 	 {NULL, NULL}},
 
 	{"spoolenumdatas", cmd_spoolss_enum_printerdata,
@@ -72,7 +72,12 @@ static const struct command_set spl_commands[] = {
 	{"spooladdprinter", cmd_spoolss_addprinterex,
 	 "<name> <driver> Spool AddPrinterEx()",
 	 {NULL, NULL}},
-	/*
+	
+	{"spooladdprinterdriver", cmd_spoolss_addprinterdriver,
+	 "<driver> Spool AddPrinterDriver()",
+	 {NULL, NULL}},
+
+		/*
 	 * oop!
 	 */
 	{"", NULL, NULL, {NULL, NULL}}

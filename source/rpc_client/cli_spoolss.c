@@ -32,24 +32,23 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 do a SPOOLSS Enum Printer Drivers
 ****************************************************************************/
-uint32 spoolss_enum_printerdrivers(const char * srv_name,
-                                const char *environment,
-                                uint32 level,
-                             NEW_BUFFER *buffer, uint32 offered,
-                             uint32 *needed, uint32 *returned)
+uint32 spoolss_enum_printerdrivers(const char *srv_name, const char *environment,
+                                   uint32 level, NEW_BUFFER *buffer, uint32 offered,
+                                   uint32 *needed, uint32 *returned)
 {
         prs_struct rbuf;
         prs_struct buf;
         SPOOL_Q_ENUMPRINTERDRIVERS q_o;
         SPOOL_R_ENUMPRINTERDRIVERS r_o;
+	TALLOC_CTX *ctx = prs_get_mem_context(&buffer->prs);
 
         struct cli_connection *con = NULL;
 
         if (!cli_connection_init(srv_name, PIPE_SPOOLSS, &con))
                 return False;
 
-        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, MARSHALL);
-        prs_init(&rbuf, 0, 4, UNMARSHALL);
+        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, ctx, MARSHALL);
+        prs_init(&rbuf, 0, 4, ctx, UNMARSHALL);
 
         /* create and send a MSRPC command with api SPOOLSS_ENUM_PRINTERS */
 
@@ -108,14 +107,15 @@ uint32 spoolss_enum_printers(uint32 flags, fstring srv_name, uint32 level,
         prs_struct buf;
         SPOOL_Q_ENUMPRINTERS q_o;
         SPOOL_R_ENUMPRINTERS r_o;
+	TALLOC_CTX *ctx = prs_get_mem_context(&buffer->prs);
 
         struct cli_connection *con = NULL;
 
         if (!cli_connection_init(srv_name, PIPE_SPOOLSS, &con))
                 return False;
 
-        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, MARSHALL);
-        prs_init(&rbuf, 0, 4, UNMARSHALL);
+        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, ctx, MARSHALL);
+        prs_init(&rbuf, 0, 4, ctx, UNMARSHALL);
 
         /* create and send a MSRPC command with api SPOOLSS_ENUM_PRINTERS */
 
@@ -172,14 +172,15 @@ uint32 spoolss_enum_ports(fstring srv_name, uint32 level,
         prs_struct buf;
         SPOOL_Q_ENUMPORTS q_o;
         SPOOL_R_ENUMPORTS r_o;
+	TALLOC_CTX *ctx = prs_get_mem_context(&buffer->prs);
 
         struct cli_connection *con = NULL;
 
         if (!cli_connection_init(srv_name, PIPE_SPOOLSS, &con))
                 return False;
 
-        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, MARSHALL);
-        prs_init(&rbuf, 0, 4, UNMARSHALL);
+        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, ctx, MARSHALL);
+        prs_init(&rbuf, 0, 4, ctx, UNMARSHALL);
 
         /* create and send a MSRPC command with api SPOOLSS_ENUMPORTS */
 
@@ -236,12 +237,13 @@ uint32 spoolss_enum_jobs(const POLICY_HND *hnd, uint32 firstjob, uint32 numofjob
         prs_struct buf;
         SPOOL_Q_ENUMJOBS q_o;
         SPOOL_R_ENUMJOBS r_o;
+	TALLOC_CTX *ctx = prs_get_mem_context(&buffer->prs);
 
         if (hnd == NULL)
                 return NT_STATUS_INVALID_PARAMETER;
 
-        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, MARSHALL);
-        prs_init(&rbuf, 0, 4, UNMARSHALL);
+        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, ctx, MARSHALL);
+        prs_init(&rbuf, 0, 4, ctx, UNMARSHALL);
 
         /* create and send a MSRPC command with api SPOOLSS_ENUMJOBS */
 
@@ -283,20 +285,26 @@ uint32 spoolss_enum_jobs(const POLICY_HND *hnd, uint32 firstjob, uint32 numofjob
 do a SPOOLSS Enum printer datas
 ****************************************************************************/
 uint32 spoolss_enum_printerdata(const POLICY_HND *hnd, uint32 idx,
-                        uint32 *valuelen, uint16 *value, uint32 *rvaluelen,
-                        uint32 *type,
-                        uint32 *datalen, uint8 *data, uint32 *rdatalen)
+                        	uint32 *valuelen, uint16 *value, uint32 *rvaluelen,
+                        	uint32 *type, uint32 *datalen, uint8 *data, 
+				uint32 *rdatalen)
 {
         prs_struct rbuf;
         prs_struct buf;
         SPOOL_Q_ENUMPRINTERDATA q_o;
         SPOOL_R_ENUMPRINTERDATA r_o;
-
+	TALLOC_CTX *mem_ctx = NULL;
+	
         if (hnd == NULL)
                 return NT_STATUS_INVALID_PARAMETER;
 
-        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, MARSHALL);
-        prs_init(&rbuf, 0, 4, UNMARSHALL);
+	if ((mem_ctx=talloc_init()) == NULL)
+	{
+		DEBUG(0,("msrpc_spoolss_enum_jobs: talloc_init failed!\n"));
+		return False;
+	}
+        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, mem_ctx, MARSHALL);
+        prs_init(&rbuf, 0, 4, mem_ctx, UNMARSHALL);
 
         /* create and send a MSRPC command with api  SPOOLSS_ENUMPRINTERDATA*/
 
@@ -333,6 +341,8 @@ uint32 spoolss_enum_printerdata(const POLICY_HND *hnd, uint32 idx,
 
         prs_mem_free(&rbuf);
         prs_mem_free(&buf );
+	if (mem_ctx)
+		talloc_destroy(mem_ctx);
 
         return r_o.status;
 }
@@ -348,12 +358,13 @@ uint32 spoolss_getprinter(const POLICY_HND *hnd, uint32 level,
         prs_struct buf;
         SPOOL_Q_GETPRINTER q_o;
         SPOOL_R_GETPRINTER r_o;
+	TALLOC_CTX *ctx = prs_get_mem_context(&buffer->prs);
 
         if (hnd == NULL)
                 return NT_STATUS_INVALID_PARAMETER;
 
-        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, MARSHALL);
-        prs_init(&rbuf, 0, 4, UNMARSHALL);
+        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, ctx, MARSHALL);
+        prs_init(&rbuf, 0, 4, ctx, UNMARSHALL);
 
         /* create and send a MSRPC command with api SPOOLSS_ENUMJOBS */
 
@@ -403,12 +414,13 @@ uint32 spoolss_getprinterdriver(const POLICY_HND *hnd,
         prs_struct buf;
         SPOOL_Q_GETPRINTERDRIVER2 q_o;
         SPOOL_R_GETPRINTERDRIVER2 r_o;
+	TALLOC_CTX *ctx = prs_get_mem_context(&buffer->prs);
 
         if (hnd == NULL)
                 return NT_STATUS_INVALID_PARAMETER;
 
-        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, MARSHALL);
-        prs_init(&rbuf, 0, 4, UNMARSHALL);
+        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, ctx, MARSHALL);
+        prs_init(&rbuf, 0, 4, ctx, UNMARSHALL);
 
         /* create and send a MSRPC command with api SPOOLSS_ENUMJOBS */
 
@@ -462,9 +474,9 @@ BOOL spoolss_open_printer_ex(  const char *printername,
         BOOL valid_pol = False;
         fstring srv_name;
         char *s = NULL;
-
         struct cli_connection *con = NULL;
-
+	TALLOC_CTX *mem_ctx = NULL;
+	
         memset(srv_name, 0, sizeof(srv_name));
         fstrcpy(srv_name, printername);
 
@@ -475,10 +487,16 @@ BOOL spoolss_open_printer_ex(  const char *printername,
         if (!cli_connection_init(srv_name, PIPE_SPOOLSS, &con))
                 return False;
 
-        if (hnd == NULL) return False;
+        if (hnd == NULL) 
+		return False;
 
-        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, MARSHALL);
-        prs_init(&rbuf, 0, 4, UNMARSHALL);
+	if ((mem_ctx=talloc_init()) == NULL)
+	{
+		DEBUG(0,("msrpc_spoolss_enum_jobs: talloc_init failed!\n"));
+		return False;
+	}
+        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, mem_ctx, MARSHALL);
+        prs_init(&rbuf, 0, 4, mem_ctx, UNMARSHALL);
 
         /* create and send a MSRPC command with api SPOOLSS_OPENPRINTEREX */
 
@@ -517,8 +535,41 @@ BOOL spoolss_open_printer_ex(  const char *printername,
 
 	prs_mem_free(&rbuf);
         prs_mem_free(&buf );
+	if (mem_ctx)
+		talloc_destroy(mem_ctx);
 
         return valid_pol;
+}
+
+/****************************************************************************
+ do a SPOOLSS AddPrinterEx()
+ **ALWAYS** uses as PRINTER_INFO level 2 struct
+****************************************************************************/
+BOOL spoolss_addprinterex(POLICY_HND *hnd, PRINTER_INFO_2 *info2)
+{
+#if 0
+        prs_struct rbuf;
+        prs_struct buf;
+        SPOOL_Q_ADDPRINTEREX q_o;
+        BOOL valid_pol = False;
+        fstring srv_name;
+        char *s = NULL;
+	struct cli_connection *con = NULL;
+
+
+        memset(srv_name, 0, sizeof(srv_name));
+        unistr_to_ascii(srv_name, info2->servername.buffer, sizeof(srv_name));
+
+        if (!cli_connection_init(srv_name, PIPE_SPOOLSS, &con))
+                return False;
+
+        if (hnd == NULL) return False;
+
+        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, MARSHALL);
+        prs_init(&rbuf, 0, 4, UNMARSHALL);
+#endif
+
+	return True;
 }
 
 /****************************************************************************
@@ -530,14 +581,19 @@ BOOL spoolss_closeprinter(POLICY_HND *hnd)
         prs_struct buf;
         SPOOL_Q_CLOSEPRINTER q_c;
         BOOL valid_close = False;
-
+	TALLOC_CTX *mem_ctx = NULL;
+	
         if (hnd == NULL) 
 		return False;
 
         /* create and send a MSRPC command with api SPOOLSS_CLOSEPRINTER */
-
-        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, MARSHALL);
-        prs_init(&rbuf, 0, 4, UNMARSHALL);
+	if ((mem_ctx=talloc_init()) == NULL)
+	{
+		DEBUG(0,("msrpc_spoolss_enum_jobs: talloc_init failed!\n"));
+		return False;
+	}
+        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, mem_ctx, MARSHALL);
+        prs_init(&rbuf, 0, 4, mem_ctx, UNMARSHALL);
 
         DEBUG(4,("SPOOL Close Printer\n"));
 
@@ -563,6 +619,8 @@ BOOL spoolss_closeprinter(POLICY_HND *hnd)
 
         prs_mem_free(&rbuf);
         prs_mem_free(&buf );
+	if (mem_ctx)
+		talloc_destroy(mem_ctx);
 
 	/* disassociate with the cli_connection */
         RpcHndList_del_connection(hnd);
@@ -584,12 +642,18 @@ uint32 spoolss_getprinterdata(const POLICY_HND *hnd, const UNISTR2 *valuename,
         prs_struct buf;
         SPOOL_Q_GETPRINTERDATA q_o;
         SPOOL_R_GETPRINTERDATA r_o;
+	TALLOC_CTX *mem_ctx = NULL;
 
         if (hnd == NULL)
                 return NT_STATUS_INVALID_PARAMETER;
 
-        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, MARSHALL);
-        prs_init(&rbuf, 0, 4, UNMARSHALL);
+	if ((mem_ctx=talloc_init()) == NULL)
+	{
+		DEBUG(0,("msrpc_spoolss_enum_jobs: talloc_init failed!\n"));
+		return False;
+	}
+        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, mem_ctx, MARSHALL);
+        prs_init(&rbuf, 0, 4, mem_ctx, UNMARSHALL);
 
         /* create and send a MSRPC command with api SPOOLSS_GETPRINTERDATA */
 
@@ -638,14 +702,15 @@ uint32 spoolss_getprinterdriverdir(fstring srv_name, fstring env_name, uint32 le
         prs_struct buf;
         SPOOL_Q_GETPRINTERDRIVERDIR q_o;
         SPOOL_R_GETPRINTERDRIVERDIR r_o;
+	TALLOC_CTX *ctx = prs_get_mem_context(&buffer->prs);
 
         struct cli_connection *con = NULL;
 
         if (!cli_connection_init(srv_name, PIPE_SPOOLSS, &con))
                 return False;
 
-        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, MARSHALL);
-        prs_init(&rbuf, 0, 4, UNMARSHALL);
+        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, ctx, MARSHALL);
+        prs_init(&rbuf, 0, 4, ctx, UNMARSHALL);
 
         /* create and send a MSRPC command with api SPOOLSS_ENUM_PRINTERS */
 

@@ -102,13 +102,21 @@ nt spoolss query
 uint32 cmd_spoolss_enum_ports(struct client_info *info, int argc, char *argv[])
 {
 	PORT_INFO_CTR ctr;
-	
-	uint32 level = 2;
-
+	uint32 level;
 	fstring srv_name;
+	
+	if (argc < 1)
+	{
+		report (out_hnd, "spoolenumports <level>\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+		
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
+	
+	level = atoi(argv[1]);
 	
 	if (msrpc_spoolss_enum_ports(srv_name, level, &ctr))
 		DEBUG(5,("cmd_spoolss_enum_printer: query succeeded\n"));
@@ -489,9 +497,6 @@ uint32 cmd_spoolss_getprinterdriverdir(struct client_info *info, int argc, char 
 ********************************************************************************/
 uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[])
 {
-#if 0
-        PRINTER_INFO_CTR ctr;
-	uint32 level = 2;
         fstring 	srv_name, 
 			printer_name, 
 			driver_name,
@@ -506,25 +511,32 @@ uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[]
 	uint32		i;
 	fstring		srv_port_name;
 	BOOL		valid_port = False;
+	TALLOC_CTX	*mem_ctx = NULL;
 
         fstrcpy(srv_name, "\\\\");
         fstrcat(srv_name, info->dest_host);
         strupper(srv_name);
 
 	/* check (and copy) the command line arguments */
-        if (argc < 2) {
-                report(out_hnd, "spooladdprinterex <name> <driver>\n");
+        if (argc < 3) {
+                report(out_hnd, "spooladdprinterex <name> <driver> <port>\n");
                 return NT_STATUS_NOPROBLEMO;
         }
-
-	fstrcpy(printer_name, argv[1]);
-        fstrcpy(driver_name, argv[2]);
-	fstrcpy(port_name, argv[3]);
-	
+	else
+	{
+		fstrcpy(printer_name, argv[1]);
+        	fstrcpy(driver_name, argv[2]);
+		fstrcpy(port_name, argv[3]);
+	}
 	
 	/* Verify that the specified port is ok; spoolss_enum_ports() should 
 	   be a level 1 since all we need is the name */
-	init_buffer (&buffer, 0);
+	if ((mem_ctx=talloc_init()) == NULL)
+	{
+		DEBUG(0, ("cmd_spoolss_addprinterex: talloc_init() failed!\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	init_buffer (&buffer, 0, mem_ctx);
 	
 	/* send a NULL buffer first */
 	status=spoolss_enum_ports(srv_name, 1, &buffer, 0, 
@@ -532,7 +544,7 @@ uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[]
 	
 	/* send the right amount of space this time */
 	if (status==ERROR_INSUFFICIENT_BUFFER) {
-		init_buffer(&buffer, needed);
+		init_buffer(&buffer, needed, mem_ctx);
 		status=spoolss_enum_ports(srv_name, 1, &buffer, 
 					  needed, &needed, &returned);
 					  
@@ -540,11 +552,11 @@ uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[]
 		   an PRINTER_INFO_1 structre */
 		if (status == NT_STATUS_NO_PROBLEMO)
 		{
-			decode_port_info_1 (&buffer, returned, &port_info_1);
+			decode_port_info_1(&buffer, returned, &port_info_1);
 		}
 		else
 		{
-			report (out_hnd, "cmd_spoolss_addprinterex: FAILED to enumerate ports\n"));
+			report (out_hnd, "cmd_spoolss_addprinterex: FAILED to enumerate ports\n");
 			return NT_STATUS_NOPROBLEMO;
 		}
 					
@@ -558,7 +570,8 @@ uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[]
 	for (i=0; i<returned; i++)
 	{
 		/* compare port_info_1[i].port_name to the port_name specified */
-		unistr_to_ascii(srv_port_name, port_info_1[i].port_name, sizeof(srv_port_name)-1);
+		unistr_to_ascii(srv_port_name, port_info_1[i].port_name.buffer, 
+				sizeof(srv_port_name)-1);
 		if (strequal(srv_port_name, port_name))
 		{
 			valid_port = True;
@@ -573,13 +586,39 @@ uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[]
 	
 	 
 	/*
-	 * Need to build the PRINTER_INFO_2 struct here 
+	 * Need to build the PRINTER_INFO_2 struct here.
+	 * I think it would be better only to deal with a PRINTER_INFO_2
+	 * and the abstract the creation of a SPOOL_PRINTER_INFO_LEVEL_2
+	 * from that rather than dealing with the struct passed dircetly 
+	 * on the wire.  We don't need the extra *_ptr fields, etc... 
+	 * here anyways.  --jerry
 	 */
-	;;
-	
+	init_unistr( &print_info_2.servername, 	srv_name);
+	init_unistr( &print_info_2.printername,	printer_name);
+	init_unistr( &print_info_2.sharename, 	printer_name);
+	init_unistr( &print_info_2.portname,	port_name);
+	init_unistr( &print_info_2.drivername,	driver_name);
+	init_unistr( &print_info_2.comment,	"Created by rpcclient");
+	init_unistr( &print_info_2.location,	"");
+	init_unistr (&print_info_2.sepfile,	"");
+	init_unistr( &print_info_2.printprocessor, "winprint");
+	init_unistr( &print_info_2.datatype,	"RAW");
+	init_unistr( &print_info_2.parameters,	"");
+	print_info_2.devmode = NULL;
+	print_info_2.secdesc = NULL;
+	print_info_2.attributes 	= 0;
+	print_info_2.priority 		= 0;
+	print_info_2.defaultpriority	= 0;
+	print_info_2.starttime		= 0;
+	print_info_2.untiltime		= 0;
+	print_info_2.status		= 0;
+	print_info_2.cjobs		= 0;
+	print_info_2.averageppm		= 0;
+
+
 	/* if successful, spoolss_addprinterex() should return True and hnd 
 	   should be a valid handle to an open printer */
-	if (spoolss_addprinterex(&hnd, 2, &print_info_2))
+	if (spoolss_addprinterex(&hnd, &print_info_2))
 	{
 		if (!spoolss_closeprinter( &hnd ))
 		{
@@ -592,8 +631,14 @@ uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[]
 	}
 
 	
-#endif		
         return NT_STATUS_NOPROBLEMO;
 }
         
-	
+/********************************************************************************
+ send an AddPrinterDriver() request
+********************************************************************************/
+uint32 cmd_spoolss_addprinterdriver(struct client_info *info, int argc, char *argv[])
+{
+
+        return NT_STATUS_NOPROBLEMO;
+}	
