@@ -35,7 +35,7 @@
 RCSID("$Id$");
 
 /*
- * Implementation of draft-ietf-krb-wg-gssapi-cfx-02.txt
+ * Implementation of draft-ietf-krb-wg-gssapi-cfx-03.txt
  */
 
 #define SentByAcceptor	(1 << 0)
@@ -634,7 +634,7 @@ OM_uint32 _gssapi_mic_cfx(OM_uint32 *minor_status,
 	return GSS_S_FAILURE;
     }
 
-    len = sizeof(*token) + message_buffer->length;
+    len = message_buffer->length + sizeof(*token);
     buf = malloc(len);
     if (buf == NULL) {
 	*minor_status = ENOMEM;
@@ -642,7 +642,9 @@ OM_uint32 _gssapi_mic_cfx(OM_uint32 *minor_status,
 	return GSS_S_FAILURE;
     }
 
-    token = (gss_cfx_mic_token)buf;
+    memcpy(buf, message_buffer->value, message_buffer->length);
+
+    token = (gss_cfx_mic_token)(buf + message_buffer->length);
     token->TOK_ID[0] = 0x04;
     token->TOK_ID[1] = 0x04;
     token->Flags = 0;
@@ -660,8 +662,6 @@ OM_uint32 _gssapi_mic_cfx(OM_uint32 *minor_status,
 				    context_handle->auth_context,
 				    ++seq_number);
     HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
-
-    memcpy(buf + sizeof(*token), message_buffer->value, message_buffer->length);
 
     if (context_handle->more_flags & LOCAL) {
 	usage = KRB5_KU_USAGE_INITIATOR_SIGN;
@@ -792,14 +792,14 @@ OM_uint32 _gssapi_verify_mic_cfx(OM_uint32 *minor_status,
 	usage = KRB5_KU_USAGE_INITIATOR_SIGN;
     }
 
-    buf = malloc(sizeof(*token) + message_buffer->length);
+    buf = malloc(message_buffer->length + sizeof(*token));
     if (buf == NULL) {
 	*minor_status = ENOMEM;
 	krb5_crypto_destroy(gssapi_krb5_context, crypto);
 	return GSS_S_FAILURE;
     }
-    memcpy(buf, token, sizeof(*token));
-    memcpy(buf + sizeof(*token), message_buffer->value, message_buffer->length);
+    memcpy(buf, message_buffer->value, message_buffer->length);
+    memcpy(buf + message_buffer->length, token, sizeof(*token));
 
     ret = krb5_verify_checksum(gssapi_krb5_context, crypto,
 			       usage,
