@@ -22,9 +22,7 @@ afskauthlib.so: $(OBJS)
 .c.o:
 	$(COMPILE) -c $<
 
-if KRB4
 KAFS = $(top_builddir)/lib/kafs/libkafs.la
-endif
 
 if KRB5
 L = \
