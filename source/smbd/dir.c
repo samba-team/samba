@@ -355,7 +355,8 @@ BOOL dptr_fill(char *buf1,unsigned int key)
     return(False);
   }
   offset = TellDir(p);
-  DEBUG(6,("fill on key %d dirptr 0x%x now at %d\n",key,(unsigned)p,offset));
+  DEBUG(6,("fill on key %ld dirptr 0x%x now at %d\n",key,
+	   (long)p,offset));
   buf[0] = key;
   SIVAL(buf,1,offset | DPTR_MASK);
   return(True);
@@ -446,8 +447,8 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,
     {
       dname = ReadDirName(conn->dirptr);
 
-      DEBUG(6,("readdir on dirptr 0x%x now at offset %d\n",
-	       (unsigned)conn->dirptr,TellDir(conn->dirptr)));
+      DEBUG(6,("readdir on dirptr 0x%lx now at offset %d\n",
+	       (long)conn->dirptr,TellDir(conn->dirptr)));
       
       if (dname == NULL) 
 	return(False);
