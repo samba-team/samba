@@ -1,3 +1,8 @@
+Sat Feb 13 17:12:53 1999  Assar Westerlund  <assar@sics.se>
+
+	* roken.h.in (mkstemp, gethostname): also includes prototypes if
+ 	they are needed.
+
 1998-12-20  Assar Westerlund  <assar@sics.se>
 
 	* snprintf.c, iruserok.c, parse-units.c: unsigned char-correctness

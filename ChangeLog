@@ -1,5 +1,27 @@
 Sat Feb 13 17:12:53 1999  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/get_in_tkt.c (krb5_init_etype): etypes are now `int'
+
+	* lib/krb5/get_host_realm.c (krb5_get_host_realm): constize
+ 	orig_host
+
+ 	(krb5_salttype_to_string): new function (RSA_MD5_DES_verify,
+ 	RSA_MD5_DES3_verify): initialize ret
+
+	* lib/gssapi/init_sec_context.c (init_auth): remove unnecessary
+ 	gssapi_krb5_init.  ask for KEYTYPE_DES credentials
+
+	* kadmin/get.c (print_entry_long): print the keytypes and salts
+ 	available for the principal
+
+	* configure.in (WFLAGS): add `-O' to catch unitialized variables
+ 	and such
+	(gethostname, mkstemp, getusershell, inet_aton): more tests
+
+	* lib/hdb/hdb.h: update prototypes
+
+	* configure.in: homogenize broken detection with krb4
+
 	* lib/kadm5/init_c.c (kadm5_c_init_with_context): remove unused
  	`error'
 
