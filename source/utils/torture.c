@@ -2112,7 +2112,7 @@ static void run_opentest(int dummy)
     printf("finished open test 1\n");
 }
 
-static void list_fn(file_info *finfo, const char *name)
+static void list_fn(file_info *finfo, const char *name, void *state)
 {
 	
 }
@@ -2149,9 +2149,9 @@ static void run_dirtest(int dummy)
 
 	t1 = end_timer();
 
-	printf("Matched %d\n", cli_list(&cli, "a*.*", 0, list_fn));
-	printf("Matched %d\n", cli_list(&cli, "b*.*", 0, list_fn));
-	printf("Matched %d\n", cli_list(&cli, "xyzabc", 0, list_fn));
+	printf("Matched %d\n", cli_list(&cli, "a*.*", 0, list_fn, NULL));
+	printf("Matched %d\n", cli_list(&cli, "b*.*", 0, list_fn, NULL));
+	printf("Matched %d\n", cli_list(&cli, "xyzabc", 0, list_fn, NULL));
 
 	printf("dirtest core %g seconds\n", end_timer() - t1);
 

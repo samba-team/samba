@@ -473,7 +473,7 @@ static int do_list_queue_empty(void)
 /****************************************************************************
 a helper for do_list
   ****************************************************************************/
-static void do_list_helper(file_info *f, const char *mask)
+static void do_list_helper(file_info *f, const char *mask, void *state)
 {
 	if (f->mode & aDIR) {
 		if (do_list_dirs && do_this_one(f)) {
@@ -537,7 +537,7 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 			 */
 			pstring head;
 			pstrcpy(head, do_list_queue_head());
-			cli_list(cli, head, attribute, do_list_helper);
+			cli_list(cli, head, attribute, do_list_helper, NULL);
 			remove_do_list_queue_head();
 			if ((! do_list_queue_empty()) && (fn == display_finfo))
 			{
@@ -561,7 +561,7 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 	}
 	else
 	{
-		if (cli_list(cli, mask, attribute, do_list_helper) == -1)
+		if (cli_list(cli, mask, attribute, do_list_helper, NULL) == -1)
 		{
 			DEBUG(0, ("%s listing %s\n", cli_errstr(cli), mask));
 		}
