@@ -2502,7 +2502,7 @@ AC_ARG_WITH(ldapsam,
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_LDAP_SAMCONFIG,1,[Whether to include 2.2 compatibel LDAP SAM configuration])
+    AC_DEFINE(WITH_LDAP_SAMCONFIG,1,[Whether to include 2.2 compatible LDAP SAM configuration])
     ;;
   *)
     AC_MSG_RESULT(no)
