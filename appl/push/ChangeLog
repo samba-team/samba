@@ -1,5 +1,7 @@
 Sun Apr 26 11:42:13 1998  Assar Westerlund  <assar@sics.se>
 
+	* push.c (main): better default for v4 and v5
+
 	* push.c (main): init context correctly
 
 	* push.c: should work with krb4
