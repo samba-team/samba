@@ -37,11 +37,8 @@ static BOOL run_netbench(struct smbcli_state *cli, int client)
 	fstring params[20];
 	const char *p;
 	BOOL correct = True;
-	struct timeval tv;
 
-	tv = timeval_current();
-
-	nb_setup(cli, client, warmup);
+	nb_setup(cli, client);
 
 	asprintf(&cname, "client%d", client+1);
 
@@ -55,17 +52,6 @@ static BOOL run_netbench(struct smbcli_state *cli, int client)
 again:
 	while (fgets(line, sizeof(line)-1, f)) {
 		NTSTATUS status;
-
-		if (warmup && 
-		    timeval_elapsed(&tv) >= warmup) {
-			warmup = 0;
-			nb_warmup_done();
-			tv = timeval_current();
-		}
-
-		if (timeval_elapsed(&tv) >= timelimit) {
-			goto done;
-		}
 
 		nbench_line_count++;
 
@@ -147,6 +133,8 @@ again:
 		} else {
 			printf("[%d] Unknown operation %s\n", nbench_line_count, params[0]);
 		}
+		
+		if (nb_tick()) goto done;
 	}
 
 	rewind(f);
@@ -154,7 +142,6 @@ again:
 
 done:
 	fclose(f);
-	nb_cleanup(cname);
 
 	if (!torture_close_connection(cli)) {
 		correct = False;
@@ -188,10 +175,11 @@ BOOL torture_nbench(void)
 		return False;
 	}
 
-	nb_setup(cli, -1, warmup);
-	nb_deltree("\\clients");
+	if (!torture_setup_dir(cli, "\\clients")) {
+		return False;
+	}
 
-	nbio_shmem(torture_nprocs);
+	nbio_shmem(torture_nprocs, timelimit, warmup);
 
 	printf("Running for %d seconds with load '%s' and warmup %d secs\n", 
 	       timelimit, loadfile, warmup);
@@ -201,7 +189,8 @@ BOOL torture_nbench(void)
 	torture_create_procs(run_netbench, &correct);
 	alarm(0);
 
-	printf("\nThroughput %g MB/sec\n", 
-	       1.0e-6 * nbio_total() / timelimit);
+	smbcli_deltree(cli->tree, "\\clients");
+
+	printf("\nThroughput %g MB/sec\n", nbio_result());
 	return correct;
 }
