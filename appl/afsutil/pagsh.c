@@ -117,7 +117,7 @@ main(int argc, char **argv)
   argv += optind;
 
 #ifdef KRB5
-  snprintf (tf, sizeof(tf), "%sXXXXXXXXXX", KRB5_DEFAULT_CCROOT);
+  snprintf (tf, sizeof(tf), "%sXXXXXX", KRB5_DEFAULT_CCROOT);
   f = mkstemp (tf + 5);
   if (f < 0)
       err(1, "mkstemp failed");
@@ -126,7 +126,7 @@ main(int argc, char **argv)
   esetenv("KRB5CCNAME", tf, 1);
 #endif
 
-  snprintf (tf, sizeof(tf), "%s_XXXXXXXXXX", TKT_ROOT);
+  snprintf (tf, sizeof(tf), "%s_XXXXXX", TKT_ROOT);
   f = mkstemp (tf);
   if (f < 0)
       err(1, "mkstemp failed");
