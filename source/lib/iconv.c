@@ -589,4 +589,3 @@ toobig:
 	errno = E2BIG;
 	return -1;
 }
-
