@@ -200,11 +200,17 @@ sub HeaderFunctionInOut_needed($$)
 {
     my($fn) = shift;
     my($prop) = shift;
+
+    if ($prop eq "out" && $fn->{RETURN_TYPE} && $fn->{RETURN_TYPE} ne "void") {
+	    return 1;
+    }
+
     foreach my $e (@{$fn->{DATA}}) {
 	    if (util::has_property($e, $prop)) {
 		    return 1;
 	    }
     }
+
     return undef;
 }
 
