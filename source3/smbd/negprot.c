@@ -227,6 +227,7 @@ static int reply_nt1(char *inbuf, char *outbuf)
 	
 	if (global_encrypted_passwords_negotiated && 
 	    (lp_security() != SEC_SHARE) &&
+	    lp_use_spnego() &&
 	    (SVAL(inbuf, smb_flg2) & FLAGS2_EXTENDED_SECURITY)) {
 		negotiate_spnego = True;
 		capabilities |= CAP_EXTENDED_SECURITY;
