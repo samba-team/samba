@@ -146,5 +146,12 @@ if ($PSFIX) {			# are we running a "psfix"?
     system("$lpcommand $file");
 }
 
-# Remove the file only if it lives in /usr/tmp, /tmp, or /var/tmp.
-unlink($file) if $file =~ m=^(/(usr|var))?/tmp=;
+if ($file =~ m(^/)) {
+	# $file is a fully specified path
+	# Remove the file only if it lives in a directory ending in /tmp.
+	unlink($file) if ($file =~ m(/tmp/[^/]+$));
+} else {
+	# $file is NOT a fully specified path
+	# Remove the file only if current directory ends in /tmp.
+	unlink($file) if (`pwd` =~ m(/tmp$));
+}
