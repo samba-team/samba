@@ -753,7 +753,7 @@ bin/wbinfo: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ) \
 
 bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_PICOOBJ)
 	@echo "Linking shared library $@"
-	$(SHLD) $(LDSHFLAGS) -symbolic -o $@ $(PAM_SMBPASS_PICOOBJ) -lpam $(DYNEXP) $(LIBS) -lc
+	$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_SMBPASS_PICOOBJ) -lpam $(DYNEXP) $(LIBS) -lc
 
 bin/libmsrpc.a: $(LIBMSRPC_PICOBJ)
 	-$(AR) -rc $@ $(LIBMSRPC_PICOBJ) 
