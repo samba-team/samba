@@ -226,6 +226,7 @@ int ltdb_attribute_flags(struct ldb_context *ldb, const char *attr_name)
 	};
 	size_t len;
 	int i, ret=0;
+	struct ldb_alloc_ops alloc = ldb->alloc_ops;
 
 	if (ltdb->cache.last_attribute.name &&
 	    ldb_attr_cmp(ltdb->cache.last_attribute.name, attr_name) == 0) {
@@ -257,10 +258,14 @@ int ltdb_attribute_flags(struct ldb_context *ldb, const char *attr_name)
 		attrs += strspn(attrs, " ,");
 	}
 
-	if (ltdb->cache.last_attribute.name) ldb_free(ldb, ltdb->cache.last_attribute.name);
+	ldb->alloc_ops.alloc = NULL;
+
+	ldb_free(ldb, ltdb->cache.last_attribute.name);
 
 	ltdb->cache.last_attribute.name = ldb_strdup(ldb, attr_name);
 	ltdb->cache.last_attribute.flags = ret;
+
+	ldb->alloc_ops = alloc;
 	
 	return ret;
 }
