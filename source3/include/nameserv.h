@@ -403,8 +403,7 @@ struct packet_struct
 #define CHECK_TIME_MAX_HOST_ANNCE  12
 
 /* announce as master to WINS server and any Primary Domain Controllers */
-/* ORIGINAL - changed for test by JRA #define CHECK_TIME_MST_ANNOUNCE    15 */
-#define CHECK_TIME_MST_ANNOUNCE    1
+#define CHECK_TIME_MST_ANNOUNCE    15
 
 /* do all remote announcements this often */
 #define REMOTE_ANNOUNCE_INTERVAL 180
