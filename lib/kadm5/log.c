@@ -469,7 +469,7 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 			 krb5_storage *sp)
 {
     krb5_error_code ret;
-    u_int32_t mask;
+    int32_t mask;
     krb5_data value;
     hdb_entry ent, log_ent;
 
