@@ -287,7 +287,7 @@ ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned 
     FD_ZERO(&fds);
     FD_SET(fd,&fds);
       
-    selrtn = sys_select(fd+1,&fds,&timeout);
+    selrtn = sys_select(fd+1,&fds,NULL, &timeout);
 
     /* Check if error */
     if(selrtn == -1) {

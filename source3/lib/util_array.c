@@ -77,6 +77,69 @@ void* add_item_to_array(uint32 *len, void ***array, void *item)
 	return NULL;
 }
 
+static void use_info_free(struct use_info *item)
+{
+	if (item != NULL)
+	{
+		if (item->srv_name != NULL)
+		{
+			free(item->srv_name);
+		}
+		if (item->user_name != NULL)
+		{
+			free(item->user_name);
+		}
+		if (item->domain != NULL)
+		{
+			free(item->domain);
+		}
+		free(item);
+	}
+}
+
+static struct use_info *use_info_dup(const struct use_info *from)
+{
+	if (from != NULL)
+	{
+		struct use_info *copy = (struct use_info *)
+		                        malloc(sizeof(struct use_info));
+		if (copy != NULL)
+		{
+			ZERO_STRUCTP(copy);
+			copy->connected = from->connected;
+			if (from->srv_name != NULL)
+			{
+				copy->srv_name  = strdup(from->srv_name );
+			}
+			if (from->user_name != NULL)
+			{
+				copy->user_name = strdup(from->user_name);
+			}
+			if (from->domain != NULL)
+			{
+				copy->domain    = strdup(from->domain   );
+			}
+		}
+		return copy;
+	}
+	return NULL;
+}
+
+void free_use_array(uint32 num_entries, struct use_info **entries)
+{
+	void(*fn)(void*) = (void(*)(void*))&use_info_free;
+	free_void_array(num_entries, (void**)entries, *fn);
+}
+
+struct use_info* add_use_to_array(uint32 *len, struct use_info ***array,
+				const struct use_info *name)
+{
+	void*(*fn)(const void*) = (void*(*)(const void*))&use_info_dup;
+	return (struct use_info*)add_copy_to_array(len,
+	                     (void***)array, (const void*)name, *fn, False);
+				
+}
+
 void free_char_array(uint32 num_entries, char **entries)
 {
 	void(*fn)(void*) = (void(*)(void*))&free;
@@ -175,7 +238,7 @@ static PRINTER_INFO_2 *prt2_dup(const PRINTER_INFO_2* from)
 		}
 		else
 		{
-			memset(copy, 0, sizeof(*copy));
+			ZERO_STRUCTP(copy);
 		}
 	}
 	return copy;
@@ -206,7 +269,7 @@ static PRINTER_INFO_1 *prt1_dup(const PRINTER_INFO_1* from)
 		}
 		else
 		{
-			memset(copy, 0, sizeof(*copy));
+			ZERO_STRUCTP(copy);
 		}
 	}
 	return copy;
@@ -237,7 +300,7 @@ static JOB_INFO_1 *job1_dup(const JOB_INFO_1* from)
 		}
 		else
 		{
-			memset(copy, 0, sizeof(*copy));
+			ZERO_STRUCTP(copy);
 		}
 	}
 	return copy;
@@ -268,7 +331,7 @@ static JOB_INFO_2 *job2_dup(const JOB_INFO_2* from)
 		}
 		else
 		{
-			memset(copy, 0, sizeof(*copy));
+			ZERO_STRUCTP(copy);
 		}
 	}
 	return copy;

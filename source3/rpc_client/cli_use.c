@@ -287,7 +287,6 @@ BOOL cli_net_use_del(const char* srv_name,
 
 	DEBUG(10,("cli_net_use_del: %s. force close: %s\n",
 	           srv_name, BOOLSTR(force_close)));
-	dbgflush();
 
 	if (strnequal("\\\\", sv_name, 2))
 	{
@@ -321,7 +320,6 @@ BOOL cli_net_use_del(const char* srv_name,
 
 			DEBUG(10,("idx: %i num_users now: %d\n",
 				   i, clis[i]->num_users));
-			dbgflush();
 
 			if (force_close || clis[i]->num_users == 0)
 			{
@@ -334,5 +332,36 @@ BOOL cli_net_use_del(const char* srv_name,
 	}
 
 	return False;
+}
+
+/****************************************************************************
+enumerate client states
+****************************************************************************/
+void cli_net_use_enum(uint32 *num_cons, struct use_info ***use)
+{
+	int i;
+
+	*num_cons = 0;
+	*use = NULL;
+
+	for (i = 0; i < num_clis; i++)
+	{
+		struct use_info item;
+
+		ZERO_STRUCT(item);
+
+		if (clis[i] == NULL) continue;
+
+		item.connected = clis[i]->cli != NULL ? True : False;
+	
+		if (item.connected)
+		{
+			item.srv_name = clis[i]->cli->desthost;
+			item.user_name = clis[i]->cli->usr.user_name;
+			item.domain    = clis[i]->cli->usr.domain;
+		}
+
+		add_use_to_array(num_cons, use, &item);
+	}
 }
 

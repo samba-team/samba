@@ -1351,7 +1351,7 @@ static char *complete_cmd_null(char *text, int state)
 
 static void cmd_net(struct client_info *info, int argc, char *argv[])
 {
-	char opt;
+	int opt;
 	BOOL net_use = False;
 	BOOL net_use_del = False;
 	BOOL net_use_add = False;
@@ -1451,7 +1451,7 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 {
 	BOOL interactive = True;
 	char *cmd_str = NULL;
-	char opt;
+	int opt;
 	extern FILE *dbf;
 	extern char *optarg;
 	static pstring servicesf = CONFIGFILE;
