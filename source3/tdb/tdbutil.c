@@ -208,6 +208,20 @@ TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, char *keystr)
 }
 
 /****************************************************************************
+ Delete a buffer using a null terminated string key.
+****************************************************************************/
+
+int tdb_delete_by_string(TDB_CONTEXT *tdb, char *keystr)
+{
+	TDB_DATA key;
+
+	key.dptr = keystr;
+	key.dsize = strlen(keystr) + 1;
+
+	return tdb_delete(tdb, key);
+}
+
+/****************************************************************************
  Atomic integer change. Returns old value. To create, set initial value in *oldval. 
 ****************************************************************************/
 
