@@ -103,6 +103,16 @@ char *reg_key_name( REG_KEY *key )
 	return key->name;
 }
 
+char *reg_key_class( REG_KEY *key )
+{
+	return key->class_name;
+}
+
+NTTIME reg_key_last_modified( REG_KEY *key )
+{
+	return key->last_mod;
+}
+
 REG_KEY *reg_key_dup(REG_KEY *key)
 {
 	key->ref++;
