@@ -227,6 +227,7 @@ receive_everything (krb5_context context, int fd,
     krb5_data data;
     int32_t vno;
     int32_t opcode;
+    unsigned long tmp;
 
     ret = server_context->db->open(context,
 				   server_context->db,
@@ -268,7 +269,8 @@ receive_everything (krb5_context context, int fd,
     if (opcode != NOW_YOU_HAVE)
 	krb5_errx (context, 1, "receive_everything: strange %d", opcode);
 
-    _krb5_get_int ((char *)data.data + 4, &vno, 4);
+    _krb5_get_int ((char *)data.data + 4, &tmp, 4);
+    vno = tmp;
 
     ret = kadm5_log_reinit (server_context);
     if (ret)
