@@ -50,7 +50,7 @@ void unexpected_packet(struct packet_struct *p)
 
 	if (!tdbd) {
 		tdbd = tdb_open_log(lock_path("unexpected.tdb"), 1, 
-			       TDB_CLEAR_IF_FIRST,
+			       TDB_CLEAR_IF_FIRST|USE_TDB_MMAP_FLAG,
 			       O_RDWR | O_CREAT, 0644);
 		if (!tdbd) {
 			DEBUG(0,("Failed to open unexpected.tdb\n"));
@@ -151,7 +151,7 @@ struct packet_struct *receive_unexpected(enum packet_type packet_type, int id,
 {
 	TDB_CONTEXT *tdb2;
 
-	tdb2 = tdb_open_log(lock_path("unexpected.tdb"), 0, 0, O_RDONLY, 0);
+	tdb2 = tdb_open_log(lock_path("unexpected.tdb"), 0, USE_TDB_MMAP_FLAG, O_RDONLY, 0);
 	if (!tdb2) return NULL;
 
 	matched_packet = NULL;

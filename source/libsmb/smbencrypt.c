@@ -51,38 +51,6 @@ void SMBencrypt(uchar *passwd, uchar *c8, uchar *p24)
 #endif
 }
 
-/* Routines for Windows NT MD4 Hash functions. */
-static int _my_wcslen(int16 *str)
-{
-	int len = 0;
-	while(*str++ != 0)
-		len++;
-	return len;
-}
-
-/*
- * Convert a string into an NT UNICODE string.
- * Note that regardless of processor type 
- * this must be in intel (little-endian)
- * format.
- */
- 
-static int _my_mbstowcs(int16 *dst, uchar *src, int len)
-{
-	int i;
-	int16 val;
- 
-	for(i = 0; i < len; i++) {
-		val = *src;
-		SSVAL(dst,0,val);
-		dst++;
-		src++;
-		if(val == 0)
-			break;
-	}
-	return i;
-}
-
 /* 
  * Creates the MD4 Hash of the users password in NT UNICODE.
  */
@@ -96,11 +64,10 @@ void E_md4hash(uchar *passwd, uchar *p16)
 	len = strlen((char *)passwd);
 	if(len > 128)
 		len = 128;
-	/* Password must be converted to NT unicode */
-	_my_mbstowcs(wpwd, passwd, len);
-	wpwd[len] = 0; /* Ensure string is null terminated */
+	/* Password must be converted to NT unicode - null terminated. */
+	dos_struni2((char *)wpwd, passwd, 256);
 	/* Calculate length in bytes */
-	len = _my_wcslen(wpwd) * sizeof(int16);
+	len = strlen_w(wpwd) * sizeof(int16);
 
 	mdfour(p16, (unsigned char *)wpwd, len);
 }
@@ -229,6 +196,34 @@ BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[
 }
 
 /***********************************************************
+ Encode a password buffer.
+************************************************************/
+
+BOOL encode_pw_buffer(char buffer[516], const char *new_pass,
+			int new_pw_len, BOOL nt_pass_set)
+{
+	generate_random_buffer(buffer, 516, True);
+
+	if (new_pw_len < 0 || new_pw_len > 512)
+		return False;
+ 
+	if (nt_pass_set) {
+		new_pw_len *= 2;
+		dos_struni2(&buffer[512 - new_pw_len], new_pass, 256);
+	} else {
+		memcpy(&buffer[512 - new_pw_len], new_pass, new_pw_len);
+	}
+ 
+	/*
+	 * The length of the new password is in the last 4 bytes of
+	 * the data buffer.
+	 */
+	SIVAL(buffer, 512, new_pw_len);
+ 
+	return True;
+}
+
+/***********************************************************
  decode a password buffer
 ************************************************************/
 BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
@@ -319,3 +314,18 @@ BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
 
 }
 
+/* Calculate the NT owfs of a user's password */
+void nt_owf_genW(const UNISTR2 *pwd, uchar nt_p16[16])
+{
+	char buf[512];
+	int i;
+ 
+	for (i = 0; i < MIN(pwd->uni_str_len, sizeof(buf) / 2); i++)
+        SIVAL(buf, i * 2, pwd->buffer[i]);
+
+	/* Calculate the MD4 hash (NT compatible) of the password */
+	mdfour(nt_p16, buf, pwd->uni_str_len * 2);
+ 
+	/* clear out local copy of user's password (just being paranoid). */
+	ZERO_STRUCT(buf);
+}

@@ -2847,6 +2847,19 @@ static BOOL run_w2ktest(int dummy)
 	cli_close(&cli, fnum);
 	cli_rmdir(&cli, fname1);
 
+	fnum = cli_open(&cli, fname, O_RDWR | O_CREAT , DENY_NONE);
+
+	cli_write(&cli, fnum,  0, (char *)&data, 0, sizeof(data));
+	cli_close(&cli, fnum);
+	cli_ulogoff(&cli);
+
+	fnum = cli_open(&cli, fname, O_RDWR , DENY_NONE);
+	if (cli_read(&cli, fnum, &data, 0, 1) != 1) {
+		printf("x test 2 failed with %s\n", cli_errstr(&cli));
+	}
+	cli_close(&cli, fnum);
+	cli_unlink(&cli, fname);
+
 	if (!close_connection(&cli)) {
 		correct = False;
 	}

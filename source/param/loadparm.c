@@ -272,6 +272,7 @@ typedef struct
 	BOOL bDebugUid;
 	BOOL bHostMSDfs;
 	BOOL bHideLocalUsers;
+	BOOL bUseMmap;
 }
 global;
 
@@ -819,6 +820,7 @@ static struct parm_struct parm_table[] = {
 	{"stat cache size", P_INTEGER, P_GLOBAL, &Globals.stat_cache_size, NULL, NULL, 0},
 	{"strict sync", P_BOOL, P_LOCAL, &sDefault.bStrictSync, NULL, NULL, FLAG_SHARE},
 	{"sync always", P_BOOL, P_LOCAL, &sDefault.bSyncAlways, NULL, NULL, FLAG_SHARE},
+	{"use mmap", P_BOOL, P_GLOBAL, &Globals.bUseMmap, NULL, NULL, 0},
 	{"write cache size", P_INTEGER, P_LOCAL, &sDefault.iWriteCacheSize, NULL, NULL, FLAG_SHARE},
 
 	{"Printing Options", P_SEP, P_SEPARATOR},
@@ -1283,6 +1285,7 @@ static void init_globals(void)
 	Globals.min_passwd_length = MINPASSWDLENGTH;	/* By Default, 5. */
 	Globals.oplock_break_wait_time = 0;	/* By Default, 0 msecs. */
 	Globals.enhanced_browsing = True; 
+	Globals.bUseMmap = True;
 
 #ifdef WITH_LDAP
 	/* default values for ldap */
@@ -1548,6 +1551,7 @@ FN_GLOBAL_BOOL(lp_lanman_auth, &Globals.bLanmanAuth)
 FN_GLOBAL_BOOL(lp_host_msdfs, &Globals.bHostMSDfs)
 FN_GLOBAL_BOOL(lp_kernel_oplocks, &Globals.bKernelOplocks)
 FN_GLOBAL_BOOL(lp_enhanced_browsing, &Globals.enhanced_browsing)
+FN_GLOBAL_BOOL(lp_use_mmap, &Globals.bUseMmap)
 FN_GLOBAL_INTEGER(lp_os_level, &Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl, &Globals.max_ttl)
 FN_GLOBAL_INTEGER(lp_max_wins_ttl, &Globals.max_wins_ttl)

@@ -244,7 +244,8 @@ TESTPRNS_OBJ = utils/testprns.o $(PARAM_OBJ) $(PRINTING_OBJ) $(UBIQX_OBJ) \
 
 SMBPASSWD_OBJ = utils/smbpasswd.o $(PARAM_OBJ) \
 		$(LIBSMB_OBJ) $(PASSDB_OBJ) \
-                $(UBIQX_OBJ) $(RPC_PARSE_OBJ) $(RPC_CLIENT_OBJ) $(LIB_OBJ)
+		$(UBIQX_OBJ) $(RPC_PARSE_OBJ) $(RPC_CLIENT_OBJ) \
+		libsmb/cli_lsarpc.o libsmb/cli_samr.o $(LIB_OBJ)
 
 RPCCLIENT_OBJ1 = rpcclient/rpcclient.o rpcclient/cmd_spoolss.o \
 		rpcclient/cmd_samr.o rpcclient/cmd_lsarpc.o \
