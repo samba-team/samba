@@ -178,7 +178,7 @@ BOOL secrets_fetch_trust_account_password(char *domain, uint8 ret_pwd[16],
 	if (plaintext) {
 		/* we have an ADS password - use that */
 		DEBUG(4,("Using ADS machine password\n"));
-		E_md4hash((uchar *)plaintext, ret_pwd);
+		E_md4hash(plaintext, ret_pwd);
 		SAFE_FREE(plaintext);
 		return True;
 	}
