@@ -130,6 +130,30 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 	break;
       }
 
+	for (s=0;s<1000;s++) {
+		if (VALID_SNUM(s)) {
+			char *deny_list = lp_hostsdeny(s);
+			char *allow_list = lp_hostsallow(s);
+			if(deny_list) {
+				char *hasstar = strchr(deny_list, '*');
+				char *hasquery = strchr(deny_list, '?');
+				if(hasstar || hasquery) {
+					printf("Invalid character %c in hosts deny list %s for service %s.\n",
+							hasstar ? *hasstar : *hasquery, deny_list, lp_servicename(s) );
+				}
+			}
+
+			if(allow_list) {
+				char *hasstar = strchr(allow_list, '*');
+				char *hasquery = strchr(allow_list, '?');
+				if(hasstar || hasquery) {
+					printf("Invalid character %c in hosts allow list %s for service %s.\n",
+							hasstar ? *hasstar : *hasquery, allow_list, lp_servicename(s) );
+				}
+			}
+		}
+	}
+
   if (argc < 3)
     {
       if (!silent_mode) {
