@@ -629,7 +629,7 @@ static BOOL test_many_files(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	for (t=0;t<ARRAY_SIZE(search_types);t++) {
 		ZERO_STRUCT(result);
-		result.mem_ctx = mem_ctx;
+		result.mem_ctx = talloc(mem_ctx, 0);
 	
 		printf("Continue %s via %s\n", search_types[t].name, search_types[t].cont_name);
 
@@ -683,7 +683,7 @@ static BOOL test_many_files(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			}
 			free(fname);
 		}
-		talloc_free(result.list);
+		talloc_free(result.mem_ctx);
 	}
 
 done:
@@ -705,7 +705,7 @@ static BOOL check_result(struct multiple_result *result, const char *name, BOOL 
 	if (i == result->count) {
 		if (exist) {
 			printf("failed: '%s' should exist with attribute %s\n", 
-			       name, attrib_string(NULL, attrib));
+			       name, attrib_string(result->list, attrib));
 			return False;
 		}
 		return True;
@@ -713,7 +713,7 @@ static BOOL check_result(struct multiple_result *result, const char *name, BOOL 
 
 	if (!exist) {
 		printf("failed: '%s' should NOT exist (has attribute %s)\n", 
-		       name, attrib_string(NULL, result->list[i].both_directory_info.attrib));
+		       name, attrib_string(result->list, result->list[i].both_directory_info.attrib));
 		return False;
 	}
 
@@ -763,6 +763,7 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("pulling the first 10 files\n");
 	ZERO_STRUCT(result);
+	result.mem_ctx = talloc(mem_ctx, 0);
 
 	io.generic.level = RAW_SEARCH_BOTH_DIRECTORY_INFO;
 	io.t2ffirst.in.search_attrib = 0;
