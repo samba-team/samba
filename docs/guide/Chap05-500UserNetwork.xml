@@ -1383,7 +1383,7 @@ abmas.us	IN SOA	server.abmas.us. root.abmas.us. (
 				)
 			NS	dns.abmas.us.
 			NS	dns2.abmas.us.
-			MX	10 mail.abmas.us.
+			MX	10 server.abmas.us.
 $ORIGIN abmas.us.
 server			A	123.45.67.66
 dns2			A	123.45.54.32
