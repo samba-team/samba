@@ -4,6 +4,7 @@
    Copyright (C) Karl Auer 1993, 1994-1998
 
    Extensively modified by Andrew Tridgell, 1995
+   Converted to popt by Jelmer Vernooij (jelmer@nl.linux.org), 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -170,158 +171,126 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 	return ret;
 }   
 
-static void usage(char *pname)
-{
-	printf("Usage: %s [-sh] [-L servername] [configfilename] [hostname hostIP]\n", pname);
-	printf("\t-s                  Suppress prompt for enter\n");
-	printf("\t-h                  Print usage\n");
-	printf("\t-L servername       Set %%L macro to servername\n");
-	printf("\t-t encoding         Print parameters with encoding\n");
-	printf("\tconfigfilename      Configuration file to test\n");
-	printf("\thostname hostIP.    Hostname and Host IP address to test\n");
-	printf("\t                    against \"host allow\" and \"host deny\"\n");
-	printf("\n");
-}
-
-
 int main(int argc, char *argv[])
 {
-  extern char *optarg;
-  extern int optind;
-  extern fstring local_machine;
-  pstring configfile;
-  int opt;
-  int s;
-  BOOL silent_mode = False;
-  int ret = 0;
-  pstring term_code;
+	extern char *optarg;
+	extern int optind;
+	extern fstring local_machine;
+	const char *config_file = dyn_CONFIGFILE;
+	int s;
+	BOOL silent_mode = False;
+	int ret = 0;
+	int opt;
+	poptContext pc;
+	static char *term_code = "";
+	static char *new_local_machine = local_machine;
+	const char *cname;
+	const char *caddr;
 
-  *term_code = 0;
+	struct poptOption long_options[] = {
+		POPT_AUTOHELP
+		{"suppress-prompt", 's', POPT_ARG_VAL, &silent_mode, 1, "Suppress prompt for enter"},
+		{"server", 'L',POPT_ARG_STRING, &new_local_machine, 0, "Set %%L macro to servername\n"},
+		{"encoding", 't', POPT_ARG_STRING, &term_code, 0, "Print parameters with encoding"},
+		{0,0,0,0}
+	};
 
-  setup_logging(argv[0],True);
-  
-  while ((opt = getopt(argc, argv,"shL:t:")) != EOF) {
-  switch (opt) {
-    case 's':
-      silent_mode = True;
-      break;
-    case 'L':
-      fstrcpy(local_machine,optarg);
-      break;
-    case 'h':
-      usage(argv[0]);
-      exit(0);
-      break;
-    case 't':
-      pstrcpy(term_code,optarg);
-      break;
-    default:
-      printf("Incorrect program usage\n");
-      usage(argv[0]);
-      exit(1);
-      break;
-    }
-  }
+	pc = poptGetContext(NULL, argc, (const char **) argv, long_options, 
+						POPT_CONTEXT_KEEP_FIRST);
 
-  argc += (1 - optind);
+	while((opt = poptGetNextOpt(pc)) != -1);
 
-  if ((argc == 1) || (argc == 3))
-    pstrcpy(configfile, dyn_CONFIGFILE);
-  else if ((argc == 2) || (argc == 4))
-    pstrcpy(configfile,argv[optind]);
+	setup_logging(poptGetArg(pc), True);
 
-  dbf = x_stdout;
-  DEBUGLEVEL = 2;
-  AllowDebugChange = False;
+	if (poptPeekArg(pc)) 
+		config_file = poptGetArg(pc);
 
-  printf("Load smb config files from %s\n",configfile);
+	cname = poptGetArg(pc);
+	caddr = poptGetArg(pc);
 
-  if (!lp_load(configfile,False,True,False)) {
-      printf("Error loading services.\n");
-      return(1);
-  }
+	fstrcpy(local_machine,new_local_machine);
 
-  printf("Loaded services file OK.\n");
+	dbf = x_stdout;
+	DEBUGLEVEL = 2;
+	AllowDebugChange = False;
 
-  ret = do_global_checks();
+	printf("Load smb config files from %s\n",config_file);
 
-  for (s=0;s<1000;s++) {
-    if (VALID_SNUM(s))
-      if (strlen(lp_servicename(s)) > 8) {
-        printf("WARNING: You have some share names that are longer than 8 chars\n");
-        printf("These may give errors while browsing or may not be accessible\nto some older clients\n");
-        break;
-      }
-  }
+	if (!lp_load(config_file,False,True,False)) {
+		printf("Error loading services.\n");
+		return(1);
+	}
 
-  for (s=0;s<1000;s++) {
-    if (VALID_SNUM(s)) {
-      char **deny_list = lp_hostsdeny(s);
-      char **allow_list = lp_hostsallow(s);
-      int i;
-      if(deny_list) {
-        for (i=0; deny_list[i]; i++) {
-          char *hasstar = strchr_m(deny_list[i], '*');
-          char *hasquery = strchr_m(deny_list[i], '?');
-          if(hasstar || hasquery) {
-            printf("Invalid character %c in hosts deny list (%s) for service %s.\n",
-                 hasstar ? *hasstar : *hasquery, deny_list[i], lp_servicename(s) );
-	  }
-        }
-      }
+	printf("Loaded services file OK.\n");
 
-      if(allow_list) {
-        for (i=0; allow_list[i]; i++) {
-          char *hasstar = strchr_m(allow_list[i], '*');
-          char *hasquery = strchr_m(allow_list[i], '?');
-          if(hasstar || hasquery) {
-            printf("Invalid character %c in hosts allow list (%s) for service %s.\n",
-                 hasstar ? *hasstar : *hasquery, allow_list[i], lp_servicename(s) );
-	  }
-        }
-      }
+	ret = do_global_checks();
 
-      if(lp_level2_oplocks(s) && !lp_oplocks(s)) {
-        printf("Invalid combination of parameters for service %s. \
-Level II oplocks can only be set if oplocks are also set.\n",
-               lp_servicename(s) );
-      }
-    }
-  }
+	for (s=0;s<1000;s++) {
+		if (VALID_SNUM(s))
+			if (strlen(lp_servicename(s)) > 8) {
+				printf("WARNING: You have some share names that are longer than 8 chars\n");
+				printf("These may give errors while browsing or may not be accessible\nto some older clients\n");
+				break;
+			}
+	}
 
-  if (argc < 3) {
-    if (!silent_mode) {
-      printf("Press enter to see a dump of your service definitions\n");
-      fflush(stdout);
-      getc(stdin);
-    }
-    lp_dump(stdout,True, lp_numservices());
-  }
-  
-  if (argc >= 3) {
-    char *cname;
-    char *caddr;
-      
-    if (argc == 3) {
-      cname = argv[optind];
-      caddr = argv[optind+1];
-    } else {
-      cname = argv[optind+1];
-      caddr = argv[optind+2];
-    }
+	for (s=0;s<1000;s++) {
+		if (VALID_SNUM(s)) {
+			char **deny_list = lp_hostsdeny(s);
+			char **allow_list = lp_hostsallow(s);
+			int i;
+			if(deny_list) {
+				for (i=0; deny_list[i]; i++) {
+					char *hasstar = strchr_m(deny_list[i], '*');
+					char *hasquery = strchr_m(deny_list[i], '?');
+					if(hasstar || hasquery) {
+						printf("Invalid character %c in hosts deny list (%s) for service %s.\n",
+							   hasstar ? *hasstar : *hasquery, deny_list[i], lp_servicename(s) );
+					}
+				}
+			}
 
-    /* this is totally ugly, a real `quick' hack */
-    for (s=0;s<1000;s++) {
-      if (VALID_SNUM(s)) {		 
-        if (allow_access(lp_hostsdeny(s),lp_hostsallow(s),cname,caddr)) {
-          printf("Allow connection from %s (%s) to %s\n",
-                 cname,caddr,lp_servicename(s));
-        } else {
-          printf("Deny connection from %s (%s) to %s\n",
-                 cname,caddr,lp_servicename(s));
-        }
-      }
-    }
-  }
-  return(ret);
+			if(allow_list) {
+				for (i=0; allow_list[i]; i++) {
+					char *hasstar = strchr_m(allow_list[i], '*');
+					char *hasquery = strchr_m(allow_list[i], '?');
+					if(hasstar || hasquery) {
+						printf("Invalid character %c in hosts allow list (%s) for service %s.\n",
+							   hasstar ? *hasstar : *hasquery, allow_list[i], lp_servicename(s) );
+					}
+				}
+			}
+
+			if(lp_level2_oplocks(s) && !lp_oplocks(s)) {
+				printf("Invalid combination of parameters for service %s. \
+					   Level II oplocks can only be set if oplocks are also set.\n",
+					   lp_servicename(s) );
+			}
+		}
+	}
+
+	if (!cname) {
+		if (!silent_mode) {
+			printf("Press enter to see a dump of your service definitions\n");
+			fflush(stdout);
+			getc(stdin);
+		}
+		lp_dump(stdout,True, lp_numservices());
+	}
+
+	if(cname && caddr){
+		/* this is totally ugly, a real `quick' hack */
+		for (s=0;s<1000;s++) {
+			if (VALID_SNUM(s)) {		 
+				if (allow_access(lp_hostsdeny(s), lp_hostsallow(s), cname, caddr)) {
+					printf("Allow connection from %s (%s) to %s\n",
+						   cname,caddr,lp_servicename(s));
+				} else {
+					printf("Deny connection from %s (%s) to %s\n",
+						   cname,caddr,lp_servicename(s));
+				}
+			}
+		}
+	}
+	return(ret);
 }
