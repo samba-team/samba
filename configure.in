@@ -4,6 +4,9 @@ AC_PREREQ(2.14.-1.1)dnl 2.14a
 AC_INIT(heimdal, 0.3a, heimdal-bugs@pdc.kth.se)
 AM_CONFIG_HEADER(include/config.h)
 
+dnl Checks for programs.
+AC_PROG_CC_STDC
+
 AM_INIT_AUTOMAKE(heimdal,0.3a)
 
 AC_PREFIX_DEFAULT(/usr/heimdal)
@@ -43,9 +46,6 @@ case "$host" in
 esac
 
 test -z "$CFLAGS" && CFLAGS="-g"
-
-dnl Checks for programs.
-AC_PROG_CC_STDC
 
 AC_OBJEXT
 AC_EXEEXT
@@ -535,8 +535,9 @@ AC_HAVE_STRUCT_FIELD(struct sockaddr, sa_len, [#include <sys/types.h>
 #include <sys/socket.h>])
 
 
-AC_GROK_TYPES(int8_t int16_t int32_t int64_t)
-AC_GROK_TYPES(u_int8_t u_int16_t u_int32_t u_int64_t)
+AC_GROK_TYPES([int8_t int16_t int32_t int64_t \
+	u_int8_t u_int16_t u_int32_t u_int64_t \
+	uint8_t uint16_t uint32_t uint64_t])
 
 dnl
 dnl crypto functions tests
