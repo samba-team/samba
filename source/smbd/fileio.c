@@ -142,6 +142,12 @@ static ssize_t real_write_file(files_struct *fsp,char *data,SMB_OFF_T pos, size_
 
 		if (fsp->pending_modtime) {
 			set_filetime(fsp->conn, fsp->fsp_name, fsp->pending_modtime);
+
+			/* If we didn't get the "set modtime" call ourselves, we must
+			   store the last write time to restore on close. JRA. */
+			if (!fsp->pending_modtime_owner) {
+				fsp->last_write_time = time(NULL);
+			}
 		}
 
 /* Yes - this is correct - writes don't update this. JRA. */

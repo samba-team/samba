@@ -379,6 +379,7 @@ files_struct *file_find_print(void)
 
 /****************************************************************************
  Set a pending modtime across all files with a given dev/ino pair.
+ Record the owner of that modtime.
 ****************************************************************************/
 
 void fsp_set_pending_modtime(files_struct *tfsp, time_t pmod)
@@ -394,8 +395,11 @@ void fsp_set_pending_modtime(files_struct *tfsp, time_t pmod)
 				fsp->dev == tfsp->dev &&
 				fsp->inode == tfsp->inode ) {
 			fsp->pending_modtime = pmod;
+			fsp->pending_modtime_owner = False;
 		}
 	}
+
+	tfsp->pending_modtime_owner = True;
 }
 
 /****************************************************************************
