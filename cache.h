@@ -1,3 +1,6 @@
+#ifndef __CACHE_H__
+#define __CACHE_H__
+
 krb5_error_code
 krb5_cc_resolve (krb5_context context,
 		 char *residual,
@@ -70,3 +73,5 @@ krb5_error_code
 krb5_cc_set_flags (krb5_context context,
 		   krb5_ccache id,
 		   krb5_flags flags);
+
+#endif /* __CACHE_H__ */
