@@ -63,19 +63,15 @@ ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
 
 #if WITH_MMAP
   if (fsp->mmap_ptr) {
-    SMB_OFF_T num = (fsp->mmap_size > pos) ? (fsp->mmap_size - pos) : -1;
-    num = MIN(n,num);
-#ifdef LARGE_SMB_OFF_T
-    if ((num > 0) && (num < (1LL<<(sizeof(size_t)*8)))) {
-#else /* LARGE_SMB_OFF_T */
-    if (num > 0) {
-#endif /* LARGE_SMB_OFF_T */
-      memcpy(data,fsp->mmap_ptr+pos,num);
-      data += num;
-      pos += num;
-      n -= num;
-      ret += num;
-    }
+	  SMB_OFF_T num = (fsp->mmap_size > pos) ? (fsp->mmap_size - pos) : -1;
+	  num = MIN(n,num);
+	  if (num > 0) {
+		  memcpy(data,fsp->mmap_ptr+pos,num);
+		  data += num;
+		  pos += num;
+		  n -= num;
+		  ret += num;
+	  }
   }
 #endif
 

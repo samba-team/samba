@@ -489,12 +489,8 @@ static int get_lanman2_dir_entry(connection_struct *conn,
       put_long_date(p,adate); p += 8;
       put_long_date(p,mdate); p += 8;
       put_long_date(p,mdate); p += 8;
-      SIVAL(p,0,size);
-      SIVAL(p,8,size);
-#ifdef LARGE_SMB_OFF_T
-      SIVAL(p,4,size >> 32);
-      SIVAL(p,12,size >> 32);
-#endif /* LARGE_SMB_OFF_T */
+      SOFF_T(p,0,size);
+      SOFF_T(p,8,size);
       p += 16;
       SIVAL(p,0,nt_extmode); p += 4;
       SIVAL(p,0,strlen(fname)); p += 4;
@@ -522,12 +518,8 @@ static int get_lanman2_dir_entry(connection_struct *conn,
       put_long_date(p,adate); p += 8;
       put_long_date(p,mdate); p += 8;
       put_long_date(p,mdate); p += 8;
-      SIVAL(p,0,size);
-      SIVAL(p,8,size);
-#ifdef LARGE_SMB_OFF_T
-      SIVAL(p,4,size >> 32);
-      SIVAL(p,12,size >> 32);
-#endif /* LARGE_SMB_OFF_T */
+      SOFF_T(p,0,size);
+      SOFF_T(p,8,size);
       p += 16;
       SIVAL(p,0,nt_extmode); p += 4;
       SIVAL(p,0,strlen(fname)); p += 4;
@@ -545,12 +537,8 @@ static int get_lanman2_dir_entry(connection_struct *conn,
       put_long_date(p,adate); p += 8;
       put_long_date(p,mdate); p += 8;
       put_long_date(p,mdate); p += 8;
-      SIVAL(p,0,size); 
-      SIVAL(p,8,size);
-#ifdef LARGE_SMB_OFF_T
-      SIVAL(p,4,size >> 32);
-      SIVAL(p,12,size >> 32);
-#endif /* LARGE_SMB_OFF_T */
+      SOFF_T(p,0,size); 
+      SOFF_T(p,8,size);
       p += 16;
       SIVAL(p,0,nt_extmode); p += 4;
       SIVAL(p,0,strlen(fname)); p += 4;
@@ -1349,12 +1337,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 
     case SMB_QUERY_FILE_STANDARD_INFO:
       data_size = 22;
-      SIVAL(pdata,0,size);
-      SIVAL(pdata,8,size);
-#ifdef LARGE_SMB_OFF_T
-      SIVAL(pdata,4,size>>32);
-      SIVAL(pdata,12,size>>32);
-#endif /* LARGE_SMB_OFF_T */
+      SOFF_T(pdata,0,size);
+      SOFF_T(pdata,8,size);
       SIVAL(pdata,16,sbuf.st_nlink);
       CVAL(pdata,20) = 0;
       CVAL(pdata,21) = (mode&aDIR)?1:0;
@@ -1392,10 +1376,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
     case SMB_QUERY_FILE_ALLOCATION_INFO:
     case SMB_QUERY_FILE_END_OF_FILEINFO:
       data_size = 8;
-      SIVAL(pdata,0,size);
-#ifdef LARGE_SMB_OFF_T
-      SIVAL(pdata,4,size >> 32);
-#endif /* LARGE_SMB_OFF_T */
+      SOFF_T(pdata,0,size);
       break;
 
     case SMB_QUERY_FILE_ALL_INFO:
@@ -1405,12 +1386,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       put_long_date(pdata+24,sbuf.st_mtime); /* change time */
       SIVAL(pdata,32,mode);
       pdata += 40;
-      SIVAL(pdata,0,size);
-      SIVAL(pdata,8,size);
-#ifdef LARGE_SMB_OFF_T
-      SIVAL(pdata,4,size >> 32);
-      SIVAL(pdata,12,size >> 32);
-#endif /* LARGE_SMB_OFF_T */
+      SOFF_T(pdata,0,size);
+      SOFF_T(pdata,8,size);
       SIVAL(pdata,16,sbuf.st_nlink);
       CVAL(pdata,20) = 0;
       CVAL(pdata,21) = (mode&aDIR)?1:0;

@@ -541,13 +541,15 @@ static void open_file(files_struct *fsp,connection_struct *conn,
   /* mmap it if read-only */
   if (!fsp->can_write) {
 	  fsp->mmap_size = file_size(fname);
-	  fsp->mmap_ptr = (char *)mmap(NULL,fsp->mmap_size,
-				       PROT_READ,MAP_SHARED,fsp->fd_ptr->fd,0);
+	  if (fsp->mmap_size < MAX_MMAP_SIZE) {
+		  fsp->mmap_ptr = (char *)mmap(NULL,fsp->mmap_size,
+					       PROT_READ,MAP_SHARED,fsp->fd_ptr->fd,0);
 
-	  if (fsp->mmap_ptr == (char *)-1 || !fsp->mmap_ptr) {
-		  DEBUG(3,("Failed to mmap() %s - %s\n",
-			   fname,strerror(errno)));
-		  fsp->mmap_ptr = NULL;
+		  if (fsp->mmap_ptr == (char *)-1 || !fsp->mmap_ptr) {
+			  DEBUG(3,("Failed to mmap() %s - %s\n",
+				   fname,strerror(errno)));
+			  fsp->mmap_ptr = NULL;
+		  }
 	  }
   }
 #endif
