@@ -1,5 +1,11 @@
 Wed Jul 16 03:37:41 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* lib/krb5/send_to_kdc.c: Check for NULL return from
+ 	gethostbyname.
+
+	* lib/krb5/set_default_realm.c: Try to get realm of local host if
+ 	no default realm is available.
+
 	* Remove non ASN.1 principal code.
 
 Wed Jul 16 03:17:30 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
