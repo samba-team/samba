@@ -786,6 +786,202 @@ void display_srv_file_info_ctr(FILE *out_hnd, enum action_type action,
 }
 
 /****************************************************************************
+sess info level 0 display function
+****************************************************************************/
+void display_sess_info_0(FILE *out_hnd, enum action_type action,
+		SESS_INFO_0 *info0, SESS_INFO_0_STR *str0)
+{
+	if (info0 == NULL || str0 == NULL)
+	{
+		return;
+	}
+
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			fprintf(out_hnd, "Session Info Level 0:\n");
+
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			fstring name;
+
+			unistr2_to_ascii(name, &str0->uni_name,
+					 sizeof(name)-1);
+
+			fprintf(out_hnd, "\tname:\t%s\n", name);
+
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			fprintf(out_hnd, "\n");
+			break;
+		}
+	}
+
+}
+
+/****************************************************************************
+sess info level 1 display function
+****************************************************************************/
+void display_sess_info_1(FILE *out_hnd, enum action_type action,
+		SESS_INFO_1 *info1, SESS_INFO_1_STR *str1)
+{
+	if (info1 == NULL || str1 == NULL)
+	{
+		return;
+	}
+
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			fprintf(out_hnd, "Session Info Level 1:\n");
+
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			fstring name;
+			fstring user_name;
+
+			unistr2_to_ascii(user_name, &str1->uni_user,
+					 sizeof(user_name)-1);
+			unistr2_to_ascii(name, &str1->uni_name,
+					 sizeof(name)-1);
+
+			fprintf(out_hnd, "\tname:\t%s\n", name);
+
+			fprintf(out_hnd, "\topen :\t%d\n", info1->num_opens);
+			fprintf(out_hnd, "\ttime :\t%d\n", info1->open_time);
+			fprintf(out_hnd, "\tidle :\t%d\n", info1->idle_time);
+			fprintf(out_hnd, "\tflags:\t%d\n", info1->user_flags);
+
+			fprintf(out_hnd, "\tuser :\t%s\n", user_name);
+
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			fprintf(out_hnd, "\n");
+			break;
+		}
+	}
+
+}
+
+/****************************************************************************
+sess info level 0 container display function
+****************************************************************************/
+void display_srv_sess_info_0_ctr(FILE *out_hnd, enum action_type action,
+				SRV_SESS_INFO_0 *ctr)
+{
+	if (ctr == NULL)
+	{
+		fprintf(out_hnd, "display_srv_sess_info_0_ctr: unavailable due to an internal error\n");
+		return;
+	}
+
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			int i;
+
+			for (i = 0; i < ctr->num_entries_read; i++)
+			{
+				display_sess_info_0(out_hnd, ACTION_HEADER   , &(ctr->info_0[i]), &(ctr->info_0_str[i]));
+				display_sess_info_0(out_hnd, ACTION_ENUMERATE, &(ctr->info_0[i]), &(ctr->info_0_str[i]));
+				display_sess_info_0(out_hnd, ACTION_FOOTER   , &(ctr->info_0[i]), &(ctr->info_0_str[i]));
+			}
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			break;
+		}
+	}
+}
+
+/****************************************************************************
+sess info level 1 container display function
+****************************************************************************/
+void display_srv_sess_info_1_ctr(FILE *out_hnd, enum action_type action,
+				SRV_SESS_INFO_1 *ctr)
+{
+	if (ctr == NULL)
+	{
+		fprintf(out_hnd, "display_srv_sess_info_1_ctr: unavailable due to an internal error\n");
+		return;
+	}
+
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			int i;
+
+			for (i = 0; i < ctr->num_entries_read; i++)
+			{
+				display_sess_info_1(out_hnd, ACTION_HEADER   , &(ctr->info_1[i]), &(ctr->info_1_str[i]));
+				display_sess_info_1(out_hnd, ACTION_ENUMERATE, &(ctr->info_1[i]), &(ctr->info_1_str[i]));
+				display_sess_info_1(out_hnd, ACTION_FOOTER   , &(ctr->info_1[i]), &(ctr->info_1_str[i]));
+			}
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			break;
+		}
+	}
+}
+
+/****************************************************************************
+sess info container display function
+****************************************************************************/
+void display_srv_sess_info_ctr(FILE *out_hnd, enum action_type action,
+				SRV_SESS_INFO_CTR *ctr)
+{
+	if (ctr == NULL || ctr->ptr_sess_ctr == 0)
+	{
+		fprintf(out_hnd, "display_srv_sess_info_ctr: unavailable due to an internal error\n");
+		return;
+	}
+
+	switch (ctr->switch_value)
+	{
+		case 0:
+		{
+			display_srv_sess_info_0_ctr(out_hnd, action,
+			                   &(ctr->sess.info0));
+			break;
+		}
+		case 1:
+		{
+			display_srv_sess_info_1_ctr(out_hnd, action,
+			                   &(ctr->sess.info1));
+			break;
+		}
+		default:
+		{
+			fprintf(out_hnd, "display_srv_sess_info_ctr: Unknown Info Level\n");
+			break;
+		}
+	}
+}
+
+/****************************************************************************
  print browse connection on a host
  ****************************************************************************/
 void display_server(FILE *out_hnd, enum action_type action,

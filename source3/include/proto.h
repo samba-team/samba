@@ -562,6 +562,7 @@ char *client_addr(int fd);
 
 BOOL get_connection_status(struct connect_record **crec,
 				uint32 *connection_count);
+BOOL get_session_count(struct connect_record **srec,uint32 *session_count);
 
 /*The following definitions come from  lib/util_str.c  */
 
@@ -3225,6 +3226,16 @@ void display_srv_file_info_3_ctr(FILE *out_hnd, enum action_type action,
 				SRV_FILE_INFO_3 *ctr);
 void display_srv_file_info_ctr(FILE *out_hnd, enum action_type action,
 				SRV_FILE_INFO_CTR *ctr);
+void display_sess_info_0(FILE *out_hnd, enum action_type action,
+		SESS_INFO_0 *info0, SESS_INFO_0_STR *str0);
+void display_sess_info_1(FILE *out_hnd, enum action_type action,
+		SESS_INFO_1 *info1, SESS_INFO_1_STR *str1);
+void display_srv_sess_info_0_ctr(FILE *out_hnd, enum action_type action,
+				SRV_SESS_INFO_0 *ctr);
+void display_srv_sess_info_1_ctr(FILE *out_hnd, enum action_type action,
+				SRV_SESS_INFO_1 *ctr);
+void display_srv_sess_info_ctr(FILE *out_hnd, enum action_type action,
+				SRV_SESS_INFO_CTR *ctr);
 void display_server(FILE *out_hnd, enum action_type action,
 				char *sname, uint32 type, char *comment);
 void display_share(FILE *out_hnd, enum action_type action,

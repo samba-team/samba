@@ -258,6 +258,13 @@ void cmd_srv_enum_sess(struct client_info *info)
 	res = res ? do_srv_net_srv_sess_enum(smb_cli, nt_pipe_fnum,
 				dest_srv, NULL, NULL, info_level, &ctr, 0x1000, &hnd) : False;
 
+	if (res)
+	{
+		display_srv_sess_info_ctr(out_hnd, ACTION_HEADER   , &ctr);
+		display_srv_sess_info_ctr(out_hnd, ACTION_ENUMERATE, &ctr);
+		display_srv_sess_info_ctr(out_hnd, ACTION_FOOTER   , &ctr);
+	}
+
 	/* close the session */
 	cli_nt_session_close(smb_cli, nt_pipe_fnum);
 
