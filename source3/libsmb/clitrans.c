@@ -143,6 +143,9 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 			if (!cli_send_smb(cli)) {
 				return False;
 			}
+
+			/* Ensure we use the same mid for the secondaries. */
+			cli->mid = mid;
 			
 			tot_data += this_ldata;
 			tot_param += this_lparam;
@@ -445,6 +448,9 @@ BOOL cli_send_nt_trans(struct cli_state *cli,
 			if (!cli_send_smb(cli)) {
 				return False;
 			}
+			
+			/* Ensure we use the same mid for the secondaries. */
+			cli->mid = mid;
 			
 			tot_data += this_ldata;
 			tot_param += this_lparam;
