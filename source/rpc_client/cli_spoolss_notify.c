@@ -222,6 +222,9 @@ done:
 	return result;
 }
 
+/*********************************************************************
+ *********************************************************************/
+ 
 WERROR cli_spoolss_rffpcnex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			    POLICY_HND *pol, uint32 flags, uint32 options,
 			    char *localmachine, uint32 printerlocal,
