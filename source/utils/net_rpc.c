@@ -1849,15 +1849,9 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid, struct cli
 	{
 		SAM_USERINFO_CTR ctr;
 		SAM_USER_INFO_24 p24;
-		fstring ucs2_trust_password;
-		int ucs2_pw_len;
 		uchar pwbuf[516];
 
-		ucs2_pw_len = push_ucs2(NULL, ucs2_trust_password, argv[1],
-					sizeof(ucs2_trust_password), 0);
-
-		encode_pw_buffer((char *)pwbuf, ucs2_trust_password,
-				 ucs2_pw_len);
+		encode_pw_buffer((char *)pwbuf, argv[1], STR_UNICODE);
 
 		ZERO_STRUCT(ctr);
 		ZERO_STRUCT(p24);

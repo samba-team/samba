@@ -508,18 +508,12 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 
 	/* Get sam handle */
 
-	if ( NT_STATUS_IS_ERR(result = cm_get_sam_handle(contact_domain, &hnd)) ) {
+	if (!NT_STATUS_IS_OK(result = cm_get_sam_handle(contact_domain, &hnd)) ) {
 		DEBUG(1, ("could not get SAM handle on DC for %s\n", domain));
 		goto done;
 	}
 
-	if (!cli_oem_change_password(hnd->cli, user, newpass, oldpass)) {
- 		DEBUG(1, ("password change failed for user %s/%s\n", domain, 
- 			  user));
-		result = NT_STATUS_WRONG_PASSWORD;
-	} else {
-		result = NT_STATUS_OK;
- 	}
+	result = cli_samr_chgpasswd_user(hnd->cli, mem_ctx, user, newpass, oldpass);
 
 done:    
 	state->response.data.auth.nt_status = NT_STATUS_V(result);

@@ -2815,7 +2815,7 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, DOM_SID *sid)
 
 	acct_ctrl = pdb_get_acct_ctrl(pwd);
 
-	if (!decode_pw_buffer((char*)id23->pass, plaintext_buf, 256, &len)) {
+	if (!decode_pw_buffer((char*)id23->pass, plaintext_buf, 256, &len, STR_UNICODE)) {
 		pdb_free_sam(&pwd);
 		return False;
  	}
@@ -2887,7 +2887,7 @@ static BOOL set_user_info_pw(char *pass, DOM_SID *sid)
 
 	ZERO_STRUCT(plaintext_buf);
  
-	if (!decode_pw_buffer(pass, plaintext_buf, 256, &len)) {
+	if (!decode_pw_buffer(pass, plaintext_buf, 256, &len, STR_UNICODE)) {
 		pdb_free_sam(&pwd);
 		return False;
  	}

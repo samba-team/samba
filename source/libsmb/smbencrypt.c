@@ -70,20 +70,29 @@ void E_md4hash(const char *passwd, uchar p16[16])
  * Creates the DES forward-only Hash of the users password in DOS ASCII charset
  * @param passwd password in 'unix' charset.
  * @param p16 return password hashed with DES, caller allocated 16 byte buffer
+ * @return False if password was > 14 characters, and therefore may be incorrect, otherwise True
+ * @note p16 is filled in regardless
  */
  
-void E_deshash(const char *passwd, uchar p16[16])
+BOOL E_deshash(const char *passwd, uchar p16[16])
 {
+	BOOL ret = True;
 	fstring dospwd; 
 	ZERO_STRUCT(dospwd);
 	
 	/* Password must be converted to DOS charset - null terminated, uppercase. */
 	push_ascii(dospwd, passwd, sizeof(dospwd), STR_UPPER|STR_TERMINATE);
-
+       
 	/* Only the fisrt 14 chars are considered, password need not be null terminated. */
 	E_P16((const unsigned char *)dospwd, p16);
 
+	if (strlen(dospwd) > 14) {
+		ret = False;
+	}
+
 	ZERO_STRUCT(dospwd);	
+
+	return ret;
 }
 
 /**
@@ -219,24 +228,7 @@ void SMBNTencrypt(const char *passwd, uchar *c8, uchar *p24)
 
 BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[16], BOOL unicode)
 {
-	int new_pw_len = strlen(passwd) * (unicode ? 2 : 1);
-
-	if (new_pw_len > 512)
-	{
-		DEBUG(0,("make_oem_passwd_hash: new password is too long.\n"));
-		return False;
-	}
-
-	/*
-	 * Now setup the data area.
-	 * We need to generate a random fill
-	 * for this area to make it harder to
-	 * decrypt. JRA.
-	 */
-	generate_random_buffer((unsigned char *)data, 516, False);
-	push_string(NULL, &data[512 - new_pw_len], passwd, new_pw_len, 
-		    STR_NOALIGN | (unicode?STR_UNICODE:STR_ASCII));
-	SIVAL(data, 512, new_pw_len);
+	encode_pw_buffer(data, passwd, (unicode?STR_UNICODE:STR_ASCII));
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("make_oem_passwd_hash\n"));
@@ -473,23 +465,31 @@ BOOL SMBNTLMv2encrypt(const char *user, const char *domain, const char *password
 }
 
 /***********************************************************
- encode a password buffer.  The caller gets to figure out 
- what to put in it.
+ encode a password buffer with a unicode password.  The buffer
+ is filled with random data to make it harder to attack.
 ************************************************************/
-BOOL encode_pw_buffer(char buffer[516], char *new_pw, int new_pw_length)
+BOOL encode_pw_buffer(char buffer[516], const char *password, int string_flags)
 {
-	generate_random_buffer((unsigned char *)buffer, 516, True);
+	uchar new_pw[512];
+	size_t new_pw_len;
 
-	memcpy(&buffer[512 - new_pw_length], new_pw, new_pw_length);
+	new_pw_len = push_string(NULL, new_pw,
+				 password, 
+				 sizeof(new_pw), string_flags);
+	
+	memcpy(&buffer[512 - new_pw_len], new_pw, new_pw_len);
+
+	generate_random_buffer((unsigned char *)buffer, 512 - new_pw_len, True);
 
 	/* 
 	 * The length of the new password is in the last 4 bytes of
 	 * the data buffer.
 	 */
-	SIVAL(buffer, 512, new_pw_length);
-
+	SIVAL(buffer, 512, new_pw_len);
+	ZERO_STRUCT(new_pw);
 	return True;
 }
+
 
 /***********************************************************
  decode a password buffer
@@ -497,13 +497,14 @@ BOOL encode_pw_buffer(char buffer[516], char *new_pw, int new_pw_length)
  returned password including termination.
 ************************************************************/
 BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
-		      int new_pwrd_size, uint32 *new_pw_len)
+		      int new_pwrd_size, uint32 *new_pw_len,
+		      int string_flags)
 {
 	int byte_len=0;
 
 	/*
 	  Warning !!! : This function is called from some rpc call.
-	  The password IN the buffer is a UNICODE string.
+	  The password IN the buffer may be a UNICODE string.
 	  The password IN new_pwrd is an ASCII string
 	  If you reuse that code somewhere else check first.
 	*/
@@ -516,15 +517,16 @@ BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
 	dump_data(100, in_buffer, 516);
 #endif
 
-	/* Password cannot be longer than 128 characters */
-	if ( (byte_len < 0) || (byte_len > new_pwrd_size - 1)) {
+	/* Password cannot be longer than the size of the password buffer */
+	if ( (byte_len < 0) || (byte_len > 512)) {
 		DEBUG(0, ("decode_pw_buffer: incorrect password length (%d).\n", byte_len));
 		DEBUG(0, ("decode_pw_buffer: check that 'encrypt passwords = yes'\n"));
 		return False;
 	}
 
-	/* decode into the return buffer.  Buffer must be a pstring */
- 	*new_pw_len = pull_string(NULL, new_pwrd, &in_buffer[512 - byte_len], new_pwrd_size, byte_len, STR_UNICODE);
+	/* decode into the return buffer.  Buffer length supplied */
+ 	*new_pw_len = pull_string(NULL, new_pwrd, &in_buffer[512 - byte_len], new_pwrd_size, 
+				  byte_len, string_flags);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("decode_pw_buffer: new_pwrd: "));
