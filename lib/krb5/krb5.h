@@ -85,7 +85,7 @@ typedef enum krb5_address_type {
 
 enum {
   AP_OPTS_USE_SESSION_KEY = 1,
-  AP_OPTS_MUTUAL_REQUIRED = 2,
+  AP_OPTS_MUTUAL_REQUIRED = 2
 };
 
 typedef HostAddress krb5_address;
