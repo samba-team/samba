@@ -157,17 +157,19 @@ static BOOL check_plaintext_auth(const char *user, const char *pass, BOOL stdout
 			d_printf("Reading winbind reply failed! (0x01)\n");
 		}
 		
-		d_printf("%s (0x%x)\n", 
+		d_printf("%s: %s (0x%x)\n", 
 			 response.data.auth.nt_status_string, 
+			 response.data.auth.error_string, 
 			 response.data.auth.nt_status);
 	} else {
 		if ((result != NSS_STATUS_SUCCESS) && (response.data.auth.nt_status == 0)) {
 			DEBUG(1, ("Reading winbind reply failed! (0x01)\n"));
 		}
 		
-		DEBUG(3, ("%s (0x%x)\n", 
-			 response.data.auth.nt_status_string, 
-			 response.data.auth.nt_status));		
+		DEBUG(3, ("%s: %s (0x%x)\n", 
+			  response.data.auth.nt_status_string, 
+			  response.data.auth.error_string,
+			  response.data.auth.nt_status));		
 	}
 		
         return (result == NSS_STATUS_SUCCESS);

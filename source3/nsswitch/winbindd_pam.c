@@ -140,7 +140,12 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
         
 	uni_group_cache_store_netlogon(mem_ctx, &info3);
 done:
-
+	
+	/* give us a more useful (more correct?) error code */
+	if ((NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND) || (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL)))) {
+		result = NT_STATUS_NO_LOGON_SERVERS;
+	}
+	
 	state->response.data.auth.nt_status = NT_STATUS_V(result);
 	fstrcpy(state->response.data.auth.nt_status_string, nt_errstr(result));
 	fstrcpy(state->response.data.auth.error_string, get_friendly_nt_error_msg(result));
@@ -176,6 +181,8 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 
 	if (!state->privilaged) {
 		DEBUG(2, ("winbindd_pam_auth_crap: non-privilaged access denied!\n"));
+		/* send a better message than ACCESS_DENIED */
+		push_utf8_fstring(state->response.data.auth.error_string, "winbind client not authorized to use winbindd_pam_auth_crap");
 		result =  NT_STATUS_ACCESS_DENIED;
 		goto done;
 	}
@@ -282,15 +289,21 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 			memcpy(state->response.data.auth.nt_session_key, info3.user_sess_key, sizeof(state->response.data.auth.nt_session_key) /* 16 */);
 		}
 		if (state->request.data.auth_crap.flags & WINBIND_PAM_LMKEY) {
-			memcpy(state->response.data.auth.first_8_lm_hash, info3.padding, sizeof(state->response.data.auth.nt_session_key) /* 16 */);
+			memcpy(state->response.data.auth.first_8_lm_hash, info3.padding, sizeof(state->response.data.auth.first_8_lm_hash) /* 8 */);
 		}
 	}
 
 done:
 
+	/* give us a more useful (more correct?) error code */
+	if ((NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND) || (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL)))) {
+		result = NT_STATUS_NO_LOGON_SERVERS;
+	}
+	
 	state->response.data.auth.nt_status = NT_STATUS_V(result);
 	push_utf8_fstring(state->response.data.auth.nt_status_string, nt_errstr(result));
-	push_utf8_fstring(state->response.data.auth.error_string, nt_errstr(result));
+	if (!*state->response.data.auth.error_string) 
+		push_utf8_fstring(state->response.data.auth.error_string, get_friendly_nt_error_msg(result));
 	state->response.data.auth.pam_error = nt_status_to_pam(result);
 
 	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2, 
