@@ -152,11 +152,14 @@ initialise a client structure
 ****************************************************************************/
 struct cli_state *cli_initialise(struct cli_state *cli)
 {
+        BOOL alloced_cli = False;
+
 	if (!cli) {
 		cli = (struct cli_state *)malloc(sizeof(*cli));
 		if (!cli)
 			return NULL;
 		ZERO_STRUCTP(cli);
+                alloced_cli = True;
 	}
 
 	if (cli->initialised) {
@@ -200,6 +203,9 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 
         safe_free(cli->inbuf);
         safe_free(cli->outbuf);
+
+        if (alloced_cli)
+                safe_free(cli);
 
         return NULL;
 }
