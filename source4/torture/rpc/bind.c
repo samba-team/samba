@@ -53,7 +53,7 @@ BOOL torture_multi_bind(void)
 
 	status = dcerpc_parse_binding(mem_ctx, binding_string, &b);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to parse dcerpc binding '%s'\n", binding_string));
+		printf("Failed to parse dcerpc binding '%s'\n", binding_string);
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -82,21 +82,21 @@ BOOL torture_multi_bind(void)
 
 		status = dcerpc_bind_auth_password(p, pipe_uuid, pipe_version, 
 						   domain, username, password, 
-						   auth_type);
-	} else {    
+						   auth_type,
+						   binding->authservice);
+	} else {
 		status = dcerpc_bind_auth_none(p, pipe_uuid, pipe_version);
 	}
 
 	if (NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("(incorrectly) allowed re-bind to uuid %s - %s\n", 
-			 pipe_uuid, nt_errstr(status)));
+		printf("(incorrectly) allowed re-bind to uuid %s - %s\n", 
+			pipe_uuid, nt_errstr(status));
 		ret = False;
 	} else {
+		printf("\n");
 		ret = True;
 	}
 
-	printf("\n");
-	
 	talloc_free(mem_ctx);
 	torture_rpc_close(p);
 
