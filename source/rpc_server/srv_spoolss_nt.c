@@ -3581,9 +3581,13 @@ uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name, uint32 level,
 	/* convert from UNICODE to ASCII */
 	convert_printer_info(info, &printer, level);
 
-	unistr2_to_ascii(share_name, &((info->info_2)->portname), sizeof(share_name)-1);
+	unistr2_to_ascii(share_name, &((info->info_2)->printername), sizeof(share_name)-1);
 	
 	slprintf(name, sizeof(name)-1, "\\\\%s\\%s", global_myname, share_name);
+
+	/* write the ASCII on disk */
+	if (add_a_printer(printer, level) != 0x0)
+		return ERROR_ACCESS_DENIED;
 
 	create_printer_hnd(handle);
 
@@ -3591,20 +3595,14 @@ uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name, uint32 level,
 
 	if (!set_printer_hnd_printertype(handle, name)) {
 		close_printer_handle(handle);
-		return NT_STATUS_ACCESS_DENIED;
-	}
-	
-	if (!set_printer_hnd_printername(handle, name)) {
-		close_printer_handle(handle);
-		return NT_STATUS_ACCESS_DENIED;
+		return ERROR_ACCESS_DENIED;
 	}
 
-	/* write the ASCII on disk */
-	if (add_a_printer(printer, level) != 0x0) {
+	if (!set_printer_hnd_printername(handle, name)) {
 		close_printer_handle(handle);
-		return NT_STATUS_ACCESS_DENIED;
+		return ERROR_ACCESS_DENIED;
 	}
-	
+
 	return NT_STATUS_NO_PROBLEMO;
 }
 
