@@ -115,6 +115,56 @@ NTSTATUS auth_init_name_to_ntstatus(struct auth_context *auth_context, const cha
 	return NT_STATUS_OK;
 }
 
+/** 
+ * Return a 'fixed' challenge instead of a varaible one.
+ *
+ * The idea of this function is to make packet snifs consistant
+ * with a fixed challenge, so as to aid debugging.
+ *
+ * This module is of no value to end-users.
+ *
+ * This module does not actually authenticate the user, but
+ * just pretenteds to need a specified challenge.  
+ * This module removes *all* security from the challenge-response system
+ *
+ * @return NT_STATUS_UNSUCCESSFUL
+ **/
+
+static NTSTATUS check_fixed_challenge_security(const struct auth_context *auth_context,
+					       void *my_private_data, 
+					       TALLOC_CTX *mem_ctx,
+					       const auth_usersupplied_info *user_info, 
+					       auth_serversupplied_info **server_info)
+{
+	return NT_STATUS_UNSUCCESSFUL;
+}
+
+/****************************************************************************
+ Get the challenge out of a password server.
+****************************************************************************/
+
+static DATA_BLOB auth_get_fixed_challenge(const struct auth_context *auth_context,
+					  void **my_private_data, 
+					  TALLOC_CTX *mem_ctx)
+{
+	const char *challenge = "I am a teapot";   
+	return data_blob(challenge, 8);
+}
+
+
+/** Module initailisation function */
+NTSTATUS auth_init_fixed_challenge(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
+{
+	if (!make_auth_methods(auth_context, auth_method)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	(*auth_method)->auth = check_fixed_challenge_security;
+	(*auth_method)->get_chal = auth_get_fixed_challenge;
+	(*auth_method)->name = "fixed_challenge";
+	return NT_STATUS_OK;
+}
+
 /**
  * Outsorce an auth module to an external loadable .so
  *
