@@ -64,7 +64,7 @@ sub ParseRegFunc($)
 	$res.= "
 	iface.num_methods = DCERPC_" . (uc $interface->{NAME}) . "_CALL_COUNT;
 	GUID_from_string(DCERPC_" . (uc $interface->{NAME}) . "_UUID, &iface.iid);
-	iface.proxy_vtable = talloc_memdup(NULL, &proxy, sizeof(struct dcom_$interface->{NAME}_vtable));
+	iface.proxy_vtable = talloc_memdup(talloc_autofree_context(), &proxy, sizeof(struct dcom_$interface->{NAME}_vtable));
 
 	return dcom_register_interface(&iface);
 }\n\n";
