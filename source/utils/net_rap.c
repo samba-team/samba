@@ -599,7 +599,7 @@ static void long_user_fn(const char *user_name, const char *comment,
 			 const char * home_dir, const char * logon_script, 
 			 void *state)
 {
-	d_printf("%-21.21s %-50.50s\n",
+	d_printf("%-21.21s %s\n",
 		 user_name, comment);
 }
 
@@ -717,7 +717,7 @@ int net_rap_group_usage(int argc, const char **argv)
 static void long_group_fn(const char *group_name, const char *comment,
 			  void *state)
 {
-	d_printf("%-21.21s %-50.50s\n", group_name, comment);
+	d_printf("%-21.21s %s\n", group_name, comment);
 }
 
 static void group_fn(const char *group_name, const char *comment, void *state)
