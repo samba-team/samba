@@ -483,13 +483,8 @@ set to "yes".
 <sect1>
 <title>Still having troubles?</title>
 
-<para>
-Try the mailing list or newsgroup, or use the ethereal utility to
-sniff the problem. The official samba mailing list can be reached at
-<ulink url="mailto:samba@samba.org">samba@samba.org</ulink>. To find 
-out more about samba and how to subscribe to the mailing list check 
-out the samba web page at 
-<ulink url="http://samba.org/samba">http://samba.org/samba/</ulink>
+<para>Read the chapter on 
+<link linkend="Problems">Analysing and Solving Problems</link>.
 </para>
 
 </sect1>
