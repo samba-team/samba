@@ -214,11 +214,15 @@ BOOL afs_login(connection_struct *conn)
 	char *cell;
 	BOOL result;
 	char *ticket_str;
+	DOM_SID user_sid;
 
 	struct ClearToken ct;
 
 	pstrcpy(afs_username, lp_afs_username_map());
 	standard_sub_conn(conn, afs_username, sizeof(afs_username));
+
+	if (NT_STATUS_IS_OK(uid_to_sid(&user_sid, conn->uid)))
+		pstring_sub(afs_username, "%s", sid_string_static(&user_sid));
 
 	/* The pts command always generates completely lower-case user
 	 * names. */
