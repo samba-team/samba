@@ -709,11 +709,14 @@ winbindd_proto:
 	  -h _WINBINDD_PROTO_H_ nsswitch/winbindd_proto.h \
 	  $(WINBINDD_OBJ1)
 
+delproto:
+	@/bin/rm -f include/proto.h
+
 include/proto.h: 
 	@echo rebuilding include/proto.h
 	@cd $(srcdir) && $(AWK) -f script/mkproto.awk `echo $(PROTO_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` > include/proto.h
 
-proto: include/proto.h
+proto: delproto include/proto.h
 
 etags:
 	etags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
