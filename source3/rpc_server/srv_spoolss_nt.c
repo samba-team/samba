@@ -87,6 +87,10 @@ typedef struct _Printer{
 		fstring machine;
 		fstring user;
 	} client;
+	
+	/* devmode sent in the OpenPrinter() call */
+	NT_DEVICEMODE	*nt_devmode;
+	
 } Printer_entry;
 
 static Printer_entry *printers_list;
@@ -224,6 +228,8 @@ static void free_printer_entry(void *ptr)
 	free_spool_notify_option(&Printer->notify.option);
 	Printer->notify.option=NULL;
 	Printer->notify.client_connected=False;
+	
+	free_nt_devicemode( &Printer->nt_devmode );
 
 	/* Remove from the internal list. */
 	DLIST_REMOVE(printers_list, Printer);
@@ -1446,9 +1452,9 @@ WERROR _spoolss_open_printer(pipes_struct *p, SPOOL_Q_OPEN_PRINTER *q_u, SPOOL_R
 
 WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, SPOOL_R_OPEN_PRINTER_EX *r_u)
 {
-	UNISTR2 *printername = NULL;
-	PRINTER_DEFAULT *printer_default = &q_u->printer_default;
-	POLICY_HND *handle = &r_u->handle;
+	UNISTR2 		*printername = NULL;
+	PRINTER_DEFAULT 	*printer_default = &q_u->printer_default;
+	POLICY_HND 		*handle = &r_u->handle;
 
 	fstring name;
 	int snum;
@@ -1606,6 +1612,18 @@ Can't find printer handle we created for printer %s\n", name ));
 	}
 	
 	Printer->access_granted = printer_default->access_required;
+	
+	/* 
+	 * If the client sent a devmode in the OpenPrinter() call, then
+	 * save it here in case we get a job submission on this handle
+	 */
+	
+	 if ( (Printer->printer_type != PRINTER_HANDLE_IS_PRINTSERVER)
+	 	&& q_u->printer_default.devmode_cont.devmode_ptr )
+	 { 
+	 	convert_devicemode( Printer->dev.handlename, q_u->printer_default.devmode_cont.devmode,
+			&Printer->nt_devmode );
+	 }
 
 	return WERR_OK;
 }
@@ -3784,47 +3802,20 @@ static void free_dev_mode(DEVICEMODE *dev)
 	SAFE_FREE(dev);	
 }
 
+
 /****************************************************************************
- Create a DEVMODE struct. Returns malloced memory.
+ Convert an NT_DEVICEMODE to a DEVICEMODE structure.  Both pointers 
+ should be valid upon entry
 ****************************************************************************/
 
-DEVICEMODE *construct_dev_mode(int snum)
+static BOOL convert_nt_devicemode( DEVICEMODE *devmode, NT_DEVICEMODE *ntdevmode )
 {
-	char adevice[32];
-	char aform[32];
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	NT_DEVICEMODE *ntdevmode = NULL;
-	DEVICEMODE *devmode = NULL;
+	if ( !devmode || !ntdevmode )
+		return False;
+		
+	init_unistr(&devmode->devicename, ntdevmode->devicename);
 
-	DEBUG(7,("construct_dev_mode\n"));
-	
-	DEBUGADD(8,("getting printer characteristics\n"));
-
-	if ((devmode = (DEVICEMODE *)malloc(sizeof(DEVICEMODE))) == NULL) {
-		DEBUG(2,("construct_dev_mode: malloc fail.\n"));
-		return NULL;
-	}
-
-	ZERO_STRUCTP(devmode);	
-
-	if (!W_ERROR_IS_OK(get_a_printer(&printer, 2, lp_servicename(snum))))
-		goto fail;
-
-	if (printer->info_2->devmode)
-		ntdevmode = dup_nt_devicemode(printer->info_2->devmode);
-
-	if (ntdevmode == NULL) {
-		DEBUG(5, ("BONG! There was no device mode!\n"));
-		goto fail;
-	}
-
-	DEBUGADD(8,("loading DEVICEMODE\n"));
-
-	slprintf(adevice, sizeof(adevice)-1, printer->info_2->printername);
-	init_unistr(&devmode->devicename, adevice);
-
-	slprintf(aform, sizeof(aform)-1, ntdevmode->formname);
-	init_unistr(&devmode->formname, aform);
+	init_unistr(&devmode->formname, ntdevmode->formname);
 
 	devmode->specversion      = ntdevmode->specversion;
 	devmode->driverversion    = ntdevmode->driverversion;
@@ -3852,23 +3843,51 @@ DEVICEMODE *construct_dev_mode(int snum)
 
 	if (ntdevmode->private != NULL) {
 		if ((devmode->private=(uint8 *)memdup(ntdevmode->private, ntdevmode->driverextra)) == NULL)
-			goto fail;
+			return False;
+	}
+	
+	return True;
+}
+
+/****************************************************************************
+ Create a DEVMODE struct. Returns malloced memory.
+****************************************************************************/
+
+DEVICEMODE *construct_dev_mode(int snum)
+{
+	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
+	DEVICEMODE 		*devmode = NULL;
+	
+	DEBUG(7,("construct_dev_mode\n"));
+	
+	DEBUGADD(8,("getting printer characteristics\n"));
+
+	if (!W_ERROR_IS_OK(get_a_printer(&printer, 2, lp_servicename(snum)))) 
+		return NULL;
+
+	if ( !printer->info_2->devmode ) {
+		DEBUG(5, ("BONG! There was no device mode!\n"));
+		goto done;
 	}
 
-	free_nt_devicemode(&ntdevmode);
+	if ((devmode = (DEVICEMODE *)malloc(sizeof(DEVICEMODE))) == NULL) {
+		DEBUG(2,("construct_dev_mode: malloc fail.\n"));
+		goto done;
+	}
+
+	ZERO_STRUCTP(devmode);	
+	
+	DEBUGADD(8,("loading DEVICEMODE\n"));
+
+	if ( !convert_nt_devicemode( devmode, printer->info_2->devmode ) ) {
+		free_dev_mode( devmode );
+		devmode = NULL;
+	}
+
+done:
 	free_a_printer(&printer,2);
 
 	return devmode;
-
-  fail:
-
-	if (ntdevmode)
-		free_nt_devicemode(&ntdevmode);
-	if (printer)
-		free_a_printer(&printer,2);
-	free_dev_mode(devmode);
-
-	return NULL;
 }
 
 /********************************************************************
@@ -5286,10 +5305,6 @@ WERROR _spoolss_startdocprinter(pipes_struct *p, SPOOL_Q_STARTDOCPRINTER *q_u, S
 	 * in EMF format.
 	 *
 	 * So I add checks like in NT Server ...
-	 *
-	 * lkclXXXX jean-francois, i love this kind of thing.  oh, well,
-	 * there's a bug in NT client-side code, so we'll fix it in the
-	 * server-side code. *nnnnnggggh!*
 	 */
 	
 	if (info_1->p_datatype != 0) {
@@ -5307,7 +5322,7 @@ WERROR _spoolss_startdocprinter(pipes_struct *p, SPOOL_Q_STARTDOCPRINTER *q_u, S
 
 	unistr2_to_ascii(jobname, &info_1->docname, sizeof(jobname));
 	
-	Printer->jobid = print_job_start(&user, snum, jobname);
+	Printer->jobid = print_job_start(&user, snum, jobname, Printer->nt_devmode);
 
 	/* An error occured in print_job_start() so return an appropriate
 	   NT error code. */
@@ -8013,7 +8028,7 @@ static WERROR getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 		return WERR_NOMEM;
 	}
 		
-	for (i=0; i<count && found==False; i++) {
+	for (i=0; i<count && found==False; i++) { 
 		if (queue[i].job==(int)jobid)
 			found=True;
 	}
@@ -8049,12 +8064,13 @@ static WERROR getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 
 static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uint32 jobid, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
-	int i=0;
-	BOOL found=False;
-	JOB_INFO_2 *info_2;
+	int 		i = 0;
+	BOOL 		found = False;
+	JOB_INFO_2 	*info_2;
 	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
-	WERROR ret;
-	DEVICEMODE *devmode = NULL;
+	WERROR 		ret;
+	DEVICEMODE 	*devmode = NULL;
+	NT_DEVICEMODE	*nt_devmode = NULL;
 
 	info_2=(JOB_INFO_2 *)malloc(sizeof(JOB_INFO_2));
 
@@ -8082,8 +8098,22 @@ static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 	ret = get_a_printer(&ntprinter, 2, lp_servicename(snum));
 	if (!W_ERROR_IS_OK(ret))
 		goto done;
-		
-	if (!(devmode = construct_dev_mode(snum)) ) {
+	
+	/* 
+	 * if the print job does not have a DEVMODE associated with it, 
+	 * just use the one for the printer 
+	 */
+	 
+	if ( !(nt_devmode=print_job_devmode( snum, jobid )) )
+		devmode = construct_dev_mode(snum);
+	else {
+		if ((devmode = (DEVICEMODE *)malloc(sizeof(DEVICEMODE))) != NULL) {
+			ZERO_STRUCTP( devmode );
+			convert_nt_devicemode( devmode, nt_devmode );
+		}
+	}
+	
+	if ( !devmode ) {
 		ret = WERR_NOMEM;
 		goto done;
 	}
