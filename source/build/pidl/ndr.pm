@@ -1007,10 +1007,31 @@ sub ParseEnumPrint($)
 	end_flags($enum);
 }
 
+sub ArgsEnumPush($)
+{
+	my $e = shift;
+	return "struct ndr_push *ndr, int ndr_flags, enum $e->{NAME} r";
+}
+
+sub ArgsEnumPrint($)
+{
+	my $e = shift;
+	return "struct ndr_print *ndr, const char *name, enum $e->{NAME} r";
+}
+
+sub ArgsEnumPull($)
+{
+	my $e = shift;
+	return "struct ndr_pull *ndr, int ndr_flags, enum $e->{NAME} *r";
+}
+
 $typefamily{ENUM} = {
 	PUSH_FN_BODY => \&ParseEnumPush,
+	PUSH_FN_ARGS => \&ArgsEnumPush,
 	PULL_FN_BODY => \&ParseEnumPull,
+	PULL_FN_ARGS => \&ArgsEnumPull,
 	PRINT_FN_BODY => \&ParseEnumPrint,
+	PRINT_FN_ARGS => \&ArgsEnumPrint,
 	ALIGN => sub { return align_type(util::enum_type_fn(shift)); }
 };
 
@@ -1085,10 +1106,34 @@ sub ParseBitmapPrint($)
 	end_flags($bitmap);
 }
 
+sub ArgsBitmapPush($)
+{
+	my $e = shift;
+	my $type_decl = util::bitmap_type_decl($e->{DATA});
+	return "struct ndr_push *ndr, int ndr_flags, $type_decl r";
+}
+
+sub ArgsBitmapPrint($)
+{
+	my $e = shift;
+	my $type_decl = util::bitmap_type_decl($e->{DATA});
+	return "struct ndr_print *ndr, const char *name, $type_decl r";
+}
+
+sub ArgsBitmapPull($)
+{
+	my $e = shift;
+	my $type_decl = util::bitmap_type_decl($e->{DATA});
+	return "struct ndr_pull *ndr, int ndr_flags, $type_decl *r";
+}
+
 $typefamily{BITMAP} = {
 	PUSH_FN_BODY => \&ParseBitmapPush,
+	PUSH_FN_ARGS => \&ArgsBitmapPush,
 	PULL_FN_BODY => \&ParseBitmapPull,
+	PULL_FN_ARGS => \&ArgsBitmapPull,
 	PRINT_FN_BODY => \&ParseBitmapPrint,
+	PRINT_FN_ARGS => \&ArgsBitmapPrint,
 	ALIGN => sub { return align_type(util::bitmap_type_fn(shift)); }
 };
 
@@ -1205,10 +1250,31 @@ sub ParseStructNdrSize($)
 	pidl "";
 }
 
+sub ArgsStructPush($)
+{
+	my $e = shift;
+	return "struct ndr_push *ndr, int ndr_flags, struct $e->{NAME} *r";
+}
+
+sub ArgsStructPrint($)
+{
+	my $e = shift;
+	return "struct ndr_print *ndr, const char *name, struct $e->{NAME} *r";
+}
+
+sub ArgsStructPull($)
+{
+	my $e = shift;
+	return "struct ndr_pull *ndr, int ndr_flags, struct $e->{NAME} *r";
+}
+
 $typefamily{STRUCT} = {
 	PUSH_FN_BODY => \&ParseStructPush,
+	PUSH_FN_ARGS => \&ArgsStructPush,
 	PULL_FN_BODY => \&ParseStructPull,
+	PULL_FN_ARGS => \&ArgsStructPull,
 	PRINT_FN_BODY => \&ParseStructPrint,
+	PRINT_FN_ARGS => \&ArgsStructPrint,
 	SIZE_FN => \&ParseStructNdrSize,
 	ALIGN => \&find_largest_alignment
 };
@@ -1411,14 +1477,34 @@ sub ParseUnionPull($)
 	end_flags($e);
 }
 
+sub ArgsUnionPush($)
+{
+	my $e = shift;
+	return "struct ndr_push *ndr, int ndr_flags, int level, union $e->{NAME} *r";
+}
+
+sub ArgsUnionPrint($)
+{
+	my $e = shift;
+	return "struct ndr_print *ndr, const char *name, int level, union $e->{NAME} *r";
+}
+
+sub ArgsUnionPull($)
+{
+	my $e = shift;
+	return "struct ndr_pull *ndr, int ndr_flags, int level, union $e->{NAME} *r";
+}
+
 $typefamily{UNION} = {
 	PUSH_FN_BODY => \&ParseUnionPush,
+	PUSH_FN_ARGS => \&ArgsUnionPush,
 	PULL_FN_BODY => \&ParseUnionPull,
+	PULL_FN_ARGS => \&ArgsUnionPull,
 	PRINT_FN_BODY => \&ParseUnionPrint,
+	PRINT_FN_ARGS => \&ArgsUnionPrint,
 	SIZE_FN => \&ParseUnionNdrSize,
 	ALIGN => \&find_largest_alignment
 };
-
 	
 #####################################################################
 # parse a typedef - push side
@@ -1427,29 +1513,9 @@ sub ParseTypedefPush($)
 	my($e) = shift;
 	my $static = fn_prefix($e);
 
-	if (! needed::is_needed("push_$e->{NAME}")) {
-#		print "push_$e->{NAME} not needed\n";
-		return;
-	}
+	return unless needed::is_needed("push_$e->{NAME}");
 
-	my $args;
-	if ($e->{DATA}->{TYPE} eq "STRUCT") {
-		$args = "struct ndr_push *ndr, int ndr_flags, struct $e->{NAME} *r";
-	}
-
-	if ($e->{DATA}->{TYPE} eq "UNION") {
-		$args = "struct ndr_push *ndr, int ndr_flags, int level, union $e->{NAME} *r";
-	}
-
-	if ($e->{DATA}->{TYPE} eq "ENUM") {
-		$args = "struct ndr_push *ndr, int ndr_flags, enum $e->{NAME} r";
-	}
-
-	if ($e->{DATA}->{TYPE} eq "BITMAP") {
-		my $type_decl = util::bitmap_type_decl($e->{DATA});
-		$args = "struct ndr_push *ndr, int ndr_flags, $type_decl r";
-	}
-	
+	my $args = $typefamily{$e->{DATA}->{TYPE}}->{PUSH_FN_ARGS}->($e);
 	pidl $static . "NTSTATUS ndr_push_$e->{NAME}($args)";
 
 	pidl "{";
@@ -1461,6 +1527,7 @@ sub ParseTypedefPush($)
 	pidl "";;
 }
 
+
 #####################################################################
 # parse a typedef - pull side
 sub ParseTypedefPull($)
@@ -1468,30 +1535,10 @@ sub ParseTypedefPull($)
 	my($e) = shift;
 	my $static = fn_prefix($e);
 
-	if (! needed::is_needed("pull_$e->{NAME}")) {
-#		print "pull_$e->{NAME} not needed\n";
-		return;
-	}
+	return unless needed::is_needed("pull_$e->{NAME}");
 
-	my $args = "";
+	my $args = $typefamily{$e->{DATA}->{TYPE}}->{PULL_FN_ARGS}->($e);
 
-	if ($e->{DATA}->{TYPE} eq "STRUCT") {
-		$args = "struct ndr_pull *ndr, int ndr_flags, struct $e->{NAME} *r";
-	}
-
-	if ($e->{DATA}->{TYPE} eq "UNION") {
-		$args = "struct ndr_pull *ndr, int ndr_flags, int level, union $e->{NAME} *r";
-	}
-
-	if ($e->{DATA}->{TYPE} eq "ENUM") {
-		$args = "struct ndr_pull *ndr, int ndr_flags, enum $e->{NAME} *r";
-	}
-
-	if ($e->{DATA}->{TYPE} eq "BITMAP") {
-		my $type_decl = util::bitmap_type_decl($e->{DATA});
-		$args = "struct ndr_pull *ndr, int ndr_flags, $type_decl *r";
-	}
-	
 	pidl $static . "NTSTATUS ndr_pull_$e->{NAME}($args)";
 
 	pidl "{";
@@ -1509,23 +1556,9 @@ sub ParseTypedefPrint($)
 {
 	my($e) = shift;
 
-	if ($e->{DATA}->{TYPE} eq "STRUCT") {
-		pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, struct $e->{NAME} *r)";
-	}
+	my $args = $typefamily{$e->{DATA}->{TYPE}}->{PRINT_FN_ARGS}->($e);
 
-	if ($e->{DATA}->{TYPE} eq "UNION") {
-		pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, int level, union $e->{NAME} *r)";
-	}
-
-	if ($e->{DATA}->{TYPE} eq "ENUM") {
-		pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, enum $e->{NAME} r)";
-	}
-
-	if ($e->{DATA}->{TYPE} eq "BITMAP") {
-		my $type_decl = util::bitmap_type_decl($e->{DATA});
-		pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, $type_decl r)";
-	}
-
+	pidl "void ndr_print_$e->{NAME}($args)";
 	pidl "{";
 	indent;
 	$typefamily{$e->{DATA}->{TYPE}}->{PRINT_FN_BODY}->($e->{DATA});
@@ -1538,9 +1571,8 @@ sub ParseTypedefPrint($)
 sub ParseTypedefNdrSize($)
 {
 	my($t) = shift;
-	if (! needed::is_needed("ndr_size_$t->{NAME}")) {
-		return;
-	}
+
+	return unless needed::is_needed("ndr_size_$t->{NAME}");
 
 	$typefamily{$t->{DATA}->{TYPE}}->{SIZE_FN}($t);
 }
