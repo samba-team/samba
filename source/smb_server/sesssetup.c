@@ -118,7 +118,7 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 			make_user_info_guest(&user_info);
 		}
 		
-		status = make_auth_context_subsystem(&auth_context);
+		status = make_auth_context_subsystem(req->smb_conn, &auth_context);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;

@@ -119,7 +119,6 @@ struct auth_context {
 	/* methods, in the order they should be called */
 	struct auth_methods *auth_method_list;	
 
-	TALLOC_CTX *mem_ctx;
 	const uint8_t *(*get_ntlm_challenge)(struct auth_context *auth_context);
 	NTSTATUS (*check_ntlm_password)(struct auth_context *auth_context,
 					const struct auth_usersupplied_info *user_info, 

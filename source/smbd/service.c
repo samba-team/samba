@@ -172,6 +172,29 @@ struct server_socket *service_setup_socket(struct server_service *service,
 	return srv_sock;
 }
 
+/*
+  destructor that handles necessary event context changes
+ */
+static int server_destructor(void *ptr)
+{
+	struct server_connection *conn = ptr;
+
+	if (conn->service) {
+		conn->service->ops->close_connection(conn, "shutdown");
+	}
+
+	socket_destroy(conn->socket);
+
+	event_remove_fd(conn->event.ctx, conn->event.fde);
+	conn->event.fde = NULL;
+	event_remove_timed(conn->event.ctx, conn->event.idle);
+	conn->event.idle = NULL;
+
+	DLIST_REMOVE(conn->server_socket->connection_list, conn);
+
+	return 0;
+}
+
 struct server_connection *server_setup_connection(struct event_context *ev, 
 						  struct server_socket *server_socket, 
 						  struct socket_context *sock, 
@@ -215,6 +238,8 @@ struct server_connection *server_setup_connection(struct event_context *ev,
 	srv_conn->event.fde	= event_add_fd(ev,&fde);
 	srv_conn->event.idle	= event_add_timed(ev,&idle);
 
+	talloc_set_destructor(srv_conn, server_destructor);
+
 	if (!socket_check_access(sock, "smbd", lp_hostsallow(-1), lp_hostsdeny(-1))) {
 		server_terminate_connection(srv_conn, "denied by access rules");
 		return NULL;
@@ -230,18 +255,6 @@ void server_terminate_connection(struct server_connection *srv_conn, const char 
 {
 	DEBUG(2,("server_terminate_connection\n"));
 	srv_conn->service->model_ops->terminate_connection(srv_conn, reason);
-}
-
-void server_destroy_connection(struct server_connection *srv_conn)
-{
-	socket_destroy(srv_conn->socket);
-
-	event_remove_fd(srv_conn->event.ctx, srv_conn->event.fde);
-	srv_conn->event.fde = NULL;
-	event_remove_timed(srv_conn->event.ctx, srv_conn->event.idle);
-	srv_conn->event.idle = NULL;
-
-	talloc_free(srv_conn);
 }
 
 void server_io_handler(struct event_context *ev, struct fd_event *fde, time_t t, uint16_t flags)

@@ -117,17 +117,7 @@ static void thread_terminate_connection(struct server_connection *conn, const ch
 	DEBUG(0,("thread_terminate_connection: reason[%s]\n",reason));
 
 	if (conn) {
-		if (conn->service) {
-			conn->service->ops->close_connection(conn,reason);
-		}
-
-		if (conn->server_socket) {
-			MUTEX_LOCK_BY_ID(MUTEX_SMBD);
-			DLIST_REMOVE(conn->server_socket->connection_list,conn);
-			MUTEX_UNLOCK_BY_ID(MUTEX_SMBD);
-		}
-
-		server_destroy_connection(conn);
+		talloc_free(conn);
 	}
 
 	/* terminate this thread */
