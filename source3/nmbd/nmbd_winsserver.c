@@ -1582,8 +1582,7 @@ void wins_write_database(BOOL background)
 {
   struct name_record *namerec;
   pstring fname, fnamenew;
-
-  FILE *fp;
+  XFILE *fp;
    
   if(!lp_we_are_a_wins_server())
     return;
@@ -1601,7 +1600,7 @@ void wins_write_database(BOOL background)
   all_string_sub(fname,"//", "/", 0);
   slprintf(fnamenew,sizeof(fnamenew)-1,"%s.%u", fname, (unsigned int)sys_getpid());
 
-  if((fp = sys_fopen(fnamenew,"w")) == NULL)
+  if((fp = x_fopen(fnamenew,O_WRONLY|O_CREAT|O_TRUNC, 0644)) == NULL)
   {
     DEBUG(0,("wins_write_database: Can't open %s. Error was %s\n", fnamenew, strerror(errno)));
     if (background) {
@@ -1612,7 +1611,7 @@ void wins_write_database(BOOL background)
 
   DEBUG(4,("wins_write_database: Dump of WINS name list.\n"));
 
-  fprintf(fp,"VERSION %d %u\n", WINS_VERSION, wins_hash());
+  x_fprintf(fp,"VERSION %d %u\n", WINS_VERSION, wins_hash());
  
   for( namerec 
            = (struct name_record *)ubi_trFirst( wins_server_subnet->namelist );
@@ -1644,17 +1643,17 @@ void wins_write_database(BOOL background)
 
     if( namerec->data.source == REGISTER_NAME )
     {
-      fprintf(fp, "\"%s#%02x\" %d ",
+      x_fprintf(fp, "\"%s#%02x\" %d ",
 	      namerec->name.name,namerec->name.name_type, /* Ignore scope. */
 	      (int)namerec->data.death_time);
 
       for (i = 0; i < namerec->data.num_ips; i++)
-        fprintf( fp, "%s ", inet_ntoa( namerec->data.ip[i] ) );
-      fprintf( fp, "%2xR\n", namerec->data.nb_flags );
+        x_fprintf( fp, "%s ", inet_ntoa( namerec->data.ip[i] ) );
+      x_fprintf( fp, "%2xR\n", namerec->data.nb_flags );
     }
   }
   
-  fclose(fp);
+  x_fclose(fp);
   chmod(fnamenew,0644);
   unlink(fname);
   rename(fnamenew,fname);
