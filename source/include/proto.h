@@ -1397,7 +1397,7 @@ uint32 _net_logon_ctrl2(const UNISTR2 *uni_server_name,
 			uint32 *reply_switch_value,
 			NETLOGON_INFO * logon_info);
 uint32 _net_trust_dom_list(const UNISTR2 *uni_server_name,
-			   uint32 function_code, BUFFER2 * uni_trust_dom_name);
+			   BUFFER2 * uni_trust_dom_name);
 uint32 _net_auth(const UNISTR2 *uni_logon_srv,
 		 const UNISTR2 *uni_acct_name,
 		 uint16 sec_chan,

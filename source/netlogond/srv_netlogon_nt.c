@@ -633,7 +633,7 @@ uint32 _net_logon_ctrl2(const UNISTR2 *uni_server_name,
  _net_trust_dom_list
  *************************************************************************/
 uint32 _net_trust_dom_list(const UNISTR2 *uni_server_name,
-			   uint32 function_code, BUFFER2 * uni_trust_dom_name)
+			   BUFFER2 * uni_trust_dom_name)
 {
 	char **doms = NULL;
 	uint32 num_doms = 0;

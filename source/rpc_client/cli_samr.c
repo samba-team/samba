@@ -2113,7 +2113,8 @@ BOOL samr_query_groupmem(  POLICY_HND *group_pol,
 		}
 
 		if (p && 
-		    r_o.ptr_rids != 0 && r_o.ptr_attrs != 0 &&
+		    ((r_o.ptr_rids != 0 && r_o.ptr_attrs != 0) ||
+		     (r_o.ptr_rids == 0 && r_o.ptr_attrs == 0))
 		    r_o.num_rids == r_o.num_attrs)
 		{
 			valid_query = True;

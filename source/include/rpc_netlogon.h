@@ -292,8 +292,6 @@ typedef struct net_q_trust_dom_info
 	uint32       ptr;             /* undocumented buffer pointer */
 	UNISTR2      uni_server_name; /* server name, starting with two '\'s */
 	
-	uint32       function_code; /* 0x31 */
-
 } NET_Q_TRUST_DOM_LIST;
 
 #define MAX_TRUST_DOMS 1

@@ -307,13 +307,12 @@ static void termination_handler(int signum)
 int main(int argc, char **argv)
 {
     extern fstring global_myname;
-    fstring domain_name;
     int sock, sock2;
     extern pstring debugf;
     
     /* Initialise samba/rpc client stuff */
 
-    setup_logging("winbindd", True); /* XXX change to false for daemon log */
+    setup_logging("winbindd", False); /* XXX change to false for daemon log */
     slprintf(debugf, sizeof(debugf), "%s/log.winbindd", LOGFILEBASE);
     reopen_logs();
 
@@ -345,12 +344,12 @@ int main(int argc, char **argv)
 
     /* Get the domain sid */
 
+#if 0
     if (strcmp(lp_passwordserver(), "") == 0) {
         DEBUG(0, ("No password server specified in smb.conf!\n"));
         return 1;
     }
-
-    fstrcpy(domain_name, lp_workgroup());
+#endif
 
     if (!winbindd_surs_init()) {
         DEBUG(0, ("Could not initialise surs information\n"));

@@ -526,8 +526,6 @@ BOOL net_io_q_trust_dom(char *desc, NET_Q_TRUST_DOM_LIST * q_l,
 
 	prs_align(ps);
 
-	prs_uint32("function_code", ps, depth, &(q_l->function_code));
-
 	return True;
 }
 

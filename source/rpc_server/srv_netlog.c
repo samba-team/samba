@@ -276,7 +276,6 @@ static BOOL api_net_trust_dom_list( prs_struct *data, prs_struct *rdata)
 	}
 
 	r_t.status = _net_trust_dom_list(&q_t.uni_server_name,
-					 q_t.function_code,
 					 &r_t.uni_trust_dom_name);
 
 	/* store the response in the SMB stream */
