@@ -1,7 +1,7 @@
 Contributors:	Various
 		Password Section - Copyright (C) 1997 - John H Terpstra
 		Printing Section - Copyright (C) 1997 - Matthew Harrell
-Updated:	June 27, 1997
+Updated:	August 20, 1997
 Status:		Current
 
 Subject:	Samba and Windows NT Password Handling
@@ -33,6 +33,9 @@ HKEY_LOCAL_MACHINE\system\CurrentControlSet\Services\rdr\parameters\
 Add the following value:
 	EnablePlainTextPassword:REG_DWORD=1
 
+Alternatively, use the NT4_PlainPassword.reg file in this directory (either
+by double clicking on it, or run regedit.exe and select "Import Registry
+File" from the "Registry" Menu).
 
 The other major ramification of this feature of NT is that it can't
 browse a user level non-encrypted server unless it already has a
