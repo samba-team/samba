@@ -7,6 +7,10 @@
    array of ints! Ultrix is one culprit
   */
 
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+
 #include <sys/types.h>
 #include <stdio.h>
 #include <unistd.h>

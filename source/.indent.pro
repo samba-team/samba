@@ -1,4 +1,5 @@
--ncs -cli8 -cbi0 -bli0 -bl -i8 -npsl -npcs -bbo
+-cli8 -cbi0 -bli0 -bl -i8 -npsl -npcs -bbo
+-ncs 
 -T BOOL
 -T pstring
 -T fstring
