@@ -87,11 +87,98 @@ int get_ntforms(nt_forms_struct **list)
 	return(total);
 }
 
+/****************************************************************************
+write a form struct list
+****************************************************************************/
+int write_ntforms(nt_forms_struct **list, int number)
+{
+       FILE *f;
+       pstring line;
+       char *file = lp_nt_forms();
+       int total=0;
+       int i;
+
+       *line=0;
+
+       DEBUG(6,("write_ntforms\n"));
+
+       if((f = sys_fopen(file, "w")) == NULL)
+       {
+	       DEBUG(1, ("cannot create forms file [%s]\n", file));
+	       return(0);
+       }
+
+       for (i=0; i<number;i++)
+       {
+
+	       fprintf(f,"%s:%d:%d:%d:%d:%d:%d:%d\n", (*list)[i].name,
+		       (*list)[i].flag, (*list)[i].width, (*list)[i].length,
+		       (*list)[i].left, (*list)[i].top, (*list)[i].right, (*list)[i].bottom);
+
+	       DEBUGADD(7,("adding entry [%s]\n", (*list)[i].name));
+       }
+
+       fclose(f);
+       DEBUGADD(6,("closing file\n"));
+       return(total);
+}
+
+/****************************************************************************
+add a form struct at the end of the list
+****************************************************************************/
+void add_a_form(nt_forms_struct **list, FORM form, int count)
+{
+       int n=count;
+
+       *list=Realloc(*list, (n+1)*sizeof(nt_forms_struct));
+
+       (*list)[n].flag=form.flags;
+       (*list)[n].width=form.size_x;
+       (*list)[n].length=form.size_y;
+       (*list)[n].left=form.left;
+       (*list)[n].top=form.top;
+       (*list)[n].right=form.right;
+       (*list)[n].bottom=form.bottom;
+
+       if (form.name_ptr)
+       {
+	       unistr2_to_ascii((*list)[n].name, &(form.name), sizeof((*list)[n].name)-1);
+       }
+
+}
+
+/****************************************************************************
+update a form struct 
+****************************************************************************/
+void update_a_form(nt_forms_struct **list, FORM form, int count)
+{
+	int n=0;
+	fstring form_name;
+	unistr2_to_ascii(form_name, &(form.name), sizeof(form_name)-1);
+
+	DEBUG(6, ("[%s]\n", form_name));
+	for (n=0; n<count; n++)
+	{
+		DEBUGADD(6, ("n [%d]:[%s]\n", n, (*list)[n].name));
+		if (!strncmp((*list)[n].name, form_name, strlen(form_name)))
+			break;
+	}
+
+	if (n==count) return;
+
+	(*list)[n].flag=form.flags;
+	(*list)[n].width=form.size_x;
+	(*list)[n].length=form.size_y;
+	(*list)[n].left=form.left;
+	(*list)[n].top=form.top;
+	(*list)[n].right=form.right;
+	(*list)[n].bottom=form.bottom;
+}
  
 /****************************************************************************
 get the nt drivers list
 
-open the rectory and look-up the matching names
+open the directory and look-up the matching names
 ****************************************************************************/
 int get_ntdrivers(connection_struct *conn, fstring **list, char *architecture)
 {
