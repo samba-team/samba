@@ -25,7 +25,7 @@
 int num_good_sends = 0;
 int num_good_receives = 0;
 
-static struct opcode_names {
+static const struct opcode_names {
 	char *nmb_opcode_name;
 	int opcode;
 } nmb_header_opcode_names[] = {
@@ -42,9 +42,9 @@ static struct opcode_names {
 /****************************************************************************
  * Lookup a nmb opcode name.
  ****************************************************************************/
-static char *lookup_opcode_name( int opcode )
+static const char *lookup_opcode_name( int opcode )
 {
-  struct opcode_names *op_namep;
+  const struct opcode_names *op_namep;
   int i;
 
   for(i = 0; nmb_header_opcode_names[i].nmb_opcode_name != 0; i++) {

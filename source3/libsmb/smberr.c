@@ -25,7 +25,7 @@
 /* error code stuff - put together by Merik Karman
    merik@blackadder.dsh.oz.au */
 
-typedef struct
+typedef const struct
 {
   char *name;
   int code;
@@ -125,7 +125,7 @@ err_code_struct hard_msgs[] = {
   {NULL,-1,NULL}};
 
 
-struct
+const struct
 {
   int code;
   char *class;
