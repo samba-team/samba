@@ -398,7 +398,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 				
 				/* this is needed so that we get decent entries
 				   in smbstatus for port 445 connects */
-				set_remote_machine_name(get_socket_addr(smbd_server_fd()), False);
+				set_remote_machine_name(get_peer_addr(smbd_server_fd()), False);
 				
 				/* Reset global variables in util.c so
 				   that client substitutions will be
