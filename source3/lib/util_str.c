@@ -945,7 +945,7 @@ int pstr_sprintf(pstring s, const char *fmt, ...)
 	int ret;
 
 	va_start(ap, fmt);
-	ret = vsnprintf(PSTR_MUTABLE(s), PSTRING_LEN, fmt, ap);
+	ret = vsnprintf(s, PSTRING_LEN, fmt, ap);
 	va_end(ap);
 	return ret;
 }
@@ -958,7 +958,7 @@ int fstr_sprintf(fstring s, const char *fmt, ...)
 	int ret;
 
 	va_start(ap, fmt);
-	ret = vsnprintf(FSTR_MUTABLE(s), FSTRING_LEN, fmt, ap);
+	ret = vsnprintf(s, FSTRING_LEN, fmt, ap);
 	va_end(ap);
 	return ret;
 }

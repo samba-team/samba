@@ -104,17 +104,19 @@ int add_home_service(const char *service, const char *homedir)
 	if ((usr_p = strchr_m(service,*lp_winbind_separator())) != NULL)
 		fstrcpy(new_service, usr_p+1);
 
-	lp_add_home(new_service,iHomeService,homedir);
+	lp_add_home(new_service, iHomeService, homedir);
 	iService = lp_servicenumber(new_service);
 
 	return iService;
 }
 
-/****************************************************************************
- Find a service entry. service is always in dos codepage.
-****************************************************************************/
 
-int find_service(char *service)
+/**
+ * Find a service entry. service is always in dos codepage.
+ *
+ * @param service is modified (to canonical form??)
+ **/
+int find_service(fstring service)
 {
    int iService;
 
@@ -158,7 +160,7 @@ int find_service(char *service)
          {
             DEBUG(3,("%s is a valid printer name\n", service));
             DEBUG(3,("adding %s as a printer service\n", service));
-            lp_add_printer(service,iPrinterService);
+            lp_add_printer(service, iPrinterService);
             iService = lp_servicenumber(service);
             if (iService < 0)
                DEBUG(0,("failed to add %s as a printer service!\n", service));
@@ -192,8 +194,8 @@ int find_service(char *service)
        iService = find_service(defservice);
        if (iService >= 0)
        {
-         all_string_sub(service,"_","/",0);
-         iService = lp_add_service(service,iService);
+         all_string_sub(service, "_","/",0);
+         iService = lp_add_service(service, iService);
        }
      }
    }
@@ -201,7 +203,7 @@ int find_service(char *service)
    if (iService >= 0)
      if (!VALID_SNUM(iService))
      {
-       DEBUG(0,("Invalid snum %d for %s\n",iService,service));
+       DEBUG(0,("Invalid snum %d for %s\n",iService, service));
        iService = -1;
      }
 
@@ -216,7 +218,7 @@ int find_service(char *service)
  do some basic sainity checks on the share.  
  This function modifies dev, ecode.
 ****************************************************************************/
-static NTSTATUS share_sanity_checks(int snum, char* service, char *dev) 
+static NTSTATUS share_sanity_checks(int snum, char* service, pstring dev) 
 {
 	
 	if (!lp_snum_ok(snum) || 
@@ -229,7 +231,7 @@ static NTSTATUS share_sanity_checks(int snum, char* service, char *dev)
 	if (strequal(service,"IPC$") || strequal(service,"ADMIN$"))
 		pstrcpy(dev,"IPC");
 	
-	if (*dev == '?' || !*dev) {
+	if (dev[0] == '?' || !dev[0]) {
 		if (lp_print_ok(snum)) {
 			pstrcpy(dev,"LPT1:");
 		} else {
@@ -318,10 +320,12 @@ static void set_admin_user(connection_struct *conn)
 
 /****************************************************************************
  Make a connection to a service.
+ *
+ * @param service (May be modified to canonical form???)
 ****************************************************************************/
 
 connection_struct *make_connection(char *service, DATA_BLOB password, 
-				   char *dev,uint16 vuid, NTSTATUS *status)
+				   const char *dev, uint16 vuid, NTSTATUS *status)
 {
 	int snum;
 	struct passwd *pass = NULL;
@@ -361,16 +365,19 @@ connection_struct *make_connection(char *service, DATA_BLOB password,
 			if (validated_username(vuid)) {
 				fstring unix_username;
 				fstrcpy(unix_username,validated_username(vuid));
-				return(make_connection(unix_username,password,dev,vuid,status));
+				return make_connection(unix_username,
+						       password,dev,vuid,status);
 			}
 		} else {
 			/* Security = share. Try with current_user_info.smb_name
 			 * as the username.  */
-			if(*current_user_info.smb_name) {
+			if (* current_user_info.smb_name) {
 				fstring unix_username;
-				fstrcpy(unix_username,current_user_info.smb_name);
+				fstrcpy(unix_username,
+					current_user_info.smb_name);
 				map_username(unix_username);
-				return(make_connection(unix_username,password,dev,vuid,status));
+				return make_connection(unix_username,
+						       password,dev,vuid,status);
 			}
 		}
 	}
