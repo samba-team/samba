@@ -1481,7 +1481,6 @@ static void init_globals(void)
 	Globals.bWinbindUseDefaultDomain = False;
 
 	Globals.bIdmapOnly = False;
-	string_set(&Globals.szWinbindBackend, "tdb");
 
 	Globals.name_cache_timeout = 660; /* In seconds */
 
