@@ -771,7 +771,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 			talloc_destroy(mem_ctx);
 			return status;
 		}
-		DEBUG(1,("Mapped to DCERPC/TCP pipe %s\n", binding->endpoint));
+		DEBUG(1,("Mapped to DCERPC/NP pipe %s\n", binding->endpoint));
 	}
 
 	pipe_name = binding->endpoint;
@@ -867,7 +867,7 @@ static NTSTATUS dcerpc_pipe_connect_ncalrpc(struct dcerpc_pipe **p,
 			talloc_destroy(mem_ctx);
 			return status;
 		}
-		DEBUG(1,("Mapped to DCERPC/TCP identifier %s\n", binding->endpoint));
+		DEBUG(1,("Mapped to DCERPC/LRPC identifier %s\n", binding->endpoint));
 	}
 
 	status = dcerpc_pipe_open_pipe(p, binding->endpoint);
