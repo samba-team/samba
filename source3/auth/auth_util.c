@@ -78,6 +78,36 @@ void smb_user_control(const auth_usersupplied_info *user_info, auth_serversuppli
 }
 
 /****************************************************************************
+ Create a SAM_ACCOUNT - either by looking in the pdb, or by faking it up from
+ unix info.
+****************************************************************************/
+
+NTSTATUS auth_get_sam_account(const char *user, SAM_ACCOUNT **account) 
+{
+	BOOL pdb_ret;
+	NTSTATUS nt_status;
+	if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam(account))) {
+		return nt_status;
+	}
+	
+	become_root();
+	pdb_ret = pdb_getsampwnam(*account, user);
+	unbecome_root();
+
+	if (!pdb_ret) {
+		
+		struct passwd *pass = Get_Pwnam(user);
+		if (!pass) 
+			return NT_STATUS_NO_SUCH_USER;
+
+		if (!NT_STATUS_IS_OK(nt_status = pdb_fill_sam_pw(*account, pass))) {
+			return nt_status;
+		}
+	}
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
  Create an auth_usersupplied_data structure
 ****************************************************************************/
 
