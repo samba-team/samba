@@ -156,7 +156,7 @@ register a uid/name pair as being valid and that a valid password
 has been given. vuid is biased by an offset. This allows us to
 tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
-uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, BOOL guest)
+uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, BOOL guest, uchar user_sess_key[16])
 {
   user_struct *vuser;
   struct passwd *pwfile; /* for getting real name from passwd file */
@@ -205,6 +205,7 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
   vuser->guest = guest;
   fstrcpy(vuser->name,unix_name);
   fstrcpy(vuser->requested_name,requested_name);
+  memcpy(vuser->dc.user_sess_key, user_sess_key, sizeof(vuser->dc.user_sess_key));
 
   vuser->n_sids = 0;
   vuser->sids   = NULL;
@@ -412,7 +413,7 @@ return True if the password is correct, False otherwise
 
 BOOL pass_check_smb(char *user, char *domain,
 		uchar *chal, uchar *lm_pwd, uchar *nt_pwd,
-		struct passwd *pwd)
+		struct passwd *pwd, uchar user_sess_key[16])
 {
 	struct passwd *pass;
 	struct smb_passwd *smb_pass;
@@ -467,6 +468,14 @@ BOOL pass_check_smb(char *user, char *domain,
 
 	if (smb_password_ok(smb_pass, chal, lm_pwd, nt_pwd))
 	{
+		if (user_sess_key != NULL)
+		{
+			mdfour(user_sess_key, smb_pass->smb_nt_passwd, 16);
+#ifdef DEBUG_PASSWORD
+		DEBUG(100,("user session key: "));
+		dump_data(100, user_sess_key, 16);
+#endif
+		}
 		return(True);
 	}
 	
@@ -479,7 +488,8 @@ check if a username/password pair is OK either via the system password
 database or the encrypted SMB password database
 return True if the password is correct, False otherwise
 ****************************************************************************/
-BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd)
+BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd,
+		uchar user_sess_key[16])
 {
 	if (pwlen == 24 || (lp_encrypted_passwords() && (pwlen == 0) && lp_null_passwords()))
 	{
@@ -493,7 +503,7 @@ BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd)
 		}
 
 		return pass_check_smb(user, global_myworkgroup,
-		                      challenge, (uchar *)password, (uchar *)password, pwd);
+		                      challenge, (uchar *)password, (uchar *)password, pwd, user_sess_key);
 	} 
 
 	return pass_check(user, password, pwlen, pwd, 
@@ -536,7 +546,8 @@ BOOL user_ok(char *user,int snum)
 /****************************************************************************
 validate a group username entry. Return the username or NULL
 ****************************************************************************/
-static char *validate_group(char *group,char *password,int pwlen,int snum)
+static char *validate_group(char *group,char *password,int pwlen,int snum,
+				uchar user_sess_key[16])
 {
 #if defined(HAVE_NETGROUP) && defined(HAVE_GETNETGRENT) && defined(HAVE_SETNETGRENT) && defined(HAVE_ENDNETGRENT)
   {
@@ -545,7 +556,7 @@ static char *validate_group(char *group,char *password,int pwlen,int snum)
     while (getnetgrent(&host, &user, &domain)) {
       if (user) {
 	if (user_ok(user, snum) && 
-	    password_ok(user,password,pwlen,NULL)) {
+	    password_ok(user,password,pwlen,NULL, user_sess_key)) {
 	  endnetgrent();
 	  return(user);
 	}
@@ -567,7 +578,7 @@ static char *validate_group(char *group,char *password,int pwlen,int snum)
 	    static fstring name;
 	    fstrcpy(name,*member);
 	    if (user_ok(name,snum) &&
-		password_ok(name,password,pwlen,NULL))
+		password_ok(name,password,pwlen,NULL, user_sess_key))
 	      return(&name[0]);
 	    member++;
 	  }
@@ -580,7 +591,7 @@ static char *validate_group(char *group,char *password,int pwlen,int snum)
 	  while (pwd = getpwent ()) {
 	    if (*(pwd->pw_passwd) && pwd->pw_gid == gptr->gr_gid) {
 	      /* This Entry have PASSWORD and same GID then check pwd */
-	      if (password_ok(NULL, password, pwlen, pwd)) {
+	      if (password_ok(NULL, password, pwlen, pwd, user_sess_key)) {
 		fstrcpy(tm, pwd->pw_name);
 		endpwent ();
 		return tm;
@@ -633,14 +644,14 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 
       /* check the given username and password */
       if (!ok && (*user) && user_ok(user,snum)) {
-	ok = password_ok(user,password, pwlen, NULL);
+	ok = password_ok(user,password, pwlen, NULL, vuser->dc.user_sess_key);
 	if (ok) DEBUG(3,("ACCEPTED: given username password ok\n"));
       }
 
       /* check for a previously registered guest username */
       if (!ok && (vuser != 0) && vuser->guest) {	  
 	if (user_ok(vuser->name,snum) &&
-	    password_ok(vuser->name, password, pwlen, NULL)) {
+	    password_ok(vuser->name, password, pwlen, NULL, vuser->dc.user_sess_key)) {
 	  fstrcpy(user, vuser->name);
 	  vuser->guest = False;
 	  DEBUG(3,("ACCEPTED: given password with registered user %s\n", user));
@@ -664,7 +675,7 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
         fstrcpy(user2,auser);
         if (!user_ok(user2,snum)) continue;
 		  
-        if (password_ok(user2,password, pwlen, NULL)) {
+        if (password_ok(user2,password, pwlen, NULL, vuser->dc.user_sess_key)) {
           ok = True;
           fstrcpy(user,user2);
           DEBUG(3,("ACCEPTED: session list username and given password ok\n"));
@@ -703,7 +714,7 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 	  {
 	    if (*auser == '@')
 	      {
-		auser = validate_group(auser+1,password,pwlen,snum);
+		auser = validate_group(auser+1,password,pwlen,snum, vuser->dc.user_sess_key);
 		if (auser)
 		  {
 		    ok = True;
@@ -716,7 +727,7 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 		fstring user2;
 		fstrcpy(user2,auser);
 		if (user_ok(user2,snum) && 
-		    password_ok(user2,password,pwlen,NULL))
+		    password_ok(user2,password,pwlen,NULL, vuser->dc.user_sess_key))
 		  {
 		    ok = True;
 		    fstrcpy(user,user2);

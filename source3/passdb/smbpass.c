@@ -158,7 +158,7 @@ struct smb_passwd *getsmbfilepwent(void *vp)
 		}
 		else
 		{
-			if (!pwdb_gethexpwd(p, (char *)smbpwd))
+			if (!pwdb_gethexpwd(p, (char *)smbpwd, NULL))
 			{
 				DEBUG(0, ("getsmbfilepwent: Malformed Lanman password entry (non hex chars)\n"));
 				continue;
@@ -178,7 +178,7 @@ struct smb_passwd *getsmbfilepwent(void *vp)
 		{
 			if (*p != '*' && *p != 'X')
 			{
-				if(pwdb_gethexpwd(p,(char *)smbntpwd))
+				if(pwdb_gethexpwd(p,(char *)smbntpwd, NULL))
 				{
 					pw_buf.smb_nt_passwd = smbntpwd;
 				}

@@ -492,7 +492,7 @@ void pwdb_set_can_change_time(char *p, int max_len, time_t t);
 void pwdb_set_must_change_time(char *p, int max_len, time_t t);
 void pwdb_set_last_set_time(char *p, int max_len, time_t t);
 void pwdb_sethexpwd(char *p, const char *pwd, uint16 acct_ctrl);
-BOOL pwdb_gethexpwd(const char *p, char *pwd);
+BOOL pwdb_gethexpwd(const char *p, char *pwd, uint32 *acct_ctrl);
 BOOL pwdb_initialise(BOOL is_server);
 
 /*The following definitions come from  lib/util_sid.c  */
@@ -1507,6 +1507,7 @@ BOOL initialise_sam_password_db(void);
 void *startsam21pwent(BOOL update);
 void endsam21pwent(void *vp);
 struct sam_passwd *getsam21pwent(void *vp);
+BOOL mod_sam21pwd_entry(struct sam_passwd* pwd, BOOL override);
 struct sam_passwd *iterate_getsam21pwntnam(const char *ntname);
 struct sam_passwd *iterate_getsam21pwrid(uint32 rid);
 struct sam_passwd *iterate_getsam21pwuid(uid_t uid);
@@ -1973,7 +1974,6 @@ void make_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint8 type, uint32 idx);
 void smb_io_dom_rid2(char *desc,  DOM_RID2 *rid2, prs_struct *ps, int depth);
 void make_dom_rid3(DOM_RID3 *rid3, uint32 rid, uint8 type);
 void smb_io_dom_rid3(char *desc,  DOM_RID3 *rid3, prs_struct *ps, int depth);
-void make_dom_rid4(DOM_RID4 *rid4, uint16 unknown, uint16 attr, uint32 rid);
 void make_log_info(DOM_LOG_INFO *log,
 		const char *logon_srv, const char *acct_name,
 		uint16 sec_chan, const char *comp_name);
@@ -2264,6 +2264,8 @@ void make_unk_info7(SAM_UNK_INFO_7 *u_7);
 void sam_io_unk_info7(char *desc, SAM_UNK_INFO_7 *u_7, prs_struct *ps, int depth);
 void make_unk_info2(SAM_UNK_INFO_2 *u_2, char *domain, char *server);
 void sam_io_unk_info2(char *desc, SAM_UNK_INFO_2 *u_2, prs_struct *ps, int depth);
+void make_unk_info1(SAM_UNK_INFO_1 *u_1);
+void sam_io_unk_info1(char *desc, SAM_UNK_INFO_1 *u_1, prs_struct *ps, int depth);
 void make_samr_r_query_dom_info(SAMR_R_QUERY_DOMAIN_INFO *r_u, 
 				uint16 switch_value, SAM_UNK_CTR *ctr,
 				uint32 status);
@@ -2456,6 +2458,10 @@ void make_samr_q_create_user(SAMR_Q_CREATE_USER *q_u,
 				const char *name,
 				uint16 acb_info, uint32 unk_1);
 void samr_io_q_create_user(char *desc,  SAMR_Q_CREATE_USER *q_u, prs_struct *ps, int depth);
+void make_samr_r_create_user(SAMR_R_CREATE_USER *r_u,
+				POLICY_HND *user_pol,
+				uint32 unk_0, uint32 user_rid,
+				uint32 status);
 void samr_io_r_create_user(char *desc,  SAMR_R_CREATE_USER *r_u, prs_struct *ps, int depth);
 void make_samr_q_query_userinfo(SAMR_Q_QUERY_USERINFO *q_u,
 				POLICY_HND *hnd, uint16 switch_value);
@@ -2470,6 +2476,36 @@ void make_sam_user_info11(SAM_USER_INFO_11 *usr,
 				uint32 rid_group,
 				uint16 acct_ctrl);
 void sam_io_user_info11(char *desc,  SAM_USER_INFO_11 *usr, prs_struct *ps, int depth);
+void make_sam_user_info23(SAM_USER_INFO_23 *usr,
+
+	NTTIME *logon_time, /* all zeros */
+	NTTIME *logoff_time, /* all zeros */
+	NTTIME *kickoff_time, /* all zeros */
+	NTTIME *pass_last_set_time, /* all zeros */
+	NTTIME *pass_can_change_time, /* all zeros */
+	NTTIME *pass_must_change_time, /* all zeros */
+
+	char *user_name, /* NULL */
+	char *full_name,
+	char *home_dir,
+	char *dir_drive,
+	char *logon_script,
+	char *profile_path,
+	char *description,
+	char *workstations,
+	char *unknown_str,
+	char *munged_dial,
+
+	uint32 user_rid, /* 0x0000 0000 */
+	uint32 group_rid,
+	uint16 acb_info, 
+
+	uint32 unknown_3,
+	uint16 logon_divs,
+	LOGON_HRS *hrs,
+	uint32 unknown_5,
+	char newpass[516],
+	uint32 unknown_6);
 void make_sam_user_info21(SAM_USER_INFO_21 *usr,
 
 	NTTIME *logon_time,
@@ -2502,8 +2538,12 @@ void make_sam_user_info21(SAM_USER_INFO_21 *usr,
 void make_samr_r_query_userinfo(SAMR_R_QUERY_USERINFO *r_u,
 				uint16 switch_value, void *info, uint32 status);
 void samr_io_r_query_userinfo(char *desc,  SAMR_R_QUERY_USERINFO *r_u, prs_struct *ps, int depth);
-void samr_io_q_unknown_32(char *desc,  SAMR_Q_UNKNOWN_32 *q_u, prs_struct *ps, int depth);
-void samr_io_r_unknown_32(char *desc,  SAMR_R_UNKNOWN_32 *r_u, prs_struct *ps, int depth);
+void make_samr_q_set_userinfo(SAMR_Q_SET_USERINFO *q_u,
+				POLICY_HND *hnd,
+				uint16 switch_value, void *info);
+void samr_io_q_set_userinfo(char *desc, SAMR_Q_SET_USERINFO *q_u, prs_struct *ps, int depth);
+void make_samr_r_set_userinfo(SAMR_R_SET_USERINFO *r_u, uint32 status);
+void samr_io_r_set_userinfo(char *desc,  SAMR_R_SET_USERINFO *r_u, prs_struct *ps, int depth);
 void make_samr_q_connect(SAMR_Q_CONNECT *q_u,
 				char *srv_name, uint32 unknown_0);
 void samr_io_q_connect(char *desc,  SAMR_Q_CONNECT *q_u, prs_struct *ps, int depth);
@@ -2932,6 +2972,8 @@ BOOL change_lanman_password(struct smb_passwd *smbpw, uchar *pass1, uchar *pass2
 BOOL pass_oem_change(char *user,
 			uchar *lmdata, uchar *lmhash,
 			uchar *ntdata, uchar *nthash);
+BOOL decode_pw_buffer(const char buffer[516], char *new_passwd,
+			int new_passwd_size, BOOL nt_pass_set);
 BOOL check_oem_password(char *user,
 			uchar *lmdata, uchar *lmhash,
 			uchar *ntdata, uchar *nthash,
@@ -3119,15 +3161,16 @@ BOOL set_challenge(unsigned char *challenge);
 user_struct *get_valid_user_struct(uint16 vuid);
 void invalidate_vuid(uint16 vuid);
 char *validated_username(uint16 vuid);
-uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, BOOL guest);
+uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, BOOL guest, uchar user_sess_key[16]);
 void add_session_user(char *user);
 BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned char *c8);
 BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
                      uchar lm_pass[24], uchar nt_pass[24]);
 BOOL pass_check_smb(char *user, char *domain,
 		uchar *chal, uchar *lm_pwd, uchar *nt_pwd,
-		struct passwd *pwd);
-BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd);
+		struct passwd *pwd, uchar user_sess_key[16]);
+BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd,
+		uchar user_sess_key[16]);
 BOOL user_ok(char *user,int snum);
 BOOL authorise_login(int snum,char *user,char *password, int pwlen, 
 		     BOOL *guest,BOOL *force,uint16 vuid);

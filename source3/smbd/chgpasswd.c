@@ -604,6 +604,42 @@ BOOL pass_oem_change(char *user,
 }
 
 /***********************************************************
+ decode a password buffer
+************************************************************/
+BOOL decode_pw_buffer(const char buffer[516], char *new_passwd,
+			int new_passwd_size, BOOL nt_pass_set)
+{
+	/* 
+	 * The length of the new password is in the last 4 bytes of
+	 * the data buffer.
+	 */
+
+	uint32 new_pw_len = IVAL(buffer, 512);
+	if (new_pw_len < 0 || new_pw_len > new_passwd_size - 1)
+	{
+		DEBUG(0,("check_oem_password: incorrect password length (%d).\n", new_pw_len));
+		return False;
+	}
+
+	if (nt_pass_set)
+	{
+		/*
+		 * nt passwords are in unicode
+		 */
+		int uni_pw_len = new_pw_len;
+		new_pw_len /= 2;
+		unibuf_to_ascii(new_passwd, &buffer[512-uni_pw_len], new_pw_len);
+	}
+	else
+	{
+		memcpy(new_passwd, &buffer[512-new_pw_len], new_pw_len);
+		new_passwd[new_pw_len] = '\0';
+	}
+
+	return True;
+}
+
+/***********************************************************
  Code to check the OEM hashed password.
 
  this function ignores the 516 byte nt OEM hashed password
@@ -619,7 +655,6 @@ BOOL check_oem_password(char *user,
 	static uchar null_pw[16];
 	static uchar null_ntpw[16];
 	struct smb_passwd *smbpw = NULL;
-	int new_pw_len;
 	uchar new_ntp16[16];
 	uchar unenc_old_ntpw[16];
 	uchar new_p16[16];
@@ -681,31 +716,9 @@ BOOL check_oem_password(char *user,
 	 */
 	SamOEMhash( (uchar *)lmdata, (uchar *)smbpw->smb_passwd, True);
 
-	/* 
-	 * The length of the new password is in the last 4 bytes of
-	 * the data buffer.
-	 */
-
-	new_pw_len = IVAL(lmdata, 512);
-	if (new_pw_len < 0 || new_pw_len > new_passwd_size - 1)
+	if (!decode_pw_buffer(lmdata, new_passwd, new_passwd_size, nt_pass_set))
 	{
-		DEBUG(0,("check_oem_password: incorrect password length (%d).\n", new_pw_len));
 		return False;
-	}
-
-	if (nt_pass_set)
-	{
-		/*
-		 * nt passwords are in unicode
-		 */
-		int uni_pw_len = new_pw_len;
-		new_pw_len /= 2;
-		unibuf_to_ascii(new_passwd, &lmdata[512-uni_pw_len], new_pw_len);
-	}
-	else
-	{
-		memcpy(new_passwd, &lmdata[512-new_pw_len], new_pw_len);
-		new_passwd[new_pw_len] = '\0';
 	}
 
 	/*
