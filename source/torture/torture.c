@@ -26,7 +26,6 @@ int torture_entries=1000;
 int torture_failures=1;
 static int procnum; /* records process count number when forking */
 static struct cli_state *current_cli;
-static char *randomfname;
 static BOOL use_oplocks;
 static BOOL use_level_II_oplocks;
 static const char *client_txt = "client_oplocks.txt";
@@ -328,7 +327,7 @@ static BOOL run_torture(int dummy)
 	return ret;
 }
 
-static BOOL rw_torture3(struct cli_state *c, char *lockfname)
+static BOOL rw_torture3(struct cli_state *c, const char *lockfname)
 {
 	int fnum = -1;
 	unsigned int i = 0;
@@ -546,8 +545,7 @@ static BOOL run_readwritemulti(int dummy)
 
 	cli = current_cli;
 
-	printf("run_readwritemulti: fname %s\n", randomfname);
-	test = rw_torture3(cli, randomfname);
+	test = rw_torture3(cli, "\\multitest.txt");
 
 	if (!torture_close_connection(cli)) {
 		test = False;
@@ -4021,9 +4019,6 @@ static BOOL run_test(const char *name)
 	}
 
 	for (i=0;torture_ops[i].name;i++) {
-		asprintf(&randomfname, "\\XX%x", 
-			 (unsigned)random());
-
 		if (gen_fnmatch(name, torture_ops[i].name) == 0) {
 			double t;
 			matched = True;
