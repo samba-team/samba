@@ -371,13 +371,13 @@ fi
 AM_CONDITIONAL(have_err_h, test "$ac_cv_header_err_h" = yes)
 AM_CONDITIONAL(have_fnmatch_h, test "$ac_cv_header_fnmatch_h" = yes)
 
-AC_KRB_IPV6
-
 dnl Checks for libraries.
 
 AC_FIND_FUNC(socket, socket)
 AC_FIND_FUNC(gethostbyname, nsl)
 AC_FIND_FUNC(syslog, syslog)
+
+AC_KRB_IPV6
 
 AC_FIND_FUNC_NO_LIBS(logwtmp, util)
 AC_FIND_FUNC_NO_LIBS(tgetent, termcap ncurses curses)
