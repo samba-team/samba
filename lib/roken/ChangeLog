@@ -1,3 +1,12 @@
+1999-07-13  Assar Westerlund  <assar@sics.se>
+
+	* roken.h.in (k_getpwnam): update prototype
+
+	* k_getpwnam.c (k_getpwnam): const-ize
+
+	* get_default_username.c (get_default_username): a better way of
+ 	guessing when the user has su:ed
+
 1999-07-08  Johan Danielsson  <joda@pdc.kth.se>
 
 	* roken.awk: use puts, as suggested by Jeffrey Hutzelman
