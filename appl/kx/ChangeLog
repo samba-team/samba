@@ -1,3 +1,8 @@
+2000-06-10  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.in: use INSTALL_SCRIPT for installing rxterm, rxtelnet,
+	tenletxr
+
 2000-04-19  Assar Westerlund  <assar@sics.se>
 
 	* common.c: try hostname uncanonified if getaddrinfo() fails
