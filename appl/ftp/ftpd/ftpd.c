@@ -832,6 +832,7 @@ end_login(void)
 	dochroot = 0;
 }
 
+#ifdef KRB5
 int
 krb5_verify(struct passwd *pwd, char *passwd)
 {
@@ -872,6 +873,7 @@ krb5_verify(struct passwd *pwd, char *passwd)
       return ret;
   return 0;
 }
+#endif
 
 void
 pass(char *passwd)
