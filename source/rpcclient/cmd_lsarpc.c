@@ -210,8 +210,11 @@ static NTSTATUS cmd_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	for (i = 0; i < argc - 1; i++)
-		string_to_sid(&sids[i], argv[i + 1]);
+	for (i = 0; i < argc - 1; i++) 
+		if (!string_to_sid(&sids[i], argv[i + 1])) {
+			result = NT_STATUS_INVALID_SID;
+			goto done;
+		}
 
 	/* Lookup the SIDs */
 
