@@ -41,9 +41,8 @@
 protocol server
 .Sh SYNOPSIS
 .Nm telnetd
-.Op Fl BUhklns
+.Op Fl BUhkln
 .Op Fl D Ar debugmode
-.Op Fl I Ns Ar initid
 .Op Fl S Ar tos
 .Op Fl X Ar authtype
 .Op Fl a Ar authmode
@@ -182,37 +181,6 @@ option may be used to enable encryption debugging code.
 .It Fl h
 Disables the printing of host-specific information before
 login has been completed.
-.It Fl I Ar initid
-This option is only applicable to
-.Tn UNICOS
-systems prior to 7.0.
-It specifies the
-.Dv ID
-from
-.Pa /etc/inittab
-to use when init starts login sessions.  The default
-.Dv ID
-is
-.Dv fe.
-.It Fl k
-This option is only useful if
-.Nm telnetd
-has been compiled with both linemode and kludge linemode
-support.  If the
-.Fl k
-option is specified, then if the remote client does not
-support the
-.Dv LINEMODE
-option, then
-.Nm telnetd
-will operate in character at a time mode.
-It will still support kludge linemode, but will only
-go into kludge linemode if the remote client requests
-it.
-(This is done by by the client sending
-.Dv DONT SUPPRESS-GO-AHEAD
-and
-.Dv DONT ECHO . )
 .It Fl k
 .It Fl l
 Ignored.
@@ -251,25 +219,6 @@ can differentiate
 .Ar highpty
 from
 .Ar lowpty .
-.It Fl s
-This option is only enabled if
-.Nm telnetd
-is compiled with support for
-.Tn SecurID
-cards.
-It causes the
-.Fl s
-option to be passed on to
-.Xr login 1 ,
-and thus is only useful if
-.Xr login 1
-supports the
-.Fl s
-flag to indicate that only
-.Tn SecurID
-validated logins are allowed, and is
-usually useful for controlling remote logins
-from outside of a firewall.
 .It Fl S Ar tos
 .It Fl u Ar len
 This option is used to specify the size of the field
