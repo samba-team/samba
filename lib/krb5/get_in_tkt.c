@@ -542,10 +542,12 @@ init_as_req (krb5_context context,
 			    sp = NULL;
 			else
 			    krb5_data_zero(&salt.saltvalue);
-		    add_padata(context, a->padata, creds->client, 
+		    ret = add_padata(context, a->padata, creds->client, 
 			       key_proc, keyseed, 
 			       &preauth->val[i].info.val[j].etype, 1,
 			       sp);
+		    if (ret == 0)
+			break;
 		}
 	    }
 	}
