@@ -1220,7 +1220,7 @@ static BOOL build_sam_account(SAM_ACCOUNT *sam_pass, struct smb_passwd *pw_buf)
 	pdb_set_pass_can_change_time (sam_pass, pw_buf->pass_last_set_time);
 	pdb_set_domain (sam_pass, lp_workgroup());
 	
-	pdb_set_dir_drive     (sam_pass, lp_logon_drive());
+	pdb_set_dir_drive     (sam_pass, lp_logon_drive(), False);
 
 	/* FIXME!!  What should this be set to?  New smb.conf parameter maybe?
 	   max password age?   For now, we'll use the current time + 21 days. 
@@ -1237,15 +1237,15 @@ static BOOL build_sam_account(SAM_ACCOUNT *sam_pass, struct smb_passwd *pw_buf)
 
 	        pstrcpy(str, lp_logon_script());
        		standard_sub_advanced(-1, pw_buf->smb_name, "", gid, str);
-		pdb_set_logon_script(sam_pass, str);
+		pdb_set_logon_script(sam_pass, str, False);
 
 	        pstrcpy(str, lp_logon_path());
        		standard_sub_advanced(-1, pw_buf->smb_name, "", gid, str);
-		pdb_set_profile_path(sam_pass, str);
+		pdb_set_profile_path(sam_pass, str, False);
 
 	        pstrcpy(str, lp_logon_home());
         	standard_sub_advanced(-1, pw_buf->smb_name, "", gid, str);
-		pdb_set_homedir(sam_pass, str);
+		pdb_set_homedir(sam_pass, str, False);
  		
 		sam_logon_in_ssb = False;
 	} else {

@@ -144,10 +144,10 @@ BOOL pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, struct passwd *pwd)
 	pdb_set_fullname(*new_sam_acct, pwd->pw_gecos);
 	pdb_set_uid(*new_sam_acct, pwd->pw_uid);
 	pdb_set_gid(*new_sam_acct, pwd->pw_gid);
-	pdb_set_profile_path(*new_sam_acct, lp_logon_path());
-	pdb_set_homedir(*new_sam_acct, lp_logon_home());
-	pdb_set_dir_drive(*new_sam_acct, lp_logon_drive());
-	pdb_set_logon_script(*new_sam_acct, lp_logon_script());
+	pdb_set_profile_path(*new_sam_acct, lp_logon_path(), False);
+	pdb_set_homedir(*new_sam_acct, lp_logon_home(), False);
+	pdb_set_dir_drive(*new_sam_acct, lp_logon_drive(), False);
+	pdb_set_logon_script(*new_sam_acct, lp_logon_script(), False);
 	return True;
 }
 
@@ -1447,7 +1447,7 @@ BOOL pdb_set_fullname(SAM_ACCOUNT *sampass, char *fullname)
  Set the user's logon script.
  ********************************************************************/
 
-BOOL pdb_set_logon_script(SAM_ACCOUNT *sampass, char *logon_script)
+BOOL pdb_set_logon_script(SAM_ACCOUNT *sampass, char *logon_script, BOOL store)
 {
 	if (!sampass)
 		return False;
@@ -1457,7 +1457,7 @@ BOOL pdb_set_logon_script(SAM_ACCOUNT *sampass, char *logon_script)
 
 	StrnCpy (sampass->logon_script, logon_script, strlen(logon_script));
 
-	if (strcmp(logon_script, lp_logon_script()))
+	if (store)
 		pdb_set_init_flag(sampass, FLAG_SAM_LOGONSCRIPT);
 
 	return True;
@@ -1467,7 +1467,7 @@ BOOL pdb_set_logon_script(SAM_ACCOUNT *sampass, char *logon_script)
  Set the user's profile path.
  ********************************************************************/
 
-BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, char *profile_path)
+BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, char *profile_path, BOOL store)
 {
 	if (!sampass)
 		return False;
@@ -1477,7 +1477,7 @@ BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, char *profile_path)
 	
 	StrnCpy (sampass->profile_path, profile_path, strlen(profile_path));
 
-	if (strcmp(profile_path, lp_logon_path()))
+	if (store)
 		pdb_set_init_flag(sampass, FLAG_SAM_PROFILE);
 	
 	return True;
@@ -1487,7 +1487,7 @@ BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, char *profile_path)
  Set the user's directory drive.
  ********************************************************************/
 
-BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, char *dir_drive)
+BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, char *dir_drive, BOOL store)
 {
 	if (!sampass)
 		return False;
@@ -1497,7 +1497,7 @@ BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, char *dir_drive)
 
 	StrnCpy (sampass->dir_drive, dir_drive, strlen(dir_drive));
 	
-	if (strcmp(dir_drive, lp_logon_drive()))
+	if (store)
 		pdb_set_init_flag(sampass, FLAG_SAM_DRIVE);
 
 	return True;
@@ -1507,7 +1507,7 @@ BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, char *dir_drive)
  Set the user's home directory.
  ********************************************************************/
 
-BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, char *homedir)
+BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, char *homedir, BOOL store)
 {
 	if (!sampass)
 		return False;
@@ -1517,7 +1517,7 @@ BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, char *homedir)
 	
 	StrnCpy (sampass->home_dir, homedir, strlen(homedir));
 
-	if (strcmp(homedir, lp_logon_home()))
+	if (store)
 		pdb_set_init_flag(sampass, FLAG_SAM_SMBHOME);
 
 	return True;

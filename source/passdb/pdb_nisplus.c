@@ -325,27 +325,40 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
     pstrcpy(samlogon_user, pdb_get_username(pw_buf));
     
     get_single_attribute(obj, NPF_HOME_DIR, home_dir, sizeof(pstring));
-    if( !(home_dir && *home_dir) )
+    if( !(home_dir && *home_dir) ) {
       pstrcpy(home_dir, lp_logon_home());
-    pdb_set_homedir(pw_buf, home_dir);
+      pdb_set_homedir(pw_buf, home_dir, False);
+    }
+    else
+      pdb_set_homedir(pw_buf, home_dir, True);
 
     get_single_attribute(obj, NPF_DIR_DRIVE, home_drive, sizeof(pstring));
-    if( !(home_drive && *home_drive) )
+    if( !(home_drive && *home_drive) ) {
       pstrcpy(home_drive, lp_logon_drive());
-    pdb_set_dir_drive(pw_buf, home_drive);
+      pdb_set_dir_drive(pw_buf, home_drive, False);
+    }
+    else
+      pdb_set_dir_drive(pw_buf, home_drive, True);
 
     get_single_attribute(obj, NPF_LOGON_SCRIPT, logon_script,
 			 sizeof(pstring));
-    if( !(logon_script && *logon_script) )
-      pstrcpy(logon_script, lp_logon_script());
-    pdb_set_logon_script(pw_buf, logon_script);
+    if( !(logon_script && *logon_script) ) {
+      pstrcpy(logon_script, lp_logon_script(), False);
+    }
+    else
+      pdb_set_logon_script(pw_buf, logon_script, True);
 
-    get_single_attribute(obj, NPF_PROFILE_PATH, profile_path,
-			 sizeof(pstring));
-    if( !(profile_path && *profile_path) )
+    get_single_attribute(obj, NPF_PROFILE_PATH, profile_path, sizeof(pstring));
+    if( !(profile_path && *profile_path) ) {
       pstrcpy(profile_path, lp_logon_path());
-    pdb_set_profile_path(pw_buf, profile_path);
-  } else {
+      pdb_set_profile_path(pw_buf, profile_path, False);
+    }
+    else
+      pdb_set_profile_path(pw_buf, profile_path, True);
+
+  } 
+  else 
+  {
     /* lkclXXXX this is OBSERVED behaviour by NT PDCs, enforced here. */
     pdb_set_group_rid (pw_buf, DOMAIN_GROUP_RID_USERS); 
   }

@@ -440,49 +440,53 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 	pass_must_change_time = (time_t) strtol(temp, NULL, 16);
 
 	/* recommend that 'gecos' and 'displayName' should refer to the same
-	   * attribute OID.  userFullName depreciated, only used by Samba
-	   * primary rules of LDAP: don't make a new attribute when one is already defined
-	   * that fits your needs; using gecos then displayName then cn rather than 'userFullName'
+	 * attribute OID.  userFullName depreciated, only used by Samba
+	 * primary rules of LDAP: don't make a new attribute when one is already defined
+	 * that fits your needs; using cn then displayName rather than 'userFullName'
 	 */
 	 
 	sam_logon_in_ssb = True;
 
-	if (!get_single_attribute(ldap_struct, entry, "gecos", fullname)) {
-		if (!get_single_attribute(ldap_struct, entry, "displayName", fullname))
-			get_single_attribute(ldap_struct, entry, "cn", fullname);
+	if (!get_single_attribute(ldap_struct, entry, "cn", fullname)) {
+		get_single_attribute(ldap_struct, entry, "displayName", fullname);
 	}
+
 
 	if (!get_single_attribute(ldap_struct, entry, "homeDrive", dir_drive)) {
 		pstrcpy(dir_drive, lp_logon_drive());
 		standard_sub_advanced(-1, username, "", gid, dir_drive);
 		DEBUG(5,("homeDrive fell back to %s\n",dir_drive));
+		pdb_set_dir_drive(sampass, dir_drive, False);
 	}
 	else
-		pdb_set_init_flag(sampass, FLAG_SAM_DRIVE);
+		pdb_set_dir_drive(sampass, dir_drive, True);
 
 	if (!get_single_attribute(ldap_struct, entry, "smbHome", homedir)) {
 		pstrcpy(homedir, lp_logon_home());
 		standard_sub_advanced(-1, username, "", gid, homedir);
 		DEBUG(5,("smbHome fell back to %s\n",homedir));
+		pdb_set_homedir(sampass, homedir, False);
 	}
 	else
-		pdb_set_init_flag(sampass, FLAG_SAM_SMBHOME);
+		pdb_set_homedir(sampass, homedir, True);
 
 	if (!get_single_attribute(ldap_struct, entry, "scriptPath", logon_script)) {
 		pstrcpy(logon_script, lp_logon_script());
 		standard_sub_advanced(-1, username, "", gid, logon_script);
 		DEBUG(5,("scriptPath fell back to %s\n",logon_script));
+		pdb_set_logon_script(sampass, logon_script, False);
 	}
 	else
-		pdb_set_init_flag(sampass, FLAG_SAM_LOGONSCRIPT);
+		pdb_set_logon_script(sampass, logon_script, True);
 
 	if (!get_single_attribute(ldap_struct, entry, "profilePath", profile_path)) {
 		pstrcpy(profile_path, lp_logon_path());
 		standard_sub_advanced(-1, username, "", gid, profile_path);
 		DEBUG(5,("profilePath fell back to %s\n",profile_path));
+		pdb_set_profile_path(sampass, profile_path, False);
 	}
 	else
-		pdb_set_init_flag(sampass, FLAG_SAM_PROFILE);
+		pdb_set_profile_path(sampass, profile_path, True);
 		
 	sam_logon_in_ssb = False;
 
@@ -498,8 +502,10 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 	 *  sys_getpw*() which is how we're doing it 
 	 */
 	sys_user = sys_getpwnam(username);
-	if (sys_user == NULL)
+	if (sys_user == NULL) {
+		DEBUG (2,("init_sam_from_ldap: User [%s] does not ave a uid!\n", username));
 		return False;
+	}
 
 
 	/* FIXME: hours stuff should be cleaner */
@@ -544,13 +550,10 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 
 	pdb_set_fullname(sampass, fullname);
 
-	pdb_set_logon_script(sampass, logon_script);
-	pdb_set_profile_path(sampass, profile_path);
-	pdb_set_dir_drive(sampass, dir_drive);
-	pdb_set_homedir(sampass, homedir);
 	pdb_set_acct_desc(sampass, acct_desc);
 	pdb_set_workstations(sampass, workstations);
 	pdb_set_munged_dial(sampass, munged_dial);
+	
 	if (!pdb_set_nt_passwd(sampass, smbntpwd))
 		return False;
 	if (!pdb_set_lanman_passwd(sampass, smblmpwd))
