@@ -1718,6 +1718,11 @@ struct ea_struct {
 	DATA_BLOB value;
 };
 
+struct ea_list {
+	struct ea_list *next, *prev;
+	struct ea_struct ea;
+};
+
 /* EA names used internally in Samba. KEEP UP TO DATE with prohibited_ea_names in trans2.c !. */
 #define SAMBA_POSIX_INHERITANCE_EA_NAME "user.SAMBA_PAI"
 /* EA to use for DOS attributes */
