@@ -547,7 +547,7 @@ talloctort : SHOWFLAGS bin/talloctort
 
 nsswitch : SHOWFLAGS $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS)
 
-wins : SHOWFLAGS nsswitch/libnss_wins.so
+wins : SHOWFLAGS nsswitch/libnss_wins.@SHLIBEXT@
 
 everything: all libsmbclient debug2html smbfilter talloctort bin/make_printerdef
 
@@ -785,8 +785,12 @@ bin/libsmbclient.a: $(LIBSMBCLIENT_PICOBJS)
 
 libsmbclient: bin/libsmbclient.a bin/libsmbclient.@SHLIBEXT@
 
+bin/pdb_mysql.@SHLIBEXT@: $(PDB_MYSQL_OBJ)
+	echo "Building plugin $@"
+	$(SHLD) $(LDSHFLAGS) -o $@ $(PDB_MYSQL_OBJ) @MYSQL_LIBS@ \
+		@SONAMEFLAG@`basename $@`
 
-nsswitch/libnss_wins.so: $(NSS_OBJ)
+nsswitch/libnss_wins.@SHLIBEXT@: $(NSS_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(NSS_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
@@ -795,17 +799,17 @@ bin/winbindd: $(WINBINDD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(WINBINDD_OBJ) $(DYNEXP) $(LIBS)
 
-nsswitch/libns_winbind.so: $(WINBIND_NSS_PICOBJS)
+nsswitch/libns_winbind.@SHLIBEXT@: $(WINBIND_NSS_PICOBJS)
 	@echo "Linking $@"
 	@$(SHLD) @LDSHFLAGS@ -o $@ $(WINBIND_NSS_PICOBJS) @WINBIND_NSS_EXTRA_LIBS@ \
 		@SONAMEFLAG@`basename $@`
 
-nsswitch/libnss_winbind.so: $(WINBIND_NSS_PICOBJS)
+nsswitch/libnss_winbind.@SHLIBEXT@: $(WINBIND_NSS_PICOBJS)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(WINBIND_NSS_PICOBJS) @WINBIND_NSS_EXTRA_LIBS@ \
 		@SONAMEFLAG@`basename $@`
 
-nsswitch/pam_winbind.so: $(PAM_WINBIND_OBJ) bin/.dummy
+nsswitch/pam_winbind.@SHLIBEXT@: $(PAM_WINBIND_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_WINBIND_OBJ) \
 		@SONAMEFLAG@`basename $@` -lpam
@@ -849,7 +853,7 @@ installswat: installdirs
 	@$(SHELL) $(srcdir)/script/installswat.sh $(SWATDIR) $(srcdir)
 
 installclientlib:
-	-$(INSTALLCMD) bin/libsmbclient.so ${prefix}/lib
+	-$(INSTALLCMD) bin/libsmbclient.@SHLIBEXT@ ${prefix}/lib
 	-$(INSTALLCMD) -d ${prefix}/include
 	-$(INSTALLCMD) include/libsmbclient.h ${prefix}/include
 
@@ -1014,10 +1018,10 @@ ctags:
 	ctags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
 
 realclean: clean delheaders
-	-rm -f config.log $(PROGS) $(SPROGS) bin/.dummy
-	-rmdir bin
+	-rm -f config.log $(PROGS) $(SPROGS) bin/.dummy script/findsmb
 
 distclean: realclean
+	-rm -f include/stamp-h
 	-rm -f include/config.h Makefile
 	-rm -f config.status config.cache so_locations
 	-rm -rf .deps
