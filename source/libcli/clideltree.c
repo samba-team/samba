@@ -41,7 +41,7 @@ static void delete_fn(file_info *finfo, const char *name, void *state)
 	asprintf(&s, "%s%s", n, finfo->name);
 
 	if (finfo->mode & FILE_ATTRIBUTE_READONLY) {
-		if (!cli_setatr(dstate->tree, s, 0, 0)) {
+		if (NT_STATUS_IS_ERR(cli_setatr(dstate->tree, s, 0, 0))) {
 			DEBUG(2,("Failed to remove READONLY on %s - %s\n",
 				 s, cli_errstr(dstate->tree)));			
 		}
@@ -55,14 +55,14 @@ static void delete_fn(file_info *finfo, const char *name, void *state)
 			 FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM, 
 			 delete_fn, state);
 		free(s2);
-		if (!cli_rmdir(dstate->tree, s)) {
+		if (NT_STATUS_IS_ERR(cli_rmdir(dstate->tree, s))) {
 			DEBUG(2,("Failed to delete %s - %s\n", 
 				 s, cli_errstr(dstate->tree)));
 			dstate->failed = True;
 		}
 		dstate->total_deleted++;
 	} else {
-		if (!cli_unlink(dstate->tree, s)) {
+		if (NT_STATUS_IS_ERR(cli_unlink(dstate->tree, s))) {
 			DEBUG(2,("Failed to delete %s - %s\n", 
 				 s, cli_errstr(dstate->tree)));
 			dstate->failed = True;
@@ -87,7 +87,7 @@ int cli_deltree(struct cli_tree *tree, const char *dname)
 	dstate.failed = False;
 
 	/* it might be a file */
-	if (cli_unlink(tree, dname)) {
+	if (NT_STATUS_IS_OK(cli_unlink(tree, dname))) {
 		return 1;
 	}
 	if (NT_STATUS_EQUAL(cli_nt_error(tree), NT_STATUS_OBJECT_NAME_NOT_FOUND) ||
@@ -102,7 +102,7 @@ int cli_deltree(struct cli_tree *tree, const char *dname)
 		 FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM, 
 		 delete_fn, &dstate);
 	free(mask);
-	if (!cli_rmdir(dstate.tree, dname)) {
+	if (NT_STATUS_IS_ERR(cli_rmdir(dstate.tree, dname))) {
 		DEBUG(2,("Failed to delete %s - %s\n", 
 			 dname, cli_errstr(dstate.tree)));
 		return -1;

@@ -91,7 +91,7 @@ static BOOL test_read(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	buf = talloc_zero(mem_ctx, maxsize);
 
 	if (cli_deltree(cli->tree, BASEDIR) == -1 ||
-	    !cli_mkdir(cli->tree, BASEDIR)) {
+	    NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR))) {
 		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli->tree));
 		return False;
 	}
@@ -178,7 +178,7 @@ static BOOL test_read(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Trying locked region\n");
 	cli->session->pid++;
-	if (!cli_lock(cli->tree, fnum, 103, 1, 0, WRITE_LOCK)) {
+	if (NT_STATUS_IS_ERR(cli_lock(cli->tree, fnum, 103, 1, 0, WRITE_LOCK))) {
 		printf("Failed to lock file at %d\n", __LINE__);
 		ret = False;
 		goto done;
@@ -217,7 +217,7 @@ static BOOL test_lockread(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	buf = talloc_zero(mem_ctx, maxsize);
 
 	if (cli_deltree(cli->tree, BASEDIR) == -1 ||
-	    !cli_mkdir(cli->tree, BASEDIR)) {
+	    NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR))) {
 		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli->tree));
 		return False;
 	}
@@ -322,7 +322,7 @@ static BOOL test_lockread(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Trying locked region\n");
 	cli->session->pid++;
-	if (!cli_lock(cli->tree, fnum, 103, 1, 0, WRITE_LOCK)) {
+	if (NT_STATUS_IS_ERR(cli_lock(cli->tree, fnum, 103, 1, 0, WRITE_LOCK))) {
 		printf("Failed to lock file at %d\n", __LINE__);
 		ret = False;
 		goto done;
@@ -360,7 +360,7 @@ static BOOL test_readx(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	buf = talloc_zero(mem_ctx, maxsize);
 
 	if (cli_deltree(cli->tree, BASEDIR) == -1 ||
-	    !cli_mkdir(cli->tree, BASEDIR)) {
+	    NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR))) {
 		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli->tree));
 		return False;
 	}
@@ -489,7 +489,7 @@ static BOOL test_readx(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Trying locked region\n");
 	cli->session->pid++;
-	if (!cli_lock(cli->tree, fnum, 103, 1, 0, WRITE_LOCK)) {
+	if (NT_STATUS_IS_ERR(cli_lock(cli->tree, fnum, 103, 1, 0, WRITE_LOCK))) {
 		printf("Failed to lock file at %d\n", __LINE__);
 		ret = False;
 		goto done;
@@ -511,7 +511,7 @@ static BOOL test_readx(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.readx.out.nread, 0);
 
-	if (!cli_lock64(cli->tree, fnum, io.readx.in.offset, 1, 0, WRITE_LOCK)) {
+	if (NT_STATUS_IS_ERR(cli_lock64(cli->tree, fnum, io.readx.in.offset, 1, 0, WRITE_LOCK))) {
 		printf("Failed to lock file at %d\n", __LINE__);
 		ret = False;
 		goto done;
@@ -547,7 +547,7 @@ static BOOL test_readbraw(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	buf = talloc_zero(mem_ctx, maxsize);
 
 	if (cli_deltree(cli->tree, BASEDIR) == -1 ||
-	    !cli_mkdir(cli->tree, BASEDIR)) {
+	    NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR))) {
 		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli->tree));
 		return False;
 	}
@@ -660,7 +660,7 @@ static BOOL test_readbraw(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Trying locked region\n");
 	cli->session->pid++;
-	if (!cli_lock(cli->tree, fnum, 103, 1, 0, WRITE_LOCK)) {
+	if (NT_STATUS_IS_ERR(cli_lock(cli->tree, fnum, 103, 1, 0, WRITE_LOCK))) {
 		printf("Failed to lock file at %d\n", __LINE__);
 		ret = False;
 		goto done;

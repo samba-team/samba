@@ -120,7 +120,7 @@ BOOL torture_close_connection(struct cli_state *c)
 	BOOL ret = True;
 	DEBUG(9,("torture_close_connection: cli_state@%p\n", c));
 	if (!c) return True;
-	if (!cli_tdis(c)) {
+	if (NT_STATUS_IS_ERR(cli_tdis(c))) {
 		printf("tdis failed (%s)\n", cli_errstr(c->tree));
 		ret = False;
 	}
@@ -201,7 +201,7 @@ static BOOL check_error(int line, struct cli_state *c,
 
 static BOOL wait_lock(struct cli_state *c, int fnum, uint32 offset, uint32 len)
 {
-	while (!cli_lock(c->tree, fnum, offset, len, -1, WRITE_LOCK)) {
+	while (NT_STATUS_IS_ERR(cli_lock(c->tree, fnum, offset, len, -1, WRITE_LOCK))) {
 		if (!check_error(__LINE__, c, ERRDOS, ERRlock, NT_STATUS_LOCK_NOT_GRANTED)) return False;
 	}
 	return True;
@@ -273,17 +273,17 @@ static BOOL rw_torture(struct cli_state *c)
 			correct = False;
 		}
 
-		if (!cli_close(c->tree, fnum)) {
+		if (NT_STATUS_IS_ERR(cli_close(c->tree, fnum))) {
 			printf("close failed (%s)\n", cli_errstr(c->tree));
 			correct = False;
 		}
 
-		if (!cli_unlink(c->tree, fname)) {
+		if (NT_STATUS_IS_ERR(cli_unlink(c->tree, fname))) {
 			printf("unlink failed (%s)\n", cli_errstr(c->tree));
 			correct = False;
 		}
 
-		if (!cli_unlock(c->tree, fnum2, n*sizeof(int), sizeof(int))) {
+		if (NT_STATUS_IS_ERR(cli_unlock(c->tree, fnum2, n*sizeof(int), sizeof(int)))) {
 			printf("unlock failed (%s)\n", cli_errstr(c->tree));
 			correct = False;
 		}
@@ -406,7 +406,7 @@ static BOOL rw_torture3(struct cli_state *c, const char *lockfname)
 
 	}
 
-	if (!cli_close(c->tree, fnum)) {
+	if (NT_STATUS_IS_ERR(cli_close(c->tree, fnum))) {
 		printf("close failed (%s)\n", cli_errstr(c->tree));
 		correct = False;
 	}
@@ -478,16 +478,16 @@ static BOOL rw_torture2(struct cli_state *c1, struct cli_state *c2)
 		}
 	}
 
-	if (!cli_close(c2->tree, fnum2)) {
+	if (NT_STATUS_IS_ERR(cli_close(c2->tree, fnum2))) {
 		printf("close failed (%s)\n", cli_errstr(c2->tree));
 		correct = False;
 	}
-	if (!cli_close(c1->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(c1->tree, fnum1))) {
 		printf("close failed (%s)\n", cli_errstr(c1->tree));
 		correct = False;
 	}
 
-	if (!cli_unlink(c1->tree, lockfname)) {
+	if (NT_STATUS_IS_ERR(cli_unlink(c1->tree, lockfname))) {
 		printf("unlink failed (%s)\n", cli_errstr(c1->tree));
 		correct = False;
 	}
@@ -703,13 +703,13 @@ static BOOL run_locktest1(int dummy)
 		return False;
 	}
 
-	if (!cli_lock(cli1->tree, fnum1, 0, 4, 0, WRITE_LOCK)) {
+	if (NT_STATUS_IS_ERR(cli_lock(cli1->tree, fnum1, 0, 4, 0, WRITE_LOCK))) {
 		printf("lock1 failed (%s)\n", cli_errstr(cli1->tree));
 		return False;
 	}
 
 
-	if (cli_lock(cli2->tree, fnum3, 0, 4, 0, WRITE_LOCK)) {
+	if (NT_STATUS_IS_OK(cli_lock(cli2->tree, fnum3, 0, 4, 0, WRITE_LOCK))) {
 		printf("lock2 succeeded! This is a locking bug\n");
 		return False;
 	} else {
@@ -721,7 +721,7 @@ static BOOL run_locktest1(int dummy)
 	lock_timeout = (6 + (random() % 20));
 	printf("Testing lock timeout with timeout=%u\n", lock_timeout);
 	t1 = time(NULL);
-	if (cli_lock(cli2->tree, fnum3, 0, 4, lock_timeout * 1000, WRITE_LOCK)) {
+	if (NT_STATUS_IS_OK(cli_lock(cli2->tree, fnum3, 0, 4, lock_timeout * 1000, WRITE_LOCK))) {
 		printf("lock3 succeeded! This is a locking bug\n");
 		return False;
 	} else {
@@ -736,12 +736,12 @@ static BOOL run_locktest1(int dummy)
 	printf("server slept for %u seconds for a %u second timeout\n",
 	       (unsigned int)(t2-t1), lock_timeout);
 
-	if (!cli_close(cli1->tree, fnum2)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum2))) {
 		printf("close1 failed (%s)\n", cli_errstr(cli1->tree));
 		return False;
 	}
 
-	if (cli_lock(cli2->tree, fnum3, 0, 4, 0, WRITE_LOCK)) {
+	if (NT_STATUS_IS_OK(cli_lock(cli2->tree, fnum3, 0, 4, 0, WRITE_LOCK))) {
 		printf("lock4 succeeded! This is a locking bug\n");
 		return False;
 	} else {
@@ -749,17 +749,17 @@ static BOOL run_locktest1(int dummy)
 				 NT_STATUS_FILE_LOCK_CONFLICT)) return False;
 	}
 
-	if (!cli_close(cli1->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 		printf("close2 failed (%s)\n", cli_errstr(cli1->tree));
 		return False;
 	}
 
-	if (!cli_close(cli2->tree, fnum3)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli2->tree, fnum3))) {
 		printf("close3 failed (%s)\n", cli_errstr(cli2->tree));
 		return False;
 	}
 
-	if (!cli_unlink(cli1->tree, fname)) {
+	if (NT_STATUS_IS_ERR(cli_unlink(cli1->tree, fname))) {
 		printf("unlink failed (%s)\n", cli_errstr(cli1->tree));
 		return False;
 	}
@@ -821,8 +821,7 @@ static BOOL run_tcon_test(int dummy)
 	}
 
 	tree1 = cli->tree;	/* save old tree connection */
-	if (!cli_send_tconX(cli, share, "?????",
-			    password)) {
+	if (NT_STATUS_IS_ERR(cli_send_tconX(cli, share, "?????", password))) {
 		printf("%s refused 2nd tree connect (%s)\n", host,
 		           cli_errstr(cli->tree));
 		cli_shutdown(cli);
@@ -868,14 +867,14 @@ static BOOL run_tcon_test(int dummy)
 	cli->session->vuid = vuid1;
 	cli->tree->tid = cnum1;
 
-	if (!cli_close(cli->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli->tree, fnum1))) {
 		printf("close failed (%s)\n", cli_errstr(cli->tree));
 		return False;
 	}
 
 	cli->tree->tid = cnum2;
 
-	if (!cli_tdis(cli)) {
+	if (NT_STATUS_IS_ERR(cli_tdis(cli))) {
 		printf("secondary tdis failed (%s)\n", cli_errstr(cli->tree));
 		return False;
 	}
@@ -900,8 +899,8 @@ static BOOL tcon_devtest(struct cli_state *cli,
 	BOOL ret;
 	char *password = lp_parm_string(-1, "torture", "password");
 
-	status = cli_send_tconX(cli, myshare, devtype,
-				password);
+	status = NT_STATUS_IS_OK(cli_send_tconX(cli, myshare, devtype, 
+						password));
 
 	printf("Trying share %s with devtype %s\n", myshare, devtype);
 
@@ -1051,12 +1050,12 @@ static BOOL run_locktest2(int dummy)
 
 	cli->session->pid = 1;
 
-	if (!cli_lock(cli->tree, fnum1, 0, 4, 0, WRITE_LOCK)) {
+	if (NT_STATUS_IS_ERR(cli_lock(cli->tree, fnum1, 0, 4, 0, WRITE_LOCK))) {
 		printf("lock1 failed (%s)\n", cli_errstr(cli->tree));
 		return False;
 	}
 
-	if (cli_lock(cli->tree, fnum1, 0, 4, 0, WRITE_LOCK)) {
+	if (NT_STATUS_IS_OK(cli_lock(cli->tree, fnum1, 0, 4, 0, WRITE_LOCK))) {
 		printf("WRITE lock1 succeeded! This is a locking bug\n");
 		correct = False;
 	} else {
@@ -1064,7 +1063,7 @@ static BOOL run_locktest2(int dummy)
 				 NT_STATUS_LOCK_NOT_GRANTED)) return False;
 	}
 
-	if (cli_lock(cli->tree, fnum2, 0, 4, 0, WRITE_LOCK)) {
+	if (NT_STATUS_IS_OK(cli_lock(cli->tree, fnum2, 0, 4, 0, WRITE_LOCK))) {
 		printf("WRITE lock2 succeeded! This is a locking bug\n");
 		correct = False;
 	} else {
@@ -1072,7 +1071,7 @@ static BOOL run_locktest2(int dummy)
 				 NT_STATUS_LOCK_NOT_GRANTED)) return False;
 	}
 
-	if (cli_lock(cli->tree, fnum2, 0, 4, 0, READ_LOCK)) {
+	if (NT_STATUS_IS_OK(cli_lock(cli->tree, fnum2, 0, 4, 0, READ_LOCK))) {
 		printf("READ lock2 succeeded! This is a locking bug\n");
 		correct = False;
 	} else {
@@ -1080,18 +1079,18 @@ static BOOL run_locktest2(int dummy)
 				 NT_STATUS_FILE_LOCK_CONFLICT)) return False;
 	}
 
-	if (!cli_lock(cli->tree, fnum1, 100, 4, 0, WRITE_LOCK)) {
+	if (NT_STATUS_IS_ERR(cli_lock(cli->tree, fnum1, 100, 4, 0, WRITE_LOCK))) {
 		printf("lock at 100 failed (%s)\n", cli_errstr(cli->tree));
 	}
 
 	cli->session->pid = 2;
 
-	if (cli_unlock(cli->tree, fnum1, 100, 4)) {
+	if (NT_STATUS_IS_OK(cli_unlock(cli->tree, fnum1, 100, 4))) {
 		printf("unlock at 100 succeeded! This is a locking bug\n");
 		correct = False;
 	}
 
-	if (cli_unlock(cli->tree, fnum1, 0, 4)) {
+	if (NT_STATUS_IS_OK(cli_unlock(cli->tree, fnum1, 0, 4))) {
 		printf("unlock1 succeeded! This is a locking bug\n");
 		correct = False;
 	} else {
@@ -1100,7 +1099,7 @@ static BOOL run_locktest2(int dummy)
 				 NT_STATUS_RANGE_NOT_LOCKED)) return False;
 	}
 
-	if (cli_unlock(cli->tree, fnum1, 0, 8)) {
+	if (NT_STATUS_IS_OK(cli_unlock(cli->tree, fnum1, 0, 8))) {
 		printf("unlock2 succeeded! This is a locking bug\n");
 		correct = False;
 	} else {
@@ -1109,7 +1108,7 @@ static BOOL run_locktest2(int dummy)
 				 NT_STATUS_RANGE_NOT_LOCKED)) return False;
 	}
 
-	if (cli_lock(cli->tree, fnum3, 0, 4, 0, WRITE_LOCK)) {
+	if (NT_STATUS_IS_OK(cli_lock(cli->tree, fnum3, 0, 4, 0, WRITE_LOCK))) {
 		printf("lock3 succeeded! This is a locking bug\n");
 		correct = False;
 	} else {
@@ -1118,17 +1117,17 @@ static BOOL run_locktest2(int dummy)
 
 	cli->session->pid = 1;
 
-	if (!cli_close(cli->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli->tree, fnum1))) {
 		printf("close1 failed (%s)\n", cli_errstr(cli->tree));
 		return False;
 	}
 
-	if (!cli_close(cli->tree, fnum2)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli->tree, fnum2))) {
 		printf("close2 failed (%s)\n", cli_errstr(cli->tree));
 		return False;
 	}
 
-	if (!cli_close(cli->tree, fnum3)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli->tree, fnum3))) {
 		printf("close3 failed (%s)\n", cli_errstr(cli->tree));
 		return False;
 	}
@@ -1183,14 +1182,14 @@ static BOOL run_locktest3(int dummy)
 
 	for (offset=i=0;i<torture_numops;i++) {
 		NEXT_OFFSET;
-		if (!cli_lock(cli1->tree, fnum1, offset-1, 1, 0, WRITE_LOCK)) {
+		if (NT_STATUS_IS_ERR(cli_lock(cli1->tree, fnum1, offset-1, 1, 0, WRITE_LOCK))) {
 			printf("lock1 %d failed (%s)\n", 
 			       i,
 			       cli_errstr(cli1->tree));
 			return False;
 		}
 
-		if (!cli_lock(cli2->tree, fnum2, offset-2, 1, 0, WRITE_LOCK)) {
+		if (NT_STATUS_IS_ERR(cli_lock(cli2->tree, fnum2, offset-2, 1, 0, WRITE_LOCK))) {
 			printf("lock2 %d failed (%s)\n", 
 			       i,
 			       cli_errstr(cli1->tree));
@@ -1203,22 +1202,22 @@ static BOOL run_locktest3(int dummy)
 	for (offset=i=0;i<torture_numops;i++) {
 		NEXT_OFFSET;
 
-		if (cli_lock(cli1->tree, fnum1, offset-2, 1, 0, WRITE_LOCK)) {
+		if (NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, offset-2, 1, 0, WRITE_LOCK))) {
 			printf("error: lock1 %d succeeded!\n", i);
 			return False;
 		}
 
-		if (cli_lock(cli2->tree, fnum2, offset-1, 1, 0, WRITE_LOCK)) {
+		if (NT_STATUS_IS_OK(cli_lock(cli2->tree, fnum2, offset-1, 1, 0, WRITE_LOCK))) {
 			printf("error: lock2 %d succeeded!\n", i);
 			return False;
 		}
 
-		if (cli_lock(cli1->tree, fnum1, offset-1, 1, 0, WRITE_LOCK)) {
+		if (NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, offset-1, 1, 0, WRITE_LOCK))) {
 			printf("error: lock3 %d succeeded!\n", i);
 			return False;
 		}
 
-		if (cli_lock(cli2->tree, fnum2, offset-2, 1, 0, WRITE_LOCK)) {
+		if (NT_STATUS_IS_OK(cli_lock(cli2->tree, fnum2, offset-2, 1, 0, WRITE_LOCK))) {
 			printf("error: lock4 %d succeeded!\n", i);
 			return False;
 		}
@@ -1229,14 +1228,14 @@ static BOOL run_locktest3(int dummy)
 	for (offset=i=0;i<torture_numops;i++) {
 		NEXT_OFFSET;
 
-		if (!cli_unlock(cli1->tree, fnum1, offset-1, 1)) {
+		if (NT_STATUS_IS_ERR(cli_unlock(cli1->tree, fnum1, offset-1, 1))) {
 			printf("unlock1 %d failed (%s)\n", 
 			       i,
 			       cli_errstr(cli1->tree));
 			return False;
 		}
 
-		if (!cli_unlock(cli2->tree, fnum2, offset-2, 1)) {
+		if (NT_STATUS_IS_ERR(cli_unlock(cli2->tree, fnum2, offset-2, 1))) {
 			printf("unlock2 %d failed (%s)\n", 
 			       i,
 			       cli_errstr(cli1->tree));
@@ -1244,17 +1243,17 @@ static BOOL run_locktest3(int dummy)
 		}
 	}
 
-	if (!cli_close(cli1->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 		printf("close1 failed (%s)\n", cli_errstr(cli1->tree));
 		return False;
 	}
 
-	if (!cli_close(cli2->tree, fnum2)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli2->tree, fnum2))) {
 		printf("close2 failed (%s)\n", cli_errstr(cli2->tree));
 		return False;
 	}
 
-	if (!cli_unlink(cli1->tree, fname)) {
+	if (NT_STATUS_IS_ERR(cli_unlink(cli1->tree, fname))) {
 		printf("unlink failed (%s)\n", cli_errstr(cli1->tree));
 		return False;
 	}
@@ -1307,113 +1306,113 @@ static BOOL run_locktest4(int dummy)
 		goto fail;
 	}
 
-	ret = cli_lock(cli1->tree, fnum1, 0, 4, 0, WRITE_LOCK) &&
-	      cli_lock(cli1->tree, fnum1, 2, 4, 0, WRITE_LOCK);
+	ret = NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 0, 4, 0, WRITE_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 2, 4, 0, WRITE_LOCK));
 	EXPECTED(ret, False);
 	printf("the same process %s set overlapping write locks\n", ret?"can":"cannot");
 	    
-	ret = cli_lock(cli1->tree, fnum1, 10, 4, 0, READ_LOCK) &&
-	      cli_lock(cli1->tree, fnum1, 12, 4, 0, READ_LOCK);
+	ret = NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 10, 4, 0, READ_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 12, 4, 0, READ_LOCK));
 	EXPECTED(ret, True);
 	printf("the same process %s set overlapping read locks\n", ret?"can":"cannot");
 
-	ret = cli_lock(cli1->tree, fnum1, 20, 4, 0, WRITE_LOCK) &&
-	      cli_lock(cli2->tree, fnum2, 22, 4, 0, WRITE_LOCK);
+	ret = NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 20, 4, 0, WRITE_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock(cli2->tree, fnum2, 22, 4, 0, WRITE_LOCK));
 	EXPECTED(ret, False);
 	printf("a different connection %s set overlapping write locks\n", ret?"can":"cannot");
 	    
-	ret = cli_lock(cli1->tree, fnum1, 30, 4, 0, READ_LOCK) &&
-	      cli_lock(cli2->tree, fnum2, 32, 4, 0, READ_LOCK);
+	ret = NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 30, 4, 0, READ_LOCK)) &&
+		NT_STATUS_IS_OK(cli_lock(cli2->tree, fnum2, 32, 4, 0, READ_LOCK));
 	EXPECTED(ret, True);
 	printf("a different connection %s set overlapping read locks\n", ret?"can":"cannot");
 	
-	ret = (cli1->session->pid = 1, cli_lock(cli1->tree, fnum1, 40, 4, 0, WRITE_LOCK)) &&
-	      (cli1->session->pid = 2, cli_lock(cli1->tree, fnum1, 42, 4, 0, WRITE_LOCK));
+	ret = NT_STATUS_IS_OK((cli1->session->pid = 1, cli_lock(cli1->tree, fnum1, 40, 4, 0, WRITE_LOCK))) &&
+	      NT_STATUS_IS_OK((cli1->session->pid = 2, cli_lock(cli1->tree, fnum1, 42, 4, 0, WRITE_LOCK)));
 	EXPECTED(ret, False);
 	printf("a different pid %s set overlapping write locks\n", ret?"can":"cannot");
 	    
-	ret = (cli1->session->pid = 1, cli_lock(cli1->tree, fnum1, 50, 4, 0, READ_LOCK)) &&
-	      (cli1->session->pid = 2, cli_lock(cli1->tree, fnum1, 52, 4, 0, READ_LOCK));
+	ret = NT_STATUS_IS_OK((cli1->session->pid = 1, cli_lock(cli1->tree, fnum1, 50, 4, 0, READ_LOCK))) &&
+	      NT_STATUS_IS_OK((cli1->session->pid = 2, cli_lock(cli1->tree, fnum1, 52, 4, 0, READ_LOCK)));
 	EXPECTED(ret, True);
 	printf("a different pid %s set overlapping read locks\n", ret?"can":"cannot");
 
-	ret = cli_lock(cli1->tree, fnum1, 60, 4, 0, READ_LOCK) &&
-	      cli_lock(cli1->tree, fnum1, 60, 4, 0, READ_LOCK);
+	ret = NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 60, 4, 0, READ_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 60, 4, 0, READ_LOCK));
 	EXPECTED(ret, True);
 	printf("the same process %s set the same read lock twice\n", ret?"can":"cannot");
 
-	ret = cli_lock(cli1->tree, fnum1, 70, 4, 0, WRITE_LOCK) &&
-	      cli_lock(cli1->tree, fnum1, 70, 4, 0, WRITE_LOCK);
+	ret = NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 70, 4, 0, WRITE_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 70, 4, 0, WRITE_LOCK));
 	EXPECTED(ret, False);
 	printf("the same process %s set the same write lock twice\n", ret?"can":"cannot");
 
-	ret = cli_lock(cli1->tree, fnum1, 80, 4, 0, READ_LOCK) &&
-	      cli_lock(cli1->tree, fnum1, 80, 4, 0, WRITE_LOCK);
+	ret = NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 80, 4, 0, READ_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 80, 4, 0, WRITE_LOCK));
 	EXPECTED(ret, False);
 	printf("the same process %s overlay a read lock with a write lock\n", ret?"can":"cannot");
 
-	ret = cli_lock(cli1->tree, fnum1, 90, 4, 0, WRITE_LOCK) &&
-	      cli_lock(cli1->tree, fnum1, 90, 4, 0, READ_LOCK);
+	ret = NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 90, 4, 0, WRITE_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 90, 4, 0, READ_LOCK));
 	EXPECTED(ret, True);
 	printf("the same process %s overlay a write lock with a read lock\n", ret?"can":"cannot");
 
-	ret = (cli1->session->pid = 1, cli_lock(cli1->tree, fnum1, 100, 4, 0, WRITE_LOCK)) &&
-	      (cli1->session->pid = 2, cli_lock(cli1->tree, fnum1, 100, 4, 0, READ_LOCK));
+	ret = NT_STATUS_IS_OK((cli1->session->pid = 1, cli_lock(cli1->tree, fnum1, 100, 4, 0, WRITE_LOCK))) &&
+	      NT_STATUS_IS_OK((cli1->session->pid = 2, cli_lock(cli1->tree, fnum1, 100, 4, 0, READ_LOCK)));
 	EXPECTED(ret, False);
 	printf("a different pid %s overlay a write lock with a read lock\n", ret?"can":"cannot");
 
-	ret = cli_lock(cli1->tree, fnum1, 110, 4, 0, READ_LOCK) &&
-	      cli_lock(cli1->tree, fnum1, 112, 4, 0, READ_LOCK) &&
-	      cli_unlock(cli1->tree, fnum1, 110, 6);
+	ret = NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 110, 4, 0, READ_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 112, 4, 0, READ_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_unlock(cli1->tree, fnum1, 110, 6));
 	EXPECTED(ret, False);
 	printf("the same process %s coalesce read locks\n", ret?"can":"cannot");
 
 
-	ret = cli_lock(cli1->tree, fnum1, 120, 4, 0, WRITE_LOCK) &&
+	ret = NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 120, 4, 0, WRITE_LOCK)) &&
 	      (cli_read(cli2->tree, fnum2, buf, 120, 4) == 4);
 	EXPECTED(ret, False);
 	printf("this server %s strict write locking\n", ret?"doesn't do":"does");
 
-	ret = cli_lock(cli1->tree, fnum1, 130, 4, 0, READ_LOCK) &&
+	ret = NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 130, 4, 0, READ_LOCK)) &&
 	      (cli_write(cli2->tree, fnum2, 0, buf, 130, 4) == 4);
 	EXPECTED(ret, False);
 	printf("this server %s strict read locking\n", ret?"doesn't do":"does");
 
 
-	ret = cli_lock(cli1->tree, fnum1, 140, 4, 0, READ_LOCK) &&
-	      cli_lock(cli1->tree, fnum1, 140, 4, 0, READ_LOCK) &&
-	      cli_unlock(cli1->tree, fnum1, 140, 4) &&
-	      cli_unlock(cli1->tree, fnum1, 140, 4);
+	ret = NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 140, 4, 0, READ_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 140, 4, 0, READ_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_unlock(cli1->tree, fnum1, 140, 4)) &&
+	      NT_STATUS_IS_OK(cli_unlock(cli1->tree, fnum1, 140, 4));
 	EXPECTED(ret, True);
 	printf("this server %s do recursive read locking\n", ret?"does":"doesn't");
 
 
-	ret = cli_lock(cli1->tree, fnum1, 150, 4, 0, WRITE_LOCK) &&
-	      cli_lock(cli1->tree, fnum1, 150, 4, 0, READ_LOCK) &&
-	      cli_unlock(cli1->tree, fnum1, 150, 4) &&
+	ret = NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 150, 4, 0, WRITE_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 150, 4, 0, READ_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_unlock(cli1->tree, fnum1, 150, 4)) &&
 	      (cli_read(cli2->tree, fnum2, buf, 150, 4) == 4) &&
 	      !(cli_write(cli2->tree, fnum2, 0, buf, 150, 4) == 4) &&
-	      cli_unlock(cli1->tree, fnum1, 150, 4);
+	      NT_STATUS_IS_OK(cli_unlock(cli1->tree, fnum1, 150, 4));
 	EXPECTED(ret, True);
 	printf("this server %s do recursive lock overlays\n", ret?"does":"doesn't");
 
-	ret = cli_lock(cli1->tree, fnum1, 160, 4, 0, READ_LOCK) &&
-	      cli_unlock(cli1->tree, fnum1, 160, 4) &&
+	ret = NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 160, 4, 0, READ_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_unlock(cli1->tree, fnum1, 160, 4)) &&
 	      (cli_write(cli2->tree, fnum2, 0, buf, 160, 4) == 4) &&		
 	      (cli_read(cli2->tree, fnum2, buf, 160, 4) == 4);		
 	EXPECTED(ret, True);
 	printf("the same process %s remove a read lock using write locking\n", ret?"can":"cannot");
 
-	ret = cli_lock(cli1->tree, fnum1, 170, 4, 0, WRITE_LOCK) &&
-	      cli_unlock(cli1->tree, fnum1, 170, 4) &&
+	ret = NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 170, 4, 0, WRITE_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_unlock(cli1->tree, fnum1, 170, 4)) &&
 	      (cli_write(cli2->tree, fnum2, 0, buf, 170, 4) == 4) &&		
 	      (cli_read(cli2->tree, fnum2, buf, 170, 4) == 4);		
 	EXPECTED(ret, True);
 	printf("the same process %s remove a write lock using read locking\n", ret?"can":"cannot");
 
-	ret = cli_lock(cli1->tree, fnum1, 190, 4, 0, WRITE_LOCK) &&
-	      cli_lock(cli1->tree, fnum1, 190, 4, 0, READ_LOCK) &&
-	      cli_unlock(cli1->tree, fnum1, 190, 4) &&
+	ret = NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 190, 4, 0, WRITE_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 190, 4, 0, READ_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_unlock(cli1->tree, fnum1, 190, 4)) &&
 	      !(cli_write(cli2->tree, fnum2, 0, buf, 190, 4) == 4) &&		
 	      (cli_read(cli2->tree, fnum2, buf, 190, 4) == 4);		
 	EXPECTED(ret, True);
@@ -1423,11 +1422,11 @@ static BOOL run_locktest4(int dummy)
 	cli_close(cli2->tree, fnum2);
 	fnum1 = cli_open(cli1->tree, fname, O_RDWR, DENY_NONE);
 	f = cli_open(cli1->tree, fname, O_RDWR, DENY_NONE);
-	ret = cli_lock(cli1->tree, fnum1, 0, 8, 0, READ_LOCK) &&
-	      cli_lock(cli1->tree, f, 0, 1, 0, READ_LOCK) &&
-	      cli_close(cli1->tree, fnum1) &&
+	ret = NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 0, 8, 0, READ_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock(cli1->tree, f, 0, 1, 0, READ_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_close(cli1->tree, fnum1)) &&
 	      ((fnum1 = cli_open(cli1->tree, fname, O_RDWR, DENY_NONE)) != -1) &&
-	      cli_lock(cli1->tree, fnum1, 7, 1, 0, WRITE_LOCK);
+	      NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 7, 1, 0, WRITE_LOCK));
         cli_close(cli1->tree, f);
 	cli_close(cli1->tree, fnum1);
 	EXPECTED(ret, True);
@@ -1477,23 +1476,23 @@ static BOOL run_locktest5(int dummy)
 	}
 
 	/* Check for NT bug... */
-	ret = cli_lock(cli1->tree, fnum1, 0, 8, 0, READ_LOCK) &&
-		  cli_lock(cli1->tree, fnum3, 0, 1, 0, READ_LOCK);
+	ret = NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 0, 8, 0, READ_LOCK)) &&
+		  NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum3, 0, 1, 0, READ_LOCK));
 	cli_close(cli1->tree, fnum1);
 	fnum1 = cli_open(cli1->tree, fname, O_RDWR, DENY_NONE);
-	ret = cli_lock(cli1->tree, fnum1, 7, 1, 0, WRITE_LOCK);
+	ret = NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 7, 1, 0, WRITE_LOCK));
 	EXPECTED(ret, True);
 	printf("this server %s the NT locking bug\n", ret ? "doesn't have" : "has");
 	cli_close(cli1->tree, fnum1);
 	fnum1 = cli_open(cli1->tree, fname, O_RDWR, DENY_NONE);
 	cli_unlock(cli1->tree, fnum3, 0, 1);
 
-	ret = cli_lock(cli1->tree, fnum1, 0, 4, 0, WRITE_LOCK) &&
-	      cli_lock(cli1->tree, fnum1, 1, 1, 0, READ_LOCK);
+	ret = NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 0, 4, 0, WRITE_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 1, 1, 0, READ_LOCK));
 	EXPECTED(ret, True);
 	printf("the same process %s overlay a write with a read lock\n", ret?"can":"cannot");
 
-	ret = cli_lock(cli2->tree, fnum2, 0, 4, 0, READ_LOCK);
+	ret = NT_STATUS_IS_OK(cli_lock(cli2->tree, fnum2, 0, 4, 0, READ_LOCK));
 	EXPECTED(ret, False);
 
 	printf("a different processs %s get a read lock on the first process lock stack\n", ret?"can":"cannot");
@@ -1501,7 +1500,7 @@ static BOOL run_locktest5(int dummy)
 	/* Unlock the process 2 lock. */
 	cli_unlock(cli2->tree, fnum2, 0, 4);
 
-	ret = cli_lock(cli1->tree, fnum3, 0, 4, 0, READ_LOCK);
+	ret = NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum3, 0, 4, 0, READ_LOCK));
 	EXPECTED(ret, False);
 
 	printf("the same processs on a different fnum %s get a read lock\n", ret?"can":"cannot");
@@ -1510,8 +1509,8 @@ static BOOL run_locktest5(int dummy)
 	cli_unlock(cli1->tree, fnum3, 0, 4);
 
 	/* Stack 2 more locks here. */
-	ret = cli_lock(cli1->tree, fnum1, 0, 4, 0, READ_LOCK) &&
-		  cli_lock(cli1->tree, fnum1, 0, 4, 0, READ_LOCK);
+	ret = NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 0, 4, 0, READ_LOCK)) &&
+		  NT_STATUS_IS_OK(cli_lock(cli1->tree, fnum1, 0, 4, 0, READ_LOCK));
 
 	EXPECTED(ret, True);
 	printf("the same process %s stack read locks\n", ret?"can":"cannot");
@@ -1519,8 +1518,8 @@ static BOOL run_locktest5(int dummy)
 	/* Unlock the first process lock, then check this was the WRITE lock that was
 		removed. */
 
-	ret = cli_unlock(cli1->tree, fnum1, 0, 4) &&
-			cli_lock(cli2->tree, fnum2, 0, 4, 0, READ_LOCK);
+ret = NT_STATUS_IS_OK(cli_unlock(cli1->tree, fnum1, 0, 4)) &&
+	NT_STATUS_IS_OK(cli_lock(cli2->tree, fnum2, 0, 4, 0, READ_LOCK));
 
 	EXPECTED(ret, True);
 	printf("the first unlock removes the %s lock\n", ret?"WRITE":"READ");
@@ -1530,20 +1529,20 @@ static BOOL run_locktest5(int dummy)
 
 	/* We should have 3 stacked locks here. Ensure we need to do 3 unlocks. */
 
-	ret = cli_unlock(cli1->tree, fnum1, 1, 1) &&
-		  cli_unlock(cli1->tree, fnum1, 0, 4) &&
-		  cli_unlock(cli1->tree, fnum1, 0, 4);
+	ret = NT_STATUS_IS_OK(cli_unlock(cli1->tree, fnum1, 1, 1)) &&
+		  NT_STATUS_IS_OK(cli_unlock(cli1->tree, fnum1, 0, 4)) &&
+		  NT_STATUS_IS_OK(cli_unlock(cli1->tree, fnum1, 0, 4));
 
 	EXPECTED(ret, True);
 	printf("the same process %s unlock the stack of 4 locks\n", ret?"can":"cannot"); 
 
 	/* Ensure the next unlock fails. */
-	ret = cli_unlock(cli1->tree, fnum1, 0, 4);
+	ret = NT_STATUS_IS_OK(cli_unlock(cli1->tree, fnum1, 0, 4));
 	EXPECTED(ret, False);
 	printf("the same process %s count the lock stack\n", !ret?"can":"cannot"); 
 
 	/* Ensure connection 2 can get a write lock. */
-	ret = cli_lock(cli2->tree, fnum2, 0, 4, 0, WRITE_LOCK);
+	ret = NT_STATUS_IS_OK(cli_lock(cli2->tree, fnum2, 0, 4, 0, WRITE_LOCK));
 	EXPECTED(ret, True);
 
 	printf("a different processs %s get a write lock on the unlocked stack\n", ret?"can":"cannot");
@@ -1633,7 +1632,7 @@ static BOOL run_locktest7(int dummy)
 
 	cli1->session->pid = 1;
 
-	if (!cli_lock(cli1->tree, fnum1, 130, 4, 0, READ_LOCK)) {
+	if (NT_STATUS_IS_ERR(cli_lock(cli1->tree, fnum1, 130, 4, 0, READ_LOCK))) {
 		printf("Unable to apply read lock on range 130:4, error was %s\n", cli_errstr(cli1->tree));
 		goto fail;
 	} else {
@@ -1680,7 +1679,7 @@ static BOOL run_locktest7(int dummy)
 	cli1->session->pid = 1;
 	cli_unlock(cli1->tree, fnum1, 130, 4);
 
-	if (!cli_lock(cli1->tree, fnum1, 130, 4, 0, WRITE_LOCK)) {
+	if (NT_STATUS_IS_ERR(cli_lock(cli1->tree, fnum1, 130, 4, 0, WRITE_LOCK))) {
 		printf("Unable to apply write lock on range 130:4, error was %s\n", cli_errstr(cli1->tree));
 		goto fail;
 	} else {
@@ -1829,7 +1828,7 @@ static BOOL run_unlinktest(int dummy)
 
 	printf("Unlinking a open file\n");
 
-	if (cli_unlink(cli->tree, fname)) {
+	if (NT_STATUS_IS_OK(cli_unlink(cli->tree, fname))) {
 		printf("error: server allowed unlink on an open file\n");
 		correct = False;
 	} else {
@@ -1890,10 +1889,10 @@ static BOOL run_maxfidtest(int dummy)
 	printf("cleaning up\n");
 	for (;i>=0;i--) {
 		asprintf(&fname, template, i,(int)getpid());
-		if (!cli_close(cli->tree, fnums[i])) {
+		if (NT_STATUS_IS_ERR(cli_close(cli->tree, fnums[i]))) {
 			printf("Close of fnum %d failed - %s\n", fnums[i], cli_errstr(cli->tree));
 		}
-		if (!cli_unlink(cli->tree, fname)) {
+		if (NT_STATUS_IS_ERR(cli_unlink(cli->tree, fname))) {
 			printf("unlink of %s failed (%s)\n", 
 			       fname, cli_errstr(cli->tree));
 			correct = False;
@@ -1962,7 +1961,7 @@ static BOOL run_attrtest(int dummy)
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
 	cli_close(cli->tree, fnum);
 
-	if (!cli_getatr(cli->tree, fname, NULL, NULL, &t)) {
+	if (NT_STATUS_IS_ERR(cli_getatr(cli->tree, fname, NULL, NULL, &t))) {
 		printf("getatr failed (%s)\n", cli_errstr(cli->tree));
 		correct = False;
 	}
@@ -1980,12 +1979,12 @@ static BOOL run_attrtest(int dummy)
 
 	printf("Setting file time to %s", ctime(&t2));
 
-	if (!cli_setatr(cli->tree, fname, 0, t2)) {
+	if (NT_STATUS_IS_ERR(cli_setatr(cli->tree, fname, 0, t2))) {
 		printf("setatr failed (%s)\n", cli_errstr(cli->tree));
 		correct = True;
 	}
 
-	if (!cli_getatr(cli->tree, fname, NULL, NULL, &t)) {
+	if (NT_STATUS_IS_ERR(cli_getatr(cli->tree, fname, NULL, NULL, &t))) {
 		printf("getatr failed (%s)\n", cli_errstr(cli->tree));
 		correct = True;
 	}
@@ -2038,15 +2037,15 @@ static BOOL run_trans2test(int dummy)
 	
 	fnum = cli_open(cli->tree, fname, 
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
-	if (!cli_qfileinfo(cli->tree, fnum, NULL, &size, &c_time, &a_time, &m_time,
-			   NULL, NULL)) {
+	if (NT_STATUS_IS_ERR(cli_qfileinfo(cli->tree, fnum, NULL, &size, &c_time, &a_time, &m_time,
+			   NULL, NULL))) {
 		printf("ERROR: qfileinfo failed (%s)\n", cli_errstr(cli->tree));
 		correct = False;
 	}
 
 	printf("Testing NAME_INFO\n");
 
-	if (!cli_qfilename(cli->tree, fnum, &pname)) {
+	if (NT_STATUS_IS_ERR(cli_qfilename(cli->tree, fnum, &pname))) {
 		printf("ERROR: qfilename failed (%s)\n", cli_errstr(cli->tree));
 		correct = False;
 	}
@@ -2070,7 +2069,7 @@ static BOOL run_trans2test(int dummy)
 
 	printf("Checking for sticky create times\n");
 
-	if (!cli_qpathinfo(cli->tree, fname, &c_time, &a_time, &m_time, &size, NULL)) {
+	if (NT_STATUS_IS_ERR(cli_qpathinfo(cli->tree, fname, &c_time, &a_time, &m_time, &size, NULL))) {
 		printf("ERROR: qpathinfo failed (%s)\n", cli_errstr(cli->tree));
 		correct = False;
 	} else {
@@ -2096,8 +2095,7 @@ static BOOL run_trans2test(int dummy)
 	fnum = cli_open(cli->tree, fname, 
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
 	cli_close(cli->tree, fnum);
-	if (!cli_qpathinfo2(cli->tree, fname, &c_time, &a_time, &m_time, 
-			    &w_time, &size, NULL, NULL)) {
+	if (NT_STATUS_IS_ERR(cli_qpathinfo2(cli->tree, fname, &c_time, &a_time, &m_time, &w_time, &size, NULL, NULL))) {
 		printf("ERROR: qpathinfo2 failed (%s)\n", cli_errstr(cli->tree));
 		correct = False;
 	} else {
@@ -2113,13 +2111,12 @@ static BOOL run_trans2test(int dummy)
 
 	/* check if the server updates the directory modification time
            when creating a new file */
-	if (!cli_mkdir(cli->tree, dname)) {
+	if (NT_STATUS_IS_ERR(cli_mkdir(cli->tree, dname))) {
 		printf("ERROR: mkdir failed (%s)\n", cli_errstr(cli->tree));
 		correct = False;
 	}
 	sleep(3);
-	if (!cli_qpathinfo2(cli->tree, "\\trans2\\", &c_time, &a_time, &m_time, 
-			    &w_time, &size, NULL, NULL)) {
+	if (NT_STATUS_IS_ERR(cli_qpathinfo2(cli->tree, "\\trans2\\", &c_time, &a_time, &m_time, &w_time, &size, NULL, NULL))) {
 		printf("ERROR: qpathinfo2 failed (%s)\n", cli_errstr(cli->tree));
 		correct = False;
 	}
@@ -2128,8 +2125,7 @@ static BOOL run_trans2test(int dummy)
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
 	cli_write(cli->tree, fnum,  0, (char *)&fnum, 0, sizeof(fnum));
 	cli_close(cli->tree, fnum);
-	if (!cli_qpathinfo2(cli->tree, "\\trans2\\", &c_time, &a_time, &m_time2, 
-			    &w_time, &size, NULL, NULL)) {
+	if (NT_STATUS_IS_ERR(cli_qpathinfo2(cli->tree, "\\trans2\\", &c_time, &a_time, &m_time2, &w_time, &size, NULL, NULL))) {
 		printf("ERROR: qpathinfo2 failed (%s)\n", cli_errstr(cli->tree));
 		correct = False;
 	} else {
@@ -2183,7 +2179,7 @@ static BOOL run_deletetest(int dummy)
 		goto fail;
 	}
 	
-	if (!cli_close(cli1->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 		printf("[1] close failed (%s)\n", cli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
@@ -2213,13 +2209,13 @@ static BOOL run_deletetest(int dummy)
 		goto fail;
 	}
 	
-	if (!cli_nt_delete_on_close(cli1->tree, fnum1, True)) {
+	if (NT_STATUS_IS_ERR(cli_nt_delete_on_close(cli1->tree, fnum1, True))) {
 		printf("[2] setting delete_on_close failed (%s)\n", cli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
 	
-	if (!cli_close(cli1->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 		printf("[2] close failed (%s)\n", cli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
@@ -2228,7 +2224,7 @@ static BOOL run_deletetest(int dummy)
 	fnum1 = cli_open(cli1->tree, fname, O_RDONLY, DENY_NONE);
 	if (fnum1 != -1) {
 		printf("[2] open of %s succeeded should have been deleted on close !\n", fname);
-		if (!cli_close(cli1->tree, fnum1)) {
+		if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 			printf("[2] close failed (%s)\n", cli_errstr(cli1->tree));
 			correct = False;
 			goto fail;
@@ -2274,19 +2270,19 @@ static BOOL run_deletetest(int dummy)
 		goto fail;
 	}
 
-	if (!cli_nt_delete_on_close(cli1->tree, fnum1, True)) {
+	if (NT_STATUS_IS_ERR(cli_nt_delete_on_close(cli1->tree, fnum1, True))) {
 		printf("[3] setting delete_on_close failed (%s)\n", cli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
 	
-	if (!cli_close(cli1->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 		printf("[3] close 1 failed (%s)\n", cli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
 	
-	if (!cli_close(cli1->tree, fnum2)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum2))) {
 		printf("[3] close 2 failed (%s)\n", cli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
@@ -2297,7 +2293,7 @@ static BOOL run_deletetest(int dummy)
 	fnum1 = cli_open(cli1->tree, fname, O_RDONLY, DENY_NONE);
 	if (fnum1 != -1) {
 		printf("[3] open of %s succeeded should have been deleted on close !\n", fname);
-		if (!cli_close(cli1->tree, fnum1)) {
+		if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 			printf("[3] close failed (%s)\n", cli_errstr(cli1->tree));
 		}
 		cli_unlink(cli1->tree, fname);
@@ -2337,13 +2333,13 @@ static BOOL run_deletetest(int dummy)
 		goto fail;
 	}
 	
-	if (!cli_close(cli1->tree, fnum2)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum2))) {
 		printf("[4] close - 1 failed (%s)\n", cli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
 	
-	if (!cli_nt_delete_on_close(cli1->tree, fnum1, True)) {
+	if (NT_STATUS_IS_ERR(cli_nt_delete_on_close(cli1->tree, fnum1, True))) {
 		printf("[4] setting delete_on_close failed (%s)\n", cli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
@@ -2360,7 +2356,7 @@ static BOOL run_deletetest(int dummy)
 	} else
 		printf("fourth delete on close test succeeded.\n");
 	
-	if (!cli_close(cli1->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 		printf("[4] close - 2 failed (%s)\n", cli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
@@ -2379,13 +2375,13 @@ static BOOL run_deletetest(int dummy)
 
 	/* This should fail - only allowed on NT opens with DELETE access. */
 
-	if (cli_nt_delete_on_close(cli1->tree, fnum1, True)) {
+	if (NT_STATUS_IS_OK(cli_nt_delete_on_close(cli1->tree, fnum1, True))) {
 		printf("[5] setting delete_on_close on OpenX file succeeded - should fail !\n");
 		correct = False;
 		goto fail;
 	}
 
-	if (!cli_close(cli1->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 		printf("[5] close - 2 failed (%s)\n", cli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
@@ -2413,13 +2409,13 @@ static BOOL run_deletetest(int dummy)
 	
 	/* This should fail - only allowed on NT opens with DELETE access. */
 	
-	if (cli_nt_delete_on_close(cli1->tree, fnum1, True)) {
+	if (NT_STATUS_IS_OK(cli_nt_delete_on_close(cli1->tree, fnum1, True))) {
 		printf("[6] setting delete_on_close on file with no delete access succeeded - should fail !\n");
 		correct = False;
 		goto fail;
 	}
 
-	if (!cli_close(cli1->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 		printf("[6] close - 2 failed (%s)\n", cli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
@@ -2443,19 +2439,19 @@ static BOOL run_deletetest(int dummy)
 		goto fail;
 	}
 
-	if (!cli_nt_delete_on_close(cli1->tree, fnum1, True)) {
+	if (NT_STATUS_IS_ERR(cli_nt_delete_on_close(cli1->tree, fnum1, True))) {
 		printf("[7] setting delete_on_close on file failed !\n");
 		correct = False;
 		goto fail;
 	}
 	
-	if (!cli_nt_delete_on_close(cli1->tree, fnum1, False)) {
+	if (NT_STATUS_IS_ERR(cli_nt_delete_on_close(cli1->tree, fnum1, False))) {
 		printf("[7] unsetting delete_on_close on file failed !\n");
 		correct = False;
 		goto fail;
 	}
 
-	if (!cli_close(cli1->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 		printf("[7] close - 2 failed (%s)\n", cli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
@@ -2470,7 +2466,7 @@ static BOOL run_deletetest(int dummy)
 		goto fail;
 	}
 
-	if (!cli_close(cli1->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 		printf("[7] close - 2 failed (%s)\n", cli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
@@ -2508,19 +2504,19 @@ static BOOL run_deletetest(int dummy)
 		goto fail;
 	}
 
-	if (!cli_nt_delete_on_close(cli1->tree, fnum1, True)) {
+	if (NT_STATUS_IS_ERR(cli_nt_delete_on_close(cli1->tree, fnum1, True))) {
 		printf("[8] setting delete_on_close on file failed !\n");
 		correct = False;
 		goto fail;
 	}
 	
-	if (!cli_close(cli1->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 		printf("[8] close - 1 failed (%s)\n", cli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
 
-	if (!cli_close(cli2->tree, fnum2)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli2->tree, fnum2))) {
 		printf("[8] close - 2 failed (%s)\n", cli_errstr(cli2->tree));
 		correct = False;
 		goto fail;
@@ -2556,7 +2552,7 @@ static BOOL run_deletetest(int dummy)
 	}
 
 	/* This should delete the file. */
-	if (!cli_close(cli1->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 		printf("[10] close failed (%s)\n", cli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
@@ -2707,14 +2703,14 @@ static BOOL run_rename(int dummy)
 		return False;
 	}
 
-	if (!cli_rename(cli1->tree, fname, fname1)) {
+	if (NT_STATUS_IS_ERR(cli_rename(cli1->tree, fname, fname1))) {
 		printf("First rename failed (this is correct) - %s\n", cli_errstr(cli1->tree));
 	} else {
 		printf("First rename succeeded - this should have failed !\n");
 		correct = False;
 	}
 
-	if (!cli_close(cli1->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 		printf("close - 1 failed (%s)\n", cli_errstr(cli1->tree));
 		return False;
 	}
@@ -2733,14 +2729,14 @@ static BOOL run_rename(int dummy)
 		return False;
 	}
 
-	if (!cli_rename(cli1->tree, fname, fname1)) {
+	if (NT_STATUS_IS_ERR(cli_rename(cli1->tree, fname, fname1))) {
 		printf("Second rename failed - this should have succeeded - %s\n", cli_errstr(cli1->tree));
 		correct = False;
 	} else {
 		printf("Second rename succeeded\n");
 	}
 
-	if (!cli_close(cli1->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 		printf("close - 2 failed (%s)\n", cli_errstr(cli1->tree));
 		return False;
 	}
@@ -2780,14 +2776,14 @@ static BOOL run_rename(int dummy)
   }
 #endif
 
-	if (!cli_rename(cli1->tree, fname, fname1)) {
+	if (NT_STATUS_IS_ERR(cli_rename(cli1->tree, fname, fname1))) {
 		printf("Third rename failed - this should have succeeded - %s\n", cli_errstr(cli1->tree));
 		correct = False;
 	} else {
 		printf("Third rename succeeded\n");
 	}
 
-	if (!cli_close(cli1->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 		printf("close - 3 failed (%s)\n", cli_errstr(cli1->tree));
 		return False;
 	}
@@ -2861,12 +2857,12 @@ static BOOL run_pipe_number(int dummy)
 		return False;
 	}
 
-	if (!cli_close(cli1->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 		printf("close2 failed (%s)\n", cli_errstr(cli1->tree));
 		return False;
 	}
 	
-	if (!cli_setatr(cli1->tree, fname, FILE_ATTRIBUTE_READONLY, 0)) {
+	if (NT_STATUS_IS_ERR(cli_setatr(cli1->tree, fname, FILE_ATTRIBUTE_READONLY, 0))) {
 		printf("cli_setatr failed (%s)\n", cli_errstr(cli1->tree));
 		CHECK_MAX_FAILURES(error_test1);
 		return False;
@@ -2909,7 +2905,7 @@ error_test1:
 		printf("correct error code ERRDOS/ERRbadshare returned\n");
 	}
 	
-	if (!cli_close(cli1->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 		printf("close2 failed (%s)\n", cli_errstr(cli1->tree));
 		return False;
 	}
@@ -2935,13 +2931,13 @@ error_test1:
 		correct = False;
 	}
 
-	if (!cli_close(cli1->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 		printf("(3) close1 failed (%s)\n", cli_errstr(cli1->tree));
 		return False;
 	}
 	
 	/* Ensure size == 20. */
-	if (!cli_getatr(cli1->tree, fname, NULL, &fsize, NULL)) {
+	if (NT_STATUS_IS_ERR(cli_getatr(cli1->tree, fname, NULL, &fsize, NULL))) {
 		printf("(3) getatr failed (%s)\n", cli_errstr(cli1->tree));
 		CHECK_MAX_FAILURES(error_test3);
 		return False;
@@ -2962,13 +2958,13 @@ error_test1:
 		return False;
 	}
 	
-	if (!cli_close(cli1->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 		printf("close2 failed (%s)\n", cli_errstr(cli1->tree));
 		return False;
 	}
 
 	/* Ensure size == 0. */
-	if (!cli_getatr(cli1->tree, fname, NULL, &fsize, NULL)) {
+	if (NT_STATUS_IS_ERR(cli_getatr(cli1->tree, fname, NULL, &fsize, NULL))) {
 		printf("(3) getatr failed (%s)\n", cli_errstr(cli1->tree));
 		CHECK_MAX_FAILURES(error_test3);
 		return False;
@@ -2992,10 +2988,10 @@ error_test3:
 		return False;
 	}
 	printf("ctemp gave path %s\n", tmp_path);
-	if (!cli_close(cli1->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 		printf("close of temp failed (%s)\n", cli_errstr(cli1->tree));
 	}
-	if (!cli_unlink(cli1->tree, tmp_path)) {
+	if (NT_STATUS_IS_ERR(cli_unlink(cli1->tree, tmp_path))) {
 		printf("unlink of temp failed (%s)\n", cli_errstr(cli1->tree));
 	}
 error_test4:	
@@ -3027,11 +3023,11 @@ error_test4:
 		return False;
 	}
 
-	if (!cli_close(cli1->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 		printf("test 1 close 1 of %s failed (%s)\n", fname, cli_errstr(cli1->tree));
 		return False;
 	}
-	if (!cli_close(cli2->tree, fnum2)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli2->tree, fnum2))) {
 		printf("test 1 close 2 of %s failed (%s)\n", fname, cli_errstr(cli2->tree));
 		return False;
 	}
@@ -3060,11 +3056,11 @@ error_test10:
 		return False;
 	}
 
-	if (!cli_close(cli1->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 		printf("test 1 close 1 of %s failed (%s)\n", fname, cli_errstr(cli1->tree));
 		return False;
 	}
-	if (!cli_close(cli2->tree, fnum2)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli2->tree, fnum2))) {
 		printf("test 1 close 2 of %s failed (%s)\n", fname, cli_errstr(cli1->tree));
 		return False;
 	}
@@ -3093,11 +3089,11 @@ error_test20:
 		return False;
 	}
 
-	if (!cli_close(cli1->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 		printf("test 3 close 1 of %s failed (%s)\n", fname, cli_errstr(cli1->tree));
 		return False;
 	}
-	if (!cli_close(cli2->tree, fnum2)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli2->tree, fnum2))) {
 		printf("test 3 close 2 of %s failed (%s)\n", fname, cli_errstr(cli2->tree));
 		return False;
 	}
@@ -3128,7 +3124,7 @@ error_test30:
 
 	printf("test 4 open 2 of %s gave %s (correct error should be %s)\n", fname, cli_errstr(cli2->tree), "sharing violation");
 
-	if (!cli_close(cli1->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 		printf("test 4 close 1 of %s failed (%s)\n", fname, cli_errstr(cli1->tree));
 		return False;
 	}
@@ -3157,12 +3153,12 @@ error_test40:
 		return False;
 	}
 
-	if (!cli_close(cli1->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 		printf("test 5 close 1 of %s failed (%s)\n", fname, cli_errstr(cli1->tree));
 		return False;
 	}
 
-	if (!cli_close(cli2->tree, fnum2)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli2->tree, fnum2))) {
 		printf("test 5 close 2 of %s failed (%s)\n", fname, cli_errstr(cli2->tree));
 		return False;
 	}
@@ -3191,12 +3187,12 @@ error_test50:
 		return False;
 	}
 
-	if (!cli_close(cli1->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 		printf("test 6 close 1 of %s failed (%s)\n", fname, cli_errstr(cli1->tree));
 		return False;
 	}
 
-	if (!cli_close(cli2->tree, fnum2)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli2->tree, fnum2))) {
 		printf("test 6 close 2 of %s failed (%s)\n", fname, cli_errstr(cli2->tree));
 		return False;
 	}
@@ -3227,7 +3223,7 @@ error_test60:
 
 	printf("test 7 open 2 of %s gave %s (correct error should be %s)\n", fname, cli_errstr(cli2->tree), "sharing violation");
 
-	if (!cli_close(cli1->tree, fnum1)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 		printf("test 7 close 1 of %s failed (%s)\n", fname, cli_errstr(cli1->tree));
 		return False;
 	}
@@ -3330,7 +3326,7 @@ static BOOL run_openattrtest(int dummy)
 			return False;
 		}
 
-		if (!cli_close(cli1->tree, fnum1)) {
+		if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 			printf("close %d (1) of %s failed (%s)\n", i, fname, cli_errstr(cli1->tree));
 			return False;
 		}
@@ -3367,12 +3363,12 @@ static BOOL run_openattrtest(int dummy)
 				continue;
 			}
 
-			if (!cli_close(cli1->tree, fnum1)) {
+			if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
 				printf("close %d (2) of %s failed (%s)\n", j, fname, cli_errstr(cli1->tree));
 				return False;
 			}
 
-			if (!cli_getatr(cli1->tree, fname, &attr, NULL, NULL)) {
+			if (NT_STATUS_IS_ERR(cli_getatr(cli1->tree, fname, &attr, NULL, NULL))) {
 				printf("getatr(2) failed (%s)\n", cli_errstr(cli1->tree));
 				return False;
 			}
@@ -3485,10 +3481,10 @@ static void del_fn(file_info *finfo, const char *mask, void *state)
 		return;
 
 	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
-		if (!cli_rmdir(pcli->tree, fname))
+		if (NT_STATUS_IS_ERR(cli_rmdir(pcli->tree, fname)))
 			printf("del_fn: failed to rmdir %s, error=%s\n", fname, cli_errstr(pcli->tree) );
 	} else {
-		if (!cli_unlink(pcli->tree, fname))
+		if (NT_STATUS_IS_ERR(cli_unlink(pcli->tree, fname)))
 			printf("del_fn: failed to unlink %s, error=%s\n", fname, cli_errstr(pcli->tree) );
 	}
 	free(fname);
@@ -3572,12 +3568,12 @@ BOOL torture_chkpath_test(int dummy)
 	cli_unlink(cli->tree, "\\chkpath.dir\\*");
 	cli_rmdir(cli->tree, "\\chkpath.dir");
 
-	if (!cli_mkdir(cli->tree, "\\chkpath.dir")) {
+	if (NT_STATUS_IS_ERR(cli_mkdir(cli->tree, "\\chkpath.dir"))) {
 		printf("mkdir1 failed : %s\n", cli_errstr(cli->tree));
 		return False;
 	}
 
-	if (!cli_mkdir(cli->tree, "\\chkpath.dir\\dir2")) {
+	if (NT_STATUS_IS_ERR(cli_mkdir(cli->tree, "\\chkpath.dir\\dir2"))) {
 		printf("mkdir2 failed : %s\n", cli_errstr(cli->tree));
 		return False;
 	}
@@ -3589,17 +3585,17 @@ BOOL torture_chkpath_test(int dummy)
 	}
 	cli_close(cli->tree, fnum);
 
-	if (!cli_chkpath(cli->tree, "\\chkpath.dir")) {
+	if (NT_STATUS_IS_ERR(cli_chkpath(cli->tree, "\\chkpath.dir"))) {
 		printf("chkpath1 failed: %s\n", cli_errstr(cli->tree));
 		ret = False;
 	}
 
-	if (!cli_chkpath(cli->tree, "\\chkpath.dir\\dir2")) {
+	if (NT_STATUS_IS_ERR(cli_chkpath(cli->tree, "\\chkpath.dir\\dir2"))) {
 		printf("chkpath2 failed: %s\n", cli_errstr(cli->tree));
 		ret = False;
 	}
 
-	if (!cli_chkpath(cli->tree, "\\chkpath.dir\\foo.txt")) {
+	if (NT_STATUS_IS_ERR(cli_chkpath(cli->tree, "\\chkpath.dir\\foo.txt"))) {
 		ret = check_error(__LINE__, cli, ERRDOS, ERRbadpath, 
 				  NT_STATUS_NOT_A_DIRECTORY);
 	} else {
@@ -3607,7 +3603,7 @@ BOOL torture_chkpath_test(int dummy)
 		ret = False;
 	}
 
-	if (!cli_chkpath(cli->tree, "\\chkpath.dir\\bar.txt")) {
+	if (NT_STATUS_IS_ERR(cli_chkpath(cli->tree, "\\chkpath.dir\\bar.txt"))) {
 		ret = check_error(__LINE__, cli, ERRDOS, ERRbadfile, 
 				  NT_STATUS_OBJECT_NAME_NOT_FOUND);
 	} else {
@@ -3615,7 +3611,7 @@ BOOL torture_chkpath_test(int dummy)
 		ret = False;
 	}
 
-	if (!cli_chkpath(cli->tree, "\\chkpath.dir\\dirxx\\bar.txt")) {
+	if (NT_STATUS_IS_ERR(cli_chkpath(cli->tree, "\\chkpath.dir\\dirxx\\bar.txt"))) {
 		ret = check_error(__LINE__, cli, ERRDOS, ERRbadpath, 
 				  NT_STATUS_OBJECT_PATH_NOT_FOUND);
 	} else {
@@ -3653,7 +3649,7 @@ static BOOL run_dirtest1(int dummy)
 		fprintf(stderr,"Failed to deltree %s, error=%s\n", "\\LISTDIR", cli_errstr(cli->tree));
 		return False;
 	}
-	if (!cli_mkdir(cli->tree, "\\LISTDIR")) {
+	if (NT_STATUS_IS_ERR(cli_mkdir(cli->tree, "\\LISTDIR"))) {
 		fprintf(stderr,"Failed to mkdir %s, error=%s\n", "\\LISTDIR", cli_errstr(cli->tree));
 		return False;
 	}
@@ -3676,7 +3672,7 @@ static BOOL run_dirtest1(int dummy)
 	for (i=0;i<torture_entries;i++) {
 		char *fname;
 		asprintf(&fname, "\\LISTDIR\\d%d", i);
-		if (!cli_mkdir(cli->tree, fname)) {
+		if (NT_STATUS_IS_ERR(cli_mkdir(cli->tree, fname))) {
 			fprintf(stderr,"Failed to open %s, error=%s\n", fname, cli_errstr(cli->tree));
 			return False;
 		}

@@ -243,7 +243,7 @@ static int do_dskattr(void)
 {
 	int total, bsize, avail;
 
-	if (!cli_dskattr(cli->tree, &bsize, &total, &avail)) {
+	if (NT_STATUS_IS_ERR(cli_dskattr(cli->tree, &bsize, &total, &avail))) {
 		d_printf("Error in dskattr: %s\n",cli_errstr(cli->tree)); 
 		return 1;
 	}
@@ -292,7 +292,7 @@ static int do_cd(char *newdir)
 	dos_clean_name(cur_dir);
 	
 	if (!strequal(cur_dir,"\\")) {
-		if (!cli_chkpath(cli->tree, dname)) {
+		if (NT_STATUS_IS_ERR(cli_chkpath(cli->tree, dname))) {
 			d_printf("cd %s: %s\n", dname, cli_errstr(cli->tree));
 			pstrcpy(cur_dir,saved_dir);
 		}
@@ -759,10 +759,10 @@ static int do_get(char *rname, const char *lname, BOOL reget)
 	}
 
 
-	if (!cli_qfileinfo(cli->tree, fnum, 
-			   &attr, &size, NULL, NULL, NULL, NULL, NULL) &&
-	    !cli_getattrE(cli->tree, fnum, 
-			  &attr, &size, NULL, NULL, NULL)) {
+	if (NT_STATUS_IS_ERR(cli_qfileinfo(cli->tree, fnum, 
+			   &attr, &size, NULL, NULL, NULL, NULL, NULL)) &&
+	    NT_STATUS_IS_ERR(cli_getattrE(cli->tree, fnum, 
+			  &attr, &size, NULL, NULL, NULL))) {
 		d_printf("getattrib: %s\n",cli_errstr(cli->tree));
 		return 1;
 	}
@@ -799,7 +799,7 @@ static int do_get(char *rname, const char *lname, BOOL reget)
 
 	SAFE_FREE(data);
 	
-	if (!cli_close(cli->tree, fnum)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli->tree, fnum))) {
 		d_printf("Error %s closing remote file\n",cli_errstr(cli->tree));
 		rc = 1;
 	}
@@ -1011,15 +1011,17 @@ static int cmd_mget(void)
 /****************************************************************************
 make a directory of name "name"
 ****************************************************************************/
-static BOOL do_mkdir(char *name)
+static NTSTATUS do_mkdir(char *name)
 {
-	if (!cli_mkdir(cli->tree, name)) {
+	NTSTATUS status;
+
+	if (NT_STATUS_IS_ERR(status = cli_mkdir(cli->tree, name))) {
 		d_printf("%s making remote directory %s\n",
 			 cli_errstr(cli->tree),name);
-		return(False);
+		return status;
 	}
 
-	return(True);
+	return status;
 }
 
 /****************************************************************************
@@ -1079,7 +1081,7 @@ static int cmd_mkdir(void)
 		p = strtok(ddir,"/\\");
 		while (p) {
 			pstrcat(ddir2,p);
-			if (!cli_chkpath(cli->tree, ddir2)) { 
+			if (NT_STATUS_IS_ERR(cli_chkpath(cli->tree, ddir2))) { 
 				do_mkdir(ddir2);
 			}
 			pstrcat(ddir2,"\\");
@@ -1135,8 +1137,8 @@ static int do_put(char *rname, char *lname, BOOL reput)
 	if (reput) {
 		fnum = cli_open(cli->tree, rname, O_RDWR|O_CREAT, DENY_NONE);
 		if (fnum >= 0) {
-			if (!cli_qfileinfo(cli->tree, fnum, NULL, &start, NULL, NULL, NULL, NULL, NULL) &&
-			    !cli_getattrE(cli->tree, fnum, NULL, &start, NULL, NULL, NULL)) {
+			if (NT_STATUS_IS_ERR(cli_qfileinfo(cli->tree, fnum, NULL, &start, NULL, NULL, NULL, NULL, NULL)) &&
+			    NT_STATUS_IS_ERR(cli_getattrE(cli->tree, fnum, NULL, &start, NULL, NULL, NULL))) {
 				d_printf("getattrib: %s\n",cli_errstr(cli->tree));
 				return 1;
 			}
@@ -1207,7 +1209,7 @@ static int do_put(char *rname, char *lname, BOOL reput)
 		nread += n;
 	}
 
-	if (!cli_close(cli->tree, fnum)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli->tree, fnum))) {
 		d_printf("%s closing remote file %s\n",cli_errstr(cli->tree),rname);
 		x_fclose(f);
 		SAFE_FREE(buf);
@@ -1453,8 +1455,8 @@ static int cmd_mput(void)
 	      				SAFE_FREE(rname);
 					if(asprintf(&rname, "%s%s", cur_dir, lname) < 0) break;
 					dos_format(rname);
-					if (!cli_chkpath(cli->tree, rname) && 
-					    !do_mkdir(rname)) {
+					if (NT_STATUS_IS_ERR(cli_chkpath(cli->tree, rname)) && 
+					    NT_STATUS_IS_ERR(do_mkdir(rname))) {
 						DEBUG (0, ("Unable to make dir, skipping..."));
 						/* Skip the directory */
 						lname[strlen(lname)-1] = '/';
@@ -1570,7 +1572,7 @@ static void do_del(file_info *finfo)
 	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) 
 		return;
 
-	if (!cli_unlink(cli->tree, mask)) {
+	if (NT_STATUS_IS_ERR(cli_unlink(cli->tree, mask))) {
 		d_printf("%s deleting remote file %s\n",cli_errstr(cli->tree),mask);
 	}
 }
@@ -1822,7 +1824,7 @@ static int cmd_rmdir(void)
 	}
 	pstrcat(mask,buf);
 
-	if (!cli_rmdir(cli->tree, mask)) {
+	if (NT_STATUS_IS_ERR(cli_rmdir(cli->tree, mask))) {
 		d_printf("%s removing remote directory file %s\n",
 			 cli_errstr(cli->tree),mask);
 	}
@@ -1855,7 +1857,7 @@ static int cmd_link(void)
 	pstrcat(src,buf);
 	pstrcat(dest,buf2);
 
-	if (!cli_unix_hardlink(cli->tree, src, dest)) {
+	if (NT_STATUS_IS_ERR(cli_unix_hardlink(cli->tree, src, dest))) {
 		d_printf("%s linking files (%s -> %s)\n", cli_errstr(cli->tree), src, dest);
 		return 1;
 	}  
@@ -1889,7 +1891,7 @@ static int cmd_symlink(void)
 	pstrcat(src,buf);
 	pstrcat(dest,buf2);
 
-	if (!cli_unix_symlink(cli->tree, src, dest)) {
+	if (NT_STATUS_IS_ERR(cli_unix_symlink(cli->tree, src, dest))) {
 		d_printf("%s symlinking files (%s -> %s)\n",
 			cli_errstr(cli->tree), src, dest);
 		return 1;
@@ -1924,7 +1926,7 @@ static int cmd_chmod(void)
 	mode = (mode_t)strtol(buf, NULL, 8);
 	pstrcat(src,buf2);
 
-	if (!cli_unix_chmod(cli->tree, src, mode)) {
+	if (NT_STATUS_IS_ERR(cli_unix_chmod(cli->tree, src, mode))) {
 		d_printf("%s chmod file %s 0%o\n",
 			cli_errstr(cli->tree), src, (unsigned int)mode);
 		return 1;
@@ -1962,7 +1964,7 @@ static int cmd_chown(void)
 	gid = (gid_t)atoi(buf2);
 	pstrcat(src,buf3);
 
-	if (!cli_unix_chown(cli->tree, src, uid, gid)) {
+	if (NT_STATUS_IS_ERR(cli_unix_chown(cli->tree, src, uid, gid))) {
 		d_printf("%s chown file %s uid=%d, gid=%d\n",
 			cli_errstr(cli->tree), src, (int)uid, (int)gid);
 		return 1;
@@ -1991,7 +1993,7 @@ static int cmd_rename(void)
 	pstrcat(src,buf);
 	pstrcat(dest,buf2);
 
-	if (!cli_rename(cli->tree, src, dest)) {
+	if (NT_STATUS_IS_ERR(cli_rename(cli->tree, src, dest))) {
 		d_printf("%s renaming files\n",cli_errstr(cli->tree));
 		return 1;
 	}
@@ -2732,7 +2734,7 @@ static struct cli_state *do_connect(const char *server, const char *share)
 
 	DEBUG(4,(" session request ok\n"));
 
-	if (!cli_negprot(c)) {
+	if (NT_STATUS_IS_ERR(cli_negprot(c))) {
 		d_printf("protocol negotiation failed\n");
 		cli_shutdown(c);
 		return NULL;
@@ -2745,11 +2747,11 @@ static struct cli_state *do_connect(const char *server, const char *share)
 		}
 	}
 
-	if (!cli_session_setup(c, username, password, 
-			       lp_workgroup())) {
+	if (NT_STATUS_IS_ERR(cli_session_setup(c, username, password, 
+					       lp_workgroup()))) {
 		/* if a password was not supplied then try again with a null username */
 		if (password[0] || !username[0] || use_kerberos ||
-		    !cli_session_setup(c, "", "", lp_workgroup())) { 
+		    NT_STATUS_IS_ERR(cli_session_setup(c, "", "", lp_workgroup()))) { 
 			d_printf("session setup failed: %s\n", cli_errstr(c->tree));
 			cli_shutdown(c);
 			return NULL;
@@ -2759,7 +2761,7 @@ static struct cli_state *do_connect(const char *server, const char *share)
 
 	DEBUG(4,(" session setup ok\n"));
 
-	if (!cli_send_tconX(c, sharename, "?????", password)) {
+	if (NT_STATUS_IS_ERR(cli_send_tconX(c, sharename, "?????", password))) {
 		d_printf("tree connect failed: %s\n", cli_errstr(c->tree));
 		cli_shutdown(c);
 		return NULL;

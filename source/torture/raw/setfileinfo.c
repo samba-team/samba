@@ -500,10 +500,10 @@ BOOL torture_raw_sfileinfo(int dummy)
 done:
 	smb_raw_exit(cli->session);
 	cli_close(cli->tree, fnum);
-	if (!cli_unlink(cli->tree, fnum_fname)) {
+	if (NT_STATUS_IS_ERR(cli_unlink(cli->tree, fnum_fname))) {
 		printf("Failed to delete %s - %s\n", fnum_fname, cli_errstr(cli->tree));
 	}
-	if (!cli_unlink(cli->tree, path_fname)) {
+	if (NT_STATUS_IS_ERR(cli_unlink(cli->tree, path_fname))) {
 		printf("Failed to delete %s - %s\n", path_fname, cli_errstr(cli->tree));
 	}
 

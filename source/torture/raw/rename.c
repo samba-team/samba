@@ -52,7 +52,7 @@ static BOOL test_mv(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("Testing SMBmv\n");
 
 	if (cli_deltree(cli->tree, BASEDIR) == -1 ||
-	    !cli_mkdir(cli->tree, BASEDIR)) {
+	    NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR))) {
 		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli->tree));
 		return False;
 	}
@@ -142,7 +142,7 @@ static BOOL test_ntrename(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("Testing SMBntrename\n");
 
 	if (cli_deltree(cli->tree, BASEDIR) == -1 ||
-	    !cli_mkdir(cli->tree, BASEDIR)) {
+	    NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR))) {
 		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli->tree));
 		return False;
 	}

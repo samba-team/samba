@@ -110,7 +110,7 @@ static BOOL test_mux_write(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	cli->session->pid = 1;
 
 	/* lock a range */
-	if (!cli_lock(cli->tree, fnum, 0, 4, 0, WRITE_LOCK)) {
+	if (NT_STATUS_IS_ERR(cli_lock(cli->tree, fnum, 0, 4, 0, WRITE_LOCK))) {
 		printf("lock failed in mux_write - %s\n", cli_errstr(cli->tree));
 		ret = False;
 		goto done;
@@ -271,7 +271,7 @@ BOOL torture_raw_mux(int dummy)
 	}
 
 
-	if (!cli_mkdir(cli->tree, BASEDIR)) {
+	if (NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR))) {
 		printf("Failed to create %s\n", BASEDIR);
 		ret = False;
 		goto done;

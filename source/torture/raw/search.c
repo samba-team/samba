@@ -551,7 +551,7 @@ static BOOL test_many_files(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	};
 
 	if (cli_deltree(cli->tree, BASEDIR) == -1 || 
-	    !cli_mkdir(cli->tree, BASEDIR)) {
+	    NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR))) {
 		printf("Failed to create " BASEDIR " - %s\n", cli_errstr(cli->tree));
 		return False;
 	}

@@ -41,7 +41,7 @@ static BOOL test_unlink(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	const char *fname = BASEDIR "\\test.txt";
 
 	if (cli_deltree(cli->tree, BASEDIR) == -1 ||
-	    !cli_mkdir(cli->tree, BASEDIR)) {
+	    NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR))) {
 		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli->tree));
 		return False;
 	}

@@ -177,9 +177,9 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	case OP_LOCK:
 		/* set a lock */
 		for (server=0;server<NSERVERS;server++) {
-			ret[server] = cli_lock64(cli[server][conn]->tree, 
+			ret[server] = NT_STATUS_IS_OK(cli_lock64(cli[server][conn]->tree, 
 						 fnum[server][conn][f],
-						 start, len, LOCK_TIMEOUT, op);
+						 start, len, LOCK_TIMEOUT, op));
 			status[server] = cli_nt_error(cli[server][conn]->tree);
 			if (!exact_error_codes && 
 			    NT_STATUS_EQUAL(status[server], 
@@ -200,9 +200,9 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	case OP_UNLOCK:
 		/* unset a lock */
 		for (server=0;server<NSERVERS;server++) {
-			ret[server] = cli_unlock64(cli[server][conn]->tree, 
+			ret[server] = NT_STATUS_IS_OK(cli_unlock64(cli[server][conn]->tree, 
 						   fnum[server][conn][f],
-						   start, len);
+						   start, len));
 			status[server] = cli_nt_error(cli[server][conn]->tree);
 		}
 		if (showall || 
