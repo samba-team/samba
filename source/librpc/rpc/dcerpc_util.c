@@ -23,206 +23,6 @@
 
 #include "includes.h"
 
-/*
-  work out what TCP port to use for a given interface on a given host
-*/
-NTSTATUS dcerpc_epm_map_tcp_port(const char *server, 
-				 const char *uuid, uint_t version,
-				 uint32_t *port)
-{
-	struct dcerpc_pipe *p;
-	NTSTATUS status;
-	struct epm_Map r;
-	struct policy_handle handle;
-	struct GUID guid;
-	struct epm_twr_t twr, *twr_r;
-
-	if (strcasecmp(uuid, DCERPC_EPMAPPER_UUID) == 0 ||
-	    strcasecmp(uuid, DCERPC_MGMT_UUID) == 0) {
-		/* don't lookup epmapper via epmapper! */
-		*port = EPMAPPER_PORT;
-		return NT_STATUS_OK;
-	}
-
-	status = dcerpc_pipe_open_tcp(&p, server, EPMAPPER_PORT, AF_UNSPEC );
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/* we can use the pipes memory context here as we will have a short
-	   lived connection */
-	status = dcerpc_bind_byuuid(p, p, 
-				    DCERPC_EPMAPPER_UUID,
-				    DCERPC_EPMAPPER_VERSION);
-	if (!NT_STATUS_IS_OK(status)) {
-		dcerpc_pipe_close(p);
-		return status;
-	}
-
-	ZERO_STRUCT(handle);
-	ZERO_STRUCT(guid);
-
-	twr.tower.num_floors = 5;
-	twr.tower.floors = talloc(p, sizeof(twr.tower.floors[0]) * 5);
-
-	/* what I'd like for christmas ... */
-
-	/* an RPC interface ... */
-	twr.tower.floors[0].lhs.protocol = EPM_PROTOCOL_UUID;
-	GUID_from_string(uuid, &twr.tower.floors[0].lhs.info.uuid.uuid);
-	twr.tower.floors[0].lhs.info.uuid.version = version;
-	twr.tower.floors[0].rhs.uuid.unknown = 0;
-
-	/* encoded with NDR ... */
-	twr.tower.floors[1].lhs.protocol = EPM_PROTOCOL_UUID;
-	GUID_from_string(NDR_GUID, &twr.tower.floors[1].lhs.info.uuid.uuid);
-	twr.tower.floors[1].lhs.info.uuid.version = NDR_GUID_VERSION;
-	twr.tower.floors[1].rhs.uuid.unknown = 0;
-
-	/* on an RPC connection ... */
-	twr.tower.floors[2].lhs.protocol = EPM_PROTOCOL_NCACN;
-	twr.tower.floors[2].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr.tower.floors[2].rhs.ncacn.minor_version = 0;
-
-	/* on a TCP port ... */
-	twr.tower.floors[3].lhs.protocol = EPM_PROTOCOL_TCP;
-	twr.tower.floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr.tower.floors[3].rhs.tcp.port = 0;
-
-	/* on an IP link ... */
-	twr.tower.floors[4].lhs.protocol = EPM_PROTOCOL_IP;
-	twr.tower.floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr.tower.floors[4].rhs.ip.address = 0;
-
-	/* with some nice pretty paper around it of course */
-	r.in.object = &guid;
-	r.in.map_tower = &twr;
-	r.in.entry_handle = &handle;
-	r.in.max_towers = 1;
-	r.out.entry_handle = &handle;
-
-	status = dcerpc_epm_Map(p, p, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		dcerpc_pipe_close(p);
-		return status;
-	}
-	if (r.out.result != 0 || r.out.num_towers != 1) {
-		dcerpc_pipe_close(p);
-		return NT_STATUS_PORT_UNREACHABLE;
-	}
-
-	twr_r = r.out.towers[0].twr;
-	if (!twr_r) {
-		dcerpc_pipe_close(p);
-		return NT_STATUS_PORT_UNREACHABLE;
-	}
-
-	if (twr_r->tower.num_floors != 5 ||
-	    twr_r->tower.floors[3].lhs.protocol != twr.tower.floors[3].lhs.protocol) {
-		dcerpc_pipe_close(p);
-		return NT_STATUS_PORT_UNREACHABLE;
-	}
-
-	*port = twr_r->tower.floors[3].rhs.tcp.port;
-
-	dcerpc_pipe_close(p);
-
-	return NT_STATUS_OK;
-}
-
-NTSTATUS dcerpc_epm_map_ncalrpc(TALLOC_CTX *mem_ctx, 
-				 const char *uuid, uint_t version, const char **identifier)
-{
-	struct dcerpc_pipe *p;
-	NTSTATUS status;
-	struct epm_Map r;
-	struct policy_handle handle;
-	struct GUID guid;
-	struct epm_twr_t twr, *twr_r;
-
-	if (strcasecmp(uuid, DCERPC_EPMAPPER_UUID) == 0 ||
-	    strcasecmp(uuid, DCERPC_MGMT_UUID) == 0) {
-		/* don't lookup epmapper via epmapper! */
-		*identifier = talloc_strdup(mem_ctx, EPMAPPER_IDENTIFIER);
-		return NT_STATUS_OK;
-	}
-
-	status = dcerpc_pipe_open_pipe(&p, EPMAPPER_IDENTIFIER);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/* we can use the pipes memory context here as we will have a short
-	   lived connection */
-	status = dcerpc_bind_byuuid(p, p, 
-				    DCERPC_EPMAPPER_UUID,
-				    DCERPC_EPMAPPER_VERSION);
-	if (!NT_STATUS_IS_OK(status)) {
-		dcerpc_pipe_close(p);
-		return status;
-	}
-
-	ZERO_STRUCT(handle);
-	ZERO_STRUCT(guid);
-
-	twr.tower.num_floors = 4;
-	twr.tower.floors = talloc(p, sizeof(twr.tower.floors[0]) * 5);
-
-	twr.tower.floors[0].lhs.protocol = EPM_PROTOCOL_UUID;
-	GUID_from_string(uuid, &twr.tower.floors[0].lhs.info.uuid.uuid);
-	twr.tower.floors[0].lhs.info.uuid.version = version;
-	twr.tower.floors[0].rhs.uuid.unknown = 0;
-
-	twr.tower.floors[1].lhs.protocol = EPM_PROTOCOL_UUID;
-	GUID_from_string(NDR_GUID, &twr.tower.floors[1].lhs.info.uuid.uuid);
-	twr.tower.floors[1].lhs.info.uuid.version = NDR_GUID_VERSION;
-	twr.tower.floors[1].rhs.uuid.unknown = 0;
-
-	twr.tower.floors[2].lhs.protocol = EPM_PROTOCOL_NCALRPC;
-	twr.tower.floors[2].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr.tower.floors[2].rhs.ncalrpc.minor_version = 0;
-
-	twr.tower.floors[3].lhs.protocol = EPM_PROTOCOL_PIPE;
-	twr.tower.floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr.tower.floors[3].rhs.pipe.path = talloc_strdup(p, "");
-
-	/* with some nice pretty paper around it of course */
-	r.in.object = &guid;
-	r.in.map_tower = &twr;
-	r.in.entry_handle = &handle;
-	r.in.max_towers = 1;
-	r.out.entry_handle = &handle;
-
-	status = dcerpc_epm_Map(p, p, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		dcerpc_pipe_close(p);
-		return status;
-	}
-	if (r.out.result != 0 || r.out.num_towers != 1) {
-		dcerpc_pipe_close(p);
-		return NT_STATUS_PORT_UNREACHABLE;
-	}
-
-	twr_r = r.out.towers[0].twr;
-	if (!twr_r) {
-		dcerpc_pipe_close(p);
-		return NT_STATUS_PORT_UNREACHABLE;
-	}
-
-	if (twr_r->tower.num_floors != 4 ||
-	    twr_r->tower.floors[3].lhs.protocol != twr.tower.floors[3].lhs.protocol) {
-		dcerpc_pipe_close(p);
-		return NT_STATUS_PORT_UNREACHABLE;
-	}
-
-	*identifier = talloc_strdup(mem_ctx, twr_r->tower.floors[3].rhs.pipe.path);
-
-	dcerpc_pipe_close(p);
-
-	return NT_STATUS_OK;
-}
-
-
 
 /*
   find the pipe name for a local IDL interface
@@ -850,7 +650,7 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *
 	return NT_STATUS_OK;
 }
 
-NTSTATUS dcerpc_epm_map(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding,
+NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding,
 				 const char *uuid, uint_t version)
 {
 	struct dcerpc_pipe *p;
@@ -1064,7 +864,7 @@ static NTSTATUS dcerpc_pipe_connect_ncalrpc(struct dcerpc_pipe **p,
 
 	/* Look up identifier using the epmapper */
 	if (!binding->endpoint) {
-		status = dcerpc_epm_map(mem_ctx, binding, pipe_uuid, pipe_version);
+		status = dcerpc_epm_map_binding(mem_ctx, binding, pipe_uuid, pipe_version);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("Failed to map DCERPC/TCP NCALRPC identifier for '%s' - %s\n", 
 				 pipe_uuid, nt_errstr(status)));
@@ -1174,7 +974,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(struct dcerpc_pipe **p,
 	TALLOC_CTX *mem_ctx = talloc_init("connect_ncacn_ip_tcp");
 
 	if (!binding->endpoint) {
-		status = dcerpc_epm_map(mem_ctx, binding, 
+		status = dcerpc_epm_map_binding(mem_ctx, binding, 
 						 pipe_uuid, pipe_version);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("Failed to map DCERPC/TCP port for '%s' - %s\n", 
