@@ -63,6 +63,8 @@
 #define PASS_MACHINE_TRUST_ADS      (PASS_TRUST_ADS | PASS_TRUST_MACHINE)
 #define PASS_DOMAIN_TRUST_ADS       (PASS_TRUST_ADS | PASS_TRUST_DOMAIN)
 
+#define SECRETS_PASSWORDS_MIGRATED  "SECRETS/PASS_MIGRATED"
+
 /* structure for storing machine account password
    (ie. when samba server is member of a domain */
 struct machine_acct_pass {

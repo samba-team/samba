@@ -842,3 +842,32 @@ void secrets_fetch_ipc_userpass(char **username, char **domain, char **password)
 	}
 }
 
+
+/**
+ * Simple function to check whether or not trust passwords have already
+ * been migrated to a passdb backend and, on request, sets the sign
+ * that says it's been done.
+ *
+ * @param set_migrated force to store the sign in secrets.tdb
+ * @return true, if migration has been done
+ */
+
+BOOL secrets_passwords_migrated(BOOL set_migrated)
+{
+	BOOL migrated, *mig, stored;
+	const char *key = SECRETS_PASSWORDS_MIGRATED;
+	size_t keylen;
+
+	/* tdb key to fetch (and maybe store) */
+	keylen = strlen(key);
+	mig = secrets_fetch(key, &keylen);
+	migrated = *mig;
+
+	if (set_migrated) {
+		/* set "migrated" sign in secrets.tdb */
+		stored = secrets_store(key, (void*)set_migrated, sizeof(set_migrated));
+		return stored;
+	}
+
+	return migrated;
+}
