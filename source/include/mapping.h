@@ -29,5 +29,12 @@ typedef struct _GROUP_MAP {
 	enum SID_NAME_USE sid_name_use;
 	fstring nt_name;
 	fstring comment;
+
+	/* Here we store SIDs that we can be sure of to be of type
+	 * SID_NAME_DOM_GRP, so it's a Domain Group which can not be
+	 * represented via /etc/group memberships. */
+
+	int num_member;
+	DOM_SID *alias_members;
 } GROUP_MAP;
 
