@@ -52,7 +52,7 @@ krb5_get_krbhst (krb5_context context,
     krb5_boolean done;
     char **tmp;
 
-     r = *realm;
+    r = *realm;
 
     count = 0;
     max = 10;
