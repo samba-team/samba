@@ -146,6 +146,7 @@ sub _do_depend_subsystems($)
 	#
 	foreach my $key (sort keys %{$CTX->{INPUT}{SUBSYSTEMS}}) {
 		my $name = $CTX->{INPUT}{SUBSYSTEMS}{$key}{NAME};
+		my @STATIC_MODULES_LIST = ();
 
 		#
 		# skip when the subsystem was disabled
@@ -200,6 +201,11 @@ sub _do_depend_subsystems($)
 			}
 
 			#
+			# add it to the STATIC_MODULES_LIST
+			#
+			push(@STATIC_MODULES_LIST,$subkey);
+
+			#
 			# add OBJS of static modules to the subsystems used OBJ_LIST
 			#
 			foreach my $elem (@{$CTX->{INPUT}{MODULES}{$subkey}{INIT_OBJ_FILES}}) {
@@ -228,6 +234,7 @@ sub _do_depend_subsystems($)
 		# set the lists
 		#
 		@{$CTX->{DEPEND}{SUBSYSTEMS}{$key}{OBJ_LIST}} = @OBJ_LIST;
+		@{$CTX->{DEPEND}{SUBSYSTEMS}{$key}{STATIC_MODULES_LIST}} = @STATIC_MODULES_LIST;
 		@{$CTX->{DEPEND}{SUBSYSTEMS}{$key}{SUBSYSTEMS_LIST}} = @SUBSYSTEMS_LIST;
 		@{$CTX->{DEPEND}{SUBSYSTEMS}{$key}{LIBRARIES_LIST}} = @LIBRARIES_LIST;
 	}

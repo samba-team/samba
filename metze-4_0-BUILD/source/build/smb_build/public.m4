@@ -228,8 +228,6 @@ SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
 # End Subsystem $1
 ###################################
 "
-#hack
-AC_DEFINE_UNQUOTED([static_init_]translit([$1], [A-Z], [a-z]), [{}], [Static init functions])
 ])
 
 dnl SMB_SUBSYSTEM_MK(
@@ -256,9 +254,6 @@ SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
 # End Subsystem $1
 ###################################
 "
-
-#hack
-AC_DEFINE_UNQUOTED([static_init_]translit([$1], [A-Z], [a-z]), [{}], [Static init functions])
 ])
 
 dnl SMB_EXT_LIB_ENABLE(
