@@ -50,7 +50,11 @@ enum hdb_lockop{ HDB_RLOCK, HDB_WLOCK };
 typedef struct HDB{
     void *db;
     char *name;
+    int master_key_set;
+    krb5_data master_key;
+    int openp;
 
+    krb5_error_code (*open)(krb5_context, struct HDB*, int, mode_t);
     krb5_error_code (*close)(krb5_context, struct HDB*);
     krb5_error_code (*fetch)(krb5_context, struct HDB*, hdb_entry*);
     krb5_error_code (*store)(krb5_context, struct HDB*, int, hdb_entry*);
@@ -64,12 +68,15 @@ typedef struct HDB{
     krb5_error_code (*_put)(krb5_context, struct HDB*, int, 
 			    krb5_data, krb5_data);
     krb5_error_code (*_del)(krb5_context, struct HDB*, krb5_data);
+    krb5_error_code (*destroy)(krb5_context, struct HDB*);
 }HDB;
 
 void hdb_free_entry(krb5_context, hdb_entry*);
-krb5_error_code hdb_db_open(krb5_context, HDB**, const char*, int, mode_t);
-krb5_error_code hdb_ndbm_open(krb5_context, HDB**, const char*, int, mode_t);
-krb5_error_code hdb_open(krb5_context, HDB**, const char*, int, mode_t);
+
+krb5_error_code hdb_create(krb5_context, HDB**, const char*);
+krb5_error_code hdb_db_create(krb5_context, HDB**, const char*);
+krb5_error_code hdb_ndbm_create(krb5_context, HDB**, const char*);
+
 
 krb5_error_code hdb_etype2key(krb5_context, hdb_entry*, 
 			      krb5_enctype, Key**);
@@ -80,11 +87,20 @@ krb5_error_code hdb_keytype2key(krb5_context, hdb_entry*,
 krb5_error_code hdb_next_keytype2key(krb5_context, hdb_entry*, 
 				     krb5_keytype, Key**);
 
-typedef krb5_error_code (*hdb_foreach_func_t)(krb5_context, HDB*, hdb_entry*, void*);
-krb5_error_code hdb_foreach(krb5_context context, HDB *db, hdb_foreach_func_t func, void *data);
+typedef krb5_error_code (*hdb_foreach_func_t)(krb5_context, HDB*,
+					      hdb_entry*, void*);
+krb5_error_code hdb_foreach(krb5_context context, HDB *db,
+			    hdb_foreach_func_t func, void *data);
 
 krb5_error_code hdb_check_db_format(krb5_context, HDB*);
 krb5_error_code hdb_init_db(krb5_context, HDB*);
+
+krb5_error_code hdb_set_master_key (krb5_context context,
+				    HDB *db,
+				    const char *keyfile);
+
+krb5_error_code hdb_clear_master_key (krb5_context context,
+				      HDB *db);
 
 Key *hdb_unseal_key(Key*, krb5_data);
 void hdb_seal_key(Key*, krb5_data);
