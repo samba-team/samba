@@ -42,8 +42,7 @@ krb5_mk_safe(krb5_context context,
     *(s.safe_body.seq_number) = ++auth_context->local_seqnumber;
   } else 
     s.safe_body.seq_number = NULL;
-  s.safe_body.s_address.addr_type = addr.addrs[0].type;
-  s.safe_body.s_address.address   = addr.addrs[0].address;
+  s.safe_body.s_address = addr.addrs[0];
   s.safe_body.r_address = NULL;
 
   len = encode_KRB_SAFE (buf + sizeof(buf) - 1, sizeof(buf), &s);
