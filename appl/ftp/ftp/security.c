@@ -582,6 +582,12 @@ secure_command(void)
     return ftp_command != NULL;
 }
 
+enum protection_level
+get_command_prot(void)
+{
+    return command_prot;
+}
+
 #else /* FTP_SERVER */
 
 void
@@ -670,20 +676,19 @@ sec_prot(int argc, char **argv)
 	return;
     }
     
-    if(argc == 2 || strcasecmp(argv[1], "data") == 0) {
+    if(argc == 2 || strncasecmp(argv[1], "data", strlen(argv[1])) == 0) {
 	if(sec_prot_internal(level) < 0){
 	    code = -1;
 	    return;
 	}
-    } else if(strcasecmp(argv[1], "command") == 0)
+    } else if(strncasecmp(argv[1], "command", strlen(argv[1])) == 0)
 	set_command_prot(level);
     else
 	goto usage;
     code = 0;
     return;
  usage:
-    printf("usage: %s (command | data) "
-	   "(clear | safe | confidential | private)\n",
+    printf("usage: %s [command|data] [clear|safe|confidential|private]\n",
 	   argv[0]);
     code = -1;
 }
