@@ -600,7 +600,6 @@ static BOOL do_lsa_sam_logon(uint16 fnum, uint32 sess_key[2], DOM_CRED *sto_clnt
 				DEBUG(5, ("do_lsa_sam_logon: server credential check failed\n"));
 			}
 		}
-#endif
 	}
 
 	if (rparam) free(rparam);
@@ -935,3 +934,4 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 
 	return True;
 }
+#endif /* NTDOMAIN */
