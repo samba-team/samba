@@ -5,6 +5,7 @@
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997.
+ *  Copyright (C) Hewlett-Packard Company           1999.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -52,9 +53,9 @@ BOOL reg_io_q_open_hklm(char *desc,  REG_Q_OPEN_HKLM *r_q, prs_struct *ps, int d
 	prs_debug(ps, depth, desc, "reg_io_q_open_hklm");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
-	
+
 	if(!prs_uint32("ptr      ", ps, depth, &r_q->ptr))
 		return False;
 
@@ -83,7 +84,7 @@ BOOL reg_io_r_open_hklm(char *desc,  REG_R_OPEN_HKLM *r_r, prs_struct *ps, int d
 	prs_debug(ps, depth, desc, "reg_io_r_open_hklm");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!smb_io_pol_hnd("", &r_r->pol, ps, depth))
@@ -117,7 +118,7 @@ BOOL reg_io_q_flush_key(char *desc,  REG_Q_FLUSH_KEY *r_q, prs_struct *ps, int d
 	prs_debug(ps, depth, desc, "reg_io_q_flush_key");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!smb_io_pol_hnd("", &r_q->pol, ps, depth))
@@ -138,7 +139,7 @@ BOOL reg_io_r_flush_key(char *desc,  REG_R_FLUSH_KEY *r_r, prs_struct *ps, int d
 	prs_debug(ps, depth, desc, "reg_io_r_flush_key");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!prs_uint32("status", ps, depth, &r_r->status))
@@ -177,7 +178,7 @@ static BOOL reg_io_hdrbuf_sec(uint32 ptr, uint32 *ptr3, BUFHDR *hdr_sec, SEC_DES
 		if(!prs_set_offset(ps, old_offset + data->len + sizeof(uint32) * ((ptr3 != NULL) ? 5 : 3)))
 			return False;
 
-		if(prs_align(ps))
+		if(!prs_align(ps))
 			return False;
 	}
 
@@ -230,7 +231,7 @@ BOOL reg_io_q_create_key(char *desc,  REG_Q_CREATE_KEY *r_q, prs_struct *ps, int
 	prs_debug(ps, depth, desc, "reg_io_q_create_key");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!smb_io_pol_hnd("", &r_q->pnt_pol, ps, depth))
@@ -240,14 +241,14 @@ BOOL reg_io_q_create_key(char *desc,  REG_Q_CREATE_KEY *r_q, prs_struct *ps, int
 		return False;
 	if(!smb_io_unistr2("", &r_q->uni_name, r_q->hdr_name.buffer, ps, depth))
 		return False;
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 
 	if(!smb_io_unihdr ("", &r_q->hdr_class, ps, depth))
 		return False;
 	if(!smb_io_unistr2("", &r_q->uni_class, r_q->hdr_class.buffer, ps, depth))
 		return False;
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 
 	if(!prs_uint32("reserved", ps, depth, &r_q->reserved))
@@ -286,7 +287,7 @@ BOOL reg_io_r_create_key(char *desc,  REG_R_CREATE_KEY *r_r, prs_struct *ps, int
 	prs_debug(ps, depth, desc, "reg_io_r_create_key");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!smb_io_pol_hnd("", &r_r->key_pol, ps, depth))
@@ -329,7 +330,7 @@ BOOL reg_io_q_delete_val(char *desc,  REG_Q_DELETE_VALUE *r_q, prs_struct *ps, i
 	prs_debug(ps, depth, desc, "reg_io_q_delete_val");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!smb_io_pol_hnd("", &r_q->pnt_pol, ps, depth))
@@ -339,7 +340,7 @@ BOOL reg_io_q_delete_val(char *desc,  REG_Q_DELETE_VALUE *r_q, prs_struct *ps, i
 		return False;
 	if(!smb_io_unistr2("", &r_q->uni_name, r_q->hdr_name.buffer, ps, depth))
 		return False;
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 
 	return True;
@@ -358,7 +359,7 @@ BOOL reg_io_r_delete_val(char *desc,  REG_R_DELETE_VALUE *r_r, prs_struct *ps, i
 	prs_debug(ps, depth, desc, "reg_io_r_delete_val");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!prs_uint32("status", ps, depth, &r_r->status))
@@ -395,7 +396,7 @@ BOOL reg_io_q_delete_key(char *desc,  REG_Q_DELETE_KEY *r_q, prs_struct *ps, int
 	prs_debug(ps, depth, desc, "reg_io_q_delete_key");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!smb_io_pol_hnd("", &r_q->pnt_pol, ps, depth))
@@ -405,7 +406,7 @@ BOOL reg_io_q_delete_key(char *desc,  REG_Q_DELETE_KEY *r_q, prs_struct *ps, int
 		return False;
 	if(!smb_io_unistr2("", &r_q->uni_name, r_q->hdr_name.buffer, ps, depth))
 		return False;
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 
 	return True;
@@ -423,7 +424,7 @@ BOOL reg_io_r_delete_key(char *desc,  REG_R_DELETE_KEY *r_r, prs_struct *ps, int
 	prs_debug(ps, depth, desc, "reg_io_r_delete_key");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!prs_uint32("status", ps, depth, &r_r->status))
@@ -458,7 +459,7 @@ BOOL reg_io_q_query_key(char *desc,  REG_Q_QUERY_KEY *r_q, prs_struct *ps, int d
 	prs_debug(ps, depth, desc, "reg_io_q_query_key");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!smb_io_pol_hnd("", &r_q->pol, ps, depth))
@@ -468,7 +469,7 @@ BOOL reg_io_q_query_key(char *desc,  REG_Q_QUERY_KEY *r_q, prs_struct *ps, int d
 	if(!smb_io_unistr2("", &r_q->uni_class, r_q->hdr_class.buffer, ps, depth))
 		return False;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 
 	return True;
@@ -487,7 +488,7 @@ BOOL reg_io_r_query_key(char *desc,  REG_R_QUERY_KEY *r_r, prs_struct *ps, int d
 	prs_debug(ps, depth, desc, "reg_io_r_query_key");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!smb_io_unihdr ("", &r_r->hdr_class, ps, depth))
@@ -495,7 +496,7 @@ BOOL reg_io_r_query_key(char *desc,  REG_R_QUERY_KEY *r_r, prs_struct *ps, int d
 	if(!smb_io_unistr2("", &r_r->uni_class, r_r->hdr_class.buffer, ps, depth))
 		return False;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 
 	if(!prs_uint32("num_subkeys   ", ps, depth, &r_r->num_subkeys))
@@ -542,7 +543,7 @@ BOOL reg_io_q_unk_1a(char *desc,  REG_Q_UNK_1A *r_q, prs_struct *ps, int depth)
 	prs_debug(ps, depth, desc, "reg_io_q_unk_1a");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!smb_io_pol_hnd("", &r_q->pol, ps, depth))
@@ -563,7 +564,7 @@ BOOL reg_io_r_unk_1a(char *desc,  REG_R_UNK_1A *r_r, prs_struct *ps, int depth)
 	prs_debug(ps, depth, desc, "reg_io_r_unk_1a");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!prs_uint32("unknown", ps, depth, &r_r->unknown))
@@ -599,7 +600,7 @@ BOOL reg_io_q_open_hku(char *desc,  REG_Q_OPEN_HKU *r_q, prs_struct *ps, int dep
 	prs_debug(ps, depth, desc, "reg_io_q_open_hku");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!prs_uint32("ptr      ", ps, depth, &r_q->ptr))
@@ -628,7 +629,7 @@ BOOL reg_io_r_open_hku(char *desc,  REG_R_OPEN_HKU *r_r, prs_struct *ps, int dep
 	prs_debug(ps, depth, desc, "reg_io_r_open_hku");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!smb_io_pol_hnd("", &r_r->pol, ps, depth))
@@ -663,12 +664,12 @@ BOOL reg_io_q_close(char *desc,  REG_Q_CLOSE *q_u, prs_struct *ps, int depth)
 	prs_debug(ps, depth, desc, "reg_io_q_unknown_1");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 
 	if(!smb_io_pol_hnd("", &q_u->pol, ps, depth))
 		return False;
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 
 	return True;
@@ -686,12 +687,12 @@ BOOL reg_io_r_close(char *desc,  REG_R_CLOSE *r_u, prs_struct *ps, int depth)
 	prs_debug(ps, depth, desc, "reg_io_r_unknown_1");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 
 	if(!smb_io_pol_hnd("", &r_u->pol, ps, depth))
 		return False;
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 
 	if(!prs_uint32("status", ps, depth, &r_u->status))
@@ -727,7 +728,7 @@ BOOL reg_io_q_set_key_sec(char *desc,  REG_Q_SET_KEY_SEC *r_q, prs_struct *ps, i
 	prs_debug(ps, depth, desc, "reg_io_q_set_key_sec");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!smb_io_pol_hnd("", &r_q->pol, ps, depth))
@@ -756,7 +757,7 @@ BOOL reg_io_r_set_key_sec(char *desc, REG_R_SET_KEY_SEC *r_q, prs_struct *ps, in
 	prs_debug(ps, depth, desc, "reg_io_r_set_key_sec");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!prs_uint32("status", ps, depth, &r_q->status))
@@ -797,7 +798,7 @@ BOOL reg_io_q_get_key_sec(char *desc,  REG_Q_GET_KEY_SEC *r_q, prs_struct *ps, i
 	prs_debug(ps, depth, desc, "reg_io_q_get_key_sec");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!smb_io_pol_hnd("", &r_q->pol, ps, depth))
@@ -842,7 +843,7 @@ BOOL reg_io_r_get_key_sec(char *desc,  REG_R_GET_KEY_SEC *r_q, prs_struct *ps, i
 	prs_debug(ps, depth, desc, "reg_io_r_get_key_sec");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!prs_uint32("ptr      ", ps, depth, &r_q->ptr))
@@ -853,7 +854,7 @@ BOOL reg_io_r_get_key_sec(char *desc,  REG_R_GET_KEY_SEC *r_q, prs_struct *ps, i
 			return False;
 		if(!sec_io_desc_buf("", &r_q->data, ps, depth))
 			return False;
-		if(prs_align(ps))
+		if(!prs_align(ps))
 			return False;
 	}
 
@@ -904,7 +905,7 @@ BOOL reg_io_q_info(char *desc,  REG_Q_INFO *r_q, prs_struct *ps, int depth)
 	prs_debug(ps, depth, desc, "reg_io_q_info");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!smb_io_pol_hnd("", &r_q->pol, ps, depth))
@@ -914,7 +915,7 @@ BOOL reg_io_q_info(char *desc,  REG_Q_INFO *r_q, prs_struct *ps, int depth)
 	if(!smb_io_unistr2("", &r_q->uni_type, r_q->hdr_type.buffer, ps, depth))
 		return False;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!prs_uint32("ptr1", ps, depth, &r_q->ptr1))
@@ -993,7 +994,7 @@ BOOL reg_io_r_info(char *desc, REG_R_INFO *r_r, prs_struct *ps, int depth)
 	prs_debug(ps, depth, desc, "reg_io_r_info");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!prs_uint32("ptr1", ps, depth, &r_r->ptr1))
@@ -1007,7 +1008,7 @@ BOOL reg_io_r_info(char *desc, REG_R_INFO *r_r, prs_struct *ps, int depth)
 
 		if(!smb_io_buffer2("uni_type", &r_r->uni_type, r_r->ptr_type, ps, depth))
 			return False;
-		if(prs_align(ps))
+		if(!prs_align(ps))
 			return False;
 
 		if(!prs_uint32("ptr2", ps, depth, &r_r->ptr2))
@@ -1074,7 +1075,7 @@ BOOL reg_io_q_enum_val(char *desc,  REG_Q_ENUM_VALUE *q_q, prs_struct *ps, int d
 	prs_debug(ps, depth, desc, "reg_io_q_enum_val");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!smb_io_pol_hnd("", &q_q->pol, ps, depth))
@@ -1086,7 +1087,7 @@ BOOL reg_io_q_enum_val(char *desc,  REG_Q_ENUM_VALUE *q_q, prs_struct *ps, int d
 		return False;
 	if(!smb_io_unistr2("uni_name", &q_q->uni_name, q_q->hdr_name.buffer, ps, depth))
 		return False;
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 
 	if(!prs_uint32("ptr_type", ps, depth, &q_q->ptr_type))
@@ -1101,7 +1102,7 @@ BOOL reg_io_q_enum_val(char *desc,  REG_Q_ENUM_VALUE *q_q, prs_struct *ps, int d
 		return False;
 	if(!smb_io_buffer2("buf_value", &q_q->buf_value, q_q->ptr_value, ps, depth))
 		return False;
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 
 	if(!prs_uint32("ptr1", ps, depth, &q_q->ptr1))
@@ -1132,14 +1133,14 @@ BOOL reg_io_r_enum_val(char *desc,  REG_R_ENUM_VALUE *r_q, prs_struct *ps, int d
 	prs_debug(ps, depth, desc, "reg_io_r_enum_val");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!smb_io_unihdr ("hdr_name", &r_q->hdr_name, ps, depth))
 		return False;
 	if(!smb_io_unistr2("uni_name", &r_q->uni_name, r_q->hdr_name.buffer, ps, depth))
 		return False;
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 
 	if(!prs_uint32("ptr_type", ps, depth, &r_q->ptr_type))
@@ -1154,7 +1155,7 @@ BOOL reg_io_r_enum_val(char *desc,  REG_R_ENUM_VALUE *r_q, prs_struct *ps, int d
 		return False;
 	if(!smb_io_buffer2("buf_value", r_q->buf_value, r_q->ptr_value, ps, depth))
 		return False;
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 
 	if(!prs_uint32("ptr1", ps, depth, &r_q->ptr1))
@@ -1210,7 +1211,7 @@ BOOL reg_io_q_create_val(char *desc,  REG_Q_CREATE_VALUE *q_q, prs_struct *ps, i
 	prs_debug(ps, depth, desc, "reg_io_q_create_val");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!smb_io_pol_hnd("", &q_q->pol, ps, depth))
@@ -1220,14 +1221,14 @@ BOOL reg_io_q_create_val(char *desc,  REG_Q_CREATE_VALUE *q_q, prs_struct *ps, i
 		return False;
 	if(!smb_io_unistr2("uni_name", &q_q->uni_name, q_q->hdr_name.buffer, ps, depth))
 		return False;
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 
 	if(!prs_uint32("type", ps, depth, &q_q->type))
 		return False;
 	if(!smb_io_buffer3("buf_value", q_q->buf_value, ps, depth))
 		return False;
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 
 	return True;
@@ -1245,7 +1246,7 @@ BOOL reg_io_r_create_val(char *desc,  REG_R_CREATE_VALUE *r_q, prs_struct *ps, i
 	prs_debug(ps, depth, desc, "reg_io_r_create_val");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!prs_uint32("status", ps, depth, &r_q->status))
@@ -1289,7 +1290,7 @@ BOOL reg_io_q_enum_key(char *desc,  REG_Q_ENUM_KEY *q_q, prs_struct *ps, int dep
 	prs_debug(ps, depth, desc, "reg_io_q_enum_key");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!smb_io_pol_hnd("", &q_q->pol, ps, depth))
@@ -1343,7 +1344,7 @@ BOOL reg_io_r_enum_key(char *desc,  REG_R_ENUM_KEY *r_q, prs_struct *ps, int dep
 	prs_debug(ps, depth, desc, "reg_io_r_enum_key");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!prs_uint16("key_name_len", ps, depth, &r_q->key_name_len))
@@ -1361,7 +1362,7 @@ BOOL reg_io_r_enum_key(char *desc,  REG_R_ENUM_KEY *r_q, prs_struct *ps, int dep
 			return False;
 		if(!smb_io_unistr3("key_name", &r_q->key_name, ps, depth))
 			return False;
-		if(prs_align(ps))
+		if(!prs_align(ps))
 			return False;
 	}
 
@@ -1417,7 +1418,7 @@ BOOL reg_io_q_open_entry(char *desc,  REG_Q_OPEN_ENTRY *r_q, prs_struct *ps, int
 	prs_debug(ps, depth, desc, "reg_io_q_entry");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!smb_io_pol_hnd("", &r_q->pol, ps, depth))
@@ -1427,7 +1428,7 @@ BOOL reg_io_q_open_entry(char *desc,  REG_Q_OPEN_ENTRY *r_q, prs_struct *ps, int
 	if(!smb_io_unistr2("", &r_q->uni_name, r_q->hdr_name.buffer, ps, depth))
 		return False;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!prs_uint32("unknown_0", ps, depth, &r_q->unknown_0))
@@ -1461,7 +1462,7 @@ BOOL reg_io_r_open_entry(char *desc,  REG_R_OPEN_ENTRY *r_r, prs_struct *ps, int
 	prs_debug(ps, depth, desc, "reg_io_r_open_entry");
 	depth++;
 
-	if(prs_align(ps))
+	if(!prs_align(ps))
 		return False;
 	
 	if(!smb_io_pol_hnd("", &r_r->pol, ps, depth))
