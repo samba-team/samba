@@ -21,34 +21,6 @@
 #include "includes.h"
 
 /*
-  mark the flags2 field in a packet as signed
-*/
-static void mark_packet_signed(struct smbsrv_request *req) 
-{
-	uint16_t flags2;
-	flags2 = SVAL(req->out.hdr, HDR_FLG2);
-	flags2 |= FLAGS2_SMB_SECURITY_SIGNATURES;
-	SSVAL(req->out.hdr, HDR_FLG2, flags2);
-}
-
-/*
-  calculate the signature for a message
-*/
-static void calc_signature(uint8_t *buffer, size_t length,
-			   DATA_BLOB *mac_key, uint8_t signature[8])
-{
-	uint8_t calc_md5_mac[16];
-	struct MD5Context md5_ctx;
-
-	MD5Init(&md5_ctx);
-	MD5Update(&md5_ctx, mac_key->data, mac_key->length); 
-	MD5Update(&md5_ctx, buffer, length);
-	MD5Final(calc_md5_mac, &md5_ctx);
-	memcpy(signature, calc_md5_mac, 8);
-}
-			   
-
-/*
   sign an outgoing packet
 */
 void req_sign_packet(struct smbsrv_request *req)
@@ -57,14 +29,9 @@ void req_sign_packet(struct smbsrv_request *req)
 	if (req->smb_conn->signing.signing_state != SMB_SIGNING_REQUIRED) {
 		return;
 	}
-
-	SBVAL(req->out.hdr, HDR_SS_FIELD, req->seq_num+1);
-
-	mark_packet_signed(req);
-
-	calc_signature(req->out.hdr, req->out.size - NBT_HDR_SIZE,
-		       &req->smb_conn->signing.mac_key, 
-		       &req->out.hdr[HDR_SS_FIELD]);
+	sign_outgoing_message(&req->out, 
+			      &req->smb_conn->signing.mac_key, 
+			      req->seq_num+1);
 }
 
 
@@ -127,23 +94,8 @@ BOOL req_signing_check_incoming(struct smbsrv_request *req)
 		return True;
 	}
 
-	/* room enough for the signature? */
-	if (req->in.size < NBT_HDR_SIZE + HDR_SS_FIELD + 8) {
-		return False;
-	}
+	return check_signed_incoming_message(&req->in,
+					     &req->smb_conn->signing.mac_key,
+					     req->seq_num);
 
-	memcpy(client_md5_mac, req->in.hdr + HDR_SS_FIELD, 8);
-
-	SBVAL(req->in.hdr, HDR_SS_FIELD, req->seq_num);
-
-	calc_signature(req->in.hdr, req->in.size - NBT_HDR_SIZE,
-		       &req->smb_conn->signing.mac_key, 
-		       signature);
-
-	if (memcmp(client_md5_mac, signature, 8) != 0) {
-		DEBUG(2,("Bad SMB signature seq_num=%d\n", (int)req->seq_num));
-		return False;
-	}
-
-	return True;
 }

@@ -69,15 +69,15 @@ static BOOL set_smb_signing_real_common(struct cli_transport *transport)
 	return True;
 }
 
-static void mark_packet_signed(struct cli_request *req) 
+static void mark_packet_signed(struct request_buffer *out) 
 {
 	uint16_t flags2;
-	flags2 = SVAL(req->out.hdr, HDR_FLG2);
+	flags2 = SVAL(out->hdr, HDR_FLG2);
 	flags2 |= FLAGS2_SMB_SECURITY_SIGNATURES;
-	SSVAL(req->out.hdr, HDR_FLG2, flags2);
+	SSVAL(out->hdr, HDR_FLG2, flags2);
 }
 
-static BOOL signing_good(struct cli_request *req, int seq, BOOL good) 
+static BOOL signing_good(struct cli_request *req, unsigned int seq, BOOL good) 
 {
 	if (good) {
 		if (!req->transport->negotiate.sign_info.doing_signing) {
@@ -87,9 +87,8 @@ static BOOL signing_good(struct cli_request *req, int seq, BOOL good)
 			req->transport->negotiate.sign_info.seen_valid = True;
 		}
 	} else {
-		if (!req->transport->negotiate.sign_info.mandatory_signing && !req->transport->negotiate.sign_info.seen_valid) {
-
-			/* Non-mandatory signing - just turn off if this is the first bad packet.. */
+		if (!req->transport->negotiate.sign_info.seen_valid) {
+			/* If we have never seen a good packet, just turn it off */
 			DEBUG(5, ("signing_good: signing negotiated but not required and peer\n"
 				  "isn't sending correct signatures. Turning off.\n"));
 			req->transport->negotiate.sign_info.negotiated_smb_signing = False;
@@ -100,13 +99,108 @@ static BOOL signing_good(struct cli_request *req, int seq, BOOL good)
 			cli_null_set_signing(req->transport);
 			return True;
 		} else {
-			/* Mandatory signing or bad packet after signing started - fail and disconnect. */
-			if (seq)
-				DEBUG(0, ("signing_good: BAD SIG: seq %u\n", (unsigned int)seq));
+			/* bad packet after signing started - fail and disconnect. */
+			DEBUG(0, ("signing_good: BAD SIG: seq %u\n", seq));
 			return False;
 		}
 	}
 	return True;
+}
+
+void sign_outgoing_message(struct request_buffer *out, DATA_BLOB *mac_key, uint_t seq_num) 
+{
+	uint8_t calc_md5_mac[16];
+	struct MD5Context md5_ctx;
+	/*
+	 * Firstly put the sequence number into the first 4 bytes.
+	 * and zero out the next 4 bytes.
+	 */
+	SIVAL(out->hdr, HDR_SS_FIELD, seq_num);
+	SIVAL(out->hdr, HDR_SS_FIELD + 4, 0);
+
+	/* mark the packet as signed - BEFORE we sign it...*/
+	mark_packet_signed(out);
+
+	/* Calculate the 16 byte MAC and place first 8 bytes into the field. */
+	MD5Init(&md5_ctx);
+	MD5Update(&md5_ctx, mac_key->data, 
+		  mac_key->length); 
+	MD5Update(&md5_ctx, 
+		  out->buffer + NBT_HDR_SIZE, 
+		  out->size - NBT_HDR_SIZE);
+	MD5Final(calc_md5_mac, &md5_ctx);
+
+	memcpy(&out->hdr[HDR_SS_FIELD], calc_md5_mac, 8);
+
+	DEBUG(5, ("sign_outgoing_message: SENT SIG (seq: %d): sent SMB signature of\n", 
+		  seq_num));
+	dump_data(5, calc_md5_mac, 8);
+/*	req->out.hdr[HDR_SS_FIELD+2]=0; 
+	Uncomment this to test if the remote server actually verifies signitures...*/
+}
+
+BOOL check_signed_incoming_message(struct request_buffer *in, DATA_BLOB *mac_key, uint_t seq_num) 
+{
+	BOOL good;
+	uint8_t calc_md5_mac[16];
+	uint8_t server_sent_mac[8];
+	uint8_t sequence_buf[8];
+	struct MD5Context md5_ctx;
+	const size_t offset_end_of_sig = (HDR_SS_FIELD + 8);
+	int i;
+	const int sign_range = 0;
+
+	/* room enough for the signature? */
+	if (in->size < NBT_HDR_SIZE + HDR_SS_FIELD + 8) {
+		return False;
+	}
+
+	/* its quite bogus to be guessing sequence numbers, but very useful
+	   when debugging signing implementations */
+	for (i = 0-sign_range; i <= 0+sign_range; i++) {
+		/*
+		 * Firstly put the sequence number into the first 4 bytes.
+		 * and zero out the next 4 bytes.
+		 */
+		SIVAL(sequence_buf, 0, seq_num + i);
+		SIVAL(sequence_buf, 4, 0);
+		
+		/* get a copy of the server-sent mac */
+		memcpy(server_sent_mac, &in->hdr[HDR_SS_FIELD], sizeof(server_sent_mac));
+		
+		/* Calculate the 16 byte MAC and place first 8 bytes into the field. */
+		MD5Init(&md5_ctx);
+		MD5Update(&md5_ctx, mac_key->data, 
+			  mac_key->length); 
+		MD5Update(&md5_ctx, in->hdr, HDR_SS_FIELD);
+		MD5Update(&md5_ctx, sequence_buf, sizeof(sequence_buf));
+		
+		MD5Update(&md5_ctx, in->hdr + offset_end_of_sig, 
+			  in->size - NBT_HDR_SIZE - (offset_end_of_sig));
+		MD5Final(calc_md5_mac, &md5_ctx);
+		
+		good = (memcmp(server_sent_mac, calc_md5_mac, 8) == 0);
+
+		if (i == 0) {
+			if (!good) {
+				DEBUG(5, ("check_signed_incoming_message: BAD SIG (seq: %d): wanted SMB signature of\n", seq_num + i));
+				dump_data(5, calc_md5_mac, 8);
+				
+				DEBUG(5, ("check_signed_incoming_message: BAD SIG (seq: %d): got SMB signature of\n", seq_num + i));
+				dump_data(5, server_sent_mac, 8);
+			} else {
+				DEBUG(15, ("check_signed_incoming_message: GOOD SIG (seq: %d): got SMB signature of\n", seq_num + i));
+				dump_data(5, server_sent_mac, 8);
+			}
+		}
+
+		if (good) break;
+	}
+
+	if (good && i != 0) {
+		DEBUG(0,("SIGNING OFFSET %d (should be %d)\n", i, seq_num));
+	}
+	return good;
 }
 
 /***********************************************************
@@ -114,8 +208,6 @@ static BOOL signing_good(struct cli_request *req, int seq, BOOL good)
 ************************************************************/
 static void cli_request_simple_sign_outgoing_message(struct cli_request *req)
 {
-	uint8_t calc_md5_mac[16];
-	struct MD5Context md5_ctx;
 	struct smb_basic_signing_context *data = req->transport->negotiate.sign_info.signing_context;
 
 #if 0
@@ -133,33 +225,8 @@ static void cli_request_simple_sign_outgoing_message(struct cli_request *req)
 	} else {
 		data->next_seq_num += 2;
 	}
-
-	/*
-	 * Firstly put the sequence number into the first 4 bytes.
-	 * and zero out the next 4 bytes.
-	 */
-	SIVAL(req->out.hdr, HDR_SS_FIELD, req->seq_num);
-	SIVAL(req->out.hdr, HDR_SS_FIELD + 4, 0);
-
-	/* mark the packet as signed - BEFORE we sign it...*/
-	mark_packet_signed(req);
-
-	/* Calculate the 16 byte MAC and place first 8 bytes into the field. */
-	MD5Init(&md5_ctx);
-	MD5Update(&md5_ctx, data->mac_key.data, 
-		  data->mac_key.length); 
-	MD5Update(&md5_ctx, 
-		  req->out.buffer + NBT_HDR_SIZE, 
-		  req->out.size - NBT_HDR_SIZE);
-	MD5Final(calc_md5_mac, &md5_ctx);
-
-	memcpy(&req->out.hdr[HDR_SS_FIELD], calc_md5_mac, 8);
-
-	DEBUG(5, ("cli_request_simple_sign_outgoing_message: SENT SIG (seq: %d, next %d): sent SMB signature of\n", 
-		  req->seq_num, data->next_seq_num));
-	dump_data(5, calc_md5_mac, 8);
-/*	req->out.hdr[HDR_SS_FIELD+2]=0; 
-	Uncomment this to test if the remote server actually verifies signitures...*/
+	
+	sign_outgoing_message(&req->out, &data->mac_key, req->seq_num);
 }
 
 
@@ -168,62 +235,13 @@ static void cli_request_simple_sign_outgoing_message(struct cli_request *req)
 ************************************************************/
 static BOOL cli_request_simple_check_incoming_message(struct cli_request *req)
 {
-	BOOL good;
-	uint8_t calc_md5_mac[16];
-	uint8_t server_sent_mac[8];
-	uint8_t sequence_buf[8];
-	struct MD5Context md5_ctx;
-	struct smb_basic_signing_context *data = req->transport->negotiate.sign_info.signing_context;
-	const size_t offset_end_of_sig = (HDR_SS_FIELD + 8);
-	int i;
-	const int sign_range = 0;
+	struct smb_basic_signing_context *data 
+		= req->transport->negotiate.sign_info.signing_context;
 
-	/* its quite bogus to be guessing sequence numbers, but very useful
-	   when debugging signing implementations */
-	for (i = 1-sign_range; i <= 1+sign_range; i++) {
-		/*
-		 * Firstly put the sequence number into the first 4 bytes.
-		 * and zero out the next 4 bytes.
-		 */
-		SIVAL(sequence_buf, 0, req->seq_num+i);
-		SIVAL(sequence_buf, 4, 0);
-		
-		/* get a copy of the server-sent mac */
-		memcpy(server_sent_mac, &req->in.hdr[HDR_SS_FIELD], sizeof(server_sent_mac));
-		
-		/* Calculate the 16 byte MAC and place first 8 bytes into the field. */
-		MD5Init(&md5_ctx);
-		MD5Update(&md5_ctx, data->mac_key.data, 
-			  data->mac_key.length); 
-		MD5Update(&md5_ctx, req->in.hdr, HDR_SS_FIELD);
-		MD5Update(&md5_ctx, sequence_buf, sizeof(sequence_buf));
-		
-		MD5Update(&md5_ctx, req->in.hdr + offset_end_of_sig, 
-			  req->in.size - NBT_HDR_SIZE - (offset_end_of_sig));
-		MD5Final(calc_md5_mac, &md5_ctx);
-		
-		good = (memcmp(server_sent_mac, calc_md5_mac, 8) == 0);
-
-		if (i == 1) {
-			if (!good) {
-				DEBUG(5, ("cli_request_simple_check_incoming_message: BAD SIG (seq: %d): wanted SMB signature of\n", req->seq_num + i));
-				dump_data(5, calc_md5_mac, 8);
-				
-				DEBUG(5, ("cli_request_simple_check_incoming_message: BAD SIG (seq: %d): got SMB signature of\n", req->seq_num + i));
-				dump_data(5, server_sent_mac, 8);
-			} else {
-				DEBUG(15, ("cli_request_simple_check_incoming_message: GOOD SIG (seq: %d): got SMB signature of\n", req->seq_num + i));
-				dump_data(5, server_sent_mac, 8);
-			}
-		}
-
-		if (good) break;
-	}
-
-	if (good && i != 1) {
-		DEBUG(0,("SIGNING OFFSET %d (should be %d)\n", i, req->seq_num+1));
-	}
-
+	BOOL good = check_signed_incoming_message(&req->in, 
+						  &data->mac_key, 
+						  req->seq_num+1);
+						  
 	return signing_good(req, req->seq_num+1, good);
 }
 
@@ -247,8 +265,7 @@ static void cli_transport_simple_free_signing_context(struct cli_transport *tran
 ************************************************************/
 BOOL cli_transport_simple_set_signing(struct cli_transport *transport,
 				      const DATA_BLOB user_session_key, 
-				      const DATA_BLOB response,
-				      int seq_num)
+				      const DATA_BLOB response)
 {
 	struct smb_basic_signing_context *data;
 
@@ -271,8 +288,10 @@ BOOL cli_transport_simple_set_signing(struct cli_transport *transport,
 		memcpy(&data->mac_key.data[user_session_key.length],response.data, response.length);
 	}
 
+	dump_data_pw("Started Signing with key:\n", data->mac_key.data, data->mac_key.length);
+
 	/* Initialise the sequence number */
-	data->next_seq_num = seq_num;
+	data->next_seq_num = 0;
 
 	transport->negotiate.sign_info.sign_outgoing_message = cli_request_simple_sign_outgoing_message;
 	transport->negotiate.sign_info.check_incoming_message = cli_request_simple_check_incoming_message;
@@ -332,11 +351,12 @@ BOOL cli_null_set_signing(struct cli_transport *transport)
 static void cli_request_temp_sign_outgoing_message(struct cli_request *req)
 {
 	/* mark the packet as signed - BEFORE we sign it...*/
-	mark_packet_signed(req);
+	mark_packet_signed(&req->out);
 
 	/* I wonder what BSRSPYL stands for - but this is what MS 
 	   actually sends! */
 	memcpy((req->out.hdr + HDR_SS_FIELD), "BSRSPYL ", 8);
+
 	return;
 }
 

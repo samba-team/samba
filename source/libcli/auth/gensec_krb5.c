@@ -304,6 +304,8 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security, TALL
 		DATA_BLOB unwrapped_in;
 
 		if (!gensec_gssapi_parse_krb5_wrap(out_mem_ctx, &in, &unwrapped_in, tok_id)) {
+			DEBUG(1,("gensec_gssapi_parse_krb5_wrap(mutual authentication) failed to parse\n"));
+			dump_data_pw("Mutual authentication message:\n", in.data, in.length);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		/* TODO: check the tok_id */
@@ -316,7 +318,7 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security, TALL
 		if (ret) {
 			DEBUG(1,("krb5_rd_rep (mutual authentication) failed (%s)\n",
 				 error_message(ret)));
-			dump_data_pw("Mutual authentication message:\n", in.data, in.length);
+			dump_data_pw("Mutual authentication message:\n", inbuf.data, inbuf.length);
 			nt_status = NT_STATUS_ACCESS_DENIED;
 		} else {
 			*out = data_blob(NULL, 0);
