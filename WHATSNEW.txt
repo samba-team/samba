@@ -25,7 +25,7 @@ See the cvs log for SAMBA_2_2 for more details
 5)  Fix bug in call to standard_sub_advanced giving a 0 length. This
     fixes the string overflow in string_sub errors.
 6)  Correctly handle querygroup rpcclient command
-
+7)  fix broken incremental tar in smbtar command
 
               =========================================
 
