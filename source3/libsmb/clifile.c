@@ -149,7 +149,7 @@ BOOL cli_rmdir(struct cli_state *cli, char *dname)
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;      
 	pstrcpy(p,dname);
-    unix_to_dos(p,True);
+	unix_to_dos(p,True);
 
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
@@ -168,7 +168,7 @@ BOOL cli_rmdir(struct cli_state *cli, char *dname)
 /****************************************************************************
 open a file
 ****************************************************************************/
-int cli_nt_create(struct cli_state *cli, char *fname)
+int cli_nt_create(struct cli_state *cli, char *fname, uint32 DesiredAccess)
 {
 	char *p;
 
@@ -187,7 +187,7 @@ int cli_nt_create(struct cli_state *cli, char *fname)
 	else
 		SIVAL(cli->outbuf,smb_ntcreate_Flags, 0);
 	SIVAL(cli->outbuf,smb_ntcreate_RootDirectoryFid, 0x0);
-	SIVAL(cli->outbuf,smb_ntcreate_DesiredAccess, 0x2019f);
+	SIVAL(cli->outbuf,smb_ntcreate_DesiredAccess, DesiredAccess);
 	SIVAL(cli->outbuf,smb_ntcreate_FileAttributes, 0x0);
 	SIVAL(cli->outbuf,smb_ntcreate_ShareAccess, 0x03);
 	SIVAL(cli->outbuf,smb_ntcreate_CreateDisposition, 0x01);

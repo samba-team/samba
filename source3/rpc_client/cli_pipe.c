@@ -1169,7 +1169,7 @@ BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name)
 	int fnum;
 
 	if (cli->capabilities & CAP_NT_SMBS) {
-		if ((fnum = cli_nt_create(cli, &(pipe_name[5]))) == -1) {
+		if ((fnum = cli_nt_create(cli, &(pipe_name[5], DESIRED_ACCESS_PIPE))) == -1) {
 			DEBUG(0,("cli_nt_session_open: cli_nt_create failed on pipe %s to machine %s.  Error was %s\n",
 				 &(pipe_name[5]), cli->desthost, cli_errstr(cli)));
 			return False;
