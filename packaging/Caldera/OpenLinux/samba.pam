@@ -3,9 +3,47 @@
 #
 # The PAM configuration file for the `samba' service
 #
-auth       required     /lib/security/pam_pwdb.so nullok nodelay # shadow audit
-# auth       required     /lib/security/pam_smbpass.so nodelay
-account    required     /lib/security/pam_pwdb.so audit nodelay
-session    required     /lib/security/pam_pwdb.so nodelay
-password   required     /lib/security/pam_pwdb.so # shadow md5
-#password   required     /lib/security/pam_smbpass.so nodelay smbconf=/etc/samba.d/smb.conf
+# Note: Only one section should be active at a time.
+#       Uncomment only those features needed. The default is a minimal implementation.
+#
+# --------------------------------------------------------------------------------
+# This example uses the standard System Files (/etc/passwd,/etc/shadow,/etc/group)
+#   and uses a very vanila PAM configuration
+#
+# auth       requisite    pam_securetty.so
+# auth       requisite    pam_nologin.so
+# auth       optional     pam_env.so
+auth       required     pam_pwdb.so       nullok nodelay # audit
+account    required     pam_pwdb.so       nodelay # audit
+# session    required     pam_mkhomedir.so
+session    required     pam_pwdb.so       nodelay
+password   required     pam_pwdb.so       nodelay # shadow md5 audit
+#
+# --------------------------------------------------------------------------------
+# This example uses PAM smbpass
+#
+# auth       requisite    pam_securetty.so
+# auth       requisite    pam_nologin.so
+# auth       optional     pam_env.so
+# auth       required     pam_smbpass.so    nodelay
+# account    required     pam_pwdb.so       nodelay # audit
+# account    sufficient   pam_winbind.so 
+# session    required     pam_mkhomedir.so
+# session    required     pam_pwdb.so       nodelay
+# password   required     pam_pwdb.so       shadow md5
+# password   required     pam_smbpass.so    nodelay smbconf=/etc/samba.d/smb.conf
+#
+# --------------------------------------------------------------------------------
+# This example uses PAM WinBind
+#
+# auth       requisite    pam_securetty.so
+# auth       requisite    pam_nologin.so
+# auth       optional     pam_env.so
+# auth       sufficient   pam_winbind.so 
+# auth       sufficient   pam_pwdb.so       shadow nullok use_first_pass
+# account    required     pam_pwdb.so       nodelay # audit
+# account    sufficient   pam_winbind.so 
+# session    required     pam_mkhomedir.so
+# session    required     pam_pwdb.so       nodelay
+# password   required     pam_pwdb.so       shadow md5
+#
