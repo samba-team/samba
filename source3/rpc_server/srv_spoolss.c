@@ -28,8 +28,8 @@
 extern int DEBUGLEVEL;
 extern pstring global_myname;
 
-#ifndef MAX_OPEN_PRINTERS
-#define MAX_OPEN_PRINTERS 50
+#ifndef MAX_OPEN_PRINTER_EXS
+#define MAX_OPEN_PRINTER_EXS 50
 #endif
 
 #define PRINTER_HANDLE_IS_PRINTER	0
@@ -61,9 +61,9 @@ static struct
   uint32 access;
   uint32 number_of_notify;
   SPOOL_NOTIFY_OPTION_TYPE notify_info[MAX_PRINTER_NOTIFY+MAX_JOB_NOTIFY];
-} Printer[MAX_OPEN_PRINTERS];
+} Printer[MAX_OPEN_PRINTER_EXS];
 
-#define VALID_HANDLE(pnum)   (((pnum) >= 0) && ((pnum) < MAX_OPEN_PRINTERS))
+#define VALID_HANDLE(pnum)   (((pnum) >= 0) && ((pnum) < MAX_OPEN_PRINTER_EXS))
 #define OPEN_HANDLE(pnum)    (VALID_HANDLE(pnum) && Printer[pnum].open)
 
 /****************************************************************************
@@ -72,7 +72,7 @@ static struct
 void init_printer_hnd(void)
 {
 	int i;
-	for (i = 0; i < MAX_OPEN_PRINTERS; i++)
+	for (i = 0; i < MAX_OPEN_PRINTER_EXS; i++)
 	{
 		Printer[i].open = False;
 	}
@@ -115,7 +115,7 @@ static BOOL open_printer_hnd(PRINTER_HND *hnd)
 {
 	int i;
 
-	for (i = 0; i < MAX_OPEN_PRINTERS; i++)
+	for (i = 0; i < MAX_OPEN_PRINTER_EXS; i++)
 	{
 		if (!Printer[i].open)
 		{
@@ -139,7 +139,7 @@ static int find_printer_index_by_hnd(PRINTER_HND *hnd)
 {
 	int i;
 
-	for (i = 0; i < MAX_OPEN_PRINTERS; i++)
+	for (i = 0; i < MAX_OPEN_PRINTER_EXS; i++)
 	{
 		if (memcmp(&(Printer[i].printer_hnd), hnd, sizeof(*hnd)) == 0)
 		{
@@ -383,9 +383,9 @@ static BOOL handle_is_printer(PRINTER_HND *handle)
  *
  * called from the spoolss dispatcher
  ********************************************************************/
-static void spoolss_reply_open_printer(SPOOL_Q_OPEN_PRINTER *q_u, prs_struct *rdata)                                
+static void spoolss_reply_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u, prs_struct *rdata)                                
 {
-	SPOOL_R_OPEN_PRINTER r_u;
+	SPOOL_R_OPEN_PRINTER_EX r_u;
 	BOOL printer_open = False;
 	fstring name;
 	
@@ -420,7 +420,7 @@ static void spoolss_reply_open_printer(SPOOL_Q_OPEN_PRINTER *q_u, prs_struct *rd
 		clear_handle(&(r_u.handle));
 	}	
 
-	spoolss_io_r_open_printer("",&r_u,rdata,0);
+	spoolss_io_r_open_printer_ex("",&r_u,rdata,0);
 }
 
 /********************************************************************
@@ -428,15 +428,15 @@ static void spoolss_reply_open_printer(SPOOL_Q_OPEN_PRINTER *q_u, prs_struct *rd
  *
  * called from the spoolss dispatcher
  ********************************************************************/
-static void api_spoolss_open_printer(pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_spoolss_open_printer_ex(pipes_struct *p, prs_struct *data, prs_struct *rdata)
 {
-	SPOOL_Q_OPEN_PRINTER q_u;
+	SPOOL_Q_OPEN_PRINTER_EX q_u;
 
 	/* grab the spoolss open policy */
-	spoolss_io_q_open_printer("", &q_u, data, 0);
+	spoolss_io_q_open_printer_ex("", &q_u, data, 0);
 
 	/* construct reply.  always indicate success */
-	spoolss_reply_open_printer(&q_u, rdata);
+	spoolss_reply_open_printer_ex(&q_u, rdata);
 }
 
 /********************************************************************
@@ -3818,7 +3818,7 @@ static void api_spoolss_getjob(pipes_struct *p, prs_struct *data,
 ********************************************************************/
 struct api_struct api_spoolss_cmds[] =
 {
- {"SPOOLSS_OPENPRINTEREX",             SPOOLSS_OPENPRINTEREX,             api_spoolss_open_printer              },
+ {"SPOOLSS_OPENPRINTEREX",             SPOOLSS_OPENPRINTEREX,             api_spoolss_open_printer_ex           },
  {"SPOOLSS_GETPRINTERDATA",            SPOOLSS_GETPRINTERDATA,            api_spoolss_getprinterdata            },
  {"SPOOLSS_CLOSEPRINTER",              SPOOLSS_CLOSEPRINTER,              api_spoolss_closeprinter              },
  {"SPOOLSS_RFFPCNEX",                  SPOOLSS_RFFPCNEX,                  api_spoolss_rffpcnex                  },

@@ -236,18 +236,11 @@ commands[] =
 	 */
 
 	{
-		"spoolgetprinterdata",
-		cmd_spoolss_getprinterdata,
-		"Spool Printer Data Test",
+		"spoolopen",
+		cmd_spoolss_open_printer_ex,
+		"Spool Printer Open Test",
 		{COMPL_NONE, COMPL_NONE}
 	},
-	{
-		"spoolgetprinter",
-		cmd_spoolss_getprinter,
-		"Spool Printer Test",
-		{COMPL_NONE, COMPL_NONE}
-	},
-
 	/*
 	 * server
 	 */

@@ -156,9 +156,9 @@ RPC_CLIENT_OBJ = \
 		rpc_client/cli_netlogon_sync.o \
 		rpc_client/cli_reg.o \
 		rpc_client/cli_pipe.o     \
+		rpc_client/cli_spoolss.o   \
 		rpc_client/cli_lsarpc.o   \
 		rpc_client/cli_wkssvc.o   \
-		rpc_client/cli_spoolss.o   \
 		rpc_client/cli_srvsvc.o   \
 		rpc_client/cli_svcctl.o \
 		rpc_client/cli_samr.o   \
@@ -248,19 +248,19 @@ SMBPASSWD_OBJ = utils/smbpasswd.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
                 $(UBIQX_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(LIB_OBJ)
 
 RPCCLIENT_OBJ = rpcclient/rpcclient.o \
-             rpcclient/display.o \
-             rpcclient/cmd_lsarpc.o \
-             rpcclient/cmd_spoolss.o \
-             rpcclient/cmd_wkssvc.o \
-             rpcclient/cmd_samr.o \
-             rpcclient/cmd_reg.o \
-             rpcclient/cmd_srvsvc.o \
-             rpcclient/cmd_svcctl.o \
-             rpcclient/cmd_netlogon.o \
-             rpcclient/cmd_atsvc.o \
-             rpcclient/cmd_eventlog.o \
-             $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
-             $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ)
+		rpcclient/display.o \
+		rpcclient/cmd_lsarpc.o \
+		rpcclient/cmd_wkssvc.o \
+		rpcclient/cmd_samr.o \
+		rpcclient/cmd_reg.o \
+		rpcclient/cmd_srvsvc.o \
+		rpcclient/cmd_svcctl.o \
+		rpcclient/cmd_netlogon.o \
+		rpcclient/cmd_atsvc.o \
+		rpcclient/cmd_spoolss.o \
+		rpcclient/cmd_eventlog.o \
+		$(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
+		$(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ)
 
 SMBWRAPPER_OBJ = smbwrapper/smbw.o smbwrapper/wrapped.o \
 		smbwrapper/smbw_dir.o smbwrapper/smbw_stat.o \
