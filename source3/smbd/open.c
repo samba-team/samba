@@ -341,22 +341,52 @@ static int access_table(int new_deny,int old_deny,int old_mode,
 check if we can open a file with a share mode
 ****************************************************************************/
 
-static int check_share_mode( share_mode_entry *share, int deny_mode, 
+static int check_share_mode( share_mode_entry *share, int share_mode, 
 			     const char *fname, BOOL fcbopen, int *flags)
 {
+	int deny_mode = GET_DENY_MODE(share_mode);
 	int old_open_mode = GET_OPEN_MODE(share->share_mode);
 	int old_deny_mode = GET_DENY_MODE(share->share_mode);
 
 	/*
-	 * Don't allow any open once the delete on close flag has been
+	 * Don't allow any opens once the delete on close flag has been
 	 * set.
 	 */
 
-	if(GET_DELETE_ON_CLOSE_FLAG(share->share_mode)) {
+	if (GET_DELETE_ON_CLOSE_FLAG(share->share_mode)) {
 		DEBUG(5,("check_share_mode: Failing open on file %s as delete on close flag is set.\n",
 			fname ));
 		unix_ERR_class = ERRDOS;
 		unix_ERR_code = ERRnoaccess;
+		return False;
+	}
+
+	/*
+	 * If delete access was requested and the existing share mode doesn't have
+	 * ALLOW_SHARE_DELETE then deny.
+	 */
+
+	if (GET_DELETE_ACCESS_REQUESTED(share_mode) && !GET_ALLOW_SHARE_DELETE(share->share_mode)) {
+		DEBUG(5,("check_share_mode: Failing open on file %s as delete access requested and allow share delete not set.\n",
+			fname ));
+		unix_ERR_class = ERRDOS;
+		unix_ERR_code = ERRbadshare;
+
+		return False;
+	}
+
+	/*
+	 * The inverse of the above.
+	 * If delete access was granted and the new share mode doesn't have
+	 * ALLOW_SHARE_DELETE then deny.
+	 */
+
+	if (GET_DELETE_ACCESS_REQUESTED(share->share_mode) && !GET_ALLOW_SHARE_DELETE(share_mode)) {
+		DEBUG(5,("check_share_mode: Failing open on file %s as delete access granted and allow share delete not requested.\n",
+			fname ));
+		unix_ERR_class = ERRDOS;
+		unix_ERR_code = ERRbadshare;
+
 		return False;
 	}
 
@@ -405,7 +435,6 @@ static int open_mode_check(connection_struct *conn, const char *fname, SMB_DEV_T
   int oplock_contention_count = 0;
   share_mode_entry *old_shares = 0;
   BOOL fcbopen = False;
-  int deny_mode = GET_DENY_MODE(share_mode);
   BOOL broke_oplock;	
 
   if(GET_OPEN_MODE(share_mode) == DOS_OPEN_FCB)
@@ -473,7 +502,7 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
       /* someone else has a share lock on it, check to see 
          if we can too */
 
-      if(check_share_mode(share_entry, deny_mode, fname, fcbopen, p_flags) == False) {
+      if(check_share_mode(share_entry, share_mode, fname, fcbopen, p_flags) == False) {
         free((char *)old_shares);
         errno = EACCES;
         return -1;
@@ -532,6 +561,7 @@ files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_S
 	int flags2=0;
 	int deny_mode = GET_DENY_MODE(share_mode);
 	BOOL allow_share_delete = GET_ALLOW_SHARE_DELETE(share_mode);
+	BOOL delete_access_requested = GET_DELETE_ACCESS_REQUESTED(share_mode);
 	BOOL file_existed = VALID_STAT(*psbuf);
 	BOOL fcbopen = False;
 	SMB_DEV_T dev = 0;
@@ -768,7 +798,10 @@ files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_S
 
 	fsp->share_mode = SET_DENY_MODE(deny_mode) | 
 						SET_OPEN_MODE(open_mode) | 
-						SET_ALLOW_SHARE_DELETE(allow_share_delete);
+						SET_ALLOW_SHARE_DELETE(allow_share_delete) |
+						SET_DELETE_ACCESS_REQUESTED(delete_access_requested);
+
+	DEBUG(10,("open_file_shared : share_mode = %x\n", fsp->share_mode ));
 
 	if (Access)
 		(*Access) = open_mode;

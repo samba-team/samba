@@ -1800,144 +1800,94 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 
     case SMB_SET_FILE_DISPOSITION_INFO: /* Set delete on close for open file. */
     {
-      if ((tran_call == TRANSACT2_SETFILEINFO) && (fsp != NULL))
-      {
-        BOOL delete_on_close = (CVAL(pdata,0) ? True : False);
+		BOOL delete_on_close = (CVAL(pdata,0) ? True : False);
 
-        if(fsp->is_directory)
-        {
-          fsp->directory_delete_on_close = delete_on_close;
-          DEBUG(10, ("call_trans2setfilepathinfo: %s delete on close flag for fnum = %d, directory %s\n",
-                delete_on_close ? "Added" : "Removed", fsp->fnum, fsp->fsp_name ));
+		if (tran_call != TRANSACT2_SETFILEINFO)
+			return(ERROR(ERRDOS,ERRunknownlevel));
 
-        }
-	else if(fsp->stat_open)
-	{
-          DEBUG(10, ("call_trans2setfilepathinfo: %s delete on close flag for fnum = %d, stat open %s\n",
-                delete_on_close ? "Added" : "Removed", fsp->fnum, fsp->fsp_name ));
+		if (fsp == NULL)
+			return(UNIXERROR(ERRDOS,ERRbadfid));
+
+		/*
+		 * Only allow delete on close for files/directories opened with delete intent.
+		 */
+
+		if (delete_on_close && !GET_DELETE_ACCESS_REQUESTED(fsp->share_mode)) {
+			DEBUG(10,("call_trans2setfilepathinfo: file %s delete on close flag set but delete access denied.\n",
+					fsp->fsp_name ));
+				return(ERROR(ERRDOS,ERRnoaccess));
+		}
+
+		if(fsp->is_directory) {
+			fsp->directory_delete_on_close = delete_on_close;
+			DEBUG(10, ("call_trans2setfilepathinfo: %s delete on close flag for fnum = %d, directory %s\n",
+				delete_on_close ? "Added" : "Removed", fsp->fnum, fsp->fsp_name ));
+		} else if(fsp->stat_open) {
+
+			DEBUG(10, ("call_trans2setfilepathinfo: %s delete on close flag for fnum = %d, stat open %s\n",
+				delete_on_close ? "Added" : "Removed", fsp->fnum, fsp->fsp_name ));
+
+		} else {
+
+			files_struct *iterate_fsp;
+
+			/*
+			 * Modify the share mode entry for all files open
+			 * on this device and inode to tell other smbds we have 
+			 * changed the delete on close flag. This will be noticed
+			 * in the close code, the last closer will delete the file
+			 * if flag is set.
+			 */
+
+			DEBUG(10,("call_trans2setfilepathinfo: %s delete on close flag for fnum = %d, file %s\n",
+						delete_on_close ? "Adding" : "Removing", fsp->fnum, fsp->fsp_name ));
+
+			if (lock_share_entry_fsp(fsp) == False)
+				return(ERROR(ERRDOS,ERRnoaccess));
+
+			if (!modify_delete_flag(fsp->dev, fsp->inode, delete_on_close)) {
+				DEBUG(0,("call_trans2setfilepathinfo: failed to change delete on close flag for file %s\n",
+						fsp->fsp_name ));
+				unlock_share_entry_fsp(fsp);
+				return(ERROR(ERRDOS,ERRnoaccess));
+			}
+
+			/*
+			 * Release the lock.
+			 */
+
+			unlock_share_entry_fsp(fsp);
+
+			/*
+			 * Go through all files we have open on the same device and
+			 * inode (hanging off the same hash bucket) and set the DELETE_ON_CLOSE_FLAG.
+			 * Other smbd's that have this file open will look in the share_mode on close.
+			 * take care of this (rare) case in close_file(). See the comment there.
+			 * NB. JRA. We don't really need to do this anymore - all should be taken
+			 * care of in the share_mode changes in the tdb.
+			 */
+
+			for(iterate_fsp = file_find_di_first(fsp->dev, fsp->inode);
+					iterate_fsp; iterate_fsp = file_find_di_next(iterate_fsp))
+							fsp->delete_on_close = delete_on_close;
+
+			/*
+			 * Set the delete on close flag in the fsp.
+			 */
+			fsp->delete_on_close = delete_on_close;
+
+			DEBUG(10, ("call_trans2setfilepathinfo: %s delete on close flag for fnum = %d, file %s\n",
+				delete_on_close ? "Added" : "Removed", fsp->fnum, fsp->fsp_name ));
+
+		}
+
+		break;
 	}
-        else
-        {
 
-          /*
-           * We can only set the delete on close flag if
-           * the share mode contained ALLOW_SHARE_DELETE
-           */
-
-          if(!GET_ALLOW_SHARE_DELETE(fsp->share_mode))
-            return(ERROR(ERRDOS,ERRnoaccess));
-
-          /*
-           * If the flag has been set then
-           * modify the share mode entry for all files we have open
-           * on this device and inode to tell other smbds we have 
-           * changed the delete on close flag.
-           */
-
-          if(delete_on_close && !GET_DELETE_ON_CLOSE_FLAG(fsp->share_mode))
-          {
-            int i;
-            files_struct *iterate_fsp;
-            SMB_DEV_T dev = fsp->dev;
-            SMB_INO_T inode = fsp->inode;
-            int num_share_modes;
-            share_mode_entry *current_shares = NULL;
-
-            if (lock_share_entry_fsp(fsp) == False)
-              return(ERROR(ERRDOS,ERRnoaccess));
-
-            /*
-             * Before we allow this we need to ensure that all current opens
-             * on the file have the GET_ALLOW_SHARE_DELETE flag set. If they
-             * do not then we deny this (as we are essentially deleting the
-             * file at this point.
-             */
-
-            num_share_modes = get_share_modes(conn, dev, inode, &current_shares);
-            for(i = 0; i < num_share_modes; i++)
-            {
-              if(!GET_ALLOW_SHARE_DELETE(current_shares[i].share_mode))
-              {
-                DEBUG(5,("call_trans2setfilepathinfo: refusing to set delete on close flag for fnum = %d, \
-file %s as a share exists that was not opened with FILE_DELETE access.\n",
-                      fsp->fnum, fsp->fsp_name ));
-                /*
-                 * Release the lock.
-                 */
-
-                unlock_share_entry_fsp(fsp);
-
-                /*
-                 * current_shares was malloced by get_share_modes - free it here.
-                 */
-
-                free((char *)current_shares);
-
-                /*
-                 * Even though share violation would be more appropriate here,
-                 * return ERRnoaccess as that's what NT does.
-                 */
-
-                return(ERROR(ERRDOS,ERRnoaccess));
-              }
-            }
-
-            /*
-             * current_shares was malloced by get_share_modes - free it here.
-             */
-
-            free((char *)current_shares);
-
-            DEBUG(10,("call_trans2setfilepathinfo: %s delete on close flag for fnum = %d, file %s\n",
-                 delete_on_close ? "Adding" : "Removing", fsp->fnum, fsp->fsp_name ));
-
-            /*
-             * Go through all files we have open on the same device and
-             * inode (hanging off the same hash bucket) and set the DELETE_ON_CLOSE_FLAG.
-             * Other smbd's that have this file open will have to fend for themselves. We
-             * take care of this (rare) case in close_file(). See the comment there.
-             */
-
-            for(iterate_fsp = file_find_di_first(dev, inode); iterate_fsp;
-                                  iterate_fsp = file_find_di_next(iterate_fsp))
-            {
-              int new_share_mode = (delete_on_close ? 
-                                    (iterate_fsp->share_mode | DELETE_ON_CLOSE_FLAG) :
-                                    (iterate_fsp->share_mode & ~DELETE_ON_CLOSE_FLAG) );
-
-              DEBUG(10,("call_trans2setfilepathinfo: Changing share mode for fnum %d, file %s \
-dev = %x, inode = %.0f from %x to %x\n", 
-                    iterate_fsp->fnum, iterate_fsp->fsp_name, (unsigned int)dev, 
-                    (double)inode, iterate_fsp->share_mode, new_share_mode ));
-
-              if(modify_share_mode(iterate_fsp, new_share_mode, iterate_fsp->oplock_type)==False)
-                DEBUG(0,("call_trans2setfilepathinfo: failed to change delete on close for fnum %d, \
-dev = %x, inode = %.0f\n", iterate_fsp->fnum, (unsigned int)dev, (double)inode));
-            }
-
-            /*
-             * Set the delete on close flag in the reference
-             * counted struct. Delete when the last reference
-             * goes away.
-             */
-           fsp->delete_on_close = delete_on_close;
-
-           unlock_share_entry_fsp(fsp);
-
-           DEBUG(10, ("call_trans2setfilepathinfo: %s delete on close flag for fnum = %d, file %s\n",
-                 delete_on_close ? "Added" : "Removed", fsp->fnum, fsp->fsp_name ));
-
-          } /* end if(delete_on_close && !GET_DELETE_ON_CLOSE_FLAG(fsp->share_mode)) */
-        } /* end if is_directory. */
-      } else
-        return(ERROR(ERRDOS,ERRunknownlevel));
-      break;
-    }
-
-    default:
-    {
-      return(ERROR(ERRDOS,ERRunknownlevel));
-    }
+	default:
+	{
+		return(ERROR(ERRDOS,ERRunknownlevel));
+	}
   }
 
   /* get some defaults (no modifications) if any info is zero or -1. */
