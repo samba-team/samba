@@ -1055,7 +1055,7 @@ static int ucs2_to_dos(char *dest, const smb_ucs2_t *src, int dest_len)
 		dest_len = sizeof(pstring);
 	}
 
-	src_len = strlen_w(src) * sizeof(smb_ucs2_t);
+	src_len = strlen_w(src)* sizeof(smb_ucs2_t);
 	
 	ret = convert_string(CH_UCS2, CH_DOS, src, src_len, dest, dest_len);
 	if (dest_len) dest[MIN(ret, dest_len-1)] = 0;
@@ -1554,7 +1554,13 @@ BOOL check_mangled_cache(char *s)
 	res = unmangle(u2);
 	if (res)
 	{
-		ucs2_to_dos (s, res, 13); /* ugly, but must be done this way */
+		
+		ucs2_to_dos (s, res, (strlen_w(res) * 2));
+		/* We MUST change this brainded interface,
+		   we do not know how many chars will be used
+		   in dos so i guess they will be no more than
+		   double the size of the unicode string
+		          ---simo */
 		DEBUG(10,("check_mangled_cache: returning -> [%s]\n", s));
 		ret = True;
 	}
@@ -1586,7 +1592,7 @@ void mangle_name_83(char *s)
 
 	res = _mangle(u2);
 	if (res) ucs2_to_dos (s, res, 13); /* ugly, but must be done this way */
-	DEBUG(10,("mangle_name_83: returning -> [%s]\n", res?"True":"False"));
+	DEBUG(10,("mangle_name_83: returning -> [%s]\n", s));
 	SAFE_FREE(res);
 	SAFE_FREE(u2);
 }
