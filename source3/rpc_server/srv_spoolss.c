@@ -407,7 +407,19 @@ static void spoolss_reply_open_printer(SPOOL_Q_OPEN_PRINTER *q_u, prs_struct *rd
 	}
 	
 	set_printer_hnd_accesstype(&(r_u.handle), q_u->access_required);
+
+
+	/* if there is a error free the printer entry */
 	
+	if (r_u.status != 0x00000000)
+	{
+		int pnum;
+
+		pnum = find_printer_index_by_hnd(&(r_u.handle));
+		Printer[pnum].open=False;
+		clear_handle(&(r_u.handle));
+	}	
+
 	spoolss_io_r_open_printer("",&r_u,rdata,0);
 }
 
@@ -669,7 +681,6 @@ static void spoolss_reply_closeprinter(SPOOL_Q_CLOSEPRINTER *q_u, prs_struct *rd
 	{
 		Printer[pnum].open=False;
 		r_u.status=0x0;	
-		spoolss_io_r_closeprinter("",&r_u,rdata,0);
 	}
 	else
 	{
@@ -3551,9 +3562,9 @@ static void spoolss_reply_addform(SPOOL_Q_ADDFORM *q_u, prs_struct *rdata)
        {
 	       count=get_ntforms(&list);
 
-	       add_a_form(&list, q_u->form, count);
+	       add_a_form(&list, q_u->form, &count);
 
-	       write_ntforms(&list, count+1);
+	       write_ntforms(&list, count);
 
 	       free(list);
        }

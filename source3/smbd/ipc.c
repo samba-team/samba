@@ -3128,7 +3128,10 @@ static void api_rpc_trans_reply(char *outbuf,
 		/* all of data was sent: no need to wait for SMBreadX calls */
 		mem_free_data(p->rhdr .data);
 		mem_free_data(p->rdata.data);
- 		mem_free_data(p->rdata_i.data);
+ 		mem_free_data(p->rdata_i.data);		
+		mem_free_data(p->rauth.data);
+		mem_free_data(p->rverf.data);
+ 		mem_free_data(p->rntlm.data);		
 	}
 }
 
@@ -3281,7 +3284,7 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 	}
 
  	mem_free_data(pd.data);
-
+	
 	if (!reply)
 	{
 		return api_no_reply(outbuf, mdrcnt);
