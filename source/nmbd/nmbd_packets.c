@@ -891,6 +891,9 @@ void reply_netbios_packet(struct packet_struct *orig_packet,
 			packet_type = "nmb_query";
 			nmb->header.nm_flags.recursion_desired = True;
 			nmb->header.nm_flags.recursion_available = True;
+			if (rcode) {
+				use_null_rr_type = True;
+			}
 			break;
 		case NMB_REG:
 		case NMB_REG_REFRESH:
