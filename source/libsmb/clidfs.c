@@ -1,6 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    client connect/disconnect routines
+   Copyright (C) Andrew Tridgell                  1994-1998
    Copyright (C) Gerald (Jerry) Carter            2004
       
    This program is free software; you can redistribute it and/or modify
@@ -22,6 +23,283 @@
 
 #include "includes.h"
 
+
+struct client_connection {
+	struct client_connection *prev, *next;
+	struct cli_state *cli;
+};
+
+/* global state....globals reek! */
+
+static pstring username;
+static pstring password;
+static BOOL use_kerberos;
+static BOOL got_pass;
+static int signing_state;
+
+static int port;
+static int name_type = 0x20;
+static int max_protocol = PROTOCOL_NT1;
+static BOOL have_ip;
+static struct in_addr dest_ip;
+
+static struct client_connection *connections;
+
+/********************************************************************
+ Return a connection to a server.
+********************************************************************/
+
+static struct cli_state *do_connect( const char *server, const char *share,
+                                     BOOL show_sessetup )
+{
+	struct cli_state *c;
+	struct nmb_name called, calling;
+	const char *server_n;
+	struct in_addr ip;
+	pstring servicename;
+	char *sharename;
+	
+	/* make a copy so we don't modify the global string 'service' */
+	pstrcpy(servicename, share);
+	sharename = servicename;
+	if (*sharename == '\\') {
+		server = sharename+2;
+		sharename = strchr_m(server,'\\');
+		if (!sharename) return NULL;
+		*sharename = 0;
+		sharename++;
+	}
+
+	server_n = server;
+	
+	zero_ip(&ip);
+
+	make_nmb_name(&calling, global_myname(), 0x0);
+	make_nmb_name(&called , server, name_type);
+
+ again:
+	zero_ip(&ip);
+	if (have_ip) 
+		ip = dest_ip;
+
+	/* have to open a new connection */
+	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, port) != port) ||
+	    !cli_connect(c, server_n, &ip)) {
+		d_printf("Connection to %s failed\n", server_n);
+		return NULL;
+	}
+
+	c->protocol = max_protocol;
+	c->use_kerberos = use_kerberos;
+	cli_setup_signing_state(c, signing_state);
+		
+
+	if (!cli_session_request(c, &calling, &called)) {
+		char *p;
+		d_printf("session request to %s failed (%s)\n", 
+			 called.name, cli_errstr(c));
+		cli_shutdown(c);
+		if ((p=strchr_m(called.name, '.'))) {
+			*p = 0;
+			goto again;
+		}
+		if (strcmp(called.name, "*SMBSERVER")) {
+			make_nmb_name(&called , "*SMBSERVER", 0x20);
+			goto again;
+		}
+		return NULL;
+	}
+
+	DEBUG(4,(" session request ok\n"));
+
+	if (!cli_negprot(c)) {
+		d_printf("protocol negotiation failed\n");
+		cli_shutdown(c);
+		return NULL;
+	}
+
+	if (!got_pass) {
+		char *pass = getpass("Password: ");
+		if (pass) {
+			pstrcpy(password, pass);
+			got_pass = 1;
+		}
+	}
+
+	if (!cli_session_setup(c, username, 
+			       password, strlen(password),
+			       password, strlen(password),
+			       lp_workgroup())) {
+		/* if a password was not supplied then try again with a null username */
+		if (password[0] || !username[0] || use_kerberos ||
+		    !cli_session_setup(c, "", "", 0, "", 0, lp_workgroup())) { 
+			d_printf("session setup failed: %s\n", cli_errstr(c));
+			if (NT_STATUS_V(cli_nt_error(c)) == 
+			    NT_STATUS_V(NT_STATUS_MORE_PROCESSING_REQUIRED))
+				d_printf("did you forget to run kinit?\n");
+			cli_shutdown(c);
+			return NULL;
+		}
+		d_printf("Anonymous login successful\n");
+	}
+
+	if ( show_sessetup ) {
+		if (*c->server_domain) {
+			DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
+				c->server_domain,c->server_os,c->server_type));
+		} else if (*c->server_os || *c->server_type){
+			DEBUG(1,("OS=[%s] Server=[%s]\n",
+				 c->server_os,c->server_type));
+		}		
+	}
+	DEBUG(4,(" session setup ok\n"));
+
+	if (!cli_send_tconX(c, sharename, "?????",
+			    password, strlen(password)+1)) {
+		d_printf("tree connect failed: %s\n", cli_errstr(c));
+		cli_shutdown(c);
+		return NULL;
+	}
+
+	DEBUG(4,(" tconx ok\n"));
+
+	return c;
+}
+
+/********************************************************************
+ Add a new connection to the list
+********************************************************************/
+
+static struct cli_state* cli_cm_connect( const char *server, const char *share,
+                                         BOOL show_hdr )
+{
+	struct client_connection *node;
+	
+	node = SMB_XMALLOC_P( struct client_connection );
+	
+	node->cli = do_connect( server, share, show_hdr );
+
+	if ( !node->cli ) {
+		SAFE_FREE( node );
+		return NULL;
+	}
+
+	DLIST_ADD( connections, node );
+
+	return node->cli;
+
+}
+
+/********************************************************************
+ Return a connection to a server.
+********************************************************************/
+
+static struct cli_state* cli_cm_find( const char *server, const char *share )
+{
+	struct client_connection *p;
+
+	for ( p=connections; p; p=p->next ) {
+		if ( strequal(server, p->cli->desthost) && strequal(share,p->cli->share) )
+			return p->cli;
+	}
+
+	return NULL;
+}
+
+/****************************************************************************
+ open a client connection to a \\server\share.  Set's the current *cli 
+ global variable as a side-effect (but only if the connection is successful).
+****************************************************************************/
+
+struct cli_state* cli_cm_open( const char *server, const char *share, BOOL show_hdr )
+{
+	struct cli_state *c;
+	
+	/* try to reuse an existing connection */
+
+	c = cli_cm_find( server, share );
+	
+	if ( !c )
+		c = cli_cm_connect( server, share, show_hdr );
+
+	return c;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+void cli_cm_shutdown( void )
+{
+
+	struct client_connection *p, *x;
+
+	for ( p=connections; p; ) {
+		cli_shutdown( p->cli );
+		x = p;
+		p = p->next;
+
+		SAFE_FREE( x );
+	}
+
+	connections = NULL;
+
+	return;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+void cli_cm_display(void)
+{
+	struct client_connection *p;
+	int i;
+
+	for ( p=connections,i=0; p; p=p->next,i++ ) {
+		d_printf("%d:\tserver=%s, share=%s\n", 
+			i, p->cli->desthost, p->cli->share );
+	}
+}
+
+/****************************************************************************
+****************************************************************************/
+
+void cli_cm_set_credentials( struct user_auth_info *user )
+{
+	pstrcpy( username, user->username );
+	
+	if ( user->got_pass ) {
+		pstrcpy( password, user->password );
+		got_pass = True;
+	}
+	
+	use_kerberos = user->use_kerberos;	
+	signing_state = user->signing_state;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+void cli_cm_set_port( int port_number )
+{
+	port = port_number;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+void cli_cm_set_dest_name_type( int type )
+{
+	name_type = type;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+void cli_cm_set_dest_ip(struct in_addr ip )
+{
+	dest_ip = ip;
+	have_ip = True;
+}
 
 /********************************************************************
  split a dfs path into the server and share name components
