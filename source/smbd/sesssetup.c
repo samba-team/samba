@@ -3,6 +3,7 @@
    handle SMBsessionsetup
    Copyright (C) Andrew Tridgell 1998-2001
    Copyright (C) Andrew Bartlett      2001
+   Copyright (C) Jim McDonough        2002
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -206,7 +207,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 send a security blob via a session setup reply
 ****************************************************************************/
 static BOOL reply_sesssetup_blob(connection_struct *conn, char *outbuf,
-				 DATA_BLOB blob)
+				 DATA_BLOB blob, uint32 errcode)
 {
 	char *p;
 
@@ -215,7 +216,7 @@ static BOOL reply_sesssetup_blob(connection_struct *conn, char *outbuf,
 	/* we set NT_STATUS_MORE_PROCESSING_REQUIRED to tell the other end
 	   that we aren't finished yet */
 
-	SIVAL(outbuf, smb_rcls, NT_STATUS_V(NT_STATUS_MORE_PROCESSING_REQUIRED));
+	SIVAL(outbuf, smb_rcls, errcode);
 	SSVAL(outbuf, smb_vwv0, 0xFF); /* no chaining possible */
 	SSVAL(outbuf, smb_vwv3, blob.length);
 	p = smb_buf(outbuf);
@@ -242,11 +243,12 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	DATA_BLOB secblob;
 	int i;
 	uint32 ntlmssp_command, neg_flags, chal_flags;
-	DATA_BLOB chal, spnego_chal, extra_data;
+	DATA_BLOB chal, spnego_chal;
 	const uint8 *cryptkey;
 	BOOL got_kerberos = False;
 	NTSTATUS nt_status;
 	extern pstring global_myname;
+	char *cliname=NULL, *domname=NULL;
 
 	/* parse out the OIDs and the first sec blob */
 	if (!parse_negTokenTarg(blob1, OIDs, &secblob)) {
@@ -277,19 +279,16 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	file_save("secblob.dat", secblob.data, secblob.length);
 #endif
 
-	if (!msrpc_parse(&secblob, "CddB",
+	if (!msrpc_parse(&secblob, "CddAA",
 			 "NTLMSSP",
 			 &ntlmssp_command,
 			 &neg_flags,
-			 &extra_data)) {
+			 &cliname,
+			 &domname)) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
        
-	DEBUG(5, ("Extra data: \n"));
-	dump_data(5, extra_data.data, extra_data.length);
-
 	data_blob_free(&secblob);
-	data_blob_free(&extra_data);
 
 	if (ntlmssp_command != NTLMSSP_NEGOTIATE) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
@@ -318,36 +317,39 @@ static int reply_spnego_negotiate(connection_struct *conn,
 		NTLMSSP_CHAL_TARGET_INFO;
 	
 	{
-		DATA_BLOB domain_blob, netbios_blob, realm_blob;
+		DATA_BLOB domain_blob, struct_blob;
+		fstring dnsname, dnsdomname;
 		
 		msrpc_gen(&domain_blob, 
 			  "U",
 			  lp_workgroup());
 
-		msrpc_gen(&netbios_blob, 
-			  "U",
-			  global_myname);
-		
-		msrpc_gen(&realm_blob, 
-			  "U",
-			  lp_realm());
-		
+		fstrcpy(dnsdomname, lp_realm());
+		strlower(dnsdomname);
 
-		msrpc_gen(&chal, "CddddbBBBB",
+		fstrcpy(dnsname, global_myname);
+		fstrcat(dnsname, ".");
+		fstrcat(dnsname, lp_realm());
+		strlower(dnsname);
+
+		msrpc_gen(&struct_blob, "aaaaa",
+			  2, lp_workgroup(),
+			  1, global_myname,
+			  4, dnsdomname,
+			  3, dnsname,
+			  0, NULL);
+
+		msrpc_gen(&chal, "CdUdbddB",
 			  "NTLMSSP", 
 			  NTLMSSP_CHALLENGE,
-			  0,
-			  0x30, /* ?? */
+			  lp_workgroup(),
 			  chal_flags,
 			  cryptkey, 8,
-			  domain_blob.data, domain_blob.length,
-			  domain_blob.data, domain_blob.length,
-			  netbios_blob.data, netbios_blob.length,
-			  realm_blob.data, realm_blob.length);
+			  0, 0,
+			  struct_blob.data, struct_blob.length);
 
 		data_blob_free(&domain_blob);
-		data_blob_free(&netbios_blob);
-		data_blob_free(&realm_blob);
+		data_blob_free(&struct_blob);
 	}
 
 	if (!spnego_gen_challenge(&spnego_chal, &chal, &chal)) {
@@ -357,7 +359,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	}
 
 	/* now tell the client to send the auth packet */
-	reply_sesssetup_blob(conn, outbuf, spnego_chal);
+	reply_sesssetup_blob(conn, outbuf, spnego_chal, NT_STATUS_V(NT_STATUS_MORE_PROCESSING_REQUIRED));
 
 	data_blob_free(&chal);
 	data_blob_free(&spnego_chal);
@@ -374,7 +376,7 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 			     int length, int bufsize,
 			     DATA_BLOB blob1)
 {
-	DATA_BLOB auth;
+	DATA_BLOB auth, response;
 	char *workgroup = NULL, *user = NULL, *machine = NULL;
 	DATA_BLOB lmhash, nthash, sess_key;
 	DATA_BLOB plaintext_password = data_blob(NULL, 0);
@@ -494,8 +496,12 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
  
 	SSVAL(outbuf,smb_uid,sess_vuid);
 	SSVAL(inbuf,smb_uid,sess_vuid);
-	
-	return chain_reply(inbuf,outbuf,length,bufsize);
+
+        response = spnego_gen_auth_response();
+	reply_sesssetup_blob(conn, outbuf, response, 0);
+
+	/* and tell smbd that we have already replied to this packet */
+	return -1;
 }
 
 
