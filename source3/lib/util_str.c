@@ -208,17 +208,15 @@ int StrCaseCmp(const char *s, const char *t)
 			return +1;
 	}
 
-	size = convert_string_allocate(CH_UNIX, CH_UCS2, s, strlen(s),
-				       (void **) &buffer_s);
-	if (size == -1) {
+	size = push_ucs2_allocate(&buffer_s, s);
+	if (size == (size_t)-1) {
 		return strcmp(s, t); 
 		/* Not quite the right answer, but finding the right one
 		   under this failure case is expensive, and it's pretty close */
 	}
 	
-	size = convert_string_allocate(CH_UNIX, CH_UCS2, t, strlen(t),
-				       (void **) &buffer_t);
-	if (size == -1) {
+	size = push_ucs2_allocate(&buffer_t, t);
+	if (size == (size_t)-1) {
 		SAFE_FREE(buffer_s);
 		return strcmp(s, t); 
 		/* Not quite the right answer, but finding the right one
@@ -364,7 +362,7 @@ BOOL strisnormal(const char *s)
  NOTE: oldc and newc must be 7 bit characters
 **/
 
-void string_replace(char *s,char oldc,char newc)
+void string_replace(pstring s,char oldc,char newc)
 {
 	push_ucs2(NULL, tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
 	string_replace_w(tmpbuf, UCS2_CHAR(oldc), UCS2_CHAR(newc));
@@ -1169,21 +1167,6 @@ void strlower_m(char *s)
 }
 
 /**
- Duplicate convert a string to lower case.
-**/
-
-char *strdup_lower(const char *s)
-{
-	char *t = strdup(s);
-	if (t == NULL) {
-		DEBUG(0, ("strdup_lower: Out of memory!\n"));
-		return NULL;
-	}
-	strlower_m(t);
-	return t;
-}
-
-/**
  Convert a string to upper case.
 **/
 
@@ -1205,21 +1188,6 @@ void strupper_m(char *s)
 	/* I assume that lowercased string takes the same number of bytes
 	 * as source string even in multibyte encoding. (VIV) */
 	unix_strupper(s,strlen(s)+1,s,strlen(s)+1);	
-}
-
-/**
- Convert a string to upper case.
-**/
-
-char *strdup_upper(const char *s)
-{
-	char *t = strdup(s);
-	if (t == NULL) {
-		DEBUG(0, ("strdup_upper: Out of memory!\n"));
-		return NULL;
-	}
-	strupper_m(t);
-	return t;
 }
 
 /**

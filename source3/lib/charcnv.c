@@ -343,16 +343,14 @@ char *strdup_upper(const char *s)
 	smb_ucs2_t *buffer;
 	char *out_buffer;
 	
-	size = convert_string_allocate(CH_UNIX, CH_UCS2, s, strlen(s)+1,
-				       (void **) &buffer);
+	size = push_ucs2_allocate(&buffer, s);
 	if (size == -1) {
 		return NULL;
 	}
 
 	strupper_w(buffer);
 	
-	size = convert_string_allocate(CH_UCS2, CH_UNIX, buffer, size, 
-				       (void **) &out_buffer);
+	size = pull_ucs2_allocate(&out_buffer, buffer);
 	SAFE_FREE(buffer);
 
 	if (size == -1) {
@@ -391,16 +389,14 @@ char *strdup_lower(const char *s)
 	smb_ucs2_t *buffer;
 	char *out_buffer;
 	
-	size = convert_string_allocate(CH_UNIX, CH_UCS2, s, strlen(s),
-				       (void **) &buffer);
+	size = push_ucs2_allocate(&buffer, s);
 	if (size == -1) {
 		return NULL;
 	}
 
 	strlower_w(buffer);
 	
-	size = convert_string_allocate(CH_UCS2, CH_UNIX, buffer, size, 
-				       (void **) &out_buffer);
+	size = pull_ucs2_allocate(&out_buffer, buffer);
 	SAFE_FREE(buffer);
 
 	if (size == -1) {
