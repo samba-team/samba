@@ -907,7 +907,6 @@ static BOOL test_DsGetNCChanges(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		printf("testing DsGetNCChanges level %d\n",
 			array[i].level);
 
-		ZERO_STRUCT(r.in);
 		r.in.bind_handle	= &priv->bind_handle;
 		r.in.level		= array[i].level;
 
@@ -915,20 +914,44 @@ static BOOL test_DsGetNCChanges(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		case 5:
 			nc.guid				= null_guid;
 			nc.sid				= null_sid;
-			nc.dn				= talloc_asprintf(mem_ctx, "CN=Schema,CN=Configuration,%s",
-									  priv->domain_obj_dn?priv->domain_obj_dn:"");
 			nc.dn				= priv->domain_obj_dn?priv->domain_obj_dn:"";
 
+			r.in.req.req5.guid1		= null_guid;
+			r.in.req.req5.guid2		= null_guid;
 			r.in.req.req5.naming_context	= &nc;
 			r.in.req.req5.usn1.usn1		= 0;
+			r.in.req.req5.usn1.usn2		= 0;
+			r.in.req.req5.usn1.usn3		= 0;
+			r.in.req.req5.coursor		= NULL;
+			r.in.req.req5.unknown1		= 0;/*0x10201C70;*/
+			r.in.req.req5.unknown2		= 0;/*402;*/
+			r.in.req.req5.unknown3		= 0;/*402116;*/
+			r.in.req.req5.unknown4		= 0;
+			r.in.req.req5.h1		= 0;
+
 			break;
 		case 8:
 			nc.guid				= null_guid;
 			nc.sid				= null_sid;
 			nc.dn				= priv->domain_obj_dn?priv->domain_obj_dn:"";
 
+			r.in.req.req8.guid1		= null_guid;
+			r.in.req.req8.guid2		= null_guid;
 			r.in.req.req8.naming_context	= &nc;
 			r.in.req.req8.usn1.usn1		= 0;
+			r.in.req.req8.usn1.usn2		= 0;
+			r.in.req.req8.usn1.usn3		= 0;
+			r.in.req.req8.coursor		= NULL;
+			r.in.req.req8.unknown1		= 0;/*0x10201C70;*/
+			r.in.req.req8.unknown2		= 0;/*402;*/
+			r.in.req.req8.unknown3		= 0;/*402116;*/
+			r.in.req.req8.unknown4		= 0;
+			r.in.req.req8.h1		= 0;
+			r.in.req.req8.unique_ptr1	= 0;
+			r.in.req.req8.unique_ptr2	= 0;
+			r.in.req.req8.ctr12.count	= 0;
+			r.in.req.req8.ctr12.array	= NULL;
+
 			break;
 		}
 
