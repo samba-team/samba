@@ -1794,8 +1794,7 @@ char *lp_codepagedir(void);
 char *lp_ldap_server(void);
 char *lp_ldap_suffix(void);
 char *lp_ldap_filter(void);
-char *lp_ldap_root(void);
-char *lp_ldap_rootpasswd(void);
+char *lp_ldap_admin_dn(void);
 int lp_ldap_schema(void);
 int lp_ldap_port(void);
 int lp_ldap_ssl(void);
@@ -2172,6 +2171,8 @@ BOOL secrets_fetch_trust_account_password(char *domain, uint8 ret_pwd[16],
 BOOL secrets_store_trust_account_password(char *domain, uint8 new_pwd[16]);
 BOOL trust_password_delete(char *domain);
 void reset_globals_after_fork(void);
+BOOL secrets_store_ldap_pw(char* dn, char* pw);
+BOOL fetch_ldap_pw(char *dn, char* pw, int len);
 
 /*The following definitions come from  passdb/smbpassfile.c  */
 

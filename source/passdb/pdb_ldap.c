@@ -63,6 +63,7 @@ struct ldap_enum_info
 
 static struct ldap_enum_info global_ldap_ent;
 
+
 /*******************************************************************
  open a connection to the ldap server.
 ******************************************************************/
@@ -138,25 +139,33 @@ static BOOL ldap_open_connection(LDAP ** ldap_struct)
 	return (True);
 }
 
-
 /*******************************************************************
  connect to the ldap server under system privilege.
 ******************************************************************/
 static BOOL ldap_connect_system(LDAP * ldap_struct)
 {
 	int rc;
+	static BOOL got_pw = False;
+	static pstring ldap_secret;
+
+	/* get the password if we don't have it already */
+	if (!got_pw && !(got_pw=fetch_ldap_pw(lp_ldap_admin_dn(), ldap_secret, sizeof(pstring)))) 
+	{
+		DEBUG(0, ("ldap_connect_system: Failed to retrieve password for %s from secrets.tdb\n",
+			lp_ldap_admin_dn()));
+		return False;
+	}
 
 	/* removed the sasl_bind_s "EXTERNAL" stuff, as my testsuite 
-	   * (OpenLDAP) doesnt' seem to support it 
-	 */
-	if ((rc = ldap_simple_bind_s(ldap_struct, lp_ldap_root(),
-				     lp_ldap_rootpasswd())) != LDAP_SUCCESS)
+	   (OpenLDAP) doesnt' seem to support it */
+	if ((rc = ldap_simple_bind_s(ldap_struct, lp_ldap_admin_dn(), 
+		ldap_secret)) != LDAP_SUCCESS)
 	{
 		DEBUG(0, ("Bind failed: %s\n", ldap_err2string(rc)));
 		return (False);
 	}
-	DEBUG(2,
-	      ("ldap_connect_system: succesful connection to the LDAP server\n"));
+	
+	DEBUG(2, ("ldap_connect_system: succesful connection to the LDAP server\n"));
 	return (True);
 }
 
@@ -889,10 +898,8 @@ BOOL pdb_update_sam_account(SAM_ACCOUNT * newpwd, BOOL override)
 	LDAPMessage *entry;
 	LDAPMod **mods;
 
-	if (!ldap_open_connection(&ldap_struct))	/* open a connection to the server */
-	{
+	if (!ldap_open_connection(&ldap_struct)) /* open a connection to the server */
 		return False;
-	}
 
 	if (!ldap_connect_system(ldap_struct))	/* connect as system account */
 	{

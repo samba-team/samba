@@ -214,8 +214,7 @@ typedef struct
 	char *szLdapServer;
 	char *szLdapSuffix;
 	char *szLdapFilter;
-	char *szLdapRoot;
-	char *szLdapRootPassword;
+	char *szLdapAdminDn;
 #endif				/* WITH_LDAP */
 
 #ifdef WITH_SSL
@@ -975,8 +974,7 @@ static struct parm_struct parm_table[] = {
 	{"ldap port", P_INTEGER, P_GLOBAL, &Globals.ldap_port, NULL, NULL, 0}, 
 	{"ldap suffix", P_STRING, P_GLOBAL, &Globals.szLdapSuffix, NULL, NULL, 0},
 	{"ldap filter", P_STRING, P_GLOBAL, &Globals.szLdapFilter, NULL, NULL, 0},
-	{"ldap root", P_STRING, P_GLOBAL, &Globals.szLdapRoot, NULL, NULL, 0},
-	{"ldap root passwd", P_STRING, P_GLOBAL, &Globals.szLdapRootPassword, NULL, NULL, 0},
+	{"ldap admin dn", P_STRING, P_GLOBAL, &Globals.szLdapAdminDn, NULL, NULL, 0},
 	{"ldap schema", P_ENUM, P_GLOBAL, &Globals.ldap_schema, NULL, enum_ldap_schema, 0},
 	{"ldap ssl", P_ENUM, P_GLOBAL, &Globals.ldap_ssl, NULL, enum_ldap_ssl, 0},
 #endif /* WITH_LDAP */
@@ -1343,8 +1341,7 @@ static void init_globals(void)
 	string_set(&Globals.szLdapServer, "localhost");
 	string_set(&Globals.szLdapSuffix, "");
 	string_set(&Globals.szLdapFilter, "(&(uid=%u)(objectclass=sambaAccount))");
-	string_set(&Globals.szLdapRoot, "");
-	string_set(&Globals.szLdapRootPassword, "");
+	string_set(&Globals.szLdapAdminDn, "");
 	Globals.ldap_port = 389;
 	Globals.ldap_schema = SCHEMA_COMPAT;
 	Globals.ldap_ssl = LDAP_SSL_OFF;
@@ -1525,8 +1522,7 @@ FN_GLOBAL_STRING(lp_codepagedir,&Globals.szCodePageDir)
 FN_GLOBAL_STRING(lp_ldap_server, &Globals.szLdapServer)
 FN_GLOBAL_STRING(lp_ldap_suffix, &Globals.szLdapSuffix)
 FN_GLOBAL_STRING(lp_ldap_filter, &Globals.szLdapFilter)
-FN_GLOBAL_STRING(lp_ldap_root, &Globals.szLdapRoot)
-FN_GLOBAL_STRING(lp_ldap_rootpasswd, &Globals.szLdapRootPassword)
+FN_GLOBAL_STRING(lp_ldap_admin_dn, &Globals.szLdapAdminDn)
 FN_GLOBAL_INTEGER(lp_ldap_schema, &Globals.ldap_schema)
 FN_GLOBAL_INTEGER(lp_ldap_port, &Globals.ldap_port)
 FN_GLOBAL_INTEGER(lp_ldap_ssl, &Globals.ldap_ssl)

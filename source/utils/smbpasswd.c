@@ -74,6 +74,9 @@ static void usage(void)
 		printf("  -e                   enable user\n");
 		printf("  -n                   set no password\n");
 		printf("  -m                   machine trust account\n");
+#ifdef WITH_LDAP
+		printf("  -w                   ldap admin password\n");
+#endif
 	}
 	exit(1);
 }
@@ -537,6 +540,24 @@ static BOOL password_change(const char *remote_machine, char *user_name,
 	return ret;
 }
 
+/*******************************************************************
+ Store the LDAP admin password in secrets.tdb
+ ******************************************************************/
+static BOOL store_ldap_admin_pw (char* pw)
+{
+	TDB_DATA kbuf, dbuf;
+	pstring fname;
+	pstring key;
+	char *p;
+	
+	if (!pw) 
+		return False;
+
+	if (!secrets_init())
+		return False;
+	
+	return secrets_store_ldap_pw(lp_ldap_admin_dn(), pw);
+}
 
 /*************************************************************
  Handle password changing for root.
@@ -549,13 +570,13 @@ static int process_root(int argc, char *argv[])
 	BOOL joining_domain = False, got_pass = False;
 	int local_flags = 0;
 	BOOL stdin_passwd_get = False;
-	fstring user_name, user_password;
+	fstring user_name, user_password, ldap_secret;
 	char *new_domain = NULL;
 	char *new_passwd = NULL;
 	char *old_passwd = NULL;
 	char *remote_machine = NULL;
 
-	while ((ch = getopt(argc, argv, "ax:d:e:hmnj:r:sR:D:U:L")) != EOF) {
+	while ((ch = getopt(argc, argv, "ax:d:e:hmnj:r:sw:R:D:U:L")) != EOF) {
 		switch(ch) {
 		case 'L':
 			local_mode = True;
@@ -598,6 +619,15 @@ static int process_root(int argc, char *argv[])
 			set_line_buffering(stderr);
 			stdin_passwd_get = True;
 			break;
+		case 'w':
+#ifdef WITH_LDAP
+			local_flags |= LOCAL_SET_LDAP_ADMIN_PW;
+			fstrcpy(ldap_secret, optarg);
+#else
+			printf("-w not available unless configured --with-ldap\n");
+			goto done;
+#endif			
+			break;
 		case 'R':
 			lp_set_name_resolve_order(optarg);
 			break;
@@ -627,6 +657,17 @@ static int process_root(int argc, char *argv[])
 	
 	argc -= optind;
 	argv += optind;
+
+#ifdef WITH_LDAP
+	if (local_flags & LOCAL_SET_LDAP_ADMIN_PW)
+	{
+		printf("Setting stored password for \"%s\" in secrets.tdb\n", 
+			lp_ldap_admin_dn());
+		if (!store_ldap_admin_pw(ldap_secret))
+			DEBUG(0,("ERROR: Failed to store the ldap admin password!\n"));
+		goto done;
+	}
+#endif
 
 	/*
 	 * Ensure both add/delete user are not set
