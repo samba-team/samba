@@ -31,9 +31,13 @@
  * SUCH DAMAGE. 
  */
 
-/* #define HAVE_TSASL 1 */
+#define HAVE_TSASL 1
 
 #include "kadm5_locl.h"
+#if 1
+#undef OPENLDAP
+#undef HAVE_TSASL
+#endif
 #ifdef OPENLDAP
 #include <ldap.h>
 #ifdef HAVE_TSASL
@@ -356,33 +360,18 @@ _kadm5_ad_connect(void *server_handle)
     }
     return KADM5_RPC_ERROR;
 }
-#endif
 
-static kadm5_ret_t
-ad_get_cred(kadm5_ad_context *context, const char *password)
+#define NTTIME_EPOCH 0x019DB1DED53E8000LL
+
+static time_t
+nt2unixtime(const char *str)
 {
-    kadm5_ret_t ret;
-    krb5_ccache cc;
-    char *service;
-
-    if (context->ccache)
+    unsigned long long t;
+    t = strtoll(str, NULL, 10);
+    t = ((t - NTTIME_EPOCH) / (long long)10000000);
+    if (t > (((time_t)(~(long long)0)) >> 1))
 	return 0;
-
-    asprintf(&service, "%s/%s@%s", KRB5_TGS_NAME,
-	     context->realm, context->realm);
-    if (service == NULL)
-	return ENOMEM;
-
-    ret = _kadm5_c_get_cred_cache(context->context,
-				  context->client_name,
-				  service,
-				  password, krb5_prompter_posix, 
-				  NULL, NULL, &cc);
-    free(service);
-    if(ret)
-	return ret; /* XXX */
-    context->ccache = cc;
-    return 0;
+    return (time_t)t;
 }
 
 /* XXX create filter in a better way */
@@ -431,6 +420,34 @@ ad_find_entry(kadm5_ad_context *context, const char *fqdn, char **name)
     return 0;
 }
 
+#endif /* OPENLDAP */
+
+static kadm5_ret_t
+ad_get_cred(kadm5_ad_context *context, const char *password)
+{
+    kadm5_ret_t ret;
+    krb5_ccache cc;
+    char *service;
+
+    if (context->ccache)
+	return 0;
+
+    asprintf(&service, "%s/%s@%s", KRB5_TGS_NAME,
+	     context->realm, context->realm);
+    if (service == NULL)
+	return ENOMEM;
+
+    ret = _kadm5_c_get_cred_cache(context->context,
+				  context->client_name,
+				  service,
+				  password, krb5_prompter_posix, 
+				  NULL, NULL, &cc);
+    free(service);
+    if(ret)
+	return ret; /* XXX */
+    context->ccache = cc;
+    return 0;
+}
 
 static kadm5_ret_t
 kadm5_ad_chpass_principal(void *server_handle,
@@ -550,10 +567,11 @@ kadm5_ad_get_principal(void *server_handle,
 		       u_int32_t mask)
 {
     kadm5_ad_context *context = server_handle;
+#ifdef OPENLDAP
     LDAPMessage *m, *m0;
     char **attr = NULL;
     int attrlen = 0;
-    char *filter, *p, *q;
+    char *filter, *p, *q, *u;
     int ret;
 
     /*
@@ -564,7 +582,6 @@ kadm5_ad_get_principal(void *server_handle,
     /*
      * return 0 || KADM5_DUP;
      */
-#ifdef OPENLDAP
 
     if (mask & KADM5_KVNO)
 	laddattr(&attr, &attrlen, "msDS-KeyVersionNumber");
@@ -574,8 +591,6 @@ kadm5_ad_get_principal(void *server_handle,
 	laddattr(&attr, &attrlen, "servicePrincipalName");
     }
     laddattr(&attr, &attrlen, "objectClass");
-    laddattr(&attr, &attrlen, "whenChanged");
-    laddattr(&attr, &attrlen, "whenCreated");
     laddattr(&attr, &attrlen, "lastLogon");
     laddattr(&attr, &attrlen, "badPwdCount");
     laddattr(&attr, &attrlen, "badPasswordTime");
@@ -584,6 +599,7 @@ kadm5_ad_get_principal(void *server_handle,
     laddattr(&attr, &attrlen, "userAccountControl");
 
     krb5_unparse_name_short(context->context, principal, &p);
+    krb5_unparse_name(context->context, principal, &u);
 
     /* replace @ in domain part with a / */
     q = strrchr(p, '@');
@@ -592,8 +608,9 @@ kadm5_ad_get_principal(void *server_handle,
 
     asprintf(&filter, 
 	     "(|(userPrincipalName=%s)(servicePrincipalName=%s))",
-	     p, p);
+	     u, p);
     free(p);
+    free(u);
 
     ret = ldap_search_s(CTX2LP(context), CTX2BASE(context),
 			LDAP_SCOPE_SUBTREE, 
@@ -609,9 +626,7 @@ kadm5_ad_get_principal(void *server_handle,
 	    ldap_msgfree(m);
 	    goto fail;
 	}
-	vals = ldap_get_values(CTX2LP(context), m0, "cn");
-	if (vals)
-	    printf("cn %s\n", vals[0]);
+#if 0
 	vals = ldap_get_values(CTX2LP(context), m0, "servicePrincipalName");
 	if (vals)
 	    printf("servicePrincipalName %s\n", vals[0]);
@@ -621,9 +636,27 @@ kadm5_ad_get_principal(void *server_handle,
 	vals = ldap_get_values(CTX2LP(context), m0, "userAccountControl");
 	if (vals)
 	    printf("userAccountControl %s\n", vals[0]);
+#endif
 	vals = ldap_get_values(CTX2LP(context), m0, "accountExpires");
 	if (vals)
-	    printf("accountExpires %s\n", vals[0]);
+	    entry->princ_expire_time = nt2unixtime(vals[0]);
+
+	vals = ldap_get_values(CTX2LP(context), m0, "lastLogon");
+	if (vals)
+	    entry->last_success = nt2unixtime(vals[0]);
+
+	vals = ldap_get_values(CTX2LP(context), m0, "badPasswordTime");
+	if (vals)
+	    entry->last_failed = nt2unixtime(vals[0]);
+
+	vals = ldap_get_values(CTX2LP(context), m0, "pwdLastSet");
+	if (vals)
+	    entry->last_pwd_change = nt2unixtime(vals[0]);
+
+	vals = ldap_get_values(CTX2LP(context), m0, "badPwdCount");
+	if (vals)
+	    entry->fail_auth_count = atoi(vals[0]);
+
 	if (mask & KADM5_KVNO) {
 	    vals = ldap_get_values(CTX2LP(context), m0, 
 				   "msDS-KeyVersionNumber");
@@ -893,11 +926,13 @@ kadm5_ad_init_with_password(const char *client_name,
 	return ret;
     }
 
+#ifdef OPENLDAP
     ret = _kadm5_ad_connect(ctx);
     if (ret) {
 	kadm5_ad_destroy(ctx);
 	return ret;
     }
+#endif
 
     *server_handle = ctx;
     return 0;
