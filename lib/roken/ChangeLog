@@ -1,3 +1,22 @@
+1999-07-19  Assar Westerlund  <assar@sics.se>
+
+	* roken.h.in: <netdb.h>: include
+	(copyhostent, freehostent, getipnodebyname, getipnodebyaddr): add
+	prototypes
+
+	* roken-common.h: new constants for getipnodeby*
+
+	* Makefile.in (SOURCES): add freehostent, copyhostent,
+ 	getipnodebyname, getipnodebyaddr
+
+	* freehostent.c: new file
+
+	* copyhostent.c: new file
+
+	* getipnodebyaddr.c: new file
+
+	* getipnodebyname.c: new file
+
 1999-07-13  Assar Westerlund  <assar@sics.se>
 
 	* roken.h.in (k_getpwnam): update prototype
