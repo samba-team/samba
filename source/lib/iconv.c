@@ -35,7 +35,7 @@
  * Samba only works with encodings that are supersets of ASCII: ascii
  * characters like whitespace can be tested for directly, multibyte
  * sequences start with a byte with the high bit set, and strings are
- * terminated by \0.
+ * terminated by a nul byte.
  *
  * Note that the only function provided by iconv is conversion between
  * characters.  It doesn't directly support operations like
