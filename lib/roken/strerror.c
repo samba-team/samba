@@ -7,11 +7,14 @@
 
 RCSID("$Id$");
 
-static char emsg[1024];
+extern int sys_nerr;
+extern char *sys_errlist[];
 
 char*
 strerror(int eno)
 {
+    static char emsg[1024];
+
     if(eno < 0 || eno >= sys_nerr)
 	sprintf(emsg, "Error %d occurred.", eno);
     else
