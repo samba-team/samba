@@ -158,7 +158,8 @@ NTSTATUS schannel_check_packet(struct schannel_state *state,
 	uint8_t seq_num[8];
 	static const uint8_t netsec_sig[8] = NETSEC_SIGN_SIGNATURE;
 
-	if (sig->length != 32) {
+	/* w2k sends just 24 bytes and skip the confounder */
+	if (sig->length != 32 && sig->length != 24) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
