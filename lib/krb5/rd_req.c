@@ -140,10 +140,14 @@ krb5_decrypt_ticket(krb5_context context,
 	    start = *t.starttime;
 	if(start - now > context->max_skew
 	   || (t.flags.invalid
-	       && !(flags & KRB5_VERIFY_AP_REQ_IGNORE_INVALID)))
+	       && !(flags & KRB5_VERIFY_AP_REQ_IGNORE_INVALID))) {
+	    free_EncTicketPart(&t);
 	    return KRB5KRB_AP_ERR_TKT_NYV;
-	if(now - t.endtime > context->max_skew)
+	}
+	if(now - t.endtime > context->max_skew) {
+	    free_EncTicketPart(&t);
 	    return KRB5KRB_AP_ERR_TKT_EXPIRED;
+	}
     }
     
     if(out)
@@ -230,15 +234,14 @@ krb5_verify_ap_req(krb5_context context,
     krb5_auth_context ac;
     krb5_error_code ret;
     
-    if(auth_context) {
-	if(*auth_context == NULL){
-	    krb5_auth_con_init(context, &ac);
-	    *auth_context = ac;
-	}else
-	    ac = *auth_context;
-    } else
-	krb5_auth_con_init(context, &ac);
-	
+    if (auth_context && *auth_context) {
+	ac = *auth_context;
+    } else {
+	ret = krb5_auth_con_init (context, &ac);
+	if (ret)
+	    return ret;
+    }
+
     if (ap_req->ap_options.use_session_key && ac->keyblock){
 	ret = krb5_decrypt_ticket(context, &ap_req->ticket, 
 				  ac->keyblock, 
@@ -253,7 +256,7 @@ krb5_verify_ap_req(krb5_context context,
 				  flags);
     
     if(ret)
-	return ret;
+	goto out;
 
     principalname2krb5_principal(&t.server, ap_req->ticket.sname, 
 				 ap_req->ticket.realm);
@@ -268,10 +271,8 @@ krb5_verify_ap_req(krb5_context context,
 				 &t.ticket.key,
 				 &ap_req->authenticator,
 				 ac->authenticator);
-    if (ret){
-	/* XXX free data */
-	return ret;
-    }
+    if (ret)
+	goto out2;
 
     {
 	krb5_principal p1, p2;
@@ -286,8 +287,10 @@ krb5_verify_ap_req(krb5_context context,
 	res = krb5_principal_compare (context, p1, p2);
 	krb5_free_principal (context, p1);
 	krb5_free_principal (context, p2);
-	if (!res)
-	    return KRB5KRB_AP_ERR_BADMATCH;
+	if (!res) {
+	    ret = KRB5KRB_AP_ERR_BADMATCH;
+	    goto out2;
+	}
     }
 
     /* check addresses */
@@ -296,8 +299,10 @@ krb5_verify_ap_req(krb5_context context,
 	&& ac->remote_address
 	&& !krb5_address_search (context,
 				 ac->remote_address,
-				 t.ticket.caddr))
-	return KRB5KRB_AP_ERR_BADADDR;
+				 t.ticket.caddr)) {
+	ret = KRB5KRB_AP_ERR_BADADDR;
+	goto out2;
+    }
 
     if (ac->authenticator->seq_number)
 	ac->remote_seqnumber = *ac->authenticator->seq_number;
@@ -326,7 +331,18 @@ krb5_verify_ap_req(krb5_context context,
 	**ticket = t;
     } else
 	krb5_free_ticket (context, &t);
+    if (auth_context) {
+	if (*auth_context == NULL)
+	    *auth_context = ac;
+    } else
+	krb5_auth_con_free (context, ac);
     return 0;
+ out2:
+    krb5_free_ticket (context, &t);
+ out:
+    if (auth_context == NULL || *auth_context == NULL)
+	krb5_auth_con_free (context, ac);
+    return ret;
 }
 		   
 
