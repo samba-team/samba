@@ -737,7 +737,7 @@ void process_announce_request(struct subnet_record *subrec, struct packet_struct
   our workgroup and then set the flag telling that we have found
   a LanMan client (DOS or OS/2) and that we will have to start
   sending LanMan announcements (unless specifically disabled
-  through the "lm_announce" parameter in smb.conf)
+  through the "lm announce" parameter in smb.conf)
 ******************************************************************/
 
 void process_lm_announce_request(struct subnet_record *subrec, struct packet_struct *p, char *buf)

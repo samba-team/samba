@@ -29,6 +29,7 @@ extern int DEBUGLEVEL;
 extern pstring scope;
 extern struct in_addr ipzero;
 extern pstring myname;
+extern fstring myworkgroup;
 
 /* This is our local master browser list database. */
 extern struct browse_cache_record *lmb_browserlist;
@@ -447,6 +448,13 @@ void announce_and_sync_with_domain_master_browser( struct subnet_record *subrec,
 {
   struct nmb_name nmbname;
 
+  /* Only do this if we are using a WINS server. */
+  if(we_are_a_wins_client() == False)
+  {
+    DEBUG(10,("announce_and_sync_with_domain_master_browser: Ignoring as we are not a WINS client.\n"));
+    return;
+  }
+
   make_nmb_name(&nmbname,work->work_group,0x1b,scope);
 
   /* First, query for the WORKGROUP<1b> name from the WINS server. */
@@ -456,3 +464,197 @@ void announce_and_sync_with_domain_master_browser( struct subnet_record *subrec,
              NULL);
 
 }
+
+/****************************************************************************
+  Function called when a node status query to a domain master browser IP succeeds.
+  This function is only called on query to a Samba 1.9.18 or above WINS server.
+
+  Note that adding the workgroup name is enough for this workgroup to be
+  browsable by clients, as clients query the WINS server or broadcast 
+  nets for the WORKGROUP<1b> name when they want to browse a workgroup
+  they are not in. We do not need to do a sync with this Domain Master
+  Browser in order for our browse clients to see machines in this workgroup.
+  JRA.
+****************************************************************************/
+
+static void get_domain_master_name_node_status_success(struct subnet_record *subrec,
+                                              struct userdata_struct *userdata,
+                                              struct res_rec *answers,
+                                              struct in_addr from_ip)
+{
+  struct work_record *work;
+
+  DEBUG(3,("get_domain_master_name_node_status_success: Success in node status from ip %s\n",
+            inet_ntoa(from_ip) ));
+
+  /* 
+   * Go through the list of names found at answers->rdata and look for
+   * the first WORKGROUP<0x1b> name.
+   */
+
+  if(answers->rdata != NULL)
+  {
+    char *p = answers->rdata;
+    int numnames = CVAL(p, 0);
+
+    p += 1;
+
+    while (numnames--)
+    {
+      char qname[17];
+      uint16 nb_flags;
+      int name_type;
+
+      StrnCpy(qname,p,15);
+      name_type = CVAL(p,15);
+      nb_flags = get_nb_flags(&p[16]);
+      trim_string(qname,NULL," ");
+
+      p += 18;
+
+      if(!(nb_flags & NB_GROUP) && (name_type == 0x1b))
+      {
+
+        DEBUG(5,("get_domain_master_name_node_status_success: IP %s is a domain \
+master browser for workgroup %s. Adding this name.\n", inet_ntoa(from_ip), qname ));
+
+        /* 
+         * If we don't already know about this workgroup, add it
+         * to the workgroup list on the unicast_subnet.
+         */
+        if((work = find_workgroup_on_subnet( subrec, qname)) == NULL)
+	{
+          /* 
+           * Add it - with an hour in the cache.
+           */
+          if((work = create_workgroup_on_subnet(subrec, qname, 60*60))==NULL)
+            return;
+        }
+        break;
+      }
+    }
+  }
+  else
+    DEBUG(0,("get_domain_master_name_node_status_success: Failed to find a WORKGROUP<0x1b> \
+name in reply from IP %s.\n", inet_ntoa(from_ip) ));
+}
+
+/****************************************************************************
+  Function called when a node status query to a domain master browser IP fails.
+****************************************************************************/
+
+static void get_domain_master_name_node_status_fail(struct subnet_record *subrec,
+                       struct response_record *rrec)
+{
+  DEBUG(0,("get_domain_master_name_node_status_fail: Doing a node status request to \
+the domain master browser at IP %s failed. Cannot get workgroup name.\n", 
+      inet_ntoa(rrec->packet->ip) ));
+
+}
+/****************************************************************************
+  Function called when a query for *<1b> name succeeds.
+****************************************************************************/
+
+static void find_all_domain_master_names_query_success(struct subnet_record *subrec,
+                        struct userdata_struct *userdata_in,
+                        struct nmb_name *q_name, struct in_addr answer_ip, struct res_rec *rrec)
+{
+  /* 
+   * We now have a list of all the domain master browsers for all workgroups
+   * that have registered with the WINS server. Now do a node status request
+   * to each one and look for the first 1b name in the reply. This will be
+   * the workgroup name that we will add to the unicast subnet as a 'non-local'
+   * workgroup.
+   */
+
+  struct nmb_name nmbname;
+  struct in_addr send_ip;
+  int i;
+
+  DEBUG(5,("find_all_domain_master_names_query_succes: Got answer from WINS server of %d \
+IP addresses for Domain Master Browsers.\n", rrec->rdlength / 6 ));
+
+  for(i = 0; i < rrec->rdlength / 6; i++)
+  {
+    /* Initiate the node status requests. */
+    bzero((char *)&nmbname, sizeof(nmbname));
+    nmbname.name[0] = '*';
+
+    putip((char *)&send_ip, (char *)&rrec->rdata[(i*6) + 2]);
+
+    /* 
+     * Don't send node status requests to ourself.
+     */
+
+    if(ismyip( send_ip ))
+    {
+      DEBUG(5,("find_all_domain_master_names_query_succes: Not sending node status \
+to our own IP %s.\n", inet_ntoa(send_ip) ));
+      continue;
+    }
+
+    DEBUG(5,("find_all_domain_master_names_query_succes: sending node status request to \
+IP %s.\n", inet_ntoa(send_ip) ));
+
+    node_status( subrec, &nmbname, send_ip, 
+                 get_domain_master_name_node_status_success,
+                 get_domain_master_name_node_status_fail,
+                 NULL);
+  }
+}
+
+/****************************************************************************
+  Function called when a query for *<1b> name fails.
+  ****************************************************************************/
+static void find_all_domain_master_names_query_fail(struct subnet_record *subrec,
+                                    struct response_record *rrec,
+                                    struct nmb_name *question_name, int fail_code)
+{
+  DEBUG(10,("find_domain_master_name_query_fail: WINS server did not reply to a query \
+for name %s. This means it is probably not a Samba 1.9.18 or above WINS server.\n",
+        namestr(question_name) ));
+}
+
+/****************************************************************************
+ If we are a domain master browser on the unicast subnet, do a query to the
+ WINS server for the *<1b> name. This will only work to a Samba WINS server,
+ so ignore it if we fail. If we succeed, contact each of the IP addresses in
+ turn and do a node status request to them. If this succeeds then look for a
+ <1b> name in the reply - this is the workgroup name. Add this to the unicast
+ subnet. This is expensive, so we only do this every 15 minutes.
+**************************************************************************/
+
+void collect_all_workgroup_names_from_wins_server(time_t t)
+{
+  static time_t lastrun = 0;
+  struct work_record *work;
+  struct nmb_name nmbname;
+
+  /* Only do this if we are using a WINS server. */
+  if(we_are_a_wins_client() == False)
+    return;
+
+  /* Check to see if we are a domain master browser on the unicast subnet. */
+  if((work = find_workgroup_on_subnet( unicast_subnet, myworkgroup)) == NULL)
+  {
+    DEBUG(0,("collect_all_workgroup_names_from_wins_server: Cannot find my workgroup %s on subnet %s.\n",
+              myworkgroup, unicast_subnet->subnet_name ));
+    return;
+  }
+
+  if(!AM_DOMAIN_MASTER_BROWSER(work))
+    return;
+
+  if ((lastrun != 0) && (t < lastrun + (15 * 60)))
+    return;
+     
+  lastrun = t;
+
+  make_nmb_name(&nmbname,"*",0x1b,scope);
+
+  /* First, query for the *<1b> name from the WINS server. */
+  query_name(unicast_subnet, nmbname.name, nmbname.name_type,
+             find_all_domain_master_names_query_success,
+             find_all_domain_master_names_query_fail,
+             NULL);
+} 

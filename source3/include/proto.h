@@ -504,6 +504,7 @@ void remove_workgroup_lmb_browsers(char *work_group);
 void dmb_expire_and_sync_browser_lists(time_t t);
 void announce_and_sync_with_domain_master_browser( struct subnet_record *subrec,
                                                    struct work_record *work);
+void collect_all_workgroup_names_from_wins_server(time_t t);
 
 /*The following definitions come from  nmbd_elections.c  */
 
