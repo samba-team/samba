@@ -683,6 +683,7 @@ alias|alias|alias|alias...
 		<listitem><para><link linkend="LOGONSCRIPT"><parameter>logon script</parameter></link></para></listitem>
 		<listitem><para><link linkend="LPQCACHETIME"><parameter>lpq cache time</parameter></link></para></listitem>
 		<listitem><para><link linkend="MACHINEPASSWORDTIMEOUT"><parameter>machine password timeout</parameter></link></para></listitem>
+		<listitem><para><link linkend="MANGLEPREFIX"><parameter>mangle prefix</parameter></link></para></listitem>
 		<listitem><para><link linkend="MANGLEDSTACK"><parameter>mangled stack</parameter></link></para></listitem>
 		<listitem><para><link linkend="MAPTOGUEST"><parameter>map to guest</parameter></link></para></listitem>
 		<listitem><para><link linkend="MAXDISKSIZE"><parameter>max disk size</parameter></link></para></listitem>
@@ -728,7 +729,6 @@ alias|alias|alias|alias...
 		<listitem><para><link linkend="PRELOAD"><parameter>preload</parameter></link></para></listitem>
 		<listitem><para><link linkend="PRINTCAP"><parameter>printcap</parameter></link></para></listitem>
 		<listitem><para><link linkend="PRINTCAPNAME"><parameter>printcap name</parameter></link></para></listitem>
-		<listitem><para><link linkend="PRINTERDRIVERFILE"><parameter>printer driver file</parameter></link></para></listitem>
 		<listitem><para><link linkend="PRIVATEDIR"><parameter>private dir</parameter></link></para></listitem>
 		<listitem><para><link linkend="PROTOCOL"><parameter>protocol</parameter></link></para></listitem>
 		<listitem><para><link linkend="READBMPX"><parameter>read bmpx</parameter></link></para></listitem>
@@ -768,7 +768,6 @@ alias|alias|alias|alias...
 		<listitem><para><link linkend="UNIXPASSWORDSYNC"><parameter>unix password sync</parameter></link></para></listitem>
 		<listitem><para><link linkend="UPDATEENCRYPTED"><parameter>update encrypted</parameter></link></para></listitem>
 		<listitem><para><link linkend="USEMMAP"><parameter>use mmap</parameter></link></para></listitem>
-		<listitem><para><link linkend="USERHOSTS"><parameter>use rhosts</parameter></link></para></listitem>
 		<listitem><para><link linkend="USESENDFILE"><parameter>use sendfile</parameter></link></para></listitem>
 		<listitem><para><link linkend="USERNAMELEVEL"><parameter>username level</parameter></link></para></listitem>
 		<listitem><para><link linkend="USERNAMEMAP"><parameter>username map</parameter></link></para></listitem>
@@ -880,7 +879,6 @@ alias|alias|alias|alias...
 		<listitem><para><link linkend="PATH"><parameter>path</parameter></link></para></listitem>
 		<listitem><para><link linkend="POSIXLOCKING"><parameter>posix locking</parameter></link></para></listitem>
 		<listitem><para><link linkend="POSTEXEC"><parameter>postexec</parameter></link></para></listitem>
-		<listitem><para><link linkend="POSTSCRIPT"><parameter>postscript</parameter></link></para></listitem>
 		<listitem><para><link linkend="PREEXEC"><parameter>preexec</parameter></link></para></listitem>
 		<listitem><para><link linkend="PREEXECCLOSE"><parameter>preexec close</parameter></link></para></listitem>
 		<listitem><para><link linkend="PRESERVECASE"><parameter>preserve case</parameter></link></para></listitem>
@@ -889,8 +887,6 @@ alias|alias|alias|alias...
 		<listitem><para><link linkend="PRINTABLE"><parameter>printable</parameter></link></para></listitem>
 		<listitem><para><link linkend="PRINTER"><parameter>printer</parameter></link></para></listitem>
 		<listitem><para><link linkend="PRINTERADMIN"><parameter>printer admin</parameter></link></para></listitem>
-		<listitem><para><link linkend="PRINTERDRIVER"><parameter>printer driver</parameter></link></para></listitem>
-		<listitem><para><link linkend="PRINTERDRIVERLOCATION"><parameter>printer driver location</parameter></link></para></listitem>
 		<listitem><para><link linkend="PRINTERNAME"><parameter>printer name</parameter></link></para></listitem>
 		<listitem><para><link linkend="PRINTING"><parameter>printing</parameter></link></para></listitem>
 		<listitem><para><link linkend="PUBLIC"><parameter>public</parameter></link></para></listitem>
@@ -5854,22 +5850,6 @@ df $1 | tail -1 | awk '{print $2" "$4}'
 
 
 		<varlistentry>
-		<term><anchor id="POSTSCRIPT"/>postscript (S)</term>
-		<listitem><para>This parameter forces a printer to interpret 
-		the print files as PostScript. This is done by adding a <constant>%!
-		</constant> to the start of print output.</para>
-
-		<para>This is most useful when you have lots of PCs that persist 
-		in putting a control-D at the start of print jobs, which then 
-		confuses your printer.</para>
-
-		<para>Default: <command>postscript = no</command></para>
-		</listitem>
-		</varlistentry>
-	
-	
-	
-		<varlistentry>
 		<term><anchor id="PREEXEC"/>preexec (S)</term>
 		<listitem><para>This option specifies a command to be run whenever 
 		the service is connected to. It takes the usual substitutions.</para>
@@ -6169,111 +6149,6 @@ print5|My Printer 5
 		<para>Default: <command>printer admin = &lt;empty string&gt;</command>
 		</para>
 		<para>Example: <command>printer admin = admin, @staff</command></para>
-		</listitem>
-		</varlistentry>
-
-
-
-
-		
-		<varlistentry>
-		<term><anchor id="PRINTERDRIVER"/>printer driver (S)</term>
-		<listitem><para><emphasis>Note :</emphasis>This is a deprecated 
-		parameter and will be removed in the next major release
-		following version 2.2.  Please see the instructions in
-		the <ulink url="printing.html">Samba 2.2. Printing
-		HOWTO</ulink> for more information
-		on the new method of loading printer drivers onto a Samba server.
-		</para>
-		
-		<para>This option allows you to control the string 
-		that clients receive when they ask the server for the printer driver 
-		associated with a printer. If you are using Windows95 or Windows NT 
-		then you can use this to automate the setup of printers on your 
-		system.</para>
-
-		<para>You need to set this parameter to the exact string (case 
-		sensitive) that describes the appropriate printer driver for your 
-		system. If you don't know the exact string to use then you should 
-		first try with no <link linkend="PRINTERDRIVER"><parameter>
-		printer driver</parameter></link> option set and the client will 
-		give you a list of printer drivers. The appropriate strings are 
-		shown in a scroll box after you have chosen the printer manufacturer.</para>
-
-		<para>See also <link linkend="PRINTERDRIVERFILE"><parameter>printer
-		driver file</parameter></link>.</para>
-
-		<para>Example: <command>printer driver = HP LaserJet 4L</command></para>
-		</listitem>
-		</varlistentry>
-
-
-
-		<varlistentry>
-		<term><anchor id="PRINTERDRIVERFILE"/>printer driver file (G)</term>
-		<listitem><para><emphasis>Note :</emphasis>This is a deprecated 
-		parameter and will be removed in the next major release
-		following version 2.2.  Please see the instructions in
-		the <ulink url="printing.html">Samba 2.2. Printing
-		HOWTO</ulink> for more information
-		on the new method of loading printer drivers onto a Samba server.
-		</para>
-
-		<para>This parameter tells Samba where the printer driver 
-		definition file, used when serving drivers to Windows 95 clients, is 
-		to be found. If this is not set, the default is :</para>
-
-		<para><filename><replaceable>SAMBA_INSTALL_DIRECTORY</replaceable>
-		/lib/printers.def</filename></para>
-
-		<para>This file is created from Windows 95 <filename>msprint.inf
-		</filename> files found on the Windows 95 client system. For more 
-		details on setting up serving of printer drivers to Windows 95 
-		clients, see the outdated documentation file in the <filename>docs/</filename> 
-		directory, <filename>PRINTER_DRIVER.txt</filename>.</para>
-
-		<para>See also <link linkend="PRINTERDRIVERLOCATION"><parameter>
-		printer driver location</parameter></link>.</para>
-		
-		<para>Default: <emphasis>None (set in compile).</emphasis></para>
-
-		<para>Example: <command>printer driver file = 
-		/usr/local/samba/printers/drivers.def</command></para>
-		</listitem>
-		</varlistentry>
-
-
-
-
-		<varlistentry>
-		<term><anchor id="PRINTERDRIVERLOCATION"/>printer driver location (S)</term>
-		<listitem><para><emphasis>Note :</emphasis>This is a deprecated 
-		parameter and will be removed in the next major release
-		following version 2.2.  Please see the instructions in
-		the <ulink url="printing.html">Samba 2.2. Printing
-		HOWTO</ulink> for more information
-		on the new method of loading printer drivers onto a Samba server.
-		</para>
-
-		<para>This parameter tells clients of a particular printer 
-		share where to find the printer driver files for the automatic 
-		installation of drivers for Windows 95 machines. If Samba is set up 
-		to serve printer drivers to Windows 95 machines, this should be set to</para>
-
-		<para><command>\\MACHINE\PRINTER$</command></para>
-
-		<para>Where MACHINE is the NetBIOS name of your Samba server, 
-		and PRINTER$ is a share you set up for serving printer driver 
-		files. For more details on setting this up see the outdated documentation 
-		file in the <filename>docs/</filename> directory, <filename>
-		PRINTER_DRIVER.txt</filename>.</para>
-
-		<para>See also <link linkend="PRINTERDRIVERFILE"><parameter>
-		printer driver file</parameter></link>.</para>
-
-		<para>Default: <command>none</command></para>
-		<para>Example: <command>printer driver location = \\MACHINE\PRINTER$
-		</command></para>
 		</listitem>
 		</varlistentry>
 
@@ -7726,26 +7601,6 @@ let "time++"
 		</listitem>
 		</varlistentry>
 
-
-
-
-		<varlistentry>
-		<term><anchor id="USERHOSTS"/>use rhosts (G)</term>
-		<listitem><para>If this global parameter is <constant>yes</constant>, it specifies 
-		that the UNIX user's <filename>.rhosts</filename> file in their home directory 
-		will be read to find the names of hosts and users who will be allowed 
-		access without specifying a password.</para>
-
-		<para><emphasis>NOTE:</emphasis> The use of <parameter>use rhosts
-		</parameter> can be a major security hole. This is because you are 
-		trusting the PC to supply the correct username. It is very easy to 
-		get a PC to supply a false username. I recommend that the <parameter>
-		use rhosts</parameter> option be only used if you really know what 
-		you are doing.</para>
-
-		<para>Default: <command>use rhosts = no</command></para>
-		</listitem>
-		</varlistentry>
 
 
 
