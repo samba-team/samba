@@ -154,8 +154,6 @@ static BOOL do_parameter(char *pszParmName, char *pszParmValue)
 		if (current->recycle_bin == NULL)
 			return False;
 		current->recycle_bin = safe_strcpy(current->recycle_bin,pszParmValue,sizeof(pstring));
-		standard_sub_basic(current->recycle_bin, strlen(current->recycle_bin));
-		trim_string(current->recycle_bin,"/","/");
 		DEBUG(10, ("name=%s\n", current->recycle_bin));
 	} else if (StrCaseCmp("mode",pszParmName)==0) {
 		if (checkparam(pszParmValue,"KEEP_DIRECTORIES") == True)
@@ -256,6 +254,8 @@ static int recycle_connect(struct connection_struct *conn, const char *service, 
 		rc=pm_process( conf_file, do_section, do_parameter);
 		DEBUG(10, ("pm_process returned %d\n", rc));
 	}
+	standard_sub_conn( conn , current->recycle_bin,sizeof(pstring));
+	trim_string(current->recycle_bin,"/","/");
 	conn->vfs_private= (void *)current;
 	return 0;
 }
