@@ -28,7 +28,7 @@ static struct pdb_init_function_entry *backends = NULL;
 
 static void lazy_initialize_passdb(void)
 {
-	static BOOL initialized = FALSE;
+	static BOOL initialized = False;
 	if(initialized)return;
 	static_init_pdb;
 	initialized = True;
