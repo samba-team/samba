@@ -1,3 +1,7 @@
+Sun Mar  1 05:14:37 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* sl.c: Cleanup printing of help strings.
+
 Thu Feb 26 02:22:02 1998  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: @LEXLIB@
