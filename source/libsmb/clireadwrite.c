@@ -110,6 +110,7 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
                    errors. */
 
                 if (cli_is_error(cli)) {
+			BOOL recoverable_error = False;
                         NTSTATUS status = NT_STATUS_OK;
                         uint8 eclass = 0;
 			uint32 ecode = 0;
@@ -119,8 +120,17 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
                         else
                                 cli_dos_error(cli, &eclass, &ecode);
 
+			/*
+			 * ERRDOS ERRmoredata or STATUS_MORE_ENRTIES is a
+			 * recoverable error, plus we have valid data in the
+			 * packet so don't error out here.
+			 */
+
                         if ((eclass == ERRDOS && ecode == ERRmoredata) ||
                             NT_STATUS_V(status) == NT_STATUS_V(STATUS_MORE_ENTRIES))
+				recoverable_error = True;
+
+			if (!recoverable_error)
                                 return -1;
 		}
 
