@@ -129,7 +129,9 @@ static int rw_torture(int numops)
 
 	for (i=0;i<numops;i++) {
 		unsigned n = (unsigned)random()%10;
-		printf("%d\r", i); fflush(stdout);
+		if (i % 10 == 0) {
+			printf("%d\r", i); fflush(stdout);
+		}
 		sprintf(fname,"\\torture.%u", n);
 
 		if (!wait_lock(fnum2, n*sizeof(int), sizeof(int))) {
