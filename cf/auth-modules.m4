@@ -11,7 +11,14 @@ if test "$ac_cv_header_siad_h" = yes; then
 	LIB_AUTH_SUBDIRS="$LIB_AUTH_SUBDIRS sia"
 fi
 
-if test "$ac_cv_header_security_pam_modules_h" = yes -a "$enable_shared" = yes; then
+case "${host}" in
+*-*-freebsd*)	ac_cv_want_pam_krb4=no ;;
+*)		ac_cv_want_pam_krb4=yes ;;
+esac
+
+if test "$ac_cv_want_pam_krb4" = yes -a \
+    "$ac_cv_header_security_pam_modules_h" = yes -a \
+    "$enable_shared" = yes; then
 	LIB_AUTH_SUBDIRS="$LIB_AUTH_SUBDIRS pam"
 fi
 
