@@ -810,6 +810,7 @@ typedef struct _R_SMB {
 		case 113 R_TDIS    r113;
 		case 114 R_NEGPROT r114;
 		case 115 R_SESSION_SETUP_ANDX r115;
+		case 116 R_ULOGOFF_ANDX r116;
 		case 117 R_TCON_ANDX r117;
 		case 128 R_DSKATTR    r128;
 		case 160 R_NTTRANS r160;
@@ -832,6 +833,7 @@ typedef struct _Q_SMB {
 		case 113 Q_TDIS    q113;
 		case 114 Q_NEGPROT q114;
 		case 115 Q_SESSION_SETUP_ANDX q115;
+		case 116 Q_ULOGOFF_ANDX q116;
 		case 117 Q_TCON_ANDX q117;
 		case 128 Q_DSKATTR    q128;
 		case 160 Q_NTTRANS q160;
