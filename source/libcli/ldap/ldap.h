@@ -85,7 +85,7 @@ struct ldap_BindRequest {
 struct ldap_BindResponse {
 	struct ldap_Result response;
 	union {
-		DATA_BLOB creds;
+		DATA_BLOB secblob;
 	} SASL;
 };
 

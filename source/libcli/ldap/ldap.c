@@ -1066,6 +1066,26 @@ static void ldap_decode_response(TALLOC_CTX *mem_ctx,
 	asn1_end_tag(data);
 }
 
+static void ldap_decode_BindResponse(TALLOC_CTX *mem_ctx,
+				 ASN1_DATA *data,
+				 enum ldap_request_tag tag,
+				 struct ldap_BindResponse *BindResp)
+{
+	asn1_start_tag(data, ASN1_APPLICATION(tag));
+	asn1_read_enumerated(data, &BindResp->response.resultcode);
+	asn1_read_OctetString_talloc(mem_ctx, data, &BindResp->response.dn);
+	asn1_read_OctetString_talloc(mem_ctx, data, &BindResp->response.errormessage);
+	if (asn1_peek_tag(data, ASN1_OCTET_STRING)) {
+		DATA_BLOB tmp_blob = data_blob(NULL, 0);
+		asn1_read_OctetString(data, &tmp_blob);
+		BindResp->SASL.secblob = data_blob_talloc(mem_ctx, tmp_blob.data, tmp_blob.length);
+		data_blob_free(&tmp_blob);
+	} else {
+		BindResp->SASL.secblob = data_blob(NULL, 0);
+	}
+	asn1_end_tag(data);
+}
+
 static BOOL add_attrib_to_array_talloc(TALLOC_CTX *mem_ctx,
 				       const struct ldap_attribute *attrib,
 				       struct ldap_attribute **attribs,
@@ -1261,9 +1281,9 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	case ASN1_APPLICATION(LDAP_TAG_BindResponse): {
 		struct ldap_BindResponse *r = &msg->r.BindResponse;
 		msg->type = LDAP_TAG_BindResponse;
-		ldap_decode_response(msg->mem_ctx,
+		ldap_decode_BindResponse(msg->mem_ctx,
 				     data, LDAP_TAG_BindResponse,
-				     &r->response);
+				     r);
 		break;
 	}
 
@@ -1866,6 +1886,10 @@ int ldap_bind_sasl(struct ldap_connection *conn, const char *username, const cha
 		response = ldap_transaction(conn, msg);
 		destroy_ldap_message(msg);
 
+		if (!response) {
+			goto done;
+		}
+
 		result = response->r.BindResponse.response.resultcode;
 
 		if (result != LDAP_SUCCESS && result != LDAP_SASL_BIND_IN_PROGRESS) {
@@ -1873,7 +1897,7 @@ int ldap_bind_sasl(struct ldap_connection *conn, const char *username, const cha
 		}
 
 		status = gensec_update(conn->gensec, mem_ctx,
-				       response->r.BindResponse.SASL.creds,
+				       response->r.BindResponse.SASL.secblob,
 				       &output);
 
 		destroy_ldap_message(response);
