@@ -4540,7 +4540,7 @@ static double create_procs(BOOL (*fn)(int), BOOL *result)
 
 			child_status[i] = getpid();
 
-			while (child_status[i]) msleep(2);
+			while (child_status[i] && end_timer() < 5) msleep(2);
 
 			child_status_out[i] = fn(i);
 			_exit(0);
