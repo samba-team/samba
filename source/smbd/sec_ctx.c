@@ -209,6 +209,24 @@ NT_USER_TOKEN *dup_nt_token(NT_USER_TOKEN *ptoken)
 	return token;
 }
 
+/* Set the user of a nt user token */
+
+void nt_token_set_user(NT_USER_TOKEN *tok, uid_t uid)
+{
+        /* The user sid is the first in the token */
+
+        uid_to_sid(&tok->user_sids[0], uid);
+}
+
+/* Set the group of a nt user token */
+
+void nt_token_set_group(NT_USER_TOKEN *tok, gid_t gid)
+{
+        /* The primary group sid is the second in the token */
+
+        gid_to_sid(&tok->user_sids[1], gid);
+}
+
 /****************************************************************************
  Initialize the groups a user belongs to.
 ****************************************************************************/

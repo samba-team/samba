@@ -199,6 +199,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	BOOL force = False;
 	connection_struct *conn;
 	int ret;
+        user_struct *vuser;
 
 	strlower(service);
 
@@ -471,9 +472,11 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		return NULL;
 	}  
 		
+        vuser = get_valid_user_struct(vuid);
+
 	conn->nt_user_token = create_nt_token(conn->uid, conn->gid, 
 					      conn->ngroups, conn->groups,
-					      guest);
+					      guest, 0, NULL);
 
 	/* Initialise VFS function pointers */
 

@@ -166,14 +166,16 @@ char *validated_domain(uint16 vuid)
  Create the SID list for this user.
 ****************************************************************************/
 
-NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups, BOOL is_guest)
+NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t
+                               *groups, BOOL is_guest, int num_info3_rids,
+                               uint32 *info3_rids)
 {
 	extern DOM_SID global_sid_World;
 	extern DOM_SID global_sid_Network;
 	extern DOM_SID global_sid_Builtin_Guests;
 	extern DOM_SID global_sid_Authenticated_Users;
 	NT_USER_TOKEN *token;
-	DOM_SID *psids;
+	DOM_SID *psids, domain_sid;
 	int i, psid_ndx = 0;
 	size_t num_sids = 0;
 	fstring sid_str;
@@ -214,6 +216,17 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups,
 		}
 	}
 
+        /* Now add the extra groups - we will probably have duplicates here
+           but this shouldn't hurt much at all. */
+
+        secrets_fetch_domain_sid(lp_workgroup(), &domain_sid);
+
+        for (i = 0; i < num_info3_rids; i++) {
+                sid_copy(&psids[psid_ndx], &domain_sid);
+                sid_append_rid(&psids[psid_ndx], info3_rids[i]);
+                psid_ndx++;
+        }
+
 	/*
 	 * Finally add the "standard" SIDs.
 	 * The only difference between guest and "anonymous" (which we
@@ -246,8 +259,9 @@ has been given. vuid is biased by an offset. This allows us to
 tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
 
-uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, 
-		     char *domain,BOOL guest)
+uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, 
+                     char *requested_name, char *domain,BOOL guest,
+                     uint32 num_info3_rids, uint32 *info3_rids)
 {
 	user_struct *vuser = NULL;
 	struct passwd *pwfile; /* for getting real name from passwd file */
@@ -297,7 +311,9 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
 	get_current_groups( &vuser->n_groups, &vuser->groups);
 
 	/* Create an NT_USER_TOKEN struct for this user. */
-	vuser->nt_user_token = create_nt_token(uid,gid, vuser->n_groups, vuser->groups, guest);
+	vuser->nt_user_token = 
+                create_nt_token(uid,gid, vuser->n_groups, vuser->groups, 
+                                guest, num_info3_rids, info3_rids);
 
 	next_vuid++;
 	num_validated_vuids++;
@@ -1437,7 +1453,8 @@ static BOOL find_connect_pdc(struct cli_state *pcli, unsigned char *trust_passwd
 BOOL domain_client_validate( char *user, char *domain, 
                              char *smb_apasswd, int smb_apasslen, 
                              char *smb_ntpasswd, int smb_ntpasslen,
-                             BOOL *user_exists)
+                             BOOL *user_exists, int *num_info3_rids,
+                             uint32 **info3_rids)
 {
   unsigned char local_challenge[8];
   unsigned char local_lm_response[24];
@@ -1584,6 +1601,24 @@ BOOL domain_client_validate( char *user, char *domain,
   /*
    * Here, if we really want it, we have lots of info about the user in info3.
    */
+
+  /* Return group membership as returned by NT.  This contains group
+     membership in nested groups which doesn't seem to be accessible by any
+     other means.  We merge this into the NT_USER_TOKEN later on. */
+
+  *num_info3_rids = info3.num_groups2;
+
+  if ((*info3_rids = malloc(info3.num_groups2 * sizeof(uint32))) == NULL) {
+          DEBUG(3, ("Out of memory allocating group rids\n"));
+          return False;
+  }
+
+  { 
+          int i;
+
+          for (i = 0; i < info3.num_groups2; i++)
+                  (*info3_rids)[i] = info3.gids[i].g_rid;
+  }
 
 #if 0
   /* 

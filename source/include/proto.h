@@ -3760,9 +3760,12 @@ user_struct *get_valid_user_struct(uint16 vuid);
 void invalidate_vuid(uint16 vuid);
 char *validated_username(uint16 vuid);
 char *validated_domain(uint16 vuid);
-NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups, BOOL is_guest);
-uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, 
-		     char *domain,BOOL guest);
+NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t
+                               *groups, BOOL is_guest, int num_info3_rids,
+                               uint32 *info3_rids);
+uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, 
+                     char *requested_name, char *domain,BOOL guest,
+                     uint32 num_info3_rids, uint32 *info3_rids);
 void add_session_user(char *user);
 BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned char *c8);
 BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
@@ -3783,7 +3786,8 @@ BOOL server_validate(char *user, char *domain,
 BOOL domain_client_validate( char *user, char *domain, 
                              char *smb_apasswd, int smb_apasslen, 
                              char *smb_ntpasswd, int smb_ntpasslen,
-                             BOOL *user_exists);
+                             BOOL *user_exists, int *num_info3_rids,
+                             uint32 **info3_rids);
 #endif
 
 /*The following definitions come from  smbd/pipes.c  */

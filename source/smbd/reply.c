@@ -609,7 +609,8 @@ static BOOL check_server_security(char *orig_user, char *domain, char *unix_user
 
 static BOOL check_domain_security(char *orig_user, char *domain, char *unix_user, 
                                   char *smb_apasswd, int smb_apasslen,
-                                  char *smb_ntpasswd, int smb_ntpasslen)
+                                  char *smb_ntpasswd, int smb_ntpasslen,
+                                  int *n_group_rids, uint32 **group_rids)
 {
   BOOL ret = False;
   BOOL user_exists = True;
@@ -624,7 +625,7 @@ static BOOL check_domain_security(char *orig_user, char *domain, char *unix_user
   ret = domain_client_validate(orig_user, domain,
                                 smb_apasswd, smb_apasslen,
                                 smb_ntpasswd, smb_ntpasslen,
-                                &user_exists);
+                                &user_exists, n_group_rids, group_rids);
 
   if(ret) {
     /*
@@ -702,6 +703,9 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   static BOOL done_sesssetup = False;
   BOOL doencrypt = SMBENCRYPT();
   char *domain = "";
+  int n_group_rids = 0;
+  uint32 *group_rids = NULL;
+
   START_PROFILE(SMBsesssetupX);
 
   *smb_apasswd = 0;
@@ -937,7 +941,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 									 smb_ntpasswd, smb_ntpasslen) &&
 			  !check_domain_security(orig_user, domain, user,
                              smb_apasswd, smb_apasslen,
-                             smb_ntpasswd, smb_ntpasslen) &&
+                             smb_ntpasswd, smb_ntpasslen,
+                             &n_group_rids, &group_rids) &&
       !check_hosts_equiv(user)
      )
   {
@@ -1045,8 +1050,11 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   /* register the name and uid as being validated, so further connections
      to a uid can get through without a password, on the same VC */
 
-  sess_vuid = register_vuid(uid,gid,user,current_user_info.smb_name,domain,guest);
+  sess_vuid = register_vuid(uid,gid,user,current_user_info.smb_name,domain,
+                            guest, n_group_rids, group_rids);
  
+  safe_free(group_rids);
+
   SSVAL(outbuf,smb_uid,sess_vuid);
   SSVAL(inbuf,smb_uid,sess_vuid);
 
