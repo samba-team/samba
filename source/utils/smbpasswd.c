@@ -453,7 +453,7 @@ static int join_domain_byuser(char *domain, char *remote_machine,
 
 		encode_pw_buffer((char *)pwbuf, machine_pwd, plen, False);
 
-		mdfour( ntpw, (char *)upw.buffer, plen);
+		mdfour( ntpw, (unsigned char *)upw.buffer, plen);
 	}
 
 	/* Set password on machine account */
