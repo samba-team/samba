@@ -335,7 +335,6 @@ as shown above:
 </para>
 
 <para><screen>
-
  transmeta: # testparm -v | egrep "(lp|print|spool|driver|ports|\[)"
  
  Load smb config files from /etc/samba/smb.conf.simpleprinting

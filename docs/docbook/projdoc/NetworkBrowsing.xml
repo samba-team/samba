@@ -1506,5 +1506,19 @@ This may take a long time on some networks (months).
 </para>
 
 </sect2>
+
+<sect1>
+<title>My client reports "This server is not configured to list shared resources"</title>
+
+<para>
+Your guest account is probably invalid for some reason. Samba uses the
+guest account for browsing in smbd.  Check that your guest account is
+valid.
+</para>
+
+<para>See also <parameter>guest account</parameter> in the &smb.conf; man page.</para>
+
+</sect2>
+
 </sect1>
 </chapter>
