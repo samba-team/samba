@@ -1207,6 +1207,25 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name,
 
 	DEBUG(5,("api_rpcTNP: called %s successfully\n", rpc_name));
 
+	/* Check for buffer underflow in rpc parsing */
+
+	if ((DEBUGLEVEL >= 10) && 
+	    (p->in_data.data.data_offset != p->in_data.data.buffer_size)) {
+		int data_len = p->in_data.data.buffer_size - 
+			p->in_data.data.data_offset;
+		char *data;
+
+		data = malloc(data_len);
+
+		DEBUG(10, ("api_rpcTNP: rpc input buffer underflow (parse error?)\n"));
+		if (data) {
+			prs_uint8s(False, "", &p->in_data.data, 0, data,
+				   data_len);
+			free(data);
+		}
+
+	}
+
 	return True;
 }
 
