@@ -262,6 +262,66 @@ NTSTATUS dcerpc_push_auth(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 }
 
 
+static const struct {
+	const char *name;
+	enum dcerpc_transport_t transport;
+} ncacn_transports[] = {
+	{"ncacn_np",     NCACN_NP},
+	{"ncacn_ip_tcp", NCACN_IP_TCP}
+};
+
+static const struct {
+	const char *name;
+	uint32 flag;
+} ncacn_options[] = {
+	{"sign", DCERPC_SIGN},
+	{"seal", DCERPC_SEAL},
+	{"validate", DCERPC_DEBUG_VALIDATE_BOTH},
+	{"bigendian", DCERPC_PUSH_BIGENDIAN}
+};
+
+/*
+  form a binding string from a binding structure
+*/
+const char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_binding *b)
+{
+	char *s = NULL;
+	int i;
+	const char *t_name=NULL;
+
+	for (i=0;i<ARRAY_SIZE(ncacn_transports);i++) {
+		if (ncacn_transports[i].transport == b->transport) {
+			t_name = ncacn_transports[i].name;
+		}
+	}
+	if (!t_name) {
+		return NULL;
+	}
+
+	s = talloc_asprintf(mem_ctx, "%s:%s:[", t_name, b->host);
+	if (!s) return NULL;
+
+	/* this is a *really* inefficent way of dealing with strings,
+	   but this is rarely called and the strings are always short,
+	   so I don't care */
+	for (i=0;b->options[i];i++) {
+		s = talloc_asprintf(mem_ctx, "%s%s,", s, b->options[i]);
+		if (!s) return NULL;
+	}
+	for (i=0;i<ARRAY_SIZE(ncacn_options);i++) {
+		if (b->flags & ncacn_options[i].flag) {
+			s = talloc_asprintf(mem_ctx, "%s%s,", s, ncacn_options[i].name);
+			if (!s) return NULL;
+		}
+	}
+	if (s[strlen(s)-1] == ',') {
+		s[strlen(s)-1] = 0;
+	}
+	s = talloc_asprintf(mem_ctx, "%s]", s);
+
+	return s;
+}
+
 /*
   parse a binding string into a dcerpc_binding structure
 */
@@ -270,22 +330,6 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 	char *part1, *part2, *part3;
 	char *p;
 	int i, j, comma_count;
-	const struct {
-		const char *name;
-		enum dcerpc_transport_t transport;
-	} transports[] = {
-		{"ncacn_np",     NCACN_NP},
-		{"ncacn_ip_tcp", NCACN_IP_TCP}
-	};
-	const struct {
-		const char *name;
-		uint32 flag;
-	} options[] = {
-		{"sign", DCERPC_SIGN},
-		{"seal", DCERPC_SEAL},
-		{"validate", DCERPC_DEBUG_VALIDATE_BOTH},
-		{"bigendian", DCERPC_PUSH_BIGENDIAN}
-	};
 
 	p = strchr(s, ':');
 	if (!p) {
@@ -319,14 +363,14 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	for (i=0;i<ARRAY_SIZE(transports);i++) {
-		if (strcasecmp(part1, transports[i].name) == 0) {
-			b->transport = transports[i].transport;
+	for (i=0;i<ARRAY_SIZE(ncacn_transports);i++) {
+		if (strcasecmp(part1, ncacn_transports[i].name) == 0) {
+			b->transport = ncacn_transports[i].transport;
 			break;
 		}
 	}
-	if (i==ARRAY_SIZE(transports)) {
-		DEBUG(1,("Unknown dcerpc transport '%s'\n", part1));
+	if (i==ARRAY_SIZE(ncacn_transports)) {
+		DEBUG(0,("Unknown dcerpc transport '%s'\n", part1));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -362,10 +406,10 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 
 	/* some options are pre-parsed for convenience */
 	for (i=0;b->options[i];i++) {
-		for (j=0;j<ARRAY_SIZE(options);j++) {
-			if (strcasecmp(options[j].name, b->options[i]) == 0) {
+		for (j=0;j<ARRAY_SIZE(ncacn_options);j++) {
+			if (strcasecmp(ncacn_options[j].name, b->options[i]) == 0) {
 				int k;
-				b->flags |= options[j].flag;
+				b->flags |= ncacn_options[j].flag;
 				for (k=i;b->options[k];k++) {
 					b->options[k] = b->options[k+1];
 				}
@@ -399,6 +443,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 			DEBUG(0,("Unknown interface endpoint '%s'\n", pipe_uuid));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
+		/* only try the first endpoint for now */
 		pipe_name = table->endpoints->names[0];
 	} else {
 		pipe_name = binding->options[0];
@@ -417,11 +462,13 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 				     username, username[0]?domain:"",
 				     password, 0, &retry);
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Failed to connect to %s - %s\n", binding->host, nt_errstr(status)));
 		return status;
 	}
 
 	status = dcerpc_pipe_open_smb(p, cli->tree, pipe_name);
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Failed to open pipe %s - %s\n", pipe_name, nt_errstr(status)));
 		cli_tdis(cli);
 		cli_shutdown(cli);
                 return status;
@@ -439,6 +486,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 		status = dcerpc_bind_auth_none(*p, pipe_uuid, pipe_version);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Failed to bind to uuid %s - %s\n", pipe_uuid, nt_errstr(status)));
 		dcerpc_pipe_close(*p);
 		return status;
 	}
@@ -498,6 +546,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(struct dcerpc_pipe **p,
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Failed to bind to uuid %s - %s\n", pipe_uuid, nt_errstr(status)));
 		dcerpc_pipe_close(*p);
 		return status;
 	}
@@ -556,6 +605,8 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **p,
 		talloc_destroy(mem_ctx);
 		return status;
 	}
+
+	DEBUG(3,("Using binding %s\n", dcerpc_binding_string(mem_ctx, &b)));
 
 	status = dcerpc_pipe_connect_b(p, &b, pipe_uuid, pipe_version, domain, username, password);
 
