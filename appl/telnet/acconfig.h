@@ -69,6 +69,12 @@
 
 @BOTTOM@
 
+#ifdef __STDC__
+#define RCSID(msg) static const char *rcsid[] = { (char *)rcsid, "@(#)" msg }
+#else
+#define RCSID(msg) static char *rcsid[] = { (char *)rcsid, msg }
+#endif
+
 /* set this to a sensible login */
 #ifndef LOGIN_PATH
 #define LOGIN_PATH "/usr/athena/bin/login"
