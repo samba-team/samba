@@ -150,8 +150,8 @@ get_krbhst_dns (krb5_context context,
 		char ***hostlist,
 		krb5_boolean fallback)
 {
-    char **res;
-    int count;
+    char **res = *hostlist;
+    int count = 0;
     krb5_error_code ret;
 
     if(context->srv_lookup) {
@@ -174,8 +174,10 @@ get_krbhst_dns (krb5_context context,
 	    krb5_config_free_strings(res);
 	    return ret;
 	}
+	++count;
     }
-    add_string(context, &res, &count, NULL);
+    if (count)
+	add_string(context, &res, &count, NULL);
     *hostlist = res;
     return 0;
 }
@@ -211,6 +213,7 @@ krb5_get_krb_admin_hst (krb5_context context,
 			const krb5_realm *realm,
 			char ***hostlist)
 {
+    *hostlist = NULL;
     return get_krbhst (context, realm, "admin_server", "kerberos-adm",
 		       hostlist, TRUE);
 }
@@ -226,9 +229,10 @@ krb5_get_krb_changepw_hst (krb5_context context,
 {
     krb5_error_code ret = 0;
 
+    *hostlist = NULL;
     get_krbhst_conf (context, realm, "kpasswd_server",
 		     hostlist);
-    if (hostlist == NULL)
+    if (*hostlist == NULL)
 	ret = get_krbhst (context, realm, "admin_server", "kpasswd",
 			  hostlist, TRUE);
     return ret;
@@ -246,13 +250,14 @@ krb5_get_krb524hst (krb5_context context,
 {
     krb5_error_code ret = 0;
 
+    *hostlist = NULL;
     get_krbhst_conf (context, realm, "krb524_server", hostlist);
-    if (hostlist == NULL) {
+    if (*hostlist == NULL) {
 	ret = get_krbhst (context, realm, "krb524_server", "krb524", hostlist,
 			  FALSE);
 	if (ret)
 	    return ret;
-	if (hostlist == NULL)
+	if (*hostlist == NULL)
 	    return krb5_get_krbhst(context, realm, hostlist);
     }
     return ret;
@@ -267,6 +272,7 @@ krb5_get_krbhst (krb5_context context,
 		 const krb5_realm *realm,
 		 char ***hostlist)
 {
+    *hostlist = NULL;
     return get_krbhst (context, realm, "kdc", "kerberos", hostlist, TRUE);
 }
 
