@@ -1232,7 +1232,7 @@ BOOL torture_rpc_samlogon(void)
 	join_ctx = torture_join_domain(TEST_MACHINE_NAME, lp_workgroup(), ACB_WSTRUST, 
 				       &machine_password);
 	if (!join_ctx) {
-		printf("Failed to join as BDC\n");
+		printf("Failed to join as Workstation\n");
 		return False;
 	}
 
@@ -1247,7 +1247,7 @@ BOOL torture_rpc_samlogon(void)
 	 * with INTERNAL_ERROR */
 
 	b.flags &= ~DCERPC_AUTH_OPTIONS;
-	b.flags |= DCERPC_SCHANNEL_BDC | DCERPC_SIGN | DCERPC_SCHANNEL_128;
+	b.flags |= DCERPC_SCHANNEL_WORKSTATION | DCERPC_SIGN | DCERPC_SCHANNEL_128;
 
 	status = dcerpc_pipe_connect_b(&p, &b, 
 				       DCERPC_NETLOGON_UUID,
@@ -1278,7 +1278,8 @@ BOOL torture_rpc_samlogon(void)
 	for (i=0; i < ARRAY_SIZE(credential_flags); i++) {
 		
 		if (!test_SetupCredentials2(p, mem_ctx, credential_flags[i],
-					    TEST_MACHINE_NAME, machine_password, creds)) {
+					    TEST_MACHINE_NAME, machine_password, 
+					    SEC_CHAN_WKSTA, creds)) {
 			return False;
 		}
 		
