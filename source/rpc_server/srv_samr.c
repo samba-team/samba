@@ -328,7 +328,11 @@ static void api_samr_enum_dom_groups( rpcsrv_struct *p, prs_struct *data, prs_st
 {
 	SAMR_Q_ENUM_DOM_GROUPS q_e;
 	SAMR_R_ENUM_DOM_GROUPS r_e;
+
 	uint32 num_entries = 0;
+
+	ZERO_STRUCT(q_e);
+	ZERO_STRUCT(r_e);
 
 	samr_io_q_enum_dom_groups("", &q_e, data, 0);
 
@@ -336,6 +340,8 @@ static void api_samr_enum_dom_groups( rpcsrv_struct *p, prs_struct *data, prs_st
 	                              q_e.max_size,
 	                              &r_e.sam, &r_e.uni_grp_name,
 	                              &num_entries);
+
+	make_samr_r_enum_dom_groups(&r_e, q_e.start_idx, num_entries);
 
 	samr_io_r_enum_dom_groups("", &r_e, rdata, 0);
 

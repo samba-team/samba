@@ -664,7 +664,7 @@ static void make_samr_dom_groups(SAM_ENTRY **sam, UNISTR2 **uni_grp_name,
 	(*sam) = NULL;
 	(*uni_grp_name) = NULL;
 
-	if (num_sam_entries != 0)
+	if (num_sam_entries == 0)
 	{
 		return;
 	}
