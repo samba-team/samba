@@ -35,6 +35,7 @@ extern pstring global_myname;
  Based on code by Branko Cibej <branko.cibej@hermes.si>
  When this is called p points at the '%' character.
 ********************************************************************/
+
 static size_t expand_env_var(char *p, int len)
 {
 	fstring envname;
@@ -87,14 +88,19 @@ static size_t expand_env_var(char *p, int len)
  Patch from jkf@soton.ac.uk
  Added this to implement %p (NIS auto-map version of %H)
 *******************************************************************/
-static char *automount_path(char *user_name)
+
+static char *automount_path(const char *user_name)
 {
 	static pstring server_path;
+	struct passwd *pass;
 
 	/* use the passwd entry as the default */
 	/* this will be the default if WITH_AUTOMOUNT is not used or fails */
-	/* pstrcpy() copes with get_user_home_dir() returning NULL */
-	pstrcpy(server_path, get_user_home_dir(user_name));
+
+	if (((pass = Get_Pwnam(user_name))!=NULL) && (pass->pw_dir != NULL))
+		pstrcpy(server_path, pass->pw_dir );
+	else
+		*server_path = '\0';
 
 #if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
 
@@ -111,9 +117,8 @@ static char *automount_path(char *user_name)
 			}
 		} else {
 			/* NIS key lookup failed: default to user home directory from password file */
-          pstrcpy(server_path, get_user_home_dir(user_name));
-		  DEBUG(5, ("NIS lookup failed. Using Home path from passwd file. Home path is: %s\n",
-		        server_path ));
+			pstrcpy(server_path, get_user_home_dir(user_name));
+			DEBUG(5, ("NIS lookup failed. Using Home path from passwd file. Home path is: %s\n", server_path ));
 		}
 	}
 #endif
@@ -123,36 +128,32 @@ static char *automount_path(char *user_name)
 	return server_path;
 }
 
-
 /*******************************************************************
  Patch from jkf@soton.ac.uk
  This is Luke's original function with the NIS lookup code
  moved out to a separate function.
 *******************************************************************/
+
 static char *automount_server(const char *user_name)
 {
 	static pstring server_name;
 
 	/* use the local machine name as the default */
 	/* this will be the default if WITH_AUTOMOUNT is not used or fails */
-	if (*local_machine) {
+	if (*local_machine)
 		pstrcpy(server_name, local_machine);
-	} else {
+	else
 		pstrcpy(server_name, global_myname);
-	}
 	
 #if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
 
-	if (lp_nis_home_map())
-	{
+	if (lp_nis_home_map()) {
 	        int home_server_len;
 		char *automount_value = automount_lookup(user_name);
 		home_server_len = strcspn(automount_value,":");
 		DEBUG(5, ("NIS lookup succeeded.  Home server length: %d\n",home_server_len));
 		if (home_server_len > sizeof(pstring))
-		{
 			home_server_len = sizeof(pstring);
-		}
 		strncpy(server_name, automount_value, home_server_len);
                 server_name[home_server_len] = '\0';
 	}
@@ -166,6 +167,7 @@ static char *automount_server(const char *user_name)
 /****************************************************************************
  Do some standard substitutions in a string.
 ****************************************************************************/
+
 void standard_sub_basic(const char *smb_name, char *str)
 {
 	char *p, *s;
@@ -226,10 +228,10 @@ void standard_sub_basic(const char *smb_name, char *str)
 	}
 }
 
-
 /****************************************************************************
  Do some standard substitutions in a string.
 ****************************************************************************/
+
 void standard_sub_advanced(int snum, const char *user, const char *connectpath, gid_t gid, const char *smb_name, char *str)
 {
 	char *p, *s, *home;
@@ -286,14 +288,47 @@ void standard_sub_advanced(int snum, const char *user, const char *connectpath, 
 /****************************************************************************
  Do some standard substitutions in a string.
 ****************************************************************************/
+
 void standard_sub_conn(connection_struct *conn, char *str)
 {
 	standard_sub_advanced(SNUM(conn), conn->user, conn->connectpath, conn->gid, current_user_info.smb_name, str);
 }
 
 /****************************************************************************
-like standard_sub but by snum
+ Like standard_sub but for a homes share where snum still points to the [homes]
+ share. No user specific snum created yet so servicename should be the username.
 ****************************************************************************/
+
+void standard_sub_home(int snum, const char *user, char *str)
+{
+	char *p, *s;
+
+	for (s=str; (p=strchr_m(s, '%'));s=p) {
+		int l = sizeof(pstring) - (int)(p-str);
+		
+		switch (*(p+1)) {
+		case 'S': 
+			string_sub(p,"%S", user, l); 
+			break;
+		case 'p': 
+			string_sub(p,"%p", automount_path(user), l); 
+			break;
+		case '\0': 
+			p++; 
+			break; /* don't run off the end of the string */
+			
+		default: p+=2; 
+			break;
+		}
+	}
+
+        standard_sub_advanced(snum, user, "", -1, current_user_info.smb_name, str);
+}
+
+/****************************************************************************
+ Like standard_sub but by snum.
+****************************************************************************/
+
 void standard_sub_snum(int snum, char *str)
 {
 	extern struct current_user current_user;
@@ -313,6 +348,7 @@ void standard_sub_snum(int snum, char *str)
 /*******************************************************************
  Substitute strings with useful parameters.
 ********************************************************************/
+
 void standard_sub_vuser(char *str, user_struct *vuser)
 {
 	standard_sub_advanced(-1, vuser->user.unix_name, "", -1, current_user_info.smb_name, str);
@@ -321,6 +357,7 @@ void standard_sub_vuser(char *str, user_struct *vuser)
 /*******************************************************************
  Substitute strings with useful parameters.
 ********************************************************************/
+
 void standard_sub_vsnum(char *str, user_struct *vuser, int snum)
 {
 	standard_sub_advanced(snum, vuser->user.unix_name, "", -1, current_user_info.smb_name, str);
