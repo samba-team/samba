@@ -45,7 +45,7 @@
 
 RCSID("$Id$");
 
-int open_socket(const char *hostname)
+int open_socket(krb5_context context, const char *hostname)
 {
     int s;
     struct hostent *hp;
@@ -63,7 +63,7 @@ int open_socket(const char *hostname)
     }
     memset(&sin, 0, sizeof(sin));
     sin.sin_family = AF_INET;
-    sin.sin_port = krb5_getportbyname ("hprop", "tcp", htons(HPROP_PORT));
+    sin.sin_port = krb5_getportbyname (context, "hprop", "tcp", HPROP_PORT);
     memcpy(&sin.sin_addr, hp->h_addr, hp->h_length);
     if(connect(s, (struct sockaddr*)&sin, sizeof(sin)) < 0){
 	warn("connect");
@@ -129,7 +129,7 @@ conv_db(void *arg, Principal *p)
 	unsigned char *key = ent.keys.val[0].key.keyvalue.data;
 	memcpy(key, &p->key_low, 4);
 	memcpy(key + 4, &p->key_high, 4);
-	kdb_encrypt_key(key, key, &mkey, msched, 0);
+	kdb_encrypt_key((des_cblock*)key, (des_cblock*)key, &mkey, msched, 0);
     }
     hdb_seal_key(&ent.keys.val[0], msched);
 
@@ -280,7 +280,7 @@ int main(int argc, char **argv)
     
 
     for(i = optind; i < argc; i++){
-	fd = open_socket(argv[i]);
+	fd = open_socket(context, argv[i]);
 	if(fd < 0)
 	    continue;
 

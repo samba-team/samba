@@ -346,7 +346,7 @@ int main(int argc, char **argv)
 	    else
 		port = htons(atoi(*argv));
 	} else {
-	    port = krb5_getportbyname ("telnet", "tcp", htons(23));
+	    port = krb5_getportbyname (NULL, "telnet", "tcp", 23);
 	}
 	mini_inetd (port);
     } else if (argc > 0) {

@@ -564,5 +564,5 @@ main (int argc, char **argv)
 
     signal (SIGINT, sigterm);
 
-    return doit (krb5_getportbyname ("kpasswd", "udp", htons(KPASSWD_PORT)));
+    return doit (krb5_getportbyname (context, "kpasswd", "udp", KPASSWD_PORT));
 }

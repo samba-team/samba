@@ -564,7 +564,7 @@ main(int argc, char **argv)
 	}
     }
     if (port == 0)
-	port = krb5_getportbyname ("kpop", "tcp", htons(1109));
+	port = krb5_getportbyname (context, "kpop", "tcp", 1109);
 
     parse_pobox (argv[0], argv[1],
 		 &host, &user, &filename);

@@ -543,7 +543,7 @@ main(int argc, char **argv)
 	if (port)
 	    tmp_port = port;
 	else
-	    tmp_port = krb5_getportbyname ("kshell", "tcp", htons(544));
+	    tmp_port = krb5_getportbyname (context, "kshell", "tcp", 544);
 
 	auth_method = AUTH_KRB5;
 	ret = doit (*argv, user, tmp_port, argc - 1, argv + 1);
@@ -555,9 +555,9 @@ main(int argc, char **argv)
 	if (port)
 	    tmp_port = port;
 	else if (do_encrypt)
-	    tmp_port = k_getportbyname ("ekshell", "tcp", htons(545));
+	    tmp_port = krb5_getportbyname (context, "ekshell", "tcp", 545);
 	else
-	    tmp_port = krb5_getportbyname ("kshell", "tcp", htons(544));
+	    tmp_port = krb5_getportbyname (context, "kshell", "tcp", 544);
 
 	auth_method = AUTH_KRB4;
 	ret = doit (*argv, user, tmp_port, argc - 1, argv + 1);

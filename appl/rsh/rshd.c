@@ -581,9 +581,9 @@ main(int argc, char **argv)
     if (inetd) {
 	if (port == 0)
 	    if (do_encrypt)
-		port = krb5_getportbyname ("ekshell", "tcp", htons(545));
+		port = krb5_getportbyname (context, "ekshell", "tcp", 545);
 	    else
-		port = krb5_getportbyname ("kshell",  "tcp", htons(544));
+		port = krb5_getportbyname (context, "kshell",  "tcp", 544);
 	mini_inetd (port);
     }
 
