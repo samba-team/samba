@@ -27,60 +27,125 @@
 
 
 /* 
-  ds_RolerGetPrimaryDomainInformation 
+  dssetup_DsRoleGetPrimaryDomainInformation 
 */
-static WERROR ds_RolerGetPrimaryDomainInformation(struct dcesrv_call_state *dce_call, 
-						  TALLOC_CTX *mem_ctx,
-						  struct ds_RolerGetPrimaryDomainInformation *r)
+static WERROR dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_call_state *dce_call, 
+							TALLOC_CTX *mem_ctx,
+							struct dssetup_DsRoleGetPrimaryDomainInformation *r)
 {
-	WERROR err = WERR_OK;
-	void *sam_ctx;
-	const char * const attrs[] = { "dnsDomain", "objectGUID", "name", NULL };
-	int ret;
-	struct ldb_message **res;
-
-	sam_ctx = samdb_connect(mem_ctx);
-	if (sam_ctx == NULL) {
-		return WERR_SERVER_UNAVAILABLE;
-	}
-
-	ret = samdb_search(sam_ctx, mem_ctx, NULL, &res, attrs,
-			   "(&(objectClass=domainDNS)(!(objectClass=builtinDomain)))");
-	if (ret != 1) {
-		return WERR_SERVER_UNAVAILABLE;
-	}
-
-	r->out.info = talloc_p(mem_ctx, union ds_DomainInformation);
-	if (r->out.info == NULL) {
-		return WERR_NOMEM;
-	}
+	ZERO_STRUCT(r->out);
 
 	switch (r->in.level) {
-	case DS_BASIC_INFORMATION:
-		/* incorrect,  but needed for the moment */
-		r->out.info->basic.role        = DS_ROLE_MEMBER_SERVER; 
-		r->out.info->basic.flags       = 0x01000003;
-		r->out.info->basic.domain      = samdb_result_string(res[0], "name", NULL);
-		r->out.info->basic.dns_domain  = samdb_result_string(res[0], "dnsDomain", NULL);
-		r->out.info->basic.forest      = samdb_result_string(res[0], "dnsDomain", NULL);
-		r->out.info->basic.domain_guid = samdb_result_guid(res[0], "objectGUID");
-		break;
+	case DS_ROLE_BASIC_INFORMATION:
+	{
+		void *sam_ctx;
+		const char * const attrs[] = { "dnsDomain", "objectGUID", "name", NULL };
+		int ret;
+		struct ldb_message **res;
+		union dssetup_DsRoleInfo *info;
+		enum dssetup_DsRole role = DS_ROLE_STANDALONE_SERVER;
+		uint32 flags = 0;
+		const char *domain = NULL;
+		const char *dns_domain = NULL;
+		const char *forest = NULL;
+		struct GUID domain_guid;
 
-	case DS_UPGRADE_STATUS:
-		r->out.info->upgrade.upgrading     = DS_NOT_UPGRADING;
-		r->out.info->upgrade.previous_role = DS_PREVIOUS_UNKNOWN;
-		break;
+		ZERO_STRUCT(domain_guid);
 
+		info = talloc_p(mem_ctx, union dssetup_DsRoleInfo);
+		W_ERROR_HAVE_NO_MEMORY(info);
+
+		/* TODO: we need to find out what we should return as standalone server */
+
+		switch (lp_server_role()) {
+		case ROLE_STANDALONE:
+			role		= DS_ROLE_STANDALONE_SERVER;
+			break;
+		case ROLE_DOMAIN_MEMBER:
+			role		= DS_ROLE_MEMBER_SERVER;
+			break;
+		case ROLE_DOMAIN_BDC:
+			role		= DS_ROLE_BACKUP_DC;
+			break;
+		case ROLE_DOMAIN_PDC:
+			role		= DS_ROLE_PRIMARY_DC;
+			break;
+		}
+
+		switch (lp_server_role()) {
+		case ROLE_STANDALONE:
+			domain		= talloc_strdup(mem_ctx, lp_workgroup());
+			W_ERROR_HAVE_NO_MEMORY(domain);
+			break;
+		case ROLE_DOMAIN_MEMBER:
+			domain		= talloc_strdup(mem_ctx, lp_workgroup());
+			W_ERROR_HAVE_NO_MEMORY(domain);
+			/* TODO: what is with dns_domain and forest and guid? */
+			break;
+		case ROLE_DOMAIN_BDC:
+		case ROLE_DOMAIN_PDC:
+			sam_ctx = samdb_connect(mem_ctx);
+			if (!sam_ctx) {
+				return WERR_SERVER_UNAVAILABLE;
+			}
+
+			ret = samdb_search(sam_ctx, mem_ctx, NULL, &res, attrs,
+					   "(&(objectClass=domainDNS)(!(objectClass=builtinDomain)))");
+			if (ret != 1) {
+				return WERR_SERVER_UNAVAILABLE;
+			}
+
+			flags		= 0;
+			flags		|= DS_ROLE_PRIMARY_DS_RUNNING;
+			flags		|= DS_ROLE_PRIMARY_DS_MIXED_MODE;
+			flags		|= DS_ROLE_PRIMARY_DOMAIN_GUID_PRESENT;
+			domain		= samdb_result_string(res[0], "name", NULL);
+			dns_domain	= samdb_result_string(res[0], "dnsDomain", NULL);
+			forest		= samdb_result_string(res[0], "dnsDomain", NULL);
+			domain_guid	= samdb_result_guid(res[0], "objectGUID");
+			break;
+		}
+
+		info->basic.role        = role; 
+		info->basic.flags       = flags;
+		info->basic.domain      = domain;
+		info->basic.dns_domain  = dns_domain;
+		info->basic.forest      = forest;
+		info->basic.domain_guid = domain_guid;
+
+		r->out.info = info;
+		return WERR_OK;
+	}
+	case DS_ROLE_UPGRADE_STATUS:
+	{
+		union dssetup_DsRoleInfo *info;
+
+		info = talloc_p(mem_ctx, union dssetup_DsRoleInfo);
+		W_ERROR_HAVE_NO_MEMORY(info);
+
+		info->upgrade.upgrading     = DS_ROLE_NOT_UPGRADING;
+		info->upgrade.previous_role = DS_ROLE_PREVIOUS_UNKNOWN;
+
+		r->out.info = info;
+		return WERR_OK;
+	}
 	case DS_ROLE_OP_STATUS:
-		r->out.info->status.status = DS_STATUS_IDLE;
-		break;
+	{
+		union dssetup_DsRoleInfo *info;
 
+		info = talloc_p(mem_ctx, union dssetup_DsRoleInfo);
+		W_ERROR_HAVE_NO_MEMORY(info);
+
+		info->opstatus.status = DS_ROLE_OP_IDLE;
+
+		r->out.info = info;
+		return WERR_OK;
+	}
 	default:
-		err = WERR_INVALID_PARAM;
-		break;
+		return WERR_INVALID_PARAM;
 	}
 
-	return err;
+	return WERR_INVALID_PARAM;
 }
 
 
@@ -92,100 +157,100 @@ not try and fill these in with anything else
 ******************************************/
 
 /* 
-  ds_RolerDnsNameToFlatName 
+  dssetup_DsRoleDnsNameToFlatName 
 */
-static WERROR ds_RolerDnsNameToFlatName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-					struct ds_RolerDnsNameToFlatName *r)
+static WERROR dssetup_DsRoleDnsNameToFlatName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					struct dssetup_DsRoleDnsNameToFlatName *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  ds_RolerDcAsDc 
+  dssetup_DsRoleDcAsDc 
 */
-static WERROR ds_RolerDcAsDc(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-			     struct ds_RolerDcAsDc *r)
+static WERROR dssetup_DsRoleDcAsDc(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+			     struct dssetup_DsRoleDcAsDc *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  ds_RolerDcAsReplica 
+  dssetup_DsRoleDcAsReplica 
 */
-static WERROR ds_RolerDcAsReplica(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-				  struct ds_RolerDcAsReplica *r)
+static WERROR dssetup_DsRoleDcAsReplica(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				  struct dssetup_DsRoleDcAsReplica *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  ds_RolerDemoteDc 
+  dssetup_DsRoleDemoteDc 
 */
-static WERROR ds_RolerDemoteDc(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-			       struct ds_RolerDemoteDc *r)
+static WERROR dssetup_DsRoleDemoteDc(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+			       struct dssetup_DsRoleDemoteDc *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  ds_RolerGetDcOperationProgress 
+  dssetup_DsRoleGetDcOperationProgress 
 */
-static WERROR ds_RolerGetDcOperationProgress(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-					     struct ds_RolerGetDcOperationProgress *r)
+static WERROR dssetup_DsRoleGetDcOperationProgress(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					     struct dssetup_DsRoleGetDcOperationProgress *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  ds_RolerGetDcOperationResults 
+  dssetup_DsRoleGetDcOperationResults 
 */
-static WERROR ds_RolerGetDcOperationResults(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-					    struct ds_RolerGetDcOperationResults *r)
+static WERROR dssetup_DsRoleGetDcOperationResults(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					    struct dssetup_DsRoleGetDcOperationResults *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  ds_RolerCancel 
+  dssetup_DsRoleCancel 
 */
-static WERROR ds_RolerCancel(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-			     struct ds_RolerCancel *r)
+static WERROR dssetup_DsRoleCancel(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+			     struct dssetup_DsRoleCancel *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  ds_RolerServerSaveStateForUpgrade 
+  dssetup_DsRoleServerSaveStateForUpgrade 
 */
-static WERROR ds_RolerServerSaveStateForUpgrade(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-						struct ds_RolerServerSaveStateForUpgrade *r)
+static WERROR dssetup_DsRoleServerSaveStateForUpgrade(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+						struct dssetup_DsRoleServerSaveStateForUpgrade *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  ds_RolerUpgradeDownlevelServer 
+  dssetup_DsRoleUpgradeDownlevelServer 
 */
-static WERROR ds_RolerUpgradeDownlevelServer(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-					     struct ds_RolerUpgradeDownlevelServer *r)
+static WERROR dssetup_DsRoleUpgradeDownlevelServer(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					     struct dssetup_DsRoleUpgradeDownlevelServer *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  ds_RolerAbortDownlevelServerUpgrade 
+  dssetup_DsRoleAbortDownlevelServerUpgrade 
 */
-static WERROR ds_RolerAbortDownlevelServerUpgrade(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-						  struct ds_RolerAbortDownlevelServerUpgrade *r)
+static WERROR dssetup_DsRoleAbortDownlevelServerUpgrade(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+						  struct dssetup_DsRoleAbortDownlevelServerUpgrade *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }

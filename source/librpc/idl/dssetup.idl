@@ -22,7 +22,12 @@
 		DS_ROLE_MEMBER_SERVER          = 3,
 		DS_ROLE_BACKUP_DC              = 4,
 		DS_ROLE_PRIMARY_DC             = 5
-	} ds_Role;
+	} dssetup_DsRole;
+
+	const uint32 DS_ROLE_PRIMARY_DS_RUNNING			= 0x00000001;
+	const uint32 DS_ROLE_PRIMARY_DS_MIXED_MODE		= 0x00000002;
+	const uint32 DS_ROLE_UPGRADE_IN_PROGRESS		= 0x00000004;
+	const uint32 DS_ROLE_PRIMARY_DOMAIN_GUID_PRESENT	= 0x01000000;
 
 	typedef struct {
 		uint16    role;
@@ -31,49 +36,50 @@
 		unistr    *dns_domain;
 		unistr    *forest;
 		GUID domain_guid;
-	} ds_DomainBasicInformation;
+	} dssetup_DsRolePrimaryDomInfoBasic;
 
 	typedef enum {
-		DS_NOT_UPGRADING = 0,
-		DS_UPGRADING     = 1
-	} ds_UpgradeStatus;
+		DS_ROLE_NOT_UPGRADING = 0,
+		DS_ROLE_UPGRADING     = 1
+	} dssetup_DsUpgrade;
 
 	typedef enum {
-		DS_PREVIOUS_UNKNOWN = 0,
-		DS_PREVIOUS_PRIMARY = 1,
-		DS_PREVIOUS_BACKUP  = 2
-	} ds_PreviousStatus;
+		DS_ROLE_PREVIOUS_UNKNOWN = 0,
+		DS_ROLE_PREVIOUS_PRIMARY = 1,
+		DS_ROLE_PREVIOUS_BACKUP  = 2
+	} dssetup_DsPrevious;
 
 	typedef struct {
 		uint32 upgrading;
 		uint16 previous_role;
-	} ds_DomainUpgradeStatus;
+	} dssetup_DsRoleUpgradeStatus;
 
 	typedef enum {
-		DS_STATUS_IDLE         = 0,
-		DS_STATUS_ACTIVE       = 1,
-		DS_STATUS_NEEDS_REBOOT = 2
-	} ds_Status;
+		DS_ROLE_OP_IDLE         = 0,
+		DS_ROLE_OP_ACTIVE       = 1,
+		DS_ROLE_OP_NEEDS_REBOOT = 2
+	} dssetup_DsRoleOp;
 
 	typedef struct {
 		uint16 status;
-	} ds_RoleOpStatus;
-	
+	} dssetup_DsRoleOpStatus;
+
 	typedef enum {
-		DS_BASIC_INFORMATION = 1,
-		DS_UPGRADE_STATUS    = 2,
-		DS_ROLE_OP_STATUS    = 3
-	} ds_InformationLevel;
+		DS_ROLE_BASIC_INFORMATION	= 1,
+		DS_ROLE_UPGRADE_STATUS		= 2,
+		DS_ROLE_OP_STATUS		= 3
+	} dssetup_DsRoleInfoLevel;
 
 	typedef union {
-		[case(DS_BASIC_INFORMATION)] ds_DomainBasicInformation basic;
-		[case(DS_UPGRADE_STATUS)]    ds_DomainUpgradeStatus    upgrade;
-		[case(DS_ROLE_OP_STATUS)]    ds_RoleOpStatus           status;
-	} ds_DomainInformation;
+		[case(DS_ROLE_BASIC_INFORMATION)] dssetup_DsRolePrimaryDomInfoBasic	basic;
+		[case(DS_ROLE_UPGRADE_STATUS)]    dssetup_DsRoleUpgradeStatus    	upgrade;
+		[case(DS_ROLE_OP_STATUS)]         dssetup_DsRoleOpStatus		opstatus;
+		[default] ;
+	} dssetup_DsRoleInfo;
 
-	WERROR ds_RolerGetPrimaryDomainInformation(
+	WERROR dssetup_DsRoleGetPrimaryDomainInformation(
 		[in] uint16 level,
-		[out,switch_is(level)] ds_DomainInformation *info
+		[out,switch_is(level)] dssetup_DsRoleInfo *info
 		);
 
 	/*
@@ -81,14 +87,14 @@
 	  These stubs are left here only as a way of documenting the names
 	  of the calls in case they ever turn up on the wire.
 	*/
-	WERROR ds_RolerDnsNameToFlatName();
-	WERROR ds_RolerDcAsDc();
-	WERROR ds_RolerDcAsReplica();
-	WERROR ds_RolerDemoteDc();
-	WERROR ds_RolerGetDcOperationProgress();
-	WERROR ds_RolerGetDcOperationResults();
-	WERROR ds_RolerCancel();
-	WERROR ds_RolerServerSaveStateForUpgrade();
-	WERROR ds_RolerUpgradeDownlevelServer();
-	WERROR ds_RolerAbortDownlevelServerUpgrade();
+	WERROR dssetup_DsRoleDnsNameToFlatName();
+	WERROR dssetup_DsRoleDcAsDc();
+	WERROR dssetup_DsRoleDcAsReplica();
+	WERROR dssetup_DsRoleDemoteDc();
+	WERROR dssetup_DsRoleGetDcOperationProgress();
+	WERROR dssetup_DsRoleGetDcOperationResults();
+	WERROR dssetup_DsRoleCancel();
+	WERROR dssetup_DsRoleServerSaveStateForUpgrade();
+	WERROR dssetup_DsRoleUpgradeDownlevelServer();
+	WERROR dssetup_DsRoleAbortDownlevelServerUpgrade();
 }
