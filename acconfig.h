@@ -130,6 +130,10 @@ static /**/const char *const rcsid[] = { (char *)rcsid, "\100(#)" msg }
 #define MaxHostNameLen (64+4)
 #define MaxPathLen (1024+4)
 
+#ifdef HAVE_SGTTY_H
+#define SGTTY
+#endif
+
 /* telnet stuff ----------------------------------------------- */
 
 /* define this if you have kerberos 4 */
