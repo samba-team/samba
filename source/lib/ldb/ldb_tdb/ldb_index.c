@@ -770,7 +770,7 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 */
 int ltdb_reindex(struct ldb_context *ldb)
 {
-	struct ltdb_private *ltdb = ldb->private;
+	struct ltdb_private *ltdb = ldb->private_data;
 	int ret;
 
 	/* first traverse the database deleting any @INDEX records */

@@ -237,7 +237,7 @@ void ltdb_search_dn1_free(struct ldb_context *ldb, struct ldb_message *msg)
 */
 int ltdb_search_dn1(struct ldb_context *ldb, const char *dn, struct ldb_message *msg)
 {
-	struct ltdb_private *ltdb = ldb->private;
+	struct ltdb_private *ltdb = ldb->private_data;
 	int ret;
 	TDB_DATA tdb_key, tdb_data;
 
@@ -427,7 +427,7 @@ static int ltdb_search_full(struct ldb_context *ldb,
 			    struct ldb_parse_tree *tree,
 			    const char *attrs[], struct ldb_message ***res)
 {
-	struct ltdb_private *ltdb = ldb->private;
+	struct ltdb_private *ltdb = ldb->private_data;
 	int ret;
 	struct ltdb_search_info sinfo;
 
