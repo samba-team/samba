@@ -65,11 +65,7 @@ static BOOL parse_dfs_path(char* pathname, struct dfs_path* pdp)
 	DEBUG(10,("parse_dfs_path: servicename: %s\n",pdp->servicename));
 
 	/* rest is reqpath */
-	pstrcpy(pdp->reqpath, p+1);
-	p = pdp->reqpath;
-	while ((p = strchr_m(p, '\\'))!=NULL) {
-		*p++ = '/';
-	}
+	check_path_syntax(pdp->reqpath, p+1);
 
 	DEBUG(10,("parse_dfs_path: rest of the path: %s\n",pdp->reqpath));
 	return True;
@@ -115,8 +111,7 @@ static BOOL parse_processed_dfs_path(char* pathname, struct dfs_path* pdp)
 	DEBUG(10,("parse_processed_dfs_path: servicename: %s\n",pdp->servicename));
 
 	/* rest is reqpath */
-	/* JRA. We should do a check_path_syntax here.... TOFIX ! */
-	pstrcpy(pdp->reqpath, p+1);
+	check_path_syntax(pdp->reqpath, p+1);
 
 	DEBUG(10,("parse_processed_dfs_path: rest of the path: %s\n",pdp->reqpath));
 	return True;
