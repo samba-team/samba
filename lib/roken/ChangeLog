@@ -1,3 +1,11 @@
+1999-11-13  Assar Westerlund  <assar@sics.se>
+
+	* strftime.c (strftime): handle `%z' and `%Z' in a tm_gmtoff-less
+	world
+
+	* getcap.c: make sure to use db only if we have both the library
+	and the header file
+	
 1999-11-12  Assar Westerlund  <assar@sics.se>
 
 	* getarg.h: add arg_counter

@@ -1,3 +1,8 @@
+1999-11-13  Assar Westerlund  <assar@sics.se>
+
+	* password_quality.c (kadm5_setup_passwd_quality_check): use
+	correct types for function pointers
+	
 1999-11-09  Johan Danielsson  <joda@pdc.kth.se>
 
 	* randkey_s.c: always bail out if the fetch fails
