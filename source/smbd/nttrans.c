@@ -1080,7 +1080,7 @@ static NTSTATUS set_sd(files_struct *fsp, char *data, uint32 sd_len, uint32 secu
 	TALLOC_CTX *mem_ctx;
 	BOOL ret;
 	
-	if (sd_len == 0) {
+	if (sd_len == 0 || !lp_nt_acl_support(SNUM(fsp->conn))) {
 		return NT_STATUS_OK;
 	}
 
@@ -1414,7 +1414,8 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	 * Now try and apply the desired SD.
 	 */
 
-	if (sd_len && !NT_STATUS_IS_OK(status = set_sd( fsp, data, sd_len, ALL_SECURITY_INFORMATION))) {
+	if (lp_nt_acl_support(SNUM(conn)) && sd_len &&
+			!NT_STATUS_IS_OK(status = set_sd( fsp, data, sd_len, ALL_SECURITY_INFORMATION))) {
 		close_file(fsp,False);
 		restore_case_semantics(conn, file_attributes);
 		return ERROR_NT(status);
