@@ -394,7 +394,7 @@ uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO 
 				break;
 			case ROLE_STANDALONE:
 				name = global_myname;
-				sid = NULL; /* Tell it we're not in a domain. */
+				sid = &global_sam_sid;
 				break;
 			default:
 				return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;

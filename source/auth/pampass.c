@@ -113,6 +113,9 @@ static int smb_pam_conv(int num_msg,
 
 	*resp = NULL;
 
+	if (num_msg <= 0)
+		return PAM_CONV_ERR;
+
 	/*
 	 * Apparantly HPUX has a buggy PAM that doesn't support the
 	 * appdata_ptr. Fail if this is the case. JRA.
@@ -174,13 +177,15 @@ static int smb_pam_passchange_conv(int num_msg,
 {
 	int replies = 0;
 	struct pam_response *reply = NULL;
-	fstring currentpw_prompt;
 	fstring newpw_prompt;
 	fstring repeatpw_prompt;
 	char *p = lp_passwd_chat();
 	struct smb_pam_userdata *udp = (struct smb_pam_userdata *)appdata_ptr;
 
 	*resp = NULL;
+
+	if (num_msg <= 0)
+		return PAM_CONV_ERR;
 
 	/*
 	 * Apparantly HPUX has a buggy PAM that doesn't support the
@@ -192,10 +197,8 @@ static int smb_pam_passchange_conv(int num_msg,
 		return PAM_CONV_ERR;
 	}
 
-	/* Get the prompts... */
+	/* Get the prompts. We're running as root so we only get 2 prompts. */
 
-	if (!next_token(&p, currentpw_prompt, NULL, sizeof(fstring)))
-		return PAM_CONV_ERR;
 	if (!next_token(&p, newpw_prompt, NULL, sizeof(fstring)))
 		return PAM_CONV_ERR;
 	if (!next_token(&p, repeatpw_prompt, NULL, sizeof(fstring)))
@@ -217,16 +220,14 @@ static int smb_pam_passchange_conv(int num_msg,
 		case PAM_PROMPT_ECHO_OFF:
 			reply[replies].resp_retcode = PAM_SUCCESS;
 			DEBUG(10,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_OFF: Replied: %s\n", msg[replies]->msg));
-			if (strncmp(currentpw_prompt, msg[replies]->msg, strlen(currentpw_prompt)) == 0) {
-				reply[replies].resp = COPY_STRING(udp->PAM_password);
-			} else if (strncmp(newpw_prompt, msg[replies]->msg, strlen(newpw_prompt)) == 0) {
+			if (strncmp(newpw_prompt, msg[replies]->msg, strlen(newpw_prompt)) == 0) {
 				reply[replies].resp = COPY_STRING(udp->PAM_newpassword);
 			} else if (strncmp(repeatpw_prompt, msg[replies]->msg, strlen(repeatpw_prompt)) == 0) {
 				reply[replies].resp = COPY_STRING(udp->PAM_newpassword);
 			} else {
 				DEBUG(3,("smb_pam_passchange_conv: Could not find reply for PAM prompt: %s\n",msg[replies]->msg));
-				DEBUG(5,("smb_pam_passchange_conv: Prompts available:\n CurrentPW: \"%s\"\n NewPW: \"%s\"\n \
-RepeatPW: \"%s\"\n",currentpw_prompt,newpw_prompt,repeatpw_prompt));
+				DEBUG(5,("smb_pam_passchange_conv: Prompts available:\n NewPW: \"%s\"\n \
+RepeatPW: \"%s\"\n",newpw_prompt,repeatpw_prompt));
 				free(reply);
 				reply = NULL;
 				return PAM_CONV_ERR;
