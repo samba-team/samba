@@ -725,7 +725,7 @@ static int call_trans2findfirst(connection_struct *conn,
   if(params == NULL)
     return(ERROR(ERRDOS,ERRnomem));
 
-  dptr_num = dptr_create(conn,directory, True ,SVAL(inbuf,smb_pid));
+  dptr_num = dptr_create(conn,directory, False, True ,SVAL(inbuf,smb_pid));
   if (dptr_num < 0)
     return(UNIXERROR(ERRDOS,ERRbadfile));
 
@@ -736,7 +736,7 @@ static int call_trans2findfirst(connection_struct *conn,
      needed as lanman2 assumes these are being saved between calls */
 
   if(!(wcard = strdup(mask))) {
-    dptr_close(dptr_num);
+    dptr_close(&dptr_num);
     return(ERROR(ERRDOS,ERRnomem));
   }
 
@@ -786,9 +786,8 @@ static int call_trans2findfirst(connection_struct *conn,
   /* Check if we can close the dirptr */
   if(close_after_first || (finished && close_if_end))
   {
-    dptr_close(dptr_num);
     DEBUG(5,("call_trans2findfirst - (2) closing dptr_num %d\n", dptr_num));
-    dptr_num = -1;
+    dptr_close(&dptr_num);
   }
 
   /* 
@@ -798,7 +797,7 @@ static int call_trans2findfirst(connection_struct *conn,
 
   if(numentries == 0)
   {
-    dptr_close(dptr_num);
+    dptr_close(&dptr_num);
     return(ERROR(ERRDOS,ERRbadfile));
   }
 
@@ -840,7 +839,7 @@ static int call_trans2findnext(connection_struct *conn,
   int max_data_bytes = SVAL(inbuf, smb_mdrcnt);
   char *params = *pparams;
   char *pdata = *ppdata;
-  int16 dptr_num = SVAL(params,0);
+  int dptr_num = SVAL(params,0);
   int maxentries = SVAL(params,2);
   uint16 info_level = SVAL(params,4);
   uint32 resume_key = IVAL(params,6);
@@ -1033,9 +1032,8 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
   /* Check if we can close the dirptr */
   if(close_after_request || (finished && close_if_end))
   {
-    dptr_close(dptr_num); /* This frees up the saved mask */
     DEBUG(5,("call_trans2findnext: closing dptr_num = %d\n", dptr_num));
-    dptr_num = -1;
+    dptr_close(&dptr_num); /* This frees up the saved mask */
   }
 
 
@@ -1989,11 +1987,11 @@ int reply_findclose(connection_struct *conn,
 		    char *inbuf,char *outbuf,int length,int bufsize)
 {
 	int outsize = 0;
-	int16 dptr_num=SVALS(inbuf,smb_vwv0);
+	int dptr_num=SVALS(inbuf,smb_vwv0);
 
 	DEBUG(3,("reply_findclose, dptr_num = %d\n", dptr_num));
 
-	dptr_close(dptr_num);
+	dptr_close(&dptr_num);
 
 	outsize = set_message(outbuf,0,0,True);
 

@@ -1113,70 +1113,70 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   
   /* dirtype &= ~aDIR; */
   
-  DEBUG(5,("path=%s status_len=%d\n",path,status_len));
+  DEBUG(5,("reply_search: path=%s status_len=%d\n",path,status_len));
 
   
   if (status_len == 0)
+  {
+    pstring dir2;
+
+    pstrcpy(directory,smb_buf(inbuf)+1);
+    pstrcpy(dir2,smb_buf(inbuf)+1);
+    unix_convert(directory,conn,0,&bad_path,NULL);
+    unix_format(dir2);
+
+    if (!check_name(directory,conn))
+      can_open = False;
+
+    p = strrchr(dir2,'/');
+    if (p == NULL) 
     {
-      pstring dir2;
-
-      pstrcpy(directory,smb_buf(inbuf)+1);
-      pstrcpy(dir2,smb_buf(inbuf)+1);
-      unix_convert(directory,conn,0,&bad_path,NULL);
-      unix_format(dir2);
-
-      if (!check_name(directory,conn))
-        can_open = False;
-
-      p = strrchr(dir2,'/');
-      if (p == NULL) 
-      {
-        pstrcpy(mask,dir2);
-        *dir2 = 0;
-      }
-      else
-      {
-        *p = 0;
-        pstrcpy(mask,p+1);
-      }
-
-      p = strrchr(directory,'/');
-      if (!p) 
-        *directory = 0;
-      else
-        *p = 0;
-
-      if (strlen(directory) == 0)
-        pstrcpy(directory,"./");
-      memset((char *)status,'\0',21);
-      CVAL(status,0) = dirtype;
+      pstrcpy(mask,dir2);
+      *dir2 = 0;
     }
+    else
+    {
+      *p = 0;
+      pstrcpy(mask,p+1);
+    }
+
+    p = strrchr(directory,'/');
+    if (!p) 
+      *directory = 0;
+    else
+      *p = 0;
+
+    if (strlen(directory) == 0)
+      pstrcpy(directory,"./");
+    memset((char *)status,'\0',21);
+    CVAL(status,0) = dirtype;
+  }
   else
-    {
-      memcpy(status,smb_buf(inbuf) + 1 + strlen(path) + 4,21);
-      memcpy(mask,status+1,11);
-      mask[11] = 0;
-      dirtype = CVAL(status,0) & 0x1F;
-      conn->dirptr = dptr_fetch(status+12,&dptr_num);      
-      if (!conn->dirptr)
-	goto SearchEmpty;
-      string_set(&conn->dirpath,dptr_path(dptr_num));
-      if (!case_sensitive)
-	strnorm(mask);
-    }
+  {
+    memcpy(status,smb_buf(inbuf) + 1 + strlen(path) + 4,21);
+    memcpy(mask,status+1,11);
+    mask[11] = 0;
+    dirtype = CVAL(status,0) & 0x1F;
+    conn->dirptr = dptr_fetch(status+12,&dptr_num);      
+    if (!conn->dirptr)
+      goto SearchEmpty;
+    string_set(&conn->dirpath,dptr_path(dptr_num));
+    if (!case_sensitive)
+      strnorm(mask);
+  }
 
   /* turn strings of spaces into a . */  
   {
     trim_string(mask,NULL," ");
     if ((p = strrchr(mask,' ')))
-      {
-	fstring ext;
-	fstrcpy(ext,p+1);
-	*p = 0;
-	trim_string(mask,NULL," ");
-	pstrcat(mask,".");
-	pstrcat(mask,ext);
-      }
+    {
+      fstring ext;
+      fstrcpy(ext,p+1);
+      *p = 0;
+      trim_string(mask,NULL," ");
+      pstrcat(mask,".");
+      pstrcat(mask,ext);
+    }
   }
 
   /* Convert the formatted mask. (This code lives in trans2.c) */
@@ -1204,110 +1204,104 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   }
 
   if (!strchr(mask,'.') && strlen(mask)>8)
-    {
-      fstring tmp;
-      fstrcpy(tmp,&mask[8]);
-      mask[8] = '.';
-      mask[9] = 0;
-      pstrcat(mask,tmp);
-    }
+  {
+    fstring tmp;
+    fstrcpy(tmp,&mask[8]);
+    mask[8] = '.';
+    mask[9] = 0;
+    pstrcat(mask,tmp);
+  }
 
   DEBUG(5,("mask=%s directory=%s\n",mask,directory));
   
   if (can_open)
-    {
-      p = smb_buf(outbuf) + 3;
+  {
+    p = smb_buf(outbuf) + 3;
       
-      ok = True;
-      
-      if (status_len == 0)
-	{
-	  dptr_num = dptr_create(conn,directory,expect_close,SVAL(inbuf,smb_pid));
-	  if (dptr_num < 0)
-        {
-          if(dptr_num == -2)
-          {
-            if((errno == ENOENT) && bad_path)
-            {
-              unix_ERR_class = ERRDOS;
-              unix_ERR_code = ERRbadpath;
-            }
-            return (UNIXERROR(ERRDOS,ERRnofids));
-          }
-          return(ERROR(ERRDOS,ERRnofids));
-        }
-	}
-
-      DEBUG(4,("dptr_num is %d\n",dptr_num));
-
-      if (ok)
-	{
-	  if ((dirtype&0x1F) == aVOLID)
-	    {	  
-	      memcpy(p,status,21);
-	      make_dir_struct(p,"???????????",volume_label(SNUM(conn)),0,aVOLID,0);
-	      dptr_fill(p+12,dptr_num);
-	      if (dptr_zero(p+12) && (status_len==0))
-		numentries = 1;
-	      else
-		numentries = 0;
-	      p += DIR_STRUCT_SIZE;
-	    }
-	  else 
-	    {
-	      DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",
-		       conn->dirpath,lp_dontdescend(SNUM(conn))));
-	      if (in_list(conn->dirpath,
-			  lp_dontdescend(SNUM(conn)),True))
-		check_descend = True;
-
-	      for (i=numentries;(i<maxentries) && !finished;i++)
-		{
-		  finished = 
-		    !get_dir_entry(conn,mask,dirtype,fname,&size,&mode,&date,check_descend);
-		  if (!finished)
-		    {
-		      memcpy(p,status,21);
-		      make_dir_struct(p,mask,fname,size,mode,date);
-		      dptr_fill(p+12,dptr_num);
-		      numentries++;
-		    }
-		  p += DIR_STRUCT_SIZE;
-		}
-	    }
-	}
-    }
-
-
- SearchEmpty:
-
-  if (numentries == 0 || !ok)
+    ok = True;
+     
+    if (status_len == 0)
     {
-      CVAL(outbuf,smb_rcls) = ERRDOS;
-      SSVAL(outbuf,smb_err,ERRnofiles);
-      if(dptr_num != -1) 
+      dptr_num = dptr_create(conn,directory,True,expect_close,SVAL(inbuf,smb_pid));
+      if (dptr_num < 0)
       {
-        dptr_close(dptr_num);
-        dptr_num = -1;
+        if(dptr_num == -2)
+        {
+          if((errno == ENOENT) && bad_path)
+          {
+            unix_ERR_class = ERRDOS;
+            unix_ERR_code = ERRbadpath;
+          }
+          return (UNIXERROR(ERRDOS,ERRnofids));
+        }
+        return(ERROR(ERRDOS,ERRnofids));
       }
     }
+
+    DEBUG(4,("dptr_num is %d\n",dptr_num));
+
+    if (ok)
+    {
+      if ((dirtype&0x1F) == aVOLID)
+      {	  
+        memcpy(p,status,21);
+        make_dir_struct(p,"???????????",volume_label(SNUM(conn)),0,aVOLID,0);
+        dptr_fill(p+12,dptr_num);
+        if (dptr_zero(p+12) && (status_len==0))
+          numentries = 1;
+        else
+          numentries = 0;
+        p += DIR_STRUCT_SIZE;
+      }
+      else 
+      {
+        DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",
+              conn->dirpath,lp_dontdescend(SNUM(conn))));
+        if (in_list(conn->dirpath, lp_dontdescend(SNUM(conn)),True))
+          check_descend = True;
+
+        for (i=numentries;(i<maxentries) && !finished;i++)
+        {
+          finished = 
+            !get_dir_entry(conn,mask,dirtype,fname,&size,&mode,&date,check_descend);
+          if (!finished)
+          {
+            memcpy(p,status,21);
+            make_dir_struct(p,mask,fname,size,mode,date);
+            dptr_fill(p+12,dptr_num);
+            numentries++;
+          }
+          p += DIR_STRUCT_SIZE;
+        }
+      }
+	} /* if (ok ) */
+  }
+
+
+  SearchEmpty:
+
+  if (numentries == 0 || !ok)
+  {
+    CVAL(outbuf,smb_rcls) = ERRDOS;
+    SSVAL(outbuf,smb_err,ERRnofiles);
+    dptr_close(&dptr_num);
+  }
 
   /* If we were called as SMBffirst with smb_search_id == NULL
      and no entries were found then return error and close dirptr 
      (X/Open spec) */
 
   if(ok && expect_close && numentries == 0 && status_len == 0)
-    {
-      CVAL(outbuf,smb_rcls) = ERRDOS;
-      SSVAL(outbuf,smb_err,ERRnofiles);
-      /* Also close the dptr - we know it's gone */
-      dptr_close(dptr_num);
-      dptr_num = -1;
-    }
+  {
+    CVAL(outbuf,smb_rcls) = ERRDOS;
+    SSVAL(outbuf,smb_err,ERRnofiles);
+    /* Also close the dptr - we know it's gone */
+    dptr_close(&dptr_num);
+  }
 
   /* If we were called as SMBfunique, then we can close the dirptr now ! */
   if(dptr_num >= 0 && CVAL(inbuf,smb_com) == SMBfunique)
-    dptr_close(dptr_num);
+    dptr_close(&dptr_num);
 
   SSVAL(outbuf,smb_vwv0,numentries);
   SSVAL(outbuf,smb_vwv1,3 + numentries * DIR_STRUCT_SIZE);
@@ -1326,8 +1320,8 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
     slprintf(directory, sizeof(directory)-1, "(%s)",dptr_path(dptr_num));
 
   DEBUG( 4, ( "%s mask=%s path=%s dtype=%d nument=%d of %d\n",
-	smb_fn_name(CVAL(inbuf,smb_com)), 
-	mask, directory, dirtype, numentries, maxentries ) );
+        smb_fn_name(CVAL(inbuf,smb_com)), 
+        mask, directory, dirtype, numentries, maxentries ) );
 
   return(outsize);
 }
@@ -1342,7 +1336,7 @@ int reply_fclose(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   int status_len;
   char *path;
   char status[21];
-  int dptr_num= -1;
+  int dptr_num= -2;
 
   outsize = set_message(outbuf,1,0,True);
   path = smb_buf(inbuf) + 1;
@@ -1356,7 +1350,7 @@ int reply_fclose(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
   if(dptr_fetch(status+12,&dptr_num)) {
     /*  Close the dptr - we know it's gone */
-    dptr_close(dptr_num);
+    dptr_close(&dptr_num);
   }
 
   SSVAL(outbuf,smb_vwv0,0);

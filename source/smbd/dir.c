@@ -33,7 +33,6 @@ typedef struct _dptr_struct {
 	int pid;
 	connection_struct *conn;
 	void *ptr;
-	BOOL finished;
 	BOOL expect_close;
 	char *wcard; /* Field only used for trans2_ searches */
 	uint16 attr; /* Field only used for trans2_ searches */
@@ -44,6 +43,8 @@ static struct bitmap *dptr_bmap;
 static dptr_struct *dirptrs;
 
 static int dptrs_open = 0;
+
+#define INVALID_DPTR_KEY (-3)
 
 /****************************************************************************
  Initialise the dir bitmap.
@@ -93,12 +94,12 @@ static void dptr_idleoldest(void)
     ;
 
   if(!dptr) {
-    DEBUG(0,("No dptrs available to idle??\n"));
+    DEBUG(0,("No dptrs available to idle ?\n"));
     return;
   }
 
   /*
-   * Now walk back until we find a non-idle ptr.
+   * Idle the oldest pointer.
    */
 
   for(; dptr; dptr = dptr->prev) {
@@ -227,8 +228,12 @@ static void dptr_close_internal(dptr_struct *dptr)
 
   DLIST_REMOVE(dirptrs, dptr);
 
-  /* Free the dnum in the bitmap. */
-  bitmap_clear(dptr_bmap, dptr->dnum);
+  /* 
+   * Free the dnum in the bitmap. Remember the dnum value is always 
+   * biased by one with respect to the bitmap.
+   */
+
+  bitmap_clear(dptr_bmap, dptr->dnum - 1);
 
   if (dptr->ptr) {
     CloseDir(dptr->ptr);
@@ -246,21 +251,25 @@ static void dptr_close_internal(dptr_struct *dptr)
  Close a dptr given a key.
 ****************************************************************************/
 
-void dptr_close(int key)
+void dptr_close(int *key)
 {
   dptr_struct *dptr;
 
+  if(*key == INVALID_DPTR_KEY)
+    return;
+
   /* OS/2 seems to use -1 to indicate "close all directories" */
-  if (key == -1) {
+  if (*key == -1) {
     dptr_struct *next;
     for(dptr = dirptrs; dptr; dptr = next) {
       next = dptr->next;
       dptr_close_internal(dptr);
     }
+    *key = INVALID_DPTR_KEY;
     return;
   }
 
-  dptr = dptr_get(key);
+  dptr = dptr_get(*key);
 
   if (!dptr) {
     DEBUG(0,("Invalid key %d given to dptr_close\n",key));
@@ -268,6 +277,8 @@ void dptr_close(int key)
   }
 
   dptr_close_internal(dptr);
+
+  *key = INVALID_DPTR_KEY;
 }
 
 /****************************************************************************
@@ -335,15 +346,52 @@ static BOOL start_dir(connection_struct *conn,char *directory)
   return(False);
 }
 
-
 /****************************************************************************
- Create a new dir ptr.
+ Try and close the oldest handle not marked for
+ expect close in the hope that the client has
+ finished with that one.
 ****************************************************************************/
 
-int dptr_create(connection_struct *conn,char *path, BOOL expect_close,int pid)
+static void dptr_old_close_oldest(void)
 {
   dptr_struct *dptr;
-  int dnum = -1;
+
+  /*
+   * Go to the end of the list.
+   */
+  for(dptr = dirptrs; dptr && dptr->next; dptr = dptr->next)
+    ;
+
+  if(!dptr) {
+    DEBUG(0,("No old dptrs available to close oldest ?\n"));
+    return;
+  }
+
+  /*
+   * Close the oldest oldhandle dnum (ie. 1 < dnum < 256) that
+   * does not have expect_close set.
+   */
+
+  for(; dptr; dptr = dptr->prev) {
+    if (dptr->dnum < 256 && !dptr->expect_close) {
+      dptr_close_internal(dptr);
+      return;
+    }
+  }
+}
+
+/****************************************************************************
+ Create a new dir ptr. If the flag old_handle is true then we must allocate
+ from the bitmap range 0 - 255 as old SMBsearch directory handles are only
+ one byte long. If old_handle is false we allocate from the range
+ 256 - MAX_DIRECTORY_HANDLES. We bias the number we return by 1 to ensure
+ a directory handle is never zero. All the above is folklore taught to
+ me at Andrew's knee.... :-) :-). JRA.
+****************************************************************************/
+
+int dptr_create(connection_struct *conn,char *path, BOOL old_handle, BOOL expect_close,int pid)
+{
+  dptr_struct *dptr;
 
   if (!start_dir(conn,path))
     return(-2); /* Code to say use a unix error return code. */
@@ -359,18 +407,56 @@ int dptr_create(connection_struct *conn,char *path, BOOL expect_close,int pid)
 
   ZERO_STRUCTP(dptr);
 
-  dptr->dnum= bitmap_find(dptr_bmap, 0);
-  if(dptr->dnum == -1) {
-    DEBUG(0,("dptr_create: Error dirptrs in use??\n"));
-    free((char *)dptr);
-    return -1;
+  if(old_handle) {
+
+    /*
+     * This is an old-style SMBsearch request. Ensure the
+     * value we return will fit in the range 1-255.
+     */
+
+    dptr->dnum = bitmap_find(dptr_bmap, 0);
+
+    if(dptr->dnum == -1 || dptr->dnum > 254) {
+
+      /*
+       * Try and close the oldest handle not marked for
+       * expect close in the hope that the client has
+       * finished with that one.
+       */
+
+      dptr_old_close_oldest();
+
+      /* Now try again... */
+      dptr->dnum = bitmap_find(dptr_bmap, 0);
+
+      if(dptr->dnum == -1 || dptr->dnum > 254) {
+        DEBUG(0,("dptr_create: Error - all old style dirptrs in use ?\n"));
+        free((char *)dptr);
+        return -1;
+      }
+    }
+  } else {
+
+    /*
+     * This is a new-style trans2 request. Allocate from
+     * a range that will return 256 - MAX_DIRECTORY_HANDLES.
+     */
+
+    dptr->dnum = bitmap_find(dptr_bmap, 255);
+
+    if(dptr->dnum == -1) {
+      DEBUG(0,("dptr_create: Error - all dirptrs in use ?\n"));
+      free((char *)dptr);
+      return -1;
+    }
   }
 
   bitmap_set(dptr_bmap, dptr->dnum);
 
+  dptr->dnum += 1; /* Always bias the dnum by one - no zero dnums allowed. */
+
   dptr->ptr = conn->dirptr;
   string_set(&dptr->path,path);
-  dptr->finished = False;
   dptr->conn = conn;
   dptr->pid = pid;
   dptr->expect_close = expect_close;
@@ -410,7 +496,7 @@ BOOL dptr_fill(char *buf1,unsigned int key)
 
 
 /****************************************************************************
- Return True is the offset is at zero.
+ Return True if the offset is at zero.
 ****************************************************************************/
 
 BOOL dptr_zero(char *buf)
