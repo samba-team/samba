@@ -123,7 +123,7 @@ else
   CFLAGS="${save_CFLAGS}"
 fi
 
-/* test for AIX missing in6addr_loopback */
+## test for AIX missing in6addr_loopback
 if test "$ac_cv_lib_ipv6" = yes; then
 	AC_CACHE_CHECK([for in6addr_loopback],[ac_cv_var_in6addr_loopback],[
 	AC_TRY_LINK([
