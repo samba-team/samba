@@ -76,7 +76,7 @@ BOOL oplock_message_waiting(fd_set *fds)
 BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeout)
 {
 	struct sockaddr_in from;
-	int fromlen = sizeof(from);
+	socklen_t fromlen = sizeof(from);
 	int32 msg_len = 0;
 
 	smb_read_error = 0;
