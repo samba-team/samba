@@ -2138,8 +2138,10 @@ tn(int argc, char **argv)
 	    hostname = _hostname;
 	} else {
 #ifdef HAVE_GETHOSTBYNAME2
+#ifdef HAVE_IPV6
 	    host = gethostbyname2(hostp, AF_INET6);
 	    if(host == NULL)
+#endif
 		host = gethostbyname2(hostp, AF_INET);
 #else
 	    host = roken_gethostbyname(hostp);
