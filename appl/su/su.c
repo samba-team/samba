@@ -224,7 +224,7 @@ main(int argc, char **argv)
     int optind = 0;
     char *su_user;
     struct passwd *su_info;
-    char *login_user;
+    char *login_user = NULL;
     struct passwd *login_info;
 
     struct passwd *pwd;
@@ -258,7 +258,9 @@ main(int argc, char **argv)
     }
     su_info = make_info(pwd);
     
+#if defined(HAVE_GETLOGIN) && !defined(POSIX_GETLOGIN)
     login_user = getlogin();
+#endif
     if(login_user == NULL || (pwd = getpwnam(login_user)) == NULL)
 	pwd = getpwuid(getuid());
     if(pwd == NULL)
