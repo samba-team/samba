@@ -35,6 +35,17 @@
 
 RCSID("$Id$");
 
+static krb5_error_code
+copy_hostname(krb5_context context,
+	      const char *orig_hostname,
+	      char **new_hostname)
+{
+    *new_hostname = strdup (orig_hostname);
+    if (*new_hostname == NULL)
+	return ENOMEM;
+    return 0;
+}
+
 krb5_error_code
 krb5_expand_hostname (krb5_context context,
 		      const char *orig_hostname,
@@ -47,11 +58,11 @@ krb5_expand_hostname (krb5_context context,
     hints.ai_flags = AI_CANONNAME;
 
     error = getaddrinfo (orig_hostname, NULL, &hints, &ai);
-    if (error) {
-	*new_hostname = strdup (orig_hostname);
-	if (*new_hostname == NULL)
-	    return ENOMEM;
-	return 0;
+    if (error)
+	return copy_hostname (context, orig_hostname, new_hostname);
+    if (ai->ai_canonname == NULL) {
+	freeaddrinfo (ai);
+	return copy_hostname (context, orig_hostname, new_hostname);
     }
     *new_hostname = strdup(ai->ai_canonname);
     freeaddrinfo (ai);
