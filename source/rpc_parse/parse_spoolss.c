@@ -2480,7 +2480,7 @@ BOOL smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *info,
 {
 	prs_struct *ps=&buffer->prs;
 	uint32 dm_offset, sd_offset, current_offset;
-	uint32 dummy_value = 0;
+	uint32 dummy_value = 0, has_secdesc = 0;
 	
 	prs_debug(ps, depth, desc, "smb_io_printer_info_2");
 	depth++;	
@@ -2518,7 +2518,7 @@ BOOL smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *info,
 
 	/* save current offset for the sec_desc */
 	sd_offset = prs_offset(ps);
-	if (!prs_uint32("sec_desc", ps, depth, &dummy_value))
+	if (!prs_uint32("sec_desc", ps, depth, &has_secdesc))
 		return False;
 
 	
@@ -2532,10 +2532,12 @@ BOOL smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *info,
 		return False;
 	
 	/* parse the sec_desc */
-	if (!prs_set_offset(ps, sd_offset))
-		return False;
-	if (!smb_io_relsecdesc("secdesc", buffer, depth, &info->secdesc))
-		return False;
+	if (has_secdesc) {
+		if (!prs_set_offset(ps, sd_offset))
+			return False;
+		if (!smb_io_relsecdesc("secdesc", buffer, depth, &info->secdesc))
+			return False;
+	}
 		
 	/* pick up where we left off */
 	if (!prs_set_offset(ps, current_offset))
