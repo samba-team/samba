@@ -117,49 +117,8 @@ static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 	return NT_STATUS_OK;
 }
 
-/* Set the HWM if necessary */
-/* This is not transaction safe, but the tdb should be locked
-   in db_set_mapping anyway. */
-static NTSTATUS db_adjust_hwm(unid_t id, int id_type)
-{
-	int32 hwm;
-
-	switch (id_type & ID_TYPEMASK) {
-	case ID_USERID:
-		hwm = tdb_fetch_int32(idmap_tdb, HWM_USER);
-		if (hwm == -1)
-			return NT_STATUS_INTERNAL_DB_ERROR;
-
-		if ((id.uid < hwm) || (id.uid > idmap_state.uid_high))
-			return NT_STATUS_OK;
-
-		if (tdb_store_int32(idmap_tdb, HWM_USER, id.uid+1) != 0)
-			return NT_STATUS_UNSUCCESSFUL;
-
-		break;
-
-	case ID_GROUPID:
-		hwm = tdb_fetch_int32(idmap_tdb, HWM_GROUP);
-		if (hwm == -1)
-			return NT_STATUS_INTERNAL_DB_ERROR;
-
-		if ((id.gid < hwm) || (id.gid > idmap_state.gid_high))
-			return NT_STATUS_OK;
-
-		if (tdb_store_int32(idmap_tdb, HWM_GROUP, id.gid+1) != 0)
-			return NT_STATUS_UNSUCCESSFUL;
-
-		break;
-
-	default:
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	return NT_STATUS_OK;
-}
-
 /* Get a sid from an id */
-static NTSTATUS db_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
+static NTSTATUS internal_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 {
 	TDB_DATA key, data;
 	fstring keystr;
@@ -193,14 +152,13 @@ static NTSTATUS db_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 	return ret;
 }
 
-/* Get an id from a sid */
-static NTSTATUS db_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
-{
-	TDB_DATA data, key;
-	fstring keystr;
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
-	if (!sid || !id || !id_type) return NT_STATUS_INVALID_PARAMETER;
+static NTSTATUS internal_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid) 
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	fstring keystr;
+	TDB_DATA key, data;
+	int type = *id_type & ID_TYPEMASK;
 
 	/* Check if sid is present in database */
 	sid_to_string(keystr, sid);
@@ -209,69 +167,135 @@ static NTSTATUS db_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 	key.dsize = strlen(keystr) + 1;
 
 	data = tdb_fetch(idmap_tdb, key);
+	if (!data.dptr)
+		return ret;
 
-	if (data.dptr) {
-		int type = *id_type & ID_TYPEMASK;
+	if (type == ID_EMPTY || type == ID_USERID) {
 		fstring scanstr;
+		/* Parse and return existing uid */
+		fstrcpy(scanstr, "UID %d");
+		
+		if (sscanf(data.dptr, scanstr, &((*id).uid)) == 1) {
+			/* uid ok? */
+			if (type == ID_EMPTY) {
+				*id_type = ID_USERID;
+			}
+			ret = NT_STATUS_OK;
+		}
+	}
+	
+	if (!NT_STATUS_IS_OK(ret) 
+	    && (type == ID_EMPTY || type == ID_GROUPID)) {
+		fstring scanstr;
+		/* Parse and return existing gid */
+		fstrcpy(scanstr, "GID %d");
+		
+		if (sscanf(data.dptr, scanstr, &((*id).gid)) == 1) {
+			/* gid ok? */
+			if (type == ID_EMPTY) {
+				*id_type = ID_GROUPID;
+			}
+			ret = NT_STATUS_OK;
+		}
+	}
+	
+	SAFE_FREE(data.dptr);
 
-		if (type == ID_EMPTY || type == ID_USERID) {
-			/* Parse and return existing uid */
-			fstrcpy(scanstr, "UID %d");
+	return ret;
+}
 
-			if (sscanf(data.dptr, scanstr, &((*id).uid)) == 1) {
-				/* uid ok? */
-				if (type == ID_EMPTY) {
-					*id_type = ID_USERID;
-				}
-				ret = NT_STATUS_OK;
-				goto idok;
+/* Get a sid from an id */
+static NTSTATUS db_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type_in)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	int id_type = id_type_in & ID_TYPEMASK;
+	unid_t id_tmp = id;
+	int id_type_tmp = id_type;
+
+	ret = internal_get_sid_from_id(sid, id, id_type);
+	if (!NT_STATUS_IS_OK(ret)) {
+		return ret;
+	}
+	
+	ret = internal_get_id_from_sid(&id_tmp, &id_type_tmp, sid);
+	if (!NT_STATUS_IS_OK(ret)) {
+		return ret;
+	}
+	if (id_type_tmp != id_type) {
+		return NT_STATUS_UNSUCCESSFUL;
+	} else if (id_type == ID_USERID) { 
+		if (id_tmp.uid != id.uid) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	} else if (id_type == ID_GROUPID) {
+		if (id_tmp.gid != id.gid) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	} else {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	return ret;
+}
+/* Get an id from a sid */
+static NTSTATUS db_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
+	if (!sid || !id || !id_type) return NT_STATUS_INVALID_PARAMETER;
+
+	ret = internal_get_id_from_sid(id, id_type, sid);
+	if (NT_STATUS_IS_OK(ret)) {
+		DOM_SID sid_tmp;
+		ret = internal_get_sid_from_id(&sid_tmp, *id, *id_type);
+		if (NT_STATUS_IS_OK(ret)) {
+			if (!sid_equal(&sid_tmp, sid)) {
+				return ret = NT_STATUS_UNSUCCESSFUL;
 			}
 		}
+	}
 
-		if (type == ID_EMPTY || type == ID_GROUPID) {
-			/* Parse and return existing gid */
-			fstrcpy(scanstr, "GID %d");
-
-			if (sscanf(data.dptr, scanstr, &((*id).gid)) == 1) {
-				/* gid ok? */
-				if (type == ID_EMPTY) {
-					*id_type = ID_GROUPID;
-				}
-				ret = NT_STATUS_OK;
-			}
-		}
-idok:
-		SAFE_FREE(data.dptr);
-
-	} else if (!(*id_type & ID_NOMAP) &&
+	if (!(*id_type & ID_NOMAP) && (!NT_STATUS_IS_OK(ret)) &&
 		   (((*id_type & ID_TYPEMASK) == ID_USERID)
 		    || (*id_type & ID_TYPEMASK) == ID_GROUPID)) {
+		TDB_DATA sid_data;
+		TDB_DATA ugid_data;
+		fstring sid_string;
+		
+		sid_to_string(sid_string, sid);
+		
+		sid_data.dptr = sid_string;
+		sid_data.dsize = strlen(sid_string)+1;
 
-		/* Allocate a new id for this sid */
-		ret = db_allocate_id(id, *id_type);
-		if (NT_STATUS_IS_OK(ret)) {
-			fstring keystr2;
-
+		do {
+			fstring ugid_str;
+			/* Allocate a new id for this sid */
+			ret = db_allocate_id(id, *id_type);
+			if (!NT_STATUS_IS_OK(ret))
+				break;
+			
 			/* Store new id */
 			if (*id_type & ID_USERID) {
-				slprintf(keystr2, sizeof(keystr2), "UID %d", (*id).uid);
+				slprintf(ugid_str, sizeof(ugid_str), "UID %d", (*id).uid);
 			} else {
-				slprintf(keystr2, sizeof(keystr2), "GID %d", (*id).gid);
+				slprintf(ugid_str, sizeof(ugid_str), "GID %d", (*id).gid);
 			}
+			
+			ugid_data.dptr = ugid_str;
+			ugid_data.dsize = strlen(ugid_str) + 1;
 
-			data.dptr = keystr2;
-			data.dsize = strlen(keystr2) + 1;
+			/* Store the UID side */
+			if (tdb_store(idmap_tdb, ugid_data, sid_data, TDB_INSERT) != -1) {
+				ret = NT_STATUS_OK;
+				break;
+			}
+			ret = NT_STATUS_UNSUCCESSFUL;
+		} while (idmap_tdb->ecode == TDB_ERR_EXISTS);
 
-			if (tdb_store(idmap_tdb, key, data, TDB_REPLACE) == -1) {
+		if (NT_STATUS_IS_OK(ret)) {
+			if (tdb_store(idmap_tdb, sid_data, ugid_data, TDB_REPLACE) == -1) {
 				/* TODO: print tdb error !! */
 				return NT_STATUS_UNSUCCESSFUL;
 			}
-			if (tdb_store(idmap_tdb, data, key, TDB_REPLACE) == -1) {
-				/* TODO: print tdb error !! */
-				return NT_STATUS_UNSUCCESSFUL;
-			}
-
-			ret = NT_STATUS_OK;
 		}
 	}
 	
@@ -326,7 +350,7 @@ static NTSTATUS db_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 		DEBUG(0, ("idb_set_mapping: tdb_store 2 error: %s\n", tdb_errorstr(idmap_tdb)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	return db_adjust_hwm(id, id_type);
+	return NT_STATUS_OK;
 }
 
 /*****************************************************************************
