@@ -74,8 +74,8 @@ send_and_recv (int fd,
 		 return 0;
 
 	     recv->data = realloc(recv->data, recv->length + nbytes);
-	     ret = recvfrom (fd, recv->data + recv->length, nbytes, 
-			     0, NULL, &len);
+	     ret = recvfrom (fd, (char *)recv->data + recv->length,
+			     nbytes, 0, NULL, &len);
 	     if (ret < 0) {
 		 free (recv->data);
 		 return -1;
