@@ -1518,28 +1518,38 @@ static char *lp_string(const char *s, BOOL sub_dos)
 
 
 /*
-   In this section all the functions that are used to access the 
-   parameters from the rest of the program are defined 
+   In this section all the functions that are used to access the
+   parameters from the rest of the program are defined
 */
 
 #define FN_GLOBAL_STRING(fn_name,ptr) \
- char *fn_name(void) {return lp_string(*(char **)(ptr) ? *(char **)(ptr) : "",False);}
+ char *fn_name(void) {return lp_string(*(ptr) ? *(ptr) : "",False);}
+
 #define FN_GLOBAL_STRING_UNIX(fn_name,ptr) \
- char *fn_name(void) {return lp_string((*(char **)((ptr))[UNIX_STRING_OFFSET]) ? *(char **)((ptr)[UNIX_STRING_OFFSET]) : "", False);}
+ char *fn_name(void) {return lp_string((*(ptr))[UNIX_STRING_OFFSET] ? (* (ptr))[UNIX_STRING_OFFSET] : "", False);}
+
+/* ptr is a pointer to an array of 2 pointers to strings */
 #define FN_GLOBAL_STRING_DOS(fn_name,ptr) \
- char *fn_name(void) {return lp_string((*(char **)((ptr))[DOS_STRING_OFFSET]) ? *(char **)((ptr)[DOS_STRING_OFFSET]) : "", True);}
+ char *fn_name(void) {return lp_string((*(ptr))[DOS_STRING_OFFSET] ? (* (ptr))[DOS_STRING_OFFSET] : "", True);}
+
 #define FN_GLOBAL_CONST_STRING(fn_name,ptr) \
-const char *fn_name(void) {return(const char *)(*(char **)(ptr) ? *(char **)(ptr) : "");}
+const char *fn_name(void) {return (*(ptr) ? *(ptr) : "");}
+
 #define FN_GLOBAL_CONST_STRING_UNIX(fn_name,ptr) \
-const char *fn_name(void) {return(const char *)(*(char **)((ptr)[UNIX_STRING_OFFSET]) ? *(char **)((ptr)[UNIX_STRING_OFFSET]) : "");}
+const char *fn_name(void) {return (*(ptr))[UNIX_STRING_OFFSET] ? (*(ptr))[UNIX_STRING_OFFSET] : "";}
+
 #define FN_GLOBAL_CONST_STRING_DOS(fn_name,ptr) \
-const char *fn_name(void) {return(const char *)(*(char **)((ptr)[DOS_STRING_OFFSET]) ? *(char **)((ptr)[DOS_STRING_OFFSET]) : "");}
+const char *fn_name(void) {return (*(ptr))[DOS_STRING_OFFSET] ? (*(ptr))[DOS_STRING_OFFSET] : "";}
+
 #define FN_GLOBAL_LIST(fn_name,ptr) \
  char **fn_name(void) {return(*(char ***)(ptr));}
+
 #define FN_GLOBAL_BOOL(fn_name,ptr) \
  BOOL fn_name(void) {return(*(BOOL *)(ptr));}
+
 #define FN_GLOBAL_CHAR(fn_name,ptr) \
  char fn_name(void) {return(*(char *)(ptr));}
+
 #define FN_GLOBAL_INTEGER(fn_name,ptr) \
  int fn_name(void) {return(*(int *)(ptr));}
 
