@@ -1554,7 +1554,9 @@ typedef struct user_struct
 #include "rpcclient.h"
 
 /*
- * Size of new password account encoding string. DO NOT CHANGE.
+ * Size of new password account encoding string.  This is enough space to
+ * hold 11 ACB characters, plus the surrounding [] and a terminating null.
+ * Do not change unless you are adding new ACB bits!
  */
 
 #define NEW_PW_FORMAT_SPACE_PADDED_LEN 14
