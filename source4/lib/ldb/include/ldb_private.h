@@ -55,7 +55,6 @@ struct ldb_module {
 */
 struct ldb_module_ops {
 	const char *name;
-	int (*close)(struct ldb_module *);
 	int (*search)(struct ldb_module *, const char *, enum ldb_scope,
 		      const char *, const char * const [], struct ldb_message ***);
 	int (*search_free)(struct ldb_module *, struct ldb_message **);
@@ -68,9 +67,6 @@ struct ldb_module_ops {
 	const char * (*errstring)(struct ldb_module *);
 };
 
-/* the modules init function */
-typedef struct ldb_module *(*ldb_module_init_function)(void);
-
 /*
   every ldb connection is started by establishing a ldb_context
 */
@@ -82,10 +78,12 @@ struct ldb_context {
 	struct ldb_debug_ops debug_ops;
 };
 
+/* the modules init function */
+typedef struct ldb_module *(*ldb_module_init_function)(struct ldb_context *ldb, const char *options[]);
+
 /* The following definitions come from lib/ldb/common/ldb_modules.c  */
 
 int ldb_load_modules(struct ldb_context *ldb, const char *options[]);
-int ldb_next_close(struct ldb_module *module);
 int ldb_next_search(struct ldb_module *module, 
 	       const char *base,
 	       enum ldb_scope scope,

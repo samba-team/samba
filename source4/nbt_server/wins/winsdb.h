@@ -40,7 +40,7 @@ struct winsdb_record {
 
 struct wins_server {
 	/* wins server database handle */
-	struct ldb_wrap *wins_db;
+	struct ldb_context *wins_db;
 
 	uint32_t min_ttl;
 	uint32_t max_ttl;

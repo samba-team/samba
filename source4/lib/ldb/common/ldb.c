@@ -69,22 +69,13 @@ struct ldb_context *ldb_connect(const char *url, unsigned int flags,
 	}
 
 	if (ldb_load_modules(ldb_ctx, options) != 0) {
-		ldb_close(ldb_ctx);
+		talloc_free(ldb_ctx);
 		errno = EINVAL;
 		return NULL;
 	}
 
 	return ldb_ctx;
 }
-
-/*
-  close the connection to the database
-*/
-int ldb_close(struct ldb_context *ldb)
-{
-	return ldb->modules->ops->close(ldb->modules);
-}
-
 
 /*
   search the database given a LDAP-like search expression

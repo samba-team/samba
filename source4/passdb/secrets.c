@@ -177,10 +177,10 @@ void secrets_named_mutex_release(const char *name, size_t *p_ref_count)
 /*
   connect to the schannel ldb
 */
-struct ldb_wrap *secrets_db_connect(TALLOC_CTX *mem_ctx)
+struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx)
 {
 	char *path;
-	struct ldb_wrap *ldb;
+	struct ldb_context *ldb;
 
 	path = private_path(mem_ctx, "secrets.ldb");
 	if (!path) {

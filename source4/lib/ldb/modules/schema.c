@@ -297,12 +297,6 @@ static int get_attr_list_recursive(struct ldb_module *module, struct schema_stru
 	return 0;
 }
 
-/* close */
-static int schema_close(struct ldb_module *module)
-{
-	return ldb_next_close(module);
-}
-
 /* search */
 static int schema_search(struct ldb_module *module, const char *base,
 		       enum ldb_scope scope, const char *expression,
@@ -367,18 +361,6 @@ static int schema_add_record(struct ldb_module *module, const struct ldb_message
 				  entry_structs->required_attrs.attr[i].name);
 
 			data->error_string = "Objectclass violation, a required attribute is missing";
-			talloc_free(entry_structs);
-			return -1;
-		}
-
-		/* check we are not trying to delete a required attribute */
-		/* TODO: consider multivalued attrs */
-		if ((attr->flags & SCHEMA_FLAG_MOD_DELETE) != 0) {
-			ldb_debug(module->ldb, LDB_DEBUG_ERROR,
-				  "Trying to delete the required attribute %s.\n",
-				  attr->name);
-
-			data->error_string = "Objectclass violation, a required attribute cannot be removed";
 			talloc_free(entry_structs);
 			return -1;
 		}
@@ -477,6 +459,18 @@ static int schema_modify_record(struct ldb_module *module, const struct ldb_mess
 			return -1;
 		}
 
+		/* check we are not trying to delete a required attribute */
+		/* TODO: consider multivalued attrs */
+		if ((attr->flags & SCHEMA_FLAG_MOD_DELETE) != 0) {
+			ldb_debug(module->ldb, LDB_DEBUG_ERROR,
+				  "Trying to delete the required attribute %s.\n",
+				  attr->name);
+
+			data->error_string = "Objectclass violation, a required attribute cannot be removed";
+			talloc_free(entry_structs);
+			return -1;
+		}
+
 		/* mark the attribute as checked */
 		attr->flags = SCHEMA_FLAG_CHECKED;
 	}
@@ -544,9 +538,15 @@ static const char *schema_errstring(struct ldb_module *module)
 	return ldb_next_errstring(module);
 }
 
+static int schema_destructor(void *module_ctx)
+{
+	struct ldb_module *ctx = module_ctx;
+	/* put your clean-up functions here */
+	return 0;
+}
+
 static const struct ldb_module_ops schema_ops = {
 	"schema",
-	schema_close, 
 	schema_search,
 	schema_search_free,
 	schema_add_record,
@@ -583,6 +583,8 @@ struct ldb_module *schema_module_init(struct ldb_context *ldb, const char *optio
 	ctx->ldb = ldb;
 	ctx->prev = ctx->next = NULL;
 	ctx->ops = &schema_ops;
+
+	talloc_set_destructor (ctx, schema_destructor);
 
 	return ctx;
 }

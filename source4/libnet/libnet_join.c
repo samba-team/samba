@@ -330,7 +330,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	NTSTATUS status;
 	int ret;
 
-	struct ldb_wrap *ldb;
+	struct ldb_context *ldb;
 	union libnet_JoinDomain r2;
 	const char *base_dn = "cn=Primary Domains";
 	const struct ldb_val *prior_secret;

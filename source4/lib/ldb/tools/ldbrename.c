@@ -112,7 +112,7 @@ static void usage(void)
 			argv[0], argv[1], ldb_errstring(ldb));
 	}
 
-	ldb_close(ldb);
+	talloc_free(ldb);
 	
 	return ret;
 }
