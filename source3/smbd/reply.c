@@ -1464,6 +1464,7 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
 
 int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_size, int dum_buffsize)
 {
+	extern struct current_user current_user;
 	ssize_t maxcount,mincount;
 	size_t nread = 0;
 	SMB_OFF_T startpos;
@@ -2361,6 +2362,7 @@ int reply_exit(connection_struct *conn,
 int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
                 int dum_buffsize)
 {
+	extern struct current_user current_user;
 	int outsize = 0;
 	time_t mtime;
 	int32 eclass = 0, err = 0;
@@ -2381,7 +2383,7 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	 * We can only use CHECK_FSP if we know it's not a directory.
 	 */
 
-	if(!fsp || (fsp->conn != conn)) {
+	if(!fsp || (fsp->conn != conn) || (fsp->vuid != current_user.vuid)) {
 		END_PROFILE(SMBclose);
 		return ERROR_DOS(ERRDOS,ERRbadfid);
 	}
