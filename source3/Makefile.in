@@ -350,8 +350,8 @@ bin/smbtorture: $(SMBTORTURE_OBJ)
 	@$(CC) $(FLAGS) -o $@ $(SMBTORTURE_OBJ) $(LDFLAGS) $(LIBS)
 
 smbwrapper/smbwrapper.so: $(PICOBJS)
-	@echo Linking $@
-	$(LD) -G -o $@ $(PICOBJS)
+	@echo Linking shared library $@
+	@$(LD) @LDSHFLAGS@ -o $@ $(PICOBJS)
 
 install: installbin installman installscripts installcp installswat
 

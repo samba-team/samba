@@ -7,12 +7,15 @@ AC_PROG_CC
 AC_PROG_INSTALL
 AC_SUBST(SHELL)
 AC_SUBST(MPROGS)
+AC_SUBST(LDSHFLAGS)
 AC_PROG_AWK
 
 AC_CANONICAL_SYSTEM
 case "$host_os" in
-	*linux*)   AC_DEFINE(LINUX);;
-        *solaris*) AC_DEFINE(SUNOS5);;
+	*linux*)   AC_DEFINE(LINUX)
+                   LDSHFLAGS="-shared";;
+        *solaris*) AC_DEFINE(SUNOS5)
+                   LDSHFLAGS="-G";;
         *sunos*) AC_DEFINE(SUNOS4);;
         *irix*) AC_DEFINE(IRIX);;
         *aix*) AC_DEFINE(AIX);;

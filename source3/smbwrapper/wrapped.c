@@ -178,16 +178,6 @@ __asm__(".globl __write; __write = write");
 	return real_chown(name, owner, group);
 }
 
- int closedir(DIR *dir)
-{
-	if (smbw_dirp(dir)) {
-		return smbw_closedir(dir);
-	}
-
-	return real_closedir(dir);
-}
-
-
 #ifdef LINUX
  int __fxstat(int vers, int fd, struct stat *st)
 {
@@ -334,17 +324,6 @@ __asm__(".globl __write; __write = write");
 }
 
 
- void seekdir(DIR *dir, off_t offset)
-{
-	if (smbw_dirp(dir)) {
-		smbw_seekdir(dir, offset);
-		return;
-	}
-
-	real_seekdir(dir, offset);
-}
-
-
 #ifdef LINUX
  int __xstat(int vers, const char *name, struct stat *st)
 {
@@ -446,16 +425,6 @@ __asm__(".globl __write; __write = write");
 }
 
 
- off_t telldir(DIR *dir)
-{
-	if (smbw_dirp(dir)) {
-		return smbw_telldir(dir);
-	}
-
-	return real_telldir(dir);
-}
-
-
  int unlink(const char *name)
 {
 	if (smbw_path(name)) {
@@ -473,25 +442,6 @@ __asm__(".globl __write; __write = write");
 	}
 
 	return real_utime(name, tvp);
-}
-
- DIR *opendir(const char *name)
-{
-	if (smbw_path(name)) {
-		return smbw_opendir(name);
-	}
-
-	return real_opendir(name);
-}
-
-
- struct dirent *readdir(DIR *dir)
-{
-	if (smbw_dirp(dir)) {
-		return smbw_readdir(dir);
-	}
-
-	return real_readdir(dir);
 }
 
  int readlink(char *path, char *buf, size_t bufsize)
@@ -566,3 +516,54 @@ __asm__(".globl __write; __write = write");
 
 	return real_dup2(oldfd, newfd);
 }
+
+ DIR *opendir(const char *name)
+{
+	if (smbw_path(name)) {
+		return smbw_opendir(name);
+	}
+
+	return real_opendir(name);
+}
+
+
+ struct dirent *readdir(DIR *dir)
+{
+	if (smbw_dirp(dir)) {
+		return smbw_readdir(dir);
+	}
+
+	return real_readdir(dir);
+}
+
+ int closedir(DIR *dir)
+{
+	if (smbw_dirp(dir)) {
+		return smbw_closedir(dir);
+	}
+
+	return real_closedir(dir);
+}
+
+#ifndef NO_TELLDIR
+ off_t telldir(DIR *dir)
+{
+	if (smbw_dirp(dir)) {
+		return smbw_telldir(dir);
+	}
+
+	return real_telldir(dir);
+}
+#endif
+
+#ifndef NO_SEEKDIR
+ void seekdir(DIR *dir, off_t offset)
+{
+	if (smbw_dirp(dir)) {
+		smbw_seekdir(dir, offset);
+		return;
+	}
+
+	real_seekdir(dir, offset);
+}
+#endif
