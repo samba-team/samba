@@ -291,6 +291,12 @@ sub ParseElementPullScalar($$$)
 		# no scalar component
 	} elsif (my $switch = util::has_property($e, "switch_is")) {
 		ParseElementPullSwitch($e, $var_prefix, $ndr_flags, $switch);
+	} elsif (util::has_property($e, "subcontext")) {
+		if (util::is_builtin_type($e->{TYPE})) {
+			$res .= "\tNDR_CHECK(ndr_pull_subcontext_fn(ndr, $cprefix$var_prefix$e->{NAME}, (ndr_pull_fn_t) ndr_pull_$e->{TYPE}));\n";
+		} else {
+			$res .= "\tNDR_CHECK(ndr_pull_subcontext_flags_fn(ndr, $cprefix$var_prefix$e->{NAME}, (ndr_pull_flags_fn_t) ndr_pull_$e->{TYPE}));\n";
+		}
 	} elsif (util::is_builtin_type($e->{TYPE})) {
 		$res .= "\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $cprefix$var_prefix$e->{NAME}));\n";
 	} else {
@@ -390,6 +396,12 @@ sub ParseElementPullBuffer($$$)
 			ParseElementPullSwitch($e, $var_prefix, "NDR_SCALARS|NDR_BUFFERS", $switch);
 		} else {
 			ParseElementPullSwitch($e, $var_prefix, "NDR_BUFFERS", $switch);
+		}
+	} elsif (util::has_property($e, "subcontext")) {
+		if (util::is_builtin_type($e->{TYPE})) {
+			$res .= "\tNDR_CHECK(ndr_pull_subcontext_fn(ndr, $cprefix$var_prefix$e->{NAME}, (ndr_pull_fn_t) ndr_pull_$e->{TYPE}));\n";
+		} else {
+			$res .= "\tNDR_CHECK(ndr_pull_subcontext_flags_fn(ndr, $cprefix$var_prefix$e->{NAME}, (ndr_pull_flags_fn_t) ndr_pull_$e->{TYPE}));\n";
 		}
 	} elsif (util::is_builtin_type($e->{TYPE})) {
 		$res .= "\t\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $cprefix$var_prefix$e->{NAME}));\n";
