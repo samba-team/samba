@@ -2917,12 +2917,12 @@ else
 #line 2918 "configure"
 #include "confdefs.h"
 #include <stdio.h>
-main()
+int main()
 {
   FILE *f=fopen("conftestval", "w");
-  if (!f) exit(1);
+  if (!f) return(1);
   fprintf(f, "%d\n", sizeof(int));
-  exit(0);
+  return(0);
 }
 EOF
 if { (eval echo configure:2929: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
@@ -2956,12 +2956,12 @@ else
 #line 2957 "configure"
 #include "confdefs.h"
 #include <stdio.h>
-main()
+int main()
 {
   FILE *f=fopen("conftestval", "w");
-  if (!f) exit(1);
+  if (!f) return(1);
   fprintf(f, "%d\n", sizeof(long));
-  exit(0);
+  return(0);
 }
 EOF
 if { (eval echo configure:2968: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
@@ -2995,12 +2995,12 @@ else
 #line 2996 "configure"
 #include "confdefs.h"
 #include <stdio.h>
-main()
+int main()
 {
   FILE *f=fopen("conftestval", "w");
-  if (!f) exit(1);
+  if (!f) return(1);
   fprintf(f, "%d\n", sizeof(short));
-  exit(0);
+  return(0);
 }
 EOF
 if { (eval echo configure:3007: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
@@ -8774,7 +8774,7 @@ EOF
 			LDSHFLAGS="-Wl,-bexpall,-bM:SRE,-bnoentry"
 			DYNEXP="-Wl,-brtl,-bexpall"
 				PICFLAG="-O2"
-			if test "${GCC}" = "no"; then
+			if test "${GCC}" != "yes; then
 				## for funky AIX compiler using strncpy()
 				CFLAGS="$CFLAGS -D_LINUX_SOURCE_COMPAT -qmaxmem=32000"
 			fi

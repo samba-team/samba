@@ -916,7 +916,7 @@ case "$host_os" in
 			LDSHFLAGS="-Wl,-bexpall,-bM:SRE,-bnoentry"
 			DYNEXP="-Wl,-brtl,-bexpall"
 				PICFLAG="-O2"
-			if test "${GCC}" = "no"; then
+			if test "${GCC}" != "yes; then
 				## for funky AIX compiler using strncpy()
 				CFLAGS="$CFLAGS -D_LINUX_SOURCE_COMPAT -qmaxmem=32000"
 			fi
