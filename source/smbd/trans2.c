@@ -237,8 +237,8 @@ static unsigned int fill_ea_buffer(TALLOC_CTX *mem_ctx, char *pdata, unsigned in
 
 	SMB_ASSERT(total_data_size >= 4);
 
-	SIVAL(pdata,0,0);
 	if (!lp_ea_support(SNUM(conn))) {
+		SIVAL(pdata,4,0);
 		return 4;
 	}
 
