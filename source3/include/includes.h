@@ -935,4 +935,19 @@ extern int DEBUGLEVEL;
 
 #define MAX_SEC_CTX_DEPTH 8    /* Maximum number of security contexts */
 
+#ifdef HAVE_NSS_H
+#include <nss.h>
+#else
+
+/* Minimal needed to compile.. */
+
+enum nss_status {
+	NSS_STATUS_SUCCESS,
+	NSS_STATUS_NOTFOUND,
+	NSS_STATUS_UNAVAIL
+};
+
+#endif
+
 #endif /* _INCLUDES_H */
+
