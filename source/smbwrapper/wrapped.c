@@ -537,6 +537,7 @@ __asm__(".globl _write; _write = write");
 
  DIR *opendir(const char *name)
 {
+	DIR *ret;
 	if (smbw_path(name)) {
 		return smbw_opendir(name);
 	}
@@ -626,5 +627,93 @@ __asm__(".globl _write; _write = write");
  int creat(const char *path, mode_t mode)
 {
 	return open(path, O_WRONLY|O_CREAT|O_TRUNC, mode);
+}
+#endif
+
+#ifdef HAVE_STAT64
+static void stat64_convert(struct stat *st, struct stat64 *st64)
+{
+	st64->st_size = st->st_size;
+	st64->st_mode = st->st_mode;
+	st64->st_ino = st->st_ino;
+	st64->st_dev = st->st_dev;
+	st64->st_rdev = st->st_rdev;
+	st64->st_nlink = st->st_nlink;
+	st64->st_uid = st->st_uid;
+	st64->st_gid = st->st_gid;
+	st64->st_atime = st->st_atime;
+	st64->st_mtime = st->st_mtime;
+	st64->st_ctime = st->st_ctime;
+	st64->st_blksize = st->st_blksize;
+	st64->st_blocks = st->st_blocks;
+}
+
+  int stat64(const char *name, struct stat64 *st64)
+{
+	if (smbw_path(name)) {
+		struct stat st;
+		int ret = stat(name, &st);
+		stat64_convert(&st, st64);
+		return ret;
+	}
+	return real_stat64(name, st64);
+}
+
+  int fstat64(int fd, struct stat64 *st64)
+{
+	if (smbw_fd(fd)) {
+		struct stat st;
+		int ret = fstat(fd, &st);
+		stat64_convert(&st, st64);
+		return ret;
+	}
+	return real_fstat64(fd, st64);
+}
+
+  int lstat64(const char *name, struct stat64 *st64)
+{
+	if (smbw_path(name)) {
+		struct stat st;
+		int ret = lstat(name, &st);
+		stat64_convert(&st, st64);
+		return ret;
+	}
+	return real_lstat64(name, st64);
+}
+#endif
+
+#ifdef HAVE_LLSEEK
+  offset_t llseek(int fd, offset_t ofs, int whence)
+{
+	if (smbw_fd(fd)) {
+		return lseek(fd, ofs, whence);
+	}
+	return real_llseek(fd, ofs, whence);
+}
+#endif
+
+#ifdef HAVE_READDIR64
+static void dirent64_convert(struct dirent *d, struct dirent64 *d64)
+{
+	d64->d_ino = d->d_ino;
+	d64->d_off = d->d_off;
+	d64->d_reclen = d->d_reclen;
+	strcpy(d64->d_name, d->d_name);
+}
+
+ struct dirent64 *readdir64(DIR *dir)
+{
+	if (smbw_dirp(dir)) {
+		struct dirent *d;
+		static union {
+			char buf[DIRP_SIZE];
+			struct dirent64 d64;
+		} dbuf;
+		d = readdir(dir);
+		if (!d) return NULL;
+		dirent64_convert(d, &dbuf.d64);
+		return &dbuf.d64;
+	}
+	return real_readdir64(dir);
 }
 #endif

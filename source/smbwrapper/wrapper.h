@@ -37,6 +37,9 @@
 #endif
 #endif
 
+/* yuck! */
+#define DIRP_SIZE (256 + 32)
+
 #include <stdio.h>
 #include <dirent.h>
 #include <errno.h>

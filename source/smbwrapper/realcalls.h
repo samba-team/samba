@@ -146,6 +146,37 @@
 #endif
 
 
+#ifdef HAVE__STAT64
+#define real_stat64(fn,st)            	(_stat64(fn,st))
+#elif HAVE___STAT64
+#define real_stat64(fn,st)            	(__stat64(fn,st))
+#endif
+
+#ifdef HAVE__LSTAT64
+#define real_lstat64(fn,st)            	(_lstat64(fn,st))
+#elif HAVE___LSTAT64
+#define real_lstat64(fn,st)            	(__lstat64(fn,st))
+#endif
+
+#ifdef HAVE__FSTAT64
+#define real_fstat64(fd,st)            	(_fstat64(fd,st))
+#elif HAVE___FSTAT64
+#define real_fstat64(fd,st)            	(__fstat64(fd,st))
+#endif
+
+#ifdef HAVE__READDIR64
+#define real_readdir64(d)            	(_readdir64(d))
+#elif HAVE___READDIR64
+#define real_readdir64(d)            	(__readdir64(d))
+#endif
+
+#ifdef HAVE__LLSEEK
+#define real_llseek(fd,ofs,whence)            	(_llseek(fd,ofs,whence))
+#elif HAVE___LLSEEK
+#define real_llseek(fd,ofs,whence)            	(__llseek(fd,ofs,whence))
+#endif
+
+
 #define real_readlink(fn,buf,len)	(syscall(SYS_readlink, (fn), (buf), (len)))
 #define real_rename(fn1, fn2)		(syscall(SYS_rename, (fn1), (fn2)))
 #define real_symlink(fn1, fn2)		(syscall(SYS_symlink, (fn1), (fn2)))
