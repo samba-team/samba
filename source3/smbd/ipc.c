@@ -594,16 +594,17 @@ static void fill_printq_info(int cnum, int snum, int uLevel,
 
   if (uLevel==52) {
     int i,ok=0;
-    pstring tok,driver,datafile, langmon, helpfile, datatype;
+    pstring tok,driver,datafile,langmon,helpfile,datatype;
     char *p,*q;
     FILE *f;
     pstring fname;
 
     strcpy(fname,lp_driverfile());
-
     f=fopen(fname,"r");
     if (!f) {
-      DEBUG(0,("fill_printq_info: Can't open %s - %s\n",fname,strerror(errno)));
+      DEBUG(3,("fill_printq_info: Can't open %s - %s\n",fname,strerror(errno)));
+      desc->errcode=NERR_notsupported;
+      return;
     }
 
     p=(char *)malloc(8192*sizeof(char));
@@ -613,80 +614,80 @@ static void fill_printq_info(int cnum, int snum, int uLevel,
     /* lookup the long printer driver name in the file description */
     while (f && !feof(f) && !ok)
     {
+      p = q;			/* reset string pointer */
       fgets(p,8191,f);
       p[strlen(p)-1]='\0';
-      next_token(&p,tok,":");
-      if(!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum)))) ok=1;
+      if (next_token(&p,tok,":") &&
+        (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum)))))
+	ok=1;
     }
-
     fclose(f);
 
-    next_token(&p,driver,":");			/* driver file name */
-    next_token(&p,datafile,":");		/* data file name */
-/*
- * for the next tokens - which may be empty - I have to check for empty
- * tokens first because the next_token function will skip all empty
- * token fields 
- */
-    if (*p == ':') {
-	*helpfile = '\0';
-	p++;
-    }else
-        next_token(&p,helpfile,":");		/* help file */
-    if (*p == ':') {
-	*langmon = '\0';
-	p++;
-    }else
-        next_token(&p,langmon,":");		/* language monitor */
+    /* driver file name */
+    if (ok && !next_token(&p,driver,":")) ok = 0;
+    /* data file name */
+    if (ok && !next_token(&p,datafile,":")) ok = 0;
+      /*
+       * for the next tokens - which may be empty - I have to check for empty
+       * tokens first because the next_token function will skip all empty
+       * token fields 
+       */
+    if (ok) {
+      /* help file */
+      if (*p == ':') {
+	  *helpfile = '\0';
+	  p++;
+      } else if (!next_token(&p,helpfile,":")) ok = 0;
+    }
 
-    next_token(&p,datatype,":");		/* default data type */
+    if (ok) {
+      /* language monitor */
+      if (*p == ':') {
+	  *langmon = '\0';
+	  p++;
+      } else if (!next_token(&p,langmon,":")) ok = 0;
+    }
 
-    PACKI(desc,"W",0x0400);                      /* don't know */
-    PACKS(desc,"z",lp_printerdriver(snum));      /* long printer name */
+    /* default data type */
+    if (ok && !next_token(&p,datatype,":")) ok = 0;
 
-    if (ok)
-    {
+    if (ok) {
+      PACKI(desc,"W",0x0400);                    /* don't know */
+      PACKS(desc,"z",lp_printerdriver(snum));    /* long printer name */
       PACKS(desc,"z",driver);                    /* Driverfile Name */
       PACKS(desc,"z",datafile);                  /* Datafile name */
       PACKS(desc,"z",langmon);			 /* language monitor */
+      PACKS(desc,"z",lp_driverlocation(snum));   /* share to retrieve files */
+      PACKS(desc,"z",datatype);			 /* default data type */
+      PACKS(desc,"z",helpfile);                  /* helpfile name */
+      PACKS(desc,"z",driver);                    /* driver name */
       DEBUG(3,("Driver:%s:\n",driver));
       DEBUG(3,("Data File:%s:\n",datafile));
       DEBUG(3,("Language Monitor:%s:\n",langmon));
-    }
-    else 
-    {
-      PACKS(desc,"z","");
-      PACKS(desc,"z","");
-      PACKS(desc,"z","");
-    }
-
-    PACKS(desc,"z",lp_driverlocation(snum));       /* share to retrieve files */
-    if (ok) {
-      PACKS(desc,"z",datatype);			   /* default data type */
-      PACKS(desc,"z",helpfile);                    /* helpfile name */
-      PACKS(desc,"z",driver);                      /* driver name */
       DEBUG(3,("Data Type:%s:\n",datatype));
       DEBUG(3,("Help File:%s:\n",helpfile));
-    }
-    else {
-      PACKS(desc,"z","RAW");
-      PACKS(desc,"z","");
-      PACKS(desc,"z","");
-    }
-    PACKI(desc,"N",count);                         /* number of files to copy */
-    for (i=0;i<count;i++)
-    {
-      next_token(&p,tok,",");
-      PACKS(desc,"z",tok);                        /* driver files to copy */
-      DEBUG(3,("file:%s:\n",tok));
+      PACKI(desc,"N",count);                     /* number of files to copy */
+      for (i=0;i<count;i++)
+      {
+	/* no need to check return value here - it was already tested in
+	 * get_printerdrivernumber
+	 */
+        next_token(&p,tok,",");
+        PACKS(desc,"z",tok);                        /* driver files to copy */
+        DEBUG(3,("file:%s:\n",tok));
+      }
+
+      DEBUG(3,("fill_printq_info on <%s> gave %d entries\n",
+	    SERVICE(snum),count));
+    } else {
+      DEBUG(3,("fill_printq_info: Can't supply driver files\n"));
+      desc->errcode=NERR_notsupported;
     }
     free(q);
   }
-
-  DEBUG(3,("fill_printq_info on <%s> gave %d entries\n",SERVICE(snum),count));
 }
 
-/* This function returns the number of file for a given driver */
+/* This function returns the number of files for a given driver */
 int get_printerdrivernumber(int snum)
 {
   int i=0,ok=0;
@@ -700,7 +701,7 @@ int get_printerdrivernumber(int snum)
   DEBUG(4,("In get_printerdrivernumber: %s\n",fname));
   f=fopen(fname,"r");
   if (!f) {
-    DEBUG(0,("get_printerdrivernumber: Can't open %s - %s\n",fname,strerror(errno)));
+    DEBUG(3,("get_printerdrivernumber: Can't open %s - %s\n",fname,strerror(errno)));
     return(0);
   }
 
@@ -710,20 +711,27 @@ int get_printerdrivernumber(int snum)
   /* lookup the long printer driver name in the file description */
   while (!feof(f) && !ok)
   {
+    p = q;			/* reset string pointer */
     fgets(p,8191,f);
-    next_token(&p,tok,":");
-    if(!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum)))) ok=1;
+    if (next_token(&p,tok,":") &&
+      (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum))))) 
+	ok=1;
   }
+  fclose(f);
 
   if (ok) {
-    /* skip 2 fields */
-    next_token(&p,tok,":");  /* short name */
-    next_token(&p,tok,":");  /* driver name */
+    /* skip 5 fields */
+    i = 5;
+    while (*p && i) {
+      if (*p++ == ':') i--;
+    }
+    if (!*p || i)
+      return(0);
+
     /* count the number of files */
     while (next_token(&p,tok,","))
        i++;
   }
-  fclose(f);
   free(q);
 
   return(i);
