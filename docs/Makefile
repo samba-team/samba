@@ -269,3 +269,4 @@ clean:
 
 # Always keep intermediate files if we can
 .SECONDARY:
+.PHONY: clean clobber latexfigures archive release everything all
