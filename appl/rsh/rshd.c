@@ -110,8 +110,8 @@ read_str (int s, char *str, size_t sz, char *expl)
 
 static int
 recv_bsd_auth (int s, u_char *buf,
-	       struct sockaddr_in thisaddr,
-	       struct sockaddr_in thataddr,
+	       struct sockaddr_in *thisaddr,
+	       struct sockaddr_in *thataddr,
 	       char *client_username,
 	       char *server_username,
 	       char *cmd)
@@ -124,7 +124,7 @@ recv_bsd_auth (int s, u_char *buf,
     pwd = getpwnam(server_username);
     if (pwd == NULL)
 	fatal(s, "Login incorrect.");
-    if (iruserok(thataddr.sin_addr.s_addr, pwd->pw_uid == 0,
+    if (iruserok(thataddr->sin_addr.s_addr, pwd->pw_uid == 0,
 		 client_username, server_username))
 	fatal(s, "Login incorrect.");
     return 0;
@@ -133,8 +133,8 @@ recv_bsd_auth (int s, u_char *buf,
 #ifdef KRB4
 static int
 recv_krb4_auth (int s, u_char *buf,
-		struct sockaddr_in thisaddr,
-		struct sockaddr_in thataddr,
+		struct sockaddr *thisaddr,
+		struct sockaddr *thataddr,
 		char *client_username,
 		char *server_username,
 		char *cmd)
@@ -163,8 +163,8 @@ recv_krb4_auth (int s, u_char *buf,
 			   &ticket,
 			   "rcmd",
 			   instance,
-			   &thataddr,
-			   &thisaddr,
+			   (struct sockaddr_in *)thataddr,
+			   (struct sockaddr_in *)thisaddr,
 			   &auth,
 			   "",
 			   schedule,
@@ -182,7 +182,8 @@ recv_krb4_auth (int s, u_char *buf,
     syslog(LOG_INFO|LOG_AUTH,
 	   "kerberos v4 shell from %s on %s as %s, cmd '%.80s'",
 	   krb_unparse_name_long(auth.pname, auth.pinst, auth.prealm),
-	   inet_ntoa(thataddr.sin_addr),
+
+	   inet_ntoa(((struct sockaddr_in *)thataddr)->sin_addr),
 	   server_username,
 	   cmd);
 
@@ -239,8 +240,8 @@ out:
 
 static int
 recv_krb5_auth (int s, u_char *buf,
-		struct sockaddr_in thisaddr,
-		struct sockaddr_in thataddr,
+		struct sockaddr *thisaddr,
+		struct sockaddr *thataddr,
 		char *client_username,
 		char *server_username,
 		char *cmd)
@@ -303,7 +304,7 @@ recv_krb5_auth (int s, u_char *buf,
     
     cksum_data.length = asprintf ((char **)&cksum_data.data,
 				  "%u:%s%s",
-				  ntohs(thisaddr.sin_port),
+				  ntohs(socket_get_port (thisaddr)),
 				  cmd,
 				  server_username);
 
@@ -380,10 +381,18 @@ recv_krb5_auth (int s, u_char *buf,
 	char *name;
 
 	if (krb5_unparse_name (context, ticket->client, &name) == 0) {
+	    char addr_str[256];
+
+	    if (inet_ntop (thataddr->sa_family,
+			   socket_get_address (thataddr),
+			   addr_str, sizeof(addr_str)) == NULL)
+		strcpy_truncate (addr_str, "unknown address",
+				 sizeof(addr_str));
+
 	    syslog(LOG_INFO|LOG_AUTH,
 		   "kerberos v5 shell from %s on %s as %s, cmd '%.80s'",
 		   name,
-		   inet_ntoa(thataddr.sin_addr),
+		   addr_str,
 		   server_username,
 		   cmd);
 	    free (name);
@@ -545,7 +554,12 @@ doit (int do_kerberos, int check_rhosts)
 {
     u_char buf[BUFSIZ];
     u_char *p;
-    struct sockaddr_in thisaddr, thataddr, erraddr;
+    struct sockaddr_storage thisaddr_ss;
+    struct sockaddr *thisaddr = (struct sockaddr *)&thisaddr_ss;
+    struct sockaddr_storage thataddr_ss;
+    struct sockaddr *thataddr = (struct sockaddr *)&thataddr_ss;
+    struct sockaddr_storage erraddr_ss;
+    struct sockaddr *erraddr = (struct sockaddr *)&erraddr_ss;
     int addrlen;
     int port;
     int errsock = -1;
@@ -555,18 +569,14 @@ doit (int do_kerberos, int check_rhosts)
     int s = STDIN_FILENO;
     char *env[7];
 
-    addrlen = sizeof(thisaddr);
-    if (getsockname (s, (struct sockaddr *)&thisaddr, &addrlen) < 0
-	|| addrlen != sizeof(thisaddr)) {
+    addrlen = sizeof(thisaddr_ss);
+    if (getsockname (s, thisaddr, &addrlen) < 0)
 	syslog_and_die("getsockname: %m");
-    }
-    addrlen = sizeof(thataddr);
-    if (getpeername (s, (struct sockaddr *)&thataddr, &addrlen) < 0
-	|| addrlen != sizeof(thataddr)) {
+    addrlen = sizeof(thataddr_ss);
+    if (getpeername (s, thataddr, &addrlen) < 0)
 	syslog_and_die ("getpeername: %m");
-    }
 
-    if (!do_kerberos && !is_reserved(thataddr.sin_port))
+    if (!do_kerberos && !is_reserved(socket_get_port(thataddr)))
 	fatal(s, "Permission denied");
 
     p = buf;
@@ -594,14 +604,24 @@ doit (int do_kerberos, int check_rhosts)
 	 * do... :-(
 	 */
 
-	erraddr = thataddr;
-	erraddr.sin_port = htons(port);
-	errsock = rresvport (&priv_port);
+	erraddr->sa_family = thataddr->sa_family;
+	socket_set_address_and_port (erraddr,
+				     socket_get_address (thataddr),
+				     htons(port));
+
+	/*
+	 * we only do reserved port for IPv4
+	 */
+
+	if (erraddr->sa_family == AF_INET)
+	    errsock = rresvport (&priv_port);
+	else
+	    errsock = socket (erraddr->sa_family, SOCK_STREAM, 0);
 	if (errsock < 0)
 	    syslog_and_die ("socket: %m");
 	if (connect (errsock,
-		     (struct sockaddr *)&erraddr,
-		     sizeof(erraddr)) < 0)
+		     erraddr,
+		     socket_sockaddr_size (erraddr)) < 0)
 	    syslog_and_die ("connect: %m");
     }
     
@@ -626,7 +646,9 @@ doit (int do_kerberos, int check_rhosts)
 		syslog_and_die ("unrecognized auth protocol: %x %x %x %x",
 				buf[0], buf[1], buf[2], buf[3]);
     } else {
-	if(recv_bsd_auth (s, buf, thisaddr, thataddr,
+	if(recv_bsd_auth (s, buf,
+			  (struct sockaddr_in *)thisaddr,
+			  (struct sockaddr_in *)thataddr,
 			  client_user,
 			  server_user,
 			  cmd) == 0) {

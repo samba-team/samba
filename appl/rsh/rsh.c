@@ -127,8 +127,8 @@ loop (int s, int errsock)
 #ifdef KRB4
 static int
 send_krb4_auth(int s,
-	       struct sockaddr_in thisaddr,
-	       struct sockaddr_in thataddr,
+	       struct sockaddr *thisaddr,
+	       struct sockaddr *thataddr,
 	       const char *hostname,
 	       const char *remote_user,
 	       const char *local_user,
@@ -145,7 +145,9 @@ send_krb4_auth(int s,
 			   s, &text, "rcmd",
 			   (char *)hostname, krb_realmofhost (hostname),
 			   getpid(), &msg, &cred, schedule,
-			   &thisaddr, &thataddr, KCMD_VERSION);
+			   (struct sockaddr_in *)thisaddr,
+			   (struct sockaddr_in *)thataddr,
+			   KCMD_VERSION);
     if (status != KSUCCESS) {
 	warnx ("%s: %s", hostname, krb_get_err_text(status));
 	return 1;
@@ -247,8 +249,8 @@ krb5_forward_cred (krb5_auth_context auth_context,
 
 static int
 send_krb5_auth(int s,
-	       struct sockaddr_in thisaddr,
-	       struct sockaddr_in thataddr,
+	       struct sockaddr *thisaddr,
+	       struct sockaddr *thataddr,
 	       const char *hostname,
 	       const char *remote_user,
 	       const char *local_user,
@@ -273,7 +275,7 @@ send_krb5_auth(int s,
 
     cksum_data.length = asprintf ((char **)&cksum_data.data,
 				  "%u:%s%s%s",
-				  ntohs(thataddr.sin_port),
+				  ntohs(socket_get_port(thataddr)),
 				  do_encrypt ? "-x " : "",
 				  cmd,
 				  remote_user);
@@ -356,8 +358,8 @@ send_krb5_auth(int s,
 
 static int
 send_broken_auth(int s,
-		 struct sockaddr_in thisaddr,
-		 struct sockaddr_in thataddr,
+		 struct sockaddr *thisaddr,
+		 struct sockaddr *thataddr,
 		 const char *hostname,
 		 const char *remote_user,
 		 const char *local_user,
@@ -388,38 +390,40 @@ proto (int s, int errsock,
        const char *hostname, const char *local_user, const char *remote_user,
        const char *cmd, size_t cmd_len,
        int (*auth_func)(int s,
-			struct sockaddr_in this, struct sockaddr_in that,
+			struct sockaddr *this, struct sockaddr *that,
 			const char *hostname, const char *remote_user,
 			const char *local_user, size_t cmd_len,
 			const char *cmd))
 {
-    struct sockaddr_in erraddr;
     int errsock2;
     char buf[BUFSIZ];
     char *p;
     size_t len;
     char reply;
-    struct sockaddr_in thisaddr, thataddr;
+    struct sockaddr_storage thisaddr_ss;
+    struct sockaddr *thisaddr = (struct sockaddr *)&thisaddr_ss;
+    struct sockaddr_storage thataddr_ss;
+    struct sockaddr *thataddr = (struct sockaddr *)&thataddr_ss;
+    struct sockaddr_storage erraddr_ss;
+    struct sockaddr *erraddr = (struct sockaddr *)&erraddr_ss;
     int addrlen;
     int ret;
 
-    addrlen = sizeof(thisaddr);
-    if (getsockname (s, (struct sockaddr *)&thisaddr, &addrlen) < 0
-	|| addrlen != sizeof(thisaddr)) {
+    addrlen = sizeof(thisaddr_ss);
+    if (getsockname (s, thisaddr, &addrlen) < 0) {
 	warn ("getsockname(%s)", hostname);
 	return 1;
     }
-    addrlen = sizeof(thataddr);
-    if (getpeername (s, (struct sockaddr *)&thataddr, &addrlen) < 0
-	|| addrlen != sizeof(thataddr)) {
+    addrlen = sizeof(thataddr_ss);
+    if (getpeername (s, thataddr, &addrlen) < 0) {
 	warn ("getpeername(%s)", hostname);
 	return 1;
     }
 
     if (errsock != -1) {
 
-	addrlen = sizeof(erraddr);
-	if (getsockname (errsock, (struct sockaddr *)&erraddr, &addrlen) < 0) {
+	addrlen = sizeof(erraddr_ss);
+	if (getsockname (errsock, erraddr, &addrlen) < 0) {
 	    warn ("getsockname");
 	    return 1;
 	}
@@ -430,7 +434,8 @@ proto (int s, int errsock,
 	}
 
 	p = buf;
-	snprintf (p, sizeof(buf), "%u", ntohs(erraddr.sin_port));
+	snprintf (p, sizeof(buf), "%u",
+		  ntohs(socket_get_port(erraddr)));
 	len = strlen(buf) + 1;
 	if(net_write (s, buf, len) != len) {
 	    warn ("write");
@@ -486,7 +491,7 @@ proto (int s, int errsock,
  */
 
 static size_t
-construct_command (char **res, int argc, char **argv)
+construct_command (char **res, int argc, const char **argv)
 {
     int i;
     size_t len = 0;
@@ -510,6 +515,19 @@ construct_command (char **res, int argc, char **argv)
     return len;
 }
 
+static char *
+print_addr (int af, const void *a)
+{
+    char addr_str[256];
+    char *res;
+
+    inet_ntop (af, a, addr_str, sizeof(addr_str));
+    res = strdup(addr_str);
+    if (res == NULL)
+	errx (1, "malloc: out of memory");
+    return res;
+}
+
 static int
 doit_broken (int argc,
 	     char **argv,
@@ -523,27 +541,41 @@ doit_broken (int argc,
 	     const char *cmd,
 	     size_t cmd_len)
 {
-    struct hostent *hostent;
-    struct sockaddr_in addr;
+    struct hostent *hostent = NULL;
+    struct sockaddr_storage addr_ss;
+    struct sockaddr *addr = (struct sockaddr *)&addr_ss;
+    int error;
+    int af;
 
     if (priv_socket1 < 0) {
 	warnx ("unable to bind reserved port: is rsh setuid root?");
 	return 1;
     }
 
-    hostent = roken_gethostbyname (host);
+#ifdef HAVE_IPV6    
+    if (hostent == NULL)
+	hostent = getipnodebyname (host, AF_INET6, 0, &error);
+#endif
+    if (hostent == NULL)
+	hostent = getipnodebyname (host, AF_INET, 0, &error);
+
     if (hostent == NULL) {
-	warn("gethostbyname '%s' failed: %s", host, hstrerror(h_errno));
+	warn("gethostbyname '%s' failed: %s", host, hstrerror(error));
 	return 1;
     }
 
+    af = addr->sa_family = hostent->h_addrtype;
+    socket_set_address_and_port (addr, hostent->h_addr_list[0], port);
+
+#if 0
     memset (&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_port   = port;
     addr.sin_addr   = *((struct in_addr *)hostent->h_addr_list[0]);
+#endif
 
-    if (connect(priv_socket1, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-	struct in_addr **h;
+    if (connect(priv_socket1, addr, socket_sockaddr_size(addr)) < 0) {
+	const char **h;
 
 	if (hostent->h_addr_list[1] == NULL)
 	    return 1;
@@ -551,9 +583,7 @@ doit_broken (int argc,
 	close(priv_socket1);
 	close(priv_socket2);
 
-	for(h = (struct in_addr **)hostent->h_addr_list;
-	    *h != NULL;
-	    ++h) {
+	for(h = hostent->h_addr_list; *h != NULL; ++h) {
 	    pid_t pid;
 
 	    pid = fork();
@@ -569,17 +599,19 @@ doit_broken (int argc,
 		new_argv[i] = argv[i];
 		++i;
 		if (optind == i)
-		    new_argv[i++] = inet_ntoa(**h);
+		    new_argv[i++] = print_addr (af, *h);
 		new_argv[i++] = "-K";
 		for(; i <= argc; ++i)
 		    new_argv[i] = argv[i - 1];
 		if (optind > 1)
-		    new_argv[optind + 1] = inet_ntoa(**h);
+		    new_argv[optind + 1] = print_addr(af, *h);
 		new_argv[argc + 1] = NULL;
 		execv(PATH_RSH, new_argv);
 		err(1, "execv(%s)", PATH_RSH);
 	    } else {
 		int status;
+
+		freehostent (hostent);
 
 		while(waitpid(pid, &status, 0) < 0)
 		    ;
@@ -590,6 +622,8 @@ doit_broken (int argc,
 	return 1;
     } else {
 	int ret;
+
+	freehostent (hostent);
 
 	ret = proto (priv_socket1, priv_socket2,
 		     argv[optind],
@@ -609,50 +643,62 @@ doit (const char *hostname,
       size_t cmd_len,
       int do_errsock,
       int (*auth_func)(int s,
-		       struct sockaddr_in this, struct sockaddr_in that,
+		       struct sockaddr *this, struct sockaddr *that,
 		       const char *hostname, const char *remote_user,
 		       const char *local_user, size_t cmd_len,
 		       const char *cmd))
 {
-    struct hostent *hostent;
-    struct in_addr **h;
+    struct hostent *hostent = NULL;
+    int error;
+    const char **h;
+    int af;
 
-    hostent = roken_gethostbyname (hostname);
+#ifdef HAVE_IPV6    
+    if (hostent == NULL)
+	hostent = getipnodebyname (hostname, AF_INET6, 0, &error);
+#endif
+    if (hostent == NULL)
+	hostent = getipnodebyname (hostname, AF_INET, 0, &error);
+
     if (hostent == NULL)
 	errx (1, "gethostbyname '%s' failed: %s",
 	      hostname,
-	      hstrerror(h_errno));
-    for (h = (struct in_addr **)hostent->h_addr_list;
-	*h != NULL;
-	 ++h) {
+	      hstrerror(error));
+    af = hostent->h_addrtype;
+    for (h = hostent->h_addr_list; *h != NULL; ++h) {
 	int s;
-	struct sockaddr_in addr;
+	struct sockaddr_storage addr_ss;
+	struct sockaddr *addr = (struct sockaddr *)&addr_ss;
 	int errsock;
-	struct sockaddr_in erraddr;
+	struct sockaddr_storage erraddr_ss;
+	struct sockaddr *erraddr = (struct sockaddr *)&erraddr_ss;
 	int ret;
 
+	addr->sa_family = af;
+	socket_set_address_and_port (addr, *h, port);
+
+#if 0
 	memset (&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
 	addr.sin_port   = port;
 	addr.sin_addr   = **h;
+#endif
 
-	s = socket (AF_INET, SOCK_STREAM, 0);
+	s = socket (af, SOCK_STREAM, 0);
 	if (s < 0)
 	    err (1, "socket");
-	if (connect (s, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+	if (connect (s, addr, socket_sockaddr_size(addr)) < 0) {
 	    warn ("connect(%s)", hostname);
 	    close (s);
 	    continue;
 	}
 	if (do_errsock) {
-	    errsock = socket (AF_INET, SOCK_STREAM, 0);
+	    errsock = socket (af, SOCK_STREAM, 0);
 	    if (errsock < 0)
 		err (1, "socket");
-	    memset (&erraddr, 0, sizeof(erraddr));
-	    erraddr.sin_family = AF_INET;
-	    erraddr.sin_addr.s_addr = INADDR_ANY;
-	    if (bind (errsock, (struct sockaddr *)&erraddr,
-		      sizeof(erraddr)) < 0)
+	    socket_set_any (erraddr, af);
+
+	    if (bind (errsock, erraddr, socket_sockaddr_size(erraddr)) < 0)
 		err (1, "bind");
 	} else
 	    errsock = -1;
