@@ -141,27 +141,13 @@ krb5_auth_con_setaddrs_from_fd (krb5_context context,
     krb5_error_code ret;
     krb5_address local_k_address, remote_k_address;
     krb5_address *lptr = NULL, *rptr = NULL;
-    size_t max_sz = krb5_max_sockaddr_size ();
-    char *buf1 = NULL, *buf2 = NULL;
-    struct sockaddr *local, *remote;
+    struct sockaddr_storage ss_local, ss_remote;
+    struct sockaddr *local  = (struct sockaddr *)&ss_local;
+    struct sockaddr *remote = (struct sockaddr *)&ss_remote;
     int len;
 
-    buf1 = malloc(max_sz);
-    if (buf1 == NULL) {
-	ret = ENOMEM;
-	goto out;
-    }
-    local = (struct sockaddr *)buf1;
-
-    buf2 = malloc(max_sz);
-    if (buf2 == NULL) {
-	ret = ENOMEM;
-	goto out;
-    }
-    remote = (struct sockaddr *)buf2;
-
     if (auth_context->local_address == NULL) {
-	len = max_sz;
+	len = sizeof(ss_local);
 	if(getsockname(fd, local, &len) < 0) {
 	    ret = errno;
 	    goto out;
@@ -171,7 +157,7 @@ krb5_auth_con_setaddrs_from_fd (krb5_context context,
 	lptr = &local_k_address;
     }
     if (auth_context->remote_address == NULL) {
-	len = max_sz;
+	len = sizeof(ss_remote);
 	if(getpeername(fd, remote, &len) < 0) {
 	    ret = errno;
 	    goto out;
@@ -189,8 +175,6 @@ out:
 	krb5_free_address (context, lptr);
     if (rptr)
 	krb5_free_address (context, rptr);
-    free (buf1);
-    free (buf2);
     return ret;
 }
 
