@@ -11,11 +11,11 @@
 
 extern char *__progname;
 
-void warnerr(int doexit, int eval, int doerrno, const char *fmt, va_list ap);
-
 #ifndef __GNUC__
 #define __attribute__(x)
 #endif
+
+void warnerr(int doexit, int eval, int doerrno, const char *fmt, va_list ap) __attribute__ ((noreturn, format (printf, 4, 0)));
 
 void verr(int eval, const char *fmt, va_list ap) __attribute__ ((noreturn, format (printf, 2, 0)));
 void err(int eval, const char *fmt, ...)  __attribute__ ((noreturn, format (printf, 2, 3)));
