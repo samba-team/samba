@@ -288,8 +288,23 @@ static NTSTATUS find_connect_pdc(struct cli_state **cli,
 	if (time_now - last_change_time < 3600)
 		use_pdc_only = True;
 
-	if (!get_dc_list(use_pdc_only, domain, &ip_list, &count))
-		return NT_STATUS_NO_LOGON_SERVERS;
+	if (use_pdc_only) {
+		struct in_addr pdc_ip;
+
+		if (!get_pdc_ip(domain, &pdc_ip))
+			return NT_STATUS_NO_LOGON_SERVERS;
+
+		if ((ip_list = (struct in_addr *)
+		     malloc(sizeof(struct in_addr))) == NULL) 
+			return NT_STATUS_NO_MEMORY;
+
+		ip_list[0] = pdc_ip;
+		count = 1;
+
+	} else {
+		if (!get_dc_list(domain, &ip_list, &count))
+			return NT_STATUS_NO_LOGON_SERVERS;
+	}
 
 	/*
 	 * Firstly try and contact a PDC/BDC who has the same
