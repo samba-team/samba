@@ -1,0 +1,60 @@
+<chapter id="locking">
+<chapterinfo>
+	&author.jeremy;
+	&author.jelmer;
+</chapterinfo>
+
+<title>Locking</title>
+
+<para>One area which sometimes causes trouble is locking.</para>
+
+<para>There are two types of locking which need to be 
+performed by a SMB server. The first is "record locking" 
+which allows a client to lock a range of bytes in a open file. 
+The second is the "deny modes" that are specified when a file 
+is open.</para>
+
+<para>Record locking semantics under Unix is very
+different from record locking under Windows. Versions
+of Samba before 2.2 have tried to use the native
+fcntl() unix system call to implement proper record
+locking between different Samba clients. This can not
+be fully correct due to several reasons. The simplest
+is the fact that a Windows client is allowed to lock a
+byte range up to 2^32 or 2^64, depending on the client
+OS. The unix locking only supports byte ranges up to
+2^31. So it is not possible to correctly satisfy a
+lock request above 2^31. There are many more
+differences, too many to be listed here.</para>
+
+<para>Samba 2.2 and above implements record locking
+completely independent of the underlying unix
+system. If a byte range lock that the client requests
+happens to fall into the range 0-2^31, Samba hands
+this request down to the Unix system. All other locks
+can not be seen by unix anyway.</para>
+
+<para>Strictly a SMB server should check for locks before 
+every read and write call on a file. Unfortunately with the 
+way fcntl() works this can be slow and may overstress the 
+rpc.lockd. It is also almost always unnecessary as clients 
+are supposed to independently make locking calls before reads 
+and writes anyway if locking is important to them. By default 
+Samba only makes locking calls when explicitly asked
+to by a client, but if you set "strict locking = yes" then it will
+make lock checking calls on every read and write. </para>
+
+<para>You can also disable by range locking completely 
+using "locking = no". This is useful for those shares that 
+don't support locking or don't need it (such as cdroms). In 
+this case Samba fakes the return codes of locking calls to 
+tell clients that everything is OK.</para>
+
+<para>The second class of locking is the "deny modes". These 
+are set by an application when it opens a file to determine 
+what types of access should be allowed simultaneously with 
+its open. A client may ask for DENY_NONE, DENY_READ, DENY_WRITE 
+or DENY_ALL. There are also special compatibility modes called 
+DENY_FCB and  DENY_DOS.</para>
+
+</chapter>
