@@ -989,6 +989,18 @@ REG_KEY *nt_create_reg_key1(char *name, REG_KEY *parent)
   return NULL;
 }
 
+/*
+ * We will implement inheritence that is based on what the parent's SEC_DESC
+ * says, but the Owner and Group SIDs can be overwridden from the command line
+ * and additional ACEs can be applied from the command line etc.
+ */
+KEY_SEC_DESC *nt_inherit_security(REG_KEY *key)
+{
+
+  if (!key) return NULL;
+  return key->security;
+}
+
 REG_KEY *nt_add_reg_key(REG_KEY *key, char *name, int create);
 REG_KEY *nt_add_reg_key_list(REG_KEY *key, char * name, int create)
 {
@@ -1054,14 +1066,27 @@ REG_KEY *nt_add_reg_key_list(REG_KEY *key, char * name, int create)
 
   bzero(tmp, sizeof(REG_KEY));
 
+  tmp->name = strdup(c1);
+  if (!tmp->name) goto error;
+  tmp->owner = key;
+  /*
+   * Next, pull security from the parent, but override by with
+   * anything passed in on the command line
+   */
+  tmp->security = nt_inherit_security(key);
+
   list->keys[list->key_count - 1] = tmp;
 
   if (c2) {
-    ret = nt_add_reg_key(key, name, True);
+    ret = nt_add_reg_key(key, c2, True);
   }
 
+  if (lname) free(lname);
+
   return ret;
+
  error:
+  if (tmp) free(tmp);
   if (lname) free(lname);
   return NULL;
 }
