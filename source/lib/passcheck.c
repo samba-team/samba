@@ -204,7 +204,6 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar challenge[8],
 	return False;
 }
 
-
 /****************************************************************************
 check if a username/password is OK assuming the password is a 24 byte
 SMB hash

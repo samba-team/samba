@@ -129,12 +129,12 @@ uint32 cli_net_auth2(const char *srv_name,
 
 	if (!cli_connection_getsrv(srv_name, PIPE_NETLOGON, &con))
 	{
-		return False;
+		return 0xC0000000 | NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (!cli_get_con_sesskey(con, sess_key))
 	{
-		return False;
+		return 0xC0000000 | NT_STATUS_INVALID_PARAMETER;
 	}
 
 	prs_init(&buf , 1024, 4, False);
@@ -239,7 +239,7 @@ uint32 cli_net_req_chal( const char *srv_name, const char* myhostname,
 
 	if (!cli_connection_init(srv_name, PIPE_NETLOGON, &con))
 	{
-		return False;
+		return 0xC0000000 | NT_STATUS_INVALID_PARAMETER;
 	}
 
   if (srv_chal == NULL || clnt_chal == NULL)
@@ -381,7 +381,7 @@ BOOL cli_net_srv_pwset(const char* srv_name,
 LSA SAM Logon - interactive or network.
 ****************************************************************************/
 
-BOOL cli_net_sam_logon(const char* srv_name, const char* myhostname,
+uint32 cli_net_sam_logon(const char* srv_name, const char* myhostname,
 				NET_ID_INFO_CTR *ctr, 
 				NET_USER_INFO_3 *user_info3)
 {
@@ -391,13 +391,13 @@ BOOL cli_net_sam_logon(const char* srv_name, const char* myhostname,
   prs_struct buf; 
   uint16 validation_level = 3;
   NET_Q_SAM_LOGON q_s;
-  BOOL ok = False;
+  uint32 status = 0x0;
 
 	struct cli_connection *con = NULL;
 
 	if (!cli_connection_getsrv(srv_name, PIPE_NETLOGON, &con))
 	{
-		return False;
+		return 0xC0000000 | NT_STATUS_INVALID_PARAMETER;
 	}
 
   cli_con_gen_next_creds( con, &new_clnt_cred);
@@ -431,39 +431,49 @@ BOOL cli_net_sam_logon(const char* srv_name, const char* myhostname,
     r_s.user = user_info3;
 
     net_io_r_sam_logon("", &r_s, &rbuf, 0);
-    ok = (rbuf.offset != 0);
+	status = (rbuf.offset == 0) ? 0xC0000000 | NT_STATUS_INVALID_PARAMETER : 0;
 		
-    if (ok && r_s.status != 0)
+    if (status != 0x0)
     {
       /* report error code */
       DEBUG(5,("cli_net_sam_logon: %s\n", get_nt_error_msg(r_s.status)));
-      ok = False;
+    }
+
+    if (status == 0x0)
+    {
+      /* report error code */
+      DEBUG(5,("cli_net_sam_logon: %s\n", get_nt_error_msg(r_s.status)));
+      status = r_s.status;
     }
 
     /* Update the credentials. */
-    if (ok && !cli_con_deal_with_creds(con, &(r_s.srv_creds)))
+    if (status == 0x0 && !cli_con_deal_with_creds(con, &(r_s.srv_creds)))
     {
       /*
        * Server replied with bad credential. Fail.
        */
       DEBUG(5,("cli_net_sam_logon: server %s replied with bad credential \
 (bad trust account password ?).\n", srv_name));
-        ok = False;
+	status = 0xC0000000 | NT_STATUS_LOGON_FAILURE;
     }
 
-    if (ok && r_s.switch_value != 3)
+    if (status == 0x0 && r_s.switch_value != 3)
     {
       /* report different switch_value */
       DEBUG(5,("cli_net_sam_logon: switch_value of 3 expected %x\n",
                    r_s.switch_value));
-      ok = False;
+	status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
     }
+  }
+  else
+  {
+	status = 0xC0000000 | NT_STATUS_INVALID_PARAMETER;
   }
 
   prs_free_data(&rbuf);
   prs_free_data(&buf );
 
-  return ok;
+  return status;
 }
 
 /***************************************************************************

@@ -312,7 +312,7 @@ static BOOL api_pipe_ntlmssp_verify(rpcsrv_struct *l)
 				      (uchar*)l->ntlmssp_chal.challenge,
 				      lm_owf, lm_owf_len,
 				      nt_owf, nt_owf_len,
-				      l->user_sess_key);
+				      l->user_sess_key) == 0x0;
 		unbecome_root(False);
 	}
 

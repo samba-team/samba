@@ -2013,7 +2013,7 @@ BOOL cli_net_srv_pwset(const char* srv_name,
 				const char* trust_acct,
 				uint8 hashed_trust_pwd[16],
 				uint16 sec_chan_type);
-BOOL cli_net_sam_logon(const char* srv_name, const char* myhostname,
+uint32 cli_net_sam_logon(const char* srv_name, const char* myhostname,
 				NET_ID_INFO_CTR *ctr, 
 				NET_USER_INFO_3 *user_info3);
 BOOL cli_net_sam_logoff(const char* srv_name, const char* myhostname,
@@ -2316,7 +2316,7 @@ BOOL msrpc_lsa_query_secret(const char* srv_name,
 
 /*The following definitions come from  rpc_client/msrpc_netlogon.c  */
 
-BOOL check_domain_security(char *orig_user, char *domain, 
+uint32 check_domain_security(char *orig_user, char *domain, 
 				uchar *challenge,
 				char *smb_apasswd, int smb_apasslen,
 				char *smb_ntpasswd, int smb_ntpasslen,

@@ -816,6 +816,18 @@ static uint32 reply_net_sam_logon(NET_Q_SAM_LOGON *q_l,
 	{
 		return 0xC0000000 | NT_STATUS_ACCOUNT_DISABLED;
 	}
+	else if (IS_BITS_SET_ALL(sam_pass->acct_ctrl, ACB_DOMTRUST))
+	{
+		return 0xc0000000|NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT;
+	}
+	else if (IS_BITS_SET_ALL(sam_pass->acct_ctrl, ACB_SVRTRUST))
+	{
+		return 0xc0000000|NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT;
+	}
+	else if (IS_BITS_SET_ALL(sam_pass->acct_ctrl, ACB_WSTRUST))
+	{
+		return 0xc0000000|NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT;
+	}
 
 	logon_time            = sam_pass->logon_time;
 	logoff_time           = sam_pass->logoff_time;

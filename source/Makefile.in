@@ -127,8 +127,6 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 		lib/vagent.o \
 		lib/util_hnd.o
 
-LIBSRV_OBJ = lib/passcheck.o
-
 UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
             ubiqx/ubi_dLinkList.o ubiqx/ubi_sLinkList.o
 
@@ -258,6 +256,7 @@ NETLOGOND_OBJ1 = netlogond/netlogond.o \
 		rpc_server/srv_lookup.o \
 		rpc_client/cli_lsarpc.o   \
                 rpc_parse/parse_lsa.o \
+		lib/passcheck.o \
 		smbd/chgpasswd.o
 
 SAMRD_OBJ1 = samrd/samrd.o \
@@ -293,65 +292,56 @@ SPOOLSSD_OBJ1 = spoolssd/spoolssd.o \
 SMBD_OBJ = $(SMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
            $(RPC_SERVER_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
            $(LOCKING_OBJ) $(SAMPASSDB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-		$(LIBSTATUS_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) \
-		$(LIBSRV_OBJ)
+		$(LIBSTATUS_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
 
 SRVSVCD_OBJ = $(MSRPCD_OBJ) $(SRVSVCD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
 		$(UBIQX_OBJ) \
            $(RPC_SRVUTIL_OBJ) $(RPC_PARSE_OBJ2) \
            $(LOCKING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) \
-		$(LIBSTATUS_OBJ) $(LIBSRV_OBJ)
+		$(LIBSTATUS_OBJ)
 
 WKSSVCD_OBJ = $(MSRPCD_OBJ) $(WKSSVCD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
 		$(UBIQX_OBJ) \
            $(RPC_SRVUTIL_OBJ) $(RPC_PARSE_OBJ2) \
-           $(LOCKING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) \
-		$(LIBSRV_OBJ)
+           $(LOCKING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
 
 BROWSERD_OBJ = $(MSRPCD_OBJ) $(BROWSERD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
 		$(UBIQX_OBJ) \
            $(RPC_SRVUTIL_OBJ) $(RPC_PARSE_OBJ2) \
-           $(LOCKING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) \
-		$(LIBSRV_OBJ)
+           $(LOCKING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
 
 WINREGD_OBJ = $(MSRPCD_OBJ) $(WINREGD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
 		$(UBIQX_OBJ) \
            $(RPC_SRVUTIL_OBJ) $(RPC_PARSE_OBJ2) \
-           $(LOCKING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) \
-		$(LIBSRV_OBJ)
+           $(LOCKING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
 
 SVCCTLD_OBJ = $(MSRPCD_OBJ) $(SVCCTLD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
 		$(UBIQX_OBJ) \
            $(RPC_SRVUTIL_OBJ) $(RPC_PARSE_OBJ2) \
-           $(LOCKING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) \
-		$(LIBSRV_OBJ)
+           $(LOCKING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
 
 LSARPCD_OBJ = $(MSRPCD_OBJ) $(LSARPCD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
 		$(UBIQX_OBJ) \
            $(RPC_SRVUTIL_OBJ) $(RPC_PARSE_OBJ2) \
            $(LOCKING_OBJ) \
-		$(LIBSTATUS_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) \
-		$(LIBSRV_OBJ)
+		$(LIBSTATUS_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
 
 SPOOLSSD_OBJ = $(MSRPCD_OBJ) $(SPOOLSSD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
 		$(UBIQX_OBJ) $(PRINTING_OBJ) \
            $(RPC_SRVUTIL_OBJ) $(RPC_PARSE_OBJ2) \
-           $(LOCKING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) \
-		$(LIBSRV_OBJ)
+           $(LOCKING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
 
 NETLOGOND_OBJ = $(MSRPCD_OBJ) $(NETLOGOND_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
 		$(UBIQX_OBJ) \
            $(RPC_SRVUTIL_OBJ) $(RPC_PARSE_OBJ2) \
            $(LOCKING_OBJ) $(SAMPASSDB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-		$(LIBSTATUS_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) \
-		$(LIBSRV_OBJ)
+		$(LIBSTATUS_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
 
 SAMRD_OBJ = $(MSRPCD_OBJ) $(SAMRD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
 		$(UBIQX_OBJ) \
            $(RPC_SRVUTIL_OBJ) $(RPC_PARSE_OBJ2) \
            $(LOCKING_OBJ) $(SAMPASSDB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-		$(LIBSTATUS_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) \
-		$(LIBSRV_OBJ)
+		$(LIBSTATUS_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
 
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
             nmbd/nmbd_become_lmb.o nmbd/nmbd_browserdb.o \

@@ -127,7 +127,7 @@ BOOL password_ok(char *orig_user, char *domain,
 					  last_chal,
 					  smb_apasswd, smb_apasslen,
 					  smb_ntpasswd, smb_ntpasslen,
-					  user_sess_key))
+					  user_sess_key) == 0x0)
 		{
 			DEBUG(10,("password_ok: domain auth succeeded\n"));
 			return True;

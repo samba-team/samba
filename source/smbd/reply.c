@@ -416,70 +416,36 @@ static int session_trust_account(connection_struct *conn,
                                 char *smb_passwd, int smb_passlen,
                                 char *smb_nt_passwd, int smb_nt_passlen)
 {
-  struct smb_passwd *smb_trust_acct = NULL; /* check if trust account exists */
 	uchar last_chal[8];
-  if (lp_security() == SEC_USER)
-  {
-    smb_trust_acct = getsmbpwnam(user);
-  }
-  else
-  {
-    DEBUG(0,("session_trust_account: Trust account %s only supported with security = user\n", user));
-    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-    return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
-  }
+	uint32 status = 0x0;
 
-  if (smb_trust_acct == NULL)
-  {
-    /* lkclXXXX: workstation entry doesn't exist */
-    DEBUG(0,("session_trust_account: Trust account %s user doesn't exist\n",user));
-    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-    return(ERROR(0, 0xc0000000|NT_STATUS_NO_SUCH_USER));
-  }
-  else
-  {
-    if ((smb_passlen != 24) || (smb_nt_passlen != 24))
-    {
-      DEBUG(0,("session_trust_account: Trust account %s - password length wrong.\n", user));
-      SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-      return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
-    }
-    if (!last_challenge(last_chal) ||
-        !check_domain_security(user, domain,
-            			last_chal, 
-		(unsigned char *)smb_passwd, smb_passlen,
-		(unsigned char *)smb_nt_passwd, smb_nt_passlen, NULL))
-    {
-      DEBUG(0,("session_trust_account: Trust Account %s - password failed\n", user));
-      SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-      return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
-    }
+	if (lp_security() != SEC_USER)
+	{
+		DEBUG(0,("session_trust_account: Trust account %s only supported with security = user\n", user));
+		SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+		return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
+	}
 
-    if (IS_BITS_SET_ALL(smb_trust_acct->acct_ctrl, ACB_DOMTRUST))
-    {
-      DEBUG(0,("session_trust_account: Domain trust account %s denied by server\n",user));
-      SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-      return(ERROR(0, 0xc0000000|NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT));
-    }
+	if (last_challenge(last_chal))
+	{
+		status = check_domain_security(user, domain,
+	                            last_chal, 
+	                            (uchar *)smb_passwd, smb_passlen,
+	                            (uchar *)smb_nt_passwd, smb_nt_passlen,
+	                            NULL);
+	}
+	else
+	{
+		status = 0xc0000000|NT_STATUS_LOGON_FAILURE;
+	}
 
-    if (IS_BITS_SET_ALL(smb_trust_acct->acct_ctrl, ACB_SVRTRUST))
-    {
-      DEBUG(0,("session_trust_account: Server trust account %s denied by server\n",user));
-      SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-      return(ERROR(0, 0xc0000000|NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT));
-    }
+	if (status == 0x0)
+	{
+		status = 0xc0000000|NT_STATUS_LOGON_FAILURE;
+	}
 
-    if (IS_BITS_SET_ALL(smb_trust_acct->acct_ctrl, ACB_WSTRUST))
-    {
-      DEBUG(4,("session_trust_account: Wksta trust account %s denied by server\n", user));
-      SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-      return(ERROR(0, 0xc0000000|NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT));
-    }
-  }
-
-  /* don't know what to do: indicate logon failure */
-  SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-  return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
+	SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+	return status;
 }
 
 /****************************************************************************
@@ -3718,9 +3684,9 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
   files_struct *fsp = file_fsp(inbuf,smb_vwv2);
-  unsigned char locktype = CVAL(inbuf,smb_vwv3);
+  uchar locktype = CVAL(inbuf,smb_vwv3);
 #if 0
-  unsigned char oplocklevel = CVAL(inbuf,smb_vwv3+1);
+  uchar oplocklevel = CVAL(inbuf,smb_vwv3+1);
 #endif
   uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
   uint16 num_locks = SVAL(inbuf,smb_vwv7);

@@ -37,7 +37,7 @@ extern pstring global_myworkgroup;
  Do the same as security=server, but using NT Domain calls and a session
  key from the workstation trust account password.
 ************************************************************************/
-static BOOL domain_client_validate( char *user, char *domain, 
+static uint32 domain_client_validate( char *user, char *domain, 
 				char *acct_name, uint16 acct_type,
 				char *challenge,
 				char *smb_apasswd, int smb_apasslen, 
@@ -48,6 +48,7 @@ static BOOL domain_client_validate( char *user, char *domain,
 	NET_ID_INFO_CTR ctr;
 	NET_USER_INFO_3 info3;
 	uint32 smb_uid_low;
+	uint32 status;
 	fstring trust_acct;
 	fstring srv_name;
 
@@ -93,39 +94,43 @@ static BOOL domain_client_validate( char *user, char *domain,
 	* Now start the NT Domain stuff :-).
 	*/
 
-	if(cli_nt_setup_creds(srv_name, global_myname, trust_acct,
-	                      trust_passwd, acct_type) != 0x0)
+	status = cli_nt_setup_creds(srv_name, global_myname, trust_acct,
+	                      trust_passwd, acct_type);
+	if (status != 0x0)
 	{
 		DEBUG(0,("domain_client_validate: unable to setup the PDC credentials to machine \
 		%s.\n", srv_name));
-		return False;
+		return status;
 	}
 
 	/* We really don't care what LUID we give the user. */
 	generate_random_buffer( (unsigned char *)&smb_uid_low, 4, False);
 
-	if (challenge == NULL && !cli_nt_login_interactive(srv_name,
+	if (challenge == NULL)
+	{
+		status = cli_nt_login_interactive(srv_name,
 			global_myname, 
 	                domain, user,
 	                smb_uid_low, 
 			smb_apasswd, smb_ntpasswd, 
-			&ctr, &info3))
-	{
-		DEBUG(0,("domain_client_validate: unable to validate password for user %s in domain \
-		%s to Domain controller %s.\n", user, domain, srv_name));
-		return False;
+			&ctr, &info3);
 	}
-	else if (challenge != NULL && !cli_nt_login_network(srv_name,
+	else
+	{
+		status = cli_nt_login_network(srv_name,
 			global_myname, 
 	                domain, user,
 	               smb_uid_low, (char *)challenge,
 			((smb_apasslen != 0) ? smb_apasswd : NULL),
 			((smb_ntpasslen != 0) ? smb_ntpasswd : NULL),
-			&ctr, &info3))
+			&ctr, &info3);
+	}
+
+	if (status != 0x0)
 	{
 		DEBUG(0,("domain_client_validate: unable to validate password for user %s in domain \
 		%s to Domain controller %s.\n", user, domain, srv_name));
-		return False;
+		return status;
 	}
 
 	/* grab the user session key - really important, this */
@@ -142,14 +147,15 @@ static BOOL domain_client_validate( char *user, char *domain,
 	 */
 
 	DEBUG(10,("domain_client_validate: user %s\%s OK\n", domain, user));
+	DEBUG(3,("domain_client_validate: check lockout / pwd expired!\n"));
 
-	return True;
+	return 0x0;
 }
 
 /****************************************************************************
  Check for a valid username and password in security=domain mode.
 ****************************************************************************/
-BOOL check_domain_security(char *orig_user, char *domain, 
+uint32 check_domain_security(char *orig_user, char *domain, 
 				uchar *challenge,
 				char *smb_apasswd, int smb_apasslen,
 				char *smb_ntpasswd, int smb_ntpasslen,
