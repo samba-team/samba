@@ -255,6 +255,107 @@ get_init_creds_common(krb5_context context,
 }
 
 krb5_error_code
+change_password (krb5_context context,
+		 krb5_principal client,
+		 char *password,
+		 char *newpw,
+		 size_t newpw_sz,
+		 krb5_prompter_fct prompter,
+		 void *data,
+		 krb5_get_init_creds_opt *old_options)
+{
+    krb5_prompt prompt;
+    krb5_error_code ret;
+    krb5_creds cpw_cred;
+    char buf1[BUFSIZ], buf2[BUFSIZ];
+    krb5_data password_data;
+    int result_code;
+    krb5_data result_code_string;
+    krb5_data result_string;
+    char *p;
+    krb5_get_init_creds_opt options;
+
+    memset (&cpw_cred, 0, sizeof(cpw_cred));
+
+    krb5_get_init_creds_opt_init (&options);
+    krb5_get_init_creds_opt_set_tkt_life (&options, 60);
+    krb5_get_init_creds_opt_set_preauth_list (&options,
+					      old_options->preauth_list,
+					      old_options->preauth_list_length);					      
+
+    krb5_data_zero (&result_code_string);
+    krb5_data_zero (&result_string);
+
+    ret = krb5_get_init_creds_password (context,
+					&cpw_cred,
+					client,
+					password,
+					prompter,
+					data,
+					0,
+					"kadmin/changepw",
+					&options);
+    if (ret)
+	goto out;
+
+    for(;;) {
+	password_data.data   = buf1;
+	password_data.length = sizeof(buf1);
+
+	prompt.hidden = 1;
+	prompt.prompt = "New password";
+	prompt.reply  = &password_data;
+
+	ret = (*prompter) (context, data, "Changing password", 1, &prompt);
+	if (ret)
+	    goto out;
+
+	password_data.data   = buf2;
+	password_data.length = sizeof(buf2);
+
+	prompt.hidden = 1;
+	prompt.prompt = "Repeat new password";
+	prompt.reply  = &password_data;
+
+	ret = (*prompter) (context, data, "Changing password", 1, &prompt);
+	if (ret)
+	    goto out;
+
+	if (strcmp (buf1, buf2) == 0)
+	    break;
+    }
+    
+    ret = krb5_change_password (context,
+				&cpw_cred,
+				buf1,
+				&result_code,
+				&result_code_string,
+				&result_string);
+    if (ret)
+	goto out;
+    asprintf (&p, "%s: %.*s\n",
+	      result_code ? "Error" : "Success",
+	      result_string.length,
+	      result_string.data);
+
+    ret = (*prompter) (context, data, p, 0, NULL);
+    free (p);
+    if (result_code == 0) {
+	strncpy (newpw, buf1, newpw_sz);
+	ret = 0;
+    } else
+	ret = ENOTTY;
+
+out:
+    memset (buf1, 0, sizeof(buf1));
+    memset (buf2, 0, sizeof(buf2));
+    krb5_data_free (&result_string);
+    krb5_data_free (&result_code_string);
+    krb5_free_creds_contents (context, &cpw_cred);
+    return ret;
+}
+
+krb5_error_code
 krb5_get_init_creds_password(krb5_context context,
 			     krb5_creds *creds,
 			     krb5_principal client,
@@ -274,6 +375,7 @@ krb5_get_init_creds_password(krb5_context context,
     krb5_kdc_rep kdc_reply;
     char buf[BUFSIZ];
     krb5_data password_data;
+    int done;
 
     ret = get_init_creds_common(context, creds, client, start_time,
 				in_tkt_service, options,
@@ -303,20 +405,41 @@ krb5_get_init_creds_password(krb5_context context,
 	password = password_data.data;
     }
 
-    ret = krb5_get_in_cred (context,
-			    flags.i,
-			    addrs,
-			    etypes,
-			    pre_auth_types,
-			    krb5_password_key_proc,
-			    password,
-			    NULL,
-			    NULL,
-			    &this_cred,
-			    &kdc_reply);
-    memset (buf, 0, sizeof(buf));
-    if (ret)
-	goto out;
+    done = 0;
+    while(!done) {
+	ret = krb5_get_in_cred (context,
+				flags.i,
+				addrs,
+				etypes,
+				pre_auth_types,
+				krb5_password_key_proc,
+				password,
+				NULL,
+				NULL,
+				&this_cred,
+				&kdc_reply);
+	switch (ret) {
+	case 0 :
+	    done = 1;
+	    break;
+	case KRB5KDC_ERR_KEY_EXPIRED :
+	    ret = change_password (context,
+				   client,
+				   password,
+				   buf,
+				   sizeof(buf),
+				   prompter,
+				   data,
+				   options);
+	    if (ret)
+		goto out;
+	    password = buf;
+	    break;
+	default:
+	    goto out;
+	}
+    }
+
     if (prompter)
 	print_expire (context,
 		      krb5_princ_realm (context, this_cred.client),
@@ -334,6 +457,7 @@ krb5_get_init_creds_password(krb5_context context,
     return 0;
 
 out:
+    memset (buf, 0, sizeof(buf));
     free (pre_auth_types);
     free (etypes);
     krb5_free_creds_contents (context, &this_cred);
