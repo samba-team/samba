@@ -53,7 +53,7 @@ static int sasl_interact(LDAP *ld,unsigned flags,void *defaults,void *in)
    this routine is much less fragile
    see RFC2078 for details
 */
-ADS_RETURN_CODE ads_sasl_gssapi_bind(ADS_STRUCT *ads)
+ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 {
 	int minor_status;
 	gss_name_t serv_name;
@@ -65,11 +65,11 @@ ADS_RETURN_CODE ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	struct berval cred;
 	struct berval *scred;
 	int i=0;
-	int gss_rc;
+	int gss_rc, rc;
 	uint8 *p;
 	uint32 max_msg_size;
 	char *sname;
-	ADS_RETURN_CODE rc;
+	ADS_STATUS status;
 	krb5_principal principal;
 	krb5_context ctx;
 	krb5_enctype enc_types[] = {ENCTYPE_DES_CBC_MD5, ENCTYPE_NULL};
@@ -88,8 +88,10 @@ ADS_RETURN_CODE ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	input_name.value = &principal;
 	input_name.length = sizeof(principal);
 
-	rc.rc = gss_import_name(&minor_status,&input_name,&nt_principal, &serv_name);
-	rc.error_type = False;
+	gss_rc = gss_import_name(&minor_status,&input_name,&nt_principal, &serv_name);
+	if (gss_rc) {
+		return ADS_ERROR_GSS(gss_rc, minor_status);
+	}
 
 	context_handle = GSS_C_NO_CONTEXT;
 
@@ -116,17 +118,19 @@ ADS_RETURN_CODE ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 		}
 
 		if (gss_rc && gss_rc != GSS_S_CONTINUE_NEEDED) {
-		    rc.minor_status = minor_status;
-		    rc.rc = gss_rc;
-		    rc.error_type = True;
-		    goto failed;
+			status = ADS_ERROR_GSS(gss_rc, minor_status);
+			goto failed;
 		}
 
 		cred.bv_val = output_token.value;
 		cred.bv_len = output_token.length;
 
-		rc.rc = ldap_sasl_bind_s(ads->ld, NULL, "GSSAPI", &cred, NULL, NULL, 
+		rc = ldap_sasl_bind_s(ads->ld, NULL, "GSSAPI", &cred, NULL, NULL, 
 				      &scred);
+		if (rc != LDAP_SASL_BIND_IN_PROGRESS) {
+			status = ADS_ERROR(rc);
+			goto failed;
+		}
 
 		if (output_token.value) {
 			gss_release_buffer(&minor_status, &output_token);
@@ -140,13 +144,17 @@ ADS_RETURN_CODE ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 			input_token.length = 0;
 		}
 
-		if (gss_rc != GSS_S_CONTINUE_NEEDED) break;
+		if (gss_rc == 0) break;
 	}
 
 	gss_release_name(&minor_status, &serv_name);
 
 	gss_rc = gss_unwrap(&minor_status,context_handle,&input_token,&output_token,
 			    &conf_state,NULL);
+	if (gss_rc) {
+		status = ADS_ERROR_GSS(gss_rc, minor_status);
+		goto failed;
+	}
 
 	gss_release_buffer(&minor_status, &input_token);
 
@@ -169,33 +177,37 @@ ADS_RETURN_CODE ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 
 	output_token.length = strlen(ads->bind_path) + 8;
 
-	rc.rc = gss_wrap(&minor_status, context_handle,0,GSS_C_QOP_DEFAULT,
+	gss_rc = gss_wrap(&minor_status, context_handle,0,GSS_C_QOP_DEFAULT,
 			  &output_token, &conf_state,
 			  &input_token);
+	if (gss_rc) {
+		status = ADS_ERROR_GSS(gss_rc, minor_status);
+		goto failed;
+	}
 
 	free(output_token.value);
 
 	cred.bv_val = input_token.value;
 	cred.bv_len = input_token.length;
 
-	rc.rc = ldap_sasl_bind_s(ads->ld, NULL, "GSSAPI", &cred, NULL, NULL, 
+	rc = ldap_sasl_bind_s(ads->ld, NULL, "GSSAPI", &cred, NULL, NULL, 
 			      &scred);
+	status = ADS_ERROR(rc);
 
 	gss_release_buffer(&minor_status, &input_token);
 
 failed:
-	return rc;
+	return status;
 }
 
-ADS_RETURN_CODE ads_sasl_bind(ADS_STRUCT *ads)
+ADS_STATUS ads_sasl_bind(ADS_STRUCT *ads)
 {
 #if USE_CYRUS_SASL
-    ADS_RETURN_CODE rc;
-	rc.error_type = False;
-	rc.rc = ldap_sasl_interactive_bind_s(ads->ld, NULL, NULL, NULL, NULL, 
-					    LDAP_SASL_QUIET,
-					    sasl_interact, NULL);
-	return rc;
+	int rc;
+	rc = ldap_sasl_interactive_bind_s(ads->ld, NULL, NULL, NULL, NULL, 
+					  LDAP_SASL_QUIET,
+					  sasl_interact, NULL);
+	return ADS_ERROR(rc);
 #else
 	return ads_sasl_gssapi_bind(ads);
 #endif

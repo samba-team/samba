@@ -22,6 +22,10 @@
 
 #include "includes.h"
 
+/* return a dn of the form "dc=AA,dc=BB,dc=CC" from a 
+   realm of the form AA.BB.CC 
+   caller must free
+*/
 char *ads_build_dn(const char *realm)
 {
 	char *p, *r;
@@ -155,34 +159,4 @@ void ads_destroy(ADS_STRUCT **ads)
 		ZERO_STRUCTP(*ads);
 		SAFE_FREE(*ads);
 	}
-}
-
-#if HAVE_KRB5
-static void ads_display_status_helper(const char *m, uint32 code, int type)
-{
-     int maj_stat, min_stat;
-     gss_buffer_desc msg;
-     int msg_ctx;
-     
-     msg_ctx = 0;
-     while (1) {
-	  maj_stat = gss_display_status(&min_stat, code,
-				       type, GSS_C_NULL_OID,
-				       &msg_ctx, &msg);
-	  DEBUG(1, ("GSS-API error %s: %s\n", m,
-		      (char *)msg.value)); 
-	  (void) gss_release_buffer(&min_stat, &msg);
-	  
-	  if (!msg_ctx)
-	       break;
-     }
-}
-#endif
-
-void ads_display_status(const char *msg, int maj_stat,int min_stat)
-{
-#if HAVE_KRB5
-     ads_display_status_helper(msg, maj_stat, GSS_C_GSS_CODE);
-     ads_display_status_helper(msg, min_stat, GSS_C_MECH_CODE);
-#endif
 }

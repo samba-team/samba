@@ -18,16 +18,26 @@ typedef struct {
 	char *server_realm;
 } ADS_STRUCT;
 
+/* there are 4 possible types of errors the ads subsystem can produce */
+enum ads_error_type {ADS_ERROR_KRB5, ADS_ERROR_GSS, 
+		     ADS_ERROR_LDAP, ADS_ERROR_SYSTEM};
+
 typedef struct {
-	/* Type of error returned by ads_connect: */
-	/* True corresponds GSS API, False - LDAP */
-	int error_type;
-	/* For error_type = False rc describes LDAP error */
+	enum ads_error_type error_type;
 	int rc;
-	/* For error_type = True rc and minor_status describe GSS API error */
+	/* For error_type = ADS_ERROR_GSS minor_status describe GSS API error */
 	/* Where rc represents major_status of GSS API error */
 	int minor_status;
-} ADS_RETURN_CODE;
+} ADS_STATUS;
+
+/* macros to simplify error returning */
+#define ADS_ERROR(rc) ads_build_error(ADS_ERROR_LDAP, rc, 0);
+#define ADS_ERROR_SYSTEM(rc) ads_build_error(ADS_ERROR_SYSTEM, rc, 0);
+#define ADS_ERROR_KRB5(rc) ads_build_error(ADS_ERROR_KRB5, rc, 0);
+#define ADS_ERROR_GSS(rc, minor) ads_build_error(ADS_ERROR_GSS, rc, minor);
+
+#define ADS_ERR_OK(status) ((status).rc == 0)
+#define ADS_SUCCESS ADS_ERROR(0)
 
 /* time between reconnect attempts */
 #define ADS_RECONNECT_TIME 5

@@ -32,64 +32,61 @@ static char *primary_realm;
   a wrapper around ldap_search_s that retries depending on the error code
   this is supposed to catch dropped connections and auto-reconnect
 */
-int ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope, 
-			const char *exp,
-			const char **attrs, void **res)
+ADS_STATUS ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope, 
+			       const char *exp,
+			       const char **attrs, void **res)
 {
-	int rc = -1;
-	ADS_RETURN_CODE rc2;
+	ADS_STATUS status;
 	int count = 3;
 
 	if (!ads->ld &&
 	    time(NULL) - ads->last_attempt < ADS_RECONNECT_TIME) {
-		return LDAP_SERVER_DOWN;
+		return ADS_ERROR(LDAP_SERVER_DOWN);
 	}
 
 	while (count--) {
-		rc = ads_do_search(ads, bind_path, scope, exp, attrs, res);
-		if (rc == 0) {
+		status = ads_do_search(ads, bind_path, scope, exp, attrs, res);
+		if (ADS_ERR_OK(status)) {
 			DEBUG(5,("Search for %s gave %d replies\n",
 				 exp, ads_count_replies(ads, *res)));
-			return rc;
+			return status;
 		}
 
 		if (*res) ads_msgfree(ads, *res);
 		*res = NULL;
-		DEBUG(1,("Reopening ads connection after error %s\n", ads_errstr(rc)));
+		DEBUG(1,("Reopening ads connection after error %s\n", 
+			 ads_errstr(status)));
 		if (ads->ld) {
 			/* we should unbind here, but that seems to trigger openldap bugs :(
 			   ldap_unbind(ads->ld); 
 			*/
 		}
 		ads->ld = NULL;
-		rc2 = ads_connect(ads);
-		if (rc2.rc) {
-		    DEBUG(1,("ads_search_retry: failed to reconnect:\n"));
-		    if(rc2.error_type) 
-			ads_display_status("", rc2.rc, rc2.minor_status);
-		    else 
-			DEBUG(1,("LDAP error: %s\n", ads_errstr(rc2.rc)));
-		    
-		    ads_destroy(&ads);
-		    return rc2.rc;
+		status = ads_connect(ads);
+		if (!ADS_ERR_OK(status)) {
+			DEBUG(1,("ads_search_retry: failed to reconnect (%s)\n",
+				 ads_errstr(status)));
+			ads_destroy(&ads);
+			return status;
 		}
 	}
-	DEBUG(1,("ads reopen failed after error %s\n", ads_errstr(rc)));
-	return rc;
+
+	DEBUG(1,("ads reopen failed after error %s\n", ads_errstr(status)));
+	return status;
 }
 
 
-int ads_search_retry(ADS_STRUCT *ads, void **res, 
-		     const char *exp, 
-		     const char **attrs)
+ADS_STATUS ads_search_retry(ADS_STRUCT *ads, void **res, 
+			    const char *exp, 
+			    const char **attrs)
 {
 	return ads_do_search_retry(ads, ads->bind_path, LDAP_SCOPE_SUBTREE,
 				   exp, attrs, res);
 }
 
-int ads_search_retry_dn(ADS_STRUCT *ads, void **res, 
-			const char *dn, 
-			const char **attrs)
+ADS_STATUS ads_search_retry_dn(ADS_STRUCT *ads, void **res, 
+			       const char *dn, 
+			       const char **attrs)
 {
 	return ads_do_search_retry(ads, dn, LDAP_SCOPE_BASE,
 				   "(objectclass=*)", attrs, res);
@@ -102,7 +99,7 @@ int ads_search_retry_dn(ADS_STRUCT *ads, void **res,
 static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 {
 	ADS_STRUCT *ads;
-	ADS_RETURN_CODE rc;
+	ADS_STATUS status;
 	char *ccache;
 	struct in_addr server_ip;
 
@@ -130,14 +127,10 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 	SAFE_FREE(ads->password);
 	ads->password = secrets_fetch_machine_password();
 
-	rc = ads_connect(ads);
-	if (rc.rc) {
-		DEBUG(1,("ads_connect for domain %s failed:\n", domain->name));
-		if(rc.error_type) 
-		    ads_display_status("", rc.rc, rc.minor_status);
-		else 
-		    DEBUG(1,("LDAP error: %s\n", ads_errstr(rc.rc)));
-		    
+	status = ads_connect(ads);
+	if (!ADS_ERR_OK(status)) {
+		DEBUG(1,("ads_connect for domain %s failed: %s\n", 
+			 domain->name, ads_errstr(status)));
 		ads_destroy(&ads);
 		return NULL;
 	}
@@ -183,7 +176,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	ADS_STRUCT *ads = NULL;
 	const char *attrs[] = {"sAMAccountName", "name", "objectSid", "primaryGroupID", 
 			       "sAMAccountType", NULL};
-	int rc, i, count;
+	int i, count;
+	ADS_STATUS rc;
 	void *res = NULL;
 	void *msg = NULL;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
@@ -196,7 +190,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	if (!ads) goto done;
 
 	rc = ads_search_retry(ads, &res, "(objectCategory=user)", attrs);
-	if (rc) {
+	if (!ADS_ERR_OK(rc)) {
 		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
 		goto done;
 	}
@@ -270,7 +264,8 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	ADS_STRUCT *ads = NULL;
 	const char *attrs[] = {"sAMAccountName", "name", "objectSid", 
 			       "sAMAccountType", NULL};
-	int rc, i, count;
+	int i, count;
+	ADS_STATUS rc;
 	void *res = NULL;
 	void *msg = NULL;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
@@ -283,7 +278,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	if (!ads) goto done;
 
 	rc = ads_search_retry(ads, &res, "(objectCategory=group)", attrs);
-	if (rc) {
+	if (!ADS_ERR_OK(rc)) {
 		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
 		goto done;
 	}
@@ -351,7 +346,8 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 {
 	ADS_STRUCT *ads = NULL;
 	const char *attrs[] = {"objectSid", "sAMAccountType", NULL};
-	int rc, count;
+	int count;
+	ADS_STATUS rc;
 	void *res = NULL;
 	char *exp;
 	uint32 t;
@@ -373,7 +369,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	asprintf(&exp, "(sAMAccountName=%s)", name2);
 	rc = ads_search_retry(ads, &res, exp, attrs);
 	free(exp);
-	if (rc) {
+	if (!ADS_ERR_OK(rc)) {
 		DEBUG(1,("name_to_sid ads_search: %s\n", ads_errstr(rc)));
 		goto done;
 	}
@@ -415,7 +411,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 {
 	ADS_STRUCT *ads = NULL;
 	const char *attrs[] = {"sAMAccountName", "sAMAccountType", NULL};
-	int rc;
+	ADS_STATUS rc;
 	void *msg = NULL;
 	char *exp;
 	char *sidstr;
@@ -433,7 +429,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	rc = ads_search_retry(ads, &msg, exp, attrs);
 	free(exp);
 	free(sidstr);
-	if (rc) {
+	if (!ADS_ERR_OK(rc)) {
 		DEBUG(1,("sid_to_name ads_search: %s\n", ads_errstr(rc)));
 		goto done;
 	}
@@ -466,7 +462,8 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	ADS_STRUCT *ads = NULL;
 	const char *attrs[] = {"sAMAccountName", "name", "objectSid", 
 			       "primaryGroupID", NULL};
-	int rc, count;
+	ADS_STATUS rc;
+	int count;
 	void *msg = NULL;
 	char *exp;
 	DOM_SID sid;
@@ -485,7 +482,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	rc = ads_search_retry(ads, &msg, exp, attrs);
 	free(exp);
 	free(sidstr);
-	if (rc) {
+	if (!ADS_ERR_OK(rc)) {
 		DEBUG(1,("query_user(rid=%d) ads_search: %s\n", user_rid, ads_errstr(rc)));
 		goto done;
 	}
@@ -531,7 +528,8 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	ADS_STRUCT *ads = NULL;
 	const char *attrs[] = {"distinguishedName", NULL};
 	const char *attrs2[] = {"tokenGroups", "primaryGroupID", NULL};
-	int rc, count;
+	ADS_STATUS rc;
+	int count;
 	void *msg = NULL;
 	char *exp;
 	char *user_dn;
@@ -558,7 +556,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	rc = ads_search_retry(ads, &msg, exp, attrs);
 	free(exp);
 	free(sidstr);
-	if (rc) {
+	if (!ADS_ERR_OK(rc)) {
 		DEBUG(1,("lookup_usergroups(rid=%d) ads_search: %s\n", user_rid, ads_errstr(rc)));
 		goto done;
 	}
@@ -568,7 +566,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	if (msg) ads_msgfree(ads, msg);
 
 	rc = ads_search_retry_dn(ads, &msg, user_dn, attrs2);
-	if (rc) {
+	if (!ADS_ERR_OK(rc)) {
 		DEBUG(1,("lookup_usergroups(rid=%d) ads_search tokenGroups: %s\n", user_rid, ads_errstr(rc)));
 		goto done;
 	}
@@ -607,7 +605,8 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	DOM_SID group_sid;
 	char *sidstr;
 	const char *attrs[] = {"sAMAccountName", "objectSid", "sAMAccountType", NULL};
-	int rc, count;
+	ADS_STATUS rc;
+	int count;
 	void *res=NULL, *msg=NULL;
 	ADS_STRUCT *ads = NULL;
 	char *exp;
@@ -626,7 +625,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	rc = ads_search_retry(ads, &res, exp, attrs);
 	free(exp);
 	free(sidstr);
-	if (rc) {
+	if (!ADS_ERR_OK(rc)) {
 		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
 		goto done;
 	}
@@ -674,17 +673,15 @@ done:
 static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 {
 	ADS_STRUCT *ads = NULL;
+	ADS_STATUS rc;
 
 	*seq = DOM_SEQUENCE_NONE;
 
 	ads = ads_cached_connection(domain);
 	if (!ads) return NT_STATUS_UNSUCCESSFUL;
 
-	if (!ads_USN(ads, seq)) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	return NT_STATUS_OK;
+	rc = ads_USN(ads, seq);
+	return ads_ntstatus(rc);
 }
 
 /* get a list of trusted domains */
@@ -695,6 +692,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				DOM_SID **dom_sids)
 {
 	ADS_STRUCT *ads = NULL;
+	ADS_STATUS rc;
 
 	*num_domains = 0;
 	*names = NULL;
@@ -702,11 +700,9 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	ads = ads_cached_connection(domain);
 	if (!ads) return NT_STATUS_UNSUCCESSFUL;
 
-	if (!ads_trusted_domains(ads, mem_ctx, num_domains, names, dom_sids)) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
+	rc = ads_trusted_domains(ads, mem_ctx, num_domains, names, dom_sids);
 
-	return NT_STATUS_OK;
+	return ads_ntstatus(rc);
 }
 
 /* find the domain sid for a domain */
@@ -716,14 +712,14 @@ static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
 	const char *attrs[] = {"objectSid", NULL};
 	ADS_STRUCT *ads = NULL;
 	void *res;
-	int rc;
+	ADS_STATUS rc;
 
 	ads = ads_cached_connection(domain);
 	if (!ads) goto done;
 
 	rc = ads_do_search(ads, ads->bind_path, LDAP_SCOPE_BASE, "(objectclass=*)", 
 			   attrs, &res);
-	if (rc) goto done;
+	if (!ADS_ERR_OK(rc)) goto done;
 	if (ads_pull_sid(ads, res, "objectSid", sid)) {
 		status = NT_STATUS_OK;
 	}
