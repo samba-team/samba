@@ -815,4 +815,178 @@ NTSTATUS cli_lsa_enum_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/** Open a LSA user handle
+ *
+ * @param cli Handle on an initialised SMB connection */
+
+NTSTATUS cli_lsa_open_account(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                             POLICY_HND *dom_pol, DOM_SID *sid, uint32 des_access, 
+			     POLICY_HND *user_pol)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_OPENACCOUNT q;
+	LSA_R_OPENACCOUNT r;
+	NTSTATUS result;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+	init_lsa_q_open_account(&q, dom_pol, sid, des_access);
+
+	/* Marshall data and send request */
+
+	if (!lsa_io_q_open_account("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, LSA_OPENACCOUNT, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!lsa_io_r_open_account("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	if (NT_STATUS_IS_OK(result = r.status)) {
+		*user_pol = r.pol;
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/** Enumerate user privileges
+ *
+ * @param cli Handle on an initialised SMB connection */
+
+NTSTATUS cli_lsa_enum_privsaccount(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                             POLICY_HND *pol, uint32 *count, LUID_ATTR **set)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_ENUMPRIVSACCOUNT q;
+	LSA_R_ENUMPRIVSACCOUNT r;
+	NTSTATUS result;
+	int i;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+	init_lsa_q_enum_privsaccount(&q, pol);
+
+	/* Marshall data and send request */
+
+	if (!lsa_io_q_enum_privsaccount("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, LSA_ENUMPRIVSACCOUNT, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!lsa_io_r_enum_privsaccount("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	if (!NT_STATUS_IS_OK(result = r.status)) {
+		goto done;
+	}
+
+	if (r.count == 0)
+		goto done;
+
+	if (!((*set = (LUID_ATTR *)talloc(mem_ctx, sizeof(LUID_ATTR) * r.count)))) {
+		DEBUG(0, ("(cli_lsa_enum_privsaccount): out of memory\n"));
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	for (i=0; i<r.count; i++) {
+		(*set)[i].luid.low = r.set.set[i].luid.low;
+		(*set)[i].luid.high = r.set.set[i].luid.high;
+		(*set)[i].attr = r.set.set[i].attr;
+	}
+
+	*count=r.count;
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/** Get a privilege value given its name */
+
+NTSTATUS cli_lsa_lookupprivvalue(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			      POLICY_HND *pol, char *name, LUID *luid)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_LOOKUPPRIVVALUE q;
+	LSA_R_LOOKUPPRIVVALUE r;
+	NTSTATUS result;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_lsa_q_lookupprivvalue(&q, pol, name);
+
+	if (!lsa_io_q_lookupprivvalue("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, LSA_LOOKUPPRIVVALUE, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!lsa_io_r_lookupprivvalue("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	if (!NT_STATUS_IS_OK(result = r.status)) {
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	(*luid).low=r.luid.low;
+	(*luid).high=r.luid.high;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+
 /** @} **/

@@ -66,6 +66,16 @@ PRIVS privs[] = {
 	{ 25, "SeUndockPrivilege" },
 	{ 26, "SeSyncAgentPrivilege" },
 	{ 27, "SeEnableDelegationPrivilege" },
+SeNetworkLogonRight
+SeUnsolicitedInputPrivilege
+SeBatchLogonRight
+SeServiceLogonRight
+SeInteractiveLogonRight
+SeDenyInteractiveLogonRight
+SeDenyNetworkLogonRight
+SeDenyBatchLogonRight
+SeDenyBatchLogonRight
+
 };
 */
 

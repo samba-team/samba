@@ -1660,6 +1660,14 @@ BOOL lsa_io_r_unk_get_connuser(char *desc, LSA_R_UNK_GET_CONNUSER *r_c, prs_stru
 	return True;
 }
 
+void init_lsa_q_open_account(LSA_Q_OPENACCOUNT *trn, POLICY_HND *hnd, DOM_SID *sid, uint32 access)
+{
+	memcpy(&trn->pol, hnd, sizeof(trn->pol));
+
+	init_dom_sid2(&trn->sid, sid);
+	trn->access = access;
+}
+
 /*******************************************************************
  Reads or writes an LSA_Q_OPENACCOUNT structure.
 ********************************************************************/
@@ -1675,7 +1683,7 @@ BOOL lsa_io_q_open_account(char *desc, LSA_Q_OPENACCOUNT *r_c, prs_struct *ps, i
 	if(!smb_io_pol_hnd("pol", &r_c->pol, ps, depth))
 		return False;
 
-	if(!smb_io_dom_sid2("", &r_c->sid, ps, depth)) /* domain SID */
+	if(!smb_io_dom_sid2("sid", &r_c->sid, ps, depth)) /* domain SID */
 		return False;
 
  	if(!prs_uint32("access", ps, depth, &r_c->access))
@@ -1705,6 +1713,12 @@ BOOL lsa_io_r_open_account(char *desc, LSA_R_OPENACCOUNT  *r_c, prs_struct *ps, 
 	return True;
 }
 
+
+void init_lsa_q_enum_privsaccount(LSA_Q_ENUMPRIVSACCOUNT *trn, POLICY_HND *hnd)
+{
+	memcpy(&trn->pol, hnd, sizeof(trn->pol));
+
+}
 
 /*******************************************************************
  Reads or writes an LSA_Q_ENUMPRIVSACCOUNT structure.
@@ -1822,6 +1836,12 @@ BOOL lsa_io_r_enum_privsaccount(char *desc, LSA_R_ENUMPRIVSACCOUNT *r_c, prs_str
 			return False;
 
 		/* malloc memory if unmarshalling here */
+
+		if (UNMARSHALLING(ps) && r_c->count!=0) {
+			if (!(r_c->set.set = (LUID_ATTR *)prs_alloc_mem(ps,sizeof(LUID_ATTR) * r_c->count)))
+				return False;
+
+		}
 		
 		if(!lsa_io_privilege_set(desc, &r_c->set, ps, depth))
 			return False;
@@ -1868,6 +1888,61 @@ BOOL lsa_io_r_getsystemaccount(char *desc, LSA_R_GETSYSTEMACCOUNT  *r_c, prs_str
 	if(!prs_uint32("access", ps, depth, &r_c->access))
 		return False;
 
+	if(!prs_ntstatus("status", ps, depth, &r_c->status))
+		return False;
+
+	return True;
+}
+
+void init_lsa_q_lookupprivvalue(LSA_Q_LOOKUPPRIVVALUE *trn, POLICY_HND *hnd, char *name)
+{
+	int len_name = strlen(name);
+	memcpy(&trn->pol, hnd, sizeof(trn->pol));
+
+	if(len_name == 0)
+		len_name = 1;
+
+	init_uni_hdr(&trn->hdr_right, len_name);
+	init_unistr2(&trn->uni2_right, name, len_name);
+}
+
+/*******************************************************************
+ Reads or writes an LSA_Q_LOOKUPPRIVVALUE  structure.
+********************************************************************/
+
+BOOL lsa_io_q_lookupprivvalue(char *desc, LSA_Q_LOOKUPPRIVVALUE  *r_c, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_q_lookupprivvalue");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+ 
+	if(!smb_io_pol_hnd("pol", &r_c->pol, ps, depth))
+		return False;
+	if(!smb_io_unihdr ("hdr_name", &r_c->hdr_right, ps, depth))
+		return False;
+	if(!smb_io_unistr2("uni2_right", &r_c->uni2_right, r_c->hdr_right.buffer, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes an  LSA_R_LOOKUPPRIVVALUE structure.
+********************************************************************/
+
+BOOL lsa_io_r_lookupprivvalue(char *desc, LSA_R_LOOKUPPRIVVALUE  *r_c, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_r_lookupprivvalue");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+		
+	if(!lsa_io_luid("luid", &r_c->luid, ps, depth))
+		return False;
+ 
 	if(!prs_ntstatus("status", ps, depth, &r_c->status))
 		return False;
 
