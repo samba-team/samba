@@ -1580,11 +1580,17 @@ void wins_write_database(BOOL background)
 
     if( namerec->data.death_time != PERMANENT_TTL )
     {
+      char *ts, *nl;
+
       tm = LocalTime(&namerec->data.death_time);
-      DEBUGADD(4,("TTL = %s", asctime(tm) ));
+      ts = asctime(tm);
+      nl = strrchr( ts, '\n' );
+      if( NULL != nl )
+        *nl = '\0';
+      DEBUGADD(4,("TTL = %s  ", ts ));
     }
     else
-      DEBUGADD(4,("TTL = PERMANENT\t"));
+      DEBUGADD(4,("TTL = PERMANENT                 "));
 
     for (i = 0; i < namerec->data.num_ips; i++)
       DEBUGADD(4,("%15s ", inet_ntoa(namerec->data.ip[i]) ));
