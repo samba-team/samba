@@ -63,9 +63,7 @@ NTSTATUS smbcli_negprot(struct smbcli_state *cli)
 
 /* wrapper around smb_raw_session_setup() */
 NTSTATUS smbcli_session_setup(struct smbcli_state *cli, 
-			      const char *user, 
-			      const char *password, 
-			      const char *domain)
+							  struct cli_credentials *credentials)
 {
 	struct smb_composite_sesssetup setup;
 	NTSTATUS status;
@@ -79,19 +77,19 @@ NTSTATUS smbcli_session_setup(struct smbcli_state *cli,
 
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
-	if (!user || !user[0]) {
+	if (cli_credentials_is_anonymous(credentials)) {
 		setup.in.password = NULL;
 		setup.in.user = "";
 		setup.in.domain = "";
 		setup.in.capabilities &= ~CAP_EXTENDED_SECURITY;
 	} else {
 		if (cli->transport->negotiate.sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) {
-			setup.in.password = password;
+			setup.in.password = cli_credentials_get_password(credentials);
 		} else {
 			setup.in.password = NULL;
 		}
-		setup.in.user = user;
-		setup.in.domain = domain;
+		setup.in.user = cli_credentials_get_username(credentials);
+		setup.in.domain = cli_credentials_get_domain(credentials);
 	}
 
 	status = smb_composite_sesssetup(cli->session, &setup);
@@ -155,29 +153,19 @@ NTSTATUS smbcli_full_connection(TALLOC_CTX *parent_ctx,
 				const char *host,
 				const char *sharename,
 				const char *devtype,
-				const char *username,
-				const char *domain,
-				const char *password)
+				struct cli_credentials *credentials)
 {
 	struct smbcli_tree *tree;
 	NTSTATUS status;
-	char *p;
 	TALLOC_CTX *mem_ctx;
 
 	mem_ctx = talloc_init("smbcli_full_connection");
 
 	*ret_cli = NULL;
 
-	/* if the username is of the form DOMAIN\username then split out the domain */
-	p = strpbrk(username, "\\/");
-	if (p) {
-		domain = talloc_strndup(mem_ctx, username, PTR_DIFF(p, username));
-		username = talloc_strdup(mem_ctx, p+1);
-	}
-
 	status = smbcli_tree_full_connection(parent_ctx,
 					     &tree, myname, host, 0, sharename, devtype,
-					     username, domain, password);
+					     credentials);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
