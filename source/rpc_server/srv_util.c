@@ -84,10 +84,10 @@ rid_name domain_group_rids[] =
 NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, uint32 **prids, DOM_SID *q_sid)
 {
 	SAM_ACCOUNT *sam_pass=NULL;
-	struct sys_grent *glist;
-	struct sys_grent *grp;
-	int i, num, cur_rid=0;
+	int i, cur_rid=0;
 	gid_t gid;
+	gid_t *groups = NULL;
+	int num_groups;
 	GROUP_MAP map;
 	DOM_SID tmp_sid;
 	fstring user_name;
@@ -130,16 +130,21 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 	fstrcpy(user_name, pdb_get_username(sam_pass));
 	grid=pdb_get_group_rid(sam_pass);
 	gid=pdb_get_gid(sam_pass);
-	
-	grp = glist = getgrent_list();
-	if (grp == NULL) {
+
+	become_root();
+	/* on some systems this must run as root */
+	num_groups = getgroups_user(user_name, &groups);	
+	unbecome_root();
+	if (num_groups == -1) {
+		/* this should never happen */
+		DEBUG(2,("get_alias_user_groups: getgroups_user failed\n"));
 		pdb_free_sam(&sam_pass);
-		return NT_STATUS_NO_MEMORY;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
-	
-	for (; grp != NULL; grp = grp->next) {
-		if(!get_group_from_gid(grp->gr_gid, &map, MAPPING_WITHOUT_PRIV)) {
-			DEBUG(10,("get_alias_user_groups: gid %d. not found\n", (int)grp->gr_gid));
+
+	for (i=0;i<num_groups;i++) {
+		if(!get_group_from_gid(groups[i], &map, MAPPING_WITHOUT_PRIV)) {
+			DEBUG(10,("get_alias_user_groups: gid %d. not found\n", (int)groups[i]));
 			continue;
 		}
 		
@@ -159,7 +164,7 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 		}
 
 		/* Don't return winbind groups as they are not local! */
-		if (winbind_groups_exist && (grp->gr_gid >= winbind_gid_low) && (grp->gr_gid <= winbind_gid_high)) {
+		if (winbind_groups_exist && (groups[i] >= winbind_gid_low) && (groups[i] <= winbind_gid_high)) {
 			DEBUG(10,("get_alias_user_groups: not returing %s, not local.\n", map.nt_name));
 			continue;
 		}
@@ -170,30 +175,21 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 			continue;			
 		}
 		
-		/* the group is fine, we can check if there is the user we're looking for */
-		DEBUG(10,("get_alias_user_groups: checking if the user is a member of %s.\n", map.nt_name));
-		
-		for(num=0; grp->gr_mem[num]!=NULL; num++) {
-			if(strcmp(grp->gr_mem[num], user_name)==0) {
-				/* we found the user, add the group to the list */
-				
-				new_rids=(uint32 *)Realloc(rids, sizeof(uint32)*(cur_rid+1));
-				if (new_rids==NULL) {
-					DEBUG(10,("get_alias_user_groups: could not realloc memory\n"));
-					pdb_free_sam(&sam_pass);
-					return NT_STATUS_NO_MEMORY;
-				}
-				rids=new_rids;
-				
-				sid_peek_rid(&map.sid, &(rids[cur_rid]));
-				DEBUG(10,("get_alias_user_groups: user found in group %s\n", map.nt_name));
-				cur_rid++;
-				break;
-			}
+		new_rids=(uint32 *)Realloc(rids, sizeof(uint32)*(cur_rid+1));
+		if (new_rids==NULL) {
+			DEBUG(10,("get_alias_user_groups: could not realloc memory\n"));
+			pdb_free_sam(&sam_pass);
+			free(groups);
+			return NT_STATUS_NO_MEMORY;
 		}
+		rids=new_rids;
+		
+		sid_peek_rid(&map.sid, &(rids[cur_rid]));
+		cur_rid++;
+		break;
 	}
 
-	grent_free(glist);
+	free(groups);
 
 	/* now check for the user's gid (the primary group rid) */
 	for (i=0; i<cur_rid && grid!=rids[i]; i++)

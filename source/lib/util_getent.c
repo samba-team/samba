@@ -21,27 +21,6 @@
 
 #include "includes.h"
 
-#if 0
-static void print_grent_list(struct sys_grent *glist)
-{
-	DEBUG(100, ("print_grent_list: %x\n", glist ));
-	while (glist) {
-		DEBUG(100,("glist: %x ", glist));
-		if (glist->gr_name)
-			DEBUG(100,(": gr_name = (%x) %s ", glist->gr_name, glist->gr_name));
-		if (glist->gr_passwd)
-			DEBUG(100,(": gr_passwd = (%x) %s ", glist->gr_passwd, glist->gr_passwd));
-		if (glist->gr_mem) {
-			int i;
-			for (i = 0; glist->gr_mem[i]; i++)
-				DEBUG(100,(" : gr_mem[%d] = (%x) %s ", i, glist->gr_mem[i], glist->gr_mem[i]));
-		}
-		DEBUG(100,(": gr_next = %x\n", glist->next ));
-		glist = glist->next;
-	}
-	DEBUG(100,("FINISHED !\n\n"));
-}
-#endif
 
 /****************************************************************
  Returns a single linked list of group entries.
@@ -319,4 +298,39 @@ void free_userlist(struct sys_userlist *list_head)
 		SAFE_FREE(old_head->unix_name);
 		SAFE_FREE(old_head);
 	}
+}
+
+
+/*
+  return a full list of groups for a user
+
+  returns the number of groups the user is a member of. The return will include the
+  users primary group.
+
+  remember to free the resulting gid_t array
+
+  NOTE! you must be root to call this function on some systems
+*/
+int getgroups_user(const char *user, gid_t **groups)
+{
+	struct passwd *pwd;
+	int ngrp, max_grp;
+
+	pwd = getpwnam(user);
+	if (!pwd) return -1;
+
+	max_grp = groups_max();
+	(*groups) = (gid_t *)malloc(sizeof(gid_t) * max_grp);
+	if (! *groups) {
+		errno = ENOMEM;
+		return -1;
+	}
+
+	ngrp = getgrouplist(user, pwd->pw_gid, *groups, &max_grp);
+	if (ngrp <= 0) {
+		free(*groups);
+		return ngrp;
+	}
+
+	return ngrp;
 }
