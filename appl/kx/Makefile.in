@@ -76,7 +76,7 @@ TAGS: $(SOURCES)
 check:
 
 clean:
-	rm -f *.a *.o $(PROGS)
+	rm -f *.a *.o $(PROGS) encdata.c
 
 mostlyclean: clean
 
