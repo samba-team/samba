@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "01 June 2001" "" ""
+.TH "SMB.CONF" "5" "11 September 2001" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -78,7 +78,7 @@ privileges in this case.
 Sections other than guest services will require a password 
 to access them. The client provides the username. As older clients 
 only provide passwords and not usernames, you may specify a list 
-of usernames to check against the password using the "user=" 
+of usernames to check against the password using the "user =" 
 option in the share definition. For modern clients such as 
 Windows 95/98/ME/NT/2000, this should not be necessary.
 .PP
@@ -148,12 +148,12 @@ the located username.
 If no path was given, the path is set to
 the user's home directory.
 .PP
-If you decide to use a \fBpath=\fR line 
+If you decide to use a \fBpath =\fR line 
 in your [homes] section then you may find it useful 
 to use the %S macro. For example :
 .PP
 .PP
-\fBpath=/data/pchome/%S\fR
+\fBpath = /data/pchome/%S\fR
 .PP
 .PP
 would be useful if you have different home directories 
@@ -197,9 +197,9 @@ access\fR.
 Note that the \fBbrowseable\fR flag for 
 auto home directories will be inherited from the global browseable 
 flag, not the [homes] browseable flag. This is useful as 
-it means setting browseable=no in the [homes] section 
-will hide the [homes] share but make any auto home 
-directories visible.
+it means setting \fBbrowseable = no\fR in
+the [homes] section will hide the [homes] share but make
+any auto home directories visible.
 .PP
 .SS "THE  PRINTERS  SECTION"
 .PP
@@ -368,7 +368,7 @@ the Internet name of the client machine.
 the name of your NIS home directory server. 
 This is obtained from your NIS auto.map entry. If you have 
 not compiled Samba with the \fB--with-automount\fR 
-option then this value will be the same as %.
+option then this value will be the same as %L.
 .TP
 \fB%p\fR
 the path of the service's home directory, 
@@ -421,7 +421,7 @@ All of these options can be set separately for each service
 .PP
 The options are: 
 .TP
-\fBmangle case= yes/no\fR
+\fBmangle case = yes/no\fR
 controls if names that have characters that 
 aren't of the "default" case are mangled. For example, 
 if this is yes then a name like "Mail" would be mangled. 
@@ -487,9 +487,9 @@ If a "user = " field is given in the
 \fIsmb.conf\fR file for the service and the client 
 has supplied a password, and that password matches (according to 
 the UNIX system's password checking) with one of the usernames 
-from the "user=" field then the connection is made as 
-the username in the "user=" line. If one 
-of the username in the "user=" list begins with a
+from the "user =" field then the connection is made as 
+the username in the "user =" line. If one 
+of the username in the "user =" list begins with a
 \&'@' then that name expands to a list of names in 
 the group of the same name.
 .IP 6. 
@@ -1462,7 +1462,7 @@ creating these users and keeping the user list in sync with the
 Windows NT PDC is an onerous task. This option allows smbdto create the required UNIX users 
 \fBON DEMAND\fR when a user accesses the Samba server.
 
-In order to use this option, smbdmust be set to \fIsecurity=server\fR or \fI security=domain\fR and \fIadd user script\fR
+In order to use this option, smbdmust be set to \fIsecurity = server\fR or \fI security = domain\fR and \fIadd user script\fR
 must be set to a full pathname for a script that will create a UNIX 
 user given one argument of \fI%u\fR, which expands into 
 the UNIX user name to create.
@@ -1995,7 +1995,7 @@ parameter \fIdirectory mode
 
 See also the \fIforce 
 create mode\fR parameter for forcing particular mode 
-bits to be set on created files. See also the  \fIdirectory mode"\fR parameter for masking 
+bits to be set on created files. See also the  \fIdirectory mode\fR parameter for masking 
 mode bits on created directories. See also the  \fIinherit permissions\fR parameter.
 
 Note that this parameter does not apply to permissions
@@ -2080,7 +2080,7 @@ Synonym for \fI log level\fR.
 A synonym for \fI default service\fR.
 .TP
 \fBdefault case (S)\fR
-See the section on  NAME MANGLING. Also note the  \fIshort preserve case"\fR parameter.
+See the section on  NAME MANGLING. Also note the  \fIshort preserve case\fR parameter.
 
 Default: \fBdefault case = lower\fR
 .TP
@@ -2208,16 +2208,16 @@ DEMAND\fR when a user accesses the Samba server and the
 Windows NT user no longer exists.
 
 In order to use this option, \fBsmbd\fR must be 
-set to \fIsecurity=domain\fR and \fIdelete 
+set to \fIsecurity = domain\fR and \fIdelete 
 user script\fR must be set to a full pathname for a script 
 that will delete a UNIX user given one argument of \fI%u
 \fR, which expands into the UNIX user name to delete.
 \fBNOTE\fR that this is different to the \fIadd user script\fR
-which will work with the \fIsecurity=server\fR option 
-as well as \fIsecurity=domain\fR. The reason for this
+which will work with the \fIsecurity = server\fR option 
+as well as \fIsecurity = domain\fR. The reason for this
 is only when Samba is a domain member does it get the information
 on an attempted user logon that a user no longer exists. In the
-\fIsecurity=server\fR mode a missing user
+\fIsecurity = server\fR mode a missing user
 is treated the same as an invalid password logon attempt. Deleting
 the user in this circumstance would not be a good idea.
 
@@ -2237,7 +2237,7 @@ This script should delete the given UNIX username. In this way,
 UNIX users are dynamically deleted to match existing Windows NT 
 accounts.
 
-See also security=domain,
+See also security = domain,
 \fIpassword server\fR
 , \fIadd user script\fR
 \&.
@@ -2573,7 +2573,7 @@ In order for encrypted passwords to work correctly
 \fBsmbd(8)\fRmust either 
 have access to a local \fIsmbpasswd(5)
 \fRprogram for information on how to set up 
-and maintain this file), or set the security=[serve|domain] parameter which 
+and maintain this file), or set the security = [server|domain] parameter which 
 causes \fBsmbd\fR to authenticate against another 
 server.
 
@@ -2751,7 +2751,7 @@ would force all created directories to have read and execute
 permissions set for 'group' and 'other' as well as the
 read/write/execute bits set for the 'user'.
 .TP
-\fBforce directory  security mode (S)\fR
+\fBforce directory\fR
 This parameter controls what UNIX permission bits 
 can be modified when a Windows NT client is manipulating the UNIX 
 permission on a directory using the native NT security dialog box.
@@ -3571,7 +3571,7 @@ having a too low priority won't be sent to the printer.
 
 If a \fI%p\fR is given then the printername 
 is put in its place. A \fI%j\fR is replaced with 
-the job number (an integer). On HPUX (see \fIprinting=hpux
+the job number (an integer). On HPUX (see \fIprinting = hpux
 \fR), if the \fI-p%p\fR option is added 
 to the lpq command, the job will show up with the correct status, i.e. 
 if the job priority is lower than the set fence priority it will 
@@ -3718,7 +3718,7 @@ Example 2: \fBlprm command = /usr/bin/cancel %p-%j
 \fR.TP
 \fBmachine password timeout (G)\fR
 If a Samba server is a member of an Windows 
-NT Domain (see the security=domain) 
+NT Domain (see the security = domain) 
 parameter) then periodically a running  smbd(8)process will try and change the MACHINE ACCOUNT 
 PASSWORD stored in the TDB called \fIprivate/secrets.tdb
 \fR\&. This parameter specifies how often this password 
@@ -3726,7 +3726,7 @@ will be changed, in seconds. The default is one week (expressed in
 seconds), the same as a Windows NT Domain member server.
 
 See also \fBsmbpasswd(8)
-\fR, and the  security=domain) parameter.
+\fR, and the  security = domain) parameter.
 
 Default: \fBmachine password timeout = 604800\fR
 .TP
@@ -3925,7 +3925,7 @@ it must include 010). See the parameter  \fIcreate mask\fR for details.
 Default: \fBmap system = no\fR
 .TP
 \fBmap to guest (G)\fR
-This parameter is only useful in  security modes other than \fIsecurity=share\fR 
+This parameter is only useful in  security modes other than \fIsecurity = share\fR 
 - i.e. user, server, 
 and domain.
 
@@ -4125,13 +4125,13 @@ Default: \fBmax ttl = 259200\fR
 .TP
 \fBmax wins ttl (G)\fR
 This option tells nmbd(8)
-when acting as a WINS server ( \fIwins support=yes\fR) what the maximum
+when acting as a WINS server ( \fIwins support = yes\fR) what the maximum
 \&'time to live' of NetBIOS names that \fBnmbd\fR 
 will grant will be (in seconds). You should never need to change this
 parameter. The default is 6 days (518400 seconds).
 
 See also the \fImin 
-wins ttl"\fR parameter.
+wins ttl\fR parameter.
 
 Default: \fBmax wins ttl = 518400\fR
 .TP
@@ -4324,7 +4324,7 @@ methods as it depends on the target host being on a locally
 connected subnet.
 .RE
 .PP
-Default: \fBname resolve order = lmhosts host wins bcast
+Default: \fBname resolve order = lmhosts wins host bcast
 \fR.PP
 .PP
 Example: \fBname resolve order = lmhosts bcast host
@@ -4793,13 +4793,13 @@ the \fIpassword server\fR parameter, however if an
 \fBsmbd\fR makes a connection to a password server, 
 and then the password server fails, no more users will be able 
 to be authenticated from this \fBsmbd\fR. This is a 
-restriction of the SMB/CIFS protocol when in \fBsecurity=server
+restriction of the SMB/CIFS protocol when in \fBsecurity = server
 \fRmode and cannot be fixed in Samba.
 .TP 0.2i
 \(bu
 If you are using a Windows NT server as your 
 password server then you will have to ensure that your users 
-are able to login from the Samba server, as when in \fB security=server\fR mode the network logon will appear to 
+are able to login from the Samba server, as when in \fB security = server\fR mode the network logon will appear to 
 come from there rather than from the users workstation.
 .RE
 .PP
@@ -5007,16 +5007,16 @@ You may have to vary this command considerably depending
 on how you normally print files on your system. The default for 
 the parameter varies depending on the setting of the  \fIprinting\fR parameter.
 
-Default: For \fBprinting= BSD, AIX, QNX, LPRNG 
+Default: For \fBprinting = BSD, AIX, QNX, LPRNG 
 or PLP :\fR
 
 \fBprint command = lpr -r -P%p %s\fR
 
-For \fBprinting= SYS or HPUX :\fR
+For \fBprinting = SYS or HPUX :\fR
 
 \fBprint command = lp -c -d%p %s; rm %s\fR
 
-For \fBprinting=SOFTQ :\fR
+For \fBprinting = SOFTQ :\fR
 
 \fBprint command = lp -d%p -s %s; rm %s\fR
 
@@ -5513,7 +5513,7 @@ the most common setting needed when talking to Windows 98 and
 Windows NT.
 
 The alternatives are \fBsecurity = share\fR,
-\fBsecurity = server\fR or \fBsecurity=domain
+\fBsecurity = server\fR or \fBsecurity = domain
 \fR\&.
 
 In versions of Samba prior to 2..0, the default was 
@@ -5620,7 +5620,7 @@ See also the section  NOTE ABOUT USERNAME/PASSWORD VALIDATION.
 \fR.PP
 .PP
 This is the default security setting in Samba 2.2. 
-With user-level security a client must first "log=on" with a 
+With user-level security a client must first "log-on" with a 
 valid username and password (which can be mapped using the \fIusername map\fR 
 parameter). Encrypted passwords (see the  \fIencrypted passwords\fR parameter) can also
 be used in this security mode. Parameters such as  \fIuser\fR and  \fIguest only\fR if set are then applied and 
@@ -5763,7 +5763,7 @@ Example: \fBsecurity mask = 0770\fR
 \fBserver string (G)\fR
 This controls what string will show up in the 
 printer comment box in print manager and next to the IPC connection 
-in \fBnet view"\fR. It can be any string that you wish 
+in \fBnet view\fR. It can be any string that you wish 
 to show to your users.
 
 It also sets what will appear in browse lists next 
@@ -5940,8 +5940,8 @@ or disable the option, by default they will be enabled if you
 don't specify 1 or 0.
 .PP
 .PP
-To specify an argument use the syntax SOME_OPTION=VALUE 
-for example \fBSO_SNDBUF=8192\fR. Note that you must 
+To specify an argument use the syntax SOME_OPTION = VALUE 
+for example \fBSO_SNDBUF = 8192\fR. Note that you must 
 not have any spaces before or after the = sign.
 .PP
 .PP
@@ -5986,7 +5986,7 @@ be formatted as the output of the standard Unix \fBenv(1)
 
 Example environment entry:
 
-\fBSAMBA_NETBIOS_NAME=myhostname\fR
+\fBSAMBA_NETBIOS_NAME = myhostname\fR
 
 Default: \fBNo default value\fR
 
@@ -6011,7 +6011,7 @@ exactly like the non-SSL samba. If set to yes,
 it depends on the variables \fI ssl hosts\fR and  \fIssl hosts resign\fR whether an SSL 
 connection will be required.
 
-Default: \fBssl=no\fR
+Default: \fBssl = no\fR
 .TP
 \fBssl CA certDir (G)\fR
 This variable is part of SSL-enabled Samba. This 
@@ -6749,22 +6749,23 @@ separator '/'.
 Note that the \fIcase sensitive\fR option 
 is applicable in vetoing files.
 
-One feature of the veto files parameter that it is important 
-to be aware of, is that if a directory contains nothing but files 
-that match the veto files parameter (which means that Windows/DOS 
-clients cannot ever see them) is deleted, the veto files within 
-that directory \fBare automatically deleted\fR along 
-with it, if the user has UNIX permissions to do so.
+One feature of the veto files parameter that it
+is important to be aware of is Samba's behaviour when
+trying to delete a directory. If a directory that is
+to be deleted contains nothing but veto files this
+deletion will \fBfail\fR unless you also set
+the \fIdelete veto files\fR parameter to
+\fIyes\fR.
 
 Setting this parameter will affect the performance 
 of Samba, as it will be forced to check all files and directories 
 for a match as they are scanned.
-
+.PP
 See also \fIhide files
 \fRand \fI case sensitive\fR.
-
+.PP
 Default: \fBNo files or directories are vetoed.
-\fR
+\fR.PP
 Examples:
 .sp
 .nf
@@ -6799,7 +6800,7 @@ To cause Samba not to grant oplocks on these files you would use
 the line (either in the [global] section or in the section for 
 the particular NetBench share :
 
-Example: \fBveto oplock files = /*;.SEM/
+Example: \fBveto oplock files = /*.SEM/
 \fR.TP
 \fBvfs object (S)\fR
 This parameter specifies a shared object file that 
@@ -6974,7 +6975,7 @@ Default: \fBwins support = no\fR
 \fBworkgroup (G)\fR
 This controls what workgroup your server will 
 appear to be in when queried by clients. Note that this parameter 
-also controls the Domain name used with the \fBsecurity=domain\fR
+also controls the Domain name used with the \fBsecurity = domain\fR
 setting.
 
 Default: \fBset at compile time to WORKGROUP\fR
