@@ -125,6 +125,18 @@ static NTSTATUS pvfs_case_search(struct pvfs_state *pvfs, struct pvfs_filename *
 			}
 			continue;
 		}
+
+		/* the filesystem might be case insensitive, in which
+		   case a search is pointless unless the name is
+		   mangled */
+		if ((pvfs->flags & PVFS_FLAG_CI_FILESYSTEM) &&
+		    !pvfs_is_mangled_component(pvfs, components[i])) {
+			if (i < num_components-1) {
+				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			}
+			partial_name = test_name;
+			continue;
+		}
 		
 		dir = opendir(partial_name);
 		if (!dir) {
@@ -317,12 +329,6 @@ NTSTATUS pvfs_resolve_name(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 	if (stat((*name)->full_name, &(*name)->st) == 0) {
 		(*name)->exists = True;
 		return pvfs_fill_dos_info(pvfs, *name);
-	}
-
-	/* the filesystem might be case insensitive, in which
-	   case a search is pointless */
-	if (pvfs->flags & PVFS_FLAG_CI_FILESYSTEM) {
-		return NT_STATUS_OK;
 	}
 
 	/* search for a matching filename */

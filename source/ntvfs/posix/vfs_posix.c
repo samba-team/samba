@@ -41,6 +41,7 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 	if (lp_readonly(snum))       pvfs->flags |= PVFS_FLAG_READONLY;
 	if (lp_strict_sync(snum))    pvfs->flags |= PVFS_FLAG_STRICT_SYNC;
 	if (lp_strict_locking(snum)) pvfs->flags |= PVFS_FLAG_STRICT_LOCKING;
+	if (lp_ci_filesystem(snum))  pvfs->flags |= PVFS_FLAG_CI_FILESYSTEM;
 
 	pvfs->share_name = talloc_strdup(pvfs, lp_servicename(snum));
 }

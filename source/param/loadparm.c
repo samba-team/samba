@@ -272,6 +272,7 @@ typedef struct
 	BOOL bMSDfsRoot;
 	BOOL bShareModes;
 	BOOL bStrictSync;
+	BOOL bCIFileSystem;
 	struct param_opt *param_opt;
 
 	char dummy[3];		/* for alignment */
@@ -330,6 +331,7 @@ static service sDefault = {
 	False,			/* bMSDfsRoot */
 	True,			/* bShareModes */
 	False,			/* bStrictSync */
+	False,			/* bCIFileSystem */
 	NULL,			/* Parametric options */
 
 	""			/* dummy */
@@ -623,6 +625,7 @@ static struct parm_struct parm_table[] = {
 
 	{"name cache timeout", P_INTEGER, P_GLOBAL, &Globals.name_cache_timeout, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"strict sync", P_BOOL, P_LOCAL, &sDefault.bStrictSync, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
+	{"case insensitive filesystem", P_BOOL, P_LOCAL, &sDefault.bCIFileSystem, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 
 	{"Printing Options", P_SEP, P_SEPARATOR},
 	
@@ -1253,6 +1256,7 @@ FN_LOCAL_BOOL(lp_locking, bLocking)
 FN_LOCAL_BOOL(lp_strict_locking, bStrictLocking)
 FN_LOCAL_BOOL(lp_posix_locking, bPosixLocking)
 FN_LOCAL_BOOL(lp_strict_sync, bStrictSync)
+FN_LOCAL_BOOL(lp_ci_filesystem, bCIFileSystem)
 FN_LOCAL_BOOL(lp_share_modes, bShareModes)
 FN_LOCAL_BOOL(lp_oplocks, bOpLocks)
 FN_LOCAL_BOOL(lp_level2_oplocks, bLevel2OpLocks)
@@ -2442,6 +2446,11 @@ BOOL lp_set_cmdline(const char *pszParmName, const char *pszParmValue)
 	if (parmnum < 0 && strchr(pszParmName, ':')) {
 		/* set a parametric option */
 		return lp_do_parameter_parametric(-1, pszParmName, pszParmValue, FLAG_CMDLINE);
+	}
+
+	if (parmnum < 0) {
+		DEBUG(0,("Unknown option '%s'\n", pszParmName));
+		return False;
 	}
 
 	/* reset the CMDLINE flag in case this has been called before */
