@@ -54,11 +54,8 @@ static void thread_accept_connection(struct event_context *ev, struct fd_event *
 	socklen_t in_addrlen = sizeof(addr);
 	pthread_t thread_id;
 	pthread_attr_t thread_attr;
-	struct fd_event fde;
-	struct timed_event idle;
 	struct server_socket *server_socket = srv_fde->private;
 	struct server_connection *conn;
-	TALLOC_CTX *mem_ctx;
 
 	/* accept an incoming connection. */
 	accepted_fd = accept(srv_fde->fd,&addr,&in_addrlen);
@@ -82,61 +79,11 @@ static void thread_accept_connection(struct event_context *ev, struct fd_event *
 		return; 
 	}
 
-	mem_ctx = talloc_init("server_service_connection");
-	if (!mem_ctx) {
-		DEBUG(0,("talloc_init(server_service_connection) failed\n"));
-		return;
-	}
-
-	conn = talloc_p(mem_ctx, struct server_connection);
+	conn = server_setup_connection(ev, server_socket, accepted_fd, t);
 	if (!conn) {
-		DEBUG(0,("talloc_p(mem_ctx, struct server_service_connection) failed\n"));
-		talloc_destroy(mem_ctx);
+		DEBUG(0,("server_setup_connection(ev, server_socket, accepted_fd) failed\n"));
 		return;
 	}
-
-	ZERO_STRUCTP(conn);
-	conn->mem_ctx = mem_ctx;
-
-	fde.private 	= conn;
-	fde.fd		= accepted_fd;
-	fde.flags	= EVENT_FD_READ;
-	fde.handler	= server_io_handler;
-
-	idle.private 	= conn;
-	idle.next_event	= t + 300;
-	idle.handler	= server_idle_handler;
-
-	conn->event.ctx		= ev;
-	conn->event.fde		= &fde;
-	conn->event.idle	= &idle;
-	conn->event.idle_time	= 300;
-
-	conn->server_socket	= server_socket;
-	conn->service		= server_socket->service;
-
-	/* TODO: we need a generic socket subsystem */
-	conn->socket		= talloc_p(conn->mem_ctx, struct socket_context);
-	if (!conn->socket) {
-		DEBUG(0,("talloc_p(conn->mem_ctx, struct socket_context) failed\n"));
-		talloc_destroy(mem_ctx);
-		return;
-	}
-	conn->socket->private_data	= NULL;
-	conn->socket->ops		= NULL;
-	conn->socket->client_addr	= NULL;
-	conn->socket->pkt_count		= 0;
-	conn->socket->fde		= conn->event.fde;
-
-	/* create a smb server context and add it to out event
-	   handling */
-	server_socket->service->ops->accept_connection(conn);
-
-	/* accpect_connection() of the service may changed idle.next_event */
-	conn->event.fde		= event_add_fd(ev,&fde);
-	conn->event.idle	= event_add_timed(ev,&idle);
-
-	conn->socket->fde	= conn->event.fde;
 
 	/* TODO: is this MUTEX_LOCK in the right place here?
 	 *       --metze
@@ -162,9 +109,7 @@ static void thread_terminate_connection(struct server_connection *conn, const ch
 {
 	DEBUG(0,("thread_terminate_connection: reason[%s]\n",reason));
 	conn->service->ops->close_connection(conn,reason);
-	close(conn->event.fde->fd);
-	event_remove_fd(conn->event.ctx, conn->event.fde);
-	event_remove_timed(conn->event.ctx, conn->event.idle);
+	server_destroy_connection(conn);
 	/* terminate this thread */
 	pthread_exit(NULL);  /* thread cleanup routine will do actual cleanup */
 }
