@@ -44,10 +44,10 @@ struct dom_sid *dom_sid_parse_talloc(TALLOC_CTX *mem_ctx, const char *sidstr)
 	sidstr = p+1;
 
 	ia = strtol(sidstr, &p, 10);
-	if (*p != '-') {
+	if (p == sidstr) {
 		return NULL;
 	}
-	sidstr = p+1;
+	sidstr = p;
 
 	num_sub_auths = 0;
 	for (i=0;sidstr[i];i++) {
@@ -75,14 +75,15 @@ struct dom_sid *dom_sid_parse_talloc(TALLOC_CTX *mem_ctx, const char *sidstr)
 	ret->num_auths = num_sub_auths;
 
 	for (i=0;i<num_sub_auths;i++) {
+		if (sidstr[0] != '-') {
+			return NULL;
+		}
+		sidstr++;
 		ret->sub_auths[i] = strtol(sidstr, &p, 10);
 		if (p == sidstr) {
 			return NULL;
 		}
-		if (*p != '-' && i < num_sub_auths-1) {
-			return NULL;
-		}
-		sidstr = p+1;
+		sidstr = p;
 	}
 
 	return ret;
