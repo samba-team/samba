@@ -28,11 +28,23 @@
 #define DFS_EXIST                0x00
 #define DFS_ADD                  0x01
 #define DFS_REMOVE               0x02
+#define DFS_GET_INFO             0x04
 #define DFS_ENUM                 0x05
 
 /* dfsadd flags */
 #define DFSFLAG_ADD_VOLUME           0x00000001
 #define DFSFLAG_RESTORE_VOLUME       0x00000002
+
+/* API errors from lmerr.h */
+#ifndef NERR_BASE
+#define NERR_BASE (2100)
+#endif
+
+#define NERR_DfsNoSuchVolume            (NERR_BASE+562)
+#define NERR_DfsNoSuchShare             (NERR_BASE+565)
+#define NERR_DfsNoSuchServer            (NERR_BASE+573)
+#define NERR_DfsInternalError           (NERR_BASE+590)
+#define NERR_DfsCantCreateJunctionPoint (NERR_BASE+569)
 
 typedef struct dfs_r_dfs_exist
 {
@@ -134,6 +146,29 @@ typedef struct dfs_info_ctr
   } dfs;
 }
 DFS_INFO_CTR;
+
+typedef struct dfs_q_dfs_get_info
+{
+  UNISTR2 uni_path;
+  
+  uint32 ptr_server;
+  UNISTR2 uni_server;
+
+  uint32 ptr_share;
+  UNISTR2 uni_share;
+  
+  uint32 level;
+}
+DFS_Q_DFS_GET_INFO;
+
+typedef struct dfs_r_dfs_get_info
+{
+  uint32 level;
+  uint32 ptr_ctr;
+  DFS_INFO_CTR ctr;
+  uint32 status;
+}
+DFS_R_DFS_GET_INFO;
 
 typedef struct dfs_q_dfs_enum
 {

@@ -186,11 +186,12 @@ typedef struct nt_printer_param
 typedef struct ntdevicemode
 {
 	fstring	devicename;
+	fstring	formname;
+
 	uint16	specversion;
 	uint16	driverversion;
 	uint16	size;
 	uint16	driverextra;
-	uint32	fields;
 	uint16	orientation;
 	uint16	papersize;
 	uint16	paperlength;
@@ -204,8 +205,9 @@ typedef struct ntdevicemode
 	uint16	yresolution;
 	uint16	ttoption;
 	uint16	collate;
-	fstring	formname;
 	uint16	logpixels;
+
+	uint32	fields;
 	uint32	bitsperpel;
 	uint32	pelswidth;
 	uint32	pelsheight;
@@ -237,6 +239,7 @@ typedef struct nt_printer_info_level_2
 	fstring sharename;
 	fstring portname;
 	fstring drivername;
+	pstring comment;
 	fstring location;
 	NT_DEVICEMODE *devmode;
 	fstring sepfile;
@@ -282,4 +285,9 @@ typedef struct _form
        UNISTR2 name;
 } FORM;
 */
+
+#ifndef SAMBA_PRINTER_PORT_NAME
+#define SAMBA_PRINTER_PORT_NAME "Samba Printer Port"
+#endif 
+
 #endif /* NT_PRINTING_H_ */

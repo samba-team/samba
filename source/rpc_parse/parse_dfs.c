@@ -75,11 +75,15 @@ BOOL dfs_io_q_dfs_remove(char *desc, DFS_Q_DFS_REMOVE *q_d, prs_struct *ps,
   prs_align(ps);
 
   prs_uint32("ptr_ServerName", ps, depth, &(q_d->ptr_ServerName));
-  smb_io_unistr2("ServerName",&(q_d->ServerName), 1, ps, depth);
+  if(q_d->ptr_ServerName)
+    smb_io_unistr2("ServerName",&(q_d->ServerName), q_d->ptr_ServerName,
+		   ps, depth);
   prs_align(ps);
 
   prs_uint32("ptr_ShareName", ps, depth, &(q_d->ptr_ShareName));
-  smb_io_unistr2("ShareName",&(q_d->ShareName),  1, ps, depth);
+  if(q_d->ptr_ShareName)
+    smb_io_unistr2("ShareName",&(q_d->ShareName),  q_d->ptr_ShareName, 
+		   ps, depth);
   prs_align(ps);
 
   return True;
@@ -174,6 +178,50 @@ BOOL dfs_io_r_dfs_add(char *desc, DFS_R_DFS_ADD *r_d, prs_struct *ps,
 }
 
 /************************************************************
+ Read/write a DFS_Q_GET_INFO structure
+ ************************************************************/
+BOOL dfs_io_q_dfs_get_info(char* desc, DFS_Q_DFS_GET_INFO* q_i, 
+			   prs_struct* ps, int depth)
+{
+  if(q_i == NULL) return False;
+
+  prs_debug(ps, depth, desc, "dfs_io_q_dfs_get_info");
+  depth++;
+
+  smb_io_unistr2("",&(q_i->uni_path), 1, ps, depth);
+  prs_align(ps);
+
+  prs_uint32("ptr_server", ps, depth, &(q_i->ptr_server));
+  if(q_i->ptr_server)
+    smb_io_unistr2("",&(q_i->uni_server), q_i->ptr_server, ps, depth);
+  prs_align(ps);
+
+  prs_uint32("ptr_share", ps, depth, &(q_i->ptr_share));
+  if(q_i->ptr_share)
+    smb_io_unistr2("", &(q_i->uni_share), q_i->ptr_share, ps, depth);
+  prs_align(ps);
+
+  prs_uint32("level", ps, depth, &(q_i->level));
+  return True;
+}
+
+/************************************************************
+ Read/write a DFS_R_GET_INFO structure
+ ************************************************************/
+BOOL dfs_io_r_dfs_get_info(char* desc, DFS_R_DFS_GET_INFO* r_i,
+			   prs_struct* ps, int depth)
+{
+  if(r_i == NULL) return False;
+  
+  prs_uint32("level", ps, depth, &(r_i->level));
+  prs_uint32("ptr_ctr", ps, depth, &(r_i->ptr_ctr));
+
+  dfs_io_dfs_info_ctr("", &(r_i->ctr), 1, r_i->level, ps, depth);
+  prs_uint32("status", ps, depth, &(r_i->status));
+  return True;
+}
+			   
+/************************************************************
  Make a DFS_Q_DFS_ENUM structure
  ************************************************************/
 BOOL make_dfs_q_dfs_enum(DFS_Q_DFS_ENUM *q_d, uint32 level, DFS_INFO_CTR *ctr)
@@ -218,6 +266,105 @@ BOOL dfs_io_q_dfs_enum(char *desc, DFS_Q_DFS_ENUM *q_d, prs_struct *ps,
 }
 
 /************************************************************
+ Read/write a DFS_INFO_CTR structure
+ ************************************************************/
+BOOL dfs_io_dfs_info_ctr(char* desc, DFS_INFO_CTR* ctr, uint32 num_entries,
+			 uint32 level,
+			 prs_struct* ps, int depth)
+{
+  switch(level)
+    {
+    case 1:
+      {
+	int i=0;
+	
+	depth++;
+	/* should depend on whether marshalling or unmarshalling! */
+	if(UNMARSHALLING(ps))
+	  ctr->dfs.info1 = (DFS_INFO_1 *)malloc(sizeof(DFS_INFO_1)*num_entries);
+
+	for(i=0;i<num_entries;i++)
+	  {
+	    prs_uint32("ptr_entrypath",ps, depth, &(ctr->dfs.info1[i].ptr_entrypath));
+	  }
+	for(i=0;i<num_entries;i++)
+	  {
+	    smb_io_unistr2("", &(ctr->dfs.info1[i].entrypath), 
+			   ctr->dfs.info1[i].ptr_entrypath,
+			   ps, depth);
+	    prs_align(ps);
+	  }
+	depth--;
+	break;
+      }
+    case 2:
+      {
+	int i=0;
+	depth++;
+	if(UNMARSHALLING(ps))
+	  ctr->dfs.info2 = (DFS_INFO_2 *)calloc(num_entries, sizeof(DFS_INFO_2));
+
+	for(i=0;i<num_entries;i++)
+	  {
+	    prs_uint32("ptr_entrypath", ps, depth, 
+		       &(ctr->dfs.info2[i].ptr_entrypath));
+	    prs_uint32("ptr_comment", ps, depth, 
+		       &(ctr->dfs.info2[i].ptr_comment));
+	    prs_uint32("state", ps, depth, &(ctr->dfs.info2[i].state));
+	    prs_uint32("num_storages", ps, depth, 
+		       &(ctr->dfs.info2[i].num_storages));
+	  }
+	for(i=0;i<num_entries;i++)
+	  {
+	    smb_io_unistr2("", &(ctr->dfs.info2[i].entrypath),
+			   ctr->dfs.info2[i].ptr_entrypath, ps, depth);
+	    prs_align(ps);
+	    smb_io_unistr2("",&(ctr->dfs.info2[i].comment),
+			   ctr->dfs.info2[i].ptr_comment, ps, depth);
+	    prs_align(ps);
+	  }
+	depth--;
+	break;
+      }
+    case 3:
+      {
+	int i=0;
+	depth++;
+	if(UNMARSHALLING(ps))
+	  ctr->dfs.info3 = (DFS_INFO_3 *)calloc(num_entries, sizeof(DFS_INFO_3));
+
+	for(i=0;i<num_entries;i++)
+	  {
+	    prs_uint32("ptr_entrypath", ps, depth, 
+		       &(ctr->dfs.info3[i].ptr_entrypath));
+	    prs_uint32("ptr_comment", ps, depth,
+		       &(ctr->dfs.info3[i].ptr_comment));
+	    prs_uint32("state", ps, depth, &(ctr->dfs.info3[i].state));
+	    prs_uint32("num_storages", ps, depth,
+		       &(ctr->dfs.info3[i].num_storages));
+	    prs_uint32("ptr_storages", ps, depth,
+		       &(ctr->dfs.info3[i].ptr_storages));
+	  }
+	for(i=0;i<num_entries;i++)
+	  {
+	    smb_io_unistr2("", &(ctr->dfs.info3[i].entrypath),
+			   ctr->dfs.info3[i].ptr_entrypath, ps, depth);
+	    prs_align(ps);
+	    smb_io_unistr2("", &(ctr->dfs.info3[i].comment),
+			   ctr->dfs.info3[i].ptr_comment, ps, depth);
+	    prs_align(ps);
+	    prs_uint32("num_storage_infos", ps, depth, 
+		   &(ctr->dfs.info3[i].num_storage_infos));
+	    if(!dfs_io_dfs_storage_info("storage_info",
+				       &(ctr->dfs.info3[i]), 
+				       ps, depth))
+	      return False;
+	  }
+      }
+    }
+  return True;
+}
+/************************************************************
  Read/write a DFS_R_DFS_ENUM structure
  ************************************************************/
 BOOL dfs_io_r_dfs_enum(char *desc, DFS_R_DFS_ENUM *q_d, prs_struct *ps, int depth)
@@ -242,101 +389,14 @@ BOOL dfs_io_r_dfs_enum(char *desc, DFS_R_DFS_ENUM *q_d, prs_struct *ps, int dept
   if(q_d->ptr_num_entries2)
     prs_uint32("num_entries2", ps, depth, &(ctr->num_entries));
 
-  switch(q_d->level)
-    {
-    case 1:
-      {
-	int i=0;
-	
-	depth++;
-	/* should depend on whether marshalling or unmarshalling! */
-	if(UNMARSHALLING(ps))
-	   ctr->dfs.info1 = g_new0(DFS_INFO_1, q_d->num_entries);
-
-	for(i=0;i<q_d->num_entries;i++)
-	  {
-	    prs_uint32("ptr_entrypath",ps, depth, &(ctr->dfs.info1[i].ptr_entrypath));
-	  }
-	for(i=0;i<q_d->num_entries;i++)
-	  {
-	    smb_io_unistr2("", &(ctr->dfs.info1[i].entrypath), 
-			   ctr->dfs.info1[i].ptr_entrypath,
-			   ps, depth);
-	    prs_align(ps);
-	  }
-	depth--;
-	break;
-      }
-    case 2:
-      {
-	int i=0;
-	depth++;
-	if(UNMARSHALLING(ps))
-	  ctr->dfs.info2 = g_new0(DFS_INFO_2, q_d->num_entries);
-
-	for(i=0;i<q_d->num_entries;i++)
-	  {
-	    prs_uint32("ptr_entrypath", ps, depth, 
-		       &(ctr->dfs.info2[i].ptr_entrypath));
-	    prs_uint32("ptr_comment", ps, depth, 
-		       &(ctr->dfs.info2[i].ptr_comment));
-	    prs_uint32("state", ps, depth, &(ctr->dfs.info2[i].state));
-	    prs_uint32("num_storages", ps, depth, 
-		       &(ctr->dfs.info2[i].num_storages));
-	  }
-	for(i=0;i<q_d->num_entries;i++)
-	  {
-	    smb_io_unistr2("", &(ctr->dfs.info2[i].entrypath),
-			   ctr->dfs.info2[i].ptr_entrypath, ps, depth);
-	    smb_io_unistr2("",&(ctr->dfs.info2[i].comment),
-			   ctr->dfs.info2[i].ptr_comment, ps, depth);
-	  }
-	depth--;
-	break;
-      }
-    case 3:
-      {
-	int i=0;
-	depth++;
-	if(UNMARSHALLING(ps))
-	  ctr->dfs.info3 = g_new0(DFS_INFO_3, q_d->num_entries);
-
-	for(i=0;i<q_d->num_entries;i++)
-	  {
-	    prs_uint32("ptr_entrypath", ps, depth, 
-		       &(ctr->dfs.info3[i].ptr_entrypath));
-	    prs_uint32("ptr_comment", ps, depth,
-		       &(ctr->dfs.info3[i].ptr_comment));
-	    prs_uint32("state", ps, depth, &(ctr->dfs.info3[i].state));
-	    prs_uint32("num_storages", ps, depth,
-		       &(ctr->dfs.info3[i].num_storages));
-	    prs_uint32("ptr_storages", ps, depth,
-		       &(ctr->dfs.info3[i].ptr_storages));
-	  }
-	for(i=0;i<q_d->num_entries;i++)
-	  {
-	    smb_io_unistr2("", &(ctr->dfs.info3[i].entrypath),
-			   ctr->dfs.info3[i].ptr_entrypath, ps, depth);
-	    prs_align(ps);
-	    smb_io_unistr2("", &(ctr->dfs.info3[i].comment),
-			   ctr->dfs.info3[i].ptr_comment, ps, depth);
-	    prs_align(ps);
-	    prs_uint32("num_storage_infos", ps, depth, 
-		   &(ctr->dfs.info3[i].num_storage_infos));
-	    if(!smb_io_dfs_storage_info("storage_info",
-				       &(ctr->dfs.info3[i]), 
-				       ps, depth))
-	      return False;
-	  }
-      }
-    }
+  dfs_io_dfs_info_ctr("", ctr, q_d->num_entries, q_d->level, ps, depth);
 
   smb_io_enum_hnd("resume_hnd", &(q_d->reshnd), ps, depth);
   prs_uint32("status", ps, depth, &(q_d->status));
   return True;
 }
 
-BOOL smb_io_dfs_storage_info(char *desc, DFS_INFO_3* info3,
+BOOL dfs_io_dfs_storage_info(char *desc, DFS_INFO_3* info3,
 			     prs_struct *ps, int depth)
 {
   int i=0;
@@ -346,7 +406,7 @@ BOOL smb_io_dfs_storage_info(char *desc, DFS_INFO_3* info3,
   depth++;
 
   if(UNMARSHALLING(ps))
-    info3->storages = g_new0(DFS_STORAGE_INFO, info3->num_storage_infos);
+    info3->storages = (DFS_STORAGE_INFO *)calloc(info3->num_storage_infos, sizeof(DFS_STORAGE_INFO));
 
   for(i=0;i<info3->num_storage_infos;i++)
     {

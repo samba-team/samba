@@ -59,11 +59,18 @@ BOOL dfs_io_q_dfs_add(char *desc, DFS_Q_DFS_ADD *q_d, prs_struct *ps,
 		      int depth);
 BOOL dfs_io_r_dfs_add(char *desc, DFS_R_DFS_ADD *r_d, prs_struct *ps,
 		      int depth);
+BOOL dfs_io_q_dfs_get_info(char* desc, DFS_Q_DFS_GET_INFO* q_i, 
+			   prs_struct* ps, int depth);
+BOOL dfs_io_r_dfs_get_info(char* desc, DFS_R_DFS_GET_INFO* r_i,
+			   prs_struct* ps, int depth);
 BOOL make_dfs_q_dfs_enum(DFS_Q_DFS_ENUM *q_d, uint32 level, DFS_INFO_CTR *ctr);
 BOOL dfs_io_q_dfs_enum(char *desc, DFS_Q_DFS_ENUM *q_d, prs_struct *ps,
 		      int depth);
+BOOL dfs_io_dfs_info_ctr(char* desc, DFS_INFO_CTR* ctr, uint32 num_entries,
+			 uint32 level,
+			 prs_struct* ps, int depth);
 BOOL dfs_io_r_dfs_enum(char *desc, DFS_R_DFS_ENUM *q_d, prs_struct *ps, int depth);
-BOOL smb_io_dfs_storage_info(char *desc, DFS_INFO_3* info3,
+BOOL dfs_io_dfs_storage_info(char *desc, DFS_INFO_3* info3,
 			     prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_eventlog.c  */
