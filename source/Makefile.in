@@ -1148,7 +1148,7 @@ bin/smbsh: $(SAMBALIB) $(SMBSH_OBJ) bin/.dummy
 
 bin/winbindd: $(WINBINDD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(WINBINDD_OBJ) $(LIBS)
+	@$(LINK) -o $@ $(WINBINDD_OBJ)
 
 bin/wbinfo: $(WBINFO_OBJ) $(LIBSAMBA_OBJ) bin/.dummy
 	@echo Linking $@
@@ -1156,7 +1156,7 @@ bin/wbinfo: $(WBINFO_OBJ) $(LIBSAMBA_OBJ) bin/.dummy
 
 nsswitch/@nssmodule@: $(WINBIND_NSS_PICOBJS)
 	@echo "Linking $@"
-	@$(LINK) @LDSHFLAGS@ -o $@ $(WINBIND_NSS_PICOBJS) $(LIBS)
+	@$(LINK) @LDSHFLAGS@ -o $@ $(WINBIND_NSS_PICOBJS)
 
 bin/pam_ntdom_auth.so: $(PAM_NTDOM_LIBS) $(PAM_NTDOM_OBJ) bin/.dummy
 	@echo Linking $@
