@@ -317,17 +317,17 @@ find_method (const char *filename, const char **rest)
 krb5_error_code
 hdb_create(krb5_context context, HDB **db, const char *filename)
 {
-    const struct hdb_method *h = NULL;
+    const struct hdb_method *h;
     const char *residual;
 
     if(filename == NULL)
 	filename = HDB_DEFAULT_DB;
     krb5_add_et_list(context, initialize_hdb_error_table_r);
+    h = find_method (filename, &residual);
 #ifdef HAVE_DLOPEN
-    h = find_dynamic_method (context, filename, &residual);
-#endif
     if (h == NULL)
-	h = find_method (filename, &residual);
+	h = find_dynamic_method (context, filename, &residual);
+#endif
     if (h == NULL)
 	krb5_errx(context, 1, "No database support! (hdb_create)");
     return (*h->create)(context, db, residual);
