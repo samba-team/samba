@@ -557,7 +557,7 @@ static BOOL test_Delete(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	struct lsa_Delete r;
 
-	printf("\ntesting Delete\n");
+	printf("testing Delete\n");
 
 	r.in.handle = handle;
 	status = dcerpc_lsa_Delete(p, mem_ctx, &r);
@@ -565,8 +565,6 @@ static BOOL test_Delete(struct dcerpc_pipe *p,
 		printf("Delete failed - %s\n", nt_errstr(status));
 		return False;
 	}
-
-	printf("\n");
 
 	return True;
 }
@@ -1235,90 +1233,68 @@ static BOOL test_EnumPrivs(struct dcerpc_pipe *p,
 	return ret;
 }
 
-
-static BOOL test_EnumTrustDom(struct dcerpc_pipe *p, 
-			      TALLOC_CTX *mem_ctx, 
-			      struct policy_handle *handle)
+static BOOL test_query_each_TrustDom(struct dcerpc_pipe *p, 
+				     TALLOC_CTX *mem_ctx, 
+				     struct policy_handle *handle, 
+				     struct lsa_DomainList *domains) 
 {
-	struct lsa_EnumTrustDom r;
 	NTSTATUS status;
-	uint32_t resume_handle = 0;
-	struct lsa_DomainList domains;
 	int i,j;
 	BOOL ret = True;
-
-	printf("\nTesting EnumTrustDom\n");
-
-	r.in.handle = handle;
-	r.in.resume_handle = &resume_handle;
-	r.in.num_entries = 100;
-	r.out.domains = &domains;
-	r.out.resume_handle = &resume_handle;
-
-	status = dcerpc_lsa_EnumTrustDom(p, mem_ctx, &r);
-
-	/* NO_MORE_ENTRIES is allowed */
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES)) {
-		return True;
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("EnumTrustDom failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
+		
 	printf("\nTesting OpenTrustedDomain, OpenTrustedDomainByName and QueryInfoTrustedDomain\n");
-
-	for (i=0; i< domains.count; i++) {
+	for (i=0; i< domains->count; i++) {
 		struct lsa_OpenTrustedDomain trust;
 		struct lsa_OpenTrustedDomainByName trust_by_name;
 		struct policy_handle trustdom_handle;
 		struct policy_handle handle2;
 		struct lsa_Close c;
 		int levels [] = {1, 3, 6, 8, 12};
-		
-		trust.in.handle = handle;
-		trust.in.sid = domains.domains[i].sid;
-		trust.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-		trust.out.trustdom_handle = &trustdom_handle;
-
-		status = dcerpc_lsa_OpenTrustedDomain(p, mem_ctx, &trust);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("OpenTrustedDomain failed - %s\n", nt_errstr(status));
-			return False;
-		}
-
-		c.in.handle = &trustdom_handle;
-		c.out.handle = &handle2;
-		
-		for (j=0; j < ARRAY_SIZE(levels); j++) {
-			struct lsa_QueryTrustedDomainInfo q;
-			union lsa_TrustedDomainInfo info;
-			q.in.trustdom_handle = &trustdom_handle;
-			q.in.level = levels[j];
-			q.out.info = &info;
-			status = dcerpc_lsa_QueryTrustedDomainInfo(p, mem_ctx, &q);
+			
+		if (domains->domains[i].sid) {
+			trust.in.handle = handle;
+			trust.in.sid = domains->domains[i].sid;
+			trust.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+			trust.out.trustdom_handle = &trustdom_handle;
+			
+			status = dcerpc_lsa_OpenTrustedDomain(p, mem_ctx, &trust);
+			
 			if (!NT_STATUS_IS_OK(status)) {
-				printf("QueryTrustedDomainInfo level %d failed - %s\n", 
-				       levels[j], nt_errstr(status));
-				ret = False;
+				printf("OpenTrustedDomain failed - %s\n", nt_errstr(status));
+				return False;
 			}
-		}
-		
-		status = dcerpc_lsa_Close(p, mem_ctx, &c);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("Close of trusted domain failed - %s\n", nt_errstr(status));
-			return False;
+			
+			c.in.handle = &trustdom_handle;
+			c.out.handle = &handle2;
+			
+			for (j=0; j < ARRAY_SIZE(levels); j++) {
+				struct lsa_QueryTrustedDomainInfo q;
+				union lsa_TrustedDomainInfo info;
+				q.in.trustdom_handle = &trustdom_handle;
+				q.in.level = levels[j];
+				q.out.info = &info;
+				status = dcerpc_lsa_QueryTrustedDomainInfo(p, mem_ctx, &q);
+				if (!NT_STATUS_IS_OK(status)) {
+					printf("QueryTrustedDomainInfo level %d failed - %s\n", 
+					       levels[j], nt_errstr(status));
+					ret = False;
+				}
+			}
+			
+			status = dcerpc_lsa_Close(p, mem_ctx, &c);
+			if (!NT_STATUS_IS_OK(status)) {
+				printf("Close of trusted domain failed - %s\n", nt_errstr(status));
+				return False;
+			}
 		}
 
 		trust_by_name.in.handle = handle;
-		trust_by_name.in.name = domains.domains[i].name;
+		trust_by_name.in.name = domains->domains[i].name;
 		trust_by_name.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 		trust_by_name.out.trustdom_handle = &trustdom_handle;
-		
+			
 		status = dcerpc_lsa_OpenTrustedDomainByName(p, mem_ctx, &trust_by_name);
-
+			
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("OpenTrustedDomainByName failed - %s\n", nt_errstr(status));
 			return False;
@@ -1350,8 +1326,13 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 		for (j=0; j < ARRAY_SIZE(levels); j++) {
 			struct lsa_QueryTrustedDomainInfoBySid q;
 			union lsa_TrustedDomainInfo info;
+
+			if (!domains->domains[i].sid) {
+				continue;
+			}
+
 			q.in.handle  = handle;
-			q.in.dom_sid = domains.domains[i].sid;
+			q.in.dom_sid = domains->domains[i].sid;
 			q.in.level   = levels[j];
 			q.out.info   = &info;
 			status = dcerpc_lsa_QueryTrustedDomainInfoBySid(p, mem_ctx, &q);
@@ -1366,7 +1347,7 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 			struct lsa_QueryTrustedDomainInfoByName q;
 			union lsa_TrustedDomainInfo info;
 			q.in.handle         = handle;
-			q.in.trusted_domain = domains.domains[i].name;
+			q.in.trusted_domain = domains->domains[i].name;
 			q.in.level          = levels[j];
 			q.out.info          = &info;
 			status = dcerpc_lsa_QueryTrustedDomainInfoByName(p, mem_ctx, &q);
@@ -1376,10 +1357,51 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 				ret = False;
 			}
 		}
-		
-		
-
 	}
+	return ret;
+}
+
+static BOOL test_EnumTrustDom(struct dcerpc_pipe *p, 
+			      TALLOC_CTX *mem_ctx, 
+			      struct policy_handle *handle)
+{
+	struct lsa_EnumTrustDom r;
+	NTSTATUS enum_status;
+	uint32_t resume_handle = 0;
+	struct lsa_DomainList domains;
+	BOOL ret = True;
+
+	printf("\nTesting EnumTrustDom\n");
+
+	do {
+		r.in.handle = handle;
+		r.in.resume_handle = &resume_handle;
+		r.in.max_size = LSA_ENUM_TRUST_DOMAIN_MULTIPLIER * 3;
+		r.out.domains = &domains;
+		r.out.resume_handle = &resume_handle;
+		
+		enum_status = dcerpc_lsa_EnumTrustDom(p, mem_ctx, &r);
+		
+		/* NO_MORE_ENTRIES is allowed */
+		if (NT_STATUS_EQUAL(enum_status, NT_STATUS_NO_MORE_ENTRIES)) {
+			return True;
+		} else if (NT_STATUS_EQUAL(enum_status, STATUS_MORE_ENTRIES)) {
+			/* Windows 2003 gets this off by one on the first run */
+			if (r.out.domains->count < 3 || r.out.domains->count > 4) {
+				printf("EnumTrustDom didn't fill the buffer we "
+				       "asked it to (got %d, expected %d / %d == %d entries)\n",
+				       r.out.domains->count, LSA_ENUM_TRUST_DOMAIN_MULTIPLIER * 3, 
+				       LSA_ENUM_TRUST_DOMAIN_MULTIPLIER, r.in.max_size);
+				ret = False;
+			}
+		} else if (!NT_STATUS_IS_OK(enum_status)) {
+			printf("EnumTrustDom failed - %s\n", nt_errstr(enum_status));
+			return False;
+		}
+		
+		ret &= test_query_each_TrustDom(p, mem_ctx, handle, &domains);
+
+	} while ((NT_STATUS_EQUAL(enum_status, STATUS_MORE_ENTRIES)));
 
 	return ret;
 }
@@ -1392,46 +1414,52 @@ static BOOL test_CreateTrustedDomain(struct dcerpc_pipe *p,
 	BOOL ret = True;
 	struct lsa_CreateTrustedDomain r;
 	struct lsa_TrustInformation trustinfo;
-	struct dom_sid *domsid;
-	struct policy_handle trustdom_handle;
+	struct dom_sid *domsid[12];
+	struct policy_handle trustdom_handle[12];
 	struct lsa_QueryTrustedDomainInfo q;
+	int i;
 
-	printf("Testing CreateTrustedDomain\n");
+	printf("Testing CreateTrustedDomain for 12 domains\n");
 
-	domsid = dom_sid_parse_talloc(mem_ctx, "S-1-5-21-97398-379795-12345");
+	for (i=0; i< 12; i++) {
+		char *trust_name = talloc_asprintf(mem_ctx, "torturedom%02d", i);
+		char *trust_sid = talloc_asprintf(mem_ctx, "S-1-5-21-97398-379795-100%02d", i);
+		
+		domsid[i] = dom_sid_parse_talloc(mem_ctx, trust_sid);
 
-	trustinfo.sid = domsid;
-	init_lsa_String(&trustinfo.name, "torturedomain");
+		trustinfo.sid = domsid[i];
+		init_lsa_String(&trustinfo.name, trust_name);
 
-	r.in.handle = handle;
-	r.in.info = &trustinfo;
-	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	r.out.trustdom_handle = &trustdom_handle;
-
-	status = dcerpc_lsa_CreateTrustedDomain(p, mem_ctx, &r);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
-		test_DeleteTrustedDomain(p, mem_ctx, handle, trustinfo.name);
+		r.in.handle = handle;
+		r.in.info = &trustinfo;
+		r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+		r.out.trustdom_handle = &trustdom_handle[i];
+		
 		status = dcerpc_lsa_CreateTrustedDomain(p, mem_ctx, &r);
-	}
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("CreateTrustedDomain failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	q.in.trustdom_handle = &trustdom_handle;
-	q.in.level = LSA_TRUSTED_DOMAIN_INFO_NAME;
-	status = dcerpc_lsa_QueryTrustedDomainInfo(p, mem_ctx, &q);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("QueryTrustedDomainInfo level 1 failed - %s\n", nt_errstr(status));
-		ret = False;
-	}
-	if (!q.out.info) {
-		ret = False;
-	} else {
-		if (strcmp(q.out.info->name.netbios_name.string, trustinfo.name.string) != 0) {
-			printf("QueryTrustedDomainInfo returned inconsistant short name: %s != %s\n",
-			       q.out.info->name.netbios_name.string, trustinfo.name.string);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+			test_DeleteTrustedDomain(p, mem_ctx, handle, trustinfo.name);
+			status = dcerpc_lsa_CreateTrustedDomain(p, mem_ctx, &r);
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("CreateTrustedDomain failed - %s\n", nt_errstr(status));
 			ret = False;
+		} else {
+		
+			q.in.trustdom_handle = &trustdom_handle[i];
+			q.in.level = LSA_TRUSTED_DOMAIN_INFO_NAME;
+			status = dcerpc_lsa_QueryTrustedDomainInfo(p, mem_ctx, &q);
+			if (!NT_STATUS_IS_OK(status)) {
+				printf("QueryTrustedDomainInfo level 1 failed - %s\n", nt_errstr(status));
+				ret = False;
+			} else if (!q.out.info) {
+				ret = False;
+			} else {
+				if (strcmp(q.out.info->name.netbios_name.string, trustinfo.name.string) != 0) {
+					printf("QueryTrustedDomainInfo returned inconsistant short name: %s != %s\n",
+					       q.out.info->name.netbios_name.string, trustinfo.name.string);
+					ret = False;
+				}
+			}
 		}
 	}
 
@@ -1439,9 +1467,11 @@ static BOOL test_CreateTrustedDomain(struct dcerpc_pipe *p,
 	if (!test_EnumTrustDom(p, mem_ctx, handle)) {
 		ret = False;
 	}
-
-	if (!test_Delete(p, mem_ctx, &trustdom_handle)) {
-		ret = False;
+	
+	for (i=0; i<12; i++) {
+		if (!test_Delete(p, mem_ctx, &trustdom_handle[i])) {
+			ret = False;
+		}
 	}
 
 	return ret;
