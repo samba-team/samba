@@ -344,6 +344,7 @@ static BOOL check_cache(char *name)
 
 	/* we found it - construct the full name */
 	strncpy(extension, name+9, 3);
+	extension[3] = 0;
 
 	if (extension[0]) {
 		M_DEBUG(0,("check_cache: %s -> %s.%s\n", name, prefix, extension));
@@ -434,6 +435,19 @@ static BOOL name_map(char *name, BOOL need83, BOOL cache83)
 
 	/* find the '.' if any */
 	dot_p = strrchr(name, '.');
+
+	if (dot_p) {
+		/* if the extension contains any illegal characters or
+		   is too long or zero length then we treat it as part
+		   of the prefix */
+		for (i=0; i<4 && dot_p[i+1]; i++) {
+			if (! FLAG_CHECK(dot_p[i+1], FLAG_ASCII)) {
+				dot_p = NULL;
+				break;
+			}
+		}
+		if (i == 0 || i == 4) dot_p = NULL;
+	}
 
 	/* the leading character in the mangled name is taken from
 	   the first character of the name, if it is ascii 

@@ -25,7 +25,8 @@
 static fstring host, workgroup, share, password, username, myname;
 static int max_protocol = PROTOCOL_NT1;
 static char *sockops="TCP_NODELAY";
-static int nprocs=1, numops=100;
+static int nprocs=1;
+int torture_numops=100;
 static int procnum; /* records process count number when forking */
 static struct cli_state current_cli;
 static fstring randomfname;
@@ -239,7 +240,7 @@ static BOOL rw_torture(struct cli_state *c)
 	}
 
 
-	for (i=0;i<numops;i++) {
+	for (i=0;i<torture_numops;i++) {
 		unsigned n = (unsigned)sys_random()%10;
 		if (i % 10 == 0) {
 			printf("%d\r", i); fflush(stdout);
@@ -456,7 +457,7 @@ static BOOL rw_torture2(struct cli_state *c1, struct cli_state *c2)
 		return False;
 	}
 
-	for (i=0;i<numops;i++)
+	for (i=0;i<torture_numops;i++)
 	{
 		size_t buf_size = ((unsigned)sys_random()%(sizeof(buf)-1))+ 1;
 		if (i % 10 == 0) {
@@ -1112,7 +1113,7 @@ static BOOL run_locktest3(int dummy)
 	uint32 offset;
 	BOOL correct = True;
 
-#define NEXT_OFFSET offset += (~(uint32)0) / numops
+#define NEXT_OFFSET offset += (~(uint32)0) / torture_numops
 
 	if (!torture_open_connection(&cli1) || !torture_open_connection(&cli2)) {
 		return False;
@@ -1135,7 +1136,7 @@ static BOOL run_locktest3(int dummy)
 		return False;
 	}
 
-	for (offset=i=0;i<numops;i++) {
+	for (offset=i=0;i<torture_numops;i++) {
 		NEXT_OFFSET;
 		if (!cli_lock(&cli1, fnum1, offset-1, 1, 0, WRITE_LOCK)) {
 			printf("lock1 %d failed (%s)\n", 
@@ -1152,7 +1153,7 @@ static BOOL run_locktest3(int dummy)
 		}
 	}
 
-	for (offset=i=0;i<numops;i++) {
+	for (offset=i=0;i<torture_numops;i++) {
 		NEXT_OFFSET;
 
 		if (cli_lock(&cli1, fnum1, offset-2, 1, 0, WRITE_LOCK)) {
@@ -1176,7 +1177,7 @@ static BOOL run_locktest3(int dummy)
 		}
 	}
 
-	for (offset=i=0;i<numops;i++) {
+	for (offset=i=0;i<torture_numops;i++) {
 		NEXT_OFFSET;
 
 		if (!cli_unlock(&cli1, fnum1, offset-1, 1)) {
@@ -3419,7 +3420,7 @@ static BOOL run_dirtest(int dummy)
 	cli_sockopt(&cli, sockops);
 
 	srandom(0);
-	for (i=0;i<numops;i++) {
+	for (i=0;i<torture_numops;i++) {
 		fstring fname;
 		slprintf(fname, sizeof(fname), "\\%x", (int)random());
 		fnum = cli_open(&cli, fname, O_RDWR|O_CREAT, DENY_NONE);
@@ -3439,7 +3440,7 @@ static BOOL run_dirtest(int dummy)
 	printf("dirtest core %g seconds\n", end_timer() - t1);
 
 	srandom(0);
-	for (i=0;i<numops;i++) {
+	for (i=0;i<torture_numops;i++) {
 		fstring fname;
 		slprintf(fname, sizeof(fname), "\\%x", (int)random());
 		cli_unlink(&cli, fname);
@@ -3693,6 +3694,7 @@ static struct {
 	{"RENAME", run_rename, 0},
 	{"DELETE", run_deletetest, 0},
 	{"PROPERTIES", run_properties, 0},
+	{"MANGLE", torture_mangle, 0},
 	{"W2K", run_w2ktest, 0},
 	{"TRANS2SCAN", torture_trans2_scan, 0},
 	{"NTTRANSSCAN", torture_nttrans_scan, 0},
@@ -3764,6 +3766,7 @@ static void usage(void)
 	printf("\t-L use oplocks\n");
 	printf("\t-c CLIENT.TXT   specify client load file for NBENCH\n");
 	printf("\t-A showall\n");
+	printf("\t-s seed\n");
 	printf("\n\n");
 
 	printf("tests are:");
@@ -3834,8 +3837,11 @@ static void usage(void)
 
 	fstrcpy(workgroup, lp_workgroup());
 
-	while ((opt = getopt(argc, argv, "hW:U:n:N:O:o:m:Ld:Ac:k")) != EOF) {
+	while ((opt = getopt(argc, argv, "hW:U:n:N:O:o:m:Ld:Ac:ks:")) != EOF) {
 		switch (opt) {
+		case 's':
+			srandom(atoi(optarg));
+			break;
 		case 'W':
 			fstrcpy(workgroup,optarg);
 			break;
@@ -3846,7 +3852,7 @@ static void usage(void)
 			nprocs = atoi(optarg);
 			break;
 		case 'o':
-			numops = atoi(optarg);
+			torture_numops = atoi(optarg);
 			break;
 		case 'd':
 			DEBUGLEVEL = atoi(optarg);
