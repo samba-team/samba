@@ -934,6 +934,16 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #define S_IXOTH 00001           /* execute permission: other */
 #endif
 
+/* NetBSD doesn't have these */
+#ifndef SHM_R
+#define SHM_R 0400
+#endif
+
+#ifndef SHM_W
+#define SHM_W 0200
+#endif
+
+
 /* Some systems (SCO) treat UNIX domain sockets as FIFOs */
 
 #ifndef S_IFSOCK
