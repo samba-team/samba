@@ -1333,7 +1333,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
         }
         return(ERROR(ERRDOS,ERRnofids));
       }
-      dptr_set_wcard(dptr_num, mask);
+      dptr_set_wcard(dptr_num, strdup(mask));
     }
 
     DEBUG(4,("dptr_num is %d\n",dptr_num));
