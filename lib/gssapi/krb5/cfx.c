@@ -40,6 +40,7 @@ RCSID("$Id$");
 
 #define SentByAcceptor	(1 << 0)
 #define Sealed		(1 << 1)
+#define AcceptorSubkey	(1 << 2)
 
 static krb5_error_code
 wrap_length_cfx(krb5_crypto crypto,
@@ -416,6 +417,7 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
 {
     krb5_crypto crypto;
     gss_cfx_wrap_token token;
+    u_char token_flags;
     krb5_error_code ret;
     unsigned usage;
     krb5_data data;
@@ -438,12 +440,10 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
 	return GSS_S_DEFECTIVE_TOKEN;
     }
 
-    /* Reject unknown flags */
-    if (token->Flags & ~(SentByAcceptor | Sealed)) {
-	return GSS_S_DEFECTIVE_TOKEN;
-    }
+    /* Ignore unknown flags */
+    token_flags = token->Flags & (SentByAcceptor | Sealed | AcceptorSubkey);
 
-    if (token->Flags & SentByAcceptor) {
+    if (token_flags & SentByAcceptor) {
 	if ((context_handle->more_flags & LOCAL) == 0)
 	    return GSS_S_DEFECTIVE_TOKEN;
     }
@@ -453,7 +453,7 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
     }
 
     if (conf_state != NULL) {
-	*conf_state = (token->Flags & Sealed) ? 1 : 0;
+	*conf_state = (token_flags & Sealed) ? 1 : 0;
     }
 
     ec  = (token->EC[0]  << 8) | token->EC[1];
@@ -507,7 +507,7 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
 	return GSS_S_FAILURE;
     }
 
-    if (token->Flags & Sealed) {
+    if (token_flags & Sealed) {
 	ret = krb5_decrypt(gssapi_krb5_context, crypto, usage,
 	    p, len, &data);
 	if (ret != 0) {
@@ -710,6 +710,7 @@ OM_uint32 _gssapi_verify_mic_cfx(OM_uint32 *minor_status,
 {
     krb5_crypto crypto;
     gss_cfx_mic_token token;
+    u_char token_flags;
     krb5_error_code ret;
     unsigned usage;
     OM_uint32 seq_number_lo, seq_number_hi;
@@ -730,12 +731,10 @@ OM_uint32 _gssapi_verify_mic_cfx(OM_uint32 *minor_status,
 	return GSS_S_DEFECTIVE_TOKEN;
     }
 
-    /* Reject unknown flags */
-    if (token->Flags & ~(SentByAcceptor)) {
-	return GSS_S_DEFECTIVE_TOKEN;
-    }
+    /* Ignore unknown flags */
+    token_flags = token->Flags & SentByAcceptor;
 
-    if (token->Flags & SentByAcceptor) {
+    if (token_flags & SentByAcceptor) {
 	if ((context_handle->more_flags & LOCAL) == 0)
 	    return GSS_S_DEFECTIVE_TOKEN;
     }
