@@ -310,21 +310,26 @@ static int put_nmb_name(char *buf,int offset,struct nmb_name *name)
 }
 
 /*******************************************************************
-  useful for debugging messages
-  ******************************************************************/
+ Useful for debugging messages.
+******************************************************************/
+
 char *nmb_namestr(struct nmb_name *n)
 {
-  static int i=0;
-  static fstring ret[4];
-  char *p = ret[i];
+	static int i=0;
+	static fstring ret[4];
+	char *p = ret[i];
 
-  if (!n->scope[0])
-    slprintf(p,sizeof(fstring)-1, "%s<%02x>",n->name,n->name_type);
-  else
-    slprintf(p,sizeof(fstring)-1, "%s<%02x>.%s",n->name,n->name_type,n->scope);
+	if (!n->scope[0])
+		slprintf(p,sizeof(fstring)-1, "%s<%02x>",dos_to_unix_static(n->name),n->name_type);
+	else {
+		fstring name, scope;
+		fstrcpy(name, dos_to_unix_static(n->name));
+		fstrcpy(scope, dos_to_unix_static(n->scope));
+		slprintf(p,sizeof(fstring)-1, "%s<%02x>.%s",name,n->name_type,scope);
+	}
 
-  i = (i+1)%4;
-  return(p);
+	i = (i+1)%4;
+	return(p);
 }
 
 /*******************************************************************
@@ -696,9 +701,10 @@ struct packet_struct *parse_packet(char *buf,int length,
 }
 
 /*******************************************************************
-  read a packet from a socket and parse it, returning a packet ready
-  to be used or put on the queue. This assumes a UDP socket
-  ******************************************************************/
+ Read a packet from a socket and parse it, returning a packet ready
+ to be used or put on the queue. This assumes a UDP socket.
+******************************************************************/
+
 struct packet_struct *read_packet(int fd,enum packet_type packet_type)
 {
 	struct packet_struct *packet;
@@ -706,10 +712,12 @@ struct packet_struct *read_packet(int fd,enum packet_type packet_type)
 	int length;
 	
 	length = read_udp_socket(fd,buf,sizeof(buf));
-	if (length < MIN_DGRAM_SIZE) return(NULL);
+	if (length < MIN_DGRAM_SIZE)
+		return(NULL);
 	
 	packet = parse_packet(buf, length, packet_type);
-	if (!packet) return NULL;
+	if (!packet)
+		return NULL;
 
 	packet->fd = fd;
 	
