@@ -141,7 +141,8 @@ proto (int sock, const char *hostname, const char *service)
     krb5_creds      creds;
     krb5_kdc_flags  flags;
     krb5_principal  principal;
-    char ret_string[10];
+    char	    ret_string[10];
+    ssize_t	    n;
 
     status = krb5_auth_con_init (context, &auth_context);
     if (status) {
@@ -272,18 +273,23 @@ proto (int sock, const char *hostname, const char *service)
     net_len = htonl(len);
 
     if (krb5_net_write (context, &sock, &net_len, 4) != 4) {
-	krb5_warn (context, status, "krb5_net_write");
+	krb5_warn (context, errno, "krb5_net_write");
 	return 1;
     }
     if (krb5_net_write (context, &sock, packet.data, len) != len) {
-	krb5_warn (context, status, "krb5_net_write");
+	krb5_warn (context, errno, "krb5_net_write");
 	return 1;
     }
 
     krb5_data_free (&data);
 
-    if (krb5_net_read (context, &sock, &net_len, 4) != 4) {
-	krb5_warn (context, status, "krb5_net_read");
+    n = krb5_net_read (context, &sock, &net_len, 4);
+    if (n == 0) {
+	krb5_warnx (context, "EOF in krb5_net_read");
+	return 1;
+    }
+    if (n < 0) {
+	krb5_warn (context, errno, "krb5_net_read");
 	return 1;
     }
     len = ntohl(net_len);
@@ -291,8 +297,13 @@ proto (int sock, const char *hostname, const char *service)
 	krb5_warnx (context, "too long string back from %s", hostname);
 	return 1;
     }
-    if (krb5_net_read (context, &sock, ret_string, len) != len) {
-	krb5_warnx (context, "read too short from %s", hostname);
+    n = krb5_net_read (context, &sock, ret_string, len);
+    if (n == 0) {
+	krb5_warnx (context, "EOF in krb5_net_read");
+	return 1;
+    }
+    if (n < 0) {
+	krb5_warn (context, errno, "krb5_net_read");
 	return 1;
     }
     ret_string[sizeof(ret_string) - 1] = '\0';
