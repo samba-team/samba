@@ -871,6 +871,8 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
 	return NT_STATUS_IS_OK(pdb_context->pdb_getsampwent(pdb_context, user));
 }
 
+static SAM_ACCOUNT *sam_account_cache = NULL;
+
 BOOL pdb_getsampwnam(SAM_ACCOUNT *sam_acct, const char *username) 
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
@@ -879,7 +881,17 @@ BOOL pdb_getsampwnam(SAM_ACCOUNT *sam_acct, const char *username)
 		return False;
 	}
 
-	return NT_STATUS_IS_OK(pdb_context->pdb_getsampwnam(pdb_context, sam_acct, username));
+	if (!NT_STATUS_IS_OK(pdb_context->pdb_getsampwnam(pdb_context,
+							  sam_acct, username)))
+		return False;
+
+	if (sam_account_cache != NULL) {
+		pdb_free_sam(&sam_account_cache);
+		sam_account_cache = NULL;
+	}
+
+	pdb_copy_sam_account(sam_acct, &sam_account_cache);
+	return True;
 }
 
 BOOL pdb_getsampwsid(SAM_ACCOUNT *sam_acct, const DOM_SID *sid) 
@@ -889,6 +901,10 @@ BOOL pdb_getsampwsid(SAM_ACCOUNT *sam_acct, const DOM_SID *sid)
 	if (!pdb_context) {
 		return False;
 	}
+
+	if ((sam_account_cache != NULL) &&
+	    (sid_equal(sid, pdb_get_user_sid(sam_account_cache))))
+		return pdb_copy_sam_account(sam_account_cache, &sam_acct);
 
 	return NT_STATUS_IS_OK(pdb_context->pdb_getsampwsid(pdb_context, sam_acct, sid));
 }
@@ -912,6 +928,11 @@ BOOL pdb_update_sam_account(SAM_ACCOUNT *sam_acct)
 		return False;
 	}
 
+	if (sam_account_cache != NULL) {
+		pdb_free_sam(&sam_account_cache);
+		sam_account_cache = NULL;
+	}
+
 	return NT_STATUS_IS_OK(pdb_context->pdb_update_sam_account(pdb_context, sam_acct));
 }
 
@@ -921,6 +942,11 @@ BOOL pdb_delete_sam_account(SAM_ACCOUNT *sam_acct)
 
 	if (!pdb_context) {
 		return False;
+	}
+
+	if (sam_account_cache != NULL) {
+		pdb_free_sam(&sam_account_cache);
+		sam_account_cache = NULL;
 	}
 
 	return NT_STATUS_IS_OK(pdb_context->pdb_delete_sam_account(pdb_context, sam_acct));
