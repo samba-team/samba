@@ -147,9 +147,9 @@ if test "$ac_cv_func_vsnprintf_working" = yes; then
 	AC_DEFINE_UNQUOTED($foo)
 fi
 
-AC_CHECK_FUNCS(_getpty asnprintf asprintf fcntl gethostname getmsg)
-AC_CHECK_FUNCS(grantpt logwtmp mktime ptsname rand random revoke)
-AC_CHECK_FUNCS(select setitimer setlogin setpcred setpgid setsid)
+AC_CHECK_FUNCS(_getpty asnprintf asprintf fcntl gethostname)
+AC_CHECK_FUNCS(getmsg grantpt logwtmp mktime ptsname rand random)
+AC_CHECK_FUNCS(revoke select setitimer setlogin setpcred setpgid)
 AC_CHECK_FUNCS(setsid setsockopt strstr timegm ttyname umask)
 AC_CHECK_FUNCS(unlockpt vasnprintf vasprintf vhangup)
 
@@ -165,12 +165,12 @@ AC_FIND_IF_NOT_BROKEN(hstrerror, resolv,
 #endif],
 17)
 
-AC_BROKEN(chown daemon err errx fchown flock getcwd getdtablesize)
-AC_BROKEN(getusershell inet_aton initgroups lstat memmove)
-AC_BROKEN(mkstemp putenv rcmd setegid setenv seteuid)
-AC_BROKEN(strcasecmp strdup strerror strftime strlwr)
-AC_BROKEN(strnlen strsep strtok_r strupr unsetenv vsyslog verr)
-AC_BROKEN(verrx vwarn vwarnx warn warnx)
+AC_BROKEN(chown daemon err errx fchown flock getcwd)
+AC_BROKEN(getdtablesize getusershell inet_aton initgroups)
+AC_BROKEN(lstat memmove mkstemp putenv rcmd setegid setenv)
+AC_BROKEN(seteuid strcasecmp strdup strerror strftime)
+AC_BROKEN(strlwr strnlen strsep strtok_r strupr unsetenv)
+AC_BROKEN(verr verrx vsyslog vwarn vwarnx warn warnx)
 
 dnl AC_KRB_FUNC_GETCWD_BROKEN
 
