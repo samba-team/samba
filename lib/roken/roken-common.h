@@ -186,6 +186,22 @@ struct addrinfo {
 #define INET6_ADDRSTRLEN   46
 #endif
 
+/*
+ * for shutdown(2)
+ */
+
+#ifndef SHUT_RD
+#define SHUT_RD 0
+#endif
+
+#ifndef SHUT_WR
+#define SHUT_WR 1
+#endif
+
+#ifndef SHUT_RDWR
+#define SHUT_RDWR 2
+#endif
+
 #ifndef HAVE___ATTRIBUTE__
 #define __attribute__(x)
 #endif
