@@ -27,6 +27,7 @@ extern pstring debugf;
 extern fstring global_myworkgroup;
 extern fstring global_sam_name;
 extern pstring global_myname;
+extern dfs_internal dfs_struct;
 
 int am_parent = 1;
 
@@ -49,6 +50,7 @@ extern int dcelogin_atmost_once;
 extern fstring remote_machine;
 extern pstring OriginalDir;
 extern pstring myhostname;
+
 
 /****************************************************************************
   when exiting, take the whole family
@@ -452,6 +454,7 @@ static void init_structs(void)
 	init_lsa_policy_hnd(); /* for LSA handles */
 	init_printer_hnd(); /* for SPOOLSS handles */
 	init_dptrs();
+	init_dfs_table();
 }
 
 /****************************************************************************

@@ -835,6 +835,11 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   unix_convert(name,conn,0,&bad_path,&st);
 
   mode = SVAL(inbuf,smb_vwv0);
+ 
+  if(under_dfs(conn, name)) {
+    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
+  }
 
   if (check_name(name,conn)) {
     if(VALID_STAT(st))
@@ -892,6 +897,11 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   BOOL bad_path = False;
  
   pstrcpy(fname,smb_buf(inbuf) + 1);
+  
+  if (under_dfs(conn, fname)) {
+    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+    return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
+  }
 
   /* dos smetimes asks for a stat of "" - it returns a "hidden directory"
      under WfWg - weird! */

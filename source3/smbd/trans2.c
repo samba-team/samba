@@ -31,6 +31,7 @@ extern int Client;
 extern int smb_read_error;
 extern fstring local_machine;
 extern int global_oplock_break;
+extern dfs_internal dfs_struct;
 
 /****************************************************************************
   Send the required number of replies back.
@@ -112,7 +113,8 @@ static int send_trans2_replies(char *outbuf, int bufsize, char *params,
     SSVAL(outbuf,smb_prcnt, params_sent_thistime);
     if(params_sent_thistime == 0)
     {
-      SSVAL(outbuf,smb_proff,0);
+      /*SSVAL(outbuf,smb_proff,0);*/
+      SSVAL(outbuf,smb_proff,((smb_buf(outbuf)+alignment_offset) - smb_base(outbuf)));
       SSVAL(outbuf,smb_prdisp,0);
     }
     else
@@ -2019,6 +2021,238 @@ int reply_findnclose(connection_struct *conn,
 	return(outsize);
 }
 
+/****************************************************************************
+ reply to a TRANS2_GET_DFS_REFERRAL
+ ****************************************************************************/
+static int call_trans2getdfsreferral(connection_struct *conn,
+				     char *inbuf, char *outbuf, int length, 
+				     int bufsize, 
+				     char **pparams, char **ppdata,
+				     int total_data)
+{
+	char *params = *pparams;
+	char *pdata;
+	char *pheader;
+	char *localstring_offset;
+	char *mangledstring_offset;
+	char *sharename_offset;
+	char *referal_offset;
+	
+	int i;
+	int j;
+	unsigned int total_params = SVAL(inbuf, smb_tpscnt);
+	int query_file_len=0;
+	int bytesreq=0;
+	int filename_len;
+	
+	BOOL first_one=True;
+	
+	referal_trans_param rtp;
+	dfs_internal_table *list=dfs_struct.table;
+	dfs_response reply;
+
+	DEBUG(0,("call_trans2getdfsreferral:1\n"));
+
+	ZERO_STRUCT(rtp);
+	/* decode the param member of query */
+	rtp.level=SVAL(params, 0);
+	DEBUGADD(0,("rtp.level:[%d]\n",rtp.level));
+	
+	DEBUGADD(0,("total_params:[%d]\n",total_params));
+	for (i=0; i<(total_params-2)/2; i++)
+	{
+		rtp.directory[i]=SVAL(params, 2+2*i);
+	}
+/*
+	strupper(rtp.directory);
+*/
+	query_file_len=strlen(rtp.directory);
+	DEBUGADD(0,("rtp.directory:[%s]\n",rtp.directory));
+	DEBUGADD(0,("query_file_len:[%d]\n",query_file_len));
+		
+	/*
+	  lookup in the internal DFS table all the entries
+	  and calculate the required data buffer size
+	*/
+	bytesreq=8;	/* the header */
+	reply.number_of_referal=0;
+	DEBUGADD(0,("call_trans2getdfsreferral:2\n"));
+	
+	for(i=0; i<dfs_struct.size; i++)
+	{
+		filename_len=list[i].localpath_length;
+ 	DEBUGADD(0,("checking against [%s][%d]\n", list[i].localpath, filename_len));
+ 
+		if( (filename_len==query_file_len) && 
+		    (!strncmp(rtp.directory, list[i].localpath, query_file_len)) )
+		{
+			
+			bytesreq+=22;		     	          /* the referal size */
+			bytesreq+=2*(list[i].sharename_length+1); /* the string length */
+			reply.number_of_referal++;
+ 	DEBUGADD(0,("found\n"));
+			
+			if (first_one) {
+ 	DEBUGADD(0,("first one\n"));
+				bytesreq+=2*(list[i].localpath_length+1);
+				bytesreq+=2*(list[i].mangledpath_length+1);
+				
+				reply.path_consumed=list[i].localpath_length;
+				
+				strncpy(reply.filename, list[i].localpath, list[i].localpath_length+1);
+				strncpy(reply.mangledname, list[i].mangledpath, list[i].mangledpath_length+1);
+				rtp.type=list[i].type;
+				first_one=False;
+			}
+		}
+ 	}
+	DEBUGADD(0,("call_trans2getdfsreferral:3\n"));
+
+	/* allocate memory for the reply data */	
+	pdata = *ppdata = Realloc(*ppdata, bytesreq + 1024); 
+	bzero(*ppdata, bytesreq+22);
+
+	pdata = *ppdata;
+	pheader = pdata;
+
+	localstring_offset  = pdata + 8 + reply.number_of_referal*22;
+
+/* unicode version */
+	mangledstring_offset = localstring_offset + 2*(1+strlen(reply.filename));
+	sharename_offset = mangledstring_offset + 2*(1+strlen(reply.mangledname));
+
+/*ascii version 
+	mangledstring_offset = localstring_offset + (1+strlen(reply.filename));
+	sharename_offset = mangledstring_offset + (1+strlen(reply.mangledname));
+*/
+	referal_offset = pdata + 8;
+
+	/* right now respond storage server */
+/*
+	reply.server_function=rtp.type;
+*/
+	reply.server_function=1;
+
+	/* write the header */
+/* unicode version*/
+	/*SSVAL(pheader, 0, reply.path_consumed*2);*/
+/*ascii version 
+
+	SSVAL(pheader, 0, reply.path_consumed);
+*/
+
+	SSVAL(pheader, 0, 6);
+
+	SSVAL(pheader, 2, reply.number_of_referal);
+	SIVAL(pheader, 4, reply.server_function);
+
+ 	/* write the local path string */
+/* unicode version*/
+	for(i=0; i<strlen(reply.filename); i++)
+ 	{
+		SSVAL(localstring_offset, 2*i, (uint16) reply.filename[i]);
+	}
+	SSVAL(localstring_offset, 2*strlen(reply.filename), 0);
+/*ascii version 
+
+	for(i=0; i<strlen(reply.filename); i++)
+ 	{
+		localstring_offset[i]=reply.filename[i];
+	}
+	localstring_offset[strlen(reply.filename)]=0;
+*/
+	DEBUG(0,("reply.filename is [%s]:[%d], i is [%d]\n", reply.filename, strlen(reply.filename), i));
+
+	/* write the mangled local path string */ 
+/* unicode version*/
+	for(i=0; i<strlen(reply.mangledname); i++)
+ 	{
+		SSVAL(mangledstring_offset, 2*i, (uint16) reply.mangledname[i]);
+	}
+	SSVAL(mangledstring_offset, 2*i, 0);
+/*ascii version 
+
+	for(i=0; i<strlen(reply.mangledname); i++)
+ 	{
+		mangledstring_offset[i]=reply.mangledname[i];
+	}
+	mangledstring_offset[i]=0;
+*/
+	DEBUGADD(0,("call_trans2getdfsreferral:4\n"));
+
+	/* the order of the referals defines the load balancing */
+
+ 	/* write each referal */
+	for(i=0; i<dfs_struct.size; i++)
+	{
+		filename_len=list[i].localpath_length;
+  
+		if(filename_len==query_file_len && 
+		   !strncasecmp(rtp.directory, list[i].localpath, query_file_len))
+		{
+		
+			SSVAL(referal_offset,  0, 2);			/* version */
+			SSVAL(referal_offset,  2, 22);			/* size */
+			
+			if (rtp.type==3)
+				SSVAL(referal_offset,  4, 1);		/* type SMB server*/
+			else		
+				SSVAL(referal_offset,  4, 0);		/* type unknown */
+			SSVAL(referal_offset,  6, 1);			/* flags */
+			SIVAL(referal_offset,  8, list[i].proximity);	/* proximity */
+			SIVAL(referal_offset, 12, 300);			/* ttl */
+			SSVAL(referal_offset, 16, localstring_offset-referal_offset);
+			SSVAL(referal_offset, 18, mangledstring_offset-referal_offset);
+			SSVAL(referal_offset, 20, sharename_offset-referal_offset); 
+
+/* unicode version	*/	
+			for(j=0; j<list[i].sharename_length; j++)
+ 			{
+				SSVAL(sharename_offset, 2*j, (uint16) list[i].sharename[j]);
+			}
+			SSVAL(sharename_offset, 2*j, 0);
+		
+			sharename_offset=sharename_offset + 2*(1+list[i].sharename_length);
+/*ascii version 
+			for(j=0; j<list[i].sharename_length; j++)
+ 			{
+				sharename_offset[j]=list[i].sharename[j];
+			}
+			sharename_offset[j]=0;
+		
+			sharename_offset=sharename_offset + (1+list[i].sharename_length);
+*/
+
+			referal_offset=referal_offset+22;
+		}					
+	}
+	
+	DEBUGADD(0,("call_trans2getdfsreferral:5\n"));
+
+	send_trans2_replies(outbuf, bufsize, params, 0, *ppdata, bytesreq+22);
+
+/*	send_trans2_replies(outbuf, bufsize, *ppdata, bytesreq, params, 0);*/
+	DEBUGADD(0,("call_trans2getdfsreferral:6\n"));
+
+	return(-1);
+}
+		
+ 
+/****************************************************************************
+reply to a TRANS2_REPORT_DFS_INCONSISTANCY
+****************************************************************************/
+static int call_trans2reportdfsinconsistancy(connection_struct *conn,
+				     	     char *inbuf, char *outbuf, int length, 
+					     int bufsize, 
+					     char **pparams, char **ppdata)
+{
+	char *params = *pparams;
+
+	DEBUG(4,("call_trans2reportdfsinconsistancy\n"));
+	send_trans2_replies(outbuf, bufsize, params, 4, *ppdata, 0);
+	return(-1);
+}
+
 
 /****************************************************************************
   reply to a SMBtranss2 - just ignore it!
@@ -2149,73 +2383,104 @@ int reply_trans2(connection_struct *conn,
 	}
 
 	/* Now we must call the relevant TRANS2 function */
-	switch(tran_call)  {
-	case TRANSACT2_OPEN:
-		outsize = call_trans2open(conn, 
+	switch(tran_call)
+	{
+		case TRANSACT2_OPEN:
+		{
+			outsize = call_trans2open(conn, 
 					  inbuf, outbuf, bufsize, 
 					  &params, &data);
-		break;
-
-	case TRANSACT2_FINDFIRST:
-		outsize = call_trans2findfirst(conn, inbuf, outbuf, 
-					       bufsize, &params, &data);
-		break;
-
-	case TRANSACT2_FINDNEXT:
-		outsize = call_trans2findnext(conn, inbuf, outbuf, 
-					      length, bufsize, 
-					      &params, &data);
-		break;
-
-	case TRANSACT2_QFSINFO:
-	    outsize = call_trans2qfsinfo(conn, inbuf, outbuf, 
-					 length, bufsize, &params, 
-					 &data);
-	    break;
-
-	case TRANSACT2_SETFSINFO:
-		outsize = call_trans2setfsinfo(conn, inbuf, outbuf, 
-					       length, bufsize, 
-					       &params, &data);
-		break;
-
-	case TRANSACT2_QPATHINFO:
-	case TRANSACT2_QFILEINFO:
-		outsize = call_trans2qfilepathinfo(conn, inbuf, outbuf, 
-						   length, bufsize, 
-						   &params, &data, total_data);
-		break;
-	case TRANSACT2_SETPATHINFO:
-	case TRANSACT2_SETFILEINFO:
-		outsize = call_trans2setfilepathinfo(conn, inbuf, outbuf, 
-						     length, bufsize, 
-						     &params, &data, 
-						     total_data);
-		break;
-
-	case TRANSACT2_FINDNOTIFYFIRST:
-		outsize = call_trans2findnotifyfirst(conn, inbuf, outbuf, 
-						     length, bufsize, 
-						     &params, &data);
-		break;
-
-	case TRANSACT2_FINDNOTIFYNEXT:
-		outsize = call_trans2findnotifynext(conn, inbuf, outbuf, 
-						    length, bufsize, 
-						    &params, &data);
-		break;
-	case TRANSACT2_MKDIR:
-		outsize = call_trans2mkdir(conn, inbuf, outbuf, length, 
-					   bufsize, &params, &data);
-		break;
-	default:
-		/* Error in request */
-		DEBUG(2,("Unknown request %d in trans2 call\n", tran_call));
-		if(params)
-			free(params);
-		if(data)
-			free(data);
-		return (ERROR(ERRSRV,ERRerror));
+			break;
+		}
+		case TRANSACT2_FINDFIRST:
+		{
+			outsize = call_trans2findfirst(conn, inbuf, outbuf, 
+						       bufsize, &params, &data);
+			break;
+		}
+		case TRANSACT2_FINDNEXT:
+		{
+			outsize = call_trans2findnext(conn, inbuf, outbuf, 
+						      length, bufsize, 
+						      &params, &data);
+			break;
+		}
+		case TRANSACT2_QFSINFO:
+		{
+			outsize = call_trans2qfsinfo(conn, inbuf, outbuf, 
+						 length, bufsize, &params, 
+						 &data);
+			break;
+		}
+		case TRANSACT2_SETFSINFO:
+		{
+			outsize = call_trans2setfsinfo(conn, inbuf, outbuf, 
+						       length, bufsize, 
+						       &params, &data);
+			break;
+		}
+		case TRANSACT2_QPATHINFO:
+		case TRANSACT2_QFILEINFO:
+		{
+			outsize = call_trans2qfilepathinfo(conn, inbuf, outbuf, 
+							   length, bufsize, 
+							   &params, &data, total_data);
+			break;
+		}
+		case TRANSACT2_SETPATHINFO:
+		case TRANSACT2_SETFILEINFO:
+		{
+			outsize = call_trans2setfilepathinfo(conn, inbuf, outbuf, 
+							     length, bufsize, 
+							     &params, &data, 
+							     total_data);
+			break;
+		}
+		case TRANSACT2_FINDNOTIFYFIRST:
+		{
+			outsize = call_trans2findnotifyfirst(conn, inbuf, outbuf, 
+							     length, bufsize, 
+							     &params, &data);
+			break;
+		}
+		case TRANSACT2_FINDNOTIFYNEXT:
+		{
+			outsize = call_trans2findnotifynext(conn, inbuf, outbuf, 
+							    length, bufsize, 
+							    &params, &data);
+			break;
+		}
+		case TRANSACT2_MKDIR:
+		{
+			outsize = call_trans2mkdir(conn, inbuf, outbuf, length, 
+						   bufsize, &params, &data);
+			break;
+		}
+		case TRANSACT2_GET_DFS_REFERRAL:
+		{
+			outsize = call_trans2getdfsreferral(conn, inbuf, outbuf, 
+							    length, bufsize, &params, 
+							    &data, total_data);
+			break;
+		}
+		case TRANSACT2_REPORT_DFS_INCONSISTANCY:
+		{
+			outsize = call_trans2reportdfsinconsistancy(conn, inbuf, outbuf,
+								    length, bufsize, 
+								    &params, &data);
+			break;
+		}
+		default:
+		{
+			/* Error in request */
+			DEBUG(2,("Unknown request %d in trans2 call\n",
+			          tran_call));
+			if(params)
+				free(params);
+			if(data)
+				free(data);
+			return (ERROR(ERRSRV,ERRerror));
+		}
 	}
 	
 	/* As we do not know how many data packets will need to be
@@ -2233,3 +2498,4 @@ int reply_trans2(connection_struct *conn,
 			   call_trans2xxx calls have already sent
 			   it. If outsize != -1 then it is returning */
 }
+
