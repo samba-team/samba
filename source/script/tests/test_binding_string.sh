@@ -31,6 +31,7 @@ for I in "ncacn_np:$server" \
 		 "ncacn_np:$server[/pipe/rpcecho,sign,seal]" \
 		 "ncacn_np:$server[,sign]" \
 		 "ncacn_ip_tcp:$server[,sign]" \
+		 "ncalrpc:" \
 		 "308FB580-1EB2-11CA-923B-08002B1075A7@ncacn_np:$server" \
 		 "308FB580-1EB2-11CA-923B-08002B1075A7@ncacn_ip_tcp:$server" 
 do

@@ -167,7 +167,7 @@ REQUIRED_SUBSYSTEMS = \
 INIT_OBJ_FILES = \
 		rpc_server/dcerpc_server.o
 ADD_OBJ_FILES = \
-		rpc_server/dcerpc_tcp.o \
+		rpc_server/dcerpc_sock.o \
 		rpc_server/dcesrv_auth.o \
 		rpc_server/handles.o
 REQUIRED_SUBSYSTEMS = \
