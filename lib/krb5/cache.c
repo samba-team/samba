@@ -153,7 +153,12 @@ static krb5_error_code
 ret_int8(int fd,
 	 int8_t *value)
 {
-  return read(fd, value, sizeof(*value));
+  int ret;
+
+  ret = read (fd, value, sizeof(*value));
+  if (ret != sizeof(*value))
+    return (ret<0)?errno:-1;
+  return 0;
 }
 
 static krb5_error_code
@@ -414,6 +419,25 @@ krb5_cc_store_cred(krb5_context context,
   close(fd);
 }
 
+static krb5_error_code
+krb5_cc_read_cred (int fd,
+		   krb5_creds *creds)
+{
+  int8_t dummy8;
+  int32_t dummy32;
+
+  return ret_principal (fd, &creds->client)
+    || ret_principal (fd, &creds->server)
+    || ret_keyblock (fd, &creds->session)
+    ||  ret_times (fd, &creds->times)
+    ||  ret_int8 (fd, &dummy8)
+    ||  ret_int32 (fd, &dummy32)
+    ||  ret_addrs (fd, &creds->addresses)
+    ||  ret_authdata (fd, &creds->authdata)
+    ||  ret_ticket (fd, &creds->ticket)
+    ||  ret_ticket (fd, &creds->second_ticket);
+}
+
 krb5_error_code
 krb5_cc_retrieve_cred(krb5_context context,
 		      krb5_ccache id,
@@ -440,6 +464,46 @@ krb5_cc_get_principal(krb5_context context,
   ret_principal(fd, principal);
   close(fd);
   return 0;
+}
+
+krb5_error_code
+krb5_cc_start_seq_get (krb5_context context,
+		       krb5_ccache id,
+		       krb5_cc_cursor *cursor)
+{
+  int16_t tag;
+  krb5_principal principal;
+
+  if (id->type != 1)
+    abort ();
+  cursor->fd = open (krb5_cc_get_name (context, id), O_RDONLY);
+  if (cursor->fd < 0)
+    return errno;
+  ret_int16 (cursor->fd, &tag);
+  ret_principal (cursor->fd, &principal);
+  krb5_free_principal (principal);
+  return 0;
+}
+
+krb5_error_code
+krb5_cc_next_cred (krb5_context context,
+		   krb5_ccache id,
+		   krb5_creds *creds,
+		   krb5_cc_cursor *cursor)
+{
+  if (id->type != 1)
+    abort ();
+  return krb5_cc_read_cred (cursor->fd, creds);
+}
+
+krb5_error_code
+krb5_cc_end_seq_get (krb5_context context,
+		     krb5_ccache id,
+		     krb5_cc_cursor *cursor)
+{
+  if (id->type != 1)
+    abort ();
+  return close (cursor->fd);
 }
 
 krb5_error_code
