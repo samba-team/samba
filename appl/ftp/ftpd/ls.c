@@ -379,17 +379,30 @@ list_files(FILE *out, char **files, int n_files, int flags)
 }
 
 static void
+free_files (char **files, int n)
+{
+    int i;
+
+    for (i = 0; i < n; ++i)
+	free (files[i]);
+    free (files);
+}
+
+static void
 list_dir(FILE *out, const char *directory, int flags)
 {
     DIR *d = opendir(directory);
     struct dirent *ent;
     char **files = NULL;
     int n_files = 0;
+
     if(d == NULL) {
 	warn("%s", directory);
 	return;
     }
     while((ent = readdir(d)) != NULL) {
+	void *tmp;
+
 	if(ent->d_name[0] == '.') {
 	    if (flags & LS_IGNORE_DOT)
 	        continue;
@@ -398,8 +411,22 @@ list_dir(FILE *out, const char *directory, int flags)
 	    if (ent->d_name[1] == '.' && ent->d_name[2] == 0) /* Ignore .. */
 	        continue;
 	}
-	files = realloc(files, (n_files + 1) * sizeof(*files));
-	asprintf(&files[n_files++], "%s/%s", directory, ent->d_name);
+	tmp = realloc(files, (n_files + 1) * sizeof(*files));
+	if (tmp == NULL) {
+	    warnx("out of memory");
+	    free_files (files, n_files);
+	    closedir (d);
+	    return;
+	}
+	files = tmp;
+	asprintf(&files[n_files], "%s/%s", directory, ent->d_name);
+	if (files[n_files] == NULL) {
+	    warnx("out of memory");
+	    free_files (files, n_files);
+	    closedir (d);
+	    return;
+	}
+	++n_files;
     }
     closedir(d);
     list_files(out, files, n_files, flags | LS_DIRS);
@@ -408,8 +435,8 @@ list_dir(FILE *out, const char *directory, int flags)
 void
 builtin_ls(FILE *out, const char *file)
 {
-    int c;
     int flags = LS_SORT_NAME;
+
     if(*file == '-') {
 	const char *p;
 	for(p = file + 1; *p; p++) {
