@@ -64,8 +64,7 @@ Exiting.\n", global_myworkgroup, subrec->subnet_name));
       return False;
     }
 
-    /* Each subnet entry, except for the remote_announce_broadcast subnet
-       and the wins_server_subnet has the magic Samba names. */
+    /* Each subnet entry, except for the wins_server_subnet has the magic Samba names. */
     add_samba_names_to_subnet(subrec);
 
     /* Register all our names including aliases. */
@@ -135,6 +134,12 @@ Exiting.\n", global_myworkgroup, subrec->subnet_name));
     }
   }
 
+  /*
+   * We need to add the Samba names to the remote broadcast subnet,
+   * as NT 4.x does directed broadcast requests to the *<0x0> name.
+   */
+  add_samba_names_to_subnet(remote_broadcast_subnet);
+
   return True;
 }
 
@@ -185,8 +190,8 @@ void refresh_my_names(time_t t)
          */
         if(!is_refresh_already_queued( subrec, namerec))
           refresh_name(subrec, namerec, NULL, NULL, NULL);
-	namerec->death_time += lp_max_ttl();
-	namerec->refresh_time += lp_max_ttl();
+          namerec->death_time += lp_max_ttl();
+          namerec->refresh_time += lp_max_ttl();
       }
     }
   }
