@@ -1056,6 +1056,26 @@ struct in_addr *interpret_addr2(TALLOC_CTX *mem_ctx, const char *str)
 	return(ret);
 }
 
+struct in_addr *interpret_addr2_x(const char *str)
+{
+	TALLOC_CTX *mem_ctx = talloc_init("interpret_addr2");
+	static struct in_addr addr;
+	struct in_addr *ret;
+
+	if (mem_ctx == NULL)
+		return NULL;
+
+	ret = interpret_addr2(mem_ctx, str);
+	if (ret == NULL) {
+		talloc_destroy(mem_ctx);
+		return NULL;
+	}
+
+	addr = *ret;
+	talloc_destroy(mem_ctx);
+	return &addr;
+}
+
 /*******************************************************************
  Check if an IP is the 0.0.0.0.
 ******************************************************************/

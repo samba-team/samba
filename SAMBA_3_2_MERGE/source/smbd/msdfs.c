@@ -464,7 +464,7 @@ BOOL get_referred_path(char *pathname, struct junction_map *jucn,
 	/* Verify hostname in path */
 	if (local_machine && (!strequal(local_machine, dp.hostname))) {
 		/* Hostname mismatch, check if one of our IP addresses */
-		if (!ismyip(*interpret_addr2(dp.hostname))) {
+		if (!ismyip(*interpret_addr2_x(dp.hostname))) {
 			DEBUG(3, ("get_referred_path: Invalid hostname %s in path %s\n",
 				dp.hostname, pathname));
 			return False;
@@ -813,7 +813,7 @@ BOOL create_junction(char* pathname, struct junction_map* jucn)
         if (local_machine && (!strequal(local_machine,dp.hostname))) {
 	    
 	   /* Hostname mismatch, check if one of our IP addresses */
-	   if (!ismyip(*interpret_addr2(dp.hostname))) {
+	   if (!ismyip(*interpret_addr2_x(dp.hostname))) {
                 DEBUG(4,("create_junction: Invalid hostname %s in dfs path %s\n",
 			 dp.hostname, pathname));
                 return False;

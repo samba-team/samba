@@ -148,6 +148,9 @@ static void free_spool_notify_option(SPOOL_NOTIFY_OPTION **pp)
 
 static void srv_spoolss_replycloseprinter(int snum, POLICY_HND *handle)
 {
+#if 1
+	return;
+#else
 	WERROR result;
 
 	/* 
@@ -184,6 +187,7 @@ static void srv_spoolss_replycloseprinter(int snum, POLICY_HND *handle)
 	}
 
 	smb_connections--;
+#endif
 }
 
 /****************************************************************************
@@ -525,7 +529,7 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 		result = get_a_printer( NULL, &printer, 2, sname );
 		if ( !W_ERROR_IS_OK(result) ) {
 			DEBUG(0,("set_printer_hnd_name: failed to lookup printer [%s] -- result [%s]\n",
-				sname, dos_errstr(result)));
+				sname, dos_errstr_x(result)));
 			continue;
 		}
 		
@@ -958,6 +962,7 @@ static int notify_msg_ctr_addmsg( SPOOLSS_NOTIFY_MSG_CTR *ctr, SPOOLSS_NOTIFY_MS
 
 static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 {
+#ifdef JERRY_FIXED_THIS
 	Printer_entry 		 *p;
 	TALLOC_CTX		 *mem_ctx = notify_ctr_getctx( ctr );
 	SPOOLSS_NOTIFY_MSG_GROUP *msg_group = notify_ctr_getgroup( ctr, idx );
@@ -1084,6 +1089,7 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 	
 done:
 	DEBUG(8,("send_notify2_changes: Exit...\n"));
+#endif
 	return;
 }
 
@@ -1281,7 +1287,7 @@ void do_drv_upgrade_printer(int msg_type, pid_t src, void *buf, size_t len)
 				result = mod_a_printer(*printer, 2);
 				if (!W_ERROR_IS_OK(result)) {
 					DEBUG(3,("do_drv_upgrade_printer: mod_a_printer() failed with status [%s]\n", 
-						dos_errstr(result)));
+						dos_errstr_x(result)));
 				}
 			}
 			

@@ -1659,6 +1659,12 @@ typedef struct user_struct_x
 
 } user_struct_x;
 
+struct unix_error_map {
+        int unix_error;
+        int dos_class;
+        int dos_code;
+        NTSTATUS nt_error;
+};
 
 /*
 #include "ntdomain.h"

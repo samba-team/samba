@@ -303,7 +303,10 @@ typedef struct {
 	char *from_name, *to_name;
 } *smb_iconv_t;
 
-#define srvstr_push(base_ptr, dest, src, dest_len, flags) srvstr_push_fn(FUNCTION_MACRO, __LINE__, base_ptr, dest, src, dest_len, flags)
+#define SAFE_STRING_FUNCTION_NAME FUNCTION_MACRO
+#define SAFE_STRING_LINE __LINE__
+
+#define srvstr_push(base_ptr, dest, src, dest_len, flags) srvstr_push_fn(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, base_ptr, dest, src, dest_len, flags)
 
 /* Stuff from 3_0 trans2.h */
 

@@ -631,6 +631,7 @@ BOOL receive_smb_raw(int fd,char *buffer, unsigned int timeout)
 	return True;
 }
 
+/***************************************************************************
  Wrapper for receive_smb_raw().
  Checks the MAC on signed packets.
 ****************************************************************************/

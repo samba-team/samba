@@ -1204,6 +1204,19 @@ BOOL get_pdc_ip(TALLOC_CTX *mem_ctx, const char *domain, struct in_addr *ip)
 	return True;
 }
 
+BOOL get_pdc_ip_x(const char *domain, struct in_addr *ip)
+{
+	struct TALLOC_CTX *mem_ctx = talloc_init("get_pdc_ip_x");
+	BOOL res;
+
+	if (mem_ctx == NULL)
+		return False;
+
+	res = get_pdc_ip(mem_ctx, domain, ip);
+	talloc_destroy(mem_ctx);
+	return res;
+}
+
 /********************************************************
  Get the IP address list of the domain controllers for
  a domain.
