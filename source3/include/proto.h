@@ -858,6 +858,7 @@ char *lp_passwordserver(void);
 char *lp_name_resolve_order(void);
 char *lp_workgroup(void);
 char *lp_username_map(void);
+char *lp_groupname_map(void);
 char *lp_logon_script(void);
 char *lp_logon_path(void);
 char *lp_logon_drive(void);
@@ -1019,6 +1020,7 @@ BOOL lp_recursive_veto_delete(int );
 BOOL lp_dos_filetimes(int );
 BOOL lp_dos_filetime_resolution(int );
 BOOL lp_fake_dir_create_times(int );
+BOOL lp_blocking_locks(int );
 int lp_create_mode(int );
 int lp_force_create_mode(int );
 int lp_dir_mode(int );
@@ -1742,6 +1744,11 @@ void file_chain_reset(void);
 void file_chain_save(void);
 void file_chain_restore(void);
 
+/*The following definitions come from  smbd/groupname.c  */
+
+void load_groupname_map(void);
+void map_gid_to_sid( gid_t gid, DOM_SID *psid);
+
 /*The following definitions come from  smbd/ipc.c  */
 
 int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int bufsize);
@@ -1788,7 +1795,7 @@ int reply_nttrans(connection_struct *conn,
 /*The following definitions come from  smbd/open.c  */
 
 void fd_add_to_uid_cache(file_fd_struct *fd_ptr, uid_t u);
-int fd_attempt_close(file_fd_struct *fd_ptr);
+uint16 fd_attempt_close(file_fd_struct *fd_ptr);
 void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int share_mode,int ofun,
 		      int mode,int oplock_request, int *Access,int *action);
 int open_directory(files_struct *fsp,connection_struct *conn,

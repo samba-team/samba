@@ -145,40 +145,37 @@ static void fd_attempt_reopen(char *fname, int mode, file_fd_struct *fd_ptr)
 fd support routines - attempt to close the file referenced by this fd.
 Decrements the ref_count and returns it.
 ****************************************************************************/
-int fd_attempt_close(file_fd_struct *fd_ptr)
+uint16 fd_attempt_close(file_fd_struct *fd_ptr)
 {
   extern struct current_user current_user;
+  uint16 ret_ref = fd_ptr->ref_count;
 
-#ifdef LARGE_SMB_INO_T
   DEBUG(3,("fd_attempt_close fd = %d, dev = %x, inode = %.0f, open_flags = %d, ref_count = %d.\n",
           fd_ptr->fd, (unsigned int)fd_ptr->dev, (double)fd_ptr->inode,
           fd_ptr->real_open_flags,
           fd_ptr->ref_count));
-#else /* LARGE_SMB_INO_T */
-  DEBUG(3,("fd_attempt_close fd = %d, dev = %x, inode = %lx, open_flags = %d, ref_count = %d.\n",
-          fd_ptr->fd, (unsigned int)fd_ptr->dev, (unsigned long)fd_ptr->inode,
-          fd_ptr->real_open_flags,
-          fd_ptr->ref_count));
-#endif /* LARGE_SMB_INO_T */
 
-  if(fd_ptr->ref_count > 0) {
-    fd_ptr->ref_count--;
-    if(fd_ptr->ref_count == 0) {
-      if(fd_ptr->fd != -1)
-        close(fd_ptr->fd);
-      if(fd_ptr->fd_readonly != -1)
-        close(fd_ptr->fd_readonly);
-      if(fd_ptr->fd_writeonly != -1)
-        close(fd_ptr->fd_writeonly);
-      /*
-       * Delete this fd_ptr.
-       */
-      fd_ptr_free(fd_ptr);
-    } else {
-      fd_remove_from_uid_cache(fd_ptr, (uid_t)current_user.uid);
-    }
-  } 
- return fd_ptr->ref_count;
+  SMB_ASSERT(fd_ptr->ref_count != 0);
+
+  fd_ptr->ref_count--;
+  ret_ref = fd_ptr->ref_count;
+
+  if(fd_ptr->ref_count == 0) {
+    if(fd_ptr->fd != -1)
+      close(fd_ptr->fd);
+    if(fd_ptr->fd_readonly != -1)
+      close(fd_ptr->fd_readonly);
+    if(fd_ptr->fd_writeonly != -1)
+      close(fd_ptr->fd_writeonly);
+    /*
+     * Delete this fd_ptr.
+     */
+    fd_ptr_free(fd_ptr);
+  } else {
+    fd_remove_from_uid_cache(fd_ptr, (uid_t)current_user.uid);
+  }
+
+ return ret_ref;
 }
 
 /****************************************************************************

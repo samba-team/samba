@@ -19,6 +19,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifdef USING_GROUPNAME_MAP
+
 #include "includes.h"
 extern int DEBUGLEVEL;
 extern DOM_SID global_machine_sid;
@@ -236,3 +238,6 @@ void map_gid_to_sid( gid_t gid, DOM_SID *psid)
 
   return;
 }
+#else /* USING_GROUPNAME_MAP */
+ void load_groupname_map(void) {;}
+#endif /* USING_GROUPNAME_MAP */

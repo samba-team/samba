@@ -272,7 +272,7 @@ static BOOL is_illegal_name( char *name )
 /* ************************************************************************** **
  * Return True if the name *could be* a mangled name.
  *
- *  Input:  s - A file name.
+ *  Input:  s - A path name - in UNIX pathname format.
  *
  *  Output: True if the name matches the pattern described below in the
  *          notes, else False.
@@ -281,7 +281,8 @@ static BOOL is_illegal_name( char *name )
  *          done separately.  This function returns true if the name contains
  *          a magic character followed by excactly two characters from the
  *          basechars list (above), which in turn are followed either by the
- *          nul (end of string) byte or a dot (extension).
+ *          nul (end of string) byte or a dot (extension) or by a '/' (end of
+ *          a directory name).
  *
  * ************************************************************************** **
  */
@@ -295,7 +296,7 @@ BOOL is_mangled( char *s )
   magic = strchr( s, magic_char );
   while( magic && magic[1] && magic[2] )          /* 3 chars, 1st is magic. */
     {
-    if( ('.' == magic[3] || !(magic[3]))          /* Ends with '.' or nul?  */
+    if( ('.' == magic[3] || '/' == magic[3] || !(magic[3]))          /* Ends with '.' or nul or '/' ?  */
      && isbasechar( toupper(magic[1]) )           /* is 2nd char basechar?  */
      && isbasechar( toupper(magic[2]) ) )         /* is 3rd char basechar?  */
       return( True );                           /* If all above, then true, */
