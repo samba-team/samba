@@ -27,15 +27,15 @@ extern pstring server;
 
 /* Check DFS is supported by the remote server */
 
-static uint32 cmd_dfs_exist(struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_dfs_exist(struct cli_state *cli, int argc, char **argv)
 {
 	TALLOC_CTX *mem_ctx;
 	BOOL dfs_exists;
-	uint32 result;
+	NTSTATUS result;
 
 	if (argc != 1) {
 		printf("Usage: %s\n", argv[0]);
-		return 0;
+		return NT_STATUS_OK;
 	}
 
 	if (!(mem_ctx = talloc_init())) {
@@ -53,7 +53,7 @@ static uint32 cmd_dfs_exist(struct cli_state *cli, int argc, char **argv)
 
 	result = cli_dfs_exist(cli, mem_ctx, &dfs_exists);
 
-	if (result == NT_STATUS_OK)
+	if (NT_STATUS_IS_OK(result))
 		printf("dfs is %spresent\n", dfs_exists ? "" : "not ");
 
 	cli_nt_session_close(cli);
@@ -63,17 +63,17 @@ done:
 	return result;
 }
 
-static uint32 cmd_dfs_add(struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_dfs_add(struct cli_state *cli, int argc, char **argv)
 {
 	TALLOC_CTX *mem_ctx;
-	uint32 result;
+	NTSTATUS result;
 	char *entrypath, *servername, *sharename, *comment;
 	uint32 flags = 0;
 
 	if (argc != 5) {
 		printf("Usage: %s entrypath servername sharename comment\n", 
 		       argv[0]);
-		return 0;
+		return NT_STATUS_OK;
 	}
 
 	entrypath = argv[1];
@@ -104,15 +104,15 @@ done:
 	return result;
 }
 
-static uint32 cmd_dfs_remove(struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_dfs_remove(struct cli_state *cli, int argc, char **argv)
 {
 	TALLOC_CTX *mem_ctx;
-	uint32 result;
+	NTSTATUS result;
 	char *entrypath, *servername, *sharename;
 
 	if (argc != 4) {
 		printf("Usage: %s entrypath servername sharename\n", argv[0]);
-		return 0;
+		return NT_STATUS_OK;
 	}
 
 	entrypath = argv[1];
@@ -222,15 +222,16 @@ static void display_dfs_info_ctr(DFS_INFO_CTR *ctr)
 
 /* Enumerate dfs shares */
 
-static uint32 cmd_dfs_enum(struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_dfs_enum(struct cli_state *cli, int argc, char **argv)
 {
 	TALLOC_CTX *mem_ctx;
 	DFS_INFO_CTR ctr;
-	uint32 result, info_level = 1;
+	NTSTATUS result;
+	uint32 info_level = 1;
 
 	if (argc > 2) {
 		printf("Usage: %s [info_level]\n", argv[0]);
-		return 0;
+		return NT_STATUS_OK;
 	}
 
 	if (argc == 2)
@@ -238,7 +239,7 @@ static uint32 cmd_dfs_enum(struct cli_state *cli, int argc, char **argv)
 
 	if (!(mem_ctx = talloc_init())) {
 		DEBUG(0,("cmd_dfs_enum: talloc_init failed\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* Initialise RPC connection */
@@ -251,9 +252,8 @@ static uint32 cmd_dfs_enum(struct cli_state *cli, int argc, char **argv)
 
 	/* Call RPC function */
 
-	if ((result = cli_dfs_enum(cli, mem_ctx, info_level, &ctr)) 
-	    == NT_STATUS_OK) {
-	    
+	result = cli_dfs_enum(cli, mem_ctx, info_level, &ctr);
+	if (NT_STATUS_IS_OK(result)) {
 		/* Print results */
 		display_dfs_info_ctr(&ctr);
 	}
@@ -265,17 +265,17 @@ done:
 	return result;
 }
 
-static uint32 cmd_dfs_getinfo(struct cli_state *cli, int argc, char **argv)
+static NTSTATUS cmd_dfs_getinfo(struct cli_state *cli, int argc, char **argv)
 {
 	TALLOC_CTX *mem_ctx;
-	uint32 result;
+	NTSTATUS result;
 	char *entrypath, *servername, *sharename;
 	uint32 info_level = 1;
 	DFS_INFO_CTR ctr;
 
 	if (argc < 4 || argc > 5) {
 		printf("Usage: %s entrypath servername sharename [info_level]\n", argv[0]);
-		return 0;
+		return NT_STATUS_OK;
 	}
 
 	entrypath = argv[1];
@@ -300,12 +300,10 @@ static uint32 cmd_dfs_getinfo(struct cli_state *cli, int argc, char **argv)
 
 	/* Call RPC function */
 
-	if ((result = cli_dfs_get_info(cli, mem_ctx, entrypath, servername, 
-				       sharename, info_level, &ctr))
-	    == NT_STATUS_OK) {
-
+	result = cli_dfs_get_info(cli, mem_ctx, entrypath, servername, 
+				  sharename, info_level, &ctr);
+	if (NT_STATUS_IS_OK(result)) {
 		/* Print results */
-
 		display_dfs_info_ctr(&ctr);
 	}
 

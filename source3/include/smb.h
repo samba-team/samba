@@ -213,7 +213,7 @@ typedef struct nttime_info
    are mixed up. This is especially important as we slowly convert Samba
    from using BOOL for internal functions 
 */
-#if defined(HAVE_IMMEDIATE_STRUCTURES) && defined(TRIDGE_TEST)
+#if defined(HAVE_IMMEDIATE_STRUCTURES)
 typedef struct {uint32 v;} NTSTATUS;
 #define NT_STATUS(x) ((NTSTATUS) { x })
 #define NT_STATUS_V(x) ((x).v)
@@ -223,7 +223,7 @@ typedef uint32 NTSTATUS;
 #define NT_STATUS_V(x) (x)
 #endif
 
-#if defined(HAVE_IMMEDIATE_STRUCTURES) && defined(TRIDGE_TEST)
+#if defined(HAVE_IMMEDIATE_STRUCTURES)
 typedef struct {uint32 v;} WERROR;
 #define W_ERROR(x) ((WERROR) { x })
 #define W_ERROR_V(x) ((x).v)

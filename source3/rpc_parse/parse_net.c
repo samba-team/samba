@@ -2445,8 +2445,8 @@ BOOL net_io_r_sam_sync(char *desc, uint8 sess_key[16],
 	}
 
 	prs_align(ps);
-	if (!prs_uint32("status", ps, depth, &r_s->status))
-                return False;
+	if (!prs_ntstatus("status", ps, depth, &(r_s->status)))
+		return False;
 
 	return True;
 }
@@ -2578,7 +2578,7 @@ BOOL net_io_r_sam_deltas(char *desc, uint8 sess_key[16],
 	}
 
 	prs_align(ps);
-	if (!prs_uint32("status", ps, depth, &r_s->status))
+	if (!prs_ntstatus("status", ps, depth, &r_s->status))
                 return False;
 
 	return True;

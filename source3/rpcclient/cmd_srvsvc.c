@@ -182,17 +182,17 @@ static void display_srv_info_102(SRV_INFO_102 *sv102)
 
 /* Server query info */
 
-static uint32 cmd_srvsvc_srv_query_info(struct cli_state *cli, int argc,
+static NTSTATUS cmd_srvsvc_srv_query_info(struct cli_state *cli, int argc,
 					char **argv)
 {
 	uint32 info_level = 101;
 	SRV_INFO_CTR ctr;
 	TALLOC_CTX *mem_ctx;
-	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
 	if (argc > 2) {
 		printf("Usage: %s [infolevel]\n", argv[0]);
-		return 0;
+		return NT_STATUS_OK;
 	}
 
 	if (argc == 2)
@@ -210,9 +210,9 @@ static uint32 cmd_srvsvc_srv_query_info(struct cli_state *cli, int argc,
 		goto done;
 	}
 
-	if ((result = cli_srvsvc_net_srv_get_info(cli, mem_ctx, info_level,
-						  &ctr)
-	     != NT_STATUS_OK)) {
+	result = cli_srvsvc_net_srv_get_info(cli, mem_ctx, info_level,
+					     &ctr);
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
