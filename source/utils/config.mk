@@ -69,3 +69,16 @@ REQUIRED_SUBSYSTEMS = \
 		NDR_SAMR
 # End BINARY setnttoken
 #################################
+
+#################################
+# Start BINARY nmblookup
+[BINARY::nmblookup]
+OBJ_FILES = \
+		utils/nmblookup.o
+REQUIRED_SUBSYSTEMS = \
+		CONFIG \
+		LIBCMDLINE \
+		LIBBASIC \
+		LIBCLI_NBT
+# End BINARY nmblookup
+#################################

@@ -82,6 +82,15 @@ interface nbt
 		nbt_qclass question_class;
 	} nbt_name_question;
 
+	/* these are the possible values of the NBT_NM_OWNER_TYPE
+	   field */
+	typedef enum {
+		NBT_NODE_B = 0x0000,
+		NBT_NODE_P = 0x2000,
+		NBT_NODE_M = 0x4000,
+		NBT_NODE_H = 0x6000
+	} nbt_node_type;
+
 	typedef [bitmap16bit] bitmap {
 		NBT_NM_PERMANENT        = 0x0200,
 		NBT_NM_ACTIVE           = 0x0400,
