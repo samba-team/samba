@@ -41,7 +41,7 @@ extern pstring global_myname;
 typedef struct _Printer{
 	BOOL document_started;
 	BOOL page_started;
-	int jobid; /* jobid in printing backend */
+    int jobid; /* jobid in printing backend */
 	BOOL printer_type;
 	union {
 	  	fstring handlename;
@@ -5230,8 +5230,10 @@ uint32 _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 	uint32 offered = q_u->offered;
 	uint32 *needed = &r_u->needed;
 	uint32 *numofforms = &r_u->numofforms;
+	uint32 numbuiltinforms;
 
 	nt_forms_struct *list=NULL;
+	nt_forms_struct *builtinlist=NULL;
 	FORM_1 *forms_1;
 	int buffer_size=0;
 	int i;
@@ -5244,8 +5246,11 @@ uint32 _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 	DEBUGADD(5,("Offered buffer size [%d]\n", offered));
 	DEBUGADD(5,("Info level [%d]\n",          level));
 
+	numbuiltinforms = get_builtin_ntforms(&builtinlist);
+	DEBUGADD(5,("Number of builtin forms [%d]\n",     numbuiltinforms));
 	*numofforms = get_ntforms(&list);
-	DEBUGADD(5,("Number of forms [%d]\n",     *numofforms));
+	DEBUGADD(5,("Number of user forms [%d]\n",     *numofforms));
+	*numofforms += numbuiltinforms;
 
 	if (*numofforms == 0) return ERROR_NO_MORE_ITEMS;
 
@@ -5257,15 +5262,26 @@ uint32 _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 		}
 
 		/* construct the list of form structures */
-		for (i=0; i<*numofforms; i++) {
+		for (i=0; i<numbuiltinforms; i++) {
 			DEBUGADD(6,("Filling form number [%d]\n",i));
-			fill_form_1(&forms_1[i], &list[i]);
+			fill_form_1(&forms_1[i], &builtinlist[i]);
+		}
+		
+		safe_free(builtinlist);
+
+		for (; i<*numofforms; i++) {
+			DEBUGADD(6,("Filling form number [%d]\n",i));
+			fill_form_1(&forms_1[i], &list[i-numbuiltinforms]);
 		}
 		
 		safe_free(list);
 
 		/* check the required size. */
-		for (i=0; i<*numofforms; i++) {
+		for (i=0; i<numbuiltinforms; i++) {
+			DEBUGADD(6,("adding form [%d]'s size\n",i));
+			buffer_size += spoolss_size_form_1(&forms_1[i]);
+		}
+		for (; i<*numofforms; i++) {
 			DEBUGADD(6,("adding form [%d]'s size\n",i));
 			buffer_size += spoolss_size_form_1(&forms_1[i]);
 		}
@@ -5278,7 +5294,11 @@ uint32 _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 		}
 
 		/* fill the buffer with the form structures */
-		for (i=0; i<*numofforms; i++) {
+		for (i=0; i<numbuiltinforms; i++) {
+			DEBUGADD(6,("adding form [%d] to buffer\n",i));
+			smb_io_form_1("", buffer, &forms_1[i], 0);
+		}
+		for (; i<*numofforms; i++) {
 			DEBUGADD(6,("adding form [%d] to buffer\n",i));
 			smb_io_form_1("", buffer, &forms_1[i], 0);
 		}
@@ -5294,6 +5314,7 @@ uint32 _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 			
 	default:
 		safe_free(list);
+		safe_free(builtinlist);
 		return ERROR_INVALID_LEVEL;
 	}
 
@@ -5312,6 +5333,8 @@ uint32 _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 	uint32 *needed = &r_u->needed;
 
 	nt_forms_struct *list=NULL;
+	nt_forms_struct builtin_form;
+	BOOL foundBuiltin;
 	FORM_1 form_1;
 	fstring form_name;
 	int buffer_size=0;
@@ -5327,29 +5350,38 @@ uint32 _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 	DEBUGADD(5,("Offered buffer size [%d]\n", offered));
 	DEBUGADD(5,("Info level [%d]\n",          level));
 
-	numofforms = get_ntforms(&list);
-	DEBUGADD(5,("Number of forms [%d]\n",     numofforms));
+	foundBuiltin = get_a_builtin_ntform(uni_formname,&builtin_form);
+	if (!foundBuiltin) {
+		numofforms = get_ntforms(&list);
+		DEBUGADD(5,("Number of forms [%d]\n",     numofforms));
 
-	if (numofforms == 0)
-		return ERROR_NO_MORE_ITEMS;
+		if (numofforms == 0)
+			return ERROR_INVALID_HANDLE;
+	}
 
 	switch (level) {
 	case 1:
+		if (foundBuiltin) {
+			fill_form_1(&form_1, &builtin_form);
+		} else {
 
-		/* Check if the requested name is in the list of form structures */
-		for (i=0; i<numofforms; i++) {
+			/* Check if the requested name is in the list of form structures */
+			for (i=0; i<numofforms; i++) {
 
-			DEBUG(4,("_spoolss_getform: checking form %s (want %s)\n", list[i].name, form_name));
+				DEBUG(4,("_spoolss_getform: checking form %s (want %s)\n", list[i].name, form_name));
 
-			if (strequal(form_name, list[i].name)) {
-				DEBUGADD(6,("Found form %s number [%d]\n", form_name, i));
-				fill_form_1(&form_1, &list[i]);
-				break;
+				if (strequal(form_name, list[i].name)) {
+					DEBUGADD(6,("Found form %s number [%d]\n", form_name, i));
+					fill_form_1(&form_1, &list[i]);
+					break;
+				}
+			}
+			
+			safe_free(list);
+			if (i == numofforms) {
+				return ERROR_INVALID_HANDLE;
 			}
 		}
-		
-		safe_free(list);
-
 		/* check the required size. */
 
 		*needed=spoolss_size_form_1(&form_1);
@@ -6135,6 +6167,7 @@ uint32 _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 	POLICY_HND *handle = &q_u->handle;
 /*	uint32 level = q_u->level; - notused. */
 	FORM *form = &q_u->form;
+	nt_forms_struct tmpForm;
 
 	int count=0;
 	nt_forms_struct *list=NULL;
@@ -6145,6 +6178,11 @@ uint32 _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 	if (!Printer) {
 		DEBUG(0,("_spoolss_addform: Invalid handle (%s).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
+	}
+
+	/* can't add if builtin */
+	if (get_a_builtin_ntform(&form->name,&tmpForm)) {
+		return ERROR_INVALID_PARAMETER;
 	}
 
 	count=get_ntforms(&list);
@@ -6164,7 +6202,7 @@ uint32 _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DE
 {
 	POLICY_HND *handle = &q_u->handle;
 	UNISTR2 *form_name = &q_u->name;
-
+	nt_forms_struct tmpForm;
 	int count=0;
 	uint32 ret = 0;
 	nt_forms_struct *list=NULL;
@@ -6175,6 +6213,11 @@ uint32 _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DE
 	if (!Printer) {
 		DEBUG(0,("_spoolss_deleteform: Invalid handle (%s).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
+	}
+
+	/* can't delete if builtin */
+	if (get_a_builtin_ntform(form_name,&tmpForm)) {
+		return ERROR_INVALID_PARAMETER;
 	}
 
 	count = get_ntforms(&list);
@@ -6195,6 +6238,7 @@ uint32 _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *
 /*	UNISTR2 *uni_name = &q_u->name; - notused. */
 /*	uint32 level = q_u->level; - notused. */
 	FORM *form = &q_u->form;
+	nt_forms_struct tmpForm;
 
 	int count=0;
 	nt_forms_struct *list=NULL;
@@ -6206,6 +6250,11 @@ uint32 _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *
 		DEBUG(0,("_spoolss_setform: Invalid handle (%s).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
+	/* can't set if builtin */
+	if (get_a_builtin_ntform(&form->name,&tmpForm)) {
+		return ERROR_INVALID_PARAMETER;
+	}
+
 	count=get_ntforms(&list);
 	update_a_form(&list, form, count);
 	write_ntforms(&list, count);
