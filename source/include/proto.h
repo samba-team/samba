@@ -3311,6 +3311,7 @@ BOOL api_ntlsa_rpc(pipes_struct *p);
 /*The following definitions come from  rpc_server/srv_lsa_hnd.c  */
 
 #if OLD_NTDOMAIN
+void create_policy_handle(POLICY_HND *hnd, uint32 *hnd_low, uint32 *hnd_high);
 void init_lsa_policy_hnd(void);
 BOOL open_lsa_policy_hnd(POLICY_HND *hnd);
 int find_lsa_policy_by_hnd(POLICY_HND *hnd);

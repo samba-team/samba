@@ -275,20 +275,19 @@ static void init_reply_lookup_sids(LSA_R_LOOKUP_SIDS *r_l,
 		r_l->status = NT_STATUS_NO_PROBLEMO;
 }
 
+static uint32 lsa_hnd_low  = 0;
+static uint32 lsa_hnd_high = 0;
+
 /***************************************************************************
  _lsa_open_policy2.
  ***************************************************************************/
 
 uint32 _lsa_open_policy2(pipes_struct *p, LSA_Q_OPEN_POL2 *q_u, LSA_R_OPEN_POL2 *r_u)
 {
-	int i;
-
 	/* lkclXXXX having decoded it, ignore all fields in the open policy! */
 
 	/* set up the LSA QUERY INFO response */
-
-	for (i = 4; i < POL_HND_SIZE; i++)
-		r_u->pol.data[i] = i;
+	create_policy_handle(&r_u->pol, &lsa_hnd_low, &lsa_hnd_high);
 
 	return NT_STATUS_NOPROBLEMO;
 }
@@ -299,14 +298,10 @@ uint32 _lsa_open_policy2(pipes_struct *p, LSA_Q_OPEN_POL2 *q_u, LSA_R_OPEN_POL2 
 
 uint32 _lsa_open_policy(pipes_struct *p, LSA_Q_OPEN_POL *q_u, LSA_R_OPEN_POL *r_u)
 {
-	int i;
-
 	/* lkclXXXX having decoded it, ignore all fields in the open policy! */
 
 	/* set up the LSA QUERY INFO response */
-
-	for (i = 4; i < POL_HND_SIZE; i++)
-		r_u->pol.data[i] = i;
+	create_policy_handle(&r_u->pol, &lsa_hnd_low, &lsa_hnd_high);
 
 	return NT_STATUS_NOPROBLEMO;
 }

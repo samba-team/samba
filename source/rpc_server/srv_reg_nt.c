@@ -37,7 +37,7 @@ extern int DEBUGLEVEL;
 uint32 _reg_close(pipes_struct *p, REG_Q_CLOSE *q_u, REG_R_CLOSE *r_u)
 {
 	/* set up the REG unknown_1 response */
-	memset((char *)r_u->pol.data, '\0', POL_HND_SIZE);
+	ZERO_STRUCT(r_u->pol);
 
 	/* close the policy handle */
 	if (!close_lsa_policy_hnd(&q_u->pol))
