@@ -87,6 +87,8 @@ void smbw_init(void)
 		DEBUG(4,("Initial cwd from getwd is %s\n", smb_cwd));
 	}
 	smbw_busy--;
+
+	set_maxfiles();
 }
 
 /***************************************************** 
