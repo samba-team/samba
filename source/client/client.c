@@ -2874,6 +2874,21 @@ static BOOL send_session_request(char *inbuf,char *outbuf)
   return(True);
 }
 
+static struct {
+  int prot;
+  char *name;
+} prots[] = {
+  {PROTOCOL_CORE,"PC NETWORK PROGRAM 1.0"},
+  {PROTOCOL_COREPLUS,"MICROSOFT NETWORKS 1.03"},
+  {PROTOCOL_LANMAN1,"MICROSOFT NETWORKS 3.0"},
+  {PROTOCOL_LANMAN1,"LANMAN1.0"},
+  {PROTOCOL_LANMAN2,"LM1.2X002"},
+  {PROTOCOL_LANMAN2,"Samba"},
+  {PROTOCOL_NT1,"NT LM 0.12"},
+  {PROTOCOL_NT1,"NT LANMAN 1.0"},
+  {-1,NULL}
+};
+
 
 /****************************************************************************
 send a login command
@@ -2887,22 +2902,6 @@ static BOOL send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setu
   int sec_mode=0;
   int crypt_len;
   int max_vcs=0;
-  struct {
-    int prot;
-    char *name;
-  }
-  prots[] = 
-    {
-      {PROTOCOL_CORE,"PC NETWORK PROGRAM 1.0"},
-      {PROTOCOL_COREPLUS,"MICROSOFT NETWORKS 1.03"},
-      {PROTOCOL_LANMAN1,"MICROSOFT NETWORKS 3.0"},
-      {PROTOCOL_LANMAN1,"LANMAN1.0"},
-      {PROTOCOL_LANMAN2,"LM1.2X002"},
-      {PROTOCOL_LANMAN2,"Samba"},
-      {PROTOCOL_NT1,"NT LM 0.12"},
-      {PROTOCOL_NT1,"NT LANMAN 1.0"},
-      {-1,NULL}
-    };
   char *pass = NULL;  
   pstring dev;
   char *p;
