@@ -148,5 +148,6 @@ krb5_expand_hostname_realms (krb5_context context,
 	    free (*new_hostname);
 	}
     }
+    freeaddrinfo(ai);
     return vanilla_hostname (context, orig_hostname, new_hostname, realms);
 }
