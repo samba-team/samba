@@ -380,18 +380,6 @@ diff -uNr samba-3.0.0beta2.orig/source/passdb/pdb_tdb.c samba-3.0.0beta2/source/
  		tdb_state->tdbsam_location = talloc_strdup(pdb_context->mem_ctx, tdbfile);
  	}
  
-diff -uNr samba-3.0.0beta2.orig/source/passdb/privileges.c samba-3.0.0beta2/source/passdb/privileges.c
---- samba-3.0.0beta2.orig/source/passdb/privileges.c	2003-06-07 12:57:35.000000000 -0500
-+++ samba-3.0.0beta2/source/passdb/privileges.c	2003-07-02 23:19:02.000000000 -0500
-@@ -62,7 +62,7 @@
- /* initialise the privilege database */
- BOOL privilege_init(void)
- {
--	tdb = tdb_open_log(lock_path("privilege.tdb"), 0, TDB_DEFAULT, 
-+	tdb = tdb_open_log(state_path("privilege.tdb"), 0, TDB_DEFAULT, 
- 			   O_RDWR|O_CREAT, 0600);
- 	if (!tdb) {
- 		DEBUG(0,("Failed to open privilege database\n"));
 diff -uNr samba-3.0.0beta2.orig/source/passdb/secrets.c samba-3.0.0beta2/source/passdb/secrets.c
 --- samba-3.0.0beta2.orig/source/passdb/secrets.c	2003-07-02 23:26:47.000000000 -0500
 +++ samba-3.0.0beta2/source/passdb/secrets.c	2003-07-02 23:19:02.000000000 -0500
@@ -512,8 +500,8 @@ diff -uNr samba-3.0.0beta2.orig/source/sam/idmap_tdb.c samba-3.0.0beta2/source/s
  	BOOL tdb_is_new = False;
  
  	/* use the old database if present */
--	tdbfile = strdup(lock_path("winbindd_idmap.tdb"));
-+	tdbfile = strdup(state_path("winbindd_idmap.tdb"));
+-	tdbfile = SMB_STRDUP(lock_path("winbindd_idmap.tdb"));
++	tdbfile = SMB_STRDUP(state_path("winbindd_idmap.tdb"));
  	if (!tdbfile) {
  		DEBUG(0, ("idmap_init: out of memory!\n"));
  		return NT_STATUS_NO_MEMORY;
