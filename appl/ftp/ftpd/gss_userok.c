@@ -103,11 +103,10 @@ gss_userok(void *app_data, char *username)
            
            chown (ticketfile+5, pw->pw_uid, pw->pw_gid);
            
-#ifdef KRB4
            if (k_hasafs()) {
-              krb5_afslog(gssapi_krb5_context, ccache, 0, 0);
+	       if (k_setpag() == 0)
+		   krb5_afslog(gssapi_krb5_context, ccache, 0, 0);
            }
-#endif
            esetenv ("KRB5CCNAME", ticketfile, 1);
            
 fail:
