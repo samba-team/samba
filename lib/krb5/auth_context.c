@@ -60,6 +60,8 @@ krb5_auth_con_init(krb5_context context,
 
     p->local_address  = NULL;
     p->remote_address = NULL;
+    p->local_port     = 0;
+    p->remote_port    = 0;
     p->keytype        = KEYTYPE_NULL;
     p->cksumtype      = CKSUMTYPE_NONE;
     *auth_context     = p;
@@ -165,6 +167,7 @@ krb5_auth_con_setaddrs_from_fd (krb5_context context,
 	    goto out;
 	}
 	krb5_sockaddr2address (local, &local_k_address);
+	krb5_sockaddr2port (local, &auth_context->local_port);
 	lptr = &local_k_address;
     }
     if (auth_context->remote_address == NULL) {
@@ -174,6 +177,7 @@ krb5_auth_con_setaddrs_from_fd (krb5_context context,
 	    goto out;
 	}
 	krb5_sockaddr2address (remote, &remote_k_address);
+	krb5_sockaddr2port (remote, &auth_context->remote_port);
 	rptr = &remote_k_address;
     }
     ret = krb5_auth_con_setaddrs (context,
