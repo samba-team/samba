@@ -1,3 +1,7 @@
+Sat Mar 28 12:53:46 1998  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.in (install, uninstall): transform the man page
+
 Tue Mar 24 05:20:34 1998  Assar Westerlund  <assar@sics.se>
 
 	* xnlock.c: remove redundant preprocessor stuff
