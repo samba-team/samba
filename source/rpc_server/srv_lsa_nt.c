@@ -441,7 +441,6 @@ NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_E
 
 NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO *r_u)
 {
-	extern DOM_SID global_sid_nonexistent;
 	struct lsa_info *handle;
 	LSA_INFO_UNION *info = &r_u->dom;
 	DOM_SID domain_sid;
@@ -494,7 +493,7 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 				break;
 			case ROLE_STANDALONE:
 				name = global_myworkgroup;
-				sid = &global_sid_nonexistent;
+				sid = NULL;
 				break;
 			default:
 				return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
