@@ -3935,7 +3935,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 
 		DEBUG(10,("call_trans2setfilepathinfo: file %s : setting dos mode %x\n", fname, dosmode ));
 
-		if(file_set_dosmode(conn, fname, dosmode, NULL)) {
+		if(file_set_dosmode(conn, fname, dosmode, &sbuf, False)) {
 			DEBUG(2,("file_set_dosmode of %s failed (%s)\n", fname, strerror(errno)));
 			return(UNIXERROR(ERRDOS,ERRnoaccess));
 		}
@@ -4020,7 +4020,7 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
 	}
 	if (check_name(directory,conn))
-		ret = vfs_MkDir(conn,directory,unix_mode(conn,aDIR,directory));
+		ret = vfs_MkDir(conn,directory,unix_mode(conn,aDIR,directory,True));
   
 	if(ret < 0) {
 		DEBUG(5,("call_trans2mkdir error (%s)\n", strerror(errno)));

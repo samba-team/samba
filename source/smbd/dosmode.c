@@ -23,7 +23,7 @@
 /****************************************************************************
  Change a dos mode to a unix mode.
     Base permission for files:
-         if inheriting
+         if creating file and inheriting
            apply read/write bits from parent directory.
          else   
            everybody gets read bit set
@@ -43,7 +43,7 @@
          }
 ****************************************************************************/
 
-mode_t unix_mode(connection_struct *conn, int dosmode, const char *fname)
+mode_t unix_mode(connection_struct *conn, int dosmode, const char *fname, BOOL creating_file)
 {
 	mode_t result = (S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR | S_IWGRP | S_IWOTH);
 	mode_t dir_mode = 0; /* Mode of the parent directory if inheriting. */
@@ -52,7 +52,7 @@ mode_t unix_mode(connection_struct *conn, int dosmode, const char *fname)
 		result &= ~(S_IWUSR | S_IWGRP | S_IWOTH);
 	}
 
-	if (fname && lp_inherit_perms(SNUM(conn))) {
+	if (fname && creating_file && lp_inherit_perms(SNUM(conn))) {
 		char *dname;
 		SMB_STRUCT_STAT sbuf;
 
@@ -329,7 +329,7 @@ uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
  chmod a file - but preserve some bits.
 ********************************************************************/
 
-int file_set_dosmode(connection_struct *conn, const char *fname, uint32 dosmode, SMB_STRUCT_STAT *st)
+int file_set_dosmode(connection_struct *conn, const char *fname, uint32 dosmode, SMB_STRUCT_STAT *st, BOOL creating_file)
 {
 	SMB_STRUCT_STAT st1;
 	int mask=0;
@@ -338,7 +338,7 @@ int file_set_dosmode(connection_struct *conn, const char *fname, uint32 dosmode,
 	int ret = -1;
 
 	DEBUG(10,("file_set_dosmode: setting dos mode 0x%x on file %s\n", dosmode, fname));
-	if (!st) {
+	if (!st || (st && !VALID_STAT(*st))) {
 		st = &st1;
 		if (SMB_VFS_STAT(conn,fname,st))
 			return(-1);
@@ -359,7 +359,7 @@ int file_set_dosmode(connection_struct *conn, const char *fname, uint32 dosmode,
 		return 0;
 	}
 
-	unixmode = unix_mode(conn,dosmode,fname);
+	unixmode = unix_mode(conn,dosmode,fname, creating_file);
 
 	/* preserve the s bits */
 	mask |= (S_ISUID | S_ISGID);
