@@ -70,9 +70,8 @@ get_kdc_address (krb5_context context,
     memset (addr, 0, sizeof(*addr));
     addr->sin_family = AF_INET;
     memcpy (&addr->sin_addr, hostent->h_addr_list[0], sizeof(addr->sin_addr));
-    addr->sin_port   = krb5_getportbyname ("kpasswd",
-					   "udp",
-					   htons(KPASSWD_PORT));
+    addr->sin_port   = krb5_getportbyname (context, "kpasswd", "udp", 
+					   KPASSWD_PORT);
 
     return 0;
 }

@@ -133,7 +133,7 @@ krb5_sendto_kdc (krb5_context context,
      int port;
      int i;
 
-     port = krb5_getportbyname ("kerberos", "udp", htons(88));
+     port = krb5_getportbyname (context, "kerberos", "udp", 88);
 
      err = krb5_get_krbhst (context, realm, &hostlist);
      if (err) {
