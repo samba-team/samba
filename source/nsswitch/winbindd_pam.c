@@ -142,7 +142,7 @@ done:
 
 	state->response.data.auth.nt_status = NT_STATUS_V(result);
 	fstrcpy(state->response.data.auth.nt_status_string, nt_errstr(result));
-	fstrcpy(state->response.data.auth.error_string, nt_errstr(result));
+	fstrcpy(state->response.data.auth.error_string, get_friendly_nt_error_msg(result));
 	state->response.data.auth.pam_error = nt_status_to_pam(result);
 
 	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2, ("Plain-text authentication for user %s returned %s (PAM: %d)\n", 
@@ -273,6 +273,8 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 
 #if 0
 		/* we don't currently do this stuff right */
+		/* Doing an assert in a daemon is going to be a pretty bad 
+                   idea. - tpot */
 		if (state->request.data.auth_crap.flags & WINBIND_PAM_NTKEY) {
 			SMB_ASSERT(sizeof(state->response.data.auth.nt_session_key) == sizeof(info3.user_sess_key)); 
 			memcpy(state->response.data.auth.nt_session_key, info3.user_sess_key, sizeof(state->response.data.auth.nt_session_key) /* 16 */);
