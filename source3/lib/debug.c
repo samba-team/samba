@@ -153,7 +153,7 @@ static const char *default_classname_table[] = {
 	"rpc_srv",           /* DBGC_RPC_SRV      */
 	"rpc_cli",           /* DBGC_RPC_CLI      */
 	"passdb",            /* DBGC_PASSDB       */
-	"sam"                /* DBGC_SAM          */
+	"sam",               /* DBGC_SAM          */
 	"auth",              /* DBGC_AUTH         */
 	"winbind",           /* DBGC_WINBIND      */
 	NULL
