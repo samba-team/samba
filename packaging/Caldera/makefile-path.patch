@@ -1,70 +1,43 @@
---- samba-2.0.0/source/Makefile.in.orig Sat Aug 22 02:48:36 1998
-+++ samba-2.0.0/source/Makefile.in  Fri Aug 21 22:19:32 1998
-***************
-*** 22,32 ****
-  builddir=@builddir@
-  SHELL=/bin/sh
-  
-! BASEDIR=$(prefix)/samba
-  BINDIR = $(BASEDIR)/bin
-! SBINDIR = $(BASEDIR)/bin
-! LIBDIR = $(BASEDIR)/lib
-! VARDIR = $(BASEDIR)/var
-  MANDIR = $(BASEDIR)/man
-  
-  # The permissions to give the executables
---- 22,32 ----
-  builddir=@builddir@
-  SHELL=/bin/sh
-  
-! BASEDIR=/usr
-  BINDIR = $(BASEDIR)/bin
-! SBINDIR = $(BASEDIR)/sbin
-! LIBDIR = /etc
-! VARDIR = /var
-  MANDIR = $(BASEDIR)/man
-  
-  # The permissions to give the executables
-***************
-*** 35,54 ****
-  # set these to where to find various files
-  # These can be overridden by command line switches (see smbd(8))
-  # or in smb.conf (see smb.conf(5))
-! SMBLOGFILE = $(VARDIR)/log.smb
-! NMBLOGFILE = $(VARDIR)/log.nmb
-  CONFIGFILE = $(LIBDIR)/smb.conf
-  LMHOSTSFILE = $(LIBDIR)/lmhosts
-  DRIVERFILE = $(LIBDIR)/printers.def
-  PASSWD_PROGRAM = /bin/passwd
-! SMB_PASSWD_FILE = $(BASEDIR)/private/smbpasswd
-  SMB_PASSWD_PROGRAM = $(BASEDIR)/bin/smbpasswd
-  
-  # This is where SWAT images and help files go
-! SWATDIR = $(BASEDIR)/swat
-  
-  # the directory where lock files go
-! LOCKDIR = $(VARDIR)/locks
-  
-  # The directory where code page definition files go
-  CODEPAGEDIR = $(LIBDIR)/codepages
---- 35,54 ----
-  # set these to where to find various files
-  # These can be overridden by command line switches (see smbd(8))
-  # or in smb.conf (see smb.conf(5))
-! SMBLOGFILE = $(VARDIR)/log/samba/log.smb
-! NMBLOGFILE = $(VARDIR)/log/samba/log.nmb
-  CONFIGFILE = $(LIBDIR)/smb.conf
-  LMHOSTSFILE = $(LIBDIR)/lmhosts
-  DRIVERFILE = $(LIBDIR)/printers.def
-  PASSWD_PROGRAM = /bin/passwd
-! SMB_PASSWD_FILE = $(LIBDIR)/smbpasswd
-  SMB_PASSWD_PROGRAM = $(BASEDIR)/bin/smbpasswd
-  
-  # This is where SWAT images and help files go
-! SWATDIR = $(BASEDIR)/share/swat
-  
-  # the directory where lock files go
-! LOCKDIR = $(VARDIR)/lock/samba
-  
-  # The directory where code page definition files go
-  CODEPAGEDIR = $(LIBDIR)/codepages
+--- samba-2.0.0/source/Makefile.in.orig	Wed Nov 18 09:58:38 1998
++++ samba-2.0.0/source/Makefile.in	Wed Nov 18 23:32:58 1998
+@@ -24,7 +24,7 @@
+ BINDIR = @bindir@
+ SBINDIR = @sbindir@
+ LIBDIR = @libdir@
+-VARDIR = $(BASEDIR)/var
++VARDIR = /var
+ MANDIR = @mandir@
+ 
+ # The permissions to give the executables
+@@ -33,23 +33,23 @@
+ # set these to where to find various files
+ # These can be overridden by command line switches (see smbd(8))
+ # or in smb.conf (see smb.conf(5))
+-SMBLOGFILE = $(VARDIR)/log.smb
+-NMBLOGFILE = $(VARDIR)/log.nmb
++SMBLOGFILE = $(VARDIR)/log/samba/log.smb
++NMBLOGFILE = $(VARDIR)/log/samba/log.nmb
+ CONFIGFILE = $(LIBDIR)/smb.conf
+ LMHOSTSFILE = $(LIBDIR)/lmhosts
+ DRIVERFILE = $(LIBDIR)/printers.def
+ PASSWD_PROGRAM = /bin/passwd
+-SMB_PASSWD_FILE = $(BASEDIR)/private/smbpasswd
+-SMB_PASSGRP_FILE = $(BASEDIR)/private/smbpassgrp
+-SMB_GROUP_FILE = $(BASEDIR)/private/smbgroup
+-SMB_ALIAS_FILE = $(BASEDIR)/private/smbalias
++SMB_PASSWD_FILE = $(LIBDIR)/smbpasswd
++SMB_PASSGRP_FILE = $(LIBDIR)/smbpassgrp
++SMB_GROUP_FILE = $(LIBDIR)/smbgroup
++SMB_ALIAS_FILE = $(LIBDIR)/smbalias
+ SMB_PASSWD_PROGRAM = $(BASEDIR)/bin/smbpasswd
+ 
+ # This is where SWAT images and help files go
+-SWATDIR = $(BASEDIR)/swat
++SWATDIR = $(BASEDIR)/share/swat
+ 
+ # the directory where lock files go
+-LOCKDIR = $(VARDIR)/locks
++LOCKDIR = $(VARDIR)/lock/samba
+ 
+ # The directory where code page definition files go
+ CODEPAGEDIR = $(LIBDIR)/codepages
