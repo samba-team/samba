@@ -115,26 +115,17 @@ typedef struct {
 static ubi_dlList stat_cache = { NULL, (ubi_dlNodePtr)&stat_cache, 0};
 
 /****************************************************************************
- Compare two names in the stat cache - to check if we already have such an
- entry.
-*****************************************************************************/
-
-static BOOL stat_name_equal( char *s1, char *s2)
-{
-  return (case_sensitive ? (strcmp( s1, s2) == 0) : (StrCaseCmp(s1, s2) == 0));
-}
-
-/****************************************************************************
  Compare a pathname to a name in the stat cache - of a given length.
  Note - this code always checks that the next character in the pathname
  is either a '/' character, or a '\0' character - to ensure we only
- match *full* pathname components.
+ match *full* pathname components. Note we don't need to handle case
+ here, if we're case insensitive the stat cache orig names are all upper
+ case.
 *****************************************************************************/
 
 static BOOL stat_name_equal_len( char *stat_name, char *orig_name, int len)
 {
-  BOOL matched = (case_sensitive ? (strncmp( stat_name, orig_name, len) == 0) :
-                           (StrnCaseCmp(stat_name, orig_name, len) == 0));
+  BOOL matched = (memcmp( stat_name, orig_name, len) == 0);
   if(orig_name[len] != '/' && orig_name[len] != '\0')
     return False;
 
@@ -159,7 +150,7 @@ static void stat_cache_add( char *full_orig_name, char *orig_translated_path)
   /*
    * Don't cache trivial valid directory entries.
    */
-  if(strequal(full_orig_name, ".") || strequal(full_orig_name, ".."))
+  if((strcmp(full_orig_name, ".") == 0) || (strcmp(full_orig_name, "..") == 0))
     return;
 
   /*
@@ -189,6 +180,8 @@ static void stat_cache_add( char *full_orig_name, char *orig_translated_path)
    */
 
   StrnCpy(orig_name, full_orig_name, namelen);
+  if(!case_sensitive)
+    strupper( orig_name );
 
   /*
    * Check this name doesn't exist in the cache before we 
@@ -197,7 +190,7 @@ static void stat_cache_add( char *full_orig_name, char *orig_translated_path)
 
   for( scp = (stat_cache_entry *)ubi_dlFirst( &stat_cache); scp; 
                         scp = (stat_cache_entry *)ubi_dlNext( scp )) {
-    if(stat_name_equal( scp->orig_name, orig_name) &&
+    if((strcmp( scp->orig_name, orig_name) == 0) &&
        (strcmp( scp->translated_name, translated_path) == 0)) {
       /*
        * Name does exist - promote it.
@@ -239,6 +232,7 @@ static BOOL stat_cache_lookup( char *name, char *dirpath, char **start, SMB_STRU
 {
   stat_cache_entry *scp;
   stat_cache_entry *longest_hit = NULL;
+  pstring chk_name;
   int namelen;
 
   if (!lp_stat_cache()) return False;
@@ -251,15 +245,19 @@ static BOOL stat_cache_lookup( char *name, char *dirpath, char **start, SMB_STRU
   /*
    * Don't lookup trivial valid directory entries.
    */
-  if(strequal(name, ".") || strequal(name, "..")) {
+  if((strcmp(name, ".") == 0) || (strcmp(name, "..") == 0)) {
     global_stat_cache_misses++;
     return False;
   }
 
+  pstrcpy(chk_name, name);
+  if(!case_sensitive)
+    strupper( chk_name );
+
   for( scp = (stat_cache_entry *)ubi_dlFirst( &stat_cache); scp; 
                         scp = (stat_cache_entry *)ubi_dlNext( scp )) {
     if(scp->name_len <= namelen) {
-      if(stat_name_equal_len(scp->orig_name, name, scp->name_len)) {
+      if(stat_name_equal_len(scp->orig_name, chk_name, scp->name_len)) {
         if((longest_hit == NULL) || (longest_hit->name_len <= scp->name_len))
           longest_hit = scp;
       }
