@@ -2306,7 +2306,7 @@ void cmd_sam_query_sec_obj(struct client_info *info, int argc, char *argv[])
 
 	if (argc < 2)
 	{
-		report(out_hnd, "samsecquery <name>\n");
+		report(out_hnd, "samquerysec <name>\n");
 		return;
 	}
 
