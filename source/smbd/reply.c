@@ -205,6 +205,14 @@ int reply_tcon(connection_struct *conn,
 		pstrcpy(service, p+1);
 	}
 
+    /*
+	 * If the vuid is valid, we should be using that....
+	 */
+
+	if (*user == '\0' && (lp_security() != SEC_SHARE) && validated_username(vuid)) {
+		pstrcpy(user,validated_username(vuid));
+	}
+
 	/*
 	 * Ensure the user and password names are in UNIX codepage format.
 	 */
@@ -247,6 +255,7 @@ int reply_tcon(connection_struct *conn,
 /****************************************************************************
  Reply to a tcon and X.
 ****************************************************************************/
+
 int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
 	fstring service;
@@ -297,6 +306,14 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	p += srvstr_pull(inbuf, devicename, p, sizeof(devicename), 6, STR_CONVERT|STR_ASCII);
 
 	DEBUG(4,("Got device type %s\n",devicename));
+
+    /*
+	 * If the vuid is valid, we should be using that....
+	 */
+
+	if (*user == '\0' && (lp_security() != SEC_SHARE) && validated_username(vuid)) {
+		pstrcpy(user,validated_username(vuid));
+	}
 
 	/*
 	 * Pass the user through the NT -> unix user mapping
@@ -1065,7 +1082,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   END_PROFILE(SMBsesssetupX);
   return chain_reply(inbuf,outbuf,length,bufsize);
 }
-
 
 /****************************************************************************
   reply to a chkpth
