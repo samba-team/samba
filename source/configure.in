@@ -1188,13 +1188,6 @@ if test x"$samba_cv_SEEKDIR_RETURNS_VOID" = x"yes"; then
     AC_DEFINE(SEEKDIR_RETURNS_VOID,1,[Whether seekdir returns void])
 fi
 
-AC_CACHE_CHECK([for __FILE__ macro],samba_cv_HAVE_FILE_MACRO,[
-AC_TRY_COMPILE([#include <stdio.h>], [printf("%s\n", __FILE__);],
-samba_cv_HAVE_FILE_MACRO=yes,samba_cv_HAVE_FILE_MACRO=no)])
-if test x"$samba_cv_HAVE_FILE_MACRO" = x"yes"; then
-    AC_DEFINE(HAVE_FILE_MACRO,1,[Whether there is a __FILE__ macro])
-fi
-
 AC_CACHE_CHECK([for __FUNCTION__ macro],samba_cv_HAVE_FUNCTION_MACRO,[
 AC_TRY_COMPILE([#include <stdio.h>], [printf("%s\n", __FUNCTION__);],
 samba_cv_HAVE_FUNCTION_MACRO=yes,samba_cv_HAVE_FUNCTION_MACRO=no)])
