@@ -488,7 +488,7 @@ BOOL sid_to_gid(DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype)
 	 */
 
 	if ((name_type != SID_NAME_DOM_GRP) && (name_type != SID_NAME_ALIAS) && (name_type != SID_NAME_WKN_GRP)) {
-		DEBUG(10,("sid_to_gid: winbind lookup succeeded but SID is not a know group (%u)\n",
+		DEBUG(10,("sid_to_gid: winbind lookup succeeded but SID is not a known group (%u)\n",
 				(unsigned int)name_type ));
 
 		return local_sid_to_gid(pgid, psid, sidtype);
