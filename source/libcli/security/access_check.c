@@ -50,9 +50,8 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 	unsigned i;
 	
 	if (sid_active_in_token(sd->owner_sid, token)) {
-		granted |= SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL;
-	}
-	if (sec_privilege_check(token, SEC_PRIV_RESTORE)) {
+		granted |= SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL | SEC_STD_DELETE;
+	} else if (sec_privilege_check(token, SEC_PRIV_RESTORE)) {
 		granted |= SEC_STD_DELETE;
 	}
 
@@ -122,10 +121,10 @@ NTSTATUS sec_access_check(const struct security_descriptor *sd,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	/* the owner always gets SEC_STD_WRITE_DAC & SEC_STD_READ_CONTROL */
-	if ((bits_remaining & (SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL)) &&
+	/* the owner always gets SEC_STD_WRITE_DAC, SEC_STD_READ_CONTROL and SEC_STD_DELETE */
+	if ((bits_remaining & (SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL|SEC_STD_DELETE)) &&
 	    sid_active_in_token(sd->owner_sid, token)) {
-		bits_remaining &= ~(SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL);
+		bits_remaining &= ~(SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL|SEC_STD_DELETE);
 	}
 	if ((bits_remaining & SEC_STD_DELETE) &&
 	    sec_privilege_check(token, SEC_PRIV_RESTORE)) {
