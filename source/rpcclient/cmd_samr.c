@@ -289,8 +289,35 @@ void cmd_sam_lookup_domain(struct client_info *info, int argc, char *argv[])
 /****************************************************************************
 Lookup names in SAM server.
 ****************************************************************************/
+static void fill_domain_sid(const char *srv_name,
+			    const char *new_domain, char *domain,
+			    DOM_SID *sid)
+{
+	uint32 ret;
+	DOM_SID new_sid;
+	fstring temp;
+
+	ret = lookup_sam_domainname(srv_name, new_domain,
+				    &new_sid);
+
+	if (ret != 0x0)
+	{
+		report(out_hnd, "Domain %s: %s\n",
+		       new_domain, get_nt_error_msg(ret));
+	}
+	else
+	{
+		sid_copy(sid, &new_sid);
+		fstrcpy(domain, new_domain);
+	}
+
+	sid_to_string(temp, sid);
+	DEBUG(3, ("Using Domain-SID: %s\n", temp));
+}
+
 void cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[])
 {
+	int opt;
 	fstring srv_name;
 	fstring domain;
 	DOM_SID sid_dom;
@@ -319,21 +346,31 @@ void cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[])
 
 	if (argc < 2)
 	{
-		report(out_hnd, "samlookupnames <name> [<name> ...]\n");
+		report(out_hnd, "samlookupnames [-d <domain>] <name> [<name> ...]\n");
 		return;
+	}
+
+	while ((opt = getopt(argc, argv, "d:")) != EOF)
+	{
+		switch (opt)
+		{
+			case 'd':
+				fill_domain_sid(srv_name, optarg,
+						domain, &sid_dom);
+		}
 	}
 
 	report(out_hnd, "SAM Lookup Names\n");
 
-	argc--;
-	argv++;
+	argc -= optind;
+	argv += optind;
 
 	num_names = argc;
 	names = (const char **) argv;
 
 	if (num_names <= 0)
 	{
-		report(out_hnd, "samlookupnames <name> [<name> ...]\n");
+		report(out_hnd, "samlookupnames [-d <domain>] <name> [<name> ...]\n");
 		return;
 	}
 

@@ -34,6 +34,31 @@ extern int DEBUGLEVEL;
 #define DEBUG_TESTING
 
 /****************************************************************************
+lookup SID for a domain in a sam database
+****************************************************************************/
+uint32 lookup_sam_domainname(const char *srv_name,
+			     const char *domain, DOM_SID *sid)
+{
+	POLICY_HND sam_pol;
+	BOOL res = True;
+	BOOL res1 = True;
+
+	/* establish a connection. */
+	res  = res ? samr_connect(srv_name, 0x02000000, &sam_pol) : False;
+
+	res1 = res ? samr_query_lookup_domain(&sam_pol, domain, sid) : False;
+
+	res  = res ? samr_close(&sam_pol) : False;
+
+	if (! res1)
+	{
+		return NT_STATUS_NONE_MAPPED | 0xC0000000;
+	}
+	return 0x0;
+}
+
+
+/****************************************************************************
 lookup in a sam database
 ****************************************************************************/
 uint32 lookup_sam_name(const char *domain, DOM_SID *sid,

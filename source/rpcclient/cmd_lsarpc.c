@@ -168,20 +168,13 @@ lookup names
 ****************************************************************************/
 void cmd_lsa_lookup_names(struct client_info *info, int argc, char *argv[])
 {
-	POLICY_HND lsa_pol;
-	fstring temp;
-	int i;
 	fstring srv_name;
 	int num_names = 0;
-	char **names;
+	const char **names;
 	uint8 *types = NULL;
 	DOM_SID *sids = NULL;
 	int num_sids = 0;
-#if 0
-	DOM_SID sid[10];
-	DOM_SID *sids[10];
-#endif
-	BOOL res = True;
+	uint32 ret;
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
@@ -201,28 +194,21 @@ void cmd_lsa_lookup_names(struct client_info *info, int argc, char *argv[])
 		return;
 	}
 
-	/* lookup domain controller; receive a policy handle */
-	res = res ? lsa_open_policy( srv_name,
-				&lsa_pol, True) : False;
+	ret = lookup_lsa_names(srv_name,
+	                       num_names, names,
+	                       &num_sids, &sids, &types);
 
-	/* send lsa lookup sids call */
-	res = res ? lsa_lookup_names( &lsa_pol,
-	                               num_names, names,
-	                               &sids, &types, &num_sids) : False;
-
-	res = res ? lsa_close(&lsa_pol) : False;
-
-	if (res)
+	if (ret != 0x0)
 	{
-		DEBUG(5,("cmd_lsa_lookup_names: query succeeded\n"));
-	}
-	else
-	{
-		DEBUG(5,("cmd_lsa_lookup_names: query failed\n"));
+		report(out_hnd, "cmd_lsa_lookup_names: FAILED: %s\n",
+		       get_nt_error_msg(ret));
 	}
 
 	if (sids != NULL)
 	{
+		int i;
+		fstring temp;
+
 		report(out_hnd, "Lookup Names:\n");
 		for (i = 0; i < num_sids; i++)
 		{
@@ -239,10 +225,7 @@ void cmd_lsa_lookup_names(struct client_info *info, int argc, char *argv[])
 		}
 		free(sids);
 	}
-	if (types)
-	{
-		free(types);
-	}
+	safe_free(types);
 }
 
 /****************************************************************************

@@ -587,8 +587,8 @@ static BOOL check_oem_password(const char *user,
 	uchar unenc_old_pw[16];
 	char no_pw[2];
 	uint32 len;
-	uchar lmdata[512];
-	uchar ntdata[512];
+	uchar lmdata[516];
+	uchar ntdata[516];
 
 	BOOL nt_pass_set = (_ntdata != NULL && nthash != NULL);
 
