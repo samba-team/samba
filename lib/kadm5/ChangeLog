@@ -1,3 +1,8 @@
+1999-07-07  Assar Westerlund  <assar@sics.se>
+
+	* marshall.c (store_principal_ent): encoding princ_expire_time and
+ 	pw_expiration in correct order
+
 1999-06-28  Assar Westerlund  <assar@sics.se>
 
 	* randkey_s.c (kadm5_s_randkey_principal): nuke old mkvno,
