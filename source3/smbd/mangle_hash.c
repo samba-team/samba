@@ -313,6 +313,7 @@ static BOOL is_8_3(const char *fname, BOOL check_case, BOOL allow_wildcards)
 	const char *f;
 	smb_ucs2_t *ucs2name;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	size_t size;
 
 	if (!fname || !*fname)
 		return False;
@@ -324,9 +325,9 @@ static BOOL is_8_3(const char *fname, BOOL check_case, BOOL allow_wildcards)
 	if (strlen(f) > 12)
 		return False;
 	
-	ucs2name = acnv_uxu2(f);
-	if (!ucs2name) {
-		DEBUG(0,("is_8_3: internal error acnv_uxu2() failed!\n"));
+	size = push_ucs2_allocate(&ucs2name, f);
+	if (size == (size_t)-1) {
+		DEBUG(0,("is_8_3: internal error push_ucs2_allocate() failed!\n"));
 		goto done;
 	}
 
