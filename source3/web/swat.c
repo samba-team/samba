@@ -406,16 +406,11 @@ static void show_main_buttons(void)
 {
 	image_link("Home", "", "images/home.gif");
 
-	/* Root gets full functionality */
-	if (demo_mode || am_root()) {
-		image_link("Globals", "globals", "images/globals.gif");
-		image_link("Shares", "shares", "images/shares.gif");
-		image_link("Printers", "printers", "images/printers.gif");
-		image_link("Status", "status", "images/status.gif");
-		image_link("View Config", "viewconfig","images/viewconfig.gif");
-	}
-
-	/* Everyone gets this functionality */
+	image_link("Globals", "globals", "images/globals.gif");
+	image_link("Shares", "shares", "images/shares.gif");
+	image_link("Printers", "printers", "images/printers.gif");
+	image_link("Status", "status", "images/status.gif");
+	image_link("View Config", "viewconfig","images/viewconfig.gif");
 	image_link("Password Management", "passwd", "images/passwd.gif");
 
 	printf("<HR>\n");
@@ -642,7 +637,7 @@ static void chg_passwd(void)
 		 * If current user is not root, make sure old password has been specified 
 		 * If REMOTE change, even root must provide old password 
 		 */
-		if (((am_root() == False) && (strlen( cgi_variable(OLD_PSWD)) <= 0)) ||
+		if (((!am_root()) && (strlen( cgi_variable(OLD_PSWD)) <= 0)) ||
 		    ((cgi_variable(CHG_R_PASSWD_FLAG)) &&  (strlen( cgi_variable(OLD_PSWD)) <= 0))) {
 			printf("<p> Must specify \"Old Password\" \n");
 			return;
@@ -720,7 +715,7 @@ static void passwd_page(void)
 	 */
 	printf("<tr><td> User Name : </td>\n");
 	printf("<td><input type=text size=30 name=%s value=%s></td></tr> \n", SWAT_USER, new_name);
-	if (am_root() == False) {
+	if (!am_root()) {
 		printf("<tr><td> Old Password : </td>\n");
 		printf("<td><input type=password size=30 name=%s></td></tr> \n",OLD_PSWD);
 	}
@@ -733,7 +728,7 @@ static void passwd_page(void)
 	 * Create all the control buttons for requesting action
 	 */
 	printf("<tr><td><input type=submit name=%s value=\"Change Password\"></td></tr>\n", CHG_S_PASSWD_FLAG);
-	if (am_root() == True) {
+	if (demo_mode || am_root()) {
 		printf("<tr><td><input type=submit name=%s value=\"Add New User\"></td></tr>\n", ADD_USER_FLAG);
 		printf("<tr><td><input type=submit name=%s value=\"Disable User\"></td></tr>\n", DISABLE_USER_FLAG);
 		printf("<tr><td><input type=submit name=%s value=\"Enable User\"></td></tr>\n", ENABLE_USER_FLAG);
@@ -923,31 +918,22 @@ static void printers_page(void)
 	page = cgi_pathinfo();
 
 	/* Root gets full functionality */
-	if (demo_mode || am_root()) {
-		if (strcmp(page, "globals")==0) {
-			globals_page();
-		} else if (strcmp(page,"shares")==0) {
-			shares_page();
-		} else if (strcmp(page,"printers")==0) {
-			printers_page();
-		} else if (strcmp(page,"status")==0) {
-			status_page();
-		} else if (strcmp(page,"viewconfig")==0) {
-			viewconfig_page();
-		} else if (strcmp(page,"passwd")==0) {
-			passwd_page();
-		} else {
-			welcome_page();
-		}
+	if (strcmp(page, "globals")==0) {
+		globals_page();
+	} else if (strcmp(page,"shares")==0) {
+		shares_page();
+	} else if (strcmp(page,"printers")==0) {
+		printers_page();
+	} else if (strcmp(page,"status")==0) {
+		status_page();
+	} else if (strcmp(page,"viewconfig")==0) {
+		viewconfig_page();
+	} else if (strcmp(page,"passwd")==0) {
+		passwd_page();
 	} else {
-		/* Everyone gets this functionality */
-		if (strcmp(page,"passwd")==0) {
-			passwd_page();
-		} else {
-			welcome_page();
-		}
+		welcome_page();
 	}
-	
+
 	print_footer();
 	return 0;
 }
