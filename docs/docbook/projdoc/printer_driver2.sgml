@@ -382,10 +382,64 @@ of the connected user, not necessarily a root account.
 </para>
 
 <para>
-There is a complementing <ulink url="smb.conf.5.html#DELETEPRINTERCOMMAND"><parameter>delete
+There is a complementary <ulink url="smb.conf.5.html#DELETEPRINTERCOMMAND"><parameter>delete
 printer command</parameter></ulink> for removing entries from the "Printers..."
 folder.
 </para>
+
+<para>
+The following is an example <ulink url="smb.conf.5.html#ADDPRINTERCOMMAN"><parameter>add printer command</parameter></ulink> script. It adds the appropriate entries to <filename>/etc/printcap.local</filename> (change that to what you need) and returns a line of 'Done' which is needed for the whole process to work.
+</para>
+
+<programlisting>
+#!/bin/sh
+
+# Script to insert a new printer entry into printcap.local
+#
+# $1, printer name, used as the descriptive name
+# $2, share name, used as the printer name for Linux
+# $3, port name
+# $4, driver name
+# $5, location, used for the device file of the printer
+# $6, win9x location
+
+#
+# Make sure we use the location that RedHat uses for local printer defs
+PRINTCAP=/etc/printcap.local
+DATE=`date +%Y%m%d-%H%M%S`
+LP=lp
+RESTART="service lpd restart"
+
+# Keep a copy
+cp $PRINTCAP $PRINTCAP.$DATE
+# Add the printer to $PRINTCAP
+echo ""				 			>> $PRINTCAP
+echo "$2|$1:\\" 					>> $PRINTCAP
+echo "  :sd=/var/spool/lpd/$2:\\" 			>> $PRINTCAP
+echo "  :mx=0:ml=0:sh:\\" 				>> $PRINTCAP
+echo "  :lp=/usr/local/samba/var/print/$5.prn:" 	>> $PRINTCAP
+
+touch "/usr/local/samba/var/print/$5.prn" >> /tmp/printadd.$$ 2>&1
+chown $LP "/usr/local/samba/var/print/$5.prn" >> /tmp/printadd.$$ 2>&1
+
+mkdir /var/spool/lpd/$2
+chmod 700 /var/spool/lpd/$2
+chown $LP /var/spool/lpd/$2
+#echo $1 >> "/usr/local/samba/var/print/$5.prn"
+#echo $2 >> "/usr/local/samba/var/print/$5.prn"
+#echo $3 >> "/usr/local/samba/var/print/$5.prn"
+#echo $4 >> "/usr/local/samba/var/print/$5.prn"
+#echo $5 >> "/usr/local/samba/var/print/$5.prn"
+#echo $6 >> "/usr/local/samba/var/print/$5.prn"
+$RESTART >> "/usr/local/samba/var/print/$5.prn"
+# Not sure if this is needed
+touch /usr/local/samba/lib/smb.conf
+#
+# You need to return a value, but I am not sure what it means.
+#
+echo "Done"
+exit 0
+</programlisting>
 
 </sect2>
 
