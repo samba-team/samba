@@ -500,6 +500,7 @@ typedef struct connection_struct
 	int ngroups;
 	gid_t *groups;
 	NT_USER_TOKEN *nt_user_token;
+	PRIVILEGE_SET *privs;
 	
 	time_t lastused;
 	BOOL used;
@@ -519,6 +520,7 @@ struct current_user
 	int ngroups;
 	gid_t *groups;
 	NT_USER_TOKEN *nt_user_token;
+	PRIVILEGE_SET *privs;
 };
 
 /* Defines for the sent_oplock_break field above. */
@@ -1546,6 +1548,7 @@ typedef struct user_struct
 	gid_t *groups;
 
 	NT_USER_TOKEN *nt_user_token;
+	PRIVILEGE_SET *privs;
 
 	DATA_BLOB session_key;
 

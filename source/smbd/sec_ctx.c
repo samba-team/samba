@@ -28,6 +28,7 @@ struct sec_ctx {
 	int ngroups;
 	gid_t *groups;
 	NT_USER_TOKEN *token;
+	PRIVILEGE_SET *privs;
 };
 
 /* A stack of security contexts.  We include the current context as being
@@ -256,6 +257,10 @@ BOOL push_sec_ctx(void)
  		  (unsigned int)ctx_p->uid, (unsigned int)ctx_p->gid, sec_ctx_stack_ndx ));
 
 	ctx_p->token = dup_nt_token(sec_ctx_stack[sec_ctx_stack_ndx-1].token);
+	if (! ctx_p->token) {
+		DEBUG(0, ("Out of memory in push_sec_ctx()\n"));
+		return False;
+	}
 
 	ctx_p->ngroups = sys_getgroups(0, NULL);
 
@@ -271,6 +276,14 @@ BOOL push_sec_ctx(void)
 		ctx_p->groups = NULL;
 	}
 
+	init_privilege(&ctx_p->privs);
+	if (! NT_STATUS_IS_OK(dup_priv_set(ctx_p->privs, sec_ctx_stack[sec_ctx_stack_ndx-1].privs))) {
+		DEBUG(0, ("Out of memory in push_sec_ctx()\n"));
+		delete_nt_token(&ctx_p->token);
+		destroy_privilege(&ctx_p->privs);
+		return False;
+	}
+
 	return True;
 }
 
@@ -278,7 +291,7 @@ BOOL push_sec_ctx(void)
  Set the current security context to a given user.
 ****************************************************************************/
 
-void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN *token)
+void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN *token, PRIVILEGE_SET *privs)
 {
 	struct sec_ctx *ctx_p = &sec_ctx_stack[sec_ctx_stack_ndx];
 	
@@ -303,9 +316,14 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN
 		smb_panic("DUPLICATE_TOKEN");
 
 	delete_nt_token(&ctx_p->token);
+	if (ctx_p->privs)
+		reset_privilege(ctx_p->privs);
+	else
+		init_privilege(&ctx_p->privs);
 	
 	ctx_p->groups = memdup(groups, sizeof(gid_t) * ngroups);
 	ctx_p->token = dup_nt_token(token);
+	dup_priv_set(ctx_p->privs, privs);
 
 	become_id(uid, gid);
 
@@ -319,6 +337,7 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN
 	current_user.ngroups = ngroups;
 	current_user.groups = groups;
 	current_user.nt_user_token = ctx_p->token;
+	current_user.privs = ctx_p->privs;
 }
 
 /****************************************************************************
@@ -329,7 +348,7 @@ void set_root_sec_ctx(void)
 {
 	/* May need to worry about supplementary groups at some stage */
 
-	set_sec_ctx(0, 0, 0, NULL, NULL);
+	set_sec_ctx(0, 0, 0, NULL, NULL, NULL);
 }
 
 /****************************************************************************
@@ -359,6 +378,7 @@ BOOL pop_sec_ctx(void)
 	ctx_p->ngroups = 0;
 
 	delete_nt_token(&ctx_p->token);
+	destroy_privilege(&ctx_p->privs);
 
 	/* Pop back previous user */
 
@@ -381,6 +401,7 @@ BOOL pop_sec_ctx(void)
 	current_user.ngroups = prev_ctx_p->ngroups;
 	current_user.groups = prev_ctx_p->groups;
 	current_user.nt_user_token = prev_ctx_p->token;
+	current_user.privs = prev_ctx_p->privs;
 
 	DEBUG(3, ("pop_sec_ctx (%u, %u) - sec_ctx_stack_ndx = %d\n", 
 		(unsigned int)geteuid(), (unsigned int)getegid(), sec_ctx_stack_ndx));
@@ -413,6 +434,7 @@ void init_sec_ctx(void)
 	get_current_groups(ctx_p->gid, &ctx_p->ngroups, &ctx_p->groups);
 
 	ctx_p->token = NULL; /* Maps to guest user. */
+	ctx_p->privs = NULL;
 
 	/* Initialise current_user global */
 
@@ -427,4 +449,5 @@ void init_sec_ctx(void)
 	current_user.conn = NULL;
 	current_user.vuid = UID_FIELD_INVALID;
 	current_user.nt_user_token = NULL;
+	current_user.privs = NULL;
 }

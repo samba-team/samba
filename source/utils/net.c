@@ -648,6 +648,7 @@ static struct functable net_func[] = {
 #ifdef WITH_FAKE_KASERVER
 	{"AFSKEY", net_afskey},
 #endif
+	{"PRIV", net_priv},
 
 	{"HELP", net_help},
 	{NULL, NULL}

@@ -371,6 +371,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	string_set(&conn->dirpath,"");
 	string_set(&conn->user,user);
 	conn->nt_user_token = NULL;
+	conn->privs = NULL;
 
 	conn->read_only = lp_readonly(conn->service);
 	conn->admin_user = False;
@@ -479,6 +480,9 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		conn->nt_user_token = create_nt_token(conn->uid, conn->gid, 
 						      conn->ngroups, conn->groups,
 						      guest);
+
+		init_privilege(&(conn->privs));
+		pdb_get_privilege_set(conn->nt_user_token, conn->privs);
 	}
 
 	/*

@@ -344,6 +344,8 @@ static void *make_internal_rpc_pipe_p(char *pipe_name,
 	if (vuser) {
 		p->session_key = data_blob(vuser->session_key.data, vuser->session_key.length);
 		p->pipe_user.nt_user_token = dup_nt_token(vuser->nt_user_token);
+		init_privilege(&p->pipe_user.privs);
+		dup_priv_set(p->pipe_user.privs, vuser->privs);
 	}
 
 	/*

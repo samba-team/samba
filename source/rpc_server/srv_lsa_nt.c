@@ -819,10 +819,10 @@ NTSTATUS _lsa_priv_get_dispname(pipes_struct *p, LSA_Q_PRIV_GET_DISPNAME *q_u, L
 
 	DEBUG(10,("_lsa_priv_get_dispname: %s", name_asc));
 
-	while (privs[i].se_priv!=SE_PRIV_ALL && strcmp(name_asc, privs[i].priv))
+	while (privs[i].se_priv!=SE_ALL_PRIVS && strcmp(name_asc, privs[i].priv))
 		i++;
 	
-	if (privs[i].se_priv!=SE_PRIV_ALL) {
+	if (privs[i].se_priv!=SE_ALL_PRIVS) {
 		DEBUG(10,(": %s\n", privs[i].description));
 		init_unistr2(&r_u->desc, privs[i].description, UNI_FLAGS_NONE);
 		init_uni_hdr(&r_u->hdr_desc, &r_u->desc);

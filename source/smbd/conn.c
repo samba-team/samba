@@ -249,6 +249,14 @@ void conn_free(connection_struct *conn)
 		conn->ngroups = 0;
 	}
 
+	if (conn->nt_user_token) {
+		delete_nt_token(&(conn->nt_user_token));
+	}
+
+	if (conn->privs) {
+		destroy_privilege(&(conn->privs));
+	}
+
 	free_namearray(conn->veto_list);
 	free_namearray(conn->hide_list);
 	free_namearray(conn->veto_oplock_list);
