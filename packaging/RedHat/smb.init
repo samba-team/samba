@@ -32,8 +32,8 @@ case "$1" in
 	;;
   stop)
 	echo -n "Shutting down SMB services: "
-	killproc smbd
-	killproc nmbd
+	killproc smbd -TERM
+	killproc nmbd -TERM
 	if [ "`ps -ef | grep winbind | grep -v grep`" ]; then
 		killproc winbindd
 	fi
