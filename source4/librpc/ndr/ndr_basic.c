@@ -36,9 +36,9 @@
 } while(0)
 
 /*
-  parse a u8
+  parse a uint8
 */
-NTSTATUS ndr_pull_u8(struct ndr_pull *ndr, uint8 *v)
+NTSTATUS ndr_pull_uint8(struct ndr_pull *ndr, uint8 *v)
 {
 	NDR_PULL_NEED_BYTES(ndr, 1);
 	*v = CVAL(ndr->data, ndr->offset);
@@ -48,9 +48,9 @@ NTSTATUS ndr_pull_u8(struct ndr_pull *ndr, uint8 *v)
 
 
 /*
-  parse a u16
+  parse a uint16
 */
-NTSTATUS ndr_pull_u16(struct ndr_pull *ndr, uint16 *v)
+NTSTATUS ndr_pull_uint16(struct ndr_pull *ndr, uint16 *v)
 {
 	NDR_PULL_ALIGN(ndr, 2);
 	NDR_PULL_NEED_BYTES(ndr, 2);
@@ -65,9 +65,9 @@ NTSTATUS ndr_pull_u16(struct ndr_pull *ndr, uint16 *v)
 
 
 /*
-  parse a u32
+  parse a uint32
 */
-NTSTATUS ndr_pull_u32(struct ndr_pull *ndr, uint32 *v)
+NTSTATUS ndr_pull_uint32(struct ndr_pull *ndr, uint32 *v)
 {
 	NDR_PULL_ALIGN(ndr, 4);
 	NDR_PULL_NEED_BYTES(ndr, 4);
@@ -86,7 +86,7 @@ NTSTATUS ndr_pull_u32(struct ndr_pull *ndr, uint32 *v)
 NTSTATUS ndr_pull_status(struct ndr_pull *ndr, NTSTATUS *status)
 {
 	uint32 v;
-	NDR_CHECK(ndr_pull_u32(ndr, &v));
+	NDR_CHECK(ndr_pull_uint32(ndr, &v));
 	*status = NT_STATUS(v);
 	return NT_STATUS_OK;
 }
@@ -121,13 +121,13 @@ NTSTATUS ndr_pull_guid(struct ndr_pull *ndr, GUID *guid)
 
 #define NDR_PUSH_ALIGN(ndr, n) do { \
 	uint32 _pad = (ndr->offset & (n-1)); \
-	while (_pad--) NDR_CHECK(ndr_push_u8(ndr, 0)); \
+	while (_pad--) NDR_CHECK(ndr_push_uint8(ndr, 0)); \
 } while(0)
 
 /*
-  push a u8
+  push a uint8
 */
-NTSTATUS ndr_push_u8(struct ndr_push *ndr, uint8 v)
+NTSTATUS ndr_push_uint8(struct ndr_push *ndr, uint8 v)
 {
 	NDR_PUSH_NEED_BYTES(ndr, 1);
 	SCVAL(ndr->data, ndr->offset, v);
@@ -136,9 +136,9 @@ NTSTATUS ndr_push_u8(struct ndr_push *ndr, uint8 v)
 }
 
 /*
-  push a u16
+  push a uint16
 */
-NTSTATUS ndr_push_u16(struct ndr_push *ndr, uint16 v)
+NTSTATUS ndr_push_uint16(struct ndr_push *ndr, uint16 v)
 {
 	NDR_PUSH_ALIGN(ndr, 2);
 	NDR_PUSH_NEED_BYTES(ndr, 2);
@@ -148,14 +148,23 @@ NTSTATUS ndr_push_u16(struct ndr_push *ndr, uint16 v)
 }
 
 /*
-  push a u32
+  push a uint32
 */
-NTSTATUS ndr_push_u32(struct ndr_push *ndr, uint32 v)
+NTSTATUS ndr_push_uint32(struct ndr_push *ndr, uint32 v)
 {
 	NDR_PUSH_ALIGN(ndr, 4);
 	NDR_PUSH_NEED_BYTES(ndr, 4);
 	SIVAL(ndr->data, ndr->offset, v);
 	ndr->offset += 4;
+	return NT_STATUS_OK;
+}
+
+/*
+  align to a uint32
+*/
+NTSTATUS ndr_push_align_uint32(struct ndr_push *ndr)
+{
+	NDR_PUSH_ALIGN(ndr, 4);
 	return NT_STATUS_OK;
 }
 
@@ -194,7 +203,7 @@ NTSTATUS ndr_push_length4_start(struct ndr_push *ndr, struct ndr_push_save *save
 {
 	NDR_PUSH_ALIGN(ndr, 4);
 	ndr_push_save(ndr, save);
-	return ndr_push_u32(ndr, 0);
+	return ndr_push_uint32(ndr, 0);
 }
 
 NTSTATUS ndr_push_length4_end(struct ndr_push *ndr, struct ndr_push_save *save)
@@ -202,7 +211,7 @@ NTSTATUS ndr_push_length4_end(struct ndr_push *ndr, struct ndr_push_save *save)
 	struct ndr_push_save save2;
 	ndr_push_save(ndr, &save2);
 	ndr_push_restore(ndr, save);
-	NDR_CHECK(ndr_push_u32(ndr, save2.offset - ndr->offset));
+	NDR_CHECK(ndr_push_uint32(ndr, save2.offset - ndr->offset));
 	ndr_push_restore(ndr, &save2);
 	return NT_STATUS_OK;
 }
@@ -212,7 +221,7 @@ NTSTATUS ndr_push_length4_end(struct ndr_push *ndr, struct ndr_push_save *save)
 */
 NTSTATUS ndr_push_ptr(struct ndr_push *ndr, const void *p)
 {
-	return ndr_push_u32(ndr, p?1:0);
+	return ndr_push_uint32(ndr, p?1:0);
 }
 
 /*
@@ -226,9 +235,9 @@ NTSTATUS ndr_push_unistr(struct ndr_push *ndr, const char *s)
 	if (len == -1) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	NDR_CHECK(ndr_push_u32(ndr, len/2));
-	NDR_CHECK(ndr_push_u32(ndr, 0));
-	NDR_CHECK(ndr_push_u32(ndr, len/2));
+	NDR_CHECK(ndr_push_uint32(ndr, len/2));
+	NDR_CHECK(ndr_push_uint32(ndr, 0));
+	NDR_CHECK(ndr_push_uint32(ndr, len/2));
 	NDR_CHECK(ndr_push_bytes(ndr, ws, len));
 	return NT_STATUS_OK;
 }
@@ -241,7 +250,7 @@ NTSTATUS ndr_push_offset(struct ndr_push *ndr, struct ndr_push_save *ofs)
 {
 	NDR_PUSH_ALIGN(ndr, 4);
 	ndr_push_save(ndr, ofs);
-	return ndr_push_u32(ndr, 0);
+	return ndr_push_uint32(ndr, 0);
 }
 
 /*
@@ -255,7 +264,7 @@ NTSTATUS ndr_push_offset_ptr(struct ndr_push *ndr,
 	struct ndr_push_save save2;
 	ndr_push_save(ndr, &save2);
 	ndr_push_restore(ndr, ofs);
-	NDR_CHECK(ndr_push_u32(ndr, save2.offset - save->offset));
+	NDR_CHECK(ndr_push_uint32(ndr, save2.offset - save->offset));
 	ndr_push_restore(ndr, &save2);
 	return NT_STATUS_OK;
 }

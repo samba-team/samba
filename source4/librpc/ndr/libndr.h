@@ -89,7 +89,7 @@ typedef NTSTATUS (*ndr_push_fn_t)(struct ndr_push *, void *);
 typedef NTSTATUS (*ndr_pull_fn_t)(struct ndr_pull *, void *);
 
 /* now pull in the individual parsers */
-#include "libcli/ndr/ndr_sec.h"
-#include "libcli/ndr/ndr_misc.h"
-#include "libcli/ndr/ndr_echo.h"
-#include "libcli/ndr/ndr_lsa.h"
+#include "librpc/ndr/ndr_sec.h"
+#include "librpc/ndr/ndr_misc.h"
+#include "librpc/ndr/ndr_echo.h"
+#include "librpc/ndr/ndr_lsa.h"

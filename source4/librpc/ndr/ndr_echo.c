@@ -30,7 +30,7 @@
 NTSTATUS ndr_pull_rpcecho_addone(struct ndr_pull *ndr, 
 				 struct rpcecho_addone *r)
 {
-	NDR_CHECK(ndr_pull_u32(ndr, &r->out.data));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.data));
 	return NT_STATUS_OK;
 }
 
@@ -41,7 +41,7 @@ NTSTATUS ndr_pull_rpcecho_addone(struct ndr_pull *ndr,
 NTSTATUS ndr_push_rpcecho_addone(struct ndr_push *ndr, 
 				 struct rpcecho_addone *r)
 {
-	NDR_CHECK(ndr_push_u32(ndr, r->in.data));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.data));
 	return NT_STATUS_OK;
 }
 
@@ -52,7 +52,7 @@ NTSTATUS ndr_push_rpcecho_addone(struct ndr_push *ndr,
 NTSTATUS ndr_pull_rpcecho_echodata(struct ndr_pull *ndr, 
 				   struct rpcecho_echodata *r)
 {
-	NDR_CHECK(ndr_pull_u32(ndr, &r->out.len));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.len));
 	NDR_ALLOC_N(ndr, r->out.data, r->out.len);
 	NDR_CHECK(ndr_pull_bytes(ndr, r->out.data, r->out.len));
 	return NT_STATUS_OK;
@@ -64,8 +64,8 @@ NTSTATUS ndr_pull_rpcecho_echodata(struct ndr_pull *ndr,
 NTSTATUS ndr_push_rpcecho_echodata(struct ndr_push *ndr, 
 				   struct rpcecho_echodata *r)
 {
-	NDR_CHECK(ndr_push_u32(ndr, r->in.len));
-	NDR_CHECK(ndr_push_u32(ndr, r->in.len));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.len));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.len));
 	NDR_CHECK(ndr_push_bytes(ndr, r->in.data, r->in.len));
 	return NT_STATUS_OK;
 }
@@ -85,8 +85,8 @@ NTSTATUS ndr_pull_rpcecho_sinkdata(struct ndr_pull *ndr,
 NTSTATUS ndr_push_rpcecho_sinkdata(struct ndr_push *ndr, 
 				   struct rpcecho_sinkdata *r)
 {
-	NDR_CHECK(ndr_push_u32(ndr, r->in.len));
-	NDR_CHECK(ndr_push_u32(ndr, r->in.len));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.len));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.len));
 	NDR_CHECK(ndr_push_bytes(ndr, r->in.data, r->in.len));
 	return NT_STATUS_OK;
 }
@@ -97,7 +97,7 @@ NTSTATUS ndr_push_rpcecho_sinkdata(struct ndr_push *ndr,
 NTSTATUS ndr_pull_rpcecho_sourcedata(struct ndr_pull *ndr, 
 				   struct rpcecho_sourcedata *r)
 {
-	NDR_CHECK(ndr_pull_u32(ndr, &r->out.len));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.len));
 	NDR_ALLOC_N(ndr, r->out.data, r->out.len);
 	NDR_CHECK(ndr_pull_bytes(ndr, r->out.data, r->out.len));
 	return NT_STATUS_OK;
@@ -109,6 +109,6 @@ NTSTATUS ndr_pull_rpcecho_sourcedata(struct ndr_pull *ndr,
 NTSTATUS ndr_push_rpcecho_sourcedata(struct ndr_push *ndr, 
 				   struct rpcecho_sourcedata *r)
 {
-	NDR_CHECK(ndr_push_u32(ndr, r->in.len));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.len));
 	return NT_STATUS_OK;
 }

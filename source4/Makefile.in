@@ -193,10 +193,11 @@ LIBCLIUTIL_OBJ = libcli/util/asn1.o \
 	     libcli/util/doserr.o libcli/util/errormap.o \
 	     libcli/util/pwd_cache.o libcli/util/clierror.o libcli/util/cliutil.o
 
-LIBRAW_NDR_OBJ = libcli/ndr/ndr.o libcli/ndr/ndr_basic.o libcli/ndr/ndr_sec.o \
-		libcli/ndr/ndr_echo.o libcli/ndr/ndr_misc.o libcli/ndr/ndr_lsa.o
+LIBRAW_NDR_OBJ = librpc/ndr/ndr.o librpc/ndr/ndr_basic.o librpc/ndr/ndr_sec.o \
+		librpc/ndr/ndr_echo.o librpc/ndr/ndr_misc.o librpc/ndr/ndr_lsa.o
 
-LIBRAW_RPC_OBJ = libcli/rpc/dcerpc.o libcli/rpc/rpc_echo.o libcli/rpc/rpc_lsa.o
+LIBRAW_RPC_OBJ = librpc/rpc/dcerpc.o librpc/rpc/rpc_echo.o librpc/rpc/rpc_lsa.o \
+		librpc/rpc/dcerpc_smb.o
 
 LIBRAW_OBJ = libcli/raw/rawfile.o libcli/raw/smb_signing.o  \
 	     libcli/raw/clisocket.o libcli/raw/clitransport.o \
@@ -207,7 +208,7 @@ LIBRAW_OBJ = libcli/raw/rawfile.o libcli/raw/smb_signing.o  \
 	     libcli/raw/rawtrans.o libcli/raw/clioplock.o \
 	     libcli/raw/rawnegotiate.o libcli/raw/rawfsinfo.o \
 	     libcli/raw/rawfileinfo.o libcli/raw/rawnotify.o \
-	     libcli/raw/rawioctl.o libcli/raw/rawacl.o libcli/raw/rawdcerpc.o \
+	     libcli/raw/rawioctl.o libcli/raw/rawacl.o \
 	     $(LIBRAW_NDR_OBJ) $(LIBRAW_RPC_OBJ) $(LIBSAMBA_OBJ) $(LIBCLIUTIL_OBJ) \
 	     $(RPC_PARSE_OBJ1) $(LIBNTLMSSP_OBJ) $(LIBNMB_OBJ) $(KRBCLIENT_OBJ)
 
@@ -729,6 +730,7 @@ MAKEDIR = || exec false; \
 
 # 'make pch' is extremely useful for fast compiles if you have gcc-3.4
 pch:
+	rm -f $(srcdir)/include/includes.h.gch
 	$(CC) -I. -I$(srcdir) $(FLAGS) -c $(srcdir)/include/includes.h -o $(srcdir)/include/includes.h.gch
 
 
