@@ -1777,6 +1777,7 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	uint32		lm_pw_len, nt_pw_len, nt_pw_hist_len, hourslen;
 	uint32 pwHistLen = 0;
 	BOOL ret = True;
+	fstring tmpstring;
 	
 	if(sampass == NULL || buf == NULL) {
 		DEBUG(0, ("init_sam_from_buffer_v2: NULL parameters found!\n"));
@@ -1840,7 +1841,9 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	pdb_set_fullname(sampass, fullname, PDB_SET);
 
 	if (homedir) {
-		pdb_set_homedir(sampass, homedir, PDB_SET);
+		fstrcpy( tmpstring, homedir );
+		standard_sub_basic( username, tmpstring, sizeof(tmpstring) );
+		pdb_set_homedir(sampass, tmpstring, PDB_SET);
 	}
 	else {
 		pdb_set_homedir(sampass, 
@@ -1850,14 +1853,14 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 
 	if (dir_drive) 	
 		pdb_set_dir_drive(sampass, dir_drive, PDB_SET);
-	else {
-		pdb_set_dir_drive(sampass, 
-			talloc_sub_basic(sampass->mem_ctx,  username, lp_logon_drive()),
-			PDB_DEFAULT);
-	}
+	else
+		pdb_set_dir_drive(sampass, lp_logon_drive(), PDB_DEFAULT );
 
-	if (logon_script) 
-		pdb_set_logon_script(sampass, logon_script, PDB_SET);
+	if (logon_script) {
+		fstrcpy( tmpstring, logon_script );
+		standard_sub_basic( username, tmpstring, sizeof(tmpstring) );
+		pdb_set_logon_script(sampass, tmpstring, PDB_SET);
+	}
 	else {
 		pdb_set_logon_script(sampass, 
 			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_script()),
@@ -1865,8 +1868,11 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	}
 	
 	if (profile_path) {	
-		pdb_set_profile_path(sampass, profile_path, PDB_SET);
-	} else {
+		fstrcpy( tmpstring, profile_path );
+		standard_sub_basic( username, tmpstring, sizeof(tmpstring) );
+		pdb_set_profile_path(sampass, tmpstring, PDB_SET);
+	} 
+	else {
 		pdb_set_profile_path(sampass, 
 			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_path()),
 			PDB_DEFAULT);
