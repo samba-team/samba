@@ -24,6 +24,43 @@
 #ifndef _RPC_MISC_H /* _RPC_MISC_H */
 #define _RPC_MISC_H 
 
+/*
+ * macros to wrap prs_xxxx routines.
+ */
+#define prs_uint8(name, ps, depth, data8) \
+	if (!_prs_uint8(name, ps, depth, data8)) return False
+#define prs_uint16(name, ps, depth, data16) \
+	if (!_prs_uint16(name, ps, depth, data16)) return False
+#define prs_hash1(ps, offset, sess_key) \
+	if (!_prs_hash1(ps, offset, sess_key)) return False
+#define prs_uint32(name, ps, depth, data32) \
+	if (!_prs_uint32(name, ps, depth, data32)) return False
+#define prs_uint8s(charmode, name, ps, depth, data8s, len) \
+	if (!_prs_uint8s(charmode, name, ps, depth, data8s, len)) return False
+#define prs_uint16s(charmode, name, ps, depth, data16s, len) \
+	if (!_prs_uint16s(charmode, name, ps, depth, data16s, len)) return False
+#define prs_uint32s(charmode, name, ps, depth, data32s, len) \
+	if (!_prs_uint32s(charmode, name, ps, depth, data32s, len)) return False
+#define prs_buffer2(charmode, name, ps, depth, str) \
+	if (!_prs_buffer2(charmode, name, ps, depth, str)) return False
+#define prs_string2(charmode, name, ps, depth, str) \
+	if (!_prs_string2(charmode, name, ps, depth, str)) return False
+#define prs_unistr2(charmode, name, ps, depth, str) \
+	if (!_prs_unistr2(charmode, name, ps, depth, str)) return False
+#define prs_unistr3(charmode, name, str, ps, depth) \
+	if (!_prs_unistr3(charmode, name, str, ps, depth)) return False
+#define prs_unistr(name, ps, depth, str) \
+	if (!_prs_unistr(name, ps, depth, str)) return False
+#define prs_string(name, ps, depth, str, len, max_buf_size) \
+	if (!_prs_string(name, ps, depth, str, len, max_buf_size)) return False
+#define prs_uint16_pre(name, ps, depth, data16, offset) \
+	if (!_prs_uint16_pre(name, ps, depth, data16, offset)) return False
+#define prs_uint16_post(name, ps, depth, data16, ptr_uint16, data_size) \
+	if (!_prs_uint16_post(name, ps, depth, data16, ptr_uint16, data_size)) return False
+#define prs_uint32_pre(name, ps, depth, data32, offset) \
+	if (!_prs_uint32_pre(name, ps, depth, data32, offset)) return False
+#define prs_uint32_post(name, ps, depth, data32, ptr_uint32, data_size) \
+	if (!_prs_uint32_post(name, ps, depth, data32, ptr_uint32, data_size)) return False
 
 #include "rpc_dce.h"
 

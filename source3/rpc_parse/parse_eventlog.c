@@ -2,8 +2,8 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1998,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1998,
+ *  Copyright (C) Andrew Tridgell              1992-1999,
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-1999,
  *  Copyright (C) Jean François Micouleau      1998-1999.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -27,7 +27,7 @@ extern int DEBUGLEVEL;
 
 /*******************************************************************
 ********************************************************************/  
-void make_eventlog_q_open(EVENTLOG_Q_OPEN *q_u, char *journal, char *unk)
+BOOL make_eventlog_q_open(EVENTLOG_Q_OPEN *q_u, char *journal, char *unk)
 {
 	int len_journal = journal != NULL ? strlen(journal) : 0;
 	int len_unk = unk != NULL ? strlen(unk) : 0;
@@ -44,11 +44,13 @@ void make_eventlog_q_open(EVENTLOG_Q_OPEN *q_u, char *journal, char *unk)
 	
 	q_u->unk6=0x01;
 	q_u->unk7=0x01;
+
+	return True;
 }
 
 /*******************************************************************
 ********************************************************************/  
-void eventlog_io_q_open(char *desc, EVENTLOG_Q_OPEN *q_u, prs_struct *ps, int depth)
+BOOL eventlog_io_q_open(char *desc, EVENTLOG_Q_OPEN *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "eventlog_io_q_open");
 	depth++;
@@ -72,11 +74,13 @@ void eventlog_io_q_open(char *desc, EVENTLOG_Q_OPEN *q_u, prs_struct *ps, int de
 
 	prs_uint32("unk6", ps, depth, &(q_u->unk6));
 	prs_uint32("unk7", ps, depth, &(q_u->unk7));
+
+	return True;
 }
 
 /*******************************************************************
 ********************************************************************/  
-void eventlog_io_r_open(char *desc, EVENTLOG_R_OPEN *r_u, prs_struct *ps, int depth)
+BOOL eventlog_io_r_open(char *desc, EVENTLOG_R_OPEN *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "eventlog_io_r_open");
 	depth++;
@@ -84,29 +88,35 @@ void eventlog_io_r_open(char *desc, EVENTLOG_R_OPEN *r_u, prs_struct *ps, int de
 	prs_align(ps);
 	smb_io_pol_hnd("", &(r_u->pol), ps, depth);
 	prs_uint32("status", ps, depth, &(r_u->status));
+
+	return True;
 }
 
 /*******************************************************************
 ********************************************************************/  
-void make_eventlog_q_close(EVENTLOG_Q_CLOSE *q_u, POLICY_HND *pol)
+BOOL make_eventlog_q_close(EVENTLOG_Q_CLOSE *q_u, POLICY_HND *pol)
 {
 	memcpy(&(q_u->pol.data), pol->data, sizeof(q_u->pol.data));
+
+	return True;
 }
 
 /*******************************************************************
 ********************************************************************/  
-void eventlog_io_q_close(char *desc, EVENTLOG_Q_CLOSE *q_u, prs_struct *ps, int depth)
+BOOL eventlog_io_q_close(char *desc, EVENTLOG_Q_CLOSE *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "eventlog_io_q_close");
 	depth++;
 
 	prs_align(ps);
 	smb_io_pol_hnd("", &(q_u->pol), ps, depth);
+
+	return True;
 }
 
 /*******************************************************************
 ********************************************************************/  
-void eventlog_io_r_close(char *desc, EVENTLOG_R_CLOSE *r_u, prs_struct *ps, int depth)
+BOOL eventlog_io_r_close(char *desc, EVENTLOG_R_CLOSE *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "eventlog_io_r_close");
 	depth++;
@@ -114,19 +124,23 @@ void eventlog_io_r_close(char *desc, EVENTLOG_R_CLOSE *r_u, prs_struct *ps, int 
 	prs_align(ps);
 	smb_io_pol_hnd("", &(r_u->pol), ps, depth);
 	prs_uint32("status", ps, depth, &(r_u->status));
+
+	return True;
 }
 
 /*******************************************************************
 ********************************************************************/  
-void make_eventlog_q_numofeventlogrec(EVENTLOG_Q_NUMOFEVENTLOGREC *q_u, POLICY_HND *pol)
+BOOL make_eventlog_q_numofeventlogrec(EVENTLOG_Q_NUMOFEVENTLOGREC *q_u, POLICY_HND *pol)
 {
 	memcpy(&(q_u->pol.data), pol->data, sizeof(q_u->pol.data));
 
+
+	return True;
 }
 
 /*******************************************************************
 ********************************************************************/  
-void eventlog_io_q_numofeventlogrec(char *desc,EVENTLOG_Q_NUMOFEVENTLOGREC  *q_u, prs_struct *ps, int depth)
+BOOL eventlog_io_q_numofeventlogrec(char *desc,EVENTLOG_Q_NUMOFEVENTLOGREC  *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "eventlog_io_q_numofeventlogrec");
 	depth++;
@@ -134,11 +148,13 @@ void eventlog_io_q_numofeventlogrec(char *desc,EVENTLOG_Q_NUMOFEVENTLOGREC  *q_u
 	prs_align(ps);
 	smb_io_pol_hnd("", &(q_u->pol), ps, depth);
 
+
+	return True;
 }
 
 /*******************************************************************
 ********************************************************************/  
-void eventlog_io_r_numofeventlogrec(char *desc, EVENTLOG_R_NUMOFEVENTLOGREC *r_u, prs_struct *ps, int depth)
+BOOL eventlog_io_r_numofeventlogrec(char *desc, EVENTLOG_R_NUMOFEVENTLOGREC *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "eventlog_io_r_numofeventlogrec");
 	depth++;
@@ -146,22 +162,26 @@ void eventlog_io_r_numofeventlogrec(char *desc, EVENTLOG_R_NUMOFEVENTLOGREC *r_u
 	prs_align(ps);
 	prs_uint32("number", ps, depth, &(r_u->number));
 	prs_uint32("status", ps, depth, &(r_u->status));
+
+	return True;
 }
 
 /*******************************************************************
 ********************************************************************/  
-void make_eventlog_q_readeventlog(EVENTLOG_Q_READEVENTLOG *q_u, POLICY_HND *pol,
+BOOL make_eventlog_q_readeventlog(EVENTLOG_Q_READEVENTLOG *q_u, POLICY_HND *pol,
                                   uint32 flags, uint32 offset, uint32 number_of_bytes)
 {
 	memcpy(&(q_u->pol.data), pol->data, sizeof(q_u->pol.data));
 	q_u->flags=flags;
 	q_u->offset=offset;
 	q_u->number_of_bytes=number_of_bytes;
+
+	return True;
 }
 
 /*******************************************************************
 ********************************************************************/  
-void eventlog_io_q_readeventlog(char *desc, EVENTLOG_Q_READEVENTLOG *q_u, prs_struct *ps, int depth)
+BOOL eventlog_io_q_readeventlog(char *desc, EVENTLOG_Q_READEVENTLOG *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "eventlog_io_q_readeventlog");
 	depth++;
@@ -171,11 +191,13 @@ void eventlog_io_q_readeventlog(char *desc, EVENTLOG_Q_READEVENTLOG *q_u, prs_st
 	prs_uint32("flags",           ps, depth, &(q_u->flags));
 	prs_uint32("offset",          ps, depth, &(q_u->offset));
 	prs_uint32("number_of_bytes", ps, depth, &(q_u->number_of_bytes));
+
+	return True;
 }
 
 /*******************************************************************
 ********************************************************************/  
-static void eventlog_io_eventlog(char *desc, EVENTLOGRECORD *ev, prs_struct *ps, int depth)
+static BOOL eventlog_io_eventlog(char *desc, EVENTLOGRECORD *ev, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "eventlog_io_eventlog");
 	depth++;
@@ -213,11 +235,13 @@ static void eventlog_io_eventlog(char *desc, EVENTLOGRECORD *ev, prs_struct *ps,
 		smb_io_unistr("", &(ev->data), ps, depth);
 
 	prs_uint32("size2", ps, depth, &(ev->size2));	
+
+	return True;
 }
 
 /*******************************************************************
 ********************************************************************/  
-void eventlog_io_r_readeventlog(char *desc, EVENTLOG_R_READEVENTLOG *r_u, prs_struct *ps, int depth)
+BOOL eventlog_io_r_readeventlog(char *desc, EVENTLOG_R_READEVENTLOG *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "eventlog_io_r_readeventlog");
 	depth++;
@@ -231,5 +255,7 @@ void eventlog_io_r_readeventlog(char *desc, EVENTLOG_R_READEVENTLOG *r_u, prs_st
 	prs_uint32("sent_size", ps, depth, &(r_u->sent_size));		
 	prs_uint32("real_size", ps, depth, &(r_u->real_size));
 	prs_uint32("status", ps, depth, &(r_u->status));	
+
+	return True;
 }
 

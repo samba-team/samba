@@ -2,9 +2,9 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1997,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997.
+ *  Copyright (C) Andrew Tridgell              1992-1999,
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-1999,
+ *  Copyright (C) Paul Ashton                  1997-1999.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -30,21 +30,23 @@ extern int DEBUGLEVEL;
 /*******************************************************************
 creates a structure.
 ********************************************************************/
-void make_reg_q_open_hklm(REG_Q_OPEN_HKLM *q_o,
+BOOL make_reg_q_open_hklm(REG_Q_OPEN_HKLM *q_o,
 				uint16 unknown_0, uint32 level)
 {
 	q_o->ptr = 1;
 	q_o->unknown_0 = unknown_0;
 	q_o->unknown_1 = 0x0; /* random - changes */
 	q_o->level = level;
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_q_open_hklm(char *desc,  REG_Q_OPEN_HKLM *r_q, prs_struct *ps, int depth)
+BOOL reg_io_q_open_hklm(char *desc,  REG_Q_OPEN_HKLM *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return;
+	if (r_q == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_open_hklm");
 	depth++;
@@ -58,15 +60,17 @@ void reg_io_q_open_hklm(char *desc,  REG_Q_OPEN_HKLM *r_q, prs_struct *ps, int d
 		prs_uint16("unknown_1", ps, depth, &(r_q->unknown_1));
 		prs_uint32("level    ", ps, depth, &(r_q->level    ));
 	}
+
+	return True;
 }
 
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_r_open_hklm(char *desc,  REG_R_OPEN_HKLM *r_r, prs_struct *ps, int depth)
+BOOL reg_io_r_open_hklm(char *desc,  REG_R_OPEN_HKLM *r_r, prs_struct *ps, int depth)
 {
-	if (r_r == NULL) return;
+	if (r_r == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_open_hklm");
 	depth++;
@@ -76,23 +80,27 @@ void reg_io_r_open_hklm(char *desc,  REG_R_OPEN_HKLM *r_r, prs_struct *ps, int d
 	smb_io_pol_hnd("", &(r_r->pol), ps, depth);
 
 	prs_uint32("status", ps, depth, &(r_r->status));
+
+	return True;
 }
 
 
 /*******************************************************************
 creates a structure.
 ********************************************************************/
-void make_reg_q_flush_key(REG_Q_FLUSH_KEY *q_u, POLICY_HND *pol)
+BOOL make_reg_q_flush_key(REG_Q_FLUSH_KEY *q_u, POLICY_HND *pol)
 {
 	memcpy(&(q_u->pol), pol, sizeof(q_u->pol));
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_q_flush_key(char *desc,  REG_Q_FLUSH_KEY *r_q, prs_struct *ps, int depth)
+BOOL reg_io_q_flush_key(char *desc,  REG_Q_FLUSH_KEY *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return;
+	if (r_q == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_flush_key");
 	depth++;
@@ -100,15 +108,17 @@ void reg_io_q_flush_key(char *desc,  REG_Q_FLUSH_KEY *r_q, prs_struct *ps, int d
 	prs_align(ps);
 	
 	smb_io_pol_hnd("", &(r_q->pol), ps, depth);
+
+	return True;
 }
 
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_r_flush_key(char *desc,  REG_R_FLUSH_KEY *r_r, prs_struct *ps, int depth)
+BOOL reg_io_r_flush_key(char *desc,  REG_R_FLUSH_KEY *r_r, prs_struct *ps, int depth)
 {
-	if (r_r == NULL) return;
+	if (r_r == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_flush_key");
 	depth++;
@@ -116,12 +126,15 @@ void reg_io_r_flush_key(char *desc,  REG_R_FLUSH_KEY *r_r, prs_struct *ps, int d
 	prs_align(ps);
 	
 	prs_uint32("status", ps, depth, &(r_r->status));
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes SEC_DESC_BUF and SEC_DATA structures.
 ********************************************************************/
-static void reg_io_hdrbuf_sec(uint32 ptr, uint32 *ptr3, BUFHDR *hdr_sec, SEC_DESC_BUF *data, prs_struct *ps, int depth)
+static BOOL reg_io_hdrbuf_sec(uint32 ptr, uint32 *ptr3, BUFHDR *hdr_sec,
+				SEC_DESC_BUF *data, prs_struct *ps, int depth)
 {
 	if (ptr != 0)
 	{
@@ -142,13 +155,15 @@ static void reg_io_hdrbuf_sec(uint32 ptr, uint32 *ptr3, BUFHDR *hdr_sec, SEC_DES
 		ps->offset = old_offset + data->len + sizeof(uint32) * ((ptr3 != NULL) ? 5 : 3);
 		prs_align(ps);
 	}
+
+	return True;
 }
 
 
 /*******************************************************************
 creates a structure.
 ********************************************************************/
-void make_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
+BOOL make_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
 				char *name, char *class,
 				SEC_ACCESS *sam_access,
 				SEC_DESC_BUF *sec_buf,
@@ -180,14 +195,16 @@ void make_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
 	make_sec_desc_buf(q_c->data, sec_len, sec);
 
 	q_c->unknown_2 = 0x00000000;
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_q_create_key(char *desc,  REG_Q_CREATE_KEY *r_q, prs_struct *ps, int depth)
+BOOL reg_io_q_create_key(char *desc,  REG_Q_CREATE_KEY *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return;
+	if (r_q == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_create_key");
 	depth++;
@@ -217,15 +234,17 @@ void reg_io_q_create_key(char *desc,  REG_Q_CREATE_KEY *r_q, prs_struct *ps, int
 	reg_io_hdrbuf_sec(r_q->ptr2, &r_q->ptr3, &r_q->hdr_sec, r_q->data, ps, depth);
 
 	prs_uint32("unknown_2", ps, depth, &(r_q->unknown_2));
+
+	return True;
 }
 
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_r_create_key(char *desc,  REG_R_CREATE_KEY *r_r, prs_struct *ps, int depth)
+BOOL reg_io_r_create_key(char *desc,  REG_R_CREATE_KEY *r_r, prs_struct *ps, int depth)
 {
-	if (r_r == NULL) return;
+	if (r_r == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_create_key");
 	depth++;
@@ -236,13 +255,15 @@ void reg_io_r_create_key(char *desc,  REG_R_CREATE_KEY *r_r, prs_struct *ps, int
 	prs_uint32("unknown", ps, depth, &(r_r->unknown));
 
 	prs_uint32("status", ps, depth, &(r_r->status));
+
+	return True;
 }
 
 
 /*******************************************************************
 creates a structure.
 ********************************************************************/
-void make_reg_q_delete_val(REG_Q_DELETE_VALUE *q_c, POLICY_HND *hnd,
+BOOL make_reg_q_delete_val(REG_Q_DELETE_VALUE *q_c, POLICY_HND *hnd,
 				char *name)
 {
 	int len_name  = name  != NULL ? strlen(name ) + 1: 0;
@@ -252,14 +273,16 @@ void make_reg_q_delete_val(REG_Q_DELETE_VALUE *q_c, POLICY_HND *hnd,
 
 	make_uni_hdr(&(q_c->hdr_name), len_name);
 	make_unistr2(&(q_c->uni_name), name, len_name);
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_q_delete_val(char *desc,  REG_Q_DELETE_VALUE *r_q, prs_struct *ps, int depth)
+BOOL reg_io_q_delete_val(char *desc,  REG_Q_DELETE_VALUE *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return;
+	if (r_q == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_delete_val");
 	depth++;
@@ -271,15 +294,17 @@ void reg_io_q_delete_val(char *desc,  REG_Q_DELETE_VALUE *r_q, prs_struct *ps, i
 	smb_io_unihdr ("", &(r_q->hdr_name), ps, depth);
 	smb_io_unistr2("", &(r_q->uni_name), r_q->hdr_name.buffer, ps, depth);
 	prs_align(ps);
+
+	return True;
 }
 
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_r_delete_val(char *desc,  REG_R_DELETE_VALUE *r_r, prs_struct *ps, int depth)
+BOOL reg_io_r_delete_val(char *desc,  REG_R_DELETE_VALUE *r_r, prs_struct *ps, int depth)
 {
-	if (r_r == NULL) return;
+	if (r_r == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_delete_val");
 	depth++;
@@ -287,13 +312,15 @@ void reg_io_r_delete_val(char *desc,  REG_R_DELETE_VALUE *r_r, prs_struct *ps, i
 	prs_align(ps);
 	
 	prs_uint32("status", ps, depth, &(r_r->status));
+
+	return True;
 }
 
 
 /*******************************************************************
 creates a structure.
 ********************************************************************/
-void make_reg_q_delete_key(REG_Q_DELETE_KEY *q_c, POLICY_HND *hnd,
+BOOL make_reg_q_delete_key(REG_Q_DELETE_KEY *q_c, POLICY_HND *hnd,
 				char *name)
 {
 	int len_name  = name  != NULL ? strlen(name ) + 1: 0;
@@ -303,14 +330,16 @@ void make_reg_q_delete_key(REG_Q_DELETE_KEY *q_c, POLICY_HND *hnd,
 
 	make_uni_hdr(&(q_c->hdr_name), len_name);
 	make_unistr2(&(q_c->uni_name), name, len_name);
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_q_delete_key(char *desc,  REG_Q_DELETE_KEY *r_q, prs_struct *ps, int depth)
+BOOL reg_io_q_delete_key(char *desc,  REG_Q_DELETE_KEY *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return;
+	if (r_q == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_delete_key");
 	depth++;
@@ -322,15 +351,17 @@ void reg_io_q_delete_key(char *desc,  REG_Q_DELETE_KEY *r_q, prs_struct *ps, int
 	smb_io_unihdr ("", &(r_q->hdr_name), ps, depth);
 	smb_io_unistr2("", &(r_q->uni_name), r_q->hdr_name.buffer, ps, depth);
 	prs_align(ps);
+
+	return True;
 }
 
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_r_delete_key(char *desc,  REG_R_DELETE_KEY *r_r, prs_struct *ps, int depth)
+BOOL reg_io_r_delete_key(char *desc,  REG_R_DELETE_KEY *r_r, prs_struct *ps, int depth)
 {
-	if (r_r == NULL) return;
+	if (r_r == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_delete_key");
 	depth++;
@@ -338,13 +369,15 @@ void reg_io_r_delete_key(char *desc,  REG_R_DELETE_KEY *r_r, prs_struct *ps, int
 	prs_align(ps);
 	
 	prs_uint32("status", ps, depth, &(r_r->status));
+
+	return True;
 }
 
 
 /*******************************************************************
 creates a structure.
 ********************************************************************/
-void make_reg_q_query_key(REG_Q_QUERY_KEY *q_o, POLICY_HND *hnd,
+BOOL make_reg_q_query_key(REG_Q_QUERY_KEY *q_o, POLICY_HND *hnd,
 				uint32 max_class_len)
 {
 	ZERO_STRUCTP(q_o);
@@ -354,14 +387,16 @@ void make_reg_q_query_key(REG_Q_QUERY_KEY *q_o, POLICY_HND *hnd,
 	q_o->hdr_class.uni_max_len = max_class_len * 2;
 	q_o->hdr_class.buffer = max_class_len > 0 ? 1 : 0;
 	q_o->uni_class.uni_max_len = max_class_len;
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_q_query_key(char *desc,  REG_Q_QUERY_KEY *r_q, prs_struct *ps, int depth)
+BOOL reg_io_q_query_key(char *desc,  REG_Q_QUERY_KEY *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return;
+	if (r_q == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_query_key");
 	depth++;
@@ -373,15 +408,17 @@ void reg_io_q_query_key(char *desc,  REG_Q_QUERY_KEY *r_q, prs_struct *ps, int d
 	smb_io_unistr2("", &(r_q->uni_class), r_q->hdr_class.buffer, ps, depth);
 
 	prs_align(ps);
+
+	return True;
 }
 
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_r_query_key(char *desc,  REG_R_QUERY_KEY *r_r, prs_struct *ps, int depth)
+BOOL reg_io_r_query_key(char *desc,  REG_R_QUERY_KEY *r_r, prs_struct *ps, int depth)
 {
-	if (r_r == NULL) return;
+	if (r_r == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_query_key");
 	depth++;
@@ -403,23 +440,27 @@ void reg_io_r_query_key(char *desc,  REG_R_QUERY_KEY *r_r, prs_struct *ps, int d
 	smb_io_time("mod_time     ", &(r_r->mod_time), ps, depth);
 	
 	prs_uint32("status", ps, depth, &(r_r->status));
+
+	return True;
 }
 
 
 /*******************************************************************
 creates a structure.
 ********************************************************************/
-void make_reg_q_unk_1a(REG_Q_UNK_1A *q_o, POLICY_HND *hnd)
+BOOL make_reg_q_unk_1a(REG_Q_UNK_1A *q_o, POLICY_HND *hnd)
 {
 	memcpy(&(q_o->pol), hnd, sizeof(q_o->pol));
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_q_unk_1a(char *desc,  REG_Q_UNK_1A *r_q, prs_struct *ps, int depth)
+BOOL reg_io_q_unk_1a(char *desc,  REG_Q_UNK_1A *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return;
+	if (r_q == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_unk_1a");
 	depth++;
@@ -427,15 +468,17 @@ void reg_io_q_unk_1a(char *desc,  REG_Q_UNK_1A *r_q, prs_struct *ps, int depth)
 	prs_align(ps);
 	
 	smb_io_pol_hnd("", &(r_q->pol), ps, depth);
+
+	return True;
 }
 
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_r_unk_1a(char *desc,  REG_R_UNK_1A *r_r, prs_struct *ps, int depth)
+BOOL reg_io_r_unk_1a(char *desc,  REG_R_UNK_1A *r_r, prs_struct *ps, int depth)
 {
-	if (r_r == NULL) return;
+	if (r_r == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_unk_1a");
 	depth++;
@@ -444,27 +487,31 @@ void reg_io_r_unk_1a(char *desc,  REG_R_UNK_1A *r_r, prs_struct *ps, int depth)
 	
 	prs_uint32("unknown", ps, depth, &(r_r->unknown));
 	prs_uint32("status" , ps, depth, &(r_r->status ));
+
+	return True;
 }
 
 
 /*******************************************************************
 creates a structure.
 ********************************************************************/
-void make_reg_q_open_hku(REG_Q_OPEN_HKU *q_o,
+BOOL make_reg_q_open_hku(REG_Q_OPEN_HKU *q_o,
 				uint16 unknown_0, uint32 level)
 {
 	q_o->ptr = 1;
 	q_o->unknown_0 = unknown_0;
 	q_o->unknown_1 = 0x0; /* random - changes */
 	q_o->level = level;
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_q_open_hku(char *desc,  REG_Q_OPEN_HKU *r_q, prs_struct *ps, int depth)
+BOOL reg_io_q_open_hku(char *desc,  REG_Q_OPEN_HKU *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return;
+	if (r_q == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_open_hku");
 	depth++;
@@ -478,15 +525,17 @@ void reg_io_q_open_hku(char *desc,  REG_Q_OPEN_HKU *r_q, prs_struct *ps, int dep
 		prs_uint16("unknown_1", ps, depth, &(r_q->unknown_1));
 		prs_uint32("level    ", ps, depth, &(r_q->level    ));
 	}
+
+	return True;
 }
 
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_r_open_hku(char *desc,  REG_R_OPEN_HKU *r_r, prs_struct *ps, int depth)
+BOOL reg_io_r_open_hku(char *desc,  REG_R_OPEN_HKU *r_r, prs_struct *ps, int depth)
 {
-	if (r_r == NULL) return;
+	if (r_r == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_open_hku");
 	depth++;
@@ -496,27 +545,31 @@ void reg_io_r_open_hku(char *desc,  REG_R_OPEN_HKU *r_r, prs_struct *ps, int dep
 	smb_io_pol_hnd("", &(r_r->pol), ps, depth);
 
 	prs_uint32("status", ps, depth, &(r_r->status));
+
+	return True;
 }
 
 
 /*******************************************************************
 makes an REG_Q_CLOSE structure.
 ********************************************************************/
-void make_reg_q_close(REG_Q_CLOSE *q_c, POLICY_HND *hnd)
+BOOL make_reg_q_close(REG_Q_CLOSE *q_c, POLICY_HND *hnd)
 {
-	if (q_c == NULL || hnd == NULL) return;
+	if (q_c == NULL || hnd == NULL) return False;
 
 	DEBUG(5,("make_reg_q_close\n"));
 
 	memcpy(&(q_c->pol), hnd, sizeof(q_c->pol));
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_q_close(char *desc,  REG_Q_CLOSE *q_u, prs_struct *ps, int depth)
+BOOL reg_io_q_close(char *desc,  REG_Q_CLOSE *q_u, prs_struct *ps, int depth)
 {
-	if (q_u == NULL) return;
+	if (q_u == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_close");
 	depth++;
@@ -525,14 +578,16 @@ void reg_io_q_close(char *desc,  REG_Q_CLOSE *q_u, prs_struct *ps, int depth)
 
 	smb_io_pol_hnd("", &(q_u->pol), ps, depth); 
 	prs_align(ps);
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_r_close(char *desc,  REG_R_CLOSE *r_u, prs_struct *ps, int depth)
+BOOL reg_io_r_close(char *desc,  REG_R_CLOSE *r_u, prs_struct *ps, int depth)
 {
-	if (r_u == NULL) return;
+	if (r_u == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_close");
 	depth++;
@@ -543,15 +598,17 @@ void reg_io_r_close(char *desc,  REG_R_CLOSE *r_u, prs_struct *ps, int depth)
 	prs_align(ps);
 
 	prs_uint32("status", ps, depth, &(r_u->status));
+
+	return True;
 }
 
 /*******************************************************************
 makes a structure.
 ********************************************************************/
-void make_reg_q_set_key_sec(REG_Q_SET_KEY_SEC *q_i, POLICY_HND *pol,
+BOOL make_reg_q_set_key_sec(REG_Q_SET_KEY_SEC *q_i, POLICY_HND *pol,
 				uint32 buf_len, SEC_DESC *sec_desc)
 {
-	if (q_i == NULL) return;
+	if (q_i == NULL) return False;
 
 	memcpy(&(q_i->pol), pol, sizeof(q_i->pol));
 
@@ -560,14 +617,16 @@ void make_reg_q_set_key_sec(REG_Q_SET_KEY_SEC *q_i, POLICY_HND *pol,
 	q_i->ptr = 1;
 	make_buf_hdr(&(q_i->hdr_sec), buf_len, buf_len);
 	make_sec_desc_buf(q_i->data, buf_len, sec_desc);
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_q_set_key_sec(char *desc,  REG_Q_SET_KEY_SEC *r_q, prs_struct *ps, int depth)
+BOOL reg_io_q_set_key_sec(char *desc,  REG_Q_SET_KEY_SEC *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return;
+	if (r_q == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_set_key_sec");
 	depth++;
@@ -580,14 +639,16 @@ void reg_io_q_set_key_sec(char *desc,  REG_Q_SET_KEY_SEC *r_q, prs_struct *ps, i
 	prs_uint32("ptr    ", ps, depth, &(r_q->ptr    ));
 
 	reg_io_hdrbuf_sec(r_q->ptr, NULL, &r_q->hdr_sec, r_q->data, ps, depth);
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_r_set_key_sec(char *desc, REG_R_SET_KEY_SEC *r_q, prs_struct *ps, int depth)
+BOOL reg_io_r_set_key_sec(char *desc, REG_R_SET_KEY_SEC *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return;
+	if (r_q == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_set_key_sec");
 	depth++;
@@ -595,16 +656,18 @@ void reg_io_r_set_key_sec(char *desc, REG_R_SET_KEY_SEC *r_q, prs_struct *ps, in
 	prs_align(ps);
 	
 	prs_uint32("status", ps, depth, &(r_q->status));
+
+	return True;
 }
 
 
 /*******************************************************************
 makes a structure.
 ********************************************************************/
-void make_reg_q_get_key_sec(REG_Q_GET_KEY_SEC *q_i, POLICY_HND *pol, 
+BOOL make_reg_q_get_key_sec(REG_Q_GET_KEY_SEC *q_i, POLICY_HND *pol, 
 				uint32 buf_len, SEC_DESC_BUF *sec_buf)
 {
-	if (q_i == NULL) return;
+	if (q_i == NULL) return False;
 
 	memcpy(&(q_i->pol), pol, sizeof(q_i->pol));
 
@@ -620,14 +683,16 @@ void make_reg_q_get_key_sec(REG_Q_GET_KEY_SEC *q_i, POLICY_HND *pol,
 		make_buf_hdr(&(q_i->hdr_sec), buf_len, 0);
 		make_sec_desc_buf(q_i->data, buf_len, NULL);
 	}
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_q_get_key_sec(char *desc,  REG_Q_GET_KEY_SEC *r_q, prs_struct *ps, int depth)
+BOOL reg_io_q_get_key_sec(char *desc,  REG_Q_GET_KEY_SEC *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return;
+	if (r_q == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_get_key_sec");
 	depth++;
@@ -640,6 +705,8 @@ void reg_io_q_get_key_sec(char *desc,  REG_Q_GET_KEY_SEC *r_q, prs_struct *ps, i
 	prs_uint32("ptr     ", ps, depth, &(r_q->ptr     ));
 
 	reg_io_hdrbuf_sec(r_q->ptr, NULL, &r_q->hdr_sec, r_q->data, ps, depth);
+
+	return True;
 }
 
 #if 0
@@ -650,22 +717,24 @@ makes a structure.
 				uint32 buf_len, uint8 *buf,
 				uint32 status)
 {
-	if (r_i == NULL) return;
+	if (r_i == NULL) return False;
 
 	r_i->ptr = 1;
 	make_buf_hdr(&(r_i->hdr_sec), buf_len, buf_len);
 	make_sec_desc_buf(r_i->data, buf_len, 1);
 
 	r_i->status = status; /* 0x0000 0000 or 0x0000 007a */
+
+	return True;
 }
 #endif 
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_r_get_key_sec(char *desc,  REG_R_GET_KEY_SEC *r_q, prs_struct *ps, int depth)
+BOOL reg_io_r_get_key_sec(char *desc,  REG_R_GET_KEY_SEC *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return;
+	if (r_q == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_get_key_sec");
 	depth++;
@@ -683,18 +752,20 @@ void reg_io_r_get_key_sec(char *desc,  REG_R_GET_KEY_SEC *r_q, prs_struct *ps, i
 	}
 
 	prs_uint32("status", ps, depth, &(r_q->status));
+
+	return True;
 }
 
 
 /*******************************************************************
 makes a structure.
 ********************************************************************/
-void make_reg_q_info(REG_Q_INFO *q_i, POLICY_HND *pol, char *product_type,
+BOOL make_reg_q_info(REG_Q_INFO *q_i, POLICY_HND *pol, char *product_type,
 				time_t unix_time, uint8 major, uint8 minor)
 {
 	int len_type  = strlen(product_type);
 
-	if (q_i == NULL) return;
+	if (q_i == NULL) return False;
 
 	memcpy(&(q_i->pol), pol, sizeof(q_i->pol));
 
@@ -714,14 +785,16 @@ void make_reg_q_info(REG_Q_INFO *q_i, POLICY_HND *pol, char *product_type,
 
 	q_i->ptr3 = 1;
 	q_i->unknown = 0x00000000;
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_q_info(char *desc,  REG_Q_INFO *r_q, prs_struct *ps, int depth)
+BOOL reg_io_q_info(char *desc,  REG_Q_INFO *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return;
+	if (r_q == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_info");
 	depth++;
@@ -759,19 +832,21 @@ void reg_io_q_info(char *desc,  REG_Q_INFO *r_q, prs_struct *ps, int depth)
 	{
 		prs_uint32("unknown", ps, depth, &(r_q->unknown));
 	}
+
+	return True;
 }
 
 
 /*******************************************************************
 creates a structure.
 ********************************************************************/
-void make_reg_r_info(REG_R_INFO *r_r,
+BOOL make_reg_r_info(REG_R_INFO *r_r,
 				uint32 level, char *os_type,
 				uint32 status)
 {
 	int len;
 
-	if (r_r == NULL || os_type == NULL) return;
+	if (r_r == NULL || os_type == NULL) return False;
 
 	len = strlen(os_type);
 
@@ -785,14 +860,16 @@ void make_reg_r_info(REG_R_INFO *r_r,
 	r_r->unknown_0 = r_r->unknown_1 = len * 2;
 
 	r_r->status = status;
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_r_info(char *desc, REG_R_INFO *r_r, prs_struct *ps, int depth)
+BOOL reg_io_r_info(char *desc, REG_R_INFO *r_r, prs_struct *ps, int depth)
 {
-	if (r_r == NULL) return;
+	if (r_r == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_info");
 	depth++;
@@ -825,16 +902,18 @@ void reg_io_r_info(char *desc, REG_R_INFO *r_r, prs_struct *ps, int depth)
 
 	}
 	prs_uint32("status", ps, depth, &(r_r->status));
+
+	return True;
 }
 
 /*******************************************************************
 makes a structure.
 ********************************************************************/
-void make_reg_q_enum_val(REG_Q_ENUM_VALUE *q_i, POLICY_HND *pol,
+BOOL make_reg_q_enum_val(REG_Q_ENUM_VALUE *q_i, POLICY_HND *pol,
 				uint32 val_idx, uint32 max_val_len,
 				uint32 max_buf_len)
 {
-	if (q_i == NULL) return;
+	if (q_i == NULL) return False;
 
 	ZERO_STRUCTP(q_i);
 
@@ -857,14 +936,16 @@ void make_reg_q_enum_val(REG_Q_ENUM_VALUE *q_i, POLICY_HND *pol,
 
 	q_i->ptr2 = 1;
 	q_i->len_value2 = 0;
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_q_enum_val(char *desc,  REG_Q_ENUM_VALUE *q_q, prs_struct *ps, int depth)
+BOOL reg_io_q_enum_val(char *desc,  REG_Q_ENUM_VALUE *q_q, prs_struct *ps, int depth)
 {
-	if (q_q == NULL) return;
+	if (q_q == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_enum_val");
 	depth++;
@@ -899,14 +980,16 @@ void reg_io_q_enum_val(char *desc,  REG_Q_ENUM_VALUE *q_q, prs_struct *ps, int d
 	{
 		prs_uint32("len_value2", ps, depth, &(q_q->len_value2));
 	}
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_r_enum_val(char *desc,  REG_R_ENUM_VALUE *r_q, prs_struct *ps, int depth)
+BOOL reg_io_r_enum_val(char *desc,  REG_R_ENUM_VALUE *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return;
+	if (r_q == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_enum_val");
 	depth++;
@@ -941,18 +1024,20 @@ void reg_io_r_enum_val(char *desc,  REG_R_ENUM_VALUE *r_q, prs_struct *ps, int d
 	}
 
 	prs_uint32("status", ps, depth, &(r_q->status));
+
+	return True;
 }
 
 /*******************************************************************
 makes a structure.
 ********************************************************************/
-void make_reg_q_create_val(REG_Q_CREATE_VALUE *q_i, POLICY_HND *pol,
+BOOL make_reg_q_create_val(REG_Q_CREATE_VALUE *q_i, POLICY_HND *pol,
 				char *val_name, uint32 type,
 				BUFFER3 *val)
 {
 	int val_len = strlen(val_name) + 1;
 
-	if (q_i == NULL) return;
+	if (q_i == NULL) return False;
 
 	ZERO_STRUCTP(q_i);
 
@@ -963,14 +1048,16 @@ void make_reg_q_create_val(REG_Q_CREATE_VALUE *q_i, POLICY_HND *pol,
 	
 	q_i->type      = type;
 	q_i->buf_value = val;
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_q_create_val(char *desc,  REG_Q_CREATE_VALUE *q_q, prs_struct *ps, int depth)
+BOOL reg_io_q_create_val(char *desc,  REG_Q_CREATE_VALUE *q_q, prs_struct *ps, int depth)
 {
-	if (q_q == NULL) return;
+	if (q_q == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_create_val");
 	depth++;
@@ -986,14 +1073,16 @@ void reg_io_q_create_val(char *desc,  REG_Q_CREATE_VALUE *q_q, prs_struct *ps, i
 	prs_uint32("type", ps, depth, &(q_q->type));
 	smb_io_buffer3("buf_value", q_q->buf_value, ps, depth);
 	prs_align(ps);
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_r_create_val(char *desc,  REG_R_CREATE_VALUE *r_q, prs_struct *ps, int depth)
+BOOL reg_io_r_create_val(char *desc,  REG_R_CREATE_VALUE *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return;
+	if (r_q == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_create_val");
 	depth++;
@@ -1001,14 +1090,16 @@ void reg_io_r_create_val(char *desc,  REG_R_CREATE_VALUE *r_q, prs_struct *ps, i
 	prs_align(ps);
 	
 	prs_uint32("status", ps, depth, &(r_q->status));
+
+	return True;
 }
 
 /*******************************************************************
 makes a structure.
 ********************************************************************/
-void make_reg_q_enum_key(REG_Q_ENUM_KEY *q_i, POLICY_HND *pol, uint32 key_idx)
+BOOL make_reg_q_enum_key(REG_Q_ENUM_KEY *q_i, POLICY_HND *pol, uint32 key_idx)
 {
-	if (q_i == NULL) return;
+	if (q_i == NULL) return False;
 
 	memcpy(&(q_i->pol), pol, sizeof(q_i->pol));
 
@@ -1025,14 +1116,16 @@ void make_reg_q_enum_key(REG_Q_ENUM_KEY *q_i, POLICY_HND *pol, uint32 key_idx)
 
 	q_i->ptr3 = 1;
 	init_nt_time(&(q_i->time));   /* ignored ? */
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_q_enum_key(char *desc,  REG_Q_ENUM_KEY *q_q, prs_struct *ps, int depth)
+BOOL reg_io_q_enum_key(char *desc,  REG_Q_ENUM_KEY *q_q, prs_struct *ps, int depth)
 {
-	if (q_q == NULL) return;
+	if (q_q == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_enum_key");
 	depth++;
@@ -1066,14 +1159,16 @@ void reg_io_q_enum_key(char *desc,  REG_Q_ENUM_KEY *q_q, prs_struct *ps, int dep
 	{
 		smb_io_time("", &(q_q->time), ps, depth);
 	}
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_r_enum_key(char *desc,  REG_R_ENUM_KEY *r_q, prs_struct *ps, int depth)
+BOOL reg_io_r_enum_key(char *desc,  REG_R_ENUM_KEY *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return;
+	if (r_q == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_enum_key");
 	depth++;
@@ -1108,18 +1203,20 @@ void reg_io_r_enum_key(char *desc,  REG_R_ENUM_KEY *r_q, prs_struct *ps, int dep
 	}
 
 	prs_uint32("status", ps, depth, &(r_q->status));
+
+	return True;
 }
 
 
 /*******************************************************************
 makes a structure.
 ********************************************************************/
-void make_reg_q_open_entry(REG_Q_OPEN_ENTRY *r_q, POLICY_HND *pol,
+BOOL make_reg_q_open_entry(REG_Q_OPEN_ENTRY *r_q, POLICY_HND *pol,
 				char *key_name, uint32 unk)
 {
 	int len_name = strlen(key_name)+1;
 
-	if (r_q == NULL) return;
+	if (r_q == NULL) return False;
 
 	memcpy(&(r_q->pol), pol, sizeof(r_q->pol));
 
@@ -1128,14 +1225,16 @@ void make_reg_q_open_entry(REG_Q_OPEN_ENTRY *r_q, POLICY_HND *pol,
 
 	r_q->unknown_0 = 0x00000000;
 	r_q->unknown_1 = unk;
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_q_open_entry(char *desc,  REG_Q_OPEN_ENTRY *r_q, prs_struct *ps, int depth)
+BOOL reg_io_q_open_entry(char *desc,  REG_Q_OPEN_ENTRY *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return;
+	if (r_q == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_entry");
 	depth++;
@@ -1150,27 +1249,31 @@ void reg_io_q_open_entry(char *desc,  REG_Q_OPEN_ENTRY *r_q, prs_struct *ps, int
 	
 	prs_uint32("unknown_0", ps, depth, &(r_q->unknown_0));
 	prs_uint32("unknown_1", ps, depth, &(r_q->unknown_1));
+
+	return True;
 }
 
 
 /*******************************************************************
 creates a structure.
 ********************************************************************/
-void make_reg_r_open_entry(REG_R_OPEN_ENTRY *r_r,
+BOOL make_reg_r_open_entry(REG_R_OPEN_ENTRY *r_r,
 				POLICY_HND *pol, uint32 status)
 {
-	if (r_r == NULL) return;
+	if (r_r == NULL) return False;
 
 	memcpy(&(r_r->pol), pol, sizeof(r_r->pol));
 	r_r->status = status;
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_r_open_entry(char *desc,  REG_R_OPEN_ENTRY *r_r, prs_struct *ps, int depth)
+BOOL reg_io_r_open_entry(char *desc,  REG_R_OPEN_ENTRY *r_r, prs_struct *ps, int depth)
 {
-	if (r_r == NULL) return;
+	if (r_r == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_open_entry");
 	depth++;
@@ -1180,17 +1283,19 @@ void reg_io_r_open_entry(char *desc,  REG_R_OPEN_ENTRY *r_r, prs_struct *ps, int
 	smb_io_pol_hnd("", &(r_r->pol), ps, depth);
 
 	prs_uint32("status", ps, depth, &(r_r->status));
+
+	return True;
 }
 
 /*******************************************************************
 makes a structure.
 ********************************************************************/
-void make_reg_q_shutdown(REG_Q_SHUTDOWN *q_i,
+BOOL make_reg_q_shutdown(REG_Q_SHUTDOWN *q_i,
 				char *msg, uint32 timeout, uint16 flags)
 {
 	int len = strlen(msg) + 1;
 
-	if (q_i == NULL) return;
+	if (q_i == NULL) return False;
 
 	ZERO_STRUCTP(q_i);
 
@@ -1203,14 +1308,16 @@ void make_reg_q_shutdown(REG_Q_SHUTDOWN *q_i,
 	
 	q_i->timeout = timeout;
 	q_i->flags   = flags;
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_q_shutdown(char *desc,  REG_Q_SHUTDOWN *q_q, prs_struct *ps, int depth)
+BOOL reg_io_q_shutdown(char *desc,  REG_Q_SHUTDOWN *q_q, prs_struct *ps, int depth)
 {
-	if (q_q == NULL) return;
+	if (q_q == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_q_shutdown");
 	depth++;
@@ -1228,14 +1335,16 @@ void reg_io_q_shutdown(char *desc,  REG_Q_SHUTDOWN *q_q, prs_struct *ps, int dep
 	prs_uint32("timeout", ps, depth, &(q_q->timeout));
 	prs_uint16("flags  ", ps, depth, &(q_q->flags  ));
 	prs_align(ps);
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_r_shutdown(char *desc,  REG_R_SHUTDOWN *r_q, prs_struct *ps, int depth)
+BOOL reg_io_r_shutdown(char *desc,  REG_R_SHUTDOWN *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return;
+	if (r_q == NULL) return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_shutdown");
 	depth++;
@@ -1243,5 +1352,7 @@ void reg_io_r_shutdown(char *desc,  REG_R_SHUTDOWN *r_q, prs_struct *ps, int dep
 	prs_align(ps);
 	
 	prs_uint32("status", ps, depth, &(r_q->status));
+
+	return True;
 }
 

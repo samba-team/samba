@@ -28,7 +28,7 @@ extern int DEBUGLEVEL;
 /*******************************************************************
  make_at_q_add_job
  ********************************************************************/
-void make_at_q_add_job(AT_Q_ADD_JOB *q_a, char *server,
+BOOL make_at_q_add_job(AT_Q_ADD_JOB *q_a, char *server,
 			AT_JOB_INFO *info, char *command)
 {
 	DEBUG(5,("make_at_q_add_job\n"));
@@ -36,14 +36,16 @@ void make_at_q_add_job(AT_Q_ADD_JOB *q_a, char *server,
 	make_buf_unistr2(&(q_a->uni_srv_name), &(q_a->ptr_srv_name), server);
 	memcpy(&(q_a->info), info, sizeof(q_a->info));
 	make_unistr2(&(q_a->command), command, strlen(command)+1);
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a AT_JOB_INFO structure.
 ********************************************************************/
-void at_io_job_info(char *desc, AT_JOB_INFO *info, prs_struct *ps, int depth)
+BOOL at_io_job_info(char *desc, AT_JOB_INFO *info, prs_struct *ps, int depth)
 {
-	if (info == NULL) return;
+	if (info == NULL) return False;
 
 	prs_debug(ps, depth, desc, "at_io_job_info");
 	depth++;
@@ -57,14 +59,16 @@ void at_io_job_info(char *desc, AT_JOB_INFO *info, prs_struct *ps, int depth)
 	prs_align(ps);
 
 	prs_uint32("ptr_command", ps, depth, &(info->ptr_command));
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a AT_Q_ADD_JOB structure.
 ********************************************************************/
-void at_io_q_add_job(char *desc, AT_Q_ADD_JOB *q_a, prs_struct *ps, int depth)
+BOOL at_io_q_add_job(char *desc, AT_Q_ADD_JOB *q_a, prs_struct *ps, int depth)
 {
-	if (q_a == NULL) return;
+	if (q_a == NULL) return False;
 
 	prs_debug(ps, depth, desc, "at_q_add_job");
 	depth++;
@@ -74,14 +78,16 @@ void at_io_q_add_job(char *desc, AT_Q_ADD_JOB *q_a, prs_struct *ps, int depth)
 	smb_io_unistr2("", &(q_a->uni_srv_name), q_a->ptr_srv_name, ps, depth); 
 	at_io_job_info("", &(q_a->info), ps, depth);
 	smb_io_unistr2("", &(q_a->command), q_a->info.ptr_command, ps, depth);
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a AT_R_ADD_JOB structure.
 ********************************************************************/
-void at_io_r_add_job(char *desc, AT_R_ADD_JOB *r_a, prs_struct *ps, int depth)
+BOOL at_io_r_add_job(char *desc, AT_R_ADD_JOB *r_a, prs_struct *ps, int depth)
 {
-	if (r_a == NULL) return;
+	if (r_a == NULL) return False;
 
 	prs_debug(ps, depth, desc, "at_r_add_job");
 	depth++;
@@ -89,12 +95,14 @@ void at_io_r_add_job(char *desc, AT_R_ADD_JOB *r_a, prs_struct *ps, int depth)
 	prs_align(ps);
 	prs_uint32("jobid", ps, depth, &(r_a->jobid));
 	prs_uint32("status", ps, depth, &(r_a->status));
+
+	return True;
 }
 
 /*******************************************************************
  make_at_q_del_job
  ********************************************************************/
-void make_at_q_del_job(AT_Q_DEL_JOB *q_a, char *server, uint32 min_jobid,
+BOOL make_at_q_del_job(AT_Q_DEL_JOB *q_a, char *server, uint32 min_jobid,
 		       uint32 max_jobid)
 {
 	DEBUG(5,("make_at_q_del_job\n"));
@@ -102,14 +110,16 @@ void make_at_q_del_job(AT_Q_DEL_JOB *q_a, char *server, uint32 min_jobid,
 	make_buf_unistr2(&(q_a->uni_srv_name), &(q_a->ptr_srv_name), server);
 	q_a->min_jobid = min_jobid;
 	q_a->max_jobid = max_jobid;
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a AT_Q_DEL_JOB structure.
 ********************************************************************/
-void at_io_q_del_job(char *desc, AT_Q_DEL_JOB *q_d, prs_struct *ps, int depth)
+BOOL at_io_q_del_job(char *desc, AT_Q_DEL_JOB *q_d, prs_struct *ps, int depth)
 {
-	if (q_d == NULL) return;
+	if (q_d == NULL) return False;
 
 	prs_debug(ps, depth, desc, "at_q_del_job");
 	depth++;
@@ -121,26 +131,30 @@ void at_io_q_del_job(char *desc, AT_Q_DEL_JOB *q_d, prs_struct *ps, int depth)
 	prs_align(ps);
 	prs_uint32("min_jobid", ps, depth, &(q_d->min_jobid));
 	prs_uint32("max_jobid", ps, depth, &(q_d->max_jobid));
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a AT_R_DEL_JOB structure.
 ********************************************************************/
-void at_io_r_del_job(char *desc, AT_R_DEL_JOB *r_d, prs_struct *ps, int depth)
+BOOL at_io_r_del_job(char *desc, AT_R_DEL_JOB *r_d, prs_struct *ps, int depth)
 {
-	if (r_d == NULL) return;
+	if (r_d == NULL) return False;
 
 	prs_debug(ps, depth, desc, "at_r_del_job");
 	depth++;
 
 	prs_align(ps);
 	prs_uint32("status", ps, depth, &(r_d->status));
+
+	return True;
 }
 
 /*******************************************************************
  make_at_q_enum_jobs
  ********************************************************************/
-void make_at_q_enum_jobs(AT_Q_ENUM_JOBS *q_e, char *server)
+BOOL make_at_q_enum_jobs(AT_Q_ENUM_JOBS *q_e, char *server)
 {
 	DEBUG(5,("make_at_q_enum_jobs\n"));
 
@@ -150,14 +164,16 @@ void make_at_q_enum_jobs(AT_Q_ENUM_JOBS *q_e, char *server)
 	q_e->max_len = 0xffff;
 	q_e->ptr_resume = 1;
 	q_e->hnd_resume = 0;
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a AT_Q_ENUM_JOBS structure.
 ********************************************************************/
-void at_io_q_enum_jobs(char *desc, AT_Q_ENUM_JOBS *q_e, prs_struct *ps, int depth)
+BOOL at_io_q_enum_jobs(char *desc, AT_Q_ENUM_JOBS *q_e, prs_struct *ps, int depth)
 {
-	if (q_e == NULL) return;
+	if (q_e == NULL) return False;
 
 	prs_debug(ps, depth, desc, "at_q_enum_jobs");
 	depth++;
@@ -172,14 +188,16 @@ void at_io_q_enum_jobs(char *desc, AT_Q_ENUM_JOBS *q_e, prs_struct *ps, int dept
 
 	prs_uint32("ptr_resume", ps, depth, &(q_e->ptr_resume));
 	prs_uint32("hnd_resume", ps, depth, &(q_e->hnd_resume));
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a AT_R_ENUM_JOBS structure.
 ********************************************************************/
-void at_io_r_enum_jobs(char *desc, AT_R_ENUM_JOBS *r_e, prs_struct *ps, int depth)
+BOOL at_io_r_enum_jobs(char *desc, AT_R_ENUM_JOBS *r_e, prs_struct *ps, int depth)
 {
-	if (r_e == NULL) return;
+	if (r_e == NULL) return False;
 
 	prs_debug(ps, depth, desc, "at_r_enum_jobs");
 	depth++;
@@ -196,7 +214,7 @@ void at_io_r_enum_jobs(char *desc, AT_R_ENUM_JOBS *r_e, prs_struct *ps, int dept
 		if (r_e->num_entries2 != r_e->num_entries)
 		{
 			/* RPC fault */
-			return;
+			return False;
 		}
 
 		SMB_ASSERT_ARRAY(r_e->info, r_e->num_entries2);
@@ -222,25 +240,29 @@ void at_io_r_enum_jobs(char *desc, AT_R_ENUM_JOBS *r_e, prs_struct *ps, int dept
 	prs_uint32("hnd_resume"   , ps, depth, &(r_e->hnd_resume   ));
 
 	prs_uint32("status", ps, depth, &(r_e->status));
+
+	return True;
 }
 
 /*******************************************************************
  make_at_q_query_job
  ********************************************************************/
-void make_at_q_query_job(AT_Q_QUERY_JOB *q_q, char *server, uint32 jobid)
+BOOL make_at_q_query_job(AT_Q_QUERY_JOB *q_q, char *server, uint32 jobid)
 {
 	DEBUG(5,("make_at_q_query_job\n"));
 
 	make_buf_unistr2(&(q_q->uni_srv_name), &(q_q->ptr_srv_name), server);
 	q_q->jobid = jobid;
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a AT_Q_QUERY_JOB structure.
 ********************************************************************/
-void at_io_q_query_job(char *desc, AT_Q_QUERY_JOB *q_q, prs_struct *ps, int depth)
+BOOL at_io_q_query_job(char *desc, AT_Q_QUERY_JOB *q_q, prs_struct *ps, int depth)
 {
-	if (q_q == NULL) return;
+	if (q_q == NULL) return False;
 
 	prs_debug(ps, depth, desc, "at_q_query_job");
 	depth++;
@@ -250,14 +272,16 @@ void at_io_q_query_job(char *desc, AT_Q_QUERY_JOB *q_q, prs_struct *ps, int dept
 	smb_io_unistr2("", &(q_q->uni_srv_name), q_q->ptr_srv_name, ps, depth); 
 	prs_align(ps);
 	prs_uint32("jobid", ps, depth, &(q_q->jobid));
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a AT_R_QUERY_JOB structure.
 ********************************************************************/
-void at_io_r_query_job(char *desc, AT_R_QUERY_JOB *r_q, prs_struct *ps, int depth)
+BOOL at_io_r_query_job(char *desc, AT_R_QUERY_JOB *r_q, prs_struct *ps, int depth)
 {
-	if (r_q == NULL) return;
+	if (r_q == NULL) return False;
 
 	prs_debug(ps, depth, desc, "at_r_query_job");
 	depth++;
@@ -272,4 +296,6 @@ void at_io_r_query_job(char *desc, AT_R_QUERY_JOB *r_q, prs_struct *ps, int dept
 
 	prs_align(ps);
 	prs_uint32("status", ps, depth, &(r_q->status));
+
+	return True;
 }
