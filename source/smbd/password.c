@@ -175,14 +175,10 @@ int setup_groups(char *user, uid_t uid, gid_t gid, int *p_ngroups, gid_t **p_gro
 	ngroups = sys_getgroups(0,&grp);
 	if (ngroups <= 0)
 	{
-		ngroups = 32;
+		ngroups = groups_max();
 	}
 
-#ifdef NGROUPS_MAX
-	if((groups = (gid_t *)malloc(sizeof(gid_t)*NGROUPS_MAX)) == NULL)
-#else /* NGROUPS_MAX */
 	if((groups = (gid_t *)malloc(sizeof(gid_t)*ngroups)) == NULL)
-#endif /* NGROUPS_MAX */
 	{
 		DEBUG(0,("setup_groups malloc fail !\n"));
 		return -1;

@@ -843,15 +843,13 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	}
 		
 	if(fsp->is_directory) {
-		if(fsp->conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name, False),
-					   &sbuf) != 0) {
+		if(conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name, False), &sbuf) != 0) {
 			close_file(fsp,True);
 			restore_case_semantics(file_attributes);
 			return(ERROR(ERRDOS,ERRnoaccess));
 		}
 	} else {
-		if (fsp->conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf) 
-		    != 0) {
+		if (conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
 			close_file(fsp,False);
 			restore_case_semantics(file_attributes);
 			return(ERROR(ERRDOS,ERRnoaccess));

@@ -182,6 +182,7 @@
 #undef USE_SETUIDX
 #undef HAVE_LIBDL
 #undef NEED_SGI_SEMUN_HACK
+#undef SYSCONF_SC_NGROUPS_MAX
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
@@ -549,9 +550,6 @@
 /* Define if you have the pipe function.  */
 #undef HAVE_PIPE
 
-/* Define if you have the popen function.  */
-#undef HAVE_POPEN
-
 /* Define if you have the pread function.  */
 #undef HAVE_PREAD
 
@@ -656,6 +654,9 @@
 
 /* Define if you have the syscall function.  */
 #undef HAVE_SYSCALL
+
+/* Define if you have the sysconf function.  */
+#undef HAVE_SYSCONF
 
 /* Define if you have the usleep function.  */
 #undef HAVE_USLEEP
