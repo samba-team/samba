@@ -29,6 +29,26 @@
 extern int DEBUGLEVEL;
 extern struct in_addr ipzero;
 
+
+
+/****************************************************************************
+hash our interfaces and netbios names settings
+*****************************************************************************/
+static unsigned wins_hash(void)
+{
+	int i;
+	unsigned ret = iface_hash();
+	extern char **my_netbios_names;
+
+	for (i=0;my_netbios_names[i];i++)
+		ret ^= str_checksum(my_netbios_names[i]);
+	
+	ret ^= str_checksum(lp_workgroup());
+
+	return ret;
+}
+	
+
 /****************************************************************************
 Determine if this packet should be allocated to the WINS server.
 *****************************************************************************/
@@ -174,7 +194,7 @@ BOOL initialise_wins(void)
     if (strncmp(line,"VERSION ", 8) == 0) {
 	    if (sscanf(line,"VERSION %d %u", &version, &hash) != 2 ||
 		version != WINS_VERSION ||
-		hash != iface_hash()) {
+		hash != wins_hash()) {
 		    DEBUG(0,("Discarding invalid wins.dat file [%s]\n",line));
 		    fclose(fp);
 		    return True;
@@ -1576,7 +1596,7 @@ void wins_write_database(void)
 
   DEBUG(4,("wins_write_database: Dump of WINS name list.\n"));
 
-  fprintf(fp,"VERSION %d %u\n", WINS_VERSION, iface_hash());
+  fprintf(fp,"VERSION %d %u\n", WINS_VERSION, wins_hash());
  
   for( namerec 
            = (struct name_record *)ubi_trFirst( wins_server_subnet->namelist );
