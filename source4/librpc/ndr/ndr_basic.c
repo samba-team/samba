@@ -83,7 +83,7 @@ NTSTATUS ndr_pull_uint32(struct ndr_pull *ndr, uint32 *v)
 /*
   pull a NTSTATUS
 */
-NTSTATUS ndr_pull_status(struct ndr_pull *ndr, NTSTATUS *status)
+NTSTATUS ndr_pull_NTSTATUS(struct ndr_pull *ndr, NTSTATUS *status)
 {
 	uint32 v;
 	NDR_CHECK(ndr_pull_uint32(ndr, &v));
