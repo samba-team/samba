@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -86,15 +86,20 @@ gethostname_fallback (krb5_addresses *res)
      return 0;
 }
 
+enum {
+    NOLOOP       = 0,		/* don't include loopback interfaces */
+    LOOP         = 1,		/* do include loopback interfaces */
+    LOOP_IF_NONE = 2		/* include loopback if no other if's */
+};
+
 /*
- *
  * Try to figure out the addresses of all configured interfaces with a
  * lot of magic ioctls.
- * Include loopback interfaces iff loop.
  */
 
 static krb5_error_code
-find_all_addresses (krb5_addresses *res, int loop,
+find_all_addresses (krb5_context context,
+		    krb5_addresses *res, int loop,
 		    int af, int siocgifconf, int siocgifflags,
 		    size_t ifreq_sz)
 {
@@ -108,6 +113,8 @@ find_all_addresses (krb5_addresses *res, int loop,
      size_t sz;
      struct sockaddr sa_zero;
      struct ifreq *ifr;
+     krb5_address lo_addr;
+     int got_lo = FALSE;
 
      buf = NULL;
      res->val = NULL;
@@ -169,19 +176,37 @@ find_all_addresses (krb5_addresses *res, int loop,
 	     goto error_out;
 	 }
 
-	 if(!(ifreq.ifr_flags & IFF_UP)
-	    || (!loop && (ifreq.ifr_flags & IFF_LOOPBACK))
-	    || memcmp (sa, &sa_zero, sizeof(sa_zero)) == 0)
+	 if (!(ifreq.ifr_flags & IFF_UP))
 	     continue;
-
+	 if (memcmp (sa, &sa_zero, sizeof(sa_zero)) == 0)
+	     continue;
 	 if (krb5_sockaddr_uninteresting (sa))
 	     continue;
+
+	 if (ifreq.ifr_flags & IFF_LOOPBACK) {
+	     if (loop == NOLOOP)
+		 continue;
+	     else if (loop == LOOP_IF_NONE) {
+		 ret = krb5_sockaddr2address (sa, &lo_addr);
+		 if (ret)
+		     goto error_out;
+		 got_lo = TRUE;
+		 continue;
+	     }
+	 }
 
 	 ret = krb5_sockaddr2address (sa, &res->val[j]);
 	 if (ret)
 	     goto error_out;
 	 ++j;
      }
+     if (loop == LOOP_IF_NONE && got_lo) {
+	 if (j == 0)
+	     res->val[j++] = lo_addr;
+	 else
+	     krb5_free_address (context, &lo_addr);
+     }
+
      if (j != num) {
 	 void *tmp;
 
@@ -197,8 +222,10 @@ find_all_addresses (krb5_addresses *res, int loop,
      goto cleanup;
 
 error_out:
+     if (got_lo)
+	     krb5_free_address (context, &lo_addr);
      while(j--) {
-	 krb5_data_free (&res->val[j].address);
+	 krb5_free_address (context, &res->val[j]);
      }
      free (res->val);
 cleanup:
@@ -212,11 +239,11 @@ get_addrs_int (krb5_context context, krb5_addresses *res, int loop)
 {
     krb5_error_code ret = -1;
 #if defined(AF_INET6) && defined(SIOCGIF6CONF) && defined(SIOCGIF6FLAGS)
-    ret = find_all_addresses (res, 1,
+    ret = find_all_addresses (context, res, loop,
 			      AF_INET6, SIOCGIF6CONF, SIOCGIF6FLAGS,
 			      sizeof(struct in6_ifreq));
 #elif defined(AF_INET) && defined(SIOCGIFCONF) && defined(SIOCGIFFLAGS)
-    ret = find_all_addresses (res, loop,
+    ret = find_all_addresses (context, res, loop,
 			      AF_INET, SIOCGIFCONF, SIOCGIFFLAGS,
 			      sizeof(struct ifreq));
 #endif
@@ -251,7 +278,7 @@ get_addrs_int (krb5_context context, krb5_addresses *res, int loop)
 krb5_error_code
 krb5_get_all_client_addrs (krb5_context context, krb5_addresses *res)
 {
-    return get_addrs_int (context, res, 0);
+    return get_addrs_int (context, res, LOOP_IF_NONE);
 }
 
 /*
@@ -262,5 +289,5 @@ krb5_get_all_client_addrs (krb5_context context, krb5_addresses *res)
 krb5_error_code
 krb5_get_all_server_addrs (krb5_context context, krb5_addresses *res)
 {
-    return get_addrs_int (context, res, 1);
+    return get_addrs_int (context, res, LOOP);
 }
