@@ -31,6 +31,108 @@
 
 extern int DEBUGLEVEL;
 
+/****************************************************************************
+ set secret tdb database
+****************************************************************************/
+static BOOL set_tdbsecdb(struct policy_cache *cache, POLICY_HND *hnd,
+				TDB_CONTEXT *tdb)
+{
+	if (tdb != NULL)
+	{
+		if (set_policy_state(cache, hnd, tdb_close, (void*)tdb))
+		{
+			return True;
+		}
+		tdb_close(tdb);
+		return False;
+	}
+	DEBUG(3,("Error setting policy secret database\n"));
+	return False;
+}
+
+/****************************************************************************
+  get tdb database handle
+****************************************************************************/
+static BOOL get_tdbsecdb(struct policy_cache *cache, const POLICY_HND *hnd,
+				TDB_CONTEXT **tdb)
+{
+	(*tdb) = (TDB_CONTEXT*)get_policy_state_info(cache, hnd);
+
+	return True;
+}
+
+typedef struct tdb_sec_info
+{
+	UNISTR2 name;
+	TDB_CONTEXT *tdb;
+
+} TDB_SEC_INFO;
+
+static void secnamefree(void*inf)
+{
+	TDB_SEC_INFO *dev = (TDB_SEC_INFO*)inf;
+	if (dev != NULL)
+	{
+		tdb_close(dev->tdb);
+	}
+	safe_free(dev);
+}
+
+/****************************************************************************
+  set tdb secret name
+****************************************************************************/
+BOOL set_tdbsecname(struct policy_cache *cache, POLICY_HND *hnd,
+				TDB_CONTEXT *tdb,
+				const UNISTR2 *name)
+{
+	TDB_SEC_INFO *dev = malloc(sizeof(*dev));
+
+	if (dev != NULL)
+	{
+		copy_unistr2(&dev->name, name);
+		dev->tdb = tdb;
+		if (set_policy_state(cache, hnd, secnamefree, (void*)dev))
+		{
+			if (DEBUGLVL(3))
+			{
+				fstring tmp;
+				unistr2_to_ascii(tmp, name, sizeof(tmp)-1);
+				DEBUG(3,("setting tdb secret name=%s\n", tmp));
+			}
+			return True;
+		}
+		free(dev);
+		return False;
+	}
+	DEBUG(3,("Error setting tdb secret name\n"));
+	return False;
+}
+
+/****************************************************************************
+  get tdb secret name
+****************************************************************************/
+BOOL get_tdbsecname(struct policy_cache *cache, const POLICY_HND *hnd,
+				TDB_CONTEXT **tdb,
+				UNISTR2 *name)
+{
+	TDB_SEC_INFO *dev = (TDB_SEC_INFO*)get_policy_state_info(cache, hnd);
+
+	if (dev != NULL)
+	{
+		if (name != NULL)
+		{
+			copy_unistr2(name, &dev->name);
+		}
+		if (tdb != NULL)
+		{
+			(*tdb) = dev->tdb;
+		}
+		return True;
+	}
+
+	DEBUG(3,("Error getting policy rid\n"));
+	return False;
+}
 /***************************************************************************
 lsa_reply_open_policy2
  ***************************************************************************/
@@ -42,6 +144,7 @@ uint32 _lsa_open_policy2(const UNISTR2 *server_name, POLICY_HND *hnd,
 	{
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
 	/* get a (unique) handle.  open a policy on it. */
 	if (!open_policy_hnd(get_global_hnd_cache(),
 		get_sec_ctx(), hnd, des_access))
@@ -106,12 +209,12 @@ static uint32 get_remote_sid(const char *dom_name, char *find_name,
 
 	if (! get_any_dc_name(dom_name, srv_name))
 	{
-		return 0xC0000000 | NT_STATUS_NONE_MAPPED;
+		return NT_STATUS_NONE_MAPPED;
 	}
 	if (strequal(srv_name, "\\\\."))
 	{
 		DEBUG(0, ("WARNING: infinite loop in lsarpcd !\n"));
-		return 0xC0000000 | NT_STATUS_NONE_MAPPED;
+		return NT_STATUS_NONE_MAPPED;
 	}
 
 	status = lookup_lsa_name(dom_name, find_name,
@@ -121,7 +224,7 @@ static uint32 get_remote_sid(const char *dom_name, char *find_name,
 	   (!sid_split_rid(sid, rid) ||
 	    !map_domain_sid_to_name(sid, dummy)))
 	{
-		status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
+		status = NT_STATUS_NONE_MAPPED;
 	}
 	return status;
 }
@@ -154,7 +257,7 @@ static void make_lsa_rid2s(DOM_R_REF *ref,
 
 		if (!split_domain_name(full_name, dom_name, find_name))
 		{
-			status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
+			status = NT_STATUS_NONE_MAPPED;
 		}
 		if (status == NT_STATUS_NOPROBLEMO && map_domain_name_to_sid(&find_sid,
 		                                            &find_name))
@@ -235,7 +338,7 @@ static void make_reply_lookup_names(LSA_R_LOOKUP_NAMES *r_l,
 
 	if (mapped_count == 0)
 	{
-		r_l->status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
+		r_l->status = NT_STATUS_NONE_MAPPED;
 	}
 	else
 	{
@@ -304,7 +407,7 @@ uint32 _lsa_lookup_sids(const POLICY_HND *hnd,
 		}
 		else
 		{
-			status1 = 0xC0000000 | NT_STATUS_NONE_MAPPED;
+			status1 = NT_STATUS_NONE_MAPPED;
 		}
 
 		dom_idx = make_dom_ref(ref, dom_name, &find_sid);
@@ -330,7 +433,7 @@ uint32 _lsa_lookup_sids(const POLICY_HND *hnd,
 
 	if ((status == 0x0) && ((*mapped_count) == 0))
 	{
-		status = NT_STATUS_NONE_MAPPED | 0xC0000000;
+		status = NT_STATUS_NONE_MAPPED;
 	}
 
 	return status;
@@ -395,7 +498,7 @@ uint32 _lsa_query_info_pol(POLICY_HND *hnd, uint16 info_class,
 		{
 			DEBUG(3, ("unknown info level in Lsa Query: %d\n",
 			          info_class));
-			status = 0xC000000 | NT_STATUS_INVALID_INFO_CLASS;
+			status = NT_STATUS_INVALID_INFO_CLASS;
 		}
 	}
 	if (domain_sid && sid)
@@ -432,13 +535,10 @@ _lsa_close
  ***************************************************************************/
 uint32 _lsa_close(POLICY_HND *hnd)
 {
-	/* find the connection policy handle. */
-	if (find_policy_by_hnd(get_global_hnd_cache(), hnd) == -1)
+	if (!close_policy_hnd(get_global_hnd_cache(), hnd))
 	{
-		return 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+		return NT_STATUS_INVALID_HANDLE;
 	}
-	close_policy_hnd(get_global_hnd_cache(), hnd);
-
 	return NT_STATUS_NOPROBLEMO;
 }
 
@@ -449,7 +549,7 @@ uint32 _lsa_create_secret(const POLICY_HND *hnd,
 			const UNISTR2 *secret_name, uint32 des_access,
 			POLICY_HND *hnd_secret)
 {
-	return 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 }
 
 /***************************************************************************
@@ -459,5 +559,32 @@ uint32 _lsa_open_secret(const POLICY_HND *hnd,
 			const UNISTR2 *secret_name, uint32 des_access,
 			POLICY_HND *hnd_secret)
 {
-	return 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	TDB_CONTEXT *tdb;
+
+	tdb = open_secret_db(O_RDWR);
+	if (tdb == NULL)
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (!tdb_lookup_secret(tdb, secret_name, NULL))
+	{
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	/* get a (unique) handle.  open a policy on it. */
+	if (!open_policy_hnd_link(get_global_hnd_cache(),
+		hnd, hnd_secret, des_access))
+	{
+		tdb_close(tdb);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (!set_tdbsecname(get_global_hnd_cache(), hnd_secret, tdb, secret_name))
+	{
+		close_policy_hnd(get_global_hnd_cache(), hnd_secret);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	return NT_STATUS_NOPROBLEMO;
 }

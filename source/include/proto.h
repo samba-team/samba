@@ -1116,12 +1116,26 @@ int share_mode_forall(void (*fn)(share_mode_entry *, char *));
 
 msrpc_service_fns *get_service_fns(void);
 
+/*The following definitions come from  lsarpcd/secret_db.c  */
+
+BOOL tdb_delete_secret( TDB_CONTEXT *tdb, const UNISTR2 *uk);
+BOOL tdb_lookup_secret( TDB_CONTEXT *tdb, const UNISTR2 *uk, LSA_SECRET **usr);
+BOOL tdb_store_secret( TDB_CONTEXT *tdb, const UNISTR2 *uk, LSA_SECRET *usr);
+TDB_CONTEXT *open_secret_db(int perms);
+BOOL secret_init_db(void);
+
 /*The following definitions come from  lsarpcd/srv_lsa.c  */
 
 BOOL api_ntlsa_rpc(rpcsrv_struct *p);
 
 /*The following definitions come from  lsarpcd/srv_lsa_samdb.c  */
 
+BOOL set_tdbsecname(struct policy_cache *cache, POLICY_HND *hnd,
+				TDB_CONTEXT *tdb,
+				const UNISTR2 *name);
+BOOL get_tdbsecname(struct policy_cache *cache, const POLICY_HND *hnd,
+				TDB_CONTEXT **tdb,
+				UNISTR2 *name);
 uint32 _lsa_open_policy2(const UNISTR2 *server_name, POLICY_HND *hnd,
 				const LSA_OBJ_ATTR *attr,
 				uint32 des_access);
@@ -1990,6 +2004,9 @@ BOOL trust_password_unlock(void);
 BOOL trust_password_delete( char *domain, char *name );
 BOOL get_trust_account_password( uchar *ret_pwd, time_t *pass_last_set_time);
 BOOL set_trust_account_password( uchar *md4_new_pwd);
+BOOL trust_get_passwd_time( uchar trust_passwd[16],
+				const char *domain, const char *myname,
+				NTTIME *modtime);
 BOOL trust_get_passwd( uchar trust_passwd[16],
 				const char *domain, const char *myname);
 BOOL create_trust_account_file(char *domain, char *name, uchar pass[16]);

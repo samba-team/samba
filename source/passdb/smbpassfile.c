@@ -236,6 +236,35 @@ account is now invalid. Please recreate. Error was %s.\n", strerror(errno) ));
   return True;
 }
 
+BOOL trust_get_passwd_time( uchar trust_passwd[16],
+				const char *domain, const char *myname,
+				NTTIME *modtime)
+{
+  time_t lct;
+
+  /*
+   * Get the trust account password.
+   */
+  if(!trust_password_lock( domain, myname, False)) {
+    DEBUG(0,("trust_get_passwd: unable to open the trust account password file for \
+trust %s in domain %s.\n", myname, domain ));
+    return False;
+  }
+
+  if(get_trust_account_password( trust_passwd, &lct) == False) {
+    DEBUG(0,("trust_get_passwd: unable to read the trust account password for \
+trust %s in domain %s.\n", myname, domain ));
+    trust_password_unlock();
+    return False;
+  }
+
+  trust_password_unlock();
+
+	unix_to_nt_time(modtime, lct);
+
+  return True;
+}
+
 BOOL trust_get_passwd( uchar trust_passwd[16],
 				const char *domain, const char *myname)
 {
