@@ -81,6 +81,7 @@ static void check_for_pipe(char *fname)
 		DEBUG(3,("Rejecting named pipe open for %s\n",fname));
 		unix_ERR_class = ERRSRV;
 		unix_ERR_code = ERRaccess;
+		unix_ERR_ntstatus = NT_STATUS_ACCESS_DENIED;
 	}
 }
 
@@ -261,6 +262,7 @@ static int truncate_unless_locked(struct connection_struct *conn, files_struct *
 		errno = EACCES;
 		unix_ERR_class = ERRDOS;
 		unix_ERR_code = ERRlock;
+		unix_ERR_ntstatus = dos_to_ntstatus(ERRDOS, ERRlock);
 		return -1;
 	} else {
 		return conn->vfs_ops.ftruncate(fsp,fsp->fd,0); 
@@ -405,9 +407,10 @@ static BOOL check_share_mode(connection_struct *conn, share_mode_entry *share, i
 	if (GET_DELETE_ON_CLOSE_FLAG(share->share_mode)) {
 		DEBUG(5,("check_share_mode: Failing open on file %s as delete on close flag is set.\n",
 			fname ));
-		unix_ERR_class = ERRDOS;
-		unix_ERR_code = ERRnoaccess;
-		unix_ERR_ntstatus = NT_STATUS_DELETE_PENDING;
+		/* Use errno to map to correct error. */
+		unix_ERR_class = SMB_SUCCESS;
+		unix_ERR_code = 0;
+		unix_ERR_ntstatus = NT_STATUS_OK;
 		return False;
 	}
 
@@ -450,6 +453,7 @@ static BOOL check_share_mode(connection_struct *conn, share_mode_entry *share, i
 				fname ));
 			unix_ERR_class = ERRDOS;
 			unix_ERR_code = ERRbadshare;
+			unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
 
 			return False;
 		}
@@ -470,6 +474,7 @@ and existing desired access (0x%x) are non-data opens\n",
 			fname ));
 		unix_ERR_class = ERRDOS;
 		unix_ERR_code = ERRbadshare;
+		unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
 
 		return False;
 	}
@@ -485,6 +490,7 @@ and existing desired access (0x%x) are non-data opens\n",
 			fname ));
 		unix_ERR_class = ERRDOS;
 		unix_ERR_code = ERRbadshare;
+		unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
 
 		return False;
 	}
@@ -516,6 +522,7 @@ existing desired access (0x%x).\n", fname, (unsigned int)desired_access, (unsign
 
 			unix_ERR_class = ERRDOS;
 			unix_ERR_code = ERRbadshare;
+			unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
 
 			return False;
 		}
@@ -602,6 +609,7 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
 					errno = EACCES;
 					unix_ERR_class = ERRDOS;
 					unix_ERR_code = ERRbadshare;
+					unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
 					return -1;
 				}
 
@@ -652,6 +660,7 @@ dev = %x, inode = %.0f. Deleting it to continue...\n", (int)broken_entry.pid, fn
 						errno = EACCES;
 						unix_ERR_class = ERRDOS;
 						unix_ERR_code = ERRbadshare;
+						unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
 						return -1;
 					}
 
@@ -926,12 +935,19 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 			 * we can do. We also ensure we're not going to create or tuncate
 			 * the file as we only want an access decision at this stage. JRA.
 			 */
+			errno = 0;
 			fsp_open = open_file(fsp,conn,fname,psbuf,
 						flags|(flags2&~(O_TRUNC|O_CREAT)),mode,desired_access);
 
 			DEBUG(4,("open_file_shared : share_mode deny - calling open_file with \
 flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 				flags,(flags2&~(O_TRUNC|O_CREAT)),(int)mode,(int)fsp_open ));
+
+			if (!fsp_open && errno) {
+				unix_ERR_class = ERRDOS;
+				unix_ERR_code = ERRnoaccess;
+				unix_ERR_ntstatus = NT_STATUS_ACCESS_DENIED;
+			}
 
 			unlock_share_entry(conn, dev, inode);
 			if (fsp_open)
