@@ -3001,6 +3001,11 @@ krb5_crypto_init(krb5_context context,
 			       etype);
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
+    if((*crypto)->et->keytype->size != key->keyvalue.length) {
+	free(*crypto);
+	krb5_set_error_string (context, "encryption key has bad length");
+	return KRB5_BAD_KEYSIZE;
+    }
     ret = krb5_copy_keyblock(context, key, &(*crypto)->key.key);
     if(ret) {
 	free(*crypto);
