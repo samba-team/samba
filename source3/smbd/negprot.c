@@ -100,6 +100,7 @@ static int reply_lanman1(char *inbuf, char *outbuf)
 	SSVAL(outbuf,smb_vwv1,secword); 
 	/* Create a token value and add it to the outgoing packet. */
 	if (global_encrypted_passwords_negotiated) {
+		SSVAL(outbuf,smb_vwv11, 8);
 		get_challenge(smb_buf(outbuf));
 	}
 
@@ -143,6 +144,7 @@ static int reply_lanman2(char *inbuf, char *outbuf)
 
 	/* Create a token value and add it to the outgoing packet. */
 	if (global_encrypted_passwords_negotiated) {
+		SSVAL(outbuf,smb_vwv11, 8);
 		get_challenge(smb_buf(outbuf));
 	}
 
