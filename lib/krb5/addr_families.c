@@ -156,6 +156,7 @@ ipv4_parse_addr (const char *address, krb5_address *addr)
 {
     const char *p;
     struct in_addr a;
+
     p = strchr(address, ':');
     if(p) {
 	p++;
@@ -177,7 +178,8 @@ ipv4_parse_addr (const char *address, krb5_address *addr)
     return -1;
 #endif
     addr->addr_type = KRB5_ADDRESS_INET;
-    krb5_data_alloc(&addr->address, 4);
+    if(krb5_data_alloc(&addr->address, 4) != 0)
+	return -1;
     _krb5_put_int(addr->address.data, ntohl(a.s_addr), addr->address.length);
     return 0;
 }
@@ -317,6 +319,19 @@ ipv6_print_addr (const krb5_address *addr, char *str, size_t len)
 static int
 ipv6_parse_addr (const char *address, krb5_address *addr)
 {
+    int ret;
+    struct in6_addr in6;
+    krb5_error_code ret;
+
+    ret = inet_pton(AF_INET6, address, &in6.s6_addr);
+    if(ret == 1) {
+	addr->addr_type = KRB5_ADDRESS_INET6;
+	ret = krb5_data_alloc(&addr->address, sizeof(in6.s6_addr));
+	if (ret)
+	    return -1;
+	memcpy(addr->address.data, in6.s6_addr, sizeof(in6.s6_addr));
+	return 0;
+    }
     return -1;
 }
 
