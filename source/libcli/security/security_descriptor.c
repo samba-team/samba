@@ -224,3 +224,24 @@ BOOL security_descriptor_equal(const struct security_descriptor *sd1,
 
 	return True;	
 }
+
+/*
+  compare two security descriptors, but allow certain (missing) parts
+  to be masked out of the comparison
+*/
+BOOL security_descriptor_mask_equal(const struct security_descriptor *sd1, 
+				    const struct security_descriptor *sd2, 
+				    uint32 mask)
+{
+	if (sd1 == sd2) return True;
+	if (!sd1 || !sd2) return False;
+	if (sd1->revision != sd2->revision) return False;
+	if ((sd1->type & mask) != (sd2->type & mask)) return False;
+
+	if (!dom_sid_equal(sd1->owner_sid, sd2->owner_sid)) return False;
+	if (!dom_sid_equal(sd1->group_sid, sd2->group_sid)) return False;
+	if ((mask & SEC_DESC_DACL_PRESENT) && !security_acl_equal(sd1->dacl, sd2->dacl))      return False;
+	if ((mask & SEC_DESC_SACL_PRESENT) && !security_acl_equal(sd1->sacl, sd2->sacl))      return False;
+
+	return True;	
+}

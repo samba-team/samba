@@ -56,11 +56,6 @@
 	/******************/
 	/* Function: 0x03 */
 
-	typedef [public] struct {
-		uint32 size;
-		[subcontext(4)] security_descriptor *sd;
-	} sec_desc_buf;
-
 	NTSTATUS lsa_QuerySecObj (
 		[in,ref]     policy_handle *handle,
 		[in]         uint32 sec_info,
