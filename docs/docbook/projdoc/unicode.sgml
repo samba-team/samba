@@ -82,4 +82,21 @@ samba knows of three kinds of character sets:
 </variablelist>
 
 </sect1>
+
+<sect1>
+<title>Conversion from old names</title>
+
+<para>Because previous samba versions did not do any charset conversion, 
+characters in filenames are usually not correct in the unix charset but only 
+for the local charset used by the DOS/Windows clients.</para>
+
+<para>The following script from Steve Langasek converts all 
+filenames from CP850 to the iso8859-15 charset.</para>
+
+<para>
+<prompt>#</prompt><userinput>find <replaceable>/path/to/share</replaceable> -type f -exec bash -c 'CP="{}"; ISO=`echo -n "$CP" | iconv -f cp850 \
+  -t iso8859-15`; if [ "$CP" != "$ISO" ]; then mv "$CP" "$ISO"; fi' \;
+</userinput>
+</para>
+</sect1>
 </chapter>
