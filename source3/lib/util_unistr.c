@@ -91,7 +91,7 @@ int dos_PutUniCode(char *dst,const char *src, ssize_t len, BOOL null_terminate)
  Help ! Fix Me ! Fix Me !
 ********************************************************************/
 
-void ascii_to_unistr(char *dest, const char *src, int maxlen)
+void ascii_to_unistr(char *dest, const char *src, size_t maxlen)
 {
 	char *destend = dest + maxlen;
 	char c;
@@ -107,24 +107,28 @@ void ascii_to_unistr(char *dest, const char *src, int maxlen)
 }
 
 /*******************************************************************
- Pull an ASCII string out of a UNICODE array .
-
- Warning: doesn't do any codepage !!! BAD !!!
- 
- Help ! Fix Me ! Fix Me !
+ Pull a DOS codepage string out of a UNICODE array. len is in bytes.
 ********************************************************************/
 
-void unistr_to_ascii(char *dest, char *src, int len)
+void unistr_to_dos(char *dest, char *src, size_t len)
 {
 	char *destend = dest + len;
-	uint16 c;
 
 	while (dest < destend) {
-		c = SVAL(src, 0);
-		src += 2;
-		if (c == 0) break;
+		uint16 ucs2_val = SVAL(src,0);
+		uint16 cp_val = ucs2_to_doscp[ucs2_val];
 
-		*(dest++) = (char)c;
+		src += 2;
+
+		if (ucs2_val == 0)
+			break;
+
+		if (cp_val < 256)
+			*dest++ = (char)cp_val;
+		else {
+			*dest++ = (cp_val >> 8) & 0xff;
+			*dest++ = (cp_val & 0xff);
+		}
 	}
 
 	*dest = 0;
