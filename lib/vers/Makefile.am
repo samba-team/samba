@@ -4,8 +4,8 @@ include $(top_srcdir)/Makefile.am.common
 
 CLEANFILES		= print_version.h
 
-lib_LTLIBRARIES		= libvers.la
-libvers_la_LDFLAGS	= -version-info 1:0:0
+noinst_LTLIBRARIES	= libvers.la
+libvers_la_LDFLAGS	= -static
 
 build_HEADERZ		= vers.h
 
