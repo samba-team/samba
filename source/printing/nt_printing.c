@@ -1230,14 +1230,12 @@ uint32 del_a_printer(char *sharename)
 
 /****************************************************************************
 ****************************************************************************/
-static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
+static uint32 update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 {
 	pstring key;
 	char *buf;
 	int buflen, len, ret;
 	TDB_DATA kbuf, dbuf;
-	NTTIME time_nt;
-	time_t time_unix = time(NULL);
 	
 	/* 
 	 * in addprinter: no servername and the printer is the name
@@ -1263,10 +1261,6 @@ static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	 * So I've made a limitation in SAMBA: you can only have 1 printer model
 	 * behind a SAMBA share.
 	 */
-
-	unix_to_nt_time(&time_nt, time_unix);
-	info->changeid=time_nt.low;
-	info->c_setprinter++;
 
 	buf = NULL;
 	buflen = 0;
@@ -1684,6 +1678,7 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	info.untiltime = 0; /* Minutes since 12:00am GMT */
 	info.priority = 1;
 	info.default_priority = 1;
+	info.setuptime = (uint32)time(NULL);
 
 	if ((info.devmode = construct_nt_devicemode(info.printername)) == NULL)
 		goto fail;
@@ -1725,12 +1720,8 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	kbuf.dsize = strlen(key)+1;
 
 	dbuf = tdb_fetch(tdb, kbuf);
-#if 1 /* JRATEST */
 	if (!dbuf.dptr)
 		return get_a_printer_2_default(info_ptr, sharename);
-#else
-	if (!dbuf.dptr) return 1;
-#endif
 
 	len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "dddddddddddfffffPfffff",
 			&info.attributes,
@@ -1762,9 +1753,7 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
 	len += unpack_specifics(&info.specific,dbuf.dptr+len, dbuf.dsize-len);
 
-#if 1 /* JRATEST */
 	nt_printing_getsec(sharename, &info.secdesc_buf);
-#endif /* JRATEST */
 
 	safe_free(dbuf.dptr);
 	*info_ptr=memdup(&info, sizeof(info));
@@ -1859,7 +1848,36 @@ void get_printer_subst_params(int snum, fstring *printername, fstring *sharename
  */
 
 /****************************************************************************
+ Modify a printer. This is called from SETPRINTERDATA/DELETEPRINTERDATA.
 ****************************************************************************/
+
+uint32 mod_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
+{
+	uint32 success;
+	
+	dump_a_printer(printer, level);	
+	
+	switch (level)
+	{
+		case 2:
+		{
+			printer.info_2->c_setprinter++;
+			success=update_a_printer_2(printer.info_2);
+			break;
+		}
+		default:
+			success=1;
+			break;
+	}
+	
+	return (success);
+}
+
+/****************************************************************************
+ Add a printer. This is called from ADDPRINTER(EX) and also SETPRINTER.
+ We split this out from mod_a_printer as it updates the id's and timestamps.
+****************************************************************************/
+
 uint32 add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 {
 	uint32 success;
@@ -1870,7 +1888,17 @@ uint32 add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 	{
 		case 2: 
 		{
-			success=add_a_printer_2(printer.info_2);
+			/*
+			 * Update the changestamp.
+			 * Note we must *not* do this in mod_a_printer().
+			 */
+			NTTIME time_nt;
+			time_t time_unix = time(NULL);
+			unix_to_nt_time(&time_nt, time_unix);
+			printer.info_2->changeid=time_nt.low;
+
+			printer.info_2->c_setprinter++;
+			success=update_a_printer_2(printer.info_2);
 			break;
 		}
 		default:
