@@ -1001,6 +1001,8 @@ static void init_globals(void)
 	do_parameter("use spnego", "True");
 
 	do_parameter("smb ports", SMB_PORTS);
+
+	do_parameter("nt status support", "True");
 }
 
 static TALLOC_CTX *lp_talloc;
