@@ -955,9 +955,133 @@ static NTSTATUS samr_LookupRids(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 static NTSTATUS samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_OpenGroup *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct samr_domain_state *d_state;
+	struct samr_account_state *state;
+	struct dcesrv_handle *h;
+	const char *groupname, *sidstr;
+	TALLOC_CTX *mem_ctx2;
+	struct ldb_message **msgs;
+	struct dcesrv_handle *g_handle;
+	const char * const attrs[2] = { "sAMAccountName", NULL };
+	int ret;
+
+	ZERO_STRUCTP(r->out.acct_handle);
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_DOMAIN);
+
+	d_state = h->data;
+
+	/* form the group SID */
+	sidstr = talloc_asprintf(mem_ctx, "%s-%u", d_state->domain_sid, r->in.rid);
+	if (!sidstr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* search for the group record */
+	ret = samdb_search(d_state->sam_ctx,
+			   mem_ctx, d_state->basedn, &msgs, attrs,
+			   "(&(objectSid=%s)(objectclass=group))", 
+			   sidstr);
+	if (ret == 0) {
+		return NT_STATUS_NO_SUCH_GROUP;
+	}
+	if (ret != 1) {
+		DEBUG(1,("Found %d records matching sid %s\n", ret, sidstr));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	groupname = samdb_result_string(msgs[0], "sAMAccountName", NULL);
+	if (groupname == NULL) {
+		DEBUG(1,("sAMAccountName field missing for sid %s\n", sidstr));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	/* create group state and new policy handle */
+	mem_ctx2 = talloc_init("OpenGroup(%u)", r->in.rid);
+	if (!mem_ctx2) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	state = talloc_p(mem_ctx2, struct samr_account_state);
+	if (!state) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	state->mem_ctx = mem_ctx2;
+	state->sam_ctx = d_state->sam_ctx;
+	state->access_mask = r->in.access_mask;
+	state->domain_state = d_state;
+	state->basedn = talloc_steal(mem_ctx, mem_ctx2, msgs[0]->dn);
+	state->account_sid = talloc_strdup(mem_ctx2, sidstr);
+	state->account_name = talloc_strdup(mem_ctx2, groupname);
+	if (!state->account_name || !state->account_sid) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* create the policy handle */
+	g_handle = dcesrv_handle_new(dce_call->conn, SAMR_HANDLE_GROUP);
+	if (!g_handle) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	g_handle->data = state;
+	g_handle->destroy = samr_Account_destroy;
+
+	/* the domain state is in use one more time */
+	d_state->reference_count++;
+
+	*r->out.acct_handle = g_handle->wire_handle;
+
+	return NT_STATUS_OK;
 }
 
+/* these query macros make samr_Query[User|Group]Info a bit easier to read */
+
+#define QUERY_STRING(msg, field, attr) \
+	r->out.info->field = samdb_result_string(msg, attr, "");
+#define QUERY_UINT(msg, field, attr) \
+	r->out.info->field = samdb_result_uint(msg, attr, 0);
+#define QUERY_RID(msg, field, attr) \
+	r->out.info->field = samdb_result_rid_from_sid(mem_ctx, msg, attr, 0);
+#define QUERY_NTTIME(msg, field, attr) \
+	r->out.info->field = samdb_result_nttime(msg, attr, 0);
+#define QUERY_APASSC(msg, field, attr) \
+	r->out.info->field = samdb_result_allow_pwd_change(state->sam_ctx, mem_ctx, \
+							   state->domain_state->basedn, msg, attr);
+#define QUERY_FPASSC(msg, field, attr) \
+	r->out.info->field = samdb_result_force_pwd_change(state->sam_ctx, mem_ctx, \
+							   state->domain_state->basedn, msg, attr);
+#define QUERY_LHOURS(msg, field, attr) \
+	r->out.info->field = samdb_result_logon_hours(mem_ctx, msg, attr);
+#define QUERY_AFLAGS(msg, field, attr) \
+	r->out.info->field = samdb_result_acct_flags(msg, attr);
+
+
+/* these are used to make the Set[User|Group]Info code easier to follow */
+
+#define SET_STRING(mod, field, attr) do { \
+	if (r->in.info->field == NULL) return NT_STATUS_INVALID_PARAMETER; \
+	if (samdb_msg_add_string(state->sam_ctx, mem_ctx, mod, attr, r->in.info->field) != 0) { \
+		return NT_STATUS_NO_MEMORY; \
+	} \
+} while (0)
+
+#define SET_UINT(mod, field, attr) do { \
+	if (samdb_msg_add_uint(state->sam_ctx, mem_ctx, mod, attr, r->in.info->field) != 0) { \
+		return NT_STATUS_NO_MEMORY; \
+	} \
+} while (0)
+
+#define SET_AFLAGS(msg, field, attr) do { \
+	if (samdb_msg_add_acct_flags(state->sam_ctx, mem_ctx, msg, attr, r->in.info->field) != 0) { \
+		return NT_STATUS_NO_MEMORY; \
+	} \
+} while (0)
+
+#define SET_LHOURS(msg, field, attr) do { \
+	if (samdb_msg_add_logon_hours(state->sam_ctx, mem_ctx, msg, attr, r->in.info->field) != 0) { \
+		return NT_STATUS_NO_MEMORY; \
+	} \
+} while (0)
 
 /* 
   samr_QueryGroupInfo 
@@ -965,7 +1089,57 @@ static NTSTATUS samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 static NTSTATUS samr_QueryGroupInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_QueryGroupInfo *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct samr_account_state *state;
+	struct ldb_message *msg, **res;
+	const char * const attrs[4] = { "sAMAccountName", "description",
+					"numMembers", NULL };
+	int ret;
+
+	r->out.info = NULL;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_GROUP);
+
+	state = h->data;
+
+	/* pull all the group attributes */
+	ret = samdb_search(state->sam_ctx, mem_ctx, NULL, &res, attrs,
+			   "dn=%s", state->basedn);
+	if (ret != 1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	msg = res[0];
+
+	/* allocate the info structure */
+	r->out.info = talloc_p(mem_ctx, union samr_GroupInfo);
+	if (r->out.info == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	ZERO_STRUCTP(r->out.info);
+
+	/* Fill in the level */
+	switch (r->in.level) {
+	case GroupInfoAll:
+		QUERY_STRING(msg, all.name.name,        "sAMAccountName");
+		r->out.info->all.unknown = 7; /* Do like w2k3 */
+		QUERY_UINT  (msg, all.num_members,      "numMembers")
+		QUERY_STRING(msg, all.description.name, "description");
+		break;
+	case GroupInfoName:
+		QUERY_STRING(msg, name.name,            "sAMAccountName");
+		break;
+	case GroupInfoX:
+		r->out.info->unknown.unknown = 7;
+		break;
+	case GroupInfoDescription:
+		QUERY_STRING(msg, description.name, "description");
+		break;
+	default:
+		r->out.info = NULL;
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
+	
+	return NT_STATUS_OK;
 }
 
 
@@ -975,7 +1149,50 @@ static NTSTATUS samr_QueryGroupInfo(struct dcesrv_call_state *dce_call, TALLOC_C
 static NTSTATUS samr_SetGroupInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_SetGroupInfo *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct samr_account_state *state;
+	struct ldb_message mod, *msg = &mod;
+	int i, ret;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_GROUP);
+
+	state = h->data;
+
+	ZERO_STRUCT(mod);
+	mod.dn = talloc_strdup(mem_ctx, state->basedn);
+	if (!mod.dn) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	switch (r->in.level) {
+	case GroupInfoDescription:
+		SET_STRING(msg, description.name,         "description");
+		break;
+	case GroupInfoName:
+		/* On W2k3 this does not change the name, it changes the
+		 * sAMAccountName attribute */
+		SET_STRING(msg, name.name,                "sAMAccountName");
+		break;
+	case GroupInfoX:
+		/* This does not do anything obviously visible in W2k3 LDAP */
+		break;
+	default:
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	/* mark all the message elements as LDB_FLAG_MOD_REPLACE */
+	for (i=0;i<mod.num_elements;i++) {
+		mod.elements[i].flags = LDB_FLAG_MOD_REPLACE;
+	}
+
+	/* modify the samdb record */
+	ret = samdb_modify(state->sam_ctx, mem_ctx, &mod);
+	if (ret != 0) {
+		/* we really need samdb.c to return NTSTATUS */
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return NT_STATUS_OK;
 }
 
 
@@ -995,7 +1212,24 @@ static NTSTATUS samr_AddGroupMember(struct dcesrv_call_state *dce_call, TALLOC_C
 static NTSTATUS samr_DeleteDomainGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_DeleteDomainGroup *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct samr_account_state *state;
+	int ret;
+
+        *r->out.handle = *r->in.handle;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_GROUP);
+
+	state = h->data;
+
+	ret = samdb_delete(state->sam_ctx, mem_ctx, state->basedn);
+	if (ret != 0) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	ZERO_STRUCTP(r->out.handle);
+
+	return NT_STATUS_OK;
 }
 
 
@@ -1212,26 +1446,6 @@ static NTSTATUS samr_DeleteUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	return NT_STATUS_OK;
 }
 
-/* these query macros make samr_QueryUserInfo a bit easier to read */
-#define QUERY_STRING(msg, field, attr) \
-	r->out.info->field = samdb_result_string(msg, attr, "");
-#define QUERY_UINT(msg, field, attr) \
-	r->out.info->field = samdb_result_uint(msg, attr, 0);
-#define QUERY_RID(msg, field, attr) \
-	r->out.info->field = samdb_result_rid_from_sid(mem_ctx, msg, attr, 0);
-#define QUERY_NTTIME(msg, field, attr) \
-	r->out.info->field = samdb_result_nttime(msg, attr, 0);
-#define QUERY_APASSC(msg, field, attr) \
-	r->out.info->field = samdb_result_allow_pwd_change(state->sam_ctx, mem_ctx, \
-							   state->domain_state->basedn, msg, attr);
-#define QUERY_FPASSC(msg, field, attr) \
-	r->out.info->field = samdb_result_force_pwd_change(state->sam_ctx, mem_ctx, \
-							   state->domain_state->basedn, msg, attr);
-#define QUERY_LHOURS(msg, field, attr) \
-	r->out.info->field = samdb_result_logon_hours(mem_ctx, msg, attr);
-#define QUERY_AFLAGS(msg, field, attr) \
-	r->out.info->field = samdb_result_acct_flags(msg, attr);
-
 
 /* 
   samr_QueryUserInfo 
@@ -1413,32 +1627,6 @@ static NTSTATUS samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 	return NT_STATUS_OK;
 }
 
-
-/* these are used to make the SetUserInfo code easier to follow */
-#define SET_STRING(mod, field, attr) do { \
-	if (r->in.info->field == NULL) return NT_STATUS_INVALID_PARAMETER; \
-	if (samdb_msg_add_string(state->sam_ctx, mem_ctx, mod, attr, r->in.info->field) != 0) { \
-		return NT_STATUS_NO_MEMORY; \
-	} \
-} while (0)
-
-#define SET_UINT(mod, field, attr) do { \
-	if (samdb_msg_add_uint(state->sam_ctx, mem_ctx, mod, attr, r->in.info->field) != 0) { \
-		return NT_STATUS_NO_MEMORY; \
-	} \
-} while (0)
-
-#define SET_AFLAGS(msg, field, attr) do { \
-	if (samdb_msg_add_acct_flags(state->sam_ctx, mem_ctx, msg, attr, r->in.info->field) != 0) { \
-		return NT_STATUS_NO_MEMORY; \
-	} \
-} while (0)
-
-#define SET_LHOURS(msg, field, attr) do { \
-	if (samdb_msg_add_logon_hours(state->sam_ctx, mem_ctx, msg, attr, r->in.info->field) != 0) { \
-		return NT_STATUS_NO_MEMORY; \
-	} \
-} while (0)
 
 /* 
   samr_SetUserInfo 
