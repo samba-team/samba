@@ -87,18 +87,14 @@ fix atomic rename of database
 replay cache not implemented
 
 the following encryption types have been implemented: DES-CBC-CRC,
-DES-CBC-MD4, DES-CBC-MD5
+DES-CBC-MD4, DES-CBC-MD5, DES3-CBC-MD5, DES3-CBC-SHA1
 
 supports the following checksums: CRC32, RSA-MD4, RSA-MD5,
-RSA-MD4-DES, RSA-MD5-DES
+RSA-MD4-DES, RSA-MD5-DES, RSA-MD5-DES3, SHA1, HMAC-SHA1-DES3
 
 always generates a new subkey in an authenticator
 
-probably leaks memory when errors occur
-
 should the sequence numbers be XORed?
-
-encryption and checksum type is still hardcoded in some places.
 
 pa-afs3-salt?
 
