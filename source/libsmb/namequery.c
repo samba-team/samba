@@ -1330,7 +1330,7 @@ BOOL get_dc_list(BOOL pdc_only, const char *group, struct in_addr **ip_list, int
 				continue;
 			tmp = (struct in_addr *)realloc(return_iplist,(num_addresses + count_more) * sizeof(struct in_addr));
 			if (return_iplist == NULL) {
-				DEBUG(3, ("realloc failed with &d addresses\n", num_addresses + count_more));
+				DEBUG(3, ("realloc failed with %d addresses\n", num_addresses + count_more));
 				SAFE_FREE(return_iplist);
 				SAFE_FREE(more_ip);
 				return False;
