@@ -1,0 +1,18 @@
+<samba:parameter name="printer name"
+                 context="S"
+		 print="1"
+		 type="string"
+                 xmlns:samba="http://samba.org/common">
+ <synonym>printer</synonym>
+<description>
+    <para>This parameter specifies the name of the printer 
+    to which print jobs spooled through a printable service will be sent.</para>
+
+    <para>If specified in the [global] section, the printer
+    name given will be used for any printable service that does 
+	not have its own printer name specified.</para>
+</description>
+
+<value type="default"><comment>none (but may be <constant>lp</constant> on many systems)</comment></value>
+<value type="example">laserwriter</value>
+</samba:parameter>

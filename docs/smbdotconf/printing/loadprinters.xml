@@ -1,0 +1,14 @@
+<samba:parameter name="load printers"
+                 context="G"
+				 type="boolean"
+		 print="1"
+                 xmlns:samba="http://samba.org/common">
+<description>
+    <para>A boolean variable that controls whether all 
+    printers in the printcap will be loaded for browsing by default. 
+    See the <link linkend="PRINTERSSECT">printers</link> section for 
+	more details.</para>
+</description>
+
+<value type="default">yes</value>
+</samba:parameter>

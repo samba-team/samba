@@ -1,0 +1,15 @@
+<samba:parameter name="nt acl support"
+                 context="S"
+                 advanced="1" wizard="1"
+				 type="boolean"
+                 xmlns:samba="http://samba.org/common">
+<description>
+    <para>This boolean parameter controls whether <citerefentry><refentrytitle>smbd</refentrytitle>                                       
+    <manvolnum>8</manvolnum></citerefentry> will attempt to map 
+    UNIX permissions into Windows NT access control lists.
+    This parameter was formally a global parameter in releases
+    prior to 2.2.2.</para>
+</description>
+
+<value type="default">yes</value>
+</samba:parameter>

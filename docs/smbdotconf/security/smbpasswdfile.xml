@@ -1,0 +1,13 @@
+<samba:parameter name="smb passwd file"
+	type="string"
+                 context="G"
+                 advanced="1" developer="1"
+		 xmlns:samba="http://samba.org/common">
+<description>
+    <para>This option sets the path to the encrypted smbpasswd file. By
+    default the path to the smbpasswd file  is compiled into Samba.</para>
+</description>
+
+<value type="default">${prefix}/private/smbpasswd</value>
+<value type="example">/etc/samba/smbpasswd</value>
+</samba:parameter>

@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+
+<!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
+]>
+
+<book id="Samba-HOWTO-Collection">
+<title>The Official Samba-3 HOWTO and Reference Guide</title>
+
+<bookinfo>
+	<authorgroup>
+	<editor>&person.jelmer;</editor>
+	<editor>&person.jht;</editor>
+	<editor>&person.jerry;</editor>
+	</authorgroup>
+	<pubdate><?latex \today ?></pubdate>
+
+</bookinfo>
+
+<?latex \setcounter{page}{5} ?>
+
+<preface>
+	<title>Attribution</title>
+	<para>
+		&attributions;
+	</para>
+</preface>
+
+<?latex \cleardoublepage ?>
+
+<preface>
+	<title>Abstract</title>
+
+<para>
+The editors wish to thank you for your decision to purchase this book.
+The Official Samba-3 HOWTO and Reference Guide is the result of many years
+of accumulation of information, feedback, tips, hints, and happy solutions.
+</para>
+
+<para>
+Please note that this book is a living document, the contents of which are
+constantly being updated. We encourage you to contribute your tips, techniques,
+helpful hints, and your special insight into the Windows networking world to
+help make the next generation of this book even more valuable to Samba users.
+</para>
+
+<para>
+We have made a concerted effort to document more comprehensively than has been
+done previously the information that may help you to better deploy Samba and to
+gain more contented network users.
+</para>
+
+<para>
+This book provides example configurations, it documents key aspects of Microsoft
+Windows networking, provides in-depth insight into the important configuration of
+Samba-3, and helps to put all of these into a useful framework.
+</para>
+
+<para>
+The most recent electronic versions of this document can be found at
+<ulink noescape="1" url="http://www.samba.org/">http://www.samba.org/</ulink>
+on the <quote>Documentation</quote> page.
+</para>
+
+<para>
+Updates, patches and corrections are most welcome. Please email your contributions
+to any one of the following:
+</para>
+
+<para>
+<simplelist>
+<member><ulink noescape="1" url="mailto:jelmer@samba.org">Jelmer Vernooij (jelmer@samba.org)</ulink></member>
+<member><ulink noescape="1" url="mailto:jht@samba.org">John H. Terpstra (jht@samba.org)</ulink></member>
+<member><ulink noescape="1" url="mailto:jerry@samba.org">Gerald (Jerry) Carter (jerry@samba.org)</ulink></member>
+</simplelist>
+</para>
+
+<para>
+We wish to advise that only original and unencumbered material can be published. Please do not submit
+content that is not your own work unless proof of consent from the copyright holder accompanies your
+submission.
+</para>
+
+</preface>
+
+<?latex \cleardoublepage ?>
+
+&foreword-tridge;
+
+<?latex \cleardoublepage ?>
+<!-- Contents -->
+<toc/>
+<?latex \cleardoublepage ?>
+
+<lot/>
+
+&IntroSMB;
+
+<!-- Chapters -->
+<part id="introduction">
+<title>General Installation</title>
+<?latex \pagenumbering{arabic} ?>
+<partintro>
+<title>Preparing Samba for Configuration</title>
+<para>This section of the Samba-HOWTO-Collection contains general info on how to install Samba 
+and how to configure the parts of Samba you will most likely need.
+PLEASE read this.</para>
+</partintro>
+&UNIX-INSTALL;
+&FastStart;
+</part>
+
+<part id="type">
+<title>Server Configuration Basics</title>
+<partintro>
+<title>First Steps in Server Configuration</title>
+<para>
+Samba can operate in various modes within SMB networks. This HOWTO section contains information on
+configuring Samba to function as the type of server your network requires. Please read this
+section carefully.
+</para>
+</partintro>
+&ServerType;
+&Samba-PDC-HOWTO;
+&Samba-BDC-HOWTO;
+&DOMAIN-MEMBER;
+&StandAloneServer;
+&ClientConfig;
+</part>
+
+<part id="optional">
+<title>Advanced Configuration</title>
+<partintro>
+<title>Valuable Nuts and Bolts Information</title>
+<para>
+Samba has several features that you might want or might not want to use. The chapters in this part each cover specific Samba features.
+</para>
+</partintro>
+&NetworkBrowsing;
+&Passdb;
+&GROUP-MAPPING-HOWTO;
+&AccessControls;
+&locking;
+&SecuringSamba;
+&Trusts;
+&MS-Dfs-Setup;
+&PRINTER-DRIVER2;
+&CUPS;
+&VFS;
+&WINBIND;
+&AdvancedNetworkAdmin;
+&PolicyMgmt;
+&ProfileMgmt;
+&Samba-PAM;
+&IntegratingWithWindows;
+&unicode;
+&Backup;
+&HighAvailability;
+</part>
+
+<part id="migration">
+<title>Migration and Updating</title>
+&upgrading;
+&NT4Migration;
+&SWAT;
+</part>
+
+<part id="troubleshooting">
+<title>Troubleshooting</title>
+&Diagnosis;
+&problems;
+&BUGS;
+</part>
+
+<part id="Appendix">
+<title>Appendixes</title>
+&Compiling;
+&Portability;
+&Other-Clients;
+&SPEED;
+&DNS-DHCP-Configuration;
+</part>
+
+
+
+<?latex \include{gpl}?>
+
+&glossary;
+
+<?latex \chaptermark{Subject index} ?>
+<index/>
+
+</book>

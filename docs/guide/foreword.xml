@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
+		"http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+
+  <!-- Stuff for xincludes -->
+  <!ENTITY % xinclude SYSTEM "../entities/xinclude.dtd">
+  %xinclude;
+
+  <!-- entities files to use -->
+  <!ENTITY % global_entities SYSTEM '../entities/global.entities'>
+  %global_entities;
+
+]>
+
+<preface lang="en-US">
+<title>Foreword</title>
+
+<sect1><title>By Dan Kusnetzky, IDC</title>
+<blockquote>
+<attribution>
+Dan Kusnetzky, Vice President System Software Research, International Data Corporation
+</attribution>
+
+<para>
+IDC's software research group has been conducting research on the market for software, 
+including operating environments, for over twenty years. In 1994, the system software 
+research team started to field questions from its subscribers on Linux. We had very 
+little empirical data to offer when these queries first were heard, so IDC added Linux 
+to its operating environment research agenda. The first demand and supply side research 
+containing IDC's findings on Linux started to appear in early 1995. 
+</para>
+
+<para>
+IDC has watched as Linux marched from being software for computer hobbyists to being 
+a mainstream choice in many markets worldwide. This march is very similar to the adoption 
+cycle UNIX experienced in the 1970s and 1980s. Windows repeated this pattern of adoption 
+during the 1980s and 1990s. IDC has long projected that Linux would be a mainstream 
+choice in nearly all markets by the end of 2005. The software is well down that path 
+now and just might beat IDC's projections.
+</para>
+
+<para>
+As of the end of 2002, Linux was the number three desktop or client operating environment, 
+responsible for nearly 3% of the worldwide shipments of client operating environment 
+software. Linux was the number two server operating environment, responsible for nearly 
+25% of the worldwide shipments of server operating environment software. This is an amazing 
+level of growth from its rather humble beginnings of holding less than 1% share of either 
+client or server operating environment market when IDC first started publishing its findings 
+on Linux.
+</para>
+
+<para>
+IDC's demand-side studies have indicated that Linux is most often utilized as a platform 
+for basic infrastructure services, such as supporting access to shared files and printers 
+or supporting basic networking functions. IDC's most recent survey, conducted in late 2003, 
+indicated that supporting file and print services was the most common use of Linux. Samba 
+and NFS are the most commonly mentioned approaches to offering file and print services on 
+Linux.
+</para>
+
+<para>
+Nearly all of IDC's operating environment studies have shown that Linux is being added 
+into organizational networks that already include Windows, UNIX, and mainframe operating 
+environments. This, of course, means that interoperability with these operating environments 
+is a crucial success factor for Linux.
+</para>
+
+<para>
+All of this leads to the book in hand, <emphasis>Samba-3 By Example</emphasis>, by John H. Terpstra, It addresses 
+the most commonly heard questions about bringing Linux and Samba into a Windows or UNIX 
+focused environment. Namely, organizations voice concerns about staff having sufficient 
+levels of expertise to facilitate development, administration, operations and support activities 
+around the adoption of Linux and Samba. I expect <emphasis>Samba-3</emphasis> by Example will be of enormous help 
+to Windows or UNIX administrators hoping to gain a level of comfort and familiarity with both 
+Linux and Samba.
+</para>
+
+<para>
+Samba is a mature open source software product that is well established as a leading Windows 
+file and print technology in use on large-scale UNIX systems. Its stability and scalability 
+appears to be well respected. This book demonstrates easy approaches to implementing Samba-3 
+no matter whether your network is large or small. It is a book that would make a fine addition 
+to the network administrators' library!
+</para>
+</blockquote>
+
+</sect1>
+
+<sect1>
+<title>By Andrew Tridgell, Samba Team</title>
+
+<blockquote><attribution>
+Andrew Tridgell, President, Samba Team
+</attribution>
+
+<para>
+I've always been the sort of computer user that learns best by
+example. Seeing a complete example matching a real-world use of a
+piece of software gives me an understanding of that software far
+better than reading detailed manuals. If, like me, you are the sort of
+computer user that learns best by example then this book is for you.
+</para>
+
+<para>
+I was also delighted to see the use of ethereal to illustrate the
+network protocols used by Samba. Ethereal has developed into a very
+sophisticated network analysis tool, and familiarity with using
+ethereal is a very useful skill for any system administrator.
+</para>
+
+<para>
+Enjoy this book, and make the most of Samba!
+</para>
+</blockquote>
+
+</sect1>
+
+</preface>
