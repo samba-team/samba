@@ -174,6 +174,7 @@ static void usage(char *pname)
 {
 	printf("Usage: %s [-sh] [-L servername] [configfilename] [hostname hostIP]\n", pname);
 	printf("\t-s                  Suppress prompt for enter\n");
+	printf("\t-x                  Print only smb.conf parameters with values that are non-default\n");
 	printf("\t-h                  Print usage\n");
 	printf("\t-L servername       Set %%L macro to servername\n");
 	printf("\t-t encoding         Print parameters with encoding\n");
@@ -192,7 +193,7 @@ int main(int argc, char *argv[])
   pstring configfile;
   int opt;
   int s;
-  BOOL show_defaults=False;
+  BOOL show_defaults=True;
   BOOL silent_mode = False;
   int ret = 0;
   pstring term_code;
@@ -205,7 +206,7 @@ int main(int argc, char *argv[])
   
   charset_initialise();
 
-  while ((opt = getopt(argc, argv,"shL:t:v")) != EOF) {
+  while ((opt = getopt(argc, argv,"shL:t:x")) != EOF) {
   switch (opt) {
     case 's':
       silent_mode = True;
@@ -220,8 +221,8 @@ int main(int argc, char *argv[])
     case 't':
       pstrcpy(term_code,optarg);
       break;
-    case 'v':
-      show_defaults=True;
+    case 'x':
+      show_defaults=False;
       break;
     default:
       printf("Incorrect program usage\n");
