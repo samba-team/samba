@@ -13,6 +13,7 @@ $_ = $foo[0];
 # create the package name
 $vername = "    id \"Samba Version ".$_."\"\n";
 
+$patch = 0;
 #create the subsystem version numbers
 if (/alpha/) {
   $_ =~ s/alpha/.00./;
@@ -21,8 +22,13 @@ elsif (/p/) {
   $_ =~ s/p/./;
   $_ .= '.00';
 }
+else {
+ $_ .='.01.00';
+}
+
 ($v1,$v2,$v3,$v4,$v5) = split('\.');
-$vernum = sprintf "        version %02d%02d%02d%02d%02d\n",$v1,$v2,$v3,$v4,$v5;
+$v4 = $v4 + $patch;
+$vernum = sprintf("        version %02d%02d%02d%02d%02d\n",$v1,$v2,$v3,$v4,$v5);
 
 # generate the samba.spec file
 open(SPEC,">samba.spec") || die "Unable to open samba.spec for output\n";
