@@ -501,8 +501,21 @@ static void cgi_download(char *file)
 {
 	struct stat st;
 	char buf[1024];
-	int fd, l;
+	int fd, l, i;
 	char *p;
+
+	/* sanitise the filename */
+	for (i=0;file[i];i++) {
+		if (!isalnum(file[i]) && !strchr("/.-_", file[i])) {
+			cgi_setup_error("404 File Not Found","",
+					"Illegal character in filename");
+		}
+	}
+
+	if (strstr(file,"..")) {
+		cgi_setup_error("404 File Not Found","",
+				"Relative paths not allowed");
+	}
 
 	if (!file_exist(file, &st)) {
 		cgi_setup_error("404 File Not Found","",
@@ -574,7 +587,7 @@ void cgi_setup(char *rootdir)
 
 	if (!authenticated) {
 		cgi_setup_error("401 Authorization Required", 
-				"WWW-Authenticate: Basic realm=\"samba\"\r\n",
+				"WWW-Authenticate: Basic realm=\"root\"\r\n",
 				"You must be authenticated to use this service");
 	}
 
@@ -604,3 +617,5 @@ void cgi_setup(char *rootdir)
 	printf("HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n");
 	
 }
+
+
