@@ -251,7 +251,7 @@ size_t tdb_pack(char *buf, int bufsize, char *fmt, ...)
 
 	va_end(ap);
 
-	DEBUG(8,("tdb_pack(%s, %d) -> %d\n", 
+	DEBUG(18,("tdb_pack(%s, %d) -> %d\n", 
 		 fmt0, bufsize0, (int)PTR_DIFF(buf, buf0)));
 	
 	return PTR_DIFF(buf, buf0);
@@ -348,7 +348,7 @@ int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
 
 	va_end(ap);
 
-	DEBUG(8,("tdb_unpack(%s, %d) -> %d\n", 
+	DEBUG(18,("tdb_unpack(%s, %d) -> %d\n", 
 		 fmt0, bufsize0, (int)PTR_DIFF(buf, buf0)));
 
 	return PTR_DIFF(buf, buf0);
