@@ -220,6 +220,9 @@ encode_type (const char *name, const Type *t)
 		 "BACK;\n",
 		 t->application);
 	break;
+    case TBoolean:
+	encode_primitive ("boolean", name);
+	break;
     default:
 	abort ();
     }
@@ -245,6 +248,7 @@ generate_type_encode (const Symbol *s)
   switch (s->type->type) {
   case TInteger:
   case TUInteger:
+  case TBoolean:
   case TOctetString:
   case TGeneralizedTime:
   case TGeneralString:

@@ -53,6 +53,7 @@ free_type (const char *name, const Type *t)
       break;
   case TInteger:
   case TUInteger:
+  case TBoolean:
   case TEnumerated :
       break;
   case TOctetString:

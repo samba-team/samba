@@ -152,6 +152,9 @@ length_type (const char *name, const Type *t, const char *variable)
 	length_type (name, t->subtype, variable);
 	fprintf (codefile, "ret += 1 + length_len (ret);\n");
 	break;
+    case TBoolean:
+	length_primitive ("boolean", name, variable);
+	break;
     default :
 	abort ();
     }

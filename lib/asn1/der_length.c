@@ -96,6 +96,12 @@ length_len (size_t len)
 }
 
 size_t
+length_boolean (const int *data)
+{
+  return 1 + length_len(1) + 1;
+}
+
+size_t
 length_integer (const int *data)
 {
     size_t len = len_int (*data);

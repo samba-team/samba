@@ -281,6 +281,9 @@ decode_type (const char *name, const Type *t)
 		"}\n");
 
 	break;
+    case TBoolean:
+	decode_primitive ("boolean", name);
+	break;
     default :
 	abort ();
     }
@@ -310,6 +313,7 @@ generate_type_decode (const Symbol *s)
   switch (s->type->type) {
   case TInteger:
   case TUInteger:
+  case TBoolean:
   case TOctetString:
   case TOID:
   case TGeneralizedTime:

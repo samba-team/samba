@@ -133,6 +133,19 @@ der_put_length (unsigned char *p, size_t len, size_t val, size_t *size)
 }
 
 int
+der_put_boolean(unsigned char *p, size_t len, const int *data, size_t *size)
+{
+    if(len < 1)
+	return ASN1_OVERFLOW;
+    if(*data != 0)
+	*p = 0xff;
+    else
+	*p = 0;
+    *size = 1;
+    return 0;
+}
+
+int
 der_put_general_string (unsigned char *p, size_t len, 
 			const heim_general_string *str, size_t *size)
 {
@@ -217,6 +230,30 @@ der_put_length_and_tag (unsigned char *p, size_t len, size_t len_val,
     ret += l;
     e = der_put_tag (p, len, class, type, tag, &l);
     if(e)
+	return e;
+    p -= l;
+    len -= l;
+    ret += l;
+    *size = ret;
+    return 0;
+}
+
+int
+encode_boolean (unsigned char *p, size_t len, const int *data,
+		size_t *size)
+{
+    size_t ret = 0;
+    size_t l;
+    int e;
+    
+    e = der_put_boolean (p, len, data, &l);
+    if(e)
+	return e;
+    p -= l;
+    len -= l;
+    ret += l;
+    e = der_put_length_and_tag (p, len, l, UNIV, PRIM, UT_Boolean, &l);
+    if (e)
 	return e;
     p -= l;
     len -= l;

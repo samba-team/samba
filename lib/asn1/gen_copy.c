@@ -55,6 +55,7 @@ copy_type (const char *from, const char *to, const Type *t)
       break;
   case TInteger:
   case TUInteger:
+  case TBoolean:
   case TEnumerated :
       fprintf(codefile, "*(%s) = *(%s);\n", to, from);
       break;

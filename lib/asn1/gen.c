@@ -270,6 +270,10 @@ define_asn1 (int level, Type *t)
 	fprintf (headerfile, "[APPLICATION %d] ", t->application);
 	define_asn1 (level, t->subtype);
 	break;
+    case TBoolean:
+	space(level);
+	fprintf (headerfile, "BOOLEAN");
+	break;
     case TUTF8String:
 	space(level);
 	fprintf (headerfile, "UTF8String");
@@ -406,6 +410,10 @@ define_type (int level, char *name, Type *t, int typedefp)
     case TUTF8String:
 	space(level);
 	fprintf (headerfile, "heim_utf8_string %s;\n", name);
+	break;
+    case TBoolean:
+	space(level);
+	fprintf (headerfile, "int %s;\n", name);
 	break;
     case TNull:
 	space(level);

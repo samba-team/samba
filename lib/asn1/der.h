@@ -74,6 +74,8 @@ int time2generalizedtime (time_t t, heim_octet_string *s);
 int der_get_int (const unsigned char *p, size_t len, int *ret, size_t *size);
 int der_get_length (const unsigned char *p, size_t len,
 		    size_t *val, size_t *size);
+int der_get_boolean (const unsigned char *p, size_t len,
+		     int *data, size_t *size);
 int der_get_general_string (const unsigned char *p, size_t len, 
 			    heim_general_string *str, size_t *size);
 int der_get_octet_string (const unsigned char *p, size_t len, 
@@ -91,6 +93,7 @@ int der_match_tag_and_length (const unsigned char *p, size_t len,
 			      Der_class class, Der_type type, int tag,
 			      size_t *length_ret, size_t *size);
 
+int decode_boolean (const unsigned char*, size_t, int*, size_t*);
 int decode_integer (const unsigned char*, size_t, int*, size_t*);
 int decode_unsigned (const unsigned char*, size_t, unsigned*, size_t*);
 int decode_enumerated (const unsigned char*, size_t, unsigned*, size_t*);
@@ -107,6 +110,7 @@ int decode_utf8string (const unsigned char*, size_t,
 
 int der_put_int (unsigned char *p, size_t len, int val, size_t*);
 int der_put_length (unsigned char *p, size_t len, size_t val, size_t*);
+int der_put_boolean (unsigned char *p, size_t len, const int *data, size_t*);
 int der_put_general_string (unsigned char *p, size_t len,
 			    const heim_general_string *str, size_t*);
 int der_put_octet_string (unsigned char *p, size_t len,
@@ -118,6 +122,8 @@ int der_put_tag (unsigned char *p, size_t len, Der_class class, Der_type type,
 int der_put_length_and_tag (unsigned char*, size_t, size_t, 
 			    Der_class, Der_type, int, size_t*);
 
+int encode_boolean (unsigned char *p, size_t len,
+		    const int *data, size_t*);
 int encode_integer (unsigned char *p, size_t len,
 		    const int *data, size_t*);
 int encode_unsigned (unsigned char *p, size_t len,
@@ -143,6 +149,7 @@ void free_generalized_time (time_t *t);
 void free_utf8string (heim_utf8_string*);
 
 size_t length_len (size_t len);
+size_t length_boolean (const int *data);
 size_t length_integer (const int *data);
 size_t length_unsigned (const unsigned *data);
 size_t length_enumerated (const unsigned *data);

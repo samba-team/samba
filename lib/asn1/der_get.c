@@ -77,6 +77,19 @@ der_get_int (const unsigned char *p, size_t len,
 }
 
 int
+der_get_boolean(const unsigned char *p, size_t len, int *data, size_t *size)
+{
+    if(len < 1)
+	return ASN1_OVERRUN;
+    if(*p != 0)
+	*data = 1;
+    else
+	*data = 0;
+    *size = 1;
+    return 0;
+}
+
+int
 der_get_length (const unsigned char *p, size_t len,
 		size_t *val, size_t *size)
 {
@@ -226,6 +239,33 @@ der_match_tag_and_length (const unsigned char *p, size_t len,
     len -= l;
     ret += l;
     e = der_get_length (p, len, length_ret, &l);
+    if (e) return e;
+    p += l;
+    len -= l;
+    ret += l;
+    if(size) *size = ret;
+    return 0;
+}
+
+int
+decode_boolean (const unsigned char *p, size_t len,
+		int *num, size_t *size)
+{
+    size_t ret = 0;
+    size_t l, reallen;
+    int e;
+
+    e = der_match_tag (p, len, UNIV, PRIM, UT_Boolean, &l);
+    if (e) return e;
+    p += l;
+    len -= l;
+    ret += l;
+    e = der_get_length (p, len, &reallen, &l);
+    if (e) return e;
+    p += l;
+    len -= l;
+    ret += l;
+    e = der_get_boolean (p, reallen, num, &l);
     if (e) return e;
     p += l;
     len -= l;
