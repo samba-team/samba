@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -90,6 +90,10 @@ pidfile(const char *basename)
     if(basename == NULL)
 	basename = getprogname();
     pidfile_path = pid_file_write(basename);
+#if defined(HAVE_ATEXIT)
     atexit(pidfile_cleanup);
+#elif defined(HAVE_ON_EXIT)
+    on_exit(pidfile_cleanup);
+#endif
 }
 #endif
