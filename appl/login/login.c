@@ -570,11 +570,6 @@ main(int argc, char **argv)
 		continue;
 	}
         pwd = k_getpwnam(username);
-	if(pwd == NULL){
-	    fprintf(stderr, "Login incorrect.\n");
-	    ask = 1;
-	    continue;
-	}
 #ifdef ALLOW_NULL_PASSWORD
         if (pwd != NULL && (pwd->pw_passwd[0] == '\0')) {
             strcpy(password,"");
@@ -587,6 +582,12 @@ main(int argc, char **argv)
 		continue;
 	}
 	
+	if(pwd == NULL){
+	    fprintf(stderr, "Login incorrect.\n");
+	    ask = 1;
+	    continue;
+	}
+
 	if(f_flag == 0 && check_password(pwd, password)){
 	    fprintf(stderr, "Login incorrect.\n");
             ask = 1;
