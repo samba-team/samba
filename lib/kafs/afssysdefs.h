@@ -82,7 +82,18 @@
 #define AFS_SYSCALL	31
 #endif
 
-#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+#if defined(__FreeBSD__)
+#ifdef __FreeBSD_version >= 500000
+#define AFS_SYSCALL 339
+#else
+#define AFS_SYSCALL 210
+#endif
+
+#ifdef __OpenBSD__
+#define AFS_SYSCALL 208
+#endif
+
+#if defined(__NetBSD__)
 #define AFS_SYSCALL 210
 #endif
 
