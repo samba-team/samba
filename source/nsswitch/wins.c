@@ -35,7 +35,6 @@
 
 static int initialised;
 
-
 /* Use our own create socket code so we don't recurse.... */
 
 static int wins_lookup_open_socket_in(void)
@@ -77,7 +76,7 @@ static int wins_lookup_open_socket_in(void)
 static void nss_wins_init(void)
 {
 	initialised = 1;
-	DEBUGLEVEL = 10;
+	DEBUGLEVEL = 0;
 
 	/* needed for lp_xx() functions */
 	charset_initialise();
