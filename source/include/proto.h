@@ -4907,6 +4907,7 @@ uint32 _reg_open(POLICY_HND * pol, uint32 access_mask);
 uint32 _reg_open_entry(const POLICY_HND * pol, const UNISTR2 * uni_name,
 		       uint32 unknown_0, uint32 access_mask,
 		       POLICY_HND * entry_pol);
+uint32 _reg_info(POLICY_HND* pol, BUFFER2* buf, uint32* type);
 BOOL api_reg_rpc(rpcsrv_struct * p);
 
 /*The following definitions come from  winregd/winregd.c  */

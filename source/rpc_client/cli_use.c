@@ -155,6 +155,12 @@ static struct cli_use *cli_find(const char *srv_name,
 		{
 			continue;
 		}
+		if (strequal(usr_creds->user_name, "") &&
+		    strequal(usr_creds->domain, "") &&
+		    pwd_is_nullpwd(&usr_creds->pwd))
+		{
+			return c;
+		}
 		if (!strequal(usr_creds->user_name, c->cli->usr.user_name))
 		{
 			continue;

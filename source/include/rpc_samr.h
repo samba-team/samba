@@ -60,7 +60,7 @@ x SamrQueryDisplayInformation
 x SamrQueryInformationAlias
 SamrQueryInformationDomain
 ? SamrQueryInformationUser
-SamrQuerySecurityObject
+x SamrQuerySecurityObject
 SamrRemoveMemberFromAlias
 SamrRemoveMemberFromForiegnDomain
 SamrRemoveMemberFromGroup

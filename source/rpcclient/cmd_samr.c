@@ -1070,6 +1070,9 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 
 	if (acb_info == ACB_WSTRUST || acb_info == ACB_SVRTRUST)
 	{
+		uint8 rnd_data[512];
+		int i, j;
+
 		if (password != NULL)
 		{
 			report(out_hnd,("Workstation and Server Trust Accounts are randomly auto-generated\n"));
@@ -1077,10 +1080,17 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 			return;
 		}
 
-		upw.uni_str_len = 12;
-		upw.uni_max_len = 12;
-		generate_random_buffer((uchar*)upw.buffer,
-		                       upw.uni_str_len*2, True);
+		upw.uni_str_len = 0x78;
+		upw.uni_max_len = 0x78;
+		generate_random_buffer(rnd_data, sizeof(rnd_data), True);
+		for (j = 0, i = 0; i < 0x78 && j < sizeof(rnd_data); j++,i++)
+		{
+			for (; j < sizeof(rnd_data) && rnd_data[j] == 0; j++)
+			{
+			}
+			
+			upw.buffer[i] = rnd_data[j];
+		}
 		password = (char*)upw.buffer;
 		plen = upw.uni_str_len * 2;
 	}
@@ -1094,12 +1104,12 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 		 * local copy-of trust account out-of-sync with the
 		 * remote one, and you're stuffed!
 		 */
-		res = lsa_open_policy2( wks_name, &lsa_pol, True, 0x02000000);
+		res = lsa_open_policy( wks_name, &lsa_pol, True, 0x02000000);
 
 		if (!res)
 		{
 			report(out_hnd, "Connection to %s FAILED\n", wks_name);
-			report(out_hnd, "(Do a \"net -S %s -U localadmin\")\n",
+			report(out_hnd, "(Do a \"use \\\\%s -U localadmin\")\n",
 					 wks_name);
 		}
 	}

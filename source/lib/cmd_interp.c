@@ -947,7 +947,14 @@ static void cmd_use(struct client_info *info, int argc, char *argv[])
 	pstring password;
 	extern struct user_creds *usr_creds;
 
-	copy_nt_creds(&u, &usr_creds->ntc);
+	if (usr_creds != NULL)
+	{
+		copy_nt_creds(&u, &usr_creds->ntc);
+	}
+	else
+	{
+		copy_nt_creds(&u, NULL);
+	}
 
 	pstrcpy(dest_host, cli_info.dest_host);
 	pstrcpy(u.user_name, optarg);
@@ -1131,6 +1138,8 @@ static void cmd_use(struct client_info *info, int argc, char *argv[])
 		}
 	}
 
+	usr_creds = NULL;
+
 	/* paranoia: destroy the local copy of the password */
 	bzero(password, sizeof(password));
 }
@@ -1165,6 +1174,8 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 	pstring term_code;
 	pstring password;	/* local copy only, if one is entered */
 	extern struct user_creds *usr_creds;
+
+	fstring srv_name;
 
 	password[0] = 0;
 	usr_creds = &usr;
@@ -1412,10 +1423,20 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 	/* paranoia: destroy the local copy of the password */
 	bzero(password, sizeof(password));
 
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, cli_info.dest_host);
+	strupper(srv_name);
+
+	if (!strequal(srv_name, "\\\\."))
+	{
+		BOOL isnew;
+		cli_net_use_add(srv_name, &usr.ntc, True, False, &isnew);
+	}
 	if (cmd_str != NULL)
 	{
 		process(&cli_info, cmd_str);
 	}
+	usr_creds = NULL;
 }
 
 static void read_user_env(struct ntuser_creds *u)

@@ -200,7 +200,7 @@ BOOL msrpc_lsa_create_secret(const char* srv_name, const char* secret_name,
 	POLICY_HND lsa_pol;
 
 	/* lookup domain controller; receive a policy handle */
-	res = res ? lsa_open_policy2( srv_name,
+	res = res ? lsa_open_policy( srv_name,
 				&lsa_pol, True, 0x02000000) : False;
 
 	/* lookup domain controller; receive a policy handle */
