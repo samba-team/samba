@@ -1,4 +1,4 @@
-.TH SMB.CONF 5 "08 Dec 1998" "smb.conf 2.0.0beta3"
+.TH "smb\&.conf " "5" "23 Oct 1998" "Samba" "SAMBA" 
 .PP 
 .SH "NAME" 
 smb\&.conf \- The configuration file for the Samba suite
@@ -1289,63 +1289,7 @@ file permissions\&.
 .IP 
 .IP "\fBallow hosts (S)\fP" 
 .IP 
-A synonym for this parameter is \fB\'hosts allow\'\fP
-.IP 
-This parameter is a comma, space, or tab delimited set of hosts which
-are permitted to access a service\&.
-.IP 
-If specified in the \fB[global]\fP section then it will
-apply to all services, regardless of whether the individual service
-has a different setting\&.
-.IP 
-You can specify the hosts by name or IP number\&. For example, you could
-restrict access to only the hosts on a Class C subnet with something
-like \f(CW"allow hosts = 150\&.203\&.5\&."\fP\&. The full syntax of the list is
-described in the man page \fBhosts_access (5)\fP\&. Note that this man
-page may not be present on your system, so a brief description will
-be given here also\&.
-.IP 
-\fINOTE:\fP IF you wish to allow the \fBsmbpasswd
-(8)\fP program to be run by local users to change
-their Samba passwords using the local \fBsmbd (8)\fP
-daemon, then you \fIMUST\fP ensure that the localhost is listed in your
-\fBallow hosts\fP list, as \fBsmbpasswd (8)\fP runs
-in client-server mode and is seen by the local
-\fBsmbd\fP process as just another client\&.
-.IP 
-You can also specify hosts by network/netmask pairs and by netgroup
-names if your system supports netgroups\&. The \fIEXCEPT\fP keyword can also
-be used to limit a wildcard list\&. The following examples may provide
-some help:
-.IP 
-\fBExample 1\fP: allow localhost and all IPs in 150\&.203\&.*\&.* except one
-.IP 
-\f(CW	hosts allow = localhost, 150\&.203\&. EXCEPT 150\&.203\&.6\&.66\fP
-.IP 
-\fBExample 2\fP: allow localhost and hosts that match the given network/netmask
-.IP 
-\f(CW	hosts allow = localhost, 150\&.203\&.15\&.0/255\&.255\&.255\&.0\fP
-.IP 
-\fBExample 3\fP: allow a localhost plus a couple of hosts
-.IP 
-\f(CW	hosts allow = localhost, lapland, arvidsjaur\fP
-.IP 
-\fBExample 4\fP: allow only hosts in NIS netgroup "foonet" or localhost, but 
-deny access from one particular host
-.IP 
-\f(CW 	hosts allow = @foonet, localhost\fP
-\f(CW 	hosts deny = pirate\fP
-.IP 
-Note that access still requires suitable user-level passwords\&.
-.IP 
-See \fBtestparm (1)\fP for a way of testing your
-host access to see if it does what you expect\&.
-.IP 
-\fBDefault:\fP
-\f(CW	none (i\&.e\&., all hosts permitted access)\fP
-.IP 
-\fBExample:\fP
-\f(CW	allow hosts = 150\&.203\&.5\&. localhost myhost\&.mynet\&.edu\&.au\fP
+Synonym for \fBhosts allow\fP\&.
 .IP 
 .IP "\fBalternate permissions (S)\fP" 
 .IP 
@@ -1982,16 +1926,7 @@ See also the \fBveto files\fP parameter\&.
 .IP 
 .IP "\fBdeny hosts (S)\fP" 
 .IP 
-The opposite of \fB\'allow hosts\'\fP - hosts listed
-here are \fINOT\fP permitted access to services unless the specific
-services have their own lists to override this one\&. Where the lists
-conflict, the \fB\'allow\'\fP list takes precedence\&.
-.IP 
-\fBDefault:\fP
-\f(CW	none (i\&.e\&., no hosts specifically excluded)\fP
-.IP 
-\fBExample:\fP
-\f(CW	deny hosts = 150\&.203\&.4\&. badhost\&.mynet\&.edu\&.au\fP
+Synonym for \fBhosts deny\fP\&.
 .IP 
 .IP "\fBdfree command (G)\fP" 
 .IP 
@@ -2606,11 +2541,77 @@ logons\fP\&.
 .IP 
 .IP "\fBhosts allow (S)\fP" 
 .IP 
-Synonym for \fBallow hosts\fP\&.
+A synonym for this parameter is \fB\'allow hosts\'\fP
+.IP 
+This parameter is a comma, space, or tab delimited set of hosts which
+are permitted to access a service\&.
+.IP 
+If specified in the \fB[global]\fP section then it will
+apply to all services, regardless of whether the individual service
+has a different setting\&.
+.IP 
+You can specify the hosts by name or IP number\&. For example, you could
+restrict access to only the hosts on a Class C subnet with something
+like \f(CW"allow hosts = 150\&.203\&.5\&."\fP\&. The full syntax of the list is
+described in the man page \fBhosts_access (5)\fP\&. Note that this man
+page may not be present on your system, so a brief description will
+be given here also\&.
+.IP 
+\fINOTE:\fP IF you wish to allow the \fBsmbpasswd
+(8)\fP program to be run by local users to change
+their Samba passwords using the local \fBsmbd (8)\fP
+daemon, then you \fIMUST\fP ensure that the localhost is listed in your
+\fBhosts allow\fP list, as \fBsmbpasswd (8)\fP runs
+in client-server mode and is seen by the local
+\fBsmbd\fP process as just another client\&.
+.IP 
+You can also specify hosts by network/netmask pairs and by netgroup
+names if your system supports netgroups\&. The \fIEXCEPT\fP keyword can also
+be used to limit a wildcard list\&. The following examples may provide
+some help:
+.IP 
+\fBExample 1\fP: allow localhost and all IPs in 150\&.203\&.*\&.* except one
+.IP 
+\f(CW	hosts allow = localhost, 150\&.203\&. EXCEPT 150\&.203\&.6\&.66\fP
+.IP 
+\fBExample 2\fP: allow localhost and hosts that match the given network/netmask
+.IP 
+\f(CW	hosts allow = localhost, 150\&.203\&.15\&.0/255\&.255\&.255\&.0\fP
+.IP 
+\fBExample 3\fP: allow a localhost plus a couple of hosts
+.IP 
+\f(CW	hosts allow = localhost, lapland, arvidsjaur\fP
+.IP 
+\fBExample 4\fP: allow only hosts in NIS netgroup "foonet" or localhost, but 
+deny access from one particular host
+.IP 
+\f(CW 	hosts allow = @foonet, localhost\fP
+.IP 
+\f(CW 	hosts deny = pirate\fP
+.IP 
+Note that access still requires suitable user-level passwords\&.
+.IP 
+See \fBtestparm (1)\fP for a way of testing your
+host access to see if it does what you expect\&.
+.IP 
+\fBDefault:\fP
+\f(CW	none (i\&.e\&., all hosts permitted access)\fP
+.IP 
+\fBExample:\fP
+\f(CW	allow hosts = 150\&.203\&.5\&. localhost myhost\&.mynet\&.edu\&.au\fP
 .IP 
 .IP "\fBhosts deny (S)\fP" 
 .IP 
-Synonym for \fBdenyhosts\fP\&.
+The opposite of \fB\'hosts allow\'\fP - hosts listed
+here are \fINOT\fP permitted access to services unless the specific
+services have their own lists to override this one\&. Where the lists
+conflict, the \fB\'allow\'\fP list takes precedence\&.
+.IP 
+\fBDefault:\fP
+\f(CW	none (i\&.e\&., no hosts specifically excluded)\fP
+.IP 
+\fBExample:\fP
+\f(CW	hosts deny = 150\&.203\&.4\&. badhost\&.mynet\&.edu\&.au\fP
 .IP 
 .IP "\fBhosts equiv (G)\fP" 
 .IP 
@@ -2618,7 +2619,7 @@ If this global parameter is a non-null string, it specifies the name
 of a file to read for the names of hosts and users who will be allowed
 access without specifying a password\&.
 .IP 
-This is not be confused with \fBallow hosts\fP which
+This is not be confused with \fBhosts allow\fP which
 is about hosts access to services and is more useful for guest
 services\&. \fBhosts equiv\fP may be useful for NT clients which will not
 supply passwords to samba\&.
@@ -3728,12 +3729,17 @@ names to be resolved as follows :
 .IP 
 .IP o 
 \fBlmhosts\fP : Lookup an IP address in the Samba lmhosts file\&.
+If the line in lmhosts has no name type attached to the NetBIOS
+name (see the \fBlmhosts (5)\fP for details) then
+any name type matches for lookup\&.
 .IP 
 .IP o 
 \fBhost\fP : Do a standard host name to IP address resolution,
 using the system /etc/hosts, NIS, or DNS lookups\&. This method of name
 resolution is operating system depended for instance on IRIX or
 Solaris this may be controlled by the \fI/etc/nsswitch\&.conf\fP file)\&.
+Note that this method is only used if the NetBIOS name type being
+queried is the 0x20 (server) name type, otherwise it is ignored\&.
 .IP 
 .IP o 
 \fBwins\fP : Query a name with the IP address listed in the

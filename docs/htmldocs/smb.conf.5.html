@@ -707,46 +707,7 @@ file permissions.
 <code>	admin users = jason</code>
 <p><br><a name="allowhosts"></a>
 <li><strong><strong>allow hosts (S)</strong></strong>
-<p><br>A synonym for this parameter is <a href="smb.conf.5.html#hostsallow"><strong>'hosts allow'</strong></a>
-<p><br>This parameter is a comma, space, or tab delimited set of hosts which
-are permitted to access a service.
-<p><br>If specified in the <a href="smb.conf.5.html#global"><strong>[global]</strong></a> section then it will
-apply to all services, regardless of whether the individual service
-has a different setting.
-<p><br>You can specify the hosts by name or IP number. For example, you could
-restrict access to only the hosts on a Class C subnet with something
-like <code>"allow hosts = 150.203.5."</code>. The full syntax of the list is
-described in the man page <strong>hosts_access (5)</strong>. Note that this man
-page may not be present on your system, so a brief description will
-be given here also.
-<p><br><em>NOTE:</em> IF you wish to allow the <a href="smbpasswd.html.8"><strong>smbpasswd
-(8)</strong></a> program to be run by local users to change
-their Samba passwords using the local <a href="smbd.8.html"><strong>smbd (8)</strong></a>
-daemon, then you <em>MUST</em> ensure that the localhost is listed in your
-<strong>allow hosts</strong> list, as <a href="smbpasswd.html.8"><strong>smbpasswd (8)</strong></a> runs
-in client-server mode and is seen by the local
-<a href="smbd.8.html"><strong>smbd</strong></a> process as just another client.
-<p><br>You can also specify hosts by network/netmask pairs and by netgroup
-names if your system supports netgroups. The <em>EXCEPT</em> keyword can also
-be used to limit a wildcard list. The following examples may provide
-some help:
-<p><br><strong>Example 1</strong>: allow localhost and all IPs in 150.203.*.* except one
-<p><br><code>	hosts allow = localhost, 150.203. EXCEPT 150.203.6.66</code>
-<p><br><strong>Example 2</strong>: allow localhost and hosts that match the given network/netmask
-<p><br><code>	hosts allow = localhost, 150.203.15.0/255.255.255.0</code>
-<p><br><strong>Example 3</strong>: allow a localhost plus a couple of hosts
-<p><br><code>	hosts allow = localhost, lapland, arvidsjaur</code>
-<p><br><strong>Example 4</strong>: allow only hosts in NIS netgroup "foonet" or localhost, but 
-deny access from one particular host
-<p><br><code> 	hosts allow = @foonet, localhost</code>
-<code> 	hosts deny = pirate</code>
-<p><br>Note that access still requires suitable user-level passwords.
-<p><br>See <a href="testparm.1.html"><strong>testparm (1)</strong></a> for a way of testing your
-host access to see if it does what you expect.
-<p><br><strong>Default:</strong>
-<code>	none (i.e., all hosts permitted access)</code>
-<p><br><strong>Example:</strong>
-<code>	allow hosts = 150.203.5. localhost myhost.mynet.edu.au</code>
+<p><br>Synonym for <a href="smb.conf.5.html#hostsallow"><strong>hosts allow</strong></a>.
 <p><br><a name="alternatepermissions"></a>
 <li><strong><strong>alternate permissions (S)</strong></strong>
 <p><br>This is a deprecated parameter. It no longer has any effect in Samba2.0.
@@ -1221,14 +1182,7 @@ as the user has permissions to do so).
 <code>	delete veto files = True</code>
 <p><br><a name="denyhosts"></a>
 <li><strong><strong>deny hosts (S)</strong></strong>
-<p><br>The opposite of <a href="smb.conf.5.html#allowhosts"><strong>'allow hosts'</strong></a> - hosts listed
-here are <em>NOT</em> permitted access to services unless the specific
-services have their own lists to override this one. Where the lists
-conflict, the <a href="smb.conf.5.html#allowhosts"><strong>'allow'</strong></a> list takes precedence.
-<p><br><strong>Default:</strong>
-<code>	none (i.e., no hosts specifically excluded)</code>
-<p><br><strong>Example:</strong>
-<code>	deny hosts = 150.203.4. badhost.mynet.edu.au</code>
+<p><br>Synonym for <a href="smb.conf.5.html#hostsdeny"><strong>hosts deny</strong></a>.
 <p><br><a name="dfreecommand"></a>
 <li><strong><strong>dfree command (G)</strong></strong>
 <p><br>The dfree command setting should only be used on systems where a
@@ -1690,7 +1644,7 @@ files"</strong></a> and <a href="smb.conf.5.html#casesensitive"><strong>"case se
 <p><br><strong>Example</strong>
 <code>	hide files = /.*/DesktopFolderDB/TrashFor%m/resource.frk/</code>
 <p><br>The above example is based on files that the Macintosh SMB client
-(DAVE) available from <a href="www.thursby.com"><strong>Thursby</strong></a> creates for
+(DAVE) available from <a href="http://www.thursby.com"><strong>Thursby</strong></a> creates for
 internal use, and also still hides all files beginning with a dot.
 <p><br><a name="homedirmap"></a>
 <li><strong><strong>homedir map (G)</strong></strong>
@@ -1713,16 +1667,62 @@ logons</strong></a>.
 <code>	homedir map = amd.homedir</code>
 <p><br><a name="hostsallow"></a>
 <li><strong><strong>hosts allow (S)</strong></strong>
-<p><br>Synonym for <a href="smb.conf.5.html#allowhosts"><strong>allow hosts</strong></a>.
+<p><br>A synonym for this parameter is <a href="smb.conf.5.html#allowhosts"><strong>'allow hosts'</strong></a>
+<p><br>This parameter is a comma, space, or tab delimited set of hosts which
+are permitted to access a service.
+<p><br>If specified in the <a href="smb.conf.5.html#global"><strong>[global]</strong></a> section then it will
+apply to all services, regardless of whether the individual service
+has a different setting.
+<p><br>You can specify the hosts by name or IP number. For example, you could
+restrict access to only the hosts on a Class C subnet with something
+like <code>"allow hosts = 150.203.5."</code>. The full syntax of the list is
+described in the man page <strong>hosts_access (5)</strong>. Note that this man
+page may not be present on your system, so a brief description will
+be given here also.
+<p><br><em>NOTE:</em> IF you wish to allow the <a href="smbpasswd.html.8"><strong>smbpasswd
+(8)</strong></a> program to be run by local users to change
+their Samba passwords using the local <a href="smbd.8.html"><strong>smbd (8)</strong></a>
+daemon, then you <em>MUST</em> ensure that the localhost is listed in your
+<strong>hosts allow</strong> list, as <a href="smbpasswd.html.8"><strong>smbpasswd (8)</strong></a> runs
+in client-server mode and is seen by the local
+<a href="smbd.8.html"><strong>smbd</strong></a> process as just another client.
+<p><br>You can also specify hosts by network/netmask pairs and by netgroup
+names if your system supports netgroups. The <em>EXCEPT</em> keyword can also
+be used to limit a wildcard list. The following examples may provide
+some help:
+<p><br><strong>Example 1</strong>: allow localhost and all IPs in 150.203.*.* except one
+<p><br><code>	hosts allow = localhost, 150.203. EXCEPT 150.203.6.66</code>
+<p><br><strong>Example 2</strong>: allow localhost and hosts that match the given network/netmask
+<p><br><code>	hosts allow = localhost, 150.203.15.0/255.255.255.0</code>
+<p><br><strong>Example 3</strong>: allow a localhost plus a couple of hosts
+<p><br><code>	hosts allow = localhost, lapland, arvidsjaur</code>
+<p><br><strong>Example 4</strong>: allow only hosts in NIS netgroup "foonet" or localhost, but 
+deny access from one particular host
+<p><br><code> 	hosts allow = @foonet, localhost</code>
+<p><br><code> 	hosts deny = pirate</code>
+<p><br>Note that access still requires suitable user-level passwords.
+<p><br>See <a href="testparm.1.html"><strong>testparm (1)</strong></a> for a way of testing your
+host access to see if it does what you expect.
+<p><br><strong>Default:</strong>
+<code>	none (i.e., all hosts permitted access)</code>
+<p><br><strong>Example:</strong>
+<code>	allow hosts = 150.203.5. localhost myhost.mynet.edu.au</code>
 <p><br><a name="hostsdeny"></a>
 <li><strong><strong>hosts deny (S)</strong></strong>
-<p><br>Synonym for <a href="smb.conf.5.html#denyhosts"><strong>denyhosts</strong></a>.
+<p><br>The opposite of <a href="smb.conf.5.html#hostsallow"><strong>'hosts allow'</strong></a> - hosts listed
+here are <em>NOT</em> permitted access to services unless the specific
+services have their own lists to override this one. Where the lists
+conflict, the <a href="smb.conf.5.html#hostsallow"><strong>'allow'</strong></a> list takes precedence.
+<p><br><strong>Default:</strong>
+<code>	none (i.e., no hosts specifically excluded)</code>
+<p><br><strong>Example:</strong>
+<code>	hosts deny = 150.203.4. badhost.mynet.edu.au</code>
 <p><br><a name="hostsequiv"></a>
 <li><strong><strong>hosts equiv (G)</strong></strong>
 <p><br>If this global parameter is a non-null string, it specifies the name
 of a file to read for the names of hosts and users who will be allowed
 access without specifying a password.
-<p><br>This is not be confused with <a href="smb.conf.5.html#allowhosts"><strong>allow hosts</strong></a> which
+<p><br>This is not be confused with <a href="smb.conf.5.html#hostsallow"><strong>hosts allow</strong></a> which
 is about hosts access to services and is more useful for guest
 services. <strong>hosts equiv</strong> may be useful for NT clients which will not
 supply passwords to samba.
@@ -2551,10 +2551,15 @@ resolution options.
 names to be resolved as follows :
 <p><br><ul>
 <p><br><li > <strong>lmhosts</strong> : Lookup an IP address in the Samba lmhosts file.
+If the line in lmhosts has no name type attached to the NetBIOS
+name (see the <a href="lmhosts.5.html"><strong>lmhosts (5)</strong></a> for details) then
+any name type matches for lookup.
 <p><br><li > <strong>host</strong> : Do a standard host name to IP address resolution,
 using the system /etc/hosts, NIS, or DNS lookups. This method of name
 resolution is operating system depended for instance on IRIX or
 Solaris this may be controlled by the <em>/etc/nsswitch.conf</em> file).
+Note that this method is only used if the NetBIOS name type being
+queried is the 0x20 (server) name type, otherwise it is ignored.
 <p><br><li > <strong>wins</strong> : Query a name with the IP address listed in the
 <a href="smb.conf.5.html#winsserver"><strong>wins server</strong></a> parameter. If no WINS server has
 been specified this method will be ignored.
