@@ -183,12 +183,12 @@ gss_adat(void *app_data, void *buf, size_t len)
 	    reply(235, "ADAT Complete");
 	sec_complete = 1;
 
-    } else if(maj_stat == GSS_S_CONTINUE_NEEDED)
+    } else if(maj_stat == GSS_S_CONTINUE_NEEDED) {
 	if(p)
 	    reply(335, "ADAT=%s", p);
 	else
 	    reply(335, "OK, need more data");
-    else
+    } else
 	reply(535, "foo?");
 out:
     free(p);
