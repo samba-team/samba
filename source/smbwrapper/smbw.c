@@ -58,11 +58,11 @@ void smbw_init(void)
 	smbw_busy++;
 
 	DEBUGLEVEL = 0;
-	setup_logging("smbw",True);
+	setup_logging("smbsh",True);
 
 	dbf = stderr;
 
-	if ((p=getenv("SMBW_LOGFILE"))) {
+	if ((p=smbw_getshared("LOGFILE"))) {
 		dbf = fopen(p, "a");
 	}
 
@@ -81,11 +81,11 @@ void smbw_init(void)
 
 	get_myname(global_myname,NULL);
 
-	if ((p=getenv("SMBW_DEBUG"))) {
+	if ((p=smbw_getshared("DEBUG"))) {
 		DEBUGLEVEL = atoi(p);
 	}
 
-	if ((p=getenv("SMBW_PREFIX"))) {
+	if ((p=smbw_getshared("PREFIX"))) {
 		slprintf(smbw_prefix,sizeof(fstring)-1, "/%s/", p);
 		string_sub(smbw_prefix,"//", "/");
 		DEBUG(2,("SMBW_PREFIX is %s\n", smbw_prefix));
@@ -100,7 +100,7 @@ void smbw_init(void)
 	}
 	smbw_busy--;
 
-	set_maxfiles(lp_max_open_files()+10);
+	set_maxfiles(SMBW_MAX_OPEN);
 
 	errno = eno;
 }
@@ -259,7 +259,7 @@ char *smbw_parse_path(const char *fname, char *server, char *share, char *path)
 	p = p2;
 	if (!p) {
 		if (len == 0) {
-			char *workgroup = getenv("SMBW_WORKGROUP");
+			char *workgroup = smbw_getshared("WORKGROUP");
 			if (!workgroup) workgroup = lp_workgroup();
 			slprintf(server,sizeof(fstring)-1, "%s#1D", workgroup);
 		}
@@ -364,17 +364,21 @@ struct smbw_server *smbw_server(char *server, char *share)
 	struct nmb_name called, calling;
 	char *p, *server_n = server;
 	fstring group;
+	pstring ipenv;
+	struct in_addr ip;
+	extern struct in_addr ipzero;
 
+	ip = ipzero;
 	ZERO_STRUCT(c);
 
-	username = getenv("SMBW_USER");
+	username = smbw_getshared("USER");
 	if (!username) username = getenv("USER");
 	if (!username) username = "guest";
 
-	workgroup = getenv("SMBW_WORKGROUP");
+	workgroup = smbw_getshared("WORKGROUP");
 	if (!workgroup) workgroup = lp_workgroup();
 
-	password = getenv("SMBW_PASSWORD");
+	password = smbw_getshared("PASSWORD");
 	if (!password) password = "";
 
 	/* try to use an existing connection */
@@ -395,22 +399,37 @@ struct smbw_server *smbw_server(char *server, char *share)
 
 	if ((p=strchr(server_n,'#')) && strcmp(p+1,"1D")==0) {
 		struct in_addr ip;
+		pstring s;
+
 		fstrcpy(group, server_n);
 		p = strchr(group,'#');
 		*p = 0;
-		if (!find_master_ip(group, &ip)) {
-			errno = ENOENT;
-			return NULL;
+		
+		/* cache the workgroup master lookup */
+		slprintf(s,sizeof(s)-1,"MASTER_%s", group);
+		if (!(server_n = smbw_getshared(s))) {
+			if (!find_master_ip(group, &ip)) {
+				errno = ENOENT;
+				return NULL;
+			}
+			fstrcpy(group, inet_ntoa(ip));
+			server_n = group;
+			smbw_setshared(s,server_n);
 		}
-		fstrcpy(group, inet_ntoa(ip));
-		server_n = group;
 	}
 
 	DEBUG(4,(" -> server_n=[%s] server=[%s]\n", server_n, server));
 
  again:
+	slprintf(ipenv,sizeof(ipenv)-1,"HOST_%s", server_n);
+
+	ip = ipzero;
+	if ((p=smbw_getshared(ipenv))) {
+		ip = *(interpret_addr2(p));
+	}
+
 	/* have to open a new connection */
-	if (!cli_initialise(&c) || !cli_connect(&c, server_n, NULL)) {
+	if (!cli_initialise(&c) || !cli_connect(&c, server_n, &ip)) {
 		errno = ENOENT;
 		return NULL;
 	}
@@ -453,6 +472,8 @@ struct smbw_server *smbw_server(char *server, char *share)
 		return NULL;
 	}
 
+	smbw_setshared(ipenv,inet_ntoa(ip));
+	
 	DEBUG(4,(" tconx ok\n"));
 
 	srv = (struct smbw_server *)malloc(sizeof(*srv));

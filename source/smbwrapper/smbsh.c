@@ -24,17 +24,37 @@
 int main(int argc, char *argv[])
 {
 	char *p, *u;
-	char *libd = BINDIR;
-	
+	char *libd = BINDIR;	
 	pstring line;
+	extern FILE *dbf;
 
-	printf("Username: ");
-	u = fgets_slash(line, sizeof(line)-1, stdin);
+	smbw_setup_shared();
 
-	p = getpass("Password: ");
+	p = getenv("SMBW_DEBUG");
+	if (p) smbw_setshared("DEBUG", p);
 
-	setenv("SMBW_USER", u, 1);
-	setenv("SMBW_PASSWORD", p, 1);
+	p = getenv("SMBW_WORKGROUP");
+	if (p) smbw_setshared("WORKGROUP", p);
+
+	p = getenv("SMBW_USER");
+	if (p) smbw_setshared("USER", p);
+
+	p = getenv("SMBW_PASSWORD");
+	if (p) smbw_setshared("PASSWORD", p);
+
+	charset_initialise();
+
+	if (!smbw_getshared("USER")) {
+		printf("Username: ");
+		u = fgets_slash(line, sizeof(line)-1, stdin);
+		smbw_setshared("USER", u);
+	}
+
+	if (!smbw_getshared("PASSWORD")) {
+		p = getpass("Password: ");
+		smbw_setshared("PASSWORD", p);
+	}
+
 	setenv("PS1", "smbsh$ ", 1);
 
 	sys_getwd(line);

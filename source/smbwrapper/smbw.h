@@ -30,7 +30,6 @@
 
 #define SMBW_PWD_ENV "PWD"
 
-
 struct smbw_server {
 	struct smbw_server *next, *prev;
 	struct cli_state cli;
