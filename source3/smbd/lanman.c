@@ -3415,6 +3415,110 @@ static BOOL api_WPrintPortEnum(connection_struct *conn,uint16 vuid, char *param,
   return(True);
 }
 
+struct session_info {
+  char machine[31];
+  char username[24];
+  char clitype[24];
+  int opens;
+  int time;
+};
+
+struct sessions_info {
+  int count;
+  struct session_info *session_list;
+};
+
+static int gather_sessioninfo(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
+{
+  struct sessions_info *sinfo = state;
+  struct session_info *curinfo = NULL;
+  struct sessionid *sessid = (struct sessionid *) dbuf.dptr;
+
+  sinfo->count += 1;
+  sinfo->session_list = REALLOC(sinfo->session_list, sinfo->count * sizeof(struct session_info));
+
+  curinfo = &(sinfo->session_list[sinfo->count - 1]);
+
+  safe_strcpy(curinfo->machine, sessid->remote_machine, 
+	      sizeof(curinfo->machine));
+  safe_strcpy(curinfo->username, uidtoname(sessid->uid), 
+	  sizeof(curinfo->username));
+  DEBUG(7,("gather_sessioninfo session from %s@%s\n", 
+	   curinfo->username, curinfo->machine));
+  return 0;
+}
+
+/****************************************************************************
+ List open sessions
+ ****************************************************************************/
+static BOOL api_RNetSessionEnum(connection_struct *conn,uint16 vuid, char *param, char *data,
+			       int mdrcnt,int mprcnt,
+			       char **rdata,char **rparam,
+			       int *rdata_len,int *rparam_len)
+
+{
+  char *str1 = param+2;
+  char *str2 = skip_string(str1,1);
+  char *p = skip_string(str2,1);
+  int uLevel;
+  struct pack_desc desc;
+  struct sessions_info sinfo;
+  int i;
+
+  memset((char *)&desc,'\0',sizeof(desc));
+
+  uLevel = SVAL(p,0);
+
+  DEBUG(3,("RNetSessionEnum uLevel=%d\n",uLevel));
+  DEBUG(7,("RNetSessionEnum req string=%s\n",str1));
+  DEBUG(7,("RNetSessionEnum ret string=%s\n",str2));
+
+  /* check it's a supported varient */
+  if (strcmp(str1,RAP_NetSessionEnum_REQ) != 0) return False;
+  if (uLevel != 2 || strcmp(str2,RAP_SESSION_INFO_L2) != 0) return False;
+
+  sinfo.count = 0;
+  sinfo.session_list = NULL;
+
+  if (!session_traverse(gather_sessioninfo, &sinfo)) {
+    DEBUG(4,("RNetSessionEnum session_traverse failed\n"));
+    return False;
+  }
+
+  if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
+  memset((char *)&desc,'\0',sizeof(desc));
+  desc.base = *rdata;
+  desc.buflen = mdrcnt;
+  desc.format = str2;
+  if (!init_package(&desc,sinfo.count,0)) {
+    return False;
+  }
+
+  for(i=0; i<sinfo.count; i++) {
+    PACKS(&desc, "z", sinfo.session_list[i].machine);
+    PACKS(&desc, "z", sinfo.session_list[i].username);
+    PACKI(&desc, "W", 1); /* num conns */
+    PACKI(&desc, "W", 0); /* num opens */
+    PACKI(&desc, "W", 1); /* num users */
+    PACKI(&desc, "D", 0); /* session time */
+    PACKI(&desc, "D", 0); /* idle time */
+    PACKI(&desc, "D", 0); /* flags */
+    PACKS(&desc, "z", "Unknown Client"); /* client type string */
+  }
+
+  *rdata_len = desc.usedlen;
+
+  *rparam_len = 8;
+  *rparam = REALLOC(*rparam,*rparam_len);
+  SSVALS(*rparam,0,desc.errcode);
+  SSVAL(*rparam,2,0); /* converter */
+  SSVAL(*rparam,4,sinfo.count); /* count */
+
+  DEBUG(4,("RNetSessionEnum: errorcode %d\n",desc.errcode));
+  return True;
+}
+
+
 /****************************************************************************
  The buffer was too small
  ****************************************************************************/
@@ -3473,6 +3577,7 @@ struct
   {"RNetShareEnum",	RAP_WshareEnum,		api_RNetShareEnum,0},
   {"RNetShareGetInfo",	RAP_WshareGetInfo,	api_RNetShareGetInfo,0},
   {"RNetShareAdd",	RAP_WshareAdd,		api_RNetShareAdd,0},
+  {"RNetSessionEnum",	RAP_WsessionEnum,	api_RNetSessionEnum,0},
   {"RNetServerGetInfo",	RAP_WserverGetInfo,	api_RNetServerGetInfo,0},
   {"RNetGroupEnum",	RAP_WGroupEnum,		api_RNetGroupEnum,0},
   {"RNetGroupGetUsers", RAP_WGroupGetUsers,	api_RNetGroupGetUsers,0},

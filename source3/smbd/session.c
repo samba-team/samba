@@ -159,3 +159,16 @@ void session_yield(uint16 vuid)
 	tdb_delete(tdb, key);
 }
 
+BOOL session_traverse(int (*fn)(TDB_CONTEXT *, TDB_DATA, TDB_DATA, void *), void *state)
+{
+  if (!tdb) {
+    DEBUG(3, ("No tdb opened\n"));
+    return False;
+  }
+
+  tdb_traverse(tdb, fn, state);
+  return True;
+}
+
+
+
