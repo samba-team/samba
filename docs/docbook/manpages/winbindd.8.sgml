@@ -16,19 +16,9 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>winbindd</command>
-		<arg choice="opt">-d debuglevel</arg>
 		<arg choice="opt">-i</arg>
-		<arg choice="opt">-S</arg>
-		<arg choice="opt">-r</arg>
-		<arg choice="opt">-A</arg>
-		<arg choice="opt">-h</arg>
-		<arg choice="opt">-B &lt;broadcast address&gt;</arg>
-		<arg choice="opt">-U &lt;unicast address&gt;</arg>
 		<arg choice="opt">-d &lt;debug level&gt;</arg>
 		<arg choice="opt">-s &lt;smb config file&gt;</arg>
-		<arg choice="opt">-i &lt;NetBIOS scope&gt;</arg>
-		<arg choice="opt">-T</arg>
-		<arg choice="req">name</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
