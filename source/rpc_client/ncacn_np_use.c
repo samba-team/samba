@@ -350,7 +350,7 @@ struct ncacn_np *ncacn_np_use_add(const char *pipe_name,
 	cli->cli->redirect = redir;
 
 	if (!ncacn_np_establish_connection
-	    (cli->cli, srv_name, ntc, pipe_name, redir, reuse))
+	    (cli->cli, srv_name, ntc, pipe_name, redir, True))
 	{
 		DEBUG(0, ("ncacn_np_use_add: connection failed\n"));
 		cli->cli = NULL;

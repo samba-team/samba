@@ -1419,6 +1419,7 @@ int command_main(int argc, char *argv[])
 {
 	extern struct user_creds *usr_creds;
 	mode_t myumask = 0755;
+	char progname[255], path[255], *s;
 
 	DEBUGLEVEL = 2;
 
@@ -1430,7 +1431,13 @@ int command_main(int argc, char *argv[])
 	usr.ptr_ntc = 1;
 
 	out_hnd = stdout;
-	fstrcpy(debugf, argv[0]);
+
+	strncpy(path, argv[0], 255);
+	for(s = strtok(path,"/");s;s = strtok(NULL,"/"))
+	  fstrcpy(progname, s);
+
+	slprintf(debugf, sizeof(debugf) - 1,
+                 "%s/log.%s", LOGFILEBASE, progname);
 
 	pstrcpy(usr.ntc.domain, "");
 	pstrcpy(usr.ntc.user_name, "");

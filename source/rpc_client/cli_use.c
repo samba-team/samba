@@ -118,16 +118,20 @@ static struct cli_use *cli_find(const char *srv_name,
 	const char *sv_name = srv_name;
 	struct ntuser_creds null_usr;
 
-	copy_nt_creds(&null_usr, usr_creds);
-	usr_creds = &null_usr;
+	if (usr_creds == NULL)
+	{
+		copy_nt_creds(&null_usr, usr_creds);
+		usr_creds = &null_usr;
+	}
 
 	if (strnequal("\\\\", sv_name, 2))
 	{
 		sv_name = &sv_name[2];
 	}
 
-	DEBUG(10, ("cli_find: %s %s %s\n",
-		   srv_name, usr_creds->user_name, usr_creds->domain));
+	DEBUG(10, ("cli_find: %s %s %s reuse: %s\n",
+		   srv_name, usr_creds->user_name, usr_creds->domain,
+	           BOOLSTR(reuse)));
 
 
 	for (i = 0; i < num_clis; i++)

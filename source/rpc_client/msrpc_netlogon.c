@@ -104,13 +104,13 @@ static uint32 domain_client_validate(const char *user, const char *domain,
 		DEBUG(3,
 		      ("domain_client_validate: could not find domain %s\n",
 		       domain));
-		return False;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (!msrpc_lsa_query_trust_passwd("\\\\.", "$MACHINE.ACC",
 					  trust_passwd, NULL))
 	{
-		return False;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/*
@@ -228,7 +228,7 @@ uint32 check_domain_security(const char *orig_user, const char *domain,
 
 	if (lp_security() == SEC_SHARE || lp_security() == SEC_SERVER)
 	{
-		return False;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (domain == NULL || strequal(domain, ""))
