@@ -52,6 +52,82 @@ extern BOOL in_client;
  */
 static int smbc_initialized = 0;
 
+static int 
+hex2int( unsigned int _char )
+{
+    if ( _char >= 'A' && _char <='F')
+	return _char - 'A' + 10;
+    if ( _char >= 'a' && _char <='f')
+	return _char - 'a' + 10;
+    if ( _char >= '0' && _char <='9')
+	return _char - '0';
+    return -1;
+}
+
+static void 
+decode_urlpart(char *segment)
+{
+    int old_length = strlen(segment);
+    int new_length = 0;
+    int new_length2 = 0;
+    int i = 0;
+    pstring new_segment;
+    char *new_usegment = 0;
+
+    if ( !old_length ) {
+	return;
+    }
+
+    /* make a copy of the old one */
+    new_usegment = (char*)malloc( old_length * 3 + 1 );
+
+    while( i < old_length ) {
+	int bReencode = False;
+	unsigned char character = segment[ i++ ];
+	if ((character <= ' ') || (character > 127))
+	    bReencode = True;
+
+	new_usegment [ new_length2++ ] = character;
+	if (character == '%' ) {
+	    int a = i+1 < old_length ? hex2int( segment[i] ) : -1;
+	    int b = i+1 < old_length ? hex2int( segment[i+1] ) : -1;
+	    if ((a == -1) || (b == -1)) { /* Only replace if sequence is valid */
+		/* Contains stray %, make sure to re-encode! */
+		bReencode = True;
+	    } else {
+		/* Valid %xx sequence */
+		character = a * 16 + b; /* Replace with value of %dd */
+		if (!character)
+		    break; /* Stop at %00 */
+
+		new_usegment [ new_length2++ ] = (unsigned char) segment[i++];
+		new_usegment [ new_length2++ ] = (unsigned char) segment[i++];
+	    }
+	}
+	if (bReencode) {
+	    unsigned int c = character / 16;
+	    new_length2--;
+	    new_usegment [ new_length2++ ] = '%';
+
+	    c += (c > 9) ? ('A' - 10) : '0';
+	    new_usegment[ new_length2++ ] = c;
+
+	    c = character % 16;
+	    c += (c > 9) ? ('A' - 10) : '0';
+	    new_usegment[ new_length2++ ] = c;
+	}
+
+	new_segment [ new_length++ ] = character;
+    }
+    new_segment [ new_length ] = 0;
+
+    /* this assumes (very safely) that removing %aa sequences
+       only shortens the string */
+    strncpy(segment, new_segment, old_length);
+
+    free(new_usegment);
+}
+
 /*
  * Function to parse a path and turn it into components
  *
@@ -97,7 +173,7 @@ smbc_parse_path(SMBCCTX *context, const char *fname, char *server, char *share, 
 	p += 2;  /* Skip the // or \\  */
 
 	if (*p == (char)0)
-		return 0;
+	    goto decoding;
 
 	if (*p == '/') {
 
@@ -158,7 +234,7 @@ smbc_parse_path(SMBCCTX *context, const char *fname, char *server, char *share, 
 
 	}
 
-	if (*p == (char)0) return 0;  /* That's it ... */
+	if (*p == (char)0) goto decoding;  /* That's it ... */
   
 	if (!next_token(&p, share, "/", sizeof(fstring))) {
 
@@ -169,6 +245,13 @@ smbc_parse_path(SMBCCTX *context, const char *fname, char *server, char *share, 
 	pstrcpy(path, p);
   
 	all_string_sub(path, "/", "\\", 0);
+
+ decoding:
+	decode_urlpart(path);
+	decode_urlpart(server);
+	decode_urlpart(share);
+	decode_urlpart(user);
+	decode_urlpart(password);
 
 	return 0;
 }
