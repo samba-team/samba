@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd March 20, 2004
+.Dd March 28, 2005
 .Dt KRB5_KEYTAB 3
 .Os HEIMDAL
 .Sh NAME
@@ -251,6 +251,7 @@ Returns 0 or an error. The opposite of
 .Fn krb5_kt_resolve
 is
 .Fn krb5_kt_close .
+.Pp
 .Fn krb5_kt_close
 frees all resources allocated to the keytab.
 .Pp
@@ -360,6 +361,12 @@ into
 .Fa entry
 from the keytab
 .Fa id .
+When comparing an entry in the keytab to determine a match, the
+function
+.Fn krb5_kt_compare
+is used, so the wildcard rules applies to arguments of
+.F krb5_kt_get_entry
+too.
 On success the returne entry must be freed with
 .Fn krb5_kt_free_entry .
 Returns 0 or an error.
@@ -371,8 +378,20 @@ reads the key identified by
 .Fa enctype )
 from the keytab in
 .Fa keyprocarg
-(the default if == NULL) into
+(the system default keytab if 
+.Dv NULL
+is used) into
 .Fa *key .
+.Fa keyprocarg
+is the same argument as to
+.Fa name
+argument to
+.Fn krb5_kt_resolve .
+Internal
+.Fn krb5_kt_compare
+will be used, so the same wildcard rules applies
+to
+.Fn krb5_kt_read_service_key .
 On success the returned key must be freed with
 .Fa krb5_free_keyblock .
 Returns 0 or an error.
@@ -422,6 +441,9 @@ main (int argc, char **argv)
     ret = krb5_kt_end_seq_get(context, keytab, &cursor);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_kt_end_seq_get");
+    ret = krb5_kt_close(context, keytab);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_kt_close");
     krb5_free_context(context);
     return 0;
 }
