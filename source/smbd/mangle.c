@@ -414,9 +414,9 @@ static void do_fwd_mangled_map(char *s, char *MangledMap)
   while (*start) {
     while ((*start) && (*start != '('))
       start++;
-    start++;                    /* Skip the ( */
     if (!*start)
       continue;                 /* Always check for the end. */
+    start++;                    /* Skip the ( */
     end = start;                /* Search for the ' ' or a ')' */
     DEBUG(5,("Start of first in pair '%s'\n", start));
     while ((*end) && !((*end == ' ') || (*end == ')')))

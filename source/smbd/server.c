@@ -397,7 +397,7 @@ static BOOL scan_directory(char *path, char *name,int cnum,BOOL docache)
       if (!name_map_mangle(name2,False,SNUM(cnum))) continue;
 
       if ((mangled && mangled_equal(name,name2))
-	  || fname_equal(name, dname))
+	  || fname_equal(name, name2)) /* name2 here was changed to dname - since 1.9.16p2 - not sure of reason (jra) */
 	{
 	  /* we've found the file, change it's name and return */
 	  if (docache) DirCacheAdd(path,name,dname,SNUM(cnum));
