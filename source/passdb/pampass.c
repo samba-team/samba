@@ -220,9 +220,9 @@ static int smb_pam_passchange_conv(int num_msg,
 		case PAM_PROMPT_ECHO_OFF:
 			reply[replies].resp_retcode = PAM_SUCCESS;
 			DEBUG(10,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_OFF: Replied: %s\n", msg[replies]->msg));
-			if (strncmp(newpw_prompt, msg[replies]->msg, strlen(newpw_prompt)) == 0) {
+			if (ms_fnmatch( newpw_prompt, msg[replies]->msg) == 0) {
 				reply[replies].resp = COPY_STRING(udp->PAM_newpassword);
-			} else if (strncmp(repeatpw_prompt, msg[replies]->msg, strlen(repeatpw_prompt)) == 0) {
+			} else if (ms_fnmatch(repeatpw_prompt, msg[replies]->msg) == 0) {
 				reply[replies].resp = COPY_STRING(udp->PAM_newpassword);
 			} else {
 				DEBUG(3,("smb_pam_passchange_conv: Could not find reply for PAM prompt: %s\n",msg[replies]->msg));

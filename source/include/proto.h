@@ -158,7 +158,7 @@ BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type, void *buf, size_t len
 
 /*The following definitions come from  lib/ms_fnmatch.c  */
 
-int ms_fnmatch(char *pattern, char *string);
+int ms_fnmatch(const char *pattern, const char *string);
 
 /*The following definitions come from  lib/pidfile.c  */
 
@@ -1788,6 +1788,7 @@ BOOL lp_debug_uid(void);
 BOOL lp_browse_list(void);
 BOOL lp_nis_home_map(void);
 BOOL lp_bind_interfaces_only(void);
+BOOL lp_pam_password_change(void);
 BOOL lp_unix_password_sync(void);
 BOOL lp_passwd_chat_debug(void);
 BOOL lp_nt_smb_support(void);
@@ -3864,7 +3865,6 @@ void process_blocking_lock_queue(time_t t);
 
 /*The following definitions come from  smbd/chgpasswd.c  */
 
-BOOL chgpasswd(char *name, char *oldpass, char *newpass, BOOL as_root);
 BOOL chgpasswd(char *name, char *oldpass, char *newpass, BOOL as_root);
 BOOL chgpasswd(char *name, char *oldpass, char *newpass, BOOL as_root);
 BOOL check_lanman_password(char *user, uchar * pass1,

@@ -30,9 +30,9 @@
    bugger. we need a separate wildcard routine for older versions
    of the protocol. This is not yet perfect, but its a lot
    better thaan what we had */
-static int ms_fnmatch_lanman_core(char *pattern, char *string)
+static int ms_fnmatch_lanman_core(const char *pattern, const char *string)
 {
-	char *p = pattern, *n = string;
+	const char *p = pattern, *n = string;
 	char c;
 
 	if (strcmp(p,"?")==0 && strcmp(n,".")==0) goto match;
@@ -111,7 +111,7 @@ next:
 	return 0;
 }
 
-static int ms_fnmatch_lanman1(char *pattern, char *string)
+static int ms_fnmatch_lanman1(const char *pattern, const char *string)
 {
 	if (!strpbrk(pattern, "?*<>\"")) {
 		if (strcmp(string,"..") == 0) string = ".";
@@ -135,9 +135,9 @@ static int ms_fnmatch_lanman1(char *pattern, char *string)
 
    Returns 0 on match, -1 on fail.
 */
-int ms_fnmatch(char *pattern, char *string)
+int ms_fnmatch(const char *pattern, const char *string)
 {
-	char *p = pattern, *n = string;
+	const char *p = pattern, *n = string;
 	char c;
 	extern int Protocol;
 
