@@ -47,6 +47,7 @@ SOURCES = \
 	errx.c \
 	fchown.c \
 	flock.c \
+	fnmatch.c \
 	get_window_size.c \
 	getarg.c \
 	getcwd.c \
