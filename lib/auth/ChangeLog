@@ -1,5 +1,6 @@
 2001-09-13  Assar Westerlund  <assar@sics.se>
 
+	* sia/sia.c: move krb5_error_code inside a ifdef KRB5
 	* sia/sia_locl.h: move roken.h earlier to grab definition of
 	socklen_t
 
