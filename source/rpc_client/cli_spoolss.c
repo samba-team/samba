@@ -48,8 +48,8 @@ uint32 spoolss_enum_printerdrivers(const char * srv_name,
         if (!cli_connection_init(srv_name, PIPE_SPOOLSS, &con))
                 return False;
 
-        prs_init(&buf , 0, 4, False);
-        prs_init(&rbuf, 0, 4, True );
+        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, MARSHALL);
+        prs_init(&rbuf, 0, 4, UNMARSHALL);
 
         /* create and send a MSRPC command with api SPOOLSS_ENUM_PRINTERS */
 
@@ -176,8 +176,8 @@ uint32 spoolss_enum_jobs(const POLICY_HND *hnd, uint32 firstjob, uint32 numofjob
         if (hnd == NULL)
                 return NT_STATUS_INVALID_PARAMETER;
 
-        prs_init(&buf , 0, 4, False);
-        prs_init(&rbuf, 0, 4, True );
+        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, MARSHALL);
+        prs_init(&rbuf, 0, 4, UNMARSHALL);
 
         /* create and send a MSRPC command with api SPOOLSS_ENUMJOBS */
 
@@ -231,8 +231,8 @@ uint32 spoolss_enum_printerdata(const POLICY_HND *hnd, uint32 idx,
         if (hnd == NULL)
                 return NT_STATUS_INVALID_PARAMETER;
 
-        prs_init(&buf , 0, 4, False);
-        prs_init(&rbuf, 0, 4, True );
+        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, MARSHALL);
+        prs_init(&rbuf, 0, 4, UNMARSHALL);
 
         /* create and send a MSRPC command with api SPOOLSS_ENUMJOBS */
 
@@ -288,8 +288,8 @@ uint32 spoolss_getprinter(const POLICY_HND *hnd, uint32 level,
         if (hnd == NULL)
                 return NT_STATUS_INVALID_PARAMETER;
 
-        prs_init(&buf , 0, 4, False);
-        prs_init(&rbuf, 0, 4, True );
+        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, MARSHALL);
+        prs_init(&rbuf, 0, 4, UNMARSHALL);
 
         /* create and send a MSRPC command with api SPOOLSS_ENUMJOBS */
 
@@ -343,8 +343,8 @@ uint32 spoolss_getprinterdriver(const POLICY_HND *hnd,
         if (hnd == NULL)
                 return NT_STATUS_INVALID_PARAMETER;
 
-        prs_init(&buf , 0, 4, False);
-        prs_init(&rbuf, 0, 4, True );
+        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, MARSHALL);
+        prs_init(&rbuf, 0, 4, UNMARSHALL);
 
         /* create and send a MSRPC command with api SPOOLSS_ENUMJOBS */
 
@@ -397,7 +397,7 @@ BOOL spoolss_open_printer_ex(  const char *printername,
         SPOOL_Q_OPEN_PRINTER_EX q_o;
         BOOL valid_pol = False;
         fstring srv_name;
-        char *s;
+        char *s = NULL;
 
         struct cli_connection *con = NULL;
 
@@ -405,9 +405,8 @@ BOOL spoolss_open_printer_ex(  const char *printername,
         fstrcpy(srv_name, printername);
 
         s = strchr(&srv_name[2], '\\');
-
-        if (s != NULL)
-                *s = 0;
+	if (s != NULL)
+		*s = '\0';
 
         if (!cli_connection_init(srv_name, PIPE_SPOOLSS, &con))
                 return False;
@@ -444,21 +443,15 @@ BOOL spoolss_open_printer_ex(  const char *printername,
                 {
                         /* ok, at last: we're happy. return the policy handle */
                         *hnd = r_o.handle;
-			valid_pol = True;
 
-#if 0 	/* JERRY */
-			/* *hnd should be valid at this point */
-                        valid_pol = register_policy_hnd(get_global_hnd_cache(),
-                                                        cli_con_sec_ctx(con),
-                                                        hnd, access_required) &&
-                                    set_policy_con(get_global_hnd_cache(),
-                                               hnd, con,
-                                               cli_connection_unlink);
-#endif	/* JERRY */
+			/* associate the handle returned with the current 
+			   state of the clienjt connection */
+			valid_pol = RpcHndList_set_connection(hnd, con);
+
                 }
         }
 
-        prs_mem_free(&rbuf);
+	prs_mem_free(&rbuf);
         prs_mem_free(&buf );
 
         return valid_pol;
@@ -474,7 +467,8 @@ BOOL spoolss_closeprinter(POLICY_HND *hnd)
         SPOOL_Q_CLOSEPRINTER q_c;
         BOOL valid_close = False;
 
-        if (hnd == NULL) return False;
+        if (hnd == NULL) 
+		return False;
 
         /* create and send a MSRPC command with api SPOOLSS_CLOSEPRINTER */
 
@@ -499,19 +493,15 @@ BOOL spoolss_closeprinter(POLICY_HND *hnd)
                         /* report error code */
                         DEBUG(0,("SPOOL_CLOSEPRINTER: %s\n", get_nt_error_msg(r_c.status)));
                 }
+		else
+			valid_close = True;
         }
 
         prs_mem_free(&rbuf);
         prs_mem_free(&buf );
 
-	if ( hnd != NULL )
-	{
-		free (hnd);
-		hnd = NULL;
-	}
-
-	/* commented out by JERRY - merge from TNG */
-        /* close_policy_hnd(get_global_hnd_cache(), hnd); */
+	/* disassociate with the cli_connection */
+        RpcHndList_del_connection(hnd);
 
         return valid_close;
 }
@@ -534,8 +524,8 @@ uint32 spoolss_getprinterdata(const POLICY_HND *hnd, const UNISTR2 *valuename,
         if (hnd == NULL)
                 return NT_STATUS_INVALID_PARAMETER;
 
-        prs_init(&buf , 0, 4, False);
-        prs_init(&rbuf, 0, 4, True );
+        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, MARSHALL);
+        prs_init(&rbuf, 0, 4, UNMARSHALL);
 
         /* create and send a MSRPC command with api SPOOLSS_GETPRINTERDATA */
 
@@ -549,7 +539,7 @@ uint32 spoolss_getprinterdata(const POLICY_HND *hnd, const UNISTR2 *valuename,
                 prs_mem_free(&buf );
         }
 
-        if(!rpc_hnd_pipe_req(hnd, SPOOLSS_GETPRINTERDATA, &buf, &rbuf)) {
+        if (!rpc_hnd_pipe_req(hnd, SPOOLSS_GETPRINTERDATA, &buf, &rbuf)) {
                 prs_mem_free(&rbuf);
                 prs_mem_free(&buf );
         }
@@ -590,8 +580,8 @@ uint32 spoolss_getprinterdriverdir(fstring srv_name, fstring env_name, uint32 le
         if (!cli_connection_init(srv_name, PIPE_SPOOLSS, &con))
                 return False;
 
-        prs_init(&buf , 0, 4, False);
-        prs_init(&rbuf, 0, 4, True );
+        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, MARSHALL);
+        prs_init(&rbuf, 0, 4, UNMARSHALL);
 
         /* create and send a MSRPC command with api SPOOLSS_ENUM_PRINTERS */
 
