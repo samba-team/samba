@@ -2094,4 +2094,10 @@ BOOL lsa_io_r_removeprivs(char *desc, LSA_R_REMOVEPRIVS *r_c, prs_struct *ps, in
 	return True;
 }
 
+BOOL policy_handle_is_valid(const POLICY_HND *hnd)
+{
+	POLICY_HND zero_pol;
 
+	ZERO_STRUCT(zero_pol);
+	return ((memcmp(&zero_pol, hnd, sizeof(POLICY_HND)) == 0) ? False : True );
+}
