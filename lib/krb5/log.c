@@ -362,8 +362,7 @@ krb5_vlog_msg(krb5_context context,
 
     vasprintf(&msg, fmt, ap);
     t = time(NULL);
-    strftime(buf, sizeof(buf), context->time_fmt, 
-	     context->log_utc ? gmtime(&t) : localtime(&t));
+    krb5_format_time(context, t, buf, sizeof(buf), TRUE);
     for(i = 0; i < fac->len; i++)
 	if(fac->val[i].min <= level && 
 	   (fac->val[i].max < 0 || fac->val[i].max >= level))
