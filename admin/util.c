@@ -87,64 +87,12 @@ event2string(Event *ev, char **str)
     *str = p;
 }
 
-/*
- * Perhaps this should not be a struct of bit-fields or rather a union
- * of an int and a struct of bit-fields.
- */
-
-int
-flags2int(HDBFlags f)
-{
-    return (f.initial      << 0) |
-	(f.forwardable     << 1) |
-	(f.proxiable       << 2) |
-	(f.renewable       << 3) |
-	(f.postdate        << 4) |
-	(f.server          << 5) |
-	(f.client          << 6) |
-	(f.invalid         << 7) |
-	(f.require_preauth << 8) |
-	(f.change_pw       << 9);
-}
-
-HDBFlags
-int2flags(int n)
-{
-    HDBFlags flags;
-
-    flags.initial         = (n >> 0) & 1;
-    flags.forwardable     = (n >> 1) & 1;
-    flags.proxiable       = (n >> 2) & 1;
-    flags.renewable       = (n >> 3) & 1;
-    flags.postdate        = (n >> 4) & 1;
-    flags.server          = (n >> 5) & 1;
-    flags.client          = (n >> 6) & 1;
-    flags.invalid         = (n >> 7) & 1;
-    flags.require_preauth = (n >> 8) & 1;
-    flags.change_pw       = (n >> 9) & 1;
-    return flags;
-}
-
-static struct units flag_units[] = {
-    {"change_pw",	1 << 9},
-    {"require_preauth",	1 << 8},
-    {"invalid",		1 << 7},
-    {"client",		1 << 6},
-    {"server",		1 << 5},
-    {"postdate",	1 << 4},
-    {"renewable",	1 << 3},
-    {"proxiable",	1 << 2},
-    {"forwardable",	1 << 1},
-    {"initial",		1 << 0},
-    {NULL,		0}
-};
-
 void
 print_hdbflags (FILE *fp, HDBFlags flags)
 {
     char buf[1024];
 
-    unparse_flags (flags2int(flags), flag_units, buf, sizeof(buf));
+    unparse_flags (HDBFlags2int(flags), HDBFlags_units, buf, sizeof(buf));
     fprintf (fp, "%s", buf);
 }
 
@@ -153,11 +101,11 @@ parse_hdbflags (const char *s, HDBFlags *flags)
 {
     int t;
 
-    t = parse_flags (s, flag_units, flags2int(*flags));
+    t = parse_flags (s, HDBFlags_units, HDBFlags2int(*flags));
     if (t < 0)
 	return t;
     else {
-	*flags = int2flags(t);
+	*flags = int2HDBFlags(t);
 	return 0;
     }
 }
