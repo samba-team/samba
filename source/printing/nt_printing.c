@@ -181,7 +181,7 @@ static BOOL upgrade_to_version_2(void)
 	DEBUG(0,("upgrade_to_version_2: upgrading print tdb's to version 2\n"));
  
 	for (kbuf = tdb_firstkey(tdb_drivers); kbuf.dptr;
-			newkey = tdb_nextkey(tdb_drivers, kbuf), SAFE_FREE(kbuf.dptr), kbuf=newkey) {
+			newkey = tdb_nextkey(tdb_drivers, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
 
 		dbuf = tdb_fetch(tdb_drivers, kbuf);
 
@@ -323,7 +323,7 @@ int get_ntforms(nt_forms_struct **list)
 
 	for (kbuf = tdb_firstkey(tdb_forms);
 	     kbuf.dptr;
-	     newkey = tdb_nextkey(tdb_forms, kbuf), SAFE_FREE(kbuf.dptr), kbuf=newkey) {
+	     newkey = tdb_nextkey(tdb_forms, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
 		if (strncmp(kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) != 0) continue;
 		
 		dbuf = tdb_fetch(tdb_forms, kbuf);
@@ -512,7 +512,7 @@ int get_ntdrivers(fstring **list, char *architecture, uint32 version)
 
 	for (kbuf = tdb_firstkey(tdb_drivers);
 	     kbuf.dptr;
-	     newkey = tdb_nextkey(tdb_drivers, kbuf), SAFE_FREE(kbuf.dptr), kbuf=newkey) {
+	     newkey = tdb_nextkey(tdb_drivers, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
 		if (strncmp(kbuf.dptr, key, strlen(key)) != 0) continue;
 		
 		if((fl = Realloc(*list, sizeof(fstring)*(total+1))) == NULL) {
@@ -3250,7 +3250,7 @@ BOOL printer_driver_in_use (char *arch, char *driver)
 	
 	/* loop through the printers.tdb and check for the drivername */
 	for (kbuf = tdb_firstkey(tdb_printers); kbuf.dptr;
-	     newkey = tdb_nextkey(tdb_printers, kbuf), SAFE_FREE(kbuf.dptr), kbuf=newkey) 
+	     newkey = tdb_nextkey(tdb_printers, kbuf), safe_free(kbuf.dptr), kbuf=newkey) 
 	{
 
 		dbuf = tdb_fetch(tdb_printers, kbuf);
