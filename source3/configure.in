@@ -3895,6 +3895,18 @@ if test "${ac_cv_prog_CC}" = "insure"; then
 fi
 
 #################################################
+# Display summary of libraries detected
+
+AC_MSG_RESULT([Using libraries:])
+AC_MSG_RESULT([    LIBS = $LIBS])
+if test x"$with_ads_support" = x"yes"; then
+   AC_MSG_RESULT([    KRB5_LIBS = $KRB5_LIBS])
+fi
+if test x"$with_ldap_support" = x"yes"; then
+   AC_MSG_RESULT([    LDAP_LIBS = $LDAP_LIBS])
+fi
+
+#################################################
 # final configure stuff
 
 AC_MSG_CHECKING([configure summary])
