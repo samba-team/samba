@@ -40,6 +40,42 @@
 
 RCSID("$Id$");
 
+static krb5_error_code
+add_addrs(krb5_context context,
+	  krb5_addresses *a,
+	  struct hostent *hostent, int af)
+{
+    krb5_error_code ret;
+    char **h;
+    unsigned n, i;
+    void *tmp;
+
+    if (hostent == NULL)
+	return 0;
+    
+    n = 0;
+    for (h = hostent->h_addr_list; *h != NULL; ++h)
+	++n;
+
+    i = a->len;
+    a->len += n;
+    tmp = realloc(a->val, a->len * sizeof(*a->val));
+    if (tmp == NULL) {
+	ret = ENOMEM;
+	goto fail;
+    }
+    a->val = tmp;
+    for (h = hostent->h_addr_list; *h != NULL; ++h) {
+	ret = krb5_h_addr2addr (af, *h, &a->val[i++]);
+	if (ret)
+	    goto fail;
+    }
+    return 0;
+fail:
+    krb5_free_addresses (context, a);
+    return ret;
+}
+
 krb5_error_code
 krb5_get_forwarded_creds (krb5_context	    context,
 			  krb5_auth_context auth_context,
@@ -52,9 +88,6 @@ krb5_get_forwarded_creds (krb5_context	    context,
     krb5_error_code ret;
     krb5_creds *out_creds;
     krb5_addresses addrs;
-    struct hostent *hostent;
-    unsigned n;
-    struct in_addr **h;
     KRB_CRED cred;
     KrbCredInfo *krb_cred_info;
     EncKrbCredPart enc_krb_cred_part;
@@ -74,43 +107,29 @@ krb5_get_forwarded_creds (krb5_context	    context,
 	    return ret;
     }
 
-    out_creds = calloc(1, sizeof(*out_creds));
-    if (out_creds == NULL)
-	return ENOMEM;
+    addrs.len = 0;
+    addrs.val = NULL;
 
-    hostent = roken_gethostbyname (hostname);
-    if (hostent == NULL)
-	return h_errno;		/* XXX */
-
-    if (hostent->h_addrtype != AF_INET)
-	abort ();
-
-    n = 0;
-    for (h = (struct in_addr **)hostent->h_addr_list;
-	 *h != NULL;
-	 ++h)
-	++n;
-
-    addrs.len = n;
-    addrs.val = calloc (n, sizeof(*addrs.val));
-    if (addrs.val == NULL)
-	return ENOMEM;
-
-    n = 0;
-    for (h = (struct in_addr **)hostent->h_addr_list;
-	 *h != NULL;
-	 ++h) {
-	addrs.val[n].addr_type      = AF_INET;
-	addrs.val[n].address.length = sizeof(struct in_addr);
-	addrs.val[n].address.data   = malloc(sizeof(struct in_addr));
-	if (addrs.val[n].address.data == NULL) {
-	    krb5_free_addresses (context, &addrs);
-	    return ENOMEM;
-	}
-	memcpy (addrs.val[n].address.data, *h, sizeof(struct in_addr));
-    }
+#ifdef HAVE_GETHOSTBYNAME2
+    ret = add_addrs (context, &addrs, gethostbyname2(hostname, AF_INET6));
+    if (ret)
+	return ret;
+    ret = add_addrs (context, &addrs, gethostbyname2(hostname, AF_INET));
+    if (ret)
+	return ret;
+#else
+    ret = add_addrs (context, &addrs, roken_gethostbyname(hostname), AF_INET);
+    if (ret)
+	return ret;
+#endif
 
     kdc_flags.i = flags;
+
+    out_creds = calloc(1, sizeof(*out_creds));
+    if (out_creds == NULL) {
+	krb5_free_addresses(context, &addrs);
+	return ENOMEM;
+    }
 
     ret = krb5_get_kdc_cred (context,
 			     ccache,
@@ -119,31 +138,46 @@ krb5_get_forwarded_creds (krb5_context	    context,
 			     NULL,
 			     in_creds,
 			     &out_creds);
+    krb5_free_addresses (context, &addrs);
     if (ret)
-	return ret;
+	goto out2;
 
     memset (&cred, 0, sizeof(cred));
     cred.pvno = 5;
     cred.msg_type = krb_cred;
     cred.tickets.len = 1;
     ALLOC(cred.tickets.val, 1);
-    if (cred.tickets.val == NULL)
-	return ENOMEM;		/* XXX */
-    if (decode_Ticket(out_creds->ticket.data,
-		      out_creds->ticket.length,
-		      cred.tickets.val, &len))
-	abort ();		/* XXX */
-    
+    if (cred.tickets.val == NULL) {
+	ret = ENOMEM;
+	goto out2;
+    }
+    ret = decode_Ticket(out_creds->ticket.data,
+			out_creds->ticket.length,
+			cred.tickets.val, &len);
+    if (ret)
+	goto out3;
 
     memset (&enc_krb_cred_part, 0, sizeof(enc_krb_cred_part));
     enc_krb_cred_part.ticket_info.len = 1;
     ALLOC(enc_krb_cred_part.ticket_info.val, 1);
+    if (enc_krb_cred_part.ticket_info.val == NULL) {
+	ret = ENOMEM;
+	goto out4;
+    }
     
     krb5_us_timeofday (context, &sec, &usec);
 
     ALLOC(enc_krb_cred_part.timestamp, 1);
+    if (enc_krb_cred_part.timestamp == NULL) {
+	ret = ENOMEM;
+	goto out4;
+    }
     *enc_krb_cred_part.timestamp = sec;
     ALLOC(enc_krb_cred_part.usec, 1);
+    if (enc_krb_cred_part.usec == NULL) {
+ 	ret = ENOMEM;
+	goto out4;
+   }
     *enc_krb_cred_part.usec      = usec;
 
     enc_krb_cred_part.s_address = NULL;	/* XXX */
@@ -175,13 +209,17 @@ krb5_get_forwarded_creds (krb5_context	    context,
     ALLOC(krb_cred_info->caddr, 1);
     copy_HostAddresses (&out_creds->addresses, krb_cred_info->caddr);
 
+    krb5_free_creds_contents (context, out_creds);
+
     /* encode EncKrbCredPart */
 
     ret = encode_EncKrbCredPart (buf + sizeof(buf) - 1, sizeof(buf),
 				 &enc_krb_cred_part, &len);
     free_EncKrbCredPart (&enc_krb_cred_part);
-    if (ret)
-	return ret; /* XXX */
+    if (ret) {
+	free_KRB_CRED(&cred);
+	return ret;
+    }    
 
     ret = krb5_encrypt_EncryptedData (context,
 				      buf + sizeof(buf) - len,
@@ -190,8 +228,10 @@ krb5_get_forwarded_creds (krb5_context	    context,
 				      0,
 				      &auth_context->local_subkey,
 				      &cred.enc_part);
-    if (ret)
-	return ret;		/* XXX */
+    if (ret) {
+	free_KRB_CRED(&cred);
+	return ret;
+    }
 
     ret = encode_KRB_CRED (buf + sizeof(buf) - 1, sizeof(buf),
 			   &cred, &len);
@@ -200,6 +240,15 @@ krb5_get_forwarded_creds (krb5_context	    context,
 	return ret;
     out_data->length = len;
     out_data->data   = malloc(len);
+    if (out_data->data == NULL)
+	return ENOMEM;
     memcpy (out_data->data, buf + sizeof(buf) - len, len);
     return 0;
+out4:
+    free_EncKrbCredPart(&enc_krb_cred_part);
+out3:
+    free_KRB_CRED(&cred);
+out2:
+    krb5_free_creds (context, out_creds);
+    return ret;
 }
