@@ -764,60 +764,20 @@ void free_getent_state(struct getent_state *state)
 	}
 }
 
-/* Parse list of arguments to winbind uid or winbind gid parameters */
-
-static BOOL parse_id_list(char *paramstr, BOOL is_user)
-{
-    uid_t id_low, id_high = 0;
-
-    /* Give a nicer error message if no parameters specified */
-
-    if (strequal(paramstr, "")) {
-        DEBUG(0, ("winbind %s parameter missing\n", is_user ? "uid" : "gid"));
-        return False;
-    }
-    
-    /* Parse entry */
-
-    if (sscanf(paramstr, "%u-%u", &id_low, &id_high) != 2) {
-        DEBUG(0, ("winbind %s parameter invalid\n", 
-                  is_user ? "uid" : "gid"));
-        return False;
-    }
-    
-    /* Store id info */
-    
-    if (is_user) {
-        server_state.uid_low = id_low;
-        server_state.uid_high = id_high;
-    } else {
-        server_state.gid_low = id_low;
-        server_state.gid_high = id_high;
-    }
-
-    return True;
-}
-
 /* Initialise trusted domain info */
 
 BOOL winbindd_param_init(void)
 {
     /* Parse winbind uid and winbind_gid parameters */
 
-    if (!(parse_id_list(lp_winbind_uid(), True) &&
-          parse_id_list(lp_winbind_gid(), False)))
-        return False;
-
-    /* Check for reversed uid and gid ranges */
-        
-    if (server_state.uid_low > server_state.uid_high) {
-        DEBUG(0, ("uid range invalid\n"));
-        return False;
+    if (!lp_winbind_uid(&server_state.uid_low, &server_state.uid_high)) {
+            DEBUG(0, ("winbind uid range missing or invalid\n"));
+            return False;
     }
-    
-    if (server_state.gid_low > server_state.gid_high) {
-        DEBUG(0, ("gid range invalid\n"));
-        return False;
+
+    if (!lp_winbind_gid(&server_state.gid_low, &server_state.gid_high)) {
+            DEBUG(0, ("winbind gid range missing or invalid\n"));
+            return False;
     }
     
     return True;
