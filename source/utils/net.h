@@ -43,3 +43,6 @@ extern char *opt_comment;
 
 extern char *opt_target_workgroup;
 extern int opt_long_list_entries;
+extern int opt_reboot;
+extern int opt_force;
+extern int opt_timeout;

@@ -46,7 +46,7 @@ typedef NTSTATUS (*rpc_command_fn)(const DOM_SID *, struct cli_state *, TALLOC_C
  * @param cli A cli_state already connected to the remote machine
  *
  * @return The Domain SID of the remote machine.
- */
+ **/
 
 static DOM_SID *net_get_remote_domain_sid(struct cli_state *cli)
 {
@@ -144,8 +144,13 @@ static int run_rpc_command(const char *pipe_name, int conn_flags,
 	
 	nt_status = fn(domain_sid, cli, mem_ctx, argc, argv);
 	
-	DEBUG(5, ("rpc command function returned %s\n", get_nt_error_msg(nt_status)));
-
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("rpc command function failed! (%s)\n", get_nt_error_msg(nt_status)));
+	} else {
+		DEBUG(5, ("rpc command function succedded\n"));
+	}
+		
+	    
 	if (cli->nt_pipe_fnum)
 		cli_nt_session_close(cli);
 	
@@ -374,7 +379,7 @@ static int rpc_user_add(int argc, const char **argv)
 }
 
 /** 
- * Basic usage function for 'net rpc join'
+ * Basic usage function for 'net rpc user'
  * @param argc  Standard main() style argc
  * @param argc  Standard main() style argv.  Initial components are already
  *              stripped
@@ -401,14 +406,160 @@ static int rpc_user(int argc, const char **argv)
 	};
 	
 	if (argc == 0) {
-		rpc_user_usage(argc, argv);
+		return rpc_user_usage(argc, argv);
 	}
 
 	return net_run_function(argc, argv, func, rpc_user_usage);
 }
 
+
+/****************************************************************************/
+
+
+
 /** 
- * Basic usage function for 'net rpc join'
+ * ABORT the shutdown of a remote RPC Server
+ *
+ * All paramaters are provided by the run_rpc_command funcion, except for
+ * argc, argv which are passed through. 
+ *
+ * @param domain_sid The domain sid aquired from the remote server
+ * @param cli A cli_state connected to the server.
+ * @param mem_ctx Talloc context, destoyed on compleation of the function.
+ * @param argc  Standard main() style argc
+ * @param argc  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return Normal NTSTATUS return.
+ **/
+
+static NTSTATUS rpc_shutdown_abort_internals(const DOM_SID *domain_sid, struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+					     int argc, const char **argv) 
+{
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	
+	result = cli_reg_abort_shutdown(cli, mem_ctx);
+	
+	if (NT_STATUS_IS_OK(result))
+		DEBUG(5,("cmd_reg_abort_shutdown: query succeeded\n"));
+	else
+		DEBUG(5,("cmd_reg_abort_shutdown: query failed\n"));
+	
+	return result;
+}
+
+
+/** 
+ * ABORT the Shut down of a remote RPC server
+ *
+ * @param argc  Standard main() style argc
+ * @param argc  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return A shell status integer (0 for success)
+ **/
+
+static int rpc_shutdown_abort(int argc, const char **argv) 
+{
+	return run_rpc_command(PIPE_WINREG, 0, rpc_shutdown_abort_internals,
+			       argc, argv);
+}
+
+/** 
+ * Shut down a remote RPC Server
+ *
+ * All paramaters are provided by the run_rpc_command funcion, except for
+ * argc, argv which are passes through. 
+ *
+ * @param domain_sid The domain sid aquired from the remote server
+ * @param cli A cli_state connected to the server.
+ * @param mem_ctx Talloc context, destoyed on compleation of the function.
+ * @param argc  Standard main() style argc
+ * @param argc  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return Normal NTSTATUS return.
+ **/
+
+static NTSTATUS rpc_shutdown_internals(const DOM_SID *domain_sid, struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				       int argc, const char **argv) 
+{
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+        char *msg = "This machine will be shutdown shortly";
+	uint32 timeout = 20;
+	uint16 flgs = 0;
+	BOOL reboot = opt_reboot;
+	BOOL force = opt_force;
+#if 0
+	poptContext pc;
+	int rc;
+
+	struct poptOption long_options[] = {
+		{"message",    'm', POPT_ARG_STRING, &msg},
+		{"timeout",    't', POPT_ARG_INT,    &timeout},
+		{"reboot",     'r', POPT_ARG_NONE,   &reboot},
+		{"force",      'f', POPT_ARG_NONE,   &force},
+		{ 0, 0, 0, 0}
+	};
+
+	pc = poptGetContext(NULL, argc, (const char **) argv, long_options, 
+			    POPT_CONTEXT_KEEP_FIRST);
+
+	rc = poptGetNextOpt(pc);
+	
+	if (rc < -1) {
+		/* an error occurred during option processing */
+		DEBUG(0, ("%s: %s\n",
+			  poptBadOption(pc, POPT_BADOPTION_NOALIAS),
+			  poptStrerror(rc)));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+#endif
+	if (reboot) {
+		flgs |= REG_REBOOT_ON_SHUTDOWN;
+	}
+	if (force) {
+		flgs |= REG_FORCE_SHUTDOWN;
+	}
+	if (opt_comment) {
+		msg = opt_comment;
+	}
+	if (opt_timeout) {
+		timeout = opt_timeout;
+	}
+
+	/* create an entry */
+	result = cli_reg_shutdown(cli, mem_ctx, msg, timeout, flgs);
+
+	if (NT_STATUS_IS_OK(result))
+		DEBUG(5,("Shutdown of remote machine succeeded\n"));
+	else
+		DEBUG(0,("Shutdown of remote machine failed!\n"));
+
+	return result;
+}
+
+/** 
+ * Shut down a remote RPC server
+ *
+ * @param argc  Standard main() style argc
+ * @param argc  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return A shell status integer (0 for success)
+ **/
+
+static int rpc_shutdown(int argc, const char **argv) 
+{
+	return run_rpc_command(PIPE_WINREG, 0, rpc_shutdown_internals,
+				       argc, argv);
+}
+
+/****************************************************************************/
+
+
+/** 
+ * Basic usage function for 'net rpc'
  * @param argc  Standard main() style argc
  * @param argc  Standard main() style argv.  Initial components are already
  *              stripped
@@ -419,11 +570,19 @@ int net_rpc_usage(int argc, const char **argv)
 	d_printf("  net rpc join \tto join a domain \n");
 	d_printf("  net rpc user \tto add, delete and list users\n");
 	d_printf("  net rpc changetrustpw \tto change the trust account password\n");
+	d_printf("  net rpc abortshutdown \tto to abort the shutdown of a remote server\n");
+	d_printf("  net rpc shutdown \tto to shutdown a remote server\n");
+	d_printf("\n");
+	d_printf("'net rpc shutdown' also accepts the following miscellaneous options:\n"); /* misc options */
+	d_printf("\t-r or --reboot\trequest remote server reboot on shutdown\n");
+	d_printf("\t-f or --force\trequest the remote server force its shutdown\n");
+	d_printf("\t-t or --timeout=<timeout>\tnumber of seconds before shutdown\n");
+	d_printf("\t-c or --comment=<message>\ttext message to display on impending shutdown\n");
 	return -1;
 }
 
 /** 
- * 'net rpc user' entrypoint.
+ * 'net rpc' entrypoint.
  * @param argc  Standard main() style argc
  * @param argc  Standard main() style argv.  Initial components are already
  *              stripped
@@ -435,6 +594,8 @@ int net_rpc(int argc, const char **argv)
 		{"join", rpc_join},
 		{"user", rpc_user},
 		{"changetrustpw", rpc_changetrustpw},
+		{"abortshutdown", rpc_shutdown_abort},
+		{"shutdown", rpc_shutdown},
 		{NULL, NULL}
 	};
 	return net_run_function(argc, argv, func, net_rpc_usage);

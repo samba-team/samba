@@ -63,11 +63,14 @@ char *opt_password = NULL;
 char *opt_user_name = NULL;
 char *opt_workgroup = NULL;
 int opt_long_list_entries = 0;
+int opt_reboot = 0;
+int opt_force = 0;
 int opt_port = 0;
 int opt_maxusers = -1;
 char *opt_comment = "";
 int opt_flags = -1;
 int opt_jobid = 0;
+int opt_timeout = 0;
 char *opt_target_workgroup = NULL;
 
 static BOOL got_pass = False;
@@ -363,6 +366,9 @@ static struct functable net_func[] = {
 		{"flags",       'F', POPT_ARG_INT,    &opt_flags},
 		{"jobid",       'j', POPT_ARG_INT,    &opt_jobid},
 		{"long",        'l', POPT_ARG_NONE,   &opt_long_list_entries},
+		{"reboot",        'r', POPT_ARG_NONE,   &opt_reboot},
+		{"force",        'f', POPT_ARG_NONE,   &opt_force},
+		{"timeout",       't', POPT_ARG_INT,    &opt_timeout},
 		{ 0, 0, 0, 0}
 	};
 
