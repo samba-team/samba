@@ -101,7 +101,7 @@ static BOOL open_sockets_inetd(void)
 /****************************************************************************
   open the socket communication
 ****************************************************************************/
-static BOOL open_sockets(BOOL is_daemon,int port)
+static BOOL open_sockets(BOOL is_daemon,BOOL interactive, int port)
 {
 	int num_interfaces = iface_count();
 	int fd_listenset[FD_SETSIZE];
@@ -255,7 +255,10 @@ max can be %d\n",
 					 strerror(errno)));
 				continue;
 			}
-			
+		
+			if (smbd_server_fd() != -1 && interactive)
+				return True;
+	
 			if (smbd_server_fd() != -1 && sys_fork()==0) {
 				/* Child code ... */
 				
@@ -772,7 +775,7 @@ static void usage(char *pname)
 	if (!migrate_from_old_password_file(global_myworkgroup))
 		DEBUG(0,("Failed to migrate from old MAC file.\n"));
 
-	if (!open_sockets(is_daemon,port))
+	if (!open_sockets(is_daemon,interactive,port))
 		exit(1);
 
 	/*

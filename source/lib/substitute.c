@@ -37,6 +37,7 @@ fstring remote_machine="";
  Based on code by Branko Cibej <branko.cibej@hermes.si>
  When this is called p points at the '%' character.
 ********************************************************************/
+
 static size_t expand_env_var(char *p, int len)
 {
 	fstring envname;
@@ -89,6 +90,7 @@ static size_t expand_env_var(char *p, int len)
  Patch from jkf@soton.ac.uk
  Added this to implement %p (NIS auto-map version of %H)
 *******************************************************************/
+
 static char *automount_path(char *user_name)
 {
 	static pstring server_path;
@@ -125,32 +127,32 @@ static char *automount_path(char *user_name)
 	return server_path;
 }
 
-
 /*******************************************************************
  Patch from jkf@soton.ac.uk
  This is Luke's original function with the NIS lookup code
  moved out to a separate function.
 *******************************************************************/
+
 static char *automount_server(char *user_name)
 {
 	static pstring server_name;
 
 	/* use the local machine name as the default */
 	/* this will be the default if WITH_AUTOMOUNT is not used or fails */
-	pstrcpy(server_name, local_machine);
+	if (*local_machine)
+		pstrcpy(server_name, local_machine);
+	else
+		pstrcpy(server_name, global_myname);
 
 #if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
 
-	if (lp_nis_home_map())
-	{
+	if (lp_nis_home_map()) {
 	        int home_server_len;
 		char *automount_value = automount_lookup(user_name);
 		home_server_len = strcspn(automount_value,":");
 		DEBUG(5, ("NIS lookup succeeded.  Home server length: %d\n",home_server_len));
 		if (home_server_len > sizeof(pstring))
-		{
 			home_server_len = sizeof(pstring);
-		}
 		strncpy(server_name, automount_value, home_server_len);
                 server_name[home_server_len] = '\0';
 	}
@@ -164,6 +166,7 @@ static char *automount_server(char *user_name)
 /****************************************************************************
  Do some standard substitutions in a string.
 ****************************************************************************/
+
 void standard_sub_basic(char *str)
 {
 	char *p, *s;
@@ -218,10 +221,10 @@ void standard_sub_basic(char *str)
 	}
 }
 
-
 /****************************************************************************
  Do some standard substitutions in a string.
 ****************************************************************************/
+
 void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *str)
 {
 	char *p, *s;
@@ -279,14 +282,47 @@ void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, c
 /****************************************************************************
  Do some standard substitutions in a string.
 ****************************************************************************/
+
 void standard_sub_conn(connection_struct *conn, char *str)
 {
 	standard_sub_advanced(SNUM(conn), conn->user, conn->connectpath, conn->gid, str);
 }
 
 /****************************************************************************
-like standard_sub but by snum
+ Like standard_sub but for a homes share where snum still points to the [homes]
+ share. No user specific snum created yet so servicename should be the username.
 ****************************************************************************/
+
+void standard_sub_home(int snum, char *user, char *str)
+{
+	char *p, *s;
+
+	for (s=str; (p=strchr(s, '%'));s=p) {
+		int l = sizeof(pstring) - (int)(p-str);
+		
+		switch (*(p+1)) {
+		case 'S': 
+			string_sub(p,"%S", user, l); 
+			break;
+		case 'p': 
+			string_sub(p,"%p", automount_path(user), l); 
+			break;
+		case '\0': 
+			p++; 
+			break; /* don't run off the end of the string */
+			
+		default: p+=2; 
+			break;
+		}
+	}
+
+	standard_sub_advanced(snum, user, "", -1, str);
+}
+
+/****************************************************************************
+ Like standard_sub but by snum.
+****************************************************************************/
+
 void standard_sub_snum(int snum, char *str)
 {
 	extern struct current_user current_user;
@@ -306,6 +342,7 @@ void standard_sub_snum(int snum, char *str)
 /*******************************************************************
  Substitute strings with useful parameters.
 ********************************************************************/
+
 void standard_sub_vuser(char *str, user_struct *vuser)
 {
 	standard_sub_advanced(-1, vuser->user.unix_name, "", -1, str);
@@ -314,8 +351,8 @@ void standard_sub_vuser(char *str, user_struct *vuser)
 /*******************************************************************
  Substitute strings with useful parameters.
 ********************************************************************/
+
 void standard_sub_vsnum(char *str, user_struct *vuser, int snum)
 {
 	standard_sub_advanced(snum, vuser->user.unix_name, "", -1, str);
 }
-

@@ -386,7 +386,7 @@ static mode_t unix_perms_from_wire( connection_struct *conn, SMB_STRUCT_STAT *ps
 {
 	mode_t ret = 0;
 
-	if (perms == MODE_NO_CHANGE)
+	if (perms == SMB_MODE_NO_CHANGE)
 		return pst->st_mode;
 
 	ret |= ((perms & UNIX_X_OTH ) ? S_IXOTH : 0);
@@ -2219,8 +2219,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 	int fd = -1;
 	BOOL bad_path = False;
 	files_struct *fsp = NULL;
-	uid_t set_owner = (uid_t)UID_NO_CHANGE;
-	gid_t set_grp = (uid_t)GID_NO_CHANGE;
+	uid_t set_owner = (uid_t)SMB_UID_NO_CHANGE;
+	gid_t set_grp = (uid_t)SMB_GID_NO_CHANGE;
 	mode_t unixmode = 0;
 
 	if (tran_call == TRANSACT2_SETFILEINFO) {
@@ -2334,8 +2334,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 	dosmode = dos_mode(conn,fname,&sbuf);
 	unixmode = sbuf.st_mode;
 
-	set_owner = VALID_STAT(sbuf) ? sbuf.st_uid : (uid_t)UID_NO_CHANGE;
-	set_grp = VALID_STAT(sbuf) ? sbuf.st_gid : (gid_t)GID_NO_CHANGE;
+	set_owner = VALID_STAT(sbuf) ? sbuf.st_uid : (uid_t)SMB_UID_NO_CHANGE;
+	set_grp = VALID_STAT(sbuf) ? sbuf.st_gid : (gid_t)SMB_GID_NO_CHANGE;
 
 	if (total_data > 4 && IVAL(pdata,0) == total_data) {
 		/* uggh, EAs for OS2 */
@@ -2583,16 +2583,16 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 				if (tran_call == TRANSACT2_SETFILEINFO)
 					return(ERROR_DOS(ERRDOS,ERRnoaccess));
 
-				if (raw_unixmode == MODE_NO_CHANGE)
+				if (raw_unixmode == SMB_MODE_NO_CHANGE)
 					return(ERROR_DOS(ERRDOS,ERRinvalidparam));
 
 				dev = makedev(dev_major, dev_minor);
 
 				/* We can only create as the owner/group we are. */
 
-				if ((set_owner != myuid) && (set_owner != (uid_t)UID_NO_CHANGE))
+				if ((set_owner != myuid) && (set_owner != (uid_t)SMB_UID_NO_CHANGE))
 					return(ERROR_DOS(ERRDOS,ERRnoaccess));
-				if ((set_grp != mygid) && (set_grp != (gid_t)GID_NO_CHANGE))
+				if ((set_grp != mygid) && (set_grp != (gid_t)SMB_GID_NO_CHANGE))
 					return(ERROR_DOS(ERRDOS,ERRnoaccess));
 
 				if (file_type != UNIX_TYPE_CHARDEV && file_type != UNIX_TYPE_BLKDEV &&
@@ -2617,7 +2617,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			 * Deal with the UNIX specific mode set.
 			 */
 
-			if (raw_unixmode != MODE_NO_CHANGE) {
+			if (raw_unixmode != SMB_MODE_NO_CHANGE) {
 				DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_BASIC setting mode 0%o for file %s\n",
 					unixmode, fname ));
 				if (vfs_chmod(conn,fname,unixmode) != 0)
@@ -2628,7 +2628,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			 * Deal with the UNIX specific uid set.
 			 */
 
-			if ((set_owner != (uid_t)UID_NO_CHANGE) && (sbuf.st_uid != set_owner)) {
+			if ((set_owner != (uid_t)SMB_UID_NO_CHANGE) && (sbuf.st_uid != set_owner)) {
 				DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_BASIC changing owner %u for file %s\n",
 					(unsigned int)set_owner, fname ));
 				if (vfs_chown(conn,fname,set_owner, (gid_t)-1) != 0)
@@ -2639,7 +2639,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			 * Deal with the UNIX specific gid set.
 			 */
 
-			if ((set_grp != (uid_t)GID_NO_CHANGE) && (sbuf.st_gid != set_grp)) {
+			if ((set_grp != (uid_t)SMB_GID_NO_CHANGE) && (sbuf.st_gid != set_grp)) {
 				DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_BASIC changing group %u for file %s\n",
 					(unsigned int)set_owner, fname ));
 				if (vfs_chown(conn,fname,(uid_t)-1, set_grp) != 0)

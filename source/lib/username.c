@@ -45,6 +45,12 @@ char *get_user_home_dir(char *user)
 	static struct passwd *pass;
 	int snum;
 
+	/* Ensure the user exists. */
+
+	pass = Get_Pwnam(user, False);
+	if (!pass)
+		return(NULL);
+
 	/* If a path is specified in [homes] then use it instead of the
 	   user's home directory from struct passwd. */
 
@@ -52,18 +58,14 @@ char *get_user_home_dir(char *user)
 		static pstring home_dir;
 
 		pstrcpy(home_dir, lp_pathname(snum));
-		standard_sub_snum(snum, home_dir);
+		standard_sub_home(snum, user, home_dir);
 
 		if (home_dir[0])
 			return home_dir;
 	}
 
-	/* Get home directory from struct passwd. */
+	/* Return home directory from struct passwd. */
 
-	pass = Get_Pwnam(user, False);
-
-	if (!pass)
-		return(NULL);
 	return(pass->pw_dir);      
 }
 
