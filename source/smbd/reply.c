@@ -1293,6 +1293,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	SMB_STRUCT_STAT sbuf;
 	char *p, *s;
 	NTSTATUS status;
+	unsigned int namelen;
 
 	START_PROFILE(SMBctemp);
 
@@ -1302,7 +1303,11 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		END_PROFILE(SMBctemp);
 		return ERROR_NT(status);
 	}
-	pstrcat(fname,"\\TMXXXXXX");
+	if (*fname) {
+		pstrcat(fname,"/TMXXXXXX");
+	} else {
+		pstrcat(fname,"TMXXXXXX");
+	}
 
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
@@ -1342,10 +1347,13 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		s++;
 
 	p = smb_buf(outbuf);
+#if 0
+	/* Tested vs W2K3 - this doesn't seem to be here - null terminated filename is the only
+	   thing in the byte section. JRA */
 	SSVALS(p, 0, -1); /* what is this? not in spec */
-	SSVAL(p, 2, strlen(s));
-	p += 4;
-	p += srvstr_push(outbuf, p, s, -1, STR_ASCII);
+#endif
+	namelen = srvstr_push(outbuf, p, s, -1, STR_ASCII|STR_TERMINATE);
+	p += namelen;
 	outsize = set_message_end(outbuf, p);
 
 	if (oplock_request && lp_fake_oplocks(SNUM(conn)))
