@@ -86,10 +86,10 @@ inaddr2str(struct in_addr addr, char *s, size_t len)
 	  *p;
 	  ++p)
 	if (memcmp (*p, &addr, sizeof(addr)) == 0) {
-	  strcpy_truncate (s, h->h_name, len);
+	  strlcpy (s, h->h_name, len);
 	  return;
 	}
   }
-  strcpy_truncate (s, inet_ntoa (addr), len);
+  strlcpy (s, inet_ntoa (addr), len);
   return;
 }

@@ -65,11 +65,11 @@ gethostname(char *name, int namelen)
 	ret = uname (&utsname);
 	if (ret < 0)
 	    return ret;
-	strcpy_truncate (name, utsname.nodename, namelen);
+	strlcpy (name, utsname.nodename, namelen);
 	return 0;
     }
 #else
-    strcpy_truncate (name, "some.random.host", namelen);
+    strlcpy (name, "some.random.host", namelen);
     return 0;
 #endif
 }

@@ -1,5 +1,7 @@
 1999-09-16  Assar Westerlund  <assar@sics.se>
 
+	* strlcat.c (strlcat): call strlcpy
+
 	* strlcpy.c: update name and prototype
 
 	* strlcat.c: update name and prototype

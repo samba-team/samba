@@ -123,7 +123,7 @@ __ivaliduser(FILE *hostf, unsigned raddr, const char *luser,
 				sizeof(u_long),
 				AF_INET)) == NULL)
 		return (-1);
-	strcpy_truncate(hname, hp->h_name, sizeof(hname));
+	strlcpy(hname, hp->h_name, sizeof(hname));
 
 	while (fgets(buf, sizeof(buf), hostf)) {
 		p = buf;

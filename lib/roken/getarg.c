@@ -59,13 +59,13 @@ print_arg (char *string, size_t len, int mdoc, int longp, struct getargs *arg)
 
     if(mdoc){
 	if(longp)
-	    strcat_truncate(string, "= Ns", len);
-	strcat_truncate(string, " Ar ", len);
+	    strlcat(string, "= Ns", len);
+	strlcat(string, " Ar ", len);
     }else
 	if (longp)
-	    strcat_truncate (string, "=", len);
+	    strlcat (string, "=", len);
 	else
-	    strcat_truncate (string, " ", len);
+	    strlcat (string, " ", len);
 
     if (arg->arg_help)
 	s = arg->arg_help;
@@ -76,7 +76,7 @@ print_arg (char *string, size_t len, int mdoc, int longp, struct getargs *arg)
     else
 	s = "<undefined>";
 
-    strcat_truncate(string, s, len);
+    strlcat(string, s, len);
     return 1 + strlen(s);
 }
 
@@ -102,7 +102,7 @@ mandoc_template(struct getargs *args,
     printf(".Dd %s\n", timestr);
     p = strrchr(progname, '/');
     if(p) p++; else p = progname;
-    strcpy_truncate(cmd, p, sizeof(cmd));
+    strlcpy(cmd, p, sizeof(cmd));
     strupr(cmd);
        
     printf(".Dt %s SECTION\n", cmd);
@@ -222,19 +222,19 @@ arg_printusage (struct getargs *args,
 
 	if (args[i].long_name) {
 	    buf[0] = '\0';
-	    strcat_truncate(buf, "[--", sizeof(buf));
+	    strlcat(buf, "[--", sizeof(buf));
 	    len += 2;
 	    if(args[i].type == arg_negative_flag) {
-		strcat_truncate(buf, "no-", sizeof(buf));
+		strlcat(buf, "no-", sizeof(buf));
 		len += 3;
 	    }
-	    strcat_truncate(buf, args[i].long_name, sizeof(buf));
+	    strlcat(buf, args[i].long_name, sizeof(buf));
 	    len += strlen(args[i].long_name);
 	    len += print_arg(buf + strlen(buf), sizeof(buf) - strlen(buf), 
 			     0, 1, &args[i]);
-	    strcat_truncate(buf, "]", sizeof(buf));
+	    strlcat(buf, "]", sizeof(buf));
 	    if(args[i].type == arg_strings)
-		strcat_truncate(buf, "...", sizeof(buf));
+		strlcat(buf, "...", sizeof(buf));
 	    col = check_column(stderr, col, strlen(buf) + 1, columns);
 	    col += fprintf(stderr, " %s", buf);
 	}
@@ -243,9 +243,9 @@ arg_printusage (struct getargs *args,
 	    len += 2;
 	    len += print_arg(buf + strlen(buf), sizeof(buf) - strlen(buf), 
 			     0, 0, &args[i]);
-	    strcat_truncate(buf, "]", sizeof(buf));
+	    strlcat(buf, "]", sizeof(buf));
 	    if(args[i].type == arg_strings)
-		strcat_truncate(buf, "...", sizeof(buf));
+		strlcat(buf, "...", sizeof(buf));
 	    col = check_column(stderr, col, strlen(buf) + 1, columns);
 	    col += fprintf(stderr, " %s", buf);
 	}
