@@ -219,13 +219,16 @@ main(int argc, char **argv)
 					     KADM5_ADMIN_SERVICE,
 					     &conf, 0, 0, 
 					     &kadm_handle);
-    else if (ad_flag)
-	ret = kadm5_ad_init_with_password(client_name,
-					  NULL,
-					  KADM5_ADMIN_SERVICE,
-					  &conf, 0, 0,
-					  &kadm_handle);
-    else if (keytab) {
+    else if (ad_flag) {
+	if (client_name == NULL)
+	    krb5_errx(context, 1, "keytab mode require principal name");
+	ret = kadm5_ad_init_with_password_ctx(context,
+					      client_name,
+					      NULL,
+					      KADM5_ADMIN_SERVICE,
+					      &conf, 0, 0,
+					      &kadm_handle);
+    } else if (keytab) {
 	if (client_name == NULL)
 	    krb5_errx(context, 1, "keytab mode require principal name");
         ret = kadm5_c_init_with_skey_ctx(context,
