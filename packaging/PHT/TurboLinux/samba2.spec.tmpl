@@ -222,6 +222,10 @@ if !( grep ^[:space:]*swat /etc/inetd.conf > /dev/null ) then
 killall -1 inetd || :
 fi
 
+# Now create the xinetd.conf file from our inetd.conf file, back up orig first.
+mv /etc/xinetd.conf /etc/xinetd.conf.presamba
+/usr/sbin/itox --daemon_dir /usr/sbin < /etc/inetd.conf > /etc/xinetd.conf
+
 %preun
 if [ $1 = 0 ] ; then
     /sbin/chkconfig --del smb
@@ -260,6 +264,10 @@ if [ $1 = 0 ] ; then
     mv $tmpfile inetd.conf
     sed -e '/^[:space:]*swat.*$/d' /etc/services > $tmpfile
     mv $tmpfile services
+
+    # Recreate xinetd.conf file from /etc/inetd.conf
+    mv /etc/xinetd.conf /etc/xinetd.conf.samba.old
+    /usr/sbin/itox --daemon_dir /usr/sbin < /etc/inetd.conf > /etc/xinetd.conf
 fi
 
 %triggerpostun -- samba < samba-2.0.0
@@ -340,6 +348,7 @@ fi
 %attr(-,root,root) /etc/codepages/src/codepage_def.949
 %attr(-,root,root) /etc/codepages/src/codepage_def.950
 %attr(-,root,root) /usr/man/man1/smbstatus.1
+%attr(-,root,root) /usr/man/man1/nmblookup.1
 %attr(-,root,root) /usr/man/man1/smbclient.1
 %attr(-,root,root) /usr/man/man1/make_smbcodepage.1
 %attr(-,root,root) /usr/man/man1/smbrun.1
@@ -350,6 +359,7 @@ fi
 %attr(-,root,root) /usr/man/man7/samba.7
 %attr(-,root,root) /usr/man/man8/smbd.8
 %attr(-,root,root) /usr/man/man8/nmbd.8
+%attr(-,root,root) /usr/man/man8/swat.8
 %attr(-,root,root) /usr/man/man8/smbpasswd.8
 %attr(-,root,nobody) %dir /home/samba
 %attr(-,root,root) %dir /etc/codepages
