@@ -802,7 +802,7 @@ static BOOL samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 		}
 
 		endgrent();
-	done: ;
+	done:
 	}
 		
 	init_samr_r_enum_dom_aliases(&r_e, num_entries, pass, r_e.status);
