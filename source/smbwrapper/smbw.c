@@ -261,6 +261,7 @@ static char *smbw_find_workgroup(void)
 	char *p;
 	struct in_addr *ip_list = NULL;
 	int count = 0;
+	int i;
 
 	/* first off see if an existing workgroup name exists */
 	p = smbw_getshared("WORKGROUP");
@@ -273,12 +274,21 @@ static char *smbw_find_workgroup(void)
 	if (!name_resolve_bcast(MSBROWSE, 1, &ip_list, &count)) {
 		DEBUG(1,("No workgroups found!"));
 		return p;
-		
 	}
 
-	free((char *)ip_list);
+	for (i=0;i<count;i++) {
+		static fstring name;
+		if (name_status_find(0x1d, ip_list[i], name)) {
+			slprintf(server, sizeof(server), "%s#1D", name);
+			if (smbw_server(server, "IPC$")) {
+				free(ip_list);
+				return name;
+			}
+		}
+	}
 
-	DEBUG(0,("Need to do node status code"));
+	free(ip_list);
+
 	return p;
 }
 
