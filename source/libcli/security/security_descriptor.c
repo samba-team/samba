@@ -100,6 +100,8 @@ NTSTATUS security_descriptor_dacl_add(struct security_descriptor *sd,
 	
 	sd->dacl->num_aces++;
 
+	sd->type |= SEC_DESC_DACL_PRESENT;
+
 	return NT_STATUS_OK;
 }
 
@@ -205,4 +207,81 @@ BOOL security_descriptor_mask_equal(const struct security_descriptor *sd1,
 	if ((mask & SEC_DESC_SACL_PRESENT) && !security_acl_equal(sd1->sacl, sd2->sacl))      return False;
 
 	return True;	
+}
+
+
+/*
+  create a security descriptor using string SIDs. This is used by the
+  torture code to allow the easy creation of complex ACLs
+  This is a varargs function. The list of ACEs ends with a NULL sid.
+
+  a typical call would be:
+
+    sd = security_descriptor_create(mem_ctx,
+                                    mysid,
+				    mygroup,
+				    SID_AUTHENTICATED_USERS, 
+				    SEC_ACE_TYPE_ACCESS_ALLOWED,
+				    SEC_FILE_ALL,
+				    NULL);
+  that would create a sd with one ACE
+*/
+struct security_descriptor *security_descriptor_create(TALLOC_CTX *mem_ctx,
+						       const char *owner_sid,
+						       const char *group_sid,
+						       ...)
+{
+	va_list ap;
+	struct security_descriptor *sd;
+	const char *sidstr;
+
+	sd = security_descriptor_initialise(mem_ctx);
+	if (sd == NULL) return NULL;
+
+	if (owner_sid) {
+		sd->owner_sid = dom_sid_parse_talloc(mem_ctx, owner_sid);
+		if (sd->owner_sid == NULL) {
+			talloc_free(sd);
+			return NULL;
+		}
+	}
+	if (group_sid) {
+		sd->group_sid = dom_sid_parse_talloc(mem_ctx, group_sid);
+		if (sd->group_sid == NULL) {
+			talloc_free(sd);
+			return NULL;
+		}
+	}
+
+	va_start(ap, group_sid);
+	while ((sidstr = va_arg(ap, const char *))) {
+		struct dom_sid *sid;
+		struct security_ace *ace = talloc_p(sd, struct security_ace);
+		NTSTATUS status;
+
+		if (ace == NULL) {
+			talloc_free(sd);
+			va_end(ap);
+			return NULL;
+		}
+		ace->type = va_arg(ap, unsigned int);
+		ace->access_mask = va_arg(ap, unsigned int);
+		ace->flags = 0;
+		sid = dom_sid_parse_talloc(ace, sidstr);
+		if (sid == NULL) {
+			va_end(ap);
+			talloc_free(sd);
+			return NULL;
+		}
+		ace->trustee = *sid;
+		status = security_descriptor_dacl_add(sd, ace);
+		if (!NT_STATUS_IS_OK(status)) {
+			va_end(ap);
+			talloc_free(sd);
+			return NULL;
+		}
+	}
+	va_end(ap);
+
+	return sd;
 }
