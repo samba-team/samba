@@ -89,14 +89,12 @@ static NTSTATUS check_name_to_ntstatus_security(const struct auth_context *auth_
 	fstrcpy(user, user_info->smb_name.str);
 	
 	if (strncasecmp("NT_STATUS", user, strlen("NT_STATUS")) == 0) {
-		strupper_m(user);
 		return nt_status_string_to_code(user);
 	}
 
-	strlower_m(user);
 	error_num = strtoul(user, NULL, 16);
 	
-	DEBUG(5,("check_name_to_ntstatus_security: Error for user %s was %lx\n", user, error_num));
+	DEBUG(5,("check_name_to_ntstatus_security: Error for user %s was 0x%lx\n", user, error_num));
 
 	nt_status = NT_STATUS(error_num);
 	
