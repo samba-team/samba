@@ -582,6 +582,12 @@ struct hostent* roken_gethostbyaddr(const void*, size_t, int);
 #define roken_openlog(a,b,c) openlog((char *)a,b,c)
 #endif
 
+#ifdef GETSOCKNAME_PROTO_COMPATIBLE
+#define roken_getsockname(a,b,c) getsockname(a,b,c)
+#else
+#define roken_getsockname(a,b,c) getsockname(a, b, (void*)c)
+#endif
+
 void set_progname(char *argv0);
 const char *get_progname(void);
 
