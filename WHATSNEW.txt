@@ -1,4 +1,4 @@
-              WHATS NEW IN Samba 2.0.7-pre3
+              WHATS NEW IN Samba 2.0.7-pre4
               =============================
 
 This is the latest stable release of Samba. This is the
