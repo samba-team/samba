@@ -90,19 +90,21 @@ extern struct winbindd_state server_state;  /* Server information */
 
 struct winbindd_domain {
 
-    /* Domain information */
+	/* Domain information */
 
-    fstring name;                          /* Domain name */
-    fstring controller;                    /* NetBIOS name of DC */
-
-    DOM_SID sid;                           /* SID for this domain */
-    BOOL got_domain_info;                  /* Got controller and sid */
-
-    /* Cached handles to samr pipe */
-    POLICY_HND sam_handle, sam_dom_handle;
-    BOOL sam_handle_open, sam_dom_handle_open;
-
-    struct winbindd_domain *prev, *next;   /* Linked list info */
+	fstring name;                          /* Domain name */
+	fstring controller;                    /* NetBIOS name of DC */
+	
+	DOM_SID sid;                           /* SID for this domain */
+	BOOL got_domain_info;                  /* Got controller and sid */
+	
+	/* Cached handles to samr pipe */
+	
+	POLICY_HND sam_handle, sam_dom_handle;
+	BOOL sam_handle_open, sam_dom_handle_open;
+	time_t last_check;
+	
+	struct winbindd_domain *prev, *next;   /* Linked list info */
 };
 
 extern struct winbindd_domain *domain_list;  /* List of domains we know */

@@ -182,14 +182,13 @@ static BOOL sam_handles_open(struct winbindd_domain *domain)
 
 BOOL domain_handles_open(struct winbindd_domain *domain)
 {
-	static time_t lastt;
 	time_t t;
 
 	/* Check we haven't checked too recently */
 
 	t = time(NULL);
 
-	if ((t - lastt) < WINBINDD_ESTABLISH_LOOP) {
+	if ((t - domain->last_check) < WINBINDD_ESTABLISH_LOOP) {
 		DEBUG(3, ("checking domain handles for domain %s\n", 
 			  domain->name));
 
@@ -197,7 +196,7 @@ BOOL domain_handles_open(struct winbindd_domain *domain)
 			domain->sam_dom_handle_open;
 	}
 
-	lastt = t;
+	domain->last_check = t;
 
 	if (!sam_handles_open(domain)) {
 		open_sam_handles(domain);
