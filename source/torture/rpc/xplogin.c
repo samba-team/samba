@@ -1143,7 +1143,7 @@ static const struct user_pw machines[] = {
 	{ "machine2", "mpw2" }
 };
 
-BOOL torture_rpc_login(int dummy)
+BOOL torture_rpc_login(void)
 {
 	const char *pdcname = "pdcname";
 	const char *domainname = "domain";
