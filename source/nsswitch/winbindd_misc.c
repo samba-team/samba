@@ -286,6 +286,13 @@ enum winbindd_result winbindd_show_sequence(struct winbindd_cli_state *state)
 	return WINBINDD_OK;
 }
 
+struct domain_info_state {
+	struct winbindd_domain *domain;
+	struct winbindd_cli_state *cli_state;
+};
+
+static void domain_info_init_recv(void *private, BOOL success);
+
 enum winbindd_result winbindd_domain_info(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
@@ -293,7 +300,7 @@ enum winbindd_result winbindd_domain_info(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5lu]: domain_info [%s]\n", (unsigned long)state->pid,
 		  state->request.domain_name));
 
-	domain = find_domain_from_name(state->request.domain_name);
+	domain = find_domain_from_name_noinit(state->request.domain_name);
 
 	if (domain == NULL) {
 		DEBUG(3, ("Did not find domain [%s]\n",
@@ -301,19 +308,76 @@ enum winbindd_result winbindd_domain_info(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	}
 
-	fstrcpy(state->response.data.domain_info.name, domain->name);
-	fstrcpy(state->response.data.domain_info.alt_name, domain->alt_name);
+	if (!domain->initialized) {
+		struct domain_info_state *istate;
+
+		istate = TALLOC_P(state->mem_ctx, struct domain_info_state);
+		if (istate == NULL) {
+			DEBUG(0, ("talloc failed\n"));
+			return WINBINDD_ERROR;
+		}
+
+		istate->cli_state = state;
+		istate->domain = domain;
+
+		init_child_connection(domain, domain_info_init_recv, istate);
+				      
+		return WINBINDD_PENDING;
+	}
+
+	fstrcpy(state->response.data.domain_info.name,
+		domain->name);
+	fstrcpy(state->response.data.domain_info.alt_name,
+		domain->alt_name);
 	fstrcpy(state->response.data.domain_info.sid,
 		sid_string_static(&domain->sid));
 	
-	state->response.data.domain_info.native_mode = domain->native_mode;
-	state->response.data.domain_info.active_directory = domain->active_directory;
-	state->response.data.domain_info.primary = domain->primary;
-
+	state->response.data.domain_info.native_mode =
+		domain->native_mode;
+	state->response.data.domain_info.active_directory =
+		domain->active_directory;
+	state->response.data.domain_info.primary =
+		domain->primary;
 	state->response.data.domain_info.sequence_number =
 		domain->sequence_number;
 
 	return WINBINDD_OK;
+}
+
+static void domain_info_init_recv(void *private, BOOL success)
+{
+	struct domain_info_state *istate = private;
+	struct winbindd_cli_state *state = istate->cli_state;
+	struct winbindd_domain *domain = istate->domain;
+
+	DEBUG(10, ("Got back from child init: %d\n", success));
+
+	if ((!success) || (!domain->initialized)) {
+		DEBUG(5, ("Could not init child for domain %s\n",
+			  domain->name));
+		state->response.result = WINBINDD_ERROR;
+		request_finished_cont(state);
+		return;
+	}
+
+	fstrcpy(state->response.data.domain_info.name,
+		domain->name);
+	fstrcpy(state->response.data.domain_info.alt_name,
+		domain->alt_name);
+	fstrcpy(state->response.data.domain_info.sid,
+		sid_string_static(&domain->sid));
+	
+	state->response.data.domain_info.native_mode =
+		domain->native_mode;
+	state->response.data.domain_info.active_directory =
+		domain->active_directory;
+	state->response.data.domain_info.primary =
+		domain->primary;
+	state->response.data.domain_info.sequence_number =
+		domain->sequence_number;
+
+	state->response.result = WINBINDD_OK;
+	request_finished_cont(state);
 }
 
 enum winbindd_result winbindd_ping(struct winbindd_cli_state

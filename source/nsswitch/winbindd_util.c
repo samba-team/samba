@@ -248,6 +248,7 @@ static void trustdom_recv(void *private)
 	while ((p != NULL) && (*p != '\0')) {
 		char *sidstr;
 		DOM_SID sid;
+		struct winbindd_domain *domain;
 
 		sidstr = strchr(p, '\\');
 		if (sidstr == NULL) {
@@ -263,7 +264,8 @@ static void trustdom_recv(void *private)
 			break;
 		}
 
-		add_trusted_domain(p, NULL, &cache_methods, &sid);
+		domain = add_trusted_domain(p, NULL, &cache_methods, &sid);
+		setup_domain_child(&domain->child);
 
 		p = strchr(sidstr, '\n');
 		if (p != NULL)
@@ -306,24 +308,25 @@ void rescan_trusted_domains( void )
 struct init_child_state {
 	TALLOC_CTX *mem_ctx;
 	struct winbindd_domain *domain;
+	struct winbindd_request *request;
 	struct winbindd_response *response;
 	void (*continuation)(void *private, BOOL success);
 	void *private;
 };
 
 static void init_child_recv(void *private);
+static void init_child_getdc_recv(void *private);
 
-static void init_child_connection(struct winbindd_domain *domain,
-				  BOOL is_primary,
-				  const char *dcname,
-				  void (*continuation)(void *private,
-						       BOOL success),
-				  void *private)
+void init_child_connection(struct winbindd_domain *domain,
+			   void (*continuation)(void *private,
+						BOOL success),
+			   void *private)
 {
 	TALLOC_CTX *mem_ctx;
 	struct winbindd_request *request;
 	struct winbindd_response *response;
 	struct init_child_state *state;
+	struct winbindd_domain *our_domain;
 
 	mem_ctx = talloc_init("add_trusted_domains");
 	if (mem_ctx == NULL) {
@@ -342,19 +345,64 @@ static void init_child_connection(struct winbindd_domain *domain,
 	}
 
 	request->length = sizeof(*request);
-	request->cmd = WINBINDD_INIT_CONNECTION;
-	fstrcpy(request->domain_name, domain->name);
-	request->data.init_conn.is_primary = is_primary;
-	if (dcname != NULL)
-		fstrcpy(request->data.init_conn.dcname, dcname);
 
 	state->mem_ctx = mem_ctx;
 	state->domain = domain;
+	state->request = request;
 	state->response = response;
 	state->continuation = continuation;
 	state->private = private;
 
-	async_request(mem_ctx, &domain->child, request, response,
+	if (domain->primary) {
+		/* The primary domain has to find the DC name itself */
+		request->cmd = WINBINDD_INIT_CONNECTION;
+		fstrcpy(request->domain_name, domain->name);
+		request->data.init_conn.is_primary = True;
+		fstrcpy(request->data.init_conn.dcname, "");
+
+		async_request(mem_ctx, &domain->child, request, response,
+			      init_child_recv, state);
+		return;
+	}
+
+	/* This is *not* the primary domain, let's ask our DC about a DC
+	 * name */
+
+	our_domain = find_our_domain();
+
+	if (our_domain == NULL) {
+		DEBUG(0, ("Could not find our domain\n"));
+		return;
+	}
+
+	request->cmd = WINBINDD_GETDCNAME;
+	fstrcpy(request->domain_name, domain->name);
+
+	async_request(mem_ctx, &our_domain->child,
+		      request, response,
+		      init_child_getdc_recv, state);
+}
+
+static void init_child_getdc_recv(void *private)
+{
+	struct init_child_state *state = private;
+	const char *dcname = "";
+
+	DEBUG(10, ("Received getdcname response\n"));
+
+	if (state->response->result == WINBINDD_OK) {
+		/* This is not a reason to call out to state->continuation,
+		 * the child has to figure out the DC name itself. */
+		dcname = state->response->data.dc_name;
+	}
+
+	state->request->cmd = WINBINDD_INIT_CONNECTION;
+	fstrcpy(state->request->domain_name, state->domain->name);
+	state->request->data.init_conn.is_primary = False;
+	fstrcpy(state->request->data.init_conn.dcname, dcname);
+
+	async_request(state->mem_ctx, &state->domain->child,
+		      state->request, state->response,
 		      init_child_recv, state);
 }
 
@@ -383,11 +431,16 @@ static void init_child_recv(void *private)
 		state->response->data.domain_info.sequence_number;
 
 	state->domain->initialized = 1;
+
+	if (state->continuation != NULL)
+		state->continuation(state->private, True);
+	talloc_destroy(state->mem_ctx);
 }
 
 enum winbindd_result winbindd_init_connection(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
+	struct in_addr ipaddr;
 
 	/* Ensure null termination */
 	state->request.domain_name
@@ -404,6 +457,18 @@ enum winbindd_result winbindd_init_connection(struct winbindd_cli_state *state)
 	}
 
 	fstrcpy(domain->dcname, state->request.data.init_conn.dcname);
+
+	if (strlen(domain->dcname) > 0) {
+		if (!resolve_name(domain->dcname, &ipaddr, 0x20)) {
+			DEBUG(2, ("Could not resolve DC name %s for domain %s\n",
+				  domain->dcname, domain->name));
+			return WINBINDD_ERROR;
+		}
+
+		domain->dcaddr.sin_family = PF_INET;
+		putip((char *)&(domain->dcaddr.sin_addr), (char *)&ipaddr);
+		domain->dcaddr.sin_port = 0;
+	}
 
 	set_dc_type_and_flags(domain);
 
@@ -463,7 +528,7 @@ void init_domain_list(void)
 
 	setup_domain_child(&domain->child);
 
-	init_child_connection(domain, True, NULL, NULL, NULL);
+	init_child_connection(domain, NULL, NULL);
 }
 
 /** 
@@ -761,14 +826,16 @@ BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
 */
 void fill_domain_username(fstring name, const char *domain, const char *user)
 {
-	strlower_m( user );
+	fstring tmp_user;
+
+	fstrcpy(tmp_user, user);
 
 	if (assume_domain(domain)) {
 		strlcpy(name, user, sizeof(fstring));
 	} else {
 		slprintf(name, sizeof(fstring) - 1, "%s%c%s",
 			 domain, *lp_winbind_separator(),
-			 user);
+			 tmp_user);
 	}
 }
 
