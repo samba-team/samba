@@ -45,6 +45,8 @@ enum gensec_role
 	GENSEC_CLIENT
 };
 
+struct auth_session_info;
+
 struct gensec_security_ops {
 	const char *name;
 	const char *sasl_name;
