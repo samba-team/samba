@@ -60,4 +60,6 @@ errf reset_com_err_hook __P((void));
 
 const char *error_table_name  __P((int num));
 
+void add_to_error_table __P((struct et_list *new_table));
+
 #endif /* __COM_ERR_H__ */
