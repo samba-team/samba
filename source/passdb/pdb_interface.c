@@ -353,7 +353,7 @@ NTSTATUS make_pdb_context_list(struct pdb_context **context, char **selected)
 NTSTATUS make_pdb_context_string(struct pdb_context **context, const char *selected) 
 {
 	NTSTATUS ret;
-	char **newsel = str_list_make(selected);
+	char **newsel = str_list_make(selected, NULL);
 	ret = make_pdb_context_list(context, newsel);
 	str_list_free(&newsel);
 	return ret;

@@ -1125,7 +1125,7 @@ some platforms don't have strnlen
 
 #define S_LIST_ABS 16 /* List Allocation Block Size */
 
-char **str_list_make(const char *string)
+char **str_list_make(const char *string, const char *sep)
 {
 	char **list, **rlist;
 	char *str, *s;
@@ -1139,12 +1139,13 @@ char **str_list_make(const char *string)
 		DEBUG(0,("str_list_make: Unable to allocate memory"));
 		return NULL;
 	}
+	if (!sep) sep = LIST_SEP;
 	
 	num = lsize = 0;
 	list = NULL;
 	
 	str = s;
-	while (next_token(&str, tok, LIST_SEP, sizeof(tok))) {		
+	while (next_token(&str, tok, sep, sizeof(tok))) {		
 		if (num == lsize) {
 			lsize += S_LIST_ABS;
 			rlist = (char **)Realloc(list, ((sizeof(char **)) * (lsize +1)));

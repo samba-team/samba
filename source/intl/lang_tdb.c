@@ -106,8 +106,10 @@ BOOL lang_tdb_init(const char *lang)
 
 	if (initialised) {
 		/* we are re-initialising, free up any old init */
-		tdb_close(tdb);
-		tdb = NULL;
+		if (tdb) {
+			tdb_close(tdb);
+			tdb = NULL;
+		}
 		SAFE_FREE(current_lang);
 	}
 
