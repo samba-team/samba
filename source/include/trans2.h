@@ -329,6 +329,13 @@ Byte offset   Type     name                description
 #define SMB_FS_FULL_SIZE_INFORMATION			1007
 #define SMB_FS_OBJECTID_INFORMATION			1008
 
+/* flags on trans2 findfirst/findnext that control search */
+#define FLAG_TRANS2_FIND_CLOSE          0x1
+#define FLAG_TRANS2_FIND_CLOSE_IF_END   0x2
+#define FLAG_TRANS2_FIND_REQUIRE_RESUME 0x4
+#define FLAG_TRANS2_FIND_CONTINUE       0x8
+#define FLAG_TRANS2_FIND_BACKUP_INTENT  0x10
+
 /* UNIX CIFS Extensions - created by HP */
 /*
  * UNIX CIFS Extensions have the range 0x200 - 0x2FF reserved.
