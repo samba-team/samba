@@ -1469,10 +1469,10 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
   DEBUG(4,("calling open_file with flags=0x%X flags2=0x%X mode=0%o\n",
 	   flags,flags2,mode));
 
-  open_file(fnum,cnum,fname,flags|(flags2&~(O_TRUNC)),mode,&sbuf);
+  open_file(fnum,cnum,fname,flags|(flags2&~(O_TRUNC)),mode,file_existed ? &sbuf : 0);
   if (!Files[fnum].open && flags==O_RDWR && errno!=ENOENT && fcbopen) {
     flags = O_RDONLY;
-    open_file(fnum,cnum,fname,flags,mode,&sbuf);
+    open_file(fnum,cnum,fname,flags,mode,file_existed ? &sbuf : 0 );
   }
 
   if (Files[fnum].open) {
