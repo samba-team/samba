@@ -181,7 +181,7 @@ uint16 register_vuid(pid_t pid, uid_t uid, gid_t gid,
 	fstrcpy(real_name, "<Full Name>\0");
 	if (lp_unix_realname())
 	{
-		if ((pwfile = hashed_getpwnam(unix_name)) != NULL)
+		if ((pwfile = getpwnam(unix_name)) != NULL)
 		{
 			DEBUG(3,
 			      ("User name: %s\tReal name: %s\n", unix_name,
