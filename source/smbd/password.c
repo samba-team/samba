@@ -1932,6 +1932,8 @@ BOOL domain_client_validate( char *user, char *domain,
     }
   }
 
+  become_root(False);
+
   /*
    * Get the machine account password.
    */
@@ -1949,6 +1951,8 @@ machine %s in domain %s.\n", global_myname, global_myworkgroup ));
   }
 
   machine_password_unlock(vp);
+
+  unbecome_root(False);
 
   /* 
    * Here we should check the last change time to see if the machine
