@@ -147,6 +147,9 @@ edit_time (const char *prompt, krb5_deltat *value, int *mask, int bit)
 {
     char buf[1024], resp[1024];
 
+    if (*mask & bit)
+	return 0;
+
     deltat2str(*value, buf, sizeof(buf));
     for (;;) {
 	unsigned tmp;
@@ -170,6 +173,9 @@ static int
 edit_attributes (const char *prompt, krb5_flags *attr, int *mask, int bit)
 {
     char buf[1024], resp[1024];
+
+    if (*mask & bit)
+	return 0;
 
     attr2str(*attr, buf, sizeof(buf));
     for (;;) {
@@ -200,6 +206,48 @@ edit_entry(kadm5_principal_ent_t ent, int *mask)
 	       KADM5_MAX_RLIFE);
     edit_attributes ("Attributes", &ent->attributes, mask,
 		     KADM5_ATTRIBUTES);
+    return 0;
+}
+
+int
+set_entry(krb5_context context,
+	  kadm5_principal_ent_t ent, int *mask,
+	  const char *max_ticket_life,
+	  const char *max_renewable_life,
+	  const char *attributes)
+{
+    unsigned tmp;
+
+    if (max_ticket_life != NULL) {
+	if (str2deltat (max_ticket_life, &tmp) != 0) {
+	    krb5_warnx (context, "unable to parse `%s'",
+			max_ticket_life);
+	    return 1;
+	}
+	ent->max_life = tmp;
+	*mask |= KADM5_MAX_LIFE;
+    }
+    if (max_renewable_life != NULL) {
+	if (str2deltat (max_renewable_life, &tmp) != 0) {
+	    krb5_warnx (context, "unable to parse `%s'",
+			max_renewable_life);
+	    return 1;
+	}
+	ent->max_renewable_life = tmp;
+	*mask |= KADM5_MAX_RLIFE;
+    }
+    if (attributes != NULL) {
+	krb5_flags flags = 0;
+
+	if (str2attr (attributes, &flags) != 0) {
+	    krb5_warnx (context, "unable to parse `%s'",
+			attributes);
+	    return 1;
+	} else {
+	    ent->attributes = flags;
+	    *mask |= KADM5_ATTRIBUTES;
+	}
+    }
     return 0;
 }
 
