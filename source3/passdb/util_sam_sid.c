@@ -306,14 +306,14 @@ BOOL map_name_to_wellknown_sid(DOM_SID *sid, enum SID_NAME_USE *use, const char 
 	return False;
 }
 
-void add_sid_to_array(DOM_SID sid, DOM_SID **sids, int *num)
+void add_sid_to_array(const DOM_SID *sid, DOM_SID **sids, int *num)
 {
 	*sids = Realloc(*sids, ((*num)+1) * sizeof(DOM_SID));
 
 	if (*sids == NULL)
 		return;
 
-	sid_copy(&((*sids)[*num]), &sid);
+	sid_copy(&((*sids)[*num]), sid);
 	*num += 1;
 
 	return;

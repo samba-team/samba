@@ -575,7 +575,7 @@ static NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, int *num)
 		if (!string_to_sid(&sid, string_sid))
 			continue;
 
-		add_sid_to_array(sid, sids, num);
+		add_sid_to_array(&sid, sids, num);
 
 		if (sids == NULL)
 			return NT_STATUS_NO_MEMORY;
@@ -694,7 +694,7 @@ static NTSTATUS alias_memberships(const DOM_SID *sid, DOM_SID **sids, int *num)
 
 		if (is_foreign_alias_member(sid, &maps[i].sid)) {
 
-			add_sid_to_array(maps[i].sid, sids, num);
+			add_sid_to_array(&maps[i].sid, sids, num);
 
 			if (sids == NULL) {
 				SAFE_FREE(maps);
@@ -710,7 +710,7 @@ static NTSTATUS alias_memberships(const DOM_SID *sid, DOM_SID **sids, int *num)
 	for (i=0; i<num_maps; i++) {
 		if (is_foreign_alias_member(sid, &maps[i].sid)) {
 
-			add_sid_to_array(maps[i].sid, sids, num);
+			add_sid_to_array(&maps[i].sid, sids, num);
 
 			if (sids == NULL) {
 				SAFE_FREE(maps);
@@ -1046,7 +1046,7 @@ BOOL get_sid_list_of_group(gid_t gid, DOM_SID **sids, int *num_sids)
 	     NT_STATUS_IS_OK(enum_aliasmem(&sid, &members, &num_members)) ) {
 
 		for (i=0; i<num_members; i++) {
-			add_sid_to_array(members[i], sids, num_sids);
+			add_sid_to_array(&members[i], sids, num_sids);
 
 			if (sids == NULL)
 				return False;
