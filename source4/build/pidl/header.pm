@@ -279,12 +279,12 @@ sub HeaderInterface($)
 		if(!defined $interface->{PROPERTIES}->{version}) { $interface->{PROPERTIES}->{version} = "0.0"; }
 	    $res .= "#define DCERPC_$name\_VERSION $interface->{PROPERTIES}->{version}\n";
 
-	    $res .= "#define DCERPC_$name\_NAME \"$interface->{NAME}\"\n\n";
+	    $res .= "#define DCERPC_$name\_NAME \"$interface->{NAME}\"\n";
 
 		if(!defined $interface->{PROPERTIES}->{helpstring}) { $interface->{PROPERTIES}->{helpstring} = "NULL"; }
 		$res .= "#define DCERPC_$name\_HELPSTRING $interface->{PROPERTIES}->{helpstring}\n";
 
-	    $res .= "extern const struct dcerpc_interface_table dcerpc_table_$interface->{NAME};\n";
+	    $res .= "\nextern const struct dcerpc_interface_table dcerpc_table_$interface->{NAME};\n";
 	    $res .= "NTSTATUS dcerpc_$interface->{NAME}_init(void);\n\n";
     }
 
