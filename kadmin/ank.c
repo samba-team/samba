@@ -105,9 +105,11 @@ add_new_key(int argc, char **argv)
 	    krb5_free_keyblock_contents(context, &new_keys[i]);
 	free(new_keys);
 	kadm5_get_principal(kadm_handle, princ_ent, &princ, 
-			    KADM5_PRINCIPAL | KADM5_ATTRIBUTES);
+			    KADM5_PRINCIPAL | KADM5_KVNO | KADM5_ATTRIBUTES);
 	princ.attributes &= (~KRB5_KDB_DISALLOW_ALL_TIX);
-	kadm5_modify_principal(kadm_handle, &princ, KADM5_ATTRIBUTES);
+	princ.kvno = 1;
+	kadm5_modify_principal(kadm_handle, &princ, 
+			       KADM5_ATTRIBUTES | KADM5_KVNO);
 	kadm5_free_principal_ent(kadm_handle, &princ);
     }
 out:
