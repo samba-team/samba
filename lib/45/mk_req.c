@@ -40,7 +40,8 @@ RCSID("$Id$");
 static int lifetime = 255;
 
 static void
-build_request(KTEXT req, char *name, char *inst, char *realm, 
+build_request(KTEXT req,
+	      const char *name, const char *inst, const char *realm, 
 	      u_int32_t checksum)
 {
     struct timeval tv;
@@ -78,7 +79,8 @@ krb_mk_req(KTEXT authent,
     KTEXT_ST req;
     krb5_storage *sp;
     int code;
-    char *myrealm;
+    /* XXX get user realm */
+    const char *myrealm = realm;
     krb5_data a;
 
     code = krb_get_cred(service, instance, realm, &cr);
@@ -91,9 +93,6 @@ krb_mk_req(KTEXT authent,
 
     if(code)
 	return code;
-
-    /* XXX get user realm */
-    myrealm = realm;
 
     sp = krb5_storage_emem();
 
