@@ -33,11 +33,11 @@ static BOOL hide_unlock_fails;
 static BOOL use_oplocks;
 static unsigned lock_range = 100;
 static unsigned lock_base = 0;
+static unsigned min_length = 0;
 
 #define FILENAME "\\locktest.dat"
-#define MINLENGTH 0
 
-#define ZERO_ZERO 1
+#define ZERO_ZERO 0
 
 #define READ_PCT 50
 #define LOCK_PCT 45
@@ -413,7 +413,7 @@ static void test_locks(char *share[NSERVERS])
 			recorded[n].conn = random() % NCONNECTIONS;
 			recorded[n].f = random() % NFILES;
 			recorded[n].start = lock_base + ((unsigned)random() % (lock_range-1));
-			recorded[n].len =  MINLENGTH +
+			recorded[n].len =  min_length +
 				random() % (lock_range-(recorded[n].start-lock_base));
 			recorded[n].start *= RANGE_MULTIPLE;
 			recorded[n].len *= RANGE_MULTIPLE;
@@ -533,6 +533,7 @@ static void usage(void)
         -O          use oplocks\n\
         -R range    set lock range\n\
         -B base     set lock base\n\
+        -M min      set min lock length\n\
 ");
 }
 
@@ -576,7 +577,7 @@ static void usage(void)
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "U:s:ho:aAW:OkR:B:")) != EOF) {
+	while ((opt = getopt(argc, argv, "U:s:ho:aAW:OkR:B:M:")) != EOF) {
 		switch (opt) {
 		case 'k':
 #ifdef HAVE_KRB5
@@ -601,6 +602,9 @@ static void usage(void)
 			break;
 		case 'B':
 			lock_base = strtol(optarg, NULL, 0);
+			break;
+		case 'M':
+			min_length = strtol(optarg, NULL, 0);
 			break;
 		case 's':
 			seed = atoi(optarg);
