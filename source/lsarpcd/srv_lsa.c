@@ -613,7 +613,9 @@ static void api_lsa_open_secret( rpcsrv_struct *p, prs_struct *data,
 	lsa_io_q_open_secret("", &q_o, data, 0);
 
 	ZERO_STRUCT(r_o);
-	r_o.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	r_o.status = _lsa_open_secret(&(q_o.pol),
+				      &(q_o.uni_secret), q_o.des_access,
+				      &r_o.pol);
 
 	/* store the response in the SMB stream */
 	lsa_io_r_open_secret("", &r_o, rdata, 0);

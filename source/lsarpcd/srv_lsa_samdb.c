@@ -607,17 +607,9 @@ uint32 _lsa_close(POLICY_HND *hnd)
 /***************************************************************************
  _lsa_open_secret
  ***************************************************************************/
-static void _lsa_open_secret( rpcsrv_struct *p, prs_struct *data,
-                                  prs_struct *rdata)
+uint32 _lsa_open_secret(const POLICY_HND *hnd,
+			const UNISTR2 *secret_name, uint32 des_access,
+			POLICY_HND *hnd_secret)
 {
-	LSA_R_OPEN_SECRET r_o;
-	LSA_Q_OPEN_SECRET q_o;
-
-	lsa_io_q_open_secret("", &q_o, data, 0);
-
-	ZERO_STRUCT(r_o);
-	r_o.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
-
-	/* store the response in the SMB stream */
-	lsa_io_r_open_secret("", &r_o, rdata, 0);
+	return 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
 }
