@@ -13,12 +13,18 @@ CFLAGS=@CFLAGS@
 CPPFLAGS=@CPPFLAGS@
 LDFLAGS=@LDFLAGS@
 AWK=@AWK@
+LIBTOOL=@LIBTOOL@ --quiet
+LIBTOOL_DEPS=@LIBTOOL_DEPS@
+LINK=$(LIBTOOL) --mode=link $(CC) $(FLAGS) $(LDFLAGS)
 
+INSTALL = @INSTALL@
 INSTALLCMD=@INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
 
 VPATH=@srcdir@
 srcdir=@srcdir@
 builddir=@builddir@
+top_builddir=.
 SHELL=/bin/sh
 
 BASEDIR= @prefix@
@@ -29,6 +35,7 @@ SBINDIR = @bindir@
 LIBDIR = @libdir@
 VARDIR = $(BASEDIR)/var
 MANDIR = @mandir@
+SYSCONFDIR = @sysconfdir@
 
 # The permissions to give the executables
 INSTALLPERMS = 0755
@@ -110,10 +117,10 @@ QUOTAOBJS=@QUOTAOBJS@
 # object file lists
 ######################################################################
 
-SAMBALIB = bin/libsamba.so @LIBSAMBA32@ 
-SMBLIB = bin/libsmb.so @LIBSMB32@ 
-NMBLIB = bin/libnmb.so @LIBNMB32@ 
-MSRPCLIB = bin/libmsrpc.so @LIBMSRPC32@ 
+SAMBALIB = bin/libsamba.la
+SMBLIB = bin/libsmb.la
+NMBLIB = bin/libnmb.la
+MSRPCLIB = bin/libmsrpc.la
 
 SAMBA_LIBS = $(SAMBALIB) $(SMBLIB) $(NMBLIB) $(MSRPCLIB)
 
@@ -300,7 +307,7 @@ SMBD_OBJ = $(SMBD_OBJ1) $(UBIQX_OBJ) \
 
 SRVSVCD_OBJ = $(MSRPCD_OBJ) $(SRVSVCD_OBJ1) \
 		$(UBIQX_OBJ) \
-           $(RPC_SRVUTIL_OBJ) $(RPC_PARSE_OBJ2) \
+           $(RPC_SRVUTIL_OBJ) \
            $(LOCKING_OBJ) $(PROFILE_OBJ)  \
 		$(LIBSTATUS_OBJ)
 
@@ -492,17 +499,13 @@ PROTO_OBJ =  $(LIB_OBJ) $(LIBNMB_OBJ) $(PARAM_OBJ) \
 SMBWRAPPERPICOBJS = $(SMBWRAPPER_OBJ:.o=.po)
 SMBWRAPPERPICOBJS32 = $(SMBWRAPPER_OBJ:.o=.po32)
 
-LIBSAMBAPICOBJS = $(LIBSAMBA_OBJ:.o=.po)
-LIBAMBAPICOBJS32 = $(LIBSAMBA_OBJ:.o=.po32)
+LIBSAMBA_LTOBJS = $(LIBSAMBA_OBJ:.o=.lo)
 
-LIBNMBPICOBJS = $(LIBNMB_OBJ:.o=.po)
-LIBNMBPICOBJS32 = $(LIBNMB_OBJ:.o=.po32)
+LIBNMB_LTOBJS = $(LIBNMB_OBJ:.o=.lo)
 
-LIBSMBPICOBJS = $(LIBSMB_OBJ:.o=.po)
-LIBSMBPICOBJS32 = $(LIBSMB_OBJ:.o=.po32)
+LIBSMB_LTOBJS = $(LIBSMB_OBJ:.o=.lo)
 
-LIBMSRPCPICOBJS = $(RPC_CLIENT_OBJ:.o=.po) $(RPC_PARSE_OBJ:.o=.po)
-LIBMSRPCPICOBJS32 = $(RPC_CLIENT_OBJ:.o=.po32) $(RPC_PARSE_OBJ:.o=.po32)
+LIBMSRPC_LTOBJS = $(RPC_CLIENT_OBJ:.o=.lo) $(RPC_PARSE_OBJ:.o=.lo)
 
 ######################################################################
 # now the rules...
@@ -528,7 +531,7 @@ smbfilter : CHECK bin/smbfilter
 
 
 .SUFFIXES:
-.SUFFIXES: .c .o .po .po32
+.SUFFIXES: .c .o .lo .po .po32
 
 CHECK:
 	@echo "Using FLAGS = $(FLAGS)"
@@ -555,6 +558,21 @@ MAKEDIR = || exec false; \
 	@$(CC) -I. -I$(srcdir) $(FLAGS) -c $< \
 	  -o $@ @MAINT@ -Wp,-MD,.deps/$@
 @MAINT@	@sed 's|^'`echo $@ | sed 's,.*/,,'`':|$@:|' \
+@MAINT@	  <.deps/$@ >.deps/$@d && \
+@MAINT@	rm -f .deps/$@ && : >.deps/.stamp
+
+# This is for libtool
+.c.lo: @MAINT@ .deps/.dummy
+	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
+	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
+@MAINT@	@if (: >> .deps/$@ || : > .deps/$@) >/dev/null 2>&1; then :; \
+@MAINT@	 else dir=.deps/`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` \
+@MAINT@	      $(MAKEDIR); fi; rm -f .deps/$@ .deps/$@d
+	@echo Compiling $< with libtool
+	@$(LIBTOOL) --mode=compile \
+	  $(CC) -I. -I$(srcdir) $(FLAGS) -c $< \
+	  -o $@ @MAINT@ -Wp,-MD,.deps/$@
+@MAINT@	@sed 's|^.*'`echo $* | sed 's,.*/,,'`'.*:|$@:|' \
 @MAINT@	  <.deps/$@ >.deps/$@d && \
 @MAINT@	rm -f .deps/$@ && : >.deps/.stamp
 
@@ -592,166 +610,153 @@ bin/.dummy:
 	  dir=bin $(MAKEDIR); fi
 	@: >> $@ || : > $@ # what a fancy emoticon!
 
-bin/libmsrpc.so: $(LIBMSRPCPICOBJS)
-	@echo Linking libmsrpc shared library $@
-	@$(LD) @LDSHFLAGS@ -o $@ $(LIBMSRPCPICOBJS) $(LDFLAGS) $(LIBS)
+bin/libmsrpc.la: $(LIBMSRPC_LTOBJS)
+	@echo Linking shared library $@
+	$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
+	  $(LIBMSRPC_LTOBJS)
 
-bin/libmsrpc.32.so: $(LIBMSRPCPICOBJS32)
-	@echo Linking libmsrpc shared library $@
-	@$(LD) -32 @LDSHFLAGS@ -o $@ $(LIBMSRPCPICOBJS32) $(LIBS)
+bin/libnmb.la: $(LIBNMB_LTOBJS)
+	@echo Linking shared library $@
+	$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
+	  $(LIBNMB_LTOBJS)
 
-bin/libnmb.so: $(LIBNMBPICOBJS)
-	@echo Linking libnmb shared library $@
-	@$(LD) @LDSHFLAGS@ -o $@ $(LIBNMBPICOBJS) $(LDFLAGS) $(LIBS)
+bin/libsmb.la: $(LIBSMB_LTOBJS)
+	@echo Linking shared library $@
+	$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
+	  $(LIBSMB_LTOBJS)
 
-bin/libnmb.32.so: $(LIBNMBPICOBJS32)
-	@echo Linking libnmb shared library $@
-	@$(LD) -32 @LDSHFLAGS@ -o $@ $(LIBNMBPICOBJS32) $(LIBS)
-
-bin/libsmb.so: $(LIBSMBPICOBJS)
-	@echo Linking libsmb shared library $@
-	@$(LD) @LDSHFLAGS@ -o $@ $(LIBSMBPICOBJS) $(LDFLAGS) $(LIBS)
-
-bin/libsmb.32.so: $(LIBSMBPICOBJS32)
-	@echo Linking libsmb shared library $@
-	@$(LD) -32 @LDSHFLAGS@ -o $@ $(LIBSMBPICOBJS32) $(LIBS)
-
-bin/libsamba.so: $(LIBSAMBAPICOBJS)
-	@echo Linking libsamba shared library $@
-	@$(LD) @LDSHFLAGS@ -o $@ $(LIBSAMBAPICOBJS) $(LDFLAGS) $(LIBS)
-
-bin/libsamba.32.so: $(LIBSAMBAPICOBJS32)
-	@echo Linking libsamba shared library $@
-	@$(LD) -32 @LDSHFLAGS@ -o $@ $(LIBSAMBAPICOBJS32) $(LIBS)
+bin/libsamba.la: $(LIBSAMBA_LTOBJS)
+	@echo Linking shared library $@
+	$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
+	  $(LIBSAMBA_LTOBJS)
 
 bin/smbd: $(SAMBA_LIBS) $(SMBD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(SMBD_OBJ) \
-	$(LDFLAGS) $(LIBS) 
+	@$(LINK) -o $@ $(SMBD_OBJ) $(SAMBA_LIBS) $(LIBS)
 
 bin/svcctld: $(SAMBA_LIBS) $(SVCCTLD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(SVCCTLD_OBJ) $(LDFLAGS) $(LIBS) 
+	@$(LINK) -o $@ $(SVCCTLD_OBJ) $(SAMBA_LIBS) $(LIBS)
 
 bin/lsarpcd: $(SAMBA_LIBS) $(LSARPCD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(LSARPCD_OBJ) $(LDFLAGS) $(LIBS) 
+	@$(LINK) -o $@ $(LSARPCD_OBJ) $(SAMBA_LIBS) $(LIBS)
 
 bin/spoolssd: $(SAMBA_LIBS) $(SPOOLSSD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(SPOOLSSD_OBJ) $(LDFLAGS) $(LIBS) 
+	@$(LINK) -o $@ $(SPOOLSSD_OBJ) $(SAMBA_LIBS) $(LIBS)
 
 bin/srvsvcd: $(SAMBA_LIBS) $(SRVSVCD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(SRVSVCD_OBJ) $(LDFLAGS) $(LIBS) 
+	@$(LINK) -o $@ $(SRVSVCD_OBJ) $(SAMBA_LIBS) $(LIBS)
 
 bin/wkssvcd: $(SAMBA_LIBS) $(WKSSVCD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(WKSSVCD_OBJ) $(LDFLAGS) $(LIBS) 
+	@$(LINK) -o $@ $(WKSSVCD_OBJ) $(SAMBA_LIBS) $(LIBS)
 
 bin/browserd: $(SAMBA_LIBS) $(BROWSERD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(BROWSERD_OBJ) $(LDFLAGS) $(LIBS) 
+	@$(LINK) -o $@ $(BROWSERD_OBJ) $(SAMBA_LIBS) $(LIBS)
 
 bin/winregd: $(SAMBA_LIBS) $(WINREGD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(WINREGD_OBJ) $(LDFLAGS) $(LIBS) 
+	@$(LINK) -o $@ $(WINREGD_OBJ) $(SAMBA_LIBS) $(LIBS)
 
 bin/netlogond: $(SAMBA_LIBS) $(NETLOGOND_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(NETLOGOND_OBJ) $(LDFLAGS) $(LIBS) 
+	@$(LINK) -o $@ $(NETLOGOND_OBJ) $(SAMBA_LIBS) $(LIBS)
 
 bin/samrd: $(SAMBA_LIBS) $(SAMRD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(SAMRD_OBJ) $(LDFLAGS) $(LIBS) 
+	@$(LINK) -o $@ $(SAMRD_OBJ) $(SAMBA_LIBS) $(LIBS)
 
 bin/nmbd: $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(NMBD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(NMBD_OBJ) $(LDFLAGS) $(LIBS)
+	@$(LINK) -o $@ $(NMBD_OBJ) $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(LIBS)
 
 bin/swat: $(SAMBA_LIBS) $(SWAT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(SWAT_OBJ) $(LDFLAGS) $(LIBS) 
+	@$(LINK) -o $@ $(SWAT_OBJ) $(SAMBA_LIBS) $(LIBS)
 
 bin/smbrun: $(SMBRUN_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBRUN_OBJ) $(LDFLAGS) $(LIBS)
+	@$(LINK) -o $@ $(SMBRUN_OBJ) $(LIBS)
 
 bin/rpcclient: $(SAMBA_LIBS) $(RPCCLIENT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(RPCCLIENT_OBJ) $(LDFLAGS) $(LIBS)
+	@$(LINK) -o $@ $(RPCCLIENT_OBJ) $(SAMBA_LIBS) $(LIBS)
 
 bin/smbclient: $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(CLIENT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(CLIENT_OBJ) $(LDFLAGS) $(LIBS)
+	@$(LINK) -o $@ $(CLIENT_OBJ) $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(LIBS)
 
 bin/smbmount: $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(MOUNT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMBALIB) $(SMBLIB) $(NMBLIB) $(MOUNT_OBJ) $(LDFLAGS) $(LIBS)
+	@$(LINK) -o $@ $(MOUNT_OBJ) $(SAMBALIB) $(SMBLIB) $(NMBLIB) $(LIBS)
 
 bin/smbmnt: $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(MNT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(MNT_OBJ) $(LDFLAGS) $(LIBS)
+	@$(LINK) -o $@ $(MNT_OBJ) $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(LIBS)
 
 bin/smbumount: $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(UMOUNT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(UMOUNT_OBJ) $(LDFLAGS) $(LIBS)
+	@$(LINK) -o $@ $(UMOUNT_OBJ) $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(LIBS)
 
 bin/testparm: $(SAMBALIB) $(TESTPARM_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMBALIB) $(TESTPARM_OBJ) $(LDFLAGS) $(LIBS)
+	@$(LINK) -o $@ $(TESTPARM_OBJ) $(SAMBALIB) $(LIBS)
 
 bin/testprns: $(SAMBALIB) $(TESTPRNS_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMBALIB) $(TESTPRNS_OBJ) $(LDFLAGS) $(LIBS)
+	@$(LINK) -o $@ $(TESTPRNS_OBJ) $(SAMBALIB) $(LIBS)
 
 bin/smbstatus: $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(STATUS_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(STATUS_OBJ) $(LDFLAGS) $(LIBS)
+	@$(LINK) -o $@ $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(STATUS_OBJ) $(LIBS)
 
 bin/smbpasswd: $(SAMBA_LIBS) $(SMBPASSWD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(SMBPASSWD_OBJ) $(LDFLAGS) $(LIBS)
+	@$(LINK) -o $@ $(SAMBA_LIBS) $(SMBPASSWD_OBJ) $(LIBS)
 
 bin/make_smbcodepage: $(SAMBALIB) $(MAKE_SMBCODEPAGE_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMBALIB) $(MAKE_SMBCODEPAGE_OBJ) $(LDFLAGS) $(LIBS)
+	@$(LINK) -o $@ $(SAMBALIB) $(MAKE_SMBCODEPAGE_OBJ) $(LIBS)
 
 bin/nmblookup: $(SAMBALIB) $(NMBLIB) $(NMBLOOKUP_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(NMBLIB) $(SAMBALIB) $(NMBLOOKUP_OBJ) $(LDFLAGS) $(LIBS)
+	@$(LINK) -o $@ $(NMBLIB) $(SAMBALIB) $(NMBLOOKUP_OBJ) $(LIBS)
 
 bin/make_printerdef: $(SAMBALIB) $(MAKE_PRINTERDEF_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMBALIB) $(MAKE_PRINTERDEF_OBJ) $(LDFLAGS) $(LIBS)
+	@$(LINK) -o $@ $(SAMBALIB) $(MAKE_PRINTERDEF_OBJ) $(LIBS)
 
 bin/smbtorture: $(SAMBA_LIBS) $(SMBTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(SMBTORTURE_OBJ) $(LDFLAGS) $(LIBS)
+	@$(LINK) -o $@ $(SAMBA_LIBS) $(SMBTORTURE_OBJ) $(LIBS)
 
 bin/rpctorture: $(SAMBA_LIBS) $(RPCTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(RPCTORTURE_OBJ) $(LDFLAGS) $(LIBS)
+	@$(LINK) -o $@ $(SAMBA_LIBS) $(RPCTORTURE_OBJ) $(LIBS)
 
 bin/smb-client: $(SMB_CLIENT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMB_CLIENT_OBJ) $(LDFLAGS) $(LIBS)
+	@$(LINK) -o $@ $(SMB_CLIENT_OBJ) $(LIBS)
 
 bin/nmb-agent: $(NMB_AGENT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(NMB_AGENT_OBJ) $(LDFLAGS) $(LIBS)
+	@$(LINK) -o $@ $(NMB_AGENT_OBJ) $(LIBS)
 
 bin/smb-agent: $(SAMBA_LIBS) $(SMB_AGENT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(SMB_AGENT_OBJ) $(LDFLAGS) $(LIBS)
+	@$(LINK) -o $@ $(SAMBA_LIBS) $(SMB_AGENT_OBJ) $(LIBS)
 
 bin/smbfilter: $(SAMBA_LIBS) $(SMBFILTER_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(SMBFILTER_OBJ) $(LDFLAGS) $(LIBS)
+	@$(LINK) -o $@ $(SAMBA_LIBS) $(SMBFILTER_OBJ) $(LIBS)
 
 bin/debug2html: $(SAMBALIB) $(DEBUG2HTML_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMBALIB) $(DEBUG2HTML_OBJ) $(LDFLAGS) $(LIBS)
+	@$(LINK) -o $@ $(SAMBALIB) $(DEBUG2HTML_OBJ) $(LIBS)
 
 bin/smbwrapper.so: $(SMBWRAPPERPICOBJS)
 	@echo Linking smbwrapper shared library $@
@@ -763,17 +768,29 @@ bin/smbwrapper.32.so: $(SMBWRAPPERPICOBJS32)
 
 bin/smbsh: $(SAMBA_LIBS) $(SMBSH_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(SMBSH_OBJ) $(LDFLAGS) $(LIBS)
+	@$(LINK) -o $@ $(SAMBA_LIBS) $(SMBSH_OBJ) $(LIBS)
 
-install: installbin installman installscripts installcp installswat
+install: install-libs installbin installman installscripts installcp installswat
 
 installdirs:
 	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) \
 	$(BASEDIR) $(SBINDIR) $(BINDIR) $(LIBDIR) $(VARDIR) $(CODEPAGEDIR)
 
+install-libs: all installdirs
+	@list='$(SAMBA_LIBS)'; for p in $$list; do \
+	  echo Installing $$p in $(LIBDIR) using libtool; \
+	  $(LIBTOOL) --mode=install $(INSTALL) $$p $(LIBDIR); \
+	done
+
 installbin: all installdirs
-	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(BASEDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(SPROGS)
-	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(BASEDIR) $(BINDIR) $(LIBDIR) $(VARDIR) $(PROGS)
+	@list='$(PROGS)'; for p in $$list; do \
+	  echo Installing $$p in $(BINDIR) using libtool; \
+	  $(LIBTOOL) --mode=install $(INSTALL_PROGRAM) $$p $(BINDIR); \
+	done
+	@list='$(SPROGS)'; for p in $$list; do \
+	  echo Installing $$p in $(SBINDIR) using libtool; \
+	  $(LIBTOOL) --mode=install $(INSTALL_PROGRAM) $$p $(SBINDIR); \
+	done
 
 installscripts: installdirs
 	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(BINDIR) $(patsubst %,$(srcdir)/%,$(SCRIPTS))
