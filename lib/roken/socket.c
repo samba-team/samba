@@ -270,7 +270,8 @@ socket_set_tos (int sock, int tos)
 {
 #if defined(IP_TOS) && defined(HAVE_SETSOCKOPT)
     if (setsockopt (sock, IPPROTO_IP, IP_TOS, (void *) &tos, sizeof (int)) < 0)
-	warn ("setsockopt TOS (ignored)");
+	if (errno != EINVAL)
+	    warn ("setsockopt TOS (ignored)");
 #endif
 }
 
