@@ -54,15 +54,21 @@
 #define M_DEBUG(level, x)
 #endif
 
+/* these flags are used to mark characters in as having particular
+   properties */
 #define FLAG_BASECHAR 1
 #define FLAG_ASCII 2
 #define FLAG_ILLEGAL 4
 #define FLAG_WILDCARD 8
+
+/* the "possible" flags are used as a fast way to find possible DOS
+   reserved filenames */
 #define FLAG_POSSIBLE1 16
 #define FLAG_POSSIBLE2 32
 #define FLAG_POSSIBLE3 64
 #define FLAG_POSSIBLE4 128
 
+/* by default have a max of 4096 entries in the cache. */
 #ifndef MANGLE_CACHE_SIZE
 #define MANGLE_CACHE_SIZE 4096
 #endif
@@ -100,11 +106,15 @@ static u32 mangle_hash(const char *key, unsigned length)
 	u32   i;
 	fstring str;
 
+	/* we have to uppercase here to ensure that the mangled name
+	   doesn't depend on the case of the long name. Note that this
+	   is the only place where we need to use a multi-byte string
+	   function */
 	strncpy(str, key, length);
 	str[length] = 0;
 	strupper_m(str);
 
-	/* the length of a multi-byte string can change after a strupper */
+	/* the length of a multi-byte string can change after a strupper_m */
 	length = strlen(str);
 
 	/* Set the initial value from the key size. */
@@ -116,7 +126,7 @@ static u32 mangle_hash(const char *key, unsigned length)
 }
 
 /* 
-   initialise the prefix cache
+   initialise (ie. allocate) the prefix cache
  */
 static BOOL cache_init(void)
 {
@@ -134,8 +144,8 @@ static BOOL cache_init(void)
 }
 
 /*
-  insert an entry into the prefix cache. The string may not be null terminated
-*/
+  insert an entry into the prefix cache. The string might not be null
+  terminated */
 static void cache_insert(const char *prefix, int length, u32 hash)
 {
 	int i = hash % MANGLE_CACHE_SIZE;
@@ -419,7 +429,7 @@ static BOOL name_map(char *name, BOOL need83, BOOL cache83)
 	/* find the hash for this prefix */
 	v = hash = mangle_hash(name, prefix_len);
 
-	/* now form the mangled name */
+	/* now form the mangled name. */
 	new_name[0] = lead_char;
 	new_name[7] = base_forward(v % 36);
 	new_name[6] = '~';	
