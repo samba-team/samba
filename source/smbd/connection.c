@@ -110,8 +110,8 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 {
 	struct connections_key key;
 	struct connections_data crec;
-	TDB_DATA kbuf, dbuf;
-	BOOL db_locked = False;
+	TDB_DATA kbuf, dbuf, lockkey;
+	BOOL rec_locked = False;
 	BOOL ret = True;
 
 	if (!tdb) {
@@ -133,15 +133,18 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 		cs.name = lp_servicename(SNUM(conn));
 		cs.Clear = Clear;
 
+		lockkey.dptr = cs.name;
+		lockkey.dsize = strlen(cs.name)+1;
+
 		/*
-		 * Go through and count the connections with the db locked. This is
-		 * slow but essentially what 2.0.x did. JRA.
+		 * Go through and count the connections with hash chain representing the service name
+		 * locked. This is slow but removes race conditions. JRA.
 		 */
 
-		if (tdb_lockall(tdb))
+		if (tdb_chainlock(tdb, lockkey))
 			return False;
 
-		db_locked = True;
+		rec_locked = True;
 
 		if (tdb_traverse(tdb, count_fn, &cs) == -1) {
 			DEBUG(0,("claim_connection: traverse of connections.tdb failed.\n"));
@@ -192,8 +195,8 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 
   out:
 
-	if (db_locked)
-		tdb_unlockall(tdb);
+	if (rec_locked)
+		tdb_chainunlock(tdb, lockkey);
 
 	return ret;
 }
