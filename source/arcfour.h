@@ -32,4 +32,8 @@ typedef struct {
   unsigned char index_j;
 } arc4_key;
 
+extern void set_arc4_key(unsigned char *data, int key_length, arc4_key *arckey);
+extern void arc4(arc4_key *arckey, unsigned char *data_in, 
+                 unsigned char *data_out, int length);
+
 #endif /* _ARC4_H_ */
