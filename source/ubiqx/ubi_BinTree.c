@@ -27,6 +27,11 @@
  * -------------------------------------------------------------------------- **
  *
  * Log: ubi_BinTree.c,v
+ * Revision 4.1  1998/03/31 06:11:57  crh
+ * Thomas Aglassinger sent E'mail pointing out errors in the
+ * dereferencing of function pointers, and a missing typecast.
+ * Thanks, Thomas!
+ *
  * Revision 4.0  1998/03/10 03:19:22  crh
  * Added the AVL field 'balance' to the ubi_btNode structure.  This means
  * that all BinTree modules now use the same basic node structure, which
@@ -125,8 +130,8 @@
  */
 
 static char ModuleID[] = "ubi_BinTree\n\
-\tRevision: 4.0\n\
-\tDate: 1998/03/10 03:19:22\n\
+\tRevision: 4.1\n\
+\tDate: 1998/03/31 06:11:57\n\
 \tAuthor: crh\n";
 
 /* ========================================================================== **
@@ -198,16 +203,16 @@ static ubi_btNodePtr TreeFind( ubi_btItemPtr  findme,
    * ------------------------------------------------------------------------ **
    */
   {
-  register ubi_btNodePtr tmp_p = p;
-  ubi_btNodePtr tmp_pp         = NULL;
-  int tmp_gender               = ubi_trEQUAL;
-  int tmp_cmp;
+  register ubi_btNodePtr tmp_p      = p;
+  ubi_btNodePtr          tmp_pp     = NULL;
+  signed char            tmp_gender = ubi_trEQUAL;
+  int                    tmp_cmp;
 
   while( tmp_p
      && (ubi_trEQUAL != (tmp_cmp = ubi_trAbNormal((*CmpFunc)(findme, tmp_p)))) )
     {
     tmp_pp     = tmp_p;                 /* Keep track of previous node. */
-    tmp_gender = tmp_cmp;               /* Keep track of sex of child.  */
+    tmp_gender = (signed char)tmp_cmp;  /* Keep track of sex of child.  */
     tmp_p      = tmp_p->Link[tmp_cmp];  /* Go to child. */
     }
   *parentp = tmp_pp;                /* Return results. */
@@ -926,7 +931,7 @@ ubi_trBool ubi_btTraverse( ubi_btRootPtr   RootPtr,
 
   while( p )
     {
-    EachNode( p, UserData );
+    (*EachNode)( p, UserData );
     p = ubi_btNext( p );
     }
   return( ubi_trTRUE );
@@ -964,7 +969,7 @@ ubi_trBool ubi_btKillTree( ubi_btRootPtr     RootPtr,
     p = q->Link[ubi_trPARENT];
     if( p )
       p->Link[ ((p->Link[ubi_trLEFT] == q)?ubi_trLEFT:ubi_trRIGHT) ] = NULL;
-    FreeNode((void *)q);
+    (*FreeNode)((void *)q);
     }
 
   (void)ubi_btInitTree( RootPtr,

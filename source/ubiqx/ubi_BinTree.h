@@ -29,6 +29,11 @@
  * -------------------------------------------------------------------------- **
  *
  * Log: ubi_BinTree.h,v
+ * Revision 4.1  1998/03/31 06:13:47  crh
+ * Thomas Aglassinger sent E'mail pointing out errors in the
+ * dereferencing of function pointers, and a missing typecast.
+ * Thanks, Thomas!
+ *
  * Revision 4.0  1998/03/10 03:16:04  crh
  * Added the AVL field 'balance' to the ubi_btNode structure.  This means
  * that all BinTree modules now use the same basic node structure, which
@@ -193,7 +198,8 @@ typedef enum {
  * -------------------------------------------------------------------------- **
  */
 #define ubi_trNormalize(W) ((char)( (W) - ubi_trEQUAL ))
-#define ubi_trAbNormal(W)  ((char)( ((char)ubi_btSgn( W )) + ubi_trEQUAL ))
+#define ubi_trAbNormal(W)  ((char)( ((char)ubi_btSgn( (long)(W) )) \
+                                         + ubi_trEQUAL ))
 #define ubi_trRevWay(W)    ((char)( ubi_trEQUAL - ((W) - ubi_trEQUAL) ))
 
 /* -------------------------------------------------------------------------- **
