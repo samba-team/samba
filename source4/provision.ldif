@@ -3,6 +3,7 @@ dn: @INDEXLIST
 @IDXATTR: sAMAccountName
 @IDXATTR: objectSid
 @IDXATTR: objectClass
+@IDXATTR: member
 
 dn: @ATTRIBUTES
 realm: CASE_INSENSITIVE
