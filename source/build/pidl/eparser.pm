@@ -12,6 +12,9 @@ use Data::Dumper;
 
 my($name);
 
+#####################################################################
+# handlers for parsing ndr argument types
+
 sub ParamSimpleNdrType($)
 {
     my($p) = shift;
@@ -32,10 +35,21 @@ sub ParamPolicyHandle($)
     return $res;
 }
 
+sub ParamString($)
+{
+    my($p) = shift;
+    my($res);
+
+    $res .= "\toffset = dissect_ndr_pointer_cb(tvb, offset, pinfo, tree, drep, dissect_ndr_wchar_cvstring, NDR_POINTER_UNIQUE, \"$p->{NAME}\", hf_$p->{NAME}, cb_wstr_postprocess, GINT_TO_POINTER(1));\n";
+
+    return $res;
+}
+
 my %param_handlers = (
 		      'uint16' => \&ParamSimpleNdrType,
 		      'uint32' => \&ParamSimpleNdrType,
 		      'policy_handle' => \&ParamPolicyHandle,
+		      'string' => \&ParamString,
 		      );
 
 #####################################################################
@@ -78,7 +92,7 @@ sub ParseFunction($)
 	$res .= ParseParameter($d), if defined($d->{PROPERTIES}{in});
     }
 
-    $res .= "\treturn offset;\n";
+    $res .= "\n\treturn offset;\n";
     $res .= "}\n\n";
 
     # Response function
@@ -91,7 +105,8 @@ sub ParseFunction($)
 	$res .= ParseParameter($d), if defined($d->{PROPERTIES}{out});
     }
 
-    $res .= "\n";
+    $res .= "\n\toffset = dissect_ntstatus(tvb, offset, pinfo, tree, drep, hf_samr_rc, NULL);\n\n";
+
     $res .= "\treturn offset;\n";
     $res .= "}\n\n";
 
@@ -115,6 +130,8 @@ sub Pass2Interface($)
 
 #####################################################################
 # Pass 1: Stuff required before structs and functions
+
+my %hf_info = ();		# Field info - remember for trailing stuff
 
 sub Pass1ModuleHeader($)
 {
@@ -156,6 +173,29 @@ EOF
     return $res;
 }
 
+# Convert an idl type to an ethereal FT_* type
+
+sub type2ft($)
+{
+    my($t) = shift;
+
+    return "FT_UINT32", if ($t eq "uint32");
+    return "FT_UINT16", if ($t eq "uint16");
+    
+    return "FT_BYTES";
+}
+
+# Select an ethereal BASE_* type for an idl type
+
+sub type2base($)
+{
+    my($t) = shift;
+
+    return "BASE_DEC", if ($t eq "uint32") or ($t eq "uint16");
+
+    return "BASE_NONE";
+}
+
 sub Pass1Interface($)
 {
     my($interface) = shift;
@@ -172,15 +212,20 @@ static gint ett_dcerpc_$name = -1;
 
 EOF
 
-    my %p = ();
-
     foreach my $fn (@{$interface->{DATA}}) {
 	next, if $fn->{TYPE} ne "FUNCTION";
 	foreach my $args ($fn->{DATA}) {
 	    foreach my $params (@{$args}) {
-		$res .= "static int hf_$params->{NAME} = -1;\n",
-   		    if not defined $p{$params->{NAME}};
-		$p{$params->{NAME}} = 1;
+
+		next, if defined $hf_info{$params->{NAME}};
+
+		# Make a note about new field
+
+		$res .= "static int hf_$params->{NAME} = -1;\n";
+		$hf_info{$params->{NAME}} = {
+		    'ft' => type2ft($params->{TYPE}),
+		    'base' => type2base($params->{TYPE})
+		    };
 	    }
 	}
     }
@@ -254,7 +299,36 @@ sub Parse($)
 	$res .= Pass3Interface($d), if $d->{TYPE} eq "INTERFACE";
     }
 
+    my $hf_register_info = "";
+
+    foreach my $hf (keys(%hf_info)) {
+	$hf_register_info .= "\t{ &hf_$hf,\n";
+	$hf_register_info .= "\t  { \"$hf\", \"$hf\", $hf_info{$hf}{ft}, $hf_info{$hf}{base},\n";
+	$hf_register_info .= "\t  NULL, 0, \"$hf\", HFILL }},\n";
+    }
+    
+    my $ett_info = "/* spotty */";
+    
     $res .= << "EOF";
+void
+proto_register_dcerpc_${name}(void)
+{
+        static hf_register_info hf[] = {
+$hf_register_info
+        };
+
+        static gint *ett[] = {
+                &ett_dcerpc_$name,
+$ett_info
+        };
+
+        proto_dcerpc_$name = proto_register_protocol("$name", "$name", "$name");
+
+        proto_register_field_array (proto_dcerpc_${name}, hf, array_length (hf));
+        proto_register_subtree_array(ett, array_length(ett));
+
+}
+
 void
 proto_reg_handoff_dcerpc_$name(void)
 {
