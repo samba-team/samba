@@ -127,7 +127,6 @@ void
 Dump(char direction, unsigned char *buffer, int length)
 {
 #   define BYTES_PER_LINE	32
-#   define min(x,y)	((x<y)? x:y)
     unsigned char *pThis;
     int offset;
     extern int pettydump;
