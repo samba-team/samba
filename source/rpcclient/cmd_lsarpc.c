@@ -174,7 +174,7 @@ void cmd_lsa_lookup_names(struct client_info *info, int argc, char *argv[])
 	char **names;
 	uint32 *types = NULL;
 	DOM_SID *sids = NULL;
-	int num_sids = 0;
+	uint32 num_sids = 0;
 	uint32 ret;
 
 	fstrcpy(srv_name, "\\\\");
