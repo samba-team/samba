@@ -29,13 +29,6 @@
 /* random defines */
 
 /*
- * Defining this enables lots of useful (and used) extensions on
- * glibc-based systems such as Linux
- */
-
-#define _GNU_SOURCE
-
-/*
  * this assumes that KRB_C_BIGENDIAN is used.
  * if we can find out endianess at compile-time, do so,
  * otherwise WORDS_BIGENDIAN should already have been defined
