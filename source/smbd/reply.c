@@ -113,19 +113,23 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
 			}
 			s++;
 		} else {
-			switch(next_mb_char_size(s)) {
-				case 4:
-					*d++ = *s++;
-				case 3:
-					*d++ = *s++;
-				case 2:
-					*d++ = *s++;
-				case 1:
-					*d++ = *s++;
-					break;
-				default:
-					DEBUG(0,("check_path_syntax: character length assumptions invalid !\n"));
-					return NT_STATUS_INVALID_PARAMETER;
+			if (!(*s & 0x80)) {
+				*d++ = *s++;
+			} else {
+				switch(next_mb_char_size(s)) {
+					case 4:
+						*d++ = *s++;
+					case 3:
+						*d++ = *s++;
+					case 2:
+						*d++ = *s++;
+					case 1:
+						*d++ = *s++;
+						break;
+					default:
+						DEBUG(0,("check_path_syntax: character length assumptions invalid !\n"));
+						return NT_STATUS_INVALID_PARAMETER;
+				}
 			}
 		}
 	}
