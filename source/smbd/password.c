@@ -1496,6 +1496,7 @@ BOOL domain_client_validate( char *user, char *domain,
                              char *smb_ntpasswd, int smb_ntpasslen,
                              BOOL *user_exists)
 {
+  extern BOOL global_machine_password_needs_changing;
   unsigned char local_challenge[8];
   unsigned char local_lm_response[24];
   unsigned char local_nt_response[24];
@@ -1563,6 +1564,10 @@ BOOL domain_client_validate( char *user, char *domain,
 	  DEBUG(0, ("domain_client_validate: could not fetch trust account password for domain %s\n", global_myworkgroup));
 	  return False;
   }
+
+  /* Test if machine password is expired and need to be changed */
+  if (time(NULL) > last_change_time + lp_machine_password_timeout())
+    global_machine_password_needs_changing = True;
 
   /*
    * At this point, smb_apasswd points to the lanman response to

@@ -317,7 +317,7 @@ BOOL is_mangled( char *s )
  *                        are the correct case.  See case_mangle and
  *                        case_default above.
  *
- *  Output: True if the name is a valid DOS name, else FALSE.
+ *  Output: True if the name is a valid DOS name, else False.
  *
  * ************************************************************************** **
  */
@@ -987,7 +987,7 @@ BOOL name_map_mangle(char *OutName, BOOL need83, BOOL cache83, int snum)
 {
 	char *map;
 	DEBUG(5,("name_map_mangle( %s, need83 = %s, cache83 = %s, %d )\n", OutName,
-		need83 ? "TRUE" : "FALSE", cache83 ? "TRUE" : "FALSE", snum));
+		need83 ? "True" : "False", cache83 ? "True" : "False", snum));
 
 #ifdef MANGLE_LONG_FILENAMES
 	if( !need83 && is_illegal_name(OutName) )

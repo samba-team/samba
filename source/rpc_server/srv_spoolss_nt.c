@@ -5856,7 +5856,7 @@ static uint32 getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 
 	unistr2_to_ascii(long_archi, uni_environment, sizeof(long_archi)-1);
 
-	if (get_short_archi(short_archi, long_archi)==FALSE)
+	if (get_short_archi(short_archi, long_archi)==False)
 		return ERROR_INVALID_ENVIRONMENT;
 
 	if((info=(DRIVER_DIRECTORY_1 *)malloc(sizeof(DRIVER_DIRECTORY_1))) == NULL)

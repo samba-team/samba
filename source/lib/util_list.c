@@ -230,7 +230,7 @@ BOOL compare_rpc_hnd_node(const RPC_HND_NODE *x,
 {
 	/* only compare valid nodes */
 	if (x==NULL || y==NULL)
-		return FALSE;
+		return False;
 
 	/* if the POLICY_HND field(s) are ever changed, this
 	   will need to be updated.  Probably should be a set of
