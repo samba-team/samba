@@ -121,7 +121,7 @@ kadm5_c_init_with_password_ctx(krb5_context context,
 	return KADM5_FAILURE;
     memset(&sin, 0, sizeof(sin));
     sin.sin_family = AF_INET;
-    sin.sin_port = htons(4711);
+    sin.sin_port = krb5_getportbyname (context, "kerberos-adm", "tcp", 749);
     hp = gethostbyname(ctx->admin_server);
     if(hp == NULL)
 	return KADM5_BAD_SERVER_NAME;
