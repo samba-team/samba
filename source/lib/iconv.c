@@ -179,15 +179,16 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 	from = charsets;
 	to = charsets;
 
-	ret = (smb_iconv_t)malloc(sizeof(*ret));
+	ret = (smb_iconv_t)talloc_named(NULL, sizeof(*ret), 
+					"iconv(%s,%s)", tocode, fromcode);
 	if (!ret) {
 		errno = ENOMEM;
 		return (smb_iconv_t)-1;
 	}
 	memset(ret, 0, sizeof(*ret));
 
-	ret->from_name = strdup(fromcode);
-	ret->to_name = strdup(tocode);
+	ret->from_name = talloc_strdup(ret, fromcode);
+	ret->to_name = talloc_strdup(ret, tocode);
 
 	/* check for the simplest null conversion */
 	if (strcmp(fromcode, tocode) == 0) {
@@ -258,7 +259,7 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 	return ret;
 
 failed:
-	SAFE_FREE(ret);
+	talloc_free(ret);
 	errno = EINVAL;
 	return (smb_iconv_t)-1;
 }
@@ -266,7 +267,7 @@ failed:
 /*
   simple iconv_close() wrapper
 */
-int smb_iconv_close (smb_iconv_t cd)
+int smb_iconv_close(smb_iconv_t cd)
 {
 #ifdef HAVE_NATIVE_ICONV
 	if (cd->cd_direct) iconv_close((iconv_t)cd->cd_direct);
@@ -274,11 +275,7 @@ int smb_iconv_close (smb_iconv_t cd)
 	if (cd->cd_push) iconv_close((iconv_t)cd->cd_push);
 #endif
 
-	SAFE_FREE(cd->from_name);
-	SAFE_FREE(cd->to_name);
-
-	memset(cd, 0, sizeof(*cd));
-	SAFE_FREE(cd);
+	talloc_free(cd);
 	return 0;
 }
 
@@ -698,4 +695,6 @@ error:
 	*outbuf = c;
 	return -1;
 }
+
+
 
