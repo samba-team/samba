@@ -1739,6 +1739,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		p++;
 	l = strlen(p);  
 	mode = dos_mode(conn,fname,&sbuf);
+	mode = mode ? mode : FILE_ATTRIBUTE_NORMAL;
 	fullpathname = fname;
 	size = get_file_size(sbuf);
 	allocation_size = get_allocation_size(fsp,&sbuf);
