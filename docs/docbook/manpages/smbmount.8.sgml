@@ -24,10 +24,11 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para><command>smbmount</command> mounts a SMB filesystem. It 
-	is usually invoked as <command>mount.smb</command> from 
+	<para><command>smbmount</command> mounts a Linux SMB filesystem. It 
+	is usually invoked as <command>mount.smbfs</command> by
 	the <command>mount(8)</command> command when using the 
-	"-t smb" option. The kernel must support the smbfs filesystem. </para>
+	"-t smbfs" option. This command only works in Linux, and the kernel must
+	support the smbfs filesystem. </para>
 
 	<para>Options to <command>smbmount</command> are specified as a comma-separated
 	list of key=value pairs. It is possible to send options other
@@ -149,7 +150,9 @@
 		<varlistentry>
 		<term>debug=&lt;arg&gt;</term>
 		<listitem><para>sets the debug level. This is useful for 
-		tracking down SMB connection problems. </para></listitem>
+		tracking down SMB connection problems. A suggested value to
+		start with is 4. If set too high there will be a lot of
+		output, possibly hiding the useful output.</para></listitem>
 		</varlistentry>
 		
 		
@@ -250,8 +253,8 @@
 	protocol level is high enough to support session-level
 	passwords.</para>
 
-	<para>The variable <envar>PASSWD_FILE</envar> may contain the pathname of
-	a file to read the password from. A single line of input is
+	<para>The variable <envar>PASSWD_FILE</envar> may contain the pathname
+	of a file to read the password from. A single line of input is
 	read and used as the password.</para>
 </refsect1>
 
@@ -259,15 +262,22 @@
 <refsect1>
 	<title>BUGS</title>
 
-	<para>Not many known smbmount bugs. But one smbfs bug is
-	important enough to mention here anyway:</para>
+	<para>Passwords and other options containing , can not be handled.
+	For passwords an alternative way of passing them is in a credentials
+	file or in the PASSWD environment.</para>
+
+	<para>The credentials file does not handle usernames or passwords with
+	leading space.</para>
+
+	<para>One smbfs bug is important enough to mention here, even if it
+	is a bit misplaced:</para>
 
 	<itemizedlist>
 
 	<listitem><para>Mounts sometimes stop working. This is usually
 	caused by smbmount terminating. Since smbfs needs smbmount to
-	reconnect when the server disconnects, the mount will go
-	dead. A re-mount normally fixes this. At least 2 ways to
+	reconnect when the server disconnects, the mount will eventually go
+	dead. An umount/mount normally fixes this. At least 2 ways to
 	trigger this bug are known.</para></listitem>
 
 	</itemizedlist>
@@ -283,8 +293,15 @@
 <refsect1>
 	<title>SEE ALSO</title>
 
-	<para>Documentation/filesystems/smbfs.txt in the kernel source tree
-	may contain additional options and information.</para>
+	<para>Documentation/filesystems/smbfs.txt in the linux kernel
+	source tree may contain additional options and information.</para>
+
+	<para>FreeBSD also has a smbfs, but it is not related to smbmount</para>
+
+	<para>For Solaris, HP-UX and others you may want to look at
+	<ulink url="smbsh.1.html"><command>smbsh(1)</command> or at other
+	solutions, such as sharity or perhaps replacing the SMB server with
+	a NFS server.</para>
 
 </refsect1>
 
