@@ -3,7 +3,6 @@ AC_REVISION($Revision$)
 AC_INIT(lib/krb5/send_to_kdc.c)
 AM_CONFIG_HEADER(include/config.h)
 
-AC_CONFIG_AUX_DIR_DEFAULT
 AM_INIT_AUTOMAKE(heimdal,0.1c)
 
 AC_PREFIX_DEFAULT(/usr/heimdal)
@@ -14,12 +13,20 @@ AC_SUBST(CANONICAL_HOST)
 
 case "$host" in 
 *-*-sunos4*)
-	AC_DEFINE(SunOS, 4)
+	sunos=2
 	;;
 *-*-solaris2*)
-	AC_DEFINE(SunOS, 5)
+	sunos=5
+	;;
+*)
+	sunos=no
 	;;
 esac
+if test "$sunos" != no; then
+	AC_DEFINE_UNQUOTED(SunOS, "$sunos", 
+		[Define to what version of SunOS you are running.])
+fi
+
 
 test -z "$CFLAGS" && CFLAGS="-g"
 
@@ -49,9 +56,7 @@ AC_TEST_PACKAGE(krb4,krb.h,libkrb.a,-lkrb,/usr/athena)
 
 LIB_kdb=
 if test "$with_krb4"; then
-	LIB_krb4="$KRB4LIB -ldes"
 	LIB_kdb=-lkdb
-	INCLUDE_krb4="$KRB4INCLUDE"
 	EXTRA_LIB45=lib45.a
 	AC_SUBST(EXTRA_LIB45)
 	AC_CACHE_CHECK(for four valued krb_put_int, ac_cv_func_krb_put_int_four,
@@ -65,14 +70,14 @@ if test "$with_krb4"; then
 		CFLAGS="$save_CFLAGS"
 	])
 	if test "$ac_cv_func_krb_put_int_four" = yes; then
-		AC_DEFINE(HAVE_FOUR_VALUED_KRB_PUT_INT, 1)
+		AC_DEFINE(HAVE_FOUR_VALUED_KRB_PUT_INT, 1,
+			[Define if krb_put_int takes four arguments.])
 	fi
 fi
 AM_CONDITIONAL(KRB4, test "$with_krb4")dnl
 AM_CONDITIONAL(KRB5, true)dnl
-AC_SUBST(LIB_krb4)dnl
+AC_DEFINE(KRB5, 1, [Enable Kerberos 5 support in applications.])dnl
 AC_SUBST(LIB_kdb)dnl
-AC_SUBST(INCLUDE_krb4)dnl
 AM_CONDITIONAL(AIX, test "`uname`" = AIX)dnl
 AM_CONDITIONAL(AIX4, test "`uname`" = AIX -a "`uname -v`" = 4)
 aix_dynamic_afs=yes
@@ -97,24 +102,22 @@ AC_SUBST(AFS_EXTRA_LD)dnl
 AC_SUBST(AIX_EXTRA_KAFS)dnl
 
 AC_ARG_ENABLE(kaserver,
-[  --enable-kaserver	  if you want the KDC to try to emulate a kaserver],
-[
-if test "$enableval" != no; then
-	AC_DEFINE(KASERVER, 1)
+[  --enable-kaserver	  if you want the KDC to try to emulate a kaserver])
+if test "$enable_kaserver" != no; then
+	AC_DEFINE(KASERVER, 1,
+		[Define if you want to use the KDC as a kaserver.])
 	if test "x$with_krb4" = "x"; then
 		AC_MSG_ERROR(kaserver requires krb4)
 		exit 1
 	fi
 fi
-])
 
 AC_ARG_ENABLE(kaserver-db,
-[  --enable-kaserver-db	  if you want support for reading kaserver databases in hprop],
-[
-if test "$enableval" != "no"; then
-	AC_DEFINE(KASERVER_DB, 1)
+[  --enable-kaserver-db	  if you want support for reading kaserver databases in hprop])
+if test "$enable_kaserver_db" != "no"; then
+	AC_DEFINE(KASERVER_DB, 1,
+		[Define if you want support in hprop for reading kaserver databases])
 fi
-])
 
 otp=yes
 AC_ARG_ENABLE(otp,
@@ -125,12 +128,11 @@ if test "$enableval" = "no"; then
 fi
 ])
 if test "$otp" = "yes"; then
-	AC_DEFINE(OTP)
+	AC_DEFINE(OTP, 1, [Define if you want OTP support in applications.])
 	LIB_otp='$(top_builddir)/lib/otp/libotp.la'
-	OTP_dir=otp
 fi
 AC_SUBST(LIB_otp)
-AC_SUBST(OTP_dir)
+AM_CONDITIONAL(OTP, test "$otp" = yes)dnl
 
 new_des3_code=no
 AC_ARG_ENABLE(new-des3-code,
@@ -141,61 +143,11 @@ if test "$enableval" = "yes"; then
 fi
 ])
 if test "$new_des3_code" = "yes"; then
-	AC_DEFINE(NEW_DES3_CODE, 1)
+	AC_DEFINE(NEW_DES3_CODE, 1, 
+		[Define if you want to enable new triple-DES code])
 fi
 
-AC_PATH_PROG(NROFF, nroff)
-AC_PATH_PROG(GROFF, groff)
-AC_CACHE_CHECK(how to format man pages,ac_cv_sys_man_format,
-[cat > conftest.1 << END
-.Dd January 1, 1970
-.Dt CONFTEST 1
-.Sh NAME
-.Nm conftest
-.Nd
-foobar
-END
-
-if test "$NROFF" ; then
-	for i in "-mdoc" "-mandoc"; do
-		if "$NROFF" $i conftest.1 2> /dev/null | \
-			grep Jan > /dev/null 2>&1 ; then
-			ac_cv_sys_man_format="$NROFF $i"
-			break
-		fi
-	done
-fi
-if test "$ac_cv_sys_man_format" = "" -a "$GROFF" ; then
-	for i in "-mdoc" "-mandoc"; do
-		if "$GROFF" -Tascii $i conftest.1 2> /dev/null | \
-			grep Jan > /dev/null 2>&1 ; then
-			ac_cv_sys_man_format="$GROFF -Tascii $i"
-			break
-		fi
-	done
-fi
-if test "$ac_cv_sys_man_format"; then
-	ac_cv_sys_man_format="$ac_cv_sys_man_format \$< > \$@"
-fi
-])
-if test "$ac_cv_sys_man_format"; then
-	CATMAN="$ac_cv_sys_man_format"
-	AC_SUBST(CATMAN)
-fi
-AM_CONDITIONAL(CATMAN, test "$CATMAN")
-AC_CACHE_CHECK(extension of pre-formatted manual pages,ac_cv_sys_catman_ext,
-if grep _suffix /etc/man.conf > /dev/null 2>&1; then
-	ac_cv_sys_catman_ext=0
-else
-	ac_cv_sys_catman_ext=number
-fi
-)
-if test "$ac_cv_sys_catman_ext" = number; then
-	CATMANEXT='$$section'
-else
-	CATMANEXT=0
-fi
-AC_SUBST(CATMANEXT)
+AC_CHECK_MAN
 
 AC_TEST_PACKAGE(readline,readline.h,libreadline.a,-lreadline)
 
@@ -346,7 +298,7 @@ AC_CHECK_FUNCS(yp_get_default_domain)
 
 AC_TYPE_SIGNAL
 if test "$ac_cv_type_signal" = "void" ; then
-	AC_DEFINE(VOID_RETSIGTYPE, 1)
+	AC_DEFINE(VOID_RETSIGTYPE, 1, [Define if signal handlers return void.])
 fi
 AC_SUBST(VOID_RETSIGTYPE)
 
@@ -433,7 +385,7 @@ int main()
 ],:, ac_cv_func_realloc_broken=yes, :)
 ])
 if test "$ac_cv_func_realloc_broken" = yes ; then
-	AC_DEFINE(BROKEN_REALLOC)
+	AC_DEFINE(BROKEN_REALLOC, 1, [Define if realloc(NULL) doesn't work.])
 fi
 
 dnl AC_KRB_FUNC_GETCWD_BROKEN
@@ -621,18 +573,25 @@ else
 fi
 AM_CONDITIONAL(el_compat, test "$ac_foo" = yes)
 LIB_readline="$LIB_readline \$(LIB_tgetent)"
-AC_DEFINE(HAVE_READLINE, 1)dnl XXX
-AC_SUBST(LIB_readline)
-AC_SUBST(INCLUDE_readline)
+AC_DEFINE(HAVE_READLINE, 1, 
+	[Define if you have a readline compatible library.])dnl
 
 dnl telnet muck --------------------------------------------------
 
-AC_DEFINE(AUTHENTICATION)dnl
-AC_DEFINE(KRB5)dnl
-AC_DEFINE(ENCRYPTION)dnl
-AC_DEFINE(DES_ENCRYPTION)dnl
-AC_DEFINE(DIAGNOSTICS)dnl
-AC_DEFINE(OLD_ENVIRON)dnl
+AC_DEFINE(AUTHENTICATION, 1, 
+	[Define if you want authentication support in telnet.])dnl
+AC_DEFINE(ENCRYPTION, 1,
+	[Define if you want encryption support in telnet.])dnl
+AC_DEFINE(DES_ENCRYPTION, 1,
+	[Define if you want to use DES encryption in telnet.])dnl
+AC_DEFINE(DIAGNOSTICS, 1,
+	[Define this to enable diagnostics in telnet.])dnl
+AC_DEFINE(OLD_ENVIRON, 1,
+	[Define this to enable old environment option in telnet.])dnl
+if false; then
+AC_DEFINE(ENV_HACK, 1,
+	[Define this if you want support for broken ENV_{VAR,VAL} telnets.])
+fi
 
 # Simple test for streamspty, based on the existance of getmsg(), alas
 # this breaks on SunOS4 which have streams but BSD-like ptys
@@ -657,7 +616,7 @@ AIX*)
 	;;
 esac
 if test "$krb_cv_sys_streamspty" = yes; then
-	AC_DEFINE(STREAMSPTY)
+	AC_DEFINE(STREAMSPTY, 1, [Define if you have streams ptys.])
 fi
 dnl AC_SUBST(STREAMSPTY)
 AC_MSG_RESULT($krb_cv_sys_streamspty)
