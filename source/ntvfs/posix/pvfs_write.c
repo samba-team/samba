@@ -29,7 +29,7 @@
 */
 NTSTATUS pvfs_write(struct smbsrv_request *req, union smb_write *wr)
 {
-	struct pvfs_private *pvfs = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
 	ssize_t ret;
 	struct pvfs_file *f;
 

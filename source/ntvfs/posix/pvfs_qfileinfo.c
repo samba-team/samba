@@ -80,12 +80,12 @@ static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 */
 NTSTATUS pvfs_qpathinfo(struct smbsrv_request *req, union smb_fileinfo *info)
 {
-	struct pvfs_state *pvfs = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
 	struct pvfs_filename *name;
 	NTSTATUS status;
 
 	if (info->generic.level != RAW_FILEINFO_GENERIC) {
-		return ntvfs_map_qpathinfo(req, info);
+		return ntvfs_map_qpathinfo(req, info, pvfs->ops);
 	}
 	
 	/* resolve the cifs name to a posix name */
@@ -106,12 +106,12 @@ NTSTATUS pvfs_qpathinfo(struct smbsrv_request *req, union smb_fileinfo *info)
 */
 NTSTATUS pvfs_qfileinfo(struct smbsrv_request *req, union smb_fileinfo *info)
 {
-	struct pvfs_state *pvfs = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
 	struct pvfs_file *f;
 	NTSTATUS status;
 
 	if (info->generic.level != RAW_FILEINFO_GENERIC) {
-		return ntvfs_map_qfileinfo(req, info);
+		return ntvfs_map_qfileinfo(req, info, pvfs->ops);
 	}
 
 	f = pvfs_find_fd(pvfs, info->generic.in.fnum);

@@ -62,8 +62,8 @@ struct smbsrv_tcon {
 	/* the server context that this was created on */
 	struct smbsrv_connection *smb_conn;
 
-	/* a private structure used by the active NTVFS backend */
-	void *ntvfs_private;
+	/* an array of private structures used by the active NTVFS backends */
+	void **ntvfs_private_list;
 
 	uint16_t cnum; /* an index passed over the wire (the TID) */
 	int service;
@@ -92,6 +92,9 @@ struct smbsrv_request {
 
 	/* the session context is derived from the vuid */
 	struct smbsrv_session *session;
+
+	/* the ntvfs chaining depth */
+	int ntvfs_depth;
 
 	/* a set of flags to control usage of the request. See REQ_CONTROL_* */
 	unsigned control_flags;

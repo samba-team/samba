@@ -135,14 +135,29 @@ BOOL ntvfs_init(void)
 */
 NTSTATUS ntvfs_init_connection(struct smbsrv_request *req)
 {
-	const char *handler = lp_ntvfs_handler(req->tcon->service);
+	const char **handlers = lp_ntvfs_handler(req->tcon->service);
 
-	req->tcon->ntvfs_ops = ntvfs_backend_byname(handler, req->tcon->type);
+	req->tcon->ntvfs_ops = ntvfs_backend_byname(handlers[0], req->tcon->type);
 
 	if (!req->tcon->ntvfs_ops) {
-		DEBUG(1,("ntvfs_init_connection: failed to find backend=%s, type=%d\n", handler, req->tcon->type));
+		DEBUG(1,("ntvfs_init_connection: failed to find backend=%s, type=%d\n", handlers[0], req->tcon->type));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	return NT_STATUS_OK;
+}
+
+
+/*
+  set the private pointer for a backend
+*/
+void ntvfs_set_private(struct smbsrv_tcon *tcon, int depth, void *value)
+{
+	if (!tcon->ntvfs_private_list) {
+		tcon->ntvfs_private_list = talloc_array_p(tcon, void *, depth+1);
+	} else {
+		tcon->ntvfs_private_list = talloc_realloc_p(tcon->ntvfs_private_list, 
+							    void *, depth+1);
+	}
+	tcon->ntvfs_private_list[depth] = value;
 }

@@ -45,14 +45,14 @@ struct pvfs_file *pvfs_find_fd(struct pvfs_state *pvfs, uint16_t fnum)
 */
 NTSTATUS pvfs_open(struct smbsrv_request *req, union smb_open *io)
 {
-	struct pvfs_state *pvfs = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
 	int fd, flags;
 	struct pvfs_filename *name;
 	struct pvfs_file *f;
 	NTSTATUS status;
 
 	if (io->generic.level != RAW_OPEN_GENERIC) {
-		return ntvfs_map_open(req, io);
+		return ntvfs_map_open(req, io, pvfs->ops);
 	}
 
 	/* resolve the cifs name to a posix name */
@@ -155,7 +155,7 @@ do_open:
 */
 NTSTATUS pvfs_close(struct smbsrv_request *req, union smb_close *io)
 {
-	struct pvfs_state *pvfs = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
 	struct pvfs_file *f;
 
 	if (io->generic.level != RAW_CLOSE_CLOSE) {

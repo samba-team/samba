@@ -164,8 +164,16 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 	name->stream_name = NULL;
 	name->has_wildcard = False;
 
-	if (*cifs_name == '\\') {
+	while (*cifs_name == '\\') {
 		cifs_name++;
+	}
+
+	if (*cifs_name == 0) {
+		name->full_name = talloc_asprintf(name, "%s/.", pvfs->base_directory);
+		if (name->full_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		return NT_STATUS_OK;
 	}
 
 	ret = talloc_asprintf(name, "%s/%s", pvfs->base_directory, cifs_name);
@@ -174,6 +182,10 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 	}
 
 	p = ret + strlen(pvfs->base_directory) + 1;
+
+	if (p[strlen(cifs_name)-1] == '\\') {
+		p[strlen(cifs_name)-1] = 0;
+	}
 
 	/* now do an in-place conversion of '\' to '/', checking
 	   for legal characters */
