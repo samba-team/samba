@@ -81,8 +81,8 @@ Input:
 Output:
       8 byte credential
 ****************************************************************************/
-void cred_create(uchar session_key[8], DOM_CHAL *stor_cred, UTIME timestamp, 
-		 DOM_CHAL *cred)
+void cred_create(uchar session_key[16], 
+			DOM_CHAL *stor_cred, UTIME timestamp, DOM_CHAL *cred)
 {
 	DOM_CHAL time_cred;
 
@@ -94,9 +94,10 @@ void cred_create(uchar session_key[8], DOM_CHAL *stor_cred, UTIME timestamp,
 	/* debug output*/
 	DEBUG(4,("cred_create\n"));
 
-	DEBUG(5,("	sess_key : %s\n", credstr(session_key)));
+	DEBUG(5,("	sess_key : %s ", credstr(session_key)));
+	DEBUG(5,("%s\n", credstr(session_key+8)));
 	DEBUG(5,("	stor_cred: %s\n", credstr(stor_cred->data)));
-	DEBUG(5,("	timestamp: %lx\n"    , timestamp.time));
+	DEBUG(5,("	timestamp: %lx\n" , timestamp.time));
 	DEBUG(5,("	timecred : %s\n", credstr(time_cred.data)));
 	DEBUG(5,("	calc_cred: %s\n", credstr(cred->data)));
 }
@@ -115,8 +116,8 @@ Output:
       returns 1 if computed credential matches received credential
       returns 0 otherwise
 ****************************************************************************/
-int cred_assert(DOM_CHAL *cred, uchar session_key[8], DOM_CHAL *stored_cred,
-		UTIME timestamp)
+int cred_assert(DOM_CHAL *cred, uchar session_key[16], 
+		DOM_CHAL *stored_cred, UTIME timestamp)
 {
 	DOM_CHAL cred2;
 

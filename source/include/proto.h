@@ -198,10 +198,10 @@ int tar_parseargs(struct client_info *info,
 char *credstr(uchar *cred);
 void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, char *pass, 
 		      uchar session_key[8]);
-void cred_create(uchar session_key[8], DOM_CHAL *stor_cred, UTIME timestamp, 
-		 DOM_CHAL *cred);
-int cred_assert(DOM_CHAL *cred, uchar session_key[8], DOM_CHAL *stored_cred,
-		UTIME timestamp);
+void cred_create(uchar session_key[16], 
+			DOM_CHAL *stor_cred, UTIME timestamp, DOM_CHAL *cred);
+int cred_assert(DOM_CHAL *cred, uchar session_key[16], 
+		DOM_CHAL *stored_cred, UTIME timestamp);
 BOOL clnt_deal_with_creds(uchar sess_key[8],
 			  DOM_CRED *sto_clnt_cred, DOM_CRED *rcv_srv_cred);
 BOOL deal_with_creds(uchar sess_key[8],
@@ -720,6 +720,7 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 void cmd_lsa_query_info(struct cli_state *cli, struct client_info *info);
 void cmd_sam_query_users(struct cli_state *cli, struct client_info *info);
 void cmd_nt_login_test(struct cli_state *cli, struct client_info *info);
+void cmd_nltest(struct cli_state *cli, struct client_info *info);
 
 /*The following definitions come from  nterr.c  */
 
@@ -930,7 +931,7 @@ void make_q_auth_2(LSA_Q_AUTH_2 *q_a,
 		DOM_CHAL *clnt_chal, uint32 clnt_flgs);
 char* lsa_io_q_auth_2(BOOL io, LSA_Q_AUTH_2 *q_a, char *q, char *base, int align, int depth);
 char* lsa_io_r_auth_2(BOOL io, LSA_R_AUTH_2 *r_a, char *q, char *base, int align, int depth);
-void make_q_srv_pwset(LSA_Q_SRV_PWSET *q_s, char sess_key[8],
+void make_q_srv_pwset(LSA_Q_SRV_PWSET *q_s, char sess_key[16],
 		char *logon_srv, char *acct_name, uint16 sec_chan, char *comp_name,
 		DOM_CRED *cred, char nt_cypher[16]);
 char* lsa_io_q_srv_pwset(BOOL io, LSA_Q_SRV_PWSET *q_s, char *q, char *base, int align, int depth);
@@ -947,21 +948,21 @@ BOOL do_nt_session_open(struct cli_state *cli, uint16 *fnum,
 				char *dest_host, char *myhostname,
 				char *mach_acct,
 				char *username, char *workgroup,
-				uchar sess_key[8], DOM_CRED *clnt_cred);
+				uchar sess_key[16], DOM_CRED *clnt_cred);
 BOOL do_nt_srv_pwset(struct cli_state *cli, uint16 fnum,
-				uint8 sess_key[8], DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
+				uint8 sess_key[16], DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
 				char *new_mach_pwd,
 				char *dest_host, char *mach_acct, char *myhostname);
 void make_nt_login_info(DOM_ID_INFO_1 *id1,
-				uchar sess_key[8],
+				uchar sess_key[16],
 				char *workgroup, char *myhostname,
 				uint32 smb_userid, char *username);
 BOOL do_nt_login(struct cli_state *cli, uint16 fnum,
-				uint8 sess_key[8], DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
+				uint8 sess_key[16], DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
 				DOM_ID_INFO_1 *id1, char *dest_host, char *myhostname,
 				LSA_USER_INFO *user_info1);
 BOOL do_nt_logoff(struct cli_state *cli, uint16 fnum,
-				uint8 sess_key[8], DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
+				uint8 sess_key[16], DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
 				DOM_ID_INFO_1 *id1, char *dest_host, char *myhostname);
 void do_nt_session_close(struct cli_state *cli, uint16 fnum);
 
@@ -987,7 +988,7 @@ BOOL do_lsa_req_chal(struct cli_state *cli, uint16 fnum,
 		char *desthost, char *myhostname,
         DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal);
 BOOL do_lsa_srv_pwset(struct cli_state *cli, uint16 fnum,
-		uchar sess_key[8], DOM_CRED *sto_clnt_cred,
+		uchar sess_key[16], DOM_CRED *sto_clnt_cred,
 		char *logon_srv, char *mach_acct, uint16 sec_chan_type, char *comp_name,
         DOM_CRED *clnt_cred, DOM_CRED *srv_cred,
 		char nt_owf_new_mach_pwd[16]);
@@ -1208,7 +1209,7 @@ char* smb_io_arc4_owf(BOOL io, ARC4_OWF *hash, char *q, char *base, int align, i
 void make_id_info1(DOM_ID_INFO_1 *id, char *domain_name,
 				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
 				char *user_name, char *wksta_name,
-				char *sess_key,
+				char sess_key[16],
 				unsigned char lm_cypher[16], unsigned char nt_cypher[16]);
 char* smb_io_id_info1(BOOL io, DOM_ID_INFO_1 *id, char *q, char *base, int align, int depth);
 void make_sam_info(DOM_SAM_INFO *sam,
@@ -1338,8 +1339,8 @@ struct shmem_ops *sysv_shm_open(int ronly);
 
 void E_P16(unsigned char *p14,unsigned char *p16);
 void E_P24(unsigned char *p21, unsigned char *c8, unsigned char *p24);
-void cred_hash1(unsigned char *out,unsigned char *in,unsigned char *key);
-void cred_hash2(unsigned char *out,unsigned char *in,unsigned char *key);
+void cred_hash1(unsigned char out[8],unsigned char in[8],unsigned char pass[16]);
+void cred_hash2(unsigned char out[8], unsigned char in[8], unsigned char key[16]);
 
 /*The following definitions come from  smbencrypt.c  */
 
@@ -1347,7 +1348,9 @@ void SMBencrypt(uchar *passwd, uchar *c8, uchar p24[24]);
 void SMBNTencrypt(char *passwd, uchar *c8, uchar p24[24]);
 void E_md4hash(uchar *passwd, uchar *p16);
 void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24]);
+void nt_owf_gen(char *pwd, char nt_p16[16]);
 void nt_lm_owf_gen(char *pwd, char nt_p16[16], char p16[16]);
+BOOL obfuscate_pwd(unsigned char pwd[16], unsigned char sess_key[16], uint8 mode);
 
 /*The following definitions come from  smberr.c  */
 

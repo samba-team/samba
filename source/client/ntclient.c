@@ -187,8 +187,6 @@ experimental nt login.
 ****************************************************************************/
 void cmd_nt_login_test(struct cli_state *cli, struct client_info *info)
 {
-	uint16 fnum = 0xffff;
-
 	fstring username;
 
 	BOOL res = True;
@@ -209,11 +207,12 @@ void cmd_nt_login_test(struct cli_state *cli, struct client_info *info)
 
 #if 0
 	/* check whether the user wants to change their machine password */
-	res = res ? trust_account_check(dest_ip, info->dest_host, info->myhostname, info->workgroup,
+	res = res ? trust_account_check(info->dest_ip, info->dest_host,
+	                                info->myhostname, info->workgroup,
 	                                info->mach_acct, new_mach_pwd) : False;
-#endif 
+#endif
 	/* open NETLOGON session.  negotiate credentials */
-	res = res ? do_nt_session_open(cli, &fnum,
+	res = res ? do_nt_session_open(cli, &info->dom.lsarpc_fnum,
 	                          info->dest_host, info->myhostname,
 	                          info->mach_acct,
 	                          username, info->workgroup,
@@ -222,7 +221,7 @@ void cmd_nt_login_test(struct cli_state *cli, struct client_info *info)
 	/* change the machine password? */
 	if (new_mach_pwd != NULL && new_mach_pwd[0] != 0)
 	{
-		res = res ? do_nt_srv_pwset(cli, fnum,
+		res = res ? do_nt_srv_pwset(cli, info->dom.lsarpc_fnum,
 		                   info->dom.sess_key, &info->dom.clnt_cred, &info->dom.rtn_cred,
 		                   new_mach_pwd,
 		                   info->dest_host, info->mach_acct, info->myhostname) : False;
@@ -235,27 +234,64 @@ void cmd_nt_login_test(struct cli_state *cli, struct client_info *info)
 	                 getuid(), username);
 
 	/* do an NT login */
-	res = res ? do_nt_login(cli, fnum,
+	res = res ? do_nt_login(cli, info->dom.lsarpc_fnum,
 	                        info->dom.sess_key, &info->dom.clnt_cred, &info->dom.rtn_cred,
 	                        &info->dom.id1, info->dest_host, info->myhostname, &info->dom.user_info1) : False;
 
 	/* ok!  you're logged in!  do anything you like, then... */
 	   
 	/* do an NT logout */
-	res = res ? do_nt_logoff(cli, fnum,
+	res = res ? do_nt_logoff(cli, info->dom.lsarpc_fnum,
 	                         info->dom.sess_key, &info->dom.clnt_cred, &info->dom.rtn_cred,
 	                         &info->dom.id1, info->dest_host, info->myhostname) : False;
 
 	/* close the session */
-	do_nt_session_close(cli, fnum);
+	do_nt_session_close(cli, info->dom.lsarpc_fnum);
 
 	if (res)
 	{
-		DEBUG(5,("cmd_nt_login_test: login test failed\n"));
+		DEBUG(5,("cmd_nt_login_test: login test succeeded\n"));
 	}
 	else
 	{
-		DEBUG(5,("cmd_nt_login_test: login test succeeded\n"));
+		DEBUG(5,("cmd_nt_login_test: login test failed\n"));
+	}
+}
+
+/****************************************************************************
+experimental net login test.
+****************************************************************************/
+void cmd_nltest(struct cli_state *cli, struct client_info *info)
+{
+	BOOL res = True;
+	fstring username;
+
+	if (!next_token(NULL, username,NULL))
+	{
+		DEBUG(0,("cmd_nltest: <username>\n"));
+		return;
+	}
+
+	DEBUG(5,("do_nltest: %d\n", __LINE__));
+
+	/* open NETLOGON session.  negotiate credentials */
+	res = res ? do_nt_session_open(cli, &info->dom.lsarpc_fnum,
+	                          info->dest_host, info->myhostname,
+	                          info->mach_acct,
+	                          username, info->workgroup,
+	                          info->dom.sess_key, 
+	                          &info->dom.clnt_cred) : False;
+
+	/* close the session */
+	do_nt_session_close(cli, info->dom.lsarpc_fnum);
+
+	if (res)
+	{
+		DEBUG(5,("cmd_nt_login_test: nltest succeeded\n"));
+	}
+	else
+	{
+		DEBUG(5,("cmd_nt_login_test: nltest failed\n"));
 	}
 }
 

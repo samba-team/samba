@@ -306,32 +306,30 @@ static void smbhash(unsigned char *out, unsigned char *in, unsigned char *key)
 void E_P16(unsigned char *p14,unsigned char *p16)
 {
 	unsigned char sp8[8] = {0x4b, 0x47, 0x53, 0x21, 0x40, 0x23, 0x24, 0x25};
-	smbhash(p16, sp8, p14);
+	smbhash(p16  , sp8, p14  );
 	smbhash(p16+8, sp8, p14+7);
 }
 
 void E_P24(unsigned char *p21, unsigned char *c8, unsigned char *p24)
 {
-	smbhash(p24, c8, p21);
-	smbhash(p24+8, c8, p21+7);
+	smbhash(p24   , c8, p21   );
+	smbhash(p24+8 , c8, p21+7 );
 	smbhash(p24+16, c8, p21+14);
 }
 
-void cred_hash1(unsigned char *out,unsigned char *in,unsigned char *key)
+void cred_hash1(unsigned char out[8],unsigned char in[8],unsigned char pass[16])
 {
 	unsigned char buf[8];
 
-	smbhash(buf, in, key);
-	smbhash(out, buf, key+9);
+	smbhash(buf, in , pass  );
+	smbhash(out, buf, pass+9);
 }
 
-void cred_hash2(unsigned char *out,unsigned char *in,unsigned char *key)
+void cred_hash2(unsigned char out[8], unsigned char in[8], unsigned char key[16])
 {
 	unsigned char buf[8];
-	static unsigned char key2[8];
 
-	smbhash(buf, in, key);
-	key2[0] = key[7];
-	smbhash(out, buf, key2);
+	smbhash(buf, in , key  );
+	smbhash(out, buf, key+7);
 }
 

@@ -224,7 +224,8 @@ struct
 } commands[] = 
 {
 #ifdef NTDOMAIN
-  {"ntlogin",    cmd_nt_login_test,    "<username> NT Domain login"},
+  {"ntlogin",    cmd_nt_login_test,    "<username> NT Domain login test"},
+  {"nltest",     cmd_nltest,           "<server> Net Logon Test"},
   {"lsaquery",   cmd_lsa_query_info,   "<server> Query Info Policy"},
   {"samrid",     cmd_sam_query_users,  "<server> SAM User Info lookup"},
 #endif
@@ -976,8 +977,9 @@ static void usage(char *pname)
 #ifdef NTDOMAIN
 	if (nt_domain_logon)
 	{
+		strupper(cli_info.myhostname);
 		fstrcpy(cli_info.mach_acct, cli_info.myhostname);
-		strlower(cli_info.mach_acct);
+		strupper(cli_info.mach_acct);
 		strcat(cli_info.mach_acct, "$");
 
 		DEBUG(5,("NT Domain Logon[%s].  Host:%s Mac-acct:%s\n",

@@ -353,7 +353,7 @@ struct dcinfo
   DOM_CRED clnt_cred; /* Last client credential */
   DOM_CRED srv_cred;  /* Last server credential */
 
-  uchar  sess_key[8]; /* Session key */
+  uchar  sess_key[16]; /* Session key */
   uchar  md4pw[16];   /* md4(machine password) */
 };
 
@@ -372,7 +372,7 @@ struct nt_client_info
 
 	fstring mach_acct;
 
-	char sess_key[8];
+	char sess_key[16];
 	DOM_CRED clnt_cred;
 	DOM_CRED rtn_cred;
 

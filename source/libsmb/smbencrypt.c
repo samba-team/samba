@@ -120,6 +120,20 @@ void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24])
 	E_P24(p21, c8, p24);
 }
 
+/* Does the NT owf of a user's password */
+void nt_owf_gen(char *pwd, char nt_p16[16])
+{
+	char passwd[130];
+	StrnCpy(passwd, pwd, sizeof(passwd)-1);
+
+	/* Calculate the MD4 hash (NT compatible) of the password */
+	memset(nt_p16, '\0', 16);
+	E_md4hash((uchar *)passwd, (uchar *)nt_p16);
+
+	/* clear out local copy of user's password (just being paranoid). */
+	bzero(passwd, sizeof(passwd));
+}
+
 /* Does both the NT and LM owfs of a user's password */
 void nt_lm_owf_gen(char *pwd, char nt_p16[16], char p16[16])
 {
@@ -141,5 +155,74 @@ void nt_lm_owf_gen(char *pwd, char nt_p16[16], char p16[16])
 
 	/* clear out local copy of user's password (just being paranoid). */
 	bzero(passwd, sizeof(passwd));
+}
+
+#ifdef USE_ARCFOUR
+void arcfour(unsigned char data[16], unsigned char data_out[16], unsigned char data_in[16]);
+#endif
+
+#ifdef USE_DES
+void des_encrypt8(unsigned char key[7], unsigned char data_in[8], unsigned char data_out[8]);
+void des_decrypt8(unsigned char key[7], unsigned char data_in[8], unsigned char data_out[8]);
+#endif
+
+BOOL obfuscate_pwd(unsigned char pwd[16], unsigned char sess_key[16], uint8 mode)
+{
+	unsigned char pwd_c[16];
+	
+	memcpy(pwd_c, pwd, 16);
+
+#ifdef DEBUG_PASSWORD
+		DEBUG(100,("obfuscate_pwd:"));
+		dump_data(100, pwd, 16);
+#endif
+
+	if (mode == 1)
+	{
+#ifdef USE_ARCFOUR
+
+		unsigned char arc4_key[16];
+		memcpy(arc4_key, sess_key, 16);
+		arcfour(arc4_key, pwd_c, pwd);
+
+#else
+
+		return False;
+
+#endif
+	}
+	else
+	{
+		/* lkcl XXXX - bugger.  need to do two DES 8 byte encrypts */
+#ifdef USE_DES
+
+		/* use bytes 0-6 of sess key to encrypt 1st 8 bytes of pwd_c */
+		/* use bytes 8-14 of sess key to encrypt 1st 8 bytes of pwd_c */
+		/* yes, bytes 7 and 15 _are_ ignored... */
+
+		if (mode == 0)
+		{
+			des_encrypt(sess_key  , pwd_c  , pwd);
+			des_encrypt(sess_key+8, pwd_c+8, pwd);
+		}
+		else
+		{
+			des_decrypt(sess_key  , pwd_c  , pwd, 8);
+			des_decrypt(sess_key+8, pwd_c+8, pwd, 8);
+		}
+
+#else
+
+	return False;
+
+#endif
+	}
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("obfuscate_pwd:"));
+	dump_data(100, pwd, 16);
+#endif
+
+	return True;
 }
 
