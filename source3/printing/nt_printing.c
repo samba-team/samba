@@ -3544,20 +3544,12 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 	if (winbind_lookup_name(lp_workgroup(), &owner_sid, &name_type)) {
 		sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
 	} else {
-		uint32 owner_rid;
-
-		/* Backup plan - make printer owned by admins or root.
+		/* Backup plan - make printer owned by admins.
 		   This should emulate a lanman printer as security
 		   settings can't be changed. */
 
-		sid_peek_rid(&owner_sid, &owner_rid);
-
-		if (owner_rid != BUILTIN_ALIAS_RID_PRINT_OPS &&
-		    owner_rid != BUILTIN_ALIAS_RID_ADMINS &&
-		    owner_rid != DOMAIN_USER_RID_ADMIN &&
-		    !lookup_name("root", &owner_sid, &name_type)) {
-			sid_copy(&owner_sid, &global_sid_World);
-		}
+		sid_copy(&owner_sid, &global_sam_sid);
+		sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
 	}
 
 	init_sec_access(&sa, PRINTER_ACE_FULL_CONTROL);
