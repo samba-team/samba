@@ -33,7 +33,7 @@ setup the shared area
 void smbw_setup_shared(void)
 {
 	int fd;
-	pstring name;
+	pstring name, s;
 
 	slprintf(name,sizeof(name)-1, "%s/smbw.XXXXXX",tmpdir());
 
