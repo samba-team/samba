@@ -15,7 +15,7 @@ int
 pop_pass (POP *p)
 {
     struct passwd  *pw;
-    char lrealm[REALM_SZ];
+    char lrealm[REALM_SZ + 1];
     int status; 
     int i;
 
