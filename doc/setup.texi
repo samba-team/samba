@@ -67,7 +67,7 @@ with contents similar to the following.
                 kdc = my.kdc
         @}
 [domain_realm]
-.my.domain = MY.REALM
+        .my.domain = MY.REALM
 
 @end example
 
@@ -100,8 +100,8 @@ one database, so @samp{init} does not destroy any old database.
 Before creating the database, @samp{init} will ask you some questions
 about max ticket lifetimes.
 
-After creating the database you should probably add yourself. You do
-this with the @samp{add} command. It takes as argument the name of a
+After creating the database you should probably add yourself to it. You
+do this with the @samp{add} command. It takes as argument the name of a
 principal. The principal should contain a realm, so if you haven't setup
 a default realm, you will need to explicitly include the realm.
 
@@ -132,9 +132,9 @@ Credentials cache: /tmp/krb5cc_0
 Aug 25 07:25:55  Aug 25 17:25:55  krbtgt/MY.REALM@@MY.REALM
 @end example
 
-To verify that the contents of the database you can use the @samp{dump}
-command to list all the entries.  It should look something similar to
-the following example (note that the entries here are truncated for
+If you are curious you can use the @samp{dump} command to list all the
+entries in the database.  It should look something similar to the
+following example (note that the entries here are truncated for
 typographical reasons):
 
 @smallexample
