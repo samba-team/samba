@@ -340,7 +340,7 @@ static int utmp_yield_tdb(const connection_struct *conn)
 	}
 
 	/* Save our result */
-	slotnum = (int) dbuf.dptr;
+	slotnum = *((int*) dbuf.dptr);
 
 	/* Tidy up */
 	tdb_delete(tdb_utmp, kbuf);
