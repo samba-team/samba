@@ -522,7 +522,8 @@ PROTO_OBJ = $(SMBD_OBJ_SRV) \
 	    $(READLINE_OBJ) $(PROFILE_OBJ) $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) \
 	    $(LIB_SMBD_OBJ) $(SAM_OBJ) $(REGISTRY_OBJ) $(POPT_LIB_OBJ) \
 	    $(RPC_LSA_OBJ) $(RPC_NETLOG_OBJ) $(RPC_SAMR_OBJ) $(RPC_REG_OBJ) \
-	    $(RPC_SVC_OBJ) $(RPC_WKS_OBJ) $(RPC_DFS_OBJ) $(RPC_SPOOLSS_OBJ)
+	    $(RPC_SVC_OBJ) $(RPC_WKS_OBJ) $(RPC_DFS_OBJ) $(RPC_SPOOLSS_OBJ) \
+	    $(CLIENT_OBJ1)
 
 NSS_OBJ_0 = nsswitch/wins.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 	    $(LIB_OBJ) $(NSSWINS_OBJ)
@@ -1085,20 +1086,12 @@ clean: delheaders python_clean
 # exist, not necessarily that they are up to date.  Since they're
 # removed by "make clean" this will always be run when you do anything
 # afterwards.
-proto_exists: include/proto.h include/wrepld_proto.h include/build_env.h \
-		nsswitch/winbindd_proto.h web/swat_proto.h \
-@STFS_ENABLED@	ntvfs/tank/vfs_tank_proto.h \
-		client/client_proto.h utils/net_proto.h \
+proto_exists: include/proto.h include/build_env.h \
 		include/tdbsam2_parse_info.h
 
 delheaders:
 	@echo Removing prototype headers
 	@/bin/rm -f $(srcdir)/include/proto.h $(srcdir)/include/build_env.h 
-	@/bin/rm -f $(srcdir)/include/wrepld_proto.h $(srcdir)/nsswitch/winbindd_proto.h 
-	@/bin/rm -f $(srcdir)/web/swat_proto.h
-	@/bin/rm -f $(srcdir)/client/client_proto.h $(srcdir)/utils/net_proto.h
-	@/bin/rm -f $(srcdir)/include/tdbsam2_parse_info.h
-@STFS_ENABLED@	@/bin/rm -f $(srcdir)/ntvfs/tank/vfs_tank_proto.h
 
 include/proto.h:
 	@echo Building include/proto.h
@@ -1110,37 +1103,6 @@ include/build_env.h:
 	@echo Building include/build_env.h
 	@cd $(srcdir) && $(SHELL) script/build_env.sh $(srcdir) $(builddir) $(CC) > $(builddir)/include/build_env.h
 
-include/wrepld_proto.h:
-	@echo Building include/wrepld_proto.h
-	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(PERL) \
-	  -h _WREPLD_PROTO_H_ $(builddir)/include/wrepld_proto.h \
-	  $(WREPL_OBJ1)
-
-nsswitch/winbindd_proto.h: 
-	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(PERL) \
-	  -h _WINBINDD_PROTO_H_ nsswitch/winbindd_proto.h \
-	  $(WINBINDD_OBJ1)
-
-ntvfs/tank/vfs_tank_proto.h: 
-	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(PERL) \
-	  -h _VFS_TANK_PROTO_H_ ntvfs/tank/vfs_tank_proto.h \
-	  $(STFS_OBJS)
-
-web/swat_proto.h: 
-	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(PERL) \
-	  -h _SWAT_PROTO_H_ web/swat_proto.h \
-	  $(SWAT_OBJ1)
-
-client/client_proto.h: 
-	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(PERL) \
-	  -h _CLIENT_PROTO_H_ client/client_proto.h \
-	  $(CLIENT_OBJ1)
-
-utils/net_proto.h: 
-	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(PERL) \
-	  -h _CLIENT_PROTO_H_ utils/net_proto.h \
-	  $(NET_OBJ1)
-
 include/tdbsam2_parse_info.h:
 	@cd $(srcdir) && $(PERL) -w script/genstruct.pl \
 	-o include/tdbsam2_parse_info.h $(CC) -E -g \
@@ -1149,17 +1111,7 @@ include/tdbsam2_parse_info.h:
 # "make headers" or "make proto" calls a subshell because we need to
 # make sure these commands are executed in sequence even for a
 # parallel make.
-headers: 
-	$(MAKE) delheaders; \
-	$(MAKE) include/proto.h; \
-	$(MAKE) include/build_env.h; \
-	$(MAKE) include/wrepld_proto.h; \
-	$(MAKE) nsswitch/winbindd_proto.h; \
-	$(MAKE) web/swat_proto.h; \
-	$(MAKE) client/client_proto.h; \
-	$(MAKE) utils/net_proto.h; \
-	$(MAKE) include/tdbsam2_parse_info.h; \
-@STFS_ENABLED@	$(MAKE) ntvfs/tank/vfs_tank_proto.h
+headers: delheaders include/proto.h include/build_env.h include/tdbsam2_parse_info.h
 
 proto: headers 
 

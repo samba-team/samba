@@ -22,7 +22,6 @@
 */
 
 #include "includes.h"
-#include "../client/client_proto.h"
 #ifndef REGISTER
 #define REGISTER 0
 #endif
