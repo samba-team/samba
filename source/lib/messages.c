@@ -19,12 +19,19 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/* this module is used for internal messaging between Samba daemons. 
+/**
+   @file messages.c
+
+   This module is used for internal messaging between Samba daemons. 
 
    The idea is that if a part of Samba wants to do communication with
    another Samba process then it will do a message_register() of a
    dispatch function, and use message_send_pid() to send messages to
    that process.
+
+   The dispatch function is given the pid of the sender, and it can
+   use that to reply by message_send_pid().  See ping_message() for a
+   simple example.
 
    This system doesn't have any inherent size limitations but is not
    very efficient for large messages or when messages are sent in very
