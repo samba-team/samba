@@ -43,4 +43,4 @@ AC_SUBST(SGML_SHARE)dnl
 DOC_BUILD_DATE=`date '+%d-%m-%Y'`
 AC_SUBST(DOC_BUILD_DATE)
 
-AC_OUTPUT( Makefile )
+AC_OUTPUT( Makefile stylesheets/ldp.dsl )
