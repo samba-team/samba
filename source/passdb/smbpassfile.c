@@ -274,46 +274,26 @@ static BOOL get_trust_account_password_from_file( unsigned char *ret_pwd, time_t
 }
 
 /************************************************************************
-form a key for fetching a domain trust password
-************************************************************************/
-
-static char *trust_keystr(char *domain)
-{
-	static fstring keystr;
-	slprintf(keystr,sizeof(keystr),"%s/%s", SECRETS_MACHINE_ACCT_PASS, domain);
-	return keystr;
-}
-
-/************************************************************************
  Migrate an old DOMAIN.MACINE.mac password file to the tdb secrets db.
 ************************************************************************/
 
-static void migrate_from_old_password_file(char *domain)
+BOOL migrate_from_old_password_file(char *domain)
 {
 	struct machine_acct_pass pass;
 
 	if (!trust_password_file_lock(domain, global_myname))
-		return;
+		return True;
 
 	if (!get_trust_account_password_from_file( pass.hash, &pass.mod_time)) {
 		trust_password_file_unlock();
-		return;
+		return False;
 	}
 
+	if (!secrets_store(trust_keystr(domain), (void *)&pass, sizeof(pass)))
+		return False;
+
 	trust_password_file_delete(domain, global_myname);
-
-	secrets_store(trust_keystr(domain), (void *)&pass, sizeof(pass));
-
 	trust_password_file_unlock();
-	return;
+
+	return True;
 }
-
-/************************************************************************
- Routine to delete the trust account password file for a domain.
-************************************************************************/
-
-BOOL trust_password_delete(char *domain)
-{
-	return secrets_delete(trust_keystr(domain));
-}
-

@@ -1732,13 +1732,15 @@ BOOL secrets_store(char *key, void *data, size_t size);
 BOOL secrets_delete(char *key);
 BOOL secrets_store_domain_sid(char *domain, DOM_SID *sid);
 BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid);
+char *trust_keystr(char *domain);
 BOOL secrets_fetch_trust_account_password(char *domain, uint8 ret_pwd[16],
 					  time_t *pass_last_set_time);
 BOOL secrets_store_trust_account_password(char *domain, uint8 new_pwd[16]);
+BOOL trust_password_delete(char *domain);
 
 /*The following definitions come from  passdb/smbpassfile.c  */
 
-BOOL trust_password_delete(char *domain);
+BOOL migrate_from_old_password_file(char *domain);
 
 /*The following definitions come from  printing/load.c  */
 
