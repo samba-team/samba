@@ -464,7 +464,7 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user,
 	pstring server_domain;  /* FIX THIS, SHOULD be UCS2-LE */
 
 	neg_flags = NTLMSSP_NEGOTIATE_UNICODE | 
-		NTLMSSP_NEGOTIATE_128 | 
+	       	NTLMSSP_NEGOTIATE_128 | 
 		NTLMSSP_NEGOTIATE_NTLM |
 		NTLMSSP_REQUEST_TARGET;
 
@@ -572,8 +572,6 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user,
 
 	if (cli_is_error(cli))
 		return False;
-
-	set_signing_on_cli(cli, pass, nthash);
 
 	return True;
 }
