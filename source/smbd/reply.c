@@ -701,6 +701,8 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		return ERROR_NT(status);
 	}
 
+	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+  
 	unix_convert(fname,conn,0,&bad_path,&sbuf);
 	if (bad_path) {
 		END_PROFILE(SMBsetatr);
@@ -833,6 +835,9 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		END_PROFILE(SMBsearch);
 		return ERROR_NT(nt_status);
 	}
+
+	RESOLVE_DFSPATH(path, conn, inbuf, outbuf);
+  
 	p++;
 	status_len = SVAL(p, 0);
 	p += 2;
@@ -4490,6 +4495,8 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		return ERROR_NT(status);
 	}
   
+	RESOLVE_DFSPATH(newdir, conn, inbuf, outbuf);
+
 	if (strlen(newdir) == 0) {
 		ok = True;
 	} else {
