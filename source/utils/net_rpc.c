@@ -1621,7 +1621,7 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid, struct cli
 					       cli->user_session_key, &ctr);
 
 		if (!NT_STATUS_IS_OK(result)) {
-			DEBUG(0,("Could not set trust account password: %s\n"
+			DEBUG(0,("Could not set trust account password: %s\n",
 				 nt_errstr(result)));
 			goto done;
 		}
