@@ -1,3 +1,23 @@
+samba (3.0.8-1) stable; urgency=low
+
+  * samba 3.0.8 release
+
+ -- Simo Sorce <idra@samba.org>  Mon, 9 November 2004 11:02:00 +0200
+
+samba (3.0.7-2) stable; urgency=low
+
+  * fix a segmentation fault in smbcacls
+  * fix 2 annoying pdbldap related bugs
+
+ -- Simo Sorce <idra@samba.org>  Mon, 11 October 2004 12:22:00 +0200
+
+samba (3.0.7-1) stable; urgency=high
+
+  * samba 3.0.7 *Security* release
+  * See CAN-2004-0807 & CAN-2004-0808
+
+ -- Simo Sorce <idra@samba.org>  Mon, 13 September 2004 14:40:00 +0200
+
 samba (3.0.6-1) stable; urgency=low
 
   * samba 3.0.6 release
