@@ -1512,7 +1512,14 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
     fsp->granted_oplock = False;
     fsp->sent_oplock_break = False;
     fsp->cnum = cnum;
-    string_set(&fsp->name,dos_to_unix(fname,False));
+    /*
+     * Note that the file name here is the *untranslated* name
+     * ie. it is still in the DOS codepage sent from the client.
+     * All use of this filename will pass though the sys_xxxx
+     * functions which will do the dos_to_unix translation before
+     * mapping into a UNIX filename. JRA.
+     */
+    string_set(&fsp->name,fname);
     fsp->wbmpx_ptr = NULL;      
 
     /*
