@@ -1416,7 +1416,7 @@ BOOL local_lookup_name(char *domain, char *user, DOM_SID *psid, enum SID_NAME_US
 	 * when needed!
 	 */
 
-	if(!(pass = Get_Pwnam(user,false))) {
+	if(!(pass = Get_Pwnam(user,False))) {
 		/*
 		 * Maybe it was a group ?
 		 */
