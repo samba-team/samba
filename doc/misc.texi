@@ -1,3 +1,5 @@
+@c $Id$
+
 @node Things in search for a better place, Kerberos 4 issues, Setting up a realm, Top
 @chapter Things in search for a better place
 

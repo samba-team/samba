@@ -1,3 +1,5 @@
+@c $Id$
+
 @node Kerberos 4 issues, Migration, Things in search for a better place, Top
 @comment  node-name,  next,  previous,  up
 @chapter Kerberos 4 issues

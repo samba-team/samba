@@ -1,3 +1,5 @@
+@c $Id$
+
 @node Building and Installing, Setting up a realm, What is Kerberos?, Top
 @comment  node-name,  next,  previous,  up
 @chapter Building and Installing

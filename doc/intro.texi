@@ -1,3 +1,5 @@
+@c $Id$
+
 @node Introduction, What is Kerberos?, Top, Top
 @c @node Introduction, What is Kerberos?, Top, Top
 @comment  node-name,  next,  previous,  up
