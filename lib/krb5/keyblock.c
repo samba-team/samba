@@ -71,3 +71,37 @@ krb5_generate_random_keyblock(krb5_context context,
 	}
     return KRB5_PROG_KEYTYPE_NOSUPP;
 }
+
+void
+krb5_free_keyblock(krb5_context context,
+		   krb5_keyblock *keyblock)
+{
+    memset(keyblock->keyvalue.data, 0, keyblock->keyvalue.length);
+    krb5_data_free (&keyblock->keyvalue);
+}
+
+krb5_error_code
+krb5_copy_keyblock_contents (krb5_context context,
+			     const krb5_keyblock *inblock,
+			     krb5_keyblock *to)
+{
+    to->keytype = inblock->keytype;
+    return krb5_data_copy (&to->keyvalue,
+			   inblock->keyvalue.data,
+			   inblock->keyvalue.length);
+
+}
+
+krb5_error_code
+krb5_copy_keyblock (krb5_context context,
+		    const krb5_keyblock *inblock,
+		    krb5_keyblock **to)
+{
+    krb5_keyblock *k;
+
+    k = malloc (sizeof(*k));
+    if (k == NULL)
+	return ENOMEM;
+    *to = k;
+    return krb5_copy_keyblock_contents (context, inblock, k);
+}
