@@ -4030,6 +4030,7 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 int tdb_close(TDB_CONTEXT *tdb);
 int tdb_lockchain(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_unlockchain(TDB_CONTEXT *tdb, TDB_DATA key);
+int tdb_free_space(TDB_CONTEXT *tdb, tdb_len *free_space, tdb_len *tdb_size);
 
 /*The following definitions come from  tdb/tdbutil.c  */
 
