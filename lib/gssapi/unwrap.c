@@ -105,7 +105,7 @@ OM_uint32 gss_unwrap
 
   /* check pad */
 
-  pad = (char *)input_message_buffer->value + input_message_buffer->length - 1;
+  pad = (u_char *)input_message_buffer->value + input_message_buffer->length - 1;
   padlength = *pad;
 
   for (i = padlength; i >= 0 && *pad == padlength; i--, pad--)
