@@ -47,9 +47,9 @@ such as eth0. See the smb.conf man page for the details
 on the new features of the "interfaces" parameter.
 nmbd has been enhanced to use this feature.
 
-The syntax for the Linux-specific smbmount command
-has been changed. See the modified smbmount man page
-for details.
+The syntax for the Linux-specific smbmount command has been changed
+and is now compatibe with the standard mount command. See the modified
+smbmount man page for details.
 
 Support for the UNIX CUPS printer standard has been added.
 See www.cups.org for details. Thanks to the folks at Easy Software
