@@ -1898,10 +1898,13 @@ static void api_samr_open_alias( rpcsrv_struct *p, prs_struct *data, prs_struct 
 /*******************************************************************
  samr_reply_open_group
  ********************************************************************/
+/* XXXX this entire function is going to go, as most of it's already
+  in _samr_open_group()
+ */
 static void samr_reply_open_group(SAMR_Q_OPEN_GROUP *q_u,
 				prs_struct *rdata)
 {
-	SAMR_R_OPEN_GROUP r_u;
+	SAMR_R_OPEN_GROUP r_u; /* XXXX cut/paste this line to below (1)! */
 	DOM_SID sid;
 
 	DEBUG(5,("samr_open_group: %d\n", __LINE__));
@@ -1925,7 +1928,7 @@ static void samr_reply_open_group(SAMR_Q_OPEN_GROUP *q_u,
 	}
 
 	/* store the response in the SMB stream */
-	samr_io_r_open_group("", &r_u, rdata, 0);
+	samr_io_r_open_group("", &r_u, rdata, 0); /* XXXX cut/paste to (2) */
 
 	DEBUG(5,("samr_open_group: %d\n", __LINE__));
 
@@ -1938,9 +1941,20 @@ static void api_samr_open_group( rpcsrv_struct *p, prs_struct *data, prs_struct 
                                 
 {
 	SAMR_Q_OPEN_GROUP q_u;
+	/* XXXX (1) HERE! */
 	samr_io_q_open_group("", &q_u, data, 0);
-	samr_reply_open_group(&q_u, rdata);
+	samr_reply_open_group(&q_u, rdata); /* XXXX replace me with a call
+		                               to _samr_open_group() instead! */
+
+	/* XXXX (2) HERE ! */
 }
+
+/* XXXX if you've completed the cut/pastes (1) and (2), you can delete
+   samr_reply_open_group().  do make bin/samrd and then send me a patch
+
+   do these one-at-a-time so i can check them and make sure we meet in the
+   middle!
+   */
 
 /*******************************************************************
  samr_reply_lookup_domain
