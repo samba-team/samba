@@ -241,7 +241,12 @@ void winbindd_kill_connections(struct winbindd_domain *domain)
 		is_server = True;
 	}
 
-	DEBUG(3, ("killing connections to domain %s\n", domain->name));
+	/* Log a level 0 message - this is probably a domain controller
+	   failure */
+
+	DEBUG(0, ("killing connections to domain %s with controller %s\n", 
+		  domain->name, domain->controller));
+
 	debug_conn_state();
 
 	if (is_server) {
@@ -860,4 +865,26 @@ BOOL check_domain_env(char *domain_env, char *domain)
 	}
 
 	return False;
+}
+
+
+/* Parse a string of the form DOMAIN/user into a domain and a user */
+
+void parse_domain_user(char *domuser, fstring domain, fstring user)
+{
+	char *p;
+	char *sep = lp_winbind_separator();
+	if (!sep) sep = "\\";
+	p = strchr(domuser,*sep);
+	if (!p) p = strchr(domuser,'\\');
+	if (!p) {
+		fstrcpy(domain,"");
+		fstrcpy(user, domuser);
+		return;
+	}
+	
+	fstrcpy(user, p+1);
+	fstrcpy(domain, domuser);
+	domain[PTR_DIFF(p, domuser)] = 0;
+	strupper(domain);
 }
