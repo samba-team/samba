@@ -437,7 +437,6 @@ static void usage(char *pname)
 {
 	extern char 		*optarg;
 	extern int 		optind;
-	struct in_addr 		dest_ip;
 	extern pstring 		global_myname;
 	BOOL 			got_pass = False;
 	BOOL 			interactive = True;
@@ -473,7 +472,7 @@ static void usage(char *pname)
 	argv++;
 	argc--;
 
-	while ((opt = getopt(argc, argv, "A:s:Nd:I:U:W:c:l:")) != EOF) {
+	while ((opt = getopt(argc, argv, "A:s:Nd:U:W:c:l:")) != EOF) {
 		switch (opt) {
 		case 'A':
 			/* only get the username, password, and domain from the file */
@@ -490,10 +489,6 @@ static void usage(char *pname)
 			DEBUGLEVEL = atoi(optarg);
 			break;
 
-		case 'I':
-			dest_ip = *interpret_addr2(optarg);
-			break;
-			
 		case 'l':
 			slprintf(debugf, sizeof(debugf) - 1, "%s.client", optarg);
 			interactive = False;
