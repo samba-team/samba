@@ -1,3 +1,8 @@
+Changes in release 0.1g:
+
+ * krb5-aware kx
+ * bug fixes
+
 Changes in release 0.1f;
 
  * experimental support for v4 kadmin protokoll in kadmind
