@@ -69,4 +69,9 @@
 	width:84px;
 	height:40px;
 }
-
+.view_conf {
+  float:right;
+  position:relative;
+  top:-130px;
+}
+}

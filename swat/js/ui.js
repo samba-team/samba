@@ -95,7 +95,7 @@ window.onload = function initPage(e)
 	window.captureEvents(Event.KEYPRESS);
 	window.onkeypress = catchHardReload;
 	
-	if (location.href.indexOf('help') > -1) {
+	if (location.href.indexOf('help') > -1 || location.href.indexOf('viewconfig') > -1) {
 		// Init iframe for file loads
 		setStage();
 

@@ -572,17 +572,6 @@ static void welcome_page(void)
 }
 
 /****************************************************************************
-  display splash page with conf options  
-****************************************************************************/
-static void conf_page(void)
-{
-	printf("  <div class=\"whereto\">\n");
-	printf("    <h2>Configuring Samba</h2>\n\n");
-	printf("    <p>The following options are available for editing your Samba configuration</p>\n");
-	printf("  </div\n");
-}
-
-/****************************************************************************
   display help page  
 ****************************************************************************/
 static void help_page(void)
@@ -837,14 +826,19 @@ static void wizard_page(void)
 
 
 /****************************************************************************
-  display a globals editing page  
+  display a conf page for editing global parameters 
 ****************************************************************************/
-static void globals_page(void)
+static void conf_page(void)
 {
 	unsigned int parm_filter = FLAG_BASIC;
 	int mode = 0;
 
-	printf("<H2>%s</H2>\n", _("Global Parameters"));
+	printf("  <div class=\"whereto\">\n");
+	printf("    <h2>Configuring Samba</h2>\n\n");
+	printf("    <p>The following menu allows for editing of global parameters affecting your Samba configuration.</p>\n");
+	printf("  </div\n");
+
+	printf("  <div class=\"view_conf\"><a href=\"viewconfig\" onclick=\"openHelp(this.href); return false\">View smb.conf file</a></div>\n\n");
 
 	if (cgi_variable("Commit")) {
 		commit_parameters(GLOBAL_SECTION_SNUM);
@@ -858,7 +852,7 @@ static void globals_page(void)
 	if ( cgi_variable("AdvMode"))
 		mode = 1;
 
-	printf("<form name=\"swatform\" method=post action=globals>\n");
+	printf("<form name=\"swatform\" method=post action=conf>\n");
 
 	ViewModeBoxes( mode );
 	switch ( mode ) {
@@ -1423,8 +1417,6 @@ static void printers_page(void)
 		viewconfig_page();
 	} else if (have_read_access && strcmp(page,"rewritecfg")==0) {
 		rewritecfg_file();
-	} else if (have_read_access && strcmp(page, "globals")==0) {
-		globals_page();
 	} else if (have_read_access && strcmp(page,"services")==0) {
 		services_page();
 	} else if (have_read_access && strcmp(page,"shares")==0) {
