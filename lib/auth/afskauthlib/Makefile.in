@@ -23,11 +23,12 @@ prefix = @prefix@
 exec_prefix = @exec_prefix@
 libdir = @libdir@
 
-LIB_DEPS = -L../../kafs -lkafs			\
-	   -L../../krb -lkrb			\
-	   -L../../des -ldes			\
-	   -L../../roken -lroken		\
-	   -lc
+@lib_deps_yes@LIB_DEPS = -L../../kafs -lkafs			\
+@lib_deps_yes@	   -L../../krb -lkrb			\
+@lib_deps_yes@	   -L../../des -ldes			\
+@lib_deps_yes@	   -L../../roken -lroken		\
+@lib_deps_yes@	   -lc
+@lib_deps_no@LIB_DEPS =
 
 PICFLAGS = @REAL_PICFLAGS@
 LDSHARED = @LDSHARED@

@@ -29,7 +29,7 @@ libdir = @libdir@
 
 PICFLAGS = @PICFLAGS@
  
-LIB_DEPS = $(LIB_DBM) -lc
+LIB_DEPS = @lib_deps_yes@ $(LIB_DBM) -lc
 build_symlink_command   = @build_symlink_command@
 install_symlink_command = @install_symlink_command@
 

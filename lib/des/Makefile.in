@@ -31,7 +31,7 @@ EXECSUFFIX=@EXECSUFFIX@
 
 PICFLAGS = @PICFLAGS@
  
-LIB_DEPS = -lc
+LIB_DEPS = @lib_deps_yes@ -lc
 build_symlink_command   = @build_symlink_command@
 install_symlink_command = @install_symlink_command@
 

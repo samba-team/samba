@@ -27,8 +27,9 @@ LDSHARED = @LDSHARED@
 SHLIBEXT = @REAL_SHLIBEXT@
 LD_FLAGS = @REAL_LD_FLAGS@
  
-LIB_DEPS = -L../../kafs -L../../krb -L../../des -L../../roken \
-	   -lkafs -lkrb -ldes -lroken -lc
+@lib_deps_yes@LIB_DEPS = -L../../kafs -L../../krb -L../../des -L../../roken \
+@lib_deps_yes@	   -lkafs -lkrb -ldes -lroken -lc
+@lib_deps_no@LIB_DEPS =
 
 LIB = pam_krb4.$(SHLIBEXT)
 

@@ -28,13 +28,14 @@ LDSHARED = @LDSHARED@
 SHLIBEXT = @REAL_SHLIBEXT@
 LD_FLAGS = @REAL_LD_FLAGS@
  
-LIB_DEPS = -L../../kafs -lkafs			\
-	   -L../../kadm -lkadm			\
-	   -L../../krb -lkrb			\
-	   -L../../des -ldes			\
-	   -L../../roken -lroken		\
-	   @LIB_getpwnam_r@			\
-	   -lc
+@lib_deps_yes@LIB_DEPS = -L../../kafs -lkafs			\
+@lib_deps_yes@	   -L../../kadm -lkadm			\
+@lib_deps_yes@	   -L../../krb -lkrb			\
+@lib_deps_yes@	   -L../../des -ldes			\
+@lib_deps_yes@	   -L../../roken -lroken		\
+@lib_deps_yes@	   @LIB_getpwnam_r@			\
+@lib_deps_yes@	   -lc
+@lib_deps_no@LIB_DEPS =
 
 LIB = libsia_krb4.$(SHLIBEXT)
 
