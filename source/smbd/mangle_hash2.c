@@ -87,6 +87,13 @@ static unsigned char char_flags[256];
 
 #define FLAG_CHECK(c, flag) (char_flags[(unsigned char)(c)] & (flag))
 
+/*
+  this determines how many characters are used from the original filename
+  in the 8.3 mangled name. A larger value leads to a weaker hash and more collisions.
+  The largest possible value is 6.
+*/
+static unsigned mangle_prefix;
+
 /* we will use a very simple direct mapped prefix cache. The big
    advantage of this cache structure is speed and low memory usage 
 
@@ -217,16 +224,18 @@ static BOOL is_mangled_component(const char *name)
 		}
 	}
 	
-	/* check first character */
-	if (! FLAG_CHECK(name[0], FLAG_ASCII)) {
-		return False;
+	/* check lead characters */
+	for (i=0;i<mangle_prefix;i++) {
+		if (! FLAG_CHECK(name[i], FLAG_ASCII)) {
+			return False;
+		}
 	}
 	
 	/* check rest of hash */
 	if (! FLAG_CHECK(name[7], FLAG_BASECHAR)) {
 		return False;
 	}
-	for (i=1;i<6;i++) {
+	for (i=mangle_prefix;i<6;i++) {
 		if (! FLAG_CHECK(name[i], FLAG_BASECHAR)) {
 			return False;
 		}
@@ -371,7 +380,7 @@ static BOOL check_cache(char *name)
 
 	/* we need to extract the hash from the 8.3 name */
 	hash = base_reverse[(unsigned char)name[7]];
-	for (multiplier=36, i=5;i>=1;i--) {
+	for (multiplier=36, i=5;i>=mangle_prefix;i--) {
 		u32 v = base_reverse[(unsigned char)name[i]];
 		hash += multiplier * v;
 		multiplier *= 36;
@@ -478,7 +487,7 @@ static BOOL is_legal_name(const char *name)
 static void name_map(char *name, BOOL need83, BOOL cache83)
 {
 	char *dot_p;
-	char lead_char;
+	char lead_chars[7];
 	char extension[4];
 	int extension_length, i;
 	int prefix_len;
@@ -516,15 +525,20 @@ static void name_map(char *name, BOOL need83, BOOL cache83)
 		if (i == 0 || i == 4) dot_p = NULL;
 	}
 
-	/* the leading character in the mangled name is taken from
-	   the first character of the name, if it is ascii 
-	   otherwise '_' is used
+	/* the leading characters in the mangled name is taken from
+	   the first characters of the name, if they are ascii otherwise
+	   '_' is used
 	*/
-	lead_char = name[0];
-	if (! FLAG_CHECK(lead_char, FLAG_ASCII)) {
-		lead_char = '_';
+	for (i=0;i<mangle_prefix && name[i];i++) {
+		lead_chars[i] = name[i];
+		if (! FLAG_CHECK(lead_chars[i], FLAG_ASCII)) {
+			lead_chars[i] = '_';
+		}
+		lead_chars[i] = toupper(lead_chars[i]);
 	}
-	lead_char = toupper(lead_char);
+	for (;i<mangle_prefix;i++) {
+		lead_chars[i] = '_';
+	}
 
 	/* the prefix is anything up to the first dot */
 	if (dot_p) {
@@ -549,10 +563,12 @@ static void name_map(char *name, BOOL need83, BOOL cache83)
 	v = hash = mangle_hash(name, prefix_len);
 
 	/* now form the mangled name. */
-	new_name[0] = lead_char;
+	for (i=0;i<mangle_prefix;i++) {
+		new_name[i] = lead_chars[i];
+	}
 	new_name[7] = base_forward(v % 36);
 	new_name[6] = '~';	
-	for (i=5; i>=1; i--) {
+	for (i=5; i>=mangle_prefix; i--) {
 		v = v / 36;
 		new_name[i] = base_forward(v % 36);
 	}
@@ -594,7 +610,7 @@ static void init_tables(void)
 
 	memset(char_flags, 0, sizeof(char_flags));
 
-	for (i=0;i<128;i++) {
+	for (i=1;i<128;i++) {
 		if ((i >= '0' && i <= '9') || 
 		    (i >= 'a' && i <= 'z') || 
 		    (i >= 'A' && i <= 'Z')) {
@@ -656,6 +672,15 @@ static struct mangle_fns mangle_fns = {
 /* return the methods for this mangling implementation */
 struct mangle_fns *mangle_hash2_init(void)
 {
+	/* the mangle prefix can only be in the mange 1 to 6 */
+	mangle_prefix = lp_mangle_prefix();
+	if (mangle_prefix > 6) {
+		mangle_prefix = 6;
+	}
+	if (mangle_prefix < 1) {
+		mangle_prefix = 1;
+	}
+
 	init_tables();
 	mangle_reset();
 
