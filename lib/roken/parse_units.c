@@ -206,7 +206,7 @@ unparse_something (int num, const struct units *units, char *s, size_t len,
 	int divisor;
 
 	divisor = num / u->mult;
-	if (div) {
+	if (divisor) {
 	    num = (*update) (num, u->mult);
 	    tmp = (*print) (s, len, divisor, u->name, num);
 	    if (tmp < 0)
