@@ -41,6 +41,7 @@
 .Nm krb5_crypto_getpadsize ,
 .Nm krb5_decrypt ,
 .Nm krb5_decrypt_EncryptedData ,
+.Nm krb5_decrypt_ticket ,
 .Nm krb5_encrypt ,
 .Nm krb5_encrypt_EncryptedData,
 .Nm krb5_enctype_disable ,
@@ -61,6 +62,8 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fn krb5_decrypt "krb5_context context" "krb5_crypto crypto" "unsigned usage" "void *data" "size_t len" "krb5_data *result"
 .Ft krb5_error_code
 .Fn krb5_decrypt_EncryptedData "krb5_context context" "krb5_crypto crypto" "unsigned usage" "EncryptedData *e" "krb5_data *result"
+.Ft krb5_error_code
+.Fn krb5_decrypt_ticket "krb5_context context" "Ticket *ticket" "krb5_keyblock *key" "EncTicketPart *out" "krb5_flags flags"
 .Ft krb5_error_code
 .Fo krb5_crypto_getblocksize
 .Fa "krb5_context context"
@@ -139,6 +142,15 @@ is not zero, it will be put in the
 and
 .Fn krb5_decrypt_EncryptedData
 works similarly.
+.Pp
+.Fn krb5_decrypt_ticket
+decrypts the encrypted part of 
+.Fa ticket
+with
+.Fa key .
+.Fn krb5_decrypt_ticket
+also verifies the timestamp in the ticket, invalid flag and if the KDC
+haven't verified the transited path, the transit path.
 .Pp
 .Fn krb5_enctype_keysize ,
 .Fn krb5_crypto_getconfoundersize ,
