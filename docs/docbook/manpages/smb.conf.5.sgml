@@ -334,29 +334,6 @@
 
 	<variablelist>
 		<varlistentry>
-		<term>%S</term>
-		<listitem><para>the name of the current service, if any.</para>
-		</listitem>
-		</varlistentry>
-		
-		<varlistentry>
-		<term>%P</term>
-		<listitem><para>the root directory of the current service, 
-		if any.</para></listitem>
-		</varlistentry>
-		
-		<varlistentry>
-		<term>%u</term>
-		<listitem><para>user name of the current service, if any.</para>
-		</listitem>
-		</varlistentry>
-		
-		<varlistentry>
-		<term>%g</term>
-		<listitem><para>primary group name of %u.</para></listitem>
-		</varlistentry>
-		
-		<varlistentry>
 		<term>%U</term>
 		<listitem><para>session user name (the user name that the client 
 		wanted, not necessarily the same as the one they got).</para></listitem>
@@ -367,17 +344,6 @@
 		<listitem><para>primary group name of %U.</para></listitem>
 		</varlistentry>
 
-		<varlistentry>
-		<term>%H</term>
-		<listitem><para>the home directory of the user given 
-		by %u.</para></listitem>
-		</varlistentry>
-		
-		<varlistentry>
-		<term>%v</term>
-		<listitem><para>the Samba version.</para></listitem>
-		</varlistentry>
-		
 		<varlistentry>
 		<term>%h</term>
 		<listitem><para>the Internet hostname that Samba is running 
@@ -406,22 +372,6 @@
 		<term>%M</term>
 		<listitem><para>the Internet name of the client machine.
 		</para></listitem>
-		</varlistentry>
-		
-		<varlistentry>
-		<term>%N</term>
-		<listitem><para>the name of your NIS home directory server.  
-		This is obtained from your NIS auto.map entry.  If you have 
-		not compiled Samba with the <emphasis>--with-automount</emphasis> 
-		option then this value will be the same as %L.</para>
-		</listitem>
-		</varlistentry>
-		
-		<varlistentry>
-		<term>%p</term>
-		<listitem><para>the path of the service's home directory, 
-		obtained from your NIS auto.map entry. The NIS auto.map entry 
-		is split up as "%N:%p".</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
@@ -458,6 +408,11 @@
 		<term>%T</term>
 		<listitem><para>the current date and time.</para></listitem>
 		</varlistentry>
+
+		<varlistentry>
+		<term>%D</term>
+		<listitem><para>Name of the domain or workgroup of the current user.</para></listitem>
+		</varlistentry>
 		
 		<varlistentry>
 		<term>%$(<replaceable>envvar</replaceable>)</term>
@@ -466,6 +421,56 @@
 		</varlistentry>
 	</variablelist>
 
+	<para>The following substitutes apply only to some configuration options(only those 
+	that are used when a connection has been established):</para>
+
+	<variablelist>
+		<varlistentry>
+		<term>%S</term>
+		<listitem><para>the name of the current service, if any.</para>
+		</listitem>
+		</varlistentry>
+	
+		<varlistentry>
+		<term>%P</term>
+		<listitem><para>the root directory of the current service, 
+		if any.</para></listitem>
+		</varlistentry>
+	
+		<varlistentry>
+		<term>%u</term>
+		<listitem><para>user name of the current service, if any.</para>
+		</listitem>
+		</varlistentry>
+	
+		<varlistentry>
+		<term>%g</term>
+		<listitem><para>primary group name of %u.</para></listitem>
+		</varlistentry>
+	
+		<varlistentry>
+		<term>%H</term>
+		<listitem><para>the home directory of the user given 
+		by %u.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>%N</term>
+		<listitem><para>the name of your NIS home directory server.  
+		This is obtained from your NIS auto.map entry.  If you have 
+		not compiled Samba with the <emphasis>--with-automount</emphasis> 
+		option then this value will be the same as %L.</para>
+		</listitem>
+		</varlistentry>
+	
+		<varlistentry>
+		<term>%p</term>
+		<listitem><para>the path of the service's home directory, 
+		obtained from your NIS auto.map entry. The NIS auto.map entry 
+		is split up as "%N:%p".</para></listitem>
+		</varlistentry>
+	</variablelist>
+	
 	<para>There are some quite creative things that can be done 
 	with these substitutions and other smb.conf options.</para
 </refsect1>
@@ -528,7 +533,7 @@
 		</varlistentry> 
 	</variablelist>
 	
-	<para>By default, Samba 2.2 has the same semantics as a Windows 
+	<para>By default, Samba 3.0 has the same semantics as a Windows 
 	NT server, in that it is case insensitive but case preserving.</para>
 	
 </refsect1>
@@ -1393,12 +1398,12 @@
 		request has a time limit associated with it.</para>
 		
 		<para>If this parameter is set and the lock range requested 
-		cannot be immediately satisfied, Samba 2.2 will internally 
+		cannot be immediately satisfied, samba will internally 
 		queue the lock request, and periodically attempt to obtain 
 		the lock until the timeout period expires.</para>
 
 		<para>If this parameter is set to <constant>no</constant>, then 
-		Samba 2.2 will behave as previous versions of Samba would and 
+		samba will behave as previous versions of Samba would and 
 		will fail the lock request immediately if the lock range 
 		cannot be obtained.</para>
 
@@ -1746,7 +1751,7 @@
 
 		<varlistentry>
 		<term><anchor id="DEBUGTIMESTAMP">debug timestamp (G)</term>
-		<listitem><para>Samba 2.2 debug log messages are timestamped 
+		<listitem><para>Samba debug log messages are timestamped 
 		by default. If you are running at a high <link linkend="DEBUGLEVEL">
 		<parameter>debug level</parameter></link> these timestamps
 		can be distracting. This boolean parameter allows timestamping 
