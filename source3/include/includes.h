@@ -1219,9 +1219,9 @@ extern char *sys_errlist[];
 #endif
 
 /* Lists, trees, caching, datbase... */
-#include "ubiqx/ubi_dLinkList.h"
+#include "ubi_dLinkList.h"
 #ifndef UBI_BINTREE_H
-#include "ubiqx/ubi_Cache.h"
+#include "ubi_Cache.h"
 #endif /* UBI_BINTREE_H */
 
 #include "version.h"
