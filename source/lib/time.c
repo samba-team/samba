@@ -253,9 +253,13 @@ time_t interpret_long_date(char *p)
   double d;
   time_t ret;
   uint32 tlow,thigh;
+  /* The next two lines are a fix needed for the 
+     broken SCO compiler. JRA. */
+  time_t l_time_min = TIME_T_MIN;
+  time_t l_time_max = TIME_T_MAX;
+
   tlow = IVAL(p,0);
   thigh = IVAL(p,4);
-
   if (thigh == 0) return(0);
 
   d = ((double)thigh)*4.0*(double)(1<<30);
@@ -265,7 +269,7 @@ time_t interpret_long_date(char *p)
   /* now adjust by 369 years to make the secs since 1970 */
   d -= TIME_FIXUP_CONSTANT;
 
-  if (!(TIME_T_MIN <= d && d <= TIME_T_MAX))
+  if (!(l_time_min <= d && d <= l_time_max))
     return(0);
 
   ret = (time_t)(d+0.5);

@@ -1049,8 +1049,18 @@ struct parm_struct
 
 /* these are the constants used in the above call. */
 /* DesiredAccess */
-#if 0
-/* TODO.... JRA */
+/* File Specific access rights. */
+#define FILE_READ_DATA        0x001
+#define FILE_WRITE_DATA       0x002
+#define FILE_APPEND_DATA      0x004
+#define FILE_READ_EA          0x008
+#define FILE_WRITE_EA         0x010
+#define FILE_EXECUTE          0x020
+#define FILE_DELETE_CHILD     0x040
+#define FILE_READ_ATTRIBUTES  0x080
+#define FILE_WRITE_ATTRIBUTES 0x100
+ 
+/* Generic access masks & rights. */
 #define SPECIFIC_RIGHTS_MASK 0x00FFFFL
 #define STANDARD_RIGHTS_MASK 0xFF0000L
 #define DELETE_ACCESS        (1L<<16)
@@ -1059,10 +1069,6 @@ struct parm_struct
 #define WRITE_OWNER_ACCESS   (1L<<19)
 #define SYNCHRONIZE_ACCESS   (1L<<20)
 #define SYSTEM_SECURITY_ACCESS (1L<<24)
-
-#define GENERIC_READ xxx?
-#define GENERIC_WRITE xxx?
-#endif
 
 /* Flags field. */
 #define REQUEST_OPLOCK 2

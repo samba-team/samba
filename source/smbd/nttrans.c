@@ -55,19 +55,20 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   pstring fname;
   int cnum = SVAL(inbuf,smb_tid);
   int fnum = -1;
-  int smb_mode = SVAL(inbuf,smb_vwv3);
+  uint32 flags = SIVAL(inbuf,smb_ntcreate_Flags);
+  uint32 desired_access = SIVAL(inbuf,smb_ntcreate_DesiredAccess);
+  uint32 file_attributes = SIVAL(inbuf,smb_ntcreate_FileAttributes);
+  uint32 share_access = SIVAL(inbuf,smb_ntcreate_ShareAccess);
+  uint32 create_disposition = SIVAL(inbuf,smb_ntcreate_CreateDisposition);
+
+  int smb_ofun;
+  int smb_open_mode;
   int smb_attr = SVAL(inbuf,smb_vwv5);
   /* Breakout the oplock request bits so we can set the
      reply bits separately. */
-  BOOL ex_oplock_request = EXTENDED_OPLOCK_REQUEST(inbuf);
+  BOOL ex_oplock_request = flags & 
   BOOL core_oplock_request = CORE_OPLOCK_REQUEST(inbuf);
   BOOL oplock_request = ex_oplock_request | core_oplock_request;
-#if 0
-  int open_flags = SVAL(inbuf,smb_vwv2);
-  int smb_sattr = SVAL(inbuf,smb_vwv4);
-  uint32 smb_time = make_unix_date3(inbuf+smb_vwv6);
-#endif 
-  int smb_ofun = SVAL(inbuf,smb_vwv8);
   int unixmode;
   int size=0,fmode=0,mtime=0,rmode=0;
   struct stat sbuf;
@@ -77,10 +78,87 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     
   /* If it's an IPC, pass off the pipe handler. */
   if (IS_IPC(cnum))
-    return reply_open_pipe_and_X(inbuf,outbuf,length,bufsize);
-    
-  /* XXXX we need to handle passed times, sattr and flags */
-    
+    return nt_open_pipe_and_X(inbuf,outbuf,length,bufsize);
+
+  /* If it's a request for a directory open, fail it. */
+  if(flags & OPEN_DIRECTORY)
+    return(ERROR(ERRSRV,ERRfilespecs));
+
+  /* 
+   * We need to construct the open_and_X ofun value from the
+   * NT values, as that's what our code is structured to accept.
+   */    
+
+  switch( create_disposition ) {
+  case CREATE_NEW:
+    /* create if not exist, fail if exist */
+    smb_ofun = 0x10;
+    break;
+  case CREATE_ALWAYS:
+    /* create if not exist, trunc if exist */
+    smb_ofun = 0x12;
+    break;
+  case OPEN_EXISTING:
+    /* fail if not exist, open if exists */
+    smb_ofun = 0x1;
+    break;
+  case OPEN_ALWAYS:
+    /* create if not exist, open if exists */
+    smb_ofun = 0x11;
+    break;
+  case TRUNCATE_EXISTING:
+    /* fail if not exist, truncate if exists */
+    smb_ofun = 0x2;
+    break;
+  default:
+    DEBUG(0,("reply_ntcreate_and_X: Incorrect value for create_disposition = %d\n",
+             create_disposition ));
+    return(ERROR(ERRDOS,ERRbadaccess));
+  }
+
+  /*
+   * Now contruct the smb_open_mode value from the desired access
+   * and the share access.
+   */
+
+  switch( desired_access & (FILE_READ_DATA|FILE_WRITE_DATA) ) {
+  case FILE_READ_DATA:
+    smb_open_mode = 0;
+    break;
+  case FILE_WRITE_DATA:
+    smb_open_mode = 1;
+    break;
+  case FILE_READ_DATA|FILE_WRITE_DATA:
+    smb_open_mode = 2;
+    break;
+  default:
+    DEBUG(0,("reply_ntcreate_and_X: Incorrect value for desired_access = %x\n",
+             desired_access));
+    return(ERROR(ERRDOS,ERRbadaccess));
+  }
+
+  /* Add in the requested share mode - ignore FILE_SHARE_DELETE for now. */
+  switch( share_access & (FILE_SHARE_READ|FILE_SHARE_WRITE)) {
+  case FILE_SHARE_READ:
+    smb_open_mode |= (DENY_WRITE<<4);
+    break;
+  case FILE_SHARE_WRITE:
+    smb_open_mode |= (DENY_READ<<4);
+    break;
+  case (FILE_SHARE_READ|FILE_SHARE_WRITE):
+    smb_open_mode |= (DENY_NONE<<4);
+    break;
+  case FILE_SHARE_NONE:
+    smb_open_mode |= (DENY_ALL<<4);
+    break;
+  }
+
+  /*
+   * Handle a O_SYNC request.
+   */
+  if(file_attributes & FILE_FLAG_WRITE_THROUGH)
+    smb_open_mode |= (1<<14);
+
   pstrcpy(fname,smb_buf(inbuf));
   unix_convert(fname,cnum,0,&bad_path);
     
@@ -100,7 +178,7 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   
   unixmode = unix_mode(cnum,smb_attr | aARCH);
     
-  open_file_shared(fnum,cnum,fname,smb_mode,smb_ofun,unixmode,
+  open_file_shared(fnum,cnum,fname,smb_open_mode,smb_ofun,unixmode,
            oplock_request, &rmode,&smb_action);
 
   fsp = &Files[fnum];
