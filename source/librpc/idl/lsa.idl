@@ -458,10 +458,11 @@
 	NTSTATUS lsa_LookupPrivDisplayName (
 		[in,ref]     policy_handle *handle,
 		[in,ref]     lsa_Name *name,
-		[in]         uint16 unknown,     /* 0x0409 */
-		[in]         uint16 unknown2,    /* 0x0409 */
 		[out]        lsa_Name *disp_name,
-		[out]        uint16 unknown3     /* 0x0409 */
+		/* see http://www.microsoft.com/globaldev/nlsweb/ for
+		   language definitions */
+		[in,out,ref] uint16 *language_id,
+		[in]         uint16 unknown
 		);
 
 	/* Function:        0x22 */
