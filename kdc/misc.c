@@ -45,11 +45,10 @@ struct timeval now;
 hdb_entry*
 db_fetch(krb5_principal principal)
 {
-    HDB *db;
     hdb_entry *ent;
     krb5_error_code ret;
 
-    ret = hdb_open(context, &db, database, O_RDONLY, 0);
+    ret = db->open(context, db, O_RDONLY, 0);
     if (ret) {
 	kdc_log(0, "Failed to open database: %s", 
 		krb5_get_err_text(context, ret));
@@ -64,31 +63,4 @@ db_fetch(krb5_principal principal)
 	return NULL;
     }
     return ent;
-}
-
-static krb5_data master_key;
-static int master_key_set;
-
-void
-set_master_key(EncryptionKey key)
-{
-    krb5_error_code ret;
-    ret = hdb_process_master_key(context, key, &master_key);
-    if(ret)
-	krb5_err(context, 1, ret, "Error processing master key file");
-    des_set_random_generator_seed(key.keyvalue.data);
-    master_key_set = 1;
-}
-
-Key *
-unseal_key(Key *key)
-{
-    Key *new;
-    if(master_key_set){
-	new = hdb_unseal_key(key, master_key);
-    }else{
-	new = ALLOC(new);
-	copy_Key(key, new);
-    }
-    return new;
 }
