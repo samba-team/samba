@@ -1,5 +1,14 @@
+2004-08-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5.3: krb5_free_salt and krb5_enctype_valid
+
+	* lib/krb5/krb5_encrypt.3: document krb5_enctype_valid
+	
 2004-08-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/kerberos5.c (get_pa_etype_info{,2}): check for dup enctypes
+	from the client and filter them out.
+	
 	* lib/krb5/krb5_string_to_key.3: document krb5_free_salt
 	
 2004-08-12  Love Hörnquist Åstrand  <lha@it.su.se>
