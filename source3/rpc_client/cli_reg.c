@@ -1,0 +1,645 @@
+
+/* 
+ *  Unix SMB/Netbios implementation.
+ *  Version 1.9.
+ *  RPC Pipe client / server routines
+ *  Copyright (C) Andrew Tridgell              1992-1997,
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
+ *  Copyright (C) Paul Ashton                       1997.
+ *  
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
+
+#ifdef SYSLOG
+#undef SYSLOG
+#endif
+
+#include "includes.h"
+
+extern int DEBUGLEVEL;
+
+
+/****************************************************************************
+do a REG Open Policy
+****************************************************************************/
+BOOL do_reg_open_policy(struct cli_state *cli, uint16 unknown_0, uint32 level,
+				POLICY_HND *hnd)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	REG_Q_OPEN_POLICY q_o;
+	BOOL valid_pol = False;
+
+	if (hnd == NULL) return False;
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api REG_OPEN_POLICY */
+
+	DEBUG(4,("REG Open Policy\n"));
+
+	make_reg_q_open_pol(&q_o, unknown_0, level);
+
+	/* turn parameters into data stream */
+	reg_io_q_open_policy("", &q_o, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, REG_OPEN_POLICY, &buf, &rbuf))
+	{
+		REG_R_OPEN_POLICY r_o;
+		BOOL p;
+
+		ZERO_STRUCT(r_o);
+
+		reg_io_r_open_policy("", &r_o, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("REG_OPEN_POLICY: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			/* ok, at last: we're happy. return the policy handle */
+			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
+			valid_pol = True;
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_pol;
+}
+
+/****************************************************************************
+do a REG Open Unknown 4
+****************************************************************************/
+BOOL do_reg_open_unk_4(struct cli_state *cli, uint16 unknown_0, uint32 level,
+				POLICY_HND *hnd)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	REG_Q_OPEN_UNK_4 q_o;
+	BOOL valid_pol = False;
+
+	if (hnd == NULL) return False;
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api REG_OPEN_UNK_4 */
+
+	DEBUG(4,("REG Open Unknown4\n"));
+
+	make_reg_q_open_unk_4(&q_o, unknown_0, level);
+
+	/* turn parameters into data stream */
+	reg_io_q_open_unk_4("", &q_o, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, REG_OPEN_UNK_4, &buf, &rbuf))
+	{
+		REG_R_OPEN_UNK_4 r_o;
+		BOOL p;
+
+		ZERO_STRUCT(r_o);
+
+		reg_io_r_open_unk_4("", &r_o, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("REG_OPEN_UNK_4: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			/* ok, at last: we're happy. return the policy handle */
+			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
+			valid_pol = True;
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_pol;
+}
+
+/****************************************************************************
+do a REG Query Unknown 10
+****************************************************************************/
+BOOL do_reg_query_unk_10(struct cli_state *cli, POLICY_HND *hnd,
+				uint32 *unknown_0, uint32 *unknown_1,
+				uint32 *num_subkeys, uint32 *max_subkeylen,
+				uint32 *unknown_4, uint32 *num_values,
+				uint32 *max_valnamelen, uint32 *max_valbufsize,
+				uint32 *unknown_8, NTTIME *mod_time)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	REG_Q_QUERY_UNK_10 q_o;
+	BOOL valid_query = False;
+
+	if (hnd == NULL) return False;
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api REG_QUERY_UNK_10 */
+
+	DEBUG(4,("REG Query Unknown 10\n"));
+
+	make_reg_q_query_unk_10(&q_o, hnd);
+
+	/* turn parameters into data stream */
+	reg_io_q_query_unk_10("", &q_o, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, REG_QUERY_UNK_10, &buf, &rbuf))
+	{
+		REG_R_QUERY_UNK_10 r_o;
+		BOOL p;
+
+		ZERO_STRUCT(r_o);
+
+		reg_io_r_query_unk_10("", &r_o, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("REG_QUERY_UNK_10: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_query = True;
+			
+			*unknown_0      = r_o.unknown_0     ;
+			*unknown_1      = r_o.unknown_1     ;
+			*num_subkeys    = r_o.num_subkeys   ;
+			*max_subkeylen  = r_o.max_subkeylen ;
+			*unknown_4      = r_o.unknown_4     ;
+			*num_values     = r_o.num_values    ;
+			*max_valnamelen = r_o.max_valnamelen;
+			*max_valbufsize = r_o.max_valbufsize;
+			*unknown_8      = r_o.unknown_8    ;
+			*mod_time       = r_o.mod_time     ;
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_query;
+}
+
+/****************************************************************************
+do a REG Unknown 1A
+****************************************************************************/
+BOOL do_reg_unknown_1a(struct cli_state *cli, POLICY_HND *hnd, uint32 *unk)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	REG_Q_UNK_1A q_o;
+	BOOL valid_query = False;
+
+	if (hnd == NULL) return False;
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api REG_UNKNOWN_1A */
+
+	DEBUG(4,("REG Unknown 1a\n"));
+
+	make_reg_q_unk_1a(&q_o, hnd);
+
+	/* turn parameters into data stream */
+	reg_io_q_unk_1a("", &q_o, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, REG_UNK_1A, &buf, &rbuf))
+	{
+		REG_R_UNK_1A r_o;
+		BOOL p;
+
+		ZERO_STRUCT(r_o);
+
+		reg_io_r_unk_1a("", &r_o, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("REG_UNK_1A: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_query = True;
+			(*unk) = r_o.unknown;
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_query;
+}
+
+/****************************************************************************
+do a REG Query Info
+****************************************************************************/
+BOOL do_reg_query_info(struct cli_state *cli, POLICY_HND *hnd,
+				char *type, uint32 *unk_0, uint32 *unk_1)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	REG_Q_INFO q_o;
+	BOOL valid_query = False;
+
+	if (hnd == NULL) return False;
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api REG_INFO */
+
+	DEBUG(4,("REG Query Info\n"));
+
+	make_reg_q_info(&q_o, hnd, "ProductType", time(NULL), 4, 1);
+
+	/* turn parameters into data stream */
+	reg_io_q_info("", &q_o, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, REG_INFO, &buf, &rbuf))
+	{
+		REG_R_INFO r_o;
+		BOOL p;
+
+		ZERO_STRUCT(r_o);
+
+		reg_io_r_info("", &r_o, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("REG_INFO: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_query = True;
+			fstrcpy(type, buffer2_to_str(&r_o.uni_type));
+			(*unk_0) = r_o.unknown_0;
+			(*unk_1) = r_o.unknown_1;
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_query;
+}
+
+/****************************************************************************
+do a REG Query Key Security 
+****************************************************************************/
+BOOL do_reg_get_key_sec(struct cli_state *cli, POLICY_HND *hnd,
+				uint32 *sec_buf_size, SEC_DESC_BUF *sec_buf)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	REG_Q_GET_KEY_SEC q_o;
+	BOOL valid_query = False;
+
+	if (hnd == NULL) return False;
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api REG_GET_KEY_SEC */
+
+	DEBUG(4,("REG query key security.  buf_size: %d\n", *sec_buf_size));
+
+	make_reg_q_get_key_sec(&q_o, hnd, *sec_buf_size, sec_buf);
+
+	/* turn parameters into data stream */
+	reg_io_q_get_key_sec("", &q_o, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, REG_GET_KEY_SEC, &buf, &rbuf))
+	{
+		REG_R_GET_KEY_SEC r_o;
+		BOOL p;
+
+		ZERO_STRUCT(r_o);
+
+		r_o.data = sec_buf;
+		reg_io_r_get_key_sec("", &r_o, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_o.status == 0x0000007a)
+		{
+			/*
+			 * get the maximum buffer size: it was too small
+			 */
+			(*sec_buf_size) = r_o.hdr_sec.buf_max_len;
+			DEBUG(5,("sec_buf_size too small.  use %d\n", *sec_buf_size));
+			valid_query = True;
+		}
+		else if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("REG_GET_KEY_SEC: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+		else
+		{
+			valid_query = True;
+			(*sec_buf_size) = r_o.data->len;
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_query;
+}
+
+/****************************************************************************
+do a REG Enum Key
+****************************************************************************/
+BOOL do_reg_enum_key(struct cli_state *cli, POLICY_HND *hnd,
+				int key_index, char *key_name,
+				uint32 *unk_1, uint32 *unk_2,
+				time_t *mod_time)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	REG_Q_ENUM_KEY q_o;
+	BOOL valid_query = False;
+
+	if (hnd == NULL) return False;
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api REG_ENUM_KEY */
+
+	DEBUG(4,("REG Enum Key\n"));
+
+	make_reg_q_enum_key(&q_o, hnd, key_index);
+
+	/* turn parameters into data stream */
+	reg_io_q_enum_key("", &q_o, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, REG_ENUM_KEY, &buf, &rbuf))
+	{
+		REG_R_ENUM_KEY r_o;
+		BOOL p;
+
+		ZERO_STRUCT(r_o);
+
+		reg_io_r_enum_key("", &r_o, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("REG_ENUM_KEY: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_query = True;
+			(*unk_1) = r_o.unknown_1;
+			(*unk_2) = r_o.unknown_2;
+			fstrcpy(key_name, unistr2(r_o.key_name.str.buffer));
+			(*mod_time) = nt_time_to_unix(&r_o.time);
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_query;
+}
+
+/****************************************************************************
+do a REG Enum Value
+****************************************************************************/
+BOOL do_reg_enum_val(struct cli_state *cli, POLICY_HND *hnd,
+				int val_index, int max_valnamelen, int max_valbufsize,
+				fstring val_name,
+				uint32 *val_type, BUFFER2 *value)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	REG_Q_ENUM_VALUE q_o;
+	BOOL valid_query = False;
+
+	if (hnd == NULL) return False;
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api REG_ENUM_VALUE */
+
+	DEBUG(4,("REG Enum Value\n"));
+
+	make_reg_q_enum_val(&q_o, hnd, val_index, max_valnamelen, max_valbufsize);
+
+	/* turn parameters into data stream */
+	reg_io_q_enum_val("", &q_o, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, REG_ENUM_VALUE, &buf, &rbuf))
+	{
+		REG_R_ENUM_VALUE r_o;
+		BOOL p;
+
+		ZERO_STRUCT(r_o);
+		r_o.buf_value = value;
+
+		reg_io_r_enum_val("", &r_o, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("REG_ENUM_VALUE: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_query = True;
+			(*val_type) = r_o.type;
+			fstrcpy(val_name, unistr2_to_str(&r_o.uni_name));
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_query;
+}
+
+/****************************************************************************
+do a REG Open Key
+****************************************************************************/
+BOOL do_reg_open_entry(struct cli_state *cli, POLICY_HND *hnd,
+				char *key_name, uint32 unk_0,
+				POLICY_HND *key_hnd)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	REG_Q_OPEN_ENTRY q_o;
+	BOOL valid_pol = False;
+
+	if (hnd == NULL) return False;
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api REG_OPEN_ENTRY */
+
+	DEBUG(4,("REG Open Entry\n"));
+
+	make_reg_q_open_entry(&q_o, hnd, key_name, unk_0);
+
+	/* turn parameters into data stream */
+	reg_io_q_open_entry("", &q_o, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, REG_OPEN_ENTRY, &buf, &rbuf))
+	{
+		REG_R_OPEN_ENTRY r_o;
+		BOOL p;
+
+		ZERO_STRUCT(r_o);
+
+		reg_io_r_open_entry("", &r_o, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("REG_OPEN_ENTRY: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_pol = True;
+			memcpy(key_hnd, r_o.pol.data, sizeof(key_hnd->data));
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_pol;
+}
+
+/****************************************************************************
+do a REG Close
+****************************************************************************/
+BOOL do_reg_close(struct cli_state *cli, POLICY_HND *hnd)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	REG_Q_CLOSE q_c;
+	BOOL valid_close = False;
+
+	if (hnd == NULL) return False;
+
+	/* create and send a MSRPC command with api REG_CLOSE */
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	DEBUG(4,("REG Close\n"));
+
+	/* store the parameters */
+	make_reg_q_close(&q_c, hnd);
+
+	/* turn parameters into data stream */
+	reg_io_q_close("", &q_c, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, REG_CLOSE, &buf, &rbuf))
+	{
+		REG_R_CLOSE r_c;
+		BOOL p;
+
+		ZERO_STRUCT(r_c);
+
+		reg_io_r_close("", &r_c, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_c.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("REG_CLOSE: %s\n", get_nt_error_msg(r_c.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			/* check that the returned policy handle is all zeros */
+			int i;
+			valid_close = True;
+
+			for (i = 0; i < sizeof(r_c.pol.data); i++)
+			{
+				if (r_c.pol.data[i] != 0)
+				{
+					valid_close = False;
+					break;
+				}
+			}	
+			if (!valid_close)
+			{
+				DEBUG(0,("REG_CLOSE: non-zero handle returned\n"));
+			}
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_close;
+}
+
+
