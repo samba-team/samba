@@ -224,6 +224,13 @@ Also get Kerberos 4 tickets in
 .Nm login ,
 and other programs.
 This option is also valid in the [realms] section.
+.It Li fcc-mit-ticketflags = Va boolean
+Use MIT compatible format for file credential cache.
+It's the field ticketflags that is stored in reverse bit order for
+older than Heimdal 0.7.
+Setting this flag to
+.Dv TRUE
+make it store the MIT way, this is default for Heimdal 0.7.
 .El
 .It Li [domain_realm]
 This is a list of mappings from DNS domain to Kerberos realm.
