@@ -439,7 +439,7 @@ doit(const char *filename, int merge)
 	    continue;
 	}
 
-	if (parse_hdbflags2int (&ent.flags, e.flags) != 0) {
+	if (parse_hdbflags2int (&ent.flags, e.flags) != 1) {
 	    fprintf (stderr, "%s:%d:error parsing flags (%s)\n",
 		     filename, line, e.flags);
 	    hdb_free_entry (context, &ent);
