@@ -1356,8 +1356,7 @@ static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int snum, SPO
 	if (get_a_printer(&printer, 2, lp_servicename(snum))!=0)
 		return False;
 
-	for(field_num=0; field_num<option_type->count; field_num++)
-	{
+	for(field_num=0; field_num<option_type->count; field_num++) {
 		field = option_type->fields[field_num];
 		DEBUGADD(4,("notify [%d]: type [%x], field [%x]\n", field_num, type, field));
 
@@ -1367,7 +1366,7 @@ static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int snum, SPO
 		if((info->data=Realloc(info->data, (info->count+1)*sizeof(SPOOL_NOTIFY_INFO_DATA))) == NULL) {
 			return False;
 		}
-		current_data=&(info->data[info->count]);
+		current_data=&info->data[info->count];
 
 		construct_info_data(current_data, type, field, id);		
 		notify_info_data_table[j].fn(snum, current_data, queue, printer);
@@ -1474,8 +1473,7 @@ static uint32 printserver_notify_info(const POLICY_HND *hnd, SPOOL_NOTIFY_INFO *
 	info->data=NULL;
 	info->count=0;
 
-	for (i=0; i<option->count; i++)
-	{
+	for (i=0; i<option->count; i++) {
 		option_type=&(option->ctr.type[i]);
 		
 		if (option_type->type!=PRINTER_NOTIFY_TYPE)
@@ -1495,8 +1493,7 @@ static uint32 printserver_notify_info(const POLICY_HND *hnd, SPOOL_NOTIFY_INFO *
 	DEBUGADD(1,("info->version:[%d], info->flags:[%d], info->count:[%d]\n", info->version, info->flags, info->count));
 	DEBUGADD(1,("num\ttype\tfield\tres\tid\tsize\tenc_type\n"));
 	
-	for (i=0; i<info->count; i++)
-	{
+	for (i=0; i<info->count; i++) {
 		DEBUGADD(1,("[%d]\t[%d]\t[%d]\t[%d]\t[%d]\t[%d]\t[%d]\n",
 		i, info->data[i].type, info->data[i].field, info->data[i].reserved,
 		info->data[i].id, info->data[i].size, info->data[i].enc_type));
@@ -1533,9 +1530,8 @@ static uint32 printer_notify_info(const POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info
 
 	get_printer_snum(hnd, &snum);
 
-	for (i=0; i<option->count; i++)
-	{
-		option_type=&(option->ctr.type[i]);
+	for (i=0; i<option->count; i++) {
+		option_type=&option->ctr.type[i];
 		
 		switch ( option_type->type ) {
 		case PRINTER_NOTIFY_TYPE:
@@ -1547,7 +1543,7 @@ static uint32 printer_notify_info(const POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info
 			memset(&status, 0, sizeof(status));	
 			count = print_queue_status(snum, &queue, &status);
 			for (j=0; j<count; j++)
-				construct_notify_jobs_info(&(queue[j]), info, snum, option_type, queue[j].job);
+				construct_notify_jobs_info(&queue[j], info, snum, option_type, queue[j].job);
 			safe_free(queue);
 			break;
 		}
@@ -1561,8 +1557,7 @@ static uint32 printer_notify_info(const POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info
 	DEBUGADD(1,("info->version:[%d], info->flags:[%d], info->count:[%d]\n", info->version, info->flags, info->count));
 	DEBUGADD(1,("num\ttype\tfield\tres\tid\tsize\tenc_type\n"));
 	
-	for (i=0; i<info->count; i++)
-	{
+	for (i=0; i<info->count; i++) {
 		DEBUGADD(1,("[%d]\t[%d]\t[%d]\t[%d]\t[%d]\t[%d]\t[%d]\n",
 		i, info->data[i].type, info->data[i].field, info->data[i].reserved,
 		info->data[i].id, info->data[i].size, info->data[i].enc_type));
@@ -2150,7 +2145,7 @@ static BOOL enum_all_printers_info_2(fstring servername, NEW_BUFFER *buffer, uin
 				if((printers=Realloc(printers, (*returned +1)*sizeof(PRINTER_INFO_2))) == NULL)
 					return ERROR_NOT_ENOUGH_MEMORY;
 				DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_2\n", *returned));		
-				memcpy(&(printers[*returned]), &current_prt, sizeof(PRINTER_INFO_2));
+				memcpy(&printers[*returned], &current_prt, sizeof(PRINTER_INFO_2));
 				(*returned)++;
 			}
 		}
@@ -4119,7 +4114,7 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 idx,
 	if (!get_printer_snum(handle, &snum))
 		return ERROR_INVALID_HANDLE;
 	
-	if (get_a_printer(&printer, 2, lp_servicename(snum)) != 0x0)
+	if (get_a_printer(&printer, 2, lp_servicename(snum)) != 0)
 		return ERROR_INVALID_HANDLE;
 
 	/* 
@@ -4182,6 +4177,9 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 idx,
 		return ERROR_NOT_ENOUGH_MEMORY;
 	}
 	*out_value_len = (uint32)dos_PutUniCode((char *)*out_value, value, in_value_len, True);
+#if 1 /* JRATEST */
+	*out_max_value_len=(*out_value_len/sizeof(uint16));
+#endif /* JRATEST */
 
 	*out_type=type;
 
@@ -4191,8 +4189,11 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 idx,
 		safe_free(data);
 		return ERROR_NOT_ENOUGH_MEMORY;
 	}
-	memcpy(*data_out, data, data_len);
+	memcpy(*data_out, data, (size_t)data_len);
 	*out_data_len=data_len;
+#if 1 /* JRATEST */
+	*out_max_data_len=data_len;
+#endif /* JRATEST */
 
 	safe_free(data);
 	
