@@ -1,3 +1,14 @@
+2000-05-19  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/store_emem.c (emem_store): make it write-compatible
+	* lib/krb5/store_fd.c (fd_store): make it write-compatible
+	* lib/krb5/store_mem.c (mem_store): make it write-compatible
+	* lib/krb5/krb5.h (krb5_storage): make store write-compatible
+
+2000-05-18  Assar Westerlund  <assar@sics.se>
+
+	* configure.in: add stdio.h in dbopen test
+
 2000-05-16  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/Makefile.am (libkrb5_la_LDFLAGS): set version to 11:1:0
