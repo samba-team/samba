@@ -800,10 +800,10 @@ static WERROR srvsvc_NETRSERVERTRANSPORTDEL(struct dcesrv_call_state *dce_call, 
 
 
 /* 
-  srvsvc_NET_REMOTE_TOD 
+  srvsvc_NetRemoteTOD 
 */
-static WERROR srvsvc_NET_REMOTE_TOD(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct srvsvc_NET_REMOTE_TOD *r)
+static WERROR srvsvc_NetRemoteTOD(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct srvsvc_NetRemoteTOD *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
