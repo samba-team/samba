@@ -835,7 +835,7 @@ already exists in WINS as a GROUP name.\n", nmb_namestr(question) ));
    * reject without doing the query - we know we will reject it.
    */
 
-  if((namerec != NULL) && (is_myname(nmb_name_name(&namerec->name))) )
+  if((namerec != NULL) && (is_myname(namerec->name.name)) )
   {
     if(!ismyip(from_ip))
     {
@@ -1163,7 +1163,7 @@ already exists in WINS as a GROUP name.\n", nmb_namestr(question) ));
    * reject without doing the query - we know we will reject it.
    */
 
-  if((namerec != NULL) && (is_myname(nmb_name_name(&namerec->name))) )
+  if((namerec != NULL) && (is_myname(namerec->name.name)) )
   {
     if(!ismyip(from_ip))
     {

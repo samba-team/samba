@@ -150,6 +150,7 @@ void debug_nmb_packet(struct packet_struct *p)
 /*******************************************************************
   handle "compressed" name pointers
   ******************************************************************/
+
 static BOOL handle_name_ptrs(uchar *ubuf,int *offset,int length,
 			     BOOL *got_pointer,int *ret)
 {
@@ -167,9 +168,11 @@ static BOOL handle_name_ptrs(uchar *ubuf,int *offset,int length,
 }
 
 /*******************************************************************
-  parse a nmb name from "compressed" format to something readable
-  return the space taken by the name, or 0 if the name is invalid
-  ******************************************************************/
+ Parse a nmb name from "compressed" format to something readable.
+ Return the space taken by the name, or 0 if the name is invalid.
+ Converts to UNIX charset from incoming DOS charset.
+******************************************************************/
+
 static int parse_nmb_name(char *inbuf,int ofs,int length, struct nmb_name *name)
 {
   int m,n=0;
@@ -208,7 +211,7 @@ static int parse_nmb_name(char *inbuf,int ofs,int length, struct nmb_name *name)
     name->name[n++] = (c1<<4) | c2;
     m -= 2;
   }
-  name->name[n] = 0;
+  name->name[n] = '\0';
 
   if (n==16) {
     /* parse out the name type, 
@@ -216,11 +219,14 @@ static int parse_nmb_name(char *inbuf,int ofs,int length, struct nmb_name *name)
     name->name_type = ((uchar)name->name[15]) & 0xff;
   
     /* remove trailing spaces */
-    name->name[15] = 0;
+    name->name[15] = '\0';
     n = 14;
     while (n && name->name[n]==' ')
-      name->name[n--] = 0;  
+      name->name[n--] = '\0';  
   }
+
+  dos_to_unix(name->name);
+  name->name[15] = '\0';
 
   /* now the domain parts (if any) */
   n = 0;
@@ -251,20 +257,23 @@ static int parse_nmb_name(char *inbuf,int ofs,int length, struct nmb_name *name)
     if (loop_count++ == 10)
       return 0;
   }
-  name->scope[n++] = 0;  
+  name->scope[n++] = '\0';  
+  dos_to_unix(name->scope);
+  name->scope[63] = '\0';
 
   return(ret);
 }
 
-
 /*******************************************************************
-  put a compressed nmb name into a buffer. return the length of the
-  compressed name
+ Put a compressed nmb name into a buffer. Return the length of the
+ compressed name. Name is converted from UNIX to DOS character set
+ before 'compression'.
 
-  compressed names are really weird. The "compression" doubles the
-  size. The idea is that it also means that compressed names conform
-  to the doman name system. See RFC1002.
-  ******************************************************************/
+ Compressed names are really weird. The "compression" doubles the
+ size. The idea is that it also means that compressed names conform
+ to the doman name system. See RFC1002.
+******************************************************************/
+
 static int put_nmb_name(char *buf,int offset,struct nmb_name *name)
 {
   int ret,m;
@@ -277,7 +286,7 @@ static int put_nmb_name(char *buf,int offset,struct nmb_name *name)
     buf1[0] = '*';
     buf1[15] = name->name_type;
   } else {
-    slprintf(buf1, sizeof(buf1) - 1,"%-15.15s%c",name->name,name->name_type);
+    slprintf(buf1, sizeof(buf1) - 1,"%-15.15s%c",unix_to_dos_static(name->name),name->name_type);
   }
 
   buf[offset] = 0x20;
@@ -293,9 +302,12 @@ static int put_nmb_name(char *buf,int offset,struct nmb_name *name)
   buf[offset] = 0;
 
   if (name->scope[0]) {
+    fstring scope;
+    fstrcpy(scope, unix_to_dos_static(name->scope));
+
     /* XXXX this scope handling needs testing */
-    ret += strlen(name->scope) + 1;
-    pstrcpy(&buf[offset+1],name->scope);  
+    ret += strlen(scope) + 1;
+    pstrcpy(&buf[offset+1],scope);  
   
     p = &buf[offset+1];
     while ((p = strchr(p,'.'))) {
@@ -320,35 +332,19 @@ const char *nmb_namestr(const struct nmb_name *n)
 	char *p = ret[i];
 
 	if (!n->scope[0])
-		slprintf(p,sizeof(fstring)-1, "%s<%02x>",dos_to_unix_static(n->name),n->name_type);
+		slprintf(p,sizeof(fstring)-1, "%s<%02x>",n->name,n->name_type);
 	else {
-		fstring name, scope;
-		fstrcpy(name, dos_to_unix_static(n->name));
-		fstrcpy(scope, dos_to_unix_static(n->scope));
-		slprintf(p,sizeof(fstring)-1, "%s<%02x>.%s",name,n->name_type,scope);
+		slprintf(p,sizeof(fstring)-1, "%s<%02x>.%s",n->name,n->name_type,n->scope);
 	}
 
 	i = (i+1)%4;
 	return(p);
 }
 
-const char *nmb_name_name(const struct nmb_name *n)
-{
-	static fstring name;
-	fstrcpy(name, dos_to_unix_static(n->name));
-	return name;
-}
-
-const char *nmb_name_scope(const struct nmb_name *n)
-{
-	static fstring name;
-	fstrcpy(name, dos_to_unix_static(n->scope));
-	return name;
-}
-
 /*******************************************************************
   allocate and parse some resource records
   ******************************************************************/
+
 static BOOL parse_alloc_res_rec(char *inbuf,int *offset,int length,
 				struct res_rec **recs, int count)
 {
@@ -843,11 +839,9 @@ void make_nmb_name( struct nmb_name *n, const char *name, int type)
 {
 	memset( (char *)n, '\0', sizeof(struct nmb_name) );
 	StrnCpy( n->name, name, 15 );
-	unix_to_dos(n->name);
-	strupper( n->name );
+	strupper_unix( n->name );
 	n->name_type = (unsigned int)type & 0xFF;
-	StrnCpy( n->scope, global_scope_dos(), 63 );
-	strupper( n->scope );
+	StrnCpy( n->scope, global_scope_unix(), 63 );
 }
 
 /*******************************************************************
@@ -857,8 +851,8 @@ void make_nmb_name( struct nmb_name *n, const char *name, int type)
 BOOL nmb_name_equal(struct nmb_name *n1, struct nmb_name *n2)
 {
   return ((n1->name_type == n2->name_type) &&
-         strequal(n1->name ,n2->name ) &&
-         strequal(n1->scope,n2->scope));
+         strequal_unix(n1->name ,n2->name ) &&
+         strequal_unix(n1->scope,n2->scope));
 }
 
 /*******************************************************************

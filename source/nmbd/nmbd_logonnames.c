@@ -149,7 +149,7 @@ void add_logon_names(void)
 
   for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec))
   {
-    struct work_record *work = find_workgroup_on_subnet(subrec, lp_workgroup_dos());
+    struct work_record *work = find_workgroup_on_subnet(subrec, lp_workgroup_unix());
 
     if (work && (work->log_state == LOGON_NONE))
     {

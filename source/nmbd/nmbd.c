@@ -770,7 +770,7 @@ static void usage(char *pname)
 
   reload_nmbd_services( True );
 
-  if (strequal(lp_workgroup_dos(),"*"))
+  if (strequal_unix(lp_workgroup_unix(),"*"))
   {
     DEBUG(0,("ERROR: a workgroup name of * is no longer supported\n"));
     exit(1);

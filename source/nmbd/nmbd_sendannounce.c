@@ -277,7 +277,7 @@ void announce_my_server_names(time_t t)
 
   for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec))
   {
-    struct work_record *work = find_workgroup_on_subnet(subrec, lp_workgroup_dos());
+    struct work_record *work = find_workgroup_on_subnet(subrec, lp_workgroup_unix());
 
     if(work)
     {
@@ -341,7 +341,7 @@ void announce_my_lm_server_names(time_t t)
 
   for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec))
   {
-    struct work_record *work = find_workgroup_on_subnet(subrec, lp_workgroup_dos());
+    struct work_record *work = find_workgroup_on_subnet(subrec, lp_workgroup_unix());
 
     if(work)
     {
@@ -513,7 +513,7 @@ void announce_remote(time_t t)
     if (wp)
       *wp++ = 0;
     if (!wp || !*wp)
-      fstrcpy(wgroup, lp_workgroup_dos());
+      fstrcpy(wgroup, lp_workgroup_unix());
     else
       fstrcpy(wgroup, wp);
 
@@ -523,9 +523,9 @@ void announce_remote(time_t t)
     /* Give the ip address as the address of our first
        broadcast subnet. */
 
-    for(i=0; my_netbios_names_dos(i); i++) 
+    for(i=0; my_netbios_names_unix(i); i++) 
     {
-      const char *name = my_netbios_names_dos(i);
+      const char *name = my_netbios_names_unix(i);
 
       DEBUG(5,("announce_remote: Doing remote announce for server %s to IP %s.\n",
                  name, inet_ntoa(addr) ));
@@ -571,7 +571,7 @@ void browse_sync_remote(time_t t)
    * for our workgroup on the firsst subnet.
    */
 
-  if((work = find_workgroup_on_subnet(FIRST_SUBNET, lp_workgroup_dos())) == NULL)
+  if((work = find_workgroup_on_subnet(FIRST_SUBNET, lp_workgroup_unix())) == NULL)
   {   
     DEBUG(0,("browse_sync_remote: Cannot find workgroup %s on subnet %s\n",
            lp_workgroup_unix(), FIRST_SUBNET->subnet_name ));

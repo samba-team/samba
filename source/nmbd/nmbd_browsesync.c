@@ -607,7 +607,7 @@ void collect_all_workgroup_names_from_wins_server(time_t t)
     return;
 
   /* Check to see if we are a domain master browser on the unicast subnet. */
-  if((work = find_workgroup_on_subnet( unicast_subnet, lp_workgroup_dos())) == NULL)
+  if((work = find_workgroup_on_subnet( unicast_subnet, lp_workgroup_unix())) == NULL)
   {
     if( DEBUGLVL( 0 ) )
     {
@@ -656,7 +656,7 @@ void sync_all_dmbs(time_t t)
 
 	/* Check to see if we are a domain master browser on the
            unicast subnet. */
-	work = find_workgroup_on_subnet(unicast_subnet, lp_workgroup_dos());
+	work = find_workgroup_on_subnet(unicast_subnet, lp_workgroup_unix());
 	if (!work) return;
 
 	if (!AM_DOMAIN_MASTER_BROWSER(work))
@@ -667,14 +667,14 @@ void sync_all_dmbs(time_t t)
      
 	/* count how many syncs we might need to do */
 	for (work=unicast_subnet->workgrouplist; work; work = work->next) {
-		if (strcmp(lp_workgroup_dos(), work->work_group)) {
+		if (!strequal_unix(lp_workgroup_unix(), work->work_group)) {
 			count++;
 		}
 	}
 
 	/* sync with a probability of 1/count */
 	for (work=unicast_subnet->workgrouplist; work; work = work->next) {
-		if (strcmp(lp_workgroup_dos(), work->work_group)) {
+		if (!strequal_unix(lp_workgroup_unix(), work->work_group)) {
 			if (((unsigned)sys_random()) % count != 0) continue;
 
 			lastrun = t;

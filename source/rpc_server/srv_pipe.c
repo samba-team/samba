@@ -360,8 +360,8 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 
 		become_root();
 
-		if(!(p->ntlmssp_auth_validated = pass_check_smb(pipe_user_name, domain,
-		                      (uchar*)p->challenge, lm_owf, nt_owf, NULL))) {
+		if(!(p->ntlmssp_auth_validated = pass_check_smb(pipe_user_name, (uchar*)p->challenge,
+						lm_owf, nt_owf, NULL))) {
 			DEBUG(1,("api_pipe_ntlmssp_verify: User %s\\%s from machine %s \
 failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name ));
 			unbecome_root();

@@ -52,7 +52,7 @@ static void send_election_dgram(struct subnet_record *subrec, const char *workgr
   p = skip_string(p,1);
   
   send_mailslot(False, BROWSE_MAILSLOT, outbuf, PTR_DIFF(p,outbuf),
-                global_myname_dos(), 0,
+                global_myname_unix(), 0,
                 workgroup_name, 0x1e,
                 subrec->bcast_ip, subrec->myip, DGRAM_PORT);
 }
@@ -89,7 +89,7 @@ static void check_for_master_browser_fail( struct subnet_record *subrec,
     return;
   }
 
-  if (strequal(work->work_group, lp_workgroup_dos()))
+  if (strequal_unix(work->work_group, lp_workgroup_unix()))
   {
 
     if (lp_local_master())
@@ -125,7 +125,7 @@ void check_master_browser_exists(time_t t)
 {
   static time_t lastrun=0;
   struct subnet_record *subrec;
-  const char *workgroup_name = lp_workgroup_dos();
+  const char *workgroup_name = lp_workgroup_unix();
 
   if (!lastrun)
     lastrun = t;
@@ -143,7 +143,7 @@ void check_master_browser_exists(time_t t)
 
     for (work = subrec->workgrouplist; work; work = work->next)
     {
-      if (strequal(work->work_group, workgroup_name) && !AM_LOCAL_MASTER_BROWSER(work))
+      if (strequal_unix(work->work_group, workgroup_name) && !AM_LOCAL_MASTER_BROWSER(work))
       {
         /* Do a name query for the local master browser on this net. */
         query_name( subrec, work->work_group, 0x1d,
@@ -195,7 +195,7 @@ yet registered on subnet %s\n", nmb_namestr(&nmbname), subrec->subnet_name ));
         }
 
         send_election_dgram(subrec, work->work_group, work->ElectionCriterion,
-                      t - StartupTime, global_myname_dos());
+                      t - StartupTime, global_myname_unix());
 	      
         if (work->ElectionCount++ >= 4)
         {
@@ -252,7 +252,7 @@ static BOOL win_election(struct work_record *work, int version,
   if (timeup < mytimeup)
     return(True);
 
-  if (strcasecmp(global_myname_dos(), server_name) > 0)
+  if (strcasecmp(global_myname_dos(), unix_to_dos_static(server_name)) > 0)
     return(False);
   
   return(True);
@@ -287,7 +287,7 @@ void process_election(struct subnet_record *subrec, struct packet_struct *p, cha
     goto done;
   }
 
-  if (!strequal(work->work_group, lp_workgroup_dos()))
+  if (!strequal_unix(work->work_group, lp_workgroup_unix()))
   {
     DEBUG(3,("process_election: ignoring election request for workgroup %s on subnet %s as this \
 is not my workgroup.\n", work->work_group, subrec->subnet_name ));
@@ -393,7 +393,7 @@ void nmbd_message_election(int msg_type, pid_t src, void *buf, size_t len)
 	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
 		struct work_record *work;
 		for (work = subrec->workgrouplist; work; work = work->next) {
-			if (strequal(work->work_group, lp_workgroup_dos())) {
+			if (strequal_unix(work->work_group, lp_workgroup_unix())) {
 				work->needelection = True;
 				work->ElectionCount=0;
 				work->mst_state = lp_local_master() ? MST_POTENTIAL : MST_NONE;

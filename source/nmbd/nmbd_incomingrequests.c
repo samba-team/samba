@@ -98,7 +98,7 @@ subnet %s from owner IP %s\n",
    * names and *don't set the group bit* !!!!!
    */
 
-  if( !group && !ismyip(owner_ip) && strequal(question->name, lp_workgroup_dos()) && 
+  if( !group && !ismyip(owner_ip) && strequal_unix(question->name, lp_workgroup_unix()) && 
       ((question->name_type == 0x0) || (question->name_type == 0x1e)))
   {
     DEBUG(6,("process_name_release_request: FTP OnNet bug workaround. Ignoring \

@@ -85,7 +85,7 @@ static void register_name_response(struct subnet_record *subrec,
 		 */
 		
 #if 1 /* OLD_SAMBA_SERVER_HACK */
-		if((nmb->header.rcode == ACT_ERR) && strequal(lp_workgroup_dos(), answer_name->name) &&
+		if((nmb->header.rcode == ACT_ERR) && strequal_unix(lp_workgroup_unix(), answer_name->name) &&
 		   (answer_name->name_type == 0x1b)) {
 			/* Pretend we did not get this. */
 			rrec->num_msgs--;

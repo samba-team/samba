@@ -528,8 +528,7 @@ BOOL smb_password_ok(SAM_ACCOUNT *sampass, uchar chal[8],
  SMB hash. Return True if the password is correct, False otherwise.
 ****************************************************************************/
 
-BOOL pass_check_smb(char *user, const char *domain, uchar *chal, 
-                    uchar *lm_pwd, uchar *nt_pwd, struct passwd *pwd)
+BOOL pass_check_smb(char *user, uchar *chal, uchar *lm_pwd, uchar *nt_pwd, struct passwd *pwd)
 {
 	SAM_ACCOUNT *sampass = NULL;
 
@@ -600,8 +599,7 @@ BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd)
 			return False;
 		}
 
-		ret = pass_check_smb(user, lp_workgroup_dos(),
-		                      challenge, (uchar *)password, (uchar *)password, pwd);
+		ret = pass_check_smb(user, challenge, (uchar *)password, (uchar *)password, pwd);
 
 		/*
 		 * Try with PAM (may not be compiled in - returns True if not. JRA).

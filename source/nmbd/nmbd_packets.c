@@ -1087,11 +1087,11 @@ static void process_browse_packet(struct packet_struct *p, char *buf,int len)
   if (!strequal(dgram->dest_name.scope, global_scope_dos()))
   {
     DEBUG(7,("process_browse_packet: Discarding datagram from IP %s. Scope (%s) \
-mismatch with our scope (%s).\n", inet_ntoa(p->ip), nmb_name_scope(&dgram->dest_name), global_scope_unix()));
+mismatch with our scope (%s).\n", inet_ntoa(p->ip), dgram->dest_name.scope, global_scope_unix()));
     return;
   }
 
-  if (is_myname(nmb_name_name(&dgram->source_name)))
+  if (is_myname(dgram->source_name.name))
   {
     DEBUG(0,("process_browse_packet: Discarding datagram from IP %s. Source name \
 %s is one of our names !\n", inet_ntoa(p->ip), nmb_namestr(&dgram->source_name)));
@@ -1199,11 +1199,11 @@ static void process_lanman_packet(struct packet_struct *p, char *buf,int len)
   if (!strequal(dgram->dest_name.scope, global_scope_dos()))
   {
     DEBUG(7,("process_lanman_packet: Discarding datagram from IP %s. Scope (%s) \
-mismatch with our scope (%s).\n", inet_ntoa(p->ip), nmb_name_scope(&dgram->dest_name), global_scope_unix()));
+mismatch with our scope (%s).\n", inet_ntoa(p->ip), dgram->dest_name.scope, global_scope_unix()));
     return;
   }
 
-  if (is_myname(nmb_name_name(&dgram->source_name)))
+  if (is_myname(dgram->source_name.name))
   {
     DEBUG(0,("process_lanman_packet: Discarding datagram from IP %s. Source name \
 %s is one of our names !\n", inet_ntoa(p->ip), nmb_namestr(&dgram->source_name)));

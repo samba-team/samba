@@ -388,9 +388,9 @@ void add_domain_names(time_t t)
          1.9.16p2 to 1.9.16p11 - due to a bug in namelogon.c,
          cannot provide domain master / domain logon services.
        */
-      become_domain_master_browser_wins(lp_workgroup_dos());
+      become_domain_master_browser_wins(lp_workgroup_unix());
     }
     else
-      become_domain_master_browser_bcast(lp_workgroup_dos());
+      become_domain_master_browser_bcast(lp_workgroup_unix());
   }
 }
