@@ -137,10 +137,10 @@ krb5_rd_cred(krb5_context context,
 
     if (enc_krb_cred_part.r_address
 	&& auth_context->local_address) {
-	if (auth_context->local_port) {
+	if(auth_context->local_port &&
+	   enc_krb_cred_part.r_address->addr_type == KRB5_ADDRESS_ADDRPORT) {
 	    krb5_address *a;
 	    int cmp;
-
 	    ret = krb5_make_addrport (context, &a,
 				      auth_context->local_address,
 				      auth_context->local_port);
