@@ -72,11 +72,28 @@ facility.  The following operations are logged:
 <para>
 This module is identical with the <emphasis>audit</emphasis> module above except
 that it sends audit logs to both syslog as well as the smbd log file/s. The 
-loglevel for this module is set in the smb.conf file. At loglevel = 0, only file
-and directory deletions and directory and file creations are logged. At loglevel = 1
-file opens are renames and permission changes are logged , while at loglevel = 2 file
-open and close calls are logged also.
+loglevel for this module is set in the smb.conf file.
 </para>
+
+<para>
+The logging information that will be written to the smbd log file is controlled by
+the <emphasis>log level</emphasis> parameter in <filename>smb.conf</filename>. The
+following information will be recorded:
+</para>
+
+<table frame="all"><title>Extended Auditing Log Information</title>
+<tgroup cols="2" align="center")
+	<thead>
+	<row><entry align="center">Log Level</entry><entry>Log Details - File and Directory Operations</entry></row>
+	</thead>
+	<tbody>
+	<row><entry align="center">0</entry><entry align="left">Creation / Deletion</entry></row>
+	<row><entry align="center">1</entry><entry align="left">Create / Delete / Rename / Permission Changes</entry></row>
+	<row><entry align="center">2</entry><entry align="left">Create / Delete / Rename / Perm Change / Open / Close</entry></row>
+	</tbody>
+</tgroup>
+</table>
+
 </sect2>
 
 <sect2>
