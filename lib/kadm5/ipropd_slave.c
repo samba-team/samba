@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -47,7 +47,8 @@ connect_to_master (krb5_context context, const char *master)
 	krb5_err (context, 1, errno, "socket AF_INET");
     memset (&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
-    addr.sin_port   = htons(4711);
+    addr.sin_port   = krb5_getportbyname (context,
+					  IPROP_SERVICE, "tcp", IPROP_PORT);
     he = roken_gethostbyname (master);
     if (he == NULL)
 	krb5_errx (context, 1, "gethostbyname: %s", hstrerror(h_errno));
@@ -58,7 +59,8 @@ connect_to_master (krb5_context context, const char *master)
 }
 
 static void
-get_creds(krb5_context context, krb5_ccache *cache, const char *host)
+get_creds(krb5_context context, const char *keytab_str,
+	  krb5_ccache *cache, const char *host)
 {
     krb5_keytab keytab;
     krb5_principal client;
@@ -71,9 +73,14 @@ get_creds(krb5_context context, krb5_ccache *cache, const char *host)
     char my_hostname[128];
     char *server;
     
-    ret = krb5_kt_default(context, &keytab);
-    if(ret) krb5_err(context, 1, ret, "krb5_kt_default");
+    ret = krb5_kt_register(context, &hdb_kt_ops);
+    if(ret)
+	krb5_err(context, 1, ret, "krb5_kt_register");
 
+    ret = krb5_kt_resolve(context, keytab_str, &keytab);
+    if(ret)
+	krb5_err(context, 1, ret, "%s", keytab_str);
+    
     gethostname (my_hostname, sizeof(my_hostname));
     ret = krb5_sname_to_principal (context, my_hostname, IPROP_NAME,
 				   KRB5_NT_SRV_HST, &client);
@@ -166,7 +173,7 @@ receive (krb5_context context,
     left  = sp->seek (sp, -16, SEEK_CUR);
     right = sp->seek (sp, 0, SEEK_END);
     buf = malloc (right - left);
-    if (buf == NULL) {
+    if (buf == NULL && (right - left) != 0) {
 	krb5_warnx (context, "malloc: no memory");
 	return;
     }
@@ -203,15 +210,91 @@ receive (krb5_context context,
 	krb5_err (context, 1, ret, "db->close");
 }
 
-char *realm;
-int version_flag;
-int help_flag;
-struct getargs args[] = {
+static void
+receive_everything (krb5_context context, int *fd,
+		    kadm5_server_context *server_context)
+{
+    int ret;
+    krb5_data data;
+    int32_t vno;
+    int32_t opcode;
+
+    ret = server_context->db->open(context,
+				   server_context->db,
+				   O_RDWR | O_CREAT | O_TRUNC, 0);
+    if (ret)
+	krb5_err (context, 1, ret, "db->open");
+
+    do {
+	krb5_data data;
+	krb5_storage *sp;
+
+	ret = krb5_read_message (context, fd, &data);
+	if (ret)
+	    krb5_err (context, 1, ret, "krb5_read_message");
+
+	sp = krb5_storage_from_data (&data);
+	krb5_ret_int32 (sp, &opcode);
+	if (opcode == ONE_PRINC) {
+	    krb5_data fake_data;
+	    hdb_entry entry;
+
+	    fake_data.data   = (char *)data.data + 4;
+	    fake_data.length = data.length - 4;
+
+	    ret = hdb_value2entry (context, &fake_data, &entry);
+	    if (ret)
+		krb5_err (context, 1, ret, "hdb_value2entry");
+	    hdb_free_entry (context, &entry);
+	    krb5_data_free (&data);
+	}
+    } while (opcode == ONE_PRINC);
+
+    if (opcode != NOW_YOU_HAVE)
+	krb5_errx (context, 1, "receive_everything: strange %d", opcode);
+
+    _krb5_get_int ((char *)data.data + 4, &vno, 4);
+
+    ret = kadm5_log_reinit (server_context);
+    if (ret)
+	krb5_err(context, 1, ret, "kadm5_log_reinit");
+
+    ret = kadm5_log_set_version (server_context, vno - 1);
+    if (ret)
+	krb5_err (context, 1, ret, "kadm5_log_set_version");
+
+    ret = kadm5_log_nop (server_context);
+    if (ret)
+	krb5_err (context, 1, ret, "kadm5_log_nop");
+
+    krb5_data_free (&data);
+
+    ret = server_context->db->close (context, server_context->db);
+    if (ret)
+	krb5_err (context, 1, ret, "db->close");
+}
+
+static char *realm;
+static int version_flag;
+static int help_flag;
+static char *keytab_str = "HDB:";
+
+static struct getargs args[] = {
     { "realm", 'r', arg_string, &realm },
+    { "keytab", 'k', arg_string, &keytab_str,
+      "keytab to get authentication from", "kspec" },
     { "version", 0, arg_flag, &version_flag },
     { "help", 0, arg_flag, &help_flag }
 };
-int num_args = sizeof(args) / sizeof(args[0]);
+
+static int num_args = sizeof(args) / sizeof(args[0]);
+
+static void
+usage (int code, struct getargs *args, int num_args)
+{
+    arg_printusage (args, num_args, NULL, "master");
+    exit (code);
+}
 
 int
 main(int argc, char **argv)
@@ -225,17 +308,30 @@ main(int argc, char **argv)
     int master_fd;
     krb5_ccache ccache;
     krb5_principal server;
-
     int optind;
+    const char *master;
     
-    optind = krb5_program_setup(&context, argc, argv, args, num_args, NULL);
+    optind = krb5_program_setup(&context, argc, argv, args, num_args,
+				usage);
     
     if(help_flag)
-	krb5_std_usage(0, args, num_args);
+	usage (0, args, num_args);
     if(version_flag) {
 	print_version(NULL);
 	exit(0);
     }
+
+    argc -= optind;
+    argv += optind;
+
+    if (argc != 1)
+	usage (1, args, num_args);
+
+    master = argv[0];
+
+    ret = krb5_kt_register(context, &hdb_kt_ops);
+    if(ret)
+	krb5_err(context, 1, ret, "krb5_kt_register");
 
     memset(&conf, 0, sizeof(conf));
     if(realm) {
@@ -257,11 +353,11 @@ main(int argc, char **argv)
     if (ret)
 	krb5_err (context, 1, ret, "kadm5_log_init");
 
-    get_creds(context, &ccache, argv[1]);
+    get_creds(context, keytab_str, &ccache, master);
 
-    master_fd = connect_to_master (context, argv[1]);
+    master_fd = connect_to_master (context, master);
 
-    ret = krb5_sname_to_principal (context, argv[1], IPROP_NAME,
+    ret = krb5_sname_to_principal (context, master, IPROP_NAME,
 				   KRB5_NT_SRV_HST, &server);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_sname_to_principal");
@@ -287,7 +383,7 @@ main(int argc, char **argv)
 	if (ret)
 	    krb5_err (context, 1, ret, "krb5_read_message");
 
-	ret = krb5_rd_priv (context, auth_context,  &data, &out, NULL);
+	ret = krb5_rd_priv (context, auth_context, &data, &out, NULL);
 	krb5_data_free (&data);
 	if (ret)
 	    krb5_err (context, 1, ret, "krb5_rd_priv");
@@ -300,7 +396,12 @@ main(int argc, char **argv)
 	    ihave (context, auth_context, master_fd,
 		   server_context->log_context.version);
 	    break;
+	case TELL_YOU_EVERYTHING :
+	    receive_everything (context, &master_fd, server_context);
+	    break;
+	case NOW_YOU_HAVE :
 	case I_HAVE :
+	case ONE_PRINC :
 	default :
 	    krb5_warnx (context, "Ignoring command %d", tmp);
 	    break;
