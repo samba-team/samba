@@ -1,3 +1,15 @@
+1999-09-21  Assar Westerlund  <assar@sics.se>
+
+	* init_sec_context.c (gss_init_sec_context): initialize `ticket'
+
+	* gssapi.h (gss_ctx_id_t_desc): add ticket in here.  ick.
+
+	* delete_sec_context.c (gss_delete_sec_context): free ticket
+
+	* accept_sec_context.c (gss_accept_sec_context): stove away
+ 	`krb5_ticket' in context so that ugly programs such as
+ 	gss_nt_server can get at it.  uck.
+
 1999-08-04  Assar Westerlund  <assar@sics.se>
 
 	* display_status.c (calling_error, routine_error): right shift the

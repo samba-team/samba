@@ -1,5 +1,17 @@
 1999-09-21  Assar Westerlund  <assar@sics.se>
 
+	* kuser/Makefile.am: add kdecode_ticket
+
+	* kuser/kdecode_ticket.c: new debug program
+
+	* appl/test/nt_gss_server.c: new program to test against `Sample *
+ 	SSPI Code' in Windows 2000 RC1 SDK.
+
+	* appl/test/Makefile.am: add nt_gss_client and nt_gss_server
+
+	* lib/asn1/der_get.c (decode_general_string): remember to advance
+ 	ret over the length-len
+
 	* lib/asn1/Makefile.am: add asn1_print
 
 	* lib/asn1/asn1_print.c: new program for printing DER-structures
