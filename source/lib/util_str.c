@@ -1098,6 +1098,9 @@ void string_sub(char *s,const char *pattern,const char *insert, size_t len)
 			case '\'':
 			case ';':
 			case '$':
+			case '%':
+			case '\r':
+			case '\n':
 				p[i] = '_';
 				break;
 			default:
