@@ -24,6 +24,7 @@
 #include "system/filesys.h"
 #include "system/passwd.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "ads.h"
 
 /*
   these are used for the fallback local uid/gid to sid mapping

@@ -27,6 +27,7 @@
 #include "system/time.h"
 #include "secrets.h"
 #include "pstring.h"
+#include "ads.h"
 
 #ifdef HAVE_KRB5
 
@@ -149,7 +150,7 @@ int kerberos_kinit_password(const char *principal,
 }
 
 /* run kinit to setup our ccache */
-int ads_kinit_password(ADS_STRUCT *ads)
+int ads_kinit_password(struct ads_struct *ads)
 {
 	char *s;
 	int ret;

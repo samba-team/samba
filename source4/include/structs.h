@@ -175,3 +175,5 @@ struct nbtd_server;
 struct nbtd_interface;
 
 struct mutex_ops;
+
+struct ads_struct;
