@@ -33,7 +33,7 @@
 .\"
 .\"     @(#)ftpd.8	8.2 (Berkeley) 4/19/94
 .\"
-.Dd April 25, 1996
+.Dd April 19, 1997
 .Dt FTPD 8
 .Os BSD 4.2
 .Sh NAME
@@ -429,7 +429,7 @@ alpha-numeric characters or any of the following:
 .Sh FILES
 .Bl -tag -width /etc/ftpwelcome -compact
 .It Pa /etc/ftpusers
-List of unwelcome/restricted users.
+Access list for users.
 .It Pa /etc/ftpchroot
 List of normal users who should be chroot'd.
 .It Pa /etc/ftpwelcome
@@ -445,6 +445,7 @@ Login access for Kerberos.
 .Xr ftp 1 ,
 .Xr otp 1 ,
 .Xr getusershell 3 ,
+.Xr ftpusers 5 ,
 .Xr syslogd 8 ,
 .Sh STANDARDS
 .Bl -tag -compact -width "RFC 1938"
@@ -452,7 +453,7 @@ Login access for Kerberos.
 FTP PROTOCOL SPECIFICATION
 .It Cm RFC 1938
 OTP Specification
-.It Cm draft-ietf-cat-ftpsec-08
+.It Cm draft-ietf-cat-ftpsec-09
 FTP Security Extensions. This is work in progress and might change in
 the future.
 .Sh BUGS
