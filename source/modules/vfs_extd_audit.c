@@ -25,8 +25,6 @@
 
 #include "includes.h"
 
-extern struct current_user current_user;
-
 static int vfs_extd_audit_debug_level = DBGC_VFS;
 
 #undef DBGC_CLASS
@@ -108,17 +106,10 @@ static int audit_connect(vfs_handle_struct *handle, connection_struct *conn, con
 
 	openlog("smbd_audit", LOG_PID, audit_syslog_facility(handle));
 
-	if (lp_parm_bool(SNUM(handle->conn), "extd_audit", "parseable",
-			 False)) {
-		syslog(audit_syslog_priority(handle),
-		       "%d|%s|connect|%s\n", current_user.uid,
-		       handle->conn->client_address, svc);
-	} else {
-		syslog(audit_syslog_priority(handle),
-		       "connect to service %s by user %s\n",  svc, user);
-		DEBUG(10, ("Connected to service %s as user %s\n",
-			   svc, user));
-	}
+	syslog(audit_syslog_priority(handle), "connect to service %s by user %s\n", 
+	       svc, user);
+	DEBUG(10, ("Connected to service %s as user %s\n",
+	       svc, user));
 
 	result = SMB_VFS_NEXT_CONNECT(handle, conn, svc, user);
 
@@ -127,17 +118,8 @@ static int audit_connect(vfs_handle_struct *handle, connection_struct *conn, con
 
 static void audit_disconnect(vfs_handle_struct *handle, connection_struct *conn)
 {
-	if (lp_parm_bool(SNUM(handle->conn), "extd_audit", "parseable",
-			 False)) {
-		syslog(audit_syslog_priority(handle),
-		       "%d|%s|disconnect|%s\n", current_user.uid,
-		       handle->conn->client_address,
-		       lp_servicename(SNUM(conn)));
-	} else {
-		syslog(audit_syslog_priority(handle), "disconnected\n");
-		DEBUG(10, ("Disconnected from VFS module extd_audit\n"));
-	}
-
+	syslog(audit_syslog_priority(handle), "disconnected\n");
+	DEBUG(10, ("Disconnected from VFS module extd_audit\n"));
 	SMB_VFS_NEXT_DISCONNECT(handle, conn);
 
 	return;
@@ -149,21 +131,14 @@ static DIR *audit_opendir(vfs_handle_struct *handle, connection_struct *conn, co
 
 	result = SMB_VFS_NEXT_OPENDIR(handle, conn, fname);
 
-	if (lp_parm_bool(SNUM(handle->conn), "extd_audit", "parseable",
-			 False)) {
-		syslog(audit_syslog_priority(handle),
-		       "%d|%s|opendir|%s\n", current_user.uid,
-		       handle->conn->client_address, fname);
-	} else {
-		syslog(audit_syslog_priority(handle), "opendir %s %s%s\n",
-		       fname,
-		       (result == NULL) ? "failed: " : "",
-		       (result == NULL) ? strerror(errno) : "");
-		DEBUG(1, ("vfs_extd_audit: opendir %s %s %s\n",
-			  fname,
-			  (result == NULL) ? "failed: " : "",
-			  (result == NULL) ? strerror(errno) : ""));
-	}
+	syslog(audit_syslog_priority(handle), "opendir %s %s%s\n",
+	       fname,
+	       (result == NULL) ? "failed: " : "",
+	       (result == NULL) ? strerror(errno) : "");
+	DEBUG(1, ("vfs_extd_audit: opendir %s %s %s\n",
+	       fname,
+	       (result == NULL) ? "failed: " : "",
+	       (result == NULL) ? strerror(errno) : ""));
 
 	return result;
 }
@@ -174,21 +149,14 @@ static int audit_mkdir(vfs_handle_struct *handle, connection_struct *conn, const
 	
 	result = SMB_VFS_NEXT_MKDIR(handle, conn, path, mode);
 	
-	if (lp_parm_bool(SNUM(handle->conn), "extd_audit", "parseable",
-			 False)) {
-		syslog(audit_syslog_priority(handle),
-		       "%d|%s|mkdir|%s\n", current_user.uid,
-		       handle->conn->client_address, path);
-	} else {
-		syslog(audit_syslog_priority(handle), "mkdir %s %s%s\n", 
-		       path,
-		       (result < 0) ? "failed: " : "",
-		       (result < 0) ? strerror(errno) : "");
-		DEBUG(0, ("vfs_extd_audit: mkdir %s %s %s\n",
-			  path,
-			  (result < 0) ? "failed: " : "",
-			  (result < 0) ? strerror(errno) : ""));
-	}
+	syslog(audit_syslog_priority(handle), "mkdir %s %s%s\n", 
+	       path,
+	       (result < 0) ? "failed: " : "",
+	       (result < 0) ? strerror(errno) : "");
+	DEBUG(0, ("vfs_extd_audit: mkdir %s %s %s\n",
+	       path,
+	       (result < 0) ? "failed: " : "",
+	       (result < 0) ? strerror(errno) : ""));
 
 	return result;
 }
@@ -199,21 +167,14 @@ static int audit_rmdir(vfs_handle_struct *handle, connection_struct *conn, const
 	
 	result = SMB_VFS_NEXT_RMDIR(handle, conn, path);
 
-	if (lp_parm_bool(SNUM(handle->conn), "extd_audit", "parseable",
-			 False)) {
-		syslog(audit_syslog_priority(handle),
-		       "%d|%s|rmdir|%s\n", current_user.uid,
-		       handle->conn->client_address, path);
-	} else {
-		syslog(audit_syslog_priority(handle), "rmdir %s %s%s\n", 
-		       path, 
-		       (result < 0) ? "failed: " : "",
-		       (result < 0) ? strerror(errno) : "");
-		DEBUG(0, ("vfs_extd_audit: rmdir %s %s %s\n",
-			  path,
-			  (result < 0) ? "failed: " : "",
-			  (result < 0) ? strerror(errno) : ""));
-	}
+	syslog(audit_syslog_priority(handle), "rmdir %s %s%s\n", 
+	       path, 
+	       (result < 0) ? "failed: " : "",
+	       (result < 0) ? strerror(errno) : "");
+	DEBUG(0, ("vfs_extd_audit: rmdir %s %s %s\n",
+               path,
+	       (result < 0) ? "failed: " : "",
+	       (result < 0) ? strerror(errno) : ""));
 
 	return result;
 }
@@ -224,26 +185,15 @@ static int audit_open(vfs_handle_struct *handle, connection_struct *conn, const 
 	
 	result = SMB_VFS_NEXT_OPEN(handle, conn, fname, flags, mode);
 
-	if (lp_parm_bool(SNUM(handle->conn), "extd_audit", "parseable",
-			 False)) {
-		syslog(audit_syslog_priority(handle),
-		       "%d|%s|open|%s|%s\n", current_user.uid,
-		       handle->conn->client_address,
-		       ((flags & O_WRONLY) || (flags & O_RDWR))?"w":"r",
-		       fname);
-	} else {
-		syslog(audit_syslog_priority(handle),
-		       "open %s (fd %d) %s%s%s\n", 
-		       fname, result,
-		       ((flags & O_WRONLY) || (flags & O_RDWR))
-		       ? "for writing " : "", 
-		       (result < 0) ? "failed: " : "",
-		       (result < 0) ? strerror(errno) : "");
-		DEBUG(2, ("vfs_extd_audit: open %s %s %s\n",
-			  fname,
-			  (result < 0) ? "failed: " : "",
-			  (result < 0) ? strerror(errno) : ""));
-	}
+	syslog(audit_syslog_priority(handle), "open %s (fd %d) %s%s%s\n", 
+	       fname, result,
+	       ((flags & O_WRONLY) || (flags & O_RDWR)) ? "for writing " : "", 
+	       (result < 0) ? "failed: " : "",
+	       (result < 0) ? strerror(errno) : "");
+	DEBUG(2, ("vfs_extd_audit: open %s %s %s\n",
+	       fname,
+	       (result < 0) ? "failed: " : "",
+	       (result < 0) ? strerror(errno) : ""));
 
 	return result;
 }
@@ -254,21 +204,14 @@ static int audit_close(vfs_handle_struct *handle, files_struct *fsp, int fd)
 	
 	result = SMB_VFS_NEXT_CLOSE(handle, fsp, fd);
 
-	if (lp_parm_bool(SNUM(handle->conn), "extd_audit", "parseable",
-			 False)) {
-		syslog(audit_syslog_priority(handle),
-		       "%d|%s|close|%s\n", current_user.uid,
-		       handle->conn->client_address, fsp->fsp_name);
-	} else {
-		syslog(audit_syslog_priority(handle), "close fd %d %s%s\n",
-		       fd,
-		       (result < 0) ? "failed: " : "",
-		       (result < 0) ? strerror(errno) : "");
-		DEBUG(2, ("vfs_extd_audit: close fd %d %s %s\n",
-			  fd,
-			  (result < 0) ? "failed: " : "",
-			  (result < 0) ? strerror(errno) : ""));
-	}
+	syslog(audit_syslog_priority(handle), "close fd %d %s%s\n",
+	       fd,
+	       (result < 0) ? "failed: " : "",
+	       (result < 0) ? strerror(errno) : "");
+	DEBUG(2, ("vfs_extd_audit: close fd %d %s %s\n",
+	       fd,
+	       (result < 0) ? "failed: " : "",
+	       (result < 0) ? strerror(errno) : ""));
 
 	return result;
 }
@@ -279,21 +222,14 @@ static int audit_rename(vfs_handle_struct *handle, connection_struct *conn, cons
 	
 	result = SMB_VFS_NEXT_RENAME(handle, conn, old, new);
 
-	if (lp_parm_bool(SNUM(handle->conn), "extd_audit", "parseable",
-			 False)) {
-		syslog(audit_syslog_priority(handle),
-		       "%d|%s|rename|%s|%s\n", current_user.uid,
-		       handle->conn->client_address, old, new);
-	} else {
-		syslog(audit_syslog_priority(handle), "rename %s -> %s %s%s\n",
-		       old, new,
-		       (result < 0) ? "failed: " : "",
-		       (result < 0) ? strerror(errno) : "");
-		DEBUG(1, ("vfs_extd_audit: rename old: %s new: %s  %s %s\n",
-			  old, new,
-			  (result < 0) ? "failed: " : "",
-			  (result < 0) ? strerror(errno) : ""));
-	}
+	syslog(audit_syslog_priority(handle), "rename %s -> %s %s%s\n",
+	       old, new,
+	       (result < 0) ? "failed: " : "",
+	       (result < 0) ? strerror(errno) : "");
+	DEBUG(1, ("vfs_extd_audit: rename old: %s new: %s  %s %s\n",
+	       old, new,
+	       (result < 0) ? "failed: " : "",
+	       (result < 0) ? strerror(errno) : ""));
 
 	return result;    
 }
@@ -304,21 +240,14 @@ static int audit_unlink(vfs_handle_struct *handle, connection_struct *conn, cons
 	
 	result = SMB_VFS_NEXT_UNLINK(handle, conn, path);
 
-	if (lp_parm_bool(SNUM(handle->conn), "extd_audit", "parseable",
-			 False)) {
-		syslog(audit_syslog_priority(handle),
-		       "%d|%s|unlink|%s\n", current_user.uid,
-		       handle->conn->client_address, path);
-	} else {
-		syslog(audit_syslog_priority(handle), "unlink %s %s%s\n",
-		       path,
-		       (result < 0) ? "failed: " : "",
-		       (result < 0) ? strerror(errno) : "");
-		DEBUG(0, ("vfs_extd_audit: unlink %s %s %s\n",
-			  path,
-			  (result < 0) ? "failed: " : "",
-			  (result < 0) ? strerror(errno) : ""));
-	}
+	syslog(audit_syslog_priority(handle), "unlink %s %s%s\n",
+	       path,
+	       (result < 0) ? "failed: " : "",
+	       (result < 0) ? strerror(errno) : "");
+	DEBUG(0, ("vfs_extd_audit: unlink %s %s %s\n",
+	       path,
+	       (result < 0) ? "failed: " : "",
+	       (result < 0) ? strerror(errno) : ""));
 
 	return result;
 }
@@ -329,22 +258,14 @@ static int audit_chmod(vfs_handle_struct *handle, connection_struct *conn, const
 
 	result = SMB_VFS_NEXT_CHMOD(handle, conn, path, mode);
 
-	if (lp_parm_bool(SNUM(handle->conn), "extd_audit", "parseable",
-			 False)) {
-		syslog(audit_syslog_priority(handle),
-		       "%d|%s|chmod|%s|%o\n", current_user.uid,
-		       handle->conn->client_address, path, mode);
-	} else {
-		syslog(audit_syslog_priority(handle),
-		       "chmod %s mode 0x%x %s%s\n",
-		       path, mode,
-		       (result < 0) ? "failed: " : "",
-		       (result < 0) ? strerror(errno) : "");
-		DEBUG(1, ("vfs_extd_audit: chmod %s mode 0x%x %s %s\n",
-			  path, mode,
-			  (result < 0) ? "failed: " : "",
-			  (result < 0) ? strerror(errno) : ""));
-	}
+	syslog(audit_syslog_priority(handle), "chmod %s mode 0x%x %s%s\n",
+	       path, mode,
+	       (result < 0) ? "failed: " : "",
+	       (result < 0) ? strerror(errno) : "");
+	DEBUG(1, ("vfs_extd_audit: chmod %s mode 0x%x %s %s\n",
+	       path, mode,
+	       (result < 0) ? "failed: " : "",
+	       (result < 0) ? strerror(errno) : ""));
 
 	return result;
 }
@@ -355,22 +276,14 @@ static int audit_chmod_acl(vfs_handle_struct *handle, connection_struct *conn, c
 	
 	result = SMB_VFS_NEXT_CHMOD_ACL(handle, conn, path, mode);
 
-	if (lp_parm_bool(SNUM(handle->conn), "extd_audit", "parseable",
-			 False)) {
-		syslog(audit_syslog_priority(handle),
-		       "%d|%s|chmod_acl|%s|%o\n", current_user.uid,
-		       handle->conn->client_address, path, mode);
-	} else {
-		syslog(audit_syslog_priority(handle),
-		       "chmod_acl %s mode 0x%x %s%s\n",
-		       path, mode,
-		       (result < 0) ? "failed: " : "",
-		       (result < 0) ? strerror(errno) : "");
-		DEBUG(1, ("vfs_extd_audit: chmod_acl %s mode 0x%x %s %s\n",
-			  path, mode,
-			  (result < 0) ? "failed: " : "",
-			  (result < 0) ? strerror(errno) : ""));
-	}
+	syslog(audit_syslog_priority(handle), "chmod_acl %s mode 0x%x %s%s\n",
+	       path, mode,
+	       (result < 0) ? "failed: " : "",
+	       (result < 0) ? strerror(errno) : "");
+	DEBUG(1, ("vfs_extd_audit: chmod_acl %s mode 0x%x %s %s\n",
+	        path, mode,
+	       (result < 0) ? "failed: " : "",
+	       (result < 0) ? strerror(errno) : ""));
 
 	return result;
 }
@@ -381,22 +294,14 @@ static int audit_fchmod(vfs_handle_struct *handle, files_struct *fsp, int fd, mo
 	
 	result = SMB_VFS_NEXT_FCHMOD(handle, fsp, fd, mode);
 
-	if (lp_parm_bool(SNUM(handle->conn), "extd_audit", "parseable",
-			 False)) {
-		syslog(audit_syslog_priority(handle),
-		       "%d|%s|fchmod|%s|%o\n", current_user.uid,
-		       handle->conn->client_address, fsp->fsp_name, mode);
-	} else {
-		syslog(audit_syslog_priority(handle),
-		       "fchmod %s mode 0x%x %s%s\n",
-		       fsp->fsp_name, mode,
-		       (result < 0) ? "failed: " : "",
-		       (result < 0) ? strerror(errno) : "");
-		DEBUG(1, ("vfs_extd_audit: fchmod %s mode 0x%x %s %s",
-			  fsp->fsp_name,  mode,
-			  (result < 0) ? "failed: " : "",
-			  (result < 0) ? strerror(errno) : ""));
-	}
+	syslog(audit_syslog_priority(handle), "fchmod %s mode 0x%x %s%s\n",
+	       fsp->fsp_name, mode,
+	       (result < 0) ? "failed: " : "",
+	       (result < 0) ? strerror(errno) : "");
+	DEBUG(1, ("vfs_extd_audit: fchmod %s mode 0x%x %s %s",
+	       fsp->fsp_name,  mode,
+	       (result < 0) ? "failed: " : "",
+	       (result < 0) ? strerror(errno) : ""));
 
 	return result;
 }
@@ -407,22 +312,14 @@ static int audit_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, int fd
 	
 	result = SMB_VFS_NEXT_FCHMOD_ACL(handle, fsp, fd, mode);
 
-	if (lp_parm_bool(SNUM(handle->conn), "extd_audit", "parseable",
-			 False)) {
-		syslog(audit_syslog_priority(handle),
-		       "%d|%s|fchmod_acl|%s|%o\n", current_user.uid,
-		       handle->conn->client_address, fsp->fsp_name, mode);
-	} else {
-		syslog(audit_syslog_priority(handle),
-		       "fchmod_acl %s mode 0x%x %s%s\n",
-		       fsp->fsp_name, mode,
-		       (result < 0) ? "failed: " : "",
-		       (result < 0) ? strerror(errno) : "");
-		DEBUG(1, ("vfs_extd_audit: fchmod_acl %s mode 0x%x %s %s",
-			  fsp->fsp_name,  mode,
-			  (result < 0) ? "failed: " : "",
-			  (result < 0) ? strerror(errno) : ""));
-	}
+	syslog(audit_syslog_priority(handle), "fchmod_acl %s mode 0x%x %s%s\n",
+	       fsp->fsp_name, mode,
+	       (result < 0) ? "failed: " : "",
+	       (result < 0) ? strerror(errno) : "");
+	DEBUG(1, ("vfs_extd_audit: fchmod_acl %s mode 0x%x %s %s",
+	       fsp->fsp_name,  mode,
+	       (result < 0) ? "failed: " : "",
+	       (result < 0) ? strerror(errno) : ""));
 
 	return result;
 }

@@ -313,6 +313,7 @@ NOTIFY_OBJ = smbd/notify.o smbd/notify_hash.o smbd/notify_kernel.o
 
 VFS_AUDIT_OBJ = modules/vfs_audit.o
 VFS_EXTD_AUDIT_OBJ = modules/vfs_extd_audit.o
+VFS_FULL_AUDIT_OBJ = modules/vfs_full_audit.o
 VFS_FAKE_PERMS_OBJ = modules/vfs_fake_perms.o
 VFS_RECYCLE_OBJ = modules/vfs_recycle.o
 VFS_NETATALK_OBJ = modules/vfs_netatalk.o
@@ -1143,6 +1144,11 @@ bin/audit.@SHLIBEXT@: $(VFS_AUDIT_OBJ:.o=.@PICSUFFIX@)
 bin/extd_audit.@SHLIBEXT@: $(VFS_EXTD_AUDIT_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_EXTD_AUDIT_OBJ:.o=.@PICSUFFIX@) \
+		@SONAMEFLAG@`basename $@`
+
+bin/full_audit.@SHLIBEXT@: $(VFS_FULL_AUDIT_OBJ:.o=.@PICSUFFIX@)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_FULL_AUDIT_OBJ:.o=.@PICSUFFIX@) \
 		@SONAMEFLAG@`basename $@`
 
 bin/recycle.@SHLIBEXT@: $(VFS_RECYCLE_OBJ:.o=.@PICSUFFIX@)
