@@ -663,7 +663,7 @@ static void
 doit(struct sockaddr *who, int who_len)
 {
     char *host = NULL;
-    struct hostent *hp;
+    struct hostent *hp = NULL;
     int level;
     int ptynum;
     char user_name[256];
@@ -741,7 +741,8 @@ Please contact your net administrator");
      * to also do a gethost* and overwrite the static data...
      */
     strcpy_truncate(remote_host_name, host, sizeof(remote_host_name));
-    freehostent (hp);
+    if (hp != NULL)
+	freehostent (hp);
     host = remote_host_name;
 
     /* XXX - should be k_gethostname? */
