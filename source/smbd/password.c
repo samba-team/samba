@@ -1191,13 +1191,16 @@ use this machine as the password server.\n"));
  given a name or IP address.
 ************************************************************************/
 
-static BOOL connect_to_domain_password_server(struct cli_state *pcli, 
+static BOOL connect_to_domain_password_server(struct cli_state **ppcli, 
 						char *server, unsigned char *trust_passwd)
 {
 	struct in_addr dest_ip;
 	fstring remote_machine;
+	struct cli_state *pcli = NULL;
 
-	if(!cli_initialise(pcli)) {
+	*ppcli = NULL;
+
+	if(!(pcli = cli_initialise(NULL))) {
 		DEBUG(0,("connect_to_domain_password_server: unable to initialize client connection.\n"));
 		return False;
 	}
@@ -1338,6 +1341,8 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(pcli)));
 		return(False);
 	}
 
+	*ppcli = pcli;
+
 	return True;
 }
 
@@ -1345,7 +1350,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(pcli)));
  Utility function to attempt a connection to an IP address of a DC.
 ************************************************************************/
 
-static BOOL attempt_connect_to_dc(struct cli_state *pcli, struct in_addr *ip, unsigned char *trust_passwd)
+static BOOL attempt_connect_to_dc(struct cli_state **ppcli, struct in_addr *ip, unsigned char *trust_passwd)
 {
 	fstring dc_name;
 
@@ -1359,7 +1364,7 @@ static BOOL attempt_connect_to_dc(struct cli_state *pcli, struct in_addr *ip, un
 	if (!lookup_dc_name(global_myname, lp_workgroup(), ip, dc_name))
 		return False;
 
-	return connect_to_domain_password_server(pcli, dc_name, trust_passwd);
+	return connect_to_domain_password_server(ppcli, dc_name, trust_passwd);
 }
 
 /***********************************************************************
@@ -1367,7 +1372,7 @@ static BOOL attempt_connect_to_dc(struct cli_state *pcli, struct in_addr *ip, un
  the PDC and BDC's for this DOMAIN, and query them in turn.
 ************************************************************************/
 
-static BOOL find_connect_pdc(struct cli_state *pcli, unsigned char *trust_passwd, time_t last_change_time)
+static BOOL find_connect_pdc(struct cli_state **ppcli, unsigned char *trust_passwd, time_t last_change_time)
 {
 	struct in_addr *ip_list = NULL;
 	int count = 0;
@@ -1398,7 +1403,7 @@ static BOOL find_connect_pdc(struct cli_state *pcli, unsigned char *trust_passwd
 		if(!is_local_net(ip_list[i]))
 			continue;
 
-		if((connected_ok = attempt_connect_to_dc(pcli, &ip_list[i], trust_passwd))) 
+		if((connected_ok = attempt_connect_to_dc(ppcli, &ip_list[i], trust_passwd))) 
 			break;
 		
 		zero_ip(&ip_list[i]); /* Tried and failed. */
@@ -1411,7 +1416,7 @@ static BOOL find_connect_pdc(struct cli_state *pcli, unsigned char *trust_passwd
 		i = (sys_random() % count);
 
 		if (!is_zero_ip(ip_list[i])) {
-			if (!(connected_ok = attempt_connect_to_dc(pcli, &ip_list[i], trust_passwd)))
+			if (!(connected_ok = attempt_connect_to_dc(ppcli, &ip_list[i], trust_passwd)))
 				zero_ip(&ip_list[i]); /* Tried and failed. */
 		}
 	}
@@ -1429,7 +1434,7 @@ static BOOL find_connect_pdc(struct cli_state *pcli, unsigned char *trust_passwd
 			if (is_zero_ip(ip_list[i]))
 				continue;
 
-			if((connected_ok = attempt_connect_to_dc(pcli, &ip_list[i], trust_passwd)))
+			if((connected_ok = attempt_connect_to_dc(ppcli, &ip_list[i], trust_passwd)))
 				break;
 		}
 	}
@@ -1545,9 +1550,9 @@ BOOL domain_client_validate( char *user, char *domain,
 	while (!connected_ok &&
 			next_token(&p,remote_machine,LIST_SEP,sizeof(remote_machine))) {
 		if(strequal(remote_machine, "*")) {
-			connected_ok = find_connect_pdc(pcli, trust_passwd, last_change_time);
+			connected_ok = find_connect_pdc(&pcli, trust_passwd, last_change_time);
 		} else {
-			connected_ok = connect_to_domain_password_server(pcli, remote_machine, trust_passwd);
+			connected_ok = connect_to_domain_password_server(&pcli, remote_machine, trust_passwd);
 		}
 	}
 
