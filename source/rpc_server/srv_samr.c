@@ -34,10 +34,6 @@ extern DOM_SID global_sam_sid;
 extern DOM_SID global_sid_S_1_1;
 extern DOM_SID global_sid_S_1_5_20;
 
-extern rid_name domain_group_rids[];
-extern rid_name domain_alias_rids[];
-extern rid_name builtin_alias_rids[];
-
 /*******************************************************************
   This next function should be replaced with something that
   dynamically returns the correct user info..... JRA.
@@ -662,33 +658,6 @@ static void samr_reply_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_u,
 		}
 	}
 
-	if (r_e.status == 0x0 &&
-	    (sid_equal(&sid, &global_sam_sid) ||
-	     sid_equal(&sid, &global_sid_S_1_5_20)))
-	{
-		char *name;
-		int i = 0;
-		got_grps = True;
-
-		while (num_entries < MAX_SAM_ENTRIES && ((name = domain_group_rids[i].name) != NULL))
-		{
-			DOMAIN_GRP tmp_grp;
-
-			fstrcpy(tmp_grp.name   , name);
-			fstrcpy(tmp_grp.comment, "");
-			tmp_grp.rid = domain_group_rids[i].rid;
-			tmp_grp.attr = 0x7;
-
-			if (!add_domain_group(&grps, &num_entries, &tmp_grp))
-			{
-				r_e.status = 0xC0000000 | NT_STATUS_NO_MEMORY;
-				break;
-			}
-
-			i++;
-		}
-	}
-
 	if (r_e.status == 0 && got_grps)
 	{
 		make_samr_r_enum_dom_groups(&r_e, q_u->start_idx, num_entries, grps, r_e.status);
@@ -744,28 +713,21 @@ static void samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 	/* well-known aliases */
 	if (sid_equal(&sid, &global_sid_S_1_5_20))
 	{
-		char *name;
+		BOOL ret;
+		/* builtin aliases */
 
-		while ((name = builtin_alias_rids[num_entries].name) != NULL)
+		become_root(True);
+		ret = enumdombuiltins(&alss, &num_entries);
+		unbecome_root(True);
+		if (!ret)
 		{
-			LOCAL_GRP tmp_als;
-
-			fstrcpy(tmp_als.name   , name);
-			fstrcpy(tmp_als.comment, "");
-			tmp_als.rid = builtin_alias_rids[num_entries].rid;
-
-			if (!add_domain_alias(&alss, &num_entries, &tmp_als))
-			{
-				r_e.status = 0xC0000000 | NT_STATUS_NO_MEMORY;
-				break;
-			}
+			r_e.status = 0xC0000000 | NT_STATUS_NO_MEMORY;
 		}
 	}
 	else if (sid_equal(&sid, &global_sam_sid))
 	{
 		BOOL ret;
 		/* local aliases */
-		num_entries = 0;
 
 		become_root(True);
 		ret = enumdomaliases(&alss, &num_entries);
