@@ -510,6 +510,27 @@ krb5_salttype_to_string (krb5_context context,
 }
 
 krb5_error_code
+krb5_string_to_salttype (krb5_context context,
+			 krb5_enctype etype,
+			 const char *string,
+			 krb5_salttype *salttype)
+{
+    struct encryption_type *e;
+    struct salt_type *st;
+
+    e = _find_enctype (etype);
+    if (e == NULL)
+	return KRB5_PROG_ETYPE_NOSUPP;
+    for (st = e->keytype->string_to_key; st && st->type; st++) {
+	if (strcasecmp (st->name, string) == 0) {
+	    *salttype = st->type;
+	    return 0;
+	}
+    }
+    return HEIM_ERR_SALTTYPE_NOSUPP;
+}
+
+krb5_error_code
 krb5_get_pw_salt(krb5_context context,
 		 krb5_const_principal principal,
 		 krb5_salt *salt)
