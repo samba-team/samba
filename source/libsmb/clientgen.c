@@ -782,6 +782,9 @@ BOOL cli_session_setup(struct cli_state *cli,
 		ntpword[0] = '\0';
 	} else {
 		if ((cli->sec_mode & 2) && passlen != 24) {
+			/*
+			 * Encrypted mode needed, and non encrypted password supplied.
+			 */
 			passlen = 24;
 			ntpasslen = 24;
 			fstrcpy(pword, pass);
@@ -790,7 +793,21 @@ BOOL cli_session_setup(struct cli_state *cli,
 			unix_to_dos(ntpword,True);
 			SMBencrypt((uchar *)pword,(uchar *)cli->cryptkey,(uchar *)pword);
 			SMBNTencrypt((uchar *)ntpword,(uchar *)cli->cryptkey,(uchar *)ntpword);
+		} else if ((cli->sec_mode & 2) && passlen == 24) {
+			/*
+			 * Encrypted mode needed, and encrypted password supplied.
+			 */
+			memcpy(pword, pass, passlen);
+			if(ntpasslen == 24) {
+				memcpy(ntpword, ntpass, ntpasslen);
+			} else {
+				fstrcpy(ntpword, "");
+				ntpasslen = 0;
+			}
 		} else {
+			/*
+			 * Plaintext mode needed, assume plaintext supplied.
+			 */
 			fstrcpy(pword, pass);
 			unix_to_dos(pword,True);
 			fstrcpy(ntpword, "");

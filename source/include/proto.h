@@ -401,8 +401,8 @@ char *string_truncate(char *s, int length);
 
 /*The following definitions come from  lib/util_unistr.c  */
 
-int dos_PutUniCode(char *dst,char *src, ssize_t len);
-char *skip_unicode_string(char *buf,int n);
+int dos_PutUniCode(char *dst,const char *src, ssize_t len);
+char *skip_unicode_string(const char *buf,int n);
 char *dos_unistrn2(uint16 *src, int len);
 char *dos_unistr2(uint16 *src);
 char *dos_unistr2_to_str(UNISTR2 *str);

@@ -636,7 +636,12 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     memcpy(smb_apasswd,smb_buf(inbuf),smb_apasslen);
     smb_apasswd[smb_apasslen] = 0;
     pstrcpy(user,smb_buf(inbuf)+smb_apasslen);
-
+    /*
+     * Incoming user is in DOS codepage format. Convert
+     * to UNIX.
+     */
+    dos_to_unix(user,True);
+  
     if (!doencrypt && (lp_security() != SEC_SERVER)) {
       smb_apasslen = strlen(smb_apasswd);
     }
@@ -745,7 +750,13 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     }
     
     p += passlen1 + passlen2;
-    fstrcpy(user,p); p = skip_string(p,1);
+    fstrcpy(user,p);
+    p = skip_string(p,1);
+    /*
+     * Incoming user is in DOS codepage format. Convert
+     * to UNIX.
+     */
+    dos_to_unix(user,True);
     domain = p;
 
     DEBUG(3,("Domain=[%s]  NativeOS=[%s] NativeLanMan=[%s]\n",
@@ -787,11 +798,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
       guest = True;
   }
 
-  /*
-   * Incoming user is in DOS codepage format. Convert
-   * to UNIX.
-   */
-  dos_to_unix(user, True);
   strlower(user);
 
   /*

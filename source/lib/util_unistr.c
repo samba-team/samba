@@ -26,10 +26,12 @@
 #endif
 
 /*******************************************************************
-write a string in (little-endian) unicoode format
+ Write a string in (little-endian) unicoode format.
+ The return value is the length of the string *without* the trailing
+ two bytes of zero
 ********************************************************************/
 
-int dos_PutUniCode(char *dst,char *src, ssize_t len)
+int dos_PutUniCode(char *dst,const char *src, ssize_t len)
 {
   int ret = 0;
   while (*src && (len > 2)) {
@@ -46,7 +48,7 @@ int dos_PutUniCode(char *dst,char *src, ssize_t len)
 skip past some unicode strings in a buffer
 ********************************************************************/
 
-char *skip_unicode_string(char *buf,int n)
+char *skip_unicode_string(const char *buf,int n)
 {
   while (n--)
   {
@@ -54,7 +56,7 @@ char *skip_unicode_string(char *buf,int n)
       buf += 2;
     buf += 2;
   }
-  return(buf);
+  return((char *)buf);
 }
 
 /*******************************************************************
