@@ -1052,7 +1052,7 @@ makes a structure.
 ********************************************************************/
 
 void init_q_lookup_names(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_NAMES *q_l, 
-			 POLICY_HND *hnd, int num_names, char **names)
+			 POLICY_HND *hnd, int num_names, const char **names)
 {
 	int i;
 
@@ -1078,7 +1078,7 @@ void init_q_lookup_names(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_NAMES *q_l,
 	}
 
 	for (i = 0; i < num_names; i++) {
-		char* name = names[i];
+		const char *name = names[i];
 		int len = strlen(name);
 
 		init_uni_hdr(&q_l->hdr_name[i], len);
