@@ -662,7 +662,9 @@ PICFLAG=""
 PICSUFFIX="po"
 POBAD_CC="#"
 SHLIBEXT="so"
+# Assume non-shared by default and override below
 BLDSHARED="false"
+AC_MSG_CHECKING([ability to build shared libraries])
 
 # and these are for particular systems
 case "$host_os" in
@@ -750,6 +752,11 @@ case "$host_os" in
 			LDSHFLAGS="-G"
 			;;
 esac
+AC_MSG_RESULT($BLDSHARED)
+AC_MSG_CHECKING([linker flags for shared libraries])
+AC_MSG_RESULT([$LDSHFLAGS])
+AC_MSG_CHECKING([compiler flags for position-independent code])
+AC_MSG_RESULT([$PICFLAGS])
 
 # this updates our target list if we can build shared libs
 if test $BLDSHARED = true; then
