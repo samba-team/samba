@@ -1,3 +1,14 @@
+Thu Oct 16 05:16:36 1997  Assar Westerlund  <assar@sics.se>
+
+	* kpasswd/kpasswdd.c: change all the keys in the database
+
+	* kdc: removed all unsealing, now done by the hdb layer
+
+	* lib/hdb/hdb.c: new functions `hdb_create', `hdb_set_master_key'
+ 	and `hdb_clear_master_key'
+
+	* admin/misc.c: removed
+
 Wed Oct 15 22:47:31 1997  Assar Westerlund  <assar@sics.se>
 
 	* kuser/klist.c: print year as YYYY iff verbose
