@@ -245,12 +245,12 @@ void do_browser_lists(time_t t)
     DEBUG(4,("do_browser_lists: Initiating sync with %s, workgroup %s\n",
               b->name, b->group));
     start_sync_browse_entry(b);
-    expire_browse_cache(t - 60);
   }
   else
   {
     DEBUG(9, ("do_browser_lists: no entries to sync.\n"));
   }
 
+  expire_browse_cache(t - 60);
 }
 
