@@ -673,27 +673,21 @@ NTSTATUS dcerpc_secondary_smb(struct dcerpc_pipe *p, struct dcerpc_pipe **p2,
   only works for the ncacn_np transport
 */
 NTSTATUS dcerpc_fetch_session_key(struct dcerpc_pipe *p,
-				  uint8 session_key[16])
+				  DATA_BLOB *session_key)
 {
 	struct cli_tree *tree;
 
-	memset(session_key, 0, 16);
-
-	tree = dcerpc_smb_tree(p);
-	if (tree) {
-		memcpy(session_key, 
-		       tree->session->transport->negotiate.user_session_key,
-		       16);
-	}
-
 	if (p->security_state) {
-		NTSTATUS status;
-
-		status = p->security_state->session_key(p->security_state, session_key);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+		return p->security_state->session_key(p->security_state, session_key);
 	}
 	
-	return NT_STATUS_OK;
+	tree = dcerpc_smb_tree(p);
+	if (tree) {
+		if (tree->session->user_session_key.data) {
+			*session_key = tree->session->user_session_key;
+			return NT_STATUS_OK;
+		}
+	}
+
+	return NT_STATUS_NO_USER_SESSION_KEY;
 }

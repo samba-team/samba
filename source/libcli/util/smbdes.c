@@ -338,14 +338,14 @@ void cred_hash1(unsigned char *out, const unsigned char *in, const unsigned char
 	smbhash(out, buf, key+9, 1);
 }
 
-void cred_hash2(unsigned char *out, const unsigned char *in, const unsigned char *key)
+void cred_hash2(unsigned char *out, const unsigned char *in, const unsigned char *key, int forw)
 {
 	unsigned char buf[8];
 	unsigned char key2[8];
 	ZERO_STRUCT(key2);
-	smbhash(buf, in, key, 1);
+	smbhash(buf, in, key, forw);
 	key2[0] = key[7];
-	smbhash(out, buf, key2, 1);
+	smbhash(out, buf, key2, forw);
 }
 
 void cred_hash3(unsigned char *out, unsigned char *in, const unsigned char *key, int forw)
@@ -401,12 +401,11 @@ void SamOEMhashBlob(unsigned char *data, int len, const DATA_BLOB *key)
 */
 void SamOEMhash(unsigned char *data, const unsigned char keystr[16], int len)
 {
-	DATA_BLOB key;
-
-	key.length = 16;
-	key.data = keystr;
+	DATA_BLOB key = data_blob(keystr, 16);
 	
 	SamOEMhashBlob(data, len, &key);
+
+	data_blob_free(&key);
 }
 
 
