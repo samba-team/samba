@@ -78,7 +78,7 @@ find_padata(KDC_REQ *req, int *start, int type)
  */
 
 static krb5_error_code
-find_etype(hdb_entry *princ, unsigned *etypes, unsigned len, 
+find_etype(hdb_entry *princ, krb5_enctype *etypes, unsigned len, 
 	   Key **ret_key, krb5_enctype *ret_etype)
 {
     int i;
