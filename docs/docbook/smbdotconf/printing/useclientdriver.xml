@@ -32,7 +32,8 @@
     on a print share which has valid print driver installed on the Samba 
     server.</emphasis></para>
 
-    <para>See also <link linkend="DISABLESPOOLSS">disable spoolss</link></para>
+    <para>See also <link linkend="DISABLESPOOLSS"><parameter 
+    moreinfo="none">disable spoolss</parameter></link></para>
 
     <para>Default: <command moreinfo="none">use client driver = no</command></para>
 </listitem>

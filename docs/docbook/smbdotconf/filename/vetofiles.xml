@@ -34,7 +34,8 @@
 	<para>Default: <emphasis>No files or directories are vetoed.
 	</emphasis></para>
 
-<para>Examples:<programlisting format="linespecific">
+	<para>Examples:
+<programlisting format="linespecific">
 ; Veto any files containing the word Security, 
 ; any ending in .tmp, and any directory containing the
 ; word root.
