@@ -574,8 +574,10 @@ verify(char *password)
 	return 0;
     }
 
-    fprintf(stderr, "%s: Warning: %s\n", ProgName, 
-	    (ret < 0) ? strerror(ret) : krb_get_err_text(ret));
+    if(ret != INTK_BADPW){
+	fprintf(stderr, "%s: Warning: %s\n", ProgName, 
+		(ret < 0) ? strerror(ret) : krb_get_err_text(ret));
+    }
     
     /*
      * Try to verify as user.
@@ -639,6 +641,8 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
 
 	if(verify(passwd) == 0)
 	    leave();
+
+	cnt = 0;
 
 	XDrawImageString(dpy, XtWindow(widget), gc,
 	    time_x, time_y, FAIL_MSG, strlen(FAIL_MSG));
