@@ -202,11 +202,11 @@ NTSTATUS sam_account_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *user
 	if (!user_info || !sampass) 
 		return NT_STATUS_LOGON_FAILURE;
 
-	DEBUG(4,("smb_password_ok: Checking SMB password for user %s\n",sampass->username));
+	DEBUG(4,("smb_password_ok: Checking SMB password for user %s\n",pdb_get_username(sampass)));
 
 	/* Quit if the account was disabled. */
 	if (acct_ctrl & ACB_DISABLED) {
-		DEBUG(1,("Account for user '%s' was disabled.\n", sampass->username));
+		DEBUG(1,("Account for user '%s' was disabled.\n", pdb_get_username(sampass)));
 		return NT_STATUS_ACCOUNT_DISABLED;
 	}
 
@@ -214,7 +214,7 @@ NTSTATUS sam_account_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *user
 	
 	kickoff_time = pdb_get_kickoff_time(sampass);
 	if (kickoff_time != 0 && time(NULL) > kickoff_time) {
-		DEBUG(1,("Account for user '%s' has expried.\n", sampass->username));
+		DEBUG(1,("Account for user '%s' has expried.\n", pdb_get_username(sampass)));
 		DEBUG(3,("Account expired at '%ld' unix time.\n", (long)kickoff_time));
 		return NT_STATUS_ACCOUNT_EXPIRED;
 	}
@@ -253,30 +253,30 @@ NTSTATUS sam_account_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *user
 
 		/* check for immediate expiry "must change at next logon" */
 		if (must_change_time == 0 && last_set_time != 0) {
-			DEBUG(1,("Account for user '%s' password must change!.\n", sampass->username));
+			DEBUG(1,("Account for user '%s' password must change!.\n", pdb_get_username(sampass)));
 			return NT_STATUS_PASSWORD_MUST_CHANGE;
 		}
 
 		/* check for expired password */
 		if (must_change_time < time(NULL) && must_change_time != 0) {
-			DEBUG(1,("Account for user '%s' password expired!.\n", sampass->username));
+			DEBUG(1,("Account for user '%s' password expired!.\n", pdb_get_username(sampass)));
 			DEBUG(1,("Password expired at '%s' (%ld) unix time.\n", http_timestring(must_change_time), (long)must_change_time));
 			return NT_STATUS_PASSWORD_EXPIRED;
 		}
 	}
 
 	if (acct_ctrl & ACB_DOMTRUST) {
-		DEBUG(2,("session_trust_account: Domain trust account %s denied by server\n", sampass->username));
+		DEBUG(2,("session_trust_account: Domain trust account %s denied by server\n", pdb_get_username(sampass)));
 		return NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT;
 	}
 	
 	if (acct_ctrl & ACB_SVRTRUST) {
-		DEBUG(2,("session_trust_account: Server trust account %s denied by server\n", sampass->username));
+		DEBUG(2,("session_trust_account: Server trust account %s denied by server\n", pdb_get_username(sampass)));
 		return NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT;
 	}
 	
 	if (acct_ctrl & ACB_WSTRUST) {
-		DEBUG(4,("session_trust_account: Wksta trust account %s denied by server\n", sampass->username));
+		DEBUG(4,("session_trust_account: Wksta trust account %s denied by server\n", pdb_get_username(sampass)));
 		return NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT;
 	}
 	
