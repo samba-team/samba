@@ -1221,6 +1221,26 @@ AC_ARG_WITH(ssl,
   AC_MSG_RESULT(no)
 )
 
+
+#################################################
+# check for experimental socket performance hack
+AC_MSG_CHECKING(whether to use the socket hack)
+AC_ARG_WITH(sockethack,
+[  --with-sockethack     Include experimental socket hack
+  --without-sockethack  Don't include experimental socket hack (default)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_SOCKET_HACK)
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+
 #################################################
 # check for experimental mmap support
 AC_MSG_CHECKING(whether to use MMAP)

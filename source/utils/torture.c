@@ -372,6 +372,11 @@ static void run_nbw95(void)
 {
 	double t;
 	t = create_procs(run_netbench);
+	/* to produce a netbench result we scale accoding to the
+           netbench measured throughput for the run that produced the
+           sniff that was used to produce client.txt. That run used 2
+           clients and ran for 660 seconds to produce a result of
+           4MBit/sec. */
 	printf("Throughput %g MB/sec (NB=%g MB/sec  %g MBit/sec)\n", 
 	       132*nprocs/t, 0.5*0.5*nprocs*660/t, 2*nprocs*660/t);
 }

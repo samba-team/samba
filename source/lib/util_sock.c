@@ -220,6 +220,20 @@ ssize_t read_udp_socket(int fd,char *buf,size_t len)
   return(ret);
 }
 
+
+/****************************************************************************
+normally just a read, unless we have the socket performance hack on
+****************************************************************************/
+static ssize_t fd_read(int fd, char *buf, size_t size)
+{
+#if WITH_SOCKET_HACK
+	return recv(fd, buf, size, 0x8000);
+#else
+	return read(fd, buf, size);
+#endif
+}
+
+
 /****************************************************************************
 read data from a device with a timout in msec.
 mincount = if timeout, minimum to read before returning
@@ -252,7 +266,7 @@ ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned 
         readret = read(fd, buf + nread, maxcnt - nread);
       }
 #else /* WITH_SSL */
-      readret = read(fd, buf + nread, maxcnt - nread);
+      readret = fd_read(fd, buf + nread, maxcnt - nread);
 #endif /* WITH_SSL */
 
       if (readret == 0) {
@@ -307,10 +321,10 @@ ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned 
     if(fd == sslFd){
       readret = SSL_read(ssl, buf + nread, maxcnt - nread);
     }else{
-      readret = read(fd, buf + nread, maxcnt - nread);
+      readret = fd_read(fd, buf + nread, maxcnt - nread);
     }
 #else /* WITH_SSL */
-    readret = read(fd, buf+nread, maxcnt-nread);
+    readret = fd_read(fd, buf+nread, maxcnt-nread);
 #endif /* WITH_SSL */
 
     if (readret == 0) {
@@ -366,10 +380,10 @@ ssize_t read_data(int fd,char *buffer,size_t N)
     if(fd == sslFd){
       ret = SSL_read(ssl, buffer + total, N - total);
     }else{
-      ret = read(fd,buffer + total,N - total);
+      ret = fd_read(fd,buffer + total,N - total);
     }
 #else /* WITH_SSL */
-    ret = read(fd,buffer + total,N - total);
+    ret = fd_read(fd,buffer + total,N - total);
 #endif /* WITH_SSL */
 
     if (ret == 0)
@@ -407,7 +421,11 @@ ssize_t write_data(int fd,char *buffer,size_t N)
       ret = write(fd,buffer + total,N - total);
     }
 #else /* WITH_SSL */
+#if WITH_SOCKET_HACK
+    ret = send(fd,buffer + total,N - total,0x8000);
+#else
     ret = write(fd,buffer + total,N - total);
+#endif
 #endif /* WITH_SSL */
 
     if (ret == -1) {
