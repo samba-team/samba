@@ -249,7 +249,7 @@ void dump_names(void)
       }
      DEBUG(4,("\n"));
 
-     if (f && n->source == REGISTER)
+     if (f && ((n->source == REGISTER) || (n->source == SELF)))
       {
       /* XXXX i have little imagination as to how to output nb_flags as
          anything other than as a hexadecimal number :-) */
@@ -260,11 +260,11 @@ void dump_names(void)
 
         for (i = 0; i < n->num_ips; i++)
         {
-           fprintf(f, "%s %2x ",
-						inet_ntoa(n->ip_flgs[i].ip),
-						n->ip_flgs[i].nb_flags);
+           fprintf(f, "%s %2x%c ",
+                inet_ntoa(n->ip_flgs[i].ip),
+                n->ip_flgs[i].nb_flags, (n->source == REGISTER ? 'R' : 'S'));
         }
-		fprintf(f, "\n");
+        fprintf(f, "\n");
       }
 
   }
@@ -340,6 +340,17 @@ void load_netbios_names(void)
 	  DEBUG(0,("[%s]: name#type abs_time ip nb_flags\n",line));
 	  continue;
 	}
+
+      /* Deal with SELF or REGISTER name encoding. Default is REGISTER 
+         for compatibility with old nmbds. */
+      if(nb_flags_str[strlen(nb_flags_str)-1] == 'S')
+      {
+        DEBUG(5,("Ignoring SELF name %s\n", line));
+        continue;
+      }
+
+      if(nb_flags_str[strlen(nb_flags_str)-1] == 'R')
+        nb_flags_str[strlen(nb_flags_str)-1] = '\0';
 
       /* netbios name. # divides the name from the type (hex): netbios#xx */
       strcpy(name,name_str);
@@ -448,6 +459,12 @@ struct name_record *add_netbios_entry(struct subnet_record *d,
       return NULL;
     }
   }
+
+  if(type == 0x1e)      
+  {  
+    /* Add all 1e names as address 255.255.255.255 */  
+    ip = *interpret_addr2("255.255.255.255");  
+  }  
 
   n = (struct name_record *)malloc(sizeof(*n));
   if (!n) return(NULL);
