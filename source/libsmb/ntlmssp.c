@@ -708,7 +708,6 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 		DEBUG(10,("ntlmssp_server_auth: Using unmodified lm session key.\n"));
 		dump_data_pw("unmodified session key:\n", session_key.data, session_key.length);
 	} else {
-		data_blob_free(&encrypted_session_key);
 		DEBUG(10,("ntlmssp_server_auth: Failed to create unmodified session key.\n"));
 		session_key = data_blob(NULL, 0);
 	}
@@ -724,6 +723,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 		} else if (!session_key.data || session_key.length != 16) {
 			DEBUG(5, ("server session key is invalid (len == %u), cannot do KEY_EXCH!\n", 
 				  session_key.length));
+			ntlmssp_state->session_key = session_key;
 		} else {
 			dump_data_pw("KEY_EXCH session key (enc):\n", encrypted_session_key.data, encrypted_session_key.length);
 			SamOEMhash(encrypted_session_key.data, 
