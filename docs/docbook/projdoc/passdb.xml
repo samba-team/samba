@@ -346,6 +346,32 @@ Samba-3 introduces the following new password backend capabilities:
 			</itemizedlist>
 		</sect3>
 	</sect2>
+
+	<sect2>
+	<title>Mapping User Identifiers between MS Windows and Unix</title>
+
+	<para>
+	Every operation in Unix/Linux requires a user identifier (UID), just as in
+	MS Windows NT4 / 200x this requires a Security Identifier (SID). Samba provides
+	two means for mapping an MS Windows user to a Unix/Linux UID.
+	</para>
+
+	<para>
+	Firstly, all Samba SAM (Security Account Management database) accounts require
+	a Unix/Linux UID that the account will map to. As users are added to the account
+	information database samba-3 will call the <command>add user script</command>
+	interface to add the account to the Samba host OS. In essence all accounts in
+	the local SAM require a local user account.
+	</para>
+
+	<para>
+	The second way to affect Windows SID to Unix UID mapping is via the
+	<emphasis>idmap uid, idmap gid</emphasis> parameters in &smb.conf;.
+	Please refer to the man page for information about these parameters.
+	These parameters are essential when mapping users from a remote SAM server.
+	</para>
+
+	</sect2>
 </sect1>
 
 <sect1>
@@ -792,7 +818,7 @@ include            /etc/openldap/schema/nis.schema
 		</para>
 
 <para>
-<programlisting>
+<screen>
 # Indices to maintain
 ## required by OpenLDAP
 index objectclass             eq
@@ -810,12 +836,11 @@ index displayName             pres,sub,eq
 ##index gidNumber               eq
 ##index memberUid               eq
 
-index   rid                   eq
 index   sambaSID              eq
 index   sambaPrimaryGroupSID  eq
 index   sambaDomainName       eq
 index   default               sub
-</programlisting>
+</screen>
 </para>
 
 		<para>
@@ -823,9 +848,9 @@ index   default               sub
 		</para>
 
 <para>
-<programlisting>
+<screen>
 ./sbin/slapindex -f slapd.conf
-</programlisting>
+</screen>
 </para>
 
 		<para>
@@ -869,51 +894,51 @@ index   default               sub
 			use with an LDAP directory could appear as
 			</para>
 
-	<para>
-	<programlisting>
-	## /usr/local/samba/lib/smb.conf
-	[global]
-	     security = user
-	     encrypt passwords = yes
+<para>
+<screen>
+## /usr/local/samba/lib/smb.conf
+[global]
+     security = user
+     encrypt passwords = yes
 
-	     netbios name = TASHTEGO
-	     workgroup = NARNIA
+     netbios name = TASHTEGO
+     workgroup = NARNIA
 
-	     # ldap related parameters
+     # ldap related parameters
 
-	     # define the DN to use when binding to the directory servers
-	     # The password for this DN is not stored in smb.conf.  Rather it
-	     # must be set by using 'smbpasswd -w <replaceable>secretpw</replaceable>' to store the
-	     # passphrase in the secrets.tdb file.  If the "ldap admin dn" values
-	     # change, this password will need to be reset.
-	     ldap admin dn = "cn=Samba Manager,ou=people,dc=samba,dc=org"
+     # define the DN to use when binding to the directory servers
+     # The password for this DN is not stored in smb.conf.  Rather it
+     # must be set by using 'smbpasswd -w <replaceable>secretpw</replaceable>' to store the
+     # passphrase in the secrets.tdb file.  If the "ldap admin dn" values
+     # change, this password will need to be reset.
+     ldap admin dn = "cn=Samba Manager,ou=people,dc=samba,dc=org"
 
-	     # Define the SSL option when connecting to the directory
-	     # ('off', 'start tls', or 'on' (default))
-	     ldap ssl = start tls
+     # Define the SSL option when connecting to the directory
+     # ('off', 'start tls', or 'on' (default))
+     ldap ssl = start tls
 
-	     # syntax: passdb backend = ldapsam:ldap://server-name[:port]
-	     passdb backend ldapsam:ldap://funball.samba.org
+     # syntax: passdb backend = ldapsam:ldap://server-name[:port]
+     passdb backend = ldapsam:ldap://funball.samba.org, guest
 
-	     # smbpasswd -x delete the entire dn-entry
-	     ldap delete dn = no
+     # smbpasswd -x delete the entire dn-entry
+     ldap delete dn = no
 
-	     # the machine and user suffix added to the base suffix
-	     # wrote WITHOUT quotes. NULL siffixes by default
-	     ldap user suffix = ou=People
-	     ldap machine suffix = ou=Systems
+     # the machine and user suffix added to the base suffix
+     # wrote WITHOUT quotes. NULL siffixes by default
+     ldap user suffix = ou=People
+     ldap machine suffix = ou=Systems
 
-	     # Trust unix account information in LDAP
-	     #  (see the smb.conf manpage for details)
-	     ldap trust ids = Yes
+     # Trust unix account information in LDAP
+     #  (see the smb.conf manpage for details)
+     ldap trust ids = Yes
 
-	     # specify the base DN to use when searching the directory
-	     ldap suffix = "ou=people,dc=samba,dc=org"
+     # specify the base DN to use when searching the directory
+     ldap suffix = "ou=people,dc=samba,dc=org"
 
-	     # generally the default ldap search filter is ok
-	     # ldap filter = "(&amp;(uid=%u)(objectclass=sambaAccount))"
-	</programlisting>
-	</para>
+     # generally the default ldap search filter is ok
+     # ldap filter = "(&amp;(uid=%u)(objectclass=sambaAccount))"
+</screen>
+</para>
 
 		</sect3>
 
@@ -928,7 +953,7 @@ index   default               sub
 			<para>
 			Machines accounts are managed with the sambaAccount objectclass, just
 			like users accounts. However, it's up to you to store thoses accounts
-			in a different tree of you LDAP namespace: you should use
+			in a different tree of your LDAP namespace: you should use
 			"ou=Groups,dc=plainjoe,dc=org" to store groups and
 			"ou=People,dc=plainjoe,dc=org" to store users. Just configure your
 			NSS and PAM accordingly (usually, in the /etc/ldap.conf configuration
@@ -989,14 +1014,14 @@ index   default               sub
 			following ACL in <filename>slapd.conf</filename>:
 			</para>
 
-	<para>
-	<programlisting>
-	## allow the "ldap admin dn" access, but deny everyone else
-	access to attrs=lmPassword,ntPassword
-	     by dn="cn=Samba Admin,ou=people,dc=plainjoe,dc=org" write
-	     by * none
-	</programlisting>
-	</para>
+<para>
+<screen>
+## allow the "ldap admin dn" access, but deny everyone else
+access to attrs=lmPassword,ntPassword
+     by dn="cn=Samba Admin,ou=people,dc=plainjoe,dc=org" write
+     by * none
+</screen>
+</para>
 
 		</sect3>
 
@@ -1103,7 +1128,7 @@ index   default               sub
 			</para>
 
 	<para>
-	<programlisting>
+	<screen>
 	dn: uid=guest2, ou=people,dc=plainjoe,dc=org
 	ntPassword: 878D8014606CDA29677A44EFA1353FC7
 	pwdMustChange: 2147483647
@@ -1118,7 +1143,7 @@ index   default               sub
 	logoffTime: 2147483647
 	rid: 19006
 	pwdCanChange: 0
-	</programlisting>
+	</screen>
 	</para>
 
 			<para>
@@ -1127,7 +1152,7 @@ index   default               sub
 			</para>
 
 	<para>
-	<programlisting>
+	<screen>
 	dn: uid=gcarter, ou=people,dc=plainjoe,dc=org
 	logonTime: 0
 	displayName: Gerald Carter
@@ -1150,7 +1175,7 @@ index   default               sub
 	pwdCanChange: 0
 	pwdMustChange: 2147483647
 	ntPassword: 878D8014606CDA29677A44EFA1353FC7
-	</programlisting>
+	</screen>
 	</para>
 
 		</sect3>
@@ -1207,7 +1232,12 @@ index   default               sub
 	<title>MySQL</title>
 
 	<para>
-	Stuff goes here!
+	Every so often someone will come along with a great new idea. Storing of user accounts in an
+	SQL backend is one of them. Those who want to do this are in the best position to know what the
+	specific benefits are to them. This may sound like a cop-out, but in truth we can not attempt
+	to document every nitty little detail why certain things of marginal utility to the bulk of
+	Samba users might make sense to the rest. In any case, the following instructions should help
+	the determined SQL user to implement a working system.
 	</para>
 
 		<sect3>
@@ -1218,7 +1248,9 @@ index   default               sub
 			for the column names) or use the default table. The file <filename>examples/pdb/mysql/mysql.dump</filename> 
 			contains the correct queries to create the required tables. Use the command :
 
+			<screen>
 			<command>mysql -u<replaceable>username</replaceable> -h<replaceable>hostname</replaceable> -p<replaceable>password</replaceable> <replaceable>databasename</replaceable> &gt; <filename>/path/to/samba/examples/pdb/mysql/mysql.dump</filename></command>
+			</screen>
 			</para>
 		</sect3>
 
@@ -1228,9 +1260,9 @@ index   default               sub
 			<para>This plugin lacks some good documentation, but here is some short info:</para>
 
 			<para>Add a the following to the <command>passdb backend</command> variable in your <filename>smb.conf</filename>:
-			<programlisting>
+			<screen>
 			passdb backend = [other-plugins] mysql:identifier [other-plugins]
-			</programlisting>
+			</screen>
 			</para>
 
 			<para>The identifier can be any string you like, as long as it doesn't collide with 
@@ -1243,16 +1275,16 @@ index   default               sub
 				Additional options can be given thru the &smb.conf; file in the <command>[global]</command> section.
 			</para>
 
-	<para>
-	<programlisting>
-	identifier:mysql host                     - host name, defaults to 'localhost'
-	identifier:mysql password
-	identifier:mysql user                     - defaults to 'samba'
-	identifier:mysql database                 - defaults to 'samba'
-	identifier:mysql port                     - defaults to 3306
-	identifier:table                          - Name of the table containing users
-	</programlisting>
-	</para>
+		<para>
+		<screen>
+		identifier:mysql host                     - host name, defaults to 'localhost'
+		identifier:mysql password
+		identifier:mysql user                     - defaults to 'samba'
+		identifier:mysql database                 - defaults to 'samba'
+		identifier:mysql port                     - defaults to 3306
+		identifier:table                          - Name of the table containing users
+		</screen>
+		</para>
 
 			<warning>
 			<para>
@@ -1265,41 +1297,41 @@ index   default               sub
 
 			<para>Names of the columns in this table(I've added column types those columns should have first):</para>
 
-	<para>
-	<programlisting>
-	identifier:logon time column             - int(9)
-	identifier:logoff time column            - int(9)
-	identifier:kickoff time column           - int(9)
-	identifier:pass last set time column     - int(9)
-	identifier:pass can change time column   - int(9)
-	identifier:pass must change time column  - int(9)
-	identifier:username column               - varchar(255) - unix username
-	identifier:domain column                 - varchar(255) - NT domain user is part of
-	identifier:nt username column            - varchar(255) - NT username
-	identifier:fullname column               - varchar(255) - Full name of user
-	identifier:home dir column               - varchar(255) - Unix homedir path
-	identifier:dir drive column              - varchar(2)   - Directory drive path (eg: 'H:')
-	identifier:logon script column           - varchar(255)
-						 - Batch file to run on client side when logging on
-	identifier:profile path column           - varchar(255) - Path of profile
-	identifier:acct desc column              - varchar(255) - Some ASCII NT user data
-	identifier:workstations column           - varchar(255)
-						 - Workstations user can logon to (or NULL for all)
-	identifier:unknown string column         - varchar(255) - unknown string
-	identifier:munged dial column            - varchar(255) - ?
-	identifier:user sid column               - varchar(255) - NT user SID
-	identifier:group sid column              - varchar(255) - NT group ID
-	identifier:lanman pass column            - varchar(255) - encrypted lanman password
-	identifier:nt pass column                - varchar(255) - encrypted nt passwd
-	identifier:plain pass column             - varchar(255) - plaintext password
-	identifier:acct control column           - int(9) - nt user data
-	identifier:unknown 3 column              - int(9) - unknown
-	identifier:logon divs column             - int(9) - ?
-	identifier:hours len column              - int(9) - ?
-	identifier:unknown 5 column              - int(9) - unknown
-	identifier:unknown 6 column              - int(9) - unknown
-	</programlisting>
-	</para>
+		<para>
+		<screen>
+		identifier:logon time column             - int(9)
+		identifier:logoff time column            - int(9)
+		identifier:kickoff time column           - int(9)
+		identifier:pass last set time column     - int(9)
+		identifier:pass can change time column   - int(9)
+		identifier:pass must change time column  - int(9)
+		identifier:username column               - varchar(255) - unix username
+		identifier:domain column                 - varchar(255) - NT domain user is part of
+		identifier:nt username column            - varchar(255) - NT username
+		identifier:fullname column               - varchar(255) - Full name of user
+		identifier:home dir column               - varchar(255) - Unix homedir path
+		identifier:dir drive column              - varchar(2)   - Directory drive path (eg: 'H:')
+		identifier:logon script column           - varchar(255)
+							 - Batch file to run on client side when logging on
+		identifier:profile path column           - varchar(255) - Path of profile
+		identifier:acct desc column              - varchar(255) - Some ASCII NT user data
+		identifier:workstations column           - varchar(255)
+							 - Workstations user can logon to (or NULL for all)
+		identifier:unknown string column         - varchar(255) - unknown string
+		identifier:munged dial column            - varchar(255) - ?
+		identifier:user sid column               - varchar(255) - NT user SID
+		identifier:group sid column              - varchar(255) - NT group ID
+		identifier:lanman pass column            - varchar(255) - encrypted lanman password
+		identifier:nt pass column                - varchar(255) - encrypted nt passwd
+		identifier:plain pass column             - varchar(255) - plaintext password
+		identifier:acct control column           - int(9) - nt user data
+		identifier:unknown 3 column              - int(9) - unknown
+		identifier:logon divs column             - int(9) - ?
+		identifier:hours len column              - int(9) - ?
+		identifier:unknown 5 column              - int(9) - unknown
+		identifier:unknown 6 column              - int(9) - unknown
+		</screen>
+		</para>
 
 			<para>
 			Eventually, you can put a colon (:) after the name of each column, which 
@@ -1393,11 +1425,47 @@ index   default               sub
 <sect1>
 <title>Common Errors</title>
 
-<para>
-Put stuff here
-- People forget to put their users in their backend and then complain samba 
-  won't authorize them
-</para>
+	<sect2>
+	<title>Users can not logon - Users not in Samba SAM</title>
 
+	<para>
+	People forget to put their users in their backend and then complain samba won't authorize them.
+	</para>
+
+	</sect2>
+
+	<sect2>
+	<title>Users are being added to the wrong backend database</title>
+
+	<para>
+	A few complaints have been recieved from users that just moved to samba-3. The following
+	&smb.conf; file entries were causing problems, new accounts were being added to the old
+	smbpasswd file, not to the tdbsam passdb.tdb file:
+	</para>
+
+	<para>
+	<screen>
+	[globals]
+		...
+		passdb backend = smbpasswd, tdbsam, guest
+		...
+	</screen>
+	</para>
+
+	<para>
+	Samba will add new accounts to the first entry in the <emphasis>passdb backend</emphasis>
+	parameter entry. If you want to update to the tdbsam, then change the entry to:
+	</para>
+
+	<para>
+	<screen>
+	[globals]
+		...
+		passdb backend = tdbsam, smbpasswd, guest
+		...
+	</screen>
+	</para>
+
+	</sect2>
 </sect1>
 </chapter>
