@@ -21,10 +21,10 @@
 /*
 
   This program is meant for backup/restore of tdb databases. Typical usage would be:
-     tdbbackup /var/lock/samba/*.tdb
+     tdbbackup *.tdb
   when Samba shuts down cleanly, which will make a backup of all the local databases
   to *.bak files. Then on Samba startup you would use:
-     tdbbackup -v /var/lock/samba/*.tdb
+     tdbbackup -v *.tdb
   and this will check the databases for corruption and if corruption is detected then
   the backup will be restored.
 
