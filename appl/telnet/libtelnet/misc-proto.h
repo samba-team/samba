@@ -61,7 +61,7 @@
 void auth_encrypt_init (char *, char *, char *, int);
 void auth_encrypt_user(char *name);
 void auth_encrypt_connect (int);
-void printd (unsigned char *, int);
+void printd (const unsigned char *, int);
 
 char** genget (char *name, char **table, int stlen);
 int isprefix(char *s1, char *s2);

@@ -111,13 +111,13 @@ static int unpack_cred(unsigned char *buf, int len, CREDENTIALS *cred);
 
 
 static int
-Data(Authenticator *ap, int type, void *d, int c)
+Data(Authenticator *ap, int type, const void *d, int c)
 {
     unsigned char *p = str_data + 4;
-    unsigned char *cd = (unsigned char *)d;
+    const unsigned char *cd = (const unsigned char *)d;
 
     if (c == -1)
-	c = strlen((char *)cd);
+	c = strlen((const char *)cd);
 
     if (auth_debug_mode) {
 	printf("%s:%d: [%d] (%d)",

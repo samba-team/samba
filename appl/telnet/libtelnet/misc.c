@@ -81,7 +81,7 @@ auth_encrypt_connect(int cnt)
 }
 
 void
-printd(unsigned char *data, int cnt)
+printd(const unsigned char *data, int cnt)
 {
     if (cnt > 16)
 	cnt = 16;
