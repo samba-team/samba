@@ -91,34 +91,63 @@ krb5_error_code
 krb5_kt_close(krb5_context context,
 	      krb5_keytab id)
 {
+  free (id->filename);
+  free (id);
+  return 0;
+}
+
+krb5_error_code
+krb5_kt_get_entry(krb5_context context,
+		  krb5_keytab id,
+		  krb5_principal principal,
+		  krb5_kvno kvno,
+		  krb5_keytype keytype,
+		  krb5_keytab_entry *entry)
+{
+  krb5_error_code r;
+  krb5_kt_cursor cursor;
+  krb5_keytab_entry entry;
+
+  r = krb5_kt_start_seq_get (context, id, &cursor);
+  while (krb5_kt_next_entry(context, id, &entry, &cursor) == 0) {
+
+  }
+  return krb5_kt_end_seq_get (context, id, &cursor);
+}
+
+krb5_error_code
+krb5_kt_free_entry(krb5_context context,
+		   krb5_keytab_entry *entry)
+{
+  free (entry);
+  return 0;
+}
+
+krb5_error_code
+krb5_kt_start_seq_get(krb5_context context,
+		      krb5_keytab id,
+		      krb5_kt_cursor *cursor)
+{
+  cursor->fd = open (id->filename, O_RDONLY);
+  if (cursor->fd < 0)
+    return -1;
+  return 0;
+}
+
+krb5_error_code
+krb5_kt_next_entry(krb5_context context,
+		   krb5_keytab id,
+		   krb5_keytab_entry *entry,
+		   krb5_kt_cursor *cursor)
+{
   
 }
 
 krb5_error_code
-krb5_kt_get_entry(krb5_context,
-		  krb5_keytab,
-		  krb5_principal,
-		  krb5_kvno,
-		  krb5_keytype,
-		  krb5_keytab_entry *);
-
-krb5_error_code
-krb5_kt_free_entry(krb5_context,
-		   krb5_keytab_entry *);
-
-krb5_error_code
-krb5_kt_start_seq_get(krb5_context,
-		      krb5_keytab id,
-		      krb5_kt_cursor *);
-
-krb5_error_code
-krb5_kt_next_entry(krb5_context,
-		   krb5_keytab,
-		   krb5_keytab_entry *,
-		   krb5_kt_cursor *);
-
-krb5_error_code
-krb5_kt_end_seq_get(krb5_context,
-		    krb5_keytab,
-		    krb5_kt_cursor *);
-
+krb5_kt_end_seq_get(krb5_context context,
+		    krb5_keytab id,
+		    krb5_kt_cursor *cursor)
+{
+  close (cursor->fd);
+  return 0;
+}
