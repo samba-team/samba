@@ -1246,7 +1246,7 @@ static BOOL init_drv_info_3_members (
 	}
 	for (i=0; i<len; i++)
 	{
-		info->dependentfiles[i] = SSVAL(&info->dependentfiles[i], 0, str2[i]);
+		SSVAL(&info->dependentfiles[i], 0, str2[i]);
 	}
 	info->dependentfiles[len] = '\0';
 
