@@ -41,6 +41,7 @@
 RCSID("$Id$");
 #endif
 
+#include "roken.h"
 #include "err.h"
 
 #ifndef HAVE___PROGNAME
