@@ -999,7 +999,7 @@ void remove_pending_change_notify_requests_by_fid(int fnum)
 
   while(cnbp != NULL) {
     if(cnbp->fnum == fnum) {
-      ubi_slRemNext( &change_notify_queue, prev);
+      free((char *)ubi_slRemNext( &change_notify_queue, prev));
       cnbp = (change_notify_buf *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
       continue;
     }
@@ -1021,7 +1021,7 @@ void remove_pending_change_notify_requests_by_mid(int mid)
   while(cnbp != NULL) {
     if(SVAL(cnbp->request_buf,smb_mid) == mid) {
       change_notify_reply_packet(cnbp->request_buf,ERRSRV,ERRaccess);
-      ubi_slRemNext( &change_notify_queue, prev);
+      free((char *)ubi_slRemNext( &change_notify_queue, prev));
       cnbp = (change_notify_buf *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
       continue;
     }
@@ -1066,7 +1066,7 @@ void process_pending_change_notify_queue(time_t t)
        * Remove the entry and return an error to the client.
        */
       change_notify_reply_packet(cnbp->request_buf,ERRSRV,ERRaccess);
-      ubi_slRemNext( &change_notify_queue, prev);
+      free((char *)ubi_slRemNext( &change_notify_queue, prev));
       cnbp = (change_notify_buf *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
       continue;
     }
@@ -1078,7 +1078,7 @@ Error was %s.\n", cnum, strerror(errno) ));
        * Remove the entry and return an error to the client.
        */
       change_notify_reply_packet(cnbp->request_buf,ERRSRV,ERRaccess);
-      ubi_slRemNext( &change_notify_queue, prev);
+      free((char *)ubi_slRemNext( &change_notify_queue, prev));
       cnbp = (change_notify_buf *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
       unbecome_user();
       continue;
@@ -1091,7 +1091,7 @@ Error was %s.\n", fsp->name, strerror(errno) ));
        * Remove the entry and return an error to the client.
        */
       change_notify_reply_packet(cnbp->request_buf,ERRSRV,ERRaccess);
-      ubi_slRemNext( &change_notify_queue, prev);
+      free((char *)ubi_slRemNext( &change_notify_queue, prev));
       cnbp = (change_notify_buf *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
       unbecome_user();
       continue;
@@ -1105,7 +1105,7 @@ Error was %s.\n", fsp->name, strerror(errno) ));
       DEBUG(5,("process_pending_change_notify_queue: directory fnum = %d, name = %s changed\n",
             fnum, fsp->name ));
       change_notify_reply_packet(cnbp->request_buf,ERRDOS,ERROR_NOTIFY_ENUM_DIR);
-      ubi_slRemNext( &change_notify_queue, prev);
+      free((char *)ubi_slRemNext( &change_notify_queue, prev));
       cnbp = (change_notify_buf *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
       unbecome_user();
       continue;
