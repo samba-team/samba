@@ -1,4 +1,4 @@
-          WHATS NEW IN Samba 2.0.0 beta2
+          WHATS NEW IN Samba 2.0.0 beta3
           ==============================
 
 This is a MAJOR new release of Samba, the UNIX based SMB/CIFS file 
@@ -120,9 +120,11 @@ Domain Controller than serving Windows NT logon requests.
 A useful version of a Primary Domain Controller contains
 many remote procedure calls to do things like enumerate users, 
 groups, and security information, only some of which Samba currently
-implements.  For this reason we have chosen not to advertise
-and actively support Primary Domain Controller functionality
-with this release.
+implements. In addion, there are outstanding (known) bugs with
+using Samba as a PDC in this release that the Samba Team are actively
+working on. For this reason we have chosen not to advertise and 
+actively support Primary Domain Controller functionality with this
+release.
 
 This work is being done in the CVS (developer) versions of Samba,
 development of which continues at a fast pace.  If you are
