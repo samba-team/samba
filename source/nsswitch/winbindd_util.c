@@ -470,8 +470,6 @@ void free_getent_state(struct getent_state *state)
         DLIST_REMOVE(state, state);
         next = temp->next;
 
-        talloc_destroy(temp->mem_ctx);
-
         SAFE_FREE(temp);
         temp = next;
     }

@@ -302,7 +302,6 @@ enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
                 ZERO_STRUCTP(domain_state);
 
                 domain_state->domain = tmp;
-                domain_state->mem_ctx = talloc_init();
 
                 /* Add to list of open domains */
                 
@@ -339,9 +338,14 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 	SAM_DISPINFO_CTR ctr;
 	struct getpwent_user *name_list = NULL;
 	uint32 group_rid;
+        BOOL result = False;
+        TALLOC_CTX *mem_ctx;
 
 	if (ent->got_all_sam_entries)
 		return False;
+
+        if (!(mem_ctx = talloc_init()))
+                return False;
 
 	ZERO_STRUCT(info1);
 	ZERO_STRUCT(ctr);
@@ -379,7 +383,7 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 					
 		num_entries = 0;
 
-		status = winbindd_query_dispinfo(ent->domain, ent->mem_ctx,
+		status = winbindd_query_dispinfo(ent->domain, mem_ctx,
 						 &ent->dispinfo_ndx, 1,
 						 &num_entries, &ctr);
 		
@@ -394,7 +398,7 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 			if (!tnl) {
 				DEBUG(0,("get_sam_user_entries: Realloc failed.\n"));
 				SAFE_FREE(name_list);
-				return WINBINDD_ERROR;
+                                goto done;
 			} else
 				name_list = tnl;
 		}
@@ -424,9 +428,8 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 		
 		ent->num_sam_entries += num_entries;
 
-		if (NT_STATUS_V(status) != NT_STATUS_V(STATUS_MORE_ENTRIES)) {
+		if (NT_STATUS_V(status) != NT_STATUS_V(STATUS_MORE_ENTRIES))
 			break;
-		}
 
 	} while (ent->num_sam_entries < MAX_FETCH_SAM_ENTRIES);
 	
@@ -441,9 +444,15 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 	
 	ent->sam_entries = name_list;
 	ent->sam_entry_index = 0;
-	ent->got_all_sam_entries = (NT_STATUS_V(status) != NT_STATUS_V(STATUS_MORE_ENTRIES));
+	ent->got_all_sam_entries = (NT_STATUS_V(status) != 
+                                    NT_STATUS_V(STATUS_MORE_ENTRIES));
 
-	return ent->num_sam_entries > 0;
+	result = ent->num_sam_entries > 0;
+
+ done:
+        talloc_destroy(mem_ctx);
+
+        return result;
 }
 
 /* Fetch next passwd entry from ntdom database */
