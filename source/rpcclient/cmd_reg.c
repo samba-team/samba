@@ -182,13 +182,13 @@ BOOL msrpc_reg_enum_key(struct cli_state *cli, const char* full_keyname,
 				&num_values, &max_valnamelen, &max_valbufsize,
 	                        &sec_desc, &mod_time) : False;
 
-	if (res1)
+	if (res1 && reg_fn != NULL)
 	{
 		reg_fn(0, full_keyname, 0);
 		reg_fn(1, full_keyname, num_subkeys);
 	}
 
-	for (i = 0; i < num_subkeys; i++)
+	for (i = 0; i < num_subkeys && reg_key_fn != NULL; i++)
 	{
 		/*
 		 * enumerate key
@@ -221,9 +221,12 @@ BOOL msrpc_reg_enum_key(struct cli_state *cli, const char* full_keyname,
 
 	}
 
-	reg_fn(2, full_keyname, num_values);
+	if (reg_fn != NULL)
+	{
+		reg_fn(2, full_keyname, num_values);
+	}
 
-	for (i = 0; i < num_values; i++)
+	for (i = 0; i < num_values && reg_val_fn != NULL; i++)
 	{
 		/*
 		 * enumerate key
@@ -253,7 +256,7 @@ BOOL msrpc_reg_enum_key(struct cli_state *cli, const char* full_keyname,
 		}
 	}
 
-	if (res1)
+	if (res1 && reg_fn != NULL)
 	{
 		reg_fn(3, full_keyname, 0);
 	}
