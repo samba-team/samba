@@ -671,7 +671,7 @@ union smb_fileinfo {
 		} out;
 	} attribute_tag_information;
 
-	/* RAW_FILEINFO_QUERY_SEC_DESC */
+	/* RAW_FILEINFO_SEC_DESC */
 	struct {
 		enum smb_fileinfo_level level;
 		struct {
