@@ -1,4 +1,4 @@
-		Announcing Samba version 2.0
+		Announcing Samba version 2.2
 		============================
 
 What is Samba?
@@ -13,6 +13,7 @@ Linux smbfs, OS/2, Pathworks and more.
 
 The package also includes a SMB client for accessing other SMB servers,
 and an advanced netbios/WINS nameserver for browsing support.
+
 
 What can it do for me?
 ----------------------
@@ -36,6 +37,7 @@ allows you to access a SMB printer (such as one attached to an OS/2 or
 WfWg server) from Unix, using an entry in /etc/printcap, or by
 explicitly specifying the command used to print files.
 
+
 What are its features?
 ------------------------
 
@@ -47,12 +49,14 @@ umask support, guest connections, name mangling and hidden and system
 attribute mapping. Look at the FAQs included with the package for
 a full list of features.
 
-What's new since 1.9?
+
+What's new since 2.0?
 ---------------------
 
 Lots of stuff. See the change log and man pages for details.
 In particular, please check the WHATSNEW.txt file in the root directory
 of each release. This file has current change/update information.
+
 
 Where can I get a client for my PC?
 -----------------------------------
@@ -60,8 +64,9 @@ Where can I get a client for my PC?
 There is a free client for MS-DOS based PCs available from
 ftp.microsoft.com in the directory bussys/Clients/MSCLIENT/. Please
 read the licencing information before downloading. The add-on 32-bit
-TCP/IP Windows for Workgroups client is also very good. Windows 95,
-Windows NT and OS/2 come with suitable clients by default.
+TCP/IP Windows for Workgroups client is also very good. Windows 95/98/ME,
+Windows NT/2000 and OS/2 come with suitable clients by default.
+
 
 What network protocols are supported?
 -------------------------------------
@@ -72,12 +77,14 @@ about ports to other protocols but nothing is yet available.
 There is a free TCP/IP implementation for Windows for Workgroups
 available from ftp.microsoft.com (it's small, fast and quite reliable). 
 
+
 How much does it cost?
 ----------------------
 
 Samba software is free software. It is available under the
 GNU Public licence in source code form at no cost. Please read the
 file COPYING that comes with the package for more information.
+
 
 What operating systems does it support?
 ---------------------------------------
@@ -96,6 +103,7 @@ work with your unix then it should be easy to fix. It has also been ported
 to Netware, OS/2 and the Amiga. A VMS port is available too. See the web site
 for more details.
 
+
 Who wrote it?
 -------------
 
@@ -105,11 +113,13 @@ large parts of the package were contributed by several people from all
 over the world. Please look at the file `change-log' for information
 on who did what bits.
 
+
 Where can I get it?
 -------------------
 
 The package is available via anonymous ftp from samba.org in
 the directory pub/samba/. 
+
 
 What about SMBServer?
 ---------------------
@@ -122,17 +132,13 @@ early incarnation of Samba was distributed as nbserver.
 If you see any copies of nbserver or smbserver on ftp sites please let
 me or the ftp archive maintainer know, as I want to get them deleted.
 
+
 Where can I get more info?
 ---------------------------
 
 Please join the mailing list if you want to discuss the development or
-use of Samba. To join the mailing list send mail to
-listproc@listproc.anu.edu.au with a body of "subscribe samba Your
-Name".
-
-There is also an announcement mailing list for new version
-announcements. Subscribe as above but with "subscribe samba-announce
-Your Name".
+use of Samba. To join the mailing list, please read the instructions
+at http://lists.samba.org/
 
 There is also often quite a bit of discussion about Samba on the
 newsgroup comp.protocols.smb.
@@ -140,5 +146,5 @@ newsgroup comp.protocols.smb.
 A WWW site with lots of Samba info can be found at 
 http://samba.org/samba/
 
-The Samba Team (Contact: samba-bugs@samba.org)
-June 1996
+The Samba Team (Contact: samba@samba.org)
+March 2001
