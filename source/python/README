@@ -1,0 +1,48 @@
+Quick Install Guide
+--
+Lines prepended with a $ indicate shell commands.
+
+1. Requirements
+
+In order to be able to compile samba-python you need to have
+python and the python-dev packages installed.
+
+2. Checking out the CVS HEAD branch of Samba and Samba-Python
+
+In your shell, type:
+
+$ cvs -d :pserver:cvs@pserver.samba.org:/cvsroot login
+
+When asked for a password, type 'cvs'.
+
+Now, type:
+
+$ cvs -d :pserver:cvs@pserver.samba.org:/cvsroot co samba
+
+This might probably take a while. When everything is downloaded,
+check out the samba-python tree:
+
+$ cvs -d :pserver:cvs@pserver.samba.org:/cvsroot co samba-python
+
+Now that you have both cvs modules, move the directory 'samba-python' to 
+inside the samba source tree, using: 
+
+$ mv samba-python samba/source/python
+
+Now, go to the samba/source directory and apply the samba-head.patch patch:
+
+$ cd samba/source && patch -p0 < location/to/samba-python/samba-head.patch
+
+You can now configure samba as usual and create the python extension:
+
+$ autoconf
+$ ./configure 
+$ make python_ext
+
+Now, you can install the modules:
+
+$ cp build/lib.*/*.so /usr/lib/python2.1/lib-dynload/
+
+(the directory /usr/lib/python2.1 may vary, depending on your installation)
+
+Samba-python should work now!
