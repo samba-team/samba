@@ -37,121 +37,118 @@
 
 #include <setjmp.h>
 #include <stdlib.h>
-#ifdef HAVE_SYS_TIME_H
+#ifdef TIME_WITH_SYS_TIME
 #include <sys/time.h>
+#include <time.h>
+#elif defined(HAVE_SYS_TIME_H)
+#include <sys/time.h>
+#else
+#include <time.h>
 #endif
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
 
-#ifndef __P
-#ifdef __STDC__
-#define __P(X) X
-#else
-#define __P(X)
-#endif
-#endif
-
-void    abort_remote __P((FILE *));
-void    abortpt __P((int));
-void    abortrecv __P((int));
-void	account __P((int, char **));
-int	another __P((int *, char ***, char *));
-void	blkfree __P((char **));
-void	cd __P((int, char **));
-void	cdup __P((int, char **));
-void	changetype __P((int, int));
-void	cmdabort __P((int));
-void	cmdscanner __P((int));
-int	command __P((char *fmt, ...));
-int	confirm __P((char *, char *));
-FILE   *dataconn __P((char *));
-void	delete __P((int, char **));
-void	disconnect __P((int, char **));
-void	do_chmod __P((int, char **));
-void	do_umask __P((int, char **));
-void	domacro __P((int, char **));
-char   *domap __P((char *));
-void	doproxy __P((int, char **));
-char   *dotrans __P((char *));
-int     empty __P((fd_set *, int));
-void	fatal __P((char *));
-void	get __P((int, char **));
-struct cmd *getcmd __P((char *));
-int	getit __P((int, char **, int, char *));
-int	getreply __P((int));
-int	globulize __P((char **));
-char   *gunique __P((char *));
-void	help __P((int, char **));
-char   *hookup __P((char *, int));
-void	ftp_idle __P((int, char **));
-int     initconn __P((void));
-void	intr __P((int));
-void	lcd __P((int, char **));
-int	login __P((char *));
-RETSIGTYPE	lostpeer __P((int));
-void	ls __P((int, char **));
-void	macdef __P((int, char **));
-void	makeargv __P((void));
-void	makedir __P((int, char **));
-void	mdelete __P((int, char **));
-void	mget __P((int, char **));
-void	mls __P((int, char **));
-void	modtime __P((int, char **));
-void	mput __P((int, char **));
-char   *onoff __P((int));
-void	newer __P((int, char **));
-void    proxtrans __P((char *, char *, char *));
-void    psabort __P((int));
-void    pswitch __P((int));
-void    ptransfer __P((char *, long, struct timeval *, struct timeval *));
-void	put __P((int, char **));
-void	pwd __P((int, char **));
-void	quit __P((int, char **));
-void	quote __P((int, char **));
-void	quote1 __P((char *, int, char **));
-void    recvrequest __P((char *, char *, char *, char *, int));
-void	reget __P((int, char **));
-char   *remglob __P((char **, int));
-void	removedir __P((int, char **));
-void	renamefile __P((int, char **));
-void    reset __P((int, char **));
-void	restart __P((int, char **));
-void	rmthelp __P((int, char **));
-void	rmtstatus __P((int, char **));
-int	ruserpass __P((char *, char **, char **, char **));
-void    sendrequest __P((char *, char *, char *, int));
-void	setascii __P((int, char **));
-void	setbell __P((int, char **));
-void	setbinary __P((int, char **));
-void	setcase __P((int, char **));
-void	setcr __P((int, char **));
-void	setdebug __P((int, char **));
-void	setform __P((int, char **));
-void	setftmode __P((int, char **));
-void	setglob __P((int, char **));
-void	sethash __P((int, char **));
-void	setnmap __P((int, char **));
-void	setntrans __P((int, char **));
-void	setpassive __P((int, char **));
-void	setpeer __P((int, char **));
-void	setport __P((int, char **));
-void	setprompt __P((int, char **));
-void	setrunique __P((int, char **));
-void	setstruct __P((int, char **));
-void	setsunique __P((int, char **));
-void	settenex __P((int, char **));
-void	settrace __P((int, char **));
-void	settype __P((int, char **));
-void	setverbose __P((int, char **));
-void	shell __P((int, char **));
-void	site __P((int, char **));
-void	sizecmd __P((int, char **));
-char   *slurpstring __P((void));
-void	status __P((int, char **));
-void	syst __P((int, char **));
-void    tvsub __P((struct timeval *, struct timeval *, struct timeval *));
-void	user __P((int, char **));
+void    abort_remote (FILE *);
+void    abortpt (int);
+void    abortrecv (int);
+void	account (int, char **);
+int	another (int *, char ***, char *);
+void	blkfree (char **);
+void	cd (int, char **);
+void	cdup (int, char **);
+void	changetype (int, int);
+void	cmdabort (int);
+void	cmdscanner (int);
+int	command (char *fmt, ...);
+int	confirm (char *, char *);
+FILE   *dataconn (char *);
+void	delete (int, char **);
+void	disconnect (int, char **);
+void	do_chmod (int, char **);
+void	do_umask (int, char **);
+void	domacro (int, char **);
+char   *domap (char *);
+void	doproxy (int, char **);
+char   *dotrans (char *);
+int     empty (fd_set *, int);
+void	fatal (char *);
+void	get (int, char **);
+struct cmd *getcmd (char *);
+int	getit (int, char **, int, char *);
+int	getreply (int);
+int	globulize (char **);
+char   *gunique (char *);
+void	help (int, char **);
+char   *hookup (char *, int);
+void	ftp_idle (int, char **);
+int     initconn (void);
+void	intr (int);
+void	lcd (int, char **);
+int	login (char *);
+RETSIGTYPE	lostpeer (int);
+void	ls (int, char **);
+void	macdef (int, char **);
+void	makeargv (void);
+void	makedir (int, char **);
+void	mdelete (int, char **);
+void	mget (int, char **);
+void	mls (int, char **);
+void	modtime (int, char **);
+void	mput (int, char **);
+char   *onoff (int);
+void	newer (int, char **);
+void    proxtrans (char *, char *, char *);
+void    psabort (int);
+void    pswitch (int);
+void    ptransfer (char *, long, struct timeval *, struct timeval *);
+void	put (int, char **);
+void	pwd (int, char **);
+void	quit (int, char **);
+void	quote (int, char **);
+void	quote1 (char *, int, char **);
+void    recvrequest (char *, char *, char *, char *, int);
+void	reget (int, char **);
+char   *remglob (char **, int);
+void	removedir (int, char **);
+void	renamefile (int, char **);
+void    reset (int, char **);
+void	restart (int, char **);
+void	rmthelp (int, char **);
+void	rmtstatus (int, char **);
+int	ruserpass (char *, char **, char **, char **);
+void    sendrequest (char *, char *, char *, int);
+void	setascii (int, char **);
+void	setbell (int, char **);
+void	setbinary (int, char **);
+void	setcase (int, char **);
+void	setcr (int, char **);
+void	setdebug (int, char **);
+void	setform (int, char **);
+void	setftmode (int, char **);
+void	setglob (int, char **);
+void	sethash (int, char **);
+void	setnmap (int, char **);
+void	setntrans (int, char **);
+void	setpassive (int, char **);
+void	setpeer (int, char **);
+void	setport (int, char **);
+void	setprompt (int, char **);
+void	setrunique (int, char **);
+void	setstruct (int, char **);
+void	setsunique (int, char **);
+void	settenex (int, char **);
+void	settrace (int, char **);
+void	settype (int, char **);
+void	setverbose (int, char **);
+void	shell (int, char **);
+void	site (int, char **);
+void	sizecmd (int, char **);
+char   *slurpstring (void);
+void	status (int, char **);
+void	syst (int, char **);
+void    tvsub (struct timeval *, struct timeval *, struct timeval *);
+void	user (int, char **);
 
 extern jmp_buf	abortprox;
 extern int	abrtflag;
