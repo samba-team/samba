@@ -202,6 +202,17 @@ v4_prop(void *arg, Principal *p)
     ent.flags.postdate = 1;
     ent.flags.client = 1;
     ent.flags.server = 1;
+    
+    /* special case password changing service */
+    if(strcmp(p->name, "changepw") == 0 && 
+       strcmp(p->instance, "kerberos") == 0) {
+	ent.flags.forwardable = 0;
+	ent.flags.renewable = 0;
+	ent.flags.proxiable = 0;
+	ent.flags.postdate = 0;
+	ent.flags.initial = 1;
+	ent.flags.change_pw = 1;
+    }
 
     ret = v5_prop(pd->context, NULL, &ent, pd);
 out:
