@@ -134,7 +134,12 @@ struct security_descriptor *security_descriptor_from_python(PyObject *obj)
 
 char *string_from_python(PyObject *obj)
 {
-	return NULL;
+	return PyString_AsString(obj);
+}
+
+PyObject *string_to_python(char *obj)
+{
+	return PyString_FromString(obj);
 }
 
 %}
