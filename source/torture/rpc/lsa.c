@@ -463,18 +463,23 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 		ret = False;
 	}
 
-	blob1.data = r4.out.new_val->buf->data;
-	blob1.length = r4.out.new_val->buf->length;
-
-	blob2 = data_blob(NULL, blob1.length);
-
-	secret2 = sess_decrypt_string(&blob1, &session_key);
-
-	printf("returned secret '%s'\n", secret2);
-
-	if (strcmp(secret1, secret2) != 0) {
-		printf("Returned secret doesn't match\n");
+	if (r4.out.new_val->buf == NULL) {
+		printf("No secret buffer returned\n");
 		ret = False;
+	} else {
+		blob1.data = r4.out.new_val->buf->data;
+		blob1.length = r4.out.new_val->buf->length;
+
+		blob2 = data_blob(NULL, blob1.length);
+
+		secret2 = sess_decrypt_string(&blob1, &session_key);
+
+		printf("returned secret '%s'\n", secret2);
+
+		if (strcmp(secret1, secret2) != 0) {
+			printf("Returned secret doesn't match\n");
+			ret = False;
+		}
 	}
 
 	if (!test_Delete(p, mem_ctx, &sec_handle)) {
