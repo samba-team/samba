@@ -52,7 +52,8 @@ struct getargs{
 	   arg_negative_flag, 
 	   arg_strings,
 	   arg_double,
-	   arg_collect
+	   arg_collect,
+	   arg_counter
     } type;
     void *value;
     const char *help;
