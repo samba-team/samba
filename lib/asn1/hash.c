@@ -201,7 +201,7 @@ hashjpw(const char *ss)
 {				/* another hash function */
     unsigned h = 0;
     unsigned g;
-    unsigned const char *s = ss;
+    const unsigned char *s = (const unsigned char *)ss;
 
     for (; *s; ++s) {
 	h = (h << TWELVE) + *s;
