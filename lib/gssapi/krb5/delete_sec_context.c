@@ -59,7 +59,7 @@ OM_uint32 gss_delete_sec_context
   if ((*context_handle)->ticket) {
     krb5_free_ticket (gssapi_krb5_context,
 		      (*context_handle)->ticket);
-    free(ticket);
+    free((*context_handle)->ticket);
   }
 
   free (*context_handle);
