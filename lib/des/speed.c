@@ -178,7 +178,6 @@ int s;
 #endif
 	}
 
-/*
 int main(argc,argv)
 int argc;
 char **argv;
@@ -314,4 +313,3 @@ char **argv;
 	return(0);
 #endif
 	}
-*/
