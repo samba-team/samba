@@ -87,39 +87,6 @@ sid_name_map[] =
 };
 
 /****************************************************************************
- Read the machine SID from a file.
-****************************************************************************/
-
-static BOOL read_sid_from_file(int fd, char *sid_file)
-{   
-  fstring fline;
-	fstring sid_str;
-    
-  memset(fline, '\0', sizeof(fline));
-
-  if (read(fd, fline, sizeof(fline) -1 ) < 0) {
-    DEBUG(0,("unable to read file %s. Error was %s\n",
-           sid_file, strerror(errno) ));
-    return False;
-  }
-
-  /*
-   * Convert to the machine SID.
-   */
-
-  fline[sizeof(fline)-1] = '\0';
-  if (!string_to_sid( &global_sam_sid, fline)) {
-    DEBUG(0,("unable to generate machine SID.\n"));
-    return False;
-  }
-
-	sid_to_string(sid_str, &global_sam_sid);
-	DEBUG(5,("read_sid_from_file: sid %s\n", sid_str));
-
-  return True;
-}
-
-/****************************************************************************
  sets up the name associated with the SAM database for which we are responsible
 ****************************************************************************/
 void get_sam_domain_name(void)
@@ -175,99 +142,6 @@ BOOL get_member_domain_sid(void)
 	return get_domain_sids(NULL, &global_member_sid, lp_passwordserver());
 }
 
-/****************************************************************************
- obtain the sid from the PDC.  do some verification along the way...
-****************************************************************************/
-BOOL get_domain_sids(DOM_SID *sid3, DOM_SID *sid5, char *servers)
-{
-	uint16 nt_pipe_fnum;
-	POLICY_HND pol;
-	fstring srv_name;
-	struct cli_state cli;
-	BOOL res = True;
-	fstring dom3;
-	fstring dom5;
-
-	if (sid3 == NULL && sid5 == NULL)
-	{
-		/* don't waste my time... */
-		return False;
-	}
-
-	if (!cli_connect_serverlist(&cli, servers))
-	{
-		DEBUG(0,("get_domain_sids: unable to initialise client connection.\n"));
-		return False;
-	}
-
-	/*
-	 * Ok - we have an anonymous connection to the IPC$ share.
-	 * Now start the NT Domain stuff :-).
-	 */
-
-	fstrcpy(dom3, "");
-	fstrcpy(dom5, "");
-	if (sid3 != NULL)
-	{
-		ZERO_STRUCTP(sid3);
-	}
-	if (sid5 != NULL)
-	{
-		ZERO_STRUCTP(sid5);
-	}
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, global_myname);
-	strupper(srv_name);
-
-	/* open LSARPC session. */
-	res = res ? cli_nt_session_open(&cli, PIPE_LSARPC, &nt_pipe_fnum) : False;
-
-	/* lookup domain controller; receive a policy handle */
-	res = res ? lsa_open_policy(&cli, nt_pipe_fnum, srv_name, &pol, False) : False;
-
-	if (sid3 != NULL)
-	{
-		/* send client info query, level 3.  receive domain name and sid */
-		res = res ? lsa_query_info_pol(&cli, nt_pipe_fnum, &pol, 3, dom3, sid3) : False;
-	}
-
-	if (sid5 != NULL)
-	{
-		/* send client info query, level 5.  receive domain name and sid */
-		res = res ? lsa_query_info_pol(&cli, nt_pipe_fnum, &pol, 5, dom5, sid5) : False;
-	}
-
-	/* close policy handle */
-	res = res ? lsa_close(&cli, nt_pipe_fnum, &pol) : False;
-
-	/* close the session */
-	cli_nt_session_close(&cli, nt_pipe_fnum);
-	cli_ulogoff(&cli);
-	cli_shutdown(&cli);
-
-	if (res)
-	{
-		pstring sid;
-		DEBUG(2,("LSA Query Info Policy\n"));
-		if (sid3 != NULL)
-		{
-			sid_to_string(sid, sid3);
-			DEBUG(2,("Domain Member     - Domain: %s SID: %s\n", dom3, sid));
-		}
-		if (sid5 != NULL)
-		{
-			sid_to_string(sid, sid5);
-			DEBUG(2,("Domain Controller - Domain: %s SID: %s\n", dom5, sid));
-		}
-	}
-	else
-	{
-		DEBUG(1,("lsa query info failed\n"));
-	}
-
-	return res;
-}
 
 /****************************************************************************
  creates some useful well known sids
@@ -284,17 +158,12 @@ void generate_wellknown_sids(void)
  Generate the global machine sid. Look for the DOMAINNAME.SID file first, if
  not found then look in smb.conf and use it to create the DOMAINNAME.SID file.
 ****************************************************************************/
-BOOL generate_sam_sid(char *domain_name)
+BOOL generate_sam_sid(char *domain_name, DOM_SID *sid)
 {
-	int fd;
-	int i;
 	char *p;
 	pstring sid_file;
 	pstring machine_sid_file;
-	fstring sid_string;
 	fstring file_name;
-	SMB_STRUCT_STAT st;
-	uchar raw_sid_data[12];
 
 	pstrcpy(sid_file, lp_smb_passwd_file());
 
@@ -341,131 +210,30 @@ BOOL generate_sam_sid(char *domain_name)
 		}
 	}
 	
-	if ((fd = sys_open(sid_file, O_RDWR | O_CREAT, 0644)) == -1) {
-		DEBUG(0,("unable to open or create file %s. Error was %s\n",
-			 sid_file, strerror(errno) ));
-		return False;
-	} 
-  
-	/*
-	 * Check if the file contains data.
-	 */
-	
-	if (sys_fstat( fd, &st) < 0) {
-		DEBUG(0,("unable to stat file %s. Error was %s\n",
-			 sid_file, strerror(errno) ));
-		close(fd);
-		return False;
-	} 
-  
-	if (st.st_size > 0) {
-		/*
-		 * We have a valid SID - read it.
-		 */
-		if (!read_sid_from_file( fd, sid_file)) {
-			DEBUG(0,("unable to read file %s. Error was %s\n",
-				 sid_file, strerror(errno) ));
-			close(fd);
-			return False;
-		}
-		close(fd);
+	/* attempt to read the SID from the file */
+	if (read_sid(domain_name, sid))
+	{
 		return True;
-	} 
-  
-	/*
-	 * Generate the new sid data & turn it into a string.
-	 */
-	generate_random_buffer( raw_sid_data, 12, True);
-		
-	fstrcpy( sid_string, "S-1-5-21");
-	for( i = 0; i < 3; i++) {
-		fstring tmp_string;
-		slprintf( tmp_string, sizeof(tmp_string) - 1, "-%u", IVAL(raw_sid_data, i*4));
-		fstrcat( sid_string, tmp_string);
 	}
-	
-	fstrcat(sid_string, "\n");
-	
-	/*
-	 * Ensure our new SID is valid.
-	 */
-	
-	if (!string_to_sid( &global_sam_sid, sid_string)) {
-		DEBUG(0,("unable to generate machine SID.\n"));
-		return False;
-	} 
   
-	/*
-	 * Do an exclusive blocking lock on the file.
-	 */
-	
-	if (!do_file_lock( fd, 60, F_WRLCK)) {
-		DEBUG(0,("unable to lock file %s. Error was %s\n",
-			 sid_file, strerror(errno) ));
-		close(fd);
+	if (!create_new_sid(sid))
+	{
 		return False;
-	} 
-  
-	/*
-	 * At this point we have a blocking lock on the SID
-	 * file - check if in the meantime someone else wrote
-	 * SID data into the file. If so - they were here first,
-	 * use their data.
-	 */
-	
-	if (sys_fstat( fd, &st) < 0) {
-		DEBUG(0,("unable to stat file %s. Error was %s\n",
-			 sid_file, strerror(errno) ));
-		close(fd);
-		return False;
-	} 
-  
-	if (st.st_size > 0) {
-		/*
-		 * Unlock as soon as possible to reduce
-		 * contention on the exclusive lock.
-		 */ 
-		do_file_lock( fd, 60, F_UNLCK);
-		
-		/*
-		 * We have a valid SID - read it.
-		 */
-		
-		if (!read_sid_from_file( fd, sid_file)) {
-			DEBUG(0,("unable to read file %s. Error was %s\n",
-				 sid_file, strerror(errno) ));
-			close(fd);
-			return False;
-		}
-		close(fd);
+	}
+	/* attempt to read the SID from the file */
+	if (!write_sid(domain_name, sid))
+	{
 		return True;
-	} 
-	
-	/*
-	 * The file is still empty and we have an exlusive lock on it.
-	 * Write out out SID data into the file.
-	 */
-	
-	if (fchmod(fd, 0644) < 0) {
-		DEBUG(0,("unable to set correct permissions on file %s. \
-Error was %s\n", sid_file, strerror(errno) ));
-		close(fd);
-		return False;
-	} 
-	
-	if (write( fd, sid_string, strlen(sid_string)) != strlen(sid_string)) {
-		DEBUG(0,("unable to write file %s. Error was %s\n",
-			 sid_file, strerror(errno) ));
-		close(fd);
-		return False;
-	} 
-	
-	/*
-	 * Unlock & exit.
-	 */
-	
-	do_file_lock( fd, 60, F_UNLCK);
-	close(fd);
+	}
+  
+	/* during the attempt to write, someone else wrote? */
+
+	/* attempt to read the SID from the file */
+	if (read_sid(domain_name, sid))
+	{
+		return True;
+	}
+  
 	return True;
 }   
 
@@ -630,3 +398,4 @@ BOOL enumdomains(char ***doms, uint32 *num_entries)
 
 	return True;
 }
+

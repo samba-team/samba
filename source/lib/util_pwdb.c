@@ -616,7 +616,7 @@ BOOL pwdb_initialise(BOOL is_server)
 
 	if (is_server)
 	{
-		if (!generate_sam_sid(global_sam_name))
+		if (!generate_sam_sid(global_sam_name, &global_sam_sid))
 		{
 			DEBUG(0,("ERROR: Samba cannot create a SAM SID for its domain (%s).\n",
 				  global_sam_name));
