@@ -200,6 +200,18 @@ void file_close_user(int vuid)
 	}
 }
 
+void file_dump_open_table(void)
+{
+	int count=0;
+	files_struct *fsp;
+
+	for (fsp=Files;fsp;fsp=fsp->next,count++) {
+		DEBUG(10,("Files[%d], fnum = %d, name %s, fd = %d, fileid = %lu, dev = %x, inode = %.0f\n",
+			count, fsp->fnum, fsp->fsp_name, fsp->fd, (unsigned long)fsp->file_id,
+			(unsigned int)fsp->dev, (double)fsp->inode ));
+	}
+}
+
 /****************************************************************************
  Find a fsp given a file descriptor.
 ****************************************************************************/
