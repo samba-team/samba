@@ -327,10 +327,3 @@ smbclient running on another linux box. Maybe I'll add those results
 here someday ...
 
 
-COMMENTS
---------
-
-If you've read this far then please give me some feedback! Which of
-the above suggestions worked for you?
-
-Mail the samba mailing list or samba-bugs@samba.anu.edu.au
