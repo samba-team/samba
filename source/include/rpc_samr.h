@@ -786,8 +786,8 @@ typedef struct samr_str_entry_info1
 
 typedef struct sam_entry_info_1
 {
-	SAM_ENTRY1 sam[MAX_SAM_ENTRIES];
-	SAM_STR1   str[MAX_SAM_ENTRIES];
+	SAM_ENTRY1 *sam;
+	SAM_STR1   *str;
 
 } SAM_DISPINFO_1;
 
