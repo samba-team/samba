@@ -334,6 +334,52 @@ static NTSTATUS make_auth_context(struct auth_context **auth_context)
 	return NT_STATUS_OK;
 }
 
+BOOL load_auth_module(struct auth_context *auth_context, 
+		      const char *module, auth_methods **ret) 
+{
+	static BOOL initialised_static_modules = False;
+
+	struct auth_init_function_entry *entry;
+	char *module_name = smb_xstrdup(module);
+	char *module_params = NULL;
+	char *p;
+	BOOL good = False;
+
+	/* Initialise static modules if not done so yet */
+	if(!initialised_static_modules) {
+		static_init_auth;
+		initialised_static_modules = True;
+	}
+	
+	DEBUG(5,("load_auth_module: Attempting to find an auth method to match %s\n",
+		 module));
+	
+	p = strchr(module_name, ':');
+	if (p) {
+		*p = 0;
+		module_params = p+1;
+		trim_string(module_params, " ", " ");
+	}
+	
+	trim_string(module_name, " ", " ");
+	
+	entry = auth_find_backend_entry(module_name);
+	
+	if(!(entry = auth_find_backend_entry(module_name)) && !smb_probe_module("auth", module_name) && 
+	   !(entry = auth_find_backend_entry(module_name))) {
+		DEBUG(0,("load_auth_module: can't find auth method %s!\n", module_name));
+	} else if (!NT_STATUS_IS_OK(entry->init(auth_context, module_params, ret))) {
+		DEBUG(0,("load_auth_module: auth method %s did not correctly init\n",
+			 module));
+	} else {
+		DEBUG(5,("load_auth_module: auth method %s has a valid init\n",
+			 module));
+		good = True;
+	}
+	SAFE_FREE(module_name);
+	return good;
+}
+
 /***************************************************************************
  Make a auth_info struct for the auth subsystem
 ***************************************************************************/
@@ -344,7 +390,6 @@ static NTSTATUS make_auth_context_text_list(struct auth_context **auth_context, 
 	auth_methods *t = NULL;
 	auth_methods *tmp;
 	NTSTATUS nt_status;
-	static BOOL initialised_static_modules = False;
 
 	if (!text_list) {
 		DEBUG(2,("make_auth_context_text_list: No auth method list!?\n"));
@@ -354,44 +399,10 @@ static NTSTATUS make_auth_context_text_list(struct auth_context **auth_context, 
 	if (!NT_STATUS_IS_OK(nt_status = make_auth_context(auth_context)))
 		return nt_status;
 
-	/* Initialise static modules if not done so yet */
-	if(!initialised_static_modules) {
-		static_init_auth;
-		initialised_static_modules = True;
-	}
-	
 	for (;*text_list; text_list++) { 
-			struct auth_init_function_entry *entry;
-			char *module_name = smb_xstrdup(*text_list);
-			char *module_params = NULL;
-			char *p;
-
-			DEBUG(5,("make_auth_context_text_list: Attempting to find an auth method to match %s\n",
-				 *text_list));
-
-			p = strchr(module_name, ':');
-			if (p) {
-				*p = 0;
-				module_params = p+1;
-				trim_string(module_params, " ", " ");
-			}
-
-			trim_string(module_name, " ", " ");
-
-			entry = auth_find_backend_entry(module_name);
-
-			if(!(entry = auth_find_backend_entry(module_name)) && !smb_probe_module("auth", module_name) && 
-			   !(entry = auth_find_backend_entry(module_name))) {
-				DEBUG(0,("make_auth_context_text_list: can't find auth method %s!\n", module_name));
-			} else if (!NT_STATUS_IS_OK(entry->init(*auth_context, module_params, &t))) {
-				DEBUG(0,("make_auth_context_text_list: auth method %s did not correctly init\n",
-							*text_list));
-			} else {
-				DEBUG(5,("make_auth_context_text_list: auth method %s has a valid init\n",
-							*text_list));
-				DLIST_ADD_END(list, t, tmp);
-			}
-			SAFE_FREE(module_name);
+		if (load_auth_module(*auth_context, *text_list, &t)) {
+		    DLIST_ADD_END(list, t, tmp);
+		}
 	}
 	
 	(*auth_context)->auth_method_list = list;
@@ -417,7 +428,7 @@ NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context)
 		{
 		case SEC_DOMAIN:
 			DEBUG(5,("Making default auth method list for security=domain\n"));
-			auth_method_list = str_list_make("guest sam winbind ntdomain", NULL);
+			auth_method_list = str_list_make("guest sam winbind:ntdomain", NULL);
 			break;
 		case SEC_SERVER:
 			DEBUG(5,("Making default auth method list for security=server\n"));
@@ -443,7 +454,7 @@ NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context)
 			break;
 		case SEC_ADS:
 			DEBUG(5,("Making default auth method list for security=ADS\n"));
-			auth_method_list = str_list_make("guest sam winbind ntdomain", NULL);
+			auth_method_list = str_list_make("guest sam winbind:ntdomain", NULL);
 			break;
 		default:
 			DEBUG(5,("Unknown auth method!\n"));
