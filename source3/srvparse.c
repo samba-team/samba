@@ -79,18 +79,18 @@ char* srv_io_share_1_ctr(BOOL io, SHARE_INFO_1_CTR *ctr, char *q, char *base, in
 	if (ctr->ptr_share_info != 0)
 	{
 		int i;
-		int max_entries = ctr->num_entries_read;
-		if (max_entries > MAX_SHARE_ENTRIES)
+		int num_entries = ctr->num_entries_read;
+		if (num_entries > MAX_SHARE_ENTRIES)
 		{
-			max_entries = MAX_SHARE_ENTRIES; /* report this! */
+			num_entries = MAX_SHARE_ENTRIES; /* report this! */
 		}
 
-		for (i = 0; i < max_entries; i++)
+		for (i = 0; i < num_entries; i++)
 		{
 			q = srv_io_share_info1(io, &(ctr->info_1[i]), q, base, align, depth); 
 		}
 
-		for (i = 0; i < max_entries; i++)
+		for (i = 0; i < num_entries; i++)
 		{
 			q = srv_io_share_info1_str(io, &(ctr->info_1_str[i]), q, base, align, depth); 
 		}
