@@ -58,7 +58,7 @@ print_cred(krb5_context context, krb5_creds *cred)
 {
     char *str;
     krb5_error_code ret;
-    int32_t sec;
+    krb5_timestamp sec;
 
     krb5_timeofday (context, &sec);
 
@@ -85,7 +85,7 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
     char *str;
     krb5_error_code ret;
     int first_flag;
-    int32_t sec;
+    krb5_timestamp sec;
 
     krb5_timeofday (context, &sec);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -44,7 +44,7 @@ OM_uint32 gss_context_time
     OM_uint32 lifetime;
     OM_uint32 ret;
     krb5_error_code kret;
-    int32_t timeret;
+    krb5_timestamp timeret;
 
     gssapi_krb5_init();
 
