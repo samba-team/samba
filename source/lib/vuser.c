@@ -162,6 +162,15 @@ uint16 register_vuid(pid_t pid, uid_t uid, gid_t gid,
 	if (lp_security() == SEC_SHARE)
 		return UID_FIELD_INVALID;
 
+#ifdef USE_RENEWABLE_AFS_TICKET
+	/* The new pag needs to be initialized before the forking */
+	/* This should only be done if we use encrypted passwords */
+	if(lp_encrypted_passwords() && uid != 0)
+	  if (k_hasafs()) {
+	    DEBUG(3, ("Setting new pag for uid %d\n", (int)uid));
+	    k_setpag();
+	  }
+#endif /* USE_RENEWABLE_AFS_TICKET */
 	/* Find all the groups this uid is in and store them. 
 	   Used by become_user() */
 	get_unixgroups(unix_name, uid, gid, &n_groups, &groups);

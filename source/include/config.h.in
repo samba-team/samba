@@ -61,8 +61,6 @@
    byte first (like Motorola and SPARC, unlike Intel and VAX).  */
 #undef WORDS_BIGENDIAN
 
-#undef NEEDS_KRB4_DEFINE_WORK_AROUND
-#undef RENEWABLE_AFS_TICKET
 #undef HAVE_BROKEN_READDIR
 #undef HAVE_ERRNO_DECL
 #undef HAVE_LONGLONG
@@ -160,6 +158,8 @@
 #undef USE_SETRESUID
 #undef USE_SETREUID
 #undef USE_SETUIDX
+#undef USE_KRB4_DEFINE_WORK_AROUND
+#undef USE_RENEWABLE_AFS_TICKET
 
 #undef WITH_NT5LDAP
 

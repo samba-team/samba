@@ -914,7 +914,7 @@ AC_ARG_WITH(krb4,
            [],samba_cv_kerberos_define_workaround=yes,samba_cv_kerberos_define_workaround=no)
       ])
       if test x"$samba_cv_kerberos_define_workaround" = x"yes"; then
-        AC_DEFINE(NEEDS_KRB4_DEFINE_WORK_AROUND)
+        AC_DEFINE(USE_KRB4_DEFINE_WORK_AROUND)
       fi
     fi)],
   AC_MSG_RESULT(no)
@@ -924,16 +924,21 @@ AC_ARG_WITH(krb4,
 # check for the AFS tickets from srvtabs
 AC_MSG_CHECKING(whether to use AFS tickets from srvtabs)
 AC_ARG_WITH(srvtab,
-[  --with-srvtab    Include renewable AFS tickets
-  --without-srvtab Don't renewable AFS tickets (default)],
+[  --with-srvtab[=instance]    Include renewable AFS tickets
+  --without-srvtab            Don't renewable AFS tickets (default)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
-    AC_DEFINE(RENEWABLE_AFS_TICKET)
+    AC_DEFINE(USE_RENEWABLE_AFS_TICKET,"")
     LIBS="$LIBS -lkafs"
     ;;
-  *)
+  no)
     AC_MSG_RESULT(no)
+    ;;
+  *)
+    AC_MSG_RESULT(yes using instance $withval)
+    AC_DEFINE_UNQUOTED(USE_RENEWABLE_AFS_TICKET,$withval)
+    LIBS="$LIBS -lkafs"
     ;;
   esac ],
   AC_MSG_RESULT(no)

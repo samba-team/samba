@@ -34,11 +34,11 @@ extern fstring remote_machine;
 extern pstring sesssetup_user;
 extern fstring remote_machine;
 
-#ifdef RENEWABLE_AFS_TICKET
+#ifdef USE_RENEWABLE_AFS_TICKET
 extern struct Srvtabinfo srvtabinfo;
 /* what user is current? */
 extern struct current_user current_user;
-#endif /* RENEWABLE_AFS_TICKET */
+#endif /* USE_RENEWABLE_AFS_TICKET */
 
 /****************************************************************************
 load parameters specific to a connection/service
@@ -513,54 +513,23 @@ connection_struct *make_connection(char *service,char *user,
 	}
 #endif
 	
-#ifdef RENEWABLE_AFS_TICKET
+#ifdef USE_RENEWABLE_AFS_TICKET
 	/* This must be done as the user */
 	if(!guest){
-	  gid_t grp = 0;
-	  int i;
-	  char tkfile[sizeof(pstring)] = "";
-	  pstrcat(tkfile, "/tmp/tkt_samba_");
-	  pstrcat(tkfile, user);
-	  unbecome_user();
-	  unlink(tkfile);
-	  become_user(conn, conn->vuid);	  
-	  krb_set_tkt_string(tkfile);
-	  /* The new pag needs to be initialized before the forking */
-	  if (k_hasafs()) 
-	    k_setpag();
-	  /* We need to reread the groups
-	   */
-	  conn->ngroups = sys_getgroups(0,&grp);
-	  if (conn->ngroups <= 0)
-	    {
-	      conn->ngroups = 32;
-	    }
-	  free(conn->groups);
-	  if((conn->groups = (gid_t *)malloc(sizeof(gid_t)*conn->ngroups))
-	     == NULL)
-	    {
-	      DEBUG(0,("setup_groups malloc fail !\n"));
-	      return NULL;
-	    }
-	  conn->ngroups = sys_getgroups(conn->ngroups, conn->groups);
-	  DEBUG(3, ("%s is in %d groups: ", user, conn->ngroups));
-	  for (i = 0; i < conn->ngroups; i++)
-	    {
-	      DEBUG(3, ("%s%d", (i ? ", " : ""), (int)conn->groups[i]));
-	    }
-	  DEBUG(3, ("\n"));
-	  current_user.ngroups = conn->ngroups;
-	  current_user.groups  = conn->groups;
-
+	  /* We need to reread the groups with the right pag */
+	  user_struct *vuser = get_valid_user_struct(&key);
+	  conn->groups = vuser->groups;
+	  conn->ngroups = vuser->n_groups;
+	  vuid_free_user_struct(vuser);
 	  /* Add uid and user name to the global AFS srvtab variables
 	     and get an auto renewed AFS ticket */
 	  srvtabinfo.uid = conn->uid;
 	  strncpy(srvtabinfo.user, user, sizeof(srvtabinfo.user) - 1);
-	  conn->afs_ticket_pid = get_renewed_ticket();
+	  conn->afs_ticket_pid = get_renewed_ticket(conn);
 	} else {
 	  conn->afs_ticket_pid = 0;
 	}
-#endif /* RENEWABLE_AFS_TICKET */
+#endif /* USE_RENEWABLE_AFS_TICKET */
 
 	add_session_user(user);
 		
@@ -706,13 +675,13 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 		smbrun(cmd,NULL,False);
 	}
 	
-#ifdef RENEWABLE_AFS_TICKET
+#ifdef USE_RENEWABLE_AFS_TICKET
 	if(conn->afs_ticket_pid != 0){
 	  kill(conn->afs_ticket_pid, SIGKILL);
 	  DEBUG(1,("Killing ticket renewer with pid %d\n",
 		   conn->afs_ticket_pid));
 	}
-#endif /* RENEWABLE_AFS_TICKET */
+#endif /* USE_RENEWABLE_AFS_TICKET */
 	conn_free(conn);
 }
 

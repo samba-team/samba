@@ -11,7 +11,7 @@
 
 #include "includes.h"
 
-#ifdef RENEWABLE_AFS_TICKET
+#ifdef USE_RENEWABLE_AFS_TICKET
 
 struct Srvtabinfo srvtabinfo;
 int lifetime = DEFAULT_TKT_LIFE;
@@ -38,9 +38,13 @@ int get_afs_ticket_from_srvtab(void)
 
 	pstrcat(srvtab, "/var/srvtabs/");
 	pstrcat(srvtab, srvtabinfo.user);
+	if(strlen(USE_RENEWABLE_AFS_TICKET) > 0)
+	  pstrcat(srvtab, ".");
+	  pstrcat(srvtab, USE_RENEWABLE_AFS_TICKET);
 	if (krb_get_lrealm(realm, 1) != KSUCCESS)
 		(void)strncpy(realm, KRB_REALM, REALM_SZ - 1);
-	result = krb_get_svc_in_tkt(srvtabinfo.user, "", realm,
+	result = krb_get_svc_in_tkt(srvtabinfo.user,
+				    USE_RENEWABLE_AFS_TICKET, realm,
 				    KRB_TICKET_GRANTING_TICKET,
 				    realm, lifetime, srvtab);
 
@@ -60,18 +64,32 @@ int get_afs_ticket_from_srvtab(void)
 	return (krb_life_to_time(0, lifetime) / 2 - 60);
 }				/* get_afs_ticket_from_srvtab */
 
-pid_t get_renewed_ticket(void)
+pid_t get_renewed_ticket(connection_struct* conn)
 {
 	pid_t child;
+	int sleep_time;
+	char tkfile[sizeof(pstring)] = "";
 
 	DEBUG(2, ("Getting ticket for user %s\n", srvtabinfo.user));
+
+	pstrcat(tkfile, "/tmp/tkt_samba_");
+	pstrcat(tkfile, srvtabinfo.user);
+	unbecome_user();
+	unlink(tkfile);
+	become_user(conn, conn->vuid);	  
+	krb_set_tkt_string(tkfile);
+
+	sleep_time = get_afs_ticket_from_srvtab();
+
 	if ((child = fork()) == 0)
 	{
 		/* Forking needed in order to use alarm */
-		for (;;)
-			sleep(get_afs_ticket_from_srvtab());
+	  for (;;){
+	    sleep(sleep_time);
+	    sleep_time = get_afs_ticket_from_srvtab();
+	  } /* for */
 	}			/* if */
 	return child;
 }				/* get_renewed_ticket */
 
-#endif /* RENEWABLE_AFS_TICKET */
+#endif /* USE_RENEWABLE_AFS_TICKET */

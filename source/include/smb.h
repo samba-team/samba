@@ -565,9 +565,9 @@ typedef struct connection_struct
 	BOOL ipc;
 	BOOL read_only;
 	BOOL admin_user;
-#ifdef RENEWABLE_AFS_TICKET
+#ifdef USE_RENEWABLE_AFS_TICKET
         pid_t afs_ticket_pid;
-#endif /* RENEWABLE_AFS_TICKET */
+#endif /* USE_RENEWABLE_AFS_TICKET */
 
 	char *dirpath;
 	char *connectpath;
