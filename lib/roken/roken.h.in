@@ -87,4 +87,18 @@ int unix_verify_user(char *user, char *password);
 
 void inaddr2str(struct in_addr addr, char *s, size_t len);
 
+void mini_inetd (int port);
+
+#ifndef SOMAXCONN
+#define SOMAXCONN 5
+#endif
+
+#ifndef STDIN_FILENO
+#define STDIN_FILENO 0
+#endif
+
+#ifndef STDOUT_FILENO
+#define STDOUT_FILENO 1
+#endif
+
 #endif /*  __ROKEN_H__ */
