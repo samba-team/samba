@@ -922,11 +922,13 @@ TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA oldkey)
 					    rec.key_len))
 		    || memcmp(k, oldkey.dptr, oldkey.dsize) != 0) {
 			/* No, it wasn't: unlock it and start from scratch */
-			free(k);
 			unlock_record(tdb, tdb->travlocks.off);
 			tdb_unlock(tdb, tdb->travlocks.hash, F_WRLCK);
 			tdb->travlocks.off = 0;
 		}
+
+		if (k)
+			free(k);
 	}
 
 	if (!tdb->travlocks.off) {
