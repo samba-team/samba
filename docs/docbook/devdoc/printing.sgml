@@ -23,7 +23,7 @@ of certain features of Windows client printing.
 
 <sect1>
 <title>
-Printing Interface to Various Backends
+Printing Interface to Various Back ends
 </title>
 
 <para>
@@ -39,11 +39,11 @@ in <filename>printing.h</filename>.
 	<listitem><para>delete a job from the queue</para></listitem>
 	<listitem><para>pause a job in the print queue</para></listitem>
 	<listitem><para>result a paused print job in the queue</para></listitem>
-	<listitem><para>submit a jobn to the print queue</para></listitem>
+	<listitem><para>submit a job to the print queue</para></listitem>
 </itemizedlist>
 
 <para>
-Currently there are only two printing backend implementations
+Currently there are only two printing back end implementations
 defined.
 </para>
 
@@ -75,7 +75,7 @@ queue contents displayed to clients will be diminished as well.
 </para>
 
 <para>
-The list of currently opened print queue TDB's can eb found
+The list of currently opened print queue TDB's can be found
 be examining the list of tdb_print_db structures ( see print_db_head
 in printing.c ). A queue TDB is opened using the wrapper function
 printing.c:get_print_db_byname().  The function ensures that smbd
@@ -125,7 +125,7 @@ the id reported by lpq.
 
 <para>
 In order to match a 32-bit Windows jobid onto a 16-bit lanman print job
-id, smbd uses an in memory TDB to match the former to a number approriate
+id, smbd uses an in memory TDB to match the former to a number appropriate
 for old lanman clients.
 </para>
 
@@ -180,8 +180,8 @@ clients and not the actual listing from the "lpq command".
 The NT_DEVICEMODE stored as part of the printjob structure is used to
 store a pointer to a non-default DeviceMode associated with the print
 job.  The pointer will be non-null when the client included a Device
-Mode in the OpePrinterEx() call and subsequently submitted a job for
-printing on that sam handle.  If the client did not include a Device
+Mode in the OpenPrinterEx() call and subsequently submitted a job for
+printing on that same handle.  If the client did not include a Device
 Mode in the OpenPrinterEx() request, the nt_devmode field is NULL
 and the job has the printer's device mode associated with it by default.
 </para>

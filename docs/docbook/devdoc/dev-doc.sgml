@@ -9,6 +9,7 @@
 <!ENTITY Tracing SYSTEM "Tracing.sgml">
 <!ENTITY cifsntdomain SYSTEM "cifsntdomain.sgml">
 <!ENTITY printing SYSTEM "printing.sgml">
+<!ENTITY wins SYSTEM "wins.sgml">
 ]>
 
 <book id="Samba-Developer-Documentation">
@@ -60,5 +61,6 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 &Tracing;
 &cifsntdomain;
 &printing;
+&wins;
 
 </book>
