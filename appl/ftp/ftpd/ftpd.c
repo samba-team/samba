@@ -1210,7 +1210,7 @@ dataconn(const char *name, off_t size, const char *mode)
 	    *sizebuf = '\0';
 	if (pdata >= 0) {
 		struct sockaddr_storage from_ss;
-		struct sockaddr *from = (struct sockaddr *)&from;
+		struct sockaddr *from = (struct sockaddr *)&from_ss;
 		int s;
 		int fromlen = sizeof(from_ss);
 
