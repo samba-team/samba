@@ -15,7 +15,7 @@ krb5_build_authenticator (krb5_context context,
   char buf[1024];
   size_t len;
   krb5_error_code ret;
-  int32_t seq_number;
+  unsigned seq_number;
 
   auth->authenticator_vno = 5;
 #ifdef USE_ASN1_PRINCIPAL
@@ -36,8 +36,8 @@ krb5_build_authenticator (krb5_context context,
     krb5_generate_seq_number (context,
 			      &cred->session, 
 			      &auth_context->local_seqnumber);
-    auth->seq_number = malloc(sizeof(*auth->seq_number));
-    *(auth->seq_number) = auth_context->local_seqnumber;
+    seq_number = auth_context->local_seqnumber;
+    auth->seq_number = &seq_number;
   } else
     auth->seq_number = NULL;
   auth->authorization_data = NULL;
@@ -62,7 +62,6 @@ krb5_build_authenticator (krb5_context context,
     *auth_result = auth;
   else {
     free (auth->crealm);
-    free (auth->seq_number);
     free (auth);
   }
   return ret;
