@@ -871,6 +871,7 @@ struct bitmap {
 #define SMBnttranss      0xA1   /* NT transact secondary */
 #define SMBntcreateX     0xA2   /* NT create and X */
 #define SMBntcancel      0xA4   /* NT cancel */
+#define SMBntrename      0xA5   /* NT rename */
 
 /* These are the trans subcommands */
 #define TRANSACT_SETNAMEDPIPEHANDLESTATE  0x01 

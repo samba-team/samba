@@ -34,7 +34,7 @@ enum flush_reason_enum { SEEK_FLUSH, READ_FLUSH, WRITE_FLUSH, READRAW_FLUSH,
 
 #define PROF_SHMEM_KEY ((key_t)0x07021999)
 #define PROF_SHM_MAGIC 0x6349985
-#define PROF_SHM_VERSION 8
+#define PROF_SHM_VERSION 9
 
 /* time values in the following structure are in microseconds */
 
@@ -259,6 +259,8 @@ struct profile_stats {
 	unsigned SMBntcreateX_time;
 	unsigned SMBntcancel_count;	/* NT cancel */
 	unsigned SMBntcancel_time;
+	unsigned SMBntrename_count;	/* NT rename file */
+	unsigned SMBntrename_time;
 	unsigned SMBsplopen_count;	/* open print spool file */
 	unsigned SMBsplopen_time;
 	unsigned SMBsplwr_count;	/* write to print spool file */
