@@ -727,7 +727,7 @@ NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname, fstrin
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	clistr_pull(cli, alt_name, rdata+4, sizeof(fstring), len, 0);
+	clistr_pull(cli, alt_name, rdata+4, sizeof(fstring), len, STR_UNICODE);
 
 	SAFE_FREE(rdata);
 	SAFE_FREE(rparam);
