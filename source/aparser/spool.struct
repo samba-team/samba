@@ -1,9 +1,14 @@
 module spool
-test R_GETPRINTERDRIVER2
+test PRINTER_DRIVER_INFO_LEVEL_6
 
 struct BUFFER5 {
        uint32 buf_len;
        uint16 buffer[buf_len];
+};
+
+struct BUFFERP {
+       uint32 buf_len;
+       BUFFER5 *buf;
 };
 
 struct UNISTR2 {
@@ -13,9 +18,14 @@ struct UNISTR2 {
        uint16 buffer[str_len];
 };
 
-struct UINT64_S {
-       uint32 low;
-       uint32 high;
+struct LPWSTR {
+       UNISTR2 *str;
+};
+
+struct VERSION {
+       uint32 version;
+       uint32 build;
+       uint32 osversion;
 };
 
 struct NTTIME {
@@ -23,42 +33,42 @@ struct NTTIME {
        uint32 high;
 };
 
+struct DWORD {
+       uint32 x;
+};
+
 struct PRINTER_DRIVER_INFO_LEVEL_3 {
-	uint32 cversion;
-	UNISTR2 *name;
-	UNISTR2 *environment;
-	UNISTR2 *driverpath;
-	UNISTR2 *datafile;
-	UNISTR2 *configfile;
-	UNISTR2 *helpfile;
-	UNISTR2 *monitorname;
-	UNISTR2 *defaultdatatype;
-	uint32  dependentfiles_len;
-	BUFFER5 *dependentfiles;
+	DWORD cversion;
+	LPWSTR name;
+	LPWSTR environment;
+	LPWSTR driverpath;
+	LPWSTR datafile;
+	LPWSTR configfile;
+	LPWSTR helpfile;
+	LPWSTR monitorname;
+	LPWSTR defaultdatatype;
+	BUFFERP dependentfiles;
 };
 
 struct PRINTER_DRIVER_INFO_LEVEL_6 {
-  uint32   dummy1; 
-  uint32   version; 
-  UNISTR2  *name;       
-  UNISTR2  *environment;
-  UNISTR2  *driverpath;
-  UNISTR2  *datafile;
-  UNISTR2  *configfile;
-  UNISTR2  *helpfile;
-  UNISTR2  *monitorname;
-  UNISTR2  *defaultdatatype;
-  uint32   dependentfiles_len;
-  BUFFER5  *dependentfiles;
-  uint32   previousnames_len;
-  BUFFER5  *previousnames;
+  DWORD   dummy1; 
+  DWORD   version; 
+  LPWSTR   name;       
+  LPWSTR environment;
+  LPWSTR driverpath;
+  LPWSTR datafile;
+  LPWSTR configfile;
+  LPWSTR helpfile;
+  LPWSTR monitorname;
+  LPWSTR defaultdatatype;
+  BUFFERP  dependentfiles;
+  BUFFERP  previousnames;
   NTTIME   driverdate; 
-  UINT64_S driverversion; 
-  uint32   dummy4;
-  UNISTR2  *mfgname; 
-  UNISTR2  *oemurl; 
-  UNISTR2  *hardwareid; 
-  UNISTR2  *provider; 
+  VERSION driverversion; 
+  LPWSTR mfgname; 
+  LPWSTR oemurl; 
+  LPWSTR hardwareid; 
+  LPWSTR provider; 
 };
 
 

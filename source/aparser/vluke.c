@@ -33,7 +33,8 @@ int main(int argc, char *argv[])
 	ps.io = UNMARSHALL;
 	il = (TEST_STRUCT *)malloc(sizeof(*il));
 	ret = TEST_FUNC(desc, &ps, 1, il, PARSE_SCALARS|PARSE_BUFFERS);
-	printf("\nret=%s\n\n\n", ret?"OK":"Bad");
+	printf("\nret=%s\n", ret?"OK":"Bad");
+	printf("Trailer is %d bytes\n\n", ps.grow_size - ps.data_offset);
 	dump_data(0, ps.data_p, ps.grow_size);
 	return !ret;
 }

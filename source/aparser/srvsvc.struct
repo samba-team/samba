@@ -1,5 +1,5 @@
 module srvsvc
-test SRV_R_NET_SHARE_ENUM
+test SRV_R_NET_SERVER_INFO
 
 struct UNISTR2 {
        uint32 max_len;
@@ -8,26 +8,41 @@ struct UNISTR2 {
        uint16 buffer[str_len];
 };
 
-/* function 15 */
-struct SRV_SHARE_INFO_1 {
-	UNISTR2 *uni_netname;
-	uint32 type;
-	UNISTR2 *uni_remark;
+struct LPWSTR {
+       UNISTR2 *str;
 };
 
-struct SHARE_ENUM {
-       uint32 level;
-       uint32 num_entries;
-       union info[level] {
-              case 1 SRV_SHARE_INFO_1 entries[num_entries];
-       }
+/* function 15 */
+struct SRV_SHARE_INFO_1 {
+	LPWSTR uni_netname;
+	uint32 type;
+	LPWSTR uni_remark;
+};
+
+struct SRV_SHARE_INFO_2 {
+	LPWSTR uni_netname;
+	uint32 type;
+	LPWSTR uni_remark;
+	uint32 perms;
+	uint32 max_uses;
+	uint32 num_uses;
+	LPWSTR path;
+	LPWSTR passwd;
 };
 
 struct SRV_R_NET_SHARE_ENUM {
        uint32 level;
-       uint32 dummy;
-       SHARE_ENUM *shares;
-       uint32 *num_entries;
+       uint32 level2;
+       uint32 *ret_count;
+       uint32 num_entries;
+       union *info[level] {
+              case 1 SRV_SHARE_INFO_1 info1[num_entries];
+              case 2 SRV_SHARE_INFO_2 info2[num_entries];
+       }
+       .trailer;
+       uint32 count;
+       uint32 status1;
+       uint32 status2;
 };
 
 
@@ -35,32 +50,32 @@ struct SRV_R_NET_SHARE_ENUM {
 /* function 21 */
 struct SERVER_INFO_100 {
 	uint32  dwPlatformID;
-	UNISTR2 *pszName;
+	LPWSTR pszName;
 };
 
 struct SERVER_INFO_101 {
 	    uint32  dwPlatformID;
-	    UNISTR2 *pszName;
+	    LPWSTR pszName;
 	    uint32  dwVerMajor;
 	    uint32  dwVerMinor;
 	    uint32  dwType;
-	    UNISTR2 *pszComment;
+	    LPWSTR pszComment;
 };
 
 struct SERVER_INFO_102 {
     uint32  dwPlatformID;
-    UNISTR2 *pszName;
+    LPWSTR pszName;
     uint32  dwVerMajor;
     uint32  dwVerMinor;
     uint32  dwType;
-    UNISTR2 *pszComment;
+    LPWSTR pszComment;
     uint32  dwUsers;
     uint32   lDisc;
     uint32   bHidden;
     uint32  dwAnnounce;
     uint32  dwAnnDelta;
     uint32  dwLicenses;
-    UNISTR2 *pszUserPath;
+    LPWSTR pszUserPath;
 };
 
 struct SRV_R_NET_SERVER_INFO {
@@ -70,4 +85,6 @@ struct SRV_R_NET_SERVER_INFO {
 		case 101 SERVER_INFO_101 *sv101;
 		case 102 SERVER_INFO_102 *sv102;
        }
+       .trailer;
+       uint32 status;
 };

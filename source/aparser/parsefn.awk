@@ -27,6 +27,7 @@ function parse_element(f, v, elnum, flags,
 		       LOCAL, type, elem)
 {
 	type = elements[elnum, "type"];
+	if (substr(type,1,1) == ".") return;
 	elem = elements[elnum, "elem"];
 	if (elements[elnum,"ptr"] == "") {
 		v["PTR"] = "\\&";
@@ -117,22 +118,31 @@ function parse_buffers(f, v, elnum, flags,
 }
 
 function struct_parser(f, v, struct_num,
-		       LOCAL, i) 
+		       LOCAL, i, n1) 
 {
 	v["STRUCTNAME"] = structs[struct_num, "name"];
 	v["FUNCNAME"] = "io_" v["STRUCTNAME"];
 	print_template(f, "fn_start.tpl", v);
 
+	for (n1=0;n1<structs[struct_num, "num_elems"];n1++) {
+		if (elements[structs[struct_num, n1], "type"] == ".trailer") break;
+	}
+
         # first all the structure pointers, scalars and arrays
-	for (i=0;i<structs[struct_num, "num_elems"];i++) {
+	for (i=0;i<n1;i++) {
 		parse_scalars(f, v, structs[struct_num, i], "PARSE_SCALARS");
 	}
 
 	print_template(f, "fn_mid.tpl", v);
 
 	# now the buffers
-	for (i=0;i<structs[struct_num, "num_elems"];i++) {
+	for (i=0;i<n1;i++) {
 		parse_buffers(f, v, structs[struct_num, i], "PARSE_BUFFERS");
+	}
+
+	# and any trailers
+	for (i=n1;i<structs[struct_num, "num_elems"];i++) {
+		parse_buffers(f, v, structs[struct_num, i], "PARSE_SCALARS");
 	}
 
 	print_template(f, "fn_end.tpl", v);
