@@ -351,12 +351,16 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
     return False;
   }
 
-  if (cli_receive_trans(cli,SMBtrans,
+  if (!cli_receive_trans(cli,SMBtrans,
                        &rparam, &rprcnt,
                        &rdata, &rdrcnt)) {
-    if (rparam)
-      cli->rap_error = SVAL(rparam,0);
+	DEBUG(0,("cli_oem_change_password: Failed to recieve reply to password change for user %s\n",
+		user ));
+	return False;
   }
+
+  if (rparam)
+      cli->rap_error = SVAL(rparam,0);
 
   SAFE_FREE(rparam);
   SAFE_FREE(rdata);
