@@ -358,9 +358,9 @@ static GtkWidget* create_mainwin (void)
 		gtk_widget_show (open_nt4);
 		gtk_container_add (GTK_CONTAINER (menu_file_menu), open_nt4);
 
-  		g_signal_connect ((gpointer) open_nt4, "activate",
-                    G_CALLBACK (on_open_file_activate),
-                    "nt4");
+		g_signal_connect ((gpointer) open_nt4, "activate",
+						  G_CALLBACK (on_open_file_activate),
+						  "nt4");
 	}
 
 	if(reg_has_backend("w95")) {
@@ -368,9 +368,9 @@ static GtkWidget* create_mainwin (void)
 		gtk_widget_show (open_w95);
 		gtk_container_add (GTK_CONTAINER (menu_file_menu), open_w95);
 
-  		g_signal_connect ((gpointer) open_w95, "activate",
-                    G_CALLBACK (on_open_file_activate),
-                    "w95");
+		g_signal_connect ((gpointer) open_w95, "activate",
+						  G_CALLBACK (on_open_file_activate),
+						  "w95");
 	}
 
 	if(reg_has_backend("gconf")) {
@@ -378,9 +378,9 @@ static GtkWidget* create_mainwin (void)
 		gtk_widget_show (open_gconf);
 		gtk_container_add (GTK_CONTAINER (menu_file_menu), open_gconf);
 
-  		g_signal_connect ((gpointer) open_gconf, "activate",
-                    G_CALLBACK (on_open_gconf_activate),
-                    NULL);
+		g_signal_connect ((gpointer) open_gconf, "activate",
+						  G_CALLBACK (on_open_gconf_activate),
+						  NULL);
 	}
 
 	if(reg_has_backend("rpc")) {
@@ -388,9 +388,9 @@ static GtkWidget* create_mainwin (void)
 		gtk_widget_show (open_remote);
 		gtk_container_add (GTK_CONTAINER (menu_file_menu), open_remote);
 
-  		g_signal_connect ((gpointer) open_remote, "activate",
-                    G_CALLBACK (on_open_remote_activate),
-                    NULL);
+		g_signal_connect ((gpointer) open_remote, "activate",
+						  G_CALLBACK (on_open_remote_activate),
+						  NULL);
 	}
 
 	save = gtk_image_menu_item_new_from_stock ("gtk-save", accel_group);
@@ -416,201 +416,201 @@ static GtkWidget* create_mainwin (void)
 	gtk_widget_show (men_edit);
 	gtk_container_add (GTK_CONTAINER (menubar), men_edit);
 
-  men_edit_menu = gtk_menu_new ();
-  gtk_menu_item_set_submenu (GTK_MENU_ITEM (men_edit), men_edit_menu);
+	men_edit_menu = gtk_menu_new ();
+	gtk_menu_item_set_submenu (GTK_MENU_ITEM (men_edit), men_edit_menu);
 
-  cut = gtk_image_menu_item_new_from_stock ("gtk-cut", accel_group);
-  gtk_widget_show (cut);
-  gtk_widget_set_sensitive(cut, False);
-  gtk_container_add (GTK_CONTAINER (men_edit_menu), cut);
+	cut = gtk_image_menu_item_new_from_stock ("gtk-cut", accel_group);
+	gtk_widget_show (cut);
+	gtk_widget_set_sensitive(cut, False);
+	gtk_container_add (GTK_CONTAINER (men_edit_menu), cut);
 
-  copy = gtk_image_menu_item_new_from_stock ("gtk-copy", accel_group);
-  gtk_widget_show (copy);
-  gtk_widget_set_sensitive(copy, False);
-  gtk_container_add (GTK_CONTAINER (men_edit_menu), copy);
+	copy = gtk_image_menu_item_new_from_stock ("gtk-copy", accel_group);
+	gtk_widget_show (copy);
+	gtk_widget_set_sensitive(copy, False);
+	gtk_container_add (GTK_CONTAINER (men_edit_menu), copy);
 
-  paste = gtk_image_menu_item_new_from_stock ("gtk-paste", accel_group);
-  gtk_widget_show (paste);
-  gtk_widget_set_sensitive(paste, False);
-  gtk_container_add (GTK_CONTAINER (men_edit_menu), paste);
+	paste = gtk_image_menu_item_new_from_stock ("gtk-paste", accel_group);
+	gtk_widget_show (paste);
+	gtk_widget_set_sensitive(paste, False);
+	gtk_container_add (GTK_CONTAINER (men_edit_menu), paste);
 
-  delete = gtk_image_menu_item_new_from_stock ("gtk-delete", accel_group);
-  gtk_widget_show (delete);
-  gtk_widget_set_sensitive(delete, False);
-  gtk_container_add (GTK_CONTAINER (men_edit_menu), delete);
+	delete = gtk_image_menu_item_new_from_stock ("gtk-delete", accel_group);
+	gtk_widget_show (delete);
+	gtk_widget_set_sensitive(delete, False);
+	gtk_container_add (GTK_CONTAINER (men_edit_menu), delete);
 
-  help = gtk_menu_item_new_with_mnemonic ("_Help");
-  gtk_widget_show (help);
-  gtk_container_add (GTK_CONTAINER (menubar), help);
+	help = gtk_menu_item_new_with_mnemonic ("_Help");
+	gtk_widget_show (help);
+	gtk_container_add (GTK_CONTAINER (menubar), help);
 
-  help_menu = gtk_menu_new ();
-  gtk_menu_item_set_submenu (GTK_MENU_ITEM (help), help_menu);
+	help_menu = gtk_menu_new ();
+	gtk_menu_item_set_submenu (GTK_MENU_ITEM (help), help_menu);
 
-  about = gtk_menu_item_new_with_mnemonic ("_About");
-  gtk_widget_show (about);
-  gtk_container_add (GTK_CONTAINER (help_menu), about);
+	about = gtk_menu_item_new_with_mnemonic ("_About");
+	gtk_widget_show (about);
+	gtk_container_add (GTK_CONTAINER (help_menu), about);
 
-  hbox1 = gtk_hbox_new (FALSE, 0);
-  gtk_widget_show (hbox1);
-  gtk_box_pack_start (GTK_BOX (vbox1), hbox1, TRUE, TRUE, 0);
+	hbox1 = gtk_hbox_new (FALSE, 0);
+	gtk_widget_show (hbox1);
+	gtk_box_pack_start (GTK_BOX (vbox1), hbox1, TRUE, TRUE, 0);
 
-  scrolledwindow1 = gtk_scrolled_window_new (NULL, NULL);
-  gtk_widget_show (scrolledwindow1);
-  gtk_box_pack_start (GTK_BOX (hbox1), scrolledwindow1, TRUE, TRUE, 0);
+	scrolledwindow1 = gtk_scrolled_window_new (NULL, NULL);
+	gtk_widget_show (scrolledwindow1);
+	gtk_box_pack_start (GTK_BOX (hbox1), scrolledwindow1, TRUE, TRUE, 0);
 
-  tree_keys = gtk_tree_view_new ();
+	tree_keys = gtk_tree_view_new ();
 
-  /* Column names */
-  curcol = gtk_tree_view_column_new ();
-  gtk_tree_view_column_set_title(curcol, "Name");
-  renderer = gtk_cell_renderer_text_new();
-  gtk_tree_view_column_pack_start(curcol, renderer, True);
+	/* Column names */
+	curcol = gtk_tree_view_column_new ();
+	gtk_tree_view_column_set_title(curcol, "Name");
+	renderer = gtk_cell_renderer_text_new();
+	gtk_tree_view_column_pack_start(curcol, renderer, True);
 
-  gtk_tree_view_append_column(GTK_TREE_VIEW(tree_keys), curcol);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(tree_keys), curcol);
 
-  gtk_tree_view_column_add_attribute(curcol, renderer, "text", 0);
-  gtk_widget_show (tree_keys);
-  gtk_container_add (GTK_CONTAINER (scrolledwindow1), tree_keys);
-  store_keys = gtk_tree_store_new(2, G_TYPE_STRING, G_TYPE_POINTER);
-  gtk_tree_view_set_model(GTK_TREE_VIEW(tree_keys), GTK_TREE_MODEL(store_keys));
-  g_object_unref(store_keys);
+	gtk_tree_view_column_add_attribute(curcol, renderer, "text", 0);
+	gtk_widget_show (tree_keys);
+	gtk_container_add (GTK_CONTAINER (scrolledwindow1), tree_keys);
+	store_keys = gtk_tree_store_new(2, G_TYPE_STRING, G_TYPE_POINTER);
+	gtk_tree_view_set_model(GTK_TREE_VIEW(tree_keys), GTK_TREE_MODEL(store_keys));
+	g_object_unref(store_keys);
 
-  gtk_tree_selection_set_select_function (gtk_tree_view_get_selection(GTK_TREE_VIEW(tree_keys)), on_key_activate, NULL, NULL);
+	gtk_tree_selection_set_select_function (gtk_tree_view_get_selection(GTK_TREE_VIEW(tree_keys)), on_key_activate, NULL, NULL);
 
-  g_signal_connect ((gpointer) tree_keys, "row-expanded",
-                    G_CALLBACK (expand_key),
-                    NULL);
+	g_signal_connect ((gpointer) tree_keys, "row-expanded",
+					  G_CALLBACK (expand_key),
+					  NULL);
 
 
-  scrolledwindow2 = gtk_scrolled_window_new (NULL, NULL);
-  gtk_widget_show (scrolledwindow2);
-  gtk_box_pack_start (GTK_BOX (hbox1), scrolledwindow2, TRUE, TRUE, 0);
+	scrolledwindow2 = gtk_scrolled_window_new (NULL, NULL);
+	gtk_widget_show (scrolledwindow2);
+	gtk_box_pack_start (GTK_BOX (hbox1), scrolledwindow2, TRUE, TRUE, 0);
 
-  tree_vals = gtk_tree_view_new ();
-    /* Column names */
+	tree_vals = gtk_tree_view_new ();
+	/* Column names */
 
-  curcol = gtk_tree_view_column_new ();
-  gtk_tree_view_column_set_title(curcol, "Name");
-  renderer = gtk_cell_renderer_text_new();
-  gtk_tree_view_column_pack_start(curcol, renderer, True);
-  gtk_tree_view_append_column(GTK_TREE_VIEW(tree_vals), curcol);
-  gtk_tree_view_column_add_attribute(curcol, renderer, "text", 0);
+	curcol = gtk_tree_view_column_new ();
+	gtk_tree_view_column_set_title(curcol, "Name");
+	renderer = gtk_cell_renderer_text_new();
+	gtk_tree_view_column_pack_start(curcol, renderer, True);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(tree_vals), curcol);
+	gtk_tree_view_column_add_attribute(curcol, renderer, "text", 0);
 
-  curcol = gtk_tree_view_column_new ();
-  gtk_tree_view_column_set_title(curcol, "Type");
-  renderer = gtk_cell_renderer_text_new();
-  gtk_tree_view_column_pack_start(curcol, renderer, True);
-  gtk_tree_view_append_column(GTK_TREE_VIEW(tree_vals), curcol);
-  gtk_tree_view_column_add_attribute(curcol, renderer, "text", 1);
+	curcol = gtk_tree_view_column_new ();
+	gtk_tree_view_column_set_title(curcol, "Type");
+	renderer = gtk_cell_renderer_text_new();
+	gtk_tree_view_column_pack_start(curcol, renderer, True);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(tree_vals), curcol);
+	gtk_tree_view_column_add_attribute(curcol, renderer, "text", 1);
 
-  curcol = gtk_tree_view_column_new ();
-  gtk_tree_view_column_set_title(curcol, "Value");
-  renderer = gtk_cell_renderer_text_new();
-  gtk_tree_view_column_pack_start(curcol, renderer, True);
-  gtk_tree_view_append_column(GTK_TREE_VIEW(tree_vals), curcol);
-  gtk_tree_view_column_add_attribute(curcol, renderer, "text", 2);
+	curcol = gtk_tree_view_column_new ();
+	gtk_tree_view_column_set_title(curcol, "Value");
+	renderer = gtk_cell_renderer_text_new();
+	gtk_tree_view_column_pack_start(curcol, renderer, True);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(tree_vals), curcol);
+	gtk_tree_view_column_add_attribute(curcol, renderer, "text", 2);
 
-  
-  gtk_widget_show (tree_vals);
-  gtk_container_add (GTK_CONTAINER (scrolledwindow2), tree_vals);
 
-  store_vals = gtk_list_store_new(4, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_POINTER);
-  gtk_tree_view_set_model(GTK_TREE_VIEW(tree_vals), GTK_TREE_MODEL(store_vals));
-  g_object_unref(store_vals);
+	gtk_widget_show (tree_vals);
+	gtk_container_add (GTK_CONTAINER (scrolledwindow2), tree_vals);
 
-  statusbar = gtk_statusbar_new ();
-  gtk_widget_show (statusbar);
-  gtk_box_pack_start (GTK_BOX (vbox1), statusbar, FALSE, FALSE, 0);
-  gtk_statusbar_set_has_resize_grip (GTK_STATUSBAR (statusbar), FALSE);
+	store_vals = gtk_list_store_new(4, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_POINTER);
+	gtk_tree_view_set_model(GTK_TREE_VIEW(tree_vals), GTK_TREE_MODEL(store_vals));
+	g_object_unref(store_vals);
 
-  g_signal_connect ((gpointer) save, "activate",
-                    G_CALLBACK (on_save_activate),
-                    NULL);
-  g_signal_connect ((gpointer) save_as, "activate",
-                    G_CALLBACK (on_save_as_activate),
-                    NULL);
-  g_signal_connect ((gpointer) quit, "activate",
-                    G_CALLBACK (on_quit_activate),
-                    NULL);
-  g_signal_connect ((gpointer) cut, "activate",
-                    G_CALLBACK (on_cut_activate),
-                    NULL);
-  g_signal_connect ((gpointer) copy, "activate",
-                    G_CALLBACK (on_copy_activate),
-                    NULL);
-  g_signal_connect ((gpointer) paste, "activate",
-                    G_CALLBACK (on_paste_activate),
-                    NULL);
-  g_signal_connect ((gpointer) delete, "activate",
-                    G_CALLBACK (on_delete_activate),
-                    NULL);
-  g_signal_connect ((gpointer) about, "activate",
-                    G_CALLBACK (on_about_activate),
-                    NULL);
+	statusbar = gtk_statusbar_new ();
+	gtk_widget_show (statusbar);
+	gtk_box_pack_start (GTK_BOX (vbox1), statusbar, FALSE, FALSE, 0);
+	gtk_statusbar_set_has_resize_grip (GTK_STATUSBAR (statusbar), FALSE);
 
-  gtk_window_add_accel_group (GTK_WINDOW (mainwin), accel_group);
+	g_signal_connect ((gpointer) save, "activate",
+					  G_CALLBACK (on_save_activate),
+					  NULL);
+	g_signal_connect ((gpointer) save_as, "activate",
+					  G_CALLBACK (on_save_as_activate),
+					  NULL);
+	g_signal_connect ((gpointer) quit, "activate",
+					  G_CALLBACK (on_quit_activate),
+					  NULL);
+	g_signal_connect ((gpointer) cut, "activate",
+					  G_CALLBACK (on_cut_activate),
+					  NULL);
+	g_signal_connect ((gpointer) copy, "activate",
+					  G_CALLBACK (on_copy_activate),
+					  NULL);
+	g_signal_connect ((gpointer) paste, "activate",
+					  G_CALLBACK (on_paste_activate),
+					  NULL);
+	g_signal_connect ((gpointer) delete, "activate",
+					  G_CALLBACK (on_delete_activate),
+					  NULL);
+	g_signal_connect ((gpointer) about, "activate",
+					  G_CALLBACK (on_about_activate),
+					  NULL);
 
-  return mainwin;
+	gtk_window_add_accel_group (GTK_WINDOW (mainwin), accel_group);
+
+	return mainwin;
 }
 
 static GtkWidget* create_openfilewin (void)
 {
-  GtkWidget *ok_button;
-  GtkWidget *cancel_button;
+	GtkWidget *ok_button;
+	GtkWidget *cancel_button;
 
-  openfilewin = gtk_file_selection_new ("Select File");
-  gtk_container_set_border_width (GTK_CONTAINER (openfilewin), 10);
+	openfilewin = gtk_file_selection_new ("Select File");
+	gtk_container_set_border_width (GTK_CONTAINER (openfilewin), 10);
 
-  ok_button = GTK_FILE_SELECTION (openfilewin)->ok_button;
-  gtk_widget_show (ok_button);
-  GTK_WIDGET_SET_FLAGS (ok_button, GTK_CAN_DEFAULT);
+	ok_button = GTK_FILE_SELECTION (openfilewin)->ok_button;
+	gtk_widget_show (ok_button);
+	GTK_WIDGET_SET_FLAGS (ok_button, GTK_CAN_DEFAULT);
 
-  cancel_button = GTK_FILE_SELECTION (openfilewin)->cancel_button;
-  gtk_widget_show (cancel_button);
-  GTK_WIDGET_SET_FLAGS (cancel_button, GTK_CAN_DEFAULT);
+	cancel_button = GTK_FILE_SELECTION (openfilewin)->cancel_button;
+	gtk_widget_show (cancel_button);
+	GTK_WIDGET_SET_FLAGS (cancel_button, GTK_CAN_DEFAULT);
 
-  return openfilewin;
+	return openfilewin;
 }
 
 static GtkWidget* create_savefilewin (void)
 {
-  GtkWidget *ok_button;
-  GtkWidget *cancel_button;
+	GtkWidget *ok_button;
+	GtkWidget *cancel_button;
 
-  savefilewin = gtk_file_selection_new ("Select File");
-  gtk_container_set_border_width (GTK_CONTAINER (savefilewin), 10);
+	savefilewin = gtk_file_selection_new ("Select File");
+	gtk_container_set_border_width (GTK_CONTAINER (savefilewin), 10);
 
-  ok_button = GTK_FILE_SELECTION (savefilewin)->ok_button;
-  gtk_widget_show (ok_button);
-  GTK_WIDGET_SET_FLAGS (ok_button, GTK_CAN_DEFAULT);
+	ok_button = GTK_FILE_SELECTION (savefilewin)->ok_button;
+	gtk_widget_show (ok_button);
+	GTK_WIDGET_SET_FLAGS (ok_button, GTK_CAN_DEFAULT);
 
-  cancel_button = GTK_FILE_SELECTION (savefilewin)->cancel_button;
-  gtk_widget_show (cancel_button);
-  GTK_WIDGET_SET_FLAGS (cancel_button, GTK_CAN_DEFAULT);
+	cancel_button = GTK_FILE_SELECTION (savefilewin)->cancel_button;
+	gtk_widget_show (cancel_button);
+	GTK_WIDGET_SET_FLAGS (cancel_button, GTK_CAN_DEFAULT);
 
-  return savefilewin;
+	return savefilewin;
 }
 
  int main(int argc, char *argv[])
 {
-  poptContext pc;
-  const char *backend = NULL;
-  const char *credentials = NULL;
-  const char *location;
-  int opt;
-  struct poptOption long_options[] = {
-       POPT_AUTOHELP
-       {"backend", 'b', POPT_ARG_STRING, &backend, 0, "backend to use", NULL},
-	   {"credentials", 'c', POPT_ARG_STRING, &credentials, 0, "credentials (user%%password)", NULL},
-       POPT_TABLEEND
-    };
-                                                                              
-    gtk_init (&argc, &argv);
+	poptContext pc;
+	const char *backend = NULL;
+	const char *credentials = NULL;
+	const char *location;
+	int opt;
+	struct poptOption long_options[] = {
+		POPT_AUTOHELP
+		{"backend", 'b', POPT_ARG_STRING, &backend, 0, "backend to use", NULL},
+		{"credentials", 'c', POPT_ARG_STRING, &credentials, 0, "credentials (user%%password)", NULL},
+		POPT_TABLEEND
+	};
 
-    pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,0);
-                                                                              
-    while((opt = poptGetNextOpt(pc)) != -1) {
-    }
+	gtk_init (&argc, &argv);
+
+	pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,0);
+
+	while((opt = poptGetNextOpt(pc)) != -1) {
+	}
 
 	location = poptGetArg(pc);
 
@@ -621,7 +621,7 @@ static GtkWidget* create_savefilewin (void)
 			if(credentials)backend = "rpc";
 			else backend = "nt4";
 		}
-		
+
 		error = reg_open(backend, location, credentials, &registry);
 		if(!W_ERROR_IS_OK(error)) {
 			gtk_show_werror(mainwin, error);
@@ -629,8 +629,9 @@ static GtkWidget* create_savefilewin (void)
 		}
 		mainwin = create_mainwin ();
 		registry_load_root();
-	} else 
+	} else {
 		mainwin = create_mainwin ();
+	}
 
 	gtk_widget_show (mainwin);
 
