@@ -201,14 +201,6 @@ void notify_job_submitted(int snum, uint32 jobid, time_t submitted)
 		jobid, sizeof(submitted), (char *)&submitted);
 }
 
-void notify_printer_delete(char *printer_name)
-{
-}
-
-void notify_printer_add(char *printer_name)
-{
-}
-
 void notify_printer_driver(int snum, char *driver_name)
 {
 	const char *printer_name = SERVICE(snum);

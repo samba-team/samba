@@ -2034,8 +2034,6 @@ uint32 del_a_printer(char *sharename)
 
 	tdb_delete(tdb_printers, kbuf);
 
-	notify_printer_delete(sharename);
-
 	return 0;
 }
 
