@@ -670,6 +670,84 @@ done:
 	return ret;
 }
 
+static BOOL test_delayed_write_update(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	union smb_fileinfo finfo1, finfo2;
+	const char *fname = BASEDIR "\\torture_file.txt";
+	NTSTATUS status;
+	int fnum1 = -1;
+	BOOL ret = True;
+	ssize_t written;
+	time_t t;
+
+	printf("Testing delayed update of write time\n");
+
+	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
+	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
+		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
+		return False;
+	}
+
+	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
+	if (fnum1 == -1) {
+		return False;
+	}
+
+	finfo1.basic_info.level = RAW_FILEINFO_BASIC_INFO;
+	finfo1.basic_info.in.fnum = fnum1;
+	finfo2 = finfo1;
+
+	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo1);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
+		return False;
+	}
+	
+	printf("Initial write time %s\n", 
+	       nt_time_string(mem_ctx, finfo1.basic_info.out.write_time));
+
+	/* 3 second delay to ensure we get past any 2 second time
+	   granularity (older systems may have that */
+	sleep(3);
+
+	written =  smbcli_write(cli->tree, fnum1, 0, "x", 0, 1);
+
+	if (written != 1) {
+		printf("write failed - wrote %d bytes\n", written);
+		return False;
+	}
+
+	t = time(NULL);
+
+	while (time(NULL) < t+120) {
+		status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo2);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
+			ret = False;
+			break;
+		}
+		printf("write time %s\n", 
+		       nt_time_string(mem_ctx, finfo2.basic_info.out.write_time));
+		if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
+			printf("Server updated write_time after %d seconds\n",
+			       (int)(time(NULL) - t));
+			break;
+		}
+		sleep(1);
+		fflush(stdout);
+	}
+
+	if (fnum1 != -1)
+		smbcli_close(cli->tree, fnum1);
+	smbcli_unlink(cli->tree, fname);
+	smbcli_deltree(cli->tree, BASEDIR);
+
+	return ret;
+}
+
+
 /* Windows does obviously not update the stat info during a write call. I
  * *think* this is the problem causing a spurious Excel 2003 on XP error
  * message when saving a file. Excel does a setfileinfo, writes, and then does
@@ -688,6 +766,8 @@ static BOOL test_finfo_after_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx
 	int fnum1 = -1;
 	BOOL ret = True;
 	ssize_t written;
+
+	printf("Testing finfo update on close\n");
 
 	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
 	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
@@ -824,6 +904,10 @@ BOOL torture_raw_write(int dummy)
 	mem_ctx = talloc_init("torture_raw_write");
 
 	if (!test_finfo_after_write(cli, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_delayed_write_update(cli, mem_ctx)) {
 		ret = False;
 	}
 
