@@ -1,3 +1,14 @@
+2001-04-29  Assar Westerlund  <assar@sics.se>
+
+	* kdc/kerberos5.c (tgs_rep2): return a reference to a krbtgt for
+	the right realm if we fail to find a non-krbtgt service in the
+	database and the second component does a succesful non-dns lookup
+	to get the real realm (which has to be different from the
+	originally-supplied realm).  this should help windows 2000 clients
+	that always start their lookups in `their' realm and do not have
+	any idea of how to map hostnames into realms
+	* kdc/kerberos5.c (is_krbtgt): rename to get_krbtgt_realm
+
 2001-04-27  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/get_host_realm.c (krb5_get_host_realm_int): add extra
