@@ -41,6 +41,37 @@
 RCSID("$Id$");
 
 kadm5_ret_t 
+kadm5_s_init_with_password_ctx(krb5_context context,
+			       char *client_name, 
+			       char *pass,
+			       char *service_name,
+			       kadm5_config_params *realm_params,
+			       unsigned long struct_version,
+			       unsigned long api_version,
+			       void **server_handle)
+{
+    kadm5_ret_t ret;
+    kadm5_server_context *ctx;
+    ret = _kadm5_s_init_context(&ctx, realm_params, context);
+    if(ret)
+	return ret;
+    ret = hdb_create(ctx->context, &ctx->db, NULL);
+    if(ret)
+	return ret;
+    ret = hdb_set_master_key (ctx->context, 
+			      ctx->db, NULL); /* XXX get from conf */
+    if(ret)
+	return ret;
+    
+    ret = krb5_parse_name(ctx->context, client_name, &ctx->caller);
+    if(ret)
+	return ret;
+    
+    *server_handle = ctx;
+    return 0;
+}
+
+kadm5_ret_t 
 kadm5_s_init_with_password(char *client_name, 
 			   char *pass,
 			   char *service_name,
@@ -49,19 +80,25 @@ kadm5_s_init_with_password(char *client_name,
 			   unsigned long api_version,
 			   void **server_handle)
 {
+    krb5_context context;
     kadm5_ret_t ret;
-    kadm5_server_context *context;
-    ret = _kadm5_s_init_context(&context, realm_params);
-    if(ret)
+    kadm5_server_context *ctx;
+
+    krb5_init_context(&context);
+    ret = kadm5_s_init_with_password_ctx(context, 
+					 client_name, 
+					 pass, 
+					 service_name, 
+					 realm_params, 
+					 struct_version, 
+					 api_version, 
+					 server_handle);
+    if(ret){
+	krb5_free_context(context);
 	return ret;
-    ret = hdb_create(context->context, &context->db, NULL);
-    if(ret)
-	return ret;
-    ret = krb5_parse_name(context->context, service_name, &context->caller);
-    if(ret)
-	return ret;
-    
-    *server_handle = context;
+    }
+    ctx = *server_handle;
+    ctx->my_context = 1;
     return 0;
 }
 
