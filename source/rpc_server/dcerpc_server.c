@@ -273,11 +273,6 @@ static int dcesrv_endpoint_destructor(void *ptr)
 		dcesrv_handle_destroy(p, p->handles);
 	}
 
-	if (p->auth_state.gensec_security) {
-		talloc_free(p->auth_state.gensec_security);
-		p->auth_state.gensec_security = NULL;
-	}
-
 	return 0;
 }
 
