@@ -587,8 +587,10 @@ BOOL cli_rmdir(struct cli_state *cli, char *dname);
 int cli_nt_create(struct cli_state *cli, char *fname);
 int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode);
 BOOL cli_close(struct cli_state *cli, int fnum);
-BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout);
-BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout);
+BOOL cli_lock(struct cli_state *cli, int fnum, 
+	      uint32 offset, uint32 len, int timeout, int locktype);
+BOOL cli_unlock(struct cli_state *cli, int fnum, 
+		uint32 offset, uint32 len, int timeout, int locktype);
 size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size);
 ssize_t cli_write(struct cli_state *cli,
 		  int fnum, uint16 write_mode,
@@ -2972,6 +2974,7 @@ int smbw_stat(const char *fname, struct stat *st);
 
 /*The following definitions come from  tdb/tdb.c  */
 
+char *tdb_error(TDB_CONTEXT *tdb);
 int tdb_update(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf);
 TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key);
