@@ -1299,6 +1299,8 @@ static void init_globals(void)
 
 		string_set(&sDefault.fstype, FSTYPE_STRING);
 
+		init_printer_values(&sDefault);
+
 		done_init = True;
 	}
 
@@ -3952,9 +3954,6 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 	}
 
 	init_iconv();
-#if 0	/* JERRY */
-	init_printer_values(&sDefault);
-#endif
 
 	return (bRetval);
 }
