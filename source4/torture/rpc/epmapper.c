@@ -22,6 +22,80 @@
 #include "includes.h"
 
 
+/*
+  display any protocol tower
+ */
+static void display_tower(TALLOC_CTX *mem_ctx, struct epm_towers *twr)
+{
+	int i;
+	const char *uuid;
+
+	for (i=0;i<twr->num_floors;i++) {
+		struct epm_lhs *lhs = &twr->floors[i].lhs;
+		struct epm_rhs *rhs = &twr->floors[i].rhs;
+		switch (lhs->protocol) {
+		case 0xd:
+			uuid = GUID_string(mem_ctx, &lhs->info.uuid.uuid);
+			if (strcasecmp(uuid, NDR_GUID) == 0) {
+				printf(" NDR");
+			} else {
+				printf(" uuid %s/0x%02x", uuid, lhs->info.uuid.version);
+			}
+			break;
+		case 0xb:
+			printf(" RPC-C");
+			break;
+
+		case 0x9:
+			printf(" IP:");
+			if (rhs->data.length == 4) {
+				struct in_addr in;
+				in.s_addr = RIVAL(rhs->data.data, 0);
+				printf("%s", inet_ntoa(in));
+			}
+			break;
+
+		case 0x10:
+			printf(" PIPE:%.*s", rhs->data.length, rhs->data.data);
+			break;
+
+		case 0x0f:
+			printf(" SMBNP:%.*s", rhs->data.length, rhs->data.data);
+			break;
+
+		case 0x11:
+			printf(" SMB:%.*s", rhs->data.length, rhs->data.data);
+			break;
+
+		case 0x01:
+			printf(" UNK(1):%.*s", rhs->data.length, rhs->data.data);
+			break;
+
+		case 0x1f:
+			printf(" TCP:");
+			if (rhs->data.length == 2) {
+				printf("%d", SVAL(rhs->data.data, 0));
+			}
+			break;
+
+		case 0x07:
+			printf(" XXX:");
+			if (rhs->data.length == 2) {
+				printf("%d", SVAL(rhs->data.data, 0));
+			}
+			break;
+
+		default:
+			printf(" UNK(%02x):", lhs->protocol);
+			if (rhs->data.length == 2) {
+				printf("%d", SVAL(rhs->data.data, 0));
+			}
+			break;
+		}
+	}
+	printf("\n");
+}
+
 static BOOL test_Lookup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
@@ -29,7 +103,6 @@ static BOOL test_Lookup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct GUID uuid;
 	struct rpc_if_id_t iface;
 	struct policy_handle handle;
-	int i;
 
 	ZERO_STRUCT(uuid);
 	ZERO_STRUCT(iface);
@@ -41,20 +114,20 @@ static BOOL test_Lookup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	r.in.vers_option = 0;
 	r.in.entry_handle = &handle;
 	r.out.entry_handle = &handle;
-	r.in.max_ents = 1;
+	r.in.max_ents = 10;
 
 	do {
 		status = dcerpc_epm_Lookup(p, mem_ctx, &r);
 		if (NT_STATUS_IS_OK(status) && r.out.status == 0) {
-			printf("Found '%s'\n", r.out.entries[0].annotation);
-			for (i=0;i<r.out.entries[0].tower->towers.num_floors;i++) {
-				struct epm_lhs *lhs = &r.out.entries[0].tower->towers.floors[i].lhs;
-				if (lhs->protocol == 13) {
-					NDR_PRINT_DEBUG(epm_prot_uuid, &lhs->info.uuid);
-				}
+			int i;
+			for (i=0;i<r.out.num_ents;i++) {
+				printf("Found '%s'\n", r.out.entries[i].annotation);
+				display_tower(mem_ctx, &r.out.entries[i].tower->towers);
 			}
 		}
-	} while (NT_STATUS_IS_OK(status) && r.out.status == 0);
+	} while (NT_STATUS_IS_OK(status) && 
+		 r.out.status == 0 && 
+		 r.out.num_ents == r.in.max_ents);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Lookup failed - %s\n", nt_errstr(status));

@@ -20,6 +20,9 @@ interface epmapper
 	  with.
 	*/
 
+	/* this guid indicates NDR encoding in a protocol tower */
+	const string NDR_GUID = "8a885d04-1ceb-11c9-9fe8-08002b104860";
+
 	typedef struct {
 		GUID uuid;
 		uint16 version;
@@ -36,7 +39,7 @@ interface epmapper
 	} epm_lhs;
 
 	typedef struct {
-		uint16 unknown;
+		[flag(NDR_REMAINING)] DATA_BLOB data;
 	} epm_rhs;
 
 	typedef struct {
@@ -57,11 +60,11 @@ interface epmapper
 	typedef struct {
 		uint32  tower_length;
 		[subcontext(4)] epm_towers towers;
-	} twr_t;
+	} epm_twr_t;
 
 	typedef struct {
 		GUID        object;
-		twr_t       *tower;
+		epm_twr_t   *tower;
 		ascstr2     annotation;
 	} epm_entry_t;
 
@@ -77,7 +80,7 @@ interface epmapper
 		[in]    uint32          num_ents,
 		[in,size_is(num_ents)]  epm_entry_t         entries[],
 		[in]    uint32    replace,
-		[out]   error_status_t    *status
+		[out]   error_status_t  status
 		);
     
 	/**********************/
@@ -85,7 +88,7 @@ interface epmapper
 	void epm_Delete(
 		[in]     uint32          num_ents,
 		[in, size_is(num_ents)]  epm_entry_t entries[],
-		[out]    error_status_t          *status
+		[out]    error_status_t  status
 		);
     
 	/**********************/
@@ -95,11 +98,11 @@ interface epmapper
 		[in]            GUID            *object,
 		[in]            rpc_if_id_t     *interface_id,
 		[in]            uint32          vers_option,
-		[in, out, ref]  policy_handle   *entry_handle,
+		[in,out,ref]    policy_handle   *entry_handle,
 		[in]            uint32          max_ents,
 		[out]           uint32          num_ents,
 		[out, length_is(num_ents), size_is(max_ents)]  epm_entry_t entries[],
-		[out]           error_status_t          status
+		[out]           error_status_t  status
 		);
 
 
@@ -107,32 +110,32 @@ interface epmapper
 	/* Function 0x03      */
 
 	typedef struct {
-		twr_t *twr;
-	} twr_p_t;
+		epm_twr_t *twr;
+	} epm_twr_p_t;
 
 	void epm_Map(
 		[in]            GUID            *object,
-		[in]            twr_t           *map_tower,
-		[in, out]       policy_handle   *entry_handle,
+		[in]            epm_twr_t       *map_tower,
+		[in,out,ref]    policy_handle   *entry_handle,
 		[in]            uint32          max_towers,
-		[out]           uint32          *num_towers,
-		[out, length_is(*num_towers), size_is(max_towers)]  twr_p_t towers[],
-		[out]           error_status_t          *status
+		[out]           uint32          num_towers,
+		[out, length_is(num_towers), size_is(max_towers)]  epm_twr_p_t towers[],
+		[out]           error_status_t  status
 		);
     
 
 	/**********************/
 	/* Function 0x04      */
 	void epm_LookupHandleFree(
-		[in, out]       policy_handle *entry_handle,
-		[out]           error_status_t        *status
+		[in,out,ref]    policy_handle *entry_handle,
+		[out]           error_status_t status
 		);
     
 	/**********************/
 	/* Function 0x05      */
 	void epm_InqObject(
 		[out]           GUID        *epm_object,
-		[out]           error_status_t      *status
+		[out]           error_status_t   status
 		);
     
 
@@ -141,7 +144,7 @@ interface epmapper
 	void epm_MgmtDelete(
 		[in]            uint32   object_speced,
 		[in]            GUID     *object,
-		[in]            twr_t    *tower,
-		[out]           error_status_t   *status
+		[in]            epm_twr_t    *tower,
+		[out]           error_status_t   status
 		);
 }
