@@ -1,3 +1,12 @@
+Tue Dec 23 01:38:01 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/kadm5/ent_setup.c (attr_to_flags): try to set `client'
+
+	* kadmin/util.c (edit_time): only set mask if != 0
+	(edit_attributes): only set mask if != 0
+
+	* kadmin/init.c (init): create `default'
+
 Sun Dec 21 09:44:05 1997  Assar Westerlund  <assar@sics.se>
 
 	* kadmin/util.c (str2deltat, str2attr, get_deltat): return value
