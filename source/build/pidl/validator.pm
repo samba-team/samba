@@ -44,6 +44,15 @@ sub ValidElement($)
 	if (util::has_property($e, "ptr")) {
 		fatal(el_name($e) . " : pidl does not support full NDR pointers yet\n");
 	}
+
+	if (util::has_property($e, "size_is") and not defined ($e->{ARRAY_LEN})) {
+		fatal(el_name($e) . " : size_is() on non-array element");
+	}
+
+	if (util::has_property($e, "length_is") and not defined ($e->{ARRAY_LEN})) {
+		fatal(el_name($e) . " : length_is() on non-array element");
+	}
+
 	
 	if (!$e->{POINTERS} && (
 		util::has_property($e, "ptr") or

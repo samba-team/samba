@@ -22,7 +22,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] srvsvc_NetCharDevInfo0 *array;
+		[size_is(count)] srvsvc_NetCharDevInfo0 *array[];
 	} srvsvc_NetCharDevCtr0;
 
 	typedef struct {
@@ -34,7 +34,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] srvsvc_NetCharDevInfo1 *array;
+		[size_is(count)] srvsvc_NetCharDevInfo1 *array[];
 	} srvsvc_NetCharDevCtr1;
 
 	typedef union {
@@ -86,7 +86,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] srvsvc_NetCharDevQInfo0 *array;
+		[size_is(count)] srvsvc_NetCharDevQInfo0 *array[];
 	} srvsvc_NetCharDevQCtr0;
 
 	typedef struct {
@@ -99,7 +99,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] srvsvc_NetCharDevQInfo1 *array;
+		[size_is(count)] srvsvc_NetCharDevQInfo1 *array[];
 	} srvsvc_NetCharDevQCtr1;
 
 	typedef union {
@@ -170,7 +170,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] srvsvc_NetConnInfo0 *array;
+		[size_is(count)] srvsvc_NetConnInfo0 *array[];
 	} srvsvc_NetConnCtr0;
 
 	typedef struct {
@@ -185,7 +185,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] srvsvc_NetConnInfo1 *array;
+		[size_is(count)] srvsvc_NetConnInfo1 *array[];
 	} srvsvc_NetConnCtr1;
 
 	typedef union {
@@ -215,7 +215,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] srvsvc_NetFileInfo2 *array;
+		[size_is(count)] srvsvc_NetFileInfo2 *array[];
 	} srvsvc_NetFileCtr2;
 
 	typedef struct {
@@ -228,7 +228,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] srvsvc_NetFileInfo3 *array;
+		[size_is(count)] srvsvc_NetFileInfo3 *array[];
 	} srvsvc_NetFileCtr3;
 
 	typedef union {
@@ -281,7 +281,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] srvsvc_NetSessInfo0 *array;
+		[size_is(count)] srvsvc_NetSessInfo0 *array[];
 	} srvsvc_NetSessCtr0;
 
 	typedef struct {
@@ -295,7 +295,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] srvsvc_NetSessInfo1 *array;
+		[size_is(count)] srvsvc_NetSessInfo1 *array[];
 	} srvsvc_NetSessCtr1;
 
 	typedef struct {
@@ -310,7 +310,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] srvsvc_NetSessInfo2 *array;
+		[size_is(count)] srvsvc_NetSessInfo2 *array[];
 	} srvsvc_NetSessCtr2;
 
 	typedef struct {
@@ -322,7 +322,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] srvsvc_NetSessInfo10 *array;
+		[size_is(count)] srvsvc_NetSessInfo10 *array[];
 	} srvsvc_NetSessCtr10;
 
 	typedef struct {
@@ -338,7 +338,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] srvsvc_NetSessInfo502 *array;
+		[size_is(count)] srvsvc_NetSessInfo502 *array[];
 	} srvsvc_NetSessCtr502;
 
 	typedef union {
@@ -400,7 +400,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] srvsvc_NetShareInfo0 *array;
+		[size_is(count)] srvsvc_NetShareInfo0 *array[];
 	} srvsvc_NetShareCtr0;
 
 	typedef struct {
@@ -411,7 +411,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] srvsvc_NetShareInfo1 *array;
+		[size_is(count)] srvsvc_NetShareInfo1 *array[];
 	} srvsvc_NetShareCtr1;
 
 	typedef struct {
@@ -427,7 +427,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] srvsvc_NetShareInfo2 *array;
+		[size_is(count)] srvsvc_NetShareInfo2 *array[];
 	} srvsvc_NetShareCtr2;
 
 	typedef struct {
@@ -439,7 +439,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] srvsvc_NetShareInfo501 *array;
+		[size_is(count)] srvsvc_NetShareInfo501 *array[];
 	} srvsvc_NetShareCtr501;
 
 	typedef struct {
@@ -457,7 +457,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] srvsvc_NetShareInfo502 *array;
+		[size_is(count)] srvsvc_NetShareInfo502 *array[];
 	} srvsvc_NetShareCtr502;
 
 	typedef struct {
@@ -1081,7 +1081,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] srvsvc_NetTransportInfo0 *array;
+		[size_is(count)] srvsvc_NetTransportInfo0 *array[];
 	} srvsvc_NetTransportCtr0;
 
 	typedef struct {
@@ -1095,7 +1095,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] srvsvc_NetTransportInfo1 *array;
+		[size_is(count)] srvsvc_NetTransportInfo1 *array[];
 	} srvsvc_NetTransportCtr1;
 
 	typedef struct {
@@ -1104,7 +1104,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] srvsvc_NetTransportInfo2 *array;
+		[size_is(count)] srvsvc_NetTransportInfo2 *array[];
 	} srvsvc_NetTransportCtr2;
 
 	typedef struct {
@@ -1113,7 +1113,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] srvsvc_NetTransportInfo3 *array;
+		[size_is(count)] srvsvc_NetTransportInfo3 *array[];
 	} srvsvc_NetTransportCtr3;
 
 	typedef union {

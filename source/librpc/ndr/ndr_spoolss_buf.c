@@ -39,7 +39,8 @@
 		for (i=0;i<r->out.count;i++) {\
 			ndr2->data += ndr2->offset;\
 			ndr2->offset = 0;\
-			NDR_CHECK(ndr_push_##type(ndr2, NDR_SCALARS|NDR_BUFFERS, r->in.level, &(*r->out.info)[i]));\
+			NDR_CHECK(ndr_push_set_switch_value(ndr2, &(*r->out.info)[i], r->in.level)); \
+			NDR_CHECK(ndr_push_##type(ndr2, NDR_SCALARS|NDR_BUFFERS, &(*r->out.info)[i]));\
 		}\
 		if (*r->in.buf_size >= ndr2->offset) {\
 			buffer = data_blob_const(ndr2->data, ndr2->offset);\
@@ -94,7 +95,8 @@
 		for (i=0;i<r->out.count;i++) {\
 			ndr2->data += ndr2->offset;\
 			ndr2->offset = 0;\
-			NDR_CHECK(ndr_pull_##type(ndr2, NDR_SCALARS|NDR_BUFFERS, r->in.level, &(*r->out.info)[i]));\
+			NDR_CHECK(ndr_pull_set_switch_value(ndr2, &(*r->out.info)[i], r->in.level)); \
+			NDR_CHECK(ndr_pull_##type(ndr2, NDR_SCALARS|NDR_BUFFERS, &(*r->out.info)[i]));\
 		}\
 	}\
 } while(0)

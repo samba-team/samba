@@ -100,7 +100,7 @@ interface drsblobs {
 		NTTIME_1sec last_success;
 		NTTIME_1sec last_attempt;
 		WERROR result_last_attempt;
-		[relative,length_is(other_info_length)] repsFromTo1OtherInfo *other_info;
+		[relative] repsFromTo1OtherInfo *other_info;
 		[value(ndr_size_repsFromTo1OtherInfo(r->other_info, ndr->flags))] uint32 other_info_length;
 		uint32 replica_flags;
 		uint8 schedule[84];

@@ -99,7 +99,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] samr_SamEntry *entries;
+		[size_is(count)] samr_SamEntry *entries[];
 	} samr_SamArray;
 
 	NTSTATUS samr_EnumDomains (
@@ -310,7 +310,7 @@
 
 	typedef struct {
 		[range(0,1024)]  uint32 count;
-		[size_is(count)] uint32 *ids;
+		[size_is(count)] uint32 *ids[];
 	} samr_Ids;
 
 	NTSTATUS samr_GetAliasMembership(
@@ -325,7 +325,7 @@
 	NTSTATUS samr_LookupNames(
 		[in,ref]      policy_handle *domain_handle,
 		[in,range(0,1000)] uint32 num_names,
-		[in,ref,size_is(1000),length_is(num_names)] samr_String *names,
+		[in,size_is(1000),length_is(num_names)] samr_String names[],
 		[out]         samr_Ids rids,
 		[out]         samr_Ids types
 		);
@@ -336,13 +336,13 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] samr_String *names;
+		[size_is(count)] samr_String *names[];
 	} samr_Strings;
 
 	NTSTATUS samr_LookupRids(
 		[in,ref]      policy_handle *domain_handle,
 		[in,range(0,1000)] uint32 num_rids,
-		[in,ref,size_is(1000),length_is(num_rids)] uint32 *rids,
+		[in,size_is(1000),length_is(num_rids)] uint32 rids[],
 		[out]         samr_Strings names,
 		[out]         samr_Ids types
 		);
@@ -431,8 +431,8 @@
 	/* Function    0x19     */
 	typedef struct {
 		uint32 count;
-		[size_is(count)] uint32 *rids;
-		[size_is(count)] uint32 *unknown;
+		[size_is(count)] uint32 *rids[];
+		[size_is(count)] uint32 *unknown[];
 	} samr_ridArray;
 
 	NTSTATUS samr_QueryGroupMember(
@@ -564,7 +564,7 @@
 	/* this is also used in samr and netlogon */
 	typedef [public, flag(NDR_PAHEX)] struct {
 		uint16 units_per_week;
-		[size_is(1260), length_is(units_per_week/8)] uint8 *bits;
+		[size_is(1260), length_is(units_per_week/8)] uint8 *bits[];
 	} samr_LogonHours;
 
 	typedef struct {
@@ -701,7 +701,7 @@
 		samr_String unknown2;
 		samr_String unknown3;
 		uint32 buf_count;
-		[size_is(buf_count)] uint8 *buffer;
+		[size_is(buf_count)] uint8 *buffer[];
 		uint32 rid;
 		uint32 primary_gid;
 		samr_AcctFlags acct_flags;
@@ -819,7 +819,7 @@
 
 	typedef struct {
 		uint32     count;
-		[size_is(count)] samr_RidType *rid;
+		[size_is(count)] samr_RidType *rid[];
 	} samr_RidArray;
 
 	NTSTATUS samr_GetGroupsForUser(
@@ -841,7 +841,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] samr_DispEntryGeneral *entries;
+		[size_is(count)] samr_DispEntryGeneral *entries[];
 	} samr_DispInfoGeneral;
 
 	typedef struct {
@@ -854,7 +854,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] samr_DispEntryFull *entries;
+		[size_is(count)] samr_DispEntryFull *entries[];
 	} samr_DispInfoFull;
 
 	typedef struct {
@@ -870,7 +870,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] samr_DispEntryAscii *entries;
+		[size_is(count)] samr_DispEntryAscii *entries[];
 	} samr_DispInfoAscii;
 
 	typedef union {

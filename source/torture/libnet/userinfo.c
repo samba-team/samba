@@ -69,6 +69,8 @@ static BOOL test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	} else {
 		*handle = domain_handle;
 	}
+
+	return True;
 }
 
 

@@ -46,7 +46,7 @@
 
 	typedef struct {
 		uint32 entries_read;
-		[size_is(entries_read)] atsvc_JobEnumInfo *first_entry;
+		[size_is(entries_read)] atsvc_JobEnumInfo *first_entry[];
 	} atsvc_enum_ctr;
 
 	/******************/
