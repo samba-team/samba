@@ -144,6 +144,9 @@
 #include <libtelnet/misc.h>
 #include <libtelnet/misc-proto.h>
 
+#define LINEMODE
+#define KLUDGELINEMODE
+
 #include "ring.h"
 #include "externs.h"
 #include "defines.h"
