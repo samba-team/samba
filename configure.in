@@ -412,6 +412,8 @@ if test "$ac_cv_func_glob_working" != yes; then
 fi
 AM_CONDITIONAL(have_glob_h, test "$ac_cv_func_glob_working" = yes)
 
+AC_CHECK_FUNC(cgetent, , LIBOBJS="$LIBOBJS getcap.o")
+
 dnl these should happen after tests for *snprintf
 
 AC_FIND_FUNC_NO_LIBS(dbopen, $berkeley_db)
