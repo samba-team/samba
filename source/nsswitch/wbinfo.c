@@ -535,7 +535,7 @@ static BOOL print_domain_users(void)
 	/* Look through extra data */
 
 	if (!response.extra_data)
-		return False;
+		goto done;
 
 	extra_data = (char *)response.extra_data;
 
@@ -543,6 +543,10 @@ static BOOL print_domain_users(void)
 		printf("%s\n", name);
 	
 	SAFE_FREE(response.extra_data);
+
+done:
+	if (response.nt_status)
+		printf("0x%08x\n", response.nt_status);
 
 	return True;
 }
@@ -564,7 +568,7 @@ static BOOL print_domain_groups(void)
 	/* Look through extra data */
 
 	if (!response.extra_data)
-		return False;
+		goto done;
 
 	extra_data = (char *)response.extra_data;
 
@@ -572,6 +576,10 @@ static BOOL print_domain_groups(void)
 		printf("%s\n", name);
 
 	SAFE_FREE(response.extra_data);
+
+done:
+	if (response.nt_status)
+		printf("0x%08x\n", response.nt_status);
 	
 	return True;
 }
