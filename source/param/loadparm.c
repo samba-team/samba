@@ -112,7 +112,6 @@ typedef struct
 	char *szSMBPasswdFile;
 	char *szPrivateDir;
 	char **szPassdbBackend;
-	char **szSamBackend;
 	char *szPasswordServer;
 	char *szSocketOptions;
 	char *szWorkGroup;
@@ -735,7 +734,6 @@ static struct parm_struct parm_table[] = {
 	{"smb passwd file", P_STRING, P_GLOBAL, &Globals.szSMBPasswdFile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"private dir", P_STRING, P_GLOBAL, &Globals.szPrivateDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"passdb backend", P_LIST, P_GLOBAL, &Globals.szPassdbBackend, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"sam backend", P_LIST, P_GLOBAL, &Globals.szSamBackend, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"non unix account range", P_STRING, P_GLOBAL, &Globals.szNonUnixAccountRange, handle_non_unix_account_range, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"algorithmic rid base", P_INTEGER, P_GLOBAL, &Globals.bAlgorithmicRidBase, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"root directory", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -1566,7 +1564,6 @@ FN_GLOBAL_STRING(lp_nis_home_map_name, &Globals.szNISHomeMapName)
 static FN_GLOBAL_STRING(lp_announce_version, &Globals.szAnnounceVersion)
 FN_GLOBAL_LIST(lp_netbios_aliases, &Globals.szNetbiosAliases)
 FN_GLOBAL_LIST(lp_passdb_backend, &Globals.szPassdbBackend)
-FN_GLOBAL_LIST(lp_sam_backend, &Globals.szSamBackend)
 FN_GLOBAL_STRING(lp_panic_action, &Globals.szPanicAction)
 FN_GLOBAL_STRING(lp_adduser_script, &Globals.szAddUserScript)
 FN_GLOBAL_STRING(lp_deluser_script, &Globals.szDelUserScript)
