@@ -59,7 +59,7 @@ krb5_write_priv_message(krb5_context context,
 {
     krb5_error_code ret;
     krb5_data packet;
-	ret = krb5_mk_priv (context, ac, data, &packet, NULL);
+    ret = krb5_mk_priv (context, ac, data, &packet, NULL);
     if(ret)
 	return ret;
     ret = krb5_write_message(context, p_fd, &packet);
