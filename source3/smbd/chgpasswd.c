@@ -718,7 +718,7 @@ BOOL change_lanman_password(SAM_ACCOUNT *sampass, uchar * pass1,
  
 	/* Now flush the sam_passwd struct to persistent storage */
 	become_root();
-	ret = pdb_update_sam_account (sampass, False);
+	ret = pdb_update_sam_account (sampass);
 	unbecome_root();
 
 	return ret;
@@ -928,7 +928,7 @@ BOOL change_oem_password(SAM_ACCOUNT *hnd, char *new_passwd)
 
 	/* Now write it into the file. */
 	become_root();
-	ret = pdb_update_sam_account (hnd, False);
+	ret = pdb_update_sam_account (hnd);
 	unbecome_root();
 
 	return ret;

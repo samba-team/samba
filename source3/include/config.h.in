@@ -126,9 +126,6 @@
 #undef WITH_PROFILE
 #undef WITH_SSL
 #undef SSL_DIR
-#undef WITH_LDAP
-#undef WITH_NISPLUS
-#undef WITH_TDBPWD
 #undef WITH_PAM
 #undef WITH_NISPLUS_HOME
 #undef WITH_AUTOMOUNT
@@ -235,7 +232,6 @@
 #undef HAVE_CUPS
 #undef WITH_LDAP_SAM
 #undef WITH_NISPLUS_SAM
-#undef WITH_SMBPASSWD_SAM
 #undef WITH_TDB_SAM
 #undef LINUX_QUOTAS_1
 #undef LINUX_QUOTAS_2

@@ -594,6 +594,7 @@
 		<listitem><para><link linkend="ALLOWTRUSTEDDOMAINS"><parameter>allow trusted domains</parameter></link></para></listitem>
 		<listitem><para><link linkend="ANNOUNCEAS"><parameter>announce as</parameter></link></para></listitem>
 		<listitem><para><link linkend="ANNOUNCEVERSION"><parameter>announce version</parameter></link></para></listitem>
+		<listitem><para><link linkend="AUTHMETHODS"><parameter>auth methods</parameter></link></para></listitem>
 		<listitem><para><link linkend="AUTOSERVICES"><parameter>auto services</parameter></link></para></listitem>
 		<listitem><para><link linkend="BINDINTERFACESONLY"><parameter>bind interfaces only</parameter></link></para></listitem>
 		<listitem><para><link linkend="BROWSELIST"><parameter>browse list</parameter></link></para></listitem>
@@ -679,8 +680,8 @@
 		<listitem><para><link linkend="NETBIOSNAME"><parameter>netbios name</parameter></link></para></listitem>
 		<listitem><para><link linkend="NETBIOSSCOPE"><parameter>netbios scope</parameter></link></para></listitem>
 		<listitem><para><link linkend="NISHOMEDIR"><parameter>nis homedir</parameter></link></para></listitem>
+		<listitem><para><link linkend="NONUNIXACCOUNTRANGE"><parameter>non unix account range</parameter></link></para></listitem>
 		<listitem><para><link linkend="NTPIPESUPPORT"><parameter>nt pipe support</parameter></link></para></listitem>
-		<listitem><para><link linkend="NTSMBSUPPORT"><parameter>nt smb support</parameter></link></para></listitem>
 		<listitem><para><link linkend="NULLPASSWORDS"><parameter>null passwords</parameter></link></para></listitem>
 		<listitem><para><link linkend="OBEYPAMRESTRICTIONS"><parameter>obey pam restrictions</parameter></link></para></listitem>
 		<listitem><para><link linkend="OPLOCKBREAKWAITTIME"><parameter>oplock break wait time</parameter></link></para></listitem>
@@ -688,6 +689,7 @@
 		<listitem><para><link linkend="OS2DRIVERMAP"><parameter>os2 driver map</parameter></link></para></listitem>
 		<listitem><para><link linkend="PAMPASSWORDCHANGE"><parameter>pam password change</parameter></link></para></listitem>
 		<listitem><para><link linkend="PANICACTION"><parameter>panic action</parameter></link></para></listitem>
+		<listitem><para><link linkend="PASSDBBACKEND"><parameter>passdb backend</parameter></link></para></listitem>
 		<listitem><para><link linkend="PASSWDCHAT"><parameter>passwd chat</parameter></link></para></listitem>
 		<listitem><para><link linkend="PASSWDCHATDEBUG"><parameter>passwd chat debug</parameter></link></para></listitem>
 		<listitem><para><link linkend="PASSWDPROGRAM"><parameter>passwd program</parameter></link></para></listitem>
@@ -1203,6 +1205,24 @@
 		</listitem>
 		</varlistentry>
 		
+
+
+		<varlistentry>
+		<term><anchor id="AUTHMETHODS">auth methods (G)</term>
+		<listitem><para>This option allows the administrator to chose what
+                authentication methods <command>smbd</command> will use when authenticating
+                a user.  This option defaults to sensible values based on <link linkend="SECURITY"><parameter>
+		security</parameter></link>.
+
+                Each entry in the list attempts to authenticate the user in turn, until
+                the user authenticates.  In practice only one method will ever actually 
+                be able to complete the authentication.
+		</para>
+
+		<para>Default: <command>auth methods = &lt;empty string&gt;</command></para>
+		<para>Example: <command>auth methods = guest sam ntdomain</command></para>
+		</listitem>
+		</varlistentry>
 
 
 		<varlistentry>
@@ -2490,7 +2510,7 @@
 		</filename></ulink> file (see the <ulink url="smbpasswd.8.html"><command>
 		smbpasswd(8)</command></ulink> program for information on how to set up 
  		and maintain this file), or set the <link
-		linkend="SECURITY">security = [server|domain]</link> parameter which 
+		linkend="SECURITY">security = [server|domain|ads]</link> parameter which 
 		causes <command>smbd</command> to authenticate against another 
 		server.</para>
 		
@@ -4919,6 +4939,40 @@
 
 
 		<varlistentry>
+		<term><anchor id="NONUNIXACCOUNTRANGE">non unix account range (G)</term>
+		<listitem><para>The non unix account range parameter specifies 
+                the range of 'user ids' that are allocated by the various 'non unix 
+                account' passdb backends.  These backends allow
+                the storage of passwords for users who don't exist in /etc/passwd.  
+                This is most often used for machine account creation. 
+                This range of ids should have no existing local or NIS users within 
+                it as strange conflicts can occur otherwise.</para>
+
+                <para>NOTE: These userids never appear on the system and Samba will never
+                'become' these users. They are used only to ensure that the algorithmic 
+                RID mapping does not conflict with normal users.
+
+		<para>Default: <command>non unix account range = &lt;empty string&gt;
+		</command></para>
+		
+		<para>Example: <command>non unix account range = 10000-20000</command></para>
+		</listitem>
+		</varlistentry>
+
+
+		<listitem><para>This boolean parameter controls whether 
+		<ulink url="smbd.8.html">smbd(8)</ulink> will attempt to map 
+		UNIX permissions into Windows NT access control lists.
+		This parameter was formally a global parameter in releases
+		prior to 2.2.2.</para>
+		
+		<para>Default: <command>nt acl support = yes</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
 		<term><anchor id="NTACLSUPPORT">nt acl support (S)</term>
 		<listitem><para>This boolean parameter controls whether 
 		<ulink url="smbd.8.html">smbd(8)</ulink> will attempt to map 
@@ -4944,27 +4998,6 @@
 		</listitem>
 		</varlistentry>
 
-
-
-		<varlistentry>
-		<term><anchor id="NTSMBSUPPORT">nt smb support (G)</term>
-		<listitem><para>This boolean parameter controls whether <ulink 
-		url="smbd.8.html">smbd(8)</ulink> will negotiate NT specific SMB 
-		support with Windows NT clients. Although this is a developer 
-		debugging option and should be left alone, benchmarking has discovered 
-		that Windows NT clients give faster performance with this option 
-		set to <constant>no</constant>. This is still being investigated. 
-	 	If this option is set to <constant>no</constant> then Samba offers 
-		exactly the same SMB calls that versions prior to Samba 2.0 offered. 
-		This information may be of use if any users are having problems 
-		with NT SMB support.</para>
-		
-		<para>You should not need to ever disable this parameter.</para>
-
-		<para>Default: <command>nt smb support = yes</command></para>
-		</listitem>
-		</varlistentry>
-	
 
 
 		<varlistentry>
@@ -5187,6 +5220,21 @@
 
 		<para>Default: <command>panic action = &lt;empty string&gt;</command></para>
 		<para>Example: <command>panic action = "/bin/sleep 90000"</command></para>
+		</listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term><anchor id="PASSDBBACKEND">passdb backend (G)</term>
+		<listitem><para>This option allows the administrator to chose what
+                backend in which to store passwords.  This allows (for example) both 
+                smbpasswd and tdbsam to be used without a recompile.  Only one can
+                be used at a time however, and experimental backends must still be selected
+                (eg --with-tdbsam) at configure time.
+		</para>
+
+		<para>Default: <command>passdb backend = smbpasswd</command></para>
+		<para>Example: <command>passdb backend = tdbsam</command></para>
 		</listitem>
 		</varlistentry>
 

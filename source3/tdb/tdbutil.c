@@ -481,7 +481,7 @@ static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
  the samba DEBUG() system.
 ****************************************************************************/
 
-TDB_CONTEXT *tdb_open_log(char *name, int hash_size, int tdb_flags,
+TDB_CONTEXT *tdb_open_log(const char *name, int hash_size, int tdb_flags,
 			  int open_flags, mode_t mode)
 {
 	TDB_CONTEXT *tdb;

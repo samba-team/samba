@@ -1911,10 +1911,6 @@ fi
 ##
 ########################################################################################
 
-## set the with_smbpasswd_sam as the default
-with_smbpasswd_sam=yes
-
-
 #################################################
 # check for a TDB password database
 AC_MSG_CHECKING(whether to use TDB SAM database)
@@ -1924,7 +1920,6 @@ AC_ARG_WITH(tdbsam,
   yes)
     AC_MSG_RESULT(yes)
     AC_DEFINE(WITH_TDB_SAM)
-    with_smbpasswd_sam=no
     ;;
   *)
     AC_MSG_RESULT(no)
@@ -1943,7 +1938,6 @@ AC_ARG_WITH(ldapsam,
     AC_MSG_RESULT(yes)
     AC_DEFINE(WITH_LDAP_SAM)
     LIBS="-lldap -llber $LIBS"
-    with_smbpasswd_sam=no
     ;;
   *)
     AC_MSG_RESULT(no)
@@ -1961,7 +1955,6 @@ AC_ARG_WITH(nisplussam,
   yes)
     AC_MSG_RESULT(yes)
     AC_DEFINE(WITH_NISPLUS_SAM)
-    with_smbpasswd_sam=no
     ;;
   *)
     AC_MSG_RESULT(no)
@@ -1969,18 +1962,6 @@ AC_ARG_WITH(nisplussam,
   esac ],
   AC_MSG_RESULT(no)
 )
-
-################################################
-# This test should come last because the
-# smbpasswd SAM is only used if another format
-# has not been defined
-AC_MSG_CHECKING(whether to use traditional smbpasswd file)
-if test $with_smbpasswd_sam = yes; then
-	AC_MSG_RESULT(yes)
-	AC_DEFINE(WITH_SMBPASSWD_SAM)
-else
-	AC_MSG_RESULT(no)
-fi
 
 ########################################################################################
 ##

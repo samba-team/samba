@@ -1869,9 +1869,6 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 {
 	SAM_ACCOUNT *sam_pass=NULL;
 	fstring account;
-	pstring err_str;
-	pstring msg_str;
-	int local_flags=0;
 	DOM_SID sid;
 	pstring add_script;
 	POLICY_HND dom_pol = q_u->domain_pol;
@@ -1880,6 +1877,8 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 	POLICY_HND *user_pol = &r_u->user_pol;
 	struct samr_info *info = NULL;
 	BOOL ret;
+	NTSTATUS nt_status;
+	struct passwd *pw;
 
 	/* find the policy handle.  open a policy on it. */
 	if (!find_policy_by_hnd(p, &dom_pol, NULL))
@@ -1905,8 +1904,7 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 		return NT_STATUS_USER_EXISTS;
 	}
 
-	local_flags=LOCAL_ADD_USER|LOCAL_DISABLE_USER|LOCAL_SET_NO_PASSWORD;
-	local_flags|= (acb_info & ACB_WSTRUST) ? LOCAL_TRUST_ACCOUNT:0;
+	pdb_free_sam(&sam_pass);
 
 	/*
 	 * NB. VERY IMPORTANT ! This call must be done as the current pipe user,
@@ -1955,32 +1953,54 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 		pstrcpy(add_script, lp_adduser_script());
 
 	if(*add_script) {
-		int add_ret;
-		all_string_sub(add_script, "%u", account, sizeof(account));
-		add_ret = smbrun(add_script,NULL);
-		DEBUG(3,("_api_samr_create_user: Running the command `%s' gave %d\n",add_script,add_ret));
+  		int add_ret;
+  		all_string_sub(add_script, "%u", account, sizeof(account));
+  		add_ret = smbrun(add_script,NULL);
+ 		DEBUG(3,("_api_samr_create_user: Running the command `%s' gave %d\n", add_script, add_ret));
+  	}
+	
+	pw = getpwnam_alloc(account);
+
+	if (pw) {
+		if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam_pw(&sam_pass, pw))) {
+			passwd_free(&pw);
+			return nt_status;
+		}
+		passwd_free(&pw); /* done with this now */
+	} else {
+		DEBUG(3,("attempting to create non-unix account %s\n", account));
+		
+		if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam(&sam_pass))) {
+			return nt_status;
+		}
+		
+		if (!pdb_set_username(sam_pass, account)) {
+			pdb_free_sam(&sam_pass);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
-	/* add the user in the smbpasswd file or the Samba authority database */
-	if (!local_password_change(account, local_flags, NULL, err_str,
-	    sizeof(err_str), msg_str, sizeof(msg_str))) {
-		DEBUG(0, ("%s\n", err_str));
-		pdb_free_sam(&sam_pass);
-		return NT_STATUS_ACCESS_DENIED;
-	}
+ 	pdb_set_acct_ctrl(sam_pass, acb_info);
+ 
+ 	if (!pdb_add_sam_account(sam_pass)) {
+ 		pdb_free_sam(&sam_pass);
+ 		DEBUG(0, ("could not add user/computer %s to passdb.  Check permissions?\n", 
+ 			  account));
+ 		return NT_STATUS_ACCESS_DENIED;		
+ 	}
 
-	become_root();
-	ret = pdb_getsampwnam(sam_pass, account);
- 	unbecome_root();
- 	if (ret == False) {
-		/* account doesn't exist: say so */
-		pdb_free_sam(&sam_pass);
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	/* Get the domain SID stored in the domain policy */
-	if(!get_lsa_policy_samr_sid(p, &dom_pol, &sid)) {
-		pdb_free_sam(&sam_pass);
+	pdb_reset_sam(sam_pass);
+	
+	if (!pdb_getsampwnam(sam_pass, account)) {
+ 		pdb_free_sam(&sam_pass);
+ 		DEBUG(0, ("could not find user/computer %s just added to passdb?!?\n", 
+ 			  account));
+ 		return NT_STATUS_ACCESS_DENIED;		
+ 	}
+ 	
+ 	/* Get the domain SID stored in the domain policy */
+  	if(!get_lsa_policy_samr_sid(p, &dom_pol, &sid)) {
+  		pdb_free_sam(&sam_pass);
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
@@ -2214,7 +2234,7 @@ static BOOL set_user_info_10(const SAM_USER_INFO_10 *id10, uint32 rid)
 		return False;
 	}
 
-	if(!pdb_update_sam_account(pwd, True)) {
+	if(!pdb_update_sam_account(pwd)) {
 		pdb_free_sam(&pwd);
 		return False;
 	}
@@ -2258,7 +2278,7 @@ static BOOL set_user_info_12(SAM_USER_INFO_12 *id12, uint32 rid)
 		return False; 
 	}
  
-	if(!pdb_update_sam_account(pwd, True)) {
+	if(!pdb_update_sam_account(pwd)) {
 		pdb_free_sam(&pwd);
 		return False;
  	}
@@ -2297,7 +2317,7 @@ static BOOL set_user_info_21(SAM_USER_INFO_21 *id21, uint32 rid)
 	 */
  
 	/* write the change out */
-	if(!pdb_update_sam_account(pwd, True)) {
+	if(!pdb_update_sam_account(pwd)) {
 		pdb_free_sam(&pwd);
 		return False;
  	}
@@ -2330,6 +2350,9 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 		return False;
  	}
 
+	DEBUG(5, ("Attempting administrator password change (level 23) for user %s\n",
+		  pdb_get_username(pwd)));
+
 	acct_ctrl = pdb_get_acct_ctrl(pwd);
 
 	copy_id23_to_sam_passwd(pwd, id23);
@@ -2345,10 +2368,11 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 	}
  
 	/* if it's a trust account, don't update /etc/passwd */
-	if ( ( (acct_ctrl &  ACB_DOMTRUST) == ACB_DOMTRUST ) ||
-	     ( (acct_ctrl &  ACB_WSTRUST) ==  ACB_WSTRUST) ||
-	     ( (acct_ctrl &  ACB_SVRTRUST) ==  ACB_SVRTRUST) ) {
-	     DEBUG(5, ("Changing trust account password, not updating /etc/passwd\n"));
+	if ( (!IS_SAM_UNIX_USER(pwd)) ||
+		( (acct_ctrl &  ACB_DOMTRUST) == ACB_DOMTRUST ) ||
+		( (acct_ctrl &  ACB_WSTRUST) ==  ACB_WSTRUST) ||
+		( (acct_ctrl &  ACB_SVRTRUST) ==  ACB_SVRTRUST) ) {
+		DEBUG(5, ("Changing trust account or non-unix-user password, not updating /etc/passwd\n"));
 	} else  {
 		/* update the UNIX password */
 		if (lp_unix_password_sync() )
@@ -2360,7 +2384,7 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
  
 	ZERO_STRUCT(plaintext_buf);
  
-	if(!pdb_update_sam_account(pwd, True)) {
+	if(!pdb_update_sam_account(pwd)) {
 		pdb_free_sam(&pwd);
 		return False;
 	}
@@ -2388,6 +2412,9 @@ static BOOL set_user_info_pw(char *pass, uint32 rid)
 		return False;
  	}
 	
+	DEBUG(5, ("Attempting administrator password change for user %s\n",
+		  pdb_get_username(pwd)));
+
 	acct_ctrl = pdb_get_acct_ctrl(pwd);
 
 	ZERO_STRUCT(plaintext_buf);
@@ -2403,25 +2430,27 @@ static BOOL set_user_info_pw(char *pass, uint32 rid)
 	}
  
 	/* if it's a trust account, don't update /etc/passwd */
-	if ( ( (acct_ctrl &  ACB_DOMTRUST) == ACB_DOMTRUST ) ||
-	     ( (acct_ctrl &  ACB_WSTRUST) ==  ACB_WSTRUST) ||
-	     ( (acct_ctrl &  ACB_SVRTRUST) ==  ACB_SVRTRUST) ) {
-	     DEBUG(5, ("Changing trust account password, not updating /etc/passwd\n"));
+	if ( (!IS_SAM_UNIX_USER(pwd)) ||
+		( (acct_ctrl &  ACB_DOMTRUST) == ACB_DOMTRUST ) ||
+		( (acct_ctrl &  ACB_WSTRUST) ==  ACB_WSTRUST) ||
+		( (acct_ctrl &  ACB_SVRTRUST) ==  ACB_SVRTRUST) ) {
+		DEBUG(5, ("Changing trust account or non-unix-user password, not updating /etc/passwd\n"));
 	} else {
 		/* update the UNIX password */
-		if (lp_unix_password_sync())
+		if (lp_unix_password_sync()) {
 			if(!chgpasswd(pdb_get_username(pwd), "", plaintext_buf, True)) {
 				pdb_free_sam(&pwd);
 				return False;
 			}
+		}
 	}
  
 	ZERO_STRUCT(plaintext_buf);
  
-	DEBUG(5,("set_user_info_pw: pdb_update_sam_account()\n"));
+	DEBUG(5,("set_user_info_pw: pdb_update_pwd()\n"));
  
 	/* update the SAMBA password */
-	if(!pdb_update_sam_account(pwd, True)) {
+	if(!pdb_update_sam_account(pwd)) {
 		pdb_free_sam(&pwd);
 		return False;
  	}
@@ -2442,7 +2471,6 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 	POLICY_HND *pol = &q_u->pol;
 	uint16 switch_value = q_u->switch_value;
 	SAM_USERINFO_CTR *ctr = q_u->ctr;
-	BOOL ret;
 
 	DEBUG(5, ("_samr_set_userinfo: %d\n", __LINE__));
 
@@ -3052,7 +3080,7 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 	smb_delete_user(pdb_get_username(sam_pass));
 
 	/* and delete the samba side */
-	if (!pdb_delete_sam_account(pdb_get_username(sam_pass))) {
+	if (!pdb_delete_sam_account(sam_pass)) {
 		DEBUG(5,("_samr_delete_dom_user:Failed to delete entry for user %s.\n", pdb_get_username(sam_pass)));
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_CANNOT_DELETE;

@@ -410,6 +410,11 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 		return NT_STATUS_NO_SUCH_USER;
 	}
 	
+	if (!(pdb_get_acct_ctrl(sampass) & ACB_DISABLED)) {
+		pdb_free_sam(&sampass);
+		return NT_STATUS_ACCOUNT_DISABLED;
+	}
+
 	DEBUG(100,("Server password set : new given value was :\n"));
 	for(i = 0; i < 16; i++)
 		DEBUG(100,("%02X ", q_u->pwd[i]));
@@ -441,7 +446,7 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 	}
  
 	become_root();
-	ret = pdb_update_sam_account (sampass,False);
+	ret = pdb_update_sam_account (sampass);
 	unbecome_root();
  
 	if (ret)

@@ -735,6 +735,8 @@ extern int errno;
 
 #include "auth.h"
 
+#include "passdb.h"
+
 #include "session.h"
 
 #include "asn_1.h"

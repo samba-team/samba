@@ -840,13 +840,21 @@ BOOL pdb_getsampwrid(SAM_ACCOUNT * user, uint32 rid)
 /**********************************************************************
 Delete entry from LDAP for username 
 *********************************************************************/
-BOOL pdb_delete_sam_account(const char *sname)
+BOOL pdb_delete_sam_account(SAM_ACCOUNT * sam_acct)
 {
+	const char *sname;
 	int rc;
 	char *dn;
 	LDAP *ldap_struct;
 	LDAPMessage *entry;
 	LDAPMessage *result;
+
+	if (!sam_acct) {
+		DEBUG(0, ("sam_acct was NULL!\n"));
+		return False;
+	}
+
+	sname = pdb_get_username(sam_acct);
 
 	if (!ldap_open_connection (&ldap_struct))
 		return False;
@@ -891,7 +899,7 @@ BOOL pdb_delete_sam_account(const char *sname)
 /**********************************************************************
 Update SAM_ACCOUNT 
 *********************************************************************/
-BOOL pdb_update_sam_account(const SAM_ACCOUNT * newpwd, BOOL override)
+BOOL pdb_update_sam_account(SAM_ACCOUNT * newpwd)
 {
 	int rc;
 	char *dn;
@@ -952,7 +960,7 @@ BOOL pdb_update_sam_account(const SAM_ACCOUNT * newpwd, BOOL override)
 /**********************************************************************
 Add SAM_ACCOUNT to LDAP 
 *********************************************************************/
-BOOL pdb_add_sam_account(const SAM_ACCOUNT * newpwd)
+BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
 {
 	int rc;
 	pstring filter;
