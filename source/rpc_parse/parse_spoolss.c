@@ -7014,6 +7014,20 @@ BOOL spoolss_io_r_setprinterdataex(char *desc, SPOOL_R_SETPRINTERDATAEX *r_u, pr
 	return True;
 }
 
+/*******************************************************************
+ * read a structure.
+ ********************************************************************/  
+BOOL make_spoolss_q_enumprinterkey(SPOOL_Q_ENUMPRINTERKEY *q_u, 
+				   POLICY_HND *hnd, char *key, uint32 size)
+{
+	DEBUG(5,("make_spoolss_q_enumprinterkey\n"));
+
+	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
+	init_unistr2(&q_u->key, key, strlen(key)+1);
+	q_u->size = size;
+
+	return True;
+}
 
 /*******************************************************************
  * read a structure.
@@ -7064,6 +7078,21 @@ BOOL spoolss_io_r_enumprinterkey(char *desc, SPOOL_R_ENUMPRINTERKEY *r_u, prs_st
 
 	if(!prs_werror("status",     ps, depth, &r_u->status))
 		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ * read a structure.
+ ********************************************************************/  
+
+BOOL make_spoolss_q_deleteprinterkey(SPOOL_Q_DELETEPRINTERKEY *q_u, 
+				     POLICY_HND *hnd, char *keyname)
+{
+	DEBUG(5,("make_spoolss_q_deleteprinterkey\n"));
+
+	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
+	init_unistr2(&q_u->keyname, keyname, strlen(keyname)+1);
 
 	return True;
 }

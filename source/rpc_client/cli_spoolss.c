@@ -2362,4 +2362,104 @@ WERROR cli_spoolss_deleteprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ct
 	return result;
 }
 
+WERROR cli_spoolss_enumprinterkey(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				  uint32 offered, uint32 *needed,
+				  POLICY_HND *hnd, char *keyname,
+				  uint16 **keylist, uint32 *len)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_ENUMPRINTERKEY q;
+	SPOOL_R_ENUMPRINTERKEY r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_enumprinterkey(&q, hnd, keyname, offered);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_enumprinterkey("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_ENUMPRINTERKEY, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_enumprinterkey("", &r, &rbuf, 0))
+		goto done;
+	
+	result = r.status;
+
+	if (needed)
+		*needed = r.needed;
+
+	if (!W_ERROR_IS_OK(r.status))
+		goto done;	
+
+	/* Copy results */
+	
+	if (keylist) {
+		*keylist = (uint16 *)malloc(r.keys.buf_len * 2);
+		memcpy(*keylist, r.keys.buffer, r.keys.buf_len * 2);
+		if (len)
+			*len = r.keys.buf_len * 2;
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;	
+}
+
+WERROR cli_spoolss_deleteprinterkey(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				    POLICY_HND *hnd, char *keyname)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_DELETEPRINTERKEY q;
+	SPOOL_R_DELETEPRINTERKEY r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_deleteprinterkey(&q, hnd, keyname);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_deleteprinterkey("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_DELETEPRINTERKEY, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_deleteprinterkey("", &r, &rbuf, 0))
+		goto done;
+	
+	result = r.status;
+
+	if (!W_ERROR_IS_OK(r.status))
+		goto done;	
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;		
+}
+
 /** @} **/
