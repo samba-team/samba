@@ -874,6 +874,7 @@ static BOOL matchname(char *remotehost,struct in_addr  addr)
 char *get_peer_name(int fd, BOOL force_lookup)
 {
 	static pstring name_buf;
+	pstring tmp_name;
 	static fstring addr_buf;
 	struct hostent *hp;
 	struct in_addr addr;
@@ -890,10 +891,12 @@ char *get_peer_name(int fd, BOOL force_lookup)
 	p = get_peer_addr(fd);
 
 	/* it might be the same as the last one - save some DNS work */
-	if (strcmp(p, addr_buf) == 0) return name_buf;
+	if (strcmp(p, addr_buf) == 0) 
+		return name_buf;
 
 	pstrcpy(name_buf,"UNKNOWN");
-	if (fd == -1) return name_buf;
+	if (fd == -1) 
+		return name_buf;
 
 	fstrcpy(addr_buf, p);
 
@@ -911,7 +914,12 @@ char *get_peer_name(int fd, BOOL force_lookup)
 		}
 	}
 
-	alpha_strcpy(name_buf, name_buf, "_-.", sizeof(name_buf));
+	/* can't pass the same source and dest strings in when you 
+	   use --enable-developer or the clobber_region() call will 
+	   get you */
+	
+	pstrcpy( tmp_name, name_buf );
+	alpha_strcpy(name_buf, tmp_name, "_-.", sizeof(name_buf));
 	if (strstr(name_buf,"..")) {
 		pstrcpy(name_buf, "UNKNOWN");
 	}
