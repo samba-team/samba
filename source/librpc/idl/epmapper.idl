@@ -12,6 +12,14 @@
 interface epmapper
 {
 
+	/*
+	  note that the following IDL won't work in MIDL, and in fact
+	  that the full towers/floors representation of epm cannot be
+	  represented in MIDL at all. I decided to represent it using
+	  the extended IDL syntax in pidl to make it easier to work
+	  with.
+	*/
+
 	typedef struct {
 		GUID uuid;
 		uint16 version;
@@ -36,6 +44,11 @@ interface epmapper
 		[subcontext(2)] epm_rhs rhs;
 	} epm_floor;
 
+	/* not that the NDR_NOALIGN flag is inherited by all nested
+	   structures. All of the towers/floors stuff is
+	   non-aligned. I wonder what sort of wicked substance these
+	   guys were smoking? 
+	*/
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint16 num_floors;
 		epm_floor floors[num_floors];
