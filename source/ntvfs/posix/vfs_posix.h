@@ -49,6 +49,8 @@ struct pvfs_state {
 	} search;
 
 	struct pvfs_file *open_files;
+
+	struct pvfs_mangle_context *mangle_ctx;
 };
 
 
@@ -114,6 +116,32 @@ struct pvfs_file {
 	   opened the file so SMBexit works */
 	uint16_t smbpid;
 };
+
+struct pvfs_mangle_context {
+	uint8_t char_flags[256];
+	/*
+	  this determines how many characters are used from the original
+	  filename in the 8.3 mangled name. A larger value leads to a weaker
+	  hash and more collisions.  The largest possible value is 6.
+	*/
+	int mangle_prefix;
+	uint32_t mangle_modulus;
+
+	/* we will use a very simple direct mapped prefix cache. The big
+	   advantage of this cache structure is speed and low memory usage 
+
+	   The cache is indexed by the low-order bits of the hash, and confirmed by
+	   hashing the resulting cache entry to match the known hash
+	*/
+	char **prefix_cache;
+	uint32_t *prefix_cache_hashes;
+
+	/* this is used to reverse the base 36 mapping */
+	unsigned char base_reverse[256];
+
+	const char **reserved_names;
+};
+
 
 
 /* flags to pvfs_resolve_name() */

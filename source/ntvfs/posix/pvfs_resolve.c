@@ -35,16 +35,18 @@
 */
 static int component_compare(struct pvfs_state *pvfs, const char *comp, const char *name)
 {
-	char *shortname;
 	int ret;
 
-	if (StrCaseCmp(comp, name) == 0) return 0;
+	ret = StrCaseCmp(comp, name);
 
-	shortname = pvfs_short_name_component(pvfs, name);
+	if (ret != 0) {
+		char *shortname = pvfs_short_name_component(pvfs, name);
+		if (shortname) {
+			ret = StrCaseCmp(comp, shortname);
+			talloc_free(shortname);
+		}
+	}
 
-	ret = StrCaseCmp(comp, shortname);
-
-	talloc_free(shortname);
 	return ret;
 }
 
@@ -95,6 +97,13 @@ static NTSTATUS pvfs_case_search(struct pvfs_state *pvfs, struct pvfs_filename *
 		char *test_name;
 		DIR *dir;
 		struct dirent *de;
+		char *long_component;
+
+		/* possibly remap from the short name cache */
+		long_component = pvfs_mangled_lookup(pvfs, name, components[i]);
+		if (long_component) {
+			components[i] = long_component;
+		}
 
 		test_name = talloc_asprintf(name, "%s/%s", partial_name, components[i]);
 		if (!test_name) {
