@@ -1,3 +1,8 @@
+Changes in release 0.2o:
+
+ * new option --addresses to kdc (for listening on an explicit set of
+   addresses)
+
 Changes in release 0.2n:
 
  * more robust parsing of dump files in kadmin

@@ -1,3 +1,15 @@
+2000-02-11  Assar Westerlund  <assar@sics.se>
+
+	* kdc/kdc_locl.h: remove keyfile add explicit_addresses
+	* kdc/connect.c (init_sockets): pay attention to
+	explicit_addresses some more comments.  better error messages.
+	* kdc/config.c: add some comments.
+	remove --key-file.
+	add --addresses.
+
+	* lib/krb5/context.c (krb5_set_extra_addresses): const-ize and use
+	proper abstraction
+
 2000-02-07  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/changepw.c: use roken_getaddrinfo_hostspec
