@@ -38,9 +38,9 @@ POP     *   p;
 #ifdef KERBEROS
     if ((status = krb_get_lrealm(lrealm,1)) == KFAILURE) {
         pop_log(p, POP_FAILURE, "%s: (%s.%s@%s) %s", p->client, kdata.pname, 
-                kdata.pinst, kdata.prealm, krb_err_txt[status]);
+                kdata.pinst, kdata.prealm, krb_err_msg(status));
         return(pop_msg(p,POP_FAILURE,
-            "Kerberos error:  \"%s\".", krb_err_txt[status]));
+            "Kerberos error:  \"%s\".", krb_err_msg(status)));
     }
 
     if (strcmp(kdata.prealm,lrealm))  {

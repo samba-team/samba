@@ -620,7 +620,7 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
 				    fprintf(stderr,
 					    "%s: Warning %s\n",
 					    ProgName,
-					    krb_err_txt[code]);
+					    krb_err_msg(code));
 			    }
 			leave();
 		    }
