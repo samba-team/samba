@@ -1416,10 +1416,10 @@ static void init_globals(void)
 #endif /* WITH_LDAP_SAMCONFIG */
 
 	string_set(&Globals.szLdapSuffix, "");
+	string_set(&Globals.szLdapFilter, "(uid=%u)");
 	string_set(&Globals.szLdapMachineSuffix, "");
 	string_set(&Globals.szLdapUserSuffix, "");
 
-	string_set(&Globals.szLdapFilter, "(&(uid=%u)(objectclass=sambaAccount))");
 	string_set(&Globals.szLdapAdminDn, "");
 	Globals.ldap_ssl = LDAP_SSL_ON;
 	Globals.ldap_passwd_sync = LDAP_PASSWD_SYNC_OFF;
