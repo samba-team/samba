@@ -129,7 +129,7 @@ LIBMSRPC_OBJ = libsmb/cli_lsarpc.o rpc_client/cli_pipe.o
 
 RPC_SERVER_OBJ = rpc_server/srv_lsa.o \
                  rpc_server/srv_lsa_hnd.o rpc_server/srv_netlog.o \
-                 rpc_server/srv_pipe_hnd.o rpc_server/srv_reg.o \
+                 rpc_server/srv_pipe_hnd.o rpc_server/srv_reg.o rpc_server/srv_reg_nt.o \
                  rpc_server/srv_samr.o rpc_server/srv_samr_nt.o rpc_server/srv_srvsvc.o \
                  rpc_server/srv_util.o rpc_server/srv_wkssvc.o \
                  rpc_server/srv_pipe.o rpc_server/srv_dfs.o \

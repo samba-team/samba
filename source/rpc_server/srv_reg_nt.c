@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -155,4 +154,3 @@ uint32 _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 
 	return status;
 }
-#undef OLD_NTDOMAIN

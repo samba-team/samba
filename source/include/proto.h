@@ -283,6 +283,26 @@ int sys_acl_set_file(char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d);
 int sys_acl_set_fd(int fd, SMB_ACL_T acl_d);
 int sys_acl_free_text(char *text);
 int sys_acl_free_acl(SMB_ACL_T acl_d) ;
+int sys_acl_get_entry(SMB_ACL_T acl_d, int entry_id, SMB_ACL_ENTRY_T *entry_p);
+int sys_acl_get_tag_type(SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *type_p);
+int sys_acl_get_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
+void *sys_acl_get_qualifier(SMB_ACL_ENTRY_T entry_d);
+SMB_ACL_T sys_acl_get_file(const char *path_p, SMB_ACL_TYPE_T type);
+SMB_ACL_T sys_acl_get_fd(int fd);
+int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset_d);
+int sys_acl_add_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm);
+int sys_acl_get_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm);
+char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p);
+SMB_ACL_T sys_acl_init(int count);
+int sys_acl_create_entry(SMB_ACL_T *acl_p, SMB_ACL_ENTRY_T *entry_p);
+int sys_acl_set_tag_type(SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T tag_type);
+int sys_acl_set_qualifier(SMB_ACL_ENTRY_T entry_d, void *qual_p);
+int sys_acl_set_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T permset_d);
+int sys_acl_valid(SMB_ACL_T acl_d);
+int sys_acl_set_file(char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d);
+int sys_acl_set_fd(int fd, SMB_ACL_T acl_d);
+int sys_acl_free_text(char *text);
+int sys_acl_free_acl(SMB_ACL_T acl_d) ;
 int sys_acl_get_entry( SMB_ACL_T the_acl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
 int sys_acl_get_tag_type( SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p);
 int sys_acl_get_permset( SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
@@ -1982,8 +2002,7 @@ BOOL cli_net_auth2(struct cli_state *cli, uint16 sec_chan,
                    uint32 neg_flags, DOM_CHAL *srv_chal);
 BOOL cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal);
 BOOL cli_net_srv_pwset(struct cli_state *cli, uint8 hashed_mach_pwd[16]);
-BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr, 
-                       NET_USER_INFO_3 *user_info3);
+BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3);
 BOOL cli_net_sam_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr);
 BOOL change_trust_account_password( char *domain, char *remote_machine_list);
 
@@ -3554,6 +3573,13 @@ pipes_struct *get_rpc_pipe(int pnum);
 /*The following definitions come from  rpc_server/srv_reg.c  */
 
 BOOL api_reg_rpc(pipes_struct *p);
+
+/*The following definitions come from  rpc_server/srv_reg_nt.c  */
+
+uint32 _reg_close(pipes_struct *p, REG_Q_CLOSE *q_u, REG_R_CLOSE *r_u);
+uint32 _reg_open(pipes_struct *p, REG_Q_OPEN_HKLM *q_u, REG_R_OPEN_HKLM *r_u);
+uint32 _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY *r_u);
+uint32 _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u);
 
 /*The following definitions come from  rpc_server/srv_samr.c  */
 
