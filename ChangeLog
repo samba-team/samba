@@ -1,3 +1,7 @@
+2000-02-20  Assar Westerlund  <assar@juguete.sics.se>
+
+	* Release 0.2p
+
 2000-02-19  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/Makefile.am: set version to 9:1:0
