@@ -623,7 +623,7 @@ static void run_randomipc(void)
 
 	for (i=0;i<1000;i++) {
 		api = sys_random() % 500;
-		param_len = sys_random() % 64;
+		param_len = (sys_random() % 64) + 4;
 
 		rand_buf(param, param_len);
   

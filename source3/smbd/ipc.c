@@ -3348,7 +3348,7 @@ struct
 static int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *params,
 		     int tdscnt,int tpscnt,int mdrcnt,int mprcnt)
 {
-  int api_command = SVAL(params,0);
+  int api_command;
   struct mem_buf rdata_buf;
   struct mem_buf rparam_buf;
   char *rdata = NULL;
@@ -3358,8 +3358,14 @@ static int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data
   BOOL reply=False;
   int i;
 
+  SMB_ASSERT(params != 0);
+
+  api_command = SVAL(params,0);
+
   DEBUG(3,("Got API command %d of form <%s> <%s> (tdscnt=%d,tpscnt=%d,mdrcnt=%d,mprcnt=%d)\n",
-	   api_command,params+2,skip_string(params+2,1),
+	   api_command,
+	   params+2,
+	   skip_string(params+2,1),
 	   tdscnt,tpscnt,mdrcnt,mprcnt));
 
   for (i=0;api_commands[i].name;i++)
@@ -3448,7 +3454,6 @@ static int named_pipe(connection_struct *conn,uint16 vuid, char *outbuf,char *na
 int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int bufsize)
 {
 	fstring name;
-
 	char *data=NULL,*params=NULL;
 	uint16 *setup=NULL;
 	int outsize = 0;
@@ -3475,17 +3480,17 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
   
 	if (tdscnt)  {
 		if((data = (char *)malloc(tdscnt)) == NULL) {
-          DEBUG(0,("reply_trans: data malloc fail for %d bytes !\n", tdscnt));
-		  return(ERROR(ERRDOS,ERRnomem));
-        } 
+			DEBUG(0,("reply_trans: data malloc fail for %d bytes !\n", tdscnt));
+			return(ERROR(ERRDOS,ERRnomem));
+		} 
 		memcpy(data,smb_base(inbuf)+dsoff,dscnt);
 	}
 
 	if (tpscnt) {
 		if((params = (char *)malloc(tpscnt)) == NULL) {
-          DEBUG(0,("reply_trans: param malloc fail for %d bytes !\n", tpscnt));
-		  return(ERROR(ERRDOS,ERRnomem));
-        } 
+			DEBUG(0,("reply_trans: param malloc fail for %d bytes !\n", tpscnt));
+			return(ERROR(ERRDOS,ERRnomem));
+		} 
 		memcpy(params,smb_base(inbuf)+psoff,pscnt);
 	}
 
@@ -3560,7 +3565,8 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	
 	if (strncmp(name,"\\PIPE\\",strlen("\\PIPE\\")) == 0) {
 		DEBUG(5,("calling named_pipe\n"));
-		outsize = named_pipe(conn,vuid,outbuf,name+strlen("\\PIPE\\"),setup,data,params,
+		outsize = named_pipe(conn,vuid,outbuf,
+				     name+strlen("\\PIPE\\"),setup,data,params,
 				     suwcnt,tdscnt,tpscnt,msrcnt,mdrcnt,mprcnt);
 	} else {
 		DEBUG(3,("invalid pipe name\n"));

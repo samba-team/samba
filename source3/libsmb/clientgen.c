@@ -432,9 +432,9 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 	pstrcpy(p,user);
 	strupper(p);
 	p += 21;
-    p++;
-    p += 15;
-    p++; 
+	p++;
+	p += 15;
+	p++; 
 	pstrcpy(p, workstation); 
 	strupper(p);
 	p += 16;
