@@ -2,7 +2,8 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    Groupname handling
-   Copyright (C) Jeremy Allison 1998.
+   Copyright (C) Jeremy Allison               1998-2000.
+   Copyright (C) Luke Kenneth Casson Leighton 1996-2000.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
