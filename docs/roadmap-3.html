@@ -1,35 +1,140 @@
-<!--#include virtual="/samba/header.html" -->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+<TITLE>SAMBA - opening windows to a wider world</TITLE>
+<link rel="shortcut icon" href="/samba/favicon.ico">
+<META HTTP-EQUIV="Content-Type" content="text/html; charset=iso-8859-1">
+<META NAME="keywords" CONTENT="Samba,SMB,CIFS">
+<META NAME="description" CONTENT="Home of Samba, the SMB file server.">
+</HEAD>
+<BODY BGCOLOR="#ffffff" TEXT="#000000" VLINK="#6600cc" LINK="#0000ff" ALINK="#cc0033">
+<!--#include virtual="/samba/local_header.html" -->
+
+<TABLE BORDER=0 WIDTH="85%" ALIGN="CENTER">
+  <tr VALIGN="middle">
+    <td ALIGN="left">
+	<ul>
+      <li><font size="-1"><a href="/samba/samba.html">home</a></font>
+      <li><font size="-1"><a href="/samba/index.html">mirrors</a></font>
+      <li><font size="-1"><a href="/samba/search.html">search</a></font>
+      <li><font size="-1"><a href="/samba/whatsnew/">announcements</a></font>
+      <li><font size="-1"><a href="/samba/archives.html">mailing&nbsp;lists</a></font>
+      <li><font size="-1"><a href="/samba/docs/">documentation</a></font>
+      <li><font size="-1"><a href="/samba/books.html">books</a></font>
+      <li><font size="-1"><a href="/samba/download.html">download</a></font>
+      <li><font size="-1"><a href="/samba/donations.html">donations</a></font>
+	</ul>
+    </td>
+    <td align="center">
+      <a href="/samba/samba.html"><img src="/samba/images/slmed.gif" 
+       width="226" height="107" border="0" alt="samba"></a>
+    </td>
+    <td align="left">
+	<ul>
+      <li><font size="-1"><a href="/samba/contacts.html">contacts</a></font>
+      <li><font size="-1"><a href="/samba/team.html">Samba&nbsp;Team</a></font>
+      <li><font size="-1"><a href="/samba/devel/">development</a></font>
+      <li><font size="-1"><a href="/samba/support/">support</a></font>
+      <li><font size="-1"><a href="/samba/GUI/">gui&nbsp;interfaces</a></font>
+      <li><font size="-1"><a href="/samba/thanks.html">thanks</a></font>
+      <li><font size="-1"><a href="/samba/vendors/">vendors</a></font>
+      <li><font size="-1"><a href="http://samba-survey.sernet.de/">survey</a></font>
+      <li><font size="-1"><a href="/samba/tshirt.html">t-shirts,&nbsp;etc</a></font>
+	</ul>
+    </td>
+  </tr>
+
+  <TR ALIGN="center">
+    <TD COLSPAN="3"><BR>
+    <img src="/samba/images/bar1.gif" WIDTH="493" HEIGHT="26"
+    BORDER="0"
+    alt="=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=">
+    <br><br><br>
+    </TD>
+  </TR>
+
+<tr><td></td><TD ALIGN="left">
 
 <h3>Roadmap to 3.0</h3>
-<p><em>Page Last Updated</em> : 5 Mar, 2003
-<p><em>Estimated shipdate</em> : When it is ready.
-<p><em>Current Alpha Release</em> : <a href="/samba/ftp/alpha/samba-3.0alpha22.tar.gz">Samba-3.0alpha22</a>
+<p><em>Page Last Updated</em> : 12th Sep, 2003
+<p><em>Current Beta Release</em> : <a href="/samba/ftp/rc/samba-3.0.0rc4.tar.gz">Samba-3.0.0rc4</a>
 
 <h3>Road to 3.0</h3>
 
 <ul>
-  <li>(5th Mar, 2003) <em>Samba-3.0alpha22 RPMS for Redhat 6.x, 7.x and 8.0 available</em>
-  <p>Binary packages for RedHat Linux 6.x, 7.x and 8.0 systems of the Samba 3.0alpha22
-  release are ready for download from the 
-  <a href="http://download.samba.org/samba/ftp/Binary_Packages/RedHat">Binary_Packages/RedHat</a> directory.
+  <li>(12th Sep, 2003) <em>The fourth release candidate of Samba 3.0.0 is available for download</em>
+  <p>Samba-3.0.0rc4 is now available in source form from samba.org.  See the
+  <a href="/samba/whatsnew/samba-3.0.0rc4.html">Release Notes</a> for more details.  
+  </li>
+</ul>
+<ul>
+  <li>(8th Sep, 2003) <em>The third release candidate of Samba 3.0.0 is available for download</em>
+  <p>Samba-3.0.0rc3 is now available in source form from samba.org.  See the
+  <a href="/samba/whatsnew/samba-3.0.0rc3.html">Release Notes</a> for more details.  
+  </li>
+</ul>
+<ul>
+  <li>(29th Aug, 2003) <em>The second release candidate of Samba 3.0.0 is available for download</em>
+  <p>Samba-3.0.0rc2 is now available in source form from samba.org.  See the
+  <a href="/samba/whatsnew/samba-3.0.0rc2.html">Release Notes</a> for more details.  
+  </li>
+</ul>
+<ul>
+  <li>(16th Aug, 2003) <em>The first release candidate of Samba 3.0.0 is available for download</em>
+  <p>Samba-3.0.0rc1 is now available in source form from samba.org.  See the
+  <a href="/samba/whatsnew/samba-3.0.0rc1.html">Release Notes</a> for more details.  
+  </li>
+</ul>
+<ul>
+  <li>(16th Jul, 2003) <em>The third beta release of Samba 3.0.0 is available for download</em>
+  <p>Samba-3.0.0beta3 is now available in source form from samba.org.  See the
+  <a href="/samba/whatsnew/samba-3.0.0beta3.html">Release Notes</a> for more details.  This 
+  could be the last beta release before moving onto 3.0.0 release candidates.   
+  </li>
+</ul>
+<ul>
+  <li>(1st Jul, 2003) <em>The second beta release of Samba 3.0.0 is available for download</em>
+  <p>Samba-3.0.0beta2 is now available in source form from samba.org.  See the
+  <a href="/samba/whatsnew/samba-3.0.0beta2.html">Release Notes</a> for more details.
+  </li>
+</ul>
+<ul>
+  <li>(7th Jun, 2003) <em>The first beta release of Samba 3.0.0 is available for download</em>
+  <p>Samba-3.0.0beta1 is now available in source form from samba.org.  See the
+  <a href="/samba/whatsnew/samba-3.0.0beta1.html">Release Notes</a> for more details.
+  </li>
+</ul>
+<ul>
+  <li>(14th May, 2003) <em>The Feature Freeze is in place with the 3.0alpha24 release</em>
+  <p>The 3.0alpha24 release is provided to aid developers in testing Samba
+  in preparation for the first beta release of 3.0 tenatively planned for May 26.
+  Refer to the <a href="http://www.samba.org/samba/samba.html">main page on samba.org</a> 
+  for download locations.
   </li>
 </ul>
 
 <ul>
-  <li>(26th Nov, 2002) <em>Samba-3.0alpha21 RPMS for Redhat 7.x and 8.0 available</em>
-  <p>Binary packages for RedHat Linux 7.x and 8.0 systems of the Samba 3.0alpha21
-  release are ready for download from the 
+  <li>(5th May, 2003) <em>Feature Freeze and Samba 3.0 beta release dates</em>
+  <p>The Samba Team has agreed to push the feature freeze for Samba 3.0
+  development to May 12, 2003.  Following this will be two weeks of testing
+  with the first planned beta release of Samba 3.0 on May 26.  Following
+  the open-ended beta period will be preview (preX) releases, followed by
+  release candidate builds (rcX) and finally 3.0.0.  There is no estimated
+  shipping date on the initial stable 3.0.0 release.
+  <p>Here is the <a href="http://lists.samba.org/pipermail/samba-technical/2003-May/044597.html">mail 
+  sent to samba-technical</a> describing the reasons for the delay.
+  </li>
+</ul>
+
+
+<ul>
+  <li>(31st Mar, 2003) <em>Samba-3.0alpha23 RPMS for Redhat 6.x, 7.x and 8.0 available</em>
+  <p>Binary packages for RedHat Linux 6.x, 7.x and 8.0 systems of the Samba 3.0alpha23
+  release are ready for download from the
   <a href="http://download.samba.org/samba/ftp/Binary_Packages/RedHat">Binary_Packages/RedHat</a> directory.
   </li>
 </ul>
 
-<ul>
-  <li>(26th Sept, 2002) <em>SAMBA_3_0 cvs branch</em>
-  <p>With the release of 3.0alpha20, the SAMBA_3_0 cvs branch is now being
-  officially maintained in an effort to stabilize certain features.  If you would
-  like to continue to test the soon-to-be-3.0 code base, please use this branch
-  tag when checking out the cvs tree.
-</ul>
 
 <h3>Roadmap Overview</h3>
 
@@ -37,7 +142,7 @@
 has gone on about this.  Implementation is a separate discussion :-)
 If a feature is already done, I marked it as "Req".  It should be obvious
 from this roadmap that one the major hurdles for releasing the 3.0 code base
-is the completion of documentation updates.  
+is the completion of documentation updates.
 
 <ul>
   <li>X = done
@@ -71,7 +176,7 @@ for a stable 3.0 release.
     <td align=center>yes</td>
     <td align=center>X</td>
     <td align=center>X</td>
-    <td align=center>o</td>
+    <td align=center>X</td>
   </tr>
 
   <tr>
@@ -79,7 +184,7 @@ for a stable 3.0 release.
     <td align=center>yes</td>
     <td align=center>X</td>
     <td align=center>X</td>
-    <td align=center>o</td>
+    <td align=center>X</td>
   </tr>
 
   <tr>
@@ -87,7 +192,7 @@ for a stable 3.0 release.
     <td align=center>yes</td>
     <td align=center>X</td>
     <td align=center>X</td>
-    <td align=center>o</td>
+    <td align=center>X</td>
   </tr>
 
   <tr>
@@ -102,16 +207,16 @@ for a stable 3.0 release.
     <td width=50%>Windows NT 4.0 Style Trust Relationship</td>
     <td align=center>yes</td>
     <td align=center>X</td>
-    <td align=center>o</td>
-    <td align=center>o</td>
+    <td align=center>X</td>
+    <td align=center>X</td>
   </tr>
 
   <tr>
     <td width=50%>NTLMv2</td>
     <td align=center>yes</td>
     <td align=center>X</td>
-    <td align=center>o</td>
-    <td align=center>o</td>
+    <td align=center>X</td>
+    <td align=center>X</td>
   </tr>
 
   <tr>
@@ -119,48 +224,52 @@ for a stable 3.0 release.
       4.0 PDC to a Samba PDC</td>
     <td align=center>yes</td>
     <td align=center>X</td>
-    <td align=center>o</td>
-    <td align=center>o</td>
+    <td align=center>X</td>
+    <td align=center>X</td>
   </tr>
 
   <tr>
     <td width=50%>Winbind working with Samba PDC</td>
     <td align=center>yes</td>
     <td align=center>X</td>
-    <td align=center>o</td>
-    <td align=center>o</td>
+    <td align=center>X</td>
+    <td align=center>X</td>
   </tr>
 
   <tr>
     <td width=50%>Loadable RPC implementations</td>
     <td align=center>yes</td>
     <td align=center>X</td>
-    <td align=center>o</td>
-    <td align=center>o</td>
+    <td align=center>X</td>
+    <td align=center>X</td>
   </tr>
 
   <tr>
-    <td width=50%>hook for utilizing a centralized winbindd id map database</td>
-    <td align=center>yes</td>
-    <td align=center>o</td>
-    <td align=center>o</td>
-    <td align=center>o</td>
-  </tr>
-
-  <tr>
-    <td width=50%>Group Mapping support(privileges need some work, etc...)</td>
-    <td align=center>yes</td>
-    <td align=center>o</td>
-    <td align=center>o</td>
-    <td align=center>o</td>
-  </tr>
-
-  <tr>
-    <td width=50%>Publishing printers in AD (probably will make 3.0 but will not delay release)</td>
+    <td width=50%>Utilizing a centralized winbindd id map database</td>
     <td align=center>yes</td>
     <td align=center>X</td>
+    <td align=center>X</td>
     <td align=center>o</td>
+  </tr>
+
+  <tr>
+    <td width=50%>Mapping between Windows and UNIX groups</td>
+    <td align=center>yes</td>
+    <td align=center>X</td>
+    <td align=center>X</td>
+    <td align=center>X</td>
+  </tr>
+
+  <tr>
+    <td width=50%>Publishing printers in AD</td>
+    <td align=center>yes</td>
+    <td align=center>X</td>
+    <td align=center>X</td>
     <td align=center>o</td>
+  </tr>
+
+  <tr>
+    <td>&nbsp;</td>
   </tr>
 
   <tr>
@@ -171,9 +280,10 @@ for a stable 3.0 release.
     <td width=50%>Stackable VFS</td>
     <td align=center>no</td>
     <td align=center>X</td>
-    <td align=center>o</td>
+    <td align=center>X</td>
     <td align=center>X</td>
   </tr>
+   <tr>
     <td width=50%>SAM replication (full implementation still lacks
       some decoding work; post 3.0)</td>
     <td align=center>no</td>
@@ -185,19 +295,34 @@ for a stable 3.0 release.
   <tr>
     <td width=50%>SMB signing (needs more research; not a show stopper)</td>
     <td align=center>no</td>
-    <td align=center>-</td>
-    <td align=center>-</td>
-    <td align=center>-</td>
+    <td align=center>X</td>
+    <td align=center>X</td>
+    <td align=center>X</td>
   </tr>
 
   <tr>
     <td width=50%>schannel, ntlmv2 sign &amp; seal (needs more research)</td>
     <td align=center>no</td>
-    <td align=center>in-progress</td>
-    <td align=center>-</td>
-    <td align=center>-</td>
+    <td align=center>X</td>
+    <td align=center>X</td>
+    <td align=center>X</td>
   </tr>
 
+  <tr>
+	  <td width=50%>alternative backend for WINS database (there is a patch that still needs some work)</td>
+	  <td align=center>no</td>
+	  <td align=center>in-progress</td>
+	  <td align=center>-</td>
+	  <td align=center>-</td>
+  </tr>
+
+  <tr>
+	  <td width=50%>Group policy objects, profiles, and SYSVOL replication protocols</td>
+	  <td align=center>no</td>
+	  <td align=center>in-progress</td>
+	  <td align=center>-</td>
+	  <td align=center>-</td>
+  </tr>
 </table>
 
 
@@ -207,9 +332,33 @@ Plus the following interesting, but non-show stopping projects
 <ul>
   <li>background updates of print queues via a dedicated process
   <li>WINS replication with Windows NT WINS servers
-  <li>alternative backend for WINS database (there is a patch that still needs some work)
 </ul>
 
 
 
-<!--#include virtual="/samba/footer.html" -->
+</td>
+<td></td>
+</tr>
+
+  <TR ALIGN="center">
+    <TD COLSPAN="3"><BR><BR><BR><img src="/samba/images/bar1.gif" WIDTH="493" HEIGHT="26" BORDER="0" alt="=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="></TD>
+  </TR>
+  <TR>
+    <TD COLSPAN="3" ALIGN="center">
+      <em>samba - opening windows to a wider world</em>
+    </TD>
+  </TR>
+</TABLE>
+
+<table align="center">
+<tr><td>
+<form method="post" action="http://de.samba.org/cgi-bin/htsearch">
+<input type="text" size="30" name="words" value="">
+<input type="submit" value="Search">
+</form>
+</td>
+</tr></table>
+
+<!--#include virtual="/samba/local_footer.html" -->
+</BODY>
+</HTML>
