@@ -1,11 +1,11 @@
-.TH TESTPARM 1 "14 Nov 1998" "testparm 2.0.0-beta1"
+.TH "testparm " "1" "23 Oct 1998" "Samba" "SAMBA" 
 .PP 
 .SH "NAME" 
 testparm \- check an smb\&.conf configuration file for internal correctness
 .PP 
 .SH "SYNOPSIS" 
 .PP 
-\fBtestparm\fP [configfilename [hostname hostIP] ]
+\fBtestparm\fP [-s] [configfilename] [hostname hostIP]
 .PP 
 .SH "DESCRIPTION" 
 .PP 
@@ -26,6 +26,11 @@ reporting whether the specified host has access to each service\&.
 .PP 
 .SH "OPTIONS" 
 .PP 
+.IP 
+.IP "\fB-s\fP" 
+Without this option, \fBtestparm\fP will prompt for a
+carriage return after printing the service names and before dumping
+the service definitions\&.
 .IP 
 .IP "\fBconfigfilename\fP" 
 This is the name of the configuration file to
