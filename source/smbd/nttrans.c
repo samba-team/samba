@@ -1742,6 +1742,8 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
+  DEBUG(3,("call_nt_transact_query_security_desc: sec_desc_size = %d.\n", sec_desc_size));
+
   SIVAL(params,0,(uint32)sec_desc_size);
 
   if(max_data_count < sec_desc_size) {
@@ -1769,7 +1771,7 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
    * Init the parse struct we will linearize into.
    */
 
-  prs_init(&pd, 0, 4, False);
+  prs_init(&pd, 0, 4, MARSHALL);
 
   /*
    * Setup the prs_struct to point at the memory we just

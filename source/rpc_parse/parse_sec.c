@@ -135,7 +135,7 @@ SEC_ACL *make_sec_acl(uint16 revision, int num_aces, SEC_ACE *ace_list)
 
 	dst->revision = revision;
 	dst->num_aces = num_aces;
-	dst->size = 4;
+	dst->size = 8;
 
 	if((dst->ace_list = (SEC_ACE *)malloc( sizeof(SEC_ACE) * num_aces )) == NULL) {
 		free_sec_acl(&dst);
@@ -306,7 +306,7 @@ SEC_DESC *make_sec_desc(uint16 revision, uint16 type,
 			offset = SD_HEADER_SIZE;
 		}
 		dst->off_dacl = offset;
-		offset += dacl->size;
+		offset += ((dacl->size + 3) & ~3);
 	}
 
 	if (dst->sacl != NULL)
@@ -316,7 +316,7 @@ SEC_DESC *make_sec_desc(uint16 revision, uint16 type,
 			offset = SD_HEADER_SIZE;
 		}
 		dst->off_sacl = offset;
-		offset += sacl->size;
+		offset += ((sacl->size + 3) & ~3);
 	}
 
 	if (dst->owner_sid != NULL)
@@ -326,7 +326,7 @@ SEC_DESC *make_sec_desc(uint16 revision, uint16 type,
 			offset = SD_HEADER_SIZE;
 		}
 		dst->off_owner_sid = offset;
-		offset += sid_size(dst->owner_sid);
+		offset += ((sid_size(dst->owner_sid) + 3) & ~3);
 	}
 
 	if (dst->grp_sid != NULL)
@@ -336,7 +336,7 @@ SEC_DESC *make_sec_desc(uint16 revision, uint16 type,
 			offset = SD_HEADER_SIZE;
 		}
 		dst->off_grp_sid = offset;
-		offset += sid_size(dst->grp_sid);
+		offset += ((sid_size(dst->grp_sid) + 3) & ~3);
 	}
 
 	*sec_desc_size = (size_t)((offset == 0) ? SD_HEADER_SIZE : offset);

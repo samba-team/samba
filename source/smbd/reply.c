@@ -2077,16 +2077,6 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
   CHECK_READ(fsp);
   CHECK_ERROR(fsp);
 
-  /*
-   * Be very restrictive about what we will process in kernel
-   * oplock break state to prevent deadlock.
-   */
-
-  if(defer_processing_due_to_kernel_oplock(fsp)) {
-    push_oplock_pending_smb_message( inbuf, length );
-    return -1;
-  }
-
   numtoread = SVAL(inbuf,smb_vwv1);
   startpos = IVAL(inbuf,smb_vwv2);
   
@@ -2148,16 +2138,6 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int size, int 
   CHECK_READ(fsp);
   CHECK_ERROR(fsp);
 
-  /*
-   * Be very restrictive about what we will process in kernel
-   * oplock break state to prevent deadlock.
-   */
-
-  if(defer_processing_due_to_kernel_oplock(fsp)) {
-    push_oplock_pending_smb_message( inbuf, size );
-    return -1;
-  }
-
   numtoread = SVAL(inbuf,smb_vwv1);
   startpos = IVAL(inbuf,smb_vwv2);
   
@@ -2206,16 +2186,6 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   CHECK_FSP(fsp,conn);
   CHECK_READ(fsp);
   CHECK_ERROR(fsp);
-
-  /*
-   * Be very restrictive about what we will process in kernel
-   * oplock break state to prevent deadlock.
-   */
-
-  if(defer_processing_due_to_kernel_oplock(fsp)) {
-    push_oplock_pending_smb_message( inbuf, length );
-    return -1;
-  }
 
   set_message(outbuf,12,0,True);
   data = smb_buf(outbuf);
@@ -2280,16 +2250,6 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
   CHECK_WRITE(fsp);
   CHECK_ERROR(fsp);
   
-  /*
-   * Be very restrictive about what we will process in kernel
-   * oplock break state to prevent deadlock.
-   */
-
-  if(defer_processing_due_to_kernel_oplock(fsp)) {
-    push_oplock_pending_smb_message( inbuf, size );
-    return -1;
-  }
-
   tcount = IVAL(inbuf,smb_vwv1);
   startpos = IVAL(inbuf,smb_vwv3);
   write_through = BITSETW(inbuf+smb_vwv7,0);
@@ -2395,16 +2355,6 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int siz
   CHECK_WRITE(fsp);
   CHECK_ERROR(fsp);
 
-  /*
-   * Be very restrictive about what we will process in kernel
-   * oplock break state to prevent deadlock.
-   */
-
-  if(defer_processing_due_to_kernel_oplock(fsp)) {
-    push_oplock_pending_smb_message( inbuf, size );
-    return -1;
-  }
-
   numtowrite = SVAL(inbuf,smb_vwv1);
   startpos = IVAL(inbuf,smb_vwv2);
   data = smb_buf(inbuf) + 3;
@@ -2457,16 +2407,6 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
   CHECK_FSP(fsp,conn);
   CHECK_WRITE(fsp);
   CHECK_ERROR(fsp);
-
-  /*
-   * Be very restrictive about what we will process in kernel
-   * oplock break state to prevent deadlock.
-   */
-
-  if(defer_processing_due_to_kernel_oplock(fsp)) {
-    push_oplock_pending_smb_message( inbuf, size );
-    return -1;
-  }
 
   numtowrite = SVAL(inbuf,smb_vwv1);
   startpos = IVAL(inbuf,smb_vwv2);
@@ -2528,16 +2468,6 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   CHECK_FSP(fsp,conn);
   CHECK_WRITE(fsp);
   CHECK_ERROR(fsp);
-
-  /*
-   * Be very restrictive about what we will process in kernel
-   * oplock break state to prevent deadlock.
-   */
-
-  if(defer_processing_due_to_kernel_oplock(fsp)) {
-    push_oplock_pending_smb_message( inbuf, length );
-    return -1;
-  }
 
   data = smb_base(inbuf) + smb_doff;
 
@@ -2615,16 +2545,6 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
   CHECK_FSP(fsp,conn);
   CHECK_ERROR(fsp);
 
-  /*
-   * Be very restrictive about what we will process in kernel
-   * oplock break state to prevent deadlock.
-   */
-
-  if(defer_processing_due_to_kernel_oplock(fsp)) {
-    push_oplock_pending_smb_message( inbuf, size );
-    return -1;
-  }
-
   mode = SVAL(inbuf,smb_vwv1) & 3;
   startpos = IVAL(inbuf,smb_vwv2);
 
@@ -2663,16 +2583,6 @@ int reply_flush(connection_struct *conn, char *inbuf,char *outbuf, int size, int
   if (fsp) {
 	  CHECK_FSP(fsp,conn);
 	  CHECK_ERROR(fsp);
-  }
-
-  /*
-   * Be very restrictive about what we will process in kernel
-   * oplock break state to prevent deadlock.
-   */
-
-  if(defer_processing_due_to_kernel_oplock(fsp)) {
-    push_oplock_pending_smb_message( inbuf, size );
-    return -1;
   }
 
   if (!fsp) {
@@ -2724,16 +2634,6 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 
 	if(!fsp || !fsp->open || (fsp->conn != conn))
 		return(ERROR(ERRDOS,ERRbadfid));
-
-	/*
-	 * Be very restrictive about what we will process in kernel
-	 * oplock break state to prevent deadlock.
-	 */
-
-	if(defer_processing_due_to_kernel_oplock(fsp)) {
-		push_oplock_pending_smb_message( inbuf, size );
-		return -1;
-	}
 
 	if(HAS_CACHED_ERROR(fsp)) {
 		eclass = fsp->wbmpx_ptr->wr_errclass;
@@ -2812,16 +2712,6 @@ int reply_writeclose(connection_struct *conn,
 	CHECK_WRITE(fsp);
 	CHECK_ERROR(fsp);
 
-	/*
-	 * Be very restrictive about what we will process in kernel
-	 * oplock break state to prevent deadlock.
-	 */
-
-	if(defer_processing_due_to_kernel_oplock(fsp)) {
-		push_oplock_pending_smb_message( inbuf, size );
-		return -1;
-	}
-
 	numtowrite = SVAL(inbuf,smb_vwv1);
 	startpos = IVAL(inbuf,smb_vwv2);
 	mtime = make_unix_date3(inbuf+smb_vwv4);
@@ -2873,16 +2763,6 @@ int reply_lock(connection_struct *conn,
 	CHECK_FSP(fsp,conn);
 	CHECK_ERROR(fsp);
 
-	/*
-	 * Be very restrictive about what we will process in kernel
-	 * oplock break state to prevent deadlock.
-	 */
-
-	if(defer_processing_due_to_kernel_oplock(fsp)) {
-		push_oplock_pending_smb_message( inbuf, length );
-		return -1;
-	}
-
 	count = IVAL(inbuf,smb_vwv1);
 	offset = IVAL(inbuf,smb_vwv3);
 
@@ -2920,16 +2800,6 @@ int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int size, in
 
   CHECK_FSP(fsp,conn);
   CHECK_ERROR(fsp);
-
-  /*
-   * Be very restrictive about what we will process in kernel
-   * oplock break state to prevent deadlock.
-   */
-
-  if(defer_processing_due_to_kernel_oplock(fsp)) {
-    push_oplock_pending_smb_message( inbuf, size );
-    return -1;
-  }
 
   count = IVAL(inbuf,smb_vwv1);
   offset = IVAL(inbuf,smb_vwv3);
@@ -4110,16 +3980,6 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
   CHECK_FSP(fsp,conn);
   CHECK_ERROR(fsp);
 
-  /*
-   * Be very restrictive about what we will process in kernel
-   * oplock break state to prevent deadlock.
-   */
-
-  if(defer_processing_due_to_kernel_oplock(fsp)) {
-    push_oplock_pending_smb_message( inbuf, length );
-    return -1;
-  }
-
   data = smb_buf(inbuf);
 
   /* Check if this is an oplock break on a file
@@ -4279,16 +4139,6 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
   CHECK_READ(fsp);
   CHECK_ERROR(fsp);
 
-  /*
-   * Be very restrictive about what we will process in kernel
-   * oplock break state to prevent deadlock.
-   */
-
-  if(defer_processing_due_to_kernel_oplock(fsp)) {
-    push_oplock_pending_smb_message( inbuf, length );
-    return -1;
-  }
-
   startpos = IVAL(inbuf,smb_vwv1);
   maxcount = SVAL(inbuf,smb_vwv3);
 
@@ -4350,16 +4200,6 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
   CHECK_FSP(fsp,conn);
   CHECK_WRITE(fsp);
   CHECK_ERROR(fsp);
-
-  /*
-   * Be very restrictive about what we will process in kernel
-   * oplock break state to prevent deadlock.
-   */
-
-  if(defer_processing_due_to_kernel_oplock(fsp)) {
-    push_oplock_pending_smb_message( inbuf, size );
-    return -1;
-  }
 
   tcount = SVAL(inbuf,smb_vwv1);
   startpos = IVAL(inbuf,smb_vwv3);
@@ -4547,16 +4387,6 @@ int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
   CHECK_FSP(fsp,conn);
   CHECK_ERROR(fsp);
 
-  /*
-   * Be very restrictive about what we will process in kernel
-   * oplock break state to prevent deadlock.
-   */
-
-  if(defer_processing_due_to_kernel_oplock(fsp)) {
-    push_oplock_pending_smb_message( inbuf, size );
-    return -1;
-  }
-
   /* Convert the DOS times into unix times. Ignore create
      time as UNIX can't set this.
      */
@@ -4610,16 +4440,6 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 
   CHECK_FSP(fsp,conn);
   CHECK_ERROR(fsp);
-
-  /*
-   * Be very restrictive about what we will process in kernel
-   * oplock break state to prevent deadlock.
-   */
-
-  if(defer_processing_due_to_kernel_oplock(fsp)) {
-    push_oplock_pending_smb_message( inbuf, size );
-    return -1;
-  }
 
   /* Do an fstat on this file */
   if(sys_fstat(fsp->fd_ptr->fd, &sbuf))
