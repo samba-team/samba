@@ -1,3 +1,14 @@
+2000-05-06  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/config_file.c (krb5_config_vget_string_default,
+ 	krb5_config_get_string_default): add
+
+2000-04-25  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/fcache.c (fcc_initialize): just forget about
+	over-writing the old cred cache.  it's too much of a hazzle trying
+	to do this safely.
+
 2000-04-11  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/crypto.c (krb5_get_wrapped_length): rewrite into
