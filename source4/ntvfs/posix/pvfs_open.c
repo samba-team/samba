@@ -605,6 +605,7 @@ NTSTATUS pvfs_close(struct ntvfs_module_context *ntvfs,
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_file *f;
 	NTSTATUS status;
+	struct utimbuf unix_times;
 
 	if (io->generic.level != RAW_CLOSE_CLOSE) {
 		return ntvfs_map_close(req, io, ntvfs);
@@ -615,6 +616,10 @@ NTSTATUS pvfs_close(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
+	unix_times.actime = 0;
+	unix_times.modtime = io->close.in.write_time;
+	utime(f->name->full_name, &unix_times);
+	
 	if (f->fd != -1 && 
 	    close(f->fd) == -1) {
 		status = pvfs_map_errno(pvfs, errno);
