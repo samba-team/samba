@@ -88,6 +88,8 @@ krb5_mk_req_extended(krb5_context context,
 				c_opt,
 				NULL,
 				&authenticator);
+  if (c_opt)
+      free_Checksum (c_opt);
   if (r)
     return r;
 
