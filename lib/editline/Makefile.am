@@ -12,7 +12,7 @@ man_MANS = editline.3
 
 lib_LTLIBRARIES = libeditline.la
 if el_compat
-noinst_LTLIBRARIES += libel_compat.la
+noinst_LTLIBRARIES = libel_compat.la
 endif
 
 noinst_PROGRAMS = testit
