@@ -132,7 +132,7 @@ BOOL cli_receive_trans_response(char *inbuf,int trans,
 
   *data_len = *param_len = 0;
 
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+  client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
   show_msg(inbuf);
 
   /* sanity check */
@@ -175,7 +175,7 @@ BOOL cli_receive_trans_response(char *inbuf,int trans,
       if (total_data <= *data_len && total_param <= *param_len)
 	break;
 
-      receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+      client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
       show_msg(inbuf);
 
       /* sanity check */
@@ -258,7 +258,7 @@ BOOL cli_send_trans_request(char *outbuf,int trans,
   if (this_ldata < ldata || this_lparam < lparam)
     {
       /* receive interim response */
-      if (!receive_smb(Client,inbuf,SHORT_TIMEOUT) || CVAL(inbuf,smb_rcls) != 0)
+      if (!client_receive_smb(Client,inbuf,SHORT_TIMEOUT) || CVAL(inbuf,smb_rcls) != 0)
 	{
 	  DEBUG(0,("%s request failed (%s)\n",
 	           trans==SMBtrans?"SMBtrans":"SMBtrans2", smb_errstr(inbuf)));
@@ -340,7 +340,7 @@ BOOL cli_send_session_request(char *inbuf,char *outbuf)
   send_smb(Client,outbuf);
   DEBUG(5,("Sent session request\n"));
 
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+  client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
 
   if (CVAL(inbuf,0) == 0x84) /* C. Hoch  9/14/95 Start */
     {
@@ -500,7 +500,7 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup)
   CVAL(smb_buf(outbuf),0) = 2;
 
   send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+  client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
 
   show_msg(inbuf);
 
@@ -644,7 +644,7 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup)
       }
 
       send_smb(Client,outbuf);
-      receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+      client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
 
       show_msg(inbuf);
 
@@ -759,7 +759,7 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup)
   }
 
   send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+  client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
 
   /* trying again with a blank password */
   if (CVAL(inbuf,smb_rcls) != 0 && 
@@ -827,7 +827,7 @@ void cli_send_logout(void )
   cli_setup_pkt(outbuf);
 
   send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,SHORT_TIMEOUT);
+  client_receive_smb(Client,inbuf,SHORT_TIMEOUT);
 
   if (CVAL(inbuf,smb_rcls) != 0)
     {
@@ -946,7 +946,7 @@ BOOL cli_reopen_connection(char *inbuf,char *outbuf)
   cli_setup_pkt(outbuf);
 
   send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,SHORT_TIMEOUT);
+  client_receive_smb(Client,inbuf,SHORT_TIMEOUT);
 
   close_sockets();
   if (!cli_open_sockets(0)) return(False);

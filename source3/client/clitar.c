@@ -472,7 +472,7 @@ static int do_setrattr(char *fname, int attr, int setit)
   *p++ = 0;
 
   send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+  client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
 
   if (CVAL(inbuf,smb_rcls) != 0)
     DEBUG(5,("getatr: %s\n",smb_errstr(inbuf)));
@@ -510,7 +510,7 @@ static int do_setrattr(char *fname, int attr, int setit)
   *p++ = 0;
 
   send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+  client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
   
   if (CVAL(inbuf,smb_rcls) != 0)
     {
@@ -547,7 +547,7 @@ static BOOL smbcreat(file_info finfo, int *fnum, char *inbuf, char *outbuf)
   strcpy(p,finfo.name);
   
   send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+  client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
   
   if (CVAL(inbuf,smb_rcls) != 0)
     {
@@ -586,7 +586,7 @@ static BOOL smbwrite(int fnum, int n, int low, int high, int left,
   SSVAL(smb_buf(outbuf),1,n);
 
   send_smb(Client,outbuf); 
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+  client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
   
   if (CVAL(inbuf,smb_rcls) != 0)
     {
@@ -625,7 +625,7 @@ static BOOL smbshut(file_info finfo, int fnum, char *inbuf, char *outbuf)
 	   finfo.mtime));
   
   send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+  client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
   
   if (CVAL(inbuf,smb_rcls) != 0)
     {
@@ -655,7 +655,7 @@ static BOOL smbchkpath(char *fname, char *inbuf, char *outbuf)
   strcpy(p,fname);
 
   send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+  client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
 
   DEBUG(5,("smbchkpath: %s\n",smb_errstr(inbuf)));
 
@@ -682,7 +682,7 @@ static BOOL smbmkdir(char *fname, char *inbuf, char *outbuf)
   strcpy(p,fname);
   
   send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+  client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
   
   if (CVAL(inbuf,smb_rcls) != 0)
     {
@@ -828,7 +828,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
     }
   
   send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+  client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
 
   if (CVAL(inbuf,smb_rcls) != 0)
     {
@@ -962,7 +962,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 		}
 	      
 	      send_smb(Client,outbuf);
-	      receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+	      client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
 	      
 	      if (CVAL(inbuf,smb_rcls) != 0)
 		{
@@ -1056,7 +1056,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 	      SSVAL(outbuf,smb_vwv4,finfo.size - nread);
 	      
 	      send_smb(Client,outbuf);
-	      receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+	      client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
 	      
 	      if (CVAL(inbuf,smb_rcls) != 0)
 		{
@@ -1117,7 +1117,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
       SIVALS(outbuf,smb_vwv1,-1);
       
       send_smb(Client,outbuf);
-      receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+      client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
       
       if (!ignore_close_error && CVAL(inbuf,smb_rcls) != 0)
 	{

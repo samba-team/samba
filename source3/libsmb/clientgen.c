@@ -104,7 +104,7 @@ static BOOL cli_send_trans(struct cli_state *cli,
 
 	if (this_ldata < ldata || this_lparam < lparam) {
 		/* receive interim response */
-		if (!receive_smb(cli->fd,cli->inbuf,cli->timeout) || 
+		if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout) || 
 		    CVAL(cli->inbuf,smb_rcls) != 0) {
 			return(False);
 		}      
@@ -165,7 +165,7 @@ static BOOL cli_receive_trans(struct cli_state *cli,
 	
 	*data_len = *param_len = 0;
 	
-	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout))
+	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout))
 		return False;
 
 	show_msg(cli->inbuf);
@@ -216,7 +216,7 @@ static BOOL cli_receive_trans(struct cli_state *cli,
 		if (total_data <= *data_len && total_param <= *param_len)
 			break;
 		
-		if (!receive_smb(cli->fd,cli->inbuf,cli->timeout))
+		if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout))
 			return False;
 
 		show_msg(cli->inbuf);
@@ -484,7 +484,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 	}
 
       send_smb(cli->fd,cli->outbuf);
-      if (!receive_smb(cli->fd,cli->inbuf,cli->timeout))
+      if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout))
 	      return False;
 
       show_msg(cli->inbuf);
@@ -543,7 +543,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	SCVAL(cli->inbuf,smb_rcls, 1);
 
 	send_smb(cli->fd,cli->outbuf);
-	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout))
+	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout))
 		return False;
 
 	if (CVAL(cli->inbuf,smb_rcls) != 0) {
@@ -567,7 +567,7 @@ BOOL cli_tdis(struct cli_state *cli)
 	cli_setup_packet(cli);
 	
 	send_smb(cli->fd,cli->outbuf);
-	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout))
+	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout))
 		return False;
 	
 	return CVAL(cli->inbuf,smb_rcls) == 0;
@@ -599,7 +599,7 @@ BOOL cli_mv(struct cli_state *cli, char *fname_src, char *fname_dst)
         strcpy(p,fname_dst);
 
         send_smb(cli->fd,cli->outbuf);
-        if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
+        if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
                 return False;
         }
 
@@ -633,7 +633,7 @@ BOOL cli_unlink(struct cli_state *cli, char *fname)
 	strcpy(p,fname);
 
 	send_smb(cli->fd,cli->outbuf);
-	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
+	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
 		return False;
 	}
 
@@ -666,7 +666,7 @@ BOOL cli_mkdir(struct cli_state *cli, char *dname)
 	strcpy(p,dname);
 
 	send_smb(cli->fd,cli->outbuf);
-	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
+	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
 		return False;
 	}
 
@@ -698,7 +698,7 @@ BOOL cli_rmdir(struct cli_state *cli, char *dname)
 	strcpy(p,dname);
 
 	send_smb(cli->fd,cli->outbuf);
-	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
+	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
 		return False;
 	}
 
@@ -758,7 +758,7 @@ int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 	p = skip_string(p,1);
 
 	send_smb(cli->fd,cli->outbuf);
-	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
+	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
 		return -1;
 	}
 
@@ -790,7 +790,7 @@ BOOL cli_close(struct cli_state *cli, int fnum)
 	SIVALS(cli->outbuf,smb_vwv1,-1);
 
 	send_smb(cli->fd,cli->outbuf);
-	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
+	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
 		return False;
 	}
 
@@ -831,7 +831,7 @@ BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int ti
 	SIVAL(p, 6, len);
 
 	send_smb(cli->fd,cli->outbuf);
-	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
+	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
 		return False;
 	}
 
@@ -871,7 +871,7 @@ BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int 
 	SIVAL(p, 6, len);
 
 	send_smb(cli->fd,cli->outbuf);
-	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
+	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
 		return False;
 	}
 
@@ -906,7 +906,7 @@ int cli_read(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 s
 	SSVAL(cli->outbuf,smb_vwv6,size);
 
 	send_smb(cli->fd,cli->outbuf);
-	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
+	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
 		return -1;
 	}
 
@@ -950,7 +950,7 @@ int cli_write(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 
 	memcpy(p, buf, size);
 
 	send_smb(cli->fd,cli->outbuf);
-	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
+	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
 		return -1;
 	}
 
@@ -984,7 +984,7 @@ BOOL cli_getatr(struct cli_state *cli, char *fname,
 	strcpy(p+1, fname);
 
 	send_smb(cli->fd,cli->outbuf);
-	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
+	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
 		return False;
 	}
 	
@@ -1035,7 +1035,7 @@ BOOL cli_setatr(struct cli_state *cli, char *fname, int attr, time_t t)
 	*p = 4;
 
 	send_smb(cli->fd,cli->outbuf);
-	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
+	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
 		return False;
 	}
 	
@@ -1242,7 +1242,7 @@ BOOL cli_negprot(struct cli_state *cli)
 	CVAL(smb_buf(cli->outbuf),0) = 2;
 
 	send_smb(cli->fd,cli->outbuf);
-	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout))
+	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout))
 		return False;
 
 	show_msg(cli->inbuf);
@@ -1322,7 +1322,7 @@ BOOL cli_session_request(struct cli_state *cli, char *host, int name_type,
 	send_smb(cli->fd,cli->outbuf);
 	DEBUG(5,("Sent session request\n"));
 
-	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout))
+	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout))
 		return False;
 
 	if (CVAL(cli->inbuf,0) != 0x82) {
