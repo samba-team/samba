@@ -3546,6 +3546,7 @@ void invalidate_vuid(uint16 vuid);
 char *validated_username(uint16 vuid);
 char *validated_domain(uint16 vuid);
 int initialize_groups(char *user, uid_t uid, gid_t gid);
+NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups);
 uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, 
 		     char *domain,BOOL guest);
 void add_session_user(char *user);
@@ -3673,6 +3674,7 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 
 int get_current_groups(int *p_ngroups, gid_t **p_groups);
 void delete_nt_token(NT_USER_TOKEN **pptoken);
+NT_USER_TOKEN *dup_nt_token(NT_USER_TOKEN *ptoken);
 BOOL push_sec_ctx(void);
 void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN *token);
 void set_root_sec_ctx(void);

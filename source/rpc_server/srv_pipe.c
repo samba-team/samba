@@ -282,6 +282,11 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	memset(p->domain, '\0', sizeof(p->domain));
 	memset(p->wks, '\0', sizeof(p->wks));
 
+	/* Set up for non-authenticated user. */
+	delete_nt_token(&p->pipe_user.nt_user_token);
+	p->pipe_user.ngroups = 0;
+	safe_free( p->pipe_user.groups);
+
 	/* 
 	 * Setup an empty password for a guest user.
 	 */
@@ -456,7 +461,13 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 	p->pipe_user.uid = pass->pw_uid;
 	p->pipe_user.gid = pass->pw_gid;
 
-	/* XXX also set up pipe user group membership */
+	/* Set up pipe user group membership. */
+	initialize_groups(pipe_user_name, p->pipe_user.uid, p->pipe_user.gid);
+	get_current_groups( &p->pipe_user.ngroups, &p->pipe_user.groups);
+
+	/* Create an NT_USER_TOKEN struct for this user. */
+	p->pipe_user.nt_user_token = create_nt_token(p->pipe_user.uid,p->pipe_user.gid,
+												p->pipe_user.ngroups, p->pipe_user.groups);
 
 	p->ntlmssp_auth_validated = True;
 	return True;

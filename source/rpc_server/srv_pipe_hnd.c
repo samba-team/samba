@@ -825,6 +825,9 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 
 	DLIST_REMOVE(Pipes, p);
 
+	delete_nt_token(&p->pipe_user.nt_user_token);
+	safe_free(p->pipe_user.groups);
+
 	ZERO_STRUCTP(p);
 
 	free(p);
