@@ -54,6 +54,8 @@ int	auth_level = 0;
 extern	int utmp_len;
 int	registerd_host_only = 0;
 
+#undef NOERROR
+
 #ifdef	STREAMSPTY
 # include <stropts.h>
 # include <termios.h>
@@ -63,8 +65,6 @@ int	registerd_host_only = 0;
 #ifdef HAVE_SYS_STREAM_H
 #include <sys/stream.h>
 #endif
-
-#undef NOERROR
 
 #ifdef _AIX
 #include <sys/termio.h>
