@@ -1,3 +1,8 @@
+2003-04-14  Love Hörquist Åstrand <lha@it.su.se>
+
+	* util.c: cast argument to tolower to unsigned char, from
+	Christian Biere <christianbiere@gmx.de> via NetBSD
+	
 2003-04-06  Love Hörquist Åstrand <lha@it.su.se>
 
 	* kadmind.8: s/kerberos/Kerberos/
