@@ -187,9 +187,6 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 	}
 	memset(ret, 0, sizeof(*ret));
 
-	ret->from_name = talloc_strdup(ret, fromcode);
-	ret->to_name = talloc_strdup(ret, tocode);
-
 	/* check for the simplest null conversion */
 	if (strcmp(fromcode, tocode) == 0) {
 		ret->direct = iconv_copy;
