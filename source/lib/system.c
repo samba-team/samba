@@ -179,11 +179,15 @@ A stat() wrapper that will deal with 64 bit filesizes.
 
 int sys_stat(const char *fname,SMB_STRUCT_STAT *sbuf)
 {
+	int ret;
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_STAT64)
-  return stat64(fname, sbuf);
+	ret = stat64(fname, sbuf);
 #else
-  return stat(fname, sbuf);
+	ret = stat(fname, sbuf);
 #endif
+	/* we always want directories to appear zero size */
+	if (ret == 0 && S_ISDIR(sbuf->st_mode)) sbuf->st_size = 0;
+	return ret;
 }
 
 /*******************************************************************
@@ -192,11 +196,15 @@ int sys_stat(const char *fname,SMB_STRUCT_STAT *sbuf)
 
 int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf)
 {
+	int ret;
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_FSTAT64)
-  return fstat64(fd, sbuf);
+	ret = fstat64(fd, sbuf);
 #else
-  return fstat(fd, sbuf);
+	ret = fstat(fd, sbuf);
 #endif
+	/* we always want directories to appear zero size */
+	if (ret == 0 && S_ISDIR(sbuf->st_mode)) sbuf->st_size = 0;
+	return ret;
 }
 
 /*******************************************************************
@@ -205,11 +213,15 @@ int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf)
 
 int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf)
 {
+	int ret;
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_LSTAT64)
-  return lstat64(fname, sbuf);
+	ret = lstat64(fname, sbuf);
 #else
-  return lstat(fname, sbuf);
+	ret = lstat(fname, sbuf);
 #endif
+	/* we always want directories to appear zero size */
+	if (ret == 0 && S_ISDIR(sbuf->st_mode)) sbuf->st_size = 0;
+	return ret;
 }
 
 /*******************************************************************
@@ -655,3 +667,58 @@ int sys_setgroups(int setlen, gid_t *gidset)
 }
 
 #endif /* HAVE_SETGROUPS */
+
+/*
+ * We only wrap pw_name and pw_passwd for now as these
+ * are the only potentially modified fields.
+ */
+
+/**************************************************************************
+ Helper function for getpwnam/getpwuid wrappers.
+****************************************************************************/
+
+static struct passwd *setup_pwret(struct passwd *pass)
+{
+	static pstring pw_name;
+	static pstring pw_passwd;
+	static struct passwd pw_ret;
+
+	if (pass == NULL)
+	{
+		return NULL;
+	}
+
+	memcpy((char *)&pw_ret, pass, sizeof(struct passwd));
+
+	if (pass->pw_name)
+	{
+		pw_ret.pw_name = pw_name;
+		pstrcpy(pw_ret.pw_name, pass->pw_name);
+	}
+
+	if (pass->pw_passwd)
+	{
+		pw_ret.pw_passwd = pw_passwd;
+		pstrcpy(pw_ret.pw_passwd, pass->pw_passwd);
+	}
+
+	return &pw_ret;
+}
+
+/**************************************************************************
+ Wrapper for getpwnam(). Always returns a static that can be modified.
+****************************************************************************/
+
+struct passwd *sys_getpwnam(const char *name)
+{
+	return setup_pwret(getpwnam(name));
+}
+
+/**************************************************************************
+ Wrapper for getpwuid(). Always returns a static that can be modified.
+****************************************************************************/
+
+struct passwd *sys_getpwuid(uid_t uid)
+{
+	return setup_pwret(getpwuid(uid));
+}

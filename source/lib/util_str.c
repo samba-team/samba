@@ -733,7 +733,54 @@ size_t count_chars(const char *s,char c)
   return(count);
 }
 
+/*******************************************************************
+Return True if a string consists only of one particular character.
+********************************************************************/
 
+BOOL str_is_all(const char *s,char c)
+{
+#if !defined(KANJI_WIN95_COMPATIBILITY)
+  /*
+   * For completeness we should put in equivalent code for code pages
+   * 949 (Korean hangul) and 950 (Big5 Traditional Chinese) here - but
+   * doubt anyone wants Samba to behave differently from Win95 and WinNT
+   * here. They both treat full width ascii characters as case senstive
+   * filenames (ie. they don't do the work we do here).
+   * JRA.
+   */
+
+  if(lp_client_code_page() == KANJI_CODEPAGE)
+  {
+    /* Win95 treats full width ascii characters as case sensitive. */
+    while (*s)
+    {
+      if (is_shift_jis (*s))
+        s += 2;
+      else
+      {
+        if (*s != c)
+          return False;
+        s++;
+      }
+    }
+  }
+  else
+#endif /* KANJI_WIN95_COMPATIBILITY */
+  {
+    while (*s)
+    {
+      size_t skip = skip_multibyte_char( *s );
+      if( skip != 0 )
+        s += skip;
+      else {
+        if (*s != c)
+          return False;
+        s++;
+      }
+    }
+  }
+  return True;
+}
 
 /*******************************************************************
 safe string copy into a known length string. maxlength does not
@@ -805,37 +852,39 @@ char *safe_strcat(char *dest, const char *src, size_t maxlength)
 
 char *alpha_strcpy(char *dest, const char *src, size_t maxlength)
 {
-    size_t len, i;
+	size_t len, i;
 
-    if (!dest) {
-        DEBUG(0,("ERROR: NULL dest in alpha_strcpy\n"));
-        return NULL;
-    }
+	if (!dest) {
+		DEBUG(0,("ERROR: NULL dest in alpha_strcpy\n"));
+		return NULL;
+	}
 
-    if (!src) {
-        *dest = 0;
-        return dest;
-    }
+	if (!src) {
+		*dest = 0;
+		return dest;
+	}  
 
-    len = strlen(src);
-    if (len >= maxlength)
-        len = maxlength - 1;
+	len = strlen(src);
+	if (len >= maxlength)
+		len = maxlength - 1;
 
-    for(i = 0; i < len; i++) {
-        if(isupper(src[i]) ||islower(src[i]) || isdigit(src[i]))
-            dest[i] = src[i];
-        else
-            dest[i] = '_';
-    }
+	for(i = 0; i < len; i++) {
+		if(isupper(src[i]) ||islower(src[i]) || isdigit(src[i]))
+			dest[i] = src[i];
+		else
+			dest[i] = '_';
+	}
 
-    dest[i] = '\0';
+	dest[i] = '\0';
 
-    return dest;
+	return dest;
 }
 
 /****************************************************************************
-like strncpy but always null terminates. Make sure there is room!
+ Like strncpy but always null terminates. Make sure there is room!
+ The variable n should always be one less than the available size.
 ****************************************************************************/
+
 char *StrnCpy(char *dest,const char *src,size_t n)
 {
   char *d = dest;
@@ -848,7 +897,6 @@ char *StrnCpy(char *dest,const char *src,size_t n)
   *d = 0;
   return(dest);
 }
-
 
 /****************************************************************************
 like strncpy but copies up to the character marker.  always null terminates.

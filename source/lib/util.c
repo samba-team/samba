@@ -1385,6 +1385,7 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
     char *fp, *rp, *cp2, *cp1;
     BOOL last_wcard_was_star = False;
     int num_path_components, num_regexp_components;
+    enum remote_arch_types ra_type = get_remote_arch();
 
     pstrcpy(te_pattern,t_pattern);
     pstrcpy(te_filename,t_filename);
@@ -1415,6 +1416,13 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
           last_wcard_was_star = False;
 
         if(!do_match(cp2, cp1, case_sig))
+          break;
+
+        /*
+         * Ugly ! Special case for non-NT. If filename is XXXX and pattern extension
+         * is '*' or all '?' then disallow match.
+         */
+        if (*cp2 == '\0' && (ra_type != RA_WINNT) && (strequal(eext, "*") || str_is_all(eext, '?')))
           break;
 
         cp1 = rp ? rp + 1 : NULL;
@@ -1525,6 +1533,13 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
           /* pattern has extension */
           matched = do_match(sbase, ebase, case_sig)
                     && do_match(sext, eext, case_sig);
+          /*
+           * Special case. If filename is XXXX and pattern extension
+           * is '*' or all '?' then disallow match.
+           */
+          if (matched && (strequal(eext, "*") || str_is_all(eext, '?')))
+            matched = False;
+
         } else {
           matched = do_match(sbase, ebase, case_sig);
 #ifdef EMULATE_WEIRD_W95_MATCHING
@@ -2329,7 +2344,7 @@ struct hostent *Get_Hostbyname(const char *name)
 check if a process exists. Does this work on all unixes?
 ****************************************************************************/
 
-BOOL process_exists(int pid)
+BOOL process_exists(pid_t pid)
 {
 	return(kill(pid,0) == 0 || errno != ESRCH);
 }
@@ -2341,7 +2356,7 @@ turn a uid into a user name
 char *uidtoname(uid_t uid)
 {
   static char name[40];
-  struct passwd *pass = getpwuid(uid);
+  struct passwd *pass = sys_getpwuid(uid);
   if (pass) return(pass->pw_name);
   slprintf(name, sizeof(name) - 1, "%d",(int)uid);
   return(name);
@@ -2366,7 +2381,7 @@ turn a user name into a uid
 ********************************************************************/
 uid_t nametouid(const char *name)
 {
-	struct passwd *pass = getpwnam(name);
+	struct passwd *pass = sys_getpwnam(name);
 	if (pass) return(pass->pw_uid);
 	return (uid_t)-1;
 }
