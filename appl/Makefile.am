@@ -6,7 +6,7 @@ if OTP
 dir_otp = otp
 endif
 if DCE
-dir_dce = dceutil
+dir_dce = dceutils
 endif
 SUBDIRS = 					\
 	  afsutil				\
