@@ -1736,7 +1736,7 @@ myoob(int signo)
 
 #if 0 
 	cp = tmpline;
-	if (getline(cp, 7) == NULL) {
+	if (ftpd_getline(cp, 7) == NULL) {
 		reply(221, "You could at least say goodbye.");
 		dologout(0);
 	}

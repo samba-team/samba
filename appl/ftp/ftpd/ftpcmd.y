@@ -985,10 +985,10 @@ lookup(struct tab *p, char *cmd)
 }
 
 /*
- * getline - a hacked up version of fgets to ignore TELNET escape codes.
+ * ftpd_getline - a hacked up version of fgets to ignore TELNET escape codes.
  */
 char *
-getline(char *s, int n)
+ftpd_getline(char *s, int n)
 {
 	int c;
 	char *cs;
@@ -1089,7 +1089,7 @@ yylex(void)
 		case CMD:
 			signal(SIGALRM, toolong);
 			alarm((unsigned) ftpd_timeout);
-			if (getline(cbuf, sizeof(cbuf)-1) == NULL) {
+			if (ftpd_getline(cbuf, sizeof(cbuf)-1) == NULL) {
 				reply(221, "You could at least say goodbye.");
 				dologout(0);
 			}
