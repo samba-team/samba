@@ -810,10 +810,8 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 		smbcli_tdis(cli);
 		smbcli_shutdown(cli);
 		talloc_destroy(mem_ctx);
-        return status;
-    }	
-
-	talloc_destroy(mem_ctx);
+		return status;
+	}
 	
 	/* this ensures that the reference count is decremented so
 	   a pipe close will really close the link */
@@ -823,6 +821,8 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 
 	/* remember the binding string for possible secondary connections */
 	(*p)->binding_string = dcerpc_binding_string((*p), binding);
+
+	talloc_destroy(mem_ctx);
 
 	if (username && username[0] && (binding->flags & DCERPC_SCHANNEL_ANY)) {
 		status = dcerpc_bind_auth_schannel(*p, pipe_uuid, pipe_version, 
