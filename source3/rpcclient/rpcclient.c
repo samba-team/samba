@@ -414,6 +414,12 @@ commands[] =
 		{COMPL_NONE, COMPL_NONE}
 	},
 	{
+		"samuserset",
+		cmd_sam_set_userinfo,
+		"<username> [-p password] SAM User Set Info (experimental!)",
+		{COMPL_SAMUSR, COMPL_NONE}
+	},
+	{
 		"samuser",
 		cmd_sam_query_user,
 		"<username> SAM User Query (experimental!)",
@@ -1556,6 +1562,8 @@ static char *complete_cmd_null(char *text, int state)
 	{
 		pwd_read(&(smb_cli->pwd), "Enter Password:", True);
 	}
+
+	mdfour(smb_cli->sess_key, smb_cli->pwd.smb_nt_pwd, 16);
 
 	/* paranoia: destroy the local copy of the password */
 	bzero(password, sizeof(password)); 

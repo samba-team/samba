@@ -1906,6 +1906,10 @@ BOOL delete_samr_dom_alias(struct cli_state *cli, uint16 fnum,
 BOOL get_samr_query_aliasmem(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain,
 				uint32 alias_rid, uint32 *num_mem, DOM_SID2 *sid);
+BOOL set_samr_query_userinfo(struct cli_state *cli, uint16 fnum, 
+				POLICY_HND *pol_open_domain,
+				uint32 info_level,
+				uint32 user_rid, void *usr);
 BOOL get_samr_query_userinfo(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain,
 				uint32 info_level,
@@ -2017,6 +2021,8 @@ BOOL samr_query_usergroups(struct cli_state *cli, uint16 fnum,
 BOOL samr_query_groupinfo(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol,
 				uint16 switch_value, GROUP_INFO_CTR* ctr);
+BOOL samr_set_userinfo(struct cli_state *cli, uint16 fnum, 
+				POLICY_HND *pol, uint16 switch_value, void* usr);
 BOOL samr_query_userinfo(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol, uint16 switch_value, void* usr);
 BOOL samr_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd);
@@ -2829,6 +2835,7 @@ BOOL make_samr_q_set_userinfo(SAMR_Q_SET_USERINFO *q_u,
 				POLICY_HND *hnd,
 				uint16 switch_value, void *info);
 BOOL samr_io_q_set_userinfo(char *desc, SAMR_Q_SET_USERINFO *q_u, prs_struct *ps, int depth);
+void free_samr_q_set_userinfo(SAMR_Q_SET_USERINFO *q_u);
 BOOL make_samr_r_set_userinfo(SAMR_R_SET_USERINFO *r_u, uint32 status);
 BOOL samr_io_r_set_userinfo(char *desc,  SAMR_R_SET_USERINFO *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_connect(SAMR_Q_CONNECT *q_u,
@@ -3340,6 +3347,7 @@ void cmd_sam_enum_users(struct client_info *info);
 void cmd_sam_query_groupmem(struct client_info *info);
 void cmd_sam_query_group(struct client_info *info);
 void cmd_sam_query_user(struct client_info *info);
+void cmd_sam_set_userinfo(struct client_info *info);
 void cmd_sam_query_dispinfo(struct client_info *info);
 void cmd_sam_query_dominfo(struct client_info *info);
 void cmd_sam_query_aliasmem(struct client_info *info);
@@ -3357,8 +3365,7 @@ BOOL msrpc_srv_enum_tprt(struct cli_state *cli,
 				const char* dest_srv,
 				uint32 info_level,
 				SRV_TPRT_INFO_CTR *ctr,
-				uint32 pref_sz,
-				ENUM_HND *hnd);
+				TPRT_INFO_FN(tprt_fn));
 void cmd_srv_enum_tprt(struct client_info *info);
 void cmd_srv_enum_conn(struct client_info *info);
 void cmd_srv_enum_shares(struct client_info *info);
@@ -3525,6 +3532,8 @@ BOOL pass_oem_change(char *user,
 			uchar *ntdata, uchar *nthash);
 BOOL decode_pw_buffer(const char buffer[516], char *new_passwd,
 			int new_passwd_size, BOOL nt_pass_set);
+BOOL encode_pw_buffer(char buffer[516], const char *new_passwd,
+			int new_pw_len, BOOL nt_pass_set);
 BOOL check_oem_password(char *user,
 			uchar *lmdata, uchar *lmhash,
 			uchar *ntdata, uchar *nthash,
