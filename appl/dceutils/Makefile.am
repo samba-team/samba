@@ -20,4 +20,4 @@ k5dcecon_SOURCES  = k5dcecon.c k5dce.h
 
 dpagaix_SOURCES = dpagaix.c
 
-LDADD = $(LIB_roken) $(LIB_dce)
+LDADD = $(LIB_dce)
