@@ -3059,6 +3059,10 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 	uint32 *rids=NULL, *new_rids=NULL, *tmp_rids=NULL;
 	struct samr_info *info = NULL;
 	int i,j;
+		
+	NTSTATUS ntstatus1;
+	NTSTATUS ntstatus2;
+
 	/* until i see a real useraliases query, we fack one up */
 
 	/* I have seen one, JFM 2/12/2001 */
@@ -3084,9 +3088,15 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
 		
-	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(info->acc_granted, USER_ACCESS_GET_GROUPS, "_samr_query_useraliases"))) {
-		return r_u->status;
-	}
+	ntstatus1 = access_check_samr_function(info->acc_granted, DOMAIN_ACCESS_LOOKUP_ALIAS_BY_MEM, "_samr_query_useraliases");
+	ntstatus2 = access_check_samr_function(info->acc_granted, DOMAIN_ACCESS_OPEN_ACCOUNT, "_samr_query_useraliases");
+	
+	if (!NT_STATUS_IS_OK(ntstatus1) || !NT_STATUS_IS_OK(ntstatus2)) {
+		if (!(NT_STATUS_EQUAL(ntstatus1,NT_STATUS_ACCESS_DENIED) && NT_STATUS_IS_OK(ntstatus2)) &&
+		    !(NT_STATUS_EQUAL(ntstatus1,NT_STATUS_ACCESS_DENIED) && NT_STATUS_IS_OK(ntstatus1))) {
+			return (NT_STATUS_IS_OK(ntstatus1)) ? ntstatus2 : ntstatus1;
+		}
+	}		
 
 	if (!sid_check_is_domain(&info->sid) &&
 	    !sid_check_is_builtin(&info->sid))
@@ -3157,7 +3167,8 @@ NTSTATUS _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_
 	if (!get_lsa_policy_samr_sid(p, &q_u->alias_pol, &alias_sid, &acc_granted)) 
 		return NT_STATUS_INVALID_HANDLE;
 	
-	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, ALIAS_ACCESS_GET_MEMBERS, "_samr_query_aliasmem"))) {
+	if (!NT_STATUS_IS_OK(r_u->status = 
+		access_check_samr_function(acc_granted, ALIAS_ACCESS_GET_MEMBERS, "_samr_query_aliasmem"))) {
 		return r_u->status;
 	}
 		
