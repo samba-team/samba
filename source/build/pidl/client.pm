@@ -17,6 +17,8 @@ sub ParseFunction($)
 	my $name = $fn->{NAME};
 	my $uname = uc $name;
 
+	return if (util::has_property($fn, "local"));
+
 	$res .= 
 "
 struct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r)

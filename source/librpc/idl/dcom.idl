@@ -278,16 +278,16 @@ interface IUnknown
 	/* Function 0x00 */
 	/* Returns the interface with the specified IID 
 	   if implemented by this object */
-	WERROR QueryInterface([in] IID *riid
+	[local] WERROR QueryInterface([in] IID *riid
 	   /*FIXME, [out] void **data*/);
 
 	/*****************/
 	/* Function 0x01 */
-	uint32 AddRef();
+	[local] uint32 AddRef();
 
 	/*****************/
 	/* Function 0x02 */
-	uint32 Release();
+	[local] uint32 Release();
 }
 
 
@@ -297,17 +297,17 @@ interface IUnknown
 	pointer_default(unique)
 ] interface IClassFactory : IUnknown
 {
-	WERROR CreateInstance(/*FIXME[in] IUnknown *pUnknown, 
+	[local] WERROR CreateInstance(/*FIXME[in] IUnknown *pUnknown, 
 			       [in] IID *riid,
 			       [out, iid_is(riid)] void **ppv*/);
 
-	WERROR RemoteCreateInstance();
+	[call_as(CreateInstance)] WERROR RemoteCreateInstance();
 
 	/* Set lock to TRUE when you want to do a lock
 	and set it to FALSE when you want to unlock */
-	WERROR LockServer([in] uint8 lock);
+	[local] WERROR LockServer([in] uint8 lock);
 
-	WERROR RemoteLockServer();
+	[call_as(LockServer)] WERROR RemoteLockServer();
 }
 
 /*//////////////////////////////////////////////////////////////// */
@@ -333,7 +333,7 @@ interface IRemUnknown : IUnknown
 	}
 	REMQIRESULT;
 
-	WERROR RemQueryInterface (
+	[call_as(QueryInterface)] WERROR RemQueryInterface (
 		[in] IPID *ripid, /* interface to QI on */
 		[in] uint32 cRefs, /* count of AddRefs requested */
 		[in] uint16 cIids, /* count of IIDs that follow */
@@ -348,13 +348,13 @@ interface IRemUnknown : IUnknown
 		uint32 cPrivateRefs;
 	} REMINTERFACEREF;
 
-	WERROR RemAddRef (
+	[call_as(AddRef)] WERROR RemAddRef (
 		 [in] uint16 cInterfaceRefs,
 		 [in, size_is(cInterfaceRefs)] REMINTERFACEREF InterfaceRefs[],
 		 [out, size_is(cInterfaceRefs)] WERROR* pResults
 		);
 
-	WERROR RemRelease (
+	[call_as(Release)] WERROR RemRelease (
 		 [in] uint16 cInterfaceRefs,
 		 [in, size_is(cInterfaceRefs)] REMINTERFACEREF InterfaceRefs[]
 		);
@@ -399,7 +399,7 @@ interface IRemUnknown : IUnknown
 
 interface IRemUnknown2 : IRemUnknown
 {
-	WERROR RemQueryInterface2 (
+	[call_as(QueryInterface2)] WERROR RemQueryInterface2 (
 		 [in] IPID *ripid,
 		 [in] uint16 cIids,
 		 [in, size_is(cIids)] IID *iids,
