@@ -143,6 +143,8 @@ TORTURE_RPC_OBJS = @TORTURE_RPC_OBJS@
 
 TORTURE_NBENCH_OBJS = @TORTURE_NBENCH_OBJS@
 
+TORTURE_BASIC_OBJS = @TORTURE_BASIC_OBJS@
+
 TORTURE_OBJS = @TORTURE_OBJS@
 TORTURE_LIBS = @TORTURE_LIBS@
 
@@ -187,6 +189,7 @@ NDRDUMP_LIBS =	$(LIBSMB_LIBS) $(CONFIG_LIBS) $(LIBBASIC_LIBS)
 PROTO_OBJ = 	$(SERVER_OBJS) $(PROCESS_MODEL_OBJS) $(CLIENT_OBJS) $(TORTURE_OBJS) \
 		$(DCERPC_OBJS) $(SMB_OBJS) $(AUTH_OBJS) $(PASSDB_OBJS) $(NTVFS_OBJS) \
 		$(LIBBASIC_OBJS) $(CONFIG_OBJS) $(LIBCMDLINE_OBJS) $(LIBSMB_OBJS)
+
 
 ######################################################################
 # now the rules...
@@ -453,5 +456,5 @@ $(srcdir)/configure: $(srcdir)/configure.in
 config.status: $(srcdir)/configure
 	@echo "WARNING: you need to run configure"
 
-Makefile: $(srcdir)/Makefile.in config.status
+Makefile: $(srcdir)/Makefile.in config.status smb_server/config.m4
 	@echo "WARNING: you need to run ./config.status"
