@@ -592,7 +592,7 @@ DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid)
  was done correctly, False if not. sidtype is set by this function.
 *****************************************************************/  
 
-BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
+BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 {
 	fstring sid_str;
 
@@ -668,7 +668,7 @@ BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
  was done correctly, False if not.
 *****************************************************************/  
 
-BOOL sid_to_gid(DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype)
+BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype)
 {
 	fstring dom_name, name, sid_str;
 	enum SID_NAME_USE name_type;
