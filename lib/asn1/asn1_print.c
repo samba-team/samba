@@ -168,6 +168,22 @@ loop (unsigned char *buf, size_t len, int indent)
 		free (str);
 		break;
 	    }
+	    case UT_OID: {
+		oid o;
+		int i;
+
+		ret = der_get_oid(buf, length, &o, NULL);
+		if (ret)
+		    errx (1, "der_get_oid: %s",
+			  com_right (et_list, ret));
+		
+		for (i = 0; i < o.length ; i++)
+		    printf("%d%s", o.components[i],
+			   i < o.length - 1 ? "." : "");
+		printf("\n");
+		free_oid(&o);
+		break;
+	    }
 	    default :
 		printf ("%lu bytes\n", (unsigned long)length);
 		break;
@@ -195,7 +211,7 @@ doit (const char *filename)
     len = sb.st_size;
     buf = malloc (len);
     if (buf == NULL)
-	err (1, "malloc %u", len);
+	err (1, "malloc %u", (unsigned)len);
     if (read (fd, buf, len) != len)
 	errx (1, "read failed");
     close (fd);
