@@ -1,11 +1,15 @@
-2003-03-19  Love Hörquist Åstrand <lha@it.su.se>
+2003-04-06  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* kafs.3: s/kerberos/Kerberos/
+	
+2003-03-19  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* kafs.3: spelling, from <jmc@prioris.mini.pw.edu.pl>
 	
 	* kafs.3: document the kafs_settoken functions write about the
 	krb5_appdefault option for kerberos 5 afs tokens fix prototypes
 	
-2003-03-18  Love Hörquist Åstrand <lha@it.su.se>
+2003-03-18  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* afskrb5.c (kafs_settoken5): change signature to include a
 	krb5_context, use v5_convert
@@ -44,7 +48,7 @@
 	internal structure struct kafs_token that carries around for rxkad
 	data that is independant of kerberos version
 	
-2003-02-18  Love Hörquist Åstrand <lha@it.su.se>
+2003-02-18  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* dlfcn.h: s/intialize/initialize, from
 	<jmc@prioris.mini.pw.edu.pl>
@@ -53,7 +57,7 @@
 
 	* afssysdefs.h: fix FreeBSD section
 
-2003-02-06  Love Hörquist Åstrand <lha@it.su.se>
+2003-02-06  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* afssysdefs.h: use syscall 208 on openbsd (all version) use
 	syscall 339 on freebsd 5.0 and later, use 210 on 4.x and earlier

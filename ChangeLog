@@ -1,3 +1,13 @@
+2003-04-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5.3: s/kerberos/Kerberos/
+	* lib/krb5/krb5_data.3: s/kerberos/Kerberos/
+	* lib/krb5/krb5_address.3: s/kerberos/Kerberos/
+	* lib/krb5/krb5_ccache.3: s/kerberos/Kerberos/
+	* lib/krb5/krb5.conf.5: s/kerberos/Kerberos/
+	* kuser/kinit.1: s/kerberos/Kerberos/
+	* kdc/kdc.8: s/kerberos/Kerberos/
+	
 2003-04-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/test_alname.c: more krb5_aname_to_localname tests
