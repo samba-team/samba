@@ -318,6 +318,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	cli_samr_close(hnd->cli, mem_ctx, &user_pol);
 	got_user_pol = False;
 
+	user_info->user_rid = user_rid;
 	user_info->group_rid = ctr->info.id21->group_rid;
 	user_info->acct_name = unistr2_tdup(mem_ctx, 
 					    &ctr->info.id21->uni_user_name);
