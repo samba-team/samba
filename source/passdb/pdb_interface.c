@@ -1299,7 +1299,9 @@ static NTSTATUS pdb_default_remove_sid_from_privilege(struct pdb_methods *method
 
 static NTSTATUS pdb_default_get_privilege_set(struct pdb_methods *methods, NT_USER_TOKEN *token, PRIVILEGE_SET *privset)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	/* by default return the empty privilege set as otherwise login will
+	 * be denied if a backend does not support privilege sets */
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS pdb_default_get_privilege_entry(struct pdb_methods *methods, const char *privname, char **sid_list)
