@@ -95,7 +95,7 @@ BOOL secrets_delete(const char *key)
 	return tdb_delete(tdb, kbuf) == 0;
 }
 
-BOOL secrets_store_domain_sid(char *domain, const DOM_SID *sid)
+BOOL secrets_store_domain_sid(const char *domain, const DOM_SID *sid)
 {
 	fstring key;
 
@@ -104,7 +104,7 @@ BOOL secrets_store_domain_sid(char *domain, const DOM_SID *sid)
 	return secrets_store(key, sid, sizeof(DOM_SID));
 }
 
-BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid)
+BOOL secrets_fetch_domain_sid(const char *domain, DOM_SID *sid)
 {
 	DOM_SID *dyn_sid;
 	fstring key;
@@ -128,7 +128,7 @@ BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid)
 	return True;
 }
 
-BOOL secrets_store_domain_guid(char *domain, GUID *guid)
+BOOL secrets_store_domain_guid(const char *domain, GUID *guid)
 {
 	fstring key;
 
@@ -137,7 +137,7 @@ BOOL secrets_store_domain_guid(char *domain, GUID *guid)
 	return secrets_store(key, guid, sizeof(GUID));
 }
 
-BOOL secrets_fetch_domain_guid(char *domain, GUID *guid)
+BOOL secrets_fetch_domain_guid(const char *domain, GUID *guid)
 {
 	GUID *dyn_guid;
 	fstring key;
