@@ -201,7 +201,7 @@ Press enter to see a dump of your service definitions
 [data]
 	comment = Data
 	path = /export
-	read only = No
+	read only = Yes
 	guest only = Yes
 </screen>
 			</para></step>
