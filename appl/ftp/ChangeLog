@@ -1,3 +1,7 @@
+2004-03-14  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* ftpd/ftpd.c (main): setpag if there is krb4 OR krb5 support
+	
 2003-12-19  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* ftp/security.h: add ftp_do_gss_delegate
