@@ -127,10 +127,11 @@ krb5_rd_priv(krb5_context context,
   /* check sequence number */
   if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
     if (part.seq_number == NULL ||
-	*part.seq_number != auth_context->remote_seqnumber++) {
+	*part.seq_number != auth_context->remote_seqnumber) {
       ret = KRB5KRB_AP_ERR_BADORDER;
       goto failure_part;
     }
+    auth_context->remote_seqnumber++;
   }
 
   ret = krb5_data_copy (outbuf, part.user_data.data, part.user_data.length);
