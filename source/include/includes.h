@@ -389,11 +389,11 @@
 #undef HAVE_LDAP
 #endif
 
-#if HAVE_SASL_H
-#include <sasl.h>
+#if HAVE_GSSAPI_GSSAPI_H
+#include <gssapi/gssapi.h>
+#include <gssapi/gssapi_generic.h>
 #else
-/* we must have sasl to use ldap */
-#undef HAVE_LDAP
+#undef HAVE_KRB5
 #endif
 
 /* we support ADS if we have krb5 and ldap libs */

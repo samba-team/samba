@@ -77,7 +77,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(cli)));
   } 
 
   nt_status = trust_pw_change_and_store_it(cli, cli->mem_ctx,
-					orig_trust_passwd_hash);
+					   orig_trust_passwd_hash);
   
   cli_nt_session_close(cli);
   cli_ulogoff(cli);

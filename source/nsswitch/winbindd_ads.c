@@ -26,6 +26,62 @@
 
 
 /*
+  a wrapper around ldap_search_s that retries depending on the error code
+  this is supposed to catch dropped connections and auto-reconnect
+*/
+int ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope, 
+			const char *exp,
+			const char **attrs, void **res)
+{
+	int rc = -1, rc2;
+	int count = 3;
+
+	if (!ads->ld &&
+	    time(NULL) - ads->last_attempt < ADS_RECONNECT_TIME) {
+		return LDAP_SERVER_DOWN;
+	}
+
+	while (count--) {
+		rc = ads_do_search(ads->ld, bind_path, scope, exp, attrs, res);
+		if (rc == 0) return rc;
+
+		if (*res) ads_msgfree(ads, *res);
+		*res = NULL;
+		DEBUG(1,("Reopening ads connection after error %s\n", ads_errstr(rc)));
+		if (ads->ld) {
+			/* we should unbind here, but that seems to trigger openldap bugs :(
+			   ldap_unbind(ads->ld); 
+			*/
+		}
+		ads->ld = NULL;
+		rc2 = ads_connect(ads);
+		if (rc2) {
+			DEBUG(1,("ads_search_retry: failed to reconnect (%s)\n", ads_errstr(rc)));
+			return rc2;
+		}
+	}
+	DEBUG(1,("ads reopen failed after error %s\n", ads_errstr(rc)));
+	return rc;
+}
+
+
+int ads_search_retry(ADS_STRUCT *ads, void **res, 
+		     const char *exp, 
+		     const char **attrs)
+{
+	return ads_do_search_retry(ads, ads->bind_path, LDAP_SCOPE_SUBTREE,
+				   exp, attrs, res);
+}
+
+int ads_search_retry_dn(ADS_STRUCT *ads, void **res, 
+			const char *dn, 
+			const char **attrs)
+{
+	return ads_do_search_retry(ads, dn, LDAP_SCOPE_BASE,
+				   "(objectclass=*)", attrs, res);
+}
+
+/*
   return our ads connections structure for a domain. We keep the connection
   open to make things faster
 */
@@ -39,13 +95,15 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 		return (ADS_STRUCT *)domain->private;
 	}
 
-	password = secrets_fetch_machine_password();
-	ads = ads_init(NULL, NULL, NULL, password);
-	free(password);
+	ads = ads_init(NULL, NULL, NULL, NULL);
 	if (!ads) {
 		DEBUG(1,("ads_init for domain %s failed\n", domain->name));
 		return NULL;
 	}
+
+	/* the machine acct password might have change - fetch it every time */
+	SAFE_FREE(ads->password);
+	ads->password = secrets_fetch_machine_password();
 
 	rc = ads_connect(ads);
 	if (rc) {
@@ -104,7 +162,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	ads = ads_cached_connection(domain);
 	if (!ads) goto done;
 
-	rc = ads_search(ads, &res, "(objectclass=user)", attrs);
+	rc = ads_search_retry(ads, &res, "(objectclass=user)", attrs);
 	if (rc) {
 		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
 		goto done;
@@ -191,7 +249,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	ads = ads_cached_connection(domain);
 	if (!ads) goto done;
 
-	rc = ads_search(ads, &res, "(objectclass=group)", attrs);
+	rc = ads_search_retry(ads, &res, "(objectclass=group)", attrs);
 	if (rc) {
 		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
 		goto done;
@@ -276,7 +334,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	if (!ads) goto done;
 
 	asprintf(&exp, "(sAMAccountName=%s)", name2);
-	rc = ads_search(ads, &res, exp, attrs);
+	rc = ads_search_retry(ads, &res, exp, attrs);
 	free(exp);
 	if (rc) {
 		DEBUG(1,("name_to_sid ads_search: %s\n", ads_errstr(rc)));
@@ -333,7 +391,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 
 	sidstr = ads_sid_binstring(sid);
 	asprintf(&exp, "(objectSid=%s)", sidstr);
-	rc = ads_search(ads, &msg, exp, attrs);
+	rc = ads_search_retry(ads, &msg, exp, attrs);
 	free(exp);
 	free(sidstr);
 	if (rc) {
@@ -382,7 +440,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 	sidstr = ads_sid_binstring(&sid);
 	asprintf(&exp, "(objectSid=%s)", sidstr);
-	rc = ads_search(ads, &msg, exp, attrs);
+	rc = ads_search_retry(ads, &msg, exp, attrs);
 	free(exp);
 	free(sidstr);
 	if (rc) {
@@ -452,7 +510,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 	sidstr = ads_sid_binstring(&sid);
 	asprintf(&exp, "(objectSid=%s)", sidstr);
-	rc = ads_search(ads, &msg, exp, attrs);
+	rc = ads_search_retry(ads, &msg, exp, attrs);
 	free(exp);
 	free(sidstr);
 	if (rc) {
@@ -464,7 +522,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 	if (msg) ads_msgfree(ads, msg);
 
-	rc = ads_search_dn(ads, &msg, user_dn, attrs2);
+	rc = ads_search_retry_dn(ads, &msg, user_dn, attrs2);
 	if (rc) {
 		DEBUG(1,("lookup_usergroups(rid=%d) ads_search tokenGroups: %s\n", user_rid, ads_errstr(rc)));
 		goto done;
@@ -519,7 +577,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	/* search for all users who have that group sid as primary group or as member */
 	asprintf(&exp, "(&(objectclass=user)(|(primaryGroupID=%d)(memberOf=%s)))",
 		 group_rid, sidstr);
-	rc = ads_search(ads, &res, exp, attrs);
+	rc = ads_search_retry(ads, &res, exp, attrs);
 	free(exp);
 	free(sidstr);
 	if (rc) {

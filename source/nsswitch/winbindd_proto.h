@@ -9,6 +9,15 @@ int main(int argc, char **argv);
 
 /* The following definitions come from nsswitch/winbindd_ads.c  */
 
+int ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope, 
+			const char *exp,
+			const char **attrs, void **res);
+int ads_search_retry(ADS_STRUCT *ads, void **res, 
+		     const char *exp, 
+		     const char **attrs);
+int ads_search_retry_dn(ADS_STRUCT *ads, void **res, 
+			const char *dn, 
+			const char **attrs);
 
 /* The following definitions come from nsswitch/winbindd_cache.c  */
 

@@ -1,0 +1,186 @@
+/* 
+   Unix SMB/Netbios implementation.
+   Version 3.0
+   ads sasl code
+   Copyright (C) Andrew Tridgell 2001
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+#include "includes.h"
+
+#ifdef HAVE_ADS
+
+#if USE_CYRUS_SASL
+/*
+  this is a minimal interact function, just enough for SASL to talk
+  GSSAPI/kerberos to W2K
+  Error handling is a bit of a problem. I can't see how to get Cyrus-sasl
+  to give sensible errors
+*/
+static int sasl_interact(LDAP *ld,unsigned flags,void *defaults,void *in)
+{
+	sasl_interact_t *interact = in;
+
+	while (interact->id != SASL_CB_LIST_END) {
+		interact->result = strdup("");
+		interact->len = strlen(interact->result);
+		interact++;
+	}
+	
+	return LDAP_SUCCESS;
+}
+#endif
+
+
+#define MAX_GSS_PASSES 3
+
+/* this performs a SASL/gssapi bind
+   we avoid using cyrus-sasl to make Samba more robust. cyrus-sasl
+   is very dependent on correctly configured DNS whereas
+   this routine is much less fragile
+   see RFC2078 for details
+*/
+int ads_sasl_gssapi_bind(ADS_STRUCT *ads)
+{
+	int rc, minor_status;
+	gss_name_t serv_name;
+	gss_buffer_desc input_name;
+	gss_ctx_id_t context_handle;
+	gss_OID mech_type = GSS_C_NULL_OID;
+	gss_buffer_desc output_token, input_token;
+	OM_uint32 ret_flags, conf_state;
+	struct berval cred;
+	struct berval *scred;
+	int i=0;
+	int gss_rc;
+	uint8 *p;
+	uint32 max_msg_size;
+	char *sname;
+
+	asprintf(&sname, "ldap@%s.%s", ads->ldap_server_name, ads->realm);
+
+	input_name.value = sname;
+	input_name.length = strlen(input_name.value);
+
+	rc = gss_import_name(&minor_status,&input_name,gss_nt_service_name, &serv_name);
+
+	free(sname);
+
+	context_handle = GSS_C_NO_CONTEXT;
+
+	input_token.value = NULL;
+	input_token.length = 0;
+
+	for (i=0; i < MAX_GSS_PASSES; i++) {
+		gss_rc = gss_init_sec_context(&minor_status,
+					  GSS_C_NO_CREDENTIAL,
+					  &context_handle,
+					  serv_name,
+					  mech_type,
+					  GSS_C_MUTUAL_FLAG | GSS_C_REPLAY_FLAG,
+					  0,
+					  NULL,
+					  &input_token,
+					  NULL,
+					  &output_token,
+					  &ret_flags,
+					  NULL);
+
+		if (input_token.value) {
+			gss_release_buffer(&minor_status, &input_token);
+		}
+
+		if (gss_rc && gss_rc != GSS_S_CONTINUE_NEEDED) goto failed;
+
+		cred.bv_val = output_token.value;
+		cred.bv_len = output_token.length;
+
+		rc = ldap_sasl_bind_s(ads->ld, NULL, "GSSAPI", &cred, NULL, NULL, 
+				      &scred);
+
+		if (output_token.value) {
+			gss_release_buffer(&minor_status, &output_token);
+		}
+
+		if (scred) {
+			input_token.value = scred->bv_val;
+			input_token.length = scred->bv_len;
+		} else {
+			input_token.value = NULL;
+			input_token.length = 0;
+		}
+
+		if (gss_rc != GSS_S_CONTINUE_NEEDED) break;
+	}
+
+	gss_release_name(&minor_status, &serv_name);
+
+	gss_rc = gss_unwrap(&minor_status,context_handle,&input_token,&output_token,
+			    &conf_state,NULL);
+
+	gss_release_buffer(&minor_status, &input_token);
+
+	p = (uint8 *)output_token.value;
+
+	max_msg_size = (p[1]<<16) | (p[2]<<8) | p[3];
+
+	gss_release_buffer(&minor_status, &output_token);
+
+	output_token.value = malloc(strlen(ads->bind_path) + 8);
+	p = output_token.value;
+
+	*p++ = 1; /* no sign or seal */
+	/* choose the same size as the server gave us */
+	*p++ = max_msg_size>>16;
+	*p++ = max_msg_size>>8;
+	*p++ = max_msg_size;
+	snprintf(p, strlen(ads->bind_path)+1, "dn:%s", ads->bind_path);
+	p += strlen(ads->bind_path);
+
+	output_token.length = strlen(ads->bind_path) + 8;
+
+	gss_rc = gss_wrap(&minor_status, context_handle,0,GSS_C_QOP_DEFAULT,
+			  &output_token, &conf_state,
+			  &input_token);
+
+	free(output_token.value);
+
+	cred.bv_val = input_token.value;
+	cred.bv_len = input_token.length;
+
+	rc = ldap_sasl_bind_s(ads->ld, NULL, "GSSAPI", &cred, NULL, NULL, 
+			      &scred);
+
+	gss_release_buffer(&minor_status, &input_token);
+	return rc;
+
+failed:
+	return gss_rc;
+}
+
+int ads_sasl_bind(ADS_STRUCT *ads)
+{
+#if USE_CYRUS_SASL
+	return ldap_sasl_interactive_bind_s(ads->ld, NULL, NULL, NULL, NULL, 
+					    LDAP_SASL_QUIET,
+					    sasl_interact, NULL);
+#else
+	return ads_sasl_gssapi_bind(ads);
+#endif
+}
+
+#endif
+
