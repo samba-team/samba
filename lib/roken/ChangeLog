@@ -1,3 +1,9 @@
+1999-09-24  Johan Danielsson  <joda@pdc.kth.se>
+
+	* getarg.{c,h}: add a callback type to do more complicated processing
+
+	* getarg.{c,h}: add floating point support
+
 1999-09-16  Assar Westerlund  <assar@sics.se>
 
 	* strlcat.c (strlcat): call strlcpy
