@@ -64,6 +64,7 @@ static void usage(void)
 	if (getuid() == 0) {
 		printf("  -R ORDER             name resolve order\n");
 		printf("  -j DOMAIN            join domain name\n");
+		printf("  -S                   synchronise with PDC (if we are BDC)\n");
 		printf("  -a                   add user\n");
 		printf("  -d                   disable user\n");
 		printf("  -e                   enable user\n");
@@ -89,13 +90,6 @@ static int join_domain(char *domain, char *remote)
 	BOOL ret;
 	uint16 sec_chan;
 
-	DEBUG(5,("join_domain: domain %s remote %s\n", domain, remote));
-
-	pstrcpy(remote_machine, remote ? remote : "");
-	fstrcpy(trust_passwd, global_myname);
-	strlower(trust_passwd);
-	E_md4hash( (uchar *)trust_passwd, orig_trust_passwd_hash);
-
 	switch (lp_server_role())
 	{
 		case ROLE_DOMAIN_PDC:
@@ -115,6 +109,18 @@ static int join_domain(char *domain, char *remote)
 			sec_chan = SEC_CHAN_WKSTA;
 		}
 	}
+
+	pstrcpy(remote_machine, remote ? remote : lp_passwordserver());
+
+	if (!remote_machine[0])
+	{
+		fprintf(stderr, "You must specify the PDC via 'password server' or -r.");
+		return 1;
+	}
+
+	fstrcpy(trust_passwd, global_myname);
+	strlower(trust_passwd);
+	E_md4hash( (uchar *)trust_passwd, orig_trust_passwd_hash);
 
 	/*
 	 * Create the machine account password file.
@@ -138,36 +144,16 @@ machine %s in domain %s.\n", global_myname, domain);
 		return 1;
 	}
 	
-	/*
-	 * If we are given a remote machine assume this is the PDC.
-	 */
-	
-	if(remote == NULL)
-	{
-		pstrcpy(remote_machine, lp_passwordserver());
-	}
-
-	if(!*remote_machine) {
-		fprintf(stderr, "No password server list given in smb.conf - \
-unable to join domain.\n");
-		trust_password_unlock();
-		return 1;
-	}
-
 	ret = change_trust_account_password(domain, remote_machine, sec_chan);
 	trust_password_unlock();
 	
 	if(!ret) {
 		fprintf(stderr,"Unable to join domain %s.\n",domain);
-	} else {
-		printf("Joined domain %s.\n",domain);
+		return 1;
 	}
-	
-#if 0
-	trust_password_delete( domain, global_myname);
-#endif
 
-	return (int)ret;
+	printf("Joined domain %s.\n",domain);
+	return 0;
 }
 
 
@@ -303,6 +289,7 @@ static int process_root(int argc, char *argv[])
 	uint16 acb_info = 0;
 	uint16 acb_mask = 0;
 	BOOL joining_domain = False;
+	BOOL sam_sync = False;
 	BOOL wks_trust_account = False;
 	BOOL srv_trust_account = False;
 	BOOL dom_trust_account = False;
@@ -318,8 +305,9 @@ static int process_root(int argc, char *argv[])
 	char *new_passwd = NULL;
 	char *old_passwd = NULL;
 	char *remote_machine = NULL;
+	int ret;
 
-	while ((ch = getopt(argc, argv, "abdehimnpxj:r:sR:D:U:")) != EOF)
+	while ((ch = getopt(argc, argv, "abdehimnpxj:Sr:sR:D:U:")) != EOF)
 	{
 		switch(ch)
 		{
@@ -389,6 +377,11 @@ static int process_root(int argc, char *argv[])
 				joining_domain = True;
 				break;
 			}
+			case 'S':
+			{
+				sam_sync = True;
+				break;
+			}
 			case 'U':
 			{
 				user_name = optarg;
@@ -422,11 +415,24 @@ static int process_root(int argc, char *argv[])
 	{
 		usage();
 	}
+
+	if (sam_sync && lp_server_role() != ROLE_DOMAIN_BDC) {
+		fprintf(stderr, "The -S option can only be used on a Backup Domain Controller.\n");
+		return 1;
+	}
 	
 	if (joining_domain)
 	{
 		if (argc != 0) usage();
-		return join_domain(new_domain, remote_machine);
+		ret = join_domain(new_domain, remote_machine);
+
+		if ((ret != 0) || (!sam_sync))
+			return ret;
+	}
+
+	if (sam_sync)
+	{
+		return synchronise_passdb();
 	}
 
 	/*
