@@ -29,7 +29,6 @@ extern "C" {
 /* flags to tdb_store() */
 #define TDB_REPLACE 1
 #define TDB_INSERT 2
-#define TDB_MODIFY 3
 
 /* flags for tdb_open() */
 #define TDB_DEFAULT 0 /* just a readability place holder */
@@ -44,7 +43,8 @@ extern "C" {
 
 /* error codes */
 enum TDB_ERROR {TDB_SUCCESS=0, TDB_ERR_CORRUPT, TDB_ERR_IO, TDB_ERR_LOCK, 
-		TDB_ERR_OOM, TDB_ERR_EXISTS, TDB_ERR_NOEXIST, TDB_ERR_NOLOCK, TDB_ERR_LOCK_TIMEOUT };
+		TDB_ERR_OOM, TDB_ERR_EXISTS, TDB_ERR_NOLOCK, TDB_ERR_LOCK_TIMEOUT,
+		TDB_ERR_NOEXIST};
 
 #ifndef u32
 #define u32 unsigned
@@ -98,7 +98,7 @@ typedef struct tdb_context {
 	int open_flags; /* flags used in the open - needed by reopen */
 } TDB_CONTEXT;
 
-typedef int (*tdb_traverse_func)(TDB_CONTEXT *, TDB_DATA, TDB_DATA, void *);
+typedef int (*tdb_traverse_func)(TDB_CONTEXT *, TDB_DATA, TDB_DATA);
 typedef void (*tdb_log_func)(TDB_CONTEXT *, int , const char *, ...);
 
 TDB_CONTEXT *tdb_open(const char *name, int hash_size, int tdb_flags,
@@ -119,7 +119,7 @@ int tdb_append(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA new_dbuf);
 int tdb_close(TDB_CONTEXT *tdb);
 TDB_DATA tdb_firstkey(TDB_CONTEXT *tdb);
 TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA key);
-int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn, void *state);
+int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn);
 int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_lockkeys(TDB_CONTEXT *tdb, u32 number, TDB_DATA keys[]);
 void tdb_unlockkeys(TDB_CONTEXT *tdb);
