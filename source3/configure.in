@@ -2285,8 +2285,8 @@ AC_ARG_WITH(acl-support,
 			AC_DEFINE(HAVE_AIX_ACLS)
 			;;
 		*osf*)
-			AC_MSG_RESULT(Using Draft 13 Posix ACLs)
-			AC_DEFINE(HAVE_DRAFT13_POSIX_ACLS)
+			AC_MSG_RESULT(Using Tru64 ACLs)
+			AC_DEFINE(HAVE_TRU64_ACLS)
 			LIBS="$LIBS -lpacl"
 			;;
         *)
