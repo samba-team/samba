@@ -1478,31 +1478,47 @@ BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level,
 /****************************************************************************
 store a security desc for a printer
 ****************************************************************************/
-uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
+uint32 nt_printing_setsec(char *printername, struct current_user *user,
+			  SEC_DESC_BUF *secdesc_ctr)
 {
 	SEC_DESC_BUF *new_secdesc_ctr = NULL;
+	SEC_DESC_BUF *old_secdesc_ctr = NULL;
 	prs_struct ps;
 	fstring key;
-	uint32 status;
+	uint32 acc_granted, status;
 
-	/* The old owner and group sids of the security descriptor are not
+	/* Get old security descriptor */
+
+	if (!nt_printing_getsec(printername, &old_secdesc_ctr)) {
+		DEBUG(3, ("could not get old security descriptor for "
+			  "printer %s", printername));
+		return ERROR_INVALID_FUNCTION;
+	}
+
+	/* Check the user has permissions to change the security
+	   descriptor.  By experimentation with two NT machines, the user
+	   requires Full Access to the printer to change security
+	   information. */ 
+
+	if (!se_access_check(old_secdesc_ctr->sec, user->uid, user->gid,
+			     user->ngroups, user->groups, 
+			     PRINTER_ACE_FULL_CONTROL, &acc_granted,
+			     &status)) {
+		DEBUG(3, ("security descriptor change denied by existing "
+			  "security descriptor\n"));
+		free_sec_desc_buf(&old_secdesc_ctr);
+		return status;
+	}
+
+        /* The old owner and group sids of the security descriptor are not
 	   present when new ACEs are added or removed by changing printer
 	   permissions through NT.  If they are NULL in the new security
 	   descriptor then copy them over from the old one. */
 
 	if (!secdesc_ctr->sec->owner_sid || !secdesc_ctr->sec->grp_sid) {
-		SEC_DESC_BUF *old_secdesc_ctr = NULL;
 		DOM_SID *owner_sid, *group_sid;
 		SEC_DESC *psd = NULL;
 		size_t size;
-
-		/* Get old security descriptor */
-
-		if (!nt_printing_getsec(printername, &old_secdesc_ctr)) {
-			DEBUG(0, ("could not get old security descriptor for "
-				  "printer %s", printername));
-			return ERROR_INVALID_FUNCTION;
-		}
 
 		/* Pick out correct owner and group sids */
 
@@ -1528,7 +1544,6 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 		/* Free up memory */
 
 		free_sec_desc(&psd);
-		free_sec_desc_buf(&old_secdesc_ctr);
 	}
 
 	if (!new_secdesc_ctr) {
@@ -1555,13 +1570,42 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 		status = ERROR_INVALID_FUNCTION;
 	}
 
+	/* Free mallocated memory */
+
  out:
+	free_sec_desc_buf(&old_secdesc_ctr);
+
 	if (new_secdesc_ctr != secdesc_ctr) {
 		free_sec_desc_buf(&new_secdesc_ctr);
 	}
 
 	prs_mem_free(&ps);
 	return status;
+}
+
+/* Call winbindd to convert a name to a sid */
+
+BOOL winbind_lookup_name(char *name, DOM_SID *sid, uint8 *name_type)
+{
+	struct winbindd_request request;
+        struct winbindd_response response;
+	enum nss_status result;
+	
+	if (!sid || !name_type) return False;
+
+        /* Send off request */
+
+        ZERO_STRUCT(request);
+        ZERO_STRUCT(response);
+
+        fstrcpy(request.data.name, name);
+        if ((result = winbindd_request(WINBINDD_LOOKUPNAME, &request, 
+				       &response)) == NSS_STATUS_SUCCESS) {
+		string_to_sid(sid, response.data.sid.sid);
+		*name_type = response.data.sid.type;
+	}
+
+        return result == NSS_STATUS_SUCCESS;
 }
 
 /****************************************************************************
@@ -1571,22 +1615,43 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 static SEC_DESC_BUF *construct_default_printer_sdb(void)
 {
 	extern DOM_SID global_sid_World; 
-	SEC_ACE ace[2];
+	SEC_ACE ace;
 	SEC_ACCESS sa;
 	SEC_ACL *psa = NULL;
 	SEC_DESC_BUF *sdb = NULL;
 	SEC_DESC *psd = NULL;
+	DOM_SID owner_sid;
 	size_t sd_size;
+	uint8 name_type;
 
-	init_sec_access(&sa,PRINTER_ACE_FULL_CONTROL);
-	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
-					sa, SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY);
-	init_sec_ace(&ace[1], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
-					sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
+	/* Create an ACE where Everyone is allowed to print */
 
-	if ((psa = make_sec_acl( ACL_REVISION, 2, ace)) != NULL) {
-		psd = make_sec_desc(SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE|SEC_DESC_DACL_PRESENT,
-									&global_sid_World, &global_sid_World, NULL, psa, &sd_size);
+	init_sec_access(&sa, PRINTER_ACE_PRINT);
+	init_sec_ace(&ace, &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
+		     sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
+
+	/* Make the security descriptor owned by the Administrators group
+	   on the PDC of the domain. */
+
+	if (!winbind_lookup_name("Administrator", &owner_sid, &name_type)) {
+		return NULL;  /* Doh */
+	}
+
+	
+
+	/* The ACL revision number in rpc_secdesc.h differs from the one
+	   created by NT when setting ACE entries in printer
+	   descriptors.  NT4 complains about the property being edited by a
+	   NT5 machine. */
+
+#define NT4_ACL_REVISION 0x2
+
+	if ((psa = make_sec_acl(NT4_ACL_REVISION, 1, &ace)) != NULL) {
+		psd = make_sec_desc(SEC_DESC_REVISION, 
+				    SEC_DESC_SELF_RELATIVE | 
+				    SEC_DESC_DACL_PRESENT,
+				    &owner_sid, NULL,
+				    NULL, psa, &sd_size);
 		free_sec_acl(&psa);
 	}
 
@@ -1597,7 +1662,8 @@ static SEC_DESC_BUF *construct_default_printer_sdb(void)
 
 	sdb = make_sec_desc_buf(sd_size, psd);
 
-	DEBUG(4,("construct_default_printer_sdb: size = %u.\n", (unsigned int)sd_size));
+	DEBUG(4,("construct_default_printer_sdb: size = %u.\n", 
+		 (unsigned int)sd_size));
 
 	free_sec_desc(&psd);
 	return sdb;
@@ -1667,7 +1733,7 @@ jfm: I should use this comment for the text file to explain
 
 /* Check a user has permissions to perform the given operation */
 
-BOOL print_access_check(struct current_user *user, int snum, 
+BOOL print_access_check(struct current_user *user, int snum,
 			uint32 required_access)
 {
 	SEC_DESC_BUF *secdesc = NULL;
@@ -1676,14 +1742,6 @@ BOOL print_access_check(struct current_user *user, int snum,
 	char *pname;
 	int i;
 	
-	/* If the user is NULL then we are being called by the lanman
-	   printing system.  Let the lower level printing permissions
-	   handle this. */
-
-	if (user == NULL) {
-		return True;
-	}
-
 	/* Get printer name */
 
 	pname = PRINTERNAME(snum);

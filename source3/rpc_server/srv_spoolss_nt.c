@@ -3001,8 +3001,10 @@ static uint32 control_printer(const POLICY_HND *handle, uint32 command,
  ********************************************************************/
 static uint32 update_printer_sec(const POLICY_HND *handle, uint32 level,
 				 const SPOOL_PRINTER_INFO_LEVEL *info,
-				 SEC_DESC_BUF *secdesc_ctr)
+				 pipes_struct *p, SEC_DESC_BUF *secdesc_ctr)
 {
+	struct current_user user;
+
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 
 	if (!OPEN_HANDLE(Printer)) {
@@ -3010,7 +3012,15 @@ static uint32 update_printer_sec(const POLICY_HND *handle, uint32 level,
 		return ERROR_INVALID_HANDLE;
 	}
 
-	return nt_printing_setsec(Printer->dev.printername, secdesc_ctr);
+	if (p->ntlmssp_auth_validated) {
+		memcpy(&user, &p->pipe_user, sizeof(user));
+	} else {
+		extern struct current_user current_user;
+		memcpy(&user, &current_user, sizeof(user));
+	}
+
+	return nt_printing_setsec(Printer->dev.printername, &user, 
+				  secdesc_ctr);
 }
 
 /********************************************************************
@@ -3025,25 +3035,53 @@ static uint32 update_printer(const POLICY_HND *handle, uint32 level,
 	int snum;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
-	
+	SEC_DESC_BUF *sd = NULL;
+	uint32 result, acc_granted;
+	extern struct current_user current_user;
+
 	DEBUG(8,("update_printer\n"));
 	
+	result = NT_STATUS_NO_PROBLEMO;
+
+	/* Check calling user has permission to update printer description */ 
+	
+	if (!nt_printing_getsec(Printer->dev.printername, &sd)) {
+		DEBUG(3, ("Could not get security descriptor for printer %s",
+			  Printer->dev.printername));
+		result = ERROR_INVALID_FUNCTION;
+		goto done;
+	}
+
+	if (!se_access_check(sd->sec, current_user.uid, current_user.gid,
+			     current_user.ngroups, current_user.groups,
+			     PRINTER_ACE_FULL_CONTROL, &acc_granted,
+			     &result)) {
+		DEBUG(3, ("printer property change denied by security "
+			  "descriptor\n"));
+		goto done;
+	}
+
 	if (level!=2) {
 		DEBUG(0,("Send a mail to samba@samba.org\n"));
 		DEBUGADD(0,("with the following message: update_printer: level!=2\n"));
-		return ERROR_INVALID_LEVEL;
+		result = ERROR_INVALID_LEVEL;
+		goto done;
 	}
 
 	if (!OPEN_HANDLE(Printer)) {
-		DEBUG(0,("update_printer: Invalid handle (%s)\n", OUR_HANDLE(handle)));
-		return ERROR_INVALID_HANDLE;
+		result = ERROR_INVALID_HANDLE;
+		goto done;
 	}
 
-	if (!get_printer_snum(handle, &snum) )
-		return ERROR_INVALID_HANDLE;
+	if (!get_printer_snum(handle, &snum)) {
+		result = ERROR_INVALID_HANDLE;
+		goto done;
+	}
 	
-	if(get_a_printer(&printer, 2, lp_servicename(snum)) != 0)
-		return ERROR_INVALID_HANDLE;
+	if(get_a_printer(&printer, 2, lp_servicename(snum)) != 0) {
+		result = ERROR_INVALID_HANDLE;
+		goto done;
+	}
 
 	DEBUGADD(8,("Converting info_2 struct\n"));
 
@@ -3078,13 +3116,15 @@ static uint32 update_printer(const POLICY_HND *handle, uint32 level,
 			
 	if (add_a_printer(*printer, 2)!=0) {
 		/* I don't really know what to return here !!! */
-		free_a_printer(&printer, 2);
-		return ERROR_ACCESS_DENIED;
+		result = ERROR_ACCESS_DENIED;
+		goto done;
 	}
 
+ done:
 	free_a_printer(&printer, 2);
+	free_sec_desc_buf(&sd);
 
-	return NT_STATUS_NO_PROBLEMO;
+	return result;
 }
 
 /****************************************************************************
@@ -3111,7 +3151,8 @@ uint32 _spoolss_setprinter(const POLICY_HND *handle, uint32 level,
 			return update_printer(handle, level, info, devmode_ctr.devmode);
 			break;
 		case 3:
-			return update_printer_sec(handle, level, info, secdesc_ctr);
+			return update_printer_sec(handle, level, info, p,
+						  secdesc_ctr);
 			break;
 		default:
 			return ERROR_INVALID_LEVEL;

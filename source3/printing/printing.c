@@ -477,6 +477,21 @@ static BOOL print_job_delete1(int jobid)
 	return True;
 }
 
+/* Return true if the uid owns the print job */
+
+static BOOL is_owner(uid_t uid, int jobid)
+{
+	struct printjob *pjob = print_job_find(jobid);
+	struct passwd *pw;
+
+	if (!pjob || !(pw = sys_getpwuid(uid))) return False;
+
+	DEBUG(0, ("checking owner of jobid %d: %s == %s\n",
+		  jobid, pw->pw_name, pjob->user));
+
+	return (pw && pjob && strequal(pw->pw_name, pjob->user));
+}
+
 /****************************************************************************
 delete a print job
 ****************************************************************************/
@@ -484,7 +499,11 @@ BOOL print_job_delete(struct current_user *user, int jobid)
 {
 	int snum = print_job_snum(jobid);
 
-	if (!print_access_check(user, snum, PRINTER_ACE_MANAGE_DOCUMENTS)) {
+	/* Check access against security descriptor or whether the user
+	   owns their job. */
+
+	if (!is_owner(user->uid, jobid) &&
+	    !print_access_check(user, snum, PRINTER_ACE_MANAGE_DOCUMENTS)) {
 		DEBUG(3, ("delete denied by security descriptor\n"));
 		return False;
 	}
@@ -513,7 +532,8 @@ BOOL print_job_pause(struct current_user *user, int jobid)
 
 	snum = print_job_snum(jobid);
 
-	if (!print_access_check(user, snum, PRINTER_ACE_MANAGE_DOCUMENTS)) {
+	if (!is_owner(user->uid, jobid) &&
+	    !print_access_check(user, snum, PRINTER_ACE_MANAGE_DOCUMENTS)) {
 		DEBUG(3, ("pause denied by security descriptor\n"));
 		return False;
 	}
@@ -546,7 +566,8 @@ BOOL print_job_resume(struct current_user *user, int jobid)
 
 	snum = print_job_snum(jobid);
 
-	if (!print_access_check(user, snum, PRINTER_ACE_MANAGE_DOCUMENTS)) {
+	if (!is_owner(user->uid, jobid) &&
+	    !print_access_check(user, snum, PRINTER_ACE_MANAGE_DOCUMENTS)) {
 		DEBUG(3, ("resume denied by security descriptor\n"));
 		return False;
 	}
