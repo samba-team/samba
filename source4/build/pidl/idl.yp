@@ -21,7 +21,7 @@ idl:
 	}
 ;
 
-interface: property_list 'interface' identifier base_interface '{' definitions '}'
+interface: property_list 'interface' identifier base_interface '{' definitions '}' optional_semicolon
           {$_[3] => {
                "TYPE" => "INTERFACE", 
 			   "PROPERTIES" => $_[1],
@@ -223,6 +223,11 @@ constant: CONSTANT
 ;
 
 text: TEXT { "\"$_[1]\"" }
+;
+
+optional_semicolon: 
+	#empty
+	| ';'
 ;
 
 
