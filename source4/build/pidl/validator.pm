@@ -88,10 +88,6 @@ sub ValidStruct($)
 	my($struct) = shift;
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-		if (util::has_property($e, "ref")) {
-			fatal(el_name($e) . " : embedded ref pointers are not supported yet\n");
-		}
-	
 		$e->{PARENT} = $struct;
 		ValidElement($e);
 	}

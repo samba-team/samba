@@ -183,7 +183,7 @@ sub need_alloc($)
 {
 	my $e = shift;
 
-	return 0 if (util::has_property($e, "ref"));
+	return 0 if (util::has_property($e, "ref") && $e->{PARENT}->{TYPE} eq "FUNCTION");
 	return 1 if ($e->{POINTERS} || util::array_size($e));
 	return 0;
 }
@@ -707,7 +707,9 @@ sub ParsePtrPush($$)
 	my $e = shift;
 	my $var_prefix = shift;
 
-	if (util::has_property($e, "relative")) {
+	if (util::has_property($e, "ref")) {
+		pidl "NDR_CHECK(ndr_push_ref_ptr(ndr, $var_prefix$e->{NAME}));";
+	} elsif (util::has_property($e, "relative")) {
 		pidl "NDR_CHECK(ndr_push_relative_ptr1(ndr, $var_prefix$e->{NAME}));";
 	} else {
 		pidl "NDR_CHECK(ndr_push_unique_ptr(ndr, $var_prefix$e->{NAME}));";
@@ -855,7 +857,11 @@ sub ParsePtrPull($$)
 	my($e) = shift;
 	my($var_prefix) = shift;
 
-	pidl "NDR_CHECK(ndr_pull_unique_ptr(ndr, &_ptr_$e->{NAME}));";
+	if (util::has_property($e, "ref")) {
+		pidl "NDR_CHECK(ndr_pull_ref_ptr(ndr, &_ptr_$e->{NAME}));";
+	} else {
+		pidl "NDR_CHECK(ndr_pull_unique_ptr(ndr, &_ptr_$e->{NAME}));";
+	}
 	pidl "if (_ptr_$e->{NAME}) {";
 	indent;
 	pidl "NDR_ALLOC(ndr, $var_prefix$e->{NAME});";
@@ -1777,7 +1783,7 @@ sub ParseFunctionElementPush($$)
 
 	if (util::array_size($e)) {
 		if (need_wire_pointer($e)) {
-			pidl "NDR_CHECK(ndr_push_unique_ptr(ndr, r->$inout.$e->{NAME}));";
+			ParsePtrPush($e, "r->$inout.");
 			pidl "if (r->$inout.$e->{NAME}) {";
 			indent;
 			ParseArrayPush($e, "ndr", "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
