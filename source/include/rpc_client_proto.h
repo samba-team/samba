@@ -196,7 +196,7 @@ BOOL cli_send_and_rcv_pdu(struct cli_connection *con,
 			  prs_struct * data, prs_struct * rdata,
 			  int max_send_pdu);
 BOOL cli_rcv_pdu(struct cli_connection *con,
-		 struct cli_state *cli, uint16 fnum, prs_struct * rdata);
+		 struct cli_state *cli, uint16 fnum, prs_struct *rdata);
 BOOL rpc_pipe_bind(struct cli_connection *con,
 		   const char *pipe_name,
 		   RPC_IFACE * abstract, RPC_IFACE * transfer);

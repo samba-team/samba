@@ -90,7 +90,7 @@ BOOL msrpc_send(int fd, prs_struct * ps)
 	size_t len = ps != NULL ? prs_buf_len(ps) : 0;
 	size_t nwritten = 0;
 	ssize_t ret;
-	char *outbuf = ps->data;
+	char *outbuf = (ps != NULL ? ps->data : NULL);
 
 	DEBUG(10, ("ncalrpc_l_send_prs: data: %p len %d\n", outbuf, len));
 	dbgflush();

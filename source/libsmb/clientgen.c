@@ -1579,6 +1579,12 @@ size_t cli_read_one(struct cli_state *cli, int fnum, char *buf, off_t offset, si
 
 	if (size == 0) return 0;
 
+	if (buf == NULL)
+	{
+		DEBUG(1, ("cli_read_one: NULL buf\n"));
+		return 0;
+	}
+
 	cli_issue_read(cli, fnum, offset, size, 0);
 
 	if (!cli_receive_smb(cli))

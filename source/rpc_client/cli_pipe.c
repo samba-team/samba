@@ -5,6 +5,7 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
+ *  Copyright (C) Elrond                            2000
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -744,18 +745,21 @@ BOOL cli_send_and_rcv_pdu(struct cli_connection *con,
 }
 
 BOOL cli_rcv_pdu(struct cli_connection *con,
-		 struct cli_state *cli, uint16 fnum, prs_struct * rdata)
+		 struct cli_state *cli, uint16 fnum, prs_struct *rdata)
 {
 	RPC_HDR_RESP rhdr_resp;
 	RPC_HDR rhdr;
+	char readbuf[0x19];
 	int num_read;
 	BOOL first = True;
 	BOOL last = True;
 	int len;
 	cli_auth_fns *auth = cli_conn_get_authfns(con);
 
-	num_read = cli_read_one(cli, fnum, rdata->data, 0, 0x18);
+	/* with a little help by Scummer */
+	num_read = cli_read_one(cli, fnum, readbuf, 0, 0x18);
 	DEBUG(5, ("cli_pipe: read header (size:%d)\n", num_read));
+	prs_append_data(rdata, readbuf, num_read);
 
 	if (num_read != 0x18)
 		return False;
