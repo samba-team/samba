@@ -31,13 +31,12 @@
    ipc$ connection. It needs to keep information about all open
    pipes */
 struct ipc_private {
-
-	uint16_t next_fnum;
-	uint16_t num_open;
+	void *idtree_fnum;
 
 	/* a list of open pipes */
 	struct pipe_state {
 		struct pipe_state *next, *prev;
+		struct ipc_private *private;
 		const char *pipe_name;
 		uint16_t fnum;
 		struct dcesrv_connection *dce_conn;
@@ -55,55 +54,11 @@ struct ipc_private {
 
 
 /*
-  find the next fnum available on this connection
-*/
-static uint16_t find_next_fnum(struct ipc_private *ipc)
-{
-	struct pipe_state *p;
-	uint32_t ret;
-
-	if (ipc->num_open == 0xFFFF) {
-		return 0;
-	}
-
-again:
-	ret = ipc->next_fnum++;
-
-	for (p=ipc->pipe_list; p; p=p->next) {
-		if (p->fnum == ret) {
-			goto again;
-		}
-	}
-
-	return ret;
-}
-
-
-/*
-  shutdown a single pipe. Called on a close or disconnect
-*/
-static void pipe_shutdown(struct ipc_private *private, struct pipe_state *p)
-{
-	talloc_free(p->dce_conn);
-	DLIST_REMOVE(private->pipe_list, p);
-	talloc_destroy(p);
-}
-
-
-/*
   find a open pipe give a file descriptor
 */
 static struct pipe_state *pipe_state_find(struct ipc_private *private, uint16_t fnum)
 {
-	struct pipe_state *p;
-	
-	for (p=private->pipe_list; p; p=p->next) {
-		if (p->fnum == fnum) {
-			return p;
-		}
-	}
-
-	return NULL;
+	return idr_find(private->idtree_fnum, fnum);
 }
 
 
@@ -127,8 +82,11 @@ static NTSTATUS ipc_connect(struct ntvfs_module_context *ntvfs,
 	ntvfs->private_data = private;
 
 	private->pipe_list = NULL;
-	private->next_fnum = 1;
-	private->num_open = 0;
+
+	private->idtree_fnum = idr_init(private);
+	if (private->idtree_fnum == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	return NT_STATUS_OK;
 }
@@ -143,7 +101,7 @@ static NTSTATUS ipc_disconnect(struct ntvfs_module_context *ntvfs,
 
 	/* close any pipes that are open. Discard any unread data */
 	while (private->pipe_list) {
-		pipe_shutdown(private, private->pipe_list);
+		talloc_free(private->pipe_list);
 	}
 
 	return NT_STATUS_OK;
@@ -196,6 +154,18 @@ static NTSTATUS ipc_setpathinfo(struct ntvfs_module_context *ntvfs,
 }
 
 
+/*
+  destroy a open pipe structure
+*/
+static int ipc_fd_destructor(void *ptr)
+{
+	struct pipe_state *p = ptr;
+	idr_remove(p->private->idtree_fnum, p->fnum);
+	DLIST_REMOVE(p->private->pipe_list, p);
+	talloc_free(p->dce_conn);
+	return 0;
+}
+
 
 /*
   open a file backend - used for MSRPC pipes
@@ -209,8 +179,9 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 	struct dcesrv_ep_description ep_description;
 	struct auth_session_info *session_info = NULL;
 	struct ipc_private *private = ntvfs->private_data;
+	int fnum;
 
-	p = talloc_p(private, struct pipe_state);
+	p = talloc_p(req, struct pipe_state);
 	if (!p) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -219,16 +190,15 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 
 	p->pipe_name = talloc_asprintf(p, "\\pipe\\%s", fname);
 	if (!p->pipe_name) {
-		talloc_free(p);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	p->fnum = find_next_fnum(private);
-	if (p->fnum == 0) {
-		talloc_free(p);
+	fnum = idr_get_new(private->idtree_fnum, p, UINT16_MAX);
+	if (fnum == -1) {
 		return NT_STATUS_TOO_MANY_OPENED_FILES;
 	}
 
+	p->fnum = fnum;
 	p->ipc_state = 0x5ff;
 
 	/*
@@ -241,8 +211,6 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 	  will need to do that once the credentials infrastructure is
 	  finalised for Samba4
 	*/
-
-	printf("FINDING: %s\n", p->pipe_name);
 	ep_description.type = ENDPOINT_SMB;
 	ep_description.info.smb_pipe = p->pipe_name;
 
@@ -250,7 +218,6 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 	if (req->session) {
 		/* The session info is refcount-increased in the 
 		   dcesrv_endpoint_search_connect() function */
-
 		session_info = req->session->session_info;
 	}
 
@@ -259,18 +226,21 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 						session_info,
 						&p->dce_conn);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(p);
+		idr_remove(private->idtree_fnum, p->fnum);
 		return status;
 	}
-
-	private->num_open++;
 
 	DLIST_ADD(private->pipe_list, p);
 
 	p->smbpid = req->smbpid;
 	p->session = req->session;
+	p->private = private;
 
 	*ps = p;
+
+	talloc_steal(private, p);
+
+	talloc_set_destructor(p, ipc_fd_destructor);
 
 	return NT_STATUS_OK;
 }
@@ -390,20 +360,13 @@ static NTSTATUS ipc_read(struct ntvfs_module_context *ntvfs,
 	struct pipe_state *p;
 	NTSTATUS status;
 
-	switch (rd->generic.level) {
-	case RAW_READ_READ:
-		fnum = rd->read.in.fnum;
-		data.length = rd->read.in.count;
-		data.data = rd->read.out.data;
-		break;
-	case RAW_READ_READX:
-		fnum = rd->readx.in.fnum;
-		data.length = rd->readx.in.maxcnt;
-		data.data = rd->readx.out.data;
-		break;
-	default:
-		return NT_STATUS_NOT_SUPPORTED;
+	if (rd->generic.level != RAW_READ_GENERIC) {
+		return ntvfs_map_read(req, rd, ntvfs);
 	}
+
+	fnum = rd->readx.in.fnum;
+	data.length = rd->readx.in.maxcnt;
+	data.data = rd->readx.out.data;
 
 	p = pipe_state_find(private, fnum);
 	if (!p) {
@@ -415,18 +378,9 @@ static NTSTATUS ipc_read(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
-	switch (rd->generic.level) {
-	case RAW_READ_READ:
-		rd->read.out.nread = data.length;
-		break;
-	case RAW_READ_READX:
-		rd->readx.out.remaining = 0;
-		rd->readx.out.compaction_mode = 0;
-		rd->readx.out.nread = data.length;
-		break;
-	default:
-		return NT_STATUS_NOT_SUPPORTED;
-	}
+	rd->readx.out.remaining = 0;
+	rd->readx.out.compaction_mode = 0;
+	rd->readx.out.nread = data.length;
 
 	return status;
 }
@@ -443,22 +397,13 @@ static NTSTATUS ipc_write(struct ntvfs_module_context *ntvfs,
 	struct pipe_state *p;
 	NTSTATUS status;
 
-	switch (wr->generic.level) {
-	case RAW_WRITE_WRITE:
-		fnum = wr->write.in.fnum;
-		data.data = discard_const_p(void, wr->write.in.data);
-		data.length = wr->write.in.count;
-		break;
-
-	case RAW_WRITE_WRITEX:
-		fnum = wr->writex.in.fnum;
-		data.data = discard_const_p(void, wr->writex.in.data);
-		data.length = wr->writex.in.count;
-		break;
-
-	default:
-		return NT_STATUS_NOT_SUPPORTED;
+	if (wr->generic.level != RAW_WRITE_GENERIC) {
+		return ntvfs_map_write(req, wr, ntvfs);
 	}
+
+	fnum = wr->writex.in.fnum;
+	data.data = discard_const_p(void, wr->writex.in.data);
+	data.length = wr->writex.in.count;
 
 	p = pipe_state_find(private, fnum);
 	if (!p) {
@@ -470,17 +415,8 @@ static NTSTATUS ipc_write(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
-	switch (wr->generic.level) {
-	case RAW_WRITE_WRITE:
-		wr->write.out.nwritten = data.length;
-		break;
-	case RAW_WRITE_WRITEX:
-		wr->writex.out.nwritten = data.length;
-		wr->writex.out.remaining = 0;
-		break;
-	default:
-		return NT_STATUS_NOT_SUPPORTED;
-	}
+	wr->writex.out.nwritten = data.length;
+	wr->writex.out.remaining = 0;
 
 	return NT_STATUS_OK;
 }
@@ -513,7 +449,7 @@ static NTSTATUS ipc_close(struct ntvfs_module_context *ntvfs,
 	struct pipe_state *p;
 
 	if (io->generic.level != RAW_CLOSE_CLOSE) {
-		return NT_STATUS_ACCESS_DENIED;
+		return ntvfs_map_close(req, io, ntvfs);
 	}
 
 	p = pipe_state_find(private, io->close.in.fnum);
@@ -521,8 +457,7 @@ static NTSTATUS ipc_close(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	pipe_shutdown(private, p);
-	private->num_open--;
+	talloc_free(p);
 
 	return NT_STATUS_OK;
 }
@@ -539,7 +474,7 @@ static NTSTATUS ipc_exit(struct ntvfs_module_context *ntvfs,
 	for (p=private->pipe_list; p; p=next) {
 		next = p->next;
 		if (p->smbpid == req->smbpid) {
-			pipe_shutdown(private, p);
+			talloc_free(p);
 		}
 	}
 
@@ -558,7 +493,7 @@ static NTSTATUS ipc_logoff(struct ntvfs_module_context *ntvfs,
 	for (p=private->pipe_list; p; p=next) {
 		next = p->next;
 		if (p->session == req->session) {
-			pipe_shutdown(private, p);
+			talloc_free(p);
 		}
 	}
 

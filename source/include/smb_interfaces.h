@@ -1245,7 +1245,9 @@ union smb_open {
 
 
 
-enum smb_read_level {RAW_READ_GENERIC, RAW_READ_READBRAW, RAW_READ_LOCKREAD, RAW_READ_READ, RAW_READ_READX};
+enum smb_read_level {RAW_READ_READBRAW, RAW_READ_LOCKREAD, RAW_READ_READ, RAW_READ_READX};
+
+#define RAW_READ_GENERIC RAW_READ_READX
 
 /* union for read() backend call 
 
@@ -1253,21 +1255,24 @@ enum smb_read_level {RAW_READ_GENERIC, RAW_READ_READBRAW, RAW_READ_LOCKREAD, RAW
    called. It will be big enough to hold the maximum size asked for
 */
 union smb_read {
-	/* generic interface */
+	/* SMBreadX (and generic) interface */
 	struct {
 		enum smb_read_level level;
 
 		struct {
 			uint16_t fnum;
 			uint64_t offset;
-			uint32_t    size;
+			uint16_t mincnt;
+			uint16_t maxcnt;
+			uint16_t remaining;
 		} in;
 		struct {
 			char *data;
-			uint32_t nread;
+			uint16_t remaining;
+			uint16_t compaction_mode;
+			uint16_t nread;
 		} out;
-	} generic;
-
+	} readx, generic;
 
 	/* SMBreadbraw interface */
 	struct {
@@ -1318,50 +1323,34 @@ union smb_read {
 			uint16_t nread;
 		} out;
 	} read;
-
-	/* SMBreadX interface */
-	struct {
-		enum smb_read_level level;
-
-		struct {
-			uint16_t fnum;
-			uint64_t offset;
-			uint16_t mincnt;
-			uint16_t maxcnt;
-			uint16_t remaining;
-		} in;
-		struct {
-			char *data;
-			uint16_t remaining;
-			uint16_t compaction_mode;
-			uint16_t nread;
-		} out;
-	} readx;
 };
 
 
-enum smb_write_level {
-		  RAW_WRITE_GENERIC, RAW_WRITE_WRITEUNLOCK, RAW_WRITE_WRITE, 
-		  RAW_WRITE_WRITEX, RAW_WRITE_WRITECLOSE, RAW_WRITE_SPLWRITE};
+enum smb_write_level {RAW_WRITE_WRITEUNLOCK, RAW_WRITE_WRITE, 
+		      RAW_WRITE_WRITEX, RAW_WRITE_WRITECLOSE, RAW_WRITE_SPLWRITE};
+
+#define RAW_WRITE_GENERIC RAW_WRITE_WRITEX
 
 /* union for write() backend call 
 */
 union smb_write {
-	/* generic interface */
+	/* SMBwriteX interface */
 	struct {
 		enum smb_write_level level;
 
 		struct {
 			uint16_t fnum;
 			uint64_t offset;
-			uint32_t    count;
+			uint16_t wmode;
+			uint16_t remaining;
+			uint32_t count;
 			const char *data;
 		} in;
 		struct {
 			uint32_t nwritten;
+			uint16_t remaining;
 		} out;
-	} generic;
-
+	} writex, generic;
 
 	/* SMBwriteunlock interface */
 	struct {
@@ -1395,24 +1384,6 @@ union smb_write {
 		} out;
 	} write;
 
-	/* SMBwriteX interface */
-	struct {
-		enum smb_write_level level;
-
-		struct {
-			uint16_t fnum;
-			uint64_t offset;
-			uint16_t wmode;
-			uint16_t remaining;
-			uint32_t count;
-			const char *data;
-		} in;
-		struct {
-			uint32_t nwritten;
-			uint16_t remaining;
-		} out;
-	} writex;
-
 	/* SMBwriteclose interface */
 	struct {
 		enum smb_write_level level;
@@ -1442,42 +1413,15 @@ union smb_write {
 };
 
 
-enum smb_lock_level {RAW_LOCK_GENERIC, RAW_LOCK_LOCK, RAW_LOCK_UNLOCK, RAW_LOCK_LOCKX};
+enum smb_lock_level {RAW_LOCK_LOCK, RAW_LOCK_UNLOCK, RAW_LOCK_LOCKX};
+
+/* the generic interface is defined to be equal to the lockingX interface */
+#define RAW_LOCK_GENERIC RAW_LOCK_LOCKX
 
 /* union for lock() backend call 
 */
 union smb_lock {
-	/* generic interface */
-	struct {
-		enum smb_lock_level level;
-		struct {
-			uint16_t fnum;
-		} in;
-	} generic;
-
-	/* SMBlock interface */
-	struct {
-		enum smb_lock_level level;
-
-		struct {
-			uint16_t fnum;
-			uint32_t count;
-			uint32_t offset;
-		} in;
-	} lock;
-
-	/* SMBunlock interface */
-	struct {
-		enum smb_lock_level level;
-
-		struct {
-			uint16_t fnum;
-			uint32_t count;
-			uint32_t offset;
-		} in;
-	} unlock;
-
-	/* SMBlockingX interface */
+	/* SMBlockingX (and generic) interface */
 	struct {
 		enum smb_lock_level level;
 
@@ -1493,26 +1437,30 @@ union smb_lock {
 				uint64_t count;
 			} *locks; /* unlocks are first in the arrray */
 		} in;
-	} lockx;
+	} lockx, generic;
+
+	/* SMBlock and SMBunlock interface */
+	struct {
+		enum smb_lock_level level;
+
+		struct {
+			uint16_t fnum;
+			uint32_t count;
+			uint32_t offset;
+		} in;
+	} lock, unlock;
 };
 
 
-enum smb_close_level {RAW_CLOSE_GENERIC, RAW_CLOSE_CLOSE, RAW_CLOSE_SPLCLOSE};
+enum smb_close_level {RAW_CLOSE_CLOSE, RAW_CLOSE_SPLCLOSE};
+
+#define RAW_CLOSE_GENERIC RAW_CLOSE_CLOSE
 
 /*
   union for close() backend call
 */
 union smb_close {
-	/* generic interface */
-	struct {
-		enum smb_close_level level;
-
-		struct {
-			uint16_t fnum;
-		} in;
-	} generic;
-
-	/* SMBclose interface */
+	/* SMBclose (and generic) interface */
 	struct {
 		enum smb_close_level level;
 
@@ -1520,7 +1468,7 @@ union smb_close {
 			uint16_t fnum;
 			time_t write_time;
 		} in;
-	} close;
+	} close, generic;
 
 	/* SMBsplclose interface - empty! */
 	struct {

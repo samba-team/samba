@@ -236,6 +236,7 @@ void reply_ioctl(struct smbsrv_request *req)
 	io->ioctl.in.fnum     = req_fnum(req, req->in.vwv, VWV(0));
 	io->ioctl.in.request  = IVAL(req->in.vwv, VWV(1));
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_ioctl_send;
 	req->async.private = io;
 
@@ -257,6 +258,7 @@ void reply_chkpth(struct smbsrv_request *req)
 
 	req_pull_ascii4(req, &io->in.path, req->in.data, STR_TERMINATE);
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_simple_send;
 
 	req->async.status = ntvfs_chkpath(req, io);
@@ -304,6 +306,7 @@ void reply_getatr(struct smbsrv_request *req)
 		return;
 	}
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_getatr_send;
 	req->async.private = st;
 
@@ -336,6 +339,7 @@ void reply_setatr(struct smbsrv_request *req)
 		return;
 	}
 	
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_simple_send;
 
 	/* call backend */
@@ -379,6 +383,7 @@ void reply_dskattr(struct smbsrv_request *req)
 	
 	fs->dskattr.level = RAW_QFS_DSKATTR;
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_dskattr_send;
 	req->async.private = fs;
 
@@ -433,6 +438,7 @@ void reply_open(struct smbsrv_request *req)
 		return;
 	}
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_open_send;
 	req->async.private = oi;
 	
@@ -508,6 +514,7 @@ void reply_open_and_X(struct smbsrv_request *req)
 		return;
 	}
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_open_and_X_send;
 	req->async.private = oi;
 
@@ -558,6 +565,7 @@ void reply_mknew(struct smbsrv_request *req)
 		return;
 	}
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_mknew_send;
 	req->async.private = oi;
 
@@ -611,6 +619,7 @@ void reply_ctemp(struct smbsrv_request *req)
 		return;
 	}
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_ctemp_send;
 	req->async.private = oi;
 
@@ -636,6 +645,7 @@ void reply_unlink(struct smbsrv_request *req)
 
 	req_pull_ascii4(req, &unl->in.pattern, req->in.data, STR_TERMINATE);
 	
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_simple_send;
 
 	/* call backend */
@@ -659,8 +669,8 @@ void reply_readbraw(struct smbsrv_request *req)
 	io.readbraw.level = RAW_READ_READBRAW;
 
 	/* there are two variants, one with 10 and one with 8 command words */
-	if (req->in.wct != 10) {
-		REQ_CHECK_WCT(req, 8);
+	if (req->in.wct < 8) {
+		goto failed;
 	}
 
 	io.readbraw.in.fnum    = req_fnum(req, req->in.vwv, VWV(0));
@@ -696,7 +706,7 @@ void reply_readbraw(struct smbsrv_request *req)
 
 	req->out.size = io.readbraw.out.nread + NBT_HDR_SIZE;
 
-	req_send_reply(req);
+	req_send_reply_nosign(req);
 	return;
 
 failed:
@@ -758,6 +768,7 @@ void reply_lockread(struct smbsrv_request *req)
 	/* tell the backend where to put the data */
 	io->lockread.out.data = req->out.data + 3;
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_lockread_send;
 	req->async.private = io;
 
@@ -816,6 +827,7 @@ void reply_read(struct smbsrv_request *req)
 	/* tell the backend where to put the data */
 	io->read.out.data = req->out.data + 3;
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_read_send;
 	req->async.private = io;
 
@@ -887,6 +899,7 @@ void reply_read_and_X(struct smbsrv_request *req)
 	/* tell the backend where to put the data. Notice the pad byte. */
 	io->readx.out.data = req->out.data + 1;
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_read_and_X_send;
 	req->async.private = io;
 
@@ -953,6 +966,7 @@ void reply_writeunlock(struct smbsrv_request *req)
 		return;
 	}
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_writeunlock_send;
 	req->async.private = io;
 
@@ -1010,6 +1024,7 @@ void reply_write(struct smbsrv_request *req)
 		return;
 	}
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_write_send;
 	req->async.private = io;
 
@@ -1076,6 +1091,7 @@ void reply_write_and_X(struct smbsrv_request *req)
 		return;
 	} 
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_write_and_X_send;
 	req->async.private = io;
 
@@ -1117,6 +1133,7 @@ void reply_lseek(struct smbsrv_request *req)
 	io->in.mode   = SVAL(req->in.vwv,  VWV(1));
 	io->in.offset = IVALS(req->in.vwv, VWV(2));
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_lseek_send;
 	req->async.private = io;
 	
@@ -1139,6 +1156,7 @@ void reply_flush(struct smbsrv_request *req)
 
 	io->in.fnum   = req_fnum(req, req->in.vwv,  VWV(0));
 	
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_simple_send;
 
 	/* call backend */
@@ -1189,6 +1207,7 @@ void reply_close(struct smbsrv_request *req)
 	io->close.in.fnum  = req_fnum(req, req->in.vwv,  VWV(0));
 	io->close.in.write_time = srv_pull_dos_date3(req->smb_conn, req->in.vwv + VWV(1));
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_simple_send;
 
 	/* call backend */
@@ -1243,6 +1262,7 @@ void reply_writeclose(struct smbsrv_request *req)
 		return;
 	}
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_writeclose_send;
 	req->async.private = io;
 
@@ -1268,6 +1288,7 @@ void reply_lock(struct smbsrv_request *req)
 	lck->lock.in.count  = IVAL(req->in.vwv, VWV(1));
 	lck->lock.in.offset = IVAL(req->in.vwv, VWV(3));
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_simple_send;
 
 	/* call backend */
@@ -1293,6 +1314,7 @@ void reply_unlock(struct smbsrv_request *req)
 	lck->unlock.in.count  = IVAL(req->in.vwv, VWV(1));
 	lck->unlock.in.offset = IVAL(req->in.vwv, VWV(3));
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_simple_send;
 
 	/* call backend */
@@ -1381,6 +1403,7 @@ void reply_printopen(struct smbsrv_request *req)
 
 	req_pull_ascii4(req, &oi->splopen.in.ident, req->in.data, STR_TERMINATE);
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_printopen_send;
 	req->async.private = oi;
 
@@ -1404,6 +1427,7 @@ void reply_printclose(struct smbsrv_request *req)
 	io->splclose.level = RAW_CLOSE_SPLCLOSE;
 	io->splclose.in.fnum = req_fnum(req, req->in.vwv,  VWV(0));
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_simple_send;
 
 	/* call backend */
@@ -1472,6 +1496,7 @@ void reply_printqueue(struct smbsrv_request *req)
 	lpq->retq.in.maxcount = SVAL(req->in.vwv,  VWV(0));
 	lpq->retq.in.startidx = SVAL(req->in.vwv,  VWV(1));
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_printqueue_send;
 	req->async.private = lpq;
 
@@ -1510,6 +1535,7 @@ void reply_printwrite(struct smbsrv_request *req)
 		return;
 	}
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_simple_send;
 
 	/* call backend */
@@ -1533,6 +1559,7 @@ void reply_mkdir(struct smbsrv_request *req)
 	io->generic.level = RAW_MKDIR_MKDIR;
 	req_pull_ascii4(req, &io->mkdir.in.path, req->in.data, STR_TERMINATE);
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_simple_send;
 
 	/* call backend */
@@ -1555,6 +1582,7 @@ void reply_rmdir(struct smbsrv_request *req)
 
 	req_pull_ascii4(req, &io->in.path, req->in.data, STR_TERMINATE);
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_simple_send;
 
 	/* call backend */
@@ -1588,6 +1616,7 @@ void reply_mv(struct smbsrv_request *req)
 		return;
 	}
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_simple_send;
 
 	/* call backend */
@@ -1623,6 +1652,7 @@ void reply_ntrename(struct smbsrv_request *req)
 		return;
 	}
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_simple_send;
 
 	/* call backend */
@@ -1673,6 +1703,7 @@ void reply_copy(struct smbsrv_request *req)
 		return;
 	}
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_copy_send;
 	req->async.private = cp;
 
@@ -1773,6 +1804,7 @@ void reply_lockingX(struct smbsrv_request *req)
 		p += lck_size;
 	}
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_lockingX_send;
 	req->async.private = lck;
 
@@ -1809,6 +1841,7 @@ void reply_setattrE(struct smbsrv_request *req)
 	info->setattre.in.access_time = srv_pull_dos_date2(req->smb_conn, req->in.vwv + VWV(3));
 	info->setattre.in.write_time  = srv_pull_dos_date2(req->smb_conn, req->in.vwv + VWV(5));
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_simple_send;
 
 	/* call backend */
@@ -1875,6 +1908,7 @@ void reply_getattrE(struct smbsrv_request *req)
 	info->getattr.level = RAW_FILEINFO_GETATTRE;
 	info->getattr.in.fnum = req_fnum(req, req->in.vwv, VWV(0));
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_getattrE_send;
 	req->async.private = info;
 
@@ -2246,6 +2280,7 @@ void reply_ntcreate_and_X(struct smbsrv_request *req)
 		return;
 	}
 
+	req->control_flags |= REQ_CONTROL_MAY_ASYNC;
 	req->async.send_fn = reply_ntcreate_and_X_send;
 	req->async.private = io;
 
