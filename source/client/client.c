@@ -710,7 +710,7 @@ static int do_get(char *rname, char *lname, BOOL reget)
 	struct timeval tp_start;
 	int read_size = io_bufsize;
 	uint16 attr;
-	size_t size;
+	SMB_OFF_T size;
 	off_t start = 0;
 	off_t nread = 0;
 	int rc = 0;
@@ -1134,7 +1134,7 @@ static int do_put(char *rname, char *lname, BOOL reput)
 {
 	int fnum;
 	XFILE *f;
-	size_t start = 0;
+	SMB_OFF_T start = 0;
 	off_t nread = 0;
 	char *buf = NULL;
 	int maxwrite = io_bufsize;

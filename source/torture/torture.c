@@ -590,7 +590,7 @@ static BOOL run_readwritelarge(int dummy)
 	static struct cli_state *cli1;
 	int fnum1;
 	const char *lockfname = "\\large.dat";
-	size_t fsize;
+	SMB_OFF_T fsize;
 	char buf[126*1024];
 	BOOL correct = True;
  
@@ -2360,7 +2360,7 @@ static BOOL run_trans2test(int dummy)
 {
 	struct cli_state *cli;
 	int fnum;
-	size_t size;
+	SMB_OFF_T size;
 	time_t c_time, a_time, m_time, w_time, m_time2;
 	const char *fname = "\\trans2.tst";
 	const char *dname = "\\trans2";
@@ -3591,7 +3591,7 @@ static BOOL run_opentest(int dummy)
 	const char *fname = "\\readonly.file";
 	int fnum1, fnum2;
 	char buf[20];
-	size_t fsize;
+	SMB_OFF_T fsize;
 	BOOL correct = True;
 	char *tmp_path;
 
