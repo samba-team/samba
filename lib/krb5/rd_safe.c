@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -74,7 +74,7 @@ verify_checksum(krb5_context context,
     else
 	key = auth_context->keyblock;
 
-    ret = krb5_crypto_init(context, auth_context->keyblock, 0, &crypto);
+    ret = krb5_crypto_init(context, key, 0, &crypto);
     if (ret)
 	goto out;
     ret = krb5_verify_checksum (context,
