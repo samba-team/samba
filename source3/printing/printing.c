@@ -436,7 +436,12 @@ A long spool-path will just waste significant chars of the file name.
 
   buf->job = atoi(tok[LPRNG_JOBTOK]);
   buf->size = atoi(tok[LPRNG_TOTALTOK]);
-  buf->status = strequal(tok[LPRNG_RANKTOK],"active")?LPQ_PRINTING:LPQ_QUEUED;
+  if (strequal(tok[LPRNG_RANKTOK],"active"))
+    buf->status = LPQ_PRINTING;
+  else if (strequal(tok[LPRNG_RANKTOK],"hold"))
+    buf->status = LPQ_PAUSED;
+  else
+    buf->status = LPQ_QUEUED;
   /*  buf->time = time(NULL); */
   buf->time = LPRng_time(tok,LPRNG_TIMETOK);
 DEBUG(3,("Time reported for job %d is %s", buf->job, ctime(&buf->time)));
