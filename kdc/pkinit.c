@@ -718,6 +718,7 @@ pk_initialize(const char *cert_file,
 				   ca_dir,
 				   NULL);
     if (ret) {
+	krb5_warn(context, ret, "PKINIT: failed to load");
 	enable_pkinit = 0;
 	return ret;
     }
