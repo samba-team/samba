@@ -282,7 +282,6 @@ typedef struct
 	BOOL bDebugPid;
 	BOOL bDebugUid;
 	BOOL bHostMSDfs;
-	BOOL bHideLocalUsers;
 	BOOL bUnicode;
 	BOOL bUseMmap;
 	BOOL bHostnameLookups;
@@ -1137,7 +1136,6 @@ static struct parm_struct parm_table[] = {
 
 	{"fake directory create times", P_BOOL, P_LOCAL, &sDefault.bFakeDirCreateTimes, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"panic action", P_STRING, P_GLOBAL, &Globals.szPanicAction, NULL, NULL, FLAG_ADVANCED}, 
-	{"hide local users", P_BOOL, P_GLOBAL, &Globals.bHideLocalUsers, NULL, NULL, FLAG_ADVANCED}, 
 
 	{N_("VFS module options"), P_SEP, P_SEPARATOR}, 
 
@@ -1903,7 +1901,6 @@ FN_LOCAL_INTEGER(lp_write_cache_size, iWriteCacheSize)
 FN_LOCAL_INTEGER(lp_block_size, iBlock_size)
 FN_LOCAL_CHAR(lp_magicchar, magic_char)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
-FN_GLOBAL_BOOL(lp_hide_local_users, &Globals.bHideLocalUsers)
 FN_GLOBAL_INTEGER(lp_algorithmic_rid_base, &Globals.AlgorithmicRidBase)
 FN_GLOBAL_INTEGER(lp_name_cache_timeout, &Globals.name_cache_timeout)
 FN_GLOBAL_INTEGER(lp_client_signing, &Globals.client_signing)
