@@ -27,35 +27,6 @@ extern int DEBUGLEVEL;
 
 
 /*******************************************************************
- search for a memory buffer that falls within the specified offset
- ********************************************************************/
-static const prs_struct *prs_find(const prs_struct *buf, uint32 offset)
-{
-        const prs_struct *f = NULL;
-
-#if 0  	/* comment out by JERRY */
-        if (buf == NULL)
-                return False;
-
-        f = buf;
-
-        while (f != NULL && offset >= f->end)
-        {
-                DEBUG(200, ("prs_find: next[%d..%d]\n", f->start, f->end));
-
-                f = f->next;
-        }
-
-        if (f != NULL)
-        {
-                DEBUG(200, ("prs_find: found [%d..%d]\n", f->start, f->end));
-        }
-
-#endif
-        return f;
-}
-
-/*******************************************************************
 dump a prs to a file
  ********************************************************************/
 void prs_dump(char *name, int v, prs_struct *ps)
@@ -657,6 +628,7 @@ BOOL prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int de
  in little-endian format then do it as a stream of bytes.
  ********************************************************************/
 
+#ifndef RPCCLIENT_TEST
 BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 {
 	int len = 0;
@@ -710,8 +682,7 @@ BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 
 	return True;
 }
-
-#if 0	/* RPCCLIENT_TEST */
+#else
 BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 {
 	int len = 0;
@@ -993,16 +964,26 @@ BOOL prs_realloc_data(prs_struct *buf, size_t new_size)
 }
 
 /*******************************************************************
- return the memory location specified by   may return NULL.
+ return the memory location specified by offset; may return NULL.
  ********************************************************************/
 char *prs_data(const prs_struct *buf, uint32 offset)
 {
-        buf = prs_find(buf, offset);
-        if (buf != NULL)
+
+	/* do we have something to look at? */
+	if (buf == NULL)
+		return NULL;
+
+	/* check to make sure the offset is within range */
+	if ((offset < 0) || (offset >= buf->buffer_size))
+		return NULL;
+
+	/* locate the memory address */
+        if (buf->data_p != NULL)
         {
-                /* return &(buf->data[offset - buf->start]); */
                 return &(buf->data_p[offset]);
         }
+
+	/* default return */
         return NULL;
 }
 
