@@ -1,5 +1,5 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
-<refentry id="rpcclient">
+<refentry id="vfstest">
 
 <refmeta>
 	<refentrytitle>vfstest</refentrytitle>
@@ -45,8 +45,7 @@
 		<term>-c|--command=command</term>
 		<listitem><para>Execute the specified (colon-seperated) commands. 
 		See below for the commands that are available.
-		</para>
-		
+		</para> </listitem> 
 		</varlistentry>
 
 		<varlistentry>
@@ -136,7 +135,6 @@
 		<listitem><para><command>exit</command> - Exit vfstest</para></listitem>
 	</itemizedlist>	
 
-</refsect1>
 </refsect1>
 
 <refsect1>
