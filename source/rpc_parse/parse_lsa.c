@@ -964,23 +964,40 @@ BOOL lsa_io_q_lookup_names(char *desc, LSA_Q_LOOKUP_NAMES *q_r, prs_struct *ps, 
 	if(!smb_io_pol_hnd("", &q_r->pol, ps, depth)) /* policy handle */
 		return False;
 
+	if(!prs_align(ps))
+		return False;
 	if(!prs_uint32("num_entries    ", ps, depth, &q_r->num_entries))
 		return False;
 	if(!prs_uint32("num_entries2   ", ps, depth, &q_r->num_entries2))
 		return False;
 
+	if (UNMARSHALLING(ps)) {
+		if (q_r->num_entries) {
+			if ((q_r->hdr_name = (UNIHDR *)prs_alloc_mem(ps,
+					q_r->num_entries * sizeof(UNIHDR))) == NULL)
+				return False;
+			if ((q_r->uni_name = (UNISTR2 *)prs_alloc_mem(ps,
+					q_r->num_entries * sizeof(UNISTR2))) == NULL)
+				return False;
+		}
+	}
+
 	for (i = 0; i < q_r->num_entries; i++) {
+		if(!prs_align(ps))
+			return False;
 		if(!smb_io_unihdr("hdr_name", &q_r->hdr_name[i], ps, depth)) /* pointer names */
 			return False;
 	}
 
 	for (i = 0; i < q_r->num_entries; i++) {
-		if(!smb_io_unistr2("dom_name", &q_r->uni_name[i], q_r->hdr_name[i].buffer, ps, depth)) /* names to be looked up */
-			return False;
 		if(!prs_align(ps))
+			return False;
+		if(!smb_io_unistr2("dom_name", &q_r->uni_name[i], q_r->hdr_name[i].buffer, ps, depth)) /* names to be looked up */
 			return False;
 	}
 
+	if(!prs_align(ps))
+		return False;
 	if(!prs_uint32("num_trans_entries ", ps, depth, &q_r->num_trans_entries))
 		return False;
 	if(!prs_uint32("ptr_trans_sids ", ps, depth, &q_r->ptr_trans_sids))

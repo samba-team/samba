@@ -602,8 +602,6 @@ static BOOL api_lsa_lookup_names(pipes_struct *p)
 		return False;
 	}
 
-	SMB_ASSERT_ARRAY(q_l.uni_name, q_l.num_entries);
-
 	return lsa_reply_lookup_names(rdata, q_l.uni_name, q_l.num_entries);
 }
 
