@@ -8,6 +8,14 @@ INIT_OBJ_FILES = \
 ################################################
 
 ################################################
+# Start MODULE socket_ipv6
+[MODULE::socket_ipv6]
+INIT_OBJ_FILES = \
+		lib/socket/socket_ipv6.o
+# End MODULE socket_ipv6
+################################################
+
+################################################
 # Start MODULE socket_unix
 [MODULE::socket_unix]
 INIT_OBJ_FILES = \
