@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "NMBD" "8" "24 April 2001" "" ""
+.TH "NMBD" "8" "03 May 2001" "" ""
 .SH NAME
 nmbd \- NetBIOS name server to provide NetBIOS  over IP naming services to clients
 .SH SYNOPSIS
@@ -75,7 +75,8 @@ for \fBnmbd\fR.
 NetBIOS lmhosts file. The lmhosts 
 file is a list of NetBIOS names to IP addresses that 
 is loaded by the nmbd server and used via the name 
-resolution mechanism  name resolve orderto resolve any NetBIOS name queries needed by the server. Note 
+resolution mechanism  name resolve order
+to resolve any NetBIOS name queries needed by the server. Note 
 that the contents of this file are \fBNOT\fR 
 used by \fBnmbd\fR to answer any name queries. 
 Adding a line to this file affects name NetBIOS resolution 
@@ -111,7 +112,8 @@ and generate HUGE amounts of log data, most of which is extremely
 cryptic.
 
 Note that specifying this parameter here will override 
-the log levelparameter in the \fI smb.conf\fRfile.
+the log level
+parameter in the \fI smb.conf\fRfile.
 .TP
 \fB-l <log file>\fR
 The -l parameter specifies a path 
@@ -175,17 +177,20 @@ See the section INSTALLATION below.
 .TP
 \fB\fI/usr/local/samba/lib/smb.conf\fB\fR
 This is the default location of the 
-\fIsmb.conf\fRserver configuration file. Other common places that systems 
+\fIsmb.conf\fR
+server configuration file. Other common places that systems 
 install this file are \fI/usr/samba/lib/smb.conf\fR 
 and \fI/etc/smb.conf\fR.
 
 When run as a WINS server (see the 
-wins supportparameter in the \fI smb.conf(5)\fRman page), \fBnmbd\fR 
+wins support
+parameter in the \fI smb.conf(5)\fRman page), \fBnmbd\fR 
 will store the WINS database in the file \fIwins.dat\fR 
 in the \fIvar/locks\fR directory configured under 
 wherever Samba was configured to install itself.
 
-If \fBnmbd\fR is acting as a \fB browse master\fR (see the local masterparameter in the \fI smb.conf(5)\fRman page), \fBnmbd\fR 
+If \fBnmbd\fR is acting as a \fB browse master\fR (see the local master
+parameter in the \fI smb.conf(5)\fRman page), \fBnmbd\fR 
 will store the browsing database in the file \fIbrowse.dat
 \fRin the \fIvar/locks\fR directory
 configured under wherever Samba was configured to install itself.

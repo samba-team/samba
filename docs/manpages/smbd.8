@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBD" "8" "24 April 2001" "" ""
+.TH "SMBD" "8" "03 May 2001" "" ""
 .SH NAME
 smbd \- server to provide SMB/CIFS services to clients
 .SH SYNOPSIS
@@ -31,7 +31,8 @@ services, but will concentrate on the administrative aspects
 of running the server.
 .PP
 Please note that there are significant security 
-implications to running this server, and the \fIsmb.conf(5)\fRmanpage should be regarded as mandatory reading before 
+implications to running this server, and the \fIsmb.conf(5)\fR
+manpage should be regarded as mandatory reading before 
 proceeding with installation.
 .PP
 A session is created whenever a client requests one. 
@@ -109,11 +110,13 @@ If specified, \fBlog file\fR
 specifies a log filename into which informational and debug 
 messages from the running server will be logged. The log 
 file generated is never removed by the server although 
-its size may be controlled by the max log sizeoption in the \fI smb.conf(5)\fRfile. The default log 
+its size may be controlled by the max log size
+option in the \fI smb.conf(5)\fRfile. The default log 
 file name is specified at compile time.
 .TP
 \fB-O <socket options>\fR
-See the socket optionsparameter in the \fIsmb.conf(5)
+See the socket options
+parameter in the \fIsmb.conf(5)
 \fRfile for details.
 .TP
 \fB-p <port number>\fR
@@ -174,7 +177,8 @@ See the section INSTALLATION below.
 .TP
 \fB\fI/usr/local/samba/lib/smb.conf\fB\fR
 This is the default location of the 
-\fIsmb.conf\fRserver configuration file. Other common places that systems 
+\fIsmb.conf\fR
+server configuration file. Other common places that systems 
 install this file are \fI/usr/samba/lib/smb.conf\fR 
 and \fI/etc/smb.conf\fR.
 
