@@ -425,12 +425,22 @@ struct srvsvc_NetShareCtr502 {
 	struct srvsvc_NetShare502 *array;
 };
 
+struct srvsvc_NetShare1004 {
+	const char *comment;
+};
+
+struct srvsvc_NetShareCtr1004 {
+	uint32 count;
+	struct srvsvc_NetShare1004 *array;
+};
+
 union srvsvc_NetShareCtr {
 /* [case(0)] */ struct srvsvc_NetShareCtr0 *ctr0;
 /* [case(1)] */ struct srvsvc_NetShareCtr1 *ctr1;
 /* [case(2)] */ struct srvsvc_NetShareCtr2 *ctr2;
 /* [case(501)] */ struct srvsvc_NetShareCtr501 *ctr501;
 /* [case(502)] */ struct srvsvc_NetShareCtr502 *ctr502;
+/* [case(1004)] */ struct srvsvc_NetShareCtr1004 *ctr1004;
 /* [case(default)] */ };
 
 struct srvsvc_NetShareEnumAll {

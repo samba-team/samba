@@ -310,12 +310,22 @@
 		[size_is(count)] srvsvc_NetShare502 *array;
 	} srvsvc_NetShareCtr502;
 
+	typedef struct {
+		unistr *comment;
+	} srvsvc_NetShare1004;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] srvsvc_NetShare1004 *array;
+	} srvsvc_NetShareCtr1004;
+
 	typedef union {
 		[case(0)] srvsvc_NetShareCtr0 *ctr0;
 		[case(1)] srvsvc_NetShareCtr1 *ctr1;
 		[case(2)] srvsvc_NetShareCtr2 *ctr2;
 		[case(501)] srvsvc_NetShareCtr501 *ctr501;
 		[case(502)] srvsvc_NetShareCtr502 *ctr502;
+		[case(1004)] srvsvc_NetShareCtr1004 *ctr1004;
 		[default] ;
 	} srvsvc_NetShareCtr;
 
