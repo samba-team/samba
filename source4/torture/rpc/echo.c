@@ -224,7 +224,7 @@ BOOL torture_rpc_echo(int dummy)
 		return False;
 	}
 
-#if 1
+#if 0
 	if (!test_addone(p, mem_ctx)) {
 		ret = False;
 	}

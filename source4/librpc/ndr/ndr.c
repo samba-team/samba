@@ -318,9 +318,9 @@ void ndr_print_debug(void (*fn)(struct ndr_print *, const char *, void *),
 /*
   a useful helper function for printing idl unions via DEBUG()
 */
-void ndr_print_union_debug(void (*fn)(struct ndr_print *, const char *, uint16, void *),
+void ndr_print_union_debug(void (*fn)(struct ndr_print *, const char *, uint32, void *),
 			   const char *name,
-			   uint16 level,
+			   uint32 level,
 			   void *ptr)
 {
 	struct ndr_print ndr;
@@ -427,9 +427,9 @@ NTSTATUS ndr_pull_subcontext_flags_fn(struct ndr_pull *ndr,
 }
 
 NTSTATUS ndr_pull_subcontext_union_fn(struct ndr_pull *ndr, 
-				      uint16 *level,
+				      uint32 level,
 				      void *base,
-				      NTSTATUS (*fn)(struct ndr_pull *, int , uint16 *, void *))
+				      NTSTATUS (*fn)(struct ndr_pull *, int , uint32 , void *))
 {
 	uint32 size;
 	struct ndr_pull ndr2;
@@ -562,15 +562,15 @@ NTSTATUS ndr_push_relative(struct ndr_push *ndr, int ndr_flags, const void *p,
 /*
   pull a union from a blob using NDR
 */
-NTSTATUS ndr_pull_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, uint16 level, void *p,
-			     NTSTATUS (*fn)(struct ndr_pull *, int ndr_flags, uint16 *, void *))
+NTSTATUS ndr_pull_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, uint32 level, void *p,
+			     NTSTATUS (*fn)(struct ndr_pull *, int ndr_flags, uint32, void *))
 {
 	struct ndr_pull *ndr;
 	ndr = ndr_pull_init_blob(blob, mem_ctx);
 	if (!ndr) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	return fn(ndr, NDR_SCALARS|NDR_BUFFERS, &level, p);
+	return fn(ndr, NDR_SCALARS|NDR_BUFFERS, level, p);
 }
 
 /*

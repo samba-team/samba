@@ -60,6 +60,10 @@ interface rpcecho
 		echo_info1 info1;
 	} echo_info6;
 
+	typedef union {
+		[case(1)]  echo_info1 info1;
+	} echo_XXX;
+
 	typedef struct {
 		uint8 v1;
 		echo_info4 info4;
@@ -76,7 +80,7 @@ interface rpcecho
 	} echo_Info;
 
 	NTSTATUS TestCall2 (
-		     [in]                    uint16 level,
+		     [in]                    uint32 level,
 		     [out,switch_is(level)]  echo_Info *info
 		);
 }

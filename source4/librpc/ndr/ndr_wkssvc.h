@@ -187,6 +187,7 @@ struct wkssvc_TransportInfo {
 struct wkssvc_TransportEnum {
 	struct {
 		const char *server_name;
+		uint32 level;
 		struct wkssvc_TransportInfo *info;
 		uint32 max_buffer;
 		uint32 *resume_handle;
@@ -194,7 +195,7 @@ struct wkssvc_TransportEnum {
 
 	struct {
 		struct wkssvc_TransportInfo *info;
-		uint32 unknown;
+		uint32 totalentries;
 		uint32 *resume_handle;
 		WERROR result;
 	} out;

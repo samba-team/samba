@@ -154,29 +154,25 @@ struct srvsvc_NetConnCtr1 {
 struct srvsvc_NetConnCtrDefault {
 };
 
-union srvsvc_NetConnSubCtr {
+union srvsvc_NetConnCtr {
 /* [case(0)] */ struct srvsvc_NetConnCtr0 *ctr0;
 /* [case(1)] */ struct srvsvc_NetConnCtr1 *ctr1;
 /* [case(default)] */ struct srvsvc_NetConnCtrDefault ctrDefault;
-};
-
-struct srvsvc_NetConnCtr {
-	uint32 level;
-	uint32 level2;
-	union srvsvc_NetConnSubCtr subctr;
 };
 
 struct srvsvc_NetConnEnum {
 	struct {
 		const char *server_unc;
 		const char *path;
-		struct srvsvc_NetConnCtr ctr;
+		uint32 level;
+		union srvsvc_NetConnCtr ctr;
 		uint32 preferred_len;
 		uint32 *resume_handle;
 	} in;
 
 	struct {
-		struct srvsvc_NetConnCtr ctr;
+		uint32 level;
+		union srvsvc_NetConnCtr ctr;
 		uint32 total;
 		uint32 *resume_handle;
 		WERROR result;
@@ -209,16 +205,10 @@ struct srvsvc_NetFileCtr3 {
 struct srvsvc_NetFileCtrDefault {
 };
 
-union srvsvc_NetFileSubCtr {
+union srvsvc_NetFileCtr {
 /* [case(2)] */ struct srvsvc_NetFileCtr2 *ctr2;
 /* [case(3)] */ struct srvsvc_NetFileCtr3 *ctr3;
 /* [case(default)] */ struct srvsvc_NetFileCtrDefault ctrDefault;
-};
-
-struct srvsvc_NetFileCtr {
-	uint32 level;
-	uint32 level2;
-	union srvsvc_NetFileSubCtr subctr;
 };
 
 struct srvsvc_NetFileEnum {
@@ -226,13 +216,15 @@ struct srvsvc_NetFileEnum {
 		const char *server_unc;
 		const char *path;
 		const char *user;
-		struct srvsvc_NetFileCtr ctr;
+		uint32 level;
+		union srvsvc_NetFileCtr ctr;
 		uint32 preferred_len;
 		uint32 *resume_handle;
 	} in;
 
 	struct {
-		struct srvsvc_NetFileCtr ctr;
+		uint32 level;
+		union srvsvc_NetFileCtr ctr;
 		uint32 total;
 		uint32 *resume_handle;
 		WERROR result;
@@ -329,7 +321,7 @@ struct srvsvc_NetSessCtr502 {
 struct srvsvc_NetSessCtrDefault {
 };
 
-union srvsvc_NetSessSubCtr {
+union srvsvc_NetSessCtr {
 /* [case(0)] */ struct srvsvc_NetSessCtr0 *ctr0;
 /* [case(1)] */ struct srvsvc_NetSessCtr1 *ctr1;
 /* [case(2)] */ struct srvsvc_NetSessCtr2 *ctr2;
@@ -338,24 +330,20 @@ union srvsvc_NetSessSubCtr {
 /* [case(default)] */ struct srvsvc_NetSessCtrDefault ctrDefault;
 };
 
-struct srvsvc_NetSessCtr {
-	uint32 level;
-	uint32 level2;
-	union srvsvc_NetSessSubCtr subctr;
-};
-
 struct srvsvc_NetSessEnum {
 	struct {
 		const char *server_unc;
 		const char *client;
 		const char *user;
-		struct srvsvc_NetSessCtr ctr;
+		uint32 level;
+		union srvsvc_NetSessCtr ctr;
 		uint32 preferred_len;
 		uint32 *resume_handle;
 	} in;
 
 	struct {
-		struct srvsvc_NetSessCtr ctr;
+		uint32 level;
+		union srvsvc_NetSessCtr ctr;
 		uint32 total;
 		uint32 *resume_handle;
 		WERROR result;
@@ -452,7 +440,7 @@ struct srvsvc_NetShareCtr502 {
 struct srvsvc_NetShareCtrDefault {
 };
 
-union srvsvc_NetShareSubCtr {
+union srvsvc_NetShareCtr {
 /* [case(0)] */ struct srvsvc_NetShareCtr0 *ctr0;
 /* [case(1)] */ struct srvsvc_NetShareCtr1 *ctr1;
 /* [case(2)] */ struct srvsvc_NetShareCtr2 *ctr2;
@@ -461,23 +449,19 @@ union srvsvc_NetShareSubCtr {
 /* [case(default)] */ struct srvsvc_NetShareCtrDefault ctrDefault;
 };
 
-struct srvsvc_NetShareCtr {
-	uint32 level;
-	uint32 level2;
-	union srvsvc_NetShareSubCtr subctr;
-};
-
 struct srvsvc_NetShareEnumAll {
 	struct {
 		const char *server_unc;
-		struct srvsvc_NetShareCtr ctr;
+		uint32 level;
+		union srvsvc_NetShareCtr ctr;
 		uint32 preferred_len;
 		uint32 *resume_handle;
 	} in;
 
 	struct {
-		struct srvsvc_NetShareCtr ctr;
-		uint32 total;
+		uint32 level;
+		union srvsvc_NetShareCtr ctr;
+		uint32 totalentries;
 		uint32 *resume_handle;
 		WERROR result;
 	} out;
@@ -693,29 +677,25 @@ struct srvsvc_NetTransportCtr2 {
 struct srvsvc_NetTransportCtrDefault {
 };
 
-union srvsvc_NetTransportSubCtr {
+union srvsvc_NetTransportCtr {
 /* [case(0)] */ struct srvsvc_NetTransportCtr0 *ctr0;
 /* [case(1)] */ struct srvsvc_NetTransportCtr1 *ctr1;
 /* [case(2)] */ struct srvsvc_NetTransportCtr2 *ctr2;
 /* [case(default)] */ struct srvsvc_NetTransportCtrDefault ctrDefault;
 };
 
-struct srvsvc_NetTransportCtr {
-	uint32 level;
-	uint32 level2;
-	union srvsvc_NetTransportSubCtr subctr;
-};
-
 struct srvsvc_NetTransportEnum {
 	struct {
 		const char *server_unc;
-		struct srvsvc_NetTransportCtr ctr;
+		uint32 level;
+		union srvsvc_NetTransportCtr ctr;
 		uint32 preferred_len;
 		uint32 *resume_handle;
 	} in;
 
 	struct {
-		struct srvsvc_NetTransportCtr ctr;
+		uint32 level;
+		union srvsvc_NetTransportCtr ctr;
 		uint32 total;
 		uint32 *resume_handle;
 		WERROR result;
@@ -816,14 +796,16 @@ struct srvsvc_23 {
 struct srvsvc_NetShareEnum {
 	struct {
 		const char *server_unc;
-		struct srvsvc_NetShareCtr ctr;
+		uint32 level;
+		union srvsvc_NetShareCtr ctr;
 		uint32 preferred_len;
 		uint32 *resume_handle;
 	} in;
 
 	struct {
-		struct srvsvc_NetShareCtr ctr;
-		uint32 total;
+		uint32 level;
+		union srvsvc_NetShareCtr ctr;
+		uint32 totalentries;
 		uint32 *resume_handle;
 		WERROR result;
 	} out;

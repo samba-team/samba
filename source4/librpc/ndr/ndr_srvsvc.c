@@ -136,7 +136,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_srvsvc_NetConnSubCtr(struct ndr_push *ndr, int ndr_flags, uint16 level, union srvsvc_NetConnSubCtr *r)
+NTSTATUS ndr_push_srvsvc_NetConnCtr(struct ndr_push *ndr, int ndr_flags, uint16 level, union srvsvc_NetConnCtr *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_push_struct_start(ndr));
@@ -179,22 +179,6 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_srvsvc_NetConnCtr(struct ndr_push *ndr, int ndr_flags, struct srvsvc_NetConnCtr *r)
-{
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_push_struct_start(ndr));
-	NDR_CHECK(ndr_push_align(ndr, 4));
-	NDR_CHECK(ndr_push_uint32(ndr, r->level));
-	NDR_CHECK(ndr_push_uint32(ndr, r->level2));
-	NDR_CHECK(ndr_push_srvsvc_NetConnSubCtr(ndr, NDR_SCALARS, r->level, &r->subctr));
-	ndr_push_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	NDR_CHECK(ndr_push_srvsvc_NetConnSubCtr(ndr, NDR_BUFFERS, r->level, &r->subctr));
-done:
-	return NT_STATUS_OK;
-}
-
 NTSTATUS ndr_push_srvsvc_NetConnEnum(struct ndr_push *ndr, struct srvsvc_NetConnEnum *r)
 {
 	NDR_CHECK(ndr_push_ptr(ndr, r->in.server_unc));
@@ -205,7 +189,9 @@ NTSTATUS ndr_push_srvsvc_NetConnEnum(struct ndr_push *ndr, struct srvsvc_NetConn
 	if (r->in.path) {
 		NDR_CHECK(ndr_push_unistr(ndr, r->in.path));
 	}
-	NDR_CHECK(ndr_push_srvsvc_NetConnCtr(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.ctr));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.level));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.level));
+	NDR_CHECK(ndr_push_srvsvc_NetConnCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.level, &r->in.ctr));
 	NDR_CHECK(ndr_push_uint32(ndr, r->in.preferred_len));
 	NDR_CHECK(ndr_push_ptr(ndr, r->in.resume_handle));
 	if (r->in.resume_handle) {
@@ -299,7 +285,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_srvsvc_NetFileSubCtr(struct ndr_push *ndr, int ndr_flags, uint16 level, union srvsvc_NetFileSubCtr *r)
+NTSTATUS ndr_push_srvsvc_NetFileCtr(struct ndr_push *ndr, int ndr_flags, uint16 level, union srvsvc_NetFileCtr *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_push_struct_start(ndr));
@@ -342,22 +328,6 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_srvsvc_NetFileCtr(struct ndr_push *ndr, int ndr_flags, struct srvsvc_NetFileCtr *r)
-{
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_push_struct_start(ndr));
-	NDR_CHECK(ndr_push_align(ndr, 4));
-	NDR_CHECK(ndr_push_uint32(ndr, r->level));
-	NDR_CHECK(ndr_push_uint32(ndr, r->level2));
-	NDR_CHECK(ndr_push_srvsvc_NetFileSubCtr(ndr, NDR_SCALARS, r->level, &r->subctr));
-	ndr_push_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	NDR_CHECK(ndr_push_srvsvc_NetFileSubCtr(ndr, NDR_BUFFERS, r->level, &r->subctr));
-done:
-	return NT_STATUS_OK;
-}
-
 NTSTATUS ndr_push_srvsvc_NetFileEnum(struct ndr_push *ndr, struct srvsvc_NetFileEnum *r)
 {
 	NDR_CHECK(ndr_push_ptr(ndr, r->in.server_unc));
@@ -372,7 +342,9 @@ NTSTATUS ndr_push_srvsvc_NetFileEnum(struct ndr_push *ndr, struct srvsvc_NetFile
 	if (r->in.user) {
 		NDR_CHECK(ndr_push_unistr(ndr, r->in.user));
 	}
-	NDR_CHECK(ndr_push_srvsvc_NetFileCtr(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.ctr));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.level));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.level));
+	NDR_CHECK(ndr_push_srvsvc_NetFileCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.level, &r->in.ctr));
 	NDR_CHECK(ndr_push_uint32(ndr, r->in.preferred_len));
 	NDR_CHECK(ndr_push_ptr(ndr, r->in.resume_handle));
 	if (r->in.resume_handle) {
@@ -618,7 +590,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_srvsvc_NetSessSubCtr(struct ndr_push *ndr, int ndr_flags, uint16 level, union srvsvc_NetSessSubCtr *r)
+NTSTATUS ndr_push_srvsvc_NetSessCtr(struct ndr_push *ndr, int ndr_flags, uint16 level, union srvsvc_NetSessCtr *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_push_struct_start(ndr));
@@ -691,22 +663,6 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_srvsvc_NetSessCtr(struct ndr_push *ndr, int ndr_flags, struct srvsvc_NetSessCtr *r)
-{
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_push_struct_start(ndr));
-	NDR_CHECK(ndr_push_align(ndr, 4));
-	NDR_CHECK(ndr_push_uint32(ndr, r->level));
-	NDR_CHECK(ndr_push_uint32(ndr, r->level2));
-	NDR_CHECK(ndr_push_srvsvc_NetSessSubCtr(ndr, NDR_SCALARS, r->level, &r->subctr));
-	ndr_push_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	NDR_CHECK(ndr_push_srvsvc_NetSessSubCtr(ndr, NDR_BUFFERS, r->level, &r->subctr));
-done:
-	return NT_STATUS_OK;
-}
-
 NTSTATUS ndr_push_srvsvc_NetSessEnum(struct ndr_push *ndr, struct srvsvc_NetSessEnum *r)
 {
 	NDR_CHECK(ndr_push_ptr(ndr, r->in.server_unc));
@@ -721,7 +677,9 @@ NTSTATUS ndr_push_srvsvc_NetSessEnum(struct ndr_push *ndr, struct srvsvc_NetSess
 	if (r->in.user) {
 		NDR_CHECK(ndr_push_unistr(ndr, r->in.user));
 	}
-	NDR_CHECK(ndr_push_srvsvc_NetSessCtr(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.ctr));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.level));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.level));
+	NDR_CHECK(ndr_push_srvsvc_NetSessCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.level, &r->in.ctr));
 	NDR_CHECK(ndr_push_uint32(ndr, r->in.preferred_len));
 	NDR_CHECK(ndr_push_ptr(ndr, r->in.resume_handle));
 	if (r->in.resume_handle) {
@@ -973,7 +931,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_srvsvc_NetShareSubCtr(struct ndr_push *ndr, int ndr_flags, uint16 level, union srvsvc_NetShareSubCtr *r)
+NTSTATUS ndr_push_srvsvc_NetShareCtr(struct ndr_push *ndr, int ndr_flags, uint16 level, union srvsvc_NetShareCtr *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_push_struct_start(ndr));
@@ -1046,29 +1004,15 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_srvsvc_NetShareCtr(struct ndr_push *ndr, int ndr_flags, struct srvsvc_NetShareCtr *r)
-{
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_push_struct_start(ndr));
-	NDR_CHECK(ndr_push_align(ndr, 4));
-	NDR_CHECK(ndr_push_uint32(ndr, r->level));
-	NDR_CHECK(ndr_push_uint32(ndr, r->level2));
-	NDR_CHECK(ndr_push_srvsvc_NetShareSubCtr(ndr, NDR_SCALARS, r->level, &r->subctr));
-	ndr_push_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	NDR_CHECK(ndr_push_srvsvc_NetShareSubCtr(ndr, NDR_BUFFERS, r->level, &r->subctr));
-done:
-	return NT_STATUS_OK;
-}
-
 NTSTATUS ndr_push_srvsvc_NetShareEnumAll(struct ndr_push *ndr, struct srvsvc_NetShareEnumAll *r)
 {
 	NDR_CHECK(ndr_push_ptr(ndr, r->in.server_unc));
 	if (r->in.server_unc) {
 		NDR_CHECK(ndr_push_unistr(ndr, r->in.server_unc));
 	}
-	NDR_CHECK(ndr_push_srvsvc_NetShareCtr(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.ctr));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.level));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.level));
+	NDR_CHECK(ndr_push_srvsvc_NetShareCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.level, &r->in.ctr));
 	NDR_CHECK(ndr_push_uint32(ndr, r->in.preferred_len));
 	NDR_CHECK(ndr_push_ptr(ndr, r->in.resume_handle));
 	if (r->in.resume_handle) {
@@ -1117,205 +1061,6 @@ NTSTATUS ndr_push_srvsvc_NET_SRV_GET_INFO(struct ndr_push *ndr, struct srvsvc_NE
 NTSTATUS ndr_push_srvsvc_NET_SRV_SET_INFO(struct ndr_push *ndr, struct srvsvc_NET_SRV_SET_INFO *r)
 {
 
-	return NT_STATUS_OK;
-}
-
-NTSTATUS ndr_push_srvsvc_NetDisk0(struct ndr_push *ndr, int ndr_flags, struct srvsvc_NetDisk0 *r)
-{
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_push_struct_start(ndr));
-	NDR_CHECK(ndr_push_align(ndr, 4));
-	NDR_CHECK(ndr_push_uint32(ndr, r->unknown));
-	NDR_CHECK(ndr_push_uint32(ndr, r->size));
-	NDR_CHECK(ndr_push_ptr(ndr, r->disk));
-	ndr_push_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	if (r->disk) {
-		NDR_CHECK(ndr_push_uint32(ndr, r->size));
-		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS|NDR_BUFFERS, r->disk, r->size));
-	}
-done:
-	return NT_STATUS_OK;
-}
-
-NTSTATUS ndr_push_srvsvc_NetDiskCtr0(struct ndr_push *ndr, int ndr_flags, struct srvsvc_NetDiskCtr0 *r)
-{
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_push_struct_start(ndr));
-	NDR_CHECK(ndr_push_align(ndr, 4));
-	NDR_CHECK(ndr_push_uint32(ndr, r->count));
-	NDR_CHECK(ndr_push_uint32(ndr, r->unknown1));
-	NDR_CHECK(ndr_push_uint32(ndr, r->unknown2));
-	NDR_CHECK(ndr_push_ptr(ndr, r->array));
-	ndr_push_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	if (r->array) {
-		NDR_CHECK(ndr_push_uint32(ndr, r->count));
-		NDR_CHECK(ndr_push_array(ndr, NDR_SCALARS|NDR_BUFFERS, r->array, sizeof(r->array[0]), r->count, (ndr_push_flags_fn_t)ndr_push_srvsvc_NetDisk0));
-	}
-done:
-	return NT_STATUS_OK;
-}
-
-NTSTATUS ndr_push_srvsvc_NetDisk1(struct ndr_push *ndr, int ndr_flags, struct srvsvc_NetDisk1 *r)
-{
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_push_struct_start(ndr));
-	NDR_CHECK(ndr_push_align(ndr, 4));
-	NDR_CHECK(ndr_push_uint32(ndr, r->dummy));
-	ndr_push_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-done:
-	return NT_STATUS_OK;
-}
-
-NTSTATUS ndr_push_srvsvc_NetDiskCtr1(struct ndr_push *ndr, int ndr_flags, struct srvsvc_NetDiskCtr1 *r)
-{
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_push_struct_start(ndr));
-	NDR_CHECK(ndr_push_align(ndr, 4));
-	NDR_CHECK(ndr_push_uint32(ndr, r->count));
-	NDR_CHECK(ndr_push_ptr(ndr, r->array));
-	ndr_push_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	if (r->array) {
-		NDR_CHECK(ndr_push_uint32(ndr, r->count));
-		NDR_CHECK(ndr_push_array(ndr, NDR_SCALARS|NDR_BUFFERS, r->array, sizeof(r->array[0]), r->count, (ndr_push_flags_fn_t)ndr_push_srvsvc_NetDisk1));
-	}
-done:
-	return NT_STATUS_OK;
-}
-
-NTSTATUS ndr_push_srvsvc_NetDisk2(struct ndr_push *ndr, int ndr_flags, struct srvsvc_NetDisk2 *r)
-{
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_push_struct_start(ndr));
-	NDR_CHECK(ndr_push_align(ndr, 4));
-	NDR_CHECK(ndr_push_uint32(ndr, r->dummy));
-	ndr_push_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-done:
-	return NT_STATUS_OK;
-}
-
-NTSTATUS ndr_push_srvsvc_NetDiskCtr2(struct ndr_push *ndr, int ndr_flags, struct srvsvc_NetDiskCtr2 *r)
-{
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_push_struct_start(ndr));
-	NDR_CHECK(ndr_push_align(ndr, 4));
-	NDR_CHECK(ndr_push_uint32(ndr, r->count));
-	NDR_CHECK(ndr_push_ptr(ndr, r->array));
-	ndr_push_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	if (r->array) {
-		NDR_CHECK(ndr_push_uint32(ndr, r->count));
-		NDR_CHECK(ndr_push_array(ndr, NDR_SCALARS|NDR_BUFFERS, r->array, sizeof(r->array[0]), r->count, (ndr_push_flags_fn_t)ndr_push_srvsvc_NetDisk2));
-	}
-done:
-	return NT_STATUS_OK;
-}
-
-NTSTATUS ndr_push_srvsvc_NetDisk3(struct ndr_push *ndr, int ndr_flags, struct srvsvc_NetDisk3 *r)
-{
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_push_struct_start(ndr));
-	NDR_CHECK(ndr_push_align(ndr, 4));
-	NDR_CHECK(ndr_push_uint32(ndr, r->dummy));
-	ndr_push_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-done:
-	return NT_STATUS_OK;
-}
-
-NTSTATUS ndr_push_srvsvc_NetDiskCtr3(struct ndr_push *ndr, int ndr_flags, struct srvsvc_NetDiskCtr3 *r)
-{
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_push_struct_start(ndr));
-	NDR_CHECK(ndr_push_align(ndr, 4));
-	NDR_CHECK(ndr_push_uint32(ndr, r->count));
-	NDR_CHECK(ndr_push_ptr(ndr, r->array));
-	ndr_push_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	if (r->array) {
-		NDR_CHECK(ndr_push_uint32(ndr, r->count));
-		NDR_CHECK(ndr_push_array(ndr, NDR_SCALARS|NDR_BUFFERS, r->array, sizeof(r->array[0]), r->count, (ndr_push_flags_fn_t)ndr_push_srvsvc_NetDisk3));
-	}
-done:
-	return NT_STATUS_OK;
-}
-
-NTSTATUS ndr_push_srvsvc_NetDiskCtrDefault(struct ndr_push *ndr, int ndr_flags, struct srvsvc_NetDiskCtrDefault *r)
-{
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_push_struct_start(ndr));
-	NDR_CHECK(ndr_push_align(ndr, 1));
-	ndr_push_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-done:
-	return NT_STATUS_OK;
-}
-
-NTSTATUS ndr_push_srvsvc_NetDiskSubCtr(struct ndr_push *ndr, int ndr_flags, uint16 level, union srvsvc_NetDiskSubCtr *r)
-{
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_push_struct_start(ndr));
-	switch (level) {
-	case 0:
-	NDR_CHECK(ndr_push_srvsvc_NetDiskCtr0(ndr, NDR_SCALARS, &r->ctr0));
-	break;
-
-	case 1:
-	NDR_CHECK(ndr_push_srvsvc_NetDiskCtr1(ndr, NDR_SCALARS, &r->ctr1));
-	break;
-
-	case 2:
-	NDR_CHECK(ndr_push_srvsvc_NetDiskCtr2(ndr, NDR_SCALARS, &r->ctr2));
-	break;
-
-	case 3:
-	NDR_CHECK(ndr_push_srvsvc_NetDiskCtr3(ndr, NDR_SCALARS, &r->ctr3));
-	break;
-
-	default:
-	NDR_CHECK(ndr_push_srvsvc_NetDiskCtrDefault(ndr, NDR_SCALARS, &r->ctrDefault));
-	break;
-
-	}
-	ndr_push_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	switch (level) {
-	case 0:
-		NDR_CHECK(ndr_push_srvsvc_NetDiskCtr0(ndr, ndr_flags, &r->ctr0));
-	break;
-
-	case 1:
-		NDR_CHECK(ndr_push_srvsvc_NetDiskCtr1(ndr, ndr_flags, &r->ctr1));
-	break;
-
-	case 2:
-		NDR_CHECK(ndr_push_srvsvc_NetDiskCtr2(ndr, ndr_flags, &r->ctr2));
-	break;
-
-	case 3:
-		NDR_CHECK(ndr_push_srvsvc_NetDiskCtr3(ndr, ndr_flags, &r->ctr3));
-	break;
-
-	default:
-		NDR_CHECK(ndr_push_srvsvc_NetDiskCtrDefault(ndr, ndr_flags, &r->ctrDefault));
-	break;
-
-	}
-done:
 	return NT_STATUS_OK;
 }
 
@@ -1502,7 +1247,7 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_srvsvc_NetTransportSubCtr(struct ndr_push *ndr, int ndr_flags, uint16 level, union srvsvc_NetTransportSubCtr *r)
+NTSTATUS ndr_push_srvsvc_NetTransportCtr(struct ndr_push *ndr, int ndr_flags, uint16 level, union srvsvc_NetTransportCtr *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_push_struct_start(ndr));
@@ -1555,29 +1300,15 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_srvsvc_NetTransportCtr(struct ndr_push *ndr, int ndr_flags, struct srvsvc_NetTransportCtr *r)
-{
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_push_struct_start(ndr));
-	NDR_CHECK(ndr_push_align(ndr, 4));
-	NDR_CHECK(ndr_push_uint32(ndr, r->level));
-	NDR_CHECK(ndr_push_uint32(ndr, r->level2));
-	NDR_CHECK(ndr_push_srvsvc_NetTransportSubCtr(ndr, NDR_SCALARS, r->level, &r->subctr));
-	ndr_push_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	NDR_CHECK(ndr_push_srvsvc_NetTransportSubCtr(ndr, NDR_BUFFERS, r->level, &r->subctr));
-done:
-	return NT_STATUS_OK;
-}
-
 NTSTATUS ndr_push_srvsvc_NetTransportEnum(struct ndr_push *ndr, struct srvsvc_NetTransportEnum *r)
 {
 	NDR_CHECK(ndr_push_ptr(ndr, r->in.server_unc));
 	if (r->in.server_unc) {
 		NDR_CHECK(ndr_push_unistr(ndr, r->in.server_unc));
 	}
-	NDR_CHECK(ndr_push_srvsvc_NetTransportCtr(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.ctr));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.level));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.level));
+	NDR_CHECK(ndr_push_srvsvc_NetTransportCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.level, &r->in.ctr));
 	NDR_CHECK(ndr_push_uint32(ndr, r->in.preferred_len));
 	NDR_CHECK(ndr_push_ptr(ndr, r->in.resume_handle));
 	if (r->in.resume_handle) {
@@ -1647,7 +1378,9 @@ NTSTATUS ndr_push_srvsvc_NetShareEnum(struct ndr_push *ndr, struct srvsvc_NetSha
 	if (r->in.server_unc) {
 		NDR_CHECK(ndr_push_unistr(ndr, r->in.server_unc));
 	}
-	NDR_CHECK(ndr_push_srvsvc_NetShareCtr(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.ctr));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.level));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.level));
+	NDR_CHECK(ndr_push_srvsvc_NetShareCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.level, &r->in.ctr));
 	NDR_CHECK(ndr_push_uint32(ndr, r->in.preferred_len));
 	NDR_CHECK(ndr_push_ptr(ndr, r->in.resume_handle));
 	if (r->in.resume_handle) {
@@ -1861,11 +1594,11 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_srvsvc_NetConnSubCtr(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union srvsvc_NetConnSubCtr *r)
+NTSTATUS ndr_pull_srvsvc_NetConnCtr(struct ndr_pull *ndr, int ndr_flags, uint16 level, union srvsvc_NetConnCtr *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_struct_start(ndr));
-	switch (*level) {
+	switch (level) {
 	case 0: {
 		uint32 _ptr_ctr0;
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_ctr0));
@@ -1894,7 +1627,7 @@ NTSTATUS ndr_pull_srvsvc_NetConnSubCtr(struct ndr_pull *ndr, int ndr_flags, uint
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	switch (*level) {
+	switch (level) {
 	case 0:
 	if (r->ctr0) {
 		NDR_CHECK(ndr_pull_srvsvc_NetConnCtr0(ndr, NDR_SCALARS|NDR_BUFFERS, r->ctr0));
@@ -1916,32 +1649,16 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_srvsvc_NetConnCtr(struct ndr_pull *ndr, int ndr_flags, struct srvsvc_NetConnCtr *r)
-{
-	NDR_CHECK(ndr_pull_struct_start(ndr));
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 4));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->level));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->level2));
-	{ uint16 _level = r->level;
-	NDR_CHECK(ndr_pull_srvsvc_NetConnSubCtr(ndr, NDR_SCALARS, &_level, &r->subctr));
-	if (((NDR_SCALARS) & NDR_SCALARS) && (_level != r->level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in subctr");
-	}
-	ndr_pull_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	{ uint16 _level = r->level;
-	NDR_CHECK(ndr_pull_srvsvc_NetConnSubCtr(ndr, NDR_BUFFERS, &_level, &r->subctr));
-	if (((NDR_BUFFERS) & NDR_SCALARS) && (_level != r->level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in subctr");
-	}
-done:
-	return NT_STATUS_OK;
-}
-
 NTSTATUS ndr_pull_srvsvc_NetConnEnum(struct ndr_pull *ndr, struct srvsvc_NetConnEnum *r)
 {
 	uint32 _ptr_resume_handle;
-	NDR_CHECK(ndr_pull_srvsvc_NetConnCtr(ndr, NDR_SCALARS|NDR_BUFFERS, &r->out.ctr));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.level));
+	if ((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) {
+		 uint32 _level;
+		NDR_CHECK(ndr_pull_uint32(ndr, &_level));
+		if (_level != r->in.level) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in ctr");
+	}
+	NDR_CHECK(ndr_pull_srvsvc_NetConnCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.level, &r->out.ctr));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.total));
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_resume_handle));
 	if (_ptr_resume_handle) {
@@ -2079,11 +1796,11 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_srvsvc_NetFileSubCtr(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union srvsvc_NetFileSubCtr *r)
+NTSTATUS ndr_pull_srvsvc_NetFileCtr(struct ndr_pull *ndr, int ndr_flags, uint16 level, union srvsvc_NetFileCtr *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_struct_start(ndr));
-	switch (*level) {
+	switch (level) {
 	case 2: {
 		uint32 _ptr_ctr2;
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_ctr2));
@@ -2112,7 +1829,7 @@ NTSTATUS ndr_pull_srvsvc_NetFileSubCtr(struct ndr_pull *ndr, int ndr_flags, uint
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	switch (*level) {
+	switch (level) {
 	case 2:
 	if (r->ctr2) {
 		NDR_CHECK(ndr_pull_srvsvc_NetFileCtr2(ndr, NDR_SCALARS|NDR_BUFFERS, r->ctr2));
@@ -2134,32 +1851,16 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_srvsvc_NetFileCtr(struct ndr_pull *ndr, int ndr_flags, struct srvsvc_NetFileCtr *r)
-{
-	NDR_CHECK(ndr_pull_struct_start(ndr));
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 4));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->level));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->level2));
-	{ uint16 _level = r->level;
-	NDR_CHECK(ndr_pull_srvsvc_NetFileSubCtr(ndr, NDR_SCALARS, &_level, &r->subctr));
-	if (((NDR_SCALARS) & NDR_SCALARS) && (_level != r->level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in subctr");
-	}
-	ndr_pull_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	{ uint16 _level = r->level;
-	NDR_CHECK(ndr_pull_srvsvc_NetFileSubCtr(ndr, NDR_BUFFERS, &_level, &r->subctr));
-	if (((NDR_BUFFERS) & NDR_SCALARS) && (_level != r->level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in subctr");
-	}
-done:
-	return NT_STATUS_OK;
-}
-
 NTSTATUS ndr_pull_srvsvc_NetFileEnum(struct ndr_pull *ndr, struct srvsvc_NetFileEnum *r)
 {
 	uint32 _ptr_resume_handle;
-	NDR_CHECK(ndr_pull_srvsvc_NetFileCtr(ndr, NDR_SCALARS|NDR_BUFFERS, &r->out.ctr));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.level));
+	if ((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) {
+		 uint32 _level;
+		NDR_CHECK(ndr_pull_uint32(ndr, &_level));
+		if (_level != r->in.level) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in ctr");
+	}
+	NDR_CHECK(ndr_pull_srvsvc_NetFileCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.level, &r->out.ctr));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.total));
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_resume_handle));
 	if (_ptr_resume_handle) {
@@ -2550,11 +2251,11 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_srvsvc_NetSessSubCtr(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union srvsvc_NetSessSubCtr *r)
+NTSTATUS ndr_pull_srvsvc_NetSessCtr(struct ndr_pull *ndr, int ndr_flags, uint16 level, union srvsvc_NetSessCtr *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_struct_start(ndr));
-	switch (*level) {
+	switch (level) {
 	case 0: {
 		uint32 _ptr_ctr0;
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_ctr0));
@@ -2613,7 +2314,7 @@ NTSTATUS ndr_pull_srvsvc_NetSessSubCtr(struct ndr_pull *ndr, int ndr_flags, uint
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	switch (*level) {
+	switch (level) {
 	case 0:
 	if (r->ctr0) {
 		NDR_CHECK(ndr_pull_srvsvc_NetSessCtr0(ndr, NDR_SCALARS|NDR_BUFFERS, r->ctr0));
@@ -2653,32 +2354,16 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_srvsvc_NetSessCtr(struct ndr_pull *ndr, int ndr_flags, struct srvsvc_NetSessCtr *r)
-{
-	NDR_CHECK(ndr_pull_struct_start(ndr));
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 4));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->level));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->level2));
-	{ uint16 _level = r->level;
-	NDR_CHECK(ndr_pull_srvsvc_NetSessSubCtr(ndr, NDR_SCALARS, &_level, &r->subctr));
-	if (((NDR_SCALARS) & NDR_SCALARS) && (_level != r->level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in subctr");
-	}
-	ndr_pull_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	{ uint16 _level = r->level;
-	NDR_CHECK(ndr_pull_srvsvc_NetSessSubCtr(ndr, NDR_BUFFERS, &_level, &r->subctr));
-	if (((NDR_BUFFERS) & NDR_SCALARS) && (_level != r->level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in subctr");
-	}
-done:
-	return NT_STATUS_OK;
-}
-
 NTSTATUS ndr_pull_srvsvc_NetSessEnum(struct ndr_pull *ndr, struct srvsvc_NetSessEnum *r)
 {
 	uint32 _ptr_resume_handle;
-	NDR_CHECK(ndr_pull_srvsvc_NetSessCtr(ndr, NDR_SCALARS|NDR_BUFFERS, &r->out.ctr));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.level));
+	if ((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) {
+		 uint32 _level;
+		NDR_CHECK(ndr_pull_uint32(ndr, &_level));
+		if (_level != r->in.level) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in ctr");
+	}
+	NDR_CHECK(ndr_pull_srvsvc_NetSessCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.level, &r->out.ctr));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.total));
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_resume_handle));
 	if (_ptr_resume_handle) {
@@ -3087,11 +2772,11 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_srvsvc_NetShareSubCtr(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union srvsvc_NetShareSubCtr *r)
+NTSTATUS ndr_pull_srvsvc_NetShareCtr(struct ndr_pull *ndr, int ndr_flags, uint16 level, union srvsvc_NetShareCtr *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_struct_start(ndr));
-	switch (*level) {
+	switch (level) {
 	case 0: {
 		uint32 _ptr_ctr0;
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_ctr0));
@@ -3150,7 +2835,7 @@ NTSTATUS ndr_pull_srvsvc_NetShareSubCtr(struct ndr_pull *ndr, int ndr_flags, uin
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	switch (*level) {
+	switch (level) {
 	case 0:
 	if (r->ctr0) {
 		NDR_CHECK(ndr_pull_srvsvc_NetShareCtr0(ndr, NDR_SCALARS|NDR_BUFFERS, r->ctr0));
@@ -3190,33 +2875,17 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_srvsvc_NetShareCtr(struct ndr_pull *ndr, int ndr_flags, struct srvsvc_NetShareCtr *r)
-{
-	NDR_CHECK(ndr_pull_struct_start(ndr));
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 4));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->level));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->level2));
-	{ uint16 _level = r->level;
-	NDR_CHECK(ndr_pull_srvsvc_NetShareSubCtr(ndr, NDR_SCALARS, &_level, &r->subctr));
-	if (((NDR_SCALARS) & NDR_SCALARS) && (_level != r->level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in subctr");
-	}
-	ndr_pull_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	{ uint16 _level = r->level;
-	NDR_CHECK(ndr_pull_srvsvc_NetShareSubCtr(ndr, NDR_BUFFERS, &_level, &r->subctr));
-	if (((NDR_BUFFERS) & NDR_SCALARS) && (_level != r->level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in subctr");
-	}
-done:
-	return NT_STATUS_OK;
-}
-
 NTSTATUS ndr_pull_srvsvc_NetShareEnumAll(struct ndr_pull *ndr, struct srvsvc_NetShareEnumAll *r)
 {
 	uint32 _ptr_resume_handle;
-	NDR_CHECK(ndr_pull_srvsvc_NetShareCtr(ndr, NDR_SCALARS|NDR_BUFFERS, &r->out.ctr));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.total));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.level));
+	if ((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) {
+		 uint32 _level;
+		NDR_CHECK(ndr_pull_uint32(ndr, &_level));
+		if (_level != r->in.level) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in ctr");
+	}
+	NDR_CHECK(ndr_pull_srvsvc_NetShareCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.level, &r->out.ctr));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.totalentries));
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_resume_handle));
 	if (_ptr_resume_handle) {
 		NDR_ALLOC(ndr, r->out.resume_handle);
@@ -3340,205 +3009,6 @@ buffers:
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->array, r->count, sizeof(r->array[0]));
 		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->array, sizeof(r->array[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_srvsvc_NetDisk0));
-	}
-done:
-	return NT_STATUS_OK;
-}
-
-NTSTATUS ndr_pull_srvsvc_NetDisk1(struct ndr_pull *ndr, int ndr_flags, struct srvsvc_NetDisk1 *r)
-{
-	NDR_CHECK(ndr_pull_struct_start(ndr));
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 4));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->dummy));
-	ndr_pull_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-done:
-	return NT_STATUS_OK;
-}
-
-NTSTATUS ndr_pull_srvsvc_NetDiskCtr1(struct ndr_pull *ndr, int ndr_flags, struct srvsvc_NetDiskCtr1 *r)
-{
-	uint32 _ptr_array;
-	NDR_CHECK(ndr_pull_struct_start(ndr));
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 4));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->count));
-	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_array));
-	if (_ptr_array) {
-		NDR_ALLOC(ndr, r->array);
-	} else {
-		r->array = NULL;
-	}
-	ndr_pull_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	if (r->array) {
-	{
-		uint32 _array_size;
-		NDR_CHECK(ndr_pull_uint32(ndr, &_array_size));
-		if (r->count > _array_size) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should be %u", _array_size, r->count);
-		}
-	}
-		NDR_ALLOC_N_SIZE(ndr, r->array, r->count, sizeof(r->array[0]));
-		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->array, sizeof(r->array[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_srvsvc_NetDisk1));
-	}
-done:
-	return NT_STATUS_OK;
-}
-
-NTSTATUS ndr_pull_srvsvc_NetDisk2(struct ndr_pull *ndr, int ndr_flags, struct srvsvc_NetDisk2 *r)
-{
-	NDR_CHECK(ndr_pull_struct_start(ndr));
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 4));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->dummy));
-	ndr_pull_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-done:
-	return NT_STATUS_OK;
-}
-
-NTSTATUS ndr_pull_srvsvc_NetDiskCtr2(struct ndr_pull *ndr, int ndr_flags, struct srvsvc_NetDiskCtr2 *r)
-{
-	uint32 _ptr_array;
-	NDR_CHECK(ndr_pull_struct_start(ndr));
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 4));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->count));
-	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_array));
-	if (_ptr_array) {
-		NDR_ALLOC(ndr, r->array);
-	} else {
-		r->array = NULL;
-	}
-	ndr_pull_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	if (r->array) {
-	{
-		uint32 _array_size;
-		NDR_CHECK(ndr_pull_uint32(ndr, &_array_size));
-		if (r->count > _array_size) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should be %u", _array_size, r->count);
-		}
-	}
-		NDR_ALLOC_N_SIZE(ndr, r->array, r->count, sizeof(r->array[0]));
-		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->array, sizeof(r->array[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_srvsvc_NetDisk2));
-	}
-done:
-	return NT_STATUS_OK;
-}
-
-NTSTATUS ndr_pull_srvsvc_NetDisk3(struct ndr_pull *ndr, int ndr_flags, struct srvsvc_NetDisk3 *r)
-{
-	NDR_CHECK(ndr_pull_struct_start(ndr));
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 4));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->dummy));
-	ndr_pull_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-done:
-	return NT_STATUS_OK;
-}
-
-NTSTATUS ndr_pull_srvsvc_NetDiskCtr3(struct ndr_pull *ndr, int ndr_flags, struct srvsvc_NetDiskCtr3 *r)
-{
-	uint32 _ptr_array;
-	NDR_CHECK(ndr_pull_struct_start(ndr));
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 4));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->count));
-	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_array));
-	if (_ptr_array) {
-		NDR_ALLOC(ndr, r->array);
-	} else {
-		r->array = NULL;
-	}
-	ndr_pull_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	if (r->array) {
-	{
-		uint32 _array_size;
-		NDR_CHECK(ndr_pull_uint32(ndr, &_array_size));
-		if (r->count > _array_size) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should be %u", _array_size, r->count);
-		}
-	}
-		NDR_ALLOC_N_SIZE(ndr, r->array, r->count, sizeof(r->array[0]));
-		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->array, sizeof(r->array[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_srvsvc_NetDisk3));
-	}
-done:
-	return NT_STATUS_OK;
-}
-
-NTSTATUS ndr_pull_srvsvc_NetDiskCtrDefault(struct ndr_pull *ndr, int ndr_flags, struct srvsvc_NetDiskCtrDefault *r)
-{
-	NDR_CHECK(ndr_pull_struct_start(ndr));
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 1));
-	ndr_pull_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-done:
-	return NT_STATUS_OK;
-}
-
-NTSTATUS ndr_pull_srvsvc_NetDiskSubCtr(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union srvsvc_NetDiskSubCtr *r)
-{
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_struct_start(ndr));
-	switch (*level) {
-	case 0: {
-	NDR_CHECK(ndr_pull_srvsvc_NetDiskCtr0(ndr, NDR_SCALARS, &r->ctr0));
-	break; }
-
-	case 1: {
-	NDR_CHECK(ndr_pull_srvsvc_NetDiskCtr1(ndr, NDR_SCALARS, &r->ctr1));
-	break; }
-
-	case 2: {
-	NDR_CHECK(ndr_pull_srvsvc_NetDiskCtr2(ndr, NDR_SCALARS, &r->ctr2));
-	break; }
-
-	case 3: {
-	NDR_CHECK(ndr_pull_srvsvc_NetDiskCtr3(ndr, NDR_SCALARS, &r->ctr3));
-	break; }
-
-	default: {
-	NDR_CHECK(ndr_pull_srvsvc_NetDiskCtrDefault(ndr, NDR_SCALARS, &r->ctrDefault));
-	break; }
-
-	}
-	ndr_pull_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	switch (*level) {
-	case 0:
-		NDR_CHECK(ndr_pull_srvsvc_NetDiskCtr0(ndr, NDR_BUFFERS, &r->ctr0));
-	break;
-
-	case 1:
-		NDR_CHECK(ndr_pull_srvsvc_NetDiskCtr1(ndr, NDR_BUFFERS, &r->ctr1));
-	break;
-
-	case 2:
-		NDR_CHECK(ndr_pull_srvsvc_NetDiskCtr2(ndr, NDR_BUFFERS, &r->ctr2));
-	break;
-
-	case 3:
-		NDR_CHECK(ndr_pull_srvsvc_NetDiskCtr3(ndr, NDR_BUFFERS, &r->ctr3));
-	break;
-
-	default:
-		NDR_CHECK(ndr_pull_srvsvc_NetDiskCtrDefault(ndr, NDR_BUFFERS, &r->ctrDefault));
-	break;
-
 	}
 done:
 	return NT_STATUS_OK;
@@ -3847,11 +3317,11 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_srvsvc_NetTransportSubCtr(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union srvsvc_NetTransportSubCtr *r)
+NTSTATUS ndr_pull_srvsvc_NetTransportCtr(struct ndr_pull *ndr, int ndr_flags, uint16 level, union srvsvc_NetTransportCtr *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_struct_start(ndr));
-	switch (*level) {
+	switch (level) {
 	case 0: {
 		uint32 _ptr_ctr0;
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_ctr0));
@@ -3890,7 +3360,7 @@ NTSTATUS ndr_pull_srvsvc_NetTransportSubCtr(struct ndr_pull *ndr, int ndr_flags,
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	switch (*level) {
+	switch (level) {
 	case 0:
 	if (r->ctr0) {
 		NDR_CHECK(ndr_pull_srvsvc_NetTransportCtr0(ndr, NDR_SCALARS|NDR_BUFFERS, r->ctr0));
@@ -3918,32 +3388,16 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_srvsvc_NetTransportCtr(struct ndr_pull *ndr, int ndr_flags, struct srvsvc_NetTransportCtr *r)
-{
-	NDR_CHECK(ndr_pull_struct_start(ndr));
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 4));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->level));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->level2));
-	{ uint16 _level = r->level;
-	NDR_CHECK(ndr_pull_srvsvc_NetTransportSubCtr(ndr, NDR_SCALARS, &_level, &r->subctr));
-	if (((NDR_SCALARS) & NDR_SCALARS) && (_level != r->level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in subctr");
-	}
-	ndr_pull_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	{ uint16 _level = r->level;
-	NDR_CHECK(ndr_pull_srvsvc_NetTransportSubCtr(ndr, NDR_BUFFERS, &_level, &r->subctr));
-	if (((NDR_BUFFERS) & NDR_SCALARS) && (_level != r->level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in subctr");
-	}
-done:
-	return NT_STATUS_OK;
-}
-
 NTSTATUS ndr_pull_srvsvc_NetTransportEnum(struct ndr_pull *ndr, struct srvsvc_NetTransportEnum *r)
 {
 	uint32 _ptr_resume_handle;
-	NDR_CHECK(ndr_pull_srvsvc_NetTransportCtr(ndr, NDR_SCALARS|NDR_BUFFERS, &r->out.ctr));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.level));
+	if ((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) {
+		 uint32 _level;
+		NDR_CHECK(ndr_pull_uint32(ndr, &_level));
+		if (_level != r->in.level) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in ctr");
+	}
+	NDR_CHECK(ndr_pull_srvsvc_NetTransportCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.level, &r->out.ctr));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.total));
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_resume_handle));
 	if (_ptr_resume_handle) {
@@ -4025,8 +3479,14 @@ NTSTATUS ndr_pull_srvsvc_23(struct ndr_pull *ndr, struct srvsvc_23 *r)
 NTSTATUS ndr_pull_srvsvc_NetShareEnum(struct ndr_pull *ndr, struct srvsvc_NetShareEnum *r)
 {
 	uint32 _ptr_resume_handle;
-	NDR_CHECK(ndr_pull_srvsvc_NetShareCtr(ndr, NDR_SCALARS|NDR_BUFFERS, &r->out.ctr));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.total));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.level));
+	if ((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) {
+		 uint32 _level;
+		NDR_CHECK(ndr_pull_uint32(ndr, &_level));
+		if (_level != r->in.level) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in ctr");
+	}
+	NDR_CHECK(ndr_pull_srvsvc_NetShareCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.level, &r->out.ctr));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.totalentries));
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_resume_handle));
 	if (_ptr_resume_handle) {
 		NDR_ALLOC(ndr, r->out.resume_handle);
@@ -4280,9 +3740,9 @@ void ndr_print_srvsvc_NetConnCtrDefault(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-void ndr_print_srvsvc_NetConnSubCtr(struct ndr_print *ndr, const char *name, uint16 level, union srvsvc_NetConnSubCtr *r)
+void ndr_print_srvsvc_NetConnCtr(struct ndr_print *ndr, const char *name, uint16 level, union srvsvc_NetConnCtr *r)
 {
-	ndr_print_union(ndr, name, level, "srvsvc_NetConnSubCtr");
+	ndr_print_union(ndr, name, level, "srvsvc_NetConnCtr");
 	switch (level) {
 	case 0:
 	ndr_print_ptr(ndr, "ctr0", r->ctr0);
@@ -4309,16 +3769,6 @@ void ndr_print_srvsvc_NetConnSubCtr(struct ndr_print *ndr, const char *name, uin
 	}
 }
 
-void ndr_print_srvsvc_NetConnCtr(struct ndr_print *ndr, const char *name, struct srvsvc_NetConnCtr *r)
-{
-	ndr_print_struct(ndr, name, "srvsvc_NetConnCtr");
-	ndr->depth++;
-	ndr_print_uint32(ndr, "level", r->level);
-	ndr_print_uint32(ndr, "level2", r->level2);
-	ndr_print_srvsvc_NetConnSubCtr(ndr, "subctr", r->level, &r->subctr);
-	ndr->depth--;
-}
-
 void ndr_print_srvsvc_NetConnEnum(struct ndr_print *ndr, const char *name, int flags, struct srvsvc_NetConnEnum *r)
 {
 	ndr_print_struct(ndr, name, "srvsvc_NetConnEnum");
@@ -4338,7 +3788,8 @@ void ndr_print_srvsvc_NetConnEnum(struct ndr_print *ndr, const char *name, int f
 		ndr_print_unistr(ndr, "path", r->in.path);
 	}
 	ndr->depth--;
-	ndr_print_srvsvc_NetConnCtr(ndr, "ctr", &r->in.ctr);
+	ndr_print_uint32(ndr, "level", r->in.level);
+	ndr_print_srvsvc_NetConnCtr(ndr, "ctr", r->in.level, &r->in.ctr);
 	ndr_print_uint32(ndr, "preferred_len", r->in.preferred_len);
 	ndr_print_ptr(ndr, "resume_handle", r->in.resume_handle);
 	ndr->depth++;
@@ -4351,7 +3802,8 @@ void ndr_print_srvsvc_NetConnEnum(struct ndr_print *ndr, const char *name, int f
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "srvsvc_NetConnEnum");
 	ndr->depth++;
-	ndr_print_srvsvc_NetConnCtr(ndr, "ctr", &r->out.ctr);
+	ndr_print_uint32(ndr, "level", r->out.level);
+	ndr_print_srvsvc_NetConnCtr(ndr, "ctr", r->in.level, &r->out.ctr);
 	ndr_print_uint32(ndr, "total", r->out.total);
 	ndr_print_ptr(ndr, "resume_handle", r->out.resume_handle);
 	ndr->depth++;
@@ -4430,9 +3882,9 @@ void ndr_print_srvsvc_NetFileCtrDefault(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-void ndr_print_srvsvc_NetFileSubCtr(struct ndr_print *ndr, const char *name, uint16 level, union srvsvc_NetFileSubCtr *r)
+void ndr_print_srvsvc_NetFileCtr(struct ndr_print *ndr, const char *name, uint16 level, union srvsvc_NetFileCtr *r)
 {
-	ndr_print_union(ndr, name, level, "srvsvc_NetFileSubCtr");
+	ndr_print_union(ndr, name, level, "srvsvc_NetFileCtr");
 	switch (level) {
 	case 2:
 	ndr_print_ptr(ndr, "ctr2", r->ctr2);
@@ -4457,16 +3909,6 @@ void ndr_print_srvsvc_NetFileSubCtr(struct ndr_print *ndr, const char *name, uin
 	break;
 
 	}
-}
-
-void ndr_print_srvsvc_NetFileCtr(struct ndr_print *ndr, const char *name, struct srvsvc_NetFileCtr *r)
-{
-	ndr_print_struct(ndr, name, "srvsvc_NetFileCtr");
-	ndr->depth++;
-	ndr_print_uint32(ndr, "level", r->level);
-	ndr_print_uint32(ndr, "level2", r->level2);
-	ndr_print_srvsvc_NetFileSubCtr(ndr, "subctr", r->level, &r->subctr);
-	ndr->depth--;
 }
 
 void ndr_print_srvsvc_NetFileEnum(struct ndr_print *ndr, const char *name, int flags, struct srvsvc_NetFileEnum *r)
@@ -4494,7 +3936,8 @@ void ndr_print_srvsvc_NetFileEnum(struct ndr_print *ndr, const char *name, int f
 		ndr_print_unistr(ndr, "user", r->in.user);
 	}
 	ndr->depth--;
-	ndr_print_srvsvc_NetFileCtr(ndr, "ctr", &r->in.ctr);
+	ndr_print_uint32(ndr, "level", r->in.level);
+	ndr_print_srvsvc_NetFileCtr(ndr, "ctr", r->in.level, &r->in.ctr);
 	ndr_print_uint32(ndr, "preferred_len", r->in.preferred_len);
 	ndr_print_ptr(ndr, "resume_handle", r->in.resume_handle);
 	ndr->depth++;
@@ -4507,7 +3950,8 @@ void ndr_print_srvsvc_NetFileEnum(struct ndr_print *ndr, const char *name, int f
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "srvsvc_NetFileEnum");
 	ndr->depth++;
-	ndr_print_srvsvc_NetFileCtr(ndr, "ctr", &r->out.ctr);
+	ndr_print_uint32(ndr, "level", r->out.level);
+	ndr_print_srvsvc_NetFileCtr(ndr, "ctr", r->in.level, &r->out.ctr);
 	ndr_print_uint32(ndr, "total", r->out.total);
 	ndr_print_ptr(ndr, "resume_handle", r->out.resume_handle);
 	ndr->depth++;
@@ -4755,9 +4199,9 @@ void ndr_print_srvsvc_NetSessCtrDefault(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-void ndr_print_srvsvc_NetSessSubCtr(struct ndr_print *ndr, const char *name, uint16 level, union srvsvc_NetSessSubCtr *r)
+void ndr_print_srvsvc_NetSessCtr(struct ndr_print *ndr, const char *name, uint16 level, union srvsvc_NetSessCtr *r)
 {
-	ndr_print_union(ndr, name, level, "srvsvc_NetSessSubCtr");
+	ndr_print_union(ndr, name, level, "srvsvc_NetSessCtr");
 	switch (level) {
 	case 0:
 	ndr_print_ptr(ndr, "ctr0", r->ctr0);
@@ -4811,16 +4255,6 @@ void ndr_print_srvsvc_NetSessSubCtr(struct ndr_print *ndr, const char *name, uin
 	}
 }
 
-void ndr_print_srvsvc_NetSessCtr(struct ndr_print *ndr, const char *name, struct srvsvc_NetSessCtr *r)
-{
-	ndr_print_struct(ndr, name, "srvsvc_NetSessCtr");
-	ndr->depth++;
-	ndr_print_uint32(ndr, "level", r->level);
-	ndr_print_uint32(ndr, "level2", r->level2);
-	ndr_print_srvsvc_NetSessSubCtr(ndr, "subctr", r->level, &r->subctr);
-	ndr->depth--;
-}
-
 void ndr_print_srvsvc_NetSessEnum(struct ndr_print *ndr, const char *name, int flags, struct srvsvc_NetSessEnum *r)
 {
 	ndr_print_struct(ndr, name, "srvsvc_NetSessEnum");
@@ -4846,7 +4280,8 @@ void ndr_print_srvsvc_NetSessEnum(struct ndr_print *ndr, const char *name, int f
 		ndr_print_unistr(ndr, "user", r->in.user);
 	}
 	ndr->depth--;
-	ndr_print_srvsvc_NetSessCtr(ndr, "ctr", &r->in.ctr);
+	ndr_print_uint32(ndr, "level", r->in.level);
+	ndr_print_srvsvc_NetSessCtr(ndr, "ctr", r->in.level, &r->in.ctr);
 	ndr_print_uint32(ndr, "preferred_len", r->in.preferred_len);
 	ndr_print_ptr(ndr, "resume_handle", r->in.resume_handle);
 	ndr->depth++;
@@ -4859,7 +4294,8 @@ void ndr_print_srvsvc_NetSessEnum(struct ndr_print *ndr, const char *name, int f
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "srvsvc_NetSessEnum");
 	ndr->depth++;
-	ndr_print_srvsvc_NetSessCtr(ndr, "ctr", &r->out.ctr);
+	ndr_print_uint32(ndr, "level", r->out.level);
+	ndr_print_srvsvc_NetSessCtr(ndr, "ctr", r->in.level, &r->out.ctr);
 	ndr_print_uint32(ndr, "total", r->out.total);
 	ndr_print_ptr(ndr, "resume_handle", r->out.resume_handle);
 	ndr->depth++;
@@ -5117,9 +4553,9 @@ void ndr_print_srvsvc_NetShareCtrDefault(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-void ndr_print_srvsvc_NetShareSubCtr(struct ndr_print *ndr, const char *name, uint16 level, union srvsvc_NetShareSubCtr *r)
+void ndr_print_srvsvc_NetShareCtr(struct ndr_print *ndr, const char *name, uint16 level, union srvsvc_NetShareCtr *r)
 {
-	ndr_print_union(ndr, name, level, "srvsvc_NetShareSubCtr");
+	ndr_print_union(ndr, name, level, "srvsvc_NetShareCtr");
 	switch (level) {
 	case 0:
 	ndr_print_ptr(ndr, "ctr0", r->ctr0);
@@ -5173,16 +4609,6 @@ void ndr_print_srvsvc_NetShareSubCtr(struct ndr_print *ndr, const char *name, ui
 	}
 }
 
-void ndr_print_srvsvc_NetShareCtr(struct ndr_print *ndr, const char *name, struct srvsvc_NetShareCtr *r)
-{
-	ndr_print_struct(ndr, name, "srvsvc_NetShareCtr");
-	ndr->depth++;
-	ndr_print_uint32(ndr, "level", r->level);
-	ndr_print_uint32(ndr, "level2", r->level2);
-	ndr_print_srvsvc_NetShareSubCtr(ndr, "subctr", r->level, &r->subctr);
-	ndr->depth--;
-}
-
 void ndr_print_srvsvc_NetShareEnumAll(struct ndr_print *ndr, const char *name, int flags, struct srvsvc_NetShareEnumAll *r)
 {
 	ndr_print_struct(ndr, name, "srvsvc_NetShareEnumAll");
@@ -5196,7 +4622,8 @@ void ndr_print_srvsvc_NetShareEnumAll(struct ndr_print *ndr, const char *name, i
 		ndr_print_unistr(ndr, "server_unc", r->in.server_unc);
 	}
 	ndr->depth--;
-	ndr_print_srvsvc_NetShareCtr(ndr, "ctr", &r->in.ctr);
+	ndr_print_uint32(ndr, "level", r->in.level);
+	ndr_print_srvsvc_NetShareCtr(ndr, "ctr", r->in.level, &r->in.ctr);
 	ndr_print_uint32(ndr, "preferred_len", r->in.preferred_len);
 	ndr_print_ptr(ndr, "resume_handle", r->in.resume_handle);
 	ndr->depth++;
@@ -5209,8 +4636,9 @@ void ndr_print_srvsvc_NetShareEnumAll(struct ndr_print *ndr, const char *name, i
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "srvsvc_NetShareEnumAll");
 	ndr->depth++;
-	ndr_print_srvsvc_NetShareCtr(ndr, "ctr", &r->out.ctr);
-	ndr_print_uint32(ndr, "total", r->out.total);
+	ndr_print_uint32(ndr, "level", r->out.level);
+	ndr_print_srvsvc_NetShareCtr(ndr, "ctr", r->in.level, &r->out.ctr);
+	ndr_print_uint32(ndr, "totalentries", r->out.totalentries);
 	ndr_print_ptr(ndr, "resume_handle", r->out.resume_handle);
 	ndr->depth++;
 	if (r->out.resume_handle) {
@@ -5703,9 +5131,9 @@ void ndr_print_srvsvc_NetTransportCtrDefault(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-void ndr_print_srvsvc_NetTransportSubCtr(struct ndr_print *ndr, const char *name, uint16 level, union srvsvc_NetTransportSubCtr *r)
+void ndr_print_srvsvc_NetTransportCtr(struct ndr_print *ndr, const char *name, uint16 level, union srvsvc_NetTransportCtr *r)
 {
-	ndr_print_union(ndr, name, level, "srvsvc_NetTransportSubCtr");
+	ndr_print_union(ndr, name, level, "srvsvc_NetTransportCtr");
 	switch (level) {
 	case 0:
 	ndr_print_ptr(ndr, "ctr0", r->ctr0);
@@ -5741,16 +5169,6 @@ void ndr_print_srvsvc_NetTransportSubCtr(struct ndr_print *ndr, const char *name
 	}
 }
 
-void ndr_print_srvsvc_NetTransportCtr(struct ndr_print *ndr, const char *name, struct srvsvc_NetTransportCtr *r)
-{
-	ndr_print_struct(ndr, name, "srvsvc_NetTransportCtr");
-	ndr->depth++;
-	ndr_print_uint32(ndr, "level", r->level);
-	ndr_print_uint32(ndr, "level2", r->level2);
-	ndr_print_srvsvc_NetTransportSubCtr(ndr, "subctr", r->level, &r->subctr);
-	ndr->depth--;
-}
-
 void ndr_print_srvsvc_NetTransportEnum(struct ndr_print *ndr, const char *name, int flags, struct srvsvc_NetTransportEnum *r)
 {
 	ndr_print_struct(ndr, name, "srvsvc_NetTransportEnum");
@@ -5764,7 +5182,8 @@ void ndr_print_srvsvc_NetTransportEnum(struct ndr_print *ndr, const char *name, 
 		ndr_print_unistr(ndr, "server_unc", r->in.server_unc);
 	}
 	ndr->depth--;
-	ndr_print_srvsvc_NetTransportCtr(ndr, "ctr", &r->in.ctr);
+	ndr_print_uint32(ndr, "level", r->in.level);
+	ndr_print_srvsvc_NetTransportCtr(ndr, "ctr", r->in.level, &r->in.ctr);
 	ndr_print_uint32(ndr, "preferred_len", r->in.preferred_len);
 	ndr_print_ptr(ndr, "resume_handle", r->in.resume_handle);
 	ndr->depth++;
@@ -5777,7 +5196,8 @@ void ndr_print_srvsvc_NetTransportEnum(struct ndr_print *ndr, const char *name, 
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "srvsvc_NetTransportEnum");
 	ndr->depth++;
-	ndr_print_srvsvc_NetTransportCtr(ndr, "ctr", &r->out.ctr);
+	ndr_print_uint32(ndr, "level", r->out.level);
+	ndr_print_srvsvc_NetTransportCtr(ndr, "ctr", r->in.level, &r->out.ctr);
 	ndr_print_uint32(ndr, "total", r->out.total);
 	ndr_print_ptr(ndr, "resume_handle", r->out.resume_handle);
 	ndr->depth++;
@@ -5966,7 +5386,8 @@ void ndr_print_srvsvc_NetShareEnum(struct ndr_print *ndr, const char *name, int 
 		ndr_print_unistr(ndr, "server_unc", r->in.server_unc);
 	}
 	ndr->depth--;
-	ndr_print_srvsvc_NetShareCtr(ndr, "ctr", &r->in.ctr);
+	ndr_print_uint32(ndr, "level", r->in.level);
+	ndr_print_srvsvc_NetShareCtr(ndr, "ctr", r->in.level, &r->in.ctr);
 	ndr_print_uint32(ndr, "preferred_len", r->in.preferred_len);
 	ndr_print_ptr(ndr, "resume_handle", r->in.resume_handle);
 	ndr->depth++;
@@ -5979,8 +5400,9 @@ void ndr_print_srvsvc_NetShareEnum(struct ndr_print *ndr, const char *name, int 
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "srvsvc_NetShareEnum");
 	ndr->depth++;
-	ndr_print_srvsvc_NetShareCtr(ndr, "ctr", &r->out.ctr);
-	ndr_print_uint32(ndr, "total", r->out.total);
+	ndr_print_uint32(ndr, "level", r->out.level);
+	ndr_print_srvsvc_NetShareCtr(ndr, "ctr", r->in.level, &r->out.ctr);
+	ndr_print_uint32(ndr, "totalentries", r->out.totalentries);
 	ndr_print_ptr(ndr, "resume_handle", r->out.resume_handle);
 	ndr->depth++;
 	if (r->out.resume_handle) {

@@ -179,11 +179,11 @@ typedef NTSTATUS (*ndr_pull_fn_t)(struct ndr_pull *, void *);
 typedef NTSTATUS (*ndr_push_flags_fn_t)(struct ndr_push *, int ndr_flags, void *);
 typedef NTSTATUS (*ndr_push_const_fn_t)(struct ndr_push *, int ndr_flags, const void *);
 typedef NTSTATUS (*ndr_pull_flags_fn_t)(struct ndr_pull *, int ndr_flags, void *);
-typedef NTSTATUS (*ndr_push_union_fn_t)(struct ndr_push *, int ndr_flags, uint16, void *);
-typedef NTSTATUS (*ndr_pull_union_fn_t)(struct ndr_pull *, int ndr_flags, uint16 *, void *);
+typedef NTSTATUS (*ndr_push_union_fn_t)(struct ndr_push *, int ndr_flags, uint32, void *);
+typedef NTSTATUS (*ndr_pull_union_fn_t)(struct ndr_pull *, int ndr_flags, uint32, void *);
 typedef void (*ndr_print_fn_t)(struct ndr_print *, const char *, void *);
 typedef void (*ndr_print_function_t)(struct ndr_print *, const char *, int, void *);
-typedef void (*ndr_print_union_fn_t)(struct ndr_print *, const char *, uint16, void *);
+typedef void (*ndr_print_union_fn_t)(struct ndr_print *, const char *, uint32, void *);
 
 /* now pull in the individual parsers */
 #include "librpc/ndr/ndr_basic.h"

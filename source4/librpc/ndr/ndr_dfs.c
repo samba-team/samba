@@ -323,7 +323,6 @@ NTSTATUS ndr_push_dfs_EnumInfo(struct ndr_push *ndr, int ndr_flags, uint16 level
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_push_struct_start(ndr));
-	NDR_CHECK(ndr_push_uint16(ndr, level));
 	switch (level) {
 	case 1:
 	NDR_CHECK(ndr_push_ptr(ndr, r->info1));
@@ -405,10 +404,12 @@ NTSTATUS ndr_push_dfs_EnumStruct(struct ndr_push *ndr, int ndr_flags, struct dfs
 	NDR_CHECK(ndr_push_struct_start(ndr));
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_uint32(ndr, r->level));
+	NDR_CHECK(ndr_push_uint32(ndr, r->level));
 	NDR_CHECK(ndr_push_dfs_EnumInfo(ndr, NDR_SCALARS, r->level, &r->e));
 	ndr_push_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	NDR_CHECK(ndr_push_uint32(ndr, r->level));
 	NDR_CHECK(ndr_push_dfs_EnumInfo(ndr, NDR_BUFFERS, r->level, &r->e));
 done:
 	return NT_STATUS_OK;
@@ -751,12 +752,11 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_dfs_Info(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union dfs_Info *r)
+NTSTATUS ndr_pull_dfs_Info(struct ndr_pull *ndr, int ndr_flags, uint16 level, union dfs_Info *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_struct_start(ndr));
-	NDR_CHECK(ndr_pull_uint16(ndr, level));
-	switch (*level) {
+	switch (level) {
 	case 1: {
 		uint32 _ptr_info1;
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_info1));
@@ -848,12 +848,12 @@ NTSTATUS ndr_pull_dfs_Info(struct ndr_pull *ndr, int ndr_flags, uint16 *level, u
 	break; }
 
 	default:
-		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 	}
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	switch (*level) {
+	switch (level) {
 	case 1:
 	if (r->info1) {
 		NDR_CHECK(ndr_pull_dfs_Info1(ndr, NDR_SCALARS|NDR_BUFFERS, r->info1));
@@ -909,7 +909,7 @@ buffers:
 	break;
 
 	default:
-		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 	}
 done:
 	return NT_STATUS_OK;
@@ -917,10 +917,12 @@ done:
 
 NTSTATUS ndr_pull_dfs_GetInfo(struct ndr_pull *ndr, struct dfs_GetInfo *r)
 {
-	{ uint16 _level = r->in.level;
-	NDR_CHECK(ndr_pull_dfs_Info(ndr, NDR_SCALARS|NDR_BUFFERS, &_level, &r->out.info));
-	if (((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) && (_level != r->in.level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
+	if ((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) {
+		 uint32 _level;
+		NDR_CHECK(ndr_pull_uint32(ndr, &_level));
+		if (_level != r->in.level) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
 	}
+	NDR_CHECK(ndr_pull_dfs_Info(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.level, &r->out.info));
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
@@ -1112,12 +1114,11 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_dfs_EnumInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union dfs_EnumInfo *r)
+NTSTATUS ndr_pull_dfs_EnumInfo(struct ndr_pull *ndr, int ndr_flags, uint16 level, union dfs_EnumInfo *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_struct_start(ndr));
-	NDR_CHECK(ndr_pull_uint16(ndr, level));
-	switch (*level) {
+	switch (level) {
 	case 1: {
 		uint32 _ptr_info1;
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_info1));
@@ -1179,12 +1180,12 @@ NTSTATUS ndr_pull_dfs_EnumInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *leve
 	break; }
 
 	default:
-		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 	}
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	switch (*level) {
+	switch (level) {
 	case 1:
 	if (r->info1) {
 		NDR_CHECK(ndr_pull_dfs_EnumArray1(ndr, NDR_SCALARS|NDR_BUFFERS, r->info1));
@@ -1222,7 +1223,7 @@ buffers:
 	break;
 
 	default:
-		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 	}
 done:
 	return NT_STATUS_OK;
@@ -1234,17 +1235,21 @@ NTSTATUS ndr_pull_dfs_EnumStruct(struct ndr_pull *ndr, int ndr_flags, struct dfs
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->level));
-	{ uint16 _level = r->level;
-	NDR_CHECK(ndr_pull_dfs_EnumInfo(ndr, NDR_SCALARS, &_level, &r->e));
-	if (((NDR_SCALARS) & NDR_SCALARS) && (_level != r->level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in e");
+	if ((NDR_SCALARS) & NDR_SCALARS) {
+		 uint32 _level;
+		NDR_CHECK(ndr_pull_uint32(ndr, &_level));
+		if (_level != r->level) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in e");
 	}
+	NDR_CHECK(ndr_pull_dfs_EnumInfo(ndr, NDR_SCALARS, r->level, &r->e));
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	{ uint16 _level = r->level;
-	NDR_CHECK(ndr_pull_dfs_EnumInfo(ndr, NDR_BUFFERS, &_level, &r->e));
-	if (((NDR_BUFFERS) & NDR_SCALARS) && (_level != r->level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in e");
+	if ((NDR_BUFFERS) & NDR_SCALARS) {
+		 uint32 _level;
+		NDR_CHECK(ndr_pull_uint32(ndr, &_level));
+		if (_level != r->level) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in e");
 	}
+	NDR_CHECK(ndr_pull_dfs_EnumInfo(ndr, NDR_BUFFERS, r->level, &r->e));
 done:
 	return NT_STATUS_OK;
 }

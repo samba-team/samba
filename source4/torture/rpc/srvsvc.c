@@ -34,19 +34,18 @@ static BOOL test_NetConnEnum(struct dcerpc_pipe *p,
 
 	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.path = talloc_asprintf(mem_ctx,"%s","ADMIN$");
-	r.in.ctr.subctr.ctr0 = &c0;
-	r.in.ctr.subctr.ctr0->count = 0;
-	r.in.ctr.subctr.ctr0->array = NULL;
+	r.in.ctr.ctr0 = &c0;
+	r.in.ctr.ctr0->count = 0;
+	r.in.ctr.ctr0->array = NULL;
 	r.in.preferred_len = (uint32)-1;
 	r.in.resume_handle = NULL;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		r.in.ctr.level = levels[i];
-		r.in.ctr.level2 = levels[i];
-		printf("testing NetConnEnum level %u\n", r.in.ctr.level);
+		r.in.level = levels[i];
+		printf("testing NetConnEnum level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetConnEnum(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("NetConnEnum level %u failed - %s\n", r.in.ctr.level, nt_errstr(status));
+			printf("NetConnEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
 			ret = False;
 		}
 	}
@@ -67,19 +66,18 @@ static BOOL test_NetFileEnum(struct dcerpc_pipe *p,
 	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.path = NULL;
 	r.in.user = NULL;
-	r.in.ctr.subctr.ctr3 = &c3;
-	r.in.ctr.subctr.ctr3->count = 0;
-	r.in.ctr.subctr.ctr3->array = NULL;
+	r.in.ctr.ctr3 = &c3;
+	r.in.ctr.ctr3->count = 0;
+	r.in.ctr.ctr3->array = NULL;
 	r.in.preferred_len = (uint32)4096;
 	r.in.resume_handle = NULL;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		r.in.ctr.level = levels[i];
-		r.in.ctr.level2 = levels[i];
-		printf("testing NetFileEnum level %u\n", r.in.ctr.level);
+		r.in.level = levels[i];
+		printf("testing NetFileEnum level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetFileEnum(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("NetFileEnum level %u failed - %s\n", r.in.ctr.level, nt_errstr(status));
+			printf("NetFileEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
 			ret = False;
 		}
 	}
@@ -100,19 +98,18 @@ static BOOL test_NetSessEnum(struct dcerpc_pipe *p,
 	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.client = NULL;
 	r.in.user = NULL;
-	r.in.ctr.subctr.ctr0 = &c0;
-	r.in.ctr.subctr.ctr0->count = 0;
-	r.in.ctr.subctr.ctr0->array = NULL;
+	r.in.ctr.ctr0 = &c0;
+	r.in.ctr.ctr0->count = 0;
+	r.in.ctr.ctr0->array = NULL;
 	r.in.preferred_len = (uint32)-1;
 	r.in.resume_handle = NULL;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		r.in.ctr.level = levels[i];
-		r.in.ctr.level2 = levels[i];
-		printf("testing NetSessEnum level %u\n", r.in.ctr.level);
+		r.in.level = levels[i];
+		printf("testing NetSessEnum level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetSessEnum(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("NetSessEnum level %u failed - %s\n", r.in.ctr.level, nt_errstr(status));
+			printf("NetSessEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
 			ret = False;
 		}
 	}
@@ -131,19 +128,18 @@ static BOOL test_NetShareEnumAll(struct dcerpc_pipe *p,
 	BOOL ret = True;
 
 	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
-	r.in.ctr.subctr.ctr0 = &c0;
-	r.in.ctr.subctr.ctr0->count = 0;
-	r.in.ctr.subctr.ctr0->array = NULL;
+	r.in.ctr.ctr0 = &c0;
+	r.in.ctr.ctr0->count = 0;
+	r.in.ctr.ctr0->array = NULL;
 	r.in.preferred_len = (uint32)-1;
 	r.in.resume_handle = NULL;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		r.in.ctr.level = levels[i];
-		r.in.ctr.level2 = levels[i];
-		printf("testing NetShareEnumAll level %u\n", r.in.ctr.level);
+		r.in.level = levels[i];
+		printf("testing NetShareEnumAll level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetShareEnumAll(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("NetShareEnumAll level %u failed - %s\n", r.in.ctr.level, nt_errstr(status));
+			printf("NetShareEnumAll level %u failed - %s\n", r.in.level, nt_errstr(status));
 			ret = False;
 		}
 	}
@@ -192,19 +188,18 @@ static BOOL test_NetTransportEnum(struct dcerpc_pipe *p,
 	BOOL ret = True;
 
 	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
-	r.in.ctr.subctr.ctr0 = &c0;
-	r.in.ctr.subctr.ctr0->count = 0;
-	r.in.ctr.subctr.ctr0->array = NULL;
+	r.in.ctr.ctr0 = &c0;
+	r.in.ctr.ctr0->count = 0;
+	r.in.ctr.ctr0->array = NULL;
 	r.in.preferred_len = (uint32)-1;
 	r.in.resume_handle = NULL;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		r.in.ctr.level = levels[i];
-		r.in.ctr.level2 = levels[i];
-		printf("testing NetTransportEnum level %u\n", r.in.ctr.level);
+		r.in.level = levels[i];
+		printf("testing NetTransportEnum level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetTransportEnum(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("NetTransportEnum level %u failed - %s\n", r.in.ctr.level, nt_errstr(status));
+			printf("NetTransportEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
 			ret = False;
 		}
 	}
@@ -223,19 +218,18 @@ static BOOL test_NetShareEnum(struct dcerpc_pipe *p,
 	BOOL ret = True;
 
 	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
-	r.in.ctr.subctr.ctr0 = &c0;
-	r.in.ctr.subctr.ctr0->count = 0;
-	r.in.ctr.subctr.ctr0->array = NULL;
+	r.in.ctr.ctr0 = &c0;
+	r.in.ctr.ctr0->count = 0;
+	r.in.ctr.ctr0->array = NULL;
 	r.in.preferred_len = (uint32)-1;
 	r.in.resume_handle = NULL;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		r.in.ctr.level = levels[i];
-		r.in.ctr.level2 = levels[i];
-		printf("testing NetShareEnum level %u\n", r.in.ctr.level);
+		r.in.level = levels[i];
+		printf("testing NetShareEnum level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetShareEnum(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("NetShareEnum level %u failed - %s\n", r.in.ctr.level, nt_errstr(status));
+			printf("NetShareEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
 			ret = False;
 		}
 	}
