@@ -103,7 +103,12 @@ sl_help (SL_cmd *cmds, int argc, char **argv)
     }
 }
 
-#ifndef HAVE_READLINE
+#ifdef HAVE_READLINE
+
+char *readline(char *prompt);
+void add_history(char *p);
+
+#else
 
 static char *
 readline(char *prompt)
