@@ -74,7 +74,6 @@ static BOOL signing_good(struct smb_signing_context *sign_info,
 			/* If we have never seen a good packet, just turn it off */
 			DEBUG(5, ("signing_good: signing negotiated but not required and peer\n"
 				  "isn't sending correct signatures. Turning off.\n"));
-			sign_info->negotiated_smb_signing = False;
 			sign_info->allow_smb_signing = False;
 			sign_info->doing_signing = False;
 			if (sign_info->free_signing_context)
@@ -191,25 +190,25 @@ BOOL check_signed_incoming_message(struct request_buffer *in, DATA_BLOB *mac_key
 ************************************************************/
 static void smbcli_request_simple_sign_outgoing_message(struct smbcli_request *req)
 {
-	struct smb_basic_signing_context *data = req->transport->negotiate.sign_info.signing_context;
-
 #if 0
 	/* enable this when packet signing is preventing you working out why valgrind 
 	   says that data is uninitialised */
 	file_save("pkt.dat", req->out.buffer, req->out.size);
 #endif
 
-	req->seq_num = data->next_seq_num;
+	req->seq_num = req->transport->negotiate.sign_info.next_seq_num;
 	
 	/* some requests (eg. NTcancel) are one way, and the sequence number
 	   should be increased by 1 not 2 */
 	if (req->sign_single_increment) {
-		data->next_seq_num += 1;
+		req->transport->negotiate.sign_info.next_seq_num += 1;
 	} else {
-		data->next_seq_num += 2;
+		req->transport->negotiate.sign_info.next_seq_num += 2;
 	}
 	
-	sign_outgoing_message(&req->out, &data->mac_key, req->seq_num);
+	sign_outgoing_message(&req->out, 
+			      &req->transport->negotiate.sign_info.mac_key, 
+			      req->seq_num);
 }
 
 
@@ -218,11 +217,8 @@ static void smbcli_request_simple_sign_outgoing_message(struct smbcli_request *r
 ************************************************************/
 static BOOL smbcli_request_simple_check_incoming_message(struct smbcli_request *req)
 {
-	struct smb_basic_signing_context *data 
-		= req->transport->negotiate.sign_info.signing_context;
-
 	BOOL good = check_signed_incoming_message(&req->in, 
-						  &data->mac_key, 
+						  &req->transport->negotiate.sign_info.mac_key, 
 						  req->seq_num+1);
 						  
 	return signing_good(&req->transport->negotiate.sign_info, 
@@ -235,11 +231,7 @@ static BOOL smbcli_request_simple_check_incoming_message(struct smbcli_request *
 ************************************************************/
 static void smbcli_transport_simple_free_signing_context(struct smb_signing_context *sign_info)
 {
-	struct smb_basic_signing_context *data = sign_info->signing_context;
-
-	data_blob_free(&data->mac_key);
-	SAFE_FREE(sign_info->signing_context);
-
+	data_blob_free(&sign_info->mac_key);
 	return;
 }
 
@@ -250,29 +242,24 @@ BOOL smbcli_simple_set_signing(struct smb_signing_context *sign_info,
 			       const DATA_BLOB user_session_key, 
 			       const DATA_BLOB response)
 {
-	struct smb_basic_signing_context *data;
-
 	if (sign_info->mandatory_signing) {
 		DEBUG(5, ("Mandatory SMB signing enabled!\n"));
 	}
 
 	DEBUG(5, ("SMB signing enabled!\n"));
 
-	data = smb_xmalloc(sizeof(*data));
-	sign_info->signing_context = data;
-	
-	data->mac_key = data_blob(NULL, response.length + user_session_key.length);
+	sign_info->mac_key = data_blob(NULL, response.length + user_session_key.length);
 
-	memcpy(&data->mac_key.data[0], user_session_key.data, user_session_key.length);
+	memcpy(&sign_info->mac_key.data[0], user_session_key.data, user_session_key.length);
 
 	if (response.length) {
-		memcpy(&data->mac_key.data[user_session_key.length],response.data, response.length);
+		memcpy(&sign_info->mac_key.data[user_session_key.length],response.data, response.length);
 	}
 
-	dump_data_pw("Started Signing with key:\n", data->mac_key.data, data->mac_key.length);
+	dump_data_pw("Started Signing with key:\n", sign_info->mac_key.data, sign_info->mac_key.length);
 
 	/* Initialise the sequence number */
-	data->next_seq_num = 0;
+	sign_info->next_seq_num = 0;
 
 	sign_info->sign_outgoing_message = smbcli_request_simple_sign_outgoing_message;
 	sign_info->check_incoming_message = smbcli_request_simple_check_incoming_message;
@@ -334,8 +321,6 @@ static void smbcli_null_free_signing_context(struct smb_signing_context *sign_in
 */
 BOOL smbcli_null_set_signing(struct smb_signing_context *sign_info)
 {
-	sign_info->signing_context = NULL;
-	
 	sign_info->sign_outgoing_message = smbcli_request_null_sign_outgoing_message;
 	sign_info->check_incoming_message = smbcli_request_null_check_incoming_message;
 	sign_info->free_signing_context = smbcli_null_free_signing_context;
@@ -344,7 +329,7 @@ BOOL smbcli_null_set_signing(struct smb_signing_context *sign_info)
 }
 
 /***********************************************************
- SMB signing - TEMP implementation - calculate a MAC to send.
+ SMB signing - TEMP implementation (send BSRSPYL during SPNEGO) - calculate a MAC to send.
 ************************************************************/
 static void smbcli_request_temp_sign_outgoing_message(struct smbcli_request *req)
 {
@@ -386,8 +371,6 @@ BOOL smbcli_temp_set_signing(struct smbcli_transport *transport)
 		return False;
 	}
 
-	transport->negotiate.sign_info.signing_context = NULL;
-	
 	transport->negotiate.sign_info.sign_outgoing_message = smbcli_request_temp_sign_outgoing_message;
 	transport->negotiate.sign_info.check_incoming_message = smbcli_request_temp_check_incoming_message;
 	transport->negotiate.sign_info.free_signing_context = smbcli_temp_free_signing_context;
