@@ -1,5 +1,5 @@
 !==
-!== BROWSING.txt for Samba release TNG-alpha 01 May 2000
+!== BROWSING.txt for Samba release TNG-alpha 02 May 2000
 !==
 Author/s:	Many (Thanks to Luke, Jeremy, Andrew, etc.)
 Updated:	July 5, 1998
