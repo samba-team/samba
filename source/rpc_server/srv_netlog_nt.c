@@ -550,7 +550,7 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 	} 
 
 #ifdef WITH_PAM
-	if (!pam_accountcheck(nt_username)) {
+	if (!smb_pam_accountcheck(nt_username)) {
 	  return NT_STATUS_ACCOUNT_DISABLED;
 	}
 #endif
