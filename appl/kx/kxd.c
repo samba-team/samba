@@ -681,6 +681,7 @@ doit(int sock, int tcp_flag)
     else
 	ret = doit_active (&context, sock, flags, tcp_flag);
     context_destroy (&context);
+    cleanup(nsockets, sockets);
     return ret;
 }
 
