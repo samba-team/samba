@@ -12,6 +12,7 @@ static char SccsId[] = "@(#)@(#)pop_updt.c	2.3  2.3 3/20/91";
 #include <errno.h>
 #include <stdio.h>
 #include <sys/types.h>
+#include <unistd.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/file.h>
