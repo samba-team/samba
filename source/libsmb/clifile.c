@@ -489,6 +489,10 @@ BOOL cli_lock64(struct cli_state *cli, int fnum,
         int saved_timeout = cli->timeout;
 	int ltype;
 
+	if (! (cli->capabilities & CAP_LARGE_FILES)) {
+		return cli_lock(cli, fnum, offset, len, timeout, lock_type);
+	}
+
 	ltype = (lock_type == READ_LOCK? 1 : 0);
 	ltype |= LOCKING_ANDX_LARGE_FILES;
 
@@ -539,6 +543,10 @@ BOOL cli_lock64(struct cli_state *cli, int fnum,
 BOOL cli_unlock64(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_BIG_UINT len)
 {
 	char *p;
+
+	if (! (cli->capabilities & CAP_LARGE_FILES)) {
+		return cli_unlock(cli, fnum, offset, len);
+	}
 
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
