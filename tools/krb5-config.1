@@ -9,8 +9,8 @@
 give information on how to link code against Heimdal libraries
 .Sh SYNOPSIS
 .Nm
-.Op Fl -prefix= Ns Ar dir
-.Op Fl -exec-prefix= Ns Ar dir
+.Op Fl -prefix Ns Op = Ns Ar dir
+.Op Fl -exec-prefix Ns Op = Ns Ar dir
 .Op Fl -libs
 .Op Fl -cflags
 .Op Ar libraries
@@ -21,11 +21,15 @@ and link programs against the libraries installed by Heimdal.
 .Pp
 Options supported:
 .Bl -tag -width Ds
-.It Fl -prefix= Ns Ar dir
-Assume that the prefix to be used is
+.It Fl -prefix Ns Op = Ns Ar dir
+Print the prefix if no
+.Ar dir
+is specified, otherwise set prefix to
 .Ar dir .
-.It Fl -exec-prefix= Ns Ar dir
-Assume that the exec-prefix to be used is
+.It Fl -exec-prefix Ns Op = Ns Ar dir
+Print the exec-prefix if no
+.Ar dir
+is specified, otherwise set exec-prefix to
 .Ar dir .
 .It Fl -libs
 Output the set of libraries that should be linked against.
