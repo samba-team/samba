@@ -680,13 +680,20 @@ static void fmtfp (char *buffer, size_t *currlen, size_t maxlen,
 
   r_length = strlen(result);
 
+  /*
+   * Fix broken fcvt implementation returns..
+   */
+
   if (r_length == 0)
     {
       result[0] = '0';
       result[1] = '\0';
       r_length = 1;
     }
-  
+
+  if ( r_length < dec_pt )
+    dec_pt = r_length;
+
   if (dec_pt <= 0)
     {
     iplace = 1;
