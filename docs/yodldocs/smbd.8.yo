@@ -262,8 +262,8 @@ label(RUNNINGTHESERVERASADAEMON)
 manpagesection(RUNNING THE SERVER AS A DAEMON)
 
 To run the server as a daemon from the command line, simply put the
-bf(-D) option on the command line. There is no need to place an
-ampersand at the end of the command line - the bf(-D) option causes
+link(bf(-D))(minusD) option on the command line. There is no need to place an
+ampersand at the end of the command line - the link(bf(-D))(minusD) option causes
 the server to detach itself from the tty anyway.
 
 Any user can run the server as a daemon (execute permissions
@@ -287,7 +287,7 @@ this man page. If the above appears as more than one line, please treat any
 newlines or indentation as a single space or TAB character.)
 
 If the options used at compile time are appropriate for your system,
-all parameters except the desired debug level and bf(-D) may be
+all parameters except the desired debug level and link(bf(-D))(minusD) may be
 omitted. See the section em(OPTIONS) above.
 
 label(RUNNINGTHESERVERONREQUEST)
@@ -300,9 +300,9 @@ machine. If you are experimenting as an ordinary user rather than as
 root, you will need the assistance of your system administrator to
 modify the system files.
 
-You will probably want to set up the NetBIOS name server bf(nmbd) at
+You will probably want to set up the NetBIOS name server url(bf(nmbd))(nmbd.8.html) at
 the same time as bf(smbd). To do this refer to the man page for
-bf(nmbd (8)).
+url(bf(nmbd (8)))(nmbd.8.html).
 
 First, ensure that a port is configured in the file /etc/services. The
 well-known port 139 should be used if possible, though any port may be
@@ -335,7 +335,8 @@ are using a non-standard port number.
 Lastly, edit the configuration file to provide suitable services. To
 start with, the following two services should be all you need:
 
-tt(
+verb(
+
 [homes]
   writable = yes
 
@@ -344,6 +345,7 @@ tt(
  printable = yes
  path = /tmp
  public = yes
+
 )
 
 This will allow you to connect to your home directory and print to any
@@ -399,7 +401,7 @@ memory area in an inconsistant state. The safe way to terminate an
 smbd is to send it a SIGTERM (-15) signal and wait for it to die on
 its own.
 
-In version 1.9.18 and above the debug log level of smbd may be raised
+The debug log level of smbd may be raised
 by sending it a SIGUSR1 tt((kill -USR1 <smbd-pid>)) and lowered by
 sending it a SIGUSR2 tt((kill -USR2 <smbd-pid>)). This is to allow
 transient problems to be diagnosed, whilst still running at a normally
