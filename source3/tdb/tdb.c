@@ -1562,6 +1562,7 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	if (tdb->fd != -1)
 		close(tdb->fd);
 	SAFE_FREE(tdb->locked);
+	SAFE_FREE(tdb);
 	errno = save_errno;
 	return NULL;
 	}
