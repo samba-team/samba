@@ -19,11 +19,11 @@
 */
 
 /* 
-   NOTE: Since tdb is licensed under the GPL, any program that uses these
-   bindings must also be licensed under the GPL or a GPL compatible
-   license. See the following URL for details:
+   NOTE: Since tdb is licenced under the GPL any program that uses these bindings
+   must be distributed under the GPL license terms since this is what
+   the GPL requires.
 
-     http://www.gnu.org/licenses/gpl-faq.html#IfInterpreterIsGPL 
+   http://www.gnu.org/licenses/gpl-faq.html#IfInterpreterIsGPL 
 */
 
 #include "includes.h"
