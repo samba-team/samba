@@ -81,14 +81,14 @@ main(int argc, char **argv)
     krb5_init_context(&context);
 
     memset(&conf, 0, sizeof(conf));
-    ret = kadm5_s_init_with_password_ctx (context,
-					  KADM5_ADMIN_SERVICE,
-					  "password",
-					  KADM5_ADMIN_SERVICE,
-					  &conf, 0, 0, 
-					  &kadm_handle);
+    ret = kadm5_init_with_password_ctx (context,
+					KADM5_ADMIN_SERVICE,
+					NULL,
+					KADM5_ADMIN_SERVICE,
+					&conf, 0, 0, 
+					&kadm_handle);
     if (ret)
-	krb5_err (context, 1, ret, "kadm5_s_init_with_password_ctx");
+	krb5_err (context, 1, ret, "kadm5_init_with_password_ctx");
 
     server_context = (kadm5_server_context *)kadm_handle;
 
