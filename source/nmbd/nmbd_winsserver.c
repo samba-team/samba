@@ -1522,7 +1522,7 @@ void wins_write_database(void)
   if(!lp_we_are_a_wins_server())
     return;
 
-  fstrcpy(fname,lp_lockdir());
+  pstrcpy(fname,lp_lockdir());
   trim_string(fname,NULL,"/");
   pstrcat(fname,"/");
   pstrcat(fname,WINS_LIST);

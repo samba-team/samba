@@ -86,7 +86,7 @@ static BOOL share_name(int cnum, uint32 dev, uint32 inode, char *name)
   trim_string(name,"","/");
   if (!*name) return(False);
   len = strlen(name);
-  name += strlen(name);
+  name += len;
   
   slprintf(name, sizeof(pstring) - len - 1, "/share.%u.%u",dev,inode);
   return(True);

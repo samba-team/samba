@@ -860,10 +860,6 @@ void make_wks_r_query_info(WKS_R_QUERY_INFO *r_u,
 				int status)  ;
 void wks_io_r_query_info(char *desc,  WKS_R_QUERY_INFO *r_u, prs_struct *ps, int depth);
 
-/*The following definitions come from  lib/rpc/server/srv_ldap_helpers.c  */
-
-void ldap_helper_dummy(void);
-
 /*The following definitions come from  lib/rpc/server/srv_lsa.c  */
 
 BOOL api_ntlsa_rpc(pipes_struct *p, prs_struct *data);
