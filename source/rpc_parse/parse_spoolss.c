@@ -821,11 +821,8 @@ BOOL make_spoolss_q_addprinterex(
 create a SPOOL_PRINTER_INFO_2 stuct from a PRINTER_INFO_2 struct
 *******************************************************************/
 
-BOOL make_spoolss_printer_info_2(
-	TALLOC_CTX *mem_ctx,
-	SPOOL_PRINTER_INFO_LEVEL_2 **spool_info2, 
-	PRINTER_INFO_2 *info
-)
+BOOL make_spoolss_printer_info_2(TALLOC_CTX *mem_ctx, SPOOL_PRINTER_INFO_LEVEL_2 **spool_info2, 
+				PRINTER_INFO_2 *info)
 {
 
 	SPOOL_PRINTER_INFO_LEVEL_2 *inf;
@@ -3650,14 +3647,9 @@ BOOL make_spoolss_q_getprinter(
 /*******************************************************************
  * init a structure.
  ********************************************************************/
-BOOL make_spoolss_q_setprinter(
-	TALLOC_CTX *mem_ctx,
-	SPOOL_Q_SETPRINTER *q_u, 
-	const POLICY_HND *hnd, 
-	uint32 level, 
-	PRINTER_INFO_CTR *info, 
-	uint32 command
-)
+BOOL make_spoolss_q_setprinter(TALLOC_CTX *mem_ctx, SPOOL_Q_SETPRINTER *q_u, 
+				const POLICY_HND *hnd, uint32 level, PRINTER_INFO_CTR *info, 
+				uint32 command)
 {
 	SEC_DESC *secdesc;
 	DEVICEMODE *devmode;
@@ -5191,7 +5183,7 @@ BOOL uni_2_asc_printer_info_2(const SPOOL_PRINTER_INFO_LEVEL_2 *uni,
 		/* we allocate memory iff called from 
 		 * addprinter(ex) so we can do one time stuff here.
 		 */
-
+		(*asc)->setuptime=time_unix;
 	}	
 	DEBUGADD(8,("start converting\n"));
 
