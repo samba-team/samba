@@ -617,7 +617,7 @@ fkt_add_entry(krb5_context context,
     struct fkt_data *d = id->data;
     off_t pos_start, pos_end;
     
-    fd = open (d->filename, O_WRONLY | O_APPEND);
+    fd = open (d->filename, O_WRONLY);
     if (fd < 0) {
 	fd = open (d->filename, O_WRONLY | O_CREAT, 0600);
 	if (fd < 0)
@@ -632,7 +632,7 @@ fkt_add_entry(krb5_context context,
 	sp = krb5_storage_from_fd(fd);
     }
 
-    pos_start = sp->seek(sp, 0, SEEK_CUR);
+    pos_start = sp->seek(sp, 0, SEEK_END);
     ret = krb5_store_int32 (sp, 0); /* store real size at end */
     if (ret) goto out;
     ret = krb5_kt_store_principal (sp, entry->principal);
