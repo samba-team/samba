@@ -471,6 +471,7 @@ DATA_BLOB spnego_gen_auth_response(void)
 
   U = unicode string (input is unix string)
   a = address (1 byte type, 1 byte length, unicode string, all inline)
+  A = ASCII string (pointer + length) Actually same as B
   B = data blob (pointer + length)
   b = data blob in header (pointer + length)
   d = word (4 bytes)
@@ -500,6 +501,7 @@ BOOL msrpc_gen(DATA_BLOB *blob,
 			s = va_arg(ap, char *);
 			data_size += (str_charnum(s) * 2) + 4;
 			break;
+		case 'A':
 		case 'B':
 			b = va_arg(ap, uint8 *);
 			head_size += 8;
