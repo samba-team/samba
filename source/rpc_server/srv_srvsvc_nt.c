@@ -950,9 +950,11 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 	fstring share_name;
 	uint32 status = NT_STATUS_NOPROBLEMO;
 	int snum;
+#if 0
 	fstring servicename;
 	fstring comment;
 	pstring pathname;
+#endif
 
 	DEBUG(5,("_srv_net_share_set_info: %d\n", __LINE__));
 
@@ -996,6 +998,49 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 }
 
 /*******************************************************************
+ Check a given DOS pathname is valid for a share.
+********************************************************************/
+
+static char *valid_share_pathname(char *dos_pathname)
+{
+	pstring saved_pathname;
+	pstring unix_pathname;
+	char *ptr;
+	int ret;
+
+	/* Convert any '\' paths to '/' */
+	unix_format(dos_pathname);
+	unix_clean_name(dos_pathname);
+
+	/* NT is braindead - it wants a C: prefix to a pathname ! So strip it. */
+	ptr = dos_pathname;
+	if (strlen(dos_pathname) > 2 && ptr[1] == ':' && ptr[0] != '/')
+		ptr += 2;
+
+	/* Only abolute paths allowed. */
+	if (*ptr != '/')
+		return NULL;
+
+	/* Can we cd to it ? */
+
+	/* First save our current directory. */
+	if (getcwd(saved_pathname, sizeof(saved_pathname)) == NULL)
+		return False;
+
+	/* Convert to UNIX charset. */
+	pstrcpy(unix_pathname, ptr);
+	dos_to_unix(unix_pathname, True);
+	
+	ret = chdir(unix_pathname);
+
+	/* We *MUST* be able to chdir back. Abort if we can't. */
+	if (chdir(saved_pathname) == -1)
+		smb_panic("valid_share_pathname: Unable to restore current directory.\n");
+
+	return (ret != -1) ? ptr : NULL;
+}
+
+/*******************************************************************
  Net share add. Call 'add_share_command "sharename" "pathname" "comment"'
 ********************************************************************/
 
@@ -1003,13 +1048,13 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 {
 	struct current_user user;
 	pstring command;
-	uint32 status = NT_STATUS_NOPROBLEMO;
 	fstring share_name;
 	fstring comment;
 	pstring pathname;
-	char *ptr;
 	int type;
 	int snum;
+	int ret;
+	char *ptr;
 
 	DEBUG(5,("_srv_net_share_add: %d\n", __LINE__));
 
@@ -1026,27 +1071,26 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 	switch (q_u->info_level) {
 	case 1:
 		/* Not enough info in a level 1 to do anything. */
-		status = ERROR_ACCESS_DENIED;
-		break;
+		return ERROR_ACCESS_DENIED;
 	case 2:
 		unistr2_to_ascii(share_name, &q_u->info.share.info2.info_2_str.uni_netname, sizeof(share_name));
 		unistr2_to_ascii(comment, &q_u->info.share.info2.info_2_str.uni_remark, sizeof(share_name));
 		unistr2_to_ascii(pathname, &q_u->info.share.info2.info_2_str.uni_path, sizeof(share_name));
+		type = q_u->info.share.info2.info_2.type;
 		break;
 	case 502:
 		/* we set sd's here. FIXME. JRA */
 		unistr2_to_ascii(share_name, &q_u->info.share.info502.info_502_str.uni_netname, sizeof(share_name));
 		unistr2_to_ascii(comment, &q_u->info.share.info502.info_502_str.uni_remark, sizeof(share_name));
 		unistr2_to_ascii(pathname, &q_u->info.share.info502.info_502_str.uni_path, sizeof(share_name));
+		type = q_u->info.share.info502.info_502.type;
 		break;
 	case 1005:
 		/* DFS only level. */
-		status = ERROR_ACCESS_DENIED;
-		break;
+		return ERROR_ACCESS_DENIED;
 	default:
 		DEBUG(5,("_srv_net_share_add: unsupported switch value %d\n", q_u->info_level));
-		status = NT_STATUS_INVALID_INFO_CLASS;
-		break;
+		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
 	snum = find_service(share_name);
@@ -1055,25 +1099,36 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 	if (snum >= 0)
 		return NT_STATUS_BAD_NETWORK_NAME;
 
-	/* Convert any '\' paths to '/' */
-	unix_format(pathname);
-	unix_clean_name(pathname);
-
-	/* NT is braindead - it wants a C: prefix to a pathname ! */
-	ptr = pathname;
-	if (strlen(pathname) > 2 && ptr[1] == ':' && ptr[0] != '/')
-		ptr += 2;
+	/* We can only add disk shares. */
+	if (type != STYPE_DISKTREE)
+		return ERROR_ACCESS_DENIED;
+		
+	/* Check if the pathname is valid. */
+	if (!(ptr = valid_share_pathname( pathname )))
+		return ERRbadpath;
 
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\"",
 			lp_add_share_cmd(), share_name, ptr, comment );
+	dos_to_unix(command, True);  /* Convert to unix-codepage */
 
-/* HERE ! JRA */
+	DEBUG(10,("_srv_net_share_add: Running [%s]\n", command ));
+	if ((ret = smbrun(command, NULL, False)) != 0) {
+		DEBUG(0,("_srv_net_share_add: Running [%s] returned (%d)\n", command, ret ));
+		return ERROR_ACCESS_DENIED;
+	}
 
-	r_u->status = status;
+	/* Send SIGHUP to process group. */
+	kill(0, SIGHUP);
+
+	/*
+	 * We don't call reload_services() here, the SIGHUP will
+	 * cause this to be done before the next packet is read
+	 * from the client. JRA.
+	 */
 
 	DEBUG(5,("_srv_net_share_add: %d\n", __LINE__));
 
-	return r_u->status;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
