@@ -340,7 +340,7 @@ typedef struct krb5_auth_context_data{
 
 typedef struct {
   KDC_REP part1;
-  EncTGSRepPart part2;
+  EncKDCRepPart part2;
 } krb5_kdc_rep;
 
 krb5_error_code
