@@ -1,4 +1,6 @@
 2003-03-16  Love Hörnquist Åstrand <lha@it.su.se>
+	
+	* gss_acquire_cred.3: text about gss_display_name
 
 	* Makefile.am (libgssapi_la_LDFLAGS): bump to 3:6:2
 	(libgssapi_la_SOURCES): add all new functions
