@@ -593,8 +593,7 @@ BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count)
 	
 	unistr2_to_ascii(form_name, &form->name, sizeof(form_name)-1);
 	for (n=0; n<*count; n++) {
-		if (!strncmp((*list)[n].name, form_name, strlen(form_name))) {
-			DEBUG(103, ("NT workaround, [%s] already exists\n", form_name));
+		if ( strequal((*list)[n].name, form_name) ) {
 			update=True;
 			break;
 		}
@@ -617,6 +616,9 @@ BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count)
 	(*list)[n].top=form->top;
 	(*list)[n].right=form->right;
 	(*list)[n].bottom=form->bottom;
+
+	DEBUG(6,("add_a_form: Successfully %s form [%s]\n", 
+		update ? "updated" : "added", form_name));
 
 	return True;
 }
