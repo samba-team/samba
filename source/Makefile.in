@@ -10,7 +10,7 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 mandir=@mandir@
 
-LIBS=@LIBS@ 
+LIBS=@LIBS@
 CC=@CC@
 SHLD=@SHLD@
 CFLAGS=@CFLAGS@
@@ -18,6 +18,7 @@ CPPFLAGS=@CPPFLAGS@
 EXEEXT=@EXEEXT@
 LDFLAGS=@LDFLAGS@
 LDSHFLAGS=@LDSHFLAGS@ @LDFLAGS@ @CFLAGS@
+WINBIND_NSS_LDSHFLAGS=@WINBIND_NSS_LDSHFLAGS@ @LDFLAGS@ @CFLAGS@
 AWK=@AWK@
 DYNEXP=@DYNEXP@
 PYTHON=@PYTHON@
@@ -211,7 +212,7 @@ LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 	       rpc_client/cli_wkssvc.o rpc_client/cli_dfs.o \
 	       rpc_client/cli_reg.o rpc_client/cli_pipe.o \
 	       rpc_client/cli_spoolss.o rpc_client/cli_spoolss_notify.o  \
-	       rpc_client/cli_ds.o libsmb/namequery_dc.o
+	       rpc_client/cli_ds.o rpc_client/cli_echo.o libsmb/namequery_dc.o
 
 LIBMSRPC_SERVER_OBJ = libsmb/trust_passwd.o
 
@@ -233,7 +234,10 @@ RPC_SVC_OBJ = rpc_server/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o
 RPC_WKS_OBJ =  rpc_server/srv_wkssvc.o rpc_server/srv_wkssvc_nt.o
 
 RPC_DFS_OBJ =  rpc_server/srv_dfs.o rpc_server/srv_dfs_nt.o
+
 RPC_SPOOLSS_OBJ = rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o 
+
+RPC_ECHO_OBJ = rpc_server/srv_echo.o rpc_server/srv_echo_nt.o
 
 RPC_PIPE_OBJ = rpc_server/srv_pipe_hnd.o rpc_server/srv_util.o \
                rpc_server/srv_pipe.o rpc_server/srv_lsa_hnd.o
@@ -247,8 +251,10 @@ RPC_PIPE_OBJ = rpc_server/srv_pipe_hnd.o rpc_server/srv_util.o \
 @REG_DYNAMIC_YES@RPC_MODULES6 = bin/librpc_winreg.@SHLIBEXT@
 @SPOOLSS_DYNAMIC_YES@RPC_MODULES7 = bin/librpc_spoolss.@SHLIBEXT@
 @DFS_DYNAMIC_YES@RPC_MODULES8 = bin/librpc_netdfs.@SHLIBEXT@
+@ECHO_DYNAMIC_YES@RPC_MODULES9 = bin/librpc_echo.@SHLIBEXT@
 RPC_MODULES = $(RPC_MODULES1) $(RPC_MODULES2) $(RPC_MODULES3) $(RPC_MODULES4) \
-	$(RPC_MODULES5) $(RPC_MODULES6) $(RPC_MODULES7) $(RPC_MODULES8)
+	$(RPC_MODULES5) $(RPC_MODULES6) $(RPC_MODULES7) $(RPC_MODULES8) \
+	$(RPC_MODULES9)
 
 @LSA_DYNAMIC_NO@RPC_PIPE_OBJ1 = $(RPC_LSA_OBJ)
 @NETLOG_DYNAMIC_NO@RPC_PIPE_OBJ2 = $(RPC_NETLOG_OBJ)
@@ -258,9 +264,10 @@ RPC_MODULES = $(RPC_MODULES1) $(RPC_MODULES2) $(RPC_MODULES3) $(RPC_MODULES4) \
 @REG_DYNAMIC_NO@RPC_PIPE_OBJ6 = $(RPC_REG_OBJ)
 @SPOOLSS_DYNAMIC_NO@RPC_PIPE_OBJ7 = $(RPC_SPOOLSS_OBJ)
 @DFS_DYNAMIC_NO@RPC_PIPE_OBJ8 =	$(RPC_DFS_OBJ)
+@ECHO_DYNAMIC_NO@RPC_PIPE_OBJ9 = $(RPC_ECHO_OBJ)
 RPC_SERVER_OBJ = $(RPC_PIPE_OBJ1) $(RPC_PIPE_OBJ2) $(RPC_PIPE_OBJ3) \
 	$(RPC_PIPE_OBJ4) $(RPC_PIPE_OBJ5) $(RPC_PIPE_OBJ6) $(RPC_PIPE_OBJ7) \
-	$(RPC_PIPE_OBJ8) $(RPC_PIPE_OBJ)
+	$(RPC_PIPE_OBJ8) $(RPC_PIPE_OBJ9) $(RPC_PIPE_OBJ)
 
 # this includes only the low level parse code, not stuff
 # that requires knowledge of security contexts
@@ -272,7 +279,7 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_net.o \
                 rpc_parse/parse_samr.o rpc_parse/parse_srv.o \
                 rpc_parse/parse_wks.o rpc_parse/parse_ds.o \
 		rpc_parse/parse_spoolss.o rpc_parse/parse_dfs.o \
-		$(REGOBJS_OBJ)
+		rpc_parse/parse_echo.o $(REGOBJS_OBJ)
 
 
 RPC_CLIENT_OBJ = rpc_client/cli_pipe.o 
@@ -413,7 +420,8 @@ RPCCLIENT_OBJ1 = rpcclient/rpcclient.o rpcclient/cmd_lsarpc.o \
 	         rpcclient/cmd_samr.o rpcclient/cmd_spoolss.o \
 		 rpcclient/cmd_netlogon.o rpcclient/cmd_srvsvc.o \
 		 rpcclient/cmd_dfs.o rpcclient/cmd_reg.o \
-		 rpcclient/display_sec.o rpcclient/cmd_ds.o
+		 rpcclient/display_sec.o rpcclient/cmd_ds.o \
+		 rpcclient/cmd_echo.o
 
 RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
@@ -543,7 +551,8 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) \
 	    $(READLINE_OBJ) $(PROFILE_OBJ) $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) \
 	    $(LIB_SMBD_OBJ) $(SAM_OBJ) $(REGISTRY_OBJ) $(POPT_LIB_OBJ) \
 	    $(RPC_LSA_OBJ) $(RPC_NETLOG_OBJ) $(RPC_SAMR_OBJ) $(RPC_REG_OBJ) \
-	    $(RPC_SVC_OBJ) $(RPC_WKS_OBJ) $(RPC_DFS_OBJ) $(RPC_SPOOLSS_OBJ)
+	    $(RPC_SVC_OBJ) $(RPC_WKS_OBJ) $(RPC_DFS_OBJ) $(RPC_SPOOLSS_OBJ) \
+	    $(RPC_ECHO_OBJ)
 
 NSS_OBJ_0 = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) \
 	    $(LIB_OBJ) $(NSSWINS_OBJ)
@@ -927,15 +936,10 @@ bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(WINBINDD_OBJ) $(DYNEXP) $(LIBS)
 
-nsswitch/libns_winbind.@SHLIBEXT@: $(WINBIND_NSS_PICOBJS)
+nsswitch/@WINBIND_NSS@.@SHLIBEXT@: $(WINBIND_NSS_PICOBJS)
 	@echo "Linking $@"
-	@$(SHLD) @LDSHFLAGS@ -o $@ $(WINBIND_NSS_PICOBJS) @WINBIND_NSS_EXTRA_LIBS@ \
-		@SONAMEFLAG@`basename $@`
-
-nsswitch/libnss_winbind.@SHLIBEXT@: $(WINBIND_NSS_PICOBJS)
-	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(WINBIND_NSS_PICOBJS) @WINBIND_NSS_EXTRA_LIBS@ \
-		@SONAMEFLAG@`basename $@`
+	@$(SHLD) $(WINBIND_NSS_LDSHFLAGS) -o $@ $(WINBIND_NSS_PICOBJS) \
+		@WINBIND_NSS_EXTRA_LIBS@ @SONAMEFLAG@`basename $@`
 
 nsswitch/pam_winbind.@SHLIBEXT@: $(PAM_WINBIND_OBJ) bin/.dummy
 	@echo Linking $@
@@ -1215,10 +1219,10 @@ finddead:
 
 # when configure.in is updated, reconfigure
 $(srcdir)/configure: $(srcdir)/configure.in
-	@echo "WARNING: you need to rerun autoconf"
+	@echo "WARNING: you need to rerun ./autogen.sh"
 
 config.status: $(srcdir)/configure
-	@echo "WARNING: you need to run configure"
+	@echo "WARNING: you need to run ./configure"
 
 Makefile: $(srcdir)/Makefile.in config.status
 	@echo "WARNING: you need to run ./config.status"
