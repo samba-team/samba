@@ -83,6 +83,12 @@
  *    Remove NO_CONFIG_H so that the test case can be built within a source
  *    tree with less trouble.
  *    Remove unnecessary SAFE_FREE() definition.
+ *
+ * Martin Pool (mbp@samba.org) May 2003
+ *    Put in a prototype for dummy_snprintf() to quiet compiler warnings.
+ *
+ *    Move #endif to make sure VA_COPY, LDOUBLE, etc are defined even
+ *    if the C library has some snprintf functions already.
  **************************************************************/
 
 #ifndef NO_CONFIG_H
@@ -123,8 +129,9 @@
 /* only include stdio.h if we are not re-defining snprintf or vsnprintf */
 #include <stdio.h>
  /* make the compiler happy with an empty file */
+ void dummy_snprintf(void);
  void dummy_snprintf(void) {} 
-#else
+#endif /* HAVE_SNPRINTF, etc */
 
 #ifdef HAVE_LONG_DOUBLE
 #define LDOUBLE long double
@@ -143,7 +150,6 @@
 #define VA_COPY(dest, src) __va_copy(dest, src)
 #else
 #define VA_COPY(dest, src) (dest) = (src)
-#endif
 #endif
 
 static size_t dopr(char *buffer, size_t maxlen, const char *format, 
