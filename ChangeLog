@@ -1,5 +1,21 @@
 Sun Nov 16 02:52:20 1997  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/mk_req_ext.c (krb5_mk_req_ext): figure out the correct
+ 	`enctype'
+
+	* lib/krb5/mk_req.c (krb5_mk_req): use `(*auth_context)->enctype'
+ 	if set.
+
+	* lib/krb5/get_cred.c: handle the case of a specific keytype
+
+	* lib/krb5/build_auth.c (krb5_build_authenticator): enctype as a
+ 	parameter instead of guessing it.
+
+	* lib/krb5/build_ap_req.c (krb5_build_ap_req): new parameter
+ 	`enctype'
+
+	* appl/test/common.c (common_setup): don't use `optarg'
+
 	* lib/krb5/keytab.c (krb5_kt_copy_entry_contents): new function
 	(krb5_kt_get_entry): retrieve the latest version if kvno == 0
 
