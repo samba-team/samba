@@ -1,6 +1,97 @@
               WHATS NEW IN Samba 2.2.1:  8th July 2001
               ========================================
 
+This is the latest stable release of Samba. This is the version that all
+production Samba servers should be running for all current bug-fixes.
+
+New/Changed parameters in 2.2.1
+-------------------------------
+
+Added parameters.
+-----------------
+
+obey pam restrictions
+
+When Samba is configured to use PAM, turns on or off Samba checking
+the PAM account restrictions. Defaults to off.
+
+pam password change
+
+When Samba is configured to use PAM, turns on or off Samba passing
+the password changes to PAM. Defaults to off.
+
+large readwrite
+
+New option to allow new Windows 2000 large file (64k) streaming
+read/write options. Needs a 64 bit underlying operating system
+(Linux kernel 2.4 with glibc 2.2 or above). Can improve performance
+by 10% with Windows 2000 clients. Defaults to off. Not as tested
+as some other Samba code paths.
+
+hide unreadable
+
+Prevents clients from seeing the existance of files that cannot
+be read. Off by default.
+
+enhanced browsing
+
+Turn on/off the enhanced Samba browing functionality (*1B names).
+Default is "on". Can prevent eternal machines in workgroups when
+WINS servers are not synchronised.
+
+Removed parameters.
+-------------------
+
+domain groups
+domain admin users
+domain guest users
+
+Changes in 2.2.1
+-----------------
+
+1). "find" command removed for smbclient. Internal code now used.
+2). smbspool updates to retry connections from Michael Sweet.
+3). Fix for mapping 8859-15 characters to UNICODE.
+4). Changed "security=server" to try with invalid username to prevent
+    account lockouts.
+5). Fixes to allow Windows 2000 SP2 clients to join a Samba PDC.
+6). Support for Windows 9x Nexus tools to allow security changes from Win9x.
+7). Two locking fixes added. Samba 2.2.1 now passes the Clarion network
+    lock tester tool for distributed databases.
+8). Preliminary support added for Windows 2000 large file read/write SMBs.
+9). Changed random number generator in Samba to prevent guess attacks.
+10). Fixes for tdb corruption in connections.tdb and file locking brlock.tdb.
+     smbd's clean the tdb files on startup and shutdown.
+11). Fixes for default ACLs on Solaris.
+12). Tidyup of password entry caching code.
+13). Correct shutdowns added for send fails. Helps tdb cleanup code.
+14). Prevent invalid '/' characters in workgroup names.
+15). Removed more static arrays in SAMR code.
+16). Client code is now UNICODE on the wire.
+17). Fix 2 second timstamp resolution everywhere if dos timestamp set to yes.
+18). All tdb opens now going through logging function.
+19). Add pam password changing and pam restrictions code.
+20). Printer driver management improvements (delete driver).
+21). Fix difference between NULL security descriptors and empty
+     security descriptors.
+22). Fix SID returns for server roles.
+23). Allow Windows 2000 mmc to view and set Samba share security descriptors.
+24). Allow smbcontrol to forcibly disconnect a share.
+25). tdb fixes for HPUX, OpenBSD and other OS's that don't have a coherent
+     mmap/file read/write cache.
+26). Fix race condition in returning create disposition for file create/open.
+27). Fix NT rewriting of security descriptors to their canonical form for
+     ACLs.
+28). Fix for Samba running on top of Linux VFAT ftruncate bug.
+29). Swat fixes for being run with xinetd that doesn't set the umask.
+30). Fix for slow writes with Win9x Explorer clients. Emulates Microsoft
+     TCP stack early ack specification error.
+
+Older release notes for Samba 2.2.x follow.
+
+-----------------------------------------------------------------------------
+The release notes for 2.2.0a follow :
+
 SECURITY FIX
 ============
 
