@@ -240,7 +240,9 @@ des_rand_data(unsigned char *data, int size)
     RETSIGTYPE (*osa)(int);
 #endif
     int i, j;
+#ifndef HAVE_SETITIMER
     pid_t pid;
+#endif
     char *rnd_devices[] = {"/dev/random",
 			   "/dev/srandom",
 			   "/dev/urandom",
