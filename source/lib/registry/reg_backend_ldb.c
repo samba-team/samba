@@ -144,7 +144,7 @@ static WERROR ldb_get_value_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, i
 	
 	*value = talloc_p(mem_ctx, struct registry_value);
 	(*value)->name = talloc_strdup(mem_ctx, el->values[0].data);
-	(*value)->backend_data = talloc_strdup(mem_ctx, kd->values[idx]->dn);
+	/* FIXME */
 
 	return WERR_OK;
 }

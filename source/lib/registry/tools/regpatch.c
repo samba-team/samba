@@ -701,13 +701,9 @@ static int nt_apply_reg_command_file(struct registry_context *r, const char *cmd
 
 		  while (cmd->val_count) {
 			  VAL_SPEC_LIST *val = cmd->val_spec_list;
-			  struct registry_value *reg_val = NULL;
 
 			  if (val->type == REG_DELETE) {
-				  error = reg_key_get_value_by_name( mem_ctx, tmp, val->name, &reg_val);
-				  if(W_ERROR_IS_OK(error)) {
-					  error = reg_del_value(reg_val);
-				  }
+				  error = reg_del_value(tmp, val->name);
 				  if(!W_ERROR_IS_OK(error)) {
 					DEBUG(0, ("Error removing value '%s'\n", val->name));
 				  }
