@@ -67,18 +67,13 @@ if KRB5
 afskrb5_c = afskrb5.c
 endif
 
-if KRB4
-afskrb_c = afskrb.c
-endif
-
-
 if do_roken_rename
 ROKEN_SRCS = resolve.c strtok_r.c strlcpy.c strsep.c
 endif
 
 libkafs_la_SOURCES =				\
 	afssys.c				\
-	$(afskrb_c)				\
+	afskrb.c				\
 	$(afskrb5_c)				\
 	common.c				\
 	$(AIX_SRC)				\
