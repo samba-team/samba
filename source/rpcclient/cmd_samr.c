@@ -1105,22 +1105,29 @@ static NTSTATUS cmd_samr_query_sec_obj(struct cli_state *cli,
                                     TALLOC_CTX *mem_ctx,
                                     int argc, char **argv) 
 {
-	POLICY_HND connect_pol, domain_pol, user_pol;
+	POLICY_HND connect_pol, domain_pol, user_pol, *pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 info_level = 4;
 	fstring server;
-	uint32 user_rid;
+	uint32 user_rid = 0;
 	TALLOC_CTX *ctx = NULL;
 	SEC_DESC_BUF *sec_desc_buf=NULL;
+	BOOL domain = False;
 
 	ctx=talloc_init();
 	
-	if (argc != 2) {
-		printf("Usage: %s rid\n", argv[0]);
+	if (argc > 2) {
+		printf("Usage: %s [rid|-d]\n", argv[0]);
+		printf("\tSpecify rid for security on user, -d for security on domain\n");
 		return NT_STATUS_OK;
 	}
 	
-	sscanf(argv[1], "%i", &user_rid);
+	if (argc == 2) {
+		if (strcmp(argv[1], "-d") == 0)
+			domain = True;
+		else
+			sscanf(argv[1], "%i", &user_rid);
+	}
 
 	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
@@ -1130,21 +1137,36 @@ static NTSTATUS cmd_samr_query_sec_obj(struct cli_state *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      &domain_sid, &domain_pol);
+	if (domain || user_rid)
+		result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+					      MAXIMUM_ALLOWED_ACCESS,
+					      &domain_sid, &domain_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = cli_samr_open_user(cli, mem_ctx, &domain_pol,
-				    MAXIMUM_ALLOWED_ACCESS,
-				    user_rid, &user_pol);
+	if (user_rid)
+		result = cli_samr_open_user(cli, mem_ctx, &domain_pol,
+					    MAXIMUM_ALLOWED_ACCESS,
+					    user_rid, &user_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = cli_samr_query_sec_obj(cli, mem_ctx, &user_pol, info_level, ctx, &sec_desc_buf);
+	/* Pick which query pol to use */
+
+	pol = &connect_pol;
+
+	if (domain)
+		pol = &domain_pol;
+
+	if (user_rid)
+		pol = &user_pol;
+
+	/* Query SAM security object */
+
+	result = cli_samr_query_sec_obj(cli, mem_ctx, pol, info_level, ctx, 
+					&sec_desc_buf);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
