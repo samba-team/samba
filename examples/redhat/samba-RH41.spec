@@ -1,10 +1,10 @@
 Summary: SMB client and server
 Name: samba
-Version: 1.9.17a1
+Version: RH303-1.9.17a3
 Release: 1
 Copyright: GPL
 Group: Networking
-Source: ftp://samba.anu.edu.au/pub/samba/samba-1.9.17a1.tar.gz
+Source: ftp://samba.anu.edu.au/pub/samba/samba-latest.tar.gz
 Patch: samba-make.patch
 Patch2: samba-axp.patch
 Packager: John H Terpstra [Samba-Team] <jht@aquasoft.com.au>
@@ -61,7 +61,7 @@ install -m644 -g0 -o0 docs/smbd.8 /usr/man/man8
 install -m644 -g0 -o0 docs/nmbd.8 /usr/man/man8
 install -m644 -g0 -o0 examples/simple/smb.conf /etc/smb.conf.sampl
 install -m644 -g0 -o0 examples/redhat/smb.conf /etc/smb.conf
-install -m644 -g0 -o0 examples/printing/smbprint /usr/bin
+install -m644 -g0 -o0 examples/redhat/smbprint /usr/bin
 install -m755 -g0 -o0 examples/redhat/smb.init /etc/rc.d/init.d/smb
 ln -sf /etc/rc.d/init.d/smb /etc/rc.d/rc3.d/S91smb
 ln -sf /etc/rc.d/init.d/smb /etc/rc.d/rc0.d/K35smb

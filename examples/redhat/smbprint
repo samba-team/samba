@@ -44,8 +44,8 @@
 #
 # Debugging log file, change to /dev/null if you like.
 #
-logfile=/var/log/smb-print.log
-# logfile=/dev/null
+# logfile=/tmp/smb-print.log
+logfile=/dev/null
 
 
 #
