@@ -169,6 +169,7 @@ static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset,
 		      int rw_type, int lck_type, int probe)
 {
 	struct flock fl;
+	int ret;
 
 	if (tdb->flags & TDB_NOLOCK)
 		return 0;
@@ -183,7 +184,12 @@ static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset,
 	fl.l_len = 1;
 	fl.l_pid = 0;
 
-	if (fcntl(tdb->fd,lck_type,&fl) == -1) {
+	do {
+		errno = 0;
+		ret = fcntl(tdb->fd,lck_type,&fl);
+	} while (ret == -1 && errno == EINTR);
+
+	if (ret == -1) {
 		if (!probe) {
 			TDB_LOG((tdb, 5,"tdb_brlock failed (fd=%d) at offset %d rw_type=%d lck_type=%d\n", 
 				 tdb->fd, offset, rw_type, lck_type));
