@@ -1128,9 +1128,9 @@ void samr_io_r_enum_dom_users(char *desc,  SAMR_R_ENUM_DOM_USERS *r_u, prs_struc
 
 		prs_align(ps);
 
-		prs_uint32("num_entries4", ps, depth, &(r_u->num_entries4));
 	}
 
+	prs_uint32("num_entries4", ps, depth, &(r_u->num_entries4));
 	prs_uint32("status", ps, depth, &(r_u->status));
 }
 
@@ -2524,10 +2524,9 @@ void samr_io_r_enum_dom_groups(char *desc, SAMR_R_ENUM_DOM_GROUPS *r_u, prs_stru
 		}
 
 		prs_align(ps);
-
-		prs_uint32("num_entries4", ps, depth, &(r_u->num_entries4));
 	}
 
+	prs_uint32("num_entries4", ps, depth, &(r_u->num_entries4));
 	prs_uint32("status", ps, depth, &(r_u->status));
 }
 
@@ -2658,10 +2657,9 @@ void samr_io_r_enum_dom_aliases(char *desc,  SAMR_R_ENUM_DOM_ALIASES *r_u, prs_s
 		}
 
 		prs_align(ps);
-
-		prs_uint32("num_entries4", ps, depth, &(r_u->num_entries4));
 	}
 
+	prs_uint32("num_entries4", ps, depth, &(r_u->num_entries4));
 	prs_uint32("status", ps, depth, &(r_u->status));
 }
 

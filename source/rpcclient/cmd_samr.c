@@ -1071,6 +1071,105 @@ void cmd_sam_create_dom_group(struct client_info *info)
 	}
 }
 
+static void req_user_info(struct client_info *info, uint16 fnum,
+				uint32 user_rid)
+{
+	SAM_USER_INFO_21 usr;
+	/* send user info query, level 0x15 */
+	if (get_samr_query_userinfo(smb_cli, fnum,
+				    &info->dom.samr_pol_open_domain,
+				    0x15, user_rid, &usr))
+	{
+		display_sam_user_info_21(out_hnd, ACTION_HEADER   , &usr);
+		display_sam_user_info_21(out_hnd, ACTION_ENUMERATE, &usr);
+		display_sam_user_info_21(out_hnd, ACTION_FOOTER   , &usr);
+	}
+}
+
+static void req_group_info(struct client_info *info, uint16 fnum,
+				uint32 user_rid)
+{
+	uint32 num_groups;
+	DOM_GID gid[LSA_MAX_GROUPS];
+
+	/* send user group query */
+	if (get_samr_query_usergroups(smb_cli, fnum,
+				      &info->dom.samr_pol_open_domain,
+				      user_rid, &num_groups, gid))
+	{
+		int i;
+		uint32 num_names;
+		uint32  rid_mem[MAX_LOOKUP_SIDS];
+		fstring name   [MAX_LOOKUP_SIDS];
+		uint32  type   [MAX_LOOKUP_SIDS];
+
+		for (i = 0; i < num_groups; i++)
+		{
+			rid_mem[i] = gid[i].g_rid;
+		}
+
+		if (samr_query_lookup_rids(smb_cli, fnum, 
+				&info->dom.samr_pol_open_domain, 0x3e8,
+				num_groups, rid_mem, 
+				&num_names, name, type))
+		{
+			display_group_members(out_hnd, ACTION_HEADER   , num_names, name, type);
+			display_group_members(out_hnd, ACTION_ENUMERATE, num_names, name, type);
+			display_group_members(out_hnd, ACTION_FOOTER   , num_names, name, type);
+		}
+	}
+}
+
+static void req_alias_info(struct client_info *info, uint16 fnum,
+				DOM_SID *sid1, uint32 user_rid)
+{
+	uint32 num_aliases;
+	uint32 rid[LSA_MAX_GROUPS];
+	DOM_SID als_sid;
+
+	sid_copy(&als_sid, sid1);
+	sid_append_rid(&als_sid, user_rid);
+
+	/* send user alias query */
+	if (samr_query_useraliases(smb_cli, fnum,
+				&info->dom.samr_pol_open_domain,
+				&als_sid, &num_aliases, rid))
+	{
+		uint32 num_names;
+		fstring name   [MAX_LOOKUP_SIDS];
+		uint32  type   [MAX_LOOKUP_SIDS];
+
+		if (samr_query_lookup_rids(smb_cli, fnum, 
+				&info->dom.samr_pol_open_domain, 0x3e8,
+				num_aliases, rid, 
+				&num_names, name, type))
+		{
+			display_group_members(out_hnd, ACTION_HEADER   , num_names, name, type);
+			display_group_members(out_hnd, ACTION_ENUMERATE, num_names, name, type);
+			display_group_members(out_hnd, ACTION_FOOTER   , num_names, name, type);
+		}
+	}
+
+	/* send user alias query */
+	if (samr_query_useraliases(smb_cli, fnum,
+				&info->dom.samr_pol_open_builtindom,
+				&als_sid, &num_aliases, rid))
+	{
+		uint32 num_names;
+		fstring name   [MAX_LOOKUP_SIDS];
+		uint32  type   [MAX_LOOKUP_SIDS];
+
+		if (samr_query_lookup_rids(smb_cli, fnum, 
+				&info->dom.samr_pol_open_builtindom, 0x3e8,
+				num_aliases, rid, 
+				&num_names, name, type))
+		{
+			display_group_members(out_hnd, ACTION_HEADER   , num_names, name, type);
+			display_group_members(out_hnd, ACTION_ENUMERATE, num_names, name, type);
+			display_group_members(out_hnd, ACTION_FOOTER   , num_names, name, type);
+		}
+	}
+}
 
 /****************************************************************************
 experimental SAM users enum.
@@ -1093,7 +1192,7 @@ void cmd_sam_enum_users(struct client_info *info)
 	uint16 unk_0 = 0x0;
 	uint16 acb_mask = 0;
 	uint16 unk_1 = 0x0;
-	uint32 flags = 0x304; /* absolutely no idea. */
+	uint32 flags = 0x02000000; /* maximum allowed. */
 	fstring tmp;
 	int i;
 
@@ -1191,108 +1290,30 @@ void cmd_sam_enum_users(struct client_info *info)
 		fprintf(out_hnd, "No users\n");
 	}
 
+	if (res)
+	{
 		/* query all the users */
-	for (user_idx = 0; res && user_idx < info->dom.num_sam_entries; user_idx++)
+		for (user_idx = 0; res && user_idx < info->dom.num_sam_entries; user_idx++)
 		{
-		uint32 user_rid = info->dom.sam[user_idx].rid;
-			SAM_USER_INFO_21 usr;
+			uint32 user_rid = info->dom.sam[user_idx].rid;
 
 			fprintf(out_hnd, "User RID: %8x  User Name: %s\n",
-					  user_rid,
-					  info->dom.sam[user_idx].acct_name);
+			        user_rid,
+			        info->dom.sam[user_idx].acct_name);
 
 			if (request_user_info)
 			{
-				/* send user info query, level 0x15 */
-				if (get_samr_query_userinfo(smb_cli, fnum,
-							&info->dom.samr_pol_open_domain,
-							0x15, user_rid, &usr))
-				{
-					display_sam_user_info_21(out_hnd, ACTION_HEADER   , &usr);
-					display_sam_user_info_21(out_hnd, ACTION_ENUMERATE, &usr);
-					display_sam_user_info_21(out_hnd, ACTION_FOOTER   , &usr);
-				}
+				req_user_info(info, fnum, user_rid);
 			}
 
 			if (request_group_info)
 			{
-				uint32 num_groups;
-				DOM_GID gid[LSA_MAX_GROUPS];
-
-				/* send user group query */
-				if (get_samr_query_usergroups(smb_cli, fnum,
-							&info->dom.samr_pol_open_domain,
-							user_rid, &num_groups, gid))
-				{
-				uint32 num_names;
-				uint32  rid_mem[MAX_LOOKUP_SIDS];
-				fstring name   [MAX_LOOKUP_SIDS];
-				uint32  type   [MAX_LOOKUP_SIDS];
-
-				for (i = 0; i < num_groups; i++)
-				{
-					rid_mem[i] = gid[i].g_rid;
-				}
-
-				if (samr_query_lookup_rids(smb_cli, fnum, 
-						&info->dom.samr_pol_open_domain, 0x3e8,
-			                        num_groups, rid_mem, 
-			                        &num_names, name, type))
-				{
-					display_group_members(out_hnd, ACTION_HEADER   , num_names, name, type);
-					display_group_members(out_hnd, ACTION_ENUMERATE, num_names, name, type);
-					display_group_members(out_hnd, ACTION_FOOTER   , num_names, name, type);
-				}
-				}
+				req_group_info(info, fnum, user_rid);
 			}
 
 			if (request_alias_info)
 			{
-				uint32 num_aliases;
-				uint32 rid[LSA_MAX_GROUPS];
-				DOM_SID als_sid;
-
-				sid_copy(&als_sid, &sid1);
-				sid_append_rid(&als_sid, user_rid);
-
-				/* send user alias query */
-				if (samr_query_useraliases(smb_cli, fnum,
-				                        &info->dom.samr_pol_open_domain,
-				                        &als_sid, &num_aliases, rid))
-				{
-				uint32 num_names;
-				fstring name   [MAX_LOOKUP_SIDS];
-				uint32  type   [MAX_LOOKUP_SIDS];
-
-				if (samr_query_lookup_rids(smb_cli, fnum, 
-						&info->dom.samr_pol_open_domain, 0x3e8,
-			                        num_aliases, rid, 
-			                        &num_names, name, type))
-				{
-					display_group_members(out_hnd, ACTION_HEADER   , num_names, name, type);
-					display_group_members(out_hnd, ACTION_ENUMERATE, num_names, name, type);
-					display_group_members(out_hnd, ACTION_FOOTER   , num_names, name, type);
-				}
-			}
-
-			/* send user alias query */
-			if (res1 && samr_query_useraliases(smb_cli, fnum,
-						&info->dom.samr_pol_open_builtindom,
-						&als_sid, &num_aliases, rid))
-			{
-				uint32 num_names;
-				fstring name   [MAX_LOOKUP_SIDS];
-				uint32  type   [MAX_LOOKUP_SIDS];
-
-				if (samr_query_lookup_rids(smb_cli, fnum, 
-						&info->dom.samr_pol_open_builtindom, 0x3e8,
-			                        num_aliases, rid, 
-			                        &num_names, name, type))
-				{
-					display_group_members(out_hnd, ACTION_HEADER   , num_names, name, type);
-					display_group_members(out_hnd, ACTION_ENUMERATE, num_names, name, type);
-					display_group_members(out_hnd, ACTION_FOOTER   , num_names, name, type);
-				}
+				req_alias_info(info, fnum, &sid1, user_rid);
 			}
 		}
 	}
@@ -1510,12 +1531,12 @@ void cmd_sam_enum_aliases(struct client_info *info)
 	DOM_SID sid1;
 	BOOL res = True;
 	BOOL request_member_info = False;
-	uint32 flags = 0x200003f3; /* absolutely no idea. */
+	uint32 flags = 0x02000000; /* maximum allowed. */
 	fstring tmp;
 	uint32 alias_idx;
 
-	sid_to_string(sid, &info->dom.level3_sid);
-	fstrcpy(domain, info->dom.level3_dom);
+	sid_to_string(sid, &info->dom.level5_sid);
+	fstrcpy(domain, info->dom.level5_dom);
 #if 0
 	fstrcpy(sid   , "S-1-5-20");
 #endif
@@ -1567,7 +1588,8 @@ void cmd_sam_enum_aliases(struct client_info *info)
 		fprintf(out_hnd, "No aliases\n");
 	}
 
-
+	if (res)
+	{
 	for (alias_idx = 0; alias_idx < info->dom.num_sam_entries; alias_idx++)
 	{
 		uint32 alias_rid = info->dom.sam[alias_idx].rid;
@@ -1650,6 +1672,7 @@ void cmd_sam_enum_aliases(struct client_info *info)
 			}
 		}
 	}
+	}
 
 	res = res ? samr_close(smb_cli, fnum, 
 	            &info->dom.samr_pol_connect) : False;
@@ -1675,6 +1698,36 @@ void cmd_sam_enum_aliases(struct client_info *info)
 	}
 }
 
+static void req_groupmem_info(struct client_info *info, uint16 fnum,
+				uint32 group_rid)
+{
+	uint32 num_mem;
+	uint32 rid_mem[MAX_LOOKUP_SIDS];
+	uint32 attr_mem[MAX_LOOKUP_SIDS];
+
+	/* get group members */
+	if (get_samr_query_groupmem(smb_cli, fnum, 
+		&info->dom.samr_pol_open_domain,
+		group_rid, &num_mem, rid_mem, attr_mem))
+	{
+		BOOL res3 = True;
+		int num_names = 0;
+		fstring names[MAX_LOOKUP_SIDS];
+		uint32 types[MAX_LOOKUP_SIDS];
+
+		res3 = samr_query_lookup_rids(smb_cli, fnum,
+		                   &info->dom.samr_pol_open_domain, 1000,
+		                   num_mem, rid_mem, &num_names, names, types);
+
+		if (res3)
+		{
+			display_group_members(out_hnd, ACTION_HEADER   , num_names, names, types);
+			display_group_members(out_hnd, ACTION_ENUMERATE, num_names, names, types);
+			display_group_members(out_hnd, ACTION_FOOTER   , num_names, names, types);
+		}
+	}
+}
+
 /****************************************************************************
 SAM groups query.
 ****************************************************************************/
@@ -1687,11 +1740,11 @@ void cmd_sam_enum_groups(struct client_info *info)
 	DOM_SID sid1;
 	BOOL res = True;
 	BOOL request_member_info = False;
-	uint32 flags = 0x200003f3; /* absolutely no idea. */
+	uint32 flags = 0x02000000; /* maximum allowed. */
 	fstring tmp;
 	uint32 group_idx;
 
-	sid_copy(&sid1, &info->dom.level3_sid);
+	sid_copy(&sid1, &info->dom.level5_sid);
 
 	if (sid1.num_auths == 0)
 	{
@@ -1742,41 +1795,19 @@ void cmd_sam_enum_groups(struct client_info *info)
 		fprintf(out_hnd, "No groups\n");
 	}
 
-
-	for (group_idx = 0; group_idx < info->dom.num_sam_entries; group_idx++)
+	if (res)
 	{
-		uint32 group_rid = info->dom.sam[group_idx].rid;
-
-		fprintf(out_hnd, "Group RID: %8x  Group Name: %s\n",
-				  group_rid,
-				  info->dom.sam[group_idx].acct_name);
-
-		if (request_member_info)
+		for (group_idx = 0; group_idx < info->dom.num_sam_entries; group_idx++)
 		{
-			uint32 num_mem;
-			uint32 rid_mem[MAX_LOOKUP_SIDS];
-			uint32 attr_mem[MAX_LOOKUP_SIDS];
+			uint32 group_rid = info->dom.sam[group_idx].rid;
 
-			/* get group members */
-			if (get_samr_query_groupmem(smb_cli, fnum, 
-				&info->dom.samr_pol_open_domain,
-				group_rid, &num_mem, rid_mem, attr_mem))
+			fprintf(out_hnd, "Group RID: %8x  Group Name: %s\n",
+					  group_rid,
+					  info->dom.sam[group_idx].acct_name);
+
+			if (request_member_info)
 			{
-				BOOL res3 = True;
-				int num_names = 0;
-				fstring names[MAX_LOOKUP_SIDS];
-				uint32 types[MAX_LOOKUP_SIDS];
-
-				res3 = samr_query_lookup_rids(smb_cli, fnum,
-				       &info->dom.samr_pol_open_domain, 1000,
-				       num_mem, rid_mem, &num_names, names, types);
-
-				if (res3)
-				{
-					display_group_members(out_hnd, ACTION_HEADER   , num_names, names, types);
-					display_group_members(out_hnd, ACTION_ENUMERATE, num_names, names, types);
-					display_group_members(out_hnd, ACTION_FOOTER   , num_names, names, types);
-				}
+				req_groupmem_info(info, fnum, group_rid);
 			}
 		}
 	}
