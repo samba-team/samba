@@ -489,7 +489,7 @@ typedef struct files_struct
 	time_t pending_modtime;
 	int oplock_type;
 	int sent_oplock_break;
-	unsigned int num_posix_locks;
+	int num_posix_locks;
 	unsigned int num_posix_pending_closes;
 	int *posix_pending_close_fds;
 	BOOL can_lock;

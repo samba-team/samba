@@ -57,11 +57,15 @@ static BOOL fd_close_posix_locks(files_struct *fsp)
 {
 	files_struct *other_fsp;
 
-	DEBUG(10,("fd_close_posix_locks: file %s: fsp->num_posix_pending_closes = %u.\n", fsp->fsp_name,
-				(unsigned int)fsp->num_posix_pending_closes ));
+	DEBUG(10,("fd_close_posix_locks: file %s: fsp->num_posix_pending_closes = %u \
+fsp->posix_pending_close_fds = %lx.\n", fsp->fsp_name,
+				(unsigned int)fsp->num_posix_pending_closes, (unsigned long)fsp->posix_pending_close_fds ));
 
 	for(other_fsp = file_find_di_first(fsp->dev, fsp->inode); other_fsp;
 					other_fsp = file_find_di_next(other_fsp)) {
+
+		if(other_fsp == fsp)
+			continue;
 
 		if ((other_fsp->fd != -1) && other_fsp->num_posix_locks) {
 
@@ -74,8 +78,8 @@ static BOOL fd_close_posix_locks(files_struct *fsp)
 			unsigned int extra_fds = fsp->num_posix_pending_closes + 1;
 
 			DEBUG(10,("fd_close_posix_locks: file %s: Transferring to \
-file %s, other_fsp->num_posix_pending_closes = %u.\n",
-				fsp->fsp_name, other_fsp->fsp_name, (unsigned int)other_fsp->num_posix_pending_closes ));
+file %s, extra_fds = %u, other_fsp->num_posix_pending_closes = %u.\n",
+				fsp->fsp_name, other_fsp->fsp_name, extra_fds, (unsigned int)other_fsp->num_posix_pending_closes ));
 
 			other_fsp->posix_pending_close_fds = (int *)Realloc(other_fsp->posix_pending_close_fds,
 																(other_fsp->num_posix_pending_closes +

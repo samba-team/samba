@@ -284,7 +284,7 @@ static BOOL is_posix_locked(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UI
 	SMB_OFF_T count;
 
 	DEBUG(10,("is_posix_locked: File %s, offset = %.0f, count = %.0f, type = %s\n",
-			fsp->fsp_name, (double)offset, (double)count, lock_type_name(lock_type) ));
+			fsp->fsp_name, (double)u_offset, (double)u_count, lock_type_name(lock_type) ));
 
 	/*
 	 * If the requested lock won't fit in the POSIX range, we will
@@ -315,7 +315,7 @@ static BOOL set_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UIN
 	BOOL ret = True;
 
 	DEBUG(5,("set_posix_lock: File %s, offset = %.0f, count = %.0f, type = %s\n",
-			fsp->fsp_name, (double)offset, (double)count, lock_type_name(lock_type) ));
+			fsp->fsp_name, (double)u_offset, (double)u_count, lock_type_name(lock_type) ));
 
 	/*
 	 * If the requested lock won't fit in the POSIX range, we will
@@ -350,17 +350,15 @@ static BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG
 	BOOL ret = True;
 
 	DEBUG(5,("release_posix_lock: File %s, offset = %.0f, count = %.0f\n",
-			fsp->fsp_name, (double)offset, (double)count ));
+			fsp->fsp_name, (double)u_offset, (double)u_count ));
 
 	if(u_count == 0) {
 
 		/*
 		 * This lock must overlap with an existing read-only lock
-		 * help by another fd. Just decrement the count but don't
-		 * do any POSIX call.
+		 * help by another fd. Don't do any POSIX call.
 		 */
 
-		fsp->num_posix_locks--;
 		return True;
 	}
 
@@ -374,10 +372,7 @@ static BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG
 
 	ret = fcntl_lock(fsp->fd,SMB_F_SETLK,offset,count,F_UNLCK);
 
-	if(ret)
-		fsp->num_posix_locks--;
-
-	return True;
+	return ret;
 }
 
 /****************************************************************************
@@ -564,6 +559,8 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 	 */
 
 	fsp->num_posix_locks--;
+
+	SMB_ASSERT(fsp->num_posix_locks >= 0);
 
 	return True; /* Did unlock */
 }
