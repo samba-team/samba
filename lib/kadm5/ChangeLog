@@ -1,3 +1,10 @@
+1999-11-14  Assar Westerlund  <assar@sics.se>
+
+	* context_s.c (_kadm5_s_init_context): call krb5_add_et_list so
+ 	that we aren't dependent on the layout of krb5_context_data
+	* init_c.c (_kadm5_c_init_context): call krb5_add_et_list so that
+ 	we aren't dependent on the layout of krb5_context_data
+
 1999-11-13  Assar Westerlund  <assar@sics.se>
 
 	* password_quality.c (kadm5_setup_passwd_quality_check): use
