@@ -3928,10 +3928,13 @@ SMB_OFF_T get_lock_count( char *data, int data_offset, BOOL large_file_format, B
   if(!large_file_format) {
     count = (SMB_OFF_T)IVAL(data,SMB_LKLEN_OFFSET(data_offset));
   } else {
-#ifdef LARGE_SMB_OFF_T
+
+#if defined(LARGE_SMB_OFF_T) && !defined(HAVE_BROKEN_FCNTL64_LOCKS)
+
     count = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset))) << 32) |
             ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset)));
-#else /* !LARGE_SMB_OFF_T */
+
+#else /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
     /*
      * NT4.x seems to be broken in that it sends large file
      * lockingX calls even if the CAP_LARGE_FILES was *not*
@@ -4021,10 +4024,13 @@ SMB_OFF_T get_lock_offset( char *data, int data_offset, BOOL large_file_format, 
   if(!large_file_format) {
     offset = (SMB_OFF_T)IVAL(data,SMB_LKOFF_OFFSET(data_offset));
   } else {
-#ifdef LARGE_SMB_OFF_T
+
+#if defined(LARGE_SMB_OFF_T) && !defined(HAVE_BROKEN_FCNTL64_LOCKS)
+
     offset = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset))) << 32) |
             ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset)));
-#else /* !LARGE_SMB_OFF_T */
+
+#else /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
     /*
      * NT4.x seems to be broken in that it sends large file
      * lockingX calls even if the CAP_LARGE_FILES was *not*

@@ -925,6 +925,13 @@ if test x"$samba_cv_HAVE_STRUCT_FLOCK64" = x"yes"; then
     AC_DEFINE(HAVE_STRUCT_FLOCK64)
 fi
 
+AC_CACHE_CHECK([for broken (glibc2.1/x86) 64 bit fcntl locking],samba_cv_HAVE_BROKEN_FCNTL64_LOCKS,[
+AC_TRY_RUN([#include "${srcdir-.}/tests/fcntl_lock64.c"],
+           samba_cv_HAVE_BROKEN_FCNTL64_LOCKS=yes,samba_cv_HAVE_BROKEN_FCNTL64_LOCKS=no,samba_cv_HAVE_BROKEN_FCNTL64_LOCKS=cross)])
+if test x"$samba_cv_HAVE_BROKEN_FCNTL64_LOCKS" = x"yes"; then
+    AC_DEFINE(HAVE_BROKEN_FCNTL64_LOCKS)
+fi
+
 AC_CACHE_CHECK([for sysv ipc],samba_cv_HAVE_SYSV_IPC,[
 AC_TRY_RUN([#include "${srcdir-.}/tests/sysv_ipc.c"],
            samba_cv_HAVE_SYSV_IPC=yes,samba_cv_HAVE_SYSV_IPC=no,samba_cv_HAVE_SYSV_IPC=cross)])

@@ -79,5 +79,15 @@ int main(int argc, char *argv[])
 
 	unlink(DATA);
 
+#if defined(WIFEXITED) && defined(WEXITSTATUS)
+    if(WIFEXITED(status) == 0) {
+        status = WEXITSTATUS(status);
+    } else {
+        status = 1;
+    }
+#else /* defined(WIFEXITED) && defined(WEXITSTATUS) */
+	status = (status == 0) ? 0 : 1;
+#endif /* defined(WIFEXITED) && defined(WEXITSTATUS) */
+
 	exit(status);
 }
