@@ -1,0 +1,96 @@
+                 Samba Projects Directory
+                 ========================
+
+
+>>>>> NOTE: THIS FILE IS NOW VERY OUT OF DATE <<<<<
+
+
+This is a list of who's working on what in Samba. It's not guaranteed
+to be uptodate or accurate but I hope it will help us getting
+coordinated.
+
+If you are working on something to do with Samba and you aren't here
+then please let me know! Also, if you are listed below and you have
+any corrections or updates then please let me know.
+
+Email contact:
+samba-bugs@anu.edu.au
+
+========================================================================
+Documentation and FAQ
+
+Docs and FAQ files for the Samba suite of software.
+
+Contact Karl.Auer@anu.edu.au
+
+Mark Preston is now working on a set of formatted docs for Samba. 
+Contact mpreston@sghms.ac.uk
+
+Docs are currently up to date with version, 1.7.07. FAQ being added to
+as questions arise.
+
+Status last updated 27th September 1994
+========================================================================
+
+========================================================================
+Netbeui support
+
+This aims to produce patches so that Samba can be used with clients
+that do not have TCP/IP. It will try to remain as portable as possible.
+
+Contact Brian.Onn@Canada.Sun.COM (Brian Onn)
+
+The project is just startup up.
+
+Status last updated 4th October 1994
+========================================================================
+
+========================================================================
+Smbfs
+
+A mountable smb filesystem for Linux using the userfs userspace filesystem
+
+Contact lendecke@namu01.gwdg.de (Volker Lendecke)
+
+Currently this is at version 0.2. It works but is really only for
+people with some knowledge and experience of Linux kernel hacking.
+
+Status last updated 23rd August 1994
+========================================================================
+
+========================================================================
+Nmbd
+
+Aims to produce a complete rfc1001/1002 implementation. The current
+nmbd is a partial implementation.
+
+Contact Fabrice Cetre (cetre@ifhpserv.insa-lyon.fr)
+
+Status last updated 23rd August 1994
+========================================================================
+
+========================================================================
+Admin Tool
+
+Aims to produce a nice smb.conf editor and other useful tools for
+administering a Samba system.
+
+Contact: Steve Brown (steve@unicorn.dungeon.com)
+
+In the design phase.
+
+Status last updated 4th September 1994
+========================================================================
+
+
+========================================================================
+Lanman Client.
+
+Contact: john@amanda.xs4all.nl (John Stewart)
+
+Aims to produce a reliable LANMAN Client implementation for LINUX,
+and possibly other variations of UNIX. Project ably started by
+Tor Lillqvist; tml@hemuli.tte.vtt.fi
+
+Status last updated 17th January 1995
+========================================================================

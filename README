@@ -1,0 +1,111 @@
+This is version 1.9 of Samba, the free SMB client and server for unix.
+
+>>>> Please read THE WHOLE of this file as it gives important information
+>>>> about the configuration and use of Samba.
+
+This software is freely distributable under the GNU public license, a
+copy of which you should have received with this software (in a file
+called COPYING). 
+
+WHAT CAN SAMBA DO?
+==================
+
+Here is a very short list of what samba includes, and what it does
+
+- a SMB server, to provide LanManager style file and print services to PCs
+
+- a Netbios (rfc1001/1002) nameserver
+
+- a ftp-like SMB client so you can access PC resources (disks and
+printers) from unix
+
+- a tar extension to the client for backing up PCs
+
+Related packages include:
+
+- ksmbfs, a linux-only filesystem allowing you to mount remote SMB
+filesystems from PCs on your linux box
+
+- tcpdump-smb, a extension to tcpdump to allow you to investigate SMB
+networking problems over netbeui and tcp/ip
+
+
+CONTRIBUTIONS
+=============
+
+If you want to contribute to the development of the software then
+please join the mailing list. I accept patches (preferably in 
+"diff -u" format) and am always glad to receive feedback or suggestions.
+
+You could also send hardware/software/money/jewelry or pizza
+vouchers directly to me. The pizza vouchers would be especially
+welcome :-)
+
+If you like a particular feature then look through the change-log and
+see who added it, then send them an email.
+
+Remember that free software of this kind lives or dies by the response
+we get. If noone tells us they like it then we'll probably move onto
+something else.
+
+Andrew Tridgell
+Email: samba-bugs@anu.edu.au
+
+3 Ballow Crescent
+Macgregor, A.C.T.
+2615 Australia
+
+
+MORE INFO
+=========
+
+DOCUMENTATION
+-------------
+
+There is quite a bit of documentation included with the package,
+including man pages, and lots of .txt files with hints and useful
+info.
+
+FTP SITE
+--------
+
+The main anonymous ftp distribution site for this software is
+nimbus.anu.edu.au in the directory pub/tridge/samba/.
+
+MAILING LIST
+------------
+
+There is a mailing list for discussion of Samba. To subscribe send
+mail to listproc@anu.edu.au with a body of "subscribe samba Your Name"
+
+To send mail to everyone on the list mail to samba@listproc.anu.edu.au
+
+There is also an announcement mailing list where I announce new
+versions.  To subscribe send mail to listproc@anu.edu.au with a body
+of "subscribe samba-announce Your Name". All announcements also go to
+the samba list.
+
+
+NEWS GROUP
+----------
+
+You might also like to look at the usenet news group
+comp.protocols.smb as it often contains lots of useful info and is
+frequented by lots of Samba users. The newsgroup was initially setup
+by people on the Samba mailing list. It is not, however, exclusive to
+Samba, it is a forum for discussing the SMB protocol (which Samba
+implements).
+
+
+WEB SITE
+--------
+
+A Samba WWW site has been setup with lots of useful info. Connect to:
+
+http://lake.canberra.edu.au/pub/samba/
+
+It is maintained by Paul Blackman (thanks Paul!). You can contact him
+at ictinus@lake.canberra.edu.au.
+
+
+
