@@ -646,29 +646,7 @@ static int call_trans2findfirst(char *inbuf, char *outbuf, int bufsize, int cnum
 
   dptr_num = dptr_create(cnum,directory, True ,SVAL(inbuf,smb_pid));
   if (dptr_num < 0)
-    {
-      if(dptr_num == -2)
-      {
-        if((errno == ENOENT) && bad_path)
-        {
-          unix_ERR_class = ERRDOS;
-          unix_ERR_code = ERRbadpath;
-        }
-
-#if 0
-        /* Ugly - NT specific hack - maybe not needed ? (JRA) */
-        if((errno == ENOTDIR) && (Protocol >= PROTOCOL_NT1) && 
-           (get_remote_arch() == RA_WINNT))
-        {
-          unix_ERR_class = ERRDOS;
-          unix_ERR_code = ERRbaddirectory;
-        }
-#endif
-
-        return (UNIXERROR(ERRDOS,ERRbadpath));
-      }
-      return(ERROR(ERRDOS,ERRbadpath));
-    }
+    return(ERROR(ERRDOS,ERRbadfile));
 
   /* convert the formatted masks */
   {
@@ -747,6 +725,14 @@ static int call_trans2findfirst(char *inbuf, char *outbuf, int bufsize, int cnum
       DEBUG(5,("call_trans2findfirst - (2) closing dptr_num %d\n", dptr_num));
       dptr_num = -1;
     }
+
+  /* 
+   * If there are no matching entries we must return ERRDOS/ERRbadfile - 
+   * from observation of NT.
+   */
+
+  if(numentries == 0)
+    return(ERROR(ERRDOS,ERRbadfile));
 
   /* At this point pdata points to numentries directory entries. */
 

@@ -953,10 +953,11 @@ int StrnCaseCmp(char *s, char *t, int n)
   else
 #endif /* KANJI_WIN95_COMPATIBILITY */
   {
-    while (n-- && *s && *t && toupper(*s) == toupper(*t))
+    while (n && *s && *t && toupper(*s) == toupper(*t))
     {
       s++;
       t++;
+      n--;
     }
 
     /* not run out of chars - strings are different lengths */
