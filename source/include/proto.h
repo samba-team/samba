@@ -401,7 +401,6 @@ char *StrnCpy(char *dest,const char *src,size_t n);
 char *strncpyn(char *dest, const char *src,size_t n, char c);
 size_t strhex_to_str(char *p, size_t len, const char *strhex);
 BOOL in_list(char *s,char *list,BOOL casesensitive);
-BOOL string_init(char **dest,const char *src);
 void string_free(char **s);
 BOOL string_set(char **dest,const char *src);
 void string_sub(char *s,const char *pattern,const char *insert, size_t len);

@@ -407,7 +407,7 @@ char *dos_GetWd(char *path)
     getwd_cache_init = True;
     for (i=0;i<MAX_GETWDCACHE;i++)
     {
-      string_init(&ino_list[i].dos_path,"");
+      string_set(&ino_list[i].dos_path,"");
       ino_list[i].valid = False;
     }
   }

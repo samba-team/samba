@@ -878,7 +878,7 @@ static void init_globals(void)
 	if ((parm_table[i].type == P_STRING ||
 	     parm_table[i].type == P_USTRING) && 
 	    parm_table[i].ptr)
-	  string_init(parm_table[i].ptr,"");
+	  string_set(parm_table[i].ptr,"");
 
       string_set(&sDefault.szGuestaccount, GUEST_ACCOUNT);
       string_set(&sDefault.szPrinterDriver, "NULL");
@@ -1047,16 +1047,6 @@ static void init_globals(void)
 }
 
 /***************************************************************************
-check if a string is initialised and if not then initialise it
-***************************************************************************/
-static void string_initial(char **s,char *v)
-{
-  if (!*s || !**s)
-    string_init(s,v);
-}
-
-
-/***************************************************************************
 Initialise the sDefault parameter structure.
 ***************************************************************************/
 static void init_locals(void)
@@ -1068,47 +1058,47 @@ static void init_locals(void)
     case PRINT_AIX:
     case PRINT_LPRNG:
     case PRINT_PLP:
-      string_initial(&sDefault.szLpqcommand,"lpq -P%p");
-      string_initial(&sDefault.szLprmcommand,"lprm -P%p %j");
-      string_initial(&sDefault.szPrintcommand,"lpr -r -P%p %s");
+      string_set(&sDefault.szLpqcommand,"lpq -P%p");
+      string_set(&sDefault.szLprmcommand,"lprm -P%p %j");
+      string_set(&sDefault.szPrintcommand,"lpr -r -P%p %s");
       break;
 
     case PRINT_CUPS:
-      string_initial(&sDefault.szLpqcommand,"/usr/bin/lpstat -o%p");
-      string_initial(&sDefault.szLprmcommand,"/usr/bin/cancel %p-%j");
-      string_initial(&sDefault.szPrintcommand,"/usr/bin/lp -d%p -oraw %s; rm %s");
-      string_initial(&sDefault.szQueuepausecommand, "/usr/bin/disable %p");
-      string_initial(&sDefault.szQueueresumecommand, "/usr/bin/enable %p");
+      string_set(&sDefault.szLpqcommand,"/usr/bin/lpstat -o%p");
+      string_set(&sDefault.szLprmcommand,"/usr/bin/cancel %p-%j");
+      string_set(&sDefault.szPrintcommand,"/usr/bin/lp -d%p -oraw %s; rm %s");
+      string_set(&sDefault.szQueuepausecommand, "/usr/bin/disable %p");
+      string_set(&sDefault.szQueueresumecommand, "/usr/bin/enable %p");
       break;
 
     case PRINT_SYSV:
     case PRINT_HPUX:
-      string_initial(&sDefault.szLpqcommand,"lpstat -o%p");
-      string_initial(&sDefault.szLprmcommand,"cancel %p-%j");
-      string_initial(&sDefault.szPrintcommand,"lp -c -d%p %s; rm %s");
+      string_set(&sDefault.szLpqcommand,"lpstat -o%p");
+      string_set(&sDefault.szLprmcommand,"cancel %p-%j");
+      string_set(&sDefault.szPrintcommand,"lp -c -d%p %s; rm %s");
 #ifdef HPUX
-      string_initial(&sDefault.szQueuepausecommand, "disable %p");
-      string_initial(&sDefault.szQueueresumecommand, "enable %p");
+      string_set(&sDefault.szQueuepausecommand, "disable %p");
+      string_set(&sDefault.szQueueresumecommand, "enable %p");
 #else /* SYSV */
-      string_initial(&sDefault.szLppausecommand,"lp -i %p-%j -H hold");
-      string_initial(&sDefault.szLpresumecommand,"lp -i %p-%j -H resume");
-      string_initial(&sDefault.szQueuepausecommand, "lpc stop %p");
-      string_initial(&sDefault.szQueueresumecommand, "lpc start %p");
+      string_set(&sDefault.szLppausecommand,"lp -i %p-%j -H hold");
+      string_set(&sDefault.szLpresumecommand,"lp -i %p-%j -H resume");
+      string_set(&sDefault.szQueuepausecommand, "lpc stop %p");
+      string_set(&sDefault.szQueueresumecommand, "lpc start %p");
 #endif /* SYSV */
       break;
 
     case PRINT_QNX:
-      string_initial(&sDefault.szLpqcommand,"lpq -P%p");
-      string_initial(&sDefault.szLprmcommand,"lprm -P%p %j");
-      string_initial(&sDefault.szPrintcommand,"lp -r -P%p %s");
+      string_set(&sDefault.szLpqcommand,"lpq -P%p");
+      string_set(&sDefault.szLprmcommand,"lprm -P%p %j");
+      string_set(&sDefault.szPrintcommand,"lp -r -P%p %s");
       break;
 
     case PRINT_SOFTQ:
-      string_initial(&sDefault.szLpqcommand,"qstat -l -d%p");
-      string_initial(&sDefault.szLprmcommand,"qstat -s -j%j -c");
-      string_initial(&sDefault.szPrintcommand,"lp -d%p -s %s; rm %s");
-      string_initial(&sDefault.szLppausecommand,"qstat -s -j%j -h");
-      string_initial(&sDefault.szLpresumecommand,"qstat -s -j%j -r");
+      string_set(&sDefault.szLpqcommand,"qstat -l -d%p");
+      string_set(&sDefault.szLprmcommand,"qstat -s -j%j -c");
+      string_set(&sDefault.szPrintcommand,"lp -d%p -s %s; rm %s");
+      string_set(&sDefault.szLppausecommand,"qstat -s -j%j -h");
+      string_set(&sDefault.szLpresumecommand,"qstat -s -j%j -r");
       break;
       
     }
@@ -1121,9 +1111,9 @@ free up temporary memory - called from the main loop
 ********************************************************************/
 void lp_talloc_free(void)
 {
-    if (!lp_talloc) return;
-    talloc_destroy(lp_talloc);
-    lp_talloc = NULL;
+	if (!lp_talloc) return;
+	talloc_destroy(lp_talloc);
+	lp_talloc = NULL;
 }
 
 /*******************************************************************
@@ -1133,24 +1123,24 @@ callers without affecting the source string.
 ********************************************************************/
 static char *lp_string(const char *s)
 {
-    size_t len = s?strlen(s):0;
-    char *ret;
+	size_t len = s?strlen(s):0;
+	char *ret;
 
-    if (!lp_talloc) lp_talloc = talloc_init();
+	if (!lp_talloc) lp_talloc = talloc_init();
+  
+	ret = (char *)talloc(lp_talloc, len + 100); /* leave room for substitution */
 
-    ret = (char *)talloc(lp_talloc, len + 100); /* leave room for substitution */
+	if (!ret) return NULL;
 
-    if (!ret) return NULL;
+	if (!s) 
+		*ret = 0;
+	else
+		StrnCpy(ret,s,len);
 
-    if (!s)
-        *ret = 0;
-    else
-        StrnCpy(ret,s,len);
+	trim_string(ret, "\"", "\"");
 
-    trim_string(ret, "\"", "\"");
-
-    standard_sub_basic(ret);
-    return(ret);
+	standard_sub_basic(ret);
+	return(ret);
 }
 
 
@@ -2619,7 +2609,7 @@ BOOL lp_load(char *pszFname,BOOL global_only, BOOL save_defaults, BOOL add_ipc)
 {
   pstring n2;
   BOOL bRetval;
- 
+
   add_to_file_list(pszFname);
 
   bRetval = False;
