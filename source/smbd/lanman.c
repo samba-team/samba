@@ -2267,6 +2267,12 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 		return False;
 	*rparam_len = 4;
 	*rparam = REALLOC(*rparam,*rparam_len);
+
+	if ( (snum = lp_servicenumber(sharename)) == -1 ) {
+		DEBUG(0,("api_PrintJobInfo: unable to get service number from sharename [%s]\n",
+			sharename));
+		return False;
+	}
   
 	*rdata_len = 0;
 	
