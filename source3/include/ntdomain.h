@@ -372,6 +372,9 @@ struct acct_info
 /* security descriptor structures */
 #include "rpc_secdes.h"
 
+/* pac */
+#include "authdata.h"
+
 /* different dce/rpc pipes */
 #include "rpc_lsa.h"
 #include "rpc_netlogon.h"
