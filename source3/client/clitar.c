@@ -71,6 +71,7 @@ stack dir_stack = {NULL, 0}; /* Want an empty stack */
 #define SEPARATORS " \t\n\r"
 extern int DEBUGLEVEL;
 extern struct cli_state *cli;
+extern FILE *dbf;
 
 /* These defines are for the do_setrattr routine, to indicate
  * setting and reseting of file attributes in the function call */
@@ -1818,6 +1819,12 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
   if (Optind>=argc || !strcmp(argv[Optind], "-")) {
     /* Sets tar handle to either 0 or 1, as appropriate */
     tarhandle=(tar_type=='c');
+    /*
+     * Make sure that dbf points to stderr if we are using stdout for 
+     * tar output
+    */
+    if (tarhandle == 1) 
+      dbf = stderr;
   } else {
     if (tar_type=='c' && (dry_run || strcmp(argv[Optind], "/dev/null")==0))
       {
