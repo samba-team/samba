@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -48,6 +48,13 @@ encode_om_uint32(OM_uint32 n, u_char *p)
   p[2] = (n >> 16) & 0xFF;
   p[3] = (n >> 24) & 0xFF;
   return 0;
+}
+
+static krb5_error_code
+decode_om_uint32(u_char *p, OM_uint32 *n)
+{
+    *n = (p[0] << 0) | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
+    return 0;
 }
 
 static krb5_error_code
@@ -114,3 +121,37 @@ gssapi_krb5_create_8003_checksum (
   return 0;
 }
 
+krb5_error_code
+gssapi_krb5_verify_8003_checksum(
+		      const gss_channel_bindings_t input_chan_bindings,
+		      Checksum *cksum,
+		      OM_uint32 *flags)
+{
+    unsigned char hash[16];
+    unsigned char *p;
+    OM_uint32 length;
+
+    /* XXX should handle checksums > 24 bytes */
+    if(cksum->cksumtype != 0x8003 || cksum->checksum.length != 24)
+	return GSS_S_BAD_BINDINGS;
+    
+    p = cksum->checksum.data;
+    decode_om_uint32(p, &length);
+    if(length != sizeof(hash))
+	return GSS_S_FAILURE;
+    
+    p += 4;
+    
+    if (input_chan_bindings != GSS_C_NO_CHANNEL_BINDINGS) {
+	if(hash_input_chan_bindings(input_chan_bindings, hash) != 0)
+	    return GSS_S_FAILURE;
+	if(memcmp(hash, p, sizeof(hash)) != 0)
+	    return GSS_S_FAILURE;
+    }
+    
+    p += sizeof(hash);
+    
+    decode_om_uint32(p, flags);
+    
+    return 0;
+}
