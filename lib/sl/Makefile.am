@@ -19,7 +19,7 @@ noinst_PROGRAMS = mk_cmds
 mk_cmds_SOURCES = make_cmds.c make_cmds.h parse.y lex.l snprintf.c
 
 ssincludedir = $(includedir)/ss
-#ssinclude_DATA = ss.h
+ssinclude_HEADERS = ss.h
 
 $(mk_cmds_OBJECTS): parse.h
 
