@@ -6154,12 +6154,79 @@ BOOL spoolss_io_r_replycloseprinter(char *desc, SPOOL_R_REPLYCLOSEPRINTER *r_u, 
 	return True;		
 }
 
+#if 0	/* JERRY - not currently used but could be :-) */
+
+/*******************************************************************
+ Deep copy a SPOOL_NOTIFY_INFO_DATA structure
+ ******************************************************************/
+static BOOL copy_spool_notify_info_data(SPOOL_NOTIFY_INFO_DATA *dst, 
+				SPOOL_NOTIFY_INFO_DATA *src, int n)
+{
+	int i;
+
+	memcpy(dst, src, sizeof(SPOOL_NOTIFY_INFO_DATA)*n);
+	
+	for (i=0; i<n; i++) {
+		int len;
+		uint16 *s = NULL;
+		
+		if (src->size != POINTER) 
+			continue;
+		len = src->notify_data.data.length;
+		s = malloc(sizeof(uint16)*len);
+		if (s == NULL) {
+			DEBUG(0,("copy_spool_notify_info_data: malloc() failed!\n"));
+			return False;
+		}
+		
+		memcpy(s, src->notify_data.data.string, len*2);
+		dst->notify_data.data.string = s;
+	}
+	
+	return True;
+}
+
+/*******************************************************************
+ Deep copy a SPOOL_NOTIFY_INFO structure
+ ******************************************************************/
+static BOOL copy_spool_notify_info(SPOOL_NOTIFY_INFO *dst, SPOOL_NOTIFY_INFO *src)
+{
+	if (!dst) {
+		DEBUG(0,("copy_spool_notify_info: NULL destination pointer!\n"));
+		return False;
+	}
+		
+	dst->version = src->version;
+	dst->flags   = src->flags;
+	dst->count   = src->count;
+	
+	if (dst->count) 
+	{
+		dst->data = malloc(dst->count * sizeof(SPOOL_NOTIFY_INFO_DATA));
+		
+		DEBUG(10,("copy_spool_notify_info: allocating space for [%d] PRINTER_NOTIFY_INFO_DATA entries\n",
+			dst->count));
+
+		if (dst->data == NULL) {
+			DEBUG(0,("copy_spool_notify_info: malloc() failed for [%d] entries!\n", 
+				dst->count));
+			return False;
+		}
+		
+		return (copy_spool_notify_info_data(dst->data, src->data, src->count));
+	}
+	
+	return True;
+}
+#endif	/* JERRY */
+
 /*******************************************************************
  * init a structure.
  ********************************************************************/
 
 BOOL make_spoolss_q_reply_rrpcn(SPOOL_Q_REPLY_RRPCN *q_u, POLICY_HND *hnd,
-			        uint32 change_low, uint32 change_high)
+			        uint32 change_low, uint32 change_high,
+				SPOOL_NOTIFY_INFO *info)
 {      
 	if (q_u == NULL)
 		return False;
@@ -6175,8 +6242,20 @@ BOOL make_spoolss_q_reply_rrpcn(SPOOL_Q_REPLY_RRPCN *q_u, POLICY_HND *hnd,
 	q_u->info_ptr=1;
 
 	q_u->info.version=2;
-	q_u->info.flags=PRINTER_NOTIFY_INFO_DISCARDED;
-	q_u->info.count=0;
+	
+	if (info->count) {
+		DEBUG(10,("make_spoolss_q_reply_rrpcn: [%d] PRINTER_NOTIFY_INFO_DATA\n",
+			info->count));
+		q_u->info.version = info->version;
+		q_u->info.flags   = info->flags;
+		q_u->info.count   = info->count;
+		/* pointer field - be careful! */
+		q_u->info.data    = info->data;
+	}
+	else  {
+		q_u->info.flags=PRINTER_NOTIFY_INFO_DISCARDED;
+		q_u->info.count=0;
+	}
 
 	return True;
 }

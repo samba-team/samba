@@ -435,7 +435,7 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 	 * anymore, so I've simplified this loop greatly.  Here
 	 * we are just verifying that the printer name is a valid
 	 * printer service defined in smb.conf
-	 *                          --jerry [Fri Feb 15 11:17:46 CST 2002] 
+	 *                          --jerry [Fri Feb 15 11:17:46 CST 2002]
 	 */
 
 	for (snum=0; snum<n_services; snum++) {
@@ -582,7 +582,7 @@ static void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size
 	high = IVAL(msg,4);
 	fstrcpy(printer_name, buf_ptr + sizeof(msg));
 
-	DEBUG(10,("srv_spoolss_receive_message: Got message printer change name [%s] low=0x%x  high=0x%x\n",
+	DEBUG(10,("srv_spoolss_receive_message: Got message printer change [queue = %s] low=0x%x  high=0x%x\n",
 		printer_name, (unsigned int)low, (unsigned int)high ));
 
 	/* Iterate the printer list */
@@ -593,14 +593,28 @@ static void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size
 		 */
 
 		if (find_printer->notify.client_connected==True) {
-			DEBUG(10,("srv_spoolss_receive_message: printerserver [%s]\n", find_printer->dev.printerservername ));
-			if (*printer_name && !strequal(printer_name, find_printer->dev.handlename)) {
+
+			if (find_printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER)
+				DEBUG(10,("srv_spoolss_receive_message: printserver [%s]\n", find_printer->dev.printerservername ));
+			else
+				DEBUG(10,("srv_spoolss_receive_message: printer [%s]\n", find_printer->dev.handlename));
+
+			/*
+			 * if handle is a printer, only send if the printer_name matches.
+			 * ...else if handle is a printerserver, send to all
+			 */
+
+			if (*printer_name && (find_printer->printer_type==PRINTER_HANDLE_IS_PRINTER) 
+				&& !strequal(printer_name, find_printer->dev.handlename)) 
+			{
 				DEBUG(10,("srv_spoolss_receive_message: ignoring message sent to %s [%s]\n",
 					printer_name, find_printer->dev.handlename ));
 				continue;
 			}
 
-			if (cli_spoolss_reply_rrpcn(&cli, &find_printer->notify.client_hnd, low, high, &status))
+			/* issue the client call */
+
+			if (cli_spoolss_reply_rrpcn(&cli, &find_printer->notify.client_hnd, printer_name, low, high, &status))
 				DEBUG(10,("srv_spoolss_receive_message: cli_spoolss_reply_rrpcn status = 0x%x\n",
 					(unsigned int)W_ERROR_V(status)));
 			else
@@ -613,16 +627,22 @@ static void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size
  Send a notify event.
 ****************************************************************************/
 
-static BOOL srv_spoolss_sendnotify(uint32 high, uint32 low)
+static BOOL srv_spoolss_sendnotify(char* printer_name, uint32 high, uint32 low)
 {
-	char msg[10];
+	char msg[8 + sizeof(fstring)];
 
 	ZERO_STRUCT(msg);
+
 	SIVAL(msg,0,low);
 	SIVAL(msg,4,high);
-	DEBUG(10,("srv_spoolss_sendnotify: printer change low=0x%x  high=0x%x\n", low, high));
+	fstrcpy(&msg[8], printer_name);
 
-	message_send_all(conn_tdb_ctx(), MSG_PRINTER_NOTIFY, msg, sizeof(msg), False);
+	DEBUG(10,("srv_spoolss_sendnotify: printer change low=0x%x  high=0x%x [%s]\n", 
+		low, high, printer_name));
+
+	message_send_all(conn_tdb_ctx(), MSG_PRINTER_NOTIFY, msg, 8 + strlen(printer_name) + 1, 
+		False);
+	
 	return True;
 }	
 
@@ -1013,7 +1033,7 @@ WERROR _spoolss_deleteprinter(pipes_struct *p, SPOOL_Q_DELETEPRINTER *q_u, SPOOL
 	update_c_setprinter(FALSE);
 
 	if (W_ERROR_IS_OK(result)) {
-		srv_spoolss_sendnotify(0, PRINTER_CHANGE_DELETE_PRINTER);
+		srv_spoolss_sendnotify(Printer->dev.handlename, 0, PRINTER_CHANGE_DELETE_PRINTER);
 	}
 		
 	return result;
@@ -1502,10 +1522,9 @@ static void spoolss_notify_port_name(int snum,
 
 /*******************************************************************
  * fill a notify_info_data with the printername
- * jfmxxxx: it's incorrect, should be lp_printerdrivername()
  * but it doesn't exist, have to see what to do
  ********************************************************************/
-static void spoolss_notify_driver_name(int snum, 
+void spoolss_notify_driver_name(int snum, 
 				       SPOOL_NOTIFY_INFO_DATA *data,
 				       print_queue_struct *queue,
 				       NT_PRINTER_INFO_LEVEL *printer,
@@ -1560,7 +1579,6 @@ static void spoolss_notify_comment(int snum,
 
 /*******************************************************************
  * fill a notify_info_data with the comment
- * jfm:xxxx incorrect, have to create a new smb.conf option
  * location = "Room 1, floor 2, building 3"
  ********************************************************************/
 static void spoolss_notify_location(int snum, 
@@ -1600,8 +1618,6 @@ static void spoolss_notify_devmode(int snum,
 
 /*******************************************************************
  * fill a notify_info_data with the separator file name
- * jfm:xxxx just return no file could add an option to smb.conf
- * separator file = "separator.txt"
  ********************************************************************/
 static void spoolss_notify_sepfile(int snum, 
 				   SPOOL_NOTIFY_INFO_DATA *data, 
@@ -2167,7 +2183,7 @@ static int search_notify(uint16 type, uint16 field, int *value)
 
 /****************************************************************************
 ****************************************************************************/
-static void construct_info_data(SPOOL_NOTIFY_INFO_DATA *info_data, uint16 type, uint16 field, int id)
+void construct_info_data(SPOOL_NOTIFY_INFO_DATA *info_data, uint16 type, uint16 field, int id)
 {
 	info_data->type     = type;
 	info_data->field    = field;
@@ -2220,7 +2236,7 @@ static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int
 
 		current_data=&info->data[info->count];
 
-		construct_info_data(current_data, type, field, id);		
+		construct_info_data(current_data, type, field, id);
 
 		DEBUG(10,("construct_notify_printer_info: calling [%s]  snum=%d  printername=[%s])\n",
 				notify_info_data_table[j].name, snum, printer->info_2->printername ));
@@ -4652,6 +4668,7 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	NT_PRINTER_INFO_LEVEL *printer = NULL, *old_printer = NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 	WERROR result;
+	uint32 notify_flag = PRINTER_CHANGE_SET_PRINTER;
 
 	DEBUG(8,("update_printer\n"));
 	
@@ -4767,18 +4784,27 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 		 * lookup previously saved driver initialization info, which is then
 		 * bound to the printer, simulating what happens in the Windows arch.
 		 */
-		if (!strequal(printer->info_2->drivername, old_printer->info_2->drivername))
+		if (!strequal(printer->info_2->drivername, old_printer->info_2->drivername)){
 			set_driver_init(printer, 2);
+			notify_flag |= PRINTER_CHANGE_SET_PRINTER_DRIVER;
+		}
 	}
 
 	/* Update printer info */
 	result = mod_a_printer(*printer, 2);
 
- done:
+done:
+	/*
+	 * It appears that if the PrinterName had changed, we should
+	 * set this to PRINTER_CHANGE_ADD_PRINTER.  This was observed
+	 * between 2k -> 2k.  Otherwise a PRINTER_CHANGE_SET_PRINTER
+	 * event is ok.    --jerry
+	 */
+	srv_spoolss_sendnotify(printer->info_2->printername, 0, notify_flag);
+ 
 	free_a_printer(&printer, 2);
 	free_a_printer(&old_printer, 2);
 
-	srv_spoolss_sendnotify(0, PRINTER_CHANGE_SET_PRINTER);
 
 	return result;
 }
@@ -5987,11 +6013,12 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 		return WERR_ACCESS_DENIED;
 	}
 
+	srv_spoolss_sendnotify(printer->info_2->printername, 0, PRINTER_CHANGE_ADD_PRINTER);
+
 	free_a_printer(&printer,2);
 
 	update_c_setprinter(False);
 
-	srv_spoolss_sendnotify(0, PRINTER_CHANGE_ADD_PRINTER);
 
 	return WERR_OK;
 }
@@ -6383,24 +6410,6 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 
 	convert_specific_param(&param, value , type, data, real_len);
 
-#if 0
-	/* JRA. W2K always changes changeid. */
-
-	if (get_specific_param(*printer, 2, param->value, &old_param.data,
-			       &old_param.type, (uint32 *)&old_param.data_len)) {
-
-		if (param->type == old_param.type &&
-		    param->data_len == old_param.data_len &&
-		    memcmp(param->data, old_param.data,
-			   old_param.data_len) == 0) {
-
-			DEBUG(3, ("setprinterdata hasn't changed\n"));
-			status = WERR_OK;
-			goto done;
-		}
-	}
-#endif
-
 	unlink_specific_param_if_exist(printer->info_2, param);
 	
 	/*
@@ -6424,11 +6433,6 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 	if (param)
 		free_nt_printer_param(&param);
 	SAFE_FREE(old_param.data);
-
-#if 0
-	/* Is this correct. JRA ? */
-	srv_spoolss_sendnotify(0, PRINTER_CHANGE_SET_PRINTER); 
-#endif
 
 	return status;
 }

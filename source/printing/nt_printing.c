@@ -2868,7 +2868,7 @@ static uint32 set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
 	kbuf.dsize = strlen(key)+1;
 
 	dbuf = tdb_fetch(tdb_drivers, kbuf);
-    if (!dbuf.dptr) {
+	if (!dbuf.dptr) {
 		/*
 		 * When changing to a driver that has no init info in the tdb, remove
 		 * the previous drivers init info and leave the new on blank.
@@ -2889,11 +2889,23 @@ static uint32 set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
 	ZERO_STRUCT(info.devmode->devicename);
 	fstrcpy(info.devmode->devicename, info_ptr->printername);
 
+#if 0	/* JERRY */
+	/*
+	 * NT/2k does not change the Device Mode of a printer
+	 * when changing the driver.  This makes no sense to me
+	 * but it just the way it goes.  However, printer data
+	 * should be deleted and reset so I'm leaving that in.
+	 *    --jerry 
+	 */
+
 	/* 
 	 * 	Bind the saved DEVMODE to the new the printer.
 	 */
 	free_nt_devicemode(&info_ptr->devmode);
 	info_ptr->devmode = info.devmode;
+#else
+	free_nt_devicemode(&info.devmode);
+#endif
 
 	DEBUG(10,("set_driver_init_2: Set printer [%s] init DEVMODE for driver [%s]\n",
 			info_ptr->printername, info_ptr->drivername));

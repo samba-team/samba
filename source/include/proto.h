@@ -2428,7 +2428,8 @@ BOOL spoolss_disconnect_from_client( struct cli_state *cli);
 BOOL spoolss_connect_to_client( struct cli_state *cli, char *remote_machine);
 BOOL cli_spoolss_reply_open_printer(struct cli_state *cli, char *printer, uint32 localprinter, uint32 type, WERROR *status, POLICY_HND *handle);
 BOOL cli_spoolss_reply_rrpcn(struct cli_state *cli, POLICY_HND *handle, 
-			     uint32 change_low, uint32 change_high, WERROR *status);
+			     char* printername, uint32 change_low, uint32 change_high, 
+			     WERROR *status);
 BOOL cli_spoolss_reply_close_printer(struct cli_state *cli, POLICY_HND *handle, 
 				     WERROR *status);
 
@@ -3692,7 +3693,8 @@ BOOL make_spoolss_q_reply_closeprinter(SPOOL_Q_REPLYCLOSEPRINTER *q_u, POLICY_HN
 BOOL spoolss_io_q_replycloseprinter(char *desc, SPOOL_Q_REPLYCLOSEPRINTER *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_replycloseprinter(char *desc, SPOOL_R_REPLYCLOSEPRINTER *r_u, prs_struct *ps, int depth);
 BOOL make_spoolss_q_reply_rrpcn(SPOOL_Q_REPLY_RRPCN *q_u, POLICY_HND *hnd,
-			        uint32 change_low, uint32 change_high);
+			        uint32 change_low, uint32 change_high,
+				SPOOL_NOTIFY_INFO *info);
 BOOL spoolss_io_q_reply_rrpcn(char *desc, SPOOL_Q_REPLY_RRPCN *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_reply_rrpcn(char *desc, SPOOL_R_REPLY_RRPCN *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_getprinterdataex(char *desc, SPOOL_Q_GETPRINTERDATAEX *q_u, prs_struct *ps, int depth);
@@ -3992,6 +3994,12 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 				    SPOOL_R_DELETEPRINTERDRIVER *r_u);
 WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPOOL_R_GETPRINTERDATA *r_u);
 WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNEX *r_u);
+void spoolss_notify_driver_name(int snum, 
+				       SPOOL_NOTIFY_INFO_DATA *data,
+				       print_queue_struct *queue,
+				       NT_PRINTER_INFO_LEVEL *printer,
+				       TALLOC_CTX *mem_ctx);
+void construct_info_data(SPOOL_NOTIFY_INFO_DATA *info_data, uint16 type, uint16 field, int id);
 WERROR _spoolss_rfnpcnex( pipes_struct *p, SPOOL_Q_RFNPCNEX *q_u, SPOOL_R_RFNPCNEX *r_u);
 WERROR _spoolss_enumprinters( pipes_struct *p, SPOOL_Q_ENUMPRINTERS *q_u, SPOOL_R_ENUMPRINTERS *r_u);
 WERROR _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GETPRINTER *r_u);
