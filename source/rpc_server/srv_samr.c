@@ -226,7 +226,6 @@ static void samr_reply_unknown_2c(SAMR_Q_UNKNOWN_2C *q_u,
 {
 	SAMR_R_UNKNOWN_2C r_u;
 	uint32 status = 0x0;
-	uint32 rid;
 
 	/* find the policy handle.  open a policy on it. */
 	if (status == 0x0 && (find_lsa_policy_by_hnd(&(q_u->user_pol)) == -1))
@@ -235,7 +234,7 @@ static void samr_reply_unknown_2c(SAMR_Q_UNKNOWN_2C *q_u,
 	}
 
 	/* find the user's rid */
-	if (status == 0x0 && (rid = get_lsa_policy_samr_rid(&(q_u->user_pol))) == 0xffffffff)
+	if ((status == 0x0) && (get_lsa_policy_samr_rid(&(q_u->user_pol)) == 0xffffffff))
 	{
 		status = NT_STATUS_OBJECT_TYPE_MISMATCH;
 	}

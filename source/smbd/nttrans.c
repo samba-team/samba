@@ -312,35 +312,47 @@ static void restore_case_semantics(uint32 file_attributes)
 
 static int map_create_disposition( uint32 create_disposition)
 {
+  int ret;
+
   switch( create_disposition ) {
   case FILE_CREATE:
     /* create if not exist, fail if exist */
-    return 0x10;
+    ret = 0x10;
+    break;
   case FILE_SUPERSEDE:
   case FILE_OVERWRITE_IF:
     /* create if not exist, trunc if exist */
-    return 0x12;
+    ret = 0x12;
+    break;
   case FILE_OPEN:
     /* fail if not exist, open if exists */
-    return 0x1;
+    ret = 0x1;
+    break;
   case FILE_OPEN_IF:
     /* create if not exist, open if exists */
-    return 0x11;
+    ret = 0x11;
+    break;
   case FILE_OVERWRITE:
     /* fail if not exist, truncate if exists */
-    return 0x2;
+    ret = 0x2;
+    break;
   default:
     DEBUG(0,("map_create_disposition: Incorrect value for create_disposition = %d\n",
              create_disposition ));
     return -1;
   }
+
+  DEBUG(10,("map_create_disposition: Mapped create_disposition %lx to %x\n",
+        (unsigned long)create_disposition, ret ));
+
+  return ret;
 }
 
 /****************************************************************************
  Utility function to map share modes.
 ****************************************************************************/
 
-static int map_share_mode( uint32 desired_access, uint32 share_access, uint32 file_attributes)
+static int map_share_mode( char *fname, uint32 desired_access, uint32 share_access, uint32 file_attributes)
 {
   int smb_open_mode = -1;
 
@@ -356,15 +368,28 @@ static int map_share_mode( uint32 desired_access, uint32 share_access, uint32 fi
     break;
   }
 
+  /*
+   * NB. For DELETE_ACCESS we should really check the
+   * directory permissions, as that is what controls
+   * delete, and for WRITE_DAC_ACCESS we should really
+   * check the ownership, as that is what controls the
+   * chmod. Note that this is *NOT* a security hole (this
+   * note is for you, Andrew) as we are not *allowing*
+   * the access at this point, the actual unlink or
+   * chown or chmod call would do this. We are just helping
+   * clients out by telling them if they have a hope
+   * of any of this succeeding. POSIX acls may still
+   * deny the real call. JRA.
+   */
+
   if (smb_open_mode == -1) {
-    if(desired_access & (DELETE_ACCESS|FILE_WRITE_ATTRIBUTES|
-                         WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS))
-      smb_open_mode = 2;
-    else if(desired_access & (FILE_EXECUTE|FILE_READ_ATTRIBUTES|READ_CONTROL_ACCESS))
+    if(desired_access & (DELETE_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|
+                              FILE_EXECUTE|FILE_READ_ATTRIBUTES|
+                              FILE_WRITE_ATTRIBUTES|READ_CONTROL_ACCESS))
       smb_open_mode = 0;
     else {
-      DEBUG(0,("map_share_mode: Incorrect value for desired_access = %x\n",
-             desired_access));
+      DEBUG(0,("map_share_mode: Incorrect value %lx for desired_access to file %s\n",
+             (unsigned long)desired_access, fname));
       return -1;
     }
   }
@@ -391,6 +416,10 @@ static int map_share_mode( uint32 desired_access, uint32 share_access, uint32 fi
   if(file_attributes & FILE_FLAG_WRITE_THROUGH)
     smb_open_mode |= (1<<14);
 
+  DEBUG(10,("map_share_mode: Mapped desired access %lx, share access %lx, file attributes %lx \
+to open_mode %x\n", (unsigned long)desired_access, (unsigned long)share_access,
+                    (unsigned long)file_attributes, smb_open_mode ));
+ 
   return smb_open_mode;
 }
 
@@ -469,17 +498,6 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	
 	if((smb_ofun = map_create_disposition( create_disposition )) == -1)
 		return(ERROR(ERRDOS,ERRbadaccess));
-
-	/*
-	 * Now contruct the smb_open_mode value from the desired access
-	 * and the share access.
-	 */
-	
-	if((smb_open_mode = map_share_mode(desired_access, 
-					   share_access, 
-					   file_attributes)) == -1) {
-		return(ERROR(ERRDOS,ERRbadaccess));
-	}
 
 	/*
 	 * Get the file name.
@@ -563,6 +581,17 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		DEBUG(5,("reply_ntcreate_and_X: open pipe = %s\n", fname));
 
 		return chain_reply(inbuf,outbuf,length,bufsize);
+	}
+
+	/*
+	 * Now contruct the smb_open_mode value from the filename, 
+     * desired access and the share access.
+	 */
+	
+	if((smb_open_mode = map_share_mode(fname, desired_access, 
+					   share_access, 
+					   file_attributes)) == -1) {
+		return(ERROR(ERRDOS,ERRbadaccess));
 	}
 
 	/*
@@ -800,15 +829,6 @@ static int call_nt_transact_create(connection_struct *conn,
     return(ERROR(ERRDOS,ERRbadaccess));
 
   /*
-   * Now contruct the smb_open_mode value from the desired access
-   * and the share access.
-   */
-
-  if((smb_open_mode = map_share_mode( desired_access, share_access, file_attributes)) == -1)
-    return(ERROR(ERRDOS,ERRbadaccess));
-
-
-  /*
    * Get the file name.
    */
 
@@ -887,6 +907,14 @@ static int call_nt_transact_create(connection_struct *conn,
     
     oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
     oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
+
+    /*
+     * Now contruct the smb_open_mode value from the desired access
+     * and the share access.
+     */
+
+    if((smb_open_mode = map_share_mode( fname, desired_access, share_access, file_attributes)) == -1)
+      return(ERROR(ERRDOS,ERRbadaccess));
 
     /*
      * If it's a request for a directory open, deal with it separately.

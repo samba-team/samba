@@ -358,6 +358,10 @@ void cred_hash3(unsigned char *out,unsigned char *in,unsigned char *key, int for
         smbhash(out + 8, in + 8, key2, forw);
 }
 
+#if 0
+/*
+ * Prepare to remove... JRA.
+ */
 void NTLMSSPhash( unsigned char hash[258], unsigned char key[5])
 {
 	unsigned char j = 0;
@@ -389,6 +393,7 @@ void NTLMSSPhash( unsigned char hash[258], unsigned char key[5])
 	hash[256] = 0;
 	hash[257] = 0;
 }
+#endif
 
 void NTLMSSPcalc( unsigned char hash[258], unsigned char *data, int len)
 {

@@ -642,7 +642,7 @@ static void usage(char *pname)
 
 	codepage_initialise(lp_client_code_page());
 
-	pstrcpy(global_myworkgroup, lp_workgroup());
+	fstrcpy(global_myworkgroup, lp_workgroup());
 
 	if(!pdb_generate_sam_sid()) {
 		DEBUG(0,("ERROR: Samba cannot create a SAM SID.\n"));
