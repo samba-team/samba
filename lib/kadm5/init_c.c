@@ -63,6 +63,7 @@ _kadm5_c_init_context(kadm5_client_context **ctx,
 		      krb5_context context)
 {
     krb5_error_code ret;
+    char *colon;
 
     *ctx = malloc(sizeof(**ctx));
     if(*ctx == NULL)
@@ -75,11 +76,6 @@ _kadm5_c_init_context(kadm5_client_context **ctx,
 	(*ctx)->realm = strdup(params->realm);
     else
 	krb5_get_default_realm((*ctx)->context, &(*ctx)->realm);
-    if(params->mask & KADM5_CONFIG_KADMIND_PORT)
-	(*ctx)->kadmind_port = params->kadmind_port;
-    else
-	(*ctx)->kadmind_port = krb5_getportbyname (context, "kerberos-adm", 
-						   "tcp", 749);
     if(params->mask & KADM5_CONFIG_ADMIN_SERVER)
 	(*ctx)->admin_server = strdup(params->admin_server);
     else {
@@ -91,9 +87,25 @@ _kadm5_c_init_context(kadm5_client_context **ctx,
 	(*ctx)->admin_server = strdup(*hostlist);
 	krb5_free_krbhst (context, hostlist);
     }
+
     if ((*ctx)->admin_server == NULL)
 	return ENOMEM;
-	    
+    colon = strchr ((*ctx)->admin_server, ':');
+    if (colon != NULL)
+	*colon++ = '\0';
+
+    (*ctx)->kadmind_port = 0;
+
+    if(params->mask & KADM5_CONFIG_KADMIND_PORT)
+	(*ctx)->kadmind_port = params->kadmind_port;
+    else if (colon != NULL) {
+	char *end;
+
+	(*ctx)->kadmind_port = htons(strtol (colon, &end, 0));
+    }
+    if ((*ctx)->kadmind_port == 0)
+	(*ctx)->kadmind_port = krb5_getportbyname (context, "kerberos-adm", 
+						   "tcp", 749);
     return 0;
 }
 
@@ -295,6 +307,7 @@ kadm5_c_init_with_context(krb5_context context,
     struct addrinfo hints;
     int error;
     char portstr[NI_MAXSERV];
+    char *hostname, *slash;
 
     memset (&hints, 0, sizeof(hints));
     hints.ai_socktype = SOCK_STREAM;
@@ -306,8 +319,12 @@ kadm5_c_init_with_context(krb5_context context,
 
     snprintf (portstr, sizeof(portstr), "%u", ntohs(ctx->kadmind_port));
 
-    error = getaddrinfo (ctx->admin_server, portstr,
-			 &hints, &ai);
+    hostname = ctx->admin_server;
+    slash = strchr (hostname, '/');
+    if (slash != NULL)
+	hostname = slash + 1;
+
+    error = getaddrinfo (hostname, portstr, &hints, &ai);
     if (error) 
 	return KADM5_BAD_SERVER_NAME;
     
@@ -316,7 +333,7 @@ kadm5_c_init_with_context(krb5_context context,
 	if (s < 0)
 	    continue;
 	if (connect (s, a->ai_addr, a->ai_addrlen) < 0) {
-	    krb5_warn (context, errno, "connect(%s)", ctx->admin_server);
+	    krb5_warn (context, errno, "connect(%s)", hostname);
 	    close (s);
 	    continue;
 	}
@@ -324,7 +341,7 @@ kadm5_c_init_with_context(krb5_context context,
     }
     if (a == NULL) {
 	freeaddrinfo (ai);
-	krb5_warnx (context, "failed to contact %s", ctx->admin_server);
+	krb5_warnx (context, "failed to contact %s", hostname);
 	return KADM5_FAILURE;
     }
     ret = get_cred_cache(context, client_name, service_name, 
