@@ -904,7 +904,7 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* add core elements to the ldb_message for the user */
+	/* add core elements to the ldb_message for the alias */
 	msg.dn = talloc_asprintf(mem_ctx, "CN=%s,CN=Users,%s", aliasname,
 				 d_state->domain_dn);
 	if (!msg.dn) {
@@ -1787,7 +1787,126 @@ static NTSTATUS samr_DeleteDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 static NTSTATUS samr_AddAliasMember(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_AddAliasMember *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct samr_account_state *a_state;
+	struct samr_domain_state *d_state;
+	const char *sidstr;
+	struct ldb_message mod;
+	struct ldb_message **msgs;
+	const char * const attrs[2] = { "dn", NULL };
+	const char *memberdn = NULL;
+	int ret;
+
+	DCESRV_PULL_HANDLE(h, r->in.alias_handle, SAMR_HANDLE_ALIAS);
+
+	a_state = h->data;
+	d_state = a_state->domain_state;
+
+	sidstr = dom_sid_string(mem_ctx, r->in.sid);
+	if (sidstr == NULL)
+		return NT_STATUS_INVALID_PARAMETER;
+
+	ret = samdb_search(d_state->sam_ctx, mem_ctx, NULL,
+			   &msgs, attrs, "(objectsid=%s)", sidstr);
+
+	if (ret == 1) {
+		memberdn = ldb_msg_find_string(msgs[0], "dn", NULL);
+	} else 	if (ret > 1) {
+		DEBUG(0,("Found %d records matching sid %s\n", ret, sidstr));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	} else if (ret == 0) {
+		struct ldb_message msg;
+		struct GUID guid;
+		const char *guidstr, *basedn;
+
+		/* We might have to create a ForeignSecurityPrincipal, but
+		 * only if it's not our own domain */
+		if (dom_sid_in_domain(dom_sid_parse_talloc(mem_ctx,
+							   d_state->domain_sid),
+				      r->in.sid))
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+
+		ZERO_STRUCT(msg);
+
+		/* pull in all the template attributes */
+		ret = samdb_copy_template(d_state->sam_ctx, mem_ctx, &msg, 
+					  "(&(name=TemplateForeignSecurityPrincipal)"
+					  "(objectclass=foreignSecurityPrincipalTemplate))");
+		if (ret != 0) {
+			DEBUG(0,("Failed to load "
+				 "TemplateForeignSecurityPrincipal "
+				 "from samdb\n"));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		/* a new GUID */
+		guid = GUID_random();
+		guidstr = GUID_string(mem_ctx, &guid);
+		if (!guidstr) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		/* TODO: Hmmm. This feels wrong. How do I find the base dn to
+		 * put the ForeignSecurityPrincipals? d_state->domain_dn does
+		 * not work, this is wrong for the Builtin domain, there's no
+		 * cn=For...,cn=Builtin,dc={BASEDN}.  -- vl
+		 */
+
+		basedn = samdb_search_string(d_state->sam_ctx, mem_ctx, NULL,
+					     "dn",
+					     "(&(objectClass=container)"
+					     "(cn=ForeignSecurityPrincipals))");
+
+		if (basedn == NULL) {
+			DEBUG(0, ("Failed to find DN for "
+				  "ForeignSecurityPrincipal container\n"));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		/* add core elements to the ldb_message for the alias */
+		msg.dn = talloc_asprintf(mem_ctx, "CN=%s,%s", sidstr, basedn);
+		if (msg.dn == NULL)
+			return NT_STATUS_NO_MEMORY;
+
+		memberdn = msg.dn;
+
+		samdb_msg_add_string(d_state->sam_ctx, mem_ctx, &msg,
+				     "name", sidstr);
+		samdb_msg_add_string(d_state->sam_ctx, mem_ctx, &msg,
+				     "objectClass",
+				     "foreignSecurityPrincipal");
+		samdb_msg_add_string(d_state->sam_ctx, mem_ctx, &msg,
+				     "objectSid", sidstr);
+		samdb_msg_add_string(d_state->sam_ctx, mem_ctx, &msg,
+				     "objectGUID", guidstr);
+		
+		/* create the alias */
+		ret = samdb_add(d_state->sam_ctx, mem_ctx, &msg);
+		if (ret != 0) {
+			DEBUG(0,("Failed to create foreignSecurityPrincipal "
+				 "record %s\n", msg.dn));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+	} else {
+		DEBUG(0, ("samdb_search returned %d\n", ret));
+	}
+
+	if (memberdn == NULL) {
+		DEBUG(0, ("Could not find memberdn\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	ZERO_STRUCT(mod);
+	mod.dn = talloc_reference(mem_ctx, a_state->account_dn);
+
+	if (samdb_msg_add_addval(d_state->sam_ctx, mem_ctx, &mod, "member",
+				 memberdn) != 0)
+		return NT_STATUS_UNSUCCESSFUL;
+
+	if (samdb_modify(a_state->sam_ctx, mem_ctx, &mod) != 0)
+		return NT_STATUS_UNSUCCESSFUL;
+
+	return NT_STATUS_OK;
 }
 
 
@@ -1797,7 +1916,39 @@ static NTSTATUS samr_AddAliasMember(struct dcesrv_call_state *dce_call, TALLOC_C
 static NTSTATUS samr_DeleteAliasMember(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_DeleteAliasMember *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct samr_account_state *a_state;
+	struct samr_domain_state *d_state;
+	const char *sidstr;
+	struct ldb_message mod;
+	const char *memberdn;
+
+	DCESRV_PULL_HANDLE(h, r->in.alias_handle, SAMR_HANDLE_ALIAS);
+
+	a_state = h->data;
+	d_state = a_state->domain_state;
+
+	sidstr = dom_sid_string(mem_ctx, r->in.sid);
+	if (sidstr == NULL)
+		return NT_STATUS_INVALID_PARAMETER;
+
+	memberdn = samdb_search_string(d_state->sam_ctx, mem_ctx, NULL,
+				       "dn", "(objectSid=%s)", sidstr);
+
+	if (memberdn == NULL)
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+
+	ZERO_STRUCT(mod);
+	mod.dn = talloc_reference(mem_ctx, a_state->account_dn);
+
+	if (samdb_msg_add_delval(d_state->sam_ctx, mem_ctx, &mod, "member",
+				 memberdn) != 0)
+		return NT_STATUS_UNSUCCESSFUL;
+
+	if (samdb_modify(a_state->sam_ctx, mem_ctx, &mod) != 0)
+		return NT_STATUS_UNSUCCESSFUL;
+
+	return NT_STATUS_OK;
 }
 
 
@@ -1807,9 +1958,59 @@ static NTSTATUS samr_DeleteAliasMember(struct dcesrv_call_state *dce_call, TALLO
 static NTSTATUS samr_GetMembersInAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_GetMembersInAlias *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
+	struct dcesrv_handle *h;
+	struct samr_account_state *a_state;
+	struct samr_domain_state *d_state;
+	struct ldb_message **msgs;
+	struct lsa_SidPtr *sids;
+	struct ldb_message_element *el;
+	const char * const attrs[2] = { "member", NULL};
+	int ret;
 
+	DCESRV_PULL_HANDLE(h, r->in.alias_handle, SAMR_HANDLE_ALIAS);
+
+	a_state = h->data;
+	d_state = a_state->domain_state;
+
+	ret = samdb_search(d_state->sam_ctx, mem_ctx, NULL, &msgs, attrs,
+			   "dn=%s", a_state->account_dn);
+
+	if (ret != 1)
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+
+	el = ldb_msg_find_element(msgs[0], "member");
+
+	if (el != NULL) {
+		int i;
+
+		sids = talloc_array_p(mem_ctx, struct lsa_SidPtr,
+				      el->num_values);
+
+		if (sids == NULL)
+			return NT_STATUS_NO_MEMORY;
+
+		for (i=0; i<el->num_values; i++) {
+			struct ldb_message **msgs2;
+			const char * const attrs2[2] = { "objectSid", NULL };
+			ret = samdb_search(a_state->sam_ctx, mem_ctx, NULL,
+					   &msgs2, attrs2, "dn=%s",
+					   (char *)el->values[i].data);
+			if (ret != 1)
+				return NT_STATUS_INTERNAL_DB_CORRUPTION;
+
+			sids[i].sid = samdb_result_dom_sid(mem_ctx, msgs2[0],
+							   "objectSid");
+
+			if (sids[i].sid == NULL)
+				return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+	}
+
+	r->out.sids->num_sids = el->num_values;
+	r->out.sids->sids = sids;
+
+	return NT_STATUS_OK;
+}
 
 /* 
   samr_OpenUser 

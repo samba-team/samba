@@ -567,6 +567,7 @@ int samdb_copy_template(void *ctx, TALLOC_CTX *mem_ctx,
 			    (strcasecmp((char *)el->values[j].data, "Template") == 0 ||
 			     strcasecmp((char *)el->values[j].data, "userTemplate") == 0 ||
 			     strcasecmp((char *)el->values[j].data, "groupTemplate") == 0 ||
+			     strcasecmp((char *)el->values[j].data, "foreignSecurityTemplate") == 0 ||
 			     strcasecmp((char *)el->values[j].data, "aliasTemplate") == 0)) {
 				continue;
 			}
