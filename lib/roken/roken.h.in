@@ -132,9 +132,7 @@ void herror(char *s);
 
 #ifndef HAVE_INET_ATON
 /* Minimal implementation of inet_aton. Doesn't handle hex numbers. */
-#ifndef __GNUC__
 int inet_aton(const char *cp, struct in_addr *adr);
-#endif
 #endif
 
 #if !defined(HAVE_GETCWD)
