@@ -2139,7 +2139,6 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf,
   pstring pathname;
   int reply_size = 0;
   int max_referral_level = SVAL(params,0);
-#endif
 
   DEBUG(10,("call_trans2getdfsreferral\n"));
 
@@ -2162,6 +2161,7 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf,
   SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | FLAGS2_UNICODE_STRINGS | 
 	FLAGS2_DFS_PATHNAMES);
   send_trans2_replies(outbuf,bufsize,0,0,*ppdata,reply_size);
+#endif
 
   return(-1);
 }
