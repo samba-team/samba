@@ -470,9 +470,9 @@ static void fill_share_mode(char *p, files_struct *fsp, uint16 port, uint16 op_t
 BOOL share_modes_identical( share_mode_entry *e1, share_mode_entry *e2)
 {
 	return (e1->pid == e2->pid &&
-	  e1->share_mode == e2->share_mode &&
-	  e1->time.tv_sec == e2->time.tv_sec &&
-	  e1->time.tv_usec == e2->time.tv_usec );
+		(e1->share_mode & ~DELETE_ON_CLOSE_FLAG) == (e2->share_mode & ~DELETE_ON_CLOSE_FLAG) &&
+		e1->time.tv_sec == e2->time.tv_sec &&
+		e1->time.tv_usec == e2->time.tv_usec );
 }
 
 /*******************************************************************
