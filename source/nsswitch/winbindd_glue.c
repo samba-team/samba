@@ -221,7 +221,7 @@ BOOL wb_samr_connect(char *server, uint32 access_mask, CLI_POLICY_HND *pol)
 		goto done;
 	}
 
-	result = cli_samr_connect(pol->cli, pol->mem_ctx, server, 
+	result = cli_samr_connect(pol->cli, pol->mem_ctx, 
 				  access_mask, &pol->handle);
 
  done:
