@@ -2232,7 +2232,7 @@ int lp_servicenumber(char *pszServiceName)
 
    for (iService = iNumServices - 1; iService >= 0; iService--)
       if (VALID(iService) &&
-	  strwicmp(iSERVICE(iService).szService, pszServiceName) == 0) 
+	  strequal(lp_servicename(iService), pszServiceName)) 
          break;
 
    if (iService < 0)
