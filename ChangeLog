@@ -1,3 +1,9 @@
+Sun Nov  9 02:17:27 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* kadmin/kadmind.c: Check return value from krb5_net_read().
+
+	* lib/kadm5,kadmin: Fix memory leaks.
+
 Fri Nov  7 02:45:26 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/kadm5/create_s.c: Get some default values from `default'

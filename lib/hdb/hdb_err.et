@@ -9,7 +9,8 @@ error_table hdb
 
 prefix HDB_ERR
 
-error_code INUSE,		"(deprecated error code) Entry exists in DB"
+index 1
+#error_code INUSE,		"Entry already exists in database"
 error_code UK_SERROR,		"Database store error"
 error_code UK_RERROR,		"Database read error"
 error_code NOENTRY,		"No such entry in the database"
