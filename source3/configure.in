@@ -3083,7 +3083,7 @@ AC_TRY_RUN_STRICT([
 #define HAVE_QUOTACTL_4A 1
 #define AUTOCONF_TEST 1
 #include "confdefs.h"
-#include "${srcdir-.}/lib/sysquotas.c"],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
+#include "${srcdir-.}/tests/sysquotas.c"],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
            samba_cv_HAVE_QUOTACTL_4A=yes,samba_cv_HAVE_QUOTACTL_4A=no,samba_cv_HAVE_QUOTACTL_4A=cross)])
 if test x"$samba_cv_HAVE_QUOTACTL_4A" = x"yes"; then
     samba_cv_SYSQUOTA_FOUND=yes;AC_DEFINE(HAVE_QUOTACTL_4A,1,[Whether long quotactl(int cmd, char *special, qid_t id, caddr_t addr) is available])
@@ -3096,7 +3096,7 @@ AC_TRY_RUN_STRICT([
 #define HAVE_QUOTACTL_4B 1
 #define AUTOCONF_TEST 1
 #include "confdefs.h"
-#include "${srcdir-.}/lib/sysquotas.c"],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
+#include "${srcdir-.}/tests/sysquotas.c"],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
            samba_cv_HAVE_QUOTACTL_4B=yes,samba_cv_HAVE_QUOTACTL_4B=no,samba_cv_HAVE_QUOTACTL_4B=cross)])
 if test x"$samba_cv_HAVE_QUOTACTL_4B" = x"yes"; then
     echo "int quotactl(const char *path, int cmd, int id, char *addr) is not reworked for the new sys_quota api"
@@ -3110,7 +3110,7 @@ AC_TRY_RUN_STRICT([
 #define HAVE_QUOTACTL_3 1
 #define AUTOCONF_TEST 1
 #include "confdefs.h"
-#include "${srcdir-.}/lib/sysquotas.c"],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
+#include "${srcdir-.}/tests/sysquotas.c"],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
            samba_cv_HAVE_QUOTACTL_3=yes,samba_cv_HAVE_QUOTACTL_3=no,samba_cv_HAVE_QUOTACTL_3=cross)])
 if test x"$samba_cv_HAVE_QUOTACTL_3" = x"yes"; then
     echo "CRAY int quotactl (char *spec, int request, char *arg) is NOT reworked for the sys_quota api"
