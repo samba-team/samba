@@ -1,316 +1,51 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
-<HTML
-><HEAD
-><TITLE
->testparm</TITLE
-><META
-NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
-"></HEAD
-><BODY
-CLASS="REFENTRY"
-BGCOLOR="#FFFFFF"
-TEXT="#000000"
-LINK="#0000FF"
-VLINK="#840084"
-ALINK="#0000FF"
-><H1
-><A
-NAME="TESTPARM">testparm</H1
-><DIV
-CLASS="REFNAMEDIV"
-><A
-NAME="AEN5"
-></A
-><H2
->Name</H2
->testparm&nbsp;--&nbsp;check an smb.conf configuration file for 
-	internal correctness</DIV
-><DIV
-CLASS="REFSYNOPSISDIV"
-><A
-NAME="AEN8"><H2
->Synopsis</H2
-><P
-><B
-CLASS="COMMAND"
->testparm</B
-> [-s] [-h] [-v] [-L &#60;servername&#62;] [-t &#60;encoding&#62;] {config filename} [hostname hostIP]</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN18"
-></A
-><H2
->DESCRIPTION</H2
-><P
->This tool is part of the <A
-HREF="samba.7.html"
-TARGET="_top"
->	Samba</A
-> suite.</P
-><P
-><B
-CLASS="COMMAND"
->testparm</B
-> is a very simple test program 
-	to check an <B
-CLASS="COMMAND"
->smbd</B
-> configuration file for 
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>testparm</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="testparm.1"></a><div class="titlepage"><div></div><div></div></div><div class="refnamediv"><h2>Name</h2><p>testparm &#8212; check an smb.conf configuration file for 
+	internal correctness</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><tt class="command">testparm</tt>  [-s] [-h] [-v] [-L &lt;servername&gt;] [-t &lt;encoding&gt;] {config filename} [hostname hostIP]</p></div></div><div class="refsect1" lang="en"><h2>DESCRIPTION</h2><p>This tool is part of the <a href="Samba.7.html"><span class="citerefentry"><span class="refentrytitle">Samba</span>(7)</span></a> suite.</p><p><b class="command">testparm</b> is a very simple test program 
+	to check an <a href="smbd.8.html"><span class="citerefentry"><span class="refentrytitle">smbd</span>(8)</span></a> configuration file for 
 	internal correctness. If this program reports no problems, you 
-	can use the configuration file with confidence that <B
-CLASS="COMMAND"
->smbd
-	</B
-> will successfully load the configuration file.</P
-><P
->Note that this is <I
-CLASS="EMPHASIS"
->NOT</I
-> a guarantee that 
+	can use the configuration file with confidence that <b class="command">smbd
+	</b> will successfully load the configuration file.</p><p>Note that this is <span class="emphasis"><em>NOT</em></span> a guarantee that 
 	the services specified in the configuration file will be 
-	available or will operate as expected. </P
-><P
->If the optional host name and host IP address are 
+	available or will operate as expected. </p><p>If the optional host name and host IP address are 
 	specified on the command line, this test program will run through 
 	the service entries reporting whether the specified host
-	has access to each service. </P
-><P
->If <B
-CLASS="COMMAND"
->testparm</B
-> finds an error in the <TT
-CLASS="FILENAME"
->	smb.conf</TT
-> file it returns an exit code of 1 to the calling 
+	has access to each service. </p><p>If <b class="command">testparm</b> finds an error in the <tt class="filename">
+	smb.conf</tt> file it returns an exit code of 1 to the calling 
 	program, else it returns an exit code of 0. This allows shell scripts 
-	to test the output from <B
-CLASS="COMMAND"
->testparm</B
->.</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN33"
-></A
-><H2
->OPTIONS</H2
-><P
-></P
-><DIV
-CLASS="VARIABLELIST"
-><DL
-><DT
->-s</DT
-><DD
-><P
->Without this option, <B
-CLASS="COMMAND"
->testparm</B
-> 
+	to test the output from <b class="command">testparm</b>.</p></div><div class="refsect1" lang="en"><h2>OPTIONS</h2><div class="variablelist"><dl><dt><span class="term">-s</span></dt><dd><p>Without this option, <b class="command">testparm</b> 
 		will prompt for a carriage return after printing the service 
-		names and before dumping the service definitions.</P
-></DD
-><DT
->-h</DT
-><DD
-><P
->Print usage message </P
-></DD
-><DT
->-L servername</DT
-><DD
-><P
->Sets the value of the %L macro to <TT
-CLASS="REPLACEABLE"
-><I
->servername</I
-></TT
->.
+		names and before dumping the service definitions.</p></dd><dt><span class="term">-h|--help</span></dt><dd><p>Print a summary of command line options.
+</p></dd><dt><span class="term">-V</span></dt><dd><p>Prints the version number for 
+<b class="command">smbd</b>.</p></dd><dt><span class="term">-L servername</span></dt><dd><p>Sets the value of the %L macro to <i class="replaceable"><tt>servername</tt></i>.
 		This is useful for testing include files specified with the 
-		%L macro. </P
-></DD
-><DT
->-v</DT
-><DD
-><P
->If this option is specified, testparm 
-		will also output all options that were not used in 
-		<TT
-CLASS="FILENAME"
->smb.conf</TT
-> and are thus set to
-		their defaults.</P
-></DD
-><DT
->-t encoding</DT
-><DD
-><P
->		Output data in specified encoding.
-		</P
-></DD
-><DT
->configfilename</DT
-><DD
-><P
->This is the name of the configuration file 
+		%L macro. </p></dd><dt><span class="term">-v</span></dt><dd><p>If this option is specified, testparm 
+		will also output all options that were not used in <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> and are thus set to their defaults.</p></dd><dt><span class="term">-t encoding</span></dt><dd><p>
+		Output data in specified encoding.
+		</p></dd><dt><span class="term">configfilename</span></dt><dd><p>This is the name of the configuration file 
 		to check. If this parameter is not present then the 
-		default <TT
-CLASS="FILENAME"
->smb.conf</TT
-> file will be checked. 	
-		</P
-></DD
-><DT
->hostname</DT
-><DD
-><P
->If this parameter and the following are 
-		specified, then <B
-CLASS="COMMAND"
->testparm</B
-> will examine the <TT
-CLASS="PARAMETER"
-><I
->hosts
-		allow</I
-></TT
-> and <TT
-CLASS="PARAMETER"
-><I
->hosts deny</I
-></TT
-> 
-		parameters in the <TT
-CLASS="FILENAME"
->smb.conf</TT
-> file to 
+		default <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> file will be checked. 	
+		</p></dd><dt><span class="term">hostname</span></dt><dd><p>If this parameter and the following are 
+		specified, then <b class="command">testparm</b> will examine the <i class="parameter"><tt>hosts
+		allow</tt></i> and <i class="parameter"><tt>hosts deny</tt></i> 
+		parameters in the <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> file to 
 		determine if the hostname with this IP address would be
-		allowed access to the <B
-CLASS="COMMAND"
->smbd</B
-> server.  If 
+		allowed access to the <b class="command">smbd</b> server.  If 
 		this parameter is supplied, the hostIP parameter must also
-		be supplied.</P
-></DD
-><DT
->hostIP</DT
-><DD
-><P
->This is the IP address of the host specified 
+		be supplied.</p></dd><dt><span class="term">hostIP</span></dt><dd><p>This is the IP address of the host specified 
 		in the previous parameter.  This address must be supplied 
-		if the hostname parameter is supplied. </P
-></DD
-></DL
-></DIV
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN77"
-></A
-><H2
->FILES</H2
-><P
-></P
-><DIV
-CLASS="VARIABLELIST"
-><DL
-><DT
-><TT
-CLASS="FILENAME"
->smb.conf</TT
-></DT
-><DD
-><P
->This is usually the name of the configuration 
-		file used by <B
-CLASS="COMMAND"
->smbd</B
->. 
-		</P
-></DD
-></DL
-></DIV
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN86"
-></A
-><H2
->DIAGNOSTICS</H2
-><P
->The program will issue a message saying whether the 
+		if the hostname parameter is supplied. </p></dd></dl></div></div><div class="refsect1" lang="en"><h2>FILES</h2><div class="variablelist"><dl><dt><span class="term"><a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a></span></dt><dd><p>This is usually the name of the configuration 
+		file used by <a href="smbd.8.html"><span class="citerefentry"><span class="refentrytitle">smbd</span>(8)</span></a>. 
+		</p></dd></dl></div></div><div class="refsect1" lang="en"><h2>DIAGNOSTICS</h2><p>The program will issue a message saying whether the 
 	configuration file loaded OK or not. This message may be preceded by 
 	errors and warnings if the file did not load. If the file was 
 	loaded OK, the program then dumps all known service details 
-	to stdout. </P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN89"
-></A
-><H2
->VERSION</H2
-><P
->This man page is correct for version 3.0 of 
-	the Samba suite.</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN92"
-></A
-><H2
->SEE ALSO</H2
-><P
-><A
-HREF="smb.conf.5.html"
-TARGET="_top"
-><TT
-CLASS="FILENAME"
->smb.conf(5)</TT
-></A
->, 
-	<A
-HREF="smbd.8.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->smbd(8)</B
-></A
->
-	</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN99"
-></A
-><H2
->AUTHOR</H2
-><P
->The original Samba software and related utilities 
+	to stdout. </p></div><div class="refsect1" lang="en"><h2>VERSION</h2><p>This man page is correct for version 3.0 of 
+	the Samba suite.</p></div><div class="refsect1" lang="en"><h2>SEE ALSO</h2><p><a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a>, <a href="smbd.8.html"><span class="citerefentry"><span class="refentrytitle">smbd</span>(8)</span></a></p></div><div class="refsect1" lang="en"><h2>AUTHOR</h2><p>The original Samba software and related utilities 
 	were created by Andrew Tridgell. Samba is now developed
 	by the Samba Team as an Open Source project similar 
-	to the way the Linux kernel is developed.</P
-><P
->The original Samba man pages were written by Karl Auer. 
+	to the way the Linux kernel is developed.</p><p>The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at
-	<A
-HREF="ftp://ftp.icce.rug.nl/pub/unix/"
-TARGET="_top"
->	ftp://ftp.icce.rug.nl/pub/unix/</A
->) and updated for the Samba 2.0 
+	excellent piece of Open Source software, available at <a href="ftp://ftp.icce.rug.nl/pub/unix/" target="_top">
+	ftp://ftp.icce.rug.nl/pub/unix/</a>) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter</P
-></DIV
-></BODY
-></HTML
->
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2
+	for Samba 3.0 was done by Alexander Bokovoy.</p></div></div></body></html>

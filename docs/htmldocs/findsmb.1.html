@@ -1,214 +1,41 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
-<HTML
-><HEAD
-><TITLE
->findsmb</TITLE
-><META
-NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
-"></HEAD
-><BODY
-CLASS="REFENTRY"
-BGCOLOR="#FFFFFF"
-TEXT="#000000"
-LINK="#0000FF"
-VLINK="#840084"
-ALINK="#0000FF"
-><H1
-><A
-NAME="FINDSMB">findsmb</H1
-><DIV
-CLASS="REFNAMEDIV"
-><A
-NAME="AEN5"
-></A
-><H2
->Name</H2
->findsmb&nbsp;--&nbsp;list info about machines that respond to SMB 
-	name queries on a subnet</DIV
-><DIV
-CLASS="REFSYNOPSISDIV"
-><A
-NAME="AEN8"><H2
->Synopsis</H2
-><P
-><B
-CLASS="COMMAND"
->findsmb</B
-> [subnet broadcast address]</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN12"
-></A
-><H2
->DESCRIPTION</H2
-><P
->This perl script is part of the <A
-HREF="samba.7.html"
-TARGET="_top"
->	Samba</A
-> suite.</P
-><P
-><B
-CLASS="COMMAND"
->findsmb</B
-> is a perl script that
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>findsmb</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="findsmb.1"></a><div class="titlepage"><div></div><div></div></div><div class="refnamediv"><h2>Name</h2><p>findsmb &#8212; list info about machines that respond to SMB 
+	name queries on a subnet</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><tt class="command">findsmb</tt>  [subnet broadcast address]</p></div></div><div class="refsect1" lang="en"><h2>DESCRIPTION</h2><p>This perl script is part of the <a href="Samba.7.html"><span class="citerefentry"><span class="refentrytitle">Samba</span>(7)</span></a>
+	suite.</p><p><b class="command">findsmb</b> is a perl script that
 	prints out several pieces of information about machines 
 	on a subnet that respond to SMB  name query requests.
-	It uses <A
-HREF="nmblookup.1.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->	nmblookup(1)</B
-></A
-> and <A
-HREF="smbclient.1.html"
-TARGET="_top"
->	<B
-CLASS="COMMAND"
->smbclient(1)</B
-></A
-> to obtain this information.
-	</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN22"
-></A
-><H2
->OPTIONS</H2
-><P
-></P
-><DIV
-CLASS="VARIABLELIST"
-><DL
-><DT
->-r</DT
-><DD
-><P
->Controls whether <B
-CLASS="COMMAND"
->findsmb</B
-> takes
+	It uses <a href="nmblookup.1.html"><span class="citerefentry"><span class="refentrytitle">nmblookup</span>(1)</span></a>
+	and <a href="smbclient.1.html"><span class="citerefentry"><span class="refentrytitle">smbclient</span>(1)</span></a>
+	to obtain this information.
+	</p></div><div class="refsect1" lang="en"><h2>OPTIONS</h2><div class="variablelist"><dl><dt><span class="term">-r</span></dt><dd><p>Controls whether <b class="command">findsmb</b> takes
 		bugs in Windows95 into account when trying to find a Netbios name
 		registered of the remote machine. This option is disabled by default
 		because it is specific to Windows 95 and Windows 95 machines only. 
-		If set, <A
-HREF="nmblookup.1.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->nmblookup</B
-></A
->
-		will be called with <TT
-CLASS="CONSTANT"
->-B</TT
-> option.</P
-></DD
-><DT
->subnet broadcast address</DT
-><DD
-><P
->Without this option, <B
-CLASS="COMMAND"
->findsmb
-		</B
-> will probe the subnet of the machine where 
-		<B
-CLASS="COMMAND"
->findsmb</B
-> is run. This value is passed 
-		to <B
-CLASS="COMMAND"
->nmblookup</B
-> as part of the 
-		<TT
-CLASS="CONSTANT"
->-B</TT
-> option.</P
-></DD
-></DL
-></DIV
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN41"
-></A
-><H2
->EXAMPLES</H2
-><P
->The output of <B
-CLASS="COMMAND"
->findsmb</B
-> lists the following 
+		If set, <a href="nmblookup.1.html"><span class="citerefentry"><span class="refentrytitle">nmblookup</span>(1)</span></a>
+		will be called with <tt class="constant">-B</tt> option.</p></dd><dt><span class="term">subnet broadcast address</span></dt><dd><p>Without this option, <b class="command">findsmb
+		</b> will probe the subnet of the machine where 
+		<a href="findsmb.1.html"><span class="citerefentry"><span class="refentrytitle">findsmb</span>(1)</span></a>
+		is run. This value is passed to 
+		<a href="nmblookup.1.html"><span class="citerefentry"><span class="refentrytitle">nmblookup</span>(1)</span></a>
+		as part of the <tt class="constant">-B</tt> option.</p></dd></dl></div></div><div class="refsect1" lang="en"><h2>EXAMPLES</h2><p>The output of <b class="command">findsmb</b> lists the following 
 	information for all machines that respond to the initial 
-	<B
-CLASS="COMMAND"
->nmblookup</B
-> for any name: IP address, NetBIOS name, 
-	Workgroup name, operating system, and SMB server version.</P
-><P
->There will be a '+' in front of the workgroup name for 
+	<b class="command">nmblookup</b> for any name: IP address, NetBIOS name, 
+	Workgroup name, operating system, and SMB server version.</p><p>There will be a '+' in front of the workgroup name for 
 	machines that are local master browsers for that workgroup. There 
 	will be an '*' in front of the workgroup name for 
 	machines that are the domain master browser for that workgroup. 
 	Machines that are running Windows, Windows 95 or Windows 98 will 
 	not show any information about the operating system or server 
-	version.</P
-><P
->The command with <TT
-CLASS="CONSTANT"
->-r</TT
-> option
-	must be run on a system without <A
-HREF="nmbd.8.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->nmbd</B
-></A
-> running. 
-	If <B
-CLASS="COMMAND"
->nmbd</B
-> is running on the system, you will 
+	version.</p><p>The command with <tt class="constant">-r</tt> option
+	must be run on a system without <a href="nmbd.8.html"><span class="citerefentry"><span class="refentrytitle">nmbd</span>(8)</span></a>	running. 
+
+	If <b class="command">nmbd</b> is running on the system, you will 
 	only  get the IP address and the DNS name of the machine. To 
 	get proper responses  from Windows 95 and Windows 98 machines, 
-	the command must be run as root and with <TT
-CLASS="CONSTANT"
->-r</TT
->
-	option on a machine without <B
-CLASS="COMMAND"
->nmbd</B
-> running.</P
-><P
->For example, running <B
-CLASS="COMMAND"
->findsmb</B
-> without 
-	<TT
-CLASS="CONSTANT"
->-r</TT
-> option set would yield output similar
-	to the following</P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
-><PRE
-CLASS="SCREEN"
-><TT
-CLASS="COMPUTEROUTPUT"
->IP ADDR         NETBIOS NAME   WORKGROUP/OS/VERSION 
+	the command must be run as root and with <tt class="constant">-r</tt>
+	option on a machine without <b class="command">nmbd</b> running.</p><p>For example, running <b class="command">findsmb</b> 
+	without <tt class="constant">-r</tt> option set would yield output similar
+	to the following</p><pre class="screen">
+IP ADDR         NETBIOS NAME   WORKGROUP/OS/VERSION 
 --------------------------------------------------------------------- 
 192.168.35.10   MINESET-TEST1  [DMVENGR]
 192.168.35.55   LINUXBOX      *[MYGROUP] [Unix] [Samba 2.0.6]
@@ -220,81 +47,15 @@ CLASS="COMPUTEROUTPUT"
 192.168.35.88   SCNT2         +[MVENGR] [Windows NT 4.0] [NT LAN Manager 4.0]
 192.168.35.93   FROGSTAR-PC    [MVENGR] [Windows 5.0] [Windows 2000 LAN Manager]
 192.168.35.97   HERBNT1       *[HERB-NT] [Windows NT 4.0] [NT LAN Manager 4.0]
-	</TT
-></PRE
-></TD
-></TR
-></TABLE
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN59"
-></A
-><H2
->VERSION</H2
-><P
->This man page is correct for version 3.0 of 
-	the Samba suite.</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN62"
-></A
-><H2
->SEE ALSO</H2
-><P
-><A
-HREF="nmbd.8.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->nmbd(8)</B
-></A
->, 
-	<A
-HREF="smbclient.1.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->smbclient(1)
-	</B
-></A
->, and	<A
-HREF="nmblookup.1.html"
-TARGET="_top"
->	<B
-CLASS="COMMAND"
->nmblookup(1)</B
-></A
->
-	</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN71"
-></A
-><H2
->AUTHOR</H2
-><P
->The original Samba software and related utilities 
+</pre></div><div class="refsect1" lang="en"><h2>VERSION</h2><p>This man page is correct for version 3.0 of 
+	the Samba suite.</p></div><div class="refsect1" lang="en"><h2>SEE ALSO</h2><p><a href="nmbd.8.html"><span class="citerefentry"><span class="refentrytitle">nmbd</span>(8)</span></a>,
+	<a href="smbclient.1.html"><span class="citerefentry"><span class="refentrytitle">smbclient</span>(1)</span></a>, and <a href="nmblookup.1.html"><span class="citerefentry"><span class="refentrytitle">nmblookup</span>(1)</span></a>
+	</p></div><div class="refsect1" lang="en"><h2>AUTHOR</h2><p>The original Samba software and related utilities 
 	were created by Andrew Tridgell. Samba is now developed
 	by the Samba Team as an Open Source project similar 
-	to the way the Linux kernel is developed.</P
-><P
->The original Samba man pages were written by Karl Auer. 
+	to the way the Linux kernel is developed.</p><p>The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at
-	<A
-HREF="ftp://ftp.icce.rug.nl/pub/unix/"
-TARGET="_top"
->	ftp://ftp.icce.rug.nl/pub/unix/</A
->) and updated for the Samba 2.0 
-	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter</P
-></DIV
-></BODY
-></HTML
->
+	excellent piece of Open Source software, available at <a href="ftp://ftp.icce.rug.nl/pub/unix/" target="_top">ftp://ftp.icce.rug.nl/pub/unix/</a>) 
+	and updated for the Samba 2.0 release by Jeremy Allison.  The conversion to DocBook for 
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook
+	XML 4.2 for Samba 3.0 was done by Alexander Bokovoy.</p></div></div></body></html>

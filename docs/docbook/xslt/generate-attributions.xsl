@@ -45,6 +45,7 @@
 					<xsl:text> &lt;</xsl:text>
 					<xsl:element name="ulink">
 						<xsl:attribute name="url">
+							<xsl:text>mailto:</xsl:text>
 							<xsl:value-of select="affiliation/address/email"/>
 						</xsl:attribute>
 						<xsl:value-of select="affiliation/address/email"/>
