@@ -452,6 +452,42 @@ static NTSTATUS cmd_lsa_lookupprivvalue(struct cli_state *cli,
 	return result;
 }
 
+/* Query LSA security object */
+
+static NTSTATUS cmd_lsa_query_secobj(struct cli_state *cli, 
+				     TALLOC_CTX *mem_ctx, int argc, 
+				     char **argv) 
+{
+	POLICY_HND pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	SEC_DESC_BUF *sdb;
+	uint32 sec_info = 0x00000004; /* ??? */
+
+	if (argc != 1 ) {
+		printf("Usage: %s\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	result = cli_lsa_open_policy2(cli, mem_ctx, True, 
+				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      &pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = cli_lsa_query_secobj(cli, mem_ctx, &pol, sec_info, &sdb);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	/* Print results */
+
+	display_sec_desc(sdb->sec);
+
+ done:
+	return result;
+}
+
 /* List of commands exported by this module */
 
 struct cmd_set lsarpc_commands[] = {
@@ -467,6 +503,7 @@ struct cmd_set lsarpc_commands[] = {
 	{ "lsaenumsid",          cmd_lsa_enum_sids,          PIPE_LSARPC, "Enumerate the LSA SIDS",               "" },
 	{ "lsaenumprivsaccount", cmd_lsa_enum_privsaccounts, PIPE_LSARPC, "Enumerate the privileges of an SID",   "" },
 	{ "lsalookupprivvalue",  cmd_lsa_lookupprivvalue,    PIPE_LSARPC, "Get a privilege value given its name", "" },
+	{ "lsaquerysecobj",      cmd_lsa_query_secobj,       PIPE_LSARPC, "Query LSA security object", "" },
 
 	{ NULL }
 };

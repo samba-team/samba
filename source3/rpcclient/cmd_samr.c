@@ -29,128 +29,6 @@
 extern DOM_SID domain_sid;
 
 /****************************************************************************
-convert a security permissions into a string
-****************************************************************************/
-char *get_sec_mask_str(uint32 type)
-{
-	static fstring typestr="";
-	int i;
-
-	typestr[0] = 0;
-
-	if (type & GENERIC_ALL_ACCESS)
-		fstrcat(typestr, "Generic all access ");
-	if (type & GENERIC_EXECUTE_ACCESS)
-		fstrcat(typestr, "Generic execute access ");
-	if (type & GENERIC_WRITE_ACCESS)
-		fstrcat(typestr, "Generic write access ");
-	if (type & GENERIC_READ_ACCESS)
-		fstrcat(typestr, "Generic read access ");
-	if (type & MAXIMUM_ALLOWED_ACCESS)
-		fstrcat(typestr, "MAXIMUM_ALLOWED_ACCESS ");
-	if (type & SYSTEM_SECURITY_ACCESS)
-		fstrcat(typestr, "SYSTEM_SECURITY_ACCESS ");
-	if (type & SYNCHRONIZE_ACCESS)
-		fstrcat(typestr, "SYNCHRONIZE_ACCESS ");
-	if (type & WRITE_OWNER_ACCESS)
-		fstrcat(typestr, "WRITE_OWNER_ACCESS ");
-	if (type & WRITE_DAC_ACCESS)
-		fstrcat(typestr, "WRITE_DAC_ACCESS ");
-	if (type & READ_CONTROL_ACCESS)
-		fstrcat(typestr, "READ_CONTROL_ACCESS ");
-	if (type & DELETE_ACCESS)
-		fstrcat(typestr, "DELETE_ACCESS ");
-
-	printf("Specific bits: 0x%x\n", type&SPECIFIC_RIGHTS_MASK);
-
-	return typestr;
-}
-
-/****************************************************************************
- display sec_access structure
- ****************************************************************************/
-void display_sec_access(SEC_ACCESS *info)
-{
-	printf("\t\tPermissions: 0x%x: %s\n", info->mask, get_sec_mask_str(info->mask));
-}
-
-/****************************************************************************
- display sec_ace structure
- ****************************************************************************/
-void display_sec_ace(SEC_ACE *ace)
-{
-	fstring sid_str;
-
-	printf("\tACE\n\t\ttype: ");
-	switch (ace->type) {
-		case SEC_ACE_TYPE_ACCESS_ALLOWED:
-			printf("ACCESS ALLOWED");
-			break;
-		case SEC_ACE_TYPE_ACCESS_DENIED:
-			printf("ACCESS DENIED");
-			break;
-		case SEC_ACE_TYPE_SYSTEM_AUDIT:
-			printf("SYSTEM AUDIT");
-			break;
-		case SEC_ACE_TYPE_SYSTEM_ALARM:
-			printf("SYSTEM ALARM");
-			break;
-		default:
-			printf("????");
-			break;
-	}
-	printf(" (%d) flags: %d\n", ace->type, ace->flags);
-	display_sec_access(&ace->info);
-	sid_to_string(sid_str, &ace->trustee);
-	printf("\t\tSID: %s\n\n", sid_str);
-}
-
-/****************************************************************************
- display sec_acl structure
- ****************************************************************************/
-void display_sec_acl(SEC_ACL *sec_acl)
-{
-	int i;
-
-	printf("\tACL\tNum ACEs:\t%d\trevision:\t%x\n",
-			 sec_acl->num_aces, sec_acl->revision); 
-	printf("\t---\n");
-
-	if (sec_acl->size != 0 && sec_acl->num_aces != 0)
-		for (i = 0; i < sec_acl->num_aces; i++)
-			display_sec_ace(&sec_acl->ace[i]);
-				
-}
-
-/****************************************************************************
- display sec_desc structure
- ****************************************************************************/
-void display_sec_desc(SEC_DESC *sec)
-{
-	fstring sid_str;
-
-	if (sec->off_sacl != 0) {
-		printf("S-ACL\n");
-		display_sec_acl(sec->sacl);
-	}
-
-	if (sec->off_dacl != 0) {
-		printf("D-ACL\n");
-		display_sec_acl(sec->dacl);
-	}
-
-	if (sec->off_owner_sid != 0) {
-		sid_to_string(sid_str, sec->owner_sid);
-		printf("\tOwner SID:\t%s\n", sid_str);
-	}
-
-	if (sec->off_grp_sid != 0) {
-		sid_to_string(sid_str, sec->grp_sid);
-		printf("\tParent SID:\t%s\n", sid_str);
-	}
-}
-
-/****************************************************************************
  display sam_user_info_21 structure
  ****************************************************************************/
 static void display_sam_user_info_21(SAM_USER_INFO_21 *usr)
@@ -1301,7 +1179,7 @@ struct cmd_set samr_commands[] = {
 	{ "samlookupnames",     cmd_samr_lookup_names,          PIPE_SAMR,	"Look up names",           "" },
 	{ "samlookuprids",      cmd_samr_lookup_rids,           PIPE_SAMR,	"Look up names",           "" },
 	{ "deletedomuser",      cmd_samr_delete_dom_user,       PIPE_SAMR,	"Delete domain user",      "" },
-	{ "querysecobj",        cmd_samr_query_sec_obj,         PIPE_SAMR,	"Query security object",   "" },
+	{ "samquerysecobj",     cmd_samr_query_sec_obj,         PIPE_SAMR, "Query SAMR security object",   "" },
 
 	{ NULL }
 };
