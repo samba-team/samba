@@ -361,7 +361,22 @@ BOOL lsa_lookup_sids(struct cli_state *cli, uint16 fnum,
 	LSA_Q_LOOKUP_SIDS q_l;
 	BOOL valid_response = False;
 
+	ZERO_STRUCT(q_l);
+
 	if (hnd == NULL || num_sids == 0 || sids == NULL) return False;
+
+	if (num_names != NULL)
+	{
+		*num_names = 0;
+	}
+	if (types != NULL)
+	{
+		*types = NULL;
+	}
+	if (names != NULL)
+	{
+		*names = NULL;
+	}
 
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
 	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
@@ -390,7 +405,9 @@ BOOL lsa_lookup_sids(struct cli_state *cli, uint16 fnum,
 		lsa_io_r_lookup_sids("", &r_l, &rbuf, 0);
 		p = rbuf.offset != 0;
 		
-		if (p && r_l.status != 0 && r_l.status != 0x107)
+		if (p && r_l.status != 0 &&
+		         r_l.status != 0x107 &&
+		         r_l.status != 0xC0000000 | NT_STATUS_NONE_MAPPED)
 		{
 			/* report error code */
 			DEBUG(1,("LSA_LOOKUP_SIDS: %s\n", get_nt_error_msg(r_l.status)));
@@ -423,12 +440,12 @@ BOOL lsa_lookup_sids(struct cli_state *cli, uint16 fnum,
 			}
 		}
 
-		if (types != NULL && valid_response && t_names.num_entries != 0)
+		if (types != NULL && valid_response && (*num_names) != 0)
 		{
 			(*types) = (uint8*)malloc((*num_names) * sizeof(uint8));
 		}
 
-		if (names != NULL && valid_response && t_names.num_entries != 0)
+		if (names != NULL && valid_response && (*num_names) != 0)
 		{
 			(*names) = (char**)malloc((*num_names) * sizeof(char*));
 		}
