@@ -1224,7 +1224,7 @@ a wrapper for lseek()
 off_t smbw_lseek(int fd, off_t offset, int whence)
 {
 	struct smbw_file *file;
-	size_t size;
+	SMB_OFF_T size;
 
 	smbw_busy++;
 

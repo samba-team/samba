@@ -382,7 +382,7 @@ send a qpathinfo call
 ****************************************************************************/
 BOOL cli_qpathinfo(struct cli_state *cli, const char *fname, 
 		   time_t *c_time, time_t *a_time, time_t *m_time, 
-		   size_t *size, uint16 *mode)
+		   SMB_OFF_T *size, uint16 *mode)
 {
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
@@ -462,7 +462,7 @@ send a qpathinfo call with the SMB_QUERY_FILE_ALL_INFO info level
 ****************************************************************************/
 BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname, 
 		    time_t *c_time, time_t *a_time, time_t *m_time, 
-		    time_t *w_time, size_t *size, uint16 *mode,
+		    time_t *w_time, SMB_OFF_T *size, uint16 *mode,
 		    SMB_INO_T *ino)
 {
 	unsigned int data_len = 0;
@@ -516,7 +516,7 @@ BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname,
 		*mode = SVAL(rdata, 32);
 	}
 	if (size) {
-		*size = IVAL(rdata, 48);
+                *size = IVAL2_TO_SMB_BIG_UINT(rdata,48);
 	}
 	if (ino) {
 		*ino = IVAL(rdata, 64);
@@ -546,11 +546,11 @@ BOOL cli_qfilename(struct cli_state *cli, int fnum,
 	SSVAL(param, 2, SMB_QUERY_FILE_NAME_INFO);
 
 	if (!cli_send_trans(cli, SMBtrans2, 
-                            NULL,                           /* name */
-                            -1, 0,                          /* fid, flags */
-                            &setup, 1, 0,                   /* setup, length, max */
-                            param, param_len, 2,            /* param, length, max */
-                            NULL, data_len, cli->max_xmit   /* data, length, max */
+                            NULL,                         /* name */
+                            -1, 0,                        /* fid, flags */
+                            &setup, 1, 0,                 /* setup, length, max */
+                            param, param_len, 2,          /* param, length, max */
+                            NULL, data_len, cli->max_xmit /* data, length, max */
                            )) {
 		return False;
 	}
@@ -575,7 +575,7 @@ BOOL cli_qfilename(struct cli_state *cli, int fnum,
 send a qfileinfo call
 ****************************************************************************/
 BOOL cli_qfileinfo(struct cli_state *cli, int fnum, 
-		   uint16 *mode, size_t *size,
+		   uint16 *mode, SMB_OFF_T *size,
 		   time_t *c_time, time_t *a_time, time_t *m_time, 
 		   time_t *w_time, SMB_INO_T *ino)
 {
@@ -596,11 +596,11 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 	SSVAL(param, 2, SMB_QUERY_FILE_ALL_INFO);
 
 	if (!cli_send_trans(cli, SMBtrans2, 
-                            NULL,                           /* name */
-                            -1, 0,                          /* fid, flags */
-                            &setup, 1, 0,                   /* setup, length, max */
-                            param, param_len, 2,            /* param, length, max */
-                            NULL, data_len, cli->max_xmit   /* data, length, max */
+                            NULL,                         /* name */
+                            -1, 0,                        /* fid, flags */
+                            &setup, 1, 0,                 /* setup, length, max */
+                            param, param_len, 2,          /* param, length, max */
+                            NULL, data_len, cli->max_xmit /* data, length, max */
                            )) {
 		return False;
 	}
@@ -631,7 +631,7 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 		*mode = SVAL(rdata, 32);
 	}
 	if (size) {
-		*size = IVAL(rdata, 48);
+                *size = IVAL2_TO_SMB_BIG_UINT(rdata,48);
 	}
 	if (ino) {
 		*ino = IVAL(rdata, 64);
