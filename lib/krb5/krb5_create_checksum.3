@@ -47,6 +47,7 @@
 .Nm krb5_crypto_get_checksum_type
 .Nm krb5_free_checksum ,
 .Nm krb5_free_checksum_contents ,
+.Nm krb5_hmac ,
 .Nm krb5_verify_checksum
 .Nd creates, handles and verifies checksums
 .Sh LIBRARY
@@ -54,23 +55,56 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Sh SYNOPSIS
 .In krb5.h
 .Pp
-.Li "struct krb5_checksum;"
+.Li "typedef Checksum krb5_checksum;"
 .Ft void
-.Fn krb5_checksum_disable "krb5_context context" "krb5_cksumtype type"
+.Fo krb5_checksum_disable
+.Fa "krb5_context context"
+.Fa "krb5_cksumtype type"
+.Fc
 .Ft krb5_boolean
-.Fn krb5_checksum_is_collision_proof "krb5_context context" "krb5_cksumtype type"
+.Fo krb5_checksum_is_collision_proof
+.Fa "krb5_context context"
+.Fa "krb5_cksumtype type"
+.Fc
 .Ft krb5_boolean
-.Fn krb5_checksum_is_disabled "krb5_context context" "krb5_cksumtype type"
+.Fo krb5_checksum_is_disabled
+.Fa "krb5_context context"
+.Fa "krb5_cksumtype type"
+.Fc
 .Ft krb5_boolean
-.Fn krb5_checksum_is_keyed "krb5_context context" "krb5_cksumtype type"
+.Fo krb5_checksum_is_keyed
+.Fa "krb5_context context"
+.Fa "krb5_cksumtype type"
+.Fc
 .Ft krb5_error_code
-.Fn krb5_cksumtype_valid "krb5_context context" "krb5_cksumtype ctype"
+.Fo krb5_cksumtype_valid
+.Fa "krb5_context context"
+.Fa "krb5_cksumtype ctype"
+.Fc
 .Ft krb5_error_code
-.Fn krb5_checksumsize "krb5_context context" "krb5_cksumtype type" "size_t *size"
+.Fo krb5_checksumsize
+.Fa "krb5_context context"
+.Fa "krb5_cksumtype type"
+.Fa "size_t *size"
+.Fc
 .Ft krb5_error_code
-.Fn krb5_create_checksum "krb5_context context" "krb5_crypto crypto" "unsigned usage_or_type" "void *data" "size_t len" "Checksum *result"
+.Fo krb5_create_checksum
+.Fa "krb5_context context"
+.Fa "krb5_crypto crypto"
+.Fa "unsigned usage_or_type"
+.Fa "void *data"
+.Fa "size_t len"
+.Fa "Checksum *result"
+.Fc
 .Ft krb5_error_code
-.Fn krb5_verify_checksum "krb5_context context" "krb5_crypto crypto" "krb5_key_usage usage" "void *data" "size_t len" "Checksum *cksum"
+.Fo krb5_verify_checksum
+.Fa "krb5_context context"
+.Fa "krb5_crypto crypto"
+.Fa "krb5_key_usage usage"
+.Fa "void *data"
+.Fa "size_t len"
+.Fa "Checksum *cksum"
+.Fc
 .Ft krb5_error_code
 .Fo krb5_crypto_get_checksum_type
 .Fa "krb5_context context"
@@ -86,6 +120,16 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fo krb5_free_checksum_contents
 .Fa "krb5_context context"
 .Fa "krb5_checksum *cksum"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_hmac
+.Fa "krb5_context context"
+.Fa "krb5_cksumtype cktype"
+.Fa "const void *data"
+.Fa "size_t len"
+.Fa "unsigned usage"
+.Fa "krb5_keyblock *key"
+.Fa "Checksum *result"
 .Fc
 .Ft krb5_error_code
 .Fo krb5_copy_checksum
@@ -165,6 +209,17 @@ free the checksum and the content of the checksum.
 .Fn krb5_free_checksum_contents
 frees the content of checksum in
 .Fa cksum .
+.Pp
+.Fn krb5_hmac
+calculates the HMAC over
+.Fa data
+(with length
+.Fa len )
+using the keyusage
+.Fa usage
+and keyblock
+.Fa key .
+Note that keyusage is not always used in checksums.
 .Pp
 .Nm krb5_checksum_is_disabled
 returns non-zero if the checksum type is disabled.
