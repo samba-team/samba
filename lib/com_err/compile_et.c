@@ -83,7 +83,7 @@ generate_c(void)
     fprintf(c_file, "\n");
     fprintf(c_file, "#include <stddef.h>\n");
     fprintf(c_file, "#include <com_err.h>\n");
-    fprintf(c_file, "#include <%s>\n", hfn);
+    fprintf(c_file, "#include \"%s\"\n", hfn);
     fprintf(c_file, "\n");
 
     fprintf(c_file, "static const char *text[] = {\n");
