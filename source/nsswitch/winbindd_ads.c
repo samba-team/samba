@@ -43,13 +43,17 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 		ads = (ADS_STRUCT *)domain->private;
 
 		/* check for a valid structure */
-		if ( ads->config.realm ) {
+
+		DEBUG(7, ("Current tickets expire at %d\n, time is now %d\n",
+			  (uint32) ads->auth.expire, (uint32) time(NULL)));
+		if ( ads->config.realm && (ads->auth.expire > time(NULL))) {
 			return ads;
 		}
 		else {
 			/* we own this ADS_STRUCT so make sure it goes away */
 			ads->is_mine = True;
 			ads_destroy( &ads );
+			ads_kdestroy("MEMORY:winbind_ccache");
 			domain->private = NULL;
 		}	
 	}
