@@ -5,6 +5,7 @@
    Copyright (C) Remus Koos 2001
    Copyright (C) Nalin Dahyabhai 2004.
    Copyright (C) Jeremy Allison 2004.
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2005
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -442,17 +443,13 @@ static BOOL verify_service_password(krb5_context ctx,
 	krb5_keyblock key;
 	krb5_data passdata;
 	char *salting_s = NULL;
-	char *machine_account = NULL, *password = NULL;
+	char *password = NULL;
 	krb5_auth_context auth_context = NULL;
 	krb5_error_code err;
 
 	memset(&passdata, '\0', sizeof(passdata));
 	memset(&key, '\0', sizeof(key));
 
-	asprintf(&machine_account, "%s$@%s", lp_netbios_name(), lp_realm());
-	if (machine_account == NULL) {
-		goto out;
-	}
 	password = secrets_fetch_machine_password(lp_workgroup());
 	if (password == NULL) {
 		goto out;
@@ -506,7 +503,6 @@ static BOOL verify_service_password(krb5_context ctx,
 	}
 	SAFE_FREE(salting_s);
 	SAFE_FREE(password);
-	SAFE_FREE(machine_account);
 	return ret;
 }
 
