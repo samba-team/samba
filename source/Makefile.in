@@ -194,9 +194,9 @@ LIBCLIUTIL_OBJ = libcli/util/asn1.o \
 	     libcli/util/pwd_cache.o libcli/util/clierror.o libcli/util/cliutil.o
 
 LIBRAW_NDR_OBJ = libcli/ndr/ndr.o libcli/ndr/ndr_basic.o libcli/ndr/ndr_sec.o \
-		libcli/ndr/ndr_echo.o
+		libcli/ndr/ndr_echo.o libcli/ndr/ndr_misc.o libcli/ndr/ndr_lsa.o
 
-LIBRAW_RPC_OBJ = libcli/rpc/dcerpc.o libcli/rpc/rpc_echo.o
+LIBRAW_RPC_OBJ = libcli/rpc/dcerpc.o libcli/rpc/rpc_echo.o libcli/rpc/rpc_lsa.o
 
 LIBRAW_OBJ = libcli/raw/rawfile.o libcli/raw/smb_signing.o  \
 	     libcli/raw/clisocket.o libcli/raw/clitransport.o \
@@ -533,7 +533,7 @@ SMBTORTURE_RPC_OBJ = torture/rpc/lsa.o torture/rpc/echo.o
 SMBTORTURE_OBJ1 = torture/torture.o torture/torture_util.o torture/nbio.o torture/scanner.o \
 		torture/utable.o torture/denytest.o torture/mangle_test.o \
 		torture/aliases.o libcli/raw/clirewrite.o $(SMBTORTURE_RAW_OBJ) \
-		$(SMBTORTURE_RPC_OBJ) rpc_parse/parse_lsa.o
+		$(SMBTORTURE_RPC_OBJ)
 
 SMBTORTURE_OBJ = $(SMBTORTURE_OBJ1) \
 	$(LIBSMB_OBJ) $(LIBDFS_OBJ) $(PARAM_OBJ) $(LIB_OBJ)

@@ -28,7 +28,7 @@ struct dcerpc_pipe *dcerpc_pipe_init(struct cli_tree *tree)
 {
 	struct dcerpc_pipe *p;
 
-	TALLOC_CTX *mem_ctx = talloc_init("cli_dcerpc_tree");
+	TALLOC_CTX *mem_ctx = talloc_init("dcerpc_tree");
 	if (mem_ctx == NULL)
 		return NULL;
 
@@ -513,7 +513,7 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 	DATA_BLOB blob;
 	DATA_BLOB blob_out;
 
-	mem_ctx = talloc_init("cli_dcerpc_bind");
+	mem_ctx = talloc_init("dcerpc_bind");
 	if (!mem_ctx) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -590,7 +590,7 @@ static const struct {
 
 
 /* Perform a bind using the given well-known pipe name */
-NTSTATUS cli_dcerpc_bind_byname(struct dcerpc_pipe *p, const char *pipe_name)
+NTSTATUS dcerpc_bind_byname(struct dcerpc_pipe *p, const char *pipe_name)
 {
 	int i;
 
@@ -609,7 +609,7 @@ NTSTATUS cli_dcerpc_bind_byname(struct dcerpc_pipe *p, const char *pipe_name)
 /*
   perform a full request/response pair on a dcerpc pipe
 */
-NTSTATUS cli_dcerpc_request(struct dcerpc_pipe *p, 
+NTSTATUS dcerpc_request(struct dcerpc_pipe *p, 
 			    uint16 opnum,
 			    TALLOC_CTX *mem_ctx,
 			    DATA_BLOB *stub_data_in,
@@ -777,7 +777,7 @@ NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
 	request = ndr_push_blob(push);
 
 	/* make the actual dcerpc request */
-	status = cli_dcerpc_request(p, opnum, mem_ctx, &request, &response);
+	status = dcerpc_request(p, opnum, mem_ctx, &request, &response);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}

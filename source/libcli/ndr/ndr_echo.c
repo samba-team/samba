@@ -53,7 +53,8 @@ NTSTATUS ndr_pull_rpcecho_echodata(struct ndr_pull *ndr,
 				   struct rpcecho_echodata *r)
 {
 	NDR_CHECK(ndr_pull_u32(ndr, &r->out.len));
-	NDR_CHECK(ndr_pull_bytes(ndr, &r->out.data, r->out.len));
+	NDR_ALLOC_N(ndr, r->out.data, r->out.len);
+	NDR_CHECK(ndr_pull_bytes(ndr, r->out.data, r->out.len));
 	return NT_STATUS_OK;
 }
 
@@ -97,7 +98,8 @@ NTSTATUS ndr_pull_rpcecho_sourcedata(struct ndr_pull *ndr,
 				   struct rpcecho_sourcedata *r)
 {
 	NDR_CHECK(ndr_pull_u32(ndr, &r->out.len));
-	NDR_CHECK(ndr_pull_bytes(ndr, &r->out.data, r->out.len));
+	NDR_ALLOC_N(ndr, r->out.data, r->out.len);
+	NDR_CHECK(ndr_pull_bytes(ndr, r->out.data, r->out.len));
 	return NT_STATUS_OK;
 }
 
