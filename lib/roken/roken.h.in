@@ -172,10 +172,6 @@ char *hstrerror(int herr);
 extern int h_errno;
 #endif
 
-#ifndef HAVE_HERROR
-void herror(char *s);
-#endif
-
 #ifndef HAVE_INET_ATON
 /* Minimal implementation of inet_aton. Doesn't handle hex numbers. */
 int inet_aton(const char *cp, struct in_addr *adr);
@@ -201,13 +197,6 @@ int seteuid(int euid);
 
 #ifndef HAVE_SETEGID
 int setegid(int egid);
-#endif
-
-#if !defined(HAVE_STRCHR) && defined(HAVE_INDEX)
-char *strchr(const char *s, int c);
-#endif
-#if !defined(HAVE_STRRCHR) && defined(HAVE_RINDEX)
-char *strrchr(const char *s, int c);
 #endif
 
 #ifndef HAVE_LSTAT
