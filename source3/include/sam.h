@@ -48,6 +48,9 @@ int sam_version(void)\
 	return SAM_INTERFACE_VERSION;\
 }
 
+/* Backend to use by default when no backend was specified */
+#define SAM_DEFAULT_BACKEND "plugin"
+
 typedef struct sam_domain_handle {
 	TALLOC_CTX *mem_ctx;
 	uint32 access_granted;
