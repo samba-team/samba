@@ -29,7 +29,7 @@ static TDB_CONTEXT *namecache_tdb;
 struct nc_value {
 	time_t expiry;		     /* When entry expires */
 	int count;		     /* Number of addresses */
-	struct in_addr *ip_list;   /* Address list */
+	struct in_addr ip_list[1];   /* Address list */
 };
 
 /* Initialise namecache system */
@@ -94,14 +94,14 @@ static TDB_DATA namecache_value(struct in_addr *ip_list, int num_names,
 	int size;
 
 	size = sizeof(struct nc_value) + sizeof(struct in_addr) *
-		num_names;
+		(num_names-1);
 
 	value = (struct nc_value *)malloc(size);
 		
 	value->expiry = expiry;
 	value->count = num_names;
 
-	memcpy(value->ip_list, ip_list, num_names * sizeof(struct in_addr));
+	memcpy(value->ip_list, ip_list, size);
 
 	retval.dptr = (char *)value;
 	retval.dsize = size;
@@ -210,10 +210,10 @@ BOOL namecache_fetch(const char *name, int name_type, struct in_addr **ip_list,
 	/* Extract and return namelist */
 
 	*ip_list = (struct in_addr *)malloc(
-		sizeof(struct in_addr) * data->count);
+		sizeof(struct in_addr) * (data->count-1));
 	
 	memcpy(*ip_list, data->ip_list, sizeof(struct in_addr) *
-	       data->count);
+	       (data->count-1));
 
 	*num_names = data->count;
 
