@@ -96,7 +96,7 @@ void send_trans_reply(char *outbuf,
 	align = ((this_lparam)%4);
 
 	if (buffer_too_large) {
-		ERROR_NT(STATUS_BUFFER_OVERFLOW);
+		ERROR_BOTH(STATUS_BUFFER_OVERFLOW,ERRDOS,ERRmoredata);
 	}
 
 	set_message(outbuf,10,1+align+this_ldata+this_lparam,True);
@@ -281,6 +281,14 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 	subcommand = ((int)setup[0]) & 0xFFFF;
 
 	if(!(p = get_rpc_pipe(pnum))) {
+		if (subcommand == TRANSACT_WAITNAMEDPIPEHANDLESTATE) {
+			/* Win9x does this call with a unicode pipe name, not a pnum. */
+			/* Just return success for now... */
+			DEBUG(3,("Got TRANSACT_WAITNAMEDPIPEHANDLESTATE on text pipe name\n"));
+			send_trans_reply(outbuf, NULL, 0, NULL, 0, False);
+			return -1;
+		}
+
 		DEBUG(1,("api_fd_reply: INVALID PIPE HANDLE: %x\n", pnum));
 		return api_no_reply(outbuf, mdrcnt);
 	}
