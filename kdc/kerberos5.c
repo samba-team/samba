@@ -344,7 +344,7 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client)
  * and error code otherwise.
  */
 
-static int
+krb5_error_code
 check_flags(hdb_entry *client, const char *client_name,
 	    hdb_entry *server, const char *server_name,
 	    krb5_boolean is_as_req)
