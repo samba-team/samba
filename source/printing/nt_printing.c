@@ -664,6 +664,12 @@ BOOL get_short_archi(char *short_archi, char *long_archi)
 	int i=-1;
 
 	DEBUG(107,("Getting architecture dependant directory\n"));
+
+	if (long_archi == NULL) {
+		DEBUGADD(107,("Bad long_archi param.!\n"));
+		return False;
+	}
+
 	do {
 		i++;
 	} while ( (archi_table[i].long_archi!=NULL ) &&
