@@ -294,8 +294,6 @@ static int reply_spnego_negotiate(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
-	DEBUG(3,("Got neg_flags=0x%08x\n", neg_flags));
-
 	debug_ntlmssp_flags(neg_flags);
 
 	if (ntlmssp_auth_context) {

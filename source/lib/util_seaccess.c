@@ -44,7 +44,7 @@ static BOOL token_sid_in_ace(const NT_USER_TOKEN *token, const SEC_ACE *ace)
  bits not yet granted. Zero means permission allowed (no more needed bits).
 **********************************************************************************/
 
-static uint32 check_ace(SEC_ACE *ace, NT_USER_TOKEN *token, uint32 acc_desired, 
+static uint32 check_ace(SEC_ACE *ace, const NT_USER_TOKEN *token, uint32 acc_desired, 
 			NTSTATUS *status)
 {
 	uint32 mask = ace->info.mask;
@@ -104,7 +104,7 @@ static uint32 check_ace(SEC_ACE *ace, NT_USER_TOKEN *token, uint32 acc_desired,
  include other bits requested.
 **********************************************************************************/ 
 
-static BOOL get_max_access( SEC_ACL *the_acl, NT_USER_TOKEN *token, uint32 *granted, 
+static BOOL get_max_access( SEC_ACL *the_acl, const NT_USER_TOKEN *token, uint32 *granted, 
 			    uint32 desired, 
 			    NTSTATUS *status)
 {
@@ -264,12 +264,13 @@ BOOL se_access_check(SEC_DESC *sd, const NT_USER_TOKEN *token,
 	}
 
 	/* The user sid is the first in the token */
-
-	DEBUG(3, ("se_access_check: user sid is %s\n", sid_to_string(sid_str, &token->user_sids[PRIMARY_USER_SID_INDEX]) ));
-
-	for (i = 1; i < token->num_sids; i++) {
-		DEBUG(3, ("se_access_check: also %s\n",
-			  sid_to_string(sid_str, &token->user_sids[i])));
+	if (DEBUGLVL(3)) {
+		DEBUG(3, ("se_access_check: user sid is %s\n", sid_to_string(sid_str, &token->user_sids[PRIMARY_USER_SID_INDEX]) ));
+		
+		for (i = 1; i < token->num_sids; i++) {
+			DEBUGADD(3, ("se_access_check: also %s\n",
+				  sid_to_string(sid_str, &token->user_sids[i])));
+		}
 	}
 
 	/* Is the token the owner of the SID ? */
@@ -299,7 +300,7 @@ BOOL se_access_check(SEC_DESC *sd, const NT_USER_TOKEN *token,
 	for ( i = 0 ; i < the_acl->num_aces && tmp_acc_desired != 0; i++) {
 		SEC_ACE *ace = &the_acl->ace[i];
 
-		DEBUG(10,("se_access_check: ACE %u: type %d, flags = 0x%02x, SID = %s mask = %x, current desired = %x\n",
+		DEBUGADD(10,("se_access_check: ACE %u: type %d, flags = 0x%02x, SID = %s mask = %x, current desired = %x\n",
 			  (unsigned int)i, ace->type, ace->flags,
 			  sid_to_string(sid_str, &ace->trustee),
 			  (unsigned int) ace->info.mask, 
