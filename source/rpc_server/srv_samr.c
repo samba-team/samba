@@ -369,70 +369,6 @@ static void api_samr_delete_dom_group( rpcsrv_struct *p, prs_struct *data, prs_s
 
 
 /*******************************************************************
- samr_reply_query_groupmem
- ********************************************************************/
-static void samr_reply_query_groupmem(SAMR_Q_QUERY_GROUPMEM *q_u,
-				prs_struct *rdata)
-{
-	uint32 status = 0;
-
-	DOMAIN_GRP_MEMBER *mem_grp = NULL;
-	DOM_SID group_sid;
-	uint32 group_rid;
-	fstring group_sid_str;
-
-	DEBUG(5,("samr_query_groupmem: %d\n", __LINE__));
-
-	/* find the policy handle.  open a policy on it. */
-	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), &q_u->group_pol, &group_sid))
-	{
-		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
-	}
-	else
-	{
-		sid_to_string(group_sid_str, &group_sid     );
-		sid_split_rid(&group_sid, &group_rid);
-	}
-
-	if (status == 0x0)
-	{
-		DEBUG(10,("sid is %s\n", group_sid_str));
-
-		if (sid_equal(&group_sid, &global_sam_sid))
-		{
-			DEBUG(10,("lookup on Domain SID\n"));
-
-			become_root(True);
-			status = getgrouprid(group_rid, &mem_grp, &num_rids) != NULL ? 0x0 : (0xC0000000 | NT_STATUS_NO_SUCH_GROUP);
-			unbecome_root(True);
-		}
-		else
-		{
-			status = 0xC0000000 | NT_STATUS_NO_SUCH_GROUP;
-		}
-	}
-
-	if (status == 0x0 && num_rids > 0)
-	{
-		rid  = malloc(num_rids * sizeof(uint32));
-		attr = malloc(num_rids * sizeof(uint32));
-		if (mem_grp != NULL && rid != NULL && attr != NULL)
-		{
-			int i;
-			for (i = 0; i < num_rids; i++)
-			{
-				rid [i] = mem_grp[i].rid;
-				attr[i] = mem_grp[i].attr;
-			}
-			free(mem_grp);
-		}
-	}
-
-	DEBUG(5,("samr_query_groupmem: %d\n", __LINE__));
-
-}
-
-/*******************************************************************
  api_samr_query_groupmem
  ********************************************************************/
 static void api_samr_query_groupmem( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
@@ -443,12 +379,13 @@ static void api_samr_query_groupmem( rpcsrv_struct *p, prs_struct *data, prs_str
 	uint32 *rid = NULL;
 	uint32 *attr = NULL;
 	int num_rids = 0;
+	uint32 status = 0;
 
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
 	samr_io_q_query_groupmem("", &q_u, data, 0);
-	status = samr_reply_query_groupmem(&q_u.group_pol,
+	status = _samr_query_groupmem(&q_u.group_pol,
 	                                   &num_rids, &rid, &attr);
 	make_samr_r_query_groupmem(&r_u, num_rids, rid, attr, status);
 	samr_io_r_query_groupmem("", &r_u, rdata, 0);
