@@ -1,14 +1,6 @@
 <chapter id="unix-permissions">
 <chapterinfo>
-	<author>
-		<firstname>Jeremy</firstname><surname>Allison</surname>
-		<affiliation>
-			<orgname>Samba Team</orgname>
-			<address>
-				<email>samba@samba.org</email>
-			</address>
-		</affiliation>
-	</author>
+	&author.jeremy;
 	<pubdate>12 Apr 1999</pubdate>
 </chapterinfo>
 

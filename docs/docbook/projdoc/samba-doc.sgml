@@ -1,4 +1,5 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
+<!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
 <!ENTITY UNIX-INSTALL SYSTEM "UNIX_INSTALL.sgml">
 <!ENTITY MS-Dfs-Setup SYSTEM "msdfs_setup.sgml">
 <!ENTITY PRINTER-DRIVER2 SYSTEM "printer_driver2.sgml">
@@ -34,23 +35,20 @@
 ]>
 
 <book id="Samba-HOWTO-Collection">
-
 <title>SAMBA Project Documentation</title>
 
 <bookinfo>
 	<author>
-		<surname>SAMBA Team</surname>
+		<othername>SAMBA Team</othername>
+		<affiliation><address><email>samba@samba.org</email></address></affiliation>
 	</author>
-	<address><email>samba@samba.org</email></address>
-</bookinfo>
+	<editor>&person.jht;</editor>
+	<editor>&person.jelmer;</editor>
+	<editor>&person.jerry;</editor>
 
-<dedication>
-<title>Abstract</title>
+	<pubdate>Friday 4 April</pubdate>
 
-<para>
-<emphasis>Last Update</emphasis> : Wed Jan 15
-</para>
-
+<abstract>
 <para>
 This book is a collection of HOWTOs added to Samba documentation over the years.
 I try to ensure that all are current, but sometimes the is a larger job
@@ -61,18 +59,17 @@ url="mailto:jerry@samba.org">jerry@samba.org</ulink> or
 <ulink url="mailto:jelmer@samba.org">jelmer@samba.org</ulink>.
 </para>
 
+</abstract>
+<legalnotice>
 <para>
 This documentation is distributed under the GNU General Public License (GPL) 
 version 2.  A copy of the license is included with the Samba source
 distribution.  A copy can be found on-line at <ulink 
 url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</ulink>
 </para>
+</legalnotice>
+</bookinfo>
 
-<para>
-Cheers, jerry
-</para>
-
-</dedication>
 
 <!-- Chapters -->
 <part id="introduction">
@@ -140,5 +137,3 @@ part each cover one specific feature.</para>
 &BUGS;
 &Diagnosis;
 </part>
-
-

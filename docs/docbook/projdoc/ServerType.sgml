@@ -1,12 +1,6 @@
 <chapter id="ServerType">
 <chapterinfo>
-        <author>
-                <firstname>John H</firstname><surname>Terpstra</surname>
-                <affiliation>
-                        <orgname>Samba Team</orgname>
-                        <address><email>jht@samba.org</email></address>
-                </affiliation>
-        </author>
+	&author.jht;
 </chapterinfo>
 
 <title>Nomenclature of Server Types</title>

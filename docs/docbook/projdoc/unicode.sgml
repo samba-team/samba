@@ -1,12 +1,6 @@
 <chapter id="unicode">
 <chapterinfo>
-	<author>
-		<firstname>Jelmer</firstname><surname>Vernooij</surname>
-		<affiliation>
-			<orgname>Samba Team</orgname>
-			<address><email>jelmer@samba.org</email></address>
-		</affiliation>
-	</author>
+	&author.jelmer;
 	<pubdate>25 March 2003</pubdate>
 </chapterinfo>
 
