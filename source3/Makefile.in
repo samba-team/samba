@@ -393,7 +393,10 @@ WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.po)
 # now the rules...
 ######################################################################
 
-all : CHECK $(SPROGS) $(PROGS) $(SHLIBS)
+all : CHECK $(SPROGS) $(PROGS) 
+
+# removed SHLIBS until it compiles on more platforms (tridge)
+# $(SHLIBS)
 
 pam_smbpass : CHECK bin/pam_smbpass.@SHLIBEXT@
 
