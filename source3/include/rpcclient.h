@@ -76,33 +76,9 @@ struct client_info
 {
     struct in_addr dest_ip;
     fstring dest_host;
-    fstring query_host;
-    uint8 name_type;
 
     fstring myhostname;
     fstring mach_acct;
-
-    pstring cur_dir;
-    pstring base_dir;
-    pstring file_sel;
-
-    fstring service;
-    fstring share;
-    fstring svc_type;
-
-    time_t newer_than;
-    int archive_level;
-    int dir_total;
-    int put_total_time_ms;
-    int put_total_size;
-    int get_total_time_ms;
-    int get_total_size;
-    int print_mode;
-    BOOL translation;
-    BOOL recurse_dir;
-    BOOL prompt;
-    BOOL lowercase;
-    BOOL abort_mget;
 
     struct tar_client_info tar;
     struct nt_client_info dom;

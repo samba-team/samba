@@ -181,7 +181,7 @@ void display_srv_info_101(FILE *out_hnd, enum action_type action,
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "Server Info Level 101:\n");
+			report(out_hnd, "Server Info Level 101:\n");
 
 			break;
 		}
@@ -195,8 +195,8 @@ void display_srv_info_101(FILE *out_hnd, enum action_type action,
 
 			display_server(out_hnd, action, name, sv101->srv_type, comment);
 
-			fprintf(out_hnd, "\tplatform_id     :\t%d\n"    , sv101->platform_id);
-			fprintf(out_hnd, "\tos version      :\t%d.%d\n" , sv101->ver_major, sv101->ver_minor);
+			report(out_hnd, "\tplatform_id     :\t%d\n"    , sv101->platform_id);
+			report(out_hnd, "\tos version      :\t%d.%d\n" , sv101->ver_major, sv101->ver_minor);
 
 			break;
 		}
@@ -222,7 +222,7 @@ void display_srv_info_102(FILE *out_hnd, enum action_type action, SRV_INFO_102 *
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "Server Info Level 102:\n");
+			report(out_hnd, "Server Info Level 102:\n");
 
 			break;
 		}
@@ -239,14 +239,14 @@ void display_srv_info_102(FILE *out_hnd, enum action_type action, SRV_INFO_102 *
 
 			display_server(out_hnd, action, name, sv102->srv_type, comment);
 
-			fprintf(out_hnd, "\tplatform_id     :\t%d\n"    , sv102->platform_id);
-			fprintf(out_hnd, "\tos version      :\t%d.%d\n" , sv102->ver_major, sv102->ver_minor);
+			report(out_hnd, "\tplatform_id     :\t%d\n"    , sv102->platform_id);
+			report(out_hnd, "\tos version      :\t%d.%d\n" , sv102->ver_major, sv102->ver_minor);
 
-			fprintf(out_hnd, "\tusers           :\t%x\n"    , sv102->users      );
-			fprintf(out_hnd, "\tdisc, hidden    :\t%x, %x\n" , sv102->disc     , sv102->hidden   );
-			fprintf(out_hnd, "\tannounce, delta :\t%d, %d\n", sv102->announce , sv102->ann_delta);
-			fprintf(out_hnd, "\tlicenses        :\t%d\n"    , sv102->licenses   );
-			fprintf(out_hnd, "\tuser path       :\t%s\n"    , usr_path);
+			report(out_hnd, "\tusers           :\t%x\n"    , sv102->users      );
+			report(out_hnd, "\tdisc, hidden    :\t%x, %x\n" , sv102->disc     , sv102->hidden   );
+			report(out_hnd, "\tannounce, delta :\t%d, %d\n", sv102->announce , sv102->ann_delta);
+			report(out_hnd, "\tlicenses        :\t%d\n"    , sv102->licenses   );
+			report(out_hnd, "\tuser path       :\t%s\n"    , usr_path);
 
 			break;
 		}
@@ -264,7 +264,7 @@ void display_srv_info_ctr(FILE *out_hnd, enum action_type action, SRV_INFO_CTR *
 {
 	if (ctr == NULL || ctr->ptr_srv_ctr == 0)
 	{
-		fprintf(out_hnd, "Server Information: unavailable due to an error\n");
+		report(out_hnd, "Server Information: unavailable due to an error\n");
 		return;
 	}
 
@@ -282,7 +282,7 @@ void display_srv_info_ctr(FILE *out_hnd, enum action_type action, SRV_INFO_CTR *
 		}
 		default:
 		{
-			fprintf(out_hnd, "Server Information: Unknown Info Level\n");
+			report(out_hnd, "Server Information: Unknown Info Level\n");
 			break;
 		}
 	}
@@ -303,19 +303,19 @@ void display_conn_info_0(FILE *out_hnd, enum action_type action,
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "Connection Info Level 0:\n");
+			report(out_hnd, "Connection Info Level 0:\n");
 
 			break;
 		}
 		case ACTION_ENUMERATE:
 		{
-			fprintf(out_hnd, "\tid:\t%d\n", info0->id);
+			report(out_hnd, "\tid:\t%d\n", info0->id);
 
 			break;
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}
@@ -337,7 +337,7 @@ void display_conn_info_1(FILE *out_hnd, enum action_type action,
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "Connection Info Level 1:\n");
+			report(out_hnd, "Connection Info Level 1:\n");
 
 			break;
 		}
@@ -349,20 +349,20 @@ void display_conn_info_1(FILE *out_hnd, enum action_type action,
 			unistr2_to_ascii(usr_name, &str1->uni_usr_name, sizeof(usr_name)-1);
 			unistr2_to_ascii(net_name, &str1->uni_net_name, sizeof(net_name)-1);
 
-			fprintf(out_hnd, "\tid       :\t%d\n", info1->id);
-			fprintf(out_hnd, "\ttype     :\t%s\n", get_share_type_str(info1->type));
-			fprintf(out_hnd, "\tnum_opens:\t%d\n", info1->num_opens);
-			fprintf(out_hnd, "\tnum_users:\t%d\n", info1->num_users);
-			fprintf(out_hnd, "\topen_time:\t%d\n", info1->open_time);
+			report(out_hnd, "\tid       :\t%d\n", info1->id);
+			report(out_hnd, "\ttype     :\t%s\n", get_share_type_str(info1->type));
+			report(out_hnd, "\tnum_opens:\t%d\n", info1->num_opens);
+			report(out_hnd, "\tnum_users:\t%d\n", info1->num_users);
+			report(out_hnd, "\topen_time:\t%d\n", info1->open_time);
 
-			fprintf(out_hnd, "\tuser name:\t%s\n", usr_name);
-			fprintf(out_hnd, "\tnet  name:\t%s\n", net_name);
+			report(out_hnd, "\tuser name:\t%s\n", usr_name);
+			report(out_hnd, "\tnet  name:\t%s\n", net_name);
 
 			break;
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}
@@ -377,7 +377,7 @@ void display_srv_conn_info_0_ctr(FILE *out_hnd, enum action_type action,
 {
 	if (ctr == NULL)
 	{
-		fprintf(out_hnd, "display_srv_conn_info_0_ctr: unavailable due to an internal error\n");
+		report(out_hnd, "display_srv_conn_info_0_ctr: unavailable due to an internal error\n");
 		return;
 	}
 
@@ -414,7 +414,7 @@ void display_srv_conn_info_1_ctr(FILE *out_hnd, enum action_type action,
 {
 	if (ctr == NULL)
 	{
-		fprintf(out_hnd, "display_srv_conn_info_1_ctr: unavailable due to an internal error\n");
+		report(out_hnd, "display_srv_conn_info_1_ctr: unavailable due to an internal error\n");
 		return;
 	}
 
@@ -451,7 +451,7 @@ void display_srv_conn_info_ctr(FILE *out_hnd, enum action_type action,
 {
 	if (ctr == NULL || ctr->ptr_conn_ctr == 0)
 	{
-		fprintf(out_hnd, "display_srv_conn_info_ctr: unavailable due to an internal error\n");
+		report(out_hnd, "display_srv_conn_info_ctr: unavailable due to an internal error\n");
 		return;
 	}
 
@@ -471,7 +471,7 @@ void display_srv_conn_info_ctr(FILE *out_hnd, enum action_type action,
 		}
 		default:
 		{
-			fprintf(out_hnd, "display_srv_conn_info_ctr: Unknown Info Level\n");
+			report(out_hnd, "display_srv_conn_info_ctr: Unknown Info Level\n");
 			break;
 		}
 	}
@@ -493,7 +493,7 @@ void display_tprt_info_0(FILE *out_hnd, enum action_type action,
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "Transport Info Level 0:\n");
+			report(out_hnd, "Transport Info Level 0:\n");
 
 			break;
 		}
@@ -507,16 +507,16 @@ void display_tprt_info_0(FILE *out_hnd, enum action_type action,
 			buffer4_to_str(trans_addr, &str0->buf_trans_addr, sizeof(trans_addr)-1);
 			unistr2_to_ascii(addr_name, &str0->uni_addr_name, sizeof(addr_name)-1);
 
-			fprintf(out_hnd, "\tnum_vcs  :\t%d\n", info0->num_vcs);
-			fprintf(out_hnd, "\ttransport name:\t%s\n", trans_name);
-			fprintf(out_hnd, "\ttransport addr:\t%s\n", trans_addr);
-			fprintf(out_hnd, "\taddress name:\t%s\n", addr_name);
+			report(out_hnd, "\tnum_vcs  :\t%d\n", info0->num_vcs);
+			report(out_hnd, "\ttransport name:\t%s\n", trans_name);
+			report(out_hnd, "\ttransport addr:\t%s\n", trans_addr);
+			report(out_hnd, "\taddress name:\t%s\n", addr_name);
 
 			break;
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}
@@ -531,7 +531,7 @@ void display_srv_tprt_info_0_ctr(FILE *out_hnd, enum action_type action,
 {
 	if (ctr == NULL)
 	{
-		fprintf(out_hnd, "display_srv_tprt_info_0_ctr: unavailable due to an internal error\n");
+		report(out_hnd, "display_srv_tprt_info_0_ctr: unavailable due to an internal error\n");
 		return;
 	}
 
@@ -568,7 +568,7 @@ void display_srv_tprt_info_ctr(FILE *out_hnd, enum action_type action,
 {
 	if (ctr == NULL || ctr->ptr_tprt_ctr == 0)
 	{
-		fprintf(out_hnd, "display_srv_tprt_info_ctr: unavailable due to an internal error\n");
+		report(out_hnd, "display_srv_tprt_info_ctr: unavailable due to an internal error\n");
 		return;
 	}
 
@@ -582,7 +582,7 @@ void display_srv_tprt_info_ctr(FILE *out_hnd, enum action_type action,
 		}
 		default:
 		{
-			fprintf(out_hnd, "display_srv_tprt_info_ctr: Unknown Info Level\n");
+			report(out_hnd, "display_srv_tprt_info_ctr: Unknown Info Level\n");
 			break;
 		}
 	}
@@ -604,7 +604,7 @@ void display_share_info_1(FILE *out_hnd, enum action_type action,
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "Share Info Level 1:\n");
+			report(out_hnd, "Share Info Level 1:\n");
 
 			break;
 		}
@@ -622,7 +622,7 @@ void display_share_info_1(FILE *out_hnd, enum action_type action,
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}
@@ -644,7 +644,7 @@ void display_share_info_2(FILE *out_hnd, enum action_type action,
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "Share Info Level 2:\n");
+			report(out_hnd, "Share Info Level 2:\n");
 
 			break;
 		}
@@ -668,7 +668,7 @@ void display_share_info_2(FILE *out_hnd, enum action_type action,
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}
@@ -683,7 +683,7 @@ void display_srv_share_info_1_ctr(FILE *out_hnd, enum action_type action,
 {
 	if (ctr == NULL)
 	{
-		fprintf(out_hnd, "display_srv_share_info_1_ctr: unavailable due to an internal error\n");
+		report(out_hnd, "display_srv_share_info_1_ctr: unavailable due to an internal error\n");
 		return;
 	}
 
@@ -720,7 +720,7 @@ void display_srv_share_info_2_ctr(FILE *out_hnd, enum action_type action,
 {
 	if (ctr == NULL)
 	{
-		fprintf(out_hnd, "display_srv_share_info_2_ctr: unavailable due to an internal error\n");
+		report(out_hnd, "display_srv_share_info_2_ctr: unavailable due to an internal error\n");
 		return;
 	}
 
@@ -757,7 +757,7 @@ void display_srv_share_info_ctr(FILE *out_hnd, enum action_type action,
 {
 	if (ctr == NULL || ctr->ptr_share_ctr == 0)
 	{
-		fprintf(out_hnd, "display_srv_share_info_ctr: unavailable due to an internal error\n");
+		report(out_hnd, "display_srv_share_info_ctr: unavailable due to an internal error\n");
 		return;
 	}
 
@@ -777,7 +777,7 @@ void display_srv_share_info_ctr(FILE *out_hnd, enum action_type action,
 		}
 		default:
 		{
-			fprintf(out_hnd, "display_srv_share_info_ctr: Unknown Info Level\n");
+			report(out_hnd, "display_srv_share_info_ctr: Unknown Info Level\n");
 			break;
 		}
 	}
@@ -799,7 +799,7 @@ void display_file_info_3(FILE *out_hnd, enum action_type action,
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "File Info Level 3:\n");
+			report(out_hnd, "File Info Level 3:\n");
 
 			break;
 		}
@@ -813,18 +813,18 @@ void display_file_info_3(FILE *out_hnd, enum action_type action,
 			unistr2_to_ascii(user_name, &str3->uni_user_name, 
 					 sizeof(user_name)-1);
 
-			fprintf(out_hnd, "\tid       :\t%d\n", info3->id);
-			fprintf(out_hnd, "\tperms    :\t%s\n", get_file_mode_str(info3->perms));
-			fprintf(out_hnd, "\tnum_locks:\t%d\n", info3->num_locks);
+			report(out_hnd, "\tid       :\t%d\n", info3->id);
+			report(out_hnd, "\tperms    :\t%s\n", get_file_mode_str(info3->perms));
+			report(out_hnd, "\tnum_locks:\t%d\n", info3->num_locks);
 
-			fprintf(out_hnd, "\tpath name:\t%s\n", path_name);
-			fprintf(out_hnd, "\tuser name:\t%s\n", user_name);
+			report(out_hnd, "\tpath name:\t%s\n", path_name);
+			report(out_hnd, "\tuser name:\t%s\n", user_name);
 
 			break;
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}
@@ -839,7 +839,7 @@ void display_srv_file_info_3_ctr(FILE *out_hnd, enum action_type action,
 {
 	if (ctr == NULL)
 	{
-		fprintf(out_hnd, "display_srv_file_info_3_ctr: unavailable due to an internal error\n");
+		report(out_hnd, "display_srv_file_info_3_ctr: unavailable due to an internal error\n");
 		return;
 	}
 
@@ -876,7 +876,7 @@ void display_srv_file_info_ctr(FILE *out_hnd, enum action_type action,
 {
 	if (ctr == NULL || ctr->ptr_file_ctr == 0)
 	{
-		fprintf(out_hnd, "display_srv_file_info_ctr: unavailable due to an internal error\n");
+		report(out_hnd, "display_srv_file_info_ctr: unavailable due to an internal error\n");
 		return;
 	}
 
@@ -890,7 +890,7 @@ void display_srv_file_info_ctr(FILE *out_hnd, enum action_type action,
 		}
 		default:
 		{
-			fprintf(out_hnd, "display_srv_file_info_ctr: Unknown Info Level\n");
+			report(out_hnd, "display_srv_file_info_ctr: Unknown Info Level\n");
 			break;
 		}
 	}
@@ -911,7 +911,7 @@ void display_sess_info_0(FILE *out_hnd, enum action_type action,
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "Session Info Level 0:\n");
+			report(out_hnd, "Session Info Level 0:\n");
 
 			break;
 		}
@@ -922,13 +922,13 @@ void display_sess_info_0(FILE *out_hnd, enum action_type action,
 			unistr2_to_ascii(name, &str0->uni_name, 
 					 sizeof(name)-1);
 
-			fprintf(out_hnd, "\tname:\t%s\n", name);
+			report(out_hnd, "\tname:\t%s\n", name);
 
 			break;
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}
@@ -950,7 +950,7 @@ void display_sess_info_1(FILE *out_hnd, enum action_type action,
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "Session Info Level 1:\n");
+			report(out_hnd, "Session Info Level 1:\n");
 
 			break;
 		}
@@ -964,20 +964,20 @@ void display_sess_info_1(FILE *out_hnd, enum action_type action,
 			unistr2_to_ascii(name, &str1->uni_name, 
 					 sizeof(name)-1);
 
-			fprintf(out_hnd, "\tname:\t%s\n", name);
+			report(out_hnd, "\tname:\t%s\n", name);
 
-			fprintf(out_hnd, "\topen :\t%d\n", info1->num_opens);
-			fprintf(out_hnd, "\ttime :\t%d\n", info1->open_time);
-			fprintf(out_hnd, "\tidle :\t%d\n", info1->idle_time);
-			fprintf(out_hnd, "\tflags:\t%d\n", info1->user_flags);
+			report(out_hnd, "\topen :\t%d\n", info1->num_opens);
+			report(out_hnd, "\ttime :\t%d\n", info1->open_time);
+			report(out_hnd, "\tidle :\t%d\n", info1->idle_time);
+			report(out_hnd, "\tflags:\t%d\n", info1->user_flags);
 
-			fprintf(out_hnd, "\tuser :\t%s\n", user_name);
+			report(out_hnd, "\tuser :\t%s\n", user_name);
 
 			break;
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}
@@ -992,7 +992,7 @@ void display_srv_sess_info_0_ctr(FILE *out_hnd, enum action_type action,
 {
 	if (ctr == NULL)
 	{
-		fprintf(out_hnd, "display_srv_sess_info_0_ctr: unavailable due to an internal error\n");
+		report(out_hnd, "display_srv_sess_info_0_ctr: unavailable due to an internal error\n");
 		return;
 	}
 
@@ -1029,7 +1029,7 @@ void display_srv_sess_info_1_ctr(FILE *out_hnd, enum action_type action,
 {
 	if (ctr == NULL)
 	{
-		fprintf(out_hnd, "display_srv_sess_info_1_ctr: unavailable due to an internal error\n");
+		report(out_hnd, "display_srv_sess_info_1_ctr: unavailable due to an internal error\n");
 		return;
 	}
 
@@ -1066,7 +1066,7 @@ void display_srv_sess_info_ctr(FILE *out_hnd, enum action_type action,
 {
 	if (ctr == NULL || ctr->ptr_sess_ctr == 0)
 	{
-		fprintf(out_hnd, "display_srv_sess_info_ctr: unavailable due to an internal error\n");
+		report(out_hnd, "display_srv_sess_info_ctr: unavailable due to an internal error\n");
 		return;
 	}
 
@@ -1086,7 +1086,7 @@ void display_srv_sess_info_ctr(FILE *out_hnd, enum action_type action,
 		}
 		default:
 		{
-			fprintf(out_hnd, "display_srv_sess_info_ctr: Unknown Info Level\n");
+			report(out_hnd, "display_srv_sess_info_ctr: Unknown Info Level\n");
 			break;
 		}
 	}
@@ -1106,7 +1106,7 @@ void display_server(FILE *out_hnd, enum action_type action,
 		}
 		case ACTION_ENUMERATE:
 		{
-			fprintf(out_hnd, "\t%-15.15s%-20s %s\n", 
+			report(out_hnd, "\t%-15.15s%-20s %s\n", 
 			                 sname, get_server_type_str(type), comment);
 			break;
 		}
@@ -1131,7 +1131,7 @@ void display_share(FILE *out_hnd, enum action_type action,
 		}
 		case ACTION_ENUMERATE:
 		{
-			fprintf(out_hnd, "\t%-15.15s%-10.10s%s\n", 
+			report(out_hnd, "\t%-15.15s%-10.10s%s\n", 
 			                 sname, get_share_type_str(type), comment);
 			break;
 		}
@@ -1159,7 +1159,7 @@ void display_share2(FILE *out_hnd, enum action_type action,
 		}
 		case ACTION_ENUMERATE:
 		{
-			fprintf(out_hnd, "\t%-15.15s%-10.10s%s %x %x %x %s %s\n", 
+			report(out_hnd, "\t%-15.15s%-10.10s%s %x %x %x %s %s\n", 
 			                 sname, get_share_type_str(type), comment, 
 			                 perms, max_uses, num_uses, path, passwd);
 			break;
@@ -1186,7 +1186,7 @@ void display_name(FILE *out_hnd, enum action_type action,
 		}
 		case ACTION_ENUMERATE:
 		{
-			fprintf(out_hnd, "\t%-21.21s\n", sname);
+			report(out_hnd, "\t%-21.21s\n", sname);
 			break;
 		}
 		case ACTION_FOOTER:
@@ -1210,12 +1210,12 @@ void display_alias_members(FILE *out_hnd, enum action_type action,
 		{
 			if (num_mem == 0)
 			{
-				fprintf(out_hnd, "\tNo Alias Members\n");
+				report(out_hnd, "\tNo Alias Members\n");
 			}
 			else
 			{
-				fprintf(out_hnd, "\tAlias Members:\n");
-				fprintf(out_hnd, "\t-------------\n");
+				report(out_hnd, "\tAlias Members:\n");
+				report(out_hnd, "\t-------------\n");
 			}
 			break;
 		}
@@ -1227,7 +1227,7 @@ void display_alias_members(FILE *out_hnd, enum action_type action,
 			{
 				if (sid_mem[i] != NULL)
 				{
-					fprintf(out_hnd, "\tMember Name:\t%s\tType:\t%s\n", 
+					report(out_hnd, "\tMember Name:\t%s\tType:\t%s\n", 
 					sid_mem[i], 
 					get_sid_name_use_str(type[i]));
 				}
@@ -1237,7 +1237,7 @@ void display_alias_members(FILE *out_hnd, enum action_type action,
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}
@@ -1259,12 +1259,12 @@ void display_alias_rid_info(FILE *out_hnd, enum action_type action,
 			sid_to_string(sid_str, sid);
 			if (num_rids == 0)
 			{
-				fprintf(out_hnd, "\tNo Aliases:\tSid %s\n", sid_str);
+				report(out_hnd, "\tNo Aliases:\tSid %s\n", sid_str);
 			}
 			else
 			{
-				fprintf(out_hnd, "\tAlias Info:\tSid %s\n", sid_str);
-				fprintf(out_hnd, "\t----------\n");
+				report(out_hnd, "\tAlias Info:\tSid %s\n", sid_str);
+				report(out_hnd, "\t----------\n");
 			}
 			break;
 		}
@@ -1274,14 +1274,14 @@ void display_alias_rid_info(FILE *out_hnd, enum action_type action,
 
 			for (i = 0; i < num_rids; i++)
 			{
-				fprintf(out_hnd, "\tAlias RID:\t%8x\n", rid[i]);
+				report(out_hnd, "\tAlias RID:\t%8x\n", rid[i]);
 			}
 
 			break;
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}
@@ -1299,12 +1299,12 @@ void display_group_members(FILE *out_hnd, enum action_type action,
 		{
 			if (num_mem == 0)
 			{
-				fprintf(out_hnd, "\tNo Members\n");
+				report(out_hnd, "\tNo Members\n");
 			}
 			else
 			{
-				fprintf(out_hnd, "\tMembers:\n");
-				fprintf(out_hnd, "\t-------\n");
+				report(out_hnd, "\tMembers:\n");
+				report(out_hnd, "\t-------\n");
 			}
 			break;
 		}
@@ -1314,7 +1314,7 @@ void display_group_members(FILE *out_hnd, enum action_type action,
 
 			for (i = 0; i < num_mem; i++)
 			{
-				fprintf(out_hnd, "\tMember Name:\t%s\tType:\t%s\n", 
+				report(out_hnd, "\tMember Name:\t%s\tType:\t%s\n", 
 				        name[i], get_sid_name_use_str(type[i]));
 			}
 
@@ -1322,7 +1322,7 @@ void display_group_members(FILE *out_hnd, enum action_type action,
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}
@@ -1346,11 +1346,11 @@ void display_group_info1(FILE *out_hnd, enum action_type action, GROUP_INFO1 *co
 			fstring temp;
 
 			unistr2_to_ascii(temp, &info1->uni_acct_name, sizeof(temp)-1);
-			fprintf(out_hnd, "\tGroup Name:\t%s\n", temp);
+			report(out_hnd, "\tGroup Name:\t%s\n", temp);
 			unistr2_to_ascii(temp, &info1->uni_acct_desc, sizeof(temp)-1);
-			fprintf(out_hnd, "\tDescription:\t%s\n", temp);
-			fprintf(out_hnd, "\tunk1:%d\n", info1->unknown_1);
-			fprintf(out_hnd, "\tNum Members:%d\n", info1->num_members);
+			report(out_hnd, "\tDescription:\t%s\n", temp);
+			report(out_hnd, "\tunk1:%d\n", info1->unknown_1);
+			report(out_hnd, "\tNum Members:%d\n", info1->num_members);
 			break;
 		}
 		case ACTION_FOOTER:
@@ -1377,7 +1377,7 @@ void display_group_info4(FILE *out_hnd, enum action_type action, GROUP_INFO4 *co
 			fstring desc;
 
 			unistr2_to_ascii(desc, &info4->uni_acct_desc, sizeof(desc)-1);
-			fprintf(out_hnd, "\tGroup Description:%s\n", 
+			report(out_hnd, "\tGroup Description:%s\n", 
 			                  desc);
 			break;
 		}
@@ -1398,8 +1398,8 @@ void display_group_info_ctr(FILE *out_hnd, enum action_type action,
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "\tSAM Group Info\n"); 
-			fprintf(out_hnd, "\t--------------\n");
+			report(out_hnd, "\tSAM Group Info\n"); 
+			report(out_hnd, "\t--------------\n");
 
 			break;
 		}
@@ -1426,7 +1426,7 @@ void display_group_info_ctr(FILE *out_hnd, enum action_type action,
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}
@@ -1444,12 +1444,12 @@ void display_group_rid_info(FILE *out_hnd, enum action_type action,
 		{
 			if (num_gids == 0)
 			{
-				fprintf(out_hnd, "\tNo Groups\n");
+				report(out_hnd, "\tNo Groups\n");
 			}
 			else
 			{
-				fprintf(out_hnd, "\tGroup Info\n");
-				fprintf(out_hnd, "\t----------\n");
+				report(out_hnd, "\tGroup Info\n");
+				report(out_hnd, "\t----------\n");
 			}
 			break;
 		}
@@ -1459,7 +1459,7 @@ void display_group_rid_info(FILE *out_hnd, enum action_type action,
 
 			for (i = 0; i < num_gids; i++)
 			{
-				fprintf(out_hnd, "\tGroup RID:\t%8x attr:\t%x\n", 
+				report(out_hnd, "\tGroup RID:\t%8x attr:\t%x\n", 
 								  gid[i].g_rid, gid[i].attr);
 			}
 
@@ -1467,7 +1467,7 @@ void display_group_rid_info(FILE *out_hnd, enum action_type action,
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}
@@ -1486,12 +1486,12 @@ void display_alias_name_info(FILE *out_hnd, enum action_type action,
 		{
 			if (num_aliases == 0)
 			{
-				fprintf(out_hnd, "\tNo Aliases\n");
+				report(out_hnd, "\tNo Aliases\n");
 			}
 			else
 			{
-				fprintf(out_hnd, "\tAlias Names\n");
-				fprintf(out_hnd, "\t----------- \n");
+				report(out_hnd, "\tAlias Names\n");
+				report(out_hnd, "\t----------- \n");
 			}
 			break;
 		}
@@ -1501,7 +1501,7 @@ void display_alias_name_info(FILE *out_hnd, enum action_type action,
 
 			for (i = 0; i < num_aliases; i++)
 			{
-				fprintf(out_hnd, "\tAlias Name:\t%s Attributes:\t%3d\n", 
+				report(out_hnd, "\tAlias Name:\t%s Attributes:\t%3d\n", 
 								  alias_name[i], num_als_usrs[i]);
 			}
 
@@ -1509,7 +1509,7 @@ void display_alias_name_info(FILE *out_hnd, enum action_type action,
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}
@@ -1532,7 +1532,7 @@ void display_alias_info3(FILE *out_hnd, enum action_type action, ALIAS_INFO3 *co
 			fstring temp;
 
 			unistr2_to_ascii(temp, &info3->uni_acct_desc, sizeof(temp)-1);
-			fprintf(out_hnd, "\tDescription:\t%s\n", temp);
+			report(out_hnd, "\tDescription:\t%s\n", temp);
 			break;
 		}
 		case ACTION_FOOTER:
@@ -1552,8 +1552,8 @@ void display_alias_info_ctr(FILE *out_hnd, enum action_type action,
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "\tSAM Group Info\n"); 
-			fprintf(out_hnd, "\t--------------\n");
+			report(out_hnd, "\tSAM Group Info\n"); 
+			report(out_hnd, "\t--------------\n");
 
 			break;
 		}
@@ -1573,7 +1573,7 @@ void display_alias_info_ctr(FILE *out_hnd, enum action_type action,
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}
@@ -1589,8 +1589,8 @@ void display_sam_user_info_21(FILE *out_hnd, enum action_type action, SAM_USER_I
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "\tUser Info, Level 0x15\n");
-			fprintf(out_hnd, "\t---------------------\n");
+			report(out_hnd, "\tUser Info, Level 0x15\n");
+			report(out_hnd, "\t---------------------\n");
 
 			break;
 		}
@@ -1599,64 +1599,64 @@ void display_sam_user_info_21(FILE *out_hnd, enum action_type action, SAM_USER_I
 			fstring temp;
 
 			unistr2_to_ascii(temp, &usr->uni_user_name, sizeof(temp)-1);
-			fprintf(out_hnd, "\t\tUser Name   :\t%s\n", temp);
+			report(out_hnd, "\t\tUser Name   :\t%s\n", temp);
 
 			unistr2_to_ascii(temp, &usr->uni_full_name, sizeof(temp)-1);
-			fprintf(out_hnd, "\t\tFull Name   :\t%s\n", temp);
+			report(out_hnd, "\t\tFull Name   :\t%s\n", temp);
 
 			unistr2_to_ascii(temp, &usr->uni_home_dir, sizeof(temp)-1);
-			fprintf(out_hnd, "\t\tHome Drive  :\t%s\n", temp);
+			report(out_hnd, "\t\tHome Drive  :\t%s\n", temp);
 
 			unistr2_to_ascii(temp, &usr->uni_dir_drive, sizeof(temp)-1);
-			fprintf(out_hnd, "\t\tDir Drive   :\t%s\n", temp);
+			report(out_hnd, "\t\tDir Drive   :\t%s\n", temp);
 
 			unistr2_to_ascii(temp, &usr->uni_profile_path, sizeof(temp)-1);
-			fprintf(out_hnd, "\t\tProfile Path:\t%s\n", temp);
+			report(out_hnd, "\t\tProfile Path:\t%s\n", temp);
 
 			unistr2_to_ascii(temp, &usr->uni_logon_script, sizeof(temp)-1);
-			fprintf(out_hnd, "\t\tLogon Script:\t%s\n", temp);
+			report(out_hnd, "\t\tLogon Script:\t%s\n", temp);
 
 			unistr2_to_ascii(temp, &usr->uni_acct_desc, sizeof(temp)-1);
-			fprintf(out_hnd, "\t\tDescription :\t%s\n", temp);
+			report(out_hnd, "\t\tDescription :\t%s\n", temp);
 
 			unistr2_to_ascii(temp, &usr->uni_workstations, sizeof(temp)-1);
-			fprintf(out_hnd, "\t\tWorkstations:\t%s\n", temp);
+			report(out_hnd, "\t\tWorkstations:\t%s\n", temp);
 
 			unistr2_to_ascii(temp, &usr->uni_unknown_str, sizeof(temp)-1);
-			fprintf(out_hnd, "\t\tUnknown Str :\t%s\n", temp);
+			report(out_hnd, "\t\tUnknown Str :\t%s\n", temp);
 
 			unistr2_to_ascii(temp, &usr->uni_munged_dial, sizeof(temp)-1);
-			fprintf(out_hnd, "\t\tRemote Dial :\t%s\n", temp);
+			report(out_hnd, "\t\tRemote Dial :\t%s\n", temp);
 
-			fprintf(out_hnd, "\t\tLogon Time               :\t%s\n", http_timestring(nt_time_to_unix(&(usr->logon_time           ))));
-			fprintf(out_hnd, "\t\tLogoff Time              :\t%s\n", http_timestring(nt_time_to_unix(&(usr->logoff_time          ))));
-			fprintf(out_hnd, "\t\tKickoff Time             :\t%s\n", http_timestring(nt_time_to_unix(&(usr->kickoff_time         ))));
-			fprintf(out_hnd, "\t\tPassword last set Time   :\t%s\n", http_timestring(nt_time_to_unix(&(usr->pass_last_set_time   ))));
-			fprintf(out_hnd, "\t\tPassword can change Time :\t%s\n", http_timestring(nt_time_to_unix(&(usr->pass_can_change_time ))));
-			fprintf(out_hnd, "\t\tPassword must change Time:\t%s\n", http_timestring(nt_time_to_unix(&(usr->pass_must_change_time))));
+			report(out_hnd, "\t\tLogon Time               :\t%s\n", http_timestring(nt_time_to_unix(&(usr->logon_time           ))));
+			report(out_hnd, "\t\tLogoff Time              :\t%s\n", http_timestring(nt_time_to_unix(&(usr->logoff_time          ))));
+			report(out_hnd, "\t\tKickoff Time             :\t%s\n", http_timestring(nt_time_to_unix(&(usr->kickoff_time         ))));
+			report(out_hnd, "\t\tPassword last set Time   :\t%s\n", http_timestring(nt_time_to_unix(&(usr->pass_last_set_time   ))));
+			report(out_hnd, "\t\tPassword can change Time :\t%s\n", http_timestring(nt_time_to_unix(&(usr->pass_can_change_time ))));
+			report(out_hnd, "\t\tPassword must change Time:\t%s\n", http_timestring(nt_time_to_unix(&(usr->pass_must_change_time))));
 			
-			fprintf(out_hnd, "\t\tunknown_2[0..31]...\n"); /* user passwords? */
+			report(out_hnd, "\t\tunknown_2[0..31]...\n"); /* user passwords? */
 
-			fprintf(out_hnd, "\t\tuser_rid :\t%x\n"  , usr->user_rid ); /* User ID */
-			fprintf(out_hnd, "\t\tgroup_rid:\t%x\n"  , usr->group_rid); /* Group ID */
-			fprintf(out_hnd, "\t\tacb_info :\t%04x\n", usr->acb_info ); /* Account Control Info */
+			report(out_hnd, "\t\tuser_rid :\t%x\n"  , usr->user_rid ); /* User ID */
+			report(out_hnd, "\t\tgroup_rid:\t%x\n"  , usr->group_rid); /* Group ID */
+			report(out_hnd, "\t\tacb_info :\t%04x\n", usr->acb_info ); /* Account Control Info */
 
-			fprintf(out_hnd, "\t\tunknown_3:\t%08x\n", usr->unknown_3); /* 0x00ff ffff */
-			fprintf(out_hnd, "\t\tlogon_divs:\t%d\n", usr->logon_divs); /* 0x0000 00a8 which is 168 which is num hrs in a week */
-			fprintf(out_hnd, "\t\tunknown_5:\t%08x\n", usr->unknown_5); /* 0x0002 0000 */
+			report(out_hnd, "\t\tunknown_3:\t%08x\n", usr->unknown_3); /* 0x00ff ffff */
+			report(out_hnd, "\t\tlogon_divs:\t%d\n", usr->logon_divs); /* 0x0000 00a8 which is 168 which is num hrs in a week */
+			report(out_hnd, "\t\tunknown_5:\t%08x\n", usr->unknown_5); /* 0x0002 0000 */
 
-			fprintf(out_hnd, "\t\tpadding1[0..7]...\n");
+			report(out_hnd, "\t\tpadding1[0..7]...\n");
 
 			if (usr->ptr_logon_hrs)
 			{
-				fprintf(out_hnd, "\t\tlogon_hrs[0..%d]...\n", usr->logon_hrs.len);
+				report(out_hnd, "\t\tlogon_hrs[0..%d]...\n", usr->logon_hrs.len);
 			}
 
 			break;
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}
@@ -1740,7 +1740,7 @@ void display_sec_access(FILE *out_hnd, enum action_type action, SEC_ACCESS *cons
 		}
 		case ACTION_ENUMERATE:
 		{
-			fprintf(out_hnd, "\t\tPermissions:\t%s\n", 
+			report(out_hnd, "\t\tPermissions:\t%s\n", 
 			        get_sec_mask_str(info->mask));
 		}
 		case ACTION_FOOTER:
@@ -1759,7 +1759,7 @@ void display_sec_ace(FILE *out_hnd, enum action_type action, SEC_ACE *const ace)
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "\tACE\n");
+			report(out_hnd, "\tACE\n");
 			break;
 		}
 		case ACTION_ENUMERATE:
@@ -1771,7 +1771,7 @@ void display_sec_ace(FILE *out_hnd, enum action_type action, SEC_ACE *const ace)
 			display_sec_access(out_hnd, ACTION_FOOTER   , &ace->info);
 
 			sid_to_string(sid_str, &ace->sid);
-			fprintf(out_hnd, "\t\tSID:\t%s\n", sid_str);
+			report(out_hnd, "\t\tSID:\t%s\n", sid_str);
 		}
 		case ACTION_FOOTER:
 		{
@@ -1789,9 +1789,9 @@ void display_sec_acl(FILE *out_hnd, enum action_type action, SEC_ACL *const sec_
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "\tACL\tNum ACEs:\t%d\trevision:\t%x\n", 
+			report(out_hnd, "\tACL\tNum ACEs:\t%d\trevision:\t%x\n", 
 			                 sec_acl->num_aces, sec_acl->revision); 
-			fprintf(out_hnd, "\t---\n");
+			report(out_hnd, "\t---\n");
 
 			break;
 		}
@@ -1812,7 +1812,7 @@ void display_sec_acl(FILE *out_hnd, enum action_type action, SEC_ACL *const sec_
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}
@@ -1827,9 +1827,9 @@ void display_sec_desc(FILE *out_hnd, enum action_type action, SEC_DESC *const se
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "\tSecurity Descriptor\trevision:\t%x\ttype:\t%x\n", 
+			report(out_hnd, "\tSecurity Descriptor\trevision:\t%x\ttype:\t%x\n", 
 			                 sec->revision, sec->type); 
-			fprintf(out_hnd, "\t-------------------\n");
+			report(out_hnd, "\t-------------------\n");
 
 			break;
 		}
@@ -1852,19 +1852,19 @@ void display_sec_desc(FILE *out_hnd, enum action_type action, SEC_DESC *const se
 			if (sec->off_owner_sid != 0)
 			{
 				sid_to_string(sid_str, sec->owner_sid);
-				fprintf(out_hnd, "\tOwner SID:\t%s\n", sid_str);
+				report(out_hnd, "\tOwner SID:\t%s\n", sid_str);
 			}
 			if (sec->off_grp_sid != 0)
 			{
 				sid_to_string(sid_str, sec->grp_sid);
-				fprintf(out_hnd, "\tParent SID:\t%s\n", sid_str);
+				report(out_hnd, "\tParent SID:\t%s\n", sid_str);
 			}
 				
 			break;
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}
@@ -1926,7 +1926,7 @@ static void print_reg_value(FILE *out_hnd, const char *val_name,
 		{
 			unibuf_to_ascii(valstr, value->buffer, 
 					MIN(value->buf_len, sizeof(valstr)-1));
-			fprintf(out_hnd, "\t%s:\t%s:\t%s\n", val_name, type, valstr);
+			report(out_hnd, "\t%s:\t%s:\t%s\n", val_name, type, valstr);
 			break;
 		}
 
@@ -1935,13 +1935,13 @@ static void print_reg_value(FILE *out_hnd, const char *val_name,
 		{
 			if (value->buf_len <= 8)
 			{
-				fprintf(out_hnd, "\t%s:\t%s:\t", val_name, type);
+				report(out_hnd, "\t%s:\t%s:\t", val_name, type);
 				out_data(out_hnd, (const char*)value->buffer, 
 				         value->buf_len, 8);
 			}
 			else
 			{
-				fprintf(out_hnd, "\t%s:\t%s:\n", val_name, type);
+				report(out_hnd, "\t%s:\t%s:\n", val_name, type);
 				out_data(out_hnd, (const char*)value->buffer, 
 				         value->buf_len, 16);
 			}
@@ -1950,14 +1950,14 @@ static void print_reg_value(FILE *out_hnd, const char *val_name,
 
 		case 0x04: /* uint32 */
 		{
-			fprintf(out_hnd, "\t%s:\t%s:\t0x%08x\n", val_name, type, buffer2_to_uint32(value));
+			report(out_hnd, "\t%s:\t%s:\t0x%08x\n", val_name, type, buffer2_to_uint32(value));
 			break;
 		}
 
 		case 0x07: /* multiunistr */
 		{
 			buffer2_to_multistr(valstr, value, sizeof(valstr)-1);
-			fprintf(out_hnd, "\t%s:\t%s:\t%s\n", val_name, type, valstr);
+			report(out_hnd, "\t%s:\t%s:\t%s\n", val_name, type, valstr);
 			break;
 		}
 	}
@@ -2002,7 +2002,7 @@ void display_reg_key_info(FILE *out_hnd, enum action_type action,
 		}
 		case ACTION_ENUMERATE:
 		{
-			fprintf(out_hnd, "\t%s\t(%s)\n", 
+			report(out_hnd, "\t%s\t(%s)\n", 
 			        key_name, http_timestring(key_mod_time));
 			break;
 		}
@@ -2047,8 +2047,8 @@ void display_query_svc_cfg(FILE *out_hnd, enum action_type action,
 			fstring service;
 
 			unistr2_to_ascii(service, &cfg->uni_display_name, sizeof(service)-1);
-			fprintf(out_hnd, "\tService:\t%s\n", service);
-			fprintf(out_hnd, "\t-------\n");
+			report(out_hnd, "\tService:\t%s\n", service);
+			report(out_hnd, "\t-------\n");
 			break;
 		}
 		case ACTION_ENUMERATE:
@@ -2056,27 +2056,27 @@ void display_query_svc_cfg(FILE *out_hnd, enum action_type action,
 			fstring temp;
 
 			unistr2_to_ascii(temp, &cfg->uni_bin_path_name, sizeof(temp)-1);
-			fprintf(out_hnd, "\tPath:\t%s\n", temp);
+			report(out_hnd, "\tPath:\t%s\n", temp);
 
 			unistr2_to_ascii(temp, &cfg->uni_load_order_grp, sizeof(temp)-1);
-			fprintf(out_hnd, "\tLoad Order:\t%s\n", temp);
+			report(out_hnd, "\tLoad Order:\t%s\n", temp);
 
 			unistr2_to_ascii(temp, &cfg->uni_dependencies, sizeof(temp)-1);
-			fprintf(out_hnd, "\tDependencies:\t%s\n", temp);
+			report(out_hnd, "\tDependencies:\t%s\n", temp);
 
 			unistr2_to_ascii(temp, &cfg->uni_service_start_name, sizeof(temp)-1);
-			fprintf(out_hnd, "\tService Start:\t%s\n", temp);
+			report(out_hnd, "\tService Start:\t%s\n", temp);
 
-			fprintf(out_hnd, "\tService Type:\t%d\n", cfg->service_type);
-			fprintf(out_hnd, "\tStart Type:\t%s\n" , get_svc_start_type_str(cfg->start_type));
-			fprintf(out_hnd, "\tError Control:\t%d\n" , cfg->error_control);
-			fprintf(out_hnd, "\tTag Id:\t%d\n" , cfg->tag_id);
+			report(out_hnd, "\tService Type:\t%d\n", cfg->service_type);
+			report(out_hnd, "\tStart Type:\t%s\n" , get_svc_start_type_str(cfg->start_type));
+			report(out_hnd, "\tError Control:\t%d\n" , cfg->error_control);
+			report(out_hnd, "\tTag Id:\t%d\n" , cfg->tag_id);
 			break;
 
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}
@@ -2100,11 +2100,11 @@ void display_svc_info(FILE *out_hnd, enum action_type action,
 
 			unistr_to_ascii(name, svc->uni_srvc_name.buffer, 
 					sizeof(name)-1); /* service name */
-			fprintf(out_hnd, "\t%s:", name);
+			report(out_hnd, "\t%s:", name);
 
 			unistr_to_ascii(name, svc->uni_disp_name.buffer, 
 					sizeof(name)-1); /* display name */
-			fprintf(out_hnd, "\t%s\n", name);
+			report(out_hnd, "\t%s\n", name);
 			break;
 		}
 		case ACTION_FOOTER:
@@ -2189,7 +2189,8 @@ static char *get_at_days_str(uint32 monthdays, uint8 weekdays, uint8 flags)
  display scheduled jobs
  ****************************************************************************/
 void display_at_enum_info(FILE *out_hnd, enum action_type action, 
-		     uint32 num_jobs, const AT_ENUM_INFO *const jobs, const fstring *const commands)
+				uint32 num_jobs, const AT_ENUM_INFO *const jobs,
+				char *const *const commands)
 {
 	switch (action)
 	{
@@ -2197,12 +2198,12 @@ void display_at_enum_info(FILE *out_hnd, enum action_type action,
 		{
 			if (num_jobs == 0)
 			{
-				fprintf(out_hnd, "\tNo Jobs.\n");
+				report(out_hnd, "\tNo Jobs.\n");
 			}
 			else
 			{
-				fprintf(out_hnd, "\tJobs:\n");
-				fprintf(out_hnd, "\t-----\n");
+				report(out_hnd, "\tJobs:\n");
+				report(out_hnd, "\t-----\n");
 			}
 			break;
 		}
@@ -2214,7 +2215,7 @@ void display_at_enum_info(FILE *out_hnd, enum action_type action,
 			{
 				const AT_JOB_INFO *const job = &jobs[i].info;
 
-				fprintf(out_hnd, "\t%d\t%s\t%s\t%s\n", 
+				report(out_hnd, "\t%d\t%s\t%s\t%s\n", 
 					jobs[i].jobid, 
 					get_at_time_str(job->time), 
 					get_at_days_str(job->monthdays, 
@@ -2227,7 +2228,7 @@ void display_at_enum_info(FILE *out_hnd, enum action_type action,
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}
@@ -2243,37 +2244,37 @@ void display_at_job_info(FILE *out_hnd, enum action_type action,
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "\tJob Information:\n");
-			fprintf(out_hnd, "\t----------------\n");
+			report(out_hnd, "\tJob Information:\n");
+			report(out_hnd, "\t----------------\n");
 			break;
 		}
 		case ACTION_ENUMERATE:
 		{
-			fprintf(out_hnd, "\tTime:        %s\n", 
+			report(out_hnd, "\tTime:        %s\n", 
 				get_at_time_str(job->time));
 
-			fprintf(out_hnd, "\tSchedule:    %s\n", 
+			report(out_hnd, "\tSchedule:    %s\n", 
 				get_at_days_str(job->monthdays, job->weekdays, 
 						job->flags));
 
-			fprintf(out_hnd, "\tStatus:      %s", 
+			report(out_hnd, "\tStatus:      %s", 
 				(job->flags & JOB_EXEC_ERR) ? "Failed" : "OK");
 
 			if (job->flags & JOB_RUNS_TODAY)
 			{
-				fprintf(out_hnd, ", Runs Today");
+				report(out_hnd, ", Runs Today");
 			}
 
-			fprintf(out_hnd, "\n\tInteractive: %s\n", 
+			report(out_hnd, "\n\tInteractive: %s\n", 
 				(job->flags & JOB_NONINTERACTIVE) ? "No"
 				: "Yes");
 
-			fprintf(out_hnd, "\tCommand:     %s\n", command);
+			report(out_hnd, "\tCommand:     %s\n", command);
 			break;
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}
@@ -2288,68 +2289,68 @@ void display_eventlog_eventrecord(FILE *out_hnd, enum action_type action, EVENTL
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "\tevent log records\n"); 
-			fprintf(out_hnd, "\t-----------------\n");
+			report(out_hnd, "\tevent log records\n"); 
+			report(out_hnd, "\t-----------------\n");
 			break;
 		}
 		case ACTION_ENUMERATE:
 		{
 			fstring temp;
-			fprintf(out_hnd, "\t\trecord n.:\t%d\n", ev->recordnumber);
+			report(out_hnd, "\t\trecord n.:\t%d\n", ev->recordnumber);
 			
-			fprintf(out_hnd, "\t\tsource\teventnumber\teventtype\tcategory\n");
+			report(out_hnd, "\t\tsource\teventnumber\teventtype\tcategory\n");
 			unistr_to_ascii(temp, ev->sourcename.buffer, sizeof(temp)-1);
 			
-			fprintf(out_hnd, "\t\t%s", temp);
+			report(out_hnd, "\t\t%s", temp);
 			
-			fprintf(out_hnd, "\t%d\t\t", ev->eventnumber&0x0000FFFF);
+			report(out_hnd, "\t%d\t\t", ev->eventnumber&0x0000FFFF);
 			
 			switch (ev->eventtype)
 			{
 				case EVENTLOG_OK:
-					fprintf(out_hnd, "Normal");
+					report(out_hnd, "Normal");
 					break;
  
 				case EVENTLOG_ERROR:
-					fprintf(out_hnd, "Error");
+					report(out_hnd, "Error");
 					break;
 			
 				case EVENTLOG_WARNING:
-					fprintf(out_hnd, "Warning");
+					report(out_hnd, "Warning");
 					break;
 			
 				case EVENTLOG_INFORMATION:
-					fprintf(out_hnd, "Information");
+					report(out_hnd, "Information");
 					break;
 			
 				case EVENTLOG_AUDIT_OK:
-					fprintf(out_hnd, "Audit Normal");
+					report(out_hnd, "Audit Normal");
 					break;
 			
 				case EVENTLOG_AUDIT_ERROR:
-					fprintf(out_hnd, "Audit Error\n");
+					report(out_hnd, "Audit Error\n");
 					break;			
 			}
 			
-			fprintf(out_hnd, "\t%d\n", ev->category);
-			fprintf(out_hnd, "\t\tcreationtime:\t%s\n", http_timestring(ev->creationtime));
-			fprintf(out_hnd, "\t\twritetime:\t%s\n", http_timestring(ev->writetime));
+			report(out_hnd, "\t%d\n", ev->category);
+			report(out_hnd, "\t\tcreationtime:\t%s\n", http_timestring(ev->creationtime));
+			report(out_hnd, "\t\twritetime:\t%s\n", http_timestring(ev->writetime));
 
 			unistr_to_ascii(temp, ev->computername.buffer, sizeof(temp)-1);
-			fprintf(out_hnd, "\t\tcomputer:\t%s\n", temp);
+			report(out_hnd, "\t\tcomputer:\t%s\n", temp);
 
 			if (ev->num_of_strings!=0)
 			{
 				unistr_to_ascii(temp, ev->strings.buffer, sizeof(temp)-1);
-				fprintf(out_hnd, "\t\tdescription:\t%s\n", temp);
+				report(out_hnd, "\t\tdescription:\t%s\n", temp);
 			}
 
-			fprintf(out_hnd, "\n");			
+			report(out_hnd, "\n");			
 			break;
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}
@@ -2377,13 +2378,13 @@ void display_sam_sync_ctr(FILE *out_hnd, enum action_type action,
 				case 1:
 				{
 					unistr2_to_ascii(name, &(ctr->domain_info.uni_dom_name), sizeof(name)-1); 
-					fprintf(out_hnd, "Domain: %s\n", name);
+					report(out_hnd, "Domain: %s\n", name);
 					break;
 				}
 				case 2:
 				{
 					unistr2_to_ascii(name, &(ctr->group_info.uni_grp_name), sizeof(name)-1); 
-					fprintf(out_hnd, "Group: %s\n", name);
+					report(out_hnd, "Group: %s\n", name);
 					break;
 				}
 				case 5:
@@ -2392,7 +2393,7 @@ void display_sam_sync_ctr(FILE *out_hnd, enum action_type action,
 					unsigned char nt_pwd[16];
 
 					unistr2_to_ascii(name, &(ctr->account_info.uni_acct_name), sizeof(name)-1); 
-					fprintf(out_hnd, "Account: %s\n", name);
+					report(out_hnd, "Account: %s\n", name);
 
 					sam_pwd_hash(ctr->account_info.user_rid, ctr->account_info.pass.buf_lm_pwd, lm_pwd, 0);
 					out_struct(out_hnd, lm_pwd, 16, 8);
@@ -2422,8 +2423,8 @@ void display_sam_sync(FILE *out_hnd, enum action_type action,
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "\tSAM Database Sync\n"); 
-			fprintf(out_hnd, "\t-----------------\n");
+			report(out_hnd, "\tSAM Database Sync\n"); 
+			report(out_hnd, "\t-----------------\n");
 
 			break;
 		}
@@ -2440,7 +2441,7 @@ void display_sam_sync(FILE *out_hnd, enum action_type action,
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}
@@ -2462,30 +2463,30 @@ void display_sam_unk_info_2(FILE *out_hnd, enum action_type action,
 		{
 			fstring name;
 			unistr2_to_ascii(name, &(info2->uni_domain), sizeof(name)-1); 
-			fprintf(out_hnd, "Domain:\t%s\n", name);
+			report(out_hnd, "Domain:\t%s\n", name);
 
 			unistr2_to_ascii(name, &(info2->uni_server), sizeof(name)-1); 
-			fprintf(out_hnd, "Server:\t%s\n", name);
+			report(out_hnd, "Server:\t%s\n", name);
 
-			fprintf(out_hnd, "Total Users:\t%d\n", info2->num_domain_usrs);
-			fprintf(out_hnd, "Total Groups:\t%d\n", info2->num_domain_grps);
-			fprintf(out_hnd, "Total Aliases:\t%d\n", info2->num_local_grps);
+			report(out_hnd, "Total Users:\t%d\n", info2->num_domain_usrs);
+			report(out_hnd, "Total Groups:\t%d\n", info2->num_domain_grps);
+			report(out_hnd, "Total Aliases:\t%d\n", info2->num_local_grps);
 
-			fprintf(out_hnd, "Sequence No:\t%d\n", info2->seq_num);
+			report(out_hnd, "Sequence No:\t%d\n", info2->seq_num);
 
-			fprintf(out_hnd, "Unknown 0:\t0x%x\n", info2->unknown_0);
-			fprintf(out_hnd, "Unknown 1:\t0x%x\n", info2->unknown_1);
-			fprintf(out_hnd, "Unknown 2:\t0x%x\n", info2->unknown_2);
-			fprintf(out_hnd, "Unknown 3:\t0x%x\n", info2->unknown_3);
-			fprintf(out_hnd, "Unknown 4:\t0x%x\n", info2->unknown_4);
-			fprintf(out_hnd, "Unknown 5:\t0x%x\n", info2->unknown_5);
-			fprintf(out_hnd, "Unknown 6:\t0x%x\n", info2->unknown_6);
+			report(out_hnd, "Unknown 0:\t0x%x\n", info2->unknown_0);
+			report(out_hnd, "Unknown 1:\t0x%x\n", info2->unknown_1);
+			report(out_hnd, "Unknown 2:\t0x%x\n", info2->unknown_2);
+			report(out_hnd, "Unknown 3:\t0x%x\n", info2->unknown_3);
+			report(out_hnd, "Unknown 4:\t0x%x\n", info2->unknown_4);
+			report(out_hnd, "Unknown 5:\t0x%x\n", info2->unknown_5);
+			report(out_hnd, "Unknown 6:\t0x%x\n", info2->unknown_6);
 
 			break;
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}
@@ -2501,8 +2502,8 @@ void display_sam_unk_ctr(FILE *out_hnd, enum action_type action,
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "\tSAM Domain Info\n"); 
-			fprintf(out_hnd, "\t---------------\n");
+			report(out_hnd, "\tSAM Domain Info\n"); 
+			report(out_hnd, "\t---------------\n");
 
 			break;
 		}
@@ -2522,7 +2523,120 @@ void display_sam_unk_ctr(FILE *out_hnd, enum action_type action,
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
+			break;
+		}
+	}
+}
+
+/****************************************************************************
+sam info level 1 display function
+****************************************************************************/
+void display_sam_info_1(FILE *out_hnd, enum action_type action, 
+		SAM_ENTRY1 *const e1, SAM_STR1 *const s1)
+{
+	if (e1 == NULL)
+	{
+		return;
+	}
+
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			report(out_hnd, "Sam Level 1:\n");
+
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			fstring tmp;
+
+			report(out_hnd, "\tIndex:\t%d\n", e1->user_idx);
+			report(out_hnd, "\tRID:\t0x%x\n", e1->rid_user);
+			report(out_hnd, "\tACB:\t%s\n", 
+			             pwdb_encode_acct_ctrl(e1->acb_info,
+			             NEW_PW_FORMAT_SPACE_PADDED_LEN));
+
+			unistr_to_ascii(tmp, s1->uni_acct_name.buffer, sizeof(tmp)-1);
+			report(out_hnd, "\tAccount Name:\t%s\n", tmp);
+			unistr_to_ascii(tmp, s1->uni_full_name.buffer, sizeof(tmp)-1);
+			report(out_hnd, "\tFull Name:\t%s\n", tmp);
+			unistr_to_ascii(tmp, s1->uni_acct_desc.buffer, sizeof(tmp)-1);
+			report(out_hnd, "\tUser Description:\t%s\n", tmp);
+
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			report(out_hnd, "\n");
+			break;
+		}
+	}
+
+}
+
+/****************************************************************************
+connection info level 1 container display function
+****************************************************************************/
+void display_sam_info_1_ctr(FILE *out_hnd, enum action_type action, 
+				uint32 count, SAM_DISPINFO_1 *const ctr)
+{
+	if (ctr == NULL)
+	{
+		report(out_hnd, "display_sam_info_1_ctr: unavailable due to an internal error\n");
+		return;
+	}
+
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			int i;
+
+			for (i = 0; i < count; i++)
+			{
+				display_sam_info_1(out_hnd, ACTION_HEADER   , &ctr->sam[i], &ctr->str[i]);
+				display_sam_info_1(out_hnd, ACTION_ENUMERATE, &ctr->sam[i], &ctr->str[i]);
+				display_sam_info_1(out_hnd, ACTION_FOOTER   , &ctr->sam[i], &ctr->str[i]);
+			}
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			break;
+		}
+	}
+}
+
+/****************************************************************************
+connection info container display function
+****************************************************************************/
+void display_sam_disp_info_ctr(FILE *out_hnd, enum action_type action, 
+				uint16 level, uint32 count,
+				SAM_DISPINFO_CTR *const ctr)
+{
+	if (ctr == NULL)
+	{
+		report(out_hnd, "display_sam_info_ctr: unavailable due to an internal error\n");
+		return;
+	}
+
+	switch (level)
+	{
+		case 1:
+		{
+			display_sam_info_1_ctr(out_hnd, action, 
+			                   count, ctr->sam.info1);
+			break;
+		}
+		default:
+		{
+			report(out_hnd, "display_sam_info_ctr: Unknown Info Level\n");
 			break;
 		}
 	}
@@ -2543,7 +2657,7 @@ void display_print_info_0(FILE *out_hnd, enum action_type action,
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "Printer Info Level 0:\n");
+			report(out_hnd, "Printer Info Level 0:\n");
 
 			break;
 		}
@@ -2555,15 +2669,15 @@ void display_print_info_0(FILE *out_hnd, enum action_type action,
 			unistr_to_ascii(name, i0->printername.buffer, sizeof(name)-1);
 			unistr_to_ascii(serv, i0->servername .buffer, sizeof(serv)-1);
 
-			fprintf(out_hnd, "\tprinter name:\t%s\n", name);
-			fprintf(out_hnd, "\tserver name:\t%s\n", serv);
-			fprintf(out_hnd, "\t[Other info not displayed]\n");
+			report(out_hnd, "\tprinter name:\t%s\n", name);
+			report(out_hnd, "\tserver name:\t%s\n", serv);
+			report(out_hnd, "\t[Other info not displayed]\n");
 
 			break;
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}
@@ -2585,7 +2699,7 @@ void display_print_info_1(FILE *out_hnd, enum action_type action,
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "Printer Info Level 1:\n");
+			report(out_hnd, "Printer Info Level 1:\n");
 
 			break;
 		}
@@ -2599,16 +2713,16 @@ void display_print_info_1(FILE *out_hnd, enum action_type action,
 			unistr_to_ascii(name, i1->name       .buffer, sizeof(name)-1);
 			unistr_to_ascii(comm, i1->comment    .buffer, sizeof(comm)-1);
 
-			fprintf(out_hnd, "\tflags:\t%d\n", i1->flags);
-			fprintf(out_hnd, "\tname:\t%s\n", name);
-			fprintf(out_hnd, "\tdescription:\t%s\n", desc);
-			fprintf(out_hnd, "\tcomment:\t%s\n", comm);
+			report(out_hnd, "\tflags:\t%d\n", i1->flags);
+			report(out_hnd, "\tname:\t%s\n", name);
+			report(out_hnd, "\tdescription:\t%s\n", desc);
+			report(out_hnd, "\tcomment:\t%s\n", comm);
 
 			break;
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}
@@ -2623,7 +2737,7 @@ void display_printer_info_0_ctr(FILE *out_hnd, enum action_type action,
 {
 	if (ctr == NULL)
 	{
-		fprintf(out_hnd, "display_printer_info_0_ctr: unavailable due to an internal error\n");
+		report(out_hnd, "display_printer_info_0_ctr: unavailable due to an internal error\n");
 		return;
 	}
 
@@ -2660,7 +2774,7 @@ void display_printer_info_1_ctr(FILE *out_hnd, enum action_type action,
 {
 	if (ctr == NULL)
 	{
-		fprintf(out_hnd, "display_printer_info_1_ctr: unavailable due to an internal error\n");
+		report(out_hnd, "display_printer_info_1_ctr: unavailable due to an internal error\n");
 		return;
 	}
 
@@ -2698,7 +2812,7 @@ void display_printer_info_ctr(FILE *out_hnd, enum action_type action,
 {
 	if (ctr == NULL)
 	{
-		fprintf(out_hnd, "display_printer_info_ctr: unavailable due to an internal error\n");
+		report(out_hnd, "display_printer_info_ctr: unavailable due to an internal error\n");
 		return;
 	}
 
@@ -2718,7 +2832,7 @@ void display_printer_info_ctr(FILE *out_hnd, enum action_type action,
 		}
 		default:
 		{
-			fprintf(out_hnd, "display_printer_info_ctr: Unknown Info Level\n");
+			report(out_hnd, "display_printer_info_ctr: Unknown Info Level\n");
 			break;
 		}
 	}
@@ -2739,7 +2853,7 @@ void display_job_info_2(FILE *out_hnd, enum action_type action,
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "Job Info Level 2:\n");
+			report(out_hnd, "Job Info Level 2:\n");
 
 			break;
 		}
@@ -2747,49 +2861,49 @@ void display_job_info_2(FILE *out_hnd, enum action_type action,
 		{
 			fstring tmp;
 
-			fprintf(out_hnd, "\tjob id:\t%d\n", i2->jobid);
+			report(out_hnd, "\tjob id:\t%d\n", i2->jobid);
 			unistr_to_ascii(tmp, i2->printername.buffer, sizeof(tmp)-1);
-			fprintf(out_hnd, "\tprinter name:\t%s\n", tmp);
+			report(out_hnd, "\tprinter name:\t%s\n", tmp);
 			unistr_to_ascii(tmp, i2->machinename.buffer, sizeof(tmp)-1);
-			fprintf(out_hnd, "\tmachine name:\t%s\n", tmp);
+			report(out_hnd, "\tmachine name:\t%s\n", tmp);
 			unistr_to_ascii(tmp, i2->username.buffer, sizeof(tmp)-1);
-			fprintf(out_hnd, "\tusername:\t%s\n", tmp);
+			report(out_hnd, "\tusername:\t%s\n", tmp);
 			unistr_to_ascii(tmp, i2->document.buffer, sizeof(tmp)-1);
-			fprintf(out_hnd, "\tdocument:\t%s\n", tmp);
+			report(out_hnd, "\tdocument:\t%s\n", tmp);
 			unistr_to_ascii(tmp, i2->notifyname.buffer, sizeof(tmp)-1);
-			fprintf(out_hnd, "\tnotify name:\t%s\n", tmp);
+			report(out_hnd, "\tnotify name:\t%s\n", tmp);
 			unistr_to_ascii(tmp, i2->datatype.buffer, sizeof(tmp)-1);
-			fprintf(out_hnd, "\tdata type:\t%s\n", tmp);
+			report(out_hnd, "\tdata type:\t%s\n", tmp);
 			unistr_to_ascii(tmp, i2->printprocessor.buffer, sizeof(tmp)-1);
-			fprintf(out_hnd, "\tprint processor:\t%s\n", tmp);
+			report(out_hnd, "\tprint processor:\t%s\n", tmp);
 			unistr_to_ascii(tmp, i2->parameters.buffer, sizeof(tmp)-1);
-			fprintf(out_hnd, "\tparameters:\t%s\n", tmp);
+			report(out_hnd, "\tparameters:\t%s\n", tmp);
 			unistr_to_ascii(tmp, i2->drivername.buffer, sizeof(tmp)-1);
-			fprintf(out_hnd, "\tdriver name:\t%s\n", tmp);
-			fprintf(out_hnd, "\tDevice Mode:\tNOT DISPLAYED YET\n");
+			report(out_hnd, "\tdriver name:\t%s\n", tmp);
+			report(out_hnd, "\tDevice Mode:\tNOT DISPLAYED YET\n");
 /*
 			DEVICEMODE *devmode;
 */
 			unistr_to_ascii(tmp, i2->text_status.buffer, sizeof(tmp)-1);
-			fprintf(out_hnd, "\ttext status:\t%s\n", tmp);
+			report(out_hnd, "\ttext status:\t%s\n", tmp);
 		/*	SEC_DESC sec_desc;*/
-			fprintf(out_hnd, "\tstatus:\t%d\n", i2->status);
-			fprintf(out_hnd, "\tpriority:\t%d\n", i2->priority);
-			fprintf(out_hnd, "\tposition:\t%d\n", i2->position);
-			fprintf(out_hnd, "\tstarttime:\t%d\n", i2->starttime);
-			fprintf(out_hnd, "\tuntiltime:\t%d\n", i2->untiltime);
-			fprintf(out_hnd, "\ttotalpages:\t%d\n", i2->totalpages);
-			fprintf(out_hnd, "\tsize:\t%d\n", i2->size);
+			report(out_hnd, "\tstatus:\t%d\n", i2->status);
+			report(out_hnd, "\tpriority:\t%d\n", i2->priority);
+			report(out_hnd, "\tposition:\t%d\n", i2->position);
+			report(out_hnd, "\tstarttime:\t%d\n", i2->starttime);
+			report(out_hnd, "\tuntiltime:\t%d\n", i2->untiltime);
+			report(out_hnd, "\ttotalpages:\t%d\n", i2->totalpages);
+			report(out_hnd, "\tsize:\t%d\n", i2->size);
 /*
 			SYSTEMTIME submitted;
 */
-			fprintf(out_hnd, "\tsubmitted:\tNOT DISPLAYED YET\n");
-			fprintf(out_hnd, "\ttimeelapsed:\t%d\n", i2->timeelapsed);
-			fprintf(out_hnd, "\tpagesprinted:\t%d\n", i2->pagesprinted);
+			report(out_hnd, "\tsubmitted:\tNOT DISPLAYED YET\n");
+			report(out_hnd, "\ttimeelapsed:\t%d\n", i2->timeelapsed);
+			report(out_hnd, "\tpagesprinted:\t%d\n", i2->pagesprinted);
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}
@@ -2811,7 +2925,7 @@ void display_job_info_1(FILE *out_hnd, enum action_type action,
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "Job Info Level 1:\n");
+			report(out_hnd, "Job Info Level 1:\n");
 
 			break;
 		}
@@ -2819,34 +2933,34 @@ void display_job_info_1(FILE *out_hnd, enum action_type action,
 		{
 			fstring tmp;
 
-			fprintf(out_hnd, "\tjob id:\t%d\n", i1->jobid);
+			report(out_hnd, "\tjob id:\t%d\n", i1->jobid);
 			unistr_to_ascii(tmp, i1->printername.buffer, sizeof(tmp)-1);
-			fprintf(out_hnd, "\tprinter name:\t%s\n", tmp);
+			report(out_hnd, "\tprinter name:\t%s\n", tmp);
 			unistr_to_ascii(tmp, i1->machinename.buffer, sizeof(tmp)-1);
-			fprintf(out_hnd, "\tmachine name:\t%s\n", tmp);
+			report(out_hnd, "\tmachine name:\t%s\n", tmp);
 			unistr_to_ascii(tmp, i1->username.buffer, sizeof(tmp)-1);
-			fprintf(out_hnd, "\tusername:\t%s\n", tmp);
+			report(out_hnd, "\tusername:\t%s\n", tmp);
 			unistr_to_ascii(tmp, i1->document.buffer, sizeof(tmp)-1);
-			fprintf(out_hnd, "\tdocument:\t%s\n", tmp);
+			report(out_hnd, "\tdocument:\t%s\n", tmp);
 			unistr_to_ascii(tmp, i1->datatype.buffer, sizeof(tmp)-1);
-			fprintf(out_hnd, "\tdata type:\t%s\n", tmp);
+			report(out_hnd, "\tdata type:\t%s\n", tmp);
 			unistr_to_ascii(tmp, i1->text_status.buffer, sizeof(tmp)-1);
-			fprintf(out_hnd, "\ttext status:\t%s\n", tmp);
-			fprintf(out_hnd, "\tstatus:\t%d\n", i1->status);
-			fprintf(out_hnd, "\tpriority:\t%d\n", i1->priority);
-			fprintf(out_hnd, "\tposition:\t%d\n", i1->position);
-			fprintf(out_hnd, "\ttotalpages:\t%d\n", i1->totalpages);
+			report(out_hnd, "\ttext status:\t%s\n", tmp);
+			report(out_hnd, "\tstatus:\t%d\n", i1->status);
+			report(out_hnd, "\tpriority:\t%d\n", i1->priority);
+			report(out_hnd, "\tposition:\t%d\n", i1->position);
+			report(out_hnd, "\ttotalpages:\t%d\n", i1->totalpages);
 /*
 			SYSTEMTIME submitted;
 */
-			fprintf(out_hnd, "\tsubmitted:\tNOT DISPLAYED YET\n");
-			fprintf(out_hnd, "\tpagesprinted:\t%d\n", i1->pagesprinted);
+			report(out_hnd, "\tsubmitted:\tNOT DISPLAYED YET\n");
+			report(out_hnd, "\tpagesprinted:\t%d\n", i1->pagesprinted);
 
 			break;
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}
@@ -2861,7 +2975,7 @@ void display_job_info_2_ctr(FILE *out_hnd, enum action_type action,
 {
 	if (ctr == NULL)
 	{
-		fprintf(out_hnd, "display_job_info_2_ctr: unavailable due to an internal error\n");
+		report(out_hnd, "display_job_info_2_ctr: unavailable due to an internal error\n");
 		return;
 	}
 
@@ -2898,7 +3012,7 @@ void display_job_info_1_ctr(FILE *out_hnd, enum action_type action,
 {
 	if (ctr == NULL)
 	{
-		fprintf(out_hnd, "display_job_info_1_ctr: unavailable due to an internal error\n");
+		report(out_hnd, "display_job_info_1_ctr: unavailable due to an internal error\n");
 		return;
 	}
 
@@ -2936,7 +3050,7 @@ void display_job_info_ctr(FILE *out_hnd, enum action_type action,
 {
 	if (ctr == NULL)
 	{
-		fprintf(out_hnd, "display_job_info_ctr: unavailable due to an internal error\n");
+		report(out_hnd, "display_job_info_ctr: unavailable due to an internal error\n");
 		return;
 	}
 
@@ -2956,7 +3070,7 @@ void display_job_info_ctr(FILE *out_hnd, enum action_type action,
 		}
 		default:
 		{
-			fprintf(out_hnd, "display_job_info_ctr: Unknown Info Level\n");
+			report(out_hnd, "display_job_info_ctr: Unknown Info Level\n");
 			break;
 		}
 	}
@@ -2972,8 +3086,8 @@ void display_job_info_ctr(FILE *out_hnd, enum action_type action,
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "\t\n"); 
-			fprintf(out_hnd, "\t-------------------\n");
+			report(out_hnd, "\t\n"); 
+			report(out_hnd, "\t-------------------\n");
 
 			break;
 		}
@@ -2983,7 +3097,7 @@ void display_job_info_ctr(FILE *out_hnd, enum action_type action,
 		}
 		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "\n");
+			report(out_hnd, "\n");
 			break;
 		}
 	}

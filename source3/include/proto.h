@@ -481,8 +481,6 @@ int set_maxfiles(int requested_max);
 void reg_get_subkey(char *full_keyname, char *key_name, char *subkey_name);
 BOOL reg_split_key(const char *full_keyname, uint32 *reg_type, char *key_name);
 BOOL become_user_permanently(uid_t uid, gid_t gid);
-BOOL resolve_srv_name(const char* srv_name, fstring dest_host,
-				struct in_addr *ip);
 
 /*The following definitions come from  lib/util_array.c  */
 
@@ -805,6 +803,8 @@ FILE *startlmhosts(char *fname);
 BOOL getlmhostsent( FILE *fp, pstring name, int *name_type, struct in_addr *ipaddr);
 void endlmhosts(FILE *fp);
 BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type);
+BOOL resolve_srv_name(const char* srv_name, fstring dest_host,
+				struct in_addr *ip);
 BOOL find_master_ip(char *group, struct in_addr *master_ip);
 
 /*The following definitions come from  libsmb/nmblib.c  */
@@ -1776,7 +1776,7 @@ BOOL at_del_job(struct cli_state *cli, uint16 fnum,
 		char *server_name, uint32 min_jobid, uint32 max_jobid);
 BOOL at_enum_jobs(struct cli_state *cli, uint16 fnum, 
 		  char *server_name, uint32 *num_jobs,
-		  AT_ENUM_INFO *jobs, fstring *commands);
+		  AT_ENUM_INFO *jobs, char ***commands);
 BOOL at_query_job(struct cli_state *cli, uint16 fnum, char *server_name,
 		  uint32 jobid, AT_JOB_INFO *job, fstring command);
 
@@ -2293,6 +2293,11 @@ BOOL get_samr_query_aliasinfo(
 BOOL msrpc_sam_create_dom_user(const char* srv_name, DOM_SID *sid1,
 				char *acct_name, uint16 acb_info,
 				uint32 *rid);
+BOOL msrpc_sam_query_dispinfo(const char* srv_name, const char* domain,
+				DOM_SID *sid1,
+				uint16 switch_value,
+				uint32 *num_entries, SAM_DISPINFO_CTR *ctr,
+				DISP_FN(disp_fn));
 
 /*The following definitions come from  rpc_parse/parse_at.c  */
 
@@ -3769,7 +3774,8 @@ void display_query_svc_cfg(FILE *out_hnd, enum action_type action,
 void display_svc_info(FILE *out_hnd, enum action_type action,
 				const ENUM_SRVC_STATUS *const svc);
 void display_at_enum_info(FILE *out_hnd, enum action_type action, 
-		     uint32 num_jobs, const AT_ENUM_INFO *const jobs, const fstring *const commands);
+				uint32 num_jobs, const AT_ENUM_INFO *const jobs,
+				char *const *const commands);
 void display_at_job_info(FILE *out_hnd, enum action_type action, 
 		     AT_JOB_INFO *const job, fstring command);
 void display_eventlog_eventrecord(FILE *out_hnd, enum action_type action, EVENTLOGRECORD *const ev);
@@ -3784,6 +3790,13 @@ void display_sam_unk_info_2(FILE *out_hnd, enum action_type action,
 				SAM_UNK_INFO_2 *const info2);
 void display_sam_unk_ctr(FILE *out_hnd, enum action_type action, 
 				uint32 switch_value, SAM_UNK_CTR *const ctr);
+void display_sam_info_1(FILE *out_hnd, enum action_type action, 
+		SAM_ENTRY1 *const e1, SAM_STR1 *const s1);
+void display_sam_info_1_ctr(FILE *out_hnd, enum action_type action, 
+				uint32 count, SAM_DISPINFO_1 *const ctr);
+void display_sam_disp_info_ctr(FILE *out_hnd, enum action_type action, 
+				uint16 level, uint32 count,
+				SAM_DISPINFO_CTR *const ctr);
 void display_print_info_0(FILE *out_hnd, enum action_type action, 
 		PRINTER_INFO_0 *const i0);
 void display_print_info_1(FILE *out_hnd, enum action_type action, 

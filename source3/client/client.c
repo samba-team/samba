@@ -1846,8 +1846,8 @@ struct cli_state *do_connect(char *server, char *share, int smb_port)
 	make_nmb_name(&called , server, name_type, "");
 	make_nmb_name(&stupid_smbserver_called , "*SMBSERVER", 0x20, scope);
 
-	fstrcpy(smb_cli->user_name, username);
-	fstrcpy(smb_cli->domain, workgroup);
+	fstrcpy(smb_cli->usr.user_name, username);
+	fstrcpy(smb_cli->usr.domain, workgroup);
 
 	ip = ipzero;
 	if (have_ip) ip = dest_ip;
@@ -1862,17 +1862,17 @@ struct cli_state *do_connect(char *server, char *share, int smb_port)
 	{
 		if (password[0] == 0)
 		{
-			pwd_set_nullpwd(&(smb_cli->pwd));
+			pwd_set_nullpwd(&(smb_cli->usr.pwd));
 		}
 		else
 		{
 			/* generate 16 byte hashes */
-			pwd_make_lm_nt_16(&(smb_cli->pwd), password);
+			pwd_make_lm_nt_16(&(smb_cli->usr.pwd), password);
 		}
 	}
 	else 
 	{
-		pwd_read(&(smb_cli->pwd), "Password:", True);
+		pwd_read(&(smb_cli->usr.pwd), "Password:", True);
 	}
 
 	/* paranoia: destroy the local copy of the password */
