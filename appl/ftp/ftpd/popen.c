@@ -80,7 +80,7 @@ ftp_rooted(const char *path)
     static char newpath[MaxPathLen];
     struct passwd *pwd;
     if(!home[0])
-	if((pwd = getpwnam("ftp")))
+	if((pwd = k_getpwnam("ftp")))
 	    strcpy(home, pwd->pw_dir);
     sprintf(newpath, "%s/%s", home, path);
     if(access(newpath, X_OK))
@@ -96,6 +96,7 @@ ftpd_popen(char *program, char *type, int do_stderr, int no_glob)
 	FILE *iop;
 	int argc, gargc, pdes[2], pid;
 	char **pop, *argv[100], *gargv[1000];
+	char *foo;
 
 	if (strcmp(type, "r") && strcmp(type, "w"))
 		return (NULL);
@@ -117,7 +118,7 @@ ftpd_popen(char *program, char *type, int do_stderr, int no_glob)
 
 	/* break up string into pieces */
 	for (argc = 0, cp = program;; cp = NULL)
-		if (!(argv[argc++] = strtok(cp, " \t\n")))
+		if (!(argv[argc++] = strtok_r(cp, " \t\n", &foo)))
 			break;
 
 	gargv[0] = (char*)ftp_rooted(argv[0]);

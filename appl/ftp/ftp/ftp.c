@@ -170,12 +170,11 @@ login(char *host)
 	int n, aflag = 0;
 
 	char *myname = NULL;
-	struct passwd *pw = getpwuid(getuid());
+	struct passwd *pw = k_getpwuid(getuid());
 	if (pw != NULL)
 	    myname = pw->pw_name;
 
 	user = pass = acct = 0;
-	
 
 	if(do_klogin(host))
 	    printf("\n*** Using plaintext user and password ***\n\n");

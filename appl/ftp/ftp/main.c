@@ -100,7 +100,7 @@ main(int argc, char **argv)
 	/*
 	 * Set up the home directory in case we're globbing.
 	 */
-	pw = getpwuid(getuid());
+	pw = k_getpwuid(getuid());
 	if (pw != NULL) {
 		home = homedir;
 		strcpy(home, pw->pw_dir);

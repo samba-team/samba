@@ -74,7 +74,7 @@ renew (int argc, char **argv, OtpAlgorithm *alg)
   if (argc != 2)
     usage();
 
-  pwd = getpwuid (getuid ());
+  pwd = k_getpwuid (getuid ());
   if (pwd == NULL) {
     fprintf(stderr, "%s: You don't exist\n", prog);
     return 1;
@@ -127,7 +127,7 @@ set (int argc, char **argv, OtpAlgorithm *alg)
   if (argc != 2)
     usage();
 
-  pwd = getpwuid (getuid ());
+  pwd = k_getpwuid (getuid ());
   if (pwd == NULL) {
     fprintf(stderr, "%s: You don't exist\n", prog);
     return 1;

@@ -254,9 +254,13 @@ parse_auth_level(char *str)
 {
     char *p;
     int ret = 0;
-    p = strtok(str, ",");
-    while(p){
-	if(strcmp(p, "user") == 0) ;
+    char *foo;
+
+    for(p = strtok_r(str, ",", &foo);
+	p;
+	p = strtok_r(NULL, ",", &foo)) {
+	if(strcmp(p, "user") == 0)
+	    ;
 	else if(strcmp(p, "otp") == 0)
 	    ret |= AUTH_PLAIN|AUTH_OTP;
 	else if(strcmp(p, "ftp") == 0 ||
@@ -268,7 +272,6 @@ parse_auth_level(char *str)
 	    ret |= AUTH_PLAIN|AUTH_FTP;
 	else
 	    warnx("bad value for -a");
-	p = strtok(NULL, ",");
     }
     return ret;	    
 }
