@@ -56,10 +56,6 @@ int trans_num = 0;
 */
 int case_default = CASE_LOWER;
 
-
-/* size of reads during a direct file to file transfer */
-int ReadSize = 16*1024;
-
 pstring debugf = "/tmp/log.samba";
 int syslog_level;
 
@@ -1951,7 +1947,6 @@ int read_with_timeout(int fd,char *buf,int mincnt,int maxcnt,long time_out,BOOL 
       
       /* Check if error */
       if(selrtn == -1) {
-	errno = EBADF;
 	return -1;
       }
       
@@ -1974,7 +1969,6 @@ int read_with_timeout(int fd,char *buf,int mincnt,int maxcnt,long time_out,BOOL 
 	/* force a particular error number for
 	   portability */
 	DEBUG(5,("read gave error %s\n",strerror(errno)));
-	errno = EBADF;
 	return -1;
       }
       
@@ -2068,10 +2062,6 @@ int read_data(int fd,char *buffer,int N)
     {
       ret = read(fd,buffer + total,N - total);
 
-      /* this is for portability */
-      if (ret < 0)
-	errno = EBADF;
-
       if (ret <= 0)
 	return total;
       total += ret;
@@ -2101,142 +2091,28 @@ int write_data(int fd,char *buffer,int N)
 }
 
 
-/* variables used by the read prediction module */
-int rp_fd = -1;
-int rp_offset = 0;
-int rp_length = 0;
-int rp_alloced = 0;
-int rp_predict_fd = -1;
-int rp_predict_offset = 0;
-int rp_predict_length = 0;
-int rp_timeout = 5;
-time_t rp_time = 0;
-char *rp_buffer = NULL;
-BOOL predict_skip=False;
-time_t smb_last_time=(time_t)0;
-
-/****************************************************************************
-handle read prediction on a file
-****************************************************************************/
-int read_predict(int fd,int offset,char *buf,char **ptr,int num)
-{
-  int ret = 0;
-  int possible = rp_length - (offset - rp_offset);
-
-  possible = MIN(possible,num);
-
-  /* give data if possible */
-  if (fd == rp_fd && 
-      offset >= rp_offset && 
-      possible>0 &&
-      smb_last_time-rp_time < rp_timeout)
-    {
-      ret = possible;
-      if (buf)
-	memcpy(buf,rp_buffer + (offset-rp_offset),possible);
-      else
-	*ptr = rp_buffer + (offset-rp_offset);
-      DEBUG(5,("read-prediction gave %d bytes of %d\n",ret,num));
-    }
-
-  if (ret == num) {
-    predict_skip = True;
-  } else {
-    predict_skip = False;
-
-    /* prepare the next prediction */
-    rp_predict_fd = fd;
-    rp_predict_offset = offset + num;
-    rp_predict_length = num;
-  }
-
-  if (ret < 0) ret = 0;
-
-  return(ret);
-}
-
-/****************************************************************************
-pre-read some data
-****************************************************************************/
-void do_read_prediction()
-{
-  if (predict_skip) return;
-
-  if (rp_predict_fd == -1) 
-    return;
-
-  rp_fd = rp_predict_fd;
-  rp_offset = rp_predict_offset;
-  rp_length = 0;
-
-  rp_predict_fd = -1;
-
-  rp_predict_length = MIN(rp_predict_length,2*ReadSize);
-  rp_predict_length = MAX(rp_predict_length,1024);
-  rp_offset = (rp_offset/1024)*1024;
-  rp_predict_length = (rp_predict_length/1024)*1024;
-
-  if (rp_predict_length > rp_alloced)
-    {
-      rp_buffer = Realloc(rp_buffer,rp_predict_length);
-      rp_alloced = rp_predict_length;
-      if (!rp_buffer)
-	{
-	  DEBUG(0,("can't allocate read-prediction buffer\n"));
-	  rp_predict_fd = -1;
-	  rp_fd = -1;
-	  rp_alloced = 0;
-	  return;
-	}
-    }
-
-  if (lseek(rp_fd,rp_offset,SEEK_SET) != rp_offset) {
-    rp_fd = -1;
-    rp_predict_fd = -1;
-    return;
-  }
-
-  rp_length = read(rp_fd,rp_buffer,rp_predict_length);
-  rp_time = time(NULL);
-  if (rp_length < 0)
-    rp_length = 0;
-}
-
-/****************************************************************************
-invalidate read-prediction on a fd
-****************************************************************************/
-void invalidate_read_prediction(int fd)
-{
- if (rp_fd == fd) 
-   rp_fd = -1;
- if (rp_predict_fd == fd)
-   rp_predict_fd = -1;
-}
-
-
 /****************************************************************************
 transfer some data between two fd's
 ****************************************************************************/
 int transfer_file(int infd,int outfd,int n,char *header,int headlen,int align)
 {
   static char *buf=NULL;  
+  static int size=0;
   char *buf1,*abuf;
-  static int size = 0;
   int total = 0;
 
   DEBUG(4,("transfer_file %d  (head=%d) called\n",n,headlen));
 
-  if ((size < ReadSize) && buf) {
-    free(buf);
-    buf = NULL;
+  if (size == 0) {
+    size = lp_readsize();
+    size = MAX(size,1024);
   }
-
-  size = MAX(ReadSize,1024);
 
   while (!buf && size>0) {
     buf = (char *)Realloc(buf,size+8);
     if (!buf) size /= 2;
   }
+
   if (!buf) {
     DEBUG(0,("Can't allocate transfer buffer!\n"));
     exit(1);

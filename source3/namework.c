@@ -270,16 +270,19 @@ void update_from_reg(char *name, int type, struct in_addr ip)
 /****************************************************************************
   add the default workgroup into my domain
   **************************************************************************/
-void add_my_domains(void)
+void add_my_domains(char *group)
 {
-  /* add or find domain on our local subnet, in the default workgroup */
-  
-  if (*lp_workgroup() != '*')
-    {
-      add_domain_entry(*iface_bcast(ipzero),
-		       *iface_nmask(ipzero),
-		       lp_workgroup(), True);
-    }
+  int n,i;
+  struct in_addr *ip;
+
+  if (*group == '*') return;
+
+  n = iface_count();
+  for (i=0;i<n;i++) {
+    ip = iface_n_ip(i);
+    if (!ip) return;
+    add_domain_entry(*iface_bcast(*ip),*iface_nmask(*ip),lp_workgroup(),True);
+  }
 }
 
 
@@ -728,7 +731,7 @@ static void process_reset_browser(struct packet_struct *p,char *buf)
 	  struct work_record *work;
 	  for (work=d->workgrouplist;work;work=remove_workgroup(d,work));
 	}
-      add_my_domains();
+      add_my_domains(lp_workgroup());
     }
   
   /* stop browsing altogether. i don't think this is a good idea! */

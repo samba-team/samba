@@ -460,6 +460,8 @@ struct domain_record *add_domain_entry(struct in_addr source_ip,
     {
       struct work_record *w = find_workgroupstruct(d, name, add);
       
+      if (!w) return NULL;
+
       /* add WORKGROUP(1e) and WORKGROUP(00) entries into name database
 	 or register with WINS server, if it's our workgroup */
       if (strequal(lp_workgroup(), name))
@@ -586,7 +588,8 @@ struct server_record *add_server_entry(struct domain_record *d,
   if (ismybcast(d->bcast_ip) &&
       strequal(lp_workgroup(),work->work_group))
     {
-      servertype |= SV_TYPE_LOCAL_LIST_ONLY;
+      if (servertype)
+	servertype |= SV_TYPE_LOCAL_LIST_ONLY;
     }
   else
     {
@@ -599,6 +602,9 @@ struct server_record *add_server_entry(struct domain_record *d,
   strupper(s->serv.name);
   s->serv.type  = servertype;
   s->death_time = ttl?time(NULL)+ttl*3:0;
+
+  if (servertype == 0)
+    s->death_time = time(NULL)-1;
   
   /* for a domain entry, the comment field refers to the server name */
   

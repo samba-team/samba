@@ -178,8 +178,6 @@ static void become_master(struct domain_record *d, struct work_record *work)
       
       /* add domain master and domain member names or register with WINS */
       add_name_entry(work->work_group,0x1b,NB_ACTIVE         );
-      add_name_entry(work->work_group,0x1c,NB_ACTIVE|NB_GROUP);
-      
       work->ServerType |= SV_TYPE_DOMAIN_MASTER;
       
       if (lp_domain_logons())
@@ -215,7 +213,6 @@ void become_nonmaster(struct domain_record *d, struct work_record *work)
   work->ElectionCriterion &= ~0x4;
   
   remove_name_entry(work->work_group,0x1b);
-  remove_name_entry(work->work_group,0x1c);
   remove_name_entry(work->work_group,0x1d);
   remove_name_entry(MSBROWSE        ,0x01);
 }
