@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -70,13 +70,13 @@ md4_tests (void)
 
   printf ("md4... ");
   for (t = tests; t->str; ++t) {
-    struct md4 md4;
+    MD4_CTX md4;
     unsigned char res[16];
     int i;
 
-    md4_init (&md4);
-    md4_update (&md4, (unsigned char *)t->str, strlen(t->str));
-    md4_finito (&md4, res);
+    MD4Init (&md4);
+    MD4Update (&md4, (unsigned char *)t->str, strlen(t->str));
+    MD4Final (res, &md4);
     if (memcmp (res, t->hash, 16) != 0) {
       printf ("MD4(\"%s\") failed\n", t->str);
       printf("should be: ");
@@ -113,12 +113,12 @@ md5_tests (void)
 
   printf ("md5... ");
   for (t = tests; t->str; ++t) {
-    struct md5 md5;
+    MD5_CTX md5;
     unsigned char res[16];
 
-    md5_init (&md5);
-    md5_update (&md5, (unsigned char *)t->str, strlen(t->str));
-    md5_finito (&md5, res);
+    MD5Init (&md5);
+    MD5Update (&md5, (unsigned char *)t->str, strlen(t->str));
+    MD5Final (res, &md5);
     if (memcmp (res, t->hash, 16) != 0) {
       int i;
 
@@ -139,7 +139,7 @@ md5_tests (void)
 
 static
 int
-sha_tests (void)
+sha1_tests (void)
 {
   struct test {
     char *str;
@@ -157,12 +157,12 @@ sha_tests (void)
 
   printf ("sha... ");
   for (t = tests; t->str; ++t) {
-    struct sha sha;
+    SHA1_CTX sha;
     unsigned char res[20];
 
-    sha_init (&sha);
-    sha_update (&sha, (unsigned char *)t->str, strlen(t->str));
-    sha_finito (&sha, res);
+    SHA1Init (&sha);
+    SHA1Update (&sha, (unsigned char *)t->str, strlen(t->str));
+    SHA1Final (res, &sha);
     if (memcmp (res, t->hash, 20) != 0) {
       int i;
 
@@ -184,5 +184,5 @@ sha_tests (void)
 int
 main (void)
 {
-  return md4_tests() + md5_tests() + sha_tests();
+  return md4_tests() + md5_tests() + sha1_tests();
 }
