@@ -295,7 +295,7 @@ void SMBsesskeygen_ntv1(const uchar kr[16],
 #endif
 }
 
-DATA_BLOB NTLMv2_generate_response(uchar ntlm_v2_hash[16],
+static DATA_BLOB NTLMv2_generate_response(uchar ntlm_v2_hash[16],
 				   DATA_BLOB server_chal, size_t client_chal_length)
 {
 	uchar ntlmv2_response[16];
@@ -415,102 +415,4 @@ BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
 #endif
 	
 	return True;
-}
-
-/***********************************************************
- SMB signing - setup the MAC key.
-************************************************************/
-
-void cli_calculate_mac_key(struct cli_state *cli, const uchar user_session_key[16], const DATA_BLOB response)
-{
-	
-	memcpy(&cli->sign_info.mac_key[0], user_session_key, 16);
-	memcpy(&cli->sign_info.mac_key[16],response.data, MIN(response.length, 40 - 16));
-	cli->sign_info.mac_key_len = MIN(response.length + 16, 40);
-	cli->sign_info.use_smb_signing = True;
-
-	/* These calls are INCONPATIBLE with SMB signing */
-	cli->readbraw_supported = False;
-	cli->writebraw_supported = False;
-
-	/* Reset the sequence number in case we had a previous (aborted) attempt */
-	cli->sign_info.send_seq_num = 2;
-}
-
-/***********************************************************
- SMB signing - calculate a MAC to send.
-************************************************************/
-
-void cli_caclulate_sign_mac(struct cli_state *cli)
-{
-	unsigned char calc_md5_mac[16];
-	struct MD5Context md5_ctx;
-
-	if (cli->sign_info.temp_smb_signing) {
-		memcpy(&cli->outbuf[smb_ss_field], "SignRequest", 8);
-		cli->sign_info.temp_smb_signing = False;
-		return;
-	}
-
-	if (!cli->sign_info.use_smb_signing) {
-		return;
-	}
-
-	/*
-	 * Firstly put the sequence number into the first 4 bytes.
-	 * and zero out the next 4 bytes.
-	 */
-	SIVAL(cli->outbuf, smb_ss_field, cli->sign_info.send_seq_num);
-	SIVAL(cli->outbuf, smb_ss_field + 4, 0);
-
-	/* Calculate the 16 byte MAC and place first 8 bytes into the field. */
-	MD5Init(&md5_ctx);
-	MD5Update(&md5_ctx, cli->sign_info.mac_key, cli->sign_info.mac_key_len);
-	MD5Update(&md5_ctx, cli->outbuf + 4, smb_len(cli->outbuf));
-	MD5Final(calc_md5_mac, &md5_ctx);
-
-	memcpy(&cli->outbuf[smb_ss_field], calc_md5_mac, 8);
-
-/*	cli->outbuf[smb_ss_field+2]=0; 
-	Uncomment this to test if the remote server actually verifies signitures...*/
-	cli->sign_info.send_seq_num++;
-	cli->sign_info.reply_seq_num = cli->sign_info.send_seq_num;
-	cli->sign_info.send_seq_num++;
-}
-
-/***********************************************************
- SMB signing - check a MAC sent by server.
-************************************************************/
-
-BOOL cli_check_sign_mac(struct cli_state *cli)
-{
-	unsigned char calc_md5_mac[16];
-	unsigned char server_sent_mac[8];
-	struct MD5Context md5_ctx;
-
-	if (cli->sign_info.temp_smb_signing) {
-		return True;
-	}
-
-	if (!cli->sign_info.use_smb_signing) {
-		return True;
-	}
-
-	/*
-	 * Firstly put the sequence number into the first 4 bytes.
-	 * and zero out the next 4 bytes.
-	 */
-
-	memcpy(server_sent_mac, &cli->inbuf[smb_ss_field], sizeof(server_sent_mac));
-
-	SIVAL(cli->inbuf, smb_ss_field, cli->sign_info.reply_seq_num);
-	SIVAL(cli->inbuf, smb_ss_field + 4, 0);
-
-	/* Calculate the 16 byte MAC and place first 8 bytes into the field. */
-	MD5Init(&md5_ctx);
-	MD5Update(&md5_ctx, cli->sign_info.mac_key, cli->sign_info.mac_key_len);
-	MD5Update(&md5_ctx, cli->inbuf + 4, smb_len(cli->inbuf));
-	MD5Final(calc_md5_mac, &md5_ctx);
-
-	return (memcmp(server_sent_mac, calc_md5_mac, 8) == 0);
 }
