@@ -1483,7 +1483,6 @@ BOOL is_trusted_domain(const char* dom_name)
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	SAM_TRUST_PASSWD *trust = NULL;
 	DOM_SID dom_sid;
-	BOOL ret;
 
 	/* no trusted domains for a standalone server */
 	if ( lp_server_role() == ROLE_STANDALONE )
@@ -1504,7 +1503,7 @@ BOOL is_trusted_domain(const char* dom_name)
 			dom_name ));
 		nt_status = pdb_gettrustpwnam(trust, dom_name);
 		unbecome_root();
-		if (ret) {
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			trust->free_fn(&trust);
 			return True;
 		}
