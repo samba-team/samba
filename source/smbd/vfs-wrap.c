@@ -252,7 +252,11 @@ static int copy_reg(const char *source, const char *dest)
 	 * so do the chmod last.
 	 */
 
+#if defined(HAVE_FCHMOD)
 	if (fchmod (ofd, source_stats.st_mode & 07777))
+#else
+	if (chmod (dest, source_stats.st_mode & 07777))
+#endif
 		goto err;
 
 	if (close (ifd) == -1)
@@ -404,7 +408,12 @@ int vfswrap_fchmod(files_struct *fsp, int fd, mode_t mode)
 		errno = saved_errno;
 	}
 
+#if defined(HAVE_FCHMOD)
 	result = fchmod(fd, mode);
+#else
+	result = -1;
+	errno = ENOSYS;
+#endif
 	END_PROFILE(syscall_fchmod);
 	return result;
 }
