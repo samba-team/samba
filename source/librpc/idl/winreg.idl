@@ -231,12 +231,9 @@
 		[in,ref] policy_handle *handle,
 		[in] winreg_String value_name,
 		[in,out] uint32 *type,
-		[in] uint32 *offered,
-		[in] uint32 unknown1,
-		[in] uint32 unknown2,
-		[out] EnumValueOut *value_out,
-		[in,out] uint32 *value_len1,
-		[in,out] uint32 *value_len2
+		[in,out,size_is(*size),length_is(*length)] uint8 *data,
+		[in,out] uint32 *size,
+		[in,out] uint32 *length
 	);
 
 	/******************/
@@ -262,19 +259,14 @@
 		[in] sec_desc_buf *sec_desc
 	);
 
-	typedef struct {
-		uint32 max_len;
-		[length_is(buf_max_len)] uint8 *buffer;
-		uint32 len;
-	} winreg_Value;
-
 	/******************/
 	/* Function: 0x16 */
 	WERROR winreg_SetValue(
-		[in,ref] policy_handle *handle,
-		[in] winreg_String name,
-		[in] uint32 type,
-		[in] winreg_Value value
+		[in,ref]           policy_handle *handle,
+		[in]               winreg_String name,
+		[in]               uint32 type,
+		[in,size_is(size)] uint8  *data,
+		[in]               uint32 size
 	);
 
 	/******************/
