@@ -1456,7 +1456,6 @@ tgs_make_reply(KDC_REQ_BODY *b,
     
     rep.pvno = 5;
     rep.msg_type = krb_tgs_rep;
-    rep.padata = NULL;
 
     et.authtime = tgt->authtime;
     fix_time(&b->till);
@@ -1566,7 +1565,8 @@ tgs_make_reply(KDC_REQ_BODY *b,
 	    
     ek.key = et.key;
     /* MIT must have at least one last_req */
-    ALLOC_SEQ(&ek.last_req, 1);
+    ek.last_req.len = 1;
+    ek.last_req.val = calloc(1, sizeof(*ek.last_req.val));
     ek.nonce = b->nonce;
     ek.flags = et.flags;
     ek.authtime = et.authtime;
@@ -1576,45 +1576,6 @@ tgs_make_reply(KDC_REQ_BODY *b,
     ek.srealm = rep.ticket.realm;
     ek.sname = rep.ticket.sname;
 	    
-    if (referral) {
-	krb5_crypto crypto;
-	EncryptedData enc;
-	size_t len;
-
-	ALLOC(rep.padata);
-	ALLOC_SEQ(rep.padata, 1);
-	rep.padata->val[0].padata_type = KRB5_PADATA_SERVER_REFERRAL;
-
-	ret = krb5_crypto_init(context, &et.key, 0, &crypto);
-	if (ret) {
-	    kdc_log(0, "krb5_crypto_init failed: %s",
-		    krb5_get_err_text(context, ret));
-	    goto out;
-	}
-	ret = krb5_encrypt_EncryptedData(context,
-					 crypto,
-					 KRB5_KU_PA_SERVER_REFERRAL,
-					 referral->data,
-					 referral->length,
-					 0,
-					 &enc);
-	krb5_crypto_destroy(context, crypto);
-	if (ret) {
-	    kdc_log(0, "referral krb5_encrypt_EncryptedData: %s",
-		    krb5_get_err_text(context, ret));
-	    goto out;
-	}
-	ASN1_MALLOC_ENCODE(EncryptedData, rep.padata->val[0].padata_value.data,
-			   rep.padata->val[0].padata_value.length, &enc,
-			   &len, ret);
-	free_EncryptedData(&enc);
-	if (ret) {
-	    kdc_log(0, "failed encoding EncryptedData for referral: %s",
-		    krb5_get_err_text(context, ret));
-	    goto out;
-	}
-    }
-
     /* It is somewhat unclear where the etype in the following
        encryption should come from. What we have is a session
        key in the passed tgt, and a list of preferred etypes
@@ -1778,9 +1739,6 @@ tgs_rep2(KDC_REQ_BODY *b,
     krb5_principal cp = NULL;
     krb5_principal sp = NULL;
     AuthorizationData *auth_data = NULL;
-
-    krb5_boolean did_referral = FALSE;
-    krb5_data *referral = NULL;
 
     *csec  = NULL;
     *cusec = NULL;
@@ -2067,7 +2025,6 @@ tgs_rep2(KDC_REQ_BODY *b,
 		    if (ret)
 			goto out;
 		    krb5_free_host_realm(context, realms);
-		    did_referral = TRUE;
 		    goto server_lookup;
 		}
 		krb5_free_host_realm(context, realms);
@@ -2126,43 +2083,10 @@ tgs_rep2(KDC_REQ_BODY *b,
 	    goto out;
 	}
 	
-	if (did_referral) {
-	    KrbServerReferralData r;
-	    size_t len;
-
-	    r.referred_realm = &sp->realm;
-	    r.true_principal_name = NULL;
-
-	    ALLOC(referral);
-	    if (referral == NULL) {
-		kdc_log(0, "malloc: out of memory");
-		e_text = "malloc: out of memory";
-		ret = ENOMEM;
-		goto out;
-	    }
-	    ASN1_MALLOC_ENCODE(KrbServerReferralData, referral->data, 
-			       referral->length, &r, &len, ret);
-	    if (ret) {
-		kdc_log(0, "failed to encode referral: %s", 
-			krb5_get_err_text(context, ret));
-		e_text = "failed to encode referral";
-		goto out;
-	    }
-	    if (len != referral->length) {
-		krb5_free_data(context, referral);
-		kdc_log(0, "Internal error in ASN.1 encoder");
-		referral = NULL;
-		e_text = "KDC internal error";
-		ret = KRB5KRB_ERR_GENERIC;
-		goto out2;
-	    }
-	}
-
 	ret = tgs_make_reply(b, 
 			     tgt, 
 			     b->kdc_options.enc_tkt_in_skey ? &adtkt : NULL, 
 			     auth_data,
-			     referral,
 			     server, 
 			     client, 
 			     cp, 
@@ -2179,8 +2103,6 @@ tgs_rep2(KDC_REQ_BODY *b,
 	    free_ent(server);
 	if(client)
 	    free_ent(client);
-	if (referral)
-	    krb5_free_data(context, referral);
     }
 out2:
     if(ret) {
