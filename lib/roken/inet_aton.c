@@ -11,10 +11,9 @@
 
 RCSID("$Id$");
 
-
 /* Minimal implementation of inet_aton. Doesn't handle hex numbers. */
 
-int inet_aton(char *cp, struct in_addr *adr)
+int inet_aton(const char *cp, struct in_addr *adr)
 {
   unsigned int a, b, c, d;
 
