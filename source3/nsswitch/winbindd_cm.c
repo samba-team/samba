@@ -415,21 +415,19 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 static BOOL connection_ok(struct winbindd_cm_conn *conn)
 {
 	if (!conn) {
-		smb_panic("Invalid paramater passed to conneciton_ok():  conn was NULL!\n");
+		smb_panic("Invalid parameter passed to connection_ok():  conn was NULL!\n");
 		return False;
 	}
 
 	if (!conn->cli) {
-		DEBUG(0, ("Connection to %s for domain %s (pipe %s) has NULL conn->cli!\n", 
+		DEBUG(3, ("Connection to %s for domain %s (pipe %s) has NULL conn->cli!\n", 
 			  conn->controller, conn->domain, conn->pipe_name));
-		smb_panic("connection_ok: conn->cli was null!");
 		return False;
 	}
 
 	if (!conn->cli->initialised) {
-		DEBUG(0, ("Connection to %s for domain %s (pipe %s) was never initialised!\n", 
+		DEBUG(3, ("Connection to %s for domain %s (pipe %s) was never initialised!\n", 
 			  conn->controller, conn->domain, conn->pipe_name));
-		smb_panic("connection_ok: conn->cli->initialised is False!");
 		return False;
 	}
 
@@ -442,13 +440,13 @@ static BOOL connection_ok(struct winbindd_cm_conn *conn)
 	return True;
 }
 
-/* Get a connection to the remote DC and open the pipe.  If there is already a connection, use that */
+/* Search the cache for a connection. If there is a broken one,
+   shut it down properly and return NULL. */
 
-static NTSTATUS get_connection_from_cache(const char *domain, const char *pipe_name,
-		struct winbindd_cm_conn **conn_out) 
+static void find_cm_connection(const char *domain, const char *pipe_name,
+			       struct winbindd_cm_conn **conn_out) 
 {
 	struct winbindd_cm_conn *conn, conn_temp;
-	NTSTATUS result;
 
 	for (conn = cm_conns; conn; conn = conn->next) {
 		if (strequal(conn->domain, domain) && 
@@ -466,26 +464,47 @@ static NTSTATUS get_connection_from_cache(const char *domain, const char *pipe_n
 			}
 		}
 	}
-	
-	if (!conn) {
-		if (!(conn = malloc(sizeof(*conn))))
-			return NT_STATUS_NO_MEMORY;
+
+	*conn_out = conn;
+}
+
+/* Initialize a new connection up to the RPC BIND. */
+
+static NTSTATUS new_cm_connection(const char *domain, const char *pipe_name,
+				  struct winbindd_cm_conn **conn_out)
+{
+	struct winbindd_cm_conn *conn;
+	NTSTATUS result;
+
+	if (!(conn = malloc(sizeof(*conn))))
+		return NT_STATUS_NO_MEMORY;
 		
-		ZERO_STRUCTP(conn);
+	ZERO_STRUCTP(conn);
 		
-		if (!NT_STATUS_IS_OK(result = cm_open_connection(domain, get_pipe_index(pipe_name), conn))) {
-			DEBUG(3, ("Could not open a connection to %s for %s (%s)\n", 
-				  domain, pipe_name, nt_errstr(result)));
-		        SAFE_FREE(conn);
-			return result;
-		}
-		DLIST_ADD(cm_conns, conn);		
+	if (!NT_STATUS_IS_OK(result = cm_open_connection(domain, get_pipe_index(pipe_name), conn))) {
+		DEBUG(3, ("Could not open a connection to %s for %s (%s)\n", 
+			  domain, pipe_name, nt_errstr(result)));
+		SAFE_FREE(conn);
+		return result;
 	}
-	
+	DLIST_ADD(cm_conns, conn);
+
 	*conn_out = conn;
 	return NT_STATUS_OK;
 }
 
+/* Get a connection to the remote DC and open the pipe.  If there is already a connection, use that */
+
+static NTSTATUS get_connection_from_cache(const char *domain, const char *pipe_name,
+					  struct winbindd_cm_conn **conn_out)
+{
+	find_cm_connection(domain, pipe_name, conn_out);
+
+	if (conn_out != NULL)
+		return NT_STATUS_OK;
+
+	return new_cm_connection(domain, pipe_name, conn_out);
+}
 
 /**********************************************************************************
 **********************************************************************************/
@@ -856,11 +875,11 @@ CLI_POLICY_HND *cm_get_sam_group_handle(char *domain, DOM_SID *domain_sid,
 NTSTATUS cm_get_netlogon_cli(const char *domain, 
 			     const unsigned char *trust_passwd, 
 			     uint32 sec_channel_type,
+			     BOOL fresh,
 			     struct cli_state **cli)
 {
 	NTSTATUS result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	struct winbindd_cm_conn *conn;
-	uint32 neg_flags = 0x000001ff;
 	fstring lock_name;
 	BOOL got_mutex;
 
@@ -869,7 +888,30 @@ NTSTATUS cm_get_netlogon_cli(const char *domain,
 
 	/* Open an initial conection - keep the mutex. */
 
-	if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_NETLOGON, &conn)))
+	find_cm_connection(domain, PIPE_NETLOGON, &conn);
+
+	if ( fresh && (conn != NULL) ) {
+		cli_shutdown(conn->cli);
+		conn->cli = NULL;
+
+		conn = NULL;
+
+		/* purge connection from cache */
+		find_cm_connection(domain, PIPE_NETLOGON, &conn);
+		if (conn != NULL) {
+			DEBUG(0,("Could not purge connection\n"));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	}
+
+	if (conn != NULL) {
+		*cli = conn->cli;
+		return NT_STATUS_OK;
+	}
+
+	result = new_cm_connection(domain, PIPE_NETLOGON, &conn);
+
+	if (!NT_STATUS_IS_OK(result))
 		return result;
 	
 	snprintf(lock_name, sizeof(lock_name), "NETLOGON\\%s", conn->controller);
@@ -878,38 +920,16 @@ NTSTATUS cm_get_netlogon_cli(const char *domain,
 		DEBUG(0,("cm_get_netlogon_cli: mutex grab failed for %s\n", conn->controller));
 	}
 			
-	result = cli_nt_setup_creds(conn->cli, sec_channel_type, trust_passwd, &neg_flags, 2);
+	result = cli_nt_establish_netlogon(conn->cli, sec_channel_type, trust_passwd);
 	
 	if (got_mutex)
 		secrets_named_mutex_release(lock_name);
-			
+				
 	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(0, ("error connecting to domain password server: %s\n",
-			  nt_errstr(result)));
-		
-		/* Hit the cache code again.  This cleans out the old connection and gets a new one */
-		if (conn->cli->fd == -1) {
-			if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_NETLOGON, &conn)))
-				return result;
-			
-			snprintf(lock_name, sizeof(lock_name), "NETLOGON\\%s", conn->controller);
-			if (!(got_mutex = secrets_named_mutex(lock_name, WINBIND_SERVER_MUTEX_WAIT_TIME))) {
-				DEBUG(0,("cm_get_netlogon_cli: mutex grab failed for %s\n", conn->controller));
-			}
-			
-			/* Try again */
-			result = cli_nt_setup_creds( conn->cli, sec_channel_type,trust_passwd, &neg_flags, 2);
-			
-			if (got_mutex)
-				secrets_named_mutex_release(lock_name);
-		}
-		
-		if (!NT_STATUS_IS_OK(result)) {
-			cli_shutdown(conn->cli);
-			DLIST_REMOVE(cm_conns, conn);
-			SAFE_FREE(conn);
-			return result;
-		}
+		cli_shutdown(conn->cli);
+		DLIST_REMOVE(cm_conns, conn);
+		SAFE_FREE(conn);
+		return result;
 	}
 
 	*cli = conn->cli;

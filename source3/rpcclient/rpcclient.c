@@ -391,6 +391,14 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 
 	/* Open pipe */
 
+	if (cmd_entry->pipe_idx != -1) {
+		if (!cli_nt_session_open(cli, cmd_entry->pipe_idx)) {
+			DEBUG(0, ("Could not initialise %s\n",
+				  get_pipe_name_from_index(cmd_entry->pipe_idx)));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	}
+
 	if (cmd_entry->pipe_idx == PI_NETLOGON) {
 		uchar trust_password[16];
 		uint32 sec_channel_type;
@@ -401,18 +409,10 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
-		if (!cli_nt_open_netlogon(cli, trust_password,
-					  sec_channel_type)) {
+		if (!NT_STATUS_IS_OK(cli_nt_establish_netlogon(cli, sec_channel_type,
+							       trust_password))) {
 			DEBUG(0, ("Could not initialise NETLOGON pipe\n"));
 			return NT_STATUS_UNSUCCESSFUL;
-		}
-	} else {
-		if (cmd_entry->pipe_idx != -1) {
-			if (!cli_nt_session_open(cli, cmd_entry->pipe_idx)) {
-				DEBUG(0, ("Could not initialise %s\n",
-					  get_pipe_name_from_index(cmd_entry->pipe_idx)));
-				return NT_STATUS_UNSUCCESSFUL;
-			}
 		}
 	}
 

@@ -472,6 +472,7 @@ NTSTATUS cli_netlogon_sam_deltas(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /* Logon domain user */
 
 NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				DOM_CRED *ret_creds,
                                 const char *username, const char *password,
                                 int logon_type)
 {
@@ -486,6 +487,7 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
+	ZERO_STRUCT(dummy_rtn_creds);
 
 	/* Initialise parse structures */
 
@@ -498,8 +500,8 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
         q.validation_level = validation_level;
 
-	memset(&dummy_rtn_creds, '\0', sizeof(dummy_rtn_creds));
-	dummy_rtn_creds.timestamp.time = time(NULL);
+	if (ret_creds == NULL)
+		ret_creds = &dummy_rtn_creds;
 
         ctr.switch_value = logon_type;
 
@@ -542,7 +544,7 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
         }
 
         init_sam_info(&q.sam_id, cli->srv_name_slash, global_myname(),
-                      &clnt_creds, &dummy_rtn_creds, logon_type,
+                      &clnt_creds, ret_creds, logon_type,
                       &ctr);
 
         /* Marshall data and send request */
@@ -563,6 +565,7 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
         /* Return results */
 
 	result = r.status;
+	memcpy(ret_creds, &r.srv_creds, sizeof(*ret_creds));
 
  done:
 	prs_mem_free(&qbuf);
@@ -579,6 +582,7 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
  **/
 
 NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+					DOM_CRED *ret_creds,
 					const char *username, const char *domain, const char *workstation, 
 					const uint8 chal[8], 
 					DATA_BLOB lm_response, DATA_BLOB nt_response,
@@ -598,6 +602,7 @@ NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_c
 	
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
+	ZERO_STRUCT(dummy_rtn_creds);
 
 	workstation_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", workstation);
 	
@@ -617,8 +622,8 @@ NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_c
 
 	q.validation_level = validation_level;
 
-	memset(&dummy_rtn_creds, '\0', sizeof(dummy_rtn_creds));
-	dummy_rtn_creds.timestamp.time = time(NULL);
+	if (ret_creds == NULL)
+		ret_creds = &dummy_rtn_creds;
 
         ctr.switch_value = NET_LOGON_TYPE;
 
@@ -629,7 +634,7 @@ NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_c
 		      lm_response.data, lm_response.length, nt_response.data, nt_response.length);
  
         init_sam_info(&q.sam_id, cli->srv_name_slash, global_myname(),
-                      &clnt_creds, &dummy_rtn_creds, NET_LOGON_TYPE,
+                      &clnt_creds, ret_creds, NET_LOGON_TYPE,
                       &ctr);
 
         /* Marshall data and send request */
@@ -659,6 +664,7 @@ NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_c
         /* Return results */
 
 	result = r.status;
+	memcpy(ret_creds, &r.srv_creds, sizeof(*ret_creds));
 
  done:
 	prs_mem_free(&qbuf);
