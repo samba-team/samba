@@ -108,21 +108,21 @@ static void create_file_sids(SMB_STRUCT_STAT *psbuf, DOM_SID *powner_sid, DOM_SI
  Print out a canon ace.
 ****************************************************************************/
 
-static void print_canon_ace(canon_ace *ace, int num)
+static void print_canon_ace(canon_ace *pace, int num)
 {
 	fstring str;
 
-	dbgtext( "canon_ace index %d. Type = %s ", num, ace->attr == ALLOW_ACE ? "allow" : "deny" );
-    dbgtext( "SID = %s ", sid_to_string( str, &ace->sid));
-	if (ace->owner_type == UID_ACE) {
-		struct passwd *pass = sys_getpwuid(ace->unix_ug.uid);
-		dbgtext( "uid %u (%s) ", (unsigned int)ace->unix_ug.uid, pass ? pass->pw_name : "UNKNOWN");
-	} else if (ace->owner_type == GID_ACE) {
-		struct group *grp = getgrgid(ace->unix_ug.gid);
-		dbgtext( "gid %u (%s) ", (unsigned int)ace->unix_ug.gid, grp ? grp->gr_name : "UNKNOWN");
+	dbgtext( "canon_ace index %d. Type = %s ", num, pace->attr == ALLOW_ACE ? "allow" : "deny" );
+    dbgtext( "SID = %s ", sid_to_string( str, &pace->sid));
+	if (pace->owner_type == UID_ACE) {
+		struct passwd *pass = sys_getpwuid(pace->unix_ug.uid);
+		dbgtext( "uid %u (%s) ", (unsigned int)pace->unix_ug.uid, pass ? pass->pw_name : "UNKNOWN");
+	} else if (pace->owner_type == GID_ACE) {
+		struct group *grp = getgrgid(pace->unix_ug.gid);
+		dbgtext( "gid %u (%s) ", (unsigned int)pace->unix_ug.gid, grp ? grp->gr_name : "UNKNOWN");
 	} else
 		dbgtext( "other ");
-	switch (ace->type) {
+	switch (pace->type) {
 		case SMB_ACL_USER:
 			dbgtext( "SMB_ACL_USER ");
 			break;
@@ -140,9 +140,24 @@ static void print_canon_ace(canon_ace *ace, int num)
 			break;
 	}
 	dbgtext( "perms ");
-	dbgtext( "%c", ace->perms & S_IRUSR ? 'r' : '-');
-	dbgtext( "%c", ace->perms & S_IWUSR ? 'w' : '-');
-	dbgtext( "%c\n", ace->perms & S_IXUSR ? 'x' : '-');
+	dbgtext( "%c", pace->perms & S_IRUSR ? 'r' : '-');
+	dbgtext( "%c", pace->perms & S_IWUSR ? 'w' : '-');
+	dbgtext( "%c\n", pace->perms & S_IXUSR ? 'x' : '-');
+}
+
+/****************************************************************************
+ Print out a canon ace list.
+****************************************************************************/
+
+static void print_canon_ace_list(const char *name, canon_ace *ace_list)
+{
+	int count = 0;
+
+	if( DEBUGLVL( 10 )) {
+		dbgtext( "print_canon_ace_list: %s\n", name );
+		for (;ace_list; ace_list = ace_list->next, count++)
+			print_canon_ace(ace_list, count );
+	}
 }
 
 /****************************************************************************
@@ -212,7 +227,8 @@ static void merge_aces( canon_ace **pp_list_head )
 			 * we've put on the ACL, we know the deny must be the first one.
 			 */
 
-			if ((curr_ace_outer->attr == DENY_ACE) && (curr_ace->attr == ALLOW_ACE)) {
+			if (sid_equal(&curr_ace->sid, &curr_ace_outer->sid) &&
+				(curr_ace_outer->attr == DENY_ACE) && (curr_ace->attr == ALLOW_ACE)) {
 
 				if( DEBUGLVL( 10 )) {
 					dbgtext("merge_aces: Masking ACE's\n");
@@ -467,7 +483,8 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 		pace->owner_type = UID_ACE;
 		pace->unix_ug.uid = pst->st_uid;
 		pace->sid = *pfile_owner_sid;
-		pace->perms = default_acl ? get_default_ace_mode(fsp, S_IRUSR): 0;
+		/* Ensure owner has read access. */
+		pace->perms = default_acl ? get_default_ace_mode(fsp, S_IRUSR): S_IRUSR;
 		pace->attr = ALLOW_ACE;
 
 		DLIST_ADD(*pp_ace, pace);
@@ -766,7 +783,7 @@ static BOOL uid_entry_in_group( canon_ace *uid_ace, canon_ace *group_ace )
 	if (!(pass = sys_getpwuid(uid_ace->unix_ug.uid)))
 		return False;
 
-	if (!(gptr = getgrgid(uid_ace->unix_ug.gid)))
+	if (!(gptr = getgrgid(group_ace->unix_ug.gid)))
 		return False;
 
 	/*
@@ -1059,8 +1076,6 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 {
 	canon_ace *file_ace = NULL;
 	canon_ace *dir_ace = NULL;
-	canon_ace *current_ace = NULL;
-	int i;
 
 	*ppfile_ace = NULL;
 	*ppdir_ace = NULL;
@@ -1092,7 +1107,10 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 	 * all allow entries (we have mandated this before accepting this acl).
 	 */
 
+	print_canon_ace_list( "file ace - before merge", file_ace);
 	merge_aces( &file_ace );
+
+	print_canon_ace_list( "dir ace - before merge", dir_ace);
 	merge_aces( &dir_ace );
 
 	/*
@@ -1100,7 +1118,10 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 	 * process DENY entries by masking the allow entries.
 	 */
 
+	print_canon_ace_list( "file ace - before deny", file_ace);
 	process_deny_list( &file_ace);
+
+	print_canon_ace_list( "dir ace - before deny", dir_ace);
 	process_deny_list( &dir_ace);
 
 	/*
@@ -1109,11 +1130,15 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 	 * and optionally a mask entry. Ensure this is the case.
 	 */
 
+	print_canon_ace_list( "file ace - before valid", file_ace);
+
 	if (!ensure_canon_entry_valid(&file_ace, fsp, pfile_owner_sid, pfile_grp_sid, pst, False)) {
 		free_canon_ace_list(file_ace);
 		free_canon_ace_list(dir_ace);
 		return False;
 	}
+
+	print_canon_ace_list( "dir ace - before valid", dir_ace);
 
 	if (!ensure_canon_entry_valid(&dir_ace, fsp, pfile_owner_sid, pfile_grp_sid, pst, True)) {
 		free_canon_ace_list(file_ace);
@@ -1121,17 +1146,8 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 		return False;
 	}
 
-	if( DEBUGLVL( 10 )) {
-		dbgtext("unpack_canon_ace: File ACL:\n");
-		for (i = 0, current_ace = file_ace; current_ace; current_ace = current_ace->next, i++ ) {
-			print_canon_ace( current_ace, i);
-		}
-
-		dbgtext("unpack_canon_ace: Directory ACL:\n");
-		for (i = 0, current_ace = dir_ace; current_ace; current_ace = current_ace->next, i++ ) {
-			print_canon_ace( current_ace, i);
-		}
-	}
+	print_canon_ace_list( "file ace - return", file_ace);
+	print_canon_ace_list( "dir ace - return", dir_ace);
 
 	*ppfile_ace = file_ace;
 	*ppdir_ace = dir_ace;
@@ -1530,19 +1546,7 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 
 	arrange_posix_perms(fsp->fsp_name,&list_head );
 
-	if( DEBUGLVL( 10 ) ) {
-		char *acl_text = sys_acl_to_text( posix_acl, NULL);
-
-		dbgtext("canonicalize_acl: processed acl %s\n", acl_text == NULL ? "NULL" : acl_text );
-		if (acl_text)
-			sys_acl_free_text(acl_text);
-
-		dbgtext("canonicalize_acl: ace entries after arrange :\n");
-
-		for ( ace_count = 0, ace = list_head; ace; ace = next_ace, ace_count++) {
-			print_canon_ace(ace, ace_count);
-		}
-	}
+	print_canon_ace_list( "canonicalize_acl: ace entries after arrange", list_head );
 
 	return list_head;
 
