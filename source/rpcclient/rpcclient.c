@@ -148,14 +148,6 @@ do a (presumably graceful) quit...
 static void cmd_quit(struct client_info *info)
 {
 	rpcclient_stop();
-#ifdef MEM_MAN
-	{
-		extern FILE* dbf;
-		smb_mem_write_status(dbf);
-		smb_mem_write_errors(dbf);
-		smb_mem_write_verbose(dbf);
-	}
-#endif
 	exit(0);
 }
 

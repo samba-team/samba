@@ -1716,13 +1716,6 @@ void *Realloc(void *p,size_t size)
   else
     ret = (void *)realloc(p,size);
 
-#ifdef MEM_MAN
-  {
-	extern FILE *dbf;
-	smb_mem_write_info(ret, dbf);
-  }
-#endif
-
   if (!ret)
     DEBUG(0,("Memory allocation error: failed to expand to %d bytes\n",(int)size));
 
