@@ -119,7 +119,7 @@ void stat_cache_add( const char *full_orig_name, const char *orig_translated_pat
 
 	if (original_path_length != translated_path_length) {
 		if (original_path_length < translated_path_length) {
-			DEBUG(0, ("OOPS - tried to store stat cache entry for werid length paths [%s] %u and [%s] %u)!\n",
+			DEBUG(0, ("OOPS - tried to store stat cache entry for weird length paths [%s] %u and [%s] %u)!\n",
 						original_path, original_path_length, translated_path, translated_path_length));
 			SAFE_FREE(original_path);
 			SAFE_FREE(translated_path);
