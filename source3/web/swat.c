@@ -32,6 +32,7 @@
 #include "web/swat_proto.h"
 
 static BOOL demo_mode = False;
+static BOOL passwd_only = False;
 static BOOL have_write_access = False;
 static BOOL have_read_access = False;
 static int iNumNonAutoPrintServices = 0;
@@ -530,7 +531,8 @@ static void show_main_buttons(void)
 		image_link(_("Printers"), "printers", "images/printers.gif");
 		image_link(_("Wizard"), "wizard", "images/wizard.gif");
 	}
-	if (have_read_access) {
+   /* root always gets all buttons, otherwise look for -P */
+	if ( have_write_access || (!passwd_only && have_read_access) ) {
 		image_link(_("Status"), "status", "images/status.gif");
 		image_link(_("View Config"), "viewconfig", "images/viewconfig.gif");
 	}
@@ -1315,6 +1317,7 @@ static void printers_page(void)
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{ "disable-authentication", 'a', POPT_ARG_VAL, &demo_mode, True, "Disable authentication (demo mode)" },
+        { "password-menu-only", 'P', POPT_ARG_VAL, &passwd_only, True, "Show only change password menu" }, 
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
