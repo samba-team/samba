@@ -763,6 +763,30 @@ void sys_endpwent(void)
 	endpwent();
 }
 
+/**************************************************************************
+ Wrappers for getpwnam(), getpwuid(), getgrnam(), getgrgid()
+****************************************************************************/
+
+struct passwd *sys_getpwnam(const char *name)
+{
+	return getpwnam(name);
+}
+
+struct passwd *sys_getpwuid(uid_t uid)
+{
+	return getpwuid(uid);
+}
+
+struct group *sys_getgrnam(const char *name)
+{
+	return getgrnam(name);
+}
+
+struct group *sys_getgrgid(gid_t gid)
+{
+	return getgrgid(gid);
+}
+
 #if 0 /* NOT CURRENTLY USED - JRA */
 /**************************************************************************
  The following are the UNICODE versions of *all* system interface functions

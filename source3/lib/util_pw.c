@@ -56,7 +56,7 @@ struct passwd *getpwnam_alloc(const char *name)
 {
 	struct passwd *temp;
 
-	temp = getpwnam(name);
+	temp = sys_getpwnam(name);
 	
 	if (!temp) {
 #if 0
@@ -74,7 +74,7 @@ struct passwd *getpwuid_alloc(uid_t uid)
 {
 	struct passwd *temp;
 
-	temp = getpwuid(uid);
+	temp = sys_getpwuid(uid);
 	
 	if (!temp) {
 #if 0
