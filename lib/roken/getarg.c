@@ -61,9 +61,9 @@ print_arg (int longp, struct getargs *arg)
     if (arg->arg_help)
 	s = arg->arg_help;
     else if (arg->type == arg_integer)
-	s = "n";
+	s = "number";
     else if (arg->type == arg_string)
-	s = "s";
+	s = "string";
 
     fprintf (stderr, "%s", s);
     return 1 + strlen(s);
