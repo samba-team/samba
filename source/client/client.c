@@ -2210,12 +2210,14 @@ static int cmd_reput(void)
 */
 static const char *share_type_str(uint32 type)
 {
-	switch (type & 0x3) {
-	case 0: 
+	switch (type & 0xF) {
+	case STYPE_DISKTREE: 
 		return "Disk";
-	case 1: 
+	case STYPE_PRINTQ: 
 		return "Printer";
-	case 3: 
+	case STYPE_DEVICE: 
+		return "Device";
+	case STYPE_IPC: 
 		return "IPC";
 	default:
 		return "Unknown";
