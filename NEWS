@@ -1,3 +1,8 @@
+Changes in release 0.2f:
+
+ * support SRV records for kpasswd
+ * look for both _kerberos and krb5-realm when doing host -> realm mapping
+
 Changes in release 0.2e:
 
  * changed copyright notices to remove `advertising'-clause.
