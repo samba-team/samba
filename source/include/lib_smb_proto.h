@@ -366,7 +366,7 @@ BOOL make_enum_hnd(ENUM_HND *enh, uint32 hnd);
 BOOL smb_io_enum_hnd(char *desc,  ENUM_HND *hnd, prs_struct *ps, int depth);
 BOOL smb_io_dom_sid(char *desc,  DOM_SID *sid, prs_struct *ps, int depth);
 BOOL make_dom_sid2(DOM_SID2 *sid2, const DOM_SID *sid);
-BOOL smb_io_dom_sid2(char *desc,  DOM_SID2 *sid, prs_struct *ps, int depth);
+BOOL smb_io_dom_sid2(char *desc, DOM_SID2 *sid, prs_struct *ps, int depth);
 BOOL make_str_hdr(STRHDR *hdr, int max_len, int len, uint32 buffer);
 BOOL smb_io_strhdr(char *desc,  STRHDR *hdr, prs_struct *ps, int depth);
 BOOL make_strhdr2(STRHDR2 *hdr, uint32 max_len, uint32 len, uint32 buffer);
@@ -375,8 +375,8 @@ BOOL make_uni_hdr(UNIHDR *hdr, int len);
 BOOL make_unihdr_from_unistr2(UNIHDR *hdr, const UNISTR2 *str);
 BOOL smb_io_unihdr(char *desc,  UNIHDR *hdr, prs_struct *ps, int depth);
 BOOL make_buf_hdr(BUFHDR *hdr, int max_len, int len);
-BOOL smb_io_hdrbuf_pre(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth, uint32 *offset);
-BOOL smb_io_hdrbuf_post(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth, 
+BOOL smb_io_hdrbuf_pre(char *desc, BUFHDR *hdr, prs_struct *ps, int depth, uint32 *offset);
+BOOL smb_io_hdrbuf_post(char *desc, BUFHDR *hdr, prs_struct *ps, int depth, 
 				uint32 ptr_hdrbuf, uint32 max_len, uint32 len);
 BOOL smb_io_hdrbuf(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth);
 BOOL make_bufhdr2(BUFHDR2 *hdr, uint32 info_level, uint32 length, uint32 buffer);
@@ -728,8 +728,8 @@ BOOL _prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth,
 		  STRING2 * str);
 BOOL _prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth,
 		  UNISTR2 *str);
-BOOL _prs_unistr3(BOOL charmode, char *name, UNISTR3 * str, prs_struct *ps,
-		  int depth);
+BOOL prs_unistr3(BOOL charmode, char *name, UNISTR3 * str,
+		 prs_struct *ps, int depth);
 BOOL _prs_unistr(char *name, prs_struct *ps, int depth, UNISTR * str);
 BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str,
 		 uint16 len, uint16 max_buf_size);

@@ -1062,8 +1062,8 @@ BOOL _prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth,
  stream a unicode string, length/buffer specified separately,
  in uint16 chars.
  ********************************************************************/
-BOOL _prs_unistr3(BOOL charmode, char *name, UNISTR3 * str, prs_struct *ps,
-		  int depth)
+BOOL prs_unistr3(BOOL charmode, char *name, UNISTR3 * str,
+		 prs_struct *ps, int depth)
 {
 	char *q;
 	int end_offset;

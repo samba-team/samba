@@ -87,12 +87,6 @@
 		ps->offset = 0;\
 		return False;\
 	}
-#define prs_unistr3(charmode, name, str, ps, depth) \
-	if (!_prs_unistr3(charmode, name, str, ps, depth)) \
-	{\
-		ps->offset = 0;\
-		return False;\
-	}
 #define prs_unistr(name, ps, depth, str) \
 	if (!_prs_unistr(name, ps, depth, str)) \
 	{\
