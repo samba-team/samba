@@ -333,10 +333,6 @@
 #define PASSWORD_LENGTH 16
 #endif  /* HAVE_SYS_SECURITY_H */
 
-#ifdef HAVE_COMPAT_H
-#include <compat.h>
-#endif
-
 #ifdef HAVE_STROPTS_H
 #include <stropts.h>
 #endif
