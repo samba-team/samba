@@ -1,7 +1,7 @@
 !==
 !== Recent-FAQs.txt for Samba release 2.0.0-beta1 13 Nov 1998
 !==
-Contributor:	Samba-bugs@samba.anu.edu.au
+Contributor:	Samba-bugs@samba.org
 Date:		July 5, 1998
 Status:		Current
 

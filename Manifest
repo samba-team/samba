@@ -62,7 +62,7 @@ packaging	(Only for those wishing to build binary distributions):
 	distribution packaging control files - and we hope to make their binary
 	packages available on the master ftp site under:
 
-		ftp://samba.anu.edu.au/pub/samba/Binary_Packages/"OS_Vendor"
+		ftp://samba.org/pub/samba/Binary_Packages/"OS_Vendor"
 
 
 source		(The official Samba source files - expect more of these!):

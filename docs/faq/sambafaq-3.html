@@ -76,7 +76,7 @@ To syncronize your PC's clock with your Samba server:
 <UL>
 <LI> Copy timesync.pif to your windows directory</LI>
 <LI> timesync.pif can be found at:
-<A HREF="http://samba.anu.edu.au/samba/binaries/miscellaneous/timesync.pif">http://samba.anu.edu.au/samba/binaries/miscellaneous/timesync.pif</A></LI>
+<A HREF="http://samba.org/samba/binaries/miscellaneous/timesync.pif">http://samba.org/samba/binaries/miscellaneous/timesync.pif</A></LI>
 <LI> Add timesync.pif to your 'Start Up' group/folder</LI>
 <LI> Open the properties dialog box for the program/icon</LI>
 <LI> Make sure the 'Run Minimized' option is set in program 'Properties'</LI>
@@ -88,7 +88,7 @@ Each time you start your computer (or login for Win95) your PC will
 synchronize its clock with your Samba server.</P>
 <P>Alternativley, if you clients support Domain Logons, you can setup Domain Logons with Samba
 - see: 
-<A HREF="ftp://samba.anu.edu.au/pub/samba/docs/BROWSING.txt">BROWSING.txt</A> *** for more information.</P>
+<A HREF="ftp://samba.org/pub/samba/docs/BROWSING.txt">BROWSING.txt</A> *** for more information.</P>
 <P>Then add 
 <BLOCKQUOTE><CODE>
 <PRE>
@@ -122,7 +122,7 @@ over this connection. This is unfortunate, but not fatal.</P>
 (the default) then things will definately break as described
 above. The share level SMB security model has no provision for
 multiple user IDs on the one SMB connection. See 
-<A HREF="ftp://samba.anu.edu.au/pub/samba/docs/security_level.txt">security_level.txt</A> in
+<A HREF="ftp://samba.org/pub/samba/docs/security_level.txt">security_level.txt</A> in
 the docs for more info on share/user/server level security.</P>
 <P>If you run in user or server level security then you have a chance,
 but only if you have a recent version of Samba (at least 1.9.15p6). In
@@ -292,7 +292,7 @@ in that dialog box.</P>
 
 this is effectively what older versions of Samba did, so if that
 worked for you then give it a go. If this does work then let us know via 
-<A HREF="mailto:samba-bugs@samba.anu.edu.au">samba-bugs@samba.anu.edu.au</A>,
+<A HREF="mailto:samba-bugs@samba.org">samba-bugs@samba.org</A>,
 and we'll make it the default. Currently the default is a 0 length
 string.</P>
 
@@ -307,7 +307,7 @@ passing clear text passwords over the network.  To enable access to
 Samba shares from NT 4.0 SP3, you must do <B>ONE</B> of two things:
 <OL>
 <LI> Set the Samba configuration option 'security = user' and implement all of the stuff detailed in 
-<A HREF="ftp://samba.anu.edu.au/pub/samba/docs/ENCRYPTION.txt">ENCRYPTION.txt</A>.</LI>
+<A HREF="ftp://samba.org/pub/samba/docs/ENCRYPTION.txt">ENCRYPTION.txt</A>.</LI>
 <LI> Follow Microsoft's directions for setting your NT box to allow plain text passwords. see 
 <A HREF="http://www.microsoft.com/kb/articles/q166/7/30.htm">Knowledge Base Article Q166730</A></LI>
 </OL>

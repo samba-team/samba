@@ -1,7 +1,7 @@
 !==
 !== NTDOMAIN.txt for Samba release 2.0.0-beta1 13 Nov 1998
 !==
-Contributor:	Luke Kenneth Casson Leighton (samba-bugs@samba.anu.edu.au)
+Contributor:	Luke Kenneth Casson Leighton (samba-bugs@samba.org)
 		Copyright (C) 1997 Luke Kenneth Casson Leighton
 Created:	October 20, 1997
 Updated:	October 29, 1997
@@ -42,7 +42,7 @@ This *has* been reported to the NTBUGTRAQ@LISTSERV.NTBUGTRAQ.COM digest.
 Domain Logons using latest cvs source
 =====================================
 
-1) obtain and compile samba: see http://samba.anu.edu.au/cvs.html
+1) obtain and compile samba: see http://samba.org/cvs.html
 
 2) set up samba with encrypted passwords: see ENCRYPTION.txt (probably out
    of date: you no longer need the DES libraries, but other than that,
@@ -143,7 +143,7 @@ Domain Logons using latest cvs source
    (generating an LSA_SAM_LOGOFF) and log back in again.  Try logging in
    two users simultaneously.  Try logging the same user in twice.
    Make Samba fall over, and then send bug reports to us, with NTDOM: at
-   the start of the subject line, as "samba-bugs@samba.anu.edu.au".
+   the start of the subject line, as "samba-bugs@samba.org".
 
 Your reports, testing, patches, criticism and encouragement will help us
 get this right.

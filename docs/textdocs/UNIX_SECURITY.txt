@@ -1,7 +1,7 @@
 !==
 !== UNIX_SECURITY.txt for Samba release 2.0.0-beta1 13 Nov 1998
 !==
-Contributor:	John H Terpstra <jht@samba.anu.edu.au>
+Contributor:	John H Terpstra <jht@samba.org>
 Date:		July 5, 1998
 Status:		Current
 

@@ -50,7 +50,7 @@ Jim barry has written an excellent drag-and-drop cr/lf converter for
 windows. Just drag your file onto the icon and it converts the file.
 
 Get it from
-ftp://samba.anu.edu.au/pub/samba/contributed/fixcrlf.zip
+ftp://samba.org/pub/samba/contributed/fixcrlf.zip
 
 ---------------------- 
 HINT: Use the "username map" option

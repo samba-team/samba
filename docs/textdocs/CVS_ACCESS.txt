@@ -8,10 +8,10 @@ Status:         Current
 How to get access to Samba source code via cvs.
 ===============================================
 
-CVS Access to samba.anu.edu.au
+CVS Access to samba.org
 ------------------------------
 
-The machine samba.anu.edu.au runs a publicly accessible CVS 
+The machine samba.org runs a publicly accessible CVS 
 repository for access to the source code of several packages, 
 including samba, rsync and jitterbug. This document describes 
 how to get anonymous read-only access to this source code. 
@@ -25,7 +25,7 @@ the repository and also to look at the revision history and
 commit logs of individual files. You can also ask for a diff 
 listing between any two versions on the repository.
 
-Use the URL : http://samba.anu.edu.au/cgi-bin/cvsweb
+Use the URL : http://samba.org/cgi-bin/cvsweb
 
 Access via cvs
 --------------
@@ -55,14 +55,14 @@ on this system just substitute the correct package name
 
 2. Run the command 
 
-  cvs -d :pserver:cvs@samba.anu.edu.au:/cvsroot login
+  cvs -d :pserver:cvs@samba.org:/cvsroot login
 
 When it asks you for a password type 'cvs' (not including
 the quotes).
 
 3. Run the command 
 
-  cvs -d :pserver:cvs@samba.anu.edu.au:/cvsroot co samba
+  cvs -d :pserver:cvs@samba.org:/cvsroot co samba
 
 This will create a directory called samba containing the 
 latest samba source code. This currently corresponds to the 
@@ -76,7 +76,7 @@ the following command from within the samba directory:
 NOTE: If you instead want the latest source code for the 
 1.9.17 stable tree then replace step 4 with the command: 
 
-  cvs -d :pserver:cvs@samba.anu.edu.au:/cvsroot co -r BRANCH_1_9_17 samba
+  cvs -d :pserver:cvs@samba.org:/cvsroot co -r BRANCH_1_9_17 samba
 
 Access to the NT DOMAIN Controller code
 ---------------------------------------
@@ -87,14 +87,14 @@ source code (this changes daily) do the following:
 
 1). Log onto cvs 
 
-  cvs -d :pserver:cvs@samba.anu.edu.au:/cvsroot login          
+  cvs -d :pserver:cvs@samba.org:/cvsroot login          
   
 When it asks you for a password type 'cvs' (not including
 the quotes).
 
 2). Check out the BRANCH_NTDOM by typing :
 
-  cvs -d :pserver:cvs@samba.anu.edu.au:/cvsroot co -r BRANCH_NTDOM samba
+  cvs -d :pserver:cvs@samba.org:/cvsroot co -r BRANCH_NTDOM samba
 
 This will create a directory called samba containing the
 latest snapshot of the domain controller code.
@@ -112,7 +112,7 @@ If you are interested in how anonymous cvs access is set up and
 want to set it up on your own system then you might like to checkout 
 the pserver source code using the the command :
 
- cvs -d :pserver:cvs@samba.anu.edu.au:/cvsroot co pserver
+ cvs -d :pserver:cvs@samba.org:/cvsroot co pserver
 
 You really have to know what you are doing to do this. Please don't 
 email samba-bugs with basic cvs or unix security questions. 
@@ -121,4 +121,4 @@ Reporting problems.
 -------------------
 
 If you have any problems with this system please email 
-samba-bugs@samba.anu.edu.au. 
+samba-bugs@samba.org. 

@@ -2,4 +2,4 @@ The Samba Consultants List
 ==========================
 
 This list has now moved to the support page of the 
-Samba web pages at http://samba.anu.edu.au/samba/
+Samba web pages at http://samba.org/samba/

@@ -17,7 +17,7 @@
 
 <title> Samba FAQ
 
-<author>Paul Blackman, <tt>ictinus@samba.anu.edu.au</tt>
+<author>Paul Blackman, <tt>ictinus@samba.org</tt>
 
 <date>v 0.8, June '97
 
@@ -74,14 +74,14 @@ and this FAQ were originally written by Karl Auer.
 
 <sect1> What is the current version of Samba? <p><label id="current_version">
 At time of writing, the current version was 1.9.17. If you want to be
-sure check the bottom of the change-log file. <url url="ftp://samba.anu.edu.au/pub/samba/alpha/change-log">
+sure check the bottom of the change-log file. <url url="ftp://samba.org/pub/samba/alpha/change-log">
 
 For more information see <ref id="version_nums" name="What do the
 version numbers mean?">
 
 <sect1> Where can I get it? <p> <label id="where">
 The Samba suite is available via anonymous ftp from
-samba.anu.edu.au. The latest and greatest versions of the suite are in
+samba.org. The latest and greatest versions of the suite are in
 the directory:
 
 /pub/samba/
@@ -200,48 +200,48 @@ There are a number of places to look for more information on Samba, including:
     <item>A searchable hypertext archive of the Samba mailing list.
     <item>Links to Samba source code, binaries, and mirrors of both.
   </itemize>
-<item>The long list of topic documentation.  These files can be found in the 'docs' directory of the Samba source, or at <url url="ftp://samba.anu.edu.au/pub/samba/docs/">
+<item>The long list of topic documentation.  These files can be found in the 'docs' directory of the Samba source, or at <url url="ftp://samba.org/pub/samba/docs/">
   <itemize>
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/Application_Serving.txt" name="Application_Serving.txt">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/BROWSING.txt" name="BROWSING.txt">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/BUGS.txt" name="BUGS.txt">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/DIAGNOSIS.txt" name="DIAGNOSIS.txt">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/DNIX.txt" name="DNIX.txt">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/DOMAIN.txt" name="DOMAIN.txt">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/DOMAIN_CONTROL.txt" name="CONTROL.txt">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/ENCRYPTION.txt" name="ENCRYPTION.txt">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/Faxing.txt" name="Faxing.txt">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/GOTCHAS.txt" name="GOTCHAS.txt">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/HINTS.txt" name="HINTS.txt">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/INSTALL.sambatar" name="INSTALL.sambatar">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/INSTALL.txt" name="INSTALL.txt">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/MIRRORS" name="MIRRORS">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/NetBIOS.txt" name="NetBIOS.txt">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/OS2.txt" name="OS2.txt">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/PROJECTS" name="PROJECTS">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/Passwords.txt" name="Passwords.txt">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/Printing.txt" name="Printing.txt">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/README.DCEDFS" name="README.DCEDFS">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/README.OS2" name="README.OS2">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/README.jis" name="README.jis">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/README.sambatar" name="README.sambatar">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/SCO.txt" name="SCO.txt">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/SMBTAR.notes" name="SMBTAR.notes">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/Speed.txt" name="Speed.txt">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/Support.txt" name="Support.txt">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/THANKS" name="THANKS">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/Tracing.txt" name="Tracing.txt">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/UNIX-SMB.txt" name="SMB.txt">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/Warp.txt" name="Warp.txt">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/WinNT.txt" name="WinNT.txt">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/history" name="history">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/security_level.txt" name="level.txt">
-    <item><url url="ftp://samba.anu.edu.au/pub/samba/docs/wfw_slip.htm" name="slip.htm">
+    <item><url url="ftp://samba.org/pub/samba/docs/Application_Serving.txt" name="Application_Serving.txt">
+    <item><url url="ftp://samba.org/pub/samba/docs/BROWSING.txt" name="BROWSING.txt">
+    <item><url url="ftp://samba.org/pub/samba/docs/BUGS.txt" name="BUGS.txt">
+    <item><url url="ftp://samba.org/pub/samba/docs/DIAGNOSIS.txt" name="DIAGNOSIS.txt">
+    <item><url url="ftp://samba.org/pub/samba/docs/DNIX.txt" name="DNIX.txt">
+    <item><url url="ftp://samba.org/pub/samba/docs/DOMAIN.txt" name="DOMAIN.txt">
+    <item><url url="ftp://samba.org/pub/samba/docs/DOMAIN_CONTROL.txt" name="CONTROL.txt">
+    <item><url url="ftp://samba.org/pub/samba/docs/ENCRYPTION.txt" name="ENCRYPTION.txt">
+    <item><url url="ftp://samba.org/pub/samba/docs/Faxing.txt" name="Faxing.txt">
+    <item><url url="ftp://samba.org/pub/samba/docs/GOTCHAS.txt" name="GOTCHAS.txt">
+    <item><url url="ftp://samba.org/pub/samba/docs/HINTS.txt" name="HINTS.txt">
+    <item><url url="ftp://samba.org/pub/samba/docs/INSTALL.sambatar" name="INSTALL.sambatar">
+    <item><url url="ftp://samba.org/pub/samba/docs/INSTALL.txt" name="INSTALL.txt">
+    <item><url url="ftp://samba.org/pub/samba/docs/MIRRORS" name="MIRRORS">
+    <item><url url="ftp://samba.org/pub/samba/docs/NetBIOS.txt" name="NetBIOS.txt">
+    <item><url url="ftp://samba.org/pub/samba/docs/OS2.txt" name="OS2.txt">
+    <item><url url="ftp://samba.org/pub/samba/docs/PROJECTS" name="PROJECTS">
+    <item><url url="ftp://samba.org/pub/samba/docs/Passwords.txt" name="Passwords.txt">
+    <item><url url="ftp://samba.org/pub/samba/docs/Printing.txt" name="Printing.txt">
+    <item><url url="ftp://samba.org/pub/samba/docs/README.DCEDFS" name="README.DCEDFS">
+    <item><url url="ftp://samba.org/pub/samba/docs/README.OS2" name="README.OS2">
+    <item><url url="ftp://samba.org/pub/samba/docs/README.jis" name="README.jis">
+    <item><url url="ftp://samba.org/pub/samba/docs/README.sambatar" name="README.sambatar">
+    <item><url url="ftp://samba.org/pub/samba/docs/SCO.txt" name="SCO.txt">
+    <item><url url="ftp://samba.org/pub/samba/docs/SMBTAR.notes" name="SMBTAR.notes">
+    <item><url url="ftp://samba.org/pub/samba/docs/Speed.txt" name="Speed.txt">
+    <item><url url="ftp://samba.org/pub/samba/docs/Support.txt" name="Support.txt">
+    <item><url url="ftp://samba.org/pub/samba/docs/THANKS" name="THANKS">
+    <item><url url="ftp://samba.org/pub/samba/docs/Tracing.txt" name="Tracing.txt">
+    <item><url url="ftp://samba.org/pub/samba/docs/UNIX-SMB.txt" name="SMB.txt">
+    <item><url url="ftp://samba.org/pub/samba/docs/Warp.txt" name="Warp.txt">
+    <item><url url="ftp://samba.org/pub/samba/docs/WinNT.txt" name="WinNT.txt">
+    <item><url url="ftp://samba.org/pub/samba/docs/history" name="history">
+    <item><url url="ftp://samba.org/pub/samba/docs/security_level.txt" name="level.txt">
+    <item><url url="ftp://samba.org/pub/samba/docs/wfw_slip.htm" name="slip.htm">
   </itemize>
 </itemize>
 
 <sect1>How do I subscribe to the Samba Mailing Lists?<p><label id="mailinglist">
-Send email to <htmlurl url="mailto:listproc@samba.anu.edu.au" name="listproc@samba.anu.edu.au">. Make sure the subject line is
+Send email to <htmlurl url="mailto:listproc@samba.org" name="listproc@samba.org">. Make sure the subject line is
 blank, and include the following two lines in the body of the message:
 <tscreen><verb>
 subscribe samba Firstname Lastname
@@ -257,7 +257,7 @@ been received by the list since the last time and sends a copy of this
 message to all subscribers.
 
 If you stop being interested in Samba, please send another email to
-<htmlurl url="mailto:listproc@samba.anu.edu.au" name="listproc@samba.anu.edu.au">. Make sure the subject line is blank, and
+<htmlurl url="mailto:listproc@samba.org" name="listproc@samba.org">. Make sure the subject line is blank, and
 include the following two lines in the body of the message:
 <tscreen><verb>
 unsubscribe samba
@@ -273,7 +273,7 @@ carried out the first three steps given here!
 
 Firstly, see if there are any likely looking entries in this FAQ! If
 you have just installed Samba, have you run through the checklist in
-<url url="ftp://samba.anu.edu.au/pub/samba/DIAGNOSIS.txt" name="DIAGNOSIS.txt">? It can save you a lot of time and effort.
+<url url="ftp://samba.org/pub/samba/DIAGNOSIS.txt" name="DIAGNOSIS.txt">? It can save you a lot of time and effort.
 DIAGNOSIS.txt can also be found in the docs directory of the Samba distribution.
 
 Secondly, read the man pages for smbd, nmbd and smb.conf, looking for
@@ -300,7 +300,7 @@ I can incorporate it in the next version.
 If you make changes to the source code, _please_ submit these patches
 so that everyone else gets the benefit of your work. This is one of
 the most important aspects to the maintainence of Samba. Send all
-patches to <htmlurl url="mailto:samba-bugs@samba.anu.edu.au" name="samba-bugs@samba.anu.edu.au">. Do not send patches to Andrew Tridgell or any
+patches to <htmlurl url="mailto:samba-bugs@samba.org" name="samba-bugs@samba.org">. Do not send patches to Andrew Tridgell or any
 other individual, they may be lost if you do.
 
 <sect1> Pizza supply details <p> <label id="pizza">
@@ -332,7 +332,7 @@ hungry sniffer dogs but it will have been a noble gesture.
 <sect>Compiling and installing Samba on a Unix host<p><label id="unix_install">
 
 <sect1>I can't see the Samba server in any browse lists!<p><label id="no_browse">
- See <url url="ftp://samba.anu.edu.au/pub/samba/BROWSING.txt" name="BROWSING.txt">
+ See <url url="ftp://samba.org/pub/samba/BROWSING.txt" name="BROWSING.txt">
  for more information on browsing.  Browsing.txt can also be found
  in the docs directory of the Samba source.
 
@@ -412,7 +412,7 @@ network" doesn't fit well with clients possibly running on multiuser
 machines (such as users of smbclient under Unix). Having said that,
 several developers are working hard on building it in to the next
 major version of Samba. If you can contribute, send a message to
-<htmlurl url="mailto:samba-bugs@samba.anu.edu.au" name="samba-bugs@samba.anu.edu.au"> !
+<htmlurl url="mailto:samba-bugs@samba.org" name="samba-bugs@samba.org"> !
 
 Seeing this message should not affect your ability to mount redirected
 disks and printers, which is really what all this is about.
@@ -459,7 +459,7 @@ as a strictly temporary solution.
 In earlier Samba versions there were some difficulties with the very
 latest Microsoft products, particularly Excel 5 and Word for Windows
 6. These should have all been solved. If not then please let Andrew
-Tridgell know via email at <htmlurl url="mailto:samba-bugs@samba.anu.edu.au" name="samba-bugs@samba.anu.edu.au">.
+Tridgell know via email at <htmlurl url="mailto:samba-bugs@samba.org" name="samba-bugs@samba.org">.
 
 <sect1>My "server string" doesn't seem to be recognised<p><label id="bad_server_string">
 OR My client reports the default setting, eg. "Samba 1.9.15p4", instead
@@ -565,7 +565,7 @@ To syncronize your PC's clock with your Samba server:
 <item> Copy timesync.pif to your windows directory
  <item> timesync.pif can be found at:
     <url 
-url="http://samba.anu.edu.au/samba/binaries/miscellaneous/timesync.pif">
+url="http://samba.org/samba/binaries/miscellaneous/timesync.pif">
 <item> Add timesync.pif to your 'Start Up' group/folder
 <item> Open the properties dialog box for the program/icon
 <item> Make sure the 'Run Minimized' option is set in program 'Properties'
@@ -576,7 +576,7 @@ Each time you start your computer (or login for Win95) your PC will
 synchronize its clock with your Samba server.
 
 Alternativley, if you clients support Domain Logons, you can setup Domain Logons with Samba
- - see: <url url="ftp://samba.anu.edu.au/pub/samba/docs/BROWSING.txt" name="BROWSING.txt"> *** for more information.
+ - see: <url url="ftp://samba.org/pub/samba/docs/BROWSING.txt" name="BROWSING.txt"> *** for more information.
 <p>Then add 
 <tscreen><verb>
 NET TIME \\%L /SET /YES
@@ -606,7 +606,7 @@ over this connection. This is unfortunate, but not fatal.
 It means that if you run your Samba server in share level security
 (the default) then things will definately break as described
 above. The share level SMB security model has no provision for
-multiple user IDs on the one SMB connection. See <url url="ftp://samba.anu.edu.au/pub/samba/docs/security_level.txt" name="security_level.txt"> in
+multiple user IDs on the one SMB connection. See <url url="ftp://samba.org/pub/samba/docs/security_level.txt" name="security_level.txt"> in
 the docs for more info on share/user/server level security.
 
 If you run in user or server level security then you have a chance,
@@ -755,7 +755,7 @@ You could also try setting the driver to NULL like this:
      printer driver = NULL
 </verb></tscreen>
 this is effectively what older versions of Samba did, so if that
-worked for you then give it a go. If this does work then let us know via <htmlurl url="mailto:samba-bugs@samba.anu.edu.au" name="samba-bugs@samba.anu.edu.au">,
+worked for you then give it a go. If this does work then let us know via <htmlurl url="mailto:samba-bugs@samba.org" name="samba-bugs@samba.org">,
 and we'll make it the default. Currently the default is a 0 length
 string.
 
@@ -764,7 +764,7 @@ As of SP3, Microsoft has decided that they will no longer default to
 passing clear text passwords over the network.  To enable access to 
 Samba shares from NT 4.0 SP3, you must do <bf>ONE</bf> of two things:
 <enum>
-<item> Set the Samba configuration option 'security = user' and implement all of the stuff detailed in <url url="ftp://samba.anu.edu.au/pub/samba/docs/ENCRYPTION.txt" name="ENCRYPTION.txt">.
+<item> Set the Samba configuration option 'security = user' and implement all of the stuff detailed in <url url="ftp://samba.org/pub/samba/docs/ENCRYPTION.txt" name="ENCRYPTION.txt">.
 <item> Follow Microsoft's directions for setting your NT box to allow plain text passwords. see <url url="http://www.microsoft.com/kb/articles/q166/7/30.htm" name="Knowledge Base Article Q166730">
 </enum>
 

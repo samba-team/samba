@@ -1,10 +1,10 @@
 !==
 !== UNIX_INSTALL.txt for Samba release 2.0.0-beta1 13 Nov 1998
 !==
-Contributor:	Andrew Tridgell <samba-bugs@samba.anu.edu.au>
+Contributor:	Andrew Tridgell <samba-bugs@samba.org>
 Date:		Unknown
 Status:		Current
-Updated:	November 13, 1998	<jra@samba.anu.edu.au>
+Updated:	November 13, 1998	<jra@samba.org>
 
 Subject:	HOW TO INSTALL AND TEST SAMBA
 ===============================================================================
@@ -17,7 +17,7 @@ try something like:
 	nroff -man smbd.8 | more
 
 Other sources of information are pointed to by the Samba web 
-site, http://samba.anu.edu.au/samba.
+site, http://samba.org/samba.
 
 STEP 1. Building the binaries
 

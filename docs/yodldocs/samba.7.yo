@@ -1,4 +1,4 @@
-mailto(samba-bugs@samba.anu.edu.au)
+mailto(samba-bugs@samba.org)
 manpage(Samba htmlcommand((7)))(7)(23 Oct 1998)(Samba)()
 
 label(NAME)
@@ -25,7 +25,7 @@ described in a separate manual page. It is strongly recommended that
 you read the documentation that comes with Samba and the manual pages
 of those components that you use. If the manual pages aren't clear
 enough then please send a patch or bug report
-to email(samba-bugs@samba.anu.edu.au).
+to email(samba-bugs@samba.org).
 
 startdit() 
 
@@ -83,7 +83,7 @@ file COPYING. You are encouraged to distribute copies of the Samba
 suite, but please obey the terms of this license.
 
 The latest version of the Samba suite can be obtained via anonymous
-ftp from samba.anu.edu.au in the directory pub/samba/. It is
+ftp from samba.org in the directory pub/samba/. It is
 also available on several mirror sites worldwide.
 
 You may also find useful information about Samba on the newsgroup
@@ -93,7 +93,7 @@ the mailing list are given in the README file that comes with Samba.
 If you have access to a WWW viewer (such as Netscape or Mosaic) then
 you will also find lots of useful information, including back issues
 of the Samba mailing list, at
-url(http://samba.anu.edu.au/samba/)(http://samba.anu.edu.au/samba/).
+url(http://samba.org/samba/)(http://samba.org/samba/).
 
 label(VERSION)
 manpagesection(VERSION)
@@ -104,13 +104,13 @@ label(CONTRIBUTIONS)
 manpagesection(CONTRIBUTIONS)
 
 If you wish to contribute to the Samba project, then I suggest you
-join the Samba mailing list at email(samba@samba.anu.edu.au). See the
+join the Samba mailing list at email(samba@samba.org). See the
 Web page at
-url(http://samba.anu.edu.au/listproc)(http://samba.anu.edu.au/listproc)
+url(http://samba.org/listproc)(http://samba.org/listproc)
 for details on how to do this.
 
 If you have patches to submit or bugs to report then you may mail them
-directly to email(samba-bugs@samba.anu.edu.au). Note, however, that due to
+directly to email(samba-bugs@samba.org). Note, however, that due to
 the enormous popularity of this package the Samba Team may take some
 time to respond to mail. We prefer patches in em(diff -u) format.
 
@@ -119,22 +119,22 @@ manpagesection(CREDITS)
 
 Contributors to the project are now too numerous to mention here but
 all deserve the thanks of all Samba users. To see a full list, look at
-url(ftp://samba.anu.edu.au/pub/samba/alpha/change-log)(ftp://samba.anu.edu.au/pub/samba/alpha/change-log)
+url(ftp://samba.org/pub/samba/alpha/change-log)(ftp://samba.org/pub/samba/alpha/change-log)
 for the pre-CVS changes and at
-url(ftp://samba.anu.edu.au/pub/samba/alpha/cvs.log)(ftp://samba.anu.edu.au/pub/samba/alpha/cvs.log)
+url(ftp://samba.org/pub/samba/alpha/cvs.log)(ftp://samba.org/pub/samba/alpha/cvs.log)
 for the contributors to Samba post-CVS. CVS is the Open Source source
 code control system used by the Samba Team to develop Samba. The
 project would have been unmanageable without it.
 
 In addition, several commercial organizations now help fund the Samba
 Team with money and equipment. For details see the Samba Web pages at
-url(http://samba.anu.edu.au/samba/samba-thanks.html)(http://samba.anu.edu.au/samba/samba-thanks.html).
+url(http://samba.org/samba/samba-thanks.html)(http://samba.org/samba/samba-thanks.html).
 
 label(AUTHOR)
 manpageauthor()
 
 The original Samba software and related utilities were created by
-Andrew Tridgell email(samba-bugs@samba.anu.edu.au). Samba is now developed
+Andrew Tridgell email(samba-bugs@samba.org). Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed.
 
@@ -143,4 +143,4 @@ sources were converted to YODL format (another excellent piece of Open
 Source software, available at
 url(bf(ftp://ftp.icce.rug.nl/pub/unix/))(ftp://ftp.icce.rug.nl/pub/unix/))
 and updated for the Samba2.0 release by Jeremy Allison.
-email(samba-bugs@samba.anu.edu.au).
+email(samba-bugs@samba.org).

@@ -130,19 +130,19 @@ interested in participating in or helping with this development
 please join the Samba-NTDOM mailing list.  Details on joining
 are available at :
 
-http://samba.anu.edu.au/listproc/
+http://samba.org/listproc/
 
 Details on obtaining CVS (developer) versions of Samba
 are available at:
 
-http://samba.anu.edu.au/cvs.html
+http://samba.org/cvs.html
 
 =====================================================================
 
 If you have problems, or think you have found a bug please email 
 a report to :
 
-        samba-bugs@samba.anu.edu.au
+        samba-bugs@samba.org
 
 As always, all bugs are our responsibility.
 

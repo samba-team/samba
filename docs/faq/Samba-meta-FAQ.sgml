@@ -11,7 +11,7 @@
 
 <title> Samba meta FAQ
 
-<author>Dan Shearer & Paul Blackman, <tt>ictinus@samba.anu.edu.au</tt>
+<author>Dan Shearer & Paul Blackman, <tt>ictinus@samba.org</tt>
 
 <date>v 0.3, 7 Oct '97
 
@@ -113,7 +113,7 @@ all covered either in this document or in those it refers to.
 
 <item> Meta-FAQ. This is the mother of all documents, and is the one you
 are reading now. The latest version is always at <url
-url="http://samba.anu.edu.au/[.....]"> but there is probably a much
+url="http://samba.org/[.....]"> but there is probably a much
 nearer <url url="../MIRRORS" name="mirror site"> which you should use
 instead.
 
@@ -189,13 +189,13 @@ and this FAQ were originally written by Karl Auer.
 <sect1> What is the current version of Samba?<p><label id="current_version">
 
 At time of writing, the current version was 1.9.17. If you want to be
-sure check the bottom of the change-log file. <url url="ftp://samba.anu.edu.au/pub/samba/alpha/change-log">
+sure check the bottom of the change-log file. <url url="ftp://samba.org/pub/samba/alpha/change-log">
 
 For more information see <ref id="version_nums" name="What do the version numbers mean?">
 
 <sect1> Where can I get it? <p><label id="WhereFrom">
 
-The Samba suite is available via anonymous ftp from samba.anu.edu.au and
+The Samba suite is available via anonymous ftp from samba.org and
 many <url url="../MIRRORS" name="mirror"> sites. You will get much
 faster performance if you use a mirror site. The latest and greatest
 versions of the suite are in the directory:
@@ -288,7 +288,7 @@ See below for subscription information.
 discussion about Samba. 
 
 <item>The WWW site 'SAMBA Web Pages' at <url
-url="http://samba.anu.edu.au/samba/"> includes:
+url="http://samba.org/samba/"> includes:
 
   <itemize>
     <item>Links to man pages and documentation, including this FAQ
@@ -302,8 +302,8 @@ url="http://samba.anu.edu.au/samba/"> includes:
 
 <sect1>How do I subscribe to the Samba Mailing Lists?<p><label id="mailinglist">
 
-Send email to <htmlurl url="mailto:listproc@samba.anu.edu.au"
-name="listproc@samba.anu.edu.au">. Make sure the subject line is blank,
+Send email to <htmlurl url="mailto:listproc@samba.org"
+name="listproc@samba.org">. Make sure the subject line is blank,
 and include the following two lines in the body of the message:
 
 <tscreen><verb>
@@ -321,7 +321,7 @@ the list since the last time and sends a copy of this message to all
 subscribers. There are thousands of people on this list.
 
 If you stop being interested in Samba, please send another email to
-<htmlurl url="mailto:listproc@samba.anu.edu.au" name="listproc@samba.anu.edu.au">. Make sure the subject line is blank, and
+<htmlurl url="mailto:listproc@samba.org" name="listproc@samba.org">. Make sure the subject line is blank, and
 include the following two lines in the body of the message:
 
 <tscreen><verb>
@@ -342,7 +342,7 @@ carried out the first three steps given here!
 
 <enum> <item> See if there are any likely looking entries in this FAQ!
 If you have just installed Samba, have you run through the checklist in
-<url url="ftp://samba.anu.edu.au/pub/samba/DIAGNOSIS.txt"
+<url url="ftp://samba.org/pub/samba/DIAGNOSIS.txt"
 name="DIAGNOSIS.txt">? It can save you a lot of time and effort.
 DIAGNOSIS.txt can also be found in the docs directory of the Samba
 distribution.
@@ -378,7 +378,7 @@ that an explanation can be incorporated into the next version.
 If you make changes to the source code, <em>please</em> submit these patches
 so that everyone else gets the benefit of your work. This is one of
 the most important aspects to the maintainence of Samba. Send all
-patches to <htmlurl url="mailto:samba-bugs@samba.anu.edu.au" name="samba-bugs@samba.anu.edu.au">. Do not send patches to Andrew Tridgell or any
+patches to <htmlurl url="mailto:samba-bugs@samba.org" name="samba-bugs@samba.org">. Do not send patches to Andrew Tridgell or any
 other individual, they may be lost if you do.
 
 Patch format
@@ -440,7 +440,7 @@ Some extras :
 
 If you have spotted something very serious and believe that it is
 important to contact the developers quickly send a message to
-samba-urgent@samba.anu.edu.au. This will be processed more quickly than
+samba-urgent@samba.org. This will be processed more quickly than
 mail to samba-bugs. Please think carefully before using this address. An
 example of its use might be to report a security hole.
 
@@ -526,7 +526,7 @@ Internet standard and is a very long way from becoming one, BUT the
 protocol specification is in the public domain and ongoing discussions
 concerning the spec take place on a public mailing list according to the
 rules of the Internet Engineering Task Force. For more information and
-pointers see <url url="http://samba.anu.edu.au/cifs/">
+pointers see <url url="http://samba.org/cifs/">
 
 The following is taken from <url url="http://www.microsoft.com/intdev/cifs/">
 

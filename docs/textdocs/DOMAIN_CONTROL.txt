@@ -2,7 +2,7 @@
 !== DOMAIN_CONTROL.txt for Samba release 2.0.0-beta1 13 Nov 1998
 !==
 Initial Release:	August 22, 1996
-Contributor:		John H Terpstra <samba-bugs@samba.anu.edu.au>
+Contributor:		John H Terpstra <samba-bugs@samba.org>
 			Copyright (C) 1996-1997 - John H Terpstra
 Updated:		July 5, 1998
 Status:			Current
