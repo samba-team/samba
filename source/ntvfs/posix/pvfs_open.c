@@ -142,6 +142,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	f->share_access = io->generic.in.share_access;
 	f->seek_offset = 0;
 	f->position = 0;
+	f->mode = 0;
 
 	DLIST_ADD(pvfs->open_files, f);
 
@@ -362,6 +363,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	}
 
 	status = odb_open_file(lck, fnum, share_access, create_options, access_mask);
+	talloc_free(lck);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* bad news, we must have hit a race */
 		idr_remove(pvfs->idtree_fnum, fnum);
@@ -382,6 +384,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	f->access_mask = access_mask;
 	f->seek_offset = 0;
 	f->position = 0;
+	f->mode = 0;
 	f->have_opendb_entry = True;
 
 	DLIST_ADD(pvfs->open_files, f);
@@ -433,6 +436,7 @@ static int pvfs_retry_destructor(void *ptr)
 		if (lck != NULL) {
 			odb_remove_pending(lck, r);
 		}
+		talloc_free(lck);
 	}
 	return 0;
 }
@@ -768,6 +772,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(lck);
 		return status;
 	}
 
@@ -776,6 +781,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	/* do the actual open */
 	fd = open(f->name->full_name, flags);
 	if (fd == -1) {
+		talloc_free(lck);
 		return pvfs_map_errno(f->pvfs, errno);
 	}
 
@@ -784,6 +790,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	/* re-resolve the open fd */
 	status = pvfs_resolve_name_fd(f->pvfs, fd, f->name);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(lck);
 		return status;
 	}
 
@@ -793,15 +800,18 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		uint32_t attrib = io->ntcreatex.in.file_attr | FILE_ATTRIBUTE_ARCHIVE;
 		mode_t mode = pvfs_fileperms(pvfs, attrib);
 		if (fchmod(fd, mode) == -1) {
+			talloc_free(lck);
 			return map_nt_error_from_unix(errno);
 		}
 		name->dos.attrib = attrib;
 		status = pvfs_dosattrib_save(pvfs, name, fd);
 		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(lck);
 			return status;
 		}
 	}
 	    
+	talloc_free(lck);
 
 	io->generic.out.oplock_level  = NO_OPLOCK;
 	io->generic.out.fnum	      = f->fnum;
