@@ -842,8 +842,15 @@ NTSTATUS cli_samr_query_dispinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_query_dispinfo(&q, domain_pol, switch_value,
 				   *start_idx, max_entries);
 
-	if (!samr_io_q_query_dispinfo("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_QUERY_DISPINFO, &qbuf, &rbuf)) {
+	/* XXX: Some level 0 debugs to try and identify the cause of cr1168 */
+
+	if (!samr_io_q_query_dispinfo("", &q, &qbuf, 0)) {
+		DEBUG(0, ("cli_samr_query_dispinfo: samr_io_q_query_dispinfo failed!\n"));
+		goto done;
+	}
+
+	if (!rpc_api_pipe_req(cli, SAMR_QUERY_DISPINFO, &qbuf, &rbuf)) {
+		DEBUG(0, ("cli_samr_query_dispinfo: rpc_api_pipe_req failed!\n"));
 		goto done;
 	}
 
@@ -852,6 +859,7 @@ NTSTATUS cli_samr_query_dispinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	r.ctr = ctr;
 
 	if (!samr_io_r_query_dispinfo("", &r, &rbuf, 0)) {
+		DEBUG(0, ("cli_samr_query_dispinfo: samr_io_r_query_dispinfo failed!\n"));
 		goto done;
 	}
 
