@@ -615,60 +615,117 @@ static void truncate_unless_locked(files_struct *fsp, connection_struct *conn, i
 	}
 }
 
+
+/*******************************************************************
+return True if the filename is one of the special executable types
+********************************************************************/
+static BOOL is_executable(char *fname)
+{
+	if ((fname = strrchr(fname,'.'))) {
+		if (strequal(fname,".com") ||
+		    strequal(fname,".dll") ||
+		    strequal(fname,".exe") ||
+		    strequal(fname,".sym")) {
+			return True;
+		}
+	}
+	return False;
+}
+
 enum {AFAIL,AREAD,AWRITE,AALL};
 
 /*******************************************************************
 reproduce the share mode access table
+this is horrendoously complex, and really can't be justified on any
+rational grounds except that this is _exactly_ what NT does. See
+the DENY1 and DENY2 tests in smbtorture for a comprehensive set of
+test routines.
 ********************************************************************/
-
 static int access_table(int new_deny,int old_deny,int old_mode,
-			pid_t share_pid,char *fname)
+			BOOL same_pid, BOOL isexe)
 {
-  if (new_deny == DENY_ALL || old_deny == DENY_ALL) return(AFAIL);
+	  if (new_deny == DENY_ALL || old_deny == DENY_ALL) return(AFAIL);
 
-  if (new_deny == DENY_DOS || old_deny == DENY_DOS) {
-    pid_t pid = getpid();
-    if (old_deny == new_deny && share_pid == pid) 
-	return(AALL);    
+	  if (same_pid) {
+		  if (isexe && old_mode == DOS_OPEN_RDONLY && 
+		      old_deny == DENY_DOS && new_deny == DENY_READ) {
+			  return AFAIL;
+		  }
+		  if (!isexe && old_mode == DOS_OPEN_RDONLY && 
+		      old_deny == DENY_DOS && new_deny == DENY_DOS) {
+			  return AREAD;
+		  }
+		  if (new_deny == DENY_FCB && old_deny == DENY_DOS) {
+			  if (isexe) return AFAIL;
+			  if (old_mode == DOS_OPEN_RDONLY) return AFAIL;
+			  return AALL;
+		  }
+		  if (old_mode == DOS_OPEN_RDONLY && old_deny == DENY_DOS) {
+			  if (new_deny == DENY_FCB || new_deny == DENY_READ) {
+				  if (isexe) return AREAD;
+				  return AFAIL;
+			  }
+		  }
+		  if (old_deny == DENY_FCB) {
+			  if (new_deny == DENY_DOS || new_deny == DENY_FCB) return AALL;
+			  return AFAIL;
+		  }
+	  }
 
-    /* the new smbpub.zip spec says that if the file extension is
-       .com, .dll, .exe or .sym then allow the open. I will force
-       it to read-only as this seems sensible although the spec is
-       a little unclear on this. */
-    if ((fname = strrchr(fname,'.'))) {
-      if (strequal(fname,".com") ||
-	  strequal(fname,".dll") ||
-	  strequal(fname,".exe") ||
-	  strequal(fname,".sym"))
-	return(AREAD);
-    }
+	  if (old_deny == DENY_DOS || new_deny == DENY_DOS || 
+	      old_deny == DENY_FCB || new_deny == DENY_FCB) {
+		  if (isexe) {
+			  if (old_deny == DENY_FCB || new_deny == DENY_FCB) {
+				  return AFAIL;
+			  }
+			  if (old_deny == DENY_DOS) {
+				  if (new_deny == DENY_READ && 
+				      (old_mode == DOS_OPEN_RDONLY || 
+				       old_mode == DOS_OPEN_RDWR)) {
+					  return AFAIL;
+				  }
+				  if (new_deny == DENY_WRITE && 
+				      (old_mode == DOS_OPEN_WRONLY || 
+				       old_mode == DOS_OPEN_RDWR)) {
+					  return AFAIL;
+				  }
+				  return AALL;
+			  }
+			  if (old_deny == DENY_NONE) return AALL;
+			  if (old_deny == DENY_READ) return AWRITE;
+			  if (old_deny == DENY_WRITE) return AREAD;
+		  }
+		  /* it isn't a exe, dll, sym or com file */
+		  if (old_deny == new_deny && same_pid)
+			  return(AALL);    
 
-	if (old_deny == DENY_READ || new_deny == DENY_READ) return AFAIL;
-	if (old_mode == DOS_OPEN_RDONLY) return(AREAD);
-
-    return(AFAIL);
-  }
-
-  switch (new_deny) 
-    {
-    case DENY_WRITE:
-      if (old_deny==DENY_WRITE && old_mode==DOS_OPEN_RDONLY) return(AREAD);
-      if (old_deny==DENY_READ && old_mode==DOS_OPEN_RDONLY) return(AWRITE);
-      if (old_deny==DENY_NONE && old_mode==DOS_OPEN_RDONLY) return(AALL);
-      return(AFAIL);
-    case DENY_READ:
-      if (old_deny==DENY_WRITE && old_mode==DOS_OPEN_WRONLY) return(AREAD);
-      if (old_deny==DENY_READ && old_mode==DOS_OPEN_WRONLY) return(AWRITE);
-      if (old_deny==DENY_NONE && old_mode==DOS_OPEN_WRONLY) return(AALL);
-      return(AFAIL);
-    case DENY_NONE:
-      if (old_deny==DENY_WRITE) return(AREAD);
-      if (old_deny==DENY_READ) return(AWRITE);
-      if (old_deny==DENY_NONE) return(AALL);
-      return(AFAIL);      
-    }
-  return(AFAIL);      
+		  if (old_deny == DENY_READ || new_deny == DENY_READ) return AFAIL;
+		  if (old_mode == DOS_OPEN_RDONLY) return(AREAD);
+		  
+		  return(AFAIL);
+	  }
+	  
+	  switch (new_deny) 
+		  {
+		  case DENY_WRITE:
+			  if (old_deny==DENY_WRITE && old_mode==DOS_OPEN_RDONLY) return(AREAD);
+			  if (old_deny==DENY_READ && old_mode==DOS_OPEN_RDONLY) return(AWRITE);
+			  if (old_deny==DENY_NONE && old_mode==DOS_OPEN_RDONLY) return(AALL);
+			  return(AFAIL);
+		  case DENY_READ:
+			  if (old_deny==DENY_WRITE && old_mode==DOS_OPEN_WRONLY) return(AREAD);
+			  if (old_deny==DENY_READ && old_mode==DOS_OPEN_WRONLY) return(AWRITE);
+			  if (old_deny==DENY_NONE && old_mode==DOS_OPEN_WRONLY) return(AALL);
+			  return(AFAIL);
+		  case DENY_NONE:
+			  if (old_deny==DENY_WRITE) return(AREAD);
+			  if (old_deny==DENY_READ) return(AWRITE);
+			  if (old_deny==DENY_NONE) return(AALL);
+			  return(AFAIL);      
+		  }
+	  return(AFAIL);      
 }
+
 
 /****************************************************************************
 check if we can open a file with a share mode
@@ -695,20 +752,9 @@ static int check_share_mode( share_mode_entry *share, int deny_mode,
     return False;
   }
 
-  if (old_deny_mode > 4 || old_open_mode > 2)
-  {
-    DEBUG(0,("Invalid share mode found (%d,%d,%d) on file %s\n",
-               deny_mode,old_deny_mode,old_open_mode,fname));
-
-    unix_ERR_class = ERRDOS;
-    unix_ERR_code = ERRbadshare;
-
-    return False;
-  }
-
   {
     int access_allowed = access_table(deny_mode,old_deny_mode,old_open_mode,
-                                share->pid,fname);
+				      (share->pid == getpid()),is_executable(fname));
 
     if ((access_allowed == AFAIL) ||
         (!fcbopen && (access_allowed == AREAD && *flags == O_RDWR)) ||
@@ -846,9 +892,6 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
     errno = EINVAL;
     return;
   }
-
-  if (deny_mode == DENY_FCB)
-    deny_mode = DENY_DOS;
 
   if (lp_share_modes(SNUM(conn))) 
   {
