@@ -23,8 +23,8 @@ s initscript /etc/rc3.d/S99samba.server=../init.d/samba.server
 #
 # Stuff to set up SWAT
 #
-e swat /etc/services=packaging/Solaris/services ? ? ?
-e swat /etc/inetd.conf=packaging/Solaris/inetd.conf ? ? ?
+e swat /etc/inet/services=packaging/Solaris/services ? ? ?
+e swat /etc/inet/inetd.conf=packaging/Solaris/inetd.conf ? ? ?
 #
 # Create the samba subtree. (Usually /usr/local/samba )
 #
