@@ -296,6 +296,10 @@ uint32 _svc_enum_svcs_status(const POLICY_HND *pol,
 
 		make_unistr(&svc->uni_srvc_name, svc_name);
 		make_unistr(&svc->uni_disp_name, svc_name);
+		svc->status.svc_type = 0x10; /* process, non-interactive */
+		svc->status.current_state = 4; /* running */
+		/* stoppable, pausable, accepts_shutdown */
+		svc->status.controls_accepted = 7;
 
 		DEBUG(10,("show service: %s\n", svc_name));
 	}

@@ -120,8 +120,8 @@ uint32 _reg_open_entry(const POLICY_HND * pol, const UNISTR2 * uni_name,
 	unistr2_to_ascii(name, uni_name, sizeof(name) - 1);
 
 	/* lkcl XXXX do a check on the name, here */
-	if (!strequal
-	    (name, "SYSTEM\\CurrentControlSet\\Control\\ProductOptions")
+	if (!strequal(name,
+		      "SYSTEM\\CurrentControlSet\\Control\\ProductOptions")
 	    && !strequal(name,
 			 "SYSTEM\\CurrentControlSet\\Services\\NETLOGON\\Parameters\\"))
 	{
@@ -148,8 +148,8 @@ uint32 _reg_info(POLICY_HND * pol, BUFFER2 * buf, uint32 * type)
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (strequal
-	    (name, "SYSTEM\\CurrentControlSet\\Control\\ProductOptions"))
+	if (strequal(name,
+		     "SYSTEM\\CurrentControlSet\\Control\\ProductOptions"))
 	{
 		char *key;
 		switch (lp_server_role())
