@@ -29,6 +29,8 @@
 	DATA_BLOB buffer;\
 	if (r->out.info) {\
 		int i;\
+		size_t size;\
+		uint8_t *data;\
 		struct ndr_push *ndr2;\
 \
 		ndr2 = ndr_push_init_ctx(ndr);\
@@ -36,20 +38,24 @@
 			return NT_STATUS_NO_MEMORY;\
 		}\
 \
+		size = ndr2->offset;\
+		data = ndr2->data;\
+\
 		for (i=0;i<r->out.count;i++) {\
 			ndr2->data += ndr2->offset;\
 			ndr2->offset = 0;\
 			NDR_CHECK(ndr_push_set_switch_value(ndr2, &(*r->out.info)[i], r->in.level)); \
 			NDR_CHECK(ndr_push_##type(ndr2, NDR_SCALARS|NDR_BUFFERS, &(*r->out.info)[i]));\
+			size += ndr2->offset;\
 		}\
-		if (*r->in.buf_size >= ndr2->offset) {\
-			buffer = data_blob_const(ndr2->data, ndr2->offset);\
+		if (*r->in.buf_size >= size) {\
+			buffer = data_blob_const(data, size);\
 		} else {\
 			r->out.info = NULL;\
 			r->out.count = 0;\
 			r->out.result = WERR_INSUFFICIENT_BUFFER;\
 		}\
-		*r->out.buf_size = ndr2->offset;\
+		*r->out.buf_size = size;\
 	}\
 	NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.info));\
 	if (r->out.info) {\
