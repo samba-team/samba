@@ -241,7 +241,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 {
 	fstring remote_machine;
 	NET_USER_INFO_3 info3;
-	struct cli_state *cli;
+	struct cli_state *cli = NULL;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct passwd *pass;
 
@@ -264,7 +264,6 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("domain_client_validate: Domain password server not available.\n"));
-		cli_shutdown(cli);
 		return nt_status;
 	}
 
