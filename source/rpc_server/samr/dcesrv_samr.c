@@ -1065,7 +1065,73 @@ static NTSTATUS samr_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 static NTSTATUS samr_LookupRids(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_LookupRids *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct samr_domain_state *d_state;
+	int i;
+	NTSTATUS status = NT_STATUS_OK;
+
+	ZERO_STRUCT(r->out.names);
+	ZERO_STRUCT(r->out.types);
+
+	DCESRV_PULL_HANDLE(h, r->in.domain_handle, SAMR_HANDLE_DOMAIN);
+
+	d_state = h->data;
+
+	if (r->in.num_rids == 0)
+		return NT_STATUS_OK;
+
+	r->out.names.names = talloc_array_p(mem_ctx, struct samr_String,
+					    r->in.num_rids);
+	if (r->out.names.names == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	r->out.types.ids = talloc_array_p(mem_ctx, uint32_t, r->in.num_rids);
+	if (r->out.types.ids == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	r->out.names.count = r->in.num_rids;
+	r->out.types.count = r->in.num_rids;
+
+	for (i=0; i<r->in.num_rids; i++) {
+		struct ldb_message **res;
+		int count;
+		const char * const attrs[] = { 	"sAMAccountType",
+						"sAMAccountName", NULL };
+		struct samr_String *str;
+		uint32_t atype;
+
+		str = &r->out.names.names[i];
+
+		ZERO_STRUCTP(str);
+		r->out.types.ids[i] = 0;
+
+		count = samdb_search(d_state->sam_ctx, mem_ctx,
+				     d_state->domain_dn, &res, attrs,
+				     "(objectSid=%s-%u)", d_state->domain_sid,
+				     r->in.rids[i]);
+		if (count != 1) {
+			status = STATUS_SOME_UNMAPPED;
+			continue;
+		}
+
+		str->string = samdb_result_string(res[0], "sAMAccountName",
+						  NULL);
+		
+		atype = samdb_result_uint(res[0], "sAMAccountType", 0);
+		if (atype == 0) {
+			status = STATUS_SOME_UNMAPPED;
+			continue;
+		}
+
+		r->out.types.ids[i] = samdb_atype_map(atype);
+		
+		if (r->out.types.ids[i] == SID_NAME_UNKNOWN) {
+			status = STATUS_SOME_UNMAPPED;
+			continue;
+		}
+	}
+	
+	return status;
 }
 
 
