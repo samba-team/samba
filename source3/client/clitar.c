@@ -1074,7 +1074,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 	   * write out in 512 byte intervals */
 	  if (dotarbuf(tarhandle,dataptr,datalen) != datalen)
 	    {
-	      DEBUG(0,("Error writing local file\n"));
+	      DEBUG(0,("Error writing to tar file - %s\n", strerror(errno)));
 	      break;
 	    }
 	  
@@ -1094,7 +1094,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
         {
           DEBUG(0, ("Didn't get entire file. size=%d, nread=%d\n", finfo.size, nread));
           if (padit(inbuf, BUFFER_SIZE, finfo.size - nread))
-              DEBUG(0,("Error writing local file\n"));
+              DEBUG(0,("Error writing tar file - %s\n", strerror(errno)));
         }
 
       /* round tar file to nearest block */
@@ -1761,7 +1761,8 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
     if ((tar_type=='x' && (tarhandle = open(argv[Optind], O_RDONLY)) == -1)
 	|| (tar_type=='c' && (tarhandle=creat(argv[Optind], 0644)) < 0))
       {
-	DEBUG(0,("Error opening local file %s\n",argv[Optind]));
+	DEBUG(0,("Error opening local file %s - %s\n",
+		 argv[Optind], strerror(errno)));
 	return(0);
       }
   }
