@@ -1835,6 +1835,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   BOOL bad_path = False;
   files_struct *fsp;
   int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
+  int tmpfd;
   SMB_STRUCT_STAT sbuf;
   char *p;
 
@@ -1850,15 +1851,23 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   
   unixmode = unix_mode(conn,createmode,fname);
   
-  pstrcpy(fname2,(char *)smbd_mktemp(fname));
-  /* This file should not exist. */
-  ZERO_STRUCT(sbuf);
+  tmpfd = smb_mkstemp(fname);
+  if (tmpfd == -1) {
+      END_PROFILE(SMBctemp);
+      return(UNIXERROR(ERRDOS,ERRnoaccess));
+  }
+
   vfs_stat(conn,fname2,&sbuf);
 
   /* Open file in dos compatibility share mode. */
-  /* We should fail if file exists. */
-  fsp = open_file_shared(conn,fname2,&sbuf,SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB), 
-                   (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_FAIL), unixmode, oplock_request, NULL, NULL);
+  /* We should fail if file does not exist. */
+  fsp = open_file_shared(conn,fname,&sbuf,
+             SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB),
+             FILE_FAIL_IF_NOT_EXIST,
+             unixmode, oplock_request, NULL, NULL);
+
+  /* close fd from smb_mkstemp() */
+  close(tmpfd);
 
   if (!fsp)
   {
@@ -3169,7 +3178,7 @@ int reply_printopen(connection_struct *conn,
 	}
 
 	/* Open for exclusive use, write only. */
-	fsp = print_fsp_open(conn,"dos.prn");
+	fsp = print_fsp_open(conn);
 
 	if (!fsp) {
 		END_PROFILE(SMBsplopen);
