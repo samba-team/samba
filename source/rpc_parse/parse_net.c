@@ -1192,10 +1192,32 @@ static BOOL smb_io_sam_info(char *desc, DOM_SAM_INFO *sam, prs_struct *ps, int d
 }
 
 /*************************************************************************
- Init
+ Inits a NET_USER_INFO_3 structure.
+
+ This is a network logon reply packet, and contains much information about
+ the user.  This information is passed as a (very long) paramater list
+ to avoid having to link in the PASSDB code to every program that deals 
+ with this file.
  *************************************************************************/
 
-void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr, SAM_ACCOUNT *sampw,
+void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr, 
+			 uint32                user_rid,
+			 uint32                group_rid,
+
+			 const char*		user_name,
+			 const char*		full_name,
+			 const char*		home_dir,
+			 const char*		dir_drive,
+			 const char*		logon_script,
+			 const char*		profile_path,
+
+			 time_t unix_logon_time,
+			 time_t unix_logoff_time,
+			 time_t unix_kickoff_time,
+			 time_t unix_pass_last_set_time,
+			 time_t unix_pass_can_change_time,
+			 time_t unix_pass_must_change_time,
+			 
 			 uint16 logon_count, uint16 bad_pw_count,
  		 	 uint32 num_groups, DOM_GID *gids,
 			 uint32 user_flgs, uchar *sess_key,
@@ -1214,13 +1236,6 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr, SAM_ACCOUNT *sam
 	int 		len_user_name, len_full_name, len_home_dir,
 			len_dir_drive, len_logon_script, len_profile_path;
 			
-	const char*		user_name = pdb_get_username(sampw);
-	const char*		full_name = pdb_get_fullname(sampw);
-	const char*		home_dir  = pdb_get_homedir(sampw);
-	const char*		dir_drive = pdb_get_dirdrive(sampw);
-	const char*		logon_script = pdb_get_logon_script(sampw);
-	const char*		profile_path = pdb_get_profile_path(sampw);
-
 	int len_logon_srv    = strlen(logon_srv);
 	int len_logon_dom    = strlen(logon_dom);
 
@@ -1238,12 +1253,12 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr, SAM_ACCOUNT *sam
 
 
 	/* Create NTTIME structs */
-	unix_to_nt_time (&logon_time, 		pdb_get_logon_time(sampw));
-	unix_to_nt_time (&logoff_time, 		pdb_get_logoff_time(sampw));
-	unix_to_nt_time (&kickoff_time, 	pdb_get_kickoff_time(sampw));
-	unix_to_nt_time (&pass_last_set_time, 	pdb_get_pass_last_set_time(sampw));
-	unix_to_nt_time (&pass_can_change_time,	pdb_get_pass_can_change_time(sampw));
-	unix_to_nt_time (&pass_must_change_time,pdb_get_pass_must_change_time(sampw));
+	unix_to_nt_time (&logon_time, 		 unix_logon_time);
+	unix_to_nt_time (&logoff_time, 		 unix_logoff_time);
+	unix_to_nt_time (&kickoff_time, 	 unix_kickoff_time);
+	unix_to_nt_time (&pass_last_set_time, 	 unix_pass_last_set_time);
+	unix_to_nt_time (&pass_can_change_time,	 unix_pass_can_change_time);
+	unix_to_nt_time (&pass_must_change_time, unix_pass_must_change_time);
 
 	usr->logon_time            = logon_time;
 	usr->logoff_time           = logoff_time;
@@ -1262,8 +1277,8 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr, SAM_ACCOUNT *sam
 	usr->logon_count = logon_count;
 	usr->bad_pw_count = bad_pw_count;
 
-	usr->user_rid = pdb_get_user_rid(sampw);
-	usr->group_rid = pdb_get_group_rid(sampw);
+	usr->user_rid = user_rid;
+	usr->group_rid = group_rid;
 	usr->num_groups = num_groups;
 
 	usr->buffer_groups = 1; /* indicates fill in groups, below, even if there are none */

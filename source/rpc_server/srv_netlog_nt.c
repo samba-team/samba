@@ -505,6 +505,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
 	extern userdom_struct current_user_info;
+	SAM_ACCOUNT *sampw;
 	        
 	usr_info = (NET_USER_INFO_3 *)talloc(p->mem_ctx, sizeof(NET_USER_INFO_3));
 	if (!usr_info)
@@ -675,18 +676,35 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
   		gids = NULL;
 		get_domain_user_groups(p->mem_ctx, &num_gids, &gids, server_info->sam_account);
         
-		init_net_user_info3(p->mem_ctx, usr_info, server_info->sam_account,
-                            0, /* logon_count */
-                            0, /* bad_pw_count */
-                            num_gids,    /* uint32 num_groups */
-                            gids    , /* DOM_GID *gids */
-                            0x20    , /* uint32 user_flgs (?) */
-                            NULL, /* uchar sess_key[16] */
-                            my_name     , /* char *logon_srv */
-                            my_workgroup, /* char *logon_dom */
-                            &global_sam_sid,     /* DOM_SID *dom_sid */
-                            NULL); /* char *other_sids */
+		sampw = server_info->sam_account;
 
+		init_net_user_info3(p->mem_ctx, usr_info, 
+				    pdb_get_user_rid(sampw),
+				    pdb_get_group_rid(sampw),
+				    
+				    pdb_get_username(sampw),
+				    pdb_get_fullname(sampw),
+				    pdb_get_homedir(sampw),
+				    pdb_get_dirdrive(sampw),
+				    pdb_get_logon_script(sampw),
+				    pdb_get_profile_path(sampw),
+				    pdb_get_logon_time(sampw),
+				    pdb_get_logoff_time(sampw),
+				    pdb_get_kickoff_time(sampw),
+				    pdb_get_pass_last_set_time(sampw),
+				    pdb_get_pass_can_change_time(sampw),
+				    pdb_get_pass_must_change_time(sampw),
+				    
+				    0, /* logon_count */
+				    0, /* bad_pw_count */
+				    num_gids,    /* uint32 num_groups */
+				    gids    , /* DOM_GID *gids */
+				    0x20    , /* uint32 user_flgs (?) */
+				    NULL, /* uchar sess_key[16] */
+				    my_name     , /* char *logon_srv */
+				    my_workgroup, /* char *logon_dom */
+				    &global_sam_sid,     /* DOM_SID *dom_sid */
+				    NULL); /* char *other_sids */
 	}
 	free_server_info(&server_info);
 	return status;
