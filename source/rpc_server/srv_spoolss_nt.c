@@ -6073,6 +6073,7 @@ static WERROR getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 	pstring long_archi;
 	pstring short_archi;
 	DRIVER_DIRECTORY_1 *info=NULL;
+	fstring asc_name, servername;
 
 	unistr2_to_ascii(long_archi, uni_environment, sizeof(long_archi)-1);
 
@@ -6081,6 +6082,20 @@ static WERROR getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 
 	if((info=(DRIVER_DIRECTORY_1 *)malloc(sizeof(DRIVER_DIRECTORY_1))) == NULL)
 		return WERR_NOMEM;
+
+#if 0	/* JERRY */
+	/* use the name the client sent us */
+
+	unistr2_to_ascii(asc_name, name, sizeof(asc_name)-1);
+	if (asc_name[0] == '\\' && asc_name[1] == '\\')
+		fstrcpy(servername, asc_name);
+	else {
+		fstrcpy(servername, "\\\\");
+		fstrcat(servername, asc_name);
+	}
+
+	slprintf(path, sizeof(path)-1, "%s\\print$\\%s", servername, short_archi);
+#endif
 
 	slprintf(path, sizeof(path)-1, "\\\\%s\\print$\\%s", get_called_name(), short_archi);
 
@@ -6485,7 +6500,7 @@ WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 
 	/* can't add if builtin */
 	if (get_a_builtin_ntform(&form->name,&tmpForm)) {
-		return WERR_INVALID_PARAM;
+		return WERR_ALREADY_EXISTS;
 	}
 
 	count=get_ntforms(&list);
