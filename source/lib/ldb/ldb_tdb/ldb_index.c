@@ -935,6 +935,7 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 	struct ldb_module *module = state;
 	struct ldb_message *msg;
 	int ret;
+	TDB_DATA key2;
 
 	if (strncmp(key.dptr, "DN=@", 4) == 0 ||
 	    strncmp(key.dptr, "DN=", 3) != 0) {
@@ -951,6 +952,15 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 		talloc_free(msg);
 		return -1;
 	}
+
+	/* check if the DN key has changed, perhaps due to the 
+	   case insensitivity of an element changing */
+	key2 = ltdb_key(module, msg->dn);
+	if (strcmp(key2.dptr, key.dptr) != 0) {
+		tdb_delete(tdb, key);
+		tdb_store(tdb, key2, data, 0);
+	}
+	talloc_free(key2.dptr);
 
 	if (!msg->dn) {
 		msg->dn = key.dptr+3;
