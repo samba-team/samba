@@ -121,26 +121,71 @@ static PyMethodDef spoolss_methods[] = {
 	/* Open/close printer handles */
 	
 	{ "openprinter", spoolss_openprinter, METH_VARARGS | METH_KEYWORDS, 
-	  "Open printer" },
+	  "openprinter(printername, [creds, access]) -> <spoolss hnd object>
+
+Open a printer given by printername in UNC format.  Optionally a 
+dictionary of (username, password) may be given in which case they are
+used when opening the RPC pipe.  An access mask may also be given which
+defaults to MAXIMUM_ALLOWED_ACCESS.
+
+Example:
+
+>>> hnd = spoolss.openprinter(\"\\\\\\\\NPSD-PDC2\\\\meanie\")
+"},
 	
 	{ "closeprinter", spoolss_closeprinter, METH_VARARGS, 
-	  "Close printer" },
+	  "closeprinter()
+
+Close a printer handle opened with openprinter or addprinter.
+
+Example:
+
+>>> spoolss.closeprinter(hnd)
+"},
 
 	/* Server enumeratation functions */
 
 	{ "enumprinters", spoolss_enumprinters, METH_VARARGS | METH_KEYWORDS,
-	  "Enumerate printers" },
+	  "enumprinters(server, [creds, level, flags]) -> list
+
+Return a list of printers on a print server.  The credentials, info level
+and flags may be specified as keyword arguments.
+
+Example:
+
+>>> print spoolss.enumprinters(\"\\\\\\\\npsd-pdc2\")
+[{'comment': 'i am a comment', 'printer_name': 'meanie', 'flags': 8388608, 
+  'description': 'meanie,Generic / Text Only,i am a location'}, 
+ {'comment': '', 'printer_name': 'fileprint', 'flags': 8388608, 
+  'description': 'fileprint,Generic / Text Only,'}]
+"},
 
 	{ "enumports", spoolss_enumports, METH_VARARGS | METH_KEYWORDS,
-	  "Enumerate ports" },
+	  "enumports(server, [creds, level]) -> list
+
+Return a list of ports on a print server.
+
+Example:
+
+>>> print spoolss.enumports(\"\\\\\\\\npsd-pdc2\")
+[{'name': 'LPT1:'}, {'name': 'LPT2:'}, {'name': 'COM1:'}, {'name': 'COM2:'}, 
+ {'name': 'FILE:'}, {'name': '\\\\nautilus1\\zpekt3r'}]
+"},
 
 	{ "enumprinterdrivers", spoolss_enumprinterdrivers, METH_VARARGS |
-	  METH_KEYWORDS, "Enumerate printer drivers" },
+	  METH_KEYWORDS, 
+"enumprinterdrivers(server, [level, arch, creds]) -> list
 
+Return a list of printer drivers.
+"},
 	/* Miscellaneous other commands */
 
 	{ "getprinterdriverdir", spoolss_getprinterdriverdir, METH_VARARGS |
-	  METH_KEYWORDS, "Get printer driver directory" },
+	  METH_KEYWORDS, "getprinterdriverdir(server, [creds]) -> string
+
+Return the printer driver directory for a given architecture.  The 
+architecture defaults to \"Windows NT x86\".
+"},
 
 	{ NULL }
 };
@@ -152,23 +197,46 @@ static PyMethodDef spoolss_hnd_methods[] = {
 	/* Printer info */
 
 	{ "getprinter", spoolss_getprinter, METH_VARARGS | METH_KEYWORDS,
-	  "Fetch printer information" },
+	  "getprinter([level]) -> dict
+
+Return a dictionary of print information.  The info level defaults to 1.
+
+Example:
+
+>>> hnd.getprinter()
+{'comment': 'i am a comment', 'printer_name': '\\\\NPSD-PDC2\\meanie', 
+ 'description': '\\\\NPSD-PDC2\\meanie,Generic / Text Only,i am a location',
+ 'flags': 8388608}
+"},
 
 	{ "setprinter", spoolss_setprinter, METH_VARARGS | METH_KEYWORDS,
-	  "Set printer information" },
+	  "setprinter(dict) -> None
+
+Set printer information.
+"},
 
 	/* Printer drivers */
 
 	{ "getprinterdriver", spoolss_getprinterdriver, 
-	  METH_VARARGS | METH_KEYWORDS, "Fetch printer driver" },
+	  METH_VARARGS | METH_KEYWORDS, 
+	  "getprinterdriver([level = 1, arch = \"Windows NT x86\"] -> dict
+
+Return a dictionary of printer driver information.
+"},
 
 	/* Forms */
 
 	{ "enumforms", spoolss_enumforms, METH_VARARGS | METH_KEYWORDS,
-	  "Enumerate forms" },
+	  "enumforms([level = 1]) -> list
+
+Return a list of forms supported by a printer.
+"},
 
 	{ "setform", spoolss_setform, METH_VARARGS | METH_KEYWORDS,
-	  "Modify properties of a form" },
+	  "setform(dict) -> None
+
+Set the form given by the dictionary argument.
+"},
 
 	{ "addform", spoolss_addform, METH_VARARGS | METH_KEYWORDS,
 	  "Insert a form" },
@@ -193,22 +261,32 @@ static PyObject *py_policy_hnd_getattr(PyObject *self, char *attrname)
 	return Py_FindMethod(spoolss_hnd_methods, self, attrname);
 }
 
+static char spoolss_type_doc[] = 
+"Python wrapper for Windows NT SPOOLSS rpc pipe.";
+
 PyTypeObject spoolss_policy_hnd_type = {
 	PyObject_HEAD_INIT(NULL)
 	0,
-	"Spoolss Policy Handle",
+	"spoolss.hnd",
 	sizeof(spoolss_policy_hnd_object),
 	0,
-	py_policy_hnd_dealloc, /*tp_dealloc*/
-	0,          /*tp_print*/
-	py_policy_hnd_getattr,          /*tp_getattr*/
-	0,          /*tp_setattr*/
-	0,          /*tp_compare*/
-	0,          /*tp_repr*/
-	0,          /*tp_as_number*/
-	0,          /*tp_as_sequence*/
-	0,          /*tp_as_mapping*/
-	0,          /*tp_hash */
+	py_policy_hnd_dealloc,	/* tp_dealloc*/
+	0,			/* tp_print*/
+	py_policy_hnd_getattr,	/* tp_getattr*/
+	0,			/* tp_setattr*/
+	0,			/* tp_compare*/
+	0,			/* tp_repr*/
+	0,			/* tp_as_number*/
+	0,			/* tp_as_sequence*/
+	0,			/* tp_as_mapping*/
+	0,			/* tp_hash */
+	0,			/* tp_call */
+	0,			/* tp_str */
+	0,			/* tp_getattro */
+	0,			/* tp_setattro */
+	0,			/* tp_as_buffer*/
+	Py_TPFLAGS_DEFAULT,	/* tp_flags */
+	spoolss_type_doc,	/* tp_doc */
 };
 
 /* Initialise constants */
@@ -273,6 +351,9 @@ void initspoolss(void)
 	/* Initialise policy handle object */
 
 	spoolss_policy_hnd_type.ob_type = &PyType_Type;
+
+	PyDict_SetItemString(dict, "spoolss.hnd", 
+			     (PyObject *)&spoolss_policy_hnd_type);
 
 	/* Initialise constants */
 
