@@ -51,3 +51,16 @@ or you want to upgrade one component, just kill the relevant daemon,
 NOT smbd and NOT any of the other services, and restart it.  i think
 that's just great :)
 
+
+Sun Jan 2nd 2000 (later on)
+
+i liked the daemon architecture so much i decided to add it to cvs main,
+or what is affectionately known as the SAMBA-3 tree.  what i added was
+code that, instead of _always_ redirecting to the daemon architecture
+like in SAMBA_TNG, samba cvs main _attempts_ to redirect to the daemon
+architecture.  if this fails, it will fall back to using the internal
+msrpc code.
+
+so, if you want to use smbd file-services in cvs main, which are much better,
+then simply run cvs main's smbd daemon instead of SAMBA_TNG's.
+
