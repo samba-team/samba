@@ -1,4 +1,17 @@
+1999-12-06  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am: bump version to 5:0:0 and 4:0:0
+
 1999-12-04  Assar Westerlund  <assar@sics.se>
+
+	* replay_log.c: adapt to changed kadm5_log_foreach
+
+	* log.c (kadm5_log_foreach): change to take a
+ 	`kadm5_server_context'
+
+	* init_c.c: use krb5_warn{,x}
+
+	* dump_log.c: adapt to changed kadm5_log_foreach
 
 	* init_c.c: re-write to use getaddrinfo
 	* Makefile.am (install-build-headers): add dependency

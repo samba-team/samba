@@ -1,3 +1,7 @@
+1999-12-06  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am: bump version to 4:0:0
+
 1999-12-05  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.in: replace inaddr2str with getnameinfo_verified
