@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += $(INCLUDE_krb4) $(AFS_EXTRA_DEFS) -DROKEN_RENAME
+INCLUDES += $(INCLUDE_krb4) $(AFS_EXTRA_DEFS)
 
 if KRB4
 AFSLIBS = libkafs.la
@@ -46,7 +46,7 @@ foodir = $(libdir)
 foo_DATA = $(AFS_EXTRA_LIBS)
 # EXTRA_DATA = afslib.so
 
-CLEANFILES= $(AFS_EXTRA_LIBS)
+CLEANFILES= $(AFS_EXTRA_LIBS) $(ROKEN_SRCS)
 
 include_HEADERS = kafs.h
 
@@ -54,7 +54,20 @@ if KRB5
 afskrb5_c = afskrb5.c
 endif
 
-libkafs_la_SOURCES = afssys.c afskrb.c $(afskrb5_c) common.c $(AIX_SRC) kafs_locl.h afssysdefs.h resolve.c
+if do_roken_rename
+ROKEN_SRCS = resolve.c
+endif
+
+libkafs_la_SOURCES =				\
+	afssys.c				\
+	afskrb.c				\
+	$(afskrb5_c)				\
+	common.c				\
+	$(AIX_SRC)				\
+	kafs_locl.h				\
+	afssysdefs.h				\
+	$(ROKEN_SRCS)
+
 #afslib_so_SOURCES = afslib.c
 
 EXTRA_libkafs_la_SOURCES = afskrb5.c dlfcn.c afslib.c dlfcn.h
