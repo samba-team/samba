@@ -28,6 +28,8 @@
 #endif
 
 #include "includes.h"
+
+#include <asm/types.h>
 #include <linux/smb_fs.h>
 static struct smb_conn_opt conn_options;
 

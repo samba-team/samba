@@ -6,6 +6,7 @@ dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_SUBST(SHELL)
+AC_SUBST(MPROGS)
 AC_PROG_AWK
 
 AC_CANONICAL_SYSTEM
@@ -522,6 +523,27 @@ AC_ARG_WITH(automount,
     ;;
   esac ],
   AC_MSG_RESULT(no)
+)
+
+#################################################
+# check for smbmount support
+AC_MSG_CHECKING(whether to use SMBMOUNT)
+AC_ARG_WITH(smbmount,
+[  --with-smbmount     Include SMBMOUNT (Linux only) support
+  --without-smbmount  Don't include SMBMOUNT support (default)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_SMBMOUNT)
+    MPROGS="bin/smbmount bin/smbmnt bin/smbumount"
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    MPROGS=
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+  MPROGS=
 )
 
 #################################################

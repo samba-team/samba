@@ -5,30 +5,12 @@
  *
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <signal.h>
-#include <pwd.h>
-#include <grp.h>
-#include <sys/socket.h>
-#include <sys/param.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-/* #include <sys/wait.h> */  /* generates a warning here */
-extern pid_t waitpid(pid_t, int *, int);
-#include <sys/errno.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <ctype.h>
-#include <stdlib.h>
-#include <sys/mount.h>
+#include "includes.h"
+
 #include <mntent.h>
 
-#include <sys/ioctl.h>
-#include <linux/fs.h>
+#include <asm/types.h>
+#include <asm/posix_types.h>
 #include <linux/smb.h>
 #include <linux/smb_mount.h>
 #include <linux/smb_fs.h>
