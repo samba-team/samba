@@ -51,14 +51,24 @@ BOOL cli_session_setup(struct cli_state *cli,
 		       char *ntpass, int ntpasslen,
 		       char *workgroup);
 BOOL cli_send_tconX(struct cli_state *cli, 
-		    char *share, char *dev, char *pword, int passlen);
+		    char *share, char *dev, char *pass, int passlen);
 BOOL cli_tdis(struct cli_state *cli);
+BOOL cli_unlink(struct cli_state *cli, char *fname);
+int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode);
+BOOL cli_close(struct cli_state *cli, int fnum);
+BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout);
+BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout);
+int cli_read(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 size);
+int cli_write(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 size);
 BOOL cli_negprot(struct cli_state *cli);
 BOOL cli_session_request(struct cli_state *cli, char *host, int name_type,
 			 char *myname);
 BOOL cli_connect(struct cli_state *cli, char *host, struct in_addr *ip);
 BOOL cli_initialise(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
+char *cli_errstr(struct cli_state *cli);
+void cli_error(struct cli_state *cli, int *eclass, int *num);
+void cli_sockopt(struct cli_state *cli, char *options);
 
 /*The following definitions come from  clientutil.c  */
 
@@ -81,7 +91,6 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup);
 void cli_send_logout(void );
 BOOL cli_open_sockets(int port );
 BOOL cli_reopen_connection(char *inbuf,char *outbuf);
-char *smb_errstr(char *inbuf);
 
 /*The following definitions come from  clitar.c  */
 
@@ -1029,6 +1038,10 @@ void SMBencrypt(uchar *passwd, uchar *c8, uchar *p24);
 void E_md4hash(uchar *passwd, uchar *p16);
 void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
 void nt_lm_owf_gen(char *pwd, char *nt_p16, char *p16);
+
+/*The following definitions come from  smberr.c  */
+
+char *smb_errstr(char *inbuf);
 
 /*The following definitions come from  smbpass.c  */
 

@@ -502,14 +502,29 @@ BOOL cli_session_setup(struct cli_state *cli,
 send a tconX
 ****************************************************************************/
 BOOL cli_send_tconX(struct cli_state *cli, 
-		    char *share, char *dev, char *pword, int passlen)
+		    char *share, char *dev, char *pass, int passlen)
 {
+	fstring fullshare, pword;
 	char *p;
 	bzero(cli->outbuf,smb_size);
 	bzero(cli->inbuf,smb_size);
 
+	if (cli->sec_mode & 1) {
+		passlen = 1;
+		pass = "";
+	}
+
+	if ((cli->sec_mode & 2) && *pass && passlen != 24) {
+		passlen = 24;
+		SMBencrypt((uchar *)pass,(uchar *)cli->cryptkey,(uchar *)pword);
+	} else {
+		memcpy(pword, pass, passlen);
+	}
+
+	sprintf(fullshare, "\\\\%s\\%s", cli->desthost, share);
+
 	set_message(cli->outbuf,4,
-		    2 + strlen(share) + passlen + strlen(dev),True);
+		    2 + strlen(fullshare) + passlen + strlen(dev),True);
 	CVAL(cli->outbuf,smb_com) = SMBtconX;
 	cli_setup_packet(cli);
 
@@ -519,7 +534,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	p = smb_buf(cli->outbuf);
 	memcpy(p,pword,passlen);
 	p += passlen;
-	strcpy(p,share);
+	strcpy(p,fullshare);
 	p = skip_string(p,1);
 	strcpy(p,dev);
 
@@ -554,6 +569,294 @@ BOOL cli_tdis(struct cli_state *cli)
 		return False;
 	
 	return CVAL(cli->inbuf,smb_rcls) == 0;
+}
+
+/****************************************************************************
+delete a file
+****************************************************************************/
+BOOL cli_unlink(struct cli_state *cli, char *fname)
+{
+	char *p;
+
+	bzero(cli->outbuf,smb_size);
+	bzero(cli->inbuf,smb_size);
+
+	set_message(cli->outbuf,1, 2 + strlen(fname),True);
+
+	CVAL(cli->outbuf,smb_com) = SMBunlink;
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	SSVAL(cli->outbuf,smb_vwv0,aSYSTEM | aHIDDEN);
+  
+	p = smb_buf(cli->outbuf);
+	*p++ = 4;      
+	strcpy(p,fname);
+	p = skip_string(p,1);
+
+	send_smb(cli->fd,cli->outbuf);
+	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
+		return False;
+	}
+
+	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+		return False;
+	}
+
+	return True;
+}
+
+
+
+/****************************************************************************
+open a file
+****************************************************************************/
+int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
+{
+	char *p;
+	unsigned openfn=0;
+	unsigned accessmode=0;
+
+	if (flags & O_CREAT)
+		openfn |= (1<<4);
+	if (!(flags & O_EXCL)) {
+		if (flags & O_TRUNC)
+			openfn |= (1<<1);
+		else
+			openfn |= (1<<0);
+	}
+
+	accessmode = (share_mode<<4);
+
+	if ((flags & O_RDWR) == O_RDWR) {
+		accessmode |= 2;
+	} else if ((flags & O_WRONLY) == O_WRONLY) {
+		accessmode |= 1;
+	} 
+
+	bzero(cli->outbuf,smb_size);
+	bzero(cli->inbuf,smb_size);
+
+	set_message(cli->outbuf,15,1 + strlen(fname),True);
+
+	CVAL(cli->outbuf,smb_com) = SMBopenX;
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	SSVAL(cli->outbuf,smb_vwv0,0xFF);
+	SSVAL(cli->outbuf,smb_vwv2,0);  /* no additional info */
+	SSVAL(cli->outbuf,smb_vwv3,accessmode);
+	SSVAL(cli->outbuf,smb_vwv4,aSYSTEM | aHIDDEN);
+	SSVAL(cli->outbuf,smb_vwv5,aSYSTEM | aHIDDEN);
+	SSVAL(cli->outbuf,smb_vwv8,openfn);
+  
+	p = smb_buf(cli->outbuf);
+	strcpy(p,fname);
+	p = skip_string(p,1);
+
+	send_smb(cli->fd,cli->outbuf);
+	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
+		return -1;
+	}
+
+	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+		return -1;
+	}
+
+	return SVAL(cli->inbuf,smb_vwv2);
+}
+
+
+
+
+/****************************************************************************
+  close a file
+****************************************************************************/
+BOOL cli_close(struct cli_state *cli, int fnum)
+{
+	bzero(cli->outbuf,smb_size);
+	bzero(cli->inbuf,smb_size);
+
+	set_message(cli->outbuf,3,0,True);
+
+	CVAL(cli->outbuf,smb_com) = SMBclose;
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	SSVAL(cli->outbuf,smb_vwv0,fnum);
+	SSVAL(cli->outbuf,smb_vwv1,0);
+	SSVAL(cli->outbuf,smb_vwv2,0);
+
+	send_smb(cli->fd,cli->outbuf);
+	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
+		return False;
+	}
+
+	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+		return False;
+	}
+
+	return True;
+}
+
+
+/****************************************************************************
+  lock a file
+****************************************************************************/
+BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout)
+{
+	char *p;
+
+	bzero(cli->outbuf,smb_size);
+	bzero(cli->inbuf,smb_size);
+
+	set_message(cli->outbuf,8,10,True);
+
+	CVAL(cli->outbuf,smb_com) = SMBlockingX;
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
+	SSVAL(cli->outbuf,smb_vwv2,fnum);
+	CVAL(cli->outbuf,smb_vwv3) = 0;
+	SIVALS(cli->outbuf, smb_vwv4, timeout);
+	SSVAL(cli->outbuf,smb_vwv6,0);
+	SSVAL(cli->outbuf,smb_vwv7,1);
+
+	p = smb_buf(cli->outbuf);
+	SSVAL(p, 0, cli->pid);
+	SIVAL(p, 2, offset);
+	SIVAL(p, 6, len);
+
+	send_smb(cli->fd,cli->outbuf);
+	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
+		return False;
+	}
+
+	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+		return False;
+	}
+
+	return True;
+}
+
+/****************************************************************************
+  unlock a file
+****************************************************************************/
+BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout)
+{
+	char *p;
+
+	bzero(cli->outbuf,smb_size);
+	bzero(cli->inbuf,smb_size);
+
+	set_message(cli->outbuf,8,10,True);
+
+	CVAL(cli->outbuf,smb_com) = SMBlockingX;
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
+	SSVAL(cli->outbuf,smb_vwv2,fnum);
+	CVAL(cli->outbuf,smb_vwv3) = 0;
+	SIVALS(cli->outbuf, smb_vwv4, timeout);
+	SSVAL(cli->outbuf,smb_vwv6,1);
+	SSVAL(cli->outbuf,smb_vwv7,0);
+
+	p = smb_buf(cli->outbuf);
+	SSVAL(p, 0, cli->pid);
+	SIVAL(p, 2, offset);
+	SIVAL(p, 6, len);
+
+	send_smb(cli->fd,cli->outbuf);
+	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
+		return False;
+	}
+
+	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+		return False;
+	}
+
+	return True;
+}
+
+
+/****************************************************************************
+  read from a file
+****************************************************************************/
+int cli_read(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 size)
+{
+	char *p;
+
+	bzero(cli->outbuf,smb_size);
+	bzero(cli->inbuf,smb_size);
+
+	set_message(cli->outbuf,10,0,True);
+
+	CVAL(cli->outbuf,smb_com) = SMBreadX;
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
+	SSVAL(cli->outbuf,smb_vwv2,fnum);
+	SIVAL(cli->outbuf,smb_vwv3,offset);
+	SSVAL(cli->outbuf,smb_vwv5,size);
+	SSVAL(cli->outbuf,smb_vwv6,size);
+
+	send_smb(cli->fd,cli->outbuf);
+	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
+		return -1;
+	}
+
+	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+		return -1;
+	}
+
+	size = SVAL(cli->inbuf, smb_vwv5);
+	p = smb_base(cli->inbuf) + SVAL(cli->inbuf,smb_vwv6);
+
+	memcpy(buf, p, size);
+
+	return size;
+}
+
+
+/****************************************************************************
+  write to a file
+****************************************************************************/
+int cli_write(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 size)
+{
+	char *p;
+
+	bzero(cli->outbuf,smb_size);
+	bzero(cli->inbuf,smb_size);
+
+	set_message(cli->outbuf,12,size,True);
+
+	CVAL(cli->outbuf,smb_com) = SMBwriteX;
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
+	SSVAL(cli->outbuf,smb_vwv2,fnum);
+	SIVAL(cli->outbuf,smb_vwv3,offset);
+
+	SSVAL(cli->outbuf,smb_vwv10,size);
+	SSVAL(cli->outbuf,smb_vwv11,smb_buf(cli->outbuf) - smb_base(cli->outbuf));
+
+	p = smb_base(cli->outbuf) + SVAL(cli->outbuf,smb_vwv11);
+	memcpy(p, buf, size);
+
+	send_smb(cli->fd,cli->outbuf);
+	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
+		return -1;
+	}
+
+	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+		return -1;
+	}
+
+	return SVAL(cli->inbuf, smb_vwv2);
 }
 
 
@@ -743,4 +1046,29 @@ void cli_shutdown(struct cli_state *cli)
 	if (cli->inbuf) free(cli->inbuf);
 	if (cli->fd != -1) close(cli->fd);
 	memset(cli, 0, sizeof(*cli));
+}
+
+/****************************************************************************
+  return a description of the error
+****************************************************************************/
+char *cli_errstr(struct cli_state *cli)
+{
+	return smb_errstr(cli->inbuf);
+}
+
+/****************************************************************************
+  return error codes for the last packet
+****************************************************************************/
+void cli_error(struct cli_state *cli, int *eclass, int *num)
+{
+	*eclass = CVAL(cli->inbuf,smb_rcls);
+	*num = SVAL(cli->inbuf,smb_err);
+}
+
+/****************************************************************************
+set socket options on a open connection
+****************************************************************************/
+void cli_sockopt(struct cli_state *cli, char *options)
+{
+	set_socket_options(cli->fd, options);
 }
