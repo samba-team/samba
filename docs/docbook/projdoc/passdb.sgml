@@ -114,23 +114,22 @@
 			<member>Windows 200x Server/Advanced Server</member>
 			<member>Windows XP Professional</member>
 		</simplelist>
-		
-		<para><emphasis>Note :</emphasis>All current release of 
-		Microsoft SMB/CIFS clients support authentication via the
-		SMB Challenge/Response mechanism described here.  Enabling
-		clear text authentication does not disable the ability
-		of the client to participate in encrypted authentication.</para>
-
-
-		<para>MS Windows clients will cache the encrypted password alone.
-		Even when plain text passwords are re-enabled, through the appropriate
-		registry change, the plain text password is NEVER cached. This means that
-		in the event that a network connections should become disconnected (broken)
-		only the cached (encrypted) password will be sent to the resource server
-		to affect a auto-reconnect. If the resource server does not support encrypted
-		passwords the auto-reconnect will fail. <emphasis>USE OF ENCRYPTED PASSWORDS
-		IS STRONGLY ADVISED.</emphasis></para>
 	</warning>
+		
+	<note><para>All current release of 
+	Microsoft SMB/CIFS clients support authentication via the
+	SMB Challenge/Response mechanism described here.  Enabling
+	clear text authentication does not disable the ability
+	of the client to participate in encrypted authentication.</para></note>
+
+	<para>MS Windows clients will cache the encrypted password alone.
+	Even when plain text passwords are re-enabled, through the appropriate
+	registry change, the plain text password is NEVER cached. This means that
+	in the event that a network connections should become disconnected (broken)
+	only the cached (encrypted) password will be sent to the resource server
+	to affect a auto-reconnect. If the resource server does not support encrypted
+	passwords the auto-reconnect will fail. <emphasis>USE OF ENCRYPTED PASSWORDS
+	IS STRONGLY ADVISED.</emphasis></para>
 
 	<sect2>
 		<title>Advantages of SMB Encryption</title>

@@ -315,7 +315,7 @@ for this including:
 	file allows the creation of arbitrary user and machine accounts without
 	requiring that account to be added to the system (/etc/passwd) file. It
 	too requires the specification of the "non unix account range" option
-	in the [globals] section of the smb.conf file.
+	in the [globals] section of the &smb.conf; file.
 	</para></listitem>
 
 	<listitem><para>
@@ -328,6 +328,9 @@ for this including:
 	account requirement, like smbpasswd_nua and tdbsam_nua above.
 	</para></listitem>
 </itemizedlist>
+
+<para>Read the chapter about the <link linkend="passdb">User Database</link> 
+for details.</para>
 
 <para>
 A Samba PDC, however, stores each machine trust account in two parts,
@@ -418,7 +421,7 @@ as shown here:
 </para>
 
 <para>
-<prompt>root# </prompt><command>smbpasswd -a -m <replaceable>machine_name</replaceable></command>
+<prompt>root# </prompt><userinput>smbpasswd -a -m <replaceable>machine_name</replaceable></userinput>
 </para>
 
 <para>
