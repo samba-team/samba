@@ -1438,7 +1438,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
  Check if a user is allowed to rename a file.
 ********************************************************************/
 
-static NTSTATUS can_rename(char *fname,connection_struct *conn, uint16 dirtype, SMB_STRUCT_STAT *pst)
+static NTSTATUS can_rename(connection_struct *conn, char *fname, uint16 dirtype, SMB_STRUCT_STAT *pst)
 {
 	int smb_action;
 	int access_mode;
@@ -1479,7 +1479,7 @@ static NTSTATUS can_rename(char *fname,connection_struct *conn, uint16 dirtype, 
  Check if a user is allowed to delete a file.
 ********************************************************************/
 
-static NTSTATUS can_delete(char *fname,connection_struct *conn, int dirtype, BOOL bad_path)
+NTSTATUS can_delete(connection_struct *conn, char *fname, int dirtype, BOOL bad_path, BOOL check_is_at_open)
 {
 	SMB_STRUCT_STAT sbuf;
 	int fmode;
@@ -1519,6 +1519,10 @@ static NTSTATUS can_delete(char *fname,connection_struct *conn, int dirtype, BOO
 	}
 	if ((fmode & ~dirtype) & (aHIDDEN | aSYSTEM))
 		return NT_STATUS_NO_SUCH_FILE;
+
+	if (check_is_at_open && !can_delete_file_in_directory(conn, fname)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	/* We need a better way to return NT status codes from open... */
 	unix_ERR_class = 0;
@@ -1598,7 +1602,7 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 	if (!has_wild) {
 		pstrcat(directory,"/");
 		pstrcat(directory,mask);
-		error = can_delete(directory,conn,dirtype,bad_path);
+		error = can_delete(conn,directory,dirtype,bad_path,False);
 		if (!NT_STATUS_IS_OK(error))
 			return error;
 
@@ -1656,7 +1660,7 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 				}
 
 				slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
-				error = can_delete(fname,conn,dirtype,bad_path);
+				error = can_delete(conn,fname,dirtype,bad_path,False);
 				if (!NT_STATUS_IS_OK(error)) {
 					continue;
 				}
@@ -3744,7 +3748,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, char *
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	error = can_rename(newname,conn,attrs,&sbuf);
+	error = can_rename(conn,newname,attrs,&sbuf);
 
 	if (dest_exists && !NT_STATUS_IS_OK(error)) {
 		DEBUG(3,("rename_internals: Error %s rename %s -> %s\n",
@@ -3950,7 +3954,7 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 			return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 		}
 
-		error = can_rename(directory,conn,attrs,&sbuf1);
+		error = can_rename(conn,directory,attrs,&sbuf1);
 
 		if (!NT_STATUS_IS_OK(error)) {
 			DEBUG(3,("rename_internals: Error %s rename %s -> %s\n",
@@ -4045,7 +4049,7 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 					DEBUG(6,("rename %s failed. Error %s\n", fname, nt_errstr(error)));
 					continue;
 				}
-				error = can_rename(fname,conn,attrs,&sbuf1);
+				error = can_rename(conn,fname,attrs,&sbuf1);
 				if (!NT_STATUS_IS_OK(error)) {
 					DEBUG(6,("rename %s refused\n", fname));
 					continue;

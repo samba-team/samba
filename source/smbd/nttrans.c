@@ -780,6 +780,15 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 		}
 	}
 
+	if (desired_access & DELETE_ACCESS) {
+		status = can_delete(conn, fname, file_attributes, bad_path, True);
+		if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status,NT_STATUS_FILE_IS_A_DIRECTORY)) {
+			restore_case_semantics(conn, file_attributes);
+			END_PROFILE(SMBntcreateX);
+			return ERROR_NT(status);
+		}
+	}
+
 	/* 
 	 * If it's a request for a directory open, deal with it separately.
 	 */
@@ -1319,6 +1328,15 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
 	}
     
+	if (desired_access & DELETE_ACCESS) {
+		status = can_delete(conn, fname, file_attributes, bad_path, True);
+		if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status,NT_STATUS_FILE_IS_A_DIRECTORY)) {
+			restore_case_semantics(conn, file_attributes);
+			END_PROFILE(SMBntcreateX);
+			return ERROR_NT(status);
+		}
+	}
+
 	/*
 	 * If it's a request for a directory open, deal with it separately.
 	 */

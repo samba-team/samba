@@ -3753,3 +3753,14 @@ BOOL set_unix_posix_acl(connection_struct *conn, files_struct *fsp, const char *
 	SMB_VFS_SYS_ACL_FREE_ACL(conn, file_acl);
 	return True;
 }
+
+/****************************************************************************
+ Actually emulate the in-kernel access checking for write access. We need
+ this to successfully return ACCESS_DENIED on a file open for delete access.
+****************************************************************************/
+
+BOOL can_delete_file_in_directory(connection_struct *conn, const char *fname)
+{
+	/* Add acl check here... JRA */
+	return True;
+}
