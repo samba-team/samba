@@ -1,3 +1,8 @@
+2004-12-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/{Makefile.am,setup.texi,win2k.texi}: spelling and text
+	fixes, from Dave Love
+
 2004-12-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/heim_threads.h: NetBSD 2.99.11 (any maybe 2.1) just
