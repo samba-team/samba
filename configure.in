@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_REVISION($Revision$)
-AC_PREREQ(2.14a)
+AC_PREREQ(2.14.-1.1)dnl 2.14a
 AC_INIT(heimdal, 0.3a-pre, heimdal-bugs@pdc.kth.se)
 AM_CONFIG_HEADER(include/config.h)
 
@@ -171,12 +171,16 @@ if test "$enable_dce" = yes; then
 fi
 AM_CONDITIONAL(DCE, test "$with_dce" = yes)
 
-## XXX should get this from ibmcxx.cfg
-dpagaix_CFLAGS="-D_THREAD_SAFE -D_AIX_PTHREADS_D7 -D_AIX32_THREADS=1 -D_AES_SOURCE -D_AIX41 -I/usr/include/dce"
+## XXX quite horrible:
+if -f /etc/ibmcxx.cfg; then
+	x=`sed -n '/^xlc_r4/,/^$/p' /etc/ibmcxx.cfg`
+	dpagaix_LDADD=`echo $x | sed -n -e '/libraries/{;s/^[^=]*=\(.*\)/\1/;s/,/ /gp;}'`
+	dpagaix_CFLAGS=`echo $x | sed -n -e '/options/{;s/^[^=]*=\(.*\)/\1/;s/-q[^,]*//;s/,/ /gp;}'`
+else
+	dpagaix_CFLAGS="-D_THREAD_SAFE -D_AIX_PTHREADS_D7 -D_AIX32_THREADS=1 -D_AES_SOURCE -D_AIX41 -I/usr/include/dce"
+	dpagaix_LDADD="-L/usr/lib/threads -ldcelibc_r -ldcepthreads -lpthreads_compat lpthreads -lc_r"
+fi
 AC_SUBST(dpagaix_CFLAGS)
-dpagaix_LDFLAGS="-Wl,-edpagaix -Wl,dfspag.exp"
-AC_SUBST(dpagaix_LDFLAGS)
-dpagaix_LDADD="-L/usr/lib/threads -ldcelibc_r -ldcepthreads -lpthreads_compat lpthreads -lc_r"
 AC_SUBST(dpagaix_LDADD)
 
 
@@ -234,18 +238,7 @@ KRB_AIX
 
 KRB_CHECK_X
 
-if test "$no_x" = "yes" ; then
-	MAKE_X_PROGS_BIN_PROGS=""
-	MAKE_X_PROGS_BIN_SCRPTS=""
-	MAKE_X_PROGS_LIBEXEC_PROGS=""
-else
-	MAKE_X_PROGS_BIN_PROGS='$(X_PROGS_BIN_PROGS)'
-	MAKE_X_PROGS_BIN_SCRPTS='$(X_PROGS_BIN_SCRPTS)'
-	MAKE_X_PROGS_LIBEXEC_PROGS='$(X_PROGS_LIBEXEC_PROGS)'
-fi
-AC_SUBST(MAKE_X_PROGS_BIN_PROGS)dnl
-AC_SUBST(MAKE_X_PROGS_BIN_SCRPTS)dnl
-AC_SUBST(MAKE_X_PROGS_LIBEXEC_PROGS)dnl
+AM_CONDITIONAL(HAVE_X, test "$no_x" != yes)
 
 AC_CHECK_XAU
 
@@ -898,45 +891,7 @@ AC_FIND_FUNC_NO_LIBS(SHA1Init, crypto)
 AC_FIND_FUNC_NO_LIBS(SHA1_Init, crypto)
 AC_FIND_FUNC_NO_LIBS(des_cbc_encrypt, crypto des)
 
-dnl
-dnl Tests for editline
-dnl
-
-dnl el_init
-
-AC_FIND_FUNC_NO_LIBS(el_init, edit, [], [], [$LIB_tgetent])
-if test "$ac_cv_func_el_init" = yes ; then
-	AC_CACHE_CHECK(for four argument el_init, ac_cv_func_el_init_four,[
-		AC_TRY_COMPILE([#include <stdio.h>
-			#include <histedit.h>],
-			[el_init("", NULL, NULL, NULL);],
-			ac_cv_func_el_init_four=yes,
-			ac_cv_func_el_init_four=no)])
-	if test "$ac_cv_func_el_init_four" = yes; then
-		AC_DEFINE(HAVE_FOUR_VALUED_EL_INIT, 1, [Define if el_init takes four arguments.])
-	fi
-fi
-
-dnl readline
-
-ac_foo=no
-if test "$with_readline" = yes; then
-	:
-elif test "$ac_cv_func_readline" = yes; then
-	:
-elif test "$ac_cv_func_el_init" = yes; then
-	ac_foo=yes
-	LIB_readline="\$(top_builddir)/lib/editline/libel_compat.a $LIB_el_init"
-else
-	LIB_readline='$(top_builddir)/lib/editline/libeditline.a'
-fi
-AM_CONDITIONAL(el_compat, test "$ac_foo" = yes)
-if test "$readline_libdir"; then
-	LIB_readline="-rpath $readline_libdir $LIB_readline"
-fi
-LIB_readline="$LIB_readline \$(LIB_tgetent)"
-AC_DEFINE(HAVE_READLINE, 1, 
-	[Define if you have a readline compatible library.])dnl
+KRB_READLINE
 
 dnl telnet muck --------------------------------------------------
 
