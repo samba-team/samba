@@ -621,6 +621,7 @@ kadm5_log_previous (krb5_storage *sp,
 		    enum kadm_ops *op,
 		    u_int32_t *len)
 {
+    off_t off;
     int32_t tmp;
 
     sp->seek(sp, -8, SEEK_CUR);
@@ -628,7 +629,8 @@ kadm5_log_previous (krb5_storage *sp,
     *len = tmp;
     krb5_ret_int32 (sp, &tmp);
     *ver = tmp;
-    sp->seek(sp, -(48 + *len), SEEK_CUR);
+    off = 24 + *len;
+    sp->seek(sp, -off, SEEK_CUR);
     krb5_ret_int32 (sp, &tmp);
     assert(tmp == *ver);
     krb5_ret_int32 (sp, &tmp);
