@@ -44,21 +44,27 @@ Kerberos realm.
 
 @example
 unix% kadmin
-kadmin> ank -pw password host/datan.my.domain
+kadmin> ank --password=password host/datan.example.com
 @end example
 
-You must configure the Workstation as a member of a workgroup, as opposed
+The name @code{datan.example.com} should be replaced with DNS name of
+the workstation.
+
+You must configure the workstation as a member of a workgroup, as opposed
 to a member in an NT domain, and specify the KDC server of the realm
 as follows:
 @example
-C:> ksetup /setdomain MY.REALM
-C:> ksetup /addkdc MY.REALM kdc.my.domain
+C:> ksetup /setdomain EXAMPLE.COM
+C:> ksetup /addkdc EXAMPLE.COM kdc.example.com
 @end example
 
 Set the machine password, i.e. create the local keytab:
 @example
 C:> ksetup /setmachpassword password
 @end example
+
+The password used in @code{ksetup /setmachpassword} must be the same
+as the password used in the @code{kadmin ank} command.
 
 The workstation must now be rebooted.
 
