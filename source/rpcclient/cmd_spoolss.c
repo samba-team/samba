@@ -380,7 +380,7 @@ static uint32 cmd_spoolss_getprinter(int argc, char **argv)
 	BOOL opened_hnd = False;
 	struct ntuser_creds creds;
 	PRINTER_INFO_CTR ctr;
-	int *returned;
+	fstring printer_name, station_name;
 
 	if (argc == 1 || argc > 3) {
 		printf("Usage: %s printername [level]\n", argv[0]);
@@ -402,8 +402,13 @@ static uint32 cmd_spoolss_getprinter(int argc, char **argv)
 		info_level = atoi(argv[2]);
 	}
 
+	slprintf(printer_name, sizeof(fstring), "\\\\%s\\%s",
+		 server, argv[1]);
+
+	slprintf(station_name, sizeof(fstring), "\\\\%s", global_myname);
+
 	if ((result = cli_spoolss_open_printer_ex(
-		&cli, argv[1], "", MAXIMUM_ALLOWED_ACCESS, global_myname,
+		&cli, printer_name, "", MAXIMUM_ALLOWED_ACCESS, station_name,
 		username, &pol)) != NT_STATUS_NOPROBLEMO) {
 		goto done;
 	}
