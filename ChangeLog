@@ -1,5 +1,12 @@
 2004-03-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/init_creds_pw.c (pa_data_add_pac_request): don't
+	increase md->len, krb5_padata_add already does that
+	
+	* lib/krb5/init_creds.c: its PAC not PAQ
+	
+	* kuser/kinit.c: its PAC not PAQ
+	
 	* kdc/kerberos4.c: stop the client from renewing tickets into the
 	future From: Jeffrey Hutzelman <jhutz@cmu.edu>
 
