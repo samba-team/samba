@@ -684,8 +684,13 @@ bin/tdbbackup: $(TDBBACKUP_OBJ) bin/.dummy
 install: installbin installman installscripts installcp installswat
 
 installdirs:
-	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) \
-	$(BASEDIR) $(SBINDIR) $(BINDIR) $(LIBDIR) $(VARDIR) $(CODEPAGEDIR)
+	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(BASEDIR)
+	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(SBINDIR)
+	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(BINDIR)
+	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(LIBDIR)
+	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(VARDIR)
+	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(PIDDIR)
+	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(CODEPAGEDIR)
 
 installservers: all installdirs
 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(BASEDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(SPROGS)
