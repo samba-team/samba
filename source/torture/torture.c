@@ -3198,7 +3198,7 @@ static BOOL run_opentest(int dummy)
 
 	printf("non-io open test #1 passed.\n");
 
-	cli_unlink(&cli2, fname);
+	cli_unlink(&cli1, fname);
 
 	printf("TEST #2 testing 2 non-io opens (first with delete)\n");
 	
@@ -3223,13 +3223,13 @@ static BOOL run_opentest(int dummy)
 		return False;
 	}
 	if (!cli_close(&cli2, fnum2)) {
-		printf("test 1 close 2 of %s failed (%s)\n", fname, cli_errstr(&cli2));
+		printf("test 1 close 2 of %s failed (%s)\n", fname, cli_errstr(&cli1));
 		return False;
 	}
 
 	printf("non-io open test #2 passed.\n");
 
-	cli_unlink(&cli2, fname);
+	cli_unlink(&cli1, fname);
 
 	printf("TEST #3 testing 2 non-io opens (second with delete)\n");
 	
@@ -3260,7 +3260,7 @@ static BOOL run_opentest(int dummy)
 
 	printf("non-io open test #3 passed.\n");
 
-	cli_unlink(&cli2, fname);
+	cli_unlink(&cli1, fname);
 
 	printf("TEST #4 testing 2 non-io opens (both with delete)\n");
 	
@@ -3280,7 +3280,7 @@ static BOOL run_opentest(int dummy)
 		return False;
 	}
 
-	printf("test 3 open 2 of %s gave %s (correct error is %s)\n", fname, cli_errstr(&cli2), "sharing violation");
+	printf("test 3 open 2 of %s gave %s (correct error should be %s)\n", fname, cli_errstr(&cli2), "sharing violation");
 
 	if (!cli_close(&cli1, fnum1)) {
 		printf("test 4 close 1 of %s failed (%s)\n", fname, cli_errstr(&cli1));
@@ -3289,7 +3289,7 @@ static BOOL run_opentest(int dummy)
 
 	printf("non-io open test #4 passed.\n");
 
-	cli_unlink(&cli2, fname);
+	cli_unlink(&cli1, fname);
 
 	printf("TEST #5 testing 2 non-io opens (both with delete - both with file share delete)\n");
 	
@@ -3321,7 +3321,68 @@ static BOOL run_opentest(int dummy)
 
 	printf("non-io open test #5 passed.\n");
 
-	cli_unlink(&cli2, fname);
+	printf("TEST #6 testing 1 non-io open, one io open\n");
+	
+	cli_unlink(&cli1, fname);
+
+	fnum1 = cli_nt_create_full(&cli1, fname,FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
+
+	if (fnum1 == -1) {
+		printf("test 6 open 1 of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return False;
+	}
+
+	fnum2 = cli_nt_create_full(&cli2, fname,FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_READ, FILE_OPEN_IF, 0);
+
+	if (fnum2 == -1) {
+		printf("test 6 open 2 of %s failed (%s)\n", fname, cli_errstr(&cli2));
+		return False;
+	}
+
+	if (!cli_close(&cli1, fnum1)) {
+		printf("test 6 close 1 of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return False;
+	}
+
+	if (!cli_close(&cli2, fnum2)) {
+		printf("test 6 close 2 of %s failed (%s)\n", fname, cli_errstr(&cli2));
+		return False;
+	}
+
+	printf("non-io open test #6 passed.\n");
+
+	printf("TEST #7 testing 1 non-io open, one io open with delete\n");
+
+	cli_unlink(&cli1, fname);
+
+	fnum1 = cli_nt_create_full(&cli1, fname,FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
+
+	if (fnum1 == -1) {
+		printf("test 7 open 1 of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return False;
+	}
+
+	fnum2 = cli_nt_create_full(&cli2, fname,DELETE_ACCESS|FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_READ|FILE_SHARE_DELETE, FILE_OPEN_IF, 0);
+
+	if (fnum2 != -1) {
+		printf("test 7 open 2 of %s SUCCEEDED - should have failed\n", fname, cli_errstr(&cli2));
+		return False;
+	}
+
+	printf("test 7 open 2 of %s gave %s (correct error should be %s)\n", fname, cli_errstr(&cli2), "sharing violation");
+
+	if (!cli_close(&cli1, fnum1)) {
+		printf("test 7 close 1 of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return False;
+	}
+
+	printf("non-io open test #7 passed.\n");
+
+	cli_unlink(&cli1, fname);
 
 	if (!torture_close_connection(&cli1)) {
 		correct = False;
