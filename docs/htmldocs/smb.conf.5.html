@@ -1465,30 +1465,6 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="#LDAPPORT"
-><TT
-CLASS="PARAMETER"
-><I
->ldap port</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="#LDAPSERVER"
-><TT
-CLASS="PARAMETER"
-><I
->ldap server</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
 HREF="#LDAPSSL"
 ><TT
 CLASS="PARAMETER"
@@ -1502,6 +1478,30 @@ CLASS="PARAMETER"
 ><P
 ><A
 HREF="#LDAPSUFFIX"
+><TT
+CLASS="PARAMETER"
+><I
+>ldap suffix</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#LDAPUSERSUFFIX"
+><TT
+CLASS="PARAMETER"
+><I
+>ldap suffix</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#LDAPMACHINESUFFIX"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2461,203 +2461,11 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="#SSL"
+HREF="#SPNEGO"
 ><TT
 CLASS="PARAMETER"
 ><I
->ssl</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="#SSLCACERTDIR"
-><TT
-CLASS="PARAMETER"
-><I
->ssl CA certDir</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="#SSLCACERTFILE"
-><TT
-CLASS="PARAMETER"
-><I
->ssl CA certFile</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="#SSLCIPHERS"
-><TT
-CLASS="PARAMETER"
-><I
->ssl ciphers</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="#SSLCLIENTCERT"
-><TT
-CLASS="PARAMETER"
-><I
->ssl client cert</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="#SSLCLIENTKEY"
-><TT
-CLASS="PARAMETER"
-><I
->ssl client key</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="#SSLCOMPATIBILITY"
-><TT
-CLASS="PARAMETER"
-><I
->ssl compatibility</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="#SSLEGDSOCKET"
-><TT
-CLASS="PARAMETER"
-><I
->ssl egd socket</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="#SSLENTROPYBYTES"
-><TT
-CLASS="PARAMETER"
-><I
->ssl entropy bytes</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="#SSLENTROPYFILE"
-><TT
-CLASS="PARAMETER"
-><I
->ssl entropy file</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="#SSLHOSTS"
-><TT
-CLASS="PARAMETER"
-><I
->ssl hosts</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="#SSLHOSTSRESIGN"
-><TT
-CLASS="PARAMETER"
-><I
->ssl hosts resign</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="#SSLREQUIRECLIENTCERT"
-><TT
-CLASS="PARAMETER"
-><I
->ssl require clientcert</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="#SSLREQUIRESERVERCERT"
-><TT
-CLASS="PARAMETER"
-><I
->ssl require servercert</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="#SSLSERVERCERT"
-><TT
-CLASS="PARAMETER"
-><I
->ssl server cert</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="#SSLSERVERKEY"
-><TT
-CLASS="PARAMETER"
-><I
->ssl server key</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="#SSLVERSION"
-><TT
-CLASS="PARAMETER"
-><I
->ssl version</I
+>use spnego</I
 ></TT
 ></A
 ></P
@@ -3063,7 +2871,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN991"
+NAME="AEN927"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -4542,7 +4350,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1483"
+NAME="AEN1419"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -5072,6 +4880,28 @@ CLASS="COMMAND"
 >add user script = /usr/local/samba/bin/add_user 
 		%u</B
 ></P
+></DD
+><DT
+><A
+NAME="ADDGROUPSCRIPT"
+></A
+>add group script (G)</DT
+><DD
+><P
+>This is the full pathname to a script that will 
+		be run <EM
+>AS ROOT</EM
+> by <A
+HREF="smbd.8.html"
+TARGET="_top"
+>smbd(8) when a new group is requested. It will expand any <TT
+CLASS="PARAMETER"
+><I
+>%g</I
+></TT
+> to the group name passed.  This script is only useful for installations using the Windows NT domain administration tools.
+		</A
+> &#13;</P
 ></DD
 ><DT
 ><A
@@ -6657,131 +6487,27 @@ NAME="DELETEUSERSCRIPT"
 ><DD
 ><P
 >This is the full pathname to a script that will 
-		be run <EM
->AS ROOT</EM
-> by <A
+		be run by <A
 HREF="smbd.8.html"
 TARGET="_top"
->		<B
+><B
 CLASS="COMMAND"
 >smbd(8)</B
 ></A
-> under special circumstances 
-		described below.</P
-><P
->Normally, a Samba server requires that UNIX users are 
-		created for all users accessing files on this server. For sites 
-		that use Windows NT account databases as their primary user database 
-		creating these users and keeping the user list in sync with the 
-		Windows NT PDC is an onerous task. This option allows <B
-CLASS="COMMAND"
->		smbd</B
-> to delete the required UNIX users <EM
->ON 
-		DEMAND</EM
-> when a user accesses the Samba server and the 
-		Windows NT user no longer exists.</P
-><P
->In order to use this option, <B
-CLASS="COMMAND"
->smbd</B
-> must be 
-		set to <TT
-CLASS="PARAMETER"
-><I
->security = domain</I
-></TT
-> or <TT
-CLASS="PARAMETER"
-><I
->security =
-		user</I
-></TT
-> and <TT
-CLASS="PARAMETER"
-><I
->delete user script</I
-></TT
-> 
-		must be set to a full pathname for a script 
-		that will delete a UNIX user given one argument of <TT
-CLASS="PARAMETER"
-><I
->%u</I
-></TT
->, 
-		which expands into the UNIX user name to delete.</P
-><P
->When the Windows user attempts to access the Samba server, 
-		at <EM
->login</EM
-> (session setup in the SMB protocol) 
-		time, <B
-CLASS="COMMAND"
->smbd</B
-> contacts the <A
-HREF="#PASSWORDSERVER"
->		<TT
-CLASS="PARAMETER"
-><I
->password server</I
-></TT
-></A
-> and attempts to authenticate 
-		the given user with the given password. If the authentication fails 
-		with the specific Domain error code meaning that the user no longer 
-		exists then <B
-CLASS="COMMAND"
->smbd</B
-> attempts to find a UNIX user in 
-		the UNIX password database that matches the Windows user account. If 
-		this lookup succeeds, and <TT
-CLASS="PARAMETER"
-><I
->delete user script</I
-></TT
-> is 
-		set then <B
-CLASS="COMMAND"
->smbd</B
-> will all the specified script 
-		<EM
->AS ROOT</EM
->, expanding any <TT
-CLASS="PARAMETER"
-><I
->%u</I
-></TT
-> 
-		argument to be the user name to delete.</P
-><P
->This script should delete the given UNIX username. In this way, 
-		UNIX users are dynamically deleted to match existing Windows NT 
-		accounts.</P
-><P
->See also <A
-HREF="#SECURITYEQUALSDOMAIN"
->security = domain</A
->,
-		<A
-HREF="#PASSWORDSERVER"
-><TT
-CLASS="PARAMETER"
-><I
->password server</I
-></TT
 >
-		</A
->, <A
-HREF="#ADDUSERSCRIPT"
-><TT
-CLASS="PARAMETER"
-><I
->add user script</I
-></TT
->
-		</A
->.</P
+                when managing user's with remote RPC (NT) tools.
+		</P
+><P
+>This script is called when a remote client removes a user
+                from the server, normally using 'User Manager for Domains' or
+                <B
+CLASS="COMMAND"
+>rpcclient</B
+>.
+		</P
+><P
+>This script should delete the given UNIX username. 
+		</P
 ><P
 >Default: <B
 CLASS="COMMAND"
@@ -9435,26 +9161,14 @@ NAME="LDAPADMINDN"
 >ldap admin dn (G)</DT
 ><DD
 ><P
->This parameter is only available if Samba has been
-		configure to include the <B
-CLASS="COMMAND"
->--with-ldapsam</B
-> option
-		at compile time. This option should be considered experimental and
-		under active development.
-		</P
-><P
->		The <TT
+> The <TT
 CLASS="PARAMETER"
 ><I
 >ldap admin dn</I
 ></TT
 > defines the Distinguished 
-		Name (DN) name used by Samba to contact the <A
-HREF="#LDAPSERVER"
->ldap
-		server</A
-> when retreiving user account information. The <TT
+		Name (DN) name used by Samba to contact the ldap server when retreiving 
+		user account information. The <TT
 CLASS="PARAMETER"
 ><I
 >ldap
@@ -9487,16 +9201,7 @@ NAME="LDAPFILTER"
 >ldap filter (G)</DT
 ><DD
 ><P
->This parameter is only available if Samba has been
-		configure to include the <B
-CLASS="COMMAND"
->--with-ldapsam</B
-> option
-		at compile time. This option should be considered experimental and
-		under active development.
-		</P
-><P
->		This parameter specifies the RFC 2254 compliant LDAP search filter.
+>This parameter specifies the RFC 2254 compliant LDAP search filter.
 		The default is to match the login name with the <TT
 CLASS="CONSTANT"
 >uid</TT
@@ -9515,99 +9220,17 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
-NAME="LDAPPORT"
-></A
->ldap port (G)</DT
-><DD
-><P
->This parameter is only available if Samba has been
-		configure to include the <B
-CLASS="COMMAND"
->--with-ldapsam</B
-> option
-		at compile time. This option should be considered experimental and
-		under active development.
-		</P
-><P
->		This option is used to control the tcp port number used to contact
-		the <A
-HREF="#LDAPSERVER"
-><TT
-CLASS="PARAMETER"
-><I
->ldap server</I
-></TT
-></A
->.
-		The default is to use the stand LDAPS port 636.
-		</P
-><P
->See Also: <A
-HREF="#LDAPSSL"
->ldap ssl</A
->
-		</P
-><P
->Default : <B
-CLASS="COMMAND"
->ldap port = 636</B
-></P
-></DD
-><DT
-><A
-NAME="LDAPSERVER"
-></A
->ldap server (G)</DT
-><DD
-><P
->This parameter is only available if Samba has been
-		configure to include the <B
-CLASS="COMMAND"
->--with-ldapsam</B
-> option
-		at compile time. This option should be considered experimental and
-		under active development.
-		</P
-><P
->		This parameter should contains the FQDN of the ldap directory 
-		server which should be queried to locate user account information.
-		</P
-><P
->Default : <B
-CLASS="COMMAND"
->ldap server = localhost</B
-></P
-></DD
-><DT
-><A
 NAME="LDAPSSL"
 ></A
 >ldap ssl (G)</DT
 ><DD
 ><P
->This parameter is only available if Samba has been
-		configure to include the <B
-CLASS="COMMAND"
->--with-ldapsam</B
-> option
-		at compile time. This option should be considered experimental and
-		under active development.
-		</P
-><P
->		This option is used to define whether or not Samba should
-		use SSL when connecting to the <A
-HREF="#LDAPSERVER"
-><TT
-CLASS="PARAMETER"
-><I
->ldap
-		server</I
-></TT
-></A
->.  This is <EM
+>This option is used to define whether or not Samba should
+		use SSL when connecting to the ldap server
+		This is <EM
 >NOT</EM
 > related to
-		Samba SSL support which is enabled by specifying the 
+		Samba's previous SSL support which was enabled by specifying the 
 		<B
 CLASS="COMMAND"
 >--with-ssl</B
@@ -9615,15 +9238,7 @@ CLASS="COMMAND"
 CLASS="FILENAME"
 >configure</TT
 > 
-		script (see <A
-HREF="#SSL"
-><TT
-CLASS="PARAMETER"
-><I
->ssl</I
-></TT
-></A
->).
+		script.
 		</P
 ><P
 >		The <TT
@@ -9665,13 +9280,33 @@ NAME="LDAPSUFFIX"
 >ldap suffix (G)</DT
 ><DD
 ><P
->This parameter is only available if Samba has been
-		configure to include the <B
-CLASS="COMMAND"
->--with-ldapsam</B
-> option
-		at compile time. This option should be considered experimental and
-		under active development.
+>Default : <EM
+>none</EM
+></P
+></DD
+><DT
+><A
+NAME="LDAPUSERSUFFIX"
+></A
+>ldap user suffix (G)</DT
+><DD
+><P
+>It specifies where users are added to the tree.
+		</P
+><P
+>Default : <EM
+>none</EM
+></P
+></DD
+><DT
+><A
+NAME="LDAPMACHINESUFFIX"
+></A
+>ldap machine suffix (G)</DT
+><DD
+><P
+>It specifies where machines should be 
+                added to the ldap tree.
 		</P
 ><P
 >Default : <EM
@@ -10135,12 +9770,14 @@ NAME="LOGLEVEL"
 >log level (G)</DT
 ><DD
 ><P
->The value of the parameter (an integer) allows 
+>The value of the parameter (a astring) allows 
 		the debug level (logging level) to be specified in the 
 		<TT
 CLASS="FILENAME"
 >smb.conf</TT
-> file. This is to give greater 
+> file. This parameter has been
+		extended since 2.2.x series, now it allow to specify the debug
+		level for multiple debug classes. This is to give greater 
 		flexibility in the configuration of the system.</P
 ><P
 >The default will be the log level specified on 
@@ -10148,7 +9785,8 @@ CLASS="FILENAME"
 ><P
 >Example: <B
 CLASS="COMMAND"
->log level = 3</B
+>log level = 3 passdb:5 auth:10 winbind:2
+		</B
 ></P
 ></DD
 ><DT
@@ -13058,23 +12696,41 @@ CLASS="COMMAND"
 >Any characters after the (optional) second : are passed to the plugin
                         for its own processing</P
 ></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>unixsam</B
+> - Allows samba to map all (other) available unix users</P
+><P
+>This backend uses the standard unix database for retrieving users. Users included 
+                        in this pdb are NOT listed in samba user listings and users included in this pdb won't be 
+                        able to login. The use of this backend is to always be able to display the owner of a file 
+                        on the samba server - even when the user doesn't have a 'real' samba account in one of the 
+                        other passdb backends.
+			</P
+><P
+>This backend should always be the last backend listed, since it contains all users in 
+                        the unix passdb and might 'override' mappings if specified earlier. It's meant to only return 
+                        accounts for users that aren't covered by the previous backends.</P
+></LI
 ></UL
 >
 		</P
 ><P
 >Default: <B
 CLASS="COMMAND"
->passdb backend = smbpasswd</B
+>passdb backend = smbpasswd unixsam</B
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
->passdb backend = tdbsam:/etc/samba/private/passdb.tdb smbpasswd:/etc/samba/smbpasswd</B
+>passdb backend = tdbsam:/etc/samba/private/passdb.tdb smbpasswd:/etc/samba/smbpasswd unixsam</B
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
->passdb backend = ldapsam_nua:ldaps://ldap.example.com</B
+>passdb backend = ldapsam_nua:ldaps://ldap.example.com unixsam</B
 ></P
 ><P
 >Example: <B
@@ -16667,606 +16323,15 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
-NAME="SSL"
+NAME="SPNEGO"
 ></A
->ssl (G)</DT
+>use spnego (G)</DT
 ><DD
 ><P
->This variable is part of SSL-enabled Samba. This 
-		is only available if the SSL libraries have been compiled on your 
-		system and the configure option <B
-CLASS="COMMAND"
->--with-ssl</B
-> was 
-		given at configure time.</P
+> This variable controls controls whether samba will try to use Simple and Protected NEGOciation (as specified by rfc2478) with WindowsXP and Windows2000sp2 clients to agree upon an authentication mechanism.  As of samba 3.0alpha it must be set to "no" for these clients to join a samba domain controller.  It can be set to "yes" to allow samba to participate in an AD domain controlled by a Windows2000 domain controller.</P
 ><P
->This variable enables or disables the entire SSL mode. If 
-		it is set to <TT
-CLASS="CONSTANT"
->no</TT
->, the SSL-enabled Samba behaves 
-		exactly like the non-SSL Samba. If set to <TT
-CLASS="CONSTANT"
->yes</TT
->, 
-		it depends on the variables <A
-HREF="#SSLHOSTS"
-><TT
-CLASS="PARAMETER"
-><I
->		ssl hosts</I
-></TT
-></A
-> and <A
-HREF="#SSLHOSTSRESIGN"
->		<TT
-CLASS="PARAMETER"
-><I
->ssl hosts resign</I
-></TT
-></A
-> whether an SSL 
-		connection will be required.</P
-><P
->Default: <B
-CLASS="COMMAND"
->ssl = no</B
-></P
-></DD
-><DT
-><A
-NAME="SSLCACERTDIR"
-></A
->ssl CA certDir (G)</DT
-><DD
-><P
->This variable is part of SSL-enabled Samba. This 
-		is only available if the SSL libraries have been compiled on your 
-		system and the configure option <B
-CLASS="COMMAND"
->--with-ssl</B
-> was 
-		given at configure time.</P
-><P
->This variable defines where to look up the Certification
-		Authorities. The given directory should contain one file for 
-		each CA that Samba will trust.  The file name must be the hash 
-		value over the "Distinguished Name" of the CA. How this directory 
-		is set up is explained later in this document. All files within the 
-		directory that don't fit into this naming scheme are ignored. You 
-		don't need this variable if you don't verify client certificates.</P
-><P
->Default: <B
-CLASS="COMMAND"
->ssl CA certDir = /usr/local/ssl/certs
-		</B
-></P
-></DD
-><DT
-><A
-NAME="SSLCACERTFILE"
-></A
->ssl CA certFile (G)</DT
-><DD
-><P
->This variable is part of SSL-enabled Samba. This 
-		is only available if the SSL libraries have been compiled on your 
-		system and the configure option <B
-CLASS="COMMAND"
->--with-ssl</B
-> was 
-		given at configure time.</P
-><P
->This variable is a second way to define the trusted CAs. 
-		The certificates of the trusted CAs are collected in one big 
-		file and this variable points to the file. You will probably 
-		only use one of the two ways to define your CAs. The first choice is 
-		preferable if you have many CAs or want to be flexible, the second 
-		is preferable if you only have one CA and want to keep things 
-		simple (you won't need to create the hashed file names). You 
-		don't need this variable if you don't verify client certificates.</P
-><P
->Default: <B
-CLASS="COMMAND"
->ssl CA certFile = /usr/local/ssl/certs/trustedCAs.pem
-		</B
-></P
-></DD
-><DT
-><A
-NAME="SSLCIPHERS"
-></A
->ssl ciphers (G)</DT
-><DD
-><P
->This variable is part of SSL-enabled Samba. This 
-		is only available if the SSL libraries have been compiled on your 
-		system and the configure option <B
-CLASS="COMMAND"
->--with-ssl</B
-> was 
-		given at configure time.</P
-><P
->This variable defines the ciphers that should be offered 
-		during SSL negotiation. You should not set this variable unless 
-		you know what you are doing.</P
-></DD
-><DT
-><A
-NAME="SSLCLIENTCERT"
-></A
->ssl client cert (G)</DT
-><DD
-><P
->This variable is part of SSL-enabled Samba. This 
-		is only available if the SSL libraries have been compiled on your 
-		system and the configure option <B
-CLASS="COMMAND"
->--with-ssl</B
-> was 
-		given at configure time.</P
-><P
->The certificate in this file is used by <A
-HREF="smbclient.1.html"
-TARGET="_top"
->		<B
-CLASS="COMMAND"
->smbclient(1)</B
-></A
-> if it exists. It's needed 
-		if the server requires a client certificate.</P
-><P
->Default: <B
-CLASS="COMMAND"
->ssl client cert = /usr/local/ssl/certs/smbclient.pem
-		</B
-></P
-></DD
-><DT
-><A
-NAME="SSLCLIENTKEY"
-></A
->ssl client key (G)</DT
-><DD
-><P
->This variable is part of SSL-enabled Samba. This 
-		is only available if the SSL libraries have been compiled on your 
-		system and the configure option <B
-CLASS="COMMAND"
->--with-ssl</B
-> was 
-		given at configure time.</P
-><P
->This is the private key for <A
-HREF="smbclient.1.html"
-TARGET="_top"
->		<B
-CLASS="COMMAND"
->smbclient(1)</B
-></A
->. It's only needed if the 
-		client should have a certificate. </P
-><P
->Default: <B
-CLASS="COMMAND"
->ssl client key = /usr/local/ssl/private/smbclient.pem
-		</B
-></P
-></DD
-><DT
-><A
-NAME="SSLCOMPATIBILITY"
-></A
->ssl compatibility (G)</DT
-><DD
-><P
->This variable is part of SSL-enabled Samba. This 
-		is only available if the SSL libraries have been compiled on your 
-		system and the configure option <B
-CLASS="COMMAND"
->--with-ssl</B
-> was 
-		given at configure time.</P
-><P
->This variable defines whether OpenSSL should be configured 
-		for bug compatibility with other SSL implementations. This is 
-		probably not desirable because currently no clients with SSL 
-		implementations other than OpenSSL exist.</P
-><P
->Default: <B
-CLASS="COMMAND"
->ssl compatibility = no</B
-></P
-></DD
-><DT
-><A
-NAME="SSLEGDSOCKET"
-></A
->ssl egd socket (G)</DT
-><DD
-><P
->This variable is part of SSL-enabled Samba. This 
-		is only available if the SSL libraries have been compiled on your 
-		system and the configure option <B
-CLASS="COMMAND"
->--with-ssl</B
-> was 
-		given at configure time.</P
-><P
->		This option is used to define the location of the communiation socket of 
-		an EGD or PRNGD daemon, from which entropy can be retrieved. This option 
-		can be used instead of or together with the <A
-HREF="#SSLENTROPYFILE"
-><TT
-CLASS="PARAMETER"
-><I
->ssl entropy file</I
-></TT
-></A
-> 
-		directive. 255 bytes of entropy will be retrieved from the daemon.
-		</P
-><P
->Default: <EM
->none</EM
-></P
-></DD
-><DT
-><A
-NAME="SSLENTROPYBYTES"
-></A
->ssl entropy bytes (G)</DT
-><DD
-><P
->This variable is part of SSL-enabled Samba. This 
-		is only available if the SSL libraries have been compiled on your 
-		system and the configure option <B
-CLASS="COMMAND"
->--with-ssl</B
-> was 
-		given at configure time.</P
-><P
->		This parameter is used to define the number of bytes which should 
-		be read from the <A
-HREF="#SSLENTROPYFILE"
-><TT
-CLASS="PARAMETER"
-><I
->ssl entropy 
-		file</I
-></TT
-></A
-> If a -1 is specified, the entire file will
-		be read.
-		</P
-><P
->Default: <B
-CLASS="COMMAND"
->ssl entropy bytes = 255</B
-></P
-></DD
-><DT
-><A
-NAME="SSLENTROPYFILE"
-></A
->ssl entropy file (G)</DT
-><DD
-><P
->This variable is part of SSL-enabled Samba. This 
-		is only available if the SSL libraries have been compiled on your 
-		system and the configure option <B
-CLASS="COMMAND"
->--with-ssl</B
-> was 
-		given at configure time.</P
-><P
->		This parameter is used to specify a file from which processes will 
-		read "random bytes" on startup.  In order to seed the internal pseudo 
-		random number generator, entropy must be provided. On system with a 
-		<TT
-CLASS="FILENAME"
->/dev/urandom</TT
-> device file, the processes
-		will retrieve its entropy from the kernel. On systems without kernel
-		entropy support, a file can be supplied that will be read on startup
-		and that will be used to seed the PRNG.
-		</P
-><P
->Default: <EM
->none</EM
-></P
-></DD
-><DT
-><A
-NAME="SSLHOSTS"
-></A
->ssl hosts (G)</DT
-><DD
-><P
->See <A
-HREF="#SSLHOSTSRESIGN"
-><TT
-CLASS="PARAMETER"
-><I
->		ssl hosts resign</I
-></TT
-></A
->.</P
-></DD
-><DT
-><A
-NAME="SSLHOSTSRESIGN"
-></A
->ssl hosts resign (G)</DT
-><DD
-><P
->This variable is part of SSL-enabled Samba. This 
-		is only available if the SSL libraries have been compiled on your 
-		system and the configure option <B
-CLASS="COMMAND"
->--with-ssl</B
-> was 
-		given at configure time.</P
-><P
->These two variables define whether Samba will go 
-		into SSL mode or not. If none of them is defined, Samba will 
-		allow only SSL connections. If the <A
-HREF="#SSLHOSTS"
->		<TT
-CLASS="PARAMETER"
-><I
->ssl hosts</I
-></TT
-></A
-> variable lists
-		hosts (by IP-address, IP-address range, net group or name), 
-		only these hosts will be forced into SSL mode. If the <TT
-CLASS="PARAMETER"
-><I
->		ssl hosts resign</I
-></TT
-> variable lists hosts, only these 
-		hosts will <EM
->NOT</EM
-> be forced into SSL mode. The syntax for these two 
-		variables is the same as for the <A
-HREF="#HOSTSALLOW"
-><TT
-CLASS="PARAMETER"
-><I
->		hosts allow</I
-></TT
-></A
-> and <A
-HREF="#HOSTSDENY"
->		<TT
-CLASS="PARAMETER"
-><I
->hosts deny</I
-></TT
-></A
-> pair of variables, only 
-		that the subject of the decision is different: It's not the access 
-		right but whether SSL is used or not. </P
-><P
->The example below requires SSL connections from all hosts
-		outside the local net (which is 192.168.*.*).</P
-><P
->Default: <B
-CLASS="COMMAND"
->ssl hosts = &#60;empty string&#62;</B
-></P
-><P
-><B
-CLASS="COMMAND"
->ssl hosts resign = &#60;empty string&#62;</B
-></P
-><P
->Example: <B
-CLASS="COMMAND"
->ssl hosts resign = 192.168.</B
-></P
-></DD
-><DT
-><A
-NAME="SSLREQUIRECLIENTCERT"
-></A
->ssl require clientcert (G)</DT
-><DD
-><P
->This variable is part of SSL-enabled Samba. This 
-		is only available if the SSL libraries have been compiled on your 
-		system and the configure option <B
-CLASS="COMMAND"
->--with-ssl</B
-> was 
-		given at configure time.</P
-><P
->If this variable is set to <TT
-CLASS="CONSTANT"
->yes</TT
->, the 
-		server will not tolerate connections from clients that don't 
-		have a valid certificate. The directory/file given in <A
-HREF="#SSLCACERTDIR"
-><TT
-CLASS="PARAMETER"
-><I
->ssl CA certDir</I
-></TT
->
-		</A
-> and <A
-HREF="#SSLCACERTFILE"
-><TT
-CLASS="PARAMETER"
-><I
->ssl CA certFile
-		</I
-></TT
-></A
-> will be used to look up the CAs that issued 
-		the client's certificate. If the certificate can't be verified 
-		positively, the connection will be terminated.  If this variable 
-		is set to <TT
-CLASS="CONSTANT"
->no</TT
->, clients don't need certificates. 
-		Contrary to web applications you really <EM
->should</EM
-> 
-		require client certificates. In the web environment the client's 
-		data is sensitive (credit card numbers) and the server must prove 
-		to be trustworthy. In a file server environment the server's data 
-		will be sensitive and the clients must prove to be trustworthy.</P
-><P
->Default: <B
-CLASS="COMMAND"
->ssl require clientcert = no</B
-></P
-></DD
-><DT
-><A
-NAME="SSLREQUIRESERVERCERT"
-></A
->ssl require servercert (G)</DT
-><DD
-><P
->This variable is part of SSL-enabled Samba. This 
-		is only available if the SSL libraries have been compiled on your 
-		system and the configure option <B
-CLASS="COMMAND"
->--with-ssl</B
-> was 
-		given at configure time.</P
-><P
->If this variable is set to <TT
-CLASS="CONSTANT"
->yes</TT
->, the 
-		<A
-HREF="smbclient.1.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->smbclient(1)</B
->
-		</A
-> will request a certificate from the server. Same as 
-		<A
-HREF="#SSLREQUIRECLIENTCERT"
-><TT
-CLASS="PARAMETER"
-><I
->ssl require 
-		clientcert</I
-></TT
-></A
-> for the server.</P
-><P
->Default: <B
-CLASS="COMMAND"
->ssl require servercert = no</B
->
-		</P
-></DD
-><DT
-><A
-NAME="SSLSERVERCERT"
-></A
->ssl server cert (G)</DT
-><DD
-><P
->This variable is part of SSL-enabled Samba. This 
-		is only available if the SSL libraries have been compiled on your 
-		system and the configure option <B
-CLASS="COMMAND"
->--with-ssl</B
-> was 
-		given at configure time.</P
-><P
->This is the file containing the server's certificate. 
-		The server <EM
->must</EM
-> have a certificate. The 
-		file may also contain the server's private key. See later for 
-		how certificates and private keys are created.</P
-><P
->Default: <B
-CLASS="COMMAND"
->ssl server cert = &#60;empty string&#62;
-		</B
-></P
-></DD
-><DT
-><A
-NAME="SSLSERVERKEY"
-></A
->ssl server key (G)</DT
-><DD
-><P
->This variable is part of SSL-enabled Samba. This 
-		is only available if the SSL libraries have been compiled on your 
-		system and the configure option <B
-CLASS="COMMAND"
->--with-ssl</B
-> was 
-		given at configure time.</P
-><P
->This file contains the private key of the server. If 
-		this variable is not defined, the key is looked up in the 
-		certificate file (it may be appended to the certificate). 
-		The server <EM
->must</EM
-> have a private key
-		and the certificate <EM
->must</EM
-> 
-		match this private key.</P
-><P
->Default: <B
-CLASS="COMMAND"
->ssl server key = &#60;empty string&#62;
-		</B
-></P
-></DD
-><DT
-><A
-NAME="SSLVERSION"
-></A
->ssl version (G)</DT
-><DD
-><P
->This variable is part of SSL-enabled Samba. This 
-		is only available if the SSL libraries have been compiled on your 
-		system and the configure option <B
-CLASS="COMMAND"
->--with-ssl</B
-> was 
-		given at configure time.</P
-><P
->This enumeration variable defines the versions of the 
-		SSL protocol that will be used. <TT
-CLASS="CONSTANT"
->ssl2or3</TT
-> allows 
-		dynamic negotiation of SSL v2 or v3, <TT
-CLASS="CONSTANT"
->ssl2</TT
-> results 
-		in SSL v2, <TT
-CLASS="CONSTANT"
->ssl3</TT
-> results in SSL v3 and
-		<TT
-CLASS="CONSTANT"
->tls1</TT
-> results in TLS v1. TLS (Transport Layer 
-		Security) is the new standard for SSL.</P
-><P
->Default: <B
-CLASS="COMMAND"
->ssl version = "ssl2or3"</B
+>Default:  <EM
+>use spnego = yes</EM
 ></P
 ></DD
 ><DT
@@ -17730,9 +16795,9 @@ NAME="UNIXEXTENSIONS"
 ><DD
 ><P
 >This boolean parameter controls whether Samba 
-		implments the CIFS UNIX extensions, as defined by HP. These
-		extensions enable CIFS to server UNIX clients to UNIX servers
-		better, and allow such things as symbolic links, hard links etc.
+		implments the CIFS UNIX extensions, as defined by HP. 
+		These extensions enable Samba to better serve UNIX CIFS clients
+		by supporting features such as symbolic links, hard links, etc...
 		These extensions require a similarly enabled client, and are of
 		no current use to Windows clients.</P
 ><P
@@ -18299,6 +17364,12 @@ CLASS="CONSTANT"
 		to add utmp or utmpx records (depending on the UNIX system) whenever a
 		connection is made to a Samba server. Sites may use this to record the
 		user connecting to a Samba share.</P
+><P
+>Due to the requirements of the utmp record, we
+	        are required to create a unique identifier for the
+	        incoming user.  Enabling this option creates an n^2
+	        algorithm to find this number.  This may impede
+	        performance on large installations. </P
 ><P
 >See also the <A
 HREF="#UTMPDIRECTORY"
@@ -19246,7 +18317,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6101"
+NAME="AEN5817"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19276,7 +18347,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6107"
+NAME="AEN5823"
 ></A
 ><H2
 >VERSION</H2
@@ -19287,7 +18358,7 @@ NAME="AEN6107"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6110"
+NAME="AEN5826"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19366,7 +18437,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6130"
+NAME="AEN5846"
 ></A
 ><H2
 >AUTHOR</H2

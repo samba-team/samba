@@ -37,12 +37,12 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >rpcclient</B
->  [-A authfile] [-c &#60;command string&#62;] [-d debuglevel] [-h] [-l logfile] [-N] [-s &#60;smb config file&#62;] [-U username[%password]] [-W workgroup] [-N] {server}</P
+>  [-A authfile] [-c &#60;command string&#62;] [-d debuglevel] [-h] [-l logfile] [-N] [-s &#60;smb config file&#62;] [-U username[%password]] [-W workgroup] [-N] [-I destinationIP] {server}</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN22"
+NAME="AEN23"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -65,7 +65,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN28"
+NAME="AEN29"
 ></A
 ><H2
 >OPTIONS</H2
@@ -149,6 +149,35 @@ CLASS="FILENAME"
 ><P
 >Print a summary of command line options.
 		</P
+></DD
+><DT
+>-I IP-address</DT
+><DD
+><P
+><TT
+CLASS="REPLACEABLE"
+><I
+>IP address</I
+></TT
+> is the address of the server to connect to. 
+		It should be specified in standard "a.b.c.d" notation. </P
+><P
+>Normally the client would attempt to locate a named 
+		SMB/CIFS server by looking it up via the NetBIOS name resolution 
+		mechanism described above in the <TT
+CLASS="PARAMETER"
+><I
+>name resolve order</I
+></TT
+> 
+		parameter above. Using this parameter will force the client
+		to assume that the server is on the machine with the specified IP 
+		address and the NetBIOS name component of the resource being 
+		connected to will be ignored. </P
+><P
+>There is no default for this parameter. If not supplied, 
+		it will be determined automatically by the client as described 
+		above. </P
 ></DD
 ><DT
 >-l|--logfile=logbasename</DT
@@ -253,7 +282,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN92"
+NAME="AEN101"
 ></A
 ><H2
 >COMMANDS</H2
@@ -647,7 +676,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN212"
+NAME="AEN221"
 ></A
 ><H2
 >BUGS</H2
@@ -688,7 +717,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN222"
+NAME="AEN231"
 ></A
 ><H2
 >VERSION</H2
@@ -699,7 +728,7 @@ NAME="AEN222"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN225"
+NAME="AEN234"
 ></A
 ><H2
 >AUTHOR</H2

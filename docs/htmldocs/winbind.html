@@ -410,12 +410,20 @@ for providing the HOWTO for this section.</P
 >This HOWTO describes how to get winbind services up and running 
 to control access and authenticate users on your Linux box using 
 the winbind services which come with SAMBA 2.2.2.</P
+><P
+>There is also some Solaris specific information in 
+<TT
+CLASS="FILENAME"
+>docs/textdocs/Solaris-Winbind-HOWTO.txt</TT
+>.
+Future revisions of this document will incorporate that
+information.</P
 ><DIV
 CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN76"
+NAME="AEN78"
 >Introduction</A
 ></H2
 ><P
@@ -468,7 +476,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN89"
+NAME="AEN91"
 >Requirements</A
 ></H2
 ><P
@@ -529,7 +537,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN103"
+NAME="AEN105"
 >Testing Things Out</A
 ></H2
 ><P
@@ -574,7 +582,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN114"
+NAME="AEN116"
 >Configure and compile SAMBA</A
 ></H3
 ><P
@@ -640,7 +648,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN133"
+NAME="AEN135"
 >Configure <TT
 CLASS="FILENAME"
 >nsswitch.conf</TT
@@ -670,6 +678,30 @@ CLASS="PROMPT"
 > <B
 CLASS="COMMAND"
 >ln -s /lib/libnss_winbind.so /lib/libnss_winbind.so.2</B
+></P
+><P
+>And, in the case of Sun solaris:</P
+><P
+><TT
+CLASS="PROMPT"
+>root#</TT
+> <B
+CLASS="COMMAND"
+>ln -s /usr/lib/libnss_winbind.so /usr/lib/libnss_winbind.so.1</B
+>
+<TT
+CLASS="PROMPT"
+>root#</TT
+> <B
+CLASS="COMMAND"
+>ln -s /usr/lib/libnss_winbind.so /usr/lib/nss_winbind.so.1</B
+>
+<TT
+CLASS="PROMPT"
+>root#</TT
+> <B
+CLASS="COMMAND"
+>ln -s /usr/lib/libnss_winbind.so /usr/lib/nss_winbind.so.2</B
 ></P
 ><P
 >Now, as root you need to edit <TT
@@ -721,7 +753,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN158"
+NAME="AEN168"
 >Configure smb.conf</A
 ></H3
 ><P
@@ -796,7 +828,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN174"
+NAME="AEN184"
 >Join the SAMBA server to the PDC domain</A
 ></H3
 ><P
@@ -842,7 +874,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN185"
+NAME="AEN195"
 >Start up the winbindd daemon and test it!</A
 ></H3
 ><P
@@ -965,12 +997,17 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN221"
->Fix the <TT
-CLASS="FILENAME"
->/etc/rc.d/init.d/smb</TT
-> startup files</A
+NAME="AEN231"
+>Fix the init.d startup scripts</A
 ></H3
+><DIV
+CLASS="SECT4"
+><H4
+CLASS="SECT4"
+><A
+NAME="AEN233"
+>Linux</A
+></H4
 ><P
 >The <B
 CLASS="COMMAND"
@@ -983,15 +1020,16 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >nmbd</B
 > daemons are running.  
-To accomplish this task, you need to modify the <TT
+To accomplish this task, you need to modify the startup scripts of your system. They are located at <TT
 CLASS="FILENAME"
 >/etc/init.d/smb</TT
->
-script to add commands to invoke this daemon in the proper sequence.  My 
+> in RedHat and 
 <TT
 CLASS="FILENAME"
->/etc/init.d/smb</TT
-> file starts up <B
+>/etc/init.d/samba</TT
+> in Debian.
+script to add commands to invoke this daemon in the proper sequence.  My 
+startup script starts up <B
 CLASS="COMMAND"
 >smbd</B
 >, 
@@ -1057,6 +1095,86 @@ CLASS="PROGRAMLISTING"
         return $RETVAL
 }</PRE
 ></P
+></DIV
+><DIV
+CLASS="SECT4"
+><HR><H4
+CLASS="SECT4"
+><A
+NAME="AEN250"
+>Solaris</A
+></H4
+><P
+>On solaris, you need to modify the 
+<TT
+CLASS="FILENAME"
+>/etc/init.d/samba.server</TT
+> startup script. It usually 
+only starts smbd and nmbd but should now start winbindd too. If you 
+have samba installed in <TT
+CLASS="FILENAME"
+>/usr/local/samba/bin</TT
+>, 
+the file could contains something like this:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>##
+## samba.server
+##
+
+if [ ! -d /usr/bin ]
+then                    # /usr not mounted
+        exit
+fi
+
+killproc() {            # kill the named process(es)
+        pid=`/usr/bin/ps -e |
+             /usr/bin/grep -w $1 |
+             /usr/bin/sed -e 's/^  *//' -e 's/ .*//'`
+        [ "$pid" != "" ] &#38;&#38; kill $pid
+}
+ 
+# Start/stop processes required for samba server
+
+case "$1" in
+
+'start')
+#
+# Edit these lines to suit your installation (paths, workgroup, host)
+#
+echo Starting SMBD
+   /usr/local/samba/bin/smbd -D -s \
+	/usr/local/samba/smb.conf
+
+echo Starting NMBD
+   /usr/local/samba/bin/nmbd -D -l \
+	/usr/local/samba/var/log -s /usr/local/samba/smb.conf
+
+echo Starting Winbind Daemon
+   /usr/local/samba/bin/winbindd
+   ;;
+
+'stop')
+   killproc nmbd
+   killproc smbd
+   killproc winbindd
+   ;;
+
+*)
+   echo "Usage: /etc/init.d/samba.server { start | stop }"
+   ;;
+esac</PRE
+></P
+></DIV
+><DIV
+CLASS="SECT4"
+><HR><H4
+CLASS="SECT4"
+><A
+NAME="AEN257"
+>Restarting</A
+></H4
 ><P
 >If you restart the <B
 CLASS="COMMAND"
@@ -1072,12 +1190,13 @@ CLASS="COMMAND"
 should be able to connect to the samba server as a domain member just as
 if you were a local user.</P
 ></DIV
+></DIV
 ><DIV
 CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN243"
+NAME="AEN263"
 >Configure Winbind and PAM</A
 ></H3
 ><P
@@ -1117,7 +1236,11 @@ your other pam security modules.  On my RedHat system, this was the
 <TT
 CLASS="FILENAME"
 >/lib/security</TT
-> directory.</P
+> directory. On Solaris, the pam security 
+modules reside in <TT
+CLASS="FILENAME"
+>/usr/lib/security</TT
+>.</P
 ><P
 ><TT
 CLASS="PROMPT"
@@ -1126,6 +1249,14 @@ CLASS="PROMPT"
 CLASS="COMMAND"
 >cp ../samba/source/nsswitch/pam_winbind.so /lib/security</B
 ></P
+><DIV
+CLASS="SECT4"
+><HR><H4
+CLASS="SECT4"
+><A
+NAME="AEN280"
+>Linux/FreeBSD-specific PAM configuration</A
+></H4
 ><P
 >The <TT
 CLASS="FILENAME"
@@ -1247,6 +1378,91 @@ CLASS="COMMAND"
 > line to get rid of annoying 
 double prompts for passwords.</P
 ></DIV
+><DIV
+CLASS="SECT4"
+><HR><H4
+CLASS="SECT4"
+><A
+NAME="AEN313"
+>Solaris-specific configuration</A
+></H4
+><P
+>The /etc/pam.conf needs to be changed. I changed this file so that my Domain
+users can logon both locally as well as telnet.The following are the changes
+that I made.You can customize the pam.conf file as per your requirements,but
+be sure of those changes because in the worst case it will leave your system
+nearly impossible to boot.</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>#
+#ident	"@(#)pam.conf	1.14	99/09/16 SMI"
+#
+# Copyright (c) 1996-1999, Sun Microsystems, Inc.
+# All Rights Reserved.
+#
+# PAM configuration
+#
+# Authentication management
+#
+login   auth required   /usr/lib/security/pam_winbind.so
+login	auth required 	/usr/lib/security/$ISA/pam_unix.so.1 try_first_pass 
+login	auth required 	/usr/lib/security/$ISA/pam_dial_auth.so.1 try_first_pass 
+#
+rlogin  auth sufficient /usr/lib/security/pam_winbind.so
+rlogin  auth sufficient /usr/lib/security/$ISA/pam_rhosts_auth.so.1
+rlogin	auth required 	/usr/lib/security/$ISA/pam_unix.so.1 try_first_pass
+#
+dtlogin auth sufficient /usr/lib/security/pam_winbind.so
+dtlogin	auth required 	/usr/lib/security/$ISA/pam_unix.so.1 try_first_pass
+#
+rsh	auth required	/usr/lib/security/$ISA/pam_rhosts_auth.so.1
+other   auth sufficient /usr/lib/security/pam_winbind.so
+other	auth required	/usr/lib/security/$ISA/pam_unix.so.1 try_first_pass
+#
+# Account management
+#
+login   account sufficient      /usr/lib/security/pam_winbind.so
+login	account requisite	/usr/lib/security/$ISA/pam_roles.so.1 
+login	account required	/usr/lib/security/$ISA/pam_unix.so.1 
+#
+dtlogin account sufficient      /usr/lib/security/pam_winbind.so
+dtlogin	account requisite	/usr/lib/security/$ISA/pam_roles.so.1 
+dtlogin	account required	/usr/lib/security/$ISA/pam_unix.so.1 
+#
+other   account sufficient      /usr/lib/security/pam_winbind.so
+other	account requisite	/usr/lib/security/$ISA/pam_roles.so.1 
+other	account required	/usr/lib/security/$ISA/pam_unix.so.1 
+#
+# Session management
+#
+other	session required	/usr/lib/security/$ISA/pam_unix.so.1 
+#
+# Password management
+#
+#other   password sufficient     /usr/lib/security/pam_winbind.so
+other	password required	/usr/lib/security/$ISA/pam_unix.so.1 
+dtsession auth required	/usr/lib/security/$ISA/pam_unix.so.1
+#
+# Support for Kerberos V5 authentication (uncomment to use Kerberos)
+#
+#rlogin	auth optional	/usr/lib/security/$ISA/pam_krb5.so.1 try_first_pass
+#login	auth optional	/usr/lib/security/$ISA/pam_krb5.so.1 try_first_pass
+#dtlogin	auth optional	/usr/lib/security/$ISA/pam_krb5.so.1 try_first_pass
+#other	auth optional	/usr/lib/security/$ISA/pam_krb5.so.1 try_first_pass
+#dtlogin	account optional /usr/lib/security/$ISA/pam_krb5.so.1
+#other	account optional /usr/lib/security/$ISA/pam_krb5.so.1
+#other	session optional /usr/lib/security/$ISA/pam_krb5.so.1
+#other	password optional /usr/lib/security/$ISA/pam_krb5.so.1 try_first_pass</PRE
+></P
+><P
+>I also added a try_first_pass line after the winbind.so line to get rid of
+annoying double prompts for passwords.</P
+><P
+>Now restart your Samba &#38; try connecting through your application that you
+configured in the pam.conf.</P
+></DIV
+></DIV
 ></DIV
 ></DIV
 ><DIV
@@ -1254,7 +1470,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN290"
+NAME="AEN320"
 >Limitations</A
 ></H1
 ><P
@@ -1295,7 +1511,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN300"
+NAME="AEN330"
 >Conclusion</A
 ></H1
 ><P

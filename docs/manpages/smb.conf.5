@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "08 May 2002" "" ""
+.TH "SMB.CONF" "5" "15 August 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -657,13 +657,13 @@ each parameter for details. Note that some are synonyms.
 \fIldap filter\fR
 .TP 0.2i
 \(bu
-\fIldap port\fR
-.TP 0.2i
-\(bu
-\fIldap server\fR
-.TP 0.2i
-\(bu
 \fIldap ssl\fR
+.TP 0.2i
+\(bu
+\fIldap suffix\fR
+.TP 0.2i
+\(bu
+\fIldap suffix\fR
 .TP 0.2i
 \(bu
 \fIldap suffix\fR
@@ -906,55 +906,7 @@ each parameter for details. Note that some are synonyms.
 \fIsource environment\fR
 .TP 0.2i
 \(bu
-\fIssl\fR
-.TP 0.2i
-\(bu
-\fIssl CA certDir\fR
-.TP 0.2i
-\(bu
-\fIssl CA certFile\fR
-.TP 0.2i
-\(bu
-\fIssl ciphers\fR
-.TP 0.2i
-\(bu
-\fIssl client cert\fR
-.TP 0.2i
-\(bu
-\fIssl client key\fR
-.TP 0.2i
-\(bu
-\fIssl compatibility\fR
-.TP 0.2i
-\(bu
-\fIssl egd socket\fR
-.TP 0.2i
-\(bu
-\fIssl entropy bytes\fR
-.TP 0.2i
-\(bu
-\fIssl entropy file\fR
-.TP 0.2i
-\(bu
-\fIssl hosts\fR
-.TP 0.2i
-\(bu
-\fIssl hosts resign\fR
-.TP 0.2i
-\(bu
-\fIssl require clientcert\fR
-.TP 0.2i
-\(bu
-\fIssl require servercert\fR
-.TP 0.2i
-\(bu
-\fIssl server cert\fR
-.TP 0.2i
-\(bu
-\fIssl server key\fR
-.TP 0.2i
-\(bu
-\fIssl version\fR
+\fIuse spnego\fR
 .TP 0.2i
 \(bu
 \fIstat cache\fR
@@ -1606,6 +1558,11 @@ Default: \fBadd user script = <empty string>
 Example: \fBadd user script = /usr/local/samba/bin/add_user 
 %u\fR
 .TP
+\fBadd group script (G)\fR
+This is the full pathname to a script that will 
+be run \fBAS ROOT\fR by smbd(8) when a new group is requested. It will expand any \fI%g\fR to the group name passed. This script is only useful for installations using the Windows NT domain administration tools.
+
+.TP
 \fBadmin users (S)\fR
 This is a list of users who will be granted 
 administrative privileges on the share. This means that they 
@@ -2189,44 +2146,14 @@ Example: \fBdelete share command = /usr/local/bin/delshare\fR
 .TP
 \fBdelete user script (G)\fR
 This is the full pathname to a script that will 
-be run \fBAS ROOT\fR by  \fBsmbd(8)\fRunder special circumstances 
-described below.
+be run by \fBsmbd(8)\fR
+when managing user's with remote RPC (NT) tools.
 
-Normally, a Samba server requires that UNIX users are 
-created for all users accessing files on this server. For sites 
-that use Windows NT account databases as their primary user database 
-creating these users and keeping the user list in sync with the 
-Windows NT PDC is an onerous task. This option allows \fB smbd\fR to delete the required UNIX users \fBON 
-DEMAND\fR when a user accesses the Samba server and the 
-Windows NT user no longer exists.
+This script is called when a remote client removes a user
+from the server, normally using 'User Manager for Domains' or
+\fBrpcclient\fR.
 
-In order to use this option, \fBsmbd\fR must be 
-set to \fIsecurity = domain\fR or \fIsecurity =
-user\fR and \fIdelete user script\fR 
-must be set to a full pathname for a script 
-that will delete a UNIX user given one argument of \fI%u\fR, 
-which expands into the UNIX user name to delete.
-
-When the Windows user attempts to access the Samba server, 
-at \fBlogin\fR (session setup in the SMB protocol) 
-time, \fBsmbd\fR contacts the  \fIpassword server\fR and attempts to authenticate 
-the given user with the given password. If the authentication fails 
-with the specific Domain error code meaning that the user no longer 
-exists then \fBsmbd\fR attempts to find a UNIX user in 
-the UNIX password database that matches the Windows user account. If 
-this lookup succeeds, and \fIdelete user script\fR is 
-set then \fBsmbd\fR will all the specified script 
-\fBAS ROOT\fR, expanding any \fI%u\fR 
-argument to be the user name to delete.
-
-This script should delete the given UNIX username. In this way, 
-UNIX users are dynamically deleted to match existing Windows NT 
-accounts.
-
-See also security = domain,
-\fIpassword server\fR
-, \fIadd user script\fR
-\&.
+This script should delete the given UNIX username. 
 
 Default: \fBdelete user script = <empty string>
 \fR
@@ -2744,7 +2671,7 @@ would force all created directories to have read and execute
 permissions set for 'group' and 'other' as well as the
 read/write/execute bits set for the 'user'.
 .TP
-\fBforce directory  security mode (S)\fR
+\fBforce directory\fR
 This parameter controls what UNIX permission bits 
 can be modified when a Windows NT client is manipulating the UNIX 
 permission on a directory using the native NT security dialog box.
@@ -3302,14 +3229,9 @@ code paths.
 Default : \fBlarge readwrite = yes\fR
 .TP
 \fBldap admin dn (G)\fR
-This parameter is only available if Samba has been
-configure to include the \fB--with-ldapsam\fR option
-at compile time. This option should be considered experimental and
-under active development.
-
 The \fIldap admin dn\fR defines the Distinguished 
-Name (DN) name used by Samba to contact the ldap
-server when retreiving user account information. The \fIldap
+Name (DN) name used by Samba to contact the ldap server when retreiving 
+user account information. The \fIldap
 admin dn\fR is used in conjunction with the admin dn password
 stored in the \fIprivate/secrets.tdb\fR file. See the
 \fBsmbpasswd(8)\fRman
@@ -3318,11 +3240,6 @@ page for more information on how to accmplish this.
 Default : \fBnone\fR
 .TP
 \fBldap filter (G)\fR
-This parameter is only available if Samba has been
-configure to include the \fB--with-ldapsam\fR option
-at compile time. This option should be considered experimental and
-under active development.
-
 This parameter specifies the RFC 2254 compliant LDAP search filter.
 The default is to match the login name with the uid 
 attribute for all entries matching the sambaAccount 
@@ -3330,43 +3247,13 @@ objectclass. Note that this filter should only return one entry.
 
 Default : \fBldap filter = (&(uid=%u)(objectclass=sambaAccount))\fR
 .TP
-\fBldap port (G)\fR
-This parameter is only available if Samba has been
-configure to include the \fB--with-ldapsam\fR option
-at compile time. This option should be considered experimental and
-under active development.
-
-This option is used to control the tcp port number used to contact
-the \fIldap server\fR.
-The default is to use the stand LDAPS port 636.
-
-See Also: ldap ssl
-
-Default : \fBldap port = 636\fR
-.TP
-\fBldap server (G)\fR
-This parameter is only available if Samba has been
-configure to include the \fB--with-ldapsam\fR option
-at compile time. This option should be considered experimental and
-under active development.
-
-This parameter should contains the FQDN of the ldap directory 
-server which should be queried to locate user account information.
-
-Default : \fBldap server = localhost\fR
-.TP
 \fBldap ssl (G)\fR
-This parameter is only available if Samba has been
-configure to include the \fB--with-ldapsam\fR option
-at compile time. This option should be considered experimental and
-under active development.
-
 This option is used to define whether or not Samba should
-use SSL when connecting to the \fIldap
-server\fR. This is \fBNOT\fR related to
-Samba SSL support which is enabled by specifying the 
+use SSL when connecting to the ldap server
+This is \fBNOT\fR related to
+Samba's previous SSL support which was enabled by specifying the 
 \fB--with-ssl\fR option to the \fIconfigure\fR 
-script (see \fIssl\fR).
+script.
 
 The \fIldap ssl\fR can be set to one of three values:
 (a) on - Always use SSL when contacting the 
@@ -3378,10 +3265,16 @@ Never use SSL when querying the directory, or (c) start_tls
 Default : \fBldap ssl = on\fR
 .TP
 \fBldap suffix (G)\fR
-This parameter is only available if Samba has been
-configure to include the \fB--with-ldapsam\fR option
-at compile time. This option should be considered experimental and
-under active development.
+Default : \fBnone\fR
+.TP
+\fBldap user suffix (G)\fR
+It specifies where users are added to the tree.
+
+Default : \fBnone\fR
+.TP
+\fBldap machine suffix (G)\fR
+It specifies where machines should be 
+added to the ldap tree.
 
 Default : \fBnone\fR
 .TP
@@ -3546,16 +3439,18 @@ you to have separate log files for each user or machine.
 Example: \fBlog file = /usr/local/samba/var/log.%m
 \fR.TP
 \fBlog level (G)\fR
-The value of the parameter (an integer) allows 
+The value of the parameter (a astring) allows 
 the debug level (logging level) to be specified in the 
-\fIsmb.conf\fR file. This is to give greater 
+\fIsmb.conf\fR file. This parameter has been
+extended since 2.2.x series, now it allow to specify the debug
+level for multiple debug classes. This is to give greater 
 flexibility in the configuration of the system.
 
 The default will be the log level specified on 
 the command line or level zero if none was specified.
 
-Example: \fBlog level = 3\fR
-.TP
+Example: \fBlog level = 3 passdb:5 auth:10 winbind:2
+\fR.TP
 \fBlogon drive (G)\fR
 This parameter specifies the local path to 
 which the home directory will be connected (see \fIlogon home\fR) 
@@ -4790,14 +4685,27 @@ arbitary passdb backend from the .so specified as a compulsary argument.
 
 Any characters after the (optional) second : are passed to the plugin
 for its own processing
+.TP 0.2i
+\(bu
+\fBunixsam\fR - Allows samba to map all (other) available unix users
+
+This backend uses the standard unix database for retrieving users. Users included 
+in this pdb are NOT listed in samba user listings and users included in this pdb won't be 
+able to login. The use of this backend is to always be able to display the owner of a file 
+on the samba server - even when the user doesn't have a 'real' samba account in one of the 
+other passdb backends.
+
+This backend should always be the last backend listed, since it contains all users in 
+the unix passdb and might 'override' mappings if specified earlier. It's meant to only return 
+accounts for users that aren't covered by the previous backends.
 .RE
 .PP
 
-Default: \fBpassdb backend = smbpasswd\fR
+Default: \fBpassdb backend = smbpasswd unixsam\fR
 
-Example: \fBpassdb backend = tdbsam:/etc/samba/private/passdb.tdb smbpasswd:/etc/samba/smbpasswd\fR
+Example: \fBpassdb backend = tdbsam:/etc/samba/private/passdb.tdb smbpasswd:/etc/samba/smbpasswd unixsam\fR
 
-Example: \fBpassdb backend = ldapsam_nua:ldaps://ldap.example.com\fR
+Example: \fBpassdb backend = ldapsam_nua:ldaps://ldap.example.com unixsam\fR
 
 Example: \fBpassdb backend = plugin:/usr/local/samba/lib/my_passdb.so:my_plugin_args tdbsam:/etc/samba/private/passdb.tdb\fR
 .TP
@@ -6278,246 +6186,10 @@ Examples: \fBsource environment = |/etc/smb.conf.sh
 Example: \fBsource environment = 
 /usr/local/smb_env_vars\fR
 .TP
-\fBssl (G)\fR
-This variable is part of SSL-enabled Samba. This 
-is only available if the SSL libraries have been compiled on your 
-system and the configure option \fB--with-ssl\fR was 
-given at configure time.
+\fBuse spnego (G)\fR
+This variable controls controls whether samba will try to use Simple and Protected NEGOciation (as specified by rfc2478) with WindowsXP and Windows2000sp2 clients to agree upon an authentication mechanism. As of samba 3.0alpha it must be set to "no" for these clients to join a samba domain controller. It can be set to "yes" to allow samba to participate in an AD domain controlled by a Windows2000 domain controller.
 
-This variable enables or disables the entire SSL mode. If 
-it is set to no, the SSL-enabled Samba behaves 
-exactly like the non-SSL Samba. If set to yes, 
-it depends on the variables \fI ssl hosts\fR and  \fIssl hosts resign\fR whether an SSL 
-connection will be required.
-
-Default: \fBssl = no\fR
-.TP
-\fBssl CA certDir (G)\fR
-This variable is part of SSL-enabled Samba. This 
-is only available if the SSL libraries have been compiled on your 
-system and the configure option \fB--with-ssl\fR was 
-given at configure time.
-
-This variable defines where to look up the Certification
-Authorities. The given directory should contain one file for 
-each CA that Samba will trust. The file name must be the hash 
-value over the "Distinguished Name" of the CA. How this directory 
-is set up is explained later in this document. All files within the 
-directory that don't fit into this naming scheme are ignored. You 
-don't need this variable if you don't verify client certificates.
-
-Default: \fBssl CA certDir = /usr/local/ssl/certs
-\fR.TP
-\fBssl CA certFile (G)\fR
-This variable is part of SSL-enabled Samba. This 
-is only available if the SSL libraries have been compiled on your 
-system and the configure option \fB--with-ssl\fR was 
-given at configure time.
-
-This variable is a second way to define the trusted CAs. 
-The certificates of the trusted CAs are collected in one big 
-file and this variable points to the file. You will probably 
-only use one of the two ways to define your CAs. The first choice is 
-preferable if you have many CAs or want to be flexible, the second 
-is preferable if you only have one CA and want to keep things 
-simple (you won't need to create the hashed file names). You 
-don't need this variable if you don't verify client certificates.
-
-Default: \fBssl CA certFile = /usr/local/ssl/certs/trustedCAs.pem
-\fR.TP
-\fBssl ciphers (G)\fR
-This variable is part of SSL-enabled Samba. This 
-is only available if the SSL libraries have been compiled on your 
-system and the configure option \fB--with-ssl\fR was 
-given at configure time.
-
-This variable defines the ciphers that should be offered 
-during SSL negotiation. You should not set this variable unless 
-you know what you are doing.
-.TP
-\fBssl client cert (G)\fR
-This variable is part of SSL-enabled Samba. This 
-is only available if the SSL libraries have been compiled on your 
-system and the configure option \fB--with-ssl\fR was 
-given at configure time.
-
-The certificate in this file is used by  \fBsmbclient(1)\fRif it exists. It's needed 
-if the server requires a client certificate.
-
-Default: \fBssl client cert = /usr/local/ssl/certs/smbclient.pem
-\fR.TP
-\fBssl client key (G)\fR
-This variable is part of SSL-enabled Samba. This 
-is only available if the SSL libraries have been compiled on your 
-system and the configure option \fB--with-ssl\fR was 
-given at configure time.
-
-This is the private key for  \fBsmbclient(1)\fR. It's only needed if the 
-client should have a certificate. 
-
-Default: \fBssl client key = /usr/local/ssl/private/smbclient.pem
-\fR.TP
-\fBssl compatibility (G)\fR
-This variable is part of SSL-enabled Samba. This 
-is only available if the SSL libraries have been compiled on your 
-system and the configure option \fB--with-ssl\fR was 
-given at configure time.
-
-This variable defines whether OpenSSL should be configured 
-for bug compatibility with other SSL implementations. This is 
-probably not desirable because currently no clients with SSL 
-implementations other than OpenSSL exist.
-
-Default: \fBssl compatibility = no\fR
-.TP
-\fBssl egd socket (G)\fR
-This variable is part of SSL-enabled Samba. This 
-is only available if the SSL libraries have been compiled on your 
-system and the configure option \fB--with-ssl\fR was 
-given at configure time.
-
-This option is used to define the location of the communiation socket of 
-an EGD or PRNGD daemon, from which entropy can be retrieved. This option 
-can be used instead of or together with the \fIssl entropy file\fR 
-directive. 255 bytes of entropy will be retrieved from the daemon.
-
-Default: \fBnone\fR
-.TP
-\fBssl entropy bytes (G)\fR
-This variable is part of SSL-enabled Samba. This 
-is only available if the SSL libraries have been compiled on your 
-system and the configure option \fB--with-ssl\fR was 
-given at configure time.
-
-This parameter is used to define the number of bytes which should 
-be read from the \fIssl entropy 
-file\fR If a -1 is specified, the entire file will
-be read.
-
-Default: \fBssl entropy bytes = 255\fR
-.TP
-\fBssl entropy file (G)\fR
-This variable is part of SSL-enabled Samba. This 
-is only available if the SSL libraries have been compiled on your 
-system and the configure option \fB--with-ssl\fR was 
-given at configure time.
-
-This parameter is used to specify a file from which processes will 
-read "random bytes" on startup. In order to seed the internal pseudo 
-random number generator, entropy must be provided. On system with a 
-\fI/dev/urandom\fR device file, the processes
-will retrieve its entropy from the kernel. On systems without kernel
-entropy support, a file can be supplied that will be read on startup
-and that will be used to seed the PRNG.
-
-Default: \fBnone\fR
-.TP
-\fBssl hosts (G)\fR
-See \fI ssl hosts resign\fR.
-.TP
-\fBssl hosts resign (G)\fR
-This variable is part of SSL-enabled Samba. This 
-is only available if the SSL libraries have been compiled on your 
-system and the configure option \fB--with-ssl\fR was 
-given at configure time.
-
-These two variables define whether Samba will go 
-into SSL mode or not. If none of them is defined, Samba will 
-allow only SSL connections. If the  \fIssl hosts\fR variable lists
-hosts (by IP-address, IP-address range, net group or name), 
-only these hosts will be forced into SSL mode. If the \fI ssl hosts resign\fR variable lists hosts, only these 
-hosts will \fBNOT\fR be forced into SSL mode. The syntax for these two 
-variables is the same as for the \fI hosts allow\fR and  \fIhosts deny\fR pair of variables, only 
-that the subject of the decision is different: It's not the access 
-right but whether SSL is used or not. 
-
-The example below requires SSL connections from all hosts
-outside the local net (which is 192.168.*.*).
-
-Default: \fBssl hosts = <empty string>\fR
-
-\fBssl hosts resign = <empty string>\fR
-
-Example: \fBssl hosts resign = 192.168.\fR
-.TP
-\fBssl require clientcert (G)\fR
-This variable is part of SSL-enabled Samba. This 
-is only available if the SSL libraries have been compiled on your 
-system and the configure option \fB--with-ssl\fR was 
-given at configure time.
-
-If this variable is set to yes, the 
-server will not tolerate connections from clients that don't 
-have a valid certificate. The directory/file given in \fIssl CA certDir\fR
-and \fIssl CA certFile
-\fRwill be used to look up the CAs that issued 
-the client's certificate. If the certificate can't be verified 
-positively, the connection will be terminated. If this variable 
-is set to no, clients don't need certificates. 
-Contrary to web applications you really \fBshould\fR 
-require client certificates. In the web environment the client's 
-data is sensitive (credit card numbers) and the server must prove 
-to be trustworthy. In a file server environment the server's data 
-will be sensitive and the clients must prove to be trustworthy.
-
-Default: \fBssl require clientcert = no\fR
-.TP
-\fBssl require servercert (G)\fR
-This variable is part of SSL-enabled Samba. This 
-is only available if the SSL libraries have been compiled on your 
-system and the configure option \fB--with-ssl\fR was 
-given at configure time.
-
-If this variable is set to yes, the 
-\fBsmbclient(1)\fR
-will request a certificate from the server. Same as 
-\fIssl require 
-clientcert\fR for the server.
-
-Default: \fBssl require servercert = no\fR
-.TP
-\fBssl server cert (G)\fR
-This variable is part of SSL-enabled Samba. This 
-is only available if the SSL libraries have been compiled on your 
-system and the configure option \fB--with-ssl\fR was 
-given at configure time.
-
-This is the file containing the server's certificate. 
-The server \fBmust\fR have a certificate. The 
-file may also contain the server's private key. See later for 
-how certificates and private keys are created.
-
-Default: \fBssl server cert = <empty string>
-\fR.TP
-\fBssl server key (G)\fR
-This variable is part of SSL-enabled Samba. This 
-is only available if the SSL libraries have been compiled on your 
-system and the configure option \fB--with-ssl\fR was 
-given at configure time.
-
-This file contains the private key of the server. If 
-this variable is not defined, the key is looked up in the 
-certificate file (it may be appended to the certificate). 
-The server \fBmust\fR have a private key
-and the certificate \fBmust\fR 
-match this private key.
-
-Default: \fBssl server key = <empty string>
-\fR.TP
-\fBssl version (G)\fR
-This variable is part of SSL-enabled Samba. This 
-is only available if the SSL libraries have been compiled on your 
-system and the configure option \fB--with-ssl\fR was 
-given at configure time.
-
-This enumeration variable defines the versions of the 
-SSL protocol that will be used. ssl2or3 allows 
-dynamic negotiation of SSL v2 or v3, ssl2 results 
-in SSL v2, ssl3 results in SSL v3 and
-tls1 results in TLS v1. TLS (Transport Layer 
-Security) is the new standard for SSL.
-
-Default: \fBssl version = "ssl2or3"\fR
+Default: \fBuse spnego = yes\fR
 .TP
 \fBstat cache (G)\fR
 This parameter determines if smbd(8)will use a cache in order to 
@@ -6698,9 +6370,9 @@ Example: \fBtotal print jobs = 5000\fR
 .TP
 \fBunix extensions(G)\fR
 This boolean parameter controls whether Samba 
-implments the CIFS UNIX extensions, as defined by HP. These
-extensions enable CIFS to server UNIX clients to UNIX servers
-better, and allow such things as symbolic links, hard links etc.
+implments the CIFS UNIX extensions, as defined by HP. 
+These extensions enable Samba to better serve UNIX CIFS clients
+by supporting features such as symbolic links, hard links, etc...
 These extensions require a similarly enabled client, and are of
 no current use to Windows clients.
 
@@ -6982,6 +6654,12 @@ Samba has been configured and compiled with the option \fB --with-utmp\fR. If se
 to add utmp or utmpx records (depending on the UNIX system) whenever a
 connection is made to a Samba server. Sites may use this to record the
 user connecting to a Samba share.
+
+Due to the requirements of the utmp record, we
+are required to create a unique identifier for the
+incoming user. Enabling this option creates an n^2
+algorithm to find this number. This may impede
+performance on large installations. 
 
 See also the \fI utmp directory\fR parameter.
 
