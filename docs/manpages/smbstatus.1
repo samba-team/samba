@@ -3,16 +3,16 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBSTATUS" "1" "28 March 2002" "" ""
+.TH "SMBSTATUS" "1" "01 October 2002" "" ""
 .SH NAME
 smbstatus \- report on current Samba connections
 .SH SYNOPSIS
 
-\fBsmbstatus\fR [ \fB-P\fR]  [ \fB-b\fR]  [ \fB-d <debug level>\fR]  [ \fB-v\fR]  [ \fB-L\fR]  [ \fB-B\fR]  [ \fB-p\fR]  [ \fB-S\fR]  [ \fB-s <configuration file>\fR]  [ \fB-u <username>\fR] 
+\fBsmbstatus\fR [ \fB-P\fR ] [ \fB-b\fR ] [ \fB-d <debug level>\fR ] [ \fB-v\fR ] [ \fB-L\fR ] [ \fB-B\fR ] [ \fB-p\fR ] [ \fB-S\fR ] [ \fB-s <configuration file>\fR ] [ \fB-u <username>\fR ]
 
 .SH "DESCRIPTION"
 .PP
-This tool is part of the  Sambasuite.
+This tool is part of the  Samba suite.
 .PP
 \fBsmbstatus\fR is a very simple program to 
 list the current Samba connections.
@@ -39,7 +39,7 @@ causes smbstatus to only list locks.
 causes smbstatus to include byte range locks.
 .TP
 \fB-p|--processes\fR
-print a list of   \fBsmbd(8)\fRprocesses and exit. 
+print a list of   \fBsmbd(8)\fR processes and exit. 
 Useful for scripting.
 .TP
 \fB-S|--shares\fR
@@ -49,7 +49,7 @@ causes smbstatus to only list shares.
 The default configuration file name is
 determined at compile time. The file specified contains the
 configuration details required by the server. See \fIsmb.conf(5)\fR
-for more information.
+ for more information.
 .TP
 \fB-u|--user=<username>\fR
 selects information relevant to 
@@ -60,8 +60,8 @@ This man page is correct for version 3.0 of
 the Samba suite.
 .SH "SEE ALSO"
 .PP
-\fBsmbd(8)\fRand
-smb.conf(5).
+\fBsmbd(8)\fR and
+smb.conf(5)
 .SH "AUTHOR"
 .PP
 The original Samba software and related utilities 
