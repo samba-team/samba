@@ -945,5 +945,18 @@ extern int DEBUGLEVEL;
 #define F_SETLKW 14
 #endif
 
+/* Needed for sys_dlopen/sys_dlsym/sys_dlclose */
+#ifndef RTLD_GLOBAL
+#define RTLD_GLOBAL 0
+#endif
+
+#ifndef RTLD_LAZY
+#define RTLD_LAZY 0
+#endif
+
+#ifndef RTLD_NOW
+#define RTLD_NOW 0
+#endif
+
 #endif /* _INCLUDES_H */
 
