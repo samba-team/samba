@@ -362,6 +362,7 @@ static NTSTATUS sam_sync(struct cli_state *cli, unsigned char trust_passwd[16],
         uint32 num_deltas_0, num_deltas_2;
         NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct pdb_context *in;
+	uint32 neg_flags = 0x000001ff;
 
 	DOM_CRED ret_creds;
 
@@ -384,7 +385,7 @@ static NTSTATUS sam_sync(struct cli_state *cli, unsigned char trust_passwd[16],
 
         /* Request a challenge */
 
-        if (!NT_STATUS_IS_OK(cli_nt_setup_creds(cli, SEC_CHAN_BDC, trust_passwd))) {
+        if (!NT_STATUS_IS_OK(cli_nt_setup_creds(cli, SEC_CHAN_BDC, trust_passwd, &neg_flags, 2))) {
                 DEBUG(0, ("Error initialising session creds\n"));
                 goto done;
         }

@@ -864,6 +864,7 @@ NTSTATUS cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd,
 {
 	NTSTATUS result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	struct winbindd_cm_conn *conn;
+	uint32 neg_flags = 0x000001ff;
 
 	if (!cli) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -875,7 +876,7 @@ NTSTATUS cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd,
 		return result;
 	}
 	
-	result = cli_nt_setup_creds(conn->cli, get_sec_chan(), trust_passwd);
+	result = cli_nt_setup_creds(conn->cli, get_sec_chan(), trust_passwd, &neg_flags, 2);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0, ("error connecting to domain password server: %s\n",
@@ -888,8 +889,7 @@ NTSTATUS cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd,
 			}
 			
 			/* Try again */
-			result = cli_nt_setup_creds(
-				conn->cli, get_sec_chan(),trust_passwd);
+			result = cli_nt_setup_creds( conn->cli, get_sec_chan(),trust_passwd, &neg_flags, 2);
 		}
 		
 		if (!NT_STATUS_IS_OK(result)) {

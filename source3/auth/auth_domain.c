@@ -131,6 +131,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	struct in_addr dest_ip;
 	fstring remote_machine;
         NTSTATUS result;
+	uint32 neg_flags = 0x000001ff;
 
 	if (lp_security() == SEC_ADS) {
 		result = ads_resolve_dc(remote_machine, &dest_ip);
@@ -206,7 +207,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(*cli)));
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	result = cli_nt_setup_creds(*cli, sec_chan, trust_passwd);
+	result = cli_nt_setup_creds(*cli, sec_chan, trust_passwd, &neg_flags, 2);
 
         if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("connect_to_domain_password_server: unable to setup the PDC credentials to machine \
