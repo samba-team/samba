@@ -3799,6 +3799,44 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
 			return(-1);
 		}
+
+		case SMB_SET_POSIX_ACL:
+		{
+			uint16 posix_acl_version;
+			uint16 num_file_acls;
+			uint16 num_dir_acls;
+
+			if (total_data < SMB_POSIX_ACL_HEADER_SIZE) {
+				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+			}
+			posix_acl_version = SVAL(pdata,0);
+			num_file_acls = SVAL(pdata,2);
+			num_dir_acls = SVAL(pdata,4);
+
+			if (posix_acl_version != SMB_POSIX_ACL_VERSION) {
+				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+			}
+
+			if (total_data < SMB_POSIX_ACL_HEADER_SIZE +
+					(num_file_acls+num_dir_acls)*SMB_POSIX_ACL_ENTRY_SIZE) {
+				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+			}
+
+			if (!set_unix_posix_default_acl(conn, fname, &sbuf, num_dir_acls,
+						pdata + SMB_POSIX_ACL_HEADER_SIZE +
+						(num_file_acls*SMB_POSIX_ACL_ENTRY_SIZE))) {
+				return(UNIXERROR(ERRDOS,ERRnoaccess));
+			}
+
+			if (!set_unix_posix_acl(conn, fsp, fname, num_file_acls,
+						pdata + SMB_POSIX_ACL_HEADER_SIZE)) {
+				return(UNIXERROR(ERRDOS,ERRnoaccess));
+			}
+			SSVAL(params,0,0);
+			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+			return(-1);
+		}
+
 		default:
 			return ERROR_DOS(ERRDOS,ERRunknownlevel);
 	}
