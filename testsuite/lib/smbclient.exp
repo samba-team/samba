@@ -15,7 +15,9 @@ proc spawn_smbclient { args } {
 
     # Spawn smbclient
 
-    spawn smbclient [lindex $args 0] [lindex $args 1] [lindex $args 2]
+    spawn smbclient [lindex $args 0] [lindex $args 1] [lindex $args 2] \
+	    [lindex $args 3] [lindex $args 4] [lindex $args 5] \
+	    [lindex $args 6]
 
     # Wait for prompt
 
