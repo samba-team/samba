@@ -9,6 +9,11 @@
 
 	* version4.c (kadm_ser_cpw): add password quality functions
 
+1999-08-27  Johan Danielsson  <joda@pdc.kth.se>
+
+	* server.c (handle_v5): give more informative message if
+	KRB5_KT_NOTFOUND
+
 1999-08-26  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kadmind.c: use HDB keytabs
