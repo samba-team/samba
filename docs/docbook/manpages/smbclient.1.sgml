@@ -352,7 +352,7 @@
 		is used. </para>
 
 		<para>If the password is not included in these environment
-		variables (using the %pass syntax), <command>rpcclient</command> will look for 
+		variables (using the %pass syntax), <command>smbclient</command> will look for 
 		a <envar>PASSWD</envar> environment variable from which 
 		to read the password. </para>
 		
@@ -368,7 +368,7 @@
 		the <envar>PASSWD</envar> environment variable. Also, on 
 		many systems the command line of a running process may be seen 
 		via the <command>ps</command> command to be safe always allow 
-		<command>rpcclient</command> to prompt for a password and type 
+		<command>smbclient</command> to prompt for a password and type 
 		it in directly. </para></listitem>
 		</varlistentry>
 		
@@ -948,6 +948,12 @@ password = &lt;value&gt;
 	the password of the person using the client.  This information is 
 	used only if the protocol level is high enough to support 
 	session-level passwords. </para>
+
+	<para>The variable <envar>LIBSMB_PROG</envar> may contain 
+	the path, executed with system(), which the client should connect 
+        to instead of connecting to a server.  This functionality is primarily
+        intended as a development aid, and works best when using a LMHOSTS 
+        file</para>
 </refsect1>
 
 
