@@ -2447,6 +2447,10 @@ static BOOL net_io_sam_policy_info(const char *desc, SAM_DELTA_POLICY *info,
 	return True;
 }
 
+#if 0
+
+/* This function is pretty broken - see bug #334 */
+
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
@@ -2494,6 +2498,12 @@ static BOOL net_io_sam_trustdoms_info(const char *desc, SAM_DELTA_TRUSTDOMS *inf
 
 	return True;
 }
+
+#endif
+
+#if 0
+
+/* This function doesn't work - see bug #334 */
 
 /*******************************************************************
 reads or writes a structure.
@@ -2581,6 +2591,8 @@ static BOOL net_io_sam_secret_info(const char *desc, SAM_DELTA_SECRET *info,
 
 	return True;
 }
+
+#endif
 
 /*******************************************************************
 reads or writes a structure.
@@ -2726,14 +2738,10 @@ static BOOL net_io_sam_delta_ctr(const char *desc, uint8 sess_key[16],
                                 return False;
 			break;
 
- 	        case SAM_DELTA_TRUST_DOMS:
-			if (!net_io_sam_trustdoms_info("", &delta->trustdoms_info, ps, depth))
-                                return False;
-			break;
+			/* These guys are implemented but broken */
 
+ 	        case SAM_DELTA_TRUST_DOMS:
 		case SAM_DELTA_SECRET_INFO:
-			if (!net_io_sam_secret_info("", &delta->secret_info, ps, depth))
-                                return False;
 			break;
 
 			/* These guys are not implemented yet */
