@@ -80,7 +80,7 @@ func(krb5_context context, HDB *db, hdb_entry *entry, void *data)
     save_val = entry->keys.val;
     entry->keys.len = n;
     entry->keys.val = k;
-    ret = new->store(context, new, 1, entry);
+    ret = new->store(context, new, HDB_F_REPLACE, entry);
     entry->keys.len = save_len;
     entry->keys.val = save_val;
     for(i = 0; i < n; i++) 
@@ -160,7 +160,7 @@ main(int argc, char **argv)
     ret = new->open(context, new, O_CREAT|O_EXCL|O_RDWR, 0600);
     if(ret)
 	krb5_err(context, 1, ret, "%s", new_database);
-    ret = hdb_foreach(context, db, func, new);
+    ret = hdb_foreach(context, db, 0, func, new);
     if(ret != 0)
 	krb5_err(context, 1, ret, "hdb_foreach");
     db->close(context, db);
