@@ -77,10 +77,10 @@ static BOOL pdb_fill_default_sam(SAM_ACCOUNT *user)
 	
 	ZERO_STRUCTP(user);
 	user->logon_time            = (time_t)0;
+	user->pass_last_set_time    = (time_t)0;
+	user->pass_can_change_time  = (time_t)0;
 	user->logoff_time           = 
 	user->kickoff_time          = 
-	user->pass_last_set_time    = 
-	user->pass_can_change_time  = 
 	user->pass_must_change_time = get_time_t_max();
 
 	user->unknown_3 = 0x00ffffff; 	/* don't know */

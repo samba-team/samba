@@ -1377,8 +1377,9 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 		hash_size = DEFAULT_HASH_SIZE;
 	if ((open_flags & O_ACCMODE) == O_RDONLY) {
 		tdb.read_only = 1;
-		/* read only databases don't do locking */
+		/* read only databases don't do locking or clear if first */
 		tdb.flags |= TDB_NOLOCK;
+		tdb.flags &= ~TDB_CLEAR_IF_FIRST;
 	}
 
 	/* internal databases don't mmap or lock, and start off cleared */
