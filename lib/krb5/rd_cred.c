@@ -46,7 +46,7 @@ krb5_rd_cred (krb5_context      context,
 	      krb5_ccache       ccache,
 	      krb5_data         *in_data)
 {
-    krb5_error_code ret = 0;
+    krb5_error_code ret;
     size_t len;
     KRB_CRED cred;
     EncKrbCredPart enc_krb_cred_part;
