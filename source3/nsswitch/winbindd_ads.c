@@ -359,7 +359,7 @@ static BOOL dn_lookup(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 		      const char *dn,
 		      char **name, uint32 *name_type, DOM_SID *sid)
 {
-	char *exp;
+	char *ldap_exp;
 	void *res = NULL;
 	const char *attrs[] = {"userPrincipalName", "sAMAccountName",
 			       "objectSid", "sAMAccountType", NULL};
@@ -373,9 +373,9 @@ static BOOL dn_lookup(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	asprintf(&exp, "(distinguishedName=%s)", dn);
-	rc = ads_search_retry(ads, &res, exp, attrs);
-	SAFE_FREE(exp);
+	asprintf(&ldap_exp, "(distinguishedName=%s)", dn);
+	rc = ads_search_retry(ads, &res, ldap_exp, attrs);
+	SAFE_FREE(ldap_exp);
 	SAFE_FREE(escaped_dn);
 
 	if (!ADS_ERR_OK(rc)) {
@@ -415,7 +415,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	ADS_STATUS rc;
 	int count;
 	void *msg = NULL;
-	char *exp;
+	char *ldap_exp;
 	char *sidstr;
 	uint32 group_rid;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
@@ -432,9 +432,9 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	}
 
 	sidstr = sid_binstring(sid);
-	asprintf(&exp, "(objectSid=%s)", sidstr);
-	rc = ads_search_retry(ads, &msg, exp, attrs);
-	free(exp);
+	asprintf(&ldap_exp, "(objectSid=%s)", sidstr);
+	rc = ads_search_retry(ads, &msg, ldap_exp, attrs);
+	free(ldap_exp);
 	free(sidstr);
 	if (!ADS_ERR_OK(rc)) {
 		DEBUG(1,("query_user(sid=%s) ads_search: %s\n", sid_to_string(sid_string, sid), ads_errstr(rc)));
@@ -488,7 +488,7 @@ static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
 	int count;
 	void *res = NULL;
 	void *msg = NULL;
-	char *exp;
+	char *ldap_exp;
 	ADS_STRUCT *ads;
 	const char *group_attrs[] = {"objectSid", NULL};
 
@@ -503,13 +503,13 @@ static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
 
 	/* buggy server, no tokenGroups.  Instead lookup what groups this user
 	   is a member of by DN search on member*/
-	if (asprintf(&exp, "(&(member=%s)(objectClass=group))", user_dn) == -1) {
+	if (asprintf(&ldap_exp, "(&(member=%s)(objectClass=group))", user_dn) == -1) {
 		DEBUG(1,("lookup_usergroups(dn=%s) asprintf failed!\n", user_dn));
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	rc = ads_search_retry(ads, &res, exp, group_attrs);
-	free(exp);
+	rc = ads_search_retry(ads, &res, ldap_exp, group_attrs);
+	free(ldap_exp);
 	
 	if (!ADS_ERR_OK(rc)) {
 		DEBUG(1,("lookup_usergroups ads_search member=%s: %s\n", user_dn, ads_errstr(rc)));
@@ -573,7 +573,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	ADS_STATUS rc;
 	int count;
 	void *msg = NULL;
-	char *exp;
+	char *ldap_exp;
 	char *user_dn;
 	DOM_SID *sids;
 	int i;
@@ -598,15 +598,15 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
-	if (asprintf(&exp, "(objectSid=%s)", sidstr) == -1) {
+	if (asprintf(&ldap_exp, "(objectSid=%s)", sidstr) == -1) {
 		free(sidstr);
 		DEBUG(1,("lookup_usergroups(sid=%s) asprintf failed!\n", sid_to_string(sid_string, sid)));
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
-	rc = ads_search_retry(ads, &msg, exp, attrs);
-	free(exp);
+	rc = ads_search_retry(ads, &msg, ldap_exp, attrs);
+	free(ldap_exp);
 	free(sidstr);
 
 	if (!ADS_ERR_OK(rc)) {
@@ -685,7 +685,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	int count;
 	void *res=NULL;
 	ADS_STRUCT *ads = NULL;
-	char *exp;
+	char *ldap_exp;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	char *sidstr;
 	const char *attrs[] = {"member", NULL};
@@ -707,9 +707,9 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	sidstr = sid_binstring(group_sid);
 
 	/* search for all members of the group */
-	asprintf(&exp, "(objectSid=%s)",sidstr);
-	rc = ads_search_retry(ads, &res, exp, attrs);
-	free(exp);
+	asprintf(&ldap_exp, "(objectSid=%s)",sidstr);
+	rc = ads_search_retry(ads, &res, ldap_exp, attrs);
+	free(ldap_exp);
 	free(sidstr);
 
 	if (!ADS_ERR_OK(rc)) {
