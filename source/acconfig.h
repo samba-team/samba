@@ -6,6 +6,7 @@
 #undef HAVE_UNSIGNED_CHAR
 #undef HAVE_UTIMBUF
 #undef ino_t
+#undef ssize_t
 #undef HAVE_CONNECT
 #undef HAVE_SHORT_INO_T
 #undef WITH_AFS
@@ -59,3 +60,5 @@
 #undef HAVE_STRUCT_FLOCK64
 #undef SIZEOF_INO_T
 #undef SIZEOF_OFF_T
+#undef STAT_STATVFS64
+#undef HAVE_LIBREADLINE

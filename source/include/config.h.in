@@ -95,7 +95,6 @@
 #undef STAT_STATFS3_OSF1
 #undef STAT_STATFS4
 #undef STAT_STATVFS
-#undef STAT_STATVFS64
 #undef HAVE_NETMASK_IFREQ
 #undef HAVE_NETMASK_AIX
 #undef HAVE_CRYPT
@@ -118,6 +117,8 @@
 #undef HAVE_STRUCT_FLOCK64
 #undef SIZEOF_INO_T
 #undef SIZEOF_OFF_T
+#undef STAT_STATVFS64
+#undef HAVE_LIBREADLINE
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
@@ -479,8 +480,8 @@
 /* Define if you have the pam library (-lpam).  */
 #undef HAVE_LIBPAM
 
-/* Define if you have the socket library (-lsocket).  */
-#undef HAVE_LIBSOCKET
-
 /* Define if you have the readline library (-lreadline).  */
 #undef HAVE_LIBREADLINE
+
+/* Define if you have the socket library (-lsocket).  */
+#undef HAVE_LIBSOCKET
