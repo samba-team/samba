@@ -408,6 +408,9 @@ static uint32 process_cmd(struct cli_state *cli, char *cmd)
 	char *p = cmd;
 	uint32 result=0;
 
+	if (cmd[strlen(cmd) - 1] == '\n')
+		cmd[strlen(cmd) - 1] = '\0';
+
 	if (!next_token(&p, buf, " ", sizeof(buf))) {
 		return 0;
 	}
@@ -633,7 +636,6 @@ static void usage(char *pname)
 	/* There are no pointers in ntuser_creds struct so zero it out */
 	ZERO_STRUCTP (&creds);
 	
-
 	/* Load command lists */
 	add_command_set(rpcclient_commands);
 	add_command_set(separator_command);
@@ -647,7 +649,6 @@ static void usage(char *pname)
 	add_command_set(samr_commands);
 	add_command_set(separator_command);
 
-
 	/* Do anything specified with -c */
 	if (cmdstr[0]) {
 		char 	*cmd;
@@ -660,7 +661,6 @@ static void usage(char *pname)
 		return 0;
 	}
 
-
 	/* Loop around accepting commands */
 	while(1) {
 		pstring prompt;
@@ -670,7 +670,12 @@ static void usage(char *pname)
 
 		line = smb_readline(prompt, NULL, completion_fn);
 
-		process_cmd(&cli, line);
-	}
-}
+		if (line == NULL)
+			break;
 
+		if (line[0] != '\n')
+			process_cmd(&cli, line);
+	}
+
+	return 0;
+}

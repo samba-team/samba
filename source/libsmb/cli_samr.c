@@ -563,3 +563,187 @@ uint32 cli_samr_query_groupmem(
 
 	return result;
 }
+
+/* Enumerate domain groups */
+
+uint32 cli_samr_enum_dom_groups(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				POLICY_HND *pol, uint32 *start_idx, 
+				uint32 size, struct acct_info **dom_groups,
+				uint32 *num_dom_groups)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_ENUM_DOM_GROUPS q;
+	SAMR_R_ENUM_DOM_GROUPS r;
+	uint32 result = NT_STATUS_UNSUCCESSFUL, name_idx, i;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_enum_dom_groups(&q, pol, *start_idx, size);
+
+	if (!samr_io_q_enum_dom_groups("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_ENUM_DOM_GROUPS, &qbuf, &rbuf)) {
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_enum_dom_groups("", &r, &rbuf, 0)) {
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	result = r.status;
+
+	if (result != NT_STATUS_NOPROBLEMO &&
+	    result != STATUS_MORE_ENTRIES) {
+		goto done;
+	}
+
+	*num_dom_groups = r.num_entries2;
+
+	if (!((*dom_groups) = (struct acct_info *)
+	      talloc(mem_ctx, sizeof(struct acct_info) * *num_dom_groups))) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	memset(*dom_groups, 0, sizeof(struct acct_info) * *num_dom_groups);
+
+	name_idx = 0;
+
+	for (i = 0; i < *num_dom_groups; i++) {
+
+		(*dom_groups)[i].rid = r.sam[i].rid;
+
+		if (r.sam[i].hdr_name.buffer) {
+			unistr2_to_ascii((*dom_groups)[i].acct_name,
+					 &r.uni_grp_name[name_idx],
+					 sizeof(fstring) - 1);
+			name_idx++;
+		}
+
+		*start_idx = r.next_idx;
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Query alias members */
+
+uint32 cli_samr_query_aliasmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			       POLICY_HND *alias_pol, uint32 *num_mem, 
+			       DOM_SID **sids)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_QUERY_ALIASMEM q;
+	SAMR_R_QUERY_ALIASMEM r;
+	uint32 result = NT_STATUS_UNSUCCESSFUL, i;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_query_aliasmem(&q, alias_pol);
+
+	if (!samr_io_q_query_aliasmem("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_QUERY_ALIASMEM, &qbuf, &rbuf)) {
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_query_aliasmem("", &r, &rbuf, 0)) {
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	if ((result = r.status) != NT_STATUS_NOPROBLEMO) {
+		goto done;
+	}
+
+	*num_mem = r.num_sids;
+
+	if (!(*sids = talloc(mem_ctx, sizeof(DOM_SID) * *num_mem))) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	for (i = 0; i < *num_mem; i++) {
+		(*sids)[i] = r.sid[i].sid;
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Open handle on an alias */
+
+uint32 cli_samr_open_alias(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			   POLICY_HND *domain_pol, uint32 access_mask, 
+			   uint32 alias_rid, POLICY_HND *alias_pol)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_OPEN_ALIAS q;
+	SAMR_R_OPEN_ALIAS r;
+	uint32 result;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_open_alias(&q, domain_pol, access_mask, alias_rid);
+
+	if (!samr_io_q_open_alias("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_OPEN_ALIAS, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_open_alias("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	if ((result = r.status) == NT_STATUS_NOPROBLEMO) {
+		*alias_pol = r.pol;
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
