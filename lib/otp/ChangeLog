@@ -1,3 +1,7 @@
+2000-07-01  Assar Westerlund  <assar@sics.se>
+
+	*  const-ify
+
 2000-02-07  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: update version to 1:0:1
