@@ -315,10 +315,13 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 		 */
 
 		if(sid_equal(&current_ace->sid, pfile_owner_sid)) {
+			/* Note we should apply the default mode/mask here.... FIXME ! JRA */
 			current_ace->type = SMB_ACL_USER_OBJ;
 		} else if( sid_equal(&current_ace->sid, pfile_grp_sid)) {
+			/* Note we should apply the default mode/mask here.... FIXME ! JRA */
 			current_ace->type = SMB_ACL_GROUP_OBJ;
 		} else if( sid_equal(&current_ace->sid, &global_sid_World)) {
+			/* Note we should apply the default mode/mask here.... FIXME ! JRA */
 			current_ace->type = SMB_ACL_OTHER;
 		} else {
 			/*
@@ -326,11 +329,21 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 			 * looking at owner_type.
 			 */
 
-			current_ace->type = current_ace->owner_type == UID_ACE ? SMB_ACL_USER : SMB_ACL_GROUP;
+			current_ace->type = (current_ace->owner_type == UID_ACE) ? SMB_ACL_USER : SMB_ACL_GROUP;
 		}
 
 		if (fsp->is_directory && (psa->flags & SEC_ACE_FLAG_INHERIT_ONLY)) {
-			DLIST_ADD(dir_ace, current_ace);
+			/*
+			 * We can only add to the default POSIX ACE list if the ACE is
+			 * designed to be inherited by both files and directories.
+			 */
+			if ((psa->flags & (SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT)) ==
+				(SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT)) {
+				DLIST_ADD(dir_ace, current_ace);
+			} else {
+				DEBUG(0,("unpack_canon_ace: unable to use a non-generic default ACE.\n"));
+				free(current_ace);
+			}
 		} else {
 			DLIST_ADD(file_ace, current_ace);
 			all_aces_are_inherit_only = False;
@@ -560,6 +573,30 @@ static mode_t unix_perms_to_acl_perms(mode_t mode, int r_mask, int w_mask, int x
 		ret |= S_IXUSR;
 
 	return ret;
+}
+
+/****************************************************************************
+ Map canon_ace permissions (a mode_t containing only S_(R|W|X)USR bits) to
+ an SMB_ACL_PERMSET_T.
+****************************************************************************/
+
+static int map_acl_perms_to_permset(mode_t mode, SMB_ACL_PERMSET_T *p_permset)
+{
+	if (sys_acl_clear_perms(*p_permset) ==  -1)
+		return -1;
+	if (mode & S_IRUSR) {
+		if (sys_acl_add_perm(*p_permset, SMB_ACL_READ) == -1)
+			return -1;
+	}
+	if (mode & S_IWUSR) {
+		if (sys_acl_add_perm(*p_permset, SMB_ACL_WRITE) == -1)
+			return -1;
+	}
+	if (mode & S_IXUSR) {
+		if (sys_acl_add_perm(*p_permset, SMB_ACL_EXECUTE) == -1)
+			return -1;
+	}
+	return 0;
 }
 
 /****************************************************************************
@@ -803,7 +840,121 @@ static canon_ace *canonicalise_acl( SMB_ACL_T posix_acl, SMB_STRUCT_STAT *psbuf)
 
 static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL default_ace)
 {
-	return False;
+	BOOL ret = False;
+	SMB_ACL_T the_acl = sys_acl_init((int)count_canon_ace_list(the_ace));
+	canon_ace *p_ace;
+	int i;
+	SMB_ACL_TYPE_T the_acl_type = (default_ace ? SMB_ACL_TYPE_DEFAULT : SMB_ACL_TYPE_ACCESS);
+
+	if (the_acl == NULL) {
+#if !defined(HAVE_NO_ACLS)
+		/*
+		 * Only print this error message if we have some kind of ACL
+		 * support that's not working. Otherwise we would always get this.
+		 */
+		DEBUG(0,("set_canon_ace_list: Unable to init %s ACL. (%s)\n",
+			default_ace ? "default" : "file", strerror(errno) ));
+#endif
+		return False;
+	}
+
+	for (i = 0, p_ace = the_ace; p_ace; p_ace = p_ace->next, i++ ) {
+		SMB_ACL_ENTRY_T the_entry;
+		SMB_ACL_PERMSET_T the_permset;
+
+		/*
+		 * Get the entry for this ACE.
+		 */
+
+		if (sys_acl_create_entry( &the_acl, &the_entry) == -1) {
+			DEBUG(0,("set_canon_ace_list: Failed to create entry %d. (%s)\n",
+				i, strerror(errno) ));
+			goto done;
+		}
+
+		/*
+		 * Initialise the entry from the canon_ace.
+		 */
+
+		/*
+		 * First tell the entry what type of ACE this is.
+		 */
+
+		if (sys_acl_set_tag_type(the_entry, p_ace->type) == -1) {
+			DEBUG(0,("set_canon_ace_list: Failed to set tag type on entry %d. (%s)\n",
+				i, strerror(errno) ));
+			goto done;
+		}
+
+		/*
+		 * Only set the qualifier (user or group id) if the entry is a user
+		 * or group id ACE.
+		 */
+
+		if ((p_ace->type == SMB_ACL_USER) || (p_ace->type == SMB_ACL_GROUP)) {
+			if (sys_acl_set_qualifier(the_entry,(void *)&p_ace->unix_ug.uid) == -1) {
+				DEBUG(0,("set_canon_ace_list: Failed to set qualifier on entry %d. (%s)\n",
+					i, strerror(errno) ));
+				goto done;
+			}
+		}
+
+		/*
+		 * Convert the mode_t perms in the canon_ace to a POSIX permset.
+		 */
+
+		if (map_acl_perms_to_permset(p_ace->perms, &the_permset) == -1) {
+			DEBUG(0,("set_canon_ace_list: Failed to create permset on entry %d. (%s)\n",
+				i, strerror(errno) ));
+			goto done;
+		}
+
+		/*
+		 * ..and apply them to the entry.
+		 */
+
+		if (sys_acl_set_permset(the_entry, the_permset) == -1) {
+			DEBUG(0,("set_canon_ace_list: Failed to add permset on entry %d. (%s)\n",
+				i, strerror(errno) ));
+			goto done;
+		}
+	}
+
+	/*
+	 * Check if the ACL is valid.
+	 */
+
+	if (sys_acl_valid(the_acl) == -1) {
+		DEBUG(0,("set_canon_ace_list: ACL is invalid for set (%s).\n", strerror(errno) ));
+		goto done;
+	}
+
+	/*
+	 * Finally apply it to the file or directory.
+	 */
+
+	if(default_ace || fsp->is_directory || fsp->fd == -1) {
+		if (sys_acl_set_file(fsp->fsp_name, the_acl_type, the_acl) == -1) {
+			DEBUG(0,("set_canon_ace_list: sys_acl_set_file failed for file %s (%s).\n",
+					fsp->fsp_name, strerror(errno) ));
+			goto done;
+		}
+	} else {
+		if (sys_acl_set_fd(fsp->fd, the_acl) == -1) {
+			DEBUG(0,("set_canon_ace_list: sys_acl_set_file failed for file %s (%s).\n",
+					fsp->fsp_name, strerror(errno) ));
+			goto done;
+		}
+	}
+
+	ret = True;
+
+  done:
+
+	if (the_acl != NULL)
+	    sys_acl_free_acl(the_acl);
+
+	return ret;
 }
 
 /****************************************************************************

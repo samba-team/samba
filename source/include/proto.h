@@ -3771,6 +3771,13 @@ int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize);
 int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf);
 #endif
 
+/*The following definitions come from  smbd/posix_acls.c  */
+
+#if OLD_NTDOMAIN
+size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc);
+BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd);
+#endif
+
 /*The following definitions come from  smbd/process.c  */
 
 #if OLD_NTDOMAIN
@@ -3938,13 +3945,6 @@ DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid);
 DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid);
 BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype);
 BOOL sid_to_gid(DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype);
-#endif
-
-/*The following definitions come from  smbd/unix_acls.c  */
-
-#if OLD_NTDOMAIN
-size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc);
-BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd);
 #endif
 
 /*The following definitions come from  smbd/vfs-wrap.c  */
