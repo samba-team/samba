@@ -1,3 +1,21 @@
+2004-03-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/crypto.c (decrypt_internal_special): do not not modify
+	the original data test case from Ronnie Sahlberg
+	<ronnie_sahlberg@ozemail.com.au>
+
+2004-03-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/test_cc.c: more cc tests, mostly related to mcc
+	behavior
+
+	* lib/krb5/mcache.c (mcc_get_principal): also check for
+	primary_principal == NULL now that that isn't used as dead flag
+	
+	* lib/krb5/mcache.c: don't overload the primary_principal == NULL
+	as dead since that doesn't always work. Based on patch from
+	Jeffrey Hutzelman <jhutz@cmu.edu>, tweeked by me
+	
 2004-02-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/pkinit.c: adapt to rename of oid_cmp to heim_oid_cmp
