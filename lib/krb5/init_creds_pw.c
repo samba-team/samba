@@ -77,7 +77,7 @@ default_s2k_func(krb5_context context, krb5_enctype type,
     return ret;
 }
 
-static krb5_error_code
+static void
 init_init_creds_ctx(krb5_context context,
 		    krb5_get_init_creds_ctx *ctx, 
 		    const char *in_tkt_service,
@@ -98,10 +98,6 @@ init_init_creds_ctx(krb5_context context,
     ctx->etypes = NULL;
     ctx->pre_auth_types = NULL;
     ctx->in_tkt_service = in_tkt_service;
-
-    memset(&ctx->as_req, 0, sizeof(ctx->as_req));
-
-    return 0;
 }
 
 static void
@@ -476,9 +472,7 @@ krb5_get_init_creds_keytab(krb5_context context,
     krb5_error_code ret;
     krb5_keytab_key_proc_args *a;
     
-    ret = init_init_creds_ctx(context, &ctx, in_tkt_service, options);
-    if (ret)
-	goto out;
+    init_init_creds_ctx(context, &ctx, in_tkt_service, options);
 
     ret = get_init_creds_common(context, creds, client, start_time,
 				ctx.in_tkt_service,
@@ -515,6 +509,7 @@ krb5_get_init_creds_keytab(krb5_context context,
     else
 	krb5_free_creds_contents (context, &ctx.cred);
 
+ out:
     free_init_creds_ctx(context, &ctx);
     return ret;
 }
@@ -1244,9 +1239,7 @@ krb5_get_init_creds(krb5_context context,
 
     memset(&kdc_reply, 0, sizeof(kdc_reply));
 
-    ret = init_init_creds_ctx(context, &ctx, in_tkt_service, options);
-    if (ret)
-	goto out;
+    init_init_creds_ctx(context, &ctx, in_tkt_service, options);
 
     ret = get_init_creds_common(context, creds, client, start_time,
 				ctx.in_tkt_service,
