@@ -705,7 +705,7 @@ bin/.dummy:
 
 bin/smbd@EXEEXT@: $(SMBD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(DYNEXP) $(PRINTLIBS) \
+	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(DYNEXP) $(PRINTLIBS) \
 	  $(AUTHLIBS) $(LIBS) @BUILD_POPT@
 
 bin/nmbd@EXEEXT@: $(NMBD_OBJ) @BUILD_POPT@ bin/.dummy
