@@ -38,6 +38,7 @@
 #ifdef HAVE_ARPA_NAMESER_H
 #include <arpa/nameser.h>
 #endif
+#include <fnmatch.h>
 #include "resolve.h"
 
 RCSID("$Id$");
