@@ -55,6 +55,7 @@ AC_CHECK_HEADERS([\
 	errno.h					\
 	err.h					\
 	fcntl.h					\
+	gdbm/ndbm.h				\
 	grp.h					\
 	ndbm.h					\
 	netdb.h					\
