@@ -1,3 +1,9 @@
+2000-06-10  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/get_addrs.c (find_all_addresses): remember to add in
+ 	the size of ifr->ifr_name when using SA_LEN.  noticed by Ken
+ 	Raeburn <raeburn@MIT.EDU>
+
 2000-06-07  Assar Westerlund  <assar@sics.se>
 
 	* configure.in: add db3 detection stuff do not use streamsptys on
