@@ -1210,7 +1210,7 @@ BOOL make_spoolss_q_deleteprinterdriverex( TALLOC_CTX *mem_ctx,
                                            const char *server,
                                            const char* arch, 
                                            const char* driver,
-                                           uint32 version)
+                                           int version)
 {
 	DEBUG(5,("make_spoolss_q_deleteprinterdriverex\n"));
  
