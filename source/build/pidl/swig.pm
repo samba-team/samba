@@ -20,34 +20,6 @@ sub isunion($)
     return $unions{$name};
 }
 
-# Display properties of a structure field as commented out code
-
-sub DebugField($)
-{
-    my($e) = shift;
-    my($result) = "";
-
-    $result .= "\t// $e->{TYPE} $e->{NAME} ";
-
-    $result .= "(scalar) " 
-	if util::is_scalar_type($e->{TYPE});
-
-    $result .= "pointers=$e->{POINTERS} " 
-	if $e->{POINTERS} > 0;
-
-    my($size_is) = util::has_property($e, "size_is");
-    $result .= "size_is=" . $size_is . " " if $size_is;
-
-    my($length_is) = util::has_property($e, "length_is");
-    $result .= "length_is=" . $length_is . " " if $length_is;
-
-    $result .= "array_len=" . $e->{ARRAY_LEN} . " " if $e->{ARRAY_LEN};
-
-    $result .= "\n";
-
-    return $result;
-}
-
 # Generate code to convert a Python object to an array
 
 sub ArrayFromPython($$)
@@ -229,8 +201,7 @@ sub FieldToPython($$)
 	    if ($e->{ARRAY_LEN} or util::has_property($e, "size_is")) {
 		$result .= ArrayToPython($e, $prefix);
 	    } else {
-		$result .= "\t// Pointer to scalar\n";
-		$result .= DebugField($e);
+		$result .= "\tPyDict_SetItemString(obj, \"$e->{NAME}\", $e->{TYPE}_to_python(*s->$prefix$e->{NAME}));\n";
 	    }
 	}
     } else {
