@@ -122,7 +122,7 @@ static NTSTATUS db_set_mapping(const DOM_SID *sid, unid_t id, int id_type) {
 /*****************************************************************************
  Initialise idmap database. 
 *****************************************************************************/
-static NTSTATUS db_init(void) {
+static NTSTATUS db_init( char *params ) {
 	return NT_STATUS_OK;
 }
 
