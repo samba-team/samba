@@ -29,7 +29,6 @@ extern int DEBUGLEVEL;
    pass 1023 for n */
 int vslprintf(char *str, int n, char *format, va_list ap)
 {
-#ifdef HAVE_VSNPRINTF
 	int ret = vsnprintf(str, n, format, ap);
 	if (ret > n || ret < 0) {
 		str[n] = 0;
@@ -37,50 +36,6 @@ int vslprintf(char *str, int n, char *format, va_list ap)
 	}
 	str[ret] = 0;
 	return ret;
-#else
-	static char *buf;
-	static int len=8000;
-	int ret;
-
-	/* this code is NOT a proper vsnprintf() implementation. It
-	   relies on the fact that all calls to slprintf() in Samba
-	   pass strings which have already been through pstrcpy() or
-	   fstrcpy() and never more than 2 strings are
-	   concatenated. This means the above buffer is absolutely
-	   ample and can never be overflowed.
-
-	   In the future we would like to replace this with a proper
-	   vsnprintf() implementation but right now we need a solution
-	   that is secure and portable. This is it.  */
-
-	if (!buf) {
-		buf = malloc(len);
-		if (!buf) {
-			/* can't call debug or we would recurse */
-			exit(1);
-		}
-	}
-
-	vsprintf(buf, format, ap);
-	ret = strlen(buf);
-
-	if (ret < 0) {
-		str[0] = 0;
-		return -1;
-	}
-
-	if (ret < n) {
-		n = ret;
-	} else if (ret > n) {
-		ret = -1;
-	}
-
-	buf[n] = 0;
-	
-	memcpy(str, buf, n+1);
-
-	return ret;
-#endif
 }
 
 #ifdef HAVE_STDARG_H
