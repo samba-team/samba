@@ -1,5 +1,7 @@
 Mon Sep  8 02:57:14 1997  Assar Westerlund  <assar@sics.se>
 
+	* doc: fixes
+
 	* admin/util.c (init_des_key): increase kvno
 	(set_password): return -1 if `des_read_pw_string' failed
 

@@ -76,8 +76,6 @@ anonymous credentials not implemented
 
 ** lib/hdb
 
-fix encryption of database entries and master keys.
-
 fix locking
 
 fix atomic rename of database
