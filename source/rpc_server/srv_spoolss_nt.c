@@ -1606,7 +1606,7 @@ Can't find printer handle we created for printer %s\n", name ));
 			/* if the user is not root and not a printer admin, then fail */
 			
 			if ( user.uid != 0
-			     && !user_in_list(uidtoname(user.uid), lp_printer_admin(snum)) )
+			     && !user_in_list(uidtoname(user.uid), lp_printer_admin(snum), user.groups, user.ngroups) )
 			{
 				close_printer_handle(p, handle);
 				return WERR_ACCESS_DENIED;
@@ -1653,7 +1653,7 @@ Can't find printer handle we created for printer %s\n", name ));
 
 		/* check smb.conf parameters and the the sec_desc */
 		
-		if (!user_ok(uidtoname(user.uid), snum) || !print_access_check(&user, snum, printer_default->access_required)) {
+		if (!user_ok(uidtoname(user.uid), snum, user.groups, user.ngroups) || !print_access_check(&user, snum, printer_default->access_required)) {
 			DEBUG(3, ("access DENIED for printer open\n"));
 			close_printer_handle(p, handle);
 			return WERR_ACCESS_DENIED;

@@ -442,6 +442,8 @@ char *safe_strcpy(char *dest,const char *src, size_t maxlength)
 		return NULL;
 	}
 
+	dest[maxlength]='\0';
+
 	if (!src) {
 		*dest = 0;
 		return dest;
@@ -450,8 +452,8 @@ char *safe_strcpy(char *dest,const char *src, size_t maxlength)
 	len = strlen(src);
 
 	if (len > maxlength) {
-		DEBUG(0,("ERROR: string overflow by %d in safe_strcpy [%.50s]\n",
-			 (int)(len-maxlength), src));
+		DEBUG(0,("ERROR: string overflow by %u (%u - %u) in safe_strcpy [%.50s]\n",
+			 (unsigned int)(len-maxlength), len, maxlength, src));
 		len = maxlength;
 	}
       
@@ -1597,7 +1599,7 @@ char * base64_encode_data_blob(DATA_BLOB data)
 {
 	int bits = 0;
 	int char_count = 0;
-	int out_cnt = 0;
+	size_t out_cnt = 0;
 	size_t len = data.length;
 	size_t output_len = data.length * 2;
 	char *result = malloc(output_len); /* get us plenty of space */
