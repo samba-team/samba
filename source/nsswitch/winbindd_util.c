@@ -145,7 +145,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 }
 
 /********************************************************************
- Periodcially we need to refresh the trusted domain cache for smbd 
+ Periodically we need to refresh the trusted domain cache for smbd 
 ********************************************************************/
 
 void rescan_trusted_domains( void )
