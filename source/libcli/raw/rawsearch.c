@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "libcli/raw/libcliraw.h"
 
 /****************************************************************************
  Old style search backend - process output.

@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "libcli/raw/libcliraw.h"
 
 /****************************************************************************
  Handle setfileinfo/setpathinfo trans2 backend.

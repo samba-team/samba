@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "libcli/raw/libcliraw.h"
 
 /****************************************************************************
  Hard/Symlink a file (UNIX extensions).

@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "libcli/raw/libcliraw.h"
 
 /****************************************************************************
  Query FS Info - SMBdskattr call (async send)

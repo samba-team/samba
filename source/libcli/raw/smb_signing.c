@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "libcli/raw/libcliraw.h"
 
 /***********************************************************
  SMB signing - Common code before we set a new signing implementation

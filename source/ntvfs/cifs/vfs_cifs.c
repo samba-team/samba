@@ -26,6 +26,7 @@
 */
 
 #include "includes.h"
+#include "libcli/raw/libcliraw.h"
 
 /* this is stored in ntvfs_private */
 struct cvfs_private {

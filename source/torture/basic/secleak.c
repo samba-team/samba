@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "libcli/raw/libcliraw.h"
 
 static BOOL try_failed_login(struct smbcli_state *cli)
 {

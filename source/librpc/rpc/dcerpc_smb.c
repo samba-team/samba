@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "libcli/raw/libcliraw.h"
 
 /* transport private information used by SMB pipe transport */
 struct smb_private {
