@@ -263,6 +263,10 @@ AC_BROKEN([					\
 	chown					\
 	copyhostent				\
 	daemon					\
+	ecalloc					\
+	emalloc					\
+	erealloc				\
+	estrdup					\
 	err					\
 	errx					\
 	fchown					\
