@@ -79,8 +79,8 @@ static void samr_clear_sam_passwd(SAM_ACCOUNT *sam_pass)
 	if (!sam_pass)
 		return;
 
-	memset(sam_pass->lm_pw, '\0', 16);
-	memset(sam_pass->nt_pw, '\0', 16);
+	if (sam_pass->lm_pw) memset(sam_pass->lm_pw, '\0', 16);
+	if (sam_pass->nt_pw) memset(sam_pass->nt_pw, '\0', 16);
 }
 
 /*******************************************************************
