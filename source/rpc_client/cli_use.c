@@ -24,7 +24,6 @@
 
 #include "includes.h"
 #include "trans2.h"
-#include "rpc_client.h"
 
 extern int DEBUGLEVEL;
 extern pstring scope;

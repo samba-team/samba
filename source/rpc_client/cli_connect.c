@@ -24,7 +24,6 @@
 
 #include "includes.h"
 #include "rpc_parse.h"
-#include "rpc_client.h"
 
 
 static struct cli_connection **con_list = NULL;

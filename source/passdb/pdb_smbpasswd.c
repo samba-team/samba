@@ -1160,8 +1160,6 @@ Error was %s\n", pwd->smb_name, pfile2, strerror(errno)));
  ********************************************************************/
 static BOOL build_smb_pass (struct smb_passwd *smb_pw, SAM_ACCOUNT *sampass)
 {
-	uint8	*ptr;
-	
         if (sampass == NULL) 
 		return False;
 
