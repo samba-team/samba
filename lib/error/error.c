@@ -57,10 +57,10 @@ com_right(struct error_table *list, long code)
 }
 
 void
-initialize_error_table_r(struct error_table **list, 
-			 const char **messages, 
-			 int num_errors,
-			 long base)
+initialize_error_table(struct error_table **list, 
+		       const char **messages, 
+		       int num_errors,
+		       long base)
 {
     struct error_table *et;
     for(et = *list; et; et = et->next)
