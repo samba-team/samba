@@ -58,7 +58,7 @@ void generate_next_challenge(char *challenge)
 	SIVAL(challenge,4,v2);
 
 	/* mash it up with md4 */
-	mdfour(buf, challenge, 8);
+	mdfour(buf, (unsigned char *)challenge, 8);
 
 	memcpy(saved_challenge, buf, 8);
 	memcpy(challenge,buf,8);
