@@ -93,8 +93,9 @@ static BOOL last_challenge(unsigned char *challenge)
 }
 
 /* this holds info on user ids that are already validated for this VC */
-static user_struct *validated_users = NULL;
-static int num_validated_users = 0;
+static user_struct *validated_users;
+static int next_vuid = VUID_OFFSET;
+static int num_validated_vuids;
 
 /****************************************************************************
 check if a uid has been validated, and return an pointer to the user_struct
@@ -103,13 +104,21 @@ tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
 user_struct *get_valid_user_struct(uint16 vuid)
 {
-  if (vuid == UID_FIELD_INVALID)
-    return NULL;
-  vuid -= VUID_OFFSET;
-  if ((vuid >= (uint16)num_validated_users) || 
-     (validated_users[vuid].uid == (uid_t)-1) || (validated_users[vuid].gid == (gid_t)-1))
-    return NULL;
-  return &validated_users[vuid];
+	user_struct *usp;
+	int count=0;
+
+	if (vuid == UID_FIELD_INVALID)
+		return NULL;
+
+	for (usp=validated_users;usp;usp=usp->next,count++) {
+		if (vuid == usp->vuid) {
+			if (count > 10)
+                DLIST_PROMOTE(validated_users, usp);
+			return usp;
+		}
+	}
+
+	return NULL;
 }
 
 /****************************************************************************
@@ -122,18 +131,12 @@ void invalidate_vuid(uint16 vuid)
 	if (vuser == NULL)
 		return;
 
-	vuser->uid = (uid_t)-1;
-	vuser->gid = (gid_t)-1;
+	DLIST_REMOVE(validated_users, vuser);
 
-	/* same number of igroups as groups */
-	vuser->n_groups = 0;
-
-	if (vuser->groups)
-		free((char *)vuser->groups);
-
-	vuser->groups  = NULL;
-
+	safe_free(vuser->groups);
 	delete_nt_token(&vuser->nt_user_token);
+	safe_free(vuser);
+	num_validated_vuids--;
 }
 
 /****************************************************************************
@@ -206,58 +209,76 @@ tell random client vuid's (normally zero) from valid vuids.
 uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, 
 		     char *domain,BOOL guest)
 {
-  user_struct *vuser;
-  struct passwd *pwfile; /* for getting real name from passwd file */
+	user_struct *vuser = NULL;
+	user_struct *vsp;
+	struct passwd *pwfile; /* for getting real name from passwd file */
 
-  /* Ensure no vuid gets registered in share level security. */
-  if(lp_security() == SEC_SHARE)
-    return UID_FIELD_INVALID;
+	/* Ensure no vuid gets registered in share level security. */
+	if(lp_security() == SEC_SHARE)
+		return UID_FIELD_INVALID;
 
-  validated_users = (user_struct *)Realloc(validated_users,
-			   sizeof(user_struct)*
-			   (num_validated_users+1));
-  
-  if (!validated_users) {
-      DEBUG(0,("Failed to realloc users struct!\n"));
-      num_validated_users = 0;
-      return UID_FIELD_INVALID;
-  }
+	/* Limit allowed vuids to 16bits - VUID_OFFSET. */
+	if (num_validated_vuids >= 0xFFFF-VUID_OFFSET)
+		return UID_FIELD_INVALID;
 
-  vuser = &validated_users[num_validated_users];
-  num_validated_users++;
+	if((vuser = (user_struct *)malloc( sizeof(user_struct) )) == NULL) {
+		DEBUG(0,("Failed to malloc users struct!\n"));
+		return UID_FIELD_INVALID;
+	}
 
-  vuser->uid = uid;
-  vuser->gid = gid;
-  vuser->guest = guest;
-  fstrcpy(vuser->user.unix_name,unix_name);
-  fstrcpy(vuser->user.smb_name,requested_name);
-  fstrcpy(vuser->user.domain,domain);
+	ZERO_STRUCTP(vuser);
 
-  vuser->n_groups = 0;
-  vuser->groups  = NULL;
+	DEBUG(10,("register_vuid: (%u,%u) %s %s %s guest=%d\n", (unsigned int)uid, (unsigned int)gid,
+				unix_name, requested_name, domain, guest ));
 
-  /* Find all the groups this uid is in and store them. 
-     Used by become_user() */
-  initialise_groups(unix_name, uid, gid);
-  get_current_groups( &vuser->n_groups, &vuser->groups);
+	/* Allocate a free vuid. Yes this is a linear search... :-) */
+	while( (vsp = get_valid_user_struct(next_vuid)) != NULL ) {
+		next_vuid++;
+		/* Check for vuid wrap. */
+		if (next_vuid == UID_FIELD_INVALID)
+			next_vuid = VUID_OFFSET;
+	}
 
-  /* Create an NT_USER_TOKEN struct for this user. */
-  vuser->nt_user_token = create_nt_token(uid,gid, vuser->n_groups, vuser->groups);
+	DEBUG(10,("register_vuid: allocated vuid = %u\n", (unsigned int)next_vuid ));
 
-  DEBUG(3,("uid %d registered to name %s\n",(int)uid,unix_name));
+	vuser->vuid = next_vuid;
+	vuser->uid = uid;
+	vuser->gid = gid;
+	vuser->guest = guest;
+	fstrcpy(vuser->user.unix_name,unix_name);
+	fstrcpy(vuser->user.smb_name,requested_name);
+	fstrcpy(vuser->user.domain,domain);
 
-  DEBUG(3, ("Clearing default real name\n"));
-  fstrcpy(vuser->user.full_name, "<Full Name>");
-  if (lp_unix_realname()) {
-    if ((pwfile=sys_getpwnam(vuser->user.unix_name))!= NULL) {
-      DEBUG(3, ("User name: %s\tReal name: %s\n",vuser->user.unix_name,pwfile->pw_gecos));
-      fstrcpy(vuser->user.full_name, pwfile->pw_gecos);
-    }
-  }
+	vuser->n_groups = 0;
+	vuser->groups  = NULL;
 
-  memset(&vuser->dc, '\0', sizeof(vuser->dc));
+	/* Find all the groups this uid is in and store them. 
+		Used by become_user() */
+	initialise_groups(unix_name, uid, gid);
+	get_current_groups( &vuser->n_groups, &vuser->groups);
 
-  return (uint16)((num_validated_users - 1) + VUID_OFFSET);
+	/* Create an NT_USER_TOKEN struct for this user. */
+	vuser->nt_user_token = create_nt_token(uid,gid, vuser->n_groups, vuser->groups);
+
+	next_vuid++;
+	num_validated_vuids++;
+
+	DLIST_ADD(validated_users, vuser);
+
+	DEBUG(3,("uid %d registered to name %s\n",(int)uid,unix_name));
+
+	DEBUG(3, ("Clearing default real name\n"));
+	fstrcpy(vuser->user.full_name, "<Full Name>");
+	if (lp_unix_realname()) {
+		if ((pwfile=sys_getpwnam(vuser->user.unix_name))!= NULL) {
+			DEBUG(3, ("User name: %s\tReal name: %s\n",vuser->user.unix_name,pwfile->pw_gecos));
+			fstrcpy(vuser->user.full_name, pwfile->pw_gecos);
+		}
+	}
+
+	memset(&vuser->dc, '\0', sizeof(vuser->dc));
+
+	return vuser->vuid;
 }
 
 
