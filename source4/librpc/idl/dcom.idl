@@ -242,7 +242,7 @@ interface ObjectRpcBaseTypes
 	{
 	} u_null;
 
-	typedef union 
+	typedef [nodiscriminant] union 
 	{
 		[case(OBJREF_NULL)] u_null u_null;
 		[case(OBJREF_STANDARD)] u_standard u_standard;
@@ -262,7 +262,8 @@ interface ObjectRpcBaseTypes
 	// wire representation of a marshalled interface pointer
 	typedef [public] struct 
 	{
-		[subcontext(4)] OBJREF abData; // data (OBJREF)
+		uint32 size;
+		[size_is(size)] uint8 data[];
 	} MInterfacePointer;
 }
 
@@ -365,7 +366,7 @@ interface IRemUnknown : IUnknown
 	object
 ] interface IClassActivator : IUnknown
 {
-	void RemoteGetClassObject([in] GUID classid, 
+	void RemoteGetClassObject([in] GUID clsid, 
 											  [in] uint32 context,
 											  [in] LCID locale,
 											  [in] GUID iid/*FIXME,
@@ -380,11 +381,7 @@ interface IRemUnknown : IUnknown
 ]
 	interface ISystemActivator : IClassActivator
 {
-	void ISystemActivatorRemoteCreateInstance(
-											  [in] GUID classid,
-											  [in] OBJREF obj,
-											  [out] MInterfacePointer res
-											  );
+	void ISystemActivatorRemoteCreateInstance();
 }
 
 
