@@ -80,7 +80,7 @@ static void debug_nmb_res_rec(struct res_rec *res, char *hdr)
 
       for (j = 0; j < 16; j++)
 	{
-	  unsigned char x = res->rdata[i+j];
+	  uchar x = res->rdata[i+j];
 	  if (x < 32 || x > 127) x = '.';
 	  
 	  if (i+j >= res->rdlength) break;
@@ -92,7 +92,7 @@ static void debug_nmb_res_rec(struct res_rec *res, char *hdr)
       for (j = 0; j < 16; j++)
 	{
 	  if (i+j >= res->rdlength) break;
-	  DEBUGADD(4, ("%02X", (unsigned char)res->rdata[i+j]));
+	  DEBUGADD(4, ("%02X", (uchar)res->rdata[i+j]));
 	}
       
       DEBUGADD(4, ("\n"));
@@ -153,7 +153,7 @@ void debug_nmb_packet(struct packet_struct *p)
 /*******************************************************************
   handle "compressed" name pointers
   ******************************************************************/
-static BOOL handle_name_ptrs(unsigned char *ubuf,int *offset,int length,
+static BOOL handle_name_ptrs(uchar *ubuf,int *offset,int length,
 			     BOOL *got_pointer,int *ret)
 {
   int loop_count=0;
@@ -176,7 +176,7 @@ static BOOL handle_name_ptrs(unsigned char *ubuf,int *offset,int length,
 static int parse_nmb_name(char *inbuf,int offset,int length, struct nmb_name *name)
 {
   int m,n=0;
-  unsigned char *ubuf = (unsigned char *)inbuf;
+  uchar *ubuf = (uchar *)inbuf;
   int ret = 0;
   BOOL got_pointer=False;
   int loop_count=0;
@@ -202,7 +202,7 @@ static int parse_nmb_name(char *inbuf,int offset,int length, struct nmb_name *na
     ret += m + 2;
   offset++;
   while (m > 0) {
-    unsigned char c1,c2;
+    uchar c1,c2;
     c1 = ubuf[offset++]-'A';
     c2 = ubuf[offset++]-'A';
     if ((c1 & 0xF0) || (c2 & 0xF0) || (n > sizeof(name->name)-1))
@@ -215,7 +215,7 @@ static int parse_nmb_name(char *inbuf,int offset,int length, struct nmb_name *na
   if (n==16) {
     /* parse out the name type, 
        its always in the 16th byte of the name */
-    name->name_type = ((unsigned char)name->name[15]) & 0xff;
+    name->name_type = ((uchar)name->name[15]) & 0xff;
   
     /* remove trailing spaces */
     name->name[15] = 0;
@@ -393,7 +393,7 @@ static int put_res_rec(char *buf,int offset,struct res_rec *recs,int count)
 /*******************************************************************
   put a compressed name pointer record into a packet
   ******************************************************************/
-static int put_compressed_name_ptr(unsigned char *buf,int offset,struct res_rec *rec,int ptr_offset)
+static int put_compressed_name_ptr(uchar *buf,int offset,struct res_rec *rec,int ptr_offset)
 {  
   int ret=0;
   buf[offset] = (0xC0 | ((ptr_offset >> 8) & 0xFF));
@@ -784,7 +784,7 @@ static BOOL send_udp(int fd,char *buf,int len,struct in_addr ip,int port)
 static int build_dgram(char *buf,struct packet_struct *p)
 {
   struct dgram_packet *dgram = &p->packet.dgram;
-  unsigned char *ubuf = (unsigned char *)buf;
+  uchar *ubuf = (uchar *)buf;
   int offset=0;
 
   /* put in the header */
@@ -852,7 +852,7 @@ BOOL nmb_name_equal(struct nmb_name *n1, struct nmb_name *n2)
 static int build_nmb(char *buf,struct packet_struct *p)
 {
   struct nmb_packet *nmb = &p->packet.nmb;
-  unsigned char *ubuf = (unsigned char *)buf;
+  uchar *ubuf = (uchar *)buf;
   int offset=0;
 
   /* put in the header */
@@ -1082,3 +1082,197 @@ void sort_query_replies(char *data, int n, struct in_addr ip)
 
 	qsort(data, n, 6, QSORT_CAST name_query_comp);
 }
+
+
+#define TRUNCATE_NETBIOS_NAME 1
+
+/*******************************************************************
+ convert, possibly using a stupid microsoft-ism which has destroyed
+ the transport independence of netbios (for CIFS vendors that usually
+ use the Win95-type methods, not for NT to NT communication, which uses
+ DCE/RPC and therefore full-length unicode strings...) a dns name into
+ a netbios name.
+
+ the netbios name (NOT necessarily null-terminated) is truncated to 15
+ characters.
+
+ ******************************************************************/
+char *dns_to_netbios_name(char *dns_name)
+{
+	static char netbios_name[16];
+	int i;
+	StrnCpy(netbios_name, dns_name, 15);
+	netbios_name[15] = 0;
+	
+#ifdef TRUNCATE_NETBIOS_NAME
+	/* ok.  this is because of a stupid microsoft-ism.  if the called host
+	   name contains a '.', microsoft clients expect you to truncate the
+	   netbios name up to and including the '.'  this even applies, by
+	   mistake, to workgroup (domain) names, which is _really_ daft.
+	 */
+	for (i = 15; i >= 0; i--)
+	{
+		if (netbios_name[i] == '.')
+		{
+			netbios_name[i] = 0;
+			break;
+		}
+	}
+#endif /* TRUNCATE_NETBIOS_NAME */
+
+	return netbios_name;
+}
+
+
+/****************************************************************************
+interpret the weird netbios "name". Return the name type
+****************************************************************************/
+static int name_interpret(char *in,char *out)
+{
+  int ret;
+  int len = (*in++) / 2;
+
+  *out=0;
+
+  if (len > 30 || len<1) return(0);
+
+  while (len--)
+    {
+      if (in[0] < 'A' || in[0] > 'P' || in[1] < 'A' || in[1] > 'P') {
+	*out = 0;
+	return(0);
+      }
+      *out = ((in[0]-'A')<<4) + (in[1]-'A');
+      in += 2;
+      out++;
+    }
+  *out = 0;
+  ret = out[-1];
+
+#ifdef NETBIOS_SCOPE
+  /* Handle any scope names */
+  while(*in) 
+    {
+      *out++ = '.'; /* Scope names are separated by periods */
+      len = *(uchar *)in++;
+      StrnCpy(out, in, len);
+      out += len;
+      *out=0;
+      in += len;
+    }
+#endif
+  return(ret);
+}
+
+/****************************************************************************
+mangle a name into netbios format
+
+  Note:  <Out> must be (33 + strlen(scope) + 2) bytes long, at minimum.
+****************************************************************************/
+int name_mangle( char *In, char *Out, char name_type )
+  {
+  int   i;
+  int   c;
+  int   len;
+  char  buf[20];
+  char *p = Out;
+  extern pstring global_scope;
+
+  /* Safely copy the input string, In, into buf[]. */
+  (void)memset( buf, 0, 20 );
+  if (strcmp(In,"*") == 0)
+    buf[0] = '*';
+  else
+    (void)slprintf( buf, sizeof(buf) - 1, "%-15.15s%c", In, name_type );
+
+  /* Place the length of the first field into the output buffer. */
+  p[0] = 32;
+  p++;
+
+  /* Now convert the name to the rfc1001/1002 format. */
+  for( i = 0; i < 16; i++ )
+    {
+    c = toupper( buf[i] );
+    p[i*2]     = ( (c >> 4) & 0x000F ) + 'A';
+    p[(i*2)+1] = (c & 0x000F) + 'A';
+    }
+  p += 32;
+  p[0] = '\0';
+
+  /* Add the scope string. */
+  for( i = 0, len = 0; NULL != global_scope; i++, len++ )
+    {
+    switch( global_scope[i] )
+      {
+      case '\0':
+        p[0]     = len;
+        if( len > 0 )
+          p[len+1] = 0;
+        return( name_len(Out) );
+      case '.':
+        p[0] = len;
+        p   += (len + 1);
+        len  = -1;
+        break;
+      default:
+        p[len+1] = global_scope[i];
+        break;
+      }
+    }
+
+  return( name_len(Out) );
+  } /* name_mangle */
+
+
+/****************************************************************************
+find a pointer to a netbios name
+****************************************************************************/
+static char *name_ptr(char *buf,int ofs)
+{
+  uchar c = *(uchar *)(buf+ofs);
+
+  if ((c & 0xC0) == 0xC0)
+    {
+      uint16 l = RSVAL(buf, ofs) & 0x3FFF;
+      DEBUG(5,("name ptr to pos %d from %d is %s\n",l,ofs,buf+l));
+      return(buf + l);
+    }
+  else
+    return(buf+ofs);
+}  
+
+/****************************************************************************
+extract a netbios name from a buf
+****************************************************************************/
+int name_extract(char *buf,int ofs,char *name)
+{
+  char *p = name_ptr(buf,ofs);
+  int d = PTR_DIFF(p,buf+ofs);
+  pstrcpy(name,"");
+  if (d < -50 || d > 50) return(0);
+  return(name_interpret(p,name));
+}
+  
+/****************************************************************************
+return the total storage length of a mangled name
+****************************************************************************/
+int name_len(char *s1)
+{
+	/* NOTE: this argument _must_ be unsigned */
+	uchar *s = (uchar *)s1;
+	int len;
+
+	/* If the two high bits of the byte are set, return 2. */
+	if (0xC0 == (*s & 0xC0))
+		return(2);
+
+	/* Add up the length bytes. */
+	for (len = 1; (*s); s += (*s) + 1) {
+		len += *s + 1;
+		SMB_ASSERT(len < 80);
+	}
+
+	return(len);
+} /* name_len */
+
+
