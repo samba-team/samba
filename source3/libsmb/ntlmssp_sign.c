@@ -121,7 +121,7 @@ static NTSTATUS ntlmssp_make_packet_signiture(NTLMSSP_CLIENT_STATE *ntlmssp_stat
 			NTLMSSPcalc_ap(ntlmssp_state->cli_sign_hash,  sig->data, sig->length);
 			break;
 		case NTLMSSP_RECEIVE:
-			NTLMSSPcalc_ap(ntlmssp_state->cli_sign_hash,  sig->data, sig->length);
+			NTLMSSPcalc_ap(ntlmssp_state->srv_sign_hash,  sig->data, sig->length);
 			break;
 		}
 	} else {
