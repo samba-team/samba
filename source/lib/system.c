@@ -637,7 +637,12 @@ int sys_getgroups(int setlen, gid_t *gidset)
 int sys_setgroups(int setlen, gid_t *gidset)
 {
 #if !defined(HAVE_BROKEN_GETGROUPS)
-  return setgroups(setlen, gidset);
+  BOOL ret = setgroups(setlen, gidset);
+  if (ret < 0)
+  {
+	  DEBUG(10,("sys_setgroups failed: pid %d\n", getpid()));
+  }
+  return ret;
 #else
 
   GID_T *group_list;
@@ -668,6 +673,8 @@ int sys_setgroups(int setlen, gid_t *gidset)
     int saved_errno = errno;
     free((char *)group_list);
     errno = saved_errno;
+	  DEBUG(10,("sys_setgroups failed: pid %d\n", getpid()));
+	  dbgflush();
     return -1;
   }
  
