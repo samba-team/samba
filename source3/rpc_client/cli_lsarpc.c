@@ -1035,9 +1035,9 @@ NTSTATUS cli_lsa_enum_privsaccount(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	}
 
 	for (i=0; i<r.count; i++) {
-		(*set)[i].luid.low = r.set.set[i].luid.low;
-		(*set)[i].luid.high = r.set.set[i].luid.high;
-		(*set)[i].attr = r.set.set[i].attr;
+		(*set)[i].luid.low = r.set->set[i].luid.low;
+		(*set)[i].luid.high = r.set->set[i].luid.high;
+		(*set)[i].attr = r.set->set[i].attr;
 	}
 
 	*count=r.count;
