@@ -908,15 +908,17 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 static BOOL convert_printer_info(const SPOOL_PRINTER_INFO_LEVEL *uni,
 				NT_PRINTER_INFO_LEVEL *printer, uint32 level)
 {
+	BOOL ret = True;
+
 	switch (level) {
 		case 2:
-			uni_2_asc_printer_info_2(uni->info_2, &printer->info_2);
+			ret = uni_2_asc_printer_info_2(uni->info_2, &printer->info_2);
 			break;
 		default:
 			break;
 	}
 
-	return True;
+	return ret;
 }
 
 static BOOL convert_printer_driver_info(const SPOOL_PRINTER_DRIVER_INFO_LEVEL *uni,
@@ -4569,7 +4571,10 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	 * just read from the tdb in the pointer 'printer'.
 	 */
 
-	convert_printer_info(info, printer, level);
+	if (!convert_printer_info(info, printer, level)) {
+		result =  WERR_NOMEM;
+		goto done;
+	}
 
 	if (info->info_2->devmode_ptr != 0) {
 		/* we have a valid devmode
@@ -5749,7 +5754,10 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 	ZERO_STRUCTP(printer);
 
 	/* convert from UNICODE to ASCII - this allocates the info_2 struct inside *printer.*/
-	convert_printer_info(info, printer, 2);
+	if (!convert_printer_info(info, printer, 2)) {
+		free_a_printer(&printer, 2);
+		return WERR_NOMEM;
+	}
 
 	/* check to see if the printer already exists */
 
