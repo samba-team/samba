@@ -58,8 +58,9 @@ BOOL py_to_FORM(FORM *form, PyObject *dict)
 	PyObject *obj, *dict_copy = PyDict_Copy(dict);
 	char *name;
 
-	if (!(obj = PyDict_GetItemString(dict, "name")) ||
-	    !PyString_Check(obj))
+	obj = PyDict_GetItemString(dict, "name");
+
+	if (!obj || !PyString_Check(obj))
 		return False;
 
 	PyDict_DelItemString(dict_copy, "level");
