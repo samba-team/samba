@@ -306,7 +306,7 @@ BOOL get_samr_query_aliasmem(struct cli_state *cli, uint16 fnum,
 /****************************************************************************
 do a SAMR set user info
 ****************************************************************************/
-BOOL set_samr_query_userinfo(struct cli_state *cli, uint16 fnum, 
+BOOL set_samr_set_userinfo(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain,
 				uint32 info_level,
 				uint32 user_rid, void *usr)
@@ -319,7 +319,7 @@ BOOL set_samr_query_userinfo(struct cli_state *cli, uint16 fnum,
 	/* send open domain (on user sid) */
 	if (!samr_open_user(cli, fnum,
 				pol_open_domain,
-				0x02000000, user_rid,
+				0x000601b4, user_rid,
 				&pol_open_user))
 	{
 		return False;

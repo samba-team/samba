@@ -2540,6 +2540,7 @@ void cmd_sam_set_userinfo(struct client_info *info)
 	uint32 type[MAX_LOOKUP_SIDS];
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
+	SAM_USER_INFO_21 usr21;
 
 	fstrcpy(domain, info->dom.level5_dom);
 	sid_copy(&sid, &info->dom.level5_sid);
@@ -2622,7 +2623,7 @@ void cmd_sam_set_userinfo(struct client_info *info)
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(smb_cli, fnum,
-	            &sam_pol, 0x304, &sid,
+	            &sam_pol, 0x02000000, &sid,
 	            &pol_dom) : False;
 
 	/* look up user rid */
@@ -2633,23 +2634,70 @@ void cmd_sam_set_userinfo(struct client_info *info)
 					&num_rids, rid, type) : False;
 
 	/* send set user info */
-	if (res1 && num_rids == 1)
+	if (res1 && num_rids == 1 && get_samr_query_userinfo(smb_cli, fnum,
+						    &pol_dom,
+						    0x15, rid[0], &usr21))
 	{
 		void *usr = NULL;
 		uint32 switch_value = 0;
+		char pwbuf[516];
+
 		if (set_passwd)
 		{
-			SAM_USER_INFO_24 *p = malloc(sizeof(SAM_USER_INFO_24));
-			encode_pw_buffer(p->pass, password,
+			encode_pw_buffer(pwbuf, password,
 			               strlen(password), True);
-			SamOEMhash(p->pass, smb_cli->sess_key, 1);
+			SamOEMhash(pwbuf, smb_cli->sess_key, 1);
+		}
+
+		if (True)
+		{
+			SAM_USER_INFO_24 *p = malloc(sizeof(SAM_USER_INFO_24));
+			make_sam_user_info24(p, pwbuf);
 
 			usr = p;
 			switch_value = 24;
 		}
+		
+		if (False)
+		{
+			SAM_USER_INFO_23 *p = malloc(sizeof(SAM_USER_INFO_23));
+			/* send user info query, level 0x15 */
+			make_sam_user_info23W(p,
+				&usr21.logon_time, 
+				&usr21.logoff_time, 
+				&usr21.kickoff_time, 
+				&usr21.pass_last_set_time, 
+				&usr21.pass_can_change_time, 
+				&usr21.pass_must_change_time, 
+
+				&usr21.uni_user_name, 
+				&usr21.uni_full_name,
+				&usr21.uni_home_dir,
+				&usr21.uni_dir_drive,
+				&usr21.uni_logon_script,
+				&usr21.uni_profile_path,
+				&usr21.uni_acct_desc,
+				&usr21.uni_workstations,
+				&usr21.uni_unknown_str,
+				&usr21.uni_munged_dial,
+
+				0x0, 
+				usr21.group_rid,
+				usr21.acb_info, 
+
+				0x09f827fa,
+				usr21.logon_divs,
+				&usr21.logon_hrs,
+				usr21.unknown_5,
+				pwbuf,
+				usr21.unknown_6);
+
+			usr = p;
+			switch_value = 23;
+		}
 		if (usr != NULL)
 		{
-			res1 = set_samr_query_userinfo(smb_cli, fnum,
+			res1 = set_samr_set_userinfo(smb_cli, fnum,
 					    &pol_dom,
 					    switch_value, rid[0], usr);
 		}

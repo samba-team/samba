@@ -267,13 +267,23 @@ copies a UNISTR2 structure.
 ********************************************************************/
 BOOL copy_unistr2(UNISTR2 *str, const UNISTR2 *from)
 {
-	/* set up string lengths. add one if string is not null-terminated */
-	str->uni_max_len = from->uni_max_len;
-	str->undoc       = from->undoc;
-	str->uni_str_len = from->uni_str_len;
+	if (from != NULL)
+	{
+		/* set up string lengths. add one if string is not null-terminated */
+		str->uni_max_len = from->uni_max_len;
+		str->undoc       = from->undoc;
+		str->uni_str_len = from->uni_str_len;
 
-	/* copy the string */
-	memcpy(str->buffer, from->buffer, sizeof(from->buffer));
+		/* copy the string */
+		memcpy(str->buffer, from->buffer, sizeof(from->buffer));
+	}
+	else
+	{
+		str->uni_max_len = 1;
+		str->undoc = 0;
+		str->uni_str_len = 1;
+		str->buffer[0] = 0;
+	}
 
 	return True;
 }
