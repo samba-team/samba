@@ -300,7 +300,7 @@ smbpid = %u, pid = %u, tid = %u\n",
  Test if we could add a lock if we wanted to.
 ****************************************************************************/
 
-BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, 
+BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		  uint16 smbpid, pid_t pid, uint16 tid,
 		  br_off start, br_off size, 
 		  enum brl_type lock_type)
@@ -325,6 +325,7 @@ BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino,
 	lock.context.tid = tid;
 	lock.start = start;
 	lock.size = size;
+	lock.fnum = fnum;
 	lock.lock_type = lock_type;
 
 	if (dbuf.dptr) {

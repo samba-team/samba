@@ -68,7 +68,7 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
 	if (!lp_locking(snum) || !lp_strict_locking(snum))
 		return(False);
 
-	ret = !brl_locktest(fsp->dev, fsp->inode, 
+	ret = !brl_locktest(fsp->dev, fsp->inode, fsp->fnum,
 			     global_smbpid, sys_getpid(), conn->cnum, 
 			     offset, count, lock_type);
 
