@@ -814,20 +814,12 @@ int open_socket_in(int type, int port, int dlevel,uint32 socket_addr, BOOL rebin
   /* now we've got a socket - we need to bind it */
   if (bind(res, (struct sockaddr * ) &sock,sizeof(sock)) < 0) 
     { 
-      if (port) {
 	if (port == SMB_PORT || port == NMB_PORT)
 	  DEBUG(dlevel,("bind failed on port %d socket_addr=%s (%s)\n",
 			port,inet_ntoa(sock.sin_addr),strerror(errno))); 
 	close(res); 
 
-	if (dlevel > 0 && port < 1000)
-	  port = 7999;
-
-	if (port >= 1000 && port < 9000)
-	  return(open_socket_in(type,port+1,dlevel,socket_addr,rebind));
-      }
-
-      return(-1); 
+	return(-1); 
     }
   DEBUG(3,("bind succeeded on port %d\n",port));
 
