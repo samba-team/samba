@@ -80,7 +80,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1413"
+NAME="AEN1439"
 >9.1. Joining an NT Domain with Samba 3.0</A
 ></H1
 ><P
@@ -106,15 +106,11 @@ CLASS="CONSTANT"
 	</CODE
 >.</P
 ><P
->Firstly, you must edit your <A
-HREF="smb.conf.5.html"
-TARGET="_top"
-><TT
+>Firstly, you must edit your <TT
 CLASS="FILENAME"
->smb.conf(5)</TT
->
-	</A
-> file to tell Samba it should now use domain security.</P
+>smb.conf</TT
+> file to tell Samba it should
+	now use domain security.</P
 ><P
 >Change (or add) your <A
 HREF="smb.conf.5.html#SECURITY"
@@ -124,7 +120,10 @@ CLASS="PARAMETER"
 >security =</VAR
 ></A
 > line in the [global] section 
-	of your smb.conf to read:</P
+	of your <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> to read:</P
 ><P
 ><B
 CLASS="COMMAND"
@@ -263,7 +262,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1467"
+NAME="AEN1493"
 >9.2. Why is this better than security = server?</A
 ></H1
 ><P

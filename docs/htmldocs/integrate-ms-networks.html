@@ -74,7 +74,7 @@ CLASS="CHAPTER"
 ><A
 NAME="INTEGRATE-MS-NETWORKS"
 ></A
->Chapter 21. Integrating MS Windows networks with Samba</H1
+>Chapter 22. Integrating MS Windows networks with Samba</H1
 ><P
 >This section deals with NetBIOS over TCP/IP name to IP address resolution. If you
 your MS Windows clients are NOT configured to use NetBIOS over TCP/IP then this
@@ -155,8 +155,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3580"
->21.1. Name Resolution in a pure Unix/Linux world</A
+NAME="AEN3688"
+>22.1. Name Resolution in a pure Unix/Linux world</A
 ></H1
 ><P
 >The key configuration files covered in this section are:</P
@@ -197,8 +197,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3596"
->21.1.1. <TT
+NAME="AEN3704"
+>22.1.1. <TT
 CLASS="FILENAME"
 >/etc/hosts</TT
 ></A
@@ -278,8 +278,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3612"
->21.1.2. <TT
+NAME="AEN3720"
+>22.1.2. <TT
 CLASS="FILENAME"
 >/etc/resolv.conf</TT
 ></A
@@ -316,8 +316,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3623"
->21.1.3. <TT
+NAME="AEN3731"
+>22.1.3. <TT
 CLASS="FILENAME"
 >/etc/host.conf</TT
 ></A
@@ -345,8 +345,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3631"
->21.1.4. <TT
+NAME="AEN3739"
+>22.1.4. <TT
 CLASS="FILENAME"
 >/etc/nsswitch.conf</TT
 ></A
@@ -414,8 +414,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3643"
->21.2. Name resolution as used within MS Windows networking</A
+NAME="AEN3751"
+>22.2. Name resolution as used within MS Windows networking</A
 ></H1
 ><P
 >MS Windows networking is predicated about the name each machine 
@@ -499,8 +499,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3655"
->21.2.1. The NetBIOS Name Cache</A
+NAME="AEN3763"
+>22.2.1. The NetBIOS Name Cache</A
 ></H2
 ><P
 >All MS Windows machines employ an in memory buffer in which is 
@@ -526,8 +526,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3660"
->21.2.2. The LMHOSTS file</A
+NAME="AEN3768"
+>22.2.2. The LMHOSTS file</A
 ></H2
 ><P
 >This file is usually located in MS Windows NT 4.0 or 
@@ -629,8 +629,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3668"
->21.2.3. HOSTS file</A
+NAME="AEN3776"
+>22.2.3. HOSTS file</A
 ></H2
 ><P
 >This file is usually located in MS Windows NT 4.0 or 2000 in 
@@ -651,8 +651,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3673"
->21.2.4. DNS Lookup</A
+NAME="AEN3781"
+>22.2.4. DNS Lookup</A
 ></H2
 ><P
 >This capability is configured in the TCP/IP setup area in the network 
@@ -671,8 +671,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3676"
->21.2.5. WINS Lookup</A
+NAME="AEN3784"
+>22.2.5. WINS Lookup</A
 ></H2
 ><P
 >A WINS (Windows Internet Name Server) service is the equivaent of the 
@@ -692,7 +692,10 @@ CLASS="PROGRAMLISTING"
 ></P
 ><P
 >To configure Samba to use a WINS server the following parameters are 
-needed in the smb.conf file:</P
+needed in the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file:</P
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"

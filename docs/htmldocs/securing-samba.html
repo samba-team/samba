@@ -74,14 +74,14 @@ CLASS="CHAPTER"
 ><A
 NAME="SECURING-SAMBA"
 ></A
->Chapter 23. Securing Samba</H1
+>Chapter 24. Securing Samba</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3884"
->23.1. Introduction</A
+NAME="AEN4003"
+>24.1. Introduction</A
 ></H1
 ><P
 >This note was attached to the Samba 2.2.8 release notes as it contained an
@@ -93,8 +93,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3887"
->23.2. Using host based protection</A
+NAME="AEN4006"
+>24.2. Using host based protection</A
 ></H1
 ><P
 >In many installations of Samba the greatest threat comes for outside
@@ -103,8 +103,17 @@ any host, which means that if you run an insecure version of Samba on
 a host that is directly connected to the Internet you can be
 especially vulnerable.</P
 ><P
->One of the simplest fixes in this case is to use the 'hosts allow' and
-'hosts deny' options in the Samba smb.conf configuration file to only
+>One of the simplest fixes in this case is to use the <B
+CLASS="COMMAND"
+>hosts allow</B
+> and
+<B
+CLASS="COMMAND"
+>hosts deny</B
+> options in the Samba <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> configuration file to only
 allow access to your server from a specific range of hosts. An example
 might be:</P
 ><P
@@ -125,8 +134,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3894"
->23.3. Using interface protection</A
+NAME="AEN4016"
+>24.3. Using interface protection</A
 ></H1
 ><P
 >By default Samba will accept connections on any network interface that
@@ -161,8 +170,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3903"
->23.4. Using a firewall</A
+NAME="AEN4025"
+>24.4. Using a firewall</A
 ></H1
 ><P
 >Many people use a firewall to deny access to services that they don't
@@ -191,8 +200,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3910"
->23.5. Using a IPC$ share deny</A
+NAME="AEN4032"
+>24.5. Using a IPC$ share deny</A
 ></H1
 ><P
 >If the above methods are not suitable, then you could also place a
@@ -230,11 +239,15 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3919"
->23.6. Upgrading Samba</A
+NAME="AEN4041"
+>24.6. Upgrading Samba</A
 ></H1
 ><P
->Please check regularly on http://www.samba.org/ for updates and
+>Please check regularly on <A
+HREF="http://www.samba.org/"
+TARGET="_top"
+>http://www.samba.org/</A
+> for updates and
 important announcements.  Occasionally security releases are made and 
 it is highly recommended to upgrade Samba when a security vulnerability
 is discovered.</P

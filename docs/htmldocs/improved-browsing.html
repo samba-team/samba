@@ -74,14 +74,14 @@ CLASS="CHAPTER"
 ><A
 NAME="IMPROVED-BROWSING"
 ></A
->Chapter 22. Improved browsing in samba</H1
+>Chapter 23. Improved browsing in samba</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3695"
->22.1. Overview of browsing</A
+NAME="AEN3804"
+>23.1. Overview of browsing</A
 ></H1
 ><P
 >SMB networking provides a mechanism by which clients can access a list
@@ -112,12 +112,18 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3701"
->22.2. Browsing support in samba</A
+NAME="AEN3810"
+>23.2. Browsing support in samba</A
 ></H1
 ><P
->Samba facilitates browsing.  The browsing is supported by nmbd
-and is also controlled by options in the smb.conf file (see smb.conf(5)).
+>Samba facilitates browsing.  The browsing is supported by <SPAN
+CLASS="APPLICATION"
+>nmbd</SPAN
+>
+and is also controlled by options in the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file.
 Samba can act as a local browse master for a workgroup and the ability
 for samba to support domain logons and scripts is now available.</P
 ><P
@@ -192,8 +198,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3714"
->22.3. Problem resolution</A
+NAME="AEN3825"
+>23.3. Problem resolution</A
 ></H1
 ><P
 >If something doesn't work then hopefully the log.nmb file will help
@@ -234,15 +240,18 @@ server resources.</I
 ><P
 >The other big problem people have is that their broadcast address,
 netmask or IP address is wrong (specified with the "interfaces" option
-in smb.conf)</P
+in <TT
+CLASS="FILENAME"
+>smb.conf</TT
+>)</P
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3725"
->22.4. Browsing across subnets</A
+NAME="AEN3837"
+>23.4. Browsing across subnets</A
 ></H1
 ><P
 >Since the release of Samba 1.9.17(alpha1) Samba has been
@@ -266,14 +275,17 @@ another subnet without using a WINS server.</P
 be they Windows 95, Windows NT, or Samba servers must have the IP address
 of a WINS server given to them by a DHCP server, or by manual configuration 
 (for Win95 and WinNT, this is in the TCP/IP Properties, under Network 
-settings) for Samba this is in the smb.conf file.</P
+settings) for Samba this is in the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file.</P
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3730"
->22.4.1. How does cross subnet browsing work ?</A
+NAME="AEN3843"
+>23.4.1. How does cross subnet browsing work ?</A
 ></H2
 ><P
 >Cross subnet browsing is a complicated dance, containing multiple
@@ -483,13 +495,16 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3765"
->22.5. Setting up a WINS server</A
+NAME="AEN3878"
+>23.5. Setting up a WINS server</A
 ></H1
 ><P
 >Either a Samba machine or a Windows NT Server machine may be set up
 as a WINS server.  To set a Samba machine to be a WINS server you must
-add the following option to the smb.conf file on the selected machine :
+add the following option to the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file on the selected machine :
 in the [globals] section add the line </P
 ><P
 ><B
@@ -536,7 +551,10 @@ the Samba machine IP address in the "Primary WINS Server" field of
 the "Control Panel-&#62;Network-&#62;Protocols-&#62;TCP-&#62;WINS Server" dialogs
 in Windows 95 or Windows NT.  To tell a Samba server the IP address
 of the WINS server add the following line to the [global] section of
-all smb.conf files :</P
+all <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> files :</P
 ><P
 ><B
 CLASS="COMMAND"
@@ -546,7 +564,10 @@ CLASS="COMMAND"
 >where &#62;name or IP address&#60; is either the DNS name of the WINS server
 machine or its IP address.</P
 ><P
->Note that this line MUST NOT BE SET in the smb.conf file of the Samba
+>Note that this line MUST NOT BE SET in the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file of the Samba
 server acting as the WINS server itself.  If you set both the
 <B
 CLASS="COMMAND"
@@ -569,8 +590,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3785"
->22.6. Setting up Browsing in a WORKGROUP</A
+NAME="AEN3901"
+>23.6. Setting up Browsing in a WORKGROUP</A
 ></H1
 ><P
 >To set up cross subnet browsing on a network containing machines
@@ -588,7 +609,10 @@ cross subnet browsing possible for a workgroup.</P
 >In an WORKGROUP environment the domain master browser must be a
 Samba server, and there must only be one domain master browser per
 workgroup name.  To set up a Samba server as a domain master browser,
-set the following option in the [global] section of the smb.conf file :</P
+set the following option in the [global] section of the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file :</P
 ><P
 ><B
 CLASS="COMMAND"
@@ -597,7 +621,10 @@ CLASS="COMMAND"
 ><P
 >The domain master browser should also preferrably be the local master
 browser for its own subnet.  In order to achieve this set the following
-options in the [global] section of the smb.conf file :</P
+options in the [global] section of the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file :</P
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
@@ -617,7 +644,10 @@ able to do this, as will Windows 9x machines (although these
 tend to get rebooted more often, so it's not such a good idea
 to use these).  To make a Samba server a local master browser
 set the following options in the [global] section of the
-smb.conf file :</P
+<TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file :</P
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
@@ -670,8 +700,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3808"
->22.7. Setting up Browsing in a DOMAIN</A
+NAME="AEN3927"
+>23.7. Setting up Browsing in a DOMAIN</A
 ></H1
 ><P
 >If you are adding Samba servers to a Windows NT Domain then
@@ -745,7 +775,7 @@ CLASS="SECT1"
 CLASS="SECT1"
 ><A
 NAME="BROWSE-FORCE-MASTER"
->22.8. Forcing samba to be the master</A
+>23.8. Forcing samba to be the master</A
 ></H1
 ><P
 >Who becomes the <B
@@ -819,8 +849,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3843"
->22.9. Making samba the domain master</A
+NAME="AEN3962"
+>23.9. Making samba the domain master</A
 ></H1
 ><P
 >The domain master is responsible for collating the browse lists of
@@ -904,8 +934,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3865"
->22.10. Note about broadcast addresses</A
+NAME="AEN3984"
+>23.10. Note about broadcast addresses</A
 ></H1
 ><P
 >If your network uses a "0" based broadcast address (for example if it
@@ -918,8 +948,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3868"
->22.11. Multiple interfaces</A
+NAME="AEN3987"
+>23.11. Multiple interfaces</A
 ></H1
 ><P
 >Samba now supports machines with multiple network interfaces.  If you
@@ -927,10 +957,10 @@ have multiple interfaces then you will need to use the <B
 CLASS="COMMAND"
 >interfaces</B
 >
-option in smb.conf to configure them.  See <TT
+option in <TT
 CLASS="FILENAME"
->smb.conf(5)</TT
-> for details.</P
+>smb.conf</TT
+> to configure them. </P
 ></DIV
 ></DIV
 ><DIV

@@ -89,7 +89,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN752"
+NAME="AEN766"
 >5.1. User and Share security level</A
 ></H1
 ><P
@@ -107,7 +107,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN755"
+NAME="AEN769"
 >5.1.1. User Level Security</A
 ></H2
 ><P
@@ -148,7 +148,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN765"
+NAME="AEN779"
 >5.1.2. Share Level Security</A
 ></H2
 ><P
@@ -169,7 +169,13 @@ level security. They normally send a valid username but no
 password. Samba records this username in a list of "possible
 usernames". When the client then does a "tree connection" it also adds
 to this list the name of the share they try to connect to (useful for
-home directories) and any users listed in the "user =" smb.conf
+home directories) and any users listed in the <B
+CLASS="COMMAND"
+>user =</B
+> <TT
+CLASS="FILENAME"
+>smb.conf</TT
+>
 line. The password is then checked in turn against these "possible
 usernames". If a match is found then the client is authenticated as
 that user.</P
@@ -179,7 +185,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN769"
+NAME="AEN785"
 >5.1.3. Server Level Security</A
 ></H2
 ><P
@@ -215,7 +221,7 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN774"
+NAME="AEN790"
 >5.1.3.1. Configuring Samba for Seemless Windows Network Integration</A
 ></H3
 ><P
@@ -327,11 +333,14 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN800"
+NAME="AEN816"
 >5.1.3.2. Use MS Windows NT as an authentication server</A
 ></H3
 ><P
->This method involves the additions of the following parameters in the smb.conf file:</P
+>This method involves the additions of the following parameters in the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file:</P
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
@@ -363,7 +372,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN808"
+NAME="AEN825"
 >5.1.4. Domain Level Security</A
 ></H2
 ><P
@@ -381,11 +390,14 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN812"
+NAME="AEN829"
 >5.1.4.1. Samba as a member of an MS Windows NT security domain</A
 ></H3
 ><P
->This method involves additon of the following paramters in the smb.conf file:</P
+>This method involves additon of the following paramters in the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file:</P
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
@@ -395,7 +407,10 @@ CLASS="PROGRAMLISTING"
 	password server = *</PRE
 ></P
 ><P
->The use of the "*" argument to "password server" will cause samba to locate the
+>The use of the "*" argument to <B
+CLASS="COMMAND"
+>password server</B
+> will cause samba to locate the
 domain controller in a way analogous to the way this is done within MS Windows NT.
 This is the default behaviour.</P
 ><P
@@ -444,7 +459,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN829"
+NAME="AEN848"
 >5.1.5. ADS Level Security</A
 ></H2
 ><P

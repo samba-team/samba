@@ -74,7 +74,7 @@ CLASS="CHAPTER"
 ><A
 NAME="PORTABILITY"
 ></A
->Chapter 28. Portability</H1
+>Chapter 29. Portability</H1
 ><P
 >Samba works on a wide range of platforms but the interface all the 
 platforms provide is not always compatible. This chapter contains 
@@ -84,8 +84,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4127"
->28.1. HPUX</A
+NAME="AEN4249"
+>29.1. HPUX</A
 ></H1
 ><P
 >HP's implementation of supplementary groups is, er, non-standard (for
@@ -114,8 +114,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4133"
->28.2. SCO Unix</A
+NAME="AEN4255"
+>29.2. SCO Unix</A
 ></H1
 ><P
 > 
@@ -131,8 +131,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4137"
->28.3. DNIX</A
+NAME="AEN4259"
+>29.3. DNIX</A
 ></H1
 ><P
 >DNIX has a problem with seteuid() and setegid(). These routines are
@@ -238,8 +238,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4166"
->28.4. RedHat Linux Rembrandt-II</A
+NAME="AEN4288"
+>29.4. RedHat Linux Rembrandt-II</A
 ></H1
 ><P
 >By default RedHat Rembrandt-II during installation adds an
@@ -262,21 +262,54 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4172"
->28.5. AIX</A
+NAME="AEN4294"
+>29.5. AIX</A
 ></H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN4174"
->28.5.1. Sequential Read Ahead</A
+NAME="AEN4296"
+>29.5.1. Sequential Read Ahead</A
 ></H2
 ><P
->Disabling Sequential Read Ahead using "vmtune -r 0" improves 
+>Disabling Sequential Read Ahead using <KBD
+CLASS="USERINPUT"
+>vmtune -r 0</KBD
+> improves 
 samba performance significally.</P
 ></DIV
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN4300"
+>29.6. Solaris</A
+></H1
+><P
+>Some people have been experiencing problems with F_SETLKW64/fcntl 
+when running samba on solaris. The built in file locking mechanism was
+not scalable. Performance would degrade to the point where processes would
+get into loops of trying to lock a file. It woul try a lock, then fail,
+then try again. The lock attempt was failing before the grant was
+occurring. So the visible manifestation of this would be a handful of
+processes stealing all of the CPU, and when they were trussed they would
+be stuck if F_SETLKW64 loops.</P
+><P
+>Sun released patches for Solaris 2.6, 8, and 9. The patch for Solaris 7
+has not been released yet.</P
+><P
+>The patch revision for 2.6 is 105181-34
+for 8 is 108528-19
+and for 9 is 112233-04</P
+><P
+>After the install of these patches it is recommended to reconfigure
+and rebuild samba.</P
+><P
+>Thanks to Joe Meslovich for reporting</P
 ></DIV
 ></DIV
 ><DIV
