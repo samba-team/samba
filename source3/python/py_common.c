@@ -197,3 +197,20 @@ struct cli_state *open_pipe_creds(char *server, PyObject *creds,
 
 	return cli;
 }
+
+/* Return true if a dictionary contains a "level" key with an integer
+   value.  Set the value if so. */
+
+BOOL get_level_value(PyObject *dict, uint32 *level)
+{
+	PyObject *obj;
+
+	if (!(obj = PyDict_GetItemString(dict, "level")) ||
+	    !PyInt_Check(obj))
+		return False;
+
+	if (level)
+		*level = PyInt_AsLong(obj);
+
+	return True;
+}
