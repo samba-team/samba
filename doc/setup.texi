@@ -752,6 +752,7 @@ Note: These is a bug in slapd where it appears to corrupt the krb5Key
 binary attribute on shutdown. This may be related to our use of the V3
 schema definition syntax instead of the old UMich-style, V2 syntax.
 
+@item
 You should specify a the distinguished name under which your
 principals will be stored in @file{krb5.conf}:
 
@@ -763,6 +764,7 @@ principals will be stored in @file{krb5.conf}:
         @}
 @end example
 
+@item
 Once you have built Heimdal and started the LDAP server, run kadmin
 (as usual) to initialize the database. Note that the instructions for
 stashing a master key are as per any Heimdal installation; you are
@@ -792,6 +794,9 @@ kdc# ldapsearch -L -h localhost -D cn=manager \
  -w secret -b ou=KerberosPrincipals,dc=padl,dc=com \
  'objectclass=krb5KDCEntry' 
 @end example
+
+@item
+Now consider adding indexes to the database to speed up the access.
 
 @node Using Samba LDAP password database, , Using LDAP to store the database, Setting up a realm
 @section Using Samba LDAP password database
