@@ -1,4 +1,4 @@
-ntlogon.py v0.7b Copyright 2000 by Avalon Technology Group, Inc.
+ntlogon.py v0.8b Copyright 2002 by Timothy (rhacer) Grant 
 This programme is released under the terms of the GNU Public License
 This programme has NO WARRANTY of any kind, use at your own risk.
 
@@ -42,7 +42,7 @@ I'd really love to know if even one person other than me and the other techs
 here at Avalon have found it useful.
 
 Thanks.
-   rhacer (rhacer@exceptionalminds.com)
+   rhacer (rhacer@craigelachie.org)
 
 September 27, 2000
 Thanks to those that did respond to my plea! I'd still love to hear from 
@@ -150,11 +150,10 @@ Nick Lopez <kimo_sabe@atdot.org> for the net bios name patch.
 ===================
 CONTACT INFORMATION
 ===================
-Author	: Timothy Grant (rhacer)
-Company	: Avalon Technology Group, Inc.
+Author	: Timothy (rhacer) Grant
 
-I can be reached at tjg@exceptionalminds.com
-ntlogon website www.exceptionalminds.com/rhacer/ntlogon
+I can be reached at tjg@craigelachie.org
+ntlogon website www.craigelachie.org/rhacer/ntlogon
 
 Please feel free to contact me with any suggestions, improvements, bugs you
 might find.
