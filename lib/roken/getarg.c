@@ -461,8 +461,10 @@ arg_match_short (struct getargs *args, size_t num_args,
 		    ++*optind;
 		    optarg = rargv[*optind];
 		}
-		if(optarg == NULL)
+		if(optarg == NULL) {
+		    --*optind;
 		    return ARG_ERR_NO_ARG;
+		}
 		if(args[k].type == arg_integer) {
 		    int tmp;
 		    if(sscanf(optarg, "%d", &tmp) != 1)
