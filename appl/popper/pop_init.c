@@ -7,6 +7,19 @@
 #include <popper.h>
 RCSID("$Id$");
 
+
+#ifdef KERBEROS
+
+int net_read(POP *p, int fd, void *buf, size_t len)
+{
+#ifdef KRB5
+    return krb5_net_read(p->context, 0, buf, len);
+#elif defined(KRB4)
+    return krb_net_read(0, buf, len);
+#endif
+}
+#endif
+
 #ifdef KRB4
 static int
 krb4_authenticate (POP *p, int s, u_char *buf, struct sockaddr_in *addr)
@@ -19,7 +32,7 @@ krb4_authenticate (POP *p, int s, u_char *buf, struct sockaddr_in *addr)
   
     if (memcmp (buf, KRB_SENDAUTH_VERS, 4) != 0)
 	return -1;
-    if (krb5_net_read (p->context, s, buf + 4,
+    if (net_read (p, s, buf + 4,
 		       KRB_SENDAUTH_VLEN - 4) != KRB_SENDAUTH_VLEN - 4)
 	return -1;
     if (memcmp (buf, KRB_SENDAUTH_VERS, KRB_SENDAUTH_VLEN) != 0)
@@ -55,6 +68,7 @@ krb4_authenticate (POP *p, int s, u_char *buf, struct sockaddr_in *addr)
 }
 #endif /* KRB4 */
 
+#ifdef KRB5
 static int
 krb5_authenticate (POP *p, int s, u_char *buf, struct sockaddr_in *addr)
 {
@@ -103,6 +117,7 @@ krb5_authenticate (POP *p, int s, u_char *buf, struct sockaddr_in *addr)
     }
     return ret;
 }
+#endif
 
 static int
 krb_authenticate(POP *p, struct sockaddr_in *addr)
@@ -110,21 +125,24 @@ krb_authenticate(POP *p, struct sockaddr_in *addr)
 #ifdef KERBEROS
     u_char buf[BUFSIZ];
 
-    if (krb5_net_read (p->context, 0, buf, 4) != 4) {
+    if (net_read (p, 0, buf, 4) != 4) {
 	pop_msg(p, POP_FAILURE, "Reading four bytes: %s",
 		strerror(errno));
 	exit (1);
     }
 #ifdef KRB4
-    if (krb4_authenticate (p, 0, buf, addr) == 0)
+    if (krb4_authenticate (p, 0, buf, addr) == 0){
 	p->version = 4;
-    else
-#endif /* KRB4 */
-    if (krb5_authenticate (p, 0, buf, addr) == 0)
-	p->version = 5;
-    else {
-	exit (1);
+	return POP_SUCCESS;
     }
+#endif
+#ifdef KRB5
+    if (krb5_authenticate (p, 0, buf, addr) == 0){
+	p->version = 5;
+	return POP_SUCCESS;
+    }
+#endif
+    exit (1);
 	
 #endif /* KERBEROS */
 
@@ -167,6 +185,18 @@ static int num_args = sizeof(args) / sizeof(args[0]);
  *  init:   Start a Post Office Protocol session
  */
 
+int pop_getportbyname(POP *p, const char *service, 
+		      const char *proto, short def)
+{
+#ifdef KRB5
+    return krb5_getportbyname(p->context, service, proto, def);
+#elif defined(KRB4)
+    return k_getportbyname(service, proto, htons(def));
+#else
+    return htons(default);
+#endif
+}
+
 int
 pop_init(POP *p,int argcount,char **argmessage)
 {
@@ -189,7 +219,7 @@ pop_init(POP *p,int argcount,char **argmessage)
     /*  Get the name of our host */
     gethostname(p->myhost,MaxHostNameLen);
 
-#ifdef KERBEROS
+#ifdef KRB5
     krb5_init_context (&p->context);
 
     krb5_openlog(p->context, p->myname, &p->logf);
@@ -209,8 +239,13 @@ pop_init(POP *p,int argcount,char **argmessage)
 	arg_printusage(args, num_args, "");
 	exit(0);
     }
-    if(version_flag)
+    if(version_flag){
+#ifdef KRB5
 	krb5_errx(p->context, 0, "%s", heimdal_version);
+#else
+	errx(0, "%s", VERSION);
+#endif
+    }
 
     argcount -= optind;
     argmessage += optind;
@@ -255,8 +290,8 @@ pop_init(POP *p,int argcount,char **argmessage)
     if (interactive_flag) {
 	if (portnum == 0)
 	    portnum = p->kerberosp ?
-		krb5_getportbyname(p->context, "kpop", "tcp", 1109) :
-	    krb5_getportbyname(p->context, "pop", "tcp", 110);
+		pop_getportbyname(p, "kpop", "tcp", 1109) :
+	    pop_getportbyname(p, "pop", "tcp", 110);
 	mini_inetd (portnum);
     }
 

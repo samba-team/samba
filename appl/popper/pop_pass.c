@@ -31,6 +31,7 @@ krb4_verify_password (POP *p)
 }
 #endif /* KRB4 */
 
+#ifdef KRB5
 static int
 krb5_verify_password (POP *p)
 {
@@ -95,7 +96,7 @@ krb5_verify_password (POP *p)
     krb5_free_creds_contents (p->context, &creds);
     return ret;
 }
-
+#endif
 /* 
  *  pass:   Obtain the user password from a POP client
  */
@@ -132,27 +133,29 @@ pop_pass (POP *p)
 		    p->ipaddr,
 		    p->kdata.pname, p->kdata.pinst, p->kdata.prealm,
 		    p->user);
-	} else
+	} 
 #endif /* KRB4 */
-	    if (p->version == 5) {
-		char *name;
-
-		if (!krb5_kuserok (p->context, p->principal, p->user)) {
-		    pop_log (p, POP_FAILURE,
-			     "krb5 permission denied");
-		    return pop_msg(p, POP_FAILURE,
-				   "Popping not authorized");
-		}
-		if(krb5_unparse_name (p->context, p->principal, &name) == 0) {
-		    pop_log(p, POP_INFO, "%s: %s -> %s",
-			    p->ipaddr, name, p->user);
-		    free (name);
-		}
-	    } else {
-		pop_log (p, POP_FAILURE, "kerberos authentication failed");
-		return pop_msg (p, POP_FAILURE,
-				"kerberos authentication failed");
+#ifdef KRB5
+	if (p->version == 5) {
+	    char *name;
+	    
+	    if (!krb5_kuserok (p->context, p->principal, p->user)) {
+		pop_log (p, POP_FAILURE,
+			 "krb5 permission denied");
+		return pop_msg(p, POP_FAILURE,
+			       "Popping not authorized");
 	    }
+	    if(krb5_unparse_name (p->context, p->principal, &name) == 0) {
+		pop_log(p, POP_INFO, "%s: %s -> %s",
+			p->ipaddr, name, p->user);
+		free (name);
+	    }
+	} else {
+	    pop_log (p, POP_FAILURE, "kerberos authentication failed");
+	    return pop_msg (p, POP_FAILURE,
+			    "kerberos authentication failed");
+	}
+#endif
     } else {
 	 /*  We don't accept connections from users with null passwords */
 	 if (pw->pw_passwd == NULL)
@@ -168,14 +171,15 @@ pop_pass (POP *p)
 			    "Password supplied for \"%s\" is incorrect.",
 			    p->user);
 	 else {
+	     int ret = -1;
 #ifdef KRB4
-	     if (krb4_verify_password (p) == 0)
-		 ;
-	     else
-#endif /* KRB4 */
-		 if (krb5_verify_password (p) == 0)
-		     ;
-	     else
+	     ret = krb4_verify_password (p);
+#endif
+#ifdef KRB5
+	     if(ret)
+		 ret = krb5_verify_password (p);
+#endif
+	     if(ret)
 		 return pop_msg(p, POP_FAILURE,
 				"Password incorrect");
 	 }

@@ -24,7 +24,7 @@ pop_log(POP *p, int stat, char *format, ...)
         fprintf(p->trace,"%s\n",msgbuf);
         fflush(p->trace);
     } else {
-#ifdef KERBEROS
+#ifdef KRB5
 	krb5_log(p->context, p->logf, stat, "%s", msgbuf);
 #else
         syslog (stat,"%s",msgbuf);

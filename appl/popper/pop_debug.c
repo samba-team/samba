@@ -121,6 +121,7 @@ doit_v4 (char *host, int port)
 }
 #endif
 
+#ifdef KRB5
 static int
 doit_v5 (char *host, int port)
 {
@@ -165,7 +166,7 @@ doit_v5 (char *host, int port)
      }
      loop (s);
 }
-
+#endif
 
 
 #ifdef KRB4
@@ -246,9 +247,11 @@ main(int argc, char **argv)
 	}
     }
 
+#ifdef KRB5
     if (ret && use_v5) {
 	ret = doit_v5 (argv[0], port);
     }
+#endif
 #ifdef KRB4
     if (ret && use_v4) {
 	ret = doit_v4 (argv[0], port);

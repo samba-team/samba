@@ -117,7 +117,9 @@
 #define   K_LOCK_UN   LOCK_UN         /* Unlock */
 #endif
 #endif
+#ifdef KRB5
 #include <krb5.h>
+#endif
 
 #define MAXUSERNAMELEN  65
 #define MAXDROPLEN      64
@@ -258,9 +260,11 @@ typedef struct  {                               /*  POP parameter block */
 #ifdef KRB4
     AUTH_DAT		kdata;
 #endif
+#ifdef KRB5
     krb5_context	context;
     krb5_principal	principal;              /*  principal auth as */
     krb5_log_facility*  logf;
+#endif
     int			version;                /*  4 or 5? */
     int			auth_level;		/*  Dont allow cleartext */
     OtpContext		otp_ctx;		/*  OTP context */
