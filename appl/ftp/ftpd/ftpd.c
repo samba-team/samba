@@ -135,6 +135,8 @@ RCSID("$Id$");
 #include <skey.h>
 #endif
 
+#include <otp.h>
+
 void yyparse();
 
 #ifndef LOG_FTP
@@ -282,10 +284,12 @@ main(int argc, char **argv)
 		{
 		    if(strcmp(optarg, "none") == 0)
 			auth_level = 0;
-		    else if(strcmp(optarg, "safe") == 0)
+		    else if(strcmp(optarg, "otp") == 0)
 			auth_level = 1;
-		    else if(strcmp(optarg, "user") == 0)
+		    else if(strcmp(optarg, "safe") == 0)
 			auth_level = 2;
+		    else if(strcmp(optarg, "user") == 0)
+			auth_level = 3;
 		    else
 			warnx("bad value for -a");
 		    break;
@@ -499,6 +503,7 @@ static char curname[10];	/* current USER name */
 static struct skey sk;
 static int permit_passwd;
 #endif /* SKEY */
+OtpContext otp_ctx;
 
 /*
  * USER command.
@@ -516,7 +521,7 @@ user(char *name)
 {
 	char *cp, *shell;
 
-	if(auth_level == 2 && !auth_complete){
+	if(auth_level == 3 && !auth_complete){
 	    reply(530, "No login allowed without authorization.");
 	    return;
 	}
@@ -549,7 +554,7 @@ user(char *name)
 		       "ANONYMOUS FTP LOGIN REFUSED FROM %s", remotehost);
 	    return;
 	}
-	if(auth_level == 1 && !auth_complete){
+	if(auth_level == 2 && !auth_complete){
 	    reply(530, "Only authorized and anonymous login allowed.");
 	    return;
 	}
@@ -576,6 +581,7 @@ user(char *name)
 	if(auth_ok())
 		ct->userok(name);
 	else {
+#if 0
 #ifdef SKEY
 		char ss[256];
 
@@ -592,13 +598,28 @@ user(char *name)
 			reply(331, "Password required for %s.", name);
 			askpasswd = 1;
 		}
+#endif
+		char ss[256];
+
+		if (otp_challenge(&otp_ctx, name, ss, sizeof(ss)) == 0) {
+			reply(331, "Password %s for %s required.",
+			      ss, name);
+			askpasswd = 1;
+		} else if (auth_level == 0) {
+			reply(331, "Password required for %s.", name);
+			askpasswd = 1;
+		} else
+			reply(530,
+			      "Only authorized, anonymous and OTP "
+			      "login allowed.");
+
 	}
 	/*
 	 * Delay before reading passwd after first failed
 	 * attempt to slow down passwd-guessing programs.
 	 */
 	if (login_attempts)
-		sleep((unsigned) login_attempts);
+		sleep(login_attempts);
 }
 
 /*
@@ -729,6 +750,7 @@ void
 pass(char *passwd)
 {
 	int rval;
+
 	/* some clients insists on sending a password */
 	if (logged_in && askpasswd == 0){
 	     reply(230, "Dumpucko!");
@@ -741,10 +763,9 @@ pass(char *passwd)
 	}
 	askpasswd = 0;
 	if (!guest) {		/* "ftp" is only account allowed no password */
-		if (pw == NULL) {
+		if (pw == NULL)
 			rval = 1;	/* failure below */
-			goto skip;
-		}
+#if 0
 #ifdef SKEY
 		if (skeyverify (&sk, passwd) == 0) {
 			rval = 0;
@@ -754,16 +775,19 @@ pass(char *passwd)
 			goto skip;
 		}
 #endif
-		{
+#endif
+		else if (otp_verify_user (&otp_ctx, passwd) == 0) {
+			rval = 0;
+		} else if(auth_level == 0) {
 		    char realm[REALM_SZ];
 		    if((rval = krb_get_lrealm(realm, 1)) == KSUCCESS)
 			rval = krb_verify_user(pw->pw_name, "", realm, 
 					       passwd, 1, NULL);
+		    if (rval != 0 )
+			    rval = unix_verify_user(pw->pw_name, passwd);
 		}
+		memset (passwd, 0, strlen(passwd));
 
-		if (rval != 0)
-		    rval = unix_verify_user(pw->pw_name, passwd);
-skip:
 		/*
 		 * If rval == 1, the user failed the authentication check
 		 * above.  If rval == 0, either Kerberos or local authentication
