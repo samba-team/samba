@@ -24,9 +24,6 @@ case "$1" in
 	echo -n "Starting SMB services: "
 	daemon smbd -D 	
 	daemon nmbd -D 
-	if [ "`grep -i 'winbind uid' /etc/samba/smb.conf | egrep -v [\#\;]`" ]; then
-		daemon winbindd 
-	fi
 	echo
 	touch /var/lock/subsys/smb
 	;;
@@ -40,11 +37,8 @@ case "$1" in
 	for pid in $smbdpids; do
 		kill -TERM $pid
 	done
-	## nmbd and winbindd are ok to kill using killproc()
+	## nmbd is ok to kill using killproc()
 	killproc nmbd -TERM
-	if [ "`ps -ef | grep winbind | grep -v grep`" ]; then
-		killproc winbindd
-	fi
 	rm -f /var/lock/subsys/smb
 	echo ""
 	;;

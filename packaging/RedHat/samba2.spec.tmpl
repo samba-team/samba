@@ -45,6 +45,10 @@ for Shadow passwords and quotas. Do NOT recompile with the
 SHADOW_PWD option enabled
 
 %changelog
+* Thu Jun 6 2002 Gerald Carter <jerry@samba.org>
+  - add separate winbindd init script
+  - build and install libsmbclient
+
 * Sun Jun 2 2002 Gerald Carter <jerry@samba.org>
   - include audit and recycle VFS modules in /usr/lib/samba
 
@@ -178,7 +182,8 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
 	--with-syslog \
 	--with-utmp \
 	--with-sambabook=%{prefix}/share/swat/using_samba \
-	--with-swatdir=%{prefix}/share/swat
+	--with-swatdir=%{prefix}/share/swat \
+	--with-libsmbclient
 make -j${NUMCPU} proto
 make -j${NUMCPU} all nsswitch/libnss_wins.so
 make -j${NUMCPU} debug2html
@@ -210,6 +215,7 @@ mkdir -p $RPM_BUILD_ROOT/var/{log,run}/samba
 mkdir -p $RPM_BUILD_ROOT/var/spool/samba
 mkdir -p $RPM_BUILD_ROOT/lib/security
 mkdir -p $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
+mkdir -p $RPM_BUILD_ROOT%{prefix}/{lib,include}
 
 # Install standard binary files
 for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
@@ -269,6 +275,10 @@ install -m755 examples/VFS/audit.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
 # clean out VFS directory since it will get installed as documentation later
 (cd examples/VFS; make clean)
 
+# libsmbclient
+install -m 644 source/bin/libsmbclient.a $RPM_BUILD_ROOT/usr/lib/
+install -m 644 source/include/libsmbclient.h $RPM_BUILD_ROOT/usr/include/
+
 # Install SWAT helper files
 for i in swat/help/*.html docs/htmldocs/*.html
 do
@@ -287,6 +297,7 @@ done
 install -m644 swat/README $RPM_BUILD_ROOT%{prefix}/share/swat
 install -m755 packaging/RedHat/smbprint $RPM_BUILD_ROOT%{prefix}/bin
 install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
+install -m755 packaging/RedHat/winbind.init $RPM_BUILD_ROOT/etc/rc.d/init.d/winbind
 install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT%{prefix}/sbin/samba
 install -m644 packaging/RedHat/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
 install -m644 packaging/RedHat/smb.conf $RPM_BUILD_ROOT/etc/samba/smb.conf
@@ -301,7 +312,9 @@ rm -rf $RPM_BUILD_ROOT
 
 %post
 /sbin/chkconfig --add smb
+/sbin/chkconfig --add winbind
 /sbin/chkconfig smb off
+/sbin/chkconfig winbind off
 
 echo "Looking for old /etc/smb.conf..."
 if [ -f /etc/smb.conf -a ! -f /etc/samba/smb.conf ]; then
