@@ -153,7 +153,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	*/
 
 	become_root(False); /* to connect to pipe */
-	m = msrpc_use_add(pipe_name, &usr, False);
+	m = msrpc_use_add(pipe_name, getpid(), &usr, False);
 	unbecome_root(False);
 
 	if (m == NULL)

@@ -136,9 +136,10 @@ void msrpc_init_creds(struct msrpc_state *msrpc, const struct user_creds *usr);
 void msrpc_close_socket(struct msrpc_state *msrpc);
 void msrpc_sockopt(struct msrpc_state *msrpc, char *options);
 BOOL msrpc_connect_auth(struct msrpc_state *msrpc,
+				uint32 pid,
 				const char* pipename,
 				const struct user_creds *usr);
-struct msrpc_state *msrpc_initialise(struct msrpc_state *msrpc);
+struct msrpc_state *msrpc_initialise(struct msrpc_state *msrpc, uint32 pid);
 void msrpc_shutdown(struct msrpc_state *msrpc);
 BOOL msrpc_establish_connection(struct msrpc_state *msrpc,
 		const char *pipe_name);
@@ -148,6 +149,7 @@ BOOL msrpc_establish_connection(struct msrpc_state *msrpc,
 void init_msrpc_use(void);
 void free_msrpc_use(void);
 struct msrpc_state *msrpc_use_add(const char* pipe_name,
+				uint32 pid,
 				const struct user_creds *usr_creds,
 				BOOL redir);
 BOOL msrpc_use_del(const char* pipe_name,
@@ -1704,11 +1706,13 @@ BOOL creds_io_cmd(char *desc, CREDS_CMD *r_u, prs_struct *ps, int depth);
 BOOL create_ntuser_creds( prs_struct *ps,
 				const char* name, 
 				uint16 version, uint16 command,
+				uint32 pid,
 				const struct ntuser_creds *ntu,
 				BOOL reuse);
 BOOL create_user_creds( prs_struct *ps,
 				const char* name, 
 				uint16 version, uint16 command,
+				uint32 pid,
 				const struct user_creds *usr);
 
 /*The following definitions come from  rpc_parse/parse_lsa.c  */

@@ -62,6 +62,7 @@ typedef struct ntsec_creds
 typedef struct user_creds
 {
 	BOOL reuse;
+
 	uint32 ptr_ntc;
 	uint32 ptr_uxc;
 	uint32 ptr_nts;
@@ -82,6 +83,7 @@ typedef struct cred_command
 {
 	uint16 version;
 	uint16 command;
+	uint32 pid; /* unique process id */
 
 	fstring name;
 

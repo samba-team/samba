@@ -1832,6 +1832,8 @@ struct msrpc_state
 	BOOL initialised;
 	char *inbuf;
 	char *outbuf;
+
+	uint32 pid;
 };
 #include "client.h"
 #include "rpcclient.h"
