@@ -1095,5 +1095,8 @@ int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #define VA_COPY(dest, src) (dest) = (src)
 #endif
 
-#endif /* _INCLUDES_H */
+#if HAVE_RESOLV_RETRANSRETRY
+#include <resolv.h>
+#endif
 
+#endif /* _INCLUDES_H */
