@@ -167,8 +167,13 @@ void charset_initialise()
   for (i=0; i<=255; i++) {
     char c = (char)i;
     upper_char_map[i] = lower_char_map[i] = c;
-    if (isupper(c)) lower_char_map[i] = tolower(c);
-    if (islower(c)) upper_char_map[i] = toupper(c);
+
+    /* Some systems have buggy isupper/islower for characters
+       above 127. Best not to rely on them. */
+    if(i < 128) {
+      if (isupper(c)) lower_char_map[i] = tolower(c);
+      if (islower(c)) upper_char_map[i] = toupper(c);
+    }
   }
 }
 
