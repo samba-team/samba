@@ -1329,20 +1329,6 @@ void start_login(char *host, int autologin, char *name)
 	 * USER value will be wrong.
 	 */
 	unsetenv("USER");
-	{
-	    FILE *f;
-	    char buf[1024];
-	    if((f = fopen("/etc/issue.net", "r")) || 
-	       (f = fopen("/etc/issue", "r"))){
-		while(fgets(buf, sizeof(buf) - 1, f)){
-		    char *p = buf + strlen(buf) - 1;
-		    if(p[0] == '\n' && (p == buf || p[-1] != '\r'))
-			strcpy(p, "\r\n");
-		    fputs(buf, stdout);
-		}
-		fclose(f);
-	    }
-	}
     }
     closelog();
     /*
