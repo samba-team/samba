@@ -530,8 +530,6 @@ krb5_get_in_cred(krb5_context context,
     if (ret)
 	return ret;
 
-    etype = a.req_body.etype.val[0]; /* XXX */
-
     ret = encode_AS_REQ ((unsigned char*)buf + sizeof(buf) - 1,
 			 sizeof(buf),
 			 &a,
@@ -566,6 +564,7 @@ krb5_get_in_cred(krb5_context context,
     krb5_data_free(&resp);
     
     pa = NULL;
+    etype = rep.part1.enc_part.etype;
     if(rep.part1.padata){
 	int index = 0;
 	pa = krb5_find_padata(rep.part1.padata->val, rep.part1.padata->len, 
