@@ -10,11 +10,8 @@ krb5_build_ap_req (krb5_context context,
 {
   AP_REQ ap;
   Ticket t;
-  des_cblock key;
-  des_key_schedule schedule;
-  u_int32_t crc;
-  unsigned char *p;
   unsigned char buf[1024];
+  int len;
 
   ap.pvno = 5;
   ap.msg_type = krb_ap_req;
@@ -33,19 +30,7 @@ krb5_build_ap_req (krb5_context context,
 
   decode_Ticket(cred->ticket.data, cred->ticket.length, &t);
 
-  ap.ticket.enc_part.etype  = t.enc_part.etype;
-  ap.ticket.enc_part.kvno   = t.enc_part.kvno;
-  ap.ticket.enc_part.cipher = t.enc_part.cipher;
-
-  memcpy(&key, cred->session.contents.data, sizeof(key));
-  des_set_key (&key, schedule);
-
-  /* authenticator */
-
-  des_cbc_encrypt (authenticator.data,
-		   authenticator.data,
-		   authenticator.length,
-		   schedule, &key, DES_ENCRYPT);
+  ap.ticket.enc_part = t.enc_part;
 
   ap.authenticator.etype = ap.ticket.enc_part.etype;
   ap.authenticator.kvno  = NULL;
