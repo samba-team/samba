@@ -642,6 +642,10 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			return NULL;
 		}
 	}
+
+#ifdef WITH_FAKE_KASERVER
+	afs_login(user);
+#endif
 	
 #if CHECK_PATH_ON_TCONX
 	/* win2000 does not check the permissions on the directory

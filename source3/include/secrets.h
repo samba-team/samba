@@ -77,5 +77,22 @@ typedef struct trustdom {
 	DOM_SID sid;
 } TRUSTDOM;
 
+/*
+ * Format of an OpenAFS keyfile
+ */
+
+#define SECRETS_AFS_MAXKEYS 8
+
+struct afs_key {
+	uint32 kvno;
+	char key[8];
+};
+
+struct afs_keyfile {
+	uint32 nkeys;
+	struct afs_key entry[SECRETS_AFS_MAXKEYS];
+};
+
+#define SECRETS_AFS_KEYFILE "SECRETS/AFS_KEYFILE"
 
 #endif /* _SECRETS_H */
