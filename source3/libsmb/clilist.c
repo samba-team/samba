@@ -143,7 +143,7 @@ static int interpret_long_filename(struct cli_state *cli,
 ****************************************************************************/
 
 int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute, 
-		 void (*fn)(file_info *, const char *, void *), void *state)
+		 void (*fn)(const char *, file_info *, const char *, void *), void *state)
 {
 #if 0
 	int max_matches = 1366; /* Match W2k - was 512. */
@@ -322,8 +322,11 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 	}
 
 	for (p=dirlist,i=0;i<total_received;i++) {
+		const char *mnt = cli_cm_get_mntpoint( cli );
+		
 		p += interpret_long_filename(cli,info_level,p,&finfo);
-		fn(&finfo, Mask, state);
+		
+		fn( mnt,&finfo, Mask, state );
 	}
 
 	/* free up the dirlist buffer */
@@ -365,7 +368,7 @@ static int interpret_short_filename(struct cli_state *cli, char *p,file_info *fi
 ****************************************************************************/
 
 int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute, 
-		 void (*fn)(file_info *, const char *, void *), void *state)
+		 void (*fn)(const char *, file_info *, const char *, void *), void *state)
 {
 	char *p;
 	int received = 0;
@@ -472,7 +475,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 	for (p=dirlist,i=0;i<num_received;i++) {
 		file_info finfo;
 		p += interpret_short_filename(cli, p,&finfo);
-		fn(&finfo, Mask, state);
+		fn("\\", &finfo, Mask, state);
 	}
 
 	SAFE_FREE(dirlist);
@@ -485,7 +488,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 ****************************************************************************/
 
 int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute, 
-	     void (*fn)(file_info *, const char *, void *), void *state)
+	     void (*fn)(const char *, file_info *, const char *, void *), void *state)
 {
 	if (cli->protocol <= PROTOCOL_LANMAN1)
 		return cli_list_old(cli, Mask, attribute, fn, state);
