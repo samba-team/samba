@@ -913,7 +913,7 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 			|| (lp_ldap_passwd_sync()!=LDAP_PASSWD_SYNC_ONLY)) {
 
 		if (need_update(sampass, PDB_LMPASSWD)) {
-			uchar *lm_pw =  pdb_get_lanman_passwd(sampass);
+			const uchar *lm_pw =  pdb_get_lanman_passwd(sampass);
 			if (lm_pw) {
 				pdb_sethexpwd(temp, lm_pw,
 					      pdb_get_acct_ctrl(sampass));
@@ -927,7 +927,7 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 			}
 		}
 		if (need_update(sampass, PDB_NTPASSWD)) {
-			uchar *nt_pw =  pdb_get_nt_passwd(sampass);
+			const uchar *nt_pw =  pdb_get_nt_passwd(sampass);
 			if (nt_pw) {
 				pdb_sethexpwd(temp, nt_pw,
 					      pdb_get_acct_ctrl(sampass));
