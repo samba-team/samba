@@ -219,16 +219,16 @@ otp_md5_next (OtpKey key)
 static void
 sha_finito_little_endian (struct sha *m, void *res)
 {
-  u_int32_t tmp[20];
+  unsigned char tmp[20];
   unsigned char *p = res;
-  int i, j;
+  int j;
 
   sha_finito (m, tmp);
-  for (i = 0, j = 0; j < 20; i++, j += 4) {
-    p[j]   = (unsigned char)(tmp[i] & 0xff);
-    p[j+1] = (unsigned char)((tmp[i] >>  8) & 0xff);
-    p[j+2] = (unsigned char)((tmp[i] >> 16) & 0xff);
-    p[j+3] = (unsigned char)((tmp[i] >> 24) & 0xff);
+  for (j = 0; j < 20; j += 4) {
+    p[j]   = tmp[j+3];
+    p[j+1] = tmp[j+2];
+    p[j+2] = tmp[j+1];
+    p[j+3] = tmp[j];
   }
 }
 
