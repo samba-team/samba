@@ -1,3 +1,8 @@
+2001-08-07  Johan Danielsson  <joda@pdc.kth.se>
+
+	* rsh.c: don't try broken auth if rresvport failed; try to give
+	some more informative error messages
+
 2001-07-31  Johan Danielsson  <joda@pdc.kth.se>
 
 	* rshd.8: add an EXAMPLE
