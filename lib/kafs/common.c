@@ -75,17 +75,31 @@ kafs_settoken(const char *cell, uid_t uid, CREDENTIALS *c)
      */
     ct.AuthHandle = c->kvno;
     memcpy (ct.HandShakeKey, c->session, sizeof(c->session));
-    ct.ViceId = uid;	/* is this always valid? */
-    ct.BeginTimestamp = 1 + c->issue_date;
+    ct.ViceId = uid;
+    ct.BeginTimestamp = c->issue_date;
     ct.EndTimestamp = krb_life_to_time(c->issue_date, c->lifetime);
     if(ct.EndTimestamp < time(NULL))
 	return 0; /* don't store tokens that has expired (and possibly
 		     overwriting valid tokens)*/
 
 #define ODD(x) ((x) & 1)
-    /* If we don't know the numerical ID lifetime should be even? */
-    if (uid == 0 && ODD(ct.EndTimestamp - ct.BeginTimestamp))
-	ct.BeginTimestamp--;
+    /* According to Transarc conventions ViceId is valid iff
+     * (EndTimestamp - BeginTimestamp) is odd. By decrementing EndTime
+     * the transformations:
+     *
+     * (issue_date, life) -> (StartTime, EndTime) -> (issue_date, life)
+     * preserves the original values.
+     */
+    if (uid != 0)		/* valid ViceId */
+      {
+	if (!ODD(ct.EndTimestamp - ct.BeginTimestamp))
+	  ct.EndTimestamp--;
+      }
+    else			/* not valid ViceId */
+      {
+	if (ODD(ct.EndTimestamp - ct.BeginTimestamp))
+	  ct.EndTimestamp--;
+      }
 
     t = buf;
     /*
