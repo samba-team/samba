@@ -1120,6 +1120,24 @@ int strcmp_safe(const char *s1, const char *s2)
 
 
 /*******************************************************************
+return the number of bytes occupied by a buffer in ASCII format
+the result includes the null termination
+limited by 'n' bytes
+********************************************************************/
+size_t ascii_len_n(const char *src, size_t n)
+{
+	size_t len;
+
+	len = strnlen(src, n);
+	if (len+1 <= n) {
+		len += 1;
+	}
+
+	return len;
+}
+
+
+/*******************************************************************
  Return a string representing a CIFS attribute for a file.
 ********************************************************************/
 char *attrib_string(TALLOC_CTX *mem_ctx, uint32_t attrib)
