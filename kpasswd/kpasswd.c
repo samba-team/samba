@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -72,16 +72,14 @@ main (int argc, char **argv)
     krb5_data result_code_string, result_string;
     char pwbuf[BUFSIZ];
 
-    set_progname (argv[0]);
+    optind = krb5_program_setup(&context, argc, argv,
+				args, sizeof(args) / sizeof(args[0]), NULL);
 
-    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
-	usage(1);
-    
     if (help_flag)
 	usage (0);
 
     if(version_flag){
-	printf("%s (%s-%s)\n", __progname, PACKAGE, VERSION);
+	print_version (NULL);
 	exit(0);
     }
 
