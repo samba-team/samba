@@ -525,21 +525,19 @@ BOOL lsa_io_q_enum_trust_dom(char *desc, LSA_Q_ENUM_TRUST_DOM *q_e,
 ********************************************************************/
 
 void init_r_enum_trust_dom(TALLOC_CTX *ctx, LSA_R_ENUM_TRUST_DOM *r_e, uint32 enum_context,
-			   uint32 requested_num_domains, uint32 num_domains, TRUSTDOM **td)
+			   uint32 req_num_domains, uint32 num_domains, TRUSTDOM **td)
 {
 	int i;
 
         DEBUG(5, ("init_r_enum_trust_dom\n"));
 	
         r_e->enum_context = enum_context;
-	r_e->num_domains = 0;
+	r_e->num_domains = num_domains;
 	r_e->ptr_enum_domains = 0;
-	r_e->num_domains2 = 0;
-
-	if (num_domains == 0) {
-		r_e->status = NT_STATUS_NO_MORE_ENTRIES;
-
-	} else {
+	r_e->num_domains2 = num_domains;
+	
+	if (num_domains != 0) {
+	
 		/* 
 		 * allocating empty arrays of unicode headers, strings
 		 * and sids of enumerated trusted domains
@@ -558,10 +556,7 @@ void init_r_enum_trust_dom(TALLOC_CTX *ctx, LSA_R_ENUM_TRUST_DOM *r_e, uint32 en
 			r_e->status = NT_STATUS_NO_MEMORY;
 			return;
 		}
-		
-		r_e->num_domains = num_domains;
-		r_e->num_domains2 = num_domains;
-		
+				
 		for (i = 0; i < num_domains; i++) {
 			
 			/* don't know what actually is this for */
@@ -573,12 +568,6 @@ void init_r_enum_trust_dom(TALLOC_CTX *ctx, LSA_R_ENUM_TRUST_DOM *r_e, uint32 en
 			init_unistr2_w(ctx, &r_e->uni_domain_name[i], (td[i])->name);
 			
 		};
-
-		if (num_domains < requested_num_domains) {
-			r_e->status = NT_STATUS_NO_MORE_ENTRIES;
-		} else {
-			r_e->status = NT_STATUS_OK;
-		}
 	}
 
 }

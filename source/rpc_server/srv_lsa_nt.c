@@ -3,8 +3,9 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997.
- *  Copyright (C) Jeremy Allison                    2001.
+ *  Copyright (C) Paul Ashton                       1997,
+ *  Copyright (C) Jeremy Allison                    2001,
+ *  Copyright (C) Rafal Szczesniak                  2002.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -423,8 +424,12 @@ NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_E
 {
 	struct lsa_info *info;
 	uint32 enum_context = q_u->enum_context;
-	/* it's set to 10 as a "our" preferred length */
-	uint32 max_num_domains = q_u->preferred_len < 10 ? q_u->preferred_len : 10;
+
+	/*
+	 * preferred length is set to 5 as a "our" preferred length
+	 * nt sets this parameter to 2
+	 */
+	uint32 max_num_domains = q_u->preferred_len < 5 ? q_u->preferred_len : 10;
 	TRUSTDOM **trust_doms;
 	uint32 num_domains;
 	NTSTATUS nt_status;
@@ -436,9 +441,14 @@ NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_E
 	if (!(info->access & POLICY_VIEW_LOCAL_INFORMATION))
 		return NT_STATUS_ACCESS_DENIED;
 
-	nt_status = secrets_get_trusted_domains(p->mem_ctx, enum_context, max_num_domains, &num_domains, &trust_doms);
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	nt_status = secrets_get_trusted_domains(p->mem_ctx, &enum_context, max_num_domains, &num_domains, &trust_doms);
+
+	if (!NT_STATUS_IS_OK(nt_status) &&
+	    !NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES) &&
+	    !NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_MORE_ENTRIES)) {
 		return nt_status;
+	} else {
+		r_u->status = nt_status;
 	}
 
 	/* set up the lsa_enum_trust_dom response */

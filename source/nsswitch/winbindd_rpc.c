@@ -558,6 +558,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	CLI_POLICY_HND *hnd;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 enum_ctx = 0;
+	uint32 pref_num_domains = 5;
 
 	*num_domains = 0;
 
@@ -565,8 +566,8 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 		goto done;
 
 	result = cli_lsa_enum_trust_dom(hnd->cli, mem_ctx,
-					&hnd->pol, &enum_ctx, num_domains, 
-					names, dom_sids);
+					&hnd->pol, &enum_ctx, &pref_num_domains,
+					num_domains, names, dom_sids);
 done:
 	return result;
 }
