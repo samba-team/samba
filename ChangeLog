@@ -1,3 +1,23 @@
+Tue Oct 28 00:11:22 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* kdc/kerberos5.c: Fix user-to-user authentication.
+
+	* lib/krb5/get_cred.c: Some restructuring of krb5_get_credentials:
+ 	  - add a kdc-options argument to krb5_get_credentials, and rename
+	    it to krb5_get_credentials_with_flags
+	  - honour the KRB5_GC_CACHED, and KRB5_GC_USER_USER options
+	  - add some more user-to-user glue
+
+	* lib/krb5/rd_req.c: Move parts of krb5_verify_ap_req into a new
+ 	function, krb5_decrypt_ticket, so it is easier to decrypt and
+ 	check a ticket without having an ap-req.
+
+	* lib/krb5/krb5.h: Add KRB5_GC_CACHED, and KRB5_GC_USER_USER
+ 	flags.
+
+	* lib/krb5/crc.c (crc_init_table): Check if table is already
+ 	inited.
+
 Sun Oct 26 04:51:02 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/asn1/der_get.c (der_get_length, fix_dce): Special-case
