@@ -244,6 +244,12 @@
 #include <shadow.h>
 #endif
 
+#ifdef HAVE_GETPWANAM
+#include <sys/label.h>
+#include <sys/audit.h>
+#include <pwdadj.h>
+#endif
+
 #ifdef HAVE_SYS_SECURITY_H
 #include <sys/security.h>
 #include <prot.h>
