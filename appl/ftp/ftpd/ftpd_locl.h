@@ -63,6 +63,9 @@
 #if defined(HAVE_SYS_IOCTL_H) && SunOS != 40
 #include <sys/ioctl.h>
 #endif
+#ifdef HAVE_SYS_IOCCOM_H
+#include <sys/ioccom.h>
+#endif
 #ifdef TIME_WITH_SYS_TIME
 #include <sys/time.h>
 #include <time.h>
