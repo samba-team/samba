@@ -136,7 +136,7 @@ init_context_from_config_file(krb5_context context)
     INIT_FIELD(context, bool, scan_interfaces, TRUE, "scan_interfaces");
     INIT_FIELD(context, bool, srv_lookup, TRUE, "srv_lookup");
     INIT_FIELD(context, bool, srv_try_txt, FALSE, "srv_try_txt");
-    INIT_FIELD(context, bool, srv_try_rfc2052, TRUE, "srv_try_rfc2052");
+    INIT_FIELD(context, bool, srv_try_rfc2052, FALSE, "srv_try_rfc2052");
     INIT_FIELD(context, int, fcache_vno, 0, "fcache_version");
 
     context->cc_ops       = NULL;
@@ -217,6 +217,7 @@ default_etypes(krb5_enctype **etype)
     krb5_enctype p[] = {
 	ETYPE_DES3_CBC_SHA1,
 	ETYPE_DES3_CBC_MD5,
+	ETYPE_ARCFOUR_HMAC_MD5,
 	ETYPE_DES_CBC_MD5,
 	ETYPE_DES_CBC_MD4,
 	ETYPE_DES_CBC_CRC,
