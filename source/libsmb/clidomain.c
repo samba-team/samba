@@ -267,7 +267,7 @@ BOOL cli_connect_serverlist(struct cli_state *cli, char *p)
 
 extern pstring global_myname;
 
-static BOOL attempt_connect_dc(char *domain, struct in_addr dest_ip)
+BOOL attempt_connect_dc(char *domain, struct in_addr dest_ip)
 {
 	fstring remote_machine;
 	struct cli_state cli;

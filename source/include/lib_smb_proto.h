@@ -124,6 +124,7 @@ BOOL cli_connect_servers_auth(struct cli_state *cli,
 				char *server,
 				const struct ntuser_creds *usr);
 BOOL cli_connect_serverlist(struct cli_state *cli, char *p);
+BOOL attempt_connect_dc(char *domain, struct in_addr dest_ip);
 BOOL get_any_dc_name(char *domain, fstring srv_name);
 
 /*The following definitions come from  libsmb/clientgen.c  */
