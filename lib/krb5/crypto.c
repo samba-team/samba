@@ -405,7 +405,7 @@ static krb5_error_code
 ARCFOUR_string_to_key(krb5_context context,
 		  krb5_enctype enctype,
 		  krb5_data password,
-		  krb5_data salt,
+		  krb5_salt salt,
 		  krb5_keyblock *key)
 {
     char *s, *p;
@@ -413,7 +413,7 @@ ARCFOUR_string_to_key(krb5_context context,
     int i;
     struct md4 m;
 
-    len = 2 * (password.length + salt.length);
+    len = 2 * (password.length + salt.saltvalue.length);
     s = malloc (len);
     if (len != 0 && s == NULL)
 	return ENOMEM;
@@ -421,8 +421,8 @@ ARCFOUR_string_to_key(krb5_context context,
 	*p++ = ((char *)password.data)[i];
 	*p++ = 0;
     }
-    for (i = 0; i < salt.length; ++i) {
-	*p++ = ((char *)salt.data)[i];
+    for (i = 0; i < salt.saltvalue.length; ++i) {
+	*p++ = ((char *)salt.saltvalue.data)[i];
 	*p++ = 0;
     }
     md4_init(&m);
