@@ -76,7 +76,7 @@ static int CopyExpanded(connection_struct *conn,
 	StrnCpy(buf,src,sizeof(buf)/2);
 	pstring_sub(buf,"%S",lp_servicename(snum));
 	standard_sub_conn(conn,buf);
-	StrnCpy(*dst,buf,*n);
+	StrnCpy(*dst,buf,*n-1);
 	l = strlen(*dst) + 1;
 	(*dst) += l;
 	(*n) -= l;
