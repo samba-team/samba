@@ -519,6 +519,8 @@ it() link(bf(domain admin users))(domainadminusers)
 
 it() link(bf(domain controller))(domaincontroller)
 
+it() link(bf(domain group map))(domaingroupmap)
+
 it() link(bf(domain groups))(domaingroups)
 
 it() link(bf(domain guest group))(domainguestgroup)
@@ -560,6 +562,8 @@ it() link(bf(lm announce))(lmannounce)
 it() link(bf(lm interval))(lminterval)
 
 it() link(bf(load printers))(loadprinters)
+
+it() link(bf(local group map))(localgroupmap)
 
 it() link(bf(local master))(localmaster)
 
@@ -1772,7 +1776,7 @@ label(domainadmingroup)
 bf(domain admin group (G))
 
 This is an bf(EXPERIMENTAL) parameter that is part of the unfinished
-Samba NT Domain Controller Code. It may be removed in a later release.
+Samba NT Domain Controller Code.  It has been removed as of November 98.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list bf(Samba-ntdom) available by sending email to
@@ -1782,7 +1786,7 @@ label(domainadminusers)
 dit(bf(domain admin users (G)))
 
 This is an bf(EXPERIMENTAL) parameter that is part of the unfinished
-Samba NT Domain Controller Code. It may be removed in a later release.
+Samba NT Domain Controller Code. It has been removed as of November 98.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list bf(Samba-ntdom) available by sending email to
@@ -1795,11 +1799,72 @@ This is a bf(DEPRECATED) parameter. It is currently not used within
 the Samba source and should be removed from all current smb.conf
 files. It is left behind for compatibility reasons.
 
+label(domaingroupmap)
+dit(bf(domain group map (G)))
+
+This option allows you to specify a file containing unique mappings
+of individual NT Domain Group names (in any domain) to UNIX group
+names.  This allows NT domain groups to be presented correctly to
+NT users, despite the lack of native support for the NT Security model
+(based on VAX/VMS) in UNIX.  The reader is advised to become familiar
+with the NT Domain system and its administration.
+
+This option is used in conjunction with link(bf('local group map'))(localgroupmap)
+and link(bf('username map'))(usernamemap).  The use of these three
+options is trivial and often unnecessary in the case where Samba is
+not expected to interact with any other SAM databases (whether local
+workstations or Domain Controllers).
+
+
+The map file is parsed line by line.  If any line begins with a tt('#')
+or a tt(';') then it is ignored.  Each line should contain a single UNIX
+group name on the left then an NT Domain Group name on the right.
+The line can be either of the form:
+
+tt(  UNIXgroupname	\\DOMAIN_NAME\\DomainGroupName )
+
+or:
+
+tt(  UNIXgroupname	DomainGroupName )
+
+In the case where Samba is either an bf(EXPERIMENTAL) Domain Controller
+or it is a member of a domain using link(bf("security = domain"))(security),
+the latter format can be used: the default Domain name is the Samba Server's
+Domain name, specified by link(bf("workgroup = MYGROUP"))(workgroup).
+
+Any UNIX groups that are em(NOT) specified in this map file are assumed
+to be Domain Groups.
+
+In this case, when Samba is an bf(EXPERIMENTAL) Domain Controller, Samba
+will present em(ALL) such unspecified UNIX groups as its own NT Domain
+Groups, with the same name.
+
+In the case where Samba is member of a domain using
+link(bf("security = domain"))(security), Samba will check the UNIX name with
+its Domain Controller (see link(bf("password server"))(passwordserver))
+as if it was an NT Domain Group.  If the UNIX group is not an NT Group,
+such unspecified (unmapped) UNIX groups which also are not NT Domain
+Groups are treated as Local Groups in the Samba Server's local SAM database.
+NT Administrators will recognise these as Workstation Local Groups,
+which are managed by running bf(USRMGR.EXE) and selecting a remote
+Domain named "\\WORKSTATION_NAME", or by running bf(MUSRMGR.EXE) on
+a local Workstation.
+
+Note that adding an entry to map an arbitrary NT group in an arbitrary
+Domain to an arbitrary UNIX group requires the following: that the UNIX
+group exists on the UNIX server; that the NT Domain Group exists in the
+specified NT Domain; that the UNIX Server knows about the specified Domain; 
+that all the UNIX users (who are expecting to access the Samba
+Server as the correct NT user and with the correct NT group permissions)
+in the UNIX group be mapped to the correct NT Domain users in the specified
+NT Domain using link(bf('username map'))(usernamemap).
+
+
 label(domaingroups)
 dit(bf(domain groups (G)))
 
 This is an bf(EXPERIMENTAL) parameter that is part of the unfinished
-Samba NT Domain Controller Code. It may be removed in a later release.
+Samba NT Domain Controller Code. It has been removed as of November 98.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list bf(Samba-ntdom) available by sending email to
@@ -1809,7 +1874,7 @@ label(domainguestgroup)
 dit(bf(domain guest group (G)))
 
 This is an bf(EXPERIMENTAL) parameter that is part of the unfinished
-Samba NT Domain Controller Code. It may be removed in a later release.
+Samba NT Domain Controller Code. It has been removed as of November 98.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list bf(Samba-ntdom) available by sending email to
@@ -1819,7 +1884,7 @@ label(domainguestusers)
 dit(bf(domain guest users (G)))
 
 This is an bf(EXPERIMENTAL) parameter that is part of the unfinished
-Samba NT Domain Controller Code. It may be removed in a later release.
+Samba NT Domain Controller Code. It has been removed as of November 98.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list bf(Samba-ntdom) available by sending email to
@@ -2573,6 +2638,67 @@ tt(	load printers = yes)
 
   bf(Example:)
 tt(	load printers = no)
+
+label(localgroupmap)
+dit(bf(local group map (G)))
+
+This option allows you to specify a file containing unique mappings
+of individual NT Local Group names (in any domain) to UNIX group
+names.  This allows NT Local groups (aliases) to be presented correctly to
+NT users, despite the lack of native support for the NT Security model
+(based on VAX/VMS) in UNIX.  The reader is advised to become familiar
+with the NT Domain system and its administration.
+
+This option is used in conjunction with link(bf('domain group map'))(domaingroupmap)
+and link(bf('username map'))(usernamemap).  The use of these three
+options is trivial and often unnecessary in the case where Samba
+is not expected to interact with any other SAM databases (whether local
+workstations or Domain Controllers).
+
+
+The map file is parsed line by line.  If any line begins with a tt('#')
+or a tt(';') then it is ignored.  Each line should contain a single UNIX
+group name on the left then an NT Local Group name on the right.
+The line can be either of the form:
+
+tt(  UNIXgroupname	\\DOMAIN_NAME\\LocalGroupName )
+
+or:
+
+tt(  UNIXgroupname	LocalGroupName )
+
+In the case where Samba is either an bf(EXPERIMENTAL) Domain Controller
+or it is a member of a domain using link(bf("security = domain"))(security),
+the latter format can be used: the default Domain name is the Samba Server's
+Domain name, specified by link(bf("workgroup = MYGROUP"))(workgroup).
+
+Any UNIX groups that are em(NOT) specified in this map file are treated
+as Local Groups depending on the role of the Samba Server.
+
+When Samba is an bf(EXPERIMENTAL) Domain Controller, Samba
+will present em(ALL) unspecified UNIX groups as its own NT Domain
+Groups, with the same name, and em(NOT) as Local Groups.
+
+In the case where Samba is member of a domain using
+link(bf("security = domain"))(security), Samba will check the UNIX name with
+its Domain Controller (see link(bf("password server"))(passwordserver))
+as if it was an NT Domain Group.  If the UNIX group is not an NT Group,
+such unspecified (unmapped) UNIX groups which also are not NT Domain
+Groups are treated as Local Groups in the Samba Server's local SAM database.
+NT Administrators will recognise these as Workstation Local Groups,
+which are managed by running bf(USRMGR.EXE) and selecting a remote
+Domain named "\\WORKSTATION_NAME", or by running bf(MUSRMGR.EXE) on
+a local Workstation.
+
+Note that adding an entry to map an arbitrary NT group in an arbitrary
+Domain to an arbitrary UNIX group requires the following: that the UNIX
+group exists on the UNIX server; that the NT Local Group exists in the
+specified NT Domain; that the UNIX Server knows about the specified Domain; 
+that all the UNIX users (who are expecting to access the Samba
+Server as the correct NT user and with the correct NT group permissions)
+in the UNIX group be mapped to the correct NT Domain users in the specified
+NT Domain using link(bf('username map'))(usernamemap).
+
 
 label(localmaster)
 dit(bf(local master (G)))
@@ -5967,10 +6093,10 @@ tt(	wins proxy = no)
 label(winsserver)
 dit(bf(wins server (G)))
 
-This specifies the DNS name (or IP address) of the WINS server that
-url(bf(nmbd))(nmbd.8.html) should register with. If you have a WINS
-server on your network then you should set this to the WINS servers
-name.
+This specifies the IP address (or DNS name: IP address for preference)
+of the WINS server that url(bf(nmbd))(nmbd.8.html) should register with.
+If you have a WINS server on your network then you should set this to
+the WINS server's IP.
 
 You should point this at your WINS server if you have a
 multi-subnetted network.
@@ -6018,6 +6144,7 @@ label(writable)
 dit(bf(writable (S)))
 
 Synonym for link(bf("writeable"))(writeable) for people who can't spell :-).
+Pronounced "ritter-bull".
 
 label(writelist)
 dit(bf(write list (S)))
