@@ -1,6 +1,6 @@
 /*
- * 'Gums' password backend for samba
- * Copyright (C) Simo Sorce 2004
+ * GUMS password backend for samba
+ * Copyright (C) Simo Sorce 2003-2004
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
@@ -236,7 +236,7 @@ static NTSTATUS gums_getsampwnam (struct pdb_methods *methods, SAM_ACCOUNT *acco
 	if (!account || !name)
 		return NT_STATUS_INVALID_PARAMETER;
 
-	if (!NT_STATUS_IS_OK(ret = ggwd->fns->get_object_from_name(&go, name, GUMS_OBJ_NORMAL_USER))) {
+	if (!NT_STATUS_IS_OK(ret = ggwd->fns->get_object_from_name(&go, global_myname(), name, GUMS_OBJ_NORMAL_USER))) {
 		DEBUG(10, ("gums_getsampwnam: unable to find account with name %s", name));
 		return ret;
 	}
