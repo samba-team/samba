@@ -188,6 +188,7 @@ static int smb_pam_passchange_conv(int num_msg,
 	for (replies = 0; replies < num_msg; replies++) {
 		switch (msg[replies]->msg_style) {
 		case PAM_PROMPT_ECHO_ON:
+			DEBUG(10,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_ON: Replied: %s\n", msg[replies]->msg));
 			reply[replies].resp_retcode = PAM_SUCCESS;
 			reply[replies].resp = COPY_STRING(udp->PAM_username);
 			/* PAM frees resp */
@@ -195,7 +196,7 @@ static int smb_pam_passchange_conv(int num_msg,
 
 		case PAM_PROMPT_ECHO_OFF:
 			reply[replies].resp_retcode = PAM_SUCCESS;
-			DEBUG(10,("smb_pam_passchange_conv: PAM Replied: %s\n", msg[replies]->msg));
+			DEBUG(10,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_OFF: Replied: %s\n", msg[replies]->msg));
 			if (strncmp(currentpw_prompt, msg[replies]->msg, strlen(currentpw_prompt)) == 0) {
 				reply[replies].resp = COPY_STRING(udp->PAM_password);
 			} else if (strncmp(newpw_prompt, msg[replies]->msg, strlen(newpw_prompt)) == 0) {
@@ -206,6 +207,9 @@ static int smb_pam_passchange_conv(int num_msg,
 				DEBUG(3,("smb_pam_passchange_conv: Could not find reply for PAM prompt: %s\n",msg[replies]->msg));
 				DEBUG(5,("smb_pam_passchange_conv: Prompts available:\n CurrentPW: \"%s\"\n NewPW: \"%s\"\n \
 RepeatPW: \"%s\"\n",currentpw_prompt,newpw_prompt,repeatpw_prompt));
+				free(reply);
+				reply = NULL;
+				return PAM_CONV_ERR;
 			}
 			/* PAM frees resp */
 			break;
