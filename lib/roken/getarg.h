@@ -46,7 +46,7 @@
 struct getargs{
     const char *long_name;
     char short_name;
-    enum { arg_integer, arg_string, arg_flag, arg_negative_flag } type;
+    enum { arg_integer, arg_string, arg_flag, arg_negative_flag, arg_strings } type;
     void *value;
     const char *help;
     const char *arg_help;
@@ -57,6 +57,11 @@ enum {
     ARG_ERR_BAD_ARG,
     ARG_ERR_NO_ARG
 };
+
+typedef struct getarg_strings {
+    int num_strings;
+    char **strings;
+} getarg_strings;
 
 int getarg(struct getargs *args, size_t num_args, 
 	   int argc, char **argv, int *optind);

@@ -91,12 +91,16 @@ arg_printusage (struct getargs *args,
 	    len += 2 + strlen(args[i].long_name);
 	    len += print_arg (1, &args[i]);
 	    putc (']', stderr);
+	    if(args[i].type == arg_strings)
+		fprintf (stderr, "...");
 	}
 	if (args[i].short_name) {
 	    len += 2;
 	    fprintf (stderr, " [-%c", args[i].short_name);
 	    len += print_arg (0, &args[i]);
 	    putc (']', stderr);
+	    if(args[i].type == arg_strings)
+		fprintf (stderr, "...");
 	}
 	if (args[i].long_name && args[i].short_name)
 	    len += 4;
@@ -134,6 +138,14 @@ arg_printusage (struct getargs *args,
 	    fprintf (stderr, "%s\n", args[i].help);
 	}
     }
+}
+
+static void
+add_string(getarg_strings *s, char *value)
+{
+    s->strings = realloc(s->strings, (s->num_strings + 1) * sizeof(*s->strings));
+    s->strings[s->num_strings] = value;
+    s->num_strings++;
 }
 
 static int
@@ -204,6 +216,11 @@ arg_match_long(struct getargs *args, size_t num_args,
     case arg_string:
     {
 	*(char**)current->value = optarg + 1;
+	return 0;
+    }
+    case arg_strings:
+    {
+	add_string((getarg_strings*)current->value, optarg + 1);
 	return 0;
     }
     case arg_flag:
@@ -278,6 +295,9 @@ getarg(struct getargs *args, size_t num_args,
 			    goto out;
 			}else if(args[k].type == arg_string){
 			    *(char**)args[k].value = optarg;
+			    goto out;
+			}else if(args[k].type == arg_strings){
+			    add_string((getarg_strings*)args[k].value, optarg);
 			    goto out;
 			}
 			return ARG_ERR_BAD_ARG;
