@@ -514,7 +514,6 @@ EOF
 #/usr/bin/make_printerdef
 /usr/bin/addtosmbpass
 /usr/bin/convert_smbpasswd
-/usr/bin/smbgroupedit
 /usr/bin/ntlm_auth
 /usr/bin/profiles
 /usr/bin/smbfilter
@@ -531,7 +530,6 @@ EOF
 %doc %{_mandir}/man7/samba.7.gz
 %doc %{_mandir}/man8/nmbd.8.gz
 %doc %{_mandir}/man8/smbd.8.gz
-%doc %{_mandir}/man8/smbgroupedit.8.gz
 %doc %{_mandir}/man8/smbpasswd.8.gz
 %doc %{_mandir}/man8/swat.8.gz
 /usr/sbin/nmbd
