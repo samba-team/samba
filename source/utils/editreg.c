@@ -2653,13 +2653,85 @@ unsigned int sec_desc_size(SEC_DESC *sd)
   return size;
 }
 
-/*
- * Flatten and store the Sec Desc 
- */
-unsigned int nt_store_sec_desc(REGF *regf, SEC_DESC *sd, char *locn)
+int nt_store_SID(REGF *regf, DOM_SID *sid, char *locn)
 {
 
   return 0;
+  
+}
+
+int nt_store_acl(REGF *regf, ACL *acl, char *locn)
+{
+
+  return 0;
+}
+
+/*
+ * Flatten and store the Sec Desc 
+ * Windows lays out the DACL first, but since there is no SACL, it might be
+ * that first, then the owner, then the group SID. So, we do it that way
+ * too.
+ */
+unsigned int nt_store_sec_desc(REGF *regf, SEC_DESC *sd, char *locn)
+{
+  REG_SEC_DESC *rsd = (REG_SEC_DESC *)locn;
+  unsigned int size = 0, off = 0;
+
+  if (!regf || !sd || !locn) return 0;
+
+  /* 
+   * Now, fill in the first two fields, then lay out the various fields
+   * as needed
+   */
+
+  rsd->rev = 0x01;
+  /* Self relative, DACL pres, owner and group not defaulted */
+  rsd->type = 0x8004;  
+
+  off = 4 * sizeof(DWORD) + 4;
+
+  if (sd->sacl){
+    size = nt_store_acl(regf, sd->sacl, (char *)(locn + off));
+    rsd->sacl_off = off;
+  }
+  else
+    rsd->sacl_off = 0;
+
+  off += size;
+
+  if (sd->dacl) {
+    rsd->dacl_off = off;
+    size = nt_store_acl(regf, sd->dacl, (char *)(locn + off));
+  }
+  else {
+    rsd->dacl_off = 0;
+  }
+
+  off += size;
+
+  /* Now the owner and group SIDs */
+
+  if (sd->owner) {
+    rsd->owner_off = off;
+    size = nt_store_SID(regf, sd->owner, (char *)(locn + off));
+  }
+  else {
+    rsd->owner_off = 0;
+  }
+
+  off += size;
+
+  if (sd->group) {
+    rsd->group_off = off;
+    size = nt_store_SID(regf, sd->group, (char *)(locn + off));
+  }
+  else {
+    rsd->group_off = 0;
+  }
+
+  off += size;
+
+  return size;
 }
 
 /*
@@ -2706,7 +2778,10 @@ unsigned int nt_store_security(REGF *regf, KEY_SEC_DESC *sec)
 
   /* Now, lay out the sec_desc */
 
-  return 0;
+  if (!nt_store_sec_desc(regf, sec->sec_desc, (char *)&sk_hdr->sec_desc))
+    return 0;
+
+  return sk_off;
 
 }
 
