@@ -19,8 +19,6 @@ INSTALLCMD=@INSTALL@
 VPATH=@srcdir@
 srcdir=@srcdir@
 SHELL=/bin/sh
-AUTOCONF=autoconf
-AUTOHEADER=autoheader
 
 .SUFFIXES:
 .SUFFIXES: .c .o
@@ -303,7 +301,7 @@ uninstallcp:
 	@$(SHELL) $(srcdir)/script/uninstallcp.sh $(CODEPAGEDIR) $(CODEPAGELIST)
 
 clean: 
-	-rm -f core */*~ *~ */*.o
+	-rm -f core */*~ *~ */*.o config.cache
 
 proto:
 	@echo rebuilding include/proto.h
@@ -330,11 +328,9 @@ finddead:
 	nm */*.o |grep 'T ' | awk '{print $$3}' | sort -u > nmfns.txt
 	comm -13 nmused.txt nmfns.txt 
 
-# when configure.in is updated, reconfigure
-$(srcdir)/configure: $(srcdir)/configure.in
-	cd $(srcdir) && $(AUTOCONF)
 config.status: $(srcdir)/configure
 	$(SHELL) ./config.status --recheck
+
 Makefile: $(srcdir)/Makefile.in config.status
 	CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
 
@@ -342,11 +338,13 @@ Makefile: $(srcdir)/Makefile.in config.status
 # only when explicitly requested
 include/config.h: include/stamp-h
 	@:
+
 include/stamp-h: $(srcdir)/include/config.h.in config.status
 	CONFIG_FILES= CONFIG_HEADERS=include/config.h $(SHELL) ./config.status
 	@ls -l config.status $(srcdir)/include/config.h.in > include/stamp-h
+
 $(srcdir)/include/config.h.in: $(srcdir)/include/stamp-h.in
 	@:
+
 $(srcdir)/include/stamp-h.in: $(srcdir)/acconfig.h $(srcdir)/configure.in
-	cd $(srcdir) && $(AUTOHEADER)
 	@cd $(srcdir) && ls -l acconfig.h configure.in > include/stamp-h.in
