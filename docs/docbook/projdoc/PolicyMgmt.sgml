@@ -236,7 +236,7 @@ executable name poledit.exe), GPOs are created and managed using a Microsoft Man
 	Now left click on the Edit tab to commence the steps needed to create the GPO.
 	</para>
 	</listitem>
-</intemizedlist>
+</itemizedlist>
 
 <para>
 All policy configuration options are controlled through the use of policy administrative
