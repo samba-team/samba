@@ -429,7 +429,7 @@ commands[] =
 	{
 		"samuser",
 		cmd_sam_query_user,
-		"<username> SAM User Query (experimental!)",
+		"<username> [-g] [-u] [-a] SAM User Query (experimental!)",
 		{COMPL_SAMUSR, COMPL_NONE}
 	},
 	{

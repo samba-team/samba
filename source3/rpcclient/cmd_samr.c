@@ -1516,6 +1516,7 @@ void cmd_sam_query_user(struct client_info *info, int argc, char *argv[])
 	DOM_SID sid;
 	BOOL res = True;
 	BOOL res1 = True;
+	int opt;
 
 	char *user_name;
 	char *names[1];
@@ -1524,6 +1525,10 @@ void cmd_sam_query_user(struct client_info *info, int argc, char *argv[])
 	uint32 type[MAX_LOOKUP_SIDS];
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
+
+	BOOL request_user_info  = False;
+	BOOL request_group_info = False;
+	BOOL request_alias_info = False;
 
 	fstrcpy(domain, info->dom.level5_dom);
 	sid_copy(&sid, &info->dom.level5_sid);
@@ -1536,11 +1541,36 @@ void cmd_sam_query_user(struct client_info *info, int argc, char *argv[])
 
 	if (argc < 2)
 	{
-		report(out_hnd, "samuser <name>\n");
+		report(out_hnd, "samuser <name> [-u] [-g] [-a]\n");
 		return;
 	}
 
 	user_name = argv[1];
+
+	argc--;
+	argv++;
+
+	while ((opt = getopt(argc, argv, "uga")) != EOF)
+	{
+		switch (opt)
+		{
+			case 'u':
+			{
+				request_user_info  = True;
+				break;
+			}
+			case 'g':
+			{
+				request_group_info = True;
+				break;
+			}
+			case 'a':
+			{
+				request_alias_info = True;
+				break;
+			}
+		}
+	}
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
@@ -1569,14 +1599,21 @@ void cmd_sam_query_user(struct client_info *info, int argc, char *argv[])
 	/* send user info query */
 	if (res1 && num_rids == 1)
 	{
-		res1 = req_user_info( &pol_dom,
+		msrpc_sam_user( &pol_dom, NULL,
 				domain,
-				&sid,
-				rid[0],
-				sam_display_user_info);
+				&sid, NULL,
+				rid[0], names[0],
+	            sam_display_user,
+	            request_user_info  ? sam_display_user_info     : NULL,
+	            request_group_info ? sam_display_group_members : NULL,
+	            request_alias_info ? sam_display_group_members : NULL);
 	}
-	res = res ? samr_close( &sam_pol) : False;
+	else
+	{
+		res1 = False;
+	}
 
+	res = res ? samr_close( &sam_pol) : False;
 	res = res ? samr_close( &pol_dom) : False;
 
 	if (res1)
