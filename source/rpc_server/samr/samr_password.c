@@ -381,7 +381,7 @@ failed:
 		return status;
 	}
 
-	dominfo->min_pwd_len         = samdb_result_uint (res[0], "minPwdLength", 0);
+	dominfo->min_password_len    = samdb_result_uint (res[0], "minPwdLength", 0);
 	dominfo->password_properties = samdb_result_uint (res[0], "pwdProperties", 0);
 	dominfo->password_history    = samdb_result_uint (res[0], "pwdHistoryLength", 0);
 	dominfo->max_password_age    = samdb_result_int64(res[0], "maxPwdAge", 0);

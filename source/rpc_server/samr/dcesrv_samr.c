@@ -622,7 +622,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	const char *name;
 	struct ldb_message msg;
 	uint32_t rid;
-	const char *username, *sidstr;
+	const char *account_name, *sidstr;
 	time_t now = time(NULL);
 	TALLOC_CTX *mem_ctx2;
 	struct dcesrv_handle *u_handle;
@@ -638,16 +638,16 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	d_state = h->data;
 
-	username = r->in.username->name;
+	account_name = r->in.account_name->name;
 
-	if (username == NULL) {
+	if (account_name == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* check if the user already exists */
 	name = samdb_search_string(d_state->sam_ctx, mem_ctx, NULL, 
 				   "sAMAccountName", 
-				   "(&(sAMAccountName=%s)(objectclass=user))", username);
+				   "(&(sAMAccountName=%s)(objectclass=user))", account_name);
 	if (name != NULL) {
 		return NT_STATUS_USER_EXISTS;
 	}
@@ -720,13 +720,13 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	}
 
 	/* add core elements to the ldb_message for the user */
-	msg.dn = talloc_asprintf(mem_ctx, "CN=%s,CN=%s,%s", username, container, d_state->domain_dn);
+	msg.dn = talloc_asprintf(mem_ctx, "CN=%s,CN=%s,%s", account_name, container, d_state->domain_dn);
 	if (!msg.dn) {
 		return NT_STATUS_NO_MEMORY;		
 	}
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, &msg, "name", username);
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, &msg, "cn", username);
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, &msg, "sAMAccountName", username);
+	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, &msg, "name", account_name);
+	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, &msg, "cn", account_name);
+	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, &msg, "sAMAccountName", account_name);
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, &msg, "objectClass", "user");
 	if (additional_class) {
 		samdb_msg_add_string(d_state->sam_ctx, mem_ctx, &msg, "objectClass", additional_class);
@@ -743,7 +743,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	}
 
 	/* create user state and new policy handle */
-	mem_ctx2 = talloc_init("CreateUser(%s)", username);
+	mem_ctx2 = talloc_init("CreateUser(%s)", account_name);
 	if (!mem_ctx2) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -758,7 +758,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	a_state->domain_state = d_state;
 	a_state->account_dn = talloc_steal(mem_ctx, mem_ctx2, msg.dn);
 	a_state->account_sid = talloc_strdup(mem_ctx2, sidstr);
-	a_state->account_name = talloc_strdup(mem_ctx2, username);
+	a_state->account_name = talloc_strdup(mem_ctx2, account_name);
 	if (!a_state->account_name || !a_state->account_sid) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -795,7 +795,7 @@ static NTSTATUS samr_CreateUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 
 	/* a simple wrapper around samr_CreateUser2 works nicely */
 	r2.in.handle = r->in.handle;
-	r2.in.username = r->in.username;
+	r2.in.account_name = r->in.account_name;
 	r2.in.acct_flags = ACB_NORMAL;
 	r2.in.access_mask = r->in.access_mask;
 	r2.out.acct_handle = r->out.acct_handle;
@@ -1109,10 +1109,10 @@ static NTSTATUS samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 #define QUERY_NTTIME(msg, field, attr) \
 	r->out.info->field = samdb_result_nttime(msg, attr, 0);
 #define QUERY_APASSC(msg, field, attr) \
-	r->out.info->field = samdb_result_allow_pwd_change(a_state->sam_ctx, mem_ctx, \
+	r->out.info->field = samdb_result_allow_password_change(a_state->sam_ctx, mem_ctx, \
 							   a_state->domain_state->domain_dn, msg, attr);
 #define QUERY_FPASSC(msg, field, attr) \
-	r->out.info->field = samdb_result_force_pwd_change(a_state->sam_ctx, mem_ctx, \
+	r->out.info->field = samdb_result_force_password_change(a_state->sam_ctx, mem_ctx, \
 							   a_state->domain_state->domain_dn, msg, attr);
 #define QUERY_LHOURS(msg, field, attr) \
 	r->out.info->field = samdb_result_logon_hours(mem_ctx, msg, attr);
@@ -1401,7 +1401,7 @@ static NTSTATUS samr_OpenUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	struct samr_domain_state *d_state;
 	struct samr_account_state *a_state;
 	struct dcesrv_handle *h;
-	const char *username, *sidstr;
+	const char *account_name, *sidstr;
 	TALLOC_CTX *mem_ctx2;
 	struct ldb_message **msgs;
 	struct dcesrv_handle *u_handle;
@@ -1433,8 +1433,8 @@ static NTSTATUS samr_OpenUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	username = samdb_result_string(msgs[0], "sAMAccountName", NULL);
-	if (username == NULL) {
+	account_name = samdb_result_string(msgs[0], "sAMAccountName", NULL);
+	if (account_name == NULL) {
 		DEBUG(1,("sAMAccountName field missing for sid %s\n", sidstr));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -1455,7 +1455,7 @@ static NTSTATUS samr_OpenUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	a_state->domain_state = d_state;
 	a_state->account_dn = talloc_steal(mem_ctx, mem_ctx2, msgs[0]->dn);
 	a_state->account_sid = talloc_strdup(mem_ctx2, sidstr);
-	a_state->account_name = talloc_strdup(mem_ctx2, username);
+	a_state->account_name = talloc_strdup(mem_ctx2, account_name);
 	if (!a_state->account_name || !a_state->account_sid) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1541,7 +1541,7 @@ static NTSTATUS samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 	/* fill in the reply */
 	switch (r->in.level) {
 	case 1:
-		QUERY_STRING(msg, info1.username.name,    "sAMAccountName");
+		QUERY_STRING(msg, info1.account_name.name,"sAMAccountName");
 		QUERY_STRING(msg, info1.full_name.name,   "displayName");
 		QUERY_UINT  (msg, info1.primary_gid,      "primaryGroupID");
 		QUERY_STRING(msg, info1.description.name, "description");
@@ -1555,22 +1555,22 @@ static NTSTATUS samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 		break;
 
 	case 3:
-		QUERY_STRING(msg, info3.username.name,       "sAMAccountName");
+		QUERY_STRING(msg, info3.account_name.name,   "sAMAccountName");
 		QUERY_STRING(msg, info3.full_name.name,      "displayName");
 		QUERY_RID   (msg, info3.rid,                 "objectSid");
 		QUERY_UINT  (msg, info3.primary_gid,         "primaryGroupID");
 		QUERY_STRING(msg, info3.home_directory.name, "homeDirectory");
 		QUERY_STRING(msg, info3.home_drive.name,     "homeDrive");
 		QUERY_STRING(msg, info3.logon_script.name,   "scriptPath");
-		QUERY_STRING(msg, info3.profile.name,        "profilePath");
+		QUERY_STRING(msg, info3.profile_path.name,   "profilePath");
 		QUERY_STRING(msg, info3.workstations.name,   "userWorkstations");
 		QUERY_NTTIME(msg, info3.last_logon,          "lastLogon");
 		QUERY_NTTIME(msg, info3.last_logoff,         "lastLogoff");
-		QUERY_NTTIME(msg, info3.last_pwd_change,     "pwdLastSet");
-		QUERY_APASSC(msg, info3.allow_pwd_change,    "pwdLastSet");
-		QUERY_FPASSC(msg, info3.force_pwd_change,    "pwdLastSet");
+		QUERY_NTTIME(msg, info3.last_password_change,"pwdLastSet");
+		QUERY_APASSC(msg, info3.allow_password_change,"pwdLastSet");
+		QUERY_FPASSC(msg, info3.force_password_change,"pwdLastSet");
 		QUERY_LHOURS(msg, info3.logon_hours,         "logonHours");
-		QUERY_UINT  (msg, info3.bad_pwd_count,       "badPwdCount");
+		QUERY_UINT  (msg, info3.bad_password_count,  "badPwdCount");
 		QUERY_UINT  (msg, info3.num_logons,          "logonCount");
 		QUERY_AFLAGS(msg, info3.acct_flags,          "userAccountControl");
 		break;
@@ -1580,33 +1580,33 @@ static NTSTATUS samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 		break;
 
 	case 5:
-		QUERY_STRING(msg, info5.username.name,       "sAMAccountName");
+		QUERY_STRING(msg, info5.account_name.name,   "sAMAccountName");
 		QUERY_STRING(msg, info5.full_name.name,      "displayName");
 		QUERY_RID   (msg, info5.rid,                 "objectSid");
 		QUERY_UINT  (msg, info5.primary_gid,         "primaryGroupID");
 		QUERY_STRING(msg, info5.home_directory.name, "homeDirectory");
 		QUERY_STRING(msg, info5.home_drive.name,     "homeDrive");
 		QUERY_STRING(msg, info5.logon_script.name,   "scriptPath");
-		QUERY_STRING(msg, info5.profile.name,        "profilePath");
+		QUERY_STRING(msg, info5.profile_path.name,   "profilePath");
 		QUERY_STRING(msg, info5.description.name,    "description");
 		QUERY_STRING(msg, info5.workstations.name,   "userWorkstations");
 		QUERY_NTTIME(msg, info5.last_logon,          "lastLogon");
 		QUERY_NTTIME(msg, info5.last_logoff,         "lastLogoff");
 		QUERY_LHOURS(msg, info5.logon_hours,         "logonHours");
-		QUERY_UINT  (msg, info5.bad_pwd_count,       "badPwdCount");
+		QUERY_UINT  (msg, info5.bad_password_count,  "badPwdCount");
 		QUERY_UINT  (msg, info5.num_logons,          "logonCount");
-		QUERY_NTTIME(msg, info5.last_pwd_change,     "pwdLastSet");
+		QUERY_NTTIME(msg, info5.last_password_change,"pwdLastSet");
 		QUERY_NTTIME(msg, info5.acct_expiry,         "accountExpires");
 		QUERY_AFLAGS(msg, info5.acct_flags,          "userAccountControl");
 		break;
 
 	case 6:
-		QUERY_STRING(msg, info6.username.name,       "sAMAccountName");
+		QUERY_STRING(msg, info6.account_name.name,   "sAMAccountName");
 		QUERY_STRING(msg, info6.full_name.name,      "displayName");
 		break;
 
 	case 7:
-		QUERY_STRING(msg, info7.username.name,       "sAMAccountName");
+		QUERY_STRING(msg, info7.account_name.name,   "sAMAccountName");
 		break;
 
 	case 8:
@@ -1652,11 +1652,11 @@ static NTSTATUS samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 	case 21:
 		QUERY_NTTIME(msg, info21.last_logon,          "lastLogon");
 		QUERY_NTTIME(msg, info21.last_logoff,         "lastLogoff");
-		QUERY_NTTIME(msg, info21.last_pwd_change,     "pwdLastSet");
+		QUERY_NTTIME(msg, info21.last_password_change,     "pwdLastSet");
 		QUERY_NTTIME(msg, info21.acct_expiry,         "accountExpires");
-		QUERY_APASSC(msg, info21.allow_pwd_change,    "pwdLastSet");
-		QUERY_FPASSC(msg, info21.force_pwd_change,    "pwdLastSet");
-		QUERY_STRING(msg, info21.username.name,       "sAMAccountName");
+		QUERY_APASSC(msg, info21.allow_password_change,    "pwdLastSet");
+		QUERY_FPASSC(msg, info21.force_password_change,    "pwdLastSet");
+		QUERY_STRING(msg, info21.account_name.name,       "sAMAccountName");
 		QUERY_STRING(msg, info21.full_name.name,      "displayName");
 		QUERY_STRING(msg, info21.home_directory.name, "homeDirectory");
 		QUERY_STRING(msg, info21.home_drive.name,     "homeDrive");
@@ -1671,7 +1671,7 @@ static NTSTATUS samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 		QUERY_AFLAGS(msg, info21.acct_flags,          "userAccountControl");
 		r->out.info->info21.fields_present = 0x00FFFFFF;
 		QUERY_LHOURS(msg, info21.logon_hours,         "logonHours");
-		QUERY_UINT  (msg, info21.bad_pwd_count,       "badPwdCount");
+		QUERY_UINT  (msg, info21.bad_password_count,  "badPwdCount");
 		QUERY_UINT  (msg, info21.num_logons,          "logonCount");
 		QUERY_UINT  (msg, info21.country_code,        "countryCode");
 		QUERY_UINT  (msg, info21.code_page,           "codePage");
@@ -1958,7 +1958,7 @@ static NTSTATUS samr_GetUserPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 	a_state = h->data;
 
-	r->out.info.min_pwd_len = samdb_search_uint(a_state->sam_ctx, mem_ctx, 0, NULL, "minPwdLength", 
+	r->out.info.min_password_len = samdb_search_uint(a_state->sam_ctx, mem_ctx, 0, NULL, "minPwdLength", 
 						    "dn=%s", a_state->domain_state->domain_dn);
 	r->out.info.password_properties = samdb_search_uint(a_state->sam_ctx, mem_ctx, 0, NULL, "pwdProperties", 
 							    "dn=%s", a_state->account_dn);
@@ -2095,7 +2095,7 @@ static NTSTATUS samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	r->out.info.min_pwd_len         = samdb_result_uint(msgs[0], "minPwdLength", 0);
+	r->out.info.min_password_len         = samdb_result_uint(msgs[0], "minPwdLength", 0);
 	r->out.info.password_properties = samdb_result_uint(msgs[0], "pwdProperties", 1);
 
 	samdb_search_free(sam_ctx, mem_ctx, msgs);

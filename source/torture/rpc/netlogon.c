@@ -103,7 +103,7 @@ static BOOL join_domain_bdc(TALLOC_CTX *mem_ctx)
 again:
 	name.name = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
 	r.in.handle = &domain_handle;
-	r.in.username = &name;
+	r.in.account_name = &name;
 	r.in.acct_flags = ACB_SVRTRUST;
 	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	r.out.acct_handle = &join.acct_handle;
@@ -126,7 +126,7 @@ again:
 
 	status = dcerpc_samr_GetUserPwInfo(join.p, mem_ctx, &pwp);
 	if (NT_STATUS_IS_OK(status)) {
-		policy_min_pw_len = pwp.out.info.min_pwd_len;
+		policy_min_pw_len = pwp.out.info.min_password_len;
 	}
 
 	join.machine_password = generate_random_str(mem_ctx, MAX(8, policy_min_pw_len));
@@ -198,7 +198,7 @@ static BOOL test_LogonUasLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct netr_LogonUasLogon r;
 
 	r.in.server_name = NULL;
-	r.in.username = lp_parm_string(-1, "torture", "username");
+	r.in.account_name = lp_parm_string(-1, "torture", "username");
 	r.in.workstation = TEST_MACHINE_NAME;
 
 	printf("Testing LogonUasLogon\n");
@@ -219,7 +219,7 @@ static BOOL test_LogonUasLogoff(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct netr_LogonUasLogoff r;
 
 	r.in.server_name = NULL;
-	r.in.username = lp_parm_string(-1, "torture", "username");
+	r.in.account_name = lp_parm_string(-1, "torture", "username");
 	r.in.workstation = TEST_MACHINE_NAME;
 
 	printf("Testing LogonUasLogoff\n");
@@ -242,7 +242,7 @@ static BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct netr_ServerAuthenticate a;
 	struct netr_Credential credentials1, credentials2, credentials3;
 	const char *plain_pass;
-	uint8_t mach_pwd[16];
+	struct samr_Password mach_password;
 
 	printf("Testing ServerReqChallenge\n");
 
@@ -265,16 +265,16 @@ static BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	E_md4hash(plain_pass, mach_pwd);
+	E_md4hash(plain_pass, mach_password.hash);
 
 	a.in.server_name = NULL;
-	a.in.username = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
+	a.in.account_name = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
 	a.in.secure_channel_type = SEC_CHAN_BDC;
 	a.in.computer_name = TEST_MACHINE_NAME;
 	a.in.credentials = &credentials3;
 	a.out.credentials = &credentials3;
 
-	creds_client_init(creds, &credentials1, &credentials2, mach_pwd, &credentials3, 
+	creds_client_init(creds, &credentials1, &credentials2, &mach_password, &credentials3, 
 			  NETLOGON_NEG_AUTH2_FLAGS);
 
 	printf("Testing ServerAuthenticate\n");
@@ -302,7 +302,7 @@ static BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct netr_ServerAuthenticate2 a;
 	struct netr_Credential credentials1, credentials2, credentials3;
 	const char *plain_pass;
-	uint8_t mach_pwd[16];
+	struct samr_Password mach_password;
 
 	printf("Testing ServerReqChallenge\n");
 
@@ -325,10 +325,10 @@ static BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	E_md4hash(plain_pass, mach_pwd);
+	E_md4hash(plain_pass, mach_password.hash);
 
 	a.in.server_name = NULL;
-	a.in.username = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
+	a.in.account_name = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
 	a.in.secure_channel_type = SEC_CHAN_BDC;
 	a.in.computer_name = TEST_MACHINE_NAME;
 	a.in.negotiate_flags = &negotiate_flags;
@@ -336,7 +336,7 @@ static BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	a.in.credentials = &credentials3;
 	a.out.credentials = &credentials3;
 
-	creds_client_init(creds, &credentials1, &credentials2, mach_pwd, &credentials3, 
+	creds_client_init(creds, &credentials1, &credentials2, &mach_password, &credentials3, 
 			  negotiate_flags);
 
 	printf("Testing ServerAuthenticate2\n");
@@ -367,7 +367,7 @@ static BOOL test_SetupCredentials3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct netr_ServerAuthenticate3 a;
 	struct netr_Credential credentials1, credentials2, credentials3;
 	const char *plain_pass;
-	uint8_t mach_pwd[16];
+	struct samr_Password mach_password;
 	uint32 rid;
 
 	printf("Testing ServerReqChallenge\n");
@@ -391,10 +391,10 @@ static BOOL test_SetupCredentials3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	E_md4hash(plain_pass, mach_pwd);
+	E_md4hash(plain_pass, mach_password.hash);
 
 	a.in.server_name = NULL;
-	a.in.username = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
+	a.in.account_name = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
 	a.in.secure_channel_type = SEC_CHAN_BDC;
 	a.in.computer_name = TEST_MACHINE_NAME;
 	a.in.negotiate_flags = &negotiate_flags;
@@ -403,7 +403,7 @@ static BOOL test_SetupCredentials3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	a.out.negotiate_flags = &negotiate_flags;
 	a.out.rid = &rid;
 
-	creds_client_init(creds, &credentials1, &credentials2, mach_pwd, &credentials3,
+	creds_client_init(creds, &credentials1, &credentials2, &mach_password, &credentials3,
 			  negotiate_flags);
 
 	printf("Testing ServerAuthenticate3\n");
@@ -434,7 +434,7 @@ enum ntlm_break {
 
 struct samlogon_state {
 	TALLOC_CTX *mem_ctx;
-	const char *username;
+	const char *account_name;
 	const char *password;
 	struct dcerpc_pipe *p;
 	struct netr_LogonSamLogon r;
@@ -473,7 +473,7 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 		ninfo.logon_info.parameter_control = 0;
 		ninfo.logon_info.logon_id_low = 0;
 		ninfo.logon_info.logon_id_high = 0;
-		ninfo.logon_info.username.string = samlogon_state->username;
+		ninfo.logon_info.account_name.string = samlogon_state->account_name;
 		ninfo.logon_info.workstation.string = TEST_MACHINE_NAME;
 		
 		memcpy(ninfo.challenge, chall->data, 8);
@@ -827,7 +827,7 @@ static BOOL test_lmv2_ntlmv2_broken(struct samlogon_state *samlogon_state, enum 
 	ZERO_STRUCT(user_session_key);
 	
 	/* TODO - test with various domain cases, and without domain */
-	if (!SMBNTLMv2encrypt(samlogon_state->username, lp_workgroup(), 
+	if (!SMBNTLMv2encrypt(samlogon_state->account_name, lp_workgroup(), 
 			      samlogon_state->password, &samlogon_state->chall,
 			      &names_blob,
 			      &lmv2_response, &ntlmv2_response, 
@@ -1051,7 +1051,7 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct samlogon_state samlogon_state;
 	
 	samlogon_state.mem_ctx = mem_ctx;
-	samlogon_state.username = lp_parm_string(-1, "torture", "username");
+	samlogon_state.account_name = lp_parm_string(-1, "torture", "username");
 	samlogon_state.password = lp_parm_string(-1, "torture", "password");
 	samlogon_state.p = p;
 
@@ -1114,7 +1114,7 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	}
 
 	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.username = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
+	r.in.account_name = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
 	r.in.secure_channel_type = SEC_CHAN_BDC;
 	r.in.computer_name = TEST_MACHINE_NAME;
 
