@@ -3837,9 +3837,19 @@ BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 BOOL get_any_dc_name(const char *domain, char *srv_name)
 {
 	struct cli_state cli;
+	extern pstring global_myname;
+	char *servers = get_trusted_serverlist(domain);
 
-	if (!cli_connect_servers_auth(&cli,
-	                              get_trusted_serverlist(domain), NULL))
+	if (strequal(servers, global_myname))
+	{
+		fstrcpy(srv_name, "\\\\");
+		fstrcat(srv_name, global_myname);
+		strupper(srv_name);
+
+		return True;
+	}
+
+	if (!cli_connect_servers_auth(&cli, servers, NULL))
 	{
 		return False;
 	}
