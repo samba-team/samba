@@ -353,74 +353,6 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 	req_send_reply_nosign(req);	
 }
 
-/* these are the protocol lists used for auto architecture detection:
-
-WinNT 3.51:
-protocol [PC NETWORK PROGRAM 1.0]
-protocol [XENIX CORE]
-protocol [MICROSOFT NETWORKS 1.03]
-protocol [LANMAN1.0]
-protocol [Windows for Workgroups 3.1a]
-protocol [LM1.2X002]
-protocol [LANMAN2.1]
-protocol [NT LM 0.12]
-
-Win95:
-protocol [PC NETWORK PROGRAM 1.0]
-protocol [XENIX CORE]
-protocol [MICROSOFT NETWORKS 1.03]
-protocol [LANMAN1.0]
-protocol [Windows for Workgroups 3.1a]
-protocol [LM1.2X002]
-protocol [LANMAN2.1]
-protocol [NT LM 0.12]
-
-Win2K:
-protocol [PC NETWORK PROGRAM 1.0]
-protocol [LANMAN1.0]
-protocol [Windows for Workgroups 3.1a]
-protocol [LM1.2X002]
-protocol [LANMAN2.1]
-protocol [NT LM 0.12]
-
-OS/2:
-protocol [PC NETWORK PROGRAM 1.0]
-protocol [XENIX CORE]
-protocol [LANMAN1.0]
-protocol [LM1.2X002]
-protocol [LANMAN2.1]
-*/
-
-/*
-  * Modified to recognize the architecture of the remote machine better.
-  *
-  * This appears to be the matrix of which protocol is used by which
-  * MS product.
-       Protocol                       WfWg    Win95   WinNT  Win2K  OS/2
-       PC NETWORK PROGRAM 1.0          1       1       1      1      1
-       XENIX CORE                                      2             2
-       MICROSOFT NETWORKS 3.0          2       2       
-       DOS LM1.2X002                   3       3       
-       MICROSOFT NETWORKS 1.03                         3
-       DOS LANMAN2.1                   4       4       
-       LANMAN1.0                                       4      2      3
-       Windows for Workgroups 3.1a     5       5       5      3
-       LM1.2X002                                       6      4      4
-       LANMAN2.1                                       7      5      5
-       NT LM 0.12                              6       8      6
-  *
-  *  tim@fsg.com 09/29/95
-  *  Win2K added by matty 17/7/99
-  */
-  
-#define ARCH_WFWG     0x3      /* This is a fudge because WfWg is like Win95 */
-#define ARCH_WIN95    0x2
-#define ARCH_WINNT    0x4
-#define ARCH_WIN2K    0xC      /* Win2K is like NT */
-#define ARCH_OS2      0x14     /* Again OS/2 is like NT */
-#define ARCH_SAMBA    0x20
- 
-#define ARCH_ALL      0x3F
  
 /* List of supported protocols, most desired first */
 static const struct {
@@ -451,7 +383,6 @@ void reply_negprot(struct smbsrv_request *req)
 	int choice = -1;
 	int protocol;
 	char *p;
-	int arch = ARCH_ALL;
 
 	if (req->smb_conn->negotiate.done_negprot) {
 		smbsrv_terminate_connection(req->smb_conn, "multiple negprot's are not permitted");
@@ -464,59 +395,8 @@ void reply_negprot(struct smbsrv_request *req)
 	while (p < req->in.data + req->in.data_size) { 
 		Index++;
 		DEBUG(3,("Requested protocol [%s]\n",p));
-		if (strcmp(p,"Windows for Workgroups 3.1a") == 0)
-			arch &= ( ARCH_WFWG | ARCH_WIN95 | ARCH_WINNT | ARCH_WIN2K );
-		else if (strcmp(p,"DOS LM1.2X002") == 0)
-			arch &= ( ARCH_WFWG | ARCH_WIN95 );
-		else if (strcmp(p,"DOS LANMAN2.1") == 0)
-			arch &= ( ARCH_WFWG | ARCH_WIN95 );
-		else if (strcmp(p,"NT LM 0.12") == 0)
-			arch &= ( ARCH_WIN95 | ARCH_WINNT | ARCH_WIN2K );
-		else if (strcmp(p,"LANMAN2.1") == 0)
-			arch &= ( ARCH_WINNT | ARCH_WIN2K | ARCH_OS2 );
-		else if (strcmp(p,"LM1.2X002") == 0)
-			arch &= ( ARCH_WINNT | ARCH_WIN2K | ARCH_OS2 );
-		else if (strcmp(p,"MICROSOFT NETWORKS 1.03") == 0)
-			arch &= ARCH_WINNT;
-		else if (strcmp(p,"XENIX CORE") == 0)
-			arch &= ( ARCH_WINNT | ARCH_OS2 );
-		else if (strcmp(p,"Samba") == 0) {
-			arch = ARCH_SAMBA;
-			break;
-		}
- 
 		p += strlen(p) + 2;
 	}
-    
-	switch (arch) {
-		case ARCH_SAMBA:
-			set_remote_arch(req->smb_conn, RA_SAMBA);
-			break;
-		case ARCH_WFWG:
-			set_remote_arch(req->smb_conn, RA_WFWG);
-			break;
-		case ARCH_WIN95:
-			set_remote_arch(req->smb_conn, RA_WIN95);
-			break;
-		case ARCH_WINNT:
-			if (req->flags2==FLAGS2_WIN2K_SIGNATURE)
-				set_remote_arch(req->smb_conn, RA_WIN2K);
-			else
-				set_remote_arch(req->smb_conn, RA_WINNT);
-			break;
-		case ARCH_WIN2K:
-			set_remote_arch(req->smb_conn, RA_WIN2K);
-			break;
-		case ARCH_OS2:
-			set_remote_arch(req->smb_conn, RA_OS2);
-			break;
-		default:
-			set_remote_arch(req->smb_conn, RA_UNKNOWN);
-		break;
-	}
- 
-	/* possibly reload - change of architecture */
-	reload_services(req->smb_conn, True);      
     
 	/* Check for protocols, most desirable first */
 	for (protocol = 0; supported_protocols[protocol].proto_name; protocol++) {

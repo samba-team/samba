@@ -575,46 +575,6 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 	return(True);
 }
 
-/*******************************************************************
- Set the remote_arch string based on an enum. This is used in places
-where we desperately need to distinguish client type. 
-********************************************************************/
-void set_remote_arch(struct smbsrv_connection *smb, enum remote_arch_types type)
-{
-	const char *arch;
-
-	smb->negotiate.ra_type = type;
-	switch (type) {
-	case RA_WFWG:
-		arch = "WfWg";
-		return;
-	case RA_OS2:
-		arch = "OS2";
-		return;
-	case RA_WIN95:
-		arch = "Win95";
-		return;
-	case RA_WINNT:
-		arch = "WinNT";
-		return;
-	case RA_WIN2K:
-		arch = "Win2K";
-		return;
-	case RA_WINXP:
-		arch = "WinXP";
-		return;
-	case RA_SAMBA:
-		arch = "Samba";
-		return;
-	default:
-		smb->negotiate.ra_type = RA_UNKNOWN;
-		arch = "UNKNOWN";
-		break;
-	}
-
-	sub_set_remote_arch(arch);
-}
-
 
 static void print_asc(int level, const uint8_t *buf,int len)
 {
