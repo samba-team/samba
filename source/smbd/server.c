@@ -43,10 +43,7 @@ extern pstring user_socket_options;
 extern int dcelogin_atmost_once;
 #endif /* WITH_DFS */
 
-
 extern fstring remote_machine;
-extern pstring OriginalDir;
-
 
 /* really we should have a top level context structure that has the
    client file descriptor as an element. That would require a major rewrite :(
@@ -395,7 +392,6 @@ static BOOL dump_core(void)
 }
 #endif
 
-
 /****************************************************************************
 exit the server
 ****************************************************************************/
@@ -439,8 +435,6 @@ void exit_server(char *reason)
 	DEBUG(3,("Server exit (%s)\n", (reason ? reason : "")));
 	exit(0);
 }
-
-
 
 /****************************************************************************
   initialise connect, service and file structs
@@ -634,9 +628,7 @@ static void usage(char *pname)
 	   so set our umask to 0 */
 	umask(0);
 
-	dos_GetWd(OriginalDir);
-
-	init_uid();
+	init_sec_ctx();
 
 	reopen_logs();
 
