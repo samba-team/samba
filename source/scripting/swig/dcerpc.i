@@ -47,24 +47,54 @@ void set_ntstatus_exception(int status)
 	PyErr_SetObject(ntstatus_exception, obj);
 }
 
-char *get_string_property(PyObject *dict, char *key)
+uint8 uint8_from_python(PyObject *obj)
 {
-	PyObject *item = PyDict_GetItem(dict, PyString_FromString(key));
-
-	if (!item)
-		return 0; /* TODO: throw exception */
-
-	return PyString_AsString(item);
+	return (uint8)PyInt_AsLong(obj);
 }
 
-uint32 get_uint32_property(PyObject *dict, char *key)
+uint16 uint16_from_python(PyObject *obj)
 {
-	PyObject *item = PyDict_GetItem(dict, PyString_FromString(key));
+	return (uint16)PyInt_AsLong(obj);
+}
 
-	if (!item)
-		return 0; /* TODO: throw exception */
+uint32 uint32_from_python(PyObject *obj)
+{
+	return (uint32)PyInt_AsLong(obj);
+}
 
-	return (uint32)PyInt_AsLong(item);
+int64 int64_from_python(PyObject *obj)
+{
+	return (int64)PyLong_AsLong(obj);
+}
+
+uint64 uint64_from_python(PyObject *obj)
+{
+	return (uint64)PyLong_AsLong(obj);
+}
+
+NTTIME NTTIME_from_python(PyObject *obj)
+{
+	return (NTTIME)PyLong_AsLong(obj);
+}
+
+HYPER_T HYPER_T_from_python(PyObject *obj)
+{
+	return (HYPER_T)PyLong_AsLong(obj);
+}
+
+struct policy_handle *policy_handle_from_python(PyObject *obj)
+{
+	return (struct policy_handle *)PyString_AsString(obj);
+}
+
+struct security_descriptor *security_descriptor_from_python(PyObject *obj)
+{
+	return NULL;
+}
+
+char *string_from_python(PyObject *obj)
+{
+	return NULL;
 }
 
 %}
