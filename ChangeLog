@@ -1,3 +1,21 @@
+Mon Mar 23 23:43:59 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/gssapi/wrap.c: Use `gss_krb5_getsomekey'.
+
+	* lib/gssapi/unwrap.c: Implement and use `gss_krb5_getsomekey'.
+  	Fix bug in checking of pad.
+
+	* lib/gssapi/{un,}wrap.c: Add support for just integrity
+ 	protecting data.
+ 	
+	* lib/gssapi/accept_sec_context.c: Use
+ 	`gssapi_krb5_verify_8003_checksum'.
+
+	* lib/gssapi/8003.c: Implement `gssapi_krb5_verify_8003_checksum'.
+
+	* lib/gssapi/init_sec_context.c: Zero cred, and store session key
+ 	properly in auth-context.
+
 Sun Mar 22 00:47:22 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/kadm5/delete_s.c: Check immutable bit.
