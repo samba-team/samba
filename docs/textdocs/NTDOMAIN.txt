@@ -48,12 +48,19 @@ Domain Logons using 1.9.18alpha1
    of date: you no longer need the DES libraries, but other than that,
    ENCRYPTION.txt is current).
 
-3) for each workstation, add a line to smbpasswd with a username of MACHINE$
-   and a password of "machine".  this process will be automated in further
-   releases.
+   at this point, you ought to test that your samba server is accessible
+   correctly with encrypted passwords, before progressing with any of the
+   NT workstation-specific bits: it's up to you.
+
+3) [ for each workstation, add a line to smbpasswd with a username of MACHINE$
+     and a password of "machine".  this process will be automated in further
+     releases.  lkcl02nov97 - done, as of 1.9.18alpha11!  added new options
+     "domain hosts allow/deny" too :-) ]
 
 4) if using NT server to log in, run the User Manager for Domains, and
-   add the capability to "Log in Locally" to the policies.
+   add the capability to "Log in Locally" to the policies, which you would
+   have to do even if you were logging in to another NT PDC instead of a
+   Samba PDC.
 
 5) set up the following parameters in smb.conf
 
@@ -105,11 +112,17 @@ Domain Logons using 1.9.18alpha1
    Any local accounts are under the hostname domain, from which you will be
    able to shut down the machine etc.  At present, we do not specify that
    the NT user logging in is a member of any groups, so will have no
-   priveleges, including the ability to shut down the machine.
+   priveleges, including the ability to shut down the machine [lkcl02nov97 -
+   done, as of samba-1.9.18alpha3!  see "domain admin/guest users" and
+   "domain groups" parameters].
    
    Select the SAMBA domain, and type in a valid username and password for
    which there is a valid entry in the samba server's smbpasswd LM/NT OWF
-   database.
+   database.  At present, the password is ignored, to allow access to the
+   domain, but *not* ignored for accesses to Samba's SMB services: that's
+   completely separate from the SAM Logon process.  Even if you log in a
+   user to a domain, your users will still need to connect to Samba SMB
+   shares with valid username / passwords, for that share.
 
    You should see an LSA_REQ_CHAL, followed by LSA_AUTH2, LSA_NET_SRV_PWSET,
    and LSA_SAM_LOGON.  The SAM Logon will be particularly large (the response
@@ -126,7 +139,8 @@ Domain Logons using 1.9.18alpha1
    copy it into the location specified by the "logon path" smb.conf parameter
    for the user logging in, or log in on the local machine, and use the
    System | Profiles control panel to make a copy of the _local_ profile onto
-   the samba server.
+   the samba server.  This process is described and documented in the NT
+   Help Files.
 
 9) Play around.  Look at the Samba Server: see if it can be found in the
    browse lists.  Check that it is accessible; run some applications.
@@ -136,5 +150,6 @@ Domain Logons using 1.9.18alpha1
    Make Samba fall over, and then send bug reports to us, with NTDOM: at
    the start of the subject line, as "samba-bugs@samba.anu.edu.au".
 
-Your reports, testing, patches and criticism will help us get this right.
+Your reports, testing, patches, criticism and encouragement will help us
+get this right.
 
