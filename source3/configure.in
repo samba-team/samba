@@ -24,7 +24,6 @@ SAMBA_MAINTAINER_MODE
 # how to compile C code to produce PIC object files
 
 # these are the defaults, good for lots of systems
-PICFLAG="-fpic"
 HOST_OS="$host_os"
 LDSHFLAGS="-shared"
 
@@ -32,13 +31,13 @@ LDSHFLAGS="-shared"
 case "$host_os" in
 	*linux*)   AC_DEFINE(LINUX);;
         *solaris*) AC_DEFINE(SUNOS5)
-                   LDSHFLAGS="-G";;
+                   LDSHFLAGS="-G"
+		   ;;
         *sunos*) AC_DEFINE(SUNOS4)
                 LDSHFLAGS=""
 		;;
         *irix*) AC_DEFINE(IRIX)
 		WRAP32=smbwrapper/smbwrapper.32.so
-		PICFLAG="-KPIC"
 		;;
         *aix*) AC_DEFINE(AIX);;
         *hpux*) AC_DEFINE(HPUX);;
@@ -47,6 +46,27 @@ case "$host_os" in
         *sco*) AC_DEFINE(SCO);;
         *next2*) AC_DEFINE(NEXT2);;
 esac
+
+
+# try to work out how to produce pic code with this compiler
+PICFLAG=""
+AC_PROG_CC_FLAG(fpic)
+if test $ac_cv_prog_cc_fpic = yes; then
+   PICFLAG="-fpic";
+fi
+if test x$PICFLAG = x; then
+  AC_PROG_CC_FLAG(Kpic)
+  if test $ac_cv_prog_cc_Kpic = yes; then
+    PICFLAG="-Kpic";
+  fi 
+fi
+if test x$PICFLAG = x; then
+  AC_PROG_CC_FLAG(KPIC)
+  if test $ac_cv_prog_cc_KPIC = yes; then
+    PICFLAG="-KPIC";
+  fi 
+fi
+
 
 AC_INLINE
 AC_HEADER_STDC
