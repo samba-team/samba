@@ -1,3 +1,4 @@
+/* -*- C -*- */
 /*
  * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
@@ -333,6 +334,11 @@ extern const char *__progname;
  * kludges and such
  */
 
+#if 1
+int roken_gethostby_setup(const char*, const char*);
+struct hostent* roken_gethostbyname(const char*);
+struct hostent* roken_gethostbyaddr(const void*, size_t, int);
+#else
 #ifdef GETHOSTBYNAME_PROTO_COMPATIBLE
 #define roken_gethostbyname(x) gethostbyname(x)
 #else
@@ -343,6 +349,7 @@ extern const char *__progname;
 #define roken_gethostbyaddr(a, l, t) gethostbyaddr(a, l, t)
 #else
 #define roken_gethostbyaddr(a, l, t) gethostbyaddr((char *)a, l, t)
+#endif
 #endif
 
 #ifdef GETSERVBYNAME_PROTO_COMPATIBLE
