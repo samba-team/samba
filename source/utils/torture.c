@@ -498,6 +498,77 @@ static void run_locktest1(int dummy)
 	printf("Passed locktest1\n");
 }
 
+/*
+ checks for correct tconX support
+ */
+static void run_tcon_test(int dummy)
+{
+	static struct cli_state cli1;
+	char *fname = "\\tcontest.tmp";
+	int fnum1;
+	uint16 cnum;
+	char buf[4];
+
+	if (!open_connection(&cli1)) {
+		return;
+	}
+	cli_sockopt(&cli1, sockops);
+
+	printf("starting tcontest\n");
+
+	cli_unlink(&cli1, fname);
+
+	fnum1 = cli_open(&cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
+	if (fnum1 == -1)
+	{
+		printf("open of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return;
+	}
+
+	cnum = cli1.cnum;
+
+	if (cli_write(&cli1, fnum1, 0, buf, 130, 4) != 4)
+	{
+		printf("write failed (%s)", cli_errstr(&cli1));
+		return;
+	}
+
+	if (!cli_send_tconX(&cli1, share, "?????",
+			    password, strlen(password)+1)) {
+		printf("%s refused 2nd tree connect (%s)\n", host,
+		           cli_errstr(&cli1));
+		cli_shutdown(&cli1);
+		return ;
+	}
+
+	if (cli_write(&cli1, fnum1, 0, buf, 130, 4) == 4)
+	{
+		printf("write succeeded (%s)", cli_errstr(&cli1));
+		return;
+	}
+
+	if (cli_close(&cli1, fnum1)) {
+		printf("close2 succeeded (%s)\n", cli_errstr(&cli1));
+		return;
+	}
+
+	if (!cli_tdis(&cli1)) {
+		printf("tdis failed (%s)\n", cli_errstr(&cli1));
+		return;
+	}
+
+	cli1.cnum = cnum;
+
+	if (!cli_close(&cli1, fnum1)) {
+		printf("close2 failed (%s)\n", cli_errstr(&cli1));
+		return;
+	}
+
+	close_connection(&cli1);
+
+	printf("Passed tcontest\n");
+}
+
 
 /*
   This test checks that 
@@ -1638,6 +1709,7 @@ static struct {
 	{"DIR",  run_dirtest, 0},
 	{"DENY1",  run_denytest1, 0},
 	{"DENY2",  run_denytest2, 0},
+	{"TCON",  run_tcon_test, 0},
 	{NULL, NULL, 0}};
 
 
