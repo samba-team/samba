@@ -8,7 +8,8 @@
   version(1.0),
   endpoint("ncacn_np:[\\pipe\\spoolss]"),
   pointer_default(unique),
-  helpstring("Spooler SubSystem")
+  helpstring("Spooler SubSystem"),
+  depends(security)
 ] interface spoolss
 {
 	typedef struct {

@@ -6,8 +6,7 @@ ADD_OBJ_FILES = libcli/util/asn1.o \
 		libcli/util/clierror.o \
 		libcli/util/nterr.o \
 		libcli/util/smbdes.o \
-		libcli/util/smbencrypt.o \
-		libcli/util/dom_sid.o
+		libcli/util/smbencrypt.o
 
 [SUBSYSTEM::LIBCLI_NMB]
 ADD_OBJ_FILES = libcli/unexpected.o \

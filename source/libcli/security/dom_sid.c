@@ -1,10 +1,12 @@
 /* 
    Unix SMB/CIFS implementation.
-
-   routines to manipulate a "struct dom_sid"
-
-   Copyright (C) Andrew Tridgell 2004
-   
+   Samba utility functions
+   Copyright (C) Andrew Tridgell 		1992-2004
+   Copyright (C) Luke Kenneth Caseson Leighton 	1998-1999
+   Copyright (C) Jeremy Allison  		1999
+   Copyright (C) Stefan (metze) Metzmacher 	2002-2004
+   Copyright (C) Simo Sorce 			2002
+      
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -21,6 +23,67 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_security.h"
+
+/*****************************************************************
+ Compare the auth portion of two sids.
+*****************************************************************/  
+
+static int dom_sid_compare_auth(const struct dom_sid *sid1, const struct dom_sid *sid2)
+{
+	int i;
+
+	if (sid1 == sid2)
+		return 0;
+	if (!sid1)
+		return -1;
+	if (!sid2)
+		return 1;
+
+	if (sid1->sid_rev_num != sid2->sid_rev_num)
+		return sid1->sid_rev_num - sid2->sid_rev_num;
+
+	for (i = 0; i < 6; i++)
+		if (sid1->id_auth[i] != sid2->id_auth[i])
+			return sid1->id_auth[i] - sid2->id_auth[i];
+
+	return 0;
+}
+
+/*****************************************************************
+ Compare two sids.
+*****************************************************************/  
+
+static int dom_sid_compare(const struct dom_sid *sid1, const struct dom_sid *sid2)
+{
+	int i;
+
+	if (sid1 == sid2)
+		return 0;
+	if (!sid1)
+		return -1;
+	if (!sid2)
+		return 1;
+
+	/* Compare most likely different rids, first: i.e start at end */
+	if (sid1->num_auths != sid2->num_auths)
+		return sid1->num_auths - sid2->num_auths;
+
+	for (i = sid1->num_auths-1; i >= 0; --i)
+		if (sid1->sub_auths[i] != sid2->sub_auths[i])
+			return sid1->sub_auths[i] - sid2->sub_auths[i];
+
+	return dom_sid_compare_auth(sid1, sid2);
+}
+
+/*****************************************************************
+ Compare two sids.
+*****************************************************************/  
+
+BOOL dom_sid_equal(const struct dom_sid *sid1, const struct dom_sid *sid2)
+{
+	return dom_sid_compare(sid1, sid2) == 0;
+}
 
 /*
   convert a dom_sid to a string
@@ -124,7 +187,7 @@ struct dom_sid *dom_sid_parse_talloc(TALLOC_CTX *mem_ctx, const char *sidstr)
 /*
   convert a string to a dom_sid, returning a talloc'd dom_sid
 */
-struct dom_sid *dom_sid_dup(TALLOC_CTX *mem_ctx, struct dom_sid *dom_sid)
+struct dom_sid *dom_sid_dup(TALLOC_CTX *mem_ctx, const struct dom_sid *dom_sid)
 {
 	struct dom_sid *ret;
 	int i;
@@ -177,4 +240,3 @@ struct dom_sid *dom_sid_add_rid(TALLOC_CTX *mem_ctx,
 	sid->num_auths++;
 	return sid;
 }
-
