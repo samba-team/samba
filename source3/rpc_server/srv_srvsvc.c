@@ -989,6 +989,59 @@ static void api_srv_net_share_enum( int uid, prs_struct *data,
 	srv_reply_net_share_enum(&q_n, rdata);
 }
 
+/*******************************************************************
+time of day
+********************************************************************/
+static void srv_reply_net_remote_tod(SRV_Q_NET_REMOTE_TOD *q_n,
+				prs_struct *rdata)
+{
+	SRV_R_NET_REMOTE_TOD r_n;
+	TIME_OF_DAY_INFO tod;
+	struct tm *t;
+	time_t unixdate = time(NULL);
+
+	r_n.tod = &tod;
+	r_n.ptr_srv_tod = 0x1;
+	r_n.status = 0x0;
+
+	DEBUG(5,("srv_reply_net_remote_tod: %d\n", __LINE__));
+
+	t = LocalTime(&unixdate);
+
+	/* set up the */
+	make_time_of_day_info(&tod,
+	                      unixdate,
+	                      0,
+	                      t->tm_hour,
+	                      t->tm_min,
+	                      t->tm_sec,
+	                      0,
+	                      TimeDiff(unixdate)/60,
+	                      10000,
+	                      t->tm_mday,
+	                      t->tm_mon + 1,
+	                      1900+t->tm_year,
+	                      t->tm_wday);
+	
+	/* store the response in the SMB stream */
+	srv_io_r_net_remote_tod("", &r_n, rdata, 0);
+	
+	DEBUG(5,("srv_reply_net_remote_tod: %d\n", __LINE__));
+}
+/*******************************************************************
+********************************************************************/
+static void api_srv_net_remote_tod( int uid, prs_struct *data,
+                                    prs_struct *rdata )
+{
+	SRV_Q_NET_REMOTE_TOD q_n;
+
+	/* grab the net server get enum */
+	srv_io_q_net_remote_tod("", &q_n, data, 0);
+
+	/* construct reply.  always indicate success */
+	srv_reply_net_remote_tod(&q_n, rdata);
+}
+
 
 /*******************************************************************
 \PIPE\srvsvc commands
@@ -1000,6 +1053,7 @@ struct api_struct api_srv_cmds[] =
 	{ "SRV_NETSHAREENUM"    , SRV_NETSHAREENUM    , api_srv_net_share_enum   },
 	{ "SRV_NETFILEENUM"     , SRV_NETFILEENUM     , api_srv_net_file_enum    },
 	{ "SRV_NET_SRV_GET_INFO", SRV_NET_SRV_GET_INFO, api_srv_net_srv_get_info },
+	{ "SRV_NET_REMOTE_TOD"  , SRV_NET_REMOTE_TOD  , api_srv_net_remote_tod   },
 	{ NULL                  , 0                   , NULL                     }
 };
 
