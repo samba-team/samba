@@ -31,6 +31,8 @@ DESCRIPTION
 -----
 [global]
   ...
+  # This can break Administration installations of Office2k.
+  # in that case, don't veto the riched20.dll
   veto files = /*.eml/*.nws/riched20.dll/
 -----
 
