@@ -333,6 +333,7 @@ static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args
 				break;
 			case 's':
 				strvalue = va_arg (args, char *);
+				if (!strvalue) strvalue = "(NULL)";
 				if (max == -1) {
 					max = strlen(strvalue);
 				}
