@@ -25,8 +25,8 @@
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
-		printf("(%d) Incorrect status %s - should be %s\n", \
-		       __LINE__, nt_errstr(status), nt_errstr(correct)); \
+		printf("(%s) Incorrect status %s - should be %s\n", \
+		       __location__, nt_errstr(status), nt_errstr(correct)); \
 		ret = False; \
 		goto done; \
 	}} while (0)
@@ -319,7 +319,7 @@ BOOL torture_raw_mux(void)
 
 	/* cleanup */
 	if (smbcli_deltree(cli->tree, BASEDIR) == -1) {
-		printf("Failed to cleanup " BASEDIR "\n");
+		printf("(%s) Failed to cleanup " BASEDIR "\n", __location__);
 		ret = False;
 		goto done;
 	}

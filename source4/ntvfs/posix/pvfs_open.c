@@ -944,7 +944,32 @@ NTSTATUS pvfs_can_delete(struct pvfs_state *pvfs, struct pvfs_filename *name)
 			      NTCREATEX_SHARE_ACCESS_READ |
 			      NTCREATEX_SHARE_ACCESS_WRITE | 
 			      NTCREATEX_SHARE_ACCESS_DELETE, 
-			      0, STD_RIGHT_DELETE_ACCESS);
+			      NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 
+			      STD_RIGHT_DELETE_ACCESS);
+
+	return status;
+}
+
+/*
+  determine if a file can be renamed, or if it is prevented by an
+  already open file
+*/
+NTSTATUS pvfs_can_rename(struct pvfs_state *pvfs, struct pvfs_filename *name)
+{
+	NTSTATUS status;
+	DATA_BLOB key;
+
+	status = pvfs_locking_key(name, name, &key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = odb_can_open(pvfs->odb_context, &key, 
+			      NTCREATEX_SHARE_ACCESS_READ |
+			      NTCREATEX_SHARE_ACCESS_WRITE | 
+			      NTCREATEX_SHARE_ACCESS_DELETE, 
+			      0,
+			      STD_RIGHT_DELETE_ACCESS);
 
 	return status;
 }
