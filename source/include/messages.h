@@ -25,6 +25,7 @@
 /* general messages */
 #define MSG_DEBUG 1
 #define MSG_PING  2
+#define MSG_PONG  3
 
 /* nmbd messages */
 #define MSG_FORCE_ELECTION 1001

@@ -36,12 +36,21 @@
 
 #include "includes.h"
 
+static int pong_count;
+
+/****************************************************************************
+a useful function for testing the message system
+****************************************************************************/
+void pong_message(int msg_type, pid_t src, void *buf, size_t len)
+{
+	pong_count++;
+}
 
 
  int main(int argc, char *argv[])
 {
 	pid_t pid;
-	int level;
+	int i, n;
 	static pstring servicesf = CONFIGFILE;
 
 	TimeInit();
@@ -54,9 +63,18 @@
 	message_init();
 
 	pid = atoi(argv[1]);
-	level = atoi(argv[2]);
+	n = atoi(argv[2]);
 
-	message_send_pid(pid, MSG_FORCE_ELECTION, NULL, 0);
+	message_register(MSG_PONG, pong_message);
+
+	for (i=0;i<n;i++) {
+		message_send_pid(pid, MSG_PING, NULL, 0);
+	}
+
+	while (pong_count < n) {
+		message_dispatch();
+		msleep(1);
+	}
 
 	return (0);
 }
