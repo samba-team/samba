@@ -396,10 +396,10 @@ alias|alias|alias|alias...
 		<listitem><para>the architecture of the remote
 		machine. Only some are recognized, and those may not be 
 		100% reliable. It currently recognizes Samba, WfWg, Win95,
-		WinNT, Win2k, WinXP, and Win2K3. Anything else will be known as 
+		WinNT and Win2k. Anything else will be known as 
 		&quot;UNKNOWN&quot;. If it gets it wrong then sending a level 
-		3 log to <ulink url="mailto:samba-technical@samba.org">samba-technical@samba.org</ulink> 
-		should allow it to be fixed.</para></listitem>
+		3 log to <ulink url="mailto:samba@samba.org">samba@samba.org
+		</ulink> should allow it to be fixed.</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
@@ -507,11 +507,9 @@ alias|alias|alias|alias...
 	
 		<varlistentry>
 		<term>case sensitive = yes/no</term>
-		<listitem><para>controls whether filenames are case sensitive. 
-		Windows clients <emphasis>will</emphasis> break if you enable
-		this parameter.  It is only included for case insentive
-		file systems (such as VFAT) and performance testing.
-		Default <emphasis>no</emphasis>.</para></listitem>
+		<listitem><para>controls whether filenames are case sensitive. If 
+		they aren't then Samba must do a filename search and match on passed 
+		names. Default <emphasis>no</emphasis>.</para></listitem>
 		</varlistentry> 
 
 		<varlistentry>
