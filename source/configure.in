@@ -1547,10 +1547,10 @@ AC_ARG_WITH(afs,
 
 #################################################
 # check for the DFS auth system
-AC_MSG_CHECKING(whether to use DFS auth)
+AC_MSG_CHECKING(whether to use DCE/DFS auth)
 AC_ARG_WITH(dfs,
-[  --with-dfs     Include DFS support
-  --without-dfs  Don't include DFS support (default)],
+[  --with-dce-dfs     Include DCE/DFS support
+  --without-dce-dfs  Don't include DCE/DFS support (default)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1729,25 +1729,23 @@ fi
 
 
 #################################################
-# removed until we get the code actually working
-# --jeremy
 # check for a TDB password database
-# AC_MSG_CHECKING(whether to use TDB password database)
-#AC_ARG_WITH(tdbpwd,
-#[  --with-tdbpwd   Include TDB password database
-#  --without-tdbpwd  Don't include TDB password database (default)],
-#[ case "$withval" in
-#  yes)
-#    AC_MSG_RESULT(yes)
-#    AC_DEFINE(WITH_TDBPWD)
-#    AC_MSG_ERROR([TDB password database not supported in this version.])
-#    ;;
-#  *)
-#    AC_MSG_RESULT(no)
-#    ;;
-#  esac ],
-#  AC_MSG_RESULT(no)
-#)
+AC_MSG_CHECKING(whether to use TDB password database)
+AC_ARG_WITH(tdbpwd,
+[  --with-tdbsam   Include TDB password database
+  --without-tdbsam  Don't include TDB password database (default)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_TDBPWD)
+    AC_MSG_ERROR([TDB password database not supported in this version.])
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
 
 #################################################
 # removed until we get the code actually working
@@ -1773,21 +1771,21 @@ fi
 
 #################################################
 # check for a NISPLUS password database
-AC_MSG_CHECKING(whether to use NISPLUS password database)
-AC_ARG_WITH(nisplus,
-[  --with-nisplus     Include NISPLUS password database support
-  --without-nisplus  Don't include NISPLUS password database support (default)],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_NISPLUS)
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
+#AC_MSG_CHECKING(whether to use NISPLUS password database)
+#AC_ARG_WITH(nisplus,
+#[  --with-nisplus     Include NISPLUS password database support
+#  --without-nisplus  Don't include NISPLUS password database support (default)],
+#[ case "$withval" in
+#  yes)
+#    AC_MSG_RESULT(yes)
+#    AC_DEFINE(WITH_NISPLUS)
+#    ;;
+#  *)
+#    AC_MSG_RESULT(no)
+#    ;;
+#  esac ],
+#  AC_MSG_RESULT(no)
+#)
 
 #################################################
 # check for a NISPLUS_HOME support 
