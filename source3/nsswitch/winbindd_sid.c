@@ -98,6 +98,11 @@ enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 	name_domain = state->request.data.name.dom_name;
 	name_user = state->request.data.name.name;
 
+	/* fail if we are a PDC and this is our domain; should be done by passdb */
+	
+	if ( lp_server_role() == ROLE_DOMAIN_PDC && 0==StrCaseCmp( name_domain, lp_workgroup()) )
+		return WINBINDD_ERROR;
+		
 	if ((domain = find_domain_from_name(name_domain)) == NULL) {
 		DEBUG(0, ("could not find domain entry for domain %s\n", 
 			  name_domain));
