@@ -6,7 +6,7 @@ Copyright: GNU GPL version 2
 Group: Networking
 Source: ftp://samba.org/pub/samba/samba-%{version}.tar.gz
 Packager: John H Terpstra [Samba-Team] <jht@samba.org>
-Requires: pam >= 0.72 /etc/pam.d/sytem-auth kernel >= 2.2.1 glibc >= 2.1.2
+Requires: pam >= 0.72 kernel >= 2.2.1 glibc >= 2.1.2
 Prereq: chkconfig fileutils
 BuildRoot: /var/tmp/samba
 Prefix: /usr
@@ -48,7 +48,6 @@ SHADOW_PWD option enabled
 	- We get a lot of requests for this!
 
 %prep
-#%setup -n samba
 %setup
 
 %build
@@ -68,9 +67,9 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
 	--with-fhs \
         --libdir=/etc \
 	--localstatedir=/var \
-	--with-configdir=/etc/samba \
+	--with-configdir=/etc \
         --with-lockdir=/var/lock/samba \
-        --with-privatedir=/etc/samba \
+        --with-privatedir=/etc \
         --with-swatdir=%{prefix}/share/swat \
         --with-quotas \
         --with-smbmount \
@@ -86,7 +85,7 @@ make -j${NUMCPU} all smbfilter nsswitch/libnss_wins.so debug2html
 %install
 rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT
-mkdir -p $RPM_BUILD_ROOT/etc/{logrotate.d,pam.d,samba/codepages}
+mkdir -p $RPM_BUILD_ROOT/etc/{logrotate.d,pam.d,samba,xinetd.d,codepages/src}
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/init.d
 mkdir -p $RPM_BUILD_ROOT/lib
 mkdir -p $RPM_BUILD_ROOT%{prefix}/{bin,sbin}
@@ -184,8 +183,8 @@ install -m644 docs/manpages/smbmount.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
 install -m644 docs/manpages/smbmnt.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
 install -m644 docs/manpages/smbumount.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
 install -m644 swat/README $RPM_BUILD_ROOT%{prefix}/share/swat
-install -m644 packaging/Mandrake/smb.con* $RPM_BUILD_ROOT/etc/samba/
-install -m644 packaging/Mandrake/smbusers $RPM_BUILD_ROOT/etc/samba/smbusers
+install -m644 packaging/Mandrake/smb.con* $RPM_BUILD_ROOT/etc/
+install -m644 packaging/Mandrake/smbusers $RPM_BUILD_ROOT/etc/smbusers
 install -m755 packaging/Mandrake/smbprint $RPM_BUILD_ROOT%{prefix}/bin
 install -m755 packaging/Mandrake/findsmb $RPM_BUILD_ROOT%{prefix}/bin
 install -m755 packaging/Mandrake/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
@@ -193,7 +192,7 @@ install -m755 packaging/Mandrake/smb.init $RPM_BUILD_ROOT%{prefix}/sbin/samba
 install -m644 packaging/Mandrake/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
 install -m644 packaging/Mandrake/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
 install -m644 packaging/Mandrake/samba.xinetd $RPM_BUILD_ROOT/etc/xinetd.d/swat
-echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/etc/samba/lmhosts
+echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/etc/lmhosts
 
 # Link smbmount to /sbin/mount.smb and /sbin/mount.smbfs
 ln -sf %{prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
@@ -282,14 +281,14 @@ fi
 %attr(-,root,root) /sbin/*
 %attr(-,root,root) %{prefix}/bin/*
 %attr(755,root,root) /lib/*
-%attr(-,root,root) %{prefix}/share/samba/swat/help/*
-%attr(-,root,root) %{prefix}/share/samba/swat/images/*
-%attr(-,root,root) %{prefix}/share/samba/swat/include/*
-%attr(-,root,root) %{prefix}/share/samba/swat/using_samba/*
-%attr(-,root,root) %config(noreplace) /etc/samba/lmhosts
-%attr(-,root,root) %config(noreplace) /etc/samba/smb.conf
-%attr(-,root,root) %config(noreplace) /etc/samba/smbusers
-%attr(-,root,root) /etc/samba/smb.conf.sample
+%attr(-,root,root) %{prefix}/share/swat/help/*
+%attr(-,root,root) %{prefix}/share/swat/images/*
+%attr(-,root,root) %{prefix}/share/swat/include/*
+%attr(-,root,root) %{prefix}/share/swat/using_samba/*
+%attr(-,root,root) %config(noreplace) /etc/lmhosts
+%attr(-,root,root) %config(noreplace) /etc/smb.conf
+%attr(-,root,root) %config(noreplace) /etc/smbusers
+%attr(-,root,root) /etc/smb.conf.sample
 %attr(-,root,root) /etc/rc.d/init.d/smb
 %attr(-,root,root) /etc/logrotate.d/samba
 %attr(-,root,root) %config(noreplace) /etc/pam.d/samba
@@ -297,8 +296,8 @@ fi
 %attr(-,root,root) %{prefix}/share/man/man5/*
 %attr(-,root,root) %{prefix}/share/man/man7/*
 %attr(-,root,root) %{prefix}/share/man/man8/*
-%attr(-,root,root) %dir %{prefix}/share/samba/codepages/*
-%attr(-,root,root) %dir %{prefix}/share/samba/codepages/src/*
+%attr(-,root,root) %dir /etc/codepages/*
+%attr(-,root,root) %dir /etc/codepages/src/*
 %attr(-,root,root) %dir /var/lock/samba
 %attr(-,root,root) %dir /var/log/samba
 %attr(1777,root,root) %dir /var/spool/samba
