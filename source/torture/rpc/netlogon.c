@@ -1216,7 +1216,7 @@ static BOOL test_ManyGetDCName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	t.in.handle = &lsa_handle;
 	t.in.resume_handle = &resume_handle;
-	t.in.num_entries = 1000;
+	t.in.max_size = 1000;
 	t.out.domains = &domains;
 	t.out.resume_handle = &resume_handle;
 

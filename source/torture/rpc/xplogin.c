@@ -322,7 +322,7 @@ static NTSTATUS test_enumtrusts(struct smbcli_transport *transport)
 
 	r2.in.handle = &handle;
 	r2.in.resume_handle = &resume_handle;
-	r2.in.num_entries = 1000;
+	r2.in.max_size = 1000;
 	r2.out.domains = &domains;
 	r2.out.resume_handle = &resume_handle;
 
