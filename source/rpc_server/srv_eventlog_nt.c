@@ -71,7 +71,7 @@ void policy_handle_to_string(POLICY_HND *handle, fstring *dest)
 	     handle->data5[4]);
 }
 
-/*
+/**
  * Callout to open the specified event log
  * 
  *   smbrun calling convention --
@@ -176,7 +176,7 @@ WERROR _eventlog_open_eventlog(pipes_struct *p,
 
     return WERR_OK;
 }
-/*
+/**
  * Callout to get the number of records in the specified event log
  * 
  *   smbrun calling convention --
@@ -252,7 +252,7 @@ WERROR _eventlog_get_num_records(pipes_struct *p,
 
     return WERR_OK;
 }
-/*
+/**
  * Callout to find the oldest record in the log
  * 
  *   smbrun calling convention --
@@ -330,7 +330,7 @@ WERROR _eventlog_get_oldest_entry(pipes_struct *p,
     return WERR_OK;
 }
 
-/*
+/**
  * Callout to close the specified event log
  * 
  *   smbrun calling convention --
@@ -419,8 +419,8 @@ static BOOL _eventlog_read_parse_line(char *line, Eventlog_entry *entry)
 {
     char *start = NULL, *stop = NULL;
     pstring temp;
-    int temp_len = 0;
-
+    int temp_len = 0, i;
+ 
     start = line;
 
     if(start == NULL || strlen(start) == 0)
@@ -528,7 +528,6 @@ static BOOL _eventlog_read_parse_line(char *line, Eventlog_entry *entry)
 	rpcstr_push((void *)(entry->data_record.computer_name), temp,
 		    sizeof(entry->data_record.computer_name), STR_TERMINATE);
 	entry->data_record.computer_name_len = (strlen_w(entry->data_record.computer_name)* 2) + 2;
-	entry->record.num_strings++;
     }
     else if(0 == strncmp(start, "SID", stop - start))
     {
@@ -546,15 +545,27 @@ static BOOL _eventlog_read_parse_line(char *line, Eventlog_entry *entry)
 	/* now skip any other leading whitespace */
 	while(isspace(stop[0]))
 	    stop++;
-	memset(temp, 0, sizeof(temp));
 	temp_len = strlen(stop);
+	memset(temp, 0, sizeof(temp));
 	strncpy(temp, stop, temp_len);
-	rpcstr_push((void *)(entry->data_record.strings), temp,
-		    sizeof(entry->data_record.strings), STR_TERMINATE);
-	entry->data_record.strings_len = (strlen_w(entry->data_record.strings) * 2) + 2;
+	rpcstr_push((void *)(entry->data_record.strings + entry->data_record.strings_len),
+		    temp,
+		    sizeof(entry->data_record.strings) - entry->data_record.strings_len, 
+		    STR_TERMINATE);
+	entry->data_record.strings_len += temp_len + 1;
+	fprintf(stderr, "Dumping strings:\n");
+	for(i = 0; i < entry->data_record.strings_len; i++)
+	{
+	    fputc((char)entry->data_record.strings[i], stderr);
+	}
+	fprintf(stderr, "\nDone\n");
+	entry->record.num_strings++;
     }
     else if(0 == strncmp(start, "DAT", stop - start))
     {
+	/* Now that we're done processing the STR data, adjust the length to account for
+	   unicode, then proceed with the DAT data. */
+	entry->data_record.strings_len *= 2;
 	/* skip past initial ":" */
 	stop++;
 	/* now skip any other leading whitespace */
@@ -577,7 +588,7 @@ static BOOL _eventlog_read_parse_line(char *line, Eventlog_entry *entry)
     }
     return True;
 }
-/*
+/**
  * Callout to read entries from the specified event log
  *
  *   smbrun calling convention --
@@ -594,7 +605,6 @@ static BOOL _eventlog_read_parse_line(char *line, Eventlog_entry *entry)
  *               TMW:(uint32) - time written, seconds since January 1, 1970, 0000 UTC
  *               EID:(uint32) - eventlog source defined event identifier. If there's a stringfile for the event, it is an index into that
  *               ETP:(uint16) - eventlog type - one of ERROR, WARNING, INFO, AUDIT_SUCCESS, AUDIT_FAILURE
- *               NST:(uint16) - number of strings in this log entry -- for now we only handle one string, so 0 or 1
  *               ECT:(uint16) - event category - depends on the eventlog generator... 
  *               RS2:(uint16) - reserved, make it 0000
  *               CRN:(uint32) - reserved, make it 00000000 for now
@@ -602,9 +612,8 @@ static BOOL _eventlog_read_parse_line(char *line, Eventlog_entry *entry)
  *               SRC:[(uint8)] - Name of the source, for example ccPwdSvc, in hex bytes. Can not be multiline.
  *               SRN:[(uint8)] - Name of the computer on which this is generated, the short hostname usually.
  *               SID:[(uint8)] - User sid if one exists. Must be present even if there is no SID.
- *               STR:[(uint8)] - String data. First WORD specifies which string this is. Would be nice for this to ascend by one each time, maybe start from zero?
- *                               followed by the actual string information, encoded into hex8 characters... If two-plus consecutive lines have same #, it's means string concats.
- *                               If two have same #, but not consecutive, that's an error. If there is no String Data (and NST==0), must include the specifier.
+ *               STR:[(uint8)] - String data. One string per line. Multiple strings can be specified using consecutive "STR" lines,
+ *                               up to a total aggregate string length of 1024 characters.
  *               DAT:[(uint8)] - The user-defined data portion of the event log. Can not be multiple lines.
  */
 static BOOL _eventlog_read_eventlog_hook(Eventlog_info *info, Eventlog_entry *entry, const char *direction, int starting_record, int buffer_size, BOOL *eof)
@@ -672,7 +681,7 @@ static BOOL _eventlog_read_prepare_data_buffer(prs_struct *ps,
 					       Eventlog_entry *entry)
 {
     uint8 *offset;
-    Eventlog_entry *new = NULL;
+    Eventlog_entry *new = NULL, *insert_point = NULL;
 
     new = PRS_ALLOC_MEM(ps, Eventlog_entry, 1);
     if(new == NULL)
@@ -726,10 +735,24 @@ static BOOL _eventlog_read_prepare_data_buffer(prs_struct *ps,
     memcpy(offset, &(entry->data_record.user_data), entry->data_record.user_data_len);
     offset += entry->data_record.user_data_len;
     /* Now that we've massaged the current entry, copy it into the new entry and add it
-       to the list */
-    new->next = r_u->entry;
-    r_u->entry = new;
-    
+       to end of the list */
+    insert_point=r_u->entry;
+
+    if (NULL == insert_point) 
+    {
+	r_u->entry = new;
+	new->next = NULL;
+    } 
+    else
+    {
+	while ((NULL != insert_point->next)) 
+	{
+	    insert_point=insert_point->next;
+	}
+	new->next = NULL;
+	insert_point->next = new;
+    }
+
     memcpy(&(new->record), &entry->record, sizeof(Eventlog_record));
     memcpy(&(new->data_record), &entry->data_record, sizeof(Eventlog_data_record));
     new->data = entry->data;
@@ -791,7 +814,7 @@ WERROR _eventlog_read_eventlog(pipes_struct *p,
 
     return WERR_OK;
 }
-/*
+/**
  * Callout to clear (and optionally backup) a specified event log
  *
  *   smbrun calling convention --
