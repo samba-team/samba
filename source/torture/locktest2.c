@@ -95,7 +95,7 @@ static BOOL try_close(struct cli_state *c, int fstype, int fd)
 
 static BOOL try_lock(struct cli_state *c, int fstype, 
 		     int fd, unsigned start, unsigned len,
-		     int op)
+		     enum brl_type op)
 {
 	struct flock lock;
 
@@ -292,7 +292,7 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	unsigned len = rec->len;
 	unsigned r1 = rec->r1;
 	unsigned r2 = rec->r2;
-	unsigned op;
+	enum brl_type op;
 	int server;
 	BOOL ret[NSERVERS];
 
