@@ -36,11 +36,29 @@ LIBTOP = $(top_builddir)/lib
 
 PROGS = ftp$(EXECSUFFIX)
 
-ftp_OBJS = cmds.o cmdtab.o ftp.o krb4.o main.o ruserpass.o domacro.o \
-	globals.o kauth.o
+ftp_SOURCES =		\
+	cmds.c		\
+	cmdtab.c	\
+	domacro.c	\
+	ftp.c		\
+	globals.c	\
+	kauth.c
+	krb4.c		\
+	main.c		\
+	ruserpass.c	\
+	security.c	\
 
-ftp_SOURCES = cmds.c cmdtab.c ftp.c krb4.c main.c ruserpass.c \
-	domacro.c globals.c kauth.c
+ftp_OBJS =		\
+	cmds.o		\
+	cmdtab.o	\
+	domacro.o	\
+	ftp.o		\
+	globals.o	\
+	kauth.o
+	krb4.o		\
+	main.o		\
+	ruserpass.o	\
+	security.o	\
 
 OBJECTS = $(ftp_OBJS)
 SOURCES = $(ftp_SOURCES)
