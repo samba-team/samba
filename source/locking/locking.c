@@ -165,7 +165,7 @@ NTSTATUS do_lock_spin(files_struct *fsp,connection_struct *conn, uint16 lock_pid
 				!NT_STATUS_EQUAL(status, NT_STATUS_FILE_LOCK_CONFLICT))
 			break;
 		if (sleeptime)
-			usleep(sleeptime);
+			sys_usleep(sleeptime);
 	}
 	return status;
 }
