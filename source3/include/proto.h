@@ -588,9 +588,9 @@ int cli_nt_create(struct cli_state *cli, char *fname);
 int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode);
 BOOL cli_close(struct cli_state *cli, int fnum);
 BOOL cli_lock(struct cli_state *cli, int fnum, 
-	      uint32 offset, uint32 len, int timeout, int locktype);
+	      uint32 offset, uint32 len, int timeout, enum lock_type lock_type);
 BOOL cli_unlock(struct cli_state *cli, int fnum, 
-		uint32 offset, uint32 len, int timeout, int locktype);
+		uint32 offset, uint32 len, int timeout);
 size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size);
 ssize_t cli_write(struct cli_state *cli,
 		  int fnum, uint16 write_mode,
@@ -751,15 +751,32 @@ void clear_unexpected(time_t t);
 struct packet_struct *receive_unexpected(enum packet_type packet_type, int id, 
 					 char *mailslot_name);
 
+/*The following definitions come from  locking/brlock.c  */
+
+void brl_init(void);
+BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino, 
+	      uint16 smbpid, pid_t pid, uint16 tid,
+	      br_off start, br_off size, 
+	      enum lock_type lock_type);
+BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, 
+		uint16 smbpid, pid_t pid, uint16 tid,
+		br_off start, br_off size);
+BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, 
+		  uint16 smbpid, pid_t pid, uint16 tid,
+		  br_off start, br_off size, 
+		  enum lock_type lock_type);
+
 /*The following definitions come from  locking/locking.c  */
 
 BOOL is_locked(files_struct *fsp,connection_struct *conn,
-	       SMB_OFF_T count,SMB_OFF_T offset, int lock_type);
+	       SMB_OFF_T count,SMB_OFF_T offset, 
+	       enum lock_type lock_type);
 BOOL do_lock(files_struct *fsp,connection_struct *conn,
-             SMB_OFF_T count,SMB_OFF_T offset,int lock_type,
+             SMB_OFF_T count,SMB_OFF_T offset,enum lock_type lock_type,
              int *eclass,uint32 *ecode);
 BOOL do_unlock(files_struct *fsp,connection_struct *conn,
-               SMB_OFF_T count,SMB_OFF_T offset,int *eclass,uint32 *ecode);
+               SMB_OFF_T count,SMB_OFF_T offset, 
+	       int *eclass,uint32 *ecode);
 BOOL locking_init(int read_only);
 BOOL locking_end(void);
 BOOL lock_share_entry(connection_struct *conn,
