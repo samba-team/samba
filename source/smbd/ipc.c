@@ -2878,7 +2878,7 @@ static struct
   char * pipe_clnt_name;
   char * pipe_srv_name;
   int subcommand;
-  BOOL (*fn) (int, int, struct mem_buffer*, struct mem_buffer*);
+  BOOL (*fn) (int, int, struct mem_buffer*, int*, struct mem_buffer*, int*);
 }
 api_fd_commands [] =
 {
@@ -2901,6 +2901,8 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
 	struct mem_buffer rdata;
 	struct mem_buffer data_buf;
 	char *rparam = NULL;
+	int data_len  = 0;
+	int rdata_len  = 0;
 	int rparam_len = 0;
 
 	BOOL reply    = False;
@@ -2960,22 +2962,22 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
 		RPC_HDR hdr;
 
 		/* process the rpc header */
-		data_buf.data_ptr = 0;
-		smb_io_rpc_hdr("", True, &hdr, &data_buf, 0);
+		data_len = 0;
+		smb_io_rpc_hdr("", True, &hdr, &data_buf, &data_len, 0);
 
 		/* bind request received */
-		if ((bind_req = ((data_buf.data_ptr != 0) && (hdr.pkt_type == RPC_BIND))))
+		if ((bind_req = ((data_len != 0) && (hdr.pkt_type == RPC_BIND))))
 		{
 			RPC_HDR_RB hdr_rb;
 
 			/* decode the bind request */
-			smb_io_rpc_hdr_rb("", True, &hdr_rb, &data_buf, 0);
+			smb_io_rpc_hdr_rb("", True, &hdr_rb, &data_buf, &data_len, 0);
 
-			if ((bind_req = (data_buf.data_ptr != 0)))
+			if ((bind_req = (data_len != 0)))
 			{
-				int rdata_len = 0;
 				RPC_HDR_BA hdr_ba;
 				fstring ack_pipe_name;
+				int p;
 
 				/* name has to be \PIPE\xxxxx */
 				strcpy(ack_pipe_name, "\\PIPE\\");
@@ -2989,16 +2991,14 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
 				                &(hdr_rb.transfer));
 
 				/* write out the bind ack first */
-				rdata.data_ptr = 0x10;
-				smb_io_rpc_hdr_ba("", False, &hdr_ba, &rdata, 0);
-
-				rdata_len = rdata.data_ptr;
+				rdata_len = 0x10;
+				smb_io_rpc_hdr_ba("", False, &hdr_ba, &rdata, &rdata_len, 0);
 
 				/* then do the header, now we know the length */
 				make_rpc_hdr(&hdr, RPC_BINDACK, 0x0, hdr.call_id, rdata_len);
 
-				rdata.data_ptr = 0x0;
-				smb_io_rpc_hdr("", False, &hdr, &rdata, 0);
+				p = 0x0;
+				smb_io_rpc_hdr("", False, &hdr, &rdata, &p, 0);
 
 				reply = True;
 			}
@@ -3016,18 +3016,21 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
 	{
 		DEBUG(10,("calling api_fd_command\n"));
 
-		/* reset the data pointer because it gets re-processed unnecessarily */
-		data_buf.data_ptr = 0x0;
 
 		if (api_fd_commands[i].fn == NULL)
 		{
 			reply = api_Unsupported(cnum,vuid,params,data,mdrcnt,mprcnt,
-		                       &(rdata.data    ), &rparam,
-		                       &(rdata.data_ptr), &rparam_len);
+		                       &(rdata.data), &rparam,
+		                       & rdata_len  , &rparam_len);
 		}
 		else
 		{
-			reply = api_fd_commands[i].fn(cnum,vuid, &data_buf, &rdata);
+			/* reset the data pointer because it gets re-processed unnecessarily */
+			data_len  = 0x0;
+			rdata_len = 0x0;
+			reply = api_fd_commands[i].fn(cnum, vuid,
+			                              &data_buf, &data_len,
+			                              &rdata, &rdata_len);
 		}
 
 		DEBUG(10,("called api_fd_command\n"));
@@ -3046,20 +3049,20 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
 	if (rparam_len > mprcnt)
 	{
 		reply = api_TooSmall(cnum,vuid,params,data,mdrcnt,mprcnt,
-		                       &(rdata.data    ), &rparam,
-		                       &(rdata.data_ptr), &rparam_len);
+		                       &(rdata.data), &rparam,
+		                       &(rdata_len ), &rparam_len);
 	}
 
 	/* if we get False back then it's actually unsupported */
 	if (!reply)
 	{
 		api_Unsupported(cnum,vuid,params,data,mdrcnt,mprcnt,
-		                       &(rdata.data    ), &rparam,
-		                       &(rdata.data_ptr), &rparam_len);
+		                       &(rdata.data), &rparam,
+		                       &(rdata_len ), &rparam_len);
 	}
 
 	/* now send the reply */
-	send_trans_reply(outbuf, rdata.data, rparam, NULL, rdata.data_ptr, rparam_len, 0, mdrcnt);
+	send_trans_reply(outbuf, rdata.data, rparam, NULL, rdata_len, rparam_len, 0, mdrcnt);
 
 	if (rdata.data_used <= mdrcnt)
 	{

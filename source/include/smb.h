@@ -535,14 +535,13 @@ struct mem_buffer
 	int margin; /* safety margin when reallocing */
 
 	int align; /* alignment of data structures */
-	int data_ptr; /* use this like you would a file pointer */
 };
 
 struct api_struct
 {
   char *name;
   uint8 opnum;
-  void (*fn) (int uid, struct mem_buffer*, struct mem_buffer*);
+  void (*fn) (int uid, struct mem_buffer*, int*, struct mem_buffer*, int*);
 };
 
 struct uid_cache {
