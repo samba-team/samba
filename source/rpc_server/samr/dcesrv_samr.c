@@ -538,13 +538,111 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 }
 
 
+/*
+  comparison function for sorting SamEntry array
+*/
+static int compare_SamEntry(struct samr_SamEntry *e1, struct samr_SamEntry *e2)
+{
+	return e1->idx - e2->idx;
+}
+
 /* 
   samr_EnumDomainGroups 
 */
 static NTSTATUS samr_EnumDomainGroups(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				      struct samr_EnumDomainGroups *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct samr_domain_state *d_state;
+	struct ldb_message **res;
+	int ldb_cnt, count, i, first;
+	struct samr_SamEntry *entries;
+	const char * const attrs[3] = { "objectSid", "sAMAccountName", NULL };
+	struct dom_sid *domain_sid;
+
+	*r->out.resume_handle = 0;
+	r->out.sam = NULL;
+	r->out.num_entries = 0;
+
+	DCESRV_PULL_HANDLE(h, r->in.domain_handle, SAMR_HANDLE_DOMAIN);
+
+	d_state = h->data;
+	
+	/* search for all domain groups in this domain. This could possibly be
+	   cached and resumed based on resume_key */
+	ldb_cnt = samdb_search(d_state->sam_ctx, mem_ctx, d_state->domain_dn,
+			       &res, attrs, 
+			       "(&(grouptype=%s)(objectclass=group))",
+			       ldb_hexstr(mem_ctx,
+					  GTYPE_SECURITY_GLOBAL_GROUP));
+	if (ldb_cnt == -1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	if (ldb_cnt == 0 || r->in.max_size == 0) {
+		return NT_STATUS_OK;
+	}
+
+	/* convert to SamEntry format */
+	entries = talloc_array_p(mem_ctx, struct samr_SamEntry, ldb_cnt);
+	if (!entries) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	count = 0;
+	domain_sid = dom_sid_parse_talloc(mem_ctx, d_state->domain_sid);
+
+	for (i=0;i<ldb_cnt;i++) {
+		struct dom_sid *alias_sid;
+
+		alias_sid = samdb_result_dom_sid(mem_ctx, res[i],
+						 "objectSid");
+
+		if (alias_sid == NULL)
+			continue;
+
+		if (!dom_sid_in_domain(domain_sid, alias_sid))
+			continue;
+		
+		entries[count].idx =
+			alias_sid->sub_auths[alias_sid->num_auths-1];
+		entries[count].name.string =
+			samdb_result_string(res[i], "sAMAccountName", "");
+		count += 1;
+	}
+
+	/* sort the results by rid */
+	qsort(entries, count, sizeof(struct samr_SamEntry), 
+	      (comparison_fn_t)compare_SamEntry);
+
+	/* find the first entry to return */
+	for (first=0;
+	     first<count && entries[first].idx <= *r->in.resume_handle;
+	     first++) ;
+
+	if (first == count) {
+		return NT_STATUS_OK;
+	}
+
+	/* return the rest, limit by max_size. Note that we 
+	   use the w2k3 element size value of 54 */
+	r->out.num_entries = count - first;
+	r->out.num_entries = MIN(r->out.num_entries, 
+				 1+(r->in.max_size/SAMR_ENUM_USERS_MULTIPLIER));
+
+	r->out.sam = talloc_p(mem_ctx, struct samr_SamArray);
+	if (!r->out.sam) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	r->out.sam->entries = entries+first;
+	r->out.sam->count = r->out.num_entries;
+
+	if (r->out.num_entries < count - first) {
+		*r->out.resume_handle = entries[first+r->out.num_entries-1].idx;
+		return STATUS_MORE_ENTRIES;
+	}
+
+	return NT_STATUS_OK;
 }
 
 
@@ -744,14 +842,6 @@ static NTSTATUS samr_CreateUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	r2.out.rid = r->out.rid;
 
 	return samr_CreateUser2(dce_call, mem_ctx, &r2);
-}
-
-/*
-  comparison function for sorting SamEntry array
-*/
-static int compare_SamEntry(struct samr_SamEntry *e1, struct samr_SamEntry *e2)
-{
-	return e1->idx - e2->idx;
 }
 
 /* 
@@ -963,7 +1053,98 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 static NTSTATUS samr_EnumDomainAliases(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_EnumDomainAliases *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct samr_domain_state *d_state;
+	struct ldb_message **res;
+	int ldb_cnt, count, i, first;
+	struct samr_SamEntry *entries;
+	const char * const attrs[3] = { "objectSid", "sAMAccountName", NULL };
+	struct dom_sid *domain_sid;
+
+	*r->out.resume_handle = 0;
+	r->out.sam = NULL;
+	r->out.num_entries = 0;
+
+	DCESRV_PULL_HANDLE(h, r->in.domain_handle, SAMR_HANDLE_DOMAIN);
+
+	d_state = h->data;
+	
+	/* search for all domain groups in this domain. This could possibly be
+	   cached and resumed based on resume_key */
+	ldb_cnt = samdb_search(d_state->sam_ctx, mem_ctx, d_state->domain_dn,
+			       &res, attrs, 
+			       "(&(|(grouptype=%s)(grouptype=%s)))"
+			       "(objectclass=group))",
+			       ldb_hexstr(mem_ctx,
+					  GTYPE_SECURITY_BUILTIN_LOCAL_GROUP),
+			       ldb_hexstr(mem_ctx,
+					  GTYPE_SECURITY_DOMAIN_LOCAL_GROUP));
+	if (ldb_cnt == -1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	if (ldb_cnt == 0) {
+		return NT_STATUS_OK;
+	}
+
+	/* convert to SamEntry format */
+	entries = talloc_array_p(mem_ctx, struct samr_SamEntry, ldb_cnt);
+	if (!entries) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	count = 0;
+	domain_sid = dom_sid_parse_talloc(mem_ctx, d_state->domain_sid);
+
+	for (i=0;i<ldb_cnt;i++) {
+		struct dom_sid *alias_sid;
+
+		alias_sid = samdb_result_dom_sid(mem_ctx, res[i],
+						 "objectSid");
+
+		if (alias_sid == NULL)
+			continue;
+
+		if (!dom_sid_in_domain(domain_sid, alias_sid))
+			continue;
+		
+		entries[count].idx =
+			alias_sid->sub_auths[alias_sid->num_auths-1];
+		entries[count].name.string =
+			samdb_result_string(res[i], "sAMAccountName", "");
+		count += 1;
+	}
+
+	/* sort the results by rid */
+	qsort(entries, count, sizeof(struct samr_SamEntry), 
+	      (comparison_fn_t)compare_SamEntry);
+
+	/* find the first entry to return */
+	for (first=0;
+	     first<count && entries[first].idx <= *r->in.resume_handle;
+	     first++) ;
+
+	if (first == count) {
+		return NT_STATUS_OK;
+	}
+
+	r->out.num_entries = count - first;
+	r->out.num_entries = MIN(r->out.num_entries, 1000);
+
+	r->out.sam = talloc_p(mem_ctx, struct samr_SamArray);
+	if (!r->out.sam) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	r->out.sam->entries = entries+first;
+	r->out.sam->count = r->out.num_entries;
+
+	if (r->out.num_entries < count - first) {
+		*r->out.resume_handle =
+			entries[first+r->out.num_entries-1].idx;
+		return STATUS_MORE_ENTRIES;
+	}
+
+	return NT_STATUS_OK;
 }
 
 
@@ -1626,8 +1807,10 @@ static NTSTATUS samr_OpenAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 			   "(&(objectSid=%s)(objectclass=group)"
 			   "(|(grouptype=%s)(grouptype=%s)))",
 			   sidstr,
-			   ldb_hexstr(mem_ctx, GTYPE_SECURITY_BUILTIN_LOCAL_GROUP),
-			   ldb_hexstr(mem_ctx, GTYPE_SECURITY_DOMAIN_LOCAL_GROUP));
+			   ldb_hexstr(mem_ctx,
+				      GTYPE_SECURITY_BUILTIN_LOCAL_GROUP),
+			   ldb_hexstr(mem_ctx,
+				      GTYPE_SECURITY_DOMAIN_LOCAL_GROUP));
 	if (ret == 0) {
 		return NT_STATUS_NO_SUCH_ALIAS;
 	}
