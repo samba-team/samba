@@ -58,6 +58,8 @@ struct krb5_crypto_data {
     void *params;
 };
 
+#define kcrypto_oid_enc(n) { sizeof(n)/sizeof(n[0]), n }
+
 #define CRYPTO_ETYPE(C) ((C)->et->type)
 
 /* bits for `flags' below */
@@ -117,6 +119,7 @@ struct checksum_type {
 struct encryption_type {
     krb5_enctype type;
     const char *name;
+    heim_oid *oid;
     size_t blocksize;
     size_t padsize;
     size_t confoundersize;
@@ -2699,6 +2702,7 @@ ARCFOUR_encrypt(krb5_context context,
 static struct encryption_type enctype_null = {
     ETYPE_NULL,
     "null",
+    NULL,
     1,
     1,
     0,
@@ -2711,6 +2715,7 @@ static struct encryption_type enctype_null = {
 static struct encryption_type enctype_des_cbc_crc = {
     ETYPE_DES_CBC_CRC,
     "des-cbc-crc",
+    NULL,
     8,
     8,
     8,
@@ -2723,6 +2728,7 @@ static struct encryption_type enctype_des_cbc_crc = {
 static struct encryption_type enctype_des_cbc_md4 = {
     ETYPE_DES_CBC_MD4,
     "des-cbc-md4",
+    NULL,
     8,
     8,
     8,
@@ -2735,6 +2741,7 @@ static struct encryption_type enctype_des_cbc_md4 = {
 static struct encryption_type enctype_des_cbc_md5 = {
     ETYPE_DES_CBC_MD5,
     "des-cbc-md5",
+    NULL,
     8,
     8,
     8,
@@ -2747,6 +2754,7 @@ static struct encryption_type enctype_des_cbc_md5 = {
 static struct encryption_type enctype_arcfour_hmac_md5 = {
     ETYPE_ARCFOUR_HMAC_MD5,
     "arcfour-hmac-md5",
+    NULL,
     1,
     1,
     8,
@@ -2759,6 +2767,7 @@ static struct encryption_type enctype_arcfour_hmac_md5 = {
 static struct encryption_type enctype_des3_cbc_md5 = { 
     ETYPE_DES3_CBC_MD5,
     "des3-cbc-md5",
+    NULL,
     8,
     8,
     8,
@@ -2771,6 +2780,7 @@ static struct encryption_type enctype_des3_cbc_md5 = {
 static struct encryption_type enctype_des3_cbc_sha1 = {
     ETYPE_DES3_CBC_SHA1,
     "des3-cbc-sha1",
+    NULL,
     8,
     8,
     8,
@@ -2783,6 +2793,7 @@ static struct encryption_type enctype_des3_cbc_sha1 = {
 static struct encryption_type enctype_old_des3_cbc_sha1 = {
     ETYPE_OLD_DES3_CBC_SHA1,
     "old-des3-cbc-sha1",
+    NULL,
     8,
     8,
     8,
@@ -2796,6 +2807,7 @@ static struct encryption_type enctype_old_des3_cbc_sha1 = {
 static struct encryption_type enctype_aes128_cts_hmac_sha1 = {
     ETYPE_AES128_CTS_HMAC_SHA1_96,
     "aes128-cts-hmac-sha1-96",
+    NULL,
     16,
     1,
     16,
@@ -2808,6 +2820,7 @@ static struct encryption_type enctype_aes128_cts_hmac_sha1 = {
 static struct encryption_type enctype_aes256_cts_hmac_sha1 = {
     ETYPE_AES256_CTS_HMAC_SHA1_96,
     "aes256-cts-hmac-sha1-96",
+    NULL,
     16,
     1,
     16,
@@ -2820,6 +2833,7 @@ static struct encryption_type enctype_aes256_cts_hmac_sha1 = {
 static struct encryption_type enctype_aes128_cbc_none = {
     ETYPE_AES128_CBC_NONE,
     "aes128-cbc-none",
+    NULL,
     16,
     16,
     16,
@@ -2832,6 +2846,7 @@ static struct encryption_type enctype_aes128_cbc_none = {
 static struct encryption_type enctype_aes192_cbc_none = {
     ETYPE_AES192_CBC_NONE,
     "aes192-cbc-none",
+    NULL,
     16,
     16,
     16,
@@ -2844,6 +2859,7 @@ static struct encryption_type enctype_aes192_cbc_none = {
 static struct encryption_type enctype_aes256_cbc_none = {
     ETYPE_AES256_CBC_NONE,
     "aes256-cbc-none",
+    NULL,
     16,
     16,
     16,
@@ -2857,6 +2873,7 @@ static struct encryption_type enctype_aes256_cbc_none = {
 static struct encryption_type enctype_des_cbc_none = {
     ETYPE_DES_CBC_NONE,
     "des-cbc-none",
+    NULL,
     8,
     8,
     0,
@@ -2869,6 +2886,7 @@ static struct encryption_type enctype_des_cbc_none = {
 static struct encryption_type enctype_des_cfb64_none = {
     ETYPE_DES_CFB64_NONE,
     "des-cfb64-none",
+    NULL,
     1,
     1,
     0,
@@ -2881,6 +2899,7 @@ static struct encryption_type enctype_des_cfb64_none = {
 static struct encryption_type enctype_des_pcbc_none = {
     ETYPE_DES_PCBC_NONE,
     "des-pcbc-none",
+    NULL,
     8,
     8,
     0,
@@ -2890,9 +2909,12 @@ static struct encryption_type enctype_des_pcbc_none = {
     F_PSEUDO,
     DES_PCBC_encrypt_key_ivec,
 };
+static unsigned des_ede3_cbc_num[] = { 1, 2, 840, 113549, 3, 7 };
+static heim_oid des_ede3_cbc_oid = kcrypto_oid_enc(des_ede3_cbc_num);
 static struct encryption_type enctype_des3_cbc_none = {
     ETYPE_DES3_CBC_NONE,
     "des3-cbc-none",
+    &des_ede3_cbc_oid,
     8,
     8,
     0,
@@ -2902,9 +2924,12 @@ static struct encryption_type enctype_des3_cbc_none = {
     F_PSEUDO,
     DES3_CBC_encrypt,
 };
+static unsigned rc2CBC_num[] = { 1, 2, 840, 113549, 3, 2 };
+static heim_oid rc2CBC_oid = kcrypto_oid_enc(rc2CBC_num);
 static struct encryption_type enctype_rc2_cbc_none = {
     ETYPE_RC2_CBC_NONE,
     "rc2-cbc-none",
+    &rc2CBC_oid,
     8,
     8,
     0,
@@ -2914,7 +2939,6 @@ static struct encryption_type enctype_rc2_cbc_none = {
     F_PSEUDO,
     RC2_CBC_encrypt,
 };
-
 
 static struct encryption_type *etypes[] = {
     &enctype_null,
@@ -2986,6 +3010,41 @@ krb5_string_to_enctype(krb5_context context,
 	}
     krb5_set_error_string (context, "encryption type %s not supported",
 			   string);
+    return KRB5_PROG_ETYPE_NOSUPP;
+}
+
+krb5_error_code
+krb5_enctype_to_oid(krb5_context context,
+		    krb5_enctype etype,
+		    heim_oid *oid)
+{
+    struct encryption_type *et = _find_enctype(etype);
+    if(et == NULL) {
+	krb5_set_error_string (context, "encryption type %d not supported",
+			       etype);
+	return KRB5_PROG_ETYPE_NOSUPP;
+    }
+    if(et->oid == NULL) {
+	krb5_set_error_string (context, "%s have not oid", et->name);
+	return KRB5_PROG_ETYPE_NOSUPP;
+    }
+    krb5_clear_error_string(context);
+    return copy_oid(et->oid, oid);
+}
+
+krb5_error_code
+krb5_oid_to_enctype(krb5_context context,
+		    const heim_oid *oid,
+		    krb5_enctype *etype)
+{
+    int i;
+    for(i = 0; i < num_etypes; i++) {
+	if(heim_oid_cmp(etypes[i]->oid, oid) == 0) {
+	    *etype = etypes[i]->type;
+	    return 0;
+	}
+    }
+    krb5_set_error_string(context, "enctype for oid not supported");
     return KRB5_PROG_ETYPE_NOSUPP;
 }
 
