@@ -48,7 +48,6 @@ krb5_build_authenticator (krb5_context context,
 			  Authenticator **auth_result,
 			  krb5_data *result)
 {
-  struct timeval tv;
   Authenticator *auth = malloc(sizeof(*auth));
   char buf[1024];
   size_t len;
@@ -87,8 +86,8 @@ krb5_build_authenticator (krb5_context context,
   /* XXX - Copy more to auth_context? */
 
   if (auth_context) {
-    auth_context->authenticator->cusec = tv.tv_usec;
-    auth_context->authenticator->ctime = tv.tv_sec;
+    auth_context->authenticator->ctime = auth->ctime;
+    auth_context->authenticator->cusec = auth->cusec;
   }
 
   memset (buf, 0, sizeof(buf));
