@@ -80,8 +80,7 @@ sub fn_prefix($)
 sub struct_alignment($)
 {
 	my $s = shift;
-	# why do we need a minimum alignment of 4 ?? 
-	my $align = 4;
+	my $align = 1;
 	for my $e (@{$s->{ELEMENTS}}) {
 		if ($align < util::type_align($e)) {
 			$align = util::type_align($e);
