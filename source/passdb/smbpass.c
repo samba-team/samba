@@ -408,6 +408,11 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
   int wr_len;
   int fd;
 
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("mod_smbfilepwd_entry: password entries\n"));
+	dump_data(100, pwd->smb_passwd, 16);
+	dump_data(100, pwd->smb_nt_passwd, 16);
+#endif
   if (!*pfile) {
     DEBUG(0, ("No SMB password file set\n"));
     return False;
