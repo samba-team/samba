@@ -41,10 +41,10 @@ dnl SMB_MODULE_DEFAULT(1:name,2:default_build)
 AC_DEFUN(SMB_MODULE_DEFAULT,
 [
 	dnl Fall back to static if dlopen() is not available
-	eval MODULE_DEFAULT_$1=$2
+	[MODULE_DEFAULT_][$1]=$2
 
-	if test x"MODULE_DEFAULT_$1" = xSHARED -a x"$ac_cv_func_dlopen" != xyes; then
-		eval MODULE_DEFAULT_$1=STATIC
+	if test x"$[MODULE_DEFAULT_][$1]" = xSHARED -a x"$ac_cv_func_dlopen" != xyes; then
+		[MODULE_DEFAULT_][$1]=STATIC
 	fi
 ])
 
@@ -54,21 +54,21 @@ AC_DEFUN(SMB_MODULE,
 [
 	AC_MSG_CHECKING([how to build $1])
 	if test -z "$[MODULE_DEFAULT_][$1]"; then
-		eval MODULE_DEFAULT_$1=$3
+		[MODULE_DEFAULT_][$1]=$3
 
-		if test x"MODULE_DEFAULT_$1" = xSHARED -a x"$ac_cv_func_dlopen" != xyes; then
-			eval MODULE_DEFAULT_$1=STATIC
+		if test x"$[MODULE_DEFAULT_][$1]" = xSHARED -a x"$ac_cv_func_dlopen" != xyes; then
+			[MODULE_DEFAULT_][$1]=STATIC
 		fi
 	fi
 
 	if test "$[MODULE_][$1]"; then
 		DEST=$[MODULE_][$1]
-	elif test "$[MODULE_]translit([$2], [A-Z], [a-z])" -a "$[MODULE_DEFAULT_][$1]"; then
+	elif test "$[MODULE_]translit([$2], [A-Z], [a-z])" -a x"$[MODULE_DEFAULT_][$1]" != xNOT; then
 		DEST=$[MODULE_]translit([$2], [A-Z], [a-z])
 	else
 		DEST=$[MODULE_DEFAULT_][$1]
 	fi
-	
+
 	if test x"$DEST" = xSHARED; then
 		AC_DEFINE([$1][_init], [init_module], [Whether to build $1 as shared module])
 		$2_MODULES="$$2_MODULES bin/$1.$SHLIBEXT"
