@@ -31,10 +31,8 @@ extern int DEBUGLEVEL;
  */
 int cli_set_port(struct cli_state *cli, int port)
 {
-	if (port > 0)
-	  cli->port = port;
-
-	return cli->port;
+	cli->port = port;
+	return port;
 }
 
 /****************************************************************************

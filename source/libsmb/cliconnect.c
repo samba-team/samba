@@ -274,7 +274,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 			 "%s", share);
 	} else {
 		slprintf(fullshare, sizeof(fullshare)-1,
-			 "\\\\%s\\%s", "foo", share);
+			 "\\\\%s\\%s", cli->desthost, share);
 	}
 
 	set_message(cli->outbuf,4, 0, True);

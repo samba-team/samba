@@ -302,12 +302,6 @@ smb_connect(char *workgroup,		/* I - Workgroup */
     return (NULL);
   }
 
-  if (!cli_set_port(c, SMB_PORT))
-  {
-    fputs("ERROR: cli_set_port() failed...\n", stderr);
-    return (NULL);
-  }
-
   if (!cli_connect(c, server, &ip))
   {
     fputs("ERROR: cli_connect() failed...\n", stderr);
