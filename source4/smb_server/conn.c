@@ -21,12 +21,6 @@
 
 #include "includes.h"
 
-/* set these to define the limits of the server. NOTE These are on a
-   per-client basis. Thus any one machine can't connect to more than
-   MAX_CONNECTIONS services, but any number of machines may connect at
-   one time. */
-#define MAX_CONNECTIONS 1024
-
 /****************************************************************************
 init the tcon structures
 ****************************************************************************/
@@ -65,7 +59,7 @@ struct smbsrv_tcon *conn_new(struct smbsrv_connection *smb_conn)
 	tcon = talloc_zero_p(smb_conn, struct smbsrv_tcon);
 	if (!tcon) return NULL;
 
-	i = idr_get_new(smb_conn->tree.idtree_tid, tcon, MAX_CONNECTIONS);	
+	i = idr_get_new(smb_conn->tree.idtree_tid, tcon, 0x10000);	
 	if (i == -1) {
 		DEBUG(1,("ERROR! Out of connection structures\n"));	       
 		return NULL;
