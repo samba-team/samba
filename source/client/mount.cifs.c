@@ -490,10 +490,10 @@ int main(int argc, char ** argv)
 	}
 
 	if((getuid() != 0) && (geteuid() == 0)) {
-		if((statbuf.st_uid == getuid()) && (S_IRWXU == statbuf.st_mode & S_IRWXU)) {
+		if((statbuf.st_uid == getuid()) && (S_IRWXU == (statbuf.st_mode & S_IRWXU))) {
 			printf("setuid mount allowed\n");
 		} else {
-			printf("mount error: permission denied, not superuser and cifs.mount not installed SUID\n"); 
+			printf("mount error: permission denied or not superuser and cifs.mount not installed SUID\n"); 
 			return -1;
 		}
 	}
