@@ -21,7 +21,7 @@ There have been several fixes and internal enhancements which include:
  * Rpcclient's various printer commands now work (again)
 
 
-New/Changed parameters in 2.2.3
+New/Changed parameters in 2.2.4
 --------------------------------
 
 For more information on these parameters, see the man pages for
@@ -30,7 +30,6 @@ smb.conf(5).
 Added/changed parameters
 ------------------------
 
-* admin log
 * csc policy
 * inherit acls
 * nt status support
