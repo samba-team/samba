@@ -3165,7 +3165,6 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 
 	if ( ret != 0 ) {
 		unlink(tmp_file);
-		free_a_printer(&printer,2);
 		return False;
 	}
 
@@ -4296,9 +4295,11 @@ static uint32 spoolss_addprinterex_level_2( const UNISTR2 *uni_srv_name,
 	convert_printer_info(info, printer, 2);
 
 	if (*lp_addprinter_cmd() )
-		if ( !add_printer_hook(printer) )
+		if ( !add_printer_hook(printer) ) {
+			free_a_printer(&printer,2);
 			return ERROR_ACCESS_DENIED;
-	
+	}
+
 	slprintf(name, sizeof(name)-1, "\\\\%s\\%s", global_myname,
              printer->info_2->sharename);
 
