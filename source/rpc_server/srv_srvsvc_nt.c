@@ -1354,10 +1354,13 @@ net sess del
 
 WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SESS_DEL *r_u)
 {
+	struct current_user user;
 	struct sessionid *session_list;
 	int num_sessions, snum, ret;
 	fstring username;
 	fstring machine;
+	SE_PRIV se_diskop = SE_DISK_OPERATOR; /* Is disk op appropriate here ? JRA. */
+	BOOL is_disk_op = False;
 
 	rpcstr_pull_unistr2_fstring(username, &q_u->uni_user_name);
 	rpcstr_pull_unistr2_fstring(machine, &q_u->uni_cli_name);
@@ -1371,12 +1374,21 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 
 	DEBUG(5,("_srv_net_sess_del: %d\n", __LINE__));
 
+	get_current_user(&user,p);
+
+	is_disk_op = user_has_privileges( p->pipe_user.nt_user_token, &se_diskop );
+	
+	/* fail out now if you are not root and not a disk op */
+	
+	if ( user.uid != sec_initial_uid() && !is_disk_op )
+		return WERR_ACCESS_DENIED;
+
 	r_u->status = WERR_ACCESS_DENIED;
 
 	for (snum = 0; snum < num_sessions; snum++) {
 
-		if ((StrCaseCmp(session_list[snum].username, username) == 0 || username[0] == '\0' ) &&
-		    StrCaseCmp(session_list[snum].remote_machine, machine) == 0) {
+		if ((strequal(session_list[snum].username, username) || username[0] == '\0' ) &&
+		    strequal(session_list[snum].remote_machine, machine)) {
 		
 			if ((ret = message_send_pid(session_list[snum].pid, MSG_SHUTDOWN, NULL, 0, False))) {
 				r_u->status = WERR_OK;
@@ -1497,7 +1509,7 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 	char *path;
 	SEC_DESC *psd = NULL;
 	SE_PRIV se_diskop = SE_DISK_OPERATOR;
-	BOOL is_disk_op;
+	BOOL is_disk_op = False;
 
 	DEBUG(5,("_srv_net_share_set_info: %d\n", __LINE__));
 
