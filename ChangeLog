@@ -1,3 +1,18 @@
+2001-04-25  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/verify_init.c (krb5_verify_init_creds): do not try to
+	close an unopened ccache, noted by <marc@mit.edu>
+
+	* lib/krb5/krb5.h (krb5_any_ops): add declaration
+	* lib/krb5/context.c (init_context_from_config_file): register
+	krb5_any_ops
+
+	* lib/krb5/keytab_any.c: new file, implementing union of keytabs
+	* lib/krb5/Makefile.am (libkrb5_la_SOURCES): add keytab_any.c
+	
+	* lib/krb5/init_creds_pw.c (get_init_creds_common): handle options
+	== NULL.  noted by <marc@mit.edu>
+
 2001-04-19  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/rd_cred.c: set ret_creds to NULL before doing anything
