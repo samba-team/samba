@@ -123,7 +123,7 @@ v5_convert(krb5_context context, krb5_ccache id,
     c = strdup(cell);
     if (c == NULL)
 	return ENOMEM;
-    strupr(c);
+    _kafs_foldup(c, c);
     krb5_appdefault_string (context, "libkafs",
 			    c,
 			    "afs-use-524", "yes", &val);
@@ -180,7 +180,7 @@ get_cred(kafs_data *data, const char *name, const char *inst,
 	return ret;
 
     ret = v5_convert(d->context, d->id, out_creds, uid, 
-		     inst ? inst : realm, kt);
+		     (inst != NULL && inst[0] != '\0') ? inst : realm, kt);
     krb5_free_creds(d->context, out_creds);
 
     return ret;
@@ -245,6 +245,7 @@ krb5_afslog_uid_home(krb5_context context,
 {
     kafs_data kd;
     struct krb5_kafs_data d;
+    kd.name = "krb5";
     kd.afslog_uid = afslog_uid_int;
     kd.get_cred = get_cred;
     kd.get_realm = get_realm;
@@ -293,6 +294,7 @@ krb5_realm_of_cell(const char *cell, char **realm)
 {
     kafs_data kd;
 
+    kd.name = "krb5";
     kd.get_realm = get_realm;
     return _kafs_realm_of_cell(&kd, cell, realm);
 }
