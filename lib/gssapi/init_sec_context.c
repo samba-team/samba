@@ -117,15 +117,6 @@ do_delegation (krb5_auth_context ac,
     memset (&creds, 0, sizeof(creds));
     krb5_data_zero (fwd_data);
        
-    kret = krb5_generate_subkey (gssapi_krb5_context, &cred->session, &subkey);
-    if (kret)
-	goto out;
-       
-    kret = krb5_auth_con_setlocalsubkey(gssapi_krb5_context, ac, subkey);
-    krb5_free_keyblock (gssapi_krb5_context, subkey);
-    if (kret)
-	goto out;
-       
     kret = krb5_cc_get_principal(gssapi_krb5_context, ccache, &creds.client);
     if (kret) 
 	goto out;
@@ -322,6 +313,16 @@ init_auth
 			 (*context_handle)->auth_context, 
 			 &cred->session);
   
+    kret = krb5_auth_con_generatelocalsubkey(gssapi_krb5_context, 
+					     (*context_handle)->auth_context,
+					     &cred->session);
+    if(kret) {
+	gssapi_krb5_set_error_string ();
+	*minor_status = kret;
+	ret = GSS_S_FAILURE;
+	goto failure;
+    }
+
     flags = 0;
     ap_options = 0;
     if (req_flags & GSS_C_DELEG_FLAG)
@@ -371,16 +372,6 @@ init_auth
 	    return kret;
     }
 #endif
-
-    kret = krb5_auth_con_generatelocalsubkey(gssapi_krb5_context, 
-					     (*context_handle)->auth_context,
-					     &cred->session);
-    if(kret) {
-	gssapi_krb5_set_error_string ();
-	*minor_status = kret;
-	ret = GSS_S_FAILURE;
-	goto failure;
-    }
 
     kret = krb5_build_authenticator (gssapi_krb5_context,
 				     (*context_handle)->auth_context,
