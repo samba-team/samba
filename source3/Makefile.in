@@ -336,7 +336,7 @@ SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	       smbd/vfs.o smbd/vfs-wrap.o smbd/statcache.o \
                smbd/posix_acls.o lib/sysacls.o lib/server_mutex.o \
 	       smbd/process.o smbd/service.o smbd/error.o \
-	       printing/printfsp.o lib/util_seaccess.o smbd/srvstr.o \
+	       printing/printfsp.o lib/util_seaccess.o \
                smbd/build_options.o \
 	       smbd/change_trust_pw.o \
 	       $(MANGLE_OBJ)

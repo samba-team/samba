@@ -662,7 +662,7 @@ AC_CACHE_CHECK([if the compiler will optimize out function calls],samba_cv_optim
     AC_TRY_LINK([
 #include <stdio.h>],
 [
-		if (1) {
+		if (0) {
 		   this_function_does_not_exist();
 		} else {
 		  return 1;

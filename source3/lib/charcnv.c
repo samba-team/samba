@@ -186,7 +186,7 @@ size_t convert_string(charset_t from, charset_t to,
  * @returns Size in bytes of the converted string; or -1 in case of error.
  **/
 
-size_t convert_string_allocate(charset_t from, charset_t to,
+static size_t convert_string_allocate(charset_t from, charset_t to,
 		      		void const *src, size_t srclen, void **dest)
 {
 	size_t i_len, o_len, destlen;
@@ -265,7 +265,7 @@ convert:
  *
  * @returns Size in bytes of the converted string; or -1 in case of error.
  **/
-size_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
+static size_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 		      		void const *src, size_t srclen, void **dest)
 {
 	void *alloced_string;
@@ -303,7 +303,7 @@ size_t unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
 }
 
 
-size_t ucs2_align(const void *base_ptr, const void *p, int flags)
+static size_t ucs2_align(const void *base_ptr, const void *p, int flags)
 {
 	if (flags & (STR_NOALIGN|STR_ASCII))
 		return 0;
@@ -352,11 +352,6 @@ size_t push_ascii_fstring(void *dest, const char *src)
 }
 
 size_t push_ascii_pstring(void *dest, const char *src)
-{
-	return push_ascii(dest, src, sizeof(pstring), STR_TERMINATE);
-}
-
-size_t push_pstring(void *dest, const char *src)
 {
 	return push_ascii(dest, src, sizeof(pstring), STR_TERMINATE);
 }
@@ -507,7 +502,7 @@ size_t push_ucs2_allocate(smb_ucs2_t **dest, const char *src)
  is -1 then no maxiumum is used.
 **/
 
-size_t push_utf8(void *dest, const char *src, size_t dest_len, int flags)
+static size_t push_utf8(void *dest, const char *src, size_t dest_len, int flags)
 {
 	size_t src_len = strlen(src);
 	pstring tmpbuf;
@@ -531,11 +526,6 @@ size_t push_utf8(void *dest, const char *src, size_t dest_len, int flags)
 size_t push_utf8_fstring(void *dest, const char *src)
 {
 	return push_utf8(dest, src, sizeof(fstring), STR_TERMINATE);
-}
-
-size_t push_utf8_pstring(void *dest, const char *src)
-{
-	return push_utf8(dest, src, sizeof(pstring), STR_TERMINATE);
 }
 
 /**
@@ -666,7 +656,7 @@ size_t pull_ucs2_allocate(void **dest, const smb_ucs2_t *src)
  The resulting string in "dest" is always null terminated.
 **/
 
-size_t pull_utf8(char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
+static size_t pull_utf8(char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
 {
 	size_t ret;
 
@@ -690,16 +680,7 @@ size_t pull_utf8(char *dest, const void *src, size_t dest_len, size_t src_len, i
 
 	return src_len;
 }
-
-size_t pull_utf8_pstring(char *dest, const void *src)
-{
-	return pull_utf8(dest, src, sizeof(pstring), -1, STR_TERMINATE);
-}
-
-size_t pull_utf8_fstring(char *dest, const void *src)
-{
-	return pull_utf8(dest, src, sizeof(fstring), -1, STR_TERMINATE);
-}
+#endif
 
 /**
  * Copy a string from a UTF-8 src to a unix char * destination, allocating a buffer using talloc
@@ -745,8 +726,11 @@ size_t pull_utf8_allocate(void **dest, const char *src)
  is -1 then no maxiumum is used.
 **/
 
-size_t push_string(const void *base_ptr, void *dest, const char *src, size_t dest_len, int flags)
+size_t push_string_fn(const char *function, unsigned int line, const void *base_ptr, void *dest, const char *src, size_t dest_len, int flags)
 {
+	if (dest_len != (size_t)-1)
+		clobber_region(function, line, dest, dest_len);
+
 	if (!(flags & STR_ASCII) && \
 	    ((flags & STR_UNICODE || \
 	      (SVAL(base_ptr, smb_flg2) & FLAGS2_UNICODE_STRINGS)))) {
@@ -770,8 +754,11 @@ size_t push_string(const void *base_ptr, void *dest, const char *src, size_t des
  The resulting string in "dest" is always null terminated.
 **/
 
-size_t pull_string(const void *base_ptr, char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
+size_t pull_string_fn(const char *function, unsigned int line, const void *base_ptr, char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
 {
+	if (dest_len != (size_t)-1)
+		clobber_region(function, line, dest, dest_len);
+
 	if (!(flags & STR_ASCII) && \
 	    ((flags & STR_UNICODE || \
 	      (SVAL(base_ptr, smb_flg2) & FLAGS2_UNICODE_STRINGS)))) {
@@ -791,27 +778,6 @@ size_t align_string(const void *base_ptr, const char *p, int flags)
 }
 
 /**
- Convert from ucs2 to unix charset and return the
- allocated and converted string or NULL if an error occurred.
- You must provide a zero terminated string.
- The returning string will be zero terminated.
-**/
-
-char *acnv_u2ux(const smb_ucs2_t *src)
-{
-	size_t slen;
-	size_t dlen;
-	void *dest;
-	
-	slen = (strlen_w(src) + 1) * sizeof(smb_ucs2_t);
-	dlen = convert_string_allocate(CH_UCS2, CH_UNIX, src, slen, &dest);
-	if (dlen == (size_t)-1)
-		return NULL;
-	else
-		return dest;
-}
-
-/**
  Convert from unix to ucs2 charset and return the
  allocated and converted string or NULL if an error occurred.
  You must provide a zero terminated string.
@@ -826,27 +792,6 @@ smb_ucs2_t *acnv_uxu2(const char *src)
 	
 	slen = strlen(src) + 1;
 	dlen = convert_string_allocate(CH_UNIX, CH_UCS2, src, slen, &dest);
-	if (dlen == (size_t)-1)
-		return NULL;
-	else
-		return dest;
-}
-
-/**
- Convert from ucs2 to dos charset and return the
- allocated and converted string or NULL if an error occurred.
- You must provide a zero terminated string.
- The returning string will be zero terminated.
-**/
-
-char *acnv_u2dos(const smb_ucs2_t *src)
-{
-	size_t slen;
-	size_t dlen;
-	void *dest;
-	
-	slen = (strlen_w(src) + 1) * sizeof(smb_ucs2_t);
-	dlen = convert_string_allocate(CH_UCS2, CH_DOS, src, slen, &dest);
 	if (dlen == (size_t)-1)
 		return NULL;
 	else

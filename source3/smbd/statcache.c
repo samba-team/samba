@@ -62,7 +62,7 @@ void stat_cache_add( char *full_orig_name, char *orig_translated_path)
     return;
 
   /*
-   * If we are in case insentive mode, we need to
+   * If we are in case insentive mode, we don't need to
    * store names that need no translation - else, it
    * would be a waste.
    */
@@ -106,8 +106,8 @@ void stat_cache_add( char *full_orig_name, char *orig_translated_path)
         DEBUG(0,("stat_cache_add: Out of memory !\n"));
         return;
       }
-      safe_strcpy(scp->names, orig_name, namelen);
-      safe_strcpy((scp->names+namelen+1), translated_path, namelen);
+      overmalloc_safe_strcpy(scp->names, orig_name, namelen);
+      overmalloc_safe_strcpy((scp->names+namelen+1), translated_path, namelen);
       scp->name_len = namelen;
       hash_insert(&stat_cache, (char *)scp, orig_name);
     }
@@ -122,8 +122,8 @@ void stat_cache_add( char *full_orig_name, char *orig_translated_path)
       DEBUG(0,("stat_cache_add: Out of memory !\n"));
       return;
     }
-    safe_strcpy(scp->names, orig_name, namelen);
-    safe_strcpy(scp->names+namelen+1, translated_path, namelen);
+    overmalloc_safe_strcpy(scp->names, orig_name, namelen);
+    overmalloc_safe_strcpy(scp->names+namelen+1, translated_path, namelen);
     scp->name_len = namelen;
     hash_insert(&stat_cache, (char *)scp, orig_name);
   }
@@ -136,7 +136,7 @@ void stat_cache_add( char *full_orig_name, char *orig_translated_path)
  Return True if we translated (and did a scuccessful stat on) the entire name.
 *****************************************************************************/
 
-BOOL stat_cache_lookup(connection_struct *conn, char *name, char *dirpath, 
+BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath, 
 		       char **start, SMB_STRUCT_STAT *pst)
 {
   stat_cache_entry *scp;
