@@ -1,319 +1,180 @@
-                 ================================
-                 Release Notes for Samba 3.0.3rc1
-                          April 20, 2004
-                 ================================
+                 =================================
+                 Release Notes for Samba 3.0.5pre1
+                            XXXX XX, 2004
+                 =================================
 
-This is a release candidate snapshot of the Samba 3.0.3 code
-base and should be considered for testing only.  A release
-candidate (RC) means that we are close to the final, stable
-release and in provided for Quality Assurance (QA) purposes.
-This release is *not* intended for production servers.  Use
-at your own risk.
+This is a preview release of the Samba 3.0.5 code base and is
+provided for testing only.  This release is *not* intended for
+production servers.  Use at your own risk.
 
-There have been several bug fixes since the 3.0.2a release that
+There have been several bug fixes since the 3.0.4 release that
 we feel are important to make available to the Samba community
 for wider testings.  See the "Changes" section for details on
 exact updates.
 
-Common bugs fixed in this RC include:
+Common bugs fixed in Samba 3.0.5pre1 include:
 
-  o Delays in winbindd startup caused by unnecessary 
-    connections to trusted domain controllers.
-  o Various small memory leaks.
-  o Winbindd failing due to expired Kerberos tickets.
+  o <FILL IN>
 
-New features introduced in this preview release include:
-
-  o Support for local nested groups via winbindd.
-  o Specifying options to be passed directly to 
-    the CUPS libraries.
-    
 
 ######################################################################
 Changes
 #######
 
-Changes since 3.0.3pre2
------------------------
-smb.conf changes
-----------------
+Changes since 3.0.4
+-------------------
 
-    Parameter Name              Action
-    --------------              ------
-    cups options                New
-    use cracklib                Removed
-    winbind nested groups       New
-
-    
 commits
 -------
 
-o   Jeremy Allison <jra@samba.org>
-    * BUG 1139: Fix based on suggestion by jdev@panix.com.
-      swap lookups for user and group - group will do an
-      algorithmic lookup if it fails, user won't.
-    * Make EA's lookups case independent.
-    * Fix SETPATHINFO in 'unix extensions' support.
-    * Make 3.x pass the Samba 4.x RAW-SEARCH tests - except for 
-      the UNIX info levels, and the short case preserve names.
-
-
-o   Andrew Bartlet <abartlet@samba.org>
-    * Ensure 'net' honors the 'netbios name' in the smb.conf by 
-      default.
-    * Support SMB signing on connections using only the LANMAN 
-      password and generate the correct the 'session key' for these 
-      connections.
-    * Implement --required-membership-of=, an ntlm_auth option 
-      that restricts all authentication to members of this particular 
-      group.
-    * Improve our fall back code for password changes.
-    * Only send the ntlm_auth 'ntlm-server-1' helper client a '.' 
-      after the server had said something (such as an error).
-    * Add 'ntlm-server-1' helper protocol to ntlm_auth.
-
-      
-o   Alexander Bokovoy <ab@samba.org>
-    * Fix smbfs problem with Tree Disconnect issued before smbfs 
-      starts its work.
-
-
-o   Gerald Carter <jerry@samba.org>
-    * Ensure server schannel uses the auth level requested by the 
-      client.
-    * Removed --with-cracklib option due to potential crash issue.
-    * Fix -lcrypto linking problem with wbinfo.
-    * BUG 761: allow printing parameter to set defaults on a per 
-      share basis.
-    * Add 'cups options' parameter to allow raw printing without 
-      changing /etc/cups/cupsd.conf.
-    * BUG 1081, 1183: Added remove_duplicate_gids() to smbd and 
-      winbindd.
-    * BUG 1246: Fix typo in Fedora /etc/init.d/winbind.
-
-
-o   Steve French <sfrench@us.ibm.com>
-    * Fix free of incremented pointer in cifsvfs mount helper.
-    * Fix path canonicalization of the mount target path and help 
-      text display in the cifs mount helper.
-    * Add missing guest mount option for mount.cifs.
-
-
-o   Paul Green <paulg@samba.org>
-    * Update VOS _POSIX_C_SOURCE macro to 200112L.
-    * Fix bug in configure.ion by moving the first use of 
-      AC_CHECK_HEADERS so it is always executed.
-    * Fix configure.in to only use $BLDSHARED to select whether to 
-      build static or shared libraries.
-
-o   Pat Haywarrd <Pat.Hayward@propero.net>
-    * Make the session_users list dynamic (max of 128K).
-    
-    
-o   Cal Heldenbrand <calzplace@yahoo.com> 
-    * Fix for for 'pam_smbpass migrate' functionality.
-
-
-o   Krischan Jodies <kj@sernet.de>
-    * Implement 'net rpc group delete'
-
-
-o   Volker Lendecke <vl@samba.org>
-    * Add support in winbindd for expanding nested local groups.
-    * Fix memleak in winbindd.
-    * Fix msdfs proxy.
-    * Don't list domain groups from BUILTIN.
-    * Fix memleak in policy handle utility functions.
-    * Decrease winbindd startup time by only contacting trusted 
-      domains as necessary.
-    * Allow winbindd to ask the DC for its domain for a trusted 
-      DC.
-    * Fix Netscape DS schema based on comments from 
-      <thomas.mueller@christ-wasser.de>.
-    
-
-o   Jianliang Lu <j.lu@tiesse.com>
-    * Don't force an upper case domain name in the ntlmssp code.
-    
-
-o   Jim McDonough <jmcd@us.ibm.com>
-    * Remove modifyTimestamp from list of our attributes.  
-    * Fix lsalookupnames to check for domain users as well as local 
-      users. 
-    * Merge struct uuid replacement for GUID from trunk.
-    * BUG 1208: Finish support for handling expired tickets in 
-      winbindd (in conjunction with Guenther Deschner <gd@suse.de>).
-
-
-o   Stefan Metzmacher <metze@samba.org>
-    * Implement new VERSION schema based on subversion revision 
-      numbers.
-
-
-o   James Peach <jpeach@sgi.com>
-    * Search IRIX ABI paths for libiconv.  Based on initial fix from 
-      Jason Mader.
-      
-
-o   Kurt Pfeifle <kpfeifle@danka.de>
-    * Add example shell script for migrating drivers and printers 
-      from a Windows print server to a Samba print server using 
-      smbclient/rpcclient (examples/printing/VamireDriversFunctions).
-
-
-o   Richard Sharpe <rsharpe@samba.org>
-    * Add support for printing out the MAC address on nmblookup.
-
-
-o   Andrew Tridgell <tridge@samba.org>
-    * Force winbindd to use schannel in clients connections to 
-      DC's if possible.
 
 
 
 Changes for older versions follow below:
 
-        --------------------------------------------------
+    --------------------------------------------------
 
-                 =================================
-                 Release Notes for Samba 3.0.3pre2
-                          April 5, 2004
-                 =================================
-
-This is a preview release of the Samba 3.0.3 code base and is
-provided for testing only.  This release is *not* intended for
-production servers.  Use at your own risk.
-
-There have been several bug fixes since the 3.0.2a release that
-we feel are important to make available to the Samba community
-for wider testings.  See the "Changes" section for details on
-exact updates.
-
-Common bugs fixed in this preview release include:
-
-  o Substitution errors for %[UuGg] in smb.conf.
-  o winbindd crashes when using ADS security mode.
-  o SMB signing errors.
-
-New features introduced in this preview release include:
-
-  o Experimental support for storing DOS attribute on files
-    and folders in Extended Attributes.
+                 =============================
+                 Release Notes for Samba 3.0.4
+                          May 8, 2004
+                 =============================
 
 
-Changes since 3.0.3pre1
------------------------
-smb.conf changes
-----------------
+Common bugs fixed in Samba 3.0.4 include:
 
-    Parameter Name              Action
-    --------------              ------
-    unicode                     Removed
-    ea support                  New
-    store dos attributes        New
+  o Password changing after applying the patch described in
+    the Microsoft KB828741 article to Windows clients.
+  o Crashes in smbd.
+  o Managing print jobs via Windows on Big-Endian servers.
+  o Several memory leaks in winbindd and smbd.
+  o Compile issues on AIX and *BSD.
 
-    
+
+
+Changes since 3.0.3
+--------------------
+
 commits
 -------
 
 o   Jeremy Allison <jra@samba.org>
-    * BUG 1064: Ensure truncate attribute checking is done correctly 
-      on "hidden" dot files.
-    * Fix bug in anonymous dfs self-referrals again.
-    * Fix get/set of EA's in client library
-    * Added support for OS/2 EA's in smbd server.
-    * Added 'ea support' parameter to smb.conf.
-    * Added 'store dos attributes' parameter to smb.conf.
-    * Fix wildcard identical rename.
-    * Fix reply_ctemp - make compatible with w2k3.
-    * Fix wildcard unlink.
-    * Fix wildcard src with wildcard dest renames.  
+    * Fix path processing for DeletePrinterDriverEx().
+    * BUG 1303: Fix for Microsoft hotfix KB828741 password change 
+      breakage.
 
 
-o   Andrew Bartlet <abartlet@samba.org>
-    * Remove 'unicode' smb.conf option.
-    * BUG 1138: Fix support for 'optional' SMB signing and other 
-      signing bugs.
-    * BUG 169: Fix NTLMv2-only behavior.
+o   Andrew Bartlett <abartlet@samba.org>
+    * Fix alignment bug in GetDomPwInfo().
 
 
-o   Timur Bakeyev <timur@com.bat.ru>
-    * BUG 1152: Allow python modules to build despite libraries added 
-      to LDFLAGS instead of LDPATH.
+o   Alexander Bokovoy <ab@samba.org>
+    * Fix utime[s]() issues in smbwrapper on systems 
+      that can boot both the 2.4 and 2.6 Linux kernels.
 
 
 o   Gerald Carter <jerry@samba.org>
-    * BUG 417, 1128: Ensure that the current_user_info is set
-      consistently so that %[UuGg] is expanded correctly.
-    * BUG 1195: Fix crash in winbindd when the ADS server is 
-      unavailable.
-    * BUG 1185: Set reconnect time to be the same as the 
-      'winbind cache time'.
-    * Ensure that we return the sec_desc in smb_io_printer_info_2.
-    * Change Samba printers Win32 attribute to PRINTER_ATTRIBUTE_LOCAL.
-    * BUG 1095: Honor the '-l' option in smbclient.
-    * BUG 1023: surround get_group_from_gid() with become_unbecome_root() 
-      block.
+    * Fedora packaging fixes.
+    * BUG 1302: Fix seg fault by not trying to optimize a list of 
+      invalid gids using the wrong array size.
+    * BUG 1309: fix seg fault caused by trying to strdup(NULL)
+      seen when 'security = share'.
+    * Fix problems when using IBM's compiler on AIX.
+    * Link Developer's Guide, Example Guide, and multi-page HOWTO
+      into SWAT's welcome page.
+    * BUG 1293: fix double free in printer publishing code.
+
+    
+o   Wim Delvaux <wim.delvaux@adaptiveplanet.com>
+    * Fix for handling timeouts in socket connections.
 
 
-o   Steve French <sfrench@us.ibm.com>
-    * Fix credential file mounting for cifs vfs.
-
-
-o   Richard Garnish <rabies@meep.org>
-    * Correct blocking condition in smbd's use of accept() on IRIX.
-
+o   Michel Gravey <michel.gravey@optogone.com>
+    * BUG 483: patch from  to fix password hash creation in SWAT.
+    
 
 o   Volker Lendecke <vl@samba.org>
-    * Implement wbinfo -k: Have winbind generate an AFS token after
-      authenticating the user.
-    * Add expand_msdfs VFS module for providing referrals based on the
-      the client's IP address.
-    * Implement client side NETLOGON GetDCName function.
-    * Fix caching of name->sid lookups.
-
-
-o   Jianliang Lu <j.lu@tiesse.com>
-    * NTLMv2 fixes.
+    * Close the open NT pipes before the tdis.
+    * Fix AFS related build issues.
+    * Handle error conditions when base64 encoding a blob of 0 bytes.
 
     
+o   Herb Lewis <herb@samba.org>
+    * Added 'acls' debug class.
+
+o   kawasa_r@itg.hitachi.co.jp
+    * Multiple variable initialization and memory leak fixes.
+    
+    
+o   Stephan Kulow <coolo@suse.de>
+    * Fix string length bug in libsmbclient that caused KDE's 
+      Konqueror to crash.
+    * BUG 429: More libsmbclient fixes.
+
+
 o   Jim McDonough <jmcd@us.ibm.com>
-    * BUG 1208 (partial): Improvements for working with expired krb5 
-      tickets in winbindd.
-    * Use timegm, or our already existing replacement instead of 
-      timezone (spotted by Andrzej Tobola <san@iem.pw.edu.pl>).
+    * BUG 1007, 1279: Store the print job using a little-endian key.
 
 
-o   Andrew Tridgell <tridge@samba.org>
-    * Change tdb license to LGPL (see source/tdb/tdb.c).
+o   Eric Mertens
+    o Compile fix for OpenBSD (ENOTSUP not supported).
+
     
+o   Stefan Metzmacher <metze@samba.org>
+    * Correct bug in disks quota views from explorer.
+
     
-        --------------------------------------------------
-
-                 =================================
-                 Release Notes for Samba 3.0.3pre1
-                          March 19, 2004
-                 =================================
+o   Tim Potter <tpot@samba.org>
+    BUG 1305: Correct debug output.
 
 
-Common bugs fixed in this preview release include:
+o   Richard Sharpe <rsharpe@samba.org>
+    * Fix incorrect error code mapping.
 
-  o Crash bugs and change notify issues in Samba's
-    printing code.
-  o Honoring secondary group membership on domain
-    member servers.
-  o TDB scalability issue surrounding the TDB_CLEAR_IF_FIRST
-    flag.
 
-New features introduced in this preview release include:
+o   Jelmer Vernooij <jelmer@samba.org>
+    * Add additional NT_STATUS errorm mappings.
+    
+
+Changes for older versions follow below:
+
+    --------------------------------------------------
+
+                 =============================
+                 Release Notes for Samba 3.0.3
+                        April 29, 2004
+                 =============================
+
+
+Common bugs fixed in Samba 3.0.3 include:
+
+  o Crash bugs and change notify issues in Samba's printing code.
+  o Honoring secondary group membership on domain member servers.
+  o TDB scalability issue surrounding the TDB_CLEAR_IF_FIRST flag.
+  o Substitution errors for %[UuGg] in smb.conf.
+  o winbindd crashes when using ADS security mode.
+  o SMB signing errors.
+  o Delays in winbindd startup caused by unnecessary 
+    connections to trusted domain controllers.
+  o Various small memory leaks.
+  o Winbindd failing due to expired Kerberos tickets.
+
+New features introduced in Samba 3.0.3 include:
 
   o Improved support for i18n character sets.
   o Support for account lockout policy based on
     bad password attempts.
   o Improved support for long password changes (>14
     characters) and strong password enforcement.
-  o Continued work on support Windows aliases (i.e.
-    nested groups).
+  o Support for Windows aliases (i.e. nested groups).
+  o Experimental support for storing DOS attribute on files
+    and folders in Extended Attributes.
+  o Support for local nested groups via winbindd.
+  o Specifying options to be passed directly to the CUPS libraries.
+
+Please be aware that the Samba source code repository was 
+migrated from CVS to Subversion on April 4, 2004.  Details on 
+accessing the Samba source tree via anonymous svn can be found 
+at http://svn.samba.org/samba/subversion.html.
 
 
 Changes since 3.0.2a
@@ -323,14 +184,14 @@ smb.conf changes
 
     Parameter Name              Action
     --------------              ------
+    cups options                New
+    ea support                  New
     only user                   Deprecated
-    use cracklib                New
+    store dos attributes        New
+    unicode                     Removed
+    winbind nested groups       New
 
     
-Please refer to the CVS log for the SAMBA_3_0 branch for complete
-details.  The list of changes per contributor are as follows:
-
-
 commits
 -------
 
@@ -373,18 +234,39 @@ o   Jeremy Allison <jra@samba.org>
       no '\' as second byte (based on work by ab@samba.org.
     * Fix the "dfs self-referrals as anonymous user" problem
       (based on patch from vl@samba.org).
+    * BUG 1064: Ensure truncate attribute checking is done correctly 
+      on "hidden" dot files.
+    * Fix bug in anonymous dfs self-referrals again.
+    * Fix get/set of EA's in client library
+    * Added support for OS/2 EA's in smbd server.
+    * Added 'ea support' parameter to smb.conf.
+    * Added 'store dos attributes' parameter to smb.conf.
+    * Fix wildcard identical rename.
+    * Fix reply_ctemp - make compatible with w2k3.
+    * Fix wildcard unlink.
+    * Fix wildcard src with wildcard dest renames.      
+    * BUG 1139: Fix based on suggestion by jdev@panix.com.
+      swap lookups for user and group - group will do an
+      algorithmic lookup if it fails, user won't.
+    * Make EA's lookups case independent.
+    * Fix SETPATHINFO in 'unix extensions' support.
+    * Make 3.x pass the Samba 4.x RAW-SEARCH tests - except for 
+      the UNIX info levels, and the short case preserve names.
 
 
 o   Timur Bakeyev <timur@com.bat.ru>
     * BUG 1144: only set --with-fhs when the argument is 'yes'
+    * BUG 1152: Allow python modules to build despite libraries added 
+      to LDFLAGS instead of LDPATH.
+    * BUG 1141: Fix nss*.so names on FreeBSD 5.x.
 
-    
+
 o   Craig Barratt <cbarratt@users.sourceforge.net>
     * BUG 389: Allow multiple exclude arguments with smbclient 
       tar -Xr options (better support for Amanda backup client).
 
 
-o   Andrew Bartlet <abartlet@samba.org>
+o   Andrew Bartlett <abartlet@samba.org>
     * Include support for linking with cracklib for enforcing strong 
       password changes.
     * Add support for >14 character password changes from Windows 
@@ -397,16 +279,34 @@ o   Andrew Bartlet <abartlet@samba.org>
       LDAP DIT.
     * Implement python unit tests for Samba's multibyte string 
       support.
+    * Remove 'unicode' smb.conf option.
+    * BUG 1138: Fix support for 'optional' SMB signing and other 
+      signing bugs.
+    * BUG 169: Fix NTLMv2-only behavior.
+    * Ensure 'net' honors the 'netbios name' in the smb.conf by 
+      default.
+    * Support SMB signing on connections using only the LANMAN 
+      password and generate the correct the 'session key' for these 
+      connections.
+    * Implement --required-membership-of=, an ntlm_auth option 
+      that restricts all authentication to members of this particular 
+      group.
+    * Improve our fall back code for password changes.
+    * Only send the ntlm_auth 'ntlm-server-1' helper client a '.' 
+      after the server had said something (such as an error).
+    * Add 'ntlm-server-1' helper protocol to ntlm_auth.
 
-
+      
 o   Alexander Bokovoy <ab@samba.org>
     * Fix incorrect size calculation of the directory name 
       in recycle.so.
     * Fix problems with very long filenames in both smbd and smbclient
       caused by truncating paths during character conversions.
+    * Fix smbfs problem with Tree Disconnect issued before smbfs 
+      starts its work.
 
 
-o   Gerald (Jerry) Carter <jerry@samba.org>
+o   Gerald Carter <jerry@samba.org>
     * BUG 850: Fix 'make installmodules' bug on True64.
     * BUG 66: mark 'only user' deprecated.
     * Remove corrupt tdb and shutdown (only for printing tdbs, 
@@ -436,7 +336,33 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
       the username map.
     * Fix client rpc binds for ASU derived servers (pc netlink, 
       etc...).
-      
+    * BUG 417, 1128: Ensure that the current_user_info is set
+      consistently so that %[UuGg] is expanded correctly.
+    * BUG 1195: Fix crash in winbindd when the ADS server is 
+      unavailable.
+    * BUG 1185: Set reconnect time to be the same as the 
+      'winbind cache time'.
+    * Ensure that we return the sec_desc in smb_io_printer_info_2.
+    * Change Samba printers Win32 attribute to PRINTER_ATTRIBUTE_LOCAL.
+    * BUG 1095: Honor the '-l' option in smbclient.
+    * BUG 1023: surround get_group_from_gid() with become_unbecome_root() 
+      block.
+    * Ensure server schannel uses the auth level requested by the 
+      client.
+    * Removed --with-cracklib option due to potential crash issue.
+    * Fix -lcrypto linking problem with wbinfo.
+    * BUG 761: allow printing parameter to set defaults on a per 
+      share basis.
+    * Add 'cups options' parameter to allow raw printing without 
+      changing /etc/cups/cupsd.conf.
+    * BUG 1081, 1183: Added remove_duplicate_gids() to smbd and 
+      winbindd.
+    * BUG 1246: Fix typo in Fedora /etc/init.d/winbind.
+    * BUG 1288: resolve any machine netbios name (0x00) and not just 
+      servers (0x20).
+    * BUG 1199: Fix potential symlink issue in 
+      examples/printing/smbprint.
+
 
 o   Robert Dahlem <Robert.Dahlem@gmx.net>
     * BUG 1048:  Don't return short names when when 'mangled names = no'
@@ -453,10 +379,22 @@ o   Bostjan Golob <golob@gimb.org>
       overwritten by other fields.
 
 
+o   Landon Fuller <landonf@opendarwin.org>
+    * BUG 1232: patch from landonf@opendarwin.org (Landon Fuller) 
+      to fix user/group enumeration on systems whose libc does not 
+      call setgrent() before trying to enumerate users (i.e. 
+      FreeBSD 5.2).
+
+
 o   Steve French <sfrench@us.ibm.com>
     * Update mount.cifs to version 1.1.
     * Disable dev (MS_NODEV) on user mounts from cifs vfs.
     * Fixes to minor security bug in the mount helper.
+    * Fix credential file mounting for cifs vfs.
+    * Fix free of incremented pointer in cifsvfs mount helper.
+    * Fix path canonicalization of the mount target path and help 
+      text display in the cifs mount helper.
+    * Add missing guest mount option for mount.cifs.
 
 
 o   SATOH Fumiyasu <fumiya@miraclelinux.com>
@@ -467,12 +405,33 @@ o   SATOH Fumiyasu <fumiya@miraclelinux.com>
     * Patch from to internally count characters correctly.
 
 
+o   Paul Green <paulg@samba.org>
+    * Update VOS _POSIX_C_SOURCE macro to 200112L.
+    * Fix bug in configure.ion by moving the first use of 
+      AC_CHECK_HEADERS so it is always executed.
+    * Fix configure.in to only use $BLDSHARED to select whether to 
+      build static or shared libraries.
+
+
+o   Pat Haywarrd <Pat.Hayward@propero.net>
+    * Make the session_users list dynamic (max of 128K).
+    
+    
+o   Cal Heldenbrand <calzplace@yahoo.com> 
+    * Fix for for 'pam_smbpass migrate' functionality.
+
+
 o   Chris Hertel <crh@samba.org>
     * fix enumeration of shares 12 characters in length via 
       smbclient.
 
+
 o   Ulrich Holeschak <ulrich@holeschak.de>
     * BUG 932: fix local password change using pam_smbpass
+
+
+o   Krischan Jodies <kj@sernet.de>
+    * Implement 'net rpc group delete'
 
 
 o   John Klinger <john.klinger@lmco.com>
@@ -497,24 +456,47 @@ o   Volker Lendecke <vl@samba.org>
     * Fix wb_delgrpmem (wbinfo -o).
     * As a DC we should not reply to lsalookupnames on DCNAME\\user.
     * Fix sambaUserWorkstations on a Samba DC.
-
-
-o   Derrell Lipman <Derrell.Lipman@UnwiredUniverse.com>
-    * Bug fixes and enhancements to libsmbclient library.
-
+    * Implement wbinfo -k: Have winbind generate an AFS token after
+      authenticating the user.
+    * Add expand_msdfs VFS module for providing referrals based on the
+      the client's IP address.
+    * Implement client side NETLOGON GetDCName function.
+    * Fix caching of name->sid lookups.
+    * Add support in winbindd for expanding nested local groups.
+    * Fix memleak in winbindd.
+    * Fix msdfs proxy.
+    * Don't list domain groups from BUILTIN.
+    * Fix memleak in policy handle utility functions.
+    * Decrease winbindd startup time by only contacting trusted 
+      domains as necessary.
+    * Allow winbindd to ask the DC for its domain for a trusted 
+      DC.
+    * Fix Netscape DS schema based on comments from 
+      <thomas.mueller@christ-wasser.de>.
+    * Correct case where adding a domain user to a XP local group 
+      did a lsalookupname on the user without domain prefix, and 
+      failed.
+    * Fix segfault in winbindd caused by 'wbinfo -a'.
+    
 
 o   Herb Lewis <herb@samba.org>
     * Fix typo for tag in proto file.
     * Add missing #ifdef HAVE_BICONV stuff.
     * Truncate Samba's netbios name at the first '.' (not 
       right to left).
-    
 
+
+o   Derrell Lipman <Derrell.Lipman@UnwiredUniverse.com>
+    * Bug fixes and enhancements to libsmbclient library.
+
+    
 o   Jianliang Lu <j.lu@tiesse.com>
     * Enforce the 'user must change password at next login' flag.
     * Decode meaning of 'fields present' flags (improves support 
       for usrmgr.exe).
-
+    * NTLMv2 fixes.
+    * Don't force an upper case domain name in the ntlmssp code.
+    
 
 o   L. Lucius <ib@digicron.com>.
     * type fixes.
@@ -530,6 +512,23 @@ o   Jim McDonough <jmcd@us.ibm.com>
       controllers and standalone servers.
     * Get MungedDial attribute actually working with full TS 
       strings in it for pdb_ldap.
+    * BUG 1208 (partial): Improvements for working with expired krb5 
+      tickets in winbindd.
+    * Use timegm, or our already existing replacement instead of 
+      timezone (spotted by Andrzej Tobola <san@iem.pw.edu.pl>).
+    * Remove modifyTimestamp from list of our attributes.  
+    * Fix lsalookupnames to check for domain users as well as local 
+      users. 
+    * Merge struct uuid replacement for GUID from trunk.
+    * BUG 1208: Finish support for handling expired tickets in 
+      winbindd (in conjunction with Guenther Deschner <gd@suse.de>).
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * Implement new VERSION schema based on subversion revision 
+      numbers.
+    * Add shadow_copy vfs module.
+    * Fix segault in login_cache support.
 
 
 o    Heinrich Mislik <Heinrich.Mislik@univie.ac.at>
@@ -543,6 +542,14 @@ o   James Peach <jpeach@sgi.com>
     * BUG 768: Accept profileing arg to IRIX init script.
     * BUG 748: Relax arg parsing to sambalp script (IRIX).
     * BUG 758: Fix pdma build.
+    * Search IRIX ABI paths for libiconv.  Based on initial fix from 
+      Jason Mader.
+      
+
+o   Kurt Pfeifle <kpfeifle@danka.de>
+    * Add example shell script for migrating drivers and printers 
+      from a Windows print server to a Samba print server using 
+      smbclient/rpcclient (examples/printing/VamireDriversFunctions).
 
 
 o   Tim Potter <tpot@samba.org>
@@ -556,29 +563,36 @@ o   Tim Potter <tpot@samba.org>
     * BUG 1112: Fix for writable printerdata problem in python bindings.
     * BUG 1154: Remove reference to <sys/mman.h> in tdbdump.c.
     * BUG 1155: enclose use of fchown() with guards.
-      
+    * Relicense tdb python module as LGPL.
+
+
+o   Richard Sharpe <rsharpe@samba.org>
+    * Add support to smbclient for multiple logins on the same 
+      session (based on work by abartlet@samba.org).
+    * Correct blocking condition in smbd's use of accept() on IRIX.
+    * Add support for printing out the MAC address on nmblookup.
+
 
 o   Simo Source <idra@samba.org>
     * Replace unknown_3 with fields_present in SAMR code.
     * More length checks in strlcat().
 
 
-o   Richard Sharpe <rsharpe@samba.org>
-    * Add support to smbclient for multiple logins on the same 
-      session (based on work by abartlet@samba.org).
-
-
 o   Andrew Tridgell <tridge@samba.org>
     * Rewrote the AIX UESS backend for winbindd.
     * Fixed compilation with --enable-dmalloc.
-    
-    
+    * Change tdb license to LGPL (see source/tdb/tdb.c).
+    * Force winbindd to use schannel in clients connections to 
+      DC's if possible.
+
+
 o   Jelmer Vernooij <jelmer@samba.org>
    * Fix ETA Calculation when resuming downloads in smbget.
    * Add -O (for writing downloaded files to standard out) 
      based on patch by Bas van Sisseren <bas@dnd.utwente.nl>.
+    * Fix syntax error in example mysql table
 
-
+           
 o   TAKEDA yasuma <yasuma@miraclelinux.com>
     * BUG 900: fix token processing in cmd_symlink, cmd_link, 
       cmd_chown, cmd_chmod smbclient functions.
@@ -586,9 +600,9 @@ o   TAKEDA yasuma <yasuma@miraclelinux.com>
 
 o    Shiro Yamada <shiro@miraclelinux.com>
      * BUG 1129: install image files for SWAT.
-      
 
-        --------------------------------------------------
+      
+    --------------------------------------------------
 
                   ==============================
                   Release Notes for Samba 3.0.2a
@@ -630,7 +644,7 @@ o   Jeremy Allison <jra@samba.org>
     * Added paranoia checks in parsing code.
     
 
-o   Andrew Bartlet <abartlet@samba.org>
+o   Andrew Bartlett <abartlet@samba.org>
     * Ensure that changes to uninitialized passwords in ldapsam 
       are written to the DIT.
 
@@ -746,7 +760,7 @@ o   Petri Asikainen <paca@sci.fi>
       working with Novell NDS.
 
 
-o   Andrew Bartlet <abartlet@samba.org>
+o   Andrew Bartlett <abartlet@samba.org>
     * Correctly handle per-pipe NTLMSSP inside a NULL session.
     * Fix segfault in gencache 
     * Fix early free() of encrypted_session_key.
