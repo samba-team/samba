@@ -5,9 +5,13 @@ if [ ! -f configure.in ]; then
 	exit 1
 fi
 
-if [ $# -ne 1 ]; then
+if [ $# -ne 1 -a $# -ne 2 ]; then
 	echo "make-release version"
 	exit 1
+fi
+
+if [ "$2" != "" ]; then
+	rev="-r $2"
 fi
 
 HV="$1" emacs -batch -q -no-site-file -l ./make-release.el || exit
@@ -15,5 +19,5 @@ HV="$1" emacs -batch -q -no-site-file -l ./make-release.el || exit
 echo cvs ci -m \"Release $1\" configure.in ChangeLog
 cvs ci -m "Release $1" configure.in ChangeLog
 v=`echo $1 | sed 's/\(.\)\.\(.\)\(.\)/\1-\2-\3/'`
-echo cvs rtag heimdal-$v heimdal
-cvs rtag heimdal-$v heimdal
+echo cvs rtag $rev heimdal-$v heimdal
+cvs rtag $rev heimdal-$v heimdal
