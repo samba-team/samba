@@ -38,6 +38,7 @@ install_symlink_command = @install_symlink_command@
 
 PROGS = destest$(EXECSUFFIX) \
 	mdtest$(EXECSUFFIX) \
+	md5crypt_test$(EXECSUFFIX) \
 	des$(EXECSUFFIX) \
 	rpw$(EXECSUFFIX) \
 	speed$(EXECSUFFIX)
@@ -98,9 +99,10 @@ uninstall:
 TAGS: $(LIBSRC)
 	etags $(LIBSRC)
 
-check: destest$(EXECSUFFIX) mdtest$(EXECSUFFIX)
+check: destest$(EXECSUFFIX) mdtest$(EXECSUFFIX) md5crypt_test$(EXECSUFFIX)
 	./destest$(EXECSUFFIX)
 	./mdtest$(EXECSUFFIX)
+	./md5crypt_test$(EXECSUFFIX)
 
 clean:
 	rm -f $(LIB) *.so *.so.* so_locations *.o *.a $(PROGS)
@@ -132,9 +134,13 @@ destest.o: destest.c
 des.o: des.c
 rpw.o: rpw.c
 speed.o: speed.c
+md5crypt_test.o: md5crypt_test.c
 
 mdtest$(EXECSUFFIX): mdtest.o $(LIB)
 	$(LINK) $(LD_FLAGS) $(LDFLAGS) -o $@ mdtest.o -L. -ldes
+
+md5crypt_test$(EXECSUFFIX): md5crypt_test.o $(LIB)
+	$(LINK) $(LD_FLAGS) $(LDFLAGS) -o $@ md5crypt_test.o -L. -ldes
 
 des_opts$(EXECSUFFIX): des_opts.o set_key.o
 	$(LINK) $(LD_FLAGS) $(LDFLAGS) -o $@ des_opts.o set_key.o

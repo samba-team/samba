@@ -9,9 +9,9 @@ include_HEADERS = des.h md4.h md5.h sha.h
 
 build_HEADERZ = $(include_HEADERS)
 
-check_PROGRAMS = destest mdtest
+check_PROGRAMS = destest mdtest md5crypt_test
 
-TESTS = destest mdtest
+TESTS = destest mdtest md5crypt_test
 CHECK_LOCAL = 
 bin_PROGRAMS = des #rpw speed
 
