@@ -1889,46 +1889,55 @@ WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 	DEBUG(4,("_spoolss_getprinterdata\n"));
 	
 	if ( !Printer ) {
-		if((*data=(uint8 *)talloc_zero(p->mem_ctx, 4*sizeof(uint8))) == NULL)
-			return WERR_NOMEM;
 		DEBUG(2,("_spoolss_getprinterdata: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
-		return WERR_BADFID;
+		status = WERR_BADFID;
+		goto done;
 	}
 	
-	if ( !get_printer_snum(p,handle, &snum) )
-		return WERR_BADFID;
-
-	status = get_a_printer(&printer, 2, lp_servicename(snum));
-	if ( !W_ERROR_IS_OK(status) )
-		return status;
-
 	unistr2_to_ascii(value, valuename, sizeof(value)-1);
 	
 	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER )
 		status = getprinterdata_printer_server( p->mem_ctx, value, type, data, needed, *out_size );
 	else
-		status = get_printer_dataex( p->mem_ctx, printer, SPOOL_PRINTERDATA_KEY, value, type, data, needed, in_size );
+	{
+		if ( !get_printer_snum(p,handle, &snum) ) {
+			status = WERR_BADFID;
+			goto done;
+		}
 
+		status = get_a_printer(&printer, 2, lp_servicename(snum));
+		if ( !W_ERROR_IS_OK(status) )
+			goto done;
+			
+		status = get_printer_dataex( p->mem_ctx, printer, SPOOL_PRINTERDATA_KEY, value, type, data, needed, *out_size );
+	}
+
+	if (*needed > *out_size)
+		status = WERR_MORE_DATA;
+	
+done:
 	if ( !W_ERROR_IS_OK(status) ) 
 	{
-		DEBUG(5, ("value not found, allocating %d\n", *out_size));
+		DEBUG(5, ("error: allocating %d\n", *out_size));
 		
 		/* reply this param doesn't exist */
 		
 		if ( *out_size ) {
-			if((*data=(uint8 *)talloc_zero(p->mem_ctx, *out_size*sizeof(uint8))) == NULL)
+			if((*data=(uint8 *)talloc_zero(p->mem_ctx, *out_size*sizeof(uint8))) == NULL) {
+				if ( printer ) 
+					free_a_printer( &printer, 2 );
 				return WERR_NOMEM;
 		} 
-		else
+		} 
+		else {
 			*data = NULL;
+		}
 	}
 	
-	if (*needed > *out_size)
-		status = WERR_MORE_DATA;
-
 	/* cleanup & exit */
 
-	free_a_printer( &printer, 2 );
+	if ( printer )
+		free_a_printer( &printer, 2 );
 	
 	return status;
 }
@@ -2443,7 +2452,6 @@ static void spoolss_notify_security_desc(int snum,
 					 NT_PRINTER_INFO_LEVEL *printer,
 					 TALLOC_CTX *mem_ctx)
 {
-	data->notify_data.data.string = NULL;
 	data->notify_data.sd.size = printer->info_2->secdesc_buf->len;
 	data->notify_data.sd.desc = dup_sec_desc( mem_ctx, printer->info_2->secdesc_buf->sec ) ;
 }
@@ -7839,18 +7847,17 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 	*out_size = in_size;
 
 	if (!Printer) {
-		if((*data=(uint8 *)talloc_zero(p->mem_ctx, 4*sizeof(uint8))) == NULL)
-			return WERR_NOMEM;
 		DEBUG(2,("_spoolss_getprinterdataex: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
-		return WERR_BADFID;
+		status = WERR_BADFID;
+		goto done;
 	}
 
 	/* Is the handle to a printer or to the server? */
 
-	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER )
-	{
+	if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER) {
 		DEBUG(10,("_spoolss_getprinterdatex: Not implemented for server handles yet\n"));
-		return WERR_INVALID_PARAM;
+		status = WERR_INVALID_PARAM;
+		goto done;
 	}
 	
 	if ( !get_printer_snum(p,handle, &snum) )
@@ -7858,7 +7865,7 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 
 	status = get_a_printer(&printer, 2, lp_servicename(snum));
 	if ( !W_ERROR_IS_OK(status) )
-		return status;
+		goto done;
 
 	/* check to see if the keyname is valid */
 	if ( !strlen(keyname) ) {
@@ -7868,6 +7875,7 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 	
 	if ( lookup_printerkey( &printer->info_2->data, keyname ) == -1 ) {
 		DEBUG(4,("_spoolss_getprinterdataex: Invalid keyname [%s]\n", keyname ));
+		free_a_printer( &printer, 2 );
 		status = WERR_BADFILE;
 		goto done;
 	}
@@ -7876,9 +7884,13 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 
 	status = get_printer_dataex( p->mem_ctx, printer, keyname, valuename, type, data, needed, in_size );
 	
+	if (*needed > *out_size)
+		status = WERR_MORE_DATA;
+
+done:
 	if ( !W_ERROR_IS_OK(status) ) 
 	{
-		DEBUG(5, ("value not found, allocating %d\n", *out_size));
+		DEBUG(5, ("error: allocating %d\n", *out_size));
 		
 		/* reply this param doesn't exist */
 		
@@ -7889,14 +7901,12 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 				goto done;
 			}
 		} 
-		else 
+		else {
 			*data = NULL;
 	}
+	}
 	
-	if (*needed > *out_size)
-		status = WERR_MORE_DATA;
-
-done:
+	if ( printer )
 	free_a_printer( &printer, 2 );
 	
 	return status;
