@@ -1,5 +1,5 @@
 !==
-!== PROFILES.txt for Samba release 2.0.0beta4 15 Dec 1998
+!== PROFILES.txt for Samba release 2.0.0beta5 31 Dec 1998
 !==
 Contributors:	Bruce Cook <BC3-AU@bigfoot.com>
 		Copyright (C) 1998 Bruce Cook
