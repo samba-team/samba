@@ -375,7 +375,7 @@ WREPL_OBJ1 = wrepld/server.o wrepld/process.o wrepld/parser.o wrepld/socket.o \
              wrepld/partners.o
 
 WREPL_OBJ = $(WREPL_OBJ1)  $(PARAM_OBJ) $(UBIQX_OBJ) \
-	    $(PROFILE_OBJ) $(LIB_OBJ)
+	    $(PROFILE_OBJ) $(LIB_OBJ) $(POPT_LIB_OBJ)
 
 SWAT_OBJ1 = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
            web/swat.o web/neg_lang.o 
@@ -392,8 +392,8 @@ STATUS_OBJ = utils/status.o $(LOCKING_OBJ) $(PARAM_OBJ) \
              $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) $(POPT_LIB_OBJ)
 
 SMBCONTROL_OBJ = utils/smbcontrol.o $(LOCKING_OBJ) $(PARAM_OBJ) \
-	$(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) printing/notify.o \
-	printing/printing_db.o
+	$(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) $(POPT_LIB_OBJ) \
+	printing/notify.o printing/printing_db.o
 
 SMBTREE_OBJ = utils/smbtree.o $(LOCKING_OBJ) $(PARAM_OBJ) \
              $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) $(LIBSMB_OBJ) \
@@ -487,7 +487,7 @@ MNT_OBJ = client/smbmnt.o
 UMOUNT_OBJ = client/smbumount.o
 
 NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBNMB_OBJ) \
-               $(LIB_OBJ)
+               $(LIB_OBJ) $(POPT_LIB_OBJ)
 
 SMBTORTURE_OBJ1 = torture/torture.o torture/nbio.o torture/scanner.o torture/utable.o \
 		torture/denytest.o torture/mangle_test.o 
@@ -521,7 +521,7 @@ LOCKTEST2_OBJ = torture/locktest2.o $(LOCKING_OBJ) $(LIBSMB_OBJ) \
 SMBCACLS_OBJ = utils/smbcacls.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 		$(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_GET_SET_OBJ) \
-		 $(LIBMSRPC_OBJ) $(SECRETS_OBJ)
+		 $(LIBMSRPC_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ)
 
 TALLOCTORT_OBJ = lib/talloctort.o  $(LIB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ)
 
@@ -591,8 +591,8 @@ WINBINDD_OBJ = \
 		$(WINBINDD_OBJ1) $(PASSDB_GET_SET_OBJ) \
 		$(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
 		$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) \
-		$(PROFILE_OBJ) $(UNIGRP_OBJ) \
-		$(SECRETS_OBJ) $(LIBADS_OBJ) $(KRBCLIENT_OBJ)
+		$(PROFILE_OBJ) $(UNIGRP_OBJ) $(POPT_LIB_OBJ) \
+		$(SECRETS_OBJ) $(LIBADS_OBJ) $(KRBCLIENT_OBJ) 
 
 WBINFO_OBJ = nsswitch/wbinfo.o libsmb/smbencrypt.o libsmb/smbdes.o $(POPT_LIB_OBJ)
 
