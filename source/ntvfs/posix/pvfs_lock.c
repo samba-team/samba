@@ -295,7 +295,8 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* now the lockingX case, most common and also most complex */
-	if (lck->lockx.in.timeout != 0) {
+	if (lck->lockx.in.timeout != 0 && 
+	    req->async.send_fn) {
 		pending = talloc_p(req, struct pvfs_pending_lock);
 		if (pending == NULL) {
 			return NT_STATUS_NO_MEMORY;
