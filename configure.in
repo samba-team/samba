@@ -464,6 +464,7 @@ AC_MSG_RESULT($krb_cv_sys_streamspty)
 
 AC_OUTPUT(Makefile 			\
 	include/Makefile		\
+	include/kadm5/Makefile		\
 	lib/Makefile			\
 	lib/roken/Makefile		\
 	lib/editline/Makefile		\
@@ -473,6 +474,7 @@ AC_OUTPUT(Makefile 			\
 	lib/asn1/Makefile		\
 	lib/des/Makefile		\
 	lib/krb5/Makefile		\
+	lib/kadm5/Makefile		\
 	lib/hdb/Makefile		\
 	lib/gssapi/Makefile		\
 	lib/45/Makefile			\
@@ -480,6 +482,7 @@ AC_OUTPUT(Makefile 			\
 	lib/kafs/Makefile		\
 	kuser/Makefile			\
 	kpasswd/Makefile		\
+	kadmin/Makefile			\
 	admin/Makefile			\
 	kdc/Makefile			\
 	appl/Makefile			\
