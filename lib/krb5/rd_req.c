@@ -112,8 +112,6 @@ krb5_decode_ap_req(krb5_context context,
 	free_AP_REQ(ap_req);
 	return KRB5KRB_AP_ERR_BADVERSION;
     }
-    if (ap_req->ap_options.use_session_key)
-	abort ();
     return 0;
 }
 
@@ -171,8 +169,18 @@ krb5_verify_ap_req(krb5_context context,
     }else
 	krb5_auth_con_init(context, &ac);
 	
-    ret = krb5_decrypt_ticket(context, &ap_req->ticket, keyblock, 
-			      &t.ticket);
+    if (ap_req->ap_options.use_session_key && auth_context->keyblock){
+	ret = krb5_decrypt_ticket(context, &ap_req->ticket, 
+				  auth_context->keyblock, 
+				  &t.ticket);
+	krb5_free_keyblock(context, auth_context->keyblock);
+	auth_context->keyblock = NULL;
+    }else
+	ret = krb5_decrypt_ticket(context, &ap_req->ticket, 
+				  keyblock, 
+				  &t.ticket);
+
+
     
     if(ret)
 	return ret;
