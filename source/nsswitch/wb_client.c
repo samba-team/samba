@@ -391,6 +391,24 @@ int winbind_getgroups(const char *user, int size, gid_t *list)
 	return result;
 }
 
+/* Similar to winbind_getgroups but allocates memory and only 
+   needs one call.  Really just a wrapper around wb_getgroups() */
+
+int winbind_getgroups2(const char *user, gid_t **list)
+{
+	/*
+	 * Don't do the lookup if the name has no separator _and_ we are not in
+	 * 'winbind use default domain' mode.
+	 */
+
+	if (!(strchr(user, *lp_winbind_separator()) || lp_winbind_use_default_domain()))
+		return -1;
+
+	/* Fetch list of groups */
+
+	return wb_getgroups(user, list);
+}
+
 /* Utility function. Convert a uid_t to a name if possible. */
 
 BOOL winbind_uidtoname(fstring name, uid_t uid)

@@ -998,8 +998,6 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 
 			num_gids++;
 		}
-
-		SAFE_FREE(group_rids);
 	}
 
 	/* Send data back to client */

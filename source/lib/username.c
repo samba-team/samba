@@ -341,25 +341,17 @@ static BOOL user_in_winbind_group_list(char *user,char *gname, BOOL *winbind_ans
  		 * Get the gid's that this user belongs to.
  		 */
  
-	 	if ((num_groups = winbind_getgroups(user, 0, NULL)) == -1)
+	 	if ((num_groups = winbind_getgroups2(user, &groups)) == -1)
  			return False;
+			
+		if ( num_groups == -1 )
+			return False;
  
-	 	if (num_groups == 0) {
+	 	if ( num_groups == 0 ) {
  			*winbind_answered = True;
  			return False;
  		}
- 
- 		if ((groups = (gid_t *)malloc(sizeof(gid_t) * num_groups )) == NULL) {
- 			DEBUG(0,("user_in_winbind_group_list: malloc fail.\n"));
- 			goto err;
- 		}
- 
- 		if ((num_groups = winbind_getgroups(user, num_groups, groups)) == -1) {
- 			DEBUG(0,("user_in_winbind_group_list: second winbind_getgroups call failed with error %s\n", 
-				strerror(errno) ));
- 			goto err;
-		}
-		
+ 		
 		/* save the last username */
 		
 		fstrcpy( last_user, user );
