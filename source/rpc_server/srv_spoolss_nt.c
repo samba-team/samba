@@ -4688,12 +4688,10 @@ static uint32 enumjobs_level2(print_queue_struct *queue, int snum,
 	}
 
 	/* fill the buffer with the structures */
-	for (i=0; i<*returned; i++)
+	for (i=0; i<*returned; i++) {
 		new_smb_io_job_info_2("", buffer, &info[i], 0);	
-
-	/* clear memory */
-	for (i = 0; i < *returned; i++)
 		free_job_info_2(&info[i]);
+	}
 
 	free(info);
 
