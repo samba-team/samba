@@ -2,7 +2,6 @@
 
 RCSID("$Id$");
 
-#if 1
 main(int argc, char **argv)
 {
     krb5_context context;
@@ -23,30 +22,9 @@ main(int argc, char **argv)
     in.times.endtime = 0;
     ret = krb5_get_credentials(context, 0, cache, &in, &out);
     
-    printf("%s\n", krb5_get_err_text(context, ret));
+    if(ret){
+	printf("%s\n", krb5_get_err_text(context, ret));
+	exit(1);
+    }
+    exit(0);
 }
-#endif
-
-#if 0
-int
-main(int argc, char **argv)
-{
-    int ret;
-    krb5_context context;
-    krb5_principal principal;
-    krb5_keyblock *key;
-    krb5_creds in, *out;
-
-
-    krb5_init_context(&context);
-    krb5_build_principal(context, &principal, strlen("FOO.SE"), "FOO.SE",
-			 "host", "emma.pdc.kth.se", NULL);
-    krb5_kt_read_service_key(context,
-			     NULL,
-			     principal,
-			     3,
-			     KEYTYPE_DES,
-			     &key);
-    return 0;
-}
-#endif
