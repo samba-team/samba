@@ -371,9 +371,9 @@ failed:
  {
 #ifdef ENCTYPE_ARCFOUR_HMAC
 	krb5_keyblock *skey;
+	krb5_error_code err;
 #endif
 	BOOL ret = False;
-	krb5_error_code err;
 
 	memset(session_key, 0, 16);
 
