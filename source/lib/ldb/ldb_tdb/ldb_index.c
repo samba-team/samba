@@ -180,7 +180,7 @@ static int ltdb_index_dn_simple(struct ldb_module *module,
 	dn = ldb_dn_key(ldb, tree->u.simple.attr, &tree->u.simple.value);
 	if (!dn) return -1;
 
-	msg = talloc_p(list, struct ldb_message);
+	msg = talloc(list, struct ldb_message);
 	if (msg == NULL) {
 		return -1;
 	}
@@ -200,7 +200,7 @@ static int ltdb_index_dn_simple(struct ldb_module *module,
 
 		el = &msg->elements[i];
 
-		list->dn = talloc_array_p(list, char *, el->num_values);
+		list->dn = talloc_array(list, char *, el->num_values);
 		if (!list->dn) {
 			break;		
 		}
@@ -259,7 +259,7 @@ static int ltdb_index_dn_objectclass(struct ldb_module *module,
 					return -1;
 				}
 				tree2.u.simple.value = el->values[j];
-				list2 = talloc_p(list, struct dn_list);
+				list2 = talloc(list, struct dn_list);
 				if (list2 == NULL) {
 					return -1;
 				}
@@ -313,12 +313,12 @@ static int list_intersect(struct ldb_context *ldb,
 		return 0;
 	}
 
-	list3 = talloc_p(ldb, struct dn_list);
+	list3 = talloc(ldb, struct dn_list);
 	if (list3 == NULL) {
 		return -1;
 	}
 
-	list3->dn = talloc_array_p(list3, char *, list->count);
+	list3->dn = talloc_array(list3, char *, list->count);
 	if (!list3->dn) {
 		talloc_free(list);
 		talloc_free(list3);
@@ -363,7 +363,7 @@ static int list_union(struct ldb_context *ldb,
 		return 0;
 	}
 
-	d = talloc_realloc_p(list, list->dn, char *, list->count + list2->count);
+	d = talloc_realloc(list, list->dn, char *, list->count + list2->count);
 	if (!d) {
 		talloc_free(list);
 		return -1;
@@ -415,7 +415,7 @@ static int ltdb_index_dn_or(struct ldb_module *module,
 		struct dn_list *list2;
 		int v;
 
-		list2 = talloc_p(module, struct dn_list);
+		list2 = talloc(module, struct dn_list);
 		if (list2 == NULL) {
 			return -1;
 		}
@@ -500,7 +500,7 @@ static int ltdb_index_dn_and(struct ldb_module *module,
 		struct dn_list *list2;
 		int v;
 
-		list2 = talloc_p(module, struct dn_list);
+		list2 = talloc(module, struct dn_list);
 		if (list2 == NULL) {
 			return -1;
 		}
@@ -591,7 +591,7 @@ static int ldb_index_filter(struct ldb_module *module, struct ldb_parse_tree *tr
 		struct ldb_message *msg;
 		int ret;
 
-		msg = talloc_p(module, struct ldb_message);
+		msg = talloc(module, struct ldb_message);
 		if (msg == NULL) {
 			return -1;
 		}
@@ -642,7 +642,7 @@ int ltdb_search_indexed(struct ldb_module *module,
 		return -1;
 	}
 
-	dn_list = talloc_p(module, struct dn_list);
+	dn_list = talloc(module, struct dn_list);
 	if (dn_list == NULL) {
 		return -1;
 	}
@@ -672,7 +672,7 @@ static int ltdb_index_add1_new(struct ldb_context *ldb,
 	struct ldb_message_element *el2;
 
 	/* add another entry */
-	el2 = talloc_realloc_p(msg, msg->elements, 
+	el2 = talloc_realloc(msg, msg->elements, 
 			       struct ldb_message_element, msg->num_elements+1);
 	if (!el2) {
 		return -1;
@@ -684,7 +684,7 @@ static int ltdb_index_add1_new(struct ldb_context *ldb,
 		return -1;
 	}
 	msg->elements[msg->num_elements].num_values = 0;
-	msg->elements[msg->num_elements].values = talloc_p(msg->elements, struct ldb_val);
+	msg->elements[msg->num_elements].values = talloc(msg->elements, struct ldb_val);
 	if (!msg->elements[msg->num_elements].values) {
 		return -1;
 	}
@@ -717,7 +717,7 @@ static int ltdb_index_add1_add(struct ldb_context *ldb,
 		}
 	}
 
-	v2 = talloc_realloc_p(msg->elements, msg->elements[idx].values,
+	v2 = talloc_realloc(msg->elements, msg->elements[idx].values,
 			      struct ldb_val, 
 			      msg->elements[idx].num_values+1);
 	if (!v2) {
@@ -749,7 +749,7 @@ static int ltdb_index_add1(struct ldb_module *module, char *dn,
 		return -1;
 	}
 
-	msg = talloc_p(dn_key, struct ldb_message);
+	msg = talloc(dn_key, struct ldb_message);
 	if (msg == NULL) {
 		return -1;
 	}
@@ -842,7 +842,7 @@ int ltdb_index_del_value(struct ldb_module *module, const char *dn,
 		return -1;
 	}
 
-	msg = talloc_p(dn_key, struct ldb_message);
+	msg = talloc(dn_key, struct ldb_message);
 	if (msg == NULL) {
 		talloc_free(dn_key);
 		return -1;
@@ -948,7 +948,7 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 		return 0;
 	}
 
-	msg = talloc_p(module, struct ldb_message);
+	msg = talloc(module, struct ldb_message);
 	if (msg == NULL) {
 		return -1;
 	}

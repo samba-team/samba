@@ -54,7 +54,7 @@ static int ltdb_baseinfo_init(struct ldb_module *module)
 
 	ltdb->sequence_number = atof(initial_sequence_number);
 
-	msg = talloc_p(ltdb, struct ldb_message);
+	msg = talloc(ltdb, struct ldb_message);
 	if (msg == NULL) {
 		goto failed;
 	}
@@ -120,11 +120,11 @@ int ltdb_cache_load(struct ldb_module *module)
 	double seq;
 
 	if (ltdb->cache == NULL) {
-		ltdb->cache = talloc_zero_p(ltdb, struct ltdb_cache);
+		ltdb->cache = talloc_zero(ltdb, struct ltdb_cache);
 		if (ltdb->cache == NULL) goto failed;
-		ltdb->cache->indexlist = talloc_zero_p(ltdb->cache, struct ldb_message);
-		ltdb->cache->subclasses = talloc_zero_p(ltdb->cache, struct ldb_message);
-		ltdb->cache->attributes = talloc_zero_p(ltdb->cache, struct ldb_message);
+		ltdb->cache->indexlist = talloc_zero(ltdb->cache, struct ldb_message);
+		ltdb->cache->subclasses = talloc_zero(ltdb->cache, struct ldb_message);
+		ltdb->cache->attributes = talloc_zero(ltdb->cache, struct ldb_message);
 		if (ltdb->cache->indexlist == NULL ||
 		    ltdb->cache->subclasses == NULL ||
 		    ltdb->cache->attributes == NULL) {
@@ -133,7 +133,7 @@ int ltdb_cache_load(struct ldb_module *module)
 	}
 
 	talloc_free(ltdb->cache->baseinfo);
-	ltdb->cache->baseinfo = talloc_p(ltdb->cache, struct ldb_message);
+	ltdb->cache->baseinfo = talloc(ltdb->cache, struct ldb_message);
 	if (ltdb->cache->baseinfo == NULL) goto failed;
 	
 	if (ltdb_search_dn1(module, LTDB_BASEINFO, ltdb->cache->baseinfo) == -1) {
@@ -165,9 +165,9 @@ int ltdb_cache_load(struct ldb_module *module)
 	talloc_free(ltdb->cache->subclasses);
 	talloc_free(ltdb->cache->attributes);
 
-	ltdb->cache->indexlist = talloc_zero_p(ltdb->cache, struct ldb_message);
-	ltdb->cache->subclasses = talloc_zero_p(ltdb->cache, struct ldb_message);
-	ltdb->cache->attributes = talloc_zero_p(ltdb->cache, struct ldb_message);
+	ltdb->cache->indexlist = talloc_zero(ltdb->cache, struct ldb_message);
+	ltdb->cache->subclasses = talloc_zero(ltdb->cache, struct ldb_message);
+	ltdb->cache->attributes = talloc_zero(ltdb->cache, struct ldb_message);
 	if (ltdb->cache->indexlist == NULL ||
 	    ltdb->cache->subclasses == NULL ||
 	    ltdb->cache->attributes == NULL) {
@@ -204,7 +204,7 @@ int ltdb_increase_sequence_number(struct ldb_module *module)
 	char *s = NULL;
 	int ret;
 
-	msg = talloc_p(ltdb, struct ldb_message);
+	msg = talloc(ltdb, struct ldb_message);
 	if (msg == NULL) {
 		errno = ENOMEM;
 		return -1;

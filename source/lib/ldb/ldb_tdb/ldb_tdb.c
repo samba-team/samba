@@ -300,7 +300,7 @@ static int ltdb_delete(struct ldb_module *module, const char *dn)
 		goto failed;
 	}
 
-	msg = talloc_p(module, struct ldb_message);
+	msg = talloc(module, struct ldb_message);
 	if (msg == NULL) {
 		goto failed;
 	}
@@ -368,7 +368,7 @@ static int msg_add_element(struct ldb_context *ldb,
 	struct ldb_message_element *e2;
 	unsigned int i;
 
-	e2 = talloc_realloc_p(msg, msg->elements, struct ldb_message_element, 
+	e2 = talloc_realloc(msg, msg->elements, struct ldb_message_element, 
 			      msg->num_elements+1);
 	if (!e2) {
 		errno = ENOMEM;
@@ -383,7 +383,7 @@ static int msg_add_element(struct ldb_context *ldb,
 	e2->flags = el->flags;
 	e2->values = NULL;
 	if (el->num_values != 0) {
-		e2->values = talloc_array_p(msg->elements, struct ldb_val, el->num_values);
+		e2->values = talloc_array(msg->elements, struct ldb_val, el->num_values);
 		if (!e2->values) {
 			errno = ENOMEM;
 			return -1;
@@ -422,7 +422,7 @@ static int msg_delete_attribute(struct ldb_module *module,
 			}
 			msg->num_elements--;
 			i--;
-			msg->elements = talloc_realloc_p(msg, msg->elements, 
+			msg->elements = talloc_realloc(msg, msg->elements, 
 							 struct ldb_message_element, 
 							 msg->num_elements);
 		}
@@ -498,7 +498,7 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 		return -1;
 	}
 
-	msg2 = talloc_p(tdb_key.dptr, struct ldb_message);
+	msg2 = talloc(tdb_key.dptr, struct ldb_message);
 	if (msg2 == NULL) {
 		talloc_free(tdb_key.dptr);
 		return -1;
@@ -547,7 +547,7 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 				}
 			}
 
-		        vals = talloc_realloc_p(msg2->elements, el2->values, struct ldb_val,
+		        vals = talloc_realloc(msg2->elements, el2->values, struct ldb_val,
 						el2->num_values + el->num_values);
 
 			if (vals == NULL)
@@ -661,7 +661,7 @@ static int ltdb_rename(struct ldb_module *module, const char *olddn, const char 
 		return -1;
 	}
 
-	msg = talloc_p(module, struct ldb_message);
+	msg = talloc(module, struct ldb_message);
 	if (msg == NULL) {
 		goto failed;
 	}
@@ -765,7 +765,7 @@ struct ldb_context *ltdb_connect(const char *url,
 	TDB_CONTEXT *tdb;
 	struct ldb_context *ldb;
 
-	ldb = talloc_zero_p(NULL, struct ldb_context);
+	ldb = talloc_zero(NULL, struct ldb_context);
 	if (!ldb) {
 		errno = ENOMEM;
 		return NULL;
@@ -798,7 +798,7 @@ struct ldb_context *ltdb_connect(const char *url,
 		return NULL;
 	}
 
-	ltdb = talloc_zero_p(ldb, struct ltdb_private);
+	ltdb = talloc_zero(ldb, struct ltdb_private);
 	if (!ltdb) {
 		tdb_close(tdb);
 		talloc_free(ldb);
@@ -811,7 +811,7 @@ struct ldb_context *ltdb_connect(const char *url,
 
 	talloc_set_destructor(ltdb, ltdb_destructor);
 
-	ldb->modules = talloc_p(ldb, struct ldb_module);
+	ldb->modules = talloc(ldb, struct ldb_module);
 	if (!ldb->modules) {
 		talloc_free(ldb);
 		errno = ENOMEM;

@@ -99,7 +99,7 @@ int ltdb_pack_data(struct ldb_module *module,
 	}
 
 	/* allocate it */
-	data->dptr = talloc_array_p(ldb, char, size);
+	data->dptr = talloc_array(ldb, char, size);
 	if (!data->dptr) {
 		errno = ENOMEM;
 		return -1;
@@ -199,7 +199,7 @@ int ltdb_unpack_data(struct ldb_module *module,
 		goto failed;
 	}
 
-	message->elements = talloc_array_p(message, struct ldb_message_element, message->num_elements);
+	message->elements = talloc_array(message, struct ldb_message_element, message->num_elements);
 	if (!message->elements) {
 		errno = ENOMEM;
 		goto failed;
@@ -225,7 +225,7 @@ int ltdb_unpack_data(struct ldb_module *module,
 		message->elements[i].num_values = pull_uint32(p, 0);
 		message->elements[i].values = NULL;
 		if (message->elements[i].num_values != 0) {
-			message->elements[i].values = talloc_array_p(message->elements,
+			message->elements[i].values = talloc_array(message->elements,
 								     struct ldb_val, 
 								     message->elements[i].num_values);
 			if (!message->elements[i].values) {

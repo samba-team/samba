@@ -69,7 +69,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 					*p = '\0';
 					q = p + 1;
 					pn++;
-					modules = talloc_realloc_p(ldb, modules, char *, pn);
+					modules = talloc_realloc(ldb, modules, char *, pn);
 					if (!modules) {
 						ldb_debug(ldb, LDB_DEBUG_FATAL, "Out of Memory in register_modules()\n");
 						return -1;
@@ -103,7 +103,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 			for (j = 0; j < msg[0]->num_elements; j++) {
 				for (k = 0; k < msg[0]->elements[j].num_values; k++) {
 					pn++;
-					modules = talloc_realloc_p(ldb, modules, char *, pn);
+					modules = talloc_realloc(ldb, modules, char *, pn);
 					if (!modules) {
 						ldb_debug(ldb, LDB_DEBUG_FATAL, "Out of Memory in register_modules()\n");
 						return -1;

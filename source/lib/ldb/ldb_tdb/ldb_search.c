@@ -47,7 +47,7 @@ static int msg_add_element(struct ldb_context *ldb,
 	unsigned int i;
 	struct ldb_message_element *e2, *elnew;
 
-	e2 = talloc_realloc_p(ret, ret->elements, struct ldb_message_element, ret->num_elements+1);
+	e2 = talloc_realloc(ret, ret->elements, struct ldb_message_element, ret->num_elements+1);
 	if (!e2) {
 		return -1;
 	}
@@ -61,7 +61,7 @@ static int msg_add_element(struct ldb_context *ldb,
 	}
 
 	if (el->num_values) {
-		elnew->values = talloc_array_p(ret->elements, struct ldb_val, el->num_values);
+		elnew->values = talloc_array(ret->elements, struct ldb_val, el->num_values);
 		if (!elnew->values) {
 			return -1;
 		}
@@ -117,7 +117,7 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_module *module,
 	struct ldb_message *ret;
 	int i;
 
-	ret = talloc_p(ldb, struct ldb_message);
+	ret = talloc(ldb, struct ldb_message);
 	if (!ret) {
 		return NULL;
 	}
@@ -279,12 +279,12 @@ int ltdb_search_dn(struct ldb_module *module, char *dn,
 	int ret;
 	struct ldb_message *msg, *msg2;
 
-	*res = talloc_array_p(ldb, struct ldb_message *, 2);
+	*res = talloc_array(ldb, struct ldb_message *, 2);
 	if (! *res) {
 		return -1;		
 	}
 
-	msg = talloc_p(*res, struct ldb_message);
+	msg = talloc(*res, struct ldb_message);
 	if (msg == NULL) {
 		talloc_free(*res);
 		*res = NULL;
@@ -333,7 +333,7 @@ int ltdb_add_attr_results(struct ldb_module *module, struct ldb_message *msg,
 	}
 
 	/* add to the results list */
-	res2 = talloc_realloc_p(ldb, *res, struct ldb_message *, (*count)+2);
+	res2 = talloc_realloc(ldb, *res, struct ldb_message *, (*count)+2);
 	if (!res2) {
 		talloc_free(msg2);
 		return -1;
@@ -378,7 +378,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 		return 0;
 	}
 
-	msg = talloc_p(sinfo, struct ldb_message);
+	msg = talloc(sinfo, struct ldb_message);
 	if (msg == NULL) {
 		return -1;
 	}
@@ -442,7 +442,7 @@ static int ltdb_search_full(struct ldb_module *module,
 	int ret, count;
 	struct ltdb_search_info *sinfo;
 
-	sinfo = talloc_p(ltdb, struct ltdb_search_info);
+	sinfo = talloc(ltdb, struct ltdb_search_info);
 	if (sinfo == NULL) {
 		return -1;
 	}

@@ -161,7 +161,7 @@ static int lldb_add_msg_attr(struct ldb_context *ldb,
 		return -1;
 	}
 
-	el = talloc_realloc_p(msg, msg->elements, struct ldb_message_element, 
+	el = talloc_realloc(msg, msg->elements, struct ldb_message_element, 
 			      msg->num_elements + 1);
 	if (!el) {
 		errno = ENOMEM;
@@ -180,7 +180,7 @@ static int lldb_add_msg_attr(struct ldb_context *ldb,
 	el->flags = 0;
 
 	el->num_values = 0;
-	el->values = talloc_array_p(msg->elements, struct ldb_val, count);
+	el->values = talloc_array(msg->elements, struct ldb_val, count);
 	if (!el->values) {
 		errno = ENOMEM;
 		return -1;
@@ -230,7 +230,7 @@ static int lldb_search(struct ldb_module *module, const char *base,
 		return count;
 	}
 
-	(*res) = talloc_array_p(lldb, struct ldb_message *, count+1);
+	(*res) = talloc_array(lldb, struct ldb_message *, count+1);
 	if (! *res) {
 		ldap_msgfree(ldapres);
 		errno = ENOMEM;
@@ -254,7 +254,7 @@ static int lldb_search(struct ldb_module *module, const char *base,
 			break;
 		}
 
-		(*res)[msg_count] = talloc_p(*res, struct ldb_message);
+		(*res)[msg_count] = talloc(*res, struct ldb_message);
 		if (!(*res)[msg_count]) {
 			goto failed;
 		}
@@ -317,7 +317,7 @@ static LDAPMod **lldb_msg_to_mods(struct ldb_context *ldb,
 	int num_mods = 0;
 
 	/* allocate maximum number of elements needed */
-	mods = talloc_array_p(ldb, LDAPMod *, msg->num_elements+1);
+	mods = talloc_array(ldb, LDAPMod *, msg->num_elements+1);
 	if (!mods) {
 		errno = ENOMEM;
 		return NULL;
@@ -327,7 +327,7 @@ static LDAPMod **lldb_msg_to_mods(struct ldb_context *ldb,
 	for (i=0;i<msg->num_elements;i++) {
 		const struct ldb_message_element *el = &msg->elements[i];
 
-		mods[num_mods] = talloc_p(ldb, LDAPMod);
+		mods[num_mods] = talloc(ldb, LDAPMod);
 		if (!mods[num_mods]) {
 			goto failed;
 		}
@@ -347,7 +347,7 @@ static LDAPMod **lldb_msg_to_mods(struct ldb_context *ldb,
 			}
 		}
 		mods[num_mods]->mod_type = el->name;
-		mods[num_mods]->mod_vals.modv_bvals = talloc_array_p(mods[num_mods], 
+		mods[num_mods]->mod_vals.modv_bvals = talloc_array(mods[num_mods], 
 								     struct berval *,
 								     1+el->num_values);
 		if (!mods[num_mods]->mod_vals.modv_bvals) {
@@ -355,7 +355,7 @@ static LDAPMod **lldb_msg_to_mods(struct ldb_context *ldb,
 		}
 
 		for (j=0;j<el->num_values;j++) {
-			mods[num_mods]->mod_vals.modv_bvals[j] = talloc_p(mods[num_mods]->mod_vals.modv_bvals,
+			mods[num_mods]->mod_vals.modv_bvals[j] = talloc(mods[num_mods]->mod_vals.modv_bvals,
 									  struct berval);
 			if (!mods[num_mods]->mod_vals.modv_bvals[j]) {
 				goto failed;
@@ -499,13 +499,13 @@ struct ldb_context *lldb_connect(const char *url,
 	struct lldb_private *lldb = NULL;
 	int i, version = 3;
 
-	ldb = talloc_p(NULL, struct ldb_context);
+	ldb = talloc(NULL, struct ldb_context);
 	if (!ldb) {
 		errno = ENOMEM;
 		goto failed;
 	}
 
-	lldb = talloc_p(ldb, struct lldb_private);
+	lldb = talloc(ldb, struct lldb_private);
 	if (!lldb) {
 		errno = ENOMEM;
 		goto failed;
@@ -526,7 +526,7 @@ struct ldb_context *lldb_connect(const char *url,
 		goto failed;
 	}
 
-	ldb->modules = talloc_p(ldb, struct ldb_module);
+	ldb->modules = talloc(ldb, struct ldb_module);
 	if (!ldb->modules) {
 		errno = ENOMEM;
 		goto failed;
@@ -541,7 +541,7 @@ struct ldb_context *lldb_connect(const char *url,
 		   on the caller keeping it around (it might be dynamic) */
 		for (i=0;options[i];i++) ;
 
-		lldb->options = talloc_array_p(lldb, char *, i+1);
+		lldb->options = talloc_array(lldb, char *, i+1);
 		if (!lldb->options) {
 			goto failed;
 		}
