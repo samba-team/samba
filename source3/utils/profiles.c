@@ -614,6 +614,7 @@ int main(int argc, char *argv[])
   base = mmap(&start, sbuf.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 #else
   base = (char *)-1;
+  errno = ENOSYS;
 #endif
 
   if ((int)base == -1) {
