@@ -1760,4 +1760,6 @@ typedef struct
 #define MAP_TO_GUEST_ON_BAD_USER 1
 #define MAP_TO_GUEST_ON_BAD_PASSWORD 2
 
+#include "nsswitch/winbindd_nss.h"
+
 #endif /* _SMB_H */
