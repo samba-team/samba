@@ -1,3 +1,24 @@
+2004-11-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5_get_init_creds.3: add description for opt_init,
+	opt_alloc, opt_free
+
+	* lib/krb5/pkinit.c: unexport krb5_get_init_creds_opt_free_pkinit
+	
+	* lib/krb5/init_creds.c: unexport
+	krb5_get_init_creds_opt_free_pkinit
+
+	* lib/krb5/init_creds_pw.c: fold init_init_creds_ctx into
+	get_init_creds_common
+
+	* lib/krb5/init_creds.c (_krb5_get_init_creds_opt_copy): if the in
+	options NULL, just make a clean copy
+
+2004-11-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/sendauth.c (krb5_rd_rep): free ap_rep message earlier
+	so we don't leak it on error
+
 2004-10-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/krb5.conf.5: unbreak 2b entry
