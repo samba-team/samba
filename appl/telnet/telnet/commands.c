@@ -2566,6 +2566,8 @@ sourceroute(struct addrinfo *ai,
 		break;
 #ifdef INET6
 	case AF_INET6:
+/* this needs to be updated for rfc2292bis */
+#ifdef IPV6_PKTOPTIONS
 		cmsg = inet6_rthdr_init(rhbuf, IPV6_RTHDR_TYPE_0);
 		if (*cp != '@')
 			return -1;
@@ -2573,6 +2575,9 @@ sourceroute(struct addrinfo *ai,
 		*protop = IPPROTO_IPV6;
 		*optp = IPV6_PKTOPTIONS;
 		break;
+#else
+		return -1;
+#endif
 #endif
 	default:
 		return -1;
