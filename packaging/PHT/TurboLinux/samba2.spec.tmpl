@@ -119,7 +119,7 @@ make all smbwrapper
 
 %install
 rm -rf $RPM_BUILD_ROOT
-mkdir -p $RPM_BUILD_ROOT
+mkdir -p $RPM_BUILD_ROOT/sbin
 mkdir -p $RPM_BUILD_ROOT/etc/codepages/src
 mkdir -p $RPM_BUILD_ROOT/etc/{logrotate.d,pam.d}
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/{init.d,rc0.d,rc1.d,rc2.d,rc3.d,rc5.d,rc6.d}
@@ -185,16 +185,18 @@ install -m644 docs/manpages/nmbd.8 $RPM_BUILD_ROOT/usr/man/man8
 install -m644 docs/manpages/smbpasswd.8 $RPM_BUILD_ROOT/usr/man/man8
 install -m644 docs/manpages/swat.8 $RPM_BUILD_ROOT/usr/man/man8
 install -m644 docs/manpages/smbmount.8 $RPM_BUILD_ROOT/usr/man/man8
+install -m644 docs/manpages/smbmnt.8 $RPM_BUILD_ROOT/usr/man/man8
 install -m644 docs/manpages/smbumount.8 $RPM_BUILD_ROOT/usr/man/man8
-install -m644 packaging/RedHat/smb.conf $RPM_BUILD_ROOT/etc/smb.conf
-install -m644 packaging/RedHat/smbusers $RPM_BUILD_ROOT/etc/smbusers
-install -m755 packaging/RedHat/smbprint $RPM_BUILD_ROOT/usr/bin
-install -m755 packaging/RedHat/findsmb $RPM_BUILD_ROOT/usr/bin
-install -m755 packaging/RedHat/smbadduser $RPM_BUILD_ROOT/usr/bin
-install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
-install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT/usr/sbin/samba
-install -m644 packaging/RedHat/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
-install -m644 packaging/RedHat/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
+install -m644 packaging/PHT/TurboLinux/mount.smb $RPM_BUILD_ROOT/sbin
+install -m644 packaging/PHT/TurboLinux/smb.conf $RPM_BUILD_ROOT/etc/smb.conf
+install -m644 packaging/PHT/TurboLinux/smbusers $RPM_BUILD_ROOT/etc/smbusers
+install -m755 packaging/PHT/TurboLinux/smbprint $RPM_BUILD_ROOT/usr/bin
+install -m755 packaging/PHT/TurboLinux/findsmb $RPM_BUILD_ROOT/usr/bin
+install -m755 packaging/PHT/TurboLinux/smbadduser $RPM_BUILD_ROOT/usr/bin
+install -m755 packaging/PHT/TurboLinux/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
+install -m755 packaging/PHT/TurboLinux/smb.init $RPM_BUILD_ROOT/usr/sbin/samba
+install -m644 packaging/PHT/TurboLinux/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
+install -m644 packaging/PHT/TurboLinux/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
 echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/etc/lmhosts
 
 %clean
@@ -362,5 +364,7 @@ fi
 %attr(-,root,root) /usr/sbin/smbmount
 %attr(-,root,root) /usr/sbin/smbumount
 %attr(-,root,root) /usr/sbin/smbmnt
+%attr(-,root,root) /sbin/mount.smb
+%attr(-,root,root) /usr/man/man8/smbmnt.8
 %attr(-,root,root) /usr/man/man8/smbmount.8
 %attr(-,root,root) /usr/man/man8/smbumount.8
