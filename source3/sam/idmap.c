@@ -91,6 +91,7 @@ NTSTATUS idmap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 	ret = local_map->set_mapping(sid, id, id_type);
 	if (NT_STATUS_IS_ERR(ret)) {
 		DEBUG (0, ("idmap_set_mapping: Error, unable to modify local cache!\n"));
+		DEBUGADD(0, ("Error num. %d", NT_STATUS_V(ret)));
 		return ret;
 	}
 
@@ -100,6 +101,7 @@ NTSTATUS idmap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 		remote_map->set_mapping(sid, id, id_type);
 		if (NT_STATUS_IS_ERR(ret)) {
 			DEBUG (0, ("idmap_set_mapping: Error, unable to modify remote cache!\n"));
+			DEBUGADD(0, ("Error num. %d", NT_STATUS_V(ret)));
 		}
 	}
 
