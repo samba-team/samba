@@ -16,6 +16,8 @@ AC_PREFIX_DEFAULT(/usr/local/samba)
 
 AC_ARG_WITH(fhs, 
 [  --with-fhs              Use FHS-compliant paths (default=no)],
+[ case "$withval" in
+  yes)
     configdir="${sysconfdir}/samba"
     lockdir="\${VARDIR}/lib/samba"
     piddir="\${VARDIR}/run"
@@ -29,7 +31,9 @@ AC_ARG_WITH(fhs,
     lockdir="\${VARDIR}/locks"
     piddir="\${VARDIR}/locks"
     privatedir="\${prefix}/private"
-    swatdir="\${prefix}/swat")
+    swatdir="\${prefix}/swat"
+    ;;
+  esac])
 
 #################################################
 # set private directory location
