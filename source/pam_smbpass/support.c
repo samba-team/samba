@@ -437,10 +437,6 @@ int _smb_verify_password( pam_handle_t * pamh, SAM_ACCOUNT *sampass,
     }
 
     _pam_delete( data_name );
-    if (sampass) {
-    	pdb_free_sam(sampass);
-	sampass = NULL;
-    }
     
     return retval;
 }

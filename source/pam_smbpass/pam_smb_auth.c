@@ -61,19 +61,18 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 {
     unsigned int ctrl;
     int retval, *ret_data = NULL;
-
+    SAM_ACCOUNT *sampass = NULL;
+    extern BOOL in_client;
     const char *name;
 
     /* Points to memory managed by the PAM library. Do not free. */
     char *p = NULL;
 
-    SAM_ACCOUNT *sampass = NULL;
-
-    extern BOOL in_client;
 
     /* Samba initialization. */
     setup_logging("pam_smbpass",False);
     charset_initialise();
+    codepage_initialise(lp_client_code_page());
     in_client = True;
 
     ctrl = set_ctrl(flags, argc, argv);
@@ -106,12 +105,16 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
     if (on( SMB_MIGRATE, ctrl )) {
 	retval = _smb_add_user(pamh, ctrl, name, sampass);
+	pdb_free_sam(sampass);
+	sampass = NULL;
 	AUTH_RETURN;
     }
 
     if (sampass == NULL) {
         _log_err(LOG_ALERT, "Failed to find entry for user %s.", name);
         retval = PAM_USER_UNKNOWN;
+	pdb_free_sam(sampass);
+	sampass = NULL;
         AUTH_RETURN;
     }
    

@@ -53,6 +53,7 @@ int pam_sm_acct_mgmt( pam_handle_t *pamh, int flags,
     /* Samba initialization. */
     setup_logging( "pam_smbpass", False );
     charset_initialise();
+    codepage_initialise(lp_client_code_page());
     in_client = True;
 
     ctrl = set_ctrl( flags, argc, argv );
