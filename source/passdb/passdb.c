@@ -782,8 +782,10 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 	select_name(to->unknown_str , &from->uni_unknown_str );
 	select_name(to->munged_dial , &from->uni_munged_dial );
 
-	to->user_rid = from->user_rid;
-	to->group_rid = from->group_rid;
+	if (from->user_rid)
+		to->user_rid = from->user_rid;
+	if (from->group_rid)
+		to->group_rid = from->group_rid;
 
 	to->acct_ctrl = from->acb_info;
 	to->unknown_3 = from->unknown_3;
