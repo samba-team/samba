@@ -975,6 +975,13 @@ int vasprintf(char **ptr, const char *format, va_list ap);
 #include <dlfcn.h>
 #endif
 
+/* dmalloc -- free heap debugger (dmalloc.org).  This should be near
+ * the *bottom* of include files so as not to conflict. */
+#ifdef DMALLOC
+#  include <dmalloc.h>
+#endif
+
+
 /* Some POSIX definitions for those without */
  
 #ifndef S_IFDIR

@@ -33,6 +33,14 @@ AC_ARG_ENABLE(developer, [  --enable-developer      turn on developer warnings a
 	CFLAGS="${CFLAGS} -g -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -DDEBUG_PASSWORD -DDEVELOPER"
     fi])
 
+AC_ARG_ENABLE(dmalloc, [  --enable-dmalloc          enable heap debugging [default=no]])
+
+if test "x$enable_dmalloc" = xyes
+then
+	AC_DEFINE(ENABLE_DMALLOC, 1, [Define to turn on dmalloc debugging])
+	LIBS="$LIBS -ldmalloc"	
+fi
+
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
