@@ -42,7 +42,7 @@ as_rep(krb5_context context,
        req->padata->val->padata_type != pa_enc_timestamp) {
 	PA_DATA foo;
 	u_char buf[16];
-	int len;
+	size_t len;
 	krb5_data foo_data;
 
 	foo.padata_type = pa_enc_timestamp;
@@ -209,7 +209,8 @@ as_rep(krb5_context context,
 
     {
 	unsigned char buf[1024]; /* XXX The data could be indefinite */
-	int len;
+	size_t len;
+
 	e = encode_EncTicketPart(buf + sizeof(buf) - 1, sizeof(buf), et, &len);
 	free_EncTicketPart(et);
 	free(et);

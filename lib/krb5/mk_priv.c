@@ -16,7 +16,7 @@ krb5_mk_priv(krb5_context context,
   unsigned usec;
   krb5_addresses addr;
   u_char buf[1024];
-  int len;
+  size_t len;
 
   r = krb5_get_all_client_addrs (&addr);
   if (r)
