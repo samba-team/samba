@@ -438,15 +438,18 @@ char *rep_inet_ntoa(struct in_addr ip)
 {
 	time_t ret;
 	char *tz;
+	char *tzvar;
 	
 	tz = getenv("TZ");
-	setenv("TZ", "", 1);
+	putenv("TZ=");
 	tzset();
 	ret = mktime(tm);
 	if (tz) {
-		setenv("TZ", tz, 1);
+		asprintf(&tzvar, "TZ=%s", tz);
+		putenv(tzvar);
+		safe_free(tzvar);
 	} else {
-		unsetenv("TZ");
+		putenv("TZ");
 	}
 	tzset();
 	return ret;
