@@ -1190,10 +1190,12 @@ static BOOL build_smb_pass (struct smb_passwd *smb_pw, const SAM_ACCOUNT *sampas
 		smb_pw->smb_userid_set = False;
 		DEBUG(5,("build_sam_pass: storing user without a UNIX uid or gid. \n"));
 	} else {
+		uint32 rid = pdb_get_user_rid(sampass);
 		smb_pw->smb_userid_set = True;
 		uid = pdb_get_uid(sampass);
 
-		if (uid != pdb_user_rid_to_uid(pdb_get_user_rid(sampass))) {
+		/* If the user specified a RID, make sure its able to be both stored and retreived */
+		if (rid && uid != pdb_user_rid_to_uid(rid)) {
 			DEBUG(0,("build_sam_pass: Failing attempt to store user with non-uid based user RID. \n"));
 			return False;
 		}
