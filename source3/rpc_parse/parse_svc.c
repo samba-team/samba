@@ -163,6 +163,54 @@ void svc_io_r_open_service(char *desc,  SVC_R_OPEN_SERVICE *r_u, prs_struct *ps,
 }
 
 /*******************************************************************
+reads or writes a SVC_Q_START_SERVICE structure.
+********************************************************************/
+void svc_io_q_start_service(char *desc, SVC_Q_START_SERVICE *q_s, prs_struct *ps, int depth)
+{
+	if (q_s == NULL) return;
+
+	prs_debug(ps, depth, desc, "svc_io_q_start_service");
+	depth++;
+
+	prs_align(ps);
+	smb_io_pol_hnd("", &(q_s->pol), ps, depth);
+
+	prs_align(ps);
+	prs_uint32("argc    ", ps, depth, &(q_s->argc    ));
+	prs_uint32("ptr_argv", ps, depth, &(q_s->ptr_argv));
+
+	if (q_s->ptr_argv != 0)
+	{
+		int i;
+
+		prs_uint32("argc2   ", ps, depth, &(q_s->argc2));
+
+		if (q_s->argc2 > MAX_SVC_ARGS)
+		{
+			q_s->argc = q_s->argc2 = MAX_SVC_ARGS;
+		}
+
+		for (i = 0; i < q_s->argc2; i++)
+		{
+			smb_io_unistr2("", &(q_s->argv[i]), 1, ps, depth); 
+		}
+	}
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void svc_io_r_start_service(char *desc,  SVC_R_START_SERVICE *r_s, prs_struct *ps, int depth)
+{
+	if (r_s == NULL) return;
+
+	prs_debug(ps, depth, desc, "svc_io_r_start_service");
+	depth++;
+
+	prs_uint32("status", ps, depth, &(r_s->status));
+}
+
+/*******************************************************************
  make_svc_query_svc_cfg
  ********************************************************************/
 void make_svc_query_svc_cfg(QUERY_SERVICE_CONFIG *q_u,

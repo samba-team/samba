@@ -2591,6 +2591,8 @@ void svc_io_q_open_service(char *desc, SVC_Q_OPEN_SERVICE *q_u, prs_struct *ps, 
 void make_svc_r_open_service(SVC_R_OPEN_SERVICE *r_u, POLICY_HND *hnd,
 				uint32 status)  ;
 void svc_io_r_open_service(char *desc,  SVC_R_OPEN_SERVICE *r_u, prs_struct *ps, int depth);
+void svc_io_q_start_service(char *desc, SVC_Q_START_SERVICE *q_s, prs_struct *ps, int depth);
+void svc_io_r_start_service(char *desc,  SVC_R_START_SERVICE *r_s, prs_struct *ps, int depth);
 void make_svc_query_svc_cfg(QUERY_SERVICE_CONFIG *q_u,
 				uint32 service_type, uint32 start_type,
 				uint32 error_control,

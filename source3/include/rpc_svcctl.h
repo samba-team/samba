@@ -31,6 +31,7 @@
 #define SVC_QUERY_SVC_CONFIG 0x11
 #define SVC_QUERY_DISP_NAME  0x14
 #define SVC_OPEN_SERVICE     0x10
+#define SVC_START_SERVICE    0x13
 #define SVC_CLOSE            0x00
 
 
@@ -71,6 +72,27 @@ typedef struct r_svc_open_service_info
 	uint32 status;             /* return status */
 
 } SVC_R_OPEN_SERVICE;
+
+#define MAX_SVC_ARGS 4
+
+/* SVC_Q_START_SERVICE */
+typedef struct q_svc_start_service_info
+{
+	POLICY_HND pol;
+
+	uint32 argc;
+	uint32 ptr_argv;
+	uint32 argc2;
+	UNISTR2 argv[MAX_SVC_ARGS];
+
+} SVC_Q_START_SERVICE;
+
+/* SVC_R_START_SERVICE */
+typedef struct r_svc_start_service_info
+{
+	uint32 status;
+
+} SVC_R_START_SERVICE;
 
 
 /* QUERY_SERVICE_CONFIG */
