@@ -868,6 +868,7 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
       fstrcpy(&ascii_p16[33], "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
   }
   ascii_p16[65] = ':';
+  ascii_p16[66] = '\0'; /* null-terminate the string so that strlen works */
 
   /* Add on the account info bits and the time of last
      password change. */
