@@ -229,7 +229,9 @@ enum socket_error {SOCKET_READ_TIMEOUT,
 /* this is a trade with jeremy - I agreed to use uint_t instead of
  * bare unsigned if he agreed to not use non-braced if statements
  * (13/4/2003 - train to gottenginen) */
+#ifndef IRIX
 typedef unsigned int uint_t;
+#endif
 
 /*
  * SMB UCS2 (16-bit unicode) internal type.
