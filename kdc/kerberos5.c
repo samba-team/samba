@@ -477,7 +477,7 @@ tgs_rep(krb5_context context,
 	    {
 		krb5_keyblock kb;
 		kb.keytype = tgt->key.keytype;
-		kb.contents = tgt->key.keyvalue;
+		kb.keyvalue = tgt->key.keyvalue;
 		krb5_encrypt(context, buf + sizeof(buf) - len, len, &kb, 
 			     &rep.enc_part.cipher);
 	    }

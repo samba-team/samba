@@ -15,7 +15,7 @@ int main(int argc, char **argv)
     salt.data = NULL;
     krb5_get_salt(princ, &salt);
     krb5_string_to_key(argv[2], &salt, &key);
-    for(i = 0; i < key.contents.length; i++)
-	printf("%02x", ((unsigned char*)key.contents.data)[i]);
+    for(i = 0; i < key.keyvalue.length; i++)
+	printf("%02x", ((unsigned char*)key.keyvalue.data)[i]);
     printf("\n");
 }
