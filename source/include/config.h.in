@@ -429,6 +429,12 @@
 /* Define if you have the execl function.  */
 #undef HAVE_EXECL
 
+/* Define if you have the fcvt function.  */
+#undef HAVE_FCVT
+
+/* Define if you have the fcvtl function.  */
+#undef HAVE_FCVTL
+
 /* Define if you have the fopen64 function.  */
 #undef HAVE_FOPEN64
 
