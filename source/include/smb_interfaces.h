@@ -433,7 +433,7 @@ union smb_fileinfo {
 		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
 
-		struct {
+		struct smb_all_eas {
 			/* the ea_size is implied by the list */
 			uint_t num_eas;
 			struct ea_struct *eas;

@@ -108,3 +108,5 @@ struct net_functable;
 struct net_context;
 
 struct file_info;
+
+struct xattr_DosEAs;

@@ -330,13 +330,13 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		return status;
 	}
 
-
-#if HAVE_XATTR_SUPPORT
 	name->dos.attrib = io->ntcreatex.in.file_attr;
-	if (pvfs->flags & PVFS_FLAG_XATTR_ENABLE) {
-		status = pvfs_xattr_save(pvfs, name, fd);
+	status = pvfs_dosattrib_save(pvfs, name, fd);
+	if (!NT_STATUS_IS_OK(status)) {
+		idr_remove(pvfs->idtree_fnum, fnum);
+		close(fd);
+		return status;
 	}
-#endif
 
 	/* form the lock context used for byte range locking and
 	   opendb locking */

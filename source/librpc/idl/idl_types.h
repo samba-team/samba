@@ -8,6 +8,7 @@
 #define STR_FIXLEN32	LIBNDR_FLAG_STR_FIXLEN32
 #define STR_CONFORMANT  LIBNDR_FLAG_STR_CONFORMANT
 #define STR_CHARLEN	LIBNDR_FLAG_STR_CHARLEN
+#define STR_UTF8	LIBNDR_FLAG_STR_UTF8
 
 /*
   a UCS2 string prefixed with [size] [offset] [length], all 32 bits
@@ -63,6 +64,11 @@
   a null terminated ascii string
 */
 #define astring       [flag(STR_ASCII|STR_NULLTERM)]                  string
+
+/*
+  a null terminated UTF8 string
+*/
+#define utf8string       [flag(STR_UTF8|STR_NULLTERM)]                string
 
 
 #define NDR_NOALIGN       LIBNDR_FLAG_NOALIGN

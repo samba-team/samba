@@ -22,13 +22,42 @@
 
 #include "includes.h"
 #include "vfs_posix.h"
+#include "librpc/gen_ndr/ndr_xattr.h"
 
+/*
+  reply to a RAW_FILEINFO_ALL_EAS call
+*/
+static NTSTATUS pvfs_query_all_eas(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx, 
+				   struct pvfs_filename *name, int fd, struct smb_all_eas *eas)
+{
+	NTSTATUS status;
+	int i;
+	struct xattr_DosEAs *ealist = talloc_p(mem_ctx, struct xattr_DosEAs);
+
+	ZERO_STRUCTP(eas);
+	status = pvfs_doseas_load(pvfs, name, fd, ealist);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	eas->num_eas = ealist->num_eas;
+	eas->eas = talloc_array_p(mem_ctx, struct ea_struct, eas->num_eas);
+	if (eas->eas == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	for (i=0;i<eas->num_eas;i++) {
+		eas->eas[i].flags = 0;
+		eas->eas[i].name.s = ealist->eas[i].name;
+		eas->eas[i].value = ealist->eas[i].value;
+	}
+	return NT_STATUS_OK;
+}
 
 /*
   approximately map a struct pvfs_filename to a generic fileinfo struct
 */
 static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
-				  struct pvfs_filename *name, union smb_fileinfo *info)
+				  struct pvfs_filename *name, union smb_fileinfo *info, 
+				  int fd)
 {
 	switch (info->generic.level) {
 	case RAW_FILEINFO_GENERIC:
@@ -61,9 +90,7 @@ static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_ALL_EAS:
-		info->all_eas.out.num_eas = 0;
-		info->all_eas.out.eas = NULL;
-		return NT_STATUS_OK;
+		return pvfs_query_all_eas(pvfs, mem_ctx, name, fd, &info->all_eas.out);
 
 	case RAW_FILEINFO_IS_NAME_VALID:
 		return NT_STATUS_OK;
@@ -202,7 +229,7 @@ NTSTATUS pvfs_qpathinfo(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	status = pvfs_map_fileinfo(pvfs, req, name, info);
+	status = pvfs_map_fileinfo(pvfs, req, name, info, -1);
 
 	return status;
 }
@@ -228,7 +255,7 @@ NTSTATUS pvfs_qfileinfo(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 	
-	status = pvfs_map_fileinfo(pvfs, req, f->name, info);
+	status = pvfs_map_fileinfo(pvfs, req, f->name, info, f->fd);
 
 	/* a qfileinfo can fill in a bit more info than a qpathinfo -
 	   now modify the levels that need to be fixed up */

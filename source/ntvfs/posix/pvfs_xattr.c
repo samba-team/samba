@@ -25,7 +25,6 @@
 #include "vfs_posix.h"
 #include "librpc/gen_ndr/ndr_xattr.h"
 
-
 /*
   pull a xattr as a blob, from either a file or a file descriptor
 */
@@ -36,6 +35,7 @@ static NTSTATUS pull_xattr_blob(TALLOC_CTX *mem_ctx,
 				size_t estimated_size,
 				DATA_BLOB *blob)
 {
+#if HAVE_XATTR_SUPPORT
 	int ret;
 
 	*blob = data_blob_talloc(mem_ctx, NULL, estimated_size);
@@ -67,17 +67,20 @@ again:
 	blob->length = ret;
 
 	return NT_STATUS_OK;
+#else
+	return NT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 /*
   push a xattr as a blob, from either a file or a file descriptor
 */
-static NTSTATUS push_xattr_blob(TALLOC_CTX *mem_ctx,
-				const char *attr_name, 
+static NTSTATUS push_xattr_blob(const char *attr_name, 
 				const char *fname, 
 				int fd, 
 				const DATA_BLOB *blob)
 {
+#if HAVE_XATTR_SUPPORT
 	int ret;
 
 	if (fd != -1) {
@@ -90,22 +93,74 @@ static NTSTATUS push_xattr_blob(TALLOC_CTX *mem_ctx,
 	}
 
 	return NT_STATUS_OK;
+#else
+	return NT_STATUS_NOT_SUPPORTED;
+#endif
+}
+
+/*
+  load a NDR structure from a xattr
+*/
+static NTSTATUS pvfs_xattr_ndr_load(TALLOC_CTX *mem_ctx,
+				    const char *fname, int fd, const char *attr_name,
+				    void *p, ndr_pull_flags_fn_t pull_fn)
+{
+	NTSTATUS status;
+	DATA_BLOB blob;
+
+	status = pull_xattr_blob(mem_ctx, attr_name, fname, 
+				 fd, XATTR_DOSATTRIB_ESTIMATED_SIZE, &blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* pull the blob */
+	status = ndr_pull_struct_blob(&blob, mem_ctx, p, pull_fn);
+
+	data_blob_free(&blob);
+
+	return status;
+}
+
+/*
+  save a NDR structure into a xattr
+*/
+static NTSTATUS pvfs_xattr_ndr_save(const char *fname, int fd, const char *attr_name, 
+				    void *p, ndr_push_flags_fn_t push_fn)
+{
+	TALLOC_CTX *mem_ctx = talloc(NULL, 0);
+	DATA_BLOB blob;
+	NTSTATUS status;
+
+	status = ndr_push_struct_blob(&blob, mem_ctx, p, (ndr_push_flags_fn_t)push_fn);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+		return status;
+	}
+
+	status = push_xattr_blob(attr_name, fname, fd, &blob);
+	talloc_free(mem_ctx);
+
+	return status;
 }
 
 
 /*
   fill in file attributes from extended attributes
 */
-NTSTATUS pvfs_xattr_load(struct pvfs_state *pvfs, struct pvfs_filename *name, int fd)
+NTSTATUS pvfs_dosattrib_load(struct pvfs_state *pvfs, struct pvfs_filename *name, int fd)
 {
-	DATA_BLOB blob;
 	NTSTATUS status;
 	struct xattr_DosAttrib attrib;
 	TALLOC_CTX *mem_ctx = talloc(name, 0);
 	struct xattr_DosInfo1 *info1;
 
-	status = pull_xattr_blob(mem_ctx, XATTR_DOSATTRIB_NAME, name->full_name, 
-				 fd, XATTR_DOSATTRIB_ESTIMATED_SIZE, &blob);
+	if (!(pvfs->flags & PVFS_FLAG_XATTR_ENABLE)) {
+		return NT_STATUS_OK;
+	}
+
+	status = pvfs_xattr_ndr_load(mem_ctx, name->full_name, fd, XATTR_DOSATTRIB_NAME,
+				     &attrib, (ndr_pull_flags_fn_t)ndr_pull_xattr_DosAttrib);
 
 	/* if the filesystem doesn't support them, then tell pvfs not to try again */
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
@@ -121,14 +176,6 @@ NTSTATUS pvfs_xattr_load(struct pvfs_state *pvfs, struct pvfs_filename *name, in
 		return NT_STATUS_OK;
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return status;
-	}
-
-	/* pull the blob */
-	status = ndr_pull_struct_blob(&blob, mem_ctx, &attrib, 
-				      (ndr_pull_flags_fn_t)ndr_pull_xattr_DosAttrib);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return status;
@@ -163,15 +210,16 @@ NTSTATUS pvfs_xattr_load(struct pvfs_state *pvfs, struct pvfs_filename *name, in
 
 
 /*
-  save the file attribute into into the xattr
+  save the file attribute into the xattr
 */
-NTSTATUS pvfs_xattr_save(struct pvfs_state *pvfs, struct pvfs_filename *name, int fd)
+NTSTATUS pvfs_dosattrib_save(struct pvfs_state *pvfs, struct pvfs_filename *name, int fd)
 {
 	struct xattr_DosAttrib attrib;
 	struct xattr_DosInfo1 *info1;
-	TALLOC_CTX *mem_ctx = talloc(name, 0);
-	DATA_BLOB blob;
-	NTSTATUS status;
+
+	if (!(pvfs->flags & PVFS_FLAG_XATTR_ENABLE)) {
+		return NT_STATUS_OK;
+	}
 
 	attrib.version = 1;
 	info1 = &attrib.info.info1;
@@ -183,15 +231,39 @@ NTSTATUS pvfs_xattr_save(struct pvfs_state *pvfs, struct pvfs_filename *name, in
 	info1->create_time = name->dos.create_time;
 	info1->change_time = name->dos.change_time;
 
-	status = ndr_push_struct_blob(&blob, mem_ctx, &attrib, 
-				      (ndr_push_flags_fn_t)ndr_push_xattr_DosAttrib);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return status;
+	return pvfs_xattr_ndr_save(name->full_name, fd, XATTR_DOSATTRIB_NAME, &attrib, 
+				   (ndr_push_flags_fn_t)ndr_push_xattr_DosAttrib);
+}
+
+
+/*
+  load the set of DOS EAs
+*/
+NTSTATUS pvfs_doseas_load(struct pvfs_state *pvfs, struct pvfs_filename *name, int fd,
+			  struct xattr_DosEAs *eas)
+{
+	NTSTATUS status;
+	ZERO_STRUCTP(eas);
+	if (!(pvfs->flags & PVFS_FLAG_XATTR_ENABLE)) {
+		return NT_STATUS_OK;
 	}
-
-	status = push_xattr_blob(mem_ctx, XATTR_DOSATTRIB_NAME, name->full_name, fd, &blob);
-	talloc_free(mem_ctx);
-
+	status = pvfs_xattr_ndr_load(eas, name->full_name, fd, XATTR_DOSEAS_NAME,
+				     eas, (ndr_pull_flags_fn_t)ndr_pull_xattr_DosEAs);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		return NT_STATUS_OK;
+	}
 	return status;
+}
+
+/*
+  save the set of DOS EAs
+*/
+NTSTATUS pvfs_doseas_save(struct pvfs_state *pvfs, struct pvfs_filename *name, int fd,
+			  struct xattr_DosEAs *eas)
+{
+	if (!(pvfs->flags & PVFS_FLAG_XATTR_ENABLE)) {
+		return NT_STATUS_OK;
+	}
+	return pvfs_xattr_ndr_save(name->full_name, fd, XATTR_DOSEAS_NAME, eas, 
+				   (ndr_push_flags_fn_t)ndr_push_xattr_DosEAs);
 }

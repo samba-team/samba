@@ -1,13 +1,4 @@
 ################################################
-# Start MODULE posix_xattr
-[MODULE::posix_xattr]
-INIT_OBJ_FILES = \
-		ntvfs/posix/pvfs_xattr.o
-# End MODULE posix_xattr
-################################################
-
-
-################################################
 # Start MODULE ntvfs_posix
 [MODULE::ntvfs_posix]
 INIT_OBJ_FILES = \
@@ -33,6 +24,7 @@ ADD_OBJ_FILES = \
 		ntvfs/posix/pvfs_wait.o \
 		ntvfs/posix/pvfs_seek.o \
 		ntvfs/posix/pvfs_ioctl.o \
+		ntvfs/posix/pvfs_xattr.o \
 		ntvfs/common/opendb.o \
 		ntvfs/common/brlock.o
 # End MODULE ntvfs_posix
