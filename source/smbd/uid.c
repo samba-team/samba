@@ -178,9 +178,22 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 		if (vuser && vuser->guest)
 			is_guest = True;
 
-		token = create_nt_token(uid, gid, current_user.ngroups,
-                                        current_user.groups, is_guest, 
-                                        0, NULL);
+                if (vuser && vuser->nt_user_token) {
+
+                        /* Modify the user and group in the nt user token
+                           as it may be been changed by the force user and
+                           force group parameters. */
+
+                        token = dup_nt_token(vuser->nt_user_token);
+
+                        nt_token_set_user(token, uid);
+                        nt_token_set_group(token, gid);
+
+                } else
+                        token = create_nt_token(uid, gid, current_user.ngroups,
+                                                current_user.groups, is_guest, 
+                                                0, NULL);
+
 		must_free_token = True;
 	}
 	

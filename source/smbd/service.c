@@ -471,12 +471,25 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		conn_free(conn);
 		return NULL;
 	}  
-		
+
         vuser = get_valid_user_struct(vuid);
 
-	conn->nt_user_token = create_nt_token(conn->uid, conn->gid, 
-					      conn->ngroups, conn->groups,
-					      guest, 0, NULL);
+        if (vuser && vuser->nt_user_token) {
+
+                /* Modify the user and group in the nt user token as it may
+                   be been changed by the force user and force group
+                   parameters. */
+
+                conn->nt_user_token = dup_nt_token(vuser->nt_user_token);
+
+                nt_token_set_user(conn->nt_user_token, conn->uid);
+                nt_token_set_group(conn->nt_user_token, conn->gid);
+
+        } else
+                conn->nt_user_token = 
+                        create_nt_token(conn->uid, conn->gid,
+                                        conn->ngroups, conn->groups, 
+                                        guest, 0, NULL);
 
 	/* Initialise VFS function pointers */
 

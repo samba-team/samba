@@ -3897,6 +3897,8 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 int get_current_groups(int *p_ngroups, gid_t **p_groups);
 void delete_nt_token(NT_USER_TOKEN **pptoken);
 NT_USER_TOKEN *dup_nt_token(NT_USER_TOKEN *ptoken);
+void nt_token_set_user(NT_USER_TOKEN *tok, uid_t uid);
+void nt_token_set_group(NT_USER_TOKEN *tok, gid_t gid);
 BOOL initialise_groups(char *user, uid_t uid, gid_t gid);
 BOOL push_sec_ctx(void);
 void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN *token);
