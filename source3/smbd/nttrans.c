@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "nterr.h"
 
 extern int DEBUGLEVEL;
 extern int Protocol;
@@ -984,6 +985,17 @@ static void change_notify_reply_packet(char *inbuf, int error_class, uint32 erro
 
   construct_reply_common(inbuf, outbuf);
 
+  /*
+   * If we're returning a 'too much in the directory changed' we need to
+   * set this is an NT error status flags. If we don't then the (probably
+   * untested) code in the NT redirector has a bug in that it doesn't re-issue
+   * the change notify.... Ah - I *love* it when I get so deeply into this I
+   * can even determine how MS failed to test stuff and why.... :-). JRA.
+   */
+
+  if(error_class == 0 && error_code == NT_STATUS_NOTIFY_ENUM_DIR)
+    SSVAL(outbuf,smb_flg2, SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
+
   ERROR(error_class,error_code);
   send_smb(Client,outbuf);
 }
@@ -1104,7 +1116,7 @@ Error was %s.\n", fsp->name, strerror(errno) ));
        */
       DEBUG(5,("process_pending_change_notify_queue: directory fnum = %d, name = %s changed\n",
             fnum, fsp->name ));
-      change_notify_reply_packet(cnbp->request_buf,ERRDOS,ERROR_NOTIFY_ENUM_DIR);
+      change_notify_reply_packet(cnbp->request_buf,0,NT_STATUS_NOTIFY_ENUM_DIR);
       free((char *)ubi_slRemNext( &change_notify_queue, prev));
       cnbp = (change_notify_buf *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
       unbecome_user();

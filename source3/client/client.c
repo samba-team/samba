@@ -1858,7 +1858,15 @@ static void do_put(char *rname,char *lname,file_info *finfo)
       return;
     }
 
-  f = fopen(lname,"r");
+  /* allow files to be piped into smbclient
+     jdblair 24.jun.98 */
+  if (!strcmp(lname, "-")) {
+    f = stdin;
+    /* size of file is not known */
+    finfo->size = 0;
+  } else {
+    f = fopen(lname,"r");
+  }
 
   if (!f)
     {
@@ -1877,15 +1885,21 @@ static void do_put(char *rname,char *lname,file_info *finfo)
   if (!maxwrite)
     maxwrite = writebraw_supported?MAX(max_xmit,BUFFER_SIZE):(max_xmit-200);
 
-  while (nread < finfo->size)
+  /* This is a rewrite of the read/write loop that doesn't require the input
+     file to be of a known length.  This allows the stream pointer 'f' to
+     refer to stdin.
+
+     Rather than reallocing the read buffer every loop to keep it the min
+     necessary length this look uses a fixed length buffer and just tests
+     for eof on the file stream at the top of each loop.
+     jdblair, 24.jun.98 */
+
+  buf = (char *)malloc(maxwrite+4);
+  while (! feof(f) )
     {
       int n = maxwrite;
       int ret;
 
-      n = MIN(n,finfo->size - nread);
-
-      buf = (char *)Realloc(buf,n+4);
-  
       fseek(f,nread,SEEK_SET);
       if ((n = readfile(buf+4,1,n,f)) < 1)
 	{
@@ -1907,8 +1921,6 @@ static void do_put(char *rname,char *lname,file_info *finfo)
 
       nread += n;
     }
-
-
 
   bzero(outbuf,smb_size);
   set_message(outbuf,3,0,True);
@@ -1951,7 +1963,7 @@ static void do_put(char *rname,char *lname,file_info *finfo)
 	     finfo->size / (1.024*this_time + 1.0e-4),
 	     put_total_size / (1.024*put_total_time_ms)));
   }
-} 
+}
 
  
 
@@ -1987,7 +1999,10 @@ static void cmd_put(char *dum_in, char *dum_out)
 
   {
     struct stat st;
-    if (!file_exist(lname,&st)) {
+    /* allow '-' to represent stdin
+       jdblair, 24.jun.98 */
+    if (!file_exist(lname,&st) &&
+      (strcmp(lname,"-"))) {
       DEBUG(0,("%s does not exist\n",lname));
       return;
     }
@@ -3556,8 +3571,10 @@ static void usage(char *pname)
  /* modification to support PASSWD environmental var
   25.Aug.97, jdblair@uab.edu */
 
-  if (getenv("PASSWD"))
+  if (getenv("PASSWD")) {
     pstrcpy(password,getenv("PASSWD"));
+    got_pass = True;
+  }
 
   if (*username == 0 && getenv("LOGNAME"))
     {

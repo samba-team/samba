@@ -5,6 +5,7 @@
 
 prefix=@prefix@
 exec_prefix=@exec_prefix@
+mandir=@mandir@
 INSTALL_BIN=$(exec_prefix)/bin
 INSTALL_MAN=$(prefix)/man
 
@@ -187,10 +188,14 @@ PROTO_OBJ = $(SMBD_OBJ) $(NMBD_OBJ) $(SWAT_OBJ) $(CLIENT_OBJ)
 # now the rules...
 ######################################################################
 
-all : $(SPROGS) $(PROGS) 
+all : CHECK $(SPROGS) $(PROGS) 
 
 .SUFFIXES:
 .SUFFIXES: .c .o .h
+
+CHECK:
+	@echo "Using FLAGS = $(FLAGS)"
+	@echo "Using LIBS = $(LIBS)"
 
 .c.o: $(INCLUDES)
 	@echo Compiling $*.c
