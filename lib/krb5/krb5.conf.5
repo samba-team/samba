@@ -147,8 +147,15 @@ specifies the realm that will be stored in this database.
 .It mkey_file Li = Pa FILENAME
 use this keytab file for the master key of this database.
 If not specified
-.Va DATABASENAME .
-mkey will be used.
+.Va DATABASENAME Ns .mkey
+will be used.
+.It acl_file Li = PA FILENAME
+use this file for the ACL list of this database.
+.It log_file Li = Pa FILENAME
+use this file as the log of changes performed to the database.  This
+file is used by
+.Nm ipropd-master
+for propagating changes to slaves.
 .El
 .It Li }
 .It max-request = Va SIZE
