@@ -633,6 +633,11 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 			return False;
 		break;
 	case MSG_PRINTER_DRVUPGRADE:
+		if (!params || !params[0]) {
+			fprintf(stderr,"drvupgrade needs a parameter\n");
+			return(False);
+		}
+
 		if (!send_message(dest, MSG_PRINTER_DRVUPGRADE, params[0], 0, False))
 			return False;
 		break;
