@@ -46,14 +46,14 @@ static BOOL winbindd_fill_pwent(char *dom_name, char *user_name,
 	
 	/* Resolve the uid number */
 
-	if (!NT_STATUS_IS_OK(idmap_sid_to_uid(user_sid, &(pw->pw_uid), 0))) {
+	if (!NT_STATUS_IS_OK(idmap_sid_to_uid(user_sid, &pw->pw_uid, 0))) {
 		DEBUG(1, ("error getting user id for sid %s\n", sid_to_string(sid_string, user_sid)));
 		return False;
 	}
 	
 	/* Resolve the gid number */   
 
-	if (!NT_STATUS_IS_OK(idmap_sid_to_gid(group_sid, &(pw->pw_gid), 0))) {
+	if (!NT_STATUS_IS_OK(idmap_sid_to_gid(group_sid, &pw->pw_gid, 0))) {
 		DEBUG(1, ("error getting group id for sid %s\n", sid_to_string(sid_string, group_sid)));
 		return False;
 	}
@@ -185,7 +185,7 @@ enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state)
 	}
     
 	/* Now take all this information and fill in a passwd structure */	
-	if (!winbindd_fill_pwent(name_domain, name_user, 
+	if (!winbindd_fill_pwent(name_domain, user_info.acct_name, 
 				 user_info.user_sid, user_info.group_sid, 
 				 user_info.full_name,
 				 &state->response.data.pw)) {
@@ -283,7 +283,7 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 
 	/* Fill in password structure */
 
-	if (!winbindd_fill_pwent(domain->name, user_name, user_info.user_sid, 
+	if (!winbindd_fill_pwent(domain->name, user_info.acct_name, user_info.user_sid, 
 				 user_info.group_sid,
 				 user_info.full_name, &state->response.data.pw)) {
 		talloc_destroy(mem_ctx);
