@@ -989,6 +989,13 @@ typedef struct printer_info_5
 }
 PRINTER_INFO_5;
 
+typedef struct printer_info_7
+{
+	UNISTR guid; /* text form of printer guid */
+	uint32 action;
+}
+PRINTER_INFO_7;
+
 typedef struct spool_q_enumprinters
 {
 	uint32 flags;
@@ -1480,6 +1487,14 @@ typedef struct spool_printer_info_level_3
 }
 SPOOL_PRINTER_INFO_LEVEL_3;
 
+typedef struct spool_printer_info_level_7
+{
+	uint32 guid_ptr;
+	uint32 action;
+	UNISTR2 guid;
+}
+SPOOL_PRINTER_INFO_LEVEL_7;
+
 typedef struct spool_printer_info_level
 {
 	uint32 level;
@@ -1487,6 +1502,7 @@ typedef struct spool_printer_info_level
 	SPOOL_PRINTER_INFO_LEVEL_1 *info_1;
 	SPOOL_PRINTER_INFO_LEVEL_2 *info_2;
 	SPOOL_PRINTER_INFO_LEVEL_3 *info_3;
+	SPOOL_PRINTER_INFO_LEVEL_7 *info_7;
 }
 SPOOL_PRINTER_INFO_LEVEL;
 
