@@ -148,8 +148,8 @@ do_mount(char *share_name, unsigned int flags, struct smb_mount_data *data)
 
 	uname(&uts);
 	release = uts.release;
-	major = strsep(&release, ".");
-	minor = strsep(&release, ".");
+	major = strtok(release, ".");
+	minor = strtok(NULL, ".");
 	if (major && minor && atoi(major) == 2 && atoi(minor) < 4) {
 		/* < 2.4, assume struct */
 		data1 = (char *) data;
