@@ -2013,6 +2013,7 @@ BOOL string_init(char **dest,char *src);
 void string_free(char **s);
 BOOL string_set(char **dest,char *src);
 BOOL string_sub(char *s,char *pattern,char *insert);
+BOOL mask_match(char *str, char *regexp, int case_sig, BOOL trans2);
 BOOL do_match(char *str, char *regexp, int case_sig);
 BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2);
 void become_daemon(void);
