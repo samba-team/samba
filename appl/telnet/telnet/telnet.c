@@ -631,7 +631,7 @@ is_unique(char *name, char **as, char **ae)
 static char termbuf[1024];
 
 static int
-setupterm(char *tname, int fd, int *errp)
+telnet_setupterm(const char *tname, int fd, int *errp)
 {
 	if (tgetent(termbuf, tname) == 1) {
 		termbuf[1023] = '\0';
@@ -659,7 +659,7 @@ gettermname()
 		if (tnamep && tnamep != unknown)
 			free(tnamep);
 		if ((tname = (char *)env_getvalue((unsigned char *)"TERM")) &&
-				setupterm(tname, 1, &err) == 0) {
+				telnet_setupterm(tname, 1, &err) == 0) {
 			tnamep = mklist(termbuf, tname);
 		} else {
 			if (tname && ((int)strlen(tname) <= 40)) {
