@@ -39,6 +39,21 @@ struct pvfs_file *pvfs_find_fd(struct pvfs_state *pvfs, uint16_t fnum)
 }
 
 /*
+  by using a destructor we make sure that abnormal cleanup will not 
+  leak file descriptors (assuming at least the top level pointer is freed, which
+  will cascade down to here)
+*/
+static int pvfs_fd_destructor(void *p)
+{
+	struct pvfs_file *f = p;
+	if (f->fd != -1) {
+		close(f->fd);
+		f->fd = -1;
+	}
+	return 0;
+}
+
+/*
   open a file
   TODO: this is a temporary implementation derived from the simple backend
   its purpose is to allow other tests to run 
@@ -132,6 +147,10 @@ do_open:
 	f->fd = fd;
 	f->name = talloc_steal(f, name);
 
+	/* setup a destructor to avoid file descriptor leaks on
+	   abnormal termination */
+	talloc_set_destructor(f, pvfs_fd_destructor);
+
 	DLIST_ADD(pvfs->open_files, f);
 
 	ZERO_STRUCT(io->generic.out);
@@ -157,6 +176,7 @@ NTSTATUS pvfs_close(struct smbsrv_request *req, union smb_close *io)
 {
 	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
 	struct pvfs_file *f;
+	NTSTATUS status;
 
 	if (io->generic.level != RAW_CLOSE_CLOSE) {
 		/* we need a mapping function */
@@ -169,12 +189,16 @@ NTSTATUS pvfs_close(struct smbsrv_request *req, union smb_close *io)
 	}
 
 	if (close(f->fd) != 0) {
-		return pvfs_map_errno(pvfs, errno);
+		status = pvfs_map_errno(pvfs, errno);
+	} else {
+		status = NT_STATUS_OK;
 	}
+
+	talloc_set_destructor(f, NULL);
 
 	DLIST_REMOVE(pvfs->open_files, f);
 	talloc_free(f);
 
-	return NT_STATUS_OK;
+	return status;
 }
 
