@@ -36,7 +36,8 @@
  * SUCH DAMAGE. 
  */
 
-#include "kadm5_locl.h"
+#include "kadmin_locl.h"
+#include <krb5-private.h>
 
 RCSID("$Id$");
 
@@ -329,23 +330,23 @@ fail:
 }
 
 krb5_error_code
+kadmind_loop (krb5_context, krb5_auth_context, krb5_keytab, int);
+
+void
+handle_v4(krb5_context context,
+	  int len,
+	  int fd);
+
+krb5_error_code
 kadmind_loop(krb5_context context,
 	     krb5_auth_context ac,
-	     const char *client,
+	     krb5_keytab keytab, 
 	     int fd)
 {
+    char *client;
     krb5_error_code ret;
     void *kadm_handle;
-    ret = kadm5_init_with_password_ctx(context, 
-				       client, 
-				       NULL,
-				       KADM5_ADMIN_SERVICE,
-				       NULL, 0, 0, 
-				       &kadm_handle);
-    if(ret) {
-	abort();
-    }
-	
+
     while(1){
 	krb5_data in, out, msg, reply;
 	unsigned char tmp[4];
@@ -363,10 +364,42 @@ kadmind_loop(krb5_context context,
 	    krb5_errx(context, 1, "short read (%ld)", (long int)n);
 	_krb5_get_int(tmp, &len, 4);
 	if(len > 0xffff && (len & 0xffff) == ('K' << 8) + 'A') {
-	    len = len << 16;
+	    len >>= 16;
 	    krb4_packet = 1;
+#ifdef KRB4
+	    handle_v4(context, len, fd);
+#else
 	    krb5_errx(context, 1, "packet appears to be version 4");
+#endif
 	}
+	krb5_net_read(context, &fd, tmp, sizeof(tmp));
+	if(len != sizeof(KRB5_SENDAUTH_VERSION) || 
+	   memcmp(tmp, KRB5_SENDAUTH_VERSION, sizeof(tmp)) != 0)
+	    krb5_errx(context, 1, "bad sendauth version %.8s", tmp);
+	
+	{
+	    krb5_ticket *ticket;
+	    krb5_principal server;
+	    krb5_parse_name(context, KADM5_ADMIN_SERVICE, &server);
+	    ret = krb5_recvauth(context, &ac, &fd, KADMIN_APPL_VERSION, 
+				server, KRB5_RECVAUTH_IGNORE_VERSION, 
+				keytab, &ticket);
+	    krb5_free_principal(context, server);
+	    
+	    if(ret)
+		krb5_err(context, 1, ret, "krb5_recvauth");
+	    krb5_unparse_name(context, ticket->client, &client);
+	    ret = kadm5_init_with_password_ctx(context, 
+					       client, 
+					       NULL,
+					       KADM5_ADMIN_SERVICE,
+					       NULL, 0, 0, 
+					       &kadm_handle);
+	    if(ret)
+		krb5_abort(context, ret, "kadm5_init_with_password_ctx");
+	}
+	
+
 	in.length = len;
 	in.data = malloc(in.length);
 	n = krb5_net_read(context, &fd, in.data, in.length);
