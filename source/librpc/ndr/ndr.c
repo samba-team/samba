@@ -663,7 +663,7 @@ NTSTATUS ndr_pull_relative1(struct ndr_pull *ndr, const void *p, uint32_t rel_of
 {
 	if (ndr->flags & LIBNDR_FLAG_RELATIVE_CURRENT) {
 		return ndr_token_store(ndr, &ndr->relative_list, p, 
-				       rel_offset + ndr->offset);
+				       rel_offset + ndr->offset - 4);
 	} else {
 		return ndr_token_store(ndr, &ndr->relative_list, p, rel_offset);
 	}
