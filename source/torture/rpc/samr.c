@@ -245,11 +245,11 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		s2.in.level = lvl1; \
 		u = *q.out.info; \
 		if (lvl1 == 21) { \
-			uint8_t *bitmap = u.info21.logon_hours.bitmap; \
+			uint8_t *bits = u.info21.logon_hours.bits; \
 			ZERO_STRUCT(u.info21); \
 			if (fpval == SAMR_FIELD_LOGON_HOURS) { \
 				u.info21.logon_hours.units_per_week = 168; \
-				u.info21.logon_hours.bitmap = bitmap; \
+				u.info21.logon_hours.bits = bits; \
 			} \
 			u.info21.fields_present = fpval; \
 		} \
@@ -324,10 +324,10 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	TEST_USERINFO_INT(21, code_page, 21, code_page, __LINE__, 
 			  SAMR_FIELD_CODE_PAGE);
 
-	TEST_USERINFO_INT(4, logon_hours.bitmap[3],  3, logon_hours.bitmap[3], 1, 0);
-	TEST_USERINFO_INT(4, logon_hours.bitmap[3],  5, logon_hours.bitmap[3], 2, 0);
-	TEST_USERINFO_INT(4, logon_hours.bitmap[3], 21, logon_hours.bitmap[3], 3, 0);
-	TEST_USERINFO_INT(21, logon_hours.bitmap[3], 21, logon_hours.bitmap[3], 4, 
+	TEST_USERINFO_INT(4, logon_hours.bits[3],  3, logon_hours.bits[3], 1, 0);
+	TEST_USERINFO_INT(4, logon_hours.bits[3],  5, logon_hours.bits[3], 2, 0);
+	TEST_USERINFO_INT(4, logon_hours.bits[3], 21, logon_hours.bits[3], 3, 0);
+	TEST_USERINFO_INT(21, logon_hours.bits[3], 21, logon_hours.bits[3], 4, 
 			  SAMR_FIELD_LOGON_HOURS);
 
 	TEST_USERINFO_INT_EXP(16, acct_flags, 5, acct_flags, 

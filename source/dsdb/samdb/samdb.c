@@ -556,14 +556,14 @@ struct samr_LogonHours samdb_result_logon_hours(TALLOC_CTX *mem_ctx, struct ldb_
 	const int units_per_week = 168;
 	const struct ldb_val *val = ldb_msg_find_ldb_val(msg, attr);
 	ZERO_STRUCT(hours);
-	hours.bitmap = talloc_array_p(mem_ctx, uint8, units_per_week);
-	if (!hours.bitmap) {
+	hours.bits = talloc_array_p(mem_ctx, uint8, units_per_week);
+	if (!hours.bits) {
 		return hours;
 	}
 	hours.units_per_week = units_per_week;
-	memset(hours.bitmap, 0xFF, units_per_week);
+	memset(hours.bits, 0xFF, units_per_week);
 	if (val) {
-		memcpy(hours.bitmap, val->data, MIN(val->length, units_per_week));
+		memcpy(hours.bits, val->data, MIN(val->length, units_per_week));
 	}
 	return hours;
 }
@@ -888,7 +888,7 @@ int samdb_msg_add_logon_hours(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message
 	struct ldb_wrap *sam_ctx = ctx;
 	struct ldb_val val;
 	val.length = hours->units_per_week / 8;
-	val.data = hours->bitmap;
+	val.data = hours->bits;
 	return ldb_msg_add_value(sam_ctx->ldb, msg, attr_name, &val);
 }
 
