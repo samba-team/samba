@@ -772,6 +772,11 @@ static void usage(char *pname)
 	/* possibly reload the services file. */
 	reload_services(True);
 
+	if (init_group_mapping()==False) {
+		printf("Could not open tdb mapping file.\n");
+		return 0;
+	}
+
 	if(!pdb_generate_sam_sid()) {
 		DEBUG(0,("ERROR: Samba cannot create a SAM SID.\n"));
 		exit(1);

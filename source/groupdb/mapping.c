@@ -1,0 +1,754 @@
+/* 
+ *  Unix SMB/Netbios implementation.
+ *  Version 1.9.
+ *  RPC Pipe client / server routines
+ *  Copyright (C) Andrew Tridgell              1992-2000,
+ *  Copyright (C) Jean François Micouleau      1998-2001.
+ *  
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
+#include "includes.h"
+
+extern int DEBUGLEVEL;
+extern DOM_SID global_sam_sid;
+
+static TDB_CONTEXT *tdb; /* used for driver files */
+
+#define DATABASE_VERSION 1
+#define GROUP_PREFIX "UNIXGROUP/"
+
+PRIVS privs[] = {
+	{SE_PRIV_NONE, "no_privs", "No privilege"},
+	{SE_PRIV_ADD_USERS, "add_users", "add users"},
+	{SE_PRIV_ADD_MACHINES, "add_computers", ""},
+	{SE_PRIV_PRINT_OPERATOR, "print_op", ""},
+	{SE_PRIV_ALL, "all_privs", ""}
+};
+/*
+PRIVS privs[] = {
+	{  2, "SeCreateTokenPrivilege" },
+	{  3, "SeAssignPrimaryTokenPrivilege" },
+	{  4, "SeLockMemoryPrivilege" },
+	{  5, "SeIncreaseQuotaPrivilege" },
+	{  6, "SeMachineAccountPrivilege" },
+	{  7, "SeTcbPrivilege" },
+	{  8, "SeSecurityPrivilege" },
+	{  9, "SeTakeOwnershipPrivilege" },
+	{ 10, "SeLoadDriverPrivilege" },
+	{ 11, "SeSystemProfilePrivilege" },
+	{ 12, "SeSystemtimePrivilege" },
+	{ 13, "SeProfileSingleProcessPrivilege" },
+	{ 14, "SeIncreaseBasePriorityPrivilege" },
+	{ 15, "SeCreatePagefilePrivilege" },
+	{ 16, "SeCreatePermanentPrivilege" },
+	{ 17, "SeBackupPrivilege" },
+	{ 18, "SeRestorePrivilege" },
+	{ 19, "SeShutdownPrivilege" },
+	{ 20, "SeDebugPrivilege" },
+	{ 21, "SeAuditPrivilege" },
+	{ 22, "SeSystemEnvironmentPrivilege" },
+	{ 23, "SeChangeNotifyPrivilege" },
+	{ 24, "SeRemoteShutdownPrivilege" },
+};
+*/
+
+#if 0
+/****************************************************************************
+check if the user has the required privilege.
+****************************************************************************/
+static BOOL se_priv_access_check(NT_USER_TOKEN *token, uint32 privilege)
+{
+	/* no token, no privilege */
+	if (token==NULL)
+		return False;
+	
+	if ((token->privilege & privilege)==privilege)
+		return True;
+	
+	return False;
+}
+#endif
+
+/****************************************************************************
+dump the mapping group mapping to a text file
+****************************************************************************/
+char *decode_sid_name_use(fstring group, enum SID_NAME_USE name_use)
+{	
+	static fstring group_type;
+
+	switch(name_use) {
+		case SID_NAME_USER:
+			fstrcpy(group_type,"User");
+			break;
+		case SID_NAME_DOM_GRP:
+			fstrcpy(group_type,"Domain group");
+			break;
+		case SID_NAME_DOMAIN:
+			fstrcpy(group_type,"Domain");
+			break;
+		case SID_NAME_ALIAS:
+			fstrcpy(group_type,"Local group");
+			break;
+		case SID_NAME_WKN_GRP:
+			fstrcpy(group_type,"Builtin group");
+			break;
+		case SID_NAME_DELETED:
+			fstrcpy(group_type,"Deleted");
+			break;
+		case SID_NAME_INVALID:
+			fstrcpy(group_type,"Invalid");
+			break;
+		case SID_NAME_UNKNOWN:
+		default:
+			fstrcpy(group_type,"Unknown type");
+			break;
+	}
+	
+	fstrcpy(group, group_type);
+	return group_type;
+}
+
+/****************************************************************************
+open the group mapping tdb
+****************************************************************************/
+BOOL init_group_mapping(void)
+{
+	static pid_t local_pid;
+	char *vstring = "INFO/version";
+
+	if (tdb && local_pid == sys_getpid()) return True;
+	tdb = tdb_open(lock_path("group_mapping.tdb"), 0, 0, O_RDWR|O_CREAT, 0600);
+	if (!tdb) {
+		DEBUG(0,("Failed to open group mapping database\n"));
+		return False;
+	}
+
+	local_pid = sys_getpid();
+
+	/* handle a Samba upgrade */
+	tdb_lock_bystring(tdb, vstring);
+	if (tdb_fetch_int(tdb, vstring) != DATABASE_VERSION) {
+		tdb_traverse(tdb, (tdb_traverse_func)tdb_delete, NULL);
+		tdb_store_int(tdb, vstring, DATABASE_VERSION);
+	}
+	tdb_unlock_bystring(tdb, vstring);
+
+
+	return True;
+}
+
+/****************************************************************************
+****************************************************************************/
+BOOL add_mapping_entry(GROUP_MAP *map, int flag)
+{
+	TDB_DATA kbuf, dbuf;
+	pstring key, buf;
+	fstring string_sid;
+	int len;
+	
+	sid_to_string(string_sid, &map->sid);
+
+	len = tdb_pack(buf, sizeof(buf), "ddffd",
+			map->gid, map->sid_name_use, map->nt_name, map->comment, map->privilege);
+
+	if (len > sizeof(buf)) return False;
+
+	slprintf(key, sizeof(key), "%s%s", GROUP_PREFIX, string_sid);
+
+	kbuf.dsize = strlen(key)+1;
+	kbuf.dptr = key;
+	dbuf.dsize = len;
+	dbuf.dptr = buf;
+	if (tdb_store(tdb, kbuf, dbuf, flag) != 0) return False;
+
+	return True;
+}
+
+/****************************************************************************
+initialise first time the mapping list
+****************************************************************************/
+BOOL add_initial_entry(gid_t gid, fstring sid, enum SID_NAME_USE sid_name_use,
+			      fstring nt_name, fstring comment, uint32 privilege)
+{
+	GROUP_MAP map;
+
+	map.gid=gid;
+	string_to_sid(&map.sid, sid);
+	map.sid_name_use=sid_name_use;
+	fstrcpy(map.nt_name, nt_name);
+	fstrcpy(map.comment, comment);
+	map.privilege=privilege;
+
+	add_mapping_entry(&map, TDB_INSERT);
+
+	return True;
+}
+
+/****************************************************************************
+initialise first time the mapping list
+****************************************************************************/
+BOOL default_group_mapping()
+{
+	DOM_SID sid_admins;
+	DOM_SID sid_users;
+	DOM_SID sid_guests;
+	fstring str_admins;
+	fstring str_users;
+	fstring str_guests;
+
+
+	/* Add the Wellknown groups */
+
+	add_initial_entry(-1, "S-1-5-32-544", SID_NAME_WKN_GRP, "Administrators", "", SE_PRIV_ALL);
+	add_initial_entry(-1, "S-1-5-32-545", SID_NAME_WKN_GRP, "Users", "", SE_PRIV_NONE);
+	add_initial_entry(-1, "S-1-5-32-546", SID_NAME_WKN_GRP, "Guests", "", SE_PRIV_NONE);
+	add_initial_entry(-1, "S-1-5-32-547", SID_NAME_WKN_GRP, "Power Users", "", SE_PRIV_NONE);
+
+	add_initial_entry(-1, "S-1-5-32-548", SID_NAME_WKN_GRP, "Account Operators", "", SE_PRIV_NONE);
+	add_initial_entry(-1, "S-1-5-32-549", SID_NAME_WKN_GRP, "System Operators", "", SE_PRIV_NONE);
+	add_initial_entry(-1, "S-1-5-32-550", SID_NAME_WKN_GRP, "Print Operators", "", SE_PRIV_PRINT_OPERATOR);
+	add_initial_entry(-1, "S-1-5-32-551", SID_NAME_WKN_GRP, "Backup Operators", "", SE_PRIV_NONE);
+
+	add_initial_entry(-1, "S-1-5-32-552", SID_NAME_WKN_GRP, "Replicators", "", SE_PRIV_NONE);
+
+	/* Add the defaults domain groups */
+
+	sid_copy(&sid_admins, &global_sam_sid);
+	sid_append_rid(&sid_admins, DOMAIN_GROUP_RID_ADMINS);
+	sid_to_string(str_admins, &sid_admins);
+	add_initial_entry(-1, str_admins, SID_NAME_DOM_GRP, "Domain Admins", "", SE_PRIV_ALL);
+
+	sid_copy(&sid_users,  &global_sam_sid);
+	sid_append_rid(&sid_users,  DOMAIN_GROUP_RID_USERS);
+	sid_to_string(str_users, &sid_users);
+	add_initial_entry(-1, str_users,  SID_NAME_DOM_GRP, "Domain Users",  "", SE_PRIV_NONE);
+
+	sid_copy(&sid_guests, &global_sam_sid);
+	sid_append_rid(&sid_guests, DOMAIN_GROUP_RID_GUESTS);
+	sid_to_string(str_guests, &sid_guests);
+	add_initial_entry(-1, str_guests, SID_NAME_DOM_GRP, "Domain Guests", "", SE_PRIV_NONE);
+
+	return True;
+}
+
+
+/****************************************************************************
+return the sid and the type of the unix group
+****************************************************************************/
+BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
+{
+	TDB_DATA kbuf, dbuf;
+	pstring key;
+	fstring string_sid;
+	int ret;
+	
+	/* the key is the SID, retrieving is direct */
+
+	sid_to_string(string_sid, &sid);
+	slprintf(key, sizeof(key), "%s%s", GROUP_PREFIX, string_sid);
+
+	kbuf.dptr = key;
+	kbuf.dsize = strlen(key)+1;
+		
+	dbuf = tdb_fetch(tdb, kbuf);
+	if (!dbuf.dptr) return False;
+
+	ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddffd",
+				&map->gid, &map->sid_name_use, &map->nt_name, &map->comment, &map->privilege);
+
+	safe_free(dbuf.dptr);
+	if (ret != dbuf.dsize) {
+		DEBUG(0,("get_group_map_from_sid: mapping TDB corrupted ?\n"));
+		return False;
+	}
+
+	sid_copy(&map->sid, &sid);
+	
+	return True;
+}
+
+
+/****************************************************************************
+return the sid and the type of the unix group
+****************************************************************************/
+BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
+{
+	TDB_DATA kbuf, dbuf, newkey;
+	fstring string_sid;
+	int ret;
+
+	/* we need to enumerate the TDB to find the GID */
+
+	for (kbuf = tdb_firstkey(tdb); 
+	     kbuf.dptr; 
+	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
+
+		if (strncmp(kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) != 0) continue;
+		
+		dbuf = tdb_fetch(tdb, kbuf);
+		if (!dbuf.dptr) continue;
+
+		fstrcpy(string_sid, kbuf.dptr+strlen(GROUP_PREFIX));
+
+		string_to_sid(&map->sid, string_sid);
+		
+		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddffd",
+				 &map->gid, &map->sid_name_use, &map->nt_name, &map->comment, &map->privilege);
+
+		safe_free(dbuf.dptr);
+		if (ret != dbuf.dsize) continue;
+
+		if (gid==map->gid)
+			return True;
+	}
+
+	return False;
+}
+
+/****************************************************************************
+return the sid and the type of the unix group
+****************************************************************************/
+BOOL get_group_map_from_ntname(char *name, GROUP_MAP *map)
+{
+	TDB_DATA kbuf, dbuf, newkey;
+	fstring string_sid;
+	int ret;
+
+	/* we need to enumerate the TDB to find the GID */
+
+	for (kbuf = tdb_firstkey(tdb); 
+	     kbuf.dptr; 
+	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
+
+		if (strncmp(kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) != 0) continue;
+		
+		dbuf = tdb_fetch(tdb, kbuf);
+		if (!dbuf.dptr) continue;
+
+		fstrcpy(string_sid, kbuf.dptr+strlen(GROUP_PREFIX));
+
+		string_to_sid(&map->sid, string_sid);
+		
+		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddffd",
+				 &map->gid, &map->sid_name_use, &map->nt_name, &map->comment, &map->privilege);
+
+		safe_free(dbuf.dptr);
+		if (ret != dbuf.dsize) continue;
+
+		if (StrCaseCmp(name, map->nt_name)==0)
+			return True;
+
+	}
+
+	return False;
+}
+
+/****************************************************************************
+enumerate the group mapping
+****************************************************************************/
+BOOL group_map_remove(DOM_SID sid)
+{
+	TDB_DATA kbuf, dbuf;
+	pstring key;
+	fstring string_sid;
+	
+	/* the key is the SID, retrieving is direct */
+
+	sid_to_string(string_sid, &sid);
+	slprintf(key, sizeof(key), "%s%s", GROUP_PREFIX, string_sid);
+
+	kbuf.dptr = key;
+	kbuf.dsize = strlen(key)+1;
+		
+	dbuf = tdb_fetch(tdb, kbuf);
+	if (!dbuf.dptr) return False;
+	
+	safe_free(dbuf.dptr);
+
+	if(tdb_delete(tdb, kbuf) != TDB_SUCCESS)
+		return False;
+
+	return True;
+}
+
+
+/****************************************************************************
+enumerate the group mapping
+****************************************************************************/
+BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap, int *num_entries)
+{
+	TDB_DATA kbuf, dbuf, newkey;
+	fstring string_sid;
+	fstring group_type;
+	GROUP_MAP map;
+	GROUP_MAP *mapt=NULL;
+	int ret;
+	int entries=0;
+
+	*num_entries=0;
+	*rmap=NULL;
+
+	for (kbuf = tdb_firstkey(tdb); 
+	     kbuf.dptr; 
+	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
+
+		if (strncmp(kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) != 0) continue;
+		
+		dbuf = tdb_fetch(tdb, kbuf);
+		if (!dbuf.dptr) continue;
+
+		fstrcpy(string_sid, kbuf.dptr+strlen(GROUP_PREFIX));
+				
+		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddffd",
+				 &map.gid, &map.sid_name_use, &map.nt_name, &map.comment, &map.privilege);
+
+		safe_free(dbuf.dptr);
+		if (ret != dbuf.dsize) continue;
+
+		/* list only the type or everything if UNKNOWN */
+		if (sid_name_use!=SID_NAME_UNKNOWN  && sid_name_use!=map.sid_name_use) continue;
+
+		string_to_sid(&map.sid, string_sid);
+		
+		decode_sid_name_use(group_type, map.sid_name_use);
+
+		mapt=(GROUP_MAP *)Realloc(mapt, (entries+1)*sizeof(GROUP_MAP));
+
+		mapt[entries].gid = map.gid;
+		sid_copy( &mapt[entries].sid, &map.sid);
+		mapt[entries].sid_name_use = map.sid_name_use;
+		fstrcpy(mapt[entries].nt_name, map.nt_name);
+		fstrcpy(mapt[entries].comment, map.comment);
+		mapt[entries].privilege = map.privilege;
+
+		entries++;
+	}
+
+	*rmap=mapt;
+	*num_entries=entries;
+	return True;
+}
+
+
+/****************************************************************************
+convert a privilege list to a privilege value
+****************************************************************************/
+void convert_priv_from_text(uint32 *se_priv, char *privilege)
+{
+	pstring tok;
+	char *p = privilege;
+	int i;
+
+	/* By default no privilege */
+	(*se_priv)=0x0;
+
+	if (privilege==NULL)
+		return;
+
+	while(next_token(&p, tok, " ", sizeof(tok)) ) {
+		for (i=0; i<=PRIV_ALL_INDEX; i++) {
+			if (StrCaseCmp(privs[i].priv, tok)==0)
+				(*se_priv)+=privs[i].se_priv;
+		}		
+	}
+}
+
+/****************************************************************************
+convert a privilege value to a privilege list
+****************************************************************************/
+void convert_priv_to_text(uint32 se_priv, char *privilege)
+{
+	int i;
+
+	if (privilege==NULL)
+		return;
+
+	ZERO_STRUCTP(privilege);
+
+	if (se_priv==SE_PRIV_NONE) {
+		fstrcat(privilege, privs[0].priv);
+		return;
+	}
+
+	if (se_priv==SE_PRIV_ALL) {
+		fstrcat(privilege, privs[PRIV_ALL_INDEX].priv);
+		return;
+	}
+
+	for (i=1; privs[i].se_priv!=SE_PRIV_ALL; i++) {
+		if ( (se_priv & privs[i].se_priv) == privs[i].se_priv) {
+			fstrcat(privilege, privs[i].priv);
+			fstrcat(privilege, " ");
+		}
+	}
+}
+
+
+/*
+ *
+ * High level functions
+ * better to use them than the lower ones.
+ *
+ * we are checking if the group is in the mapping file
+ * and if the group is an existing unix group
+ *
+ */
+
+/* get a domain group from it's SID */
+
+BOOL get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map)
+{
+	struct group *grp;
+
+	/* if the group is NOT in the database, it CAN NOT be a domain group */
+	if(!get_group_map_from_sid(sid, map))
+		return False;
+
+	/* if it's not a domain group, continue */
+	if (map->sid_name_use!=SID_NAME_DOM_GRP)
+		return False;
+ 	
+	if (map->gid==-1)
+		return False;
+
+	if ( (grp=getgrgid(map->gid)) == NULL)
+		return False;	
+
+	return True;
+}
+
+
+/* get a local (alias) group from it's SID */
+
+BOOL get_local_group_from_sid(DOM_SID sid, GROUP_MAP *map)
+{
+	struct group *grp;
+
+	/* The group is in the mapping table */
+	if(get_group_map_from_sid(sid, map)) {
+		if (map->sid_name_use!=SID_NAME_ALIAS)
+			return False;
+ 	
+		if (map->gid==-1)
+			return False;
+
+		if ( (grp=getgrgid(map->gid)) == NULL)
+			return False;
+	} else {
+		/* the group isn't in the mapping table.
+		 * make one based on the unix information */
+		uint32 alias_rid;
+
+		sid_split_rid(&sid, &alias_rid);
+		map->gid=pdb_user_rid_to_gid(alias_rid);
+
+		if ((grp=getgrgid(map->gid)) == NULL)
+			return False;
+
+		map->sid_name_use=SID_NAME_ALIAS;
+
+		fstrcpy(map->nt_name, grp->gr_name);
+		fstrcpy(map->comment, "Local Unix Group");
+
+		map->privilege=SE_PRIV_NONE;
+
+	}
+
+	return True;
+}
+
+/* get a builtin group from it's SID */
+
+BOOL get_builtin_group_from_sid(DOM_SID sid, GROUP_MAP *map)
+{
+	struct group *grp;
+
+	if(!get_group_map_from_sid(sid, map))
+		return False;
+
+	if (map->sid_name_use!=SID_NAME_WKN_GRP)
+		return False;
+
+	if (map->gid==-1)
+		return False;
+
+	if ( (grp=getgrgid(map->gid)) == NULL)
+		return False;
+
+	return True;
+}
+
+
+
+/****************************************************************************
+Returns a GROUP_MAP struct based on the gid.
+****************************************************************************/
+BOOL get_group_from_gid(gid_t gid, GROUP_MAP *map)
+{
+	struct group *grp;
+	DOM_SID sid;
+	uint32 rid;
+
+	if ( (grp=getgrgid(gid)) == NULL)
+		return False;
+
+	/*
+	 * make a group map from scratch if doesn't exist.
+	 */
+	if (!get_group_map_from_gid(gid, map)) {
+		map->gid=gid;
+		map->sid_name_use=SID_NAME_ALIAS;
+		map->privilege=SE_PRIV_NONE;
+
+		rid=pdb_gid_to_group_rid(gid);
+		sid_copy(&sid, &global_sam_sid);
+		sid_append_rid(&sid, rid);
+
+		fstrcpy(map->nt_name, grp->gr_name);
+		fstrcpy(map->comment, "Local Unix Group");
+	}
+	
+	return True;
+}
+
+
+
+
+/****************************************************************************
+ Get the member users of a group and
+ all the users who have that group as primary.
+            
+ give back an array of uid
+ return the grand number of users
+
+
+ TODO: sort the list and remove duplicate. JFM.
+
+****************************************************************************/
+        
+BOOL get_uid_list_of_group(gid_t gid, uid_t **uid, int *num_uids)
+{
+	struct group *grp;
+	struct passwd *pwd;
+	int i=0;
+	char *gr;
+ 
+	*num_uids = 0;
+	
+	if ( (grp=getgrgid(gid)) == NULL)
+		return False;
+
+	gr = grp->gr_mem[0];
+	DEBUG(10, ("getting members\n"));
+        
+	while (gr && (*gr != (char)NULL)) {
+		(*uid)=Realloc((*uid), sizeof(uid_t)*(*num_uids+1));
+
+		if( (pwd=getpwnam(gr)) !=NULL) {
+			(*uid)[*num_uids]=pwd->pw_uid;
+			(*num_uids)++;
+		}
+		gr = grp->gr_mem[++i];
+	}
+	DEBUG(10, ("got [%d] members\n", *num_uids));
+
+	setpwent();
+	while ((pwd=getpwent()) != NULL) {
+		if (pwd->pw_gid==gid) {
+			(*uid)=Realloc((*uid), sizeof(uid_t)*(*num_uids+1));
+			(*uid)[*num_uids]=pwd->pw_uid;
+
+			(*num_uids)++;
+		}
+	}
+	endpwent();
+	DEBUG(10, ("got primary groups, members: [%d]\n", *num_uids));
+
+        return True;
+}
+
+/****************************************************************************
+ Create a UNIX group on demand.
+****************************************************************************/
+
+int smb_create_group(char *unix_group)
+{
+	pstring add_script;
+	int ret;
+
+	pstrcpy(add_script, lp_addgroup_script());
+	if (! *add_script) return -1;
+	pstring_sub(add_script, "%g", unix_group);
+	ret = smbrun(add_script,NULL,False);
+	DEBUG(3,("smb_create_group: Running the command `%s' gave %d\n",add_script,ret));
+	return ret;
+}
+
+/****************************************************************************
+ Delete a UNIX group on demand.
+****************************************************************************/
+
+int smb_delete_group(char *unix_group)
+{
+	pstring del_script;
+	int ret;
+
+	pstrcpy(del_script, lp_delgroup_script());
+	if (! *del_script) return -1;
+	pstring_sub(del_script, "%g", unix_group);
+	ret = smbrun(del_script,NULL,False);
+	DEBUG(3,("smb_delete_group: Running the command `%s' gave %d\n",del_script,ret));
+	return ret;
+}
+
+/****************************************************************************
+ Create a UNIX group on demand.
+****************************************************************************/
+
+int smb_add_user_group(char *unix_group, char *unix_user)
+{
+	pstring add_script;
+	int ret;
+
+	pstrcpy(add_script, lp_addusertogroup_script());
+	if (! *add_script) return -1;
+	pstring_sub(add_script, "%g", unix_group);
+	pstring_sub(add_script, "%u", unix_user);
+	ret = smbrun(add_script,NULL,False);
+	DEBUG(3,("smb_add_user_group: Running the command `%s' gave %d\n",add_script,ret));
+	return ret;
+}
+
+/****************************************************************************
+ Delete a UNIX group on demand.
+****************************************************************************/
+
+int smb_delete_user_group(char *unix_group, char *unix_user)
+{
+	pstring del_script;
+	int ret;
+
+	pstrcpy(del_script, lp_deluserfromgroup_script());
+	if (! *del_script) return -1;
+	pstring_sub(del_script, "%g", unix_group);
+	pstring_sub(del_script, "%u", unix_user);
+	ret = smbrun(del_script,NULL,False);
+	DEBUG(3,("smb_delete_user_group: Running the command `%s' gave %d\n",del_script,ret));
+	return ret;
+}
+
+
+

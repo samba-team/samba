@@ -5,7 +5,7 @@
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997.
- *  Copyright (C) Marc Jacobsen						1999.
+ *  Copyright (C) Marc Jacobsen			    1999.
  *  Copyright (C) Jeremy Allison                    2001.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -34,6 +34,7 @@ extern int DEBUGLEVEL;
 extern fstring global_myworkgroup;
 extern pstring global_myname;
 extern DOM_SID global_sam_sid;
+extern DOM_SID global_sid_Builtin;
 
 extern rid_name domain_group_rids[];
 extern rid_name domain_alias_rids[];
@@ -546,7 +547,6 @@ uint32 _samr_get_usrdom_pwinfo(pipes_struct *p, SAMR_Q_GET_USRDOM_PWINFO *q_u, S
 
 static uint32 samr_make_usr_obj_sd(TALLOC_CTX *ctx, SEC_DESC_BUF **buf, DOM_SID *usr_sid)
 {
-	extern DOM_SID global_sid_Builtin;
 	extern DOM_SID global_sid_World;
 	DOM_SID adm_sid;
 	DOM_SID act_sid;
@@ -1251,8 +1251,8 @@ static BOOL make_samr_lookup_rids(TALLOC_CTX *ctx, uint32 num_names, fstring nam
 	    UNIHDR **pp_hdr_name, UNISTR2 **pp_uni_name)
 {
 	uint32 i;
-	UNIHDR *hdr_name;
-	UNISTR2 *uni_name;
+	UNIHDR *hdr_name=NULL;
+	UNISTR2 *uni_name=NULL;
 
 	*pp_uni_name = NULL;
 	*pp_hdr_name = NULL;
@@ -2306,8 +2306,22 @@ uint32 _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_SE
 
 uint32 _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u, SAMR_R_QUERY_USERALIASES *r_u)
 {
-  DEBUG(0,("_samr_query_useraliases: Not yet implemented.\n"));
-  return False;
+	uint32 *rid=NULL;
+	int num_rids;
+	
+	num_rids = 1;
+	rid=(uint32 *)talloc(p->mem_ctx, num_rids*sizeof(uint32));
+	if (rid==NULL)
+		return NT_STATUS_NO_MEMORY;
+	
+	/* until i see a real useraliases query, we fack one up */
+
+	rid[0] = BUILTIN_ALIAS_RID_USERS;
+
+	init_samr_r_query_useraliases(r_u, num_rids, rid, NT_STATUS_NO_PROBLEMO);
+
+	return NT_STATUS_NO_PROBLEMO;
+
 }
 
 /*********************************************************************
@@ -2316,8 +2330,61 @@ uint32 _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u, S
 
 uint32 _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_R_QUERY_ALIASMEM *r_u)
 {
-  DEBUG(0,("_samr_query_aliasmem: Not yet implemented.\n"));
-  return False;
+	int i;
+
+	GROUP_MAP map;
+	int num_uids = 0;
+	DOM_SID2 *sid;
+	uid_t *uid=NULL;
+
+	DOM_SID alias_sid;
+	DOM_SID als_sid;
+	uint32 alias_rid;
+	fstring alias_sid_str;
+	DOM_SID temp_sid;
+
+
+	/* find the policy handle.  open a policy on it. */
+	if (!get_lsa_policy_samr_sid(p, &q_u->alias_pol, &alias_sid)) 
+		return NT_STATUS_INVALID_HANDLE;
+
+	sid_copy(&als_sid, &alias_sid);
+	sid_to_string(alias_sid_str, &alias_sid);
+	sid_split_rid(&alias_sid, &alias_rid);
+
+	DEBUG(10, ("sid is %s\n", alias_sid_str));
+
+	if (sid_equal(&alias_sid, &global_sid_Builtin)) {
+		DEBUG(10, ("lookup on Builtin SID (S-1-5-32)\n"));
+		if(!get_builtin_group_from_sid(als_sid, &map))
+			return NT_STATUS_NO_SUCH_ALIAS;
+	} else {
+		if (sid_equal(&alias_sid, &global_sam_sid)) {
+			DEBUG(10, ("lookup on Server SID\n"));
+			if(!get_local_group_from_sid(als_sid, &map))
+				return NT_STATUS_NO_SUCH_ALIAS;
+		}
+	}
+
+	if(!get_uid_list_of_group(map.gid, &uid, &num_uids))
+		return NT_STATUS_NO_SUCH_ALIAS;
+
+	DEBUG(10, ("sid is %s\n", alias_sid_str));
+	sid = (DOM_SID2 *)talloc(p->mem_ctx, sizeof(DOM_SID2) * num_uids);	
+	if (sid == NULL) 
+		return NT_STATUS_NO_SUCH_ALIAS;
+
+	for (i = 0; i < num_uids; i++) {
+		sid_copy(&temp_sid, &global_sam_sid);
+		sid_append_rid(&temp_sid, pdb_uid_to_user_rid(uid[i]));
+		
+		init_dom_sid2(&sid[i], &temp_sid);
+	}
+
+	DEBUG(10, ("sid is %s\n", alias_sid_str));
+	init_samr_r_query_aliasmem(r_u, num_uids, sid, NT_STATUS_NO_PROBLEMO);
+
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*********************************************************************
@@ -2326,8 +2393,56 @@ uint32 _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_R_
 
 uint32 _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_R_QUERY_GROUPMEM *r_u)
 {
-  DEBUG(0,("_samr_query_groupmem: Not yet implemented.\n"));
-  return False;
+	int num_uids = 0;
+	int i;
+	DOM_SID group_sid;
+	uint32 group_rid;
+	fstring group_sid_str;
+	uid_t *uid=NULL;
+	
+	GROUP_MAP map;
+
+	uint32 *rid=NULL;
+	uint32 *attr=NULL;
+
+
+	/* find the policy handle.  open a policy on it. */
+	if (!get_lsa_policy_samr_sid(p, &q_u->group_pol, &group_sid)) 
+		return NT_STATUS_INVALID_HANDLE;
+
+	/* todo: change to use sid_compare_front */
+
+	sid_split_rid(&group_sid, &group_rid);
+	sid_to_string(group_sid_str, &group_sid);
+	DEBUG(10, ("sid is %s\n", group_sid_str));
+
+	/* can we get a query for an SID outside our domain ? */
+	if (!sid_equal(&group_sid, &global_sam_sid))
+		return NT_STATUS_NO_SUCH_GROUP;
+
+	sid_append_rid(&group_sid, group_rid);
+	DEBUG(10, ("lookup on Domain SID\n"));
+
+	if(!get_domain_group_from_sid(group_sid, &map))
+		return NT_STATUS_NO_SUCH_GROUP;
+
+	if(!get_uid_list_of_group(map.gid, &uid, &num_uids))
+		return NT_STATUS_NO_SUCH_GROUP;
+
+	rid=talloc(p->mem_ctx, sizeof(uint32)*num_uids);
+	attr=talloc(p->mem_ctx, sizeof(uint32)*num_uids);
+	
+	if (rid==NULL || attr==NULL)
+		return NT_STATUS_NO_MEMORY;
+	
+	for (i=0; i<num_uids; i++) {
+		rid[i]=pdb_uid_to_user_rid(uid[i]);
+		attr[i] = SID_NAME_USER;		
+	}
+
+	init_samr_r_query_groupmem(r_u, num_uids, rid, attr, NT_STATUS_NOPROBLEMO);
+
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*********************************************************************
@@ -2336,8 +2451,64 @@ uint32 _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_R_
 
 uint32 _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_ADD_ALIASMEM *r_u)
 {
-  DEBUG(0,("_samr_add_aliasmem: Not yet implemented.\n"));
-  return False;
+	DOM_SID alias_sid;
+	fstring alias_sid_str;
+	uid_t uid;
+	struct passwd *pwd;
+	struct group *grp;
+	fstring grp_name;
+	uint32 rid;
+	GROUP_MAP map;
+
+	/* Find the policy handle. Open a policy on it. */
+	if (!get_lsa_policy_samr_sid(p, &q_u->alias_pol, &alias_sid)) 
+		return NT_STATUS_INVALID_HANDLE;
+
+	sid_to_string(alias_sid_str, &alias_sid);
+	DEBUG(10, ("sid is %s\n", alias_sid_str));
+
+	if (sid_compare(&alias_sid, &global_sam_sid)>0) {
+		DEBUG(10, ("adding member on Server SID\n"));
+		if(!get_local_group_from_sid(alias_sid, &map))
+			return NT_STATUS_NO_SUCH_ALIAS;
+	
+	} else {
+		if (sid_compare(&alias_sid, &global_sid_Builtin)>0) {
+			DEBUG(10, ("adding member on BUILTIN SID\n"));
+			if( !get_builtin_group_from_sid(alias_sid, &map))
+				return NT_STATUS_NO_SUCH_ALIAS;
+
+		} else
+			return NT_STATUS_NO_SUCH_ALIAS;
+	}
+	
+	sid_split_rid(&q_u->sid.sid, &rid);
+	uid=pdb_user_rid_to_uid(rid);
+
+	if ((pwd=getpwuid(uid)) == NULL)
+		return NT_STATUS_NO_SUCH_USER;
+
+	if ((grp=getgrgid(map.gid)) == NULL)
+		return NT_STATUS_NO_SUCH_ALIAS;
+
+	/* we need to copy the name otherwise it's overloaded in user_in_group_list */
+	fstrcpy(grp_name, grp->gr_name);
+
+	/* if the user is already in the group */
+	if(user_in_group_list(pwd->pw_name, grp_name))
+		return NT_STATUS_MEMBER_IN_ALIAS;
+
+	/* 
+	 * ok, the group exist, the user exist, the user is not in the group,
+	 * we can (finally) add it to the group !
+	 */
+	smb_add_user_group(grp_name, pwd->pw_name);
+
+	/* check if the user has been added then ... */
+	if(!user_in_group_list(pwd->pw_name, grp_name))
+		return NT_STATUS_MEMBER_NOT_IN_ALIAS;	/* don't know what to reply else */
+
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*********************************************************************
@@ -2356,8 +2527,54 @@ uint32 _samr_del_aliasmem(pipes_struct *p, SAMR_Q_DEL_ALIASMEM *q_u, SAMR_R_DEL_
 
 uint32 _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_ADD_GROUPMEM *r_u)
 {
-  DEBUG(0,("_samr_add_groupmem: Not yet implemented.\n"));
-  return False;
+	DOM_SID group_sid;
+	fstring group_sid_str;
+	struct passwd *pwd;
+	struct group *grp;
+	fstring grp_name;
+	GROUP_MAP map;
+
+	/* Find the policy handle. Open a policy on it. */
+	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &group_sid)) 
+		return NT_STATUS_INVALID_HANDLE;
+
+	sid_to_string(group_sid_str, &group_sid);
+	DEBUG(10, ("sid is %s\n", group_sid_str));
+
+	if (sid_compare(&group_sid, &global_sam_sid)<=0)
+		return NT_STATUS_NO_SUCH_GROUP;
+
+	DEBUG(10, ("lookup on Domain SID\n"));
+
+	if(!get_domain_group_from_sid(group_sid, &map))
+		return NT_STATUS_NO_SUCH_GROUP;
+
+	if ((pwd=getpwuid(pdb_user_rid_to_uid(q_u->rid))) ==NULL)
+		return NT_STATUS_NO_SUCH_USER;
+
+	if ((grp=getgrgid(map.gid)) == NULL)
+		return NT_STATUS_NO_SUCH_GROUP;
+
+	/* we need to copy the name otherwise it's overloaded in user_in_group_list */
+	fstrcpy(grp_name, grp->gr_name);
+
+	/* if the user is already in the group */
+	if(user_in_group_list(pwd->pw_name, grp_name))
+		return NT_STATUS_MEMBER_IN_GROUP;
+
+	/* 
+	 * ok, the group exist, the user exist, the user is not in the group,
+	 *
+	 * we can (finally) add it to the group !
+	 */
+
+	smb_add_user_group(grp_name, pwd->pw_name);
+
+	/* check if the user has been added then ... */
+	if(!user_in_group_list(pwd->pw_name, grp_name))
+		return NT_STATUS_MEMBER_NOT_IN_GROUP;		/* don't know what to reply else */
+
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*********************************************************************
@@ -2406,8 +2623,55 @@ uint32 _samr_delete_dom_alias(pipes_struct *p, SAMR_Q_DELETE_DOM_ALIAS *q_u, SAM
 
 uint32 _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, SAMR_R_CREATE_DOM_GROUP *r_u)
 {
-  DEBUG(0,("_samr_create_dom_group: Not yet implemented.\n"));
-  return False;
+	DOM_SID dom_sid;
+	DOM_SID info_sid;
+	fstring name;
+	fstring sid_string;
+	struct group *grp;
+	struct samr_info *info;
+
+	/* Find the policy handle. Open a policy on it. */
+	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &dom_sid)) 
+		return NT_STATUS_INVALID_HANDLE;
+
+	if (!sid_equal(&dom_sid, &global_sam_sid))
+		return NT_STATUS_ACCESS_DENIED;
+
+	/* TODO: check if allowed to create group and add a become_root/unbecome_root pair.*/
+
+	unistr2_to_ascii(name, &q_u->uni_acct_desc, sizeof(name)-1);
+
+	/* check if group already exist */
+	if ((grp=getgrnam(name)) != NULL)
+		return NT_STATUS_GROUP_EXISTS;
+
+	/* we can create the UNIX group */
+	smb_create_group(name);
+
+	/* check if the group has been successfully created */
+	if ((grp=getgrnam(name)) == NULL)
+		return NT_STATUS_ACCESS_DENIED;
+
+	r_u->rid=pdb_gid_to_group_rid(grp->gr_gid);
+
+	/* add the group to the mapping table */
+	if(!add_initial_entry(grp->gr_gid, sid_string, SID_NAME_DOM_GRP, name, NULL, SE_PRIV_NONE))
+		return NT_STATUS_ACCESS_DENIED;
+
+	if ((info = (struct samr_info *)malloc(sizeof(struct samr_info))) == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	ZERO_STRUCTP(info);
+
+	sid_copy(&info_sid, &global_sam_sid);
+	sid_append_rid(&info->sid, r_u->rid);
+	sid_to_string(sid_string, &info->sid);
+
+	/* get a (unique) handle.  open a policy on it. */
+	if (!create_policy_hnd(p, &r_u->pol, free_samr_info, (void *)info))
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*********************************************************************
@@ -2416,28 +2680,137 @@ uint32 _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, SAM
 
 uint32 _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, SAMR_R_CREATE_DOM_ALIAS *r_u)
 {
-  DEBUG(0,("_samr_create_dom_alias: Not yet implemented.\n"));
-  return False;
+	DOM_SID dom_sid;
+	fstring name;
+	fstring sid_string;
+	struct group *grp;
+	struct samr_info *info;
+
+	/* Find the policy handle. Open a policy on it. */
+	if (!get_lsa_policy_samr_sid(p, &q_u->dom_pol, &dom_sid)) 
+		return NT_STATUS_INVALID_HANDLE;
+
+	if (!sid_equal(&dom_sid, &global_sam_sid))
+		return NT_STATUS_ACCESS_DENIED;
+
+	/* TODO: check if allowed to create group  and add a become_root/unbecome_root pair.*/
+
+	unistr2_to_ascii(name, &q_u->uni_acct_desc, sizeof(name)-1);
+
+	/* check if group already exists */
+	if ( (grp=getgrnam(name)) != NULL)
+		return NT_STATUS_GROUP_EXISTS;
+
+	/* we can create the UNIX group */
+	smb_create_group(name);
+
+	/* check if the group has been successfully created */
+	if ((grp=getgrnam(name)) == NULL)
+		return NT_STATUS_ACCESS_DENIED;
+
+	r_u->rid=pdb_gid_to_group_rid(grp->gr_gid);
+
+	/* add the group to the mapping table */
+	if(!add_initial_entry(grp->gr_gid, sid_string, SID_NAME_ALIAS, NULL, NULL, SE_PRIV_NONE))
+		return NT_STATUS_ACCESS_DENIED;
+
+	if ((info = (struct samr_info *)malloc(sizeof(struct samr_info))) == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	ZERO_STRUCTP(info);
+
+	sid_copy(&info->sid, &global_sam_sid);
+	sid_append_rid(&info->sid, r_u->rid);
+	sid_to_string(sid_string, &info->sid);
+
+	/* get a (unique) handle.  open a policy on it. */
+	if (!create_policy_hnd(p, &r_u->alias_pol, free_samr_info, (void *)info))
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*********************************************************************
  _samr_query_groupinfo
+
+sends the name/comment pair of a domain group
+level 1 send also the number of users of that group
 *********************************************************************/
 
 uint32 _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAMR_R_QUERY_GROUPINFO *r_u)
 {
-  DEBUG(0,("_samr_query_groupinfo: Not yet implemented.\n"));
-  return False;
+	DOM_SID group_sid;
+	GROUP_MAP map;
+	uid_t *uid;
+	int num_uids=0;
+	GROUP_INFO_CTR *ctr;
+
+	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &group_sid)) 
+		return NT_STATUS_INVALID_HANDLE;
+
+	if (!get_domain_group_from_sid(group_sid, &map))
+		return NT_STATUS_INVALID_HANDLE;
+	
+	ctr=(GROUP_INFO_CTR *)talloc(p->mem_ctx, sizeof(GROUP_INFO_CTR));
+	if (ctr==NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	switch (q_u->switch_level) {
+		case 1:
+			ctr->switch_value1 = 1;
+			if(!get_uid_list_of_group(map.gid, &uid, &num_uids))
+				return NT_STATUS_NO_SUCH_GROUP;
+			init_samr_group_info1(&ctr->group.info1, map.nt_name, map.comment, num_uids);
+			safe_free(uid);
+			break;
+		case 4:
+			ctr->switch_value1 = 4;
+			init_samr_group_info4(&ctr->group.info4, map.comment);
+			break;
+		default:
+			return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	init_samr_r_query_groupinfo(r_u, ctr, NT_STATUS_NO_PROBLEMO);
+
+	return NT_STATUS_NO_PROBLEMO;
 }
 
 /*********************************************************************
  _samr_set_groupinfo
+ 
+ update a domain group's comment.
 *********************************************************************/
 
 uint32 _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_SET_GROUPINFO *r_u)
 {
-  DEBUG(0,("_samr_set_groupinfo: Not yet implemented.\n"));
-  return False;
+	DOM_SID group_sid;
+	GROUP_MAP map;
+	GROUP_INFO_CTR *ctr;
+
+	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &group_sid)) 
+		return NT_STATUS_INVALID_HANDLE;
+
+	if (!get_domain_group_from_sid(group_sid, &map))
+		return NT_STATUS_NO_SUCH_GROUP;
+	
+	ctr=q_u->ctr;
+
+	switch (ctr->switch_value1) {
+		case 1:
+			unistr2_to_ascii(map.comment, &(ctr->group.info1.uni_acct_desc), sizeof(map.comment)-1);
+			break;
+		case 4:
+			unistr2_to_ascii(map.comment, &(ctr->group.info4.uni_acct_desc), sizeof(map.comment)-1);
+			break;
+		default:
+			return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	if(!add_mapping_entry(&map, TDB_REPLACE))
+		return NT_STATUS_NO_SUCH_GROUP;
+
+	return NT_STATUS_NO_PROBLEMO;
 }
 
 /*********************************************************************
@@ -2456,8 +2829,38 @@ uint32 _samr_get_dom_pwinfo(pipes_struct *p, SAMR_Q_GET_DOM_PWINFO *q_u, SAMR_R_
 
 uint32 _samr_open_group(pipes_struct *p, SAMR_Q_OPEN_GROUP *q_u, SAMR_R_OPEN_GROUP *r_u)
 {
-  DEBUG(0,("_samr_open_group: Not yet implemented.\n"));
-  return False;
+	DOM_SID sid;
+	GROUP_MAP map;
+	struct samr_info *info;
+	fstring sid_string;
+
+	if (!get_lsa_policy_samr_sid(p, &q_u->domain_pol, &sid)) 
+		return NT_STATUS_INVALID_HANDLE;
+
+	/* this should not be hard-coded like this */
+	if (!sid_equal(&sid, &global_sam_sid))
+		return NT_STATUS_ACCESS_DENIED;
+
+	if ((info = (struct samr_info *)malloc(sizeof(struct samr_info))) == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	ZERO_STRUCTP(info);
+
+	sid_copy(&info->sid, &global_sam_sid);
+	sid_append_rid(&info->sid, q_u->rid_group);
+	sid_to_string(sid_string, &info->sid);
+
+	DEBUG(10, ("Opening SID: %s\n", sid_string));
+
+	/* check if that group really exists */
+	if (!get_domain_group_from_sid(info->sid, &map))
+		return NT_STATUS_NO_SUCH_USER;
+
+	/* get a (unique) handle.  open a policy on it. */
+	if (!create_policy_hnd(p, &r_u->pol, free_samr_info, (void *)info))
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+
+	return NT_STATUS_NO_PROBLEMO;
 }
 
 /*********************************************************************

@@ -163,6 +163,10 @@ typedef struct
 	char *szPanicAction;
 	char *szAddUserScript;
 	char *szDelUserScript;
+	char *szAddGroupScript;
+	char *szDelGroupScript;
+	char *szAddUserToGroupScript;
+	char *szDelUserToGroupScript;
 	char *szWINSHook;
 #ifdef WITH_UTMP
 	char *szUtmpDir;
@@ -891,6 +895,11 @@ static struct parm_struct parm_table[] = {
 	
 	{"add user script", P_STRING, P_GLOBAL, &Globals.szAddUserScript, NULL, NULL, 0},
 	{"delete user script", P_STRING, P_GLOBAL, &Globals.szDelUserScript, NULL, NULL, 0},
+	{"add group script", P_STRING, P_GLOBAL, &Globals.szAddGroupScript, NULL, NULL, 0},
+	{"delete group script", P_STRING, P_GLOBAL, &Globals.szDelGroupScript, NULL, NULL, 0},
+	{"add user to group script", P_STRING, P_GLOBAL, &Globals.szAddUserToGroupScript, NULL, NULL, 0},
+	{"delete user from group script", P_STRING, P_GLOBAL, &Globals.szDelUserToGroupScript, NULL, NULL, 0},
+
 	{"logon script", P_STRING, P_GLOBAL, &Globals.szLogonScript, NULL, NULL, FLAG_DOS_STRING},
 	{"logon path", P_STRING, P_GLOBAL, &Globals.szLogonPath, NULL, NULL, FLAG_DOS_STRING},
 	{"logon drive", P_STRING, P_GLOBAL, &Globals.szLogonDrive, NULL, NULL, 0},
@@ -1464,6 +1473,12 @@ FN_GLOBAL_STRING(lp_netbios_aliases, &Globals.szNetbiosAliases)
 FN_GLOBAL_STRING(lp_panic_action, &Globals.szPanicAction)
 FN_GLOBAL_STRING(lp_adduser_script, &Globals.szAddUserScript)
 FN_GLOBAL_STRING(lp_deluser_script, &Globals.szDelUserScript)
+
+FN_GLOBAL_STRING(lp_addgroup_script, &Globals.szAddGroupScript)
+FN_GLOBAL_STRING(lp_delgroup_script, &Globals.szDelGroupScript)
+FN_GLOBAL_STRING(lp_addusertogroup_script, &Globals.szAddUserToGroupScript)
+FN_GLOBAL_STRING(lp_deluserfromgroup_script, &Globals.szDelUserToGroupScript)
+
 FN_GLOBAL_STRING(lp_wins_hook, &Globals.szWINSHook)
 FN_GLOBAL_STRING(lp_domain_groups, &Globals.szDomainGroups)
 FN_GLOBAL_STRING(lp_domain_admin_group, &Globals.szDomainAdminGroup)
