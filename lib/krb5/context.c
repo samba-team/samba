@@ -42,13 +42,85 @@ RCSID("$Id$");
 
 int issuid(void); /* XXX */
 
+#define INIT_FIELD(C, T, E, D, F)					\
+    (C)->E = krb5_config_get_ ## T ## _default ((C), NULL, (D), 	\
+						"libdefaults", F, NULL)
+
+static krb5_error_code
+init_context_from_config_file(krb5_context context)
+{
+    const char * tmp;
+    INIT_FIELD(context, time, max_skew, 5 * 60, "clockskew");
+    INIT_FIELD(context, time, kdc_timeout, 3, "kdc_timeout");
+    INIT_FIELD(context, int, max_retries, 3, "max_retries");
+
+    context->http_proxy = krb5_config_get_string(context, NULL, "libdefaults", 
+					   "http_proxy", NULL);
+
+    {
+	char **etypes;
+	etypes = krb5_config_get_strings(context, NULL, "libdefaults", 
+					 "default_etypes", NULL);
+	if(etypes){
+	    int i, j, k;
+	    for(i = 0; etypes[i]; i++);
+	    context->etypes = malloc((i+1) * sizeof(*context->etypes));
+	    for(j = 0, k = 0; j < i; j++) {
+		if(krb5_string_to_enctype(context, etypes[j], &context->etypes[k]) == 0)
+		    k++;
+	    }
+	    context->etypes[k] = ETYPE_NULL;
+	    krb5_config_free_strings(etypes);
+	}
+    }
+    /* default keytab name */
+    context->default_keytab = krb5_config_get_string(context, NULL, 
+					       "libdefaults", 
+					       "default_keytab_name", 
+					       NULL);
+    if(context->default_keytab == NULL)
+	context->default_keytab = KEYTAB_DEFAULT;
+
+    context->time_fmt = krb5_config_get_string(context, NULL, "libdefaults", 
+					 "time_format", NULL);
+    if(context->time_fmt == NULL)
+	context->time_fmt = "%d-%b-%Y %H:%M:%S";
+    context->log_utc = krb5_config_get_bool(context, NULL, "libdefaults", "log_utc", NULL);
+
+    /* init dns-proxy slime */
+    tmp = krb5_config_get_string(context, NULL, "libdefaults", 
+				 "dns_proxy", NULL);
+    if(tmp) 
+	roken_gethostby_setup(context->http_proxy, tmp);
+    krb5_set_default_realm(context, NULL);
+
+    {
+	krb5_addresses addresses;
+	char **adr, **a;
+	adr = krb5_config_get_strings(context, NULL, 
+				      "libdefaults", 
+				      "extra_addresses", 
+				      NULL);
+	memset(&addresses, 0, sizeof(addresses));
+	for(a = adr; a && *a; a++) {
+	    krb5_parse_address(context, *a, &addresses);
+	    krb5_add_extra_addresses(context, &addresses);
+	    krb5_free_addresses(context, &addresses);
+	}
+	krb5_config_free_strings(adr);
+    }
+    
+    INIT_FIELD(context, bool, srv_lookup, TRUE, "srv_lookup");
+    INIT_FIELD(context, bool, srv_try_txt, FALSE, "srv_try_txt");
+    INIT_FIELD(context, bool, srv_try_rfc2052, TRUE, "srv_try_rfc2052");
+    return 0;
+}
+
 krb5_error_code
 krb5_init_context(krb5_context *context)
 {
     krb5_context p;
-    int val;
     const char *config_file = NULL;
-    const char * tmp;
     krb5_config_section *tmp_cf;
     krb5_error_code ret;
 
@@ -75,76 +147,9 @@ krb5_init_context(krb5_context *context)
 		    config_file); /* XXX */
 #endif
 
-    p->max_skew = 5 * 60;
-    val = krb5_config_get_time (p, NULL, "libdefaults", "clockskew", NULL);
-    if (val >= 0)
-	p->max_skew = val;
-
-    p->kdc_timeout = 3;
-    val = krb5_config_get_time (p, NULL, "libdefaults", "kdc_timeout", NULL);
-    if(val >= 0) 
-	p->kdc_timeout = val;
-
-    p->max_retries = 3;
-    val = krb5_config_get_int (p, NULL, "libdefaults", "max_retries", NULL);
-    if (val >= 0)
-	p->max_retries = val;
-
-    p->http_proxy = krb5_config_get_string(p, NULL, "libdefaults", 
-					   "http_proxy", NULL);
-
-    {
-	char **etypes;
-	etypes = krb5_config_get_strings(p, NULL, "libdefaults", 
-					 "default_etypes", NULL);
-	if(etypes){
-	    int i, j, k;
-	    for(i = 0; etypes[i]; i++);
-	    p->etypes = malloc((i+1) * sizeof(*p->etypes));
-	    for(j = 0, k = 0; j < i; j++) {
-		if(krb5_string_to_enctype(p, etypes[j], &p->etypes[k]) == 0)
-		    k++;
-	    }
-	    p->etypes[k] = ETYPE_NULL;
-	    krb5_config_free_strings(etypes);
-	}
-    }
-    /* default keytab name */
-    p->default_keytab = krb5_config_get_string(p, NULL, 
-					       "libdefaults", 
-					       "default_keytab_name", 
-					       NULL);
-    if(p->default_keytab == NULL)
-	p->default_keytab = KEYTAB_DEFAULT;
-
-    p->time_fmt = krb5_config_get_string(p, NULL, "libdefaults", 
-					 "time_format", NULL);
-    if(p->time_fmt == NULL)
-	p->time_fmt = "%d-%b-%Y %H:%M:%S";
-    p->log_utc = krb5_config_get_bool(p, NULL, "libdefaults", "log_utc", NULL);
-
-    /* init dns-proxy slime */
-    tmp = krb5_config_get_string(p, NULL, "libdefaults", 
-				 "dns_proxy", NULL);
-    if(tmp) 
-	roken_gethostby_setup(p->http_proxy, tmp);
-    krb5_set_default_realm(p, NULL);
-
-    {
-	krb5_addresses addresses;
-	char **adr, **a;
-	adr = krb5_config_get_strings(p, NULL, 
-				      "libdefaults", 
-				      "extra_addresses", 
-				      NULL);
-	memset(&addresses, 0, sizeof(addresses));
-	for(a = adr; a && *a; a++) {
-	    krb5_parse_address(p, *a, &addresses);
-	    krb5_add_extra_addresses(p, &addresses);
-	    krb5_free_addresses(p, &addresses);
-	}
-	krb5_config_free_strings(adr);
-    }
+    ret = init_context_from_config_file(p);
+    if(ret)
+	return ret;
 
     *context = p;
     return 0;
