@@ -15,7 +15,7 @@ typedef struct hdb_entry{
     krb5_principal changed_by;	/* Who did last update */
     time_t expires;		/* Time when principal expires */
     union {
-	int flags;
+	int i;
 	struct {
 	    int initial:1;	/* Require AS_REQ */
 	    int forwardable:1;	/* Ticket may be forwardable */
@@ -23,8 +23,8 @@ typedef struct hdb_entry{
 	    int allow_postdate:1; /* Ticket may be postdated */
 	    int server:1;	/* Principal may be server */
 	    int locked:1;	/* Principal is locked */
-	}s;
-    }u;
+	}b;
+    }flags;
 }hdb_entry;
 
 typedef struct HDB{

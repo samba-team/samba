@@ -42,7 +42,7 @@ hdb_entry2value(krb5_context context, hdb_entry *ent, krb5_data *value)
     krb5_store_int32(sp, ent->last_change);
     krb5_store_principal(sp, ent->changed_by);
     krb5_store_int32(sp, ent->expires);
-    krb5_store_int32(sp, ent->u.flags);
+    krb5_store_int32(sp, ent->flags.i);
     krb5_storage_to_data(sp, value);
     krb5_storage_free(sp);
 }
@@ -67,7 +67,7 @@ hdb_value2entry(krb5_context context, krb5_data *value, hdb_entry *ent)
     krb5_ret_int32(sp, &tmp);
     ent->expires = tmp;
     krb5_ret_int32(sp, &tmp);
-    ent->u.flags = tmp;
+    ent->flags.i = tmp;
     krb5_storage_free(sp);
 }
 
