@@ -946,14 +946,16 @@ retrieve(char *cmd, char *name)
 		    struct cmds *p;
 		    for(p = cmds; p->ext; p++){
 			char *tail = name + strlen(name) - strlen(p->ext);
+			char c = *tail;
 			
-			if(strcmp(tail, p->ext) == 0){
-			    char c = *tail;
-			    *tail  = 0;
+			if(strcmp(tail, p->ext) == 0 &&
+			   (*tail  = 0) == 0 &&
+			   access(name, R_OK) == 0){
 			    snprintf (line, sizeof(line), p->cmd, name);
 			    *tail  = c;
 			    break;
 			}
+			*tail = c;
 		    }
 		    if(p->ext){
 			fin = ftpd_popen(line, "r", 0, 0);
