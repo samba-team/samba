@@ -96,9 +96,9 @@ NTSTATUS gensec_krb5_decode_pac(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct PAC_SIGNATURE_DATA srv_sig;
-	uint8_t *srv_key = NULL;
+	struct PAC_SIGNATURE_DATA *srv_sig_ptr;
 	struct PAC_SIGNATURE_DATA kdc_sig;
-	uint8_t *kdc_key = NULL;
+	struct PAC_SIGNATURE_DATA *kdc_sig_ptr;
 	struct PAC_LOGON_INFO *logon_info = NULL;
 	struct PAC_DATA pac_data;
 	DATA_BLOB tmp_blob;
@@ -110,6 +110,8 @@ NTSTATUS gensec_krb5_decode_pac(TALLOC_CTX *mem_ctx,
 		DEBUG(0,("can't parse the PAC\n"));
 		return status;
 	}
+
+	NDR_PRINT_DEBUG(PAC_DATA, &pac_data);
 
 	if (pac_data.num_buffers < 3) {
 		/* we need logon_ingo, service_key and kdc_key */
@@ -129,14 +131,14 @@ NTSTATUS gensec_krb5_decode_pac(TALLOC_CTX *mem_ctx,
 				if (!pac_data.buffers[i].info) {
 					break;
 				}
-				srv_key = (uint8_t *)&pac_data.buffers[i].info->srv_cksum.signature;
+				srv_sig_ptr = &pac_data.buffers[i].info->srv_cksum;
 				srv_sig = pac_data.buffers[i].info->srv_cksum;
 				break;
 			case PAC_TYPE_KDC_CHECKSUM:
 				if (!pac_data.buffers[i].info) {
 					break;
 				}
-				kdc_key = (uint8_t *)&pac_data.buffers[i].info->kdc_cksum.signature;
+				kdc_sig_ptr = &pac_data.buffers[i].info->kdc_cksum;
 				kdc_sig = pac_data.buffers[i].info->kdc_cksum;
 				break;
 			case PAC_TYPE_UNKNOWN_10:
@@ -151,18 +153,18 @@ NTSTATUS gensec_krb5_decode_pac(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_FOOBAR;
 	}
 
-	if (!srv_key) {
+	if (!srv_sig_ptr) {
 		DEBUG(0,("PAC no srv_key\n"));
 		return NT_STATUS_FOOBAR;
 	}
 
-	if (!kdc_key) {
+	if (!kdc_sig_ptr) {
 		DEBUG(0,("PAC no kdc_key\n"));
 		return NT_STATUS_FOOBAR;
 	}
 
 	/* clear the kdc_key */
-	memset(kdc_key , '\0', 16);
+	memset((void *)kdc_sig_ptr , '\0', sizeof(*kdc_sig_ptr));
 
 	status = ndr_push_struct_blob(&tmp_blob, mem_ctx, &pac_data,
 					      (ndr_push_flags_fn_t)ndr_push_PAC_DATA);
@@ -178,7 +180,7 @@ NTSTATUS gensec_krb5_decode_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	/* clear the service_key */
-	memset(srv_key , '\0', 16);
+	memset((void *)srv_sig_ptr , '\0', sizeof(*srv_sig_ptr));
 
 	status = ndr_push_struct_blob(&tmp_blob, mem_ctx, &pac_data,
 					      (ndr_push_flags_fn_t)ndr_push_PAC_DATA);
