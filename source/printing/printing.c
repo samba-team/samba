@@ -518,8 +518,6 @@ BOOL print_job_delete(struct current_user *user, int jobid)
 	int snum = print_job_snum(jobid);
 	BOOL owner;
 	
-	if (!user) return False;
-
 	owner = is_owner(user, jobid);
 	
 	/* Check access against security descriptor or whether the user
@@ -998,8 +996,6 @@ int print_queue_snum(char *qname)
 BOOL print_queue_pause(struct current_user *user, int snum, int *errcode)
 {
 	int ret;
-	
-	if (!user) return False;
 	
 	if (!print_access_check(user, snum, PRINTER_ACCESS_ADMINISTER)) {
 		*errcode = ERROR_ACCESS_DENIED;

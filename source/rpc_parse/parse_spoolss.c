@@ -3419,6 +3419,16 @@ BOOL spoolss_io_q_setprinter(char *desc, SPOOL_Q_SETPRINTER *q_u, prs_struct *ps
 	{
 		if (!sec_io_desc_buf(desc, &q_u->secdesc_ctr, ps, depth))
 			return False;
+	} else {
+		uint32 dummy;
+
+		/* Parse a NULL security descriptor.  This should really
+		   happen inside the sec_io_desc_buf() function. */
+
+		prs_debug(ps, depth, "", "sec_io_desc_buf");
+		if (!prs_uint32("size", ps, depth + 1, &dummy)) return False;
+		if (!prs_uint32("ptr", ps, depth + 1, &dummy)) return
+								       False;
 	}
 	
 	if(!prs_uint32("command", ps, depth, &q_u->command))
