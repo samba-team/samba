@@ -270,6 +270,95 @@ static void run_torture(int dummy)
 	close_connection(&cli);
 }
 
+static BOOL rw_torture2(struct cli_state *c1, struct cli_state *c2)
+{
+	char *lockfname = "\\torture.lck";
+	int fnum1;
+	int fnum2;
+	int i;
+	char buf[131072];
+	char buf_rd[131072];
+
+	if (!cli_unlink(c1, lockfname)) {
+		printf("unlink failed (%s)\n", cli_errstr(c1));
+	}
+
+	fnum1 = cli_open(c1, lockfname, O_RDWR | O_CREAT | O_EXCL, 
+			 DENY_NONE);
+	if (fnum1 == -1) {
+		printf("first open read/write of %s failed (%s)\n",
+				lockfname, cli_errstr(c1));
+		return False;
+	}
+	fnum2 = cli_open(c2, lockfname, O_RDONLY, 
+			 DENY_NONE);
+	if (fnum2 == -1) {
+		printf("second open read-only of %s failed (%s)\n",
+				lockfname, cli_errstr(c2));
+		cli_close(c1, fnum1);
+		return False;
+	}
+
+	for (i=0;i<numops;i++)
+	{
+		unsigned buf_size = ((unsigned)sys_random()%(sizeof(buf)-1))+ 1;
+		if (i % 10 == 0) {
+			printf("%d\r", i); fflush(stdout);
+		}
+
+		generate_random_buffer(buf, buf_size, False);
+
+		if (cli_write(c1, fnum1, 0, buf, 0, buf_size) != buf_size) {
+			printf("write failed (%s)\n", cli_errstr(c1));
+		}
+
+		if (cli_read(c2, fnum2, buf_rd, 0, buf_size) != buf_size) {
+			printf("read failed (%s)\n", cli_errstr(c2));
+		}
+
+		if (memcmp(buf_rd, buf, buf_size) != 0)
+		{
+			printf("read/write compare failed\n");
+		}
+	}
+
+	if (!cli_close(c2, fnum2)) {
+		printf("close failed (%s)\n", cli_errstr(c2));
+	}
+	if (!cli_close(c1, fnum1)) {
+		printf("close failed (%s)\n", cli_errstr(c1));
+	}
+
+	if (!cli_unlink(c1, lockfname)) {
+		printf("unlink failed (%s)\n", cli_errstr(c1));
+	}
+
+	return True;
+}
+
+static void run_readwritetest(int dummy)
+{
+	static struct cli_state cli1, cli2;
+	BOOL test;
+
+	if (!open_connection(&cli1) || !open_connection(&cli2)) {
+		return;
+	}
+	cli_sockopt(&cli1, sockops);
+	cli_sockopt(&cli2, sockops);
+
+	printf("starting readwritetest\n");
+
+	test = rw_torture2(&cli1, &cli2);
+	printf("Passed readwritetest v1: %s\n", BOOLSTR(test));
+
+	test = rw_torture2(&cli1, &cli1);
+	printf("Passed readwritetest v2: %s\n", BOOLSTR(test));
+
+	close_connection(&cli1);
+	close_connection(&cli2);
+}
+
 int line_count = 0;
 
 /* run a test that simulates an approximate netbench client load */
@@ -1855,7 +1944,9 @@ static struct {
 	{"DENY1",  run_denytest1, 0},
 	{"DENY2",  run_denytest2, 0},
 	{"TCON",  run_tcon_test, 0},
+	{"RW",  run_readwritetest, 0},
 	{NULL, NULL, 0}};
+
 
 
 /****************************************************************************
