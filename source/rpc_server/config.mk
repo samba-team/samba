@@ -100,7 +100,6 @@ INIT_OBJ_FILES = \
 ADD_OBJ_FILES = \
 		rpc_server/netlogon/schannel_state.o
 REQUIRED_SUBSYSTEMS = \
-		SAMDB \
 		DCERPC_COMMON
 # End MODULE dcerpc_netlogon
 ################################################
@@ -110,6 +109,17 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::dcerpc_lsarpc]
 INIT_OBJ_FILES = \
 		rpc_server/lsa/dcesrv_lsa.o
+REQUIRED_SUBSYSTEMS = \
+		SAMDB \
+		DCERPC_COMMON
+# End MODULE dcerpc_lsa
+################################################
+
+################################################
+# Start MODULE dcerpc_spoolss
+[MODULE::dcerpc_spoolss]
+INIT_OBJ_FILES = \
+		rpc_server/spoolss/dcesrv_spoolss.o
 REQUIRED_SUBSYSTEMS = \
 		SAMDB \
 		DCERPC_COMMON
