@@ -3250,7 +3250,7 @@ static int process_tok(fstring tok)
 	  cmd = i;
 	  break;
 	}
-      else if (strnequal(commands[i].name, tok, tok_len+1))
+      else if (strnequal(commands[i].name, tok, tok_len))
 	{
 	  matches++;
 	  cmd = i;
