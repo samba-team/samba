@@ -1,3 +1,19 @@
+2003-11-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/rd_req.c (krb5_verify_ap_req2): krb5_free_ticket free
+	the ticket now, rewrite error handling to handle that
+	
+	* kpasswd/kpasswdd.c (process): don't free ticket,
+	krb5_free_ticket does that now
+
+	* kdc/kerberos5.c (tgs_rep2): don't free ticket, krb5_free_ticket
+	does that now
+
+	* lib/krb5/ticket.c (krb5_free_ticket): free the ticket itself to
+	match mit behavior, pointed out by Derrick Brashear
+	
+	* lib/krb5/krb5_ticket.3: krb5_free_ticket free the whole ticket
+	
 2003-11-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/padata.c: add krb5_padata_add
