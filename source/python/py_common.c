@@ -137,8 +137,6 @@ struct cli_state *open_pipe_creds(char *server, PyObject *creds,
 	char *username = "", *password = "", *domain = "";
 	struct cli_state *cli;
 	NTSTATUS result;
-	struct in_addr server_ip;
-	extern pstring global_myname;
 	
 	/* Extract credentials from the python dictionary */
 
@@ -174,14 +172,9 @@ struct cli_state *open_pipe_creds(char *server, PyObject *creds,
 
 	/* Now try to connect */
 
-	if (!resolve_name(server, &server_ip, 0x20))  {
-		asprintf(errstr, "unable to resolve %s", server);
-		return NULL;
-	}
-
 	result = cli_full_connection(
-		&cli, global_myname, server, &server_ip, 0, "IPC$", "IPC",
-		username, domain, password, strlen(password));
+		&cli, NULL, server, NULL, 0, "IPC$", "IPC",
+		username, domain, password);
 	
 	if (!NT_STATUS_IS_OK(result)) {
 		*errstr = strdup("error connecting to IPC$ pipe");
