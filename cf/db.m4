@@ -71,24 +71,26 @@ dnl dbopen is used by db1/db2
 
 dnl test for ndbm compatability
 
-  AC_FIND_FUNC_NO_LIBS2(dbm_firstkey, $ac_cv_funclib_dbopen $ac_cv_funclib_db_create, [
-  #include <stdio.h>
-  #define DB_DBM_HSEARCH 1
-  #include <db.h>
-  DBM *dbm;
-  ],[NULL])
-
-  if test "$ac_cv_func_dbm_firstkey" = "yes"; then
-    if test "$ac_cv_funclib_dbm_firstkey" != "yes"; then
-      LIB_NDBM="$ac_cv_funclib_dbm_firstkey"
+  if test "$ac_cv_func_dbm_firstkey" != yes; then
+    AC_FIND_FUNC_NO_LIBS2(dbm_firstkey, $ac_cv_funclib_dbopen $ac_cv_funclib_db_create, [
+    #include <stdio.h>
+    #define DB_DBM_HSEARCH 1
+    #include <db.h>
+    DBM *dbm;
+    ],[NULL])
+  
+    if test "$ac_cv_func_dbm_firstkey" = "yes"; then
+      if test "$ac_cv_funclib_dbm_firstkey" != "yes"; then
+        LIB_NDBM="$ac_cv_funclib_dbm_firstkey"
+      else
+        LIB_NDBM=""
+      fi
+      AC_DEFINE(HAVE_DB_NDBM, 1, [define if you have ndbm compat in db])
+      AC_DEFINE(HAVE_NEW_DB, 1, [Define if NDBM really is DB (creates files *.db)])
     else
-      LIB_NDBM=""
+      $as_unset ac_cv_func_dbm_firstkey
+      $as_unset ac_cv_funclib_dbm_firstkey
     fi
-    AC_DEFINE(HAVE_DB_NDBM, 1, [define if you have ndbm compat in db])
-    AC_DEFINE(HAVE_NEW_DB, 1, [Define if NDBM really is DB (creates files *.db)])
-  else
-    $as_unset ac_cv_func_dbm_firstkey
-    $as_unset ac_cv_funclib_dbm_firstkey
   fi
 
 fi # berkeley db
@@ -188,6 +190,7 @@ AM_CONDITIONAL(HAVE_DB1, test "$db_type" = db1)dnl
 AM_CONDITIONAL(HAVE_DB3, test "$db_type" = db3)dnl
 AM_CONDITIONAL(HAVE_NDBM, test "$db_type" = ndbm)dnl
 
+DBLIB="$LDFLAGS $DBLIB"
 AC_SUBST(DBLIB)dnl
 AC_SUBST(LIB_NDBM)dnl
 ])
