@@ -1,3 +1,26 @@
+          WHATS NEW IN 1.9.18p4 - March 25th 1998.
+          ===========================================
+This is probably the last 1.9.18 release. This version has now stabilised
+to the point that wide scale adoption is considered safe. Work is ahead
+of schedule on 1.9.19 and 1.9.20 and alpha roll out should commence during
+April 1998.
+
+New Parameters
+--------------
+name resolve order = lmhosts wins hosts bcast
+
+This parameter allows control over the order in which netbios name to
+IP Address resolution is attempted. Any method NOT specified will be
+excluded from the name resolution process. If this parameter is not
+specified then the above default order will be observed - this is
+consistent with prior releases.
+
+The maximum length of a printer share name has now been increased to 15
+characters - the same as file share names. Any one who needs to revert back
+to 8 character printer share name support can do so by adjusting the define
+in local.h.
+
+
           WHATS NEW IN 1.9.18p3 - February 18th 1998.
           ===========================================
 

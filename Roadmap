@@ -5,6 +5,23 @@ controlled software to a well defined roadmap.
 
 The current Samba release 1.9.18 is called the "Oplock Release"
 The following development objectives are in place:
+----------------------------------------------------------------------------
+Please Note: Development of the 1.9.19 and 1.9.20 releases is presently
+	     well ahead of schedule. This means that the release program
+	     may very well change radically from what is outlined below.
+
+	     If present developments continue then 1.9.19 will feature
+	     improved authentication and security capabilities as well as
+	     the long promised GUI (Web) based management tools.
+
+	     This being the case, then version 2.0 may become the long
+	     awaited Windows NT Domain Controller Release and version 2.1
+	     will become the Directory Services update.
+
+	     Should 1.9.19 roll out ahead of schedule then there will
+	     likely be a delay of up to 6 months before the NT Domain
+	     Controller release will be ready for prime-time business use.
+----------------------------------------------------------------------------
 
 Version	/ Codename	Notes
 ------------------	----------------------------------------------------
