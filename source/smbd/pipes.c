@@ -138,8 +138,6 @@ int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 	DEBUG(3,("readX pnum=%04x min=%d max=%d nread=%d\n",
 		 p->pnum, smb_mincnt, smb_maxcnt, nread));
 
-	set_chain_p(p);
-
 	return chain_reply(inbuf,outbuf,length,bufsize);
 }
 /****************************************************************************

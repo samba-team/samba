@@ -51,14 +51,6 @@ void reset_chain_p(void)
 }
 
 /****************************************************************************
-  sets chain pipe-file handle
-****************************************************************************/
-void set_chain_p(pipes_struct *new_p)
-{
-	chain_p = new_p;
-}
-
-/****************************************************************************
   initialise pipe handle states...
 ****************************************************************************/
 void init_rpc_pipe_hnd(void)
@@ -136,7 +128,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	DEBUG(4,("Opened pipe %s with handle %x (pipes_open=%d)\n",
 		 pipe_name, i, pipes_open));
 	
-	set_chain_p(p);
+	chain_p = p;
 	
 	return p;
 }
@@ -335,7 +327,10 @@ pipes_struct *get_rpc_pipe(int pnum)
 	pipes_struct *p;
 
 	for (p=Pipes;p;p=p->next) {
-		if (p->pnum == pnum) return p;
+		if (p->pnum == pnum) {
+			chain_p = p;
+			return p;
+		}
 	}
 
 	return NULL;

@@ -32,7 +32,6 @@ extern int oplock_sock;
 extern int smb_read_error;
 extern fstring local_machine;
 extern int global_oplock_break;
-extern files_struct *chain_fsp;
 
 /****************************************************************************
   Send the required number of replies back.
@@ -1209,7 +1208,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
   BOOL bad_path = False;
 
   if (tran_call == TRANSACT2_QFILEINFO) {
-    files_struct *fsp = GETFSP(params,0);
+    files_struct *fsp = file_fsp(params,0);
     info_level = SVAL(params,2);
 
     CHECK_FSP(fsp,conn);
@@ -1434,7 +1433,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
     return(ERROR(ERRSRV,ERRaccess));
 
   if (tran_call == TRANSACT2_SETFILEINFO) {
-    files_struct *fsp = GETFSP(params,0);
+    files_struct *fsp = file_fsp(params,0);
     info_level = SVAL(params,2);    
 
     CHECK_FSP(fsp,conn);
