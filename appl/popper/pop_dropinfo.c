@@ -64,14 +64,6 @@ pop_dropinfo(POP *p)
     int                     nchar;                  /*  Bytes written/read */
     int blank_line = 1; /* previous line was blank */
     int in_header = 0; /* if we are in a header block */
-#if defined(UIDL) || defined(XOVER)
-    /* msg_idp points to the current Message-Id to be filled in. The
-     * pointer is moved every time we find a From line and we fill in
-     * msg_id whenever we encounter the corresponding Message-Id or
-     * X-UIDL line. */
-    char *_sentinel = 0;
-    char **msg_idp = &_sentinel;
-#endif
     
     /*  Initialize maildrop status variables in the POP parameter block */
     p->msg_count = 0;
@@ -123,7 +115,6 @@ pop_dropinfo(POP *p)
             mp->retr_flag = FALSE;
 #if defined(UIDL) || defined(XOVER)
 	    mp->msg_id = 0;
-	    msg_idp = &mp->msg_id;
 #endif
 #ifdef XOVER
 	    mp->subject = 0;
@@ -140,13 +131,13 @@ pop_dropinfo(POP *p)
 #if defined(UIDL) || defined(XOVER)
 	    if (strncasecmp("Message-Id:",buffer, 11) == 0) {
 		if (mp->msg_id == 0)
-		    *msg_idp = find_value_after_colon(buffer);
+		    mp->msg_id = find_value_after_colon(buffer);
 	    } 
 #ifdef UIDL
 	    else if (strncasecmp(buffer, "X-UIDL:", 7) == 0) {
 		/* Courtesy to Qualcomm, there really is no such 
 		   thing as X-UIDL */
-		*msg_idp = find_value_after_colon(buffer);
+		mp->msg_id = find_value_after_colon(buffer);
 	    }
 #endif
 #endif
@@ -178,8 +169,29 @@ pop_dropinfo(POP *p)
 #endif
 	}
 	blank_line = (strncmp(buffer, "\n", nchar) == 0);
-	if(blank_line)
+	if(blank_line) {
 	    in_header = 0;
+#if defined(UIDL) || defined(XOVER)
+	    if (mp->msg_id) {
+		asprintf(&mp->msg_id, "no-message-id-%d", mp->number);
+		if(mp->msg_id == NULL) {
+                    fclose (p->drop);
+                    p->msg_count = 0;
+                    return pop_msg (p,POP_FAILURE,
+                        "Can't build message list for '%s': Out of memory",
+                            p->user);
+                }
+	    }
+#endif	    
+#ifdef XOVER
+	    if (mp->subject == 0)
+		mp->subject = "<none>";
+	    if (mp->from == 0)
+		mp->from = "<unknown>";
+	    if (mp->date == 0)
+		mp->date = "<unknown>";
+#endif
+	}
         mp->length += nchar;
         p->drop_size += nchar;
         mp->lines++;
