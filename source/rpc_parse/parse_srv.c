@@ -56,7 +56,10 @@ static BOOL srv_io_share_info1_str(char *desc,  SH_INFO_1_STR *sh1, prs_struct *
 	prs_align(ps);
 
 	smb_io_unistr2("", &(sh1->uni_netname), True, ps, depth); 
+	prs_align(ps);
 	smb_io_unistr2("", &(sh1->uni_remark ), True, ps, depth); 
+	prs_align(ps);
+
 
 	return True;
 }
@@ -164,19 +167,23 @@ BOOL make_srv_share_info2_str(SH_INFO_2_STR *sh2,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL srv_io_share_info2_str(char *desc,  SH_INFO_2_STR *sh2, prs_struct *ps, int depth)
+static BOOL srv_io_share_info2_str(char *desc,  SH_INFO_2_STR *ss2, SH_INFO_2 *sh2, prs_struct *ps, int depth)
 {
-	if (sh2 == NULL) return False;
+	if (ss2 == NULL) return False;
 
 	prs_debug(ps, depth, desc, "srv_io_share_info2_str");
 	depth++;
 
 	prs_align(ps);
 
-	smb_io_unistr2("", &(sh2->uni_netname), True, ps, depth); 
-	smb_io_unistr2("", &(sh2->uni_remark ), True, ps, depth); 
-	smb_io_unistr2("", &(sh2->uni_path   ), True, ps, depth); 
-	smb_io_unistr2("", &(sh2->uni_passwd ), True, ps, depth); 
+	smb_io_unistr2("", &(ss2->uni_netname), sh2->ptr_netname, ps, depth); 
+	prs_align(ps);
+	smb_io_unistr2("", &(ss2->uni_remark ), sh2->ptr_remark , ps, depth); 
+	prs_align(ps);
+	smb_io_unistr2("", &(ss2->uni_path   ), sh2->ptr_path   , ps, depth); 
+	prs_align(ps);
+	smb_io_unistr2("", &(ss2->uni_passwd ), sh2->ptr_passwd , ps, depth); 
+	prs_align(ps);
 
 	return True;
 }
@@ -261,13 +268,13 @@ static BOOL srv_io_srv_share_info_2(char *desc,  SRV_SHARE_INFO_2 *ctr, prs_stru
 		for (i = 0; i < num_entries; i++)
 		{
 			prs_grow(ps);
-			srv_io_share_info2("", &(ctr->info_2[i]), ps, depth); 
+			if (!srv_io_share_info2("", &(ctr->info_2[i]), ps, depth)) return False;
 		}
 
 		for (i = 0; i < num_entries; i++)
 		{
 			prs_grow(ps);
-			srv_io_share_info2_str("", &(ctr->info_2_str[i]), ps, depth); 
+			if (!srv_io_share_info2_str("", &(ctr->info_2_str[i]), &(ctr->info_2[i]), ps, depth)) return False;
 		}
 
 		prs_align(ps);
