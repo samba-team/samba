@@ -427,6 +427,9 @@ void talloc_report(void *ptr, FILE *f)
 */
 static void talloc_report_all(void)
 {
+	if (talloc_total_size(null_context) == 0) {
+		return;
+	}
 	talloc_report(null_context, stderr);
 }
 
