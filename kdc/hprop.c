@@ -37,11 +37,6 @@
  */
 
 #include "hprop.h"
-#ifdef KRB4
-#define Principal Principal4
-#include <krb.h>
-#include <krb_db.h>
-#endif
 
 RCSID("$Id$");
 
@@ -160,9 +155,15 @@ v4_prop(void *arg, Principal *p)
     
     {
 	unsigned char *key = ent.keys.val[0].key.keyvalue.data;
+	unsigned char null_key[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 	memcpy(key, &p->key_low, 4);
 	memcpy(key + 4, &p->key_high, 4);
 	kdb_encrypt_key((des_cblock*)key, (des_cblock*)key, &mkey4, msched4, 0);
+	if(memcmp(key, null_key, sizeof(null_key)) == 0) {
+	    free_Key(&ent.keys.val[0]);
+	    ent.keys.val = 0;
+	    ent.flags.invalid = 1;
+	}
     }
 
     ALLOC(ent.max_life);
