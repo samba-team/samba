@@ -139,11 +139,27 @@ Data(Authenticator *ap, int type, void *d, int c)
 int
 kerberos5_init(Authenticator *ap, int server)
 {
-    if (server)
-	str_data[3] = TELQUAL_REPLY;
-    else
-	str_data[3] = TELQUAL_IS;
     krb5_init_context(&context);
+    if (server) {
+	krb5_error_code ret;
+	krb5_keytab kt;
+	krb5_kt_cursor cursor;
+
+	ret = krb5_kt_default(context, &kt);
+	if (ret)
+	    return 0;
+
+	ret = krb5_kt_start_seq_get (context, kt, &cursor);
+	if (ret) {
+	    krb5_kt_close (context, kt);
+	    return 0;
+	}
+	krb5_kt_end_seq_get (context, kt, &cursor);
+	krb5_kt_close (context, kt);
+
+	str_data[3] = TELQUAL_REPLY;
+    } else
+	str_data[3] = TELQUAL_IS;
     return(1);
 }
 
