@@ -444,7 +444,13 @@ static int process_root(int argc, char *argv[])
 	} else if (set_no_password) {
 		printf("User %s - set to no password.\n", user_name);
 	} else {
-		printf("Password changed for user %s\n", user_name);
+		struct smb_passwd *smb_pass = getsmbpwnam(user_name);
+		printf("Password changed for user %s.", user_name );
+		if((smb_pass != NULL) && (smb_pass->acct_ctrl & ACB_DISABLED ))
+			printf(" User has disabled flag set.");
+		if((smb_pass != NULL) && (smb_pass->acct_ctrl & ACB_PWNOTREQ))
+			printf(" User has no password flag set.");
+		printf("\n");
 	}
 	return 0;
 }

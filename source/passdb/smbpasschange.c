@@ -54,6 +54,7 @@ static BOOL add_new_user(char *user_name, uid_t uid, BOOL trust_account,
 /*************************************************************
 change a password entry in the local smbpasswd file
 *************************************************************/
+
 BOOL local_password_change(char *user_name, BOOL trust_account, BOOL add_user,
 			   BOOL enable_user, BOOL disable_user, BOOL set_no_password,
 			   char *new_passwd, 
@@ -151,6 +152,17 @@ account without a valid system user.\n", user_name);
 		smb_pwent->smb_passwd = NULL;
 		smb_pwent->smb_nt_passwd = NULL;
 	} else {
+		/*
+		 * If we're dealing with setting a completely empty user account
+		 * ie. One with a password of 'XXXX', but not set disabled (like
+		 * an account created from scratch) then if the old password was
+		 * 'XX's then getsmbpwent will have set the ACB_DISABLED flag.
+		 * We remove that as we're giving this user their first password
+		 * and the decision hasn't really been made to disable them (ie.
+		 * don't create them disabled). JRA.
+		 */
+		if((smb_pwent->smb_passwd == NULL) && (smb_pwent->acct_ctrl & ACB_DISABLED))
+			smb_pwent->acct_ctrl &= ~ACB_DISABLED;
 		smb_pwent->acct_ctrl &= ~ACB_PWNOTREQ;
 		smb_pwent->smb_passwd = new_p16;
 		smb_pwent->smb_nt_passwd = new_nt_p16;
