@@ -129,6 +129,8 @@ TORTURE_PROGS = bin/smbtorture@EXEEXT@ bin/msgtest@EXEEXT@ \
 
 BIN_PROGS = $(BIN_PROGS1) $(BIN_PROGS2) $(BIN_PROGS3) @EXTRA_BIN_PROGS@
 
+EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ bin/talloctort@EXEEXT@
+
 SHLIBS = @SHLIB_PROGS@ @LIBSMBCLIENT@
 
 SCRIPTS = $(srcdir)/script/smbtar $(srcdir)/script/addtosmbpass $(srcdir)/script/convert_smbpasswd \
@@ -1184,7 +1186,8 @@ TOPFILES=dynconfig.o dynconfig.po
 
 clean: delheaders python_clean
 	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@ \
-		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(MODULES) $(TORTURE_PROGS) $(LIBSMBCLIENT) .headers.stamp
+		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(MODULES) $(TORTURE_PROGS) \
+		$(LIBSMBCLIENT) $(EVERYTHING_PROGS) .headers.stamp
 
 # This is quite ugly actually.. But we need to make 
 # sure the changes to include/config.h are used.
@@ -1279,7 +1282,7 @@ ctags:
 	ctags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
 
 realclean: clean delheaders
-	-rm -f config.log $(BIN_PROGS) $(MODULES) $(SBIN_PROGS) bin/.dummy script/findsmb
+	-rm -f config.log bin/.dummy script/findsmb
 
 distclean: realclean
 	-rm -f include/stamp-h
