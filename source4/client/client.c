@@ -2782,8 +2782,8 @@ static struct smbcli_state *do_connect(const char *server, const char *share)
 
 	if (!smbcli_transport_establish(c, &calling, &called)) {
 		char *p;
-		d_printf("session request to %s failed (%s)\n", 
-			 called.name, smbcli_errstr(c->tree));
+		d_printf("session request to %s failed\n", 
+			 called.name);
 		smbcli_shutdown(c);
 		if ((p=strchr_m(called.name, '.'))) {
 			*p = 0;
