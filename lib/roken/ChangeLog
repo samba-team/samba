@@ -1,3 +1,10 @@
+2001-02-12  Assar Westerlund  <assar@sics.se>
+
+	* getnameinfo_verified.c (getnameinfo_verified): do the first
+	getnameinfo with NI_NUMERICSERV to avoid the error that bind 8.2.3
+	reports on not finding the service
+	(ENI_NOSERVNAME).  reported by Ake Sandgren <ake@cs.umu.se>
+
 2001-02-09  Assar Westerlund  <assar@sics.se>
 
 	* getnameinfo.c (doit): call inet_ntop with correct af, noted by
