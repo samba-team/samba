@@ -185,7 +185,10 @@ sub HeaderType($$$)
 		return;
 	}
 
-	my $dt = $NdrParser::typedefs{$e->{TYPE}}->{DATA};
+	my $dt;
+	if (my $t = NdrParser::get_typedef($e->{TYPE})) {
+		$dt = $t->{DATA};
+	}
 
 	if ($data =~ "string") {
 		pidl "const char *";
