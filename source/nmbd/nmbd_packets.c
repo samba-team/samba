@@ -1635,16 +1635,6 @@ on subnet %s\n", rrec->response_id, inet_ntoa(rrec->packet->ip), subrec->subnet_
 }
 
 /****************************************************************************
-  Check and if required set the highest fd.
-***************************************************************************/
-
-void check_set_maxfd( int *maxfd, int fd)
-{
-	if ( *maxfd < fd )
-		*maxfd = fd;
-}
-
-/****************************************************************************
   Create an fd_set containing all the sockets in the subnet structures,
   plus the broadcast sockets.
 ***************************************************************************/
@@ -1682,25 +1672,25 @@ only use %d.\n", (count*2) + 2, FD_SETSIZE));
 	/* Add in the broadcast socket on 137. */
 	FD_SET(ClientNMB,pset);
 	sock_array[num++] = ClientNMB;
-	check_set_maxfd( maxfd, ClientNMB);
+	*maxfd = MAX( *maxfd, ClientNMB);
 
 	/* Add in the 137 sockets on all the interfaces. */
 	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
 		FD_SET(subrec->nmb_sock,pset);
 		sock_array[num++] = subrec->nmb_sock;
-		check_set_maxfd( maxfd, subrec->nmb_sock);
+		*maxfd = MAX( *maxfd, subrec->nmb_sock);
 	}
 
 	/* Add in the broadcast socket on 138. */
 	FD_SET(ClientDGRAM,pset);
 	sock_array[num++] = ClientDGRAM;
-	check_set_maxfd( maxfd, ClientDGRAM);
+	*maxfd = MAX( *maxfd, ClientDGRAM);
 
 	/* Add in the 138 sockets on all the interfaces. */
 	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
 		FD_SET(subrec->dgram_sock,pset);
 		sock_array[num++] = subrec->dgram_sock;
-		check_set_maxfd( maxfd, subrec->dgram_sock);
+		*maxfd = MAX( *maxfd, subrec->dgram_sock);
 	}
 
 	*listen_number = (count*2) + 2;
@@ -1725,7 +1715,7 @@ BOOL listen_for_packets(BOOL run_election)
 	static int listen_number = 0;
 	static int *sock_array = NULL;
 	int i;
-	int maxfd = 0;
+	static int maxfd = 0;
 
 	fd_set fds;
 	int selrtn;
@@ -1748,7 +1738,7 @@ BOOL listen_for_packets(BOOL run_election)
 	dns_fd = asyncdns_fd();
 	if (dns_fd != -1) {
 		FD_SET(dns_fd, &fds);
-		check_set_maxfd( &maxfd, dns_fd);
+		maxfd = MAX( maxfd, dns_fd);
 	}
 #endif
 

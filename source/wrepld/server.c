@@ -164,7 +164,7 @@ void exit_server(const char *reason)
   plus the broadcast sockets.
 ***************************************************************************/
 
-static BOOL create_listen_fdset(void)
+static BOOL create_listen_fdset( int *maxfd)
 {
 	int i;
 	int num_interfaces = iface_count();
@@ -221,6 +221,7 @@ static BOOL create_listen_fdset(void)
 			}
 			add_fd_to_sock_array(s);
 			FD_SET(s, listen_set);
+			*maxfd = MAX( *maxfd, s);
 		}
 	} else {
 		/* Just bind to 0.0.0.0 - accept connections from anywhere. */
@@ -243,6 +244,7 @@ static BOOL create_listen_fdset(void)
 		
 		add_fd_to_sock_array(s);
 		FD_SET(s, listen_set);
+		*maxfd = MAX( *maxfd, s);
 	} 
 
 	return True;
@@ -346,10 +348,11 @@ static BOOL listen_for_wins_packets(void)
 	int num_interfaces = iface_count();
 	fd_set fds;
 	int i, num, s, new_s;
+	static int maxfd = 0;
 	struct timeval timeout;
 
 	if(listen_set == NULL) {
-		if(!create_listen_fdset()) {
+		if(!create_listen_fdset( &maxfd)) {
 			DEBUG(0,("listen_for_packets: Fatal error. unable to create listen set. Exiting.\n"));
 			return True;
 		}
@@ -364,7 +367,7 @@ static BOOL listen_for_wins_packets(void)
 
 	BlockSignals(False, SIGTERM);
 
-	num = sys_select(FD_SETSIZE, &fds, NULL, NULL, &timeout);
+	num = sys_select(maxfd+1, &fds, NULL, NULL, &timeout);
 
 	/* We can only take signals when we are in the select - block them again here. */
 
@@ -397,6 +400,7 @@ static BOOL listen_for_wins_packets(void)
 				set_socket_options(new_s, user_socket_options);
 				FD_SET(new_s, listen_set);
 				add_fd_to_sock_array(new_s);
+				maxfd = MAX( maxfd, new_s);
 			}
 		}
 
