@@ -96,9 +96,10 @@ typedef struct krb5_keyblock{
 } krb5_keyblock;
 
 typedef struct krb5_context_data{
-  krb5_enctype *etypes;
-  char *default_realm;
-  k5_cfile *cf;
+    krb5_enctype *etypes;
+    char *default_realm;
+    k5_cfile *cf;
+    struct error_list *et_list;
 } krb5_context_data;
 
 typedef krb5_context_data *krb5_context;
@@ -188,9 +189,9 @@ typedef struct krb5_cc_cursor{
   int fd;
 }krb5_cc_cursor;
 
-struct krb5_keytab_data {
+typedef struct krb5_keytab_data {
   char *filename;
-};
+}krb5_keytab_data;
 
 typedef struct krb5_keytab_data *krb5_keytab;
 
@@ -248,12 +249,12 @@ krb5_auth_con_free(krb5_context context,
 krb5_error_code
 krb5_auth_con_setflags(krb5_context context,
 		       krb5_auth_context *auth_context,
-		       krb5_int32 flags);
+		       int32_t flags);
 
 krb5_error_code
 krb5_auth_con_getflags(krb5_context context,
 		       krb5_auth_context *auth_context,
-		       krb5_int32 *flags);
+		       int32_t *flags);
 
 krb5_error_code
 krb5_auth_con_setaddrs(krb5_context context,
@@ -288,12 +289,12 @@ krb5_auth_setcksumtype(krb5_context context,
 krb5_error_code
 krb5_auth_getlocalseqnumber(krb5_context context,
 			    krb5_auth_context *auth_context,
-			    krb5_int32 *seqnumber);
+			    int32_t *seqnumber);
 
 krb5_error_code
 krb5_auth_getremoteseqnumber(krb5_context context,
 			     krb5_auth_context *auth_context,
-			     krb5_int32 *seqnumber);
+			     int32_t *seqnumber);
 
 krb5_error_code
 krb5_auth_getauthenticator(krb5_context context,
