@@ -63,7 +63,7 @@ NTSTATUS check_password(const auth_usersupplied_info *user_info,
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 	BOOL done_pam = False;
 	
-	DEBUG(3, ("check_password:  Checking password for user %s with the new password interface\n", user_info->smb_username.str));
+	DEBUG(3, ("check_password:  Checking password for smb user %s with the new password interface\n", user_info->smb_username.str));
   	if (!check_domain_match(user_info->smb_username.str, user_info->domain.str)) {
 		return NT_STATUS_LOGON_FAILURE;
 	}
@@ -81,7 +81,7 @@ NTSTATUS check_password(const auth_usersupplied_info *user_info,
 	}
 
 	if (lp_security() >= SEC_SERVER) {
-		smb_user_control(user_info->smb_username.str, nt_status);
+		smb_user_control(user_info->unix_username.str, nt_status);
 	}
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -97,14 +97,14 @@ NTSTATUS check_password(const auth_usersupplied_info *user_info,
 	if (NT_STATUS_IS_OK(nt_status) && !done_pam) {
 		/* We might not be root if we are an RPC call */
 		become_root();
-		nt_status = smb_pam_accountcheck(user_info->smb_username.str);
+		nt_status = smb_pam_accountcheck(user_info->unix_username.str);
 		unbecome_root();
 	}
 	
 	if (NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(5, ("check_password:  Password for user %s suceeded\n", user_info->smb_username.str));
+		DEBUG(5, ("check_password:  Password for smb user %s suceeded\n", user_info->smb_username.str));
 	} else {
-		DEBUG(3, ("check_password:  Password for user %s FAILED with error %s\n", user_info->smb_username.str, get_nt_error_msg(nt_status)));
+		DEBUG(3, ("check_password:  Password for smb user %s FAILED with error %s\n", user_info->smb_username.str, get_nt_error_msg(nt_status)));
 
 	}		
 	return nt_status;
@@ -121,14 +121,16 @@ SMB hash
 return True if the password is correct, False otherwise
 ****************************************************************************/
 
-NTSTATUS pass_check_smb_with_chal(char *user, char *domain, uchar chal[8], 
+NTSTATUS pass_check_smb_with_chal(char *smb_user, char *unix_user, 
+                                  char *domain, uchar chal[8], 
 				  uchar *lm_pwd, int lm_pwd_len,
 				  uchar *nt_pwd, int nt_pwd_len)
 {
 
 	auth_usersupplied_info user_info;
 	auth_serversupplied_info server_info;
-	AUTH_STR ourdomain, theirdomain, smb_username, wksta_name;
+	AUTH_STR ourdomain, theirdomain, unix_username, smb_username, 
+                wksta_name;
 		
 	ZERO_STRUCT(user_info);
 	ZERO_STRUCT(ourdomain);
@@ -145,10 +147,15 @@ NTSTATUS pass_check_smb_with_chal(char *user, char *domain, uchar chal[8],
 	user_info.requested_domain = theirdomain;
 	user_info.domain = ourdomain;
 	
-	smb_username.str = user;
+	smb_username.str = smb_user;
 	smb_username.len = strlen(smb_username.str);
 
-	user_info.requested_username = smb_username;  /* For the time-being */
+        /* If unix user is NULL, use smb user */
+
+	unix_username.str = unix_user ? unix_user : smb_user;
+	unix_username.len = strlen(unix_username.str);
+
+	user_info.unix_username = unix_username;
 	user_info.smb_username = smb_username;
 
 	user_info.wksta_name.str = client_name();
@@ -197,7 +204,7 @@ NTSTATUS pass_check_smb_with_chal(char *user, char *domain, uchar chal[8],
 	return check_password(&user_info, &server_info);
 }
 
-NTSTATUS pass_check_smb(char *user, char *domain,
+NTSTATUS pass_check_smb(char *smb_user, char *unix_user, char *domain,
 			uchar *lm_pwd, int lm_pwd_len,
 			uchar *nt_pwd, int nt_pwd_len)
 {
@@ -207,7 +214,7 @@ NTSTATUS pass_check_smb(char *user, char *domain,
 		generate_random_buffer( chal, 8, False);
 	}
 
-	return pass_check_smb_with_chal(user, domain, chal, 
+	return pass_check_smb_with_chal(smb_user, unix_user, domain, chal, 
 					lm_pwd, lm_pwd_len,
 					nt_pwd, nt_pwd_len);
 
@@ -233,11 +240,11 @@ BOOL password_ok(char *user, char *password, int pwlen)
 	
 	/* The password could be either NTLM or plain LM.  Try NTLM first, but fall-through as
 	   required. */
-	if (NT_STATUS_IS_OK(pass_check_smb(user, lp_workgroup(), NULL, 0, (unsigned char *)password, pwlen))) {
+	if (NT_STATUS_IS_OK(pass_check_smb(user, NULL, lp_workgroup(), NULL, 0, (unsigned char *)password, pwlen))) {
 		return True;
 	}
 
-	if (NT_STATUS_IS_OK(pass_check_smb(user, lp_workgroup(), (unsigned char *)password, pwlen, NULL, 0))) {
+	if (NT_STATUS_IS_OK(pass_check_smb(user, NULL, lp_workgroup(), (unsigned char *)password, pwlen, NULL, 0))) {
 		return True;
 	}
 

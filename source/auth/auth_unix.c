@@ -73,9 +73,11 @@ NTSTATUS check_unix_security(const auth_usersupplied_info *user_info, auth_serve
 	NTSTATUS nt_status;
 	
 	become_root();
-	nt_status = (pass_check(user_info->smb_username.str, user_info->plaintext_password.str,
+	nt_status = (pass_check(user_info->unix_username.str, 
+                                user_info->plaintext_password.str,
 				user_info->plaintext_password.len,
-				lp_update_encrypted() ? update_smbpassword_file : NULL) 
+				lp_update_encrypted() ? 
+                                update_smbpassword_file : NULL) 
 		     ? NT_STATUS_OK : NT_STATUS_LOGON_FAILURE);
 	unbecome_root();
 
