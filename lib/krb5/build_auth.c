@@ -13,7 +13,7 @@ krb5_build_authenticator (krb5_context context,
   struct timeval tv;
   Authenticator *auth = malloc(sizeof(*auth));
   char buf[1024];
-  int len;
+  size_t len;
   krb5_error_code ret;
   int32_t seq_number;
 
@@ -53,7 +53,9 @@ krb5_build_authenticator (krb5_context context,
   memset (buf, 0, sizeof(buf));
   ret = encode_Authenticator (buf + sizeof(buf) - 1, sizeof(buf), auth, &len);
 
-  ret = krb5_encrypt (context, buf + sizeof(buf) - len, len, &cred->session,
+  ret = krb5_encrypt (context, buf + sizeof(buf) - len, len,
+		      auth_context->enctype,
+		      &cred->session,
 		      result);
 
   if (auth_result)
