@@ -7,18 +7,20 @@
 IS_ON=/etc/chkconfig
 KILLALL=/sbin/killall
 
-SAMBAD=/usr/samba/bin/smbd
+SAMBA_HOME="/usr/samba/bin"
+
+SAMBAD=${SAMBA_HOME}/smbd
 #SAMBA_OPTS=-d2
-NMBD=/usr/samba/bin/nmbd
-BROWSERD=/usr/samba/bin/browserd
-LSARPCD=/usr/samba/bin/lsarpcd
-NETLOGOND=/usr/samba/bin/netlogond
-SAMRD=/usr/samba/bin/samrd
-SPOOLSSD=/usr/samba/bin/spoolssd
-SRVSVCD=/usr/samba/bin/srvsvcd
-SVCCTLD=/usr/samba/bin/svcctld
-WINREGD=/usr/samba/bin/winregd
-WKSSVCD=/usr/samba/bin/wkssvcd
+NMBD=${SAMBA_HOME}/nmbd
+BROWSERD=${SAMBA_HOME}/browserd
+LSARPCD=${SAMBA_HOME}/lsarpcd
+NETLOGOND=${SAMBA_HOME}/netlogond
+SAMRD=${SAMBA_HOME}/samrd
+SPOOLSSD=${SAMBA_HOME}/spoolssd
+SRVSVCD=${SAMBA_HOME}/srvsvcd
+SVCCTLD=${SAMBA_HOME}/svcctld
+WINREGD=${SAMBA_HOME}/winregd
+WKSSVCD=${SAMBA_HOME}/wkssvcd
 
 #NMBD_OPTS=-d1
 
