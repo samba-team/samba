@@ -479,6 +479,8 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_OFF_T len)
 				int save_errno = errno;
 				fsp->conn->vfs_ops.ftruncate(fsp, fsp->fd, st.st_size);
 				errno = save_errno;
+				DEBUG(10,("vfs_allocate_file_space: file %s, grow. write fail %s\n",
+					fsp->fsp_name, strerror(errno) ));
 				return -1;
 			}
 
