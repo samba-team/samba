@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -43,7 +43,7 @@ RCSID("$Id$");
 #ifdef KRB4
 
 krb5_error_code
-do_524(Ticket *t, krb5_data *reply, const char *from)
+do_524(Ticket *t, krb5_data *reply, const char *from, struct sockaddr_in *addr)
 {
     krb5_error_code ret = 0;
     krb5_principal sprinc = NULL;
@@ -112,9 +112,38 @@ do_524(Ticket *t, krb5_data *reply, const char *from)
 	ret = KRB5KRB_AP_ERR_TKT_NYV;
 	goto out;
     }
+    {
+	krb5_addresses *save_caddr, new_addr;
+	krb5_address v4_addr;
 
-    ret  = encode_v4_ticket(buf + sizeof(buf) - 1, sizeof(buf),
-			    &et, &t->sname, &len);
+	ret = krb5_sockaddr2address((struct sockaddr*)addr, &v4_addr);
+	if(ret) {
+	    kdc_log(0, "Failed to convert address (%s)", spn);
+	    free_EncTicketPart(&et);
+	    goto out;
+	}
+	    
+	if (et.caddr && !krb5_address_search (context, &v4_addr, et.caddr)) {
+	    kdc_log(0, "Incorrect network address (%s)", spn);
+	    free_EncTicketPart(&et);
+	    krb5_free_address(context, &v4_addr);
+	    ret = KRB5KRB_AP_ERR_BADADDR;
+	    goto out;
+	}
+	if(v4_addr.addr_type == KRB5_ADDRESS_INET) {
+	    /* we need to collapse the addresses in the ticket to a
+	       single address; best guess is to use the address the
+	       connection came from */
+	    save_caddr = et.caddr;
+	    new_addr.len = 1;
+	    new_addr.val = &v4_addr;
+	    et.caddr = &new_addr;
+	}
+	ret  = encode_v4_ticket(buf + sizeof(buf) - 1, sizeof(buf),
+				&et, &t->sname, &len);
+	if(v4_addr.addr_type == KRB5_ADDRESS_INET)
+	    et.caddr = save_caddr;
+    }
     free_EncTicketPart(&et);
     if(ret){
 	kdc_log(0, "Failed to encode v4 ticket (%s)", spn);
