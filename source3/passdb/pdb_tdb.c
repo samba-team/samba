@@ -31,8 +31,6 @@
 #define RIDPREFIX		"RID_"
 
 extern int 		DEBUGLEVEL;
-extern pstring 		samlogon_user;
-extern BOOL 		sam_logon_in_ssb;
 
 struct tdb_enum_info {
 	TDB_CONTEXT 	*passwd_tdb;

@@ -1264,7 +1264,7 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr, SAM_ACCOUNT *sam
 
 	usr->user_rid = pdb_get_user_rid(sampw);
 	usr->group_rid = pdb_get_group_rid(sampw);
-	usr->num_groups = num_groups+1;
+	usr->num_groups = num_groups;
 
 	usr->buffer_groups = 1; /* indicates fill in groups, below, even if there are none */
 	usr->user_flgs = user_flgs;
@@ -1293,20 +1293,14 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr, SAM_ACCOUNT *sam
 	init_unistr2(&usr->uni_home_dir, home_dir, len_home_dir);
 	init_unistr2(&usr->uni_dir_drive, dir_drive, len_dir_drive);
 
-	/* always have at least one group == the user's primary group */
-	usr->num_groups2 = num_groups+1;
+	usr->num_groups2 = num_groups;
 
-	usr->gids = (DOM_GID *)talloc_zero(ctx,sizeof(DOM_GID) * (num_groups+1));
+	usr->gids = (DOM_GID *)talloc_zero(ctx,sizeof(DOM_GID) * (num_groups));
 	if (usr->gids == NULL)
 		return;
 
-	/* primary group **MUST** go first.  NT4's winmsd.exe will give
-	   "The Network statistics are currently not available.  9-5"
-	   What the heck is this?     -- jerry  */
-	usr->gids[0].g_rid = usr->group_rid;
-	usr->gids[0].attr  = 0x07;
 	for (i = 0; i < num_groups; i++) 
-		usr->gids[i+1] = gids[i];	
+		usr->gids[i] = gids[i];	
 		
 	init_unistr2(&usr->uni_logon_srv, logon_srv, len_logon_srv);
 	init_unistr2(&usr->uni_logon_dom, logon_dom, len_logon_dom);
@@ -1358,17 +1352,17 @@ static BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 *usr, prs_struct *ps, 
 	if(!smb_io_time("must change time", &usr->pass_must_change_time, ps, depth)) /* password must change time */
 		return False;
 
-	if(!smb_io_unihdr("unihdr", &usr->hdr_user_name, ps, depth)) /* username unicode string header */
+	if(!smb_io_unihdr("hdr_user_name", &usr->hdr_user_name, ps, depth)) /* username unicode string header */
 		return False;
-	if(!smb_io_unihdr("unihdr", &usr->hdr_full_name, ps, depth)) /* user's full name unicode string header */
+	if(!smb_io_unihdr("hdr_full_name", &usr->hdr_full_name, ps, depth)) /* user's full name unicode string header */
 		return False;
-	if(!smb_io_unihdr("unihdr", &usr->hdr_logon_script, ps, depth)) /* logon script unicode string header */
+	if(!smb_io_unihdr("hdr_logon_script", &usr->hdr_logon_script, ps, depth)) /* logon script unicode string header */
 		return False;
-	if(!smb_io_unihdr("unihdr", &usr->hdr_profile_path, ps, depth)) /* profile path unicode string header */
+	if(!smb_io_unihdr("hdr_profile_path", &usr->hdr_profile_path, ps, depth)) /* profile path unicode string header */
 		return False;
-	if(!smb_io_unihdr("unihdr", &usr->hdr_home_dir, ps, depth)) /* home directory unicode string header */
+	if(!smb_io_unihdr("hdr_home_dir", &usr->hdr_home_dir, ps, depth)) /* home directory unicode string header */
 		return False;
-	if(!smb_io_unihdr("unihdr", &usr->hdr_dir_drive, ps, depth)) /* home directory drive unicode string header */
+	if(!smb_io_unihdr("hdr_dir_drive", &usr->hdr_dir_drive, ps, depth)) /* home directory drive unicode string header */
 		return False;
 
 	if(!prs_uint16("logon_count   ", ps, depth, &usr->logon_count))  /* logon count */
@@ -1390,9 +1384,9 @@ static BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 *usr, prs_struct *ps, 
 	if(!prs_uint8s(False, "user_sess_key", ps, depth, usr->user_sess_key, 16)) /* unused user session key */
 		return False;
 
-	if(!smb_io_unihdr("unihdr", &usr->hdr_logon_srv, ps, depth)) /* logon server unicode string header */
+	if(!smb_io_unihdr("hdr_logon_srv", &usr->hdr_logon_srv, ps, depth)) /* logon server unicode string header */
 		return False;
-	if(!smb_io_unihdr("unihdr", &usr->hdr_logon_dom, ps, depth)) /* logon domain unicode string header */
+	if(!smb_io_unihdr("hdr_logon_dom", &usr->hdr_logon_dom, ps, depth)) /* logon domain unicode string header */
 		return False;
 
 	if(!prs_uint32("buffer_dom_id ", ps, depth, &usr->buffer_dom_id)) /* undocumented logon domain id pointer */
@@ -1412,17 +1406,17 @@ static BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 *usr, prs_struct *ps, 
 		}
 	}
 		
-	if(!smb_io_unistr2("unistr2", &usr->uni_user_name, usr->hdr_user_name.buffer, ps, depth)) /* username unicode string */
+	if(!smb_io_unistr2("uni_user_name", &usr->uni_user_name, usr->hdr_user_name.buffer, ps, depth)) /* username unicode string */
 		return False;
-	if(!smb_io_unistr2("unistr2", &usr->uni_full_name, usr->hdr_full_name.buffer, ps, depth)) /* user's full name unicode string */
+	if(!smb_io_unistr2("uni_full_name", &usr->uni_full_name, usr->hdr_full_name.buffer, ps, depth)) /* user's full name unicode string */
 		return False;
-	if(!smb_io_unistr2("unistr2", &usr->uni_logon_script, usr->hdr_logon_script.buffer, ps, depth)) /* logon script unicode string */
+	if(!smb_io_unistr2("uni_logon_script", &usr->uni_logon_script, usr->hdr_logon_script.buffer, ps, depth)) /* logon script unicode string */
 		return False;
-	if(!smb_io_unistr2("unistr2", &usr->uni_profile_path, usr->hdr_profile_path.buffer, ps, depth)) /* profile path unicode string */
+	if(!smb_io_unistr2("uni_profile_path", &usr->uni_profile_path, usr->hdr_profile_path.buffer, ps, depth)) /* profile path unicode string */
 		return False;
-	if(!smb_io_unistr2("unistr2", &usr->uni_home_dir, usr->hdr_home_dir.buffer, ps, depth)) /* home directory unicode string */
+	if(!smb_io_unistr2("uni_home_dir", &usr->uni_home_dir, usr->hdr_home_dir.buffer, ps, depth)) /* home directory unicode string */
 		return False;
-	if(!smb_io_unistr2("unistr2", &usr->uni_dir_drive, usr->hdr_dir_drive.buffer, ps, depth)) /* home directory drive unicode string */
+	if(!smb_io_unistr2("uni_dir_drive", &usr->uni_dir_drive, usr->hdr_dir_drive.buffer, ps, depth)) /* home directory drive unicode string */
 		return False;
 
 	if(!prs_align(ps))
@@ -1441,9 +1435,9 @@ static BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 *usr, prs_struct *ps, 
 			return False;
 	}
 
-	if(!smb_io_unistr2("unistr2", &usr->uni_logon_srv, usr->hdr_logon_srv.buffer, ps, depth)) /* logon server unicode string */
+	if(!smb_io_unistr2("uni_logon_srv", &usr->uni_logon_srv, usr->hdr_logon_srv.buffer, ps, depth)) /* logon server unicode string */
 		return False;
-	if(!smb_io_unistr2("unistr2", &usr->uni_logon_dom, usr->hdr_logon_srv.buffer, ps, depth)) /* logon domain unicode string */
+	if(!smb_io_unistr2("uni_logon_dom", &usr->uni_logon_dom, usr->hdr_logon_srv.buffer, ps, depth)) /* logon domain unicode string */
 		return False;
 
 	if(!smb_io_dom_sid2("", &usr->dom_sid, ps, depth))           /* domain SID */

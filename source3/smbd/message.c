@@ -26,6 +26,8 @@
 
 #include "includes.h"
 
+extern userdom_struct current_user_info;
+
 /* look in server.c for some explanation of these variables */
 static char msgbuf[1600];
 static int msgpos;
@@ -84,7 +86,7 @@ static void msg_deliver(void)
       pstrcpy(s,lp_msg_command());
       pstring_sub(s,"%f",alpha_strcpy(alpha_msgfrom,msgfrom,NULL,sizeof(alpha_msgfrom)));
       pstring_sub(s,"%t",alpha_strcpy(alpha_msgto,msgto,NULL,sizeof(alpha_msgto)));
-      standard_sub_basic(s);
+      standard_sub_basic(current_user_info.smb_name, s);
       pstring_sub(s,"%s",name);
       smbrun(s,NULL);
     }

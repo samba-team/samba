@@ -23,6 +23,7 @@
 #include "includes.h"
 
 extern pstring global_myname;
+extern userdom_struct current_user_info;
 
 /****************************************************************************
  Support for server level security.
@@ -46,7 +47,7 @@ static struct cli_state *server_cryptkey(void)
 	p = pserver;
 
         while(next_token( &p, desthost, LIST_SEP, sizeof(desthost))) {
-		standard_sub_basic(desthost);
+		standard_sub_basic(current_user_info.smb_name, desthost);
 		strupper(desthost);
 
 		if(!resolve_name( desthost, &dest_ip, 0x20)) {

@@ -1854,11 +1854,13 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 
 	if (ret == False) {
 		samr_clear_sam_passwd(sam_pass);
+		pdb_free_sam(&sam_pass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	if(!new_get_domain_user_groups(p->mem_ctx, &num_groups, &gids, sam_pass)) {
+	if(!get_domain_user_groups(p->mem_ctx, &num_groups, &gids, sam_pass)) {
 		samr_clear_sam_passwd(sam_pass);
+		pdb_free_sam(&sam_pass);
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
 
@@ -1868,6 +1870,7 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 	DEBUG(5,("_samr_query_usergroups: %d\n", __LINE__));
 	
 	samr_clear_sam_passwd(sam_pass);
+	pdb_free_sam(&sam_pass);
 
 	return r_u->status;
 }
@@ -2745,7 +2748,7 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 
 	for (i=0; i<q_u->num_sids1; i++) {
 
-		r_u->status=new_get_alias_user_groups(p->mem_ctx, &info->sid, &tmp_num_groups, &tmp_rids, &(q_u->sid[i].sid));
+		r_u->status=get_alias_user_groups(p->mem_ctx, &info->sid, &tmp_num_groups, &tmp_rids, &(q_u->sid[i].sid));
 
 		/*
 		 * if there is an error, we just continue as
