@@ -611,7 +611,7 @@ static BOOL change_password(const char *remote_machine, char *user_name,
 					 msg_str, sizeof(msg_str));
 
 	if(*msg_str)
-		printf("%\n<p>", msg_str);
+		printf("%s\n<p>", msg_str);
 	if(*err_str)
 		printf("%s\n<p>", err_str);
 
