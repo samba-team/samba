@@ -3049,19 +3049,18 @@ static uint32 update_printer_sec(POLICY_HND *handle, uint32 level,
 				 const SPOOL_PRINTER_INFO_LEVEL *info,
 				 pipes_struct *p, SEC_DESC_BUF *secdesc_ctr)
 {
-	SEC_DESC_BUF *old_secdesc_ctr = NULL;
 	struct current_user user;
-	uint32 acc_granted, status, result;
+	uint32 result;
+	int snum;
 
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 
-	if (!OPEN_HANDLE(Printer)) {
+	if (!OPEN_HANDLE(Printer) || !get_printer_snum(handle, &snum)) {
 		DEBUG(0,("update_printer_sec: Invalid handle (%s)\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
 
 	/* Work out which user is performing the operation */
-
 	if (p->ntlmssp_auth_validated) {
 		memcpy(&user, &p->pipe_user, sizeof(user));
 	} else {
@@ -3069,32 +3068,18 @@ static uint32 update_printer_sec(POLICY_HND *handle, uint32 level,
 		memcpy(&user, &current_user, sizeof(user));
 	}
 
-	/* Get old security descriptor */
-
-	if (!nt_printing_getsec(Printer->dev.handlename, &old_secdesc_ctr)) {
-		DEBUG(3, ("could not get old security descriptor for "
-			  "printer %s", Printer->dev.handlename));
-		return ERROR_INVALID_FUNCTION;
-	}
-
 	/* Check the user has permissions to change the security
 	   descriptor.  By experimentation with two NT machines, the user
 	   requires Full Access to the printer to change security
 	   information. */ 
-
-	if (!se_access_check(old_secdesc_ctr->sec, &user,
-			     PRINTER_ACE_FULL_CONTROL, &acc_granted,
-			     &status)) {
-		DEBUG(3, ("security descriptor change denied by existing "
-			  "security descriptor\n"));
-		result = status;
+	if (!print_access_check(&user, snum, PRINTER_ACE_FULL_CONTROL)) {
+		result = NT_STATUS_ACCESS_DENIED;
 		goto done;
 	}
 
 	result = nt_printing_setsec(Printer->dev.handlename, secdesc_ctr);
 
  done:
-	free_sec_desc_buf(&old_secdesc_ctr);
 	return result;
 }
 
@@ -3144,9 +3129,7 @@ static uint32 update_printer(POLICY_HND *handle, uint32 level,
 	int snum;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
-	SEC_DESC_BUF *sd = NULL;
-	uint32 result, acc_granted;
-	extern struct current_user current_user;
+	uint32 result;
 
 	DEBUG(8,("update_printer\n"));
 	
@@ -3154,22 +3137,6 @@ static uint32 update_printer(POLICY_HND *handle, uint32 level,
 
 	/* Check calling user has permission to update printer description */ 
 
-#if 0 /* JFMTEST */
-	if (!nt_printing_getsec(Printer->dev.handlename, &sd)) {
-		DEBUG(3, ("Could not get security descriptor for printer %s",
-			  Printer->dev.handlename));
-		result = ERROR_INVALID_FUNCTION;
-		goto done;
-	}
-
-	if (!se_access_check(sd->sec, &current_user,
-			     PRINTER_ACE_FULL_CONTROL, &acc_granted,
-			     &result)) {
-		DEBUG(3, ("printer property change denied by security "
-			  "descriptor\n"));
-		goto done;
-	}
-#endif
 	if (level!=2) {
 		DEBUG(0,("Send a mail to samba@samba.org\n"));
 		DEBUGADD(0,("with the following message: update_printer: level!=2\n"));
@@ -3184,6 +3151,13 @@ static uint32 update_printer(POLICY_HND *handle, uint32 level,
 
 	if (!get_printer_snum(handle, &snum)) {
 		result = ERROR_INVALID_HANDLE;
+		goto done;
+	}
+
+	if (!print_access_check(NULL, snum, PRINTER_ACE_FULL_CONTROL)) {
+		DEBUG(3, ("printer property change denied by security "
+			  "descriptor\n"));
+		result = NT_STATUS_ACCESS_DENIED;
 		goto done;
 	}
 	
@@ -3240,7 +3214,6 @@ static uint32 update_printer(POLICY_HND *handle, uint32 level,
 
  done:
 	free_a_printer(&printer, 2);
-	free_sec_desc_buf(&sd);
 
 	return result;
 }
@@ -4251,6 +4224,12 @@ static uint32 spoolss_addprinterex_level_2( const UNISTR2 *uni_srv_name,
 		free_a_printer(&printer,2);
 		return ERROR_ACCESS_DENIED;
 	}
+
+	/* you must be a printer admin to add a new printer */
+	if (!print_access_check(NULL, snum, PRINTER_ACE_FULL_CONTROL)) {
+		free_a_printer(&printer,2);
+		return ERROR_ACCESS_DENIED;		
+	}
 	
 	/*
 	 * Do sanity check on the requested changes for Samba.
@@ -4547,8 +4526,7 @@ uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 				uint32 numeric_data)
 {
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	NT_PRINTER_PARAM *param = NULL;
-		
+	NT_PRINTER_PARAM *param = NULL;		
 	int snum=0;
 	uint32 status = 0x0;
 	Printer_entry *Printer=find_printer_index_by_hnd(handle);
@@ -4563,6 +4541,12 @@ uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 
 	if (!get_printer_snum(handle, &snum))
 		return ERROR_INVALID_HANDLE;
+
+	if (!print_access_check(NULL, snum, PRINTER_ACE_FULL_CONTROL)) {
+		DEBUG(3, ("security descriptor change denied by existing "
+			  "security descriptor\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	status = get_a_printer(&printer, 2, lp_servicename(snum));
 	if (status != 0x0)
