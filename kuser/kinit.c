@@ -440,7 +440,7 @@ main (int argc, char **argv)
 	    errx (1, "unparsable time: %s", renew_life);
 
 	krb5_get_init_creds_opt_set_renew_life (&opt, tmp);
-    } else if (renewable_flag)
+    } else if (renewable_flag == 1)
 	krb5_get_init_creds_opt_set_renew_life (&opt, 1 << 30);
 
     if(ticket_life != 0)
