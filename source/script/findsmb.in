@@ -15,7 +15,7 @@
 # that workgroup.
 #
 
-$SAMBABIN = "/usr/bin";
+$SAMBABIN = "@prefix@/bin";
 
 for ($i = 0; $i < 2; $i++) {	# test for -d option and broadcast address
   $_ = shift;
