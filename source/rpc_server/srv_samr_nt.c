@@ -44,7 +44,6 @@ typedef struct _disp_info {
 	BOOL group_dbloaded;
 	uint32 num_account;
 	uint32 total_size;
-	uint32 last_enum;
 	DISP_USER_INFO *disp_user_info;
 	DISP_GROUP_INFO *disp_group_info;
 } DISP_INFO;
@@ -82,7 +81,6 @@ static void free_samr_db(struct samr_info *info)
 	info->disp_info.group_dbloaded=False;
 	info->disp_info.num_account=0;
 	info->disp_info.total_size=0;
-	info->disp_info.last_enum=0;
 }
 
 /*******************************************************************
@@ -175,7 +173,6 @@ static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask)
 	/* the snapshoot is in memory, we're ready to enumerate fast */
 
 	info->disp_info.user_dbloaded=True;
-	info->disp_info.last_enum=0;
 
 	DEBUG(12,("load_sampwd_entries: done\n"));
 
@@ -270,7 +267,6 @@ static NTSTATUS load_group_domain_entries(struct samr_info *info, DOM_SID *sid)
 	/* the snapshoot is in memory, we're ready to enumerate fast */
 
 	info->disp_info.group_dbloaded=True;
-	info->disp_info.last_enum=0;
 
 	DEBUG(12,("load_group_domain_entries: done\n"));
 
