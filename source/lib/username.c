@@ -551,10 +551,6 @@ static struct passwd *uname_string_combinations2(char *s,int offset,struct passw
 	int i;
 	struct passwd *ret;
 
-#ifdef PASSWORD_LENGTH
-	len = MIN(len,PASSWORD_LENGTH);
-#endif
-
 	if (N <= 0 || offset >= len)
 		return(fn(s));
 
