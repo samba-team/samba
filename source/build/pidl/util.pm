@@ -187,6 +187,30 @@ sub is_scalar_type($)
     return 0;
 }
 
+# return the NDR alignment for a type
+sub type_align($)
+{
+    my($e) = shift;
+    my $type = $e->{TYPE};
+
+    if ($e->{POINTERS} || array_size($e)) {
+	    # FIXME: we really should recurse here
+	    return 4;
+    }
+
+    return 4, if ($type eq "uint32");
+    return 4, if ($type eq "long");
+    return 2, if ($type eq "short");
+    return 1, if ($type eq "char");
+    return 1, if ($type eq "uint8");
+    return 2, if ($type eq "uint16");
+    return 4, if ($type eq "NTTIME");
+    return 8, if ($type eq "hyper");
+    return 2, if ($type eq "wchar_t");
+
+    return 0;
+}
+
 # this is used to determine if the ndr push/pull functions will need
 # a ndr_flags field to split by buffers/scalars
 sub is_builtin_type($)

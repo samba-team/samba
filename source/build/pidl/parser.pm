@@ -56,6 +56,20 @@ sub find_size_var($$)
 
 
 #####################################################################
+# work out the correct alignment for a structure
+sub struct_alignment($)
+{
+	my $s = shift;
+	my $align = 1;
+	for my $e (@{$s->{ELEMENTS}}) {
+		if ($align < util::type_align($e)) {
+			$align = util::type_align($e);
+		}
+	}
+	return $align;
+}
+
+#####################################################################
 # parse an array - push side
 sub ParseArrayPush($$)
 {
@@ -312,11 +326,14 @@ sub ParseStructPush($)
 		$res .= "\tndr_push_save(ndr, &_save1);\n";
 	}
 
+	my $align = struct_alignment($struct);
+	$res .= "\tNDR_CHECK(ndr_push_align(ndr, $align));\n";
+
 	$res .= "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		if (defined($struct_len) && $e == $struct_len) {
-			$res .= "\tNDR_CHECK(ndr_push_align_$e->{TYPE}(ndr));\n";
+			$res .= "\tNDR_CHECK(ndr_push_align(ndr, sizeof($e->{TYPE})));\n";
 			$res .= "\tndr_push_save(ndr, &_save2);\n";
 		}
 		ParseElementPushScalar($e, "r->", "NDR_SCALARS");
@@ -393,6 +410,9 @@ sub ParseStructPull($)
 		$res .= "\tstruct ndr_pull_save _save;\n";
 		$res .= "\tndr_pull_save(ndr, &_save);\n";
 	}
+
+	my $align = struct_alignment($struct);
+	$res .= "\tNDR_CHECK(ndr_pull_align(ndr, $align));\n";
 
 	$res .= "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
 	foreach my $e (@{$struct->{ELEMENTS}}) {
