@@ -97,7 +97,7 @@ static PyObject *py_smb_session_setup(PyObject *self, PyObject *args,
 				      PyObject *kw)
 {
 	cli_state_object *cli = (cli_state_object *)self;
-	static char *kwlist[] = { "creds" };
+	static char *kwlist[] = { "creds", NULL };
 	PyObject *creds;
 	char *username, *domain, *password, *errstr;
 	BOOL result;
@@ -113,6 +113,11 @@ static PyObject *py_smb_session_setup(PyObject *self, PyObject *args,
 	result = cli_session_setup(
 		cli->cli, username, password, strlen(password) + 1,
 		password, strlen(password) + 1, domain);
+
+	if (cli_is_error(cli->cli)) {
+		PyErr_SetString(PyExc_RuntimeError, "session setup failed");
+		return NULL;
+	}
 
 	return Py_BuildValue("i", result);
 }
@@ -130,6 +135,11 @@ static PyObject *py_smb_tconx(PyObject *self, PyObject *args, PyObject *kw)
 	result = cli_send_tconX(
 		cli->cli, service, strequal(service, "IPC$") ? "IPC" : 
 		"?????", "", 1);
+
+	if (cli_is_error(cli->cli)) {
+		PyErr_SetString(PyExc_RuntimeError, "tconx failed");
+		return NULL;
+	}
 
 	return Py_BuildValue("i", result);
 }
@@ -159,6 +169,11 @@ static PyObject *py_smb_nt_create_andx(PyObject *self, PyObject *args,
 		cli->cli, filename, desired_access, file_attributes,
 		share_access, create_disposition, create_options);
 
+	if (cli_is_error(cli->cli)) {
+		PyErr_SetString(PyExc_RuntimeError, "nt_create_andx failed");
+		return NULL;
+	}
+
 	/* Return FID */
 
 	return PyInt_FromLong(result);
@@ -184,7 +199,10 @@ static PyObject *py_smb_query_secdesc(PyObject *self, PyObject *args,
 
 	secdesc = cli_query_secdesc(cli->cli, fnum, mem_ctx);
 
-	/* FIXME: we should raise an exception here */
+	if (cli_is_error(cli->cli)) {
+		PyErr_SetString(PyExc_RuntimeError, "query_secdesc failed");
+		return NULL;
+	}
 
 	if (!secdesc) {
 		Py_INCREF(Py_None);
@@ -231,6 +249,11 @@ static PyObject *py_smb_set_secdesc(PyObject *self, PyObject *args,
 	}
 
 	result = cli_set_secdesc(cli->cli, fnum, secdesc);
+
+	if (cli_is_error(cli->cli)) {
+		PyErr_SetString(PyExc_RuntimeError, "set_secdesc failed");
+		return NULL;
+	}
 
 	return PyInt_FromLong(result);
 }
