@@ -44,12 +44,134 @@ struct generic_mapping printer_generic_mapping = {
 	PRINTER_ALL_ACCESS
 };
 
-/* We need one default form to support our default printer. Msoft adds the
-forms it wants and in the ORDER it wants them (note: DEVMODE papersize is an
-array index). Letter is always first, so (for the current code) additions
-always put things in the correct order. */
+
+#define FORM_USER    0	/* Forms defined by user... unclear how this works */
+#define FORM_BUILTIN 1  /* Forms defined (built-in) in the spooler. */
+#define FORM_PRINTER 2  /* Forms defined (added by) by a printer driver */
+
+/* Msoft defines spooler 'built-in' forms in a specific order. The DEVMODE
+'papersize' member variable is an array index to the entries in this structure.
+Note: NT4 defines the forms "Letter" through "German Legal Fanfold", and W2K
+adds the rest. JRR */
 static nt_forms_struct default_forms[] = {
-	{"Letter", 0x2, 0x34b5b, 0x44367, 0x0, 0x0, 0x34b5b, 0x44367},
+	{"Letter", FORM_BUILTIN, 0x34b5c, 0x44368, 0x0, 0x0, 0x34b5c, 0x44368},
+	{"Letter Small", FORM_BUILTIN, 0x34b5c, 0x44368, 0x0, 0x0, 0x34b5c, 0x44368},
+	{"Tabloid", FORM_BUILTIN, 0x44368, 0x696b8, 0x0, 0x0, 0x44368, 0x696b8},
+	{"Ledger", FORM_BUILTIN, 0x696b8, 0x44368, 0x0, 0x0, 0x696b8, 0x44368},
+	{"Legal", FORM_BUILTIN, 0x34b5c, 0x56d10, 0x0, 0x0, 0x34b5c, 0x56d10},
+	{"Statement", FORM_BUILTIN, 0x221b4, 0x34b5c, 0x0, 0x0, 0x221b4, 0x34b5c},
+	{"Executive", FORM_BUILTIN, 0x2cf56, 0x411cc, 0x0, 0x0, 0x2cf56, 0x411cc},
+	{"A3", FORM_BUILTIN, 0x48828, 0x668a0, 0x0, 0x0, 0x48828, 0x668a0},
+	{"A4", FORM_BUILTIN, 0x33450, 0x48828, 0x0, 0x0, 0x33450, 0x48828},
+	{"A4 Small", FORM_BUILTIN, 0x33450, 0x48828, 0x0, 0x0, 0x33450, 0x48828},
+	{"A5", FORM_BUILTIN, 0x24220, 0x33450, 0x0, 0x0, 0x24220, 0x33450},
+	{"B4 (JIS)", FORM_BUILTIN, 0x3ebe8, 0x58de0, 0x0, 0x0, 0x3ebe8, 0x58de0},
+	{"B5 (JIS)", FORM_BUILTIN, 0x2c6f0, 0x3ebe8, 0x0, 0x0, 0x2c6f0, 0x3ebe8},
+	{"Folio", FORM_BUILTIN, 0x34b5c, 0x509d8, 0x0, 0x0, 0x34b5c, 0x509d8},
+	{"Quarto", FORM_BUILTIN, 0x347d8, 0x43238, 0x0, 0x0, 0x347d8, 0x43238},
+	{"10x14", FORM_BUILTIN, 0x3e030, 0x56d10, 0x0, 0x0, 0x3e030, 0x56d10},
+	{"11x17", FORM_BUILTIN, 0x44368, 0x696b8, 0x0, 0x0, 0x44368, 0x696b8},
+	{"Note", FORM_BUILTIN, 0x34b5c, 0x44368, 0x0, 0x0, 0x34b5c, 0x44368},
+	{"Envelope #9", FORM_BUILTIN, 0x18079, 0x37091, 0x0, 0x0, 0x18079, 0x37091},
+	{"Envelope #10", FORM_BUILTIN, 0x19947, 0x3ae94, 0x0, 0x0, 0x19947, 0x3ae94},
+	{"Envelope #11", FORM_BUILTIN, 0x1be7c, 0x40565, 0x0, 0x0, 0x1be7c, 0x40565},
+	{"Envelope #12", FORM_BUILTIN, 0x1d74a, 0x44368, 0x0, 0x0, 0x1d74a, 0x44368},
+	{"Envelope #14", FORM_BUILTIN, 0x1f018, 0x47504, 0x0, 0x0, 0x1f018, 0x47504},
+	{"C size sheet", FORM_BUILTIN, 0x696b8, 0x886d0, 0x0, 0x0, 0x696b8, 0x886d0},
+	{"D size sheet", FORM_BUILTIN, 0x886d0, 0xd2d70, 0x0, 0x0, 0x886d0, 0xd2d70},
+	{"E size sheet", FORM_BUILTIN, 0xd2d70, 0x110da0, 0x0, 0x0, 0xd2d70, 0x110da0},
+	{"Envelope DL", FORM_BUILTIN, 0x1adb0, 0x35b60, 0x0, 0x0, 0x1adb0, 0x35b60},
+	{"Envelope C5", FORM_BUILTIN, 0x278d0, 0x37e88, 0x0, 0x0, 0x278d0, 0x37e88},
+	{"Envelope C3", FORM_BUILTIN, 0x4f1a0, 0x6fd10, 0x0, 0x0, 0x4f1a0, 0x6fd10},
+	{"Envelope C4", FORM_BUILTIN, 0x37e88, 0x4f1a0, 0x0, 0x0, 0x37e88, 0x4f1a0},
+	{"Envelope C6", FORM_BUILTIN, 0x1bd50, 0x278d0, 0x0, 0x0, 0x1bd50, 0x278d0},
+	{"Envelope C65", FORM_BUILTIN, 0x1bd50, 0x37e88, 0x0, 0x0, 0x1bd50, 0x37e88},
+	{"Envelope B4", FORM_BUILTIN, 0x3d090, 0x562e8, 0x0, 0x0, 0x3d090, 0x562e8},
+	{"Envelope B5", FORM_BUILTIN, 0x2af80, 0x3d090, 0x0, 0x0, 0x2af80, 0x3d090},
+	{"Envelope B6", FORM_BUILTIN, 0x2af80, 0x1e848, 0x0, 0x0, 0x2af80, 0x1e848},
+	{"Envelope", FORM_BUILTIN, 0x1adb0, 0x38270, 0x0, 0x0, 0x1adb0, 0x38270},
+	{"Envelope Monarch", FORM_BUILTIN, 0x18079, 0x2e824, 0x0, 0x0, 0x18079, 0x2e824},
+	{"6 3/4 Envelope", FORM_BUILTIN, 0x167ab, 0x284ec, 0x0, 0x0, 0x167ab, 0x284ec},
+	{"US Std Fanfold", FORM_BUILTIN, 0x5c3e1, 0x44368, 0x0, 0x0, 0x5c3e1, 0x44368},
+	{"German Std Fanfold", FORM_BUILTIN, 0x34b5c, 0x4a6a0, 0x0, 0x0, 0x34b5c, 0x4a6a0},
+	{"German Legal Fanfold", FORM_BUILTIN, 0x34b5c, 0x509d8, 0x0, 0x0, 0x34b5c, 0x509d8},
+	{"B4 (ISO)", 0x1, 0x3d090, 0x562e8, 0x0, 0x0, 0x3d090, 0x562e8},
+	{"Japanese Postcard", 0x1, 0x186a0, 0x24220, 0x0, 0x0, 0x186a0, 0x24220},
+	{"9x11", 0x1, 0x37cf8, 0x44368, 0x0, 0x0, 0x37cf8, 0x44368},
+	{"10x11", 0x1, 0x3e030, 0x44368, 0x0, 0x0, 0x3e030, 0x44368},
+	{"15x11", 0x1, 0x5d048, 0x44368, 0x0, 0x0, 0x5d048, 0x44368},
+	{"Envelope Invite", 0x1, 0x35b60, 0x35b60, 0x0, 0x0, 0x35b60, 0x35b60},
+	{"Reserved48", 0x1, 0x1, 0x1, 0x0, 0x0, 0x1, 0x1},
+	{"Reserved49", 0x1, 0x1, 0x1, 0x0, 0x0, 0x1, 0x1},
+	{"Letter Extra", 0x1, 0x3ae94, 0x4a6a0, 0x0, 0x0, 0x3ae94, 0x4a6a0},
+	{"Legal Extra", 0x1, 0x3ae94, 0x5d048, 0x0, 0x0, 0x3ae94, 0x5d048},
+	{"Tabloid Extra", 0x1, 0x4a6a0, 0x6f9f0, 0x0, 0x0, 0x4a6a0, 0x6f9f0},
+	{"A4 Extra", 0x1, 0x397c2, 0x4eb16, 0x0, 0x0, 0x397c2, 0x4eb16},
+	{"Letter Transverse", 0x1, 0x34b5c, 0x44368, 0x0, 0x0, 0x34b5c, 0x44368},
+	{"A4 Transverse", 0x1, 0x33450, 0x48828, 0x0, 0x0, 0x33450, 0x48828},
+	{"Letter Extra Transverse", 0x1, 0x3ae94, 0x4a6a0, 0x0, 0x0, 0x3ae94, 0x4a6a0},
+	{"Super A", 0x1, 0x376b8, 0x56ea0, 0x0, 0x0, 0x376b8, 0x56ea0},
+	{"Super B", 0x1, 0x4a768, 0x76e58, 0x0, 0x0, 0x4a768, 0x76e58},
+	{"Letter Plus", 0x1, 0x34b5c, 0x4eb16, 0x0, 0x0, 0x34b5c, 0x4eb16},
+	{"A4 Plus", 0x1, 0x33450, 0x50910, 0x0, 0x0, 0x33450, 0x50910},
+	{"A5 Transverse", 0x1, 0x24220, 0x33450, 0x0, 0x0, 0x24220, 0x33450},
+	{"B5 (JIS) Transverse", 0x1, 0x2c6f0, 0x3ebe8, 0x0, 0x0, 0x2c6f0, 0x3ebe8},
+	{"A3 Extra", 0x1, 0x4e9d0, 0x6ca48, 0x0, 0x0, 0x4e9d0, 0x6ca48},
+	{"A5 Extra", 0x1, 0x2a7b0, 0x395f8, 0x0, 0x0, 0x2a7b0, 0x395f8},
+	{"B5 (ISO) Extra", 0x1, 0x31128, 0x43620, 0x0, 0x0, 0x31128, 0x43620},
+	{"A2", 0x1, 0x668a0, 0x91050, 0x0, 0x0, 0x668a0, 0x91050},
+	{"A3 Transverse", 0x1, 0x48828, 0x668a0, 0x0, 0x0, 0x48828, 0x668a0},
+	{"A3 Extra Transverse", 0x1, 0x4e9d0, 0x6ca48, 0x0, 0x0, 0x4e9d0, 0x6ca48},
+	{"Japanese Double Postcard", 0x1, 0x30d40, 0x24220, 0x0, 0x0, 0x30d40, 0x24220},
+	{"A6", 0x1, 0x19a28, 0x24220, 0x0, 0x0, 0x19a28, 0x24220},
+	{"Japanese Envelope Kaku #2", 0x1, 0x3a980, 0x510e0, 0x0, 0x0, 0x3a980, 0x510e0},
+	{"Japanese Envelope Kaku #3", 0x1, 0x34bc0, 0x43a08, 0x0, 0x0, 0x34bc0, 0x43a08},
+	{"Japanese Envelope Chou #3", 0x1, 0x1d4c0, 0x395f8, 0x0, 0x0, 0x1d4c0, 0x395f8},
+	{"Japanese Envelope Chou #4", 0x1, 0x15f90, 0x320c8, 0x0, 0x0, 0x15f90, 0x320c8},
+	{"Letter Rotated", 0x1, 0x44368, 0x34b5c, 0x0, 0x0, 0x44368, 0x34b5c},
+	{"A3 Rotated", 0x1, 0x668a0, 0x48828, 0x0, 0x0, 0x668a0, 0x48828},
+	{"A4 Rotated", 0x1, 0x48828, 0x33450, 0x0, 0x0, 0x48828, 0x33450},
+	{"A5 Rotated", 0x1, 0x33450, 0x24220, 0x0, 0x0, 0x33450, 0x24220},
+	{"B4 (JIS) Rotated", 0x1, 0x58de0, 0x3ebe8, 0x0, 0x0, 0x58de0, 0x3ebe8},
+	{"B5 (JIS) Rotated", 0x1, 0x3ebe8, 0x2c6f0, 0x0, 0x0, 0x3ebe8, 0x2c6f0},
+	{"Japanese Postcard Rotated", 0x1, 0x24220, 0x186a0, 0x0, 0x0, 0x24220, 0x186a0},
+	{"Double Japan Postcard Rotated", 0x1, 0x24220, 0x30d40, 0x0, 0x0, 0x24220, 0x30d40},
+	{"A6 Rotated", 0x1, 0x24220, 0x19a28, 0x0, 0x0, 0x24220, 0x19a28},
+	{"Japan Envelope Kaku #2 Rotated", 0x1, 0x510e0, 0x3a980, 0x0, 0x0, 0x510e0, 0x3a980},
+	{"Japan Envelope Kaku #3 Rotated", 0x1, 0x43a08, 0x34bc0, 0x0, 0x0, 0x43a08, 0x34bc0},
+	{"Japan Envelope Chou #3 Rotated", 0x1, 0x395f8, 0x1d4c0, 0x0, 0x0, 0x395f8, 0x1d4c0},
+	{"Japan Envelope Chou #4 Rotated", 0x1, 0x320c8, 0x15f90, 0x0, 0x0, 0x320c8, 0x15f90},
+	{"B6 (JIS)", 0x1, 0x1f400, 0x2c6f0, 0x0, 0x0, 0x1f400, 0x2c6f0},
+	{"B6 (JIS) Rotated", 0x1, 0x2c6f0, 0x1f400, 0x0, 0x0, 0x2c6f0, 0x1f400},
+	{"12x11", 0x1, 0x4a724, 0x443e1, 0x0, 0x0, 0x4a724, 0x443e1},
+	{"Japan Envelope You #4", 0x1, 0x19a28, 0x395f8, 0x0, 0x0, 0x19a28, 0x395f8},
+	{"Japan Envelope You #4 Rotated", 0x1, 0x395f8, 0x19a28, 0x0, 0x0, 0x395f8, 0x19a28},
+	{"PRC 16K", 0x1, 0x2de60, 0x3f7a0, 0x0, 0x0, 0x2de60, 0x3f7a0},
+	{"PRC 32K", 0x1, 0x1fbd0, 0x2cec0, 0x0, 0x0, 0x1fbd0, 0x2cec0},
+	{"PRC 32K(Big)", 0x1, 0x222e0, 0x318f8, 0x0, 0x0, 0x222e0, 0x318f8},
+	{"PRC Envelope #1", 0x1, 0x18e70, 0x28488, 0x0, 0x0, 0x18e70, 0x28488},
+	{"PRC Envelope #2", 0x1, 0x18e70, 0x2af80, 0x0, 0x0, 0x18e70, 0x2af80},
+	{"PRC Envelope #3", 0x1, 0x1e848, 0x2af80, 0x0, 0x0, 0x1e848, 0x2af80},
+	{"PRC Envelope #4", 0x1, 0x1adb0, 0x32c80, 0x0, 0x0, 0x1adb0, 0x32c80},
+	{"PRC Envelope #5", 0x1, 0x1adb0, 0x35b60, 0x0, 0x0, 0x1adb0, 0x35b60},
+	{"PRC Envelope #6", 0x1, 0x1d4c0, 0x38270, 0x0, 0x0, 0x1d4c0, 0x38270},
+	{"PRC Envelope #7", 0x1, 0x27100, 0x38270, 0x0, 0x0, 0x27100, 0x38270},
+	{"PRC Envelope #8", 0x1, 0x1d4c0, 0x4b708, 0x0, 0x0, 0x1d4c0, 0x4b708},
+	{"PRC Envelope #9", 0x1, 0x37e88, 0x4f1a0, 0x0, 0x0, 0x37e88, 0x4f1a0},
+	{"PRC Envelope #10", 0x1, 0x4f1a0, 0x6fd10, 0x0, 0x0, 0x4f1a0, 0x6fd10},
+	{"PRC 16K Rotated", 0x1, 0x3f7a0, 0x2de60, 0x0, 0x0, 0x3f7a0, 0x2de60},
+	{"PRC 32K Rotated", 0x1, 0x2cec0, 0x1fbd0, 0x0, 0x0, 0x2cec0, 0x1fbd0},
+	{"PRC 32K(Big) Rotated", 0x1, 0x318f8, 0x222e0, 0x0, 0x0, 0x318f8, 0x222e0},
+	{"PRC Envelope #1 Rotated", 0x1, 0x28488, 0x18e70, 0x0, 0x0, 0x28488, 0x18e70},
+	{"PRC Envelope #2 Rotated", 0x1, 0x2af80, 0x18e70, 0x0, 0x0, 0x2af80, 0x18e70},
+	{"PRC Envelope #3 Rotated", 0x1, 0x2af80, 0x1e848, 0x0, 0x0, 0x2af80, 0x1e848},
+	{"PRC Envelope #4 Rotated", 0x1, 0x32c80, 0x1adb0, 0x0, 0x0, 0x32c80, 0x1adb0},
+	{"PRC Envelope #5 Rotated", 0x1, 0x35b60, 0x1adb0, 0x0, 0x0, 0x35b60, 0x1adb0},
+	{"PRC Envelope #6 Rotated", 0x1, 0x38270, 0x1d4c0, 0x0, 0x0, 0x38270, 0x1d4c0},
+	{"PRC Envelope #7 Rotated", 0x1, 0x38270, 0x27100, 0x0, 0x0, 0x38270, 0x27100},
+	{"PRC Envelope #8 Rotated", 0x1, 0x4b708, 0x1d4c0, 0x0, 0x0, 0x4b708, 0x1d4c0},
+	{"PRC Envelope #9 Rotated", 0x1, 0x4f1a0, 0x37e88, 0x0, 0x0, 0x4f1a0, 0x37e88},
+	{"PRC Envelope #10 Rotated", 0x1, 0x6fd10, 0x4f1a0, 0x0, 0x0, 0x6fd10, 0x4f1a0},
 };
 
 
@@ -60,6 +182,7 @@ BOOL nt_printing_init(void)
 {
 	static pid_t local_pid;
 	char *vstring = "INFO/version";
+	nt_forms_struct *list = NULL;
 
 	if (tdb && local_pid == sys_getpid()) return True;
 	tdb = tdb_open(lock_path("ntdrivers.tdb"), 0, 0, O_RDWR|O_CREAT, 0600);
@@ -75,6 +198,12 @@ BOOL nt_printing_init(void)
 	if (tdb_fetch_int(tdb, vstring) != DATABASE_VERSION) {
 		tdb_traverse(tdb, (tdb_traverse_func)tdb_delete, NULL);
 		tdb_store_int(tdb, vstring, DATABASE_VERSION);
+
+		/* Init the tdb with the spooler defined forms (i.e. FORM_BUILTIN) */
+
+		list = (nt_forms_struct *)memdup(&default_forms[0], sizeof(default_forms));
+		write_ntforms(&list, sizeof(default_forms) / sizeof(default_forms[0]));
+		safe_free(list);
 	}
 	tdb_unlock_bystring(tdb, vstring);
 
@@ -158,34 +287,43 @@ int write_ntforms(nt_forms_struct **list, int number)
 /****************************************************************************
 add a form struct at the end of the list
 ****************************************************************************/
-BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count)
+#define ERROR_FILE_EXISTS 80
+BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count, uint32 *ret)
 {
 	int n=0;
-	BOOL update;
 	fstring form_name;
 
+	*ret = 0;
+	
 	/*
-	 * NT tries to add forms even when
-	 * they are already in the base
-	 * only update the values if already present
+	 * NT tries to add forms even when they are already in the base.
+	 * Only add the form if doesn't curently exist.
 	 */
 
-	update=False;
-	
 	unistr2_to_ascii(form_name, &form->name, sizeof(form_name)-1);
 	for (n=0; n<*count; n++) {
 		if (!strncmp((*list)[n].name, form_name, strlen(form_name))) {
 			DEBUG(103, ("NT workaround, [%s] already exists\n", form_name));
-			update=True;
-			break;
+			*ret = ERROR_FILE_EXISTS;
+			return False;
 		}
 	}
 
-	if (update==False) {
-		if((*list=Realloc(*list, (n+1)*sizeof(nt_forms_struct))) == NULL)
-			return False;
-		unistr2_to_ascii((*list)[n].name, &form->name, sizeof((*list)[n].name)-1);
-		(*count)++;
+	if((*list=Realloc(*list, (n+1)*sizeof(nt_forms_struct))) == NULL) {
+		*ret = ERROR_NOT_ENOUGH_MEMORY;
+		return False;
+	}
+	unistr2_to_ascii((*list)[n].name, &form->name, sizeof((*list)[n].name)-1);
+	(*count)++;
+	
+	/*
+	 * Only update the form if it isn't a spooler built-in form.
+	 * Disallow a client from setting a spooler built-in forms.
+	 */
+
+	if ((*list)[n].flag == FORM_BUILTIN || form->flags == FORM_BUILTIN) {
+		*ret = ERROR_INVALID_PARAMETER;
+		return False;
 	}
 	
 	(*list)[n].flag=form->flags;
@@ -229,7 +367,11 @@ BOOL delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, uint32
 		}
 	}
 
-	if (n == *count) {
+	/*
+	 * Don't delete non existant forms..
+	 * Don't delete spooler built-in forms.
+	 */
+	if (n == *count || (*list)[n].flag == FORM_BUILTIN) {
 		DEBUG(10,("delete_a_form, [%s] not found\n", form_name));
 		*ret = ERROR_INVALID_PARAMETER;
 		return False;
@@ -250,10 +392,13 @@ BOOL delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, uint32
 /****************************************************************************
 update a form struct
 ****************************************************************************/
-void update_a_form(nt_forms_struct **list, const FORM *form, int count)
+BOOL update_a_form(nt_forms_struct **list, const FORM *form, int count, uint32 *ret)
 {
 	int n=0;
 	fstring form_name;
+	
+	*ret = 0;
+
 	unistr2_to_ascii(form_name, &(form->name), sizeof(form_name)-1);
 
 	DEBUG(106, ("[%s]\n", form_name));
@@ -264,8 +409,16 @@ void update_a_form(nt_forms_struct **list, const FORM *form, int count)
 			break;
 	}
 
-	if (n==count) return;
-
+	/*
+	 * Only update the form if it currently exists AND isn't a spooler built-in 
+	 * form AND it is not being changed to a built-in form.
+	 */
+	
+	if (n==count || (*list)[n].flag == FORM_BUILTIN || form->flags == FORM_BUILTIN) {
+		*ret = ERROR_INVALID_PARAMETER;
+		return False;
+	}
+	
 	(*list)[n].flag=form->flags;
 	(*list)[n].width=form->size_x;
 	(*list)[n].length=form->size_y;
@@ -273,6 +426,8 @@ void update_a_form(nt_forms_struct **list, const FORM *form, int count)
 	(*list)[n].top=form->top;
 	(*list)[n].right=form->right;
 	(*list)[n].bottom=form->bottom;
+	
+	return True;
 }
 
 /****************************************************************************
@@ -2243,7 +2398,43 @@ static int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
 			  &devmode.panningwidth,
 			  &devmode.panningheight,
 			  &devmode.private);
-	
+#if 0 /*JRRTEST*/
+	DEBUG(   10,("Unpacked devicemode:\n"));
+	DEBUGADD(10,("devicename = %s\n", devmode.devicename));
+	DEBUGADD(10,("formname = %s\n", devmode.formname));
+	DEBUGADD(10,("specversion = %d\n", devmode.specversion));
+	DEBUGADD(10,("driverversion = %d\n", devmode.driverversion));
+	DEBUGADD(10,("size = %d\n", devmode.size));
+	DEBUGADD(10,("driverextra = %d\n", devmode.driverextra));
+	DEBUGADD(10,("orientation = %d\n", devmode.orientation));
+	DEBUGADD(10,("papersize = %d\n", devmode.papersize));
+	DEBUGADD(10,("paperlength = %d\n", devmode.paperlength));
+	DEBUGADD(10,("paperwidth = %d\n", devmode.paperwidth));
+	DEBUGADD(10,("scale = %d\n", devmode.scale));
+	DEBUGADD(10,("copies = %d\n", devmode.copies));
+	DEBUGADD(10,("defaultsource = %d\n", devmode.defaultsource));
+	DEBUGADD(10,("printquality = %d\n", devmode.printquality));
+	DEBUGADD(10,("color = %d\n", devmode.color));
+	DEBUGADD(10,("duplex = %d\n", devmode.duplex));
+	DEBUGADD(10,("yresolution = %d\n", devmode.yresolution));
+	DEBUGADD(10,("ttoption = %d\n", devmode.ttoption));
+	DEBUGADD(10,("collate = %d\n", devmode.collate));
+	DEBUGADD(10,("logpixels = %d\n", devmode.logpixels));
+	DEBUGADD(10,("fields = %d\n", devmode.fields));
+	DEBUGADD(10,("bitsperpel = %d\n", devmode.bitsperpel));
+	DEBUGADD(10,("pelswidth = %d\n", devmode.pelswidth));
+	DEBUGADD(10,("pelsheight = %d\n", devmode.pelsheight));
+	DEBUGADD(10,("displayflags = %d\n", devmode.displayflags));
+	DEBUGADD(10,("displayfrequency = %d\n", devmode.displayfrequency));
+	DEBUGADD(10,("icmmethod = %d\n", devmode.icmmethod));
+	DEBUGADD(10,("icmintent = %d\n", devmode.icmintent));
+	DEBUGADD(10,("mediatype = %d\n", devmode.mediatype));
+	DEBUGADD(10,("dithertype = %d\n", devmode.dithertype));
+	DEBUGADD(10,("reserved1 = %d\n", devmode.reserved1));
+	DEBUGADD(10,("reserved2 = %d\n", devmode.reserved2));
+	DEBUGADD(10,("panningwidth = %d\n", devmode.panningwidth));
+	DEBUGADD(10,("panningheight = %d\n", devmode.panningheight));
+#endif
 	if (devmode.private) {
 		/* the len in tdb_unpack is an int value and
 		 * devmode.driverextra is only a short
@@ -2259,9 +2450,16 @@ static int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
 
 	*nt_devmode = (NT_DEVICEMODE *)memdup(&devmode, sizeof(devmode));
 
+#if 0 /*JRRTEST*/
+	if (devmode.private) {
+		DEBUG(8,("with a private section of %d bytes\n", devmode.driverextra));
+		dump_data(10, devmode.private, devmode.driverextra);
+	}
+#else
 	DEBUG(8,("Unpacked devicemode [%s](%s)\n", devmode.devicename, devmode.formname));
 	if (devmode.private)
-		DEBUG(8,("with a private section of %d bytes\n", devmode.driverextra));
+			DEBUG(8,("with a private section of %d bytes\n", devmode.driverextra));
+#endif
 
 	return len;
 }
@@ -2287,7 +2485,12 @@ static int unpack_specifics(NT_PRINTER_PARAM **list, char *buf, int buflen)
 		param.next = *list;
 		*list = memdup(&param, sizeof(param));
 
+#if 0 /*JRRTEST*/
+		DEBUG(10,("specific: [%s], type: %d len: %d\n", param.value, param.type, param.data_len));
+		dump_data(10, param.data, param.data_len);
+#else
 		DEBUG(8,("specific: [%s], len: %d\n", param.value, param.data_len));
+#endif
 	}
 
 	return len;
