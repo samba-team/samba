@@ -659,6 +659,26 @@ static int check_share_mode( share_mode_entry *share, int deny_mode,
   int old_open_mode = GET_OPEN_MODE(share->share_mode);
   int old_deny_mode = GET_DENY_MODE(share->share_mode);
 
+  /*
+   * Setup the potential error to return.
+   */
+
+  unix_ERR_class = ERRDOS;
+  unix_ERR_code = ERRbadshare;
+
+  /*
+   * Don't allow any open once the delete on close flag has been
+   * set.
+   */
+
+  if(GET_DELETE_ON_CLOSE_FLAG(share->share_mode))
+  {
+    DEBUG(5,("check_share_mode: Failing open on file %s as delete on close flag is set.\n",
+          fname ));
+    unix_ERR_code = ERRnoaccess;
+    return False;
+  }
+
   if (old_deny_mode > 4 || old_open_mode > 2)
   {
     DEBUG(0,("Invalid share mode found (%d,%d,%d) on file %s\n",
@@ -688,6 +708,7 @@ static int check_share_mode( share_mode_entry *share, int deny_mode,
       *flags = O_WRONLY;
 
   }
+
   return True;
 }
 
@@ -865,8 +886,6 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
             free((char *)old_shares);
             unlock_share_entry(conn, dev, inode, token);
             errno = EACCES;
-            unix_ERR_class = ERRDOS;
-            unix_ERR_code = ERRbadshare;
             return;
           }
 

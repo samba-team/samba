@@ -3615,7 +3615,7 @@ no oplock granted on this file.\n", fsp->fnum));
 
     /* Remove the oplock flag from the sharemode. */
     lock_share_entry(fsp->conn, dev, inode, &token);
-    if(remove_share_oplock(fsp, token)==False) {
+    if(remove_share_oplock(token, fsp)==False) {
 
 	    DEBUG(0,("reply_lockingX: failed to remove share oplock for fnum %d, \
 dev = %x, inode = %.0f\n", fsp->fnum, (unsigned int)dev, (double)inode));

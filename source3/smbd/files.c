@@ -277,6 +277,41 @@ files_struct *file_find_dit(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval
 	return NULL;
 }
 
+/****************************************************************************
+ Find the first fsp given a device and inode.
+****************************************************************************/
+
+files_struct *file_find_di_first(SMB_DEV_T dev, SMB_INO_T inode)
+{
+    files_struct *fsp;
+
+    for (fsp=Files;fsp;fsp=fsp->next) {
+        if (fsp->open &&
+            fsp->fd_ptr->dev == dev &&
+            fsp->fd_ptr->inode == inode )
+            return fsp;
+    }
+
+    return NULL;
+}
+
+/****************************************************************************
+ Find the next fsp having the same device and inode.
+****************************************************************************/
+
+files_struct *file_find_di_next(files_struct *start_fsp)
+{
+    files_struct *fsp;
+
+    for (fsp = start_fsp->next;fsp;fsp=fsp->next) {
+        if (fsp->open &&
+            fsp->fd_ptr->dev == start_fsp->fd_ptr->dev &&
+            fsp->fd_ptr->inode == start_fsp->fd_ptr->inode )
+            return fsp;
+    }
+
+    return NULL;
+}
 
 /****************************************************************************
 find a fsp that is open for printing

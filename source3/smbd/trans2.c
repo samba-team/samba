@@ -1655,14 +1655,64 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
     {
       if (tran_call == TRANSACT2_SETFILEINFO) {
         files_struct *fsp = file_fsp(params,0);
+        BOOL delete_on_close = (CVAL(pdata,0) ? True : False);
+
         if(fsp->is_directory)
           return(ERROR(ERRDOS,ERRnoaccess));
+
+        /*
+         * We can only set the delete on close flag if
+         * the share mode contained ALLOW_SHARE_DELETE
+         */
+
+        if(!GET_ALLOW_SHARE_DELETE(fsp->share_mode))
+          return(ERROR(ERRDOS,ERRnoaccess));
+
+        /*
+         * If the flag has changed from its previous value then
+         * modify the share mode entry for all files we have open
+         * on this device and inode to tell other smbds we have 
+         * changed the delete on close flag.
+         */
+
+        if(GET_DELETE_ON_CLOSE_FLAG(fsp->share_mode) != delete_on_close)
+        {
+          int token;
+          files_struct *iterate_fsp;
+          SMB_DEV_T dev = fsp->fd_ptr->dev;
+          SMB_INO_T inode = fsp->fd_ptr->inode;
+          int new_share_mode = (delete_on_close ? 
+                                  (fsp->share_mode | DELETE_ON_CLOSE_FLAG) :
+                                  (fsp->share_mode & ~DELETE_ON_CLOSE_FLAG) );
+
+          DEBUG(10,("call_trans2setfilepathinfo: %s delete on close flag for fnum = %d, file %s\n",
+               delete_on_close ? "Adding" : "Removing", fsp->fnum, fsp->fsp_name ));
+
+          if(lock_share_entry(fsp->conn, dev, inode, &token) == False)
+            return(ERROR(ERRDOS,ERRnoaccess));
+
+          /*
+           * Go through all files we have open on the same device and
+           * inode (hanging off the same hash bucket) and set the DELETE_ON_CLOSE_FLAG.
+           */
+
+          for(iterate_fsp = file_find_di_first(dev, inode); iterate_fsp;
+                                iterate_fsp = file_find_di_next(iterate_fsp))
+          {
+            if(modify_share_mode(token, iterate_fsp, new_share_mode)==False)
+              DEBUG(0,("call_trans2setfilepathinfo: failed to change delete on close for fnum %d, \
+dev = %x, inode = %.0f\n", fsp->fnum, (unsigned int)dev, (double)inode));
+          }
+
+          unlock_share_entry(fsp->conn, dev, inode, token);
+        }
+
         /*
          * Set the delete on close flag in the reference
          * counted struct. Delete when the last reference
          * goes away.
          */
-        fsp->fd_ptr->delete_on_close = CVAL(pdata,0);
+        fsp->fd_ptr->delete_on_close = delete_on_close;
       } else
         return(ERROR(ERRDOS,ERRunknownlevel));
       break;

@@ -538,7 +538,8 @@ int get_share_modes(connection_struct *conn,
 		    share_mode_entry **shares);
 void del_share_mode(int token, files_struct *fsp);
 BOOL set_share_mode(int token, files_struct *fsp, uint16 port, uint16 op_type);
-BOOL remove_share_oplock(files_struct *fsp, int token);
+BOOL remove_share_oplock(int token, files_struct *fsp);
+BOOL modify_share_mode(int token, files_struct *fsp, int new_mode);
 int share_mode_forall(void (*fn)(share_mode_entry *, char *));
 void share_status(FILE *f);
 
@@ -2147,6 +2148,8 @@ void file_close_conn(connection_struct *conn);
 void file_init(void);
 void file_close_user(int vuid);
 files_struct *file_find_dit(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval);
+files_struct *file_find_di_first(SMB_DEV_T dev, SMB_INO_T inode);
+files_struct *file_find_di_next(files_struct *start_fsp);
 files_struct *file_find_print(void);
 void file_sync_all(connection_struct *conn);
 void fd_ptr_free(file_fd_struct *fd_ptr);
