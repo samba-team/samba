@@ -1159,10 +1159,16 @@ BOOL prs_unistr(const char *name, prs_struct *ps, int depth, UNISTR *str)
  not include the null-termination character.
  ********************************************************************/
 
-BOOL prs_string(const char *name, prs_struct *ps, int depth, char *str, int len, int max_buf_size)
+BOOL prs_string(const char *name, prs_struct *ps, int depth, char *str, int max_buf_size)
 {
 	char *q;
 	int i;
+	int len;
+
+	if (UNMARSHALLING(ps))
+		len = strlen(&ps->data_p[ps->data_offset]);
+	else
+		len = strlen(str);
 
 	len = MIN(len, (max_buf_size-1));
 
