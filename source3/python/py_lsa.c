@@ -133,19 +133,36 @@ static PyObject *lsa_lookup_names(PyObject *self, PyObject *args)
 	DOM_SID *sids;
 	uint32 *name_types;
 
-	if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &py_names))
+	if (!PyArg_ParseTuple(args, "O", &py_names))
 		return NULL;
 
-	/* Convert dictionary to char ** array */
+	if (!PyList_Check(py_names) && !PyString_Check(py_names)) {
+		PyErr_SetString(PyExc_TypeError, "must be list or string");
+		return NULL;
+	}
 
-	num_names = PyList_Size(py_names);
-	names = (const char **)talloc(
-		hnd->mem_ctx, num_names * sizeof(char *));
+	if (PyList_Check(py_names)) {
 
-	for (i = 0; i < num_names; i++) {
-		PyObject *obj = PyList_GetItem(py_names, i);
+		/* Convert list to char ** array */
 
-		names[i] = talloc_strdup(hnd->mem_ctx, PyString_AsString(obj));
+		num_names = PyList_Size(py_names);
+		names = (const char **)talloc(
+			hnd->mem_ctx, num_names * sizeof(char *));
+		
+		for (i = 0; i < num_names; i++) {
+			PyObject *obj = PyList_GetItem(py_names, i);
+			
+			names[i] = talloc_strdup(hnd->mem_ctx, PyString_AsString(obj));
+		}
+
+	} else {
+
+		/* Just a single element */
+
+		num_names = 1;
+		names = (const char **)talloc(hnd->mem_ctx, sizeof(char *));
+
+		names[0] = PyString_AsString(py_names);
 	}
 
 	ntstatus = cli_lsa_lookup_names(hnd->cli, hnd->mem_ctx, &hnd->pol,
@@ -182,20 +199,37 @@ static PyObject *lsa_lookup_sids(PyObject *self, PyObject *args,
 	lsa_policy_hnd_object *hnd = (lsa_policy_hnd_object *)self;
 	DOM_SID *sids;
 
-	if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &py_sids))
+	if (!PyArg_ParseTuple(args, "O", &py_sids))
 		return NULL;
 
-	/* Convert dictionary to char ** array */
+	if (!PyList_Check(py_sids) && !PyString_Check(py_sids)) {
+		PyErr_SetString(PyExc_TypeError, "must be list or string");
+		return NULL;
+	}
 
-	num_sids = PyList_Size(py_sids);
-	sids = (DOM_SID *)talloc(hnd->mem_ctx, num_sids * sizeof(DOM_SID));
+	if (PyList_Check(py_sids)) {
 
-	memset(sids, 0, num_sids * sizeof(DOM_SID));
+		/* Convert dictionary to char ** array */
+		
+		num_sids = PyList_Size(py_sids);
+		sids = (DOM_SID *)talloc(hnd->mem_ctx, num_sids * sizeof(DOM_SID));
+		
+		memset(sids, 0, num_sids * sizeof(DOM_SID));
+		
+		for (i = 0; i < num_sids; i++) {
+			PyObject *obj = PyList_GetItem(py_sids, i);
+			
+			string_to_sid(&sids[i], PyString_AsString(obj));
+		}
 
-	for (i = 0; i < num_sids; i++) {
-		PyObject *obj = PyList_GetItem(py_sids, i);
+	} else {
 
-		string_to_sid(&sids[i], PyString_AsString(obj));
+		/* Just a single element */
+
+		num_sids = 1;
+		sids = (DOM_SID *)talloc(hnd->mem_ctx, sizeof(DOM_SID));
+
+		string_to_sid(&sids[0], PyString_AsString(py_sids));
 	}
 
 	ntstatus = cli_lsa_lookup_sids(hnd->cli, hnd->mem_ctx, &hnd->pol,
