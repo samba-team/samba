@@ -35,7 +35,7 @@ sub has_property($$)
 	    return 1, if ($d eq "in,out" && ($p eq "in" || $p eq "out"));
 	} else {
 	    foreach my $k (keys %{$d}) {
-		$res .= "[$k($d->{$k})] ";
+		return $d->{$k}, if ($k eq $p);
 	    }
 	}
     }
@@ -60,25 +60,31 @@ sub ParseProperties($)
 }
 
 #####################################################################
+# parse an array - called in buffers context
+sub ParseArray($)
+{
+    my($elt) = shift;
+
+    $res .= "\tfor (i = 0; i < count; i++) {\n";
+    if (is_scalar_type($elt)) {
+	$res .= "\t\tprs_$elt->{NAME}(tvb, offset, pinfo, tree, \"$elt->{NAME});\n";
+	$res .= "\t}\n\n";
+    } else {
+	$res .= "\t\tprs_$elt->{NAME}(tvb, offset, pinfo, tree, \"PARSE_SCALARS\", \"$elt->{NAME}\");\n";
+	$res .= "\t}\n\n";
+
+	$res .= "\tfor (i = 0; i < count; i++) {\n";
+	$res .= "\t\tprs_$elt->{NAME}(tvb, offset, pinfo, tree, \"PARSE_BUFFERS\", \"$elt->{NAME}\");\n";
+	$res .= "\t}\n\n";
+    }
+}
+
+#####################################################################
 # parse a structure element
 sub ParseElement($$)
 {
     my($elt) = shift;
     my($flags) = shift;
-
-#    (defined $elt->{PROPERTIES}) && ParseProperties($elt->{PROPERTIES});
-#    ParseType($elt->{TYPE});
-
-#    $res .= "/* ";
-#    if ($elt->{POINTERS}) {
-#	for (my($i)=0; $i < $elt->{POINTERS}; $i++) {
-#	    $res .= "*";
-#	}
-#    }
-#    $res .= "$elt->{NAME}";
-#    (defined $elt->{ARRAY_LEN}) && ($res .= "[$elt->{ARRAY_LEN}]");
-
-#    $res .= "*/\n\n";
 
     # Arg is a policy handle
 	    
@@ -104,7 +110,9 @@ sub ParseElement($$)
 	    }
 	}
 
-    } else {
+    }
+
+    if ($flags =~ /buffers/) {
 
 	# Scalars are not buffers, except if they are pointed to
 
@@ -116,8 +124,12 @@ sub ParseElement($$)
 		$res .= "\t\tif (ptr_$elt->{NAME}) {\n\t";
 	    }
 	    
-	    $res .= "\t\tprs_$elt->{TYPE}(tvb, offset, pinfo, tree, flags, \"$elt->{NAME}\");\n\n";
-	    
+	    if (has_property($elt->{PROPERTIES}, "size_is")) {
+		ParseArray($elt);
+	    } else {
+		$res .= "\t\tprs_$elt->{TYPE}(tvb, offset, pinfo, tree, flags, \"$elt->{NAME}\");\n\n";
+	    }
+
 	    if ($elt->{POINTERS}) {
 		$res .= "\t\t}\n\n";
 	    }
@@ -125,22 +137,6 @@ sub ParseElement($$)
     }
 
     return;
-    
-#    if (is_simple_type($elt->{TYPE})) {
-#	if ($flags =~ /scalars/ && !$elt->{POINTERS}) {
-#	    $res .= "\t\tprs_$elt->{TYPE}(tvb, offset, pinfo, tree, \"$elt->{NAME}}\");\n\n",
-#	}
-#    } else {
-#	if ($flags =~ /buffers/) {
-#	    if ($elt->{POINTERS}) {
-#		$res .= "\t\tif (ptr_$elt->{NAME}) {\n\t";
-#	    }
-#	    $res .= "\t\tprs_$elt->{TYPE}(tvb, offset, pinfo, tree, flags, \"$elt->{NAME}\");\n\n";
-#	    if ($elt->{POINTERS}) {
-#		$res .= "\t\t}\n\n";
-#	    }
-#	}
-#    }
 }
 
 #####################################################################
@@ -157,12 +153,6 @@ sub ParseStruct($)
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 	    ParseElement($e, "scalars");
-
-#	    if (defined $e->{POINTERS}) {
-#		$res .= "\t\toffset = prs_ptr(tvb, offset, pinfo, tree, &ptr_$e->{NAME}, \"$e->{NAME}\");\n";
-#	    } else {
-#		$res .= "\t\toffset = prs_$e->{TYPE}(tvb, offset, pinfo, tree, \"$e->{NAME}\");\n";
-#	    }
 	}	
 
 	$res .= "\t}\n\n";
@@ -173,8 +163,6 @@ sub ParseStruct($)
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 	    ParseElement($e, "buffers");
-#	    $res .= "\t\tif (ptr_$e->{NAME})\n\t\t\toffset = prs_$e->{TYPE}(tvb, offset, pinfo, tree, \"$e->{NAME}\");\n\n",
-#	    if (defined $e->{POINTERS});
 	}
 
 	$res .= "\t}\n\n";
@@ -188,16 +176,9 @@ sub ParseUnionElement($)
 {
     my($element) = shift;
     
-#    $res .= "int prs_$element->{DATA}->{TYPE}()\n{\n";
-
-#    $res .= "}\n\n";
-
     $res .= "\tcase $element->{DATA}->{NAME}: \n";
     $res .= "\t\toffset = prs_$element->{DATA}->{TYPE}(tvb, offset, pinfo, tree, \"$element->{DATA}->{NAME}\");\n\t\tbreak;\n";
 
-#    $res .= "[case($element->{CASE})] ";
-#    ParseElement($element->{DATA});
-#    $res .= ";\n";
 }
 
 #####################################################################
