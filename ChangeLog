@@ -1,5 +1,9 @@
 2003-03-14  Love Hörnquist Åstrand <lha@it.su.se>
 
+	* kdc/kdc.8: . -> .\n copyright/license
+	
+	* kdc/kdc.8: changed configuration file -> restart kdc
+
 	* kdc/kerberos4.c: add krb4 into the most error messages written
 	to the logfile
 
