@@ -56,6 +56,7 @@ struct getent_state {
 	void *sam_entries;
 	uint32 sam_entry_index, num_sam_entries;
 	uint32 dispinfo_ndx;
+	uint32 grp_query_start_ndx;
 	BOOL got_all_sam_entries, got_sam_entries;
 	struct winbindd_domain *domain;
 };
