@@ -15,6 +15,7 @@ kdb_edit_SOURCES =				\
 		extkeytab.c			\
 		get.c				\
 		life.c				\
+		misc.c				\
 		init.c				\
 		kdb_edit.c			\
 		load.c				\
