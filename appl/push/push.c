@@ -273,7 +273,7 @@ doit(int s,
 	if (FD_ISSET(s, &readset)) {
 	    char *beg, *p;
 	    size_t rem;
-	    int blank_line;
+	    int blank_line = 0;
 
 	    ret = read (s, in_ptr, sizeof(in_buf) - in_len - 1);
 	    if (ret < 0)
@@ -295,7 +295,7 @@ doit(int s,
 		    if (strncmp(copy,
 				header_str,
 				min(p - copy + 1, strlen(header_str))) == 0) {
-			fprintf (stdout, "%.*s\n", p - copy, copy);
+			fprintf (stdout, "%.*s\n", (int)(p - copy), copy);
 		    }
 		    if (beg[0] == '.' && beg[1] == '\r' && beg[2] == '\n') {
 			state = STAT;
@@ -379,7 +379,7 @@ doit(int s,
 			}
 		    } else if (++state == STAT) {
 			if(sscanf (beg + 4, "%u %u", &count, &bytes) != 2)
-			    errx(1, "Bad STAT-line: %.*s", p - beg, beg);
+			    errx(1, "Bad STAT-line: %.*s", (int)(p - beg), beg);
 			if (verbose)
 			    fprintf (stderr, "%u message(s) (%u bytes). "
 				     "fetching... ",
@@ -396,7 +396,7 @@ doit(int s,
 		    rem -= p - beg + 2;
 		    beg = p + 2;
 		} else
-		    errx (1, "Bad response: %.*s", p - beg, beg);
+		    errx (1, "Bad response: %.*s", (int)(p - beg), beg);
 	    }
 	    if (!do_from)
 		write_state_flush (&write_state);
@@ -626,7 +626,7 @@ main(int argc, char **argv)
     int port = 0;
     int optind = 0;
     int ret = 1;
-    char *host, *user, *filename, *pobox;
+    char *host, *user, *filename = NULL, *pobox = NULL;
 
     set_progname (argv[0]);
 
@@ -656,7 +656,7 @@ main(int argc, char **argv)
 	usage (0);
 
     if (do_version) {
-	printf ("%s (%s-%s)\n", __progname, PACKAGE, VERSION);
+	print_version(NULL);
 	return 0;
     }
 	
