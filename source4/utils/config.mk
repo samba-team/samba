@@ -39,3 +39,31 @@ REQUIRED_SUBSYSTEMS = \
 		LIBRPC
 # End BINARY ntlm_auth
 #################################
+
+#################################
+# Start BINARY getntacl
+[BINARY::getntacl]
+OBJ_FILES = \
+		utils/getntacl.o
+REQUIRED_SUBSYSTEMS = \
+		CONFIG \
+		LIBCMDLINE \
+		LIBBASIC \
+		LIBSMB \
+		LIBRPC
+# End BINARY getntacl
+#################################
+
+#################################
+# Start BINARY setntacl
+[BINARY::setntacl]
+OBJ_FILES = \
+		utils/setntacl.o
+REQUIRED_SUBSYSTEMS = \
+		CONFIG \
+		LIBCMDLINE \
+		LIBBASIC \
+		LIBSMB \
+		LIBRPC
+# End BINARY setntacl
+#################################
