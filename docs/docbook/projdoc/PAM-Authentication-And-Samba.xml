@@ -382,4 +382,51 @@ reduction of wide area network authentication traffic.
 
 </sect1>
 
+<sect1>
+<title>Common Errors</title>
+
+<para>
+PAM can be a very fickle and sensitive to configuration glitches. Here we look at a few cases from
+the Samba mailing list.
+</para>
+
+	<sect2>
+	<title>pam_winbind problem</title>
+
+	<para>
+	I have the following PAM configuration:
+	</para>
+
+<para>
+<screen>
+auth required /lib/security/pam_securetty.so
+auth sufficient /lib/security/pam_winbind.so
+auth sufficient /lib/security/pam_unix.so use_first_pass nullok
+auth required /lib/security/pam_stack.so service=system-auth
+auth required /lib/security/pam_nologin.so
+account required /lib/security/pam_stack.so service=system-auth
+account required /lib/security/pam_winbind.so
+password required /lib/security/pam_stack.so service=system-auth
+</screen>
+</para>
+
+	<para>
+	When I open a new console with [ctrl][alt][F1], then I cant log in with my user "pitie".
+	I've tried with user "scienceu+pitie" also.
+	</para>
+
+	<para>
+	Answer: The problem may lie with your inclusion of <parameter>pam_stack.so
+	service=system-auth</parameter>. That file often contains a lot of stuff that may
+	duplicate what you're already doing. Try commenting out the pam_stack lines
+	for auth and account and see if things work. If they do, look at
+	<filename>/etc/pam.d/system-auth</filename> and copy only what you need from it into your
+	<filename>/etc/pam.d/login</filename> file.  Alternatively, if you want all services to use
+	winbind, you can put the winbind-specific stuff in <filename>/etc/pam.d/system-auth</filename>.
+	</para>
+
+	</sect2>
+
+</sect1>
+
 </chapter>
