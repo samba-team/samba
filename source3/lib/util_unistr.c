@@ -258,13 +258,13 @@ void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 		uint16 ucs2_val;
 		uint16 cp_val;
 
-		c = *(src++);
+		c = *src;
 		if (c == 0)
 		{
 			break;
 		}
 		
-		ucs2_val = SVAL(src,0);
+		ucs2_val = SVAL(src++,0);
 		cp_val = ucs2_to_doscp[ucs2_val];
 				
 		if (cp_val < 256)

@@ -772,22 +772,30 @@ BOOL spoolss_io_q_getprinterdata(char *desc, SPOOL_Q_GETPRINTERDATA *q_u, prs_st
  ********************************************************************/
 BOOL spoolss_io_r_getprinterdata(char *desc, SPOOL_R_GETPRINTERDATA *r_u, prs_struct *ps, int depth)
 {
-	if (r_u == NULL) return False;
+	if (r_u == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "spoolss_io_r_getprinterdata");
 	depth++;
 
-	prs_align(ps);
-	prs_uint32("type", ps, depth, &(r_u->type));
-	prs_uint32("size", ps, depth, &(r_u->size));
+	if (!prs_align(ps))
+		return False;
+	if (!prs_uint32("type", ps, depth, &(r_u->type)))
+		return False;
+	if (!prs_uint32("size", ps, depth, &(r_u->size)))
+		return False;
 	
-	prs_uint8s(False,"data", ps, depth, r_u->data, r_u->size);
-	prs_align(ps);
+	if (!prs_uint8s(False,"data", ps, depth, r_u->data, r_u->size))
+		return False;
+		
+	if (!prs_align(ps))
+		return False;
 	
-	prs_uint32("needed", ps, depth, &(r_u->needed));
-	prs_uint32("status", ps, depth, &(r_u->status));
-	prs_align(ps);
-
+	if (!prs_uint32("needed", ps, depth, &(r_u->needed)))
+		return False;
+	if (!prs_uint32("status", ps, depth, &(r_u->status)))
+		return False;
+		
 	return True;
 }
 

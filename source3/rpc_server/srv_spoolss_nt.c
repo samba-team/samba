@@ -537,15 +537,17 @@ uint32 _spoolss_closeprinter(POLICY_HND *handle)
 
 /********************************************************************
  ********************************************************************/
-static BOOL getprinterdata_printer_server(fstring value, uint32 *type, uint8 **data, uint32 *needed)
+static BOOL getprinterdata_printer_server(fstring value, uint32 *type, uint8 **data, uint32 *needed, uint32 in_size)
 {		
 	int i;
+	
+	DEBUG(8,("getprinterdata_printer_server:%s\n", value));
 		
 	if (!strcmp(value, "BeepEnabled"))
 	{
 		*type = 0x4;
 		*data = (uint8 *)malloc( 4*sizeof(uint8) );
-		SIVAL(data, 0, 0x01);
+		SIVAL(*data, 0, 0x01);
 		*needed = 0x4;			
 		return True;
 	}
@@ -554,7 +556,7 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 *type, uint8 **d
 	{
 		*type = 0x4;
 		*data = (uint8 *)malloc( 4*sizeof(uint8) );
-		SIVAL(data, 0, 0x1B);
+		SIVAL(*data, 0, 0x1B);
 		*needed = 0x4;			
 		return True;
 	}
@@ -563,7 +565,7 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 *type, uint8 **d
 	{
 		*type = 0x4;
 		*data = (uint8 *)malloc( 4*sizeof(uint8) );
-		SIVAL(data, 0, 0x01);
+		SIVAL(*data, 0, 0x01);
 		*needed = 0x4;
 		return True;
 	}
@@ -572,23 +574,23 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 *type, uint8 **d
 	{
 		*type = 0x4;
 		*data = (uint8 *)malloc( 4*sizeof(uint8) );
-		SIVAL(data, 0, 0x02);
+		SIVAL(*data, 0, 0x02);
 		*needed = 0x4;
 		return True;
 	}
 
 	if (!strcmp(value, "DefaultSpoolDirectory"))
 	{
-		pstring directory="You are using a Samba server";
+		pstring string="You are using a Samba server";
 		*type = 0x1;			
-		*needed = 2*(strlen(directory)+1);
-		*data  = (uint8 *)malloc(*needed *sizeof(uint8));
+		*needed = 2*(strlen(string)+1);		
+		*data  = (uint8 *)malloc( ((*needed > in_size) ? *needed:in_size) *sizeof(uint8));
 		ZERO_STRUCTP(*data);
 		
 		/* it's done by hand ready to go on the wire */
-		for (i=0; i<strlen(directory); i++)
+		for (i=0; i<strlen(string); i++)
 		{
-			(*data)[2*i]=directory[i];
+			(*data)[2*i]=string[i];
 			(*data)[2*i+1]='\0';
 		}			
 		return True;
@@ -596,14 +598,14 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 *type, uint8 **d
 
 	if (!strcmp(value, "Architecture"))
 	{			
-		pstring directory="Windows NT x86";
+		pstring string="Windows NT x86";
 		*type = 0x1;			
-		*needed = 2*(strlen(directory)+1);	
-		*data  = (uint8 *)malloc(*needed *sizeof(uint8));
+		*needed = 2*(strlen(string)+1);	
+		*data  = (uint8 *)malloc( ((*needed > in_size) ? *needed:in_size) *sizeof(uint8));
 		ZERO_STRUCTP(*data);
-		for (i=0; i<strlen(directory); i++)
+		for (i=0; i<strlen(string); i++)
 		{
-			(*data)[2*i]=directory[i];
+			(*data)[2*i]=string[i];
 			(*data)[2*i+1]='\0';
 		}			
 		return True;
@@ -616,7 +618,7 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 *type, uint8 **d
  ********************************************************************/
 static BOOL getprinterdata_printer(const POLICY_HND *handle,
 				fstring value, uint32 *type, 
-                        	uint8 **data, uint32 *needed )
+                        	uint8 **data, uint32 *needed, uint32 in_size )
 {
 	NT_PRINTER_INFO_LEVEL printer;
 	int pnum=0;
@@ -634,9 +636,9 @@ static BOOL getprinterdata_printer(const POLICY_HND *handle,
 		
 		if (get_specific_param(printer, 2, value, &idata, type, &len)) 
 		{
-			*data  = (uint8 *)malloc( len*sizeof(uint8) );
+			*data  = (uint8 *)malloc( (len>in_size)?len:in_size *sizeof(uint8) );
 			bzero(*data, sizeof(uint8)*len);
-			memcpy(*data, idata, len);
+			memcpy(*data, idata, (len>in_size)?len:in_size);
 			*needed = len;
 			
 			if (idata) free(idata);
@@ -659,7 +661,7 @@ uint32 _spoolss_getprinterdata(const POLICY_HND *handle, UNISTR2 *valuename,
 				uint32 *needed)
 {
 	fstring value;
-	BOOL found;
+	BOOL found=False;
 	int pnum = find_printer_index_by_hnd(handle);
 	
 	/* 
@@ -675,6 +677,7 @@ uint32 _spoolss_getprinterdata(const POLICY_HND *handle, UNISTR2 *valuename,
 	*needed=in_size;
 	*type=4;
 	
+	DEBUG(4,("_spoolss_getprinterdata\n"));
 	
 	if (!OPEN_HANDLE(pnum)) {
 		*data=(uint8 *)malloc(4*sizeof(uint8));
@@ -684,9 +687,9 @@ uint32 _spoolss_getprinterdata(const POLICY_HND *handle, UNISTR2 *valuename,
 	unistr2_to_ascii(value, valuename, sizeof(value)-1);
 	
 	if (handle_is_printserver(handle))
-		found=getprinterdata_printer_server(value, type, data, needed);
+		found=getprinterdata_printer_server(value, type, data, needed, *out_size);
 	else
-		found=getprinterdata_printer(handle, value, type, data, needed);
+		found=getprinterdata_printer(handle, value, type, data, needed, *out_size);
 
 	if (found==False) {
 		/* reply this param doesn't exist */
