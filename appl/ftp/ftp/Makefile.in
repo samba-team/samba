@@ -20,7 +20,7 @@ libdir = $(exec_prefix)/lib
 ATHENA = /usr/athena
 LIBTOP = ../../../lib
 
-LIBS = $(LIBTOP)/krb/libkrb.a $(LIBTOP)/des/libdes.a $(LIBTOP)/roken/libroken.a
+LIBS = -L$(LIBTOP)/krb -lkrb -L$(LIBTOP)/des -ldes $(LIBTOP)/roken/libroken.a
 
 ftp_OBJS = cmds.o cmdtab.o ftp.o krb4.o main.o ruserpass.o domacro.o globals.o kauth.o
 

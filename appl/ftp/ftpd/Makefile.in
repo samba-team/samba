@@ -17,23 +17,21 @@ prefix 	= @prefix@
 exec_prefix = $(prefix)
 libdir = $(exec_prefix)/lib
 
-ATHENA	= /usr/athena
-
 LIBTOP = ../../../lib
 
-LIBS = ../common/libcommon.a $(LIBTOP)/kafs/libkafs.a $(LIBTOP)/krb/libkrb.a $(LIBTOP)/des/libdes.a $(LIBTOP)/roken/libroken.a
+LIBS = ../common/libcommon.a -L$(LIBTOP)/kafs -lkafs -L$(LIBTOP)/krb -lkrb -L$(LIBTOP)/des -ldes $(LIBTOP)/roken/libroken.a
 
 ftpd_OBJS = ftpd.o ftpcmd.o logwtmp.o popen.o auth.o krb4.o kauth.o klogin.o
 
 all: ftpd
 
 .c.o:
-	$(CC) -c $(CFLAGS) -I. -I$(srcdir) -I.. -I$(srcdir)/.. -I../common -I$(srcdir)/../common -I$(ATHENA)/include  $(DEFS) $<
+	$(CC) -c $(CFLAGS) -I. -I$(srcdir) -I.. -I$(srcdir)/.. -I../common -I$(srcdir)/../common -I$(srcdir)/include  $(DEFS) $<
 
 install:
 
 
-ftpd: $(ftpd_OBJS) $(LIBS)
+ftpd: $(ftpd_OBJS)
 	$(CC) -o ftpd $(ftpd_OBJS) $(LIBS)
 
 ftpcmd.c: ftpcmd.y
