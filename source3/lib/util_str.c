@@ -1528,4 +1528,3 @@ size_t valgrind_strlen(const char *s)
 	return count;
 }
 #endif
-
