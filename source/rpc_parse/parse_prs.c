@@ -432,7 +432,7 @@ BOOL prs_align_uint16(prs_struct *ps)
 	uint8 old_align = ps->align;
 
 	ps->align = 2;
-	ret = prs_align(ps)
+	ret = prs_align(ps);
 	ps->align = old_align;
 	return ret;
 }
