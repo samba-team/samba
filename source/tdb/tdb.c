@@ -498,6 +498,7 @@ static int tdb_new_database(TDB_CONTEXT *tdb, int hash_size)
 	tdb_off offset;
 	int i, size = 0;
 	tdb_off buf[16];
+	char buf2[TDB_RESERVED];
 
         /* create the header */
         memset(&header, 0, sizeof(header));
@@ -514,6 +515,13 @@ static int tdb_new_database(TDB_CONTEXT *tdb, int hash_size)
             tdb->ecode = TDB_ERR_IO;
             return -1;
         } else size += sizeof(header);
+
+	memset(buf2, 0, sizeof(buf2));
+        if (tdb->fd != -1 && write(tdb->fd, buf2, TDB_RESERVED) != 
+            TDB_RESERVED) {
+            tdb->ecode = TDB_ERR_IO;
+            return -1;
+        } else size += TDB_RESERVED;
 	
         /* the freelist and hash pointers */
         offset = 0;
