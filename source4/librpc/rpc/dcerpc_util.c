@@ -1150,7 +1150,7 @@ NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p, struct dcerpc_pipe *
 			return status;
 		}
 		b.flags &= ~DCERPC_AUTH_OPTIONS;
-		status = dcerpc_pipe_connect_ncalrpc(p2, &b, pipe_uuid, pipe_version, NULL, NULL, NULL);
+		status = dcerpc_pipe_open_pipe(p2, b.endpoint);
 		break;
 
 	default:
