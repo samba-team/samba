@@ -75,4 +75,6 @@ struct passwd *k_getpwnam (char *user);
 #include <sys/time.h>
 time_t tm2time (struct tm tm, int local);
 
+int verify_unix_user(char *user, char *password);
+
 #endif /*  __ROKEN_H__ */
