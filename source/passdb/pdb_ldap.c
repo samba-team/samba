@@ -2225,7 +2225,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 		if (!smbldap_get_single_attribute(conn->ldap_struct,
 						  entry, "sambaSID",
 						  str, sizeof(str)-1))
-			goto done;
+			continue;
 
 		if (!string_to_sid(&sid, str))
 			goto done;
@@ -2233,7 +2233,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 		if (!smbldap_get_single_attribute(conn->ldap_struct,
 						  entry, "gidNumber",
 						  str, sizeof(str)-1))
-			goto done;
+			continue;
 
 		gid = strtoul(str, &end, 10);
 
@@ -2249,7 +2249,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 	}
 
 	if (sid_compare(&global_sid_NULL, &(*sids)[0]) == 0) {
-		DEBUG(3, ("primary group not found\n"));
+		DEBUG(3, ("primary group of [%s] not found\n", username));
 		goto done;
 	}
 
