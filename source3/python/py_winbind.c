@@ -23,6 +23,8 @@
 #include "includes.h"
 #include "Python.h"
 
+#include "py_common.h"
+
 /* 
  * Exceptions raised by this module 
  */
@@ -41,13 +43,13 @@ NSS_STATUS winbindd_request(int req_type,
 
 /* Convert a name to a sid */
 
-static PyObject *winbind_name_to_sid(PyObject *self, PyObject *args)
+static PyObject *py_name_to_sid(PyObject *self, PyObject *args)
 
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
 	PyObject *result;
-	char *name, *p;
+	char *name, *p, *sep;
 
 	if (!PyArg_ParseTuple(args, "s", &name))
 		return NULL;
@@ -55,9 +57,9 @@ static PyObject *winbind_name_to_sid(PyObject *self, PyObject *args)
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	/* FIXME: use winbind separator */
+	sep = lp_winbind_separator();
 
-	if ((p = strchr(name, '\\'))) {
+	if ((p = strchr(name, sep[0]))) {
 		*p = 0;
 		fstrcpy(request.data.name.dom_name, name);
 		fstrcpy(request.data.name.name, p + 1);
@@ -79,7 +81,7 @@ static PyObject *winbind_name_to_sid(PyObject *self, PyObject *args)
 
 /* Convert a sid to a name */
 
-static PyObject *winbind_sid_to_name(PyObject *self, PyObject *args)
+static PyObject *py_sid_to_name(PyObject *self, PyObject *args)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -118,7 +120,7 @@ static PyObject *winbind_sid_to_name(PyObject *self, PyObject *args)
 
 /* Enumerate domain users */
 
-static PyObject *winbind_enum_domain_users(PyObject *self, PyObject *args)
+static PyObject *py_enum_domain_users(PyObject *self, PyObject *args)
 {
 	struct winbindd_response response;
 	PyObject *result;
@@ -149,7 +151,7 @@ static PyObject *winbind_enum_domain_users(PyObject *self, PyObject *args)
 
 /* Enumerate domain groups */
 
-static PyObject *winbind_enum_domain_groups(PyObject *self, PyObject *args)
+static PyObject *py_enum_domain_groups(PyObject *self, PyObject *args)
 {
 	struct winbindd_response response;
 	PyObject *result = NULL;
@@ -184,7 +186,7 @@ static PyObject *winbind_enum_domain_groups(PyObject *self, PyObject *args)
 
 /* Enumerate domain groups */
 
-static PyObject *winbind_enum_trust_dom(PyObject *self, PyObject *args)
+static PyObject *py_enum_trust_dom(PyObject *self, PyObject *args)
 {
 	struct winbindd_response response;
 	PyObject *result = NULL;
@@ -215,7 +217,7 @@ static PyObject *winbind_enum_trust_dom(PyObject *self, PyObject *args)
 
 /* Check machine account password */
 
-static PyObject *winbind_check_secret(PyObject *self, PyObject *args)
+static PyObject *py_check_secret(PyObject *self, PyObject *args)
 {
 	struct winbindd_response response;
 
@@ -238,7 +240,7 @@ static PyObject *winbind_check_secret(PyObject *self, PyObject *args)
  * parameters.  This is stored in the module object.
  */
 
-static PyObject *winbind_config_dict(void)
+static PyObject *py_config_dict(void)
 {
 	PyObject *result;
 	uid_t ulow, uhi;
@@ -255,25 +257,129 @@ static PyObject *winbind_config_dict(void)
 	PyDict_SetItemString(result, "separator", 
 			     PyString_FromString(lp_winbind_separator()));
 
-	PyDict_SetItemString(result, "template homedir", 
+	PyDict_SetItemString(result, "template_homedir", 
 			     PyString_FromString(lp_template_homedir()));
 
-	PyDict_SetItemString(result, "template shell", 
+	PyDict_SetItemString(result, "template_shell", 
 			     PyString_FromString(lp_template_shell()));
 
 	/* Winbind uid/gid range */
 
 	if (lp_winbind_uid(&ulow, &uhi)) {
-		PyDict_SetItemString(result, "uid low", PyInt_FromLong(ulow));
-		PyDict_SetItemString(result, "uid high", PyInt_FromLong(uhi));
+		PyDict_SetItemString(result, "uid_low", PyInt_FromLong(ulow));
+		PyDict_SetItemString(result, "uid_high", PyInt_FromLong(uhi));
 	}
 
 	if (lp_winbind_gid(&glow, &ghi)) {
-		PyDict_SetItemString(result, "gid low", PyInt_FromLong(glow));
-		PyDict_SetItemString(result, "gid high", PyInt_FromLong(ghi));
+		PyDict_SetItemString(result, "gid_low", PyInt_FromLong(glow));
+		PyDict_SetItemString(result, "gid_high", PyInt_FromLong(ghi));
 	}
 
 	return result;
+}
+
+/*
+ * ID mapping
+ */
+
+/* Convert a uid to a SID */
+
+static PyObject *py_uid_to_sid(PyObject *self, PyObject *args)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	int id;
+
+	if (!PyArg_ParseTuple(args, "i", &id))
+		return NULL;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	request.data.uid = id;
+
+	if (winbindd_request(WINBINDD_UID_TO_SID, &request, &response) 
+	    != NSS_STATUS_SUCCESS) {
+		PyErr_SetString(winbind_error, "lookup failed");
+		return NULL;		
+	}
+
+	return PyString_FromString(response.data.sid.sid);
+}
+
+/* Convert a gid to a SID */
+
+static PyObject *py_gid_to_sid(PyObject *self, PyObject *args)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	int id;
+
+	if (!PyArg_ParseTuple(args, "i", &id))
+		return NULL;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	request.data.gid = id;
+
+	if (winbindd_request(WINBINDD_GID_TO_SID, &request, &response) 
+	    != NSS_STATUS_SUCCESS) {
+		PyErr_SetString(winbind_error, "lookup failed");
+		return NULL;		
+	}
+
+	return PyString_FromString(response.data.sid.sid);
+}
+
+/* Convert a sid to a uid */
+
+static PyObject *py_sid_to_uid(PyObject *self, PyObject *args)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	char *sid;
+
+	if (!PyArg_ParseTuple(args, "s", &sid))
+		return NULL;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	fstrcpy(request.data.sid, sid);
+
+	if (winbindd_request(WINBINDD_SID_TO_UID, &request, &response) 
+	    != NSS_STATUS_SUCCESS) {
+		PyErr_SetString(winbind_error, "lookup failed");
+		return NULL;		
+	}
+
+	return PyInt_FromLong(response.data.uid);
+}
+
+/* Convert a sid to a gid */
+
+static PyObject *py_sid_to_gid(PyObject *self, PyObject *args)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	char *sid;
+
+	if (!PyArg_ParseTuple(args, "s", &sid))
+		return NULL;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	fstrcpy(request.data.sid, sid);
+
+	if (winbindd_request(WINBINDD_SID_TO_GID, &request, &response) 
+	    != NSS_STATUS_SUCCESS) {
+		PyErr_SetString(winbind_error, "lookup failed");
+		return NULL;		
+	}
+	
+	return PyInt_FromLong(response.data.gid);
 }
 
 /*
@@ -284,30 +390,72 @@ static PyMethodDef winbind_methods[] = {
 
 	/* Name <-> SID conversion */
 
-	{ "name_to_sid", winbind_name_to_sid, METH_VARARGS,
+	{ "name_to_sid", py_name_to_sid, METH_VARARGS,
 	  "Convert a name to a sid" },
 
-	{ "sid_to_name", winbind_sid_to_name, METH_VARARGS,
+	{ "sid_to_name", py_sid_to_name, METH_VARARGS,
 	  "Convert a sid to a name" },
 
 	/* Enumerate users/groups */
 
-	{ "enum_domain_users", winbind_enum_domain_users, METH_VARARGS,
+	{ "enum_domain_users", py_enum_domain_users, METH_VARARGS,
 	  "Enumerate domain users" },
 
-	{ "enum_domain_groups", winbind_enum_domain_groups, METH_VARARGS,
+	{ "enum_domain_groups", py_enum_domain_groups, METH_VARARGS,
 	  "Enumerate domain groups" },
+
+	/* ID mapping */
+
+	{ "uid_to_sid", py_uid_to_sid, METH_VARARGS,
+	  "Convert a uid to a SID" },
+
+	{ "gid_to_sid", py_gid_to_sid, METH_VARARGS,
+	  "Convert a gid to a SID" },
+
+	{ "sid_to_uid", py_sid_to_uid, METH_VARARGS,
+	  "Convert a uid to a SID" },
+
+	{ "sid_to_gid", py_sid_to_gid, METH_VARARGS,
+	  "Convert a gid to a SID" },
 
 	/* Miscellaneous */
 
-	{ "check_secret", winbind_check_secret, METH_VARARGS,
+	{ "check_secret", py_check_secret, METH_VARARGS,
 	  "Check machine account password" },
 
-	{ "enum_trust_dom", winbind_enum_trust_dom, METH_VARARGS,
+	{ "enum_trust_dom", py_enum_trust_dom, METH_VARARGS,
 	  "Enumerate trusted domains" },
 
 	{ NULL }
 };
+
+static struct winbind_const {
+	char *name;
+	uint32 value;
+} winbind_const_vals[] = {
+
+	/* Well known RIDs */
+	
+	{ "DOMAIN_USER_RID_ADMIN", DOMAIN_USER_RID_ADMIN },
+	{ "DOMAIN_USER_RID_GUEST", DOMAIN_USER_RID_GUEST },
+	{ "DOMAIN_GROUP_RID_ADMINS", DOMAIN_GROUP_RID_ADMINS },
+	{ "DOMAIN_GROUP_RID_USERS", DOMAIN_GROUP_RID_USERS },
+	{ "DOMAIN_GROUP_RID_GUESTS", DOMAIN_GROUP_RID_GUESTS },
+	
+	{ NULL }
+};
+
+static void const_init(PyObject *dict)
+{
+	struct winbind_const *tmp;
+	PyObject *obj;
+
+	for (tmp = winbind_const_vals; tmp->name; tmp++) {
+		obj = PyInt_FromLong(tmp->value);
+		PyDict_SetItemString(dict, tmp->name, obj);
+		Py_DECREF(obj);
+	}
+}
 
 /*
  * Module initialisation 
@@ -329,7 +477,11 @@ void initwinbind(void)
 
 	py_samba_init();
 
+	/* Initialise constants */
+
+	const_init(dict);
+
 	/* Insert configuration dictionary */
 
-	PyDict_SetItemString(dict, "config", winbind_config_dict());
+	PyDict_SetItemString(dict, "config", py_config_dict());
 }
