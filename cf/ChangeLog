@@ -1,3 +1,17 @@
+Mon Mar  1 11:23:41 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* proto-compat.m4: typo
+
+	* krb-func-getcwd-broken.m4: update to autoconf 2.13
+
+	* krb-find-db.m4: update to autoconf 2.13
+
+	* check-declaration.m4: typo
+
+	* have-pragma-weak.m4: update to autoconf 2.13
+
+	* have-struct-field.m4: better handling of types with spaces
+
 Mon Feb 22 20:05:06 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* broken-glob.m4: check for broken glob
