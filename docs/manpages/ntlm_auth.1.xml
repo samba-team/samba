@@ -35,7 +35,8 @@
 	users using NT/LM authentication. It returns 0 if the users is authenticated
 	successfully and 1 if access was denied. ntlm_auth uses winbind to access 
 	the user and authentication data for a domain.  This utility 
-	is only indended to be used by other programs (currently squid).
+	is only indended to be used by other programs (currently
+	Squid).
 	</para>
 </refsect1>
 
@@ -90,7 +91,11 @@
                 <filename>winbindd_privileged</filename> in
 		<filename>$LOCKDIR</filename>.  The protocol used is
 		described here: <ulink
-		url="http://devel.squid-cache.org/ntlm/squid_helper_protocol.html">http://devel.squid-cache.org/ntlm/squid_helper_protocol.html</ulink>
+		url="http://devel.squid-cache.org/ntlm/squid_helper_protocol.html">http://devel.squid-cache.org/ntlm/squid_helper_protocol.html</ulink>.
+		This protocol has been extended to allow the
+		NTLMSSP Negotiate packet to be included as an argument
+		to the <command>YR</command> command. (Thus avoiding
+		loss of information in the protocol exchange).
                 </para>
                 </listitem>
 	      </varlistentry>
@@ -130,6 +135,130 @@
 		also uses a protocol similar to the above helpers, but
 		is currently undocumented.
                 </para>
+                </listitem>
+		</varlistentry>
+
+	        <varlistentry>
+				<term>ntlm-server-1</term>
+		<listitem><para>
+                Server-side helper protocol, intended for use by a
+		RADIUS server or the 'winbind' plugin for pppd, for
+		the provision of MSCHAP and MSCHAPv2 authentication.  
+                </para>
+		<para>This protocol consists of lines in for form:
+                <command>Parameter: value</command> and <command>Paramter::
+                Base64-encode value</command>.  The presence of a single
+                period <command>.</command> indicates that one side has
+                finished supplying data to the other.  (Which in turn
+                could cause the helper to authenticate the
+                user). </para>
+
+		<para>Curently implemented parameters from the
+		external program to the helper are:</para>
+		<variablelist>
+		  <varlistentry>
+		  <term>Username</term>
+		  
+                <listitem><para>The username, expected to be in
+                Samba's <smbconfoption><name>unix charset</name></smbconfoption>.
+                </para>
+
+		      <para><example>Username: bob</example></para>
+		      <para><example>Username:: Ym9i</example></para>
+		    </listitem></varlistentry>
+
+		  <varlistentry>
+		  <term>Username</term>
+                <listitem><para>The user's domain, expected to be in
+                Samba's <smbconfoption><name>unix charset</name></smbconfoption>.
+                </para>
+
+		      <para><example>Domain: WORKGROUP</example></para>
+		      <para><example>Domain:: V09SS0dST1VQ</example></para>
+		    </listitem></varlistentry>
+
+		  <varlistentry>
+		  <term>Full-Username</term>
+                <listitem><para>The fully qualified username, expected to be in
+                Samba's <smbconfoption><name>unix
+                charset</name></smbconfoption> and qualified with the
+                <smbconfoption><name>winbind separator</name></smbconfoption>.
+                </para>
+
+		      <para><example>Full-Username: WORKGROUP\bob</example></para>
+		      <para><example>Full-Username:: V09SS0dST1VQYm9i</example></para>
+		    </listitem></varlistentry>
+
+		  <varlistentry>
+		  <term>LANMAN-Challenge</term>
+		  
+                <listitem><para>The 8 byte <command>LANMAN Challenge</command> value,
+                generated randomly by the server, or (in cases such as
+                MSCHAPv2) generated in some way by both the server and
+                the client.
+                </para>	
+		      <para><example>LANMAN-Challege: 0102030405060708</example></para>
+		    </listitem></varlistentry>
+
+		  <varlistentry>
+		  <term>LANMAN-Response</term>
+		  
+                <listitem><para>The 24 byte <command>LANMAN Response</command> value,
+                calculated from the user's password and the supplied
+                <command>LANMAN Challenge</command>.  Typically, this
+                is provided over the network by a client wishing to authenticate.
+                </para>	
+		      <para><example>LANMAN-Response: 010203040506070809101112131415161718192021222324</example></para>
+
+		    </listitem></varlistentry>
+
+		  <varlistentry>
+		  <term>NT-Response</term>
+                <listitem><para>The >= 24 byte <command>NT Response</command>
+                calculated from the user's password and the supplied
+                <command>LANMAN Challenge</command>.  Typically, this is 
+                provided over the network by a client wishing to authenticate.
+                 </para>	
+		      <para><example>NT-Response: 010203040506070809101112131415161718192021222324</example></para>
+
+		    </listitem></varlistentry>
+
+		  <varlistentry>
+		  <term>Password</term>
+                <listitem><para>The user's password.  This would be
+                provided by a network client, if the helper is being
+                used in a legacy situation that exposes plaintext
+                passwords in this way.
+                 </para>	
+		      <para><example>Password: samba2</example></para>
+		      <para><example>Password:: c2FtYmEy</example></para>
+
+		    </listitem></varlistentry>
+
+		  <varlistentry>
+		  <term>Request-User-Session-Key</term>
+                <listitem><para>Apon sucessful authenticaiton, return
+                the user session key associated with the login.
+                 </para>	
+		      <para><example>Request-User-Session-Key: Yes</example></para>
+
+		    </listitem></varlistentry>
+
+		  <varlistentry>
+		  <term>Request-LanMan-Session-Key</term>
+                <listitem><para>Apon sucessful authenticaiton, return
+                the LANMAN session key associated with the login.
+                 </para>	
+		      <para><example>Request-LanMan-Session-Key: Yes</example></para>
+
+		    </listitem></varlistentry>
+
+		<para><warning>Implementors should take care to base64 encode
+		any data (such as usernames/passwords) that may contain malicous user data, such as
+		a newline.  They may also need to decode strings from
+		the helper, which likewise may have been base64 encoded.</warning></para>
+	</variablelist>
+
                 </listitem>
 		</varlistentry>
 	</variablelist>
@@ -178,7 +307,12 @@
 	<term>--password=PASSWORD</term>
 	<listitem><para>User's plaintext password</para><para>If 
 	not specified on the command line, this is prompted for when
-	required.  </para></listitem>
+	required.  </para>
+
+	  <para>For the NTLMSSP based server roles, this paramter
+	  specifies the expected password, allowing testing without
+	  winbindd operational.</para>
+	</listitem>
 	</varlistentry>
 
 	<varlistentry>
