@@ -100,7 +100,7 @@ static NTSTATUS cmd_help(struct sam_context *sam, TALLOC_CTX *mem_ctx,
 
 		while(tmp_set->name) {
 
-			printf("%15s\t\t%s\n", tmp_set->name,
+			printf("%20s\t%s\n", tmp_set->name,
 			       tmp_set->description ? tmp_set->description:
 			       "");
 
@@ -157,10 +157,16 @@ static struct cmd_set separator_command[] = {
 
 
 /*extern struct cmd_set sam_commands[];*/
-extern struct cmd_set sam_commands[];
+extern struct cmd_set sam_general_commands[];
+extern struct cmd_set sam_domain_commands[];
+extern struct cmd_set sam_account_commands[];
+extern struct cmd_set sam_group_commands[];
 static struct cmd_set *samtest_command_list[] = {
 	samtest_commands,
-	sam_commands,
+	sam_general_commands,
+	sam_domain_commands,
+	sam_account_commands,
+	sam_group_commands,
 	NULL
 };
 
