@@ -1370,7 +1370,7 @@ tgs_rep(KDC_REQ *req,
 	const char *from)
 {
     krb5_error_code ret;
-    int i;
+    int i = 0;
     PA_DATA *tgs_req = NULL;
 
     if(req->padata == NULL){
