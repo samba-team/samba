@@ -115,4 +115,6 @@ struct client_info
     struct nt_client_info dom;
 };
 
+enum action_type {ACTION_HEADER, ACTION_ENUMERATE, ACTION_FOOTER};
+
 #endif /* _RPCCLIENT_H */
