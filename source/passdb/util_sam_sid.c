@@ -336,19 +336,6 @@ void add_sid_to_array(const DOM_SID *sid, DOM_SID **sids, int *num)
 	return;
 }
 
-void add_sid_to_array_unique(const DOM_SID *sid, DOM_SID **sids, int *num)
-{
-	int i;
-
-	for (i=0; i<*num; i++) {
-		if (sid_compare(sid, &(*sids)[i]) == 0)
-			return;
-	}
-
-	add_sid_to_array(sid, sids, num);
-}
-
-
 void add_sid_to_array_unique(const DOM_SID *sid, DOM_SID **sids, int *num_sids)
 {
 	int i;
@@ -358,5 +345,5 @@ void add_sid_to_array_unique(const DOM_SID *sid, DOM_SID **sids, int *num_sids)
 			return;
 	}
 
-	return add_sid_to_array(sid, sids, num_sids);
+	add_sid_to_array(sid, sids, num_sids);
 }
