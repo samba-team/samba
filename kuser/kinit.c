@@ -18,18 +18,20 @@ main (int argc, char **argv)
   krb5_creds cred;
   krb5_preauthtype pre_auth_types[] = {KRB5_PADATA_ENC_TIMESTAMP};
   int c;
-  int forwardable = 0;
-  krb5_flags options = 0;
   char *realm;
   int preauth = 1;
 
   set_progname (argv[0]);
+  union {
+      krb5_flags i;
+      TicketFlags f;
+  }options;
 
+  options.i = 0;
   while ((c = getopt (argc, argv, "fp")) != EOF) {
       switch (c) {
       case 'f':
-	  forwardable = 1;
-	  options = 1;		/* XXX */
+	  options.f.forwardable = 1;
 	  break;
       case 'p':
 	  preauth = 0;
@@ -55,10 +57,13 @@ main (int argc, char **argv)
 	    krb5_get_err_text(context, err));
 
   if(argv[0]){
+      char *p;
       err = krb5_parse_name (context, argv[0], &principal);
       if (err)
 	  errx (1, "krb5_parse_name: %s", krb5_get_err_text(context, err));
-      fprintf (stderr, "%s@%s's ", argv[0], realm);
+      krb5_unparse_name(context, principal, &p);
+      fprintf (stderr, "%s's ", p);
+      free(p);
   }else{
       struct passwd *pw;
 
@@ -111,7 +116,7 @@ main (int argc, char **argv)
 #endif
 
   err = krb5_get_in_tkt_with_password (context,
-				       options,
+				       options.i,
 				       NULL,
 				       NULL,
 				       preauth ? pre_auth_types : NULL,
