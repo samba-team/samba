@@ -115,9 +115,6 @@ static int del_fd(int fd)
 
 int smbc_init(smbc_get_auth_data_fn fn, int debug)
 {
-        int i;
-        struct smbc_compat_fdlist * f;
-        
 	if (!smbc_compat_initialized) {
 		statcont = smbc_new_context();
 		if (!statcont) 
