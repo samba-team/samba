@@ -160,7 +160,7 @@ static BOOL get_md4pw(char *md4pw, char *trust_name, char *trust_acct)
 
 	if (status_pwd == NT_STATUS_NOPROBLEMO)
 	{
-		memcpy(md4pw, ctr.info.id12->lm_pwd, 16);
+		memcpy(md4pw, ctr.info.id12->nt_pwd, 16);
 		dump_data_pw("md4pw", md4pw, 16);
 	}
 
