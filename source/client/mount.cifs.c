@@ -116,13 +116,12 @@ static int open_cred_file(char * file_name)
 		/* parse line from credential file */
 
 		/* eat leading white space */
-		for(i=0;i<4096;i++) {
+		for(i=0;i<4086;i++) {
 			if((line_buf[i] != ' ') && (line_buf[i] != '\t'))
 				break;
 			/* if whitespace - skip past it */
-			line_buf++;
 		}
-		if (strncasecmp("username",line_buf,8) == 0) {
+		if (strncasecmp("username",line_buf+i,8) == 0) {
 			temp_val = strchr(line_buf + i,'=');
 			if(temp_val) {
 				/* go past equals sign */
@@ -146,7 +145,7 @@ static int open_cred_file(char * file_name)
 					strncpy(user_name,temp_val, length);
 				}
 			}
-		} else if (strncasecmp("password",line_buf,8) == 0) {
+		} else if (strncasecmp("password",line_buf+i,8) == 0) {
 			temp_val = strchr(line_buf+i,'=');
 			if(temp_val) {
 				/* go past equals sign */
@@ -376,7 +375,7 @@ static int parse_options(char * options, int * filesys_flags)
 			if (value && *value) {
 				rc = open_cred_file(value);
 				if(rc) {
-					printf("error %d opening credential file %s",rc, value);
+					printf("error %d opening credential file %s\n",rc, value);
 					return 1;
 				}
 			} else {
