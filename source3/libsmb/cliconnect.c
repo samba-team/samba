@@ -117,10 +117,7 @@ static uint32 cli_session_setup_capabilities(struct cli_state *cli)
 {
 	uint32 capabilities = CAP_NT_SMBS;
 
-	/* Set the CLI_FORCE_DOSERR environment variable to test
-	   client routines using DOS errors instead of STATUS32
-	   ones.  This intended only as a temporary hack. */	
-	if (!getenv("CLI_FORCE_DOSERR")) {
+	if (!cli->force_dos_errors) {
 		capabilities |= CAP_STATUS32;
 	}
 

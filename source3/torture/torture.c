@@ -2856,7 +2856,80 @@ static BOOL run_dirtest(int dummy)
 	return correct;
 }
 
+static BOOL run_error_map_extract(int dummy) {
+	
+	static struct cli_state c_dos;
+	static struct cli_state c_nt;
 
+	uint32 error;
+
+	uint32 flgs2, errnum;
+        uint8 errclass;
+
+	NTSTATUS nt_status;
+
+	fstring user;
+
+	open_nbt_connection(&c_nt);
+	open_nbt_connection(&c_dos);
+
+	c_dos.force_dos_errors = True;
+
+	if (!cli_negprot(&c_dos)) {
+		printf("%s rejected the DOS-error negprot (%s)\n",host, cli_errstr(&c_dos));
+		cli_shutdown(&c_dos);
+		return False;
+	}
+	if (!cli_negprot(&c_nt)) {
+		printf("%s rejected the NT-error negprot (%s)\n",host, cli_errstr(&c_nt));
+		cli_shutdown(&c_nt);
+		return False;
+	}
+
+	for (error=(0xc0000000 | 0x1); error < (0xc0000000| 0xFFF); error++) {
+		snprintf(user, sizeof(user), "%X", error);
+
+		if (!cli_session_setup(&c_nt, user, 
+				       password, strlen(password),
+				       password, strlen(password),
+				       workgroup)) {
+			flgs2 = SVAL(c_nt.inbuf,smb_flg2);
+			
+			/* Case #1: 32-bit NT errors */
+			if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
+				nt_status = NT_STATUS(IVAL(c_nt.inbuf,smb_rcls));
+			} else {
+				printf("** Dos error on NT connection! (%s)\n", cli_errstr(&c_nt));
+				nt_status = NT_STATUS(0xc0000000);
+			}
+		} else {
+			printf("** Session setup succeeded.  This shouldn't happen...\n");
+		}
+
+		if (!cli_session_setup(&c_dos, user, 
+				       password, strlen(password),
+				       password, strlen(password),
+				       workgroup)) {
+			flgs2 = SVAL(c_dos.inbuf,smb_flg2), errnum;
+			
+			/* Case #1: 32-bit NT errors */
+			if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
+				printf("** NT error on DOS connection! (%s)\n", cli_errstr(&c_nt));
+				errnum = errclass = 0;
+			} else {
+				cli_dos_error(&c_dos, &errclass, &errnum);
+			}
+		} else {
+			printf("** Session setup succeeded.  This shouldn't happen...\n");
+		}
+		if (NT_STATUS_V(nt_status) == error) { 
+			printf("\t{%s,\t%s,\t%s}\n", smb_dos_err_class(errclass), smb_dos_err_name(errclass, errnum), get_nt_error_c_code(nt_status));
+		} else {
+			printf("/*\t{ This NT error code was 'sqashed'\n\t from %s to %s \n\t during the session setup }\n*/\n", get_nt_error_c_code(NT_STATUS(error)), get_nt_error_c_code(nt_status));
+		}
+	}
+	return True;
+}
 
 static double create_procs(BOOL (*fn)(int), BOOL *result)
 {
@@ -2992,6 +3065,7 @@ static struct {
 	{"NTTRANSSCAN", torture_nttrans_scan, 0},
 	{"UTABLE", torture_utable, 0},
 	{"CASETABLE", torture_casetable, 0},
+	{"ERRMAPEXTRACT", run_error_map_extract, 0},
 	{NULL, NULL, 0}};
 
 

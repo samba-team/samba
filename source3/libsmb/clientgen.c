@@ -198,6 +198,13 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	cli->oplock_handler = cli_oplock_ack;
 	cli->use_spnego = True;
 
+	/* Set the CLI_FORCE_DOSERR environment variable to test
+	   client routines using DOS errors instead of STATUS32
+	   ones.  This intended only as a temporary hack. */	
+	if (getenv("CLI_FORCE_DOSERR")) {
+		cli->force_dos_errors = True;
+	}
+
 	if (!cli->outbuf || !cli->inbuf)
                 goto error;
 

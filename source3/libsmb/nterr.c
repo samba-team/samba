@@ -558,3 +558,24 @@ char *get_nt_error_msg(NTSTATUS nt_code)
 
         return msg;
 }
+
+/*****************************************************************************
+ returns an NT_STATUS constant as a string for inclusion in autogen C code
+ *****************************************************************************/
+char *get_nt_error_c_code(NTSTATUS nt_code)
+{
+        static pstring out;
+        int idx = 0;
+
+	while (nt_errs[idx].nt_errstr != NULL) {
+		if (NT_STATUS_V(nt_errs[idx].nt_errcode) == 
+                    NT_STATUS_V(nt_code)) {
+                        return nt_errs[idx].nt_errstr;
+		}
+		idx++;
+	}
+
+	slprintf(out, sizeof(out), "NT_STATUS(0x%08x)", NT_STATUS_V(nt_code));
+
+        return out;
+}

@@ -156,7 +156,51 @@ const struct
 
 
 /****************************************************************************
-return a SMB error string from a SMB buffer
+return a SMB error name from a class and code
+****************************************************************************/
+char *smb_dos_err_name(uint8 class, uint16 num)
+{
+	static pstring ret;
+	int i,j;
+	
+	for (i=0;err_classes[i].class;i++)
+		if (err_classes[i].code == class) {
+			if (err_classes[i].err_msgs) {
+				err_code_struct *err = err_classes[i].err_msgs;
+				for (j=0;err[j].name;j++)
+					if (num == err[j].code) {
+						return err[j].name;
+					}
+			}
+			slprintf(ret, sizeof(ret) - 1, "%d",num);
+			return ret;
+		}
+	
+	slprintf(ret, sizeof(ret) - 1, "Error: Unknown error class (%d,%d)",class,num);
+	return(ret);
+}
+
+
+/****************************************************************************
+return a SMB error class name as a string.
+****************************************************************************/
+char *smb_dos_err_class(uint8 class)
+{
+	static pstring ret;
+	int i;
+	
+	for (i=0;err_classes[i].class;i++) {
+		if (err_classes[i].code == class) {
+			return err_classes[i].class;
+		}
+	}
+		
+	slprintf(ret, sizeof(ret) - 1, "Error: Unknown class (%d)",class);
+	return(ret);
+}
+
+/****************************************************************************
+return a SMB string from an SMB buffer
 ****************************************************************************/
 char *smb_dos_errstr(char *inbuf)
 {
