@@ -2,7 +2,7 @@
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
- *  Copyright (C) Jean François Micouleau      1998-2000.
+ *  Copyright (C) Jean FranÃ§ois Micouleau      1998-2000.
  *  Copyright (C) Gerald Carter                2002-2003.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -2205,7 +2205,7 @@ NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
 	nt_devmode->mediatype        = 0;
 	nt_devmode->dithertype       = 0;
 
-	/* non utilisés par un driver d'imprimante */
+	/* non utilisÃ©s par un driver d'imprimante */
 	nt_devmode->logpixels        = 0;
 	nt_devmode->bitsperpel       = 0;
 	nt_devmode->pelswidth        = 0;

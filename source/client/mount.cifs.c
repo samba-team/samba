@@ -38,7 +38,7 @@
 #include <fcntl.h>
 
 #define MOUNT_CIFS_VERSION_MAJOR "1"
-#define MOUNT_CIFS_VERSION_MINOR "2"
+#define MOUNT_CIFS_VERSION_MINOR "4"
 
 #ifndef MOUNT_CIFS_VENDOR_SUFFIX
 #define MOUNT_CIFS_VENDOR_SUFFIX ""
@@ -57,6 +57,7 @@ static int got_ip = 0;
 static int got_unc = 0;
 static int got_uid = 0;
 static int got_gid = 0;
+static int free_share_name = 0;
 static char * user_name = NULL;
 char * mountpassword = NULL;
 
@@ -285,32 +286,45 @@ static int parse_options(char * options, int * filesys_flags)
 
 		if (strncmp(data, "user", 4) == 0) {
 			if (!value || !*value) {
-				printf("invalid or missing username\n");
-				return 1;	/* needs_arg; */
-			}
-			if (strnlen(value, 260) < 260) {
-				got_user=1;
-				percent_char = strchr(value,'%');
-				if(percent_char) {
-					*percent_char = ',';
-					if(mountpassword == NULL)
-						mountpassword = calloc(65,1);
-					if(mountpassword) {
-						if(got_password)
-							printf("\nmount.cifs warning - password specified twice\n");
-						got_password = 1;
-						percent_char++;
-						strncpy(mountpassword, percent_char,64);
-					/*  remove password from username */
-						while(*percent_char != 0) {
-							*percent_char = ',';
-							percent_char++;
-						}
-					}
+				if(data[4] == '\0') {
+					if(verboseflag)
+						printf("\nskipping empty user mount parameter\n");
+					/* remove the parm since it would otherwise be confusing
+					to the kernel code which would think it was a real username */
+						data[0] = ',';
+						data[1] = ',';
+						data[2] = ',';
+						data[3] = ',';
+					/* BB remove it from mount line so as not to confuse kernel code */
+				} else {
+					printf("username specified with no parameter\n");
+					return 1;	/* needs_arg; */
 				}
 			} else {
-				printf("username too long\n");
-				return 1;
+				if (strnlen(value, 260) < 260) {
+					got_user=1;
+					percent_char = strchr(value,'%');
+					if(percent_char) {
+						*percent_char = ',';
+						if(mountpassword == NULL)
+							mountpassword = calloc(65,1);
+						if(mountpassword) {
+							if(got_password)
+								printf("\nmount.cifs warning - password specified twice\n");
+							got_password = 1;
+							percent_char++;
+							strncpy(mountpassword, percent_char,64);
+						/*  remove password from username */
+							while(*percent_char != 0) {
+								*percent_char = ',';
+								percent_char++;
+							}
+						}
+					}
+				} else {
+					printf("username too long\n");
+					return 1;
+				}
 			}
 		} else if (strncmp(data, "pass", 4) == 0) {
 			if (!value || !*value) {
@@ -489,8 +503,9 @@ static int parse_options(char * options, int * filesys_flags)
 }
 
 /* Note that caller frees the returned buffer if necessary */
-char * parse_server(char * unc_name)
+char * parse_server(char ** punc_name)
 {
+	char * unc_name = *punc_name;
 	int length = strnlen(unc_name,1024);
 	char * share;
 	char * ipaddress_string = NULL;
@@ -514,11 +529,23 @@ char * parse_server(char * unc_name)
 		return 0;
 	} else {
 		if(strncmp(unc_name,"//",2) && strncmp(unc_name,"\\\\",2)) {
-			printf("mount error: improperly formatted UNC name.");
-			printf(" %s does not begin with \\\\ or //\n",unc_name);
-			return 0;
+			/* check for nfs syntax ie server:share */
+			share = strchr(unc_name,':');
+			if(share) {
+				free_share_name = 1;
+				*punc_name = malloc(length+3);
+				*share = '/';
+				strncpy((*punc_name)+2,unc_name,length);
+				unc_name = *punc_name;
+				unc_name[length+2] = 0;
+				goto continue_unc_parsing;
+			} else {
+				printf("mount error: improperly formatted UNC name.");
+				printf(" %s does not begin with \\\\ or //\n",unc_name);
+				return 0;
+			}
 		} else {
-			unc_name[0] = '\\';
+continue_unc_parsing:
 			unc_name[0] = '/';
 			unc_name[1] = '/';
 			unc_name += 2;
@@ -634,7 +661,7 @@ int main(int argc, char ** argv)
 
 	/* add sharename in opts string as unc= parm */
 
-	while ((c = getopt_long (argc, argv, "afFhilL:no:O:rsU:vVwt:",
+	while ((c = getopt_long (argc, argv, "afFhilL:no:O:rsSU:vVwt:",
 			 longopts, NULL)) != -1) {
 		switch (c) {
 /* No code to do the following  options yet */
@@ -712,6 +739,9 @@ int main(int argc, char ** argv)
 				strncpy(mountpassword,optarg,64);
 			}
 			break;
+		case 'S':
+			get_password_from_file(0 /* stdin */,NULL);
+			break;
 		case 't':
 			break;
 		default:
@@ -737,8 +767,7 @@ int main(int argc, char ** argv)
 		get_password_from_file(0, getenv("PASSWD_FILE"));
 	}
 
-	ipaddr = parse_server(share_name);
-
+	ipaddr = parse_server(&share_name);
 	if(ipaddr == NULL)
 		return -1;
 	
@@ -863,8 +892,9 @@ int main(int argc, char ** argv)
 			mountent.mnt_fsname = share_name;
 			mountent.mnt_dir = mountpoint; 
 			mountent.mnt_type = "cifs"; 
-			mountent.mnt_opts = malloc(200);
+			mountent.mnt_opts = malloc(220);
 			if(mountent.mnt_opts) {
+				char * mount_user = getusername();
 				memset(mountent.mnt_opts,0,200);
 				if(flags & MS_RDONLY)
 					strcat(mountent.mnt_opts,"ro");
@@ -882,6 +912,13 @@ int main(int argc, char ** argv)
 					strcat(mountent.mnt_opts,",nodev");
 				if(flags & MS_SYNCHRONOUS)
 					strcat(mountent.mnt_opts,",synch");
+				if(mount_user) {
+					if(getuid() != 0) {
+						strcat(mountent.mnt_opts,",user=");
+						strcat(mountent.mnt_opts,mount_user);
+					}
+					free(mount_user);
+				}
 			}
 			mountent.mnt_freq = 0;
 			mountent.mnt_passno = 0;
@@ -911,6 +948,9 @@ int main(int argc, char ** argv)
 		free(resolved_path);
 	}
 
+	if(free_share_name) {
+		free(share_name);
+		}
 	return 0;
 }
 

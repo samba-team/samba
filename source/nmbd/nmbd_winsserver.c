@@ -582,7 +582,7 @@ void wins_process_name_refresh_request( struct subnet_record *subrec,
 		/* 
 		 * Normal groups are all registered with an IP address of
 		 * 255.255.255.255  so we can't search for the IP address.
-		 */
+	 	 */
 		update_name_ttl(namerec, ttl);
 		send_wins_name_registration_response(0, ttl, p);
 		return;

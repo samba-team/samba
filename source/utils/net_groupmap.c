@@ -752,12 +752,10 @@ int net_groupmap(int argc, const char **argv)
 	};
 
 	/* we shouldn't have silly checks like this */
-#if 0
 	if (getuid() != 0) {
 		d_printf("You must be root to edit group mappings.\nExiting...\n");
 		return -1;
 	}
-#endif
 	
 	if ( argc )
 		return net_run_function(argc, argv, func, net_help_groupmap);

@@ -3,7 +3,7 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
- *  Copyright (C) Jean François Micouleau      1998-2000,
+ *  Copyright (C) Jean FranÃ§ois Micouleau      1998-2000,
  *  Copyright (C) Jeremy Allison               2001-2002,
  *  Copyright (C) Gerald Carter		       2000-2004,
  *  Copyright (C) Tim Potter                   2001-2002.
@@ -3740,6 +3740,12 @@ static WERROR printserver_notify_info(pipes_struct *p, POLICY_HND *hnd,
 	info->data=NULL;
 	info->count=0;
 
+	/* a bug in xp sp2 rc2 causes it to send a fnpcn request without 
+	   sending a ffpcn() request first */
+
+	if ( !option )
+		return WERR_BADFID;
+
 	for (i=0; i<option->count; i++) {
 		option_type=&(option->ctr.type[i]);
 		
@@ -3801,6 +3807,12 @@ static WERROR printer_notify_info(pipes_struct *p, POLICY_HND *hnd, SPOOL_NOTIFY
 	info->version=2;
 	info->data=NULL;
 	info->count=0;
+
+	/* a bug in xp sp2 rc2 causes it to send a fnpcn request without 
+	   sending a ffpcn() request first */
+
+	if ( !option )
+		return WERR_BADFID;
 
 	get_printer_snum(p, hnd, &snum);
 

@@ -572,6 +572,7 @@ BOOL reopen_logs( void )
 	oldumask = umask( 022 );
   
 	pstrcpy(fname, debugf );
+	debugf[0] = '\0';
 
 	if (lp_loaded()) {
 		char *logfname;
@@ -726,7 +727,12 @@ void check_log_size( void )
 		errno = old_errno;
 		return( 0 );
 	}
-  
+
+	/* prevent recursion by checking if reopen_logs() has temporaily
+	   set the debugf string to "" */
+	if( debugf[0] == '\0')
+		return( 0 );
+
 #ifdef WITH_SYSLOG
 	if( !lp_syslog_only() )
 #endif
