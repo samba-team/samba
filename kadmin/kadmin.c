@@ -48,8 +48,11 @@ static int help_flag;
 static int version_flag;
 static char *realm;
 static char *admin_server;
+static char *client_name;
 
 static struct getargs args[] = {
+    {	"principal", 	'p',	arg_string,	&client_name,
+	"principal to authenticate as" },
     { 
 	"config-file",	'c',	arg_string,	&config_file, 
 	"location of config file",	"file" 
@@ -243,8 +246,7 @@ main(int argc, char **argv)
 	cmd = commands;
     } else {
 	ret = kadm5_c_init_with_password_ctx(context, 
-					     /* XXX these are not used */
-					     "client",
+					     client_name,
 					     "password", 
 					     KADM5_ADMIN_SERVICE,
 					     &conf, 0, 0, 
