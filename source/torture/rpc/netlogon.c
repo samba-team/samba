@@ -284,7 +284,6 @@ struct samlogon_state {
    Authenticate a user with a challenge/response, checking session key
    and valid authentication types
 */
-
 static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state, 
 			       enum ntlm_break break_which,
 			       DATA_BLOB *chall, 
@@ -1522,6 +1521,65 @@ static BOOL test_DsrEnumerateDomainTrusts(struct dcerpc_pipe *p, TALLOC_CTX *mem
 }
 
 
+/*
+  test an ADS style interactive domain login
+*/
+static BOOL test_InteractiveLogin(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				  struct creds_CredentialState *creds)
+{
+	NTSTATUS status;
+	struct netr_LogonSamLogonWithFlags r;
+	struct netr_Authenticator a, ra;
+	struct netr_PasswordInfo pinfo;
+	const char *plain_pass;
+
+	ZERO_STRUCT(r);
+	ZERO_STRUCT(ra);
+
+	creds_client_authenticator(creds, &a);
+
+	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.workstation = TEST_MACHINE_NAME;
+	r.in.credential = &a;
+	r.in.return_authenticator = &ra;
+	r.in.logon_level = 5;
+	r.in.logon.password = &pinfo;
+	r.in.validation_level = 6;
+	r.in.flags = 0;
+
+	pinfo.identity_info.domain_name.string = lp_workgroup();
+	pinfo.identity_info.parameter_control = 0;
+	pinfo.identity_info.logon_id_low = 0;
+	pinfo.identity_info.logon_id_high = 0;
+	pinfo.identity_info.account_name.string = lp_parm_string(-1, "torture", "username");
+	pinfo.identity_info.workstation.string = TEST_MACHINE_NAME;
+
+	plain_pass = lp_parm_string(-1, "torture", "password");
+
+	E_deshash(plain_pass, pinfo.lmpassword.hash);
+	E_md4hash(plain_pass, pinfo.ntpassword.hash);
+
+	creds_arcfour_crypt(creds, pinfo.lmpassword.hash, 16);
+	creds_arcfour_crypt(creds, pinfo.ntpassword.hash, 16);
+
+	printf("Testing netr_LogonSamLogonWithFlags\n");
+
+	status = dcerpc_netr_LogonSamLogonWithFlags(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("netr_LogonSamLogonWithFlags - %s\n", nt_errstr(status));
+		exit(1);
+		return False;
+	}
+
+	if (!creds_client_check(creds, &r.out.return_authenticator->cred)) {
+		printf("Credential chaining failed\n");
+		return False;
+	}
+
+	return True;
+}
+
+
 static BOOL test_GetDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
@@ -1531,7 +1589,7 @@ static BOOL test_GetDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	uint32_t i1;
 	struct creds_CredentialState creds;
 
-	if (!test_SetupCredentials(p, mem_ctx, &creds)) {
+	if (!test_SetupCredentials3(p, mem_ctx, NETLOGON_NEG_AUTH2_ADS_FLAGS, &creds)) {
 		return False;
 	}
 
@@ -1555,27 +1613,28 @@ static BOOL test_GetDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	/* this should really be the fully qualified name */
 	q1.workstation_domain = TEST_MACHINE_NAME;
 	q1.workstation_site = "Default-First-Site-Name";
-	q1.foo2 = "foo";
 	q1.blob2.length = 0;
 	q1.blob2.size = 0;
 	q1.blob2.data = NULL;
 	q1.product.string = "product string";
-	q1.p4 = NULL;
-	q1.pp = 0x00000000;
 
 	printf("Testing netr_LogonGetDomainInfo\n");
 
 	status = dcerpc_netr_LogonGetDomainInfo(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("netr_LogonGetDomainInfo - %s\n", nt_errstr(status));
+		return False;
+	}
 
 	if (!creds_client_check(&creds, &a.cred)) {
 		printf("Credential chaining failed\n");
+		return False;
 	}
 
-	printf("fault code 0x%x  status=%s\n", p->last_fault_code, nt_errstr(status));
+	test_InteractiveLogin(p, mem_ctx, &creds);
 
 	return True;
 }
-
 
 
 BOOL torture_rpc_netlogon(int dummy)
@@ -1603,10 +1662,6 @@ BOOL torture_rpc_netlogon(int dummy)
 		return False;
 	}
 
-	if (!test_GetDomainInfo(p, mem_ctx)) {
-		ret = False;
-	}
-
 	if (!test_LogonUasLogon(p, mem_ctx)) {
 		ret = False;
 	}
@@ -1620,6 +1675,10 @@ BOOL torture_rpc_netlogon(int dummy)
 	}
 
 	if (!test_SamLogon(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_GetDomainInfo(p, mem_ctx)) {
 		ret = False;
 	}
 

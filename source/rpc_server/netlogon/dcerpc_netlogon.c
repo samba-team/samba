@@ -586,7 +586,7 @@ static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, 
 	
 	sam->account_name.string = talloc_strdup(mem_ctx, server_info->account_name);
 	sam->full_name.string = talloc_strdup(mem_ctx, server_info->full_name);
-	sam->logon_script.string = talloc_strdup(mem_ctx, server_info->account_name);
+	sam->logon_script.string = talloc_strdup(mem_ctx, server_info->logon_script);
 	sam->profile_path.string = talloc_strdup(mem_ctx, server_info->profile_path);
 	sam->home_directory.string = talloc_strdup(mem_ctx, server_info->home_directory);
 	sam->home_drive.string = talloc_strdup(mem_ctx, server_info->home_drive);
@@ -597,9 +597,8 @@ static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, 
 	sam->primary_gid = server_info->primary_group_sid->sub_auths[server_info->primary_group_sid->num_auths-1];
 	sam->group_count = 0;
 	sam->groupids = NULL;
-	
-	sam->acct_flags = server_info->acct_flags;
-	
+	sam->user_flags = 0; /* TODO: w2k3 uses 0x120 - what is this? */
+	sam->acct_flags = server_info->acct_flags;	
 	sam->logon_server.string = lp_netbios_name();
 	
 	sam->domain.string = talloc_strdup(mem_ctx, server_info->domain);
@@ -607,8 +606,6 @@ static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, 
 	sam->domain_sid = dom_sid_dup(mem_ctx, server_info->user_sid);
 	sam->domain_sid->num_auths--;
 
-	sam->AccountControl = 0;
-	
 	if (server_info->user_session_key.length == sizeof(sam->key.key)) {
 		memcpy(sam->key.key, server_info->user_session_key.data, sizeof(sam->key.key));
 	} else {
@@ -657,9 +654,9 @@ static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, 
 		sam6 = talloc_p(mem_ctx, struct netr_SamInfo6);
 		ZERO_STRUCTP(sam6);
 		sam6->base = *sam;
-		sam6->forest.string = sam->domain.string;
+		sam6->forest.string = lp_realm();
 		sam6->principle.string = talloc_asprintf(mem_ctx, "%s@%s", 
-							 sam->account_name.string, sam->domain.string);
+							 sam->account_name.string, sam6->forest.string);
 		r->out.validation.sam6 = sam6;
 		break;
 
