@@ -974,7 +974,7 @@ ADS_STATUS ads_gen_add(ADS_STRUCT *ads, const char *new_dn, ADS_MODLIST mods)
 	/* make sure the end of the list is NULL */
 	mods[i] = NULL;
 
-	ret = ldap_add_s(ads->ld, utf8_dn ? utf8_dn : new_dn, mods);
+	ret = ldap_add_s(ads->ld, utf8_dn, mods);
 	SAFE_FREE(utf8_dn);
 	return ADS_ERROR(ret);
 }
@@ -994,7 +994,7 @@ ADS_STATUS ads_del_dn(ADS_STRUCT *ads, char *del_dn)
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 	
-	ret = ldap_delete(ads->ld, utf8_dn ? utf8_dn : del_dn);
+	ret = ldap_delete(ads->ld, utf8_dn);
 	return ADS_ERROR(ret);
 }
 
@@ -1029,8 +1029,8 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 	ADS_MODLIST mods;
 	const char *objectClass[] = {"top", "person", "organizationalPerson",
 				     "user", "computer", NULL};
-	const char *servicePrincipalName[3] = {NULL, NULL, NULL};
-	char *psp;
+	const char *servicePrincipalName[5] = {NULL, NULL, NULL, NULL, NULL};
+	char *psp, *psp2;
 	unsigned acct_control;
 
 	if (!(ctx = talloc_init("machine_account")))
@@ -1051,10 +1051,16 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 				 ads->config.bind_path);
 	servicePrincipalName[0] = talloc_asprintf(ctx, "HOST/%s", hostname);
 	psp = talloc_asprintf(ctx, "HOST/%s.%s", 
-						  hostname, 
-						  ads->config.realm);
+			      hostname, 
+			      ads->config.realm);
 	strlower(&psp[5]);
 	servicePrincipalName[1] = psp;
+	servicePrincipalName[2] = talloc_asprintf(ctx, "CIFS/%s", hostname);
+	psp2 = talloc_asprintf(ctx, "CIFS/%s.%s", 
+			       hostname, 
+			       ads->config.realm);
+	strlower(&psp2[5]);
+	servicePrincipalName[3] = psp2;
 
 	free(ou_str);
 	if (!new_dn)
@@ -1405,6 +1411,7 @@ ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 	size_t          sd_size = 0;
 	struct berval   bval = {0, NULL};
 	prs_struct      ps_wire;
+	char           *escaped_hostname = escape_ldap_string_alloc(hostname);
 
 	LDAPMessage *res  = 0;
 	LDAPMessage *msg  = 0;
@@ -1420,10 +1427,17 @@ ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 
 	ret = ADS_ERROR(LDAP_SUCCESS);
 
-	if (asprintf(&exp, "(samAccountName=%s$)", hostname) == -1) {
-		DEBUG(1, ("ads_set_machine_sd: asprintf failed!\n"));
+	if (!escaped_hostname) {
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
+
+	if (asprintf(&exp, "(samAccountName=%s$)", escaped_hostname) == -1) {
+		DEBUG(1, ("ads_set_machine_sd: asprintf failed!\n"));
+		SAFE_FREE(escaped_hostname);
+		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
+
+	SAFE_FREE(escaped_hostname);
 
 	ret = ads_search(ads, (void *) &res, exp, attrs);
 
