@@ -868,6 +868,7 @@ char *lp_auto_services(void);
 char *lp_passwd_program(void);
 char *lp_passwd_chat(void);
 char *lp_passwordserver(void);
+char *lp_name_resolve_order(void);
 char *lp_workgroup(void);
 char *lp_username_map(void);
 char *lp_character_set(void);
@@ -1007,6 +1008,7 @@ BOOL lp_fake_oplocks(int );
 BOOL lp_recursive_veto_delete(int );
 BOOL lp_dos_filetimes(int );
 BOOL lp_dos_filetime_resolution(int );
+BOOL lp_fake_dir_create_times(int );
 int lp_create_mode(int );
 int lp_force_create_mode(int );
 int lp_dir_mode(int );
@@ -1038,6 +1040,7 @@ void lp_copy_service(int snum, char *new_name);
 int lp_default_server_announce(void);
 int lp_major_announce_version(void);
 int lp_minor_announce_version(void);
+void lp_set_name_resolve_order(char *new_order);
 
 /*The following definitions come from  locking.c  */
 
@@ -1126,6 +1129,10 @@ BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
 struct in_addr *name_query(int fd,char *name,int name_type, 
 			   BOOL bcast,BOOL recurse,
 			   struct in_addr to_ip, int *count, void (*fn)());
+FILE *startlmhosts(char *fname);
+BOOL getlmhostsent( FILE *fp, char *name, int *name_type, struct in_addr *ipaddr);
+void endlmhosts(FILE *fp);
+BOOL resolve_name(char *name, struct in_addr *return_ip);
 
 /*The following definitions come from  nmbd.c  */
 
@@ -1725,7 +1732,7 @@ time_t make_unix_date2(void *date_ptr);
 time_t make_unix_date3(void *date_ptr);
 char *http_timestring(time_t t);
 char *timestring(void );
-time_t get_create_time(struct stat *st);
+time_t get_create_time(struct stat *st,BOOL fake_dirs);
 
 /*The following definitions come from  trans2.c  */
 

@@ -3500,6 +3500,7 @@ static void usage(char *pname)
   DEBUG(0,("\t-m max protocol       set the max protocol level\n"));
   DEBUG(0,("\t-L host               get a list of shares available on a host\n"));
   DEBUG(0,("\t-I dest IP            use this IP to connect to\n"));
+  DEBUG(0,("\t-R name resolve order use these name resolution services only\n"));
   DEBUG(0,("\t-E                    write messages to stderr instead of stdout\n"));
   DEBUG(0,("\t-U username           set the network username\n"));
   DEBUG(0,("\t-W workgroup          set the workgroup name\n"));
@@ -3528,6 +3529,7 @@ static void usage(char *pname)
   extern char tar_type;
   static pstring servicesf = CONFIGFILE;
   pstring term_code;
+  pstring new_name_resolve_order;
   char *p;
 
 #ifdef KANJI
@@ -3538,6 +3540,8 @@ static void usage(char *pname)
 
   *query_host = 0;
   *base_directory = 0;
+
+  *new_name_resolve_order = 0;
 
   DEBUGLEVEL = 2;
 
@@ -3624,7 +3628,7 @@ static void usage(char *pname)
     }
 
   while ((opt = 
-	  getopt(argc, argv,"s:B:O:M:S:i:Nn:d:Pp:l:hI:EB:U:L:t:m:W:T:D:c:")) != EOF)
+	  getopt(argc, argv,"s:B:O:R:M:S:i:Nn:d:Pp:l:hI:EB:U:L:t:m:W:T:D:c:")) != EOF)
     switch (opt)
       {
       case 'm':
@@ -3633,6 +3637,9 @@ static void usage(char *pname)
       case 'O':
 	strcpy(user_socket_options,optarg);
 	break;	
+      case 'R':
+        pstrcpy(new_name_resolve_order, optarg);
+        break;
       case 'S':
 	strcpy(desthost,optarg);
 	strupper(desthost);
@@ -3759,6 +3766,9 @@ static void usage(char *pname)
   load_interfaces();
   get_myname((*myname)?NULL:myname,NULL);  
   strupper(myname);
+
+  if(*new_name_resolve_order)
+    lp_set_name_resolve_order(new_name_resolve_order);
 
   if (tar_type) {
     recurse=True;

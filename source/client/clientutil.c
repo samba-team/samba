@@ -29,8 +29,6 @@
 #define REGISTER 0
 #endif
 
-#define USENMB
-
 pstring service="";
 pstring desthost="";
 extern pstring myname;
@@ -863,7 +861,6 @@ BOOL cli_open_sockets(int port )
   char *host;
   pstring service2;
   extern int Client;
-  BOOL failed = True;
 
   if (port == 0) port=last_port;
   last_port=port;
@@ -894,37 +891,10 @@ BOOL cli_open_sockets(int port )
 
   if (!have_ip)
     {
-      struct hostent *hp;
-
-      if ((hp = Get_Hostbyname(host)))
+      if(!resolve_name( host, &dest_ip))
       {
-	putip((char *)&dest_ip,(char *)hp->h_addr);
-	failed = False;
-      }
-      else
-      {
-#ifdef USENMB
-	/* Try and resolve the name with the netbios server */
-	int           	bcast, count;
-	struct in_addr *ip_list;
-
-	if ((bcast = open_socket_in(SOCK_DGRAM, 0, 3,
-				    interpret_addr(lp_socket_address()))) != -1) {
-	  set_socket_options(bcast, "SO_BROADCAST");
-
-	  if ((ip_list = name_query(bcast, host, name_type, True, True, *iface_bcast(dest_ip),
-				    &count,0)) != NULL) {
-		  dest_ip = ip_list[0];
-		  free(ip_list);
-		  failed = False;
-	  }
-	  close (bcast);
-	}
-#endif
-	if (failed) {
-	  DEBUG(0,("Get_Hostbyname: Unknown host %s.\n",host));
+	  DEBUG(0,("cli_open_sockets: Unknown host %s.\n",host));
 	  return False;
-	}
       }
     }
 
