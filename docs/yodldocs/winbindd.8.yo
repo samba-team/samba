@@ -23,7 +23,7 @@ be configured throught the tt(/etc/nsswitch.conf) file.  Users and groups
 are allocated as they are resolved to a range of user and group ids
 specified by the administrator of the Samba system.  
 
-The service provided by bf(winbindd) is called `ntdom' and can be used to
+The service provided by bf(winbindd) is called `winbind' and can be used to
 resolve user and group information from a Windows NT server.  
 
 The following nsswitch databases are implemented by the bf(winbindd)
@@ -48,8 +48,9 @@ tt(/etc/nsswitch.conf) file can be used to initially resolve user and group
 information from tt(/etc/passwd) and tt(/etc/group) and then from the
 Windows NT server.
 
-passwd:         files ntdom
-group:          files ntdom
+tt(passwd:         files winbind)
+
+tt(group:          files winbind)
 
 label(OPTIONS)
 manpageoptions()
@@ -177,11 +178,11 @@ Name service switch configuration file.
 dit(/tmp/.winbindd/pipe)
 
 The UNIX pipe over which clients communicate with the bf(winbindd) program.
-For security reasons, the ntdom client will only attempt to connect to the
+For security reasons, the winbind client will only attempt to connect to the
 bf(winbindd) daemon if both the tt(/tmp/.winbindd) directory and
 tt(/tmp/.winbindd/pipe) file are owned by root.
 
-dit(/lib/libnss_ntdom.so.X)
+dit(/lib/libnss_winbind.so.X)
 
 Implementation of name service switch library. 
 
