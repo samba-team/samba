@@ -300,7 +300,8 @@ static int ads_user_add(int argc, const char **argv)
 
 	/* try setting the password */
 	asprintf(&upn, "%s@%s", argv[0], ads->config.realm);
-	status = krb5_set_password(ads->auth.kdc_server, upn, argv[1], ads->auth.time_offset);
+	status = ads_krb5_set_password(ads->auth.kdc_server, upn, argv[1], 
+				       ads->auth.time_offset);
 	safe_free(upn);
 	if (ADS_ERR_OK(status)) {
 		d_printf("User %s added\n", argv[0]);
