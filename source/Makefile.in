@@ -75,7 +75,7 @@ LOCKDIR = @lockdir@
 CODEPAGEDIR = $(LIBDIR)/codepages
 
 # The current codepage definition list.
-CODEPAGELIST= 437 737 850 852 861 932 866 949 950 936
+CODEPAGELIST= 437 737 775 850 852 861 932 866 949 950 936 1251 ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 KOI-R
 
 # where you are going to have the smbrun binary. This defaults to the 
 # install directory. This binary is needed for correct printing
@@ -113,7 +113,7 @@ SPROGS = bin/smbd bin/lsarpcd bin/svcctld bin/spoolssd bin/samrd \
          bin/srvsvcd bin/wkssvcd bin/browserd bin/netlogond bin/winregd \
          bin/nmbd bin/swat
 PROGS1 = bin/smbclient bin/testparm bin/testprns bin/smbrun bin/smbstatus 
-PROGS2 = bin/rpcclient bin/smbpasswd bin/make_smbcodepage bin/debug2html 
+PROGS2 = bin/rpcclient bin/smbpasswd bin/make_smbcodepage bin/make_unicodemap 
 PROGS3 = bin/regedit bin/samedit bin/net bin/svccontrol bin/cmdat bin/ntspool
 PROGS4 = @WRAP@ @WRAP32@
 #MPROGS = @MPROGS@
@@ -466,6 +466,8 @@ SMBSH_OBJ = smbwrapper/smbsh.o smbwrapper/shared.o
 
 MAKE_SMBCODEPAGE_OBJ = utils/make_smbcodepage.o
 
+MAKE_UNICODEMAP_OBJ = utils/make_unicodemap.o
+
 MAKE_PRINTERDEF_OBJ = utils/make_printerdef.o
 
 STATUS_OBJ = utils/status.o $(LIBSTATUS_OBJ) $(LOCKING_OBJ) \
@@ -785,6 +787,7 @@ MAKEDIR = || exec false; \
 @MAINT@	@if (: >> .deps/$@ || : > .deps/$@) >/dev/null 2>&1; then :; \
 @MAINT@	 else dir=.deps/`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` \
 @MAINT@	      $(MAKEDIR); fi; rm -f .deps/$@ .deps/$@d
+@BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
 	@echo Compiling $< with libtool
 	@$(LIBTOOL) --mode=compile \
 	  $(CC) -I. -I$(srcdir) $(FLAGS) -c $< \
@@ -813,6 +816,7 @@ MAKEDIR = || exec false; \
 	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
 @MAINT@	@if (: >> .deps/$@ || : > .deps/$@) >/dev/null 2>&1; then :; \
 @MAINT@	 else dir=.deps/`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` \
+@BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.po$$%.o%'` $@.o
 @MAINT@	      $(MAKEDIR); fi; rm -f .deps/$@ .deps/$@d
 	@echo Compiling $*.c with @PICFLAG@ and -32
 	@$(CC) -32 -I. -I$(srcdir) $(FLAGS) @PICFLAG@ -c $< \
@@ -828,6 +832,7 @@ bin/.dummy:
 	@: >> $@ || : > $@ # what a fancy emoticon!
 
 bin/libsurs.la: $(LIBSURS_LTOBJS) bin/.dummy
+@BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.po32$$%.o%'` $@.o
 	@echo Linking shared library $@
 	@$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
 	  $(LIBSURS_LTOBJS)
@@ -1029,6 +1034,10 @@ bin/make_smbcodepage: $(SAMBALIB) $(MAKE_SMBCODEPAGE_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(MAKE_SMBCODEPAGE_OBJ) $(SAMBALIB) $(LIBS)
 
+bin/make_unicodemap: $(SAMBALIB) $(MAKE_UNICODEMAP_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(LINK) -o $@ $(MAKE_UNICODEMAP_OBJ) $(SAMBALIB) $(LIBS)
+
 bin/nmblookup: $(SAMBALIB) $(NMBLIB) $(NMBLOOKUP_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(NMBLOOKUP_OBJ) $(NMBLIB) $(SAMBALIB) $(LIBS)
@@ -1216,10 +1225,10 @@ AUTOHEADER=@AUTOHEADER@
 
 # when configure.in is updated, reconfigure
 $(srcdir)/configure: @MAINT@ $(srcdir)/configure.in $(srcdir)/aclocal.m4
-	cd $(srcdir) && $(AUTOCONF)
+	echo "WARNING: you need to rerun configure"
 
 config.status: $(srcdir)/configure
-	$(SHELL) ./config.status --recheck
+	echo "WARNING: you need to run ./config.status --recheck"
 
 Makefile: $(srcdir)/Makefile.in config.status \
 	  include/stamp-h # just to ensure that config.h is up-to-date

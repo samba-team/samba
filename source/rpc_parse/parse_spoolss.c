@@ -274,7 +274,8 @@ static BOOL smb_io_notify_option_type_ctr(char *desc, SPOOL_NOTIFY_OPTION_TYPE_C
 
 	/* reading */
 	if (UNMARSHALLING(ps))
-		ctr->type=(SPOOL_NOTIFY_OPTION_TYPE *)malloc(ctr->count*sizeof(SPOOL_NOTIFY_OPTION_TYPE));
+		if((ctr->type=(SPOOL_NOTIFY_OPTION_TYPE *)malloc(ctr->count*sizeof(SPOOL_NOTIFY_OPTION_TYPE))) == NULL)
+			return False;
 		
 	/* the option type struct */
 	for(i=0;i<ctr->count;i++)
@@ -389,7 +390,7 @@ BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
 	uint32 x;
 	BOOL isvalue;
 	
-	prs_debug(ps, depth, desc, "smb_io_notify_info_data");
+	prs_debug(ps, depth, desc, "smb_io_notify_info_data_strings");
 	depth++;
 	
 	if(!prs_align(ps))
@@ -1143,7 +1144,8 @@ BOOL spoolss_io_q_rffpcnex(char *desc, SPOOL_Q_RFFPCNEX *q_u, prs_struct *ps, in
 	if (q_u->option_ptr!=0) {
 	
 		if (UNMARSHALLING(ps))
-			q_u->option=(SPOOL_NOTIFY_OPTION *)malloc(sizeof(SPOOL_NOTIFY_OPTION));
+			if((q_u->option=(SPOOL_NOTIFY_OPTION *)malloc(sizeof(SPOOL_NOTIFY_OPTION))) == NULL)
+				return False;
 	
 		if(!smb_io_notify_option("notify option", q_u->option, ps, depth))
 			return False;
@@ -1191,7 +1193,8 @@ BOOL spoolss_io_q_rfnpcnex(char *desc, SPOOL_Q_RFNPCNEX *q_u, prs_struct *ps, in
 	if (q_u->option_ptr!=0) {
 	
 		if (UNMARSHALLING(ps))
-			q_u->option=(SPOOL_NOTIFY_OPTION *)malloc(sizeof(SPOOL_NOTIFY_OPTION));
+			if((q_u->option=(SPOOL_NOTIFY_OPTION *)malloc(sizeof(SPOOL_NOTIFY_OPTION))) == NULL)
+				return False;
 	
 		if(!smb_io_notify_option("notify option", q_u->option, ps, depth))
 			return False;
@@ -1431,7 +1434,8 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 				return False;
 			
 			l_chaine=str_len_uni(&chaine);
-			chaine2=(uint16 *)Realloc(chaine2, (l_chaine2+l_chaine+1)*sizeof(uint16));
+			if((chaine2=(uint16 *)Realloc(chaine2, (l_chaine2+l_chaine+1)*sizeof(uint16))) == NULL)
+				return False;
 			memcpy(chaine2+l_chaine2, chaine.buffer, (l_chaine+1)*sizeof(uint16));
 			l_chaine2+=l_chaine+1;
 		
@@ -1485,7 +1489,8 @@ static BOOL new_smb_io_reldevmode(char *desc, NEW_BUFFER *buffer, int depth, DEV
 		prs_set_offset(ps, buffer->string_at_end + buffer->struct_start);
 
 		/* read the string */
-		*devmode=(DEVICEMODE *)malloc(sizeof(DEVICEMODE));
+		if((*devmode=(DEVICEMODE *)malloc(sizeof(DEVICEMODE))) == NULL)
+			return False;
 		if (!spoolss_io_devmode(desc, ps, depth, *devmode))
 			return False;
 
@@ -1986,16 +1991,21 @@ void new_spoolss_move_buffer(NEW_BUFFER *src, NEW_BUFFER **dest)
 /*******************************************************************
  create a BUFFER struct.
 ********************************************************************/  
-void new_spoolss_allocate_buffer(NEW_BUFFER **buffer)
+BOOL new_spoolss_allocate_buffer(NEW_BUFFER **buffer)
 {
 	if (buffer==NULL)
-		return;
+		return False;
 		
-	*buffer=(NEW_BUFFER *)malloc(sizeof(NEW_BUFFER));
+	if((*buffer=(NEW_BUFFER *)malloc(sizeof(NEW_BUFFER))) == NULL) {
+		DEBUG(0,("new_spoolss_allocate_buffer: malloc fail for size %u.\n",
+				(unsigned int)sizeof(NEW_BUFFER) ));
+		return False;
+	}
 	
 	(*buffer)->ptr=0x0;
 	(*buffer)->size=0;
 	(*buffer)->string_at_end=0;	
+	return True;
 }
 
 /*******************************************************************
@@ -2315,8 +2325,11 @@ uint32 spoolss_size_printer_driver_info_3(DRIVER_INFO_3 *info)
 	
 	for (i=0; (string[i]!=0x0000) || (string[i+1]!=0x0000); i++);
 
-	size+=2*i;
-	size+=6;
+	i=i+2; /* to count all chars including the leading zero */
+	i=2*i; /* because we need the value in bytes */
+	i=i+4; /* the offset pointer size */
+
+	size+=i;
 
 	return size;
 }
