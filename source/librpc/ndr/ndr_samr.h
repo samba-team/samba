@@ -156,7 +156,7 @@ struct samr_DomInfo7 {
 
 struct samr_DomInfo8 {
 	HYPER_T sequence_num;
-	NTTIME last_modify_time;
+	NTTIME last_xxx_time;
 };
 
 struct samr_DomInfo9 {
@@ -188,7 +188,7 @@ struct samr_DomInfo12 {
 
 struct samr_DomInfo13 {
 	HYPER_T sequence_num;
-	NTTIME last_modify_time;
+	NTTIME last_xxx_time;
 	uint32 foo7;
 	uint32 foo8;
 };
@@ -203,7 +203,6 @@ union samr_DomainInfo {
 /* [case(7)] */ struct samr_DomInfo7 info7;
 /* [case(8)] */ struct samr_DomInfo8 info8;
 /* [case(9)] */ struct samr_DomInfo9 info9;
-/* [case(10)] */ struct samr_DomInfo1 info10;
 /* [case(11)] */ struct samr_DomInfo11 info11;
 /* [case(12)] */ struct samr_DomInfo12 info12;
 /* [case(13)] */ struct samr_DomInfo13 info13;
@@ -242,11 +241,17 @@ struct samr_CREATE_DOM_GROUP {
 
 };
 
-struct samr_ENUM_DOM_GROUPS {
+struct samr_EnumDomainGroups {
 	struct {
+		struct policy_handle *handle;
+		uint32 *resume_handle;
+		uint32 max_size;
 	} in;
 
 	struct {
+		uint32 *resume_handle;
+		struct samr_SamArray *sam;
+		uint32 num_entries;
 		NTSTATUS result;
 	} out;
 
@@ -262,11 +267,18 @@ struct samr_CREATE_USER_IN_DOMAIN {
 
 };
 
-struct samr_ENUM_DOM_USERS {
+struct samr_EnumDomainUsers {
 	struct {
+		struct policy_handle *handle;
+		uint32 *resume_handle;
+		uint32 acct_flags;
+		uint32 max_size;
 	} in;
 
 	struct {
+		uint32 *resume_handle;
+		struct samr_SamArray *sam;
+		uint32 num_entries;
 		NTSTATUS result;
 	} out;
 
@@ -827,9 +839,9 @@ struct samr_VALIDATE_PASSWORD {
 #define DCERPC_SAMR_QUERYDOMAININFO 8
 #define DCERPC_SAMR_SET_DOMAIN_INFO 9
 #define DCERPC_SAMR_CREATE_DOM_GROUP 10
-#define DCERPC_SAMR_ENUM_DOM_GROUPS 11
+#define DCERPC_SAMR_ENUMDOMAINGROUPS 11
 #define DCERPC_SAMR_CREATE_USER_IN_DOMAIN 12
-#define DCERPC_SAMR_ENUM_DOM_USERS 13
+#define DCERPC_SAMR_ENUMDOMAINUSERS 13
 #define DCERPC_SAMR_CREATE_DOM_ALIAS 14
 #define DCERPC_SAMR_ENUM_DOM_ALIASES 15
 #define DCERPC_SAMR_GET_ALIAS_MEMBERSHIP 16

@@ -99,8 +99,11 @@ NTSTATUS ndr_push_samr_CREATE_DOM_GROUP(struct ndr_push *ndr, struct samr_CREATE
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_samr_ENUM_DOM_GROUPS(struct ndr_push *ndr, struct samr_ENUM_DOM_GROUPS *r)
+NTSTATUS ndr_push_samr_EnumDomainGroups(struct ndr_push *ndr, struct samr_EnumDomainGroups *r)
 {
+	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
+	NDR_CHECK(ndr_push_uint32(ndr, *r->in.resume_handle));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.max_size));
 
 	return NT_STATUS_OK;
 }
@@ -111,8 +114,12 @@ NTSTATUS ndr_push_samr_CREATE_USER_IN_DOMAIN(struct ndr_push *ndr, struct samr_C
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_samr_ENUM_DOM_USERS(struct ndr_push *ndr, struct samr_ENUM_DOM_USERS *r)
+NTSTATUS ndr_push_samr_EnumDomainUsers(struct ndr_push *ndr, struct samr_EnumDomainUsers *r)
 {
+	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
+	NDR_CHECK(ndr_push_uint32(ndr, *r->in.resume_handle));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.acct_flags));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.max_size));
 
 	return NT_STATUS_OK;
 }
@@ -693,7 +700,7 @@ static NTSTATUS ndr_pull_samr_DomInfo8(struct ndr_pull *ndr, int ndr_flags, stru
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 8));
 	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->sequence_num));
-	NDR_CHECK(ndr_pull_NTTIME(ndr, &r->last_modify_time));
+	NDR_CHECK(ndr_pull_NTTIME(ndr, &r->last_xxx_time));
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 done:
@@ -756,7 +763,7 @@ static NTSTATUS ndr_pull_samr_DomInfo13(struct ndr_pull *ndr, int ndr_flags, str
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 8));
 	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->sequence_num));
-	NDR_CHECK(ndr_pull_NTTIME(ndr, &r->last_modify_time));
+	NDR_CHECK(ndr_pull_NTTIME(ndr, &r->last_xxx_time));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->foo7));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->foo8));
 buffers:
@@ -804,10 +811,6 @@ static NTSTATUS ndr_pull_samr_DomainInfo(struct ndr_pull *ndr, int ndr_flags, ui
 
 	case 9: {
 	NDR_CHECK(ndr_pull_samr_DomInfo9(ndr, NDR_SCALARS, &r->info9));
-	break; }
-
-	case 10: {
-	NDR_CHECK(ndr_pull_samr_DomInfo1(ndr, NDR_SCALARS, &r->info10));
 	break; }
 
 	case 11: {
@@ -864,10 +867,6 @@ buffers:
 		NDR_CHECK(ndr_pull_samr_DomInfo9(ndr, NDR_BUFFERS, &r->info9));
 	break;
 
-	case 10:
-		NDR_CHECK(ndr_pull_samr_DomInfo1(ndr, NDR_BUFFERS, &r->info10));
-	break;
-
 	case 11:
 		NDR_CHECK(ndr_pull_samr_DomInfo11(ndr, NDR_BUFFERS, &r->info11));
 	break;
@@ -921,8 +920,20 @@ NTSTATUS ndr_pull_samr_CREATE_DOM_GROUP(struct ndr_pull *ndr, struct samr_CREATE
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_samr_ENUM_DOM_GROUPS(struct ndr_pull *ndr, struct samr_ENUM_DOM_GROUPS *r)
+NTSTATUS ndr_pull_samr_EnumDomainGroups(struct ndr_pull *ndr, struct samr_EnumDomainGroups *r)
 {
+	uint32 _ptr_sam;
+	NDR_CHECK(ndr_pull_uint32(ndr, r->out.resume_handle));
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_sam));
+	if (_ptr_sam) {
+		NDR_ALLOC(ndr, r->out.sam);
+	} else {
+		r->out.sam = NULL;
+	}
+	if (r->out.sam) {
+		NDR_CHECK(ndr_pull_samr_SamArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sam));
+	}
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.num_entries));
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
@@ -935,8 +946,20 @@ NTSTATUS ndr_pull_samr_CREATE_USER_IN_DOMAIN(struct ndr_pull *ndr, struct samr_C
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_samr_ENUM_DOM_USERS(struct ndr_pull *ndr, struct samr_ENUM_DOM_USERS *r)
+NTSTATUS ndr_pull_samr_EnumDomainUsers(struct ndr_pull *ndr, struct samr_EnumDomainUsers *r)
 {
+	uint32 _ptr_sam;
+	NDR_CHECK(ndr_pull_uint32(ndr, r->out.resume_handle));
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_sam));
+	if (_ptr_sam) {
+		NDR_ALLOC(ndr, r->out.sam);
+	} else {
+		r->out.sam = NULL;
+	}
+	if (r->out.sam) {
+		NDR_CHECK(ndr_pull_samr_SamArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sam));
+	}
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.num_entries));
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
@@ -1434,7 +1457,7 @@ void ndr_print_samr_DomInfo8(struct ndr_print *ndr, const char *name, struct sam
 	ndr_print_struct(ndr, name, "samr_DomInfo8");
 	ndr->depth++;
 	ndr_print_HYPER_T(ndr, "sequence_num", r->sequence_num);
-	ndr_print_NTTIME(ndr, "last_modify_time", r->last_modify_time);
+	ndr_print_NTTIME(ndr, "last_xxx_time", r->last_xxx_time);
 	ndr->depth--;
 }
 
@@ -1482,7 +1505,7 @@ void ndr_print_samr_DomInfo13(struct ndr_print *ndr, const char *name, struct sa
 	ndr_print_struct(ndr, name, "samr_DomInfo13");
 	ndr->depth++;
 	ndr_print_HYPER_T(ndr, "sequence_num", r->sequence_num);
-	ndr_print_NTTIME(ndr, "last_modify_time", r->last_modify_time);
+	ndr_print_NTTIME(ndr, "last_xxx_time", r->last_xxx_time);
 	ndr_print_uint32(ndr, "foo7", r->foo7);
 	ndr_print_uint32(ndr, "foo8", r->foo8);
 	ndr->depth--;
@@ -1526,10 +1549,6 @@ void ndr_print_samr_DomainInfo(struct ndr_print *ndr, const char *name, uint16 l
 
 	case 9:
 	ndr_print_samr_DomInfo9(ndr, "info9", &r->info9);
-	break;
-
-	case 10:
-	ndr_print_samr_DomInfo1(ndr, "info10", &r->info10);
 	break;
 
 	case 11:
