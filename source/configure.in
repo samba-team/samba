@@ -22,13 +22,8 @@ case "$host_os" in
         *next2*) AC_DEFINE(NEXT2);;
 esac
 
-if test x"$ac_cv_canonical_host" != x &&
-   test x"$ac_cv_canonical_host" != x"$host"; then
-   echo "system config has changed - remove config.cache"; exit 1;
-fi
-
-AC_CACHE_VAL(ac_cv_canonical_host, ac_cv_canonical_host=$host;)
-
+AC_VALIDATE_CACHE_SYSTEM_TYPE
+SAMBA_MAINTAINER_MODE
 
 AC_INLINE
 AC_HEADER_STDC
@@ -809,7 +804,6 @@ echo "checking configure summary"
 AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
            echo "configure OK";,
 	   AC_MSG_ERROR([summary failure. Aborting config]),:)
-
 
 AC_OUTPUT(Makefile tests/dummy client/dummy lib/dummy ubiqx/dummy
 web/dummy param/dummy nmbd/dummy smbd/dummy rpc_server/dummy
