@@ -182,8 +182,6 @@ kerberos-adm stream     tcp     nowait  root /usr/heimdal/libexec/kadmind kadmin
 You might need to add @samp{kerberos-adm} to your @file{/etc/services}
 as 749/tcp.
 
-You need to add a key for @samp{kadmin/admin} to your keytab.
-
 Access to the admin server is controlled by an acl-file, (default
 @file{/var/heimdal/kadmind.acl}.) The lines in the access file, has the
 following syntax:
@@ -196,6 +194,14 @@ The privileges you can assign to a principal are: @samp{add},
 @samp{get}, @samp{list}, and @samp{modify}, or the special privilege
 @samp{all}. All of these roughly corresponds to the different commands
 in @samp{kadmin}.
+
+@section Password changing
+
+To allow users to change their passwords, you should run @samp{kpasswdd}.
+It is not run from @samp{inetd}.
+
+You might need to add @samp{kpasswd} to your @file{/etc/services} as
+464/udp.
 
 @section Testing clients and servers
 
