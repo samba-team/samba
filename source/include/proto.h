@@ -2084,6 +2084,7 @@ void lp_set_name_resolve_order(char *new_order);
 char *lp_printername(int snum);
 void get_private_directory(pstring priv_dir);
 void lp_set_logfile(const char *name);
+const char *get_called_name(void);
 
 /*The following definitions come from  param/params.c  */
 

@@ -3760,3 +3760,13 @@ void lp_set_logfile(const char *name)
 	pstrcpy(Globals.szLogFile, name);
 	pstrcpy(debugf, name);
 }
+
+/*******************************************************************
+ Return the NetBIOS called name.
+********************************************************************/
+
+const char *get_called_name(void)
+{
+	extern fstring local_machine;
+        return (*local_machine) ? local_machine : global_myname;
+}
