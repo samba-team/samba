@@ -49,6 +49,7 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname, BOOL allow_w
 	const char *s = srcname;
 	NTSTATUS ret = NT_STATUS_OK;
 	BOOL start_of_name_component = True;
+	unsigned int num_bad_components = 0;
 
 	while (*s) {
 		if (IS_DIRECTORY_SEP(*s)) {
@@ -97,32 +98,21 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname, BOOL allow_w
 				}
 				s += 2; /* Else go past the .. */
 				/* We're still at the start of a name component, just the previous one. */
+
+				if (num_bad_components) {
+					/* Hmmm. Should we only decrement the bad_components if
+					   we're removing a bad component ? Need to check this. JRA. */
+					num_bad_components--;
+				}
+
 				continue;
 
-			} else if ((s[0] == '.') && (s[1] == '\0')) {
+			} else if ((s[0] == '.') && ((s[1] == '\0') || IS_DIRECTORY_SEP(s[1]))) {
 				/* Component of pathname can't be "." only. */
 				ret =  NT_STATUS_OBJECT_NAME_INVALID;
-				break;
-			} else if ((s[0] == '.') && IS_DIRECTORY_SEP(s[1])) {
-				/*
-				 * No mb char starts with '.' so we're safe checking the directory separator here.
-				 */
-
-				/* Component of pathname can't be ".\\ANYTHING". */
-
-				/* "/./" or "\\.\\" fails with a different error depending on what is after it... */
-
-				/* Eat multiple '/' or '\\' */
-				for (s++; IS_DIRECTORY_SEP(*s); s++) {
-					;	
-				}
-
-				if (*s == '\0') {
-					ret = NT_STATUS_OBJECT_NAME_INVALID;
-				} else {
-					ret = NT_STATUS_OBJECT_PATH_NOT_FOUND;
-				}
-				break;
+				num_bad_components++;
+				*d++ = *s++;
+				continue;
 			}
 		}
 
@@ -160,6 +150,23 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname, BOOL allow_w
 			}
 		}
 		start_of_name_component = False;
+		if (num_bad_components) {
+			num_bad_components++;
+		}
+	}
+
+	if (NT_STATUS_EQUAL(ret, NT_STATUS_OBJECT_NAME_INVALID)) {
+		/* For some strange reason being called from findfirst changes
+		   the num_components number to cause the error return to change. JRA. */
+		if (allow_wcard_names) {
+			if (num_bad_components > 2) {
+				ret = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			}
+		} else {
+			if (num_bad_components > 1) {
+				ret = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			}
+		}
 	}
 
 	*d = '\0';
