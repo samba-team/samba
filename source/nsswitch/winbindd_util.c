@@ -64,49 +64,59 @@ static struct winbindd_domain *add_trusted_domain(char *domain_name,
 
 BOOL get_domain_info(void)
 {
-	uint32 enum_ctx = 0;
-	uint32 num_doms = 0;
+	uint32 enum_ctx = 0, num_doms = 0;
 	char **domains = NULL;
 	DOM_SID *sids = NULL, domain_sid;
         NTSTATUS result;
         CLI_POLICY_HND *hnd;
 	int i;
         fstring level5_dom;
+        BOOL rv = False;
+        TALLOC_CTX *mem_ctx = NULL;
 	
 	DEBUG(1, ("getting trusted domain list\n"));
+
+        if (!(mem_ctx = talloc_init()))
+                goto done;
 
 	/* Add our workgroup - keep handle to look up trusted domains */
 
         if (!(hnd = cm_get_lsa_handle(lp_workgroup())))
-                return False;
+                goto done;
 
-        result = cli_lsa_query_info_policy(hnd->cli, hnd->cli->mem_ctx,
+        result = cli_lsa_query_info_policy(hnd->cli, mem_ctx,
                                            &hnd->pol, 0x05, level5_dom,
                                            &domain_sid);
 
         if (!NT_STATUS_IS_OK(result))
-                return False;
+                goto done;
 
 	add_trusted_domain(lp_workgroup(), &domain_sid);
 	
 	/* Enumerate list of trusted domains */	
 
         if (!(hnd = cm_get_lsa_handle(lp_workgroup())))
-                return False;
+                goto done;
 
-        result = cli_lsa_enum_trust_dom(hnd->cli, hnd->cli->mem_ctx,
+        result = cli_lsa_enum_trust_dom(hnd->cli, mem_ctx,
                                         &hnd->pol, &enum_ctx, &num_doms, 
                                         &domains, &sids);
 	
         if (!NT_STATUS_IS_OK(result))
-                return False;
+                goto done;
 	
         /* Add each domain to the trusted domain list */
 
 	for(i = 0; i < num_doms; i++)
 		add_trusted_domain(domains[i], &sids[i]);
-	
-	return True;
+
+        rv = True;	
+
+ done:
+        if (mem_ctx)
+                talloc_destroy(mem_ctx);
+
+        return rv;
 }
 
 /* Connect to a domain controller using get_any_dc_name() to discover 
@@ -115,53 +125,65 @@ BOOL get_domain_info(void)
 BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
 {
         fstring level5_dom;
-        uint32 enum_ctx = 0;
-        uint32 num_doms = 0;
+        uint32 enum_ctx = 0, num_doms = 0;
         char **domains = NULL;
         DOM_SID *sids = NULL;
         CLI_POLICY_HND *hnd;
         NTSTATUS result;
+        BOOL rv = False;
+        TALLOC_CTX *mem_ctx = NULL;
         
         DEBUG(1, ("looking up sid for domain %s\n", domain_name));
         
+        if (!(mem_ctx = talloc_init()))
+                return False;
+        
         if (!(hnd = cm_get_lsa_handle(domain_name)))
-            return False;
+                goto done;
         
         /* Do a level 5 query info policy if we are looking up the SID for
            our own domain. */
         
         if (strequal(domain_name, lp_workgroup())) {
                 
-                result = cli_lsa_query_info_policy(hnd->cli, hnd->cli->mem_ctx,
+                result = cli_lsa_query_info_policy(hnd->cli, mem_ctx,
                                                    &hnd->pol, 0x05, level5_dom,
                                                    &domain->sid);
                 
-                return NT_STATUS_IS_OK(result);
+                rv = NT_STATUS_IS_OK(result);
+                goto done;
         } 
         
         /* Use lsaenumdomains to get sid for this domain */
         
-        result = cli_lsa_enum_trust_dom(hnd->cli, hnd->cli->mem_ctx, &hnd->pol,
+        result = cli_lsa_enum_trust_dom(hnd->cli, mem_ctx, &hnd->pol,
                                         &enum_ctx, &num_doms, &domains, &sids);
         
         /* Look for domain name */
         
         if (NT_STATUS_IS_OK(result) && domains && sids) {
-                int found = False;
+                BOOL found = False;
                 int i;
                 
                 for(i = 0; i < num_doms; i++) {
                         if (strequal(domain_name, domains[i])) {
                                 sid_copy(&domain->sid, &sids[i]);
                                 found = True;
-			    break;
+                                break;
                         }
                 }
                 
-                return found;
+                rv = found;
+                goto done;
         }
-        
-        return NT_STATUS_IS_OK(result);
+      
+        rv = False;             /* An error occured with a trusted domain */
+
+ done:
+        if (mem_ctx)
+                talloc_destroy(mem_ctx);
+
+        return rv;
 }
 
 /* Lookup a sid in a domain from a name */
@@ -174,18 +196,23 @@ BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid,
         uint32 *types = NULL;
         CLI_POLICY_HND *hnd;
         NTSTATUS result;
+        TALLOC_CTX *mem_ctx = NULL;
+        BOOL rv = False;
         
         /* Don't bother with machine accounts */
         
         if (name[strlen(name) - 1] == '$')
                 return False;
-        
+
         /* Lookup name */
         
-        if (!(hnd = cm_get_lsa_handle(lp_workgroup())))
+        if (!(mem_ctx = talloc_init()))
                 return False;
         
-        result = cli_lsa_lookup_names(hnd->cli, hnd->cli->mem_ctx, &hnd->pol, 
+        if (!(hnd = cm_get_lsa_handle(lp_workgroup())))
+                goto done;
+        
+        result = cli_lsa_lookup_names(hnd->cli, mem_ctx, &hnd->pol, 
                                       num_names, (char **)&name, &sids, 
                                       &types, &num_sids);
         
@@ -202,11 +229,15 @@ BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid,
                 
                 if ((type != NULL) && (types != NULL))
                         *type = types[0];
-
-                return True;
         }
+
+        rv = NT_STATUS_IS_OK(result);
+
+ done:
+        if (mem_ctx)
+                talloc_destroy(mem_ctx);
         
-        return False;
+        return rv;
 }
 
 /* Lookup a name in a domain from a sid */
@@ -219,13 +250,18 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name,
         char **names;
         CLI_POLICY_HND *hnd;
         NTSTATUS result;
+        TALLOC_CTX *mem_ctx;
+        BOOL rv = False;
         
         /* Lookup name */
+
+        if (!(mem_ctx = talloc_init()))
+                goto done;
         
         if (!(hnd = cm_get_lsa_handle(lp_workgroup())))
-                return False;
+                goto done;
         
-        result = cli_lsa_lookup_sids(hnd->cli, hnd->cli->mem_ctx, &hnd->pol,
+        result = cli_lsa_lookup_sids(hnd->cli, mem_ctx, &hnd->pol,
                                      num_sids, sid, &names, &types, 
                                      &num_names);
 
@@ -242,11 +278,15 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name,
 
                 if ((type != NULL) && (types != NULL))
                         *type = types[0];
-
-                return True;
         }
+
+        rv = NT_STATUS_IS_OK(result);
         
-        return False;
+ done:
+        if (mem_ctx)
+                talloc_destroy(mem_ctx);
+
+        return rv;
 }
 
 /* Lookup user information from a rid */
