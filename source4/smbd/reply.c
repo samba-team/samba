@@ -1187,6 +1187,11 @@ void reply_exit(struct request_context *req)
 
 	req->async.send_fn = reply_simple_send;
 
+	if (!req->conn) {
+		req_reply_error(req, NT_STATUS_INVALID_HANDLE);
+		return;
+	}
+
 	/* call backend */
 	req->async.status = req->conn->ntvfs_ops->exit(req);
 	
