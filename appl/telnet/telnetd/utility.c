@@ -35,8 +35,14 @@
 static char sccsid[] = "@(#)utility.c	8.4 (Berkeley) 5/30/95";
 #endif /* not lint */
 
+#include <config.h>
+
 #define PRINTOPTIONS
 #include "telnetd.h"
+
+#ifdef HAVE_UNAME
+#include <sys/utsname.h>
+#endif
 
 /*
  * utility functions performing io related tasks
@@ -445,6 +451,9 @@ putf(cp, where)
 	register char *cp;
 	char *where;
 {
+#ifdef HAVE_UNAME
+        struct utsname name;
+#endif
 	char *slash;
 	time_t t;
 	char db[100];
@@ -452,6 +461,20 @@ putf(cp, where)
 	extern char *strchr();
 #else
 	extern char *strrchr();
+#endif
+
+/* if we don't have uname, set these to sensible values */
+	char *sysname = "Unix", 
+	  *machine = "", 
+	  *release = "",
+	  *version = ""; 
+
+#ifdef HAVE_UNAME
+	uname(&name);
+	sysname=name.sysname;
+	machine=name.machine;
+	release=name.release;
+	version=name.version;
 #endif
 
 	putlocation = where;
@@ -479,6 +502,22 @@ putf(cp, where)
 		case 'h':
 			putstr(editedhost);
 			break;
+
+		case 's':
+		  putstr(sysname);
+		  break;
+
+		case 'm':
+		  putstr(machine);
+		  break;
+
+		case 'r':
+		  putstr(release);
+		  break;
+
+		case 'v':
+		  putstr(version);
+		  break;
 
 		case 'd':
 			(void)time(&t);
