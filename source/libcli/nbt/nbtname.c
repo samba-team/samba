@@ -214,8 +214,9 @@ NTSTATUS ndr_push_nbt_name(struct ndr_push *ndr, int ndr_flags, struct nbt_name 
 	uint_t num_components;
 	uint8_t *components[MAX_COMPONENTS];
 	char *dscope=NULL, *p;
-	uint8_t *cname;
+	uint8_t *cname, *fullname;
 	int i;
+	int fulllen;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NT_STATUS_OK;
@@ -246,14 +247,31 @@ NTSTATUS ndr_push_nbt_name(struct ndr_push *ndr, int ndr_flags, struct nbt_name 
 	if (num_components == MAX_COMPONENTS) {
 		return NT_STATUS_BAD_NETWORK_NAME;
 	}
+
+	fullname = talloc_asprintf(ndr, "%c%s", (unsigned char)strlen(cname), cname);
+	NT_STATUS_HAVE_NO_MEMORY(fullname);
 		
-	/* push the components */
-	for (i=0;i<num_components;i++) {
-		uint8_t len = strlen(components[i]);
-		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, len));
-		NDR_CHECK(ndr_push_bytes(ndr, components[i], len));
+	for (i=1;i<num_components;i++) {
+		fullname = talloc_asprintf_append(fullname, "%c%s", 
+						  (unsigned char)strlen(components[i]), components[i]);
+		NT_STATUS_HAVE_NO_MEMORY(fullname);
 	}
-	NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, 0));
+
+	/* see if we can find the fullname in the existing packet - if
+	   so, we can use a NBT name pointer. This allows us to fit
+	   longer names into the packet */
+	fulllen = strlen(fullname)+1;
+	for (i=0;i + fulllen < ndr->offset;i++) {
+		if (ndr->data[i] == fullname[0] &&
+		    memcmp(fullname, &ndr->data[i], fulllen) == 0) {
+			talloc_free(fullname);
+			return ndr_push_uint16(ndr, NDR_SCALARS, 0xC000 | i);
+		}
+	}
+
+	NDR_CHECK(ndr_push_bytes(ndr, fullname, fulllen));
+
+	talloc_free(fullname);
 
 	return NT_STATUS_OK;
 }
