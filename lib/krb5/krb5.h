@@ -236,6 +236,10 @@ typedef struct krb5_context_data *krb5_context;
 
 typedef Realm krb5_realm;
 typedef const char *krb5_const_realm; /* stupid language */
+
+#define krb5_realm_length(r) strlen(r)
+#define krb5_realm_data(r) (r)
+
 typedef Principal krb5_principal_data;
 typedef struct Principal *krb5_principal;
 typedef const struct Principal *krb5_const_principal;
