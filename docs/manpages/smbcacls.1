@@ -1,13 +1,14 @@
-.TH "smbcacls " "1" "3 Dec 2000" "Samba" "SAMBA" 
+.TH "smbcacls " "1" "22 Dec 2000" "Samba" "SAMBA" 
 .PP 
 .SH "NAME" 
 smbcacls \- Set or get ACLs on an NT file or directory 
 .PP 
 .SH "SYNOPSIS" 
 .PP 
-\fBsmbcacls\fP //server/share filename -U username
+\fBsmbcacls\fP //server/share filename [-U username]
 [-A acls] [-M acls] 
 [-D acls] [-S acls] 
+[-C name] [-G name]
 [-n] [-h]
 .PP 
 .SH "DESCRIPTION" 
@@ -52,6 +53,22 @@ prompted to enter in a password and the workgroup specified in the
 or \f(CWDOMAIN\eusername%password\fP and the password and workgroup names are
 used as provided\&.
 .IP 
+.IP "\fB-C name\fP" 
+.IP 
+The owner of a file or directory can be changed to the name given
+using the -C option\&.  The name can be a sid in the form \f(CWS-1-x-y-z\fP or a
+name resolved against the server specified in the first argument\&.
+.IP 
+This command is a shortcut for \f(CW-M OWNER:name\fP\&.
+.IP 
+.IP "\fB-G name\fP" 
+.IP 
+The group owner of a file or directory can be changed to the name given
+using the -G option\&.  The name can be a sid in the form \f(CWS-1-x-y-z\fP or a
+name resolved against the server specified in the first argument\&.
+.IP 
+This command is a shortcut for \f(CW-M GROUP:name\fP\&.
+.IP 
 .IP "\fB-n\fP" 
 .IP 
 This option displays all ACL information in numeric format\&.  The default is
@@ -65,13 +82,12 @@ Print usage information on the \fBsmbcacls\fP program
 .PP 
 .SH "ACL FORMAT" 
 .PP 
-The format of an ACL is one or more ACL entries separated by either spaces,
+The format of an ACL is one or more ACL entries separated by either 
 commas or newlines\&.  An ACL entry is one of the following:
 .PP 
 
 .nf 
  
-
 REVISION:<revision number>
 OWNER:<sid or name>
 GROUP:<sid or name>
@@ -81,12 +97,13 @@ ACL:<sid or name>:<type>/<flags>/<mask>
 
 .PP 
 The revision of the ACL specifies the internal Windows NT ACL revision for
-the security descriptor\&.  If not specified it defaults to 1\&.
+the security descriptor\&.  If not specified it defaults to 1\&.  Using values
+other than 1 may cause strange behaviour\&.
 .PP 
 The owner and group specify the owner and group sids for the object\&.  If a
 SID in the format \f(CWS-1-x-y-z\fP is specified this is used, otherwise
 the name specified is resolved using the server on which the file or
-directory resides\&. 
+directory resides\&.
 .PP 
 ACLs specify permissions granted to the SID\&.  This SID again can be
 specified in \f(CWS-1-x-y-z\fP format or as a name in which case it is resolved
@@ -100,7 +117,6 @@ the SID\&.  The flags values are generally zero for file ACLs and either 9 or
 
 .nf 
  
-
 #define SEC_ACE_FLAG_OBJECT_INHERIT     	0x1
 #define SEC_ACE_FLAG_CONTAINER_INHERIT  	0x2
 #define SEC_ACE_FLAG_NO_PROPAGATE_INHERIT       0x4
@@ -109,10 +125,12 @@ the SID\&.  The flags values are generally zero for file ACLs and either 9 or
  
 
 .PP 
-The mask is a value which expresses the access right granted to
-the SID\&.  It can be given as a hexadecimal value or by using one of the
+At present flags can only be specified as decimal or hexadecimal values\&. 
+.PP 
+The mask is a value which expresses the access right granted to the SID\&.
+It can be given as a decimal or hexadecimal value, or by using one of the
 following text strings which map to the NT file permissions of the same
-name\&. 
+name\&.
 .PP 
 .IP 
 .IP "" 
@@ -138,14 +156,32 @@ The following combined permissions can be specified:
 .PP 
 .IP 
 .IP "" 
-\f(CWREAD\fP	 Equivalent to \f(CWRX\fP permissions
+\f(CWREAD\fP	 
+.IP 
+Equivalent to \f(CWRX\fP permissions
+.IP 
 .IP "" 
-\f(CWCHANGE\fP Equivalent to \f(CWRXWD\fP permissions
+\f(CWCHANGE\fP 
+.IP 
+Equivalent to \f(CWRXWD\fP permissions
+.IP 
 .IP "" 
-\f(CWFULL\fP   Equivalent to \f(CWRWXDPO\fP permissions
+\f(CWFULL\fP   
+.IP 
+Equivalent to \f(CWRWXDPO\fP permissions
 .IP 
 .PP 
 .SH "EXIT STATUS" 
+.PP 
+The \fBsmbcacls\fP program sets the exit status depending on the success or
+otherwise of the operations performed\&.  The exit status may be one of the
+following values\&.
+.PP 
+If the operation succeded, \fBsmbcacls\fP returns and exit status of 0\&.  If
+\fBsmbcacls\fP couldn\'t connect to the specified server, or there was an
+error getting or setting the ACLs, an exit status of 1 is returned\&.  If
+there was an error parsing any command line arguments, an exit status of 2
+is returned\&.
 .PP 
 .SH "AUTHOR" 
 .PP 

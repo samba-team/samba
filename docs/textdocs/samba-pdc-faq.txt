@@ -143,7 +143,12 @@ State of Play
    Known Bug !W2K machines will not successfully join a domain with a
    name that is made up from an even number of characters. Yep, thats
    right ! BIOTEST is OK as is MYDOMAI but MYDOMAIN will not work until
-   this bug is fixed.
+   this bug is fixed. Hmm.., we believe that this bug is fixed, but see
+   below.
+   
+   Known Bug !After some bugs were fixed just before Christmas, W2K SP1
+   machines cannot join the domain. Expected to be fixed early in the new
+   year. Whats that ? yeah, samba developers have a Christmas break too !
    
    Know Bug !NTs (and possibly W2K ?) are not told the logged on user is
    a domain admin if the parameter "domain admin users = user" is used.

@@ -1905,14 +1905,14 @@ BOOL send_mailslot(BOOL unique, char *mailslot,char *buf,int len,
   if(ismyip(dest_ip))
     loopback_this_packet = True;
 
-  generate_name_trn_id();
+  /* generate_name_trn_id(); */ /* Not used, so gone, RJS */
 
   /* DIRECT GROUP or UNIQUE datagram. */
   dgram->header.msg_type = unique ? 0x10 : 0x11; 
   dgram->header.flags.node_type = M_NODE;
   dgram->header.flags.first = True;
   dgram->header.flags.more = False;
-  dgram->header.dgm_id = name_trn_id;
+  dgram->header.dgm_id = generate_name_trn_id();
   dgram->header.source_ip = src_ip;
   dgram->header.source_port = DGRAM_PORT;
   dgram->header.dgm_length = 0; /* Let build_dgram() handle this. */

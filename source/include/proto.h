@@ -272,6 +272,7 @@ BOOL cli_unlink(struct cli_state *cli, char *fname);
 BOOL cli_mkdir(struct cli_state *cli, char *dname);
 BOOL cli_rmdir(struct cli_state *cli, char *dname);
 int cli_nt_create(struct cli_state *cli, char *fname, uint32 DesiredAccess);
+int cli_nt_create_uni(struct cli_state *cli, char *fname, uint32 DesiredAccess);
 int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode);
 BOOL cli_close(struct cli_state *cli, int fnum);
 BOOL cli_lock(struct cli_state *cli, int fnum, 
@@ -295,6 +296,24 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 	     void (*fn)(file_info *, const char *));
 int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute, 
 		 void (*fn)(file_info *, const char *));
+
+/*The following definitions come from  libsmb/cli_lsarpc.c  */
+
+struct cli_state *cli_lsa_initialise(struct cli_state *cli, char *system_name,
+				     struct ntuser_creds *creds);
+void cli_lsa_shutdown(struct cli_state *cli);
+uint32 cli_lsa_open_policy(struct cli_state *cli, BOOL sec_qos, 
+			   uint32 des_access, POLICY_HND *hnd);
+uint32 cli_lsa_close(struct cli_state *cli, POLICY_HND *hnd);
+uint32 cli_lsa_lookup_sids(struct cli_state *cli, POLICY_HND *hnd,
+			   int num_sids, DOM_SID *sids, char ***names, 
+			   uint32 **types, int *num_names);
+uint32 cli_lsa_lookup_names(struct cli_state *cli, POLICY_HND *hnd,
+			    int num_names, char **names, DOM_SID **sids,
+			    uint32 **types, int *num_sids);
+uint32 cli_lsa_query_info_policy(struct cli_state *cli, POLICY_HND *hnd, 
+				 uint16 info_class, fstring domain_name, 
+				 DOM_SID * domain_sid);
 
 /*The following definitions come from  libsmb/climessage.c  */
 
