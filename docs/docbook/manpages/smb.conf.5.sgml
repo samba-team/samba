@@ -7656,8 +7656,8 @@
 		is important to be aware of is Samba's behaviour when
 		trying to delete a directory. If a directory that is
 		to be deleted contains nothing but veto files this
-		deletion will <emph>fail</emph> unless you also set
-		the <parameter>delete veto files</param> parameter to
+		deletion will <emphasis>fail</emphasis> unless you also set
+		the <parameter>delete veto files</parameter> parameter to
 		<parameter>yes</parameter>.
 
 		<para>Setting this parameter will affect the performance 
