@@ -106,9 +106,8 @@
 
 #include <krb.h>
 
+#include <err.h>
 #include <roken.h>
-
-extern char *prog;
 
 int copy_encrypted (int fd1, int fd2, des_cblock *iv,
 		    des_key_schedule schedule);

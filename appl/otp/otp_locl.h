@@ -56,5 +56,6 @@
 #include <pwd.h>
 #endif
 #include <roken.h>
+#include <err.h>
 #include <des.h>
 #include <otp.h>
