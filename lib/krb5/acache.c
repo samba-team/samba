@@ -282,9 +282,8 @@ make_ccred_from_cred(krb5_context context,
     cred->second_ticket.length = incred->second_ticket.length;
     cred->second_ticket.data = incred->second_ticket.data;
 
-    /* XXX these too should also be filled in */
+    /* XXX this one should also be filled in */
     cred->authdata = NULL;
-    cred->addresses = NULL;
     
     cred->addresses = calloc(incred->addresses.len + 1, 
 			     sizeof(cred->addresses[0]));
