@@ -142,6 +142,10 @@ static void reg_reply_open_entry(REG_Q_OPEN_ENTRY *q_u,
 	{
 		DEBUG(5,("reg_open_entry: %s\n", name));
 		/* lkcl XXXX do a check on the name, here */
+		if (!strequal(name, "SYSTEM\\CurrentControlSet\\Control\\ProductOptions"))
+		{
+			status = 0xC000000 | NT_STATUS_ACCESS_DENIED;
+		}
 	}
 
 	if (status == 0x0 && !set_lsa_policy_reg_name(&pol, name))
