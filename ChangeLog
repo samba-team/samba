@@ -1,3 +1,14 @@
+2002-08-28  Jacques Vidrine  <nectar@kth.se>
+
+	* lib/krb5/context.c: rename the `srv_lookup' option to
+	`dns_lookup_kdc'.
+	* lib/krb5/get_host_realm.c: add a knob `dns_lookup_realm'
+	to control global use of dns-locate for domain to realm
+	mappings.  add a special token to control use of dns-locate
+	on a domain-by-domain basis in the [domain_realms] section.
+	add a knob `dns_lookup_realm_labels' to specify which labels
+	(e.g. `_kerberos') to use with dns-locate.
+
 2002-08-27  Assar Westerlund  <assar@kth.se>
 
 	* acconfig.h: remove _GNU_SOURCE - it's now added by configure
