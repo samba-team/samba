@@ -9,12 +9,16 @@ CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
+REL="UP"
+TITLE="Optional configuration"
+HREF="p1346.html"><LINK
 REL="PREVIOUS"
-TITLE="Hosting a Microsoft Distributed File System tree on Samba"
-HREF="msdfs.html"><LINK
+TITLE="Integrating MS Windows networks with Samba"
+HREF="integrate-ms-networks.html"><LINK
 REL="NEXT"
-TITLE="Printing Support in Samba 2.2.x"
-HREF="printing.html"></HEAD
+TITLE="Configuring PAM for distributed but centrally 
+managed authentication"
+HREF="pam.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -42,7 +46,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="msdfs.html"
+HREF="integrate-ms-networks.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -56,7 +60,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="printing.html"
+HREF="pam.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -71,15 +75,15 @@ CLASS="CHAPTER"
 ><A
 NAME="UNIX-PERMISSIONS"
 ></A
->Chapter 5. UNIX Permission Bits and Windows NT Access Control Lists</H1
+>Chapter 11. UNIX Permission Bits and Windows NT Access Control Lists</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN580"
+NAME="AEN1593"
 ></A
->5.1. Viewing and changing UNIX permissions using the NT 
+>11.1. Viewing and changing UNIX permissions using the NT 
 	security dialogs</H1
 ><P
 >New in the Samba 2.0.4 release is the ability for Windows 
@@ -116,9 +120,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN589"
+NAME="AEN1602"
 ></A
->5.2. How to view file security on a Samba share</H1
+>11.2. How to view file security on a Samba share</H1
 ><P
 >From an NT 4.0 client, single-click with the right 
 	mouse button on any file or directory in a Samba mounted 
@@ -186,9 +190,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN600"
+NAME="AEN1613"
 ></A
->5.3. Viewing file ownership</H1
+>11.3. Viewing file ownership</H1
 ><P
 >Clicking on the <B
 CLASS="COMMAND"
@@ -280,9 +284,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN620"
+NAME="AEN1633"
 ></A
->5.4. Viewing file or directory permissions</H1
+>11.4. Viewing file or directory permissions</H1
 ><P
 >The third button is the <B
 CLASS="COMMAND"
@@ -342,9 +346,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN635"
+NAME="AEN1648"
 ></A
->5.4.1. File Permissions</H2
+>11.4.1. File Permissions</H2
 ><P
 >The standard UNIX user/group/world triple and 
 		the corresponding "read", "write", "execute" permissions 
@@ -404,9 +408,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN649"
+NAME="AEN1662"
 ></A
->5.4.2. Directory Permissions</H2
+>11.4.2. Directory Permissions</H2
 ><P
 >Directories on an NT NTFS file system have two 
 		different sets of permissions. The first set of permissions 
@@ -436,9 +440,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN656"
+NAME="AEN1669"
 ></A
->5.5. Modifying file or directory permissions</H1
+>11.5. Modifying file or directory permissions</H1
 ><P
 >Modifying file and directory permissions is as simple 
 	as changing the displayed permissions in the dialog box, and 
@@ -534,9 +538,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN678"
+NAME="AEN1691"
 ></A
->5.6. Interaction with the standard Samba create mask 
+>11.6. Interaction with the standard Samba create mask 
 	parameters</H1
 ><P
 >Note that with Samba 2.0.5 there are four new parameters 
@@ -811,9 +815,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN742"
+NAME="AEN1755"
 ></A
->5.7. Interaction with the standard Samba file attribute 
+>11.7. Interaction with the standard Samba file attribute 
 	mapping</H1
 ><P
 >Samba maps some of the DOS attribute bits (such as "read 
@@ -870,7 +874,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="msdfs.html"
+HREF="integrate-ms-networks.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -888,7 +892,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="printing.html"
+HREF="pam.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -898,17 +902,22 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->Hosting a Microsoft Distributed File System tree on Samba</TD
+>Integrating MS Windows networks with Samba</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
->&nbsp;</TD
+><A
+HREF="p1346.html"
+ACCESSKEY="U"
+>Up</A
+></TD
 ><TD
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Printing Support in Samba 2.2.x</TD
+>Configuring PAM for distributed but centrally 
+managed authentication</TD
 ></TR
 ></TABLE
 ></DIV

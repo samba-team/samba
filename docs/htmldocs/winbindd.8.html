@@ -38,12 +38,12 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >winbindd</B
->  [-i] [-d &lt;debug level&gt;] [-s &lt;smb config file&gt;]</P
+>  [-i] [-B] [-d &lt;debug level&gt;] [-s &lt;smb config file&gt;] [-n]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN14"
+NAME="AEN16"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -192,7 +192,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN57"
+NAME="AEN59"
 ></A
 ><H2
 >OPTIONS</H2
@@ -225,13 +225,46 @@ CLASS="COMMAND"
 >winbindd</B
 > is required. </P
 ></DD
+><DT
+>-n</DT
+><DD
+><P
+>Disable caching. This means winbindd will 
+		always have to wait for a response from the domain controller 
+		before it can respond to a client and this thus makes things 
+		slower. The results will however be more accurate, since 
+		results from the cache might not be up-to-date. This 
+		might also temporarily hang winbindd if the DC doesn't respond.
+		</P
+></DD
+><DT
+>-B</DT
+><DD
+><P
+>Dual daemon mode. This means winbindd will run 
+		as 2 threads. The first will answer all requests from the cache, 
+		thus making responses to clients faster. The other will 
+		update the cache for the query that the first has just responded. 
+		Advantage of this is that responses are accurate and fast.
+		</P
+></DD
+><DT
+>-s|--conf=smb.conf</DT
+><DD
+><P
+>Specifies the location of the all-important
+		<TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file. </P
+></DD
 ></DL
 ></DIV
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN70"
+NAME="AEN85"
 ></A
 ><H2
 >NAME AND ID RESOLUTION</H2
@@ -262,7 +295,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN76"
+NAME="AEN91"
 ></A
 ><H2
 >CONFIGURATION</H2
@@ -402,7 +435,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN118"
+NAME="AEN133"
 ></A
 ><H2
 >EXAMPLE SETUP</H2
@@ -553,7 +586,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN157"
+NAME="AEN172"
 ></A
 ><H2
 >NOTES</H2
@@ -611,7 +644,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN173"
+NAME="AEN188"
 ></A
 ><H2
 >SIGNALS</H2
@@ -662,7 +695,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN190"
+NAME="AEN205"
 ></A
 ><H2
 >FILES</H2
@@ -738,18 +771,18 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN219"
+NAME="AEN234"
 ></A
 ><H2
 >VERSION</H2
 ><P
->This man page is correct for version 2.2 of
+>This man page is correct for version 3.0 of
         the Samba suite.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN222"
+NAME="AEN237"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -777,7 +810,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN229"
+NAME="AEN244"
 ></A
 ><H2
 >AUTHOR</H2

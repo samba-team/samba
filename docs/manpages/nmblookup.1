@@ -3,12 +3,12 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "NMBLOOKUP" "1" "01 October 2002" "" ""
+.TH "NMBLOOKUP" "1" "05 November 2002" "" ""
 .SH NAME
 nmblookup \- NetBIOS over TCP/IP client used to lookup NetBIOS  names
 .SH SYNOPSIS
 
-\fBnmblookup\fR [ \fB-M\fR ] [ \fB-R\fR ] [ \fB-S\fR ] [ \fB-r\fR ] [ \fB-A\fR ] [ \fB-h\fR ] [ \fB-B <broadcast address>\fR ] [ \fB-U <unicast address>\fR ] [ \fB-d <debug level>\fR ] [ \fB-s <smb config file>\fR ] [ \fB-i <NetBIOS scope>\fR ] [ \fB-T\fR ] \fBname\fR
+\fBnmblookup\fR [ \fB-M\fR ] [ \fB-R\fR ] [ \fB-S\fR ] [ \fB-r\fR ] [ \fB-A\fR ] [ \fB-h\fR ] [ \fB-B <broadcast address>\fR ] [ \fB-U <unicast address>\fR ] [ \fB-d <debug level>\fR ] [ \fB-s <smb config file>\fR ] [ \fB-i <NetBIOS scope>\fR ] [ \fB-T\fR ] [ \fB-f\fR ] \fBname\fR
 
 .SH "DESCRIPTION"
 .PP
@@ -110,6 +110,11 @@ DNS name, and printed out before each
 
 pair that is the normal output.
 .TP
+\fB-f\fR
+Show which flags apply to the name that has been looked up. Possible 
+answers are zero or more of: Response, Authoritative, 
+Truncated, Recursion_Desired, Recursion_Available, Broadcast.
+.TP
 \fBname\fR
 This is the NetBIOS name being queried. Depending 
 upon the previous options this may be a NetBIOS name or IP address. 
@@ -134,7 +139,7 @@ would query the WINS server samba.org for the domain
 master browser (1B name type) for the IRIX workgroup.
 .SH "VERSION"
 .PP
-This man page is correct for version 2.2 of 
+This man page is correct for version 3.0 of 
 the Samba suite.
 .SH "SEE ALSO"
 .PP

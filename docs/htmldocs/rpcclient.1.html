@@ -127,20 +127,48 @@ CLASS="PROGRAMLISTING"
 >-d|--debug=debuglevel</DT
 ><DD
 ><P
->set the debuglevel. Debug level 0 is the lowest 
-		and 100 being the highest. This should be set to 100 if you are
-		planning on submitting a bug report to the Samba team (see <TT
+><TT
+CLASS="REPLACEABLE"
+><I
+>debuglevel</I
+></TT
+> is an integer 
+from 0 to 10.  The default value if this parameter is 
+not specified is zero.</P
+><P
+>The higher this value, the more detail will be 
+logged to the log files about the activities of the 
+server. At level 0, only critical errors and serious 
+warnings will be logged. Level 1 is a reasonable level for
+day to day running - it generates a small amount of 
+information about operations carried out.</P
+><P
+>Levels above 1 will generate considerable 
+amounts of log data, and should only be used when 
+investigating a problem. Levels above 3 are designed for 
+use only by developers and generate HUGE amounts of log
+data, most of which is extremely cryptic.</P
+><P
+>Note that specifying this parameter here will 
+override the <A
+HREF="smb.conf.5.html#loglevel"
+TARGET="_top"
+>log
+level</A
+> parameter in the <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+><TT
 CLASS="FILENAME"
->BUGS.txt</TT
->). 
-		</P
+>smb.conf(5)</TT
+></A
+> file.</P
 ></DD
 ><DT
 >-h|--help</DT
 ><DD
 ><P
->Print a summary of command line options.
-		</P
+>Print a summary of command line options.</P
 ></DD
 ><DT
 >-I IP-address</DT
@@ -275,7 +303,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN101"
+NAME="AEN107"
 ></A
 ><H2
 >COMMANDS</H2
@@ -677,7 +705,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN221"
+NAME="AEN227"
 ></A
 ><H2
 >BUGS</H2
@@ -722,7 +750,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN231"
+NAME="AEN237"
 ></A
 ><H2
 >VERSION</H2
@@ -733,7 +761,7 @@ NAME="AEN231"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN234"
+NAME="AEN240"
 ></A
 ><H2
 >AUTHOR</H2

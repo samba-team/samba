@@ -9,12 +9,15 @@ CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
+REL="UP"
+TITLE="Optional configuration"
+HREF="p1346.html"><LINK
 REL="PREVIOUS"
-TITLE="How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain"
-HREF="samba-bdc.html"><LINK
+TITLE="Passdb XML plugin"
+HREF="pdb-xml.html"><LINK
 REL="NEXT"
-TITLE="Using samba 3.0 with ActiveDirectory support"
-HREF="ads.html"></HEAD
+TITLE="HOWTO Access Samba source code via CVS"
+HREF="cvs-access.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -42,7 +45,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="samba-bdc.html"
+HREF="pdb-xml.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -56,7 +59,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="ads.html"
+HREF="cvs-access.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -71,15 +74,15 @@ CLASS="CHAPTER"
 ><A
 NAME="SAMBA-LDAP-HOWTO"
 ></A
->Chapter 13. Storing Samba's User/Machine Account information in an LDAP Directory</H1
+>Chapter 19. Storing Samba's User/Machine Account information in an LDAP Directory</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2211"
+NAME="AEN2664"
 ></A
->13.1. Purpose</H1
+>19.1. Purpose</H1
 ><P
 >This document describes how to use an LDAP directory for storing Samba user
 account information traditionally stored in the smbpasswd(5) file.  It is
@@ -145,9 +148,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2231"
+NAME="AEN2684"
 ></A
->13.2. Introduction</H1
+>19.2. Introduction</H1
 ><P
 >Traditionally, when configuring <A
 HREF="smb.conf.5.html#ENCRYPTPASSWORDS"
@@ -262,9 +265,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2260"
+NAME="AEN2713"
 ></A
->13.3. Supported LDAP Servers</H1
+>19.3. Supported LDAP Servers</H1
 ><P
 >The LDAP samdb code in 2.2.3 has been developed and tested using the OpenLDAP
 2.0 server and client libraries.  The same code should be able to work with
@@ -287,9 +290,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2265"
+NAME="AEN2718"
 ></A
->13.4. Schema and Relationship to the RFC 2307 posixAccount</H1
+>19.4. Schema and Relationship to the RFC 2307 posixAccount</H1
 ><P
 >Samba 2.2.3 includes the necessary schema file for OpenLDAP 2.0 in
 <TT
@@ -346,17 +349,17 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2277"
+NAME="AEN2730"
 ></A
->13.5. Configuring Samba with LDAP</H1
+>19.5. Configuring Samba with LDAP</H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2279"
+NAME="AEN2732"
 ></A
->13.5.1. OpenLDAP configuration</H2
+>19.5.1. OpenLDAP configuration</H2
 ><P
 >To include support for the sambaAccount object in an OpenLDAP directory
 server, first copy the samba.schema file to slapd's configuration directory.</P
@@ -436,9 +439,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2296"
+NAME="AEN2749"
 ></A
->13.5.2. Configuring Samba</H2
+>19.5.2. Configuring Samba</H2
 ><P
 >The following parameters are available in smb.conf only with <TT
 CLASS="PARAMETER"
@@ -556,9 +559,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2324"
+NAME="AEN2777"
 ></A
->13.6. Accounts and Groups management</H1
+>19.6. Accounts and Groups management</H1
 ><P
 >As users accounts are managed thru the sambaAccount objectclass, you should
 modify you existing administration tools to deal with sambaAccount attributes.</P
@@ -581,9 +584,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2329"
+NAME="AEN2782"
 ></A
->13.7. Security and sambaAccount</H1
+>19.7. Security and sambaAccount</H1
 ><P
 >There are two important points to remember when discussing the security
 of sambaAccount entries in the directory.</P
@@ -660,9 +663,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2349"
+NAME="AEN2802"
 ></A
->13.8. LDAP specials attributes for sambaAccounts</H1
+>19.8. LDAP specials attributes for sambaAccounts</H1
 ><P
 >The sambaAccount objectclass is composed of the following attributes:</P
 ><P
@@ -871,9 +874,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2419"
+NAME="AEN2872"
 ></A
->13.9. Example LDIF Entries for a sambaAccount</H1
+>19.9. Example LDIF Entries for a sambaAccount</H1
 ><P
 >The following is a working LDIF with the inclusion of the posixAccount objectclass:</P
 ><P
@@ -929,9 +932,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2427"
+NAME="AEN2880"
 ></A
->13.10. Comments</H1
+>19.10. Comments</H1
 ><P
 >Please mail all comments regarding this HOWTO to <A
 HREF="mailto:jerry@samba.org"
@@ -957,7 +960,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="samba-bdc.html"
+HREF="pdb-xml.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -975,7 +978,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="ads.html"
+HREF="cvs-access.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -985,17 +988,21 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain</TD
+>Passdb XML plugin</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
->&nbsp;</TD
+><A
+HREF="p1346.html"
+ACCESSKEY="U"
+>Up</A
+></TD
 ><TD
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Using samba 3.0 with ActiveDirectory support</TD
+>HOWTO Access Samba source code via CVS</TD
 ></TR
 ></TABLE
 ></DIV

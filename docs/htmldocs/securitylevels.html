@@ -9,12 +9,15 @@ CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
+REL="UP"
+TITLE="Optional configuration"
+HREF="p1346.html"><LINK
 REL="PREVIOUS"
-TITLE="Debugging Printing Problems"
-HREF="printingdebug.html"><LINK
+TITLE="Printing Support"
+HREF="printing.html"><LINK
 REL="NEXT"
-TITLE="security = domain in Samba 2.x"
-HREF="domain-security.html"></HEAD
+TITLE="Unified Logons between Windows NT and UNIX using Winbind"
+HREF="winbind.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -42,7 +45,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="printingdebug.html"
+HREF="printing.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -56,7 +59,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="domain-security.html"
+HREF="winbind.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -71,15 +74,15 @@ CLASS="CHAPTER"
 ><A
 NAME="SECURITYLEVELS"
 ></A
->Chapter 8. Security levels</H1
+>Chapter 15. Security levels</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1089"
+NAME="AEN2186"
 ></A
->8.1. Introduction</H1
+>15.1. Introduction</H1
 ><P
 >Samba supports the following options to the global smb.conf parameter</P
 ><P
@@ -95,7 +98,7 @@ CLASS="PARAMETER"
 >security</I
 ></TT
 ></A
-> = [share|user(default)|domain|ads]</PRE
+> = [share|user(default)|server|domain|ads]</PRE
 ></P
 ><P
 >Please refer to the smb.conf man page for usage information and to the document
@@ -123,9 +126,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1100"
+NAME="AEN2197"
 ></A
->8.2. More complete description of security levels</H1
+>15.2. More complete description of security levels</H1
 ><P
 >A SMB server tells the client at startup what "security level" it is
 running. There are two options "share level" and "user level". Which
@@ -229,7 +232,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="printingdebug.html"
+HREF="printing.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -247,7 +250,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="domain-security.html"
+HREF="winbind.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -257,17 +260,21 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->Debugging Printing Problems</TD
+>Printing Support</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
->&nbsp;</TD
+><A
+HREF="p1346.html"
+ACCESSKEY="U"
+>Up</A
+></TD
 ><TD
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->security = domain in Samba 2.x</TD
+>Unified Logons between Windows NT and UNIX using Winbind</TD
 ></TR
 ></TABLE
 ></DIV

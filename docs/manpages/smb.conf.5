@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "03 October 2002" "" ""
+.TH "SMB.CONF" "5" "05 November 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -303,32 +303,12 @@ These substitutions are mostly noted in the descriptions below,
 but there are some general substitutions which apply whenever they 
 might be relevant. These are:
 .TP
-\fB%S\fR
-the name of the current service, if any.
-.TP
-\fB%P\fR
-the root directory of the current service, 
-if any.
-.TP
-\fB%u\fR
-user name of the current service, if any.
-.TP
-\fB%g\fR
-primary group name of %u.
-.TP
 \fB%U\fR
 session user name (the user name that the client 
 wanted, not necessarily the same as the one they got).
 .TP
 \fB%G\fR
 primary group name of %U.
-.TP
-\fB%H\fR
-the home directory of the user given 
-by %u.
-.TP
-\fB%v\fR
-the Samba version.
 .TP
 \fB%h\fR
 the Internet hostname that Samba is running 
@@ -348,17 +328,6 @@ on port 445, as clients no longer send this information
 .TP
 \fB%M\fR
 the Internet name of the client machine.
-.TP
-\fB%N\fR
-the name of your NIS home directory server.  
-This is obtained from your NIS auto.map entry.  If you have 
-not compiled Samba with the \fB--with-automount\fR 
-option then this value will be the same as %L.
-.TP
-\fB%p\fR
-the path of the service's home directory, 
-obtained from your NIS auto.map entry. The NIS auto.map entry 
-is split up as "%N:%p".
 .TP
 \fB%R\fR
 the selected protocol level after 
@@ -384,9 +353,43 @@ The IP address of the client machine.
 \fB%T\fR
 the current date and time.
 .TP
+\fB%D\fR
+Name of the domain or workgroup of the current user.
+.TP
 \fB%$(\fIenvvar\fB)\fR
 The value of the environment variable
 \fIenvar\fR.
+.PP
+The following substitutes apply only to some configuration options(only those 
+that are used when a connection has been established):
+.TP
+\fB%S\fR
+the name of the current service, if any.
+.TP
+\fB%P\fR
+the root directory of the current service, 
+if any.
+.TP
+\fB%u\fR
+user name of the current service, if any.
+.TP
+\fB%g\fR
+primary group name of %u.
+.TP
+\fB%H\fR
+the home directory of the user given 
+by %u.
+.TP
+\fB%N\fR
+the name of your NIS home directory server.  
+This is obtained from your NIS auto.map entry.  If you have 
+not compiled Samba with the \fB--with-automount\fR 
+option then this value will be the same as %L.
+.TP
+\fB%p\fR
+the path of the service's home directory, 
+obtained from your NIS auto.map entry. The NIS auto.map entry 
+is split up as "%N:%p".
 .PP
 There are some quite creative things that can be done 
 with these substitutions and other smb.conf options.
@@ -433,7 +436,7 @@ case. This option can be use with "preserve case = yes"
 to permit long filenames to retain their case, while short names 
 are lowercased. Default \fByes\fR.
 .PP
-By default, Samba 2.2 has the same semantics as a Windows 
+By default, Samba 3.0 has the same semantics as a Windows 
 NT server, in that it is case insensitive but case preserving.
 .SH "NOTE ABOUT USERNAME/PASSWORD VALIDATION"
 .PP
@@ -683,6 +686,9 @@ each parameter for details.  Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIldap passwd sync\fR
+.TP 0.2i
+\(bu
+\fIldap trust ids\fR
 .TP 0.2i
 \(bu
 \fIlm announce\fR
@@ -1713,10 +1719,10 @@ Example: \fBannounce as = Win95\fR
 \fBannounce version (G)\fR
 This specifies the major and minor version numbers 
 that nmbd will use when announcing itself as a server. The default 
-is 4.2.  Do not change this parameter unless you have a specific 
+is 4.9.  Do not change this parameter unless you have a specific 
 need to set a Samba server to be a downlevel server.
 
-Default: \fBannounce version = 4.5\fR
+Default: \fBannounce version = 4.9\fR
 
 Example: \fBannounce version = 2.0\fR
 .TP
@@ -1806,12 +1812,12 @@ to obtain a byte range lock on a region of an open file, and the
 request has a time limit associated with it.
 
 If this parameter is set and the lock range requested 
-cannot be immediately satisfied, Samba 2.2 will internally 
+cannot be immediately satisfied, samba will internally 
 queue the lock request, and periodically attempt to obtain 
 the lock until the timeout period expires.
 
 If this parameter is set to no, then 
-Samba 2.2 will behave as previous versions of Samba would and 
+samba will behave as previous versions of Samba would and 
 will fail the lock request immediately if the lock range 
 cannot be obtained.
 
@@ -2069,7 +2075,7 @@ effect.
 Default: \fBdebug pid = no\fR
 .TP
 \fBdebug timestamp (G)\fR
-Samba 2.2 debug log messages are timestamped 
+Samba debug log messages are timestamped 
 by default. If you are running at a high   \fIdebug level\fR these timestamps
 can be distracting. This boolean parameter allows timestamping 
 to be turned off.
@@ -2933,7 +2939,7 @@ this by trying to log in as your guest user (perhaps by using the
 \fBsu -\fR command) and trying to print using the 
 system print command such as \fBlpr(1)\fR or \fB  lp(1)\fR.
 
-This paramater does not accept % macros, because
+This parameter does not accept % macros, because
 many parts of the system require this value to be
 constant for correct operation.
 
@@ -3391,20 +3397,25 @@ The \fIldap ssl\fR can be set to one of three values:
 .RS
 .TP 0.2i
 \(bu
-\fIOn\fR  =  Always use SSL when contacting the 
-\fIldap server\fR.
-.TP 0.2i
-\(bu
 \fIOff\fR = Never use SSL when querying the directory.
 .TP 0.2i
 \(bu
 \fIStart_tls\fR = Use the LDAPv3 StartTLS extended operation 
 (RFC2830) for communicating with the directory server.
+.TP 0.2i
+\(bu
+\fIOn\fR  =
+Use SSL on the ldaps port when contacting the 
+\fIldap server\fR.  Only
+available when the backwards-compatiblity \fB   --with-ldapsam\fR option is specified
+to configure.  See \fIpassdb backend\fR
 .RE
 
-Default : \fBldap ssl = on\fR
+Default : \fBldap ssl = start_tls\fR
 .TP
 \fBldap suffix (G)\fR
+Specifies where user and machine accounts are added to the tree. Can be overriden by \fBldap user suffix\fR and \fBldap machine suffix\fR. It also used as the base dn for all ldap searches. 
+
 Default : \fBnone\fR
 .TP
 \fBldap user suffix (G)\fR
@@ -3439,6 +3450,23 @@ The \fIldap passwd sync\fR can be set to one of three values:
 .RE
 
 Default : \fBldap passwd sync = no\fR
+.TP
+\fBldap trust ids (G)\fR
+Normally, Samba validates each entry
+in the LDAP server against getpwnam().  This allows
+LDAP to be used for Samba with the unix system using
+NIS (for example) and also ensures that Samba does not
+present accounts that do not otherwise exist.  
+
+This option is used to disable this functionality, and
+instead to rely on the presence of the appropriate
+attributes in LDAP directly, which can result in a
+significant performance boost in some situations.  
+Setting this option to yes effectivly assumes
+that the local machine is running \fBnss_ldap\fR against the
+same LDAP server.
+
+Default: \fBldap trust ids = No\fR
 .TP
 \fBlevel2 oplocks (S)\fR
 This parameter controls whether Samba supports
@@ -4056,11 +4084,21 @@ a better algorithm (generates less collisions) in the names.
 However, many Win32 applications store the mangled names and so
 changing to the new algorithm must not be done
 lightly as these applications may break unless reinstalled.
-New installations of Samba may set the default to hash2.
 
-Default: \fBmangling method = hash\fR
+Default: \fBmangling method = hash2\fR
 
-Example: \fBmangling method = hash2\fR
+Example: \fBmangling method = hash\fR
+.TP
+\fBmangle prefix (G)\fR
+controls the number of prefix
+characters from the original name used when generating
+the mangled names. A larger value will give a weaker
+hash and therefore more name collisions. The minimum
+value is 1 and the maximum value is 6.
+
+Default: \fBmangle prefix = 1\fR
+
+Example: \fBmangle prefix = 4\fR
 .TP
 \fBmangled stack (G)\fR
 This parameter controls the number of mangled names 
@@ -4868,7 +4906,18 @@ backend.  Takes an LDAP URL as an optional argument (defaults to
 backend, with non unix account support.  Takes an LDAP URL as an optional argument (defaults to 
 \fBldap://localhost\fR)
 
-See also                         \fInon unix account range\fR
+Note:  In this module, any account
+without a matching POSIX account is regarded
+as 'non unix'.
+
+See also                         \fInon unix account
+range\fR
+
+LDAP connections should be secured where
+possible.  This may be done using either
+Start-TLS (see                         \fIldap ssl\fR) or by
+specifying \fIldaps://\fR in
+the URL argument.  
 .TP 0.2i
 \(bu
 \fBnisplussam\fR - The NIS+ based passdb backend. Takes name NIS domain as an optional argument. Only works with sun NIS+ servers. 
@@ -6553,7 +6602,8 @@ Example: \fBtotal print jobs = 5000\fR
 .TP
 \fBunicode (G)\fR
 Specifies whether Samba should try 
-to use unicode on the wire by default. 
+to use unicode on the wire by default. Note: This does NOT
+mean that samba will assume that the unix machine uses unicode!
 
 Default: \fBunicode = yes\fR
 .TP
@@ -6563,6 +6613,8 @@ Samba runs on uses. Samba needs to know this in order to be able to
 convert text to the charsets other SMB clients use.
 
 Default: \fBunix charset = ASCII\fR
+
+Example: \fBunix charset = UTF8\fR
 .TP
 \fBunix extensions(G)\fR
 This boolean parameter controls whether Samba 
@@ -7313,7 +7365,7 @@ sections. In particular, ensure that the permissions on spool
 directories are correct.
 .SH "VERSION"
 .PP
-This man page is correct for version 2.2 of 
+This man page is correct for version 3.0 of 
 the Samba suite.
 .SH "SEE ALSO"
 .PP
