@@ -1,23 +1,29 @@
 #! /bin/sh
 # $Id$
 
-if [ "$#" -ne 2 ]; then
-	echo "Usage: `basename $0` proto-file output"
+if [ "$#" -lt 1 -o "$#" -gt 2 ]; then
+	echo "Usage: `basename $0` proto-file [output]"
 	exit 1
 fi
 
-if rm -f "$2" ; then :; else
-	echo "Failed to remove $2"
+infile="$1"
+outfile="$2"
+if [ "$outfile" = "" ]; then
+    outfile=`basename "$infile" .in`
+fi
+
+if rm -f "$outfile" ; then :; else
+	echo "Failed to remove $outfile"
 	exit 1
 fi
 
 d=`dirname $0`
 
-for i in `cat "$1"`; do
+for i in `cat "$infile"`; do
 	if [ -f "$i" ]; then
-		cat "$i" >> "$2"
+		cat "$i" >> "$outfile"
 	elif [ -f "$d/$i" ]; then
-		cat "$d/$i" >> "$2"
+		cat "$d/$i" >> "$outfile"
 	else
 		echo "$i: File not found"
 		exit 1
