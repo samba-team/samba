@@ -1,3 +1,11 @@
+2002-04-30  Johan Danielsson  <joda@pdc.kth.se>
+
+	* db.m4: rework this somewhat; check for db3/4 in subdirs, change
+	--with to --enable; it should really be possible to point it to
+	some directory --with-berkeley-db=/foo
+
+	* otp.m4: OTP test
+
 2002-04-25  Johan Danielsson  <joda@pdc.kth.se>
 
 	* destdirs.m4: define BINDIR et al
