@@ -239,7 +239,8 @@ NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket,
 		data_blob_free(ap_rep);
 
 	krb5_free_principal(context, host_princ);
-	krb5_free_ticket(context, tkt);
+	if (tkt != NULL)
+		krb5_free_ticket(context, tkt);
 	free_kerberos_etypes(context, enctypes);
 	SAFE_FREE(password_s);
 	SAFE_FREE(host_princ_s);
