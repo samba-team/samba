@@ -37,7 +37,7 @@ or by editing individual files that are located in <filename>/etc/pam.d</filenam
 	is located other than default then the path may be specified as:
 	
 	<programlisting>
-	eg: "auth       required      /other_path/pam_strange_module.so"
+	auth       required      /other_path/pam_strange_module.so
 	</programlisting>
 	</para>
 </note>

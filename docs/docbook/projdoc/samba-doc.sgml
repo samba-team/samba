@@ -32,6 +32,7 @@
 <!ENTITY ProfileMgmt SYSTEM "ProfileMgmt.sgml">
 <!ENTITY NT4Migration SYSTEM "NT4Migration.sgml">
 <!ENTITY SWAT SYSTEM "SWAT.sgml">
+<!ENTITY Trusts SYSTEM "InterdomainTrusts.sgml">
 ]>
 
 <book id="Samba-HOWTO-Collection">
@@ -117,6 +118,7 @@ part each cover one specific feature.</para>
 &AdvancedNetworkAdmin;
 &PolicyMgmt;
 &ProfileMgmt;
+&Trusts;
 &Samba-PAM;
 &VFS;
 &MS-Dfs-Setup;
