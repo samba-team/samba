@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -184,74 +184,20 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
     printf("\n\n");
 }
 
-static int version_flag = 0;
-static int help_flag = 0;
-static int do_verbose = 0;
-
-static struct getargs args[] = {
-    { "verbose",		'v', arg_flag, &do_verbose,
-      "Verbose output", NULL },
-    { "version", 		0,   arg_flag, &version_flag, 
-      "print version", NULL },
-    { "help",			0,   arg_flag, &help_flag, 
-      NULL, NULL}
-};
+/*
+ * Print all tickets in `ccache' on stdout, verbosily iff do_verbose.
+ */
 
 static void
-usage (int ret)
-{
-    arg_printusage (args,
-		    sizeof(args)/sizeof(*args),
-		    NULL,
-		    "");
-    exit (ret);
-}
-
-int
-main (int argc, char **argv)
+print_tickets (krb5_context context,
+	       krb5_ccache ccache,
+	       krb5_principal principal,
+	       int do_verbose)
 {
     krb5_error_code ret;
-    krb5_context context;
-    krb5_ccache ccache;
-    krb5_principal principal;
+    char *str;
     krb5_cc_cursor cursor;
     krb5_creds creds;
-    char *str;
-    int optind = 0;
-
-    set_progname (argv[0]);
-
-    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
-	usage(1);
-    
-    if (help_flag)
-	usage (0);
-
-    if(version_flag){
-	printf("%s (%s-%s)\n", __progname, PACKAGE, VERSION);
-	exit(0);
-    }
-
-    argc -= optind;
-    argv += optind;
-
-    if (argc != 0)
-	usage (1);
-
-    ret = krb5_init_context (&context);
-    if (ret)
-	krb5_err(context, 1, ret, "krb5_init_context");
-
-    ret = krb5_cc_default (context, &ccache);
-    if (ret)
-	krb5_err (context, 1, ret, "krb5_cc_default");
-
-    ret = krb5_cc_get_principal (context, ccache, &principal);
-    if(ret == ENOENT)
-	krb5_errx(context, 1, "No ticket file: %s", 
-		  krb5_cc_get_name(context, ccache));
-    if (ret)
-	krb5_err (context, 1, ret, "krb5_cc_get_principal");
 
     ret = krb5_unparse_name (context, principal, &str);
     if (ret)
@@ -300,6 +246,118 @@ main (int argc, char **argv)
     ret = krb5_cc_end_seq_get (context, ccache, &cursor);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_cc_end_seq_get");
+}
+
+/*
+ * Check if there's a tgt for the realm of `principal' and ccache and
+ * if so return 0, else 1
+ */
+
+static int
+check_for_tgt (krb5_context context,
+	       krb5_ccache ccache,
+	       krb5_principal principal)
+{
+    krb5_error_code ret;
+    krb5_creds pattern;
+    krb5_creds creds;
+    krb5_realm *client_realm;
+    int expired;
+
+    client_realm = krb5_princ_realm (context, principal);
+
+    ret = krb5_make_principal (context, &pattern.server,
+			       *client_realm, KRB5_TGS_NAME, *client_realm,
+			       NULL);
+    if (ret)
+	krb5_err (context, 1, ret, "krb5_make_principal");
+
+    ret = krb5_cc_retrieve_cred (context, ccache, 0, &pattern, &creds);
+    expired = time(NULL) > creds.times.endtime;
+    krb5_free_principal (context, pattern.server);
+    krb5_free_creds_contents (context, &creds);
+    if (ret) {
+	if (ret == KRB5_CC_END)
+	    return 1;
+	krb5_err (context, 1, ret, "krb5_cc_retrieve_cred");
+    }
+    return expired;
+}
+
+static int version_flag = 0;
+static int help_flag	= 0;
+static int do_verbose	= 0;
+static int do_test	= 0;
+
+static struct getargs args[] = {
+    { "test",			't', arg_flag, &do_test,
+      "test for having tickets", NULL },
+    { "verbose",		'v', arg_flag, &do_verbose,
+      "Verbose output", NULL },
+    { "version", 		0,   arg_flag, &version_flag, 
+      "print version", NULL },
+    { "help",			0,   arg_flag, &help_flag, 
+      NULL, NULL}
+};
+
+static void
+usage (int ret)
+{
+    arg_printusage (args,
+		    sizeof(args)/sizeof(*args),
+		    NULL,
+		    "");
+    exit (ret);
+}
+
+int
+main (int argc, char **argv)
+{
+    krb5_error_code ret;
+    krb5_context context;
+    krb5_ccache ccache;
+    krb5_principal principal;
+    int optind = 0;
+    int exit_status = 0;
+
+    set_progname (argv[0]);
+
+    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
+	usage(1);
+    
+    if (help_flag)
+	usage (0);
+
+    if(version_flag){
+	printf("%s (%s-%s)\n", __progname, PACKAGE, VERSION);
+	exit(0);
+    }
+
+    argc -= optind;
+    argv += optind;
+
+    if (argc != 0)
+	usage (1);
+
+    ret = krb5_init_context (&context);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_init_context");
+
+    ret = krb5_cc_default (context, &ccache);
+    if (ret)
+	krb5_err (context, 1, ret, "krb5_cc_default");
+
+    ret = krb5_cc_get_principal (context, ccache, &principal);
+    if(ret == ENOENT)
+	krb5_errx(context, 1, "No ticket file: %s", 
+		  krb5_cc_get_name(context, ccache));
+    if (ret)
+	krb5_err (context, 1, ret, "krb5_cc_get_principal");
+
+    if (do_test)
+	exit_status = check_for_tgt (context, ccache, principal);
+    else
+	print_tickets (context, ccache, principal, do_verbose);
 
     ret = krb5_cc_close (context, ccache);
     if (ret)
@@ -307,5 +365,5 @@ main (int argc, char **argv)
 
     krb5_free_principal (context, principal);
     krb5_free_context (context);
-    return 0;
+    return exit_status;
 }
