@@ -73,9 +73,9 @@ srv_find_realm(krb5_context context, krb5_krbhst_info ***res, int *count,
     }
 
     if(proto_num == KRB5_KRBHST_HTTP)
-	def_port = krb5_getportbyname (context, "http", "tcp", 80);    
+	def_port = ntohs(krb5_getportbyname (context, "http", "tcp", 80));
     else if(port == 0)
-	def_port = krb5_getportbyname (context, service, proto, 88);
+	def_port = ntohs(krb5_getportbyname (context, service, proto, 88));
     else
 	def_port = port;
 
@@ -116,9 +116,9 @@ srv_find_realm(krb5_context context, krb5_krbhst_info ***res, int *count,
 
 	    hi->proto = proto_num;
 	    
-	    hi->def_port = ntohs(def_port);
+	    hi->def_port = def_port;
 	    if (port != 0)
-		hi->port = ntohs(port);
+		hi->port = port;
 	    else
 		hi->port = rr->u.srv->port;
 
