@@ -1147,6 +1147,11 @@ static void spoolss_notify_server_name(int snum,
 
 	data->notify_data.data.length = len / 2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
+
+	if (!data->notify_data.data.string) {
+		data->notify_data.data.length = 0;
+		return;
+	}
 	
 	memcpy(data->notify_data.data.string, temp, len);
 }
@@ -1177,6 +1182,11 @@ static void spoolss_notify_printer_name(int snum,
 	data->notify_data.data.length = len / 2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
+	if (!data->notify_data.data.string) {
+		data->notify_data.data.length = 0;
+		return;
+	}
+	
 	memcpy(data->notify_data.data.string, temp, len);
 }
 
@@ -1197,6 +1207,11 @@ static void spoolss_notify_share_name(int snum,
 
 	data->notify_data.data.length = len / 2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
+	
+	if (!data->notify_data.data.string) {
+		data->notify_data.data.length = 0;
+		return;
+	}
 	
 	memcpy(data->notify_data.data.string, temp, len);
 }
@@ -1221,6 +1236,11 @@ static void spoolss_notify_port_name(int snum,
 	data->notify_data.data.length = len / 2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
+	if (!data->notify_data.data.string) {
+		data->notify_data.data.length = 0;
+		return;
+	}
+	
 	memcpy(data->notify_data.data.string, temp, len);
 }
 
@@ -1243,6 +1263,11 @@ static void spoolss_notify_driver_name(int snum,
 
 	data->notify_data.data.length = len / 2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
+	
+	if (!data->notify_data.data.string) {
+		data->notify_data.data.length = 0;
+		return;
+	}
 	
 	memcpy(data->notify_data.data.string, temp, len);
 }
@@ -1269,6 +1294,11 @@ static void spoolss_notify_comment(int snum,
 	data->notify_data.data.length = len / 2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
+	if (!data->notify_data.data.string) {
+		data->notify_data.data.length = 0;
+		return;
+	}
+	
 	memcpy(data->notify_data.data.string, temp, len);
 }
 
@@ -1291,6 +1321,11 @@ static void spoolss_notify_location(int snum,
 
 	data->notify_data.data.length = len / 2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
+	
+	if (!data->notify_data.data.string) {
+		data->notify_data.data.length = 0;
+		return;
+	}
 	
 	memcpy(data->notify_data.data.string, temp, len);
 }
@@ -1327,6 +1362,11 @@ static void spoolss_notify_sepfile(int snum,
 	data->notify_data.data.length = len / 2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
+	if (!data->notify_data.data.string) {
+		data->notify_data.data.length = 0;
+		return;
+	}
+	
 	memcpy(data->notify_data.data.string, temp, len);
 }
 
@@ -1348,6 +1388,11 @@ static void spoolss_notify_print_processor(int snum,
 
 	data->notify_data.data.length = len / 2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
+	
+	if (!data->notify_data.data.string) {
+		data->notify_data.data.length = 0;
+		return;
+	}
 	
 	memcpy(data->notify_data.data.string, temp, len);
 }
@@ -1371,6 +1416,11 @@ static void spoolss_notify_parameters(int snum,
 	data->notify_data.data.length = len / 2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
+	if (!data->notify_data.data.string) {
+		data->notify_data.data.length = 0;
+		return;
+	}
+	
 	memcpy(data->notify_data.data.string, temp, len);
 }
 
@@ -1392,6 +1442,11 @@ static void spoolss_notify_datatype(int snum,
 
 	data->notify_data.data.length = len / 2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
+	
+	if (!data->notify_data.data.string) {
+		data->notify_data.data.length = 0;
+		return;
+	}
 	
 	memcpy(data->notify_data.data.string, temp, len);
 }
@@ -1541,6 +1596,11 @@ static void spoolss_notify_username(int snum,
 	data->notify_data.data.length = len / 2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
+	if (!data->notify_data.data.string) {
+		data->notify_data.data.length = 0;
+		return;
+	}
+	
 	memcpy(data->notify_data.data.string, temp, len);
 }
 
@@ -1573,6 +1633,11 @@ static void spoolss_notify_job_name(int snum,
 
 	data->notify_data.data.length = len / 2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
+	
+	if (!data->notify_data.data.string) {
+		data->notify_data.data.length = 0;
+		return;
+	}
 	
 	memcpy(data->notify_data.data.string, temp, len);
 }
@@ -1609,6 +1674,11 @@ static void spoolss_notify_job_status_string(int snum,
 
 	data->notify_data.data.length = len / 2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
+	
+	if (!data->notify_data.data.string) {
+		data->notify_data.data.length = 0;
+		return;
+	}
 	
 	memcpy(data->notify_data.data.string, temp, len);
 }
@@ -1668,6 +1738,11 @@ static void spoolss_notify_submitted_time(int snum,
 	data->notify_data.data.length = len;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 
+	if (!data->notify_data.data.string) {
+		data->notify_data.data.length = 0;
+		return;
+	}
+	
 	make_systemtime((SYSTEMTIME*)(data->notify_data.data.string), t);
 }
 
