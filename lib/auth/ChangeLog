@@ -1,13 +1,17 @@
+Thu Apr  1 18:09:23 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* sia/sia_locl.h: POSIX_GETPWNAM_R is defined in config.h
+
 Sun Mar 21 14:08:30 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
-	* lib/auth/sia/Makefile.in: add posix_getpw.c
-
-	* lib/auth/sia/Makefile.am: makefile for sia
-
-	* lib/auth/sia/posix_getpw.c: move from sia.c
-
-	* lib/auth/sia/sia_locl.h: merge with krb5 version
-
-	* lib/auth/sia/sia.c: merge with krb5 version
-
-	* lib/auth/sia/sia5.c: remove unused variables
+	* sia/Makefile.in: add posix_getpw.c
+	  
+	* sia/Makefile.am: makefile for sia
+	  
+	* sia/posix_getpw.c: move from sia.c
+	  
+	* sia/sia_locl.h: merge with krb5 version
+	  
+	* sia/sia.c: merge with krb5 version
+	  
+	* sia/sia5.c: remove unused variables
