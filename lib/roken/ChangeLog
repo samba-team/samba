@@ -1,5 +1,9 @@
 1999-07-26  Assar Westerlund  <assar@sics.se>
 
+	* roken.h.in (inet_ntop): add prototype
+
+ 	* roken-common.h: (INET{,6}_ADDRSTRLEN): add
+
 	* inet_ntop.c: new file
 
 	* Makefile.am (EXTRA_libroken_la_SOURCES): add inet_ntop.c
