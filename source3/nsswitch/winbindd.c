@@ -52,25 +52,6 @@ static BOOL reload_services_file(BOOL test)
 	return(ret);
 }
 
-/*******************************************************************
- Print out all talloc memory info.
-********************************************************************/
-
-void return_all_talloc_info(int msg_type, pid_t src_pid, void *buf, size_t len)
-{
-	TALLOC_CTX *ctx = talloc_init("info context");
-	char *info = NULL;
-
-	if (!ctx)
-		return;
-
-	info = talloc_describe_all(ctx);
-	if (info)
-		DEBUG(10,(info));
-	message_send_pid(src_pid, MSG_TALLOC_USAGE, info, info ? strlen(info) + 1: 0, True);
-	talloc_destroy(ctx);
-}
-
 #if DUMP_CORE
 
 /**************************************************************************** **
@@ -916,14 +897,12 @@ int main(int argc, char **argv)
 	}
 	poptFreeContext(pc);
 
-	register_msg_pool_usage();
-	message_register(MSG_REQ_TALLOC_USAGE, return_all_talloc_info);
-
 	/* Loop waiting for requests */
 
 	process_loop();
 
 	trustdom_cache_shutdown();
 	uni_group_cache_shutdown();
+
 	return 0;
 }

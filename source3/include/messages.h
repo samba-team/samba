@@ -43,10 +43,6 @@
 
 #define MSG_SHUTDOWN		13
 
-/* Dump out the talloc useage. */
-#define MSG_REQ_TALLOC_USAGE      14
-#define MSG_TALLOC_USAGE          15
-
 /* nmbd messages */
 #define MSG_FORCE_ELECTION 1001
 #define MSG_WINS_NEW_ENTRY 1002
