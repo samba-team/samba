@@ -60,7 +60,7 @@ usage on the program
 ****************************************************************************/
 static void usage(void)
 {
-  d_printf("Usage: nmblookup [-M] [-B bcast address] [-d debuglevel] name\n");
+  d_printf("Usage: nmblookup [options] name\n");
   d_printf("Version %s\n",VERSION);
   d_printf("\t-d debuglevel         set the debuglevel\n");
   d_printf("\t-B broadcast address  the address to use for broadcasts\n");
