@@ -83,24 +83,6 @@ static BOOL pack_devicemode_alloc(NT_DEVICEMODE *nt_devmode,
 	return True;
 }
 
-static BOOL pack_values_alloc(NT_PRINTER_DATA *data, char **buf, int *buflen)
-{
-	*buflen = pack_values(data, NULL, 0);
-
-	*buf = malloc(*buflen);
-
-	if (*buf == NULL)
-		return False;
-
-	if (pack_values(data, *buf, *buflen) != *buflen) {
-		DEBUG(0, ("values encoded twice gives different "
-			  "lengths\n"));
-		return False;
-	}
-
-	return True;
-}
-
 #define ADD_TO_ARRAY_TALLOC(mem_ctx, elem, array, num) \
 do { \
        *(array) = talloc_realloc(mem_ctx, (*(array)), \
@@ -796,6 +778,56 @@ static struct ldap_entry *prepare_printer_entry(const char *name)
 	return entry;
 }
 
+static void prldap_setvalues(struct ldap_entry *entry, NT_PRINTER_DATA *data)
+{
+	int 		i, j;
+	TALLOC_CTX     *mem_ctx;
+
+	if (data == NULL)
+		return;
+
+	if ((mem_ctx = talloc_init("ldap_entry_setvalues")) == NULL)
+		return;
+
+	/* loop over all keys */
+		
+	for ( i=0; i<data->num_keys; i++ ) {	
+		REGVAL_CTR *val_ctr;
+		int num_values;
+
+		val_ctr = &data->keys[i].values;
+		num_values = regval_ctr_numvals( val_ctr );
+		
+		/* loop over all values */
+		
+		for ( j=0; j<num_values; j++ ) {
+			char *path;
+			REGISTRY_VALUE	*val;
+			DATA_BLOB ldapval;
+
+			/* pathname should be stored as <key>\<value> */
+			
+			val = regval_ctr_specific_value( val_ctr, j );
+			path = talloc_asprintf(mem_ctx, "%s\\%s",
+					       data->keys[i].name,
+					       regval_name(val));
+
+			ldapval = data_blob_pack_talloc(mem_ctx, "pPdB",
+							val,
+							path,
+							regval_type(val),
+							regval_size(val),
+							regval_data_p(val) );
+
+			ldap_entry_bin(entry, "sambaPrintData",
+				       ldapval.data, ldapval.length);
+		}
+	
+	}
+
+	talloc_destroy(mem_ctx);
+}
+
 BOOL prldap_set_printer(NT_PRINTER_INFO_LEVEL_2 *printer)
 {
 	int rc;
@@ -840,11 +872,7 @@ BOOL prldap_set_printer(NT_PRINTER_INFO_LEVEL_2 *printer)
 	ldap_entry_bin(entry, "sambaPrintDevMode", buf, len);
 	SAFE_FREE(buf);
 
-	if (!pack_values_alloc(&printer->data, &buf, &len))
-		return False;
-
-	ldap_entry_bin(entry, "sambaPrintData", buf, len);
-	SAFE_FREE(buf);
+	prldap_setvalues(entry, &printer->data);
 
 	rc = ldap_entry_set(ldap_conn.smbldap_state, entry);
 
