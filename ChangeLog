@@ -1,3 +1,15 @@
+Wed Apr  7 23:37:26 1999  Assar Westerlund  <assar@sics.se>
+
+	* kdc/hpropd.c: fix some error messages to be more understandable.
+
+	* kdc/hprop.c (ka_dump): remove unused variables
+
+	* appl/test/tcp_server.c: remove unused variables
+
+	* appl/test/gssapi_server.c: remove unused variables
+
+	* appl/test/gssapi_client.c: remove unused variables
+
 Thu Apr  1 11:00:40 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* Release 0.1d

@@ -1,3 +1,8 @@
+Wed Apr  7 23:39:23 1999  Assar Westerlund  <assar@sics.se>
+
+	* common.c (get_xsockets): init local variable to get rid of a gcc
+ 	warning
+
 Thu Apr  1 21:11:36 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* Makefile.in: fix for writeauth.o

@@ -1,3 +1,7 @@
+Wed Apr  7 20:40:22 1999  Assar Westerlund  <assar@sics.se>
+
+	* shared-libs.m4 (hpux): no library dependencies
+
 Mon Apr  5 16:13:08 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* test-package.m4: compile and link, rather than looking for
