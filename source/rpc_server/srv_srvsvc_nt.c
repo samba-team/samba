@@ -50,7 +50,7 @@ static void init_srv_share_info_1(SRV_SHARE_INFO_1 *sh1, int snum)
 		
 	if (lp_print_ok(snum))
 		type = STYPE_PRINTQ;
-	if (strequal("IPC$", net_name))
+	if (strequal("IPC", lp_fstype(snum)))
 		type = STYPE_IPC;
 	if (net_name[len_net_name] == '$')
 		type |= STYPE_HIDDEN;
@@ -84,7 +84,7 @@ static void init_srv_share_info_2(SRV_SHARE_INFO_2 *sh2, int snum)
 		
 	if (lp_print_ok(snum))
 		type = STYPE_PRINTQ;
-	if (strequal("IPC$", net_name))
+	if (strequal("IPC", lp_fstype(snum)))
 		type = STYPE_IPC;
 	if (net_name[len_net_name] == '$')
 		type |= STYPE_HIDDEN;
