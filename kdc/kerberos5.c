@@ -101,94 +101,111 @@ as_rep(krb5_context context,
     }
 
 
-    if(req->padata == NULL || req->padata->len < 1 ||
-       req->padata->val->padata_type != pa_enc_timestamp) {
-	if(require_enc_timestamp){
-	    PA_DATA foo;
-	    u_char buf[16];
-	    size_t len;
-	    krb5_data foo_data;
+    if(req->padata){
+	int i;
+	PA_DATA *pa;
+	int found_pa = 0;
+	for(i = 0; i < req->padata->len; i++){
+	    PA_DATA *pa = &req->padata->val[i];
+	    if(pa->padata_type == pa_enc_timestamp){
+		krb5_data ts_data;
+		PA_ENC_TS_ENC p;
+		time_t patime;
+		size_t len;
+		EncryptedData enc_data;
+		
+		found_pa = 1;
+		
+		ret = decode_EncryptedData(pa->padata_value.data,
+					   pa->padata_value.length,
+					   &enc_data,
+					   &len);
+		if (ret) {
+		    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
+		    kdc_log(0, "Failed to decode PA-DATA -- %s", client_name);
+		    goto out;
+		}
 
-	    foo.padata_type = pa_enc_timestamp;
-	    foo.padata_value.length = 0;
-	    foo.padata_value.data   = NULL;
-
-	    encode_PA_DATA(buf + sizeof(buf) - 1,
-			   sizeof(buf),
-			   &foo,
-			   &len);
-	    foo_data.length = len;
-	    foo_data.data   = buf + sizeof(buf) - len;
-
-	    ret = KRB5KDC_ERR_PREAUTH_REQUIRED;
-	    krb5_mk_error(context,
-			  ret,
-			  "Need to use PA-ENC-TIMESTAMP",
-			  &foo_data,
-			  client_princ,
-			  server_princ,
-			  0,
-			  reply);
-	
-	    kdc_log(0, "No PA-ENC-TIMESTAMP -- %s", client_name);
-	    goto out2;
+		ret = krb5_decrypt (context,
+				    enc_data.cipher.data,
+				    enc_data.cipher.length,
+				    enc_data.etype,
+				    &client->keyblock,
+				    &ts_data);
+		free_EncryptedData(&enc_data);
+		if(ret){
+		    e_text = "Failed to decrypt PA-DATA";
+		    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
+		    continue;
+		}
+		ret = decode_PA_ENC_TS_ENC(ts_data.data,
+					   ts_data.length,
+					   &p,
+					   &len);
+		krb5_data_free(&ts_data);
+		if(ret){
+		    e_text = "Failed to decode PA-ENC-TS-ENC";
+		    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
+		    continue;
+		}
+		patime = p.patimestamp;
+		free_PA_ENC_TS_ENC(&p);
+		if (abs(kdc_time - p.patimestamp) > context->max_skew) {
+		    ret = KRB5KDC_ERR_PREAUTH_FAILED;
+		    krb5_mk_error (context,
+				   ret,
+				   "Too large time skew",
+				   NULL,
+				   client_princ,
+				   server_princ,
+				   0,
+				   reply);
+		    kdc_log(0, "Too large time skew -- %s", client_name);
+		    goto out2;
+		}
+		et->flags.pre_authent = 1;
+		kdc_log(2, "Pre-authentication succeded -- %s", client_name);
+		break;
+	    }
 	}
-    } else {
-	krb5_data ts_data;
-	PA_ENC_TS_ENC p;
-	time_t patime;
+	/* XXX */
+	if(found_pa == 0)
+	    goto use_pa;
+	if(et->flags.pre_authent == 0){
+	    kdc_log(0, "%s -- %s", e_text, client_name);
+	    e_text = NULL;
+	    goto out;
+	}
+    }else{
+	PA_DATA foo;
+	u_char buf[16];
 	size_t len;
-	EncryptedData enc_data;
-
-	ret = decode_EncryptedData(req->padata->val->padata_value.data,
-				   req->padata->val->padata_value.length,
-				   &enc_data,
-				   &len);
-	if (ret) {
-	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
-	    kdc_log(0, "Failed to decode PA-DATA -- %s", client_name);
-	    goto out;
-	}
-
-	ret = krb5_decrypt (context,
-			    enc_data.cipher.data,
-			    enc_data.cipher.length,
-			    enc_data.etype,
-			    &client->keyblock,
-			    &ts_data);
-	free_EncryptedData(&enc_data);
-	if (ret) {
-	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
-	    kdc_log(0, "Failed to decrypt PA-DATA -- %s", client_name);
-	    goto out;
-	}
-	ret = decode_PA_ENC_TS_ENC(ts_data.data,
-				   ts_data.length,
-				   &p,
-				   &len);
-	krb5_data_free(&ts_data);
-	if (ret) {
-	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
-	    kdc_log(0, "Failed to decode PA-ENC-TS-ENC -- %s", client_name);
-	    goto out;
-	}
-	patime = p.patimestamp;
-	free_PA_ENC_TS_ENC(&p);
-	if (abs(kdc_time - p.patimestamp) > context->max_skew) {
-	    krb5_mk_error (context,
-			   KRB5KDC_ERR_PREAUTH_FAILED,
-			   "Too large time skew",
-			   NULL,
-			   client_princ,
-			   server_princ,
-			   0,
-			   reply);
-	    ret = KRB5KDC_ERR_PREAUTH_FAILED;
-	    kdc_log(0, "Too large time skew -- %s", client_name);
-	    goto out2;
-	}
-	et->flags.pre_authent = 1;
-	kdc_log(2, "Pre-authentication succeded -- %s", client_name);
+	krb5_data foo_data;
+	
+    use_pa:
+	foo.padata_type = pa_enc_timestamp;
+	foo.padata_value.length = 0;
+	foo.padata_value.data   = NULL;
+	
+	encode_PA_DATA(buf + sizeof(buf) - 1,
+		       sizeof(buf),
+		       &foo,
+		       &len);
+	foo_data.length = len;
+	foo_data.data   = buf + sizeof(buf) - len;
+	
+	ret = KRB5KDC_ERR_PREAUTH_REQUIRED;
+	krb5_mk_error(context,
+		      ret,
+		      "Need to use PA-ENC-TIMESTAMP",
+		      &foo_data,
+		      client_princ,
+		      server_princ,
+		      0,
+		      reply);
+	
+	kdc_log(0, "No PA-ENC-TIMESTAMP -- %s", client_name);
+	goto out2;
     }
 
     /* Find appropriate key */
@@ -351,6 +368,12 @@ as_rep(krb5_context context,
 	rep.enc_part.kvno = malloc(sizeof(*rep.enc_part.kvno));
 	*rep.enc_part.kvno = client.kvno;
 #endif
+	if(client->flags.b.v4){
+	    rep.padata = malloc(sizeof(*rep.padata));
+	    rep.padata->len = 1;
+	    rep.padata->val = calloc(1, sizeof(*rep.padata->val));
+	    rep.padata->val->padata_type = pa_pw_salt;
+	}
 	
 	ret = encode_AS_REP(buf + sizeof(buf) - 1, sizeof(buf), &rep, &len);
 	free_AS_REP(&rep);
