@@ -390,6 +390,8 @@ static NTSTATUS ndr_map_error(enum ndr_err_code err)
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	case NDR_ERR_ALLOC:
 		return NT_STATUS_NO_MEMORY;
+	default:
+		break;
 	}
 
 	/* we should all error codes to different status codes */

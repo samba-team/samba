@@ -548,7 +548,7 @@ static size_t smbcli_req_pull_ucs2(struct smbcli_request *req, TALLOC_CTX *mem_c
   of bytes consumed in the packet is returned
 */
 size_t smbcli_req_pull_ascii(struct smbcli_request *req, TALLOC_CTX *mem_ctx,
-			  char **dest, const char *src, int byte_len, uint_t flags)
+			     char **dest, const char *src, int byte_len, uint_t flags)
 {
 	int src_len, src_len2;
 	ssize_t ret;

@@ -394,7 +394,7 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe **p,
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = pipe_name;
 
-	status = smb_raw_open(tree, pipe_name, &io);
+	status = smb_raw_open(tree, tree, &io);
 
 	if (!NT_STATUS_IS_OK(status)) {
                 return status;
