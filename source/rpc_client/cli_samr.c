@@ -698,7 +698,7 @@ BOOL samr_enum_dom_aliases(struct cli_state *cli, uint16 fnum,
 do a SAMR enumerate users
 ****************************************************************************/
 BOOL samr_enum_dom_users(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *pol, uint16 num_entries, uint16 unk_0,
+				POLICY_HND *pol, uint32 start_idx, 
 				uint16 acb_mask, uint16 unk_1, uint32 size,
 				struct acct_info **sam,
 				int *num_sam_users)
@@ -719,9 +719,7 @@ BOOL samr_enum_dom_users(struct cli_state *cli, uint16 fnum,
 	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
-	make_samr_q_enum_dom_users(&q_e, pol,
-	                           num_entries, unk_0,
-	                           acb_mask, unk_1, size);
+	make_samr_q_enum_dom_users(&q_e, pol, start_idx, acb_mask, unk_1, size);
 
 	/* turn parameters into data stream */
 	samr_io_q_enum_dom_users("", &q_e, &data, 0);

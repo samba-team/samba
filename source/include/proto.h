@@ -1679,7 +1679,7 @@ BOOL samr_enum_dom_aliases(struct cli_state *cli, uint16 fnum,
 				struct acct_info **sam,
 				int *num_sam_aliases);
 BOOL samr_enum_dom_users(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *pol, uint16 num_entries, uint16 unk_0,
+				POLICY_HND *pol, uint32 start_idx, 
 				uint16 acb_mask, uint16 unk_1, uint32 size,
 				struct acct_info **sam,
 				int *num_sam_users);
@@ -2181,7 +2181,7 @@ void make_samr_r_unknown_3(SAMR_R_UNKNOWN_3 *r_u,
 				uint32 status);
 void samr_io_r_unknown_3(char *desc,  SAMR_R_UNKNOWN_3 *r_u, prs_struct *ps, int depth);
 void make_samr_q_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_e, POLICY_HND *pol,
-				uint16 req_num_entries, uint16 unk_0,
+				uint32 start_idx, 
 				uint16 acb_mask, uint16 unk_1, uint32 size);
 void samr_io_q_enum_dom_users(char *desc,  SAMR_Q_ENUM_DOM_USERS *q_e, prs_struct *ps, int depth);
 void make_samr_r_enum_dom_users(SAMR_R_ENUM_DOM_USERS *r_u,
@@ -2779,6 +2779,7 @@ void display_reg_value_info(FILE *out_hnd, enum action_type action,
 				char *val_name, uint32 val_type, BUFFER2 *value);
 void display_reg_key_info(FILE *out_hnd, enum action_type action,
 				char *key_name, time_t key_mod_time);
+char *get_svc_start_type_str(uint32 type);
 void display_query_svc_cfg(FILE *out_hnd, enum action_type action,
 				QUERY_SERVICE_CONFIG *cfg);
 void display_svc_info(FILE *out_hnd, enum action_type action, ENUM_SRVC_STATUS *svc);
