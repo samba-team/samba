@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -59,6 +59,21 @@
 #ifndef T_CERT
 #define T_CERT		37
 #endif
+
+#define dns_query		rk_dns_query
+#define mx_record		rk_mx_record
+#define srv_record		rk_srv_record
+#define key_record		rk_key_record
+#define sig_record		rk_sig_record
+#define cert_record		rk_cert_record
+#define resource_record		rk_resource_record
+#define dns_reply		rk_dns_reply
+
+#define dns_lookup		rk_dns_lookup
+#define dns_free_data		rk_dns_free_data
+#define dns_string_to_type	rk_dns_string_to_type
+#define dns_type_to_string	rk_dns_type_to_string
+#define dns_srv_order		rk_dns_srv_order
 
 struct dns_query{
     char *domain;
