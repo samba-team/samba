@@ -190,13 +190,13 @@ int smbrun(char *cmd, int *outfd);
 
 /* The following definitions come from lib/substitute.c  */
 
-void standard_sub_basic(char *str);
-void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *str);
-void standard_sub_conn(connection_struct *conn, char *str);
-void standard_sub_home(int snum, char *user, char *str);
-void standard_sub_snum(int snum, char *str);
-void standard_sub_vuser(char *str, user_struct *vuser);
-void standard_sub_vsnum(char *str, user_struct *vuser, int snum);
+void standard_sub_basic(char *str, int len);
+void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *str, int len);
+void standard_sub_conn(connection_struct *conn, char *str, int len);
+void standard_sub_home(int snum, char *user, char *str, int len);
+void standard_sub_snum(int snum, char *str, int len);
+void standard_sub_vuser(char *str, int len, user_struct *vuser);
+void standard_sub_vsnum(char *str, int len, user_struct *vuser, int snum);
 
 /* The following definitions come from lib/sysacls.c  */
 
