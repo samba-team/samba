@@ -460,30 +460,38 @@ typedef struct sam_account_info_info
 	UNIHDR hdr_dir_drive;
 	UNIHDR hdr_logon_script;
 	UNIHDR hdr_acct_desc;
+	UNIHDR hdr_workstations;
 
-	NTTIME time_1;
-	NTTIME time_2;
-	NTTIME time_3;
+	NTTIME logon_time;
+	NTTIME logoff_time;
 
 	uint32 logon_divs; /* 0xA8 */
 	uint32 ptr_logon_hrs;
 
-	/* N.B. 8-byte alignment */
-	NTTIME time_4;
-	NTTIME time_5;
+	uint16 bad_pwd_count;
+	uint16 logon_count;
+	NTTIME pwd_last_set_time;
+	NTTIME acct_expiry_time;
+
 	uint32 acb_info;
-	char reserved[36];
+	uint8 nt_pwd[16];
+	uint8 lm_pwd[16];
+	uint8 nt_pwd_present;
+	uint8 lm_pwd_present;
+	uint8 pwd_expired;
 
 	UNIHDR hdr_comment;
-	char unknown1[12];
+	UNIHDR hdr_parameters;
+	uint16 country;
+	uint16 codepage;
 
-	BUFHDR2 hdr_pwd_info;
+	BUFHDR2 hdr_priv_data;
 	BUFHDR2 hdr_sec_desc;  /* security descriptor */
-	UNIHDR  hdr_profile;
 
-	char unknown2[24];
-	NTTIME time_6; /* *** HIGH/LOW DWORDS THE WRONG WAY!!! *** */
-	char unknown3[8];
+	UNIHDR  hdr_profile;
+	UNIHDR  hdr_reserved[3];  /* space for more strings */
+	uint32  dw_reserved[4];   /* space for more data - first two seem to
+				     be an NTTIME */
 
 	UNISTR2 uni_acct_name;
 	UNISTR2 uni_full_name;
@@ -491,13 +499,15 @@ typedef struct sam_account_info_info
 	UNISTR2 uni_dir_drive;
 	UNISTR2 uni_logon_script;
 	UNISTR2 uni_acct_desc;
+	UNISTR2 uni_workstations;
 
-	uint32 unknown4; /* 0x4EC */
-	uint32 unknown5; /* 0 */
+	uint32 unknown1; /* 0x4EC */
+	uint32 unknown2; /* 0 */
 
 	BUFFER4 buf_logon_hrs;
 	UNISTR2 uni_comment;
-	BUFFER4 buf_pwd_info;
+	UNISTR2 uni_parameters;
+	BUFFER4 buf_priv_data;
 	BUFFER4 buf_sec_desc;
 	UNISTR2 uni_profile;
 
@@ -571,8 +581,8 @@ typedef struct net_r_sam_sync_info
 	uint32 ptr_deltas2;
 	uint32 num_deltas2;
 
-	SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS];
-	SAM_DELTA_CTR deltas[MAX_SAM_DELTAS];
+	SAM_DELTA_HDR *hdr_deltas;
+	SAM_DELTA_CTR *deltas;
 
 	uint32 status;
 
@@ -605,8 +615,8 @@ typedef struct net_r_sam_deltas_info
 	uint32 ptr_deltas;
 	uint32 num_deltas2;
 
-	SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS];
-	SAM_DELTA_CTR deltas[MAX_SAM_DELTAS];
+	SAM_DELTA_HDR *hdr_deltas;
+	SAM_DELTA_CTR *deltas;
 
 	uint32 status;
 

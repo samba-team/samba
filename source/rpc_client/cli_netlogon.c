@@ -476,7 +476,7 @@ password ?).\n", cli->desthost ));
 /***************************************************************************
 Synchronise SAM Database (requires SEC_CHAN_BDC).
 ****************************************************************************/
-BOOL cli_net_sam_sync(struct cli_state *cli, uint16 nt_pipe_fnum, uint32 database_id)
+BOOL cli_net_sam_sync(struct cli_state *cli, uint16 nt_pipe_fnum, uint32 database_id, uint32 *num_deltas, SAM_DELTA_HDR *hdr_deltas, SAM_DELTA_CTR *deltas)
 {
 	NET_Q_SAM_SYNC q_s;
 	prs_struct rbuf;
@@ -501,11 +501,14 @@ BOOL cli_net_sam_sync(struct cli_state *cli, uint16 nt_pipe_fnum, uint32 databas
 	if (rpc_api_pipe_req(cli, nt_pipe_fnum, NET_SAM_SYNC, &buf, &rbuf))
 	{
 		NET_R_SAM_SYNC r_s;
-		
+
+		r_s.hdr_deltas = hdr_deltas;
+		r_s.deltas = deltas;
+
 		net_io_r_sam_sync("", &r_s, &rbuf, 0);
 		ok = (rbuf.offset != 0);
-		
-		if (ok && r_s.status != 0)
+
+		if (ok && r_s.status != 0 && r_s.status != NT_STATUS_MORE_ENTRIES)
 		{
 			/* report error code */
 			DEBUG(0,("cli_net_sam_sync: %s\n", get_nt_error_msg(r_s.status)));
@@ -518,6 +521,16 @@ BOOL cli_net_sam_sync(struct cli_state *cli, uint16 nt_pipe_fnum, uint32 databas
 		{
 			DEBUG(0,("cli_net_sam_sync: server %s replied with bad credential (bad machine password ?).\n", cli->desthost));
 			ok = False;
+		}
+
+		if (ok)
+		{
+			*num_deltas = r_s.num_deltas2;
+
+			if (r_s.status == NT_STATUS_MORE_ENTRIES)
+			{
+				DEBUG(2, ("(More entries)\n"));
+			}
 		}
 	}
 	
@@ -707,4 +720,72 @@ domain %s.\n", timestring(), domain));
   DEBUG(0,("%s : change_trust_account_password: Failed to change password for \
 domain %s.\n", timestring(), domain));
   return False;
+}
+
+BOOL do_sam_sync(struct cli_state *cli)
+{
+	uint16 nt_pipe_fnum;
+	BOOL res = True;
+	unsigned char trust_passwd[16];
+	int i, j;
+
+	SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS];
+	SAM_DELTA_CTR deltas[MAX_SAM_DELTAS];
+	uint32 num_deltas;
+	fstring name;
+	char *data;
+
+	DEBUG(2,("Attempting SAM synchronisation with PDC\n"));
+
+	res = res ? trust_get_passwd(trust_passwd, cli->domain, global_myname) : False;
+
+	/* open NETLOGON session.  negotiate credentials */
+	res = res ? cli_nt_session_open(cli, PIPE_NETLOGON, &nt_pipe_fnum) : False;
+
+	res = res ? cli_nt_setup_creds(cli, nt_pipe_fnum, cli->mach_acct,
+	                               trust_passwd, SEC_CHAN_BDC) : False;
+
+	res = res ? cli_net_sam_sync(cli, nt_pipe_fnum, 0, &num_deltas, hdr_deltas, deltas) : False;
+
+	memset(trust_passwd, 0, 16);
+
+	/* close the session */
+	cli_nt_session_close(cli, nt_pipe_fnum);
+
+	if (!res)
+	{
+		DEBUG(0, ("SAM synchronisation FAILED\n"));
+		return False;
+	}
+
+	DEBUG(0, ("SAM synchronisation returned %d entries\n", num_deltas));
+
+	for (i = 0; i < num_deltas; i++)
+	{
+		switch (hdr_deltas[i].type)
+		{
+		case 1:
+			unistr2_to_ascii(name, &(deltas[i].domain_info.uni_dom_name), sizeof(fstring)-1); 
+			DEBUG(0, ("Domain: %s\n", name));
+			break;
+			
+		case 2:
+			unistr2_to_ascii(name, &(deltas[i].group_info.uni_grp_name), sizeof(fstring)-1); 
+			DEBUG(0, ("Group: %s\n", name));
+			break;
+
+		case 5:
+			unistr2_to_ascii(name, &(deltas[i].account_info.uni_acct_name), sizeof(fstring)-1); 
+			DEBUG(0, ("Account: %s\n", name));
+
+			data = deltas[i].account_info.buf_priv_data.buffer;
+			for (j = 0; j < deltas[i].account_info.buf_priv_data.buf_len; j++)
+			{
+				snprintf(&name[2*j], 3, "%02X", data[j]);
+			}
+			DEBUG(0, ("Private Data: %s\n", name));
+		}
+	}
+
+	return True;
 }

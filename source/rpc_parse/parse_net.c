@@ -1221,6 +1221,7 @@ static void net_io_sam_domain_info(char *desc, SAM_DOMAIN_INFO *info, prs_struct
 
 	smb_io_bufhdr2("hdr_sec_desc", &(info->hdr_sec_desc) , ps, depth);
 	smb_io_unihdr ("hdr_unknown" , &(info->hdr_unknown)  , ps, depth);
+	ps->offset += 40;
 
 	smb_io_unistr2("uni_dom_name", &(info->uni_dom_name),
 		       info->hdr_dom_name.buffer, ps, depth);
@@ -1252,7 +1253,7 @@ static void net_io_sam_group_info(char *desc, SAM_GROUP_INFO *info, prs_struct *
 	smb_io_unistr2("uni_grp_name", &(info->uni_grp_name),
 		       info->hdr_grp_name.buffer, ps, depth);
 	smb_io_unistr2("uni_grp_desc", &(info->uni_grp_desc),
-		       info->hdr_grp_name.buffer, ps, depth);
+		       info->hdr_grp_desc.buffer, ps, depth);
 	smb_io_buffer4("buf_sec_desc", &(info->buf_sec_desc),
 		       info->hdr_sec_desc.buffer, ps, depth);
 }
@@ -1284,25 +1285,34 @@ void make_sam_account_info(SAM_ACCOUNT_INFO *info, char *user_name,
         make_uni_hdr(&(info->hdr_profile     ), len_profile     );
 
 	/* not present */
+        make_uni_hdr(&(info->hdr_workstations), 0);
         make_uni_hdr(&(info->hdr_comment), 0);
-	make_bufhdr2(&(info->hdr_pwd_info), 0, 0, 0);
+        make_uni_hdr(&(info->hdr_parameters), 0);
+	make_bufhdr2(&(info->hdr_priv_data), 0, 0, 0);
 	make_bufhdr2(&(info->hdr_sec_desc), 0, 0, 0);
 
 	info->user_rid = user_rid;
 	info->group_rid = group_rid;
 
-	init_nt_time(&(info->time_1));
-	init_nt_time(&(info->time_2));
-	init_nt_time(&(info->time_3));
-	init_nt_time(&(info->time_4));
-	init_nt_time(&(info->time_5));
+	init_nt_time(&(info->logon_time));
+	init_nt_time(&(info->logoff_time));
+	init_nt_time(&(info->pwd_last_set_time));
+	init_nt_time(&(info->acct_expiry_time));
 
 	info->logon_divs = 0xA8;
 	info->ptr_logon_hrs = 0; /* Don't care right now */
 
+	info->bad_pwd_count = 0;
+	info->logon_count = 0;
 	info->acb_info = acb_info;
-	info->unknown4 = 0x4EC;
-	info->unknown5 = 0;
+	info->nt_pwd_present = 0;
+	info->lm_pwd_present = 0;
+	info->pwd_expired = 0;
+	info->country = 0;
+	info->codepage = 0;
+
+	info->unknown1 = 0x4EC;
+	info->unknown2 = 0;
 
 	make_unistr2(&(info->uni_acct_name), user_name, len_user_name+1);
 	make_unistr2(&(info->uni_full_name), full_name, len_full_name+1);
@@ -1318,6 +1328,8 @@ reads or writes a structure.
 ********************************************************************/
 static void net_io_sam_account_info(char *desc, SAM_ACCOUNT_INFO *info, prs_struct *ps, int depth)
 {
+	int i;
+
 	if (info == NULL) return;
 
 	prs_debug(ps, depth, desc, "net_io_sam_account_info");
@@ -1333,26 +1345,44 @@ static void net_io_sam_account_info(char *desc, SAM_ACCOUNT_INFO *info, prs_stru
 	smb_io_unihdr("hdr_dir_drive"   , &(info->hdr_dir_drive), ps, depth);
 	smb_io_unihdr("hdr_logon_script", &(info->hdr_logon_script), ps, depth);
 	smb_io_unihdr("hdr_acct_desc"   , &(info->hdr_acct_desc), ps, depth);
+	smb_io_unihdr("hdr_workstations", &(info->hdr_workstations), ps, depth);
 
-	smb_io_time("time_1", &(info->time_1), ps, depth);
-	smb_io_time("time_2", &(info->time_2), ps, depth);
-	smb_io_time("time_3", &(info->time_3), ps, depth);
+	smb_io_time("logon_time" , &(info->logon_time ), ps, depth);
+	smb_io_time("logoff_time", &(info->logoff_time), ps, depth);
 
 	prs_uint32("logon_divs   ", ps, depth, &(info->logon_divs   ));
 	prs_uint32("ptr_logon_hrs", ps, depth, &(info->ptr_logon_hrs));
 
-	smb_io_time("time_4", &(info->time_4), ps, depth);
-	smb_io_time("time_5", &(info->time_5), ps, depth);
+	prs_uint16("bad_pwd_count", ps, depth, &(info->bad_pwd_count));
+	prs_uint16("logon_count"  , ps, depth, &(info->logon_count  ));
+	smb_io_time("pwd_last_set_time", &(info->pwd_last_set_time), ps, depth);
+	smb_io_time("acct_expiry_time" , &(info->acct_expiry_time ), ps, depth);
+
 	prs_uint32("acb_info", ps, depth, &(info->acb_info));
-	ps->offset += 36;
+	prs_uint8s(False, "nt_pwd", ps, depth, info->nt_pwd, 16);
+	prs_uint8s(False, "lm_pwd", ps, depth, info->lm_pwd, 16);
+	prs_uint8("lm_pwd_present", ps, depth, &(info->lm_pwd_present));
+	prs_uint8("nt_pwd_present", ps, depth, &(info->nt_pwd_present));
+	prs_uint8("pwd_expired"   , ps, depth, &(info->pwd_expired   ));
 
-	smb_io_unihdr("hdr_comment", &(info->hdr_comment), ps, depth);
-	ps->offset += 12;
+	smb_io_unihdr("hdr_comment"   , &(info->hdr_comment   ), ps, depth);
+	smb_io_unihdr("hdr_parameters", &(info->hdr_parameters), ps, depth);
+	prs_uint16("country" , ps, depth, &(info->country ));
+	prs_uint16("codepage", ps, depth, &(info->codepage));
 
-	smb_io_bufhdr2("hdr_pwd_info", &(info->hdr_pwd_info), ps, depth);
-	smb_io_bufhdr2("hdr_sec_desc", &(info->hdr_sec_desc), ps, depth);
-	smb_io_unihdr ("hdr_profile ", &(info->hdr_profile) , ps, depth);
-	ps->offset += 36; /* includes that stupid NTTIME, ignore for now */
+	smb_io_bufhdr2("hdr_priv_data", &(info->hdr_priv_data), ps, depth);
+	smb_io_bufhdr2("hdr_sec_desc" , &(info->hdr_sec_desc) , ps, depth);
+	smb_io_unihdr ("hdr_profile"  , &(info->hdr_profile)  , ps, depth);
+
+	for (i = 0; i < 3; i++)
+	{
+		smb_io_unihdr("hdr_reserved", &(info->hdr_reserved[i]), ps, depth);
+	}
+
+	for (i = 0; i < 4; i++)
+	{
+		prs_uint32("dw_reserved", ps, depth, &(info->dw_reserved[i]));
+	}
 
 	smb_io_unistr2("uni_acct_name", &(info->uni_acct_name),
 		       info->hdr_acct_name.buffer, ps, depth);
@@ -1366,19 +1396,23 @@ static void net_io_sam_account_info(char *desc, SAM_ACCOUNT_INFO *info, prs_stru
 		       info->hdr_logon_script.buffer, ps, depth);
 	smb_io_unistr2("uni_acct_desc", &(info->uni_acct_desc),
 		       info->hdr_acct_desc.buffer, ps, depth);
+	smb_io_unistr2("uni_workstations", &(info->uni_workstations),
+		       info->hdr_workstations.buffer, ps, depth);
 
-	prs_uint32("unknown4", ps, depth, &(info->unknown4));
-	prs_uint32("unknown5", ps, depth, &(info->unknown5));
+	prs_uint32("unknown1", ps, depth, &(info->unknown1));
+	prs_uint32("unknown2", ps, depth, &(info->unknown2));
 
-	smb_io_buffer4("buf_logon_hrs", &(info->buf_logon_hrs),
+	smb_io_buffer4("buf_logon_hrs" , &(info->buf_logon_hrs ),
 		       info->ptr_logon_hrs, ps, depth);
-	smb_io_unistr2("uni_comment"  , &(info->uni_comment  ),
+	smb_io_unistr2("uni_comment"   , &(info->uni_comment   ),
 		       info->hdr_comment.buffer, ps, depth);
-	smb_io_buffer4("buf_pwd_info" , &(info->buf_pwd_info ),
-		       info->hdr_pwd_info.buffer, ps, depth);
-	smb_io_buffer4("buf_sec_desc" , &(info->buf_sec_desc ),
+	smb_io_unistr2("uni_parameters", &(info->uni_parameters),
+		       info->hdr_parameters.buffer, ps, depth);
+	smb_io_buffer4("buf_priv_data" , &(info->buf_priv_data ),
+		       info->hdr_priv_data.buffer, ps, depth);
+	smb_io_buffer4("buf_sec_desc"  , &(info->buf_sec_desc  ),
 		       info->hdr_sec_desc.buffer, ps, depth);
-	smb_io_unistr2("uni_profile"  , &(info->uni_profile  ),
+	smb_io_unistr2("uni_profile"   , &(info->uni_profile   ),
 		       info->hdr_profile.buffer, ps, depth);
 }
 
@@ -1517,7 +1551,7 @@ static void net_io_sam_alias_mem_info(char *desc, SAM_ALIAS_MEM_INFO *info, prs_
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static void net_io_sam_delta_ctr(char *desc, SAM_DELTA_CTR *delta, uint32 type, prs_struct *ps, int depth)
+static void net_io_sam_delta_ctr(char *desc, SAM_DELTA_CTR *delta, uint16 type, prs_struct *ps, int depth)
 {
 	if (delta == NULL) return;
 
@@ -1592,5 +1626,6 @@ void net_io_r_sam_sync(char *desc, NET_R_SAM_SYNC *r_s, prs_struct *ps, int dept
 		}
 	}
 
+	prs_align(ps);
 	prs_uint32("status", ps, depth, &(r_s->status));
 }
