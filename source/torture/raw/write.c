@@ -58,6 +58,18 @@
 #define BASEDIR "\\testwrite"
 
 
+static BOOL setup_dir(struct smbcli_state *cli, const char *dname)
+{
+	smb_raw_exit(cli->session);
+	if (smbcli_deltree(cli->tree, dname) == -1 ||
+	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, dname))) {
+		printf("Unable to setup %s - %s\n", dname, smbcli_errstr(cli->tree));
+		return False;
+	}
+	return True;
+}
+
+
 /*
   setup a random buffer based on a seed
 */
@@ -103,9 +115,7 @@ static BOOL test_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	buf = talloc_zero(mem_ctx, maxsize);
 
-	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
-	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
-		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
+	if (!setup_dir(cli, BASEDIR)) {
 		return False;
 	}
 
@@ -222,9 +232,7 @@ static BOOL test_writex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	buf = talloc_zero(mem_ctx, maxsize);
 
-	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
-	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
-		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
+	if (!setup_dir(cli, BASEDIR)) {
 		return False;
 	}
 
@@ -396,9 +404,7 @@ static BOOL test_writeunlock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	buf = talloc_zero(mem_ctx, maxsize);
 
-	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
-	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
-		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
+	if (!setup_dir(cli, BASEDIR)) {
 		return False;
 	}
 
@@ -535,9 +541,7 @@ static BOOL test_writeclose(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	buf = talloc_zero(mem_ctx, maxsize);
 
-	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
-	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
-		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
+	if (!setup_dir(cli, BASEDIR)) {
 		return False;
 	}
 
@@ -682,9 +686,7 @@ static BOOL test_delayed_write_update(struct smbcli_state *cli, TALLOC_CTX *mem_
 
 	printf("Testing delayed update of write time\n");
 
-	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
-	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
-		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
+	if (!setup_dir(cli, BASEDIR)) {
 		return False;
 	}
 
@@ -715,7 +717,7 @@ static BOOL test_delayed_write_update(struct smbcli_state *cli, TALLOC_CTX *mem_
 	written =  smbcli_write(cli->tree, fnum1, 0, "x", 0, 1);
 
 	if (written != 1) {
-		printf("write failed - wrote %d bytes\n", written);
+		printf("write failed - wrote %d bytes (%s)\n", written, __location__);
 		return False;
 	}
 
@@ -776,9 +778,7 @@ static BOOL test_finfo_after_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx
 
 	printf("Testing finfo update on close\n");
 
-	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
-	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
-		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
+	if (!setup_dir(cli, BASEDIR)) {
 		return False;
 	}
 
