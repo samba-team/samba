@@ -2,14 +2,18 @@ This is a prelodable shared library that provides SMB client services
 for existing executables. Using this you can simulate a smb
 filesystem.
 
-Currently this code only works on Linux with glibc2 (tested on
-RH5.1). Eventually I hope to make it portable to lots of OSes but at
-the moment if you don't have Linux then don't even try to use it.
+Currently this code has only been tested on:
+
+- Linux 2.0 with glibc2 (RH5.1)
+- Linux 2.1 with glibc2
+- Solaris 2.5.1 with gcc
+- Solaris 2.6 with gcc
+
+It probably won't run on other systems without some porting.
 
 To use it you need to do this:
 
-1) build smbwrapper.so using the command "make smbwrapper/smbwrapper.so"
-2) edit smbsh and set the LIBDIR line to point to the smbwrapper directory
+1) build smbwrapper.so using the command "make smbwrapper"
 3) run smbsh
 
 then try to access /smb/SERVER for some SMB server name and see what
@@ -28,6 +32,7 @@ things that I know don't work:
  
  anything executing from the share
  anything that uses mmap
+ redirection within shells to smbsh files
 
 If you want to help with the development of this code then join the
 samba-technical mailing list.
