@@ -53,7 +53,11 @@ typedef struct
 	uint32 offset; /* offset currently being accessed in memory buffer */
 	uint8 align; /* data alignment */
 	BOOL io; /* parsing in or out of data stream */
-
+	/* 
+	 * If the (incoming) data is big-endian. On output we are
+	 * always little-endian.
+	 */
+	BOOL bigendian_data;
 } prs_struct;
 
 typedef struct pipes_struct

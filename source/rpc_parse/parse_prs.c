@@ -44,6 +44,7 @@ void prs_init(prs_struct *ps, uint32 size,
 				BOOL io)
 {
 	ps->io = io;
+	ps->bigendian_data = False;
 	ps->align = align;
 	ps->offset = 0;
 
@@ -122,7 +123,7 @@ BOOL prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16)
 	char *q = mem_data(&(ps->data), ps->offset);
 	if (q == NULL) return False;
 
-	DBG_RW_SVAL(name, depth, ps->offset, ps->io, q, *data16)
+	DBG_RW_SVAL(name, depth, ps->offset, ps->io, ps->bigendian_data, q, *data16)
 	ps->offset += 2;
 
 	return True;
@@ -136,7 +137,7 @@ BOOL prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32)
 	char *q = mem_data(&(ps->data), ps->offset);
 	if (q == NULL) return False;
 
-	DBG_RW_IVAL(name, depth, ps->offset, ps->io, q, *data32)
+	DBG_RW_IVAL(name, depth, ps->offset, ps->io, ps->bigendian_data, q, *data32)
 	ps->offset += 4;
 
 	return True;
@@ -165,7 +166,7 @@ BOOL prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *d
 	char *q = mem_data(&(ps->data), ps->offset);
 	if (q == NULL) return False;
 
-	DBG_RW_PIVAL(charmode, name, depth, ps->offset, ps->io, q, data32s, len)
+	DBG_RW_PIVAL(charmode, name, depth, ps->offset, ps->io, ps->bigendian_data, q, data32s, len)
 	ps->offset += len * sizeof(uint32);
 
 	return True;
@@ -173,16 +174,20 @@ BOOL prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *d
 
 /******************************************************************
  stream a "not" unicode string, length/buffer specified separately,
- in byte chars
+ in byte chars. Unicode string is in little-endian format.
  ********************************************************************/
 BOOL prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 *str)
 {
 	char *q = mem_data(&(ps->data), ps->offset);
-    char *p = (char *)str->buffer;
+	char *p = (char *)str->buffer;
 
 	if (q == NULL) return False;
 
-	DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q, p, str->buf_len)
+	/* If we're using big-endian, reverse to get little-endian. */
+	if(ps->bigendian_data)
+		DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, ps->bigendian_data, q, p, str->buf_len/2)
+	else
+		DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q, p, str->buf_len)
 	ps->offset += str->buf_len;
 
 	return True;
@@ -211,11 +216,15 @@ BOOL prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 *
 BOOL prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *str)
 {
 	char *q = mem_data(&(ps->data), ps->offset);
-    char *p = (char *)str->buffer;
+	char *p = (char *)str->buffer;
 
 	if (q == NULL) return False;
 
-	DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q, p, str->uni_str_len * 2)
+	/* If we're using big-endian, reverse to get little-endian. */
+	if(ps->bigendian_data)
+		DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, ps->bigendian_data, q, p, str->uni_str_len)
+	else
+		DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q, p, str->uni_str_len * 2)
 	ps->offset += str->uni_str_len * sizeof(uint16);
 
 	return True;
@@ -229,11 +238,15 @@ BOOL prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *
 BOOL prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int depth)
 {
 	char *q = mem_data(&(ps->data), ps->offset);
-    char *p = (char *)str->str.buffer;
+	char *p = (char *)str->str.buffer;
 
 	if (q == NULL) return False;
 
-	DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q, p, str->uni_str_len * 2)
+	/* If we're using big-endian, reverse to get little-endian. */
+	if(ps->bigendian_data)
+		DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, ps->bigendian_data, q, p, str->uni_str_len)
+	else
+		DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q, p, str->uni_str_len * 2)
 	ps->offset += str->uni_str_len * sizeof(uint16);
 
 	return True;
@@ -248,18 +261,24 @@ BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 	char *q = mem_data(&(ps->data), ps->offset);
 	int i = 0;
 	uint8 *start = (uint8*)q;
-    unsigned char *p = (unsigned char *)str->buffer;
+	unsigned char *p = (unsigned char *)str->buffer;
 
 	if (q == NULL) return False;
 
 	do 
 	{
-		RW_CVAL(ps->io, q, *p, 0);
-        p++;
-        q++;
-		RW_CVAL(ps->io, q, *p, 0);
-        p++;
-        q++;
+		if(ps->bigendian_data) {
+			RW_SVAL(ps->io, ps->bigendian_data, q, *p, 0)
+			p += 2;
+			q += 2;
+		} else {
+			RW_CVAL(ps->io, q, *p, 0)
+			p++;
+			q++;
+			RW_CVAL(ps->io, q, *p, 0)
+			p++;
+			q++;
+		}
 		i++;
 
 	} while ((i < sizeof(str->buffer) / sizeof(str->buffer[0])) &&
@@ -294,12 +313,12 @@ BOOL prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, ui
 
 		if (i < len || len == 0)
 		{
-			RW_CVAL(ps->io, q, str[i],0);
+			RW_CVAL(ps->io, q, str[i],0)
 		}
 		else
 		{
 			uint8 dummy = 0;
-			RW_CVAL(ps->io, q, dummy,0);
+			RW_CVAL(ps->io, q, dummy,0)
 		}
 
 		q++;
@@ -392,4 +411,3 @@ BOOL prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
 	}
 	return True;
 }
-
