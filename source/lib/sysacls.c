@@ -191,8 +191,17 @@ int sys_acl_free_qualifier(void *qual, SMB_ACL_TAG_T tagtype)
 	return acl_free(qual);
 }
 
-#elif defined(HAVE_DRAFT13_POSIX_ACLS)
-
+#elif defined(HAVE_TRU64_ACLS)
+/*
+ * The interface to DEC/Compaq Tru64 UNIX ACLs
+ * is based on Draft 13 of the POSIX spec which is
+ * slightly different from the Draft 16 interface.
+ * 
+ * Also, some of the permset manipulation functions
+ * such as acl_clear_perm() and acl_add_perm() appear
+ * to be broken on Tru64 so we have to manipulate
+ * the permission bits in the permset directly.
+ */
 int sys_acl_get_entry( SMB_ACL_T the_acl, int entry_id, SMB_ACL_ENTRY_T *entry_p)
 {
 	SMB_ACL_ENTRY_T	entry;
@@ -237,25 +246,26 @@ SMB_ACL_T sys_acl_get_fd(int fd)
 
 int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset)
 {
-	return acl_clear_perm(permset);
+	*permset = 0;		/* acl_clear_perm() is broken on Tru64	*/
+
+	return 0;
 }
 
 int sys_acl_add_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm)
 {
-	return acl_add_perm(permset, perm);
+	if (perm & ~(SMB_ACL_READ | SMB_ACL_WRITE | SMB_ACL_EXECUTE)) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	*permset |= perm;	/* acl_add_perm() is broken on Tru64	*/
+
+	return 0;
 }
 
 int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm)
 {
-#if defined(HAVE_ACL_GET_PERM_NP)
-	return acl_get_perm_np(permset, perm);
-#else
-	/*
-	 * if we don't have an acl_get_perm() interface
-	 * this will probably work for most implementations
-	 */
-	return *permset & perm;
-#endif
+	return *permset & perm;	/* Tru64 doesn't have acl_get_perm() */
 }
 
 char *sys_acl_to_text( SMB_ACL_T the_acl, ssize_t *plen)
