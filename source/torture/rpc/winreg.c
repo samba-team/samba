@@ -126,6 +126,11 @@ static BOOL test_FlushKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("FlushKey failed - %s\n", win_errstr(r.out.result));
+		return False;
+	}
+
 	return True;
 }
 
@@ -257,7 +262,7 @@ static BOOL test_EnumKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		r.in.enum_index++;
 
-	} while (W_ERROR_IS_OK(r.out.result));
+	} while (NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(r.out.result));
 
 	return True;
 }
@@ -327,6 +332,11 @@ static BOOL test_OpenHKLM(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("OpenHKLM failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("OpenHKLM failed - %s\n", win_errstr(r.out.result));
 		return False;
 	}
 
