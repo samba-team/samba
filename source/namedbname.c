@@ -512,24 +512,21 @@ void expire_names(time_t t)
 /***************************************************************************
   reply to a name query
   ****************************************************************************/
-struct name_record *search_for_name(struct subnet_record **d,
-				    struct nmb_name *question,
-				    struct in_addr ip, int Time, int search)
+struct name_record *dns_name_search(struct nmb_name *question,
+				    int Time, int search)
 {
+  struct subnet_record *d = find_subnet(ipgrp);
   int name_type = question->name_type;
   char *qname = question->name;
   BOOL dns_type = (name_type == 0x20 || name_type == 0);
-  
   struct name_record *n;
   
+  if (d == NULL) return NULL;
+
   DEBUG(3,("Search for %s from %s - ", namestr(question), inet_ntoa(ip)));
   
-  /* first look up name in cache */
-  n = find_name_search(d,question,search,ip);
-  
-  if (*d == NULL) return NULL;
-
-  if (!n && (search & FIND_SELF)) {
+  if (!n && (search & FIND_SELF))
+  {
     if (!lp_wins_proxy())
       DEBUG(3,("wins proxy not enabled - failing lookup\n"));
     else
@@ -541,7 +538,6 @@ struct name_record *search_for_name(struct subnet_record **d,
   if (!n)
     {
       struct in_addr dns_ip;
-      uint32 a;      
       
       /* only do DNS lookups if the query is for type 0x20 or type 0x0 */
       if (!dns_type && name_type != 0x1b)
@@ -551,11 +547,9 @@ struct name_record *search_for_name(struct subnet_record **d,
 	}
       
       /* look it up with DNS */      
-      a = interpret_addr(qname);
+      dns_ip.s_addr = interpret_addr(qname);
       
-      putip((char *)&dns_ip,(char *)&a);
-      
-      if (!a)
+      if (dns_ip.s_addr)
 	{
 	  /* no luck with DNS. We could possibly recurse here XXXX */
 	  DEBUG(3,("no recursion.\n"));
@@ -572,21 +566,6 @@ struct name_record *search_for_name(struct subnet_record **d,
       /* failed to add it? yikes! */
       if (!n) return NULL;
     }
-  
-  /* is our entry already dead? */
-  if (n->death_time)
-    {
-      if (n->death_time < Time) return False;
-    }
-  
-  /* it may have been an earlier failure */
-  if (n->source == DNSFAIL)
-    {
-      DEBUG(3,("DNSFAIL\n"));
-      return NULL;
-    }
-  
-  DEBUG(3,("OK %s\n",inet_ntoa(n->ip_flgs[0].ip)));      
   
   return n;
 }

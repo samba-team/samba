@@ -509,10 +509,6 @@ void reply_name_query(struct packet_struct *p)
 
   int search = bcast ? FIND_LOCAL | FIND_WINS: FIND_WINS;
 
-  if (!lp_wins_proxy()) {
-    search |= FIND_SELF;
-  }
-
   if (search & FIND_LOCAL)
   {
     if (!(d = find_req_subnet(p->ip, bcast)))
@@ -547,13 +543,42 @@ void reply_name_query(struct packet_struct *p)
     success = False;
   }
 
-  if (success && (n = search_for_name(&d,question,p->ip,p->timestamp, search)))
+  if (success)
   {
-      /* don't respond to broadcast queries unless the query is for
-         a name we own or it is for a Primary Domain Controller name */
+    /* look up the name in the cache */
+    n = find_name_search(&d, question, p->ip, search));
 
-      if (bcast && n->source != SELF && name_type != 0x1b) {
-	    if (!lp_wins_proxy() || same_net(p->ip,n->ip_flgs[0].ip,*iface_nmask(p->ip))) {
+    /* it is a name that already failed DNS lookup or it's expired */
+    if (n->source == DNSFAIL ||
+        (n->death_time && n->death_time < p->timestamp))
+    {
+      success = False;
+    }
+   
+    /* do we want to do dns lookups? */
+    /* XXXX this DELAYS nmbd while it does a search. not a good idea
+       but there's no pleasant alternative. phil@hands.com suggested
+       making the name a full DNS name, which would succeed / fail
+       much quicker.
+     */
+    if (success && !n && (lp_wins_proxy() || !bcast))
+    {
+      n = dns_name_search(question, p->timestamp, search);
+    }
+  }
+
+  if (!n) success = False;
+  
+  if (success)
+  {
+      if (bcast && n->source != SELF && name_type != 0x1b)
+      {
+        /* don't respond to broadcast queries unless the query is for
+           a name we own or it is for a Primary Domain Controller name */
+
+	    if (!lp_wins_proxy() || 
+            same_net(p->ip,n->ip_flgs[0].ip,*iface_nmask(p->ip)))
+        {
 	      /* never reply with a negative response to broadcast queries */
 	      return;
 	    }
@@ -573,12 +598,9 @@ void reply_name_query(struct packet_struct *p)
       retip = n->ip_flgs[0].ip;
       nb_flags = n->ip_flgs[0].nb_flags;
   }
-  else
-  {
-      if (bcast) return; /* never reply negative response to bcasts */
-      success = False;
-  }
-  
+
+  if (!success && bcast) return; /* never reply negative response to bcasts */
+
   /* if the IP is 0 then substitute my IP */
   if (zero_ip(retip)) retip = *iface_ip(p->ip);
 
@@ -608,5 +630,3 @@ void reply_name_query(struct packet_struct *p)
 		       ttl,
 		       rdata, success ? 6 : 0);
 }
-
-
