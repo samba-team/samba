@@ -23,7 +23,7 @@ sub Template($)
 
    endpoint server for the $name pipe
 
-   Copyright (C) YOUR NAME HERE XXXX
+   Copyright (C) YOUR NAME HERE YEAR
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -41,6 +41,9 @@ sub Template($)
 */
 
 #include \"includes.h\"
+#include \"rpc_server/dcerpc_server.h\"
+#include \"librpc/gen_ndr/ndr_$name.h\"
+#include \"rpc_server/common/common.h\"
 
 ";
 
