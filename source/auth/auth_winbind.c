@@ -103,6 +103,11 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 	
 	result = winbindd_request(WINBINDD_PAM_AUTH_CRAP, &request, &response);
 
+	if (result == NSS_STATUS_UNAVAIL) {
+		struct auth_methods *auth_method = my_private_data;
+		return auth_method->auth(auth_context, auth_method->private_data, mem_ctx, user_info, server_info);
+	}
+
 	nt_status = NT_STATUS(response.data.auth.nt_status);
 
 	if (result == NSS_STATUS_SUCCESS && response.extra_data) {
@@ -127,11 +132,18 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 /* module initialisation */
 NTSTATUS auth_init_winbind(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
-	if (!make_auth_methods(auth_context, auth_method))
-		return NT_STATUS_NO_MEMORY;
 
 	(*auth_method)->name = "winbind";
 	(*auth_method)->auth = check_winbind_security;
+
+	if (param && *param) {
+		/* we load the 'fallback' module - if winbind isn't here, call this
+		   module */
+		if (!load_auth_module(auth_context, param, &(*auth_method)->private_data)) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+		
+	}
 	return NT_STATUS_OK;
 }
 

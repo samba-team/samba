@@ -175,6 +175,11 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 				     &dest_ip, 0, "IPC$", "IPC", "", "", "",0, retry);
 
 	if (!NT_STATUS_IS_OK(result)) {
+		/* map to something more useful */
+		if (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL)) {
+			result = NT_STATUS_NO_LOGON_SERVERS;
+		}
+
 		release_server_mutex();
 		return result;
 	}
@@ -272,7 +277,7 @@ static NTSTATUS find_connect_dc(struct cli_state **cli,
 	struct in_addr dc_ip;
 	fstring srv_name;
 
-	if ( !rpc_find_dc(lp_workgroup(), srv_name, &dc_ip) ) {
+	if (!rpc_find_dc(domain, srv_name, &dc_ip)) {
 		DEBUG(0,("find_connect_dc: Failed to find an DCs for %s\n", lp_workgroup()));
 		return NT_STATUS_NO_LOGON_SERVERS;
 	}
