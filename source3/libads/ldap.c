@@ -826,7 +826,11 @@ static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 ADS_STATUS ads_mod_str(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
 		       const char *name, const char *val)
 {
-	const char *values[2] = {val, NULL};
+	const char *values[2];
+
+	values[0] = val;
+	values[1] = NULL;
+
 	if (!val)
 		return ads_modlist_add(ctx, mods, LDAP_MOD_DELETE, name, NULL);
 	return ads_modlist_add(ctx, mods, LDAP_MOD_REPLACE, name, 
@@ -861,7 +865,10 @@ ADS_STATUS ads_mod_strlist(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 static ADS_STATUS ads_mod_ber(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
 			      const char *name, const struct berval *val)
 {
-	const struct berval *values[2] = {val, NULL};
+	const struct berval *values[2];
+
+	values[0] = val;
+	values[1] = NULL;
 	if (!val)
 		return ads_modlist_add(ctx, mods, LDAP_MOD_DELETE, name, NULL);
 	return ads_modlist_add(ctx, mods, LDAP_MOD_REPLACE|LDAP_MOD_BVALUES,
