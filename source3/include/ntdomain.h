@@ -24,7 +24,6 @@
 #ifndef _NT_DOMAIN_H /* _NT_DOMAIN_H */
 #define _NT_DOMAIN_H 
 
-
 /* dce/rpc support */
 #include "rpc_dce.h"
 
@@ -137,21 +136,6 @@ typedef struct _input_data {
     prs_struct data;
 } input_data;
 
-struct msrpc_state
-{
-    fstring pipe_name;
-    struct user_creds usr;
-    struct ntdom_info nt;
-
-    int fd;
-    BOOL redirect;
-    BOOL initialised;
-    char *inbuf;
-    char *outbuf;
-
-    uint32 pid;
-};
-
 /*
  * Handle database - stored per pipe.
  */
@@ -173,12 +157,26 @@ struct handle_list {
 	size_t count;
 };
 
+/* Domain controller authentication protocol info */
+struct dcinfo
+{
+	DOM_CHAL clnt_chal; /* Initial challenge received from client */
+	DOM_CHAL srv_chal;  /* Initial server challenge */
+	DOM_CRED clnt_cred; /* Last client credential */
+	DOM_CRED srv_cred;  /* Last server credential */
+ 
+	uchar  sess_key[8]; /* Session key */
+	uchar  md4pw[16];   /* md4(machine password) */
+
+	fstring mach_acct;  /* Machine name we've authenticated. */
+};
+
 typedef struct pipes_struct
 {
 	struct pipes_struct *next, *prev;
 	int pnum;
 	connection_struct *conn;
-	uint16 vuid;
+	uint16 vuid; /* points to the unauthenticated user that opened this pipe. */
 	BOOL open; /* open connection */
 	uint16 device_state;
 	uint16 priority;
@@ -194,6 +192,7 @@ typedef struct pipes_struct
 	unsigned char challenge[8];
 	unsigned char ntlmssp_hash[258];
 	uint32 ntlmssp_seq_num;
+	struct dcinfo dc; /* Keeps the creds data. */
 
 	/*
 	 * Windows user info.
