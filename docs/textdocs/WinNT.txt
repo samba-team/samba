@@ -29,7 +29,7 @@ The following registry entry change will re-enable clear text password
 handling:
 
 Run regedt32.exe and locate the hive key entry:
-HKEY_LOCAL_MACHINE\system\CurrentControlSet\Services\rdr\parameters\
+HKEY_LOCAL_MACHINE\system\CurrentControlSet\Services\Rdr\Parameters\
 
 Add the following value:
 	EnablePlainTextPassword:REG_DWORD=1
