@@ -612,7 +612,7 @@ static void ldapsrv_accept(struct server_connection *conn)
 
 	DEBUG(5, ("ldapsrv_accept\n"));
 
-	ldap_conn = talloc_p(NULL, struct ldapsrv_connection);
+	ldap_conn = talloc_p(conn, struct ldapsrv_connection);
 
 	if (ldap_conn == NULL)
 		return;

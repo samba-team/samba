@@ -22,8 +22,7 @@
 
 #include "includes.h"
 
-/* initialise a dcerpc pipe. This currently assumes a SMB named pipe
-   transport */
+/* initialise a dcerpc pipe. */
 struct dcerpc_pipe *dcerpc_pipe_init(void)
 {
 	struct dcerpc_pipe *p;

@@ -329,7 +329,7 @@ NTSTATUS dcerpc_pipe_open_tcp(struct dcerpc_pipe **p,
 
 	set_socket_options(fd, lp_socket_options());
 
-    if (!(*p = dcerpc_pipe_init())) {
+	if (!(*p = dcerpc_pipe_init())) {
                 return NT_STATUS_NO_MEMORY;
 	}
  

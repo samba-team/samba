@@ -47,13 +47,13 @@ static NTSTATUS samr_Connect(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 
 	ZERO_STRUCTP(r->out.connect_handle);
 
-	c_state = talloc_p(NULL, struct samr_connect_state);
+	c_state = talloc_p(dce_call->conn, struct samr_connect_state);
 	if (!c_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* make sure the sam database is accessible */
-	c_state->sam_ctx = samdb_connect(mem_ctx);
+	c_state->sam_ctx = samdb_connect(c_state);
 	if (c_state->sam_ctx == NULL) {
 		talloc_free(c_state);
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;

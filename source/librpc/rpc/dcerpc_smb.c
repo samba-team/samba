@@ -433,7 +433,7 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe **p,
 	/* Over-ride the default session key with the SMB session key */
 	(*p)->security_state.session_key = smb_session_key;
 
-	smb = talloc((*p), sizeof(*smb));
+	smb = talloc_p((*p), struct smb_private);
 	if (!smb) {
 		dcerpc_pipe_close(*p);
 		return NT_STATUS_NO_MEMORY;
