@@ -262,7 +262,7 @@ static void free_printer_entry(void *ptr)
  Functions to duplicate a SPOOL_NOTIFY_OPTION struct stored in Printer_entry.
 ****************************************************************************/
 
-SPOOL_NOTIFY_OPTION *dup_spool_notify_option(SPOOL_NOTIFY_OPTION *sp)
+static SPOOL_NOTIFY_OPTION *dup_spool_notify_option(SPOOL_NOTIFY_OPTION *sp)
 {
 	SPOOL_NOTIFY_OPTION *new_sp = NULL;
 
@@ -5409,7 +5409,7 @@ WERROR _spoolss_getprinterdriver2(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVER2 *q_
 	*servermajorversion = 0;
 	*serverminorversion = 0;
 
-	pstrcpy(servername, get_called_name());
+	fstrcpy(servername, get_called_name());
 	unistr2_to_ascii(architecture, uni_arch, sizeof(architecture)-1);
 
 	if (!get_printer_snum(p, handle, &snum))
