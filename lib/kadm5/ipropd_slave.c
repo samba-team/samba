@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -354,6 +354,9 @@ static char *realm;
 static int version_flag;
 static int help_flag;
 static char *keytab_str;
+#ifdef HAVE_DAEMON
+static int detach_from_console = 0;
+#endif
 
 static struct getargs args[] = {
     { "config-file", 'c', arg_string, &config_file },
@@ -362,6 +365,10 @@ static struct getargs args[] = {
       "keytab to get authentication from", "kspec" },
     { "time-lost", 0, arg_string, &server_time_lost,
       "time before server is considered lost", "time" },
+#ifdef HAVE_DAEMON
+    { "detach", 0, arg_flag, &detach_from_console, 
+      "detach from console" },
+#endif
     { "version", 0, arg_flag, &version_flag },
     { "help", 0, arg_flag, &help_flag }
 };
@@ -421,6 +428,10 @@ main(int argc, char **argv)
 
     master = argv[0];
 
+#ifdef HAVE_DAEMON
+    if (detach_from_console)
+	daemon(0, 0);
+#endif
     pidfile (NULL);
     krb5_openlog (context, "ipropd-slave", &log_facility);
     krb5_set_warn_dest(context, log_facility);
