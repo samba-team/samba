@@ -869,8 +869,8 @@ BOOL sam_query_groupmem( const POLICY_HND *pol_dom,
 			for(j = 0; j < num_mem; j += MAX_LOOKUP_RIDS) 
 			{
 				uint32 tmp_num_names = 0;
-				char **tmp_names;
-				uint32 *tmp_types;
+				char **tmp_names = NULL;
+				uint32 *tmp_types = NULL;
 
 				/* Look up up to MAX_LOOKUP_RIDS */
 
