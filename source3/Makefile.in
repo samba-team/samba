@@ -111,9 +111,15 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_misc.o \
                 rpc_parse/parse_samr.o rpc_parse/parse_srv.o \
                 rpc_parse/parse_wks.o
 
-RPC_CLIENT_OBJ = rpc_client/cli_login.o rpc_client/cli_netlogon.o \
-                 rpc_client/cli_pipe.o rpc_client/cli_lsarpc.o \
-                 rpc_client/cli_wkssvc.o rpc_client/cli_samr.o
+RPC_CLIENT_OBJ = \
+		rpc_client/cli_login.o    \
+		rpc_client/cli_netlogon.o \
+		rpc_client/cli_pipe.o     \
+		rpc_client/cli_lsarpc.o   \
+		rpc_client/cli_wkssvc.o   \
+		rpc_client/cli_srvsvc.o   \
+		rpc_client/cli_samr.o 
+		
 
 LOCKING_OBJ = locking/locking.o locking/locking_shm.o locking/locking_slow.o \
               locking/shmem.o locking/shmem_sysv.o

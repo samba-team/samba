@@ -34,7 +34,6 @@ extern int DEBUGLEVEL;
 #define DEBUG_TESTING
 
 extern struct cli_state *smb_cli;
-extern int smb_tidx;
 
 extern FILE* out_hnd;
 
@@ -53,11 +52,11 @@ void cmd_srv_query_info(struct client_info *info)
 
 	bzero(&ctr, sizeof(ctr));
 
-	strcpy(dest_srv, "\\\\");
-	strcat(dest_srv, info->dest_host);
+	fstrcpy(dest_srv, "\\\\");
+	fstrcat(dest_srv, info->dest_host);
 	strupper(dest_srv);
 
-	if (next_token(NULL, tmp, NULL))
+	if (next_token(NULL, tmp, NULL, sizeof(tmp)-1))
 	{
 		info_level = strtoul(tmp, (char**)NULL, 10);
 	}
@@ -68,14 +67,14 @@ void cmd_srv_query_info(struct client_info *info)
 	DEBUG(5, ("cmd_srv_query_info: smb_cli->fd:%d\n", smb_cli->fd));
 
 	/* open LSARPC session. */
-	res = res ? do_session_open(smb_cli, smb_tidx, PIPE_SRVSVC, &(info->dom.srvsvc_fnum)) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, False) : False;
 
 	/* send info level: receive requested info.  hopefully. */
-	res = res ? do_srv_net_srv_get_info(smb_cli, smb_tidx, info->dom.srvsvc_fnum,
+	res = res ? do_srv_net_srv_get_info(smb_cli,
 				dest_srv, info_level, &ctr) : False;
 
 	/* close the session */
-	do_session_close(smb_cli, smb_tidx, info->dom.srvsvc_fnum);
+	cli_nt_session_close(smb_cli);
 
 	if (res)
 	{
@@ -107,15 +106,15 @@ void cmd_srv_enum_conn(struct client_info *info)
 
 	bzero(&ctr, sizeof(ctr));
 
-	strcpy(qual_srv, "\\\\");
-	strcat(qual_srv, info->myhostname);
+	fstrcpy(qual_srv, "\\\\");
+	fstrcat(qual_srv, info->myhostname);
 	strupper(qual_srv);
 
-	strcpy(dest_srv, "\\\\");
-	strcat(dest_srv, info->dest_host);
+	fstrcpy(dest_srv, "\\\\");
+	fstrcat(dest_srv, info->dest_host);
 	strupper(dest_srv);
 
-	if (next_token(NULL, tmp, NULL))
+	if (next_token(NULL, tmp, NULL, sizeof(tmp)-1))
 	{
 		info_level = strtoul(tmp, (char**)NULL, 10);
 	}
@@ -126,13 +125,13 @@ void cmd_srv_enum_conn(struct client_info *info)
 	DEBUG(5, ("cmd_srv_enum_conn: smb_cli->fd:%d\n", smb_cli->fd));
 
 	/* open srvsvc session. */
-	res = res ? do_session_open(smb_cli, smb_tidx, PIPE_SRVSVC, &(info->dom.srvsvc_fnum)) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, False) : False;
 
 	hnd.ptr_hnd = 1;
 	hnd.handle = 0;
 
 	/* enumerate connections on server */
-	res = res ? do_srv_net_srv_conn_enum(smb_cli, smb_tidx, info->dom.srvsvc_fnum,
+	res = res ? do_srv_net_srv_conn_enum(smb_cli,
 				dest_srv, qual_srv,
 	            info_level, &ctr, 0xffffffff, &hnd) : False;
 
@@ -144,7 +143,7 @@ void cmd_srv_enum_conn(struct client_info *info)
 	}
 
 	/* close the session */
-	do_session_close(smb_cli, smb_tidx, info->dom.srvsvc_fnum);
+	cli_nt_session_close(smb_cli);
 
 	if (res)
 	{
@@ -171,11 +170,11 @@ void cmd_srv_enum_shares(struct client_info *info)
 
 	bzero(&ctr, sizeof(ctr));
 
-	strcpy(dest_srv, "\\\\");
-	strcat(dest_srv, info->dest_host);
+	fstrcpy(dest_srv, "\\\\");
+	fstrcat(dest_srv, info->dest_host);
 	strupper(dest_srv);
 
-	if (next_token(NULL, tmp, NULL))
+	if (next_token(NULL, tmp, NULL, sizeof(tmp)-1))
 	{
 		info_level = strtoul(tmp, (char**)NULL, 10);
 	}
@@ -186,13 +185,13 @@ void cmd_srv_enum_shares(struct client_info *info)
 	DEBUG(5, ("cmd_srv_enum_shares: smb_cli->fd:%d\n", smb_cli->fd));
 
 	/* open srvsvc session. */
-	res = res ? do_session_open(smb_cli, smb_tidx, PIPE_SRVSVC, &(info->dom.srvsvc_fnum)) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, False) : False;
 
 	hnd.ptr_hnd = 0;
 	hnd.handle = 0;
 
 	/* enumerate shares_files on server */
-	res = res ? do_srv_net_srv_share_enum(smb_cli, smb_tidx, info->dom.srvsvc_fnum,
+	res = res ? do_srv_net_srv_share_enum(smb_cli,
 				dest_srv, 
 	            info_level, &ctr, 0xffffffff, &hnd) : False;
 
@@ -204,7 +203,7 @@ void cmd_srv_enum_shares(struct client_info *info)
 	}
 
 	/* close the session */
-	do_session_close(smb_cli, smb_tidx, info->dom.srvsvc_fnum);
+	cli_nt_session_close(smb_cli);
 
 	if (res)
 	{
@@ -231,11 +230,11 @@ void cmd_srv_enum_sess(struct client_info *info)
 
 	bzero(&ctr, sizeof(ctr));
 
-	strcpy(dest_srv, "\\\\");
-	strcat(dest_srv, info->dest_host);
+	fstrcpy(dest_srv, "\\\\");
+	fstrcat(dest_srv, info->dest_host);
 	strupper(dest_srv);
 
-	if (next_token(NULL, tmp, NULL))
+	if (next_token(NULL, tmp, NULL, sizeof(tmp)-1))
 	{
 		info_level = strtoul(tmp, (char**)NULL, 10);
 	}
@@ -246,17 +245,17 @@ void cmd_srv_enum_sess(struct client_info *info)
 	DEBUG(5, ("cmd_srv_enum_sess: smb_cli->fd:%d\n", smb_cli->fd));
 
 	/* open srvsvc session. */
-	res = res ? do_session_open(smb_cli, smb_tidx, PIPE_SRVSVC, &(info->dom.srvsvc_fnum)) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, False) : False;
 
 	hnd.ptr_hnd = 1;
 	hnd.handle = 0;
 
 	/* enumerate sessions on server */
-	res = res ? do_srv_net_srv_sess_enum(smb_cli, smb_tidx, info->dom.srvsvc_fnum,
+	res = res ? do_srv_net_srv_sess_enum(smb_cli,
 				dest_srv, NULL, info_level, &ctr, 0x1000, &hnd) : False;
 
 	/* close the session */
-	do_session_close(smb_cli, smb_tidx, info->dom.srvsvc_fnum);
+	cli_nt_session_close(smb_cli);
 
 	if (res)
 	{
@@ -283,11 +282,11 @@ void cmd_srv_enum_files(struct client_info *info)
 
 	bzero(&ctr, sizeof(ctr));
 
-	strcpy(dest_srv, "\\\\");
-	strcat(dest_srv, info->dest_host);
+	fstrcpy(dest_srv, "\\\\");
+	fstrcat(dest_srv, info->dest_host);
 	strupper(dest_srv);
 
-	if (next_token(NULL, tmp, NULL))
+	if (next_token(NULL, tmp, NULL, sizeof(tmp)-1))
 	{
 		info_level = strtoul(tmp, (char**)NULL, 10);
 	}
@@ -298,13 +297,13 @@ void cmd_srv_enum_files(struct client_info *info)
 	DEBUG(5, ("cmd_srv_enum_files: smb_cli->fd:%d\n", smb_cli->fd));
 
 	/* open srvsvc session. */
-	res = res ? do_session_open(smb_cli, smb_tidx, PIPE_SRVSVC, &(info->dom.srvsvc_fnum)) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, False) : False;
 
 	hnd.ptr_hnd = 1;
 	hnd.handle = 0;
 
 	/* enumerate files on server */
-	res = res ? do_srv_net_srv_file_enum(smb_cli, smb_tidx, info->dom.srvsvc_fnum,
+	res = res ? do_srv_net_srv_file_enum(smb_cli,
 				dest_srv, NULL, info_level, &ctr, 0x1000, &hnd) : False;
 
 	if (res)
@@ -315,7 +314,7 @@ void cmd_srv_enum_files(struct client_info *info)
 	}
 
 	/* close the session */
-	do_session_close(smb_cli, smb_tidx, info->dom.srvsvc_fnum);
+	cli_nt_session_close(smb_cli);
 
 	if (res)
 	{

@@ -41,7 +41,7 @@ BOOL do_wks_query_info(struct cli_state *cli,
 	prs_struct rbuf;
 	prs_struct buf; 
 	WKS_Q_QUERY_INFO q_o;
-    BOOL valid_info = False;
+	BOOL valid_info = False;
 
 	if (server_name == 0 || wks100 == NULL) return False;
 
