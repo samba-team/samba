@@ -1,0 +1,57 @@
+/*
+  dfs interface definition
+*/
+
+[ uuid(4fc742e0-4a10-11cf-8273-00aa004ae673),
+  version(3.0),
+  pointer_default(unique)
+] interface netdfs
+{
+	/******************/
+	/* Function: 0x00 */
+	void dfs_Exist(
+		[out,ref] uint32 *exist_flag
+		);
+
+
+	/******************/
+	/* Function: 0x01 */
+	NTSTATUS dfs_Add (
+		[in]     unistr *path,
+		[in]     unistr *server,
+		[in]     unistr *share,
+		[in]     unistr *comment,
+		[in]     uint32  flags
+		);
+
+	/******************/
+	/* Function: 0x02 */
+	NTSTATUS dfs_Remove (
+		[in,ref] unistr *path,
+		[in]     unistr *server,
+		[in]     unistr *share
+		);
+
+	/******************/
+	/* Function: 0x03 */
+	NTSTATUS dfs_UNKNOWN3 ();
+
+	/******************/
+	/* Function: 0x04 */
+	NTSTATUS dfs_Info (
+		[in,ref] unistr *path,
+		[in]     unistr *server,
+		[in]     unistr *share,
+		[in]     uint16 level
+		);
+
+
+	/******************/
+	/* Function: 0x05 */
+	NTSTATUS dfs_Enum (
+		[in] unistr *name,
+		[in] uint32 level,
+		[in] uint32 buffer_size,
+		[in,out,ref] uint32 *resume_handle
+		);
+}

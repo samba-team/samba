@@ -54,11 +54,7 @@ NTSTATUS ndr_pull_uint16(struct ndr_pull *ndr, uint16 *v)
 {
 	NDR_PULL_ALIGN(ndr, 2);
 	NDR_PULL_NEED_BYTES(ndr, 2);
-	if (ndr->flags & LIBNDR_FLAG_BIGENDIAN) {
-		*v = RSVAL(ndr->data, ndr->offset);
-	} else {
-		*v = SVAL(ndr->data, ndr->offset);
-	}
+	*v = SVAL(ndr->data, ndr->offset);
 	ndr->offset += 2;
 	return NT_STATUS_OK;
 }
@@ -71,11 +67,7 @@ NTSTATUS ndr_pull_uint32(struct ndr_pull *ndr, uint32 *v)
 {
 	NDR_PULL_ALIGN(ndr, 4);
 	NDR_PULL_NEED_BYTES(ndr, 4);
-	if (ndr->flags & LIBNDR_FLAG_BIGENDIAN) {
-		*v = RIVAL(ndr->data, ndr->offset);
-	} else {
-		*v = IVAL(ndr->data, ndr->offset);
-	}
+	*v = IVAL(ndr->data, ndr->offset);
 	ndr->offset += 4;
 	return NT_STATUS_OK;
 }
@@ -87,13 +79,8 @@ NTSTATUS ndr_pull_HYPER_T(struct ndr_pull *ndr, HYPER_T *v)
 {
 	NDR_PULL_ALIGN(ndr, 8);
 	NDR_PULL_NEED_BYTES(ndr, 8);
-	if (ndr->flags & LIBNDR_FLAG_BIGENDIAN) {
-		v->low = RIVAL(ndr->data, ndr->offset);
-		v->high = RIVAL(ndr->data, ndr->offset+4);
-	} else {
-		v->low = IVAL(ndr->data, ndr->offset);
-		v->high = IVAL(ndr->data, ndr->offset+4);
-	}
+	v->low = IVAL(ndr->data, ndr->offset);
+	v->high = IVAL(ndr->data, ndr->offset+4);
 	ndr->offset += 8;
 	return NT_STATUS_OK;
 }
@@ -125,12 +112,7 @@ NTSTATUS ndr_pull_bytes(struct ndr_pull *ndr, char *data, uint32 n)
 */
 NTSTATUS ndr_pull_array_uint8(struct ndr_pull *ndr, char *data, uint32 n)
 {
-	uint32 len;
-	NDR_CHECK(ndr_pull_uint32(ndr, &len));
-	if (len != n) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}	
-	return ndr_pull_bytes(ndr, data, len);
+	return ndr_pull_bytes(ndr, data, n);
 }
 
 
@@ -139,11 +121,7 @@ NTSTATUS ndr_pull_array_uint8(struct ndr_pull *ndr, char *data, uint32 n)
 */
 NTSTATUS ndr_pull_array_uint16(struct ndr_pull *ndr, uint16 *data, uint32 n)
 {
-	uint32 len, i;
-	NDR_CHECK(ndr_pull_uint32(ndr, &len));
-	if (len != n) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}	
+	uint32 i;
 	for (i=0;i<n;i++) {
 		NDR_CHECK(ndr_pull_uint16(ndr, &data[i]));
 	}
@@ -153,7 +131,7 @@ NTSTATUS ndr_pull_array_uint16(struct ndr_pull *ndr, uint16 *data, uint32 n)
 /*
   pull a const array of uint32
 */
-NTSTATUS ndr_pull_const_array_uint32(struct ndr_pull *ndr, uint32 *data, uint32 n)
+NTSTATUS ndr_pull_array_uint32(struct ndr_pull *ndr, uint32 *data, uint32 n)
 {
 	uint32 i;
 	for (i=0;i<n;i++) {
@@ -161,20 +139,6 @@ NTSTATUS ndr_pull_const_array_uint32(struct ndr_pull *ndr, uint32 *data, uint32 
 	}
 	return NT_STATUS_OK;
 }
-
-/*
-  pull an array of uint32
-*/
-NTSTATUS ndr_pull_array_uint32(struct ndr_pull *ndr, uint32 *data, uint32 n)
-{
-	uint32 len;
-	NDR_CHECK(ndr_pull_uint32(ndr, &len));
-	if (len != n) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}	
-	return ndr_pull_const_array_uint32(ndr, data, n);
-}
-
 
 /*
   parse a GUID
@@ -271,7 +235,6 @@ NTSTATUS ndr_push_bytes(struct ndr_push *ndr, const char *data, uint32 n)
 */
 NTSTATUS ndr_push_array_uint8(struct ndr_push *ndr, const char *data, uint32 n)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, n));
 	return ndr_push_bytes(ndr, data, n);
 }
 

@@ -334,8 +334,8 @@
 	
 	typedef struct {
 		uint32 count;
+		uint32 unknown;
 		[size_is(count)] lsa_LUIDAttribute set[*];
-		uint32 unknown[1];
 	} lsa_PrivilegeSet;
 	
 	NTSTATUS lsa_EnumPrivsAccount (

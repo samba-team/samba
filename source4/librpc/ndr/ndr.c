@@ -192,7 +192,7 @@ NTSTATUS ndr_push_set_offset(struct ndr_push *ndr, uint32 ofs)
 /*
   push a generic array
 */
-NTSTATUS ndr_push_const_array(struct ndr_push *ndr, int ndr_flags, void *base, 
+NTSTATUS ndr_push_array(struct ndr_push *ndr, int ndr_flags, void *base, 
 			      size_t elsize, uint32 count, 
 			      NTSTATUS (*push_fn)(struct ndr_push *, int, void *))
 {
@@ -215,22 +215,11 @@ done:
 }
 
 /*
-  push a generic array
-*/
-NTSTATUS ndr_push_array(struct ndr_push *ndr, int ndr_flags, void *base, 
-			size_t elsize, uint32 count, 
-			NTSTATUS (*push_fn)(struct ndr_push *, int, void *))
-{
-	NDR_CHECK(ndr_push_uint32(ndr, count));
-	return ndr_push_const_array(ndr, ndr_flags, base, elsize, count, push_fn);
-}
-
-/*
   pull a constant sized array
 */
-NTSTATUS ndr_pull_const_array(struct ndr_pull *ndr, int ndr_flags, void *base, 
-			      size_t elsize, uint32 count, 
-			      NTSTATUS (*pull_fn)(struct ndr_pull *, int, void *))
+NTSTATUS ndr_pull_array(struct ndr_pull *ndr, int ndr_flags, void *base, 
+			size_t elsize, uint32 count, 
+			NTSTATUS (*pull_fn)(struct ndr_pull *, int, void *))
 {
 	int i;
 	char *p;
@@ -250,23 +239,6 @@ buffers:
 done:
 	return NT_STATUS_OK;
 }
-
-/*
-  pull a generic array
-*/
-NTSTATUS ndr_pull_array(struct ndr_pull *ndr, int ndr_flags, void *base, 
-			size_t elsize, uint32 count, 
-			NTSTATUS (*pull_fn)(struct ndr_pull *, int, void *))
-{
-	uint32 max_count;
-	NDR_CHECK(ndr_pull_uint32(ndr, &max_count));
-	if (max_count != count) {
-		/* maybe we can cope with this? */
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-	return ndr_pull_const_array(ndr, ndr_flags, base, elsize, count, pull_fn);
-}
-
 
 
 /*
@@ -345,4 +317,23 @@ void ndr_print_union_debug(void (*fn)(struct ndr_print *, const char *, uint16, 
 	ndr.depth = 1;
 	fn(&ndr, name, level, ptr);
 	talloc_destroy(ndr.mem_ctx);
+}
+
+/*
+  return and possibly log an NDR error
+*/
+NTSTATUS ndr_pull_error(struct ndr_pull *ndr, enum ndr_err_code err, const char *format, ...)
+{
+	char *s=NULL;
+	va_list ap;
+
+	va_start(ap, format);
+	vasprintf(&s, format, ap);
+	va_end(ap);
+
+	DEBUG(3,("ndr_pull_error(%u): %s\n", err, s));
+
+	free(s);
+	/* we should map to different status codes */
+	return NT_STATUS_INVALID_PARAMETER;
 }

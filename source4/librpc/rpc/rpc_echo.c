@@ -34,3 +34,11 @@ NTSTATUS dcerpc_echo_SourceData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, stru
 				  (ndr_pull_fn_t) ndr_pull_echo_SourceData,
 				  r);
 }
+
+NTSTATUS dcerpc_TestCall(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct TestCall *r)
+{
+	return dcerpc_ndr_request(p, DCERPC_TESTCALL, mem_ctx,
+				  (ndr_push_fn_t) ndr_push_TestCall,
+				  (ndr_pull_fn_t) ndr_pull_TestCall,
+				  r);
+}

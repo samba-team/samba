@@ -123,6 +123,13 @@ static NTSTATUS ndr_pull_lsa_PrivArray(struct ndr_pull *ndr, int ndr_flags, stru
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->privs) {
+	{
+		uint32 _array_size;
+		NDR_CHECK(ndr_pull_uint32(ndr, &_array_size));
+		if (r->count > _array_size) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should be %u", _array_size, r->count);
+		}
+	}
 		NDR_ALLOC_N_SIZE(ndr, r->privs, r->count, sizeof(r->privs[0]));
 		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)r->privs, sizeof(r->privs[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_PrivEntry));
 	}
@@ -354,12 +361,17 @@ void ndr_print_lsa_AuditLogInfo(struct ndr_print *ndr, const char *name, struct 
 
 static NTSTATUS ndr_pull_lsa_AuditSettings(struct ndr_pull *ndr, int ndr_flags, struct lsa_AuditSettings *r)
 {
+	uint32 _conformant_size;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_conformant_size));
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->count));
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-		NDR_ALLOC_N_SIZE(ndr, r->settings, r->count, sizeof(r->settings[0]));
+	if (r->count > _conformant_size) {
+		return ndr_pull_error(ndr, NDR_ERR_CONFORMANT_SIZE, "Bad conformant size %u should be %u", _conformant_size, r->count);
+	}
+		NDR_ALLOC_N_SIZE(ndr, r->settings, _conformant_size, sizeof(r->settings[0]));
 		NDR_CHECK(ndr_pull_array_uint32(ndr, r->settings, r->count));
 done:
 	return NT_STATUS_OK;
@@ -699,7 +711,7 @@ static NTSTATUS ndr_pull_lsa_PolicyInformation(struct ndr_pull *ndr, int ndr_fla
 	break;
 
 	default:
-		return NT_STATUS_INVALID_LEVEL;
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in ", *level);
 	}
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
@@ -753,7 +765,7 @@ buffers:
 	break;
 
 	default:
-		return NT_STATUS_INVALID_LEVEL;
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in ", *level);
 	}
 done:
 	return NT_STATUS_OK;
@@ -836,7 +848,7 @@ NTSTATUS ndr_pull_lsa_QueryInfoPolicy(struct ndr_pull *ndr, struct lsa_QueryInfo
 	if (r->out.info) {
 	{ uint16 _level;
 	NDR_CHECK(ndr_pull_lsa_PolicyInformation(ndr, NDR_SCALARS|NDR_BUFFERS, &_level, r->out.info));
-	if (_level != r->in.level) return NT_STATUS_INVALID_LEVEL;
+	if (_level != r->in.level) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
 	}
 	}
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
@@ -939,6 +951,7 @@ static NTSTATUS ndr_push_lsa_SidArray(struct ndr_push *ndr, int ndr_flags, struc
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->sids) {
+		NDR_CHECK(ndr_push_uint32(ndr, r->num_sids));
 		NDR_CHECK(ndr_push_array(ndr, ndr_flags, r->sids, sizeof(r->sids[0]), r->num_sids, (ndr_push_flags_fn_t)ndr_push_lsa_SidPtr));
 	}
 done:
@@ -960,6 +973,13 @@ static NTSTATUS ndr_pull_lsa_SidArray(struct ndr_pull *ndr, int ndr_flags, struc
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->sids) {
+	{
+		uint32 _array_size;
+		NDR_CHECK(ndr_pull_uint32(ndr, &_array_size));
+		if (r->num_sids > _array_size) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should be %u", _array_size, r->num_sids);
+		}
+	}
 		NDR_ALLOC_N_SIZE(ndr, r->sids, r->num_sids, sizeof(r->sids[0]));
 		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)r->sids, sizeof(r->sids[0]), r->num_sids, (ndr_pull_flags_fn_t)ndr_pull_lsa_SidPtr));
 	}
@@ -1063,6 +1083,13 @@ static NTSTATUS ndr_pull_lsa_DomainList(struct ndr_pull *ndr, int ndr_flags, str
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->domains) {
+	{
+		uint32 _array_size;
+		NDR_CHECK(ndr_pull_uint32(ndr, &_array_size));
+		if (r->count > _array_size) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should be %u", _array_size, r->count);
+		}
+	}
 		NDR_ALLOC_N_SIZE(ndr, r->domains, r->count, sizeof(r->domains[0]));
 		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)r->domains, sizeof(r->domains[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_DomainInformation));
 	}
@@ -1147,6 +1174,7 @@ static NTSTATUS ndr_push_lsa_TransSidArray(struct ndr_push *ndr, int ndr_flags, 
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->sids) {
+		NDR_CHECK(ndr_push_uint32(ndr, r->count));
 		NDR_CHECK(ndr_push_array(ndr, ndr_flags, r->sids, sizeof(r->sids[0]), r->count, (ndr_push_flags_fn_t)ndr_push_lsa_TranslatedSid));
 	}
 done:
@@ -1168,6 +1196,13 @@ static NTSTATUS ndr_pull_lsa_TransSidArray(struct ndr_pull *ndr, int ndr_flags, 
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->sids) {
+	{
+		uint32 _array_size;
+		NDR_CHECK(ndr_pull_uint32(ndr, &_array_size));
+		if (r->count > _array_size) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should be %u", _array_size, r->count);
+		}
+	}
 		NDR_ALLOC_N_SIZE(ndr, r->sids, r->count, sizeof(r->sids[0]));
 		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)r->sids, sizeof(r->sids[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_TranslatedSid));
 	}
@@ -1241,6 +1276,13 @@ static NTSTATUS ndr_pull_lsa_RefDomainList(struct ndr_pull *ndr, int ndr_flags, 
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->domains) {
+	{
+		uint32 _array_size;
+		NDR_CHECK(ndr_pull_uint32(ndr, &_array_size));
+		if (r->count > _array_size) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should be %u", _array_size, r->count);
+		}
+	}
 		NDR_ALLOC_N_SIZE(ndr, r->domains, r->count, sizeof(r->domains[0]));
 		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)r->domains, sizeof(r->domains[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_TrustInformation));
 	}
@@ -1269,6 +1311,7 @@ NTSTATUS ndr_push_lsa_LookupNames(struct ndr_push *ndr, struct lsa_LookupNames *
 	NDR_CHECK(ndr_push_uint32(ndr, r->in.num_names));
 	if (r->in.names) {
 		int ndr_flags = NDR_SCALARS|NDR_BUFFERS;
+		NDR_CHECK(ndr_push_uint32(ndr, r->in.num_names));
 		NDR_CHECK(ndr_push_array(ndr, ndr_flags, r->in.names, sizeof(r->in.names[0]), r->in.num_names, (ndr_push_flags_fn_t)ndr_push_lsa_Name));
 	}
 	NDR_CHECK(ndr_push_lsa_TransSidArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sids));
@@ -1344,6 +1387,7 @@ static NTSTATUS ndr_push_lsa_TransNameArray(struct ndr_push *ndr, int ndr_flags,
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->names) {
+		NDR_CHECK(ndr_push_uint32(ndr, r->count));
 		NDR_CHECK(ndr_push_array(ndr, ndr_flags, r->names, sizeof(r->names[0]), r->count, (ndr_push_flags_fn_t)ndr_push_lsa_TranslatedName));
 	}
 done:
@@ -1365,6 +1409,13 @@ static NTSTATUS ndr_pull_lsa_TransNameArray(struct ndr_pull *ndr, int ndr_flags,
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->names) {
+	{
+		uint32 _array_size;
+		NDR_CHECK(ndr_pull_uint32(ndr, &_array_size));
+		if (r->count > _array_size) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should be %u", _array_size, r->count);
+		}
+	}
 		NDR_ALLOC_N_SIZE(ndr, r->names, r->count, sizeof(r->names[0]));
 		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)r->names, sizeof(r->names[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_TranslatedName));
 	}
@@ -1491,14 +1542,19 @@ void ndr_print_lsa_LUIDAttribute(struct ndr_print *ndr, const char *name, struct
 
 static NTSTATUS ndr_pull_lsa_PrivilegeSet(struct ndr_pull *ndr, int ndr_flags, struct lsa_PrivilegeSet *r)
 {
+	uint32 _conformant_size;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_conformant_size));
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->count));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown));
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-		NDR_ALLOC_N_SIZE(ndr, r->set, r->count, sizeof(r->set[0]));
+	if (r->count > _conformant_size) {
+		return ndr_pull_error(ndr, NDR_ERR_CONFORMANT_SIZE, "Bad conformant size %u should be %u", _conformant_size, r->count);
+	}
+		NDR_ALLOC_N_SIZE(ndr, r->set, _conformant_size, sizeof(r->set[0]));
 		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)r->set, sizeof(r->set[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_LUIDAttribute));
-		NDR_CHECK(ndr_pull_const_array_uint32(ndr, r->unknown, 1));
 done:
 	return NT_STATUS_OK;
 }
@@ -1508,13 +1564,10 @@ void ndr_print_lsa_PrivilegeSet(struct ndr_print *ndr, const char *name, struct 
 	ndr_print_struct(ndr, name, "lsa_PrivilegeSet");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "count", r->count);
+	ndr_print_uint32(ndr, "unknown", r->unknown);
 	ndr_print_ptr(ndr, "set", r->set);
 	ndr->depth++;
 		ndr_print_array(ndr, "set", r->set, sizeof(r->set[0]), r->count, (ndr_print_fn_t)ndr_print_lsa_LUIDAttribute);
-	ndr->depth--;
-	ndr_print_ptr(ndr, "unknown", r->unknown);
-	ndr->depth++;
-		ndr_print_array_uint32(ndr, "unknown", r->unknown, 1);
 	ndr->depth--;
 	ndr->depth--;
 }
@@ -1805,6 +1858,13 @@ static NTSTATUS ndr_pull_lsa_RightSet(struct ndr_pull *ndr, int ndr_flags, struc
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->names) {
+	{
+		uint32 _array_size;
+		NDR_CHECK(ndr_pull_uint32(ndr, &_array_size));
+		if (r->count > _array_size) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should be %u", _array_size, r->count);
+		}
+	}
 		NDR_ALLOC_N_SIZE(ndr, r->names, r->count, sizeof(r->names[0]));
 		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)r->names, sizeof(r->names[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_Name));
 	}

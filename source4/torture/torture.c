@@ -3986,6 +3986,7 @@ static struct {
 	{"SCAN-SMB", torture_smb_scan, 0},
         {"RPC-LSA", torture_rpc_lsa, 0},
         {"RPC-ECHO", torture_rpc_echo, 0},
+        {"RPC-DFS", torture_rpc_dfs, 0},
 	{NULL, NULL, 0}};
 
 

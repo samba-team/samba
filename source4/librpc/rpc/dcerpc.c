@@ -792,6 +792,8 @@ NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
 		goto failed;
 	}
 
+	dump_data(10, pull->data, pull->data_size);
+
 	/* pull the structure from the blob */
 	status = ndr_pull(pull, struct_ptr);
 	if (!NT_STATUS_IS_OK(status)) {

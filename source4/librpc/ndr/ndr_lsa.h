@@ -405,8 +405,8 @@ struct lsa_LUIDAttribute {
 
 struct lsa_PrivilegeSet {
 	uint32 count;
+	uint32 unknown;
 	struct lsa_LUIDAttribute *set;
-	uint32 unknown[1];
 };
 
 struct lsa_EnumPrivsAccount {
