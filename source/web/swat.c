@@ -163,7 +163,7 @@ static void show_parameter(int snum, struct parm_struct *parm)
 		ptr = lp_local_ptr(snum, ptr);
 	}
 
-	printf("<tr><td><A HREF=\"/swat/help/smb.conf.5.html#%s\">?</A> %s</td><td>", 
+	printf("<tr><td><A HREF=\"/swat/help/smb.conf.5.html#%s\">Help</A>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; %s</td><td>", 
 	       stripspace(parm->label), parm->label);
 
 	switch (parm->type) {
