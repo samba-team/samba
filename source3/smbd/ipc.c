@@ -3110,6 +3110,34 @@ static BOOL api_WPrintPortEnum(connection_struct *conn,uint16 vuid, char *param,
   return(True);
 }
 
+static BOOL api_pipe_ntlmssp(pipes_struct *p, prs_struct *pd)
+{
+	/* receive a negotiate; send a challenge; receive a response */
+	switch (p->auth_verifier.msg_type)
+	{
+		case NTLMSSP_NEGOTIATE:
+		{
+			smb_io_rpc_auth_ntlmssp_neg("", &p->ntlmssp_neg, pd, 0);
+			break;
+		}
+		case NTLMSSP_AUTH:
+		{
+			smb_io_rpc_auth_ntlmssp_resp("", &p->ntlmssp_resp, pd, 0);
+			break;
+		}
+		default:
+		{
+			/* NTLMSSP expected: unexpected message type */
+			DEBUG(3,("unexpected message type in NTLMSSP %d\n",
+			          p->auth_verifier.msg_type));
+			return False;
+			break;
+		}
+	}
+
+	return (pd->offset != 0);
+}
+
 struct api_cmd
 {
   char * pipe_clnt_name;
@@ -3159,12 +3187,16 @@ static BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *pd)
 	if (p->hdr.auth_len != 0)
 	{
 		/* decode the authentication verifier */
-		smb_io_rpc_auth_ntlmssp_req("", &p->ntlmssp_req, pd, 0);
+		smb_io_rpc_auth_verifier("", &p->auth_verifier, pd, 0);
 
 		if (pd->offset == 0) return False;
 
-		/* ignore the version number for now */
-		ntlmssp_auth = strequal(p->ntlmssp_req.ntlmssp_str, "NTLMSSP");
+		ntlmssp_auth = strequal(p->auth_verifier.signature, "NTLMSSP");
+
+		if (ntlmssp_auth)
+		{
+			if (!api_pipe_ntlmssp(p, pd)) return False;
+		}
 	}
 
 	/* name has to be \PIPE\xxxxx */
@@ -3176,18 +3208,19 @@ static BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *pd)
 	prs_init(&(p->rdata), 1024, 4, 0, False);
 	prs_init(&(p->rhdr ), 0x10, 4, 0, False);
 	prs_init(&(p->rauth), 1024, 4, 0, False);
+	prs_init(&(p->rntlm), 1024, 4, 0, False);
 
     /***/
 	/*** do the bind ack first ***/
     /***/
 
 	make_rpc_hdr_ba(&p->hdr_ba,
-					p->hdr_rb.bba.max_tsize,
+	                p->hdr_rb.bba.max_tsize,
 	                p->hdr_rb.bba.max_rsize,
 	                p->hdr_rb.bba.assoc_gid,
-					ack_pipe_name,
-					0x1, 0x0, 0x0,
-					&(p->hdr_rb.transfer));
+	                ack_pipe_name,
+	                0x1, 0x0, 0x0,
+	                &(p->hdr_rb.transfer));
 
 	smb_io_rpc_hdr_ba("", &p->hdr_ba, &p->rdata, 0);
 	mem_realloc_data(p->rdata.data, p->rdata.offset);
@@ -3198,16 +3231,19 @@ static BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *pd)
 
 	if (ntlmssp_auth)
 	{
-		uint8 data[16];
-		bzero(data, sizeof(data)); /* first 8 bytes are non-zero */
+		uint8 challenge[8];
+		generate_random_buffer(challenge, 8, False);
 
-		make_rpc_auth_ntlmssp_resp(&p->ntlmssp_resp,
-		                           0x0a, 0x06, 0,
-		                           "NTLMSSP", 2,
-		                           0x00000000, 0x0000b2b3, 0x000082b1,
-		                           data);
-		smb_io_rpc_auth_ntlmssp_resp("", &p->ntlmssp_resp, &p->rauth, 0);
+		make_rpc_auth_verifier(&p->auth_verifier,
+		                       0x0a, 0x06, 0,
+		                       "NTLMSSP", NTLMSSP_CHALLENGE);
+		smb_io_rpc_auth_verifier("", &p->auth_verifier, &p->rauth, 0);
 		mem_realloc_data(p->rauth.data, p->rauth.offset);
+
+		make_rpc_auth_ntlmssp_chal(&p->ntlmssp_chal,
+		                           0x000082b1, challenge);
+		smb_io_rpc_auth_ntlmssp_chal("", &p->ntlmssp_chal, &p->rntlm, 0);
+		mem_realloc_data(p->rntlm.data, p->rntlm.offset);
 	}
 
     /***/
@@ -3216,8 +3252,8 @@ static BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *pd)
 
 	make_rpc_hdr(&p->hdr, RPC_BINDACK, RPC_FLG_FIRST | RPC_FLG_LAST,
 				 p->hdr.call_id,
-	             p->rdata.offset + p->rauth.offset + 0x10,
-	             p->rauth.offset);
+	             p->rdata.offset + p->rauth.offset + p->rntlm.offset + 0x10,
+	             p->rauth.offset + p->rntlm.offset);
 
 	smb_io_rpc_hdr("", &p->hdr, &p->rhdr, 0);
 	mem_realloc_data(p->rhdr.data, p->rdata.offset);
@@ -3237,8 +3273,12 @@ static BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *pd)
 		p->rdata.data->next         = p->rauth.data;
 
 		p->rauth.data->offset.start = p->rhdr.offset + p->rdata.offset;
-		p->rauth.data->offset.end   = p->rhdr.offset + p->rauth.offset + p->rdata.offset;
-		p->rauth.data->next         = NULL;
+		p->rauth.data->offset.end   = p->rhdr.offset + p->rdata.offset + p->rauth.offset;
+		p->rauth.data->next         = p->rntlm.data;
+
+		p->rntlm.data->offset.start = p->rhdr.offset + p->rdata.offset + p->rauth.offset;
+		p->rntlm.data->offset.end   = p->rhdr.offset + p->rdata.offset + p->rauth.offset + p->rntlm.offset;
+		p->rntlm.data->next         = NULL;
 	}
 	else
 	{

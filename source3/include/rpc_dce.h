@@ -41,6 +41,28 @@ enum RPC_PKT_TYPE
 #define RPC_FLG_FIRST 0x01
 #define RPC_FLG_LAST  0x02
 
+/* NTLMSSP message types */
+enum NTLM_MESSAGE_TYPE
+{
+	NTLMSSP_NEGOTIATE = 1,
+	NTLMSSP_CHALLENGE = 2,
+	NTLMSSP_AUTH      = 3,
+	NTLMSSP_UNKNOWN   = 4,
+};
+
+/* NTLMSSP negotiation flags */
+#define NTLMSSP_NEGOTIATE_UNICODE          0x00000001
+#define NTLMSSP_NEGOTIATE_OEM              0x00000002
+#define NTLMSSP_REQUEST_TARGET             0x00000004
+#define NTLMSSP_NEGOTIATE_SIGN             0x00000010
+#define NTLMSSP_NEGOTIATE_SEAL             0x00000020
+#define NTLMSSP_NEGOTIATE_LM_KEY           0x00000080
+#define NTLMSSP_NEGOTIATE_NTLM             0x00000200
+#define NTLMSSP_NEGOTIATE_ALWAYS_SIGN      0x00008000
+#define NTLMSSP_NEGOTIATE_NTLM2            0x00080000
+#define NTLMSSP_NEGOTIATE_TARGET_INFO      0x00800000
+#define NTLMSSP_NEGOTIATE_128              0x20000000
+#define NTLMSSP_NEGOTIATE_KEY_EXCH         0x40000000
 
 /* RPC_IFACE */
 typedef struct rpc_iface_info
@@ -161,33 +183,6 @@ typedef struct rpc_hdr_ba_info
 /* RPC_AUTH_VERIFIER */
 typedef struct rpc_auth_verif_info
 {
-	fstring ssp_str;
-	uint32 ssp_ver;
-
-} RPC_AUTH_VERIFIER;
-
-/* this is TEMPORARILY coded up as a specific structure */
-/* this structure comes after the bind request */
-/* RPC_AUTH_NTLMSSP_REQ */
-typedef struct rpc_auth_ntlmssp_req_info
-{
-	fstring ntlmssp_str; /* "NTLMSSP" */
-	uint32  ntlmssp_ver; /* 0x0000 0001 */
-
-	uint32 unknown_0; /* 0x00b2b3 */
-	STRHDR hdr_myname; /* offset is against START of this structure */
-	STRHDR hdr_domain; /* offset is against START of this structure */
-
-	fstring myname; /* calling workstation's name */
-	fstring domain; /* calling workstations's domain */
-
-} RPC_AUTH_NTLMSSP_REQ;
-
-/* this is TEMPORARILY coded up as a specific structure */
-/* this structure comes after the bind acknowledgement */
-/* RPC_AUTH_NTLMSSP_RESP */
-typedef struct rpc_auth_ntlmssp_resp_info
-{
 	uint8 auth_type; /* 0x0a */
 	uint8 auth_level; /* 0x06 */
 	uint8 stub_type_len; /* don't know */
@@ -195,23 +190,69 @@ typedef struct rpc_auth_ntlmssp_resp_info
 
 	uint32 ptr_0; /* non-zero pointer to something */
 
-	fstring ntlmssp_str; /* "NTLMSSP" */
-	uint32  ntlmssp_ver; /* 0x0000 0002 */
+	fstring signature; /* "NTLMSSP" */
+	uint32  msg_type; /* NTLMSSP_MESSAGE_TYPE (1,2,3) */
 
+} RPC_AUTH_VERIFIER;
+
+/* this is TEMPORARILY coded up as a specific structure */
+/* this structure comes after the bind request */
+/* RPC_AUTH_NTLMSSP_NEG */
+typedef struct rpc_auth_ntlmssp_neg_info
+{
+	uint32  neg_flgs; /* 0x0000 b2b3 */
+
+	STRHDR hdr_myname; /* offset is against START of this structure */
+	STRHDR hdr_domain; /* offset is against START of this structure */
+
+	fstring myname; /* calling workstation's name */
+	fstring domain; /* calling workstations's domain */
+
+} RPC_AUTH_NTLMSSP_NEG;
+
+/* this is TEMPORARILY coded up as a specific structure */
+/* this structure comes after the bind acknowledgement */
+/* RPC_AUTH_NTLMSSP_CHAL */
+typedef struct rpc_auth_ntlmssp_chal_info
+{
 	uint32 unknown_1; /* 0x0000 0000 */
-	uint32 unknown_2; /* 0x00b2b3 */
-	uint32 unknown_3; /* 0x0082b1 */
+	uint32 unknown_2; /* 0x0000 0028 */
+	uint32 neg_flags; /* 0x0000 82b1 */
 
-	uint8 data[16]; /* 0x10 bytes of something */
+	uint8 challenge[8]; /* ntlm challenge */
+	uint8 reserved [8]; /* zeros */
+
+} RPC_AUTH_NTLMSSP_CHAL;
+
+
+/* RPC_AUTH_NTLMSSP_RESP */
+typedef struct rpc_auth_ntlmssp_resp_info
+{
+	STRHDR hdr_lm_resp; /* 24 byte response */
+	STRHDR hdr_nt_resp; /* 24 byte response */
+	STRHDR hdr_domain;
+	UNIHDR hdr_usr;
+	UNIHDR hdr_wks;
+	UNIHDR hdr_sess_key; /* NULL unless negotiated */
+	uint32 neg_flags; /* 0x0000 82b1 */
+
+	fstring uni_sess_key;
+	fstring uni_wks;
+	fstring uni_usr;
+	fstring uni_domain;
+	fstring str_nt_resp;
+	fstring str_lm_resp;
 
 } RPC_AUTH_NTLMSSP_RESP;
+
 
 /* attached to the end of encrypted rpc requests and responses */
 /* RPC_AUTH_NTLMSSP_CHK */
 typedef struct rpc_auth_ntlmssp_chk_info
 {
-	uint32 ver; /* 0x1 */
-	uint8 data[12];
+	uint32 ver; /* 0x0000 0001 */
+	uint8  crc32[8]; /* checksum using 0xEDB8 8320 as a polynomial */
+	uint32 seq_num;
 
 } RPC_AUTH_NTLMSSP_CHK;
 
