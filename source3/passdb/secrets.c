@@ -227,7 +227,7 @@ BOOL secrets_lock_trust_account_password(char *domain, BOOL dolock)
  the above call.
 ************************************************************************/
 
-BOOL secrets_fetch_trust_account_password(char *domain, uint8 ret_pwd[16],
+BOOL secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
 					  time_t *pass_last_set_time)
 {
 	struct machine_acct_pass *pass;
