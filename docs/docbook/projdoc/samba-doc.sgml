@@ -8,6 +8,7 @@
 <!ENTITY NT-Security SYSTEM "NT_Security.sgml">
 <!ENTITY OS2-Client SYSTEM "OS2-Client-HOWTO.sgml">
 <!ENTITY Samba-PDC-HOWTO SYSTEM "Samba-PDC-HOWTO.sgml">
+<!ENTITY CVS-Access SYSTEM "CVS-Access.sgml">
 ]>
 
 <book id="Samba-Project-Documentation">
@@ -49,5 +50,6 @@ Cheers, jerry
 &WINBIND;
 &NT-Security;
 &OS2-Client;
+&CVS-Access;
 
 </book>
