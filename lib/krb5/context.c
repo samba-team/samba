@@ -81,7 +81,9 @@ set_etypes (krb5_context context,
 static krb5_error_code
 init_context_from_config_file(krb5_context context)
 {
+    krb5_error_code ret;
     const char * tmp;
+
     INIT_FIELD(context, time, max_skew, 5 * 60, "clockskew");
     INIT_FIELD(context, time, kdc_timeout, 3, "kdc_timeout");
     INIT_FIELD(context, int, max_retries, 3, "max_retries");
@@ -125,9 +127,11 @@ init_context_from_config_file(krb5_context context)
 				      NULL);
 	memset(&addresses, 0, sizeof(addresses));
 	for(a = adr; a && *a; a++) {
-	    krb5_parse_address(context, *a, &addresses);
-	    krb5_add_extra_addresses(context, &addresses);
-	    krb5_free_addresses(context, &addresses);
+	    ret = krb5_parse_address(context, *a, &addresses);
+	    if (ret == 0) {
+		krb5_add_extra_addresses(context, &addresses);
+		krb5_free_addresses(context, &addresses);
+	    }
 	}
 	krb5_config_free_strings(adr);
 
@@ -137,9 +141,11 @@ init_context_from_config_file(krb5_context context)
 				      NULL);
 	memset(&addresses, 0, sizeof(addresses));
 	for(a = adr; a && *a; a++) {
-	    krb5_parse_address(context, *a, &addresses);
-	    krb5_add_ignore_addresses(context, &addresses);
-	    krb5_free_addresses(context, &addresses);
+	    ret = krb5_parse_address(context, *a, &addresses);
+	    if (ret == 0) {
+		krb5_add_ignore_addresses(context, &addresses);
+		krb5_free_addresses(context, &addresses);
+	    }
 	}
 	krb5_config_free_strings(adr);
     }
