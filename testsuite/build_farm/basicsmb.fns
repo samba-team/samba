@@ -1,21 +1,32 @@
-test_smb_conf_setup() {
-	cat basicsmb.smb.conf.template | \
+template_smb_conf_setup() {
+	cat basicsmb.smb.conf$1.template | \
               sed "s|PREFIX|$prefix|g" | \
 	      sed "s|BUILD_FARM|$pwd|g" | \
 	      sed "s|WHOAMI|$whoami|g" | \
 	      sed "s|LOGLEVEL|$loglevel|g" \
-        > $prefix/lib/smb.conf
+        > $prefix/lib/smb.conf$1
+}
+
+test_smb_conf_setup() {
+    template_smb_conf_setup 
+    template_smb_conf_setup .hostsequiv
+    template_smb_conf_setup .invalidusers
 
 	echo "127.0.0.1    localhost">$prefix/lib/lmhosts
-	echo "127.0.0.1    BUILDFARM">>$prefix/lib/lmhosts
-    echo "127.0.0.1    SHARE">>$prefix/lib/lmhosts
-    echo "127.0.0.1    USER">>$prefix/lib/lmhosts
-    echo "127.0.0.1    SERVER">>$prefix/lib/lmhosts
-    echo "127.0.0.1    DOMAIN">>$prefix/lib/lmhosts
+	echo "127.0.0.2    BUILDFARM">>$prefix/lib/lmhosts
+    echo "127.0.0.3    SHARE">>$prefix/lib/lmhosts
+    echo "127.0.0.4    USER">>$prefix/lib/lmhosts
+    echo "127.0.0.5    SERVER">>$prefix/lib/lmhosts
+    echo "127.0.0.6    DOMAIN">>$prefix/lib/lmhosts
+    echo "127.0.0.7    HOSTSEQUIV">>$prefix/lib/lmhosts
+
+    echo "localhost" > $prefix/lib/hosts.equiv
+
     cp basicsmb.smb.conf.share $prefix/lib/smb.conf.share
     cp basicsmb.smb.conf.user $prefix/lib/smb.conf.user
     cp basicsmb.smb.conf.server $prefix/lib/smb.conf.server
     cp basicsmb.smb.conf.domain $prefix/lib/smb.conf.domain
+
     touch $prefix/lib/smb.conf.
     touch $prefix/lib/smb.conf.localhost
 }
@@ -63,3 +74,16 @@ test_listfilesnpw() {
 	return 0
 }
 
+test_listfilesauth_should_deny() {
+	remote_name="$1"
+	echo $prefix/bin/smbclient //$remote_name/samba -n buildclient -U$whoami%$password  -c 'ls'
+	$prefix/bin/smbclient //$remote_name/samba -n buildclient -U$whoami%$password -c 'ls'
+	status=$?
+	if [ $status = 0 ]; then
+		echo "smbd LISTED FILES despite smb.conf entires to the contary!"
+		return 1
+	else 
+		echo "listing files with smbd failed with status $status (correct)"
+	fi
+	return 0
+}
