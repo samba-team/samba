@@ -37,7 +37,7 @@ fi
 ])
 
 dnl Specify the default build method of this module 
-dnl SMB_MODULE_DEFAULT(name,default_build)
+dnl SMB_MODULE_DEFAULT(1:name,2:default_build)
 AC_DEFUN(SMB_MODULE_DEFAULT,
 [
 	dnl Fall back to static if dlopen() is not available
@@ -49,12 +49,12 @@ AC_DEFUN(SMB_MODULE_DEFAULT,
 ])
 
 dnl Mark specified module as shared
-dnl SMB_MODULE(name,default_build,static_files,shared_files,subsystem,whatif-static,whatif-shared,whatif-not)
+dnl SMB_MODULE(1:name,2:subsystem,3:default_build,4:object_files,5:shared_object,6:libs,7:whatif-static,8:whatif-shared,9:whatif-not)
 AC_DEFUN(SMB_MODULE,
 [
 	AC_MSG_CHECKING([how to build $1])
 	if test -z "$[MODULE_DEFAULT_][$1]"; then
-		eval MODULE_DEFAULT_$1=$2
+		eval MODULE_DEFAULT_$1=$3
 
 		if test x"MODULE_DEFAULT_$1" = xSHARED -a x"$ac_cv_func_dlopen" != xyes; then
 			eval MODULE_DEFAULT_$1=STATIC
@@ -63,38 +63,42 @@ AC_DEFUN(SMB_MODULE,
 
 	if test "$[MODULE_][$1]"; then
 		DEST=$[MODULE_][$1]
-	elif test "$[MODULE_]translit([$5], [A-Z], [a-z])" -a "$[MODULE_DEFAULT_][$1]"; then
-		DEST=$[MODULE_]translit([$5], [A-Z], [a-z])
+	elif test "$[MODULE_]translit([$2], [A-Z], [a-z])" -a "$[MODULE_DEFAULT_][$1]"; then
+		DEST=$[MODULE_]translit([$2], [A-Z], [a-z])
 	else
 		DEST=$[MODULE_DEFAULT_][$1]
 	fi
 	
 	if test x"$DEST" = xSHARED; then
 		AC_DEFINE([$1][_init], [init_module], [Whether to build $1 as shared module])
-		$5_MODULES="$$5_MODULES $4"
+		$2_MODULES="$$2_MODULES $5"
+		[MODULE_][$1][_LIBS]="$6"
 		AC_MSG_RESULT([shared])
-		[$7]
+		[$8]
 		string_shared_modules="$string_shared_modules $1"
 	elif test x"$DEST" = xSTATIC; then
-		[init_static_modules_]translit([$5], [A-Z], [a-z])="$[init_static_modules_]translit([$5], [A-Z], [a-z]) $1_init();"
+		[init_static_modules_]translit([$2], [A-Z], [a-z])="$[init_static_modules_]translit([$2], [A-Z], [a-z]) $1_init();"
 		string_static_modules="$string_static_modules $1"
-		$5_STATIC="$$5_STATIC $3"
-		AC_SUBST($5_STATIC)
-		[$6]
+		$2_STATIC="$$2_STATIC $4"
+		$2_LIBS="$$2_LIBS $6"
+		[$7]
 		AC_MSG_RESULT([static])
 	else
 	    	string_ignored_modules="$string_ignored_modules $1"
-	    	[$8]
+	    	[$9]
 		AC_MSG_RESULT([not])
 	fi
 ])
 
+dnl Mark specified module as shared
+dnl SMB_SUBSYSTEM(1:name,2:init_objectfile)
 AC_DEFUN(SMB_SUBSYSTEM,
 [
 	AC_SUBST($1_STATIC)
+	AC_SUBST($1_LIBS)
 	AC_SUBST($1_MODULES)
 	AC_DEFINE_UNQUOTED([static_init_]translit([$1], [A-Z], [a-z]), [{$init_static_modules_]translit([$1], [A-Z], [a-z])[}], [Static init functions])
-    	ifelse([$2], , :, [rm -f $2])
+	ifelse([$2], , :, [rm -f $2])
 ])
 
 dnl AC_PROG_CC_FLAG(flag)
