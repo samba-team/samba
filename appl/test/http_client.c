@@ -53,7 +53,7 @@ do_connect (const char *hostname, const char *port)
     memset (&hints, 0, sizeof(hints));
     hints.ai_family = PF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
+    hints.ai_protocol = 0;
 
     error = getaddrinfo (hostname, port, &hints, &ai);
     if (error)
