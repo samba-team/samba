@@ -412,8 +412,6 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 	DOM_SID user_sid;
 	DOM_SID group_sid;
 	struct passwd *passwd;
-	unid_t id;
-	int u_type = ID_USERID | ID_QUERY_ONLY;
 	fstring sid_string;
 
 	fstrcpy(account, unistr2_static(&delta->uni_acct_name));
@@ -497,19 +495,9 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 		}
 	}	
 
-	if (!passwd) {
-		DEBUG(1, ("No unix user for this account (%s), cannot adjust mappings\n", pdb_get_username(sam_account)));
-		/* if no unix user, changing the mapping won't help */
-	} else {
-		nt_ret = idmap_get_id_from_sid(&id, &u_type, pdb_get_user_sid(sam_account));
-		if (NT_STATUS_IS_OK(nt_ret) && (u_type == ID_USERID) && (id.uid == passwd->pw_uid)) {
-			
-		} else {
-			/* set mapping */
-			
-			id.uid = passwd->pw_uid;
-			nt_ret = idmap_set_mapping(pdb_get_user_sid(sam_account), id, ID_USERID);
-		}
+	if ( !passwd ) {
+		DEBUG(1, ("No unix user for this account (%s), cannot adjust mappings\n", 
+			pdb_get_username(sam_account)));
 	}
 
 	pdb_free_sam(&sam_account);
@@ -536,21 +524,25 @@ fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
 	sid_to_string(sid_string, &group_sid);
 
 	if (pdb_getgrsid(&map, group_sid)) {
-		grp = getgrgid(map.gid);
+		if ( map.gid != -1 )
+			grp = getgrgid(map.gid);
 		insert = False;
 	}
 
-	if (grp == NULL)
-	{
+	if (grp == NULL) {
 		gid_t gid;
 
 		/* No group found from mapping, find it from its name. */
 		if ((grp = getgrnam(name)) == NULL) {
+		
 			/* No appropriate group found, create one */
+			
 			d_printf("Creating unix group: '%s'\n", name);
+			
 			if (smb_create_group(name, &gid) != 0)
 				return NT_STATUS_ACCESS_DENIED;
-			if ((grp = getgrgid(gid)) == NULL)
+				
+			if ((grp = getgrnam(name)) == NULL)
 				return NT_STATUS_ACCESS_DENIED;
 		}
 	}
@@ -997,11 +989,6 @@ int rpc_vampire(int argc, const char **argv)
 
 	ZERO_STRUCT(ret_creds);
 
-	if (!idmap_init(lp_idmap_backend())) {
-		d_printf("Could not init idmap\n");
-		return -1;
-	}
-
 	/* Connect to remote machine */
 	if (!(cli = net_make_ipc_connection(NET_FLAGS_ANONYMOUS |
 					    NET_FLAGS_PDC))) {
@@ -1027,7 +1014,7 @@ int rpc_vampire(int argc, const char **argv)
 		goto fail;
 	}
 
-	dom_sid = *get_global_sam_sid();
+	sid_copy( &dom_sid, get_global_sam_sid() );
 	result = fetch_database(cli, SAM_DATABASE_DOMAIN, &ret_creds, dom_sid);
 
 	if (!NT_STATUS_IS_OK(result)) {

@@ -883,9 +883,6 @@ int main(int argc, char **argv)
 	if (!idmap_init(lp_idmap_backend()))
 		return 1;
 
-	if (!idmap_init_wellknown_sids())
-		exit(1);
-
 	/* Unblock all signals we are interested in as they may have been
 	   blocked by the parent process. */
 

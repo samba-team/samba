@@ -1053,9 +1053,7 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 	struct passwd *unix_pw;
 	BOOL ret;
 	
-	winbind_off();
 	unix_pw = sys_getpwuid( uid );
-	winbind_on();
 
 	if ( !unix_pw ) {
 		DEBUG(4,("local_uid_to_sid: host has know idea of uid %d\n", uid));
@@ -1114,8 +1112,6 @@ BOOL local_sid_to_uid(uid_t *puid, const DOM_SID *psid, enum SID_NAME_USE *name_
 		return False;
 	}
 
-
-
 	/* lookup the user account */
 	
 	if ( !NT_STATUS_IS_OK(pdb_init_sam(&sampw)) ) {
@@ -1134,9 +1130,7 @@ BOOL local_sid_to_uid(uid_t *puid, const DOM_SID *psid, enum SID_NAME_USE *name_
 	
 	user_name = pdb_get_username(sampw);
 
-	winbind_off();
 	unix_pw = sys_getpwnam( user_name );
-	winbind_on();
 
 	if ( !unix_pw ) {
 		DEBUG(0,("local_sid_to_uid: %s found in passdb but getpwnam() return NULL!\n",
