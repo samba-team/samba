@@ -22,8 +22,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
-
 /* NOTES: 
 
    This code makes no attempt to be fast! In fact, it is a very
@@ -404,7 +402,7 @@ void SamOEMhash( uchar *data, const uchar *key, int val)
   }
 }
 
-void sam_pwd_hash(uint32 rid, const uchar *in, uchar *out, int forw)
+void sam_pwd_hash(unsigned int rid, const uchar *in, uchar *out, int forw)
 {
 	uchar s[14];
 
