@@ -3156,7 +3156,7 @@ static BOOL can_rename(char *fname,int cnum)
  code. 
 ****************************************************************************/
 
-int rename_internals(char *inbuf, char *outbuf, char *name, char *newname)
+int rename_internals(char *inbuf, char *outbuf, char *name, char *newname, BOOL replace_if_exists)
 {
   int cnum;
   pstring directory;
@@ -3203,6 +3203,9 @@ int rename_internals(char *inbuf, char *outbuf, char *name, char *newname)
   has_wild = strchr(mask,'*') || strchr(mask,'?');
 
   if (!has_wild) {
+    /*
+     * No wildcards - just process the one file.
+     */
     BOOL is_short_name = is_8_3(name, True);
 
     /* Add a terminating '/' to the directory name. */
@@ -3253,6 +3256,18 @@ int rename_internals(char *inbuf, char *outbuf, char *name, char *newname)
       }
     }
 
+    if(replace_if_exists) {
+      /*
+       * NT SMB specific flag - we must remove a target
+       * file with the same name before continuing.
+       */
+      if(resolve_wildcards(directory,newname) &&
+                  can_rename(directory,cnum) &&
+                  file_exist(newname,NULL)) {
+          sys_unlink(newname);
+      }
+    }
+
     if (resolve_wildcards(directory,newname) && 
                   can_rename(directory,cnum) && 
                   !file_exist(newname,NULL) &&
@@ -3268,6 +3283,9 @@ int rename_internals(char *inbuf, char *outbuf, char *name, char *newname)
       error = 183;
     }
   } else {
+    /*
+     * Wildcards - process each file that matches.
+     */
     void *dirptr = NULL;
     char *dname;
     pstring destname;
@@ -3301,11 +3319,14 @@ int rename_internals(char *inbuf, char *outbuf, char *name, char *newname)
           continue;
         }
 
-        if (file_exist(destname,NULL)) {
+        if (replace_if_exists && file_exist(destname,NULL)) {
+          sys_unlink(destname);
+        } else if(file_exist(destname,NULL)) {
           DEBUG(6,("file_exist %s\n", destname));
           error = 183;
           continue;
         }
+
         if (!sys_rename(fname,destname))
           count++;
         DEBUG(3,("rename_internals: doing rename on %s -> %s\n",fname,destname));
@@ -3344,7 +3365,7 @@ int reply_mv(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
    
   DEBUG(3,("reply_mv : %s -> %s\n",name,newname));
 
-  outsize = rename_internals(inbuf, outbuf, name, newname);
+  outsize = rename_internals(inbuf, outbuf, name, newname, False);
   if(outsize == 0) 
     outsize = set_message(outbuf,0,0,True);
   

@@ -1118,6 +1118,9 @@ struct parm_struct
 #define OPEN_ALWAYS 4
 #define TRUNCATE_EXISTING 5
 
+/* Flag for NT transact rename call. */
+#define RENAME_REPLACE_IF_EXISTS 1
+
 /* Filesystem Attributes. */
 #define FILE_CASE_SENSITIVE_SEARCH 0x1
 #define FILE_CASE_PRESERVED_NAMES 0x2
