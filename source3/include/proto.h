@@ -1712,8 +1712,9 @@ BOOL do_event_readeventlog(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 
 /*The following definitions come from  rpc_client/cli_login.c  */
 
-BOOL cli_nt_setup_creds(struct cli_state *cli, uint16 fnum,
+uint32 cli_nt_setup_creds(struct cli_state *cli, uint16 fnum,
 				const char* trust_acct,
+				const char* srv_name,
 				unsigned char trust_pwd[16],
 				uint16 sec_chan);
 BOOL cli_nt_srv_pwset(struct cli_state *cli, uint16 fnum,
@@ -1760,10 +1761,13 @@ BOOL lsa_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd);
 /*The following definitions come from  rpc_client/cli_netlogon.c  */
 
 BOOL cli_net_logon_ctrl2(struct cli_state *cli, uint16 nt_pipe_fnum, uint32 status_level);
-BOOL cli_net_auth2(struct cli_state *cli, uint16 nt_pipe_fnum,
-				const char *trust_acct, uint16 sec_chan, 
+uint32 cli_net_auth2(struct cli_state *cli, uint16 nt_pipe_fnum,
+				const char *trust_acct, 
+				const char *srv_name, uint16 sec_chan, 
 				uint32 neg_flags, DOM_CHAL *srv_chal);
-BOOL cli_net_req_chal(struct cli_state *cli, uint16 nt_pipe_fnum, DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal);
+uint32 cli_net_req_chal(struct cli_state *cli, uint16 nt_pipe_fnum, 
+				const char *srv_name,
+				DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal);
 BOOL cli_net_srv_pwset(struct cli_state *cli, uint16 nt_pipe_fnum,
 		       uint8 hashed_mach_pwd[16], uint16 sec_chan_type);
 BOOL cli_net_sam_logon(struct cli_state *cli, uint16 nt_pipe_fnum, NET_ID_INFO_CTR *ctr, 
@@ -2207,7 +2211,7 @@ BOOL make_r_trust_dom(NET_R_TRUST_DOM_LIST *r_t,
 BOOL net_io_r_trust_dom(char *desc,  NET_R_TRUST_DOM_LIST *r_t, prs_struct *ps, int depth);
 BOOL net_io_q_trust_dom(char *desc,  NET_Q_TRUST_DOM_LIST *q_l, prs_struct *ps, int depth);
 BOOL make_q_req_chal(NET_Q_REQ_CHAL *q_c,
-				char *logon_srv, char *logon_clnt,
+				const char *logon_srv, const char *logon_clnt,
 				DOM_CHAL *clnt_chal);
 BOOL net_io_q_req_chal(char *desc,  NET_Q_REQ_CHAL *q_c, prs_struct *ps, int depth);
 BOOL net_io_r_req_chal(char *desc,  NET_R_REQ_CHAL *r_c, prs_struct *ps, int depth);

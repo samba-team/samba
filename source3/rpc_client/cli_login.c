@@ -29,14 +29,15 @@ extern int DEBUGLEVEL;
 Initialize domain session credentials.
 ****************************************************************************/
 
-BOOL cli_nt_setup_creds(struct cli_state *cli, uint16 fnum,
+uint32 cli_nt_setup_creds(struct cli_state *cli, uint16 fnum,
 				const char* trust_acct,
+				const char* srv_name,
 				unsigned char trust_pwd[16],
 				uint16 sec_chan)
 {
   DOM_CHAL clnt_chal;
   DOM_CHAL srv_chal;
-
+	uint32 ret;
   UTIME zerotime;
 
   /******************* Request Challenge ********************/
@@ -44,10 +45,11 @@ BOOL cli_nt_setup_creds(struct cli_state *cli, uint16 fnum,
   generate_random_buffer( clnt_chal.data, 8, False);
 	
   /* send a client challenge; receive a server challenge */
-  if (!cli_net_req_chal(cli, fnum, &clnt_chal, &srv_chal))
+  ret = cli_net_req_chal(cli, fnum, srv_name, &clnt_chal, &srv_chal);
+  if (ret != 0)
   {
     DEBUG(0,("cli_nt_setup_creds: request challenge failed\n"));
-    return False;
+    return ret;
   }
 
   /**************** Long-term Session key **************/
@@ -67,13 +69,14 @@ BOOL cli_nt_setup_creds(struct cli_state *cli, uint16 fnum,
    * Receive an auth-2 challenge response and check it.
    */
 
-  if (!cli_net_auth2(cli, fnum, trust_acct, sec_chan, 0x000001ff, &srv_chal))
+  ret = cli_net_auth2(cli, fnum, trust_acct, srv_name,
+                      sec_chan, 0x000001ff, &srv_chal);
+  if (ret != 0x0)
   {
     DEBUG(0,("cli_nt_setup_creds: auth2 challenge failed\n"));
-    return False;
   }
 
-  return True;
+  return ret;
 }
 
 /****************************************************************************

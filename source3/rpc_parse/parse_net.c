@@ -371,7 +371,7 @@ BOOL net_io_q_trust_dom(char *desc,  NET_Q_TRUST_DOM_LIST *q_l, prs_struct *ps, 
 makes an NET_Q_REQ_CHAL structure.
 ********************************************************************/
 BOOL make_q_req_chal(NET_Q_REQ_CHAL *q_c,
-				char *logon_srv, char *logon_clnt,
+				const char *logon_srv, const char *logon_clnt,
 				DOM_CHAL *clnt_chal)
 {
 	if (q_c == NULL) return False;
