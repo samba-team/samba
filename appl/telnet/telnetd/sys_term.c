@@ -374,6 +374,16 @@ static char *ptsname(int fd)
 
 int getpty(int *ptynum)
 {
+#ifdef __osf__
+        int master;
+	int slave;
+	if(openpty(&master, &slave, line, 0, 0) == 0){
+	  close(slave);
+	  return master;
+	}
+	return -1;
+#else
+
         int p;
 	char *cp, *p1, *p2;
 	int i;
@@ -495,6 +505,7 @@ int getpty(int *ptynum)
 #endif	/* STREAMSPTY */
 #endif /* OPENPTY */
 	return(-1);
+#endif
 }
 
 #ifdef	LINEMODE
@@ -877,7 +888,7 @@ static int my_find(int fd, char *module)
     sl.sl_modlist=(struct str_mlist*)malloc(n * sizeof(struct str_mlist));
     sl.sl_nmods = n;
     n = ioctl(fd, I_LIST, &sl);
-    if(n != 0){
+    if(n < 0){
       perror("ioctl(fd, I_LIST, n)");
       return -1;
     }
