@@ -162,6 +162,7 @@ BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL dupli
 
 	if (!process_exists(pid)) {
 		DEBUG(2,("message_send_pid: pid %d doesn't exist\n", (int)pid));
+        tdb_delete(tdb, message_key_pid(pid));
 		return False;
 	}
 
