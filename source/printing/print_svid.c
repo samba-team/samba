@@ -45,7 +45,7 @@ typedef struct printer {
 } printer_t;
 static printer_t *printers = NULL;
 
-static void populate_printers()
+static void populate_printers(void)
 {
 	FILE *fp;
 
