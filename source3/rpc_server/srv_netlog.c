@@ -399,10 +399,10 @@ static void api_net_srv_pwset( int uid,
                   unsigned char pwd[16];
                   int i;
 
-                  DEBUG(0,("Server password set : new given value was :\n"));
+                  DEBUG(100,("Server password set : new given value was :\n"));
                   for(i = 0; i < 16; i++)
-                    DEBUG(0,("%02X ", q_a.pwd[i]));
-                  DEBUG(0,("\n"));
+                    DEBUG(100,("%02X ", q_a.pwd[i]));
+                  DEBUG(100,("\n"));
 
                   cred_hash3( pwd, q_a.pwd, vuser->dc.sess_key);
 
