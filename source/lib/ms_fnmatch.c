@@ -36,6 +36,8 @@
    matching routine! 
 
    NOTE: this matches only filenames with no directory component
+
+   Returns 0 on match, -1 on fail.
 */
 int ms_fnmatch(char *pattern, char *string)
 {

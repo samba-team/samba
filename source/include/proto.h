@@ -532,6 +532,8 @@ BOOL map_username(char *user);
 const struct passwd *Get_Pwnam(char *user,BOOL allow_change);
 BOOL user_ok(char *user,int snum);
 BOOL user_in_list(char *user,char *list);
+struct passwd *smb_getpwnam(char *user, char *domain, BOOL allow_change);
+int smb_initgroups(char *user, char *domain, gid_t group);
 
 /*The following definitions come from  lib/util.c  */
 
@@ -3848,7 +3850,7 @@ ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n);
 void delete_write_cache(files_struct *fsp);
 void set_filelen_write_cache(files_struct *fsp, SMB_OFF_T file_size);
 ssize_t flush_write_cache(files_struct *fsp, enum flush_reason_enum reason);
-void sys_fsync_file(connection_struct *conn, files_struct *fsp);
+void sync_file(connection_struct *conn, files_struct *fsp);
 
 /*The following definitions come from  smbd/filename.c  */
 
@@ -4185,6 +4187,7 @@ int vfswrap_unlink(char *path);
 int vfswrap_chmod(char *path, mode_t mode);
 int vfswrap_utime(char *path, struct utimbuf *times);
 int vfswrap_ftruncate(int fd, SMB_OFF_T offset);
+BOOL vfswrap_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 
 /*The following definitions come from  smbd/vfs.c  */
 

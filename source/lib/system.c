@@ -966,6 +966,7 @@ pid_t sys_getpid(void)
  Modified from the glibc sources.
  modified by tridge to return a file descriptor. We must kick our FILE* habit
 ****************************************************************************/
+
 typedef struct _popen_list
 {
 	int fd;

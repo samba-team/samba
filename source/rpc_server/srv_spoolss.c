@@ -553,8 +553,15 @@ static BOOL api_spoolss_setprinter(prs_struct *data, prs_struct *rdata)
 	if (q_u.info.level == 2 && q_u.info.info_ptr != 0)
 		safe_free(q_u.info.info_2);
 
+	/* now, we can free the memory */
+	if (q_u.info.level == 1 && q_u.info.info_ptr != 0)
+		safe_free(q_u.info.info_1);
+
 	if (q_u.devmode_ctr.devmode_ptr != 0)
 		safe_free(q_u.devmode_ctr.devmode);
+
+	if (q_u.secdesc_ctr.len != 0)
+		free_sec_desc_buf(&q_u.secdesc_ctr);
 
 	if (!spoolss_io_r_setprinter("", &r_u, rdata, 0))
 	{
@@ -1269,9 +1276,9 @@ static BOOL api_spoolss_getjob(prs_struct *data, prs_struct *rdata)
 /*******************************************************************
 \pipe\spoolss commands
 ********************************************************************/
-struct api_struct api_spoolss_cmds[] = {
-	
-		{"SPOOLSS_OPENPRINTEREX", SPOOLSS_OPENPRINTEREX,
+struct api_struct api_spoolss_cmds[] =
+{
+	{"SPOOLSS_OPENPRINTEREX", SPOOLSS_OPENPRINTEREX,
 	 api_spoolss_open_printer_ex},
 	{"SPOOLSS_GETPRINTERDATA", SPOOLSS_GETPRINTERDATA,
 	 api_spoolss_getprinterdata},
@@ -1279,11 +1286,9 @@ struct api_struct api_spoolss_cmds[] = {
 	 api_spoolss_closeprinter},
 	{"SPOOLSS_RFFPCNEX", SPOOLSS_RFFPCNEX, api_spoolss_rffpcnex},
 	{"SPOOLSS_RFNPCNEX", SPOOLSS_RFNPCNEX, api_spoolss_rfnpcnex},
-	
 		{"SPOOLSS_ENUMPRINTERS", SPOOLSS_ENUMPRINTERS,
 	 api_spoolss_enumprinters},
 	{"SPOOLSS_GETPRINTER", SPOOLSS_GETPRINTER, api_spoolss_getprinter},
-	
 		{"SPOOLSS_GETPRINTERDRIVER2", SPOOLSS_GETPRINTERDRIVER2,
 	 api_spoolss_getprinterdriver2},
 	{"SPOOLSS_STARTPAGEPRINTER", SPOOLSS_STARTPAGEPRINTER,
@@ -1292,6 +1297,8 @@ struct api_struct api_spoolss_cmds[] = {
 	 api_spoolss_endpageprinter},
 	{"SPOOLSS_STARTDOCPRINTER", SPOOLSS_STARTDOCPRINTER,
 	 api_spoolss_startdocprinter},
+	{"SPOOLSS_DELETEPRINTER", SPOOLSS_DELETEPRINTER,
+	 api_spoolss_deleteprinter},
 	{"SPOOLSS_ENDDOCPRINTER", SPOOLSS_ENDDOCPRINTER,
 	 api_spoolss_enddocprinter},
 	{"SPOOLSS_WRITEPRINTER", SPOOLSS_WRITEPRINTER,

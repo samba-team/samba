@@ -813,7 +813,7 @@ BOOL samr_io_r_chgpasswd_user(char *desc, SAMR_R_CHGPASSWD_USER * r_u,
 /*The following definitions come from  rpc_parse/parse_sec.c  */
 
 BOOL make_sec_access(SEC_ACCESS * t, uint32 mask);
-BOOL sec_io_access(char *desc, SEC_ACCESS * t, prs_struct *ps, int depth);
+BOOL sec_io_access(char *desc, SEC_ACCESS *t, prs_struct *ps, int depth);
 BOOL make_sec_ace(SEC_ACE * t, const DOM_SID *sid, uint8 type,
 		  SEC_ACCESS mask, uint8 flag);
 BOOL make_sec_acl(SEC_ACL * t, uint16 revision, int num_aces, SEC_ACE * ace);
@@ -945,6 +945,7 @@ BOOL new_spoolss_io_r_enumforms(char *desc, SPOOL_R_ENUMFORMS *r_u, prs_struct *
 BOOL new_spoolss_io_r_enumports(char *desc, SPOOL_R_ENUMPORTS *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_enumports(char *desc, SPOOL_Q_ENUMPORTS *q_u, prs_struct *ps, int depth);
 BOOL spool_io_printer_info_level_1(char *desc, SPOOL_PRINTER_INFO_LEVEL_1 *il, prs_struct *ps, int depth);
+BOOL spool_io_printer_info_level_3(char *desc, SPOOL_PRINTER_INFO_LEVEL_3 *il, prs_struct *ps, int depth);
 BOOL spool_io_printer_info_level_2(char *desc, SPOOL_PRINTER_INFO_LEVEL_2 *il, prs_struct *ps, int depth);
 BOOL spool_io_printer_info_level(char *desc, SPOOL_PRINTER_INFO_LEVEL *il, prs_struct *ps, int depth);
 BOOL spoolss_io_q_addprinterex(char *desc, SPOOL_Q_ADDPRINTEREX *q_u, prs_struct *ps, int depth);

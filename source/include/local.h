@@ -85,10 +85,6 @@
 /* this is where browse lists are kept in the lock dir */
 #define SERVER_LIST "browse.dat"
 
-/* shall guest entries in printer queues get changed to user entries,
-   so they can be deleted using the windows print manager? */
-#define LPQ_GUEST_TO_USER
-
 /* shall filenames with illegal chars in them get mangled in long
    filename listings? */
 #define MANGLE_LONG_FILENAMES 

@@ -55,7 +55,7 @@ extern pstring OriginalDir;
    the following 2 functions are an alternative - they make the file
    descriptor private to smbd
  */
-static int server_fd;
+static int server_fd = -1;
 
 int smbd_server_fd(void)
 {
@@ -754,11 +754,11 @@ static void usage(char *pname)
 		become_daemon();
 	}
 
-	check_kernel_oplocks();
-
 	if (!directory_exist(lp_lockdir(), NULL)) {
 		mkdir(lp_lockdir(), 0755);
 	}
+
+	check_kernel_oplocks();
 
 	if (is_daemon) {
 		pidfile_create("smbd");

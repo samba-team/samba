@@ -1311,10 +1311,7 @@ static uint32 size_of_relative_string(UNISTR *string)
  ********************************************************************/
 static uint32 size_of_sec_desc(SEC_DESC *sec)
 {
-	if (sec==NULL)
-		return 4;
-	else 
-		return 4+1024;
+	return 4+1024;
 }
 
 /*******************************************************************
@@ -1523,7 +1520,7 @@ static BOOL new_smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth,
 		
 		if (*secdesc != NULL)
 		{
-			buffer->string_at_end -= 1024; /* HACK! */
+			buffer->string_at_end -= 256; /* HACK! */
 			
 			prs_set_offset(ps, buffer->string_at_end);
 			
@@ -2938,9 +2935,7 @@ BOOL spoolss_io_q_setprinter(char *desc, SPOOL_Q_SETPRINTER *q_u, prs_struct *ps
 	if (!spoolss_io_devmode_cont(desc, &q_u->devmode_ctr, ps, depth))
 		return False;
 	
-	if(!prs_uint32("security.size_of_buffer", ps, depth, &q_u->security.size_of_buffer))
-		return False;
-	if(!prs_uint32("security.data", ps, depth, &q_u->security.data))
+	if (!sec_io_desc_buf(desc, &q_u->secdesc_ctr, ps, depth))
 		return False;
 	
 	if(!prs_uint32("command", ps, depth, &q_u->command))
@@ -3399,6 +3394,23 @@ BOOL spool_io_printer_info_level_1(char *desc, SPOOL_PRINTER_INFO_LEVEL_1 *il, p
 }
 
 /*******************************************************************
+ Parse a SPOOL_PRINTER_INFO_LEVEL_3 structure.
+********************************************************************/  
+BOOL spool_io_printer_info_level_3(char *desc, SPOOL_PRINTER_INFO_LEVEL_3 *il, prs_struct *ps, int depth)
+{	
+	prs_debug(ps, depth, desc, "spool_io_printer_info_level_3");
+	depth++;
+		
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("secdesc_ptr", ps, depth, &il->secdesc_ptr))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
  Parse a SPOOL_PRINTER_INFO_LEVEL_2 structure.
 ********************************************************************/  
 BOOL spool_io_printer_info_level_2(char *desc, SPOOL_PRINTER_INFO_LEVEL_2 *il, prs_struct *ps, int depth)
@@ -3514,23 +3526,36 @@ BOOL spool_io_printer_info_level(char *desc, SPOOL_PRINTER_INFO_LEVEL *il, prs_s
 		 * and by setprinter when updating printer's info
 		 */	
 		case 1:
+		{
 			if (UNMARSHALLING(ps)) {
-				il->info_1=(SPOOL_PRINTER_INFO_LEVEL_1 *)malloc(sizeof(SPOOL_PRINTER_INFO_LEVEL_1));
+				il->info_1=g_new(SPOOL_PRINTER_INFO_LEVEL_1, 1);
 				if(il->info_1 == NULL)
 					return False;
 			}
 			if (!spool_io_printer_info_level_1("", il->info_1, ps, depth))
 				return False;
 			break;		
+		}
 		case 2:
 			if (UNMARSHALLING(ps)) {
-				il->info_2=(SPOOL_PRINTER_INFO_LEVEL_2 *)malloc(sizeof(SPOOL_PRINTER_INFO_LEVEL_2));
+				il->info_2=g_new(SPOOL_PRINTER_INFO_LEVEL_2, 1);
 				if(il->info_2 == NULL)
 					return False;
 			}
 			if (!spool_io_printer_info_level_2("", il->info_2, ps, depth))
 				return False;
 			break;		
+		case 3:
+		{
+			if (UNMARSHALLING(ps)) {
+				il->info_3=g_new(SPOOL_PRINTER_INFO_LEVEL_3, 1);
+				if(il->info_3 == NULL)
+					return False;
+			}
+			if (!spool_io_printer_info_level_3("", il->info_3, ps, depth))
+				return False;
+			break;		
+		}
 	}
 
 	return True;

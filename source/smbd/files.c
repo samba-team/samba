@@ -283,7 +283,7 @@ void file_sync_all(connection_struct *conn)
 	for (fsp=Files;fsp;fsp=next) {
 		next=fsp->next;
 		if ((conn == fsp->conn) && (fsp->fd != -1)) {
-			conn->vfs_ops.fsync(fsp->fd);
+			sync_file(conn,fsp);
 		}
 	}
 }

@@ -151,6 +151,8 @@
 #define PRINTER_ACCESS_USE		0x00000008
 #define JOB_ACCESS_ADMINISTER		0x00000010
 
+#define PRINTER_MANAGE_DOCUMENTS	0x10000000 /* i think dis right ... */
+
 #define STANDARD_RIGHTS_READ		0x00020000
 #define STANDARD_RIGHTS_WRITE		STANDARD_RIGHTS_READ
 #define STANDARD_RIGHTS_EXECUTE		STANDARD_RIGHTS_READ
@@ -1234,12 +1236,19 @@ typedef struct spool_printer_info_level_2
 }
 SPOOL_PRINTER_INFO_LEVEL_2;
 
+typedef struct spool_printer_info_level_3
+{
+	uint32 secdesc_ptr;
+}
+SPOOL_PRINTER_INFO_LEVEL_3;
+
 typedef struct spool_printer_info_level
 {
 	uint32 level;
 	uint32 info_ptr;
 	SPOOL_PRINTER_INFO_LEVEL_1 *info_1;
 	SPOOL_PRINTER_INFO_LEVEL_2 *info_2;
+	SPOOL_PRINTER_INFO_LEVEL_3 *info_3;
 }
 SPOOL_PRINTER_INFO_LEVEL;
 
@@ -1306,15 +1315,8 @@ typedef struct spool_q_setprinter
 	POLICY_HND handle;
 	uint32 level;
 	SPOOL_PRINTER_INFO_LEVEL info;
+	SEC_DESC_BUF secdesc_ctr;
 	DEVMODE_CTR devmode_ctr;
-
-	/* lkclXXXX jean-francois, see SEC_DESC_BUF code */
-	struct
-	{
-		uint32 size_of_buffer;
-		uint32 data;
-	}
-	security;
 
 	uint32 command;
 

@@ -652,3 +652,38 @@ static struct passwd * uname_string_combinations(char *s,struct passwd * (*fn)(c
   }
   return(NULL);
 }
+
+
+/****************************************************************************
+these wrappers allow appliance mode to work. In appliance mode the username
+takes the form DOMAIN/user
+****************************************************************************/
+struct passwd *smb_getpwnam(char *user, char *domain, BOOL allow_change)
+{
+	struct passwd *pw;
+	fstring userdom;
+
+	pw = Get_Pwnam(user, allow_change);
+	if (pw || !domain || !*domain) return pw;
+
+	slprintf(userdom, sizeof(userdom), "%s/%s", domain, user);
+
+	DEBUG(4,("smb_getpwnam trying userdom %s\n", userdom));
+
+	return Get_Pwnam(userdom, allow_change);
+}
+
+int smb_initgroups(char *user, char *domain, gid_t group)
+{
+	fstring userdom;
+	int ret;
+
+	ret = initgroups(user, group);
+	if (ret==0 || !domain || !*domain) return ret;
+
+	slprintf(userdom, sizeof(userdom), "%s/%s", domain, user);
+
+	DEBUG(4,("smb_initgroups trying userdom %s\n", userdom));
+
+	return initgroups(userdom, group);
+}

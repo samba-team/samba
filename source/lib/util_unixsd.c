@@ -24,6 +24,47 @@
 #include "sids.h"
 
 /****************************************************************************
+ Map unix perms to NT print.
+****************************************************************************/
+
+#define PRINT_ACCESS_R (PRINTER_READ)
+#define PRINT_ACCESS_W (PRINTER_WRITE)
+#define PRINT_ACCESS_X (PRINTER_EXECUTE)
+
+#define PRINT_ACCESS_RWX (PRINTER_ALL_ACCESS)
+
+#define PRINT_ACCESS_NONE (0)
+
+static SEC_ACCESS map_unix_perms_print(int *pacl_type, mode_t perm, int r_mask,
+				 int w_mask, int x_mask, BOOL is_directory)
+{
+	SEC_ACCESS sa;
+	uint32 nt_mask = 0;
+
+	*pacl_type = SEC_ACE_TYPE_ACCESS_ALLOWED;
+
+	if ((perm & (r_mask | w_mask | x_mask)) == (r_mask | w_mask | x_mask))
+	{
+		nt_mask = PRINT_ACCESS_RWX;
+	}
+	else if ((perm & (r_mask | w_mask | x_mask)) == 0)
+	{
+		nt_mask = PRINT_ACCESS_NONE;
+	}
+	else
+	{
+		nt_mask |= (perm & r_mask) ? PRINT_ACCESS_R : 0;
+		if (is_directory)
+			nt_mask |= (perm & w_mask) ? PRINT_ACCESS_W : 0;
+		else
+			nt_mask |= (perm & w_mask) ? PRINT_ACCESS_W : 0;
+		nt_mask |= (perm & x_mask) ? PRINT_ACCESS_X : 0;
+	}
+	make_sec_access(&sa, nt_mask);
+	return sa;
+}
+
+/****************************************************************************
  Map unix perms to NT.
 ****************************************************************************/
 
@@ -134,13 +175,13 @@ size_t convertperms_unix_to_sd(const SMB_STRUCT_STAT * sbuf,
 		 * Create the generic 3 element UNIX acl.
 		 */
 
-		owner_access = map_unix_perms(&owner_acl_type, sbuf->st_mode,
+		owner_access = map_unix_perms_print(&owner_acl_type, sbuf->st_mode,
 					      S_IRUSR, S_IWUSR, S_IXUSR,
 					      is_directory);
-		group_access = map_unix_perms(&grp_acl_type, sbuf->st_mode,
+		group_access = map_unix_perms_print(&grp_acl_type, sbuf->st_mode,
 					      S_IRGRP, S_IWGRP, S_IXGRP,
 					      is_directory);
-		other_access = map_unix_perms(&other_acl_type, sbuf->st_mode,
+		other_access = map_unix_perms_print(&other_acl_type, sbuf->st_mode,
 					      S_IROTH, S_IWOTH, S_IXOTH,
 					      is_directory);
 
@@ -189,14 +230,14 @@ size_t convertperms_unix_to_sd(const SMB_STRUCT_STAT * sbuf,
 			 * being created in the directory.
 			 */
 
-			owner_access = map_unix_perms(&owner_acl_type, mode,
+			owner_access = map_unix_perms_print(&owner_acl_type, mode,
 						      S_IRUSR, S_IWUSR,
 						      S_IXUSR, is_directory);
-			group_access = map_unix_perms(&grp_acl_type,
+			group_access = map_unix_perms_print(&grp_acl_type,
 						      mode, S_IRGRP,
 						      S_IWGRP, S_IXGRP,
 						      is_directory);
-			other_access = map_unix_perms(&other_acl_type,
+			other_access = map_unix_perms_print(&other_acl_type,
 						      mode, S_IROTH,
 						      S_IWOTH, S_IXOTH,
 						      is_directory);
@@ -293,13 +334,35 @@ size_t convertperms_unix_to_sd(const SMB_STRUCT_STAT * sbuf,
  Map NT perms to UNIX.
 ****************************************************************************/
 
-#define FILE_SPECIFIC_READ_BITS (FILE_READ_DATA|FILE_READ_EA|FILE_READ_ATTRIBUTES)
-#define FILE_SPECIFIC_WRITE_BITS (FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_WRITE_EA|FILE_WRITE_ATTRIBUTES)
+#define FILE_SPECIFIC_READ_BITS \
+	(FILE_READ_DATA|FILE_READ_EA|FILE_READ_ATTRIBUTES)
+#define FILE_SPECIFIC_WRITE_BITS \
+	(FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_WRITE_EA|FILE_WRITE_ATTRIBUTES)
 #define FILE_SPECIFIC_EXECUTE_BITS (FILE_EXECUTE)
 
-static mode_t map_nt_perms(SEC_ACCESS sec_access, int type)
+#define PRINT_SPECIFIC_READ_BITS (PRINTER_READ)
+#define PRINT_SPECIFIC_WRITE_BITS (PRINTER_READ)
+#define PRINT_SPECIFIC_EXECUTE_BITS (PRINTER_ALL_ACCESS)
+
+static mode_t map_nt_perms(SEC_ACCESS sec_access, int type, BOOL printing)
 {
+	uint32 write_bits;
+	uint32 read_bits;
+	uint32 execute_bits;
 	mode_t mode = 0;
+
+	if (printing)
+	{
+		write_bits = PRINT_SPECIFIC_WRITE_BITS;	
+		read_bits = PRINT_SPECIFIC_READ_BITS;	
+		execute_bits = PRINT_SPECIFIC_EXECUTE_BITS;	
+	}
+	else
+	{
+		write_bits = FILE_SPECIFIC_WRITE_BITS;	
+		read_bits = FILE_SPECIFIC_READ_BITS;	
+		execute_bits = FILE_SPECIFIC_EXECUTE_BITS;	
+	}
 
 	switch (type)
 	{
@@ -311,17 +374,17 @@ static mode_t map_nt_perms(SEC_ACCESS sec_access, int type)
 				mode |=
 					(sec_access.mask &
 					 (GENERIC_READ_ACCESS |
-					  FILE_SPECIFIC_READ_BITS)) ? S_IRUSR
+					  read_bits)) ? S_IRUSR
 					: 0;
 				mode |=
 					(sec_access.mask &
 					 (GENERIC_WRITE_ACCESS |
-					  FILE_SPECIFIC_WRITE_BITS)) ? S_IWUSR
+					  write_bits)) ? S_IWUSR
 					: 0;
 				mode |=
 					(sec_access.mask &
 					 (GENERIC_EXECUTE_ACCESS |
-					  FILE_SPECIFIC_EXECUTE_BITS)) ?
+					  execute_bits)) ?
 					S_IXUSR : 0;
 			}
 			break;
@@ -333,17 +396,17 @@ static mode_t map_nt_perms(SEC_ACCESS sec_access, int type)
 				mode |=
 					(sec_access.mask &
 					 (GENERIC_READ_ACCESS |
-					  FILE_SPECIFIC_READ_BITS)) ? S_IRGRP
+					  read_bits)) ? S_IRGRP
 					: 0;
 				mode |=
 					(sec_access.mask &
 					 (GENERIC_WRITE_ACCESS |
-					  FILE_SPECIFIC_WRITE_BITS)) ? S_IWGRP
+					  write_bits)) ? S_IWGRP
 					: 0;
 				mode |=
 					(sec_access.mask &
 					 (GENERIC_EXECUTE_ACCESS |
-					  FILE_SPECIFIC_EXECUTE_BITS)) ?
+					  execute_bits)) ?
 					S_IXGRP : 0;
 			}
 			break;
@@ -355,17 +418,17 @@ static mode_t map_nt_perms(SEC_ACCESS sec_access, int type)
 				mode |=
 					(sec_access.mask &
 					 (GENERIC_READ_ACCESS |
-					  FILE_SPECIFIC_READ_BITS)) ? S_IROTH
+					  read_bits)) ? S_IROTH
 					: 0;
 				mode |=
 					(sec_access.mask &
 					 (GENERIC_WRITE_ACCESS |
-					  FILE_SPECIFIC_WRITE_BITS)) ? S_IWOTH
+					  write_bits)) ? S_IWOTH
 					: 0;
 				mode |=
 					(sec_access.mask &
 					 (GENERIC_EXECUTE_ACCESS |
-					  FILE_SPECIFIC_EXECUTE_BITS)) ?
+					  execute_bits)) ?
 					S_IXOTH : 0;
 			}
 			break;
@@ -535,9 +598,9 @@ BOOL convertperms_sd_to_unix(SMB_STRUCT_STAT * psbuf, uid_t * puser,
 			 */
 
 			if (psa->type == SEC_ACE_TYPE_ACCESS_ALLOWED)
-				*pmode |= map_nt_perms(psa->info, S_IRUSR);
+				*pmode |= map_nt_perms(psa->info, S_IRUSR, True);
 			else
-				*pmode &= ~(map_nt_perms(psa->info, S_IRUSR));
+				*pmode &= ~(map_nt_perms(psa->info, S_IRUSR, True));
 
 		}
 		else if (sid_equal(&ace_sid, &file_grp_sid))
@@ -547,9 +610,9 @@ BOOL convertperms_sd_to_unix(SMB_STRUCT_STAT * psbuf, uid_t * puser,
 			 */
 
 			if (psa->type == SEC_ACE_TYPE_ACCESS_ALLOWED)
-				*pmode |= map_nt_perms(psa->info, S_IRGRP);
+				*pmode |= map_nt_perms(psa->info, S_IRGRP, True);
 			else
-				*pmode &= ~(map_nt_perms(psa->info, S_IRGRP));
+				*pmode &= ~(map_nt_perms(psa->info, S_IRGRP, True));
 
 		}
 		else if (sid_equal(&ace_sid, global_sid_everyone))
@@ -559,9 +622,9 @@ BOOL convertperms_sd_to_unix(SMB_STRUCT_STAT * psbuf, uid_t * puser,
 			 */
 
 			if (psa->type == SEC_ACE_TYPE_ACCESS_ALLOWED)
-				*pmode |= map_nt_perms(psa->info, S_IROTH);
+				*pmode |= map_nt_perms(psa->info, S_IROTH, True);
 			else
-				*pmode &= ~(map_nt_perms(psa->info, S_IROTH));
+				*pmode &= ~(map_nt_perms(psa->info, S_IROTH, True));
 
 		}
 		else
