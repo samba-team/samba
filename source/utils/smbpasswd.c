@@ -94,6 +94,7 @@ static void usage(void)
 #endif
 	printf("  -x                   delete user\n");
 	printf("  -j DOMAIN            join domain name\n");
+	printf("  -S DOMAIN            Retrieve the domain SID for DOMAIN\n");
 	printf("  -R ORDER             name resolve order\n");
 
 	exit(1);
@@ -113,7 +114,7 @@ static void process_options(int argc, char **argv, BOOL amroot)
 
 	user_name[0] = '\0';
 
-	while ((ch = getopt(argc, argv, "c:axdehmnj:r:sw:R:D:U:L")) != EOF) {
+	while ((ch = getopt(argc, argv, "c:axdehmnj:r:sw:R:D:U:LS")) != EOF) {
 		switch(ch) {
 		case 'L':
 			local_mode = amroot = True;
@@ -157,6 +158,10 @@ static void process_options(int argc, char **argv, BOOL amroot)
 		case 'r':
 			remote_machine = optarg;
 			break;
+		case 'S': 
+			if (!amroot) goto bad_args;
+			local_flags |= LOCAL_GET_DOM_SID;
+			break;
 		case 's':
 			set_line_buffering(stdin);
 			set_line_buffering(stdout);
@@ -170,7 +175,7 @@ static void process_options(int argc, char **argv, BOOL amroot)
 			fstrcpy(ldap_secret, optarg);
 			break;
 #else
-			printf("-w not available unless configured --with-ldap\n");
+			printf("-w not available unless configured --with-ldapsam\n");
 			goto bad_args;
 #endif			
 		case 'R':
@@ -602,7 +607,7 @@ machine %s in domain %s.\n", global_myname, domain);
 	 */
 	
 	if(remote == NULL || !strcmp(remote, "*")) {
-                struct in_addr *ip_list;
+                struct in_addr *ip_list = NULL;
                 int addr_count;
                 if (!get_dc_list(True /* PDC only*/, domain, &ip_list, &addr_count)) {
 			fprintf(stderr, "Unable to find the domain controller for domain %s.\n", domain);
@@ -636,6 +641,51 @@ machine %s in domain %s.\n", global_myname, domain);
 	}
 	
 	return 0;
+}
+
+static int set_domain_sid_from_dc( char *domain, char *remote )
+{
+	pstring pdc_name;
+	DOM_SID domain_sid;
+	fstring sid_str;
+	
+	pstrcpy(pdc_name, remote ? remote : "");
+
+	if(strequal(pdc_name, global_myname)) {
+		fprintf(stderr, "Cannot fetch domain sid for %s as the domain controller name is our own.\n", domain);
+		return 1;
+	}
+
+	if(remote == NULL || !strcmp(remote, "*")) {
+                struct in_addr *ip_list = NULL;
+                int addr_count;
+                if (!get_dc_list(False , domain, &ip_list, &addr_count)) {
+			fprintf(stderr, "Unable to find the domain controller for domain %s.\n", domain);
+			return 1;
+		}
+		if ((addr_count < 1) || (is_zero_ip(ip_list[0]))) {
+			fprintf(stderr, "Incorrect entries returned when finding the domain controller for domain %s.\n", domain);
+			return 1;
+		}
+
+		if (!lookup_dc_name(global_myname, domain, &ip_list[0], pdc_name)) {
+			fprintf(stderr, "Unable to lookup the name for the domain controller for domain %s.\n", domain);
+			return 1;
+		}
+	}
+
+	if (!fetch_domain_sid( domain, pdc_name, &domain_sid) 
+		|| !secrets_store_domain_sid(domain, &domain_sid))
+	{
+		fprintf(stderr,"Failed to get domain SID for %s.\n",domain);
+		return 1;
+	}
+	
+	sid_to_string(sid_str, &domain_sid);
+	printf("Successfully set domain SID to %s.\n", sid_str);
+	
+	return 0;
+	
 }
 
 /*************************************************************
@@ -785,15 +835,16 @@ static int process_root(void)
 	 * Ensure add/delete user and either remote machine or join domain are
 	 * not both set.
 	 */	
-	if(((local_flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER)) == (LOCAL_ADD_USER|LOCAL_DELETE_USER)) || 
-	   ((local_flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER)) && 
-		((remote_machine != NULL) || joining_domain))) {
+	if ( ((local_flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER)) == (LOCAL_ADD_USER|LOCAL_DELETE_USER)) 
+		|| ( (local_flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER)) 
+		      && ((remote_machine != NULL) || joining_domain) ) ) 
+	{
 		usage();
 	}
 	
 	/* Only load interfaces if we are doing network operations. */
 
-	if (joining_domain || remote_machine) {
+	if ( joining_domain || remote_machine || (local_flags & LOCAL_GET_DOM_SID) ) {
 		load_interfaces();
 	}
 
@@ -823,6 +874,15 @@ static int process_root(void)
 
 			return join_domain(new_domain, remote_machine);
 		}
+	}
+	
+	/* 
+	 * get the domain sid from a PDC and store it in secrets.tdb 
+	 * Used for Samba PDC/BDC installations.
+	 */
+	 
+	if (local_flags & LOCAL_GET_DOM_SID) {
+		return set_domain_sid_from_dc(lp_workgroup(), remote_machine);
 	}
 
 	/*

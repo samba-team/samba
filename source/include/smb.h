@@ -649,13 +649,14 @@ typedef struct sam_passwd
  * Flags for local user manipulation.
  */
 
-#define LOCAL_ADD_USER 0x1
-#define LOCAL_DELETE_USER 0x2
-#define LOCAL_DISABLE_USER 0x4
-#define LOCAL_ENABLE_USER 0x8
-#define LOCAL_TRUST_ACCOUNT 0x10
-#define LOCAL_SET_NO_PASSWORD 0x20
+#define LOCAL_ADD_USER 		0x01
+#define LOCAL_DELETE_USER 	0x02
+#define LOCAL_DISABLE_USER 	0x04
+#define LOCAL_ENABLE_USER 	0x08
+#define LOCAL_TRUST_ACCOUNT 	0x10
+#define LOCAL_SET_NO_PASSWORD 	0x20
 #define LOCAL_SET_LDAP_ADMIN_PW 0x40
+#define LOCAL_GET_DOM_SID	0x80
 
 /* key and data in the connections database - used in smbstatus and smbd */
 struct connections_key {
