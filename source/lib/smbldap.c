@@ -808,7 +808,7 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state, LDAP * ldap_
 }
 
 /**********************************************************************
-Connect to LDAP server (called before every ldap operation)
+ Connect to LDAP server (called before every ldap operation)
 *********************************************************************/
 static int smbldap_open(struct smbldap_state *ldap_state)
 {

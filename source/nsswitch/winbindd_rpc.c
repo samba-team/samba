@@ -707,36 +707,6 @@ done:
 
 #include <ldap.h>
 
-static SIG_ATOMIC_T gotalarm;
-
-/***************************************************************
- Signal function to tell us we timed out.
-****************************************************************/
-
-static void gotalarm_sig(void)
-{
-	gotalarm = 1;
-}
-
-static LDAP *ldap_open_with_timeout(const char *server, int port, unsigned int to)
-{
-	LDAP *ldp = NULL;
-
-	/* Setup timeout */
-	gotalarm = 0;
-	CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
-	alarm(to);
-	/* End setup timeout. */
-
-	ldp = ldap_open(server, port);
-
-	/* Teardown timeout. */
-	CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
-	alarm(0);
-
-	return ldp;
-}
-
 static int get_ldap_seq(const char *server, int port, uint32 *seq)
 {
 	int ret = -1;
@@ -749,11 +719,11 @@ static int get_ldap_seq(const char *server, int port, uint32 *seq)
 	*seq = DOM_SEQUENCE_NONE;
 
 	/*
-	 * 10 second timeout on open. This is needed as the search timeout
+	 * Parameterised (5) second timeout on open. This is needed as the search timeout
 	 * doesn't seem to apply to doing an open as well. JRA.
 	 */
 
-	if ((ldp = ldap_open_with_timeout(server, port, 10)) == NULL)
+	if ((ldp = ldap_open_with_timeout(server, port, lp_ldap_timeout())) == NULL)
 		return -1;
 
 	/* Timeout if no response within 20 seconds. */
