@@ -157,6 +157,42 @@ static char *automount_server(char *user_name)
 	return server_name;
 }
 
+/****************************************************************************
+ Do some standard substitutions in a string.
+****************************************************************************/
+void standard_sub_basic(char *str)
+{
+	char *p, *s;
+	fstring pidstr;
+
+	for (s=str; (p=strchr(s, '%'));s=p) {
+		int l = sizeof(pstring) - (int)(p-str);
+		
+		switch (*(p+1)) {
+		case 'I' : string_sub(p,"%I", client_addr(),l); break;
+		case 'L' : string_sub(p,"%L", local_machine,l); break;
+		case 'M' : string_sub(p,"%M", client_name(),l); break;
+		case 'R' : string_sub(p,"%R", remote_proto,l); break;
+		case 'T' : string_sub(p,"%T", timestring(False),l); break;
+		case 'a' : string_sub(p,"%a", remote_arch,l); break;
+		case 'd' :
+			slprintf(pidstr,sizeof(pidstr), "%d",(int)getpid());
+			string_sub(p,"%d", pidstr,l);
+			break;
+		case 'h' : string_sub(p,"%h", myhostname(),l); break;
+		case 'm' : string_sub(p,"%m", remote_machine,l); break;
+		case 'v' : string_sub(p,"%v", VERSION,l); break;
+		case '$' : p += expand_env_var(p,l); break; /* Expand environment variables */
+		case '\0': 
+			p++; 
+			break; /* don't run off the end of the string */
+			
+		default: p+=2; 
+			break;
+		}
+	}
+}
+
 
 /****************************************************************************
  Do some standard substitutions in a string.
@@ -171,21 +207,7 @@ static void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t
 		int l = sizeof(pstring) - (int)(p-str);
 		
 		switch (*(p+1)) {
-		case 'I' : string_sub(p,"%I", client_addr(),l); break;
-		case 'L' : string_sub(p,"%L", local_machine,l); break;
-		case 'M' : string_sub(p,"%M", client_name(),l); break;
-		case 'R' : string_sub(p,"%R", remote_proto,l); break;
-		case 'T' : string_sub(p,"%T", timestring(False),l); break;
 		case 'U' : string_sub(p,"%U", user,l); break;
-		case 'a' : string_sub(p,"%a", remote_arch,l); break;
-		case 'd' :
-			slprintf(pidstr,sizeof(pidstr), "%d",(int)getpid());
-			string_sub(p,"%d", pidstr,l);
-			break;
-		case 'h' : string_sub(p,"%h", myhostname(),l); break;
-		case 'm' : string_sub(p,"%m", remote_machine,l); break;
-		case 'v' : string_sub(p,"%v", VERSION,l); break;
-		case '$' : p += expand_env_var(p,l); break; /* Expand environment variables */
 		case 'G' :
 			if ((pass = Get_Pwnam(user,False))!=NULL) {
 				string_sub(p,"%G",gidtoname(pass->pw_gid),l);
@@ -234,6 +256,8 @@ static void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t
 			break;
 		}
 	}
+
+	standard_sub_basic(str);
 }
 
 /****************************************************************************
@@ -250,15 +274,6 @@ like standard_sub but by snum
 void standard_sub_snum(int snum, char *str)
 {
 	standard_sub_advanced(snum, "", "", -1, str);
-}
-
-
-/*******************************************************************
- Substitute strings with useful parameters.
-********************************************************************/
-void standard_sub_basic(char *str)
-{
-	standard_sub_advanced(-1, "", "", -1, str);
 }
 
 /*******************************************************************
