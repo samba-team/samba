@@ -400,6 +400,8 @@ char *unix2dos_format_static(const char *str)
 	if (!mapsinited)
 		initmaps();
 
+	if (!str)
+		return NULL;
 	for (p = str, dp = cvtbuf;*p && (dp - cvtbuf < sizeof(cvtbuf) - 1); p++,dp++)
 		*dp = unix2dos[(unsigned char)*p];
 	*dp = 0;
@@ -413,6 +415,8 @@ char *unix2dos_format(char *str)
 	if (!mapsinited)
 		initmaps();
 
+	if (!str)
+		return NULL;
 	for (p = str; *p; p++)
 		*p = unix2dos[(unsigned char)*p];
 	return str;
@@ -430,6 +434,8 @@ char *dos2unix_format_static(const char *str)
 	if (!mapsinited)
 		initmaps();
 
+	if (!str)
+		return NULL;
 	for (p = str, dp = cvtbuf;*p && (dp - cvtbuf < sizeof(cvtbuf) - 1); p++,dp++)
 		*dp = dos2unix[(unsigned char)*p];
 	*dp = 0;
@@ -442,6 +448,9 @@ char *dos2unix_format(char *str)
 
 	if (!mapsinited)
 		initmaps();
+
+	if (!str)
+		return NULL;
 
 	for (p = str; *p; p++)
 		*p = dos2unix[(unsigned char)*p];

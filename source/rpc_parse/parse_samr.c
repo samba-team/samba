@@ -1467,9 +1467,9 @@ NTSTATUS init_sam_dispinfo_1(TALLOC_CTX *ctx, SAM_DISPINFO_1 *sam, uint32 num_en
 		
 		pwd=disp_user_info[i+start_idx].sam;
 		
-		len_sam_name = strlen(pdb_get_username(pwd));
-		len_sam_full = strlen(pdb_get_fullname(pwd));
-		len_sam_desc = strlen(pdb_get_acct_desc(pwd));
+		len_sam_name = strlen(unix_to_dos_static(pdb_get_username(pwd)));
+		len_sam_full = strlen(unix_to_dos_static(pdb_get_fullname(pwd)));
+		len_sam_desc = strlen(unix_to_dos_static(pdb_get_acct_desc(pwd)));
 
 		init_sam_entry1(&sam->sam[i], start_idx + i + 1,
 				len_sam_name, len_sam_full, len_sam_desc,
@@ -1479,9 +1479,9 @@ NTSTATUS init_sam_dispinfo_1(TALLOC_CTX *ctx, SAM_DISPINFO_1 *sam, uint32 num_en
 		ZERO_STRUCTP(&sam->str[i].uni_full_name);
 		ZERO_STRUCTP(&sam->str[i].uni_acct_desc);
 
-		init_unistr2(&sam->str[i].uni_acct_name, pdb_get_username(pwd),  len_sam_name);
-		init_unistr2(&sam->str[i].uni_full_name, pdb_get_fullname(pwd),  len_sam_full);
-		init_unistr2(&sam->str[i].uni_acct_desc, pdb_get_acct_desc(pwd), len_sam_desc);
+		init_unistr2(&sam->str[i].uni_acct_name, unix_to_dos_static(pdb_get_username(pwd)),  len_sam_name);
+		init_unistr2(&sam->str[i].uni_full_name, unix_to_dos_static(pdb_get_fullname(pwd)),  len_sam_full);
+		init_unistr2(&sam->str[i].uni_acct_desc, unix_to_dos_static(pdb_get_acct_desc(pwd)), len_sam_desc);
 	}
 
 	return NT_STATUS_OK;
@@ -1567,8 +1567,8 @@ NTSTATUS init_sam_dispinfo_2(TALLOC_CTX *ctx, SAM_DISPINFO_2 *sam, uint32 num_en
 		DEBUG(11, ("init_sam_dispinfo_2: entry: %d\n",i));
 		pwd=disp_user_info[i+start_idx].sam;
 
-		len_sam_name = strlen(pdb_get_username(pwd));
-		len_sam_desc = strlen(pdb_get_acct_desc(pwd));
+		len_sam_name = strlen(unix_to_dos_static(pdb_get_username(pwd)));
+		len_sam_desc = strlen(unix_to_dos_static(pdb_get_acct_desc(pwd)));
 	  
 		init_sam_entry2(&sam->sam[i], start_idx + i + 1,
 			  len_sam_name, len_sam_desc,
@@ -1577,8 +1577,8 @@ NTSTATUS init_sam_dispinfo_2(TALLOC_CTX *ctx, SAM_DISPINFO_2 *sam, uint32 num_en
 		ZERO_STRUCTP(&sam->str[i].uni_srv_name);
 		ZERO_STRUCTP(&sam->str[i].uni_srv_desc);
 
-		init_unistr2(&sam->str[i].uni_srv_name, pdb_get_username(pwd),  len_sam_name);
-		init_unistr2(&sam->str[i].uni_srv_desc, pdb_get_acct_desc(pwd), len_sam_desc);
+		init_unistr2(&sam->str[i].uni_srv_name, unix_to_dos_static(pdb_get_username(pwd)),  len_sam_name);
+		init_unistr2(&sam->str[i].uni_srv_desc, unix_to_dos_static(pdb_get_acct_desc(pwd)), len_sam_desc);
 	}
 
 	return NT_STATUS_OK;
@@ -1760,11 +1760,12 @@ NTSTATUS init_sam_dispinfo_4(TALLOC_CTX *ctx, SAM_DISPINFO_4 *sam, uint32 num_en
 		DEBUG(11, ("init_sam_dispinfo_2: entry: %d\n",i));
 		pwd=disp_user_info[i+start_idx].sam;
 
-		len_sam_name = strlen(pdb_get_username(pwd));
+		len_sam_name = strlen(unix_to_dos_static(pdb_get_username(pwd)));
 	  
 		init_sam_entry4(&sam->sam[i], start_idx + i + 1, len_sam_name);
 
-		init_string2(&sam->str[i].acct_name, pdb_get_username(pwd), len_sam_name+1, len_sam_name);
+		init_string2(&sam->str[i].acct_name, unix_to_dos_static(pdb_get_username(pwd)),
+				len_sam_name+1, len_sam_name);
 	}
 	
 	return NT_STATUS_OK;
@@ -5846,16 +5847,16 @@ void init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw)
 	const char*		workstations = pdb_get_workstations(pw);
 	const char*		munged_dial = pdb_get_munged_dial(pw);
 
-	len_user_name    = user_name    != NULL ? strlen(user_name   )+1 : 0;
-	len_full_name    = full_name    != NULL ? strlen(full_name   )+1 : 0;
-	len_home_dir     = home_dir     != NULL ? strlen(home_dir    )+1 : 0;
-	len_dir_drive    = dir_drive    != NULL ? strlen(dir_drive   )+1 : 0;
-	len_logon_script = logon_script != NULL ? strlen(logon_script)+1 : 0;
-	len_profile_path = profile_path != NULL ? strlen(profile_path)+1 : 0;
-	len_description  = description  != NULL ? strlen(description )+1 : 0;
-	len_workstations = workstations != NULL ? strlen(workstations)+1 : 0;
+	len_user_name    = user_name    != NULL ? strlen(unix_to_dos_static(user_name))+1 : 0;
+	len_full_name    = full_name    != NULL ? strlen(unix_to_dos_static(full_name))+1 : 0;
+	len_home_dir     = home_dir     != NULL ? strlen(unix_to_dos_static(home_dir))+1 : 0;
+	len_dir_drive    = dir_drive    != NULL ? strlen(unix_to_dos_static(dir_drive))+1 : 0;
+	len_logon_script = logon_script != NULL ? strlen(unix_to_dos_static(logon_script))+1 : 0;
+	len_profile_path = profile_path != NULL ? strlen(unix_to_dos_static(profile_path))+1 : 0;
+	len_description  = description  != NULL ? strlen(unix_to_dos_static(description))+1 : 0;
+	len_workstations = workstations != NULL ? strlen(unix_to_dos_static(workstations))+1 : 0;
 	len_unknown_str  = 0;
-	len_munged_dial  = munged_dial  != NULL ? strlen(munged_dial )+1 : 0;
+	len_munged_dial  = munged_dial  != NULL ? strlen(unix_to_dos_static(munged_dial))+1 : 0;
 
 
 	/* Create NTTIME structs */
@@ -5899,16 +5900,16 @@ void init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw)
 
 	ZERO_STRUCT(usr->padding1);
 
-	init_unistr2(&usr->uni_user_name, user_name, len_user_name);
-	init_unistr2(&usr->uni_full_name, full_name, len_full_name);
-	init_unistr2(&usr->uni_home_dir, home_dir, len_home_dir);
-	init_unistr2(&usr->uni_dir_drive, dir_drive, len_dir_drive);
-	init_unistr2(&usr->uni_logon_script, logon_script, len_logon_script);
-	init_unistr2(&usr->uni_profile_path, profile_path, len_profile_path);
-	init_unistr2(&usr->uni_acct_desc, description, len_description);
-	init_unistr2(&usr->uni_workstations, workstations, len_workstations);
+	init_unistr2(&usr->uni_user_name, unix_to_dos_static(user_name), len_user_name);
+	init_unistr2(&usr->uni_full_name, unix_to_dos_static(full_name), len_full_name);
+	init_unistr2(&usr->uni_home_dir, unix_to_dos_static(home_dir), len_home_dir);
+	init_unistr2(&usr->uni_dir_drive, unix_to_dos_static(dir_drive), len_dir_drive);
+	init_unistr2(&usr->uni_logon_script, unix_to_dos_static(logon_script), len_logon_script);
+	init_unistr2(&usr->uni_profile_path, unix_to_dos_static(profile_path), len_profile_path);
+	init_unistr2(&usr->uni_acct_desc, unix_to_dos_static(description), len_description);
+	init_unistr2(&usr->uni_workstations, unix_to_dos_static(workstations), len_workstations);
 	init_unistr2(&usr->uni_unknown_str, NULL, len_unknown_str);
-	init_unistr2(&usr->uni_munged_dial, munged_dial, len_munged_dial);
+	init_unistr2(&usr->uni_munged_dial, unix_to_dos_static(munged_dial), len_munged_dial);
 
 	usr->unknown_6 = pdb_get_unknown6(pw);
 	usr->padding4 = 0;
@@ -6042,9 +6043,9 @@ void init_sam_user_info20A(SAM_USER_INFO_20 *usr, SAM_ACCOUNT *pw)
 	int 		len_munged_dial;
 	const char*		munged_dial = pdb_get_munged_dial(pw);
 
-	len_munged_dial  = munged_dial  != NULL ? strlen(munged_dial )+1 : 0;
+	len_munged_dial  = munged_dial  != NULL ? strlen(unix_to_dos_static(munged_dial))+1 : 0;
 	init_uni_hdr(&usr->hdr_munged_dial, len_munged_dial);
-	init_unistr2(&usr->uni_munged_dial, munged_dial, len_munged_dial);
+	init_unistr2(&usr->uni_munged_dial, unix_to_dos_static(munged_dial), len_munged_dial);
 
 }
 
