@@ -242,27 +242,29 @@ NTSTATUS pvfs_qfileinfo(struct ntvfs_module_context *ntvfs,
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_file *f;
+	struct pvfs_file_handle *h;
 	NTSTATUS status;
 
 	f = pvfs_find_fd(pvfs, req, info->generic.in.fnum);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
+	h = f->handle;
 
 	/* update the file information */
-	status = pvfs_resolve_name_fd(pvfs, f->fd, f->name);
+	status = pvfs_resolve_name_fd(pvfs, h->fd, h->name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
-	status = pvfs_map_fileinfo(pvfs, req, f->name, info, f->fd);
+	status = pvfs_map_fileinfo(pvfs, req, h->name, info, h->fd);
 
 	/* a qfileinfo can fill in a bit more info than a qpathinfo -
 	   now modify the levels that need to be fixed up */
 	switch (info->generic.level) {
 	case RAW_FILEINFO_STANDARD_INFO:
 	case RAW_FILEINFO_STANDARD_INFORMATION:
-		if (f->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
+		if (h->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
 			info->standard_info.out.delete_pending = 1;
 			info->standard_info.out.nlink--;
 		}
@@ -270,22 +272,22 @@ NTSTATUS pvfs_qfileinfo(struct ntvfs_module_context *ntvfs,
 
 	case RAW_FILEINFO_ALL_INFO:
 	case RAW_FILEINFO_ALL_INFORMATION:
-		if (f->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
+		if (h->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
 			info->all_info.out.delete_pending = 1;
 			info->all_info.out.nlink--;
 		}
 		break;
 
 	case RAW_FILEINFO_POSITION_INFORMATION:
-		info->position_information.out.position = f->position;
+		info->position_information.out.position = h->position;
 		break;
 
 	case RAW_FILEINFO_ACCESS_INFORMATION:
-		info->access_information.out.access_flags = f->access_mask;
+		info->access_information.out.access_flags = h->access_mask;
 		break;
 
 	case RAW_FILEINFO_MODE_INFORMATION:
-		info->mode_information.out.mode = f->mode;
+		info->mode_information.out.mode = h->mode;
 		break;
 
 	default:

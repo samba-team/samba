@@ -41,7 +41,7 @@ NTSTATUS pvfs_check_lock(struct pvfs_state *pvfs,
 	}
 
 	return brl_locktest(pvfs->brl_context,
-			    &f->locking_key,
+			    &f->handle->locking_key,
 			    f->fnum,
 			    smbpid,
 			    offset, count, rw);
@@ -73,7 +73,7 @@ static void pvfs_lock_async_failed(struct pvfs_state *pvfs,
 	/* undo the locks we just did */
 	for (i=i-1;i>=0;i--) {
 		brl_unlock(pvfs->brl_context,
-			   &f->locking_key,
+			   &f->handle->locking_key,
 			   locks[i].pid,
 			   f->fnum,
 			   locks[i].offset,
@@ -118,7 +118,7 @@ static void pvfs_pending_lock_continue(void *private, enum pvfs_wait_notice reas
 	DLIST_REMOVE(f->pending_list, pending);
 
 	status = brl_lock(pvfs->brl_context,
-			  &f->locking_key,
+			  &f->handle->locking_key,
 			  req->smbpid,
 			  f->fnum,
 			  locks[pending->pending_lock].offset,
@@ -133,7 +133,8 @@ static void pvfs_pending_lock_continue(void *private, enum pvfs_wait_notice reas
 	   don't need the pending lock any more */
 	if (NT_STATUS_IS_OK(status) || timed_out) {
 		NTSTATUS status2;
-		status2 = brl_remove_pending(pvfs->brl_context, &f->locking_key, pending);
+		status2 = brl_remove_pending(pvfs->brl_context, 
+					     &f->handle->locking_key, pending);
 		if (!NT_STATUS_IS_OK(status2)) {
 			DEBUG(0,("pvfs_lock: failed to remove pending lock - %s\n", nt_errstr(status2)));
 		}
@@ -170,7 +171,7 @@ static void pvfs_pending_lock_continue(void *private, enum pvfs_wait_notice reas
 		}
 
 		status = brl_lock(pvfs->brl_context,
-				  &f->locking_key,
+				  &f->handle->locking_key,
 				  req->smbpid,
 				  f->fnum,
 				  locks[i].offset,
@@ -214,7 +215,7 @@ void pvfs_lock_close(struct pvfs_state *pvfs, struct pvfs_file *f)
 	if (f->lock_count || f->pending_list) {
 		DEBUG(5,("pvfs_lock: removing %.0f locks on close\n", 
 			 (double)f->lock_count));
-		brl_close(f->pvfs->brl_context, &f->locking_key, f->fnum);
+		brl_close(f->pvfs->brl_context, &f->handle->locking_key, f->fnum);
 		f->lock_count = 0;
 	}
 
@@ -289,7 +290,7 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (f->name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
+	if (f->handle->name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
@@ -337,7 +338,7 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 
 	for (i=0;i<lck->lockx.in.ulock_cnt;i++) {
 		status = brl_unlock(pvfs->brl_context,
-				    &f->locking_key,
+				    &f->handle->locking_key,
 				    locks[i].pid,
 				    f->fnum,
 				    locks[i].offset,
@@ -356,7 +357,7 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 		}
 
 		status = brl_lock(pvfs->brl_context,
-				  &f->locking_key,
+				  &f->handle->locking_key,
 				  locks[i].pid,
 				  f->fnum,
 				  locks[i].offset,
@@ -379,7 +380,7 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 			/* undo the locks we just did */
 			for (i=i-1;i>=0;i--) {
 				brl_unlock(pvfs->brl_context,
-					   &f->locking_key,
+					   &f->handle->locking_key,
 					   locks[i].pid,
 					   f->fnum,
 					   locks[i].offset,

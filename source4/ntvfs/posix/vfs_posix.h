@@ -84,33 +84,20 @@ struct pvfs_filename {
 };
 
 
-/* open file state */
-struct pvfs_file {
-	struct pvfs_file *next, *prev;
+/* open file handle state - encapsulates the posix fd
+
+   Note that this is separated from the pvfs_file structure in order
+   to cope with the openx DENY_DOS semantics where a 2nd DENY_DOS open
+   on the same connection gets the same low level filesystem handle,
+   rather than a new handle
+*/
+struct pvfs_file_handle {
 	int fd;
-	uint16_t fnum;
+
 	struct pvfs_filename *name;
-
-	/* we need to remember the session it was opened on,
-	   as it is illegal to operate on someone elses fnum */
-	struct smbsrv_session *session;
-
-	/* we need to remember the client pid that 
-	   opened the file so SMBexit works */
-	uint16_t smbpid;
 
 	/* a unique file key to be used for file locking */
 	DATA_BLOB locking_key;
-
-	/* we need this hook back to our parent for lock destruction */
-	struct pvfs_state *pvfs;
-
-	/* a list of pending locks - used for locking cancel operations */
-	struct pvfs_pending_lock *pending_list;
-
-	/* a count of active locks - used to avoid calling brl_close on
-	   file close */
-	uint64_t lock_count;
 
 	uint32_t create_options;
 	uint32_t share_access;
@@ -124,6 +111,33 @@ struct pvfs_file {
 	uint64_t position;
 
 	BOOL have_opendb_entry;
+
+	/* we need this hook back to our parent for lock destruction */
+	struct pvfs_state *pvfs;
+};
+
+/* open file state */
+struct pvfs_file {
+	struct pvfs_file *next, *prev;
+	struct pvfs_file_handle *handle;
+	uint16_t fnum;
+
+	struct pvfs_state *pvfs;
+
+	/* we need to remember the session it was opened on,
+	   as it is illegal to operate on someone elses fnum */
+	struct smbsrv_session *session;
+
+	/* we need to remember the client pid that 
+	   opened the file so SMBexit works */
+	uint16_t smbpid;
+
+	/* a list of pending locks - used for locking cancel operations */
+	struct pvfs_pending_lock *pending_list;
+
+	/* a count of active locks - used to avoid calling brl_close on
+	   file close */
+	uint64_t lock_count;
 };
 
 

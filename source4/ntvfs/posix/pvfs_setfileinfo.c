@@ -27,6 +27,47 @@
 
 
 /*
+  rename_information level
+*/
+static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs, 
+					struct smbsrv_request *req, 
+					struct pvfs_filename *name,
+					struct smb_rename_information *r)
+{
+#if 0
+	NTSTATUS status;
+	struct pvfs_filename *name2;
+	char *base_dir, *p;
+
+	/* renames are only allowed within a directory */
+	if (strchr_m(r->new_name, '\\')) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	if (name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
+		/* don't allow this for now */
+		return NT_STATUS_FILE_IS_A_DIRECTORY;
+	}
+
+	/* work out the base directory that the source file is in */
+	base_dir = talloc_strdup(name, name->full_name);
+	p = strrchr(base_dir, '/');
+	*p = 0;
+
+	/* resolve the new name */
+	status = pvfs_resolve_partial(pvfs, req, base_dir, r->new_name, &name2);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (name2->exists && !r->overwrite) {
+		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
+#endif
+	return NT_STATUS_UNSUCCESSFUL;
+}
+
+/*
   add a single DOS EA
 */
 static NTSTATUS pvfs_setfileinfo_ea_set(struct pvfs_state *pvfs, 
@@ -90,6 +131,7 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct utimbuf unix_times;
 	struct pvfs_file *f;
+	struct pvfs_file_handle *h;
 	uint32_t create_options;
 	struct pvfs_filename newstats;
 	NTSTATUS status;
@@ -99,8 +141,10 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
+	h = f->handle;
+
 	/* update the file information */
-	status = pvfs_resolve_name_fd(pvfs, f->fd, f->name);
+	status = pvfs_resolve_name_fd(pvfs, h->fd, h->name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -108,7 +152,7 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 	/* we take a copy of the current file stats, then update
 	   newstats in each of the elements below. At the end we
 	   compare, and make any changes needed */
-	newstats = *f->name;
+	newstats = *h->name;
 
 	switch (info->generic.level) {
 	case RAW_SFILEINFO_SETATTR:
@@ -134,7 +178,8 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
   		break;
 
 	case RAW_SFILEINFO_EA_SET:
-		return pvfs_setfileinfo_ea_set(pvfs, f->name, f->fd, &info->ea_set.in.ea);
+		return pvfs_setfileinfo_ea_set(pvfs, h->name, h->fd, 
+					       &info->ea_set.in.ea);
 
 	case RAW_SFILEINFO_BASIC_INFO:
 	case RAW_SFILEINFO_BASIC_INFORMATION:
@@ -157,10 +202,10 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 
 	case RAW_SFILEINFO_DISPOSITION_INFO:
 	case RAW_SFILEINFO_DISPOSITION_INFORMATION:
-		if (!(f->access_mask & STD_RIGHT_DELETE_ACCESS)) {
+		if (!(h->access_mask & STD_RIGHT_DELETE_ACCESS)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
-		create_options = f->create_options;
+		create_options = h->create_options;
 		if (info->disposition_info.in.delete_on_close) {
 			create_options |= NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
 		} else {
@@ -182,7 +227,7 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 		break;
 
 	case RAW_SFILEINFO_POSITION_INFORMATION:
-		f->position = info->position_information.in.position;
+		h->position = info->position_information.in.position;
 		break;
 
 	case RAW_SFILEINFO_MODE_INFORMATION:
@@ -193,23 +238,27 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 		    info->mode_information.in.mode != 6) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		f->mode = info->mode_information.in.mode;
+		h->mode = info->mode_information.in.mode;
 		break;
+
+	case RAW_SFILEINFO_RENAME_INFORMATION:
+		return pvfs_setfileinfo_rename(pvfs, req, h->name, 
+					       &info->rename_information.in);
 
 	default:
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
 	/* possibly change the file size */
-	if (newstats.st.st_size != f->name->st.st_size) {
+	if (newstats.st.st_size != h->name->st.st_size) {
 		int ret;
-		if (f->name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
+		if (h->name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
 			return NT_STATUS_FILE_IS_A_DIRECTORY;
 		}
-		if (f->access_mask & SA_RIGHT_FILE_WRITE_APPEND) {
-			ret = ftruncate(f->fd, newstats.st.st_size);
+		if (h->access_mask & SA_RIGHT_FILE_WRITE_APPEND) {
+			ret = ftruncate(h->fd, newstats.st.st_size);
 		} else {
-			ret = truncate(f->name->full_name, newstats.st.st_size);
+			ret = truncate(h->name->full_name, newstats.st.st_size);
 		}
 		if (ret == -1) {
 			return pvfs_map_errno(pvfs, errno);
@@ -218,33 +267,33 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 
 	/* possibly change the file timestamps */
 	ZERO_STRUCT(unix_times);
-	if (newstats.dos.access_time != f->name->dos.access_time) {
+	if (newstats.dos.access_time != h->name->dos.access_time) {
 		unix_times.actime = nt_time_to_unix(newstats.dos.access_time);
 	}
-	if (newstats.dos.write_time != f->name->dos.write_time) {
+	if (newstats.dos.write_time != h->name->dos.write_time) {
 		unix_times.modtime = nt_time_to_unix(newstats.dos.write_time);
 	}
 	if (unix_times.actime != 0 || unix_times.modtime != 0) {
-		if (utime(f->name->full_name, &unix_times) == -1) {
+		if (utime(h->name->full_name, &unix_times) == -1) {
 			return pvfs_map_errno(pvfs, errno);
 		}
 	}
 
 	/* possibly change the attribute */
-	if (newstats.dos.attrib != f->name->dos.attrib) {
+	if (newstats.dos.attrib != h->name->dos.attrib) {
 		mode_t mode = pvfs_fileperms(pvfs, newstats.dos.attrib);
-		if (f->name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
+		if (h->name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
 			/* ignore on directories for now */
 			return NT_STATUS_OK;
 		}
-		if (fchmod(f->fd, mode) == -1) {
+		if (fchmod(h->fd, mode) == -1) {
 			return pvfs_map_errno(pvfs, errno);
 		}
 	}
 
-	*f->name = newstats;
+	*h->name = newstats;
 
-	return pvfs_dosattrib_save(pvfs, f->name, f->fd);
+	return pvfs_dosattrib_save(pvfs, h->name, h->fd);
 }
 
 
@@ -348,6 +397,10 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		return NT_STATUS_OK;
+
+	case RAW_SFILEINFO_RENAME_INFORMATION:
+		return pvfs_setfileinfo_rename(pvfs, req, name, 
+					       &info->rename_information.in);
 
 	case RAW_SFILEINFO_DISPOSITION_INFO:
 	case RAW_SFILEINFO_DISPOSITION_INFORMATION:

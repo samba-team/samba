@@ -44,11 +44,11 @@ NTSTATUS pvfs_write(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (f->name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
+	if (f->handle->name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
-	if (!(f->access_mask & SA_RIGHT_FILE_WRITE_APPEND)) {
+	if (!(f->handle->access_mask & SA_RIGHT_FILE_WRITE_APPEND)) {
 		return NT_STATUS_ACCESS_VIOLATION;
 	}
 
@@ -60,7 +60,7 @@ NTSTATUS pvfs_write(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 	
-	ret = pwrite(f->fd, 
+	ret = pwrite(f->handle->fd, 
 		     wr->writex.in.data, 
 		     wr->writex.in.count,
 		     wr->writex.in.offset);
@@ -71,7 +71,7 @@ NTSTATUS pvfs_write(struct ntvfs_module_context *ntvfs,
 		return map_nt_error_from_unix(errno);
 	}
 
-	f->seek_offset = wr->writex.in.offset + ret;
+	f->handle->seek_offset = wr->writex.in.offset + ret;
 	
 	wr->writex.out.nwritten = ret;
 	wr->writex.out.remaining = 0; /* should fill this in? */
