@@ -532,8 +532,12 @@ get_creds(krb5_context context, krb5_ccache *cache)
     ret = krb5_cc_initialize(context, *cache, client);
     if(ret) krb5_err(context, 1, ret, "krb5_cc_initialize");
 
+    krb5_free_principal(context, client);
+
     ret = krb5_cc_store_cred(context, *cache, &creds);
     if(ret) krb5_err(context, 1, ret, "krb5_cc_store_cred");
+
+    krb5_free_creds_contents(context, &creds);
 }
 
 enum hprop_source {
@@ -676,6 +680,7 @@ propagate_database (krb5_context context, int type,
             krb5_realm my_realm;
             krb5_get_default_realm(context,&my_realm);
 
+	    free (*krb5_princ_realm(context, server));
             krb5_princ_set_realm(context,server,&my_realm);
         }
     
@@ -694,12 +699,14 @@ propagate_database (krb5_context context, int type,
 			    NULL,
 			    NULL);
 
+	krb5_free_principal(context, server);
+
 	if(ret) {
 	    krb5_warn(context, ret, "krb5_sendauth");
 	    close(fd);
 	    continue;
 	}
-
+	
 	pd.context      = context;
 	pd.auth_context = auth_context;
 	pd.sock         = fd;
@@ -728,8 +735,8 @@ main(int argc, char **argv)
 {
     krb5_error_code ret;
     krb5_context context;
-    krb5_ccache ccache;
-    HDB *db;
+    krb5_ccache ccache = NULL;
+    HDB *db = NULL;
     int optind = 0;
 
     int type = 0;
@@ -849,5 +856,13 @@ main(int argc, char **argv)
     else
 	propagate_database (context, type, database, 
 			    db, ccache, optind, argc, argv);
+
+    if(ccache != NULL)
+	krb5_cc_destroy(context, ccache);
+	
+    if(db != NULL)
+	(*db->destroy)(context, db);
+
+    krb5_free_context(context);
     return 0;
 }
