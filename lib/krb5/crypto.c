@@ -1217,7 +1217,7 @@ struct checksum_type checksum_des_mac = {
     0,
     0,
     0,
-    DES_MAC_checksum,
+    DES_MAC_checksum
 };
 struct checksum_type checksum_des_mac_k = {
     CKSUMTYPE_DES_MAC_K,
@@ -1225,7 +1225,7 @@ struct checksum_type checksum_des_mac_k = {
     0,
     0,
     0,
-    DES_MAC_K_checksum,
+    DES_MAC_K_checksum
 };
 struct checksum_type checksum_rsa_md4_des_k = {
     CKSUMTYPE_RSA_MD4_DES_K, 
@@ -1233,8 +1233,8 @@ struct checksum_type checksum_rsa_md4_des_k = {
     0, 
     0, 
     0, 
-    RSA_MD4_DES_K_checksum, 
-    RSA_MD4_DES_K_verify,
+    RSA_MD4_DES_K_checksum,
+    RSA_MD4_DES_K_verify
 };
 #endif
 struct checksum_type checksum_rsa_md5 = {
@@ -1253,7 +1253,7 @@ struct checksum_type checksum_rsa_md5_des = {
     24,
     F_KEYED | F_CPROOF | F_VARIANT,
     RSA_MD5_DES_checksum,
-    RSA_MD5_DES_verify,
+    RSA_MD5_DES_verify
 };
 struct checksum_type checksum_rsa_md5_des3 = {
     CKSUMTYPE_RSA_MD5_DES3,
@@ -1262,7 +1262,7 @@ struct checksum_type checksum_rsa_md5_des3 = {
     24,
     F_KEYED | F_CPROOF | F_VARIANT,
     RSA_MD5_DES3_checksum,
-    RSA_MD5_DES3_verify,
+    RSA_MD5_DES3_verify
 };
 struct checksum_type checksum_sha1 = {
     CKSUMTYPE_SHA1,
@@ -1751,6 +1751,7 @@ usage2arcfour (int usage)
     case KRB5_KU_AP_REQ_ENC_PART :
 	return 11;
     case KRB5_KU_KRB_PRIV :
+	return 0;
     case KRB5_KU_KRB_CRED :
     case KRB5_KU_KRB_SAFE_CKSUM :
     case KRB5_KU_OTHER_ENCRYPTED :
@@ -1761,7 +1762,7 @@ usage2arcfour (int usage)
     case KRB5_KU_AUTH_DATA_TICKET_EXTENSION :
     case KRB5_KU_USAGE_SEAL :
     case KRB5_KU_USAGE_SIGN :
-    case KRB5_KU_USAGE_MIC :
+    case KRB5_KU_USAGE_SEQ :
     default :
 	abort ();
     }
@@ -1919,7 +1920,7 @@ static struct encryption_type etypes[] = {
 	NULL,
 	F_PSEUDO,
 	DES3_CBC_encrypt,
-    },
+    }
 };
 
 static unsigned num_etypes = sizeof(etypes) / sizeof(etypes[0]);
