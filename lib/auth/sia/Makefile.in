@@ -21,7 +21,10 @@ prefix = @prefix@
 exec_prefix = $(prefix)
 libdir = $(exec_prefix)/lib
 
-PICFLAGS = @PICFLAGS@
+PICFLAGS = @REAL_PICFLAGS@
+SHARED = @REAL_SHARED@
+SHLIBEXT = @REAL_SHLIBEXT@
+LD_FLAGS = @REAL_LD_FLAGS@
  
 LIB = @SIA_LIB@
 
@@ -71,4 +74,5 @@ dist: $(DISTFILES)
 $(OBJECTS): ../../../config.h
 
 $(LIB): $(OBJECTS)
-	ld -shared -expect_unresolved \* -o $(LIB) $(OBJECTS)  ../../kafs/libkafs.a ../../krb/libkrb.a ../../des/libdes.a
+	$(CC) $(CFLAGS) $(PICFLAGS) $(SHARED) -o $@ $(OBJECTS) $(LD_FLAGS) -L../../kafs -L../../krb -L../../des -L../../roken -lkafs -lkrb -ldes -lroken
+#	ld -shared -expect_unresolved \* -o $(LIB) $(OBJECTS)  ../../kafs/libkafs.a ../../krb/libkrb.a ../../des/libdes.a
