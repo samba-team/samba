@@ -153,17 +153,30 @@ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 	struct dcesrv_ep_description ep_description;
 	struct dcesrv_endpoint *ep;
 	struct dcesrv_if_list *ifl;
-	BOOL tcp;
+	struct dcerpc_binding binding;
 	BOOL add_ep = False;
+	NTSTATUS status;
+	
+	status = dcerpc_parse_binding(dce_ctx, ep_name, &binding);
 
-	tcp = (strncasecmp(ep_name, "TCP-", 4) == 0);
+	if (NT_STATUS_IS_ERR(status)) {
+		DEBUG(0, ("Trouble parsing binding string '%s'\n", ep_name));
+		return status;
+	}
 
-	if (tcp) {
+	if (binding.transport == NCACN_IP_TCP) {
 		ep_description.type = ENDPOINT_TCP;
-		ep_description.info.tcp_port = atoi(ep_name+4);
-	} else {
+		ep_description.info.tcp_port = 0;
+
+		if (binding.options && binding.options[0]) {
+			ep_description.info.tcp_port = atoi(binding.options[0]);
+		}
+	} else if (binding.transport == NCACN_NP) {
 		ep_description.type = ENDPOINT_SMB;
-		ep_description.info.smb_pipe = ep_name;
+		ep_description.info.smb_pipe = binding.options[0];
+	} else {
+		DEBUG(0, ("Unknown transport type '%d'\n", binding.transport));
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* check if this endpoint exists
@@ -174,12 +187,16 @@ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 		ZERO_STRUCTP(ep);
-		if (tcp) {
+		if (binding.transport == NCACN_IP_TCP) {
 			ep->ep_description.type = ENDPOINT_TCP;
-			ep->ep_description.info.tcp_port = atoi(ep_name+4);
+			ep->ep_description.info.tcp_port = 0;
+
+			if (binding.options && binding.options[0]) {
+				ep->ep_description.info.tcp_port = atoi(binding.options[0]);
+			}
 		} else {
 			ep->ep_description.type = ENDPOINT_SMB;
-			ep->ep_description.info.smb_pipe = smb_xstrdup(ep_name);
+			ep->ep_description.info.smb_pipe = binding.options[0];
 		}
 		add_ep = True;
 	}
@@ -508,6 +525,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	pkt.u.bind_ack.max_recv_frag = 0x2000;
 	pkt.u.bind_ack.assoc_group_id = call->pkt.u.bind.assoc_group_id;
 	if (call->conn->iface && call->conn->iface->ndr) {
+		/* FIXME: Use pipe name as specified by endpoint instead of interface name */
 		pkt.u.bind_ack.secondary_address = talloc_asprintf(call, "\\PIPE\\%s", 
 								   call->conn->iface->ndr->name);
 	} else {

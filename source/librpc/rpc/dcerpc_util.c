@@ -4,6 +4,7 @@
    dcerpc utility functions
 
    Copyright (C) Andrew Tridgell 2003
+   Copyright (C) Jelmer Vernooij 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -128,7 +129,6 @@ NTSTATUS dcerpc_epm_map_tcp_port(const char *server,
 
 	return NT_STATUS_OK;
 }
-
 
 /*
   find the pipe name for a local IDL interface
@@ -425,24 +425,39 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 	BOOL retry;
 	struct smbcli_state *cli;
 	const char *pipe_name;
+	TALLOC_CTX *mem_ctx = talloc_init("dcerpc_pipe_connect_ncacn_np");
 	
 	if (!binding->options || !binding->options[0] || !strlen(binding->options[0])) {
 		const struct dcerpc_interface_table *table = idl_iface_by_uuid(pipe_uuid);
+		struct dcerpc_binding default_binding;
+		int i;
+
 		if (!table) {
 			DEBUG(0,("Unknown interface endpoint '%s'\n", pipe_uuid));
+			talloc_destroy(mem_ctx);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		/* only try the first endpoint for now */
-		pipe_name = table->endpoints->names[0];
+
+		/* Find one of the default pipes for this interface */
+		for (i = 0; i < table->endpoints->count; i++) {
+			status = dcerpc_parse_binding(mem_ctx, table->endpoints->names[i], &default_binding);
+
+			if (NT_STATUS_IS_OK(status) && default_binding.transport == ENDPOINT_SMB) {
+				pipe_name = default_binding.options[0];	
+				break;
+				
+			}
+		}
 	} else {
 		pipe_name = binding->options[0];
 	}
 
-	if (strncasecmp(pipe_name, "\\pipe\\", 6) == 0) {
-		pipe_name += 6;
+	if (!strncasecmp(pipe_name, "/pipe/", 6)) {
+		pipe_name+=6;
 	}
-	if (strncasecmp(pipe_name, "/pipe/", 6) == 0) {
-		pipe_name += 6;
+	
+	if (strncasecmp(pipe_name, "\\pipe\\", 6)) {
+		pipe_name = talloc_asprintf(mem_ctx, "\\pipe\\%s", pipe_name);
 	}
 	    
 	if (!username || !username[0]) {
@@ -459,6 +474,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to connect to %s - %s\n", binding->host, nt_errstr(status)));
+		talloc_destroy(mem_ctx);
 		return status;
 	}
 
@@ -467,8 +483,11 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 		DEBUG(0,("Failed to open pipe %s - %s\n", pipe_name, nt_errstr(status)));
 		smbcli_tdis(cli);
 		smbcli_shutdown(cli);
-                return status;
-        }
+		talloc_destroy(mem_ctx);
+        return status;
+    }	
+
+	talloc_destroy(mem_ctx);
 	
 	/* this ensures that the reference count is decremented so
 	   a pipe close will really close the link */

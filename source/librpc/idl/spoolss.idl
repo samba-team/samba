@@ -6,7 +6,7 @@
 
 [ uuid(12345678-1234-abcd-ef00-0123456789ab),
   version(1.0),
-  endpoints(spoolss),
+  endpoint("ncacn_np:[\\pipe\\spoolss]"),
   pointer_default(unique),
   helpstring("Spooler SubSystem")
 ] interface spoolss

@@ -372,14 +372,8 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe **p,
 {
 	struct smb_private *smb;
         NTSTATUS status;
-	char *name;
 	union smb_open io;
 
-	name = talloc_asprintf(tree, "\\%s", pipe_name);
-	if (!name) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	
 	io.ntcreatex.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.root_fid = 0;
@@ -398,10 +392,9 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe **p,
 	io.ntcreatex.in.create_options = 0;
 	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_IMPERSONATION;
 	io.ntcreatex.in.security_flags = 0;
-	io.ntcreatex.in.fname = name;
+	io.ntcreatex.in.fname = pipe_name;
 
-	status = smb_raw_open(tree, name, &io);
-	talloc_free(name);
+	status = smb_raw_open(tree, pipe_name, &io);
 
 	if (!NT_STATUS_IS_OK(status)) {
                 return status;

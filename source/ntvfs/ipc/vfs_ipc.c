@@ -227,9 +227,6 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_TOO_MANY_OPENED_FILES;
 	}
 
-	while (p->pipe_name[0] == '\\') {
-		p->pipe_name++;
-	}
 	p->ipc_state = 0x5ff;
 
 	/*
@@ -309,8 +306,6 @@ static NTSTATUS ipc_open_openx(struct ntvfs_module_context *ntvfs,
 	if (strncasecmp(fname, "PIPE\\", 5) != 0) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
-
-	fname += 4;
 
 	status = ipc_open_generic(ntvfs, req, fname, &p);
 	if (!NT_STATUS_IS_OK(status)) {
