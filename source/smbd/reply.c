@@ -36,6 +36,7 @@ extern char magic_char;
 extern connection_struct Connections[];
 extern files_struct Files[];
 extern BOOL case_sensitive;
+extern BOOL case_preserve;
 extern pstring sesssetup_user;
 extern int Client;
 
@@ -528,7 +529,7 @@ int reply_chkpth(char *inbuf,char *outbuf)
   cnum = SVAL(inbuf,smb_tid);
   
   strcpy(name,smb_buf(inbuf) + 1);
-  unix_convert(name,cnum);
+  unix_convert(name,cnum,0);
 
   mode = SVAL(inbuf,smb_vwv0);
 
@@ -563,7 +564,7 @@ int reply_getatr(char *inbuf,char *outbuf)
   cnum = SVAL(inbuf,smb_tid);
 
   strcpy(fname,smb_buf(inbuf) + 1);
-  unix_convert(fname,cnum);
+  unix_convert(fname,cnum,0);
 
   /* dos smetimes asks for a stat of "" - it returns a "hidden directory"
      under WfWg - weird! */
@@ -629,7 +630,7 @@ int reply_setatr(char *inbuf,char *outbuf)
   cnum = SVAL(inbuf,smb_tid);
   
   strcpy(fname,smb_buf(inbuf) + 1);
-  unix_convert(fname,cnum);
+  unix_convert(fname,cnum,0);
 
   mode = SVAL(inbuf,smb_vwv0);
   mtime = make_unix_date3(inbuf+smb_vwv1);
@@ -732,7 +733,7 @@ int reply_search(char *inbuf,char *outbuf)
 
       strcpy(directory,smb_buf(inbuf)+1);
       strcpy(dir2,smb_buf(inbuf)+1);
-      unix_convert(directory,cnum);
+      unix_convert(directory,cnum,0);
       unix_format(dir2);
 
       if (!check_name(directory,cnum))
@@ -966,7 +967,7 @@ int reply_open(char *inbuf,char *outbuf)
   share_mode = SVAL(inbuf,smb_vwv0);
 
   strcpy(fname,smb_buf(inbuf)+1);
-  unix_convert(fname,cnum);
+  unix_convert(fname,cnum,0);
     
   fnum = find_free_file();
   if (fnum < 0)
@@ -1042,7 +1043,7 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   /* XXXX we need to handle passed times, sattr and flags */
 
   strcpy(fname,smb_buf(inbuf));
-  unix_convert(fname,cnum);
+  unix_convert(fname,cnum,0);
     
   /* now add create and trunc bits */
   if (smb_ofun & 0x10)
@@ -1145,7 +1146,7 @@ int reply_mknew(char *inbuf,char *outbuf)
 
   createmode = SVAL(inbuf,smb_vwv0);
   strcpy(fname,smb_buf(inbuf)+1);
-  unix_convert(fname,cnum);
+  unix_convert(fname,cnum,0);
 
   if (createmode & aVOLID)
     {
@@ -1199,7 +1200,7 @@ int reply_ctemp(char *inbuf,char *outbuf)
   cnum = SVAL(inbuf,smb_tid);
   createmode = SVAL(inbuf,smb_vwv0);
   sprintf(fname,"%s/TMXXXXXX",smb_buf(inbuf)+1);
-  unix_convert(fname,cnum);
+  unix_convert(fname,cnum,0);
   
   unixmode = unix_mode(cnum,createmode);
   
@@ -1281,7 +1282,7 @@ int reply_unlink(char *inbuf,char *outbuf)
    
   DEBUG(3,("reply_unlink : %s\n",name));
    
-  unix_convert(name,cnum);
+  unix_convert(name,cnum,0);
 
   p = strrchr(name,'/');
   if (!p) {
@@ -2393,7 +2394,7 @@ int reply_mkdir(char *inbuf,char *outbuf)
   
   strcpy(directory,smb_buf(inbuf) + 1);
   cnum = SVAL(inbuf,smb_tid);
-  unix_convert(directory,cnum);
+  unix_convert(directory,cnum,0);
   
   if (check_name(directory,cnum))
     ret = sys_mkdir(directory,unix_mode(cnum,aDIR));
@@ -2421,7 +2422,7 @@ int reply_rmdir(char *inbuf,char *outbuf)
   
   cnum = SVAL(inbuf,smb_tid);
   strcpy(directory,smb_buf(inbuf) + 1);
-  unix_convert(directory,cnum);
+  unix_convert(directory,cnum,0);
   
   if (check_name(directory,cnum))
     {
@@ -2532,6 +2533,7 @@ int reply_mv(char *inbuf,char *outbuf)
   int cnum;
   pstring directory;
   pstring mask,newname;
+  pstring newname_last_component;
   char *p;
   int count=0;
   int error = ERRnoaccess;
@@ -2547,8 +2549,8 @@ int reply_mv(char *inbuf,char *outbuf)
    
   DEBUG(3,("reply_mv : %s -> %s\n",name,newname));
    
-  unix_convert(name,cnum);
-  unix_convert(newname,cnum);
+  unix_convert(name,cnum,0);
+  unix_convert(newname,cnum,newname_last_component);
 
   p = strrchr(name,'/');
   if (!p) {
@@ -2558,6 +2560,7 @@ int reply_mv(char *inbuf,char *outbuf)
     *p = 0;
     strcpy(directory,name);
     strcpy(mask,p+1);
+    *p = '/'; /* Replace needed for exceptional test below. */
   }
 
   if (is_mangled(mask))
@@ -2568,10 +2571,50 @@ int reply_mv(char *inbuf,char *outbuf)
   if (!has_wild) {
     strcat(directory,"/");
     strcat(directory,mask);
+
+    DEBUG(3,("reply_mv : case_sensitive = %d, case_preserve = %d, name = %s, newname = %s, newname_last_component = %s\n", case_sensitive, case_preserve, name, newname, newname_last_component));
+
+    /*
+     * Check for special case with case preserving and not
+     * case sensitive, if name and newname are identical,
+     * and the old last component differs from the original
+     * last component only by case, then we should allow
+     * the rename (user is trying to change the case of the
+     * filename).
+     */
+    if((case_sensitive == False) && (case_preserve == True) &&
+       strcsequal(name, newname)) {
+      pstring newname_modified_last_component;
+
+      /*
+       * Get the last component of the modified name.
+       */
+      p = strrchr(newname,'/');
+      if (!p)
+	strcpy(newname_modified_last_component,name);
+      else
+	strcpy(newname_modified_last_component,p+1);
+
+      if(strcsequal(newname_modified_last_component, 
+		    newname_last_component) == False) {
+	/*
+	 * Replace the modified last component with
+	 * the original.
+	 */
+	if(p)
+	  strcpy(p+1, newname_last_component);
+	else
+	  strcpy(newname, newname_last_component);
+      }
+    }
+
     if (resolve_wildcards(directory,newname) && 
 	can_rename(directory,cnum) && 
 	!file_exist(newname,NULL) &&
 	!sys_rename(directory,newname)) count++;
+
+    DEBUG(3,("reply_mv : doing rename on %s -> %s\n",directory,newname));
+
     if (!count) exists = file_exist(directory,NULL);
     if (!count && exists && file_exist(newname,NULL)) {
       exists = True;
@@ -2727,8 +2770,8 @@ int reply_copy(char *inbuf,char *outbuf)
     return(ERROR(ERRSRV,ERRinvdevice));
   }
 
-  unix_convert(name,cnum);
-  unix_convert(newname,cnum);
+  unix_convert(name,cnum,0);
+  unix_convert(newname,cnum,0);
 
   target_is_directory = directory_exist(newname,NULL);
 

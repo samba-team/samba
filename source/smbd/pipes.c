@@ -114,7 +114,7 @@ int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   Connections[cnum].read_only = 0;
   smb_ofun |= 0x10;		/* Add Create it not exists flag */
 
-  unix_convert(fname,cnum);
+  unix_convert(fname,cnum,0);
     
   fnum = find_free_file();
   if (fnum < 0)

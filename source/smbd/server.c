@@ -378,14 +378,21 @@ for this service.
 
 The function will return False if some part of the name except for the last
 part cannot be resolved
+
+If the saved_last_component != 0, then the unmodified last component
+of the pathname is returned there. This is used in an exceptional
+case in reply_mv (so far). If saved_last_component == 0 then nothing
+is returned there.
 ****************************************************************************/
-BOOL unix_convert(char *name,int cnum)
+BOOL unix_convert(char *name,int cnum,pstring saved_last_component)
 {
   struct stat st;
   char *start, *end;
   pstring dirpath;
 
   *dirpath = 0;
+  if(saved_last_component)
+    *saved_last_component = 0;
 
   /* convert to basic unix format - removing \ chars and cleaning it up */
   unix_format(name);
@@ -415,6 +422,17 @@ BOOL unix_convert(char *name,int cnum)
       return(True);
     }
 
+  /*
+   * Ensure saved_last_component is valid even if file exists.
+   */
+  if(saved_last_component) {
+    end = strrchr(name, '/');
+    if(end)
+      strcpy(saved_last_component, end + 1);
+    else
+      strcpy(saved_last_component, name);
+  }
+
   /* stat the name - if it exists then we are all done! */
   if (sys_stat(name,&st) == 0)
     return(True);
@@ -442,7 +460,10 @@ BOOL unix_convert(char *name,int cnum)
       end = strchr(start, '/');
 
       /* chop the name at this point */
-      if (end) *end = 0;
+      if (end) 	*end = 0;
+
+      if(saved_last_component != 0)
+	strcpy(saved_last_component, end ? end + 1 : start);
 
       /* check if the name exists up to this point */
       if (sys_stat(name, &st) == 0) 
@@ -466,7 +487,6 @@ BOOL unix_convert(char *name,int cnum)
 	  /* remember the rest of the pathname so it can be restored
 	     later */
 	  if (end) strcpy(rest,end+1);
-
 
 	  /* try to find this part of the path in the directory */
 	  if (strchr(start,'?') || strchr(start,'*') ||
