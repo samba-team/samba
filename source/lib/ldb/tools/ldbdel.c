@@ -90,7 +90,8 @@ static void usage(void)
 	for (i=0;i<argc;i++) {
 		ret = ldb_delete(ldb, argv[i]);
 		if (ret != 0) {
-			printf("delete of '%s' failed\n", argv[i]);
+			printf("delete of '%s' failed - %s\n", 
+			       argv[i], ldb_errstring(ldb));
 		}
 	}
 
