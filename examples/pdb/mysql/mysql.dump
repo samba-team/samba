@@ -31,5 +31,7 @@ CREATE TABLE user (
 	logon_divs int(9),
 	hours_len int(9),
 	unknown_5 int(9),
-	unknown_6 int(9)
+	unknown_6 int(9),
+	bad_password_count int(9),
+	logon_count(9)
 );
