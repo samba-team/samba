@@ -40,13 +40,12 @@ extern pstring workgroup;
  check workstation trust account status
  ************************************************************************/
 BOOL wksta_trust_account_check(struct in_addr dest_ip, char *dest_host,
-				char *myhostname, char *domain)
+				char *myhostname, char *domain,
+				fstring mach_pwd, fstring new_mach_pwd)
 {
 	pstring tmp;
 	struct cli_state wksta_trust;
 	fstring mach_acct;
-	fstring mach_pwd;
-	fstring new_mach_pwd;
 	uchar lm_owf_mach_pwd[16];
 	uchar nt_owf_mach_pwd[16];
 	uchar lm_sess_pwd[24];
@@ -88,8 +87,8 @@ BOOL wksta_trust_account_check(struct in_addr dest_ip, char *dest_host,
 
 	if (!server_connect_init(&wksta_trust, myhostname, dest_ip, dest_host))
 	{
-		int err_cls;
-		int err_num;
+		uint8 err_cls;
+		uint32 err_num;
 		cli_error(&wksta_trust, &err_cls, &err_num);
 		DEBUG(1,("server_connect_init failed (%s)\n", cli_errstr(&wksta_trust)));
 
@@ -109,17 +108,17 @@ BOOL wksta_trust_account_check(struct in_addr dest_ip, char *dest_host,
 			lm_sess_pwd, sizeof(lm_sess_pwd),
 			nt_sess_pwd, sizeof(nt_sess_pwd)))
 	{
-		int err_cls;
-		int err_num;
+		uint8 err_cls;
+		uint32 err_num;
 		cli_error(&wksta_trust, &err_cls, &err_num);
 
-		if (err_cls == 0xC000 && err_num == NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT)
+		if (err_num == (0xC0000000 | NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT))
 		{
 			DEBUG(1,("server_validate: valid workstation trust account exists\n"));
 			right_error_code = True;
 		}
 
-		if (err_cls == 0xC000 && err_num == NT_STATUS_NO_SUCH_USER)
+		if (err_num == (0xC0000000 | NT_STATUS_NO_SUCH_USER))
 		{
 			DEBUG(1,("server_validate: workstation trust account does not exist\n"));
 			right_error_code = False;
@@ -149,6 +148,10 @@ BOOL do_nt_login(struct in_addr dest_ip, char *dest_host,
 
 	DOM_CHAL auth2_srv_chal;
 
+	DOM_CRED srv_pwset_clnt_cred;
+	DOM_CRED srv_pwset_rtn_cred;
+	DOM_CRED srv_pwset_srv_cred;
+
 	DOM_CRED sam_logon_clnt_cred;
 	DOM_CRED sam_logon_rtn_cred;
 	DOM_CRED sam_logon_srv_cred;
@@ -166,6 +169,7 @@ BOOL do_nt_login(struct in_addr dest_ip, char *dest_host,
 
 	uchar sess_key[8];
 	char nt_owf_mach_pwd[16];
+	char nt_owf_new_mach_pwd[16];
 
 	fstring server_name;
 	fstring mach_acct;
@@ -204,10 +208,6 @@ BOOL do_nt_login(struct in_addr dest_ip, char *dest_host,
 		return False;
 	}
 	
-	/************ check workstation trust account *******************/
-
-	wksta_trust_account_check(dest_ip, dest_host, myhostname, workgroup);
-
 	/******************* open the \PIPE\lsarpc file *****************/
 
 	if ((fnum = rpc_pipe_open(inbuf, outbuf, PIPE_LSARPC, Client, cnum)) == 0xffff)
@@ -300,6 +300,46 @@ BOOL do_nt_login(struct in_addr dest_ip, char *dest_host,
 	
 
 
+	/************ Check workstation trust account *******************/
+
+	/* default machine password is lower-case machine name (really secure) */
+	fstrcpy(mach_pwd, myhostname);
+	strlower(mach_pwd);
+
+	wksta_trust_account_check(dest_ip, dest_host, myhostname, workgroup, mach_pwd, new_mach_pwd);
+
+	/************ Long-term Session key (default) **********/
+
+	{
+		char lm_owf_mach_pwd[16];
+#ifdef DEBUG_PASSWORD
+		DEBUG(100,("generating nt owf from initial machine pwd: %s\n", mach_pwd));
+#endif
+		nt_lm_owf_gen(    mach_pwd, nt_owf_mach_pwd    , lm_owf_mach_pwd     );
+	}
+
+#ifdef DEBUG_PASSWORD
+	dump_data(6, nt_owf_mach_pwd, 16);
+#endif
+
+	/* calculate the session key */
+	cred_session_key(&clnt_chal, &srv_chal, nt_owf_mach_pwd, sess_key);
+
+	/*********** next new trust account password ************/
+	{
+		char lm_owf_new_mach_pwd[16];
+#ifdef DEBUG_PASSWORD
+		DEBUG(100,("generating nt owf from new     machine pwd: %s\n", new_mach_pwd));
+#endif
+		nt_lm_owf_gen(new_mach_pwd, nt_owf_new_mach_pwd, lm_owf_new_mach_pwd);
+	}
+
+#ifdef DEBUG_PASSWORD
+	dump_data(6, nt_owf_new_mach_pwd, 16);
+#endif
+
+
+
 	/******************* open the \PIPE\NETLOGON file *****************/
 
 	if ((fnum = rpc_pipe_open(inbuf, outbuf, PIPE_NETLOGON, Client, cnum)) == 0xffff)
@@ -336,35 +376,6 @@ BOOL do_nt_login(struct in_addr dest_ip, char *dest_host,
 		return False;
 	}
 
-	/************ Long-term Session key (default) **********/
-
-#if 0
-	/* DAMN!  can't get the machine password - need become_root() to do it! */
-	/* get the machine password */
-	if (!get_md4pw(mach_acct, nt_owf_mach_pwd))
-	{
-		cli_smb_close(inbuf, outbuf, Client, cnum, fnum);
-		free(inbuf); free(outbuf);
-		return False;
-	}
-
-	DEBUG(5,("got nt owf from smbpasswd entry: %s\n", mach_pwd));
-#else
-
-	{
-		char lm_owf_mach_pwd[16];
-		nt_lm_owf_gen(mach_pwd, nt_owf_mach_pwd, lm_owf_mach_pwd);
-		DEBUG(5,("generating nt owf from initial machine pwd: %s\n", mach_pwd));
-	}
-
-#endif
-
-	dump_data(6, nt_owf_mach_pwd, 16);
-
-	/* calculate the session key */
-	cred_session_key(&clnt_chal, &srv_chal, nt_owf_mach_pwd, sess_key);
-
-
 	/******************* Authenticate 2 ********************/
 
 	/* calculate auth-2 credentials */
@@ -379,8 +390,26 @@ BOOL do_nt_login(struct in_addr dest_ip, char *dest_host,
 		return False;
 	}
 
+	/**************** Net Server Password Set **************/
 
-	/*********************** SAM Info ***********************/
+	clnt_cred.timestamp.time = srv_pwset_clnt_cred.timestamp.time = time(NULL);
+
+	/* calculate sam logon credentials, using the auth2 client challenge */
+	cred_create(sess_key, &(clnt_cred.challenge), srv_pwset_clnt_cred.timestamp,
+	                                  &(srv_pwset_clnt_cred.challenge));
+
+	/* send client srv_pwset challenge; receive a srv_pwset challenge */
+	if (!do_lsa_srv_pwset(fnum, ++call_id, sess_key, 
+	                  dest_host, mach_acct, 2, myhostname,
+	                  &srv_pwset_clnt_cred, &srv_pwset_srv_cred,
+	                  nt_owf_new_mach_pwd))
+	{
+		cli_smb_close(inbuf, outbuf, Client, cnum, fnum);
+		free(inbuf); free(outbuf);
+		return False;
+	}
+
+	/****************** SAM Info Preparation *******************/
 
 	{
 		char lm_owf_user_pwd[16];
