@@ -1650,7 +1650,6 @@ static int cmd_symlink(void)
 		return 1;
 	}
 
-	pstrcpy(oldname,cur_dir);
 	pstrcpy(newname,cur_dir);
 	
 	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
@@ -1659,7 +1658,7 @@ static int cmd_symlink(void)
 		return 1;
 	}
 
-	pstrcat(oldname,buf);
+	pstrcpy(oldname,buf);
 	pstrcat(newname,buf2);
 
 	if (!cli_unix_symlink(cli, oldname, newname)) {
