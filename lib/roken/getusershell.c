@@ -43,7 +43,9 @@ RCSID("$Id$");
 
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef HAVE_PATHS_H
 #include <paths.h>
+#endif
 #include <sys/stat.h>
 #include <sys/param.h>
 
@@ -53,6 +55,14 @@ RCSID("$Id$");
 
 #ifndef _PATH_SHELLS
 #define _PATH_SHELLS "/etc/shells"
+#endif
+
+#ifndef _PATH_BSHELL
+#define _PATH_BSHELL "/bin/sh"
+#endif
+
+#ifndef _PATH_CSHELL
+#define _PATH_CSHELL "/bin/csh"
 #endif
 
 /*
