@@ -72,10 +72,10 @@ make_address(const char *address, struct in_addr *ip)
     return 0;
 }
 
-int
-roken_gethostby_setup(const char *proxy_host, short proxy_port,
-		      const char *dns_host, short dns_port,
-		      const char *dns_path)
+static int
+setup_int(const char *proxy_host, short proxy_port,
+	  const char *dns_host, short dns_port,
+	  const char *dns_path)
 {
     memset(&dns_addr, 0, sizeof(dns_addr));
     if(dns_req)
@@ -94,6 +94,54 @@ roken_gethostby_setup(const char *proxy_host, short proxy_port,
     dns_addr.sin_family = AF_INET;
     return 0;
 }
+
+static void
+split_spec(const char *spec, char **host, int *port, char **path, int def_port)
+{
+    char *p;
+    *host = strdup(spec);
+    p = strchr(*host, ':');
+    if(p) {
+	*p++ = '\0';
+	if(sscanf(p, "%d", port) != 1)
+	    *port = def_port;
+    } else
+	*port = def_port;
+    p = strchr(p ? p : *host, '/');
+    if(p) {
+	if(path) 
+	    *path = strdup(p);
+	*p = '\0';
+    }else
+	if(path) 
+	    *path = NULL;
+}
+
+
+int
+roken_gethostby_setup(const char *proxy_spec, const char *dns_spec)
+{
+    char *proxy_host = NULL;
+    int proxy_port;
+    char *dns_host, *dns_path;
+    int dns_port;
+    
+    char *tmp;
+    int ret = -1;
+    
+    split_spec(dns_spec, &dns_host, &dns_port, &dns_path, 80);
+    if(dns_path == NULL)
+	goto out;
+    if(proxy_spec)
+	split_spec(proxy_spec, &proxy_host, &proxy_port, NULL, 80);
+    ret = setup_int(proxy_host, proxy_port, dns_host, dns_port, dns_path);
+out:
+    free(proxy_host);
+    free(dns_host);
+    free(dns_path);
+    return ret;
+}
+    
 
 /* Try to lookup a name or an ip-address using http as transport
    mechanism. See the end of this file for an example program. */
