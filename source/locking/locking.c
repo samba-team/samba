@@ -37,7 +37,7 @@
 
 #include "includes.h"
 extern int DEBUGLEVEL;
-int global_smbpid;
+uint16 global_smbpid;
 
 /* the locking database handle */
 static TDB_CONTEXT *tdb;
@@ -53,11 +53,14 @@ static const char *lock_type_name(enum brl_type lock_type)
 
 /****************************************************************************
  Utility function called to see if a file region is locked.
+ If check_self is True, then checks on our own fd with the same locking context
+ are still made. If check_self is False, then checks are not made on our own fd
+ with the same locking context are not made.
 ****************************************************************************/
 
 BOOL is_locked(files_struct *fsp,connection_struct *conn,
 	       SMB_BIG_UINT count,SMB_BIG_UINT offset, 
-	       enum brl_type lock_type)
+	       enum brl_type lock_type, BOOL check_self)
 {
 	int snum = SNUM(conn);
 	BOOL ret;
@@ -70,15 +73,24 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
 
 	ret = !brl_locktest(fsp->dev, fsp->inode, fsp->fnum,
 			     global_smbpid, sys_getpid(), conn->cnum, 
-			     offset, count, lock_type);
+			     offset, count, lock_type, check_self);
+
+	DEBUG(10,("is_locked: brl start=%.0f len=%.0f %s for file %s\n",
+			(double)offset, (double)count, ret ? "locked" : "unlocked",
+			fsp->fsp_name ));
 
 	/*
 	 * There is no lock held by an SMB daemon, check to
 	 * see if there is a POSIX lock from a UNIX or NFS process.
 	 */
 
-	if(!ret && lp_posix_locking(snum))
+	if(!ret && lp_posix_locking(snum)) {
 		ret = is_posix_locked(fsp, offset, count, lock_type);
+
+		DEBUG(10,("is_locked: posix start=%.0f len=%.0f %s for file %s\n",
+				(double)offset, (double)count, ret ? "locked" : "unlocked",
+				fsp->fsp_name ));
+	}
 
 	return ret;
 }
@@ -87,7 +99,7 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
  Utility function called by locking requests.
 ****************************************************************************/
 
-BOOL do_lock(files_struct *fsp,connection_struct *conn,
+BOOL do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
              SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type,
              int *eclass,uint32 *ecode)
 {
@@ -107,7 +119,7 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
 
 	if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn)) {
 		ok = brl_lock(fsp->dev, fsp->inode, fsp->fnum,
-			      global_smbpid, sys_getpid(), conn->cnum, 
+			      lock_pid, sys_getpid(), conn->cnum, 
 			      offset, count, 
 			      lock_type);
 
@@ -127,7 +139,7 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
 				 * lock entry.
 				 */
 				(void)brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-								global_smbpid, sys_getpid(), conn->cnum, 
+								lock_pid, sys_getpid(), conn->cnum, 
 								offset, count);
 			}
 		}
@@ -145,7 +157,7 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
  Utility function called by unlocking requests.
 ****************************************************************************/
 
-BOOL do_unlock(files_struct *fsp,connection_struct *conn,
+BOOL do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
                SMB_BIG_UINT count,SMB_BIG_UINT offset, 
 	       int *eclass,uint32 *ecode)
 {
@@ -156,7 +168,7 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 	
 	if (!OPEN_FSP(fsp) || !fsp->can_lock || (fsp->conn != conn)) {
 		*eclass = ERRDOS;
-		*ecode = ERRlock;
+		*ecode = ERRbadfid;
 		return False;
 	}
 	
@@ -170,12 +182,12 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 	 */
 
 	ok = brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-			global_smbpid, sys_getpid(), conn->cnum, offset, count);
+			lock_pid, sys_getpid(), conn->cnum, offset, count);
    
 	if (!ok) {
 		DEBUG(10,("do_unlock: returning ERRlock.\n" ));
 		*eclass = ERRDOS;
-		*ecode = ERRlock;
+		*ecode = ERRnotlocked;
 		return False;
 	}
 
@@ -215,15 +227,74 @@ void locking_close_file(files_struct *fsp)
 }
 
 /****************************************************************************
+ Delete a record if it is for a dead process, if check_self is true, then
+ delete any records belonging to this pid also (there shouldn't be any).
+ This function is only called on locking startup and shutdown.
+****************************************************************************/
+
+static int delete_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
+{
+	struct locking_data *data;
+	share_mode_entry *shares;
+	int i, del_count=0;
+	pid_t mypid = sys_getpid();
+	BOOL check_self = *(BOOL *)state;
+
+	tdb_chainlock(tdb, kbuf);
+
+	data = (struct locking_data *)dbuf.dptr;
+	shares = (share_mode_entry *)(dbuf.dptr + sizeof(*data));
+
+	for (i=0;i<data->num_share_mode_entries;) {
+
+		if (check_self && (shares[i].pid == mypid)) {
+			DEBUG(0,("locking : delete_fn. LOGIC ERROR ! Shutting down and a record for my pid (%u) exists !\n",
+					(unsigned int)shares[i].pid ));
+		} else if (!process_exists(shares[i].pid)) {
+			DEBUG(0,("locking : delete_fn. LOGIC ERROR ! Entry for pid %u and it no longer exists !\n",
+					(unsigned int)shares[i].pid ));
+		} else {
+			/* Process exists, leave this record alone. */
+			i++;
+			continue;
+		}
+
+		data->num_share_mode_entries--;
+		memmove(&shares[i], &shares[i+1],
+		dbuf.dsize - (sizeof(*data) + (i+1)*sizeof(*shares)));
+		del_count++;
+
+	}
+
+	/* the record has shrunk a bit */
+	dbuf.dsize -= del_count * sizeof(*shares);
+
+	/* store it back in the database */
+	if (data->num_share_mode_entries == 0)
+		tdb_delete(ttdb, kbuf);
+	else
+		tdb_store(ttdb, kbuf, dbuf, TDB_REPLACE);
+
+	tdb_chainunlock(tdb, kbuf);
+	return 0;
+}
+
+/****************************************************************************
  Initialise the locking functions.
 ****************************************************************************/
+
+static int open_read_only;
+
 BOOL locking_init(int read_only)
 {
+	BOOL check_self = False;
+
 	brl_init(read_only);
 
-	if (tdb) return True;
+	if (tdb)
+		return True;
 
-	tdb = tdb_open(lock_path("locking.tdb"), 
+	tdb = tdb_open_log(lock_path("locking.tdb"), 
 		       0, TDB_CLEAR_IF_FIRST, 
 		       read_only?O_RDONLY:O_RDWR|O_CREAT,
 		       0644);
@@ -236,15 +307,35 @@ BOOL locking_init(int read_only)
 	if (!posix_locking_init(read_only))
 		return False;
 
+	/* delete any dead locks */
+	if (!read_only)
+		tdb_traverse(tdb, delete_fn, &check_self);
+
+	open_read_only = read_only;
+
 	return True;
 }
 
 /*******************************************************************
  Deinitialize the share_mode management.
 ******************************************************************/
+
 BOOL locking_end(void)
 {
-	if (tdb && tdb_close(tdb) != 0) return False;
+	BOOL check_self = True;
+
+	brl_shutdown(open_read_only);
+	if (tdb) {
+
+		/* delete any dead locks */
+
+		if (!open_read_only)
+			tdb_traverse(tdb, delete_fn, &check_self);
+
+		if (tdb_close(tdb) != 0)
+			return False;
+	}
+
 	return True;
 }
 

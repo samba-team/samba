@@ -223,7 +223,7 @@ BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[
 	DEBUG(100,("make_oem_passwd_hash\n"));
 	dump_data(100, data, 516);
 #endif
-	SamOEMhash( (unsigned char *)data, (unsigned char *)old_pw_hash, True);
+	SamOEMhash( (unsigned char *)data, (unsigned char *)old_pw_hash, 516);
 
 	return True;
 }

@@ -5,9 +5,11 @@ SPECDIR=/usr/src/RPM/SPECS
 SRCDIR=/usr/src/RPM/SOURCES
 USERID=`id -u`
 GRPID=`id -g`
+VERSION='PVERSION'
 
-( cd ../../.. ; chown -R ${USERID}.${GRPID} ${SRCDIR}/samba )
-( cd ../../.. ; tar czvf ${SRCDIR}/samba-PVERSION.tar.gz samba )
+( cd ../../.. ; mv samba samba-$VERSION; chown -R ${USERID}.${GRPID} ${SRCDIR}/samba-$VERSION )
+( cd ../../.. ; tar --exclude=CVS -czvf ${SRCDIR}/samba-$VERSION.tar.gz samba-$VERSION )
+( cd ../../.. ; mv samba-$VERSION samba )
 cp -a *.spec $SPECDIR
 cp -a *.patch smb.* samba.log $SRCDIR
 cd $SPECDIR

@@ -28,7 +28,7 @@
 
 /* Prototypes from common.h - only needed #if TNG */
 
-enum nss_status winbindd_request(int req_type, 
+NSS_STATUS winbindd_request(int req_type, 
 				 struct winbindd_request *request,
 				 struct winbindd_response *response);
 
@@ -101,10 +101,11 @@ static BOOL wbinfo_check_secret(void)
 
         if (result) {
 
-                if (response.data.num_entries) {
+                if (response.data.num_entries == 0) {
                         printf("Secret is good\n");
                 } else {
-                        printf("Secret is bad\n");
+                        printf("Secret is bad\n0x%08x\n", 
+			       response.data.num_entries);
                 }
 
                 return True;
@@ -447,8 +448,8 @@ int main(int argc, char **argv)
 				return 1;
 			}
 			break;
-
-			/* Invalid option */
+				
+                      /* Invalid option */
 
 		default:
 			usage();

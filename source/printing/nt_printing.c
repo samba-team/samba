@@ -180,7 +180,7 @@ BOOL nt_printing_init(void)
 	char *vstring = "INFO/version";
 
 	if (tdb && local_pid == sys_getpid()) return True;
-	tdb = tdb_open(lock_path("ntdrivers.tdb"), 0, 0, O_RDWR|O_CREAT, 0600);
+	tdb = tdb_open_log(lock_path("ntdrivers.tdb"), 0, 0, O_RDWR|O_CREAT, 0600);
 	if (!tdb) {
 		DEBUG(0,("Failed to open nt drivers database %s (%s)\n",
 			lock_path("ntdrivers.tdb"), strerror(errno) ));
@@ -644,19 +644,15 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 	DEBUG(10,("get_correct_cversion: Driver file [%s] cversion = %d\n",
 			driverpath, cversion));
 
-	fsp->conn->vfs_ops.close(fsp, fsp->fd);
-	file_free(fsp);
+	close_file(fsp, True);
 	close_cnum(conn, user->vuid);
 	pop_sec_ctx();
 	return cversion;
 
 
 	error_exit:
-		if(fsp) {
-			if(fsp->fd != -1)
-				fsp->conn->vfs_ops.close(fsp, fsp->fd);
-			file_free(fsp);
-		}
+		if(fsp)
+			close_file(fsp, True);
 
 		close_cnum(conn, user->vuid);
 		pop_sec_ctx();
@@ -1138,9 +1134,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", old_create_time));
 		}
 	}
-	fsp->conn->vfs_ops.close(fsp, fsp->fd);
-	file_free(fsp);
-
+	close_file(fsp, True);
 
 	/* Get file version info (if available) for new file */
 	pstrcpy(filepath, new_file);
@@ -1169,8 +1163,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", new_create_time));
 		}
 	}
-	fsp->conn->vfs_ops.close(fsp, fsp->fd);
-	file_free(fsp);
+	close_file(fsp, True);
 
 	if (use_version) {
 		/* Compare versions and choose the larger version number */
@@ -1198,11 +1191,8 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 	}
 
 	error_exit:
-		if(fsp) {
-			file_free(fsp);
-			if(fsp->fd != -1)
-				fsp->conn->vfs_ops.close(fsp, fsp->fd);
-		}
+		if(fsp)
+			close_file(fsp, True);
 		return -1;
 }
 
@@ -2372,8 +2362,18 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	fstrcpy(info.portname, SAMBA_PRINTER_PORT_NAME);
 	fstrcpy(info.drivername, lp_printerdriver(snum));
 
+#if 0	/* JERRY */
 	if (!*info.drivername)
 		fstrcpy(info.drivername, "NO DRIVER AVAILABLE FOR THIS PRINTER");
+#else
+	/* by setting the driver name to an empty string, a local NT admin
+	   can now run the **local** APW to install a local printer driver
+ 	   for a Samba shared printer in 2.2.  Without this, drivers **must** be 
+	   installed on the Samba server for NT clients --jerry */
+	if (!*info.drivername)
+		fstrcpy(info.drivername, "");
+#endif
+
 
 	DEBUG(10,("get_a_printer_2_default: driver name set to [%s]\n", info.drivername));
 
@@ -2834,6 +2834,113 @@ uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 	return result;
 }
 
+
+/****************************************************************************
+  Determine whether or not a particular driver is currently assigned
+  to a printer
+****************************************************************************/
+BOOL printer_driver_in_use (char *arch, char *driver)
+{
+	TDB_DATA kbuf, newkey, dbuf;
+	NT_PRINTER_INFO_LEVEL_2 info;
+	int ret;
+
+	if (!tdb)
+		nt_printing_init();	
+
+	DEBUG(5,("printer_driver_in_use: Beginning search through printers.tdb...\n"));
+	
+	/* loop through the printers.tdb and check for the drivername */
+	for (kbuf = tdb_firstkey(tdb); kbuf.dptr;
+	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) 
+	{
+
+		dbuf = tdb_fetch(tdb, kbuf);
+		if (!dbuf.dptr) 
+			continue;
+
+		if (strncmp(kbuf.dptr, PRINTERS_PREFIX, strlen(PRINTERS_PREFIX)) != 0) 
+			continue;
+
+		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "dddddddddddfffffPfffff",
+			&info.attributes,
+			&info.priority,
+			&info.default_priority,
+			&info.starttime,
+			&info.untiltime,
+			&info.status,
+			&info.cjobs,
+			&info.averageppm,
+			&info.changeid,
+			&info.c_setprinter,
+			&info.setuptime,
+			info.servername,
+			info.printername,
+			info.sharename,
+			info.portname,
+			info.drivername,
+			info.comment,
+			info.location,
+			info.sepfile,
+			info.printprocessor,
+			info.datatype,
+			info.parameters);
+
+		safe_free(dbuf.dptr);
+
+		if (ret == -1) {
+			DEBUG (0,("printer_driver_in_use: tdb_unpack failed for printer %s\n",
+					info.printername));
+			continue;
+		}
+		
+		DEBUG (10,("printer_driver_in_use: Printer - %s (%s)\n",
+			info.printername, info.drivername));
+			
+		if (strcmp(info.drivername, driver) == 0) 
+		{
+			DEBUG(5,("printer_driver_in_use: Printer %s using %s\n",
+				info.printername, driver));
+			return True;
+		}	
+	}
+	DEBUG(5,("printer_driver_in_use: Completed search through printers.tdb...\n"));
+	
+	
+	
+	/* report that the driver is in use by default */
+	return False;
+}
+
+/****************************************************************************
+ Remove a printer driver from the TDB.  This assumes that the the driver was
+ previously looked up.
+ ***************************************************************************/
+uint32 delete_printer_driver (NT_PRINTER_DRIVER_INFO_LEVEL_3 *i)
+{
+	pstring 	key;
+	fstring		arch;
+	TDB_DATA 	kbuf;
+
+
+	get_short_archi(arch, i->environment);
+	slprintf(key, sizeof(key)-1, "%s%s/%d/%s", DRIVERS_PREFIX,
+		arch, i->cversion, i->name); 
+	DEBUG(5,("delete_printer_driver: key = [%s]\n", key));
+
+	kbuf.dptr=key;
+	kbuf.dsize=strlen(key)+1;
+
+	if (tdb_delete(tdb, kbuf) == -1) {
+		DEBUG (0,("delete_printer_driver: fail to delete %s!\n", key));
+		return NT_STATUS_ACCESS_VIOLATION;
+	}
+	
+	DEBUG(5,("delete_printer_driver: [%s] driver delete successful.\n",
+		i->name));
+	
+	return NT_STATUS_NO_PROBLEMO;
+}
 /****************************************************************************
 ****************************************************************************/
 BOOL get_specific_param_by_index(NT_PRINTER_INFO_LEVEL printer, uint32 level, uint32 param_index,
@@ -3029,16 +3136,19 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 	if (winbind_lookup_name(lp_workgroup(), &owner_sid, &name_type)) {
 		sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
 	} else {
+		uint32 owner_rid;
 
-		/* Backup plan - make printer owned by admins or root.  This should
-		   emulate a lanman printer as security settings can't be
-		   changed. */
+		/* Backup plan - make printer owned by admins or root.
+		   This should emulate a lanman printer as security
+		   settings can't be changed. */
 
-		if (!lookup_name( "Printer Administrators", &owner_sid, &name_type) &&
-			!lookup_name( "Administrators", &owner_sid, &name_type) &&
-			!lookup_name( "Administrator", &owner_sid, &name_type) &&
-			!lookup_name("root", &owner_sid, &name_type)) {
-						sid_copy(&owner_sid, &global_sid_World);
+		sid_peek_rid(&owner_sid, &owner_rid);
+
+		if (owner_rid != BUILTIN_ALIAS_RID_PRINT_OPS &&
+		    owner_rid != BUILTIN_ALIAS_RID_ADMINS &&
+		    owner_rid != DOMAIN_USER_RID_ADMIN &&
+		    !lookup_name("root", &owner_sid, &name_type)) {
+			sid_copy(&owner_sid, &global_sid_World);
 		}
 	}
 
@@ -3145,20 +3255,20 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, char *printername, SEC_DESC_BUF **secde
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		SEC_ACL *acl = (*secdesc_ctr)->sec->dacl;
+		SEC_ACL *the_acl = (*secdesc_ctr)->sec->dacl;
 		int i;
 
 		DEBUG(10, ("secdesc_ctr for %s has %d aces:\n", 
-			   printername, acl->num_aces));
+			   printername, the_acl->num_aces));
 
-		for (i = 0; i < acl->num_aces; i++) {
+		for (i = 0; i < the_acl->num_aces; i++) {
 			fstring sid_str;
 
-			sid_to_string(sid_str, &acl->ace[i].sid);
+			sid_to_string(sid_str, &the_acl->ace[i].sid);
 
 			DEBUG(10, ("%s %d %d 0x%08x\n", sid_str,
-				   acl->ace[i].type, acl->ace[i].flags, 
-				   acl->ace[i].info.mask)); 
+				   the_acl->ace[i].type, the_acl->ace[i].flags, 
+				   the_acl->ace[i].info.mask)); 
 		}
 	}
 

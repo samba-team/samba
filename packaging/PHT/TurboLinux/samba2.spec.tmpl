@@ -194,13 +194,14 @@ autoheader
 NUMCPU=`grep processor /proc/cpuinfo | wc -l`
 CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
 	--prefix=%{prefix} \
-	--libdir=/etc \
+	--libdir=/etc/samba \
 	--with-lockdir=/var/lock/samba \
 	--with-privatedir=/etc \
 	--with-swatdir=%{prefix}/share/swat \
 	--with-quotas \
 	--with-smbmount \
 	--with-pam \
+	--with-pam_smbpass \
 	--with-profile \
 	--with-syslog \
 	--with-utmp \
@@ -214,7 +215,8 @@ make -j${NUMCPU} debug2html
 %install
 rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/sbin
-mkdir -p $RPM_BUILD_ROOT/etc/codepages/src
+mkdir -p $RPM_BUILD_ROOT%{prefix}/share/samba/codepages/src
+mkdir -p $RPM_BUILD_ROOT/etc/samba
 mkdir -p $RPM_BUILD_ROOT/etc/{logrotate.d,pam.d}
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/init.d
 mkdir -p $RPM_BUILD_ROOT/lib
@@ -254,17 +256,20 @@ done
 # Install codepage source files
 for i in 437 737 775 850 852 861 866 932 936 949 950 1251
 do
-install -m644 source/codepages/codepage_def.$i $RPM_BUILD_ROOT/etc/codepages/src
+install -m644 source/codepages/codepage_def.$i $RPM_BUILD_ROOT%{prefix}/samba/codepages/src
 done
 for i in 437 737 850 852 861 866 932 936 949 950 ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 KOI8-R
 do
-install -m644 source/codepages/CP$i.TXT $RPM_BUILD_ROOT/etc/codepages/src
+install -m644 source/codepages/CP$i.TXT $RPM_BUILD_ROO%{prefix}/samba/codepages/src
 done
 
 # Install the nsswitch library extension file
 install -m755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/lib
 # Make link for wins resolver
 ( cd $RPM_BUILD_ROOT/lib; ln -s libnss_wins.so libnss_wins.so.2; )
+
+# Install PAM pam_smbpass.so
+install -m644 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/lib/security
 
 # Install SWAT helper files
 for i in swat/help/*.html docs/htmldocs/*.html
@@ -307,8 +312,8 @@ install -m644 docs/manpages/swat.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
 install -m644 docs/manpages/smbmount.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
 install -m644 docs/manpages/smbmnt.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
 install -m644 docs/manpages/smbumount.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
-install -m644 packaging/PHT/TurboLinux/smb.conf $RPM_BUILD_ROOT/etc/smb.conf
-install -m644 packaging/PHT/TurboLinux/smbusers $RPM_BUILD_ROOT/etc/smbusers
+install -m644 packaging/PHT/TurboLinux/smb.conf $RPM_BUILD_ROOT/etc/samba/smb.conf
+install -m644 packaging/PHT/TurboLinux/smbusers $RPM_BUILD_ROOT/etc/samba/smbusers
 install -m755 packaging/PHT/TurboLinux/smbprint $RPM_BUILD_ROOT%{prefix}/bin
 install -m755 packaging/PHT/TurboLinux/findsmb $RPM_BUILD_ROOT%{prefix}/bin
 install -m755 packaging/PHT/TurboLinux/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
@@ -329,14 +334,14 @@ rm -rf $RPM_BUILD_ROOT
 /sbin/chkconfig smb off
 
 # Build codepage load files
-cd /etc
+cd %{prefix}/share/samba
 for i in 437 737 775 850 852 861 866 932 936 949 950 1251
 do
-%{prefix}/bin/make_smbcodepage c $i /etc/codepages/src/codepage_def.$i /etc/codepages/codepage.$i
+%{prefix}/bin/make_smbcodepage c $i %{prefix}/share/samba/codepages/src/codepage_def.$i %{prefix}/share/samba/codepages/codepage.$i
 done
 for i in 437 737 850 852 861 866 932 936 949 950 ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 KOI8-R
 do
-%{prefix}/bin/make_unicodemap $i /etc/codepages/src/CP$i.TXT /etc/codepages/unicode_map.$i
+%{prefix}/bin/make_unicodemap $i %{prefix}/share/samba/codepages/src/CP$i.TXT %{prefix}/share/samba/codepages/unicode_map.$i
 done
 
 # Add swat entry to /etc/services if not already there
@@ -361,8 +366,8 @@ fi
 if [ $1 = 0 ] ; then
     /sbin/chkconfig --del smb
 
-    for n in /etc/codepages/*; do
-        if [ $n != /etc/codepages/src ]; then
+    for n in %{prefix}/share/samba/codepages/*; do
+        if [ $n != %{prefix}/share/samba/codepages/src ]; then
             rm -rf $n
         fi
     done
@@ -384,8 +389,18 @@ if [ $1 = 0 ] ; then
     if [ -e /var/log/samba ]; then
       rm -rf /var/log/samba
     fi
-    if [ -e /var/lock/samba ]; then
-      rm -rf /var/lock/samba
+
+# Note: We MUST keep:
+#	winbindd_*, sshare_info*, printing*, ntdrivers*
+
+    if [ -x /var/lock/samba ]; then
+      rm -f /var/lock/samba/browse.dat 
+      rm -f /var/lock/samba/{brlock,connections,locking,messages}.tdb
+      if [ -e /var/lock/samba.d/namelist.debug ]; then
+	rm -f /var/lock/samba.d/namelist.debug
+      fi
+      rm -f /var/lock/samba/unexpected.tdb
+      rm -f /var/lock/samba/{smbd,nmbd}.pid
     fi
 
     # Remove swat entries from /etc/inetd.conf and /etc/services
@@ -437,19 +452,20 @@ fi
 %attr(-,root,root) %{prefix}/bin/smbspool
 %attr(-,root,root) %{prefix}/bin/smbadduser
 %attr(755,root,root) /lib/libnss_wins.s*
+%attr(755,root,root) /lib/security/pam_smbpass.so
 %attr(-,root,root) %{prefix}/share/swat/help/*
 %attr(-,root,root) %{prefix}/share/swat/images/*
 %attr(-,root,root) %{prefix}/share/swat/include/header.html
 %attr(-,root,root) %{prefix}/share/swat/include/footer.html
 %attr(-,root,root) %{prefix}/share/swat/using_samba/*
-%attr(-,root,root) %config(noreplace) /etc/lmhosts
-%attr(-,root,root) %config(noreplace) /etc/smb.conf
-%attr(-,root,root) %config(noreplace) /etc/smbusers
+%attr(-,root,root) %config(noreplace) /etc/samba/lmhosts
+%attr(-,root,root) %config(noreplace) /etc/samba/smb.conf
+%attr(-,root,root) %config(noreplace) /etc/samba/smbusers
 %attr(-,root,root) /etc/rc.d/init.d/smb
 %attr(-,root,root) /etc/logrotate.d/samba
 %attr(-,root,root) /etc/pam.d/samba
-%attr(-,root,root) /etc/codepages/src/codepage_def.*
-%attr(-,root,root) /etc/codepages/src/CP*
+%attr(-,root,root) %{prefix}/share/samba/codepages/src/codepage_def.*
+%attr(-,root,root) %{prefix}/share/samba/codepages/src/CP*
 # %attr(-,root,root) %{prefix}/share/man/man1/smbsh.1
 %attr(-,root,root) %{prefix}/share/man/man1/make_smbcodepage.1
 %attr(-,root,root) %{prefix}/share/man/man1/make_unicodemap.1
@@ -469,8 +485,8 @@ fi
 %attr(-,root,root) %{prefix}/share/man/man8/smbpasswd.8
 %attr(-,root,root) %{prefix}/share/man/man8/swat.8
 %attr(-,root,nobody) %dir /home/samba
-%attr(-,root,root) %dir /etc/codepages
-%attr(-,root,root) %dir /etc/codepages/src
+%attr(-,root,root) %dir %{prefix}/share/samba/codepages
+%attr(-,root,root) %dir %{prefix}/share/samba/codepages/src
 %attr(-,root,root) %dir /var/lock/samba
 %attr(-,root,root) %dir /var/log/samba
 %attr(1777,root,root) %dir /var/spool/samba

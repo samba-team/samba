@@ -54,7 +54,6 @@ static void overflow_attack(int len)
 		dbgtext( "attempting to exploit an old bug.\n" );
 		dbgtext( "Attack was from IP = %s.\n", client_addr() );
 	}
-	exit_server("possible attack");
 }
 
 
@@ -170,11 +169,10 @@ static int connection_error(char *inbuf,char *outbuf,int ecode)
 	return(ERROR(ERRSRV,ecode));
 }
 
-
-
 /****************************************************************************
   parse a share descriptor string
 ****************************************************************************/
+
 static void parse_connect(char *p,char *service,char *user,
 			  char *password,int *pwlen,char *dev)
 {
@@ -228,13 +226,21 @@ int reply_tcon(connection_struct *conn,
 
 	parse_connect(smb_buf(inbuf)+1,service,user,password,&pwlen,dev);
 
+	/*
+	 * If the vuid is valid, we should be using that....
+	 */
+
+	if (*user == '\0' && (lp_security() != SEC_SHARE) && validated_username(vuid)) {
+		pstrcpy(user,validated_username(vuid));
+	}
+
     /*
      * Ensure the user and password names are in UNIX codepage format.
      */
 
-    dos_to_unix(user,True);
+    pstrcpy(user,dos_to_unix(user,False));
 	if (!doencrypt)
-    	dos_to_unix(password,True);
+    	pstrcpy(password,dos_to_unix(password,False));
 
 	/*
 	 * Pass the user through the NT -> unix user mapping
@@ -270,6 +276,7 @@ int reply_tcon(connection_struct *conn,
 /****************************************************************************
  Reply to a tcon and X.
 ****************************************************************************/
+
 int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
 	fstring service;
@@ -293,6 +300,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
 	if (passlen > MAX_PASS_LEN) {
 		overflow_attack(passlen);
+		return(ERROR(ERRDOS,ERRbuftoosmall));
 	}
  
 	memcpy(password,smb_buf(inbuf),passlen);
@@ -320,12 +328,20 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	DEBUG(4,("Got device type %s\n",devicename));
 
 	/*
+	 * If the vuid is valid, we should be using that....
+	 */
+
+	if (*user == '\0' && (lp_security() != SEC_SHARE) && validated_username(vuid)) {
+		pstrcpy(user,validated_username(vuid));
+	}
+
+	/*
 	 * Ensure the user and password names are in UNIX codepage format.
 	 */
 
-	dos_to_unix(user,True);
+	pstrcpy(user,dos_to_unix(user,False));
 	if (!doencrypt)
-		dos_to_unix(password,True);
+		pstrcpy(password,dos_to_unix(password,False));
 
 	/*
 	 * Pass the user through the NT -> unix user mapping
@@ -393,7 +409,6 @@ int reply_unknown(char *inbuf,char *outbuf)
   
 	return(ERROR(ERRSRV,ERRunknownsmb));
 }
-
 
 /****************************************************************************
   reply to an ioctl
@@ -563,47 +578,48 @@ static BOOL check_server_security(char *orig_user, char *domain, char *unix_user
                                   char *smb_apasswd, int smb_apasslen,
                                   char *smb_ntpasswd, int smb_ntpasslen)
 {
-  BOOL ret = False;
+	BOOL ret = False;
 
-  if(lp_security() != SEC_SERVER)
-    return False;
+	if(lp_security() != SEC_SERVER)
+		return False;
 
-  if (!check_domain_match(orig_user, domain))
-     return False;
+	if (!check_domain_match(orig_user, domain))
+		return False;
 
-  ret = server_validate(orig_user, domain, 
-                            smb_apasswd, smb_apasslen, 
-                            smb_ntpasswd, smb_ntpasslen);
-  if(ret) {
-    struct passwd *pwd = NULL;
+	ret = server_validate(orig_user, domain, 
+					smb_apasswd, smb_apasslen, 
+					smb_ntpasswd, smb_ntpasslen);
 
-    /*
-     * User validated ok against Domain controller.
-     * If the admin wants us to try and create a UNIX
-     * user on the fly, do so.
-     * Note that we can never delete users when in server
-     * level security as we never know if it was a failure
-     * due to a bad password, or the user really doesn't exist.
-     */
-    if(lp_adduser_script() && !(pwd = smb_getpwnam(unix_user,True))) {
-      smb_create_user(unix_user, NULL);
-    }
+	if(ret) {
+		struct passwd *pwd = NULL;
 
-    if(lp_adduser_script() && pwd) {
-      SMB_STRUCT_STAT st;
+		/*
+		 * User validated ok against Domain controller.
+		 * If the admin wants us to try and create a UNIX
+		 * user on the fly, do so.
+		 * Note that we can never delete users when in server
+		 * level security as we never know if it was a failure
+		 * due to a bad password, or the user really doesn't exist.
+		 */
 
-      /*
-       * Also call smb_create_user if the users home directory
-       * doesn't exist. Used with winbindd to allow the script to
-       * create the home directory for a user mapped with winbindd.
-       */
+		if(lp_adduser_script() && !(pwd = smb_getpwnam(unix_user,True)))
+			smb_create_user(unix_user, NULL);
 
-      if (pwd->pw_shell && (sys_stat(pwd->pw_dir, &st) == -1) && (errno == ENOENT))
-        smb_create_user(unix_user, pwd->pw_dir);
-    }
-  }
+		if(lp_adduser_script() && pwd) {
+			SMB_STRUCT_STAT st;
 
-  return ret;
+			/*
+			 * Also call smb_create_user if the users home directory
+			 * doesn't exist. Used with winbindd to allow the script to
+			 * create the home directory for a user mapped with winbindd.
+			 */
+
+			if (pwd->pw_dir && (sys_stat(pwd->pw_dir, &st) == -1) && (errno == ENOENT))
+				smb_create_user(unix_user, pwd->pw_dir);
+		}
+	}
+
+	return ret;
 }
 
 /****************************************************************************
@@ -648,7 +664,7 @@ static BOOL check_domain_security(char *orig_user, char *domain, char *unix_user
        * create the home directory for a user mapped with winbindd.
        */
 
-      if (pwd->pw_shell && (sys_stat(pwd->pw_dir, &st) == -1) && (errno == ENOENT))
+      if (pwd->pw_dir && (sys_stat(pwd->pw_dir, &st) == -1) && (errno == ENOENT))
         smb_create_user(unix_user, pwd->pw_dir);
     }
 
@@ -690,7 +706,7 @@ reply to a session setup command
 
 int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
-  uint16 sess_vuid;
+  int sess_vuid;
   gid_t gid;
   uid_t uid;
   int   smb_bufsize;    
@@ -705,19 +721,22 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   BOOL guest=False;
   static BOOL done_sesssetup = False;
   BOOL doencrypt = SMBENCRYPT();
-  char *domain = "";
+  fstring domain;
   START_PROFILE(SMBsesssetupX);
 
   *smb_apasswd = 0;
   *smb_ntpasswd = 0;
-  
+  *domain = 0;
+
   smb_bufsize = SVAL(inbuf,smb_vwv2);
 
   if (Protocol < PROTOCOL_NT1) {
     smb_apasslen = SVAL(inbuf,smb_vwv7);
-    if (smb_apasslen > MAX_PASS_LEN)
+    if (smb_apasslen > MAX_PASS_LEN) {
       overflow_attack(smb_apasslen);
-
+      return(ERROR(ERRDOS,ERRbuftoosmall));
+    }
+      
     memcpy(smb_apasswd,smb_buf(inbuf),smb_apasslen);
     smb_apasswd[smb_apasslen] = 0;
     pstrcpy(user,smb_buf(inbuf)+smb_apasslen);
@@ -725,7 +744,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
      * Incoming user is in DOS codepage format. Convert
      * to UNIX.
      */
-    dos_to_unix(user,True);
+    pstrcpy(user,dos_to_unix(user,False));
   
     if (!doencrypt && (lp_security() != SEC_SERVER)) {
       smb_apasslen = strlen(smb_apasswd);
@@ -755,6 +774,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
     if (passlen1 > MAX_PASS_LEN) {
       overflow_attack(passlen1);
+      return(ERROR(ERRDOS,ERRbuftoosmall));
     }
 
     passlen1 = MIN(passlen1, MAX_PASS_LEN);
@@ -810,8 +830,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
        * Ensure the plaintext passwords are in UNIX format.
        */
       if(!doencrypt) {
-        dos_to_unix(smb_apasswd,True);
-        dos_to_unix(smb_ntpasswd,True);
+        pstrcpy(smb_apasswd,dos_to_unix(smb_apasswd,False));
+        pstrcpy(smb_ntpasswd,dos_to_unix(smb_ntpasswd,False));
       }
 
     } else {
@@ -821,7 +841,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
       /*
        * Ensure the plaintext password is in UNIX format.
        */
-      dos_to_unix(smb_apasswd,True);
+      pstrcpy(smb_apasswd,dos_to_unix(smb_apasswd,False));
       
       /* trim the password */
       smb_apasslen = strlen(smb_apasswd);
@@ -840,11 +860,17 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
      * Incoming user and domain are in DOS codepage format. Convert
      * to UNIX.
      */
-    dos_to_unix(user,True);
-    domain = p;
-    dos_to_unix(domain, True);
+    pstrcpy(user,dos_to_unix(user,False));
+    fstrcpy(domain, dos_to_unix(p, False));
     DEBUG(3,("Domain=[%s]  NativeOS=[%s] NativeLanMan=[%s]\n",
 	     domain,skip_string(p,1),skip_string(p,2)));
+  }
+
+  /* don't allow strange characters in usernames or domains */
+  alpha_strcpy(user, user, ". _-", sizeof(user));
+  alpha_strcpy(domain, domain, ". _-", sizeof(domain));
+  if (strstr(user, "..") || strstr(domain,"..")) {
+	  return bad_password_error(inbuf, outbuf);
   }
 
   DEBUG(3,("sesssetupX:name=[%s]\n",user));
@@ -895,15 +921,23 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
   pstrcpy( orig_user, user);
 
-  /* if the username exists as a domain/username pair on the unix system then use 
-     that */
-  if (!sys_getpwnam(user)) {
-	  pstring user2;
-	  slprintf(user2,sizeof(user2)-1,"%s%s%s", dos_to_unix(domain,False), lp_winbind_separator(), user);
-	  if (sys_getpwnam(user2)) {
-		  DEBUG(3,("Using unix username %s\n", user2));
-		  pstrcpy(user, user2);
-	  }
+  /*
+   * Always try the "DOMAIN\user" lookup first, as this is the most
+   * specific case. If this fails then try the simple "user" lookup.
+   */
+
+  {
+    pstring dom_user;
+
+    /* Work out who's who */
+
+    slprintf(dom_user, sizeof(dom_user) - 1,"%s%s%s",
+               dos_to_unix(domain, False), lp_winbind_separator(), user);
+
+    if (sys_getpwnam(dom_user) != NULL) {
+      pstrcpy(user, dom_user);
+      DEBUG(3,("Using unix username %s\n", dom_user));
+    }
   }
 
   /*
@@ -1054,6 +1088,11 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
      to a uid can get through without a password, on the same VC */
 
   sess_vuid = register_vuid(uid,gid,user,current_user_info.smb_name,domain,guest);
+  
+  if (sess_vuid == -1) {
+	  return(ERROR(ERRDOS,ERRnoaccess));
+  }
+
  
   SSVAL(outbuf,smb_uid,sess_vuid);
   SSVAL(inbuf,smb_uid,sess_vuid);
@@ -1840,14 +1879,15 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   pstring fname;
-  pstring fname2;
   int outsize = 0;
   int createmode;
-  mode_t unixmode;
+  mode_t unixmode = 0600;
   BOOL bad_path = False;
   files_struct *fsp;
   int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
+  int tmpfd;
   SMB_STRUCT_STAT sbuf;
+
   START_PROFILE(SMBctemp);
 
   createmode = SVAL(inbuf,smb_vwv0);
@@ -1858,17 +1898,22 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
   unix_convert(fname,conn,0,&bad_path,&sbuf);
   
-  unixmode = unix_mode(conn,createmode,fname);
-  
-  pstrcpy(fname2,(char *)smbd_mktemp(fname));
-  /* This file should not exist. */
-  ZERO_STRUCT(sbuf);
-  vfs_stat(conn,fname2,&sbuf);
+  tmpfd = smb_mkstemp(fname);
+  if (tmpfd == -1) {
+	  END_PROFILE(SMBctemp);
+	  return(UNIXERROR(ERRDOS,ERRnoaccess));
+  }
+
+  vfs_stat(conn,fname,&sbuf);
 
   /* Open file in dos compatibility share mode. */
-  /* We should fail if file exists. */
-  fsp = open_file_shared(conn,fname2,&sbuf,SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB), 
-                   (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_FAIL), unixmode, oplock_request, NULL, NULL);
+  /* We should fail if file does not exist. */
+  fsp = open_file_shared(conn,fname,&sbuf,
+			 SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB), 
+			 FILE_EXISTS_OPEN|FILE_FAIL_IF_NOT_EXIST, 
+			 unixmode, oplock_request, NULL, NULL);
+  /* close fd from smb_mkstemp() */
+  close(tmpfd);
 
   if (!fsp)
   {
@@ -1881,10 +1926,10 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  outsize = set_message(outbuf,1,2 + strlen(fname2),True);
+  outsize = set_message(outbuf,1,2 + strlen(fname),True);
   SSVAL(outbuf,smb_vwv0,fsp->fnum);
   CVAL(smb_buf(outbuf),0) = 4;
-  pstrcpy(smb_buf(outbuf) + 1,fname2);
+  pstrcpy(smb_buf(outbuf) + 1,fname);
 
   if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
@@ -1893,9 +1938,9 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   if(EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
 
-  DEBUG( 2, ( "created temp file %s\n", fname2 ) );
+  DEBUG( 2, ( "created temp file %s\n", fname ) );
   DEBUG( 3, ( "ctemp %s fd=%d dmode=%d umode=%o\n",
-        fname2, fsp->fd, createmode, (int)unixmode ) );
+        fname, fsp->fd, createmode, (int)unixmode ) );
 
   END_PROFILE(SMBctemp);
   return(outsize);
@@ -2154,7 +2199,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
   maxcount = MIN(65535,maxcount);
   maxcount = MAX(mincount,maxcount);
 
-  if (!is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK))
+  if (!is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK,False))
   {
     SMB_OFF_T size = fsp->size;
     SMB_OFF_T sizeneeded = startpos + maxcount;
@@ -2251,7 +2296,7 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
    * for a write lock. JRA.
    */
 
-  if(!do_lock( fsp, conn, (SMB_BIG_UINT)numtoread, (SMB_BIG_UINT)startpos, WRITE_LOCK, &eclass, &ecode)) {
+  if(!do_lock( fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)numtoread, (SMB_BIG_UINT)startpos, WRITE_LOCK, &eclass, &ecode)) {
     if((ecode == ERRlock) && lp_blocking_locks(SNUM(conn))) {
       /*
        * A blocking lock was requested. Package up
@@ -2311,7 +2356,7 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int size, int 
   numtoread = MIN(BUFFER_SIZE-outsize,numtoread);
   data = smb_buf(outbuf) + 3;
   
-  if (is_locked(fsp,conn,(SMB_BIG_UINT)numtoread,(SMB_BIG_UINT)startpos, READ_LOCK)) {
+  if (is_locked(fsp,conn,(SMB_BIG_UINT)numtoread,(SMB_BIG_UINT)startpos, READ_LOCK,False)) {
     END_PROFILE(SMBread);
     return(ERROR(ERRDOS,ERRlock));	
   }
@@ -2388,7 +2433,7 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
   }
 
-  if (is_locked(fsp,conn,(SMB_BIG_UINT)smb_maxcnt,(SMB_BIG_UINT)startpos, READ_LOCK)) {
+  if (is_locked(fsp,conn,(SMB_BIG_UINT)smb_maxcnt,(SMB_BIG_UINT)startpos, READ_LOCK,False)) {
     END_PROFILE(SMBreadX);
     return(ERROR(ERRDOS,ERRlock));
   }
@@ -2449,7 +2494,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
   CVAL(inbuf,smb_com) = SMBwritec;
   CVAL(outbuf,smb_com) = SMBwritec;
 
-  if (is_locked(fsp,conn,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
+  if (is_locked(fsp,conn,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos, WRITE_LOCK,False)) {
     END_PROFILE(SMBwritebraw);
     return(ERROR(ERRDOS,ERRlock));
   }
@@ -2472,7 +2517,8 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
   CVAL(outbuf,smb_com) = SMBwritebraw;
   SSVALS(outbuf,smb_vwv0,-1);
   outsize = set_message(outbuf,Protocol>PROTOCOL_COREPLUS?1:0,0,True);
-  send_smb(smbd_server_fd(),outbuf);
+  if (!send_smb(smbd_server_fd(),outbuf))
+    exit_server("reply_writebraw: send_smb failed.\n");
   
   /* Now read the raw data into the buffer and write it */
   if (read_smb_length(smbd_server_fd(),inbuf,SMB_SECONDARY_WAIT) == -1) {
@@ -2514,6 +2560,12 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
      follows what WfWg does */
   END_PROFILE(SMBwritebraw);
   if (!write_through && total_written==tcount) {
+    /*
+     * Fix for "rabbit pellet" mode, trigger an early TCP ack by
+     * sending a SMBkeepalive. Thanks to DaveCB at Sun for this. JRA.
+     */
+    if (!send_keepalive(smbd_server_fd()))
+      exit_server("reply_writebraw: send of keepalive failed");
     return(-1);
   }
 
@@ -2544,7 +2596,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int siz
   startpos = IVAL(inbuf,smb_vwv2);
   data = smb_buf(inbuf) + 3;
   
-  if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
+  if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK,False)) {
     END_PROFILE(SMBwriteunlock);
     return(ERROR(ERRDOS,ERRlock));
   }
@@ -2565,7 +2617,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int siz
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  if(!do_unlock(fsp, conn, (SMB_BIG_UINT)numtowrite, (SMB_BIG_UINT)startpos, &eclass, &ecode)) {
+  if(!do_unlock(fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)numtowrite, (SMB_BIG_UINT)startpos, &eclass, &ecode)) {
     END_PROFILE(SMBwriteunlock);
     return(ERROR(eclass,ecode));
   }
@@ -2608,7 +2660,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
   startpos = IVAL(inbuf,smb_vwv2);
   data = smb_buf(inbuf) + 3;
   
-  if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
+  if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK,False)) {
     END_PROFILE(SMBwrite);
     return(ERROR(ERRDOS,ERRlock));
   }
@@ -2657,7 +2709,9 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   BOOL write_through = BITSETW(inbuf+smb_vwv7,0);
   ssize_t nwritten = -1;
   unsigned int smb_doff = SVAL(inbuf,smb_vwv11);
+  unsigned int smblen = smb_len(inbuf);
   char *data;
+  BOOL large_writeX = ((CVAL(inbuf,smb_wct) == 14) && (smblen > 0xFFFF));
   START_PROFILE(SMBwriteX);
 
   /* If it's an IPC, pass off the pipe handler. */
@@ -2670,7 +2724,11 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   CHECK_WRITE(fsp);
   CHECK_ERROR(fsp);
 
-  if(smb_doff > smb_len(inbuf)) {
+  /* Deal with possible LARGE_WRITEX */
+  if (large_writeX)
+    numtowrite |= ((((size_t)SVAL(inbuf,smb_vwv9)) & 1 )<<16);
+
+  if(smb_doff > smblen || (smb_doff + numtowrite > smblen)) {
     END_PROFILE(SMBwriteX);
     return(ERROR(ERRDOS,ERRbadmem));
   }
@@ -2700,7 +2758,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 #endif /* LARGE_SMB_OFF_T */
   }
 
-  if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
+  if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK,False)) {
     END_PROFILE(SMBwriteX);
     return(ERROR(ERRDOS,ERRlock));
   }
@@ -2722,7 +2780,9 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   set_message(outbuf,6,0,True);
   
   SSVAL(outbuf,smb_vwv2,nwritten);
-  
+  if (large_writeX)
+    SSVAL(outbuf,smb_vwv4,(nwritten>>16)&1);
+
   if (nwritten < (ssize_t)numtowrite) {
     CVAL(outbuf,smb_rcls) = ERRHRD;
     SSVAL(outbuf,smb_err,ERRdiskfull);      
@@ -2983,7 +3043,7 @@ int reply_writeclose(connection_struct *conn,
 	mtime = make_unix_date3(inbuf+smb_vwv4);
 	data = smb_buf(inbuf) + 1;
   
-	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
+	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK,False)) {
 		END_PROFILE(SMBwriteclose);
 		return(ERROR(ERRDOS,ERRlock));
 	}
@@ -3041,7 +3101,7 @@ int reply_lock(connection_struct *conn,
 	DEBUG(3,("lock fd=%d fnum=%d offset=%.0f count=%.0f\n",
 		 fsp->fd, fsp->fnum, (double)offset, (double)count));
 
-	if (!do_lock(fsp, conn, count, offset, WRITE_LOCK, &eclass, &ecode)) {
+	if (!do_lock(fsp, conn, SVAL(inbuf,smb_pid), count, offset, WRITE_LOCK, &eclass, &ecode)) {
           if((ecode == ERRlock) && lp_blocking_locks(SNUM(conn))) {
 	    /*
              * A blocking lock was requested. Package up
@@ -3080,7 +3140,7 @@ int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int size, in
   count = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv1);
   offset = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv3);
 
-  if(!do_unlock(fsp, conn, count, offset, &eclass, &ecode)) {
+  if(!do_unlock(fsp, conn, SVAL(inbuf,smb_pid), count, offset, &eclass, &ecode)) {
     END_PROFILE(SMBunlock);
     return (ERROR(eclass,ecode));
   }
@@ -3149,7 +3209,8 @@ int reply_echo(connection_struct *conn,
 
 		smb_setlen(outbuf,outsize - 4);
 
-		send_smb(smbd_server_fd(),outbuf);
+		if (!send_smb(smbd_server_fd(),outbuf))
+			exit_server("reply_echo: send_smb failed.\n");
 	}
 
 	DEBUG(3,("echo %d times\n", smb_reverb));
@@ -3177,7 +3238,7 @@ int reply_printopen(connection_struct *conn,
 	}
 
 	/* Open for exclusive use, write only. */
-	fsp = print_fsp_open(conn,"dos.prn");
+	fsp = print_fsp_open(conn);
 
 	if (!fsp) {
 		END_PROFILE(SMBsplopen);
@@ -4195,6 +4256,18 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 }
 
 /****************************************************************************
+ Get a lock pid, dealing with large count requests.
+****************************************************************************/
+
+uint16 get_lock_pid( char *data, int data_offset, BOOL large_file_format)
+{
+	if(!large_file_format)
+		return SVAL(data,SMB_LPID_OFFSET(data_offset));
+	else
+		return SVAL(data,SMB_LARGE__LPID_OFFSET(data_offset));
+}
+
+/****************************************************************************
  Get a lock count, dealing with large count requests.
 ****************************************************************************/
 
@@ -4293,6 +4366,7 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
   uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
   uint16 num_locks = SVAL(inbuf,smb_vwv7);
   SMB_BIG_UINT count = 0, offset = 0;
+  uint16 lock_pid;
   int32 lock_timeout = IVAL(inbuf,smb_vwv4);
   int i;
   char *data;
@@ -4316,7 +4390,7 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
 	BOOL break_to_none = (oplocklevel == 0);
 
     DEBUG(5,("reply_lockingX: oplock break reply (%u) from client for fnum = %d\n",
-              fsp->fnum, (unsigned int)oplocklevel ));
+              (unsigned int)oplocklevel, fsp->fnum ));
 
     /*
      * Make sure we have granted an exclusive or batch oplock on this file.
@@ -4365,6 +4439,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
   /* Data now points at the beginning of the list
      of smb_unlkrng structs */
   for(i = 0; i < (int)num_ulocks; i++) {
+    lock_pid = get_lock_pid( data, i, large_file_format);
     count = get_lock_count( data, i, large_file_format);
     offset = get_lock_offset( data, i, large_file_format, &err);
 
@@ -4376,10 +4451,10 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
       return ERROR(ERRDOS,ERRnoaccess);
     }
 
-    DEBUG(10,("reply_lockingX: unlock start=%.0f, len=%.0f for file %s\n",
-          (double)offset, (double)count, fsp->fsp_name ));
+    DEBUG(10,("reply_lockingX: unlock start=%.0f, len=%.0f for pid %u, file %s\n",
+          (double)offset, (double)count, (unsigned int)lock_pid, fsp->fsp_name ));
 
-    if(!do_unlock(fsp,conn,count,offset, &eclass, &ecode)) {
+    if(!do_unlock(fsp,conn,lock_pid,count,offset, &eclass, &ecode)) {
       END_PROFILE(SMBlockingX);
       return ERROR(eclass,ecode);
     }
@@ -4395,6 +4470,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
      of smb_lkrng structs */
 
   for(i = 0; i < (int)num_locks; i++) {
+    lock_pid = get_lock_pid( data, i, large_file_format);
     count = get_lock_count( data, i, large_file_format);
     offset = get_lock_offset( data, i, large_file_format, &err);
 
@@ -4406,10 +4482,10 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
       return ERROR(ERRDOS,ERRnoaccess);
     }
  
-    DEBUG(10,("reply_lockingX: lock start=%.0f, len=%.0f for file %s\n",
-          (double)offset, (double)count, fsp->fsp_name ));
+    DEBUG(10,("reply_lockingX: lock start=%.0f, len=%.0f for pid %u, file %s\n",
+          (double)offset, (double)count, (unsigned int)lock_pid, fsp->fsp_name ));
 
-    if(!do_lock(fsp,conn,count,offset, ((locktype & 1) ? READ_LOCK : WRITE_LOCK),
+    if(!do_lock(fsp,conn,lock_pid, count,offset, ((locktype & 1) ? READ_LOCK : WRITE_LOCK),
                 &eclass, &ecode)) {
       if((ecode == ERRlock) && (lock_timeout != 0) && lp_blocking_locks(SNUM(conn))) {
         /*
@@ -4435,6 +4511,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
      * will delete it (and we shouldn't) .....
      */
     for(i--; i >= 0; i--) {
+      lock_pid = get_lock_pid( data, i, large_file_format);
       count = get_lock_count( data, i, large_file_format);
       offset = get_lock_offset( data, i, large_file_format, &err);
 
@@ -4446,7 +4523,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
         return ERROR(ERRDOS,ERRnoaccess);
       }
  
-      do_unlock(fsp,conn,count,offset,&dummy1,&dummy2);
+      do_unlock(fsp,conn,lock_pid,count,offset,&dummy1,&dummy2);
     }
     END_PROFILE(SMBlockingX);
     return ERROR(eclass,ecode);
@@ -4503,7 +4580,7 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
   tcount = maxcount;
   total_read = 0;
 
-  if (is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK)) {
+  if (is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK,False)) {
     END_PROFILE(SMBreadBmpx);
     return(ERROR(ERRDOS,ERRlock));
   }
@@ -4525,7 +4602,8 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
       SSVAL(outbuf,smb_vwv6,nread);
       SSVAL(outbuf,smb_vwv7,smb_offset(data,outbuf));
 
-      send_smb(smbd_server_fd(),outbuf);
+      if (!send_smb(smbd_server_fd(),outbuf))
+        exit_server("reply_readbmpx: send_smb failed.\n");
 
       total_read += nread;
       startpos += nread;
@@ -4569,7 +4647,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
      not an SMBwritebmpx - set this up now so we don't forget */
   CVAL(outbuf,smb_com) = SMBwritec;
 
-  if (is_locked(fsp,conn,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos,WRITE_LOCK)) {
+  if (is_locked(fsp,conn,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos,WRITE_LOCK,False)) {
     END_PROFILE(SMBwriteBmpx);
     return(ERROR(ERRDOS,ERRlock));
   }
@@ -4623,7 +4701,8 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
   if (write_through && tcount==nwritten) {
     /* we need to send both a primary and a secondary response */
     smb_setlen(outbuf,outsize - 4);
-    send_smb(smbd_server_fd(),outbuf);
+    if (!send_smb(smbd_server_fd(),outbuf))
+      exit_server("reply_writebmpx: send_smb failed.\n");
 
     /* now the secondary */
     outsize = set_message(outbuf,1,0,True);

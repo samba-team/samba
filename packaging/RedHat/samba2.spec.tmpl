@@ -160,7 +160,8 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
 	--with-syslog \
 	--with-utmp \
 	--with-netatalk \
-	--with-sambabook=%{prefix}/share/swat/using_samba
+	--with-sambabook=%{prefix}/share/swat/using_samba \
+	--with-swatdir=%{prefix}/share/swat
 make -j${NUMCPU} proto
 make -j${NUMCPU} all nsswitch/libnss_wins.so
 make -j${NUMCPU} debug2html

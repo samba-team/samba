@@ -30,7 +30,10 @@ $V mkdir -p ${BLDFIX}/var/locks
 $V mkdir -p ${BLDFIX}/lib/codepages/src
 
 # Copy into the dist tree the pkg data files
-$V cp pkg/* ${BUILD_ROOT}
+for i in pkg/*
+do
+    [ -f $i ] && $V cp $i ${BUILD_ROOT}
+done
 
 cd ../../..
 
@@ -41,7 +44,7 @@ for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
 do
 $V    install -m755 -s source/bin/$i ${BLDFIX}/bin
 done
-for i in addtosmbpass mksmbpasswd.sh smbtar
+for i in mksmbpasswd.sh smbtar
 do
 $V    install -m755 source/script/$i ${BLDFIX}/bin
 done

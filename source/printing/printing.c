@@ -55,7 +55,7 @@ BOOL print_backend_init(void)
 	char *sversion = "INFO/version";
 
 	if (tdb && local_pid == sys_getpid()) return True;
-	tdb = tdb_open(lock_path("printing.tdb"), 0, 0, O_RDWR|O_CREAT, 0600);
+	tdb = tdb_open_log(lock_path("printing.tdb"), 0, 0, O_RDWR|O_CREAT, 0600);
 	if (!tdb) {
 		DEBUG(0,("print_backend_init: Failed to open printing backend database. Error = [%s]\n",
 				 tdb_errorstr(tdb)));
@@ -845,6 +845,7 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 		SMB_BIG_UINT dspace, dsize;
 		if (sys_fsusage(path, &dspace, &dsize) == 0 &&
 		    dspace < 2*(SMB_BIG_UINT)lp_minprintspace(snum)) {
+			DEBUG(3, ("print_job_start: disk space check failed.\n"));
 			errno = ENOSPC;
 			return -1;
 		}
@@ -852,18 +853,23 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 
 	/* for autoloaded printers, check that the printcap entry still exists */
 	if (lp_autoloaded(snum) && !pcap_printername_ok(lp_servicename(snum), NULL)) {
+		DEBUG(3, ("print_job_start: printer name %s check failed.\n", lp_servicename(snum) ));
 		errno = ENOENT;
 		return -1;
 	}
 
 	/* Insure the maximum queue size is not violated */
 	if (lp_maxprintjobs(snum) && print_queue_length(snum) > lp_maxprintjobs(snum)) {
+		DEBUG(3, ("print_job_start: number of jobs (%d) larger than max printjobs per queue (%d).\n",
+			print_queue_length(snum), lp_maxprintjobs(snum) ));
 		errno = ENOSPC;
 		return -1;
 	}
 
 	/* Insure the maximum print jobs in the system is not violated */
 	if (lp_totalprintjobs() && get_total_jobs(snum) > lp_totalprintjobs()) {
+		DEBUG(3, ("print_job_start: number of jobs (%d) larger than max printjobs per system (%d).\n",
+			print_queue_length(snum), lp_totalprintjobs() ));
 		errno = ENOSPC;
 		return -1;
 	}
@@ -892,32 +898,27 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	/* lock the database */
 	tdb_lock_bystring(tdb, "INFO/nextjob");
 
- next_jobnum:
 	next_jobid = tdb_fetch_int(tdb, "INFO/nextjob");
-	if (next_jobid == -1) next_jobid = 1;
+	if (next_jobid == -1)
+		next_jobid = 1;
 
 	for (jobid = NEXT_JOBID(next_jobid); jobid != next_jobid; jobid = NEXT_JOBID(jobid)) {
-		if (!print_job_exists(jobid)) break;
+		if (!print_job_exists(jobid))
+			break;
 	}
 	if (jobid == next_jobid || !print_job_store(jobid, &pjob)) {
+		DEBUG(3, ("print_job_start: either jobid (%d)==next_jobid(%d) or print_job_store failed.\n",
+				jobid, next_jobid ));
 		jobid = -1;
 		goto fail;
 	}
 
 	tdb_store_int(tdb, "INFO/nextjob", jobid);
 
-	/* we have a job entry - now create the spool file 
-
-	   we unlink first to cope with old spool files and also to beat
-	   a symlink security hole - it allows us to use O_EXCL 
-	   There may be old spool files owned by other users lying around.
-	*/
-	slprintf(pjob.filename, sizeof(pjob.filename)-1, "%s/%s%d", 
-		 path, PRINT_SPOOL_PREFIX, jobid);
-	if (unlink(pjob.filename) == -1 && errno != ENOENT) {
-		goto next_jobnum;
-	}
-	pjob.fd = sys_open(pjob.filename,O_WRONLY|O_CREAT|O_EXCL,0600);
+	/* we have a job entry - now create the spool file */
+	slprintf(pjob.filename, sizeof(pjob.filename)-1, "%s/%sXXXXXX", 
+		 path, PRINT_SPOOL_PREFIX);
+	pjob.fd = smb_mkstemp(pjob.filename);
 
 	if (pjob.fd == -1) {
 		if (errno == EACCES) {
@@ -955,6 +956,8 @@ to open spool file %s.\n", pjob.filename));
 	}
 
 	tdb_unlock_bystring(tdb, "INFO/nextjob");
+
+	DEBUG(3, ("print_job_start: returning fail. Error = %s\n", strerror(errno) ));
 	return -1;
 }
 
@@ -990,6 +993,7 @@ BOOL print_job_end(int jobid, BOOL normal_close)
 		 */
 		close(pjob->fd);
 		pjob->fd = -1;
+		DEBUG(3,("print_job_end: failed to stat file for jobid %d\n", jobid ));
 		goto fail;
 	}
 
@@ -1007,7 +1011,8 @@ BOOL print_job_end(int jobid, BOOL normal_close)
 
 	ret = (*(current_printif->job_submit))(snum, pjob);
 
-	if (ret) goto fail;
+	if (ret)
+		goto fail;
 
 	/* The print job has been sucessfully handed over to the back-end */
 	
@@ -1016,11 +1021,13 @@ BOOL print_job_end(int jobid, BOOL normal_close)
 	print_job_store(jobid, pjob);
 	
 	/* make sure the database is up to date */
-	if (print_cache_expired(snum)) print_queue_update(snum);
+	if (print_cache_expired(snum))
+		print_queue_update(snum);
 	
 	return True;
 
 fail:
+
 	/* The print job was not succesfully started. Cleanup */
 	/* Still need to add proper error return propagation! 010122:JRR */
 	unlink(pjob->filename);

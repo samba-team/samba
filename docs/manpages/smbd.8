@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH SMBD 8 "23 Jun 2001" "smbd 2.2.0a"
+.TH "SMBD" "8" "05 July 2001" "" ""
 .SH NAME
 smbd \- server to provide SMB/CIFS services to clients
 .SH SYNOPSIS
@@ -31,7 +31,8 @@ services, but will concentrate on the administrative aspects
 of running the server.
 .PP
 Please note that there are significant security 
-implications to running this server, and the \fIsmb.conf(5)\fRmanpage should be regarded as mandatory reading before 
+implications to running this server, and the \fIsmb.conf(5)\fR
+manpage should be regarded as mandatory reading before 
 proceeding with installation.
 .PP
 A session is created whenever a client requests one. 
@@ -45,7 +46,7 @@ are automatically reloaded every minute, if they change. You
 can force a reload by sending a SIGHUP to the server. Reloading 
 the configuration file will not affect connections to any service 
 that is already established. Either the user will have to 
-disconnect from the service, or smbd killed and restarted.
+disconnect from the service, or \fBsmbd\fR killed and restarted.
 .SH "OPTIONS"
 .TP
 \fB-D\fR
@@ -53,9 +54,9 @@ If specified, this parameter causes
 the server to operate as a daemon. That is, it detaches 
 itself and runs in the background, fielding requests 
 on the appropriate port. Operating the server as a
-daemon is the recommended way of running smbd for 
+daemon is the recommended way of running \fBsmbd\fR for 
 servers that provide more than casual use file and 
-print services. This switch is assumed is \fBsmbd
+print services. This switch is assumed if \fBsmbd
 \fRis executed on the command line of a shell.
 .TP
 \fB-a\fR
@@ -70,7 +71,7 @@ log files will be overwritten when opened. By default,
 files.
 .TP
 \fB-P\fR
-Passive option. Causes smbd not to 
+Passive option. Causes \fBsmbd\fR not to 
 send any network traffic out. Used for debugging by 
 the developers only.
 .TP
@@ -83,7 +84,7 @@ Prints the version number for
 \fBsmbd\fR.
 .TP
 \fB-d <debug level>\fR
-debuglevel is an integer 
+\fIdebuglevel\fR is an integer 
 from 0 to 10. The default value if this parameter is 
 not specified is zero.
 
@@ -105,19 +106,21 @@ override the log
 levelfile.
 .TP
 \fB-l <log file>\fR
-If specified, \fBlog file\fR 
+If specified, \fIlog file\fR 
 specifies a log filename into which informational and debug 
 messages from the running server will be logged. The log 
 file generated is never removed by the server although 
-its size may be controlled by the max log sizeoption in the \fI smb.conf(5)\fRfile. The default log 
+its size may be controlled by the max log size
+option in the \fI smb.conf(5)\fRfile. The default log 
 file name is specified at compile time.
 .TP
 \fB-O <socket options>\fR
-See the socket optionsparameter in the \fIsmb.conf(5)
+See the socket options
+parameter in the \fIsmb.conf(5)
 \fRfile for details.
 .TP
 \fB-p <port number>\fR
-port number is a positive integer 
+\fIport number\fR is a positive integer 
 value. The default value if this parameter is not 
 specified is 139.
 
@@ -174,7 +177,8 @@ See the section INSTALLATION below.
 .TP
 \fB\fI/usr/local/samba/lib/smb.conf\fB\fR
 This is the default location of the 
-\fIsmb.conf\fRserver configuration file. Other common places that systems 
+\fIsmb.conf\fR
+server configuration file. Other common places that systems 
 install this file are \fI/usr/samba/lib/smb.conf\fR 
 and \fI/etc/smb.conf\fR.
 
@@ -209,10 +213,10 @@ in a directory readable by all, writeable only by root. The server
 program itself should be executable by all, as users may wish to 
 run the server themselves (in which case it will of course run 
 with their privileges). The server should NOT be setuid. On some 
-systems it may be worthwhile to make smbd setgid to an empty group. 
+systems it may be worthwhile to make \fBsmbd\fR setgid to an empty group. 
 This is because some systems may have a security hole where daemon 
 processes that become a user can be attached to with a debugger. 
-Making the smbd file setgid to an empty group may prevent
+Making the \fBsmbd\fR file setgid to an empty group may prevent
 this hole from being exploited. This security hole and the suggested
 fix has only been confirmed on old versions (pre-kernel 2.0) of Linux
 at the time this was written. It is possible that this hole only
@@ -303,7 +307,7 @@ be omitted. See the section OPTIONS above.
 .SH "RUNNING THE SERVER ON REQUEST"
 .PP
 If your system uses a meta-daemon such as \fBinetd
-\fR, you can arrange to have the smbd server started 
+\fR, you can arrange to have the \fBsmbd\fR server started 
 whenever a process attempts to connect to it. This requires several 
 changes to the startup files on the host machine. If you are 
 experimenting as an ordinary user rather than as root, you will 
@@ -369,6 +373,27 @@ all you need:
 This will allow you to connect to your home directory 
 and print to any printer supported by the host (user privileges 
 permitting).
+.SH "PAM INTERACTION"
+.PP
+Samba uses PAM for authentication (when presented with a plaintext 
+password), for account checking (is this account disabled?) and for
+session management. The degree too which samba supports PAM is restricted
+by the limitations of the SMB protocol and the 
+obey pam restricions
+smb.conf paramater. When this is set, the following restrictions apply:
+.TP 0.2i
+\(bu
+\fBAccount Validation\fR: All acccesses to a 
+samba server are checked 
+against PAM to see if the account is vaild, not disabled and is permitted to 
+login at this time. This also applies to encrypted logins.
+.TP 0.2i
+\(bu
+\fBSession Management\fR: When not using share 
+level secuirty, users must pass PAM's session checks before access 
+is granted. Note however, that this is bypassed in share level secuirty. 
+Note also that some older pam configuration files may need a line 
+added for session support. 
 .SH "TESTING THE INSTALLATION"
 .PP
 If running the server as a daemon, execute it before 
@@ -377,8 +402,8 @@ or kill and restart the meta-daemon. Some versions of
 \fBinetd\fR will reread their configuration
 tables if they receive a HUP signal.
 .PP
-If your machine's name is fred and your 
-name is mary, you should now be able to connect 
+If your machine's name is \fIfred\fR and your 
+name is \fImary\fR, you should now be able to connect 
 to the service \fI\\\\fred\\mary\fR.
 .PP
 To properly test and experiment with the server, we 
@@ -409,26 +434,26 @@ source code and inspect the conditions that gave rise to the
 diagnostics you are seeing.
 .SH "SIGNALS"
 .PP
-Sending the smbd a SIGHUP will cause it to 
-re-load its \fIsmb.conf\fR configuration 
+Sending the \fBsmbd\fR a SIGHUP will cause it to 
+reload its \fIsmb.conf\fR configuration 
 file within a short period of time.
 .PP
-To shut down a users smbd process it is recommended 
+To shut down a user's \fBsmbd\fR process it is recommended 
 that \fBSIGKILL (-9)\fR \fBNOT\fR 
 be used, except as a last resort, as this may leave the shared
 memory area in an inconsistent state. The safe way to terminate 
-an smbd is to send it a SIGTERM (-15) signal and wait for 
+an \fBsmbd\fR is to send it a SIGTERM (-15) signal and wait for 
 it to die on its own.
 .PP
-The debug log level of smbd may be raised by sending 
+The debug log level of \fBsmbd\fR may be raised by sending 
 it a SIGUSR1 (\fBkill -USR1 <smbd-pid>\fR)
 and lowered by sending it a SIGUSR2 (\fBkill -USR2 <smbd-pid>
 \fR). This is to allow transient problems to be diagnosed, 
 whilst still running at a normally low log level.
 .PP
 Note that as the signal handlers send a debug write, 
-they are not re-entrant in smbd. This you should wait until 
-smbd is in a state of waiting for an incoming smb before 
+they are not re-entrant in \fBsmbd\fR. This you should wait until 
+\fBsmbd\fR is in a state of waiting for an incoming SMB before 
 issuing them. It is possible to make the signal handlers safe 
 by un-blocking the signals before the select call and re-blocking 
 them after, however this would affect performance.

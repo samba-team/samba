@@ -86,10 +86,8 @@ pstring global_scope = "";
 #endif
 
 /* some helpful bits */
-#define pSERVICE(i) ServicePtrs[i]
-#define iSERVICE(i) (*pSERVICE(i))
-#define LP_SNUM_OK(iService) (((iService) >= 0) && ((iService) < iNumServices) && iSERVICE(iService).valid)
-#define VALID(i) iSERVICE(i).valid
+#define LP_SNUM_OK(i) (((i) >= 0) && ((i) < iNumServices) && ServicePtrs[(i)]->valid)
+#define VALID(i) ServicePtrs[i]->valid
 
 int keepalive = DEFAULT_KEEPALIVE;
 BOOL use_getwd_cache = True;
@@ -131,8 +129,6 @@ typedef struct
 	char *szWorkGroup;
 	char *szDomainAdminGroup;
 	char *szDomainGuestGroup;
-	char *szDomainAdminUsers;
-	char *szDomainGuestUsers;
 	char *szDomainHostsallow;
 	char *szDomainHostsdeny;
 	char *szUsernameMap;
@@ -155,7 +151,6 @@ typedef struct
 	char *szAnnounceVersion;	/* This is initialised in init_globals */
 	char *szNetbiosAliases;
 	char *szDomainOtherSIDs;
-	char *szDomainGroups;
 	char *szNameResolveOrder;
 	char *szLdapServer;
 	char *szLdapSuffix;
@@ -169,9 +164,8 @@ typedef struct
 #ifdef WITH_UTMP
 	char *szUtmpDir;
 	char *szWtmpDir;
-	char *szUtmpHostname;
-	BOOL bUtmpConsolidate;
-#endif				/* WITH_UTMP */
+	BOOL bUtmp;
+#endif
 	char *szSourceEnv;
 	char *szWinbindUID;
 	char *szWinbindGID;
@@ -199,6 +193,7 @@ typedef struct
 	int iTotalPrintJobs;
 	int syslog;
 	int os_level;
+	int enhanced_browsing;
 	int max_ttl;
 	int max_wins_ttl;
 	int min_wins_ttl;
@@ -245,18 +240,20 @@ typedef struct
 	BOOL bUpdateEncrypt;
 	BOOL bStripDot;
 	BOOL bNullPasswords;
+	BOOL bObeyPamRestrictions;
 	BOOL bLoadPrinters;
 	BOOL bUseRhosts;
+	BOOL bLargeReadwrite;
 	BOOL bReadRaw;
 	BOOL bWriteRaw;
 	BOOL bReadPrediction;
 	BOOL bReadbmpx;
 	BOOL bSyslogOnly;
 	BOOL bBrowseList;
-	BOOL bUnixRealname;
 	BOOL bNISHomeMap;
 	BOOL bTimeServer;
 	BOOL bBindInterfacesOnly;
+	BOOL bPamPasswordChange;
 	BOOL bUnixPasswdSync;
 	BOOL bPasswdChatDebug;
 	BOOL bTimestampLogs;
@@ -354,6 +351,7 @@ typedef struct
 	BOOL bCaseMangle;
 	BOOL status;
 	BOOL bHideDotFiles;
+	BOOL bHideUnReadable;
 	BOOL bBrowseable;
 	BOOL bAvailable;
 	BOOL bRead_only;
@@ -368,9 +366,6 @@ typedef struct
 	BOOL bLocking;
 	BOOL bStrictLocking;
 	BOOL bPosixLocking;
-#ifdef WITH_UTMP
-	BOOL bUtmp;
-#endif
 	BOOL bShareModes;
 	BOOL bOpLocks;
 	BOOL bLevel2OpLocks;
@@ -450,12 +445,12 @@ static service sDefault = {
 	0,			/* iWriteCacheSize */
 	0744,			/* iCreate_mask */
 	0000,			/* iCreate_force_mode */
-	-1,			/* iSecurity_mask */
-	-1,			/* iSecurity_force_mode */
+	0777,			/* iSecurity_mask */
+	0,			/* iSecurity_force_mode */
 	0755,			/* iDir_mask */
 	0000,			/* iDir_force_mode */
-	-1,			/* iDir_Security_mask */
-	-1,			/* iDir_Security_force_mode */
+	0777,			/* iDir_Security_mask */
+	0,			/* iDir_Security_force_mode */
 	0,			/* iMaxConnections */
 	CASE_LOWER,		/* iDefaultCase */
 	DEFAULT_PRINTING,	/* iPrinting */
@@ -469,6 +464,7 @@ static service sDefault = {
 	False,			/* case mangle */
 	True,			/* status */
 	True,			/* bHideDotFiles */
+	False,			/* bHideUnReadable */
 	True,			/* bBrowseable */
 	True,			/* bAvailable */
 	True,			/* bRead_only */
@@ -483,9 +479,6 @@ static service sDefault = {
 	True,			/* bLocking */
 	False,			/* bStrictLocking */
 	True,			/* bPosixLocking */
-#ifdef WITH_UTMP
-	False,			/* bUtmp */
-#endif
 	True,			/* bShareModes */
 	True,			/* bOpLocks */
 	True,			/* bLevel2OpLocks */
@@ -678,6 +671,7 @@ static struct parm_struct parm_table[] = {
 	{"min password length", P_INTEGER, P_GLOBAL, &Globals.min_passwd_length, NULL, NULL, 0},
 	{"map to guest", P_ENUM, P_GLOBAL, &Globals.map_to_guest, NULL, enum_map_to_guest, 0},
 	{"null passwords", P_BOOL, P_GLOBAL, &Globals.bNullPasswords, NULL, NULL, 0},
+	{"obey pam restrictions", P_BOOL, P_GLOBAL, &Globals.bObeyPamRestrictions, NULL, NULL, 0},
 	{"password server", P_STRING, P_GLOBAL, &Globals.szPasswordServer, NULL, NULL, 0},
 /* #ifdef WITH_TDBPWD
 	{"tdb passwd file", P_STRING, P_GLOBAL, &Globals.szTDBPasswdFile, NULL, NULL, 0},
@@ -688,6 +682,7 @@ static struct parm_struct parm_table[] = {
 	{"root dir", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, 0},
 	{"root", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, 0},
 	
+	{"pam password change", P_BOOL, P_GLOBAL, &Globals.bPamPasswordChange, NULL, NULL, 0},
 	{"passwd program", P_STRING, P_GLOBAL, &Globals.szPasswdProgram, NULL, NULL, 0},
 	{"passwd chat", P_STRING, P_GLOBAL, &Globals.szPasswdChat, NULL, NULL, 0},
 	{"passwd chat debug", P_BOOL, P_GLOBAL, &Globals.bPasswdChatDebug, NULL, NULL, 0},
@@ -709,7 +704,7 @@ static struct parm_struct parm_table[] = {
 	{"admin users", P_STRING, P_LOCAL, &sDefault.szAdminUsers, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
 	{"read list", P_STRING, P_LOCAL, &sDefault.readlist, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
 	{"write list", P_STRING, P_LOCAL, &sDefault.writelist, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
-	{"printer admin", P_STRING, P_LOCAL, &sDefault.printer_admin, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
+	{"printer admin", P_STRING, P_LOCAL, &sDefault.printer_admin, NULL, NULL, FLAG_GLOBAL | FLAG_PRINT},
 	{"force user", P_STRING, P_LOCAL, &sDefault.force_user, NULL, NULL, FLAG_SHARE},
 	{"force group", P_STRING, P_LOCAL, &sDefault.force_group, NULL, NULL, FLAG_SHARE},
 	{"group", P_STRING, P_LOCAL, &sDefault.force_group, NULL, NULL, 0},
@@ -780,6 +775,7 @@ static struct parm_struct parm_table[] = {
 	{"Protocol Options", P_SEP, P_SEPARATOR},
 	
 	{"protocol", P_ENUM, P_GLOBAL, &Globals.maxprotocol, NULL, enum_protocol, 0},
+	{"large readwrite", P_BOOL, P_GLOBAL, &Globals.bLargeReadwrite, NULL, NULL, 0},
 	{"max protocol", P_ENUM, P_GLOBAL, &Globals.maxprotocol, NULL, enum_protocol, 0},
 	{"min protocol", P_ENUM, P_GLOBAL, &Globals.minprotocol, NULL, enum_protocol, 0},
 	{"read bmpx", P_BOOL, P_GLOBAL, &Globals.bReadbmpx, NULL, NULL, 0},
@@ -867,6 +863,7 @@ static struct parm_struct parm_table[] = {
 	{"mangle case", P_BOOL, P_LOCAL, &sDefault.bCaseMangle, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"mangling char", P_CHAR, P_LOCAL, &sDefault.magic_char, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"hide dot files", P_BOOL, P_LOCAL, &sDefault.bHideDotFiles, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
+	{"hide unreadable", P_BOOL, P_LOCAL, &sDefault.bHideUnReadable, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"delete veto files", P_BOOL, P_LOCAL, &sDefault.bDeleteVetoFiles, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"veto files", P_STRING, P_LOCAL, &sDefault.szVetoFiles, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL | FLAG_DOS_STRING},
 	{"hide files", P_STRING, P_LOCAL, &sDefault.szHideFiles, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL | FLAG_DOS_STRING},
@@ -880,11 +877,8 @@ static struct parm_struct parm_table[] = {
 
 	{"Domain Options", P_SEP, P_SEPARATOR},
 	
-	{"domain groups", P_STRING, P_GLOBAL, &Globals.szDomainGroups, NULL, NULL, 0},
 	{"domain admin group", P_STRING, P_GLOBAL, &Globals.szDomainAdminGroup, NULL, NULL, 0},
 	{"domain guest group", P_STRING, P_GLOBAL, &Globals.szDomainGuestGroup, NULL, NULL, 0},
-	{"domain admin users", P_STRING, P_GLOBAL, &Globals.szDomainAdminUsers, NULL, NULL, 0},
-	{"domain guest users", P_STRING, P_GLOBAL, &Globals.szDomainGuestUsers, NULL, NULL, 0},
 #ifdef USING_GROUPNAME_MAP
 	
 	{"groupname map", P_STRING, P_GLOBAL, &Globals.szGroupnameMap, NULL, NULL, 0},
@@ -914,6 +908,7 @@ static struct parm_struct parm_table[] = {
 	{"browse list", P_BOOL, P_GLOBAL, &Globals.bBrowseList, NULL, NULL, 0},
 	{"browseable", P_BOOL, P_LOCAL, &sDefault.bBrowseable, NULL, NULL, FLAG_BASIC | FLAG_SHARE | FLAG_PRINT},
 	{"browsable", P_BOOL, P_LOCAL, &sDefault.bBrowseable, NULL, NULL, 0},
+	{"enhanced browsing", P_BOOL, P_GLOBAL, &Globals.enhanced_browsing, NULL, NULL},
 
 	{"WINS Options", P_SEP, P_SEPARATOR},
 	{"dns proxy", P_BOOL, P_GLOBAL, &Globals.bDNSproxy, NULL, NULL, 0},
@@ -929,9 +924,6 @@ static struct parm_struct parm_table[] = {
 	{"fake oplocks", P_BOOL, P_LOCAL, &sDefault.bFakeOplocks, NULL, NULL, FLAG_SHARE},
 	{"kernel oplocks", P_BOOL, P_GLOBAL, &Globals.bKernelOplocks, NULL, NULL, FLAG_GLOBAL},
 	{"locking", P_BOOL, P_LOCAL, &sDefault.bLocking, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
-#ifdef WITH_UTMP
-	{"utmp", P_BOOL, P_LOCAL, &sDefault.bUtmp, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
-#endif
 	
 	{"oplocks", P_BOOL, P_LOCAL, &sDefault.bOpLocks, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"level2 oplocks", P_BOOL, P_LOCAL, &sDefault.bLevel2OpLocks, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
@@ -963,17 +955,13 @@ static struct parm_struct parm_table[] = {
 	{"lock dir", P_STRING, P_GLOBAL, &Globals.szLockDir, NULL, NULL, 0}, 
 	{"lock directory", P_STRING, P_GLOBAL, &Globals.szLockDir, NULL, NULL, 0},
 #ifdef WITH_UTMP
-	{"utmp dir", P_STRING, P_GLOBAL, &Globals.szUtmpDir, NULL, NULL, 0},
 	{"utmp directory", P_STRING, P_GLOBAL, &Globals.szUtmpDir, NULL, NULL, 0},
-	{"wtmp dir", P_STRING, P_GLOBAL, &Globals.szWtmpDir, NULL, NULL, 0},
 	{"wtmp directory", P_STRING, P_GLOBAL, &Globals.szWtmpDir, NULL, NULL, 0},
-	{"utmp hostname", P_STRING, P_GLOBAL, &Globals.szUtmpHostname, NULL, NULL, 0},
-	{"utmp consolidate", P_BOOL, P_GLOBAL, &Globals.bUtmpConsolidate, NULL, NULL, 0},
-#endif /* WITH_UTMP */
+	{"utmp",          P_BOOL, P_GLOBAL, &Globals.bUtmp, NULL, NULL, 0},
+#endif
 	
-	{"default service", P_STRING, P_GLOBAL,
-	 &Globals.szDefaultService, NULL, NULL, 0},
-	{"default", P_STRING, P_GLOBAL, &Globals.szDefaultService, NULL, NULL, 0},
+	{"default service", P_STRING, P_GLOBAL, &Globals.szDefaultService, NULL, NULL, FLAG_DOS_STRING},
+	{"default", P_STRING, P_GLOBAL, &Globals.szDefaultService, NULL, NULL, FLAG_DOS_STRING},
 	{"message command", P_STRING, P_GLOBAL, &Globals.szMsgCommand, NULL, NULL, 0},
 	{"dfree command", P_STRING, P_GLOBAL, &Globals.szDfree, NULL, NULL, 0},
 	{"valid chars", P_STRING, P_GLOBAL, &Globals.szValidChars, handle_valid_chars, NULL, 0},
@@ -982,7 +970,6 @@ static struct parm_struct parm_table[] = {
 	{"socket address", P_STRING, P_GLOBAL, &Globals.szSocketAddress, NULL, NULL, 0},
 	{"homedir map", P_STRING, P_GLOBAL, &Globals.szNISHomeMapName, NULL, NULL, 0},
 	{"time offset", P_INTEGER, P_GLOBAL, &extra_time_offset, NULL, NULL, 0},
-	{"unix realname", P_BOOL, P_GLOBAL, &Globals.bUnixRealname, NULL, NULL, 0},
 	{"NIS homedir", P_BOOL, P_GLOBAL, &Globals.bNISHomeMap, NULL, NULL, 0},
 	{"-valid", P_BOOL, P_LOCAL, &sDefault.valid, NULL, NULL, FLAG_HIDE},
 	
@@ -997,7 +984,7 @@ static struct parm_struct parm_table[] = {
 	{"root preexec close", P_BOOL, P_LOCAL, &sDefault.bRootpreexecClose, NULL, NULL, FLAG_SHARE},
 	{"root postexec", P_STRING, P_LOCAL, &sDefault.szRootPostExec, NULL, NULL, FLAG_SHARE | FLAG_PRINT},
 	{"available", P_BOOL, P_LOCAL, &sDefault.bAvailable, NULL, NULL, FLAG_BASIC | FLAG_SHARE | FLAG_PRINT},
-	{"volume", P_STRING, P_LOCAL, &sDefault.volume, NULL, NULL, FLAG_SHARE},
+	{"volume", P_STRING, P_LOCAL, &sDefault.volume, NULL, NULL, FLAG_SHARE | FLAG_DOS_STRING},
 	{"fstype", P_STRING, P_LOCAL, &sDefault.fstype, NULL, NULL, FLAG_SHARE},
 	{"set directory", P_BOOLREV, P_LOCAL, &sDefault.bNo_set_dir, NULL, NULL, FLAG_SHARE},
 	{"source environment", P_STRING, P_GLOBAL, &Globals.szSourceEnv, handle_source_env, NULL, 0},
@@ -1018,12 +1005,12 @@ static struct parm_struct parm_table[] = {
 
 	{"VFS options", P_SEP, P_SEPARATOR},
 	
-	{"vfs object", P_STRING, P_LOCAL, &sDefault.szVfsObjectFile, handle_vfs_object, NULL, 0},
-	{"vfs options", P_STRING, P_LOCAL, &sDefault.szVfsOptions, NULL, NULL, 0},
+	{"vfs object", P_STRING, P_LOCAL, &sDefault.szVfsObjectFile, handle_vfs_object, NULL, FLAG_SHARE},
+	{"vfs options", P_STRING, P_LOCAL, &sDefault.szVfsOptions, NULL, NULL, FLAG_SHARE},
 
 	
 	{"msdfs root", P_BOOL, P_LOCAL, &sDefault.bMSDfsRoot, NULL, NULL, FLAG_SHARE},
-	{"host msdfs", P_BOOL, P_GLOBAL, &Globals.bHostMSDfs, NULL, NULL, FLAG_GLOBAL},
+	{"host msdfs", P_BOOL, P_GLOBAL, &Globals.bHostMSDfs, NULL, NULL, 0},
 
 	{"Winbind options", P_SEP, P_SEPARATOR},
 
@@ -1205,9 +1192,8 @@ static void init_globals(void)
 #ifdef WITH_UTMP
 	string_set(&Globals.szUtmpDir, "");
 	string_set(&Globals.szWtmpDir, "");
-	string_set(&Globals.szUtmpHostname, "%m");
-	Globals.bUtmpConsolidate = False;
-#endif /* WITH_UTMP */
+	Globals.bUtmp = False;
+#endif
 	string_set(&Globals.szSocketAddress, "0.0.0.0");
 	pstrcpy(s, "Samba ");
 	pstrcat(s, VERSION);
@@ -1238,6 +1224,7 @@ static void init_globals(void)
 	Globals.pwordlevel = 0;
 	Globals.unamelevel = 0;
 	Globals.deadtime = 0;
+	Globals.bLargeReadwrite = False;
 	Globals.max_log_size = 5000;
 	Globals.max_open_files = MAX_OPEN_FILES;
 	Globals.maxprotocol = PROTOCOL_NT1;
@@ -1250,6 +1237,7 @@ static void init_globals(void)
 	Globals.bReadPrediction = False;
 	Globals.bReadbmpx = False;
 	Globals.bNullPasswords = False;
+	Globals.bObeyPamRestrictions = False;
 	Globals.bStripDot = False;
 	Globals.syslog = 1;
 	Globals.bSyslogOnly = False;
@@ -1267,7 +1255,6 @@ static void init_globals(void)
 	Globals.lm_interval = 60;
 	Globals.stat_cache_size = 50;	/* Number of stat translations we'll keep */
 	Globals.announce_as = ANNOUNCE_AS_NT_SERVER;
-	Globals.bUnixRealname = True;
 #if (defined(HAVE_NETGROUP) && defined(WITH_AUTOMOUNT))
 	Globals.bNISHomeMap = False;
 #ifdef WITH_NISPLUS_HOME
@@ -1280,6 +1267,7 @@ static void init_globals(void)
 	Globals.bTimeServer = False;
 	Globals.bBindInterfacesOnly = False;
 	Globals.bUnixPasswdSync = False;
+	Globals.bPamPasswordChange = False;
 	Globals.bPasswdChatDebug = False;
 	Globals.bNTSmbSupport = True;	/* Do NT SMB's by default. */
 	Globals.bNTPipeSupport = True;	/* Do NT pipes by default. */
@@ -1290,6 +1278,7 @@ static void init_globals(void)
 	Globals.map_to_guest = 0;	/* By Default, "Never" */
 	Globals.min_passwd_length = MINPASSWDLENGTH;	/* By Default, 5. */
 	Globals.oplock_break_wait_time = 0;	/* By Default, 0 msecs. */
+	Globals.enhanced_browsing = True; 
 
 #ifdef WITH_LDAP
 	/* default values for ldap */
@@ -1414,13 +1403,13 @@ static char *lp_string(const char *s)
  int fn_name(void) {return(*(int *)(ptr));}
 
 #define FN_LOCAL_STRING(fn_name,val) \
- char *fn_name(int i) {return(lp_string((LP_SNUM_OK(i)&&pSERVICE(i)->val)?pSERVICE(i)->val : sDefault.val));}
+ char *fn_name(int i) {return(lp_string((LP_SNUM_OK(i) && ServicePtrs[(i)]->val) ? ServicePtrs[(i)]->val : sDefault.val));}
 #define FN_LOCAL_BOOL(fn_name,val) \
- BOOL fn_name(int i) {return(LP_SNUM_OK(i)? pSERVICE(i)->val : sDefault.val);}
+ BOOL fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 #define FN_LOCAL_CHAR(fn_name,val) \
- char fn_name(int i) {return(LP_SNUM_OK(i)? pSERVICE(i)->val : sDefault.val);}
+ char fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 #define FN_LOCAL_INTEGER(fn_name,val) \
- int fn_name(int i) {return(LP_SNUM_OK(i)? pSERVICE(i)->val : sDefault.val);}
+ int fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 
 FN_GLOBAL_STRING(lp_logfile, &Globals.szLogFile)
 FN_GLOBAL_STRING(lp_configfile, &Globals.szConfigFile)
@@ -1439,9 +1428,8 @@ FN_GLOBAL_STRING(lp_lockdir, &Globals.szLockDir)
 #ifdef WITH_UTMP
 FN_GLOBAL_STRING(lp_utmpdir, &Globals.szUtmpDir)
 FN_GLOBAL_STRING(lp_wtmpdir, &Globals.szWtmpDir)
-FN_GLOBAL_STRING(lp_utmp_hostname, &Globals.szUtmpHostname)
-FN_GLOBAL_BOOL(lp_utmp_consolidate, &Globals.bUtmpConsolidate)
-#endif /* WITH_UTMP */
+FN_GLOBAL_BOOL(lp_utmp, &Globals.bUtmp)
+#endif
 FN_GLOBAL_STRING(lp_rootdir, &Globals.szRootdir)
 FN_GLOBAL_STRING(lp_source_environment, &Globals.szSourceEnv)
 FN_GLOBAL_STRING(lp_defaultservice, &Globals.szDefaultService)
@@ -1474,11 +1462,8 @@ FN_GLOBAL_STRING(lp_panic_action, &Globals.szPanicAction)
 FN_GLOBAL_STRING(lp_adduser_script, &Globals.szAddUserScript)
 FN_GLOBAL_STRING(lp_deluser_script, &Globals.szDelUserScript)
 FN_GLOBAL_STRING(lp_wins_hook, &Globals.szWINSHook)
-FN_GLOBAL_STRING(lp_domain_groups, &Globals.szDomainGroups)
 FN_GLOBAL_STRING(lp_domain_admin_group, &Globals.szDomainAdminGroup)
 FN_GLOBAL_STRING(lp_domain_guest_group, &Globals.szDomainGuestGroup)
-FN_GLOBAL_STRING(lp_domain_admin_users, &Globals.szDomainAdminUsers)
-FN_GLOBAL_STRING(lp_domain_guest_users, &Globals.szDomainGuestUsers)
 FN_GLOBAL_STRING(lp_winbind_uid, &Globals.szWinbindUID)
 FN_GLOBAL_STRING(lp_winbind_gid, &Globals.szWinbindGID)
 FN_GLOBAL_STRING(lp_template_homedir, &Globals.szTemplateHomedir)
@@ -1525,8 +1510,10 @@ FN_GLOBAL_BOOL(lp_use_rhosts, &Globals.bUseRhosts)
 FN_GLOBAL_BOOL(lp_readprediction, &Globals.bReadPrediction)
 FN_GLOBAL_BOOL(lp_readbmpx, &Globals.bReadbmpx)
 FN_GLOBAL_BOOL(lp_readraw, &Globals.bReadRaw)
+FN_GLOBAL_BOOL(lp_large_readwrite, &Globals.bLargeReadwrite)
 FN_GLOBAL_BOOL(lp_writeraw, &Globals.bWriteRaw)
 FN_GLOBAL_BOOL(lp_null_passwords, &Globals.bNullPasswords)
+FN_GLOBAL_BOOL(lp_obey_pam_restrictions, &Globals.bObeyPamRestrictions)
 FN_GLOBAL_BOOL(lp_strip_dot, &Globals.bStripDot)
 FN_GLOBAL_BOOL(lp_encrypted_passwords, &Globals.bEncryptPasswords)
 FN_GLOBAL_BOOL(lp_update_encrypted, &Globals.bUpdateEncrypt)
@@ -1536,10 +1523,10 @@ FN_GLOBAL_BOOL(lp_debug_hires_timestamp, &Globals.bDebugHiresTimestamp)
 FN_GLOBAL_BOOL(lp_debug_pid, &Globals.bDebugPid)
 FN_GLOBAL_BOOL(lp_debug_uid, &Globals.bDebugUid)
 FN_GLOBAL_BOOL(lp_browse_list, &Globals.bBrowseList)
-FN_GLOBAL_BOOL(lp_unix_realname, &Globals.bUnixRealname)
 FN_GLOBAL_BOOL(lp_nis_home_map, &Globals.bNISHomeMap)
 static FN_GLOBAL_BOOL(lp_time_server, &Globals.bTimeServer)
 FN_GLOBAL_BOOL(lp_bind_interfaces_only, &Globals.bBindInterfacesOnly)
+FN_GLOBAL_BOOL(lp_pam_password_change, &Globals.bPamPasswordChange)
 FN_GLOBAL_BOOL(lp_unix_password_sync, &Globals.bUnixPasswdSync)
 FN_GLOBAL_BOOL(lp_passwd_chat_debug, &Globals.bPasswdChatDebug)
 FN_GLOBAL_BOOL(lp_nt_smb_support, &Globals.bNTSmbSupport)
@@ -1551,6 +1538,7 @@ FN_GLOBAL_BOOL(lp_restrict_anonymous, &Globals.bRestrictAnonymous)
 FN_GLOBAL_BOOL(lp_lanman_auth, &Globals.bLanmanAuth)
 FN_GLOBAL_BOOL(lp_host_msdfs, &Globals.bHostMSDfs)
 FN_GLOBAL_BOOL(lp_kernel_oplocks, &Globals.bKernelOplocks)
+FN_GLOBAL_BOOL(lp_enhanced_browsing, &Globals.enhanced_browsing)
 FN_GLOBAL_INTEGER(lp_os_level, &Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl, &Globals.max_ttl)
 FN_GLOBAL_INTEGER(lp_max_wins_ttl, &Globals.max_wins_ttl)
@@ -1634,6 +1622,7 @@ FN_LOCAL_BOOL(lp_shortpreservecase, bShortCasePreserve)
 FN_LOCAL_BOOL(lp_casemangle, bCaseMangle)
 FN_LOCAL_BOOL(lp_status, status)
 FN_LOCAL_BOOL(lp_hide_dot_files, bHideDotFiles)
+FN_LOCAL_BOOL(lp_hideunreadable, bHideUnReadable)
 FN_LOCAL_BOOL(lp_browseable, bBrowseable)
 FN_LOCAL_BOOL(lp_readonly, bRead_only)
 FN_LOCAL_BOOL(lp_no_set_dir, bNo_set_dir)
@@ -1646,9 +1635,6 @@ FN_LOCAL_BOOL(lp_map_archive, bMap_archive)
 FN_LOCAL_BOOL(lp_locking, bLocking)
 FN_LOCAL_BOOL(lp_strict_locking, bStrictLocking)
 FN_LOCAL_BOOL(lp_posix_locking, bPosixLocking)
-#ifdef WITH_UTMP
-FN_LOCAL_BOOL(lp_utmp, bUtmp)
-#endif
 FN_LOCAL_BOOL(lp_share_modes, bShareModes)
 FN_LOCAL_BOOL(lp_oplocks, bOpLocks)
 FN_LOCAL_BOOL(lp_level2_oplocks, bLevel2OpLocks)
@@ -1670,12 +1656,12 @@ FN_LOCAL_BOOL(lp_blocking_locks, bBlockingLocks)
 FN_LOCAL_BOOL(lp_inherit_perms, bInheritPerms)
 FN_LOCAL_INTEGER(lp_create_mask, iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode, iCreate_force_mode)
-FN_LOCAL_INTEGER(_lp_security_mask, iSecurity_mask)
-FN_LOCAL_INTEGER(_lp_force_security_mode, iSecurity_force_mode)
+FN_LOCAL_INTEGER(lp_security_mask, iSecurity_mask)
+FN_LOCAL_INTEGER(lp_force_security_mode, iSecurity_force_mode)
 FN_LOCAL_INTEGER(lp_dir_mask, iDir_mask)
 FN_LOCAL_INTEGER(lp_force_dir_mode, iDir_force_mode)
-FN_LOCAL_INTEGER(_lp_dir_security_mask, iDir_Security_mask)
-FN_LOCAL_INTEGER(_lp_force_dir_security_mode, iDir_Security_force_mode)
+FN_LOCAL_INTEGER(lp_dir_security_mask, iDir_Security_mask)
+FN_LOCAL_INTEGER(lp_force_dir_security_mode, iDir_Security_force_mode)
 FN_LOCAL_INTEGER(lp_max_connections, iMaxConnections)
 FN_LOCAL_INTEGER(lp_defaultcase, iDefaultCase)
 FN_LOCAL_INTEGER(lp_minprintspace, iMinPrintSpace)
@@ -1739,6 +1725,8 @@ static void free_service(service * pservice)
 			string_free((char **)
 				    (((char *)pservice) +
 				     PTR_DIFF(parm_table[i].ptr, &sDefault)));
+
+	ZERO_STRUCTP(pservice);
 }
 
 /***************************************************************************
@@ -1763,35 +1751,49 @@ static int add_a_service(service * pservice, char *name)
 
 	/* find an invalid one */
 	for (i = 0; i < iNumServices; i++)
-		if (!pSERVICE(i)->valid)
+		if (!ServicePtrs[i]->valid)
 			break;
 
 	/* if not, then create one */
 	if (i == iNumServices)
 	{
+#ifdef __INSURE__
+		service **oldservices = iNumServices ? malloc(sizeof(service *) * iNumServices) : NULL;
+
+		if (iNumServices)
+			memcpy(oldservices, ServicePtrs, sizeof(service *) * iNumServices);
+#endif
+
 		ServicePtrs =
 			(service **) Realloc(ServicePtrs,
 					     sizeof(service *) *
 					     num_to_alloc);
+#ifdef __INSURE__
+		if (iNumServices && (memcmp(oldservices, ServicePtrs, sizeof(service *) * iNumServices) != 0)) {
+			smb_panic("add_a_service: Realloc corrupted ptrs...\n");
+		}
+		safe_free(oldservices);
+#endif
+
 		if (ServicePtrs)
-			pSERVICE(iNumServices) =
+			ServicePtrs[iNumServices] =
 				(service *) malloc(sizeof(service));
 
-		if (!ServicePtrs || !pSERVICE(iNumServices))
+		if (!ServicePtrs || !ServicePtrs[iNumServices])
 			return (-1);
 
 		iNumServices++;
 	}
 	else
-		free_service(pSERVICE(i));
+		free_service(ServicePtrs[i]);
 
-	pSERVICE(i)->valid = True;
+	ServicePtrs[i]->valid = True;
 
-	init_service(pSERVICE(i));
-	copy_service(pSERVICE(i), &tservice, NULL);
+	init_service(ServicePtrs[i]);
+	copy_service(ServicePtrs[i], &tservice, NULL);
 	if (name)
 	{
-		string_set(&iSERVICE(i).szService, name);
+		string_set(&ServicePtrs[i]->szService, name);
 	}
 	return (i);
 }
@@ -1802,23 +1804,23 @@ from service ifrom. homename must be in DOS codepage.
 ***************************************************************************/
 BOOL lp_add_home(char *pszHomename, int iDefaultService, char *pszHomedir)
 {
-	int i = add_a_service(pSERVICE(iDefaultService), pszHomename);
+	int i = add_a_service(ServicePtrs[iDefaultService], pszHomename);
 
 	if (i < 0)
 		return (False);
 
-	if (!(*(iSERVICE(i).szPath))
-	    || strequal(iSERVICE(i).szPath, lp_pathname(-1)))
-		string_set(&iSERVICE(i).szPath, pszHomedir);
-	if (!(*(iSERVICE(i).comment)))
+	if (!(*(ServicePtrs[i]->szPath))
+	    || strequal(ServicePtrs[i]->szPath, lp_pathname(-1)))
+		string_set(&ServicePtrs[i]->szPath, pszHomedir);
+	if (!(*(ServicePtrs[i]->comment)))
 	{
 		pstring comment;
 		slprintf(comment, sizeof(comment) - 1,
 			 "Home directory of %s", pszHomename);
-		string_set(&iSERVICE(i).comment, comment);
+		string_set(&ServicePtrs[i]->comment, comment);
 	}
-	iSERVICE(i).bAvailable = sDefault.bAvailable;
-	iSERVICE(i).bBrowseable = sDefault.bBrowseable;
+	ServicePtrs[i]->bAvailable = sDefault.bAvailable;
+	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
 
 	DEBUG(3,
 	      ("adding home directory %s at %s\n", pszHomename, pszHomedir));
@@ -1831,7 +1833,7 @@ add a new service, based on an old one. pszService must be in DOS codepage.
 ***************************************************************************/
 int lp_add_service(char *pszService, int iDefaultService)
 {
-	return (add_a_service(pSERVICE(iDefaultService), pszService));
+	return (add_a_service(ServicePtrs[iDefaultService], pszService));
 }
 
 
@@ -1849,18 +1851,18 @@ static BOOL lp_add_ipc(char *ipc_name, BOOL guest_ok)
 	slprintf(comment, sizeof(comment) - 1,
 		 "IPC Service (%s)", Globals.szServerString);
 
-	string_set(&iSERVICE(i).szPath, tmpdir());
-	string_set(&iSERVICE(i).szUsername, "");
-	string_set(&iSERVICE(i).comment, comment);
-	string_set(&iSERVICE(i).fstype, "IPC");
-	iSERVICE(i).status = False;
-	iSERVICE(i).iMaxConnections = 0;
-	iSERVICE(i).bAvailable = True;
-	iSERVICE(i).bRead_only = True;
-	iSERVICE(i).bGuest_only = False;
-	iSERVICE(i).bGuest_ok = guest_ok;
-	iSERVICE(i).bPrint_ok = False;
-	iSERVICE(i).bBrowseable = sDefault.bBrowseable;
+	string_set(&ServicePtrs[i]->szPath, tmpdir());
+	string_set(&ServicePtrs[i]->szUsername, "");
+	string_set(&ServicePtrs[i]->comment, comment);
+	string_set(&ServicePtrs[i]->fstype, "IPC");
+	ServicePtrs[i]->status = False;
+	ServicePtrs[i]->iMaxConnections = 0;
+	ServicePtrs[i]->bAvailable = True;
+	ServicePtrs[i]->bRead_only = True;
+	ServicePtrs[i]->bGuest_only = False;
+	ServicePtrs[i]->bGuest_ok = guest_ok;
+	ServicePtrs[i]->bPrint_ok = False;
+	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
 
 	DEBUG(3, ("adding IPC service %s\n", ipc_name));
 
@@ -1875,7 +1877,7 @@ printername must be in DOS codepage.
 BOOL lp_add_printer(char *pszPrintername, int iDefaultService)
 {
 	char *comment = "From Printcap";
-	int i = add_a_service(pSERVICE(iDefaultService), pszPrintername);
+	int i = add_a_service(ServicePtrs[iDefaultService], pszPrintername);
 
 	if (i < 0)
 		return (False);
@@ -1886,17 +1888,17 @@ BOOL lp_add_printer(char *pszPrintername, int iDefaultService)
 	/* entry (if/when the 'available' keyword is implemented!).    */
 
 	/* the printer name is set to the service name. */
-	string_set(&iSERVICE(i).szPrintername, pszPrintername);
-	string_set(&iSERVICE(i).comment, comment);
-	iSERVICE(i).bBrowseable = sDefault.bBrowseable;
+	string_set(&ServicePtrs[i]->szPrintername, pszPrintername);
+	string_set(&ServicePtrs[i]->comment, comment);
+	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
 	/* Printers cannot be read_only. */
-	iSERVICE(i).bRead_only = False;
+	ServicePtrs[i]->bRead_only = False;
 	/* No share modes on printer services. */
-	iSERVICE(i).bShareModes = False;
+	ServicePtrs[i]->bShareModes = False;
 	/* No oplocks on printer services. */
-	iSERVICE(i).bOpLocks = False;
+	ServicePtrs[i]->bOpLocks = False;
 	/* Printer services must be printable. */
-	iSERVICE(i).bPrint_ok = True;
+	ServicePtrs[i]->bPrint_ok = True;
 
 	DEBUG(3, ("adding printer service %s\n", pszPrintername));
 
@@ -1961,12 +1963,10 @@ static int getservicebyname(char *pszServiceName, service * pserviceDest)
 
 	for (iService = iNumServices - 1; iService >= 0; iService--)
 		if (VALID(iService) &&
-		    strwicmp(iSERVICE(iService).szService,
-			     pszServiceName) == 0)
+		    strwicmp(ServicePtrs[iService]->szService, pszServiceName) == 0)
 		{
 			if (pserviceDest != NULL)
-				copy_service(pserviceDest, pSERVICE(iService),
-					     NULL);
+				copy_service(pserviceDest, ServicePtrs[iService], NULL);
 			break;
 		}
 
@@ -2049,7 +2049,7 @@ static BOOL service_ok(int iService)
 	BOOL bRetval;
 
 	bRetval = True;
-	if (iSERVICE(iService).szService[0] == '\0')
+	if (ServicePtrs[iService]->szService[0] == '\0')
 	{
 		DEBUG(0,
 		      ("The following message indicates an internal error:\n"));
@@ -2059,31 +2059,31 @@ static BOOL service_ok(int iService)
 
 	/* The [printers] entry MUST be printable. I'm all for flexibility, but */
 	/* I can't see why you'd want a non-printable printer service...        */
-	if (strwicmp(iSERVICE(iService).szService, PRINTERS_NAME) == 0) {
-		if (!iSERVICE(iService).bPrint_ok) {
+	if (strwicmp(ServicePtrs[iService]->szService, PRINTERS_NAME) == 0) {
+		if (!ServicePtrs[iService]->bPrint_ok) {
 			DEBUG(0,
 			      ("WARNING: [%s] service MUST be printable!\n",
-			       iSERVICE(iService).szService));
-			iSERVICE(iService).bPrint_ok = True;
+			       ServicePtrs[iService]->szService));
+			ServicePtrs[iService]->bPrint_ok = True;
 		}
 		/* [printers] service must also be non-browsable. */
-		if (iSERVICE(iService).bBrowseable)
-			iSERVICE(iService).bBrowseable = False;
+		if (ServicePtrs[iService]->bBrowseable)
+			ServicePtrs[iService]->bBrowseable = False;
 	}
 
-	if (iSERVICE(iService).szPath[0] == '\0' &&
-	    strwicmp(iSERVICE(iService).szService, HOMES_NAME) != 0)
+	if (ServicePtrs[iService]->szPath[0] == '\0' &&
+	    strwicmp(ServicePtrs[iService]->szService, HOMES_NAME) != 0)
 	{
 		DEBUG(0,
 		      ("No path in service %s - using %s\n",
-		       iSERVICE(iService).szService, tmpdir()));
-		string_set(&iSERVICE(iService).szPath, tmpdir());
+		       ServicePtrs[iService]->szService, tmpdir()));
+		string_set(&ServicePtrs[iService]->szPath, tmpdir());
 	}
 
 	/* If a service is flagged unavailable, log the fact at level 0. */
-	if (!iSERVICE(iService).bAvailable)
+	if (!ServicePtrs[iService]->bAvailable)
 		DEBUG(1, ("NOTE: Service %s is flagged unavailable.\n",
-			  iSERVICE(iService).szService));
+			  ServicePtrs[iService]->szService));
 
 	return (bRetval);
 }
@@ -2429,9 +2429,9 @@ static BOOL handle_copy(char *pszParmValue, char **ptr)
 		}
 		else
 		{
-			copy_service(pSERVICE(iServiceIndex),
+			copy_service(ServicePtrs[iServiceIndex],
 				     &serviceTemp,
-				     iSERVICE(iServiceIndex).copymap);
+				     ServicePtrs[iServiceIndex]->copymap);
 			bRetval = True;
 		}
 	}
@@ -2528,7 +2528,7 @@ static void init_copymap(service * pservice)
 ***************************************************************************/
 void *lp_local_ptr(int snum, void *ptr)
 {
-	return (void *)(((char *)pSERVICE(snum)) + PTR_DIFF(ptr, &sDefault));
+	return (void *)(((char *)ServicePtrs[snum]) + PTR_DIFF(ptr, &sDefault));
 }
 
 /***************************************************************************
@@ -2573,20 +2573,20 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
 			return (True);
 		}
 		parm_ptr =
-			((char *)pSERVICE(snum)) + PTR_DIFF(def_ptr,
+			((char *)ServicePtrs[snum]) + PTR_DIFF(def_ptr,
 							    &sDefault);
 	}
 
 	if (snum >= 0)
 	{
-		if (!iSERVICE(snum).copymap)
-			init_copymap(pSERVICE(snum));
+		if (!ServicePtrs[snum]->copymap)
+			init_copymap(ServicePtrs[snum]);
 
 		/* this handles the aliases - set the copymap for other entries with
 		   the same data pointer */
 		for (i = 0; parm_table[i].label; i++)
 			if (parm_table[i].ptr == parm_table[parmnum].ptr)
-				iSERVICE(snum).copymap[i] = False;
+				ServicePtrs[snum]->copymap[i] = False;
 	}
 
 	/* if it is a special case then go ahead */
@@ -2921,7 +2921,7 @@ BOOL lp_is_default(int snum, struct parm_struct *parm)
 	int pdiff = PTR_DIFF(parm->ptr, &sDefault);
 
 	return equal_parameter(parm->type,
-			       ((char *)pSERVICE(snum)) + pdiff,
+			       ((char *)ServicePtrs[snum]) + pdiff,
 			       ((char *)&sDefault) + pdiff);
 }
 
@@ -2995,7 +2995,7 @@ struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
 	}
 	else
 	{
-		service *pService = pSERVICE(snum);
+		service *pService = ServicePtrs[snum];
 
 		for (; parm_table[*i].label; (*i)++)
 		{
@@ -3057,7 +3057,7 @@ Return TRUE if the passed service number is within range.
 ***************************************************************************/
 BOOL lp_snum_ok(int iService)
 {
-	return (LP_SNUM_OK(iService) && iSERVICE(iService).bAvailable);
+	return (LP_SNUM_OK(iService) && ServicePtrs[iService]->bAvailable);
 }
 
 
@@ -3107,9 +3107,9 @@ void lp_add_one_printer(char *name, char *comment)
 		lp_add_printer(name, printers);
 		if ((i = lp_servicenumber(name)) >= 0)
 		{
-			string_set(&iSERVICE(i).comment, comment);
-            unix_to_dos(iSERVICE(i).comment, True);
-			iSERVICE(i).autoloaded = True;
+			string_set(&ServicePtrs[i]->comment, comment);
+            unix_to_dos(ServicePtrs[i]->comment, True);
+			ServicePtrs[i]->autoloaded = True;
 		}
 	}
 }
@@ -3135,8 +3135,8 @@ void lp_killunused(BOOL (*snumused) (int))
 
 		if (!snumused || !snumused(i))
 		{
-			iSERVICE(i).valid = False;
-			free_service(pSERVICE(i));
+			ServicePtrs[i]->valid = False;
+			free_service(ServicePtrs[i]);
 		}
 	}
 }
@@ -3149,8 +3149,8 @@ void lp_killservice(int iServiceIn)
 {
 	if (VALID(iServiceIn))
 	{
-		iSERVICE(iServiceIn).valid = False;
-		free_service(pSERVICE(iServiceIn));
+		ServicePtrs[iServiceIn]->valid = False;
+		free_service(ServicePtrs[iServiceIn]);
 	}
 }
 
@@ -3354,9 +3354,9 @@ void lp_dump_one(FILE * f, BOOL show_defaults, int snum, char *(*dos_to_ext)(cha
 {
 	if (VALID(snum))
 	{
-		if (iSERVICE(snum).szService[0] == '\0')
+		if (ServicePtrs[snum]->szService[0] == '\0')
 			return;
-		dump_a_service(pSERVICE(snum), f, dos_to_ext);
+		dump_a_service(ServicePtrs[snum], f, dos_to_ext);
 	}
 }
 
@@ -3385,17 +3385,14 @@ int lp_servicenumber(char *pszServiceName)
 }
 
 /*******************************************************************
-  a useful volume label function
-  ******************************************************************/
+ A useful volume label function. Returns a string in DOS codepage.
+********************************************************************/
+
 char *volume_label(int snum)
 {
 	char *ret = lp_volume(snum);
-	if (!*ret) {
-		/* lp_volume returns a unix charset - lp_servicename returns a
-		   dos codepage - convert so volume_label() always returns UNIX.
-		*/
-		return (dos_to_unix(lp_servicename(snum), False));
-	}
+	if (!*ret)
+		return lp_servicename(snum);
 	return (ret);
 }
 
@@ -3518,7 +3515,7 @@ remove a service
 ********************************************************************/
 void lp_remove_service(int snum)
 {
-	pSERVICE(snum)->valid = False;
+	ServicePtrs[snum]->valid = False;
 }
 
 /*******************************************************************
@@ -3599,43 +3596,6 @@ int lp_minor_announce_version(void)
 void lp_set_name_resolve_order(char *new_order)
 {
 	Globals.szNameResolveOrder = new_order;
-}
-
-/***********************************************************
- Functions to return the current security masks/modes. If
- set to -1 then return the create mask/mode instead.
-************************************************************/
-
-int lp_security_mask(int snum)
-{
-	int val = _lp_security_mask(snum);
-	if (val == -1)
-		return lp_create_mask(snum);
-	return val;
-}
-
-int lp_force_security_mode(int snum)
-{
-	int val = _lp_force_security_mode(snum);
-	if (val == -1)
-		return lp_force_create_mode(snum);
-	return val;
-}
-
-int lp_dir_security_mask(int snum)
-{
-	int val = _lp_dir_security_mask(snum);
-	if (val == -1)
-		return lp_dir_mask(snum);
-	return val;
-}
-
-int lp_force_dir_security_mode(int snum)
-{
-	int val = _lp_force_dir_security_mode(snum);
-	if (val == -1)
-		return lp_force_dir_mode(snum);
-	return val;
 }
 
 char *lp_printername(int snum)

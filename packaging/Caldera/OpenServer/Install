@@ -54,7 +54,7 @@ for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
 do
 $V    install -m755 -s source/bin/$i ${BLDFIX}/bin
 done
-for i in addtosmbpass mksmbpasswd.sh smbtar
+for i in mksmbpasswd.sh smbtar
 do
 $V    install -m755 source/script/$i ${BLDFIX}/bin
 done

@@ -34,10 +34,17 @@ static uint32 cmd_lsa_query_info_policy(struct cli_state *cli, int argc, char **
 	DOM_SID dom_sid;
 	fstring sid_str, domain_name;
 	uint32 info_class = 3;
+	TALLOC_CTX *mem_ctx;
 
 	if (argc > 2) {
 		printf("Usage: %s [info_class]\n", argv[0]);
 		return 0;
+	}
+
+	if (!(mem_ctx=talloc_init()))
+	{
+		DEBUG(0,("cmd_lsa_query_info_poicy: talloc_init returned NULL!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	if (argc == 2) {
@@ -50,7 +57,7 @@ static uint32 cmd_lsa_query_info_policy(struct cli_state *cli, int argc, char **
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if ((result = cli_lsa_open_policy(cli, True, 
+	if ((result = cli_lsa_open_policy(cli, mem_ctx, True, 
 					  SEC_RIGHTS_MAXIMUM_ALLOWED,
 					  &pol)) != NT_STATUS_NOPROBLEMO) {
 		goto done;
@@ -60,7 +67,7 @@ static uint32 cmd_lsa_query_info_policy(struct cli_state *cli, int argc, char **
 
 	/* Lookup info policy */
 
-	if ((result = cli_lsa_query_info_policy(cli, &pol, info_class, 
+	if ((result = cli_lsa_query_info_policy(cli, mem_ctx, &pol, info_class, 
 						domain_name, &dom_sid)) 
 	    != NT_STATUS_NOPROBLEMO) {
 		goto done;
@@ -73,10 +80,11 @@ static uint32 cmd_lsa_query_info_policy(struct cli_state *cli, int argc, char **
 done:
 
 	if (got_policy_hnd) {
-		cli_lsa_close(cli, &pol);
+		cli_lsa_close(cli, mem_ctx, &pol);
 	}
 
 	cli_nt_session_close(cli);
+	talloc_destroy(mem_ctx);
 
 	return result;
 }
@@ -91,10 +99,17 @@ static uint32 cmd_lsa_lookup_names(struct cli_state *cli, int argc, char **argv)
 	DOM_SID *sids;
 	uint32 *types;
 	int num_names, i;
+	TALLOC_CTX *mem_ctx;
 
 	if (argc == 1) {
 		printf("Usage: %s [name1 [name2 [...]]]\n", argv[0]);
 		return 0;
+	}
+
+	if (!(mem_ctx=talloc_init()))
+	{
+		DEBUG(0,("cmd_lsa_lookup_names: talloc_init returned NULL!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* Initialise RPC connection */
@@ -104,7 +119,7 @@ static uint32 cmd_lsa_lookup_names(struct cli_state *cli, int argc, char **argv)
 	}
 
 
-	if ((result = cli_lsa_open_policy(cli, True, 
+	if ((result = cli_lsa_open_policy(cli, mem_ctx, True, 
 					  SEC_RIGHTS_MAXIMUM_ALLOWED,
 					  &pol)) != NT_STATUS_NOPROBLEMO) {
 		goto done;
@@ -114,8 +129,8 @@ static uint32 cmd_lsa_lookup_names(struct cli_state *cli, int argc, char **argv)
 
 	/* Lookup the names */
 
-	if ((result = cli_lsa_lookup_names(
-		cli, &pol, argc - 1, &argv[1], &sids, &types, &num_names) !=
+	if ((result = cli_lsa_lookup_names(cli, mem_ctx, &pol, argc - 1, 
+		&argv[1], &sids, &types, &num_names) !=
 	     NT_STATUS_NOPROBLEMO)) {
 		goto done;
 	}
@@ -130,16 +145,19 @@ static uint32 cmd_lsa_lookup_names(struct cli_state *cli, int argc, char **argv)
 		       types[i]);
 	}
 
+#if 0	/* JERRY */
 	safe_free(sids);
 	safe_free(types);      
+#endif
 
  done:
 
 	if (got_policy_hnd) {
-		cli_lsa_close(cli, &pol);
+		cli_lsa_close(cli, mem_ctx, &pol);
 	}
 
 	cli_nt_session_close(cli);
+	talloc_destroy(mem_ctx);
 
 	return result;
 }
@@ -155,10 +173,17 @@ static uint32 cmd_lsa_lookup_sids(struct cli_state *cli, int argc, char **argv)
 	char **names;
 	uint32 *types;
 	int num_names, i;
+	TALLOC_CTX *mem_ctx;
 
 	if (argc == 1) {
 		printf("Usage: %s [sid1 [sid2 [...]]]\n", argv[0]);
 		return 0;
+	}
+
+	if (!(mem_ctx=talloc_init()))
+	{
+		DEBUG(0,("cmd_lsa_lookup_sids: talloc_init returned NULL!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* Initialise RPC connection */
@@ -167,7 +192,7 @@ static uint32 cmd_lsa_lookup_sids(struct cli_state *cli, int argc, char **argv)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if ((result = cli_lsa_open_policy(cli, True, 
+	if ((result = cli_lsa_open_policy(cli, mem_ctx, True, 
 					  SEC_RIGHTS_MAXIMUM_ALLOWED,
 					  &pol)) != NT_STATUS_NOPROBLEMO) {
 		goto done;
@@ -177,7 +202,7 @@ static uint32 cmd_lsa_lookup_sids(struct cli_state *cli, int argc, char **argv)
 
 	/* Convert arguments to sids */
 
-	sids = (DOM_SID *)malloc(sizeof(DOM_SID) * (argc - 1));
+	sids = (DOM_SID *)talloc(mem_ctx, sizeof(DOM_SID) * (argc - 1));
 
 	if (!sids) {
 		printf("out of memory\n");
@@ -190,7 +215,7 @@ static uint32 cmd_lsa_lookup_sids(struct cli_state *cli, int argc, char **argv)
 
 	/* Lookup the SIDs */
 
-	if ((result = cli_lsa_lookup_sids(cli, &pol, argc - 1, sids, 
+	if ((result = cli_lsa_lookup_sids(cli, mem_ctx, &pol, argc - 1, sids, 
 					  &names, &types, &num_names) !=
 	     NT_STATUS_NOPROBLEMO)) {
 		goto done;
@@ -206,6 +231,7 @@ static uint32 cmd_lsa_lookup_sids(struct cli_state *cli, int argc, char **argv)
 		       "*unknown*", types[i]);
 	}
 
+#if 0	/* JERRY */
 	safe_free(sids);
 	safe_free(types);      
 
@@ -214,14 +240,16 @@ static uint32 cmd_lsa_lookup_sids(struct cli_state *cli, int argc, char **argv)
 	}
 
 	safe_free(names);
+#endif
 
  done:
 
 	if (got_policy_hnd) {
-		cli_lsa_close(cli, &pol);
+		cli_lsa_close(cli, mem_ctx, &pol);
 	}
 
 	cli_nt_session_close(cli);
+	talloc_destroy (mem_ctx);
 
 	return result;
 }
@@ -238,10 +266,17 @@ static uint32 cmd_lsa_enum_trust_dom(struct cli_state *cli, int argc, char **arg
 	uint32 enum_ctx = 0;
 	uint32 num_domains;
 	int i;
+	TALLOC_CTX *mem_ctx;
 
 	if (argc != 1) {
 		printf("Usage: %s\n", argv[0]);
 		return 0;
+	}
+
+	if (!(mem_ctx=talloc_init()))
+	{
+		DEBUG(0,("cmd_lsa_enum_trust_dom: talloc_init returned NULL!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* Initialise RPC connection */
@@ -250,7 +285,7 @@ static uint32 cmd_lsa_enum_trust_dom(struct cli_state *cli, int argc, char **arg
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if ((result = cli_lsa_open_policy(cli, True, 
+	if ((result = cli_lsa_open_policy(cli, mem_ctx, True, 
 					  SEC_RIGHTS_MAXIMUM_ALLOWED,
 					  &pol)) != NT_STATUS_NOPROBLEMO) {
 		goto done;
@@ -260,7 +295,7 @@ static uint32 cmd_lsa_enum_trust_dom(struct cli_state *cli, int argc, char **arg
 
 	/* Lookup list of trusted domains */
 
-	if ((result = cli_lsa_enum_trust_dom(cli, &pol, &enum_ctx,
+	if ((result = cli_lsa_enum_trust_dom(cli, mem_ctx, &pol, &enum_ctx,
 					     &num_domains, &domain_names,
 					     &domain_sids) 
 	     != NT_STATUS_NOPROBLEMO)) {
@@ -277,6 +312,7 @@ static uint32 cmd_lsa_enum_trust_dom(struct cli_state *cli, int argc, char **arg
 		       "*unknown*", sid_str);
 	}
 
+#if 0	/* JERRY */
 	safe_free(domain_sids);
 
 	for (i = 0; i < num_domains; i++) {
@@ -284,14 +320,16 @@ static uint32 cmd_lsa_enum_trust_dom(struct cli_state *cli, int argc, char **arg
 	}
 
 	safe_free(domain_names);
+#endif
 
  done:
 
 	if (got_policy_hnd) {
-		cli_lsa_close(cli, &pol);
+		cli_lsa_close(cli, mem_ctx, &pol);
 	}
 
 	cli_nt_session_close(cli);
+	talloc_destroy(mem_ctx);
 
 	return result;
 }

@@ -48,7 +48,7 @@ BOOL spoolss_disconnect_from_client( struct cli_state *cli)
 BOOL spoolss_connect_to_client( struct cli_state *cli, char *remote_machine)
 {
 	ZERO_STRUCTP(cli);
-	if(cli_initialise(cli) == False) {
+	if(!cli_initialise(cli)) {
 		DEBUG(0,("connect_to_client: unable to initialize client connection.\n"));
 		return False;
 	}

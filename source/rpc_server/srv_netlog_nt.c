@@ -68,7 +68,7 @@ uint32 _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_CTR
 	DEBUG(6,("_net_logon_ctrl2: %d\n", __LINE__));
 
 	/* set up the Logon Control2 response */
-	init_r_logon_ctrl2(r_u, q_u->query_level,
+	init_net_r_logon_ctrl2(r_u, q_u->query_level,
 	                   flags, pdc_connection_status, logon_attempts,
 	                   tc_status, trusted_domain);
 
@@ -94,18 +94,6 @@ uint32 _net_trust_dom_list(pipes_struct *p, NET_Q_TRUST_DOM_LIST *q_u, NET_R_TRU
 	DEBUG(6,("_net_trust_dom_list: %d\n", __LINE__));
 
 	return r_u->status;
-}
-
-/*************************************************************************
- init_net_r_auth_2:
- *************************************************************************/
-
-static void init_net_r_auth_2(NET_R_AUTH_2 *r_a,
-                              DOM_CHAL *resp_cred, NEG_FLAGS *flgs, int status)
-{
-	memcpy(r_a->srv_chal.data, resp_cred->data, sizeof(resp_cred->data));
-	memcpy(&r_a->srv_flgs, flgs, sizeof(r_a->srv_flgs));
-	r_a->status = status;
 }
 
 /***********************************************************************************
@@ -214,6 +202,62 @@ uint32 _net_req_chal(pipes_struct *p, NET_Q_REQ_CHAL *q_u, NET_R_REQ_CHAL *r_u)
 	init_net_r_req_chal(r_u, &p->dc.srv_chal, status);
 
 	return r_u->status;
+}
+
+/*************************************************************************
+ init_net_r_auth:
+ *************************************************************************/
+
+static void init_net_r_auth(NET_R_AUTH *r_a, DOM_CHAL *resp_cred, int status)
+{
+	memcpy(r_a->srv_chal.data, resp_cred->data, sizeof(resp_cred->data));
+	r_a->status = status;
+}
+
+/*************************************************************************
+ _net_auth
+ *************************************************************************/
+
+uint32 _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
+{
+	uint32 status = NT_STATUS_NOPROBLEMO;
+	DOM_CHAL srv_cred;
+	UTIME srv_time;
+
+	if (!get_valid_user_struct(p->vuid))
+		return NT_STATUS_NO_SUCH_USER;
+
+	srv_time.time = 0;
+
+	/* check that the client credentials are valid */
+	if (cred_assert(&q_u->clnt_chal, p->dc.sess_key, &p->dc.clnt_cred.challenge, srv_time)) {
+
+		/* create server challenge for inclusion in the reply */
+		cred_create(p->dc.sess_key, &p->dc.srv_cred.challenge, srv_time, &srv_cred);
+
+		/* copy the received client credentials for use next time */
+		memcpy(p->dc.clnt_cred.challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
+		memcpy(p->dc.srv_cred .challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
+	} else {
+		status = NT_STATUS_ACCESS_DENIED;
+	}
+
+	/* set up the LSA AUTH 2 response */
+	init_net_r_auth(r_u, &srv_cred, status);
+
+	return r_u->status;
+}
+
+/*************************************************************************
+ init_net_r_auth_2:
+ *************************************************************************/
+
+static void init_net_r_auth_2(NET_R_AUTH_2 *r_a,
+                              DOM_CHAL *resp_cred, NEG_FLAGS *flgs, int status)
+{
+	memcpy(r_a->srv_chal.data, resp_cred->data, sizeof(resp_cred->data));
+	memcpy(&r_a->srv_flgs, flgs, sizeof(r_a->srv_flgs));
+	r_a->status = status;
 }
 
 /*************************************************************************
@@ -382,8 +426,8 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1, struct smb_passwd *smb_p
 	dump_data(100, nt_pwd, 16);
 #endif
 
-	SamOEMhash((uchar *)lm_pwd, key, False);
-	SamOEMhash((uchar *)nt_pwd, key, False);
+	SamOEMhash((uchar *)lm_pwd, key, 16);
+	SamOEMhash((uchar *)nt_pwd, key, 16);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("decrypt of lm owf password:"));
@@ -456,26 +500,26 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2, struct smb_passwd *smb_pass)
 uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_u)
 {
 	uint32 status = NT_STATUS_NOPROBLEMO;
-    NET_USER_INFO_3 *usr_info = NULL;
-    DOM_CRED srv_cred;
-    struct smb_passwd *smb_pass = NULL;
-    struct sam_passwd *sam_pass = NULL;
-    UNISTR2 *uni_samlogon_user = NULL;
-    fstring nt_username;
+	NET_USER_INFO_3 *usr_info = NULL;
+	DOM_CRED srv_cred;
+	struct smb_passwd *smb_pass = NULL;
+	struct sam_passwd *sam_pass = NULL;
+	UNISTR2 *uni_samlogon_user = NULL;
+	fstring nt_username;
    
 	usr_info = (NET_USER_INFO_3 *)talloc(p->mem_ctx, sizeof(NET_USER_INFO_3));
 	if (!usr_info)
 		return NT_STATUS_NO_MEMORY;
 	ZERO_STRUCTP(usr_info);
  
-    if (!get_valid_user_struct(p->vuid))
-        return NT_STATUS_NO_SUCH_USER;
+	if (!get_valid_user_struct(p->vuid))
+		return NT_STATUS_NO_SUCH_USER;
     
-    /* checks and updates credentials.  creates reply credentials */
-    if (!deal_with_creds(p->dc.sess_key, &p->dc.clnt_cred, &q_u->sam_id.client.cred, &srv_cred))
-        return NT_STATUS_INVALID_HANDLE;
-    else
-        memcpy(&p->dc.srv_cred, &p->dc.clnt_cred, sizeof(p->dc.clnt_cred));
+	/* checks and updates credentials.  creates reply credentials */
+	if (!deal_with_creds(p->dc.sess_key, &p->dc.clnt_cred, &q_u->sam_id.client.cred, &srv_cred))
+		return NT_STATUS_INVALID_HANDLE;
+	else
+		memcpy(&p->dc.srv_cred, &p->dc.clnt_cred, sizeof(p->dc.clnt_cred));
     
 	r_u->buffer_creds = 1; /* yes, we have valid server credentials */
 	memcpy(&r_u->srv_creds, &srv_cred, sizeof(r_u->srv_creds));
@@ -486,7 +530,7 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 	r_u->auth_resp = 1; /* authoritative response */
 	r_u->switch_value = 3; /* indicates type of validation user info */
 
-    /* find the username */
+	/* find the username */
     
 	switch (q_u->sam_id.logon_level) {
 	case INTERACTIVE_LOGON_TYPE:
@@ -550,9 +594,15 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 	} 
 
 #ifdef WITH_PAM
-	if (!pam_accountcheck(nt_username)) {
-	  return NT_STATUS_ACCOUNT_DISABLED;
-	}
+	become_root();
+#if 0	/* JERRY */
+	status = smb_pam_accountcheck(nt_username);
+#else
+	status = smb_pam_accountcheck(sam_pass->smb_name);
+#endif
+	unbecome_root();
+	if (status != NT_STATUS_NOPROBLEMO)
+		return status;
 #endif
 
 	if (!(smb_pass->acct_ctrl & ACB_PWNOTREQ)) {

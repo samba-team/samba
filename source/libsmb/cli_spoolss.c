@@ -87,10 +87,16 @@ void cli_spoolss_shutdown(struct cli_state *cli)
 
 /* Open printer ex */
 
-uint32 cli_spoolss_open_printer_ex(struct cli_state *cli, char *printername,
-				   char *datatype, uint32 access_required,
-				   char *station, char *username,
-				   POLICY_HND *pol)
+uint32 cli_spoolss_open_printer_ex(
+	struct cli_state *cli, 
+	TALLOC_CTX *mem_ctx,
+	char *printername,
+	char *datatype, 
+	uint32 access_required,
+	char *station, 
+	char *username,
+	POLICY_HND *pol
+)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_OPEN_PRINTER_EX q;
@@ -102,8 +108,8 @@ uint32 cli_spoolss_open_printer_ex(struct cli_state *cli, char *printername,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Initialise input parameters */
 
@@ -140,7 +146,11 @@ uint32 cli_spoolss_open_printer_ex(struct cli_state *cli, char *printername,
 
 /* Close a printer handle */
 
-uint32 cli_spoolss_close_printer(struct cli_state *cli, POLICY_HND *pol)
+uint32 cli_spoolss_close_printer(
+	struct cli_state *cli,
+	TALLOC_CTX *mem_ctx,
+	POLICY_HND *pol
+)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_CLOSEPRINTER q;
@@ -152,8 +162,8 @@ uint32 cli_spoolss_close_printer(struct cli_state *cli, POLICY_HND *pol)
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Initialise input parameters */
 
@@ -201,8 +211,12 @@ static void init_buffer(NEW_BUFFER *buffer, uint32 size, TALLOC_CTX *ctx)
 /* Decode various printer info levels - perhaps this should live in
    parse_spoolss.c? */
 
-static void decode_printer_info_0(NEW_BUFFER *buffer, uint32 returned, 
-				  PRINTER_INFO_0 **info)
+static void decode_printer_info_0(
+	TALLOC_CTX *mem_ctx,
+	NEW_BUFFER *buffer, 
+	uint32 returned, 
+	PRINTER_INFO_0 **info
+)
 {
         uint32 i;
         PRINTER_INFO_0  *inf;
@@ -218,13 +232,17 @@ static void decode_printer_info_0(NEW_BUFFER *buffer, uint32 returned,
         *info=inf;
 }
 
-static void decode_printer_info_1(NEW_BUFFER *buffer, uint32 returned, 
-				  PRINTER_INFO_1 **info)
+static void decode_printer_info_1(
+	TALLOC_CTX *mem_ctx,
+	NEW_BUFFER *buffer, 
+	uint32 returned, 
+	PRINTER_INFO_1 **info
+)
 {
         uint32 i;
         PRINTER_INFO_1  *inf;
 
-        inf=(PRINTER_INFO_1 *)malloc(returned*sizeof(PRINTER_INFO_1));
+        inf=(PRINTER_INFO_1 *)talloc(mem_ctx, returned*sizeof(PRINTER_INFO_1));
 
         buffer->prs.data_offset=0;
 
@@ -235,13 +253,17 @@ static void decode_printer_info_1(NEW_BUFFER *buffer, uint32 returned,
         *info=inf;
 }
 
-static void decode_printer_info_2(NEW_BUFFER *buffer, uint32 returned, 
-				  PRINTER_INFO_2 **info)
+static void decode_printer_info_2(
+	TALLOC_CTX *mem_ctx,
+	NEW_BUFFER *buffer, 
+	uint32 returned, 
+	PRINTER_INFO_2 **info
+)
 {
         uint32 i;
         PRINTER_INFO_2  *inf;
 
-        inf=(PRINTER_INFO_2 *)malloc(returned*sizeof(PRINTER_INFO_2));
+        inf=(PRINTER_INFO_2 *)talloc(mem_ctx, returned*sizeof(PRINTER_INFO_2));
 
         buffer->prs.data_offset=0;
 
@@ -254,13 +276,17 @@ static void decode_printer_info_2(NEW_BUFFER *buffer, uint32 returned,
         *info=inf;
 }
 
-static void decode_printer_info_3(NEW_BUFFER *buffer, uint32 returned, 
-				  PRINTER_INFO_3 **info)
+static void decode_printer_info_3(
+	TALLOC_CTX *mem_ctx,
+	NEW_BUFFER *buffer, 
+	uint32 returned, 
+	PRINTER_INFO_3 **info
+)
 {
         uint32 i;
         PRINTER_INFO_3  *inf;
 
-        inf=(PRINTER_INFO_3 *)malloc(returned*sizeof(PRINTER_INFO_3));
+        inf=(PRINTER_INFO_3 *)talloc(mem_ctx, returned*sizeof(PRINTER_INFO_3));
 
         buffer->prs.data_offset=0;
 
@@ -275,13 +301,17 @@ static void decode_printer_info_3(NEW_BUFFER *buffer, uint32 returned,
 /**********************************************************************
  Decode a PORT_INFO_1 struct from a NEW_BUFFER 
 **********************************************************************/
-static void decode_port_info_1(NEW_BUFFER *buffer, uint32 returned, 
-			       PORT_INFO_1 **info)
+static void decode_port_info_1(
+	TALLOC_CTX *mem_ctx,
+	NEW_BUFFER *buffer, 
+	uint32 returned, 
+	PORT_INFO_1 **info
+)
 {
         uint32 i;
         PORT_INFO_1 *inf;
 
-        inf=(PORT_INFO_1*)malloc(returned*sizeof(PORT_INFO_1));
+        inf=(PORT_INFO_1*)talloc(mem_ctx, returned*sizeof(PORT_INFO_1));
 
         prs_set_offset(&buffer->prs, 0);
 
@@ -295,13 +325,16 @@ static void decode_port_info_1(NEW_BUFFER *buffer, uint32 returned,
 /**********************************************************************
  Decode a PORT_INFO_2 struct from a NEW_BUFFER 
 **********************************************************************/
-static void decode_port_info_2(NEW_BUFFER *buffer, uint32 returned, 
-			       PORT_INFO_2 **info)
+static void decode_port_info_2(
+	TALLOC_CTX *mem_ctx,
+	NEW_BUFFER *buffer, 
+	uint32 returned, 
+	PORT_INFO_2 **info)
 {
         uint32 i;
         PORT_INFO_2 *inf;
 
-        inf=(PORT_INFO_2*)malloc(returned*sizeof(PORT_INFO_2));
+        inf=(PORT_INFO_2*)talloc(mem_ctx, returned*sizeof(PORT_INFO_2));
 
         prs_set_offset(&buffer->prs, 0);
 
@@ -312,13 +345,17 @@ static void decode_port_info_2(NEW_BUFFER *buffer, uint32 returned,
         *info=inf;
 }
 
-static void decode_printer_driver_1(NEW_BUFFER *buffer, uint32 returned, 
-			 	    DRIVER_INFO_1 **info)
+static void decode_printer_driver_1(
+	TALLOC_CTX *mem_ctx,
+	NEW_BUFFER *buffer, 
+	uint32 returned, 
+	DRIVER_INFO_1 **info
+)
 {
         uint32 i;
         DRIVER_INFO_1 *inf;
 
-        inf=(DRIVER_INFO_1 *)malloc(returned*sizeof(DRIVER_INFO_1));
+        inf=(DRIVER_INFO_1 *)talloc(mem_ctx, returned*sizeof(DRIVER_INFO_1));
 
         buffer->prs.data_offset=0;
 
@@ -329,13 +366,17 @@ static void decode_printer_driver_1(NEW_BUFFER *buffer, uint32 returned,
         *info=inf;
 }
 
-static void decode_printer_driver_2(NEW_BUFFER *buffer, uint32 returned, 
-				    DRIVER_INFO_2 **info)
+static void decode_printer_driver_2(
+	TALLOC_CTX *mem_ctx,
+	NEW_BUFFER *buffer, 
+	uint32 returned, 
+	DRIVER_INFO_2 **info
+)
 {
         uint32 i;
         DRIVER_INFO_2 *inf;
 
-        inf=(DRIVER_INFO_2 *)malloc(returned*sizeof(DRIVER_INFO_2));
+        inf=(DRIVER_INFO_2 *)talloc(mem_ctx, returned*sizeof(DRIVER_INFO_2));
 
         buffer->prs.data_offset=0;
 
@@ -347,6 +388,7 @@ static void decode_printer_driver_2(NEW_BUFFER *buffer, uint32 returned,
 }
 
 static void decode_printer_driver_3(
+	TALLOC_CTX *mem_ctx,
 	NEW_BUFFER *buffer, 
 	uint32 returned, 
 	DRIVER_INFO_3 **info
@@ -355,7 +397,7 @@ static void decode_printer_driver_3(
         uint32 i;
         DRIVER_INFO_3 *inf;
 
-        inf=(DRIVER_INFO_3 *)malloc(returned*sizeof(DRIVER_INFO_3));
+        inf=(DRIVER_INFO_3 *)talloc(mem_ctx, returned*sizeof(DRIVER_INFO_3));
 
         buffer->prs.data_offset=0;
 
@@ -367,6 +409,7 @@ static void decode_printer_driver_3(
 }
 
 static void decode_printerdriverdir_1 (
+	TALLOC_CTX *mem_ctx,
 	NEW_BUFFER *buffer, 
 	uint32 returned, 
 	DRIVER_DIRECTORY_1 **info
@@ -374,7 +417,7 @@ static void decode_printerdriverdir_1 (
 {
 	DRIVER_DIRECTORY_1 *inf;
  
-        inf=(DRIVER_DIRECTORY_1 *)malloc(sizeof(DRIVER_DIRECTORY_1));
+        inf=(DRIVER_DIRECTORY_1 *)talloc(mem_ctx, sizeof(DRIVER_DIRECTORY_1));
 
         prs_set_offset(&buffer->prs, 0);
 
@@ -386,9 +429,14 @@ static void decode_printerdriverdir_1 (
 
 /* Enumerate printers */
 
-uint32 cli_spoolss_enum_printers(struct cli_state *cli, uint32 flags,
-				 uint32 level, int *returned, 
-				 PRINTER_INFO_CTR *ctr)
+uint32 cli_spoolss_enum_printers(
+	struct cli_state *cli, 
+	TALLOC_CTX *mem_ctx,
+	uint32 flags,
+	uint32 level, 
+	int *returned, 
+	PRINTER_INFO_CTR *ctr
+)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_ENUMPRINTERS q;
@@ -407,10 +455,10 @@ uint32 cli_spoolss_enum_printers(struct cli_state *cli, uint32 flags,
 	do {
 		/* Initialise input parameters */
 
-		init_buffer(&buffer, needed, cli->mem_ctx);
+		init_buffer(&buffer, needed, mem_ctx);
 
-		prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-		prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+		prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+		prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 		make_spoolss_q_enumprinters(&q, flags, server, level, &buffer, 
 					    needed);
@@ -430,21 +478,20 @@ uint32 cli_spoolss_enum_printers(struct cli_state *cli, uint32 flags,
 		
 		/* Return output parameters */
 
-		if ((result = r.status) == NT_STATUS_NOPROBLEMO && r.returned > 0) {
-
-			*returned = r.returned;
+		if (((result=r.status) == NT_STATUS_NOPROBLEMO) && (*returned = r.returned))
+		{
 
 			switch (level) {
 			case 1:
-				decode_printer_info_1(r.buffer, r.returned, 
+				decode_printer_info_1(mem_ctx, r.buffer, r.returned, 
 						      &ctr->printers_1);
 				break;
 			case 2:
-				decode_printer_info_2(r.buffer, r.returned, 
+				decode_printer_info_2(mem_ctx, r.buffer, r.returned, 
 						      &ctr->printers_2);
 				break;
 			case 3:
-				decode_printer_info_3(r.buffer, r.returned, 
+				decode_printer_info_3(mem_ctx, r.buffer, r.returned, 
 						      &ctr->printers_3);
 				break;
 			}			
@@ -460,8 +507,13 @@ uint32 cli_spoolss_enum_printers(struct cli_state *cli, uint32 flags,
 }
 
 /* Enumerate printer ports */
-uint32 cli_spoolss_enum_ports(struct cli_state *cli, uint32 level, 
-			      int *returned, PORT_INFO_CTR *ctr)
+uint32 cli_spoolss_enum_ports(
+	struct cli_state *cli, 
+	TALLOC_CTX *mem_ctx,
+	uint32 level, 
+	int *returned, 
+	PORT_INFO_CTR *ctr
+)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_ENUMPORTS q;
@@ -480,10 +532,10 @@ uint32 cli_spoolss_enum_ports(struct cli_state *cli, uint32 level,
 	do {
 		/* Initialise input parameters */
 
-		init_buffer(&buffer, needed, cli->mem_ctx);
+		init_buffer(&buffer, needed, mem_ctx);
 
-		prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-		prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+		prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+		prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 		make_spoolss_q_enumports(&q, server, level, &buffer, needed);
 
@@ -509,11 +561,11 @@ uint32 cli_spoolss_enum_ports(struct cli_state *cli, uint32 level,
 
 			switch (level) {
 			case 1:
-				decode_port_info_1(r.buffer, r.returned, 
+				decode_port_info_1(mem_ctx, r.buffer, r.returned, 
 						   &ctr->port.info_1);
 				break;
 			case 2:
-				decode_port_info_2(r.buffer, r.returned, 
+				decode_port_info_2(mem_ctx, r.buffer, r.returned, 
 						   &ctr->port.info_2);
 				break;
 			}			
@@ -531,6 +583,7 @@ uint32 cli_spoolss_enum_ports(struct cli_state *cli, uint32 level,
 /* Get printer info */
 uint32 cli_spoolss_getprinter(
 	struct cli_state *cli, 
+	TALLOC_CTX *mem_ctx,
 	POLICY_HND *pol,
 	uint32 level, 
 	PRINTER_INFO_CTR *ctr
@@ -549,12 +602,12 @@ uint32 cli_spoolss_getprinter(
 	do {
 		/* Initialise input parameters */
 
-		init_buffer(&buffer, needed, cli->mem_ctx);
+		init_buffer(&buffer, needed, mem_ctx);
 
-		prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-		prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+		prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+		prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
-		make_spoolss_q_getprinter(&q, pol, level, &buffer, needed);
+		make_spoolss_q_getprinter(mem_ctx, &q, pol, level, &buffer, needed);
 
 		/* Marshall data and send request */
 		if (!spoolss_io_q_getprinter("", &q, &qbuf, 0) ||
@@ -574,16 +627,16 @@ uint32 cli_spoolss_getprinter(
 
 			switch (level) {
 			case 0:
-				decode_printer_info_0(r.buffer, 1, &ctr->printers_0);
+				decode_printer_info_0(mem_ctx, r.buffer, 1, &ctr->printers_0);
 				break;
 			case 1:
-				decode_printer_info_1(r.buffer, 1, &ctr->printers_1);
+				decode_printer_info_1(mem_ctx, r.buffer, 1, &ctr->printers_1);
 				break;
 			case 2:
-				decode_printer_info_2(r.buffer, 1, &ctr->printers_2);
+				decode_printer_info_2(mem_ctx, r.buffer, 1, &ctr->printers_2);
 				break;
 			case 3:
-				decode_printer_info_3(r.buffer, 1, &ctr->printers_3);
+				decode_printer_info_3(mem_ctx, r.buffer, 1, &ctr->printers_3);
 				break;
 			}			
 		}
@@ -602,6 +655,7 @@ uint32 cli_spoolss_getprinter(
  */
 uint32 cli_spoolss_setprinter(
 	struct cli_state *cli, 
+	TALLOC_CTX *mem_ctx,
 	POLICY_HND *pol,
 	uint32 level, 
 	PRINTER_INFO_CTR *ctr,
@@ -617,13 +671,12 @@ uint32 cli_spoolss_setprinter(
 	ZERO_STRUCT(r);
 
 	/* Initialise input parameters */
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 		
-	make_spoolss_q_setprinter(&q, pol, level, ctr, command);
+	make_spoolss_q_setprinter(mem_ctx, &q, pol, level, ctr, command);
 
 	/* Marshall data and send request */
-	result = NT_STATUS_UNSUCCESSFUL;
 	if (!spoolss_io_q_setprinter("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, SPOOLSS_SETPRINTER, &qbuf, &rbuf)) 
 	{
@@ -632,7 +685,6 @@ uint32 cli_spoolss_setprinter(
 	}
 
 	/* Unmarshall response */
-	result = NT_STATUS_UNSUCCESSFUL;
 	if (!spoolss_io_r_setprinter("", &r, &rbuf, 0)) 
 	{
 		goto done;
@@ -653,6 +705,7 @@ done:
  */
 uint32 cli_spoolss_getprinterdriver (
 	struct cli_state 	*cli, 
+	TALLOC_CTX 		*mem_ctx,
 	POLICY_HND 		*pol, 
 	uint32 			level,
 	char* 			env,
@@ -677,10 +730,10 @@ uint32 cli_spoolss_getprinterdriver (
 	{
 		/* Initialise input parameters */
 
-		init_buffer(&buffer, needed, cli->mem_ctx);
+		init_buffer(&buffer, needed, mem_ctx);
 
-		prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-		prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+		prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+		prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 
 		/* write the request */
@@ -707,13 +760,13 @@ uint32 cli_spoolss_getprinterdriver (
 			switch (level) 
 			{
 			case 1:
-				decode_printer_driver_1(r.buffer, 1, &ctr->info1);
+				decode_printer_driver_1(mem_ctx, r.buffer, 1, &ctr->info1);
 				break;
 			case 2:
-				decode_printer_driver_2(r.buffer, 1, &ctr->info2);
+				decode_printer_driver_2(mem_ctx, r.buffer, 1, &ctr->info2);
 				break;
 			case 3:
-				decode_printer_driver_3(r.buffer, 1, &ctr->info3);
+				decode_printer_driver_3(mem_ctx, r.buffer, 1, &ctr->info3);
 				break;
 			}			
 		}
@@ -732,6 +785,7 @@ uint32 cli_spoolss_getprinterdriver (
  */
 uint32 cli_spoolss_enumprinterdrivers (
 	struct cli_state 	*cli, 
+	TALLOC_CTX		*mem_ctx,
 	uint32 			level,
 	char* 			env,
 	uint32			*returned,
@@ -755,10 +809,10 @@ uint32 cli_spoolss_enumprinterdrivers (
 	do 
 	{
 		/* Initialise input parameters */
-		init_buffer(&buffer, needed, cli->mem_ctx);
+		init_buffer(&buffer, needed, mem_ctx);
 
-		prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-		prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+		prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+		prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 
 		/* write the request */
@@ -787,13 +841,13 @@ uint32 cli_spoolss_enumprinterdrivers (
 			switch (level) 
 			{
 			case 1:
-				decode_printer_driver_1(r.buffer, r.returned, &ctr->info1);
+				decode_printer_driver_1(mem_ctx, r.buffer, r.returned, &ctr->info1);
 				break;
 			case 2:
-				decode_printer_driver_2(r.buffer, r.returned, &ctr->info2);
+				decode_printer_driver_2(mem_ctx, r.buffer, r.returned, &ctr->info2);
 				break;
 			case 3:
-				decode_printer_driver_3(r.buffer, r.returned, &ctr->info3);
+				decode_printer_driver_3(mem_ctx, r.buffer, r.returned, &ctr->info3);
 				break;
 			}			
 		}
@@ -813,6 +867,7 @@ uint32 cli_spoolss_enumprinterdrivers (
  */
 uint32 cli_spoolss_getprinterdriverdir (
 	struct cli_state 	*cli, 
+	TALLOC_CTX		*mem_ctx,
 	uint32 			level,
 	char* 			env,
 	DRIVER_DIRECTORY_CTR  	*ctr
@@ -835,10 +890,10 @@ uint32 cli_spoolss_getprinterdriverdir (
 	do 
 	{
 		/* Initialise input parameters */
-		init_buffer(&buffer, needed, cli->mem_ctx);
+		init_buffer(&buffer, needed, mem_ctx);
 
-		prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-		prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+		prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+		prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 
 		/* write the request */
@@ -864,7 +919,7 @@ uint32 cli_spoolss_getprinterdriverdir (
 			switch (level) 
 			{
 			case 1:
-				decode_printerdriverdir_1(r.buffer, 1, &ctr->info1);
+				decode_printerdriverdir_1(mem_ctx, r.buffer, 1, &ctr->info1);
 				break;
 			}			
 		}
@@ -883,6 +938,7 @@ uint32 cli_spoolss_getprinterdriverdir (
  */
 uint32 cli_spoolss_addprinterdriver (
 	struct cli_state 	*cli, 
+	TALLOC_CTX		*mem_ctx,
 	uint32 			level,
 	PRINTER_DRIVER_CTR  	*ctr
 )
@@ -890,22 +946,22 @@ uint32 cli_spoolss_addprinterdriver (
 	prs_struct 			qbuf, rbuf;
 	SPOOL_Q_ADDPRINTERDRIVER 	q;
         SPOOL_R_ADDPRINTERDRIVER 	r;
-	uint32 				result;
+	uint32 				result = NT_STATUS_UNSUCCESSFUL;
 	fstring 			server;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
-
+	
         slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
         strupper (server);
 
 	/* Initialise input parameters */
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 
 	/* write the request */
-	make_spoolss_q_addprinterdriver (&q, server, level, ctr);
+	make_spoolss_q_addprinterdriver (mem_ctx, &q, server, level, ctr);
 
 	/* Marshall data and send request */
 	result = NT_STATUS_UNSUCCESSFUL;
@@ -929,7 +985,7 @@ uint32 cli_spoolss_addprinterdriver (
 done:
 	prs_mem_free(&qbuf);
 	prs_mem_free(&rbuf);
-
+	
 	return result;	
 }
 
@@ -938,6 +994,7 @@ done:
  */
 uint32 cli_spoolss_addprinterex (
 	struct cli_state 	*cli, 
+	TALLOC_CTX		*mem_ctx,
 	uint32 			level,
 	PRINTER_INFO_CTR  	*ctr
 )
@@ -961,12 +1018,12 @@ uint32 cli_spoolss_addprinterex (
 	
 
 	/* Initialise input parameters */
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 
 	/* write the request */
-	make_spoolss_q_addprinterex (&q, server, client, user, level, ctr);
+	make_spoolss_q_addprinterex (mem_ctx, &q, server, client, user, level, ctr);
 
 	/* Marshall data and send request */
 	result = NT_STATUS_UNSUCCESSFUL;
@@ -980,6 +1037,63 @@ uint32 cli_spoolss_addprinterex (
 	/* Unmarshall response */
 	result = NT_STATUS_UNSUCCESSFUL;
 	if (!spoolss_io_r_addprinterex ("", &r, &rbuf, 0))
+	{
+		goto done;
+	}
+		
+	/* Return output parameters */
+	result = r.status;
+
+done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;	
+}
+
+/**********************************************************************
+ * Delete a Printer Driver from the server (does not remove 
+ * the driver files
+ */
+uint32 cli_spoolss_deleteprinterdriver (
+	struct cli_state 	*cli, 
+	TALLOC_CTX		*mem_ctx,
+	char			*arch,
+	char			*driver
+)
+{
+	prs_struct 			qbuf, rbuf;
+	SPOOL_Q_DELETEPRINTERDRIVER	q;
+        SPOOL_R_DELETEPRINTERDRIVER	r;
+	uint32 				result;
+	fstring				server;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+
+	/* Initialise input parameters */
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+        slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+        strupper (server);
+
+	/* write the request */
+	make_spoolss_q_deleteprinterdriver (mem_ctx, &q, server, arch, driver);
+
+	/* Marshall data and send request */
+	result = NT_STATUS_UNSUCCESSFUL;
+	if (!spoolss_io_q_deleteprinterdriver ("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req (cli,SPOOLSS_DELETEPRINTERDRIVER , &qbuf, &rbuf)) 
+	{
+		goto done;
+	}
+
+		
+	/* Unmarshall response */
+	result = NT_STATUS_UNSUCCESSFUL;
+	if (!spoolss_io_r_deleteprinterdriver ("", &r, &rbuf, 0))
 	{
 		goto done;
 	}

@@ -663,6 +663,36 @@ typedef struct
 } Dir;
 
 
+
+/*******************************************************************
+check to see if a user can read a file. This is only approximate,
+it is used as part of the "hide unreadable" option. Don't
+use it for anything security sensitive
+********************************************************************/
+static BOOL user_can_read_file(connection_struct *conn, char *name)
+{
+	SMB_STRUCT_STAT ste;
+
+	/* if we can't stat it does not show it */
+	if (vfs_stat(conn, name, &ste) != 0) return False;
+
+	if (ste.st_uid == conn->uid) {
+		return (ste.st_mode & S_IRUSR) == S_IRUSR;
+      	} else {
+		int i;
+		if (ste.st_gid == conn->gid) {
+			return (ste.st_mode & S_IRGRP) == S_IRGRP;
+		}
+		for (i=0; i<conn->ngroups; i++) {
+			if (conn->groups[i] == ste.st_gid) {
+				return (ste.st_mode & S_IRGRP) == S_IRGRP;
+			}
+		}
+	}
+
+	return (ste.st_mode & S_IROTH) == S_IROTH;
+}
+
 /*******************************************************************
  Open a directory.
 ********************************************************************/
@@ -677,6 +707,7 @@ void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
   if (!p) return(NULL);
   dirp = (Dir *)malloc(sizeof(Dir));
   if (!dirp) {
+    DEBUG(0,("Out of memory in OpenDir\n"));
     conn->vfs_ops.closedir(conn,p);
     return(NULL);
   }
@@ -694,6 +725,18 @@ void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
 
     /* If it's a vetoed file, pretend it doesn't even exist */
     if (use_veto && conn && IS_VETO_PATH(conn, n)) continue;
+
+    /* Honour _hide unreadable_ option */
+    if (conn && lp_hideunreadable(SNUM(conn))) {
+	    char *entry;
+	    int ret=0;
+      
+	    if (asprintf(&entry, "%s/%s/%s", conn->origpath, name, n) > 0) {
+		    ret = user_can_read_file(conn, entry);
+		    free(entry);
+	    }
+	    if (!ret) continue;
+    }
 
     if (used + l > dirp->mallocsize) {
       int s = MAX(used+l,used+2000);

@@ -34,6 +34,13 @@ extern pstring global_myname;
 #define PRINTER_HANDLE_IS_PRINTER	0
 #define PRINTER_HANDLE_IS_PRINTSERVER	1
 
+struct table_node {
+	char    *long_archi;
+	char    *short_archi;
+	int     version;
+};
+
+
 /* structure to store the printer handles */
 /* and a reference to what it's pointing to */
 /* and the notify info asked about */
@@ -371,7 +378,7 @@ static BOOL set_printer_hnd_printertype(Printer_entry *Printer, char *handlename
 	}
 
 	/* it's a print server */
-	if (!strchr(handlename+2, '\\')) {
+	if (*handlename=='\\' && *(handlename+1)=='\\' && !strchr(handlename+2, '\\')) {
 		DEBUGADD(4,("Printer is a print server\n"));
 		Printer->printer_type = PRINTER_HANDLE_IS_PRINTSERVER;		
 	}
@@ -407,8 +414,13 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 	if (Printer->printer_type!=PRINTER_HANDLE_IS_PRINTER)
 		return False;
 	
-	aprinter=strchr(handlename+2, '\\');
-	aprinter++;
+	if (*handlename=='\\') {
+		aprinter=strchr(handlename+2, '\\');
+		aprinter++;
+	}
+	else {
+		aprinter=handlename;
+	}
 
 	DEBUGADD(5,("searching for [%s] (len=%d)\n", aprinter, strlen(aprinter)));
 
@@ -600,7 +612,7 @@ static BOOL alloc_buffer_size(NEW_BUFFER *buffer, uint32 buffer_size)
  receive the notify message
 ****************************************************************************/
 
-void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len)
+static void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len)
 {
 	fstring printer;
 	uint32 status;
@@ -1053,6 +1065,81 @@ uint32 _spoolss_deleteprinter(pipes_struct *p, SPOOL_Q_DELETEPRINTER *q_u, SPOOL
 	return result;
 }
 
+/*******************************************************************
+ * static function to lookup the version id corresponding to an
+ * long architecture string
+ ******************************************************************/
+static int get_version_id (char * arch)
+{
+	int i;
+	struct table_node archi_table[]= {
+ 
+	        {"Windows 4.0",          "WIN40",       0 },
+	        {"Windows NT x86",       "W32X86",      2 },
+	        {"Windows NT R4000",     "W32MIPS",     2 },	
+	        {"Windows NT Alpha_AXP", "W32ALPHA",    2 },
+	        {"Windows NT PowerPC",   "W32PPC",      2 },
+	        {NULL,                   "",            -1 }
+	};
+ 
+	for (i=0; archi_table[i].long_archi != NULL; i++)
+	{
+		if (strcmp(arch, archi_table[i].long_archi) == 0)
+			return (archi_table[i].version);
+        }
+	
+	return -1;
+}
+
+/********************************************************************
+ * _spoolss_deleteprinterdriver
+ *
+ * We currently delete the driver for the architecture only.
+ * This can leave the driver for other archtectures.  However,
+ * since every printer associates a "Windows NT x86" driver name
+ * and we cannot delete that one while it is in use, **and** since
+ * it is impossible to assign a driver to a Samba printer without
+ * having the "Windows NT x86" driver installed,...
+ * 
+ * ....we should not get into trouble here.  
+ *
+ *                                                      --jerry
+ ********************************************************************/
+
+uint32 _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER *q_u, 
+				    SPOOL_R_DELETEPRINTERDRIVER *r_u)
+{
+	fstring				driver;
+	fstring				arch;
+	NT_PRINTER_DRIVER_INFO_LEVEL	info;
+	int				version;
+	 
+	unistr2_to_ascii(driver, &q_u->driver, sizeof(driver)-1 );
+	unistr2_to_ascii(arch,   &q_u->arch,   sizeof(arch)-1   );
+	
+	/* check that we have a valid driver name first */
+	if ((version=get_version_id(arch)) == -1) {
+		/* this is what NT returns */
+		return ERROR_INVALID_ENVIRONMENT;
+	}
+		
+	ZERO_STRUCT(info);
+	if (get_a_printer_driver (&info, 3, driver, arch, version) != 0) {
+		/* this is what NT returns */
+		return ERROR_UNKNOWN_PRINTER_DRIVER;
+	}
+	
+
+	if (printer_driver_in_use(arch, driver))
+	{
+		/* this is what NT returns */
+		return ERROR_PRINTER_DRIVER_IN_USE;
+	}
+
+	return delete_printer_driver(info.info_3);	 
+}
+
+
 /********************************************************************
  GetPrinterData on a printer server Handle.
 ********************************************************************/
@@ -1266,7 +1353,12 @@ static BOOL srv_spoolss_replyopenprinter(char *printer, uint32 localprinter, uin
 	 * and connect to the IPC$ share anonumously
 	 */
 	if (smb_connections==0) {
-		if(!spoolss_connect_to_client(&cli, printer+2)) /* the +2 is to strip the leading 2 backslashs */
+		fstring unix_printer;
+
+		fstrcpy(unix_printer, printer+2); /* the +2 is to strip the leading 2 backslashs */
+		dos_to_unix(unix_printer, True);
+
+		if(!spoolss_connect_to_client(&cli, unix_printer))
 			return False;
 		message_register(MSG_PRINTER_NOTIFY, srv_spoolss_receive_message);
 
@@ -4029,35 +4121,35 @@ static uint32 update_printer_sec(POLICY_HND *handle, uint32 level,
 	nt_printing_getsec(p->mem_ctx, Printer->dev.handlename, &old_secdesc_ctr);
 
 	if (DEBUGLEVEL >= 10) {
-		SEC_ACL *acl;
+		SEC_ACL *the_acl;
 		int i;
 
-		acl = old_secdesc_ctr->sec->dacl;
+		the_acl = old_secdesc_ctr->sec->dacl;
 		DEBUG(10, ("old_secdesc_ctr for %s has %d aces:\n", 
-			   PRINTERNAME(snum), acl->num_aces));
+			   PRINTERNAME(snum), the_acl->num_aces));
 
-		for (i = 0; i < acl->num_aces; i++) {
+		for (i = 0; i < the_acl->num_aces; i++) {
 			fstring sid_str;
 
-			sid_to_string(sid_str, &acl->ace[i].sid);
+			sid_to_string(sid_str, &the_acl->ace[i].sid);
 
 			DEBUG(10, ("%s 0x%08x\n", sid_str, 
-				  acl->ace[i].info.mask));
+				  the_acl->ace[i].info.mask));
 		}
 
-		acl = secdesc_ctr->sec->dacl;
+		the_acl = secdesc_ctr->sec->dacl;
 
-		if (acl) {
+		if (the_acl) {
 			DEBUG(10, ("secdesc_ctr for %s has %d aces:\n", 
-				   PRINTERNAME(snum), acl->num_aces));
+				   PRINTERNAME(snum), the_acl->num_aces));
 
-			for (i = 0; i < acl->num_aces; i++) {
+			for (i = 0; i < the_acl->num_aces; i++) {
 				fstring sid_str;
 				
-				sid_to_string(sid_str, &acl->ace[i].sid);
+				sid_to_string(sid_str, &the_acl->ace[i].sid);
 				
 				DEBUG(10, ("%s 0x%08x\n", sid_str, 
-					   acl->ace[i].info.mask));
+					   the_acl->ace[i].info.mask));
 			}
 		} else {
 			DEBUG(10, ("dacl for secdesc_ctr is NULL\n"));
@@ -4121,18 +4213,12 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 {
 	char *cmd = lp_addprinter_cmd();
-	char *path;
 	char **qlines;
 	pstring command;
 	pstring driverlocation;
 	int numlines;
 	int ret;
 	int fd;
-
-	if (*lp_pathname(lp_servicenumber(PRINTERS_NAME)))
-		path = lp_pathname(lp_servicenumber(PRINTERS_NAME));
-	else
-		path = lp_lockdir();
 
 	/* build driver path... only 9X architecture is needed for legacy reasons */
 	slprintf(driverlocation, sizeof(driverlocation)-1, "\\\\%s\\print$\\WIN40\\0",
@@ -5305,7 +5391,7 @@ uint32 _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 	FORM_1 form_1;
 	fstring form_name;
 	int buffer_size=0;
-	int numofforms=0, i = -1;
+	int numofforms=0, i=0;
 
 	/* that's an [in out] buffer */
 	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
@@ -5402,17 +5488,11 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 
 	if (*lp_enumports_cmd()) {
 		char *cmd = lp_enumports_cmd();
-		char *path;
 		char **qlines;
 		pstring command;
 		int numlines;
 		int ret;
 		int fd;
-
-		if (*lp_pathname(lp_servicenumber(PRINTERS_NAME)))
-			path = lp_pathname(lp_servicenumber(PRINTERS_NAME));
-		else
-			path = lp_lockdir();
 
 		slprintf(command, sizeof(command)-1, "%s \"%d\"", cmd, 1);
 
@@ -5510,7 +5590,7 @@ static uint32 enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		else
 			path = lp_lockdir();
 
-		slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%d.", path, sys_getpid());
+		slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%u.", path, (unsigned int)sys_getpid());
 		slprintf(command, sizeof(command)-1, "%s \"%d\"", cmd, 2);
 
 		unlink(tmp_file);

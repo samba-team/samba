@@ -37,7 +37,7 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >smbclient</B
->  {servicename} [password] [-b &lt;buffer size&gt;] [-d debuglevel] [-D Directory] [-S server] [-U username] [-W workgroup] [-M &lt;netbios name&gt;] [-m maxprotocol] [-A authfile] [-N] [-l logfile] [-L &lt;netbios name&gt;] [-I destinationIP] [-E &lt;terminal code&gt;] [-c &lt;command string&gt;] [-i scope] [-O &lt;socket options&gt;] [-p port] [-R &lt;name resolve order&gt;] [-s &lt;smb config file&gt;] [-T&lt;c|x&gt;IXFqgbNan]</P
+>  {servicename} [password] [-b &#60;buffer size&#62;] [-d debuglevel] [-D Directory] [-S server] [-U username] [-W workgroup] [-M &#60;netbios name&#62;] [-m maxprotocol] [-A authfile] [-N] [-l logfile] [-L &#60;netbios name&#62;] [-I destinationIP] [-E &#60;terminal code&#62;] [-c &#60;command string&#62;] [-i scope] [-O &#60;socket options&#62;] [-p port] [-R &#60;name resolve order&#62;] [-s &#60;smb config file&#62;] [-T&#60;c|x&#62;IXFqgbNan]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -121,8 +121,14 @@ CLASS="PARAMETER"
 ><I
 >-R</I
 ></TT
-> parameter to smbclient or 
-		using the name resolve order parameter in the smb.conf file, 
+> parameter to <B
+CLASS="COMMAND"
+>smbclient</B
+> or 
+		using the name resolve order parameter in the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file, 
 		allowing an administrator to change the order and methods 
 		by which server names are looked up. </P
 ></DD
@@ -189,12 +195,12 @@ CLASS="FILENAME"
 		options. </P
 ></DD
 ><DT
->-R &lt;name resolve order&gt;</DT
+>-R &#60;name resolve order&#62;</DT
 ><DD
 ><P
 >This option is used by the programs in the Samba 
 		suite to determine what naming services and in what order to resolve 
-		host names to IP addresses. The option takes a space separated 
+		host names to IP addresses. The option takes a space-separated 
 		string of different name resolution options.</P
 ><P
 >The options are :"lmhosts", "host", "wins" and "bcast". They 
@@ -227,7 +233,7 @@ CLASS="FILENAME"
 >/etc/hosts
 			</TT
 >, NIS, or DNS lookups. This method of name resolution 
-			is operating system depended for instance on IRIX or Solaris this 
+			is operating system dependent, for instance on IRIX or Solaris this 
 			may be controlled by the <TT
 CLASS="FILENAME"
 >/etc/nsswitch.conf</TT
@@ -284,7 +290,10 @@ CLASS="PARAMETER"
 >name resolve order
 		</I
 ></TT
-> parameter of the smb.conf file the name resolution
+> parameter of the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file the name resolution
 		methods will be attempted in this order. </P
 ></DD
 ><DT
@@ -339,9 +348,8 @@ CLASS="FILENAME"
 > for a description of how to handle incoming 
 		WinPopup messages in Samba. </P
 ><P
-><I
-CLASS="EMPHASIS"
->Note</I
+><EM
+>Note</EM
 >: Copy WinPopup into the startup group 
 		on your WfWg PCs if you want them to always be able to receive 
 		messages. </P
@@ -352,10 +360,15 @@ CLASS="EMPHASIS"
 ><P
 >This specifies a NetBIOS scope that smbclient will 
 		use to communicate with when generating NetBIOS names. For details 
-		on the use of NetBIOS scopes, see rfc1001.txt and rfc1002.txt.
-		NetBIOS scopes are <I
-CLASS="EMPHASIS"
->very</I
+		on the use of NetBIOS scopes, see <TT
+CLASS="FILENAME"
+>rfc1001.txt</TT
+> and <TT
+CLASS="FILENAME"
+>rfc1002.txt</TT
+>.
+		NetBIOS scopes are <EM
+>very</EM
 > rarely used, only set 
 		this parameter if you are the system administrator in charge of all 
 		the NetBIOS systems you communicate with. </P
@@ -385,7 +398,12 @@ CLASS="EMPHASIS"
 >-d debuglevel</DT
 ><DD
 ><P
->debuglevel is an integer from 0 to 10, or 
+><TT
+CLASS="REPLACEABLE"
+><I
+>debuglevel</I
+></TT
+> is an integer from 0 to 10, or 
 		the letter 'A'. </P
 ><P
 >The default value if this parameter is not specified 
@@ -402,21 +420,24 @@ CLASS="EMPHASIS"
 		data, and should only be used when investigating a problem.
 		Levels above 3 are designed for use only by developers and 
 		generate HUGE amounts of log data, most of which is extremely 
-		cryptic. If debuglevel is set to the letter 'A', then <I
-CLASS="EMPHASIS"
+		cryptic. If <TT
+CLASS="REPLACEABLE"
+><I
+>debuglevel</I
+></TT
+> is set to the letter 'A', then <EM
 >all
-		</I
+		</EM
 >  debug messages will be printed. This setting
-		is for developers only (and people who <I
-CLASS="EMPHASIS"
->really</I
+		is for developers only (and people who <EM
+>really</EM
 > want 
 		to know how the code works internally). </P
 ><P
 >Note that specifying this parameter here will override
-		the log level parameter in the <B
-CLASS="COMMAND"
->smb.conf (5)</B
+		the log level parameter in the <TT
+CLASS="FILENAME"
+>smb.conf (5)</TT
 > 
 		file. </P
 ></DD
@@ -433,7 +454,12 @@ CLASS="COMMAND"
 >-l logfilename</DT
 ><DD
 ><P
->If specified, logfilename specifies a base filename 
+>If specified, <TT
+CLASS="REPLACEABLE"
+><I
+>logfilename</I
+></TT
+> specifies a base filename 
 		into which operational data from the running client will be 
 		logged. </P
 ><P
@@ -459,7 +485,12 @@ CLASS="FILENAME"
 >-I IP-address</DT
 ><DD
 ><P
->IP address is the address of the server to connect to. 
+><TT
+CLASS="REPLACEABLE"
+><I
+>IP address</I
+></TT
+> is the address of the server to connect to. 
 		It should be specified in standard "a.b.c.d" notation. </P
 ><P
 >Normally the client would attempt to locate a named 
@@ -496,35 +527,37 @@ CLASS="PARAMETER"
 ><P
 >Sets the SMB username or username and password. 
 		If %pass is not specified, The user will be prompted. The client 
-		will first check the USER environment variable, then the 
+		will first check the <TT
+CLASS="ENVAR"
+>USER</TT
+> environment variable, then the 
 		<TT
-CLASS="PARAMETER"
-><I
->$LOGNAME</I
-></TT
-> variable and if either exist, the 
+CLASS="ENVAR"
+>LOGNAME</TT
+> variable and if either exists, the 
 		string is uppercased. Anything in these variables following a '%' 
-		sign will be treated as the password. If these environmental 
+		sign will be treated as the password. If these environment 
 		variables are not found, the username <TT
 CLASS="CONSTANT"
 >GUEST</TT
 > 
 		is used. </P
 ><P
->If the password is not included in these environment 
-		variables (using the %pass syntax), rpcclient will look for 
+>If the password is not included in these environment
+		variables (using the %pass syntax), <B
+CLASS="COMMAND"
+>rpcclient</B
+> will look for 
 		a <TT
-CLASS="PARAMETER"
-><I
->$PASSWD</I
-></TT
+CLASS="ENVAR"
+>PASSWD</TT
 > environment variable from which 
 		to read the password. </P
 ><P
 >A third option is to use a credentials file which 
 		contains the plaintext of the username and password.  This 
 		option is mainly provided for scripts where the admin doesn't 
-		desire to pass the credentials on the command line or via environment 
+		wish to pass the credentials on the command line or via environment 
 		variables. If this method is used, make certain that the permissions 
 		on the file restrict access from unwanted users.  See the 
 		<TT
@@ -536,10 +569,8 @@ CLASS="PARAMETER"
 ><P
 >Be cautious about including passwords in scripts or in 
 		the <TT
-CLASS="PARAMETER"
-><I
->$PASSWD</I
-></TT
+CLASS="ENVAR"
+>PASSWD</TT
 > environment variable. Also, on 
 		many systems the command line of a running process may be seen 
 		via the <B
@@ -561,11 +592,20 @@ CLASS="COMMAND"
 		password used in the connection.  The format of the file is 
 		</P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
->username = &lt;value&gt; 
-password = &lt;value&gt;
+>username = &#60;value&#62; 
+password = &#60;value&#62;
 		</PRE
+></TD
+></TR
+></TABLE
 ></P
 ><P
 >Make certain that the permissions on the file restrict 
@@ -587,22 +627,23 @@ CLASS="PARAMETER"
 		</I
 ></TT
 > option may be useful if your NetBIOS names don't 
-		match your tcp/ip dns host names or if you are trying to reach a 
+		match your TCP/IP DNS host names or if you are trying to reach a 
 		host on another network. </P
 ></DD
 ><DT
 >-t terminal code</DT
 ><DD
 ><P
->This option tells smbclient how to interpret 
+>This option tells <B
+CLASS="COMMAND"
+>smbclient</B
+> how to interpret 
 		filenames coming from the remote server. Usually Asian language 
 		multibyte UNIX implementations use different character sets than 
-		SMB/CIFS servers (<I
-CLASS="EMPHASIS"
->EUC</I
-> instead of <I
-CLASS="EMPHASIS"
->		SJIS</I
+		SMB/CIFS servers (<EM
+>EUC</EM
+> instead of <EM
+>		SJIS</EM
 > for example). Setting this parameter will let 
 		<B
 CLASS="COMMAND"
@@ -768,7 +809,7 @@ CLASS="PARAMETER"
 >r</I
 ></TT
 > - Regular expression include
-			or exclude.  Uses regular  regular expression matching for 
+			or exclude.  Uses regular  expression matching for 
 			excluding or excluding files if  compiled with HAVE_REGEX_H. 
 			However this mode can be very slow. If  not compiled with 
 			HAVE_REGEX_H, does a limited wildcard match on '*' and  '?'. 
@@ -816,9 +857,8 @@ CLASS="PARAMETER"
 ></LI
 ></UL
 ><P
-><I
-CLASS="EMPHASIS"
->Tar Long File Names</I
+><EM
+>Tar Long File Names</EM
 ></P
 ><P
 ><B
@@ -827,30 +867,34 @@ CLASS="COMMAND"
 >'s tar option now supports long 
 		file names both on backup and restore. However, the full path 
 		name of the file must be less than 1024 bytes.  Also, when
-		a tar archive is created, smbclient's tar option places all 
+		a tar archive is created, <B
+CLASS="COMMAND"
+>smbclient</B
+>'s tar option places all 
 		files in the archive with relative names, not absolute names. 
 		</P
 ><P
-><I
-CLASS="EMPHASIS"
->Tar Filenames</I
+><EM
+>Tar Filenames</EM
 ></P
 ><P
 >All file names can be given as DOS path names (with '\' 
 		as the component separator) or as UNIX path names (with '/' as 
 		the component separator). </P
 ><P
-><I
-CLASS="EMPHASIS"
->Examples</I
+><EM
+>Examples</EM
 ></P
 ><P
->Restore from tar file backup.tar into myshare on mypc 
+>Restore from tar file <TT
+CLASS="FILENAME"
+>backup.tar</TT
+> into myshare on mypc 
 		(no password on share). </P
 ><P
 ><B
 CLASS="COMMAND"
->smbclient //mypc/myshare "" -N -Tx backup.tar
+>smbclient //mypc/yshare "" -N -Tx backup.tar
 		</B
 ></P
 ><P
@@ -906,7 +950,7 @@ CLASS="COMMAND"
 >-c command string</DT
 ><DD
 ><P
->command string is a semicolon separated list of 
+>command string is a semicolon-separated list of 
 		commands to be executed instead of prompting from stdin. <TT
 CLASS="PARAMETER"
 ><I
@@ -931,7 +975,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN297"
+NAME="AEN311"
 ></A
 ><H2
 >OPERATIONS</H2
@@ -941,7 +985,7 @@ NAME="AEN297"
 ><P
 ><TT
 CLASS="PROMPT"
->smb:\&gt; </TT
+>smb:\&#62; </TT
 ></P
 ><P
 >The backslash ("\") indicates the current working directory 
@@ -961,7 +1005,7 @@ CLASS="PROMPT"
 ><P
 >Parameters shown in square brackets (e.g., "[parameter]") are 
 	optional.  If not given, the command will use suitable defaults. Parameters 
-	shown in angle brackets (e.g., "&lt;parameter&gt;") are required.
+	shown in angle brackets (e.g., "&#60;parameter&#62;") are required.
 	</P
 ><P
 >Note that all commands operating on the server are actually 
@@ -979,7 +1023,12 @@ CLASS="VARIABLELIST"
 >? [command]</DT
 ><DD
 ><P
->If "command" is specified, the ? command will display 
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>command</I
+></TT
+> is specified, the ? command will display 
 		a brief informative message about the specified command.  If no 
 		command is specified, a list of available commands will
 		be displayed. </P
@@ -988,7 +1037,12 @@ CLASS="VARIABLELIST"
 >! [shell command]</DT
 ><DD
 ><P
->If "shell command" is specified, the !  
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>shell command</I
+></TT
+> is specified, the !  
 		command will execute a shell locally and run the specified shell 
 		command. If no command is specified, a local shell will be run. 
 		</P
@@ -1006,18 +1060,28 @@ CLASS="VARIABLELIST"
 		directory on the server will be reported. </P
 ></DD
 ><DT
->del &lt;mask&gt;</DT
+>del &#60;mask&#62;</DT
 ><DD
 ><P
 >The client will request that the server attempt 
-		to delete all files matching "mask" from the current working 
+		to delete all files matching <TT
+CLASS="REPLACEABLE"
+><I
+>mask</I
+></TT
+> from the current working 
 		directory on the server. </P
 ></DD
 ><DT
->dir &lt;mask&gt;</DT
+>dir &#60;mask&#62;</DT
 ><DD
 ><P
->A list of the files matching "mask" in the current 
+>A list of the files matching <TT
+CLASS="REPLACEABLE"
+><I
+>mask</I
+></TT
+> in the current 
 		working directory on the server will be retrieved from the server 
 		and displayed. </P
 ></DD
@@ -1029,12 +1093,18 @@ CLASS="VARIABLELIST"
 		from the program. </P
 ></DD
 ><DT
->get &lt;remote file name&gt; [local file name]</DT
+>get &#60;remote file name&#62; [local file name]</DT
 ><DD
 ><P
->Copy the file called "remote file name" from 
+>Copy the file called <TT
+CLASS="FILENAME"
+>remote file name</TT
+> from 
 		the server to the machine running the client. If specified, name 
-		the local copy "local file name".  Note that all transfers in 
+		the local copy <TT
+CLASS="FILENAME"
+>local file name</TT
+>.  Note that all transfers in 
 		<B
 CLASS="COMMAND"
 >smbclient</B
@@ -1051,7 +1121,12 @@ CLASS="COMMAND"
 >lcd [directory name]</DT
 ><DD
 ><P
->If "directory name" is specified, the current 
+>If <TT
+CLASS="REPLACEABLE"
+><I
+>directory name</I
+></TT
+> is specified, the current 
 		working directory on the local machine will be changed to 
 		the directory specified. This operation will fail if for any 
 		reason the specified directory is inaccessible. </P
@@ -1073,13 +1148,13 @@ CLASS="COMMAND"
 		lowercase filenames are the norm on UNIX systems. </P
 ></DD
 ><DT
->ls &lt;mask&gt;</DT
+>ls &#60;mask&#62;</DT
 ><DD
 ><P
 >See the dir command above. </P
 ></DD
 ><DT
->mask &lt;mask&gt;</DT
+>mask &#60;mask&#62;</DT
 ><DD
 ><P
 >This command allows the user to set up a mask 
@@ -1105,45 +1180,71 @@ CLASS="COMMAND"
 		mask back to "*" after using the mget or mput commands. </P
 ></DD
 ><DT
->md &lt;directory name&gt;</DT
+>md &#60;directory name&#62;</DT
 ><DD
 ><P
 >See the mkdir command. </P
 ></DD
 ><DT
->mget &lt;mask&gt;</DT
+>mget &#60;mask&#62;</DT
 ><DD
 ><P
->Copy all files matching mask from the server to 
+>Copy all files matching <TT
+CLASS="REPLACEABLE"
+><I
+>mask</I
+></TT
+> from the server to 
 		the machine running the client. </P
 ><P
->Note that mask is interpreted differently during recursive 
+>Note that <TT
+CLASS="REPLACEABLE"
+><I
+>mask</I
+></TT
+> is interpreted differently during recursive 
 		operation and non-recursive operation - refer to the recurse and 
 		mask commands for more information. Note that all transfers in 
-		smbclient are binary. See also the lowercase command. </P
+		<B
+CLASS="COMMAND"
+>smbclient</B
+> are binary. See also the lowercase command. </P
 ></DD
 ><DT
->mkdir &lt;directory name&gt;</DT
+>mkdir &#60;directory name&#62;</DT
 ><DD
 ><P
 >Create a new directory on the server (user access 
 		privileges permitting) with the specified name. </P
 ></DD
 ><DT
->mput &lt;mask&gt;</DT
+>mput &#60;mask&#62;</DT
 ><DD
 ><P
->Copy all files matching mask in the current working 
+>Copy all files matching <TT
+CLASS="REPLACEABLE"
+><I
+>mask</I
+></TT
+> in the current working 
 		directory on the local machine to the current working directory on 
 		the server. </P
 ><P
->Note that mask is interpreted differently during recursive 
+>Note that <TT
+CLASS="REPLACEABLE"
+><I
+>mask</I
+></TT
+> is interpreted differently during recursive 
 		operation and non-recursive operation - refer to the recurse and mask 
-		commands for more information. Note that all transfers in smbclient 
+		commands for more information. Note that all transfers in <B
+CLASS="COMMAND"
+>smbclient</B
+> 
 		are binary. </P
 ></DD
 ><DT
->print &lt;file name&gt;</DT
+>print &#60;file name&#62;</DT
 ><DD
 ><P
 >Print the specified file from the local machine 
@@ -1152,7 +1253,7 @@ CLASS="COMMAND"
 >See also the printmode command.</P
 ></DD
 ><DT
->printmode &lt;graphics or text&gt;</DT
+>printmode &#60;graphics or text&#62;</DT
 ><DD
 ><P
 >Set the print mode to suit either binary data 
@@ -1172,13 +1273,22 @@ CLASS="COMMAND"
 		</P
 ></DD
 ><DT
->put &lt;local file name&gt; [remote file name]</DT
+>put &#60;local file name&#62; [remote file name]</DT
 ><DD
 ><P
->Copy the file called "local file name" from the 
+>Copy the file called <TT
+CLASS="FILENAME"
+>local file name</TT
+> from the 
 		machine running the client to the server. If specified,
-		name the remote copy "remote file name". Note that all transfers 
-		in smbclient are binary. See also the lowercase command. 
+		name the remote copy <TT
+CLASS="FILENAME"
+>remote file name</TT
+>. Note that all transfers 
+		in <B
+CLASS="COMMAND"
+>smbclient</B
+> are binary. See also the lowercase command. 
 		</P
 ></DD
 ><DT
@@ -1195,7 +1305,7 @@ CLASS="COMMAND"
 >See the exit command. </P
 ></DD
 ><DT
->rd &lt;directory name&gt;</DT
+>rd &#60;directory name&#62;</DT
 ><DD
 ><P
 >See the rmdir command. </P
@@ -1220,21 +1330,26 @@ CLASS="COMMAND"
 		using the mask command will be ignored. </P
 ></DD
 ><DT
->rm &lt;mask&gt;</DT
+>rm &#60;mask&#62;</DT
 ><DD
 ><P
->Remove all files matching mask from the current 
+>Remove all files matching <TT
+CLASS="REPLACEABLE"
+><I
+>mask</I
+></TT
+> from the current 
 		working directory on the server. </P
 ></DD
 ><DT
->rmdir &lt;directory name&gt;</DT
+>rmdir &#60;directory name&#62;</DT
 ><DD
 ><P
 >Remove the specified directory (user access 
 		privileges permitting) from the server. </P
 ></DD
 ><DT
->tar &lt;c|x&gt;[IXbgNa]</DT
+>tar &#60;c|x&#62;[IXbgNa]</DT
 ><DD
 ><P
 >Performs a tar operation - see the <TT
@@ -1250,15 +1365,20 @@ CLASS="PARAMETER"
 		</P
 ></DD
 ><DT
->blocksize &lt;blocksize&gt;</DT
+>blocksize &#60;blocksize&#62;</DT
 ><DD
 ><P
 >Blocksize. Must be followed by a valid (greater 
 		than zero) blocksize. Causes tar file to be written out in 
-		blocksize*TBLOCK (usually 512 byte) blocks. </P
+		<TT
+CLASS="REPLACEABLE"
+><I
+>blocksize</I
+></TT
+>*TBLOCK (usually 512 byte) blocks. </P
 ></DD
 ><DT
->tarmode &lt;full|inc|reset|noreset&gt;</DT
+>tarmode &#60;full|inc|reset|noreset&#62;</DT
 ><DD
 ><P
 >Changes tar's behavior with regard to archive 
@@ -1269,7 +1389,7 @@ CLASS="PARAMETER"
 		read/write share). </P
 ></DD
 ><DT
->setmode &lt;filename&gt; &lt;perm=[+|\-]rsha&gt;</DT
+>setmode &#60;filename&#62; &#60;perm=[+|\-]rsha&#62;</DT
 ><DD
 ><P
 >A version of the DOS attrib command to set 
@@ -1288,7 +1408,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN446"
+NAME="AEN478"
 ></A
 ><H2
 >NOTES</H2
@@ -1309,26 +1429,22 @@ NAME="AEN446"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN451"
+NAME="AEN483"
 ></A
 ><H2
 >ENVIRONMENT VARIABLES</H2
 ><P
 >The variable <TT
-CLASS="PARAMETER"
-><I
->$USER</I
-></TT
+CLASS="ENVAR"
+>USER</TT
 > may contain the 
 	username of the person  using the client. This information is 
 	used only if the protocol  level is high enough to support 
 	session-level passwords.</P
 ><P
 >The variable <TT
-CLASS="PARAMETER"
-><I
->$PASSWD</I
-></TT
+CLASS="ENVAR"
+>PASSWD</TT
 > may contain 
 	the password of the person using the client.  This information is 
 	used only if the protocol level is high enough to support 
@@ -1337,7 +1453,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN457"
+NAME="AEN489"
 ></A
 ><H2
 >INSTALLATION</H2
@@ -1355,9 +1471,8 @@ CLASS="FILENAME"
 >	/usr/samba/bin/</TT
 > directory, this directory readable 
 	by all, writeable only by root. The client program itself should 
-	be executable by all. The client should <I
-CLASS="EMPHASIS"
->NOT</I
+	be executable by all. The client should <EM
+>NOT</EM
 > be 
 	setuid or setgid! </P
 ><P
@@ -1369,14 +1484,14 @@ CLASS="EMPHASIS"
 CLASS="COMMAND"
 >smbd(8)
 	</B
-> an ordinary user - running that server as a daemon 
+> as an ordinary user - running that server as a daemon 
 	on a user-accessible port (typically any port number over 1024)
 	would provide a suitable test server. </P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN467"
+NAME="AEN499"
 ></A
 ><H2
 >DIAGNOSTICS</H2
@@ -1392,7 +1507,7 @@ NAME="AEN467"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN471"
+NAME="AEN503"
 ></A
 ><H2
 >VERSION</H2
@@ -1403,7 +1518,7 @@ NAME="AEN471"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN474"
+NAME="AEN506"
 ></A
 ><H2
 >AUTHOR</H2

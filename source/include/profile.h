@@ -96,6 +96,10 @@ struct profile_stats {
 	unsigned syscall_ftruncate_time;
 	unsigned syscall_fcntl_lock_count;
 	unsigned syscall_fcntl_lock_time;
+	unsigned syscall_readlink_count;
+	unsigned syscall_readlink_time;
+	unsigned syscall_symlink_count;
+	unsigned syscall_symlink_time;
 /* stat cache counters */
 	unsigned statcache_lookups;
 	unsigned statcache_misses;

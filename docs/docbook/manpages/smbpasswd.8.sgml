@@ -9,7 +9,7 @@
 
 <refnamediv>
 	<refname>smbpasswd</refname>
-	<refpurpose>change a users SMB password</refpurpose>
+	<refpurpose>change a user's SMB password</refpurpose>
 </refnamediv>
 
 <refsynopsisdiv>
@@ -45,7 +45,7 @@
 	SMB passwords. </para>
 
 	<para>By default (when run with no arguments) it will attempt to 
-	change the current users SMB password on the local machine. This is 
+	change the current user's SMB password on the local machine. This is 
 	similar to the way the <command>passwd(1)</command> program works. 
 	<command>smbpasswd</command> differs from how the passwd program works 
 	however in that it is not <emphasis>setuid root</emphasis> but works in 
@@ -56,10 +56,10 @@
 	the <filename>smbpasswd(5)</filename> file. </para>
 
 	<para>When run by an ordinary user with no options. smbpasswd 
-	will prompt them for their old smb password and then ask them 
+	will prompt them for their old SMB password and then ask them 
 	for their new password twice, to ensure that the new password
 	was typed correctly. No passwords will be echoed on the screen 
-	whilst being typed. If you have a blank smb password (specified by 
+	whilst being typed. If you have a blank SMB password (specified by 
 	the string "NO PASSWORD" in the smbpasswd file) then just press 
 	the &lt;Enter&gt; key when asked for your old password. </para>
 
@@ -117,7 +117,7 @@
 		will fail. </para>
 		
 		<para>If the smbpasswd file is in the 'old' format (pre-Samba 2.0 
-		format) there is no space in the users password entry to write
+		format) there is no space in the user's password entry to write
 		this information and so the user is disabled by writing 'X' characters 
 		into the password space in the smbpasswd file. See <command>smbpasswd(5)
 		</command> for details on the 'old' and new password file formats.
@@ -151,7 +151,7 @@
 
 		<varlistentry>
 		<term>-D debuglevel</term>
-		<listitem><para><parameter>debuglevel</parameter> is an integer 
+		<listitem><para><replaceable>debuglevel</replaceable> is an integer 
 		from 0 to 10.  The default value if this parameter is not specified 
 		is zero. </para>
 
@@ -335,7 +335,7 @@
 		<varlistentry>
 		<term>-s</term>
 		<listitem><para>This option causes smbpasswd to be silent (i.e. 
-		not issue prompts) and to read it's old and new passwords from 
+		not issue prompts) and to read its old and new passwords from 
 		standard  input, rather than from <filename>/dev/tty</filename> 
 		(like the <command>passwd(1)</command> program does). This option 
 		is to aid people writing scripts to drive smbpasswd</para>

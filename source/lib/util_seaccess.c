@@ -106,14 +106,14 @@ static uint32 check_ace(SEC_ACE *ace, NT_USER_TOKEN *token, uint32 acc_desired, 
  include other bits requested.
 **********************************************************************************/ 
 
-static BOOL get_max_access( SEC_ACL *acl, NT_USER_TOKEN *token, uint32 *granted, uint32 desired, uint32 *status)
+static BOOL get_max_access( SEC_ACL *the_acl, NT_USER_TOKEN *token, uint32 *granted, uint32 desired, uint32 *status)
 {
 	uint32 acc_denied = 0;
 	uint32 acc_granted = 0;
 	size_t i;
 	
-	for ( i = 0 ; i < acl->num_aces; i++) {
-		SEC_ACE *ace = &acl->ace[i];
+	for ( i = 0 ; i < the_acl->num_aces; i++) {
+		SEC_ACE *ace = &the_acl->ace[i];
 		uint32 mask = ace->info.mask;
 
 		if (!token_sid_in_ace( token, ace))
@@ -206,7 +206,7 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 {
 	extern NT_USER_TOKEN anonymous_token;
 	size_t i;
-	SEC_ACL *acl;
+	SEC_ACL *the_acl;
 	fstring sid_str;
 	NT_USER_TOKEN *token = user->nt_user_token ? user->nt_user_token : &anonymous_token;
 	uint32 tmp_acc_desired = acc_desired;
@@ -259,15 +259,15 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 		}
 	}
 
-	acl = sd->dacl;
+	the_acl = sd->dacl;
 
 	if (tmp_acc_desired & MAXIMUM_ALLOWED_ACCESS) {
 		tmp_acc_desired &= ~MAXIMUM_ALLOWED_ACCESS;
-		return get_max_access( acl, token, acc_granted, tmp_acc_desired, status);
+		return get_max_access( the_acl, token, acc_granted, tmp_acc_desired, status);
 	}
 
-	for ( i = 0 ; i < acl->num_aces && tmp_acc_desired != 0; i++) {
-		SEC_ACE *ace = &acl->ace[i];
+	for ( i = 0 ; i < the_acl->num_aces && tmp_acc_desired != 0; i++) {
+		SEC_ACE *ace = &the_acl->ace[i];
 
 		DEBUG(10,("se_access_check: ACE %u: type %d, flags = 0x%02x, SID = %s mask = %x, current desired = %x\n",
 			  (unsigned int)i, ace->type, ace->flags,
@@ -310,7 +310,7 @@ SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr,
 {
 	SEC_DESC_BUF *sdb;
 	SEC_DESC *sd;
-	SEC_ACL *new_dacl, *acl;
+	SEC_ACL *new_dacl, *the_acl;
 	SEC_ACE *new_ace_list = NULL;
 	int new_ace_list_ndx = 0, i;
 	size_t size;
@@ -319,13 +319,13 @@ SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr,
 	   sacl should also be processed but this is left out as sacls are
 	   not implemented in Samba at the moment.*/
 
-	acl = parent_ctr->dacl;
+	the_acl = parent_ctr->dacl;
 
-	if (!(new_ace_list = talloc(ctx, sizeof(SEC_ACE) * acl->num_aces))) 
+	if (!(new_ace_list = talloc(ctx, sizeof(SEC_ACE) * the_acl->num_aces))) 
 		return NULL;
 
-	for (i = 0; acl && i < acl->num_aces; i++) {
-		SEC_ACE *ace = &acl->ace[i];
+	for (i = 0; the_acl && i < the_acl->num_aces; i++) {
+		SEC_ACE *ace = &the_acl->ace[i];
 		SEC_ACE *new_ace = &new_ace_list[new_ace_list_ndx];
 		uint8 new_flags = 0;
 		BOOL inherit = False;

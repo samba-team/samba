@@ -104,8 +104,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 			/*
 			 * Plaintext mode needed, assume plaintext supplied.
 			 */
-			fstrcpy(pword, pass);
-			unix_to_dos(pword,True);
+			passlen = clistr_push(cli, pword, pass, -1, STR_CONVERT|STR_TERMINATE);
 			fstrcpy(ntpword, "");
 			ntpasslen = 0;
 		}
@@ -124,7 +123,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 
 	if (cli->protocol < PROTOCOL_NT1)
 	{
-		set_message(cli->outbuf,10,1 + strlen(user) + passlen,True);
+		set_message(cli->outbuf,10, 0, True);
 		CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
 		cli_setup_packet(cli);
 
@@ -137,12 +136,20 @@ BOOL cli_session_setup(struct cli_state *cli,
 		p = smb_buf(cli->outbuf);
 		memcpy(p,pword,passlen);
 		p += passlen;
-		pstrcpy(p,user);
-		unix_to_dos(p,True);
-		strupper(p);
+		p += clistr_push(cli, p, user, -1, STR_CONVERT|STR_UPPER|STR_TERMINATE);
+		cli_setup_bcc(cli, p);
 	}
 	else
 	{
+		uint32 capabilities;
+
+		capabilities = CAP_NT_SMBS;
+		if (cli->use_level_II_oplocks) {
+			capabilities |= CAP_LEVEL_II_OPLOCKS;
+		}
+		if (cli->capabilities & CAP_UNICODE) {
+			capabilities |= CAP_UNICODE;
+		}
 		set_message(cli->outbuf,13,0,True);
 		CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
 		cli_setup_packet(cli);
@@ -154,23 +161,17 @@ BOOL cli_session_setup(struct cli_state *cli,
 		SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
 		SSVAL(cli->outbuf,smb_vwv7,passlen);
 		SSVAL(cli->outbuf,smb_vwv8,ntpasslen);
-		SSVAL(cli->outbuf,smb_vwv11,CAP_NT_SMBS|(cli->use_level_II_oplocks ? CAP_LEVEL_II_OPLOCKS : 0));
+		SIVAL(cli->outbuf,smb_vwv11,capabilities);
 		p = smb_buf(cli->outbuf);
 		memcpy(p,pword,passlen); 
 		p += SVAL(cli->outbuf,smb_vwv7);
 		memcpy(p,ntpword,ntpasslen); 
 		p += SVAL(cli->outbuf,smb_vwv8);
-		pstrcpy(p,user);
-		unix_to_dos(p,True);
-		strupper(p);
-		p = skip_string(p,1);
-		pstrcpy(p,workgroup);
-		unix_to_dos(p,True);
-		strupper(p);
-		p = skip_string(p,1);
-		pstrcpy(p,"Unix");p = skip_string(p,1);
-		pstrcpy(p,"Samba");p = skip_string(p,1);
-		set_message(cli->outbuf,13,PTR_DIFF(p,smb_buf(cli->outbuf)),False);
+		p += clistr_push(cli, p, user, -1, STR_CONVERT|STR_TERMINATE|STR_UPPER);
+		p += clistr_push(cli, p, workgroup, -1, STR_CONVERT|STR_TERMINATE|STR_UPPER);
+		p += clistr_push(cli, p, "Unix", -1, STR_CONVERT|STR_TERMINATE);
+		p += clistr_push(cli, p, "Samba", -1, STR_CONVERT|STR_TERMINATE);
+		cli_setup_bcc(cli, p);
 	}
 
       cli_send_smb(cli);
@@ -187,24 +188,17 @@ BOOL cli_session_setup(struct cli_state *cli,
       cli->vuid = SVAL(cli->inbuf,smb_uid);
 
       if (cli->protocol >= PROTOCOL_NT1) {
-        /*
-         * Save off some of the connected server
-         * info.
-         */
-        char *server_domain,*server_os,*server_type;
-        server_os = smb_buf(cli->inbuf);
-        server_type = skip_string(server_os,1);
-        server_domain = skip_string(server_type,1);
-        fstrcpy(cli->server_os, server_os);
-		dos_to_unix(cli->server_os, True);
-        fstrcpy(cli->server_type, server_type);
-		dos_to_unix(cli->server_type, True);
-        fstrcpy(cli->server_domain, server_domain);
-		dos_to_unix(cli->server_domain, True);
+	      /*
+	       * Save off some of the connected server
+	       * info.
+	       */
+	      char *q = smb_buf(cli->inbuf);
+	      q += clistr_pull(cli, cli->server_os, q, sizeof(fstring), -1, STR_TERMINATE|STR_CONVERT);
+	      q += clistr_pull(cli, cli->server_type, q, sizeof(fstring), -1, STR_TERMINATE|STR_CONVERT);
+	      q += clistr_pull(cli, cli->server_domain, q, sizeof(fstring), -1, STR_TERMINATE|STR_CONVERT);
       }
 
       fstrcpy(cli->user_name, user);
-      dos_to_unix(cli->user_name, True);
 
       return True;
 }
@@ -257,12 +251,11 @@ BOOL cli_send_tconX(struct cli_state *cli,
 		unix_to_dos(dos_pword,True);
 		SMBencrypt((uchar *)dos_pword,(uchar *)cli->cryptkey,(uchar *)pword);
 	} else {
-		if(!(cli->sec_mode & 2)) {
+		if((cli->sec_mode & 3) == 0) {
 			/*
 			 * Non-encrypted passwords - convert to DOS codepage before using.
 			 */
-			fstrcpy(pword,pass);
-			unix_to_dos(pword,True);
+			passlen = clistr_push(cli, pword, pass, -1, STR_CONVERT|STR_TERMINATE);
 		} else {
 			memcpy(pword, pass, passlen);
 		}
@@ -273,8 +266,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	unix_to_dos(fullshare, True);
 	strupper(fullshare);
 
-	set_message(cli->outbuf,4,
-		    2 + strlen(fullshare) + passlen + strlen(dev),True);
+	set_message(cli->outbuf,4, 0, True);
 	CVAL(cli->outbuf,smb_com) = SMBtconX;
 	cli_setup_packet(cli);
 
@@ -284,10 +276,10 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	p = smb_buf(cli->outbuf);
 	memcpy(p,pword,passlen);
 	p += passlen;
-	fstrcpy(p,fullshare);
-	p = skip_string(p,1);
-	pstrcpy(p,dev);
-	unix_to_dos(p,True);
+	p += clistr_push(cli, p, fullshare, -1, STR_CONVERT | STR_TERMINATE);
+	fstrcpy(p, dev); p += strlen(dev)+1;
+
+	cli_setup_bcc(cli, p);
 
 	SCVAL(cli->inbuf,smb_rcls, 1);
 
@@ -302,7 +294,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	fstrcpy(cli->dev, "A:");
 
 	if (cli->protocol >= PROTOCOL_NT1) {
-		fstrcpy(cli->dev, smb_buf(cli->inbuf));
+		clistr_pull(cli, cli->dev, smb_buf(cli->inbuf), sizeof(fstring), -1, STR_TERMINATE | STR_CONVERT);
 	}
 
 	if (strcasecmp(share,"IPC$")==0) {
@@ -347,17 +339,11 @@ void cli_negprot_send(struct cli_state *cli)
 {
 	char *p;
 	int numprots;
-	int plength;
 
 	memset(cli->outbuf,'\0',smb_size);
 
 	/* setup the protocol strings */
-	for (plength=0,numprots=0;
-	     prots[numprots].name && prots[numprots].prot<=cli->protocol;
-	     numprots++)
-		plength += strlen(prots[numprots].name)+2;
-    
-	set_message(cli->outbuf,0,plength,True);
+	set_message(cli->outbuf,0,0,True);
 
 	p = smb_buf(cli->outbuf);
 	for (numprots=0;
@@ -370,6 +356,7 @@ void cli_negprot_send(struct cli_state *cli)
 	}
 
 	CVAL(cli->outbuf,smb_com) = SMBnegprot;
+	cli_setup_bcc(cli, p);
 	cli_setup_packet(cli);
 
 	CVAL(smb_buf(cli->outbuf),0) = 2;
@@ -442,6 +429,12 @@ BOOL cli_negprot(struct cli_state *cli)
 			cli->readbraw_supported = True;
 			cli->writebraw_supported = True;      
 		}
+		/* work out if they sent us a workgroup */
+		if (smb_buflen(cli->inbuf) > 8) {
+			clistr_pull(cli, cli->server_domain, 
+				    smb_buf(cli->inbuf)+8, sizeof(cli->server_domain),
+				    smb_buflen(cli->inbuf)-8, STR_CONVERT|STR_UNICODE|STR_NOALIGN);
+		}
 	} else if (cli->protocol >= PROTOCOL_LANMAN1) {
 		cli->sec_mode = SVAL(cli->inbuf,smb_vwv1);
 		cli->max_xmit = SVAL(cli->inbuf,smb_vwv2);
@@ -460,6 +453,11 @@ BOOL cli_negprot(struct cli_state *cli)
 	}
 
 	cli->max_xmit = MIN(cli->max_xmit, CLI_BUFFER_SIZE);
+
+	/* a way to force ascii SMB */
+	if (getenv("CLI_FORCE_ASCII")) {
+		cli->capabilities &= ~CAP_UNICODE;
+	}
 
 	return True;
 }
@@ -560,7 +558,6 @@ retry:
 	return(True);
 }
 
-
 /****************************************************************************
 open the client sockets
 ****************************************************************************/
@@ -582,8 +579,12 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 
         if (cli->port == 0) cli->port = 139;  /* Set to default */
 
-	cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ip, 
-				  cli->port, cli->timeout);
+	if (getenv("LIBSMB_PROG")) {
+		cli->fd = sock_exec(getenv("LIBSMB_PROG"));
+	} else {
+		cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ip, 
+					  cli->port, cli->timeout);
+	}
 	if (cli->fd == -1)
 		return False;
 
@@ -677,7 +678,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	{
 		DEBUG(1,("failed session request\n"));
 		if (do_shutdown)
-          cli_shutdown(cli);
+			cli_shutdown(cli);
 		return False;
 	}
 

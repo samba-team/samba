@@ -28,7 +28,7 @@
 	<para><command>smbsh</command> allows you to access an NT filesystem 
 	using UNIX commands such as <command>ls</command>, <command>
 	egrep</command>, and <command>rcp</command>. You must use a 
-	shell that is dynmanically linked in order for <command>smbsh</command> 
+	shell that is dynamically linked in order for <command>smbsh</command> 
 	to work correctly.</para>
 
 	<para>To use the <command>smbsh</command> command, execute <command>

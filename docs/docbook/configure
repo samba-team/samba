@@ -777,9 +777,9 @@ fi
 
 SGML_SHARE="/usr/local/share/sgml"
 
-# Check whether --with-SGML_SHARE or --without-SGML_SHARE was given.
-if test "${with_SGML_SHARE+set}" = set; then
-  withval="$with_SGML_SHARE"
+# Check whether --with-sgml-share or --without-sgml-share was given.
+if test "${with_sgml_share+set}" = set; then
+  withval="$with_sgml_share"
   case "$withval" in
         no) SGML_SHARE=""
                 ;;
@@ -795,7 +795,10 @@ esac
 
 fi
 
-
+# The Makefile requires docbook2X in the share/sgml directory
+if  ! test -f $SGML_SHARE/docbook2X/docbook2man-spec.pl ; then
+	{ echo "configure: error: "Unable to find dockbook2X. Make sure it is installed and that the sgml-share path is correct."" 1>&2; exit 1; }
+fi
 
 
 DOC_BUILD_DATE=`date '+%d-%m-%Y'`
@@ -913,7 +916,7 @@ done
 
 ac_given_srcdir=$srcdir
 
-trap 'rm -fr `echo "Makefile " | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
+trap 'rm -fr `echo "Makefile stylesheets/ldp.dsl " | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
 EOF
 cat >> $CONFIG_STATUS <<EOF
 
@@ -994,7 +997,7 @@ EOF
 
 cat >> $CONFIG_STATUS <<EOF
 
-CONFIG_FILES=\${CONFIG_FILES-"Makefile "}
+CONFIG_FILES=\${CONFIG_FILES-"Makefile stylesheets/ldp.dsl "}
 EOF
 cat >> $CONFIG_STATUS <<\EOF
 for ac_file in .. $CONFIG_FILES; do if test "x$ac_file" != x..; then

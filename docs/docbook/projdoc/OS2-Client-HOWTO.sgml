@@ -1,4 +1,4 @@
-<chapter>
+<chapter id="os2">
 
 
 <chapterinfo>
@@ -116,7 +116,7 @@
 		driver from an OS/2 system.</para>
 		
 		<para>Install the NT driver first for that printer.  Then, 
-		add to your smb.conf a paramater, "os2 driver map = 
+		add to your smb.conf a parameter, "os2 driver map = 
 		<replaceable>filename</replaceable>".  Then, in the file 
 		specified by <replaceable>filename</replaceable>, map the 
 		name of the NT driver name to the OS/2 driver name as 

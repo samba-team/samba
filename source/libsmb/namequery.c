@@ -190,6 +190,96 @@ BOOL name_status_find(int type, struct in_addr to_ip, char *name)
 	return True;
 }
 
+/****************************************************************************
+ Do a NetBIOS name registation to try to claim a name ...
+***************************************************************************/
+BOOL name_register(int fd, const char *name, int name_type,
+		   struct in_addr name_ip, int opcode,
+		   BOOL bcast, 
+		   struct in_addr to_ip, int *count)
+{
+  int retries = 3;
+  struct timeval tval;
+  struct packet_struct p;
+  struct packet_struct *p2;
+  struct nmb_packet *nmb = &p.packet.nmb;
+  struct in_addr register_ip;
+
+  DEBUG(4, ("name_register: %s as %s on %s\n", name, inet_ntoa(name_ip), inet_ntoa(to_ip)));
+
+  register_ip.s_addr = name_ip.s_addr;  /* Fix this ... */
+  
+  bzero((char *)&p, sizeof(p));
+
+  *count = 0;
+
+  nmb->header.name_trn_id = generate_trn_id();
+  nmb->header.opcode = opcode;
+  nmb->header.response = False;
+  nmb->header.nm_flags.bcast = False;
+  nmb->header.nm_flags.recursion_available = False;
+  nmb->header.nm_flags.recursion_desired = True;  /* ? */
+  nmb->header.nm_flags.trunc = False;
+  nmb->header.nm_flags.authoritative = True;
+
+  nmb->header.qdcount = 1;
+  nmb->header.ancount = 0;
+  nmb->header.nscount = 0;
+  nmb->header.arcount = 1;
+
+  make_nmb_name(&nmb->question.question_name, name, name_type);
+
+  nmb->question.question_type = 0x20;
+  nmb->question.question_class = 0x1;
+
+  /* Now, create the additional stuff for a registration request */
+
+  if ((nmb->additional = (struct res_rec *)malloc(sizeof(struct res_rec))) == NULL) {
+
+    DEBUG(0, ("name_register: malloc fail for additional record.\n"));
+    return False;
+
+  }
+
+  bzero((char *)nmb->additional, sizeof(struct res_rec));
+
+  nmb->additional->rr_name  = nmb->question.question_name;
+  nmb->additional->rr_type  = RR_TYPE_NB;
+  nmb->additional->rr_class = RR_CLASS_IN;
+
+  /* See RFC 1002, sections 5.1.1.1, 5.1.1.2 and 5.1.1.3 */
+  if (nmb->header.nm_flags.bcast)
+    nmb->additional->ttl = PERMANENT_TTL;
+  else
+    nmb->additional->ttl = lp_max_ttl();
+
+  nmb->additional->rdlength = 6;
+
+  nmb->additional->rdata[0] = NB_MFLAG & 0xFF;
+
+  /* Set the address for the name we are registering. */
+  putip(&nmb->additional->rdata[2], &register_ip);
+
+  p.ip = to_ip;
+  p.port = NMB_PORT;
+  p.fd = fd;
+  p.timestamp = time(NULL);
+  p.packet_type = NMB_PACKET;
+
+  GetTimeOfDay(&tval);
+
+  if (!send_packet(&p))
+    return False;
+
+  retries--;
+
+  if ((p2 = receive_nmb_packet(fd, 10, nmb->header.name_trn_id))) {
+    debug_nmb_packet(p2);
+    free(p2);  /* No memory leaks ... */
+  }
+
+  return True;
+}
 
 /****************************************************************************
  Do a netbios name query to find someones IP.
@@ -456,6 +546,65 @@ void endlmhosts(FILE *fp)
   fclose(fp);
 }
 
+BOOL name_register_wins(const char *name, int name_type)
+{
+  int sock, i, return_count;
+  int num_interfaces = iface_count();
+  struct in_addr sendto_ip;
+
+  /*
+   * Do a broadcast register ...
+   */
+
+  if (!lp_wins_server())
+    return False;
+
+  DEBUG(4, ("name_register_wins:Registering my name %s on %s\n", name, lp_wins_server()));
+
+  sock = open_socket_in(SOCK_DGRAM, 0, 3, 
+			interpret_addr("0.0.0.0"), True);
+
+  if (sock == -1) return False;
+
+  set_socket_options(sock, "SO_BROADCAST");
+
+  sendto_ip.s_addr = inet_addr(lp_wins_server());
+
+  if (num_interfaces > 1) {
+
+    for (i = 0; i < num_interfaces; i++) {
+      
+      if (!name_register(sock, name, name_type, *iface_n_ip(i), 
+			 NMB_NAME_MULTIHOMED_REG_OPCODE,
+			 True, sendto_ip, &return_count)) {
+
+	close(sock);
+	return False;
+
+      }
+
+    }
+
+  }
+  else {
+
+    if (!name_register(sock, name, name_type, *iface_n_ip(0),
+		       NMB_NAME_REG_OPCODE,
+		       True, sendto_ip, &return_count)) {
+
+      close(sock);
+      return False;
+
+    }
+
+  }
+
+  close(sock);
+
+  return True;
+
+}
+
 /********************************************************
  Resolve via "bcast" method.
 *********************************************************/
@@ -623,7 +772,7 @@ static BOOL resolve_hosts(const char *name,
 
 	DEBUG(3,("resolve_hosts: Attempting host lookup for name %s<0x20>\n", name));
 	
-	if (((hp = Get_Hostbyname(name)) != NULL) && (hp->h_addr != NULL)) {
+	if (((hp = sys_gethostbyname(name)) != NULL) && (hp->h_addr != NULL)) {
 		struct in_addr return_ip;
 		putip((char *)&return_ip,(char *)hp->h_addr);
 		*return_iplist = (struct in_addr *)malloc(sizeof(struct in_addr));

@@ -25,7 +25,6 @@
 
 #include "includes.h"
 extern int DEBUGLEVEL;
-extern int global_smbpid;
 
 /*
  * The POSIX locking database handle.
@@ -1350,14 +1349,14 @@ BOOL posix_locking_init(int read_only)
 		return True;
 	
 	if (!posix_lock_tdb)
-		posix_lock_tdb = tdb_open(NULL, 0, TDB_INTERNAL,
+		posix_lock_tdb = tdb_open_log(NULL, 0, TDB_INTERNAL,
 					  read_only?O_RDONLY:(O_RDWR|O_CREAT), 0644);
 	if (!posix_lock_tdb) {
 		DEBUG(0,("Failed to open POSIX byte range locking database.\n"));
 		return False;
 	}
 	if (!posix_pending_close_tdb)
-		posix_pending_close_tdb = tdb_open(NULL, 0, TDB_INTERNAL,
+		posix_pending_close_tdb = tdb_open_log(NULL, 0, TDB_INTERNAL,
 						   read_only?O_RDONLY:(O_RDWR|O_CREAT), 0644);
 	if (!posix_pending_close_tdb) {
 		DEBUG(0,("Failed to open POSIX pending close database.\n"));

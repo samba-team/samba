@@ -106,11 +106,23 @@ void cli_setup_packet(struct cli_state *cli)
 	SSVAL(cli->outbuf,smb_uid,cli->vuid);
 	SSVAL(cli->outbuf,smb_mid,cli->mid);
 	if (cli->protocol > PROTOCOL_CORE) {
+		uint16 flags2;
 		SCVAL(cli->outbuf,smb_flg,0x8);
-		SSVAL(cli->outbuf,smb_flg2,0x1);
+		flags2 = FLAGS2_LONG_PATH_COMPONENTS;
+		if (cli->capabilities & CAP_UNICODE) {
+			flags2 |= FLAGS2_UNICODE_STRINGS;
+		}
+		SSVAL(cli->outbuf,smb_flg2, flags2);
 	}
 }
 
+/****************************************************************************
+setup the bcc length of the packet from a pointer to the end of the data
+****************************************************************************/
+void cli_setup_bcc(struct cli_state *cli, void *p)
+{
+	set_message_bcc(cli->outbuf, PTR_DIFF(p, smb_buf(cli->outbuf)));
+}
 
 
 /****************************************************************************

@@ -1,7 +1,7 @@
 <HTML
 ><HEAD
 ><TITLE
->Unifed Logons between Windows NT and UNIX using Winbind</TITLE
+>Unified Logons between Windows NT and UNIX using Winbind</TITLE
 ><META
 NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
@@ -20,7 +20,7 @@ CLASS="TITLEPAGE"
 CLASS="TITLE"
 ><A
 NAME="AEN1"
->Unifed Logons between Windows NT and UNIX using Winbind</A
+>Unified Logons between Windows NT and UNIX using Winbind</A
 ></H1
 ><HR></DIV
 ><DIV
@@ -39,7 +39,7 @@ CLASS="EMPHASIS"
 >winbind
 	</I
 >, a component of the Samba suite of programs as a 
-	solution to the unied logon problem. Winbind uses a UNIX implementation 
+	solution to the unified logon problem. Winbind uses a UNIX implementation 
 	of Microsoft RPC calls, Pluggable Authentication Modules, and the Name 
 	Service Switch to allow Windows NT domain users to appear and operate 
 	as UNIX users on a UNIX machine. This paper describes the winbind 
@@ -70,7 +70,7 @@ NAME="AEN7"
 	can lead to synchronization problems between the UNIX and Windows 
 	systems and confusion for users.</P
 ><P
->We divide the unifed logon problem for UNIX machines into 
+>We divide the unified logon problem for UNIX machines into 
 	three smaller problems:</P
 ><P
 ></P
@@ -97,7 +97,7 @@ NAME="AEN7"
 	information on the UNIX machines and without creating additional 
 	tasks for the system administrator when maintaining users and 
 	groups on either system. The winbind system provides a simple 
-	and elegant solution to all three components of the unifed logon 
+	and elegant solution to all three components of the unified logon 
 	problem.</P
 ></DIV
 ><DIV
@@ -224,7 +224,7 @@ NAME="AEN40"
 >The Name Service Switch, or NSS, is a feature that is 
 		present in many UNIX operating systems. It allows system 
 		information such as hostnames, mail aliases and user information 
-		to be resolved from dierent sources. For example, a standalone 
+		to be resolved from different sources. For example, a standalone 
 		UNIX workstation may resolve system information from a series of 
 		flat files stored on the local lesystem. A networked workstation 
 		may first attempt to resolve system information from local files, 
@@ -253,7 +253,7 @@ CLASS="FILENAME"
 		for a line which matches the service type being requested, for 
 		example the "passwd" service type is used when user or group names 
 		are looked up. This	config line species which implementations 
-		of that service should be tried andin what order. If the passwd 
+		of that service should be tried and in what order. If the passwd 
 		config line is:</P
 ><P
 ><B
@@ -303,7 +303,7 @@ NAME="AEN56"
 >Pluggable Authentication Modules, also known as PAM, 
 		is a system for abstracting authentication and authorization 
 		technologies. With a PAM module it is possible to specify different 
-		authentication methods for dierent system applications without 
+		authentication methods for different system applications without 
 		having to recompile these applications. PAM is also useful
 		for implementing a particular policy for authorization. For example, 
 		a system administrator may only allow console logins from users 
@@ -318,7 +318,7 @@ NAME="AEN56"
 		this change take eect directly on the Primary Domain Controller.
 		</P
 ><P
->PAM is congured by providing control files in the directory 
+>PAM is configured by providing control files in the directory 
 		<TT
 CLASS="FILENAME"
 >/etc/pam.d/</TT
@@ -350,11 +350,11 @@ NAME="AEN64"
 ></H2
 ><P
 >When a user or group is created under Windows NT 
-		is it allocated a numerical relative identier (RID). This is 
-		slightly dierent to UNIX which has a range of numbers which are 
+		is it allocated a numerical relative identifier (RID). This is 
+		slightly different to UNIX which has a range of numbers which are 
 		used to identify users, and the same range in which to identify 
 		groups. It is winbind's job to convert RIDs to UNIX id numbers and
-		vice versa.  When winbind is congured it is given part of the UNIX 
+		vice versa.  When winbind is configured it is given part of the UNIX 
 		user id space and a part of the UNIX group id space in which to 
 		store Windows NT users and groups. If a Windows NT user is 
 		resolved for the first time, it is allocated the next UNIX id from 
@@ -381,7 +381,7 @@ NAME="AEN68"
 		by NT domain controllers.  User or group information returned 
 		by a PDC is cached by winbind along with a sequence number also 
 		returned by the PDC. This sequence number is incremented by 
-		Windows NT whenever any user or group information is modied. If 
+		Windows NT whenever any user or group information is modified. If 
 		a cached entry has expired, the sequence number is requested from 
 		the PDC and compared against the sequence number of the cached entry. 
 		If the sequence numbers do not match, then the cached information 
@@ -415,7 +415,7 @@ CLASS="FILENAME"
 CLASS="COMMAND"
 >winbindd(8)</B
 > man page which will provide you 
-	with conguration information and give you sample conguration files. 
+	with configuration information and give you sample configuration files. 
 	You may also wish to update the main Samba daemons smbd and nmbd) 
 	with a more recent development release, such as the recently
 	announced Samba 2.2 alpha release.</P

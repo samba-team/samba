@@ -214,6 +214,38 @@ static BOOL api_spoolss_deleteprinter(pipes_struct *p)
 
 
 /********************************************************************
+ * api_spoolss_deleteprinterdriver
+ *
+ * called from the spoolss dispatcher
+ ********************************************************************/
+
+static BOOL api_spoolss_deleteprinterdriver(pipes_struct *p)
+{
+	SPOOL_Q_DELETEPRINTERDRIVER q_u;
+	SPOOL_R_DELETEPRINTERDRIVER r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if (!spoolss_io_q_deleteprinterdriver("", &q_u, data, 0)) {
+		DEBUG(0,("spoolss_io_q_deleteprinterdriver: unable to unmarshall SPOOL_Q_DELETEPRINTERDRIVER.\n"));
+		return False;
+	}
+
+	r_u.status = _spoolss_deleteprinterdriver(p, &q_u, &r_u);
+
+	if (!spoolss_io_r_deleteprinterdriver("",&r_u,rdata,0)) {
+		DEBUG(0,("spoolss_io_r_deleteprinter: unable to marshall SPOOL_R_DELETEPRINTER.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+
+/********************************************************************
  * api_spoolss_rffpcnex
  * ReplyFindFirstPrinterChangeNotifyEx
  ********************************************************************/
@@ -1059,6 +1091,38 @@ static BOOL api_spoolss_enumprintprocessors(pipes_struct *p)
 /****************************************************************************
 ****************************************************************************/
 
+static BOOL api_spoolss_addprintprocessor(pipes_struct *p)
+{
+	SPOOL_Q_ADDPRINTPROCESSOR q_u;
+	SPOOL_R_ADDPRINTPROCESSOR r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+	
+	if(!spoolss_io_q_addprintprocessor("", &q_u, data, 0)) {
+		DEBUG(0,("spoolss_io_q_addprintprocessor: unable to unmarshall SPOOL_Q_ADDPRINTPROCESSOR.\n"));
+		return False;
+	}
+	
+	/* for now, just indicate success and ignore the add.  We'll
+	   automatically set the winprint processor for printer
+	   entries later.  Used to debug the LexMark Optra S 1855 PCL
+	   driver --jerry */
+	r_u.status = NT_STATUS_NO_PROBLEMO;
+
+	if(!spoolss_io_r_addprintprocessor("", &r_u, rdata, 0)) {
+		DEBUG(0,("spoolss_io_r_addprintprocessor: unable to marshall SPOOL_R_ADDPRINTPROCESSOR.\n"));
+		return False;
+	}
+	
+	return True;
+}
+
+/****************************************************************************
+****************************************************************************/
+
 static BOOL api_spoolss_enumprintprocdatatypes(pipes_struct *p)
 {
 	SPOOL_Q_ENUMPRINTPROCDATATYPES q_u;
@@ -1169,6 +1233,7 @@ struct api_struct api_spoolss_cmds[] =
  {"SPOOLSS_ENUMPRINTERDRIVERS",        SPOOLSS_ENUMPRINTERDRIVERS,        api_spoolss_enumprinterdrivers        },
  {"SPOOLSS_ADDPRINTEREX",              SPOOLSS_ADDPRINTEREX,              api_spoolss_addprinterex              },
  {"SPOOLSS_ADDPRINTERDRIVER",          SPOOLSS_ADDPRINTERDRIVER,          api_spoolss_addprinterdriver          },
+ {"SPOOLSS_DELETEPRINTERDRIVER",       SPOOLSS_DELETEPRINTERDRIVER,       api_spoolss_deleteprinterdriver       },
  {"SPOOLSS_GETPRINTERDRIVERDIRECTORY", SPOOLSS_GETPRINTERDRIVERDIRECTORY, api_spoolss_getprinterdriverdirectory },
  {"SPOOLSS_ENUMPRINTERDATA",           SPOOLSS_ENUMPRINTERDATA,           api_spoolss_enumprinterdata           },
  {"SPOOLSS_SETPRINTERDATA",            SPOOLSS_SETPRINTERDATA,            api_spoolss_setprinterdata            },
@@ -1177,6 +1242,7 @@ struct api_struct api_spoolss_cmds[] =
  {"SPOOLSS_DELETEFORM",                SPOOLSS_DELETEFORM,                api_spoolss_deleteform                },
  {"SPOOLSS_GETFORM",                   SPOOLSS_GETFORM,                   api_spoolss_getform                   },
  {"SPOOLSS_SETFORM",                   SPOOLSS_SETFORM,                   api_spoolss_setform                   },
+ {"SPOOLSS_ADDPRINTPROCESSOR",         SPOOLSS_ADDPRINTPROCESSOR,         api_spoolss_addprintprocessor         },
  {"SPOOLSS_ENUMPRINTPROCESSORS",       SPOOLSS_ENUMPRINTPROCESSORS,       api_spoolss_enumprintprocessors       },
  {"SPOOLSS_ENUMMONITORS",              SPOOLSS_ENUMMONITORS,              api_spoolss_enumprintmonitors         },
  {"SPOOLSS_GETJOB",                    SPOOLSS_GETJOB,                    api_spoolss_getjob                    },

@@ -41,15 +41,13 @@ BOOL cli_message_start(struct cli_state *cli, char *host, char *username,
 	
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;
-	pstrcpy(p,username);
-	unix_to_dos(p,True);
-	p = skip_string(p,1);
+	p += clistr_push(cli, p, username, -1, 
+			 STR_TERMINATE|STR_CONVERT);
 	*p++ = 4;
-	pstrcpy(p,host);
-	unix_to_dos(p,True);
-	p = skip_string(p,1);
+	p += clistr_push(cli, p, host, -1, 
+			 STR_TERMINATE|STR_CONVERT);
 	
-	set_message(cli->outbuf,0,PTR_DIFF(p,smb_buf(cli->outbuf)),False);
+	cli_setup_bcc(cli, p);
 	
 	cli_send_smb(cli);	
 	

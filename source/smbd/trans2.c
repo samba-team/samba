@@ -65,7 +65,8 @@ static int send_trans2_replies(char *outbuf, int bufsize, char *params,
      the empty packet */
   if(params_to_send == 0 && data_to_send == 0)
   {
-    send_smb(smbd_server_fd(),outbuf);
+    if (!send_smb(smbd_server_fd(),outbuf))
+      exit_server("send_trans2_replies: send_smb failed.\n");
     return 0;
   }
 
@@ -160,7 +161,8 @@ static int send_trans2_replies(char *outbuf, int bufsize, char *params,
           params_to_send, data_to_send, paramsize, datasize));
 
     /* Send the packet */
-    send_smb(smbd_server_fd(),outbuf);
+    if (!send_smb(smbd_server_fd(),outbuf))
+		exit_server("send_trans2_replies: send_smb failed.\n");
 
     pp += params_sent_thistime;
     pd += data_sent_thistime;
@@ -432,6 +434,13 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       mdate = sbuf.st_mtime;
       adate = sbuf.st_atime;
       cdate = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
+
+      if (lp_dos_filetime_resolution(SNUM(conn))) {
+        cdate &= ~1;
+        mdate &= ~1;
+        adate &= ~1;
+      }
+
       if(mode & aDIR)
         size = 0;
 
@@ -1173,9 +1182,10 @@ static int call_trans2qfsinfo(connection_struct *conn,
             (lp_nt_acl_support() ? FILE_PERSISTENT_ACLS : 0)); /* FS ATTRIBUTES */
 #if 0 /* Old code. JRA. */
       SIVAL(pdata,0,0x4006); /* FS ATTRIBUTES == long filenames supported? */
+      SIVAL(pdata,0,0x700FF);
 #endif /* Old code. */
 
-      SIVAL(pdata,4,128); /* Max filename component length */
+      SIVAL(pdata,4,255); /* Max filename component length */
       fstype_len = dos_PutUniCode(pdata+12,unix_to_dos(fstype,False),sizeof(pstring), False);
       SIVAL(pdata,8,fstype_len);
       data_len = 12 + fstype_len;
@@ -1303,6 +1313,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
   SMB_OFF_T pos = 0;
   BOOL bad_path = False;
   BOOL delete_pending = False;
+  time_t c_time;
 
   if (tran_call == TRANSACT2_QFILEINFO) {
     files_struct *fsp = file_fsp(params,0);
@@ -1410,12 +1421,21 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 
   memset((char *)pdata,'\0',data_size);
 
+  c_time = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
+
+  if (lp_dos_filetime_resolution(SNUM(conn))) {
+    c_time &= ~1;
+    sbuf.st_atime &= ~1;
+    sbuf.st_mtime &= ~1;
+    sbuf.st_mtime &= ~1;
+  }
+
   switch (info_level) 
     {
     case SMB_INFO_STANDARD:
     case SMB_INFO_QUERY_EA_SIZE:
       data_size = (info_level==1?22:26);
-      put_dos_date2(pdata,l1_fdateCreation,get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn))));
+      put_dos_date2(pdata,l1_fdateCreation,c_time);
       put_dos_date2(pdata,l1_fdateLastAccess,sbuf.st_atime);
       put_dos_date2(pdata,l1_fdateLastWrite,sbuf.st_mtime); /* write time */
       SIVAL(pdata,l1_cbFile,(uint32)size);
@@ -1426,7 +1446,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 
     case SMB_INFO_QUERY_EAS_FROM_LIST:
       data_size = 24;
-      put_dos_date2(pdata,0,get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn))));
+      put_dos_date2(pdata,0,c_time);
       put_dos_date2(pdata,4,sbuf.st_atime);
       put_dos_date2(pdata,8,sbuf.st_mtime);
       SIVAL(pdata,12,(uint32)size);
@@ -1443,8 +1463,15 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       return(ERROR(ERRDOS,ERRbadfunc)); /* os/2 needs this */      
 
     case SMB_QUERY_FILE_BASIC_INFO:
-      data_size = 36; /* w95 returns 40 bytes not 36 - why ?. */
-      put_long_date(pdata,get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn))));
+	case 1004:
+
+      if (info_level == SMB_QUERY_FILE_BASIC_INFO)
+	      data_size = 36; /* w95 returns 40 bytes not 36 - why ?. */
+      else {
+          data_size = 40;
+          SIVAL(pdata,36,0);
+      }
+      put_long_date(pdata,c_time);
       put_long_date(pdata+8,sbuf.st_atime);
       put_long_date(pdata+16,sbuf.st_mtime); /* write time */
       put_long_date(pdata+24,sbuf.st_mtime); /* change time */
@@ -1452,7 +1479,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 
       DEBUG(5,("SMB_QFBI - "));
       {
-        time_t create_time = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
+        time_t create_time = c_time;
         DEBUG(5,("create: %s ", ctime(&create_time)));
       }
       DEBUG(5,("access: %s ", ctime(&sbuf.st_atime)));
@@ -1518,7 +1545,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       break;
 
     case SMB_QUERY_FILE_ALL_INFO:
-      put_long_date(pdata,get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn))));
+      put_long_date(pdata,c_time);
       put_long_date(pdata+8,sbuf.st_atime);
       put_long_date(pdata+16,sbuf.st_mtime); /* write time */
       put_long_date(pdata+24,sbuf.st_mtime); /* change time */
@@ -1548,6 +1575,144 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       pdata += 4 + l;
       data_size = PTR_DIFF(pdata,(*ppdata));
       break;
+
+	/*
+	 * Windows 2000 completely undocumented new SMB info levels.
+	 * Thanks Microsoft.... sure you're working on making this
+	 * protocol a standard.... sure you are... :-).
+	 * Lying rat-bastards. JRA.
+	 */
+
+	case 1005:
+		SIVAL(pdata,0,mode);
+		SIVAL(pdata,4,0); /* ??? */
+		SOFF_T(pdata,8,size);
+		SIVAL(pdata,16,1); /* ??? */
+		SIVAL(pdata,20,0); /* ??? */
+		data_size = 24;
+		break;
+
+	case 1006:
+		SIVAL(pdata,0,0x907); /* ??? */
+		SIVAL(pdata,4,0x690000); /* ??? */
+		data_size = 8;
+		break;
+
+	case 1007:
+		SIVAL(pdata,0,0); /* ??? */
+		data_size = 4;
+		break;
+
+	case 1008:
+		SIVAL(pdata,0,0x12019F); /* ??? */
+		data_size = 4;
+		break;
+
+	case 1009:
+		/* Pathname with leading '\'. */
+		{
+			pstring new_fname;
+			size_t byte_len;
+
+			pstrcpy(new_fname, "\\");
+			pstrcat(new_fname, fname);
+			byte_len = dos_PutUniCode(pdata+4,new_fname,max_data_bytes,False);
+			SIVAL(pdata,0,byte_len);
+			data_size = 4 + byte_len;
+			break;
+		}
+
+	case 1014:
+		SIVAL(pdata,0,0); /* ??? */
+		SIVAL(pdata,4,0); /* ??? */
+		data_size = 8;
+		break;
+
+	case 1016:
+		SIVAL(pdata,0,0); /* ??? */
+		data_size = 4;
+		break;
+
+	case 1017:
+		SIVAL(pdata,0,0); /* ??? */
+		data_size = 4;
+		break;
+
+#if 0
+	/* Not yet finished... JRA */
+	case 1018:
+		{
+			pstring new_fname;
+			size_t byte_len;
+
+			put_long_date(pdata,c_time);
+			put_long_date(pdata+8,sbuf.st_atime);
+			put_long_date(pdata+16,sbuf.st_mtime); /* write time */
+			put_long_date(pdata+24,sbuf.st_mtime); /* change time */
+			SIVAL(pdata,32,mode);
+			SIVAL(pdata,36,0); /* ??? */
+			SIVAL(pdata,40,0x20); /* ??? */
+			SIVAL(pdata,44,0); /* ??? */
+			SOFF_T(pdata,48,size);
+			SIVAL(pdata,56,0x1); /* ??? */
+			SIVAL(pdata,60,0); /* ??? */
+			SIVAL(pdata,64,0); /* ??? */
+			SIVAL(pdata,68,length); /* Following string length in bytes. */
+			dos_PutUniCode(pdata+72,,False);
+			break;
+		}
+#endif
+
+	case 1021:
+		/* Last component of pathname. */
+		{
+			size_t byte_len = dos_PutUniCode(pdata+4,fname,max_data_bytes,False);
+			SIVAL(pdata,0,byte_len);
+			data_size = 4 + byte_len;
+			break;
+		}
+		
+	case 1022:
+		{
+			size_t byte_len = dos_PutUniCode(pdata+24,"::$DATA", 0xE, False);
+			SIVAL(pdata,0,0); /* ??? */
+			SIVAL(pdata,4,byte_len); /* Byte length of unicode string ::$DATA */
+			SOFF_T(pdata,8,size);
+			SIVAL(pdata,16,0x20); /* ??? */
+			SIVAL(pdata,20,0); /* ??? */
+			data_size = 24 + byte_len;
+			break;
+		}
+
+	case 1028:
+		SOFF_T(pdata,0,size);
+		SIVAL(pdata,8,0); /* ??? */
+		SIVAL(pdata,12,0); /* ??? */
+		data_size = 16;
+		break;
+
+	case 1034:
+		put_long_date(pdata,c_time);
+		put_long_date(pdata+8,sbuf.st_atime);
+		put_long_date(pdata+16,sbuf.st_mtime); /* write time */
+		put_long_date(pdata+24,sbuf.st_mtime); /* change time */
+		SIVAL(pdata,32,0x20); /* ??? */
+		SIVAL(pdata,36,0); /* ??? */
+		SOFF_T(pdata,40,size);
+		SIVAL(pdata,48,mode);
+		SIVAL(pdata,52,0); /* ??? */
+		data_size = 56;
+		break;
+
+	case 1035:
+		SIVAL(pdata,0,mode);
+		SIVAL(pdata,4,0);
+		data_size = 8;
+		break;
+
+	/*
+	 * End new completely undocumented info levels... JRA.
+	 */
 
 #if 0
       /* NT4 server just returns "invalid query" to this - if we try to answer 
@@ -1731,6 +1896,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
       break;
 
     case SMB_SET_FILE_BASIC_INFO:
+	case 1004:
     {
       /* Patch to do this correctly from Paul Eggert <eggert@twinsun.com>. */
       time_t write_time;
@@ -1752,14 +1918,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
                       ? changed_time
                       : write_time);
 
-#if 0 /* Needs more testing... */
-      /* Test from Luke to prevent Win95 from
-         setting incorrect values here.
-       */
-      if (tvs.actime < tvs.modtime)
-        return(ERROR(ERRDOS,ERRnoaccess));
-#endif /* Needs more testing... */
-
       /* attributes */
       mode = IVAL(pdata,32);
       break;
@@ -1770,6 +1928,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
      * to mean truncate the file. JRA.
      */
 
+	case 1019:
+	case 1020:
     case SMB_SET_FILE_ALLOCATION_INFO:
     {
       SMB_OFF_T newsize = IVAL(pdata,0);
@@ -1903,7 +2063,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
   DEBUG(6,("mode: %x\n"  , mode));
 
   if(!((info_level == SMB_SET_FILE_END_OF_FILE_INFO) ||
-     (info_level == SMB_SET_FILE_ALLOCATION_INFO))) {
+     (info_level == SMB_SET_FILE_ALLOCATION_INFO) ||
+     (info_level == 1019) ||
+     (info_level == 1020))) {
     /*
      * Only do this test if we are not explicitly
      * changing the size of a file.
@@ -2348,7 +2510,8 @@ int reply_trans2(connection_struct *conn,
 		/* We need to send an interim response then receive the rest
 		   of the parameter/data bytes */
 		outsize = set_message(outbuf,0,0,True);
-		send_smb(smbd_server_fd(),outbuf);
+		if (!send_smb(smbd_server_fd(),outbuf))
+			exit_server("reply_trans2: send_smb failed.\n");
 
 		while (num_data_sofar < total_data || 
 		       num_params_sofar < total_params) {

@@ -27,18 +27,15 @@
 /****************************************************************************
 Call a remote api on an arbitrary pipe.  takes param, data and setup buffers.
 ****************************************************************************/
-BOOL cli_api_pipe(struct cli_state *cli, char *pipe_name, int pipe_name_len,
+BOOL cli_api_pipe(struct cli_state *cli, char *pipe_name, 
                   uint16 *setup, uint32 setup_count, uint32 max_setup_count,
                   char *params, uint32 param_count, uint32 max_param_count,
                   char *data, uint32 data_count, uint32 max_data_count,
                   char **rparam, uint32 *rparam_count,
                   char **rdata, uint32 *rdata_count)
 {
-  if (pipe_name_len == 0)
-    pipe_name_len = strlen(pipe_name);
-
   cli_send_trans(cli, SMBtrans, 
-                 pipe_name, pipe_name_len,
+                 pipe_name, 
                  0,0,                         /* fid, flags */
                  setup, setup_count, max_setup_count,
                  params, param_count, max_param_count,
@@ -59,8 +56,8 @@ BOOL cli_api(struct cli_state *cli,
 	     char **rdata, int *rdrcnt)
 {
   cli_send_trans(cli,SMBtrans,
-                 PIPE_LANMAN,strlen(PIPE_LANMAN), /* Name, length */
-                 0,0,                             /* fid, flags */
+                 PIPE_LANMAN,             /* Name */
+                 0,0,                     /* fid, flags */
                  NULL,0,0,                /* Setup, length, max */
                  param, prcnt, mprcnt,    /* Params, length, max */
                  data, drcnt, mdrcnt      /* Data, length, max */ 
@@ -137,7 +134,7 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 /****************************************************************************
 call a NetShareEnum - try and browse available connections on a host
 ****************************************************************************/
-int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, const char *))
+int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, const char *, void *), void *state)
 {
 	char *rparam = NULL;
 	char *rdata = NULL;
@@ -182,9 +179,12 @@ int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, co
 					int type = SVAL(p,14);
 					int comment_offset = IVAL(p,16) & 0xFFFF;
 					char *cmnt = comment_offset?(rdata+comment_offset-converter):"";
-					dos_to_unix(sname,True);
-					dos_to_unix(cmnt,True);
-					fn(sname, type, cmnt);
+					pstring s1, s2;
+
+					pstrcpy(s1, dos_to_unix(sname, False));
+					pstrcpy(s2, dos_to_unix(cmnt, False));
+
+					fn(s1, type, s2, state);
 				}
 			} else {
 				DEBUG(4,("NetShareEnum res=%d\n", res));
@@ -210,7 +210,8 @@ The callback function takes 3 arguments: the machine name, the server type and
 the comment.
 ****************************************************************************/
 BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
-		       void (*fn)(const char *, uint32, const char *))
+		       void (*fn)(const char *, uint32, const char *, void *),
+		       void *state)
 {
 	char *rparam = NULL;
 	char *rdata = NULL;
@@ -219,7 +220,7 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 	pstring param;
 	int uLevel = 1;
 	int count = -1;
-  
+
 	/* send a SMBtrans command with api NetServerEnum */
 	p = param;
 	SSVAL(p,0,0x68); /* api number */
@@ -228,17 +229,16 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 	p = skip_string(p,1);
   
 	pstrcpy(p,"B16BBDz");
-  
+
 	p = skip_string(p,1);
 	SSVAL(p,0,uLevel);
 	SSVAL(p,2,CLI_BUFFER_SIZE);
 	p += 4;
 	SIVAL(p,0,stype);
 	p += 4;
-	
-	pstrcpy(p, workgroup);
-	unix_to_dos(p, True);
-	p = skip_string(p,1);
+
+	p += clistr_push(cli, p, workgroup, -1, 
+			 STR_TERMINATE | STR_CONVERT | STR_ASCII);
 	
 	if (cli_api(cli, 
                     param, PTR_DIFF(p,param), 8,        /* params, length, max */
@@ -259,13 +259,15 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 				char *sname = p;
 				int comment_offset = (IVAL(p,22) & 0xFFFF)-converter;
 				char *cmnt = comment_offset?(rdata+comment_offset):"";
+				pstring s1, s2;
+
 				if (comment_offset < 0 || comment_offset > rdrcnt) continue;
 
 				stype = IVAL(p,18) & ~SV_TYPE_LOCAL_LIST_ONLY;
 
-				dos_to_unix(sname, True);
-				dos_to_unix(cmnt, True);
-				fn(sname, stype, cmnt);
+				pstrcpy(s1, dos_to_unix(sname, False));
+				pstrcpy(s2, dos_to_unix(cmnt, False));
+				fn(s1, stype, s2, state);
 			}
 		}
 	}
@@ -349,7 +351,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
   data_len = 532;
     
   if (cli_send_trans(cli,SMBtrans,
-                    PIPE_LANMAN,strlen(PIPE_LANMAN),      /* name, length */
+                    PIPE_LANMAN,                          /* name */
                     0,0,                                  /* fid, flags */
                     NULL,0,0,                             /* setup, length, max */
                     param,param_len,2,                    /* param, length, max */
@@ -391,17 +393,19 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 	int count=8;
 	BOOL ret;
 	time_t (*date_fn)(void *);
+	char *p;
 
-	param_len = strlen(fname) + 7;
+	p = param;
+	memset(p, 0, 6);
+	SSVAL(p, 0, SMB_INFO_STANDARD);
+	p += 6;
+	p += clistr_push(cli, p, fname, sizeof(pstring)-6, STR_TERMINATE | STR_CONVERT);
 
-	memset(param, 0, param_len);
-	SSVAL(param, 0, SMB_INFO_STANDARD);
-	pstrcpy(&param[6], fname);
-    unix_to_dos(&param[6],True);
+	param_len = PTR_DIFF(p, param);
 
 	do {
 		ret = (cli_send_trans(cli, SMBtrans2, 
-				      NULL, 0,        /* Name, length */
+				      NULL,           /* Name */
 				      -1, 0,          /* fid, flags */
 				      &setup, 1, 0,   /* setup, length, max */
 				      param, param_len, 10, /* param, length, max */
@@ -465,16 +469,18 @@ BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname,
 	uint16 setup = TRANSACT2_QPATHINFO;
 	pstring param;
 	char *rparam=NULL, *rdata=NULL;
+	char *p;
 
-	param_len = strlen(fname) + 7;
+	p = param;
+	memset(p, 0, 6);
+	SSVAL(p, 0, SMB_QUERY_FILE_ALL_INFO);
+	p += 6;
+	p += clistr_push(cli, p, fname, sizeof(pstring)-6, STR_TERMINATE | STR_CONVERT);
 
-	memset(param, 0, param_len);
-	SSVAL(param, 0, SMB_QUERY_FILE_ALL_INFO);
-	pstrcpy(&param[6], fname);
-    unix_to_dos(&param[6],True);
+	param_len = PTR_DIFF(p, param);
 
 	if (!cli_send_trans(cli, SMBtrans2, 
-                            NULL, 0,                      /* name, length */
+                            NULL,                         /* name */
                             -1, 0,                        /* fid, flags */
                             &setup, 1, 0,                 /* setup, length, max */
                             param, param_len, 10,         /* param, length, max */
@@ -546,7 +552,7 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 	SSVAL(param, 2, SMB_QUERY_FILE_ALL_INFO);
 
 	if (!cli_send_trans(cli, SMBtrans2, 
-                            NULL, 0,                        /* name, length */
+                            NULL,                           /* name */
                             -1, 0,                          /* fid, flags */
                             &setup, 1, 0,                   /* setup, length, max */
                             param, param_len, 2,            /* param, length, max */
@@ -592,3 +598,46 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 	return True;
 }
 
+/****************************************************************************
+send a qfileinfo call
+****************************************************************************/
+BOOL cli_qfileinfo_test(struct cli_state *cli, int fnum, int level, char *outdata)
+{
+	int data_len = 0;
+	int param_len = 0;
+	uint16 setup = TRANSACT2_QFILEINFO;
+	pstring param;
+	char *rparam=NULL, *rdata=NULL;
+
+	/* if its a win95 server then fail this - win95 totally screws it
+	   up */
+	if (cli->win95) return False;
+
+	param_len = 4;
+
+	memset(param, 0, param_len);
+	SSVAL(param, 0, fnum);
+	SSVAL(param, 2, level);
+
+	if (!cli_send_trans(cli, SMBtrans2, 
+                            NULL,                           /* name */
+                            -1, 0,                          /* fid, flags */
+                            &setup, 1, 0,                   /* setup, length, max */
+                            param, param_len, 2,            /* param, length, max */
+                            NULL, data_len, cli->max_xmit   /* data, length, max */
+                           )) {
+		return False;
+	}
+
+	if (!cli_receive_trans(cli, SMBtrans2,
+                               &rparam, &param_len,
+                               &rdata, &data_len)) {
+		return False;
+	}
+
+	memcpy(outdata, rdata, data_len);
+
+	if (rdata) free(rdata);
+	if (rparam) free(rparam);
+	return True;
+}

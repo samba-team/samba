@@ -238,7 +238,7 @@ static int truncate_unless_locked(struct connection_struct *conn, files_struct *
 {
 	SMB_BIG_UINT mask = (SMB_BIG_UINT)-1;
 
-	if (is_locked(fsp,fsp->conn,mask,0,WRITE_LOCK)){
+	if (is_locked(fsp,fsp->conn,mask,0,WRITE_LOCK,True)){
 		errno = EACCES;
 		unix_ERR_class = ERRDOS;
 		unix_ERR_code = ERRlock;
@@ -492,8 +492,8 @@ static int open_mode_check(connection_struct *conn, const char *fname, SMB_DEV_T
 
         BOOL opb_ret;
 
-        DEBUG(5,("open_mode_check: breaking oplock (%x) on file %s, \
-dev = %x, inode = %.0f\n", share_entry->op_type, fname, (unsigned int)dev, (double)inode));
+        DEBUG(5,("open_mode_check: oplock_request = %d, breaking oplock (%x) on file %s, \
+dev = %x, inode = %.0f\n", *p_oplock_request, share_entry->op_type, fname, (unsigned int)dev, (double)inode));
 
         /* Oplock break - unlock to request it. */
         unlock_share_entry(conn, dev, inode);
@@ -596,11 +596,11 @@ files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_S
 	uint16 port = 0;
 
 	if (conn->printer) {
-		/* printers are handled completely differently. Most of the passed parameters are
-			ignored */
+		/* printers are handled completely differently. Most
+			of the passed parameters are ignored */
 		*Access = DOS_OPEN_WRONLY;
 		*action = FILE_WAS_CREATED;
-		return print_fsp_open(conn, fname);
+		return print_fsp_open(conn);
 	}
 
 	fsp = file_new(conn);
@@ -777,6 +777,14 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 			file_free(fsp);
 			return NULL;
 		}
+
+		/*
+		 * If there are any share modes set then the file *did*
+		 * exist. Ensure we return the correct value for action.
+		 */
+
+		if (num_share_modes > 0)
+			file_existed = True;
 
 		/*
 		 * We exit this block with the share entry *locked*.....

@@ -63,6 +63,7 @@
 
 #undef HAVE_VOLATILE
 #undef HAVE_BROKEN_READDIR
+#undef HAVE_C99_VSNPRINTF
 #undef HAVE_ERRNO_DECL
 #undef HAVE_LONGLONG
 #undef HAVE_OFF64_T
@@ -70,6 +71,7 @@
 #undef HAVE_UNSIGNED_CHAR
 #undef HAVE_UTIMBUF
 #undef HAVE_SIG_ATOMIC_T_TYPE
+#undef HAVE_SOCKLEN_T_TYPE
 #undef ssize_t
 #undef ino_t
 #undef ssize_t
@@ -124,6 +126,7 @@
 #undef WITH_NISPLUS
 #undef WITH_TDBPWD
 #undef WITH_PAM
+#undef WITH_PAM_SMBPASS
 #undef WITH_NISPLUS_HOME
 #undef WITH_AUTOMOUNT
 #undef WITH_SMBMOUNT
@@ -207,9 +210,13 @@
 #undef HAVE_UNIXWARE_ACLS
 #undef HAVE_SOLARIS_ACLS
 #undef HAVE_IRIX_ACLS
-#undef HAVE_XFS_ACLS
 #undef HAVE_AIX_ACLS
 #undef HAVE_NO_ACLS
+#undef HAVE_LIBPAM
+#undef HAVE_ASPRINTF_DECL
+#undef HAVE_VASPRINTF_DECL
+#undef HAVE_SNPRINTF_DECL
+#undef HAVE_VSNPRINTF_DECL
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
@@ -430,6 +437,9 @@
 /* Define if you have the _write function.  */
 #undef HAVE__WRITE
 
+/* Define if you have the asprintf function.  */
+#undef HAVE_ASPRINTF
+
 /* Define if you have the atexit function.  */
 #undef HAVE_ATEXIT
 
@@ -619,6 +629,9 @@
 /* Define if you have the readdir64 function.  */
 #undef HAVE_READDIR64
 
+/* Define if you have the readlink function.  */
+#undef HAVE_READLINK
+
 /* Define if you have the rename function.  */
 #undef HAVE_RENAME
 
@@ -697,6 +710,9 @@
 /* Define if you have the strtoul function.  */
 #undef HAVE_STRTOUL
 
+/* Define if you have the symlink function.  */
+#undef HAVE_SYMLINK
+
 /* Define if you have the syscall function.  */
 #undef HAVE_SYSCALL
 
@@ -718,6 +734,9 @@
 /* Define if you have the utimes function.  */
 #undef HAVE_UTIMES
 
+/* Define if you have the vasprintf function.  */
+#undef HAVE_VASPRINTF
+
 /* Define if you have the vsnprintf function.  */
 #undef HAVE_VSNPRINTF
 
@@ -726,9 +745,6 @@
 
 /* Define if you have the yp_get_default_domain function.  */
 #undef HAVE_YP_GET_DEFAULT_DOMAIN
-
-/* Define if you have the <acl/acl.h> header file.  */
-#undef HAVE_ACL_ACL_H
 
 /* Define if you have the <arpa/inet.h> header file.  */
 #undef HAVE_ARPA_INET_H
@@ -784,6 +800,9 @@
 /* Define if you have the <nss.h> header file.  */
 #undef HAVE_NSS_H
 
+/* Define if you have the <nss_common.h> header file.  */
+#undef HAVE_NSS_COMMON_H
+
 /* Define if you have the <poll.h> header file.  */
 #undef HAVE_POLL_H
 
@@ -808,8 +827,14 @@
 /* Define if you have the <rpcsvc/ypclnt.h> header file.  */
 #undef HAVE_RPCSVC_YPCLNT_H
 
+/* Define if you have the <security/_pam_macros.h> header file.  */
+#undef HAVE_SECURITY__PAM_MACROS_H
+
 /* Define if you have the <security/pam_appl.h> header file.  */
 #undef HAVE_SECURITY_PAM_APPL_H
+
+/* Define if you have the <security/pam_modules.h> header file.  */
+#undef HAVE_SECURITY_PAM_MODULES_H
 
 /* Define if you have the <shadow.h> header file.  */
 #undef HAVE_SHADOW_H
@@ -865,6 +890,9 @@
 /* Define if you have the <sys/ioctl.h> header file.  */
 #undef HAVE_SYS_IOCTL_H
 
+/* Define if you have the <sys/ipc.h> header file.  */
+#undef HAVE_SYS_IPC_H
+
 /* Define if you have the <sys/mman.h> header file.  */
 #undef HAVE_SYS_MMAN_H
 
@@ -891,6 +919,9 @@
 
 /* Define if you have the <sys/select.h> header file.  */
 #undef HAVE_SYS_SELECT_H
+
+/* Define if you have the <sys/shm.h> header file.  */
+#undef HAVE_SYS_SHM_H
 
 /* Define if you have the <sys/socket.h> header file.  */
 #undef HAVE_SYS_SOCKET_H

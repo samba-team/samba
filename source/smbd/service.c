@@ -108,11 +108,6 @@ int add_home_service(char *service, char *homedir)
 	lp_add_home(new_service,iHomeService,homedir);
 	iService = lp_servicenumber(new_service);
 
-	if ((iService != -1) && usr_p && (strstr(lp_pathname(iService),"%D") == NULL))
-		DEBUG(0,("find_service: Service %s added for user %s - contains non-local (Domain) user \
-with non-domain parameterised path (%s). This may be cause the wrong directory to be seen.\n",
-                 new_service, service, lp_pathname(iService) ));
-
 	return iService;
 }
 
@@ -530,38 +525,11 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	}
 	/* Initialise VFS function pointers */
 
-#if WITH_VFS
-	if (*lp_vfsobj(SNUM(conn))) {
-
-#ifdef HAVE_LIBDL
-
-	    /* Loadable object file */
-
-	    if (!vfs_init_custom(conn)) {
-	    	DEBUG(0, ("vfs_init failed\n"));
-		    conn_free(conn);
-			return NULL;
-	    }
-#else /* HAVE_LIBDL */
-	    DEBUG(0, ("No libdl present - cannot use VFS objects\n"));
-	    conn_free(conn);
-	    return NULL;
-#endif /* HAVE_LIBDL */
-
-	} else {
-
-		/* Normal share - initialise with disk access functions */
-
-	    vfs_init_default(conn);
+	if (!vfs_init(conn)) {
+		DEBUG(0, ("vfs_init failed for service %s\n", lp_servicename(SNUM(conn))));
+		conn_free(conn);
+		return NULL;
 	}
-
-#else /* WITH_VFS */
-
-	/* Normal share - initialise with disk access functions */
-
-	vfs_init_default(conn);
-
-#endif /* WITH_VFS */
 
 	/* execute any "root preexec = " line */
 	if (*lp_rootpreexec(SNUM(conn))) {
@@ -712,3 +680,5 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	}
 	conn_free(conn);
 }
+
+

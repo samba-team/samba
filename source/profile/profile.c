@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-#include <sys/shm.h>
-
 extern int DEBUGLEVEL;
 
 #define IPC_PERMS ((SHM_R | SHM_W) | (SHM_R>>3) | (SHM_R>>6))
@@ -85,7 +83,7 @@ void reqprofile_message(int msg_type, pid_t src, void *buf, size_t len)
 #else
 	level = 0;
 #endif
-	DEBUG(1,("INFO: Received REQ_PROFILELEVEL message from PID %d\n",src));
+	DEBUG(1,("INFO: Received REQ_PROFILELEVEL message from PID %u\n",(unsigned int)src));
 	message_send_pid(src, MSG_PROFILELEVEL, &level, sizeof(int), True);
 }
 

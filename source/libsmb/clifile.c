@@ -33,7 +33,7 @@ BOOL cli_rename(struct cli_state *cli, char *fname_src, char *fname_dst)
         memset(cli->outbuf,'\0',smb_size);
         memset(cli->inbuf,'\0',smb_size);
 
-        set_message(cli->outbuf,1, 4 + strlen(fname_src) + strlen(fname_dst), True);
+        set_message(cli->outbuf,1, 0, True);
 
         CVAL(cli->outbuf,smb_com) = SMBmv;
         SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -43,12 +43,13 @@ BOOL cli_rename(struct cli_state *cli, char *fname_src, char *fname_dst)
 
         p = smb_buf(cli->outbuf);
         *p++ = 4;
-        pstrcpy(p,fname_src);
-        unix_to_dos(p,True);
-        p = skip_string(p,1);
+	p += clistr_push(cli, p, fname_src, -1, 
+			 STR_TERMINATE | STR_CONVERT);
         *p++ = 4;
-        pstrcpy(p,fname_dst);
-        unix_to_dos(p,True);
+	p += clistr_push(cli, p, fname_dst, -1, 
+			 STR_TERMINATE | STR_CONVERT);
+
+	cli_setup_bcc(cli, p);
 
         cli_send_smb(cli);
         if (!cli_receive_smb(cli)) {
@@ -72,7 +73,7 @@ BOOL cli_unlink(struct cli_state *cli, char *fname)
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,1, 2 + strlen(fname),True);
+	set_message(cli->outbuf,1, 0,True);
 
 	CVAL(cli->outbuf,smb_com) = SMBunlink;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -82,9 +83,9 @@ BOOL cli_unlink(struct cli_state *cli, char *fname)
   
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;      
-	pstrcpy(p,fname);
-    unix_to_dos(p,True);
+	p += clistr_push(cli, p, fname, -1, STR_TERMINATE | STR_CONVERT);
 
+	cli_setup_bcc(cli, p);
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
 		return False;
@@ -107,7 +108,7 @@ BOOL cli_mkdir(struct cli_state *cli, char *dname)
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,0, 2 + strlen(dname),True);
+	set_message(cli->outbuf,0, 0,True);
 
 	CVAL(cli->outbuf,smb_com) = SMBmkdir;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -115,8 +116,9 @@ BOOL cli_mkdir(struct cli_state *cli, char *dname)
 
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;      
-	pstrcpy(p,dname);
-    unix_to_dos(p,True);
+	p += clistr_push(cli, p, dname, -1, STR_CONVERT|STR_TERMINATE);
+
+	cli_setup_bcc(cli, p);
 
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
@@ -140,7 +142,7 @@ BOOL cli_rmdir(struct cli_state *cli, char *dname)
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,0, 2 + strlen(dname),True);
+	set_message(cli->outbuf,0, 0, True);
 
 	CVAL(cli->outbuf,smb_com) = SMBrmdir;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -148,8 +150,9 @@ BOOL cli_rmdir(struct cli_state *cli, char *dname)
 
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;      
-	pstrcpy(p,dname);
-	unix_to_dos(p,True);
+	p += clistr_push(cli, p, dname, -1, STR_TERMINATE|STR_CONVERT);
+
+	cli_setup_bcc(cli, p);
 
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
@@ -183,11 +186,11 @@ int cli_nt_delete_on_close(struct cli_state *cli, int fnum, BOOL flag)
 	data = flag ? 1 : 0;
 
 	if (!cli_send_trans(cli, SMBtrans2,
-		NULL, 0,                        /* name, length */
-		-1, 0,                          /* fid, flags */
-		&setup, 1, 0,                   /* setup, length, max */
-		param, param_len, 2,            /* param, length, max */
-		&data,  data_len, cli->max_xmit /* data, length, max */
+						NULL,                        /* name */
+						-1, 0,                          /* fid, flags */
+						&setup, 1, 0,                   /* setup, length, max */
+						param, param_len, 2,            /* param, length, max */
+						&data,  data_len, cli->max_xmit /* data, length, max */
 						)) {
 		return False;
 	}
@@ -209,15 +212,17 @@ int cli_nt_delete_on_close(struct cli_state *cli, int fnum, BOOL flag)
  Used in smbtorture.
 ****************************************************************************/
 
-int cli_nt_create_full(struct cli_state *cli, char *fname, uint32 DesiredAccess, uint32 FileAttributes,
-						uint32 ShareAccess, uint32 CreateDisposition, uint32 CreateOptions)
+int cli_nt_create_full(struct cli_state *cli, char *fname, uint32 DesiredAccess,
+		 uint32 FileAttributes, uint32 ShareAccess,
+		 uint32 CreateDisposition, uint32 CreateOptions)
 {
 	char *p;
+	int len;
 
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,24,1 + strlen(fname),True);
+	set_message(cli->outbuf,24,0,True);
 
 	CVAL(cli->outbuf,smb_com) = SMBntcreateX;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -235,12 +240,17 @@ int cli_nt_create_full(struct cli_state *cli, char *fname, uint32 DesiredAccess,
 	SIVAL(cli->outbuf,smb_ntcreate_CreateDisposition, CreateDisposition);
 	SIVAL(cli->outbuf,smb_ntcreate_CreateOptions, CreateOptions);
 	SIVAL(cli->outbuf,smb_ntcreate_ImpersonationLevel, 0x02);
-	SSVAL(cli->outbuf,smb_ntcreate_NameLength, strlen(fname));
 
 	p = smb_buf(cli->outbuf);
-	pstrcpy(p,fname);
-	unix_to_dos(p,True);
-	p = skip_string(p,1);
+	/* this alignment and termination is critical for netapp filers. Don't change */
+	p += clistr_align_out(cli, p, STR_CONVERT);
+	len = clistr_push(cli, p, fname, -1, STR_CONVERT);
+	p += len;
+	SSVAL(cli->outbuf,smb_ntcreate_NameLength, len);
+	/* sigh. this copes with broken netapp filer behaviour */
+	p += clistr_push(cli, p, "", -1, STR_TERMINATE);
+
+	cli_setup_bcc(cli, p);
 
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
@@ -257,61 +267,12 @@ int cli_nt_create_full(struct cli_state *cli, char *fname, uint32 DesiredAccess,
 /****************************************************************************
 open a file
 ****************************************************************************/
+
 int cli_nt_create(struct cli_state *cli, char *fname, uint32 DesiredAccess)
 {
 	return cli_nt_create_full(cli, fname, DesiredAccess, 0,
 				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_EXISTS_OPEN, 0x0);
 }
-
-/****************************************************************************
-open a file
-****************************************************************************/
-int cli_nt_create_uni(struct cli_state *cli, char *fname, uint32 DesiredAccess)
-{
-	pstring uni;
-	char *p;
-
-	memset(cli->outbuf,'\0',smb_size);
-	memset(cli->inbuf,'\0',smb_size);
-
-	set_message(cli->outbuf,24,(strlen(fname) + 1) * 2 + 1,True);
-
-	CVAL(cli->outbuf,smb_com) = SMBntcreateX;
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
-
-	SSVAL(cli->outbuf,smb_vwv0,0xFF);
-	if (cli->use_oplocks)
-		SIVAL(cli->outbuf,smb_ntcreate_Flags, REQUEST_OPLOCK|REQUEST_BATCH_OPLOCK);
-	else 
-		SIVAL(cli->outbuf,smb_ntcreate_Flags, 0);
-	SIVAL(cli->outbuf,smb_ntcreate_RootDirectoryFid, 0x0);
-	SIVAL(cli->outbuf,smb_ntcreate_DesiredAccess, DesiredAccess);
-	SIVAL(cli->outbuf,smb_ntcreate_FileAttributes, 0x0);
-	SIVAL(cli->outbuf,smb_ntcreate_ShareAccess, 0x03);
-	SIVAL(cli->outbuf,smb_ntcreate_CreateDisposition, 0x01);
-	SIVAL(cli->outbuf,smb_ntcreate_CreateOptions, 0x0);
-	SIVAL(cli->outbuf,smb_ntcreate_ImpersonationLevel, 0x02);
-	SSVAL(cli->outbuf,smb_ntcreate_NameLength, strlen(fname) * 2);
-
-	p = smb_buf(cli->outbuf);
-	p++; /* Alignment */
-	pstrcpy(uni, fname);
-	unix_to_dos(uni, True);
-	dos_struni2(p, uni, (strlen(fname) + 1) * 2);
-
-	cli_send_smb(cli);
-	if (!cli_receive_smb(cli)) {
-		return -1;
-	}
-
-	if (CVAL(cli->inbuf,smb_rcls) != 0) {
-		return -1;
-	}
-
-	return SVAL(cli->inbuf,smb_vwv2 + 1);
-}
-
 
 /****************************************************************************
 open a file
@@ -353,7 +314,7 @@ int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,15,1 + strlen(fname),True);
+	set_message(cli->outbuf,15,0,True);
 
 	CVAL(cli->outbuf,smb_com) = SMBopenX;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -375,9 +336,9 @@ int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 	}
   
 	p = smb_buf(cli->outbuf);
-	pstrcpy(p,fname);
-	unix_to_dos(p,True);
-	p = skip_string(p,1);
+	p += clistr_push(cli, p, fname, -1, STR_TERMINATE | STR_CONVERT);
+
+	cli_setup_bcc(cli, p);
 
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
@@ -436,7 +397,7 @@ BOOL cli_lock(struct cli_state *cli, int fnum,
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0', smb_size);
 
-	set_message(cli->outbuf,8,10,True);
+	set_message(cli->outbuf,8,0,True);
 
 	CVAL(cli->outbuf,smb_com) = SMBlockingX;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -453,6 +414,11 @@ BOOL cli_lock(struct cli_state *cli, int fnum,
 	SSVAL(p, 0, cli->pid);
 	SIVAL(p, 2, offset);
 	SIVAL(p, 6, len);
+
+	p += 10;
+
+	cli_setup_bcc(cli, p);
+
 	cli_send_smb(cli);
 
         cli->timeout = (timeout == -1) ? 0x7FFFFFFF : (timeout + 2*1000);
@@ -481,7 +447,7 @@ BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len)
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,8,10,True);
+	set_message(cli->outbuf,8,0,True);
 
 	CVAL(cli->outbuf,smb_com) = SMBlockingX;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -498,7 +464,8 @@ BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len)
 	SSVAL(p, 0, cli->pid);
 	SIVAL(p, 2, offset);
 	SIVAL(p, 6, len);
-
+	p += 10;
+	cli_setup_bcc(cli, p);
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
 		return False;
@@ -528,7 +495,7 @@ BOOL cli_lock64(struct cli_state *cli, int fnum,
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0', smb_size);
 
-	set_message(cli->outbuf,8,20,True);
+	set_message(cli->outbuf,8,0,True);
 
 	CVAL(cli->outbuf,smb_com) = SMBlockingX;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -543,8 +510,11 @@ BOOL cli_lock64(struct cli_state *cli, int fnum,
 
 	p = smb_buf(cli->outbuf);
 	SIVAL(p, 0, cli->pid);
-	SOFF_T_R(p, 0, offset);
+	SOFF_T_R(p, 4, offset);
 	SOFF_T_R(p, 12, len);
+	p += 20;
+
+	cli_setup_bcc(cli, p);
 	cli_send_smb(cli);
 
         cli->timeout = (timeout == -1) ? 0x7FFFFFFF : (timeout + 2*1000);
@@ -573,7 +543,7 @@ BOOL cli_unlock64(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_BIG_
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,8,20,True);
+	set_message(cli->outbuf,8,0,True);
 
 	CVAL(cli->outbuf,smb_com) = SMBlockingX;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -590,7 +560,8 @@ BOOL cli_unlock64(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_BIG_
 	SIVAL(p, 0, cli->pid);
 	SOFF_T_R(p, 4, offset);
 	SOFF_T_R(p, 12, len);
-
+	p += 20;
+	cli_setup_bcc(cli, p);
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
 		return False;
@@ -669,16 +640,17 @@ BOOL cli_getatr(struct cli_state *cli, char *fname,
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,0,strlen(fname)+2,True);
+	set_message(cli->outbuf,0,0,True);
 
 	CVAL(cli->outbuf,smb_com) = SMBgetatr;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
 
 	p = smb_buf(cli->outbuf);
-	*p = 4;
-	pstrcpy(p+1, fname);
-    unix_to_dos(p+1,True);
+	*p++ = 4;
+	p += clistr_push(cli, p, fname, -1, STR_TERMINATE | STR_CONVERT);
+
+	cli_setup_bcc(cli, p);
 
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
@@ -716,7 +688,7 @@ BOOL cli_setatr(struct cli_state *cli, char *fname, uint16 attr, time_t t)
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,8,strlen(fname)+4,True);
+	set_message(cli->outbuf,8,0,True);
 
 	CVAL(cli->outbuf,smb_com) = SMBsetatr;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -726,11 +698,11 @@ BOOL cli_setatr(struct cli_state *cli, char *fname, uint16 attr, time_t t)
 	put_dos_date3(cli->outbuf,smb_vwv1, t);
 
 	p = smb_buf(cli->outbuf);
-	*p = 4;
-	pstrcpy(p+1, fname);
-    unix_to_dos(p+1,True);
-	p = skip_string(p,1);
-	*p = 4;
+	*p++ = 4;
+	p += clistr_push(cli, p, fname, -1, STR_TERMINATE | STR_CONVERT);
+	*p++ = 4;
+
+	cli_setup_bcc(cli, p);
 
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
@@ -758,14 +730,15 @@ BOOL cli_chkpath(struct cli_state *cli, char *path)
 	if (!*path2) *path2 = '\\';
 	
 	memset(cli->outbuf,'\0',smb_size);
-	set_message(cli->outbuf,0,4 + strlen(path2),True);
+	set_message(cli->outbuf,0,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBchkpth);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;
-	safe_strcpy(p,path2,strlen(path2));
-	unix_to_dos(p,True);
+	p += clistr_push(cli, p, path2, -1, STR_TERMINATE | STR_CONVERT);
+
+	cli_setup_bcc(cli, p);
 
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
@@ -802,3 +775,44 @@ BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 	return True;
 }
 
+
+/****************************************************************************
+create and open a temporary file
+****************************************************************************/
+int cli_ctemp(struct cli_state *cli, char *path, char **tmp_path)
+{
+	char *p;
+
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
+
+	set_message(cli->outbuf,1,strlen(path)+2,True);
+
+	CVAL(cli->outbuf,smb_com) = SMBctemp;
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	SSVAL(cli->outbuf,smb_vwv0,0);
+
+	p = smb_buf(cli->outbuf);
+	*p++ = 4;
+	p += clistr_push(cli, p, path, -1, STR_TERMINATE | STR_CONVERT);
+
+	cli_send_smb(cli);
+	if (!cli_receive_smb(cli)) {
+		return -1;
+	}
+
+	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+		return -1;
+	}
+
+	if (tmp_path) {
+		pstring path2;
+		clistr_pull(cli, path2, smb_buf(cli->inbuf)+1, 
+			    sizeof(path2), -1, STR_TERMINATE | STR_CONVERT);
+		*tmp_path = strdup(path2);
+	}
+
+	return SVAL(cli->inbuf,smb_vwv0);
+}

@@ -186,9 +186,13 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 	struct session_record *ptr;
 	struct connections_data crec;
 
+	if (dbuf.dsize != sizeof(crec))
+		return 0;
+
 	memcpy(&crec, dbuf.dptr, sizeof(crec));
 
-	if (crec.cnum == -1) return 0;
+	if (crec.cnum == -1)
+		return 0;
 
 	if (!process_exists(crec.pid) || !Ucrit_checkUsername(uidtoname(crec.uid))) {
 		return 0;
@@ -306,7 +310,7 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 		return profile_dump();
 	}
 	
-	tdb = tdb_open(lock_path("connections.tdb"), 0, 0, O_RDONLY, 0);
+	tdb = tdb_open_log(lock_path("connections.tdb"), 0, 0, O_RDONLY, 0);
 	if (!tdb) {
 		printf("connections.tdb not initialised\n");
 		if (!lp_status(-1))

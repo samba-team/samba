@@ -260,13 +260,12 @@ static BOOL only_ipaddrs_in_list(const char* list)
 		
 		if (!is_ipaddress(tok))
 		{
-			char *p;
 			/* 
 			 * if we failed, make sure that it was not because the token
 			 * was a network/netmask pair.  Only network/netmask pairs
 			 * have a '/' in them
 			 */
-			if ((p=strchr(tok, '/')) == NULL)
+			if (strchr(tok, '/') == NULL)
 			{
 				only_ip = False;
 				DEBUG(3,("only_ipaddrs_in_list: list [%s] has non-ip address %s\n", list, tok));

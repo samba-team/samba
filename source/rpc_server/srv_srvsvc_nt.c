@@ -77,6 +77,14 @@ static void init_srv_share_info_2(SRV_SHARE_INFO_2 *sh2, int snum)
 	pstring_sub(remark,"%S",lp_servicename(snum));
 	pstrcpy(path, "C:");
 	pstrcat(path, lp_pathname(snum));
+
+	/*
+	 * Change / to \\ so that win2k will see it as a valid path.  This was added to
+	 * enable use of browsing in win2k add share dialog.
+	 */ 
+
+	string_replace(path, '/', '\\');
+
 	pstrcpy(passwd, "");
 	len_net_name = strlen(net_name);
 
@@ -117,7 +125,7 @@ BOOL share_info_db_init(void)
     char *vstring = "INFO/version";
  
     if (share_tdb && local_pid == sys_getpid()) return True;
-    share_tdb = tdb_open(lock_path("share_info.tdb"), 0, 0, O_RDWR|O_CREAT, 0600);
+    share_tdb = tdb_open_log(lock_path("share_info.tdb"), 0, 0, O_RDWR|O_CREAT, 0600);
     if (!share_tdb) {
         DEBUG(0,("Failed to open share info database %s (%s)\n",
 				lock_path("share_info.tdb"), strerror(errno) ));
@@ -363,6 +371,14 @@ static void init_srv_share_info_502(TALLOC_CTX *ctx, SRV_SHARE_INFO_502 *sh502, 
 	pstring_sub(remark,"%S",lp_servicename(snum));
 	pstrcpy(path, "C:");
 	pstrcat(path, lp_pathname(snum));
+
+	/*
+	 * Change / to \\ so that win2k will see it as a valid path.  This was added to
+	 * enable use of browsing in win2k add share dialog.
+	 */ 
+
+	string_replace(path, '/', '\\');
+
 	pstrcpy(passwd, "");
 	len_net_name = strlen(net_name);
 
@@ -379,7 +395,7 @@ static void init_srv_share_info_502(TALLOC_CTX *ctx, SRV_SHARE_INFO_502 *sh502, 
 	sd = get_share_security(ctx, snum, &sd_size);
 
 	init_srv_share_info502(&sh502->info_502, net_name, type, remark, 0, 0xffffffff, 1, path, passwd, sd, sd_size);
-	init_srv_share_info502_str(&sh502->info_502_str, net_name, remark, path, passwd, sd, sd_size);
+	init_srv_share_info502_str(&sh502->info_502_str, &sh502->info_502, net_name, remark, path, passwd, sd, sd_size);
 }
 
 /***************************************************************************
@@ -1032,6 +1048,28 @@ uint32 _srv_net_srv_get_info(pipes_struct *p, SRV_Q_NET_SRV_GET_INFO *q_u, SRV_R
 }
 
 /*******************************************************************
+net server set info
+********************************************************************/
+
+uint32 _srv_net_srv_set_info(pipes_struct *p, SRV_Q_NET_SRV_SET_INFO *q_u, SRV_R_NET_SRV_SET_INFO *r_u)
+{
+	/* NT gives "Windows NT error 0xc00000022" if we return
+	   NT_STATUS_ACCESS_DENIED here so just pretend everything is OK. */
+
+	uint32 status = NT_STATUS_NOPROBLEMO;
+
+	DEBUG(5,("srv_net_srv_set_info: %d\n", __LINE__));
+
+	/* Set up the net server set info structure. */
+
+	init_srv_r_net_srv_set_info(r_u, 0x0, status);
+
+	DEBUG(5,("srv_net_srv_set_info: %d\n", __LINE__));
+
+	return r_u->status;
+}
+
+/*******************************************************************
 net file enum
 ********************************************************************/
 
@@ -1543,6 +1581,296 @@ uint32 _srv_net_remote_tod(pipes_struct *p, SRV_Q_NET_REMOTE_TOD *q_u, SRV_R_NET
 	                      t->tm_wday);
 	
 	DEBUG(5,("_srv_net_remote_tod: %d\n", __LINE__));
+
+	return r_u->status;
+}
+
+/***********************************************************************************
+ Win9x NT tools get security descriptor.
+***********************************************************************************/
+
+uint32 _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC *q_u,
+			SRV_R_NET_FILE_QUERY_SECDESC *r_u)
+{
+	SEC_DESC *psd = NULL;
+	size_t sd_size;
+	fstring null_pw;
+	pstring filename;
+	pstring qualname;
+	files_struct *fsp = NULL;
+	SMB_STRUCT_STAT st;
+	BOOL bad_path;
+	int access_mode;
+	int action;
+	int ecode;
+	struct current_user user;
+	fstring user_name;
+	connection_struct *conn = NULL;
+
+	ZERO_STRUCT(st);
+
+	r_u->status = NT_STATUS_NOPROBLEMO;
+
+	unistr2_to_ascii(qualname, &q_u->uni_qual_name, sizeof(qualname));
+
+	/* Null password is ok - we are already an authenticated user... */
+	*null_pw = '\0';
+
+	get_current_user(&user, p);
+	fstrcpy(user_name, uidtoname(user.uid));
+
+	conn = make_connection(qualname, user_name, null_pw, 0, "A:", user.vuid, &ecode);
+
+	if (conn == NULL) {
+		DEBUG(3,("_srv_net_file_query_secdesc: Unable to connect to %s\n", qualname));
+		r_u->status = (uint32)ecode;
+		goto error_exit;
+	}
+
+	unistr2_to_ascii(filename, &q_u->uni_file_name, sizeof(filename));
+	unix_convert(filename, conn, NULL, &bad_path, &st);
+	fsp = open_file_shared(conn, filename, &st, SET_OPEN_MODE(DOS_OPEN_RDONLY),
+				(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, 0, &access_mode, &action);
+
+	if (!fsp) {
+		/* Perhaps it is a directory */
+		if (errno == EISDIR)
+			fsp = open_directory(conn, filename, &st,
+					(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, &action);
+
+		if (!fsp) {
+			DEBUG(3,("_srv_net_file_query_secdesc: Unable to open file %s\n", filename));
+			r_u->status = ERROR_ACCESS_DENIED;
+			goto error_exit;
+		}
+	}
+
+	sd_size = conn->vfs_ops.get_nt_acl(fsp, fsp->fsp_name, &psd);
+
+	if (sd_size == 0) {
+		DEBUG(3,("_srv_net_file_query_secdesc: Unable to get NT ACL for file %s\n", filename));
+		r_u->status = ERROR_ACCESS_DENIED;
+		goto error_exit;
+	}
+
+	r_u->ptr_response = 1;
+	r_u->size_response = sd_size;
+	r_u->ptr_secdesc = 1;
+	r_u->size_secdesc = sd_size;
+	r_u->sec_desc = psd;
+
+	psd->dacl->revision = (uint16) NT4_ACL_REVISION;
+
+	close_file(fsp, True);
+
+	close_cnum(conn, user.vuid);
+	return r_u->status;
+
+  error_exit:
+
+	if(fsp) {
+		close_file(fsp, True);
+	}
+
+	if (conn) 
+		close_cnum(conn, user.vuid);
+
+	return r_u->status;
+}
+
+/***********************************************************************************
+ Win9x NT tools set security descriptor.
+***********************************************************************************/
+
+uint32 _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_u,
+									SRV_R_NET_FILE_SET_SECDESC *r_u)
+{
+	BOOL ret;
+	pstring filename;
+	pstring qualname;
+	fstring null_pw;
+	files_struct *fsp = NULL;
+	SMB_STRUCT_STAT st;
+	BOOL bad_path;
+	int access_mode;
+	int action;
+	int ecode;
+	struct current_user user;
+	fstring user_name;
+	connection_struct *conn = NULL;
+
+	ZERO_STRUCT(st);
+
+	r_u->status = NT_STATUS_NOPROBLEMO;
+
+	unistr2_to_ascii(qualname, &q_u->uni_qual_name, sizeof(qualname));
+
+	/* Null password is ok - we are already an authenticated user... */
+	*null_pw = '\0';
+
+	get_current_user(&user, p);
+	fstrcpy(user_name, uidtoname(user.uid));
+
+	conn = make_connection(qualname, user_name, null_pw, 0, "A:", user.vuid, &ecode);
+
+	if (conn == NULL) {
+		DEBUG(3,("_srv_net_file_set_secdesc: Unable to connect to %s\n", qualname));
+		r_u->status = (uint32)ecode;
+		goto error_exit;
+	}
+
+	unistr2_to_ascii(filename, &q_u->uni_file_name, sizeof(filename));
+	unix_convert(filename, conn, NULL, &bad_path, &st);
+
+	fsp = open_file_shared(conn, filename, &st, SET_OPEN_MODE(DOS_OPEN_RDWR),
+			(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, 0, &access_mode, &action);
+
+	if (!fsp) {
+		/* Perhaps it is a directory */
+		if (errno == EISDIR)
+			fsp = open_directory(conn, filename, &st,
+						(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, &action);
+
+		if (!fsp) {
+			DEBUG(3,("_srv_net_file_set_secdesc: Unable to open file %s\n", filename));
+			r_u->status = ERROR_ACCESS_DENIED;
+			goto error_exit;
+		}
+	}
+
+	ret = conn->vfs_ops.set_nt_acl(fsp, fsp->fsp_name, q_u->sec_info, q_u->sec_desc);
+
+	if (ret == False) {
+		DEBUG(3,("_srv_net_file_set_secdesc: Unable to set NT ACL on file %s\n", filename));
+		r_u->status = ERROR_ACCESS_DENIED;
+		goto error_exit;
+	}
+
+	close_file(fsp, True);
+	close_cnum(conn, user.vuid);
+	return r_u->status;
+
+  error_exit:
+
+	if(fsp) {
+		close_file(fsp, True);
+	}
+
+	if (conn) 
+		close_cnum(conn, user.vuid);
+
+	return r_u->status;
+}
+
+/***********************************************************************************
+ It may be that we want to limit users to creating shares on certain areas of the UNIX file area.
+ We could define areas by mapping Windows style disks to points on the UNIX directory hierarchy.
+ These disks would the disks listed by this function.
+ Users could then create shares relative to these disks.  Watch out for moving these disks around.
+ "Nigel Williams" <nigel@veritas.com>.
+***********************************************************************************/
+
+const char *server_disks[] = {"C:"};
+
+static uint32 get_server_disk_count(void)
+{
+	return sizeof(server_disks)/sizeof(server_disks[0]);
+}
+
+static uint32 init_server_disk_enum(uint32 *resume)
+{
+	uint32 server_disk_count = get_server_disk_count();
+
+	/*resume can be an offset into the list for now*/
+
+	if(*resume & 0x80000000)
+		*resume = 0;
+
+	if(*resume > server_disk_count)
+		*resume = server_disk_count;
+
+	return server_disk_count - *resume;
+}
+
+static const char *next_server_disk_enum(uint32 *resume)
+{
+	const char *disk;
+
+	if(init_server_disk_enum(resume) == 0)
+		return NULL;
+
+	disk = server_disks[*resume];
+
+	(*resume)++;
+
+	DEBUG(10, ("next_server_disk_enum: reporting disk %s. resume handle %d.\n", disk, *resume));
+
+	return disk;
+}
+
+uint32 _srv_net_disk_enum(pipes_struct *p, SRV_Q_NET_DISK_ENUM *q_u, SRV_R_NET_DISK_ENUM *r_u)
+{
+	uint32 i;
+	const char *disk_name;
+	uint32 resume=get_enum_hnd(&q_u->enum_hnd);
+
+	r_u->status=NT_STATUS_NOPROBLEMO;
+
+	r_u->total_entries = init_server_disk_enum(&resume);
+
+	r_u->disk_enum_ctr.unknown = 0; 
+
+	r_u->disk_enum_ctr.disk_info_ptr = (uint32) r_u->disk_enum_ctr.disk_info;
+
+	/*allow one DISK_INFO for null terminator*/
+
+	for(i = 0; i < MAX_SERVER_DISK_ENTRIES -1 && (disk_name = next_server_disk_enum(&resume)); i++) {
+
+		r_u->disk_enum_ctr.entries_read++;
+
+		/*copy disk name into a unicode string*/
+
+		init_unistr3(&r_u->disk_enum_ctr.disk_info[i].disk_name, disk_name);    
+	}
+
+	/*add a terminating null string.  Is this there if there is more data to come?*/
+
+	r_u->disk_enum_ctr.entries_read++;
+
+	init_unistr3(&r_u->disk_enum_ctr.disk_info[i].disk_name, "");
+
+	init_enum_hnd(&r_u->enum_hnd, resume);
+
+	return r_u->status;
+}
+
+uint32 _srv_net_name_validate(pipes_struct *p, SRV_Q_NET_NAME_VALIDATE *q_u, SRV_R_NET_NAME_VALIDATE *r_u)
+{
+	int snum;
+	fstring share_name;
+
+	r_u->status=NT_STATUS_NOPROBLEMO;
+
+	switch(q_u->type) {
+
+	case 0x9:
+
+		/*check if share name is ok*/
+		/*also check if we already have a share with this name*/
+
+		unistr2_to_ascii(share_name, &q_u->uni_name, sizeof(share_name));
+		snum = find_service(share_name);
+
+		/* Share already exists. */
+		if (snum >= 0)
+			r_u->status = NT_STATUS_OBJECT_NAME_INVALID;
+		break;
+
+	default:
+		/*unsupported type*/
+		r_u->status = ERROR_INVALID_LEVEL;
+		break;
+	}
 
 	return r_u->status;
 }

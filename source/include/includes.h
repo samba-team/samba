@@ -54,6 +54,13 @@
 #endif
 #endif
 
+/* use gcc attribute to check printf fns */
+#ifdef __GNUC__
+#define PRINTF_ATTRIBUTE(a1, a2) __attribute__ ((format (__printf__, a1, a2)))
+#else
+#define PRINTF_ATTRIBUTE(a1, a2)
+#endif
+
 #ifdef RELIANTUNIX
 /*
  * <unistd.h> has to be included before any other to get
@@ -271,10 +278,6 @@
 #include <sys/acl.h>
 #endif
 
-#ifdef HAVE_XFS_ACLS
-#include <acl/acl.h>
-#endif
-
 #ifdef HAVE_SYS_FS_S5PARAM_H 
 #include <sys/fs/s5param.h>
 #endif
@@ -350,6 +353,14 @@
 #endif
 #endif /* HAVE_NETGROUP */
 
+#if defined(HAVE_SYS_IPC_H)
+#include <sys/ipc.h>
+#endif /* HAVE_SYS_IPC_H */
+
+#if defined(HAVE_SYS_SHM_H)
+#include <sys/shm.h>
+#endif /* HAVE_SYS_SHM_H */
+
 /*
  * Define VOLATILE if needed.
  */
@@ -361,14 +372,16 @@
 #endif
 
 /*
- * Define SIG_ATOMIC_T if needed.
+ * Define additional missing types
  */
-
-#if defined(HAVE_SIG_ATOMIC_T_TYPE)
-#define SIG_ATOMIC_T sig_atomic_t
-#else
-#define SIG_ATOMIC_T int
+#ifndef HAVE_SIG_ATOMIC_T_TYPE
+typedef int sig_atomic_t;
 #endif
+
+#ifndef HAVE_SOCKLEN_T_TYPE
+typedef int socklen_t;
+#endif
+
 
 #ifndef uchar
 #define uchar unsigned char
@@ -421,6 +434,9 @@
 #define int32 long
 #elif (SIZEOF_SHORT == 4)
 #define int32 short
+#else
+/* uggh - no 32 bit type?? probably a CRAY. just hope this works ... */
+#define uint32 int
 #endif
 #endif
 
@@ -436,6 +452,9 @@
 #define uint32 unsigned long
 #elif (SIZEOF_SHORT == 4)
 #define uint32 unsigned short
+#else
+/* uggh - no 32 bit type?? probably a CRAY. just hope this works ... */
+#define uint32 unsigned
 #endif
 #endif
 
@@ -622,6 +641,8 @@ extern int errno;
 #include "messages.h"
 #include "util_list.h"
 
+#include "util_getent.h"
+
 #ifndef UBI_BINTREE_H
 #include "ubi_Cache.h"
 #endif /* UBI_BINTREE_H */
@@ -643,6 +664,8 @@ extern int errno;
 #include "msdfs.h"
 
 #include "profile.h"
+
+#include "mapping.h"
 
 #ifndef MAXCODEPAGELINES
 #define MAXCODEPAGELINES 256
@@ -678,17 +701,38 @@ typedef struct smb_wpasswd {
 #define UNI_XDIGIT   0x8
 #define UNI_SPACE    0x10
 
-#ifdef HAVE_NSS_H
+#ifdef HAVE_NSS_COMMON_H
+
+/* Sun Solaris */
+
+#include <nss_common.h>
+#include <nss_dbdefs.h>
+#include <nsswitch.h>
+
+typedef nss_status_t NSS_STATUS;
+
+#define NSS_STATUS_SUCCESS     NSS_SUCCESS
+#define NSS_STATUS_NOTFOUND    NSS_NOTFOUND
+#define NSS_STATUS_UNAVAIL     NSS_UNAVAIL
+#define NSS_STATUS_TRYAGAIN    NSS_TRYAGAIN
+
+#elif HAVE_NSS_H
+
+/* GNU */
+
 #include <nss.h>
-#else
 
-/* Minimal needed to compile.. */
+typedef enum nss_status NSS_STATUS;
 
-enum nss_status {
-	NSS_STATUS_SUCCESS,
-	NSS_STATUS_NOTFOUND,
-	NSS_STATUS_UNAVAIL
-};
+#else /* Nothing's defined. Neither gnu nor sun */
+
+typedef enum
+{
+  NSS_STATUS_SUCCESS,
+  NSS_STATUS_NOTFOUND,
+  NSS_STATUS_UNAVAIL,
+  NSS_STATUS_TRYAGAIN
+} NSS_STATUS;
 
 #endif
 
@@ -846,6 +890,9 @@ int setresuid(uid_t ruid, uid_t euid, uid_t suid);
 #if (defined(USE_SETRESUID) && !defined(HAVE_SETRESGID_DECL))
 int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #endif
+#ifndef HAVE_VASPRINTF_DECL
+int vasprintf(char **ptr, const char *format, va_list ap);
+#endif
 
 #if !defined(HAVE_BZERO) && defined(HAVE_MEMSET)
 #define bzero(a,b) memset((a),'\0',(b))
@@ -934,13 +981,13 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #define S_IXOTH 00001           /* execute permission: other */
 #endif
 
-/* Some systems (SCO) treat UNIX domain sockets as FIFOs */
-
-#ifndef S_IFSOCK
-#define S_IFSOCK S_IFIFO
+/* NetBSD doesn't have these */
+#ifndef SHM_R
+#define SHM_R 0400
 #endif
-#ifndef S_ISSOCK
-#define S_ISSOCK(mode)  ((mode & S_IFSOCK) == S_IFSOCK)
+
+#ifndef SHM_W
+#define SHM_W 0200
 #endif
 
 #if HAVE_KERNEL_SHARE_MODES
@@ -981,6 +1028,20 @@ extern int DEBUGLEVEL;
 #ifndef RTLD_NOW
 #define RTLD_NOW 0
 #endif
+
+/* add varargs prototypes with printf checking */
+int fdprintf(int , char *, ...) PRINTF_ATTRIBUTE(2,3);
+#ifndef HAVE_SNPRINTF_DECL
+int snprintf(char *,size_t ,const char *, ...) PRINTF_ATTRIBUTE(3,4);
+#endif
+#ifndef HAVE_ASPRINTF_DECL
+int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
+#endif
+
+/* we used to use these fns, but now we have good replacements
+   for snprintf and vsnprintf */
+#define slprintf snprintf
+#define vslprintf vsnprintf
 
 #endif /* _INCLUDES_H */
 

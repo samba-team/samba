@@ -208,7 +208,7 @@ max can be %d\n",
 		num = sys_select(FD_SETSIZE,&lfds,NULL);
 		
 		if (num == -1 && errno == EINTR) {
-			extern VOLATILE SIG_ATOMIC_T reload_after_sighup;
+			extern VOLATILE sig_atomic_t reload_after_sighup;
 
 			/* check for sighup processing */
 			if (reload_after_sighup) {
@@ -228,7 +228,7 @@ max can be %d\n",
 		   accept on these. */
 		for( ; num > 0; num--) {
 			struct sockaddr addr;
-			int in_addrlen = sizeof(addr);
+			socklen_t in_addrlen = sizeof(addr);
 			
 			s = -1;
 			for(i = 0; i < num_interfaces; i++) {
@@ -276,6 +276,16 @@ max can be %d\n",
 			}
 			/* The parent doesn't need this socket */
 			close(smbd_server_fd()); 
+
+			/* Sun May 6 18:56:14 2001 ackley@cs.unm.edu:
+				Clear the closed fd info out of server_fd --
+				and more importantly, out of client_fd in
+				util_sock.c, to avoid a possible
+				getpeername failure if we reopen the logs
+				and use %I in the filename.
+			*/
+
+			smbd_set_server_fd(-1);
 
 			/* Force parent to check log size after
 			 * spawning child.  Fix from
@@ -356,7 +366,7 @@ BOOL reload_services(BOOL test)
  Catch a sighup.
 ****************************************************************************/
 
-VOLATILE SIG_ATOMIC_T reload_after_sighup = False;
+VOLATILE sig_atomic_t reload_after_sighup = False;
 
 static void sig_hup(int sig)
 {
@@ -411,16 +421,14 @@ static BOOL dump_core(void)
 /****************************************************************************
 update the current smbd process count
 ****************************************************************************/
+
 static void decrement_smbd_process_count(void)
 {
 	int total_smbds;
 
 	if (lp_max_smbd_processes()) {
-		tdb_lock_bystring(conn_tdb_ctx(), "INFO/total_smbds");
-		if ((total_smbds = tdb_fetch_int(conn_tdb_ctx(), "INFO/total_smbds")) > 0)
-			tdb_store_int(conn_tdb_ctx(), "INFO/total_smbds", total_smbds - 1);
-		
-		tdb_unlock_bystring(conn_tdb_ctx(), "INFO/total_smbds");
+		total_smbds = 0;
+		tdb_change_int_atomic(conn_tdb_ctx(), "INFO/total_smbds", &total_smbds, -1);
 	}
 }
 
@@ -441,12 +449,14 @@ void exit_server(char *reason)
 
 	conn_close_all();
 
+	invalidate_all_vuids();
+
 	/* delete our entry in the connections database. */
 	if (lp_status(-1)) {
 		yield_connection(NULL,"",MAXSTATUS);
 	}
 
-    respond_to_all_remaining_local_messages();
+	respond_to_all_remaining_local_messages();
 	decrement_smbd_process_count();
 
 #ifdef WITH_DFS
@@ -611,15 +621,7 @@ static void usage(char *pname)
 	setluid(0);
 #endif
 
-	/*
-	 * gain_root_privilege uses an assert than will cause a core
-	 * dump if euid != 0. Ensure this is the case.
-	 */
-
-	if(geteuid() != (uid_t)0) {
-		fprintf(stderr, "%s: Version %s : Must have effective user id of zero to run.\n", argv[0], VERSION);
-		exit(1);
-	}
+	sec_init();
 
 	append_log = True;
 

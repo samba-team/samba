@@ -26,65 +26,68 @@ RETVAL=0
 
 
 start() {
-      echo -n "Starting SMB services: "
-      daemon smbd -D
-      RETVAL=$?
-      echo
-      echo -n "Starting NMB services: "
-      daemon nmbd -D
-      RETVAL2=$?
-      echo
-      [ $RETVAL -eq 0 -a $RETVAL2 -eq 0 ] && touch /var/lock/subsys/smb || \
-         RETVAL=1
-      return $RETVAL
-}
+	echo -n "Starting SMB services: "
+	daemon smbd -D 	
+	RETVAL=$?
+	echo
+	echo -n "Starting NMB services: "
+	daemon nmbd -D 
+	RETVAL2=$?
+	echo
+	[ $RETVAL -eq 0 -a $RETVAL2 -eq 0 ] && touch /var/lock/subsys/smb || \
+	   RETVAL=1
+	return $RETVAL
+}	
 stop() {
-      echo -n "Shutting down SMB services: "
-      killproc smbd
-      RETVAL=$?
-      echo
-      echo -n "Shutting down NMB services: "
-      killproc nmbd
-      RETVAL2=$?
-      [ $RETVAL -eq 0 -a $RETVAL2 -eq 0 ] && rm -f /var/lock/subsys/smb
-      echo ""
-      return $RETVAL
-}
+	echo -n "Shutting down SMB services: "
+	killproc smbd
+	RETVAL=$?
+	echo
+	echo -n "Shutting down NMB services: "
+	killproc nmbd
+	RETVAL2=$?
+	[ $RETVAL -eq 0 -a $RETVAL2 -eq 0 ] && rm -f /var/lock/subsys/smb
+	echo ""
+	return $RETVAL
+}	
 restart() {
-      stop
-      start
-}
+	stop
+	start
+}	
 reload() {
         echo -n "Reloading smb.conf file: "
-      killproc smbd -HUP
-      RETVAL=$?
-      echo
-      return $RETVAL
-}
+	killproc smbd -HUP
+	RETVAL=$?
+	echo
+	return $RETVAL
+}	
 mdkstatus() {
-      status smbd
-      status nmbd
-}
+	status smbd
+	status nmbd
+}	
 
-
-# See how we were called.
 case "$1" in
-	start)
-	    start
-	    ;;
-	stop)
-	    stop
-	    ;;
-	restart)
-	    restart
-	    ;;
-	reload)
-	    reload
-	    ;;
-	status)
-	    mdkstatus
-	    ;;
-	condrestart)
-	    [ -f /var/lock/subsys/smb ] && restart || :
-	    ;;
-	*)
+  start)
+  	start
+	;;
+  stop)
+  	stop
+	;;
+  restart)
+  	restart
+	;;
+  reload)
+  	reload
+	;;
+  status)
+  	mdkstatus
+	;;
+  condrestart)
+  	[ -f /var/lock/subsys/smb ] && restart || :
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart|status|condrestart}"
+	exit 1
+esac
+
+exit $?

@@ -56,6 +56,33 @@ static BOOL api_srv_net_srv_get_info(pipes_struct *p)
 }
 
 /*******************************************************************
+ api_srv_net_srv_get_info
+********************************************************************/
+
+static BOOL api_srv_net_srv_set_info(pipes_struct *p)
+{
+	SRV_Q_NET_SRV_SET_INFO q_u;
+	SRV_R_NET_SRV_SET_INFO r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	/* grab the net server set info */
+	if (!srv_io_q_net_srv_set_info("", &q_u, data, 0))
+		return False;
+
+	r_u.status = _srv_net_srv_set_info(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if (!srv_io_r_net_srv_set_info("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
  api_srv_net_file_enum
 ********************************************************************/
 
@@ -345,6 +372,126 @@ static BOOL api_srv_net_remote_tod(pipes_struct *p)
 }
 
 /*******************************************************************
+ RPC to enumerate disks available on a server e.g. C:, D: ...
+*******************************************************************/
+
+static BOOL api_srv_net_disk_enum(pipes_struct *p) 
+{
+	SRV_Q_NET_DISK_ENUM q_u;
+	SRV_R_NET_DISK_ENUM r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	/* Unmarshall the net server disk enum. */
+	if(!srv_io_q_net_disk_enum("", &q_u, data, 0)) {
+		DEBUG(0,("api_srv_net_disk_enum: Failed to unmarshall SRV_Q_NET_DISK_ENUM.\n"));
+		return False;
+	}
+
+	r_u.status = _srv_net_disk_enum(p, &q_u, &r_u);
+
+	if(!srv_io_r_net_disk_enum("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_srv_net_disk_enum: Failed to marshall SRV_R_NET_DISK_ENUM.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+ NetValidateName (opnum 0x21) 
+*******************************************************************/
+
+static BOOL api_srv_net_name_validate(pipes_struct *p) 
+{
+	SRV_Q_NET_NAME_VALIDATE q_u;
+	SRV_R_NET_NAME_VALIDATE r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+ 
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+  
+	/* Unmarshall the net server disk enum. */
+	if(!srv_io_q_net_name_validate("", &q_u, data, 0)) {
+		DEBUG(0,("api_srv_net_name_validate: Failed to unmarshall SRV_Q_NET_NAME_VALIDATE.\n"));
+		return False;
+	}
+
+	r_u.status = _srv_net_name_validate(p, &q_u, &r_u);
+
+	if(!srv_io_r_net_name_validate("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_srv_net_name_validate: Failed to marshall SRV_R_NET_NAME_VALIDATE.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+ NetFileQuerySecdesc (opnum 0x27)
+*******************************************************************/
+
+static BOOL api_srv_net_file_query_secdesc(pipes_struct *p)
+{
+	SRV_Q_NET_FILE_QUERY_SECDESC q_u;
+	SRV_R_NET_FILE_QUERY_SECDESC r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	/* Unmarshall the net file get info from Win9x */
+	if(!srv_io_q_net_file_query_secdesc("", &q_u, data, 0)) {
+		DEBUG(0,("api_srv_net_file_query_secdesc: Failed to unmarshall SRV_Q_NET_FILE_QUERY_SECDESC.\n"));
+		return False;
+	}
+
+	r_u.status = _srv_net_file_query_secdesc(p, &q_u, &r_u);
+
+	if(!srv_io_r_net_file_query_secdesc("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_srv_net_file_query_secdesc: Failed to marshall SRV_R_NET_FILE_QUERY_SECDESC.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+ NetFileSetSecdesc (opnum 0x28)
+*******************************************************************/
+
+static BOOL api_srv_net_file_set_secdesc(pipes_struct *p)
+{
+	SRV_Q_NET_FILE_SET_SECDESC q_u;
+	SRV_R_NET_FILE_SET_SECDESC r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	/* Unmarshall the net file set info from Win9x */
+	if(!srv_io_q_net_file_set_secdesc("", &q_u, data, 0)) {
+		DEBUG(0,("api_srv_net_file_set_secdesc: Failed to unmarshall SRV_Q_NET_FILE_SET_SECDESC.\n"));
+		return False;
+	}
+
+	r_u.status = _srv_net_file_set_secdesc(p, &q_u, &r_u);
+
+	if(!srv_io_r_net_file_set_secdesc("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_srv_net_file_set_secdesc: Failed to marshall SRV_R_NET_FILE_SET_SECDESC.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/*******************************************************************
 \PIPE\srvsvc commands
 ********************************************************************/
 
@@ -360,7 +507,12 @@ struct api_struct api_srv_cmds[] =
 	{ "SRV_NET_SHARE_SET_INFO", SRV_NET_SHARE_SET_INFO, api_srv_net_share_set_info },
 	{ "SRV_NETFILEENUM"       , SRV_NETFILEENUM       , api_srv_net_file_enum    },
 	{ "SRV_NET_SRV_GET_INFO"  , SRV_NET_SRV_GET_INFO  , api_srv_net_srv_get_info },
+	{ "SRV_NET_SRV_SET_INFO"  , SRV_NET_SRV_SET_INFO  , api_srv_net_srv_set_info },
 	{ "SRV_NET_REMOTE_TOD"    , SRV_NET_REMOTE_TOD    , api_srv_net_remote_tod   },
+	{ "SRV_NET_DISK_ENUM"     , SRV_NET_DISK_ENUM     , api_srv_net_disk_enum    },
+	{ "SRV_NET_NAME_VALIDATE" , SRV_NET_NAME_VALIDATE , api_srv_net_name_validate},
+	{ "SRV_NETFILEQUERYSECDESC",SRV_NETFILEQUERYSECDESC,api_srv_net_file_query_secdesc},
+	{ "SRV_NETFILESETSECDESC" , SRV_NETFILESETSECDESC , api_srv_net_file_set_secdesc},
 	{ NULL                    , 0                     , NULL                     }
 };
 

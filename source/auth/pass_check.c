@@ -599,7 +599,7 @@ static BOOL password_check(char *password)
 {
 
 #ifdef WITH_PAM
-	return (pam_passcheck(this_user, password));
+	return (smb_pam_passcheck(this_user, password) == NT_STATUS_NOPROBLEMO);
 #endif /* WITH_PAM */
 
 #ifdef WITH_AFS
@@ -681,12 +681,13 @@ the function pointer fn() points to a function to call when a successful
 match is found and is used to update the encrypted password file 
 return True on correct match, False otherwise
 ****************************************************************************/
+
 BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
 		BOOL (*fn) (char *, char *))
 {
 	pstring pass2;
 	int level = lp_passwordlevel();
-	struct passwd *pass;
+	struct passwd *pass = NULL;
 
 	if (password)
 		password[pwlen] = 0;
@@ -708,8 +709,20 @@ BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
 		pass = Get_Pwnam(user, True);
 	}
 
+#ifdef WITH_PAM
 
-	DEBUG(4, ("Checking password for user %s (l=%d)\n", user, pwlen));
+	/*
+	 * If we're using PAM we want to short-circuit all the 
+	 * checks below and dive straight into the PAM code.
+	 */
+
+	fstrcpy(this_user, user);
+
+	DEBUG(4, ("pass_check: Checking (PAM) password for user %s (l=%d)\n", user, pwlen));
+
+#else /* Not using PAM */
+
+	DEBUG(4, ("pass_check: Checking password for user %s (l=%d)\n", user, pwlen));
 
 	if (!pass) {
 		DEBUG(3, ("Couldn't find user %s\n", user));
@@ -801,6 +814,8 @@ BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
 			return (True);
 		}
 	}
+
+#endif /* WITH_PAM */
 
 	/* try it as it came to us */
 	if (password_check(password)) {

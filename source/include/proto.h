@@ -100,7 +100,8 @@ int sys_fsusage(const char *path, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
 
 /*The following definitions come from  lib/genrand.c  */
 
-void generate_random_buffer( unsigned char *out, int len, BOOL re_seed);
+void set_rand_reseed_data(unsigned char *data, size_t len);
+void generate_random_buffer( unsigned char *out, int len, BOOL do_reseed_now);
 char *generate_random_str(size_t len);
 
 /*The following definitions come from  lib/getsmbpass.c  */
@@ -110,11 +111,10 @@ char *getsmbpass(char *prompt)    ;
 /*The following definitions come from  lib/hash.c  */
 
 BOOL hash_table_init(hash_table *table, int num_buckets, compare_function compare_func);
-int string_hash(int hash_size, const char *key);
 hash_element *hash_lookup(hash_table *table, char *key);
 hash_element *hash_insert(hash_table *table, char *value, char *key);
 void hash_remove(hash_table *table, hash_element *hash_elem);
-BOOL hash_clear(hash_table *table);
+void hash_clear(hash_table *table);
 
 /*The following definitions come from  lib/interface.c  */
 
@@ -158,7 +158,7 @@ BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type, void *buf, size_t len
 
 /*The following definitions come from  lib/ms_fnmatch.c  */
 
-int ms_fnmatch(char *pattern, char *string);
+int ms_fnmatch(const char *pattern, const char *string);
 
 /*The following definitions come from  lib/pidfile.c  */
 
@@ -187,10 +187,6 @@ void BlockSignals(BOOL block,int signum);
 void CatchSignal(int signum,void (*handler)(int ));
 void CatchChild(void);
 void CatchChildLeaveStatus(void);
-
-/*The following definitions come from  lib/slprintf.c  */
-
-int vslprintf(char *str, int n, char *format, va_list ap);
 
 /*The following definitions come from  libsmb/cliconnect.c  */
 
@@ -223,6 +219,7 @@ int cli_set_port(struct cli_state *cli, int port);
 BOOL cli_receive_smb(struct cli_state *cli);
 BOOL cli_send_smb(struct cli_state *cli);
 void cli_setup_packet(struct cli_state *cli);
+void cli_setup_bcc(struct cli_state *cli, void *p);
 void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr);
 struct cli_state *cli_initialise(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
@@ -241,10 +238,10 @@ BOOL cli_unlink(struct cli_state *cli, char *fname);
 BOOL cli_mkdir(struct cli_state *cli, char *dname);
 BOOL cli_rmdir(struct cli_state *cli, char *dname);
 int cli_nt_delete_on_close(struct cli_state *cli, int fnum, BOOL flag);
-int cli_nt_create_full(struct cli_state *cli, char *fname, uint32 DesiredAccess, uint32 FileAttributes,
-						uint32 ShareAccess, uint32 CreateDisposition, uint32 CreateOptions);
+int cli_nt_create_full(struct cli_state *cli, char *fname, uint32 DesiredAccess,
+		 uint32 FileAttributes, uint32 ShareAccess,
+		 uint32 CreateDisposition, uint32 CreateOptions);
 int cli_nt_create(struct cli_state *cli, char *fname, uint32 DesiredAccess);
-int cli_nt_create_uni(struct cli_state *cli, char *fname, uint32 DesiredAccess);
 int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode);
 BOOL cli_close(struct cli_state *cli, int fnum);
 BOOL cli_lock(struct cli_state *cli, int fnum, 
@@ -261,34 +258,39 @@ BOOL cli_getatr(struct cli_state *cli, char *fname,
 BOOL cli_setatr(struct cli_state *cli, char *fname, uint16 attr, time_t t);
 BOOL cli_chkpath(struct cli_state *cli, char *path);
 BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
+int cli_ctemp(struct cli_state *cli, char *path, char **tmp_path);
 
 /*The following definitions come from  libsmb/clilist.c  */
 
-int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute, 
-	     void (*fn)(file_info *, const char *));
+int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute, 
+		 void (*fn)(file_info *, const char *, void *), void *state);
 int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute, 
-		 void (*fn)(file_info *, const char *));
+		 void (*fn)(file_info *, const char *, void *), void *state);
+int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute, 
+	     void (*fn)(file_info *, const char *, void *), void *state);
 
 /*The following definitions come from  libsmb/cli_lsarpc.c  */
 
 struct cli_state *cli_lsa_initialise(struct cli_state *cli, char *system_name,
 				     struct ntuser_creds *creds);
 void cli_lsa_shutdown(struct cli_state *cli);
-uint32 cli_lsa_open_policy(struct cli_state *cli, BOOL sec_qos, 
-			   uint32 des_access, POLICY_HND *pol);
-uint32 cli_lsa_close(struct cli_state *cli, POLICY_HND *pol);
-uint32 cli_lsa_lookup_sids(struct cli_state *cli, POLICY_HND *pol,
-			   int num_sids, DOM_SID *sids, char ***names, 
-			   uint32 **types, int *num_names);
-uint32 cli_lsa_lookup_names(struct cli_state *cli, POLICY_HND *pol,
-			    int num_names, char **names, DOM_SID **sids,
-			    uint32 **types, int *num_sids);
-uint32 cli_lsa_query_info_policy(struct cli_state *cli, POLICY_HND *pol, 
-				 uint16 info_class, fstring domain_name, 
-				 DOM_SID * domain_sid);
-uint32 cli_lsa_enum_trust_dom(struct cli_state *cli, POLICY_HND *pol, 
-			      uint32 *enum_ctx, uint32 *num_domains,
-			      char ***domain_names, DOM_SID **domain_sids);
+uint32 cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			   BOOL sec_qos, uint32 des_access, POLICY_HND *pol);
+uint32 cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+		     POLICY_HND *pol);
+uint32 cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			   POLICY_HND *pol, int num_sids, DOM_SID *sids, 
+			   char ***names, uint32 **types, int *num_names);
+uint32 cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			    POLICY_HND *pol, int num_names, char **names, 
+			    DOM_SID **sids, uint32 **types, int *num_sids);
+uint32 cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				 POLICY_HND *pol, uint16 info_class, 
+				 fstring domain_name, DOM_SID *domain_sid);
+uint32 cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			      POLICY_HND *pol, uint32 *enum_ctx, 
+			      uint32 *num_domains, char ***domain_names, 
+			      DOM_SID **domain_sids);
 
 /*The following definitions come from  libsmb/climessage.c  */
 
@@ -296,6 +298,15 @@ BOOL cli_message_start(struct cli_state *cli, char *host, char *username,
 			      int *grp);
 BOOL cli_message_text(struct cli_state *cli, char *msg, int len, int grp);
 BOOL cli_message_end(struct cli_state *cli, int grp);
+
+/*The following definitions come from  libsmb/cli_netlogon.c  */
+
+struct cli_state *cli_netlogon_initialise(struct cli_state *cli, 
+					  char *system_name,
+					  struct ntuser_creds *creds);
+void cli_netlogon_shutdown(struct cli_state *cli);
+uint32 cli_netlogon_logon_ctrl2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				uint32 query_level);
 
 /*The following definitions come from  libsmb/cliprint.c  */
 
@@ -305,7 +316,7 @@ int cli_printjob_del(struct cli_state *cli, int job);
 
 /*The following definitions come from  libsmb/clirap.c  */
 
-BOOL cli_api_pipe(struct cli_state *cli, char *pipe_name, int pipe_name_len,
+BOOL cli_api_pipe(struct cli_state *cli, char *pipe_name, 
                   uint16 *setup, uint32 setup_count, uint32 max_setup_count,
                   char *params, uint32 param_count, uint32 max_param_count,
                   char *data, uint32 data_count, uint32 max_data_count,
@@ -317,9 +328,10 @@ BOOL cli_api(struct cli_state *cli,
 	     char **rparam, int *rprcnt,
 	     char **rdata, int *rdrcnt);
 BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation);
-int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, const char *));
+int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, const char *, void *), void *state);
 BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
-		       void (*fn)(const char *, uint32, const char *));
+		       void (*fn)(const char *, uint32, const char *, void *),
+		       void *state);
 BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char *new_password,
                              const char *old_password);
 BOOL cli_qpathinfo(struct cli_state *cli, const char *fname, 
@@ -333,10 +345,11 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 		   uint16 *mode, size_t *size,
 		   time_t *c_time, time_t *a_time, time_t *m_time, 
 		   time_t *w_time, SMB_INO_T *ino);
+BOOL cli_qfileinfo_test(struct cli_state *cli, int fnum, int level, char *outdata);
 
 /*The following definitions come from  libsmb/clireadwrite.c  */
 
-size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size);
+ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size);
 ssize_t cli_write(struct cli_state *cli,
 		  int fnum, uint16 write_mode,
 		  char *buf, off_t offset, size_t size);
@@ -348,30 +361,53 @@ ssize_t cli_smbwrite(struct cli_state *cli,
 struct cli_state *cli_samr_initialise(struct cli_state *cli, char *system_name,
 				      struct ntuser_creds *creds);
 void cli_samr_shutdown(struct cli_state *cli);
-uint32 cli_samr_connect(struct cli_state *cli, char *srv_name,
-			uint32 access_mask, POLICY_HND *connect_pol);
-uint32 cli_samr_close(struct cli_state *cli, POLICY_HND *connect_pol);
-uint32 cli_samr_open_domain(struct cli_state *cli, POLICY_HND *connect_pol,
-			    uint32 access_mask, DOM_SID *domain_sid,
-			    POLICY_HND *domain_pol);
-uint32 cli_samr_open_user(struct cli_state *cli, POLICY_HND *domain_pol,
-			  uint32 access_mask, uint32 user_rid,
-			  POLICY_HND *user_pol);
-uint32 cli_samr_open_group(struct cli_state *cli, POLICY_HND *domain_pol,
-			  uint32 access_mask, uint32 group_rid,
-			  POLICY_HND *group_pol);
-uint32 cli_samr_query_userinfo(struct cli_state *cli, POLICY_HND *user_pol, 
-			       uint16 switch_value, SAM_USERINFO_CTR *ctr);
-uint32 cli_samr_query_groupinfo(struct cli_state *cli, POLICY_HND *group_pol,
-				uint32 info_level, GROUP_INFO_CTR *ctr);
-uint32 cli_samr_query_usergroups(struct cli_state *cli, POLICY_HND *user_pol,
-				 uint32 *num_groups, DOM_GID **gid);
-uint32 cli_samr_query_groupmem(struct cli_state *cli, POLICY_HND *group_pol,
-			       uint32 *num_mem, uint32 **rid, uint32 **attr);
+uint32 cli_samr_connect(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			char *srv_name, uint32 access_mask, 
+			POLICY_HND *connect_pol);
+uint32 cli_samr_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+		      POLICY_HND *connect_pol);
+uint32 cli_samr_open_domain(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			    POLICY_HND *connect_pol, uint32 access_mask, 
+			    DOM_SID *domain_sid, POLICY_HND *domain_pol);
+uint32 cli_samr_open_user(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			  POLICY_HND *domain_pol, uint32 access_mask, 
+			  uint32 user_rid, POLICY_HND *user_pol);
+uint32 cli_samr_open_group(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			   POLICY_HND *domain_pol, uint32 access_mask, 
+			   uint32 group_rid, POLICY_HND *group_pol);
+uint32 cli_samr_query_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			       POLICY_HND *user_pol, uint16 switch_value, 
+			       SAM_USERINFO_CTR *ctr);
+uint32 cli_samr_query_groupinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				POLICY_HND *group_pol, uint32 info_level, 
+				GROUP_INFO_CTR *ctr);
+uint32 cli_samr_query_usergroups(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				 POLICY_HND *user_pol, uint32 *num_groups, 
+				 DOM_GID **gid);
+uint32 cli_samr_query_groupmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			       POLICY_HND *group_pol, uint32 *num_mem, 
+			       uint32 **rid, uint32 **attr);
+uint32 cli_samr_enum_dom_groups(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				POLICY_HND *pol, uint32 *start_idx, 
+				uint32 size, struct acct_info **dom_groups,
+				uint32 *num_dom_groups);
+uint32 cli_samr_query_aliasmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			       POLICY_HND *alias_pol, uint32 *num_mem, 
+			       DOM_SID **sids);
+uint32 cli_samr_open_alias(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			   POLICY_HND *domain_pol, uint32 access_mask, 
+			   uint32 alias_rid, POLICY_HND *alias_pol);
+uint32 cli_samr_query_dom_info(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			       POLICY_HND *domain_pol, uint16 switch_value,
+			       SAM_UNK_CTR *ctr);
+uint32 cli_samr_query_dispinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			       POLICY_HND *domain_pol, uint32 *start_idx,
+			       uint16 switch_value, uint32 *num_entries,
+			       uint32 max_entries, SAM_DISPINFO_CTR *ctr);
 
 /*The following definitions come from  libsmb/clisecdesc.c  */
 
-SEC_DESC *cli_query_secdesc(struct cli_state *cli,int fd);
+SEC_DESC *cli_query_secdesc(struct cli_state *cli,int fd, TALLOC_CTX *mem_ctx);
 BOOL cli_set_secdesc(struct cli_state *cli,int fd, SEC_DESC *sd);
 
 /*The following definitions come from  libsmb/cli_spoolss.c  */
@@ -380,24 +416,46 @@ struct cli_state *cli_spoolss_initialise(struct cli_state *cli,
 					 char *system_name,
 					 struct ntuser_creds *creds);
 void cli_spoolss_shutdown(struct cli_state *cli);
-uint32 cli_spoolss_open_printer_ex(struct cli_state *cli, char *printername,
-				   char *datatype, uint32 access_required,
-				   char *station, char *username,
-				   POLICY_HND *pol);
-uint32 cli_spoolss_close_printer(struct cli_state *cli, POLICY_HND *pol);
-uint32 cli_spoolss_enum_printers(struct cli_state *cli, uint32 flags,
-				 uint32 level, int *returned, 
-				 PRINTER_INFO_CTR *ctr);
-uint32 cli_spoolss_enum_ports(struct cli_state *cli, uint32 level, 
-			      int *returned, PORT_INFO_CTR *ctr);
+uint32 cli_spoolss_open_printer_ex(
+	struct cli_state *cli, 
+	TALLOC_CTX *mem_ctx,
+	char *printername,
+	char *datatype, 
+	uint32 access_required,
+	char *station, 
+	char *username,
+	POLICY_HND *pol
+);
+uint32 cli_spoolss_close_printer(
+	struct cli_state *cli,
+	TALLOC_CTX *mem_ctx,
+	POLICY_HND *pol
+);
+uint32 cli_spoolss_enum_printers(
+	struct cli_state *cli, 
+	TALLOC_CTX *mem_ctx,
+	uint32 flags,
+	uint32 level, 
+	int *returned, 
+	PRINTER_INFO_CTR *ctr
+);
+uint32 cli_spoolss_enum_ports(
+	struct cli_state *cli, 
+	TALLOC_CTX *mem_ctx,
+	uint32 level, 
+	int *returned, 
+	PORT_INFO_CTR *ctr
+);
 uint32 cli_spoolss_getprinter(
 	struct cli_state *cli, 
+	TALLOC_CTX *mem_ctx,
 	POLICY_HND *pol,
 	uint32 level, 
 	PRINTER_INFO_CTR *ctr
 );
 uint32 cli_spoolss_setprinter(
 	struct cli_state *cli, 
+	TALLOC_CTX *mem_ctx,
 	POLICY_HND *pol,
 	uint32 level, 
 	PRINTER_INFO_CTR *ctr,
@@ -405,6 +463,7 @@ uint32 cli_spoolss_setprinter(
 );
 uint32 cli_spoolss_getprinterdriver (
 	struct cli_state 	*cli, 
+	TALLOC_CTX 		*mem_ctx,
 	POLICY_HND 		*pol, 
 	uint32 			level,
 	char* 			env,
@@ -412,6 +471,7 @@ uint32 cli_spoolss_getprinterdriver (
 );
 uint32 cli_spoolss_enumprinterdrivers (
 	struct cli_state 	*cli, 
+	TALLOC_CTX		*mem_ctx,
 	uint32 			level,
 	char* 			env,
 	uint32			*returned,
@@ -419,25 +479,50 @@ uint32 cli_spoolss_enumprinterdrivers (
 );
 uint32 cli_spoolss_getprinterdriverdir (
 	struct cli_state 	*cli, 
+	TALLOC_CTX		*mem_ctx,
 	uint32 			level,
 	char* 			env,
 	DRIVER_DIRECTORY_CTR  	*ctr
 );
 uint32 cli_spoolss_addprinterdriver (
 	struct cli_state 	*cli, 
+	TALLOC_CTX		*mem_ctx,
 	uint32 			level,
 	PRINTER_DRIVER_CTR  	*ctr
 );
 uint32 cli_spoolss_addprinterex (
 	struct cli_state 	*cli, 
+	TALLOC_CTX		*mem_ctx,
 	uint32 			level,
 	PRINTER_INFO_CTR  	*ctr
 );
+uint32 cli_spoolss_deleteprinterdriver (
+	struct cli_state 	*cli, 
+	TALLOC_CTX		*mem_ctx,
+	char			*arch,
+	char			*driver
+);
+
+/*The following definitions come from  libsmb/cli_srvsvc.c  */
+
+struct cli_state *cli_svrsvc_initialise(struct cli_state *cli, 
+					char *system_name,
+					struct ntuser_creds *creds);
+void cli_srvsvc_shutdown(struct cli_state *cli);
+uint32 cli_srvsvc_net_srv_get_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				   uint32 switch_value, SRV_INFO_CTR *ctr);
+
+/*The following definitions come from  libsmb/clistr.c  */
+
+int clistr_push(struct cli_state *cli, void *dest, const char *src, int dest_len, int flags);
+int clistr_pull(struct cli_state *cli, char *dest, const void *src, int dest_len, int src_len, int flags);
+int clistr_align_out(struct cli_state *cli, const void *p, int flags);
+int clistr_align_in(struct cli_state *cli, const void *p, int flags);
 
 /*The following definitions come from  libsmb/clitrans.c  */
 
 BOOL cli_send_trans(struct cli_state *cli, int trans, 
-		    char *name, int pipe_name_len, 
+		    char *pipe_name, 
 		    int fid, int flags,
 		    uint16 *setup, int lsetup, int msetup,
 		    char *param, int lparam, int mparam,
@@ -475,12 +560,17 @@ BOOL deal_with_creds(uchar sess_key[8],
 struct node_status *name_status_query(int fd,struct nmb_name *name,
 				      struct in_addr to_ip, int *num_names);
 BOOL name_status_find(int type, struct in_addr to_ip, char *name);
+BOOL name_register(int fd, const char *name, int name_type,
+		   struct in_addr name_ip, int opcode,
+		   BOOL bcast, 
+		   struct in_addr to_ip, int *count);
 struct in_addr *name_query(int fd,const char *name,int name_type, 
 			   BOOL bcast,BOOL recurse,
 			   struct in_addr to_ip, int *count);
 FILE *startlmhosts(char *fname);
 BOOL getlmhostsent( FILE *fp, pstring name, int *name_type, struct in_addr *ipaddr);
 void endlmhosts(FILE *fp);
+BOOL name_register_wins(const char *name, int name_type);
 BOOL name_resolve_bcast(const char *name, int name_type,
 			struct in_addr **return_ip_list, int *return_count);
 BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type);
@@ -608,8 +698,9 @@ int sys_acl_set_tag_type( SMB_ACL_ENTRY_T entry, SMB_ACL_TAG_T tagtype);
 int sys_acl_set_qualifier( SMB_ACL_ENTRY_T entry, void *qual);
 int sys_acl_set_permset( SMB_ACL_ENTRY_T entry, SMB_ACL_PERMSET_T permset);
 int sys_acl_valid( SMB_ACL_T theacl );
-int sys_acl_set_file( char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
+int sys_acl_set_file( const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
 int sys_acl_set_fd( int fd, SMB_ACL_T theacl);
+int sys_acl_delete_def_file(const char *name);
 int sys_acl_free_text(char *text);
 int sys_acl_free_acl(SMB_ACL_T the_acl) ;
 int sys_acl_free_qualifier(void *qual) ;
@@ -629,8 +720,9 @@ int sys_acl_set_tag_type(SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T tag_type);
 int sys_acl_set_qualifier(SMB_ACL_ENTRY_T entry_d, void *qual_p);
 int sys_acl_set_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T permset_d);
 int sys_acl_valid(SMB_ACL_T acl_d);
-int sys_acl_set_file(char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d);
+int sys_acl_set_file(const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d);
 int sys_acl_set_fd(int fd, SMB_ACL_T acl_d);
+int sys_acl_delete_def_file(const char *path);
 int sys_acl_free_text(char *text);
 int sys_acl_free_acl(SMB_ACL_T acl_d) ;
 int sys_acl_free_qualifier(void *qual) ;
@@ -650,31 +742,11 @@ int sys_acl_set_tag_type(SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T tag_type);
 int sys_acl_set_qualifier(SMB_ACL_ENTRY_T entry_d, void *qual_p);
 int sys_acl_set_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T permset_d);
 int sys_acl_valid(SMB_ACL_T acl_d);
-int sys_acl_set_file(char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d);
+int sys_acl_set_file(const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d);
 int sys_acl_set_fd(int fd, SMB_ACL_T acl_d);
+int sys_acl_delete_def_file(const char *name);
 int sys_acl_free_text(char *text);
 int sys_acl_free_acl(SMB_ACL_T acl_d) ;
-int sys_acl_free_qualifier(void *qual) ;
-int sys_acl_get_entry( SMB_ACL_T the_acl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
-SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type);
-SMB_ACL_T sys_acl_get_fd(int fd);
-char *sys_acl_to_text( SMB_ACL_T the_acl, ssize_t *plen);
-int sys_acl_valid( SMB_ACL_T theacl );
-int sys_acl_set_file( char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
-int sys_acl_set_fd( int fd, SMB_ACL_T theacl);
-int sys_acl_create_entry( SMB_ACL_T *acl_p, SMB_ACL_ENTRY_T *entry_p);
-int sys_acl_get_tag_type( SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p);
-int sys_acl_get_permset( SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
-void *sys_acl_get_qualifier( SMB_ACL_ENTRY_T entry_d);
-int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset);
-int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
-int sys_acl_add_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
-SMB_ACL_T sys_acl_init( int count);
-int sys_acl_set_tag_type( SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T tag_type);
-int sys_acl_set_qualifier( SMB_ACL_ENTRY_T entry_d, void *qual_p);
-int sys_acl_set_permset( SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T permset_d);
-int sys_acl_free_text(char *text);
-int sys_acl_free_acl(SMB_ACL_T the_acl) ;
 int sys_acl_free_qualifier(void *qual) ;
 int sys_acl_get_entry( SMB_ACL_T theacl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
 int sys_acl_get_tag_type( SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p);
@@ -691,8 +763,9 @@ int sys_acl_set_tag_type( SMB_ACL_ENTRY_T entry, SMB_ACL_TAG_T tagtype);
 int sys_acl_set_qualifier( SMB_ACL_ENTRY_T entry, void *qual);
 int sys_acl_set_permset( SMB_ACL_ENTRY_T entry, SMB_ACL_PERMSET_T permset);
 int sys_acl_valid( SMB_ACL_T theacl );
-int sys_acl_set_file( char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
+int sys_acl_set_file( const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
 int sys_acl_set_fd( int fd, SMB_ACL_T theacl);
+int sys_acl_delete_def_file(const char *name);
 int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
 int sys_acl_free_text(char *text);
 int sys_acl_free_acl(SMB_ACL_T posix_acl);
@@ -714,8 +787,9 @@ int sys_acl_set_tag_type( SMB_ACL_ENTRY_T entry, SMB_ACL_TAG_T tagtype);
 int sys_acl_set_qualifier( SMB_ACL_ENTRY_T entry, void *qual);
 int sys_acl_set_permset( SMB_ACL_ENTRY_T entry, SMB_ACL_PERMSET_T permset);
 int sys_acl_valid( SMB_ACL_T theacl );
-int sys_acl_set_file( char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
+int sys_acl_set_file( const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
 int sys_acl_set_fd( int fd, SMB_ACL_T theacl);
+int sys_acl_delete_def_file(const char *name);
 int sys_acl_free_acl(SMB_ACL_T the_acl) ;
 int sys_acl_free_qualifier(void *qual) ;
 
@@ -735,6 +809,8 @@ FILE *sys_fopen(const char *path, const char *type);
 SMB_STRUCT_DIRENT *sys_readdir(DIR *dirp);
 int sys_waitpid(pid_t pid,int *status,int options);
 char *sys_getwd(char *s);
+int sys_symlink(const char *oldpath, const char *newpath);
+int sys_readlink(const char *path, char *buf, size_t bufsiz);
 int sys_chown(const char *fname,uid_t uid,gid_t gid);
 int sys_chroot(const char *dname);
 struct hostent *sys_gethostbyname(const char *name);
@@ -770,11 +846,13 @@ int sys_dlclose (void *handle);
 
 TALLOC_CTX *talloc_init(void);
 void *talloc(TALLOC_CTX *t, size_t size);
+void *talloc_realloc(TALLOC_CTX *t, void *ptr, size_t size);
 void talloc_destroy_pool(TALLOC_CTX *t);
 void talloc_destroy(TALLOC_CTX *t);
 size_t talloc_pool_size(TALLOC_CTX *t);
 void *talloc_zero(TALLOC_CTX *t, size_t size);
 void *talloc_memdup(TALLOC_CTX *t, void *p, size_t size);
+char *talloc_strdup(TALLOC_CTX *t, char *p);
 
 /*The following definitions come from  lib/time.c  */
 
@@ -799,7 +877,7 @@ time_t get_create_time(SMB_STRUCT_STAT *st,BOOL fake_dirs);
 
 /*The following definitions come from  lib/ufc.c  */
 
-char *ufc_crypt(char *key,char *salt);
+char *ufc_crypt(const char *key,const char *salt);
 
 /*The following definitions come from  lib/username.c  */
 
@@ -842,6 +920,8 @@ char *attrib_string(uint16 mode);
 void show_msg(char *buf);
 void smb_setlen(char *buf,int len);
 int set_message(char *buf,int num_words,int num_bytes,BOOL zero);
+void set_message_bcc(char *buf,int num_bytes);
+void set_message_end(void *outbuf,void *end_ptr);
 void dos_clean_name(char *s);
 void unix_clean_name(char *s);
 void make_dir_struct(char *buf,char *mask,char *fname,SMB_OFF_T size,int mode,time_t date);
@@ -862,7 +942,6 @@ BOOL zero_ip(struct in_addr ip);
 char *automount_lookup(char *user_name);
 char *automount_lookup(char *user_name);
 BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
-struct hostent *Get_Hostbyname(const char *name);
 BOOL process_exists(pid_t pid);
 char *uidtoname(uid_t uid);
 char *gidtoname(gid_t gid);
@@ -886,7 +965,6 @@ int str_checksum(const char *s);
 void zero_free(void *p, size_t size);
 int set_maxfiles(int requested_max);
 BOOL reg_split_key(char *full_keyname, uint32 *reg_type, char *key_name);
-char *smbd_mktemp(char *template);
 int smb_mkstemp(char *template);
 void *memdup(void *p, size_t size);
 char *myhostname(void);
@@ -917,6 +995,13 @@ char **file_lines_pload(char *syscmd, int *numlines, BOOL convert);
 void file_lines_free(char **lines);
 void file_lines_slashcont(char **lines);
 
+/*The following definitions come from  lib/util_getent.c  */
+
+struct sys_grent * getgrent_list(void);
+void grent_free (struct sys_grent *glist);
+struct sys_pwent * getpwent_list(void);
+void pwent_free (struct sys_pwent *plist);
+
 /*The following definitions come from  lib/util_list.c  */
 
 BOOL copy_policy_hnd (POLICY_HND *dest, const POLICY_HND *src);
@@ -937,6 +1022,8 @@ SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr,
 
 /*The following definitions come from  lib/util_sec.c  */
 
+void sec_init(void);
+BOOL non_root_mode(void);
 void gain_root_privilege(void);
 void gain_root_group_privilege(void);
 void set_effective_uid(uid_t uid);
@@ -957,6 +1044,7 @@ char *sid_to_string(fstring sidstr_out, DOM_SID *sid);
 BOOL string_to_sid(DOM_SID *sidout, char *sidstr);
 BOOL sid_append_rid(DOM_SID *sid, uint32 rid);
 BOOL sid_split_rid(DOM_SID *sid, uint32 *rid);
+BOOL sid_peek_rid(DOM_SID *sid, uint32 *rid);
 void sid_copy(DOM_SID *dst, const DOM_SID *src);
 DOM_SID *sid_dup(DOM_SID *src);
 BOOL sid_linearize(char *outbuf, size_t len, DOM_SID *sid);
@@ -978,12 +1066,10 @@ ssize_t write_socket(int fd,char *buf,size_t len);
 ssize_t read_smb_length(int fd,char *inbuf,unsigned int timeout);
 BOOL receive_smb(int fd,char *buffer, unsigned int timeout);
 BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout);
-BOOL send_null_session_msg(int fd);
 BOOL send_smb(int fd,char *buffer);
 BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type);
 int open_socket_in(int type, int port, int dlevel,uint32 socket_addr, BOOL rebind);
 int open_socket_out(int type, struct in_addr *addr, int port ,int timeout);
-void reset_globals_after_fork(void);
 void client_setfd(int fd);
 char *client_name(void);
 char *client_addr(void);
@@ -992,6 +1078,7 @@ char *get_socket_addr(int fd);
 int open_pipe_sock(char *path);
 int create_pipe_socket(char *dir, int dir_perms,
 				char *path, int path_perms);
+int sock_exec(const char *prog);
 
 /*The following definitions come from  lib/util_str.c  */
 
@@ -1127,6 +1214,7 @@ unsigned long wins_srv_count( void );
 /*The following definitions come from  locking/brlock.c  */
 
 void brl_init(int read_only);
+void brl_shutdown(int read_only);
 BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	      uint16 smbpid, pid_t pid, uint16 tid,
 	      br_off start, br_off size, 
@@ -1137,7 +1225,7 @@ BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		  uint16 smbpid, pid_t pid, uint16 tid,
 		  br_off start, br_off size, 
-		  enum brl_type lock_type);
+		  enum brl_type lock_type, int check_self);
 void brl_close(SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum);
 int brl_forall(BRLOCK_FN(fn));
 
@@ -1145,11 +1233,11 @@ int brl_forall(BRLOCK_FN(fn));
 
 BOOL is_locked(files_struct *fsp,connection_struct *conn,
 	       SMB_BIG_UINT count,SMB_BIG_UINT offset, 
-	       enum brl_type lock_type);
-BOOL do_lock(files_struct *fsp,connection_struct *conn,
+	       enum brl_type lock_type, BOOL check_self);
+BOOL do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
              SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type,
              int *eclass,uint32 *ecode);
-BOOL do_unlock(files_struct *fsp,connection_struct *conn,
+BOOL do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
                SMB_BIG_UINT count,SMB_BIG_UINT offset, 
 	       int *eclass,uint32 *ecode);
 void locking_close_file(files_struct *fsp);
@@ -1189,15 +1277,11 @@ BOOL is_msdfs_link(connection_struct* conn, char* path);
 BOOL get_referred_path(struct junction_map* junction);
 BOOL dfs_redirect(char* pathname, connection_struct* conn);
 BOOL dfs_findfirst_redirect(char* pathname, connection_struct* conn);
-int setup_dfs_referral(char* pathname, int max_referral_level, 
-			char** ppdata);
+int setup_dfs_referral(char* pathname, int max_referral_level, char** ppdata);
 int dfs_path_error(char* inbuf, char* outbuf);
 BOOL create_msdfs_link(struct junction_map* jn, BOOL exists);
 BOOL remove_msdfs_link(struct junction_map* jn);
 int enum_msdfs_links(struct junction_map* jn);
-int setup_dfs_referral(char* pathname, int max_referral_level, 
-		       char** ppdata);
-BOOL is_msdfs_link(connection_struct* conn, char* path);
 
 /*The following definitions come from  nmbd/asyncdns.c  */
 
@@ -1563,9 +1647,6 @@ void close_sock(void);
 int write_sock(void *buffer, int count);
 int read_reply(struct winbindd_response *response);
 void free_response(struct winbindd_response *response);
-enum nss_status winbindd_request(int req_type, 
-				 struct winbindd_request *request,
-				 struct winbindd_response *response);
 
 /*The following definitions come from  param/loadparm.c  */
 
@@ -1583,8 +1664,7 @@ char *lp_os2_driver_map(void);
 char *lp_lockdir(void);
 char *lp_utmpdir(void);
 char *lp_wtmpdir(void);
-char *lp_utmp_hostname(void);
-BOOL lp_utmp_consolidate(void);
+BOOL lp_utmp(void);
 char *lp_rootdir(void);
 char *lp_source_environment(void);
 char *lp_defaultservice(void);
@@ -1614,11 +1694,8 @@ char *lp_panic_action(void);
 char *lp_adduser_script(void);
 char *lp_deluser_script(void);
 char *lp_wins_hook(void);
-char *lp_domain_groups(void);
 char *lp_domain_admin_group(void);
 char *lp_domain_guest_group(void);
-char *lp_domain_admin_users(void);
-char *lp_domain_guest_users(void);
 char *lp_winbind_uid(void);
 char *lp_winbind_gid(void);
 char *lp_template_homedir(void);
@@ -1659,8 +1736,10 @@ BOOL lp_use_rhosts(void);
 BOOL lp_readprediction(void);
 BOOL lp_readbmpx(void);
 BOOL lp_readraw(void);
+BOOL lp_large_readwrite(void);
 BOOL lp_writeraw(void);
 BOOL lp_null_passwords(void);
+BOOL lp_obey_pam_restrictions(void);
 BOOL lp_strip_dot(void);
 BOOL lp_encrypted_passwords(void);
 BOOL lp_update_encrypted(void);
@@ -1670,9 +1749,9 @@ BOOL lp_debug_hires_timestamp(void);
 BOOL lp_debug_pid(void);
 BOOL lp_debug_uid(void);
 BOOL lp_browse_list(void);
-BOOL lp_unix_realname(void);
 BOOL lp_nis_home_map(void);
 BOOL lp_bind_interfaces_only(void);
+BOOL lp_pam_password_change(void);
 BOOL lp_unix_password_sync(void);
 BOOL lp_passwd_chat_debug(void);
 BOOL lp_nt_smb_support(void);
@@ -1684,6 +1763,7 @@ BOOL lp_restrict_anonymous(void);
 BOOL lp_lanman_auth(void);
 BOOL lp_host_msdfs(void);
 BOOL lp_kernel_oplocks(void);
+BOOL lp_enhanced_browsing(void);
 int lp_os_level(void);
 int lp_max_ttl(void);
 int lp_max_wins_ttl(void);
@@ -1762,6 +1842,7 @@ BOOL lp_shortpreservecase(int );
 BOOL lp_casemangle(int );
 BOOL lp_status(int );
 BOOL lp_hide_dot_files(int );
+BOOL lp_hideunreadable(int );
 BOOL lp_browseable(int );
 BOOL lp_readonly(int );
 BOOL lp_no_set_dir(int );
@@ -1774,7 +1855,6 @@ BOOL lp_map_archive(int );
 BOOL lp_locking(int );
 BOOL lp_strict_locking(int );
 BOOL lp_posix_locking(int );
-BOOL lp_utmp(int );
 BOOL lp_share_modes(int );
 BOOL lp_oplocks(int );
 BOOL lp_level2_oplocks(int );
@@ -1796,12 +1876,12 @@ BOOL lp_blocking_locks(int );
 BOOL lp_inherit_perms(int );
 int lp_create_mask(int );
 int lp_force_create_mode(int );
-int _lp_security_mask(int );
-int _lp_force_security_mode(int );
+int lp_security_mask(int );
+int lp_force_security_mode(int );
 int lp_dir_mask(int );
 int lp_force_dir_mode(int );
-int _lp_dir_security_mask(int );
-int _lp_force_dir_security_mode(int );
+int lp_dir_security_mask(int );
+int lp_force_dir_security_mode(int );
 int lp_max_connections(int );
 int lp_defaultcase(int );
 int lp_minprintspace(int );
@@ -1843,10 +1923,6 @@ int lp_default_server_announce(void);
 int lp_major_announce_version(void);
 int lp_minor_announce_version(void);
 void lp_set_name_resolve_order(char *new_order);
-int lp_security_mask(int snum);
-int lp_force_security_mode(int snum);
-int lp_dir_security_mask(int snum);
-int lp_force_dir_security_mode(int snum);
 char *lp_printername(int snum);
 
 /*The following definitions come from  param/params.c  */
@@ -1865,9 +1941,11 @@ struct passdb_ops *nisplus_initialize_password_db(void);
 
 /*The following definitions come from  passdb/pampass.c  */
 
-BOOL pam_session(BOOL flag, const connection_struct *conn, char *tty);
-BOOL pam_accountcheck(char * user);
-BOOL pam_passcheck(char * user, char * password);
+BOOL smb_pam_claim_session(char *user, char *tty, char *rhost);
+BOOL smb_pam_close_session(char *user, char *tty, char *rhost);
+uint32 smb_pam_accountcheck(char * user);
+uint32 smb_pam_passcheck(char * user, char * password);
+BOOL smb_pam_passchange(char * user, char * oldpassword, char * newpassword);
 
 /*The following definitions come from  passdb/pass_check.c  */
 
@@ -1942,6 +2020,7 @@ BOOL secrets_fetch_trust_account_password(char *domain, uint8 ret_pwd[16],
 					  time_t *pass_last_set_time);
 BOOL secrets_store_trust_account_password(char *domain, uint8 new_pwd[16]);
 BOOL trust_password_delete(char *domain);
+void reset_globals_after_fork(void);
 
 /*The following definitions come from  passdb/smbpass.c  */
 
@@ -2010,6 +2089,8 @@ uint32 add_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level);
 uint32 get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level,
                             fstring printername, fstring architecture, uint32 version);
 uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level);
+BOOL printer_driver_in_use (char *arch, char *driver);
+uint32 delete_printer_driver (NT_PRINTER_DRIVER_INFO_LEVEL_3 *i);
 BOOL get_specific_param_by_index(NT_PRINTER_INFO_LEVEL printer, uint32 level, uint32 param_index,
                                  fstring value, uint8 **data, uint32 *type, uint32 *len);
 BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level,
@@ -2031,7 +2112,7 @@ void pcap_printer_fn(void (*fn)(char *, char *));
 
 /*The following definitions come from  printing/printfsp.c  */
 
-files_struct *print_fsp_open(connection_struct *conn,char *jobname);
+files_struct *print_fsp_open(connection_struct *conn);
 void print_fsp_end(files_struct *fsp, BOOL normal_close);
 
 /*The following definitions come from  printing/print_generic.c  */
@@ -2166,6 +2247,9 @@ void cli_use_wait_keyboard(void);
 /*The following definitions come from  rpcclient/cmd_lsarpc.c  */
 
 
+/*The following definitions come from  rpcclient/cmd_netlogon.c  */
+
+
 /*The following definitions come from  rpcclient/cmd_samr.c  */
 
 
@@ -2173,6 +2257,9 @@ void cli_use_wait_keyboard(void);
 
 BOOL get_short_archi(char *short_archi, char *long_archi);
 void set_drv_info_3_env (DRIVER_INFO_3 *info, const char *arch);
+
+/*The following definitions come from  rpcclient/cmd_srvsvc.c  */
+
 
 /*The following definitions come from  rpc_client/ncacn_np_use.c  */
 
@@ -2297,7 +2384,6 @@ void init_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e, uint32 enum_context,
                            uint32 status);
 BOOL lsa_io_r_enum_trust_dom(char *desc, LSA_R_ENUM_TRUST_DOM *r_e, 
 			     prs_struct *ps, int depth);
-void lsa_free_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM * r_e);
 BOOL lsa_io_dom_query_5(char *desc, DOM_QUERY_5 *d_q, prs_struct *ps, int depth);
 BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO *r_q, prs_struct *ps,
 		    int depth);
@@ -2321,6 +2407,8 @@ BOOL lsa_io_q_close(char *desc, LSA_Q_CLOSE *q_c, prs_struct *ps, int depth);
 BOOL lsa_io_r_close(char *desc,  LSA_R_CLOSE *r_c, prs_struct *ps, int depth);
 BOOL lsa_io_q_open_secret(char *desc, LSA_Q_OPEN_SECRET *q_c, prs_struct *ps, int depth);
 BOOL lsa_io_r_open_secret(char *desc, LSA_R_OPEN_SECRET *r_c, prs_struct *ps, int depth);
+BOOL lsa_io_q_unk_get_connuser(char *desc, LSA_Q_UNK_GET_CONNUSER *q_c, prs_struct *ps, int depth);
+BOOL lsa_io_r_unk_get_connuser(char *desc, LSA_R_UNK_GET_CONNUSER *r_c, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_misc.c  */
 
@@ -2391,16 +2479,28 @@ void init_owf_info(OWF_INFO *hash, uint8 data[16]);
 BOOL smb_io_owf_info(char *desc, OWF_INFO *hash, prs_struct *ps, int depth);
 BOOL smb_io_gid(char *desc,  DOM_GID *gid, prs_struct *ps, int depth);
 BOOL smb_io_pol_hnd(char *desc, POLICY_HND *pol, prs_struct *ps, int depth);
+void init_unistr3(UNISTR3 *str, const char *buf);
 BOOL smb_io_unistr3(char *desc, UNISTR3 *name, prs_struct *ps, int depth);
 BOOL prs_uint64(char *name, prs_struct *ps, int depth, UINT64_S *data64);
 
 /*The following definitions come from  rpc_parse/parse_net.c  */
 
 BOOL net_io_q_logon_ctrl2(char *desc, NET_Q_LOGON_CTRL2 *q_l, prs_struct *ps, int depth);
-void init_r_logon_ctrl2(NET_R_LOGON_CTRL2 *r_l, uint32 query_level,
-				uint32 flags, uint32 pdc_status, uint32 logon_attempts,
-				uint32 tc_status, char *trusted_domain_name);
+void init_net_q_logon_ctrl2(NET_Q_LOGON_CTRL2 *q_l, char *srv_name,
+			    uint32 query_level);
+void init_net_r_logon_ctrl2(NET_R_LOGON_CTRL2 *r_l, uint32 query_level,
+			    uint32 flags, uint32 pdc_status, 
+			    uint32 logon_attempts, uint32 tc_status, 
+			    char *trusted_domain_name);
 BOOL net_io_r_logon_ctrl2(char *desc, NET_R_LOGON_CTRL2 *r_l, prs_struct *ps, int depth);
+BOOL net_io_q_logon_ctrl(char *desc, NET_Q_LOGON_CTRL *q_l, prs_struct *ps, 
+			 int depth);
+void init_net_q_logon_ctrl(NET_Q_LOGON_CTRL *q_l, char *srv_name,
+			   uint32 query_level);
+void init_net_r_logon_ctrl(NET_R_LOGON_CTRL *r_l, uint32 query_level,
+			   uint32 flags, uint32 pdc_status);
+BOOL net_io_r_logon_ctrl(char *desc, NET_R_LOGON_CTRL *r_l, prs_struct *ps, 
+			 int depth);
 void init_r_trust_dom(NET_R_TRUST_DOM_LIST *r_t,
 			uint32 num_doms, char *dom_name);
 BOOL net_io_r_trust_dom(char *desc, NET_R_TRUST_DOM_LIST *r_t, prs_struct *ps, int depth);
@@ -2410,6 +2510,8 @@ void init_q_req_chal(NET_Q_REQ_CHAL *q_c,
 				DOM_CHAL *clnt_chal);
 BOOL net_io_q_req_chal(char *desc,  NET_Q_REQ_CHAL *q_c, prs_struct *ps, int depth);
 BOOL net_io_r_req_chal(char *desc, NET_R_REQ_CHAL *r_c, prs_struct *ps, int depth);
+BOOL net_io_q_auth(char *desc, NET_Q_AUTH *q_a, prs_struct *ps, int depth);
+BOOL net_io_r_auth(char *desc, NET_R_AUTH *r_a, prs_struct *ps, int depth);
 void init_q_auth_2(NET_Q_AUTH_2 *q_a,
 		char *logon_srv, char *acct_name, uint16 sec_chan, char *comp_name,
 		DOM_CHAL *clnt_chal, uint32 clnt_flgs);
@@ -2715,19 +2817,19 @@ void init_samr_q_query_dispinfo(SAMR_Q_QUERY_DISPINFO * q_e, POLICY_HND *pol,
 				uint32 max_entries);
 BOOL samr_io_q_query_dispinfo(char *desc, SAMR_Q_QUERY_DISPINFO * q_e,
 			      prs_struct *ps, int depth);
-void init_sam_dispinfo_1(SAM_DISPINFO_1 * sam, uint32 *num_entries,
+uint32 init_sam_dispinfo_1(TALLOC_CTX *ctx, SAM_DISPINFO_1 *sam, uint32 *num_entries,
 			 uint32 *data_size, uint32 start_idx,
 			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES]);
-void init_sam_dispinfo_2(SAM_DISPINFO_2 * sam, uint32 *num_entries,
+uint32 init_sam_dispinfo_2(TALLOC_CTX *ctx, SAM_DISPINFO_2 *sam, uint32 *num_entries,
 			 uint32 *data_size, uint32 start_idx,
 			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES]);
-void init_sam_dispinfo_3(SAM_DISPINFO_3 * sam, uint32 *num_entries,
+uint32 init_sam_dispinfo_3(TALLOC_CTX *ctx, SAM_DISPINFO_3 *sam, uint32 *num_entries,
 			 uint32 *data_size, uint32 start_idx,
 			 DOMAIN_GRP * grp);
-void init_sam_dispinfo_4(SAM_DISPINFO_4 * sam, uint32 *num_entries,
+uint32 init_sam_dispinfo_4(TALLOC_CTX *ctx, SAM_DISPINFO_4 *sam, uint32 *num_entries,
 			 uint32 *data_size, uint32 start_idx,
 			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES]);
-void init_sam_dispinfo_5(SAM_DISPINFO_5 * sam, uint32 *num_entries,
+uint32 init_sam_dispinfo_5(TALLOC_CTX *ctx, SAM_DISPINFO_5 *sam, uint32 *num_entries,
 			 uint32 *data_size, uint32 start_idx,
 			 DOMAIN_GRP * grp);
 void init_samr_r_query_dispinfo(SAMR_R_QUERY_DISPINFO * r_u,
@@ -2873,7 +2975,7 @@ BOOL samr_io_rids(char *desc, uint32 *num_rids, uint32 **rid,
 BOOL samr_io_r_query_useraliases(char *desc, SAMR_R_QUERY_USERALIASES * r_u,
 				 prs_struct *ps, int depth);
 void init_samr_q_open_alias(SAMR_Q_OPEN_ALIAS * q_u, POLICY_HND *pol,
-			    uint32 unknown_0, uint32 rid);
+			    uint32 access_mask, uint32 rid);
 BOOL samr_io_q_open_alias(char *desc, SAMR_Q_OPEN_ALIAS * q_u,
 			  prs_struct *ps, int depth);
 BOOL samr_io_r_open_alias(char *desc, SAMR_R_OPEN_ALIAS * r_u,
@@ -2928,12 +3030,12 @@ void init_samr_r_query_aliasmem(SAMR_R_QUERY_ALIASMEM * r_u,
 				uint32 status);
 BOOL samr_io_r_query_aliasmem(char *desc, SAMR_R_QUERY_ALIASMEM * r_u,
 			      prs_struct *ps, int depth);
-void init_samr_q_lookup_names(SAMR_Q_LOOKUP_NAMES * q_u,
+uint32 init_samr_q_lookup_names(TALLOC_CTX *ctx, SAMR_Q_LOOKUP_NAMES * q_u,
 			      POLICY_HND *pol, uint32 flags,
 			      uint32 num_names, char **name);
 BOOL samr_io_q_lookup_names(char *desc, SAMR_Q_LOOKUP_NAMES * q_u,
 			    prs_struct *ps, int depth);
-void init_samr_r_lookup_names(TALLOC_CTX *ctx, SAMR_R_LOOKUP_NAMES * r_u,
+uint32 init_samr_r_lookup_names(TALLOC_CTX *ctx, SAMR_R_LOOKUP_NAMES * r_u,
 			      uint32 num_rids,
 			      uint32 *rid, uint32 *type,
 			      uint32 status);
@@ -2971,8 +3073,7 @@ void init_sam_user_info11(SAM_USER_INFO_11 * usr,
 			  NTTIME * expiry,
 			  char *mach_acct,
 			  uint32 rid_user, uint32 rid_group, uint16 acct_ctrl);
-void init_sam_user_info24(SAM_USER_INFO_24 * usr,
-			  char newpass[516], uint16 passlen);
+void init_sam_user_info24(SAM_USER_INFO_24 * usr, char newpass[516]);
 void init_sam_user_info23W(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all zeros */
 			NTTIME * logoff_time,	/* all zeros */
 			NTTIME * kickoff_time,	/* all zeros */
@@ -3159,6 +3260,7 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 		const fstring clientname,
 		const fstring user_name);
 BOOL make_spoolss_q_addprinterex(
+	TALLOC_CTX *mem_ctx,
 	SPOOL_Q_ADDPRINTEREX *q_u, 
 	const char *srv_name,
 	const char* clientname, 
@@ -3166,10 +3268,18 @@ BOOL make_spoolss_q_addprinterex(
 	uint32 level, 
 	PRINTER_INFO_CTR *ctr);
 BOOL make_spoolss_printer_info_2(
+	TALLOC_CTX *mem_ctx,
 	SPOOL_PRINTER_INFO_LEVEL_2 **spool_info2, 
 	PRINTER_INFO_2 *info
 );
 BOOL spoolss_io_q_open_printer_ex(char *desc, SPOOL_Q_OPEN_PRINTER_EX *q_u, prs_struct *ps, int depth);
+BOOL make_spoolss_q_deleteprinterdriver(
+	TALLOC_CTX *mem_ctx,
+	SPOOL_Q_DELETEPRINTERDRIVER *q_u, 
+	const char *server,
+	const char* arch, 
+	const char* driver 
+);
 BOOL spoolss_io_r_open_printer_ex(char *desc, SPOOL_R_OPEN_PRINTER_EX *r_u, prs_struct *ps, int depth);
 BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
                                 const POLICY_HND *handle,
@@ -3183,6 +3293,8 @@ BOOL spoolss_io_q_abortprinter(char *desc, SPOOL_Q_ABORTPRINTER *q_u, prs_struct
 BOOL spoolss_io_r_abortprinter(char *desc, SPOOL_R_ABORTPRINTER *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_deleteprinter(char *desc, SPOOL_Q_DELETEPRINTER *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_deleteprinter(char *desc, SPOOL_R_DELETEPRINTER *r_u, prs_struct *ps, int depth);
+BOOL spoolss_io_q_deleteprinterdriver(char *desc, SPOOL_Q_DELETEPRINTERDRIVER *q_u, prs_struct *ps, int depth);
+BOOL spoolss_io_r_deleteprinterdriver(char *desc, SPOOL_R_DELETEPRINTERDRIVER *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_closeprinter(char *desc, SPOOL_Q_CLOSEPRINTER *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_closeprinter(char *desc, SPOOL_R_CLOSEPRINTER *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_startdocprinter(char *desc, SPOOL_Q_STARTDOCPRINTER *q_u, prs_struct *ps, int depth);
@@ -3247,9 +3359,14 @@ BOOL make_spoolss_q_getprinterdriver2(SPOOL_Q_GETPRINTERDRIVER2 *q_u,
 			       NEW_BUFFER *buffer, uint32 offered);
 BOOL spoolss_io_q_getprinterdriver2(char *desc, SPOOL_Q_GETPRINTERDRIVER2 *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_getprinterdriver2(char *desc, SPOOL_R_GETPRINTERDRIVER2 *r_u, prs_struct *ps, int depth);
-BOOL make_spoolss_q_enumprinters(SPOOL_Q_ENUMPRINTERS *q_u, uint32 flags, 
-				fstring servername, uint32 level, 
-				NEW_BUFFER *buffer, uint32 offered);
+BOOL make_spoolss_q_enumprinters(
+	SPOOL_Q_ENUMPRINTERS *q_u, 
+	uint32 flags, 
+	fstring servername, 
+	uint32 level, 
+	NEW_BUFFER *buffer, 
+	uint32 offered
+);
 BOOL make_spoolss_q_enumports(SPOOL_Q_ENUMPORTS *q_u, 
 				fstring servername, uint32 level, 
 				NEW_BUFFER *buffer, uint32 offered);
@@ -3258,6 +3375,7 @@ BOOL spoolss_io_r_enumprinters(char *desc, SPOOL_R_ENUMPRINTERS *r_u, prs_struct
 BOOL spoolss_io_r_getprinter(char *desc, SPOOL_R_GETPRINTER *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_getprinter(char *desc, SPOOL_Q_GETPRINTER *q_u, prs_struct *ps, int depth);
 BOOL make_spoolss_q_getprinter(
+	TALLOC_CTX *mem_ctx,
 	SPOOL_Q_GETPRINTER *q_u, 
 	const POLICY_HND *hnd, 
 	uint32 level, 
@@ -3265,6 +3383,7 @@ BOOL make_spoolss_q_getprinter(
 	uint32 offered
 );
 BOOL make_spoolss_q_setprinter(
+	TALLOC_CTX *mem_ctx,
 	SPOOL_Q_SETPRINTER *q_u, 
 	const POLICY_HND *hnd, 
 	uint32 level, 
@@ -3316,15 +3435,22 @@ BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_
 BOOL smb_io_unibuffer(char *desc, UNISTR2 *buffer, prs_struct *ps, int depth);
 BOOL spool_io_printer_driver_info_level(char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL *il, prs_struct *ps, int depth);
 BOOL make_spoolss_q_addprinterdriver(
+	TALLOC_CTX *mem_ctx,
 	SPOOL_Q_ADDPRINTERDRIVER *q_u, 
 	const char* srv_name, 
 	uint32 level, 
 	PRINTER_DRIVER_CTR *info);
 BOOL make_spoolss_driver_info_3(
+	TALLOC_CTX *mem_ctx,
 	SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 **spool_drv_info,
 	DRIVER_INFO_3 *info3
 );
-BOOL make_spoolss_buffer5(BUFFER5 *buf5, uint32 len, uint16 *src);
+BOOL make_spoolss_buffer5(
+	TALLOC_CTX *mem_ctx,
+	BUFFER5 *buf5, 
+	uint32 len, 
+	uint16 *src
+);
 BOOL spoolss_io_q_addprinterdriver(char *desc, SPOOL_Q_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_addprinterdriver(char *desc, SPOOL_R_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth);
 BOOL uni_2_asc_printer_driver_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *uni,
@@ -3340,6 +3466,8 @@ BOOL spoolss_io_q_getprinterdriverdir(char *desc, SPOOL_Q_GETPRINTERDRIVERDIR *q
 BOOL spoolss_io_r_getprinterdriverdir(char *desc, SPOOL_R_GETPRINTERDRIVERDIR *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_enumprintprocessors(char *desc, SPOOL_R_ENUMPRINTPROCESSORS *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_enumprintprocessors(char *desc, SPOOL_Q_ENUMPRINTPROCESSORS *q_u, prs_struct *ps, int depth);
+BOOL spoolss_io_q_addprintprocessor(char *desc, SPOOL_Q_ADDPRINTPROCESSOR *q_u, prs_struct *ps, int depth);
+BOOL spoolss_io_r_addprintprocessor(char *desc, SPOOL_R_ADDPRINTPROCESSOR *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_enumprintprocdatatypes(char *desc, SPOOL_R_ENUMPRINTPROCDATATYPES *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_enumprintprocdatatypes(char *desc, SPOOL_Q_ENUMPRINTPROCDATATYPES *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_enumprintmonitors(char *desc, SPOOL_Q_ENUMPRINTMONITORS *q_u, prs_struct *ps, int depth);
@@ -3393,7 +3521,8 @@ void init_srv_share_info502(SH_INFO_502 *sh502,
 				char *net_name, uint32 type, char *remark,
 				uint32 perms, uint32 max_uses, uint32 num_uses,
 				char *path, char *passwd, SEC_DESC *psd, size_t sd_size);
-void init_srv_share_info502_str(SH_INFO_502_STR *sh502,
+void init_srv_share_info502_str(SH_INFO_502_STR *sh502str,
+				SH_INFO_502 *ptrs,
 				char *net_name, char *remark,
 				char *path, char *passwd, SEC_DESC *psd, size_t sd_size);
 void init_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n, 
@@ -3461,13 +3590,27 @@ void init_srv_q_net_srv_get_info(SRV_Q_NET_SRV_GET_INFO *srv,
 BOOL srv_io_q_net_srv_get_info(char *desc, SRV_Q_NET_SRV_GET_INFO *q_n, prs_struct *ps, int depth);
 void init_srv_r_net_srv_get_info(SRV_R_NET_SRV_GET_INFO *srv,
 				uint32 switch_value, SRV_INFO_CTR *ctr, uint32 status);
+void init_srv_r_net_srv_set_info(SRV_R_NET_SRV_SET_INFO *srv,
+				 uint32 switch_value, uint32 status);
+BOOL srv_io_q_net_srv_set_info(char *desc, SRV_Q_NET_SRV_SET_INFO *q_n, 
+			       prs_struct *ps, int depth);
 BOOL srv_io_r_net_srv_get_info(char *desc, SRV_R_NET_SRV_GET_INFO *r_n, prs_struct *ps, int depth);
+BOOL srv_io_r_net_srv_set_info(char *desc, SRV_R_NET_SRV_SET_INFO *r_n, 
+			       prs_struct *ps, int depth);
 BOOL srv_io_q_net_remote_tod(char *desc, SRV_Q_NET_REMOTE_TOD *q_n, prs_struct *ps, int depth);
 void init_time_of_day_info(TIME_OF_DAY_INFO *tod, uint32 elapsedt, uint32 msecs,
                            uint32 hours, uint32 mins, uint32 secs, uint32 hunds,
 			   uint32 zone, uint32 tintervals, uint32 day,
 			   uint32 month, uint32 year, uint32 weekday);
 BOOL srv_io_r_net_remote_tod(char *desc, SRV_R_NET_REMOTE_TOD *r_n, prs_struct *ps, int depth);
+BOOL srv_io_q_net_disk_enum(char *desc, SRV_Q_NET_DISK_ENUM *q_n, prs_struct *ps, int depth);
+BOOL srv_io_r_net_disk_enum(char *desc, SRV_R_NET_DISK_ENUM *r_n, prs_struct *ps, int depth);
+BOOL srv_io_q_net_name_validate(char *desc, SRV_Q_NET_NAME_VALIDATE *q_n, prs_struct *ps, int depth);
+BOOL srv_io_r_net_name_validate(char *desc, SRV_R_NET_NAME_VALIDATE *r_n, prs_struct *ps, int depth);
+BOOL srv_io_q_net_file_query_secdesc(char *desc, SRV_Q_NET_FILE_QUERY_SECDESC *q_n, prs_struct *ps, int depth);
+BOOL srv_io_r_net_file_query_secdesc(char *desc, SRV_R_NET_FILE_QUERY_SECDESC *r_n, prs_struct *ps, int depth);
+BOOL srv_io_q_net_file_set_secdesc(char *desc, SRV_Q_NET_FILE_SET_SECDESC *q_n, prs_struct *ps, int depth);
+BOOL srv_io_r_net_file_set_secdesc(char *desc, SRV_R_NET_FILE_SET_SECDESC *r_n, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_wks.c  */
 
@@ -3516,6 +3659,7 @@ uint32 _lsa_lookup_sids(pipes_struct *p, LSA_Q_LOOKUP_SIDS *q_u, LSA_R_LOOKUP_SI
 uint32 _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP_NAMES *r_u);
 uint32 _lsa_close(pipes_struct *p, LSA_Q_CLOSE *q_u, LSA_R_CLOSE *r_u);
 uint32 _lsa_open_secret(pipes_struct *p, LSA_Q_OPEN_SECRET *q_u, LSA_R_OPEN_SECRET *r_u);
+uint32 _lsa_unk_get_connuser(pipes_struct *p, LSA_Q_UNK_GET_CONNUSER *q_u, LSA_R_UNK_GET_CONNUSER *r_u);
 
 /*The following definitions come from  rpc_server/srv_netlog.c  */
 
@@ -3526,6 +3670,7 @@ BOOL api_netlog_rpc(pipes_struct *p);
 uint32 _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_CTRL2 *r_u);
 uint32 _net_trust_dom_list(pipes_struct *p, NET_Q_TRUST_DOM_LIST *q_u, NET_R_TRUST_DOM_LIST *r_u);
 uint32 _net_req_chal(pipes_struct *p, NET_Q_REQ_CHAL *q_u, NET_R_REQ_CHAL *r_u);
+uint32 _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u);
 uint32 _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u);
 uint32 _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_u);
 uint32 _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOFF *r_u);
@@ -3535,7 +3680,7 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 
 BOOL create_next_pdu(pipes_struct *p);
 BOOL api_pipe_bind_auth_resp(pipes_struct *p, prs_struct *rpc_in_p);
-BOOL setup_fault_pdu(pipes_struct *p);
+BOOL setup_fault_pdu(pipes_struct *p, uint32 status);
 BOOL check_bind_req(char* pipe_name, RPC_IFACE* abstract,
 					RPC_IFACE* transfer);
 BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p);
@@ -3628,12 +3773,13 @@ BOOL api_spoolss_rpc(pipes_struct *p);
 
 /*The following definitions come from  rpc_server/srv_spoolss_nt.c  */
 
-void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len);
 uint32 _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, SPOOL_R_OPEN_PRINTER_EX *r_u);
 BOOL convert_devicemode(char *printername, const DEVICEMODE *devmode,
 				NT_DEVICEMODE **pp_nt_devmode);
 uint32 _spoolss_closeprinter(pipes_struct *p, SPOOL_Q_CLOSEPRINTER *q_u, SPOOL_R_CLOSEPRINTER *r_u);
 uint32 _spoolss_deleteprinter(pipes_struct *p, SPOOL_Q_DELETEPRINTER *q_u, SPOOL_R_DELETEPRINTER *r_u);
+uint32 _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER *q_u, 
+				    SPOOL_R_DELETEPRINTERDRIVER *r_u);
 uint32 _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPOOL_R_GETPRINTERDATA *r_u);
 uint32 _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNEX *r_u);
 uint32 _spoolss_rfnpcnex( pipes_struct *p, SPOOL_Q_RFNPCNEX *q_u, SPOOL_R_RFNPCNEX *r_u);
@@ -3680,6 +3826,7 @@ BOOL share_info_db_init(void);
 void map_generic_share_sd_bits(SEC_DESC *psd);
 BOOL share_access_check(connection_struct *conn, int snum, uint16 vuid, uint32 desired_access);
 uint32 _srv_net_srv_get_info(pipes_struct *p, SRV_Q_NET_SRV_GET_INFO *q_u, SRV_R_NET_SRV_GET_INFO *r_u);
+uint32 _srv_net_srv_set_info(pipes_struct *p, SRV_Q_NET_SRV_SET_INFO *q_u, SRV_R_NET_SRV_SET_INFO *r_u);
 uint32 _srv_net_file_enum(pipes_struct *p, SRV_Q_NET_FILE_ENUM *q_u, SRV_R_NET_FILE_ENUM *r_u);
 uint32 _srv_net_conn_enum(pipes_struct *p, SRV_Q_NET_CONN_ENUM *q_u, SRV_R_NET_CONN_ENUM *r_u);
 uint32 _srv_net_sess_enum(pipes_struct *p, SRV_Q_NET_SESS_ENUM *q_u, SRV_R_NET_SESS_ENUM *r_u);
@@ -3690,6 +3837,12 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_SHARE_ADD *r_u);
 uint32 _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_SHARE_DEL *r_u);
 uint32 _srv_net_remote_tod(pipes_struct *p, SRV_Q_NET_REMOTE_TOD *q_u, SRV_R_NET_REMOTE_TOD *r_u);
+uint32 _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC *q_u,
+			SRV_R_NET_FILE_QUERY_SECDESC *r_u);
+uint32 _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_u,
+									SRV_R_NET_FILE_SET_SECDESC *r_u);
+uint32 _srv_net_disk_enum(pipes_struct *p, SRV_Q_NET_DISK_ENUM *q_u, SRV_R_NET_DISK_ENUM *r_u);
+uint32 _srv_net_name_validate(pipes_struct *p, SRV_Q_NET_NAME_VALIDATE *q_u, SRV_R_NET_NAME_VALIDATE *r_u);
 
 /*The following definitions come from  rpc_server/srv_util.c  */
 
@@ -3753,6 +3906,7 @@ connection_struct *conn_new(void);
 void conn_close_all(void);
 BOOL conn_idle_all(time_t t, int deadtime);
 void conn_free(connection_struct *conn);
+void msg_force_tdis(int msg_type, pid_t pid, void *buf, size_t len);
 
 /*The following definitions come from  smbd/connection.c  */
 
@@ -3959,11 +4113,12 @@ void generate_next_challenge(char *challenge);
 BOOL set_challenge(unsigned char *challenge);
 user_struct *get_valid_user_struct(uint16 vuid);
 void invalidate_vuid(uint16 vuid);
+void invalidate_all_vuids(void);
 char *validated_username(uint16 vuid);
 char *validated_domain(uint16 vuid);
 NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups, BOOL is_guest);
-uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, 
-		     char *domain,BOOL guest);
+int register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, 
+		  char *domain,BOOL guest);
 void add_session_user(char *user);
 BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned char *c8);
 BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
@@ -4079,6 +4234,7 @@ int rename_internals(connection_struct *conn,
 int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+uint16 get_lock_pid( char *data, int data_offset, BOOL large_file_format);
 SMB_BIG_UINT get_lock_count( char *data, int data_offset, BOOL large_file_format);
 SMB_BIG_UINT get_lock_offset( char *data, int data_offset, BOOL large_file_format, BOOL *err);
 int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
@@ -4114,6 +4270,11 @@ int add_home_service(char *service, char *homedir);
 int find_service(char *service);
 connection_struct *make_connection(char *service,char *user,char *password, int pwlen, char *dev,uint16 vuid, int *ecode);
 void close_cnum(connection_struct *conn, uint16 vuid);
+
+/*The following definitions come from  smbd/session.c  */
+
+BOOL session_claim(uint16 vuid);
+void session_yield(uint16 vuid);
 
 /*The following definitions come from  smbd/ssl.c  */
 
@@ -4158,10 +4319,16 @@ DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid);
 BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype);
 BOOL sid_to_gid(DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype);
 
+/*The following definitions come from  smbd/utmp.c  */
+
+void sys_utmp_yield(const char *username, const char *hostname, 
+		    const char *id_str, int id_num);
+void sys_utmp_claim(const char *username, const char *hostname, 
+		    const char *id_str, int id_num);
+
 /*The following definitions come from  smbd/vfs.c  */
 
-int vfs_init_default(connection_struct *conn);
-BOOL vfs_init_custom(connection_struct *conn);
+BOOL vfs_init(connection_struct *conn);
 BOOL vfs_directory_exist(connection_struct *conn, char *dname, SMB_STRUCT_STAT *st);
 int vfs_mkdir(connection_struct *conn, char *fname, mode_t mode);
 char *vfs_getwd(connection_struct *conn, char *unix_path);
@@ -4208,6 +4375,8 @@ char *vfswrap_getwd(connection_struct *conn, char *path);
 int vfswrap_utime(connection_struct *conn, char *path, struct utimbuf *times);
 int vfswrap_ftruncate(files_struct *fsp, int fd, SMB_OFF_T len);
 BOOL vfswrap_lock(files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
+int vfswrap_symlink(connection_struct *conn, const char *oldpath, const char *newpath);
+int vfswrap_readlink(connection_struct *conn, const char *path, char *buf, size_t bufsiz);
 size_t vfswrap_fget_nt_acl(files_struct *fsp, int fd, SEC_DESC **ppdesc);
 size_t vfswrap_get_nt_acl(files_struct *fsp, char *name, SEC_DESC **ppdesc);
 BOOL vfswrap_fset_nt_acl(files_struct *fsp, int fd, uint32 security_info_sent, SEC_DESC *psd);
@@ -4305,7 +4474,9 @@ int tdb_clear_spinlocks(TDB_CONTEXT *tdb);
 
 /*The following definitions come from  tdb/tdb.c  */
 
+void tdb_dump_all(TDB_CONTEXT *tdb);
 void tdb_printfreelist(TDB_CONTEXT *tdb);
+enum TDB_ERROR tdb_error(TDB_CONTEXT *tdb);
 const char *tdb_errorstr(TDB_CONTEXT *tdb);
 TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key);
@@ -4323,6 +4494,7 @@ int tdb_lockkeys(TDB_CONTEXT *tdb, u32 number, TDB_DATA keys[]);
 void tdb_unlockkeys(TDB_CONTEXT *tdb);
 int tdb_chainlock(TDB_CONTEXT *tdb, TDB_DATA key);
 void tdb_chainunlock(TDB_CONTEXT *tdb, TDB_DATA key);
+void tdb_logging_function(TDB_CONTEXT *tdb, void (*fn)(TDB_CONTEXT *, int , const char *, ...));
 
 /*The following definitions come from  tdb/tdbutil.c  */
 
@@ -4334,8 +4506,11 @@ int tdb_store_int_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, int v);
 int tdb_store_int(TDB_CONTEXT *tdb, char *keystr, int v);
 int tdb_store_by_string(TDB_CONTEXT *tdb, char *keystr, void *buffer, int len);
 TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, char *keystr);
+int tdb_change_int_atomic(TDB_CONTEXT *tdb, char *keystr, int *oldval, int change_val);
 size_t tdb_pack(char *buf, int bufsize, char *fmt, ...);
 int tdb_unpack(char *buf, int bufsize, char *fmt, ...);
+TDB_CONTEXT *tdb_open_log(char *name, int hash_size, int tdb_flags,
+			  int open_flags, mode_t mode);
 
 /*The following definitions come from  utils/nbio.c  */
 

@@ -24,9 +24,9 @@
 #if HAVE_KERNEL_CHANGE_NOTIFY
 
 extern int DEBUGLEVEL;
-static VOLATILE SIG_ATOMIC_T fd_pending;
-static VOLATILE SIG_ATOMIC_T signals_received;
-static VOLATILE SIG_ATOMIC_T signals_processed;
+static VOLATILE sig_atomic_t fd_pending;
+static VOLATILE sig_atomic_t signals_received;
+static VOLATILE sig_atomic_t signals_processed;
 
 #ifndef DN_ACCESS
 #define DN_ACCESS       0x00000001      /* File accessed in directory */
@@ -62,10 +62,10 @@ struct change_data {
 /****************************************************************************
 the signal handler for change notify
 *****************************************************************************/
-static void signal_handler(int signal, siginfo_t *info, void *unused)
+static void signal_handler(int sig, siginfo_t *info, void *unused)
 {
-	BlockSignals(True, signal);
-	fd_pending = (SIG_ATOMIC_T)info->si_fd;
+	BlockSignals(True, sig);
+	fd_pending = (sig_atomic_t)info->si_fd;
 	signals_received++;
 	sys_select_signal();
 }
@@ -89,7 +89,7 @@ static BOOL kernel_check_notify(connection_struct *conn, uint16 vuid, char *path
 	DEBUG(3,("kernel change notify on %s fd=%d\n", path, (int)fd_pending));
 
 	close((int)fd_pending);
-	fd_pending = (SIG_ATOMIC_T)-1;
+	fd_pending = (sig_atomic_t)-1;
 	data->directory_handle = -1;
 	signals_processed++;
 	BlockSignals(False, RT_SIGNAL_NOTIFY);
@@ -105,7 +105,7 @@ static void kernel_remove_notify(void *datap)
 	int fd = data->directory_handle;
 	if (fd != -1) {
 		if (fd == (int)fd_pending) {
-			fd_pending = (SIG_ATOMIC_T)-1;
+			fd_pending = (sig_atomic_t)-1;
 			signals_processed++;
 			BlockSignals(False, RT_SIGNAL_NOTIFY);
 		}

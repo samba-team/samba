@@ -135,7 +135,14 @@ SEC_ACL *make_sec_acl(TALLOC_CTX *ctx, uint16 revision, int num_aces, SEC_ACE *a
 	dst->num_aces = num_aces;
 	dst->size = 8;
 
-	if((dst->ace = (SEC_ACE *)talloc(ctx, sizeof(SEC_ACE) * num_aces )) == NULL) {
+	/* Now we need to return a non-NULL address for the ace list even
+	   if the number of aces required is zero.  This is because there
+	   is a distinct difference between a NULL ace and an ace with zero
+	   entries in it.  This is achieved by always making the number of
+	   bytes allocated by talloc() positive.  Heh. */
+
+	if((dst->ace = (SEC_ACE *)talloc(ctx, sizeof(SEC_ACE) * num_aces + 1))
+	   == NULL) {
 		return NULL;
 	}
 
@@ -204,9 +211,13 @@ BOOL sec_io_acl(char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 	if(!prs_uint32("num_aces ", ps, depth, &psa->num_aces))
 		return False;
 
-	if (UNMARSHALLING(ps) && psa->num_aces != 0) {
-		/* reading */
-		if((psa->ace = (SEC_ACE *)prs_alloc_mem(ps,sizeof(psa->ace[0]) * psa->num_aces)) == NULL)
+	if (UNMARSHALLING(ps)) {
+		/*
+		 * Even if the num_aces is zero, allocate memory as there's a difference
+		 * between a non-present DACL (allow all access) and a DACL with no ACE's
+		 * (allow no access).
+		 */
+		if((psa->ace = (SEC_ACE *)prs_alloc_mem(ps,sizeof(psa->ace[0]) * (psa->num_aces+1))) == NULL)
 			return False;
 	}
 

@@ -545,9 +545,11 @@ BOOL trim_string(char *s,const char *front,const char *back)
     size_t back_len;
     char	*sP;
 
-    if ( !s ) {
+	/* Ignore null or empty strings. */
+
+    if ( !s || (s[0] == '\0'))
         return False;
-    }
+
     sP	= s;
     s_len	= strlen( s ) + 1;
     front_len	= (front) ? strlen( front ) + 1 : 0;
@@ -589,7 +591,7 @@ BOOL trim_string(char *s,const char *front,const char *back)
      * Kenichi Okuyama.
      */
 
-    if ( back && back_len > 1 ) {
+    if ( back && back_len > 1 && s_len >= back_len) {
         char	*bP	= sP + s_len - back_len;
         long	b_len	= s_len;
 

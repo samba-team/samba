@@ -1,5 +1,5 @@
 !==
-!== UNIX_SECURITY.txt for Samba release 2.2.0a 23 Jun 2001
+!== UNIX_SECURITY.txt for Samba release 2.2.0-alpha3 24 Mar 2001
 !==
 Contributor:	John H Terpstra <jht@samba.org>
 Date:		July 5, 1998

@@ -109,6 +109,10 @@ static BOOL become_id(uid_t uid, gid_t gid)
 
 static void gain_root(void)
 {
+	if (non_root_mode()) {
+		return;
+	}
+
 	if (geteuid() != 0) {
 		set_effective_uid(0);
 
@@ -152,8 +156,10 @@ int get_current_groups(int *p_ngroups, gid_t **p_groups)
 		return -1;
 	}
 
-	if ((ngroups = sys_getgroups(ngroups,groups)) == -1)
+	if ((ngroups = sys_getgroups(ngroups,groups)) == -1) {
+		safe_free(groups);
 		return -1;
+	}
 
 	(*p_ngroups) = ngroups;
 	(*p_groups) = groups;
@@ -275,8 +281,8 @@ BOOL push_sec_ctx(void)
 	ctx_p->uid = geteuid();
 	ctx_p->gid = getegid();
 
- 	DEBUG(3, ("push_sec_ctx(%d, %d) : sec_ctx_stack_ndx = %d\n", 
- 		  ctx_p->uid, ctx_p->gid, sec_ctx_stack_ndx ));
+ 	DEBUG(3, ("push_sec_ctx(%u, %u) : sec_ctx_stack_ndx = %d\n", 
+ 		  (unsigned int)ctx_p->uid, (unsigned int)ctx_p->gid, sec_ctx_stack_ndx ));
 
 	ctx_p->token = dup_nt_token(sec_ctx_stack[sec_ctx_stack_ndx-1].token);
 
@@ -307,14 +313,15 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN
 	
 	/* Set the security context */
 
-	DEBUG(3, ("setting sec ctx (%d, %d) - sec_ctx_stack_ndx = %d\n", uid, gid, sec_ctx_stack_ndx));
+	DEBUG(3, ("setting sec ctx (%u, %u) - sec_ctx_stack_ndx = %d\n", 
+		(unsigned int)uid, (unsigned int)gid, sec_ctx_stack_ndx));
 
 	if (ngroups) {
 		int i;
 
 		DEBUG(3, ("%d user groups: \n", ngroups));
 		for (i = 0; i < ngroups; i++) {
-			DEBUGADD(3, ("%d ", groups[i]));
+			DEBUGADD(3, ("%u ", (unsigned int)groups[i]));
 		}
 
 		DEBUG(3, ("\n"));
@@ -413,7 +420,8 @@ BOOL pop_sec_ctx(void)
 	current_user.groups = prev_ctx_p->groups;
 	current_user.nt_user_token = prev_ctx_p->token;
 
-	DEBUG(3, ("pop_sec_ctx (%d, %d) - sec_ctx_stack_ndx = %d\n", geteuid(), getegid(), sec_ctx_stack_ndx));
+	DEBUG(3, ("pop_sec_ctx (%u, %u) - sec_ctx_stack_ndx = %d\n", 
+		(unsigned int)geteuid(), (unsigned int)getegid(), sec_ctx_stack_ndx));
 
 	return True;
 }

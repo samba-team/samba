@@ -42,7 +42,33 @@ extern int DEBUGLEVEL;
 
 #define DEBUG(x, y) printf y
 #define smb_panic(x) exit(1)
+#define BOOL int
 #endif
+
+/* are we running as non-root? This is used by the regresison test code,
+   and potentially also for sites that want non-root smbd */
+static uid_t initial_uid;
+
+/****************************************************************************
+remember what uid we got started as - this allows us to run correctly
+as non-root while catching trapdoor systems
+****************************************************************************/
+void sec_init(void)
+{
+	initial_uid = geteuid();
+	if (initial_uid != (uid_t)0) {
+		/* the DEBUG() subsystem has not been initialised when this is called */
+		fprintf(stderr, "WARNING: running as non-root. Some functionality will be missing\n");
+	}
+}
+
+/****************************************************************************
+are we running in non-root mode?
+****************************************************************************/
+BOOL non_root_mode(void)
+{
+	return (initial_uid != (uid_t)0);
+}
 
 /****************************************************************************
 abort if we haven't set the uid correctly
@@ -51,11 +77,13 @@ static void assert_uid(uid_t ruid, uid_t euid)
 {
 	if ((euid != (uid_t)-1 && geteuid() != euid) ||
 	    (ruid != (uid_t)-1 && getuid() != ruid)) {
-		DEBUG(0,("Failed to set uid privileges to (%d,%d) now set to (%d,%d)\n",
-			 (int)ruid, (int)euid,
-			 (int)getuid(), (int)geteuid()));
-		smb_panic("failed to set uid\n");
-		exit(1);
+		if (!non_root_mode()) {
+			DEBUG(0,("Failed to set uid privileges to (%d,%d) now set to (%d,%d)\n",
+				 (int)ruid, (int)euid,
+				 (int)getuid(), (int)geteuid()));
+			smb_panic("failed to set uid\n");
+			exit(1);
+		}
 	}
 }
 
@@ -66,12 +94,14 @@ static void assert_gid(gid_t rgid, gid_t egid)
 {
 	if ((egid != (gid_t)-1 && getegid() != egid) ||
 	    (rgid != (gid_t)-1 && getgid() != rgid)) {
-		DEBUG(0,("Failed to set gid privileges to (%d,%d) now set to (%d,%d) uid=(%d,%d)\n",
-			 (int)rgid, (int)egid,
-			 (int)getgid(), (int)getegid(),
-			 (int)getuid(), (int)geteuid()));
-		smb_panic("failed to set gid\n");
-		exit(1);
+		if (!non_root_mode()) {
+			DEBUG(0,("Failed to set gid privileges to (%d,%d) now set to (%d,%d) uid=(%d,%d)\n",
+				 (int)rgid, (int)egid,
+				 (int)getgid(), (int)getegid(),
+				 (int)getuid(), (int)geteuid()));
+			smb_panic("failed to set gid\n");
+			exit(1);
+		}
 	}
 }
 

@@ -124,48 +124,6 @@ typedef struct SMB_ACL_T {
 #define SMB_ACL_TYPE_ACCESS         ACL_TYPE_ACCESS
 #define SMB_ACL_TYPE_DEFAULT        ACL_TYPE_DEFAULT
 
-/* XFS ACLS are defined here */
-/* donated by John Trostel (jtrostel@connex.com) */
-
-#elif defined(HAVE_XFS_ACLS)
-
-/* This is an nearly an identity mapping (just remove the SMB_). */
-#define SMB_ACL_TAG_T               acl_tag_t
-#define SMB_ACL_TYPE_T				acl_type_t
-//#define SMB_ACL_PERMSET_T           acl_permset_t
-typedef ushort	*SMB_ACL_PERMSET_T;
-#define SMB_ACL_PERM_T				acl_perm_t
-#define SMB_ACL_READ                ACL_READ
-#define SMB_ACL_WRITE               ACL_WRITE
-#define SMB_ACL_EXECUTE             ACL_EXECUTE
-
-/* Types of ACLs. */
-#define SMB_ACL_USER                ACL_USER
-#define SMB_ACL_USER_OBJ            ACL_USER_OBJ
-#define SMB_ACL_GROUP               ACL_GROUP
-#define SMB_ACL_GROUP_OBJ           ACL_GROUP_OBJ
-#define SMB_ACL_OTHER               ACL_OTHER_OBJ
-#define SMB_ACL_MASK                ACL_MASK
-
-#define SMB_ACL_T 					acl_t
-
-#define SMB_ACL_ENTRY_T				acl_entry_t
-
-#define SMB_ACL_FIRST_ENTRY         ACL_FIRST_ENTRY
-#define SMB_ACL_NEXT_ENTRY          ACL_NEXT_ENTRY
-
-#define SMB_ACL_TYPE_ACCESS         ACL_TYPE_ACCESS
-#define SMB_ACL_TYPE_DEFAULT        ACL_TYPE_DEFAULT
-
-/* Not yet in Official SGI XFS CVS */
-
-#if defined(CONFIG_EXTENDED_PERMISSSION)
-#define SMB_ACL_CHOWN				ACL_CHOWN
-#define SMB_ACL_CHMOD				ACL_CHMOD
-#define SMB_ACL_DELETE				ACL_DELETE
-#define EXTENDED_PERM_BITS			(ACL_CHOWN|ACL_CHMOD|ACL_DELETE)
-#endif /* CONFIG_EXTENDED_PERMISSION */
-
 #elif defined(HAVE_AIX_ACLS)
 
 /* Donated by Medha Date, mdate@austin.ibm.com, for IBM */

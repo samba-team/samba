@@ -471,10 +471,7 @@ static struct sam_passwd* build_sampw_from_smbpw (struct smb_passwd *pw_buf)
 		user.user_rid  = pdb_uid_to_user_rid (user.smb_userid);
 		user.group_rid = pdb_gid_to_group_rid(user.smb_grpid );
 
-		if (lp_unix_realname())
-			pstrcpy(full_name, pwfile->pw_gecos);
-		else
-			pstrcpy(full_name    , "<Full Name>");
+		pstrcpy(full_name, pwfile->pw_gecos);
 		pstrcpy(logon_script , lp_logon_script       ());
 		pstrcpy(profile_path , lp_logon_path         ());
 		pstrcpy(home_drive   , lp_logon_drive        ());
@@ -1362,7 +1359,7 @@ struct sam_passwd *smbiterate_getsam21pwuid(uid_t uid)
 	if (smbpw != NULL)
 	{
 		pwd = build_sampw_from_smbpw (smbpw);
-		DEBUG(10, ("found by user_uid: %d\n", uid));
+		DEBUG(10, ("found by user_uid: %u\n", (unsigned int)uid));
 	}
 
 	return pwd;

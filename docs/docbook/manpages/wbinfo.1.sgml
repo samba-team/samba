@@ -149,7 +149,7 @@
 
 	<para>The wbinfo program returns 0 if the operation 
 	succeeded, or 1 if the operation failed.  If the <command>winbindd(8)
-	</command> daemon is not working wbinfo will always return 
+	</command> daemon is not working <command>wbinfo</command> will always return 
 	failure. </para>
 </refsect1>
 

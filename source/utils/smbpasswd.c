@@ -29,6 +29,9 @@ extern int DEBUGLEVEL;
 extern char *optarg;
 extern int optind;
 
+/* forced running in root-mode */
+static BOOL local_mode;
+
 /*********************************************************
 a strdup with exit
 **********************************************************/
@@ -59,7 +62,8 @@ static void usage(void)
 	printf("  -U USER              remote username\n");
 	printf("  -r MACHINE           remote machine\n");
 
-	if (getuid() == 0) {
+	if (getuid() == 0 || local_mode) {
+		printf("  -L                   local mode (must be first option)\n");
 		printf("  -R ORDER             name resolve order\n");
 		printf("  -j DOMAIN            join domain name\n");
 		printf("  -a                   add user\n");
@@ -261,8 +265,11 @@ static int process_root(int argc, char *argv[])
 	char *old_passwd = NULL;
 	char *remote_machine = NULL;
 
-	while ((ch = getopt(argc, argv, "ax:d:e:mnj:r:sR:D:U:")) != EOF) {
+	while ((ch = getopt(argc, argv, "ax:d:e:mnj:r:sR:D:U:L")) != EOF) {
 		switch(ch) {
+		case 'L':
+			local_mode = True;
+			break;
 		case 'a':
 			local_flags |= LOCAL_ADD_USER;
 			break;
@@ -319,10 +326,13 @@ static int process_root(int argc, char *argv[])
 	argv += optind;
 
 	/*
+	 * Ensure both add/delete user are not set
 	 * Ensure add/delete user and either remote machine or join domain are
 	 * not both set.
 	 */	
-	if((local_flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER)) && ((remote_machine != NULL) || joining_domain)) {
+	if(((local_flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER)) == (LOCAL_ADD_USER|LOCAL_DELETE_USER)) || 
+	   ((local_flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER)) && 
+		((remote_machine != NULL) || joining_domain))) {
 		usage();
 	}
 	
@@ -595,7 +605,14 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	if (getuid() == 0) {
+	/* pre-check for local mode option as first option. We can't
+	   do this via normal getopt as getopt can't be called
+	   twice. */
+	if (argc > 1 && strcmp(argv[1], "-L") == 0) {
+		local_mode = True;
+	}
+
+	if (local_mode || getuid() == 0) {
 		return process_root(argc, argv);
 	} 
 

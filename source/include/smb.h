@@ -27,6 +27,7 @@
 
 #define BUFFER_SIZE (0xFFFF)
 #define SAFETY_MARGIN 1024
+#define LARGE_WRITEX_HDR_SIZE 65
 
 #define NMB_PORT 137
 #define DGRAM_PORT 138
@@ -56,7 +57,7 @@ typedef int BOOL;
 #define STR_UPPER 4
 #define STR_ASCII 8
 #define STR_UNICODE 16
-
+#define STR_NOALIGN 32
 
 /* how long to wait for secondary SMB packets (milli-seconds) */
 #define SMB_SECONDARY_WAIT (60*1000)
@@ -176,6 +177,7 @@ implemented */
 #define ERRfilexists 80 /* File in operation already exists */
 #define ERRcannotopen 110 /* Cannot open the file specified */
 #define ERRunknownlevel 124
+#define ERRnotlocked 158 /* This region is not locked by this locking context. */
 #define ERRrename 183
 #define ERRbadpipe 230 /* Named pipe invalid */
 #define ERRpipebusy 231 /* All instances of pipe are busy */
@@ -205,6 +207,7 @@ implemented */
 #define ERROR_INVALID_PRINTER_NAME     (1801)
 #define ERROR_INVALID_DATATYPE	       (1804)
 #define ERROR_INVALID_ENVIRONMENT      (1805)
+#define ERROR_PRINTER_DRIVER_IN_USE    (3001) 
 
 /* here's a special one from observing NT */
 #define ERRnoipc 66 /* don't support ipc */
@@ -1178,6 +1181,16 @@ struct bitmap {
 								FILE_EXECUTE|SYNCHRONIZE_ACCESS)
 
 /* Mapping of access rights to UNIX perms. */
+#define UNIX_ACCESS_RWX		FILE_GENERIC_ALL
+#define UNIX_ACCESS_R 		FILE_GENERIC_READ
+#define UNIX_ACCESS_W		FILE_GENERIC_WRITE
+#define UNIX_ACCESS_X		FILE_GENERIC_EXECUTE
+
+#if 0
+/*
+ * This is the old mapping we used to use. To get W2KSP2 profiles
+ * working we need to map to the canonical file perms.
+ */
 #define UNIX_ACCESS_RWX (UNIX_ACCESS_R|UNIX_ACCESS_W|UNIX_ACCESS_X)
 #define UNIX_ACCESS_R (READ_CONTROL_ACCESS|SYNCHRONIZE_ACCESS|\
 			FILE_READ_ATTRIBUTES|FILE_READ_EA|FILE_READ_DATA)
@@ -1186,6 +1199,7 @@ struct bitmap {
 			FILE_APPEND_DATA|FILE_WRITE_DATA)
 #define UNIX_ACCESS_X (READ_CONTROL_ACCESS|SYNCHRONIZE_ACCESS|\
 			FILE_EXECUTE|FILE_READ_ATTRIBUTES)
+#endif
 
 #define UNIX_ACCESS_NONE (WRITE_OWNER_ACCESS)
 
@@ -1404,7 +1418,9 @@ char *strdup(char *s);
 #define CAP_LOCK_AND_READ    0x0100
 #define CAP_NT_FIND          0x0200
 #define CAP_DFS              0x1000
+#define CAP_W2K_SMBS         0x2000
 #define CAP_LARGE_READX      0x4000
+#define CAP_LARGE_WRITEX     0x8000
 #define CAP_EXTENDED_SECURITY 0x80000000
 
 /* protocol types. It assumes that higher protocols include lower protocols
@@ -1700,6 +1716,8 @@ typedef struct user_struct
 	gid_t *groups;
 
 	NT_USER_TOKEN *nt_user_token;
+
+	int session_id; /* used by utmp and pam session code */
 } user_struct;
 
 #include "ntdomain.h"

@@ -103,11 +103,21 @@ void pwd_read(struct pwd_info *pwd, char *passwd_report, BOOL do_encrypt)
 
 	user_pass = (char*)getpass(passwd_report);
 
+	/*
+	 * Do not assume that an empty string is a NULL password.
+	 * If you do this will break the session key generation for
+	 * and account with an emtpy password.  If you wish to use
+	 * a NULL password, use the -N option to smbclient and rpcclient
+	 * --jerry
+	 */
+#if 0
 	if (user_pass == NULL || user_pass[0] == 0)
 	{
 		pwd_set_nullpwd(pwd);
 	}
 	else if (do_encrypt)
+#endif
+	if (do_encrypt)
 	{
 		pwd_make_lm_nt_16(pwd, user_pass);
 	}

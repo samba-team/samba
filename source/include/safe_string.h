@@ -37,11 +37,6 @@
 #endif /* sprintf */
 #define sprintf __ERROR__XX__NEVER_USE_SPRINTF__;
 
-#ifdef snprintf
-#undef snprintf
-#endif /* snprintf */
-#define snprintf __ERROR__XX__NEVER_USE_SNPRINTF___;
-
 #define pstrcpy(d,s) safe_strcpy((d),(s),sizeof(pstring)-1)
 #define pstrcat(d,s) safe_strcat((d),(s),sizeof(pstring)-1)
 #define fstrcpy(d,s) safe_strcpy((d),(s),sizeof(fstring)-1)

@@ -106,9 +106,9 @@ static void print_socket_options(int s)
 
 	for (; p->name != NULL; p++) {
 		if (getsockopt(s, p->level, p->option, (void *)&value, &vlen) == -1) {
-			DEBUG(3,("Could not test socket option %s.\n", p->name));
+			DEBUG(5,("Could not test socket option %s.\n", p->name));
 		} else {
-			DEBUG(3,("socket option %s = %d\n",p->name,value));
+			DEBUG(5,("socket option %s = %d\n",p->name,value));
 		}
 	}
  }
@@ -174,26 +174,25 @@ void set_socket_options(int fd, char *options)
 
 ssize_t read_udp_socket(int fd,char *buf,size_t len)
 {
-  ssize_t ret;
-  struct sockaddr_in sock;
-  int socklen;
-  
-  socklen = sizeof(sock);
-  memset((char *)&sock,'\0',socklen);
-  memset((char *)&lastip,'\0',sizeof(lastip));
-  ret = (ssize_t)recvfrom(fd,buf,len,0,(struct sockaddr *)&sock,&socklen);
-  if (ret <= 0) {
-    DEBUG(2,("read socket failed. ERRNO=%s\n",strerror(errno)));
-    return(0);
-  }
+	ssize_t ret;
+	struct sockaddr_in sock;
+	socklen_t socklen = sizeof(sock);
 
-  lastip = sock.sin_addr;
-  lastport = ntohs(sock.sin_port);
+	memset((char *)&sock,'\0',socklen);
+	memset((char *)&lastip,'\0',sizeof(lastip));
+	ret = (ssize_t)recvfrom(fd,buf,len,0,(struct sockaddr *)&sock,&socklen);
+	if (ret <= 0) {
+		DEBUG(2,("read socket failed. ERRNO=%s\n",strerror(errno)));
+		return(0);
+	}
 
-  DEBUG(10,("read_udp_socket: lastip %s lastport %d read: %d\n",
-             inet_ntoa(lastip), lastport, ret));
+	lastip = sock.sin_addr;
+	lastport = ntohs(sock.sin_port);
 
-  return(ret);
+	DEBUG(10,("read_udp_socket: lastip %s lastport %d read: %d\n",
+			inet_ntoa(lastip), lastport, ret));
+
+	return(ret);
 }
 
 /****************************************************************************
@@ -642,35 +641,40 @@ ssize_t read_smb_length(int fd,char *inbuf,unsigned int timeout)
 
 BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
 {
-  ssize_t len,ret;
+	ssize_t len,ret;
 
-  smb_read_error = 0;
+	smb_read_error = 0;
 
-  memset(buffer,'\0',smb_size + 100);
+	memset(buffer,'\0',smb_size + 100);
 
-  len = read_smb_length_return_keepalive(fd,buffer,timeout);
-  if (len < 0)
-  {
-    DEBUG(10,("receive_smb: length < 0!\n"));
-    return(False);
-  }
+	len = read_smb_length_return_keepalive(fd,buffer,timeout);
+	if (len < 0) {
+		DEBUG(10,("receive_smb: length < 0!\n"));
+		return(False);
+	}
 
-  if (len > BUFFER_SIZE) {
-    DEBUG(0,("Invalid packet length! (%d bytes).\n",len));
-    if (len > BUFFER_SIZE + (SAFETY_MARGIN/2))
-    {
-	exit(1);
-    }
-  }
+	/*
+	 * A WRITEX with CAP_LARGE_WRITEX can be 64k worth of data plus 65 bytes
+     * of header. Don't print the error if this fits.... JRA.
+	 */
 
-  if(len > 0) {
-    ret = read_socket_data(fd,buffer+4,len);
-    if (ret != len) {
-      smb_read_error = READ_ERROR;
-      return False;
-    }
-  }
-  return(True);
+	if (len > (BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE)) {
+		DEBUG(0,("Invalid packet length! (%d bytes).\n",len));
+		if (len > BUFFER_SIZE + (SAFETY_MARGIN/2)) {
+			smb_read_error = READ_ERROR;
+			return False;
+		}
+	}
+
+	if(len > 0) {
+		ret = read_socket_data(fd,buffer+4,len);
+		if (ret != len) {
+			smb_read_error = READ_ERROR;
+			return False;
+		}
+	}
+
+	return(True);
 }
 
 /****************************************************************************
@@ -708,55 +712,27 @@ BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout)
 }
 
 /****************************************************************************
-  send an null session message to a fd
-****************************************************************************/
-
-BOOL send_null_session_msg(int fd)
-{
-  ssize_t ret;
-  uint32 blank = 0;
-  size_t len = 4;
-  size_t nwritten=0;
-  char *buffer = (char *)&blank;
-
-  while (nwritten < len)
-  {
-    ret = write_socket(fd,buffer+nwritten,len - nwritten);
-    if (ret <= 0)
-    {
-      DEBUG(0,("send_null_session_msg: Error writing %d bytes to client. %d. Exiting\n",(int)len,(int)ret));
-      exit(1);
-    }
-    nwritten += ret;
-  }
-
-  DEBUG(10,("send_null_session_msg: sent 4 null bytes to client.\n"));
-  return True;
-}
-
-/****************************************************************************
   send an smb to a fd 
 ****************************************************************************/
 
 BOOL send_smb(int fd,char *buffer)
 {
-  size_t len;
-  size_t nwritten=0;
-  ssize_t ret;
-  len = smb_len(buffer) + 4;
+	size_t len;
+	size_t nwritten=0;
+	ssize_t ret;
+	len = smb_len(buffer) + 4;
 
-  while (nwritten < len)
-  {
-    ret = write_socket(fd,buffer+nwritten,len - nwritten);
-    if (ret <= 0)
-    {
-      DEBUG(0,("Error writing %d bytes to client. %d. Exiting\n",(int)len,(int)ret));
-      exit(1);
-    }
-    nwritten += ret;
-  }
+	while (nwritten < len) {
+		ret = write_socket(fd,buffer+nwritten,len - nwritten);
+		if (ret <= 0) {
+			DEBUG(0,("Error writing %d bytes to client. %d. (%s)\n",
+				(int)len,(int)ret, strerror(errno) ));
+			return False;
+		}
+		nwritten += ret;
+	}
 
-  return True;
+	return True;
 }
 
 /****************************************************************************
@@ -814,9 +790,9 @@ int open_socket_in(int type, int port, int dlevel,uint32 socket_addr, BOOL rebin
     { DEBUG(0,("gethostname failed\n")); return -1; } 
 
   /* get host info */
-  if ((hp = Get_Hostbyname(host_name)) == 0) 
+  if ((hp = sys_gethostbyname(host_name)) == 0) 
     {
-      DEBUG(0,( "Get_Hostbyname: Unknown host %s\n",host_name));
+      DEBUG(0,( "sys_gethostbyname: Unknown host %s\n",host_name));
       return -1;
     }
   
@@ -939,27 +915,6 @@ connect_again:
   return res;
 }
 
-
-/*******************************************************************
- Reset the 'done' variables so after a client process is created
- from a fork call these calls will be re-done. This should be
- expanded if more variables need reseting.
- ******************************************************************/
-
-
-void reset_globals_after_fork(void)
-{
-  /*
-   * Re-seed the random crypto generator, so all smbd's
-   * started from the same parent won't generate the same
-   * sequence.
-   */
-  {
-    unsigned char dummy;
-    generate_random_buffer( &dummy, 1, True);
-  } 
-}
-
 /* the following 3 client_*() functions are nasty ways of allowing
    some generic functions to get info that really should be hidden in
    particular modules */
@@ -989,8 +944,8 @@ static BOOL matchname(char *remotehost,struct in_addr  addr)
 	struct hostent *hp;
 	int     i;
 	
-	if ((hp = Get_Hostbyname(remotehost)) == 0) {
-		DEBUG(0,("Get_Hostbyname(%s): lookup failure.\n", remotehost));
+	if ((hp = sys_gethostbyname(remotehost)) == 0) {
+		DEBUG(0,("sys_gethostbyname(%s): lookup failure.\n", remotehost));
 		return False;
 	} 
 
@@ -1061,6 +1016,12 @@ char *get_socket_name(int fd)
 			pstrcpy(name_buf,"UNKNOWN");
 		}
 	}
+
+	alpha_strcpy(name_buf, name_buf, "_-.", sizeof(name_buf));
+	if (strstr(name_buf,"..")) {
+		pstrcpy(name_buf, "UNKNOWN");
+	}
+
 	return name_buf;
 }
 
@@ -1189,3 +1150,97 @@ int create_pipe_socket(char *dir, int dir_perms,
 
 	return s;
 }
+
+/*******************************************************************
+this is like socketpair but uses tcp. It is used by the Samba
+regression test code
+The function guarantees that nobody else can attach to the socket,
+or if they do that this function fails and the socket gets closed
+returns 0 on success, -1 on failure
+the resulting file descriptors are symmetrical
+ ******************************************************************/
+static int socketpair_tcp(int fd[2])
+{
+	int listener;
+	struct sockaddr_in sock;
+	struct sockaddr_in sock2;
+	socklen_t socklen = sizeof(sock);
+	int connect_done = 0;
+	
+	fd[0] = fd[1] = listener = -1;
+
+	memset(&sock, 0, sizeof(sock));
+	
+	if ((listener = socket(PF_INET, SOCK_STREAM, 0)) == -1) goto failed;
+
+        memset(&sock2, 0, sizeof(sock2));
+#ifdef HAVE_SOCK_SIN_LEN
+        sock2.sin_len = sizeof(sock2);
+#endif
+        sock2.sin_family = PF_INET;
+
+        bind(listener, (struct sockaddr *)&sock2, sizeof(sock2));
+
+	if (listen(listener, 1) != 0) goto failed;
+
+	if (getsockname(listener, (struct sockaddr *)&sock, &socklen) != 0) goto failed;
+
+	if ((fd[1] = socket(PF_INET, SOCK_STREAM, 0)) == -1) goto failed;
+
+	set_blocking(fd[1], 0);
+
+	sock.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+
+	if (connect(fd[1],(struct sockaddr *)&sock,sizeof(sock)) == -1) {
+		if (errno != EINPROGRESS) goto failed;
+	} else {
+		connect_done = 1;
+	}
+
+	if ((fd[0] = accept(listener, (struct sockaddr *)&sock, &socklen)) == -1) goto failed;
+
+	close(listener);
+	if (connect_done == 0) {
+		if (connect(fd[1],(struct sockaddr *)&sock,sizeof(sock)) != 0
+		    && errno != EISCONN) goto failed;
+	}
+
+	set_blocking(fd[1], 1);
+
+	/* all OK! */
+	return 0;
+
+ failed:
+	if (fd[0] != -1) close(fd[0]);
+	if (fd[1] != -1) close(fd[1]);
+	if (listener != -1) close(listener);
+	return -1;
+}
+
+
+/*******************************************************************
+run a program on a local tcp socket, this is used to launch smbd
+when regression testing
+the return value is a socket which is attached to a subprocess
+running "prog". stdin and stdout are attached. stderr is left
+attached to the original stderr
+ ******************************************************************/
+int sock_exec(const char *prog)
+{
+	int fd[2];
+	if (socketpair_tcp(fd) != 0) {
+		DEBUG(0,("socketpair_tcp failed (%s)\n", strerror(errno)));
+		return -1;
+	}
+	if (fork() == 0) {
+		close(fd[0]);
+		close(0);
+		close(1);
+		dup(fd[1]);
+		dup(fd[1]);
+		exit(system(prog));
+	}
+	close(fd[1]);
+	return fd[0];
+}
+

@@ -25,19 +25,14 @@
 extern int DEBUGLEVEL;
 extern fstring debugf;
 
-/* Various pipe commands */
-extern struct cmd_set lsarpc_commands[];
-extern struct cmd_set samr_commands[];
-extern struct cmd_set spoolss_commands[];
+DOM_SID domain_sid;
 
 /* List to hold groups of commands */
+
 static struct cmd_list {
 	struct cmd_list *prev, *next;
 	struct cmd_set *cmd_set;
 } *cmd_list;
-
-
-DOM_SID domain_sid;
 
 /****************************************************************************
 handle completion of commands for readline
@@ -160,9 +155,7 @@ static void read_authfile (
 	return;
 }
 
-static char* next_command (
-	char**	cmdstr
-)
+static char* next_command (char** cmdstr)
 {
 	static pstring 		command;
 	char			*p;
@@ -201,8 +194,15 @@ void fetch_domain_sid(struct cli_state *cli)
 	uint32 result = 0, info_class = 5;
 	fstring domain_name;
 	static BOOL got_domain_sid;
+	TALLOC_CTX *mem_ctx;
 
 	if (got_domain_sid) return;
+
+	if (!(mem_ctx=talloc_init()))
+	{
+		DEBUG(0,("fetch_domain_sid: talloc_init returned NULL!\n"));
+		goto error;
+	}
 
 
 	if (!cli_nt_session_open (cli, PIPE_LSARPC)) {
@@ -210,13 +210,13 @@ void fetch_domain_sid(struct cli_state *cli)
 		goto error;
 	}
 	
-	if ((result = cli_lsa_open_policy(cli, True, 
+	if ((result = cli_lsa_open_policy(cli, mem_ctx, True, 
 					  SEC_RIGHTS_MAXIMUM_ALLOWED,
 					  &pol) != NT_STATUS_NOPROBLEMO)) {
 		goto error;
 	}
 
-	if ((result = cli_lsa_query_info_policy(cli, &pol, info_class, 
+	if ((result = cli_lsa_query_info_policy(cli, mem_ctx, &pol, info_class, 
 						domain_name, &domain_sid))
 	    != NT_STATUS_NOPROBLEMO) {
 		goto error;
@@ -224,8 +224,9 @@ void fetch_domain_sid(struct cli_state *cli)
 
 	got_domain_sid = True;
 
-	cli_lsa_close(cli, &pol);
+	cli_lsa_close(cli, mem_ctx, &pol);
 	cli_nt_session_close(cli);
+	talloc_destroy(mem_ctx);
 
 	return;
 
@@ -315,6 +316,24 @@ static struct cmd_set separator_command[] = {
 };
 
 
+/* Various pipe commands */
+
+extern struct cmd_set lsarpc_commands[];
+extern struct cmd_set samr_commands[];
+extern struct cmd_set spoolss_commands[];
+extern struct cmd_set netlogon_commands[];
+extern struct cmd_set srvsvc_commands[];
+
+static struct cmd_set *rpcclient_command_list[] = {
+	rpcclient_commands,
+	lsarpc_commands,
+	samr_commands,
+	spoolss_commands,
+	netlogon_commands,
+	srvsvc_commands,
+	NULL
+};
+
 void add_command_set(struct cmd_set *cmd_set)
 {
 	struct cmd_list *entry;
@@ -399,10 +418,19 @@ static uint32 process_cmd(struct cli_state *cli, char *cmd)
 	pstring buf;
 	char *p = cmd;
 	uint32 result=0;
+	int len = 0;
+
+	if (cmd[strlen(cmd) - 1] == '\n')
+		cmd[strlen(cmd) - 1] = '\0';
 
 	if (!next_token(&p, buf, " ", sizeof(buf))) {
 		return 0;
 	}
+
+        /* strip the trainly \n if it exsists */
+	len = strlen(buf);
+	if (buf[len-1] == '\n')
+		buf[len-1] = '\0';
 
 	/* Search for matching commands */
 
@@ -508,6 +536,7 @@ static void usage(char *pname)
 				username,
 				domain,
 				server;
+	struct cmd_set **cmd_set;
 
 	charset_initialise();
 	setlinebuf(stdout);
@@ -623,37 +652,33 @@ static void usage(char *pname)
 	}
 	
 	/* There are no pointers in ntuser_creds struct so zero it out */
+
 	ZERO_STRUCTP (&creds);
 	
-
 	/* Load command lists */
-	add_command_set(rpcclient_commands);
-	add_command_set(separator_command);
 
-	add_command_set(spoolss_commands);
-	add_command_set(separator_command);
+	cmd_set = rpcclient_command_list;
 
-	add_command_set(lsarpc_commands);
-	add_command_set(separator_command);
-
-	add_command_set(samr_commands);
-	add_command_set(separator_command);
-
-
-	/* Do anything specified with -c */
-	if (cmdstr[0]) {
-		char 	*cmd;
-		char 	*p = cmdstr;
-
-		while((cmd=next_command(&p)) != NULL) {
-			process_cmd(&cli, cmd);
-		}
-
-		return 0;
+	while(*cmd_set) {
+		add_command_set(*cmd_set);
+		add_command_set(separator_command);
+		cmd_set++;
 	}
 
+        /* Do anything specified with -c */
+        if (cmdstr[0]) {
+                char    *cmd;
+                char    *p = cmdstr;
+ 
+                while((cmd=next_command(&p)) != NULL) {
+                        process_cmd(&cli, cmd);
+                }
+ 
+                return 0;
+        }
 
 	/* Loop around accepting commands */
+
 	while(1) {
 		pstring prompt;
 		char *line;
@@ -662,7 +687,12 @@ static void usage(char *pname)
 
 		line = smb_readline(prompt, NULL, completion_fn);
 
-		process_cmd(&cli, line);
-	}
-}
+		if (line == NULL)
+			break;
 
+		if (line[0] != '\n')
+			process_cmd(&cli, line);
+	}
+
+	return 0;
+}

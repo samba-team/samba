@@ -70,16 +70,61 @@
 #include <errno.h>
 #include <pwd.h>
 
-#ifdef HAVE_NSS_H
+#ifdef HAVE_NSS_COMMON_H
+/* Sun Solaris */
+
+#include <nss_common.h>
+#include <nss_dbdefs.h>
+#include <nsswitch.h>
+
+typedef nss_status_t NSS_STATUS;
+
+#define NSS_STATUS_SUCCESS     NSS_SUCCESS
+#define NSS_STATUS_NOTFOUND    NSS_NOTFOUND
+#define NSS_STATUS_UNAVAIL     NSS_UNAVAIL
+#define NSS_STATUS_TRYAGAIN    NSS_TRYAGAIN
+
+#elif HAVE_NSS_H
+/* GNU */
+
 #include <nss.h>
-#else
-/* Minimal needed to compile.. */
-enum nss_status {
-NSS_STATUS_SUCCESS,
-NSS_STATUS_NOTFOUND,
-NSS_STATUS_UNAVAIL
-};
+
+typedef enum nss_status NSS_STATUS;
+
+#else /* Nothing's defined. Neither gnu nor sun */
+
+typedef enum
+{
+  NSS_STATUS_SUCCESS,
+  NSS_STATUS_NOTFOUND,
+  NSS_STATUS_UNAVAIL,
+  NSS_STATUS_TRYAGAIN
+} NSS_STATUS;
+
 #endif
+
+/* Declarations for functions in winbind_nss.c
+   needed in winbind_nss_solaris.c (solaris wrapper to nss) */
+
+NSS_STATUS _nss_winbind_setpwent(void);
+NSS_STATUS _nss_winbind_endpwent(void);
+NSS_STATUS _nss_winbind_getpwent_r(struct passwd* result, char* buffer,
+				   size_t buflen, int* errnop);
+NSS_STATUS _nss_winbind_getpwuid_r(uid_t, struct passwd*, char* buffer,
+				   size_t buflen, int* errnop);
+NSS_STATUS _nss_winbind_getpwnam_r(const char* name, struct passwd* result,
+				   char* buffer, size_t buflen, int* errnop);
+
+NSS_STATUS _nss_winbind_setgrent(void);
+NSS_STATUS _nss_winbind_endgrent(void);
+NSS_STATUS _nss_winbind_getgrent_r(struct group* result, char* buffer,
+				   size_t buflen, int* errnop);
+NSS_STATUS _nss_winbind_getgrnam_r(const char *name,
+				   struct group *result, char *buffer,
+				   size_t buflen, int *errnop);
+NSS_STATUS _nss_winbind_getgrgid_r(gid_t gid,
+				   struct group *result, char *buffer,
+				   size_t buflen, int *errnop);
 
 /* I'm trying really hard not to include anything from smb.h with the
    result of some silly looking redeclaration of structures. */
@@ -127,6 +172,7 @@ typedef int BOOL;
 
 /* zero a structure given a pointer to the structure */
 #define ZERO_STRUCTP(x) { if ((x) != NULL) memset((char *)(x), 0, sizeof(*(x))); }
+    
 /* Some systems (SCO) treat UNIX domain sockets as FIFOs */
 
 #ifndef S_IFSOCK

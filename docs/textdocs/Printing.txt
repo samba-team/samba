@@ -1,5 +1,5 @@
 !==
-!== Printing.txt for Samba release 2.2.0a 23 Jun 2001
+!== Printing.txt for Samba release 2.2.0-alpha3 24 Mar 2001
 !==
 Contributor:	Unknown <samba@samba.org>
 Revised by:	Patrick Powell <papowell@lprng.org>

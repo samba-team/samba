@@ -113,12 +113,16 @@ static BOOL brl_conflict(struct lock_struct *lck1,
 
 
 /****************************************************************************
-delete a record if it is for a dead process
+ Delete a record if it is for a dead process, if check_self is true, then
+ delete any records belonging to this pid also (there shouldn't be any).
 ****************************************************************************/
+
 static int delete_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
 {
 	struct lock_struct *locks;
 	int count, i;
+	BOOL check_self = *(BOOL *)state;
+	pid_t mypid = sys_getpid();
 
 	tdb_chainlock(tdb, kbuf);
 
@@ -128,7 +132,20 @@ static int delete_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *stat
 	for (i=0; i<count; i++) {
 		struct lock_struct *lock = &locks[i];
 
-		if (process_exists(lock->context.pid)) continue;
+		/* If check_self is true we want to remove our own records. */
+		if (check_self && (mypid == lock->context.pid)) {
+
+			DEBUG(0,("brlock : delete_fn. LOGIC ERROR ! Shutting down and a record for my pid (%u) exists !\n",
+					(unsigned int)lock->context.pid ));
+
+		} else if (process_exists(lock->context.pid)) {
+
+			DEBUG(10,("brlock : delete_fn. pid %u exists.\n", (unsigned int)lock->context.pid ));
+			continue;
+		}
+
+		DEBUG(10,("brlock : delete_fn. Deleting record for process %u\n",
+				(unsigned int)lock->context.pid ));
 
 		if (count > 1 && i < count-1) {
 			memmove(&locks[i], &locks[i+1], 
@@ -152,10 +169,14 @@ static int delete_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *stat
 /****************************************************************************
  Open up the brlock.tdb database.
 ****************************************************************************/
+
 void brl_init(int read_only)
 {
-	if (tdb) return;
-	tdb = tdb_open(lock_path("brlock.tdb"), 0, TDB_CLEAR_IF_FIRST, 
+	BOOL check_self = False;
+
+	if (tdb)
+		return;
+	tdb = tdb_open_log(lock_path("brlock.tdb"), 0, TDB_CLEAR_IF_FIRST, 
 		       read_only?O_RDONLY:(O_RDWR|O_CREAT), 0644);
 	if (!tdb) {
 		DEBUG(0,("Failed to open byte range locking database\n"));
@@ -163,11 +184,27 @@ void brl_init(int read_only)
 	}
 
 	/* delete any dead locks */
-	if (!read_only) {
-		tdb_traverse(tdb, delete_fn, NULL);
-	}
+	if (!read_only)
+		tdb_traverse(tdb, delete_fn, &check_self);
 }
 
+/****************************************************************************
+ Close down the brlock.tdb database.
+****************************************************************************/
+
+void brl_shutdown(int read_only)
+{
+	BOOL check_self = True;
+
+	if (!tdb)
+		return;
+
+	/* delete any dead locks */
+	if (!read_only)
+		tdb_traverse(tdb, delete_fn, &check_self);
+
+	tdb_close(tdb);
+}
 
 /****************************************************************************
  Lock a range of bytes.
@@ -304,13 +341,33 @@ smbpid = %u, pid = %u, tid = %u\n",
 }
 
 /****************************************************************************
+ Check to see if this lock conflicts, but ignore our own locks on the
+ same fnum only.
+****************************************************************************/
+
+static BOOL brl_conflict_other(struct lock_struct *lck1, struct lock_struct *lck2)
+{
+	if (lck1->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK) 
+		return False;
+
+	if (brl_same_context(&lck1->context, &lck2->context) &&
+				lck1->fnum == lck2->fnum)
+		return False;
+
+	if (lck1->start >= (lck2->start + lck2->size) ||
+	    lck2->start >= (lck1->start + lck1->size)) return False;
+	    
+	return True;
+} 
+
+/****************************************************************************
  Test if we could add a lock if we wanted to.
 ****************************************************************************/
 
 BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		  uint16 smbpid, pid_t pid, uint16 tid,
 		  br_off start, br_off size, 
-		  enum brl_type lock_type)
+		  enum brl_type lock_type, int check_self)
 {
 	TDB_DATA kbuf, dbuf;
 	int count, i;
@@ -336,8 +393,15 @@ BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		locks = (struct lock_struct *)dbuf.dptr;
 		count = dbuf.dsize / sizeof(*locks);
 		for (i=0; i<count; i++) {
-			if (brl_conflict(&locks[i], &lock)) {
-				goto fail;
+			if (check_self) {
+				if (brl_conflict(&locks[i], &lock))
+					goto fail;
+			} else {
+				/*
+				 * Our own locks don't conflict.
+				 */
+				if (brl_conflict_other(&locks[i], &lock))
+					goto fail;
 			}
 		}
 	}

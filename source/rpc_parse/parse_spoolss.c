@@ -761,6 +761,7 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
  * init a structure.
  ********************************************************************/
 BOOL make_spoolss_q_addprinterex(
+	TALLOC_CTX *mem_ctx,
 	SPOOL_Q_ADDPRINTEREX *q_u, 
 	const char *srv_name,
 	const char* clientname, 
@@ -783,7 +784,7 @@ BOOL make_spoolss_q_addprinterex(
 	{
 		case 2:
 			/* init q_u->info.info2 from *info */
-			if (!make_spoolss_printer_info_2(&q_u->info.info_2, ctr->printers_2))
+			if (!make_spoolss_printer_info_2(mem_ctx, &q_u->info.info_2, ctr->printers_2))
 			{
 				DEBUG(0,("make_spoolss_q_addprinterex: Unable to fill SPOOL_Q_ADDPRINTEREX struct!\n"));
 				return False;
@@ -818,6 +819,7 @@ create a SPOOL_PRINTER_INFO_2 stuct from a PRINTER_INFO_2 struct
 *******************************************************************/
 
 BOOL make_spoolss_printer_info_2(
+	TALLOC_CTX *mem_ctx,
 	SPOOL_PRINTER_INFO_LEVEL_2 **spool_info2, 
 	PRINTER_INFO_2 *info
 )
@@ -826,8 +828,7 @@ BOOL make_spoolss_printer_info_2(
 	SPOOL_PRINTER_INFO_LEVEL_2 *inf;
 
 	/* allocate the necessary memory */
-	inf = (SPOOL_PRINTER_INFO_LEVEL_2*)malloc(sizeof(SPOOL_PRINTER_INFO_LEVEL_2));
-	if (!spool_info2)
+	if (!(inf=(SPOOL_PRINTER_INFO_LEVEL_2*)talloc(mem_ctx, sizeof(SPOOL_PRINTER_INFO_LEVEL_2))))
 	{
 		DEBUG(0,("make_spoolss_printer_info_2: Unable to allocate SPOOL_PRINTER_INFO_LEVEL_2 sruct!\n"));
 		return False;
@@ -904,6 +905,31 @@ BOOL spoolss_io_q_open_printer_ex(char *desc, SPOOL_Q_OPEN_PRINTER_EX *q_u, prs_
 	if (!spool_io_user_level("", &q_u->user_ctr, ps, depth))
 		return False;
 		
+	return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+BOOL make_spoolss_q_deleteprinterdriver(
+	TALLOC_CTX *mem_ctx,
+	SPOOL_Q_DELETEPRINTERDRIVER *q_u, 
+	const char *server,
+	const char* arch, 
+	const char* driver 
+)
+{
+	DEBUG(5,("make_spoolss_q_deleteprinterdriver\n"));
+	
+	q_u->server_ptr = (server!=NULL)?1:0;
+
+	/* these must be NULL terminated or else NT4 will
+	   complain about invalid parameters --jerry */
+	init_unistr2(&q_u->server, server, strlen(server)+1);
+	init_unistr2(&q_u->arch, arch, strlen(arch)+1);
+	init_unistr2(&q_u->driver, driver, strlen(driver)+1);
+
+	
 	return True;
 }
 
@@ -1149,6 +1175,58 @@ BOOL spoolss_io_r_deleteprinter(char *desc, SPOOL_R_DELETEPRINTER *r_u, prs_stru
 	
 	return True;
 }
+
+
+/*******************************************************************
+ * read a structure.
+ * called from api_spoolss_deleteprinterdriver (srv_spoolss.c)
+ * called from spoolss_deleteprinterdriver (cli_spoolss.c)
+ ********************************************************************/
+
+BOOL spoolss_io_q_deleteprinterdriver(char *desc, SPOOL_Q_DELETEPRINTERDRIVER *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL) return False;
+
+	prs_debug(ps, depth, desc, "spoolss_io_q_deleteprinterdriver");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("server_ptr", ps, depth, &q_u->server_ptr))
+		return False;		
+	if(!smb_io_unistr2("server", &q_u->server, q_u->server_ptr, ps, depth))
+		return False;
+	if(!smb_io_unistr2("arch", &q_u->arch, True, ps, depth))
+		return False;
+	if(!smb_io_unistr2("driver", &q_u->driver, True, ps, depth))
+		return False;
+
+
+	return True;
+}
+
+
+/*******************************************************************
+ * write a structure.
+ ********************************************************************/
+BOOL spoolss_io_r_deleteprinterdriver(char *desc, SPOOL_R_DELETEPRINTERDRIVER *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL) return False;
+
+	prs_debug(ps, depth, desc, "spoolss_io_r_deleteprinterdriver");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+
 
 /*******************************************************************
  * read a structure.
@@ -3256,9 +3334,14 @@ BOOL spoolss_io_r_getprinterdriver2(char *desc, SPOOL_R_GETPRINTERDRIVER2 *r_u, 
  * init a structure.
  ********************************************************************/
 
-BOOL make_spoolss_q_enumprinters(SPOOL_Q_ENUMPRINTERS *q_u, uint32 flags, 
-				fstring servername, uint32 level, 
-				NEW_BUFFER *buffer, uint32 offered)
+BOOL make_spoolss_q_enumprinters(
+	SPOOL_Q_ENUMPRINTERS *q_u, 
+	uint32 flags, 
+	fstring servername, 
+	uint32 level, 
+	NEW_BUFFER *buffer, 
+	uint32 offered
+)
 {
 	q_u->flags=flags;
 	
@@ -3420,6 +3503,7 @@ BOOL spoolss_io_q_getprinter(char *desc, SPOOL_Q_GETPRINTER *q_u, prs_struct *ps
  ********************************************************************/
 
 BOOL make_spoolss_q_getprinter(
+	TALLOC_CTX *mem_ctx,
 	SPOOL_Q_GETPRINTER *q_u, 
 	const POLICY_HND *hnd, 
 	uint32 level, 
@@ -3444,6 +3528,7 @@ BOOL make_spoolss_q_getprinter(
  * init a structure.
  ********************************************************************/
 BOOL make_spoolss_q_setprinter(
+	TALLOC_CTX *mem_ctx,
 	SPOOL_Q_SETPRINTER *q_u, 
 	const POLICY_HND *hnd, 
 	uint32 level, 
@@ -3474,7 +3559,7 @@ BOOL make_spoolss_q_setprinter(
 		info->printers_2->devmode = NULL;
 		info->printers_2->secdesc = NULL;
 		
-		make_spoolss_printer_info_2 (&q_u->info.info_2, info->printers_2);
+		make_spoolss_printer_info_2 (mem_ctx, &q_u->info.info_2, info->printers_2);
 #if 0	/* JERRY TEST */
 		q_u->secdesc_ctr = (SEC_DESC_BUF*)malloc(sizeof(SEC_DESC_BUF));
 		if (!q_u->secdesc_ctr)
@@ -3483,13 +3568,13 @@ BOOL make_spoolss_q_setprinter(
 		q_u->secdesc_ctr->max_len = (secdesc) ? sizeof(SEC_DESC) + (2*sizeof(uint32)) : 0;
 		q_u->secdesc_ctr->len = (secdesc) ? sizeof(SEC_DESC) + (2*sizeof(uint32)) : 0;
 		q_u->secdesc_ctr->sec = secdesc;
-	
+
 		q_u->devmode_ctr.devmode_ptr = (devmode != NULL) ? 1 : 0;
 		q_u->devmode_ctr.size = sizeof(DEVICEMODE) + (3*sizeof(uint32));
 		q_u->devmode_ctr.devmode = devmode;
 #else
 		q_u->secdesc_ctr = NULL;
-		
+	
 		q_u->devmode_ctr.devmode_ptr = 0;
 		q_u->devmode_ctr.size = 0;
 		q_u->devmode_ctr.devmode = NULL;
@@ -4700,6 +4785,7 @@ BOOL spool_io_printer_driver_info_level(char *desc, SPOOL_PRINTER_DRIVER_INFO_LE
  ******************************************************************/
 
 BOOL make_spoolss_q_addprinterdriver(
+	TALLOC_CTX *mem_ctx,
 	SPOOL_Q_ADDPRINTERDRIVER *q_u, 
 	const char* srv_name, 
 	uint32 level, 
@@ -4718,7 +4804,7 @@ BOOL make_spoolss_q_addprinterdriver(
 	{
 	/* info level 3 is supported by Windows 95/98, WinNT and Win2k */
 	case 3 :
-		make_spoolss_driver_info_3(&q_u->info.info_3, info->info3);
+		make_spoolss_driver_info_3(mem_ctx, &q_u->info.info_3, info->info3);
 		break;
 		
 	/* info level 6 is supported by WinME and Win2k */
@@ -4735,6 +4821,7 @@ BOOL make_spoolss_q_addprinterdriver(
 }
 
 BOOL make_spoolss_driver_info_3(
+	TALLOC_CTX *mem_ctx,
 	SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 **spool_drv_info,
 	DRIVER_INFO_3 *info3
 )
@@ -4745,11 +4832,8 @@ BOOL make_spoolss_driver_info_3(
 	BOOL		null_char = False;
 	SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *inf;
 
-	inf = (SPOOL_PRINTER_DRIVER_INFO_LEVEL_3*)
-		malloc(sizeof(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3));
-	if (!inf)
+	if (!(inf=(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3*)talloc_zero(mem_ctx, sizeof(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3))))
 		return False;
-	memset (inf, 0x0, sizeof(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3));
 	
 	inf->cversion	= info3->version;
 	inf->name_ptr	= (info3->name.buffer!=NULL)?1:0;
@@ -4793,7 +4877,7 @@ BOOL make_spoolss_driver_info_3(
 	}
 	inf->dependentfiles_ptr = (info3->dependentfiles != NULL) ? 1 : 0;
 	inf->dependentfilessize = len;
-	if(!make_spoolss_buffer5(&inf->dependentfiles, len, info3->dependentfiles))
+	if(!make_spoolss_buffer5(mem_ctx, &inf->dependentfiles, len, info3->dependentfiles))
 	{
 		safe_free (inf);
 		return False;
@@ -4808,18 +4892,21 @@ BOOL make_spoolss_driver_info_3(
  make a BUFFER5 struct from a uint16*
  ******************************************************************/
 
-BOOL make_spoolss_buffer5(BUFFER5 *buf5, uint32 len, uint16 *src)
+BOOL make_spoolss_buffer5(
+	TALLOC_CTX *mem_ctx,
+	BUFFER5 *buf5, 
+	uint32 len, 
+	uint16 *src
+)
 {
 
 	buf5->buf_len = len;
-	if((buf5->buffer=(uint16*)malloc(sizeof(uint16)*len)) == NULL)
+	if((buf5->buffer=(uint16*)talloc_memdup(mem_ctx, src, sizeof(uint16)*len)) == NULL)
 	{
 		DEBUG(0,("make_spoolss_buffer5: Unable to malloc memory for buffer!\n"));
 		return False;
 	}
 	
-	memcpy(buf5->buffer, src, sizeof(uint16)*len);
-
 	return True;
 }
 
@@ -5168,6 +5255,57 @@ BOOL spoolss_io_q_enumprintprocessors(char *desc, SPOOL_Q_ENUMPRINTPROCESSORS *q
 /*******************************************************************
 ********************************************************************/  
 
+BOOL spoolss_io_q_addprintprocessor(char *desc, SPOOL_Q_ADDPRINTPROCESSOR *q_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_q_addprintprocessor");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+		
+	if (!prs_uint32("server_ptr", ps, depth, &q_u->server_ptr))
+		return False;
+	if (!smb_io_unistr2("server", &q_u->server, q_u->server_ptr, ps, depth))
+		return False;
+		
+	if (!prs_align(ps))
+		return False;
+	if (!smb_io_unistr2("environment", &q_u->environment, True, ps, depth))
+		return False;
+		
+	if (!prs_align(ps))
+		return False;
+	if (!smb_io_unistr2("path", &q_u->path, True, ps, depth))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+	if (!smb_io_unistr2("name", &q_u->name, True, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/  
+
+BOOL spoolss_io_r_addprintprocessor(char *desc, SPOOL_R_ADDPRINTPROCESSOR *r_u, prs_struct *ps, int depth)
+{		
+	prs_debug(ps, depth, desc, "spoolss_io_r_addprintproicessor");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+		
+	if (!prs_uint32("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;		
+}
+
+/*******************************************************************
+********************************************************************/  
+
 BOOL spoolss_io_r_enumprintprocdatatypes(char *desc, SPOOL_R_ENUMPRINTPROCDATATYPES *r_u, prs_struct *ps, int depth)
 {		
 	prs_debug(ps, depth, desc, "spoolss_io_r_enumprintprocdatatypes");
@@ -5407,12 +5545,14 @@ BOOL spoolss_io_q_setprinterdata(char *desc, SPOOL_Q_SETPRINTERDATA *q_u, prs_st
 		case 0x3:
 		case 0x4:
 		case 0x7:
-			if (UNMARSHALLING(ps))
-				q_u->data=(uint8 *)prs_alloc_mem(ps, q_u->max_len * sizeof(uint8));
-			if(q_u->data == NULL)
-				return False;
-			if(!prs_uint8s(False,"data", ps, depth, q_u->data, q_u->max_len))
-				return False;
+            if (q_u->max_len) {
+                if (UNMARSHALLING(ps))
+    				q_u->data=(uint8 *)prs_alloc_mem(ps, q_u->max_len * sizeof(uint8));
+    			if(q_u->data == NULL)
+    				return False;
+    			if(!prs_uint8s(False,"data", ps, depth, q_u->data, q_u->max_len))
+    				return False;
+            }
 			if(!prs_align(ps))
 				return False;
 			break;

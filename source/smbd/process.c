@@ -48,7 +48,7 @@ extern char *last_inbuf;
 extern char *InBuffer;
 extern char *OutBuffer;
 extern int smb_read_error;
-extern VOLATILE SIG_ATOMIC_T reload_after_sighup;
+extern VOLATILE sig_atomic_t reload_after_sighup;
 extern BOOL global_machine_password_needs_changing;
 extern fstring global_myworkgroup;
 extern pstring global_myname;
@@ -612,7 +612,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 {
   static pid_t pid= (pid_t)-1;
   int outsize = 0;
-  extern int global_smbpid;
+  extern uint16 global_smbpid;
 
   type &= 0xff;
 
@@ -692,6 +692,12 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
     /* does this protocol need to be run as root? */
     if (!(flags & AS_USER))
       unbecome_user();
+
+    /* does this protocol need a valid tree connection? */
+    if ((flags & AS_USER) && !conn) {
+	    return ERROR(ERRSRV, ERRinvnid);
+    }
+
 
     /* does this protocol need to be run as the connected user? */
     if ((flags & AS_USER) && !become_user(conn,session_tag)) {
@@ -781,12 +787,12 @@ static BOOL smbd_process_limit(void)
 		/* Always add one to the smbd process count, as exit_server() always
 		 * subtracts one.
 		 */
-		tdb_lock_bystring(conn_tdb_ctx(), "INFO/total_smbds");
-		total_smbds = tdb_fetch_int(conn_tdb_ctx(), "INFO/total_smbds");
-		total_smbds = total_smbds < 0 ? 1 : total_smbds + 1;
-		tdb_store_int(conn_tdb_ctx(), "INFO/total_smbds", total_smbds);
-		tdb_unlock_bystring(conn_tdb_ctx(), "INFO/total_smbds");
-		
+
+		total_smbds = 1; /* In case we need to create the entry. */
+
+		if (tdb_change_int_atomic(conn_tdb_ctx(), "INFO/total_smbds", &total_smbds, 1) == -1)
+			return True;
+
 		return total_smbds > lp_max_smbd_processes();
 	}
 	else
@@ -822,7 +828,7 @@ void process_smb(char *inbuf, char *outbuf)
 		  static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
 		  DEBUG( 1, ( "Connection denied from %s\n",
 			      client_addr() ) );
-		  send_smb(smbd_server_fd(),(char *)buf);
+		  (void)send_smb(smbd_server_fd(),(char *)buf);
 		  exit_server("connection denied");
 	  }
   }
@@ -860,7 +866,8 @@ void process_smb(char *inbuf, char *outbuf)
                  nread, smb_len(outbuf)));
     }
     else
-      send_smb(smbd_server_fd(),outbuf);
+      if (!send_smb(smbd_server_fd(),outbuf))
+        exit_server("process_smb: send_smb failed.\n");
   }
   trans_num++;
 }
@@ -1183,8 +1190,8 @@ void smbd_process(void)
 	time_t last_timeout_processing_time = time(NULL);
 	unsigned int num_smbs = 0;
 
-	InBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
-	OutBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
+	InBuffer = (char *)malloc(BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN);
+	OutBuffer = (char *)malloc(BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN);
 	if ((InBuffer == NULL) || (OutBuffer == NULL)) 
 		return;
 
@@ -1195,6 +1202,9 @@ void smbd_process(void)
 
 	/* re-initialise the timezone */
 	TimeInit();
+
+	/* register our message handlers */
+	message_register(MSG_SMB_FORCE_TDIS, msg_force_tdis);
 
 	while (True) {
 		int deadtime = lp_deadtime()*60;
@@ -1210,7 +1220,7 @@ void smbd_process(void)
 		lp_talloc_free();
 		main_loop_talloc_free();
 
-		while (!receive_message_or_smb(InBuffer,BUFFER_SIZE,select_timeout)) {
+		while (!receive_message_or_smb(InBuffer,BUFFER_SIZE+LARGE_WRITEX_HDR_SIZE,select_timeout)) {
 			if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
 				return;
 			num_smbs = 0; /* Reset smb counter. */
@@ -1246,7 +1256,7 @@ void smbd_process(void)
 		
 		if ((num_smbs % 200) == 0) {
 			time_t new_check_time = time(NULL);
-			if(last_timeout_processing_time - new_check_time >= (select_timeout/1000)) {
+			if(new_check_time - last_timeout_processing_time >= (select_timeout/1000)) {
 				if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
 					return;
 				num_smbs = 0; /* Reset smb counter. */

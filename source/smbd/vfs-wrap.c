@@ -479,33 +479,34 @@ int vfswrap_utime(connection_struct *conn, char *path, struct utimbuf *times)
 int vfswrap_ftruncate(files_struct *fsp, int fd, SMB_OFF_T len)
 {
 	int result = -1;
-    START_PROFILE(syscall_ftruncate);
-
-#ifdef HAVE_FTRUNCATE_EXTEND
-	result = sys_ftruncate(fd, len);
-    END_PROFILE(syscall_ftruncate);
-    return result;
-#else
-
-	/* According to W. R. Stevens advanced UNIX prog. Pure 4.3 BSD cannot
-		extend a file with ftruncate. Provide alternate implementation
-		for this */
-
 	struct vfs_ops *vfs_ops = &fsp->conn->vfs_ops;
 	SMB_STRUCT_STAT st;
 	char c = 0;
 	SMB_OFF_T currpos;
 
-	currpos = vfs_ops->lseek(fsp, (SMB_OFF_T)0, SEEK_CUR);
-	if(currpos == -1) {
+	START_PROFILE(syscall_ftruncate);
+
+	/* we used to just check HAVE_FTRUNCATE_EXTEND and only use
+	   sys_ftruncate if the system supports it. Then I discovered that
+	   you can have some filesystems that support ftruncate
+	   expansion and some that don't! On Linux fat can't do
+	   ftruncate extend but ext2 can. */
+	result = sys_ftruncate(fd, len);
+	if (result == 0) goto done;
+
+	/* According to W. R. Stevens advanced UNIX prog. Pure 4.3 BSD cannot
+	   extend a file with ftruncate. Provide alternate implementation
+	   for this */
+	currpos = vfs_ops->lseek(fsp, fd, 0, SEEK_CUR);
+	if (currpos == -1) {
 		goto done;
 	}
 
-	/* Do an fstat to see if the file is longer than
-		the requested size (call ftruncate),
-		or shorter, in which case seek to len - 1 and write 1
-		byte of zero */
-	if(vfs_ops->fstat(fsp, &st)<0) {
+	/* Do an fstat to see if the file is longer than the requested
+	   size in which case the ftruncate above should have
+	   succeeded or shorter, in which case seek to len - 1 and
+	   write 1 byte of zero */
+	if (vfs_ops->fstat(fsp, fd, &st) < 0) {
 		goto done;
 	}
 
@@ -516,35 +517,33 @@ int vfswrap_ftruncate(files_struct *fsp, int fd, SMB_OFF_T len)
 	}
 #endif
 
-	if(st.st_size == len) {
+	if (st.st_size == len) {
 		result = 0;
 		goto done;
 	}
 
-	if(st.st_size > len) {
-		/* Yes this is *deliberately* sys_ftruncate ! JRA */
-		result = sys_ftruncate(fd, len);
+	if (st.st_size > len) {
+		/* the sys_ftruncate should have worked */
 		goto done;
 	}
 
-	if(vfs_ops->lseek(fsp, len-1, SEEK_SET) != len -1) {
+	if (vfs_ops->lseek(fsp, fd, len-1, SEEK_SET) != len -1) {
 		goto done;
 	}
 
-	if(vfs_ops->write(fsp, &c, 1)!=1) {
+	if (vfs_ops->write(fsp, fd, &c, 1)!=1) {
 		goto done;
 	}
 
 	/* Seek to where we were */
-	if(vfs_ops->lseek(fsp, currpos, SEEK_SET) != currpos) {
+	if (vfs_ops->lseek(fsp, fd, currpos, SEEK_SET) != currpos) {
 		goto done;
 	}
+	result = 0;
   done:
 
-    END_PROFILE(syscall_ftruncate);
-    return result;
-#endif
-
+	END_PROFILE(syscall_ftruncate);
+	return result;
 }
 
 BOOL vfswrap_lock(files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
@@ -555,6 +554,38 @@ BOOL vfswrap_lock(files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T
 
     result =  fcntl_lock(fd, op, offset, count,type);
     END_PROFILE(syscall_fcntl_lock);
+    return result;
+}
+
+int vfswrap_symlink(connection_struct *conn, const char *oldpath, const char *newpath)
+{
+    int result;
+
+    START_PROFILE(syscall_symlink);
+
+#ifdef VFS_CHECK_NULL
+    if ((oldpath == NULL) || (newpath == NULL))
+		smb_panic("NULL pointer passed to vfswrap_symlink()\n");
+#endif
+
+    result = sys_symlink(oldpath, newpath);
+    END_PROFILE(syscall_symlink);
+    return result;
+}
+
+int vfswrap_readlink(connection_struct *conn, const char *path, char *buf, size_t bufsiz)
+{
+    int result;
+
+    START_PROFILE(syscall_readlink);
+
+#ifdef VFS_CHECK_NULL
+    if ((path == NULL) || (buf == NULL))
+		smb_panic("NULL pointer passed to vfswrap_readlink()\n");
+#endif
+
+    result = sys_readlink(path, buf, bufsiz);
+    END_PROFILE(syscall_readlink);
     return result;
 }
 

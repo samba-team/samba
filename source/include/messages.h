@@ -39,5 +39,6 @@
 #define MSG_PRINTER_NOTIFY 2001
 
 #define MSG_SMB_CONF_UPDATED 3001
+#define MSG_SMB_FORCE_TDIS   3002
 
 #endif

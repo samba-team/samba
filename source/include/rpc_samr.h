@@ -219,6 +219,58 @@ typedef struct sam_user_info_24
 	uint8 pass[516];
 } SAM_USER_INFO_24;
 
+/*
+ * NB. This structure is *definately* incorrect. It's my best guess
+ * currently for W2K SP2. The password field is encrypted in a different
+ * way than normal... And there are definately other problems. JRA.
+ */
+
+/* SAM_USER_INFO_25 */
+typedef struct sam_user_info_25
+{
+	/* TIMES MAY NOT IN RIGHT ORDER!!!! */
+	NTTIME logon_time;            /* logon time */
+	NTTIME logoff_time;           /* logoff time */
+	NTTIME kickoff_time;          /* kickoff time */
+	NTTIME pass_last_set_time;    /* password last set time */
+	NTTIME pass_can_change_time;  /* password can change time */
+	NTTIME pass_must_change_time; /* password must change time */
+
+	UNIHDR hdr_user_name;    /* NULL - user name unicode string header */
+	UNIHDR hdr_full_name;    /* user's full name unicode string header */
+	UNIHDR hdr_home_dir;     /* home directory unicode string header */
+	UNIHDR hdr_dir_drive;    /* home drive unicode string header */
+	UNIHDR hdr_logon_script; /* logon script unicode string header */
+	UNIHDR hdr_profile_path; /* profile path unicode string header */
+	UNIHDR hdr_acct_desc  ;  /* user description */
+	UNIHDR hdr_workstations; /* comma-separated workstations user can log in from */
+	UNIHDR hdr_unknown_str ; /* don't know what this is, yet. */
+	UNIHDR hdr_munged_dial ; /* munged path name and dial-back tel number */
+
+	uint8 lm_pwd[16];    /* lm user passwords */
+	uint8 nt_pwd[16];    /* nt user passwords */
+
+	uint32 user_rid;      /* Primary User ID */
+	uint32 group_rid;     /* Primary Group ID */
+
+	uint32 acb_info; /* account info (ACB_xxxx bit-mask) */
+
+	uint32 unknown_6[6];
+
+	uint8 pass[532];
+
+	UNISTR2 uni_user_name;    /* NULL - username unicode string */
+	UNISTR2 uni_full_name;    /* user's full name unicode string */
+	UNISTR2 uni_home_dir;     /* home directory unicode string */
+	UNISTR2 uni_dir_drive;    /* home directory drive unicode string */
+	UNISTR2 uni_logon_script; /* logon script unicode string */
+	UNISTR2 uni_profile_path; /* profile path unicode string */
+	UNISTR2 uni_acct_desc  ;  /* user description unicode string */
+	UNISTR2 uni_workstations; /* login from workstations unicode string */
+	UNISTR2 uni_unknown_str ; /* don't know what this is, yet. */
+	UNISTR2 uni_munged_dial ; /* munged path name and dial-back tel no */
+} SAM_USER_INFO_25;
+
 
 /* SAM_USER_INFO_21 */
 typedef struct sam_user_info_21
@@ -565,7 +617,7 @@ typedef struct r_samr_open_domain_info
 
 } SAMR_R_OPEN_DOMAIN;
 
-#define MAX_SAM_ENTRIES 250
+#define MAX_SAM_ENTRIES 50
 
 typedef struct samr_entry_info
 {
@@ -734,8 +786,8 @@ typedef struct samr_str_entry_info1
 
 typedef struct sam_entry_info_1
 {
-	SAM_ENTRY1 sam[MAX_SAM_ENTRIES];
-	SAM_STR1   str[MAX_SAM_ENTRIES];
+	SAM_ENTRY1 *sam;
+	SAM_STR1   *str;
 
 } SAM_DISPINFO_1;
 
@@ -764,8 +816,8 @@ typedef struct samr_str_entry_info2
 
 typedef struct sam_entry_info_2
 {
-	SAM_ENTRY2 sam[MAX_SAM_ENTRIES];
-	SAM_STR2   str[MAX_SAM_ENTRIES];
+	SAM_ENTRY2 *sam;
+	SAM_STR2   *str;
 
 } SAM_DISPINFO_2;
 
@@ -793,8 +845,8 @@ typedef struct samr_str_entry_info3
 
 typedef struct sam_entry_info_3
 {
-	SAM_ENTRY3 sam[MAX_SAM_ENTRIES];
-	SAM_STR3   str[MAX_SAM_ENTRIES];
+	SAM_ENTRY3 *sam;
+	SAM_STR3   *str;
 
 } SAM_DISPINFO_3;
 
@@ -816,8 +868,8 @@ typedef struct samr_str_entry_info4
 
 typedef struct sam_entry_info_4
 {
-	SAM_ENTRY4 sam[MAX_SAM_ENTRIES];
-	SAM_STR4   str[MAX_SAM_ENTRIES];
+	SAM_ENTRY4 *sam;
+	SAM_STR4   *str;
 
 } SAM_DISPINFO_4;
 
@@ -839,8 +891,8 @@ typedef struct samr_str_entry_info5
 
 typedef struct sam_entry_info_5
 {
-	SAM_ENTRY5 sam[MAX_SAM_ENTRIES];
-	SAM_STR5   str[MAX_SAM_ENTRIES];
+	SAM_ENTRY5 *sam;
+	SAM_STR5   *str;
 
 } SAM_DISPINFO_5;
 
@@ -1140,6 +1192,7 @@ typedef struct sam_userinfo_ctr_info
 		SAM_USER_INFO_21 *id21; /* auth-level 21 */
 		SAM_USER_INFO_23 *id23; /* auth-level 0x17 */
 		SAM_USER_INFO_24 *id24; /* auth-level 0x18 */
+		SAM_USER_INFO_25 *id25; /* auth-level 0x19 */
 		void* id; /* to make typecasting easy */
 
 	} info;
@@ -1249,8 +1302,8 @@ typedef struct q_samr_lookup_names_info
 	uint32 ptr;            /* 0x0000 0000 - 32 bit unknown */
 	uint32 num_names2;      /* number of names being looked up */
 
-	UNIHDR  hdr_name[MAX_LOOKUP_SIDS]; /* unicode account name header */
-	UNISTR2 uni_name[MAX_LOOKUP_SIDS]; /* unicode account name string */
+	UNIHDR  *hdr_name; /* unicode account name header */
+	UNISTR2 *uni_name; /* unicode account name string */
 
 } SAMR_Q_LOOKUP_NAMES;
 
@@ -1530,8 +1583,8 @@ typedef struct q_samr_open_alias_info
 {
 	POLICY_HND dom_pol;
 
-	uint32 unknown_0;         /* 0x0000 0008 */
-	uint32 rid_alias;        /* rid */
+	uint32 access_mask;         
+	uint32 rid_alias;
 
 } SAMR_Q_OPEN_ALIAS;
 

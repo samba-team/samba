@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH SMBCLIENT 1 "23 Jun 2001" "smbclient 2.2.0a"
+.TH "SMBCLIENT" "1" "22 June 2001" "" ""
 .SH NAME
 smbclient \- ftp-like client to access SMB/CIFS resources  on servers
 .SH SYNOPSIS
@@ -38,8 +38,8 @@ a NetBIOS server name, which may or may not be the
 same as the IP hostname of the machine running the server.
 
 The server name is looked up according to either 
-the \fI-R\fR parameter to smbclient or 
-using the name resolve order parameter in the smb.conf file, 
+the \fI-R\fR parameter to \fBsmbclient\fR or 
+using the name resolve order parameter in the \fIsmb.conf\fR file, 
 allowing an administrator to change the order and methods 
 by which server names are looked up. 
 .TP
@@ -75,7 +75,7 @@ options.
 \fB-R <name resolve order>\fR
 This option is used by the programs in the Samba 
 suite to determine what naming services and in what order to resolve 
-host names to IP addresses. The option takes a space separated 
+host names to IP addresses. The option takes a space-separated 
 string of different name resolution options.
 
 The options are :"lmhosts", "host", "wins" and "bcast". They 
@@ -92,7 +92,7 @@ any name type matches for lookup.
 host : Do a standard host 
 name to IP address resolution, using the system \fI/etc/hosts
 \fR, NIS, or DNS lookups. This method of name resolution 
-is operating system depended for instance on IRIX or Solaris this 
+is operating system dependent, for instance on IRIX or Solaris this 
 may be controlled by the \fI/etc/nsswitch.conf\fR 
 file). Note that this method is only used if the NetBIOS name 
 type being queried is the 0x20 (server) name type, otherwise 
@@ -120,7 +120,7 @@ defined in the \fIsmb.conf\fR file parameter
 .PP
 The default order is lmhosts, host, wins, bcast and without 
 this parameter or any entry in the \fIname resolve order
-\fRparameter of the smb.conf file the name resolution
+\fRparameter of the \fIsmb.conf\fR file the name resolution
 methods will be attempted in this order. 
 .PP
 .TP
@@ -157,7 +157,7 @@ messages.
 \fB-i scope\fR
 This specifies a NetBIOS scope that smbclient will 
 use to communicate with when generating NetBIOS names. For details 
-on the use of NetBIOS scopes, see rfc1001.txt and rfc1002.txt.
+on the use of NetBIOS scopes, see \fIrfc1001.txt\fR and \fIrfc1002.txt\fR.
 NetBIOS scopes are \fBvery\fR rarely used, only set 
 this parameter if you are the system administrator in charge of all 
 the NetBIOS systems you communicate with. 
@@ -178,7 +178,7 @@ allows you to override the host name and use whatever NetBIOS
 name you wish. 
 .TP
 \fB-d debuglevel\fR
-debuglevel is an integer from 0 to 10, or 
+\fIdebuglevel\fR is an integer from 0 to 10, or 
 the letter 'A'. 
 
 The default value if this parameter is not specified 
@@ -195,13 +195,13 @@ Levels above 1 will generate considerable amounts of log
 data, and should only be used when investigating a problem.
 Levels above 3 are designed for use only by developers and 
 generate HUGE amounts of log data, most of which is extremely 
-cryptic. If debuglevel is set to the letter 'A', then \fBall
+cryptic. If \fIdebuglevel\fR is set to the letter 'A', then \fBall
 \fRdebug messages will be printed. This setting
 is for developers only (and people who \fBreally\fR want 
 to know how the code works internally). 
 
 Note that specifying this parameter here will override
-the log level parameter in the \fBsmb.conf (5)\fR 
+the log level parameter in the \fIsmb.conf (5)\fR 
 file. 
 .TP
 \fB-p port\fR
@@ -211,7 +211,7 @@ TCP port number for an SMB/CIFS server is 139, which is the
 default. 
 .TP
 \fB-l logfilename\fR
-If specified, logfilename specifies a base filename 
+If specified, \fIlogfilename\fR specifies a base filename 
 into which operational data from the running client will be 
 logged. 
 
@@ -227,7 +227,7 @@ The log file generated is never removed by the client.
 Print the usage message for the client. 
 .TP
 \fB-I IP-address\fR
-IP address is the address of the server to connect to. 
+\fIIP address\fR is the address of the server to connect to. 
 It should be specified in standard "a.b.c.d" notation. 
 
 Normally the client would attempt to locate a named 
@@ -253,28 +253,28 @@ By default, the client writes messages to standard output
 \fB-U username[%pass]\fR
 Sets the SMB username or username and password. 
 If %pass is not specified, The user will be prompted. The client 
-will first check the USER environment variable, then the 
-\fI$LOGNAME\fR variable and if either exist, the 
+will first check the \fBUSER\fR environment variable, then the 
+\fBLOGNAME\fR variable and if either exists, the 
 string is uppercased. Anything in these variables following a '%' 
-sign will be treated as the password. If these environmental 
+sign will be treated as the password. If these environment 
 variables are not found, the username GUEST 
 is used. 
 
-If the password is not included in these environment 
-variables (using the %pass syntax), rpcclient will look for 
-a \fI$PASSWD\fR environment variable from which 
+If the password is not included in these environment
+variables (using the %pass syntax), \fBrpcclient\fR will look for 
+a \fBPASSWD\fR environment variable from which 
 to read the password. 
 
 A third option is to use a credentials file which 
 contains the plaintext of the username and password. This 
 option is mainly provided for scripts where the admin doesn't 
-desire to pass the credentials on the command line or via environment 
+wish to pass the credentials on the command line or via environment 
 variables. If this method is used, make certain that the permissions 
 on the file restrict access from unwanted users. See the 
 \fI-A\fR for more details. 
 
 Be cautious about including passwords in scripts or in 
-the \fI$PASSWD\fR environment variable. Also, on 
+the \fBPASSWD\fR environment variable. Also, on 
 many systems the command line of a running process may be seen 
 via the \fBps\fR command to be safe always allow 
 \fBrpcclient\fR to prompt for a password and type 
@@ -301,11 +301,11 @@ This option allows you to look at what services
 are available on a server. You use it as \fBsmbclient -L 
 host\fR and a list should appear. The \fI-I
 \fRoption may be useful if your NetBIOS names don't 
-match your tcp/ip dns host names or if you are trying to reach a 
+match your TCP/IP DNS host names or if you are trying to reach a 
 host on another network. 
 .TP
 \fB-t terminal code\fR
-This option tells smbclient how to interpret 
+This option tells \fBsmbclient\fR how to interpret 
 filenames coming from the remote server. Usually Asian language 
 multibyte UNIX implementations use different character sets than 
 SMB/CIFS servers (\fBEUC\fR instead of \fB SJIS\fR for example). Setting this parameter will let 
@@ -383,7 +383,7 @@ diagnostics as it works. This is the same as tarmode quiet.
 .TP 0.2i
 \(bu
 \fIr\fR - Regular expression include
-or exclude. Uses regular regular expression matching for 
+or exclude. Uses regular expression matching for 
 excluding or excluding files if compiled with HAVE_REGEX_H. 
 However this mode can be very slow. If not compiled with 
 HAVE_REGEX_H, does a limited wildcard match on '*' and '?'. 
@@ -407,7 +407,7 @@ archive bit to be reset when a file is backed up. Useful with the
 \fBsmbclient\fR's tar option now supports long 
 file names both on backup and restore. However, the full path 
 name of the file must be less than 1024 bytes. Also, when
-a tar archive is created, smbclient's tar option places all 
+a tar archive is created, \fBsmbclient\fR's tar option places all 
 files in the archive with relative names, not absolute names. 
 .PP
 .PP
@@ -422,11 +422,11 @@ the component separator).
 \fBExamples\fR
 .PP
 .PP
-Restore from tar file backup.tar into myshare on mypc 
+Restore from tar file \fIbackup.tar\fR into myshare on mypc 
 (no password on share). 
 .PP
 .PP
-\fBsmbclient //mypc/myshare "" -N -Tx backup.tar
+\fBsmbclient //mypc/yshare "" -N -Tx backup.tar
 \fR.PP
 .PP
 Restore everything except \fIusers/docs\fR
@@ -463,7 +463,7 @@ Change to initial directory before starting. Probably
 only of any use with the tar -T option. 
 .TP
 \fB-c command string\fR
-command string is a semicolon separated list of 
+command string is a semicolon-separated list of 
 commands to be executed instead of prompting from stdin. \fI -N\fR is implied by \fI-c\fR.
 
 This is particularly useful in scripts and for printing stdin 
@@ -500,13 +500,13 @@ vary from server to server, depending on how the server was implemented.
 The commands available are given here in alphabetical order. 
 .TP
 \fB? [command]\fR
-If "command" is specified, the ? command will display 
+If \fIcommand\fR is specified, the ? command will display 
 a brief informative message about the specified command. If no 
 command is specified, a list of available commands will
 be displayed. 
 .TP
 \fB! [shell command]\fR
-If "shell command" is specified, the ! 
+If \fIshell command\fR is specified, the ! 
 command will execute a shell locally and run the specified shell 
 command. If no command is specified, a local shell will be run. 
 .TP
@@ -521,11 +521,11 @@ directory on the server will be reported.
 .TP
 \fBdel <mask>\fR
 The client will request that the server attempt 
-to delete all files matching "mask" from the current working 
+to delete all files matching \fImask\fR from the current working 
 directory on the server. 
 .TP
 \fBdir <mask>\fR
-A list of the files matching "mask" in the current 
+A list of the files matching \fImask\fR in the current 
 working directory on the server will be retrieved from the server 
 and displayed. 
 .TP
@@ -534,9 +534,9 @@ Terminate the connection with the server and exit
 from the program. 
 .TP
 \fBget <remote file name> [local file name]\fR
-Copy the file called "remote file name" from 
+Copy the file called \fIremote file name\fR from 
 the server to the machine running the client. If specified, name 
-the local copy "local file name". Note that all transfers in 
+the local copy \fIlocal file name\fR. Note that all transfers in 
 \fBsmbclient\fR are binary. See also the 
 lowercase command. 
 .TP
@@ -544,7 +544,7 @@ lowercase command.
 See the ? command above. 
 .TP
 \fBlcd [directory name]\fR
-If "directory name" is specified, the current 
+If \fIdirectory name\fR is specified, the current 
 working directory on the local machine will be changed to 
 the directory specified. This operation will fail if for any 
 reason the specified directory is inaccessible. 
@@ -591,26 +591,26 @@ mask back to "*" after using the mget or mput commands.
 See the mkdir command. 
 .TP
 \fBmget <mask>\fR
-Copy all files matching mask from the server to 
+Copy all files matching \fImask\fR from the server to 
 the machine running the client. 
 
-Note that mask is interpreted differently during recursive 
+Note that \fImask\fR is interpreted differently during recursive 
 operation and non-recursive operation - refer to the recurse and 
 mask commands for more information. Note that all transfers in 
-smbclient are binary. See also the lowercase command. 
+\fBsmbclient\fR are binary. See also the lowercase command. 
 .TP
 \fBmkdir <directory name>\fR
 Create a new directory on the server (user access 
 privileges permitting) with the specified name. 
 .TP
 \fBmput <mask>\fR
-Copy all files matching mask in the current working 
+Copy all files matching \fImask\fR in the current working 
 directory on the local machine to the current working directory on 
 the server. 
 
-Note that mask is interpreted differently during recursive 
+Note that \fImask\fR is interpreted differently during recursive 
 operation and non-recursive operation - refer to the recurse and mask 
-commands for more information. Note that all transfers in smbclient 
+commands for more information. Note that all transfers in \fBsmbclient\fR 
 are binary. 
 .TP
 \fBprint <file name>\fR
@@ -633,10 +633,10 @@ the transfer of each file during these commands. When toggled
 OFF, all specified files will be transferred without prompting. 
 .TP
 \fBput <local file name> [remote file name]\fR
-Copy the file called "local file name" from the 
+Copy the file called \fIlocal file name\fR from the 
 machine running the client to the server. If specified,
-name the remote copy "remote file name". Note that all transfers 
-in smbclient are binary. See also the lowercase command. 
+name the remote copy \fIremote file name\fR. Note that all transfers 
+in \fBsmbclient\fR are binary. See also the lowercase command. 
 .TP
 \fBqueue\fR
 Displays the print queue, showing the job id, 
@@ -664,7 +664,7 @@ to the mget or mput commands will be copied, and any mask specified
 using the mask command will be ignored. 
 .TP
 \fBrm <mask>\fR
-Remove all files matching mask from the current 
+Remove all files matching \fImask\fR from the current 
 working directory on the server. 
 .TP
 \fBrmdir <directory name>\fR
@@ -681,7 +681,7 @@ with tar x may not work - use the command line option instead.
 \fBblocksize <blocksize>\fR
 Blocksize. Must be followed by a valid (greater 
 than zero) blocksize. Causes tar file to be written out in 
-blocksize*TBLOCK (usually 512 byte) blocks. 
+\fIblocksize\fR*TBLOCK (usually 512 byte) blocks. 
 .TP
 \fBtarmode <full|inc|reset|noreset>\fR
 Changes tar's behavior with regard to archive 
@@ -713,12 +713,12 @@ smbclient supports long file names where the server
 supports the LANMAN2 protocol or above. 
 .SH "ENVIRONMENT VARIABLES"
 .PP
-The variable \fI$USER\fR may contain the 
+The variable \fBUSER\fR may contain the 
 username of the person using the client. This information is 
 used only if the protocol level is high enough to support 
 session-level passwords.
 .PP
-The variable \fI$PASSWD\fR may contain 
+The variable \fBPASSWD\fR may contain 
 the password of the person using the client. This information is 
 used only if the protocol level is high enough to support 
 session-level passwords. 
@@ -739,7 +739,7 @@ and writeable only by the user.
 .PP
 To test the client, you will need to know the name of a 
 running SMB/CIFS server. It is possible to run \fBsmbd(8)
-\fRan ordinary user - running that server as a daemon 
+\fRas an ordinary user - running that server as a daemon 
 on a user-accessible port (typically any port number over 1024)
 would provide a suitable test server. 
 .SH "DIAGNOSTICS"

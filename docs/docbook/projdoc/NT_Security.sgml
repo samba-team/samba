@@ -1,4 +1,4 @@
-<chapter>
+<chapter id="unix-permissions">
 
 <chapterinfo>
 	<author>
@@ -16,7 +16,7 @@
 </chapterinfo>
 
 
-<title>UNIX Permission Bits and WIndows NT Access Control Lists</title>
+<title>UNIX Permission Bits and Windows NT Access Control Lists</title>
 
 <sect1>
 	<title>Viewing and changing UNIX permissions using the NT 
@@ -33,7 +33,7 @@
 	administrator can set.</para>
 
 	<para>In Samba 2.0.4 and above the default value of the 
-	parameter <ulink url="smb.conf.5.html#NTACLSUPPOR"><parameter>
+	parameter <ulink url="smb.conf.5.html#NTACLSUPPORT"><parameter>
 	nt acl support</parameter></ulink> has been changed from 
 	<constant>false</constant> to <constant>true</constant>, so 
  	manipulation of permissions is turned on by default.</para>
@@ -75,7 +75,7 @@
 	<para>Where <replaceable>SERVER</replaceable> is the NetBIOS name of 
 	the Samba server, <replaceable>user</replaceable> is the user name of 
 	the UNIX user who owns the file, and <replaceable>(Long name)</replaceable>
-	is the discriptive string identifying the user (normally found in the
+	is the descriptive string identifying the user (normally found in the
 	GECOS field of the UNIX password database). Click on the <command>Close
 	</command> button to remove this dialog.</para>
 
@@ -87,14 +87,14 @@
 	you to change the ownership of this file to yourself (clicking on 
 	it will display a dialog box complaining that the user you are 
 	currently logged onto the NT client cannot be found). The reason 
-	for this is that changing the ownership of a file is a privilaged 
+	for this is that changing the ownership of a file is a privileged 
 	operation in UNIX, available only to the <emphasis>root</emphasis> 
 	user. As clicking on this button causes NT to attempt to change 
 	the ownership of a file to the current user logged into the NT 
 	client this will not work with Samba at this time.</para>
 
 	<para>There is an NT chown command that will work with Samba 
-	and allow a user with Administrator privillage connected 
+	and allow a user with Administrator privilege connected 
 	to a Samba 2.0.4 server as root to change the ownership of 
 	files on both a local NTFS filesystem or remote mounted NTFS 
 	or Samba drive. This is available as part of the <emphasis>Seclib
@@ -116,7 +116,7 @@
 	<para>Where <replaceable>SERVER</replaceable> is the NetBIOS name of 
 	the Samba server, <replaceable>user</replaceable> is the user name of 
 	the UNIX user who owns the file, and <replaceable>(Long name)</replaceable>
-	is the discriptive string identifying the user (normally found in the
+	is the descriptive string identifying the user (normally found in the
 	GECOS field of the UNIX password database).</para>
 
 	<para>If the parameter <parameter>nt acl support</parameter>
@@ -133,7 +133,7 @@
 		<title>File Permissions</title>
 
 		<para>The standard UNIX user/group/world triple and 
-		the correspinding "read", "write", "execute" permissions 
+		the corresponding "read", "write", "execute" permissions 
 		triples are mapped by Samba into a three element NT ACL 
 		with the 'r', 'w', and 'x' bits mapped into the corresponding 
 		NT permissions. The UNIX world permissions are mapped into 
@@ -200,7 +200,7 @@
 
 	<para>The first thing to note is that the <command>"Add"</command> 
 	button will not return a list of users in Samba 2.0.4 (it will give 
-	an error message of <command>"The remote proceedure call failed 
+	an error message of <command>"The remote procedure call failed 
 	and did not execute"</command>). This means that you can only 
 	manipulate the current user/group/world permissions listed in 
 	the dialog box. This actually works quite well as these are the 
@@ -231,7 +231,7 @@
 	user/group/world  component then you may either highlight the 
 	component and click the <command>"Remove"</command> button, 
 	or set the component to only have the special <command>"Take
-	Ownership"</command> permission (dsplayed as <command>"O"
+	Ownership"</command> permission (displayed as <command>"O"
 	</command>) highlighted.</para>
 </sect1>
 
@@ -281,7 +281,7 @@
 	as the <ulink url="smb.conf.5.html#FORCECREATEMODE"><parameter>force 
 	create mode</parameter></ulink> parameter to provide compatibility
 	with Samba 2.0.4 where the permission change facility was introduced.
-	To allow a user to modify all the user/group/world permissions on a file,
+	To allow a user to modify all the user/group/world permissions on a file
 	with no restrictions set this parameter to 000.</para>
 
 	<para>The <parameter>security mask</parameter> and <parameter>force 

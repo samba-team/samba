@@ -37,7 +37,7 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >rpcclient</B
->  {server} [-A authfile] [-c &lt;command string&gt;] [-d debuglevel] [-h] [-l logfile] [-N] [-s &lt;smb config file&gt;] [-U username[%password]] [-W workgroup] [-N]</P
+>  {server} [-A authfile] [-c &#60;command string&#62;] [-d debuglevel] [-h] [-l logfile] [-N] [-s &#60;smb config file&#62;] [-U username[%password]] [-W workgroup] [-N]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -104,12 +104,21 @@ CLASS="FILENAME"
 		password used in the connection.  The format of the file is 
 		</P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
->		username = &lt;value&gt; 
-		password = &lt;value&gt;
-		domain   = &lt;value&gt;
+>		username = &#60;value&#62; 
+		password = &#60;value&#62;
+		domain   = &#60;value&#62;
 		</PRE
+></TD
+></TR
+></TABLE
 ></P
 ><P
 >Make certain that the permissions on the file restrict 
@@ -128,7 +137,10 @@ CLASS="PROGRAMLISTING"
 ><P
 >set the debuglevel. Debug level 0 is the lowest 
 		and 100 being the highest. This should be set to 100 if you are
-		planning on submitting a bug report to the Samba team (see BUGS.txt). 
+		planning on submitting a bug report to the Samba team (see <TT
+CLASS="FILENAME"
+>BUGS.txt</TT
+>). 
 		</P
 ></DD
 ><DT
@@ -142,8 +154,12 @@ CLASS="PROGRAMLISTING"
 >-l logbasename</DT
 ><DD
 ><P
->File name for log/debug files. .client will be 
-		appended. The log file is never removed  by the client.
+>File name for log/debug files. The extension 
+		<TT
+CLASS="CONSTANT"
+>'.client'</TT
+> will be appended. The log file is never removed  
+		by the client.
 		</P
 ></DD
 ><DT
@@ -189,7 +205,7 @@ CLASS="ENVAR"
 		<TT
 CLASS="ENVAR"
 >LOGNAME</TT
-> variable and if either exist, the 
+> variable and if either exists, the 
 		string is uppercased. If these environmental variables are not 
 		found, the username <TT
 CLASS="CONSTANT"
@@ -226,14 +242,8 @@ CLASS="COMMAND"
 ><DD
 ><P
 >Set the SMB domain of the username.   This 
-		overrides the default  domain which is the domain of the 
-		server specified with the  <TT
-CLASS="PARAMETER"
-><I
->-S</I
-></TT
-> option.  
-		If the domain specified is the same as the server's NetBIOS name, 
+		overrides the default domain which is the domain defined in 
+		smb.conf.  If the domain specified is the same as the server's NetBIOS name, 
 		it causes the client to log on using the  server's local SAM (as 
 		opposed to the Domain SAM). </P
 ></DD
@@ -243,14 +253,13 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN91"
+NAME="AEN92"
 ></A
 ><H2
 >COMMANDS</H2
 ><P
-><I
-CLASS="EMPHASIS"
->LSARPC</I
+><EM
+>LSARPC</EM
 ></P
 ><P
 ></P
@@ -267,14 +276,18 @@ CLASS="COMMAND"
 ><B
 CLASS="COMMAND"
 >lookupsids</B
-></P
+> - Resolve a list 
+		of SIDs to usernames.
+		</P
 ></LI
 ><LI
 ><P
 ><B
 CLASS="COMMAND"
 >lookupnames</B
-></P
+> - Resolve s list 
+		of usernames to SIDs.
+		</P
 ></LI
 ><LI
 ><P
@@ -287,9 +300,8 @@ CLASS="COMMAND"
 ><P
 > </P
 ><P
-><I
-CLASS="EMPHASIS"
->SAMR</I
+><EM
+>SAMR</EM
 ></P
 ><P
 ></P
@@ -322,13 +334,40 @@ CLASS="COMMAND"
 >querygroupmem</B
 ></P
 ></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>queryaliasmem</B
+></P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>querydispinfo</B
+></P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>querydominfo</B
+></P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>enumdomgroups</B
+></P
+></LI
 ></UL
 ><P
 > </P
 ><P
-><I
-CLASS="EMPHASIS"
->SPOOLSS</I
+><EM
+>SPOOLSS</EM
 ></P
 ><P
 ></P
@@ -337,7 +376,7 @@ CLASS="EMPHASIS"
 ><P
 ><B
 CLASS="COMMAND"
->adddriver &lt;arch&gt; &lt;config&gt;</B
+>adddriver &#60;arch&#62; &#60;config&#62;</B
 > 
 		- Execute an AddPrinterDriver() RPC to install the printer driver 
 		information on the server.  Note that the driver files should 
@@ -364,6 +403,12 @@ CLASS="PARAMETER"
 > parameter is defined as 
 		follows: </P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >		Long Printer Name:\
@@ -375,6 +420,9 @@ CLASS="PROGRAMLISTING"
 		Default Data Type:\
 		Comma Separated list of Files
 		</PRE
+></TD
+></TR
+></TABLE
 ></P
 ><P
 >Any empty fields should be enter as the string "NULL". </P
@@ -390,8 +438,8 @@ CLASS="PROGRAMLISTING"
 ><P
 ><B
 CLASS="COMMAND"
->addprinter &lt;printername&gt; 
-		&lt;sharename&gt; &lt;drivername&gt; &lt;port&gt;</B
+>addprinter &#60;printername&#62; 
+		&#60;sharename&#62; &#60;drivername&#62; &#60;port&#62;</B
 > 
 		- Add a printer on the remote server.  This printer 
  		will be automatically shared.  Be aware that the printer driver 
@@ -414,6 +462,17 @@ CLASS="COMMAND"
 ><P
 ><B
 CLASS="COMMAND"
+>deldriver</B
+> - Delete the 
+		specified printer driver for all architectures.  This
+		does not delete the actual driver files from the server,
+		only the entry from the server's list of drivers.
+		</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
 >enumdata</B
 > - Enumerate all 
 		printer setting data stored on the server. On Windows NT  clients, 
@@ -426,7 +485,7 @@ CLASS="COMMAND"
 ><P
 ><B
 CLASS="COMMAND"
->enumjobs &lt;printer&gt;</B
+>enumjobs &#60;printer&#62;</B
 > 
 		- List the jobs and status of a given printer.  
 		This command corresponds to the MS Platform SDK EnumJobs() 
@@ -468,7 +527,7 @@ CLASS="COMMAND"
 ><P
 ><B
 CLASS="COMMAND"
->getdata &lt;printername&gt;</B
+>getdata &#60;printername&#62;</B
 > 
 		- Retrieve the data for a given printer setting.  See 
 		the  <B
@@ -482,7 +541,7 @@ CLASS="COMMAND"
 ><P
 ><B
 CLASS="COMMAND"
->getdriver &lt;printername&gt;</B
+>getdriver &#60;printername&#62;</B
 > 
 		- Retrieve the printer driver information (such as driver file, 
 		config file, dependent files, etc...) for 
@@ -494,7 +553,7 @@ CLASS="COMMAND"
 ><P
 ><B
 CLASS="COMMAND"
->getdriverdir &lt;arch&gt;</B
+>getdriverdir &#60;arch&#62;</B
 > 
 		- Execute a GetPrinterDriverDirectory()
 		RPC to retreive the SMB share name and subdirectory for 
@@ -512,7 +571,7 @@ CLASS="PARAMETER"
 ><P
 ><B
 CLASS="COMMAND"
->getprinter &lt;printername&gt;</B
+>getprinter &#60;printername&#62;</B
 > 
 		- Retrieve the current printer information.  This command 
 		corresponds to the GetPrinter() MS Platform SDK function. 
@@ -522,7 +581,7 @@ CLASS="COMMAND"
 ><P
 ><B
 CLASS="COMMAND"
->openprinter &lt;printername&gt;</B
+>openprinter &#60;printername&#62;</B
 > 
 		- Execute an OpenPrinterEx() and ClosePrinter() RPC 
 		against a given printer. </P
@@ -531,7 +590,7 @@ CLASS="COMMAND"
 ><P
 ><B
 CLASS="COMMAND"
->setdriver &lt;printername&gt; &lt;drivername&gt;</B
+>setdriver &#60;printername&#62; &#60;drivername&#62;</B
 > 
 		- Execute a SetPrinter() command to update the printer driver associated
 		with an installed printer.  The printer driver must already be correctly
@@ -549,9 +608,8 @@ CLASS="COMMAND"
 ></LI
 ></UL
 ><P
-><I
-CLASS="EMPHASIS"
->GENERAL OPTIONS</I
+><EM
+>GENERAL OPTIONS</EM
 ></P
 ><P
 ></P
@@ -589,7 +647,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN196"
+NAME="AEN212"
 ></A
 ><H2
 >BUGS</H2
@@ -604,15 +662,14 @@ CLASS="COMMAND"
 ><P
 >From Luke Leighton's original rpcclient man page:</P
 ><P
-><I
-CLASS="EMPHASIS"
->"WARNING!</I
+><EM
+>"WARNING!</EM
 > The MSRPC over SMB code has 
 	been developed from examining  Network traces. No documentation is 
 	available from the original creators  (Microsoft) on how MSRPC over 
 	SMB works, or how the individual MSRPC services  work. Microsoft's 
 	implementation of these services has been demonstrated  (and reported) 
-	to be... a bit flakey in places. </P
+	to be... a bit flaky in places. </P
 ><P
 >The development of Samba's implementation is also a bit rough, 
 	and as more  of the services are understood, it can even result in 
@@ -631,7 +688,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN206"
+NAME="AEN222"
 ></A
 ><H2
 >VERSION</H2
@@ -642,7 +699,7 @@ NAME="AEN206"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN209"
+NAME="AEN225"
 ></A
 ><H2
 >AUTHOR</H2
@@ -653,7 +710,7 @@ NAME="AEN209"
 	to the way the Linux kernel is developed.</P
 ><P
 >The original rpcclient man page was written by Matthew 
-	Geddes, Luke Kenneth Casson, and rewriten by Gerald Carter.  
+	Geddes, Luke Kenneth Casson Leighton, and rewritten by Gerald Carter.  
 	The conversion to DocBook for Samba 2.2 was done by Gerald 
 	Carter.</P
 ></DIV

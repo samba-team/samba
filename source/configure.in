@@ -25,7 +25,7 @@ AC_ARG_WITH(fhs, [  --with-fhs            use FHS-compliant paths [default=no]],
 #################################################
 # set private directory location
 AC_ARG_WITH(privatedir,
-[  --with-privatedir=DIR     Where to put smbpasswd ($privatedir)],
+[  --with-privatedir=DIR     Where to put smbpasswd ($ac_default_prefix/private)],
 [ case "$withval" in
   yes|no)
   #
@@ -41,7 +41,7 @@ AC_ARG_WITH(privatedir,
 #################################################
 # set lock directory location
 AC_ARG_WITH(lockdir,
-[  --with-lockdir=DIR     Where to put lock files ($lockdir)],
+[  --with-lockdir=DIR     Where to put lock files ($ac_default_prefix/var/locks)],
 [ case "$withval" in
   yes|no)
   #
@@ -57,7 +57,7 @@ AC_ARG_WITH(lockdir,
 #################################################
 # set SWAT directory location
 AC_ARG_WITH(swatdir,
-[  --with-swatdir=DIR     Where to put SWAT files ($swatdir)],
+[  --with-swatdir=DIR     Where to put SWAT files ($ac_default_prefix/swat)],
 [ case "$withval" in
   yes|no)
   #
@@ -73,7 +73,7 @@ AC_ARG_WITH(swatdir,
 #################################################
 # set configuration directory location
 AC_ARG_WITH(configdir,
-[  --with-configdir=DIR     Where to put configuration files ($configdir)],
+[  --with-configdir=DIR     Where to put configuration files (\$libdir)],
 [ case "$withval" in
   yes|no)
   #
@@ -89,7 +89,7 @@ AC_ARG_WITH(configdir,
 #################################################
 # set codepage directory location
 AC_ARG_WITH(codepagedir,
-[  --with-codepagedir=DIR     Where to put codepage files ($codepagedir)],
+[  --with-codepagedir=DIR     Where to put codepage files (\$libdir/codepages)],
 [ case "$withval" in
   yes|no)
   #
@@ -118,6 +118,7 @@ AC_SUBST(RUNPROG)
 AC_SUBST(MPROGS)
 AC_SUBST(LDSHFLAGS)
 AC_SUBST(HOST_OS)
+AC_SUBST(PAM_MOD)
 AC_SUBST(WRAP)
 AC_SUBST(WRAP32)
 AC_SUBST(PICFLAG)
@@ -267,7 +268,7 @@ exit(1);
     *linux*)
         AC_MSG_CHECKING([for LFS support])
         old_CPPFLAGS="$CPPFLAGS"
-        CPPFLAGS="-D_LARGEFILE64_SOURCE -D_GNU_SOURCE $CPPFLAGS"
+        CPPFLAGS="-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE $CPPFLAGS"
        AC_TRY_RUN([
 #include <unistd.h>
 #include <sys/utsname.h>
@@ -305,7 +306,7 @@ main() {
 ], [LINUX_LFS_SUPPORT=yes], [LINUX_LFS_SUPPORT=no], [LINUX_LFS_SUPPORT=cross])
         CPPFLAGS="$old_CPPFLAGS"
         if test x$LINUX_LFS_SUPPORT = xyes ; then
-          CPPFLAGS="-D_LARGEFILE64_SOURCE -D_GNU_SOURCE $CPPFLAGS"
+          CPPFLAGS="-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE $CPPFLAGS"
         fi
        AC_MSG_RESULT([$LINUX_LFS_SUPPORT])
 		;;
@@ -340,10 +341,12 @@ AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(arpa/inet.h sys/fcntl.h sys/select.h fcntl.h sys/time.h sys/unistd.h)
 AC_CHECK_HEADERS(unistd.h utime.h grp.h sys/id.h limits.h memory.h net/if.h)
 AC_CHECK_HEADERS(compat.h rpc/rpc.h rpcsvc/nis.h rpcsvc/yp_prot.h rpcsvc/ypclnt.h)
-AC_CHECK_HEADERS(sys/param.h ctype.h sys/un.h sys/wait.h sys/resource.h sys/ioctl.h sys/mode.h)
-AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h string.h strings.h stdlib.h sys/socket.h)
+AC_CHECK_HEADERS(sys/param.h ctype.h sys/un.h sys/wait.h sys/resource.h sys/ioctl.h sys/ipc.h sys/mode.h)
+AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h sys/socket.h)
 AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)
 AC_CHECK_HEADERS(sys/termio.h sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h sys/sockio.h)
+AC_CHECK_HEADERS(security/pam_modules.h security/_pam_macros.h)
+
 #
 # HPUX has a bug in that including shadow.h causes a re-definition of MAXINT.
 # This causes configure to fail to detect it. Check for shadow separately on HPUX.
@@ -358,10 +361,10 @@ case "$host_os" in
 	;;
 esac
 AC_CHECK_HEADERS(shadow.h netinet/ip.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
-AC_CHECK_HEADERS(nss.h sys/security.h security/pam_appl.h)
+AC_CHECK_HEADERS(nss.h nss_common.h sys/security.h security/pam_appl.h security/pam_modules.h)
 AC_CHECK_HEADERS(stropts.h poll.h)
 AC_CHECK_HEADERS(sys/capability.h syscall.h sys/syscall.h)
-AC_CHECK_HEADERS(sys/acl.h sys/cdefs.h glob.h acl/acl.h)
+AC_CHECK_HEADERS(sys/acl.h sys/cdefs.h glob.h)
 
 # For experimental utmp support (lastlog on some BSD-like systems)
 AC_CHECK_HEADERS(utmp.h utmpx.h lastlog.h)
@@ -399,6 +402,19 @@ AC_CHECK_LIB(cups,httpConnect)
 AC_CHECK_LIB(dl, dlopen, [LIBS="$LIBS -ldl";
 	AC_DEFINE(HAVE_LIBDL)])
 
+AC_CACHE_CHECK([for socklen_t type],samba_cv_socklen_t, [
+    AC_TRY_COMPILE([
+#include <sys/types.h>
+#if STDC_HEADERS
+#include <stdlib.h>
+#include <stddef.h>
+#endif
+#include <sys/socket.h>],[socklen_t i = 0],
+    samba_cv_socklen_t=yes,samba_cv_socklen_t=no)])
+if test x"$samba_cv_socklen_t" = x"yes"; then
+   AC_DEFINE(HAVE_SOCKLEN_T_TYPE)
+fi
+
 AC_CACHE_CHECK([for sig_atomic_t type],samba_cv_sig_atomic_t, [
     AC_TRY_COMPILE([
 #include <sys/types.h>
@@ -412,28 +428,14 @@ if test x"$samba_cv_sig_atomic_t" = x"yes"; then
    AC_DEFINE(HAVE_SIG_ATOMIC_T_TYPE)
 fi
 
-AC_CACHE_CHECK([for errno in errno.h],samba_cv_errno, [
-    AC_TRY_COMPILE([#include <errno.h>],[int i = errno],
-	samba_cv_errno=yes,samba_cv_have_errno=no)])
-if test x"$samba_cv_errno" = x"yes"; then
-   AC_DEFINE(HAVE_ERRNO_DECL)
-fi
-
-# stupid glibc has the functions but no declaration. grrrr.
-AC_CACHE_CHECK([for setresuid declaration],samba_cv_have_setresuid_decl,[
-    AC_TRY_COMPILE([#include <unistd.h>],[int i = (int)setresuid],
-        samba_cv_have_setresuid_decl=yes,samba_cv_have_setresuid_decl=no)])
-if test x"$samba_cv_have_setresuid_decl" = x"yes"; then
-    AC_DEFINE(HAVE_SETRESUID_DECL)
-fi
-
-# stupid glibc has the functions but no declaration. grrrr.
-AC_CACHE_CHECK([for setresgid declaration],samba_cv_have_setresgid_decl,[
-    AC_TRY_COMPILE([#include <unistd.h>],[int i = (int)setresgid],
-        samba_cv_have_setresgid_decl=yes,samba_cv_have_setresgid_decl=no)])
-if test x"$samba_cv_have_setresgid_decl" = x"yes"; then
-    AC_DEFINE(HAVE_SETRESGID_DECL)
-fi
+# stupid headers have the functions but no declaration. grrrr.
+AC_HAVE_DECL(errno, [#include <errno.h>])
+AC_HAVE_DECL(setresuid, [#include <unistd.h>])
+AC_HAVE_DECL(setresgid, [#include <unistd.h>])
+AC_HAVE_DECL(asprintf, [#include <stdio.h>])
+AC_HAVE_DECL(vasprintf, [#include <stdio.h>])
+AC_HAVE_DECL(vsnprintf, [#include <stdio.h>])
+AC_HAVE_DECL(snprintf, [#include <stdio.h>])
 
 # and glibc has setresuid under linux but the function does
 # nothing until kernel 2.1.44! very dumb.
@@ -457,14 +459,6 @@ if test x"$samba_cv_have_setresgid" = x"yes"; then
 fi
 
 AC_FUNC_MEMCMP
-
-###############################################
-# test for where we get crypt() from
-AC_CHECK_FUNCS(crypt)
-if test x"$ac_cv_func_crypt" = x"no"; then
-    AC_CHECK_LIB(crypt, crypt, [LIBS="$LIBS -lcrypt";
-	AC_DEFINE(HAVE_CRYPT)])
-fi
 
 ###############################################
 # Readline included by default unless explicitly asked not to
@@ -581,13 +575,13 @@ fi
 
 AC_CHECK_FUNCS(waitpid getcwd strdup strtoul strerror chown fchown chmod fchmod chroot)
 AC_CHECK_FUNCS(fstat strchr utime utimes getrlimit fsync bzero memset)
-AC_CHECK_FUNCS(memmove vsnprintf snprintf setsid glob strpbrk pipe crypt16 getauthuid)
+AC_CHECK_FUNCS(memmove vsnprintf snprintf asprintf vasprintf setsid glob strpbrk pipe crypt16 getauthuid)
 AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction innetgr setnetgrent getnetgrent endnetgrent)
 AC_CHECK_FUNCS(initgroups select poll rdchk getgrnam getgrent pathconf)
 AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups sysconf mktime rename ftruncate stat64 fstat64)
 AC_CHECK_FUNCS(lstat64 fopen64 atexit grantpt dup2 lseek64 ftruncate64 readdir64)
 AC_CHECK_FUNCS(fseek64 fseeko64 ftell64 ftello64 setluid getpwanam setlinebuf)
-AC_CHECK_FUNCS(srandom random srand rand setenv usleep strcasecmp fcvt fcvtl)
+AC_CHECK_FUNCS(srandom random srand rand setenv usleep strcasecmp fcvt fcvtl symlink readlink)
 
 # syscall() is needed for smbwrapper.
 AC_CHECK_FUNCS(syscall)
@@ -896,6 +890,30 @@ if test x"$samba_cv_HAVE_GETTIMEOFDAY_TZ" = x"yes"; then
     AC_DEFINE(HAVE_GETTIMEOFDAY_TZ)
 fi
 
+AC_CACHE_CHECK([for C99 vsnprintf],samba_cv_HAVE_C99_VSNPRINTF,[
+AC_TRY_RUN([
+#include <sys/types.h>
+#include <stdarg.h>
+void foo(const char *format, ...) { 
+       va_list ap;
+       int len;
+       char buf[5];
+
+       va_start(ap, format);
+       len = vsnprintf(0, 0, format, ap);
+       va_end(ap);
+       if (len != 5) exit(1);
+
+       if (snprintf(buf, 3, "hello") != 5 || strcmp(buf, "he") != 0) exit(1);
+
+       exit(0);
+}
+main() { foo("hello"); }
+],
+samba_cv_HAVE_C99_VSNPRINTF=yes,samba_cv_HAVE_C99_VSNPRINTF=no,samba_cv_HAVE_C99_VSNPRINTF=cross)])
+if test x"$samba_cv_HAVE_C99_VSNPRINTF" = x"yes"; then
+    AC_DEFINE(HAVE_C99_VSNPRINTF)
+fi
 
 AC_CACHE_CHECK([for broken readdir],samba_cv_HAVE_BROKEN_READDIR,[
 AC_TRY_RUN([#include <sys/types.h>
@@ -1210,7 +1228,7 @@ fi
 
 AC_CACHE_CHECK([whether getpass should be replaced],samba_cv_REPLACE_GETPASS,[
 SAVE_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS -I${srcdir-.}/include -I${srcdir-.}/ubiqx -I${srcdir-.}/smbwrapper"
+CPPFLAGS="$CPPFLAGS -I${srcdir-.}/ -I${srcdir-.}/include -I${srcdir-.}/ubiqx -I${srcdir-.}/smbwrapper"
 AC_TRY_COMPILE([
 #define REPLACE_GETPASS 1
 #define NO_CONFIG_H 1
@@ -1605,6 +1623,7 @@ AC_ARG_WITH(smbmount,
 
 #################################################
 # check for a PAM password database
+with_pam_for_crypt=no
 AC_MSG_CHECKING(whether to use PAM password database)
 AC_ARG_WITH(pam,
 [  --with-pam     Include PAM password database support
@@ -1614,6 +1633,7 @@ AC_ARG_WITH(pam,
     AC_MSG_RESULT(yes)
     AC_DEFINE(WITH_PAM)
     LIBS="$LIBS -lpam"
+    with_pam_for_crypt=yes
     ;;
   *)
     AC_MSG_RESULT(no)
@@ -1621,6 +1641,52 @@ AC_ARG_WITH(pam,
   esac ],
   AC_MSG_RESULT(no)
 )
+
+# we can't build a pam module if we don't have pam.
+AC_CHECK_LIB(pam, pam_get_data, [AC_DEFINE(HAVE_LIBPAM)])
+
+#################################################
+# check for pam_smbpass support
+AC_MSG_CHECKING(whether to use pam_smbpass)
+AC_ARG_WITH(pam_smbpass,
+[  --with-pam_smbpass     Include the smbpass PAM module
+  --without-pam_smbpass  Don't include the smbpass PAM module (default)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+
+# Conditions under which pam_smbpass should not be built.
+
+       if test x$PICFLAG = x; then
+          AC_MSG_RESULT([No support for PIC code - disabling pam_smbpass])
+          PAM_MOD=""
+       elif test x$ac_cv_lib_pam_pam_get_data = xno; then
+          AC_MSG_RESULT([No libpam found -- disabling pam_smbpass])
+          PAM_MOD=""
+       else
+          AC_DEFINE(WITH_PAM_SMBPASS)
+          PAM_MOD="bin/pam_smbpass.so"
+       fi
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+
+###############################################
+# test for where we get crypt() from, but only
+# if not using PAM
+if test $with_pam_for_crypt = no; then
+AC_CHECK_FUNCS(crypt)
+if test x"$ac_cv_func_crypt" = x"no"; then
+    AC_CHECK_LIB(crypt, crypt, [LIBS="$LIBS -lcrypt";
+	AC_DEFINE(HAVE_CRYPT)])
+fi
+fi
+
 
 #################################################
 # removed until we get the code actually working
@@ -1725,7 +1791,7 @@ AC_ARG_WITH(ssl,
 	  LDFLAGS="=L/usr/local/ssl/lib $LDFLAGS"
 	;;
         * )
-          CFLAGS="-I${withval}/include $CFLAGS"
+          CFLAGS="-I${withval} $CFLAGS"
 	  LIBS="-lssl -lcrypto $LIBS"
   	  LDFLAGS="-L${withval}/lib $LDFLAGS"
 	;;
@@ -2164,15 +2230,6 @@ samba_cv_HAVE_ACL_GET_PERM_NP=yes,samba_cv_HAVE_ACL_GET_PERM_NP=no)])
 				if test x"$samba_cv_HAVE_ACL_GET_PERM_NP" = x"yes"; then
 					AC_DEFINE(HAVE_ACL_GET_PERM_NP)
 				fi
-			fi
-			AC_CACHE_CHECK([for XFS ACL support],samba_cv_HAVE_XFS_ACLS,[
-			AC_TRY_COMPILE([#include <sys/types.h>
-#include <acl/acl.h>],
-[ char test_str[13] = SGI_ACL_FILE; ],
-samba_cv_HAVE_XFS_ACLS=yes,samba_cv_XFS_POSIX_ACLS=no)])
-			if test x"$samba_cv_HAVE_XFS_ACLS" = x"yes"; then
-				AC_MSG_RESULT(Using XFS ACLs)
-				AC_DEFINE(HAVE_XFS_ACLS)
 			fi
 			;;
 		esac

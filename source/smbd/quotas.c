@@ -277,11 +277,6 @@ static int xdr_getquota_args(XDR *xdrsp, struct getquota_args *args)
 
 static int xdr_getquota_rslt(XDR *xdrsp, struct getquota_rslt *gqr)
 {
-	gqr_status status;
-	union {
-		rquota gqr_rquota;
-	} getquota_rslt_u;
-  
 	if (!xdr_int(xdrsp, &quotastat)) {
 		DEBUG(6,("nfs_quotas: Status bad or zero\n"));
 		return 0;
@@ -322,6 +317,9 @@ static BOOL nfs_quotas(char *nfspath, uid_t euser_id, SMB_BIG_UINT *bsize, SMB_B
 	int len;
 	static struct timeval timeout = {2,0};
 	enum clnt_stat clnt_stat;
+	BOOL ret = True;
+
+	*bsize = *dfree = *dsize = (SMB_BIG_UINT)0;
 
 	len=strcspn(mnttype, ":");
 	pathname=strstr(mnttype, ":");
@@ -338,15 +336,21 @@ static BOOL nfs_quotas(char *nfspath, uid_t euser_id, SMB_BIG_UINT *bsize, SMB_B
 
 	DEBUG(5,("nfs_quotas: Asking for host \"%s\" rpcprog \"%i\" rpcvers \"%i\" network \"%s\"\n", host, RQUOTAPROG, RQUOTAVERS, "udp"));
 
-	if ((clnt = clnt_create(host, RQUOTAPROG, RQUOTAVERS, "udp")) != NULL) {
-		clnt->cl_auth = authunix_create_default();
-		DEBUG(9,("nfs_quotas: auth_success\n"));
+	if ((clnt = clnt_create(host, RQUOTAPROG, RQUOTAVERS, "udp")) == NULL) {
+		ret = False;
+		goto out;
+	}
 
-		clnt_stat=clnt_call(clnt, RQUOTAPROC_GETQUOTA, xdr_getquota_args, (caddr_t)&args, xdr_getquota_rslt, (caddr_t)&gqr, timeout);
-		if (clnt_stat == RPC_SUCCESS)
-			DEBUG(9,("nfs_quotas: rpccall_success\n"));
-	};
+	clnt->cl_auth = authunix_create_default();
+	DEBUG(9,("nfs_quotas: auth_success\n"));
 
+	clnt_stat=clnt_call(clnt, RQUOTAPROC_GETQUOTA, xdr_getquota_args, (caddr_t)&args, xdr_getquota_rslt, (caddr_t)&gqr, timeout);
+
+	if (clnt_stat != RPC_SUCCESS) {
+		DEBUG(9,("nfs_quotas: clnt_call fail\n"));
+		ret = False;
+		goto out;
+	}
 
 	/* 
 	 * quotastat returns 0 if the rpc call fails, 1 if quotas exist, 2 if there is
@@ -354,26 +358,30 @@ static BOOL nfs_quotas(char *nfspath, uid_t euser_id, SMB_BIG_UINT *bsize, SMB_B
 	 * something sensible.
 	 */   
 
-	if (quotastat == 1) {
+	switch ( quotastat ) {
+	case 0:
+		DEBUG(9,("nfs_quotas: Remote Quotas Failed!  Error \"%i\" \n", quotastat ));
+		ret = False;
+		goto out;
+
+	case 1:
 		DEBUG(9,("nfs_quotas: Good quota data\n"));
 		D.dqb_bsoftlimit = gqr.getquota_rslt_u.gqr_rquota.rq_bsoftlimit;
 		D.dqb_bhardlimit = gqr.getquota_rslt_u.gqr_rquota.rq_bhardlimit;
 		D.dqb_curblocks = gqr.getquota_rslt_u.gqr_rquota.rq_curblocks;
-	}
+		break;
 
-	if (quotastat == 0 || quotastat == 3) {
+	case 2:
+	case 3:
 		D.dqb_bsoftlimit = 1;
 		D.dqb_curblocks = 1;
-		DEBUG(9,("nfs_quotas: Remote Quotas Failed!  Error \"%i\" \n", quotastat ));
-	}
+		DEBUG(9,("nfs_quotas: Remote Quotas returned \"%i\" \n", quotastat ));
+		break;
 
-	if (quotastat == 2) {
-		DEBUG(9,("nfs_quotas: Remote Quotas Failed!  Error \"%i\" \n", quotastat ));
-		auth_destroy(clnt->cl_auth);
-		clnt_destroy(clnt);
-		free(cutstr);
-		return(False);
-	}       
+	default:
+		DEBUG(9,("nfs_quotas: Remote Quotas Questionable!  Error \"%i\" \n", quotastat ));
+		break;
+	}
 
 	DEBUG(10,("nfs_quotas: Let`s look at D a bit closer... status \"%i\" bsize \"%i\" active? \"%i\" bhard \"%i\" bsoft \"%i\" curb \"%i\" \n",
 			quotastat,
@@ -395,14 +403,19 @@ static BOOL nfs_quotas(char *nfspath, uid_t euser_id, SMB_BIG_UINT *bsize, SMB_B
 	} else
 		*dfree = D.dqb_bsoftlimit - D.dqb_curblocks;
 
-	auth_destroy(clnt->cl_auth);
-	clnt_destroy(clnt);
+  out:
+
+	if (clnt) {
+		if (clnt->cl_auth)
+			auth_destroy(clnt->cl_auth);
+		clnt_destroy(clnt);
+	}
 
 	DEBUG(5,("nfs_quotas: For path \"%s\" returning  bsize %.0f, dfree %.0f, dsize %.0f\n",args.gqa_pathp,(double)*bsize,(double)*dfree,(double)*dsize));
 
-	free(cutstr);
+	safe_free(cutstr);
 	DEBUG(10,("nfs_quotas: End of nfs_quotas\n" ));
-	return(True);
+	return ret;
 }
 #endif
 
@@ -438,7 +451,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
 		return(False) ;
   
 	devno = sbuf.st_dev ;
-	DEBUG(5,("disk_quotas: looking for path \"%s\" devno=%x\n", path,devno));
+	DEBUG(5,("disk_quotas: looking for path \"%s\" devno=%x\n", path,(unsigned int)devno));
 	if ( devno != devno_cached ) {
 		devno_cached = devno ;
 #if defined(SUNOS5)
@@ -446,7 +459,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
 			return(False) ;
     
 		found = False ;
-		slprintf(devopt, sizeof(devopt) - 1, "dev=%x", devno);
+		slprintf(devopt, sizeof(devopt) - 1, "dev=%x", (unsigned int)devno);
 		while (getmntent(fd, &mnt) == 0) {
 			if( !hasmntopt(&mnt, devopt) )
 				continue;
@@ -473,7 +486,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
 		while ((mnt = getmntent(fd)) != NULL) {
 			if ( sys_stat(mnt->mnt_dir,&sbuf) == -1 )
 				continue ;
-			DEBUG(5,("disk_quotas: testing \"%s\" devno=%o\n", mnt->mnt_dir,sbuf.st_dev));
+			DEBUG(5,("disk_quotas: testing \"%s\" devno=%x\n", mnt->mnt_dir,(unsigned int)sbuf.st_dev));
 			if (sbuf.st_dev == devno) {
 				found = True ;
 				break;

@@ -86,22 +86,16 @@ static known_sid_users builtin_groups[] = {
 	{ BUILTIN_ALIAS_RID_BACKUP_OPS, SID_NAME_ALIAS, "Backup Operators" },
 	{  0, (enum SID_NAME_USE)0, NULL}};
 
+#define MAX_SID_NAMES	7
+
 static struct sid_name_map_info
 {
 	DOM_SID *sid;
 	char *name;
 	known_sid_users *known_users;
-}
-sid_name_map[] =
-{
-	{ &global_sam_sid, global_myname, NULL},
-	{ &global_sam_sid, global_myworkgroup, NULL},
-	{ &global_sid_Builtin, "BUILTIN", &builtin_groups[0]},
-	{ &global_sid_World_Domain, "", &everyone_users[0] },
-	{ &global_sid_Creator_Owner_Domain, "", &creator_owner_users[0] },
-	{ &global_sid_NT_Authority, "NT Authority", &nt_authority_users[0] },
-	{ NULL, NULL, NULL}
-};
+} sid_name_map[MAX_SID_NAMES];
+
+static BOOL sid_name_map_initialized = False;
 
 /*
  * An NT compatible anonymous token.
@@ -113,6 +107,65 @@ NT_USER_TOKEN anonymous_token = {
     3,
     anon_sid_array
 };
+
+/**************************************************************************
+ quick init function
+ *************************************************************************/
+static void init_sid_name_map (void)
+{
+	int i = 0;
+	
+	if (sid_name_map_initialized) return;
+	
+
+	if ((lp_security() == SEC_USER) && lp_domain_logons()) {
+		sid_name_map[i].sid = &global_sam_sid;
+		sid_name_map[i].name = global_myworkgroup;
+		sid_name_map[i].known_users = NULL;
+		i++;
+		sid_name_map[i].sid = &global_sam_sid;
+		sid_name_map[i].name = global_myname;
+		sid_name_map[i].known_users = NULL;
+		i++;
+	}
+	else {
+		sid_name_map[i].sid = &global_sam_sid;
+		sid_name_map[i].name = global_myname;
+		sid_name_map[i].known_users = NULL;
+		i++;
+	}
+
+	sid_name_map[i].sid = &global_sid_Builtin;
+	sid_name_map[i].name = "BUILTIN";
+	sid_name_map[i].known_users = &builtin_groups[0];
+	i++;
+	
+	sid_name_map[i].sid = &global_sid_World_Domain;
+	sid_name_map[i].name = "";
+	sid_name_map[i].known_users = &everyone_users[0];
+	i++;
+
+	sid_name_map[i].sid = &global_sid_Creator_Owner_Domain;
+	sid_name_map[i].name = "";
+	sid_name_map[i].known_users = &creator_owner_users[0];
+	i++;
+		
+	sid_name_map[i].sid = &global_sid_NT_Authority;
+	sid_name_map[i].name = "NT Authority";
+	sid_name_map[i].known_users = &nt_authority_users[0];
+	i++;
+		
+
+	/* end of array */
+	sid_name_map[i].sid = NULL;
+	sid_name_map[i].name = NULL;
+	sid_name_map[i].known_users = NULL;
+	
+	sid_name_map_initialized = True;
+		
+	return;
+
+}
 
 /****************************************************************************
  Creates some useful well known sids
@@ -146,7 +199,11 @@ BOOL map_domain_sid_to_name(DOM_SID *sid, char *nt_domain)
 {
 	fstring sid_str;
 	int i = 0;
+	
 	sid_to_string(sid_str, sid);
+
+	if (!sid_name_map_initialized) 
+		init_sid_name_map();
 
 	DEBUG(5,("map_domain_sid_to_name: %s\n", sid_str));
 
@@ -156,7 +213,7 @@ BOOL map_domain_sid_to_name(DOM_SID *sid, char *nt_domain)
 	while (sid_name_map[i].sid != NULL) {
 		sid_to_string(sid_str, sid_name_map[i].sid);
 		DEBUG(5,("map_domain_sid_to_name: compare: %s\n", sid_str));
-		if (sid_equal(sid_name_map[i].sid, sid)) {
+		if (sid_equal(sid_name_map[i].sid, sid)) {		
 			fstrcpy(nt_domain, sid_name_map[i].name);
 			DEBUG(5,("map_domain_sid_to_name: found '%s'\n", nt_domain));
 			return True;
@@ -177,6 +234,9 @@ BOOL lookup_known_rid(DOM_SID *sid, uint32 rid, char *name, enum SID_NAME_USE *p
 {
 	int i = 0;
 	struct sid_name_map_info *psnm;
+
+	if (!sid_name_map_initialized) 
+		init_sid_name_map();
 
 	for(i = 0; sid_name_map[i].sid != NULL; i++) {
 		psnm = &sid_name_map[i];
@@ -217,9 +277,12 @@ BOOL map_domain_name_to_sid(DOM_SID *sid, char *nt_domain)
 		DEBUG(5,("map_domain_name_to_sid: overriding blank name to %s\n", nt_domain));
 		sid_copy(sid, &global_sam_sid);
 		return True;
-    }
+	}
 
 	DEBUG(5,("map_domain_name_to_sid: %s\n", nt_domain));
+
+	if (!sid_name_map_initialized) 
+		init_sid_name_map();
 
 	while (sid_name_map[i].name != NULL) {
 		DEBUG(5,("map_domain_name_to_sid: compare: %s\n", sid_name_map[i].name));
@@ -376,6 +439,19 @@ BOOL sid_split_rid(DOM_SID *sid, uint32 *rid)
 	if (sid->num_auths > 0) {
 		sid->num_auths--;
 		*rid = sid->sub_auths[sid->num_auths];
+		return True;
+	}
+	return False;
+}
+
+/*****************************************************************
+ Return the last rid from the end of a sid
+*****************************************************************/  
+
+BOOL sid_peek_rid(DOM_SID *sid, uint32 *rid)
+{
+	if (sid->num_auths > 0) {
+		*rid = sid->sub_auths[sid->num_auths - 1];
 		return True;
 	}
 	return False;

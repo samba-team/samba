@@ -103,12 +103,12 @@ void send_trans_reply(char *outbuf,
 	if (buffer_too_large)
 	{
 		/* issue a buffer size warning.  on a DCE/RPC pipe, expect an SMBreadX... */
-		if (!(global_client_caps & (CAP_NT_SMBS | CAP_STATUS32 ))) {
+		if (!(global_client_caps & (CAP_NT_SMBS | CAP_STATUS32 ))) { 
 			/* Win9x version. */
 			SSVAL(outbuf, smb_err, ERRmoredata);
 			SCVAL(outbuf, smb_rcls, ERRDOS);
 		} else {
-			SIVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+			SIVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
 			SIVAL(outbuf, smb_rcls, 0x80000000 | STATUS_BUFFER_OVERFLOW);
 		}
 	}
@@ -128,7 +128,8 @@ void send_trans_reply(char *outbuf,
 	SSVAL(outbuf,smb_vwv9,0);
 
 	show_msg(outbuf);
-	send_smb(smbd_server_fd(),outbuf);
+	if (!send_smb(smbd_server_fd(),outbuf))
+		exit_server("send_trans_reply: send_smb failed.\n");
 
 	tot_data_sent = this_ldata;
 	tot_param_sent = this_lparam;
@@ -161,7 +162,8 @@ void send_trans_reply(char *outbuf,
 		SSVAL(outbuf,smb_vwv9,0);
 
 		show_msg(outbuf);
-		send_smb(smbd_server_fd(),outbuf);
+		if (!send_smb(smbd_server_fd(),outbuf))
+			exit_server("send_trans_reply: send_smb failed.\n");
 
 		tot_data_sent  += this_ldata;
 		tot_param_sent += this_lparam;
@@ -424,7 +426,8 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 		   of the parameter/data bytes */
 		outsize = set_message(outbuf,0,0,True);
 		show_msg(outbuf);
-		send_smb(smbd_server_fd(),outbuf);
+		if (!send_smb(smbd_server_fd(),outbuf))
+			exit_server("reply_trans: send_smb failed.\n");
 	}
 
 	/* receive the rest of the trans packet */
@@ -489,10 +492,18 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 			(name[strlen(local_machine)+1] == '\\'))
 		name_offset = strlen(local_machine)+1;
 
-	if (strncmp(&name[name_offset],"\\PIPE\\",strlen("\\PIPE\\")) == 0) {
+	if (strnequal(&name[name_offset], "\\PIPE", strlen("\\PIPE"))) {
+		name_offset += strlen("\\PIPE");
+
+		/* Win9x weirdness.  When talking to a unicode server Win9x
+		   only sends \PIPE instead of \PIPE\ */
+
+		if (name[name_offset] == '\\')
+			name_offset++;
+
 		DEBUG(5,("calling named_pipe\n"));
 		outsize = named_pipe(conn,vuid,outbuf,
-				     name+name_offset+strlen("\\PIPE\\"),setup,data,params,
+				     name+name_offset,setup,data,params,
 				     suwcnt,tdscnt,tpscnt,msrcnt,mdrcnt,mprcnt);
 	} else {
 		DEBUG(3,("invalid pipe name\n"));

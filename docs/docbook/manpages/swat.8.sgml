@@ -14,7 +14,7 @@
 
 <refsynopsisdiv>
 	<cmdsynopsis>
-		<command>nmblookup</command>
+		<command>swat</command>
 		<arg choice="opt">-s &lt;smb config file&gt;</arg>
 		<arg choice="opt">-a</arg>
 	</cmdsynopsis>
@@ -31,10 +31,10 @@
 	configure the complex <ulink url="smb.conf.5.html"><filename>
 	smb.conf(5)</filename></ulink> file via a Web browser. In addition, 
 	a <command>swat</command> configuration page has help links 
-	to all the configurable options in the smb.conf file allowing an 
+	to all the configurable options in the <filename>smb.conf</filename> file allowing an 
 	administrator to easily look up the effects of any change. </para>
 
-	<para>swat is run from inetd </para>
+	<para><command>swat</command> is run from <command>inetd</command> </para>
 </refsect1>
 
 
@@ -47,7 +47,7 @@
 		<listitem><para>The default configuration file path is 
 		determined at compile time.  The file specified contains 
 		the configuration details required by the <command>smbd
-		</command> server. This is the file that swat will modify. 
+		</command> server. This is the file that <command>swat</command> will modify. 
 		The information in this file includes server-specific 
 		information such as what printcap file to use, as well as 
 		descriptions of all the services that the server is to provide.
@@ -59,8 +59,8 @@
 		<varlistentry>
 		<term>-a</term>
 		<listitem><para>This option disables authentication and puts 
-		swat in demo mode. In that mode anyone will be able to modify 
-		the smb.conf file. </para>
+		<command>swat</command> in demo mode. In that mode anyone will be able to modify 
+		the <filename>smb.conf</filename> file. </para>
 		
 		<para><emphasis>Do NOT enable this option on a production 
 		server. </emphasis></para></listitem>
@@ -89,7 +89,7 @@
 
 		<para>You need to edit your <filename>/etc/inetd.conf
 		</filename> and <filename>/etc/services</filename>
-		to enable SWAT to be launched via inetd.</para>
+		to enable SWAT to be launched via <command>inetd</command>.</para>
 
 		<para>In <filename>/etc/services</filename> you need to 
 		add a line like this: </para>
@@ -123,10 +123,10 @@
 	<refsect2>
 		<title>Launching</title>
 
-		<para>To launch swat just run your favorite web browser and 
+		<para>To launch SWAT just run your favorite web browser and 
 		point it at "http://localhost:901/".</para>
 
-		<para>Note that you can attach to swat from any IP connected 
+		<para>Note that you can attach to SWAT from any IP connected 
 		machine but connecting from a remote machine leaves your 
 		connection open to password sniffing as passwords will be sent 
 		in the clear over the wire. </para>

@@ -37,7 +37,7 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >smbd</B
->  [-D] [-a] [-o] [-P] [-h] [-V] [-d &lt;debug level&gt;] [-H &lt;lmhosts file&gt;] [-l &lt;log file&gt;] [-n &lt;primary netbios name&gt;] [-p &lt;port number&gt;] [-s &lt;configuration file&gt;]</P
+>  [-D] [-a] [-o] [-P] [-h] [-V] [-d &#60;debug level&#62;] [-H &#60;lmhosts file&#62;] [-l &#60;log file&#62;] [-n &#60;primary netbios name&#62;] [-p &#60;port number&#62;] [-s &#60;configuration file&#62;]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -54,7 +54,7 @@ CLASS="COMMAND"
 >nmbd</B
 > is a server that understands 
 	and can reply to NetBIOS over IP name service requests, like 
-	those produced by SMBD/CIFS clients such as Windows 95/98/ME, 
+	those produced by SMB/CIFS clients such as Windows 95/98/ME, 
 	Windows NT, Windows 2000, and LanManager clients. It also
 	participates in the browsing protocols which make up the 
 	Windows "Network Neighborhood" view.</P
@@ -71,9 +71,8 @@ CLASS="COMMAND"
 	specified it will respond with the IP number of the host it 
 	is running on.  Its "own NetBIOS name" is by
 	default the primary DNS name of the host it is running on, 
-	but this can be overridden with the <I
-CLASS="EMPHASIS"
->-n</I
+	but this can be overridden with the <EM
+>-n</EM
 > 
 	option (see OPTIONS below). Thus <B
 CLASS="COMMAND"
@@ -175,7 +174,7 @@ CLASS="COMMAND"
 >.</P
 ></DD
 ><DT
->-H &lt;filename&gt;</DT
+>-H &#60;filename&#62;</DT
 ><DD
 ><P
 >NetBIOS lmhosts file.  The lmhosts 
@@ -194,18 +193,16 @@ CLASS="FILENAME"
 ></A
 >
 		to resolve any NetBIOS name queries needed by the server. Note 
-		that the contents of this file are <I
-CLASS="EMPHASIS"
->NOT</I
+		that the contents of this file are <EM
+>NOT</EM
 > 
 		used by <B
 CLASS="COMMAND"
 >nmbd</B
 > to answer any name queries. 
 		Adding a line to this file affects name NetBIOS resolution 
-		from this host <I
-CLASS="EMPHASIS"
->ONLY</I
+		from this host <EM
+>ONLY</EM
 >.</P
 ><P
 >The default path to this file is compiled into 
@@ -242,7 +239,7 @@ CLASS="COMMAND"
 >.</P
 ></DD
 ><DT
->-d &lt;debug level&gt;</DT
+>-d &#60;debug level&#62;</DT
 ><DD
 ><P
 >debuglevel is an integer 
@@ -278,7 +275,7 @@ CLASS="FILENAME"
 > file.</P
 ></DD
 ><DT
->-l &lt;log file&gt;</DT
+>-l &#60;log file&#62;</DT
 ><DD
 ><P
 >The -l parameter specifies a path 
@@ -306,7 +303,7 @@ CLASS="FILENAME"
 >.</P
 ></DD
 ><DT
->-n &lt;primary NetBIOS name&gt;</DT
+>-n &#60;primary NetBIOS name&#62;</DT
 ><DD
 ><P
 >This option allows you to override
@@ -331,7 +328,7 @@ CLASS="FILENAME"
 >.</P
 ></DD
 ><DT
->-p &lt;UDP port number&gt;</DT
+>-p &#60;UDP port number&#62;</DT
 ><DD
 ><P
 >UDP port number is a positive integer value.
@@ -344,7 +341,7 @@ CLASS="COMMAND"
 		won't need help!</P
 ></DD
 ><DT
->-s &lt;configuration file&gt;</DT
+>-s &#60;configuration file&#62;</DT
 ><DD
 ><P
 >The default configuration file name 
@@ -484,9 +481,8 @@ CLASS="FILENAME"
 >If <B
 CLASS="COMMAND"
 >nmbd</B
-> is acting as a <I
-CLASS="EMPHASIS"
->		browse master</I
+> is acting as a <EM
+>		browse master</EM
 > (see the <A
 HREF="smb.conf.5.html#localmaster"
 TARGET="_top"
@@ -529,9 +525,8 @@ NAME="AEN171"
 CLASS="COMMAND"
 >nmbd</B
 > process it is recommended 
-	that SIGKILL (-9) <I
-CLASS="EMPHASIS"
->NOT</I
+	that SIGKILL (-9) <EM
+>NOT</EM
 > be used, except as a last 
 	resort, as this may leave the name database in an inconsistent state. 
 	The correct way to terminate <B
@@ -544,7 +539,7 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >nmbd</B
 > will accept SIGHUP, which will cause 
-	it to dump out it's namelists into the file <TT
+	it to dump out its namelists into the file <TT
 CLASS="FILENAME"
 >namelist.debug
 	</TT
@@ -560,7 +555,7 @@ CLASS="FILENAME"
 	cause <B
 CLASS="COMMAND"
 >nmbd</B
-> to dump out it's server database in
+> to dump out its server database in
 	the <TT
 CLASS="FILENAME"
 >log.nmb</TT
@@ -568,11 +563,11 @@ CLASS="FILENAME"
 	of nmbd may be raised by sending it a SIGUSR1 (<B
 CLASS="COMMAND"
 >kill -USR1
-	&lt;nmbd-pid&gt;</B
+	&#60;nmbd-pid&#62;</B
 >) and lowered by sending it a
 	SIGUSR2 (<B
 CLASS="COMMAND"
->kill -USR2 &lt;nmbd-pid&gt;</B
+>kill -USR2 &#60;nmbd-pid&#62;</B
 >). This is to 
 	allow transient problems to be diagnosed, whilst still running at a 
 	normally low log level.</P

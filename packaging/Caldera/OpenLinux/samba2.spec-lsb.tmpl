@@ -27,7 +27,7 @@ Requires    	: libpam >= 0.66, SysVinit-scripts >= 1.04-6
 
 BuildRoot   	: /tmp/%{Name}-%{Version}
 
-Source: ftp://ftp.samba.org/pub/samba/%{Name}-%{Version}-%{date}.tar.gz
+Source: ftp://ftp.samba.org/pub/samba/%{Name}-%{Version}.tar.gz
 #Patch0: %{Name}-%{Version}-smbmount.patch
 #Patch1: %{Name}-%{Version}-install.patch
 #Patch2: %{Name}-%{Version}-smbconf.patch
@@ -182,7 +182,7 @@ verificar rapidamente o efeite de qualquer alteração.
 
 
 %Prep
-%setup -n samba
+%setup
 #%patch0 -p1
 #%patch1 -p1
 #%patch2 -p1
@@ -241,8 +241,7 @@ for i in htmldocs/DOMAIN_MEMBER.html htmldocs/Samba-HOWTO-Collection.html \
          docbook/projdoc/DOMAIN_MEMBER.sgml docbook/projdoc/DOMAIN_MEMBER.sgml \
          docbook/faq/samba-pdc-faq.sgml docbook/howto/samba-pdc-howto.sgml \
          docbook/manpages/smbclient.1.sgml docbook/manpages/smbd.8.sgml \
-	 docbook/projdoc/ENCRYPTION.sgml textdocs/samba-pdc-faq.txt \
-	 textdocs/samba-pdc-howto.txt manpages/smbclient.1 manpages/smbd.8 ; do
+	 docbook/projdoc/ENCRYPTION.sgml manpages/smbclient.1 manpages/smbd.8 ; do
 %{fixUP} -vT docs/$i -e '
     s:/usr/local/samba/private/FOREST.SLEEPY.SID:/var/lock/samba.d/FOREST.SLEEPY.SID: +
     s:/usr/local/samba/private:/usr/bin:g +
@@ -255,9 +254,6 @@ done
 '
 %{fixUP} -vT docs/htmldocs/samba-pdc-faq.html -e '
   s:/usr/local/src:/usr/src:g ;
-'
-%{fixUP} -vT docs/textdocs/PRINTER_DRIVER.txt -e '
-  s:/usr/local/samba/printer:/var/spool/samba:g ;
 '
 # End of DirtyHack(TM)
 
@@ -276,15 +272,17 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--with-swatdir='$(DESTDIR)/usr/share/swat' \
 	--with-sambabook='$(DESTDIR)/usr/share/swat/using_samba' \
 	--with-configdir='$(DESTDIR)'%{EtcSamba} \
+	--with-codepagedir='$(DESTDIR)'/usr/share/samba/codepages \
 	--without-smbwrapper \
 	--with-smbmount \
 	--with-pam \
+	--with-pam_smbpass \
 	--with-netatalk \
 	--with-quotas \
 	--with-utmp \
 	--with-syslog 
 
-make LOGFILEBASE=/var/log/samba.d all nsswitch debug2html bin/smbspool
+make LOGFILEBASE=/var/log/samba.d all nsswitch/libnss_wins.so debug2html bin/smbspool
 
 
 %Install
@@ -294,11 +292,10 @@ VVS=packaging/%{Vendor}/%{Dist}
 mkdir -p $DESTDIR/etc/{{logrotate,pam}.d,sysconfig/daemons}
 mkdir -p $DESTDIR/var/{lo{ck,g}/samba.d,spool/samba}
 mkdir -p $DESTDIR/usr/share/swat/using_samba/{gifs,figs}
-mkdir -p $DESTDIR/usr/share/samba/codepages
 mkdir -p $DESTDIR/lib/security
 mkdir -p $DESTDIR/%{LSBservedir}/{netlogon,profiles,Public}
 mkdir -p $DESTDIR/etc/skel/Samba
-mkdir -p $DESTDIR%{EtcSamba}/codepages/src $DESTDIR/sbin
+mkdir -p $DESTDIR/usr/share/samba/codepages/src $DESTDIR/sbin
 mkdir -p $DESTDIR/%{SVIdir}
 
 make LOGFILEBASE=/var/log/samba.d -C source  install
@@ -306,7 +303,7 @@ make LOGFILEBASE=/var/log/samba.d -C source  install
 strip $DESTDIR/usr/bin/smb{mnt,umount}
 #mv $DESTDIR/usr/bin/{make,add,conv}* $DESTDIR/usr/bin
 
-cp -p source/codepages/codepage_def.??? $DESTDIR%{EtcSamba}/codepages/src
+cp -p source/codepages/codepage_def.??? $DESTDIR/usr/share/samba/codepages/src
 
 # Install the nsswitch library extension file
 install -m 755 source/nsswitch/libnss_wins.so $DESTDIR/lib/libnss_wins.so.2.0
@@ -343,6 +340,9 @@ cp -p $VVS/samba.logrotate $DESTDIR/etc/logrotate.d/samba
 cp -p $VVS/README.home $DESTDIR/etc/skel/Samba/README.txt
 cp -p $VVS/README.Public $DESTDIR/%{LSBservedir}/Public/README.txt
 cp -p $VVS/README.profiles $DESTDIR/%{LSBservedir}/profiles/README.txt
+
+# Add PAM smbpass facility
+mv $DESTDIR/usr/bin/pam_smbpass.so $DESTDIR/lib/security
 
 install -m 755 $VVS/samba.init-lsb $DESTDIR/%{SVIdir}/%{Name}
 
@@ -414,6 +414,9 @@ swat					swat
 %{_defaultdocdir}/samba- 		doc
 tmp					IGNORED
 man					IGNORED
+lib/security				IGNORED
+/src/$					IGNORED
+/usr/private/$				IGNORED
 @default@
 EOF
 cat << 'EOF' | %{mkLists} -f -a samba
@@ -421,7 +424,8 @@ cat << 'EOF' | %{mkLists} -f -a samba
 Samba/README.txt			base
 ^/etc					config-IGNORED
 %{_defaultdocdir}/samba-[^/]+/(COPYING|README$)	base
-libnss_wins.so				base
+libnss_wins.*				base
+pam_smbpass.so				base
 %{_defaultdocdir}/samba-[^/]+/(COPYING|README$)	base
 %{_defaultdocdir}/samba- 		doc
 smb(mount|mnt|umount)			smbfs
@@ -450,7 +454,16 @@ test "$1" = "0" || exit 0
 /usr/lib/LSB/init-remove %{Name}
 # We want to remove the browse.dat and wins.dat files so they can not
 # interfer with a new version of samba!
-rm -f /var/lock/samba/{browse,wins}.dat 
+rm -f /var/lock/samba/browse.dat 
+rm -f /var/lock/samba/{brlock,connections,locking,messages}.tdb
+if [ -e /var/lock/samba.d/namelist.debug ]; then
+	rm -f /var/lock/samba.d/namelist.debug
+fi
+rm -f /var/lock/samba/unexpected.tdb
+rm -f /var/lock/samba/{smbd,nmbd}.pid
+
+# Note: We MUST keep:
+#	winbindd_*, sshare_info*, printing*, ntdrivers*
 
 
 %PostUn -n swat
@@ -490,4 +503,4 @@ test "$1" = "0" || exit 0
 
 %ChangeLog
 * Mon Jan 01 1997 ...
-$Id: samba2.spec-lsb.tmpl,v 1.1.2.17 2001/04/15 00:33:29 jht Exp $
+$Id: samba2.spec-lsb.tmpl,v 1.1.2.17.2.1 2001/07/06 00:48:38 jra Exp $

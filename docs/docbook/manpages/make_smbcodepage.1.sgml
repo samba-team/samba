@@ -1,5 +1,5 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
-<refentry id="findsmb">
+<refentry id="make-smbcodepage">
 
 <refmeta>
 	<refentrytitle>make_smbcodepage</refentrytitle>
@@ -56,11 +56,11 @@
 		
 		<varlistentry>
 		<term>inputfile</term>
-		<listitem><para>This is the input file to process. In t
-		he '<parameter>c</parameter>' case this will be a text 
+		<listitem><para>This is the input file to process. In 
+		the <parameter>c</parameter> case this will be a text 
 		codepage definition file such as the ones found in the Samba 	
 		<filename>source/codepages</filename> directory. In
-		the '<parameter>d</parameter>' case this will be the 
+		the <parameter>d</parameter> case this will be the 
 		binary format codepage definition file normally found in 
 		the <filename>lib/codepages</filename> directory in the 
 		Samba install directory path.</para></listitem>

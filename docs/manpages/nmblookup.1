@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH NMBLOOKUP 1 "23 Jun 2001" "nmblookup 2.2.0a"
+.TH "NMBLOOKUP" "1" "22 June 2001" "" ""
 .SH NAME
 nmblookup \- NetBIOS over TCP/IP client used to lookup NetBIOS  names
 .SH SYNOPSIS
@@ -44,8 +44,9 @@ Try and bind to UDP port 137 to send and receive UDP
 datagrams. The reason for this option is a bug in Windows 95 
 where it ignores the source port of the requesting packet 
 and only replies to UDP port 137. Unfortunately, on most UNIX 
-systems root privilage is needed to bind to this port, and 
-in addition, if the nmbd(8)daemon is running on this machine it also binds to this port.
+systems root privilege is needed to bind to this port, and 
+in addition, if the nmbd(8)
+daemon is running on this machine it also binds to this port.
 .TP
 \fB-A\fR
 Interpret \fIname\fR as 
@@ -126,7 +127,7 @@ used to query DNS servers). To query a WINS server,
 .PP
 For example, running :
 .PP
-\fBnmblookup -U samba.org -R IRIX#1B'\fR
+\fBnmblookup -U samba.org -R 'IRIX#1B'\fR
 .PP
 would query the WINS server samba.org for the domain 
 master browser (1B name type) for the IRIX workgroup.
@@ -137,7 +138,8 @@ the Samba suite.
 .SH "SEE ALSO"
 .PP
 \fBnmbd(8)\fR, 
-samba(7).SH "AUTHOR"
+samba(7)
+.SH "AUTHOR"
 .PP
 The original Samba software and related utilities 
 were created by Andrew Tridgell. Samba is now developed

@@ -198,11 +198,12 @@ int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num, uint32 *nt_rpc_
 		case ERRbadshare: return EBUSY;
 		case ERRlock: return EBUSY;
 		case ERROR_INVALID_NAME: return ENOENT;
+		case ERRnosuchshare: return ENODEV;
 		}
 	}
 	if (rcls == ERRSRV) {
 		switch (code) {
-		case ERRbadpw: return EACCES;
+		case ERRbadpw: return EPERM;
 		case ERRaccess: return EACCES;
 		case ERRnoresource: return ENOMEM;
 		case ERRinvdevice: return ENODEV;

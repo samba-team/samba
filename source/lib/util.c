@@ -335,12 +335,31 @@ void smb_setlen(char *buf,int len)
 ********************************************************************/
 int set_message(char *buf,int num_words,int num_bytes,BOOL zero)
 {
-  if (zero)
-    memset(buf + smb_size,'\0',num_words*2 + num_bytes);
-  CVAL(buf,smb_wct) = num_words;
-  SSVAL(buf,smb_vwv + num_words*SIZEOFWORD,num_bytes);  
-  smb_setlen(buf,smb_size + num_words*2 + num_bytes - 4);
-  return (smb_size + num_words*2 + num_bytes);
+	if (zero)
+		memset(buf + smb_size,'\0',num_words*2 + num_bytes);
+	CVAL(buf,smb_wct) = num_words;
+	SSVAL(buf,smb_vwv + num_words*SIZEOFWORD,num_bytes);  
+	smb_setlen(buf,smb_size + num_words*2 + num_bytes - 4);
+	return (smb_size + num_words*2 + num_bytes);
+}
+
+/*******************************************************************
+  setup only the byte count for a smb message
+********************************************************************/
+void set_message_bcc(char *buf,int num_bytes)
+{
+	int num_words = CVAL(buf,smb_wct);
+	SSVAL(buf,smb_vwv + num_words*SIZEOFWORD,num_bytes);  
+	smb_setlen(buf,smb_size + num_words*2 + num_bytes - 4);
+}
+
+/*******************************************************************
+  setup only the byte count for a smb message, using the end of the
+  message as a marker
+********************************************************************/
+void set_message_end(void *outbuf,void *end_ptr)
+{
+	set_message_bcc((char *)outbuf,PTR_DIFF(end_ptr,smb_buf((char *)outbuf)));
 }
 
 /*******************************************************************
@@ -784,13 +803,13 @@ uint32 interpret_addr(char *str)
     res = inet_addr(str);
   } else {
     /* otherwise assume it's a network name of some sort and use 
-       Get_Hostbyname */
-    if ((hp = Get_Hostbyname(str)) == 0) {
-      DEBUG(3,("Get_Hostbyname: Unknown host. %s\n",str));
+       sys_gethostbyname */
+    if ((hp = sys_gethostbyname(str)) == 0) {
+      DEBUG(3,("sys_gethostbyname: Unknown host. %s\n",str));
       return 0;
     }
     if(hp->h_addr == NULL) {
-      DEBUG(3,("Get_Hostbyname: host address is invalid for host %s\n",str));
+      DEBUG(3,("sys_gethostbyname: host address is invalid for host %s\n",str));
       return 0;
     }
     putip((char *)&res,(char *)hp->h_addr);
@@ -977,67 +996,6 @@ BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask)
 
 
 /****************************************************************************
-a wrapper for gethostbyname() that tries with all lower and all upper case 
-if the initial name fails
-****************************************************************************/
-struct hostent *Get_Hostbyname(const char *name)
-{
-  char *name2 = strdup(name);
-  struct hostent *ret;
-
-  if (!name2)
-    {
-      DEBUG(0,("Memory allocation error in Get_Hostbyname! panic\n"));
-      exit(0);
-    }
-
-   
-  /* 
-   * This next test is redundent and causes some systems (with
-   * broken isalnum() calls) problems.
-   * JRA.
-   */
-
-#if 0
-  if (!isalnum(*name2))
-    {
-      free(name2);
-      return(NULL);
-    }
-#endif /* 0 */
-
-  ret = sys_gethostbyname(name2);
-  if (ret != NULL)
-    {
-      free(name2);
-      return(ret);
-    }
-
-  /* try with all lowercase */
-  strlower(name2);
-  ret = sys_gethostbyname(name2);
-  if (ret != NULL)
-    {
-      free(name2);
-      return(ret);
-    }
-
-  /* try with all uppercase */
-  strupper(name2);
-  ret = sys_gethostbyname(name2);
-  if (ret != NULL)
-    {
-      free(name2);
-      return(ret);
-    }
-  
-  /* nothing works :-( */
-  free(name2);
-  return(NULL);
-}
-
-
-/****************************************************************************
 check if a process exists. Does this work on all unixes?
 ****************************************************************************/
 
@@ -1095,13 +1053,15 @@ uid_t nametouid(char *name)
 	uid_t u;
 
 	u = (uid_t)strtol(name, &p, 0);
-	if (p != name) return u;
+	if ((p != name) && (*p == '\0'))
+		return u;
 
 	if (winbind_nametouid(&u, name))
 		return u;
 
 	pass = sys_getpwnam(name);
-	if (pass) return(pass->pw_uid);
+	if (pass)
+		return(pass->pw_uid);
 	return (uid_t)-1;
 }
 
@@ -1117,13 +1077,15 @@ gid_t nametogid(char *name)
 	gid_t g;
 
 	g = (gid_t)strtol(name, &p, 0);
-	if (p != name) return g;
+	if ((p != name) && (*p == '\0'))
+		return g;
 
 	if (winbind_nametogid(&g, name))
 		return g;
 
 	grp = getgrnam(name);
-	if (grp) return(grp->gr_gid);
+	if (grp)
+		return(grp->gr_gid);
 	return (gid_t)-1;
 }
 
@@ -1168,7 +1130,9 @@ char *readdirname(DIR *p)
 
 	{
 		static pstring buf;
-		memcpy(buf, dname, NAMLEN(ptr)+1);
+		int len = NAMLEN(ptr);
+		memcpy(buf, dname, len);
+		buf[len] = 0;
 		dname = buf;
 	}
 
@@ -1714,34 +1678,6 @@ BOOL reg_split_key(char *full_keyname, uint32 *reg_type, char *key_name)
 
 
 /*****************************************************************
-like mktemp() but make sure that no % characters are used
-% characters are bad for us because of the macro subs
- *****************************************************************/  
-char *smbd_mktemp(char *template)
-{
-	char *p = mktemp(template);
-	char *p2;
-	SMB_STRUCT_STAT st;
-
-	if (!p) return NULL;
-
-	while ((p2=strchr(p,'%'))) {
-		p2[0] = 'A';
-		while (sys_stat(p,&st) == 0 && p2[0] < 'Z') {
-			/* damn, it exists */
-			p2[0]++;
-		}
-		if (p2[0] == 'Z') {
-			/* oh well ... better return something */
-			p2[0] = '%';
-			return p;
-		}
-	}
-
-	return p;
-}
-
-/*****************************************************************
 possibly replace mkstemp if it is broken
 *****************************************************************/  
 int smb_mkstemp(char *template)
@@ -1750,8 +1686,8 @@ int smb_mkstemp(char *template)
 	return mkstemp(template);
 #else
 	/* have a reasonable go at emulating it. Hope that
-		the system mktemp() isn't completly hopeless */
-	char *p = smbd_mktemp(template);
+	   the system mktemp() isn't completly hopeless */
+	char *p = mktemp(template);
 	if (!p) return -1;
 	return open(p, O_CREAT|O_EXCL|O_RDWR, 0600);
 #endif

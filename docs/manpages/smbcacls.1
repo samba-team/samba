@@ -3,21 +3,21 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH SMBCACLS 1 "23 Jun 2001" "smbcacls 2.2.0a"
+.TH "SMBCACLS" "1" "22 June 2001" "" ""
 .SH NAME
 smbcacls \- Set or get ACLs on an NT file or directory names
 .SH SYNOPSIS
 .sp
-\fBnmblookup\fR \fB//server/share\fR \fBfilename\fR [ \fB-U username\fR ]  [ \fB-A acls\fR ]  [ \fB-M acls\fR ]  [ \fB-D acls\fR ]  [ \fB-S acls\fR ]  [ \fB-C name\fR ]  [ \fB-G name\fR ]  [ \fB-n\fR ]  [ \fB-h\fR ] 
+\fBsmbcacls\fR \fB//server/share\fR \fBfilename\fR [ \fB-U username\fR ]  [ \fB-A acls\fR ]  [ \fB-M acls\fR ]  [ \fB-D acls\fR ]  [ \fB-S acls\fR ]  [ \fB-C name\fR ]  [ \fB-G name\fR ]  [ \fB-n\fR ]  [ \fB-h\fR ] 
 .SH "DESCRIPTION"
 .PP
 This tool is part of the  Sambasuite.
 .PP
-The smbcacls program manipulates NT Access Control Lists 
+The \fBsmbcacls\fR program manipulates NT Access Control Lists 
 (ACLs) on SMB file shares. 
 .SH "OPTIONS"
 .PP
-The following options are available to the smbcacls program. 
+The following options are available to the \fBsmbcacls\fR program. 
 The format of ACLs is described in the section ACL FORMAT 
 .TP
 \fB-A acls\fR
@@ -30,7 +30,7 @@ specified on the command line. An error will be printed for each
 ACL specified that was not already present in the ACL list
 .TP
 \fB-D acls\fR
-Delete any ACLs specfied on the command line. 
+Delete any ACLs specified on the command line. 
 An error will be printed for each ACL specified that was not 
 already present in the ACL list. 
 .TP
@@ -168,8 +168,8 @@ The \fBsmbcacls\fR program sets the exit status
 depending on the success or otherwise of the operations performed. 
 The exit status may be one of the following values. 
 .PP
-If the operation succeded, smbcacls returns and exit 
-status of 0. If smbcacls couldn't connect to the specified server, 
+If the operation succeeded, smbcacls returns and exit 
+status of 0. If \fBsmbcacls\fR couldn't connect to the specified server, 
 or there was an error getting or setting the ACLs, an exit status 
 of 1 is returned. If there was an error parsing any command line 
 arguments, an exit status of 2 is returned. 

@@ -1,4 +1,4 @@
-/var/log/samba/log.nmb {
+/var/log/samba/log.nmbd {
     notifempty
     missingok
     postrotate
@@ -6,7 +6,7 @@
     endscript
 }
 
-/var/log/samba/log.smb {
+/var/log/samba/log.smbd {
     notifempty
     missingok
     postrotate

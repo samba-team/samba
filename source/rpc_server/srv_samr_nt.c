@@ -61,7 +61,7 @@ static void free_samr_info(void *ptr)
   dynamically returns the correct user info..... JRA.
  ********************************************************************/
 
-static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
+static uint32 get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
                                 int *total_entries, int *num_entries,
                                 int max_num_entries, uint16 acb_mask)
 {
@@ -72,12 +72,12 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
     (*total_entries) = 0;
 
     if (pw_buf == NULL)
-        return False;
+        return NT_STATUS_NO_MEMORY;
 
     vp = startsmbpwent(False);
     if (!vp) {
         DEBUG(0, ("get_sampwd_entries: Unable to open SMB password database.\n"));
-        return False;
+        return NT_STATUS_ACCESS_DENIED;
     }
 
     while (((pwd = getsam21pwent(vp)) != NULL) && (*num_entries) < max_num_entries) {
@@ -119,10 +119,13 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
 
     endsmbpwent(vp);
 
-    return (*num_entries) > 0;
+	if (pwd!=NULL)
+		return STATUS_MORE_ENTRIES;
+	else
+		return NT_STATUS_NO_PROBLEMO;
 }
 
-static BOOL jf_get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
+static uint32 jf_get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
                                 int *total_entries, uint32 *num_entries,
                                 int max_num_entries, uint16 acb_mask)
 {
@@ -133,12 +136,12 @@ static BOOL jf_get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
 	*total_entries = 0;
 
 	if (pw_buf == NULL)
-		return False;
+		return NT_STATUS_NO_MEMORY;
 
 	vp = startsmbpwent(False);
 	if (!vp) {
 		DEBUG(0, ("get_sampwd_entries: Unable to open SMB password database.\n"));
-		return False;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	while (((pwd = getsam21pwent(vp)) != NULL) && (*num_entries) < max_num_entries) {
@@ -183,7 +186,11 @@ static BOOL jf_get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
 	endsmbpwent(vp);
 
 	*total_entries = *num_entries;
-	return True;
+
+	if (pwd!=NULL)
+		return STATUS_MORE_ENTRIES;
+	else
+		return NT_STATUS_NO_PROBLEMO;
 }
 
 /*******************************************************************
@@ -675,7 +682,6 @@ uint32 _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u, SAMR_R_
 	SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES];
 	int num_entries = 0;
 	int total_entries = 0;
-	BOOL ret;
 	
 	r_u->status = NT_STATUS_NOPROBLEMO;
 
@@ -686,12 +692,12 @@ uint32 _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u, SAMR_R_
 	DEBUG(5,("_samr_enum_dom_users: %d\n", __LINE__));
 
 	become_root();
-	ret = get_sampwd_entries(pass, q_u->start_idx, &total_entries, &num_entries,
+	r_u->status = get_sampwd_entries(pass, q_u->start_idx, &total_entries, &num_entries,
 								MAX_SAM_ENTRIES, q_u->acb_mask);
 	unbecome_root();
 
-	if (!ret)
-		return NT_STATUS_ACCESS_DENIED;
+	if (r_u->status != NT_STATUS_NOPROBLEMO && r_u->status != STATUS_MORE_ENTRIES)
+		return r_u->status;
 
 	samr_clear_passwd_fields(pass, num_entries);
 
@@ -775,34 +781,41 @@ static BOOL get_group_alias_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 star
 
 	/* well-known aliases */
 	if (strequal(sid_str, "S-1-5-32")) {
-		char *name;
+		char *alias_name;
 		while (!lp_hide_local_users() &&
 				num_entries < max_entries && 
-				((name = builtin_alias_rids[num_entries].name) != NULL)) {
+				((alias_name = builtin_alias_rids[num_entries].name) != NULL)) {
 
-			fstrcpy(d_grp[num_entries].name, name);
+			fstrcpy(d_grp[num_entries].name, alias_name);
 			d_grp[num_entries].rid = builtin_alias_rids[num_entries].rid;
 
 			num_entries++;
 		}
 	} else if (strequal(sid_str, sam_sid_str) && !lp_hide_local_users()) {
-		char *name;
+		fstring name;
 		char *sep;
-		struct group *grp;
+		struct sys_grent *glist;
+		struct sys_grent *grp;
 
 		sep = lp_winbind_separator();
 
 		/* local aliases */
 		/* we return the UNIX groups here.  This seems to be the right */
 		/* thing to do, since NT member servers return their local     */
-                /* groups in the same situation.                               */
-		setgrent();
+		/* groups in the same situation.                               */
 
-		while (num_entries < max_entries && ((grp = getgrent()) != NULL)) {
+		/* use getgrent_list() to retrieve the list of groups to avoid
+		 * problems with getgrent possible infinite loop by internal
+		 * libc grent structures overwrites by called functions */
+		grp = glist = getgrent_list();
+		if (grp == NULL)
+			return False;
+
+		for (;(num_entries < max_entries) && (grp != NULL); grp = grp->next) {
 			int i;
 			uint32 trid;
-			name = grp->gr_name;
 
+			fstrcpy(name,grp->gr_name);
 			DEBUG(10,("get_group_alias_entries: got group %s\n", name ));
 
 			/* Don't return winbind groups as they are not local! */
@@ -820,7 +833,8 @@ static BOOL get_group_alias_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 star
 
 			trid = pdb_gid_to_group_rid(grp->gr_gid);
 			for( i = 0; i < num_entries; i++)
-				if ( d_grp[i].rid == trid ) break;
+				if ( d_grp[i].rid == trid )
+					break;
 
 			if ( i < num_entries )
 				continue; /* rid was there, dup! */
@@ -840,7 +854,7 @@ static BOOL get_group_alias_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 star
 			num_entries++;
 		}
 
-		endgrent();
+		grent_free(glist);
 	}
 
 	*p_num_entries = num_entries;
@@ -852,7 +866,7 @@ static BOOL get_group_alias_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 star
  Get the group entries - similar to get_sampwd_entries().
  ********************************************************************/
 
-static BOOL get_group_domain_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 start_idx,
+static uint32 get_group_domain_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 start_idx,
 				     uint32 *p_num_entries, uint32 max_entries)
 {
 	fstring sid_str;
@@ -880,7 +894,7 @@ static BOOL get_group_domain_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 sta
 
 	*p_num_entries = num_entries;
 
-	return True;
+	return NT_STATUS_NO_PROBLEMO;
 }
 
 /*******************************************************************
@@ -959,7 +973,7 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
     int total_entries = 0;
     uint32 data_size = 0;
 	DOM_SID sid;
-	BOOL ret;
+	uint32 disp_ret;
 	SAM_DISPINFO_CTR *ctr;
 
 	DEBUG(5, ("samr_reply_query_dispinfo: %d\n", __LINE__));
@@ -984,30 +998,30 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 	case 0x4:
 		become_root();
 #if 0
-		ret = get_passwd_entries(pass, q_u->start_idx, &total_entries, &num_entries,
+		r_u->status = get_passwd_entries(pass, q_u->start_idx, &total_entries, &num_entries,
 						MAX_SAM_ENTRIES, acb_mask);
 #endif
 #if 0
 	/*
 	 * Which should we use here ? JRA.
 	 */
-		ret = get_sampwd_entries(pass, q_u->start_idx, &total_entries, &num_entries,
+		r_u->status = get_sampwd_entries(pass, q_u->start_idx, &total_entries, &num_entries,
 						MAX_SAM_ENTRIES, acb_mask);
 #endif
 #if 1
-		ret = jf_get_sampwd_entries(pass, q_u->start_idx, &total_entries, &num_entries,
+		r_u->status = jf_get_sampwd_entries(pass, q_u->start_idx, &total_entries, &num_entries,
 						MAX_SAM_ENTRIES, acb_mask);
 #endif
 		unbecome_root();
-		if (!ret) {
+		if (r_u->status!=STATUS_MORE_ENTRIES && r_u->status!=NT_STATUS_NO_PROBLEMO) {
 			DEBUG(5, ("get_sampwd_entries: failed\n"));
-			return NT_STATUS_ACCESS_DENIED;
+			return r_u->status;
 		}
 		break;
 	case 0x3:
 	case 0x5:
-		ret = get_group_domain_entries(grps, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES);
-		if (!ret)
+		r_u->status = get_group_domain_entries(grps, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES);
+		if (r_u->status!=NT_STATUS_NO_PROBLEMO)
 			return NT_STATUS_ACCESS_DENIED;
 		break;
 	default:
@@ -1015,6 +1029,7 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
+	orig_num_entries = num_entries;
 
 	if (num_entries > q_u->max_entries)
 		num_entries = q_u->max_entries;
@@ -1028,31 +1043,47 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 	samr_clear_passwd_fields(pass, num_entries);
 
 	data_size = q_u->max_size;
-	orig_num_entries = num_entries;
 
 	ctr = (SAM_DISPINFO_CTR *)talloc(p->mem_ctx,sizeof(SAM_DISPINFO_CTR));
+	if (!ctr)
+		return NT_STATUS_NO_MEMORY;
 
 	/* Now create reply structure */
 	switch (q_u->switch_level) {
 	case 0x1:
-		ctr->sam.info1 = (SAM_DISPINFO_1 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_1));
-		init_sam_dispinfo_1(ctr->sam.info1, &num_entries, &data_size, q_u->start_idx, pass);
+		if (!(ctr->sam.info1 = (SAM_DISPINFO_1 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_1))))
+			return NT_STATUS_NO_MEMORY;
+		disp_ret = init_sam_dispinfo_1(p->mem_ctx,ctr->sam.info1, &num_entries, &data_size, q_u->start_idx, pass);
+		if (disp_ret != NT_STATUS_NO_PROBLEMO)
+			return disp_ret;
 		break;
 	case 0x2:
-		ctr->sam.info2 = (SAM_DISPINFO_2 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_2));
-		init_sam_dispinfo_2(ctr->sam.info2, &num_entries, &data_size, q_u->start_idx, pass);
+		if (!(ctr->sam.info2 = (SAM_DISPINFO_2 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_2))))
+			return NT_STATUS_NO_MEMORY;
+		disp_ret = init_sam_dispinfo_2(p->mem_ctx,ctr->sam.info2, &num_entries, &data_size, q_u->start_idx, pass);
+		if (disp_ret != NT_STATUS_NO_PROBLEMO)
+			return disp_ret;
 		break;
 	case 0x3:
-		ctr->sam.info3 = (SAM_DISPINFO_3 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_3));
-		init_sam_dispinfo_3(ctr->sam.info3, &num_entries, &data_size, q_u->start_idx, grps);
+		if (!(ctr->sam.info3 = (SAM_DISPINFO_3 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_3))))
+			return NT_STATUS_NO_MEMORY;
+		disp_ret = init_sam_dispinfo_3(p->mem_ctx,ctr->sam.info3, &num_entries, &data_size, q_u->start_idx, grps);
+		if (disp_ret != NT_STATUS_NO_PROBLEMO)
+			return disp_ret;
 		break;
 	case 0x4:
-		ctr->sam.info4 = (SAM_DISPINFO_4 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_4));
-		init_sam_dispinfo_4(ctr->sam.info4, &num_entries, &data_size, q_u->start_idx, pass);
+		if (!(ctr->sam.info4 = (SAM_DISPINFO_4 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_4))))
+			return NT_STATUS_NO_MEMORY;
+		disp_ret = init_sam_dispinfo_4(p->mem_ctx,ctr->sam.info4, &num_entries, &data_size, q_u->start_idx, pass);
+		if (disp_ret != NT_STATUS_NO_PROBLEMO)
+			return disp_ret;
 		break;
 	case 0x5:
-		ctr->sam.info5 = (SAM_DISPINFO_5 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_5));
-		init_sam_dispinfo_5(ctr->sam.info5, &num_entries, &data_size, q_u->start_idx, grps);
+		if (!(ctr->sam.info5 = (SAM_DISPINFO_5 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_5))))
+			return NT_STATUS_NO_MEMORY;
+		disp_ret = init_sam_dispinfo_5(p->mem_ctx,ctr->sam.info5, &num_entries, &data_size, q_u->start_idx, grps);
+		if (disp_ret != NT_STATUS_NO_PROBLEMO)
+			return disp_ret;
 		break;
 	default:
 		ctr->sam.info = NULL;
@@ -1061,11 +1092,10 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 
 	DEBUG(5, ("_samr_query_dispinfo: %d\n", __LINE__));
 
-	init_samr_r_query_dispinfo(r_u, num_entries, data_size, q_u->switch_level, ctr, r_u->status);
+	if (num_entries < orig_num_entries)
+		r_u->status = STATUS_MORE_ENTRIES;
 
-	if (num_entries < orig_num_entries) {
-		return STATUS_MORE_ENTRIES;
-	}
+	init_samr_r_query_dispinfo(r_u, num_entries, data_size, q_u->switch_level, ctr, r_u->status);
 
 	return r_u->status;
 }
@@ -1181,7 +1211,7 @@ uint32 _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LOOK
     uint32 rid[MAX_SAM_ENTRIES];
     enum SID_NAME_USE type[MAX_SAM_ENTRIES];
     int i;
-    int num_rids = q_u->num_names1;
+    int num_rids = q_u->num_names2;
     DOM_SID pol_sid;
 
     r_u->status = NT_STATUS_NOPROBLEMO;
@@ -1200,8 +1230,6 @@ uint32 _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LOOK
         num_rids = MAX_SAM_ENTRIES;
         DEBUG(5,("_samr_lookup_names: truncating entries to %d\n", num_rids));
     }
-
-    SMB_ASSERT_ARRAY(q_u->uni_name, num_rids);
 
     for (i = 0; i < num_rids; i++) {
         fstring name;
@@ -1756,7 +1784,7 @@ uint32 _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SAMR
 
 uint32 _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREATE_USER *r_u)
 {
-    struct sam_passwd *sam_pass;
+    struct sam_passwd *sam_pass = NULL;
     fstring mach_acct;
     pstring err_str;
     pstring msg_str;
@@ -1821,7 +1849,6 @@ uint32 _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CR
          sizeof(err_str), msg_str, sizeof(msg_str)))
     {
         DEBUG(0, ("%s\n", err_str));
-        close_policy_hnd(p, user_pol);
         return NT_STATUS_ACCESS_DENIED;
     }
 
@@ -1830,19 +1857,16 @@ uint32 _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CR
     unbecome_root();
     if (sam_pass == NULL) {
         /* account doesn't exist: say so */
-        close_policy_hnd(p, user_pol);
         return NT_STATUS_ACCESS_DENIED;
     }
 
     /* Get the domain SID stored in the domain policy */
     if(!get_lsa_policy_samr_sid(p, &dom_pol, &sid)) {
-        close_policy_hnd(p, user_pol);
         return NT_STATUS_INVALID_HANDLE;
     }
 
     /* append the user's RID to it */
     if(!sid_append_rid(&sid, sam_pass->user_rid)) {
-        close_policy_hnd(p, user_pol);
         return NT_STATUS_NO_SUCH_USER;
     }
 
@@ -2198,10 +2222,10 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 }
 
 /*******************************************************************
- set_user_info_24
+ set_user_info_pw
  ********************************************************************/
 
-static BOOL set_user_info_24(SAM_USER_INFO_24 *id24, uint32 rid)
+static BOOL set_user_info_pw(char *pass, uint32 rid)
 {
 	struct sam_passwd *pwd = getsam21pwrid(rid);
 	struct sam_passwd new_pwd;
@@ -2218,7 +2242,7 @@ static BOOL set_user_info_24(SAM_USER_INFO_24 *id24, uint32 rid)
 
 	memset(buf, 0, sizeof(pstring));
 
-	if (!decode_pw_buffer((char*)id24->pass, buf, 256, &len, nt_hash, lm_hash))
+	if (!decode_pw_buffer(pass, buf, 256, &len, nt_hash, lm_hash))
 		return False;
 
 	new_pwd.smb_passwd = lm_hash;
@@ -2239,7 +2263,7 @@ static BOOL set_user_info_24(SAM_USER_INFO_24 *id24, uint32 rid)
 	
 	memset(buf, 0, sizeof(buf));
 	
-	DEBUG(5,("set_user_info_24: pdb_update_sam_account()\n"));
+	DEBUG(5,("set_user_info_pw: pdb_update_sam_account()\n"));
 
 	/* update the SAMBA password */
 	if(!mod_sam21pwd_entry(&new_pwd, True))
@@ -2313,13 +2337,39 @@ uint32 _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SET_
 			break;
 
 		case 24:
-			SamOEMhash(ctr->info.id24->pass, sess_key, 1);
-			if (!set_user_info_24(ctr->info.id24, rid))
+			SamOEMhash(ctr->info.id24->pass, sess_key, 516);
+
+			dump_data(100, (char *)ctr->info.id24->pass, 516);
+
+			if (!set_user_info_pw((char *)(ctr->info.id24->pass), rid))
 				return NT_STATUS_ACCESS_DENIED;
 			break;
 
+		case 25:
+#if 0
+			/*
+			 * Currently we don't really know how to unmarshall
+			 * the level 25 struct, and the password encryption
+			 * is different. This is a placeholder for when we
+			 * do understand it. In the meantime just return INVALID
+			 * info level and W2K SP2 drops down to level 23... JRA.
+			 */
+
+			SamOEMhash(ctr->info.id25->pass, sess_key, 532);
+
+			dump_data(100, (char *)ctr->info.id25->pass, 532);
+
+			if (!set_user_info_pw(ctr->info.id25->pass, rid))
+				return NT_STATUS_ACCESS_DENIED;
+			break;
+#endif
+			return NT_STATUS_INVALID_INFO_CLASS;
+
 		case 23:
-			SamOEMhash(ctr->info.id23->pass, sess_key, 1);
+			SamOEMhash(ctr->info.id23->pass, sess_key, 516);
+
+			dump_data(100, (char *)ctr->info.id23->pass, 516);
+
 			if (!set_user_info_23(ctr->info.id23, rid))
 				return NT_STATUS_ACCESS_DENIED;
 			break;

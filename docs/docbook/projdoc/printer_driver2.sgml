@@ -1,4 +1,4 @@
-<chapter>
+<chapter id="printing">
 
 
 <chapterinfo>
@@ -13,244 +13,408 @@
 	</author>
 	
 		
-	<pubdate>5 Mar 2001</pubdate>
+	<pubdate> (3 May 2001) </pubdate>
 </chapterinfo>
 
 <title>Printing Support in Samba 2.2.x</title>
 
 <sect1>
-	<title>Introduction</title>
+<title>Introduction</title>
 	
-	<para>Beginning with the 2.2.0 release, Samba supports 
-	the native Windows NT printing mechanisms implemented via 
-	MS-RPC (i.e. the SPOOLSS named pipe).  Previous versions of 
-	Samba only supported LanMan printing calls.</para>
+<para>Beginning with the 2.2.0 release, Samba supports 
+the native Windows NT printing mechanisms implemented via 
+MS-RPC (i.e. the SPOOLSS named pipe).  Previous versions of 
+Samba only supported LanMan printing calls.</para>
 
-	<para>The additional functionality provided by the new 
-	SPOOLSS support includes:</para>
+<para>The additional functionality provided by the new 
+SPOOLSS support includes:</para>
 	
-	<itemizedlist>
-		<listitem><para>Support for downloading printer driver 
-		files to Windows 95/98/NT/2000 clients upon demand.
-		</para></listitem>
+<itemizedlist>
+	<listitem><para>Support for downloading printer driver 
+	files to Windows 95/98/NT/2000 clients upon demand.
+	</para></listitem>
+	
+	<listitem><para>Uploading of printer drivers via the 
+	Windows NT Add Printer Wizard (APW) or the 
+	Imprints tool set (refer to <ulink 
+	url="http://imprints.sourceforge.net">http://imprints.sourceforge.net</ulink>). 
+	</para></listitem>
 		
-		<listitem><para>Uploading of printer drivers via the 
-		Windows NT Add Printer Wizard (APW) or the <ulink
-		url="http://imprints.sourceforge.net">Imprints tool set
-		</ulink></para></listitem>
+	<listitem><para>Support for the native MS-RPC printing 
+	calls such as StartDocPrinter, EnumJobs(), etc...  (See 
+	the MSDN documentation at <ulink 
+	url="http://msdn.microsoft.com/">http://msdn.microsoft.com/</ulink> 
+	for more information on the Win32 printing API)
+	</para></listitem>
 		
-		<listitem><para>Support for the native MS-RPC printing 
-		calls such as StartDocPrinter, EnumJobs(), etc...  (See 
-		the <ulink url="http://msdn.microsoft.com/">MSDN documentation
-		</ulink> for more information on the Win32 printing API)
-		</para></listitem>
-		
-		<listitem><para>Support for NT Access Control Lists (ACL) 
-		on printer objects</para></listitem>
-		
-		<listitem><para>Improved support for printer queue manipulation 
-		through the use of an internal databases for spooled job 
-		information</para></listitem>
-	</itemizedlist>
+	<listitem><para>Support for NT Access Control Lists (ACL) 
+	on printer objects</para></listitem>
+	
+	<listitem><para>Improved support for printer queue manipulation 
+	through the use of an internal databases for spooled job 
+	information</para></listitem>
+</itemizedlist>
+
+<para>
+There has been some initial confusion about what all this means
+and whether or not it is a requirement for printer drivers to be 
+installed on a Samba host in order to support printing from Windows 
+clients.  A bug existed in Samba 2.2.0 which made Windows NT/2000 clients 
+require that the Samba server possess a valid driver for the printer.  
+This is fixed in Samba 2.2.1 and once again, Windows NT/2000 clients
+can use the local APW for installing drivers to be used with a Samba 
+served printer.  This is the same behavior exhibited by Windows 9x clients.
+As a side note, Samba does not use these drivers in any way to process 
+spooled files.  They are utilized entirely by the clients.
+</para>
+
+<para>
+The following MS KB article, may be of some help if you are dealing with
+Windows 2000 clients:  <emphasis>How to Add Printers with No User 
+Interaction in Windows 2000</emphasis>
+</para>
+
+<para>
+<ulink url="http://support.microsoft.com/support/kb/articles/Q189/1/05.ASP">http://support.microsoft.com/support/kb/articles/Q189/1/05.ASP</ulink>
+</para>
 
 </sect1>
 
 
 <sect1>
-	<title>Configuration</title>
+<title>Configuration</title>
 
-	<para>In order to support the uploading of printer driver 
-	files, you must first configure a file share named [print$].  
-	The name of this share is hard coded in Samba's internals so 
-	the name is very important (print$ is the service used by 
-	Windows NT print servers to provide support for printer driver 
-	download).</para>
+<warning>
+<title>[print$] vs. [printer$]</title>
 
-	<warning>
-		<para>Previous versions of Samba recommended using 
-		a share named [printer$].  This name was taken from the 
-		printer$ service created by Windows 9x clients when a 
-		printer was shared.  Windows 9x printer servers always have 
-		a printer$ service which provides read-only access via no 
-		password in order to support printer driver downloads.</para>
+<para>
+Previous versions of Samba recommended using a share named [printer$].  
+This name was taken from the printer$ service created by Windows 9x 
+clients when a printer was shared.  Windows 9x printer servers always have 
+a printer$ service which provides read-only access via no 
+password in order to support printer driver downloads.
+</para>
 	
-		<para>However, the initial implementation allowed for a 
-		parameter named <parameter>printer driver location</parameter> 
-		to be used on a per share basis to specify the location of 
-		the driver files associated with that printer.  Another 
-		parameter named <parameter>printer driver</parameter> provided 
-		a means of defining the printer driver name to be sent to 
-		the client.</para>
-  
-		<para>These parameters, including <parameter>printer driver 
-		file</parameter> parameter, are being depreciated and should not 
-		be used in new installations.  For more information on this change, 
-		you should refer to the <link linkend="MIGRATION">Migration section 
-		</link>of this document.</para>
-	</warning>
-	
-	<para>You should modify the server's smb.conf file to create the 
-	following file share (of course, some of the parameter values,
-	such as 'path' are arbitrary and should be replaced with
-	appropriate values for your site):</para>
+<para>
+However, the initial implementation allowed for a 
+parameter named <parameter>printer driver location</parameter> 
+to be used on a per share basis to specify the location of 
+the driver files associated with that printer.  Another 
+parameter named <parameter>printer driver</parameter> provided 
+a means of defining the printer driver name to be sent to 
+the client.
+</para>
+ 
+<para>
+These parameters, including <parameter>printer driver
+file</parameter> parameter, are being depreciated and should not 
+be used in new installations.  For more information on this change, 
+you should refer to the <link linkend="MIGRATION">Migration section</link>
+of this document.
+</para>
+</warning>
 
-	<para><programlisting>
+<sect2>
+<title>Creating [print$]</title>	
+
+<para>
+In order to support the uploading of printer driver 
+files, you must first configure a file share named [print$].  
+The name of this share is hard coded in Samba's internals so 
+the name is very important (print$ is the service used by 
+Windows NT print servers to provide support for printer driver 
+download).
+</para>
+
+<para>You should modify the server's smb.conf file to add the global
+parameters and to create the 
+following file share (of course, some of the parameter values,
+such as 'path' are arbitrary and should be replaced with
+appropriate values for your site):</para>
+
+<para><programlisting>
+[global]
+    ; members of the ntadmin group should be able
+    ; to add drivers and set printer properties
+    ; root is implicitly a 'printer admin'
+    printer admin = @ntadmin
+
 [print$]
-	path = /usr/local/samba/printers
-	guest ok = yes
-	browseable = yes
-	read only = yes
-	write list = ntadmin
-	</programlisting></para>
+    path = /usr/local/samba/printers
+    guest ok = yes
+    browseable = yes
+    read only = yes
+    ; since this share is configured as read only, then we need
+    ; a 'write list'.  Check the file system permissions to make
+    ; sure this account can copy files to the share.  If this
+    ; is setup to a non-root account, then it should also exist
+    ; as a 'printer admin'
+    write list = @ntadmin,root
+</programlisting></para>
 	
-	<para>The <ulink url="smb.conf.5.html#WRITELIST"><parameter>
-	write list</parameter></ulink> is used to allow administrative 
-	level user accounts to have write access in order to update files 
-	on the share.  See the <ulink url="smb./conf.5.html">
-	smb.conf(5) man page</ulink> for more information on 
-	configuring file shares.</para>
+<para>The <ulink url="smb.conf.5.html#WRITELIST"><parameter>
+write list</parameter></ulink> is used to allow administrative 
+level user accounts to have write access in order to update files 
+on the share.  See the <ulink url="smb./conf.5.html">smb.conf(5) 
+man page</ulink> for more information on configuring file shares.</para>
 	
-	<para>The requirement for <ulink url="smb.conf.5.html#GUESTOK"><command>
-	guest ok = yes</command></ulink> depends upon how your
-	site is configured.  If users will be guaranteed to have 
-	an account on the Samba host, then this is a non-issue.</para>
+<para>The requirement for <ulink url="smb.conf.5.html#GUESTOK"><command>guest 
+ok = yes</command></ulink> depends upon how your
+site is configured.  If users will be guaranteed to have 
+an account on the Samba host, then this is a non-issue.</para>
+
+<note>	
+<title>Author's Note</title>
+
+<para>
+The non-issue is that if all your Windows NT users are guaranteed to be 
+authenticated by the Samba server (such as a domain member server and the NT 
+user has already been validated by the Domain Controller in 
+order to logon to the Windows NT console), then guest access 
+is not necessary.  Of course, in a workgroup environment where 
+you just want to be able to print without worrying about 
+silly accounts and security, then configure the share for 
+guest access.  You'll probably want to add <ulink 
+url="smb.conf.5.html#MAPTOGUEST"><command>map to guest = Bad User
+</command></ulink> in the [global] section as well.  Make sure 
+you understand what this parameter does before using it 
+though. --jerry
+</para>
+</note>
+
+<para>In order for a Windows NT print server to support 
+the downloading of driver files by multiple client architectures,
+it must create subdirectories within the [print$] service
+which correspond to each of the supported client architectures.
+Samba follows this model as well.</para>
+
+<para>Next create the directory tree below the [print$] share 
+for each architecture you wish to support.</para>
+
+<para><programlisting>
+[print$]-----
+        |-W32X86           ; "Windows NT x86"
+        |-WIN40            ; "Windows 95/98"
+        |-W32ALPHA         ; "Windows NT Alpha_AXP"
+        |-W32MIPS          ; "Windows NT R4000"
+        |-W32PPC           ; "Windows NT PowerPC"
+</programlisting></para>
+
+<warning>
+<title>ATTENTION!  REQUIRED PERMISSIONS</title>
 	
-	<para><emphasis>author's note: </emphasis>The non-issue is that 
-	if all your Windows NT users are guarenteed to be authenticated 
-	by the Samba server (such as a domain member server and the NT 
-	user has already been validated by the Domain Controller in 
-	order to logon to the Windows NT console), then guest access 
-	is not necessary.  Of course, in a workgroup environment where 
-	you just want to be able to print without worrying about 
-	silly accounts and security, then configure the share for 
-	guest access.  You'll probably want to add <ulink 
-	url="smb.conf.5.html#MAPTOGUEST"><command>map to guest = Bad User
-	</command></ulink> in the [global] section as well.  Make sure 
-	you understand what this parameter does before using it 
-	though. --jerry]</para>
-
-	<para>In order for a Windows NT print server to support 
-	the downloading of driver files by multiple client architectures,
-	it must create subdirectories within the [print$] service
-	which correspond to each of the supported client architectures.
-	Samba follows this model as well.</para>
-
-	<para>Next create the directory tree below the [print$] share 
-	for each architecture you wish to support.</para>
-
-	<para><programlisting>
-	[print$]-----
-		|-W32X86		; "Windows NT x86"
-		|-WIN40			; "Windows 95/98"
-		|-W32ALPHA		; "Windows NT Alpha_AXP"
-		|-W32MIPS		; "Windows NT R4000"
-		|-W32PPC		; "Windows NT PowerPC"
-	</programlisting></para>
-
-	<warning>
-		<para><emphasis>ATTENTION!  REQUIRED PERMISSIONS</emphasis></para>
-
-		<para>In order to currently add a new driver to you Samba host, 
-		one of two conditions must hold true:</para>
+<para>
+In order to currently add a new driver to you Samba host, 
+one of two conditions must hold true:
+</para>
 		
-		<itemizedlist>
-			<listitem><para>The account used to connect to the Samba host 
-			must have a uid of 0 (i.e. a root account)</para></listitem>
-			
-			<listitem><para>The account used to connect to the Samba host
-			must be a member of the <ulink url="smb.conf.5.html"><parameter>
-			printer admin</parameter></ulink> list.</para></listitem>
-		</itemizedlist>
-
-		<para>Of course, the connected account must still possess access
-		to add files to the subdirectories beneath [print$].</para>
-	</warning>
-
-
-	<para>Once you have created the required [print$] service and 
-	associated subdirectories, simply log onto the Samba server using 
-	a root (or <parameter>printer admin</parameter>) account
-	from a Windows NT 4.0 client.  Navigate to the "Printers" folder
-	on the Samba server.  You should see an initial listing of printers
-	that matches the printer shares defined on your Samba host.</para>
-
-	<para>The initial listing of printers in the Samba host's 
-	Printers folder will have no printer driver assigned to them.  
-	The way assign a driver to a printer is to view the Properties 
-	of the printer and either</para>
-	
-	<itemizedlist>
-		<listitem><para>Use the "New Driver..." button to install 
-		a new printer driver, or</para></listitem>
+<itemizedlist>
+	<listitem><para>The account used to connect to the Samba host 
+	must have a uid of 0 (i.e. a root account)</para></listitem>
 		
-		<listitem><para>Select a driver from the popup list of 
-		installed drivers.  Initially this list will be empty.</para>
-		</listitem>
-	</itemizedlist>
-	
-	<para>If you wish to install printer drivers for client 
-	operating systems other than "Windows NT x86", you will need 
-	to use the "Sharing" tab of the printer properties dialog.</para>
+	<listitem><para>The account used to connect to the Samba host
+	must be a member of the <ulink 
+	url="smb.conf.5.html#PRINTERADMIN"><parameter>printer 
+	admin</parameter></ulink> list.</para></listitem>
+</itemizedlist>
 
-	<para>Assuming you have connected with a root account, you 
-	will also be able modify other printer properties such as 
-	ACLs and device settings using this dialog box.</para>
+<para>
+Of course, the connected account must still possess access
+to add files to the subdirectories beneath [print$]. Remember
+that all file shares are set to 'read only' by default.
+</para>
+</warning>
+
+
+<para>
+Once you have created the required [print$] service and 
+associated subdirectories, simply log onto the Samba server using 
+a root (or <parameter>printer admin</parameter>) account
+from a Windows NT 4.0 client.  Navigate to the "Printers" folder
+on the Samba server.  You should see an initial listing of printers
+that matches the printer shares defined on your Samba host.
+</para>
+</sect2>
+
+<sect2>
+<title>Setting Drivers for Existing Printers</title>
+
+<para>The initial listing of printers in the Samba host's 
+Printers folder will have no real printer driver assigned 
+to them.  By default, in Samba 2.2.0 this driver name was set to 
+<emphasis>NO PRINTER DRIVER AVAILABLE FOR THIS PRINTER</emphasis>.
+Later versions changed this to a NULL string to allow the use
+tof the local Add Printer Wizard on NT/2000 clients.
+Attempting to view the printer properties for a printer
+which has this default driver assigned will result in 
+the error message:</para>
+
+<para>
+<emphasis>Device settings cannot be displayed.  The driver 
+for the specified printer is not installed, only spooler 
+properties will be displayed.  Do you want to install the 
+driver now?</emphasis>
+</para>
+
+<para>
+Click "No" in the error dialog and you will be presented with
+the printer properties window.  The way assign a driver to a 
+printer is to either
+</para>
 	
-	<para>A few closing comments for this section, it is possible 
-	on a Windows NT print server to have printers
-	listed in the Printers folder which are not shared.  Samba does
-	not make this distinction.  By definition, the only printers of
-	which Samba is aware are those which are specified as shares in
-	<filename>smb.conf</filename>.</para>
+<itemizedlist>
+	<listitem><para>Use the "New Driver..." button to install 
+	a new printer driver, or</para></listitem>
+	
+	<listitem><para>Select a driver from the popup list of 
+	installed drivers.  Initially this list will be empty.</para>
+	</listitem>
+</itemizedlist>
+	
+<para>If you wish to install printer drivers for client 
+operating systems other than "Windows NT x86", you will need 
+to use the "Sharing" tab of the printer properties dialog.</para>
+
+<para>Assuming you have connected with a root account, you 
+will also be able modify other printer properties such as 
+ACLs and device settings using this dialog box.</para>
+
+<para>A few closing comments for this section, it is possible 
+on a Windows NT print server to have printers
+listed in the Printers folder which are not shared.  Samba does
+not make this distinction.  By definition, the only printers of
+which Samba is aware are those which are specified as shares in
+<filename>smb.conf</filename>.</para>
   
-	<para>Another interesting side note is that Windows NT clients do
-	not use the SMB printer share, but rather can print directly 
-	to any printer on another Windows NT host using MS-RPC.  This
-	of course assumes that the printing client has the necessary
-	privileges on the remote host serving the printer.  The default
-	permissions assigned by Windows NT to a printer gives the "Print"
-	permissions to the "Everyone" well-known group.</para>
-	
-	<sect2>
-		<title>Support a large number of printers</title>
+<para>Another interesting side note is that Windows NT clients do
+not use the SMB printer share, but rather can print directly 
+to any printer on another Windows NT host using MS-RPC.  This
+of course assumes that the printing client has the necessary
+privileges on the remote host serving the printer.  The default
+permissions assigned by Windows NT to a printer gives the "Print"
+permissions to the "Everyone" well-known group.
+</para>
+
+</sect2>	
+
+
+<sect2>
+<title>Support a large number of printers</title>
 		
-		<para>One issue that has arisen during the development
-		phase of Samba 2.2 is the need to support driver downloads for
-		100's of printers.  Using the Windows NT APW is somewhat 
-		awkward to say the list.  If more than one printer are using the 
-		same driver, the <ulink url="rpcclient.1.html"><command>rpcclient's
-		setdriver command</command></ulink> can be used to set the driver
-		associated with an installed driver.  The following is example
-		of how this could be accomplished:</para>
+<para>One issue that has arisen during the development
+phase of Samba 2.2 is the need to support driver downloads for
+100's of printers.  Using the Windows NT APW is somewhat 
+awkward to say the list.  If more than one printer are using the 
+same driver, the <ulink url="rpcclient.1.html"><command>rpcclient's
+setdriver command</command></ulink> can be used to set the driver
+associated with an installed driver.  The following is example
+of how this could be accomplished:</para>
 		
-		<para><programlisting> 
-		<prompt>$ </prompt>rpcclient pogo -U root%secret -c "enumdrivers"
+<para><programlisting> 
+<prompt>$ </prompt>rpcclient pogo -U root%secret -c "enumdrivers"
 Domain=[NARNIA] OS=[Unix] Server=[Samba 2.2.0-alpha3]
  
 [Windows NT x86]
 Printer Driver Info 1:
-	Driver Name: [HP LaserJet 4000 Series PS]
+     Driver Name: [HP LaserJet 4000 Series PS]
  
 Printer Driver Info 1:
-	Driver Name: [HP LaserJet 2100 Series PS]
+     Driver Name: [HP LaserJet 2100 Series PS]
  
 Printer Driver Info 1:
-	Driver Name: [HP LaserJet 4Si/4SiMX PS]
+     Driver Name: [HP LaserJet 4Si/4SiMX PS]
 				  
-		<prompt>$ </prompt>rpcclient pogo -U root%secret -c "enumprinters"
+<prompt>$ </prompt>rpcclient pogo -U root%secret -c "enumprinters"
 Domain=[NARNIA] OS=[Unix] Server=[Samba 2.2.0-alpha3]
-	flags:[0x800000]
-	name:[\\POGO\hp-print]
-	description:[POGO\\POGO\hp-print,NO DRIVER AVAILABLE FOR THIS PRINTER,]
-	comment:[]
+     flags:[0x800000]
+     name:[\\POGO\hp-print]
+     description:[POGO\\POGO\hp-print,NO DRIVER AVAILABLE FOR THIS PRINTER,]
+     comment:[]
 				  
-		<prompt>$ </prompt>rpcclient pogo -U root%bleaK.er \
-		<prompt>&gt; </prompt> -c "setdriver hp-print \"HP LaserJet 4000 Series PS\""
+<prompt>$ </prompt>rpcclient pogo -U root%secret \
+<prompt>&gt; </prompt> -c "setdriver hp-print \"HP LaserJet 4000 Series PS\""
 Domain=[NARNIA] OS=[Unix] Server=[Samba 2.2.0-alpha3]
-Succesfully set hp-print to driver HP LaserJet 4000 Series PS.
-		</programlisting></para>
-	</sect2>
+Successfully set hp-print to driver HP LaserJet 4000 Series PS.
+</programlisting></para>
+</sect2>
+
+
+
+<sect2>
+<title>Adding New Printers via the Windows NT APW</title>
 	
+<para>
+By default, Samba offers all printer shares defined in <filename>smb.conf</filename>
+in the "Printers..." folder.  Also existing in this folder is the Windows NT 
+Add Printer Wizard icon.  The APW will be show only if
+</para>
+
+<itemizedlist>
+	<listitem><para>The connected user is able to successfully
+	execute an OpenPrinterEx(\\server) with administrative
+	privileges (i.e. root or <parameter>printer admin</parameter>).
+	</para></listitem>
+	
+	<listitem><para><ulink url="smb.conf.5.html#SHOWADDPRINTERWIZARD"><parameter>show 
+	add printer wizard = yes</parameter></ulink> (the default).
+	</para></listitem>
+</itemizedlist>
+
+<para>
+In order to be able to use the APW to successfully add a printer to a Samba 
+server, the <ulink url="smb.conf.5.html#ADDPRINTERCOMMAND"><parameter>add 
+printer command</parameter></ulink> must have a defined value.  The program
+hook must successfully add the printer to the system (i.e. 
+<filename>/etc/printcap</filename> or appropriate files) and 
+<filename>smb.conf</filename> if necessary.
+</para>
+
+<para>
+When using the APW from a client, if the named printer share does 
+not exist, <command>smbd</command> will execute the <parameter>add printer 
+command</parameter> and reparse to the <filename>smb.conf</filename>
+to attempt to locate the new printer share.  If the share is still not defined,
+an error of "Access Denied" is returned to the client.  Note that the 
+<parameter>add printer program</parameter> is executed under the context
+of the connected user, not necessarily a root account.
+</para>
+
+<para>
+There is a complementing <ulink url="smb.conf.5.html#DELETEPRINTERCOMMAND"><parameter>delete
+printer command</parameter></ulink> for removing entries from the "Printers..."
+folder.
+</para>
+
+</sect2>
+
+
+<sect2>
+<title>Samba and Printer Ports</title>
+
+<para>
+Windows NT/2000 print servers associate a port with each printer.  These normally
+take the form of LPT1:, COM1:, FILE:, etc...  Samba must also support the
+concept of ports associated with a printer.  By default, only one printer port,
+named "Samba Printer Port", exists on a system.  Samba does not really a port in
+order to print, rather it is a requirement of Windows clients.  
+</para>
+
+<para>
+Note that Samba does not support the concept of "Printer Pooling" internally 
+either.  This is when a logical printer is assigned to multiple ports as 
+a form of load balancing or fail over.
+</para>
+
+<para>
+If you require that multiple ports be defined for some reason,
+<filename>smb.conf</filename> possesses a <ulink 
+url="smb.conf.5.html#ENUMPORTSCOMMAND"><parameter>enumports 
+command</parameter></ulink> which can be used to define an external program 
+that generates a listing of ports on a system.
+</para>
+
+</sect2>
+
 </sect1>
 
 
@@ -339,24 +503,24 @@ Succesfully set hp-print to driver HP LaserJet 4000 Series PS.
 		perl code is wrapped around <command>smbclient</command> 
 		and <command>rpcclient</command>.</para>
 
-		<para><programlisting>	
-		foreach (supported architecture for a given driver)
-		{
-			1.	rpcclient: Get the appropriate upload directory 
-				on the remote server
-			2.	smbclient: Upload the driver files
-			3.	rpcclient: Issues an AddPrinterDriver() MS-RPC
-		}
+<para><programlisting>	
+foreach (supported architecture for a given driver)
+{
+     1.  rpcclient: Get the appropriate upload directory 
+         on the remote server
+     2.  smbclient: Upload the driver files
+     3.  rpcclient: Issues an AddPrinterDriver() MS-RPC
+}
 	
-		4.	rpcclient: Issue an AddPrinterEx() MS-RPC to actually
-			create the printer
-		</programlisting></para>
+4.  rpcclient: Issue an AddPrinterEx() MS-RPC to actually
+    create the printer
+</programlisting></para>
 		
 		<para>One of the problems encountered when implementing 
 		the Imprints tool set was the name space issues between 
 		various supported client architectures.  For example, Windows 
 		NT includes a driver named "Apple LaserWriter II NTX v51.8" 
-		and Windows 95 callsits version of this driver "Apple 
+		and Windows 95 calls its version of this driver "Apple 
 		LaserWriter II NTX"</para>
 		
 		<para>The problem is how to know what client drivers have 
@@ -369,7 +533,7 @@ Succesfully set hp-print to driver HP LaserJet 4000 Series PS.
 		</filename></para>
 		
 		<para>will reveal that Windows NT always uses the NT driver 
-		name.  The is ok as Windows NT always requires that at least 
+		name.  This is ok as Windows NT always requires that at least 
 		the Windows NT version of the printer driver is present.  
 		However, Samba does not have the requirement internally.  
 		Therefore, how can you use the NT driver name if is has not 
@@ -385,64 +549,167 @@ Succesfully set hp-print to driver HP LaserJet 4000 Series PS.
 
 
 <sect1>
-	<title><anchor id="MIGRATION">Migration to from Samba 2.0.x to 
-	2.2.x</title>
+<title><anchor id="MIGRATION">Migration to from Samba 2.0.x to 2.2.x</title>
+
+<para>
+Given that printer driver management has changed (we hope improved) in 
+2.2 over prior releases, migration from an existing setup to 2.2 can 
+follow several paths.
+</para>
+
+<para>
+Windows clients have a tendency to remember things for quite a while.
+For example, if a Windows NT client has attached to a Samba 2.0 server,
+it will remember the server as a LanMan printer server.  Upgrading 
+the Samba host to 2.2 makes support for MSRPC printing possible, but 
+the NT client will still remember the previous setting.
+</para>
+
+<para>
+In order to give an NT client printing "amnesia" (only necessary if you 
+want to use the newer MSRPC printing functionality in Samba), delete 
+the registry keys associated with the print server contained in 
+<constant>[HKLM\SYSTEM\CurrentControlSet\Control\Print]</constant>.  The 
+spooler service on the client should be stopped prior to doing this:
+</para>
+
+<para>
+<prompt>C:\WINNT\ ></prompt> <userinput>net stop spooler</userinput>
+</para>
+
+<para>
+<emphasis>All the normal disclaimers about editing the registry go 
+here.</emphasis>  Be careful, and know what you are doing.
+</para>
+
+<para>
+The spooler service should be restarted after you have finished 
+removing the appropriate registry entries by replacing the 
+<command>stop</command> command above with <command>start</command>.
+</para>
+
+<para>
+Windows 9x clients will continue to use LanMan printing calls
+with a 2.2 Samba server so there is no need to perform any of these
+modifications on non-NT clients.
+</para>
 	
-	<para>Given that printer driver management has changed
-	(we hope improved :) ) in 2.2.0 over prior releases,
-	migration from an existing setup to 2.2.0 can follow
-	several paths.</para>
-	
-	<warning>
-		<para>The following smb.conf parameters are considered to be
-		depreciated and will be removed soon.  Do not use them
-		in new installations</para>
+<warning>
+<title>Achtung!</title>
+
+<para>
+The following smb.conf parameters are considered to be depreciated and will 
+be removed soon.  Do not use them in new installations
+</para>
 		
-		<itemizedlist>
-			<listitem><para><parameter>printer driver file (G)</parameter>
-			</para></listitem>
+<itemizedlist>
+	<listitem><para><parameter>printer driver file (G)</parameter>
+	</para></listitem>
 			
-			<listitem><para><parameter>printer driver (S)</parameter>
-			</para></listitem>
+	<listitem><para><parameter>printer driver (S)</parameter>
+	</para></listitem>
 			
-			<listitem><para><parameter>printer driver location (S)</parameter>
-			</para></listitem>
-		</itemizedlist>
-	</warning>
+	<listitem><para><parameter>printer driver location (S)</parameter>
+	</para></listitem>
+</itemizedlist>
+</warning>
 
 
-	<para>Here are the possible scenarios for supporting migration:</para>
+<para>
+Here are the possible scenarios for supporting migration:
+</para>
 	
-	<itemizedlist>
-		<listitem><para>If you do not desire the new Windows NT 
-		print driver support, nothing needs to be done.  
-		All existing parameters work the same.</para></listitem>
+<itemizedlist>
+	<listitem><para>If you do not desire the new Windows NT 
+	print driver support, nothing needs to be done.  
+	All existing parameters work the same.</para></listitem>
 
-		<listitem><para>If you want to take advantage of NT printer 
-		driver support but do not want to migrate the 
-		9x drivers to the new setup, the leave the existing 
-		printers.def file.  When smbd attempts to locate a 
-		9x driver for the printer in the TDB and fails it 
-		will drop down to using the printers.def (and all 
-		associated parameters).  The <command>make_printerdef</command> 
-		tool will also remain for backwards compatibility but will 
-		be moved to the "this tool is the old way of doing it" 
-		pile.</para></listitem>
+	<listitem><para>If you want to take advantage of NT printer 
+	driver support but do not want to migrate the 
+	9x drivers to the new setup, the leave the existing 
+	printers.def file.  When smbd attempts to locate a 
+	9x driver for the printer in the TDB and fails it 
+	will drop down to using the printers.def (and all 
+	associated parameters).  The <command>make_printerdef</command> 
+	tool will also remain for backwards compatibility but will 
+	be moved to the "this tool is the old way of doing it" 
+	pile.</para></listitem>
 
-		<listitem><para>If you install a Windows 9x driver for a printer 
-		on your Samba host (in the printing TDB), this information will 
-		take precedence and the three old printing parameters
-		will be ignored (including print driver location).</para></listitem>
+	<listitem><para>If you install a Windows 9x driver for a printer 
+	on your Samba host (in the printing TDB), this information will 
+	take precedence and the three old printing parameters
+	will be ignored (including print driver location).</para></listitem>
 
-		<listitem><para>If you want to migrate an existing <filename>
-		printers.def</filename> file into the new setup, the current only 
-		solution is to use the Windows NT APW to install the NT drivers 
-		and the 9x  drivers.  This can be scripted using smbclient and 
-		rpcclient.  See the <ulink url="http://imprints.sourceforge.net/">
-		Imprints insrallation client</ulink> for an example.
-		</para></listitem>
-	</itemizedlist>
+	<listitem><para>If you want to migrate an existing <filename>printers.def</filename> 
+	file into the new setup, the current only solution is to use the Windows 
+	NT APW to install the NT drivers and the 9x  drivers.  This can be scripted 
+	using <command>smbclient</command> and <command>rpcclient</command>.  See the 
+	Imprints installation client at <ulink 
+	url="http://imprints.sourceforge.net/">http://imprints.sourceforge.net/</ulink> 
+	for an example.
+	</para></listitem>
+</itemizedlist>
 
 </sect1>
+
+
+<!--
+
+  This comment from rpc_server/srv_spoolss_nt.c:_spoolss_open_printer_ex()
+  needs to be added into a section probably.  This is to remind me it needs 
+  to be done.  -jerry
+
+                /*
+                 * If the openprinterex rpc call contains a devmode,
+                 * it's a per-user one. This per-user devmode is derivated
+                 * from the global devmode. Openprinterex() contains a per-user
+                 * devmode for when you do EMF printing and spooling.
+                 * In the EMF case, the NT workstation is only doing half the job
+                 * of rendering the page. The other half is done by running the printer
+                 * driver on the server.
+                 * The EMF file doesn't contain the page description (paper size, orientation, ...).
+                 * The EMF file only contains what is to be printed on the page.
+                 * So in order for the server to know how to print, the NT client sends
+                 * a devicemode attached to the openprinterex call.
+                 * But this devicemode is short lived, it's only valid for the current print job.
+                 *
+                 * If Samba would have supported EMF spooling, this devicemode would
+                 * have been attached to the handle, to sent it to the driver to correctly
+                 * rasterize the EMF file.
+                 *
+                 * As Samba only supports RAW spooling, we only receive a ready-to-print file,
+                 * we just act as a pass-thru between windows and the printer.
+                 *
+                 * In order to know that Samba supports only RAW spooling, NT has to call
+                 * getprinter() at level 2 (attribute field) or NT has to call startdoc()
+                 * and until NT sends a RAW job, we refuse it.
+                 *
+                 * But to call getprinter() or startdoc(), you first need a valid handle,
+                 * and to get an handle you have to call openprintex(). Hence why you have
+                 * a devicemode in the openprinterex() call.
+                 *
+                 *
+                 * Differences between NT4 and NT 2000.
+                 * NT4:
+                 * 
+                 * On NT4, you only have a global devicemode. This global devicemode can be changed
+                 * by the administrator (or by a user with enough privs). Every time a user
+                 * wants to print, the devicemode is reset to the default. In Word, every time
+                 * you print, the printer's characteristics are always reset to the global devicemode.
+                 *
+                 * NT 2000:
+                 * 
+                 * In W2K, there is the notion of per-user devicemode. The first time you use
+                 * a printer, a per-user devicemode is build from the global devicemode.
+                 * If you change your per-user devicemode, it is saved in the registry, under the
+                 * H_KEY_CURRENT_KEY sub_tree. So that every time you print, you have your default
+                 * printer preferences available.
+                 *
+                 * To change the per-user devicemode: it's the "Printing Preferences ..." button
+                 * on the General Tab of the printer properties windows.
+                 *
+                 * To change the global devicemode: it's the "Printing Defaults..." button
+                 * on the Advanced Tab of the printer properties window.
+-->
 
 </chapter>

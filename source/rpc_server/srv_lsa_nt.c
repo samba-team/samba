@@ -108,7 +108,7 @@ static int init_dom_ref(DOM_R_REF *ref, char *dom_name, DOM_SID *dom_sid)
  ***************************************************************************/
 
 static void init_lsa_rid2s(DOM_R_REF *ref, DOM_RID2 *rid2,
-				int num_entries, UNISTR2 name[MAX_LOOKUP_SIDS],
+				int num_entries, UNISTR2 *name,
 				uint32 *mapped_count, BOOL endian)
 {
 	int i;
@@ -238,6 +238,11 @@ static void init_lsa_trans_names(TALLOC_CTX *ctx, DOM_R_REF *ref, LSA_TRANS_NAME
 			sid_split_rid(&find_sid, &rid);
 		}
 
+		/* unistr routines take dos codepage strings */
+
+		unix_to_dos(dom_name, True);
+		unix_to_dos(name, True);
+
 		dom_idx = init_dom_ref(ref, dom_name, &find_sid);
 
 		DEBUG(10,("init_lsa_trans_names: added user '%s\\%s' to "
@@ -332,6 +337,7 @@ uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO 
 {
 	LSA_INFO_UNION *info = &r_u->dom;
 	DOM_SID domain_sid;
+	fstring dos_domain;
 	char *name = NULL;
 	DOM_SID *sid = NULL;
 
@@ -339,6 +345,9 @@ uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO 
 
 	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
 		return NT_STATUS_INVALID_HANDLE;
+
+	fstrcpy(dos_domain, global_myworkgroup);
+	unix_to_dos(dos_domain, True);
 
 	switch (q_u->info_class) {
 	case 0x02:
@@ -355,24 +364,25 @@ uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO 
             break;
 		}
 	case 0x03:
-		switch (lp_server_role())
-		{
+		/* Request PolicyPrimaryDomainInformation. */
+		switch (lp_server_role()) {
 			case ROLE_DOMAIN_PDC:
 			case ROLE_DOMAIN_BDC:
-				name = global_myworkgroup;
+				name = dos_domain;
 				sid = &global_sam_sid;
 				break;
 			case ROLE_DOMAIN_MEMBER:
-				name = global_myname;
-				if (secrets_fetch_domain_sid(global_myworkgroup,
-					&domain_sid))
-						sid = &domain_sid;
+				name = dos_domain;
+				/* We need to return the Domain SID here. */
+				if (secrets_fetch_domain_sid(dos_domain,
+							     &domain_sid))
+					sid = &domain_sid;
 				else
-					sid = &global_sam_sid;
+					return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 				break;
 			case ROLE_STANDALONE:
-				name = global_myname;
-				sid = NULL;
+				name = dos_domain;
+				sid = NULL; /* Tell it we're not in a domain. */
 				break;
 			default:
 				return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
@@ -380,24 +390,19 @@ uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO 
 		init_dom_query(&r_u->dom.id3, name, sid);
 		break;
 	case 0x05:
-		/* AS/U shows this needs to be the same as level 3. JRA. */
-		switch (lp_server_role())
-		{
+		/* Request PolicyAccountDomainInformation. */
+		switch (lp_server_role()) {
 			case ROLE_DOMAIN_PDC:
 			case ROLE_DOMAIN_BDC:
-				name = global_myworkgroup;
+				name = dos_domain;
 				sid = &global_sam_sid;
 				break;
 			case ROLE_DOMAIN_MEMBER:
-				name = global_myname;
-				if (secrets_fetch_domain_sid(global_myworkgroup,
-					&domain_sid))
-						sid = &domain_sid;
-				else
-					sid = &global_sam_sid;
+				name = dos_domain;
+				sid = &global_sam_sid;
 				break;
 			case ROLE_STANDALONE:
-				name = global_myname;
+				name = dos_domain;
 				sid = &global_sam_sid;
 				break;
 			default:
@@ -406,8 +411,7 @@ uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO 
 		init_dom_query(&r_u->dom.id5, name, sid);
 		break;
 	case 0x06:
-		switch (lp_server_role())
-		{
+		switch (lp_server_role()) {
 			case ROLE_DOMAIN_BDC:
 				/*
 				 * only a BDC is a backup controller
@@ -514,4 +518,34 @@ uint32 _lsa_close(pipes_struct *p, LSA_Q_CLOSE *q_u, LSA_R_CLOSE *r_u)
 uint32 _lsa_open_secret(pipes_struct *p, LSA_Q_OPEN_SECRET *q_u, LSA_R_OPEN_SECRET *r_u)
 {
 	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+}
+
+uint32 _lsa_unk_get_connuser(pipes_struct *p, LSA_Q_UNK_GET_CONNUSER *q_u, LSA_R_UNK_GET_CONNUSER *r_u)
+{
+  fstring username, domname;
+  int ulen, dlen;
+  user_struct *vuser = get_valid_user_struct(p->vuid);
+  
+  if (vuser == NULL)
+    return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+  
+  fstrcpy(username, vuser->user.smb_name);
+  fstrcpy(domname, vuser->user.domain);
+  
+  ulen = strlen(username);
+  dlen = strlen(domname);
+  
+  init_uni_hdr(&r_u->hdr_user_name, ulen);
+  r_u->ptr_user_name = 1;
+  init_unistr2(&r_u->uni2_user_name, username, ulen);
+
+  r_u->unk1 = 1;
+  
+  init_uni_hdr(&r_u->hdr_dom_name, dlen);
+  r_u->ptr_dom_name = 1;
+  init_unistr2(&r_u->uni2_dom_name, domname, dlen);
+
+  r_u->status = NT_STATUS_NO_PROBLEMO;
+  
+  return r_u->status;
 }

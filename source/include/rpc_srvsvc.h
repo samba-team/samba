@@ -36,8 +36,48 @@
 #define SRV_NET_SHARE_DEL      0x12
 #define SRV_NET_SRV_GET_INFO   0x15
 #define SRV_NET_SRV_SET_INFO   0x16
+#define SRV_NET_DISK_ENUM      0x17
 #define SRV_NET_REMOTE_TOD     0x1c
+#define SRV_NET_NAME_VALIDATE  0x21
 #define SRV_NETSHAREENUM       0x24
+#define SRV_NETFILEQUERYSECDESC 0x27
+#define SRV_NETFILESETSECDESC	0x28
+
+#define MAX_SERVER_DISK_ENTRIES 15
+
+typedef struct disk_info {
+	uint32  unknown;
+	UNISTR3 disk_name;
+} DISK_INFO;
+
+typedef struct disk_enum_container {
+	uint32 level;
+	uint32 entries_read;
+	uint32 unknown;
+	uint32 disk_info_ptr;
+	DISK_INFO disk_info[MAX_SERVER_DISK_ENTRIES];
+} DISK_ENUM_CONTAINER;
+
+typedef struct net_srv_disk_enum {
+	uint32 ptr_srv_name;         /* pointer (to server name?) */
+	UNISTR2 uni_srv_name;        /* server name */
+
+	DISK_ENUM_CONTAINER disk_enum_ctr;
+
+	uint32 preferred_len;        /* preferred maximum length (0xffff ffff) */
+	uint32 total_entries;        /* total number of entries */
+	ENUM_HND enum_hnd;
+	uint32 status;               /* return status */
+} SRV_Q_NET_DISK_ENUM, SRV_R_NET_DISK_ENUM;
+
+typedef struct net_name_validate {
+	uint32 ptr_srv_name;
+	UNISTR2 uni_srv_name;
+	UNISTR2 uni_name; /*name to validate*/
+	uint32 type;
+	uint32 flags;
+	uint32 status;
+} SRV_Q_NET_NAME_VALIDATE, SRV_R_NET_NAME_VALIDATE;
 
 /* SESS_INFO_0 (pointers to level 0 session info strings) */
 typedef struct ptr_sess_info0
@@ -328,6 +368,8 @@ typedef struct ptr_share_info502
 /* SH_INFO_502_STR (level 502 share info strings) */
 typedef struct str_share_info502
 {
+	SH_INFO_502 *ptrs;
+
 	UNISTR2 uni_netname; /* unicode string of net name (e.g NETLOGON) */
 	UNISTR2 uni_remark;  /* unicode string of comment (e.g "Logon server share") */
 	UNISTR2 uni_path;    /* unicode string of local path (e.g c:\winnt\system32\repl\import\scripts) */
@@ -723,5 +765,48 @@ typedef struct r_net_remote_tod
 
 } SRV_R_NET_REMOTE_TOD;
 
+/* SRV_Q_NET_FILE_QUERY_SECDESC */
+typedef struct q_net_file_query_secdesc
+{
+	uint32  ptr_srv_name;
+	UNISTR2 uni_srv_name;
+	uint32  ptr_qual_name;
+	UNISTR2 uni_qual_name;
+	UNISTR2 uni_file_name;
+	uint32  unknown1;
+	uint32  unknown2;
+	uint32  unknown3;
+} SRV_Q_NET_FILE_QUERY_SECDESC;
 
+/* SRV_R_NET_FILE_QUERY_SECDESC */
+typedef struct r_net_file_query_secdesc
+{
+	uint32 ptr_response;
+	uint32 size_response;
+	uint32 ptr_secdesc;
+	uint32 size_secdesc;
+	SEC_DESC *sec_desc;
+	uint32 status;
+} SRV_R_NET_FILE_QUERY_SECDESC;
+
+/* SRV_Q_NET_FILE_SET_SECDESC */
+typedef struct q_net_file_set_secdesc
+{
+	uint32  ptr_srv_name;
+	UNISTR2 uni_srv_name;
+	uint32  ptr_qual_name;
+	UNISTR2 uni_qual_name;
+	UNISTR2 uni_file_name;
+	uint32  sec_info;
+	uint32  size_set;
+	uint32  ptr_secdesc;
+	uint32  size_secdesc;
+	SEC_DESC *sec_desc;
+} SRV_Q_NET_FILE_SET_SECDESC;
+
+/* SRV_R_NET_FILE_SET_SECDESC */
+typedef struct r_net_file_set_secdesc
+{
+	uint32 status;
+} SRV_R_NET_FILE_SET_SECDESC;
 #endif /* _RPC_SRVSVC_H */

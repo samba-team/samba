@@ -83,7 +83,7 @@ static void sig_term(int sig)
 /**************************************************************************** **
  catch a sighup
  **************************************************************************** */
-static VOLATILE SIG_ATOMIC_T reload_after_sighup = False;
+static VOLATILE sig_atomic_t reload_after_sighup = False;
 
 static void sig_hup(int sig)
 {
@@ -460,7 +460,9 @@ static void process(void)
      * This will only work to a Samba WINS server.
      * (nmbd_browsesync.c)
      */
-    collect_all_workgroup_names_from_wins_server(t);
+    if (lp_enhanced_browsing()) {
+	    collect_all_workgroup_names_from_wins_server(t);
+    }
 
     /*
      * Go through the response record queue and time out or re-transmit
@@ -477,7 +479,9 @@ static void process(void)
     /*
      * regularly sync with any other DMBs we know about 
      */
-    sync_all_dmbs(t);
+    if (lp_enhanced_browsing()) {
+	    sync_all_dmbs(t);
+    }
 
     /*
      * clear the unexpected packet queue 

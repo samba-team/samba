@@ -92,7 +92,7 @@ static BOOL cacls_open_policy_hnd(void)
 		/* Some systems don't support SEC_RIGHTS_MAXIMUM_ALLOWED,
 		   but NT sends 0x2000000 so we might as well do it too. */
 
-		if (cli_lsa_open_policy(&lsa_cli, True, 
+		if (cli_lsa_open_policy(&lsa_cli, lsa_cli.mem_ctx, True, 
 					GENERIC_EXECUTE_ACCESS, &pol)
 		    != NT_STATUS_NOPROBLEMO) {
 			return False;
@@ -118,7 +118,7 @@ static void SidToString(fstring str, DOM_SID *sid)
 	/* Ask LSA to convert the sid to a name */
 
 	if (!cacls_open_policy_hnd() ||
-	    cli_lsa_lookup_sids(&lsa_cli, &pol, 1, sid, &names, &types, 
+	    cli_lsa_lookup_sids(&lsa_cli, lsa_cli.mem_ctx,  &pol, 1, sid, &names, &types, 
 				&num_names) != NT_STATUS_NOPROBLEMO ||
 	    !names || !names[0]) {
 		return;
@@ -127,10 +127,6 @@ static void SidToString(fstring str, DOM_SID *sid)
 	/* Converted OK */
 	
 	fstrcpy(str, names[0]);
-	
-	safe_free(names[0]);
-	safe_free(names);
-	safe_free(types);
 }
 
 /* convert a string to a SID, either numeric or username/group */
@@ -146,16 +142,13 @@ static BOOL StringToSid(DOM_SID *sid, char *str)
 	}
 
 	if (!cacls_open_policy_hnd() ||
-	    cli_lsa_lookup_names(&lsa_cli, &pol, 1, &str, &sids, &types, 
+	    cli_lsa_lookup_names(&lsa_cli, lsa_cli.mem_ctx, &pol, 1, &str, &sids, &types, 
 				 &num_sids) != NT_STATUS_NOPROBLEMO) {
 		result = False;
 		goto done;
 	}
 
 	sid_copy(sid, &sids[0]);
-
-	safe_free(sids);
-	safe_free(types);
 
  done:
 
@@ -347,7 +340,7 @@ static SEC_DESC *sec_desc_parse(char *str)
 	char *p = str;
 	fstring tok;
 	SEC_DESC *ret;
-	unsigned sd_size;
+	size_t sd_size;
 	DOM_SID *grp_sid=NULL, *owner_sid=NULL;
 	SEC_ACL *dacl=NULL;
 	int revision=1;
@@ -458,7 +451,7 @@ static int cacl_dump(struct cli_state *cli, char *filename)
 		return EXIT_FAILED;
 	}
 
-	sd = cli_query_secdesc(cli, fnum);
+	sd = cli_query_secdesc(cli, fnum, ctx);
 
 	if (!sd) {
 		printf("ERROR: secdesc query failed: %s\n", cli_errstr(cli));
@@ -495,7 +488,7 @@ static int owner_set(struct cli_state *cli, enum chown_mode change_mode,
 	if (!StringToSid(&sid, new_username))
 		return EXIT_PARSE_ERROR;
 
-	old = cli_query_secdesc(cli, fnum);
+	old = cli_query_secdesc(cli, fnum, ctx);
 
 	cli_close(cli, fnum);
 
@@ -589,7 +582,7 @@ static int cacl_set(struct cli_state *cli, char *filename,
 		return EXIT_FAILED;
 	}
 
-	old = cli_query_secdesc(cli, fnum);
+	old = cli_query_secdesc(cli, fnum, ctx);
 
 	if (!old) {
 		printf("calc_set: Failed to query old descriptor\n");
@@ -817,7 +810,7 @@ You can string acls together with spaces, commas or newlines\n\
 	char *p;
 	static pstring servicesf = CONFIGFILE;
 	struct cli_state *cli=NULL;
-	enum acl_mode mode;
+	enum acl_mode mode = SMB_ACL_SET;
 	char *the_acl = NULL;
 	enum chown_mode change_mode = REQUEST_NONE;
 	int result;

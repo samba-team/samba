@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH TESTPARM 1 "23 Jun 2001" "testparm 2.2.0a"
+.TH "TESTPARM" "1" "22 June 2001" "" ""
 .SH NAME
 testparm \- check an smb.conf configuration file for  internal correctness
 .SH SYNOPSIS
@@ -42,7 +42,7 @@ names and before dumping the service definitions.
 Print usage message 
 .TP
 \fB-L servername\fR
-Sets the value of the %L macro to servername.
+Sets the value of the %L macro to \fIservername\fR.
 This is useful for testing include files specified with the 
 %L macro. 
 .TP
@@ -53,7 +53,7 @@ default \fIsmb.conf\fR file will be checked.
 .TP
 \fBhostname\fR
 If this parameter and the following are 
-specified, then testparm will examine the \fIhosts
+specified, then \fBtestparm\fR will examine the \fIhosts
 allow\fR and \fIhosts deny\fR 
 parameters in the \fIsmb.conf\fR file to 
 determine if the hostname with this IP address would be
@@ -73,7 +73,7 @@ file used by \fBsmbd\fR.
 .SH "DIAGNOSTICS"
 .PP
 The program will issue a message saying whether the 
-configuration file loaded OK or not. This message may be preceeded by 
+configuration file loaded OK or not. This message may be preceded by 
 errors and warnings if the file did not load. If the file was 
 loaded OK, the program then dumps all known service details 
 to stdout. 
@@ -84,7 +84,8 @@ the Samba suite.
 .SH "SEE ALSO"
 .PP
 \fIsmb.conf(5)\fR, 
-\fBsmbd(8)\fR.SH "AUTHOR"
+\fBsmbd(8)\fR
+.SH "AUTHOR"
 .PP
 The original Samba software and related utilities 
 were created by Andrew Tridgell. Samba is now developed

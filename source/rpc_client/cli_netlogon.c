@@ -562,7 +562,7 @@ static BOOL modify_trust_password( char *domain, char *remote_machine,
   struct cli_state cli;
 
   ZERO_STRUCT(cli);
-  if(cli_initialise(&cli) == False) {
+  if(!cli_initialise(&cli)) {
     DEBUG(0,("modify_trust_password: unable to initialize client connection.\n"));
     return False;
   }

@@ -92,7 +92,7 @@ BOOL hash_table_init(hash_table *table, int num_buckets, compare_function compar
  **************************************************************
  */
 
-int string_hash(int hash_size, const char *key)
+static int string_hash(int hash_size, const char *key)
 {
 	int j=0;
 	while (*key)
@@ -147,7 +147,7 @@ static hash_element *hash_chain_find(hash_table *table, ubi_dlList *hash_chain, 
 
 hash_element *hash_lookup(hash_table *table, char *key)
 {
-	return (hash_chain_find(table, &(table->buckets[string_hash(table->size, key)]), key));
+	return (hash_chain_find(table, &table->buckets[string_hash(table->size, key)], key));
 }
 
 /* ***************************************************************
@@ -198,7 +198,7 @@ hash_element *hash_insert(hash_table *table, char *value, char *key)
 		table->num_elements += 1;
 	}
 
-	bucket = &(table->buckets[string_hash(table->size, key)]);
+	bucket = &table->buckets[string_hash(table->size, key)];
 
 	/* Since we only have 1-byte for the key string, we need to 
 	 * allocate extra space in the hash_element to store the entire key
@@ -301,7 +301,7 @@ static BOOL enlarge_hash_table(hash_table *table)
  *************************************************************************
  */
 
-BOOL hash_clear(hash_table *table)
+void hash_clear(hash_table *table)
 {
 	int i;
 	ubi_dlList	*bucket = table->buckets;
@@ -319,6 +319,4 @@ BOOL hash_clear(hash_table *table)
 	if(table->buckets)
 		free((char *) table->buckets);
 	table->buckets = NULL;
-
-	return True;
 }

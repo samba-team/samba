@@ -110,8 +110,9 @@ user_struct *get_valid_user_struct(uint16 vuid)
 
 	for (usp=validated_users;usp;usp=usp->next,count++) {
 		if (vuid == usp->vuid) {
-			if (count > 10)
-                DLIST_PROMOTE(validated_users, usp);
+			if (count > 10) {
+				DLIST_PROMOTE(validated_users, usp);
+			}
 			return usp;
 		}
 	}
@@ -129,12 +130,28 @@ void invalidate_vuid(uint16 vuid)
 	if (vuser == NULL)
 		return;
 
+	session_yield(vuid);
+
 	DLIST_REMOVE(validated_users, vuser);
 
 	safe_free(vuser->groups);
 	delete_nt_token(&vuser->nt_user_token);
 	safe_free(vuser);
 	num_validated_vuids--;
+}
+
+/****************************************************************************
+invalidate all vuid entries for this process
+****************************************************************************/
+void invalidate_all_vuids(void)
+{
+	user_struct *usp, *next=NULL;
+
+	for (usp=validated_users;usp;usp=next) {
+		next = usp->next;
+		
+		invalidate_vuid(usp->vuid);
+	}
 }
 
 /****************************************************************************
@@ -244,8 +261,8 @@ has been given. vuid is biased by an offset. This allows us to
 tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
 
-uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, 
-		     char *domain,BOOL guest)
+int register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, 
+		  char *domain,BOOL guest)
 {
 	user_struct *vuser = NULL;
 	struct passwd *pwfile; /* for getting real name from passwd file */
@@ -305,12 +322,15 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
 	DEBUG(3,("uid %d registered to name %s\n",(int)uid,unix_name));
 
 	DEBUG(3, ("Clearing default real name\n"));
-	fstrcpy(vuser->user.full_name, "<Full Name>");
-	if (lp_unix_realname()) {
-		if ((pwfile=sys_getpwnam(vuser->user.unix_name))!= NULL) {
-			DEBUG(3, ("User name: %s\tReal name: %s\n",vuser->user.unix_name,pwfile->pw_gecos));
-			fstrcpy(vuser->user.full_name, pwfile->pw_gecos);
-		}
+	if ((pwfile=sys_getpwnam(vuser->user.unix_name))!= NULL) {
+		DEBUG(3, ("User name: %s\tReal name: %s\n",vuser->user.unix_name,pwfile->pw_gecos));
+		fstrcpy(vuser->user.full_name, pwfile->pw_gecos);
+	}
+
+	if (!session_claim(vuser->vuid)) {
+		DEBUG(1,("Failed to claim session for vuid=%d\n", vuser->vuid));
+		invalidate_vuid(vuser->vuid);
+		return -1;
 	}
 
 	return vuser->vuid;
@@ -430,7 +450,7 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
 
 	if (!lm_pass || !smb_pass) return(False);
 
-	DEBUG(4,("Checking SMB password for user %s\n", 
+	DEBUG(4,("smb_password_ok: Checking SMB password for user %s\n", 
 		 smb_pass->smb_name));
 
 	if(smb_pass->acct_ctrl & ACB_DISABLED) {
@@ -471,23 +491,23 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
 	/* Try against the lanman password. smb_pass->smb_passwd == NULL means
 	   no password, allow access. */
 
-	DEBUG(4,("Checking LM MD4 password\n"));
-
 	if((smb_pass->smb_passwd == NULL) && 
 	   (smb_pass->acct_ctrl & ACB_PWNOTREQ)) {
-		DEBUG(4,("no password required for user %s\n",
+		DEBUG(4,("smb_password_ok: no password required for user %s\n",
 			 smb_pass->smb_name));
 		return True;
 	}
 
-	if((smb_pass->smb_passwd != NULL) && 
-	   smb_password_check((char *)lm_pass, 
-			      (uchar *)smb_pass->smb_passwd, challenge)) {
-		DEBUG(4,("LM MD4 password check succeeded\n"));
-		return(True);
-	}
+	if(lp_lanman_auth() && (smb_pass->smb_passwd != NULL)) {
+		DEBUG(4,("smb_password_ok: Checking LM password\n"));
 
-	DEBUG(4,("LM MD4 password check failed\n"));
+		if (smb_password_check((char *)lm_pass, 
+			      (uchar *)smb_pass->smb_passwd, challenge)) {
+			DEBUG(4,("smb_password_ok: LM password check succeeded\n"));
+			return(True);
+		}
+		DEBUG(4,("LM password check failed\n"));
+	}
 
 	return False;
 }
@@ -575,37 +595,40 @@ return True if the password is correct, False otherwise
 BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd)
 {
 
-  BOOL ret;
+	BOOL ret;
 
 	if ((pwlen == 0) && !lp_null_passwords()) {
 		DEBUG(4,("Null passwords not allowed.\n"));
 		return False;
 	}
 
-	if (pwlen == 24 || (lp_encrypted_passwords() && (pwlen == 0) && lp_null_passwords()))
-	{
+	if (pwlen == 24 || (lp_encrypted_passwords() && (pwlen == 0) && lp_null_passwords())) {
 		/* if 24 bytes long assume it is an encrypted password */
 		uchar challenge[8];
 
-		if (!last_challenge(challenge))
-		{
+		if (!last_challenge(challenge)) {
 			DEBUG(0,("Error: challenge not done for user=%s\n", user));
 			return False;
 		}
 
 		ret = pass_check_smb(user, global_myworkgroup,
 		                      challenge, (uchar *)password, (uchar *)password, pwd);
-#ifdef WITH_PAM
-		if (ret) {
-		  return pam_accountcheck(user);
-		}
-#endif
+
+		/*
+		 * Try with PAM (may not be compiled in - returns True if not. JRA).
+		 * FIXME ! Should this be called if we're using winbindd ? What about
+		 * non-local accounts ? JRA.
+		 */
+
+		if (ret)
+		  return (smb_pam_accountcheck(user) == NT_STATUS_NOPROBLEMO);
+
 		return ret;
 	} 
 
-	return pass_check(user, password, pwlen, pwd, 
+	return (pass_check(user, password, pwlen, pwd, 
 			  lp_update_encrypted() ? 
-			  update_smbpassword_file : NULL);
+			  update_smbpassword_file : NULL));
 }
 
 /****************************************************************************
@@ -725,167 +748,182 @@ static char *validate_group(char *group,char *password,int pwlen,int snum)
 	return(NULL);
 }
 
-
-
 /****************************************************************************
-check for authority to login to a service with a given username/password
+ Check for authority to login to a service with a given username/password.
+ Note this is *NOT* used when logging on using sessionsetup_and_X.
 ****************************************************************************/
+
 BOOL authorise_login(int snum,char *user,char *password, int pwlen, 
 		     BOOL *guest,BOOL *force,uint16 vuid)
 {
-  BOOL ok = False;
-  
-  *guest = False;
-  
+	BOOL ok = False;
+	user_struct *vuser = get_valid_user_struct(vuid);
+
 #if DEBUG_PASSWORD
-  DEBUG(100,("checking authorisation on user=%s pass=%s\n",user,password));
+	DEBUG(100,("authorise_login: checking authorisation on user=%s pass=%s\n",
+			user,password));
 #endif
 
-  /* there are several possibilities:
-     1) login as the given user with given password
-     2) login as a previously registered username with the given password
-     3) login as a session list username with the given password
-     4) login as a previously validated user/password pair
-     5) login as the "user =" user with given password
-     6) login as the "user =" user with no password (guest connection)
-     7) login as guest user with no password
+	*guest = False;
+  
+	if (GUEST_ONLY(snum))
+		*force = True;
 
-     if the service is guest_only then steps 1 to 5 are skipped
-  */
+	if (!GUEST_ONLY(snum) && (lp_security() > SEC_SHARE)) {
 
-  if (GUEST_ONLY(snum)) *force = True;
+		/*
+		 * We should just use the given vuid from a sessionsetup_and_X.
+		 */
 
-  if (!(GUEST_ONLY(snum) && GUEST_OK(snum)))
-    {
+		if (!vuser) {
+			DEBUG(1,("authorise_login: refusing user %s with no session setup\n",
+					user));
+			return False;
+		}
 
-      user_struct *vuser = get_valid_user_struct(vuid);
-
-      /* check the given username and password */
-      if (!ok && (*user) && user_ok(user,snum)) {
-	ok = password_ok(user,password, pwlen, NULL);
-	if (ok) DEBUG(3,("ACCEPTED: given username password ok\n"));
-      }
-
-      /* check for a previously registered guest username */
-      if (!ok && (vuser != 0) && vuser->guest) {	  
-	if (user_ok(vuser->user.unix_name,snum) &&
-	    password_ok(vuser->user.unix_name, password, pwlen, NULL)) {
-	  fstrcpy(user, vuser->user.unix_name);
-	  vuser->guest = False;
-	  DEBUG(3,("ACCEPTED: given password with registered user %s\n", user));
-	  ok = True;
+		if (!vuser->guest && user_ok(vuser->user.unix_name,snum)) {
+			fstrcpy(user,vuser->user.unix_name);
+			*guest = False;
+			DEBUG(3,("authorise_login: ACCEPTED: validated uid ok as non-guest \
+(user=%s)\n", user));
+			return True;
+		}
 	}
-      }
+ 
+	/* there are several possibilities:
+		1) login as the given user with given password
+		2) login as a previously registered username with the given password
+		3) login as a session list username with the given password
+		4) login as a previously validated user/password pair
+		5) login as the "user =" user with given password
+		6) login as the "user =" user with no password (guest connection)
+		7) login as guest user with no password
 
+		if the service is guest_only then steps 1 to 5 are skipped
+	*/
 
-      /* now check the list of session users */
-    if (!ok)
-    {
-      char *auser;
-      char *user_list = strdup(session_users);
-      if (!user_list) return(False);
+	if (!(GUEST_ONLY(snum) && GUEST_OK(snum))) {
+		/* check the given username and password */
+		if (!ok && (*user) && user_ok(user,snum)) {
+			ok = password_ok(user,password, pwlen, NULL);
+			if (ok)
+				DEBUG(3,("authorise_login: ACCEPTED: given username (%s) password ok\n",
+						user ));
+		}
 
-      for (auser=strtok(user_list,LIST_SEP); 
-           !ok && auser; 
-           auser = strtok(NULL,LIST_SEP))
-      {
-        fstring user2;
-        fstrcpy(user2,auser);
-        if (!user_ok(user2,snum)) continue;
+		/* check for a previously registered guest username */
+		if (!ok && (vuser != 0) && vuser->guest) {	  
+			if (user_ok(vuser->user.unix_name,snum) &&
+					password_ok(vuser->user.unix_name, password, pwlen, NULL)) {
+				fstrcpy(user, vuser->user.unix_name);
+				vuser->guest = False;
+				DEBUG(3,("authorise_login: ACCEPTED: given password with registered user %s\n", user));
+				ok = True;
+			}
+		}
+
+		/* now check the list of session users */
+		if (!ok) {
+			char *auser;
+			char *user_list = strdup(session_users);
+			if (!user_list)
+				return(False);
+
+			for (auser=strtok(user_list,LIST_SEP); !ok && auser;
+									auser = strtok(NULL,LIST_SEP)) {
+				fstring user2;
+				fstrcpy(user2,auser);
+				if (!user_ok(user2,snum))
+					continue;
 		  
-        if (password_ok(user2,password, pwlen, NULL)) {
-          ok = True;
-          fstrcpy(user,user2);
-          DEBUG(3,("ACCEPTED: session list username and given password ok\n"));
-        }
-      }
-      free(user_list);
-    }
+				if (password_ok(user2,password, pwlen, NULL)) {
+					ok = True;
+					fstrcpy(user,user2);
+					DEBUG(3,("authorise_login: ACCEPTED: session list username (%s) \
+and given password ok\n", user));
+				}
+			}
 
-    /* check for a previously validated username/password pair */
-    if (!ok && (lp_security() > SEC_SHARE) &&
-        (vuser != 0) && !vuser->guest &&
-        user_ok(vuser->user.unix_name,snum)) {
-      fstrcpy(user,vuser->user.unix_name);
-      *guest = False;
-      DEBUG(3,("ACCEPTED: validated uid ok as non-guest\n"));
-      ok = True;
-    }
+			free(user_list);
+		}
 
-      /* check for a rhosts entry */
-      if (!ok && user_ok(user,snum) && check_hosts_equiv(user)) {
-	ok = True;
-	DEBUG(3,("ACCEPTED: hosts equiv or rhosts entry\n"));
-      }
+		/* check for a previously validated username/password pair */
+		if (!ok && (lp_security() > SEC_SHARE) && (vuser != 0) && !vuser->guest &&
+							user_ok(vuser->user.unix_name,snum)) {
+			fstrcpy(user,vuser->user.unix_name);
+			*guest = False;
+			DEBUG(3,("authorise_login: ACCEPTED: validated uid (%s) as non-guest\n",
+				user));
+			ok = True;
+		}
 
-      /* check the user= fields and the given password */
-      if (!ok && lp_username(snum)) {
-	char *auser;
-	pstring user_list;
-	StrnCpy(user_list,lp_username(snum),sizeof(pstring));
+		/* check for a rhosts entry */
+		if (!ok && user_ok(user,snum) && check_hosts_equiv(user)) {
+			ok = True;
+			DEBUG(3,("authorise_login: ACCEPTED: hosts equiv or rhosts entry for %s\n",
+					user));
+		}
 
-	pstring_sub(user_list,"%S",lp_servicename(snum));
+		/* check the user= fields and the given password */
+		if (!ok && lp_username(snum)) {
+			char *auser;
+			pstring user_list;
+			StrnCpy(user_list,lp_username(snum),sizeof(pstring));
+
+			pstring_sub(user_list,"%S",lp_servicename(snum));
 	  
-	for (auser=strtok(user_list,LIST_SEP);
-	     auser && !ok;
-	     auser = strtok(NULL,LIST_SEP))
-	  {
-	    if (*auser == '@')
-	      {
-		auser = validate_group(auser+1,password,pwlen,snum);
-		if (auser)
-		  {
-		    ok = True;
-		    fstrcpy(user,auser);
-		    DEBUG(3,("ACCEPTED: group username and given password ok\n"));
-		  }
-	      }
-	    else
-	      {
-		fstring user2;
-		fstrcpy(user2,auser);
-		if (user_ok(user2,snum) && 
-		    password_ok(user2,password,pwlen,NULL))
-		  {
-		    ok = True;
-		    fstrcpy(user,user2);
-		    DEBUG(3,("ACCEPTED: user list username and given password ok\n"));
-		  }
-	      }
-	  }
-      }      
-    } /* not guest only */
+			for (auser=strtok(user_list,LIST_SEP); auser && !ok;
+											auser = strtok(NULL,LIST_SEP)) {
+				if (*auser == '@') {
+					auser = validate_group(auser+1,password,pwlen,snum);
+					if (auser) {
+						ok = True;
+						fstrcpy(user,auser);
+						DEBUG(3,("authorise_login: ACCEPTED: group username \
+and given password ok (%s)\n", user));
+					}
+				} else {
+					fstring user2;
+					fstrcpy(user2,auser);
+					if (user_ok(user2,snum) && password_ok(user2,password,pwlen,NULL)) {
+						ok = True;
+						fstrcpy(user,user2);
+						DEBUG(3,("authorise_login: ACCEPTED: user list username \
+and given password ok (%s)\n", user));
+					}
+				}
+			}
+		}
+	} /* not guest only */
 
-  /* check for a normal guest connection */
-  if (!ok && GUEST_OK(snum))
-    {
-      fstring guestname;
-      StrnCpy(guestname,lp_guestaccount(snum),sizeof(guestname)-1);
-      if (Get_Pwnam(guestname,True))
-	{
-	  fstrcpy(user,guestname);
-	  ok = True;
-	  DEBUG(3,("ACCEPTED: guest account and guest ok\n"));
+	/* check for a normal guest connection */
+	if (!ok && GUEST_OK(snum)) {
+		fstring guestname;
+		StrnCpy(guestname,lp_guestaccount(snum),sizeof(guestname)-1);
+		if (Get_Pwnam(guestname,True)) {
+			fstrcpy(user,guestname);
+			ok = True;
+			DEBUG(3,("authorise_login: ACCEPTED: guest account and guest ok (%s)\n",
+					user));
+		} else {
+			DEBUG(0,("authorise_login: Invalid guest account %s??\n",guestname));
+		}
+		*guest = True;
 	}
-      else
-	DEBUG(0,("Invalid guest account %s??\n",guestname));
-      *guest = True;
-    }
 
-  if (ok && !user_ok(user,snum))
-    {
-      DEBUG(0,("rejected invalid user %s\n",user));
-      ok = False;
-    }
+	if (ok && !user_ok(user,snum)) {
+		DEBUG(0,("authorise_login: rejected invalid user %s\n",user));
+		ok = False;
+	}
 
-  return(ok);
+	return(ok);
 }
 
-
 /****************************************************************************
-read the a hosts.equiv or .rhosts file and check if it
-allows this user from this machine
+ Read the a hosts.equiv or .rhosts file and check if it
+ allows this user from this machine.
 ****************************************************************************/
+
 static BOOL check_user_equiv(char *user, char *remote, char *equiv_file)
 {
   int plus_allowed = 1;
@@ -1112,96 +1150,103 @@ BOOL server_validate(char *user, char *domain,
 		     char *pass, int passlen,
 		     char *ntpass, int ntpasslen)
 {
-  struct cli_state *cli;
-  static unsigned char badpass[24];
-  static BOOL tested_password_server = False;
-  static BOOL bad_password_server = False;
+	struct cli_state *cli;
+	static unsigned char badpass[24];
+	static fstring baduser; 
+	static BOOL tested_password_server = False;
+	static BOOL bad_password_server = False;
 
-  cli = server_client();
+	cli = server_client();
 
-  if (!cli->initialised) {
-    DEBUG(1,("password server %s is not connected\n", cli->desthost));
-    return(False);
-  }  
+	if (!cli->initialised) {
+		DEBUG(1,("password server %s is not connected\n", cli->desthost));
+		return(False);
+	}  
 
-  if(badpass[0] == 0)
-    memset(badpass, 0x1f, sizeof(badpass));
+	if(badpass[0] == 0)
+		memset(badpass, 0x1f, sizeof(badpass));
 
-  if((passlen == sizeof(badpass)) && !memcmp(badpass, pass, passlen)) {
-    /* 
-     * Very unlikely, our random bad password is the same as the users
-     * password. */
-    memset(badpass, badpass[0]+1, sizeof(badpass));
-  }
+	if((passlen == sizeof(badpass)) && !memcmp(badpass, pass, passlen)) {
+		/* 
+		 * Very unlikely, our random bad password is the same as the users
+		 * password.
+		 */
+		memset(badpass, badpass[0]+1, sizeof(badpass));
+	}
 
-  /*
-   * Attempt a session setup with a totally incorrect password.
-   * If this succeeds with the guest bit *NOT* set then the password
-   * server is broken and is not correctly setting the guest bit. We
-   * need to detect this as some versions of NT4.x are broken. JRA.
-   */
+	if(baduser[0] == 0) {
+		fstrcpy(baduser, INVALID_USER_PREFIX);
+		fstrcat(baduser, global_myname);
+	}
 
-  if(!tested_password_server) {
-    if (cli_session_setup(cli, user, (char *)badpass, sizeof(badpass), 
-                              (char *)badpass, sizeof(badpass), domain)) {
+	/*
+	 * Attempt a session setup with a totally incorrect password.
+	 * If this succeeds with the guest bit *NOT* set then the password
+	 * server is broken and is not correctly setting the guest bit. We
+	 * need to detect this as some versions of NT4.x are broken. JRA.
+	 */
 
-      /*
-       * We connected to the password server so we
-       * can say we've tested it.
-       */
-      tested_password_server = True;
+	if(!tested_password_server) {
+		if (cli_session_setup(cli, baduser, (char *)badpass, sizeof(badpass), 
+					(char *)badpass, sizeof(badpass), domain)) {
 
-      if ((SVAL(cli->inbuf,smb_vwv2) & 1) == 0) {
-        DEBUG(0,("server_validate: password server %s allows users as non-guest \
+			/*
+			 * We connected to the password server so we
+			 * can say we've tested it.
+			 */
+			tested_password_server = True;
+
+			if ((SVAL(cli->inbuf,smb_vwv2) & 1) == 0) {
+				DEBUG(0,("server_validate: password server %s allows users as non-guest \
 with a bad password.\n", cli->desthost));
-        DEBUG(0,("server_validate: This is broken (and insecure) behaviour. Please do not \
+				DEBUG(0,("server_validate: This is broken (and insecure) behaviour. Please do not \
 use this machine as the password server.\n"));
-        cli_ulogoff(cli);
+				cli_ulogoff(cli);
 
-        /*
-         * Password server has the bug.
-         */
-        bad_password_server = True;
-        return False;
-      }
-      cli_ulogoff(cli);
-    }
-  } else {
+				/*
+				 * Password server has the bug.
+				 */
+				bad_password_server = True;
+				return False;
+			}
+			cli_ulogoff(cli);
+		}
+	} else {
 
-    /*
-     * We have already tested the password server.
-     * Fail immediately if it has the bug.
-     */
+		/*
+		 * We have already tested the password server.
+		 * Fail immediately if it has the bug.
+		 */
 
-    if(bad_password_server) {
-      DEBUG(0,("server_validate: [1] password server %s allows users as non-guest \
+		if(bad_password_server) {
+			DEBUG(0,("server_validate: [1] password server %s allows users as non-guest \
 with a bad password.\n", cli->desthost));
-      DEBUG(0,("server_validate: [1] This is broken (and insecure) behaviour. Please do not \
+			DEBUG(0,("server_validate: [1] This is broken (and insecure) behaviour. Please do not \
 use this machine as the password server.\n"));
-      return False;
-    }
-  }
+			return False;
+		}
+	}
 
-  /*
-   * Now we know the password server will correctly set the guest bit, or is
-   * not guest enabled, we can try with the real password.
-   */
+	/*
+	 * Now we know the password server will correctly set the guest bit, or is
+	 * not guest enabled, we can try with the real password.
+	 */
 
-  if (!cli_session_setup(cli, user, pass, passlen, ntpass, ntpasslen, domain)) {
-    DEBUG(1,("password server %s rejected the password\n", cli->desthost));
-    return False;
-  }
+	if (!cli_session_setup(cli, user, pass, passlen, ntpass, ntpasslen, domain)) {
+		DEBUG(1,("password server %s rejected the password\n", cli->desthost));
+		return False;
+	}
 
-  /* if logged in as guest then reject */
-  if ((SVAL(cli->inbuf,smb_vwv2) & 1) != 0) {
-    DEBUG(1,("password server %s gave us guest only\n", cli->desthost));
-    cli_ulogoff(cli);
-    return(False);
-  }
+	/* if logged in as guest then reject */
+	if ((SVAL(cli->inbuf,smb_vwv2) & 1) != 0) {
+		DEBUG(1,("password server %s gave us guest only\n", cli->desthost));
+		cli_ulogoff(cli);
+		return(False);
+	}
 
-  cli_ulogoff(cli);
+	cli_ulogoff(cli);
 
-  return(True);
+	return(True);
 }
 
 /***********************************************************************
@@ -1210,13 +1255,12 @@ use this machine as the password server.\n"));
 ************************************************************************/
 
 static BOOL connect_to_domain_password_server(struct cli_state *pcli, 
-					      char *server,
-                                              unsigned char *trust_passwd)
+								char *server, unsigned char *trust_passwd)
 {
   struct in_addr dest_ip;
   fstring remote_machine;
 
-  if(cli_initialise(pcli) == False) {
+  if(!cli_initialise(pcli)) {
     DEBUG(0,("connect_to_domain_password_server: unable to initialize client connection.\n"));
     return False;
   }
@@ -1514,9 +1558,9 @@ BOOL domain_client_validate( char *user, char *domain,
   /*
    * Get the machine account password for our primary domain
    */
-  if (!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd, &last_change_time))
+  if (!secrets_fetch_trust_account_password(global_myworkgroup, trust_passwd, &last_change_time))
   {
-	  DEBUG(0, ("domain_client_validate: could not fetch trust account password for domain %s\n", lp_workgroup()));
+	  DEBUG(0, ("domain_client_validate: could not fetch trust account password for domain %s\n", global_myworkgroup));
 	  return False;
   }
 

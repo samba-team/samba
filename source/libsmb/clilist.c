@@ -30,7 +30,8 @@ The length of the structure is returned
 The structure of a long filename depends on the info level. 260 is used
 by NT and 2 is used by OS/2
 ****************************************************************************/
-static int interpret_long_filename(int level,char *p,file_info *finfo)
+static int interpret_long_filename(struct cli_state *cli,
+				   int level,char *p,file_info *finfo)
 {
 	extern file_info def_finfo;
 
@@ -47,8 +48,10 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 				finfo->mtime = make_unix_date2(p+12);
 				finfo->size = IVAL(p,16);
 				finfo->mode = CVAL(p,24);
-				pstrcpy(finfo->name,p+27);
-				dos_to_unix(finfo->name,True);
+				clistr_pull(cli, finfo->name, p+27,
+					    sizeof(finfo->name),
+					    -1, 
+					    STR_TERMINATE | STR_CONVERT);
 			}
 			return(28 + CVAL(p,26));
 
@@ -60,8 +63,10 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 				finfo->mtime = make_unix_date2(p+12);
 				finfo->size = IVAL(p,16);
 				finfo->mode = CVAL(p,24);
-				pstrcpy(finfo->name,p+31);
-				dos_to_unix(finfo->name,True);
+				clistr_pull(cli, finfo->name, p+31,
+					    sizeof(finfo->name),
+					    -1, 
+					    STR_TERMINATE | STR_CONVERT);
 			}
 			return(32 + CVAL(p,30));
 
@@ -74,8 +79,10 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 				finfo->mtime = make_unix_date2(p+16);
 				finfo->size = IVAL(p,20);
 				finfo->mode = CVAL(p,28);
-				pstrcpy(finfo->name,p+33);
-				dos_to_unix(finfo->name,True);
+				clistr_pull(cli, finfo->name, p+33,
+					    sizeof(finfo->name),
+					    -1, 
+					    STR_TERMINATE | STR_CONVERT);
 			}
 			return(SVAL(p,4)+4);
 			
@@ -87,15 +94,17 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 				finfo->mtime = make_unix_date2(p+16);
 				finfo->size = IVAL(p,20);
 				finfo->mode = CVAL(p,28);
-				pstrcpy(finfo->name,p+37);
-				dos_to_unix(finfo->name,True);
+				clistr_pull(cli, finfo->name, p+37,
+					    sizeof(finfo->name),
+					    -1, 
+					    STR_TERMINATE | STR_CONVERT);
 			}
 			return(SVAL(p,4)+4);
 			
 		case 260: /* NT uses this, but also accepts 2 */
 			if (finfo) {
 				int ret = SVAL(p,0);
-				int namelen, slen;
+				int namelen;
 				p += 4; /* next entry offset */
 				p += 4; /* fileindex */
 				
@@ -122,18 +131,21 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 				finfo->mode = CVAL(p,0); p += 4;
 				namelen = IVAL(p,0); p += 4;
 				p += 4; /* EA size */
-				slen = SVAL(p, 0);
+				/* slen = SVAL(p, 0); */
 				p += 2; 
-				if (p[1] == 0 && slen > 1) {
-					/* NT has stuffed up again */
-					unistr_to_dos(finfo->short_name, p, slen/2);
-				} else {
-					strncpy(finfo->short_name, p, 12);
-					finfo->short_name[12] = 0;
+				{
+					/* stupid NT bugs. grr */
+					int flags = STR_CONVERT;
+					if (p[1] == 0 && namelen > 1) flags |= STR_UNICODE;
+					clistr_pull(cli, finfo->short_name, p,
+						    sizeof(finfo->short_name),
+						    24, flags);
 				}
 				p += 24; /* short name? */	  
-				StrnCpy(finfo->name,p,MIN(sizeof(finfo->name)-1,namelen));
-				dos_to_unix(finfo->name,True);
+				clistr_pull(cli, finfo->name, p,
+					    sizeof(finfo->name),
+					    namelen, 
+					    STR_CONVERT);
 				return(ret);
 			}
 			return(SVAL(p,0));
@@ -147,12 +159,11 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 /****************************************************************************
   do a directory listing, calling fn on each file found
   ****************************************************************************/
-int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute, 
-	     void (*fn)(file_info *, const char *))
+int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute, 
+		 void (*fn)(file_info *, const char *, void *), void *state)
 {
 	int max_matches = 512;
-	/* NT uses 260, OS/2 uses 2. Both accept 1. */
-	int info_level = cli->protocol<PROTOCOL_NT1?1:260; 
+	int info_level;
 	char *p, *p2;
 	pstring mask;
 	file_info finfo;
@@ -170,9 +181,11 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 	int param_len, data_len;	
 	uint16 setup;
 	pstring param;
-	
+
+	/* NT uses 260, OS/2 uses 2. Both accept 1. */
+	info_level = (cli->capabilities&CAP_NT_SMBS)?260:1;
+
 	pstrcpy(mask,Mask);
-	unix_to_dos(mask,True);
 	
 	while (ff_eos == 0) {
 		loop_count++;
@@ -181,8 +194,6 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 			break;
 		}
 
-		param_len = 12+strlen(mask)+1;
-
 		if (First) {
 			setup = TRANSACT2_FINDFIRST;
 			SSVAL(param,0,attribute); /* attribute */
@@ -190,7 +201,9 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SSVAL(param,4,4+2);	/* resume required + close on end */
 			SSVAL(param,6,info_level); 
 			SIVAL(param,8,0);
-			pstrcpy(param+12,mask);
+			p = param+12;
+			p += clistr_push(cli, param+12, mask, -1, 
+					 STR_TERMINATE | STR_CONVERT);
 		} else {
 			setup = TRANSACT2_FINDNEXT;
 			SSVAL(param,0,ff_dir_handle);
@@ -198,14 +211,15 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SSVAL(param,4,info_level); 
 			SIVAL(param,6,0); /* ff_resume_key */
 			SSVAL(param,10,8+4+2);	/* continue + resume required + close on end */
-			pstrcpy(param+12,mask);
-
-			DEBUG(5,("hand=0x%X ff_lastname=%d mask=%s\n",
-				 ff_dir_handle,ff_lastname,mask));
+			p = param+12;
+			p += clistr_push(cli, param+12, mask, -1, 
+					 STR_TERMINATE | STR_CONVERT);
 		}
 
+		param_len = PTR_DIFF(p, param);
+
 		if (!cli_send_trans(cli, SMBtrans2, 
-				    NULL, 0,                /* Name, length */
+				    NULL,                   /* Name */
 				    -1, 0,                  /* fid, flags */
 				    &setup, 1, 0,           /* setup, length, max */
 				    param, param_len, 10,   /* param, length, max */
@@ -254,18 +268,23 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 			switch(info_level)
 				{
 				case 260:
-					StrnCpy(mask,p+ff_lastname,
-						MIN(sizeof(mask)-1,data_len-ff_lastname));
+					clistr_pull(cli, mask, p+ff_lastname,
+						    sizeof(mask), 
+						    data_len-ff_lastname,
+						    STR_TERMINATE |
+						    STR_CONVERT);
 					break;
 				case 1:
-					pstrcpy(mask,p + ff_lastname + 1);
+					clistr_pull(cli, mask, p+ff_lastname+1,
+						    sizeof(mask), 
+						    -1,
+						    STR_TERMINATE |
+						    STR_CONVERT);
 					break;
 				}
 		} else {
 			pstrcpy(mask,"");
 		}
- 
-		dos_to_unix(mask, True);
  
 		/* and add them to the dirlist pool */
 		dirlist = Realloc(dirlist,dirlist_len + data_len);
@@ -278,7 +297,7 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 		/* put in a length for the last entry, to ensure we can chain entries 
 		   into the next packet */
 		for (p2=p,i=0;i<(ff_searchcount-1);i++)
-			p2 += interpret_long_filename(info_level,p2,NULL);
+			p2 += interpret_long_filename(cli,info_level,p2,NULL);
 		SSVAL(p2,0,data_len - PTR_DIFF(p2,p));
 
 		/* grab the data for later use */
@@ -299,8 +318,8 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 	}
 
 	for (p=dirlist,i=0;i<total_received;i++) {
-		p += interpret_long_filename(info_level,p,&finfo);
-		fn(&finfo, Mask);
+		p += interpret_long_filename(cli,info_level,p,&finfo);
+		fn(&finfo, Mask, state);
 	}
 
 	/* free up the dirlist buffer */
@@ -314,7 +333,7 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 interpret a short filename structure
 The length of the structure is returned
 ****************************************************************************/
-static int interpret_short_filename(char *p,file_info *finfo)
+static int interpret_short_filename(struct cli_state *cli, char *p,file_info *finfo)
 {
 	extern file_info def_finfo;
 
@@ -326,7 +345,7 @@ static int interpret_short_filename(char *p,file_info *finfo)
 	finfo->ctime = make_unix_date(p+22);
 	finfo->mtime = finfo->atime = finfo->ctime;
 	finfo->size = IVAL(p,26);
-	pstrcpy(finfo->name,p+30);
+	clistr_pull(cli, finfo->name, p+30, sizeof(finfo->name), 12, STR_CONVERT|STR_ASCII);
 	if (strcmp(finfo->name, "..") && strcmp(finfo->name, "."))
 		fstrcpy(finfo->short_name,finfo->name);
 	
@@ -340,7 +359,7 @@ static int interpret_short_filename(char *p,file_info *finfo)
   but should otherwise not be used
   ****************************************************************************/
 int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute, 
-		 void (*fn)(file_info *, const char *))
+		 void (*fn)(file_info *, const char *, void *), void *state)
 {
 	char *p;
 	int received = 0;
@@ -360,12 +379,9 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 		memset(cli->outbuf,'\0',smb_size);
 		memset(cli->inbuf,'\0',smb_size);
 
-		if (first)	
-			set_message(cli->outbuf,2,5 + strlen(mask),True);
-		else
-			set_message(cli->outbuf,2,5 + 21,True);
+		set_message(cli->outbuf,2,0,True);
 
-		CVAL(cli->outbuf,smb_com) = SMBffirst;
+		CVAL(cli->outbuf,smb_com) = SMBsearch;
 
 		SSVAL(cli->outbuf,smb_tid,cli->cnum);
 		cli_setup_packet(cli);
@@ -376,21 +392,19 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 		p = smb_buf(cli->outbuf);
 		*p++ = 4;
       
-		if (first)
-			pstrcpy(p,mask);
-		else
-			pstrcpy(p,"");
-		p += strlen(p) + 1;
-      
+		p += clistr_push(cli, p, first?mask:"", -1, STR_TERMINATE|STR_CONVERT);      
 		*p++ = 5;
 		if (first) {
 			SSVAL(p,0,0);
+			p += 2;
 		} else {
 			SSVAL(p,0,21);
 			p += 2;
 			memcpy(p,status,21);
+			p += 21;
 		}
 
+		cli_setup_bcc(cli, p);
 		cli_send_smb(cli);
 		if (!cli_receive_smb(cli)) break;
 
@@ -420,7 +434,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 		memset(cli->outbuf,'\0',smb_size);
 		memset(cli->inbuf,'\0',smb_size);
 
-		set_message(cli->outbuf,2,5 + 21,True);
+		set_message(cli->outbuf,2,0,True);
 		CVAL(cli->outbuf,smb_com) = SMBfclose;
 		SSVAL(cli->outbuf,smb_tid,cli->cnum);
 		cli_setup_packet(cli);
@@ -436,7 +450,9 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 		SSVAL(p, 0, 21);
 		p += 2;
 		memcpy(p,status,21);
+		p += 21;
 		
+		cli_setup_bcc(cli, p);
 		cli_send_smb(cli);
 		if (!cli_receive_smb(cli)) {
 			DEBUG(0,("Error closing search: %s\n",smb_errstr(cli->inbuf)));
@@ -445,10 +461,24 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 	for (p=dirlist,i=0;i<num_received;i++) {
 		file_info finfo;
-		p += interpret_short_filename(p,&finfo);
-		fn(&finfo, Mask);
+		p += interpret_short_filename(cli, p,&finfo);
+		fn(&finfo, Mask, state);
 	}
 
 	if (dirlist) free(dirlist);
 	return(num_received);
+}
+
+
+/****************************************************************************
+  do a directory listing, calling fn on each file found
+  this auto-switches between old and new style
+  ****************************************************************************/
+int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute, 
+	     void (*fn)(file_info *, const char *, void *), void *state)
+{
+	if (cli->protocol <= PROTOCOL_LANMAN1) {
+		return cli_list_old(cli, Mask, attribute, fn, state);
+	}
+	return cli_list_new(cli, Mask, attribute, fn, state);
 }

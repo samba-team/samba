@@ -101,6 +101,7 @@ chdir $curdir;
 # the "*.doc" files from the source tree
 @docs = sort byfilename grep (!/^docs\/$/ & (/^source\/.*\.doc$/ | /^docs\//),@allfiles);
 @docs = grep(!/htmldocs\/using_samba/, @docs);
+@docs = grep(!/docbook/, @docs);
 
 @swatfiles = sort grep(/^packaging\/SGI\/swat/, @allfiles);
 @catman = sort grep(/^packaging\/SGI\/catman/ & !/\/$/, @allfiles);
@@ -133,7 +134,6 @@ else {
 }
 
 print IDB "d 0755 root sys usr/samba $SRCPFX/packaging/SGI $PKG.sw.base\n";
-print IDB "f 0444 root sys usr/samba/README $SRCPFX/packaging/SGI/README $PKG.sw.base\n";
 
 print IDB "d 0755 root sys usr/samba/bin $SRCPFX/packaging/SGI $PKG.sw.base\n";
 while(@bins) {
