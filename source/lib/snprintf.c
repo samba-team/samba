@@ -341,6 +341,7 @@ static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args
 					fvalue = va_arg (args, LDOUBLE);
 				else
 					fvalue = va_arg (args, double);
+				fmtfp (buffer, &currlen, maxlen, fvalue, min, max, flags);
 				break;
 			case 'G':
 				flags |= DP_F_UP;
@@ -349,6 +350,7 @@ static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args
 					fvalue = va_arg (args, LDOUBLE);
 				else
 					fvalue = va_arg (args, double);
+				fmtfp (buffer, &currlen, maxlen, fvalue, min, max, flags);
 				break;
 			case 'c':
 				dopr_outch (buffer, &currlen, maxlen, va_arg (args, int));
