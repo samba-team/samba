@@ -34,8 +34,9 @@ pstring servicesf = CONFIGFILE;
 
 extern pstring scope;
 
-int ClientNMB   = -1;
-int ClientDGRAM = -1;
+int ClientNMB            = -1;
+int ClientDGRAM          = -1;
+int global_nmb_port = -1;
 
 extern pstring myhostname;
 static pstring host_file;
@@ -302,7 +303,8 @@ static void process(void)
     {
       time_t t = time(NULL);
       run_election = check_elections();
-      listen_for_packets(run_election);
+      if(listen_for_packets(run_election))
+        return;
 
       run_packet_queue();
       run_elections(t);
@@ -338,12 +340,19 @@ static BOOL open_sockets(BOOL isdaemon, int port)
     return False;
   }   
 
+  /* The sockets opened here will be used to receive broadcast
+     packets *only*. Interface specific sockets are opened in
+     make_subnet() in namedbsubnet.c. Thus we bind to the
+     address "0.0.0.0". The parameter 'socket address' is
+     now deprecated.
+   */
+
   if (isdaemon)
-    ClientNMB = open_socket_in(SOCK_DGRAM, port,0,interpret_addr(lp_socket_address()));
+    ClientNMB = open_socket_in(SOCK_DGRAM, port,0,0);
   else
     ClientNMB = 0;
   
-  ClientDGRAM = open_socket_in(SOCK_DGRAM,DGRAM_PORT,3,interpret_addr(lp_socket_address()));
+  ClientDGRAM = open_socket_in(SOCK_DGRAM,DGRAM_PORT,3,0);
 
   if (ClientNMB == -1)
     return(False);
@@ -353,7 +362,7 @@ static BOOL open_sockets(BOOL isdaemon, int port)
   set_socket_options(ClientNMB,"SO_BROADCAST");
   set_socket_options(ClientDGRAM,"SO_BROADCAST");
 
-  DEBUG(3,("Sockets opened.\n"));
+  DEBUG(3,("open_sockets: Broadcast sockets opened.\n"));
   return True;
 }
 
@@ -460,12 +469,12 @@ static void usage(char *pname)
   **************************************************************************/
  int main(int argc,char *argv[])
 {
-  int port = NMB_PORT;
   int opt;
   extern FILE *dbf;
   extern char *optarg;
   char pidFile[100] = { 0 };
 
+  global_nmb_port = NMB_PORT;
   *host_file = 0;
 
   StartupTime = time(NULL);
@@ -537,7 +546,7 @@ static void usage(char *pname)
 	  DEBUGLEVEL = atoi(optarg);
 	  break;
 	case 'p':
-	  port = atoi(optarg);
+	  global_nmb_port = atoi(optarg);
 	  break;
 	case 'h':
 	  usage(argv[0]);
@@ -618,9 +627,9 @@ static void usage(char *pname)
     }
 
 
-  DEBUG(3,("Opening sockets %d\n", port));
+  DEBUG(3,("Opening sockets %d\n", global_nmb_port));
 
-  if (!open_sockets(is_daemon,port)) return 1;
+  if (!open_sockets(is_daemon,global_nmb_port)) return 1;
 
   load_interfaces();
   add_my_subnets(myworkgroup);

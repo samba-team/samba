@@ -32,7 +32,6 @@
 #include "smb.h"
 
 extern int ClientNMB;
-extern int ClientDGRAM;
 
 extern int DEBUGLEVEL;
 

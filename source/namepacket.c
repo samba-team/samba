@@ -504,71 +504,197 @@ void run_packet_queue()
 }
 
 /****************************************************************************
+  Create an fd_set containing all the sockets in the subnet structures,
+  plus the broadcast sockets.
+  ***************************************************************************/
+
+static BOOL create_listen_fdset(fd_set **ppset, int **psock_array, int *listen_number)
+{
+  int *sock_array = NULL;
+  struct subnet_record *d = NULL;
+  int count = 0;
+  int num = 0;
+  fd_set *pset = (fd_set *)malloc(sizeof(fd_set));
+
+  if(pset == NULL)
+  {
+    DEBUG(0,("create_listen_fdset: malloc fail !\n"));
+    return True;
+  }
+
+  /* Check that we can add all the fd's we need. */
+  for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_EXCLUDING_WINS(d))
+    count++;
+
+  if((count*2) + 2 > FD_SETSIZE)
+  {
+    DEBUG(0,("create_listen_fdset: Too many file descriptors needed (%d). We can \
+only use %d.\n", (count*2) + 2, FD_SETSIZE));
+    return True;
+  }
+
+  if((sock_array = (int *)malloc(((count*2) + 2)*sizeof(int))) == NULL)
+  {
+    DEBUG(0,("create_listen_fdset: malloc fail for socket array.\n"));
+    return True;
+  }
+
+  FD_ZERO(pset);
+
+  /* Add in the broadcast socket on 137. */
+  FD_SET(ClientNMB,pset);
+  sock_array[num++] = ClientNMB;
+
+  /* Add in the 137 sockets on all the interfaces. */
+  for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_EXCLUDING_WINS(d))
+  {
+    FD_SET(d->nmb_sock,pset);
+    sock_array[num++] = d->nmb_sock;
+  }
+
+  /* Add in the broadcast socket on 138. */
+  FD_SET(ClientDGRAM,pset);
+  sock_array[num++] = ClientDGRAM;
+
+  /* Add in the 138 sockets on all the interfaces. */
+  for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_EXCLUDING_WINS(d))
+  {
+    FD_SET(d->dgram_sock,pset);
+    sock_array[num++] = d->dgram_sock;
+  }
+
+  *listen_number = (count*2) + 2;
+  *ppset = pset;
+  *psock_array = sock_array;
+ 
+  return False;
+}
+
+/****************************************************************************
   listens for NMB or DGRAM packets, and queues them
   ***************************************************************************/
-void listen_for_packets(BOOL run_election)
+BOOL listen_for_packets(BOOL run_election)
 {
-	fd_set fds;
-	int selrtn;
-	struct timeval timeout;
+  static fd_set *listen_set = NULL;
+  static int listen_number = 0;
+  static int *sock_array = NULL;
 
-	FD_ZERO(&fds);
-	FD_SET(ClientNMB,&fds);
-	FD_SET(ClientDGRAM,&fds);
+  fd_set fds;
+  int selrtn;
+  struct timeval timeout;
 
-	/* during elections and when expecting a netbios response packet we
-	need to send election packets at tighter intervals 
+  if(listen_set == NULL)
+  {
+    if(create_listen_fdset(&listen_set, &sock_array, &listen_number))
+    {
+      DEBUG(0,("listen_for_packets: Fatal error. unable to create listen set. Exiting.\n"));
+      return True;
+    }
+  }
 
-	ideally it needs to be the interval (in ms) between time now and
-	the time we are expecting the next netbios packet */
+  memcpy((char *)&fds, (char *)listen_set, sizeof(fd_set));
 
-	timeout.tv_sec = (run_election||num_response_packets) ? 1:NMBD_SELECT_LOOP;
-	timeout.tv_usec = 0;
+  /* during elections and when expecting a netbios response packet we
+  need to send election packets at tighter intervals 
 
-        /* We can only take term signals when we are in the select. */
-        BlockSignals(False, SIGTERM);
-	selrtn = sys_select(&fds,&timeout);
-        BlockSignals(True, SIGTERM);
+  ideally it needs to be the interval (in ms) between time now and
+  the time we are expecting the next netbios packet */
 
-	if (FD_ISSET(ClientNMB,&fds))
-	{
-		struct packet_struct *packet = read_packet(ClientNMB, NMB_PACKET);
-		if (packet)
-		{
-			if ((ip_equal(loopback_ip, packet->ip) || 
-			     ismyip(packet->ip)) && 
-			     packet->port == NMB_PORT)
-			{
-				DEBUG(7,("discarding own packet from %s:%d\n",
-				          inet_ntoa(packet->ip),packet->port));	  
-				free_packet(packet);
-			}
-			else
-			{
-				queue_packet(packet);
-			}
-		}
-	}
+  timeout.tv_sec = (run_election||num_response_packets) ? 1:NMBD_SELECT_LOOP;
+  timeout.tv_usec = 0;
 
-	if (FD_ISSET(ClientDGRAM,&fds))
-	{
-		struct packet_struct *packet = read_packet(ClientDGRAM, DGRAM_PACKET);
-		if (packet)
-		{
-			if ((ip_equal(loopback_ip, packet->ip) || 
-			     ismyip(packet->ip)) && 
-			    packet->port == DGRAM_PORT)
-			{
-				DEBUG(7,("discarding own packet from %s:%d\n",
-				          inet_ntoa(packet->ip),packet->port));	  
-				free_packet(packet);
-			}
-			else
-			{
-				queue_packet(packet);
-			}
-		}
-	}
+  /* We can only take term signals when we are in the select. */
+  BlockSignals(False, SIGTERM);
+  selrtn = sys_select(&fds,&timeout);
+  BlockSignals(True, SIGTERM);
+
+  if(selrtn > 0)
+  {
+    int i;
+
+    for(i = 0; i < listen_number; i++)
+    {
+      if(i < (listen_number/2))
+      {
+        /* Processing a 137 socket. */
+        if (FD_ISSET(sock_array[i],&fds))
+        {
+          struct packet_struct *packet = read_packet(sock_array[i], NMB_PACKET);
+          if (packet)
+          {
+
+            /*
+             * If we got a packet on the broadcast socket check it
+             * came from one of our local nets. We should only be
+             * receiving broadcasts from nets we have subnets for.
+             *
+             * Note that this filter precludes remote announces.
+             * If we need this to work we will have to add an
+             * 'allow local announce' parameter that gives a
+             * list of networks we will allow through the filter.
+             */
+            if((sock_array[i] == ClientNMB) && (!is_local_net(packet->ip)))
+            {
+              DEBUG(7,("discarding nmb packet sent to broadcast socket from %s:%d\n",
+                        inet_ntoa(packet->ip),packet->port));	  
+              free_packet(packet);
+            }
+            else if ((ip_equal(loopback_ip, packet->ip) || 
+              ismyip(packet->ip)) && packet->port == NMB_PORT)
+            {
+              DEBUG(7,("discarding own packet from %s:%d\n",
+                        inet_ntoa(packet->ip),packet->port));	  
+              free_packet(packet);
+            }
+            else
+            {
+              queue_packet(packet);
+            }
+          }
+        }
+      }
+      else
+      {
+        /* Processing a 138 socket. */
+
+        if (FD_ISSET(sock_array[i],&fds))
+        {
+          struct packet_struct *packet = read_packet(sock_array[i], DGRAM_PACKET);
+          if (packet)
+          {
+            /*
+             * If we got a packet on the broadcast socket check it
+             * came from one of our local nets. We should only be
+             * receiving broadcasts from nets we have subnets for.
+             *
+             * Note that this filter precludes remote announces.
+             * If we need this to work we will have to add an
+             * 'allow local announce' parameter that gives a
+             * list of networks we will allow through the filter.
+             */
+            if((sock_array[i] == ClientDGRAM) && (!is_local_net(packet->ip)))
+            {
+              DEBUG(7,("discarding dgram packet sent to broadcast socket from %s:%d\n",
+                        inet_ntoa(packet->ip),packet->port));	  
+              free_packet(packet);
+            }
+            else if ((ip_equal(loopback_ip, packet->ip) || 
+                 ismyip(packet->ip)) && packet->port == DGRAM_PORT)
+            {
+              DEBUG(7,("discarding own packet from %s:%d\n",
+                        inet_ntoa(packet->ip),packet->port));	  
+              free_packet(packet);
+            }
+            else
+            {
+              queue_packet(packet);
+            }
+          }
+        }
+      } /* end processing 138 socket. */
+    } /* end for */
+  } /* end if selret > 0 */
+  return False;
 }
 
 
@@ -636,7 +762,7 @@ BOOL send_mailslot_reply(BOOL unique, char *mailslot,int fd,char *buf,int len,ch
 
   p.ip = dest_ip;
   p.port = DGRAM_PORT;
-  p.fd = ClientDGRAM;
+  p.fd = fd;
   p.timestamp = time(NULL);
   p.packet_type = DGRAM_PACKET;
 

@@ -291,6 +291,8 @@ struct subnet_record
   struct in_addr bcast_ip;
   struct in_addr mask_ip;
   struct in_addr myip;
+  int nmb_sock;               /* socket to listen for unicast 137. */
+  int dgram_sock;             /* socket to listen for unicast 138. */
 };
 
 /* a resource record */

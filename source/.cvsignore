@@ -1,6 +1,7 @@
 Makefile.RPM
 makefile
 makefile.sunos5
+make_smbcodepage
 nmbd
 nmblookup
 smbclient

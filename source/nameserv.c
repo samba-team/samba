@@ -168,7 +168,7 @@ void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags)
   }
   else
   {
-    /* broadcast the packet, but it comes from ipzero */
+    /* broadcast the packet */
     queue_netbios_packet(d,ClientNMB,
 	 re_reg ? NMB_REG_REFRESH : NMB_REG, NAME_REGISTER,
          name, type, nb_flags, GET_TTL(0),0,NULL,NULL,
@@ -214,45 +214,43 @@ void add_domain_logon_names(void)
   ****************************************************************************/
 void add_domain_master_bcast(void)
 {
-	struct subnet_record *d;
+  struct subnet_record *d;
 
-	if (!lp_domain_master()) return;
+  if (!lp_domain_master()) return;
 
-	for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_EXCLUDING_WINS(d))
-	{ 
-		struct work_record *work = find_workgroupstruct(d, myworkgroup, True);
+  for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_EXCLUDING_WINS(d))
+  { 
+    struct work_record *work = find_workgroupstruct(d, myworkgroup, True);
 
-		if (work && work->dom_state == DOMAIN_NONE)
-		{
-			struct nmb_name n;
-			make_nmb_name(&n,myworkgroup,0x1b,scope);
+    if (work && work->dom_state == DOMAIN_NONE)
+    {
+      struct nmb_name n;
+      make_nmb_name(&n,myworkgroup,0x1b,scope);
 
-			if (!find_name(d->namelist, &n, FIND_SELF))
-			{
-				DEBUG(0,("%s add_domain_names: attempting to become domain \
-master browser on workgroup %s %s\n",
-				timestring(), myworkgroup, inet_ntoa(d->bcast_ip)));
+      if (!find_name(d->namelist, &n, FIND_SELF))
+      {
+        DEBUG(0,("%s add_domain_names: attempting to become domain \
+master browser on workgroup %s %s\n", timestring(), myworkgroup, inet_ntoa(d->bcast_ip)));
 
-				/* send out a query to establish whether there's a 
-				   domain controller on the local subnet.  if not,
-				   we can become a domain controller.  it's only
-				   polite that we check, before claiming the
-				   NetBIOS name 0x1b.
-				*/
+        /* send out a query to establish whether there's a 
+           domain controller on the local subnet.  if not,
+           we can become a domain controller.  it's only
+           polite that we check, before claiming the
+           NetBIOS name 0x1b.
+         */
 
-				DEBUG(0,("add_domain_names:querying subnet %s \
-for domain master on workgroup %s\n", 
-						  inet_ntoa(d->bcast_ip), myworkgroup));
+        DEBUG(0,("add_domain_names:querying subnet %s \
+for domain master on workgroup %s\n", inet_ntoa(d->bcast_ip), myworkgroup));
 
-				queue_netbios_packet(d,ClientNMB,NMB_QUERY,
-									 NAME_QUERY_DOMAIN,
-									 myworkgroup, 0x1b,
-									 0, 0,0,NULL,NULL,
-									 True, False,
-									 d->bcast_ip, d->bcast_ip, 0);
-			}
-		}
-	}
+        queue_netbios_packet(d,ClientNMB,NMB_QUERY,
+                             NAME_QUERY_DOMAIN,
+                             myworkgroup, 0x1b,
+                             0, 0,0,NULL,NULL,
+                             True, False,
+                             d->bcast_ip, d->bcast_ip, 0);
+      }
+    }
+  }
 }
 
 
