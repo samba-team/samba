@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -60,6 +60,24 @@ compressmd (OtpKey key, unsigned char *md, size_t len)
       p = key;
   }
 }
+
+#ifdef HAVE_OLD_HASH_NAMES
+static void
+otp_md4_final (void *res, struct md4 *m)
+{
+    MD4_Final(res, m);
+}
+#undef MD4_Final
+#define MD4_Final otp_md4_final
+
+static void
+otp_md5_final (void *res, struct md5 *m)
+{
+    MD5_Final(res, m);
+}
+#undef MD5_Final
+#define MD5_Final otp_md5_final
+#endif
 
 static int
 otp_md_init (OtpKey key,
