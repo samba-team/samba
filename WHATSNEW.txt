@@ -5,19 +5,16 @@
 
 This is the latest stable release of the Samba 2.2 code base.
 
-Please note that the Samba 2.2 code tree will reach end-of-life
+Please note that the Samba 2.2 code tree will reach its End-Of-Life
 on October 1, 2004.  Administrators of existing Samba 2.2
 installations are encouraged to upgrade to the latest Samba 3.0.x
 release prior to that date.
 
-The Samba 2.2.11 release addresses 2 bugs:
+The Samba 2.2.11 release addresses the following bug:
 
-  * Crashes in smbd caused derferencing a NULL pointer troggered 
-    by a Windows XP SP2 client sending a FindNextPrintChange-
-    Notify() requirest without previously issueing FindFirst-
-    PrintChangeNotify().
-  * An smbd crash generated when attempting to reopen the Samba 
-    log files under certain conditions.
+  o Crashes in smbd triggered by a Windows XP SP2 client sending 
+    a FindNextPrintChangeNotify() request without previously 
+    issuing FindFirstPrintChangeNotify().
 
 
 Older releases notes for 2.2.x distributions follow
