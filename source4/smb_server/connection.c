@@ -88,7 +88,7 @@ static int count_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *u
 
 	if (cs->Clear && !process_exists(crec.pid) && (errno == ESRCH)) {
 		DEBUG(2,("pid %u doesn't exist - deleting connections %d [%s]\n",
-			(unsigned int)crec.pid, crec.cnum, crec.name));
+			(uint_t)crec.pid, crec.cnum, crec.name));
 		if (tdb_delete(the_tdb, kbuf) != 0)
 			DEBUG(0,("count_fn: tdb_delete failed with error %s\n", tdb_errorstr(tdb) ));
 		return 0;
@@ -191,7 +191,7 @@ BOOL register_message_flags(BOOL doreg, uint32_t msg_flags)
 
 	DEBUG(10,("register_message_flags: %s flags 0x%x\n",
 		doreg ? "adding" : "removing",
-		(unsigned int)msg_flags ));
+		(uint_t)msg_flags ));
 
 	make_conn_key(NULL, "", &kbuf, &key);
 
@@ -216,7 +216,7 @@ BOOL register_message_flags(BOOL doreg, uint32_t msg_flags)
 	}
 
 	DEBUG(10,("register_message_flags: new flags 0x%x\n",
-		(unsigned int)pcrec->bcast_msg_flags ));
+		(uint_t)pcrec->bcast_msg_flags ));
 
 	SAFE_FREE(dbuf.dptr);
 	return True;

@@ -199,7 +199,7 @@ static krb5_error_code setpw_result_code_string(krb5_context context,
 						int result_code,
 						const char **code_string)
 {
-        unsigned int idx = 0;
+        uint_t idx = 0;
 
 	while (kpasswd_errors[idx].error_string != NULL) {
 		if (kpasswd_errors[idx].result_code == 

@@ -311,7 +311,7 @@ typedef void (*userdata_free_fn)(struct userdata_struct *);
 struct userdata_struct {
   userdata_copy_fn copy_fn;
   userdata_free_fn free_fn;
-  unsigned int userdata_len;
+  uint_t userdata_len;
   char data[16]; /* 16 is to ensure alignment/padding on all systems */
 };
 

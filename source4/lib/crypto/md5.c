@@ -107,7 +107,7 @@ void MD5Update(struct MD5Context *ctx, uint8_t const *buf, unsigned len)
  */
 void MD5Final(uint8_t digest[16], struct MD5Context *ctx)
 {
-    unsigned int count;
+    uint_t count;
     uint8_t *p;
 
     /* Compute number of bytes mod 64 */

@@ -40,7 +40,7 @@
  * the keys and the RGDB contains the actual data.
  */
 
-typedef unsigned int DWORD;
+typedef uint_t DWORD;
 typedef unsigned short WORD;
 
 typedef struct creg_block {

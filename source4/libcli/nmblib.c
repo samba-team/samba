@@ -812,7 +812,7 @@ void make_nmb_name( struct nmb_name *n, const char *name, int type)
 {
 	memset( (char *)n, '\0', sizeof(struct nmb_name) );
 	push_ascii(n->name, name, 16, STR_TERMINATE|STR_UPPER);
-	n->name_type = (unsigned int)type & 0xFF;
+	n->name_type = (uint_t)type & 0xFF;
 	StrnCpy( n->scope, lp_netbios_scope(), 63 );
 	strupper( n->scope );
 }

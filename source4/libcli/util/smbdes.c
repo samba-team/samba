@@ -412,7 +412,7 @@ void SamOEMhash(uint8_t *data, const uint8_t keystr[16], int len)
 /* Decode a sam password hash into a password.  The password hash is the
    same method used to store passwords in the NT registry.  The DES key
    used is based on the RID of the user. */
-void sam_pwd_hash(unsigned int rid, const uchar *in, uchar *out, int forw)
+void sam_pwd_hash(uint_t rid, const uchar *in, uchar *out, int forw)
 {
 	uchar s[14];
 

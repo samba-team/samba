@@ -53,7 +53,7 @@ static NTSTATUS cli_link_internal(struct cli_tree *tree,
 ****************************************************************************/
 static uint32_t unix_perms_to_wire(mode_t perms)
 {
-        unsigned int ret = 0;
+        uint_t ret = 0;
 
         ret |= ((perms & S_IXOTH) ?  UNIX_X_OTH : 0);
         ret |= ((perms & S_IWOTH) ?  UNIX_W_OTH : 0);
