@@ -388,7 +388,8 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 		} 
 		if ((dsoff+dscnt < dsoff) || (dsoff+dscnt < dscnt))
 			goto bad_param;
-		if (smb_base(inbuf)+dsoff+dscnt > inbuf + size)
+		if ((smb_base(inbuf)+dsoff+dscnt > inbuf + size) ||
+				(smb_base(inbuf)+dsoff+dscnt < smb_base(inbuf)))
 			goto bad_param;
 
 		memcpy(data,smb_base(inbuf)+dsoff,dscnt);
@@ -402,8 +403,9 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 			return(ERROR_DOS(ERRDOS,ERRnomem));
 		} 
 		if ((psoff+pscnt < psoff) || (psoff+pscnt < pscnt))
-			 goto bad_param;
-		if (smb_base(inbuf)+psoff+pscnt > inbuf + size)
+			goto bad_param;
+		if ((smb_base(inbuf)+psoff+pscnt > inbuf + size) ||
+				(smb_base(inbuf)+psoff+pscnt < smb_base(inbuf)));
 			goto bad_param;
 
 		memcpy(params,smb_base(inbuf)+psoff,pscnt);
@@ -487,8 +489,11 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 			if (pdisp+pcnt >= tpscnt)
 				goto bad_param;
 			if ((pdisp+pcnt < pdisp) || (pdisp+pcnt < pcnt))
-				 goto bad_param;
-			if (smb_base(inbuf) + poff + pcnt >= inbuf + bufsize)
+				goto bad_param;
+			if (pdisp > tpscnt)
+				goto bad_param;
+			if ((smb_base(inbuf) + poff + pcnt >= inbuf + bufsize) ||
+					(smb_base(inbuf) + poff + pcnt < smb_base(inbuf)))
 				goto bad_param;
 			if (params + pdisp < params)
 				goto bad_param;
@@ -501,7 +506,10 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 				goto bad_param;
 			if ((ddisp+dcnt < ddisp) || (ddisp+dcnt < dcnt))
 				goto bad_param;
-			if (smb_base(inbuf) + doff + dcnt >= inbuf + bufsize)
+			if (ddisp > tdscnt)
+				goto bad_param;
+			if ((smb_base(inbuf) + doff + dcnt >= inbuf + bufsize) ||
+					(smb_base(inbuf) + doff + dcnt < smb_base(inbuf)))
 				goto bad_param;
 			if (data + ddisp < data)
 				goto bad_param;
