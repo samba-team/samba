@@ -868,6 +868,15 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #include <dlfcn.h>
 #endif
 
+#if HAVE_KERNEL_SHARE_MODES
+#ifndef LOCK_MAND 
+#define LOCK_MAND	32	/* This is a mandatory flock */
+#define LOCK_READ	64	/* ... Which allows concurrent read operations */
+#define LOCK_WRITE	128	/* ... Which allows concurrent write operations */
+#define LOCK_RW		192	/* ... Which allows concurrent read & write ops */
+#endif
+#endif
+
 extern int DEBUGLEVEL;
 
 #endif /* _INCLUDES_H */
