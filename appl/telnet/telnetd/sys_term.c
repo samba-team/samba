@@ -1327,10 +1327,11 @@ static void scrub_env(void)
   char **p;
   
   for (cpp2 = cpp = environ; *cpp; cpp++) {
-    for(p = remove; *p; p++)
-      if(strncmp(*cpp, *p, strlen(*p)) == 0)
-	continue;
-    *cpp2++ = *cpp;
+      for(p = remove; *p; p++)
+	  if(strncmp(*cpp, *p, strlen(*p)) == 0)
+	      break;
+      if(*p == NULL)
+	  *cpp2++ = *cpp;
   }
   *cpp2 = 0;
 }
