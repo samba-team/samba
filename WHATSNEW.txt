@@ -1,9 +1,67 @@
-          WHATS NEW IN 1.9.18p7 - May 12th 1998.
+          WHATS NEW IN 1.9.18p8 - June 12th 1998.
           ======================================
 
 This is the latest stable release of Samba. This is the
 version that all production Samba servers should be running
 for all current bug-fixes.
+
+Note that most Samba Team effort is now going into working on the
+next major release which should contain some Windows NT Domain 
+features. It is intended that any future work on the 1.9.18 series
+be maintenance only fixes.
+
+An announcement will be made when the first alpha release of the next
+Samba series is available.
+
+Bugfixes added since 1.9.18p7
+-----------------------------
+
+1). Fixed bug so Samba returns ERROR_MORE_DATA for long share
+    lists that won't fit in the data buffer given by the client.
+2). Made mapping of Windows to UNIX usernames only occur once per
+    name.
+3). Cause changing of SMB password to fail if UNIX pasword change
+    fails and unix password sync is set.
+4). Ensure the Samba names are added to the remote broadcast subnet
+    to allow NT workstations to do a directed broadcast node status
+    query (they seem to want to do this for some reason).
+5). Fixed HPUX10 Trusted systems bigcrypt password authentication call.
+6). Ensure smbd doesn't crash if 'account disabled' set in smbpasswd
+    file.
+7). Ensured 'revalidate' parameter is only checked if we're in share
+    level security.
+8). Ensure that password lengths are sanity checked even if in server
+    level security.
+9). Fix bug with multi-user NT systems where a file currently open by
+    one user could always be opened by another.
+10). Ensure we save the current user info and restore it correctly
+     whilst in the oplock break state.
+11). Added some simple sanity checks to testparam.
+12). Added timezone sanity checks.
+13). Re-wrote wildcard handling for trans2 calls. Wildcard matching
+     now seems to be *identical* to NT (as far as I can tell).
+14). Added facility for user list code to be explicit about checking
+     UNIX group database or NIS netgroup list. Updated smb.conf 
+     detailing this.
+15). Fixed bug in multibyte character handling when parsing a pathname.
+16). Fixed file descriptor leak in client code.
+17). Fixed QSORT_CAST compile bugs on many systems.
+18). Added codepages 737 (Greek) and 861 (Icelandic).
+
+If you have problems, or think you have found a bug please email 
+a report to :
+
+        samba-bugs@samba.anu.edu.au
+
+As always, all bugs are our responsibility.
+
+Regards,
+
+        The Samba Team. 
+
+
+Previous release notes for 1.9.18p7 follow.
+=========================================================================
 
 This release is a security hole patch fix for a security hole reported
 on BugTraq by Drago. The security hole may have allowed authenticated
@@ -21,28 +79,8 @@ The previous release 1.9.18p6, which was intended to fix the
 security hole, has compile problems on several platforms, and
 should not be used.
 
-If you have problems, or think you have found a bug please email 
-a report to :
-
-        samba-bugs@samba.anu.edu.au
-
-As always, all bugs are our responsibility.
-
-Regards,
-
-        The Samba Team. 
-
-
 Previous release notes for 1.9.18p5 follow.
 =========================================================================
-
-Note that most Samba Team effort is now going into working on the
-next major release which should contain some Windows NT Domain 
-features. It is intended that any future work on the 1.9.18 series
-be maintenance only fixes.
-
-An announcement will be made when the first alpha release of the next
-Samba series is available.
 
 Added features in 1.9.18p5
 --------------------------
