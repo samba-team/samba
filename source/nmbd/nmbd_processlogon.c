@@ -48,6 +48,7 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len,
   uint16 lmnttoken;
   uint16 lm20token;
   uint32 domainsidsize;
+  BOOL short_request = 0;
   char *getdc;
   char *uniuser; /* Unicode user name. */
   char *unicomp; /* Unicode computer name. */
@@ -119,12 +120,21 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
       q = skip_unibuf(q, buf+len-q);
 
-      ntversion = IVAL(q, 0);
-      q += 4;
-      lmnttoken = SVAL(q, 0);
-      q += 2;
-      lm20token = SVAL(q, 0);
-      q += 2;
+      if ((buf - q) >= len) {    /* Check for a short request */
+
+        short_request = 1;
+
+      }
+      else { /* A full length request */
+
+        ntversion = IVAL(q, 0);
+        q += 4;
+        lmnttoken = SVAL(q, 0);
+        q += 2;
+        lm20token = SVAL(q, 0);
+        q += 2;
+
+      }
 
       /* Construct reply. */
 
@@ -137,9 +147,8 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
       q = skip_string(q, 1); /* PDC name */
 
       /* PDC and domain name */
-#if 0
-      if (strcmp(mailslot, NT_LOGON_MAILSLOT)==0)
-#endif
+
+      if (!short_request)  /* Make a full reply */
       {
         q = align2(q, buf);
 
@@ -155,6 +164,8 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
         SSVAL(q, 0, lm20token);
         q += 2;
       }
+
+      /* RJS, 21-Feb-2000, we send a short reply if the request was short */
 
       DEBUG(3,("process_logon_packet: GETDC request from %s at IP %s, \
 reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
