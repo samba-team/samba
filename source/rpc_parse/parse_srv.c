@@ -429,28 +429,6 @@ BOOL srv_io_r_net_share_enum(char *desc, SRV_R_NET_SHARE_ENUM *r_n, prs_struct *
 }
 
 /*******************************************************************
- Frees a SRV_Q_NET_SHARE_GET_INFO structure.
-********************************************************************/
-
-void free_srv_q_net_share_get_info(SRV_Q_NET_SHARE_GET_INFO *q_n)
-{
-	if(!q_n)
-		return;
-	memset(q_n, '\0', sizeof(SRV_Q_NET_SHARE_GET_INFO));
-}
-
-/*******************************************************************
- Frees a SRV_R_NET_SHARE_GET_INFO structure.
-********************************************************************/
-
-void free_srv_r_net_share_get_info(SRV_R_NET_SHARE_GET_INFO *r_n)
-{
-	if(!r_n)
-		return;
-	memset(r_n, '\0', sizeof(SRV_R_NET_SHARE_GET_INFO));
-}
-
-/*******************************************************************
  Reads or writes a structure.
 ********************************************************************/
 
