@@ -172,13 +172,13 @@ BOOL get_member_domain_sid(void)
 		}
 	}
 
-	return get_domain_sids(NULL, &global_member_sid);
+	return get_domain_sids(NULL, &global_member_sid, lp_passwordserver());
 }
 
 /****************************************************************************
  obtain the sid from the PDC.  do some verification along the way...
 ****************************************************************************/
-BOOL get_domain_sids(DOM_SID *sid3, DOM_SID *sid5)
+BOOL get_domain_sids(DOM_SID *sid3, DOM_SID *sid5, char *servers)
 {
 	POLICY_HND pol;
 	fstring srv_name;
@@ -193,7 +193,7 @@ BOOL get_domain_sids(DOM_SID *sid3, DOM_SID *sid5)
 		return False;
 	}
 
-	if (!cli_connect_serverlist(&cli, lp_passwordserver()))
+	if (!cli_connect_serverlist(&cli, servers))
 	{
 		DEBUG(0,("get_member_domain_sid: unable to initialise client connection.\n"));
 		return False;

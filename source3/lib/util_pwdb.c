@@ -31,6 +31,9 @@ extern DOM_SID global_member_sid;
 extern fstring global_myworkgroup;
 
 extern DOM_SID global_sid_S_1_5_20;
+
+extern pstring global_myname;
+
 /*
  * A list of the rids of well known BUILTIN and Domain users
  * and groups.
@@ -443,7 +446,7 @@ BOOL pwdb_initialise(BOOL is_server)
 	}
 	else
 	{
-		if (!get_domain_sids(&global_member_sid, &global_sam_sid))
+		if (!get_domain_sids(&global_member_sid, &global_sam_sid, global_myname))
 		{
 			return False;
 		}
