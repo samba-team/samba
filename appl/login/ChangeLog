@@ -1,3 +1,10 @@
+2000-06-28  Johan Danielsson  <joda@pdc.kth.se>
+
+	* env.c: new file for environment related functions
+
+	* login.c: move environment stuff to separate file, allow
+	specifying list of environment files via login.conf
+
 2000-06-21  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am (LDADD): add otp
