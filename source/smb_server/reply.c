@@ -2057,6 +2057,10 @@ static void reply_sesssetup_spnego(struct smbsrv_request *req)
 	/* construct reply */
 	req_setup_reply(req, 4, sess.spnego.out.secblob.length);
 
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		req_setup_error(req, status);
+	}
+
 	SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
 	SSVAL(req->out.vwv, VWV(1), 0);
 	SSVAL(req->out.vwv, VWV(2), sess.spnego.out.action);
