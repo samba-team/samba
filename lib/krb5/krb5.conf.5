@@ -46,6 +46,35 @@ name:
 consists of one or more non-white space characters.
 Currently recognised sections and bindings are:
 .Bl -tag -width "xxx" -offset indent
+.It Li [appdefaults]
+Specifies the default values to be used for Kerberos applications.
+You can specify defaults per application, realm, or a combination of
+these.  The preference order is:
+.Bl -enum -compact
+.It
+.Va application Va realm Va option
+.It
+.Va application Va option
+.It
+.Va realm Va option
+.It
+.Va option
+.El
+.Pp
+The supported options are:
+.Bl -tag -width "xxx" -offset indent
+.It Li forwardable = Va boolean
+When obtaining initial credentials, make the credentials forwardable.
+.It Li proxiable = Va boolean
+When obtaining initial credentials, make the credentials proxiable.
+.It Li no-addresses = Va boolean
+When obtaining initial credentials, request them for an empty set of
+addresses, making the tickets valid from any address.
+.It Li ticket_life = Va time
+Default ticket lifetime.
+.It Li renew_lifetime = Va time
+Default renewable ticket lifetime.
+.El
 .It Li [libdefaults]
 .Bl -tag -width "xxx" -offset indent
 .It Li default_realm = Va REALM
