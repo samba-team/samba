@@ -106,6 +106,7 @@ void initiate_netbios_packet(uint16 *id,
   if (quest_type == NMB_STATUS) { packet_type = "nmb_status"; opcode = 0; }
   if (quest_type == NMB_QUERY ) { packet_type = "nmb_query"; opcode = 0; }
   if (quest_type == NMB_REG   ) { packet_type = "nmb_reg"; opcode = 5; }
+  if (quest_type == NMB_REG_REFRESH ) { packet_type = "nmb_reg_refresh"; opcode = 9; }
   if (quest_type == NMB_REL   ) { packet_type = "nmb_rel"; opcode = 6; }
   
   DEBUG(4,("initiating netbios packet: %s %s(%x) (bcast=%s) %s\n",
@@ -134,14 +135,18 @@ void initiate_netbios_packet(uint16 *id,
   nmb->header.qdcount = 1;
   nmb->header.ancount = 0;
   nmb->header.nscount = 0;
-  nmb->header.arcount = (quest_type==NMB_REG || quest_type==NMB_REL) ? 1 : 0;
+  nmb->header.arcount = (quest_type==NMB_REG || 
+			 quest_type==NMB_REL ||
+			 quest_type==NMB_REG_REFRESH) ? 1 : 0;
   
   make_nmb_name(&nmb->question.question_name,name,name_type,scope);
   
   nmb->question.question_type = quest_type;
   nmb->question.question_class = 0x1;
   
-  if (quest_type == NMB_REG || quest_type == NMB_REL)
+  if (quest_type == NMB_REG ||
+      quest_type == NMB_REG_REFRESH ||
+      quest_type == NMB_REL)
     {
       nmb->additional = &additional_rec;
       bzero((char *)nmb->additional,sizeof(*nmb->additional));
@@ -150,7 +155,10 @@ void initiate_netbios_packet(uint16 *id,
       nmb->additional->rr_type  = nmb->question.question_type;
       nmb->additional->rr_class = nmb->question.question_class;
       
-      nmb->additional->ttl = quest_type == NMB_REG ? lp_max_ttl() : 0;
+      if (quest_type == NMB_REG || quest_type == NMB_REG_REFRESH)
+	nmb->additional->ttl = lp_max_ttl();
+      else
+	nmb->additional->ttl = 0;
       nmb->additional->rdlength = 6;
       nmb->additional->rdata[0] = nb_flags;
       putip(&nmb->additional->rdata[2],(char *)iface_ip(to_ip));
