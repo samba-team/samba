@@ -1029,9 +1029,10 @@ extern int DEBUGLEVEL;
 #define RTLD_NOW 0
 #endif
 
-/* needed for some systems without iconv */
+/* needed for some systems without iconv. Doesn't really matter
+   what error code we use */
 #ifndef EILSEQ
-#define EILSEQ EINVAL
+#define EILSEQ EIO
 #endif
 
 /* add varargs prototypes with printf checking */
