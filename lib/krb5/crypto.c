@@ -972,13 +972,8 @@ HMAC_SHA1_DES3_checksum(krb5_context context,
 			Checksum *result)
 {
     struct checksum_type *c = _find_checksum(CKSUMTYPE_SHA1);
-    /* iovec? */
-    unsigned char *p = malloc(4 + len);
-    _krb5_put_int(p, len, 4);
-    memcpy(p + 4, data , len);
-    hmac(context, c, p, 4 + len, key, result);
-    memset(p, 0, 4 + len);
-    free(p);
+
+    hmac(context, c, data, len, key, result);
 }
 
 struct checksum_type checksum_none = {
@@ -1074,7 +1069,7 @@ struct checksum_type checksum_rsa_md5_des3 = {
 struct checksum_type checksum_sha1 = {
     CKSUMTYPE_SHA1,
     "sha1",
-    80,
+    64,
     20,
     F_CPROOF,
     SHA1_checksum,
@@ -1083,7 +1078,7 @@ struct checksum_type checksum_sha1 = {
 struct checksum_type checksum_hmac_sha1_des3 = {
     CKSUMTYPE_HMAC_SHA1_DES3,
     "hmac-sha1-des3",
-    80,
+    64,
     20,
     F_KEYED | F_CPROOF | F_DERIVED,
     HMAC_SHA1_DES3_checksum,
@@ -1612,7 +1607,7 @@ encrypt_internal_derived(krb5_context context,
     
     checksum_sz = CHECKSUMSIZE(et->keyed_checksum);
 
-    sz = et->confoundersize + 4 /* length */ + len;
+    sz = et->confoundersize + /* 4 - length */ len;
     block_sz = (sz + et->blocksize - 1) &~ (et->blocksize - 1); /* pad */
     p = calloc(1, block_sz + checksum_sz);
     if(p == NULL)
@@ -1621,10 +1616,6 @@ encrypt_internal_derived(krb5_context context,
     q = p;
     krb5_generate_random_block(q, et->confoundersize); /* XXX */
     q += et->confoundersize;
-#if 0
-    _krb5_put_int(q, len, 4);
-    q += 4;
-#endif
     memcpy(q, data, len);
     
     ret = create_checksum(context, 
@@ -1778,11 +1769,8 @@ decrypt_internal_derived(krb5_context context,
 	free(p);
 	return ret;
     }
-#if 0
-    _krb5_get_int(p + et->confoundersize, &l, 4);
-#endif
-    l = len - et->confoundersize - checksum_sz;
-    memmove(p, p + et->confoundersize + checksum_sz, l);
+    l = len - et->confoundersize;
+    memmove(p, p + et->confoundersize, l);
     result->data = realloc(p, l);
     if(p == NULL) {
 	free(p);
@@ -2056,13 +2044,6 @@ derive_key(krb5_context context,
 	free(c);
     }
     
-#if 0
-    des_set_odd_parity((des_cblock*)k);
-    des_set_odd_parity((des_cblock*)(k + 8));
-    des_set_odd_parity((des_cblock*)(k + 16));
-    memcpy (key->key->keyvalue.data, k, 24);
-#endif
-#if 1
     /* XXX keytype dependent post-processing */
     switch(kt->type) {
     case KEYTYPE_DES3:
@@ -2074,7 +2055,6 @@ derive_key(krb5_context context,
 	ret = KRB5_CRYPTO_INTERNAL;
 	break;
     }
-#endif
     memset(k, 0, nblocks * et->blocksize);
     free(k);
     return ret;
@@ -2102,7 +2082,8 @@ _get_derived_key(krb5_context context,
 {
     int i;
     struct key_data *d;
-    unsigned char constant[4];
+    unsigned char constant[5];
+
     for(i = 0; i < crypto->num_key_usage; i++)
 	if(crypto->key_usage[i].usage == usage) {
 	    *key = &crypto->key_usage[i].key;
@@ -2112,7 +2093,7 @@ _get_derived_key(krb5_context context,
     if(d == NULL)
 	return ENOMEM;
     krb5_copy_keyblock(context, crypto->key.key, &d->key);
-    _krb5_put_int(constant, usage, 4);
+    _krb5_put_int(constant, usage, 5);
     derive_key(context, crypto->et, d, constant, sizeof(constant));
     *key = d;
     return 0;
