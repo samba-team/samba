@@ -66,21 +66,42 @@ void strupr(char *s)
 	sprintf(tmp2, "typedef %s %s;", #TYPE, tmp);		\
 	strupr(tmp);						\
 	tabs = 5 - strlen(tmp2) / 8;				\
-	fprintf(f, "#ifndef HAVE_%s\n", tmp);			\
-	fprintf(f, "#define HAVE_%s\n", tmp);			\
         fprintf(f, "%s", tmp2);					\
 	while(tabs-- > 0) fprintf(f, "\t");			\
 	fprintf(f, "/* %2d bits */\n", b);			\
-	fprintf(f, "#endif /* HAVE_%s */\n", tmp);		\
-	continue;						\
+        return;                                                 \
     }								\
+}
+
+static void
+try_signed(FILE *f, int len)
+{
+    BITSIZE(signed char);
+    BITSIZE(short);
+    BITSIZE(int);
+    BITSIZE(long);
+#ifdef HAVE_LONG_LONG
+    BITSIZE(long long);
+#endif
+    fprintf(f, "/* There is no %d bit type */\n", len);
+}
+
+static void
+try_unsigned(FILE *f, int len)
+{
+    BITSIZE(unsigned char);
+    BITSIZE(unsigned short);
+    BITSIZE(unsigned int);
+    BITSIZE(unsigned long);
+#ifdef HAVE_LONG_LONG
+    BITSIZE(unsigned long long);
+#endif
+    fprintf(f, "/* There is no %d bit type */\n", len);
 }
 
 int main(int argc, char **argv)
 {
-    int i, b, len;
     FILE *f;
-    int sizes[] = { 8, 16, 32, 64 };
     
     if(argc < 2)
 	f = stdout;
@@ -109,31 +130,33 @@ int main(int argc, char **argv)
     fprintf(f, "#ifndef __BIT_TYPES_DEFINED__\n");
     fprintf(f, "#define __BIT_TYPES_DEFINED__\n");
     fprintf(f, "\n");
-    for(i = 0; i < sizeof(sizes) / sizeof(sizes[0]); i++){
-	len = sizes[i];
-	BITSIZE(signed char);
-	BITSIZE(short);
-	BITSIZE(int);
-	BITSIZE(long);
-#ifdef HAVE_LONG_LONG
-	BITSIZE(long long);
-#endif
-	fprintf(f, "/* There is no %d bit type */\n", len);
-	break;
-    }
-    fprintf(f, "\n");
-    for(i = 0; i < sizeof(sizes) / sizeof(sizes[0]); i++){
-	len = sizes[i];
-	BITSIZE(unsigned char);
-	BITSIZE(unsigned short);
-	BITSIZE(unsigned int);
-	BITSIZE(unsigned long);
-#ifdef HAVE_LONG_LONG
-	BITSIZE(unsigned long long);
-#endif
-	fprintf(f, "/* There is no %d bit type */\n", len);
-	break;
-    }
+
+#ifndef HAVE_INT8_T
+    try_signed (f, 8);
+#endif /* HAVE_INT8_T */
+#ifndef HAVE_INT16_T
+    try_signed (f, 16);
+#endif /* HAVE_INT16_T */
+#ifndef HAVE_INT32_T
+    try_signed (f, 32);
+#endif /* HAVE_INT32_T */
+#ifndef HAVE_INT64_T
+    try_signed (f, 64);
+#endif /* HAVE_INT64_T */
+
+#ifndef HAVE_U_INT8_T
+    try_unsigned (f, 8);
+#endif /* HAVE_INT8_T */
+#ifndef HAVE_U_INT16_T
+    try_unsigned (f, 16);
+#endif /* HAVE_U_INT16_T */
+#ifndef HAVE_U_INT32_T
+    try_unsigned (f, 32);
+#endif /* HAVE_U_INT32_T */
+#ifndef HAVE_U_INT64_T
+    try_unsigned (f, 64);
+#endif /* HAVE_U_INT64_T */
+
     fprintf(f, "\n");
     fprintf(f, "#endif /* __BIT_TYPES_DEFINED__ */\n");
     fprintf(f, "\n");
