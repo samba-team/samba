@@ -1180,3 +1180,66 @@ void reg_io_r_open_entry(char *desc,  REG_R_OPEN_ENTRY *r_r, prs_struct *ps, int
 	prs_uint32("status", ps, depth, &(r_r->status));
 }
 
+/*******************************************************************
+makes a structure.
+********************************************************************/
+void make_reg_q_shutdown(REG_Q_SHUTDOWN *q_i,
+				char *msg, uint32 timeout, uint16 flags)
+{
+	int len = strlen(msg) + 1;
+
+	if (q_i == NULL) return;
+
+	ZERO_STRUCTP(q_i);
+
+	q_i->ptr_0 = 1;
+	q_i->ptr_1 = 1;
+	q_i->ptr_2 = 1;
+
+	make_uni_hdr(&q_i->hdr_msg, len, len, 1);
+	make_unistr2(&(q_i->uni_msg), msg, len);
+	
+	q_i->timeout = timeout;
+	q_i->flags   = flags;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void reg_io_q_shutdown(char *desc,  REG_Q_SHUTDOWN *q_q, prs_struct *ps, int depth)
+{
+	if (q_q == NULL) return;
+
+	prs_debug(ps, depth, desc, "reg_io_q_shutdown");
+	depth++;
+
+	prs_align(ps);
+	
+	prs_uint32("ptr_0", ps, depth, &(q_q->ptr_0));
+	prs_uint32("ptr_1", ps, depth, &(q_q->ptr_1));
+	prs_uint32("ptr_2", ps, depth, &(q_q->ptr_2));
+	
+	smb_io_unihdr ("hdr_msg", &(q_q->hdr_msg), ps, depth);
+	smb_io_unistr2("uni_msg", &(q_q->uni_msg), q_q->hdr_msg.buffer, ps, depth);
+	prs_align(ps);
+
+	prs_uint32("timeout", ps, depth, &(q_q->timeout));
+	prs_uint16("flags  ", ps, depth, &(q_q->flags  ));
+	prs_align(ps);
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void reg_io_r_shutdown(char *desc,  REG_R_SHUTDOWN *r_q, prs_struct *ps, int depth)
+{
+	if (r_q == NULL) return;
+
+	prs_debug(ps, depth, desc, "reg_io_r_shutdown");
+	depth++;
+
+	prs_align(ps);
+	
+	prs_uint32("status", ps, depth, &(r_q->status));
+}
+

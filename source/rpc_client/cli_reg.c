@@ -1041,4 +1041,59 @@ BOOL do_reg_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
 	return valid_close;
 }
 
+/****************************************************************************
+do a REG Shutdown Server
+****************************************************************************/
+BOOL do_reg_shutdown(struct cli_state *cli, uint16 fnum, 
+				char *msg, uint32 timeout, uint16 flags)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	REG_Q_SHUTDOWN q_o;
+	BOOL valid_shutdown = False;
+
+	if (msg == NULL) return False;
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api REG_SHUTDOWN */
+
+	DEBUG(4,("REG Shutdown: (timeout: %d secs) %s\n", timeout, msg));
+
+	make_reg_q_shutdown(&q_o, msg, timeout, flags);
+
+	/* turn parameters into data stream */
+	reg_io_q_shutdown("", &q_o, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, fnum, REG_SHUTDOWN, &buf, &rbuf))
+	{
+		REG_R_SHUTDOWN r_o;
+		BOOL p;
+
+		ZERO_STRUCT(r_o);
+
+		reg_io_r_shutdown("", &r_o, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("REG_SHUTDOWN: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_shutdown = True;
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_shutdown;
+}
+
 

@@ -918,3 +918,48 @@ void cmd_reg_get_key_sec(struct client_info *info)
 	}
 }
 
+/****************************************************************************
+nt registry shutdown
+****************************************************************************/
+void cmd_reg_shutdown(struct client_info *info)
+{
+	uint16 fnum;
+	BOOL res = True;
+
+	fstring msg;
+	fstring tmp;
+	uint32 timeout = 20;
+
+	DEBUG(5, ("cmd_reg_shutdown: smb_cli->fd:%d\n", smb_cli->fd));
+
+	if (!next_token(NULL, msg, NULL, sizeof(msg)))
+	{
+		msg[0] = 0;
+	}
+	else if (next_token(NULL, tmp, NULL, sizeof(tmp)))
+	{
+		timeout = atoi(tmp);
+	}
+
+
+	/* open WINREG session. */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG, &fnum) : False;
+
+	/* create an entry */
+	res = res ? do_reg_shutdown(smb_cli, fnum, msg, timeout, 1) : False;
+
+	/* close the session */
+	cli_nt_session_close(smb_cli, fnum);
+
+	if (res)
+	{
+		DEBUG(5,("cmd_reg_shutdown: query succeeded\n"));
+		fprintf(out_hnd,"OK\n");
+	}
+	else
+	{
+		DEBUG(5,("cmd_reg_shutdown: query failed\n"));
+		fprintf(out_hnd,"Failed\n");
+	}
+}
+

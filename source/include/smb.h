@@ -1900,6 +1900,13 @@ struct nmb_name {
 #define MAP_TO_GUEST_ON_BAD_USER 1
 #define MAP_TO_GUEST_ON_BAD_PASSWORD 2
 
+/* associate bit field or enumeration field with a string */
+struct field_info
+{
+	uint32 bits;
+	char *str;
+};
+
 #endif /* _SMB_H */
 
 /* _SMB_H */
