@@ -141,7 +141,7 @@ NTSTATUS connect_to_ipc(struct cli_state **c, struct in_addr *server_ip,
 		}
 	}
 	
-	nt_status = cli_full_connection(c, opt_requester_name, server_name, 
+	nt_status = cli_full_connection(c, NULL, server_name, 
 					server_ip, opt_port,
 					"IPC$", "IPC",  
 					opt_user_name, opt_workgroup,
@@ -750,10 +750,8 @@ static struct functable net_func[] = {
 		}
 	}
 
-	if (!opt_requester_name) {
-		static fstring myname;
-		get_myname(myname);
-		opt_requester_name = myname;
+	if (opt_requester_name) {
+		set_global_myname(opt_requester_name);
 	}
 
 	if (!opt_user_name && getenv("LOGNAME")) {
