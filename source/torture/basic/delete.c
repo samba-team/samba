@@ -515,9 +515,11 @@ BOOL torture_test_delete(int dummy)
 	smbcli_setatr(cli1->tree, fname, 0, 0);
 	smbcli_unlink(cli1->tree, fname);
                                                                                                                                         
-	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, GENERIC_RIGHTS_FILE_ALL_ACCESS,
-				   FILE_ATTRIBUTE_READONLY, NTCREATEX_SHARE_ACCESS_NONE, 
-				   NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
+				      GENERIC_RIGHTS_FILE_ALL_ACCESS,
+				      FILE_ATTRIBUTE_READONLY, 
+				      NTCREATEX_SHARE_ACCESS_NONE, 
+				      NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 	
         if (fnum1 == -1) {
                 printf("(%s) open of %s failed (%s)\n", 
