@@ -1505,40 +1505,40 @@ static int call_nt_transact_rename(connection_struct *conn,
                                    int bufsize,
                                    char **ppsetup, char **ppparams, char **ppdata)
 {
-  char *params = *ppparams;
-  pstring new_name;
-  files_struct *fsp = file_fsp(params, 0);
-  BOOL replace_if_exists = (SVAL(params,2) & RENAME_REPLACE_IF_EXISTS) ? True : False;
-  uint32 fname_len = MIN((((uint32)IVAL(inbuf,smb_nt_TotalParameterCount)-4)),
-                         ((uint32)sizeof(new_name)-1));
-  int outsize = 0;
+	char *params = *ppparams;
+	pstring new_name;
+	files_struct *fsp = file_fsp(params, 0);
+	BOOL replace_if_exists = (SVAL(params,2) & RENAME_REPLACE_IF_EXISTS) ? True : False;
+	uint32 fname_len = MIN((((uint32)IVAL(inbuf,smb_nt_TotalParameterCount)-4)),
+		((uint32)sizeof(new_name)-1));
+	int outsize = 0;
 
-  CHECK_FSP(fsp, conn);
-  StrnCpy(new_name,params+4,fname_len);
-  new_name[fname_len] = '\0';
+	CHECK_FSP(fsp, conn);
+	StrnCpy(new_name,params+4,fname_len);
+	new_name[fname_len] = '\0';
 
-  outsize = rename_internals(conn, inbuf, outbuf, fsp->fsp_name,
-                             new_name, replace_if_exists);
-  if(outsize == 0) {
-    /*
-     * Rename was successful.
-     */
-    send_nt_replies(inbuf, outbuf, bufsize, 0, NULL, 0, NULL, 0);
+	outsize = rename_internals(conn, inbuf, outbuf, fsp->fsp_name,
+			new_name, replace_if_exists);
+	if(outsize == 0) {
+		/*
+		 * Rename was successful.
+		 */
+		send_nt_replies(inbuf, outbuf, bufsize, 0, NULL, 0, NULL, 0);
 
-    DEBUG(3,("nt transact rename from = %s, to = %s succeeded.\n", 
-          fsp->fsp_name, new_name));
+		DEBUG(3,("nt transact rename from = %s, to = %s succeeded.\n", 
+			fsp->fsp_name, new_name));
 
-    outsize = -1;
+		outsize = -1;
 
-	/*
-	 * Win2k needs a changenotify request response before it will
-	 * update after a rename..
-	 */
+		/*
+		 * Win2k needs a changenotify request response before it will
+		 * update after a rename..
+		 */
 
-	process_pending_change_notify_queue((time_t)0);
-  }
+		process_pending_change_notify_queue((time_t)0);
+	}
 
-  return(outsize);
+	return(outsize);
 }
 
 

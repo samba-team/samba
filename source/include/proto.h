@@ -4013,6 +4013,7 @@ BOOL vfs_init_custom(connection_struct *conn);
 BOOL vfs_directory_exist(connection_struct *conn, char *dname, SMB_STRUCT_STAT *st);
 int vfs_mkdir(connection_struct *conn, char *fname, mode_t mode);
 char *vfs_getwd(connection_struct *conn, char *unix_path);
+BOOL vfs_object_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf);
 BOOL vfs_file_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf);
 ssize_t vfs_read_data(files_struct *fsp, char *buf, size_t byte_count);
 ssize_t vfs_write_data(files_struct *fsp,char *buffer,size_t N);

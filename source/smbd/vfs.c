@@ -321,6 +321,24 @@ char *vfs_getwd(connection_struct *conn, char *unix_path)
 }
 
 /*******************************************************************
+ Check if an object exists in the vfs.
+********************************************************************/
+
+BOOL vfs_object_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf)
+{
+	SMB_STRUCT_STAT st;
+
+	if (!sbuf)
+		sbuf = &st;
+
+	ZERO_STRUCTP(sbuf);
+
+	if (vfs_stat(conn,fname,sbuf) == -1)
+		return(False);
+	return True;
+}
+
+/*******************************************************************
  Check if a vfs file exists.
 ********************************************************************/
 

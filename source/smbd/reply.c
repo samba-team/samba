@@ -3646,17 +3646,18 @@ static BOOL resolve_wildcards(char *name1,char *name2)
 }
 
 /*******************************************************************
-check if a user is allowed to rename a file
+ Check if a user is allowed to rename a file.
 ********************************************************************/
-static BOOL can_rename(char *fname,connection_struct *conn)
+
+static int can_rename(char *fname,connection_struct *conn)
 {
-  SMB_STRUCT_STAT sbuf;
+	if (!CAN_WRITE(conn))
+		return ERRnoaccess;
 
-  if (!CAN_WRITE(conn)) return(False);
+	if (!check_file_sharing(conn,fname,True))
+		return ERRbadshare;
 
-  if (conn->vfs_ops.lstat(conn,dos_to_unix(fname,False),&sbuf) != 0) return(False);
-  if (!check_file_sharing(conn,fname,True)) return(False);
-  return(True);
+	return 0;
 }
 
 /****************************************************************************
@@ -3676,10 +3677,8 @@ int rename_internals(connection_struct *conn,
 	BOOL bad_path2 = False;
 	int count=0;
 	int error = ERRnoaccess;
-	BOOL exists=False;
 	BOOL rc = True;
 	SMB_STRUCT_STAT sbuf1, sbuf2;
-	pstring zdirectory;
 
 	*directory = *mask = 0;
 
@@ -3725,6 +3724,8 @@ int rename_internals(connection_struct *conn,
 		 * No wildcards - just process the one file.
 		 */
 		BOOL is_short_name = is_8_3(name, True);
+		pstring zdirectory;
+		pstring znewname;
 
 		/* Add a terminating '/' to the directory name. */
 		pstrcat(directory,"/");
@@ -3739,7 +3740,8 @@ int rename_internals(connection_struct *conn,
 			pstrcpy(newname, tmpstr);
 		}
 		
-		DEBUG(3,("rename_internals: case_sensitive = %d, case_preserve = %d, short case preserve = %d, directory = %s, newname = %s, newname_last_component = %s, is_8_3 = %d\n", 
+		DEBUG(3,("rename_internals: case_sensitive = %d, case_preserve = %d, short case preserve = %d, \
+directory = %s, newname = %s, newname_last_component = %s, is_8_3 = %d\n", 
 			 case_sensitive, case_preserve, short_case_preserve, directory, 
 			 newname, newname_last_component, is_short_name));
 
@@ -3777,36 +3779,72 @@ int rename_internals(connection_struct *conn,
 			}
 		}
 		
-                pstrcpy(zdirectory, dos_to_unix(directory, False));
-		if(replace_if_exists) {
-			/*
-			 * NT SMB specific flag - rename can overwrite
-			 * file with the same name so don't check for
-			 * vfs_file_exist().
-			 */
+		resolve_wildcards(directory,newname);
 
-			if(resolve_wildcards(directory,newname) &&
-			   can_rename(directory,conn) &&
-			   !conn->vfs_ops.rename(conn,zdirectory,
-						 dos_to_unix(newname,False)))
-				count++;
-		} else {
-			if (resolve_wildcards(directory,newname) && 
-			    can_rename(directory,conn) && 
-			    !vfs_file_exist(conn,newname,NULL) &&
-			    !conn->vfs_ops.rename(conn,zdirectory,
-						  dos_to_unix(newname,False)))
-				count++;
+		/*
+		 * The source object must exist.
+		 */
+
+		if (!vfs_object_exist(conn, directory, NULL)) {
+			DEBUG(3,("rename_internals: source doesn't exist doing rename %s -> %s\n",
+				directory,newname));
+
+			if (errno == ENOTDIR || errno == EISDIR || errno == ENOENT) {
+				/*
+				 * Must return different errors depending on whether the parent
+				 * directory existed or not.
+				 */
+
+				p = strrchr(directory, '/');
+				if (!p)
+					return ERROR(ERRDOS,ERRbadfile);
+				*p = '\0';
+				if (vfs_object_exist(conn, directory, NULL))
+					return ERROR(ERRDOS,ERRbadfile);
+				return ERROR(ERRDOS,ERRbadpath);
+			}
+			return(UNIXERROR(ERRDOS,error));
+                }
+
+		error = can_rename(directory,conn);
+
+                if (error) {
+                        DEBUG(3,("rename_internals: can_rename failed %d rename %s -> %s\n",
+                                error, directory,newname));
+			return ERROR(ERRDOS,error);
 		}
 
-		DEBUG(3,("rename_internals: %s doing rename on %s -> %s\n",(count != 0) ? "succeeded" : "failed",
-                         directory,newname));
-		
-		if (!count) exists = vfs_file_exist(conn,directory,NULL);
-		if (!count && exists && vfs_file_exist(conn,newname,NULL)) {
-			exists = True;
-			error = ERRrename;
+		pstrcpy(zdirectory, dos_to_unix(directory, False));
+		pstrcpy(znewname, dos_to_unix(newname,False));
+
+		/*
+		 * If the src and dest names are identical - including case,
+		 * don't do the rename, just return success.
+		 */
+
+		if (strcsequal(zdirectory, znewname)) {
+			DEBUG(3,("rename_internals: identical names in rename %s - returning success\n", directory));
+			return 0;
 		}
+
+		if(!replace_if_exists && vfs_object_exist(conn,newname,NULL)) {
+			DEBUG(3,("rename_internals: dest exists doing rename %s -> %s\n",
+				directory,newname));
+			return ERROR(ERRDOS,ERRrename);
+		}
+
+		if(conn->vfs_ops.rename(conn,zdirectory, znewname) == 0) {
+			DEBUG(3,("rename_internals: succeeded doing rename on %s -> %s\n",
+				directory,newname));
+			return 0;
+		}
+
+		DEBUG(3,("rename_internals: Error %s rename %s -> %s\n",
+			strerror(errno), directory,newname));
+
+		if (errno == ENOTDIR || errno == EISDIR)
+			return ERROR(ERRDOS,ERRrename);
+		return (UNIXERROR(ERRDOS,error));
 	} else {
 		/*
 		 * Wildcards - process each file that matches.
@@ -3834,7 +3872,7 @@ int rename_internals(connection_struct *conn,
 				
 				error = ERRnoaccess;
 				slprintf(fname,sizeof(fname)-1,"%s/%s",directory,dname);
-				if (!can_rename(fname,conn)) {
+				if (can_rename(fname,conn)) {
 					DEBUG(6,("rename %s refused\n", fname));
 					continue;
 				}
@@ -3863,15 +3901,11 @@ int rename_internals(connection_struct *conn,
 	}
 	
 	if (count == 0) {
-		if (exists)
-			return(ERROR(ERRDOS,error));
-		else {
-			if((errno == ENOENT) && (bad_path1 || bad_path2)) {
-				unix_ERR_class = ERRDOS;
-				unix_ERR_code = ERRbadpath;
-			}
-			return(UNIXERROR(ERRDOS,error));
+		if((errno == ENOENT) && (bad_path1 || bad_path2)) {
+			unix_ERR_class = ERRDOS;
+			unix_ERR_code = ERRbadpath;
 		}
+		return(UNIXERROR(ERRDOS,error));
 	}
 	
 	return 0;
