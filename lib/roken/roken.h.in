@@ -187,7 +187,7 @@ char * strlwr(char *);
 int strnlen(char*, int);
 #endif
 
-#ifndef HAVE_STRSEP
+#if !defined(HAVE_STRSEP) || defined(NEED_STRSEP_PROTO)
 char *strsep(char**, const char*);
 #endif
 
