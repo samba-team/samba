@@ -460,7 +460,7 @@ static void pjob_store_notify(int snum, uint32 jobid, struct printjob *old_data,
  Store a job structure back to the database.
 ****************************************************************************/
 
-static BOOL pjob_store(int snum, uint32 jobid, struct printjob *pjob, BOOL donotify)
+static BOOL pjob_store(int snum, uint32 jobid, struct printjob *pjob)
 {
 	TDB_DATA old_data, new_data;
 	BOOL ret;
@@ -483,7 +483,7 @@ static BOOL pjob_store(int snum, uint32 jobid, struct printjob *pjob, BOOL donot
 
 	/* Send notify updates for what has changed */
 
-	if (donotify && ret && (old_data.dsize == 0 || old_data.dsize == sizeof(*pjob))) {
+	if (ret && (old_data.dsize == 0 || old_data.dsize == sizeof(*pjob))) {
 		pjob_store_notify(
 			snum, jobid, (struct printjob *)old_data.dptr,
 			(struct printjob *)new_data.dptr);
@@ -581,7 +581,7 @@ static void print_unix_job(int snum, print_queue_struct *q)
 	fstrcpy(pj.user, q->fs_user);
 	fstrcpy(pj.queuename, lp_const_servicename(snum));
 
-	pjob_store(snum, jobid, &pj, True);
+	pjob_store(snum, jobid, &pj);
 }
 
 
@@ -868,7 +868,7 @@ static void print_queue_update(int snum)
 		pjob->sysjob = queue[i].job;
 		pjob->status = queue[i].status;
 
-		pjob_store(snum, jobid, pjob, True);
+		pjob_store(snum, jobid, pjob);
 	}
 
 	/* now delete any queued entries that don't appear in the
@@ -977,7 +977,7 @@ BOOL print_job_set_name(int snum, uint32 jobid, char *name)
 		return False;
 
 	fstrcpy(pjob->jobname, name);
-	return pjob_store(snum, jobid, pjob, True);
+	return pjob_store(snum, jobid, pjob);
 }
 
 /****************************************************************************
@@ -1009,7 +1009,7 @@ static BOOL print_job_delete1(int snum, uint32 jobid)
 	/* Set the tdb entry to be deleting. */
 
 	pjob->status = LPQ_DELETING;
-	pjob_store(snum, jobid, pjob, True);
+	pjob_store(snum, jobid, pjob);
 
 	if (pjob->spooled && pjob->sysjob != -1)
 		result = (*(current_printif->job_delete))(snum, pjob);
@@ -1196,7 +1196,7 @@ int print_job_write(int snum, uint32 jobid, const char *buf, int size)
 	return_code = write(pjob->fd, buf, size);
 	if (return_code>0) {
 		pjob->size += size;
-		pjob_store(snum, jobid, pjob, True);
+		pjob_store(snum, jobid, pjob);
 	}
 	return return_code;
 }
@@ -1388,7 +1388,7 @@ uint32 print_job_start(struct current_user *user, int snum, char *jobname)
 		if (!print_job_exists(snum, jobid))
 			break;
 	}
-	if (jobid == next_jobid || !pjob_store(snum, jobid, &pjob, False)) {
+	if (jobid == next_jobid || !pjob_store(snum, jobid, &pjob)) {
 		DEBUG(3, ("print_job_start: either jobid (%d)==next_jobid(%d) or pjob_store failed.\n",
 				jobid, next_jobid ));
 		jobid = -1;
@@ -1422,7 +1422,7 @@ to open spool file %s.\n", pjob.filename));
 		goto fail;
 	}
 
-	pjob_store(snum, jobid, &pjob, True);
+	pjob_store(snum, jobid, &pjob);
 
 	release_print_db(pdb);
 
@@ -1464,7 +1464,7 @@ void print_job_endpage(int snum, uint32 jobid)
 		return;
 
 	pjob->page_count++;
-	pjob_store(snum, jobid, pjob, True);
+	pjob_store(snum, jobid, pjob);
 }
 
 /****************************************************************************
@@ -1522,7 +1522,7 @@ BOOL print_job_end(int snum, uint32 jobid, BOOL normal_close)
 	
 	pjob->spooled = True;
 	pjob->status = LPQ_QUEUED;
-	pjob_store(snum, jobid, pjob, True);
+	pjob_store(snum, jobid, pjob);
 	
 	/* make sure the database is up to date */
 	if (print_cache_expired(snum))
