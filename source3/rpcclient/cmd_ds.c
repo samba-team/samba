@@ -59,6 +59,10 @@ static NTSTATUS cmd_ds_enum_domain_trusts(struct cli_state *cli,
 	result = cli_ds_enum_domain_trusts( cli, mem_ctx, cli->desthost, flags, 
 		&trusts, &num_domains );
 	
+	printf( "%d domains returned\n", num_domains );
+	
+	SAFE_FREE( trusts );
+	
 	return result;
 }
 
