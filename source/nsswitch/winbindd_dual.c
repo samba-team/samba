@@ -361,6 +361,8 @@ static struct winbindd_dispatch_table child_dispatch_table[] = {
 	{ WINBINDD_LOOKUPNAME, winbindd_lookupname, "LOOKUPNAME" },
 	{ WINBINDD_LIST_TRUSTDOM, winbindd_list_trusted_domains,
 	  "LIST_TRUSTDOM" },
+	{ WINBINDD_INIT_CONNECTION, winbindd_init_connection,
+	  "INIT_CONNECTION" },
 
 	/* End of list */
 

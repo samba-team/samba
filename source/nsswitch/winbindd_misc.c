@@ -137,7 +137,7 @@ enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state *st
 		return WINBINDD_ERROR;
 	}
 
-	result = domain->backend->trusted_domains(domain, state->mem_ctx,
+	result = domain->methods->trusted_domains(domain, state->mem_ctx,
 						  &num_domains, &names,
 						  &alt_names, &sids);
 

@@ -62,8 +62,7 @@ struct winbindd_domain *domain_list(void)
 	/* Initialise list */
 
 	if (!_domain_list) 
-		if (!init_domain_list()) 
-			return NULL;
+		init_domain_list();
 
 	return _domain_list;
 }
@@ -304,8 +303,135 @@ void rescan_trusted_domains( void )
 	return;	
 }
 
+struct init_child_state {
+	TALLOC_CTX *mem_ctx;
+	struct winbindd_domain *domain;
+	struct winbindd_response *response;
+	void (*continuation)(void *private, BOOL success);
+	void *private;
+};
+
+static void init_child_recv(void *private);
+
+static void init_child_connection(struct winbindd_domain *domain,
+				  BOOL is_primary,
+				  const char *dcname,
+				  void (*continuation)(void *private,
+						       BOOL success),
+				  void *private)
+{
+	TALLOC_CTX *mem_ctx;
+	struct winbindd_request *request;
+	struct winbindd_response *response;
+	struct init_child_state *state;
+
+	mem_ctx = talloc_init("add_trusted_domains");
+	if (mem_ctx == NULL) {
+		DEBUG(0, ("talloc_init failed\n"));
+		return;
+	}
+
+	request = TALLOC_ZERO_P(mem_ctx, struct winbindd_request);
+	response = TALLOC_P(mem_ctx, struct winbindd_response);
+	state = TALLOC_P(mem_ctx, struct init_child_state);
+
+	if ((request == NULL) || (response == NULL) || (state == NULL)) {
+		DEBUG(0, ("talloc failed\n"));
+		continuation(private, False);
+		return;
+	}
+
+	request->length = sizeof(*request);
+	request->cmd = WINBINDD_INIT_CONNECTION;
+	fstrcpy(request->domain_name, domain->name);
+	request->data.init_conn.is_primary = is_primary;
+	if (dcname != NULL)
+		fstrcpy(request->data.init_conn.dcname, dcname);
+
+	state->mem_ctx = mem_ctx;
+	state->domain = domain;
+	state->response = response;
+	state->continuation = continuation;
+	state->private = private;
+
+	async_request(mem_ctx, &domain->child, request, response,
+		      init_child_recv, state);
+}
+
+static void init_child_recv(void *private)
+{
+	struct init_child_state *state = private;
+
+	if (state->response->result != WINBINDD_OK) {
+		DEBUG(3, ("Could not init child\n"));
+		state->continuation(state->private, False);
+		talloc_destroy(state->mem_ctx);
+		return;
+	}
+
+	fstrcpy(state->domain->name,
+		state->response->data.domain_info.name);
+	fstrcpy(state->domain->alt_name,
+		state->response->data.domain_info.alt_name);
+	string_to_sid(&state->domain->sid,
+		      state->response->data.domain_info.sid);
+	state->domain->native_mode =
+		state->response->data.domain_info.native_mode;
+	state->domain->active_directory =
+		state->response->data.domain_info.active_directory;
+	state->domain->sequence_number =
+		state->response->data.domain_info.sequence_number;
+
+	state->domain->initialized = 1;
+}
+
+enum winbindd_result winbindd_init_connection(struct winbindd_cli_state *state)
+{
+	struct winbindd_domain *domain;
+
+	/* Ensure null termination */
+	state->request.domain_name
+		[sizeof(state->request.domain_name)-1]='\0';
+	state->request.data.init_conn.dcname
+		[sizeof(state->request.data.init_conn.dcname)-1]='\0';
+
+	domain = find_domain_from_name(state->request.domain_name);
+
+	if (domain == NULL) {
+		DEBUG(1, ("Could not find domain %s\n",
+			  state->request.domain_name));
+		return WINBINDD_ERROR;
+	}
+
+	fstrcpy(domain->dcname, state->request.data.init_conn.dcname);
+
+	set_dc_type_and_flags(domain);
+
+	if (!domain->initialized) {
+		DEBUG(1, ("Could not initialize domain %s\n",
+			  state->request.domain_name));
+		return WINBINDD_ERROR;
+	}
+
+	fstrcpy(state->response.data.domain_info.name, domain->name);
+	fstrcpy(state->response.data.domain_info.alt_name, domain->alt_name);
+	fstrcpy(state->response.data.domain_info.sid,
+		sid_string_static(&domain->sid));
+	
+	state->response.data.domain_info.native_mode
+		= domain->native_mode;
+	state->response.data.domain_info.active_directory
+		= domain->active_directory;
+	state->response.data.domain_info.primary
+		= domain->primary;
+	state->response.data.domain_info.sequence_number =
+		domain->sequence_number;
+
+	return WINBINDD_OK;
+}
+
 /* Look up global info for the winbind daemon */
-BOOL init_domain_list(void)
+void init_domain_list(void)
 {
 	extern DOM_SID global_sid_Builtin;
 	extern struct winbindd_methods cache_methods;
@@ -319,58 +445,25 @@ BOOL init_domain_list(void)
 
 	if (IS_DC) {
 		domain = add_trusted_domain(get_global_sam_name(), NULL,
-					    &passdb_methods, get_global_sam_sid());
+					    &passdb_methods,
+					    get_global_sam_sid());
 	} else {
 
 		DOM_SID our_sid;
 
 		if (!secrets_fetch_domain_sid(lp_workgroup(), &our_sid)) {
 			DEBUG(0, ("Could not fetch our SID - did we join?\n"));
-			return False;
 		}
 	
 		domain = add_trusted_domain( lp_workgroup(), lp_realm(),
 					     &cache_methods, &our_sid);
-	
-		/* set flags about native_mode, active_directory */
-		set_dc_type_and_flags(domain);
 	}
 
 	domain->primary = True;
 
-	/* get any alternate name for the primary domain */
-	
-	cache_methods.alternate_name(domain);
-	
-	/* now we have the correct netbios (short) domain name */
-	
-	if ( *domain->name )
-		set_global_myworkgroup( domain->name );
-		
-	if (!secrets_fetch_domain_sid(domain->name, &domain->sid)) {
-		DEBUG(1, ("Could not fetch sid for our domain %s\n",
-			  domain->name));
-		return False;
-	}
-
 	setup_domain_child(&domain->child);
 
-	/* do an initial scan for trusted domains */
-	add_trusted_domains(domain);
-
-	/* Add our local SAM domains */
-
-	add_trusted_domain("BUILTIN", NULL, &passdb_methods,
-			   &global_sid_Builtin);
-
-	if (!IS_DC) {
-		add_trusted_domain(get_global_sam_name(), NULL,
-				   &passdb_methods, get_global_sam_sid());
-	}
-	
-	/* avoid rescanning this right away */
-	last_trustdom_scan = time(NULL);
-	return True;
+	init_child_connection(domain, True, NULL, NULL, NULL);
 }
 
 /** 

@@ -820,6 +820,9 @@ void close_conns_after_fork(void)
 		if (domain->conn.cli == NULL)
 			continue;
 
+		if (domain->conn.cli->fd == -1)
+			continue;
+
 		close(domain->conn.cli->fd);
 		domain->conn.cli->fd = -1;
 	}

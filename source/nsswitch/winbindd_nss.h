@@ -111,7 +111,10 @@ enum winbindd_cmd {
 	WINBINDD_PRIV_PIPE_DIR,
 
 	/* return a list of group sids for a user sid */
-	WINBINDD_GETUSERSIDS,	
+	WINBINDD_GETUSERSIDS,
+
+	/* Initialize connection in a child */
+	WINBINDD_INIT_CONNECTION,
 
 	/* Placeholder for end of cmd list */
 	WINBINDD_NUM_CMDS
@@ -202,6 +205,10 @@ struct winbindd_request {
 			fstring username;
 			fstring groupname;
 		} acct_mgt;
+		struct {
+			BOOL is_primary;
+			fstring dcname;
+		} init_conn;
 	} data;
 	char null_term;
 };
