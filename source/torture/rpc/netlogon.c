@@ -1713,7 +1713,9 @@ BOOL torture_rpc_netlogon(int dummy)
 		ret = False;
 	}
 
-        torture_rpc_close(p);
+	talloc_destroy(mem_ctx);
+
+	torture_rpc_close(p);
 
 	torture_leave_domain(join_ctx);
 
