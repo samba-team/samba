@@ -267,6 +267,7 @@ static NTSTATUS ipc_open_ntcreatex(struct ntvfs_module_context *ntvfs,
 	ZERO_STRUCT(oi->ntcreatex.out);
 	oi->ntcreatex.out.fnum = p->fnum;
 	oi->ntcreatex.out.ipc_state = p->ipc_state;
+	oi->ntcreatex.out.file_type = FILE_TYPE_MESSAGE_MODE_PIPE;
 
 	return status;
 }
