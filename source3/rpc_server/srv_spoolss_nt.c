@@ -825,8 +825,8 @@ uint32 _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 		}
 		else if ((printer_default->access_required & SERVER_ACCESS_ADMINISTER ) == SERVER_ACCESS_ADMINISTER) {
 
-			if (!get_printer_snum(handle, &snum))
-				return ERROR_INVALID_HANDLE;
+			/* Printserver handles use global struct... */
+			snum = -1;
 
 			if (!lp_ms_add_printer_wizard()) {
 				close_printer_handle(handle);
