@@ -26,10 +26,10 @@
 <title>Abstract</title>
 
 <para>
-This book is a collection of HOWTOs added to Samba documentation over the year.
+This book is a collection of HOWTOs added to Samba documentation over the years.
 I try to ensure that all are current, but sometimes the is a larger job
-than one person can maintain.  You can always find the later version of this
-PDF file at <ulink url="http://www.samba.org/">http://www.samba.org/</ulink>
+than one person can maintain.  The most recent version of this document
+can be found at <ulink url="http://www.samba.org/">http://www.samba.org/</ulink>
 on the "Documentation" page.  Please send updates to <ulink 
 url="mailto:jerry@samba.org">jerry@samba.org</ulink>.
 </para>
