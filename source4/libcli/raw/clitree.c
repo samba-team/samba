@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/composite/composite.h"
 
 #define SETUP_REQUEST_TREE(cmd, wct, buflen) do { \
 	req = smbcli_request_setup(tree, cmd, wct, buflen); \
@@ -288,4 +289,37 @@ NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 
 	*ret_tree = tree;
 	return NT_STATUS_OK;
+}
+
+
+/*
+  a convenient function to establish a smbcli_tree from scratch
+*/
+NTSTATUS async_smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
+					   struct smbcli_tree **ret_tree, 
+					   const char *my_name, 
+					   const char *dest_host, int port,
+					   const char *service, const char *service_type,
+					   const char *user, const char *domain, 
+					   const char *password)
+{
+	struct smb_composite_connect io;
+	NTSTATUS status;
+
+	io.in.dest_host = dest_host;
+	io.in.port = port;
+	io.in.called_name = dest_host;
+	io.in.calling_name = my_name;
+	io.in.service = service;
+	io.in.service_type = service_type;
+	io.in.user = user;
+	io.in.domain = domain;
+	io.in.password = password;
+	
+	status = smb_composite_connect(&io, parent_ctx);
+	if (NT_STATUS_IS_OK(status)) {
+		*ret_tree = io.out.tree;
+	}
+
+	return status;
 }
