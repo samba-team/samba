@@ -425,28 +425,28 @@ krb5_config_vget_string (krb5_context context,
 const char *
 krb5_config_vget_string_default (krb5_context context,
 				 krb5_config_section *c,
-				 const char *default,
+				 const char *def_value,
 				 va_list args)
 {
     const char *ret;
 
     ret = krb5_config_vget_string (context, c, args);
     if (ret == NULL)
-	ret = default;
+	ret = def_value;
     return ret;
 }
 
 const char *
 krb5_config_get_string_default (krb5_context context,
 				krb5_config_section *c,
-				const char *default,
+				const char *def_value,
 				...)
 {
     const char *ret;
     va_list args;
 
-    va_start(args, default);
-    ret = krb5_config_vget_string_default (context, c, default, args);
+    va_start(args, def_value);
+    ret = krb5_config_vget_string_default (context, c, def_value, args);
     va_end(args);
     return ret;
 }
