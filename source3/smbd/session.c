@@ -38,8 +38,6 @@ BOOL session_claim(uint16 vuid)
 	int i;
 	TDB_DATA data;
 	struct sessionid sessionid;
-	pstring dbuf;
-	int dlen;
 	uint32 pid = (uint32)sys_getpid();
 	TDB_DATA key;		
 	fstring keystr;
