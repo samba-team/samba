@@ -1185,7 +1185,11 @@ void unix_clean_name(char *s)
   string_sub(s, "//","/");
 
   /* Remove leading ./ characters */
-  trim_string(s, "./", NULL);
+  if(strncmp(s, "./", 2) == 0) {
+    trim_string(s, "./", NULL);
+    if(*s == 0)
+      strcpy(s,"./");
+  }
 
   while ((p = strstr(s,"/../")) != NULL)
     {
@@ -1381,6 +1385,10 @@ BOOL reduce_name(char *s,char *dir,BOOL widelinks)
 	  DEBUG(3,("Illegal file name? (%s)\n",s));
 	  return(False);
 	}
+
+      if (strlen(s) == 0)
+        strcpy(s,"./");
+
       return(True);
     }
   
