@@ -29,10 +29,11 @@ static int next_vuid = VUID_OFFSET;
 static int num_validated_vuids;
 
 /****************************************************************************
-check if a uid has been validated, and return an pointer to the user_struct
-if it has. NULL if not. vuid is biased by an offset. This allows us to
-tell random client vuid's (normally zero) from valid vuids.
+ Check if a uid has been validated, and return an pointer to the user_struct
+ if it has. NULL if not. vuid is biased by an offset. This allows us to
+ tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
+
 user_struct *get_valid_user_struct(uint16 vuid)
 {
 	user_struct *usp;
@@ -54,8 +55,9 @@ user_struct *get_valid_user_struct(uint16 vuid)
 }
 
 /****************************************************************************
-invalidate a uid
+ Invalidate a uid.
 ****************************************************************************/
+
 void invalidate_vuid(uint16 vuid)
 {
 	user_struct *vuser = get_valid_user_struct(vuid);
@@ -85,8 +87,9 @@ void invalidate_vuid(uint16 vuid)
 }
 
 /****************************************************************************
-invalidate all vuid entries for this process
+ Invalidate all vuid entries for this process.
 ****************************************************************************/
+
 void invalidate_all_vuids(void)
 {
 	user_struct *usp, *next=NULL;
@@ -238,38 +241,44 @@ int register_vuid(auth_serversupplied_info *server_info, const char *smb_name)
 		vuser->homes_snum = -1;
 	}
 	
+#if 0 /* JRATEST. */
+	if (lp_server_signing() && !vuser->guest && !srv_signing_active()) {
+		/* Try and turn on server signing on the first non-guest sessionsetup. */
+		srv_set_signing(session_key.data, nt_response);
+	}
+#endif
+
 	return vuser->vuid;
 }
 
-
 /****************************************************************************
-add a name to the session users list
+ Add a name to the session users list.
 ****************************************************************************/
+
 void add_session_user(const char *user)
 {
-  fstring suser;
-  struct passwd *passwd;
+	fstring suser;
+	struct passwd *passwd;
 
-  if (!(passwd = Get_Pwnam(user))) return;
+	if (!(passwd = Get_Pwnam(user)))
+		return;
 
-  fstrcpy(suser,passwd->pw_name);
+	fstrcpy(suser,passwd->pw_name);
 
-  if (suser && *suser && !in_list(suser,session_users,False))
-    {
-      if (strlen(suser) + strlen(session_users) + 2 >= sizeof(pstring))
-	DEBUG(1,("Too many session users??\n"));
-      else
-	{
-	  pstrcat(session_users," ");
-	  pstrcat(session_users,suser);
+	if (suser && *suser && !in_list(suser,session_users,False)) {
+		if (strlen(suser) + strlen(session_users) + 2 >= sizeof(pstring)) {
+			DEBUG(1,("Too many session users??\n"));
+		} else {
+			pstrcat(session_users," ");
+			pstrcat(session_users,suser);
+		}
 	}
-    }
 }
 
-
 /****************************************************************************
-check if a username is valid
+ Check if a username is valid.
 ****************************************************************************/
+
 BOOL user_ok(const char *user,int snum, gid_t *groups, size_t n_groups)
 {
 	char **valid, **invalid;
@@ -308,8 +317,9 @@ BOOL user_ok(const char *user,int snum, gid_t *groups, size_t n_groups)
 }
 
 /****************************************************************************
-validate a group username entry. Return the username or NULL
+ Validate a group username entry. Return the username or NULL.
 ****************************************************************************/
+
 static char *validate_group(char *group, DATA_BLOB password,int snum)
 {
 #ifdef HAVE_NETGROUP
