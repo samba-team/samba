@@ -209,7 +209,7 @@ get_entry(int argc, char **argv)
 	ret = foreach_principal(argv[i], do_get_entry, &data);
     return 0;
 usage:
-    arg_printusage (args, num_args, "principal...");
+    arg_printusage (args, num_args, "get", "principal...");
     return 0;
 }
 
