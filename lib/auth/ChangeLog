@@ -1,3 +1,7 @@
+2001-07-12  Assar Westerlund  <assar@sics.se>
+
+	* sia/Makefile.am: use $(CC) instead of ld for linking
+
 2001-07-06  Assar Westerlund  <assar@sics.se>
 
 	* sia/Makefile.am: use LDFLAGS, and conditional libdes

@@ -3,6 +3,12 @@
 	* kdc/hprop.c: remove v4 master key handling; remove old v4-db and
 	ka-db flags; add defaults for v4_realm and afs_cell
 
+2001-07-09  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/sock_principal.c (krb5_sock_to_principal): copy hname
+	before calling krb5_sname_to_principal.  from "Jacques A. Vidrine"
+	<n@nectar.com>
+
 2001-07-08  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/context.c: use krb5_copy_addresses instead of
