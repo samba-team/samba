@@ -1,21 +1,164 @@
-              WHATS NEW IN Samba 2.2.3a  - 6th February 2002
-              ==============================================
+              WHAT'S NEW IN Samba 2.2.4  - 2nd May 2002
+              =========================================
 
 This is the latest stable release of Samba. This is the version that all
 production Samba servers should be running for all current bug-fixes.
 
-There are several important scaling bugs that have been fixed in this release
-for large server systems so an upgrade is recommended.
+There have been several fixes and internal enhancements which include:
 
-Change from 2.2.3
------------------
+ * More/better SPOOLSS printing functionality for Windows
+   NT/2k/XP clients.
+ * Several fixes relating to serving PC database files such
+   as (Access and FoxPro) from a Samba file share.
+ * Several improves in Samba's VFS layer which can be seen
+   in the inclusion of a "Recycle Bin" vfs module.  See
+   examples/VFS/README for more details on this.
+ * Addition of a tool (tdbbackup) for backup/restore of Samba's
+   tdb's
+ * Continued improvements to winbind for greater scalability
+   and stability
+ * Several fixes related to Samba's MS-DFS support
+ * Rpcclient's various printer commands now work (again)
+
+
+New/Changed parameters in 2.2.4
+--------------------------------
+
+For more information on these parameters, see the man pages for
+smb.conf(5).
+
+Added/changed parameters
+------------------------
+
+* csc policy
+* inherit acls
+* nt status support
+* lock spin count
+* lock spin time
+* pid directory
+* winbind use default domain
+
+
+Depreciated parameters
+----------------------
+
+The following parameters have been marked as depreciated
+and will be removed in Samba 3.0
+
+* postscript
+* printer driver
+* printer driver file
+* printer driver location
+
+
+Removed Parameters
+------------------
+
+  none
+
+
+Changes in 2.2.4
+----------------
+
+See the cvs log for SAMBA_2_2 for more details
+
+1)  added -c option to smbpasswd
+2)  reworked smbpasswd internal command line option parsing
+3)  small various bug fixes to experimental pdb_tdb.c
+4)  Enforce spoolss RPCs based on the access granted at PrinterOpen()
+5)  Added missing access checks to [add/delete/set]form
+6)  Compile fixes for pam_smbpass
+7)  fix smbd crash when netbios session request fails from
+    spoolss_connect_to_client().
+8)  fixed logic bug that prevent SetPrinter() from storing devmode
+9)  Removed extra get_printer_snum() calls from set_printer_hnd_name()
+10) fix joining domain on big endian machine when using -U to smbpasswd
+11) allow command line arg to override smb.conf log level
+12) continue to retry to register 1b name with wins server if there is an old IP there
+13) fix smbclient print crash bug
+14) 9x pnp fix when the config file and driver file are different
+15) force testparm to print the correct value for log level
+16) fix swat to show full log level info
+17) fix server GetPrinterData() fields to be more sensible
+18) fix logic error in SetPrinterDataEx()
+19) Only set smb_read_error if not already set
+20) Fix string returns that require unicode
+21) Merge of printing performance fixes from appliance
+22) lpq parsing fixes
+23) Back port tridge's xcopy /o fix from HEAD
+24) Fix the printer change notify code (unfinished)
+25) Patch for Domain users not showing up
+26) Fixed SetPrinterData(magic key) to support zero length DEVMODE
+27) Ensure that all methods of looking up and connecting to DC's work
+    using identical logic.
+28) Merge in the mutex code to stop multiple domain logon failure
+29) Ignore 0/0 lock
+30) Fix winbindd to respect command line debuglevel as nmbd/smbd
+31) Update with tdbbackup from HEAD
+32) Fix for typo on solaris nss
+33) Merge in the locking changes from HEAD
+34) Added POSIX ACL layer into the vfs
+35) Fix the returning of domain enum
+36) Fix the generation of the MACHINE.SID file into the secrets.tdb.
+37) Enable test for -rdynamic when building binaries
+38) Remove the "stat open" code - make it inline
+39) Fix the mp3 rename bug
+40) Fix for Explorer DFS problems on older Windows 9X machines
+41) implement OpenPrinter() opnum == 0x01
+42) Matched W2K *insane* open semantics....
+43) small fix that will prevent the "failed to marshall
+    R_NET_SAMLOGON" message in the logs
+42) don't do checking of local passdb in smbpasswd if using -r option
+43) fix "smbpasswd -j DOMAIN -r * -U Admin%XXXX" so that it doesn't
+    try to connect to a server named '*'
+44) merge rpcclient code from HEAD
+45) Ensure MACHINE.SID update done before child spawns
+46) Fix the bad path errors for mkdir so mkdir \a\b\c\d works
+47) Removed --with-vfs - always built if available
+48) Fixed psec for 2.2
+49) Fixed the handle leak in the connection management code
+50) fix disable spoolss after the switch to nt status codes
+51) Added Shirish's client side caching policy change
+52) Honor the specversion when parsing the the DEVICEMODE
+53) fix parsing bug when DEVICEMODE's private data does not end
+    on a 4 byte boundary
+54) do not idle an smbd when there is an open pipe
+55) when a new driver is added to a Samba server, cycle through
+    all printers and bump the change_id for each one bound to the driver
+56) allow smbclient to work with a FIFO as well (needed for KDE
+    ioslave)
+57) various updates to pdb_nisplus.c
+58) many small documentation updates
+59) removed many compiler warnings
+
+
+
+Known Bugs
+----------
+
+* Under certain conditions when serving the MS Access 2000
+  executable file and an Access database from a Samba share,
+  it is possible to experience data corruption.  This bug does not
+  occur when the database is served from a Samba file share
+  but the Access *.exe is stored on the client's local file system.
+  The exact reason for this bug is unknown at this time.
+
+              =========================================
+
+
+
+
+Older release notes for Samba 2.2.x follow.
+
+-----------------------------------------------------------------------------
+The release notes for 2.2.3a follow :
 
 This is a minor bugfix release for the 2.2.3 release. The 2.2.3
 release had a problem that was visible to Windows 2000 Explorer
-users in that copying files into a share that already existed 
+users in that copying files into a share that already existed
 failed with "Access Denied" rather than asking the user if an
 overwrite was required. This was due to an incorrect error mapping
-between the UNIX EEXIST error code and the NT status error.
+between the UNIX EXIST error code and the NT status error.
 
 As Windows Explorer is a highly visible end user application a quick
 bugfix release was required, hence 2.2.3a.
@@ -25,6 +168,12 @@ corrected.
 
 The cvs.log file is no longer included with this release, as it adds
 13Mb to the size of the release, and is easily available on the Web.
+
+-----------------------------------------------------------------------------
+The release notes for 2.2.3 follow :
+
+There are several important scaling bugs that have been fixed in this release
+for large server systems so an upgrade is recommended.
 
 LDAP update
 -----------
@@ -50,12 +199,12 @@ Samba 2.2.3 fixes the known memory leaks in winbindd and has
 been extended to work with SGI IRIX and HPUX (11.x) in addition
 to the earlier targets of Linux and Solaris.
 
-For more information on using winbind, see the man pages for 
+For more information on using winbind, see the man pages for
 winbindd and wbinfo.
 
 Note that winbindd is not installed by default.
 
-New/Changed parameters in 2.2.3a
+New/Changed parameters in 2.2.3
 --------------------------------
 
 For more information on these parameters, see the man pages for
@@ -73,7 +222,7 @@ default devmode
 
 Some printer drivers will crash the Windows NT/2000 spooler service
 if they are given a default devmode, some require it. This parameter
-allows the administrator a choice of whether smbd returns such a 
+allows the administrator a choice of whether smbd returns such a
 default devmode for a driver.
 
 share modes
@@ -96,7 +245,7 @@ this.
 8). Improved NT error code mapping table.
 9). Many new point and print RPC calls added.
 10). Win9x clients can now see full user list.
-11). fileid added to identify simultaneous open files (no longer
+11). field added to identify simultaneous open files (no longer
 use dev/inode/time as unique value).
 12). HPUX ACL code added (donated by HP).
 13). vfs interfaces updated (again !).
@@ -131,16 +280,15 @@ systems to do the nsswitch WINS lookup). Fixed by SGI.
 41). Fix delete on close semantics.
 42). Stop opening all files with O_NONBLOCK !
 43). Use O_NOFOLLOW for systems that have it and don't want symlinks.
-44). Ensure NT suplementary groups get added to user token.
+44). Ensure NT supplementary groups get added to user token.
 45). Try and mitigate effects of DNS timeout (do less lookups).
 46). Added current user connection context stack.
 47). Fixes to utmp code.
 48). smbw code tidyups.
 49). Added tdb open log code. Several tdb fixes.
 
-Older release notes for Samba 2.2.x follow.
-
 -----------------------------------------------------------------------------
+The release notes for 2.2.2 follow :
 
 New daemon included - winbindd
 ------------------------------
@@ -162,7 +310,7 @@ The current version of winbindd shipped in 2.2.2 does have some
 memory leaks, which will be addressed for the next Samba release,
 so it is advisable to monitor the winbind process. This code is
 being used in production by several vendors, so the leaks are
-managable. In addition, this version of winbind does not work
+manageable. In addition, this version of winbind does not work
 correctly against a Samba PDC, due to some missing calls on the
 PDC side. These problems are being addressed for the next Samba
 release, but it was thought better to release the code now rather
@@ -185,7 +333,7 @@ Added/changed parameters.
 strict allocate
 
 Causes Samba not to create UNIX 'sparse' files, but to follow the
-Windows behaviour of always allocating on-disk space.
+Windows behavior of always allocating on-disk space.
 
 use mmap
 
@@ -205,7 +353,7 @@ New printing parameters.
 disable spoolss
 
 Setting this parameter causes Samba to go back to the old 2.0.x
-LANMAN printing behaviour, for people who wish to disable the
+LANMAN printing behavior, for people who wish to disable the
 new SPOOLSS pipe.
 
 use client driver
@@ -270,7 +418,7 @@ Quota problems on a Linux 2.4 kernel.
 -------------------------------------
 
 Currently the quota interfaces have diverged between the Linus
-2.4.x kernels and the Alan Cox 2.4.x kernels (the Alan Cox varients
+2.4.x kernels and the Alan Cox 2.4.x kernels (the Alan Cox variants
 are shipped with RedHat). Running quota-enabled Samba compiled on
 an Alan Cox kernel works correctly on an Alan Cox kernel (the one
 shipped by default with RedHat 7.x) but fails on a Linus kernel.
@@ -290,7 +438,7 @@ LDAP, NIS+ and Samba TDB.
 5). Quota fixups on Linux.
 6). libsmbclient stand-alone code added. Can be built as a shared library
 under Linux.
-7). Tru64 ACL suppport added.
+7). Tru64 ACL support added.
 8). winbindd option added.
 9). Realloc fail tidyup fixes all over the code.
 10). Large improvement in hash table code efficiency - would be found with
@@ -329,14 +477,12 @@ from other smbd daemons whilst client kept us busy.
 37). Fixes for setting/getting NT ACLs - improved POSIX mapping both ways.
 38). Removed unused readbmpx/writebmpx code.
 39). Attempt to fix Linux 2.4.x quota mess.
-40). Improved ctemp code for Windows 2000 compatibilty.
+40). Improved ctemp code for Windows 2000 compatibility.
 41). Finally understood difference between set EOF and set allocation requests.
 Added strict allocate parameter to help.
 42). Correctly return name types on name to SID lookups.
 43). tdb spinlock code update.
 44). Use pread/pwrite on systems that have it to fix race condition in tdb code.
-
-Older release notes for Samba 2.2.x follow.
 
 -----------------------------------------------------------------------------
 The release notes for 2.2.1a follow :
@@ -381,14 +527,14 @@ as some other Samba code paths.
 
 hide unreadable
 
-Prevents clients from seeing the existance of files that cannot
+Prevents clients from seeing the existence of files that cannot
 be read. Off by default.
 
 enhanced browsing
 
-Turn on/off the enhanced Samba browing functionality (*1B names).
+Turn on/off the enhanced Samba browsing functionality (*1B names).
 Default is "on". Can prevent eternal machines in workgroups when
-WINS servers are not synchronised.
+WINS servers are not synchronized.
 
 Removed parameters.
 -------------------
@@ -419,7 +565,7 @@ Changes in 2.2.1
 14). Prevent invalid '/' characters in workgroup names.
 15). Removed more static arrays in SAMR code.
 16). Client code is now UNICODE on the wire.
-17). Fix 2 second timstamp resolution everywhere if dos timestamp set to yes.
+17). Fix 2 second timestamp resolution everywhere if dos timestamp set to yes.
 18). All tdb opens now going through logging function.
 19). Add pam password changing and pam restrictions code.
 20). Printer driver management improvements (delete driver).
@@ -437,7 +583,7 @@ Changes in 2.2.1
 29). Swat fixes for being run with xinetd that doesn't set the umask.
 30). Fix for slow writes with Win9x Explorer clients. Emulates Microsoft
      TCP stack early ack specification error.
-31). Changed lock & persistant tdb directory to /var/cache/samba by default on
+31). Changed lock & persistent tdb directory to /var/cache/samba by default on
      RedHat and Mandrake as they clear the /var/lock/samba directory on reboot.
 
 -----------------------------------------------------------------------------
@@ -572,7 +718,7 @@ This release contains support for the following filesystems:
 	FreeBSD (with external patch)
 
 Other platforms will be supported as resources are
-available to test and implement the encessary modules. If
+available to test and implement the necessary modules. If
 you are interested in writing the support for a particular
 ACL filesystem, please join the samba-technical mailing
 list and coordinate your efforts. 
@@ -588,7 +734,7 @@ locks (32 bit or 64 bit) as the underlying system allows.
 
 Conversion of various internal flat data structures to use
 database records for increased performance and
-flexibility. 
+flexibility.
 
 Support for acting as a MS-DFS (Distributed File System) server.
 
@@ -624,15 +770,15 @@ data is disabled. To begin collecting data use the smbcontrol
 program to turn on profiling (see the smbcontrol man page).
 Profile information collection can be enabled for nmbd, all smbd
 processes or one or more selected processes. The profiling
-data collected is the aggragate for all processes that have
+data collected is the aggregate for all processes that have
 profiling enabled.
 
 With samba compiled for profile data collection, you may see
 a very slight degradation in performance even with profiling
 collection turned off. On initial tests with NetBench on an
-SGI Origin 200 server, this degradation was not measureable 
+SGI Origin 200 server, this degradation was not measurable 
 with profile collection off compared to no profile collection
-compiled into samba. 
+compiled into samba.
 
 With count profile collection enabled on all clients, the 
 degradation was less than 2%. With full profile collection 
@@ -648,4 +794,4 @@ As always, all bugs are our responsibility.
 
 Regards,
 
-        The Samba Team.  
+        The Samba Team.
