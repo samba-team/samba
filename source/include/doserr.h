@@ -54,6 +54,7 @@
 #define ERRbadshare 32 /* Share mode on file conflict with open mode */
 #define ERRlock 33 /* Lock request conflicts with existing lock */
 #define ERRunsup 50 /* Request unsupported, returned by Win 95, RJS 20Jun98 */
+#define ERRnetnamedel 64 /* Network name deleted or not available */
 #define ERRnosuchshare 67 /* You specified an invalid share name */
 #define ERRfilexists 80 /* File in operation already exists */
 #define ERRinvalidparam 87
@@ -75,6 +76,7 @@
 #define ERRbuftoosmall 2123
 #define ERRunknownipc 2142
 #define ERRnosuchprintjob 2151
+#define ERRinvgroup 2455
 
 /* here's a special one from observing NT */
 #define ERRnoipc 66 /* don't support ipc */

@@ -2926,7 +2926,7 @@ static BOOL run_error_map_extract(int dummy) {
 		if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
 			nt_status = NT_STATUS(IVAL(c_nt.inbuf,smb_rcls));
 		} else {
-			printf("/** Dos error on NT connection! (%s)\n */", 
+			printf("/** Dos error on NT connection! (%s) */\n", 
 			       cli_errstr(&c_nt));
 			nt_status = NT_STATUS(0xc0000000);
 		}
@@ -2941,7 +2941,7 @@ static BOOL run_error_map_extract(int dummy) {
 		
 		/* Case #1: 32-bit NT errors */
 		if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
-			printf("/** NT error on DOS connection! (%s)\n*/", 
+			printf("/** NT error on DOS connection! (%s) */\n", 
 			       cli_errstr(&c_nt));
 			errnum = errclass = 0;
 		} else {
@@ -2957,7 +2957,7 @@ static BOOL run_error_map_extract(int dummy) {
 		printf("\t{%s,\t%s,\t%s},\n", 
 		       smb_dos_err_class(errclass), 
 		       smb_dos_err_name(errclass, errnum), 
-		       get_nt_error_c_code(nt_status));
+		       get_nt_error_c_code(NT_STATUS(error)));
 	}
 	return True;
 }
