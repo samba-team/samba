@@ -43,7 +43,7 @@ DOCS_TARGET_REQUIRE_PROGRAM(RM, rm, ALL)
 DOCS_TARGET_REQUIRE_PROGRAM(DIA, dia, ALL)
 
 # Check dia version number
-[ DIA_VERSION=`dia -v | egrep -o '([0-9]+)\.([0-9]+)'`]
+[ DIA_VERSION=`$DIA -v | egrep -o '([0-9]+)\.([0-9]+)'`]
 DIA_MAJ_VERSION=`echo $DIA_VERSION | cut -d . -f 1`
 DIA_MIN_VERSION=`echo $DIA_VERSION | cut -d . -f 2`
 
