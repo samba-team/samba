@@ -31,7 +31,6 @@ hdb_source =					\
 	keytab.c				\
 	mkey.c					\
 	ndbm.c					\
-	privsep.c				\
 	print.c
 
 libhdb_la_SOURCES =				\
