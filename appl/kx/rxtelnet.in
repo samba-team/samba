@@ -1,13 +1,14 @@
 #!/bin/sh
 # $Id$
 #
-usage="Usage: $0 [-l username] [-t args_to_telnet] [-x args_to_xterm] host [port]"
+usage="Usage: $0 [-l username] [-k] [-t args_to_telnet] [-x args_to_xterm] host [port]"
 while true
 do
   case $1 in
   -l) telnet_args="${telnet_args} -l $2 "; kx_args="${kx_args} -l $2"; title="${2}@"; shift 2;;
   -t) telnet_args="${telnet_args} $2 "; shift 2;;
   -x) xterm_args="${xterm_args} $2 "; shift 2;;
+  -k) kx_args="${kx_args} -k"; shift;;
   -*) echo "$0: Bad option $1"; echo $usage; exit 1;;
   *) break;;
   esac
