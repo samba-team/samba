@@ -133,8 +133,11 @@ This option is also valid in the [realms] section.
 When obtaining initial credentials, make the credentials proxiable.
 This option is also valid in the [realms] section.
 .It Li verify_ap_req_nofail = Va boolean
-Enable to make a failure to verify obtained credentials
-non-fatal. This can be useful if there is no keytab on a host.
+If enabled, failure to verify credentials against a local key is a
+fatal error. The application has to be able to read the corresponding
+service key for this to work. Some applications, like
+.Xr su 8 ,
+enable this option unconditionally.
 .It Li warn_pwexpire = Va time
 How soon to warn for expiring password. Default is seven days.
 .It Li http_proxy = Va proxy-spec
