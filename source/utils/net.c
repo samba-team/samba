@@ -344,7 +344,7 @@ static int help_usage(int argc, const char **argv)
 static int net_help(int argc, const char **argv)
 {
 	struct functable func[] = {
-		{"ADS", net_ads_usage},	
+		{"ADS", net_ads_help},	
 		{"RAP", net_rap_help},
 		{"RPC", net_rpc_help},
 
