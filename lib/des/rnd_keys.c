@@ -140,3 +140,10 @@ des_init_random_number_generator(des_cblock *seed)
   des_new_random_key(&new_key);
   des_set_random_generator_seed(&new_key);
 }
+
+/* This is for backwards compatibility */
+int
+des_random_key(unsigned char *ret)
+{
+  return des_new_random_key((des_cblock *) ret);
+}
