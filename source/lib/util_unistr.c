@@ -32,7 +32,6 @@ load the case handling tables
 ********************************************************************/
 static void load_case_tables(void)
 {
-	int i;
 	TALLOC_CTX *mem_ctx;
 
 	mem_ctx = talloc_init("load_case_tables");
@@ -42,35 +41,11 @@ static void load_case_tables(void)
 	upcase_table = map_file(lib_path(mem_ctx, "upcase.dat"), 0x20000);
 	lowcase_table = map_file(lib_path(mem_ctx, "lowcase.dat"), 0x20000);
 	talloc_destroy(mem_ctx);
-	
-	/* we would like Samba to limp along even if these tables are
-	   not available */
 	if (upcase_table == NULL) {
-		DEBUG(1,("creating lame upcase table\n"));
-		upcase_table = talloc_named_const(NULL, 0x20000, "upcase_table");
-		if (!upcase_table) {
-			smb_panic("No memory for upcase tables");
-		}
-		for (i=0;i<0x10000;i++) {
-			SSVAL(upcase_table, i*2, i);
-		}
-		for (i=0;i<256;i++) {
-			SSVAL(upcase_table, i*2, islower(i)?toupper(i):i);
-		}
+		upcase_table = (void *)-1;
 	}
-
 	if (lowcase_table == NULL) {
-		DEBUG(1,("creating lame lowcase table\n"));
-		lowcase_table = talloc_named_const(NULL, 0x20000, "lowcase_table");
-		if (!lowcase_table) {
-			smb_panic("No memory for lowcase tables");
-		}
-		for (i=0;i<0x10000;i++) {
-			SSVAL(lowcase_table, i*2, i);
-		}
-		for (i=0;i<256;i++) {
-			SSVAL(lowcase_table, i*2, isupper(i)?tolower(i):i);
-		}
+		lowcase_table = (void *)-1;
 	}
 }
 
@@ -88,6 +63,9 @@ codepoint_t toupper_w(codepoint_t val)
 	if (upcase_table == NULL) {
 		load_case_tables();
 	}
+	if (upcase_table == (void *)-1) {
+		return val;
+	}
 	return SVAL(upcase_table, val*2);
 }
 
@@ -104,6 +82,9 @@ codepoint_t tolower_w(codepoint_t val)
 	}
 	if (lowcase_table == NULL) {
 		load_case_tables();
+	}
+	if (lowcase_table == (void *)-1) {
+		return val;
 	}
 	return SVAL(lowcase_table, val*2);
 }
