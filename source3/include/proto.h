@@ -1711,6 +1711,7 @@ BOOL trust_password_delete( char *domain, char *name );
 BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_time);
 BOOL set_trust_account_password( unsigned char *md4_new_pwd);
 BOOL trust_get_passwd( unsigned char trust_passwd[16], char *domain, char *myname);
+BOOL create_trust_account_file(char *domain, char *name, uchar pass[16]);
 
 /*The following definitions come from  passdb/smbpassgroup.c  */
 
@@ -1904,6 +1905,7 @@ void gen_next_creds( struct cli_state *cli, DOM_CRED *new_clnt_cred);
 BOOL cli_net_logon_ctrl2(const char* srv_name, uint32 status_level);
 uint32 cli_net_auth2(const char *srv_name,
 				const char *trust_acct, 
+				const char *acct_name, 
 				uint16 sec_chan, 
 				uint32 neg_flags, DOM_CHAL *srv_chal);
 uint32 cli_net_req_chal( const char *srv_name, const char* myhostname,
@@ -2059,7 +2061,7 @@ BOOL samr_open_domain(  const POLICY_HND *connect_pol,
 BOOL samr_query_lookup_domain(  POLICY_HND *pol, const char *dom_name,
 			      DOM_SID *dom_sid);
 BOOL samr_query_lookup_names(  POLICY_HND *pol, uint32 flags,
-				uint32 num_names, const char **names,
+				uint32 num_names, char **names,
 				uint32 *num_rids,
 				uint32 rid[MAX_LOOKUP_SIDS],
 				uint32 type[MAX_LOOKUP_SIDS]);
@@ -2301,7 +2303,7 @@ uint32 msrpc_sam_enum_aliases( const char* srv_name,
 				ALIAS_MEM_FN(als_mem_fn));
 BOOL create_samr_domain_user( POLICY_HND *pol_dom,
 				const char *acct_name, uint16 acb_info,
-				const char* password,
+				const char* password, int plen,
 				uint32 *rid);
 BOOL create_samr_domain_alias( POLICY_HND *pol_open_domain,
 				const char *acct_name, const char *acct_desc,
@@ -2348,7 +2350,7 @@ BOOL get_samr_query_aliasinfo(
 				uint32 alias_rid, ALIAS_INFO_CTR *ctr);
 BOOL msrpc_sam_create_dom_user(const char* srv_name, DOM_SID *sid1,
 				const char *acct_name, uint16 acb_info,
-				const char *password,
+				const char *password, int plen,
 				uint32 *rid);
 BOOL msrpc_sam_query_dispinfo(const char* srv_name, const char* domain,
 				DOM_SID *sid1,
@@ -3030,7 +3032,7 @@ BOOL make_samr_r_query_aliasmem(SAMR_R_QUERY_ALIASMEM *r_u,
 BOOL samr_io_r_query_aliasmem(char *desc,  SAMR_R_QUERY_ALIASMEM *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
 		POLICY_HND *pol, uint32 flags,
-		uint32 num_names, const char **name);
+		uint32 num_names, char **name);
 BOOL samr_io_q_lookup_names(char *desc,  SAMR_Q_LOOKUP_NAMES *q_u, prs_struct *ps, int depth);
 BOOL make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
 		uint32 num_rids, uint32 *rid, uint8 *type, uint32 status);

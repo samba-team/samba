@@ -81,39 +81,6 @@ static void usage(void)
 }
 
 /*********************************************************
-record Trust Account password.
-**********************************************************/
-static BOOL create_trust_account_file(char *domain, char *name, uchar pass[16])
-{
-	/*
-	 * Create the machine account password file.
-	 */
-
-	if(!trust_password_lock( domain, name, True))
-	{
-		fprintf(stderr, "unable to open the trust account password file for \
-machine %s in domain %s.\n", global_myname, domain); 
-		return False;
-	}
-
-	/*
-	 * Write the old machine account password.
-	 */
-	
-	if(!set_trust_account_password( pass))
-	{              
-		fprintf(stderr, "unable to write the trust account password for \
-%s in domain %s.\n", name, domain);
-		trust_password_unlock();
-		return False;
-	}
-	
-	trust_password_unlock();
-	
-	return True;
-}
-
-/*********************************************************
 Join a domain.
 **********************************************************/
 static int create_interdomain_trust_acct(char *domain, char *name)

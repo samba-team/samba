@@ -43,7 +43,7 @@ static void get_trust_account_file_name( char *domain, char *name, char *mac_fil
 
   if ((int)(sizeof(pstring) - mac_file_len - strlen(domain) - strlen(name) - 6) < 0)
   {
-    DEBUG(0,("trust_password_lock: path %s too long to add trust details.\n",
+    DEBUG(0,("get_trust_account_file_name: path %s too long to add trust details.\n",
               mac_file));
     return;
   }
@@ -267,4 +267,37 @@ trust %s in domain %s.\n", myname, domain ));
     global_machine_password_needs_changing = True;
   }
   return True;
+}
+
+/*********************************************************
+record Trust Account password.
+**********************************************************/
+BOOL create_trust_account_file(char *domain, char *name, uchar pass[16])
+{
+	/*
+	 * Create the machine account password file.
+	 */
+
+	if (!trust_password_lock( domain, name, True))
+	{
+		DEBUG(0,("unable to open the trust account password file for \
+account %s in domain %s.\n", name, domain)); 
+		return False;
+	}
+
+	/*
+	 * Write the old machine account password.
+	 */
+	
+	if (!set_trust_account_password( pass))
+	{              
+		DEBUG(0,("unable to write the trust account password for \
+%s in domain %s.\n", name, domain));
+		trust_password_unlock();
+		return False;
+	}
+	
+	trust_password_unlock();
+	
+	return True;
 }
