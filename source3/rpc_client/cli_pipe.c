@@ -1587,10 +1587,10 @@ BOOL cli_nt_open_netlogon(struct cli_state *cli, const char *trust_password,
 
 	if (cli->capabilities & CAP_NT_SMBS) {
 
-		/* If we open \\PIPE\NETLOGON here, NT4SP6
-		   gives us an ACCESS_DENIED. Do I have to
-		   understand this?
-		*/
+		/* The secure channel connection must be opened on the same 
+                   session (TCP connection) as the one the challenge was
+                   requested from. */
+
 		if ((fnum = cli_nt_create(cli, PIPE_NETLOGON_PLAIN,
 					  DESIRED_ACCESS_PIPE)) == -1) {
 			DEBUG(0,("cli_nt_create failed to %s machine %s. "
