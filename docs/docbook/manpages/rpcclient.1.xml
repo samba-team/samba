@@ -1,8 +1,7 @@
-<?xml version="1.0" encoding="iso8859-1"?>
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
-                  "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
-
-<!ENTITY % globalentities SYSTEM './../global.ent'> %globalentities;
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+				  
+<!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
 ]>
 <refentry id="rpcclient.1">
 
@@ -58,8 +57,7 @@
 		<term>server</term>
 		<listitem><para>NetBIOS name of Server to which to connect. 
 		The server can be  any SMB/CIFS server.  The name is 
-		resolved using the <ulink url="smb.conf.5.html#NAMERESOLVEORDER">
-		<parameter>name resolve order</parameter></ulink> line from <citerefentry><refentrytitle>smb.conf</refentrytitle>
+		resolved using the <smbconfoption><name>name resolve order</name></smbconfoption> line from <citerefentry><refentrytitle>smb.conf</refentrytitle>
 	<manvolnum>5</manvolnum></citerefentry>.</para></listitem>
 	</varlistentry>
 

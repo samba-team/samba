@@ -1,8 +1,7 @@
-<?xml version="1.0" encoding="iso8859-1"?>
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
-                  "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
-
-<!ENTITY % globalentities SYSTEM './../global.ent'> %globalentities;
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+				  
+<!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
 ]>
 <refentry id="smbd.8">
 
@@ -144,8 +143,8 @@
 		file will be created for informational and debug 
 		messages from the running server. The log 
 		file generated is never removed by the server although 
-		its size may be controlled by the <ulink 
-		url="smb.conf.5.html#maxlogsize"><parameter>max log size</parameter></ulink>
+		its size may be controlled by the 
+		<smbconfoption><name>max log size</name></smbconfoption>
 		option in the <citerefentry><refentrytitle>smb.conf</refentrytitle>
 		<manvolnum>5</manvolnum></citerefentry> file. <emphasis>Beware:</emphasis>
 		If the directory specified does not exist, <command>smbd</command>
@@ -192,8 +191,7 @@
 		<listitem><para>If the server is to be run by the 
 		<command>inetd</command> meta-daemon, this file 
 		must contain suitable startup information for the 
-		meta-daemon. See the <ulink url="install.html">"How to Install and Test SAMBA"</ulink>
-		document for details.
+		meta-daemon. 
 		</para></listitem>
 		</varlistentry>
 		
@@ -204,8 +202,7 @@
 
 		<para>If running the server as a daemon at startup, 
 		this file will need to contain an appropriate startup 
-		sequence for the server. See the <ulink url="install.html">"How to Install and Test SAMBA"</ulink>
-		document for details.</para></listitem>
+		sequence for the server. </para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
@@ -214,8 +211,7 @@
 		meta-daemon <command>inetd</command>, this file 
 		must contain a mapping of service name (e.g., netbios-ssn) 
 		to service port (e.g., 139) and protocol type (e.g., tcp). 
-		See the <ulink url="install.html">"How to Install and Test SAMBA"</ulink>
-		document for details.</para></listitem>
+		</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
@@ -265,8 +261,7 @@
 	<para>Samba uses PAM for authentication (when presented with a plaintext 
 	password), for account checking (is this account disabled?) and for
 	session management.  The degree too which samba supports PAM is restricted
-	by the limitations of the SMB protocol and the <ulink url="smb.conf.5.html#OBEYPAMRESRICTIONS"><parameter>obey 
-	pam restricions</parameter></ulink> <citerefentry><refentrytitle>smb.conf</refentrytitle>
+	by the limitations of the SMB protocol and the <smbconfoption><name>obey pam restrictions</name></smbconfoption> <citerefentry><refentrytitle>smb.conf</refentrytitle>
 	<manvolnum>5</manvolnum></citerefentry> paramater.  When this is set, the following restrictions apply:
 	</para>
 
@@ -352,7 +347,7 @@
 	<manvolnum>1</manvolnum></citerefentry>, and the 
 	Internet RFC's	<filename>rfc1001.txt</filename>, <filename>rfc1002.txt</filename>. 
 	In addition the CIFS (formerly SMB) specification is available 
-	as a link from the Web page <ulink url="http://samba.org/cifs/"> 
+	as a link from the Web page <ulink noescape="1" url="http://samba.org/cifs/"> 
 	http://samba.org/cifs/</ulink>.</para>
 </refsect1>
 
