@@ -994,6 +994,46 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 }
 
 /*******************************************************************
+ Net share add. Stub for now. JRA.
+********************************************************************/
+
+uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_SHARE_ADD *r_u)
+{
+	uint32 status = NT_STATUS_NOPROBLEMO;
+
+	DEBUG(5,("_srv_net_share_add: %d\n", __LINE__));
+
+	r_u->switch_value = q_u->info_level;
+
+	switch (q_u->info_level) {
+	case 1:
+		status = ERROR_ACCESS_DENIED;
+		break;
+	case 2:
+		status = ERROR_ACCESS_DENIED;
+		break;
+	case 502:
+		/* we set sd's here. FIXME. JRA */
+		status = ERROR_ACCESS_DENIED;
+		break;
+	case 1005:
+		status = ERROR_ACCESS_DENIED;
+		break;
+	default:
+		DEBUG(5,("_srv_net_share_add: unsupported switch value %d\n", q_u->info_level));
+		status = NT_STATUS_INVALID_INFO_CLASS;
+		break;
+	}
+
+	r_u->switch_value = 0;
+	r_u->status = status;
+
+	DEBUG(5,("_srv_net_share_add: %d\n", __LINE__));
+
+	return r_u->status;
+}
+
+/*******************************************************************
 time of day
 ********************************************************************/
 

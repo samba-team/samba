@@ -29,6 +29,7 @@
 #define SRV_NETCONNENUM        0x08
 #define SRV_NETFILEENUM        0x09
 #define SRV_NETSESSENUM        0x0c
+#define SRV_NET_SHARE_ADD      0x0e
 #define SRV_NETSHAREENUM_ALL   0x0f
 #define SRV_NET_SHARE_GET_INFO 0x10
 #define SRV_NET_SHARE_SET_INFO 0x11
@@ -455,6 +456,27 @@ typedef struct r_net_share_set_info
 	uint32 status;               /* return status */
 
 } SRV_R_NET_SHARE_SET_INFO;
+
+/* SRV_Q_NET_SHARE_ADD */
+typedef struct q_net_share_add
+{
+	uint32 ptr_srv_name;
+	UNISTR2 uni_srv_name;
+
+	uint32 info_level;
+
+	SRV_SHARE_INFO info;
+
+} SRV_Q_NET_SHARE_ADD;
+
+/* SRV_R_NET_SHARE_ADD */
+typedef struct r_net_share_add
+{
+	uint32 switch_value;         /* switch value */
+
+	uint32 status;               /* return status */
+
+} SRV_R_NET_SHARE_ADD;
 
 /* FILE_INFO_3 (level 3 file info strings) */
 typedef struct file_info3_info
