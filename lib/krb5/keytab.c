@@ -355,8 +355,12 @@ krb5_kt_start_seq_get(krb5_context context,
 		      krb5_keytab id,
 		      krb5_kt_cursor *cursor)
 {
-    if(id->start_seq_get == NULL)
+    if(id->start_seq_get == NULL) {
+	krb5_set_error_string(context,
+			      "start_seq_get is not supported in the %s "
+			      " keytab", id->prefix);
 	return HEIM_ERR_OPNOTSUPP;
+    }
     return (*id->start_seq_get)(context, id, cursor);
 }
 
@@ -372,8 +376,12 @@ krb5_kt_next_entry(krb5_context context,
 		   krb5_keytab_entry *entry,
 		   krb5_kt_cursor *cursor)
 {
-    if(id->next_entry == NULL)
+    if(id->next_entry == NULL) {
+	krb5_set_error_string(context,
+			      "next_entry is not supported in the %s "
+			      " keytab", id->prefix);
 	return HEIM_ERR_OPNOTSUPP;
+    }
     return (*id->next_entry)(context, id, entry, cursor);
 }
 
@@ -386,8 +394,12 @@ krb5_kt_end_seq_get(krb5_context context,
 		    krb5_keytab id,
 		    krb5_kt_cursor *cursor)
 {
-    if(id->end_seq_get == NULL)
+    if(id->end_seq_get == NULL) {
+	krb5_set_error_string(context,
+			      "end_seq_get is not supported in the %s "
+			      " keytab", id->prefix);
 	return HEIM_ERR_OPNOTSUPP;
+    }
     return (*id->end_seq_get)(context, id, cursor);
 }
 
@@ -401,8 +413,11 @@ krb5_kt_add_entry(krb5_context context,
 		  krb5_keytab id,
 		  krb5_keytab_entry *entry)
 {
-    if(id->add == NULL)
+    if(id->add == NULL) {
+	krb5_set_error_string(context, "Add is not supported in the %s keytab",
+			      id->prefix);
 	return KRB5_KT_NOWRITE;
+    }
     entry->timestamp = time(NULL);
     return (*id->add)(context, id,entry);
 }
@@ -417,7 +432,11 @@ krb5_kt_remove_entry(krb5_context context,
 		     krb5_keytab id,
 		     krb5_keytab_entry *entry)
 {
-    if(id->remove == NULL)
+    if(id->remove == NULL) {
+	krb5_set_error_string(context,
+			      "Remove is not supported in the %s keytab",
+			      id->prefix);
 	return KRB5_KT_NOWRITE;
+    }
     return (*id->remove)(context, id, entry);
 }
