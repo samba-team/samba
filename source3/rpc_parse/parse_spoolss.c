@@ -1484,6 +1484,10 @@ static BOOL spoolss_smb_io_unistr(char *desc, UNISTR *uni, prs_struct *ps, int d
 
 	prs_debug(ps, depth, desc, "spoolss_smb_io_unistr");
 	depth++;
+	
+	if (!prs_align(ps))
+		return False;
+		
 	if (!prs_unistr("unistr", ps, depth, uni))
 		return False;
 
@@ -1642,8 +1646,11 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 			l_chaine=str_len_uni(&chaine);
 			if((chaine2=(uint16 *)Realloc(chaine2, (l_chaine2+l_chaine+1)*sizeof(uint16))) == NULL)
 				return False;
-			memcpy(chaine2+l_chaine2, chaine.buffer, (l_chaine+1)*sizeof(uint16));
-			l_chaine2+=l_chaine+1;
+			if (l_chaine > 0)
+			{
+				memcpy(chaine2+l_chaine2, chaine.buffer, (l_chaine+1)*sizeof(uint16));
+				l_chaine2+=l_chaine+1;
+			}
 		
 		} while(l_chaine!=0);
 		
