@@ -1,0 +1,16 @@
+#!/bin/sh
+#
+# Generic command-line Software Manger (custom) removal from
+# media images. Based on the installation script by Phil Hollenback 
+# (philiph@sco.com) and Ron Record (rr@sco.com)
+#
+
+# Set this to be the full pathname to the directory 
+# where your media images are:
+VDIR=`pwd`/archives/FLOPPY
+VOLS=$VDIR/VOL.000.000
+
+component=`grep "component" < $VOLS | head -1 | cut -d= -f2 | cut -d: -f1`
+package=`grep "component" < $VOLS | head -1 | cut -d= -f2 | cut -d: -f2`
+
+custom -p $component:$package -r
