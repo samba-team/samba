@@ -175,6 +175,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
 				      buf + sizeof(buf) - len,
 				      len,
 				      auth_context->enctype,
+				      0,
 				      &auth_context->local_subkey,
 				      &cred.enc_part);
     if (ret)

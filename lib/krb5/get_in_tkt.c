@@ -298,6 +298,7 @@ make_pa_enc_timestamp(krb5_context context, PA_DATA *pa, krb5_keyblock *key)
 				     buf + sizeof(buf) - len,
 				     len,
 				     ETYPE_DES_CBC_MD5,
+				     0,
 				     key,
 				     &encdata);
     if (ret)
