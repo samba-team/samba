@@ -761,6 +761,8 @@ it() link(bf(wins proxy))(winsproxy)
 
 it() link(bf(wins server))(winsserver)
 
+it() link(bf(wins hook))(winshook)
+
 it() link(bf(wins support))(winssupport)
 
 it() link(bf(workgroup))(workgroup)
@@ -6505,6 +6507,42 @@ tt(	wins server = )
 
   bf(Example:)
 tt(	wins server = 192.9.200.1)
+
+label(winshook)
+dit(bf(wins hook (G)))
+
+When Samba is running as a WINS server this allows you to call an
+external program for all changes to the WINS database. The primary use
+for this option is to allow the dynamic update of external name
+resolution databases such as dynamic DNS.
+
+The wins hook parameter specifies the name of a script or executable
+that will be called as follows:
+
+   wins_hook operation name nametype ttl IP_list
+
+The first argument is the operation and is one of "add", "delete",
+or "refresh". In most cases the operation can be ignored as the rest
+of the parameters provide sufficient information. Note that "refresh"
+may sometimes be called when the name has not previously been added,
+in that case it should be treated as an add.
+
+The second argument is the netbios name. If the name is not a legal
+name then the wins hook is not called. Legal names contain only
+letters, digits, hyphens, underscores and periods.
+
+The third argument is the netbios name type as a 2 digit hexadecimal
+number. 
+
+The fourth argument is the TTL (time to live) for the name in seconds.
+
+The fifth and subsequent arguments are the IP addresses currently
+registered for that name. If this list is empty then the name should
+be deleted.
+
+An example script that calls the BIND dynamic DNS update program
+"nsupdate" is provided in the examples directory of the Samba source
+code. 
 
 label(winssupport)
 dit(bf(wins support (G)))

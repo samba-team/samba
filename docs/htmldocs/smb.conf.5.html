@@ -542,6 +542,7 @@ parameter for details.  Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#validchars"><strong>valid chars</strong></a>
 <p><br><li > <a href="smb.conf.5.html#winsproxy"><strong>wins proxy</strong></a>
 <p><br><li > <a href="smb.conf.5.html#winsserver"><strong>wins server</strong></a>
+<p><br><li > <a href="smb.conf.5.html#winshook"><strong>wins hook</strong></a>
 <p><br><li > <a href="smb.conf.5.html#winssupport"><strong>wins support</strong></a>
 <p><br><li > <a href="smb.conf.5.html#workgroup"><strong>workgroup</strong></a>
 <p><br><li > <a href="smb.conf.5.html#writeraw"><strong>write raw</strong></a>
@@ -4736,6 +4737,32 @@ Samba source distribution.
 <code>	wins server = </code>
 <p><br><strong>Example:</strong>
 <code>	wins server = 192.9.200.1</code>
+<p><br><a name="winshook"></a>
+<li><strong><strong>wins hook (G)</strong></strong>
+<p><br>When Samba is running as a WINS server this allows you to call an
+external program for all changes to the WINS database. The primary use
+for this option is to allow the dynamic update of external name
+resolution databases such as dynamic DNS.
+<p><br>The wins hook parameter specifies the name of a script or executable
+that will be called as follows:
+<p><br>wins_hook operation name nametype ttl IP_list
+<p><br>The first argument is the operation and is one of "add", "delete",
+or "refresh". In most cases the operation can be ignored as the rest
+of the parameters provide sufficient information. Note that "refresh"
+may sometimes be called when the name has not previously been added,
+in that case it should be treated as an add.
+<p><br>The second argument is the netbios name. If the name is not a legal
+name then the wins hook is not called. Legal names contain only
+letters, digits, hyphens, underscores and periods.
+<p><br>The third argument is the netbios name type as a 2 digit hexadecimal
+number. 
+<p><br>The fourth argument is the TTL (time to live) for the name in seconds.
+<p><br>The fifth and subsequent arguments are the IP addresses currently
+registered for that name. If this list is empty then the name should
+be deleted.
+<p><br>An example script that calls the BIND dynamic DNS update program
+"nsupdate" is provided in the examples directory of the Samba source
+code. 
 <p><br><a name="winssupport"></a>
 <li><strong><strong>wins support (G)</strong></strong>
 <p><br>This boolean controls if the <a href="nmbd.8.html"><strong>nmbd</strong></a> process in
