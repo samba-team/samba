@@ -134,6 +134,16 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 			 * the primary. Important in signing. JRA. */
 			cli->mid = mid;
 
+			/*
+			 * Turns out that we need to increment the
+			 * sequence number for each packet until the
+			 * last one in the signing sequence. That's
+			 * the one that matters to check signing replies. JRA.
+			 */
+
+			cli_signing_trans_stop(cli);
+			cli_signing_trans_start(cli);
+
 			show_msg(cli->outbuf);
 			if (!cli_send_smb(cli)) {
 				cli_signing_trans_stop(cli);
@@ -426,6 +436,16 @@ BOOL cli_send_nt_trans(struct cli_state *cli,
 			/* Ensure this packet has the same MID as
 			 * the primary. Important in signing. JRA. */
 			cli->mid = mid;
+
+			/*
+			 * Turns out that we need to increment the
+			 * sequence number for each packet until the
+			 * last one in the signing sequence. That's
+			 * the one that matters to check signing replies. JRA.
+			 */
+
+			cli_signing_trans_stop(cli);
+			cli_signing_trans_start(cli);
 
 			show_msg(cli->outbuf);
 
