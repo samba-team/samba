@@ -305,7 +305,7 @@ krb4encpwd_reply(ap, data, cnt)
 		realm = krb_realmofhost(hostname);
 		memmove(challenge, data, cnt);
 		memset(user_passwd, 0, sizeof(user_passwd));
-		local_des_read_pw_string(user_passwd, sizeof(user_passwd)-1, "Password: ", 0);
+		des_read_pw_string(user_passwd, sizeof(user_passwd)-1, "Password: ", 0);
 		UserPassword = user_passwd;
 		Challenge = challenge;
 		strcpy(instance, RemoteHostName);

@@ -362,7 +362,7 @@ rsaencpwd_reply(ap, data, cnt)
 		ptr += NumEncodeLengthOctets(pubkey_len);
 		memmove(pubkey, ptr, pubkey_len);
 		memset(user_passwd, 0, sizeof(user_passwd));
-		local_des_read_pw_string(user_passwd, sizeof(user_passwd)-1, "Password: ", 0);
+		des_read_pw_string(user_passwd, sizeof(user_passwd)-1, "Password: ", 0);
 		UserPassword = user_passwd;
 		Challenge = challenge;
 		r = init_rsa_encpwd(&token, user_passwd, challenge, challenge_len, pubkey);
