@@ -380,7 +380,8 @@ static int event_loop_epoll(struct event_context *ev, struct timeval *tvalp)
 	int timeout = -1;
 
 	if (tvalp) {
-		timeout = (tvalp->tv_usec / 1000) + (tvalp->tv_sec*1000);
+		/* it's better to trigger timed events a bit later than to early */
+		timeout = ((tvalp->tv_usec+999) / 1000) + (tvalp->tv_sec*1000);
 	}
 
 	ret = epoll_wait(ev->epoll_fd, events, maxevents, timeout);
