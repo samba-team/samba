@@ -3852,6 +3852,14 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 					continue;
 				}
 				
+				if (strcsequal(fname,destname)) {
+					rename_open_files(conn, sbuf1.st_dev, sbuf1.st_ino, newname);
+					DEBUG(3,("rename_internals: identical names in wildcard rename %s - success\n", fname));
+					count++;
+					error = NT_STATUS_OK;
+					continue;
+				}
+
 				if (!replace_if_exists && 
                                     vfs_file_exist(conn,destname, NULL)) {
 					DEBUG(6,("file_exist %s\n", destname));
