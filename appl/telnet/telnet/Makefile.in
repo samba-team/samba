@@ -14,7 +14,7 @@ CFLAGS = @CFLAGS@
 LD_FLAGS = @LD_FLAGS@
 LIBS = @LIBS@
 INSTALL = @INSTALL@
-MKDIRHIER = @top_srcdir@/../../mkdirhier-sh
+MKDIRHIER = @top_srcdir@/mkdirhier-sh
 
 PROGS = telnet
 
@@ -31,19 +31,18 @@ OBJECTS=authenc.o commands.o main.o network.o ring.o sys_bsd.o \
 
 libtop=@libtop@
 
-KRBLIBPATH	= @KRBLIBPATH@
-LIBKRB		= @LIBKRB@
-LIBDES		= @LIBDES@
-LIBROKEN	= @LIBROKEN@
+LIBKRB		= -L../../../lib/krb -lkrb
+LIBDES		= -L../../../lib/des -ldes
+LIBROKEN	= -L../../../lib/roken -lroken
 
-KLIB=$(KRBLIBPATH) $(LIBKRB) $(LIBDES) $(LIBROKEN)
+KLIB=$(LIBKRB) $(LIBDES) $(LIBROKEN)
 
 
 all: telnet
 
 .c.o:
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DEFS) \
-	@KRBINCPATH@ -I.. -I$(srcdir)/.. $<
+	-I../../../include -I.. -I../../.. -I$(srcdir)/.. $<
 
 telnet: $(OBJECTS)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o telnet $(OBJECTS) ../libtelnet/libtelnet.a $(KLIB) $(LIBS)

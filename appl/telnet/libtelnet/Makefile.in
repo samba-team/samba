@@ -26,7 +26,7 @@ libtop = @libtop@
 
 .c.o:
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DEFS) \
-	@KRBINCPATH@ -I.. -I$(srcdir)/.. $<
+	-I../../../include -I../../.. -I$(srcdir)/.. $<
 
 libtelnet.a: $(OBJECTS)
 	$(AR) cr libtelnet.a $(OBJECTS)

@@ -1,5 +1,3 @@
-# 
-
 srcdir		= @srcdir@
 top_srcdir	= @top_srcdir@
 VPATH		= @srcdir@

@@ -16,7 +16,7 @@ CFLAGS 	= @CFLAGS@ @SKEYINCLUDE@
 LD_FLAGS = @LD_FLAGS@
 LIBS	= @LIBS@
 SKEYLIB = @SKEYLIB@
-MKDIRHIER = @top_srcdir@/../../mkdirhier-sh
+MKDIRHIER = $(top_srcdir)/mkdirhier-sh
 
 INSTALL = @INSTALL@
 
@@ -42,7 +42,7 @@ ftpd_OBJS = ftpd.o ftpcmd.o logwtmp.o popen.o auth.o krb4.o kauth.o klogin.o
 all: ftpd
 
 .c.o:
-	$(CC) -c $(CFLAGS) -I$(srcdir) -I.. -I$(srcdir)/../common -I$(INCTOP) $(DEFS) $<
+	$(CC) -c $(CFLAGS) -I$(srcdir) -I../../.. -I$(srcdir)/../common -I$(INCTOP) $(DEFS) $<
 
 install: all
 	$(MKDIRHIER) $(prefix)/libexec

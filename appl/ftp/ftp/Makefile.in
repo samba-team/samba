@@ -14,7 +14,7 @@ DEFS 	= @DEFS@
 CFLAGS 	= @CFLAGS@
 LD_FLAGS = @LD_FLAGS@
 LIBS = @LIBS@
-MKDIRHIER = @top_srcdir@/../../mkdirhier-sh
+MKDIRHIER = $(top_srcdir)/mkdirhier-sh
 
 INSTALL = @INSTALL@
 
@@ -35,7 +35,7 @@ ftp_OBJS = cmds.o cmdtab.o ftp.o krb4.o main.o ruserpass.o domacro.o globals.o k
 all: ftp
 
 .c.o:
-	$(CC) -c $(CFLAGS) -I$(srcdir) -I.. -I$(srcdir)/../common -I$(INCTOP) $(DEFS) $<
+	$(CC) -c $(CFLAGS) -I$(srcdir) -I../../.. -I$(srcdir)/../common -I$(INCTOP) $(DEFS) $<
 
 install: all
 	$(MKDIRHIER) $(prefix)/bin

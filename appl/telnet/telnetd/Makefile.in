@@ -14,7 +14,7 @@ CFLAGS = @CFLAGS@
 LD_FLAGS = @LD_FLAGS@
 LIBS = @LIBS@
 INSTALL = @INSTALL@
-MKDIRHIER = @top_srcdir@/../../mkdirhier-sh
+MKDIRHIER = @top_srcdir@/mkdirhier-sh
 
 prefix = @prefix@
 exec_prefix = $(prefix)
@@ -33,23 +33,19 @@ OBJECTS=telnetd.o state.o termstat.o slc.o sys_term.o \
 
 libtop = @libtop@
 
-KRBLIBPATH	= @KRBLIBPATH@
-KRBINCPATH	= @KRBINCPATH@
-LIBKRB		= @LIBKRB@
-LIBDES		= @LIBDES@
-LIBKAFS		= @LIBKAFS@
-LIBROKEN	= @LIBROKEN@
+LIBKRB		= -L../../../lib/krb -lkrb
+LIBDES		= -L../../../lib/des -ldes
+LIBKAFS		= -L../../../lib/kafs -lkafs
+LIBROKEN	= -L../../../lib/roken -lroken
 
-KLIB=$(KRBLIBPATH) $(LIBKAFS) $(LIBKRB) $(LIBDES) $(LIBROKEN)
+KLIB=$(LIBKAFS) $(LIBKRB) $(LIBDES) $(LIBROKEN)
 
 
 all: telnetd
 
-$(OBJECTS): ../config.h
-
 .c.o:
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DEFS) \
-	@KRBINCPATH@ -I.. -I$(srcdir)/.. -I. -I$(srcdir) $<
+	-I../../../include -I.. -I../../.. -I$(srcdir)/.. -I. -I$(srcdir) $<
 
 telnetd: $(OBJECTS)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o telnetd $(OBJECTS) ../libtelnet/libtelnet.a $(KLIB) $(LIBS)
