@@ -4,11 +4,11 @@ include $(top_srcdir)/Makefile.am.common
 
 INCLUDES += $(INCLUDE_krb4) $(INCLUDE_des) -I$(srcdir)/../lib/krb5
 
-man_MANS = kinit.1 klist.1 kdestroy.1 kgetcred.1
+man_MANS = kinit.1 klist.1 kdestroy.1 kgetcred.1 copy_cred_cache.1
 
 bin_PROGRAMS = kinit klist kdestroy kgetcred
 
-noinst_PROGRAMS = kverify kdecode_ticket generate-requests
+noinst_PROGRAMS = kverify kdecode_ticket generate-requests copy_cred_cache
 
 kinit_LDADD = \
 	$(LIB_kafs) \
