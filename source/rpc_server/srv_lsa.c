@@ -286,7 +286,7 @@ BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name,
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
-	enum winbindd_result result;
+	enum nss_status result;
 	DOM_SID tmp_sid;
 	uint32 rid;
 	fstring sid_str;
@@ -321,7 +321,7 @@ BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name,
 
 	/* Copy out result */
 
-	if (result == WINBINDD_OK) {
+	if (result == NSS_STATUS_SUCCESS) {
 		parse_domain_user(response.data.name.name, dom_name, name);
 		*name_type = response.data.name.type;
 	} else {
@@ -335,7 +335,7 @@ BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name,
 			lookup_known_rid(&tmp_sid, rid, name, name_type);
 	}
 
-	return (result == WINBINDD_OK);
+	return (result == NSS_STATUS_SUCCESS);
 }
 
 /***************************************************************************
