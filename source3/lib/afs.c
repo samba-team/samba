@@ -142,6 +142,10 @@ BOOL afs_login(connection_struct *conn)
 	pstrcpy(afs_username, lp_afs_username_map());
 	standard_sub_conn(conn, afs_username, sizeof(afs_username));
 
+	/* The pts command always generates completely lower-case user
+	 * names. */
+	strlower_m(afs_username);
+
 	cell = strchr(afs_username, '@');
 
 	if (cell == NULL) {
@@ -152,7 +156,6 @@ BOOL afs_login(connection_struct *conn)
 
 	*cell = '\0';
 	cell += 1;
-	strlower_m(cell);
 
 	DEBUG(10, ("Trying to log into AFS for user %s@%s\n", 
 		   afs_username, cell));
