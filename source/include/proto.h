@@ -1145,6 +1145,7 @@ BOOL lp_dos_filetimes(int );
 BOOL lp_dos_filetime_resolution(int );
 BOOL lp_fake_dir_create_times(int );
 BOOL lp_blocking_locks(int );
+BOOL lp_truncate_locks(int );
 int lp_create_mode(int );
 int lp_force_create_mode(int );
 int lp_dir_mode(int );
@@ -2598,8 +2599,8 @@ int rename_internals(connection_struct *conn,
 int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
-SMB_OFF_T get_lock_count( char *data, int data_offset, BOOL large_file_format, BOOL *err);
-SMB_OFF_T get_lock_offset( char *data, int data_offset, BOOL large_file_format, BOOL *err);
+SMB_OFF_T get_lock_count( char *data, int data_offset, BOOL large_file_format, BOOL truncate_locks, BOOL *err);
+SMB_OFF_T get_lock_offset( char *data, int data_offset, BOOL large_file_format, BOOL truncate_locks, BOOL *err);
 int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
 int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
 int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
