@@ -386,7 +386,7 @@ obtain a server's SAM SID and save it in the secrets database
 
 BOOL cli_lsa_get_domain_sid(struct cli_state *cli, char *server)
 {
-	fstring domain, key;
+	fstring domain;
 	POLICY_HND pol;
 	DOM_SID sid;
 	BOOL res, res2, res3;

@@ -4110,6 +4110,7 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 idx,
 
 		DEBUG(6,("final values: [%d], [%d]\n", *out_value_len, *out_data_len));
 
+		free_a_printer(&printer, 2);
 		return NT_STATUS_NO_PROBLEMO;
 	}
 	
@@ -4120,8 +4121,11 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 idx,
 
 	if (!get_specific_param_by_index(*printer, 2, idx, value, &data, &type, &data_len)) {
 		safe_free(data);
+		free_a_printer(&printer, 2);
 		return ERROR_NO_MORE_ITEMS;
 	}
+
+	free_a_printer(&printer, 2);
 
 	/* 
 	 * the value is:
@@ -4194,6 +4198,7 @@ uint32 _spoolss_setprinterdata( const POLICY_HND *handle,
 	else
 		status = add_a_printer(*printer, 2);
 
+	free_a_printer(&printer, 2);
 	return status;
 }
 
