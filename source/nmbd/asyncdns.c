@@ -111,11 +111,7 @@ static void asyncdns_process(void)
 
 static int sig_term()
 {
-  BlockSignals(True,SIGTERM);
- 
-  DEBUG(0,("async dns child. Got SIGTERM: going down...\n"));
-
-  exit(0);
+  _exit(0);
   /* Keep compiler happy.. */
   return 0;
 }
@@ -149,7 +145,7 @@ void start_async_dns(void)
 	signal(SIGUSR2, SIG_IGN);
 	signal(SIGUSR1, SIG_IGN);
 	signal(SIGHUP, SIG_IGN);
-        signal( SIGTERM, SIGNAL_CAST sig_term );
+        signal(SIGTERM, SIGNAL_CAST sig_term );
 
 	asyncdns_process();
 }
