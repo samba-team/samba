@@ -453,7 +453,7 @@ uint32 lookup_added_alias_name(const char *als_name, const char *domain,
 	LOCAL_GRP *als = NULL;
 	(*type) = SID_NAME_ALIAS;
 
-	DEBUG(5,("lookup_added_alias_name: name: %s\%s", domain, als_name));
+	DEBUG(5,("lookup_added_alias_name: name: %s\\%s", domain, als_name));
 
 	if (!strequal(domain, global_sam_name))
 	{
