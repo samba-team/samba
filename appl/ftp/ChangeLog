@@ -11,6 +11,12 @@ Sun Nov 22 10:28:20 1998  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.in (WFLAGS): set
 
+Sat Nov 21 23:13:03 1998  Assar Westerlund  <assar@sics.se>
+
+	* ftp/security.c: some more type correctness.
+
+	* ftp/gssapi.c (gss_adat): more braces to shut up warnings
+
 Wed Nov 18 21:47:55 1998  Assar Westerlund  <assar@sics.se>
 
 	* ftp/main.c (main): new option `-p' for enable passive mode.
