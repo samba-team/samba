@@ -1659,7 +1659,7 @@ void *xmalloc(size_t size)
  Memdup with smb_panic on fail.
  *****************************************************************/  
 
-void *xmemdup(void *p, size_t size)
+void *xmemdup(const void *p, size_t size)
 {
 	void *p2;
 	p2 = xmalloc(size);
@@ -1682,7 +1682,7 @@ char *xstrdup(const char *s)
 /*****************************************************************
 like strdup but for memory
  *****************************************************************/  
-void *memdup(void *p, size_t size)
+void *memdup(const void *p, size_t size)
 {
 	void *p2;
 	if (size == 0) return NULL;
@@ -1934,7 +1934,7 @@ BOOL unix_wild_match(char *pattern, char *string)
 /*******************************************************************
  construct a data blob, must be freed with data_blob_free()
 *******************************************************************/
-DATA_BLOB data_blob(void *p, size_t length)
+DATA_BLOB data_blob(const void *p, size_t length)
 {
 	DATA_BLOB ret;
 
@@ -1956,6 +1956,16 @@ void data_blob_free(DATA_BLOB *d)
 	SAFE_FREE(d->data);
 }
 
+/*******************************************************************
+free a data blob and clear its contents
+*******************************************************************/
+void data_blob_clear_free(DATA_BLOB *d)
+{
+	if (d->data) {
+		memset((char *)&(d->data), 0, d->length);
+	}
+	data_blob_free(d);
+}
 
 #ifdef __INSURE__
 
