@@ -75,11 +75,19 @@ static void pdb_fill_default_sam(SAM_ACCOUNT *user)
 	user->private.workstations = "";
 	user->private.unknown_str = "";
 	user->private.munged_dial = "";
+
+	user->private.plaintext_pw = NULL;
+
 }	
 
 static void destroy_pdb_talloc(SAM_ACCOUNT **user) 
 {
 	if (*user) {
+		data_blob_clear_free(&((*user)->private.lm_pw));
+		data_blob_clear_free(&((*user)->private.nt_pw));
+
+		if((*user)->private.plaintext_pw!=NULL)
+			memset((*user)->private.plaintext_pw,'\0',strlen((*user)->private.plaintext_pw));
 		talloc_destroy((*user)->mem_ctx);
 		*user = NULL;
 	}
@@ -310,7 +318,8 @@ static void pdb_free_sam_contents(SAM_ACCOUNT *user)
 
 	data_blob_clear_free(&(user->private.lm_pw));
 	data_blob_clear_free(&(user->private.nt_pw));
-	data_blob_clear_free(&(user->private.plaintext_pw));
+	if (user->private.plaintext_pw!=NULL)
+		memset(user->private.plaintext_pw,'\0',strlen(user->private.plaintext_pw));
 }
 
 
