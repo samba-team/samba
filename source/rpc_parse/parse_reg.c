@@ -808,6 +808,7 @@ void reg_io_r_info(char *desc, REG_R_INFO *r_r, prs_struct *ps, int depth)
 		prs_uint32("ptr_type", ps, depth, &(r_r->ptr_type));
 
 		smb_io_buffer2("uni_type", &(r_r->uni_type), r_r->ptr_type, ps, depth);
+		prs_align(ps);
 
 		prs_uint32("ptr2", ps, depth, &(r_r->ptr2));
 
