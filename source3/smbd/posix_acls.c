@@ -2593,7 +2593,8 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 	 * Do we need to chown ?
 	 */
 
-	need_chown = (user != (uid_t)-1 && orig_uid != user || grp != (uid_t)-1 && orig_gid != grp);
+	if (((user != (uid_t)-1) && (orig_uid != user)) || (( grp != (uid_t)-1) && (orig_gid != grp)))
+		need_chown = True;
 
 	/*
 	 * Chown before setting ACL only if we don't change the user, or
