@@ -241,6 +241,8 @@ RPCCLIENT_OBJ = rpcclient/rpcclient.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
              $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ)
 
+PAM_WINBIND_OBJ = nsswitch/pam_winbind.po nsswitch/common.po
+
 SMBWRAPPER_OBJ = smbwrapper/smbw.o smbwrapper/wrapped.o \
 		smbwrapper/smbw_dir.o smbwrapper/smbw_stat.o \
 		smbwrapper/realcalls.o smbwrapper/shared.o \
@@ -296,6 +298,26 @@ NSS_OBJ = $(NSS_OBJ_0:.o=.po)
 
 PICOBJS = $(SMBWRAPPER_OBJ:.o=.po)
 PICOBJS32 = $(SMBWRAPPER_OBJ:.o=.po32)
+
+WINBINDD_OBJ1 = \
+		nsswitch/winbindd.o       \
+		nsswitch/winbindd_user.o  \
+		nsswitch/winbindd_group.o \
+		nsswitch/winbindd_idmap.o \
+		nsswitch/winbindd_util.o  \
+		nsswitch/winbindd_cache.o \
+		nsswitch/winbindd_pam.o
+
+WINBINDD_OBJ = \
+		$(WINBINDD_OBJ1) \
+		$(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(STUB_UID_OBJ) \
+		$(LIBNMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
+		$(NSSWINS_OBJ) $(SIDDB_OBJ) $(LIBSMB_OBJ)
+
+NTDOM_OBJ = nsswitch/ntdom.o nsswitch/common.o
+
+NTDOM_PICOBJS = $(NTDOM_OBJ:.o=.po)
+
 
 ######################################################################
 # now the rules...
@@ -513,7 +535,19 @@ nsswitch/libnss_wins.so: $(NSS_OBJ)
 	@echo "Linking $@"
 	@$(LD) @LDSHFLAGS@ -o $@ $(NSS_OBJ) -lc
 
-nsswitch: nsswitch/libnss_wins.so
+bin/winbindd: $(WINBINDD_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(LINK) -o $@ $(WINBINDD_OBJ) $(LIBS)
+
+nsswitch/libnss_ntdom.so: $(NTDOM_PICOBJS)
+	@echo "Linking $@"
+	@$(LINK) -shared -o $@ $(NTDOM_PICOBJS)
+
+nsswitch/pam_winbind.so: $(PAM_WINBIND_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(LINK) -shared -o $@ $(PAM_WINBIND_OBJ)
+
+nsswitch: nsswitch/libnss_wins.so nsswitch/pam_winbind.so nsswitch/libnss_ntdom.so
 
 install: installbin installman installscripts installcp installswat
 
