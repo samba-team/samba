@@ -135,9 +135,10 @@ install: build
 	# libsmbclient files are not installed by the standard
 	#	'make install' - do it manually.
 	$(MAKE) -C source installclientlib DESTDIR=$(DESTDIR)
-	mv $(DESTDIR)/usr/lib/libsmbclient.so $(DESTDIR)/usr/lib/libsmbclient.so.0.1
+	mv $(DESTDIR)/usr/lib/samba/libsmbclient.so $(DESTDIR)/usr/lib/libsmbclient.so.0.1
 	ln -s libsmbclient.so.0.1 $(DESTDIR)/usr/lib/libsmbclient.so.0
 	ln -s libsmbclient.so.0.1 $(DESTDIR)/usr/lib/libsmbclient.so
+	mv $(DESTDIR)/usr/lib/samba/libsmbclient.a $(DESTDIR)/usr/lib/libsmbclient.a
 
 	# Install other stuff not installed by "make install"
 	install -m 0755 debian/mksmbpasswd.awk $(DESTDIR)/usr/sbin/mksmbpasswd
