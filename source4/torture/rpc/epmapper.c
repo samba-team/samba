@@ -25,7 +25,7 @@
 /*
   display any protocol tower
  */
-static void display_tower(TALLOC_CTX *mem_ctx, struct epm_towers *twr)
+static void display_tower(TALLOC_CTX *mem_ctx, struct epm_tower *twr)
 {
 	int i;
 	const char *uuid;
