@@ -577,9 +577,13 @@ static int cmd_dir(void)
 	int rc;
 	
 	dir_total = 0;
-	pstrcpy(mask,cur_dir);
-	if(mask[strlen(mask)-1]!='\\')
-		pstrcat(mask,"\\");
+	if (strcmp(cur_dir, "\\") != 0) {
+		pstrcpy(mask,cur_dir);
+		if(mask[strlen(mask)-1]!='\\')
+			pstrcat(mask,"\\");
+	} else {
+		*mask = '\0';
+	}
 	
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		dos_format(p);
@@ -1769,6 +1773,38 @@ static int cmd_rename(void)
 	return 0;
 }
 
+#if 0
+ This will become a hard link call. JRA.
+/****************************************************************************
+ Rename some file using the NT call.
+****************************************************************************/
+
+static int cmd_ntrename(void)
+{
+	pstring src,dest;
+	fstring buf,buf2;
+  
+	pstrcpy(src,cur_dir);
+	pstrcpy(dest,cur_dir);
+	
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token_nr(NULL,buf2,NULL, sizeof(buf2))) {
+		d_printf("ntrename <src> <dest>\n");
+		return 1;
+	}
+
+	pstrcat(src,buf);
+	pstrcat(dest,buf2);
+
+	if (!cli_ntrename(cli, src, dest)) {
+		d_printf("%s doing an NT rename of files\n",cli_errstr(cli));
+		return 1;
+	}
+	
+	return 0;
+}
+#endif
+
 /****************************************************************************
  Toggle the prompt flag.
 ****************************************************************************/
@@ -2168,6 +2204,10 @@ static struct
   {"more",cmd_more,"<remote name> view a remote file with your pager",{COMPL_REMOTE,COMPL_NONE}},  
   {"mput",cmd_mput,"<mask> put all matching files",{COMPL_REMOTE,COMPL_NONE}},
   {"newer",cmd_newer,"<file> only mget files newer than the specified local file",{COMPL_LOCAL,COMPL_NONE}},
+#if 0
+  /* This call will eventually morph into a hard link call. JRA */
+  {"ntrename",cmd_ntrename,"<src> <dest> NT rename some files",{COMPL_REMOTE,COMPL_REMOTE}},
+#endif
   {"open",cmd_open,"<mask> open a file",{COMPL_REMOTE,COMPL_NONE}},
   {"print",cmd_print,"<file name> print a file",{COMPL_NONE,COMPL_NONE}},
   {"printmode",cmd_printmode,"<graphics or text> set the print mode",{COMPL_NONE,COMPL_NONE}},

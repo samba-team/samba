@@ -538,7 +538,7 @@ static int do_ntcreate_pipe_open(connection_struct *conn,
 	char *p = NULL;
 	NTSTATUS status;
 
-	srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), STR_TERMINATE,&status);
+	srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), 0, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status))
 		return ERROR_NT(status);
 
@@ -659,7 +659,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 
 		if(!dir_fsp->is_directory) {
 
-			srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), STR_TERMINATE,&status);
+			srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), 0, STR_TERMINATE, &status);
 			if (!NT_STATUS_IS_OK(status)) {
 				END_PROFILE(SMBntcreateX);
 				return ERROR_NT(status);
@@ -701,13 +701,13 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 			dir_name_len++;
 		}
 
-		srvstr_get_path(inbuf, &fname[dir_name_len], smb_buf(inbuf), sizeof(fname)-dir_name_len, STR_TERMINATE,&status);
+		srvstr_get_path(inbuf, &fname[dir_name_len], smb_buf(inbuf), sizeof(fname)-dir_name_len, 0, STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
 			END_PROFILE(SMBntcreateX);
 			return ERROR_NT(status);
 		}
 	} else {
-		srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), STR_TERMINATE,&status);
+		srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), 0, STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
 			END_PROFILE(SMBntcreateX);
 			return ERROR_NT(status);
@@ -1019,8 +1019,7 @@ static int do_nt_transact_create_pipe( connection_struct *conn, char *inbuf, cha
 		return ERROR_DOS(ERRDOS,ERRnoaccess);
 	}
 
-	srvstr_pull(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE);
-	status = check_path_syntax(fname);
+	srvstr_get_path(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}
@@ -1161,7 +1160,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	int smb_open_mode;
 	int smb_attr;
 	time_t c_time;
-	NTSTATUS nt_status;
+	NTSTATUS status;
 
 	DEBUG(5,("call_nt_transact_create\n"));
 
@@ -1227,11 +1226,9 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 			return ERROR_DOS(ERRDOS,ERRbadfid);
 
 		if(!dir_fsp->is_directory) {
-
-			srvstr_pull(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE);
-			nt_status = check_path_syntax(fname);
-			if (!NT_STATUS_IS_OK(nt_status)) {
-				return ERROR_NT(nt_status);
+			srvstr_get_path(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE, &status);
+			if (!NT_STATUS_IS_OK(status)) {
+				return ERROR_NT(status);
 			}
 
 			/*
@@ -1260,17 +1257,18 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 			dir_name_len++;
 		}
 
-		srvstr_pull(inbuf, &fname[dir_name_len], params+53, sizeof(fname)-dir_name_len, 
-				parameter_count-53, STR_TERMINATE);
-		nt_status = check_path_syntax(fname);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return ERROR_NT(nt_status);
+		{
+			pstring tmpname;
+			srvstr_get_path(inbuf, tmpname, params+53, sizeof(tmpname), parameter_count-53, STR_TERMINATE, &status);
+			if (!NT_STATUS_IS_OK(status)) {
+				return ERROR_NT(status);
+			}
+			pstrcat(fname, tmpname);
 		}
 	} else {
-		srvstr_pull(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE);
-		nt_status = check_path_syntax(fname);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return ERROR_NT(nt_status);
+		srvstr_get_path(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE, &status);
+		if (!NT_STATUS_IS_OK(status)) {
+			return ERROR_NT(status);
 		}
 
 		/*
@@ -1396,10 +1394,10 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	 * Now try and apply the desired SD.
 	 */
 
-	if (sd_len && !NT_STATUS_IS_OK(nt_status = set_sd( fsp, data, sd_len, ALL_SECURITY_INFORMATION))) {
+	if (sd_len && !NT_STATUS_IS_OK(status = set_sd( fsp, data, sd_len, ALL_SECURITY_INFORMATION))) {
 		close_file(fsp,False);
 		restore_case_semantics(file_attributes);
-		return ERROR_NT(nt_status);
+		return ERROR_NT(status);
 	}
 	
 	restore_case_semantics(file_attributes);
@@ -1519,17 +1517,31 @@ int reply_ntrename(connection_struct *conn,
 	pstring newname;
 	char *p;
 	NTSTATUS status;
+	uint16 attrs = SVAL(inbuf,smb_vwv0);
+	uint16 rename_type = SVAL(inbuf,smb_vwv1);
 
 	START_PROFILE(SMBntrename);
 
+	if (rename_type != RENAME_FLAG_RENAME) {
+		END_PROFILE(SMBntrename);
+		return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+	}
+
 	p = smb_buf(inbuf) + 1;
-	p += srvstr_get_path(inbuf, name, p, sizeof(name), STR_TERMINATE,&status);
+	p += srvstr_get_path(inbuf, name, p, sizeof(name), 0, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBntrename);
 		return ERROR_NT(status);
 	}
+
+	if( strchr_m(name, ':')) {
+		/* Can't rename a stream. */
+		END_PROFILE(SMBntrename);
+		return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+	}
+
 	p++;
-	p += srvstr_get_path(inbuf, newname, p, sizeof(newname), STR_TERMINATE,&status);
+	p += srvstr_get_path(inbuf, newname, p, sizeof(newname), 0, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBntrename);
 		return ERROR_NT(status);
@@ -1540,7 +1552,7 @@ int reply_ntrename(connection_struct *conn,
 	
 	DEBUG(3,("reply_ntrename : %s -> %s\n",name,newname));
 	
-	status = rename_internals(conn, name, newname, False);
+	status = rename_internals(conn, name, newname, attrs, False);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBntrename);
 		return ERROR_NT(status);
@@ -1628,14 +1640,13 @@ static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *o
 	fsp = file_fsp(params, 0);
 	replace_if_exists = (SVAL(params,2) & RENAME_REPLACE_IF_EXISTS) ? True : False;
 	CHECK_FSP(fsp, conn);
-	srvstr_pull(inbuf, new_name, params+4, sizeof(new_name), -1, STR_TERMINATE);
-	status = check_path_syntax(new_name);
+	srvstr_get_path(inbuf, new_name, params+4, sizeof(new_name), -1, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}
 
 	status = rename_internals(conn, fsp->fsp_name,
-				  new_name, replace_if_exists);
+				  new_name, 0, replace_if_exists);
 	if (!NT_STATUS_IS_OK(status))
 		return ERROR_NT(status);
 
