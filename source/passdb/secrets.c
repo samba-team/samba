@@ -106,7 +106,9 @@ BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid)
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_SID, domain);
 	strupper(key);
+
 	dos_to_unix(key);                /* Convert key to unix-codepage */
+
 	dyn_sid = (DOM_SID *)secrets_fetch(key, &size);
 
 	if (dyn_sid == NULL)

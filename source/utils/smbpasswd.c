@@ -114,10 +114,12 @@ static void set_line_buffering(FILE *f)
 static void process_options(int argc, char **argv, BOOL amroot)
 {
 	int ch;
+	DOM_SID dom_sid;
+	fstring sid_str;
 
 	user_name[0] = '\0';
 
-	while ((ch = getopt(argc, argv, "c:axdehmnj:t:r:sw:R:D:U:LS")) != EOF) {
+	while ((ch = getopt(argc, argv, "c:axdehmnj:t:r:sw:R:D:U:LSW:X:")) != EOF) {
 		switch(ch) {
 		case 'L':
 			local_mode = amroot = True;
@@ -210,6 +212,17 @@ static void process_options(int argc, char **argv, BOOL amroot)
 
 			break;
 		}
+
+		case 'X': /* Extract the SID for a domain from secrets */
+		  if (secrets_fetch_domain_sid(optarg, &dom_sid)) {
+		    sid_to_string(sid_str, &dom_sid);
+		    printf("SID for domain %s is: %s\n", optarg, sid_str);
+		  }
+		  else {
+		    fprintf(stderr, "Could not retrieve SID for domain: %s\n", optarg);
+		    exit(1);
+		  }
+		  break;
 		case 'h':
 		default:
 bad_args:
@@ -906,6 +919,7 @@ static int process_root(void)
 	/* 
 	 * get the domain sid from a PDC and store it in secrets.tdb 
 	 * Used for Samba PDC/BDC installations.
+	 * 
 	 */
 	 
 	if (local_flags & LOCAL_GET_DOM_SID) {
