@@ -96,8 +96,10 @@ extern struct sysv sysv;
 #include <sys/stream.h>
 #endif
 #ifdef __hpux
+#undef SE
 #include <sys/resource.h>
 #include <sys/proc.h>
+#undef SE
 #endif
 #include <sys/tty.h>
 #ifdef	t_erase
