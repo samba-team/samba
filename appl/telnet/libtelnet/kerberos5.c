@@ -129,7 +129,7 @@ static	krb5_authenticator authenticator;
 static	k5_Authenticator authenticator;
 
 static krb5_context context;
-static krb5_auth_context *auth_context;
+static krb5_auth_context auth_context;
 
 /* some compilers can't hack void *, so we use the Kerberos krb5_pointer,
    which is either void * or char *, depending on the compiler. */
@@ -178,13 +178,14 @@ kerberos5_init(Authenticator *ap, int server)
     return(1);
 }
 
-int
-kerberos5_send(Authenticator *ap)
+static int
+kerberos5_send(char *name, Authenticator *ap)
 {
     krb5_error_code r;
     krb5_ccache ccache;
     int ap_opts;
     
+    printf("[ Trying %s ... ]\r\n", name);
     if (!UserNameRequested) {
 	if (auth_debug_mode) {
 	    printf("Kerberos V5: no user name supplied\r\n");
@@ -213,7 +214,7 @@ kerberos5_send(Authenticator *ap)
     if (r) {
 	if (auth_debug_mode) {
 	    printf("Kerberos V5: mk_req failed (%s)\r\n",
-		   krb5_get_err_text(r));
+		   krb5_get_err_text(context, r));
 	}
 	return(0);
     }
@@ -234,14 +235,26 @@ kerberos5_send(Authenticator *ap)
     return(1);
 }
 
+int
+kerberos5_send_mutual(Authenticator *ap)
+{
+    return kerberos5_send("mutual KERBEROS5", ap);
+}
+
+int
+kerberos5_send_oneway(Authenticator *ap)
+{
+    return kerberos5_send("KERBEROS5", ap);
+}
+
 void
 kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 {
     int r;
     krb5_data outbuf;
     krb5_ticket *ticket;
-    
     krb5_keyblock *key_block;
+    char *name;
 
     if (cnt-- < 1)
 	return;
@@ -267,40 +280,41 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 		printf("%s\r\n", errbuf);
 	    return;
 	}
-#if 0
 	if ((ap->way & AUTH_HOW_MASK) == AUTH_HOW_MUTUAL) {
-	    r = krb5_mk_rep(context, auth_context, &outbuf);
+	    r = krb5_mk_rep(context, &auth_context, &outbuf);
 	    if(r){
-
+	      abort ();
 	    }
 	    Data(ap, KRB_RESPONSE, outbuf.data, outbuf.length);
 	}
-	if (krb5_unparse_name(context, ticket->enc_part2->client, &name))
+	if (krb5_unparse_name(context, ticket->enc_part2.client, &name))
 	    name = 0;
-#endif
-#if 0
 	Data(ap, KRB_ACCEPT, name, name ? -1 : 0);
 	if (auth_debug_mode) {
 	    printf("Kerberos5 identifies him as ``%s''\r\n",
 		   name ? name : "");
 	}
-#endif
 	auth_finished(ap, AUTH_USER);
 
-#if 0
 	r = krb5_auth_con_getkey(context, auth_context, &key_block);
 	if(r){
+	  abort ();
 	}
-#endif
 	
 	if(key_block->keytype == KEYTYPE_DES){
+	  Session_Key skey;
+
+	  skey.type = SK_DES;
+	  skey.length = 8;
+	  skey.data = key_block->contents.data;
+	  encrypt_session_key(&skey, 0);
+#if 0
 	    memcpy(&session_key, key_block->contents.data,
 		   sizeof(session_key));
+#endif
 	}
 
-#if 0
 	krb5_free_keyblock(context, key_block);
-#endif
 	
 	break;
 #ifdef	FORWARD
@@ -393,6 +407,22 @@ kerberos5_reply(Authenticator *ap, unsigned char *data, int cnt)
 	    }
 #endif
 	    krb5_free_ap_rep_enc_part(context, reply);
+	    {
+	      Session_Key skey;
+	      krb5_keyblock *keyblock;
+	      
+	      if (r = krb5_auth_con_getkey (context,
+					    auth_context,
+					    &keyblock)) {
+		abort ();
+	      }
+	      
+	      skey.type = SK_DES;
+	      skey.length = 8;
+	      skey.data = keyblock->contents.data;
+	      encrypt_session_key(&skey, 0);
+	      krb5_free_keyblock (context, keyblock);
+	    }
 	    mutual_complete = 1;
 	}
 	return;
@@ -418,15 +448,13 @@ kerberos5_status(Authenticator *ap, char *name, int level)
     if (level < AUTH_USER)
 	return(level);
 
-#if 0
     if (UserNameRequested &&
-	krb5_kuserok(context, authdat->ticket->enc_part2->client, UserNameRequested))
+	/*krb5_kuserok(context, authdat->ticket->enc_part2->client, UserNameRequested)*/ 1)
 	{
 	    strcpy(name, UserNameRequested);
 	    return(AUTH_VALID);
 	} else
 	    return(AUTH_USER);
-#endif
 }
 
 #define	BUMP(buf, len)		while (*(buf)) {++(buf), --(len);}
