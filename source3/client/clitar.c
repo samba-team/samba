@@ -1487,7 +1487,7 @@ int process_tar(void)
     free(tarbuf);
     
     DEBUG(0, ("tar: dumped %d tar files\n", ntarf));
-    DEBUG(0, ("Total bytes written: %llu\n", ttarf));
+    DEBUG(0, ("Total bytes written: %.0f\n", (double)ttarf));
     break;
   }
 
