@@ -1540,6 +1540,7 @@ void run_packet_queue(void)
     switch (p->packet_type)
     {
       case NMB_PACKET:
+      case NMB_SOCK_PACKET:
         if(p->packet.nmb.header.response)
           process_nmb_response(p);
         else
@@ -1547,6 +1548,7 @@ void run_packet_queue(void)
         break;
 
       case DGRAM_PACKET:
+      case DGRAM_SOCK_PACKET:
         process_dgram(p);
         break;
     }

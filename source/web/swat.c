@@ -225,7 +225,8 @@ static void show_parameter(int snum, struct parm_struct *parm)
 		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.selectedIndex=\'%d\'\">",
 			make_parm_name(parm->label),enum_index((int)(parm->def.ivalue),parm->enum_list));
 		break;
-	case P_SEP:
+
+	default:
 		break;
 	}
 	printf("</td></tr>\n");
@@ -282,7 +283,8 @@ static void show_parameters(int snum, int allparameters, int advanced, int print
 				case P_ENUM:
 					if (*(int *)ptr == (int)(parm->def.ivalue)) continue;
 					break;
-				case P_SEP:
+
+				default:
 					continue;
 				}
 			}

@@ -148,7 +148,7 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
       if (argc == 3) {
 	cname = argv[optind];
 	caddr = argv[optind+1];
-      } else if (argc == 4) {
+      } else {
 	cname = argv[optind+1];
 	caddr = argv[optind+2];
       }

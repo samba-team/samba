@@ -1944,7 +1944,7 @@ static BOOL handle_vfs_option(char *pszParmValue, char **ptr)
     }
 
     while(isspace(*new_option->name)) {
-	*new_option->name++;
+	new_option->name++;
     }
 
     for (i = strlen(new_option->name); i > 0; i--) {
@@ -1959,7 +1959,7 @@ static BOOL handle_vfs_option(char *pszParmValue, char **ptr)
     if (new_option->value != NULL) {
 
 	while(isspace(*new_option->value)) {
-	    *new_option->value++;
+	    new_option->value++;
 	}
 	
 	for (i = strlen(new_option->value); i > 0; i--) {
@@ -2211,7 +2211,8 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
 		     }
 	     }
 	     break;
-     case P_SEP:
+
+     default:
 	     break;
      }
 
@@ -2281,7 +2282,8 @@ static void print_parameter(struct parm_struct *p,void *ptr, FILE *f)
 		if (*(char **)ptr)
 			fprintf(f,"%s",*(char **)ptr);
 		break;
-	case P_SEP:
+
+	default:
 		break;
 	}
 }
@@ -2322,7 +2324,8 @@ static BOOL equal_parameter(parm_type type,void *ptr1,void *ptr2)
 	if (p2 && !*p2) p2 = NULL;
 	return(p1==p2 || strequal(p1,p2));
       }
-     case P_SEP:
+
+     default:
 	     break;
     }
   return(False);
@@ -2402,7 +2405,7 @@ static BOOL is_default(int i)
 	case P_OCTAL:
 	case P_ENUM:
 		return parm_table[i].def.ivalue == *(int *)parm_table[i].ptr;
-	case P_SEP:
+	default:
 		break;
 	}
 	return False;
@@ -2650,7 +2653,7 @@ static void lp_save_defaults(void)
 		case P_ENUM:
 			parm_table[i].def.ivalue = *(int *)parm_table[i].ptr;
 			break;
-		case P_SEP:
+		default:
 			break;
 		}
 	}

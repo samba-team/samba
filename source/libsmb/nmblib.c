@@ -605,9 +605,11 @@ static struct packet_struct *copy_dgram_packet(struct packet_struct *packet)
   ******************************************************************/
 struct packet_struct *copy_packet(struct packet_struct *packet)
 {  
-  if(packet->packet_type == NMB_PACKET)
+  if((packet->packet_type == NMB_PACKET) 
+       || (packet->packet_type == NMB_SOCK_PACKET))
     return copy_nmb_packet(packet);
-  else if (packet->packet_type == DGRAM_PACKET)
+  else if ((packet->packet_type == DGRAM_PACKET)
+       || (packet->packet_type == DGRAM_SOCK_PACKET))
     return copy_dgram_packet(packet);
   return NULL;
 }
@@ -637,9 +639,11 @@ void free_packet(struct packet_struct *packet)
 {  
   if (packet->locked) 
     return;
-  if (packet->packet_type == NMB_PACKET)
+  if ((packet->packet_type == NMB_PACKET)
+       || (packet->packet_type == NMB_SOCK_PACKET))
     free_nmb_packet(&packet->packet.nmb);
-  else if (packet->packet_type == DGRAM_PACKET)
+  else if ((packet->packet_type == DGRAM_PACKET)
+       || (packet->packet_type == DGRAM_SOCK_PACKET))
     free_dgram_packet(&packet->packet.dgram);
   free(packet);
 }
