@@ -34,7 +34,9 @@
 #define PAM_AUTHTOK_RECOVER_ERR PAM_AUTHTOK_RECOVERY_ERR
 #endif
 
+#ifdef HAVE_SECURITY_PAM_MODULES_H
 #include <security/pam_modules.h>
+#endif
 
 #ifdef HAVE_SECURITY__PAM_MACROS_H
 #include <security/_pam_macros.h>
