@@ -206,7 +206,7 @@ destination, otherwise not. Either of the min and max valued may be
 omitted, in this case min is assumed to be zero, and max is assumed to be
 infinity.  If you don't include a dash, both min and max gets set to the
 specified value. If no range is specified, all messages gets logged.
-.Sh EXAMPLE
+.Sh EXAMPLES
 .Bd -literal -offset indent
 [logging]
 	kdc = 0/FILE:/var/log/kdc.log
@@ -223,6 +223,9 @@ other messages will be logged to syslog with priority
 and facility
 .Li LOG_USER .
 All other programs will log all messages to their stderr.
+.Sh SEE ALSO
+.Xr syslog 3 ,
+.Xr krb5.conf 5
 .Sh BUGS
 These functions use
 .Fn asprintf
@@ -237,6 +240,3 @@ thread-safe, depending on the implementation of
 .Fn openlog ,
 and
 .Fn syslog .
-.Sh SEE ALSO
-.Xr syslog 3 ,
-.Xr krb5.conf 5
