@@ -130,8 +130,8 @@ if test x$with_krb5_support != x"no"; then
 
 	#################################################
 	# check for krb5-config from recent MIT and Heimdal kerberos 5
-	AC_PATH_PROG(KRB5_CONFIG, $krb5_withval/krb5-config)
-	AC_MSG_CHECKING(for working $krb5_withval/krb5-config)
+	KRB5_CONFIG="$krb5_withval/bin/krb5-config"
+	AC_MSG_CHECKING(for working $krb5_withval/bin/krb5-config)
 	if test -x "$KRB5_CONFIG"; then
 		ac_save_CFLAGS=$CFLAGS
 		CFLAGS="";export CFLAGS
