@@ -22,13 +22,12 @@
 
 #include "includes.h"
 
-typedef const struct
-{
+struct werror_code_struct {
 	const char *dos_errstr;
 	WERROR werror;
-} werror_code_struct;
+};
 
-werror_code_struct dos_errs[] =
+static const struct werror_code_struct dos_errs[] =
 {
 	{ "WERR_OK", WERR_OK },
 	{ "WERR_BADFILE", WERR_BADFILE },
@@ -79,14 +78,14 @@ const char *win_errstr(WERROR werror)
         static pstring msg;
         int idx = 0;
 
-	slprintf(msg, sizeof(msg), "DOS code 0x%08x", W_ERROR_V(werror));
-
 	while (dos_errs[idx].dos_errstr != NULL) {
 		if (W_ERROR_V(dos_errs[idx].werror) == 
                     W_ERROR_V(werror))
                         return dos_errs[idx].dos_errstr;
 		idx++;
 	}
+
+	slprintf(msg, sizeof(msg), "DOS code 0x%08x", W_ERROR_V(werror));
 
         return msg;
 }
