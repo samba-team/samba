@@ -50,6 +50,7 @@ extern char *InBuffer;
 extern char *OutBuffer;
 extern int smb_read_error;
 extern VOLATILE SIG_ATOMIC_T reload_after_sighup;
+extern VOLATILE SIG_ATOMIC_T got_sig_term;
 extern BOOL global_machine_password_needs_changing;
 extern fstring global_myworkgroup;
 extern pstring global_myname;
@@ -121,6 +122,10 @@ static void async_processing(fd_set *fds, char *buffer, int buffer_len)
 		process_local_message(buffer, buffer_len);
 	}
 
+	if (got_sig_term) {
+		exit_server("Caught TERM signal");
+	}
+
 	/* check for async change notify events */
 	process_pending_change_notify_queue(0);
 
@@ -129,7 +134,7 @@ static void async_processing(fd_set *fds, char *buffer, int buffer_len)
 		unbecome_user();
 		DEBUG(1,("Reloading services after SIGHUP\n"));
 		reload_services(False);
-		reload_after_sighup = False;
+		reload_after_sighup = 0;
 	}
 }
 

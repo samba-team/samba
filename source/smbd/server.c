@@ -64,12 +64,27 @@ void smbd_set_server_fd(int fd)
 }
 
 /****************************************************************************
-  when exiting, take the whole family
+ Terminate signal.
 ****************************************************************************/
-static void *dflt_sig(void)
+
+VOLATILE sig_atomic_t got_sig_term = 0;
+
+static void sig_term(void)
 {
-	exit_server("caught signal");
-	return NULL;
+	got_sig_term = 1;
+	sys_select_signal();
+}
+
+/****************************************************************************
+ Catch a sighup.
+****************************************************************************/
+
+VOLATILE sig_atomic_t reload_after_sighup = 0;
+
+static void sig_hup(int sig)
+{
+	reload_after_sighup = 1;
+	sys_select_signal();
 }
 
 /****************************************************************************
@@ -208,14 +223,17 @@ max can be %d\n",
 		num = sys_select(FD_SETSIZE,&lfds,NULL);
 		
 		if (num == -1 && errno == EINTR) {
-			extern VOLATILE SIG_ATOMIC_T reload_after_sighup;
+
+			if (got_sig_term) {
+				exit_server("Caught TERM signal");
+			}
 
 			/* check for sighup processing */
 			if (reload_after_sighup) {
 				unbecome_user();
 				DEBUG(1,("Reloading services after SIGHUP\n"));
 				reload_services(False);
-				reload_after_sighup = False;
+				reload_after_sighup = 0;
 			}
 
 			continue;
@@ -352,26 +370,6 @@ BOOL reload_services(BOOL test)
 
 	return(ret);
 }
-
-
-
-/****************************************************************************
- Catch a sighup.
-****************************************************************************/
-
-VOLATILE SIG_ATOMIC_T reload_after_sighup = False;
-
-static void sig_hup(int sig)
-{
-	BlockSignals(True,SIGHUP);
-	DEBUG(0,("Got SIGHUP\n"));
-
-	sys_select_signal();
-	reload_after_sighup = True;
-	BlockSignals(False,SIGHUP);
-}
-
-
 
 #if DUMP_CORE
 /*******************************************************************
@@ -654,7 +652,8 @@ static void usage(char *pname)
 	gain_root_group_privilege();
 
 	fault_setup((void (*)(void *))exit_server);
-	CatchSignal(SIGTERM , SIGNAL_CAST dflt_sig);
+	CatchSignal(SIGTERM , SIGNAL_CAST sig_term);
+	CatchSignal(SIGHUP,SIGNAL_CAST sig_hup);
 
 	/* we are never interested in SIGPIPE */
 	BlockSignals(True,SIGPIPE);
@@ -673,6 +672,7 @@ static void usage(char *pname)
 	 * these signals masked, we will have problems, as we won't recieve them. */
 	BlockSignals(False, SIGHUP);
 	BlockSignals(False, SIGUSR1);
+	BlockSignals(False, SIGTERM);
 
 	/* we want total control over the permissions on created files,
 	   so set our umask to 0 */
