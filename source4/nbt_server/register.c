@@ -76,19 +76,24 @@ static void name_refresh_handler(struct event_context *ev, struct timed_event *t
 {
 	struct nbt_iface_name *iname = talloc_get_type(private, struct nbt_iface_name);
 	struct nbt_interface *iface = iname->iface;
-	struct nbt_name_refresh io;
+	struct nbt_name_register io;
 	struct nbt_name_request *req;
 
-	/* setup a name refresh request */
+	/* setup a single name register request. Notice that we don't
+	   use a name refresh request, as Windows and Samba3 do not
+	   defend against broadcast name refresh packets. So for this
+	   to be of any use at all, we need to refresh using name
+	   registration packets */
 	io.in.name            = iname->name;
 	io.in.dest_addr       = iface->bcast_address;
 	io.in.address         = iface->ip_address;
 	io.in.nb_flags        = iname->nb_flags;
 	io.in.ttl             = iname->ttl;
+	io.in.register_demand = False;
 	io.in.broadcast       = True;
 	io.in.timeout         = 3;
 
-	req = nbt_name_refresh_send(iface->nbtsock, &io);
+	req = nbt_name_register_send(iface->nbtsock, &io);
 	if (req == NULL) return;
 
 	req->async.fn = refresh_completion_handler;
@@ -108,7 +113,7 @@ static void nbtd_start_refresh_timer(struct nbt_iface_name *iname)
 	
 	event_add_timed(iname->iface->nbtsrv->task->event_ctx, 
 			iname, 
-			timeval_current_ofs(refresh_time, 0),
+			timeval_add(&iname->registration_time, refresh_time, 0),
 			name_refresh_handler, iname);
 }
 
