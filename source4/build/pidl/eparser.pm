@@ -369,7 +369,6 @@ sub ParseHeader($$)
 sub ParseEnum($)
 {
     my ($e) = shift;
-    print Dumper($e);
 
     pidl "static const value_string $e->{PARENT}{NAME}_vals[] =\n";
     pidl "{\n";
