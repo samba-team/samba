@@ -42,7 +42,7 @@ endif
 
 
 lib_LTLIBRARIES = libhdb.la $(ldap_so)
-libhdb_la_LDFLAGS = -version-info 7:5:0
+libhdb_la_LDFLAGS = -version-info 8:0:1
 
 hdb_source =					\
 	common.c				\
