@@ -53,7 +53,8 @@ NTSTATUS dcesrv_crypto_select_type(struct dcesrv_connection *dce_conn,
 		return status;
 	}
 
-	status = gensec_start_mech_by_authtype(auth->gensec_security, auth->auth_info->auth_type);
+	status = gensec_start_mech_by_authtype(auth->gensec_security, auth->auth_info->auth_type, 
+					       auth->auth_info->auth_level);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start GENSEC mech-specific server code (%d): %s\n", 

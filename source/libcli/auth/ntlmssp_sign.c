@@ -178,6 +178,11 @@ NTSTATUS ntlmssp_sign_packet(struct ntlmssp_state *ntlmssp_state,
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 
+	if (!ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN) {
+		DEBUG(3, ("NTLMSSP Signing not negotiated - cannot sign packet!\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	nt_status = ntlmssp_make_packet_signature(ntlmssp_state, sig_mem_ctx, 
 						  data, length, NTLMSSP_SEND, sig);
 
@@ -266,6 +271,11 @@ NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
 	if (!ntlmssp_state->session_key.length) {
 		DEBUG(3, ("NO session key, cannot seal packet\n"));
 		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	if (!ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
+		DEBUG(3, ("NTLMSSP Sealing not negotiated - cannot seal packet!\n"));
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	DEBUG(10,("ntlmssp_seal_data: seal\n"));

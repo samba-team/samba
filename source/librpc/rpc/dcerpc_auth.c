@@ -44,7 +44,7 @@ NTSTATUS dcerpc_bind_auth_none(struct dcerpc_pipe *p,
 	return status;
 }
 
-NTSTATUS dcerpc_bind_auth3(struct dcerpc_pipe *p, uint8_t auth_type,
+NTSTATUS dcerpc_bind_auth3(struct dcerpc_pipe *p, uint8_t auth_type, uint8_t auth_level,
 			  const char *uuid, uint_t version)
 {
 	NTSTATUS status;
@@ -63,7 +63,7 @@ NTSTATUS dcerpc_bind_auth3(struct dcerpc_pipe *p, uint8_t auth_type,
 			return status;
 		}
 
-		status = gensec_start_mech_by_authtype(p->security_state.generic_state, auth_type);
+		status = gensec_start_mech_by_authtype(p->security_state.generic_state, auth_type, auth_level);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -77,18 +77,11 @@ NTSTATUS dcerpc_bind_auth3(struct dcerpc_pipe *p, uint8_t auth_type,
 	}
 
 	p->security_state.auth_info->auth_type = auth_type;
+	p->security_state.auth_info->auth_level = auth_level;
 	p->security_state.auth_info->auth_pad_length = 0;
 	p->security_state.auth_info->auth_reserved = 0;
 	p->security_state.auth_info->auth_context_id = random();
 	p->security_state.auth_info->credentials = null_data_blob;
-
-	if (p->flags & DCERPC_SEAL) {
-		p->security_state.auth_info->auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
-	} else if (p->flags & DCERPC_SIGN) {
-		p->security_state.auth_info->auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
-	} else {
-		p->security_state.auth_info->auth_level = DCERPC_AUTH_LEVEL_NONE;
-	}
 
 	status = gensec_update(p->security_state.generic_state, mem_ctx,
 			       null_data_blob,
@@ -126,7 +119,7 @@ done:
 	return status;
 }
 
-NTSTATUS dcerpc_bind_alter(struct dcerpc_pipe *p, uint8_t auth_type,
+NTSTATUS dcerpc_bind_alter(struct dcerpc_pipe *p, uint8_t auth_type, uint8_t auth_level,
 			  const char *uuid, uint_t version)
 {
 	NTSTATUS status;
@@ -145,7 +138,8 @@ NTSTATUS dcerpc_bind_alter(struct dcerpc_pipe *p, uint8_t auth_type,
 			return status;
 		}
 
-		status = gensec_start_mech_by_authtype(p->security_state.generic_state, auth_type);
+		status = gensec_start_mech_by_authtype(p->security_state.generic_state, 
+						       auth_type, auth_level);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -159,18 +153,11 @@ NTSTATUS dcerpc_bind_alter(struct dcerpc_pipe *p, uint8_t auth_type,
 	}
 
 	p->security_state.auth_info->auth_type = auth_type;
+	p->security_state.auth_info->auth_level = auth_level;
 	p->security_state.auth_info->auth_pad_length = 0;
 	p->security_state.auth_info->auth_reserved = 0;
 	p->security_state.auth_info->auth_context_id = random();
 	p->security_state.auth_info->credentials = null_data_blob;
-
-	if (p->flags & DCERPC_SEAL) {
-		p->security_state.auth_info->auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
-	} else if (p->flags & DCERPC_SIGN) {
-		p->security_state.auth_info->auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
-	} else {
-		p->security_state.auth_info->auth_level = DCERPC_AUTH_LEVEL_NONE;
-	}
 
 	status = gensec_update(p->security_state.generic_state, mem_ctx,
 			       null_data_blob,

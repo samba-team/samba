@@ -67,14 +67,14 @@ NTSTATUS dcerpc_bind_auth_spnego(struct dcerpc_pipe *p,
 		return status;
 	}
 
-	status = gensec_start_mech_by_authtype(p->security_state.generic_state, DCERPC_AUTH_TYPE_SPNEGO);
+	status = gensec_start_mech_by_authtype(p->security_state.generic_state, DCERPC_AUTH_TYPE_SPNEGO, dcerpc_auth_level(p));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start set GENSEC client SPNEGO mechanism: %s\n",
 			  nt_errstr(status)));
 		return status;
 	}
 	
-	status = dcerpc_bind_alter(p, DCERPC_AUTH_TYPE_SPNEGO,
+	status = dcerpc_bind_alter(p, DCERPC_AUTH_TYPE_SPNEGO, dcerpc_auth_level(p),
 				  uuid, version);
 
 	if (!NT_STATUS_IS_OK(status)) {
