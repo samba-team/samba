@@ -97,11 +97,12 @@ krb5_sendauth(krb5_context context,
   if (ret)
     return ret;
 
-  len = htonl(ap_req.length);
-  if (krb5_net_write (context, fd, &len, 4) != 4
-      || krb5_net_write (context, fd,
-			 ap_req.data, ap_req.length) != ap_req.length)
-    return errno;
+  ret = krb5_write_message (context,
+			    p_fd,
+			    &ap_req);
+  if (ret)
+      return ret;
+
   krb5_data_free (&ap_req);
 
   if (krb5_net_read (context, fd, &len, 4) != 4)
@@ -114,17 +115,12 @@ krb5_sendauth(krb5_context context,
     krb5_data ap_rep;
     krb5_ap_rep_enc_part *ignore;
 
-    if (krb5_net_read (context, fd, &len, 4) != 4)
-      return errno;
-
-    len = ntohl(len);
-    ap_rep.length = len;
-    ap_rep.data = malloc (len);
-    if (ap_rep.data == NULL)
-      return ENOMEM;
-
-    if (krb5_net_read (context, fd, ap_rep.data, len) != len)
-      return errno;
+    krb5_data_zero (&ap_rep);
+    ret = krb5_read_message (context,
+			     p_fd,
+			     &ap_rep);
+    if (ret)
+	return ret;
 
     ret = krb5_rd_rep (context, *auth_context, &ap_rep,
 		       rep_result ? rep_result : &ignore);

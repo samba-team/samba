@@ -66,17 +66,10 @@ krb5_recvauth(krb5_context context,
   if (krb5_net_write (context, fd, &repl, 1) != 1)
     return errno;
 
-  if (krb5_net_read (context, fd, &len, 4) != 4)
-    return errno;
-
-  len = ntohl(len);
-  data.length = len;
-  data.data = malloc (len);
-  if (data.data == NULL)
-    return ENOMEM;
-
-  if (krb5_net_read (context, fd, data.data, len) != len)
-    return errno;
+  krb5_data_zero (&data);
+  ret = krb5_read_message (context, p_fd, &data);
+  if (ret)
+      return ret;
 
   ret = krb5_rd_req (context,
 		     auth_context,
@@ -98,10 +91,9 @@ krb5_recvauth(krb5_context context,
     if (ret)
       return ret;
 
-    len = htonl(data.length);
-    if (krb5_net_write (context, fd, &len, 4) != 4
-	|| krb5_net_write (context, fd, data.data, data.length) != data.length)
-      return errno;
+    ret = krb5_write_message (context, p_fd, &data);
+    if (ret)
+	return ret;
     krb5_data_free (&data);
   }
   return 0;
