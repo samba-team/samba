@@ -13,6 +13,7 @@ start a secure remote xterm
 .Op Fl k
 .Op Fl r Ar rsh_args
 .Op Fl x Ar xterm_args
+.Op Fl w Ar term_emulator
 .Ar host
 .Op Ar port
 .Sh DESCRIPTION
@@ -44,6 +45,10 @@ Send
 .Ar xterm_args
 as arguments to
 .Nm xterm
+.It Fl w
+Use
+.Ar term_emulator
+instead of xterm.
 .El
 .Sh EXAMPLE
 To login from host
