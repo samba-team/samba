@@ -5,9 +5,12 @@ This is the latest stable release of Samba. This is the
 version that all production Samba servers should be running
 for all current bug-fixes.
 
-Two new paramters added - these are :
+New Parameters
+--------------
 
-In the [global] section :
+Two new paramters were added - these are :
+
+In the [global] section of smb.conf :
 
 networkstation user login
 
@@ -19,7 +22,7 @@ security option - it must only be turned off after checks have been
 made to ensure that your NT password server does not suffer from the
 bug this code was meant to protect against !
 
-In the services section :
+In the [global] or services section of smb.conf :
 
 dos filetime resolution
 
