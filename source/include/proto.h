@@ -1561,6 +1561,13 @@ BOOL pdb_rid_is_user(uint32 rid);
 BOOL lookup_local_rid(uint32 rid, char *name, uint8 *psid_name_use);
 BOOL lookup_local_name(char *domain, char *user, DOM_SID *psid, uint8 *psid_name_use);
 
+/*The following definitions come from  passdb/secrets.c  */
+
+BOOL secrets_init(void);
+void *secrets_fetch(char *key, size_t *size);
+BOOL secrets_store(char *key, void *data, size_t size);
+BOOL secrets_delete(char *key);
+
 /*The following definitions come from  passdb/smbpass.c  */
 
 char *format_new_smbpasswd_entry(struct smb_passwd *newpwd);
@@ -1577,12 +1584,9 @@ BOOL local_password_change(char *user_name, int local_flags,
 
 BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth);
 BOOL pw_file_unlock(int fd, int *plock_depth);
-BOOL trust_password_lock( char *domain, char *name, BOOL update);
-BOOL trust_password_unlock(void);
-BOOL trust_password_delete( char *domain, char *name );
-BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_time);
-BOOL set_trust_account_password( unsigned char *md4_new_pwd);
-BOOL trust_get_passwd( unsigned char trust_passwd[16], char *domain, char *myname);
+BOOL trust_password_delete(char *domain);
+BOOL get_trust_account_password(char *domain, unsigned char *ret_pwd, time_t *pass_last_set_time);
+BOOL set_trust_account_password(char *domain, unsigned char *md4_new_pwd);
 
 /*The following definitions come from  printing/load.c  */
 

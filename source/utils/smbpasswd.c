@@ -97,22 +97,12 @@ static int join_domain(char *domain, char *remote)
 	}
 
 	/*
-	 * Create the machine account password file.
-	 */
-	if(!trust_password_lock( domain, global_myname, True)) {
-		fprintf(stderr, "Unable to open the machine account password file for \
-machine %s in domain %s.\n", global_myname, domain); 
-		return 1;
-	}
-
-	/*
 	 * Write the old machine account password.
 	 */
 	
-	if(!set_trust_account_password( orig_trust_passwd_hash)) {              
+	if(!set_trust_account_password(domain,  orig_trust_passwd_hash)) {              
 		fprintf(stderr, "Unable to write the machine account password for \
 machine %s in domain %s.\n", global_myname, domain);
-		trust_password_unlock();
 		return 1;
 	}
 	
@@ -127,15 +117,13 @@ machine %s in domain %s.\n", global_myname, domain);
 	if(!*remote_machine) {
 		fprintf(stderr, "No password server list given in smb.conf - \
 unable to join domain.\n");
-		trust_password_unlock();
 		return 1;
 	}
 
 	ret = change_trust_account_password( domain, remote_machine);
-	trust_password_unlock();
 	
 	if(!ret) {
-		trust_password_delete( domain, global_myname);
+		trust_password_delete(domain);
 		fprintf(stderr,"Unable to join domain %s.\n",domain);
 	} else {
 		printf("Joined domain %s.\n",domain);
@@ -579,6 +567,7 @@ int main(int argc, char **argv)
 	codepage_initialise(lp_client_code_page());
 
 	load_interfaces();
+	secrets_init();
 
 	/* Check the effective uid - make sure we are not setuid */
 	if ((geteuid() == (uid_t)0) && (getuid() != (uid_t)0)) {

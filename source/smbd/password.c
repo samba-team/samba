@@ -1435,7 +1435,7 @@ BOOL domain_client_validate( char *user, char *domain,
   /*
    * Get the machine account password.
    */
-  if (!trust_get_passwd( trust_passwd, global_myworkgroup, global_myname))
+  if (!get_trust_account_password(domain, trust_passwd, NULL))
   {
     return False;
   }
