@@ -109,7 +109,7 @@ static struct encryption_type em [] = {
     { ETYPE_DES3_CBC_MD5, 8, 8, DES3_encrypt_null_ivec, 
       KEYTYPE_DES3, CKSUMTYPE_RSA_MD5, "des3-cbc-md5" },
     { ETYPE_DES3_CBC_SHA1, 8, 8, DES3_encrypt_null_ivec, 
-      KEYTYPE_DES3, CKSUMTYPE_HMAC_SHA1_DES3, "des3-cbc-sha1" },
+      KEYTYPE_DES3, CKSUMTYPE_SHA1, "des3-cbc-sha1" },
     { ETYPE_NULL, 1, 0, NULL_encrypt, KEYTYPE_NULL, CKSUMTYPE_NONE, "null" },
 };
 
