@@ -1752,6 +1752,40 @@ static void process_command_string(char *cmd)
 	}
 }	
 
+/****************************************************************************
+handle completion of commands for readline
+****************************************************************************/
+static char **completion_fn(char *text, int start, int end)
+{
+#define MAX_COMPLETIONS 100
+	char **matches;
+	int i, count=0;
+
+	/* for words not at the start of the line fallback to filename completion */
+	if (start) return NULL;
+
+	matches = (char **)malloc(sizeof(matches[0])*MAX_COMPLETIONS);
+	if (!matches) return NULL;
+
+	matches[count++] = strdup(text);
+	if (!matches[0]) return NULL;
+
+	for (i=0;commands[i].fn && count < MAX_COMPLETIONS-1;i++) {
+		if (strncmp(text, commands[i].name, strlen(text)) == 0) {
+			matches[count] = strdup(commands[i].name);
+			if (!matches[count]) return NULL;
+			count++;
+		}
+	}
+
+	if (count == 2) {
+		free(matches[0]);
+		matches[0] = strdup(matches[1]);
+	}
+	matches[count] = NULL;
+	return matches;
+}
+
 
 /****************************************************************************
 make sure we swallow keepalives during idle time
@@ -1805,7 +1839,7 @@ static void process_stdin(void)
 		
 		/* display a prompt */
 		slprintf(prompt, sizeof(prompt), "smb: %s> ", cur_dir);
-		line = smb_readline(prompt, readline_callback);
+		line = smb_readline(prompt, readline_callback, completion_fn);
 
 		if (!line) break;
 
