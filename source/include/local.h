@@ -58,9 +58,6 @@
 #define MAX_OPEN_FILES 10000
 #endif
  
-/* the max number of simultanous connections to the server by all clients */
-#define MAXSTATUS 100000
-
 #define WORDMAX 0xFFFF
 
 /* the maximum password length before we declare a likely attack */

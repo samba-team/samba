@@ -444,7 +444,7 @@ void exit_server(char *reason)
 
 	/* delete our entry in the connections database. */
 	if (lp_status(-1)) {
-		yield_connection(NULL,"",MAXSTATUS);
+		yield_connection(NULL,"");
 	}
 
     respond_to_all_remaining_local_messages();
@@ -751,7 +751,7 @@ static void usage(char *pname)
 
 	/* Setup the main smbd so that we can get messages. */
 	if (lp_status(-1)) {
-		claim_connection(NULL,"",MAXSTATUS,True);
+		claim_connection(NULL,"",0,True);
 	}
 
 	/* Attempt to migrate from an old 2.0.x machine account file. */

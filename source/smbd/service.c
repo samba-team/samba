@@ -518,9 +518,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	
 	if (!become_user(conn, conn->vuid)) {
 		DEBUG(0,("Can't become connected user!\n"));
-		yield_connection(conn,
-				 lp_servicename(SNUM(conn)),
-				 lp_max_connections(SNUM(conn)));
+		yield_connection(conn, lp_servicename(SNUM(conn)));
 		conn_free(conn);
 		*ecode = ERRbadpw;
 		return NULL;
@@ -530,9 +528,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		DEBUG(0,("Can't change directory to %s (%s)\n",
 			 conn->connectpath,strerror(errno)));
 		unbecome_user();
-		yield_connection(conn,
-				 lp_servicename(SNUM(conn)),
-				 lp_max_connections(SNUM(conn)));
+		yield_connection(conn, lp_servicename(SNUM(conn)));
 		conn_free(conn);
 		*ecode = ERRnosuchshare;
 		return NULL;
@@ -622,9 +618,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	    
 	}
 
-	yield_connection(conn,
-			 lp_servicename(SNUM(conn)),
-			 lp_max_connections(SNUM(conn)));
+	yield_connection(conn, lp_servicename(SNUM(conn)));
 
 	file_close_conn(conn);
 	dptr_closecnum(conn);
