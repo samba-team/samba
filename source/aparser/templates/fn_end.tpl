@@ -1,8 +1,6 @@
 
 end:
-	/* the parse is OK, just align and end */
-	if (!prs_align(ps)) goto fail;
-
+	/* the parse is OK */
 	return True;
 
 fail:

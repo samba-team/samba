@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
 	}
 	fstat(fd, &st);
 
-	prs_init(&ps, 0, 4, MARSHALL);
+	prs_init(&ps, 0, MARSHALL);
 	ps.is_dynamic=True;
 	prs_read(&ps, fd, st.st_size, 0);
 	ps.data_offset = 0;	

@@ -48,7 +48,6 @@ typedef struct _prs_struct
 	 * always little-endian.
 	 */ 
 	BOOL bigendian_data;
-	uint8 align; /* data alignment */
 	BOOL is_dynamic; /* Do we own this memory or not ? */
 	uint32 data_offset; /* Current working offset into data. */
 	uint32 buffer_size; /* Current size of the buffer. */
@@ -58,9 +57,9 @@ typedef struct _prs_struct
 
 
 char *prs_mem_get(prs_struct *ps, uint32 extra_size);
-BOOL prs_init(prs_struct *ps, uint32 size, uint8 align, BOOL io);
+BOOL prs_init(prs_struct *ps, uint32 size, BOOL io);
 void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name);
-BOOL prs_align(prs_struct *ps);
+BOOL prs_align(prs_struct *ps, int align);
 void print_asc(int level, unsigned char *buf,int len);
 BOOL prs_read(prs_struct *ps, int fd, size_t len, int timeout);
 void dump_data(int level,char *buf1,int len);
