@@ -94,7 +94,8 @@ process_request(krb5_context context,
 		unsigned char *buf, 
 		size_t len, 
 		krb5_data *reply,
-		const char *from)
+		const char *from,
+		struct sockaddr *addr)
 {
     KDC_REQ req;
     krb5_error_code err;
@@ -110,6 +111,11 @@ process_request(krb5_context context,
 	free_TGS_REQ(&req);
 	return err;
     }
+#ifdef KRB4
+    else if(maybe_version4(buf, len))
+	do_version4(context, buf, len, reply, from, (struct sockaddr_in*)addr);
+#endif
+			  
     return -1;
 }
 
@@ -125,7 +131,7 @@ do_request(krb5_context context, void *buf, size_t len,
 	strcpy(addr, inet_ntoa(((struct sockaddr_in*)from)->sin_addr));
     
     reply.length = 0;
-    ret = process_request(context, buf, len, &reply, addr);
+    ret = process_request(context, buf, len, &reply, addr, from);
     if(reply.length){
 	kdc_log(5, "sending %d bytes to %s", reply.length, addr);
 	sendto(socket, reply.data, reply.length, 0, from, from_len);
