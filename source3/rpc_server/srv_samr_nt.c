@@ -3708,12 +3708,6 @@ NTSTATUS _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, S
 NTSTATUS _samr_delete_dom_alias(pipes_struct *p, SAMR_Q_DELETE_DOM_ALIAS *q_u, SAMR_R_DELETE_DOM_ALIAS *r_u)
 {
 	DOM_SID alias_sid;
-	DOM_SID dom_sid;
-	uint32 alias_rid;
-	fstring alias_sid_str;
-	gid_t gid;
-	struct group *grp;
-	GROUP_MAP map;
 	uint32 acc_granted;
 
 	DEBUG(5, ("_samr_delete_dom_alias: %d\n", __LINE__));
@@ -3725,37 +3719,17 @@ NTSTATUS _samr_delete_dom_alias(pipes_struct *p, SAMR_Q_DELETE_DOM_ALIAS *q_u, S
 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, STD_RIGHT_DELETE_ACCESS, "_samr_delete_dom_alias"))) {
 		return r_u->status;
 	}
-		
-	sid_copy(&dom_sid, &alias_sid);
-	sid_to_string(alias_sid_str, &dom_sid);
-	sid_split_rid(&dom_sid, &alias_rid);
 
-	DEBUG(10, ("sid is %s\n", alias_sid_str));
+	DEBUG(10, ("sid is %s\n", sid_string_static(&alias_sid)));
 
-	/* we check if it's our SID before deleting */
-	if (!sid_equal(&dom_sid, get_global_sam_sid()))
+	if (!sid_check_is_in_our_domain(&alias_sid))
 		return NT_STATUS_NO_SUCH_ALIAS;
-
+		
 	DEBUG(10, ("lookup on Local SID\n"));
 
-	if(!get_local_group_from_sid(&alias_sid, &map))
-		return NT_STATUS_NO_SUCH_ALIAS;
-
-	gid=map.gid;
-
-	/* check if group really exists */
-	if ( (grp=getgrgid(gid)) == NULL)
-		return NT_STATUS_NO_SUCH_ALIAS;
-
-	/* we can delete the UNIX group */
-	smb_delete_group(grp->gr_name);
-
-	/* check if the group has been successfully deleted */
-	if ( (grp=getgrgid(gid)) != NULL)
+	/* Have passdb delete the alias */
+	if (!pdb_delete_alias(&alias_sid))
 		return NT_STATUS_ACCESS_DENIED;
-
-	/* don't check if we removed it as it could be an un-mapped group */
-	pdb_delete_group_mapping_entry(alias_sid);
 
 	if (!close_policy_hnd(p, &q_u->alias_pol))
 		return NT_STATUS_OBJECT_NAME_INVALID;
@@ -3834,7 +3808,6 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 	DOM_SID dom_sid;
 	DOM_SID info_sid;
 	fstring name;
-	fstring sid_string;
 	struct group *grp;
 	struct samr_info *info;
 	uint32 acc_granted;
@@ -3855,26 +3828,18 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 
 	unistr2_to_ascii(name, &q_u->uni_acct_desc, sizeof(name)-1);
 
-	/* check if group already exists */
-	if ( (grp=getgrnam(name)) != NULL)
-		return NT_STATUS_ALIAS_EXISTS;
+	/* Have passdb create the alias */
+	if (!pdb_create_alias(name, &r_u->rid))
+		return NT_STATUS_ACCESS_DENIED;
 
-	/* we can create the UNIX group */
-	if (smb_create_group(name, &gid) != 0)
+	sid_copy(&info_sid, get_global_sam_sid());
+	sid_append_rid(&info_sid, r_u->rid);
+
+	if (!NT_STATUS_IS_OK(sid_to_gid(&info_sid, &gid)))
 		return NT_STATUS_ACCESS_DENIED;
 
 	/* check if the group has been successfully created */
 	if ((grp=getgrgid(gid)) == NULL)
-		return NT_STATUS_ACCESS_DENIED;
-
-	r_u->rid=pdb_gid_to_group_rid(grp->gr_gid);
-
-	sid_copy(&info_sid, get_global_sam_sid());
-	sid_append_rid(&info_sid, r_u->rid);
-	sid_to_string(sid_string, &info_sid);
-
-	/* add the group to the mapping table */
-	if(!add_initial_entry(grp->gr_gid, sid_string, SID_NAME_ALIAS, name, NULL))
 		return NT_STATUS_ACCESS_DENIED;
 
 	if ((info = get_samr_info_by_sid(&info_sid)) == NULL)
