@@ -203,6 +203,44 @@ It is not run from @samp{inetd}.
 You might need to add @samp{kpasswd} to your @file{/etc/services} as
 464/udp.
 
+@subsection Password quality assurance
+
+It is important that users have good passwords, both to make it harder
+to guess them and to avoid off-line attacks (pre-authentication provides
+some defense against off-line attacks).  To ensure that the users choose
+good passwords, you can enable password quality controls in
+@samp{kpasswdd}.  The controls themselves are done in a shared library
+that is used by @samp{kpasswdd}.  To configure in these controls, add
+lines similar to the following to your @file{/etc/krb5.conf}:
+
+@example
+[password_quality]
+        check_library = @var{library}
+        check_function = @var{function}
+@end example
+
+The function @var{function} in the shared library @var{library} will be
+called for proposed new passwords.  The function should be declared as:
+
+@example
+const char *
+function(krb5_context context, krb5_principal principal, krb5_data *pwd);
+@end example
+
+The function should verify that @var{pwd} is a good password for
+@var{principal} and if so return @code{NULL}.  If it is deemed to be of
+low quality, it should return a string explaining why that password
+should not be used.
+
+Code for a password quality checking function that uses the cracklib
+library can be found in @file{kpasswd/sample_password_check.c} in the
+source code distribution.  It requires the cracklib library built with
+the patch available at
+@url{ftp://ftp.pdc.kth.se/pub/krb/src/cracklib.patch}.
+
+If no password quality checking function is configured, it is only
+verified that it is at least six characters of length.
+
 @section Testing clients and servers
 
 Now you should be able to run all the clients and servers.  Refer to the
