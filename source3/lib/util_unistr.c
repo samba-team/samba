@@ -62,7 +62,7 @@ Return a ascii version of a little-endian unicode string.
 Hack alert: uses fixed buffer(s) and only handles ascii strings
 ********************************************************************/
 
-char *unistrn2(uint16 *src, int len)
+char *unistrn2(char *src, int len)
 {
 	static char lbufs[8][MAXUNI];
 	static int nexti;
@@ -71,9 +71,9 @@ char *unistrn2(uint16 *src, int len)
 
 	nexti = (nexti+1)%8;
 
-	for (p = lbuf; *src && p-lbuf < MAXUNI-2 && len > 0; len--, src++)
+	for (p = lbuf; *src && p-lbuf < MAXUNI-2 && len > 0; len--, src += 2)
 	{
-		*p++ = (*src & 0xff);
+		*p++ = SVAL(src, 0) & 0xFF;
 	}
 
 	*p = 0;
@@ -88,16 +88,16 @@ Return a ascii version of a little-endian unicode string.
 Hack alert: uses fixed buffer(s) and only handles ascii strings
 ********************************************************************/
 
-char *unistr2(uint16 *src)
+char *unistr2(char *src)
 {
 	char *lbuf = lbufs[nexti];
 	char *p;
 
 	nexti = (nexti+1)%8;
 
-	for (p = lbuf; *src && p-lbuf < MAXUNI-2; p++, src++)
+	for (p = lbuf; *src && p-lbuf < MAXUNI-2; p++, src += 2)
 	{
-		*p = (*src & 0xff);
+		*p = SVAL(src, 0) & 0xFF;
 	}
 
 	*p = 0;
@@ -260,7 +260,7 @@ char *unistr(char *buf)
 
 	for (p = lbuf; *buf && p-lbuf < MAXUNI-2; p++, buf += 2)
 	{
-		*p = *buf;
+		*p = SVAL(buf, 0) & 0xFF;
 	}
 	*p = 0;
 	return lbuf;
