@@ -261,6 +261,12 @@ BOOL samdb_password_complexity_ok(const char *pass)
 /*
   set the user password using plaintext, obeying any user or domain
   password restrictions
+
+  note that this function doesn't actually store the result in the
+  database, it just fills in the "mod" structure with ldb modify
+  elements to setup the correct change when samdb_replace() is
+  called. This allows the caller to combine the change with other
+  changes (as is needed by some of the set user info levels)
 */
 NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 				   const char *user_dn, const char *domain_dn,
