@@ -1020,6 +1020,63 @@ struct parm_struct
 #define smb_nts_DataOffset (smb_vwv0 + 27)
 #define smb_nts_DataDisplacement (smb_vwv0 + 31)
 
+/* these are for the NT create_and_X */
+#define smb_ntcreate_NameLength (smb_vwv0 + 5)
+#define smb_ntcreate_Flags (smb_vwv0 + 7)
+#define smb_ntcreate_RootDirectoryFid (smb_wvw0 + 11)
+#define smb_ntcreate_DesiredAccess (smb_vwv0 + 15)
+#define smb_ntcreate_AllocationSize (smb_vwv0 + 19)
+#define smb_ntcreate_FileAttributes (smb_vwv0 + 27)
+#define smb_ntcreate_ShareAccess (smb_vwv0 + 31)
+#define smb_ntcreate_CreateDisposition (smb_vwv0 + 35)
+#define smb_ntcreate_CreateOptions (smb_vwv0 + 39)
+#define smb_ntcreate_ImpersonationLevel (smb_vwv0 + 43)
+#define smb_ntcreate_SecurityFlags (smb_vwv0 + 47)
+
+/* these are the constants used in the above call. */
+/* DesiredAccess */
+#if 0
+/* TODO.... JRA */
+#define GENERIC_READ xxx?
+#define GENERIC_WRITE xxx?
+#endif
+
+/* Flags field. */
+#define REQUEST_OPLOCK 2
+#define REQUEST_BATCH_OPLOCK 4
+#define OPEN_DIRECTORY 8
+
+/* ShareAccess field. */
+#define FILE_SHARE_NONE 0 /* Cannot be used in bitmask. */
+#define FILE_SHARE_READ 1
+#define FILE_SHARE_WRITE 2
+#define FILE_SHARE_DELETE 4
+
+/* FileAttributesField */
+#define FILE_ATTRIBUTE_READONLY aRONLY
+#define FILE_ATTRIBUTE_HIDDEN aHIDDEN
+#define FILE_ATTRIBUTE_SYSTEM aSYSTEM
+#define FILE_ATTRIBUTE_DIRECTORY aDIR
+#define FILE_ATTRIBUTE_ARCHIVE aARCH
+#define FILE_ATTRIBUTE_NORMAL 0x80L
+#define FILE_ATTRIBUTE_TEMPORARY 0x100L
+#define FILE_ATTRIBUTE_COMPRESSED 0x800L
+/* Flags - combined with attributes. */
+#define FILE_FLAG_WRITE_THROUGH    0x80000000L
+#define FILE_FLAG_NO_BUFFERING     0x20000000L
+#define FILE_FLAG_RANDOM_ACCESS    0x10000000L
+#define FILE_FLAG_SEQUENTIAL_SCAN  0x08000000L
+#define FILE_FLAG_DELETE_ON_CLOSE  0x04000000L
+#define FILE_FLAG_BACKUP_SEMANTICS 0x02000000L
+#define FILE_FLAG_POSIX_SEMANTICS  0x01000000L
+
+/* CreateDisposition field. */
+#define CREATE_NEW 1
+#define CREATE_ALWAYS 2
+#define OPEN_EXISTING 3
+#define OPEN_ALWAYS 4
+#define TRUNCATE_EXISTING 5
+
 /* where to find the base of the SMB packet proper */
 #define smb_base(buf) (((char *)(buf))+4)
 
