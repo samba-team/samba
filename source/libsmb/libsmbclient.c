@@ -65,7 +65,7 @@ BOOL smbc_getatr(struct smbc_server *srv, char *path,
 extern BOOL in_client;
 static int smbc_initialized = 0;
 static smbc_get_auth_data_fn smbc_auth_fn = NULL;
-static int smbc_debug;
+/*static int smbc_debug;*/
 static int smbc_start_fd;
 static int smbc_max_fd = 10000;
 static struct smbc_file **smbc_file_table;
@@ -414,7 +414,7 @@ int smbc_init(smbc_get_auth_data_fn fn, int debug)
 
   smbc_initialized = 1;
   smbc_auth_fn = fn;
-  smbc_debug = debug;
+  /*  smbc_debug = debug; */
 
   DEBUGLEVEL = -1;
 
@@ -1829,6 +1829,7 @@ int smbc_getdents(unsigned int fd, struct smbc_dirent *dirp, int count)
   struct smbc_file *fe;
   struct smbc_dir_list *dir;
   int rem = count, reqd;
+  char *ndir = (char *)dirp;
 
   /* Check that all is ok first ... */
 
@@ -1898,11 +1899,12 @@ int smbc_getdents(unsigned int fd, struct smbc_dirent *dirp, int count)
 
     dirent = dir->dirent;
 
-    bcopy(dirent, dirp, reqd); /* Copy the data in ... */
+    bcopy(dirent, ndir, reqd); /* Copy the data in ... */
     
-    dirp->comment = (char *)(&dirp->name + dirent->namelen + 1);
+    ((struct smbc_dirent *)ndir)->comment = 
+      (char *)(&((struct smbc_dirent *)ndir)->name + dirent->namelen + 1);
 
-    (char *)dirp += reqd;
+    ndir += reqd;
 
     rem -= reqd;
 
