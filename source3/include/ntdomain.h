@@ -192,6 +192,13 @@ typedef struct pipes_struct
 	uint32 ntlmssp_seq_num;
 	struct dcinfo dc; /* Keeps the creds data. */
 
+	 /* Hmm. In my understanding the authentication happens
+	    implicitly later, so there are no two stages for
+	    schannel. */
+
+	BOOL netsec_auth_validated;
+	struct netsec_auth_struct netsec_auth;
+
 	/*
 	 * Windows user info.
 	 */

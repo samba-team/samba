@@ -744,6 +744,7 @@
 		<listitem><para><link linkend="ROOTDIR"><parameter>root dir</parameter></link></para></listitem>
 		<listitem><para><link linkend="ROOTDIRECTORY"><parameter>root directory</parameter></link></para></listitem>
 		<listitem><para><link linkend="SECURITY"><parameter>security</parameter></link></para></listitem>
+		<listitem><para><link linkend="SERVERSCHANNEL"><parameter>server schannel</parameter></link></para></listitem>
 		<listitem><para><link linkend="SERVERSTRING"><parameter>server string</parameter></link></para></listitem>
 		<listitem><para><link linkend="SETPRIMARYGROUPSCRIPT"><parameter>set primary group script</parameter></link></para></listitem>
 		<listitem><para><link linkend="SHOWADDPRINTERWIZARD"><parameter>show add printer wizard</parameter></link></para></listitem>
@@ -7007,6 +7008,31 @@
 		</listitem>
 		</varlistentry>
 
+
+		<varlistentry>
+		<term><anchor id="SERVERSCHANNEL"/>server schannel (G)</term>
+		<listitem>
+
+		<para>This controls whether the server offers or even
+		demands the use of the netlogon schannel.
+		<parameter>server schannel = no</parameter> does not
+		offer the schannel, <parameter>server schannel =
+		auto</parameter> offers the schannel but does not
+		enforce it, and <parameter>server schannel =
+		yes</parameter> denies access if the client is not
+		able to speak netlogon schannel. This is only the case
+		for Windows NT4 before SP4.</para>
+
+		<para>Please note that with this set to
+		<parameter>no</parameter> you will have to apply the
+		WindowsXP requireSignOrSeal-Registry patch found in
+		the docs/Registry subdirectory.</para
+
+		<para>Default: <command>server schannel = auto</command></para>
+
+		<para>Example: <command>server schannel = yes</command>/para>
+		</listitem>
+		</varlistentry>
 
 		<varlistentry>
 		<term><anchor id="SERVERSTRING">server string (G)</term>

@@ -594,11 +594,18 @@ static BOOL process_request_pdu(pipes_struct *p, prs_struct *rpc_in_p)
 		 * Authentication _was_ requested and it already failed.
 		 */
 
-		DEBUG(0,("process_request_pdu: RPC request received on pipe %s where \
-authentication failed. Denying the request.\n", p->name));
+		DEBUG(0,("process_request_pdu: RPC request received on pipe %s "
+			 "where authentication failed. Denying the request.\n",
+			 p->name));
 		set_incoming_fault(p);
-        return False;
-    }
+		return False;
+	}
+
+	if (p->netsec_auth_validated && !api_pipe_netsec_process(p, rpc_in_p)) {
+		DEBUG(0,("process_request_pdu: failed to do schannel processing.\n"));
+		set_incoming_fault(p);
+		return False;
+	}
 
 	/*
 	 * Check the data length doesn't go over the 15Mb limit.

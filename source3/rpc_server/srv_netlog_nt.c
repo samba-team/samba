@@ -334,6 +334,13 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 
 	srv_time.time = 0;
 
+	if ( (lp_server_schannel() == True) &&
+	     ((q_u->clnt_flgs.neg_flags & NETLOGON_NEG_SCHANNEL) == 0) ) {
+
+		/* schannel must be used, but client did not offer it. */
+		status = NT_STATUS_ACCESS_DENIED;
+	}
+
 	rpcstr_pull(mach_acct, q_u->clnt_id.uni_acct_name.buffer,sizeof(fstring),q_u->clnt_id.uni_acct_name.uni_str_len*2,0);
 
 	if (p->dc.challenge_sent && get_md4pw((char *)p->dc.md4pw, mach_acct)) {
@@ -366,8 +373,17 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 	
 	srv_flgs.neg_flags = 0x000001ff;
 
+	if (lp_server_schannel() != False) {
+		srv_flgs.neg_flags |= NETLOGON_NEG_SCHANNEL;
+	}
+
 	/* set up the LSA AUTH 2 response */
 	init_net_r_auth_2(r_u, &srv_cred, &srv_flgs, status);
+
+	if (NT_STATUS_IS_OK(status)) {
+		extern struct dcinfo last_dcinfo;
+		last_dcinfo = p->dc;
+	}
 
 	return r_u->status;
 }
@@ -523,7 +539,23 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
  
 	if (!get_valid_user_struct(p->vuid))
 		return NT_STATUS_NO_SUCH_USER;
-    
+
+
+	if ( (lp_server_schannel() == True) && (!p->netsec_auth_validated) ) {
+		/* 'server schannel = yes' should enforce use of
+		   schannel, the client did offer it in auth2, but
+		   obviously did not use it. */
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (p->netsec_auth_validated) {
+		/* The client opens a second RPC NETLOGON pipe without
+                   doing a auth2. The session key for the schannel is
+                   re-used from the auth2 the client did before. */
+		extern struct dcinfo last_dcinfo;
+		p->dc = last_dcinfo;
+	}
+
 	/* checks and updates credentials.  creates reply credentials */
 	if (!(p->dc.authenticated && deal_with_creds(p->dc.sess_key, &p->dc.clnt_cred, &q_u->sam_id.client.cred, &srv_cred)))
 		return NT_STATUS_INVALID_HANDLE;
