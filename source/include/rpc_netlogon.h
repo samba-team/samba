@@ -141,8 +141,9 @@ typedef struct net_user_info_3
 	uint16 logon_count;  /* logon count */
 	uint16 bad_pw_count; /* bad password count */
 
-	uint32 user_rid;       /* User ID */
-	uint32 group_rid;      /* Group ID */
+	uint32 user_rid;       /* User RID */
+	uint32 group_rid;      /* Group RID */
+
 	uint32 num_groups;    /* num groups */
 	uint32 buffer_groups; /* undocumented buffer pointer to groups. */
 	uint32 user_flgs;     /* user flags */
