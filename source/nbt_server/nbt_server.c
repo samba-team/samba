@@ -52,6 +52,13 @@ static void nbtd_task_init(struct task_server *task)
 		return;
 	}
 
+	/* start the WINS server, if appropriate */
+	status = nbtd_winsserver_init(nbtsrv);
+	if (!NT_STATUS_IS_OK(status)) {
+		task_terminate(task, "nbtd failed to start WINS server");
+		return;
+	}
+
 	/* start the process of registering our names on all interfaces */
 	nbtd_register_names(nbtsrv);
 }

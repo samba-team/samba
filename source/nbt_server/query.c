@@ -25,65 +25,6 @@
 #include "system/network.h"
 #include "nbt_server/nbt_server.h"
 
-/*
-  send a name query reply
-*/
-static void nbtd_name_query_reply(struct nbt_name_socket *nbtsock, 
-				  struct nbt_name_packet *request_packet, 
-				  const char *src_address, int src_port,
-				  struct nbt_name *name, uint32_t ttl,
-				  uint16_t nb_flags, const char **addresses)
-{
-	struct nbt_name_packet *packet;
-	size_t num_addresses = str_list_length(addresses);
-	int i;
-
-	if (num_addresses == 0) {
-		DEBUG(3,("No addresses in name query reply - failing\n"));
-		return;
-	}
-
-	packet = talloc_zero(nbtsock, struct nbt_name_packet);
-	if (packet == NULL) return;
-
-	packet->name_trn_id = request_packet->name_trn_id;
-	packet->ancount = 1;
-	packet->operation = 
-		NBT_FLAG_REPLY | 
-		NBT_OPCODE_QUERY | 
-		NBT_FLAG_AUTHORITIVE |
-		NBT_FLAG_RECURSION_DESIRED |
-		NBT_FLAG_RECURSION_AVAIL;
-
-	packet->answers = talloc_array(packet, struct nbt_res_rec, 1);
-	if (packet->answers == NULL) goto failed;
-
-	packet->answers[0].name     = *name;
-	packet->answers[0].rr_type  = NBT_QTYPE_NETBIOS;
-	packet->answers[0].rr_class = NBT_QCLASS_IP;
-	packet->answers[0].ttl      = ttl;
-	packet->answers[0].rdata.netbios.length = num_addresses*6;
-	packet->answers[0].rdata.netbios.addresses = 
-		talloc_array(packet->answers, struct nbt_rdata_address, num_addresses);
-	if (packet->answers[0].rdata.netbios.addresses == NULL) goto failed;
-
-	for (i=0;i<num_addresses;i++) {
-		struct nbt_rdata_address *addr = 
-			&packet->answers[0].rdata.netbios.addresses[i];
-		addr->nb_flags = nb_flags;
-		addr->ipaddr = talloc_strdup(packet->answers, addresses[i]);
-		if (addr->ipaddr == NULL) goto failed;
-	}
-
-	DEBUG(7,("Sending name query reply for %s<%02x> at %s to %s:%d\n", 
-		 name->name, name->type, addresses[0], src_address, src_port));
-	
-	nbt_name_reply_send(nbtsock, src_address, src_port, packet);
-
-failed:
-	talloc_free(packet);
-}
-
 
 /*
   answer a name query
@@ -104,17 +45,33 @@ void nbtd_request_query(struct nbt_name_socket *nbtsock,
 		return;
 	}
 
-	NBT_ASSERT_PACKET(packet, src_address, packet->qdcount == 1);
-	NBT_ASSERT_PACKET(packet, src_address, packet->questions[0].question_type == NBT_QTYPE_NETBIOS);
-	NBT_ASSERT_PACKET(packet, src_address, packet->questions[0].question_class == NBT_QCLASS_IP);
+	NBTD_ASSERT_PACKET(packet, src_address, packet->qdcount == 1);
+	NBTD_ASSERT_PACKET(packet, src_address, 
+			   packet->questions[0].question_type == NBT_QTYPE_NETBIOS);
+	NBTD_ASSERT_PACKET(packet, src_address, 
+			   packet->questions[0].question_class == NBT_QCLASS_IP);
 
 	/* see if we have the requested name on this interface */
 	name = &packet->questions[0].name;
 
 	iname = nbtd_find_iname(iface, name, 0);
+
 	if (iname == NULL) {
-		DEBUG(7,("Query for %s<%02x> from %s - not found on %s\n",
-			 name->name, name->type, src_address, iface->ip_address));
+		/* don't send negative replies to broadcast queries */
+		if (packet->operation & NBT_FLAG_BROADCAST) {
+			return;
+		}
+
+		/* if the name does not exist, then redirect to WINS
+		   server if recursion has been asked for */
+		if (packet->operation & NBT_FLAG_RECURSION_DESIRED) {
+			nbtd_winsserver_request(nbtsock, packet, src_address, src_port);
+			return;
+		}
+
+		/* otherwise send a negative reply */
+		nbtd_negative_name_query_reply(nbtsock, packet, 
+					       src_address, src_port);
 		return;
 	}
 

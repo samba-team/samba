@@ -34,23 +34,13 @@ static void nbtd_request_handler(struct nbt_name_socket *nbtsock,
 				 struct nbt_name_packet *packet, 
 				 const char *src_address, int src_port)
 {
-	/* if its a WINS query then direct to our WINS server if we
-	   are running one */
-	if ((packet->operation & NBT_FLAG_RECURSION_DESIRED) &&
-	    !(packet->operation & NBT_FLAG_BROADCAST) &&
-	    lp_wins_support()) {
-		nbtd_query_wins(nbtsock, packet, src_address, src_port);
-		return;
-	}
-
 	/* see if its from one of our own interfaces - if so, then ignore it */
 	if (nbtd_self_packet(nbtsock, packet, src_address, src_port)) {
 		DEBUG(10,("Ignoring self packet from %s:%d\n", src_address, src_port));
 		return;
 	}
 
-	/* the request is to us in our role as a B node */
-	switch ((enum nbt_opcode)(packet->operation & NBT_OPCODE)) {
+	switch (packet->operation & NBT_OPCODE) {
 	case NBT_OPCODE_QUERY:
 		nbtd_request_query(nbtsock, packet, src_address, src_port);
 		break;
@@ -59,6 +49,11 @@ static void nbtd_request_handler(struct nbt_name_socket *nbtsock,
 	case NBT_OPCODE_REFRESH:
 	case NBT_OPCODE_REFRESH2:
 		nbtd_request_defense(nbtsock, packet, src_address, src_port);
+		break;
+
+	case NBT_OPCODE_RELEASE:
+	case NBT_OPCODE_MULTI_HOME_REG:
+		nbtd_winsserver_request(nbtsock, packet, src_address, src_port);
 		break;
 
 	default:
