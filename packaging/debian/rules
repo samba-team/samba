@@ -3,12 +3,15 @@
 # Made with the aid of debmake, by Christoph Lameter,
 # based on the sample debian/rules file for GNU hello by Ian Jackson.
 
+
+SOURCEPATH=../source
+
 package=samba4
 
 configure:
 	$(checkdir)
-	cd source && ./autogen.sh
-	cd source && ./configure --with-fhs \
+	cd $(SOURCEPATH) && ./autogen.sh
+	cd $(SOURCEPATH) && ./configure --with-fhs \
 		--prefix=/usr \
 		--enable-shared \
 		--enable-static \
@@ -26,13 +29,13 @@ configure:
 
 build: configure
 	$(checkdir)
-	cd source && $(MAKE) proto all
+	cd $(SOURCEPATH) && $(MAKE) proto all
 	touch build
 
 clean:
 	$(checkdir)
 	rm -f build
-	-cd source && $(MAKE) clean
+	-cd $(SOURCEPATH) && $(MAKE) clean
 	rm -f `find . -name "*~"`
 	rm -rf debian/tmp `find debian/* -type d ! -name CVS` debian/files* core
 	rm -f debian/*substvars
@@ -48,7 +51,7 @@ binary-arch: checkroot build
 	rm -rf debian/tmp `find debian/* -type d ! -name CVS`
 	install -d debian/tmp
 	cd debian/tmp && install -d `cat ../dirs`
-	cd source && $(MAKE) install DESTDIR=`pwd`/../debian/tmp
+	cd $(SOURCEPATH) && $(MAKE) install DESTDIR=`pwd`/../packaging/debian/tmp
 	debstd 
 	dpkg-gencontrol -isp -psamba4
 	chown -R root:root debian/tmp
