@@ -41,13 +41,18 @@
 RCSID("$Id$");
 #endif
 
-#include "roken.h"
-
 #ifndef HAVE_HSTRERROR
 
+#include "roken.h"
+
 #include <stdio.h>
+
 #ifdef HAVE_NETDB_H
+#if (defined(SunOS) && (SunOS >= 5))
+#define hstrerror broken_proto
+#endif
 #include <netdb.h>
+#undef hstrerror
 #endif
 
 #ifndef HAVE_H_ERRNO
