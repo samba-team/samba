@@ -418,10 +418,11 @@ BOOL pwdb_gethexpwd(const char *p, char *pwd)
 	return strhex_to_str(pwd, 32, p) == 16;
 }
 
+
 /*************************************************************
  initialise password databases, domain names, domain sid.
 **************************************************************/
-BOOL pwdb_initialise(BOOL is_server)
+BOOL pwdb_init_myworkgroup(void)
 {
 	fstrcpy(global_myworkgroup, lp_workgroup());
 
@@ -430,8 +431,20 @@ BOOL pwdb_initialise(BOOL is_server)
 		DEBUG(0,("ERROR: a workgroup name of * is no longer supported\n"));
 		return False;
 	}
+	return True;
+}
 
+/*************************************************************
+ initialise password databases, domain names, domain sid.
+**************************************************************/
+BOOL pwdb_initialise(BOOL is_server)
+{
 	get_sam_domain_name();
+
+	if (!pwdb_init_myworkgroup())
+	{
+		return False;
+	}
 
 	generate_wellknown_sids();
 

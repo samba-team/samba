@@ -677,6 +677,11 @@ static void usage(char *pname)
 
   reload_services( True );
 
+	if (!pwdb_init_myworkgroup())
+	{
+		exit(1);
+	}
+
   set_samba_nb_type();
 
   if (!is_daemon && !is_a_socket(0))
