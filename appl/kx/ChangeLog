@@ -1,3 +1,9 @@
+2004-01-08  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* krb5.c: clean up krb5 support, log to syslog instead of stdout
+	(very confusing for the other end tcp connection), patch
+	originally from joda
+
 2003-11-13  Johan Danielsson  <joda@pdc.kth.se>
 
 	* rxtelnet.in: add telnet -F option
