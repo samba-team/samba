@@ -143,7 +143,7 @@ AC_FIND_FUNC(res_nsearch, resolv,
 #include <resolv.h>
 #endif
 ],
-[0,0,0,0,0])
+[0,0,0,0,0,0])
 
 AC_FIND_FUNC(dn_expand, resolv,
 [
