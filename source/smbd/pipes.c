@@ -241,6 +241,8 @@ int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 	DEBUG(3,("readX-IPC pnum=%04x min=%d max=%d nread=%d\n",
 		 p->pnum, smb_mincnt, smb_maxcnt, nread));
 
+	/* Ensure we set up the message length to include the data length read. */
+	set_message_bcc(outbuf,nread);
 	return chain_reply(inbuf,outbuf,length,bufsize);
 }
 
