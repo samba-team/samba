@@ -2261,6 +2261,8 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 	POLICY_HND pol_dom;
 	SAM_USERINFO_CTR ctr;
 
+	ZERO_STRUCT(ctr);
+
 	fstrcpy(domain, info->dom.level5_dom);
 	sid_copy(&sid, &info->dom.level5_sid);
 
@@ -2403,9 +2405,11 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 		if (usr != NULL)
 		{
 			res1 = set_samr_set_userinfo( &pol_dom,
-					    switch_value, rids[0], &ctr);
+					    switch_value, rids[0], usr);
 		}
 	}
+
+	free_samr_userinfo_ctr(&ctr);
 
 	res = res ? samr_close( &pol_dom) : False;
 	res = res ? samr_close( &sam_pol) : False;

@@ -1289,8 +1289,6 @@ BOOL create_samr_domain_user( POLICY_HND *pol_dom,
 		
 	res1 = set_samr_set_userinfo( pol_dom, 0x18, *rid, (void*)p24);
 
-	DEBUG(10,("create_samr_dom_user: succeeded\n"));
-
 	if (!res1)
 	{
 		DEBUG(10,("sam_set_userinfo: failed\n"));
@@ -1580,7 +1578,7 @@ BOOL set_samr_set_userinfo2(
 	/* send user info query */
 	if (!samr_set_userinfo2( &pol_open_user, info_level, usr))
 	{
-		DEBUG(5,("samr_set_userinfo: error in query user info, level 0x%x\n",
+		DEBUG(5,("samr_set_userinfo2: error in query user info, level 0x%x\n",
 		          info_level));
 		ret = False;
 	}
@@ -1615,8 +1613,6 @@ BOOL set_samr_set_userinfo( const POLICY_HND *pol_open_domain,
 		          info_level));
 		ret = False;
 	}
-
-	DEBUG(10,("set_samr_set_userinfo: succeeded\n"));
 
 	return samr_close(&pol_open_user) && ret;
 }
