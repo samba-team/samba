@@ -3460,6 +3460,8 @@ BOOL smb_io_printer_info_0(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_0 *info,
 BOOL smb_io_printer_info_1(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_1 *info, int depth);
 BOOL smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *info, int depth);
 BOOL smb_io_printer_info_3(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_3 *info, int depth);
+BOOL smb_io_printer_info_4(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_4 *info, int depth);
+BOOL smb_io_printer_info_5(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_5 *info, int depth);
 BOOL smb_io_port_info_1(char *desc, NEW_BUFFER *buffer, PORT_INFO_1 *info, int depth);
 BOOL smb_io_port_info_2(char *desc, NEW_BUFFER *buffer, PORT_INFO_2 *info, int depth);
 BOOL smb_io_printer_driver_info_1(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_1 *info, int depth) ;
@@ -3481,6 +3483,8 @@ BOOL smb_io_printmonitor_info_2(char *desc, NEW_BUFFER *buffer, PRINTMONITOR_2 *
 uint32 spoolss_size_printer_info_0(PRINTER_INFO_0 *info);
 uint32 spoolss_size_printer_info_1(PRINTER_INFO_1 *info);
 uint32 spoolss_size_printer_info_2(PRINTER_INFO_2 *info);
+uint32 spoolss_size_printer_info_4(PRINTER_INFO_4 *info);
+uint32 spoolss_size_printer_info_5(PRINTER_INFO_5 *info);
 uint32 spoolss_size_printer_info_3(PRINTER_INFO_3 *info);
 uint32 spoolss_size_printer_driver_info_1(DRIVER_INFO_1 *info);
 uint32 spoolss_size_printer_driver_info_2(DRIVER_INFO_2 *info);
@@ -3637,6 +3641,8 @@ void free_devmode(DEVICEMODE *devmode);
 void free_printer_info_1(PRINTER_INFO_1 *printer);
 void free_printer_info_2(PRINTER_INFO_2 *printer);
 void free_printer_info_3(PRINTER_INFO_3 *printer);
+void free_printer_info_4(PRINTER_INFO_4 *printer);
+void free_printer_info_5(PRINTER_INFO_5 *printer);
 void free_job_info_2(JOB_INFO_2 *job);
 BOOL make_spoolss_q_replyopenprinter(SPOOL_Q_REPLYOPENPRINTER *q_u, 
 			       const fstring string, uint32 printer, uint32 type);

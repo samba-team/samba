@@ -2887,6 +2887,49 @@ static BOOL construct_printer_info_3(PRINTER_INFO_3 **pp_printer, int snum)
 }
 
 /********************************************************************
+ * construct_printer_info_4
+ * fill a printer_info_4 struct
+ ********************************************************************/
+
+static BOOL construct_printer_info_4(PRINTER_INFO_4 *printer, int snum)
+{
+	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
+
+	if (!W_ERROR_IS_OK(get_a_printer(&ntprinter, 2, lp_servicename(snum))))
+		return False;
+		
+	init_unistr(&printer->printername, ntprinter->info_2->printername);				/* printername*/
+	init_unistr(&printer->servername, ntprinter->info_2->servername); /* servername*/
+	printer->attributes = ntprinter->info_2->attributes;
+
+	free_a_printer(&ntprinter, 2);
+	return True;
+}
+
+/********************************************************************
+ * construct_printer_info_5
+ * fill a printer_info_5 struct
+ ********************************************************************/
+
+static BOOL construct_printer_info_5(PRINTER_INFO_5 *printer, int snum)
+{
+	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
+
+	if (!W_ERROR_IS_OK(get_a_printer(&ntprinter, 2, lp_servicename(snum))))
+		return False;
+		
+	init_unistr(&printer->printername, ntprinter->info_2->printername);				/* printername*/
+	init_unistr(&printer->portname, ntprinter->info_2->portname); /* portname */
+	printer->attributes = ntprinter->info_2->attributes;
+	printer->device_not_selected_timeout = 0x3a98;
+	printer->transmission_retry_timeout = 0xafc8;
+
+	free_a_printer(&ntprinter, 2);
+	return True;
+}
+
+
+/********************************************************************
  Spoolss_enumprinters.
 ********************************************************************/
 static WERROR enum_all_printers_info_1(uint32 flags, NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
@@ -3348,6 +3391,72 @@ static WERROR getprinter_level_3(int snum, NEW_BUFFER *buffer, uint32 offered, u
 
 /****************************************************************************
 ****************************************************************************/
+static WERROR getprinter_level_4(int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+{
+	PRINTER_INFO_4 *printer=NULL;
+
+	if((printer=(PRINTER_INFO_4*)malloc(sizeof(PRINTER_INFO_4)))==NULL)
+		return WERR_NOMEM;
+
+	if (!construct_printer_info_4(printer, snum))
+		return WERR_NOMEM;
+	
+	/* check the required size. */	
+	*needed += spoolss_size_printer_info_4(printer);
+
+	if (!alloc_buffer_size(buffer, *needed)) {
+		free_printer_info_4(printer);
+		return WERR_INSUFFICIENT_BUFFER;
+	}
+
+	/* fill the buffer with the structures */
+	smb_io_printer_info_4("", buffer, printer, 0);	
+	
+	/* clear memory */
+	free_printer_info_4(printer);
+	
+	if (*needed > offered) {
+		return WERR_INSUFFICIENT_BUFFER;
+	}
+
+	return WERR_OK;	
+}
+
+/****************************************************************************
+****************************************************************************/
+static WERROR getprinter_level_5(int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+{
+	PRINTER_INFO_5 *printer=NULL;
+
+	if((printer=(PRINTER_INFO_5*)malloc(sizeof(PRINTER_INFO_5)))==NULL)
+		return WERR_NOMEM;
+
+	if (!construct_printer_info_5(printer, snum))
+		return WERR_NOMEM;
+	
+	/* check the required size. */	
+	*needed += spoolss_size_printer_info_5(printer);
+
+	if (!alloc_buffer_size(buffer, *needed)) {
+		free_printer_info_5(printer);
+		return WERR_INSUFFICIENT_BUFFER;
+	}
+
+	/* fill the buffer with the structures */
+	smb_io_printer_info_5("", buffer, printer, 0);	
+	
+	/* clear memory */
+	free_printer_info_5(printer);
+	
+	if (*needed > offered) {
+		return WERR_INSUFFICIENT_BUFFER;
+	}
+
+	return WERR_OK;	
+}
+
+/****************************************************************************
+****************************************************************************/
 
 WERROR _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GETPRINTER *r_u)
 {
@@ -3377,6 +3486,10 @@ WERROR _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GET
 		return getprinter_level_2(snum, buffer, offered, needed);
 	case 3:		
 		return getprinter_level_3(snum, buffer, offered, needed);
+	case 4:		
+		return getprinter_level_4(snum, buffer, offered, needed);
+	case 5:		
+		return getprinter_level_5(snum, buffer, offered, needed);
 	}
 	return WERR_UNKNOWN_LEVEL;
 }	

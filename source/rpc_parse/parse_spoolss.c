@@ -2241,6 +2241,54 @@ BOOL smb_io_printer_info_3(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_3 *info,
 }
 
 /*******************************************************************
+ Parse a PRINTER_INFO_4 structure.
+********************************************************************/  
+
+BOOL smb_io_printer_info_4(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_4 *info, int depth)
+{
+	prs_struct *ps=&buffer->prs;
+
+	prs_debug(ps, depth, desc, "smb_io_printer_info_4");
+	depth++;	
+	
+	buffer->struct_start=prs_offset(ps);
+	
+	if (!smb_io_relstr("printername", buffer, depth, &info->printername))
+		return False;
+	if (!smb_io_relstr("servername", buffer, depth, &info->servername))
+		return False;
+	if (!prs_uint32("attributes", ps, depth, &info->attributes))
+		return False;
+	return True;
+}
+
+/*******************************************************************
+ Parse a PRINTER_INFO_5 structure.
+********************************************************************/  
+
+BOOL smb_io_printer_info_5(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_5 *info, int depth)
+{
+	prs_struct *ps=&buffer->prs;
+
+	prs_debug(ps, depth, desc, "smb_io_printer_info_5");
+	depth++;	
+	
+	buffer->struct_start=prs_offset(ps);
+	
+	if (!smb_io_relstr("printername", buffer, depth, &info->printername))
+		return False;
+	if (!smb_io_relstr("portname", buffer, depth, &info->portname))
+		return False;
+	if (!prs_uint32("attributes", ps, depth, &info->attributes))
+		return False;
+	if (!prs_uint32("device_not_selected_timeout", ps, depth, &info->device_not_selected_timeout))
+		return False;
+	if (!prs_uint32("transmission_retry_timeout", ps, depth, &info->transmission_retry_timeout))
+		return False;
+	return True;
+}
+
+/*******************************************************************
  Parse a PORT_INFO_1 structure.
 ********************************************************************/  
 
@@ -2946,6 +2994,39 @@ uint32 spoolss_size_printer_info_2(PRINTER_INFO_2 *info)
 	size+=size_of_uint32( &info->averageppm );	
 	return size;
 }
+
+/*******************************************************************
+return the size required by a struct in the stream
+********************************************************************/
+
+uint32 spoolss_size_printer_info_4(PRINTER_INFO_4 *info)
+{
+	uint32 size=0;
+		
+	size+=size_of_relative_string( &info->printername );
+	size+=size_of_relative_string( &info->servername );
+
+	size+=size_of_uint32( &info->attributes );
+	return size;
+}
+
+/*******************************************************************
+return the size required by a struct in the stream
+********************************************************************/
+
+uint32 spoolss_size_printer_info_5(PRINTER_INFO_5 *info)
+{
+	uint32 size=0;
+		
+	size+=size_of_relative_string( &info->printername );
+	size+=size_of_relative_string( &info->portname );
+
+	size+=size_of_uint32( &info->attributes );
+	size+=size_of_uint32( &info->device_not_selected_timeout );
+	size+=size_of_uint32( &info->transmission_retry_timeout );
+	return size;
+}
+
 
 /*******************************************************************
 return the size required by a struct in the stream
@@ -5935,6 +6016,16 @@ void free_printer_info_2(PRINTER_INFO_2 *printer)
 }
 
 void free_printer_info_3(PRINTER_INFO_3 *printer)
+{
+	SAFE_FREE(printer);
+}
+
+void free_printer_info_4(PRINTER_INFO_4 *printer)
+{
+	SAFE_FREE(printer);
+}
+
+void free_printer_info_5(PRINTER_INFO_5 *printer)
 {
 	SAFE_FREE(printer);
 }
