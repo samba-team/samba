@@ -3,7 +3,7 @@
                  advanced="1" developer="1"
                  xmlns:samba="http://samba.org/common">
 <listitem>
-	<para>The <command>set quota command</command> should only be used 
+	<para>The <command>get quota command</command> should only be used 
 	whenever there is no operating system API available from the OS that 
 	samba can use.</para>
 
@@ -29,7 +29,7 @@
 		<listitem><para>4 - group default quotas (gid = -1)</para></listitem>
 	</itemizedlist>
 
-	<para>This script should output according to the following format:</para>
+	<para>This script should print its output according to the following format:</para>
 
 	<itemizedlist>
 		<listitem><para>Line 1 - quota flags (0 = no quotas, 1 = quotas enabled, 2 = quotas enabled and enforced)</para></listitem>
@@ -45,8 +45,8 @@
 	<para>See also the <link linkend="SETQUOTACOMMAND"><parameter moreinfo="none">set quota command</parameter></link> parameter.
 	</para>
 		
-	<para>Default: <command moreinfo="none">set quota command = </command></para>
+	<para>Default: <command moreinfo="none">get quota command = </command></para>
 
-	<para>Example: <command moreinfo="none">set quota command = /usr/local/sbin/query_quota</command></para>
+	<para>Example: <command moreinfo="none">get quota command = /usr/local/sbin/query_quota</command></para>
 </listitem>
 </samba:parameter>
