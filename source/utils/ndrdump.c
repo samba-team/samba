@@ -103,7 +103,7 @@ static void show_functions(const struct dcerpc_interface_table *p)
 	int flags;
 	NTSTATUS status;
 	void *st;
-	struct ndr_print pr;
+	struct ndr_print *pr;
 
 	DEBUGLEVEL = 10;
 
@@ -172,10 +172,10 @@ static void show_functions(const struct dcerpc_interface_table *p)
 		dump_data(0, ndr->data+ndr->offset, ndr->data_size - ndr->offset);
 	}
 
-	pr.mem_ctx = mem_ctx;
-	pr.print = ndr_print_debug_helper;
-	pr.depth = 1;
-	f->ndr_print(&pr, function, flags, st);
+	pr = talloc_p(NULL, struct ndr_print);
+	pr->print = ndr_print_debug_helper;
+	pr->depth = 1;
+	f->ndr_print(pr, function, flags, st);
 
 	if (!NT_STATUS_IS_OK(status) ||
 	    ndr->offset != ndr->data_size) {
@@ -184,6 +184,8 @@ static void show_functions(const struct dcerpc_interface_table *p)
 	}
 
 	printf("dump OK\n");
+
+	talloc_free(pr);
 	
 	return 0;
 }

@@ -195,13 +195,11 @@ NTSTATUS smbcli_tdis(struct smbcli_state *cli)
 struct smbcli_state *smbcli_state_init(void)
 {
 	struct smbcli_state *cli;
-	TALLOC_CTX *mem_ctx;
 
-	mem_ctx = talloc_init("smbcli_state");
-	if (!mem_ctx) return NULL;
-
-	cli = talloc_zero(mem_ctx, sizeof(*cli));
-	cli->mem_ctx = mem_ctx;
+	cli = talloc_named(NULL, sizeof(*cli), "smbcli_state");
+	if (cli) {
+		ZERO_STRUCTP(cli);
+	}
 
 	return cli;
 }
@@ -216,7 +214,5 @@ void smbcli_shutdown(struct smbcli_state *cli)
 		cli->tree->reference_count++;
 		smbcli_tree_close(cli->tree);
 	}
-	if (cli->mem_ctx) {
-		talloc_destroy(cli->mem_ctx);
-	}
+	talloc_free(cli);
 }

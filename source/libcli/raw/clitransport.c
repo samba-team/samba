@@ -37,23 +37,20 @@ static void smbcli_transport_event_handler(struct event_context *ev, struct fd_e
 */
 struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock)
 {
-	TALLOC_CTX *mem_ctx;
 	struct smbcli_transport *transport;
 	struct fd_event fde;
 
-	mem_ctx = talloc_init("smbcli_transport");
-	if (!mem_ctx) return NULL;
-
-	transport = talloc_zero(mem_ctx, sizeof(*transport));
+	transport = talloc_named(NULL, sizeof(*transport), "smbcli_transport");
 	if (!transport) return NULL;
+
+	ZERO_STRUCTP(transport);
 
 	transport->event.ctx = event_context_init();
 	if (transport->event.ctx == NULL) {
-		talloc_destroy(mem_ctx);
+		talloc_destroy(transport);
 		return NULL;
 	}
 
-	transport->mem_ctx = mem_ctx;
 	transport->socket = sock;
 	transport->negotiate.protocol = PROTOCOL_NT1;
 	transport->options.use_spnego = lp_use_spnego();
@@ -88,7 +85,7 @@ void smbcli_transport_close(struct smbcli_transport *transport)
 		event_remove_fd(transport->event.ctx, transport->event.fde);
 		event_remove_timed(transport->event.ctx, transport->event.te);
 		event_context_destroy(transport->event.ctx);
-		talloc_destroy(transport->mem_ctx);
+		talloc_free(transport);
 	}
 }
 
@@ -456,7 +453,7 @@ static void smbcli_transport_process_recv(struct smbcli_transport *transport)
 		if (transport->recv_buffer.received == NBT_HDR_SIZE) {
 			/* we've got a full header */
 			transport->recv_buffer.req_size = smb_len(transport->recv_buffer.header) + NBT_HDR_SIZE;
-			transport->recv_buffer.buffer = talloc(transport->mem_ctx,
+			transport->recv_buffer.buffer = talloc(transport,
 							       NBT_HDR_SIZE+transport->recv_buffer.req_size);
 			if (transport->recv_buffer.buffer == NULL) {
 				smbcli_transport_dead(transport);

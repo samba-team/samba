@@ -20,6 +20,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+/*
+  inspired by http://swapped.cc/halloc/
+*/
+
 #include "includes.h"
 
 #define MAX_TALLOC_SIZE 0x10000000
@@ -81,24 +85,49 @@ void *talloc(void *context, size_t size)
 
 
 /*
-  create a named talloc pointer
+  add a name to an existing pointer - va_list version
+*/
+static void talloc_set_name_v(void *ptr, const char *fmt, va_list ap)
+{
+	struct talloc_chunk *tc;
+
+	tc = ((struct talloc_chunk *)ptr)-1;
+	if (tc->magic != TALLOC_MAGIC) {
+		return;
+	}
+
+	vasprintf(&tc->name, fmt, ap);
+}
+
+/*
+  add a name to an existing pointer
+*/
+void talloc_set_name(void *ptr, const char *fmt, ...) _PRINTF_ATTRIBUTE(2,3)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	talloc_set_name_v(ptr, fmt, ap);
+	va_end(ap);
+}
+
+/*
+  create a named talloc pointer. Any talloc pointer can be named, and
+  talloc_named() operates just like talloc() except that it allows you
+  to name the pointer.
 */
 void *talloc_named(void *context, size_t size, 
 		   const char *fmt, ...) _PRINTF_ATTRIBUTE(3,4)
 {
 	va_list ap;
 	void *ptr;
-	struct talloc_chunk *tc;
 
 	ptr = talloc(context, size);
 	if (ptr == NULL) {
 		return NULL;
 	}
 
-	tc = ((struct talloc_chunk *)ptr)-1;
-
 	va_start(ap, fmt);
-	vasprintf(&tc->name, fmt, ap);
+	talloc_set_name_v(ptr, fmt, ap);
 	va_end(ap);
 
 	return ptr;
