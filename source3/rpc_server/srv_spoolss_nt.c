@@ -587,8 +587,8 @@ static BOOL convert_printer_driver_info(const SPOOL_PRINTER_DRIVER_INFO_LEVEL *u
 
 static BOOL convert_devicemode(DEVICEMODE devmode, NT_DEVICEMODE *nt_devmode)
 {
-	unistr_to_dos(nt_devmode->devicename, (char *)devmode.devicename.buffer, 31);
-	unistr_to_dos(nt_devmode->formname, (char *)devmode.formname.buffer, 31);
+	unistr_to_ascii(nt_devmode->devicename, (char *)devmode.devicename.buffer, 31);
+	unistr_to_ascii(nt_devmode->formname, (char *)devmode.formname.buffer, 31);
 
 	nt_devmode->specversion=devmode.specversion;
 	nt_devmode->driverversion=devmode.driverversion;
@@ -1892,6 +1892,17 @@ static BOOL construct_printer_info_2(fstring servername, PRINTER_INFO_2 *printer
 
 	printer->devmode=devmode;
 	
+	if (ntprinter.info_2->secdesc.len != 0)
+	{
+		/* steal the printer info sec_desc structure.  [badly done]. */
+		printer->secdesc = ntprinter.info_2->secdesc.sec;
+		ZERO_STRUCT(ntprinter.info_2->secdesc);
+	}
+	else
+	{
+		printer->secdesc = NULL;
+	}
+
 	safe_free(queue);
 	free_a_printer(ntprinter, 2);
 	return True;
@@ -1901,6 +1912,31 @@ static BOOL construct_printer_info_2(fstring servername, PRINTER_INFO_2 *printer
 	safe_free(queue);
 	free_a_printer(ntprinter, 2);
 	return False;
+}
+
+/********************************************************************
+ * construct_printer_info_3
+ * fill a printer_info_3 struct
+ ********************************************************************/
+static BOOL construct_printer_info_3(fstring servername,
+			PRINTER_INFO_3 *printer, int snum)
+{
+	NT_PRINTER_INFO_LEVEL ntprinter;
+
+	if (get_a_printer(&ntprinter, 2, lp_servicename(snum)) !=0 )
+		return False;
+		
+	printer->flags = 4; /* no idea, yet.  see MSDN. */
+	if (ntprinter.info_2->secdesc.len != 0)
+	{
+		/* steal the printer info sec_desc structure.  [badly done]. */
+		printer->sec = *ntprinter.info_2->secdesc.sec;
+		safe_free(ntprinter.info_2->secdesc.sec);
+		ZERO_STRUCT(ntprinter.info_2->secdesc);
+	}
+
+	free_a_printer(ntprinter, 2);
+	return True;
 }
 
 /********************************************************************
@@ -2339,6 +2375,41 @@ static uint32 getprinter_level_2(fstring servername, int snum, NEW_BUFFER *buffe
 
 /****************************************************************************
 ****************************************************************************/
+static uint32 getprinter_level_3(fstring servername, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+{
+	PRINTER_INFO_3 *printer=NULL;
+	fstring temp;
+
+	if((printer=(PRINTER_INFO_3*)malloc(sizeof(PRINTER_INFO_3)))==NULL)
+		return ERROR_NOT_ENOUGH_MEMORY;
+	
+	fstrcpy(temp, "\\\\");
+	fstrcat(temp, servername);
+	construct_printer_info_3(temp, printer, snum);
+	
+	/* check the required size. */	
+	*needed += spoolss_size_printer_info_3(printer);
+
+	if (!alloc_buffer_size(buffer, *needed)) {
+		safe_free(printer);
+		return ERROR_INSUFFICIENT_BUFFER;
+	}
+
+	/* fill the buffer with the structures */
+	new_smb_io_printer_info_3("", buffer, printer, 0);	
+	
+	/* clear memory */
+	free_sec_desc(&printer->sec);
+
+	if (*needed > offered) {
+		return ERROR_INSUFFICIENT_BUFFER;
+	}
+	else
+		return NT_STATUS_NO_PROBLEMO;	
+}
+
+/****************************************************************************
+****************************************************************************/
 uint32 _spoolss_getprinter(POLICY_HND *handle, uint32 level,
 			   NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
@@ -2355,13 +2426,12 @@ uint32 _spoolss_getprinter(POLICY_HND *handle, uint32 level,
 	switch (level) {
 	case 0:
 		return getprinter_level_0(servername, snum, buffer, offered, needed);
-		break;
 	case 1:
 		return getprinter_level_1(servername,snum, buffer, offered, needed);
-		break;
 	case 2:		
 		return getprinter_level_2(servername,snum, buffer, offered, needed);
-		break;
+	case 3:		
+		return getprinter_level_3(servername,snum, buffer, offered, needed);
 	default:
 		return ERROR_INVALID_LEVEL;
 		break;

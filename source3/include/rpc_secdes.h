@@ -2,9 +2,8 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    SMB parameters and setup
-   Copyright (C) Andrew Tridgell 1992-1997
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1997
-   Copyright (C) Paul Ashton 1997
+   Copyright (C) Andrew Tridgell              1992-2000
+   Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -113,6 +112,7 @@ typedef struct security_acl_info
 	SEC_ACE *ace;
 
 } SEC_ACL;
+
 
 /* SEC_DESC */
 typedef struct security_descriptor_info

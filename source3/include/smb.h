@@ -1683,8 +1683,9 @@ struct ntdom_info
 	int max_xmit_frag;
 };
 
-#include "nt_printing.h"
 #include "rpc_creds.h"
+#include "rpc_secdes.h"
+#include "nt_printing.h"
 #include "ntdomain.h"
 
 #include "client.h"

@@ -41,9 +41,8 @@ int nt_printing_init(void)
 
 	if (tdb && local_pid == sys_getpid()) return True;
 	tdb = tdb_open(lock_path("ntdrivers.tdb"), 0, 0, O_RDWR|O_CREAT, 0600);
-	if (!tdb) {
 		DEBUG(0,("Failed to open nt drivers database\n"));
-	}
+
 	local_pid = sys_getpid();
 
 	/* handle a Samba upgrade */
@@ -757,6 +756,7 @@ static void free_nt_printer_info_level_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr)
 	DEBUG(106,("free_nt_printer_info_level_2: deleting info\n"));
 
 	free_nt_devicemode(&info->devmode);
+	free_sec_desc_buf(&info->secdesc);
 
 	for(param_ptr = info->specific; param_ptr; ) {
 		NT_PRINTER_PARAM *tofree = param_ptr;

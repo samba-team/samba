@@ -244,7 +244,7 @@ typedef struct nt_printer_info_level_2
 	fstring datatype;
 	fstring parameters;
 	NT_PRINTER_PARAM *specific;
-	/* SEC_DESC_BUF *secdesc; */
+	SEC_DESC_BUF secdesc;
 	/* not used but ... and how ??? */
 	uint32 changeid;
 	uint32 c_setprinter;
