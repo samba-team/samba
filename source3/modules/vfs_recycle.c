@@ -37,7 +37,7 @@ static const char *delimiter = "|";		/* delimiter for options */
 
 typedef struct recycle_bin_struct
 {
-	TALLOC_CTX *ctx;
+	TALLOC_CTX *mem_ctx;
 	char	*repository;		/* name of the recycle bin directory */
 	BOOL	keep_dir_tree;		/* keep directory structure of deleted file in recycle bin */
 	BOOL	versions;		/* create versions of deleted files with identical name */
@@ -47,6 +47,19 @@ typedef struct recycle_bin_struct
 	char	*noversions;		/* which files to exclude from versioning */
 	SMB_OFF_T maxsize;		/* maximum file size to be saved */
 } recycle_bin_struct;
+
+typedef struct recycle_bin_connections {
+	int conn;
+	recycle_bin_struct *data;
+	struct recycle_bin_connections *next;
+} recycle_bin_connections;
+
+typedef struct recycle_bin_private_data {
+	TALLOC_CTX *mem_ctx;
+	recycle_bin_connections *conns;
+} recycle_bin_private_data;
+
+struct smb_vfs_handle_struct *recycle_bin_private_handle;
 
 /* VFS operations */
 static struct vfs_ops default_vfs_ops;   /* For passthrough operation */
@@ -69,16 +82,6 @@ static vfs_op_tuple recycle_ops[] = {
 	{NULL,				SMB_VFS_OP_NOOP,	SMB_VFS_LAYER_NOOP}
 };
 
-static BOOL check_bool_param(const char *value)
-{
-	if (strwicmp(value, "yes") == 0 ||
-	    strwicmp(value, "true") == 0 ||
-	    strwicmp(value, "1") == 0)
-		return True;
-
-	return False;
-}
-
 /**
  * VFS initialisation function.
  *
@@ -87,6 +90,8 @@ static BOOL check_bool_param(const char *value)
 static vfs_op_tuple *recycle_init(const struct vfs_ops *def_vfs_ops,
 			struct smb_vfs_handle_struct *vfs_handle)
 {
+	TALLOC_CTX *mem_ctx = NULL;
+
 	DEBUG(10, ("Initializing VFS module recycle\n"));
 	memcpy(&default_vfs_ops, def_vfs_ops, sizeof(struct vfs_ops));
 	vfs_recycle_debug_level = debug_add_class("vfs_recycle_bin");
@@ -97,6 +102,20 @@ static vfs_op_tuple *recycle_init(const struct vfs_ops *def_vfs_ops,
 		DEBUG(0, ("vfs_recycle: Debug class number of 'vfs_recycle': %d\n", vfs_recycle_debug_level));
 	}
 
+	recycle_bin_private_handle = vfs_handle;
+	if (!(mem_ctx = talloc_init("recycle bin data"))) {
+		DEBUG(0, ("Failed to allocate memory in VFS module recycle_bin\n"));
+		return NULL;
+	}
+
+	recycle_bin_private_handle->data = talloc(mem_ctx, sizeof(recycle_bin_private_data));
+	if (recycle_bin_private_handle->data == NULL) {
+		DEBUG(0, ("Failed to allocate memory in VFS module recycle_bin\n"));
+		return NULL;
+	}
+	((recycle_bin_private_data *)(recycle_bin_private_handle->data))->mem_ctx = mem_ctx;
+	((recycle_bin_private_data *)(recycle_bin_private_handle->data))->conns = NULL;
+
 	return recycle_ops;
 }
 
@@ -104,84 +123,91 @@ static int recycle_connect(struct connection_struct *conn, const char *service, 
 {
 	TALLOC_CTX *ctx = NULL;
 	recycle_bin_struct *recbin;
-	char *servicename;
-	char *tmp_str;
+	recycle_bin_connections *recconn;
+	recycle_bin_connections *recconnbase;
+	recycle_bin_private_data *recdata;
+	const char *tmp_str;
 
 	DEBUG(10, ("Called for service %s (%d) as user %s\n", service, SNUM(conn), user));
 
-	if (!(ctx = talloc_init("recycle bin"))) {
-		DEBUG(0, ("Failed to allocate memory in VFS module recycle_bin\n"));
-		return 0;
+	if (recycle_bin_private_handle)
+		recdata = (recycle_bin_private_data *)(recycle_bin_private_handle->data);
+	else {
+		DEBUG(0, ("Recycle bin not initialized!\n"));
+		return -1;
 	}
 
-	recbin = talloc(ctx,sizeof(recycle_bin_struct));
-	if ( recbin == NULL) {
+	if (!(ctx = talloc_init("recycle bin connection"))) {
 		DEBUG(0, ("Failed to allocate memory in VFS module recycle_bin\n"));
 		return -1;
 	}
-	recbin->ctx = ctx;
 
-	/* Set defaults */
-	recbin->repository = talloc_strdup(ctx, ".recycle");
-	ALLOC_CHECK(recbin->repository, error);
-	recbin->keep_dir_tree = False;
-	recbin->versions = False;
-	recbin->touch = False;
-	recbin->exclude = "";
-	recbin->exclude_dir = "";
-	recbin->noversions = "";
-	recbin->maxsize = 0;
+	recbin = talloc_zero(ctx, sizeof(recycle_bin_struct));
+	if (recbin == NULL) {
+		DEBUG(0, ("Failed to allocate memory in VFS module recycle_bin\n"));
+		return -1;
+	}
+	recbin->mem_ctx = ctx;
 
 	/* parse configuration options */
-	servicename = talloc_strdup(recbin->ctx, lp_servicename(SNUM(conn)));
-	DEBUG(10, ("servicename = %s\n",servicename));
-	if ((tmp_str = lp_parm_string(servicename, "vfs_recycle_bin", "repository")) != NULL) {
-		recbin->repository = talloc_sub_conn(ctx, conn, tmp_str);
+	if ((tmp_str = lp_parm_const_string(SNUM(conn), "vfs_recycle_bin", "repository", ".recycle")) != NULL) {
+		recbin->repository = talloc_sub_conn(recbin->mem_ctx, conn, tmp_str);
 		ALLOC_CHECK(recbin->repository, error);
 		trim_string(recbin->repository, "/", "/");
 		DEBUG(5, ("recycle.bin: repository = %s\n", recbin->repository));
+	} else {
+		DEBUG(0,("recycle.bin: no repository found (fail) !\n"));
+		goto error;
 	}
-	if ((tmp_str = lp_parm_string(servicename, "vfs_recycle_bin", "keeptree")) != NULL) {
-		if (check_bool_param(tmp_str) == True)
-			recbin->keep_dir_tree = True;
-		DEBUG(5, ("recycle.bin: keeptree = %s\n", tmp_str));
+	
+	recbin->keep_dir_tree = lp_parm_bool(SNUM(conn), "vfs_recycle_bin", "keeptree", False);
+	DEBUG(5, ("recycle.bin: keeptree = %d\n", recbin->keep_dir_tree));
+	
+	recbin->versions = lp_parm_bool(SNUM(conn), "vfs_recycle_bin", "versions", False);
+	DEBUG(5, ("recycle.bin: versions = %d\n", recbin->versions));
+	
+	recbin->touch = lp_parm_bool(SNUM(conn), "vfs_recycle_bin", "touch", False);
+	DEBUG(5, ("recycle.bin: touch = %d\n", recbin->touch));
+
+	recbin->maxsize = lp_parm_ulong(SNUM(conn), "vfs_recycle_bin", "maxsize" , 0);
+	if (recbin->maxsize == 0) {
+		recbin->maxsize = -1;
+		DEBUG(5, ("recycle.bin: maxsize = -infinite-\n"));
+	} else {
+		DEBUG(5, ("recycle.bin: maxsize = %ld\n", (long int)recbin->maxsize));
 	}
-	if ((tmp_str = lp_parm_string(servicename, "vfs_recycle_bin", "versions")) != NULL) {
-		if (check_bool_param(tmp_str) == True)
-			recbin->versions = True;
-		DEBUG(5, ("recycle.bin: versions = %s\n", tmp_str));
-	}
-	if ((tmp_str = lp_parm_string(servicename, "vfs_recycle_bin", "touch")) != NULL) {
-		if (check_bool_param(tmp_str) == True)
-			recbin->touch = True;
-		DEBUG(5, ("recycle.bin: touch = %s\n", tmp_str));
-	}
-	if ((tmp_str = lp_parm_string(servicename, "vfs_recycle_bin", "maxsize")) != NULL) {
-		recbin->maxsize = strtoul(tmp_str, NULL, 10);
-		if (recbin->maxsize == 0) {
-			recbin->maxsize = -1;
-			DEBUG(5, ("recycle.bin: maxsize = -infinite-\n"));
-		} else {
-			DEBUG(5, ("recycle.bin: maxsize = %ld\n", (long int)recbin->maxsize));
-		}
-	}
-	if ((tmp_str = lp_parm_string(servicename, "vfs_recycle_bin", "exclude")) != NULL) {
-		recbin->exclude = talloc_strdup(ctx, tmp_str);
+
+	if ((tmp_str = lp_parm_const_string(SNUM(conn), "vfs_recycle_bin", "exclude", "")) != NULL) {
+		recbin->exclude = talloc_strdup(recbin->mem_ctx, tmp_str);
 		ALLOC_CHECK(recbin->exclude, error);
 		DEBUG(5, ("recycle.bin: exclude = %s\n", recbin->exclude));
 	}
-	if ((tmp_str = lp_parm_string(servicename,"vfs_recycle_bin", "exclude_dir")) != NULL) {
-		recbin->exclude_dir = talloc_strdup(ctx, tmp_str);
+	if ((tmp_str = lp_parm_const_string(SNUM(conn), "vfs_recycle_bin", "exclude_dir", "")) != NULL) {
+		recbin->exclude_dir = talloc_strdup(recbin->mem_ctx, tmp_str);
 		ALLOC_CHECK(recbin->exclude_dir, error);
 		DEBUG(5, ("recycle.bin: exclude_dir = %s\n", recbin->exclude_dir));
 	}
-	if ((tmp_str = lp_parm_string(servicename,"vfs_recycle_bin", "noversions")) != NULL) {
-		recbin->noversions = talloc_strdup(ctx, tmp_str);
+	if ((tmp_str = lp_parm_const_string(SNUM(conn), "vfs_recycle_bin", "noversions", "")) != NULL) {
+		recbin->noversions = talloc_strdup(recbin->mem_ctx, tmp_str);
 		ALLOC_CHECK(recbin->noversions, error);
 		DEBUG(5, ("recycle.bin: noversions = %s\n", recbin->noversions));
 	}
 
-	conn->vfs_private = (void *)recbin;
+	recconn = talloc(recdata->mem_ctx, sizeof(recycle_bin_connections));
+	if (recconn == NULL) {
+		DEBUG(0, ("Failed to allocate memory in VFS module recycle_bin\n"));
+		goto error;
+	}
+	recconn->conn = SNUM(conn);
+	recconn->data = recbin;
+	recconn->next = NULL;
+	if (recdata->conns) {
+		recconnbase = recdata->conns;
+		while (recconnbase->next != NULL) recconnbase = recconnbase->next;
+		recconnbase->next = recconn;
+	} else {
+		recdata->conns = recconn;
+	}
 	return default_vfs_ops.connect(conn, service, user);
 
 error:
@@ -191,10 +217,35 @@ error:
 
 static void recycle_disconnect(struct connection_struct *conn)
 {
+	recycle_bin_private_data *recdata;
+	recycle_bin_connections *recconn;
+
 	DEBUG(10, ("Disconnecting VFS module recycle bin\n"));
-	if (conn->vfs_private) {
-		talloc_destroy(((recycle_bin_struct *)conn->vfs_private)->ctx);
-		conn->vfs_private = NULL;
+
+	if (recycle_bin_private_handle)
+		recdata = (recycle_bin_private_data *)(recycle_bin_private_handle->data);
+	else {
+		DEBUG(0, ("Recycle bin not initialized!\n"));
+		return;
+	}
+
+	if (recdata) {
+		if (recdata->conns) {
+			if (recdata->conns->conn == SNUM(conn)) {
+				talloc_destroy(recdata->conns->data->mem_ctx);
+				recdata->conns = recdata->conns->next;
+			} else {
+				recconn = recdata->conns;
+				while (recconn->next) {
+					if (recconn->next->conn == SNUM(conn)) {
+						talloc_destroy(recconn->next->data->mem_ctx);
+						recconn->next = recconn->next->next;
+						break;
+					}
+					recconn = recconn->next;
+				}
+			}
+		}
 	}
 	default_vfs_ops.disconnect(conn);
 }
@@ -379,26 +430,35 @@ static void recycle_touch(connection_struct *conn, const char *fname)
 /**
  * Check if file should be recycled
  **/
-static int recycle_unlink(connection_struct *conn, const char *inname)
+static int recycle_unlink(connection_struct *conn, const char *file_name)
 {
+	recycle_bin_private_data *recdata;
+	recycle_bin_connections *recconn;
 	recycle_bin_struct *recbin;
-	char *file_name = NULL;
 	char *path_name = NULL;
        	char *temp_name = NULL;
 	char *final_name = NULL;
-	char *base;
+	const char *base;
 	int i;
-	SMB_BIG_UINT dfree, dsize, bsize;
-	SMB_OFF_T file_size, space_avail;
+/*	SMB_BIG_UINT dfree, dsize, bsize;	*/
+	SMB_OFF_T file_size; /* space_avail;	*/
 	BOOL exist;
 	int rc = -1;
 
-	file_name = strdup(inname);
-	ALLOC_CHECK(file_name, done);
-
-	if (conn->vfs_private)
-		recbin = (recycle_bin_struct *)conn->vfs_private;
-	else {
+	recbin = NULL;
+	if (recycle_bin_private_handle) {
+		recdata = (recycle_bin_private_data *)(recycle_bin_private_handle->data);
+		if (recdata) {
+			if (recdata->conns) {
+				recconn = recdata->conns;
+				while (recconn && recconn->conn != SNUM(conn)) recconn = recconn->next;
+				if (recconn != NULL) {
+					recbin = recconn->data;
+				}
+			}
+		}
+	}
+	if (recbin == NULL) {
 		DEBUG(0, ("Recycle bin not initialized!\n"));
 		rc = default_vfs_ops.unlink(conn, file_name);
 		goto done;
@@ -504,10 +564,9 @@ static int recycle_unlink(connection_struct *conn, const char *inname)
 		}
 	}
 
-	final_name = (char *)malloc(PATH_MAX);
+	asprintf(&final_name, "%s/%s", temp_name, base);
 	ALLOC_CHECK(final_name, done);
-	snprintf(final_name, PATH_MAX, "%s/%s", temp_name, base);
-	DEBUG(10, ("recycle.bin: recycled file name%s\n", temp_name));		/* new filename with path */
+	DEBUG(10, ("recycle.bin: recycled file name: %s\n", temp_name));		/* new filename with path */
 
 	/* check if we should delete file from recycle bin */
 	if (recycle_file_exist(conn, final_name)) {
@@ -538,7 +597,6 @@ static int recycle_unlink(connection_struct *conn, const char *inname)
 		recycle_touch(conn, final_name);
 
 done:
-	SAFE_FREE(file_name);
 	SAFE_FREE(path_name);
 	SAFE_FREE(temp_name);
 	SAFE_FREE(final_name);
@@ -546,6 +604,6 @@ done:
 }
 
 int vfs_recycle_init(void)
-{  
-   return smb_register_vfs("recycle", recycle_init, SMB_VFS_INTERFACE_VERSION);
+{
+	return smb_register_vfs("recycle", recycle_init, SMB_VFS_INTERFACE_VERSION);
 }

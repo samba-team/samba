@@ -512,7 +512,7 @@ static NTSTATUS xmlsam_add_sam_account(struct pdb_methods *methods, SAM_ACCOUNT 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS xmlsam_init(PDB_CONTEXT * pdb_context, PDB_METHODS ** pdb_method,
+static NTSTATUS xmlsam_init(PDB_CONTEXT * pdb_context, PDB_METHODS ** pdb_method,
 		 const char *location)
 {
 	NTSTATUS nt_status;
@@ -553,8 +553,7 @@ NTSTATUS xmlsam_init(PDB_CONTEXT * pdb_context, PDB_METHODS ** pdb_method,
 	(*pdb_method)->enum_group_mapping = NULL;
 
 	data = talloc(pdb_context->mem_ctx, sizeof(pdb_xml));
-	data->location =
-		(location ? talloc_strdup(pdb_context->mem_ctx, location) : "passdb.xml");
+	data->location = talloc_strdup(pdb_context->mem_ctx, (location ? location : "passdb.xml"));
 	data->pwent = NULL;
 	data->written = 0;
 	(*pdb_method)->private_data = data;
@@ -564,7 +563,7 @@ NTSTATUS xmlsam_init(PDB_CONTEXT * pdb_context, PDB_METHODS ** pdb_method,
 	return NT_STATUS_OK;
 }
 
-int pdb_xml_init() 
+int pdb_xml_init(void) 
 {
 	return smb_register_passdb("xml", xmlsam_init, PASSDB_INTERFACE_VERSION);
 }
