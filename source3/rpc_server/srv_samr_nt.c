@@ -141,8 +141,6 @@ static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask)
 
 	for (pdb_init_sam(&pwd); pdb_getsampwent(pwd) == True; pwd=NULL, pdb_init_sam(&pwd) ) {
 		
-		uint32 len_sam_name, len_sam_full, len_sam_desc;
-
 		if (acb_mask != 0 && !(pwd->acct_ctrl & acb_mask)) {
 			pdb_free_sam(&pwd);
 			DEBUG(5,(" acb_mask %x reject\n", acb_mask));
