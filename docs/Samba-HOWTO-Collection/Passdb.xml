@@ -46,10 +46,8 @@ as follows:
 	<varlistentry><term>Plain Text</term>
 		<listitem>
 			<para>
-			This isn't really a backend at all, but is
-			listed here for simplicity.  Samba can be
-			configured to pass plaintext authentication
-			requests to the traditional UNIX/Linux
+			This isn't really a backend at all, but is listed here for simplicity.  Samba can be
+			configured to pass plaintext authentication requests to the traditional UNIX/Linux
 			<filename>/etc/passwd</filename> and <filename>/etc/shadow</filename>
 			style subsystems.  On systems that have Pluggable Authentication Modules (PAM)
 			support, all PAM modules are supported. The behavior is just as it was with
@@ -459,8 +457,62 @@ Samba-3 introduces a number of new password backend capabilities.
 		</listitem>
 	</itemizedlist>
 
+	</sect2>
+
+	<sect2>
+	<title>Regarding LDAP Directories and Windows Computer Accounts</title>
+
+		<para>
+		Samba doesn't provide a turnkey solution to LDAP. It is best to deal with the design and configuration
+		of an LDAP directory prior to integration with Samba. A working knowledge of LDAP makes Samba integration
+		easy and the lack of a working knowledge of LDAP can make it one a frustrating experience.
+		</para>
+
+		<para>
+		Computer (machine) accounts can be placed where ever you like in an LDAP directory subject to some
+		constraints that are described in this chapter.
+		</para>
+
+		<para>
+		The POSIX and SambaSAMAccount components of computer (machine) accounts are both used by Samba.
+		i.e.: Machine  accounts are treated inside Samba in the same way that Windows NT4/200X treats
+		them. A user account and a machine account are indistinquishable from each other, except that
+		the machine account ends in a '$' character, as do trust accounts.
+		</para>
+
+		<para>
+		The need for Windows user, group, machine, trust, etc. accounts to be tied to a valid UNIX uid
+		is a design decision that was made a long way back in the history of Samba development. It is
+		unlikely that this decision will be reversed of changed during the remaining life of the
+		Samba-3.x series.
+		</para>
+
+		<para>
+		The resolution of a UID from the Windows SID is achieved within Samba through a mechanism that
+		must refer back to the host operating system on which Samba is running. The Name Service
+		Switcher (NSS) is the preferred mechanism that shields applications (like Samba) from the
+		need to know everything about every host OS it runs on.
+		</para>
+
+		<para>
+		Samba asks the host OS to provide a UID via the <quote>passwd</quote>, <quote>shadow</quote>
+		and <quote>group</quote> facilities in the NSS control (configuration) file. The best tool
+		for achieving this is left up to the UNIX administrator to determine. It is not imposed by
+		Samba. Samba provides winbindd together with its support libraries as one method. It is
+		possible to do this via LDAP - and for that Samba provides the appropriate hooks so that
+		all account entities can be located in an LDAP directory.
+		</para>
+
+		<para>
+		For many the weapon of choice is to use the PADL nss_ldap utility. This utility must
+		be configured so that computer accounts can be resolved to a POSIX/UNIX account UID. That
+		is fundamentally an LDAP design question.  The information provided on the Samba list and
+		in the documentation is directed at providing working examples only. The design
+		of an LDAP directory is a complex subject that is beyond the scope of this documentation.
+		</para>
 
 	</sect2>
+
 </sect1>
 
 <sect1 id="acctmgmttools">
