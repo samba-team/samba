@@ -109,6 +109,21 @@ static NTSTATUS dcesrv_crypto_ntlmssp_unseal(struct dcesrv_auth *auth, TALLOC_CT
 }
 
 /*
+  get the session key
+*/
+static NTSTATUS dcesrv_crypto_ntlmssp_session_key(struct dcesrv_auth *auth, uint8_t session_key[16])
+{
+	struct auth_ntlmssp_state *auth_ntlmssp_state = auth->crypto_ctx.private_data;
+
+	if (auth_ntlmssp_state->ntlmssp_state->session_key.length != 16) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+	memcpy(session_key, auth_ntlmssp_state->ntlmssp_state->session_key.data, 16);
+
+	return NT_STATUS_OK;
+}
+
+/*
   end crypto state
 */
 static void dcesrv_crypto_ntlmssp_end(struct dcesrv_auth *auth)
@@ -131,6 +146,7 @@ static const struct dcesrv_crypto_ops dcesrv_crypto_ntlmssp_ops = {
 	.sign		= dcesrv_crypto_ntlmssp_sign,
 	.check_sig	= dcesrv_crypto_ntlmssp_check_sig,
 	.unseal		= dcesrv_crypto_ntlmssp_unseal,
+	.session_key	= dcesrv_crypto_ntlmssp_session_key,
 	.end		= dcesrv_crypto_ntlmssp_end
 };
 

@@ -35,9 +35,71 @@ struct server_pipe_state {
 	struct creds_CredentialState *creds;
 };
 
+
+/*
+  a client has connected to the netlogon server using schannel, so we need
+  to re-establish the credentials state
+*/
+static NTSTATUS netlogon_schannel_setup(struct dcesrv_call_state *dce_call) 
+{
+	struct server_pipe_state *state;
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	mem_ctx = talloc_init("netlogon_bind");
+	if (!mem_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	state = talloc_p(mem_ctx, struct server_pipe_state);
+	if (state == NULL) {
+		talloc_destroy(mem_ctx);
+	}
+	ZERO_STRUCTP(state);
+	state->mem_ctx = mem_ctx;
+	state->authenticated = True;
+	
+	state->creds = talloc_p(mem_ctx, struct creds_CredentialState);
+	if (state->creds == NULL) {
+		talloc_destroy(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+	ZERO_STRUCTP(state->creds);
+	
+	if (dce_call->conn->auth_state.session_info == NULL) {
+		talloc_destroy(mem_ctx);
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+	
+	status = schannel_fetch_session_key(mem_ctx, 
+					    dce_call->conn->auth_state.session_info->workstation, 
+					    state->creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_destroy(mem_ctx);
+		return status;
+	}
+	
+	dce_call->conn->private = state;
+
+	return NT_STATUS_OK;
+}
+
+/*
+  a hook for bind on the netlogon pipe
+*/
 static NTSTATUS netlogon_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *di) 
 {
 	dce_call->conn->private = NULL;
+
+	/* if this is a schannel bind then we need to reconstruct the pipe state */
+	if (dce_call->conn->auth_state.auth_info &&
+	    dce_call->conn->auth_state.auth_info->auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
+		NTSTATUS status;
+
+		status = netlogon_schannel_setup(dce_call);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
 
 	return NT_STATUS_OK;
 }
@@ -861,13 +923,115 @@ static WERROR netr_DSRGETSITENAME(struct dcesrv_call_state *dce_call, TALLOC_CTX
 }
 
 
-/* 
-  netr_NETRLOGONGETDOMAININFO 
+/*
+  fill in a netr_DomainTrustInfo from a ldb search result
 */
-static WERROR netr_NETRLOGONGETDOMAININFO(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_NETRLOGONGETDOMAININFO *r)
+static NTSTATUS fill_domain_trust_info(TALLOC_CTX *mem_ctx, struct ldb_message *res,
+				       struct netr_DomainTrustInfo *info)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	ZERO_STRUCTP(info);
+	
+	info->domainname.string = samdb_result_string(res, "flatName", NULL);
+	if (info->domainname.string == NULL) {
+		info->domainname.string = samdb_result_string(res, "name", NULL);
+		info->fulldomainname.string = samdb_result_string(res, "dnsDomain", NULL);
+	} else {
+		info->fulldomainname.string = samdb_result_string(res, "name", NULL);
+	}
+
+	/* TODO: we need proper forest support */
+	info->forest.string = info->fulldomainname.string;
+
+	info->guid = samdb_result_guid(res, "objectGUID");
+	info->sid = samdb_result_dom_sid(mem_ctx, res, "objectSid");
+
+	return NT_STATUS_OK;
+}
+
+/* 
+  netr_LogonGetDomainInfo
+  this is called as part of the ADS domain logon procedure.
+*/
+static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					struct netr_LogonGetDomainInfo *r)
+{
+	struct server_pipe_state *pipe_state = dce_call->conn->private;
+	const char * const attrs[] = { "name", "dnsDomain", "objectSid", 
+				       "objectGUID", "flatName", NULL };
+	void *sam_ctx;
+	struct ldb_message **res1, **res2;
+	struct netr_DomainInfo1 *info1;
+	int ret1, ret2, i;
+	NTSTATUS status;
+
+	if (!pipe_state) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (!netr_creds_server_step_check(pipe_state, 
+					  r->in.credential, r->out.credential)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	sam_ctx = samdb_connect();
+	if (sam_ctx == NULL) {
+		return NT_STATUS_INVALID_SYSTEM_SERVICE;
+	}
+
+	/* we need to do two searches. The first will pull our primary
+	   domain and the second will pull any trusted domains. Our
+	   primary domain is also a "trusted" domain, so we need to
+	   put the primary domain into the lists of returned trusts as
+	   well */
+	ret1 = samdb_search(sam_ctx, mem_ctx, NULL, &res1, attrs, "(objectClass=domainDNS)");
+	if (ret1 != 1) {
+		samdb_close(sam_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	ret2 = samdb_search(sam_ctx, mem_ctx, NULL, &res2, attrs, "(objectClass=trustedDomain)");
+	if (ret2 == -1) {
+		samdb_close(sam_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	/* we don't need the db link any more */
+	samdb_close(sam_ctx);
+
+	info1 = talloc_p(mem_ctx, struct netr_DomainInfo1);
+	if (info1 == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ZERO_STRUCTP(info1);
+
+	info1->num_trusts = ret2 + 1;
+	info1->trusts = talloc_array_p(mem_ctx, struct netr_DomainTrustInfo, 
+				       info1->num_trusts);
+	if (info1->trusts == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = fill_domain_trust_info(mem_ctx, res1[0], &info1->domaininfo);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = fill_domain_trust_info(mem_ctx, res1[0], &info1->trusts[0]);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	for (i=0;i<ret2;i++) {
+		status = fill_domain_trust_info(mem_ctx, res2[i], &info1->trusts[i+1]);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	r->out.info.info1 = info1;
+
+	return NT_STATUS_OK;
 }
 
 
