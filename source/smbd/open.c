@@ -154,6 +154,17 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 
 		local_flags &= ~O_TRUNC;
 
+#if defined(O_NONBLOCK) && defined(S_ISFIFO)
+		/*
+		 * We would block on opening a FIFO with no one else on the
+		 * other end. Do what we used to do and add O_NONBLOCK to the
+		 * open flags. JRA.
+		 */
+
+		if (VALID_STAT(*psbuf) && S_ISFIFO(psbuf->st_mode))
+			local_flags |= O_NONBLOCK;
+#endif
+
 		/* actually do the open */
 		fsp->fd = fd_open(conn, fname, local_flags, mode);
 
