@@ -919,11 +919,17 @@ Can't find printer handle we created for priunter %s\n", name ));
 			return ERROR_ACCESS_DENIED;
 		}
 
+#if 0 	/* JERRY */
+		/*
+		 * commented out until we can perform some decent client testing
+		 * ok'd by JRA.    --jerry
+		 */
 		if ((printer_default->access_required & SPECIFIC_RIGHTS_MASK)& ~(PRINTER_ACCESS_ADMINISTER|PRINTER_ACCESS_USE)) {
 			DEBUG(3, ("access DENIED for printer open - unknown bits\n"));
 			close_printer_handle(p, handle);
 			return ERROR_ACCESS_DENIED;
                 }
+#endif
 
 		if (printer_default->access_required & PRINTER_ACCESS_ADMINISTER)
 			printer_default->access_required = PRINTER_ACCESS_ADMINISTER;
