@@ -132,6 +132,27 @@ static void decode_printer_info_3(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
 
 /**********************************************************************
 **********************************************************************/
+static void decode_printer_info_7(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
+				uint32 returned, PRINTER_INFO_7 **info)
+{
+	uint32 i;
+	PRINTER_INFO_7  *inf;
+
+	inf=(PRINTER_INFO_7 *)talloc(mem_ctx, returned*sizeof(PRINTER_INFO_7));
+	memset(inf, 0, returned*sizeof(PRINTER_INFO_7));
+
+	prs_set_offset(&buffer->prs,0);
+
+	for (i=0; i<returned; i++) {
+		smb_io_printer_info_7("", buffer, &inf[i], 0);
+	}
+
+	*info=inf;
+}
+
+
+/**********************************************************************
+**********************************************************************/
 static void decode_port_info_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer, 
 			uint32 returned, PORT_INFO_1 **info)
 {
@@ -625,6 +646,9 @@ WERROR cli_spoolss_getprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			break;
 		case 3:
 			decode_printer_info_3(mem_ctx, r.buffer, 1, &ctr->printers_3);
+			break;
+		case 7:
+			decode_printer_info_7(mem_ctx, r.buffer, 1, &ctr->printers_7);
 			break;
 		}			
 	}
