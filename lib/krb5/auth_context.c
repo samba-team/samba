@@ -77,7 +77,8 @@ krb5_auth_con_free(krb5_context context,
 	free_HostAddress(auth_context->remote_address);
 	free(auth_context->remote_address);
     }
-    free_EncryptionKey(&auth_context->key);
+    if(auth_context->keyblock)
+	krb5_free_keylock(context, auth_context->keyblock);
     free_EncryptionKey(&auth_context->remote_subkey);
     free_EncryptionKey(&auth_context->local_subkey);
     free (auth_context);
@@ -210,14 +211,7 @@ krb5_auth_con_getkey(krb5_context context,
 		     krb5_auth_context auth_context,
 		     krb5_keyblock **keyblock)
 {
-  *keyblock = malloc(sizeof(**keyblock));
-  if (*keyblock == NULL)
-    return ENOMEM;
-  (*keyblock)->keytype = auth_context->key.keytype;
-  (*keyblock)->keyvalue.length = 0;
-  return krb5_data_copy (&(*keyblock)->keyvalue,
-			 auth_context->key.keyvalue.data,
-			 auth_context->key.keyvalue.length);
+    return krb5_copy_keyblock(context, auth_context->keyblock, keyblock);
 }
 
 krb5_error_code
