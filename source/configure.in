@@ -33,6 +33,11 @@ AC_ARG_ENABLE(developer, [  --enable-developer      turn on developer warnings a
 	CFLAGS="${CFLAGS} -g -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -DDEBUG_PASSWORD -DDEVELOPER"
     fi])
 
+AC_ARG_ENABLE(krb5developer, [  --enable-krb5developer      turn on developer warnings and debugging, except -Wstrict-prototypes [default=no]],
+    [if eval "test x$enable_krb5developer = xyes"; then
+	CFLAGS="${CFLAGS} -g -Wall -Wshadow -Wpointer-arith -Wcast-qual -Wcast-align -DDEBUG_PASSWORD -DDEVELOPER"
+    fi])
+
 AC_ARG_ENABLE(dmalloc, [  --enable-dmalloc          enable heap debugging [default=no]])
 
 if test "x$enable_dmalloc" = xyes
@@ -2591,7 +2596,6 @@ if test x"$HAVE_WINBIND" = x"yes"; then
 fi
 
 # Display test results
-
 
 WINBIND_TARGETS=""
 WINBIND_STARGETS=""
