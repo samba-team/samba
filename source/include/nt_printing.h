@@ -187,6 +187,7 @@ typedef struct nt_printer_driver_info_level
 #define SPOOL_REG_ASSETNUMBER		"assetNumber"
 #define SPOOL_REG_BYTESPERMINUTE	"bytesPerMinute"
 #define SPOOL_REG_DEFAULTPRIORITY	"defaultPriority"
+#define SPOOL_REG_DESCRIPTION		"description"
 #define SPOOL_REG_DRIVERNAME		"driverName"
 #define SPOOL_REG_DRIVERVERSION		"driverVersion"
 #define SPOOL_REG_FLAGS			"flags"
