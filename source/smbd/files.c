@@ -31,11 +31,7 @@ static int real_max_open_files;
 
 static struct bitmap *file_bmap;
 
-#ifdef USE_FILES_ARRAY
-static files_struct **Files;
-#else
 static files_struct *Files;
-#endif
  
 /* a fsp to use when chaining */
 static files_struct *chain_fsp = NULL;
@@ -79,21 +75,12 @@ files_struct *file_new(void )
 		 * files batch oplocked for quite a long time
 		 * after they have finished with them.
 		 */
-#ifdef USE_FILES_ARRAY
-                for(i = 0; i < real_max_open_files; i++) {
-                  if((fsp = Files[i]) == NULL)
-                    continue;
-                  if (attempt_close_oplocked_file(fsp)) 
-                    return file_new();
-                }
-#else
 		for (fsp=Files;fsp;fsp=next) {
 			next=fsp->next;
 			if (attempt_close_oplocked_file(fsp)) {
 				return file_new();
 			}
 		}
-#endif
 
 		DEBUG(0,("ERROR! Out of file structures\n"));
 		return NULL;
@@ -112,11 +99,7 @@ files_struct *file_new(void )
 	fsp->fnum = i + FILE_HANDLE_OFFSET;
 	string_init(&fsp->fsp_name,"");
 	
-#ifdef USE_FILES_ARRAY
-        Files[i] = fsp;
-#else
 	DLIST_ADD(Files, fsp);
-#endif
 
 	DEBUG(5,("allocated file structure %d, fnum = %d (%d used)\n",
 		 i, fsp->fnum, files_used));
@@ -200,19 +183,6 @@ void file_close_conn(connection_struct *conn)
 {
 	files_struct *fsp, *next;
 	
-#ifdef USE_FILES_ARRAY
-        int i;
-        for (i = 0; i < real_max_open_files; i++) {
-          if((fsp = Files[i]) == NULL)
-            continue;
-          if(fsp->conn == conn && fsp->open) {
-            if (fsp->is_directory)
-              close_directory(fsp);
-            else
-              close_file(fsp,False);
-          }
-        }
-#else
 	for (fsp=Files;fsp;fsp=next) {
 		next = fsp->next;
 		if (fsp->conn == conn && fsp->open) {
@@ -222,7 +192,6 @@ void file_close_conn(connection_struct *conn)
 				close_file(fsp,False); 
 		}
 	}
-#endif
 }
 
 /****************************************************************************
@@ -265,16 +234,10 @@ was %d, actual files available  per session = %d\n",
 		exit_server("out of memory in file_init");
 	}
 
-#ifdef USE_FILES_ARRAY
-    Files = (files_struct **)malloc( sizeof(files_struct *) * real_max_open_files);
-    if(Files == NULL)
-      exit_server("out of memory for file array in file_init");
-#endif
-
-    /*
-     * Ensure that pipe_handle_oppset is set correctly.
-     */
-    set_pipe_handle_offset(real_max_open_files);
+	/*
+	 * Ensure that pipe_handle_oppset is set correctly.
+	 */
+	set_pipe_handle_offset(real_max_open_files);
 }
 
 
@@ -285,19 +248,6 @@ void file_close_user(int vuid)
 {
 	files_struct *fsp, *next;
 
-#ifdef USE_FILES_ARRAY
-        int i;
-        for(i = 0; i < real_max_open_files; i++) {
-          if((fsp = Files[i]) == NULL)
-            continue;
-          if((fsp->vuid == vuid) && fsp->open) {
-            if(!fsp->is_directory)
-              close_file(fsp,False);
-            else
-              close_directory(fsp);
-          }
-        }
-#else
 	for (fsp=Files;fsp;fsp=next) {
 		next=fsp->next;
 		if ((fsp->vuid == vuid) && fsp->open) {
@@ -307,7 +257,6 @@ void file_close_user(int vuid)
 				close_directory(fsp);
 		}
 	}
-#endif
 }
 
 
@@ -321,18 +270,6 @@ files_struct *file_find_dit(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval
 	int count=0;
 	files_struct *fsp;
 
-#ifdef USE_FILES_ARRAY
-	for(count = 0; count < real_max_open_files; count++) {
-		if((fsp = Files[count]) == NULL)
-			continue;
-		if (fsp->open &&
-			fsp->fd_ptr->dev == dev &&
-			fsp->fd_ptr->inode == inode &&
-			(tval ? (fsp->open_time.tv_sec == tval->tv_sec) : True) &&
-			(tval ? (fsp->open_time.tv_usec == tval->tv_usec) : True)) 
-				return fsp;
-		}
-#else
 	for (fsp=Files;fsp;fsp=fsp->next,count++) {
 		if (fsp->open && 
 		    fsp->fd_ptr->dev == dev && 
@@ -345,7 +282,6 @@ files_struct *file_find_dit(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval
 			return fsp;
 		}
 	}
-#endif
 
 	return NULL;
 }
@@ -358,18 +294,9 @@ files_struct *file_find_print(void)
 {
 	files_struct *fsp;
 
-#ifdef USE_FILES_ARRAY
-        int i;
-        for(i = 0; i < real_max_open_files; i++) {
-          if((fsp = Files[i]) == NULL)
-            continue;
-          if (fsp->open && fsp->print_file) return fsp;
-        }
-#else
 	for (fsp=Files;fsp;fsp=fsp->next) {
 		if (fsp->open && fsp->print_file) return fsp;
 	} 
-#endif
 
 	return NULL;
 }
@@ -382,22 +309,12 @@ void file_sync_all(connection_struct *conn)
 {
 	files_struct *fsp, *next;
 
-#ifdef USE_FILES_ARRAY
-        int i;
-        for(i = 0; i < real_max_open_files; i++) {
-          if((fsp = Files[i]) == NULL)
-            continue;
-          if (fsp->open && conn == fsp->conn)
-            sync_file(conn,fsp);
-        }
-#else
 	for (fsp=Files;fsp;fsp=next) {
 		next=fsp->next;
 		if (fsp->open && conn == fsp->conn) {
 			sync_file(conn,fsp);
 		}
 	}
-#endif
 }
 
 
@@ -424,16 +341,7 @@ free up a fsp
 ****************************************************************************/
 void file_free(files_struct *fsp)
 {
-#ifdef USE_FILES_ARRAY
-    files_struct *fsp1 = Files[fsp->fnum - FILE_HANDLE_OFFSET];
-    if(fsp != fsp1)
-      DEBUG(0,("file_free: fnum = %d (array offset %d) <> fsp = %x, fnum = %d!\n",
-            fsp->fnum, fsp->fnum - FILE_HANDLE_OFFSET, fsp1, fsp1->fnum));
-    SMB_ASSERT(fsp == fsp1);
-    Files[fsp->fnum - FILE_HANDLE_OFFSET] = NULL;
-#else
 	DLIST_REMOVE(Files, fsp);
-#endif
 
 	string_free(&fsp->fsp_name);
 
@@ -469,15 +377,6 @@ files_struct *file_fsp(char *buf, int where)
 
 	fnum = SVAL(buf, where);
 
-#ifdef USE_FILES_ARRAY
-        fsp = Files[fnum - FILE_HANDLE_OFFSET];
-        if(!fsp)
-          DEBUG(0,("file_fsp: fnum = %d (array offset %d) gave null fsp !\n",
-                fnum, fnum - FILE_HANDLE_OFFSET));
-        SMB_ASSERT(fsp != NULL);
-
-        return (chain_fsp = fsp);
-#else
 	for (fsp=Files;fsp;fsp=fsp->next, count++) {
 		if (fsp->fnum == fnum) {
 			chain_fsp = fsp;
@@ -488,7 +387,6 @@ files_struct *file_fsp(char *buf, int where)
 		}
 	}
 	return NULL;
-#endif
 }
 
 /****************************************************************************
