@@ -445,6 +445,7 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 	unsigned char pwd[16];
 	int i;
 	uint32 acct_ctrl;
+	const uchar *old_pw;
 
 	/* checks and updates credentials.  creates reply credentials */
 	if (!(p->dc.authenticated && deal_with_creds(p->dc.sess_key, &p->dc.clnt_cred, &q_u->clnt_id.cred, &srv_cred)))
@@ -482,34 +483,43 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 		return NT_STATUS_ACCOUNT_DISABLED;
 	}
 
+	cred_hash3( pwd, q_u->pwd, p->dc.sess_key, 0);
+
 	DEBUG(100,("Server password set : new given value was :\n"));
 	for(i = 0; i < 16; i++)
 		DEBUG(100,("%02X ", q_u->pwd[i]));
 	DEBUG(100,("\n"));
 
-	cred_hash3( pwd, q_u->pwd, p->dc.sess_key, 0);
+	old_pw = pdb_get_nt_passwd(sampass);
 
-	/* lies!  nt and lm passwords are _not_ the same: don't care */
-	if (!pdb_set_lanman_passwd (sampass, pwd, PDB_CHANGED)) {
-		pdb_free_sam(&sampass);
-		return NT_STATUS_NO_MEMORY;
-	}
+	if (old_pw && memcmp(pwd, old_pw, 16) == 0) {
+		/* Avoid backend modificiations and other fun if the 
+		   client changed the password to the *same thing* */
 
-	if (!pdb_set_nt_passwd     (sampass, pwd, PDB_CHANGED)) {
-		pdb_free_sam(&sampass);
-		return NT_STATUS_NO_MEMORY;
-	}
+		ret = True;
+	} else {
 
-	if (!pdb_set_pass_changed_now     (sampass)) {
-		pdb_free_sam(&sampass);
-		/* Not quite sure what this one qualifies as, but this will do */
-		return NT_STATUS_UNSUCCESSFUL; 
+		/* LM password should be NULL for machines */
+		if (!pdb_set_lanman_passwd (sampass, NULL, PDB_CHANGED)) {
+			pdb_free_sam(&sampass);
+			return NT_STATUS_NO_MEMORY;
+		}
+		
+		if (!pdb_set_nt_passwd     (sampass, pwd, PDB_CHANGED)) {
+			pdb_free_sam(&sampass);
+			return NT_STATUS_NO_MEMORY;
+		}
+		
+		if (!pdb_set_pass_changed_now     (sampass)) {
+			pdb_free_sam(&sampass);
+			/* Not quite sure what this one qualifies as, but this will do */
+			return NT_STATUS_UNSUCCESSFUL; 
+		}
+		
+		become_root();
+		ret = pdb_update_sam_account (sampass);
+		unbecome_root();
 	}
- 
-	become_root();
-	ret = pdb_update_sam_account (sampass);
-	unbecome_root();
- 
 	if (ret)
 		status = NT_STATUS_OK;
 
