@@ -168,38 +168,6 @@ static BOOL api_net_sam_logoff(rpcsrv_struct * p,
 	return net_io_r_sam_logoff("", &r_s, rdata, 0);
 }
 
-static uint32 net_update_creds(uint32 remote_pid, struct dcinfo *dc,
-			       const UNISTR2 * uni_cli_name,
-			       const DOM_CRED * cli_creds,
-			       const DOM_CRED * ret_creds,
-			       DOM_CRED * srv_creds)
-{
-	fstring trust_name;
-
-	unistr2_to_ascii(trust_name, uni_cli_name, sizeof(trust_name) - 1);
-
-	if (!cred_get(remote_pid, global_sam_name, trust_name, dc))
-	{
-		return NT_STATUS_INVALID_HANDLE;
-	}
-
-	/* checks and updates credentials.  creates reply credentials */
-	if (!deal_with_creds
-	    (dc->sess_key, &dc->clnt_cred, cli_creds, srv_creds))
-	{
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	memcpy(&dc->srv_cred, &dc->clnt_cred, sizeof(dc->clnt_cred));
-
-	if (!cred_store(remote_pid, global_sam_name, trust_name, dc))
-	{
-		return NT_STATUS_INVALID_HANDLE;
-	}
-
-	return NT_STATUS_NOPROBLEMO;
-}
-
 /*************************************************************************
  api_net_sam_sync
  *************************************************************************/
@@ -225,21 +193,17 @@ static BOOL api_net_sam_sync(rpcsrv_struct * p,
 		return False;
 	}
 
-	status = net_update_creds(p->key.pid,
-				  &dc, &q_s.uni_cli_name,
-				  &q_s.cli_creds, &q_s.ret_creds, &srv_creds);
-
-	if (status == 0x0)
-	{
-		status = _net_sam_sync(&q_s.uni_srv_name,
+	status = _net_sam_sync(&q_s.uni_srv_name,
 				       &q_s.uni_cli_name,
+				       &q_s.cli_creds,
+				       &srv_creds,
 				       q_s.database_id,
 				       q_s.restart_state,
 				       &q_s.sync_context,
 				       q_s.max_size,
 				       &num_deltas,
-				       &num_deltas2, hdr_deltas, deltas);
-	}
+				       &num_deltas2, hdr_deltas, deltas,
+				       p->key.pid);
 
 	make_r_sam_sync(&r_s, &srv_creds,
 			q_s.sync_context,

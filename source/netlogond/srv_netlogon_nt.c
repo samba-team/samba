@@ -733,6 +733,11 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO * clnt_id,
 
 	memcpy(&(dc.srv_cred), &(dc.clnt_cred), sizeof(dc.clnt_cred));
 
+	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	uni_samusr = &(clnt_id->login.uni_acct_name);
 	unistr2_to_ascii(trust_acct, uni_samusr, sizeof(trust_acct) - 1);
 
@@ -777,11 +782,6 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO * clnt_id,
 	if (status_pwd != NT_STATUS_NOPROBLEMO)
 	{
 		return status_pwd;
-	}
-
-	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
-	{
-		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	return NT_STATUS_NOPROBLEMO;
@@ -851,6 +851,11 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 	}
 
 	memcpy(&dc.srv_cred, &dc.clnt_cred, sizeof(dc.clnt_cred));
+
+	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	/* find the username */
 
@@ -1097,11 +1102,6 @@ usr_sess_key, lm_pw8);
 		return status;
 	}
 
-	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
-	{
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
 	return NT_STATUS_NOPROBLEMO;
 }
 
@@ -1146,13 +1146,16 @@ uint32 _net_sam_logoff(const DOM_SAM_INFO * sam_id,
  *************************************************************************/
 uint32 _net_sam_sync(const UNISTR2 * uni_srv_name,
 		     const UNISTR2 * uni_cli_name,
+		     DOM_CRED * cli_creds,
+		     DOM_CRED * srv_creds,
 		     uint32 database_id,
 		     uint32 restart_state,
 		     uint32 * sync_context,
 		     uint32 max_size,
 		     uint32 * num_deltas,
 		     uint32 * num_deltas2,
-		     SAM_DELTA_HDR * hdr_deltas, SAM_DELTA_CTR * deltas)
+		     SAM_DELTA_HDR * hdr_deltas, SAM_DELTA_CTR * deltas,
+		     uint16 remote_pid)
 {
 	fstring trust_name;
 
@@ -1169,7 +1172,28 @@ uint32 _net_sam_sync(const UNISTR2 * uni_srv_name,
 	uint32 num_sam_users = 0;
 	uint32 idx;
 
+	struct dcinfo dc;
+
 	unistr2_to_ascii(trust_name, uni_cli_name, sizeof(trust_name) - 1);
+
+	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/* checks and updates credentials.  creates reply credentials */
+	if (!deal_with_creds(dc.sess_key, &dc.clnt_cred,
+			     cli_creds, srv_creds))
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	memcpy(&dc.srv_cred, &dc.clnt_cred, sizeof(dc.clnt_cred));
+
+	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	(*sync_context) = 1;
 

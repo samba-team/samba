@@ -1275,13 +1275,16 @@ uint32 _net_sam_logoff(const DOM_SAM_INFO * sam_id,
 		       DOM_CRED * srv_creds, uint16 remote_pid);
 uint32 _net_sam_sync(const UNISTR2 * uni_srv_name,
 		     const UNISTR2 * uni_cli_name,
+		     DOM_CRED * cli_creds,
+		     DOM_CRED * srv_creds,
 		     uint32 database_id,
 		     uint32 restart_state,
 		     uint32 * sync_context,
 		     uint32 max_size,
 		     uint32 * num_deltas,
 		     uint32 * num_deltas2,
-		     SAM_DELTA_HDR * hdr_deltas, SAM_DELTA_CTR * deltas);
+		     SAM_DELTA_HDR * hdr_deltas, SAM_DELTA_CTR * deltas,
+		     uint16 remote_pid);
 
 /*The following definitions come from  nmbd/asyncdns.c  */
 

@@ -70,6 +70,8 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
   code = SVAL(buf,0);
   DEBUG(1,("process_logon_packet: Logon from %s: code = %x\n", inet_ntoa(p->ip), code));
 
+      dump_data(4, buf, len);
+
   switch (code)
   {
     case 0:    
@@ -123,11 +125,18 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
          packet ends here. For a W9X request we now end with a pair of
          bytes (usually 0xFE 0xFF) whereas with NT we have two further
          strings - the following is a simple way of detecting this */
-      if (len - PTR_DIFF(unicomp, buf) > 3) {
+      if (len - PTR_DIFF(unicomp, buf ) <= 3)
+      {
 	      short_request = True;
       } else {
+
 	      /* A full length (NT style) request */
-	      q = skip_unicode_string(unicomp, 1);
+	      
+	q = align2(unicomp, buf);
+
+	/* skip unicode string -- cannot go beyond end of input buffer */
+	q = skip_unibuf(q, buf + len - q);
+
 
 	      if (len - PTR_DIFF(q, buf) > 8) {
 					/* with NT5 clients we can sometimes
