@@ -57,11 +57,18 @@ void ndr_pull_level(struct e_ndr_pull *ndr, proto_tree *tree, int hf,
 		tree, ndr->drep, hf, data);
 }
 
-void ndr_pull_NTSTATUS(struct e_ndr_pull *ndr, proto_tree *tree, int hf)
+void ndr_pull_NTSTATUS(struct e_ndr_pull *ndr, proto_tree *tree, int hf, gNTSTATUS *data)
 {
 	ndr->offset = dissect_ntstatus(
 		ndr->tvb, ndr->offset, ndr->pinfo,
-		tree, ndr->drep, hf, NULL);
+		tree, ndr->drep, hf, data);
+}
+
+void ndr_pull_WERROR(struct e_ndr_pull *ndr, proto_tree *tree, int hf, gWERROR *data)
+{
+	ndr->offset = dissect_werror(
+		ndr->tvb, ndr->offset, ndr->pinfo,
+		tree, ndr->drep, hf, data);
 }
 
 void ndr_pull_uint8(struct e_ndr_pull *ndr, proto_tree *tree, int hf, 
@@ -102,6 +109,18 @@ void ndr_pull_uint64(struct e_ndr_pull *ndr, proto_tree *tree, int hf,
 	ndr->offset = dissect_ndr_uint64(
 		ndr->tvb, ndr->offset, ndr->pinfo,
 		tree, ndr->drep, hf, data);	
+}
+
+void ndr_pull_DATA_BLOB(struct e_ndr_pull *ndr, proto_tree *tree, int hf, gDATA_BLOB *h)
+{
+	guint32 len1, ofs, len2;
+	char *data;
+
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return;
+	}
+
+	/* FIXME */
 }
 
 void ndr_pull_string(struct e_ndr_pull *ndr, proto_tree *tree, int ndr_flags)
@@ -508,6 +527,18 @@ void ndr_pull_array_uint8(struct e_ndr_pull *ndr, proto_tree *tree, int hf,
 	}
 	for (i=0;i<n;i++) {
 		ndr_pull_uint8(ndr, tree, hf, NULL);
+	}	
+}
+
+void ndr_pull_array_uint16(struct e_ndr_pull *ndr, proto_tree *tree, int hf, 
+			  int ndr_flags, guint32 n)
+{
+	guint32 i;
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return;
+	}
+	for (i=0;i<n;i++) {
+		ndr_pull_uint16(ndr, tree, hf, NULL);
 	}	
 }
 
