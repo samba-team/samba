@@ -10,6 +10,8 @@ RANLIB = @RANLIB@
 DEFS = @DEFS@
 CFLAGS = @CFLAGS@
 
+PICFLAGS = @PICFLAGS@
+
 INSTALL = @INSTALL@
 INSTALL_DATA	= @INSTALL_DATA@
 MKDIRHIER = @top_srcdir@/mkdirhier-sh
@@ -18,7 +20,12 @@ prefix = @prefix@
 exec_prefix = $(prefix)
 libdir = $(exec_prefix)/lib
 
-LIB = libdes.a
+PICFLAGS = @PICFLAGS@
+ 
+LIBNAME = libdes
+LIBEXT = @LIBEXT@
+MAJORVER = @MAJORVER@
+LIB = $(LIBNAME).$(LIBEXT)
 
 SOURCES = cbc_cksm.c cbc_enc.c ecb_enc.c pcbc_enc.c \
         qud_cksm.c read_pwd.c set_key.c str2key.c \
@@ -38,12 +45,11 @@ Wall:
 	make CFLAGS="-g -Wall -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
 
 .c.o:
-	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $<
+	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $(PICFLAGS) $<
 
 install: all
 	$(MKDIRHIER) $(prefix)/lib
 	$(INSTALL_DATA) $(LIB) $(libdir)
-	-$(RANLIB) $(libdir)/$(LIB)
 
 uninstall:
 
@@ -53,7 +59,7 @@ TAGS: $(SOURCES)
 check:
 
 clean:
-	rm -f *.a *.o
+	rm -f $(LIB) *.o
 
 mostlyclean: clean
 
@@ -69,9 +75,13 @@ dist: $(DISTFILES)
 	    || cp -p $$file ../`cat ../.fname`/lib; \
 	done
 
-$(LIB): $(OBJECTS)
+$(LIBNAME).a: $(OBJECTS)
 	rm -f $@
 	$(AR) cr $@ $(OBJECTS)
 	-$(RANLIB) $@
+
+$(LIBNAME).so.$(MAJORVER): $(OBJECTS)
+	rm -f $@
+	$(CC) -shared -Wl,-soname,$@ -o $@ $(OBJECTS)
 
 $(OBJECTS): ../../config.h

@@ -29,7 +29,7 @@ OBJECTS=authenc.o commands.o main.o network.o ring.o sys_bsd.o \
 
 libtop=../../../lib
 
-KLIB=$(libtop)/krb/libkrb.a $(libtop)/des/libdes.a
+KLIB=-L$(libtop)/krb -lkrb -L$(libtop)/des -ldes -L../../../util/et -lcom_err
 
 
 all: telnet
@@ -47,3 +47,6 @@ install: all
 
 clean cleandir:
 	rm -f *.o *.a telnet \#* *~ core
+
+distclean: clean
+	rm -f Makefile

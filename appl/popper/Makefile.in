@@ -73,6 +73,6 @@ dist: $(DISTFILES)
 	done
 
 kpopper: $(OBJECTS)
-	$(CC) $(LDFLAGS) -o $@ $(OBJECTS) ../../lib/krb/libkrb.a ../../lib/des/libdes.a $(LIBS)
+	$(CC) $(LDFLAGS) -o $@ $(OBJECTS) -L../../lib/krb -lkrb -L../../lib/des -ldes -L../util/et -lcom_err $(LIBS)
 
 $(OBJECTS): ../../config.h

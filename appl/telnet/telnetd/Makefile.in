@@ -30,7 +30,7 @@ OBJECTS=telnetd.o state.o termstat.o slc.o sys_term.o \
 
 libtop=../../../lib
 
-KLIB=$(libtop)/kafs/libkafs.a $(libtop)/krb/libkrb.a $(libtop)/des/libdes.a
+KLIB=-L$(libtop)/kafs -lkafs -L$(libtop)/krb -lkrb -L$(libtop)/des -ldes -L../../../util/et -lcom_err
 
 
 all: telnetd
@@ -51,4 +51,6 @@ install: all
 clean cleandir:
 	rm -f *.o *.a telnetd \#* *~ core
 
+distclean: clean
+	rm -f Makefile
 

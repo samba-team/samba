@@ -20,7 +20,12 @@ prefix = @prefix@
 exec_prefix = $(prefix)
 libdir = $(exec_prefix)/lib
 
-LIB = libkafs.a
+PICFLAGS = @PICFLAGS@
+ 
+LIBNAME = libkafs
+LIBEXT = @LIBEXT@
+MAJORVER = @MAJORVER@
+LIB = $(LIBNAME).$(LIBEXT)
 
 SOURCES = afssys.c
 
@@ -32,12 +37,11 @@ Wall:
 	make CFLAGS="-g -Wall -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
 
 .c.o:
-	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $<
+	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $(PICFLAGS) $<
 
 install: all
 	$(MKDIRHIER) $(libdir)
 	$(INSTALL_DATA) $(LIB) $(libdir)
-	-$(RANLIB) $(libdir)/$(LIB)
 
 uninstall:
 
@@ -47,7 +51,7 @@ TAGS: $(SOURCES)
 check:
 
 clean:
-	rm -f *.a *.o
+	rm -f $(LIB) *.o
 
 mostlyclean: clean
 
@@ -63,10 +67,14 @@ dist: $(DISTFILES)
 	    || cp -p $$file ../`cat ../.fname`/lib; \
 	done
 
-$(LIB): $(OBJECTS)
+$(LIBNAME).a: $(OBJECTS)
 	rm -f $@
 	$(AR) cr $@ $(OBJECTS)
 	-if [ "$(AIX_SYSCALL_MAGIC)" = yes ] ; then $(AR) cr $@ $(srcdir)/afsl.exp ; fi
 	-$(RANLIB) $@
+
+$(LIBNAME).so.$(MAJORVER): $(OBJECTS)
+	rm -f $@
+	$(CC) -shared -Wl,-soname,$@ -o $@ $(OBJECTS)
 
 $(OBJECTS): ../../config.h

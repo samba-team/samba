@@ -35,3 +35,7 @@ clean cleandir:
 	for i in $(SUBDIRS); \
 	do (cd $$i; $(MAKE) $(MFLAGS) clean); done
 
+distclean: 
+	for i in $(SUBDIRS); \
+	do (cd $$i; $(MAKE) $(MFLAGS) distclean); done
+	rm -f Makefile config.status config.cache config.log config.h stamp-configure
