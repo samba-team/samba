@@ -230,18 +230,17 @@ make_pa_enc_timestamp(krb5_context context, PA_DATA *pa, krb5_keyblock *key)
 }
 
 krb5_error_code
-krb5_get_in_tkt(krb5_context context,
-		krb5_flags options,
-		const krb5_addresses *addrs,
-		const krb5_enctype *etypes,
-		const krb5_preauthtype *ptypes,
-		krb5_key_proc key_proc,
-		krb5_const_pointer keyseed,
-		krb5_decrypt_proc decrypt_proc,
-		krb5_const_pointer decryptarg,
-		krb5_creds *creds,
-		krb5_ccache ccache,
-		krb5_kdc_rep *ret_as_reply)
+krb5_get_in_cred(krb5_context context,
+		 krb5_flags options,
+		 const krb5_addresses *addrs,
+		 const krb5_enctype *etypes,
+		 const krb5_preauthtype *ptypes,
+		 krb5_key_proc key_proc,
+		 krb5_const_pointer keyseed,
+		 krb5_decrypt_proc decrypt_proc,
+		 krb5_const_pointer decryptarg,
+		 krb5_creds *creds,
+		 krb5_kdc_rep *ret_as_reply)
 {
     krb5_error_code ret;
     AS_REQ a;
@@ -252,19 +251,17 @@ krb5_get_in_tkt(krb5_context context,
     krb5_data salt;
     krb5_keyblock *key;
     size_t size;
-    union {
-	krb5_flags i;
-	KDCOptions f;
-    } opts;
+    krb5_kdc_flags opts;
     PA_DATA *pa;
     unsigned etype;
+
     opts.i = options;
 
     memset(&a, 0, sizeof(a));
 
     a.pvno = 5;
     a.msg_type = krb_as_req;
-    a.req_body.kdc_options = opts.f;
+    a.req_body.kdc_options = opts.b;
     a.req_body.cname = malloc(sizeof(*a.req_body.cname));
     a.req_body.sname = malloc(sizeof(*a.req_body.sname));
     krb5_principal2principalname (a.req_body.cname, creds->client);
@@ -342,17 +339,16 @@ krb5_get_in_tkt(krb5_context context,
 			 sizeof(buf),
 			 &a,
 			 &req.length);
-    if (ret){
-	free_AS_REQ(&a);
-	return ret;
-    }
     free_AS_REQ(&a);
+    if (ret)
+	return ret;
+
     req.data = buf + sizeof(buf) - req.length;
 
     ret = krb5_sendto_kdc (context, &req, &creds->client->realm, &resp);
-    if (ret) {
+    if (ret)
 	return ret;
-    }
+
     if((ret = decode_AS_REP(resp.data, resp.length, &rep.part1, &size))){
 	/* let's try to parse it as a KRB-ERROR */
 	KRB_ERROR error;
@@ -401,16 +397,41 @@ krb5_get_in_tkt(krb5_context context,
     memset (key->keyvalue.data, 0, key->keyvalue.length);
     krb5_free_keyblock (context, key);
     free (key);
-#if 0
-    krb5_data_free (&key->keyvalue);
-    free (key);
-#endif
 
     if (ret_as_reply)
 	*ret_as_reply = rep;
     else
 	krb5_free_kdc_rep (context, &rep);
+    return 0;
+}
 
+krb5_error_code
+krb5_get_in_tkt(krb5_context context,
+		krb5_flags options,
+		const krb5_addresses *addrs,
+		const krb5_enctype *etypes,
+		const krb5_preauthtype *ptypes,
+		krb5_key_proc key_proc,
+		krb5_const_pointer keyseed,
+		krb5_decrypt_proc decrypt_proc,
+		krb5_const_pointer decryptarg,
+		krb5_creds *creds,
+		krb5_ccache ccache,
+		krb5_kdc_rep *ret_as_reply)
+{
+    krb5_error_code ret;
+
+    ret = krb5_get_in_cred (context,
+			    options,
+			    addrs,
+			    etypes,
+			    ptypes,
+			    key_proc,
+			    keyseed,
+			    decrypt_proc,
+			    decryptarg,
+			    creds,
+			    ret_as_reply);
     if(ret) 
 	return ret;
     ret = krb5_cc_store_cred (context, ccache, creds);
