@@ -228,7 +228,7 @@ get_cred_cache(krb5_context context,
 	       couldn't get principal from cache */
 	    return -1;
 
-	if(client == default_client) {
+	if(client != default_client) {
 	    krb5_free_principal(context, default_client);
 	    default_client = NULL;
 	}
@@ -242,7 +242,8 @@ get_cred_cache(krb5_context context,
 	if(ret == 0) {
 	    *ret_cache = id;
 	    krb5_free_principal(context, default_client);
-	    krb5_free_principal(context, client);
+	    if (default_client != client)
+		krb5_free_principal(context, client);
 	    return 0;
 	}
 	if(ccache != NULL)
