@@ -112,6 +112,8 @@ static struct winbindd_domain *add_trusted_domain(char *domain_name,
 	fstrcpy(domain->name, domain_name);
 	sid_copy(&domain->sid, domain_sid);
         domain->methods = methods;
+	domain->sequence_number = DOM_SEQUENCE_NONE;
+	domain->last_seq_check = 0;
 
 	/* Link to domain list */
         
@@ -133,22 +135,8 @@ BOOL get_domain_info(void)
 	fstring level5_dom;
 	BOOL rv = False;
 	TALLOC_CTX *mem_ctx;
-	extern struct winbindd_methods msrpc_methods;
-	struct winbindd_methods *methods;
+	extern struct winbindd_methods cache_methods;
 
-	switch (lp_security()) {
-#ifdef HAVE_ADS
-	case SEC_ADS:
-	{
-		extern struct winbindd_methods ads_methods;
-		methods = &ads_methods;
-		break;
-	}
-#endif
-	default:
-		methods = &msrpc_methods;
-	}
-	
 	DEBUG(1, ("getting trusted domain list\n"));
 
 	if (!(mem_ctx = talloc_init()))
@@ -165,7 +153,7 @@ BOOL get_domain_info(void)
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	add_trusted_domain(lp_workgroup(), &domain_sid, methods);
+	add_trusted_domain(lp_workgroup(), &domain_sid, &cache_methods);
 	
 	/* Enumerate list of trusted domains */	
 
@@ -181,7 +169,7 @@ BOOL get_domain_info(void)
 	/* Add each domain to the trusted domain list */
 
 	for(i = 0; i < num_doms; i++)
-		add_trusted_domain(domains[i], &sids[i], methods);
+		add_trusted_domain(domains[i], &sids[i], &cache_methods);
 
 	rv = True;	
 
@@ -260,99 +248,6 @@ BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
 	return rv;
 }
 
-/* Store a SID in a domain indexed by name in the cache. */
-
-static void store_sid_by_name_in_cache(struct winbindd_domain *domain,
-				       const char *name, 
-				       DOM_SID *sid, enum SID_NAME_USE type)
-{
-	struct winbindd_sid sid_val;
-	
-	sid_to_string(sid_val.sid, sid);
-	sid_val.type = (int)type;
-
-	DEBUG(10,("store_sid_by_name_in_cache: storing cache entry %s -> SID %s\n",
-		name, sid_val.sid ));
-
-	winbindd_store_sid_cache_entry(domain, name, &sid_val);
-}
-
-/* Lookup a SID in a domain indexed by name in the cache. */
-
-static BOOL winbindd_lookup_sid_by_name_in_cache(struct winbindd_domain *domain,
-						 const char *name, 
-						 DOM_SID *sid, enum SID_NAME_USE *type)
-{
-	struct winbindd_sid sid_ret;
-
-	if (!winbindd_fetch_sid_cache_entry(domain, name, &sid_ret))
-		return False;
-
-	string_to_sid( sid, sid_ret.sid);
-	*type = (enum SID_NAME_USE)sid_ret.type;
-
-	DEBUG(10,("winbindd_lookup_sid_by_name_in_cache: Cache hit for name %s. SID = %s\n",
-		name, sid_ret.sid ));
-
-	return True;
-}
-
-/* Store a name in a domain indexed by SID in the cache. */
-
-static void store_name_by_sid_in_cache(struct winbindd_domain *domain,
-				       DOM_SID *sid, 
-				       const char *name, enum SID_NAME_USE type)
-{
-	fstring sid_str;
-	uint32 rid;
-	DOM_SID domain_sid;
-	struct winbindd_name name_val;
-
-	/* Split sid into domain sid and user rid */
-	sid_copy(&domain_sid, sid);
-	sid_split_rid(&domain_sid, &rid);
-
-	sid_to_string(sid_str, sid);
-	fstrcpy(name_val.name, name );
-	name_val.type = (int)type;
-
-	DEBUG(10,("store_name_by_sid_in_cache: storing cache entry SID %s -> %s\n",
-		sid_str, name_val.name ));
-
-	winbindd_store_name_cache_entry(domain, sid_str, &name_val);
-}
-
-/* Lookup a name in a domain indexed by SID in the cache. */
-
-static BOOL winbindd_lookup_name_by_sid_in_cache(DOM_SID *sid, fstring name, enum SID_NAME_USE *type)
-{
-	fstring sid_str;
-	uint32 rid;
-	DOM_SID domain_sid;
-	struct winbindd_name name_ret;
-	struct winbindd_domain *domain;
-
-	/* Split sid into domain sid and user rid */
-	sid_copy(&domain_sid, sid);
-	sid_split_rid(&domain_sid, &rid);
-
-	if ((domain = find_domain_from_sid(&domain_sid)) == NULL)
-                return False;
-
-	sid_to_string(sid_str, sid);
-
-	if (!winbindd_fetch_name_cache_entry(domain, sid_str, &name_ret))
-		return False;
-
-	fstrcpy( name, name_ret.name );
-	*type = (enum SID_NAME_USE)name_ret.type;
-
-	DEBUG(10,("winbindd_lookup_name_by_sid_in_cache: Cache hit for SID = %s, name %s\n",
-		sid_str, name ));
-
-	return True;
-}
-
 /* Lookup a sid in a domain from a name */
 
 BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain, 
@@ -365,26 +260,11 @@ BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain,
 	if (name[strlen(name) - 1] == '$')
 		return False;
 
-	/* First check cache. */
-	if (winbindd_lookup_sid_by_name_in_cache(domain, name, sid, type)) {
-		if (*type == SID_NAME_USE_NONE)
-			return False; /* Negative cache hit. */
-		return True;
-	}
 	/* Lookup name */
 	result = domain->methods->name_to_sid(domain, name, sid, type);
         
 	/* Return rid and type if lookup successful */
-	if (NT_STATUS_IS_OK(result)) {
-                store_sid_by_name_in_cache(domain, name, sid, *type);
-		store_name_by_sid_in_cache(domain, sid, name, *type);
-	} else {
-		/* JRA. Here's where we add the -ve cache store with a
-                   name type of SID_NAME_USE_NONE. */
-		DOM_SID nullsid;
-
-		ZERO_STRUCT(nullsid);
-		store_sid_by_name_in_cache(domain, name, &nullsid, SID_NAME_USE_NONE);
+	if (!NT_STATUS_IS_OK(result)) {
 		*type = SID_NAME_UNKNOWN;
 	}
 
@@ -414,16 +294,6 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid,
 	BOOL rv = False;
 	struct winbindd_domain *domain;
 
-	/* First check cache. */
-	if (winbindd_lookup_name_by_sid_in_cache(sid, name, type)) {
-		if (*type == SID_NAME_USE_NONE) {
-			fstrcpy(name, name_deadbeef);
-			*type = SID_NAME_UNKNOWN;
-			return False; /* Negative cache hit. */
-		} else 
-			return True;
-	}
-
 	domain = find_domain_from_sid(sid);
 	if (!domain) {
 		DEBUG(1,("Can't find domain from sid\n"));
@@ -441,14 +311,7 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid,
         
 	if ((rv = NT_STATUS_IS_OK(result))) {
 		fstrcpy(name, names);
-
-		store_sid_by_name_in_cache(domain, names, sid, *type);
-		store_name_by_sid_in_cache(domain, sid, names, *type);
 	} else {
-		/* OK, so we tried to look up a name in this sid, and
-		 * didn't find it.  Therefore add a negative cache
-		 * entry.  */
-		store_name_by_sid_in_cache(domain, sid, "", SID_NAME_USE_NONE);
 		*type = SID_NAME_UNKNOWN;
 		fstrcpy(name, name_deadbeef);
 	}

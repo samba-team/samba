@@ -136,7 +136,7 @@ struct winbindd_methods {
 				    uint32 **name_types);
 
 	/* return the current global sequence number */
-	uint32 (*sequence_number)(struct winbindd_domain *domain);
+	NTSTATUS (*sequence_number)(struct winbindd_domain *domain, uint32 *seq);
 };
 
 /* Structures to hold per domain information */
@@ -147,6 +147,8 @@ struct winbindd_domain {
                                                   this domain (LDAP or
                                                   RPC) */
 	void *private; /* private data for the backends (used for connection cache) */
+	time_t last_seq_check;
+	uint32 sequence_number;
 	struct winbindd_domain *prev, *next;   /* Linked list info */
 };
 

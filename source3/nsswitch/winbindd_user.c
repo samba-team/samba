@@ -91,12 +91,6 @@ static BOOL winbindd_fill_pwent(char *domain_name, char *name,
 	return True;
 }
 
-/************************************************************************
- Empty static struct for negative caching.
-*************************************************************************/
-
-static struct winbindd_pw negative_pw_cache_entry;
-
 /* Return a password structure from a username.  Specify whether cached data 
    can be returned. */
 
@@ -125,30 +119,18 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state *stat
 		return WINBINDD_ERROR;
 	}
 
-	/* Check for cached user entry */
-
-	if (winbindd_fetch_user_cache_entry(domain, name_user, &state->response.data.pw)) {
-		/* Check if this is a negative cache entry. */
-		if (memcmp(&negative_pw_cache_entry, &state->response.data.pw,
-						sizeof(state->response.data.pw)) == 0)
-			return WINBINDD_ERROR;
-		return WINBINDD_OK;
-	}
-
 	slprintf(name, sizeof(name) - 1, "%s\\%s", name_domain, name_user);
 	
 	/* Get rid and name type from name */
 
 	if (!winbindd_lookup_sid_by_name(domain, name, &user_sid, &name_type)) {
 		DEBUG(1, ("user '%s' does not exist\n", name_user));
-		winbindd_store_user_cache_entry(domain, name_user, &negative_pw_cache_entry);
 		return WINBINDD_ERROR;
 	}
 
 	if (name_type != SID_NAME_USER) {
 		DEBUG(1, ("name '%s' is not a user name: %d\n", name_user, 
 			  name_type));
-		winbindd_store_user_cache_entry(domain, name_user, &negative_pw_cache_entry);
 		return WINBINDD_ERROR;
 	}
 	
@@ -167,7 +149,6 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state *stat
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("pwnam_from_user(): error getting user info for "
 			  "user '%s'\n", name_user));
-		winbindd_store_user_cache_entry(domain, name_user, &negative_pw_cache_entry);
 		talloc_destroy(mem_ctx);
 		return WINBINDD_ERROR;
 	}
@@ -176,14 +157,11 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state *stat
 	if (!winbindd_fill_pwent(name_domain, state->request.data.username, 
 				 user_rid, user_info.group_rid, user_info.full_name,
 				 &state->response.data.pw)) {
-		winbindd_store_user_cache_entry(domain, name_user, &negative_pw_cache_entry);
 		talloc_destroy(mem_ctx);
 		return WINBINDD_ERROR;
 	}
 
 	talloc_destroy(mem_ctx);
-	
-	winbindd_store_user_cache_entry(domain, name_user, &state->response.data.pw);
 	
 	return WINBINDD_OK;
 }       
@@ -220,18 +198,6 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state *state
 		return WINBINDD_ERROR;
 	}
 	
-	/* Check for cached uid entry */
-
-	if (winbindd_fetch_uid_cache_entry(domain, 
-					   state->request.data.uid,
-					   &state->response.data.pw)) {
-		/* Check if this is a negative cache entry. */
-		if (memcmp(&negative_pw_cache_entry, &state->response.data.pw,
-						sizeof(state->response.data.pw)) == 0)
-			return WINBINDD_ERROR;
-		return WINBINDD_OK;
-	}
-
 	/* Get name and name type from rid */
 
 	sid_copy(&user_sid, &domain->sid);
@@ -242,8 +208,6 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state *state
 		
 		sid_to_string(temp, &user_sid);
 		DEBUG(1, ("Could not lookup sid %s\n", temp));
-
-		winbindd_store_uid_cache_entry(domain, state->request.data.uid, &negative_pw_cache_entry);
 		return WINBINDD_ERROR;
 	}
 	
@@ -262,7 +226,6 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state *state
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("pwnam_from_uid(): error getting user info for "
 			  "user '%s'\n", user_name));
-		winbindd_store_uid_cache_entry(domain, state->request.data.uid, &negative_pw_cache_entry);
 		return WINBINDD_ERROR;
 	}
 	
@@ -277,12 +240,9 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state *state
 
 	if (!winbindd_fill_pwent(domain->name, user_name, user_rid, user_info.group_rid,
 				 user_info.full_name, &state->response.data.pw)) {
-		winbindd_store_uid_cache_entry(domain, state->request.data.uid, &negative_pw_cache_entry);
 		return WINBINDD_ERROR;
 	}
 	
-	winbindd_store_uid_cache_entry(domain, state->request.data.uid, &state->response.data.pw);
-
 	talloc_destroy(mem_ctx);
 
 	return WINBINDD_OK;
@@ -383,17 +343,6 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 
 	methods = ent->domain->methods;
 
-#if 0
-	/* Look in cache for entries, else get them direct */
-		    
-	if (winbindd_fetch_user_cache(ent->domain,
-				      (struct getpwent_user **)
-				      &ent->sam_entries, 
-				      &ent->num_sam_entries)) {
-		return True;
-	}
-#endif
-
 	/* Free any existing user info */
 
 	SAFE_FREE(ent->sam_entries);
@@ -453,13 +402,6 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 
 	} while (ent->num_sam_entries < MAX_FETCH_SAM_ENTRIES);
 	
-#if 0
-	/* Fill cache with received entries */
-	
-	winbindd_store_user_cache(ent->domain, ent->sam_entries, 
-				  ent->num_sam_entries);
-#endif
-
 	/* Fill in remaining fields */
 	
 	ent->sam_entries = name_list;
