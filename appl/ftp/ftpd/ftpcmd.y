@@ -1135,7 +1135,7 @@ yylex(void)
 			}
 			alarm(0);
 #ifdef HAVE_SETPROCTITLE
-			if (strncasecmp(cbuf, "PASS", 4) != NULL)
+			if (strncasecmp(cbuf, "PASS", 4) != 0)
 				setproctitle("%s: %s", proctitle, cbuf);
 #endif /* HAVE_SETPROCTITLE */
 			if ((cp = strchr(cbuf, '\r'))) {
