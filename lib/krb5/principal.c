@@ -466,6 +466,9 @@ krb5_425_conv_principal(krb5_context context,
     }
     p = krb5_config_get_string(context->cf, "realms", realm,
 			       "v4_name_convert", "host", name, NULL);
+    if(p == NULL)
+	p = krb5_config_get_string(context->cf, "libdefaults", 
+				   "v4_name_convert", "host", name, NULL);
     if(p){
 	name = p;
 	p = krb5_config_get_string(context->cf, "realms", realm, 
@@ -474,8 +477,8 @@ krb5_425_conv_principal(krb5_context context,
 	    instance = p;
 	    goto done;
 	}
-	if(krb5_config_get_string(context->cf, "libdefaults", 
-				  "v4_instance_resolve", NULL)){
+	if(krb5_config_get_bool(context->cf, "libdefaults", 
+				"v4_instance_resolve", NULL)){
 	    struct hostent *hp = gethostbyname(instance);
 	    if(hp){
 		instance = hp->h_name;
@@ -502,11 +505,46 @@ no_host:
 			       "plain",
 			       name,
 			       NULL);
+    if(p == NULL)
+	p = krb5_config_get_string(context->cf,
+				   "libdefaults",
+				   "v4_name_convert",
+				   "plain",
+				   name,
+				   NULL);
     if(p)
 	name = p;
     
 done:		
     return krb5_make_principal(context, princ, realm, name, instance, NULL);
+}
+
+static char*
+name_convert(krb5_context context, const char *name, const char *realm, 
+	     const char *section)
+{
+    const krb5_config_binding *l;
+    l = krb5_config_get_list (context->cf,
+			      "realms",
+			      realm,
+			      "v4_name_convert",
+			      section,
+			      NULL);
+    if(l == NULL)
+	l = krb5_config_get_list (context->cf,
+				  "libdefaults",
+				  "v4_name_convert",
+				  section,
+				  NULL);
+    
+    while(l){
+	if (l->type != STRING)
+	    continue;
+	if(strcmp(name, l->u.string) == 0)
+	    return l->name;
+	l = l->next;
+    }
+    return NULL;
 }
 
 krb5_error_code
@@ -518,6 +556,8 @@ krb5_524_conv_principal(krb5_context context,
 {
     char *n, *i, *r;
     char tmpinst[40];
+    int type = princ_type(principal);
+
     r = principal->realm;
 
     switch(principal->name.name_string.len){
@@ -532,16 +572,30 @@ krb5_524_conv_principal(krb5_context context,
     default:
 	return KRB5_PARSE_MALFORMED;
     }
-    
-    if(strcmp(n, "host") == 0){
+
+    {
+	char *tmp = name_convert(context, n, r, "host");
+	if(tmp){
+	    type = KRB5_NT_SRV_HST;
+	    n = tmp;
+	}else{
+	    tmp = name_convert(context, n, r, "plain");
+	    if(tmp){
+		type = KRB5_NT_UNKNOWN;
+		n = tmp;
+	    }
+	}
+    }
+
+    if(type == KRB5_NT_SRV_HST){
 	char *p;
-	n = "rcmd";
 	strncpy(tmpinst, i, sizeof(tmpinst));
 	tmpinst[sizeof(tmpinst) - 1] = 0;
 	p = strchr(tmpinst, '.');
 	if(p) *p = 0;
 	i = tmpinst;
     }
+    
     if(strlen(r) >= 40)
 	return KRB5_PARSE_MALFORMED;
     if(strlen(n) >= 40)
@@ -564,47 +618,38 @@ krb5_sname_to_principal (krb5_context context,
 			 krb5_principal *ret_princ)
 {
     krb5_error_code ret;
-    char **r;
-
-    ret = krb5_get_host_realm (context, hostname, &r);
-    if (ret)
-	return ret;
+    char localhost[128];
+    char **realms, *host = NULL;
     
-    if (type == KRB5_NT_SRV_HST) {
-	struct hostent *hostent;
-	char *h;
-
-	hostent = gethostbyname (hostname);
-	if (hostent != NULL)
-	    hostname = hostent->h_name;
-	h = strdup (hostname);
-	if (h == NULL) {
-	    krb5_free_host_realm (context, r);
+    if(type != KRB5_NT_SRV_HST && type != KRB5_NT_UNKNOWN)
+	return KRB5_SNAME_UNSUPP_NAMETYPE;
+    if(hostname == NULL){
+	gethostname(localhost, sizeof(localhost));
+	hostname = localhost;
+    }
+    if(sname == NULL)
+	sname = "host";
+    if(type == KRB5_NT_SRV_HST){
+	struct hostent *hp;
+	hp = gethostbyname(hostname);
+	if(hp != NULL)
+	    hostname = hp->h_name;
+    }
+    ret = krb5_get_host_realm(context, hostname, &realms);
+    if(ret)
+	return ret;
+    if(type == KRB5_NT_SRV_HST){
+	host = strdup(hostname);
+	if(host == NULL){
+	    krb5_free_host_realm(context, realms);
 	    return ENOMEM;
 	}
-	strlwr (h);
-	ret = krb5_build_principal (context,
-				    ret_princ,
-				    strlen(r[0]),
-				    r[0],
-				    sname,
-				    h,
-				    NULL);
-	krb5_free_host_realm (context, r);
-	free (h);
-	return ret;
-    } else if (type == KRB5_NT_UNKNOWNN) {
-	ret = krb5_build_principal (context,
-				    ret_princ,
-				    strlen(r[0]),
-				    r[0],
-				    sname,
-				    hostname,
-				    NULL);
-	krb5_free_host_realm (context, r);
-	return ret;
-    } else {
-	krb5_free_host_realm (context, r);
-	return KRB5_SNAME_UNSUPP_NAMETYPE;
+	strlwr(host);
+	hostname = host;
     }
+    ret = krb5_make_principal(context, ret_princ, realms[0], sname, hostname, NULL);
+    if(host)
+	free(host);
+    krb5_free_host_realm(context, realms);
+    return ret;
 }
