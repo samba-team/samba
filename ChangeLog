@@ -1,5 +1,11 @@
 2003-01-23  Love  <lha@stacken.kth.se>
 
+	* lib/krb5/krb5.conf.5: add [kdc]use_2b
+
+	* kdc/524.c (encode_524_response): its 2b not b2
+	
+	* doc/misc.texi: quote @ where missing
+	
 	* lib/asn1/Makefile.am: add check-gen
 	
 	* lib/asn1/check-gen.c: add Principal check
