@@ -428,11 +428,11 @@ BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid, enum SID_NAME_USE *ty
 		/* Return name type */
                 
 		if ((type != NULL) && (types != NULL))
-			*type = types[0];
+			*type = (enum SID_NAME_USE)types[0];
 
 		/* Store the forward and reverse map of this lookup in the cache. */
-		store_sid_by_name_in_cache(name, &sids[0], types[0]);
-		store_name_by_sid_in_cache(&sids[0], name, types[0]);
+		store_sid_by_name_in_cache(name, &sids[0], (enum SID_NAME_USE)types[0]);
+		store_name_by_sid_in_cache(&sids[0], name, (enum SID_NAME_USE)types[0]);
 	} else {
 		/* JRA. Here's where we add the -ve cache store with a name type of SID_NAME_USE_NONE. */
 		DOM_SID nullsid;
@@ -509,10 +509,10 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid,
 		/* Return name type */
 
 		if ((type != NULL) && (types != NULL))
-			*type = types[0];
+			*type = (enum SID_NAME_USE)types[0];
 
-		store_sid_by_name_in_cache(names[0], sid, types[0]);
-		store_name_by_sid_in_cache(sid, names[0], types[0]);
+		store_sid_by_name_in_cache(names[0], sid, (enum SID_NAME_USE)types[0]);
+		store_name_by_sid_in_cache(sid, names[0], (enum SID_NAME_USE)types[0]);
 	} else {
 		/* OK, so we tried to look up a name in this sid, and
 		 * didn't find it.  Therefore add a negative cache
