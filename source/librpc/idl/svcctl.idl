@@ -121,8 +121,8 @@
 							[in,ref] policy_handle *handle,
 							[in] uint32 type,
 							[in] uint32 state,
-							[out,size_is(buf_size)] ENUM_SERVICE_STATUS *service,
 							[in] uint32 buf_size,
+							[out,size_is(buf_size)] uint8 service[*],
 							[out] uint32 bytes_needed,
 							[out] uint32 services_returned,
 							[in,out] uint32 *resume_handle
