@@ -43,7 +43,7 @@ AC_DEFUN(SMB_MODULE,
 	AC_MSG_CHECKING([how to build $1])
 	if test "$[MODULE_][$1]"; then
 		DEST=$[MODULE_][$1]
-	elif test "$[MODULE_]translit([$4], [A-Z], [a-z])"; then
+	elif test "$[MODULE_]translit([$4], [A-Z], [a-z])" -a "$[MODULE_DEFAULT_][$1]"; then
 		DEST=$[MODULE_]translit([$4], [A-Z], [a-z])
 	else
 		DEST=$[MODULE_DEFAULT_][$1]
