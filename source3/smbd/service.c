@@ -108,11 +108,6 @@ int add_home_service(char *service, char *homedir)
 	lp_add_home(new_service,iHomeService,homedir);
 	iService = lp_servicenumber(new_service);
 
-	if ((iService != -1) && usr_p && (strstr(lp_pathname(iService),"%D") == NULL))
-		DEBUG(0,("find_service: Service %s added for user %s - contains non-local (Domain) user \
-with non-domain parameterised path (%s). This may be cause the wrong directory to be seen.\n",
-		new_service, service, lp_pathname(iService) ));
-
 	return iService;
 }
 
