@@ -43,6 +43,56 @@ int cli_set_port(struct cli_state *cli, int port)
 }
 
 /****************************************************************************
+copy a string (unicode or otherwise) into an SMB buffer.  skips a string
+plus points to next
+****************************************************************************/
+static char *cli_put_string(struct cli_state *cli, char *p, const char *str,
+				BOOL skip_end)
+{
+	uint16 flgs2 = SVAL(cli->outbuf, smb_flg2);
+	if (IS_BITS_SET_ALL(flgs2, FLAGS2_UNICODE_STRINGS))
+	{
+		p = align2(p, cli->outbuf);
+		p = ascii_to_unibuf(p, str, 1024);
+		if (skip_end)
+		{
+			CVAL(p, 0) = 0; p++;
+			CVAL(p, 0) = 0; p++;
+		}
+		return p;
+	}
+	else
+	{
+		pstrcpy(p, str);
+		p = skip_string(p, 1);
+		if (skip_end)
+		{
+			CVAL(p, 0) = 0; p++;
+		}
+		return p;
+	}
+}
+
+/****************************************************************************
+copy a string (unicode or otherwise) into an SMB buffer.  skips a string
+plus points to next
+****************************************************************************/
+static const char *cli_get_string(struct cli_state *cli, const char *p,
+				char *str, size_t str_len)
+{
+	uint16 flgs2 = SVAL(cli->inbuf,smb_flg2);
+	if (IS_BITS_SET_ALL(flgs2, FLAGS2_UNICODE_STRINGS))
+	{
+		return unibuf_to_ascii(str, p, str_len);
+	}
+	else
+	{
+		safe_strcpy(str, p, str_len-1);
+		return skip_string(p, 1);
+	}
+}
+
+/****************************************************************************
 recv an smb
 ****************************************************************************/
 static BOOL cli_receive_smb(struct cli_state *cli)
@@ -202,14 +252,24 @@ setup basics in a outgoing packet
 ****************************************************************************/
 static void cli_setup_packet(struct cli_state *cli)
 {
+	uint16 flgs2 = 0;
+	flgs2 |= FLAGS2_LONG_PATH_COMPONENTS;
+	flgs2 |= FLAGS2_32_BIT_ERROR_CODES;
+#if 0
+	flgs2 |= FLAGS2_UNICODE_STRINGS;
+#endif
+	flgs2 |= FLAGS2_EXT_SEC;
+
         cli->rap_error = 0;
         cli->nt_error = 0;
 	SSVAL(cli->outbuf,smb_pid,cli->pid);
 	SSVAL(cli->outbuf,smb_uid,cli->vuid);
 	SSVAL(cli->outbuf,smb_mid,cli->mid);
-	if (cli->protocol > PROTOCOL_CORE) {
+
+	if (cli->protocol > PROTOCOL_CORE)
+	{
 		SCVAL(cli->outbuf,smb_flg,0x8);
-		SSVAL(cli->outbuf,smb_flg2,0x1);
+		SSVAL(cli->outbuf,smb_flg2,flgs2);
 	}
 }
 
@@ -705,7 +765,13 @@ BOOL cli_session_setup_x(struct cli_state *cli,
 				char *ntpass, int ntpasslen,
 				char *user_domain)
 {
+	uint8 eclass;
+	uint32 ecode;
 	char *p;
+	BOOL esec = cli->capabilities & CAP_EXTENDED_SECURITY;
+
+	DEBUG(100,("cli_session_setup.  extended security: %s\n",
+	            BOOLSTR(esec)));
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("cli_session_setup.  pass, ntpass\n"));
@@ -739,7 +805,31 @@ BOOL cli_session_setup_x(struct cli_state *cli,
 		pstrcpy(p,user);
 		strupper(p);
 	}
-	else
+	else if (esec)
+	{
+		set_message(cli->outbuf,12,0,True);
+		CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
+		cli_setup_packet(cli);
+		
+		CVAL(cli->outbuf,smb_vwv0) = 0xFF;
+		SSVAL(cli->outbuf,smb_vwv2,CLI_BUFFER_SIZE);
+		SSVAL(cli->outbuf,smb_vwv3,2);
+		SSVAL(cli->outbuf,smb_vwv4,cli->pid);
+		SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
+		SSVAL(cli->outbuf,smb_vwv7,passlen);
+		SIVAL(cli->outbuf,smb_vwv10, CAP_EXTENDED_SECURITY|CAP_STATUS32|CAP_UNICODE);
+		p = smb_buf(cli->outbuf);
+		memcpy(p,pass,passlen); 
+		p += passlen;
+
+		p = cli_put_string(cli, p, "Unix", False);
+		p = cli_put_string(cli, p, "Samba", False);
+		p = cli_put_string(cli, p, "", False);
+		p++;
+		
+		set_message(cli->outbuf,12,PTR_DIFF(p,smb_buf(cli->outbuf)),False);
+	}
+	else 
 	{
 		set_message(cli->outbuf,13,0,True);
 		CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
@@ -758,44 +848,65 @@ BOOL cli_session_setup_x(struct cli_state *cli,
 		p += SVAL(cli->outbuf,smb_vwv7);
 		memcpy(p,ntpass,ntpasslen); 
 		p += SVAL(cli->outbuf,smb_vwv8);
-		pstrcpy(p,user);
-		strupper(p);
-		p = skip_string(p,1);
-		pstrcpy(p,user_domain);
-		strupper(p);
-		p = skip_string(p,1);
-		pstrcpy(p,"Unix");p = skip_string(p,1);
-		CVAL(p, 0) = 0; p++;
-		pstrcpy(p,"Samba");p = skip_string(p,1);
+		strupper(user);
+		p = cli_put_string(cli, p, user, False);
+		strupper(user_domain);
+		p = cli_put_string(cli, p, user_domain, False);
+		p = cli_put_string(cli, p, "Unix", True);
+		p = cli_put_string(cli, p, "Samba", False);
+		
 		set_message(cli->outbuf,13,PTR_DIFF(p,smb_buf(cli->outbuf)),False);
 	}
 
-      cli_send_smb(cli, True);
-      if (!cli_receive_smb(cli))
+	cli_send_smb(cli, True);
+	if (!cli_receive_smb(cli))
 	{
 		DEBUG(10,("cli_session_setup_x: receive smb failed\n"));
 	      return False;
 	}
 
-      if (CVAL(cli->inbuf,smb_rcls) != 0) {
-	      return False;
-      }
+	if (cli_error(cli, &eclass, &ecode))
+	{
+		uint16 flgs2 = SVAL(cli->inbuf,smb_flg2);
+		if (IS_BITS_CLR_ALL(flgs2, FLAGS2_32_BIT_ERROR_CODES))
+		{
+			if (ecode != ERRmoredata || !esec)
+			{
+				return False;
+			}
+		}
+		else if (ecode != 0xC0000016) /* STATUS_MORE_PROCESSING_REQD */
+		{
+			return False;
+		}
+	}
 
-      /* use the returned vuid from now on */
-      cli->vuid = SVAL(cli->inbuf,smb_uid);
+	/* use the returned vuid from now on */
+	cli->vuid = SVAL(cli->inbuf,smb_uid);
 
-      if (cli->protocol >= PROTOCOL_NT1) {
-        /*
-         * Save off some of the connected server
-         * info.
-         */
-        char *server_domain,*server_os,*server_type;
-        server_os = smb_buf(cli->inbuf);
-        server_type = skip_string(server_os,1);
-        server_domain = skip_string(server_type,1);
-        fstrcpy(cli->server_os, server_os);
-        fstrcpy(cli->server_type, server_type);
-        fstrcpy(cli->server_domain, server_domain);
+	if (cli->protocol >= PROTOCOL_NT1)
+	{
+		if (esec)
+		{
+		}
+		else
+		{
+			/*
+			 * Save off some of the connected server
+			 * info.
+			 */
+			char *server_domain;
+			char *server_os;
+			char *server_type;
+
+			server_os = smb_buf(cli->inbuf);
+			server_type = skip_string(server_os,1);
+			server_domain = skip_string(server_type,1);
+
+			fstrcpy(cli->server_os, server_os);
+			fstrcpy(cli->server_type, server_type);
+			fstrcpy(cli->server_domain, server_domain);
+		}
       }
 
       return True;
@@ -1003,8 +1114,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 		 "\\\\%s\\%s", cli->desthost, share);
 	strupper(fullshare);
 
-	set_message(cli->outbuf,4,
-		    2 + strlen(fullshare) + passlen + strlen(dev),True);
+	set_message(cli->outbuf,4, 0, True);
 	CVAL(cli->outbuf,smb_com) = SMBtconX;
 	cli_setup_packet(cli);
 
@@ -1014,9 +1124,11 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	p = smb_buf(cli->outbuf);
 	memcpy(p,pword,passlen);
 	p += passlen;
-	fstrcpy(p,fullshare);
-	p = skip_string(p,1);
-	pstrcpy(p,dev);
+	p = cli_put_string(cli, p, fullshare, False);
+	fstrcpy(p, dev);
+	p = skip_string(p, 1);
+
+	set_message(cli->outbuf,4,PTR_DIFF(p, smb_buf(cli->outbuf)),False);
 
 	SCVAL(cli->inbuf,smb_rcls, 1);
 
@@ -1030,8 +1142,10 @@ BOOL cli_send_tconX(struct cli_state *cli,
 
 	fstrcpy(cli->dev, "A:");
 
-	if (cli->protocol >= PROTOCOL_NT1) {
-		fstrcpy(cli->dev, smb_buf(cli->inbuf));
+	if (cli->protocol >= PROTOCOL_NT1)
+	{
+		cli_get_string(cli, smb_buf(cli->inbuf),
+		               cli->dev, sizeof(cli->dev));
 	}
 
 	if (strcasecmp(share,"IPC$")==0) {
@@ -1039,8 +1153,8 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	}
 
 	/* only grab the device if we have a recent protocol level */
-	if (cli->protocol >= PROTOCOL_NT1 &&
-	    smb_buflen(cli->inbuf) == 3) {
+	if (cli->protocol >= PROTOCOL_NT1 && smb_buflen(cli->inbuf) == 3)
+	{
 		/* almost certainly win95 - enable bug fixes */
 		cli->win95 = True;
 	}
@@ -1304,8 +1418,9 @@ int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 	SSVAL(cli->outbuf,smb_vwv8,openfn);
   
 	p = smb_buf(cli->outbuf);
-	pstrcpy(p,fname);
-	p = skip_string(p,1);
+	p = cli_put_string(cli, p, fname, False);
+
+	set_message(cli->outbuf,15,PTR_DIFF(p, smb_buf(cli->outbuf)),False);
 
 	cli_send_smb(cli, True);
 	if (!cli_receive_smb(cli)) {
@@ -2412,23 +2527,37 @@ BOOL cli_negprot(struct cli_state *cli)
 		cli->serverzone = SVALS(cli->inbuf,smb_vwv15+1)*60;
 		/* this time arrives in real GMT */
 		cli->servertime = interpret_long_date(cli->inbuf+smb_vwv11+1);
-		memcpy(cli->cryptkey, buf,8);
-		if (bcc > 8)
-		{
-			unibuf_to_ascii(cli->server_domain,  buf+8,
-					sizeof(cli->server_domain));
-		}
-		else
-		{
-			cli->server_domain[0] = 0;
-		}
+
 		cli->capabilities = IVAL(cli->inbuf,smb_vwv9+1);
-		if (cli->capabilities & CAP_RAW_MODE) {
+		if (IS_BITS_SET_ALL(cli->capabilities, CAP_RAW_MODE))
+		{
 			cli->readbraw_supported = True;
 			cli->writebraw_supported = True;      
 		}
-		DEBUG(5,("server's domain: %s bcc: %d\n",
-			cli->server_domain, bcc));
+
+		if (IS_BITS_SET_ALL(cli->capabilities, CAP_EXTENDED_SECURITY))
+		{
+			/* oops, some kerberos-related nonsense. */
+			/* expect to have to use NTLMSSP-over-SMB */
+			DEBUG(10,("unknown kerberos-related (?) blob\n"));
+			memset(cli->cryptkey, 0, 8);
+			cli->server_domain[0] = 0;
+		}
+		else
+		{
+			memcpy(cli->cryptkey, buf,8);
+			if (bcc > 8)
+			{
+				unibuf_to_ascii(cli->server_domain,  buf+8,
+						sizeof(cli->server_domain));
+			}
+			else
+			{
+				cli->server_domain[0] = 0;
+			}
+			DEBUG(5,("server's domain: %s bcc: %d\n",
+				cli->server_domain, bcc));
+		}
 	}
 	else if (cli->protocol >= PROTOCOL_LANMAN1)
 	{
@@ -2659,24 +2788,26 @@ int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num)
 	if (eclass) *eclass = 0;
 	if (num   ) *num = 0;
 
-	if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
+	if (flgs2 & FLAGS2_32_BIT_ERROR_CODES)
+	{
 		/* 32 bit error codes detected */
 		uint32 nt_err = IVAL(cli->inbuf,smb_rcls);
 		if (num) *num = nt_err;
 		DEBUG(10,("cli_error: 32 bit codes: code=%08x\n", nt_err));
 		if (!IS_BITS_SET_ALL(nt_err, 0xc0000000)) return 0;
 
-		switch (nt_err & 0xFFFFFF) {
-		case NT_STATUS_ACCESS_VIOLATION: return EACCES;
-		case NT_STATUS_NO_SUCH_FILE: return ENOENT;
-		case NT_STATUS_NO_SUCH_DEVICE: return ENODEV;
-		case NT_STATUS_INVALID_HANDLE: return EBADF;
-		case NT_STATUS_NO_MEMORY: return ENOMEM;
-		case NT_STATUS_ACCESS_DENIED: return EACCES;
-		case NT_STATUS_OBJECT_NAME_NOT_FOUND: return ENOENT;
-		case NT_STATUS_SHARING_VIOLATION: return EBUSY;
-		case NT_STATUS_OBJECT_PATH_INVALID: return ENOTDIR;
-		case NT_STATUS_OBJECT_NAME_COLLISION: return EEXIST;
+		switch (nt_err & 0xFFFFFF)
+		{
+			case NT_STATUS_ACCESS_VIOLATION     : return EACCES;
+			case NT_STATUS_NO_SUCH_FILE         : return ENOENT;
+			case NT_STATUS_NO_SUCH_DEVICE       : return ENODEV;
+			case NT_STATUS_INVALID_HANDLE       : return EBADF;
+			case NT_STATUS_NO_MEMORY            : return ENOMEM;
+			case NT_STATUS_ACCESS_DENIED        : return EACCES;
+			case NT_STATUS_OBJECT_NAME_NOT_FOUND: return ENOENT;
+			case NT_STATUS_SHARING_VIOLATION    : return EBUSY;
+			case NT_STATUS_OBJECT_PATH_INVALID  : return ENOTDIR;
+			case NT_STATUS_OBJECT_NAME_COLLISION: return EEXIST;
 		}
 
 		/* for all other cases - a default code */
@@ -2856,7 +2987,202 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		            sizeof(cli->domain));
 	}
 
-	if (cli->pwd.cleartext || cli->pwd.null_pwd)
+	if (IS_BITS_SET_ALL(cli->capabilities, CAP_EXTENDED_SECURITY))
+	{
+		/* common to both session setups */
+		char pwd_buf[128];
+		int buf_len;
+		char *p;
+		char *e = pwd_buf + sizeof(pwd_buf);
+
+		/* 1st session setup */
+		char pwd_data[34] =
+		{
+			0x60, 0x40, 0x06, 0x06, 0x2b, 0x06, 0x01, 0x05,
+			0x05, 0x02, 0xa0, 0x36, 0x30, 0x34, 0xa0, 0x0e,
+			0x30, 0x0c, 0x06, 0x0a, 0x2b, 0x06, 0x01, 0x04,
+			0x01, 0x82, 0x37, 0x02, 0x02, 0x0a, 0xa2, 0x22,
+			0x04, 0x20
+		};
+		/* 2nd session setup */
+#if 0
+		char pwd_data_2[8] =
+		{
+			0xa1, 0x51, 0x30, 0x4f, 0xa2, 0x4d, 0x04, 0x4b
+		};
+#endif
+		char pwd_data_2[8] =
+		{
+			0xa1, 0x51, 0x30, 0x4f, 0xa2, 0x4d, 0x04, 0x4b
+		};
+		prs_struct auth_resp;
+		int resp_len;
+		char *p_gssapi;
+		char *p_oem;
+		char *p_gssapi_end;
+		uint16 gssapi_len;
+
+		memset(pwd_buf, 0, sizeof(pwd_buf));
+		memcpy(pwd_buf, pwd_data, sizeof(pwd_data));
+		p = pwd_buf + sizeof(pwd_data);
+
+		safe_strcpy(p, "NTLMSSP", PTR_DIFF(e, p) - 1);
+		p = skip_string(p, 1);
+		CVAL(p, 0) = 0x1;
+		p += 4;
+		if (cli->ntlmssp_cli_flgs == 0)
+		{
+			cli->ntlmssp_cli_flgs =
+				NTLMSSP_NEGOTIATE_UNICODE |
+				NTLMSSP_NEGOTIATE_OEM |
+				NTLMSSP_NEGOTIATE_SIGN |
+				NTLMSSP_NEGOTIATE_SEAL |
+				NTLMSSP_NEGOTIATE_LM_KEY |
+				NTLMSSP_NEGOTIATE_NTLM |
+				NTLMSSP_NEGOTIATE_ALWAYS_SIGN |
+				NTLMSSP_NEGOTIATE_00001000 |
+				NTLMSSP_NEGOTIATE_00002000;
+#if 0
+			cli->ntlmssp_cli_flgs = 0x80008207;
+#endif
+		}
+		SIVAL(p, 0, cli->ntlmssp_cli_flgs);
+		p += 4;
+		p += 16; /* skip some NULL space */
+		CVAL(p, 0) = 0; p++; /* alignment */
+
+		buf_len = PTR_DIFF(p, pwd_buf);
+
+		/* first session negotiation stage */
+		if (!cli_session_setup_x(cli, cli->user_name,
+			       pwd_buf, buf_len,
+			       NULL, 0,
+			       cli->domain))
+		{
+			DEBUG(1,("failed session setup\n"));
+			if (do_shutdown)
+			{
+				cli_shutdown(cli);
+			}
+			return False;
+		}
+
+		DEBUG(1,("1st session setup ok\n"));
+
+		if (*cli->server_domain || *cli->server_os || *cli->server_type)
+		{
+			DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
+			     cli->server_domain,
+		             cli->server_os,
+		             cli->server_type));
+		}
+	
+		p = smb_buf(cli->inbuf) + 0x2f;
+		cli->ntlmssp_cli_flgs = IVAL(p, 0); /* 0x80808a05; */
+		p += 4;
+		memcpy(cli->cryptkey, p, 8);
+#ifdef DEBUG_PASSWORD
+		DEBUG(100,("cli_session_setup_x: ntlmssp %8x\n",
+			    cli->ntlmssp_cli_flgs));
+			   
+		DEBUG(100,("cli_session_setup_x: crypt key\n"));
+		dump_data(100, cli->cryptkey, 8);
+#endif
+		prs_init(&auth_resp, 1024, 4, SAFETY_MARGIN, False);
+
+		pwd_make_lm_nt_owf(&cli->pwd, cli->cryptkey);
+
+		create_ntlmssp_resp(&cli->pwd, cli->domain,
+				     cli->user_name, cli->calling.name,
+				     cli->ntlmssp_cli_flgs,
+				     &auth_resp);
+		prs_link(NULL, &auth_resp, NULL);
+
+		memset(pwd_buf, 0, sizeof(pwd_buf));
+		p = pwd_buf;
+
+		CVAL(p, 0) = 0xa1; p++;
+		CVAL(p, 0) = 0x82; p++;
+		p_gssapi = p; p+= 2;
+		CVAL(p, 0) = 0x30; p++;
+		CVAL(p, 0) = 0x82; p++;
+		p += 2;
+		
+		CVAL(p, 0) = 0xa2; p++;
+		CVAL(p, 0) = 0x82; p++;
+		p_oem = p; p+= 2;
+		CVAL(p, 0) = 0x04; p++;
+		CVAL(p, 0) = 0x82; p++;
+		p += 2;
+
+		p_gssapi_end = p;
+		
+		safe_strcpy(p, "NTLMSSP", PTR_DIFF(e, p) - 1);
+		p = skip_string(p, 1);
+		CVAL(p, 0) = 0x3;
+		p += 4;
+
+		resp_len = mem_buf_len(auth_resp.data);
+		mem_buf_copy(p, auth_resp.data, 0, resp_len);
+		prs_mem_free(&auth_resp);
+
+		p += resp_len;
+
+		buf_len = PTR_DIFF(p, pwd_buf);
+		gssapi_len = PTR_DIFF(p, p_gssapi_end) + 12;
+
+		*p_gssapi++ = (gssapi_len >> 8) & 0xff;
+		*p_gssapi++ = gssapi_len & 0xff;
+
+		p_gssapi += 2;
+		gssapi_len -= 4;
+
+		*p_gssapi++ = (gssapi_len >> 8) & 0xff;
+		*p_gssapi++ = gssapi_len & 0xff;
+
+		gssapi_len -= 4;
+
+		*p_oem++ = (gssapi_len >> 8) & 0xff;
+		*p_oem++ = gssapi_len & 0xff;
+
+		p_oem += 2;
+		gssapi_len -= 4;
+
+		*p_oem++ = (gssapi_len >> 8) & 0xff;
+		*p_oem++ = gssapi_len & 0xff;
+
+		/* second session negotiation stage */
+		if (!cli_session_setup_x(cli, cli->user_name,
+			       pwd_buf, buf_len,
+			       NULL, 0,
+			       cli->domain))
+		{
+			DEBUG(1,("failed session setup\n"));
+			if (do_shutdown)
+			{
+				cli_shutdown(cli);
+			}
+			return False;
+		}
+
+		DEBUG(1,("2nd session setup ok\n"));
+
+		if (do_tcon)
+		{
+			if (!cli_send_tconX(cli, service, service_type,
+			                    NULL, 0))
+			                    
+			{
+				DEBUG(1,("failed tcon_X\n"));
+				if (do_shutdown)
+				{
+					cli_shutdown(cli);
+				}
+				return False;
+			}
+		}
+	}
+	else if (cli->pwd.cleartext || cli->pwd.null_pwd)
 	{
 		fstring passwd, ntpasswd;
 		int pass_len = 0, ntpass_len = 0;
@@ -2925,9 +3251,9 @@ BOOL cli_establish_connection(struct cli_state *cli,
 
 		/* attempt encrypted session */
 		if (!cli_session_setup_x(cli, cli->user_name,
-	                       (char*)lm_sess_pwd, sizeof(lm_sess_pwd),
-	                       (char*)nt_sess_pwd, nt_sess_pwd_len,
-	                       cli->domain))
+			               (char*)lm_sess_pwd, sizeof(lm_sess_pwd),
+			               (char*)nt_sess_pwd, nt_sess_pwd_len,
+			               cli->domain))
 		{
 			DEBUG(1,("failed session setup\n"));
 

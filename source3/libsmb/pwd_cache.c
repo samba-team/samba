@@ -34,6 +34,7 @@ void pwd_init(struct pwd_info *pwd)
 	bzero(pwd->smb_nt_pwd, sizeof(pwd->smb_nt_pwd));
 	bzero(pwd->smb_lm_owf, sizeof(pwd->smb_lm_owf));
 	bzero(pwd->smb_nt_owf, sizeof(pwd->smb_nt_owf));
+	pwd->nt_owf_len = 0;
 
 	pwd->null_pwd  = True; /* safest option... */
 	pwd->cleartext = False;
@@ -259,6 +260,14 @@ void pwd_make_lm_nt_owf2(struct pwd_info *pwd, const uchar srv_key[8],
  ****************************************************************************/
 void pwd_make_lm_nt_owf(struct pwd_info *pwd, uchar cryptkey[8])
 {
+	if (pwd->null_pwd)
+	{
+#ifdef DEBUG_PASSWORD
+		DEBUG(100,("pwd_make_lm_nt_owf: NULL password\n"));
+#endif
+		pwd->nt_owf_len = 0;
+		return;
+	}
 	pwd_deobfuscate(pwd);
 
 	SMBOWFencrypt(pwd->smb_lm_pwd, cryptkey, pwd->smb_lm_owf);
@@ -291,6 +300,18 @@ void pwd_make_lm_nt_owf(struct pwd_info *pwd, uchar cryptkey[8])
 void pwd_get_lm_nt_owf(struct pwd_info *pwd, uchar lm_owf[24],
 				uchar *nt_owf, size_t *nt_owf_len)
 {
+	if (pwd->null_pwd)
+	{
+#ifdef DEBUG_PASSWORD
+		DEBUG(100,("pwd_get_lm_nt_owf: NULL password\n"));
+#endif
+		if (nt_owf_len != NULL)
+		{
+			*nt_owf_len = 0;
+		}
+		return;
+	}
+		
 	pwd_deobfuscate(pwd);
 	if (lm_owf != NULL)
 	{

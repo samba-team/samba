@@ -1492,6 +1492,7 @@ char *strdup(char *s);
    
 #define FLAGS2_LONG_PATH_COMPONENTS   0x0001
 #define FLAGS2_EXTENDED_ATTRIBUTES    0x0002
+#define FLAGS2_EXT_SEC                0x0800
 #define FLAGS2_DFS_PATHNAMES          0x1000
 #define FLAGS2_READ_PERMIT_NO_EXECUTE 0x2000
 #define FLAGS2_32_BIT_ERROR_CODES     0x4000 
@@ -1499,18 +1500,19 @@ char *strdup(char *s);
 
 /* Capabilities.  see ftp.microsoft.com/developr/drg/cifs/cifs/cifs4.txt */
 
-#define CAP_RAW_MODE         0x0001
-#define CAP_MPX_MODE         0x0002
-#define CAP_UNICODE          0x0004
-#define CAP_LARGE_FILES      0x0008
-#define CAP_NT_SMBS          0x0010
-#define CAP_RPC_REMOTE_APIS  0x0020
-#define CAP_STATUS32         0x0040
-#define CAP_LEVEL_II_OPLOCKS 0x0080
-#define CAP_LOCK_AND_READ    0x0100
-#define CAP_NT_FIND          0x0200
-#define CAP_DFS              0x1000
-#define CAP_LARGE_READX      0x4000
+#define CAP_RAW_MODE          0x00000001
+#define CAP_MPX_MODE          0x00000002
+#define CAP_UNICODE           0x00000004
+#define CAP_LARGE_FILES       0x00000008
+#define CAP_NT_SMBS           0x00000010
+#define CAP_RPC_REMOTE_APIS   0x00000020
+#define CAP_STATUS32          0x00000040
+#define CAP_LEVEL_II_OPLOCKS  0x00000080
+#define CAP_LOCK_AND_READ     0x00000100
+#define CAP_NT_FIND           0x00000200
+#define CAP_DFS               0x00001000
+#define CAP_LARGE_READX       0x00004000
+#define CAP_EXTENDED_SECURITY 0x80000000
 
 /* protocol types. It assumes that higher protocols include lower protocols
    as subsets */
