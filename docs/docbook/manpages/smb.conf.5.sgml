@@ -1073,8 +1073,7 @@
                 to it's domain using the administrator username and password method. </para>
 
 		<para>This option is only required when using sam back-ends tied to the
-                Unix uid method of RID calculation such as smbpasswd.  This option is only
-                available in Samba 3.0.</para>
+                Unix uid method of RID calculation such as smbpasswd.  This option is only available in Samba 3.0. If this option is not specified, the <link linkend="ADDUSERSCRIPT">add user script</link> is used.</para>
 
 		<para>Default: <command>add machine script = &lt;empty string&gt;
 		</command></para>	
