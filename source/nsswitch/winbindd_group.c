@@ -863,7 +863,10 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 		extra_data[extra_data_len - 1] = '\0';
 		state->response.extra_data = extra_data;
 		state->response.length += extra_data_len;
-			}
+	}
+
+	/* No domains may have responded but that's still OK so don't
+	   return an error. */
 
         return WINBINDD_OK;
 }
