@@ -62,37 +62,37 @@ NTSTATUS dcerpc_epm_map_tcp_port(const char *server,
 	ZERO_STRUCT(handle);
 	ZERO_STRUCT(guid);
 
-	twr.towers.num_floors = 5;
-	twr.towers.floors = talloc(p, sizeof(twr.towers.floors[0]) * 5);
+	twr.tower.num_floors = 5;
+	twr.tower.floors = talloc(p, sizeof(twr.tower.floors[0]) * 5);
 
 	/* what I'd like for christmas ... */
 
 	/* an RPC interface ... */
-	twr.towers.floors[0].lhs.protocol = EPM_PROTOCOL_UUID;
-	GUID_from_string(uuid, &twr.towers.floors[0].lhs.info.uuid.uuid);
-	twr.towers.floors[0].lhs.info.uuid.version = version;
-	twr.towers.floors[0].rhs.uuid.unknown = 0;
+	twr.tower.floors[0].lhs.protocol = EPM_PROTOCOL_UUID;
+	GUID_from_string(uuid, &twr.tower.floors[0].lhs.info.uuid.uuid);
+	twr.tower.floors[0].lhs.info.uuid.version = version;
+	twr.tower.floors[0].rhs.uuid.unknown = 0;
 
 	/* encoded with NDR ... */
-	twr.towers.floors[1].lhs.protocol = EPM_PROTOCOL_UUID;
-	GUID_from_string(NDR_GUID, &twr.towers.floors[1].lhs.info.uuid.uuid);
-	twr.towers.floors[1].lhs.info.uuid.version = NDR_GUID_VERSION;
-	twr.towers.floors[1].rhs.uuid.unknown = 0;
+	twr.tower.floors[1].lhs.protocol = EPM_PROTOCOL_UUID;
+	GUID_from_string(NDR_GUID, &twr.tower.floors[1].lhs.info.uuid.uuid);
+	twr.tower.floors[1].lhs.info.uuid.version = NDR_GUID_VERSION;
+	twr.tower.floors[1].rhs.uuid.unknown = 0;
 
 	/* on an RPC connection ... */
-	twr.towers.floors[2].lhs.protocol = EPM_PROTOCOL_NCACN;
-	twr.towers.floors[2].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr.towers.floors[2].rhs.ncacn.minor_version = 0;
+	twr.tower.floors[2].lhs.protocol = EPM_PROTOCOL_NCACN;
+	twr.tower.floors[2].lhs.info.lhs_data = data_blob(NULL, 0);
+	twr.tower.floors[2].rhs.ncacn.minor_version = 0;
 
 	/* on a TCP port ... */
-	twr.towers.floors[3].lhs.protocol = EPM_PROTOCOL_TCP;
-	twr.towers.floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr.towers.floors[3].rhs.tcp.port = 0;
+	twr.tower.floors[3].lhs.protocol = EPM_PROTOCOL_TCP;
+	twr.tower.floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
+	twr.tower.floors[3].rhs.tcp.port = 0;
 
 	/* on an IP link ... */
-	twr.towers.floors[4].lhs.protocol = EPM_PROTOCOL_IP;
-	twr.towers.floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr.towers.floors[4].rhs.ip.address = 0;
+	twr.tower.floors[4].lhs.protocol = EPM_PROTOCOL_IP;
+	twr.tower.floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
+	twr.tower.floors[4].rhs.ip.address = 0;
 
 	/* with some nice pretty paper around it of course */
 	r.in.object = &guid;
@@ -117,13 +117,13 @@ NTSTATUS dcerpc_epm_map_tcp_port(const char *server,
 		return NT_STATUS_PORT_UNREACHABLE;
 	}
 
-	if (twr_r->towers.num_floors != 5 ||
-	    twr_r->towers.floors[3].lhs.protocol != twr.towers.floors[3].lhs.protocol) {
+	if (twr_r->tower.num_floors != 5 ||
+	    twr_r->tower.floors[3].lhs.protocol != twr.tower.floors[3].lhs.protocol) {
 		dcerpc_pipe_close(p);
 		return NT_STATUS_PORT_UNREACHABLE;
 	}
 
-	*port = twr_r->towers.floors[3].rhs.tcp.port;
+	*port = twr_r->tower.floors[3].rhs.tcp.port;
 
 	dcerpc_pipe_close(p);
 

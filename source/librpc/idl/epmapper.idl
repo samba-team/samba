@@ -50,20 +50,24 @@ interface epmapper
 		EPM_PROTOCOL_TCP     		= 0x07,
 		EPM_PROTOCOL_UDP     		= 0x08,
 		EPM_PROTOCOL_IP      		= 0x09,
-
 		/* These 4 are protocol identifiers, always at level 3 or lower */
 		EPM_PROTOCOL_NCADG 			= 0x0a, /* Connectionless RPC */
 		EPM_PROTOCOL_NCACN 			= 0x0b,
 		EPM_PROTOCOL_NCALRPC 		= 0x0c, /* Local RPC */
 		EPM_PROTOCOL_UUID 			= 0x0d,
-
 		EPM_PROTOCOL_IPX  			= 0x0e,
 		EPM_PROTOCOL_SMB     		= 0x0f,
 		EPM_PROTOCOL_PIPE    		= 0x10,
 		EPM_PROTOCOL_NETBIOS 		= 0x11,
-		EPM_PROTOCOL_NB_NB   		= 0x12, /* NetBIOS over NetBEUI */
+		EPM_PROTOCOL_NETBEUI   		= 0x12,
 		EPM_PROTOCOL_SPX     		= 0x13,
 		EPM_PROTOCOL_NB_IPX  		= 0x14, /* NetBIOS over IPX */
+		EPM_PROTOCOL_ATALK_STREAM 	= 0x16,
+		EPM_PROTOCOL_ATALK_DATAGRAM = 0x17,
+		EPM_PROTOCOL_APPLETALK		= 0x18, /* AppleTalk */
+		EPM_PROTOCOL_VINES_SPP		= 0x1a, 
+		EPM_PROTOCOL_VINES_IPC		= 0x1b,
+		EPM_PROTOCOL_STREETTALK		= 0x1c,
 		EPM_PROTOCOL_HTTP    		= 0x1f,
 		EPM_PROTOCOL_UNIX_DS  		= 0x20,  /* Unix domain socket */
 		EPM_PROTOCOL_NULL			= 0x21
@@ -127,7 +131,7 @@ interface epmapper
 	} epm_rhs_netbios;
 
 	typedef struct {
-	} epm_rhs_nb_nb;
+	} epm_rhs_netbeui;
 
 	typedef struct {
 	} epm_rhs_spx;
@@ -147,7 +151,29 @@ interface epmapper
 	} epm_rhs_null;
 
 	typedef struct {
+		astring identifier;
 	} epm_rhs_ncalrpc;
+
+	typedef struct {
+	} epm_rhs_appletalk;
+
+	typedef struct {
+	} epm_rhs_atalk_stream;
+
+	typedef struct {
+	} epm_rhs_atalk_datagram;
+
+	typedef struct {
+		uint16 port;
+	} epm_rhs_vines_spp;
+
+	typedef struct {
+		uint16 port;
+	} epm_rhs_vines_ipc;
+
+	typedef struct {
+		astring streettalk;
+	} epm_rhs_streettalk;
 
 	typedef [flag(NDR_BIG_ENDIAN),nodiscriminant] union {
 		[case(EPM_PROTOCOL_DNET_NSP)] epm_rhs_dnet_nsp dnet_nsp;
@@ -164,9 +190,15 @@ interface epmapper
 		[case(EPM_PROTOCOL_SMB)] epm_rhs_smb smb;
 		[case(EPM_PROTOCOL_PIPE)] epm_rhs_pipe pipe;
 		[case(EPM_PROTOCOL_NETBIOS)] epm_rhs_netbios netbios;
-		[case(EPM_PROTOCOL_NB_NB)] epm_rhs_nb_nb nb_nb;
+		[case(EPM_PROTOCOL_NETBEUI)] epm_rhs_netbeui netbeui;
 		[case(EPM_PROTOCOL_SPX)] epm_rhs_spx spx;
 		[case(EPM_PROTOCOL_NB_IPX)] epm_rhs_nb_ipx nb_ipx;
+		[case(EPM_PROTOCOL_ATALK_STREAM)] epm_rhs_atalk_stream atalk_stream;
+		[case(EPM_PROTOCOL_ATALK_DATAGRAM)] epm_rhs_atalk_datagram atalk_datagram;
+		[case(EPM_PROTOCOL_APPLETALK)] epm_rhs_appletalk appletalk;
+		[case(EPM_PROTOCOL_VINES_SPP)] epm_rhs_vines_spp vines_spp;
+		[case(EPM_PROTOCOL_VINES_IPC)] epm_rhs_vines_ipc vines_ipc;
+		[case(EPM_PROTOCOL_STREETTALK)] epm_rhs_streettalk streettalk;
 		[case(EPM_PROTOCOL_HTTP)] epm_rhs_http http;
 		[case(EPM_PROTOCOL_UNIX_DS)] epm_rhs_unix_ds unix_ds;
 		[case(EPM_PROTOCOL_NULL)] epm_rhs_null null;
@@ -191,11 +223,11 @@ interface epmapper
 	typedef [flag(NDR_NOALIGN|NDR_LITTLE_ENDIAN)] struct {
 		uint16 num_floors;
 		epm_floor floors[num_floors];
-	} epm_towers;
+	} epm_tower;
 
 	typedef [gensize] struct {
-		[value(ndr_size_epm_towers(0, &r->towers,ndr->flags))] uint32  tower_length;
-		[subcontext(4)] epm_towers towers;
+		[value(ndr_size_epm_tower(0, &r->tower,ndr->flags))] uint32  tower_length;
+		[subcontext(4)] epm_tower tower;
 	} epm_twr_t;
 
 	typedef struct {

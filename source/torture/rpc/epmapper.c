@@ -85,8 +85,8 @@ static void display_tower(TALLOC_CTX *mem_ctx, struct epm_towers *twr)
 			printf(" NetBIOS:%s", rhs->netbios.name);
 			break;
 
-		case EPM_PROTOCOL_NB_NB:
-			printf(" NB_NB");
+		case EPM_PROTOCOL_NETBEUI:
+			printf(" NETBeui");
 			break;
 
 		case EPM_PROTOCOL_SPX:
@@ -141,63 +141,63 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.out.entry_handle = &handle;
 	r.in.max_towers = 100;
 
-	if (twr->towers.num_floors != 5) {
-		printf(" tower has %d floors - skipping test_Map\n", twr->towers.num_floors);
+	if (twr->tower.num_floors != 5) {
+		printf(" tower has %d floors - skipping test_Map\n", twr->tower.num_floors);
 		return True;
 	}
 
-	uuid_str = GUID_string(mem_ctx, &twr->towers.floors[0].lhs.info.uuid.uuid);
+	uuid_str = GUID_string(mem_ctx, &twr->tower.floors[0].lhs.info.uuid.uuid);
 
 	printf("epm_Map results for '%s':\n", 
-	       idl_pipe_name(uuid_str, twr->towers.floors[0].lhs.info.uuid.version));
+	       idl_pipe_name(uuid_str, twr->tower.floors[0].lhs.info.uuid.version));
 
-	twr->towers.floors[2].lhs.protocol = EPM_PROTOCOL_NCACN;
-	twr->towers.floors[2].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->towers.floors[2].rhs.ncacn.minor_version = 0;
+	twr->tower.floors[2].lhs.protocol = EPM_PROTOCOL_NCACN;
+	twr->tower.floors[2].lhs.info.lhs_data = data_blob(NULL, 0);
+	twr->tower.floors[2].rhs.ncacn.minor_version = 0;
 
-	twr->towers.floors[3].lhs.protocol = EPM_PROTOCOL_TCP;
-	twr->towers.floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->towers.floors[3].rhs.tcp.port = 0;
+	twr->tower.floors[3].lhs.protocol = EPM_PROTOCOL_TCP;
+	twr->tower.floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
+	twr->tower.floors[3].rhs.tcp.port = 0;
 
-	twr->towers.floors[4].lhs.protocol = EPM_PROTOCOL_IP;
-	twr->towers.floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->towers.floors[4].rhs.ip.address = 0;
+	twr->tower.floors[4].lhs.protocol = EPM_PROTOCOL_IP;
+	twr->tower.floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
+	twr->tower.floors[4].rhs.ip.address = 0;
 
 	status = dcerpc_epm_Map(p, mem_ctx, &r);
 	if (NT_STATUS_IS_OK(status) && r.out.result == 0) {
 		for (i=0;i<r.out.num_towers;i++) {
 			if (r.out.towers[i].twr) {
-				display_tower(mem_ctx, &r.out.towers[i].twr->towers);
+				display_tower(mem_ctx, &r.out.towers[i].twr->tower);
 			}
 		}
 	}
 
-	twr->towers.floors[3].lhs.protocol = EPM_PROTOCOL_HTTP;
-	twr->towers.floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->towers.floors[3].rhs.http.port = 0;
+	twr->tower.floors[3].lhs.protocol = EPM_PROTOCOL_HTTP;
+	twr->tower.floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
+	twr->tower.floors[3].rhs.http.port = 0;
 
 	status = dcerpc_epm_Map(p, mem_ctx, &r);
 	if (NT_STATUS_IS_OK(status) && r.out.result == 0) {
 		for (i=0;i<r.out.num_towers;i++) {
 			if (r.out.towers[i].twr) {
-				display_tower(mem_ctx, &r.out.towers[i].twr->towers);
+				display_tower(mem_ctx, &r.out.towers[i].twr->tower);
 			}
 		}
 	}
 
-	twr->towers.floors[3].lhs.protocol = EPM_PROTOCOL_SMB;
-	twr->towers.floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->towers.floors[3].rhs.smb.unc = "";
+	twr->tower.floors[3].lhs.protocol = EPM_PROTOCOL_SMB;
+	twr->tower.floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
+	twr->tower.floors[3].rhs.smb.unc = "";
 
-	twr->towers.floors[4].lhs.protocol = EPM_PROTOCOL_NETBIOS;
-	twr->towers.floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->towers.floors[4].rhs.netbios.name = "";
+	twr->tower.floors[4].lhs.protocol = EPM_PROTOCOL_NETBIOS;
+	twr->tower.floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
+	twr->tower.floors[4].rhs.netbios.name = "";
 
 	status = dcerpc_epm_Map(p, mem_ctx, &r);
 	if (NT_STATUS_IS_OK(status) && r.out.result == 0) {
 		for (i=0;i<r.out.num_towers;i++) {
 			if (r.out.towers[i].twr) {
-				display_tower(mem_ctx, &r.out.towers[i].twr->towers);
+				display_tower(mem_ctx, &r.out.towers[i].twr->tower);
 			}
 		}
 	}
@@ -233,7 +233,7 @@ static BOOL test_Lookup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		}
 		for (i=0;i<r.out.num_ents;i++) {
 			printf("\nFound '%s'\n", r.out.entries[i].annotation);
-			display_tower(mem_ctx, &r.out.entries[i].tower->towers);
+			display_tower(mem_ctx, &r.out.entries[i].tower->tower);
 			test_Map(p, mem_ctx, r.out.entries[i].tower);
 		}
 	} while (NT_STATUS_IS_OK(status) && 
