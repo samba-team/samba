@@ -199,6 +199,7 @@ typedef struct domrid3_info
 	uint32 type1;      /* value is 0x1 */
 	uint32 ptr_type;   /* undocumented pointer */
 	uint32 type2;      /* value is 0x1 */
+	uint32 unk; /* value is 0x2 */
 
 } DOM_RID3;
 
@@ -210,17 +211,6 @@ typedef struct domrid4_info
 	uint32 rid;  /* user RID */
 
 } DOM_RID4;
-
-/* DOM_RID5 - rid, type & attributes */
-typedef struct domrid5_info
-{
-	uint32 ptr_unk;   /* pointer to unk */
-	uint32 unk;      /* value is 0x1 */
-	uint32 rid;  /* RID */
-	uint8  type; /* SID_NAME_USE_ENUM */
-	uint16 attr;
-
-} DOM_RID5;
 
 /* DOM_CLNT_SRV - client / server names */
 typedef struct clnt_srv_info

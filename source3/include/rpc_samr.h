@@ -749,18 +749,25 @@ typedef struct samr_group_info4
 
 } GROUP_INFO4;
 
+/* GROUP_INFO_CTR */
+typedef struct group_info_ctr
+{
+	uint16 switch_value;
+
+	union
+ 	{
+		GROUP_INFO4 info4;
+		GROUP_INFO1 info1;
+
+	} group;
+
+} GROUP_INFO_CTR;
+
 /* SAMR_R_QUERY_GROUPINFO - SAM Group Info */
 typedef struct r_samr_query_groupinfo_info
 {
 	uint32 ptr;        
-	uint16 switch_value;     /* 0x0001 seen */
-	/* uint8[2] padding */
-
-	union
- 	{
-		GROUP_INFO1 info1;
-
-	} group;
+	GROUP_INFO_CTR *ctr;
 
 	uint32 status;
 
@@ -771,14 +778,7 @@ typedef struct r_samr_query_groupinfo_info
 typedef struct q_samr_set_group_info
 {
 	POLICY_HND pol;        /* policy handle */
-	uint16 switch_value1;     /* 0x0004 seen */
-	uint16 switch_value2;     /* 0x0004 seen */
-
-	union
- 	{
-		GROUP_INFO4 info4;
-
-	} group;
+	GROUP_INFO_CTR *ctr;
 
 } SAMR_Q_SET_GROUPINFO;
 
@@ -1005,8 +1005,6 @@ typedef struct r_samr_lookup_names_info
 	uint32 num_entries2; 
 	DOM_RID3 dom_rid[MAX_LOOKUP_SIDS]; /* domain RIDs being looked up */
 
-	uint32 num_entries3; 
-
 	uint32 status; /* return code */
 
 } SAMR_R_LOOKUP_NAMES;
@@ -1105,6 +1103,33 @@ typedef struct r_samr_unknown_32_info
 	uint32 status;         /* return status - fail: 0xC000 0099: user exists */
 
 } SAMR_R_UNKNOWN_32;
+
+/* SAMR_Q_QUERY_GROUPMEM - query group members */
+typedef struct q_samr_query_groupmem_info
+{
+	POLICY_HND group_pol;        /* policy handle */
+
+} SAMR_Q_QUERY_GROUPMEM;
+
+
+/* SAMR_R_QUERY_GROUPMEM - query group members */
+typedef struct r_samr_query_groupmem_info
+{
+	uint32 ptr;
+	uint32 num_entries;
+
+	uint32 ptr_rids;
+	uint32 ptr_attrs;
+
+	uint32 num_rids;
+	uint32 *rid;
+
+	uint32 num_attrs;
+	uint32 *attr;
+
+	uint32 status;
+
+} SAMR_R_QUERY_GROUPMEM;
 
 
 /* SAMR_Q_ADD_GROUPMEM - probably an add group member */
