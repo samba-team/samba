@@ -250,7 +250,7 @@ configure(int argc, char **argv)
     if(config_file == NULL)
 	config_file = _PATH_KDC_CONF;
     
-    if(krb5_config_parse_file(config_file, &cf))
+    if(krb5_config_parse_file(context, config_file, &cf))
 	cf = NULL;
     
     get_dbinfo(cf);

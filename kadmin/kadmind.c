@@ -128,7 +128,7 @@ main(int argc, char **argv)
     if (config_file == NULL)
 	config_file = HDB_DB_DIR "/kdc.conf";
 
-    if(krb5_config_parse_file(config_file, &cf) == 0) {
+    if(krb5_config_parse_file(context, config_file, &cf) == 0) {
 	const char *p = krb5_config_get_string (context, cf, 
 						"kdc", "key-file", NULL);
 	if (p)
