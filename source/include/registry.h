@@ -22,8 +22,8 @@
 #ifndef _REGISTRY_H /* _REGISTRY_H */
 #define _REGISTRY_H 
 
-
-enum hkeys {
+/* Handles for the predefined keys */
+enum reg_predefined_key {
 	HKEY_CLASSES_ROOT		= 0x80000000,
 	HKEY_CURRENT_USER		= 0x80000001,
 	HKEY_LOCAL_MACHINE		= 0x80000002,
@@ -31,8 +31,8 @@ enum hkeys {
 	HKEY_PERFORMANCE_DATA	= 0x80000004,
 	HKEY_CURRENT_CONFIG		= 0x80000005,
 	HKEY_DYN_DATA			= 0x80000006,
-	HKEY_PT					= 0x80000007, /* Don't know if this is correct! */
-	HKEY_PN					= 0x80000008  /* Don't know if this is correct! */
+	HKEY_PERFORMANCE_TEXT	= 0x80000050,
+	HKEY_PERFORMANCE_NLSTEXT= 0x80000060
 };
 
 /* Registry data types */

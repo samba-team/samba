@@ -74,7 +74,7 @@ BOOL reg_has_backend(const char *backend)
 }
 
 static struct {
-	uint32 hkey;
+	enum reg_predefined_key handle;
 	const char *name;
 } hkey_names[] = 
 {
@@ -85,30 +85,30 @@ static struct {
 	{HKEY_USERS, "HKEY_USERS" },
 	{HKEY_CURRENT_CONFIG, "HKEY_CURRENT_CONFIG" },
 	{HKEY_DYN_DATA, "HKEY_DYN_DATA" },
-	{HKEY_PT, "HKEY_PT" },
-	{HKEY_PN, "HKEY_PN" },
+	{HKEY_PERFORMANCE_TEXT, "HKEY_PERFORMANCE_TEXT" },
+	{HKEY_PERFORMANCE_NLSTEXT, "HKEY_PERFORMANCE_NLSTEXT" },
 	{ 0, NULL }
 };
 
-int reg_list_hives(TALLOC_CTX *mem_ctx, char ***hives, uint32_t **hkeys)
+int reg_list_predefs(TALLOC_CTX *mem_ctx, char ***hives, enum reg_predefined_key **hkeys)
 {
 	int i;
 	*hives = talloc_array_p(mem_ctx, char *, ARRAY_SIZE(hkey_names));
-	*hkeys = talloc_array_p(mem_ctx, uint32_t, ARRAY_SIZE(hkey_names));
+	*hkeys = talloc_array_p(mem_ctx, enum reg_predefined_key, ARRAY_SIZE(hkey_names));
 
 	for (i = 0; hkey_names[i].name; i++) {
 		(*hives)[i] = talloc_strdup(mem_ctx, hkey_names[i].name);
-		(*hkeys)[i] = hkey_names[i].hkey;
+		(*hkeys)[i] = hkey_names[i].handle;
 	}
 
 	return i;
 }
 
-const char *reg_get_hkey_name(uint32_t hkey)
+const char *reg_get_hkey_name(enum reg_predefined_key hkey)
 {
 	int i;
 	for (i = 0; hkey_names[i].name; i++) {
-		if (hkey_names[i].hkey == hkey) return hkey_names[i].name;
+		if (hkey_names[i].handle == hkey) return hkey_names[i].name;
 	}
 
 	return NULL;
@@ -119,7 +119,7 @@ WERROR reg_get_hive_by_name(struct registry_context *ctx, const char *name, stru
 	int i;
 	
 	for (i = 0; hkey_names[i].name; i++) {
-		if (!strcmp(hkey_names[i].name, name)) return reg_get_hive(ctx, hkey_names[i].hkey, key);
+		if (!strcmp(hkey_names[i].name, name)) return reg_get_hive(ctx, hkey_names[i].handle, key);
 	}
 
 	DEBUG(1, ("No hive with name '%s'\n", name));
@@ -134,7 +134,7 @@ WERROR reg_close (struct registry_context *ctx)
 	return WERR_OK;
 }
 
-WERROR reg_get_hive(struct registry_context *ctx, uint32_t hkey, struct registry_key **key)
+WERROR reg_get_hive(struct registry_context *ctx, enum reg_predefined_key hkey, struct registry_key **key)
 {
 	WERROR ret = ctx->get_hive(ctx, hkey, key);
 

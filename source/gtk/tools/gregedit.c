@@ -313,7 +313,7 @@ static void registry_load_root(void)
 
 	gtk_tree_store_clear(store_keys);
 
-	for(i = HKEY_CLASSES_ROOT; i <= HKEY_PN; i++) 
+	for(i = HKEY_CLASSES_ROOT; i <= HKEY_PERFORMANCE_NLSTEXT; i++) 
 	{
 		if (!W_ERROR_IS_OK(reg_get_hive(registry, i, &root))) { continue; }
 
