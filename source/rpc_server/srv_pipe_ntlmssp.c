@@ -218,7 +218,6 @@ static BOOL api_ntlmssp_verify(rpcsrv_struct *l,
 				RPC_AUTH_NTLMSSP_RESP *ntlmssp_resp)
 {
 	ntlmssp_auth_struct *a = (ntlmssp_auth_struct *)l->auth_info;
-	uchar *pwd = NULL;
 	uchar password[16];
 	uchar lm_owf[24];
 	uchar nt_owf[128];
@@ -231,6 +230,11 @@ static BOOL api_ntlmssp_verify(rpcsrv_struct *l,
 	fstring user_name;
 	fstring domain;
 	fstring wks;
+	const struct passwd *pw = NULL;
+	fstring unix_user;
+	fstring nt_user;
+	uchar user_sess_key[16];
+	BOOL guest = False;
 
 	memset(password, 0, sizeof(password));
 
@@ -295,28 +299,54 @@ static BOOL api_ntlmssp_verify(rpcsrv_struct *l,
 	if (anonymous)
 	{
 		DEBUG(5,("anonymous user session\n"));
-		mdfour(l->user_sess_key, password, 16);
-		pwd = password;
+		mdfour(user_sess_key, password, 16);
 		l->auth_validated = True;
+		guest = True;
+		safe_strcpy(unix_user, lp_guestaccount(-1), sizeof(unix_user)-1);
+		nt_user[0] = 0;
+		pw = Get_Pwnam(unix_user, True);
+		l->auth_validated = pw != NULL;
 	}
 	else
 	{
-		DEBUG(5,("user: %s domain: %s wks: %s\n", user_name, domain, wks));
-		become_root(False);
+		DEBUG(5,("user: %s domain: %s wks: %s\n",
+		          user_name, domain, wks));
+
 		l->auth_validated = check_domain_security(user_name, domain,
 				      (uchar*)a->ntlmssp_chal.challenge,
 				      lm_owf, lm_owf_len,
 				      nt_owf, nt_owf_len,
-				      l->user_sess_key,
+				      user_sess_key,
 				      password) == 0x0;
-		pwd = password;
-		unbecome_root(False);
+		if (l->auth_validated)
+		{
+			pw = map_nt_and_unix_username(domain, user_name,
+			                              unix_user, nt_user);
+			l->auth_validated = pw != NULL;
+		}
 	}
 
-	if (l->auth_validated && pwd != NULL)
+	if (l->auth_validated)
 	{
+		l->vuid = register_vuid(pw->pw_uid, pw->pw_gid,
+					unix_user, nt_user,
+					guest, user_sess_key);
+		l->auth_validated = l->vuid != UID_FIELD_INVALID;
+	}
+
+	if (l->auth_validated)
+	{
+		l->auth_validated = become_vuser(l->vuid);
+	}
+
+	if (l->auth_validated)
+	{
+		/************************************************************/
+		/****************** lkclXXXX - NTLMv1 ONLY! *****************/
+		/************************************************************/
+
 		uchar p24[24];
-		NTLMSSPOWFencrypt(pwd, lm_owf, p24);
+		NTLMSSPOWFencrypt(password, lm_owf, p24);
 		{
 			unsigned char j = 0;
 			int ind;

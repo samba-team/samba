@@ -135,7 +135,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 		DEBUG(5,("open pipes: name %s pnum=%x\n", p->name, p->pnum));  
 	}
 
-	become_root(False); /* to connect to pipe */
+	become_root(False); /* to make pipe connection */
 	m = msrpc_use_add(pipe_name, &usr, False);
 	unbecome_root(False);
 

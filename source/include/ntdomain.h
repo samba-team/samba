@@ -91,8 +91,6 @@ typedef struct ntlmssp_auth_struct
 	unsigned char ntlmssp_hash[258];
 	uint32 ntlmssp_seq_num;
 
-	uchar user_sess_key[16];
-
 } ntlmssp_auth_struct;
 
 struct srv_auth_fns;
@@ -112,12 +110,13 @@ typedef struct rpcsrv_struct
 	struct srv_auth_fns *auth;
 	BOOL auth_validated;
 	BOOL faulted_once_before;
-	uchar user_sess_key[16];
 
 	RPC_HDR       hdr;
 	RPC_HDR_BA    hdr_ba;
 	RPC_HDR_RB    hdr_rb;
 	RPC_HDR_REQ   hdr_req;
+
+	uint16 vuid;
 
 	/* per-user authentication info.  hmm, this not appropriate, but
 	   it will do for now.  dcinfo contains NETLOGON-specific info,
@@ -138,7 +137,6 @@ typedef struct srv_auth_fns
 
 typedef struct msrpc_pipes_struct
 {
-	uint16 vuid;
 	fstring name;
 	fstring pipe_srv_name;
 

@@ -62,55 +62,6 @@ static void overflow_attack(int len)
 
 
 /****************************************************************************
-  does _both_ nt->unix and unix->unix username remappings.
-****************************************************************************/
-static void map_nt_and_unix_username(const char *domain, char *user)
-{
-#if 0
-	DOM_NAME_MAP gmep;
-	fstring nt_username;
-
-	/*
-	 * Pass the user through the NT -> unix user mapping
-	 * function.
-	 */
-
-	if (lp_server_role() != ROLE_DOMAIN_NONE)
-	{
-		memset(nt_username, 0, sizeof(nt_username));
-		if (domain != NULL)
-		{
-			slprintf(nt_username, sizeof(nt_username)-1, "%s\\%s",
-				 domain, user);
-		}
-		else
-		{
-			fstrcpy(nt_username, user);
-		}
-
-		if (lookupsmbpwntnam(nt_username, &gmep))
-		{
-			fstrcpy(user, gmep.unix_name);
-		}
-	}
-#else
-	DEBUG(1,("map_nt_and_unix_username: NT->Unix map DISABLED\n"));
-#endif
-
-	/*
-	 * Pass the user through the unix -> unix user mapping
-	 * function.
-	 */
-
-	(void)map_username(user);
-
-	/*
-	 * Do any UNIX username case mangling.
-	 */
-	(void)Get_Pwnam( user, True);
-}
-
-/****************************************************************************
   reply to an special message 
 ****************************************************************************/
 int reply_special(char *inbuf,char *outbuf)
@@ -273,7 +224,7 @@ int reply_tcon(connection_struct *conn,
 
 	parse_connect(smb_buf(inbuf)+1,service,user,password,&pwlen,dev);
 
-	map_nt_and_unix_username(global_myworkgroup, user);
+	map_nt_and_unix_username(global_myworkgroup, user, user, NULL);
 
 	conn = make_connection(service,user,global_myworkgroup, password,pwlen,dev,vuid,&ecode);
   
@@ -343,7 +294,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	StrnCpy(devicename,path + strlen(path) + 1,6);
 	DEBUG(4,("Got device type %s\n",devicename));
 
-	map_nt_and_unix_username(global_myworkgroup, user);
+	map_nt_and_unix_username(global_myworkgroup, user, user, NULL);
 
 	conn = make_connection(service,user,global_myworkgroup, password,passlen,devicename,vuid,&ecode);
 	
@@ -637,7 +588,7 @@ user %s attempted down-level SMB connection\n", user));
 
   pstrcpy( orig_user, user);
 
-  map_nt_and_unix_username(domain, user);
+  map_nt_and_unix_username(domain, user, user, NULL);
 
   add_session_user(user);
 

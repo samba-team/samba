@@ -324,6 +324,7 @@ BOOL msrpcd_init(int c, msrpc_pipes_struct *p)
 	struct user_creds usr;
 	gid_t *groups = NULL;
 	char *user;
+	uint16 vuid;
 
 	if (!get_user_creds(c, &usr))
 	{
@@ -346,7 +347,7 @@ BOOL msrpcd_init(int c, msrpc_pipes_struct *p)
 		}
 	}
 		
-	p->vuid = create_vuid(usr.uxs.uid, usr.uxs.gid,
+	vuid = create_vuid(usr.uxs.uid, usr.uxs.gid,
 	                               usr.uxs.num_grps, groups,
 	                               usr.uxc.user_name,
 	                               usr.uxc.requested_name,
@@ -354,14 +355,14 @@ BOOL msrpcd_init(int c, msrpc_pipes_struct *p)
 	                               usr.uxc.guest,
 	                               usr.ntc.pwd.sess_key);
 
-	if (p->vuid == UID_FIELD_INVALID)
+	if (vuid == UID_FIELD_INVALID)
 	{
 		return False;
 	}
 
 	free_user_creds(&usr);
 
-	if (!become_vuser(p->vuid))
+	if (!become_vuser(vuid))
 	{
 		return False;
 	}
@@ -374,17 +375,22 @@ BOOL msrpcd_init(int c, msrpc_pipes_struct *p)
 
 	ZERO_STRUCTP(p->l);
 
-	user = usr.uxc.user_name;
-	if (!strequal(user,lp_guestaccount(-1)) &&
-	     lp_servicenumber(user) < 0)      
+	p->l->vuid = vuid;
+
+	if (!usr.uxc.guest)
 	{
-		int homes = lp_servicenumber(HOMES_NAME);
-		char *home = get_unixhome_dir(user);
-		if (homes >= 0 && home)
+		user = usr.uxc.user_name;
+		if (!strequal(user,lp_guestaccount(-1)) &&
+		     lp_servicenumber(user) < 0)      
 		{
-			pstring home_dir;
-			fstrcpy(home_dir, home);
-			lp_add_home(user,homes,home_dir);
+			int homes = lp_servicenumber(HOMES_NAME);
+			char *home = get_unixhome_dir(user);
+			if (homes >= 0 && home)
+			{
+				pstring home_dir;
+				fstrcpy(home_dir, home);
+				lp_add_home(user,homes,home_dir);
+			}
 		}
 	}
 	return True;

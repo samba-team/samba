@@ -77,18 +77,13 @@ static uint32 domain_client_validate( char *user, char *domain,
 		return False;
 	}
 
-	/*
-	 * Get the workstation trust account password.
-	 */
-	if (strequal(&srv_name[2], acct_name))
+	become_root(False);
+	if (!trust_get_passwd( trust_passwd, domain, acct_name))
 	{
-		/* loop-back to ourselves */
-		memset(trust_passwd, 0, sizeof(trust_passwd));
-	}
-	else if (!trust_get_passwd( trust_passwd, domain, acct_name))
-	{
+		unbecome_root(False);
 		return False;
 	}
+	unbecome_root(False);
 
 	/*
 	 * At this point, smb_apasswd points to the lanman response to
