@@ -1300,26 +1300,15 @@ static struct smb_passwd *iterate_getsmbpwnam(char *name)
  */
 
 /************************************************************************
- Utility function to search sam passwd by name.  use this if your database
- does not have search facilities.
+ Utility function to search sam passwd by name. 
 *************************************************************************/
 
 static struct sam_passwd *smbiterate_getsam21pwnam(char *name)
 {
 	struct sam_passwd *pwd = NULL;
 	struct smb_passwd *smbpw = NULL;
-	void *fp = NULL;
 
 	DEBUG(10, ("search by name: %s\n", name));
-
-	/* Open the smb password database - not for update. */
-	fp = startsmbpwent(False);
-
-	if (fp == NULL)
-	{
-		DEBUG(0, ("unable to open sam password database.\n"));
-		return NULL;
-	}
 
 	smbpw = getsmbpwnam(name);
 
@@ -1329,7 +1318,50 @@ static struct sam_passwd *smbiterate_getsam21pwnam(char *name)
 		DEBUG(10, ("found by name: %s\n", name));
 	}
 
-	endsmbpwent(fp);
+	return pwd;
+}
+ 
+ 
+/************************************************************************
+ Utility function to search sam passwd by rid.  
+*************************************************************************/
+struct sam_passwd *smbiterate_getsam21pwrid(uint32 rid)
+{
+	struct sam_passwd 	*pwd = NULL;
+	struct smb_passwd 	*smbpw = NULL;
+
+	DEBUG(10, ("search by rid: %x\n", rid));
+
+	smbpw = getsmbpwrid(rid);
+
+	if (smbpw != NULL)
+	{
+		pwd = build_sampw_from_smbpw (smbpw);
+		DEBUG(10, ("found by user_rid: %x\n", rid));
+	}
+
+	return pwd;
+}
+
+/************************************************************************
+ Utility function to search sam passwd by uid.  
+*************************************************************************/
+struct sam_passwd *smbiterate_getsam21pwuid(uid_t uid)
+{
+	struct sam_passwd 	*pwd = NULL;
+	struct smb_passwd	*smbpw = NULL;
+
+	DEBUG(10, ("search by uid: %x\n", (int)uid));
+
+
+	smbpw = getsmbpwuid(uid);
+
+	if (smbpw != NULL)
+	{
+		pwd = build_sampw_from_smbpw (smbpw);
+		DEBUG(10, ("found by user_uid: %d\n", uid));
+	}
+
 	return pwd;
 }
 
@@ -1377,8 +1409,8 @@ static struct passdb_ops file_ops = {
   del_smbfilepwd_entry,
   getsmbfile21pwent,
   smbiterate_getsam21pwnam,
-  iterate_getsam21pwuid,
-  iterate_getsam21pwrid, 
+  smbiterate_getsam21pwuid,
+  smbiterate_getsam21pwrid, 
   add_smbfile21pwd_entry,
   mod_smbfile21pwd_entry,
   getsmbfiledispnam,
