@@ -185,11 +185,22 @@ KDCOptions ::= BIT STRING {
 	validate(31)
 }
 
+LR-TYPE ::= INTEGER {
+	LR_NONE(0),		-- no information
+	LR_INITIAL_TGT(1),	-- last initial TGT request
+	LR_INITIAL(2),		-- last initial request
+	LR_ISSUE_USE_TGT(3),	-- time of newest TGT used
+	LR_RENEWAL(4),		-- time of last renewal
+	LR_REQUEST(5),		-- time of last request (of any type)
+	LR_PW_EXPTIME(6),	-- expiration time of password
+	LR_ACCT_EXPTIME(7)	-- expiration time of account
+}
 
 LastReq ::= SEQUENCE OF SEQUENCE {
-	lr-type[0]		INTEGER,
+	lr-type[0]		LR-TYPE,
 	lr-value[1]		KerberosTime
 }
+
 
 EncryptedData ::= SEQUENCE {
 	etype[0] 		ENCTYPE, -- EncryptionType
