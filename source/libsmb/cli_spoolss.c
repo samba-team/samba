@@ -582,71 +582,67 @@ WERROR cli_spoolss_enum_ports(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 }
 
 /* Get printer info */
-NTSTATUS cli_spoolss_getprinter(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *pol,
-	uint32 level, 
-	PRINTER_INFO_CTR *ctr
-)
+WERROR cli_spoolss_getprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			      uint32 offered, uint32 *needed,
+			      POLICY_HND *pol, uint32 level, 
+			      PRINTER_INFO_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_GETPRINTER q;
 	SPOOL_R_GETPRINTER r;
 	NEW_BUFFER buffer;
-	uint32 needed = 100;
-	NTSTATUS result;
+	WERROR result = W_ERROR(ERRgeneral);
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	do {
-		/* Initialise input parameters */
+	/* Initialise input parameters */
+	
+	init_buffer(&buffer, offered, mem_ctx);
+	
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
-		init_buffer(&buffer, needed, mem_ctx);
+	make_spoolss_q_getprinter(mem_ctx, &q, pol, level, &buffer, offered);
+	
+	/* Marshall data and send request */
 
-		prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-		prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+	if (!spoolss_io_q_getprinter("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_GETPRINTER, &qbuf, &rbuf))
+		goto done;
 
-		make_spoolss_q_getprinter(mem_ctx, &q, pol, level, &buffer, needed);
+	/* Unmarshall response */
 
-		/* Marshall data and send request */
-		if (!spoolss_io_q_getprinter("", &q, &qbuf, 0) ||
-		    !rpc_api_pipe_req(cli, SPOOLSS_GETPRINTER, &qbuf, &rbuf)) 
-		{
-			result = NT_STATUS_UNSUCCESSFUL;
-			goto done;
-		}
+	if (!spoolss_io_r_getprinter("", &r, &rbuf, 0))
+		goto done;
 
-		/* Unmarshall response */
-		if (spoolss_io_r_getprinter("", &r, &rbuf, 0)) {
-			needed = r.needed;
-		}
-		
-		/* Return output parameters */
-		result = werror_to_ntstatus(r.status);
-		if (NT_STATUS_IS_OK(result)) {
-			switch (level) {
-			case 0:
-				decode_printer_info_0(mem_ctx, r.buffer, 1, &ctr->printers_0);
-				break;
-			case 1:
-				decode_printer_info_1(mem_ctx, r.buffer, 1, &ctr->printers_1);
-				break;
-			case 2:
-				decode_printer_info_2(mem_ctx, r.buffer, 1, &ctr->printers_2);
-				break;
-			case 3:
-				decode_printer_info_3(mem_ctx, r.buffer, 1, &ctr->printers_3);
-				break;
-			}			
-		}
+	if (needed)
+		*needed = r.needed;
+	
+	/* Return output parameters */
 
-	done:
-		prs_mem_free(&qbuf);
-		prs_mem_free(&rbuf);
+	result = r.status;
 
-	} while (NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_BUFFER_TOO_SMALL));
+	if (NT_STATUS_IS_OK(result)) {
+		switch (level) {
+		case 0:
+			decode_printer_info_0(mem_ctx, r.buffer, 1, &ctr->printers_0);
+			break;
+		case 1:
+			decode_printer_info_1(mem_ctx, r.buffer, 1, &ctr->printers_1);
+			break;
+		case 2:
+			decode_printer_info_2(mem_ctx, r.buffer, 1, &ctr->printers_2);
+			break;
+		case 3:
+			decode_printer_info_3(mem_ctx, r.buffer, 1, &ctr->printers_3);
+			break;
+		}			
+	}
+	
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
 
 	return result;	
 }

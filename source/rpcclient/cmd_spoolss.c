@@ -353,7 +353,7 @@ static NTSTATUS cmd_spoolss_enum_printers(struct cli_state *cli,
 		}
 	}
 
-	return werror_to_ntstatus(result);
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 /****************************************************************************
@@ -435,7 +435,7 @@ static NTSTATUS cmd_spoolss_enum_ports(struct cli_state *cli,
 		}
 	}
 	
-	return werror_to_ntstatus(result);
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 /***********************************************************************
@@ -446,14 +446,14 @@ static NTSTATUS cmd_spoolss_getprinter(struct cli_state *cli,
                                        int argc, char **argv)
 {
 	POLICY_HND 	pol;
-	WERROR          werror;
-	NTSTATUS	result;
+	WERROR          result;
 	uint32 		info_level = 1;
 	BOOL 		opened_hnd = False;
 	PRINTER_INFO_CTR ctr;
 	fstring 	printername, 
 			servername,
 			user;
+	uint32 needed;
 
 	if (argc == 1 || argc > 3) {
 		printf("Usage: %s <printername> [level]\n", argv[0]);
@@ -472,22 +472,25 @@ static NTSTATUS cmd_spoolss_getprinter(struct cli_state *cli,
 	
 	/* get a printer handle */
 
-	werror = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, 
+	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, 
 					     "", MAXIMUM_ALLOWED_ACCESS, 
 					     servername, user, &pol);
 
-	result = W_ERROR_IS_OK(werror) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!W_ERROR_IS_OK(result))
 		goto done;
  
 	opened_hnd = True;
 
 	/* Get printer info */
 
-	result = cli_spoolss_getprinter(cli, mem_ctx, &pol, info_level, &ctr);
+	result = cli_spoolss_getprinter(cli, mem_ctx, 0, &needed,
+					&pol, info_level, &ctr);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (W_ERROR_V(result) == ERRinsufficientbuffer)
+		result = cli_spoolss_getprinter(
+			cli, mem_ctx, needed, NULL, &pol, info_level, &ctr);
+
+	if (!W_ERROR_IS_OK(result))
 		goto done;
 
 	/* Display printer info */
@@ -514,7 +517,7 @@ static NTSTATUS cmd_spoolss_getprinter(struct cli_state *cli,
 	if (opened_hnd) 
 		cli_spoolss_close_printer(cli, mem_ctx, &pol);
 
-	return result;
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 /****************************************************************************
@@ -1073,6 +1076,7 @@ static NTSTATUS cmd_spoolss_setdriver(struct cli_state *cli,
 	fstring			servername,
 				printername,
 				user;
+	uint32 needed;
 	
 	/* parse the command arguements */
 	if (argc != 3)
@@ -1092,7 +1096,7 @@ static NTSTATUS cmd_spoolss_setdriver(struct cli_state *cli,
 					     MAXIMUM_ALLOWED_ACCESS, 
 					     servername, user, &pol);
 
-	nt_status = werror_to_ntstatus(result);
+	nt_status = W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 
 	if (!NT_STATUS_IS_OK(nt_status))
 		goto done;
@@ -1104,9 +1108,14 @@ static NTSTATUS cmd_spoolss_setdriver(struct cli_state *cli,
 	ZERO_STRUCT (info2);
 	ctr.printers_2 = &info2;
 
-	nt_status = cli_spoolss_getprinter(cli, mem_ctx, &pol, level, &ctr);
+	result = cli_spoolss_getprinter(cli, mem_ctx, 0, &needed,
+					&pol, level, &ctr);
 
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	if (W_ERROR_V(result) == ERRinsufficientbuffer)
+		result = cli_spoolss_getprinter(
+			cli, mem_ctx, needed, NULL, &pol, level, &ctr);
+
+	if (!W_ERROR_IS_OK(result)) {
 		printf ("Unable to retrieve printer information!\n");
 		goto done;
 	}
