@@ -58,7 +58,7 @@ struct ntvfs_ops {
 	NTSTATUS (*search_close)(struct request_context *req, union smb_search_close *io);
 
 	/* operations on open files */
-	NTSTATUS (*ioctl)(struct request_context *req, struct smb_ioctl *io);
+	NTSTATUS (*ioctl)(struct request_context *req, union smb_ioctl *io);
 	NTSTATUS (*read)(struct request_context *req, union smb_read *io);
 	NTSTATUS (*write)(struct request_context *req, union smb_write *io);
 	NTSTATUS (*seek)(struct request_context *req, struct smb_seek *io);

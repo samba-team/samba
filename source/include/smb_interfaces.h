@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    SMB request interface structures
    Copyright (C) Andrew Tridgell			2003
+   Copyright (C) James J Myers 2003 <myersjj@samba.org>
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,7 +29,7 @@ typedef struct GUID
 	uint8 info[GUID_SIZE];
 } GUID;
 
-/* 64 bit time (100usec) 1601 - cifs6.txt, section 3.5, page 30 */
+/* 64 bit time (100 nanosec) 1601 - cifs6.txt, section 3.5, page 30 */
 typedef struct nttime_info
 {
 	uint32 low;
@@ -78,7 +79,7 @@ struct smb_seek {
 		int32  offset; /* signed */
 	} in;
 	struct {
-		uint32 offset;
+		int32 offset;
 	} out;
 };
 
@@ -1573,16 +1574,44 @@ union smb_lpq {
 	} retq;
 };
 
+enum ioctl_level {RAW_IOCTL_IOCTL, RAW_IOCTL_NTIOCTL};
 
-/* struct for SMBioctl */
-struct smb_ioctl {
+/*
+  union for ioctl() backend
+*/
+union smb_ioctl {
+	/* generic interface */
 	struct {
-		uint16 fnum;
-		uint32 request;
-	} in;
+		enum ioctl_level level;
+
+	} generic;
+
+	/* struct for SMBioctl */
 	struct {
-		DATA_BLOB blob;
-	} out;
+		enum ioctl_level level;
+		struct {
+			uint16 fnum;
+			uint32 request;
+		} in;
+		struct {
+			DATA_BLOB blob;
+		} out;
+	} ioctl;
+
+
+	/* struct for NT ioctl call */
+	struct {
+		enum ioctl_level level;
+		struct {
+			uint32 function;
+			uint16 fnum;
+			BOOL fsctl;
+			uint8 filter;
+		} in;
+		struct {
+			DATA_BLOB blob;
+		} out;
+	} ntioctl;
 };
 
 /* struct for SMBflush */
@@ -1671,19 +1700,10 @@ struct smb_notify {
 	} out;
 };
 
-/* struct for NT ioctl call */
-struct smb_ntioctl {
-	struct {
-		uint32 function;
-		uint16 fnum;
-		BOOL fsctl;
-		uint8 filter;
-	} in;
-};
-
 
 enum search_level {RAW_SEARCH_GENERIC                 = 0xF000, 
 		   RAW_SEARCH_SEARCH,                 /* SMBsearch */ 
+		   RAW_SEARCH_FCLOSE,				  /* SMBfclose */
 		   RAW_SEARCH_STANDARD                = SMB_FIND_STANDARD,
 		   RAW_SEARCH_EA_SIZE                 = SMB_FIND_EA_SIZE,
 		   RAW_SEARCH_DIRECTORY_INFO          = SMB_FIND_DIRECTORY_INFO,
@@ -1914,6 +1934,20 @@ union smb_search_close {
 		enum search_close_level level;
 	} generic;
 
+	/* SMBfclose (old search) interface */
+	struct {
+		enum search_level level;
+	
+		struct {
+			uint16 max_count;
+			uint16 search_attrib;
+			DATA_BLOB search_id;
+		} in;
+		struct {
+			uint16 count;
+		} out;
+	} search_next;
+	
 	/* SMBfindclose interface */
 	struct {
 		enum search_close_level level;
@@ -1923,5 +1957,4 @@ union smb_search_close {
 		} in;
 	} findclose;
 };
-
 

@@ -54,17 +54,21 @@ static NTSTATUS print_unlink(struct request_context *req, struct smb_unlink *unl
 /*
   ioctl - used for job query
 */
-static NTSTATUS print_ioctl(struct request_context *req, struct smb_ioctl *io)
+static NTSTATUS print_ioctl(struct request_context *req, union smb_ioctl *io)
 {
 	char *p;
 
-	if (io->in.request == IOCTL_QUERY_JOB_INFO) {
+	if (io->generic.level != RAW_IOCTL_IOCTL) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	if (io->ioctl.in.request == IOCTL_QUERY_JOB_INFO) {
 		/* a request for the print job id of an open print job */
-		io->out.blob = data_blob_talloc(req->mem_ctx, NULL, 32);
+		io->ioctl.out.blob = data_blob_talloc(req->mem_ctx, NULL, 32);
 
-		memset(io->out.blob.data, 0, io->out.blob.length);
+		data_blob_clear(&io->ioctl.out.blob);
 
-		p = io->out.blob.data;
+		p = io->ioctl.out.blob.data;
 		SSVAL(p,0, 1 /* REWRITE: fsp->rap_print_jobid */);
 		push_string(NULL, p+2, lp_netbios_name(), 15, STR_TERMINATE|STR_ASCII);
 		push_string(NULL, p+18, lp_servicename(req->conn->service), 13, STR_TERMINATE|STR_ASCII);

@@ -95,7 +95,7 @@ static NTSTATUS svfs_unlink(struct request_context *req, struct smb_unlink *unl)
 /*
   ioctl interface - we don't do any
 */
-static NTSTATUS svfs_ioctl(struct request_context *req, struct smb_ioctl *io)
+static NTSTATUS svfs_ioctl(struct request_context *req, union smb_ioctl *io)
 {
 	return NT_STATUS_INVALID_PARAMETER;
 }

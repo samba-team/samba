@@ -247,7 +247,7 @@ static void async_ioctl(struct cli_request *c_req)
 /*
   ioctl interface
 */
-static NTSTATUS cvfs_ioctl(struct request_context *req, struct smb_ioctl *io)
+static NTSTATUS cvfs_ioctl(struct request_context *req, union smb_ioctl *io)
 {
 	struct cvfs_private *private = req->conn->ntvfs_private;
 	struct cli_request *c_req;

@@ -331,12 +331,24 @@ BOOL torture_set_file_attribute(struct cli_tree *tree, const char *fname, uint16
 */
 NTSTATUS torture_set_sparse(struct cli_tree *tree, int fnum)
 {
-	struct smb_ntioctl nt;
+	union smb_ioctl nt;
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
 
-	nt.in.function = 0x900c4;
-	nt.in.fnum = fnum;
-	nt.in.fsctl = True;
-	nt.in.filter = 0;
+	mem_ctx = talloc_init("torture_set_sparse");
+	if (!mem_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	return smb_raw_ntioctl(tree, &nt);
+	nt.ntioctl.level = RAW_IOCTL_NTIOCTL;
+	nt.ntioctl.in.function = 0x900c4;
+	nt.ntioctl.in.fnum = fnum;
+	nt.ntioctl.in.fsctl = True;
+	nt.ntioctl.in.filter = 0;
+
+	status = smb_raw_ioctl(tree, mem_ctx, &nt);
+
+	talloc_destroy(mem_ctx);
+
+	return status;
 }

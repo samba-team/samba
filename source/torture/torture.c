@@ -3589,9 +3589,8 @@ BOOL torture_ioctl_test(int dummy)
 	uint16 device, function;
 	int fnum;
 	const char *fname = "\\ioctl.dat";
-	DATA_BLOB blob;
 	NTSTATUS status;
-	struct smb_ioctl parms;
+	union smb_ioctl parms;
 	TALLOC_CTX *mem_ctx;
 
 	if (!torture_open_connection(&cli)) {
@@ -3610,20 +3609,20 @@ BOOL torture_ioctl_test(int dummy)
 		return False;
 	}
 
-	parms.in.request = IOCTL_QUERY_JOB_INFO;
+	parms.ioctl.level = RAW_IOCTL_IOCTL;
+	parms.ioctl.in.request = IOCTL_QUERY_JOB_INFO;
 	status = smb_raw_ioctl(cli->tree, mem_ctx, &parms);
 	printf("ioctl job info: %s\n", cli_errstr(cli));
 
 	for (device=0;device<0x100;device++) {
 		printf("testing device=0x%x\n", device);
 		for (function=0;function<0x100;function++) {
-			parms.in.request = (device << 16) | function;
+			parms.ioctl.in.request = (device << 16) | function;
 			status = smb_raw_ioctl(cli->tree, mem_ctx, &parms);
 
 			if (NT_STATUS_IS_OK(status)) {
 				printf("ioctl device=0x%x function=0x%x OK : %d bytes\n", 
-					device, function, blob.length);
-				data_blob_free(&parms.out.blob);
+					device, function, parms.ioctl.out.blob.length);
 			}
 		}
 	}
