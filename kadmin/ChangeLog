@@ -1,3 +1,9 @@
+2003-02-04  Love  <lha@stacken.kth.se>
+
+	* kadmind.8: spelling, from jmc <jmc@prioris.mini.pw.edu.pl>
+	
+	* kadmin.8: spelling, from jmc <jmc@prioris.mini.pw.edu.pl>
+	
 2003-01-29  Love Hörquist Åstrand <lha@it.su.se>
 
 	* server.c (kadmind_dispatch): kadm_chpass: require the password
