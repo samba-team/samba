@@ -440,6 +440,19 @@ len = %u\n",fsp->fd, (double)pos, (unsigned int)n, (double)wcp->offset, (unsigne
 			} else {
 				ssize_t ret = real_write_file(fsp, data, pos, n);
 
+				/*
+				 * If the write overlaps the entire cache, then
+				 * discard the current contents of the cache.
+				 * Fix from Rasmus Borup Hansen rbh@math.ku.dk.
+				 */
+
+				if ((pos <= wcp->offset) &&
+						(pos + n >= wcp->offset + wcp->data_size) ) {
+					DEBUG(9,("write_file: discarding overwritten write \
+cache: fd = %d, off=%.0f, size=%u\n", fsp->fd, (double)wcp->offset, (unsigned int)wcp->data_size ));
+					wcp->data_size = 0;
+				}
+
 				DO_PROFILE_INC(writecache_direct_writes);
 				if (ret == -1)
 					return ret;
