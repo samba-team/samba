@@ -898,8 +898,8 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
   if ((sys_stat(path, &S)<0) || (devnm(S_IFBLK, S.st_dev, dev_disk, 256, 1)<0))
 #else
   if ((sys_stat(path, &S)<0) || (devnm(S_IFBLK, S.st_dev, dev_disk, 256, 0)<0)) 
-	return (False);
 #endif /* ifdef HPUX */
+	return (False);
 
 #endif /* !defined(__FreeBSD__) && !defined(AIX) && !defined(__OpenBSD__) */
 
