@@ -110,8 +110,12 @@ conv_db(void *arg, Principal *p)
 
     memset(&ent, 0, sizeof(ent));
 
-    krb5_425_conv_principal(pd->context, p->name, p->instance, realm,
-			    &ent.principal);
+    ret = krb5_425_conv_principal(pd->context, p->name, p->instance, realm,
+				  &ent.principal);
+    if(ret){
+	krb5_warn(pd->context, ret, "%s.%s@%s", p->name, p->instance, realm);
+	return 0;
+    }
 
     ent.keys.len = 1;
     ALLOC(ent.keys.val);
@@ -131,7 +135,7 @@ conv_db(void *arg, Principal *p)
 
     ALLOC(ent.max_life);
     *ent.max_life = krb_life_to_time(0, p->max_life);
-    if(*ent.max_life == (1 << 31) - 1){
+    if(*ent.max_life == (1U << 31) - 1){
 	free(ent.max_life);
 	ent.max_life = NULL;
     }
