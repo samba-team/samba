@@ -727,14 +727,6 @@ distclean: realclean
 	-rm -f config.status config.cache so_locations
 	-rm -rf .deps
 
-#
-# This target is for documenation updators. It regenerates
-# the man pages and HTML docs from the YODL source files.
-# In order for this target to work YODL must be installed
-# and working on your system. JRA.
-yodldocs:
-	@$(SHELL) $(srcdir)/script/makeyodldocs.sh $(srcdir)
-
 # this target is really just for my use. It only works on a limited
 # range of machines and is used to produce a list of potentially
 # dead (ie. unused) functions in the code. (tridge)
