@@ -6,8 +6,8 @@ test_torture() {
 	security=USER
 	(test_smb_conf_setup && test_smbpasswd $password ) || return 1
 
-	echo $pwd/$tree/source/bin/smbtorture //localhost/test -U$whoami%$password $torture_test
-	$pwd/$tree/source/bin/smbtorture //localhost/test -U$whoami%$password $torture_test
+	echo $srcdir/bin/smbtorture //localhost/test -U$whoami%$password $torture_test
+	$srcdir/bin/smbtorture //localhost/test -U$whoami%$password $torture_test
 	status=$?
 	if [ $status = 0 ]; then
 		echo "smbtorture test $torture_test worked"
