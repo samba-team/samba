@@ -37,9 +37,10 @@ static void msrpc_auth_init(rpcsrv_struct *l)
 /*************************************************************************
  initialise an msrpc service
  *************************************************************************/
-static void msrpc_service_init(char* service_name)
+static void service_init(char* service_name)
 {
 	add_msrpc_command_processor( pipe_name, service_name, api_srvsvc_rpc );
+	generate_wellknown_sids();
 }
 
 /****************************************************************************
@@ -106,7 +107,7 @@ static int main_init(int argc,char *argv[])
 static msrpc_service_fns fn_table =
 {
 	msrpc_auth_init,
-	msrpc_service_init,
+	service_init,
 	reload_msrpc,
 	main_init,
 	NULL

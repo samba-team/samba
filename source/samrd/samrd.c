@@ -42,7 +42,7 @@ static void auth_init(rpcsrv_struct *l)
  *************************************************************************/
 static void service_init(char* service_name)
 {
-	DEBUG(10,("msrpc_service_init\n"));
+	DEBUG(10,("service_init\n"));
 
 	add_msrpc_command_processor( pipe_name, service_name, api_samr_rpc );
 

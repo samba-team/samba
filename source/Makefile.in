@@ -203,7 +203,6 @@ RPC_PARSE_OBJ1 = rpc_parse/parse_lsa.o \
 RPC_PARSE_OBJ2 = rpc_parse/parse_rpc.o \
                 rpc_parse/parse_netsec.o \
 		rpc_parse/parse_sec.o \
-		lib/util_seaccess.o \
 		lib/msrpc-client.o 
 
 #		lib/msrpc_use.o
@@ -255,7 +254,7 @@ PASSDB_OBJ = passdb/passdb.o passdb/smbpass.o \
              passdb/smbpasschange.o passdb/mysqlpass.o passdb/smbpassnt5ldap.o \
              lib/util_pwdb.o lib/domain_namemap.o 
 
-SIDDB_OBJ = lib/sids.o
+SIDDB_OBJ = lib/sids.o lib/util_seaccess.o
 
 PROFILE_OBJ = profile/profile.o
 
