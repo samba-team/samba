@@ -1048,8 +1048,7 @@ void check_kernel_oplocks(void)
     set_process_capability(KERNEL_OPLOCK_CAPABILITY,True);
     set_inherited_process_capability(KERNEL_OPLOCK_CAPABILITY,True);
 
-    slprintf( tmpname, sizeof(tmpname)-1, "/tmp/ot.%d.XXXXXX", (unsigned int)getpid());
-    mktemp(tmpname);
+	slprintf(tmpname,sizeof(tmpname)-1, "%/koplock.%d", lp_lockdir(), (int)getpid());
 
     if(pipe(pfd) != 0) {
       DEBUG(0,("check_kernel_oplocks: Unable to create pipe. Error was %s\n",
@@ -1057,7 +1056,7 @@ void check_kernel_oplocks(void)
       return;
     }
 
-    if((fd = open(tmpname, O_RDWR|O_CREAT|O_TRUNC|O_EXCL, 0600)) < 0) {
+    if((fd = open(tmpname, O_RDWR|O_CREAT|O_EXCL|O_TRUNC, 0600)) < 0) {
       DEBUG(0,("check_kernel_oplocks: Unable to open temp test file %s. Error was %s\n",
             tmpname, strerror(errno) ));
       unlink( tmpname );
