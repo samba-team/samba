@@ -45,6 +45,7 @@ struct addr_operations {
     krb5_address_type atype;
     size_t max_sockaddr_size;
     krb5_error_code (*sockaddr2addr)(const struct sockaddr *, krb5_address *);
+    krb5_error_code (*sockaddr2port)(const struct sockaddr *, int16_t *);
     void (*addr2sockaddr)(const krb5_address *, struct sockaddr *,
 			  int *sa_size, int port);
     void (*h_addr2sockaddr)(const char *, struct sockaddr *, int *, int);
@@ -68,6 +69,15 @@ ipv4_sockaddr2addr (const struct sockaddr *sa, krb5_address *a)
     a->addr_type = KRB5_ADDRESS_INET;
     memcpy (buf, &sin->sin_addr, 4);
     return krb5_data_copy(&a->address, buf, 4);
+}
+
+static krb5_error_code
+ipv4_sockaddr2port (const struct sockaddr *sa, int16_t *port)
+{
+    const struct sockaddr_in *sin = (const struct sockaddr_in *)sa;
+
+    *port = sin->sin_port;
+    return 0;
 }
 
 static void
@@ -204,6 +214,15 @@ ipv6_sockaddr2addr (const struct sockaddr *sa, krb5_address *a)
     }
 }
 
+static krb5_error_code
+ipv6_sockaddr2port (const struct sockaddr *sa, int16_port *port)
+{
+    const struct sockaddr_in6 *sin6 = (const struct sockaddr_in6 *)sa;
+
+    *port = sin6->sin6_port;
+    return 0;
+}
+
 static void
 ipv6_addr2sockaddr (const krb5_address *a,
 		    struct sockaddr *sa,
@@ -309,13 +328,19 @@ ipv6_parse_addr (const char *address, krb5_address *addr)
 
 static struct addr_operations at[] = {
     {AF_INET,	KRB5_ADDRESS_INET, sizeof(struct sockaddr_in),
-     ipv4_sockaddr2addr, ipv4_addr2sockaddr,
-     ipv4_h_addr2sockaddr, ipv4_h_addr2addr,
+     ipv4_sockaddr2addr, 
+     ipv4_sockaddr2port,
+     ipv4_addr2sockaddr,
+     ipv4_h_addr2sockaddr,
+     ipv4_h_addr2addr,
      ipv4_uninteresting, ipv4_anyaddr, ipv4_print_addr, ipv4_parse_addr},
 #ifdef HAVE_IPV6
     {AF_INET6,	KRB5_ADDRESS_INET6, sizeof(struct sockaddr_in6),
-     ipv6_sockaddr2addr, ipv6_addr2sockaddr,
-     ipv6_h_addr2sockaddr, ipv6_h_addr2addr,
+     ipv6_sockaddr2addr, 
+     ipv6_sockaddr2port,
+     ipv6_addr2sockaddr,
+     ipv6_h_addr2sockaddr,
+     ipv6_h_addr2addr,
      ipv6_uninteresting, ipv6_anyaddr, ipv6_print_addr, ipv6_parse_addr}
 #endif
 };
@@ -357,6 +382,15 @@ krb5_sockaddr2address (const struct sockaddr *sa, krb5_address *addr)
     if (a == NULL)
 	return KRB5_PROG_ATYPE_NOSUPP;
     return (*a->sockaddr2addr)(sa, addr);
+}
+
+krb5_error_code
+krb5_sockaddr2port (const struct sockaddr *sa, int16_t *port)
+{
+    struct addr_operations *a = find_af(sa->sa_family);
+    if (a == NULL)
+	return KRB5_PROG_ATYPE_NOSUPP;
+    return (*a->sockaddr2port)(sa, port);
 }
 
 krb5_error_code
