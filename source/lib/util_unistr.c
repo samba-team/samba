@@ -105,27 +105,34 @@ static int check_dos_char(smb_ucs2_t c)
  **/
 void init_valid_table(void)
 {
-	static int initialised;
 	static int mapped_file;
 	int i;
 	const char *allowed = ".!#$%&'()_-@^`~";
+	uint8 *valid_file;
 
-	if (initialised && mapped_file) return;
-	initialised = 1;
+	if (mapped_file) {
+		/* Can't unmap files, so stick with what we have */
+		return;
+	}
 
-	valid_table = map_file(lib_path("valid.dat"), 0x10000);
-	if (valid_table) {
+	valid_file = map_file(lib_path("valid.dat"), 0x10000);
+	if (valid_file) {
+		valid_table = valid_file;
 		mapped_file = 1;
 		return;
 	}
 
-	/* Otherwise, using a dynamically loaded one. */
+	/* Otherwise, we're using a dynamically created valid_table.
+	 * It might need to be regenerated if the code page changed.
+	 * We know that we're not using a mapped file, so we can
+	 * free() the old one. */
 	if (valid_table) free(valid_table);
 
 	DEBUG(2,("creating default valid table\n"));
 	valid_table = malloc(0x10000);
-	for (i=0;i<128;i++) valid_table[i] = isalnum(i) || 
-				    strchr(allowed,i);
+	for (i=0;i<128;i++)
+		valid_table[i] = isalnum(i) || strchr(allowed,i);
+	
 	for (;i<0x10000;i++) {
 		smb_ucs2_t c;
 		SSVAL(&c, 0, i);
