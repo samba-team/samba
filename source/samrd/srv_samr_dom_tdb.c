@@ -342,7 +342,7 @@ uint32 _samr_enum_dom_groups(const POLICY_HND *pol,
 	int num_entries = 0;
 	DOM_SID sid;
 	fstring sid_str;
-	BOOL ret;
+	BOOL ret = False;
 	TDB_CONTEXT *tdb = NULL;
 
 	/* find the policy handle.  open a policy on it. */
@@ -429,10 +429,11 @@ uint32 _samr_enum_dom_aliases(const POLICY_HND *pol,
 	int num_entries = 0;
 	DOM_SID sid;
 	fstring sid_str;
-	TDB_CONTEXT *tdb = NULL;
+	TDB_CONTEXT *als_tdb = NULL;
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_tdbsid(get_global_hnd_cache(), pol, &tdb, &sid))
+	if (!get_tdbdomsid(get_global_hnd_cache(), pol,
+	                   NULL, NULL, &als_tdb, &sid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -444,7 +445,7 @@ uint32 _samr_enum_dom_aliases(const POLICY_HND *pol,
 	/* well-known aliases */
 	if (sid_equal(&sid, &global_sid_S_1_5_20))
 	{
-		BOOL ret;
+		BOOL ret = True;
 		/* builtin aliases */
 
 		become_root(True);
@@ -459,7 +460,7 @@ uint32 _samr_enum_dom_aliases(const POLICY_HND *pol,
 	}
 	else if (sid_equal(&sid, &global_sam_sid))
 	{
-		BOOL ret;
+		BOOL ret = True;
 		/* local aliases */
 
 		become_root(True);
@@ -550,7 +551,7 @@ uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
 		case 0x3:
 		case 0x5:
 		{
-			BOOL ret;
+			BOOL ret = True;
 
 			become_root(True);
 #if 0

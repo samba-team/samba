@@ -352,11 +352,8 @@ int StrCaseCmpW(const UNISTR2 *ws, const UNISTR2 *wt)
 	int len = MIN(ws->uni_str_len, wt->uni_str_len);
 	uint16 *s = ws->buffer;
 	uint16 *t = wt->buffer;
-
-	if (ws->uni_str_len != wt->uni_str_len)
-	{
-		return False;
-	}
+	uint16 sc;
+	uint16 tc;
 
     while (len > 0 && *s && *t && toupper(*s) == toupper(*t))
     {
@@ -365,12 +362,22 @@ int StrCaseCmpW(const UNISTR2 *ws, const UNISTR2 *wt)
 	len--;
     }
 
-	if (len == 0)
+    sc = toupper(*s);
+    tc = toupper(*t);
+
+	if (wt->uni_str_len > ws->uni_str_len)
 	{
-		return 0;
+		/* wt is longer, therefore last ws char must be 0 */
+		sc = 0;
 	}
 
-    return(toupper(*s) - toupper(*t));
+	if (ws->uni_str_len > wt->uni_str_len)
+	{
+		/* ws is longer, therefore last wt char must be 0 */
+		tc = 0;
+	}
+
+    return sc - tc;
 }
 
 /*******************************************************************

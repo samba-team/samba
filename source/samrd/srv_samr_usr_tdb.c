@@ -264,9 +264,9 @@ uint32 _samr_query_usergroups(const POLICY_HND *pol,
 				DOM_GID **gids)
 {
 	DOMAIN_GRP *mem_grp = NULL;
-	struct sam_passwd *sam_pass;
+	struct sam_passwd *sam_pass = NULL;
 	uint32 rid;
-	BOOL ret;
+	BOOL ret = False;
 	TDB_CONTEXT *tdb = NULL;
 
 	DEBUG(5,("samr_query_usergroups: %d\n", __LINE__));
