@@ -396,10 +396,10 @@ NTSTATUS cli_netlogon_sam_deltas(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                                  SAM_DELTA_HDR **hdr_deltas, 
                                  SAM_DELTA_CTR **deltas);
 NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                                char *username, char *password,
-                                int logon_type);
+				const char *unix_username, const char *unix_password,
+				int logon_type);
 NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-					const char *username, const char *domain, const char *workstation, 
+					const char *unix_username, const char *unix_domain, const char *workstation, 
 					const uint8 chal[8],
 					DATA_BLOB lm_response, DATA_BLOB nt_response,
 					NET_USER_INFO_3 *info3);
@@ -2516,13 +2516,13 @@ BOOL profile_setup(BOOL rdonly);
 
 NTSTATUS cli_nt_setup_creds(struct cli_state *cli, unsigned char mach_pwd[16]);
 BOOL cli_nt_srv_pwset(struct cli_state *cli, unsigned char *new_hashof_mach_pwd);
-NTSTATUS cli_nt_login_interactive(struct cli_state *cli, char *domain, char *username, 
-                              uint32 smb_userid_low, char *password,
-                              NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3);
-NTSTATUS cli_nt_login_network(struct cli_state *cli, char *domain, char *username, 
-							uint32 smb_userid_low, const char lm_chal[8], 
-							const char *lm_chal_resp, const char *nt_chal_resp,
-							NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3);
+NTSTATUS cli_nt_login_interactive(struct cli_state *cli, char *unix_domain, char *unix_username, 
+				uint32 smb_userid_low, char *unix_password,
+				NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3);
+NTSTATUS cli_nt_login_network(struct cli_state *cli, char *unix_domain, char *unix_username, 
+				uint32 smb_userid_low, const char lm_chal[8], 
+				const char *lm_chal_resp, const char *nt_chal_resp,
+				NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3);
 BOOL cli_nt_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr);
 
 /* The following definitions come from rpc_client/cli_netlogon.c  */
