@@ -150,7 +150,8 @@ static void stat_cache_add( char *full_orig_name, char *orig_translated_path)
   /*
    * Don't cache trivial valid directory entries.
    */
-  if((strcmp(full_orig_name, ".") == 0) || (strcmp(full_orig_name, "..") == 0))
+  if((*full_orig_name == '\0') || (strcmp(full_orig_name, ".") == 0) ||
+     (strcmp(full_orig_name, "..") == 0))
     return;
 
   /*
@@ -245,7 +246,7 @@ static BOOL stat_cache_lookup( char *name, char *dirpath, char **start, SMB_STRU
   /*
    * Don't lookup trivial valid directory entries.
    */
-  if((strcmp(name, ".") == 0) || (strcmp(name, "..") == 0)) {
+  if((*name == '\0') || (strcmp(name, ".") == 0) || (strcmp(name, "..") == 0)) {
     global_stat_cache_misses++;
     return False;
   }
@@ -364,6 +365,17 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
    */
 
   trim_string(name,"/","/");
+
+  /*
+   * If we trimmed down to a single '\0' character
+   * then we should use the "." directory to avoid
+   * searching the cache.
+   */
+
+  if(!*name) {
+    name[0] = '.';
+    name[1] = '\0';
+  }
 
   /*
    * Ensure saved_last_component is valid even if file exists.
