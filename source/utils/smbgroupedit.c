@@ -57,9 +57,34 @@ static void usage(void)
 }
 
 /*********************************************************
+ Figure out if the input was an NT group or a SID string.  
+ Return the SID.
+**********************************************************/
+static BOOL get_sid_from_input(DOM_SID *sid, char *input) 
+{
+	GROUP_MAP map;
+	
+	if (StrnCaseCmp( input, "S-", 2)) {
+		/* Perhaps its the NT group name? */
+		if (!get_group_map_from_ntname(input, &map, MAPPING_WITHOUT_PRIV)) {
+			printf("NT Group %s doesn't exist in mapping DB\n", input);
+			return False;
+		} else {
+			*sid = map.sid;
+		}
+	} else {
+		if (!string_to_sid(sid, input)) {
+			printf("converting sid %s from a string failed!\n", input);
+			return False;
+		}
+	}
+	return True;
+}
+
+/*********************************************************
  add a group.
 **********************************************************/
-int addgroup(char *group, enum SID_NAME_USE sid_type, char *ntgroup, char *ntcomment, char *privilege)
+static int addgroup(char *group, enum SID_NAME_USE sid_type, char *ntgroup, char *ntcomment, char *privilege)
 {
 	PRIVILEGE_SET se_priv;
 	gid_t gid;
@@ -68,12 +93,15 @@ int addgroup(char *group, enum SID_NAME_USE sid_type, char *ntgroup, char *ntcom
 	fstring name, comment;
 
 	gid=nametogid(group);
-	if (gid==-1)
+	if (gid==-1) {
+		printf("unix group %s doesn't exist!\n", group);
 		return -1;
+	}
 
 	local_gid_to_sid(&sid, gid);
-	sid_to_string(string_sid, &sid);
 
+	sid_to_string(string_sid, &sid);
+	
 	if (ntgroup==NULL)
 		fstrcpy(name, group);
 	else
@@ -89,6 +117,7 @@ int addgroup(char *group, enum SID_NAME_USE sid_type, char *ntgroup, char *ntcom
 		convert_priv_from_text(&se_priv, privilege);
 
 	if(!add_initial_entry(gid, string_sid, sid_type, name, comment, se_priv, PR_ACCESS_FROM_NETWORK)) {
+		printf("adding entry for group %s failed!\n", group);
 		free_privilege(&se_priv);
 		return -1;
 	}
@@ -100,13 +129,15 @@ int addgroup(char *group, enum SID_NAME_USE sid_type, char *ntgroup, char *ntcom
 /*********************************************************
  Change a group.
 **********************************************************/
-int changegroup(char *sid_string, char *group, enum SID_NAME_USE sid_type, char *ntgroup, char *groupdesc, char *privilege)
+static int changegroup(char *sid_string, char *group, enum SID_NAME_USE sid_type, char *ntgroup, char *groupdesc, char *privilege)
 {
 	DOM_SID sid;
 	GROUP_MAP map;
 	gid_t gid;
 
-	string_to_sid(&sid, sid_string);
+	if (!get_sid_from_input(&sid, sid_string)) {
+		return -1;
+	}
 
 	/* Get the current mapping from the database */
 	if(!get_group_map_from_sid(sid, &map, MAPPING_WITH_PRIV)) {
@@ -128,10 +159,19 @@ int changegroup(char *sid_string, char *group, enum SID_NAME_USE sid_type, char 
 	 * Allow changing of group type only between domain and local
 	 * We disallow changing Builtin groups !!! (SID problem)
 	 */ 
-	if (sid_type==SID_NAME_ALIAS || sid_type==SID_NAME_DOM_GRP)
-		if (map.sid_name_use==SID_NAME_ALIAS || map.sid_name_use==SID_NAME_DOM_GRP)
+	if (sid_type==SID_NAME_ALIAS 
+	    || sid_type==SID_NAME_DOM_GRP 
+	    || sid_type==SID_NAME_UNKNOWN) {
+		if (map.sid_name_use==SID_NAME_ALIAS 
+		    || map.sid_name_use==SID_NAME_DOM_GRP
+		    || map.sid_name_use==SID_NAME_UNKNOWN) {
 			map.sid_name_use=sid_type;
-
+		} else {
+			printf("cannot change group type to builtin\n");
+		};
+	} else {
+		printf("cannot change group type from builtin\n");
+	}
 
 	if (ntgroup!=NULL)
 		fstrcpy(map.nt_name, ntgroup);
@@ -157,22 +197,26 @@ int changegroup(char *sid_string, char *group, enum SID_NAME_USE sid_type, char 
 /*********************************************************
  Delete the group.
 **********************************************************/
-BOOL deletegroup(char *group)
+static int deletegroup(char *group)
 {
 	DOM_SID sid;
-	
-	string_to_sid(&sid, group);
 
-	if(!group_map_remove(sid))
-		return False;
+	if (!get_sid_from_input(&sid, group)) {
+		return -1;
+	}
 
-	return True;
+	if(!group_map_remove(sid)) {
+		printf("removing group %s from the mapping db failed!\n", group);
+		return -1;
+	}
+
+	return 0;
 }
 
 /*********************************************************
  List the groups.
 **********************************************************/
-int listgroup(enum SID_NAME_USE sid_type, BOOL long_list)
+static int listgroup(enum SID_NAME_USE sid_type, BOOL long_list)
 {
 	int entries,i;
 	GROUP_MAP *map=NULL;
