@@ -158,6 +158,7 @@ struct nbt_name_status;
 struct nbt_name_register;
 struct nbt_name_refresh;
 struct nbt_name_register_bcast;
+struct nbt_name_refresh_wins;
 
 struct messaging_context;
 struct stream_connection;
@@ -165,5 +166,5 @@ struct task_server;
 struct model_ops;
 struct stream_server_ops;
 
-struct nbt_server;
-struct nbt_interface;
+struct nbtd_server;
+struct nbtd_interface;
