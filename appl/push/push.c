@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -144,7 +144,7 @@ do_connect (const char *hostname, int port, int nodelay)
 }
 
 typedef enum { INIT = 0, GREET, USER, PASS, STAT, RETR, TOP, 
-	       DELE, QUIT } pop_state;
+	       DELE, XDELE, QUIT} pop_state;
 
 #define PUSH_BUFSIZ 65536
 
@@ -228,6 +228,7 @@ doit(int s,
     pop_state state = INIT;
     unsigned count, bytes;
     unsigned asked_for = 0, retrieved = 0, asked_deleted = 0, deleted = 0;
+    unsigned sent_xdele = 0;
     int out_fd;
     char from_line[128];
     size_t from_line_length;
@@ -269,6 +270,7 @@ doit(int s,
 	FD_SET(s,&readset);
 	if (((state == STAT || state == RETR || state == TOP)
 	     && asked_for < count)
+	    || (state == XDELE && !sent_xdele)
 	    || (state == DELE && asked_deleted < count))
 	    FD_SET(s,&writeset);
 	ret = select (s + 1, &readset, &writeset, NULL, NULL);
@@ -278,22 +280,22 @@ doit(int s,
 	    else
 		err (1, "select");
 	}
-
+	
 	if (FD_ISSET(s, &readset)) {
 	    char *beg, *p;
 	    size_t rem;
 	    int blank_line = 0;
-
+	    
 	    ret = read (s, in_ptr, sizeof(in_buf) - in_len - 1);
 	    if (ret < 0)
 		err (1, "read");
 	    else if (ret == 0)
 		errx (1, "EOF during read");
-
+	    
 	    in_len += ret;
 	    in_ptr += ret;
 	    *in_ptr = '\0';
-
+	    
 	    beg = in_buf;
 	    rem = in_len;
 	    while(rem > 1
@@ -302,8 +304,8 @@ doit(int s,
 		    char *copy = beg;
 
 		    if (strncasecmp(copy,
-				header_str,
-				min(p - copy + 1, strlen(header_str))) == 0) {
+				    header_str,
+				    min(p - copy + 1, strlen(header_str))) == 0) {
 			fprintf (stdout, "%.*s\n", (int)(p - copy), copy);
 		    }
 		    if (beg[0] == '.' && beg[1] == '\r' && beg[2] == '\n') {
@@ -335,7 +337,7 @@ doit(int s,
 				    state = QUIT;
 				    net_write (s, "QUIT\r\n", 6);
 				    if (verbose > 1)
-				      net_write (STDERR_FILENO, "QUIT\r\n", 6);
+					net_write (STDERR_FILENO, "QUIT\r\n", 6);
 				} else {
 				    if (forkp) {
 					pid_t pid;
@@ -351,7 +353,7 @@ doit(int s,
 					}
 				    }
 
-				    state = DELE;
+				    state = XDELE;
 				    if (verbose)
 					fprintf (stderr, "deleting... ");
 				}
@@ -378,6 +380,12 @@ doit(int s,
 			    state = TOP;
 			else
 			    state = RETR;
+		    } else if (state == XDELE) {
+			state = QUIT;
+			net_write (s, "QUIT\r\n", 6);
+			if (verbose > 1)
+			    net_write (STDERR_FILENO, "QUIT\r\n", 6);
+			break;
 		    } else if (state == DELE) {
 			if (++deleted == count) {
 			    state = QUIT;
@@ -404,8 +412,12 @@ doit(int s,
 
 		    rem -= p - beg + 2;
 		    beg = p + 2;
-		} else
-		    errx (1, "Bad response: %.*s", (int)(p - beg), beg);
+		} else {
+		    if(state == XDELE)
+			state = DELE;
+		    else
+			errx (1, "Bad response: %.*s", (int)(p - beg), beg);
+		}
 	    }
 	    if (!do_from)
 		write_state_flush (&write_state);
@@ -421,6 +433,11 @@ doit(int s,
 	    else if ((state == STAT && do_from) || state == TOP)
 		out_len = snprintf (out_buf, sizeof(out_buf),
 				    "TOP %u 0\r\n", ++asked_for);
+	    else if(state == XDELE) {
+		out_len = snprintf(out_buf, sizeof(out_buf),
+				   "XDELE %u %u\r\n", 1, count);
+		sent_xdele++;
+	    }
 	    else if(state == DELE)
 		out_len = snprintf (out_buf, sizeof(out_buf),
 				    "DELE %u\r\n", ++asked_deleted);
@@ -634,10 +651,13 @@ parse_pobox (char *a0, const char **host, const char **user)
 	return;
     }
 
+    /* if the specification starts with po:, remember this information */
     if(strncmp(a0, "po:", 3) == 0) {
 	a0 += 3;
 	po++;
     }
+    /* if there is an `@', the hostname is after it, otherwise at the
+       beginning of the string */
     p = strchr(a0, '@');
     if(p != NULL) {
 	*p++ = '\0';
@@ -645,6 +665,8 @@ parse_pobox (char *a0, const char **host, const char **user)
     } else {
 	h = a0;
     }
+    /* if there is a `:', the username comes before it, otherwise at
+       the beginning of the string */
     p = strchr(a0, ':');
     if(p != NULL) {
 	*p++ = '\0';
@@ -748,7 +770,7 @@ main(int argc, char **argv)
 #ifdef KRB5
 	port = krb5_getportbyname (context, "kpop", "tcp", 1109);
 #elif defined(KRB4)
-	port = k_getportbyname ("kpop", "tcp", 1109);
+    port = k_getportbyname ("kpop", "tcp", 1109);
 #else
 #error must define KRB4 or KRB5
 #endif
