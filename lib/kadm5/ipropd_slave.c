@@ -72,7 +72,6 @@ get_creds(krb5_context context, const char *keytab_str,
     krb5_preauthtype preauth = KRB5_PADATA_ENC_TIMESTAMP;
 #endif
     krb5_creds creds;
-    char my_hostname[128];
     char *server;
     char keytab_buf[256];
     
@@ -91,8 +90,7 @@ get_creds(krb5_context context, const char *keytab_str,
     if(ret)
 	krb5_err(context, 1, ret, "%s", keytab_str);
     
-    gethostname (my_hostname, sizeof(my_hostname));
-    ret = krb5_sname_to_principal (context, my_hostname, IPROP_NAME,
+    ret = krb5_sname_to_principal (context, NULL, IPROP_NAME,
 				   KRB5_NT_SRV_HST, &client);
     if (ret) krb5_err(context, 1, ret, "krb5_sname_to_principal");
 
@@ -344,11 +342,11 @@ main(int argc, char **argv)
     int master_fd;
     krb5_ccache ccache;
     krb5_principal server;
+
     int optind;
     const char *master;
     
-    optind = krb5_program_setup(&context, argc, argv, args, num_args,
-				usage);
+    optind = krb5_program_setup(&context, argc, argv, args, num_args, usage);
     
     if(help_flag)
 	usage (0, args, num_args);
@@ -449,6 +447,6 @@ main(int argc, char **argv)
 	krb5_storage_free (sp);
 	krb5_data_free (&out);
     }
-
+    
     return 0;
-}
+    }
