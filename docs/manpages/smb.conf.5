@@ -873,9 +873,6 @@ in the configuration file than the service doing the copying.
 .SS create mask (S)
 A synonym for this parameter is 'create mode'.
 
-This parameter is the octal modes which are used when converting DOS modes 
-to UNIX modes.
-
 When a file is created, the neccessary permissions are calculated
 according to the mapping from DOS modes to UNIX permissions, and
 the resulting UNIX mode is then bit-wise 'AND'ed with this parameter.
@@ -883,26 +880,23 @@ This parameter may be thought of as a bit-wise MASK for the UNIX
 modes of a file. Any bit *not* set here will be removed from the
 modes set on a file when it is created.
 
-The default value of this parameter removes the 'user' execute
-bit and the 'group' and 'other' write and execute bits from the
-UNIX modes.
+The default value of this parameter removes the 'group' and 'other' 
+write and execute bits from the UNIX modes.
 
 Following this Samba will bit-wise 'OR' the UNIX mode created from
 this parameter with the value of the "force create mode" parameter 
-which is set to 0700 by default. This causes the 'user' read, write
-and execute bits to be set for every file created. You must have at 
-least 'user' read, write and execute bits set for Samba to work properly.
+which is set to 000 by default.
 
 For Samba 1.9.17 and above this parameter no longer affects directory
 modes. See the parameter 'directory mode' for details.
 
 See also the "force create mode" parameter for forcing particular
 mode bits to be set on created files.
-See also the "directory mode" paramter for masking mode bits on created
+See also the "directory mode" parameter for masking mode bits on created
 directories.
 
 .B Default:
- 	create mask = 0644
+ 	create mask = 0744
 
 .B Example:
  	create mask = 0775
@@ -1067,7 +1061,8 @@ modes of a directory. Any bit *not* set here will be removed from the
 modes set on a directory when it is created.
 
 The default value of this parameter removes the 'group' and 'other'
-write bits from the UNIX mode.
+write bits from the UNIX mode, allowing only the user who owns the
+directory to modify it.
 
 Following this Samba will bit-wise 'OR' the UNIX mode created from
 this parameter with the value of the "force directory mode" parameter. 
@@ -1196,15 +1191,15 @@ This parameter specifies a set of UNIX mode bit permissions that
 will *always* be set on a file created by Samba. This is done
 by bitwise 'OR'ing these bits onto the mode bits of a file that
 is being created. The default for this parameter is (in octel)
-0700 as files must have at least 'user' read/write/execute bits
-set for Samba to work correctly. This operation is done after
-the mode mask in the parameter "create mask" is applied.
+000. The modes in this parameter are bitwise 'OR'ed onto the
+file mode after the mask set in the "create mask" parameter
+is applied.
 
 See also the parameter "create mask" for details on masking mode
 bits on created files.
 
 .B Default:
-       force create mode = 0700
+       force create mode = 000
 
 .B Example:
        force create mode = 0755
@@ -1333,18 +1328,22 @@ directories that match.
 
 Each entry in the list must be separated by a "/", which allows spaces
 to be included in the entry.  '*' and '?' can be used to specify multiple 
-files or directories as in DOS wildcards.  The default, for example, is 
-used to hide all files beginning with a dot.
+files or directories as in DOS wildcards.
 
 Each entry must be a unix path, not a DOS path and must not include the 
 unix directory separator "/".
 
 Note that the case sensitivity option is applicable in hiding files.
 
-See also "veto files" and "case sensitive"
+Setting this parameter will affect the performance of Samba, as
+it will be forced to check all files and directories for a match
+as they are scanned.
+
+See also "hide dot files", "veto files" and "case sensitive"
 
 .B Default
-	hide files = .*
+	No files or directories are hidden by this option (dot files are
+    hidden by default because of the "hide dot files" option).
 
 .B Example
 	hide files = /.*/DesktopFolderDB/TrashFor%m/resource.frk/
@@ -1873,11 +1872,15 @@ be prepared for some surprises!
  	mangled stack = 100
 
 .SS map archive (S)
-This controls whether the DOS archive attribute should be mapped to UNIX
-execute bits.  The DOS archive bit is set when a file has been modified
+This controls whether the DOS archive attribute should be mapped to the
+UNIX owner execute bit.  The DOS archive bit is set when a file has been modified
 since its last backup.  One motivation for this option it to keep Samba/your
 PC from making any file it touches from becoming executable under UNIX.
 This can be quite annoying for shared source code, documents,  etc...
+
+Note that this requires the 'create mask' to be set such that owner
+execute bit is not masked out (ie. it must include 100). See the 
+parameter "create mask" for details.
 
 .B Default:
       map archive = yes
@@ -1886,8 +1889,12 @@ This can be quite annoying for shared source code, documents,  etc...
       map archive = no
 
 .SS map hidden (S)
-This controls whether DOS style hidden files should be mapped to UNIX
-execute bits.
+This controls whether DOS style hidden files should be mapped to the
+UNIX world execute bit.
+
+Note that this requires the 'create mask' to be set such that the world
+execute bit is not masked out (ie. it must include 001). 
+See the parameter "create mask" for details.
 
 .B Default:
  	map hidden = no
@@ -1895,8 +1902,12 @@ execute bits.
 .B Example:
  	map hidden = yes
 .SS map system (S)
-This controls whether DOS style system files should be mapped to UNIX
-execute bits.
+This controls whether DOS style system files should be mapped to the
+UNIX group execute bit.
+
+Note that this requires the 'create mask' to be set such that the group
+execute bit is not masked out (ie. it must include 010). See the parameter 
+"create mask" for details.
 
 .B Default:
  	map system = no
@@ -3226,6 +3237,10 @@ cannot ever see them) is deleted, the veto files within that directory
 *are automatically deleted* along with it, if the user has UNIX permissions
 to do so.
  
+Setting this parameter will affect the performance of Samba, as
+it will be forced to check all files and directories for a match
+as they are scanned.
+
 See also "hide files" and "case sensitive"
 
 .B Default
