@@ -1,11 +1,30 @@
-              WHATS NEW IN Samba 2.2.3  - 2nd February 2002
-              =============================================
+              WHATS NEW IN Samba 2.2.3a  - 6th February 2002
+              ==============================================
 
 This is the latest stable release of Samba. This is the version that all
 production Samba servers should be running for all current bug-fixes.
 
 There are several important scaling bugs that have been fixed in this release
 for large server systems so an upgrade is recommended.
+
+Change from 2.2.3
+-----------------
+
+This is a minor bugfix release for the 2.2.3 release. The 2.2.3
+release had a problem that was visible to Windows 2000 Explorer
+users in that copying files into a share that already existed 
+failed with "Access Denied" rather than asking the user if an
+overwrite was required. This was due to an incorrect error mapping
+between the UNIX EEXIST error code and the NT status error.
+
+As Windows Explorer is a highly visible end user application a quick
+bugfix release was required, hence 2.2.3a.
+
+Compilation on HPUX versions earlier than HPUX 11 has also been
+corrected.
+
+The cvs.log file is no longer included with this release, as it adds
+13Mb to the size of the release, and is easily available on the Web.
 
 LDAP update
 -----------
@@ -36,8 +55,8 @@ winbindd and wbinfo.
 
 Note that winbindd is not installed by default.
 
-New/Changed parameters in 2.2.3
--------------------------------
+New/Changed parameters in 2.2.3a
+--------------------------------
 
 For more information on these parameters, see the man pages for
 smb.conf.
