@@ -145,6 +145,7 @@ void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 	uchar lm_newhash[16];
 	uchar lm_hshhash[16];
 	uchar lm_oldhash[16];
+	fstring acct_name;
 
 	struct cli_connection *con = NULL;
 
@@ -157,14 +158,21 @@ void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 
 	report(out_hnd, "SAM NT Password Change\n");
 
-#if 0
-	struct pwd_info new_pwd;
-	pwd_read(&new_pwd, "New Password (ONCE: this is test code!):", True);
-#endif
-	new_passwd = (char*)getpass("New Password (ONCE ONLY - get it right :-)");
+	if (argc >= 2)
+	{
+		struct pwd_info old_pwd;
+		safe_strcpy(acct_name, argv[1], sizeof(acct_name));
+		pwd_read(&old_pwd, "Old Password:", True);
+		pwd_get_lm_nt_16(&old_pwd, lm_oldhash, nt_oldhash );
+	}
+	else
+	{
+		safe_strcpy(acct_name, usr_creds->user_name, sizeof(acct_name));
+		pwd_get_lm_nt_16(&(usr_creds->pwd), lm_oldhash, nt_oldhash );
+	}
 
+	new_passwd = (char*)getpass("New Password (ONCE ONLY - get it right :-)");
 	nt_lm_owf_gen(new_passwd, lm_newhash, nt_newhash);
-	pwd_get_lm_nt_16(&(usr_creds->pwd), lm_oldhash, nt_oldhash );
 	make_oem_passwd_hash(nt_newpass, new_passwd, nt_oldhash, True);
 	make_oem_passwd_hash(lm_newpass, new_passwd, lm_oldhash, True);
 	E_old_pw_hash(lm_newhash, lm_oldhash, lm_hshhash);
@@ -188,7 +196,7 @@ void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 
 	/* establish a connection. */
 	res = res ? samr_chgpasswd_user(con,
-	                                   srv_name, usr_creds->user_name,
+	                                   srv_name, acct_name,
 	                                   nt_newpass, nt_hshhash,
 	                                   lm_newpass, lm_hshhash) : False;
 	/* close the session */
