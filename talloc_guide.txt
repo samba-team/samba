@@ -65,6 +65,19 @@ level context is created.
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+void *talloc_p(const void *context, type);
+
+The talloc_p() macro is the equivalent of 
+
+  (type *)talloc(ctx, sizeof(type))
+
+You should use it in preference to talloc() whenever possible, as it
+provides additional type safety. It also automatically calls the
+talloc_set_name_const() function with the name being a string holding
+the name of the type.
+
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 int talloc_free(void *ptr);
 
 The talloc_free() function frees a piece of talloc memory, and all its
