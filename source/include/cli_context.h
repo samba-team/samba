@@ -53,7 +53,11 @@ struct cli_negotiate {
 		BOOL (*check_incoming_message)(struct cli_request *req);
 		void (*free_signing_context)(struct cli_transport *transport);
 		void *signing_context;
+		BOOL negotiated_smb_signing;
+		BOOL allow_smb_signing;
 		BOOL doing_signing;
+		BOOL mandatory_signing;
+		BOOL seen_valid; /* Have I ever seen a validly signed packet? */
 	} sign_info;
 
 	/* capabilities that the server reported */

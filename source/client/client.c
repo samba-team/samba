@@ -2836,6 +2836,7 @@ static struct cli_state *do_connect(const char *server, const char *share)
 
 	status = cli_session_setup(c, username, password, lp_workgroup());
 	if (NT_STATUS_IS_ERR(status)) {
+		d_printf("authenticated session setup failed: %s\n", nt_errstr(status));
 		/* if a password was not supplied then try again with a null username */
 		if (password[0] || !username[0] || use_kerberos) {
 			status = cli_session_setup(c, "", "", lp_workgroup());
