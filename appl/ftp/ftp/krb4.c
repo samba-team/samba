@@ -447,7 +447,11 @@ do_klogin(char *host)
 	return ret;
     }
 
-    base64_encode(krb4_adat.dat, krb4_adat.length, &p);
+    if(base64_encode(krb4_adat.dat, krb4_adat.length, &p) < 0) {
+	printf("Out of memory base64-encoding.\n");
+	verbose = old_verbose;
+	return -1;
+    }
     ret = command("ADAT %s", p);
     free(p);
 
@@ -502,7 +506,8 @@ krb4_quit(void)
   data_prot = 0;
 }
 
-int krb4_write_enc(FILE *F, char *fmt, va_list ap)
+int
+krb4_write_enc(FILE *F, char *fmt, va_list ap)
 {
     int len;
     char *p;
@@ -512,7 +517,9 @@ int krb4_write_enc(FILE *F, char *fmt, va_list ap)
     vsnprintf(buf, sizeof(buf), fmt, ap);
     len = krb_mk_priv(buf, enc, strlen(buf), schedule, &key, 
 		      &myctladdr, &hisctladdr);
-    base64_encode(enc, len, &p);
+    if(base64_encode(enc, len, &p) < 0) {
+	return -1;
+    }
 
     fprintf(F, "ENC %s", p);
     free (p);

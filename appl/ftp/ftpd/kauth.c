@@ -231,7 +231,10 @@ kauth(char *principal, char *ticket)
 	reply(500, "Kerberos error: %s.", krb_get_err_text(ret));
 	return;
     }
-    base64_encode(cip.dat, cip.length, &p);
+    if(base64_encode(cip.dat, cip.length, &p) < 0) {
+	reply(500, "Out of memory while base64-encoding.");
+	return;
+    }
     reply(300, "P=%s T=%s", krb_unparse_name(&pr), p);
     free(p);
     memset(&cip, 0, sizeof(cip));

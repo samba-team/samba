@@ -121,7 +121,11 @@ kauth(int argc, char **argv)
     memset(key, 0, sizeof(key));
     memset(schedule, 0, sizeof(schedule));
     memset(passwd, 0, sizeof(passwd));
-    base64_encode(tktcopy.dat, tktcopy.length, &p);
+    if(base64_encode(tktcopy.dat, tktcopy.length, &p) < 0) {
+	printf("Out of memory base64-encoding.\n");
+	code = -1;
+	return;
+    }
     memset (tktcopy.dat, 0, tktcopy.length);
     ret = command("SITE KAUTH %s %s", name, p);
     free(p);

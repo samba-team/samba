@@ -122,7 +122,10 @@ int krb4_adat(char *auth)
 	reply(535, "Error creating reply: %s.", strerror(errno));
 	return -1;
     }
-    base64_encode(msg, len, &p);
+    if(base64_encode(msg, len, &p) < 0) {
+	reply(535, "Out of memory base64-encoding.");
+	return -1;
+    }
     reply(235, "ADAT=%s", p);
     auth_complete = 1;
     free(p);
@@ -364,9 +367,12 @@ krb4_vprintf(const char *fmt, va_list ap)
 	len = 0; /* XXX */
 	code = 631;
     }
-    base64_encode(enc, len, &p);
-    fprintf(stdout, "%d %s\r\n", code, p);
+    if(base64_encode(enc, len, &p) < 0) {
+	;			/* XXX */
+    } else {
+	fprintf(stdout, "%d %s\r\n", code, p);
+	free(p);
+    }
     free(enc);
-    free(p);
     return 0;
 }
