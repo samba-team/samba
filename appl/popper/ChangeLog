@@ -1,3 +1,7 @@
+Thu Apr 23 00:54:38 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* pop_dropcopy.c: Fix mismatched parenthesis.
+
 Sat Apr  4 15:13:56 1998  Assar Westerlund  <assar@sics.se>
 
 	* pop_dropcopy.c (pop_dropcopy): first do mkstemp and then fdopen.
