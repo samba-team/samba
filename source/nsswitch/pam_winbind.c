@@ -176,7 +176,7 @@ static int pam_winbind_request_log(enum winbindd_cmd req_type,
 	case PAM_SUCCESS:
 		if (req_type == WINBINDD_PAM_AUTH) {
 			/* Otherwise, the authentication looked good */
-			_pam_log(LOG_NOTICE, "user '%s' granted acces", user);
+			_pam_log(LOG_NOTICE, "user '%s' granted access", user);
 		} else if (req_type == WINBINDD_PAM_CHAUTHTOK) {
 			/* Otherwise, the authentication looked good */
 			_pam_log(LOG_NOTICE, "user '%s' password changed", user);
@@ -551,7 +551,7 @@ int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags,
 	    return PAM_USER_UNKNOWN;
 	case 0:
 	    /* Otherwise, the authentication looked good */
-	    _pam_log(LOG_NOTICE, "user '%s' granted acces", username);
+	    _pam_log(LOG_NOTICE, "user '%s' granted access", username);
 	    return PAM_SUCCESS;
 	default:
 	    /* we don't know anything about this return value */
