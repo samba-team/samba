@@ -104,6 +104,9 @@ static double dir_total;
 
 #define USENMB
 
+/* some forward declarations */
+static struct cli_state *do_connect(const char *server, const char *share);
+
 /****************************************************************************
 write to a local file with CR/LF->LF translation if appropriate. return the 
 number taken from the buffer. This may not equal the number written.
