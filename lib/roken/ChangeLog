@@ -1,3 +1,7 @@
+2000-07-01  Assar Westerlund  <assar@sics.se>
+
+	* roken-common.h (pid_file_*): fix protos
+
 2000-06-28  Assar Westerlund  <assar@sics.se>
 
 	* getnameinfo_verified.c (getnameinfo_verified): free memory

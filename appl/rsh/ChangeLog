@@ -1,3 +1,8 @@
+2000-06-09  Assar Westerlund  <assar@sics.se>
+
+	* rsh.c (main): work-around for setuid and capabilities bug fixed
+	in Linux 2.2.16
+
 2000-06-06  Johan Danielsson  <joda@pdc.kth.se>
 
 	* rsh.c: nuke long option from -z
