@@ -561,7 +561,7 @@ SEC_DESC_BUF *sec_desc_merge(TALLOC_CTX *ctx, SEC_DESC_BUF *new_sdb, SEC_DESC_BU
 
 	/* Create new security descriptor from bits */
 
-	psd = make_sec_desc(ctx, new_sdb->sec->revision, 
+	psd = make_sec_desc(ctx, new_sdb->sec->revision, secdesc_type,
 			    owner_sid, group_sid, sacl, dacl, &secdesc_size);
 
 	return_sdb = make_sec_desc_buf(ctx, secdesc_size, psd);
@@ -573,7 +573,7 @@ SEC_DESC_BUF *sec_desc_merge(TALLOC_CTX *ctx, SEC_DESC_BUF *new_sdb, SEC_DESC_BU
  Creates a SEC_DESC structure
 ********************************************************************/
 
-SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision, 
+SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision, uint16 type,
 			DOM_SID *owner_sid, DOM_SID *grp_sid,
 			SEC_ACL *sacl, SEC_ACL *dacl, size_t *sd_size)
 {
@@ -586,10 +586,12 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision,
 		return NULL;
 
 	dst->revision = revision;
-	dst->type     = SEC_DESC_SELF_RELATIVE;
+	dst->type = type;
 
-	if (sacl) dst->type |= SEC_DESC_SACL_PRESENT;
-	if (dacl) dst->type |= SEC_DESC_DACL_PRESENT;
+	if (sacl)
+		dst->type |= SEC_DESC_SACL_PRESENT;
+	if (dacl)
+		dst->type |= SEC_DESC_DACL_PRESENT;
 
 	dst->off_owner_sid = 0;
 	dst->off_grp_sid   = 0;
@@ -654,7 +656,7 @@ SEC_DESC *dup_sec_desc( TALLOC_CTX *ctx, SEC_DESC *src)
 	if(src == NULL)
 		return NULL;
 
-	return make_sec_desc( ctx, src->revision, 
+	return make_sec_desc( ctx, src->revision, src->type,
 				src->owner_sid, src->grp_sid, src->sacl,
 				src->dacl, &dummy);
 }
@@ -666,7 +668,7 @@ SEC_DESC *dup_sec_desc( TALLOC_CTX *ctx, SEC_DESC *src)
 SEC_DESC *make_standard_sec_desc(TALLOC_CTX *ctx, DOM_SID *owner_sid, DOM_SID *grp_sid,
 				 SEC_ACL *dacl, size_t *sd_size)
 {
-	return make_sec_desc(ctx, SEC_DESC_REVISION,
+	return make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
 			     owner_sid, grp_sid, NULL, dacl, sd_size);
 }
 
@@ -924,7 +926,7 @@ NTSTATUS sec_desc_add_sid(TALLOC_CTX *ctx, SEC_DESC **psd, DOM_SID *sid, uint32 
 	if (!(dacl = make_sec_acl(ctx, psd[0]->dacl->revision, psd[0]->dacl->num_aces, ace)))
 		return NT_STATUS_UNSUCCESSFUL;
 	
-	if (!(sd = make_sec_desc(ctx, psd[0]->revision, psd[0]->owner_sid, 
+	if (!(sd = make_sec_desc(ctx, psd[0]->revision, psd[0]->type, psd[0]->owner_sid, 
 		psd[0]->grp_sid, psd[0]->sacl, dacl, sd_size)))
 		return NT_STATUS_UNSUCCESSFUL;
 
@@ -976,7 +978,7 @@ NTSTATUS sec_desc_del_sid(TALLOC_CTX *ctx, SEC_DESC **psd, DOM_SID *sid, size_t 
 	if (!(dacl = make_sec_acl(ctx, psd[0]->dacl->revision, psd[0]->dacl->num_aces, ace)))
 		return NT_STATUS_UNSUCCESSFUL;
 	
-	if (!(sd = make_sec_desc(ctx, psd[0]->revision, psd[0]->owner_sid, 
+	if (!(sd = make_sec_desc(ctx, psd[0]->revision, psd[0]->type, psd[0]->owner_sid, 
 		psd[0]->grp_sid, psd[0]->sacl, dacl, sd_size)))
 		return NT_STATUS_UNSUCCESSFUL;
 

@@ -4572,7 +4572,7 @@ WERROR nt_printing_setsec(const char *printername, SEC_DESC_BUF *secdesc_ctr)
 
 		/* Make a deep copy of the security descriptor */
 
-		psd = make_sec_desc(mem_ctx, secdesc_ctr->sec->revision,
+		psd = make_sec_desc(mem_ctx, secdesc_ctr->sec->revision, secdesc_ctr->sec->type,
 				    owner_sid, group_sid,
 				    sacl,
 				    dacl,
@@ -4665,7 +4665,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 	   NT5 machine. */
 
 	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 3, ace)) != NULL) {
-		psd = make_sec_desc(ctx, SEC_DESC_REVISION,
+		psd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
 				    &owner_sid, NULL,
 				    NULL, psa, &sd_size);
 	}
@@ -4741,7 +4741,7 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *printername, SEC_DESC_BUF *
 
 			sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
 
-			psd = make_sec_desc(ctx, (*secdesc_ctr)->sec->revision,
+			psd = make_sec_desc(ctx, (*secdesc_ctr)->sec->revision, (*secdesc_ctr)->sec->type,
 					    &owner_sid,
 					    (*secdesc_ctr)->sec->grp_sid,
 					    (*secdesc_ctr)->sec->sacl,
