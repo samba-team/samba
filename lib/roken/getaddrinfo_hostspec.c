@@ -41,9 +41,10 @@ RCSID("$Id$");
 /* getaddrinfo via string specifying host and port */
 
 int
-roken_getaddrinfo_hostspec(const char *hostspec, 
-			   int port,
-			   struct addrinfo **ai)
+roken_getaddrinfo_hostspec2(const char *hostspec, 
+			    int socktype,
+			    int port,
+			    struct addrinfo **ai)
 {
     const char *p;
     char portstr[NI_MAXSERV];
@@ -65,6 +66,8 @@ roken_getaddrinfo_hostspec(const char *hostspec,
     };
 
     memset(&hints, 0, sizeof(hints));
+
+    hints.ai_socktype = socktype;
 	
     for(hstp = hst; hstp->prefix; hstp++) {
 	if(strncmp(hostspec, hstp->prefix, strlen(hstp->prefix)) == 0) {
@@ -90,4 +93,12 @@ roken_getaddrinfo_hostspec(const char *hostspec,
     
     snprintf (host, sizeof(host), "%.*s", hostspec_len, hostspec);
     return getaddrinfo (host, portstr, &hints, ai);
+}
+
+int
+roken_getaddrinfo_hostspec(const char *hostspec, 
+			   int port,
+			   struct addrinfo **ai)
+{
+    return roken_getaddrinfo_hostspec2(hostspec, 0, port, ai);
 }
