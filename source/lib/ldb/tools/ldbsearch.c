@@ -86,8 +86,8 @@ static void usage(void)
 	}
 
 	if (!ldb_url) {
-		fprintf(stderr, "You must specify a ldb URL\n");
-		exit(1);
+		fprintf(stderr, "You must specify a ldb URL\n\n");
+		usage();
 	}
 
 	argc -= optind;

@@ -281,7 +281,7 @@ static void usage(void)
 		editor = "vi";
 	}
 
-	while ((opt = getopt(argc, argv, "ab:e:H:s:")) != EOF) {
+	while ((opt = getopt(argc, argv, "hab:e:H:s:")) != EOF) {
 		switch (opt) {
 		case 'b':
 			basedn = optarg;
@@ -317,8 +317,8 @@ static void usage(void)
 	}
 
 	if (!ldb_url) {
-		fprintf(stderr, "You must specify a ldb URL\n");
-		exit(1);
+		fprintf(stderr, "You must specify a ldb URL\n\n");
+		usage();
 	}
 
 	argc -= optind;

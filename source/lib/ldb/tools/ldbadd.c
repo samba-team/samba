@@ -101,8 +101,8 @@ static int process_file(struct ldb_context *ldb, FILE *f)
 	}
 
 	if (!ldb_url) {
-		fprintf(stderr, "You must specify a ldb URL\n");
-		exit(1);
+		fprintf(stderr, "You must specify a ldb URL\n\n");
+		usage();
 	}
 
 	argc -= optind;
