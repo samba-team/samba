@@ -173,7 +173,7 @@ static int test_ResolveOxid2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, HYPER_T
 	NTSTATUS status;
 	uint16 protseq[2] = { EPM_PROTOCOL_TCP, EPM_PROTOCOL_SMB };	
 
-	r.in.pOxid = &oxid;
+	r.in.pOxid = oxid;
 	r.in.cRequestedProtseqs = 2;
 	r.in.arRequestedProtseqs = protseq;
 
