@@ -2184,7 +2184,7 @@ NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
 
 	ZERO_STRUCTP(nt_devmode);
 
-	safe_strcpy(adevice, default_devicename, sizeof(adevice)-1);
+	slprintf(adevice, sizeof(adevice), "%s", default_devicename);
 	fstrcpy(nt_devmode->devicename, adevice);	
 	
 	fstrcpy(nt_devmode->formname, "Letter");
