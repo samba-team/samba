@@ -2880,9 +2880,11 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 		 * inherited at file create time, so ACLs never contain
 		 * any ACEs that are inherited dynamically. The DACL_PROTECTED
 		 * flag doesn't seem to bother Windows NT.
+		 * Always set this if map acl inherit is turned off.
 		 */
-		if (get_protected_flag(pal))
+		if (get_protected_flag(pal) || !lp_map_acl_inherit(SNUM(conn))) {
 			psd->type |= SE_DESC_DACL_PROTECTED;
+		}
 	}
 
 	if (psd->dacl)
