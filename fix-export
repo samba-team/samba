@@ -60,8 +60,8 @@ make_proto () {
 	(top=`pwd`
 	cd $1
 	b=`basename $1`
-        if test X"$4" != X ; then
-	    e="-E $4";
+        if test X"$5" != X ; then
+	    e="-E $5";
 	else
 	    e=
 	fi
