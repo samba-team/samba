@@ -205,7 +205,7 @@ krb5_cc_set_default_name(krb5_context context, const char *name)
 	if(!issuid())
 	    e = getenv("KRB5CCNAME");
 	if (e == NULL)
-	    e = krb5_config_get_string(context, NULL, "libdefault",
+	    e = krb5_config_get_string(context, NULL, "libdefaults",
 				       "default_cc_name", NULL);
 	if (e)
 	    p = strdup(e);
