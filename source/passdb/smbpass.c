@@ -382,7 +382,7 @@ BOOL add_smbpwd_entry(struct smb_passwd* pwd)
 	/* Set a 16k buffer to do more efficient reads */
 	setvbuf(fp, readbuf, _IOFBF, sizeof(readbuf));
 
-	if ((lockfd = pw_file_lock(pfile, F_RDLCK | F_WRLCK, 5)) < 0)
+	if ((lockfd = pw_file_lock(pfile, F_WRLCK, 5)) < 0)
 	{
 		DEBUG(0, ("add_smbpwd_entry: unable to lock file %s\n", pfile));
 		fclose(fp);
@@ -600,7 +600,7 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
 	/* Set a 16k buffer to do more efficient reads */
 	setvbuf(fp, readbuf, _IOFBF, sizeof(readbuf));
 
-	if ((lockfd = pw_file_lock(pfile, F_RDLCK | F_WRLCK, 5)) < 0)
+	if ((lockfd = pw_file_lock(pfile, F_WRLCK, 5)) < 0)
 	{
 		DEBUG(0, ("mod_smbpwd_entry: unable to lock file %s\n", pfile));
 		fclose(fp);
