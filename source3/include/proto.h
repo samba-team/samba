@@ -2100,6 +2100,8 @@ BOOL prs_uint16_post(char *name, prs_struct *ps, int depth, uint16 *data16,
 BOOL prs_uint32_pre(char *name, prs_struct *ps, int depth, uint32 *data32, uint32 *offset);
 BOOL prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
 				uint32 ptr_uint32, uint32 data_size);
+int tdb_prs_store(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps);
+int tdb_prs_fetch(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps);
 
 /*The following definitions come from  rpc_parse/parse_reg.c  */
 
@@ -3631,8 +3633,6 @@ int tdb_store_by_string(TDB_CONTEXT *tdb, char *keystr, void *buffer, int len);
 TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, char *keystr);
 size_t tdb_pack(char *buf, int bufsize, char *fmt, ...);
 int tdb_unpack(char *buf, int bufsize, char *fmt, ...);
-int tdb_prs_store(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps);
-int tdb_prs_fetch(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps);
 
 /*The following definitions come from  utils/nbio.c  */
 
