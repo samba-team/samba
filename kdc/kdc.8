@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd October 22, 2003
+.Dd March  7, 2004
 .Dt KDC 8
 .Os HEIMDAL
 .Sh NAME
@@ -59,6 +59,7 @@
 .Xc
 .Oc
 .Op Fl -detach
+.Op Fl -disable-DES
 .Op Fl -addresses= Ns Ar list of addresses
 .Sh DESCRIPTION
 .Nm
@@ -147,6 +148,10 @@ By default, the kdc will listen on all the locally configured
 addresses.
 If only a subset is desired, or the automatic detection fails, this
 option might be used.
+.It Fl -detach
+detach from pty and run as a daemon.
+.It Fl -disable-DES
+disable add des encryption types, makes the kdc not use them.
 .El
 .Pp
 All activities are logged to one or more destinations, see
