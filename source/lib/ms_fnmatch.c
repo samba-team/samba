@@ -145,7 +145,7 @@ int ms_fnmatch(char *pattern, char *string)
 	char c;
 	extern int Protocol;
 
-	if (Protocol <= PROTOCOL_LANMAN1) {
+	if (Protocol <= PROTOCOL_LANMAN2) {
 		return ms_fnmatch_lanman1(pattern, string);
 	}
 
