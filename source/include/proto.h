@@ -3228,7 +3228,7 @@ BOOL new_smb_io_printer_driver_info_6(char *desc, NEW_BUFFER *buffer, DRIVER_INF
 BOOL new_smb_io_job_info_1(char *desc, NEW_BUFFER *buffer, JOB_INFO_1 *info, int depth);
 BOOL new_smb_io_job_info_2(char *desc, NEW_BUFFER *buffer, JOB_INFO_2 *info, int depth);
 BOOL new_smb_io_form_1(char *desc, NEW_BUFFER *buffer, FORM_1 *info, int depth);
-void new_spoolss_move_buffer(NEW_BUFFER *src, NEW_BUFFER **dest);
+void spoolss_move_buffer(NEW_BUFFER *src, NEW_BUFFER **dest);
 uint32 new_get_buffer_size(NEW_BUFFER *buffer);
 BOOL new_smb_io_driverdir_1(char *desc, NEW_BUFFER *buffer, DRIVER_DIRECTORY_1 *info, int depth);
 BOOL new_smb_io_port_1(char *desc, NEW_BUFFER *buffer, PORT_INFO_1 *info, int depth);
@@ -3270,7 +3270,7 @@ BOOL make_spoolss_q_enumports(SPOOL_Q_ENUMPORTS *q_u,
 				fstring servername, uint32 level, 
 				NEW_BUFFER *buffer, uint32 offered);
 BOOL spoolss_io_q_enumprinters(char *desc, SPOOL_Q_ENUMPRINTERS *q_u, prs_struct *ps, int depth);
-BOOL new_spoolss_io_r_enumprinters(char *desc, SPOOL_R_ENUMPRINTERS *r_u, prs_struct *ps, int depth);
+BOOL spoolss_io_r_enumprinters(char *desc, SPOOL_R_ENUMPRINTERS *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_getprinter(char *desc, SPOOL_R_GETPRINTER *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_getprinter(char *desc, SPOOL_Q_GETPRINTER *q_u, prs_struct *ps, int depth);
 BOOL make_spoolss_q_getprinter(SPOOL_Q_GETPRINTER *q_u, const POLICY_HND *hnd, uint32 level, 
@@ -3293,7 +3293,7 @@ BOOL spoolss_io_r_schedulejob(char *desc, SPOOL_R_SCHEDULEJOB *r_u, prs_struct *
 BOOL spoolss_io_q_schedulejob(char *desc, SPOOL_Q_SCHEDULEJOB *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_setjob(char *desc, SPOOL_R_SETJOB *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_setjob(char *desc, SPOOL_Q_SETJOB *q_u, prs_struct *ps, int depth);
-BOOL new_spoolss_io_r_enumprinterdrivers(char *desc, SPOOL_R_ENUMPRINTERDRIVERS *r_u, prs_struct *ps, int depth);
+BOOL spoolss_io_r_enumprinterdrivers(char *desc, SPOOL_R_ENUMPRINTERDRIVERS *r_u, prs_struct *ps, int depth);
 BOOL make_spoolss_q_enumprinterdrivers(SPOOL_Q_ENUMPRINTERDRIVERS *q_u,
                                 const char *name,
                                 const char *environment,
@@ -3301,10 +3301,10 @@ BOOL make_spoolss_q_enumprinterdrivers(SPOOL_Q_ENUMPRINTERDRIVERS *q_u,
                                 NEW_BUFFER *buffer, uint32 offered);
 BOOL spoolss_io_q_enumprinterdrivers(char *desc, SPOOL_Q_ENUMPRINTERDRIVERS *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_enumforms(char *desc, SPOOL_Q_ENUMFORMS *q_u, prs_struct *ps, int depth);
-BOOL new_spoolss_io_r_enumforms(char *desc, SPOOL_R_ENUMFORMS *r_u, prs_struct *ps, int depth);
+BOOL spoolss_io_r_enumforms(char *desc, SPOOL_R_ENUMFORMS *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_getform(char *desc, SPOOL_Q_GETFORM *q_u, prs_struct *ps, int depth);
-BOOL new_spoolss_io_r_getform(char *desc, SPOOL_R_GETFORM *r_u, prs_struct *ps, int depth);
-BOOL new_spoolss_io_r_enumports(char *desc, SPOOL_R_ENUMPORTS *r_u, prs_struct *ps, int depth);
+BOOL spoolss_io_r_getform(char *desc, SPOOL_R_GETFORM *r_u, prs_struct *ps, int depth);
+BOOL spoolss_io_r_enumports(char *desc, SPOOL_R_ENUMPORTS *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_enumports(char *desc, SPOOL_Q_ENUMPORTS *q_u, prs_struct *ps, int depth);
 BOOL spool_io_printer_info_level_1(char *desc, SPOOL_PRINTER_INFO_LEVEL_1 *il, prs_struct *ps, int depth);
 BOOL spool_io_printer_info_level_3(char *desc, SPOOL_PRINTER_INFO_LEVEL_3 *il, prs_struct *ps, int depth);
@@ -3643,7 +3643,7 @@ uint32 _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJO
 uint32 _spoolss_schedulejob( pipes_struct *p, SPOOL_Q_SCHEDULEJOB *q_u, SPOOL_R_SCHEDULEJOB *r_u);
 uint32 _spoolss_setjob(pipes_struct *p, SPOOL_Q_SETJOB *q_u, SPOOL_R_SETJOB *r_u);
 uint32 _spoolss_enumprinterdrivers( pipes_struct *p, SPOOL_Q_ENUMPRINTERDRIVERS *q_u, SPOOL_R_ENUMPRINTERDRIVERS *r_u);
-uint32 _new_spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMFORMS *r_u);
+uint32 _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMFORMS *r_u);
 uint32 _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *r_u);
 uint32 _spoolss_enumports( pipes_struct *p, SPOOL_Q_ENUMPORTS *q_u, SPOOL_R_ENUMPORTS *r_u);
 uint32 _spoolss_addprinterex( pipes_struct *p, SPOOL_Q_ADDPRINTEREX *q_u, SPOOL_R_ADDPRINTEREX *r_u);
