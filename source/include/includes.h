@@ -294,6 +294,23 @@
 #include <sys/capability.h>
 #endif
 
+#if defined(HAVE_RPC_RPC_H)
+#include <rpc/rpc.h>
+#endif
+
+#if defined(HAVE_YP_GET_DEFAULT_DOMAIN) && defined(HAVE_SETNETGRENT) && defined(HAVE_ENDNETGRENT) && defined(HAVE_GETNETGRENT)
+#define HAVE_NETGROUP 1
+#endif
+
+#if defined (HAVE_NETGROUP)
+#if defined(HAVE_RPCSVC_YP_PROT_H)
+#include <rpcsvc/yp_prot.h>
+#endif
+#if defined(HAVE_RPCSVC_YPCLNT_H)
+#include <rpcsvc/ypclnt.h>
+#endif
+#endif /* HAVE_NETGROUP */
+
 #ifndef uchar
 #define uchar unsigned char
 #endif
@@ -317,7 +334,7 @@
 #define uint8 unsigned char
 #endif
 
-#ifndef int16
+#if !defined(int16) && !defined(HAVE_INT16_FROM_RPC_RPC_H)
 #if (SIZEOF_SHORT == 4)
 #define int16 __ERROR___CANNOT_DETERMINE_TYPE_FOR_INT16;
 #else /* SIZEOF_SHORT != 4 */
@@ -325,11 +342,20 @@
 #endif /* SIZEOF_SHORT != 4 */
 #endif
 
-#ifndef uint16
-#define uint16 unsigned int16
+/*
+ * Note we duplicate the size tests in the unsigned 
+ * case as int16 may be a typedef from rpc/rpc.h
+ */
+
+#if !defined(uint16) && !defined(HAVE_UINT16_FROM_RPC_RPC_H)
+#if (SIZEOF_SHORT == 4)
+#define uint16 __ERROR___CANNOT_DETERMINE_TYPE_FOR_INT16;
+#else /* SIZEOF_SHORT != 4 */
+#define uint16 unsigned short
+#endif /* SIZEOF_SHORT != 4 */
 #endif
 
-#ifndef int32
+#if !defined(int32) && !defined(HAVE_INT32_FROM_RPC_RPC_H)
 #if (SIZEOF_INT == 4)
 #define int32 int
 #elif (SIZEOF_LONG == 4)
@@ -339,8 +365,19 @@
 #endif
 #endif
 
-#ifndef uint32
-#define uint32 unsigned int32
+/*
+ * Note we duplicate the size tests in the unsigned 
+ * case as int32 may be a typedef from rpc/rpc.h
+ */
+
+#if !defined(uint32) && !defined(HAVE_UINT32_FROM_RPC_RPC_H)
+#if (SIZEOF_INT == 4)
+#define uint32 unsigned int
+#elif (SIZEOF_LONG == 4)
+#define uint32 unsigned long
+#elif (SIZEOF_SHORT == 4)
+#define uint32 unsigned short
+#endif
 #endif
 
 /*
@@ -593,22 +630,6 @@ union semun {
 #if defined(HAVE_PAM_AUTHENTICATE) && defined(HAVE_SECURITY_PAM_APPL_H)
 #define HAVE_PAM 1
 #endif
-
-#if defined(HAVE_YP_GET_DEFAULT_DOMAIN) && defined(HAVE_SETNETGRENT) && defined(HAVE_ENDNETGRENT) && defined(HAVE_GETNETGRENT)
-#define HAVE_NETGROUP 1
-#endif
-
-#if defined (HAVE_NETGROUP)
-#if defined(HAVE_RPC_RPC_H)
-#include <rpc/rpc.h>
-#endif
-#if defined(HAVE_RPCSVC_YP_PROT_H)
-#include <rpcsvc/yp_prot.h>
-#endif
-#if defined(HAVE_RPCSVC_YPCLNT_H)
-#include <rpcsvc/ypclnt.h>
-#endif
-#endif /* HAVE_NETGROUP */
 
 #ifndef ALLOW_CHANGE_PASSWORD
 #if (defined(HAVE_TERMIOS_H) && defined(HAVE_DUP2) && defined(HAVE_SETSID))

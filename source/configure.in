@@ -1,6 +1,8 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(include/includes.h)
 AC_CONFIG_HEADER(include/config.h)
+# we want to be compatibe with older versions of Samba
+AC_PREFIX_DEFAULT(/usr/local/samba)
 
 dnl Unique-to-Samba variables we'll be playing with.
 AC_SUBST(SHELL)
@@ -30,8 +32,7 @@ AC_HEADER_TIME
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(sys/fcntl.h sys/select.h fcntl.h sys/time.h sys/unistd.h)
 AC_CHECK_HEADERS(unistd.h utime.h grp.h sys/id.h limits.h memory.h net/route.h net/if.h)
-AC_CHECK_HEADERS(compat.h rpc/rpc.h rpc/types.h rpc/xdr.h rpc/auth.h rpc/clnt.h)
-AC_CHECK_HEADERS(rpcsvc/yp_prot.h rpcsvc/ypclnt.h sys/param.h ctype.h )
+AC_CHECK_HEADERS(compat.h rpc/rpc.h rpcsvc/yp_prot.h rpcsvc/ypclnt.h sys/param.h ctype.h )
 AC_CHECK_HEADERS(sys/wait.h sys/resource.h sys/ioctl.h sys/mode.h)
 AC_CHECK_HEADERS(sys/filio.h string.h strings.h stdlib.h sys/socket.h)
 AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h)
@@ -190,9 +191,18 @@ AC_CHECK_FUNCS(pread _pread __pread pread64 _pread64 __pread64)
 AC_CHECK_FUNCS(pwrite _pwrite __pwrite pwrite64 _pwrite64 __pwrite64)
 AC_CHECK_FUNCS(open64 _open64 __open64 creat64)
 
+#
+# These next two checks are needed for DEC OSF1
+# but don't hurt anywhere else.
+#
 if test x"$ac_cv_func_putprpwnam" = x"no"; then
     AC_CHECK_LIB(security, putprpwnam, [LIBS="$LIBS -lsecurity";
       AC_DEFINE(HAVE_PUTPRPWNAM)])
+fi
+
+if test x"$ac_cv_func_set_auth_parameters" = x"no"; then
+    AC_CHECK_LIB(security, set_auth_parameters, [LIBS="$LIBS -lsecurity";
+      AC_DEFINE(HAVE_SET_AUTH_PARAMETERS)])
 fi
 
 # this bit needs to be modified for each OS that is suported by
@@ -402,26 +412,53 @@ if test x"$samba_cv_HAVE_IRIX_SPECIFIC_CAPABILITIES" = x"yes"; then
     AC_DEFINE(HAVE_IRIX_SPECIFIC_CAPABILITIES)
 fi
 
-AC_CACHE_CHECK([for broken int32 typedef included by rpc/rpc.h],samba_cv_HAVE_BROKEN_INT32_FROM_RPC_RPC_H,[
+#
+# Check for int16, uint16, int32 and uint32 in rpc/types.h included from rpc/rpc.h
+# This is *really* broken but some systems (DEC OSF1) do this.... JRA.
+#
+
+AC_CACHE_CHECK([for int16 typedef included by rpc/rpc.h],samba_cv_HAVE_INT16_FROM_RPC_RPC_H,[
 AC_TRY_COMPILE([#include <sys/types.h>
 #if defined(HAVE_RPC_RPC_H)
 #include <rpc/rpc.h>
 #endif],
-[#define int32 int],
-samba_cv_HAVE_BROKEN_INT32_FROM_RPC_RPC_H=yes,samba_cv_HAVE_BROKEN_INT32_FROM_RPC_RPC_H=no)])
-if test x"$samba_cv_HAVE_BROKEN_INT32_FROM_RPC_RPC_H" = x"yes"; then
-    AC_DEFINE(HAVE_BROKEN_INT32_FROM_RPC_RPC_H)
+[int16 testvar;],
+samba_cv_HAVE_INT16_FROM_RPC_RPC_H=yes,samba_cv_HAVE_INT16_FROM_RPC_RPC_H=no)])
+if test x"$samba_cv_HAVE_INT16_FROM_RPC_RPC_H" = x"yes"; then
+    AC_DEFINE(HAVE_INT16_FROM_RPC_RPC_H)
 fi
 
-AC_CACHE_CHECK([for broken uint32 typedef included by rpc/rpc.h],samba_cv_HAVE_BROKEN_UINT32_FROM_RPC_RPC_H,[
+AC_CACHE_CHECK([for uint16 typedef included by rpc/rpc.h],samba_cv_HAVE_UINT16_FROM_RPC_RPC_H,[
 AC_TRY_COMPILE([#include <sys/types.h>
 #if defined(HAVE_RPC_RPC_H)
 #include <rpc/rpc.h>
 #endif],
-[#define uint32 unsigned int],
-samba_cv_HAVE_BROKEN_UINT32_FROM_RPC_RPC_H=yes,samba_cv_HAVE_BROKEN_UINT32_FROM_RPC_RPC_H=no)])
-if test x"$samba_cv_HAVE_BROKEN_UINT32_FROM_RPC_RPC_H" = x"yes"; then
-    AC_DEFINE(HAVE_BROKEN_UINT32_FROM_RPC_RPC_H)
+[uint16 testvar;],
+samba_cv_HAVE_UINT16_FROM_RPC_RPC_H=yes,samba_cv_HAVE_UINT16_FROM_RPC_RPC_H=no)])
+if test x"$samba_cv_HAVE_UINT16_FROM_RPC_RPC_H" = x"yes"; then
+    AC_DEFINE(HAVE_UINT16_FROM_RPC_RPC_H)
+fi
+
+AC_CACHE_CHECK([for int32 typedef included by rpc/rpc.h],samba_cv_HAVE_INT32_FROM_RPC_RPC_H,[
+AC_TRY_COMPILE([#include <sys/types.h>
+#if defined(HAVE_RPC_RPC_H)
+#include <rpc/rpc.h>
+#endif],
+[int32 testvar;],
+samba_cv_HAVE_INT32_FROM_RPC_RPC_H=yes,samba_cv_HAVE_INT32_FROM_RPC_RPC_H=no)])
+if test x"$samba_cv_HAVE_INT32_FROM_RPC_RPC_H" = x"yes"; then
+    AC_DEFINE(HAVE_INT32_FROM_RPC_RPC_H)
+fi
+
+AC_CACHE_CHECK([for uint32 typedef included by rpc/rpc.h],samba_cv_HAVE_UINT32_FROM_RPC_RPC_H,[
+AC_TRY_COMPILE([#include <sys/types.h>
+#if defined(HAVE_RPC_RPC_H)
+#include <rpc/rpc.h>
+#endif],
+[uint32 testvar;],
+samba_cv_HAVE_UINT32_FROM_RPC_RPC_H=yes,samba_cv_HAVE_UINT32_FROM_RPC_RPC_H=no)])
+if test x"$samba_cv_HAVE_UINT32_FROM_RPC_RPC_H" = x"yes"; then
+    AC_DEFINE(HAVE_UINT32_FROM_RPC_RPC_H)
 fi
 
 AC_MSG_CHECKING([for test routines])
