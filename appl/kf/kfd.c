@@ -146,6 +146,7 @@ proto (int sock, const char *service)
     krb5_ccache ccache;
     char ccname[MAXPATHLEN];
     struct passwd *pwd;
+    ssize_t n;
 
     status = krb5_auth_con_init (context, &auth_context);
     if (status)
@@ -204,13 +205,19 @@ proto (int sock, const char *service)
     krb5_data_zero (&data);
     krb5_data_zero (&packet);
 
-    if (krb5_net_read (context, &sock, &net_len, 4) != 4)
-        syslog_and_die("krb5_net_read: %s",strerror(errno));
+    n = krb5_net_read (context, &sock, &net_len, 4);
+    if (n < 0)
+        syslog_and_die("krb5_net_read: %s", strerror(errno));
+    if (n == 0)
+        syslog_and_die("EOF in krb5_net_read");
 
     len = ntohl(net_len);
     krb5_data_alloc (&packet, len);
-    if (krb5_net_read (context, &sock, packet.data, len) != len)
-         syslog_and_die("krb5_net_read: %s",strerror(errno)); 
+    n = krb5_net_read (context, &sock, packet.data, len);
+    if (n < 0)
+        syslog_and_die("krb5_net_read: %s", strerror(errno));
+    if (n == 0)
+        syslog_and_die("EOF in krb5_net_read");
 
     status = krb5_rd_priv (context,
                            auth_context,
