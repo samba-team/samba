@@ -191,6 +191,8 @@ sAMAccountName: Administrator
 sAMAccountType: 0x30000000
 objectCategory: CN=Person,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
+unicodePwd: ${ADMINPASS}
+unixName: root
 
 dn: CN=Guest,CN=Users,${BASEDN}
 objectClass: top
@@ -247,6 +249,7 @@ systemFlags: 0x8c000000
 groupType: 0x80000005
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
+unixName: root
 
 dn: CN=Users,CN=Builtin,${BASEDN}
 objectClass: top
@@ -290,6 +293,7 @@ systemFlags: 0x8c000000
 groupType: 0x80000005
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
+unixName: nogroup
 
 dn: CN=Print Operators,CN=Builtin,${BASEDN}
 objectClass: top
@@ -562,6 +566,7 @@ sAMAccountType: 268435456
 groupType: -2147483646
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
+unixName: root
 
 dn: CN=Enterprise Admins,CN=Users,${BASEDN}
 objectClass: top
@@ -584,6 +589,7 @@ sAMAccountType: 268435456
 groupType: -2147483646
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
+unixName: root
 
 dn: CN=Cert Publishers,CN=Users,${BASEDN}
 objectClass: top
@@ -625,6 +631,7 @@ sAMAccountType: 268435456
 groupType: -2147483646
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
+unixName: root
 
 dn: CN=Domain Users,CN=Users,${BASEDN}
 objectClass: top
@@ -645,6 +652,7 @@ sAMAccountType: 268435456
 groupType: -2147483646
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
+unixName: users
 
 dn: CN=Domain Guests,CN=Users,${BASEDN}
 objectClass: top
@@ -685,6 +693,7 @@ sAMAccountType: 268435456
 groupType: -2147483646
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
+unixName: root
 
 dn: CN=RAS and IAS Servers,CN=Users,${BASEDN}
 objectClass: top
@@ -839,3 +848,4 @@ cn: TemplateGroup
 name: TemplateGroup
 instanceType: 4
 sAMAccountType: 0x10000000
+

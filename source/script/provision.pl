@@ -139,10 +139,11 @@ sub FileLoad($)
 
 #######################################################################
 # add a foreign security principle
-sub add_foreign($$)
+sub add_foreign($$$)
 {
 	my $sid = shift;
 	my $desc = shift;
+	my $unixname = shift;
 	return "
 dn: CN=$sid,CN=ForeignSecurityPrincipals,\${BASEDN}
 objectClass: top
@@ -160,6 +161,7 @@ name: $sid
 objectGUID: \${NEWGUID}
 objectSid: $sid
 objectCategory: CN=Foreign-Security-Principal,CN=Schema,CN=Configuration,\${BASEDN}
+unixName: $unixname
 
 ";
 }
@@ -209,9 +211,9 @@ $basedn = "DC=" . join(",DC=", split(/\./, $opt_realm));
 
 my $data = FileLoad("provision.ldif") || die "Unable to load provision.ldif\n";
 
-$data .= add_foreign("S-1-5-7", "Anonymous");
-$data .= add_foreign("S-1-5-18", "System");
-$data .= add_foreign("S-1-5-11", "Authenticated Users");
+$data .= add_foreign("S-1-5-7", "Anonymous", "nobody");
+$data .= add_foreign("S-1-5-18", "System", "root");
+$data .= add_foreign("S-1-5-11", "Authenticated Users", "users");
 
 if (!$opt_adminpass) {
 	$opt_adminpass = randpass();
