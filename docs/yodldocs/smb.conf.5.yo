@@ -669,6 +669,8 @@ it() link(bf(printcap name))(printcapname)
 
 it() link(bf(printer driver file))(printerdriverfile)
 
+it() link(bf(private dir))(privatedir)
+
 it() link(bf(protocol))(protocol)
 
 it() link(bf(read bmpx))(readbmpx)
@@ -4839,7 +4841,7 @@ this is not set, the default is :
 
 tt(SAMBA_INSTALL_DIRECTORY/lib/printers.def)
 
-This file is created from Windows 95 tt("msprint.def") files found on
+This file is created from Windows 95 tt("msprint.inf") files found on
 the Windows 95 client system. For more details on setting up serving
 of printer drivers to Windows 95 clients, see the documentation file
 in the docs/ directory, PRINTER_DRIVER.txt.
@@ -4903,6 +4905,22 @@ the various options use the url(bf("testparm"))(testparm.1.html) program.
 This option can be set on a per printer basis
 
 See also the discussion in the link(bf([printers]))(printers) section.
+
+label(privatedir)
+dit(bf(private dir(G)))
+
+The bf(private dir) parameter allows an administator to define a
+directory path used to hold the various databases Samba will use
+to store things like a the machine trust account information
+when acting as a domain member (i.e. where the secrets.tdb file will
+be located), where the passdb.tbd file will stored in the case
+of using the experiemental tdbsam support, etc...
+
+   bf(Default:)
+tt(	private dir = <compile time location of smbpasswd>)
+
+  bf(Example:)
+tt(	private dir = /etc/smbprivate)
 
 label(protocol)
 dit(bf(protocol (G)))

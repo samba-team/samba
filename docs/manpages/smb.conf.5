@@ -86,7 +86,7 @@ write access to the path \f(CW/home/bar\fP\&. The share is accessed via
 the share name "foo":
 .PP 
 
-.nf 
+.DS 
  
 
 
@@ -95,7 +95,7 @@ the share name "foo":
  		writeable = true
 
 
-.fi 
+.DE 
  
 
 .PP 
@@ -106,7 +106,7 @@ is via calls to open, write to and close a spool file\&. The
 as the default guest user (specified elsewhere):
 .PP 
 
-.nf 
+.DS 
  
 
  	[aprinter]
@@ -115,7 +115,7 @@ as the default guest user (specified elsewhere):
  		printable = true
  		guest ok = true
 
-.fi 
+.DE 
  
 
 .PP 
@@ -175,13 +175,13 @@ section can specify, though some make more sense than others\&. The
 following is a typical and suitable [homes] section:
 .IP 
 
-.nf 
+.DS 
  
 
  	[homes]
  		writeable = yes
 
-.fi 
+.DE 
  
 
 .IP 
@@ -237,7 +237,7 @@ directory with the sticky bit set on it\&. A typical \fB[printers]\fP entry
 would look like this:
 .IP 
 
-.nf 
+.DS 
  
 
  	[printers]
@@ -245,7 +245,7 @@ would look like this:
  		guest ok = yes
  		printable = yes 
 
-.fi 
+.DE 
  
 
 .IP 
@@ -256,10 +256,10 @@ pseudo-printcap\&. This is a file consisting of one or more lines like
 this:
 .IP 
 
-.nf 
+.DS 
  
         alias|alias|alias|alias\&.\&.\&.    
-.fi 
+.DE 
  
 
 .IP 
@@ -377,7 +377,7 @@ negotiation\&. It can be one of CORE, COREPLUS, LANMAN1, LANMAN2 or NT1\&.
 machine\&. Only some are recognized, and those may not be 100%
 reliable\&. It currently recognizes Samba, WfWg, WinNT and
 Win95\&. Anything else will be known as "UNKNOWN"\&. If it gets it wrong
-then sending a level 3 log to samba@samba\&.org
+then sending a level 3 log to \fIsamba@samba\&.org\fP
 should allow it to be fixed\&.
 .IP 
 .IP o 
@@ -775,6 +775,9 @@ parameter for details\&.  Note that some are synonyms\&.
 .IP 
 .IP o 
 \fBprinter driver file\fP
+.IP 
+.IP o 
+\fBprivate dir\fP
 .IP 
 .IP o 
 \fBprotocol\fP
@@ -1992,7 +1995,7 @@ interesting things\&.
 .IP 
 \fBExample:\fP
 
-.nf 
+.DS 
  
 
 	default service = pub
@@ -2000,7 +2003,7 @@ interesting things\&.
 	[pub]
 		path = /%S
 
-.fi 
+.DE 
  
 
 .IP 
@@ -2137,26 +2140,26 @@ and remaining space will be used\&.\fP
 Where the script dfree (which must be made executable) could be:
 .IP 
 
-.nf 
+.DS 
  
 
 	#!/bin/sh
 	df $1 | tail -1 | awk \'{print $2" "$4}\'
 
-.fi 
+.DE 
  
 
 .IP 
 or perhaps (on Sys V based systems):
 .IP 
 
-.nf 
+.DS 
  
 
 	#!/bin/sh
 	/usr/bin/df -k $1 | tail -1 | awk \'{print $3" "$5}\'
 
-.fi 
+.DE 
  
 
 .IP 
@@ -2795,13 +2798,13 @@ files"\fP and \fB"case sensitive"\fP\&.
 .IP 
 \fBDefault\fP
 
-.nf 
+.DS 
  
 
 	No files or directories are hidden by this option (dot files are
 	hidden by default because of the "hide dot files" option)\&.
 
-.fi 
+.DE 
  
 
 .IP 
@@ -4479,20 +4482,20 @@ debug"\fP\&.
 .IP 
 \fBExample:\fP 
 
-.nf 
+.DS 
  
  passwd chat = "*Enter OLD password*" %o\en "*Enter NEW password*" %n\en "*Reenter NEW password*" %n\en "*Password changed*"
 
-.fi 
+.DE 
  
 
 .IP 
 \fBDefault:\fP
 
-.nf 
+.DS 
  
        passwd chat = *old*password* %o\en *new*password* %n\en *new*password* %n\en *changed*
-.fi 
+.DE 
  
 
 .IP 
@@ -4744,12 +4747,12 @@ An interesting example is to send the users a welcome message every
 time they log in\&. Maybe a message of the day? Here is an example:
 .IP 
 
-.nf 
+.DS 
  
 
 	preexec = csh -c \'echo \e"Welcome to %S!\e" | /usr/local/samba/bin/smbclient -M %m -I %I\' &
 
-.fi 
+.DE 
  
 
 .IP 
@@ -4934,7 +4937,7 @@ to obtain a printer list\&.
 A minimal printcap file would look something like this:
 .IP 
 
-.nf 
+.DS 
  
 
 	print1|My Printer 1
@@ -4943,7 +4946,7 @@ A minimal printcap file would look something like this:
 	print4|My Printer 4
 	print5|My Printer 5
 
-.fi 
+.DE 
  
 
 .IP 
@@ -5003,7 +5006,7 @@ this is not set, the default is :
 .IP 
 \f(CWSAMBA_INSTALL_DIRECTORY/lib/printers\&.def\fP
 .IP 
-This file is created from Windows 95 \f(CW"msprint\&.def"\fP files found on
+This file is created from Windows 95 \f(CW"msprint\&.inf"\fP files found on
 the Windows 95 client system\&. For more details on setting up serving
 of printer drivers to Windows 95 clients, see the documentation file
 in the docs/ directory, PRINTER_DRIVER\&.txt\&.
@@ -5064,6 +5067,21 @@ the various options use the \fB"testparm"\fP program\&.
 This option can be set on a per printer basis
 .IP 
 See also the discussion in the \fB[printers]\fP section\&.
+.IP 
+.IP "\fBprivate dir(G)\fP" 
+.IP 
+The \fBprivate dir\fP parameter allows an administator to define a
+directory path used to hold the various databases Samba will use
+to store things like a the machine trust account information
+when acting as a domain member (i\&.e\&. where the secrets\&.tdb file will
+be located), where the passdb\&.tbd file will stored in the case
+of using the experiemental tdbsam support, etc\&.\&.\&.
+.IP 
+\fBDefault:\fP
+\f(CW	private dir = <compile time location of smbpasswd>\fP
+.IP 
+\fBExample:\fP
+\f(CW	private dir = /etc/smbprivate\fP
 .IP 
 .IP "\fBprotocol (G)\fP" 
 .IP 
@@ -5797,7 +5815,7 @@ You may find that on some systems Samba will say "Unknown socket
 option" when you supply an option\&. This means you either incorrectly 
 typed it or you need to add an include file to includes\&.h for your OS\&. 
 If the latter is the case please send the patch to
-samba@samba\&.org\&.
+\fIsamba@samba\&.org\fP\&.
 .IP 
 Any of the supported socket options may be combined in any way you
 like, as long as your OS allows it\&.
@@ -6464,13 +6482,13 @@ information on how this parameter determines access to the services\&.
 .IP 
 \fBExamples:\fP
 
-.nf 
+.DS 
  
 
  	username = fred
  	username = fred, mary, jack, jane, @users, @pcgroup
 
-.fi 
+.DE 
  
 
 .IP 
@@ -6554,13 +6572,13 @@ and map the rest to guest\&. Note the use of the \f(CW\'!\'\fP to tell Samba
 to stop processing if it gets a match on that line\&.
 .IP 
 
-.nf 
+.DS 
  
 
 	!sys = mary fred
 	guest = *
 
-.fi 
+.DE 
  
 
 .IP 
@@ -6676,14 +6694,14 @@ is a pointless thing to do as it\'s already there) you could do one of
 the following
 .IP 
 
-.nf 
+.DS 
  
 
 	valid chars = Z
 	valid chars = z:Z
 	valid chars = 0132:0172
 
-.fi 
+.DE 
  
 
 .IP 
@@ -6700,13 +6718,13 @@ See also the \fB"client code page"\fP parameter\&.
 .IP 
 \fBDefault:\fP
 
-.nf 
+.DS 
  
 
 	Samba defaults to using a reasonable set of valid characters
 	for English systems
 
-.fi 
+.DE 
  
 
 .IP 
@@ -6718,7 +6736,7 @@ them\&.
 .IP 
 NOTE: It is actually quite difficult to correctly produce a \fB"valid
 chars"\fP line for a particular system\&. To automate the process
-tino@augsburg\&.net has written a package called \fB"validchars"\fP
+\fItino@augsburg\&.net\fP has written a package called \fB"validchars"\fP
 which will automatically produce a complete \fB"valid chars"\fP line for
 a given client system\&. Look in the examples/validchars/ subdirectory
 of your Samba source code distribution for this package\&.
@@ -6782,7 +6800,7 @@ sensitive"\fP\&.
 Example 1\&.
 .IP 
 
-.nf 
+.DS 
  
 
 
@@ -6792,14 +6810,14 @@ Example 1\&.
 
 	veto files = /*Security*/*\&.tmp/*root*/
 
-.fi 
+.DE 
  
 
 .IP 
 Example 2\&.
 .IP 
 
-.nf 
+.DS 
  
 
     Veto the Apple specific files that a NetAtalk server
@@ -6807,7 +6825,7 @@ Example 2\&.
 
     veto files = /\&.AppleDouble/\&.bin/\&.AppleDesktop/Network Trash Folder/
 
-.fi 
+.DE 
  
 
 .IP 
@@ -7027,14 +7045,14 @@ permitting), but only via spooling operations\&.
 .IP 
 \fBExamples:\fP
 
-.nf 
+.DS 
  
 
  	read only = no
  	writeable = yes
  	write ok = yes
 
-.fi 
+.DE 
  
 
 .IP 
@@ -7073,7 +7091,7 @@ This man page is correct for version 2\&.0 of the Samba suite\&.
 .SH "AUTHOR" 
 .PP 
 The original Samba software and related utilities were created by
-Andrew Tridgell samba@samba\&.org\&. Samba is now developed
+Andrew Tridgell \fIsamba@samba\&.org\fP\&. Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed\&.
 .PP 
@@ -7082,7 +7100,7 @@ sources were converted to YODL format (another excellent piece of Open
 Source software, available at
 \fBftp://ftp\&.icce\&.rug\&.nl/pub/unix/\fP)
 and updated for the Samba2\&.0 release by Jeremy Allison\&.
-samba@samba\&.org\&.
+\fIsamba@samba\&.org\fP\&.
 .PP 
 See \fBsamba (7)\fP to find out how to get a full
 list of contributors and details on how to submit bug reports,
