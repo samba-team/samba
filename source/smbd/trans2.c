@@ -261,9 +261,11 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
   }
 
   /* Realloc the size of parameters and data we will return */
-  params = *pparams = Realloc(*pparams, 28);
-  if(params == NULL)
+  params	= Realloc(*pparams, 28);
+  if( params == NULL ) {
     return(ERROR(ERRDOS,ERRnomem));
+  }
+  *pparams	= params;
 
   memset((char *)params,'\0',28);
   SSVAL(params,0,fsp->fnum);
@@ -715,15 +717,19 @@ static int call_trans2findfirst(connection_struct *conn,
 
   DEBUG(5,("dir=%s, mask = %s\n",directory, mask));
 
-  pdata = *ppdata = Realloc(*ppdata, max_data_bytes + 1024);
-  if(!*ppdata)
+  pdata	= Realloc(*ppdata, max_data_bytes + 1024);
+  if( pdata == NULL ) {
     return(ERROR(ERRDOS,ERRnomem));
+  }
+  *ppdata	= pdata;
   memset((char *)pdata,'\0',max_data_bytes + 1024);
 
   /* Realloc the params space */
-  params = *pparams = Realloc(*pparams, 10);
-  if(params == NULL)
+  params = Realloc(*pparams, 10);
+  if( params == NULL ) {
     return(ERROR(ERRDOS,ERRnomem));
+  }
+  *pparams	= params;
 
   dptr_num = dptr_create(conn,directory, False, True ,SVAL(inbuf,smb_pid));
   if (dptr_num < 0)
@@ -904,15 +910,19 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
       return(ERROR(ERRDOS,ERRunknownlevel));
     }
 
-  pdata = *ppdata = Realloc( *ppdata, max_data_bytes + 1024);
-  if(!*ppdata)
+  pdata = Realloc( *ppdata, max_data_bytes + 1024);
+  if(pdata == NULL) {
     return(ERROR(ERRDOS,ERRnomem));
+  }
+  *ppdata	= pdata;
   memset((char *)pdata,'\0',max_data_bytes + 1024);
 
   /* Realloc the params space */
-  params = *pparams = Realloc(*pparams, 6*SIZEOFWORD);
-  if(!params)
+  params = Realloc(*pparams, 6*SIZEOFWORD);
+  if( params == NULL ) {
     return(ERROR(ERRDOS,ERRnomem));
+  }
+  *pparams	= params;
 
   /* Check that the dptr is valid */
   if(!(conn->dirptr = dptr_fetch_lanman2(dptr_num)))
@@ -1114,7 +1124,11 @@ static int call_trans2qfsinfo(connection_struct *conn,
     return (ERROR(ERRSRV,ERRinvdevice));
   }
 
-  pdata = *ppdata = Realloc(*ppdata, max_data_bytes + 1024);
+  pdata = Realloc(*ppdata, max_data_bytes + 1024);
+  if ( pdata == NULL ) {
+    return(ERROR(ERRDOS,ERRnomem));
+  }
+  *ppdata	= pdata;
   memset((char *)pdata,'\0',max_data_bytes + 1024);
 
   switch (info_level) 
@@ -1375,10 +1389,18 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
   /* from now on we only want the part after the / */
   fname = p;
   
-  params = *pparams = Realloc(*pparams,2);
+  params = Realloc(*pparams,2);
+  if ( params == NULL ) {
+    return(ERROR(ERRDOS,ERRnomem));
+  }
+  *pparams	= params;
   memset((char *)params,'\0',2);
   data_size = max_data_bytes + 1024;
-  pdata = *ppdata = Realloc(*ppdata, data_size); 
+  pdata = Realloc(*ppdata, data_size); 
+  if ( pdata == NULL ) {
+    return(ERROR(ERRDOS,ERRnomem));
+  }
+  *ppdata	= pdata;
 
   if (total_data > 0 && IVAL(pdata,0) == total_data) {
     /* uggh, EAs for OS2 */
@@ -1641,9 +1663,11 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 	   tran_call,fname,info_level,total_data));
 
   /* Realloc the parameter and data sizes */
-  params = *pparams = Realloc(*pparams,2);
-  if(params == NULL)
+  params = Realloc(*pparams,2);
+  if(params == NULL) {
     return(ERROR(ERRDOS,ERRnomem));
+  }
+  *pparams	= params;
 
   SSVAL(params,0,0);
 
@@ -2041,9 +2065,11 @@ static int call_trans2mkdir(connection_struct *conn,
     }
 
   /* Realloc the parameter and data sizes */
-  params = *pparams = Realloc(*pparams,2);
-  if(params == NULL)
+  params = Realloc(*pparams,2);
+  if(params == NULL) {
     return(ERROR(ERRDOS,ERRnomem));
+  }
+  *pparams	= params;
 
   SSVAL(params,0,0);
 
@@ -2077,9 +2103,11 @@ static int call_trans2findnotifyfirst(connection_struct *conn,
     }
 
   /* Realloc the parameter and data sizes */
-  params = *pparams = Realloc(*pparams,6);
-  if(params == NULL)
+  params = Realloc(*pparams,6);
+  if(params == NULL) {
     return(ERROR(ERRDOS,ERRnomem));
+  }
+  *pparams	= params;
 
   SSVAL(params,0,fnf_handle);
   SSVAL(params,2,0); /* No changes */
@@ -2109,9 +2137,11 @@ static int call_trans2findnotifynext(connection_struct *conn,
   DEBUG(3,("call_trans2findnotifynext\n"));
 
   /* Realloc the parameter and data sizes */
-  params = *pparams = Realloc(*pparams,4);
-  if(params == NULL)
+  params = Realloc(*pparams,4);
+  if(params == NULL) {
     return(ERROR(ERRDOS,ERRnomem));
+  }
+  *pparams	= params;
 
   SSVAL(params,0,0); /* No changes */
   SSVAL(params,2,0); /* No EA errors */

@@ -115,7 +115,12 @@ int reply_special(char *inbuf,char *outbuf)
 			break;
 		}
 
-		add_session_user(remote_machine);
+		/* only add the client's machine name to the list
+		   of possibly valid usernames if we are operating
+		   in share mode security */
+		if (lp_security() == SEC_SHARE) {
+			add_session_user(remote_machine);
+		}
 
 		reload_services(True);
 		reopen_logs();
