@@ -262,7 +262,7 @@ static BOOL net_reply_sam_logoff(NET_Q_SAM_LOGOFF *q_s, prs_struct *rdata,
  gets a machine password entry.  checks access rights of the host.
  ******************************************************************/
 
-static BOOL get_md4pw(char *md4pw, char *mach_name, char *mach_acct)
+static BOOL get_md4pw(char *md4pw, char *mach_acct)
 {
 	struct smb_passwd *smb_pass;
 
@@ -313,7 +313,6 @@ static BOOL api_net_req_chal(pipes_struct *p)
 	prs_struct *rdata = &p->out_data.rdata;
 
 	fstring mach_acct;
-	fstring mach_name;
 
 	user_struct *vuser;
 
@@ -331,12 +330,11 @@ static BOOL api_net_req_chal(pipes_struct *p)
 	fstrcpy(mach_acct, dos_unistrn2(q_r.uni_logon_clnt.buffer,
 	                            q_r.uni_logon_clnt.uni_str_len));
 
-	fstrcpy(mach_name, mach_acct);
-	strlower(mach_name);
+	strlower(mach_acct);
 
 	fstrcat(mach_acct, "$");
 
-	if (get_md4pw((char *)vuser->dc.md4pw, mach_name, mach_acct)) {
+	if (get_md4pw((char *)vuser->dc.md4pw, mach_acct)) {
 		/* copy the client credentials */
 		memcpy(vuser->dc.clnt_chal.data          , q_r.clnt_chal.data, sizeof(q_r.clnt_chal.data));
 		memcpy(vuser->dc.clnt_cred.challenge.data, q_r.clnt_chal.data, sizeof(q_r.clnt_chal.data));

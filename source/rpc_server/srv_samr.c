@@ -1859,8 +1859,7 @@ static BOOL _api_samr_create_user(POLICY_HND dom_pol, UNISTR2 user_account, uint
 	become_root();
 	sam_pass = getsam21pwnam(mach_acct);
 	unbecome_root();
-	if (sam_pass != NULL) 
-	{
+	if (sam_pass != NULL) {
 		/* machine account exists: say so */
 		return NT_STATUS_USER_EXISTS;
 	}
@@ -1881,7 +1880,11 @@ static BOOL _api_samr_create_user(POLICY_HND dom_pol, UNISTR2 user_account, uint
 
 	/* add the user in the /etc/passwd file or the unix authority system */
 	if (lp_adduser_script())
-		smb_create_user(mach_acct,NULL);
+		if(smb_create_user(mach_acct, NULL) != 0) {
+			DEBUG(0,("Could not create the unix account\n"));
+			close_lsa_policy_hnd(user_pol);
+			return NT_STATUS_ACCESS_DENIED;
+		}
 
 	/* add the user in the smbpasswd file or the Samba authority database */
 	if (!local_password_change(mach_acct, local_flags, NULL, err_str, 
@@ -2357,10 +2360,18 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 	new_pwd.smb_passwd = lm_hash;
 	new_pwd.smb_nt_passwd = nt_hash;
 
-	/* update the UNIX password */
-	if (lp_unix_password_sync())
-		if(!chgpasswd(new_pwd.smb_name, "", buf, True))
-			return False;
+	/* if it's a trust account, don't update /etc/passwd */
+	if ( ( (new_pwd.acct_ctrl &  ACB_DOMTRUST) == ACB_DOMTRUST ) ||
+	     ( (new_pwd.acct_ctrl &  ACB_WSTRUST) ==  ACB_WSTRUST) ||
+	     ( (new_pwd.acct_ctrl &  ACB_SVRTRUST) ==  ACB_SVRTRUST) ) {
+	     DEBUG(5, ("Changing trust account password, not updating /etc/passwd\n"));
+	} else {
+
+		/* update the UNIX password */
+		if (lp_unix_password_sync() )
+			if(!chgpasswd(new_pwd.smb_name, "", buf, True))
+				return False;
+	}
 
 	memset(buf, 0, sizeof(buf));
 
@@ -2393,21 +2404,29 @@ static BOOL set_user_info_24(const SAM_USER_INFO_24 *id24, uint32 rid)
 	if (!decode_pw_buffer((char*)id24->pass, buf, 256, &len))
 		return False;
 
-	DEBUG(0,("set_user_info_24:nt_lm_owf_gen\n"));
+	DEBUG(5,("set_user_info_24:nt_lm_owf_gen\n"));
 
 	nt_lm_owf_gen(buf, nt_hash, lm_hash);
 
 	new_pwd.smb_passwd = lm_hash;
 	new_pwd.smb_nt_passwd = nt_hash;
+	
+	/* if it's a trust account, don't update /etc/passwd */
+	if ( ( (new_pwd.acct_ctrl &  ACB_DOMTRUST) == ACB_DOMTRUST ) ||
+	     ( (new_pwd.acct_ctrl &  ACB_WSTRUST) ==  ACB_WSTRUST) ||
+	     ( (new_pwd.acct_ctrl &  ACB_SVRTRUST) ==  ACB_SVRTRUST) ) {
+	     DEBUG(5, ("Changing trust account password, not updating /etc/passwd\n"));
+	} else {
 
-	/* update the UNIX password */
-	if (lp_unix_password_sync())
-		if(!chgpasswd(new_pwd.smb_name, "", buf, True))
-			return False;
-
+		/* update the UNIX password */
+		if (lp_unix_password_sync() )
+			if(!chgpasswd(new_pwd.smb_name, "", buf, True))
+				return False;
+	}
+	
 	memset(buf, 0, sizeof(buf));
 	
-	DEBUG(0,("set_user_info_24: pdb_update_sam_account()\n"));
+	DEBUG(5,("set_user_info_24: pdb_update_sam_account()\n"));
 
 	/* update the SAMBA password */
 	if(!mod_sam21pwd_entry(&new_pwd, True))
