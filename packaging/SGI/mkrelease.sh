@@ -65,15 +65,7 @@ fi
 echo Making binaries
 
 make clean
-make "CFLAGS=-O -g3 QUOTAOBJS=smbd/noquotas.o -D WITH_PROFILE" CHECK bin/smbd
-errstat=$?
-if [ $errstat -ne 0 ]; then
-  echo "Error $errstat building profile sources\n";
-  exit $errstat;
-fi
-mv  bin/smbd bin/smbd.noquota
-make clean
-make "CFLAGS=-O -g3 -D WITH_PROFILE" CHECK bin/smbd bin/nmbd
+make -P "CFLAGS=-O -g3 -D WITH_PROFILE" CHECK bin/smbd bin/nmbd
 errstat=$?
 if [ $errstat -ne 0 ]; then
   echo "Error $errstat building profile sources\n";
@@ -81,8 +73,17 @@ if [ $errstat -ne 0 ]; then
 fi
 mv  bin/smbd bin/smbd.profile
 mv  bin/nmbd bin/nmbd.profile
+
 make clean
-make "CFLAGS=-O -g3" all
+make -P "CFLAGS=-O -g3 -D QUOTAOBJS=smbd/noquotas.o" CHECK bin/smbd
+errstat=$?
+if [ $errstat -ne 0 ]; then
+  echo "Error $errstat building noquota sources\n";
+  exit $errstat;
+fi
+mv  bin/smbd bin/smbd.noquota
+
+make -P "CFLAGS=-O -g3" all
 errstat=$?
 if [ $errstat -ne 0 ]; then
   echo "Error $errstat building sources\n";
