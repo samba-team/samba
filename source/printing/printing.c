@@ -943,11 +943,11 @@ BOOL print_notify_register_pid(int snum)
 	if (snum == -1)
 	{
 		int num_services = lp_numservices();
-		int i;
+		int idx;
 
-		for ( i=0; i<num_services; i++ ) {
-			if (lp_snum_ok(i) && lp_print_ok(i) )
-				print_notify_register_pid(i);
+		for ( idx=0; idx<num_services; idx++ ) {
+			if (lp_snum_ok(idx) && lp_print_ok(idx) )
+				print_notify_register_pid(idx);
 		}
 
 		return True;
@@ -1033,11 +1033,11 @@ BOOL print_notify_deregister_pid(int snum)
 	if (snum == -1)
 	{
 		int num_services = lp_numservices();
-		int i;
+		int idx;
 
-		for ( i=0; i<num_services; i++ ) {
-			if ( lp_snum_ok(snum) && lp_print_ok(snum) )
-				print_notify_deregister_pid(i);
+		for ( idx=0; idx<num_services; idx++ ) {
+			if ( lp_snum_ok(idx) && lp_print_ok(idx) )
+				print_notify_deregister_pid(idx);
 		}
 
 		return True;
