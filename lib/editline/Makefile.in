@@ -70,9 +70,9 @@ dist: $(DISTFILES)
 	    || cp -p $$file ../`cat ../.fname`/lib; \
 	done
 
-$(LIBNAME).a: $(OBJECTS) @AFS_EXTRA_OBJS@
+$(LIBNAME).a: $(OBJECTS)
 	rm -f $@
-	$(AR) cr $@ $(OBJECTS) @AFS_EXTRA_OBJS@
+	$(AR) cr $@ $(OBJECTS)
 	-$(RANLIB) $@
 
 
