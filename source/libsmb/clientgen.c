@@ -352,8 +352,10 @@ BOOL cli_session_setup(struct cli_state *cli,
 	}
 
 	if ((cli->sec_mode & 2) && *pass && passlen != 24) {
+#ifdef SMB_PASSWD
 		passlen = 24;
 		SMBencrypt((uchar *)pass,(uchar *)cli->cryptkey,(uchar *)pword);
+#endif
 	} else {
 		memcpy(pword, pass, passlen);
 	}
