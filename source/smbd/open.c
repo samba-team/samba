@@ -551,7 +551,7 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
 dev = %x, inode = %.0f. Deleting it to continue...\n", (int)broken_entry.pid, fname, (unsigned int)dev, (double)inode));
 					
 					if (process_exists(broken_entry.pid)) {
-						DEBUG(0,("open_mode_check: Existant process %d left active oplock.\n",
+						DEBUG(0,("open_mode_check: Existent process %d left active oplock.\n",
 							 broken_entry.pid ));
 					}
 					
