@@ -115,8 +115,11 @@ const char **gensec_security_oids(TALLOC_CTX *mem_ctx, const char *skip)
 	return oid_list;
 }
 
-/*
-  note that memory context is the parent context to hang this gensec context off. It may be NULL.
+/**
+  Start the GENSEC system, returning a context pointer.
+  @param mem_ctx The parent TALLOC memory context.
+  @param gensec_security Returned GENSEC context pointer.
+  @note  The mem_ctx is only a parent and may be NULL.
 */
 static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx, struct gensec_security **gensec_security) 
 {
@@ -142,7 +145,9 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx, struct gensec_security **gense
 
 /** 
  * Start a GENSEC subcontext, with a copy of the properties of the parent
- *
+ * @param mem_ctx The parent TALLOC memory context.
+ * @param parent The parent GENSEC context 
+ * @param gensec_security Returned GENSEC context pointer.
  * @note Used by SPENGO in particular, for the actual implementation mechanism
  */
 
@@ -164,6 +169,12 @@ NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+/**
+  Start the GENSEC system, in client mode, returning a context pointer.
+  @param mem_ctx The parent TALLOC memory context.
+  @param gensec_security Returned GENSEC context pointer.
+  @note  The mem_ctx is only a parent and may be NULL.
+*/
 NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx, struct gensec_security **gensec_security)
 {
 	NTSTATUS status;
@@ -179,6 +190,12 @@ NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx, struct gensec_security **gense
 	return status;
 }
 
+/**
+  Start the GENSEC system, in server mode, returning a context pointer.
+  @param mem_ctx The parent TALLOC memory context.
+  @param gensec_security Returned GENSEC context pointer.
+  @note  The mem_ctx is only a parent and may be NULL.
+*/
 NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx, struct gensec_security **gensec_security)
 {
 	NTSTATUS status;
@@ -222,6 +239,9 @@ static NTSTATUS gensec_start_mech(struct gensec_security *gensec_security)
 
 /** 
  * Start a GENSEC sub-mechanism by DCERPC allocated 'auth type' number 
+ * @param gensec_security GENSEC context pointer.
+ * @param auth_type DCERPC auth type
+ * @param auth_level DCERPC auth level 
  */
 
 NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_security, 
