@@ -128,7 +128,11 @@ int ldb_should_b64_encode(const struct ldb_val *val)
 	unsigned int i;
 	uint8_t *p = val->data;
 
-	if (val->length == 0 || p[0] == ' ' || p[0] == ':') {
+	if (val->length == 0) {
+		return 0;
+	}
+
+	if (p[0] == ' ' || p[0] == ':') {
 		return 1;
 	}
 
@@ -377,7 +381,7 @@ static int next_attr(char **s, const char **attr, struct ldb_val *value)
 
 	*attr = *s;
 
-	while (isspace(*p)) {
+	while (*p == ' ' || *p == '\t') {
 		p++;
 	}
 
