@@ -210,7 +210,7 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
   handle fd events on a nbt_name_socket
 */
 static void nbt_name_socket_handler(struct event_context *ev, struct fd_event *fde,
-				    struct timeval t, uint16_t flags, void *private)
+				    uint16_t flags, void *private)
 {
 	struct nbt_name_socket *nbtsock = talloc_get_type(private, 
 							  struct nbt_name_socket);

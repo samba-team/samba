@@ -61,17 +61,17 @@ void stream_terminate_connection(struct stream_connection *srv_conn, const char 
   the select loop has indicated that a stream is ready for IO
 */
 static void stream_io_handler(struct event_context *ev, struct fd_event *fde, 
-			      struct timeval t, uint16_t flags, void *private)
+			      uint16_t flags, void *private)
 {
 	struct stream_connection *conn = talloc_get_type(private, 
 							 struct stream_connection);
 	if (flags & EVENT_FD_WRITE) {
-		conn->ops->send_handler(conn, t, flags);
+		conn->ops->send_handler(conn, flags);
 		return;
 	}
 
 	if (flags & EVENT_FD_READ) {
-		conn->ops->recv_handler(conn, t, flags);
+		conn->ops->recv_handler(conn, flags);
 	}
 }
 
@@ -126,7 +126,7 @@ static void stream_new_connection(struct event_context *ev,
   called when someone opens a connection to one of our listening ports
 */
 static void stream_accept_handler(struct event_context *ev, struct fd_event *fde, 
-				  struct timeval t, uint16_t flags, void *private)
+				  uint16_t flags, void *private)
 {
 	struct stream_socket *stream_socket = talloc_get_type(private, struct stream_socket);
 

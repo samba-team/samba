@@ -73,7 +73,7 @@ static NTSTATUS smbcli_sock_connect_one(struct smbcli_socket *sock,
   has either completed the connect() or has returned an error
 */
 static void smbcli_sock_connect_handler(struct event_context *ev, struct fd_event *fde, 
-					struct timeval t, uint16_t flags, void *private)
+					uint16_t flags, void *private)
 {
 	struct composite_context *c = talloc_get_type(private, struct composite_context);
 	struct clisocket_connect *conn = talloc_get_type(c->private, struct clisocket_connect);

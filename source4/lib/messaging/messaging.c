@@ -122,7 +122,7 @@ static void messaging_dispatch(struct messaging_context *msg, struct messaging_r
   handle IO for a single message
 */
 static void messaging_recv_handler(struct event_context *ev, struct fd_event *fde, 
-				   struct timeval t, uint16_t flags, void *private)
+				   uint16_t flags, void *private)
 {
 	struct messaging_rec *rec = talloc_get_type(private, struct messaging_rec);
 	struct messaging_context *msg = rec->msg;
@@ -192,7 +192,7 @@ static void messaging_recv_handler(struct event_context *ev, struct fd_event *fd
   handle a new incoming connection
 */
 static void messaging_listen_handler(struct event_context *ev, struct fd_event *fde, 
-				     struct timeval t, uint16_t flags, void *private)
+				     uint16_t flags, void *private)
 {
 	struct messaging_context *msg = talloc_get_type(private, 
 							struct messaging_context);
@@ -257,7 +257,7 @@ void messaging_deregister(struct messaging_context *msg, uint32_t msg_type, void
   handle IO for sending a message
 */
 static void messaging_send_handler(struct event_context *ev, struct fd_event *fde, 
-				   struct timeval t, uint16_t flags, void *private)
+				   uint16_t flags, void *private)
 {
 	struct messaging_rec *rec = talloc_get_type(private, struct messaging_rec);
 	NTSTATUS status;

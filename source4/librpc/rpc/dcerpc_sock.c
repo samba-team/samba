@@ -192,7 +192,7 @@ static void sock_process_recv(struct dcerpc_connection *p)
   called when a IO is triggered by the events system
 */
 static void sock_io_handler(struct event_context *ev, struct fd_event *fde, 
-			    struct timeval t, uint16_t flags, void *private)
+			    uint16_t flags, void *private)
 {
 	struct dcerpc_connection *p = talloc_get_type(private, struct dcerpc_connection);
 	struct sock_private *sock = p->transport.private;

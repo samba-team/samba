@@ -26,7 +26,7 @@ struct timed_event;
 
 /* event handler types */
 typedef void (*event_fd_handler_t)(struct event_context *, struct fd_event *, 
-				   struct timeval , uint16_t , void *);
+				   uint16_t , void *);
 typedef void (*event_timed_handler_t)(struct event_context *, struct timed_event *, 
 				      struct timeval , void *);
 

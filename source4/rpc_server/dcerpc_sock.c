@@ -78,7 +78,7 @@ void dcesrv_sock_accept(struct stream_connection *srv_conn)
 	return;	
 }
 
-void dcesrv_sock_recv(struct stream_connection *conn, struct timeval t, uint16_t flags)
+void dcesrv_sock_recv(struct stream_connection *conn, uint16_t flags)
 {
 	NTSTATUS status;
 	struct dcesrv_connection *dce_conn = talloc_get_type(conn->private, struct dcesrv_connection);
@@ -116,7 +116,7 @@ void dcesrv_sock_recv(struct stream_connection *conn, struct timeval t, uint16_t
 	}
 }
 
-void dcesrv_sock_send(struct stream_connection *conn, struct timeval t, uint16_t flags)
+void dcesrv_sock_send(struct stream_connection *conn, uint16_t flags)
 {
 	struct dcesrv_connection *dce_conn = talloc_get_type(conn->private, struct dcesrv_connection);
 	NTSTATUS status;
