@@ -1,3 +1,7 @@
+Wed Jul 22 21:38:35 1998  Assar Westerlund  <assar@sics.se>
+
+	* simple_exec.c (simple_execlp): initialize `argv'
+
 Fri Jul 10 01:20:08 1998  Assar Westerlund  <assar@sics.se>
 
 	* roken.h.in (net_write, net_read): add prototypes
