@@ -710,6 +710,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 				unsigned int max_data_bytes)
 {
 	char *params = *pparams;
+	char *pdata = *ppdata;
 	int16 open_mode;
 	int16 open_attr;
 	BOOL oplock_request;
@@ -729,6 +730,8 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	int smb_action = 0;
 	BOOL bad_path = False;
 	files_struct *fsp;
+	TALLOC_CTX *ctx = NULL;
+	struct ea_list *ea_list = NULL;
 	NTSTATUS status;
 
 	/*
@@ -759,7 +762,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 		return ERROR_NT(status);
 	}
 
-	DEBUG(3,("trans2open %s mode=%d attr=%d ofun=%d size=%d\n",
+	DEBUG(3,("call_trans2open %s mode=%d attr=%d ofun=%d size=%d\n",
 		fname,open_mode, open_attr, open_ofun, open_size));
 
 	/* XXXX we need to handle passed times, sattr and flags */
@@ -773,10 +776,38 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 	}
 
+	/* Any data in this call is an EA list. */
+	if (total_data && !lp_ea_support(SNUM(conn))) {
+		return ERROR_NT(NT_STATUS_EAS_NOT_SUPPORTED);
+	}
+
+	if (total_data) {
+		if (total_data < 10) {
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+
+		if (IVAL(pdata,0) > total_data) {
+			DEBUG(10,("call_trans2open: bad total data size (%u) > %u\n",
+				IVAL(pdata,0), (unsigned int)total_data));
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+
+		ctx = talloc_init("TRANS2_OPEN_SET_EA");
+		if (!ctx) {
+			return ERROR_NT(NT_STATUS_NO_MEMORY);
+		}
+		ea_list = read_ea_list(ctx, pdata + 4, total_data - 4);
+		if (!ea_list) {
+			talloc_destroy(ctx);
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+	}
+
 	fsp = open_file_shared(conn,fname,&sbuf,open_mode,open_ofun,(uint32)open_attr,
 		oplock_request, &rmode,&smb_action);
       
 	if (!fsp) {
+		talloc_destroy(ctx);
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */
 			clear_cached_errors();
@@ -790,8 +821,18 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	mtime = sbuf.st_mtime;
 	inode = sbuf.st_ino;
 	if (fmode & aDIR) {
+		talloc_destroy(ctx);
 		close_file(fsp,False);
 		return(ERROR_DOS(ERRDOS,ERRnoaccess));
+	}
+
+	if (total_data && smb_action == FILE_WAS_CREATED) {
+		status = set_ea(conn, fsp, fname, ea_list);
+		talloc_destroy(ctx);
+		if (!NT_STATUS_IS_OK(status)) {
+			close_file(fsp,False);
+			return ERROR_NT(status);
+		}
 	}
 
 	/* Realloc the size of parameters and data we will return */
@@ -3670,7 +3711,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			status = set_ea(conn, fsp, fname, ea_list);
 			talloc_destroy(ctx);
 
-			if (NT_STATUS_V(status) !=  NT_STATUS_V(NT_STATUS_OK)) {
+			if (!NT_STATUS_IS_OK(status)) {
 				return ERROR_NT(status);
 			}
 			break;
@@ -3853,13 +3894,15 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 			status = set_delete_on_close_internal(fsp, delete_on_close, dosmode);
  
-			if (NT_STATUS_V(status) !=  NT_STATUS_V(NT_STATUS_OK))
+			if (!NT_STATUS_IS_OK(status)) {
 				return ERROR_NT(status);
+			}
 
 			/* The set is across all open files on this dev/inode pair. */
 			status =set_delete_on_close_over_all(fsp, delete_on_close);
-			if (NT_STATUS_V(status) !=  NT_STATUS_V(NT_STATUS_OK))
+			if (!NT_STATUS_IS_OK(status)) {
 				return ERROR_NT(status);
+			}
 
 			break;
 		}
@@ -4371,11 +4414,14 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 					unsigned int max_data_bytes)
 {
 	char *params = *pparams;
+	char *pdata = *ppdata;
 	pstring directory;
 	int ret = -1;
 	SMB_STRUCT_STAT sbuf;
 	BOOL bad_path = False;
 	NTSTATUS status = NT_STATUS_OK;
+	TALLOC_CTX *ctx = NULL;
+	struct ea_list *ea_list = NULL;
 
 	if (!CAN_WRITE(conn))
 		return ERROR_DOS(ERRSRV,ERRaccess);
@@ -4395,12 +4441,51 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 	if (bad_path) {
 		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
 	}
-	if (check_name(directory,conn))
+
+	/* Any data in this call is an EA list. */
+	if (total_data && !lp_ea_support(SNUM(conn))) {
+		return ERROR_NT(NT_STATUS_EAS_NOT_SUPPORTED);
+	}
+
+	if (total_data) {
+		if (total_data < 10) {
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+
+		if (IVAL(pdata,0) > total_data) {
+			DEBUG(10,("call_trans2mkdir: bad total data size (%u) > %u\n",
+				IVAL(pdata,0), (unsigned int)total_data));
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+
+		ctx = talloc_init("TRANS2_MKDIR_SET_EA");
+		if (!ctx) {
+			return ERROR_NT(NT_STATUS_NO_MEMORY);
+		}
+		ea_list = read_ea_list(ctx, pdata + 4, total_data - 4);
+		if (!ea_list) {
+			talloc_destroy(ctx);
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+	}
+
+	if (check_name(directory,conn)) {
 		ret = vfs_MkDir(conn,directory,unix_mode(conn,aDIR,directory,True));
+	}
   
 	if(ret < 0) {
+		talloc_destroy(ctx);
 		DEBUG(5,("call_trans2mkdir error (%s)\n", strerror(errno)));
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
+	}
+
+	/* Try and set any given EA. */
+	if (total_data) {
+		status = set_ea(conn, NULL, directory, ea_list);
+		talloc_destroy(ctx);
+		if (!NT_STATUS_IS_OK(status)) {
+			return ERROR_NT(status);
+		}
 	}
 
 	/* Realloc the parameter and data sizes */
