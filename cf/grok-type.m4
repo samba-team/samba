@@ -3,6 +3,9 @@ dnl
 AC_DEFUN(AC_GROK_TYPE, [
 AC_CACHE_VAL(ac_cv_type_$1, 
 AC_TRY_COMPILE([
+#ifdef HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
