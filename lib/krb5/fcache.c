@@ -49,18 +49,23 @@ typedef struct krb5_fcache{
     int version;
 }krb5_fcache;
 
-#define KRB5_FCC_FVNO_1 0x501
-#define KRB5_FCC_FVNO_2 0x502
-#define KRB5_FCC_FVNO_3 0x503
-#define KRB5_FCC_FVNO_4 0x504
+struct fcc_cursor {
+    int fd;
+    krb5_storage *sp;
+};
 
-#define BYTESWAP(F) ((F)->version == KRB5_FCC_FVNO_1 || (F)->version == KRB5_FCC_FVNO_2)
+#define KRB5_FCC_FVNO_1 1
+#define KRB5_FCC_FVNO_2 2
+#define KRB5_FCC_FVNO_3 3
+#define KRB5_FCC_FVNO_4 4
 
 #define FCC_TAG_DELTATIME 1
 
 #define FCACHE(X) ((krb5_fcache*)(X)->data.data)
 
 #define FILENAME(X) (FCACHE(X)->filename)
+
+#define FCC_CURSOR(C) ((struct fcc_cursor*)(C))
 
 static char*
 fcc_get_name(krb5_context context,
@@ -140,6 +145,31 @@ fcc_gen_new(krb5_context context, krb5_ccache *id)
     return 0;
 }
 
+static void
+storage_set_flags(krb5_context context, krb5_storage *sp, int vno)
+{
+    int flags = 0;
+    switch(vno) {
+    case KRB5_FCC_FVNO_1:
+	flags |= KRB5_STORAGE_PRINCIPAL_WRONG_NUM_COMPONENTS;
+	flags |= KRB5_STORAGE_PRINCIPAL_NO_NAME_TYPE;
+	flags |= KRB5_STORAGE_HOST_BYTEORDER;
+	break;
+    case KRB5_FCC_FVNO_2:
+	flags |= KRB5_STORAGE_HOST_BYTEORDER;
+	break;
+    case KRB5_FCC_FVNO_3:
+	flags |= KRB5_STORAGE_KEYBLOCK_KEYTYPE_TWICE;
+	break;
+    case KRB5_FCC_FVNO_4:
+	break;
+    default:
+	krb5_abortx(context, 
+		    "storage_set_flags called with bad vno (%x)", vno);
+    }
+    krb5_storage_set_flags(sp, flags);
+}
+
 static krb5_error_code
 fcc_initialize(krb5_context context,
 	       krb5_ccache id,
@@ -159,9 +189,13 @@ fcc_initialize(krb5_context context,
     {
 	krb5_storage *sp;    
 	sp = krb5_storage_from_fd(fd);
-	f->version = KRB5_FCC_FVNO_4;
-	krb5_store_int16(sp, f->version);
-	krb5_storage_set_host_byteorder(sp, BYTESWAP(f));
+	if(context->fcache_vno != 0)
+	    f->version = context->fcache_vno;
+	else
+	    f->version = KRB5_FCC_FVNO_4;
+	krb5_store_int8(sp, 5);
+	krb5_store_int8(sp, f->version);
+	storage_set_flags(context, sp, f->version);
 	if(f->version == KRB5_FCC_FVNO_4) {
 	    /* V4 stuff */
 	    if (context->kdc_sec_offset) {
@@ -219,7 +253,7 @@ fcc_store_cred(krb5_context context,
     {
 	krb5_storage *sp;
 	sp = krb5_storage_from_fd(fd);
-	krb5_storage_set_host_byteorder(sp, BYTESWAP(FCACHE(id)));
+	storage_set_flags(context, sp, FCACHE(id)->version);
 	krb5_store_creds(sp, creds);
 	krb5_storage_free(sp);
     }
@@ -228,21 +262,16 @@ fcc_store_cred(krb5_context context,
 }
 
 static krb5_error_code
-fcc_read_cred (krb5_fcache *fc,
-	       int fd,
+fcc_read_cred (krb5_context context,
+	       krb5_fcache *fc,
+	       krb5_storage *sp,
 	       krb5_creds *creds)
 {
     krb5_error_code ret;
-    krb5_storage *sp;
 
-    sp = krb5_storage_from_fd(fd);
-    if(sp == NULL)
-	return ENOMEM;
+    storage_set_flags(context, sp, fc->version);
     
-    krb5_storage_set_host_byteorder(sp, BYTESWAP(fc));
-
     ret = krb5_ret_creds(sp, creds);
-    krb5_storage_free(sp);
     return ret;
 }
 
@@ -253,16 +282,22 @@ init_fcc (krb5_context context,
 	  int *ret_fd)
 {
     int fd;
-    int16_t tag;
+    int8_t pvno, tag;
     krb5_storage *sp;
 
     fd = open(fcache->filename, O_RDONLY | O_BINARY);
     if(fd < 0)
 	return errno;
     sp = krb5_storage_from_fd(fd);
-    krb5_ret_int16(sp, &tag); /* should not be host byte order */
+    krb5_ret_int8(sp, &pvno);
+    if(pvno != 5) {
+	krb5_storage_free(sp);
+	close(fd);
+	return KRB5_CCACHE_BADVNO;
+    }
+    krb5_ret_int8(sp, &tag); /* should not be host byte order */
     fcache->version = tag;
-    krb5_storage_set_host_byteorder(sp, BYTESWAP(fcache));
+    storage_set_flags(context, sp, fcache->version);
     switch (tag) {
     case KRB5_FCC_FVNO_4: {
 	int16_t length;
@@ -329,14 +364,15 @@ fcc_get_first (krb5_context context,
 {
     krb5_error_code ret;
     krb5_principal principal;
-    krb5_storage *sp;
     krb5_fcache *f = FCACHE(id);
 
-    ret = init_fcc (context, f, &sp, &cursor->u.fd);
+    *cursor = malloc(sizeof(struct fcc_cursor));
+
+    ret = init_fcc (context, f, &FCC_CURSOR(*cursor)->sp, 
+		    &FCC_CURSOR(*cursor)->fd);
     if (ret)
 	return ret;
-    krb5_ret_principal (sp, &principal);
-    krb5_storage_free(sp);
+    krb5_ret_principal (FCC_CURSOR(*cursor)->sp, &principal);
     krb5_free_principal (context, principal);
     return 0;
 }
@@ -347,7 +383,7 @@ fcc_get_next (krb5_context context,
 	      krb5_cc_cursor *cursor,
 	      krb5_creds *creds)
 {
-    return fcc_read_cred (FCACHE(id), cursor->u.fd, creds);
+    return fcc_read_cred (context, FCACHE(id), FCC_CURSOR(*cursor)->sp, creds);
 }
 
 static krb5_error_code
@@ -355,7 +391,10 @@ fcc_end_get (krb5_context context,
 	     krb5_ccache id,
 	     krb5_cc_cursor *cursor)
 {
-    return close (cursor->u.fd);
+    krb5_storage_free(FCC_CURSOR(*cursor)->sp);
+    close (FCC_CURSOR(*cursor)->fd);
+    free(*cursor);
+    return 0;
 }
 
 static krb5_error_code
@@ -374,6 +413,13 @@ fcc_set_flags(krb5_context context,
 {
     return 0; /* XXX */
 }
+
+static krb5_error_code
+fcc_get_version(krb5_context context,
+		krb5_ccache id)
+{
+    return FCACHE(id)->version;
+}
 		    
 const krb5_cc_ops krb5_fcc_ops = {
     "FILE",
@@ -390,5 +436,6 @@ const krb5_cc_ops krb5_fcc_ops = {
     fcc_get_next,
     fcc_end_get,
     fcc_remove_cred,
-    fcc_set_flags
+    fcc_set_flags,
+    fcc_get_version
 };
