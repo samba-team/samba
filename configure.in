@@ -33,6 +33,16 @@ if test "$withval" = no; then
 fi
 ])
 
+AC_TEST_PACKAGE(krb4,krb.h,libkrb.a,-lkrb)
+
+if test "$with_krb4"; then
+	AC_DEFINE(KRB4, 1)
+	LIB_krb4="$KRB4LIB -ldes"
+	INCLUDE_krb4="$KRB4INCLUDE"
+fi
+AC_SUBST(LIB_krb4)
+AC_SUBST(INCLUDE_krb4)
+
 AC_TEST_PACKAGE(readline,readline.h,libreadline.a,-lreadline)
 
 AC_C_BIGENDIAN
