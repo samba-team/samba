@@ -71,10 +71,10 @@ static struct toktab {
 static char *
 guess_domain (char *hostname, size_t sz)
 {
-    struct hostent *he;
+    struct addrinfo *ai;
+    struct addrinfo hints;
+    int error;
     char *dot;
-    char *a;
-    char **aliases;
 
     if (gethostname (hostname, sz) < 0) {
 	strlcpy (hostname, "", sz);
@@ -84,23 +84,20 @@ guess_domain (char *hostname, size_t sz)
     if (dot != NULL)
 	return dot + 1;
 
-    he = gethostbyname (hostname);
-    if (he == NULL)
+    memset (&hints, 0, sizeof(hints));
+    hints.ai_flags = AI_CANONNAME;
+
+    error = getaddrinfo (hostname, NULL, &hints, &ai);
+    if (error)
 	return hostname;
 
-    dot = strchr (he->h_name, '.');
-    if (dot != NULL) {
-	strlcpy (hostname, he->h_name, sz);
+    strlcpy (hostname, ai->ai_canonname, sz);
+    freeaddrinfo (ai);
+    dot = strchr (hostname, '.');
+    if (dot != NULL)
 	return dot + 1;
-    }
-    for (aliases = he->h_aliases; (a = *aliases) != NULL; ++aliases) {
-	dot = strchr (a, '.');
-	if (dot != NULL) {
-	    strlcpy (hostname, a, sz);
-	    return dot + 1;
-	}
-    }
-    return hostname;
+    else
+	return hostname;
 }
 
 int
