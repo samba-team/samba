@@ -909,14 +909,14 @@ static void wbinfo_get_auth_user(void)
 	char *user, *domain, *password;
 
 	/* Lift data from secrets file */
+	
+	secrets_fetch_ipc_userpass(&user, &domain, &password);
 
-	secrets_init();
+	if ((!user || !*user) && (!domain || !*domain ) && (!password || !*password)){
 
-	user = secrets_fetch(SECRETS_AUTH_USER, NULL);
-	domain = secrets_fetch(SECRETS_AUTH_DOMAIN, NULL);
-	password = secrets_fetch(SECRETS_AUTH_PASSWORD, NULL);
-
-	if (!user && !domain && !password) {
+		SAFE_FREE(user);
+		SAFE_FREE(domain);
+		SAFE_FREE(password);
 		d_printf("No authorised user configured\n");
 		return;
 	}
