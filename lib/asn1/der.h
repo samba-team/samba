@@ -36,6 +36,8 @@ struct krb5_data {
 
 typedef struct krb5_data krb5_data;
 
+time_t timegm (struct tm *);
+
 void time2generalizedtime (time_t t, krb5_data *s);
 
 krb5_data string_make (char *);
