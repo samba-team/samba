@@ -1064,7 +1064,6 @@ pa_data_add_pac_request(krb5_context context,
     ret = krb5_padata_add(context, md, KRB5_PADATA_PA_PAC_REQUEST, buf, len);
     if (ret)
 	free(buf);
-    md->len++;    
 
     return 0;
 }
