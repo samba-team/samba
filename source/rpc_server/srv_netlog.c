@@ -228,6 +228,7 @@ static void net_reply_sam_logoff(NET_Q_SAM_LOGOFF *q_s, prs_struct *rdata,
  net_reply_sam_sync:
  *************************************************************************/
 static void net_reply_sam_sync(NET_Q_SAM_SYNC *q_s, prs_struct *rdata,
+				uint8 sess_key[16],
 				DOM_CRED *srv_creds, uint32 status)
 {
 	NET_R_SAM_SYNC r_s;
@@ -264,7 +265,7 @@ static void net_reply_sam_sync(NET_Q_SAM_SYNC *q_s, prs_struct *rdata,
 	r_s.status = status;
 
 	/* store the response in the SMB stream */
-	net_io_r_sam_sync("", &r_s, rdata, 0);
+	net_io_r_sam_sync("", sess_key, &r_s, rdata, 0);
 
 }
 
@@ -562,7 +563,7 @@ static void api_net_sam_sync( pipes_struct *p,
 	}
 
 	/* construct reply. */
-	net_reply_sam_sync(&q_s, rdata, &srv_creds, status);
+	net_reply_sam_sync(&q_s, rdata, vuser->dc.sess_key, &srv_creds, status);
 }
 
 
