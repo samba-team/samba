@@ -47,7 +47,7 @@ key_proc (krb5_context context,
 	  krb5_const_pointer keyseed,
 	  krb5_keyblock **key)
 {
-     krb5_error_code err;
+     krb5_error_code ret;
      char *password = (char *)keyseed;
      char buf[BUFSIZ];
      
@@ -61,16 +61,21 @@ key_proc (krb5_context context,
 	  des_read_pw_string (buf, sizeof(buf), "Password: ", 0);
 	  password = buf;
      }
-     err = krb5_string_to_key (password, salt, *key);
+     if(salt == NULL){
+	 (*key)->keyvalue.length = 8;
+	 (*key)->keyvalue.data = malloc((*key)->keyvalue.length);
+	 des_string_to_key(password, (*key)->keyvalue.data);
+	 ret = 0;
+     }else
+	 ret = krb5_string_to_key (password, salt, *key);
      memset (buf, 0, sizeof(buf));
-     return err;
+     return ret;
 }
 
 krb5_error_code
 krb5_get_in_tkt_with_password (krb5_context context,
 			       krb5_flags options,
 			       krb5_addresses *addrs,
-/*			       krb5_address *const *addrs,*/
 			       const krb5_enctype *etypes,
 			       const krb5_preauthtype *pre_auth_types,
 			       const char *password,
