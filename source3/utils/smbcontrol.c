@@ -401,7 +401,6 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 		break;
 
 	case MSG_REQ_POOL_USAGE:
-	{
 		if (!pool_usage_registered) {
 			message_register(MSG_POOL_USAGE, pool_usage_cb);
 			pool_usage_registered = True;
@@ -411,7 +410,6 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 		wait_for_replies(MAX_WAIT, NULL);
 		
 		break;
-	}
 	}
 
 	return (True);

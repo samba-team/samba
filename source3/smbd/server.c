@@ -805,6 +805,7 @@ static void usage(char *pname)
 	if (!message_init()) {
 		exit(1);
 	}
+	register_msg_pool_usage();
 
 	/* Setup the main smbd so that we can get messages. */
 	claim_connection(NULL,"",MAXSTATUS,True);
