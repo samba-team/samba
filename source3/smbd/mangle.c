@@ -1000,18 +1000,6 @@ BOOL name_map_mangle(char *OutName, BOOL need83, BOOL cache83, int snum)
 
 static TDB_CONTEXT	*mangle_tdb;
 
-static int POW10(unsigned int exp)
-{
-	int result = 1;
-	
-	while (exp) {
-		result *= 10;
-		exp--;
-	}
-  
-	return result;
-}
-
 BOOL init_mangle_tdb(void)
 {
 	char *tdbfile;

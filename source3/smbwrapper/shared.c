@@ -104,6 +104,7 @@ char *smbw_getshared(const char *name)
 {
 	int i;
 	struct stat st;
+	char *var;
 
 	lockit();
 
@@ -111,8 +112,9 @@ char *smbw_getshared(const char *name)
 	if (fstat(shared_fd, &st)) goto failed;
 
 	if (st.st_size != shared_size) {
-		variables = (char *)Realloc(variables, st.st_size);
-		if (!variables) goto failed;
+		var = (char *)Realloc(variables, st.st_size);
+		if (!var) goto failed;
+		else variables = var;
 		shared_size = st.st_size;
 		lseek(shared_fd, 0, SEEK_SET);
 		if (read(shared_fd, variables, shared_size) != shared_size) {
@@ -156,6 +158,7 @@ set a variable in the shared area
 void smbw_setshared(const char *name, const char *val)
 {
 	int l1, l2;
+	char *var;
 
 	/* we don't allow variable overwrite */
 	if (smbw_getshared(name)) return;
@@ -165,12 +168,14 @@ void smbw_setshared(const char *name, const char *val)
 	l1 = strlen(name)+1;
 	l2 = strlen(val)+1;
 
-	variables = (char *)Realloc(variables, shared_size + l1+l2+4);
+	var = (char *)Realloc(variables, shared_size + l1+l2+4);
 
-	if (!variables) {
+	if (!var) {
 		DEBUG(0,("out of memory in smbw_setshared\n"));
 		exit(1);
 	}
+	
+	variables = var;
 
 	SSVAL(&variables[shared_size], 0, l1);
 	SSVAL(&variables[shared_size], 2, l2);
