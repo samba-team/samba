@@ -1,4 +1,4 @@
-.\" Copyright (c) 2003 Kungliga Tekniska Högskolan
+.\" Copyright (c) 2003 - 2004 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden). 
 .\" All rights reserved. 
 .\"
@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd March  7, 2004
+.Dd December 10, 2004
 .Dt KDC 8
 .Os HEIMDAL
 .Sh NAME
@@ -39,6 +39,7 @@
 .Nd Kerberos 5 server
 .Sh SYNOPSIS
 .Nm
+.Bk -words
 .Oo Fl c Ar file \*(Ba Xo
 .Fl -config-file= Ns Ar file
 .Xc
@@ -61,6 +62,7 @@
 .Op Fl -detach
 .Op Fl -disable-DES
 .Op Fl -addresses= Ns Ar list of addresses
+.Ek
 .Sh DESCRIPTION
 .Nm
 serves requests for tickets.
