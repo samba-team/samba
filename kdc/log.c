@@ -43,7 +43,7 @@ extern int loglevel;
 static krb5_log_facility *logf;
 
 char*
-kdc_log_msg_va(krb5_context context, int level, const char *fmt, va_list ap)
+kdc_log_msg_va(int level, const char *fmt, va_list ap)
 {
     char *msg;
     if(level > loglevel)
@@ -56,23 +56,23 @@ kdc_log_msg_va(krb5_context context, int level, const char *fmt, va_list ap)
 }
 
 char*
-kdc_log_msg(krb5_context context, int level, const char *fmt, ...)
+kdc_log_msg(int level, const char *fmt, ...)
 {
     va_list ap;
     char *s;
     va_start(ap, fmt);
-    s = kdc_log_msg_va(context, level, fmt, ap);
+    s = kdc_log_msg_va(level, fmt, ap);
     va_end(ap);
     return s;
 }
 
 void
-kdc_log(krb5_context context, int level, const char *fmt, ...)
+kdc_log(int level, const char *fmt, ...)
 {
     va_list ap;
     char *s;
     va_start(ap, fmt);
-    s = kdc_log_msg_va(context, level, fmt, ap);
+    s = kdc_log_msg_va(level, fmt, ap);
     if(s) free(s);
     va_end(ap);
 }

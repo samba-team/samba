@@ -90,8 +90,7 @@ init_sockets(struct descr **d)
 
     
 static int
-process_request(krb5_context context, 
-		unsigned char *buf, 
+process_request(unsigned char *buf, 
 		size_t len, 
 		krb5_data *reply,
 		const char *from,
@@ -103,24 +102,24 @@ process_request(krb5_context context,
 
     gettimeofday(&now, NULL);
     if(decode_AS_REQ(buf, len, &req, &i) == 0){
-	err = as_rep(context, &req, reply, from);
+	err = as_rep(&req, reply, from);
 	free_AS_REQ(&req);
 	return err;
     }else if(decode_TGS_REQ(buf, len, &req, &i) == 0){
-	err = tgs_rep(context, &req, reply, from);
+	err = tgs_rep(&req, reply, from);
 	free_TGS_REQ(&req);
 	return err;
     }
 #ifdef KRB4
     else if(maybe_version4(buf, len))
-	do_version4(context, buf, len, reply, from, (struct sockaddr_in*)addr);
+	do_version4(buf, len, reply, from, (struct sockaddr_in*)addr);
 #endif
 			  
     return -1;
 }
 
 static void
-do_request(krb5_context context, void *buf, size_t len, 
+do_request(void *buf, size_t len, 
 	   int socket, struct sockaddr *from, size_t from_len)
 {
     krb5_error_code ret;
@@ -131,22 +130,22 @@ do_request(krb5_context context, void *buf, size_t len,
 	strcpy(addr, inet_ntoa(((struct sockaddr_in*)from)->sin_addr));
     
     reply.length = 0;
-    ret = process_request(context, buf, len, &reply, addr, from);
+    ret = process_request(buf, len, &reply, addr, from);
     if(reply.length){
-	kdc_log(context, 5, "sending %d bytes to %s", reply.length, addr);
+	kdc_log(5, "sending %d bytes to %s", reply.length, addr);
 	sendto(socket, reply.data, reply.length, 0, from, from_len);
 	krb5_data_free(&reply);
     }
 }
 
 static void
-handle_udp(krb5_context context, struct descr *d)
+handle_udp(struct descr *d)
 {
     unsigned char buf[1024];
     struct sockaddr_in from;
     int from_len = sizeof(from);
     size_t n;
-
+    
     n = recvfrom(d->s, buf, sizeof(buf), 0, 
 		 (struct sockaddr*)&from, &from_len);
     if(n < 0){
@@ -156,7 +155,7 @@ handle_udp(krb5_context context, struct descr *d)
     if(n == 0){
 	return;
     }
-    do_request(context, buf, n, d->s, (struct sockaddr*)&from, from_len);
+    do_request(buf, n, d->s, (struct sockaddr*)&from, from_len);
 }
 
 static void
@@ -171,7 +170,7 @@ clear_descr(struct descr *d)
 }
 
 static void
-handle_tcp(krb5_context context, struct descr *d, int index, int min_free)
+handle_tcp(struct descr *d, int index, int min_free)
 {
     unsigned char buf[1024];
     struct sockaddr_in from;
@@ -236,7 +235,7 @@ handle_tcp(krb5_context context, struct descr *d, int index, int min_free)
 	}
     }
     if(n == 0){
-	do_request(context, d[index].buf, d[index].len, 
+	do_request(d[index].buf, d[index].len, 
 		   d[index].s, (struct sockaddr*)&from, from_len);
 	clear_descr(d + index);
     }
@@ -245,7 +244,7 @@ handle_tcp(krb5_context context, struct descr *d, int index, int min_free)
 
 
 void
-loop(krb5_context context)
+loop(void)
 {
     struct descr *d;
     int ndescr;
@@ -292,9 +291,9 @@ loop(krb5_context context)
 	    for(i = 0; i < ndescr; i++)
 		if(d[i].s >= 0 && FD_ISSET(d[i].s, &fds))
 		    if(d[i].type == SOCK_DGRAM)
-			handle_udp(context, &d[i]);
+			handle_udp(&d[i]);
 		    else if(d[i].type == SOCK_STREAM)
-			handle_tcp(context, d, i, min_free);
+			handle_tcp(d, i, min_free);
 	}
     }
     free (d);

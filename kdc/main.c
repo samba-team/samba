@@ -41,6 +41,7 @@
 RCSID("$Id$");
 
 sig_atomic_t exit_flag = 0;
+krb5_context context;
 
 static RETSIGTYPE
 sigterm(int sig)
@@ -58,7 +59,6 @@ usage(void)
 int
 main(int argc, char **argv)
 {
-    krb5_context context;
     int c;
     set_progname(argv[0]);
     
@@ -73,15 +73,13 @@ main(int argc, char **argv)
 	EncryptionKey key;
 	f = fopen(keyfile, "r");
 	if(f == NULL){
-	    kdc_log(context, 0, "Failed to open master key file %s", 
-		    keyfile);
+	    kdc_log(0, "Failed to open master key file %s", keyfile);
 	    exit(1);
 	}
 	len = fread(buf, 1, sizeof(buf), f);
 	fclose(f);
 	if(decode_EncryptionKey(buf, len, &key, &len)){
-	    kdc_log(context, 0, 
-		    "Failed to parse contents of master key file %s", keyfile);
+	    kdc_log(0, "Failed to parse contents of master key file %s", keyfile);
 	    exit(1);
 	}	    
 	set_master_key(&key);
@@ -95,7 +93,7 @@ main(int argc, char **argv)
 
 
     signal(SIGINT, sigterm);
-    loop(context);
+    loop();
     krb5_free_context(context);
     return 0;
 }
