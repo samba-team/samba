@@ -283,7 +283,7 @@ out:
 	free_EncryptedData(&ticket);
     }
     ret = krb5_storage_to_data(sp, reply);
-    reply.length = (*sp->seek)(sp, 0, SEEK_CUR);
+    reply->length = (*sp->seek)(sp, 0, SEEK_CUR);
     krb5_storage_free(sp);
     
     if(spn)
