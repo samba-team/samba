@@ -110,6 +110,7 @@ off_t talloc_total_size(const void *ptr);
 off_t talloc_total_blocks(const void *ptr);
 void talloc_report_full(const void *ptr, FILE *f);
 void talloc_report(const void *ptr, FILE *f);
+void talloc_enable_null_tracking(void);
 void talloc_enable_leak_report(void);
 void talloc_enable_leak_report_full(void);
 void *_talloc_zero(const void *ctx, size_t size, const char *name);
