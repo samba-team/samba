@@ -45,6 +45,25 @@ sub ValidElement($)
 		fatal(el_name($e) . " : pidl does not support full NDR pointers yet\n");
 	}
 
+	# Check whether switches are used correctly.
+	if (my $switch = util::has_property($e, "switch_is")) {
+		my $e2 = util::find_sibling($e, $switch);
+		my $type = typelist::getType($e->{TYPE});
+
+		if (defined($type) and $type->{DATA}->{TYPE} ne "UNION") {
+			fatal(el_name($e) . ": switch_is() used on non-union type $e->{TYPE} which is a $type->{DATA}->{TYPE}");
+		}
+
+		if (!util::has_property($type, "nodiscriminant") and defined($e2)) {
+			my $discriminator_type = util::has_property($type, "switch_type");
+			$discriminator_type = "uint32" unless defined ($discriminator_type);
+
+			if ($e2->{TYPE} ne $discriminator_type) {
+				print el_name($e) . ": Warning: switch_is() is of type $e2->{TYPE}, while discriminator type for union $type->{NAME} is $discriminator_type\n";
+			}
+		}
+	}
+
 	if (util::has_property($e, "size_is") and not defined ($e->{ARRAY_LEN})) {
 		fatal(el_name($e) . " : size_is() on non-array element");
 	}
@@ -53,7 +72,6 @@ sub ValidElement($)
 		fatal(el_name($e) . " : length_is() on non-array element");
 	}
 
-	
 	if (!$e->{POINTERS} && (
 		util::has_property($e, "ptr") or
 		util::has_property($e, "unique") or
@@ -84,6 +102,11 @@ sub ValidStruct($)
 sub ValidUnion($)
 {
 	my($union) = shift;
+
+	if (util::has_property($union->{PARENT}, "nodiscriminant") and util::has_property($union->{PARENT}, "switch_type")) {
+		fatal($union->{PARENT}->{NAME} . ": switch_type() on union without discriminant");
+	}
+	
 	foreach my $e (@{$union->{ELEMENTS}}) {
 		$e->{PARENT} = $union;
 

@@ -137,6 +137,7 @@ sub process_file($)
 	if ($opt_parse) {
 		$pidl = IdlParse($idl_file);
 		defined @$pidl || die "Failed to parse $idl_file";
+		typelist::LoadIdl($pidl);
 		IdlValidator::Validate($pidl);
 		if ($opt_keep && !util::SaveStructure($pidl_file, $pidl)) {
 			    die "Failed to save $pidl_file\n";
@@ -155,10 +156,6 @@ sub process_file($)
 		util::FileSave($tempfile, IdlDump::Dump($pidl));
 		system("diff -wu $idl_file $tempfile");
 		unlink($tempfile);
-	}
-
-	if ($opt_header || $opt_parser || $opt_com_header || $opt_dcom_proxy) {
-		typelist::LoadIdl($pidl);
 	}
 
 	if ($opt_com_header) {

@@ -22,6 +22,15 @@ sub getType($)
 	return $typedefs{$t};
 }
 
+sub typeIs($$)
+{
+	my $t = shift;
+	my $tt = shift;
+
+	return 1 if (hasType($t) and getType($t)->{DATA}->{TYPE} eq $tt);
+	return 0;
+}
+
 sub hasType($)
 {
 	my $t = shift;

@@ -127,7 +127,7 @@ interface drsuapi
 		uint32 unknown1;
 	} drsuapi_DsReplicaSyncRequest1;
 
-	typedef union {
+	typedef [switch_type(int32)] union {
 		[case(1)] drsuapi_DsReplicaSyncRequest1 req1;
 	} drsuapi_DsReplicaSyncRequest;
 
@@ -222,7 +222,7 @@ interface drsuapi
 		[size_is(count)] drsuapi_DsNameString *names[];
 	} drsuapi_DsNameRequest1;
 
-	typedef union {
+	typedef [switch_type(int32)] union {
 		[case(1)] drsuapi_DsNameRequest1 req1;
 	} drsuapi_DsNameRequest;
 
@@ -237,7 +237,7 @@ interface drsuapi
 		[size_is(count)] drsuapi_DsNameInfo1 *array[];
 	} drsuapi_DsNameCtr1;
 
-	typedef union {
+	typedef [switch_type(int32)] union {
 		[case(1)] drsuapi_DsNameCtr1 *ctr1;
 	} drsuapi_DsNameCtr;
 
@@ -264,7 +264,7 @@ interface drsuapi
 		[size_is(count)] drsuapi_DsNameString *spn_names[];
 	} drsuapi_DsWriteAccountSpnRequest1;
 
-	typedef union {
+	typedef [switch_type(int32)] union {
 		[case(1)] drsuapi_DsWriteAccountSpnRequest1 req1;
 	} drsuapi_DsWriteAccountSpnRequest;
 
@@ -272,7 +272,7 @@ interface drsuapi
 		WERROR status;
 	} drsuapi_DsWriteAccountSpnResult1;
 
-	typedef union {
+	typedef [switch_type(int32)] union {
 		[case(1)] drsuapi_DsWriteAccountSpnResult1 res1;
 	} drsuapi_DsWriteAccountSpnResult;
 
@@ -298,7 +298,7 @@ interface drsuapi
 		int32 level; /* specifies the switch level for the request */
 	} drsuapi_DsGetDCInfoRequest1;
 
-	typedef union {
+	typedef [switch_type(int32)] union {
 		[case(1)] drsuapi_DsGetDCInfoRequest1 req1;
 	} drsuapi_DsGetDCInfoRequest;
 
@@ -354,7 +354,7 @@ interface drsuapi
 		[size_is(count)] drsuapi_DsGetDCInfo01 *array[];
 	} drsuapi_DsGetDCInfoCtr01;
 
-	typedef union {
+	typedef [switch_type(int32)] union {
 		[case(1)] drsuapi_DsGetDCInfoCtr1 ctr1;
 		[case(2)] drsuapi_DsGetDCInfoCtr2 ctr2;
 		[case(-1)] drsuapi_DsGetDCInfoCtr01 ctr01;
@@ -416,7 +416,7 @@ interface drsuapi
 		uint32 unknown2;
 	} drsuapi_DsReplicaGetInfoRequest2;
 
-	typedef union {
+	typedef [switch_type(drsuapi_DsReplicaGetInfoLevel)] union {
 		[case(DRSUAPI_DS_REPLICA_GET_INFO)] drsuapi_DsReplicaGetInfoRequest1 req1;
 		[case(DRSUAPI_DS_REPLICA_GET_INFO2)] drsuapi_DsReplicaGetInfoRequest2 req2;
 	} drsuapi_DsReplicaGetInfoRequest;
@@ -628,7 +628,7 @@ interface drsuapi
 		[size_is(count)] drsuapi_DsReplica06 array[];
 	} drsuapi_DsReplica06Ctr;
 
-	typedef union {
+	typedef [switch_type(drsuapi_DsReplicaInfoType)] union {
 		[case(DRSUAPI_DS_REPLICA_INFO_NEIGHBORS)] drsuapi_DsReplicaNeighbourCtr *neighbours;
 		[case(DRSUAPI_DS_REPLICA_INFO_CURSORS)] drsuapi_DsReplicaCoursorCtr *coursors;
 		[case(DRSUAPI_DS_REPLICA_INFO_OBJ_METADATA)] drsuapi_DsReplicaObjMetaDataCtr *objmetadata;
