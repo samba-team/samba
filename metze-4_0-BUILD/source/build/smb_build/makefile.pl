@@ -513,7 +513,8 @@ distclean: clean
 	-rm -f bin/.dummy
 	-rm -f include/config.h 
 	-rm -f Makefile*
-	-rm -f config.status 
+	-rm -f config.status
+	-rm -f config.smb_build.*
 	-rm -f config.log config.cache
 
 realdistclean: distclean
