@@ -493,7 +493,6 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 				state->response.data.num_entries++;
 				state->response.length += 
 					sizeof(struct winbindd_pw);
-				break;
 			} else {
 				DEBUG(1, ("could not getpwnam_from_user "
 					  "for username %s\n", 
@@ -543,7 +542,7 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
         struct winbindd_domain *domain;
         SAM_DISPINFO_CTR ctr;
 	SAM_DISPINFO_1 info1;
-        uint32 num_entries, total_entries = 0;
+        uint32 num_entries = 0, total_entries = 0;
 	char *extra_data = NULL;
 	int extra_data_len = 0;
 
