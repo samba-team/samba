@@ -1782,10 +1782,18 @@ typedef struct taboid {
 
 } TABOID;
 
-static BOOL run_vusertest_op_null(TABOID *t) {
+static void init_TABOID(TABOID *t, int owner, int share, int as_user)
+{
+	memset( t, '\0', sizeof(*t));
+	t->owner = owner;
+	t->share = share;
+	t->as_user = as_user;
+}
 
-  return True;
-      }
+static BOOL run_vusertest_op_null(TABOID *t)
+{
+	return True;
+}
 
 static BOOL run_vusertest_report_full(
 				      const char *operation, 
@@ -1793,7 +1801,8 @@ static BOOL run_vusertest_report_full(
 				      BOOL failure, 
 				      BOOL report,
 				      fstring *buf,
-				      TABOID *t) {
+				      TABOID *t)
+{
 
   (*buf)[0] = '\0';
 
@@ -1818,46 +1827,48 @@ static BOOL run_vusertest_report_full(
 	   failure?cli_errstr(&vusers[t->as_user].cli):""
 	   );
     
-  if(report) {
-
+  if(report)
     printf("%s\n", *buf);
-  }
 
   return True;
-      }
+}
     
 static BOOL run_vusertest_report(
 				 const char *operation, 
 				 const char *sub_operation, 
 				 BOOL failure, 
-				 TABOID *t) {
+				 TABOID *t)
+{
 
   fstring buf;
 
   return run_vusertest_report_full(operation, sub_operation, failure, True, &buf, t);
-    }
+}
 
 static BOOL run_vusertest_report_failure(
 				 const char *operation, 
 				 const char *sub_operation, 
-				 TABOID *t) {
+				 TABOID *t)
+{
 
   fstring buf;
 
   return run_vusertest_report_full(operation, sub_operation, True, True, &buf, t);
-  }
+}
 
 static BOOL run_vusertest_report_success(
 				 const char *operation, 
 				 const char *sub_operation, 
-				 TABOID *t) {
+				 TABOID *t)
+{
 
   fstring buf;
 
   return run_vusertest_report_full(operation, sub_operation, False, True, &buf, t);
 }
 
-static BOOL run_vusertest_op_init(TABOID *t) {
+static BOOL run_vusertest_op_init(TABOID *t)
+{
 
   int i, j;
 
@@ -1881,7 +1892,8 @@ static BOOL run_vusertest_op_init(TABOID *t) {
   return True;
 }
 
-static BOOL run_vusertest_op_create(TABOID *t) {
+static BOOL run_vusertest_op_create(TABOID *t)
+{
 
   BOOL should_work = (vusers[t->owner].per_tid[t->share].tid_valid && vusers[t->as_user].vuid_valid);
 
@@ -1911,9 +1923,10 @@ static BOOL run_vusertest_op_create(TABOID *t) {
   vusers[t->as_user].files_valid = True;  /*not true for all!*/
 
   return should_work?True:False;
-      }
+}
 
-static BOOL run_vusertest_op_write(TABOID *t) {
+static BOOL run_vusertest_op_write(TABOID *t)
+{
 
   BOOL should_work = (
 		      vusers[t->owner].per_tid[t->share].tid_valid && 
@@ -1951,7 +1964,8 @@ static BOOL run_vusertest_op_write(TABOID *t) {
   return should_work?True:False;
 }
 
-static BOOL run_vusertest_op_create_and_write(TABOID *t) {
+static BOOL run_vusertest_op_create_and_write(TABOID *t)
+{
 
   BOOL ret = True;
 
@@ -1963,12 +1977,13 @@ static BOOL run_vusertest_op_create_and_write(TABOID *t) {
   if(!run_vusertest_op_write(t)) {
 
     ret = False;
-}
+  }
 
   return ret;
 }
 
-static BOOL run_vusertest_op_openr(TABOID *t) {
+static BOOL run_vusertest_op_openr(TABOID *t)
+{
 
   BOOL should_work = (vusers[t->owner].per_tid[t->share].tid_valid && vusers[t->as_user].vuid_valid);
 
@@ -1982,7 +1997,7 @@ static BOOL run_vusertest_op_openr(TABOID *t) {
     run_vusertest_report_failure("OPENR", "open", t);
 
     return should_work?False:True;
-}
+  }
 
   run_vusertest_report_success("OPENR", "open", t);
 
@@ -1991,7 +2006,8 @@ static BOOL run_vusertest_op_openr(TABOID *t) {
   return should_work?True:False;
 }
 
-static BOOL run_vusertest_op_read(TABOID *t) {
+static BOOL run_vusertest_op_read(TABOID *t)
+{
 
   fstring msg;
   int msglen = 0;
@@ -2019,14 +2035,15 @@ static BOOL run_vusertest_op_read(TABOID *t) {
     run_vusertest_report_failure("READ", "read 2", t);
 
     return should_work?False:True;
-}
+  }
 
   run_vusertest_report_success("READ", "read", t);
 
   return should_work?True:False;
 }
 
-static BOOL run_vusertest_op_openr_and_read(TABOID *t) {
+static BOOL run_vusertest_op_openr_and_read(TABOID *t)
+{
 
   BOOL ret = True;
 
@@ -2038,12 +2055,13 @@ static BOOL run_vusertest_op_openr_and_read(TABOID *t) {
   if(!run_vusertest_op_read(t)) {
       
     ret = False;
-      }
-
-  return ret;
   }
 
-static BOOL run_vusertest_op_backup_open_fids(TABOID *t) {
+  return ret;
+}
+
+static BOOL run_vusertest_op_backup_open_fids(TABOID *t)
+{
 
   memcpy(vusers[t->as_user].per_tid[t->share].backup_fnum, 
 	 vusers[t->as_user].per_tid[t->share].fnum, 
@@ -2052,7 +2070,8 @@ static BOOL run_vusertest_op_backup_open_fids(TABOID *t) {
   return True;
 }
 
-static BOOL run_vusertest_op_close(TABOID *t) {
+static BOOL run_vusertest_op_close(TABOID *t)
+{
 
   BOOL should_work = (
 		      (
@@ -2080,8 +2099,8 @@ static BOOL run_vusertest_op_close(TABOID *t) {
       ret = should_work?False:True;
     } else {
 
-      run_vusertest_report_success("CLOSE", "close", t);
-}
+        run_vusertest_report_success("CLOSE", "close", t);
+    }
 
     vusers[t->as_user].per_tid[t->share].fnum[t->owner] = -1;
   }
@@ -2104,9 +2123,10 @@ static BOOL run_vusertest_op_close(TABOID *t) {
   }
 
   return ret;
-      }
+}
 
-static BOOL run_vusertest_op_tcon(TABOID *t) {
+static BOOL run_vusertest_op_tcon(TABOID *t)
+{
 
   BOOL should_work = (vusers[t->as_user].vuid_valid);
 
@@ -2121,7 +2141,7 @@ static BOOL run_vusertest_op_tcon(TABOID *t) {
     run_vusertest_report_failure("TCON", "tcon", t);
 
     return should_work?False:True;
-    }
+  }
 
   vusers[t->owner].per_tid[t->share].tid_valid = True;
   vusers[t->owner].per_tid[t->share].tid = vusers[t->as_user].cli.cnum;
@@ -2129,17 +2149,18 @@ static BOOL run_vusertest_op_tcon(TABOID *t) {
   run_vusertest_report_success("TCON", "tcon", t);
 
   return should_work?True:False;
-  }
+}
 
-static BOOL run_vusertest_op_tdis(TABOID *t) {
+static BOOL run_vusertest_op_tdis(TABOID *t)
+{
 
   BOOL should_work = (vusers[t->owner].per_tid[t->share].tid_valid && vusers[t->as_user].vuid_valid);
 
 #if 0
   if(!vusers[t->owner].per_tid[t->share].tid_valid) {
 
-  return True;
-}
+    return True;
+  }
 #endif
 
   vusers[t->as_user].cli.cnum = vusers[t->owner].per_tid[t->share].tid;
@@ -2158,7 +2179,8 @@ static BOOL run_vusertest_op_tdis(TABOID *t) {
   return should_work?True:False;
 }
 
-static BOOL run_vusertest_op_ulogon(TABOID *t) {
+static BOOL run_vusertest_op_ulogon(TABOID *t)
+{
   
   vusers[t->owner].cli = *seed;
 
@@ -2186,7 +2208,8 @@ static BOOL run_vusertest_op_ulogon(TABOID *t) {
   return True;
 }
 
-static BOOL run_vusertest_op_ulogoff(TABOID *t) {
+static BOOL run_vusertest_op_ulogoff(TABOID *t)
+{
 
   BOOL should_work = (vusers[t->owner].vuid_valid);
 
@@ -2210,12 +2233,13 @@ static BOOL run_vusertest_op_ulogoff(TABOID *t) {
   vusers[t->owner].files_valid = False;
 
   return should_work?True:False;
-  }
+}  
 
-  /***********************************************************/
-  /***********************************************************/
+/***********************************************************/
+/***********************************************************/
 
-static BOOL run_vusertest_owner_op(BOOL (*op)(TABOID *t)) {
+static BOOL run_vusertest_owner_op(BOOL (*op)(TABOID *t))
+{
 
   BOOL ret = True;
 
@@ -2223,7 +2247,8 @@ static BOOL run_vusertest_owner_op(BOOL (*op)(TABOID *t)) {
 
   for(; owner < nusers; owner++) {
 
-    TABOID t = {owner, 0, owner};
+    TABOID t;
+	init_TABOID(&t, owner, 0, owner);
 
     if(!op(&t)) {
 
@@ -2235,7 +2260,8 @@ static BOOL run_vusertest_owner_op(BOOL (*op)(TABOID *t)) {
   return ret;
 }
 
-static BOOL run_vusertest_owner_share_op(BOOL (*op)(TABOID *t)) {
+static BOOL run_vusertest_owner_share_op(BOOL (*op)(TABOID *t))
+{
 
   BOOL ret = True;
 
@@ -2247,7 +2273,8 @@ static BOOL run_vusertest_owner_share_op(BOOL (*op)(TABOID *t)) {
 
     for(; share < nshares; share++) {
 
-      TABOID t = {owner, share, owner};
+      TABOID t;
+      init_TABOID( &t, owner, share, owner);
 
       if(!op(&t)) {
 
@@ -2264,7 +2291,8 @@ static BOOL run_vusertest_owner_share_preop_user_op(
 						    BOOL  (*preop)(TABOID *t),
 						    BOOL     (*op)(TABOID *t),
 						    BOOL (*postop)(TABOID *t)
-						    ) {
+						    )
+{
 
   BOOL ret = True;
 
@@ -2276,7 +2304,8 @@ static BOOL run_vusertest_owner_share_preop_user_op(
 
     for(; share < nshares; share++) {
 
-      TABOID t = {owner, share, owner};
+      TABOID t;
+      init_TABOID( &t, owner, share, owner);
 
       if(!preop(&t)) {  
 
@@ -2311,7 +2340,8 @@ static BOOL run_vusertest_owner_share_user_preop_op(
 						    BOOL  (*preop)(TABOID *t),
 						    BOOL     (*op)(TABOID *t),
 						    BOOL (*postop)(TABOID *t)
-						    ) {
+						    )
+{
 
   BOOL ret = True;
 
@@ -2327,7 +2357,8 @@ static BOOL run_vusertest_owner_share_user_preop_op(
 
       for(; as_user < nusers; as_user++) {
 
-	TABOID t = {owner, share, owner};
+	TABOID t;
+	init_TABOID( &t, owner, share, owner);
 
 	if(!preop(&t)) {  
 
@@ -2528,7 +2559,8 @@ static BOOL run_vusertest_owner_share_user_preop_op(
 
 */
 
-static BOOL run_vusertest(int dummy) {
+static BOOL run_vusertest(int dummy)
+{
   BOOL ret   = True;
 
   int testcnt = 0;
