@@ -1160,7 +1160,7 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 			if (res1)
 			{
 				STRING2 secret;
-				secret_store_data(&secret, ntpw, 16);
+				secret_store_data(&secret, password, plen);
 
 				res2 = lsa_set_secret(&pol_sec, &secret) ==
 				                   NT_STATUS_NOPROBLEMO;
