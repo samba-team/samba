@@ -696,36 +696,42 @@ BOOL cli_session_setup(struct cli_state *cli,
 	fstring pword, ntpword;
 
 	if (cli->protocol < PROTOCOL_LANMAN1)
+	{
 		return True;
+	}
 
-	if (passlen > sizeof(pword)-1 || ntpasslen > sizeof(ntpword)-1) {
+	if (passlen > sizeof(pword)-1 || ntpasslen > sizeof(ntpword)-1)
+	{
 		return False;
 	}
 
-        if (((passlen == 0) || (passlen == 1)) && (pass[0] == '\0')) {
-          /* Null session connect. */
-          pword[0] = '\0';
-          ntpword[0] = '\0';
-        } else {
-          if ((cli->sec_mode & 2) && passlen != 24) {
-            passlen = 24;
-            ntpasslen = 24;
-            SMBencrypt((uchar *)pass,(uchar *)cli->cryptkey,(uchar *)pword);
-            SMBNTencrypt((uchar *)ntpass,(uchar *)cli->cryptkey,(uchar *)ntpword);
-          } else {
-		  fstrcpy(pword, pass);
-		  fstrcpy(ntpword, "");
-		  ntpasslen = 0;
-          }
-        }
-
-	/* if in share level security then don't send a password now */
-	if (!(cli->sec_mode & 1)) {
+	if (!IS_BITS_SET_ALL(cli->sec_mode, 1))
+	{
+		/* if in share level security then don't send a password now */
 		fstrcpy(pword, "");
 		passlen=1;
 		fstrcpy(ntpword, "");
 		ntpasslen=1;
 	} 
+	else if (((passlen == 0) || (passlen == 1)) && (pass[0] == '\0'))
+	{
+		/* Null session connect. */
+		pword[0] = '\0';
+		ntpword[0] = '\0';
+	}
+	else if (passlen == 24 && ntpasslen == 24)
+	{
+		/* encrypted password send, implicit from 24-byte lengths */
+		memcpy(pword, pass, 24);
+		memcpy(ntpword, ntpass, 24);
+	}
+	else
+	{
+		/* plain-text password send */
+		fstrcpy(pword, pass);
+		fstrcpy(ntpword, "");
+		ntpasslen = 0;
+	}
 
 	/* send a session setup command */
 	bzero(cli->outbuf,smb_size);
