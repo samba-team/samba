@@ -4,6 +4,7 @@
    Winbind ADS backend functions
 
    Copyright (C) Andrew Tridgell 2001
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -445,6 +446,84 @@ done:
 	return status;
 }
 
+/* Lookup groups a user is a member of - alternate method, for when
+   tokenGroups are not available. */
+static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
+				      TALLOC_CTX *mem_ctx,
+				      const char *user_dn, 
+				      uint32 primary_group,
+				      uint32 *num_groups, uint32 **user_gids)
+{
+	ADS_STATUS rc;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	int count;
+	void *res = NULL;
+	void *msg = NULL;
+	char *exp;
+	ADS_STRUCT *ads;
+	const char *group_attrs[] = {"objectSid", NULL};
+
+	ads = ads_cached_connection(domain);
+	if (!ads) goto done;
+
+	/* buggy server, no tokenGroups.  Instead lookup what groups this user
+	   is a member of by DN search on member*/
+	if (asprintf(&exp, "(&(member=%s)(objectClass=group))", user_dn) == -1) {
+		DEBUG(1,("lookup_usergroups(dn=%s) asprintf failed!\n", user_dn));
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	rc = ads_search_retry(ads, &res, exp, group_attrs);
+	free(exp);
+	
+	if (!ADS_ERR_OK(rc)) {
+		DEBUG(1,("lookup_usergroups ads_search member=%s: %s\n", user_dn, ads_errstr(rc)));
+		return ads_ntstatus(rc);
+	}
+	
+	count = ads_count_replies(ads, res);
+	if (count == 0) {
+		DEBUG(5,("lookup_usergroups: No supp groups found\n"));
+		
+		status = ads_ntstatus(rc);
+		goto done;
+	}
+	
+	(*user_gids) = (uint32 *)talloc_zero(mem_ctx, sizeof(uint32) * (count + 1));
+	(*user_gids)[0] = primary_group;
+	
+	*num_groups = 1;
+	
+	for (msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
+		uint32 rid;
+		DOM_SID group_sid;
+		fstring sid_string;
+		
+		if (!ads_pull_sid(ads, msg, "objectSid", &group_sid)) {
+			DEBUG(1,("No sid for this group ?!?\n"));
+			continue;
+		}
+		
+		if (!sid_peek_check_rid(&domain->sid, &group_sid, &rid)) {
+			DEBUG(5,("sid for %s is out of domain or invalid\n", sid_to_string(sid_string, &group_sid)));
+			continue;
+		}
+		if (rid == primary_group) continue;
+		
+		(*user_gids)[*num_groups] = rid;
+		(*num_groups)++;
+			
+	}
+
+	if (res) ads_msgfree(ads, res);
+	if (msg) ads_msgfree(ads, msg);
+
+	status = NT_STATUS_OK;
+
+	DEBUG(3,("ads lookup_usergroups (alt) for dn=%s\n", user_dn));
+done:
+	return status;
+}
 
 /* Lookup groups a user is a member of. */
 static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
@@ -455,10 +534,8 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	ADS_STRUCT *ads = NULL;
 	const char *attrs[] = {"distinguishedName", NULL};
 	const char *attrs2[] = {"tokenGroups", "primaryGroupID", NULL};
-	const char *group_attrs[] = {"objectSid", "cn", NULL};
 	ADS_STATUS rc;
 	int count;
-	void *res = NULL;
 	void *msg = NULL;
 	char *exp;
 	char *user_dn;
@@ -524,81 +601,27 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	/* there must always be at least one group in the token, 
 	   unless we are talking to a buggy Win2k server */
 	if (count == 0) {
-		/* buggy server, no tokenGroups.  Instead lookup what groups this user
-		   is a member of by DN search on member*/
-		if (asprintf(&exp, "(&(member=%s)(objectClass=group))", user_dn) == -1) {
-			free(sidstr);
-			DEBUG(1,("lookup_usergroups(rid=%d) asprintf failed!\n", user_rid));
-			status = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
+		return lookup_usergroups_alt(domain, mem_ctx, user_dn, 
+					       primary_group,
+					       num_groups, user_gids);
+	}
 
-		rc = ads_search_retry(ads, &res, exp, group_attrs);
-		free(exp);
-				
-		if (!ADS_ERR_OK(rc)) {
-			DEBUG(1,("lookup_usergroups(rid=%d) ads_search member=%s: %s\n", user_rid, user_dn, ads_errstr(rc)));
-			goto done;
-		}
-
-		count = ads_count_replies(ads, res);
-		if (count == 0) {
-			DEBUG(5,("lookup_usergroups: No supp groups found\n"));
-			goto done;
-		}
-		
-		(*user_gids) = (uint32 *)talloc_zero(mem_ctx, sizeof(uint32) * (count + 1));
-		(*user_gids)[0] = primary_group;
-		
-		*num_groups = 1;
-
-		for (msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
-			uint32 rid;
-			DOM_SID group_sid;
-			fstring sid_string;
-			const char *cn;
-			
-			cn = ads_pull_string(ads, mem_ctx, msg, "cn");
-			if (!cn) {
-				cn = "<CN NOT AVAILABLE>";
-			}
-
-			if (!ads_pull_sid(ads, msg, "objectSid", &group_sid)) {
-				DEBUG(1,("No sid for %s !?\n", cn));
-				continue;
-			}
-			
-			if (!sid_peek_check_rid(&domain->sid, &group_sid, &rid)) {
-				DEBUG(5,("sid for %s is out of domain or invalid\n", sid_to_string(sid_string, &sid)));
-				continue;
-			}
-			if (rid == primary_group) continue;
-
-			(*user_gids)[*num_groups] = rid;
-			(*num_groups)++;
-
-		}
-	} else {
-		(*user_gids) = (uint32 *)talloc_zero(mem_ctx, sizeof(uint32) * (count + 1));
-		(*user_gids)[0] = primary_group;
-		
-		*num_groups = 1;
-
-		for (i=0;i<count;i++) {
-			uint32 rid;
-			if (!sid_peek_check_rid(&domain->sid, &sids[i-1], &rid)) continue;
-			if (rid == primary_group) continue;
-			(*user_gids)[*num_groups] = rid;
-			(*num_groups)++;
-		}
+	(*user_gids) = (uint32 *)talloc_zero(mem_ctx, sizeof(uint32) * (count + 1));
+	(*user_gids)[0] = primary_group;
+	
+	*num_groups = 1;
+	
+	for (i=0;i<count;i++) {
+		uint32 rid;
+		if (!sid_peek_check_rid(&domain->sid, &sids[i-1], &rid)) continue;
+		if (rid == primary_group) continue;
+		(*user_gids)[*num_groups] = rid;
+		(*num_groups)++;
 	}
 
 	status = NT_STATUS_OK;
 	DEBUG(3,("ads lookup_usergroups for rid=%d\n", user_rid));
 done:
-	if (res) ads_msgfree(ads, res);
-	if (msg) ads_msgfree(ads, msg);
-
 	return status;
 }
 
