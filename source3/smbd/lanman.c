@@ -1834,6 +1834,8 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
   fstring user;
   fstring pass1,pass2;
 
+  struct passwd *passwd;
+
   pull_ascii_fstring(user,p);
 
   p = skip_string(p,1);
@@ -1863,7 +1865,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
   /*
    * Do any UNIX username case mangling.
    */
-  (void)Get_Pwnam( user, True);
+  passwd = Get_Pwnam( user, True);
 
   /*
    * Attempt to verify the old password against smbpasswd entries
@@ -1906,13 +1908,15 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 
   if(SVAL(*rparam,0) != NERR_Success)
   {
-    if (password_ok(user, pass1,strlen(pass1)) &&
-        chgpasswd(user,pass1,pass2,False))
-    {
-      SSVAL(*rparam,0,NERR_Success);
-    }
+	  if NT_STATUS_IS_OK(pass_check(passwd, user, pass1, 
+					strlen(pass1), NULL, False)) 
+		  {
+			  if (chgpasswd(user,pass1,pass2,False)) {
+				  SSVAL(*rparam,0,NERR_Success);
+			  }
+		  }
   }
-
+  
   /*
    * If the plaintext change failed, attempt
    * the old encrypted method. NT will generate this
