@@ -141,15 +141,19 @@ typedef const krb5_principal_data *krb5_const_principal;
 
 typedef krb5_data krb5_realm;
 
+/* XXX This does not belong here! */
+#include <asn1.h>
+
 typedef struct krb5_ticket {
 #if 0
     krb5_principal server;
     krb5_data enc_part;
     krb5_data enc_part2;
 #endif
-  struct {
-    krb5_principal client;
-  } enc_part2;
+    EncTicketPart tkt;
+    struct {
+	krb5_principal client;
+    } enc_part2;
 } krb5_ticket;
 
 
@@ -250,8 +254,6 @@ typedef struct krb5_auth_context_data{
 
 
 typedef u_int32_t krb5_flags;
-
-#include <asn1.h>
 
 typedef struct {
   KDC_REP part1;
