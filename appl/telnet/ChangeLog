@@ -1,3 +1,7 @@
+Wed May 27 04:19:17 1998  Assar Westerlund  <assar@sics.se>
+
+	* telnet/sys_bsd.c (process_rings): correct call to `stilloob'
+
 Fri May 15 19:38:19 1998  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* libtelnet/kerberos5.c: Always print errors from mk_req.

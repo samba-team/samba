@@ -1,3 +1,7 @@
+Wed May 27 04:20:20 1998  Assar Westerlund  <assar@sics.se>
+
+	* kxd.c (doit): better error reporting
+
 Tue May 26 17:41:23 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* kx.c: use krb_enable_debug
