@@ -27,6 +27,11 @@ How to Configure Samba 2.2.x as a Primary Domain Controller
 Background
 </title>
 
+<para><emphasis>Author's Note :</emphasis> This document
+is a combination of David Bannon's Samba 2.2 PDC HOWTO
+and the Samba NT Domain FAQ. Both documents are superceeded by this one.
+</para>
+
 <para>
 Version of Samba prior to release 2.2 had marginal capabilities to
 act as a Windows NT 4.0 Primary Domain Controller (PDC).  The following 
@@ -56,7 +61,7 @@ The following pieces of functionality are not included in the 2.2 release:
 	<listitem><para>Sam replication with Windows NT 4.0 Domain Controllers
 	(i.e. a Samba PDC and a Windows NT BDC or vice versa) </para></listitem>
 	
-	<listitem><para>Ading users via the User Manager for Domains</para></listitem>
+	<listitem><para>Adding users via the User Manager for Domains</para></listitem>
 
 	<listitem><para>Acting as a Windows 2000 Domain Controller (i.e. Kerberos
 	and Active Directory)</para></listitem>
@@ -118,10 +123,10 @@ concepts.  They will be mentioned only briefly here.
 
 <para>
 The first step in creating a working Samba PDC is to 
-understand the parameters necesary in smb.conf.  I will not
+understand the parameters necessary in smb.conf.  I will not
 attempt to re-explain the parameters here as they are more that
 adequately covered in <ulink url="smb.conf.5.html"> the smb.conf
-man page</ulink>.  For convienience, the parameters have been
+man page</ulink>.  For convenience, the parameters have been
 linked with the actual smb.conf description.
 </para>
 
@@ -218,7 +223,7 @@ it is used for.
 
 <para>
 A machine trust account is a user account owned by a computer.  
-The account password acts as the shared serect for secure 
+The account password acts as the shared secret for secure 
 communication with the Domain Controller.  Hence the reason that
 a Windows 9x host is never a true member of a domain because
 it does not posses a machine trust account and thus has no shared
@@ -228,7 +233,7 @@ secret with the DC.
 <para>
 On a Windows NT PDC, these machine trust account passwords are stored
 in the registry.  A Samba PDC stores these accounts in he same location
-as user LanMan and NT password hashes (currently <filename>ambpasswd</filename>).
+as user LanMan and NT password hashes (currently <filename>smbpasswd</filename>).
 However, machine trust accounts only possess the NT password hash.
 </para>
 
@@ -305,12 +310,13 @@ add user script = /usr/sbin/useradd -d /dev/null -g 100 -s /bin/false -M %u
 </programlisting></para>
 
 <para>
-In Samba 2.2.0, only the root account can be used to create
+In Samba 2.2.0, <emphasis>only the root account</emphasis> can be used to create
 machine accounts on the fly like this.  Therefore, it is required
 to create an entry in smbpasswd for <emphasis>root</emphasis>.
 The password <emphasis>SHOULD</emphasis> be set to s different
 password that the associated <filename>/etc/passwd</filename>
 entry for security reasons.
+</para>
 </sect1>
 
 <!-- **********************************************************
@@ -398,12 +404,12 @@ SID or 	remove the domain client from the domain and rejoin.
 
 <para>
 <emphasis>"The machine account for this computer either does not 
-exist or is not accessable."</emphasis>
+exist or is not accessible."</emphasis>
 </para>
 
 <para>
 When I try to join the domain I get the message "The machine account 
-for this computer either does not exist or is not accessable". Whats 
+for this computer either does not exist or is not accessible". Whats 
 wrong ?
 </para>
 
@@ -477,7 +483,7 @@ directory is 'hidden'.
 <para>The Windows NT policy editor is also included with the 
 Service Pack 3 (and later) for Windows NT 4.0. Extract the files using 
 <command>servicepackname /x</command>, ie thats <command>Nt4sp6ai.exe 
-/x</command> for service pack 6a.  The policy editor, <command>poledt.exe</command> and the 
+/x</command> for service pack 6a.  The policy editor, <command>poledit.exe</command> and the 
 associated template files (*.adm) should
 be extracted as well.  It is also possible to downloaded the policy template 
 files for Office97 and get a copy of the policy editor.  Another possible 
@@ -574,7 +580,7 @@ process and where can I	find them?</emphasis>
 	<para>
 	Another helpful method of debugging is to compile samba using the 
 	<command>gcc -g </command> flag.   This will include debug 
-	information in the binaries and allow you to attch gdb to the 
+	information in the binaries and allow you to attach gdb to the 
 	running smbd / nmbd process.  In order to attach gdb to an smbd 
 	process for an NT workstation, first get the workstation to make the 
 	connection. Pressing ctrl-alt-delete and going down to the domain box 
@@ -587,7 +593,7 @@ process and where can I	find them?</emphasis>
 	</para>
 
 	<para>
-	Some usefull samba commands worth investigating:
+	Some useful samba commands worth investigating:
 	</para>
 	
 	<itemizedlist>
@@ -704,7 +710,7 @@ or a Windows 9x box?</emphasis>
 	on the Samba mirrors might mention your problem. If so,
 	it might mean that the developers are working on it.</para></listitem>
  
-	<listitem><para>See how Scott Merrill simulates a BDC behaviour at 
+	<listitem><para>See how Scott Merrill simulates a BDC behavior at 
         <ulink url="http://www.skippy.net/linux/smb-howto.html">
         http://www.skippy.net/linux/smb-howto.html</>. </para></listitem>
 
@@ -771,7 +777,7 @@ If you post a message to one of the lists please observe the following guide lin
 		Don't post html encoded messages (if you can select colour or font 
 		size its html).</para></listitem>
 
-	<listitem><para> If you run one of those niffy 'I'm on holidays' things when 
+	<listitem><para> If you run one of those nifty 'I'm on holidays' things when 
 		you are away, make sure its configured	to not answer mailing lists.
 		</para></listitem> 
 
@@ -811,7 +817,7 @@ If you post a message to one of the lists please observe the following guide lin
 
     <para>
 	Please don't post messages to the list asking to be removed, you will just
-        be refered to the above address (unless that process failed in some way...)
+        be referred to the above address (unless that process failed in some way...)
     </para>
 </sect2>      
 </sect1>
@@ -857,7 +863,7 @@ Control (DOMAIN member, Primary Domain controller or Backup Domain controller).
 <para>
 The same is true for OS/2 Warp Server, Digital Pathworks and other similar
 products, all of which can participate in Domain Control along with Windows NT.
-However only those servers which have licenced Windows NT code in them can be
+However only those servers which have licensed Windows NT code in them can be
 a primary Domain Controller (eg Windows NT Server, Advanced Server for Unix.)
 </para>
 
@@ -867,7 +873,7 @@ To many people these terms can be confusing, so let's try to clear the air.
 
 <para>
 Every Windows NT system (workstation or server) has a registry database.
-The registry contains entries that describe the initialisation information
+The registry contains entries that describe the initialization information
 for all services (the equivalent of Unix Daemons) that run within the Windows
 NT environment. The registry also contains entries that tell application
 software where to find dynamically loadable libraries that they depend upon.
