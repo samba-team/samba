@@ -312,18 +312,21 @@ static int thread_rwlock_unlock(smb_rwlock_t *rwlock, const char *name)
 *****************************************************************/  
 static void thread_log_suspicious_usage(const char* from, const char* info)
 {
-	void *addresses[10];
-	int num_addresses, i;
-	char **bt_symbols;
-	
 	DEBUG(1,("log_suspicious_usage: from %s info='%s'\n", from, info));
 #ifdef HAVE_BACKTRACE
-	num_addresses = backtrace(addresses, 8);
-	bt_symbols = backtrace_symbols(addresses, num_addresses);
-	for (i=0; i<num_addresses; i++) {
-		DEBUG(1,("log_suspicious_usage: %s%s\n", DEBUGTAB(1), bt_symbols[i]));
+	{
+		void *addresses[10];
+		int num_addresses = backtrace(addresses, 8);
+		char **bt_symbols = backtrace_symbols(addresses, num_addresses);
+		int i;
+
+		if (bt_symbols) {
+			for (i=0; i<num_addresses; i++) {
+				DEBUG(1,("log_suspicious_usage: %s%s\n", DEBUGTAB(1), bt_symbols[i]));
+			}
+			free(bt_symbols);
+		}
 	}
-	free(bt_symbols);
 #endif
 }
 
@@ -333,18 +336,21 @@ static void thread_log_suspicious_usage(const char* from, const char* info)
 *****************************************************************/  
 static void thread_print_suspicious_usage(const char* from, const char* info)
 {
-	void *addresses[10];
-	int num_addresses, i;
-	char **bt_symbols;
-	
 	printf("log_suspicious_usage: from %s info='%s'\n", from, info);
 #ifdef HAVE_BACKTRACE
-	num_addresses = backtrace(addresses, 8);
-	bt_symbols = backtrace_symbols(addresses, num_addresses);
-	for (i=0; i<num_addresses; i++) {
-		printf("log_suspicious_usage: %s%s\n", DEBUGTAB(1), bt_symbols[i]);
+	{
+		void *addresses[10];
+		int num_addresses = backtrace(addresses, 8);
+		char **bt_symbols = backtrace_symbols(addresses, num_addresses);
+		int i;
+
+		if (bt_symbols) {
+			for (i=0; i<num_addresses; i++) {
+				printf("log_suspicious_usage: %s%s\n", DEBUGTAB(1), bt_symbols[i]);
+			}
+			free(bt_symbols);
+		}
 	}
-	free(bt_symbols);
 #endif
 }
 
@@ -383,6 +389,9 @@ static void thread_fault_setup(void)
 #ifdef SIGBUS
 	CatchSignal(SIGBUS,SIGNAL_CAST thread_sig_fault);
 #endif
+#ifdef SIGABRT
+	CatchSignal(SIGABRT,SIGNAL_CAST thread_sig_fault);
+#endif
 }
 
 /*******************************************************************
@@ -391,9 +400,6 @@ report a fault in a thread
 static void thread_fault_handler(int sig)
 {
 	static int counter;
-	void *addresses[10];
-	int num_addresses, i;
-	char **bt_symbols;
 	
 	/* try to catch recursive faults */
 	thread_fault_setup();
@@ -405,12 +411,19 @@ static void thread_fault_handler(int sig)
 	DEBUG(0,("Please read the file BUGS.txt in the distribution\n"));
 	DEBUG(0,("===============================================================\n"));
 #ifdef HAVE_BACKTRACE
-	num_addresses = backtrace(addresses, 10);
-	bt_symbols = backtrace_symbols(addresses, num_addresses);
-	for (i=0; i<num_addresses; i++) {
-		DEBUG(9,("fault_report:   %s\n", bt_symbols[i]));
+	{
+		void *addresses[10];
+		int num_addresses = backtrace(addresses, 8);
+		char **bt_symbols = backtrace_symbols(addresses, num_addresses);
+		int i;
+
+		if (bt_symbols) {
+			for (i=0; i<num_addresses; i++) {
+				DEBUG(1,("fault_report: %s%s\n", DEBUGTAB(1), bt_symbols[i]));
+			}
+			free(bt_symbols);
+		}
 	}
-	free(bt_symbols);
 #endif
 	pthread_exit(NULL); /* terminate failing thread only */
 }
