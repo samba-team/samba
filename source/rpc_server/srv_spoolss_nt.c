@@ -272,7 +272,8 @@ static BOOL delete_printer_handle(POLICY_HND *hnd)
 		/* Printer->dev.handlename equals portname equals sharename */
 		slprintf(command, sizeof(command), "%s \"%s\"", cmd,
 					Printer->dev.handlename);
-		slprintf(tmp_file, sizeof(tmp_file), "%s/smbcmd.%d", path, local_pid);
+		dos_to_unix(command, True);  /* Convert printername to unix-codepage */
+        slprintf(tmp_file, sizeof(tmp_file), "%s/smbcmd.%d", path, local_pid);
 
 		unlink(tmp_file);
 		DEBUG(10,("Running [%s > %s]\n", command,tmp_file));
@@ -289,7 +290,6 @@ static BOOL delete_printer_handle(POLICY_HND *hnd)
 		kill(0, SIGHUP);
 
 		if ( ( i = lp_servicenumber( Printer->dev.handlename ) ) >= 0 ) {
-			lp_remove_service( i );
 			lp_killservice( i );
 			return True;
 		} else
@@ -1605,11 +1605,9 @@ static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int snum, SPO
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	print_queue_struct *queue=NULL;
 	
-	DEBUG(4,("construct_notify_printer_info\n"));
-	
 	type=option_type->type;
 
-	DEBUGADD(4,("Notify type: [%s], number of notify info: [%d] on printer: [%s]\n",
+	DEBUG(4,("construct_notify_printer_info: Notify type: [%s], number of notify info: [%d] on printer: [%s]\n",
 		(option_type->type==PRINTER_NOTIFY_TYPE?"PRINTER_NOTIFY_TYPE":"JOB_NOTIFY_TYPE"),
 		option_type->count, lp_servicename(snum)));
 	
@@ -1618,7 +1616,7 @@ static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int snum, SPO
 
 	for(field_num=0; field_num<option_type->count; field_num++) {
 		field = option_type->fields[field_num];
-		DEBUGADD(4,("notify [%d]: type [%x], field [%x]\n", field_num, type, field));
+		DEBUG(4,("construct_notify_printer_info: notify [%d]: type [%x], field [%x]\n", field_num, type, field));
 
 		if (!search_notify(type, field, &j) )
 			continue;
@@ -1630,8 +1628,8 @@ static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int snum, SPO
 
 		construct_info_data(current_data, type, field, id);		
 
-		DEBUG(10,("construct_notify_printer_info: calling %s\n",
-				notify_info_data_table[j].name ));
+		DEBUG(10,("construct_notify_printer_info: calling [%s]  snum=%d  printername=[%s])\n",
+				notify_info_data_table[j].name, snum, printer->info_2->printername ));
 
 		notify_info_data_table[j].fn(snum, current_data, queue, printer);
 
