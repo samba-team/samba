@@ -355,8 +355,17 @@ void unbecome_root(BOOL restore_dir)
 	{
 		DEBUG(0,("ERROR: unbecome root depth is %d\n",
 			 become_root_depth));
+		SMB_ASSERT(False);
 	}
 
+	become_root_depth--;
+
+	if (become_root_depth > 0)
+	{
+		DEBUG(10,("not yet non-root: unbecome root depth is %d\n",
+			become_root_depth));
+		return;
+	}
 	/* we might have done a become_user() while running as root,
 	   if we have then become root again in order to become 
 	   non root! */
@@ -389,5 +398,4 @@ void unbecome_root(BOOL restore_dir)
 
 	current_user = current_user_saved;
 
-	become_root_depth--;
 }
