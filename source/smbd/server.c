@@ -636,7 +636,7 @@ static void usage(char *pname)
 		slprintf(debugf, sizeof(debugf), "%s/log.smbd", LOGFILEBASE);
 	}
 
-	pstrcpy(remote_machine, "smb");
+	pstrcpy(remote_machine, "smbd");
 
 	setup_logging(argv[0],False);
 
