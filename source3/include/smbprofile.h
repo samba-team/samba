@@ -34,7 +34,7 @@ enum flush_reason_enum { SEEK_FLUSH, READ_FLUSH, WRITE_FLUSH, READRAW_FLUSH,
 
 #define PROF_SHMEM_KEY ((key_t)0x07021999)
 #define PROF_SHM_MAGIC 0x6349985
-#define PROF_SHM_VERSION 6
+#define PROF_SHM_VERSION 7
 
 /* time values in the following structure are in microseconds */
 
