@@ -308,6 +308,7 @@ static BOOL test_one_file(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VAL("BOTH_DIRECTORY_INFO", both_directory_info, size, all_info, all_info, size);
 	CHECK_VAL("ID_FULL_DIRECTORY_INFO", id_full_directory_info,           size, all_info, all_info, size);
 	CHECK_VAL("ID_BOTH_DIRECTORY_INFO", id_both_directory_info,           size, all_info, all_info, size);
+	CHECK_VAL("UNIX_INFO",           unix_info,           size, all_info, all_info, size);
 
 	CHECK_VAL("STANDARD",            standard,            alloc_size, all_info, all_info, alloc_size);
 	CHECK_VAL("EA_SIZE",             ea_size,             alloc_size, all_info, all_info, alloc_size);
@@ -316,6 +317,7 @@ static BOOL test_one_file(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VAL("BOTH_DIRECTORY_INFO", both_directory_info, alloc_size, all_info, all_info, alloc_size);
 	CHECK_VAL("ID_FULL_DIRECTORY_INFO", id_full_directory_info,           alloc_size, all_info, all_info, alloc_size);
 	CHECK_VAL("ID_BOTH_DIRECTORY_INFO", id_both_directory_info,           alloc_size, all_info, all_info, alloc_size);
+	CHECK_VAL("UNIX_INFO",           unix_info,           alloc_size, all_info, all_info, alloc_size);
 
 	CHECK_VAL("EA_SIZE",             ea_size,             ea_size, all_info, all_info, ea_size);
 	CHECK_VAL("FULL_DIRECTORY_INFO", full_directory_info, ea_size, all_info, all_info, ea_size);
