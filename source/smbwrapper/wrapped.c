@@ -625,5 +625,6 @@ __asm__(".globl _write; _write = write");
 
  int creat(const char *path, mode_t mode)
 {
-	return open(path, O_WRONLY | O_CREAT | O_TRUNC, mode);
+	/* drat, including sys/fcntl.h gives conflicts */
+	return open(path, 01101, mode);
 }
