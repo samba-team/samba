@@ -62,7 +62,8 @@ struct
 /****************************************************************************
   create an error packet from errno
 ****************************************************************************/
-int unix_error_packet(char *outbuf,int def_class,uint32 def_code,int line)
+int unix_error_packet(char *outbuf,int def_class,uint32 def_code,
+		      int line, const char *file)
 {
 	int eclass=def_class;
 	int ecode=def_code;
@@ -84,7 +85,7 @@ int unix_error_packet(char *outbuf,int def_class,uint32 def_code,int line)
 		}
 	}
 
-	return error_packet(outbuf,NT_STATUS_OK,eclass,ecode,line);
+	return error_packet(outbuf,NT_STATUS_OK,eclass,ecode,line,file);
 }
 
 
@@ -92,7 +93,7 @@ int unix_error_packet(char *outbuf,int def_class,uint32 def_code,int line)
   create an error packet. Normally called using the ERROR() macro
 ****************************************************************************/
 int error_packet(char *outbuf,NTSTATUS ntstatus,
-		 uint8 eclass,uint32 ecode,int line)
+		 uint8 eclass,uint32 ecode,int line, const char *file)
 {
 	int outsize = set_message(outbuf,0,0,True);
 	extern uint32 global_client_caps;
@@ -106,8 +107,8 @@ int error_packet(char *outbuf,NTSTATUS ntstatus,
 		}
 		SIVAL(outbuf,smb_rcls,NT_STATUS_V(ntstatus));
 		SSVAL(outbuf,smb_flg2, SVAL(outbuf,smb_flg2)|FLAGS2_32_BIT_ERROR_CODES);
-		DEBUG(3,("error packet at line %d cmd=%d (%s) %s\n",
-			 line,
+		DEBUG(3,("error packet at %s(%d) cmd=%d (%s) %s\n",
+			 file, line,
 			 (int)CVAL(outbuf,smb_com),
 			 smb_fn_name(CVAL(outbuf,smb_com)),
 			 get_nt_error_msg(ntstatus)));
@@ -122,8 +123,8 @@ int error_packet(char *outbuf,NTSTATUS ntstatus,
 	SSVAL(outbuf,smb_rcls,eclass);
 	SSVAL(outbuf,smb_err,ecode);  
 
-	DEBUG(3,("error packet at line %d cmd=%d (%s) eclass=%d ecode=%d\n",
-		  line,
+	DEBUG(3,("error packet at %s(%d) cmd=%d (%s) eclass=%d ecode=%d\n",
+		  file, line,
 		  (int)CVAL(outbuf,smb_com),
 		  smb_fn_name(CVAL(outbuf,smb_com)),
 		  eclass,
