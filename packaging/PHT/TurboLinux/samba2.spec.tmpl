@@ -69,6 +69,9 @@ more information on SMB and NetBIOS over TCP/IP. There you also find
 explanation for conceps like NetBIOS name or share.
 
 %changelog
+* Thu Jul 26 2001 John H Terpstra <jht@samba.org>
+- Addded WinBind stuff
+
 * Tue Mar 27 2001 John H Terpstra <jht@samba.org>
 - Fixes to make 2.2 compile
 
@@ -241,7 +244,7 @@ install -m755 source/script/$i $RPM_BUILD_ROOT%{prefix}/bin
 done
 
 # Install secure binary files
-for i in smbd nmbd swat smbmount smbumount smbmnt debug2html smbfilter 
+for i in smbd nmbd swat smbmount smbumount smbmnt debug2html smbfilter wbinfo winbindd
 do
 install -m755 -s source/bin/$i $RPM_BUILD_ROOT/usr/sbin
 done
@@ -263,13 +266,16 @@ do
 install -m644 source/codepages/CP$i.TXT $RPM_BUILD_ROO%{prefix}/samba/codepages/src
 done
 
-# Install the nsswitch library extension file
+# Install the nsswitch library extension files
 install -m755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/lib
+install -m755 source/nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/lib
 # Make link for wins resolver
 ( cd $RPM_BUILD_ROOT/lib; ln -s libnss_wins.so libnss_wins.so.2; )
+( cd $RPM_BUILD_ROOT/lib; ln -s libnss_winbind.so libnss_winbind.so.2; )
 
 # Install PAM pam_smbpass.so
 install -m644 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/lib/security
+install -m644 source/nsswitch/pam_winbind.so $RPM_BUILD_ROOT/lib/security
 
 # Install SWAT helper files
 for i in swat/help/*.html docs/htmldocs/*.html
@@ -312,6 +318,7 @@ install -m644 docs/manpages/swat.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
 install -m644 docs/manpages/smbmount.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
 install -m644 docs/manpages/smbmnt.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
 install -m644 docs/manpages/smbumount.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
+install -m644 docs/manpages/winbind.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
 install -m644 packaging/PHT/TurboLinux/smb.conf $RPM_BUILD_ROOT/etc/samba/smb.conf
 install -m644 packaging/PHT/TurboLinux/smbusers $RPM_BUILD_ROOT/etc/samba/smbusers
 install -m755 packaging/PHT/TurboLinux/smbprint $RPM_BUILD_ROOT%{prefix}/bin
@@ -339,7 +346,7 @@ for i in 437 737 775 850 852 861 866 932 936 949 950 1251
 do
 %{prefix}/bin/make_smbcodepage c $i %{prefix}/share/samba/codepages/src/codepage_def.$i %{prefix}/share/samba/codepages/codepage.$i
 done
-for i in 437 737 850 852 861 866 932 936 949 950 ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 KOI8-R
+for i in 437 737 850 852 861 866 932 936 949 950 1251 ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 KOI8-R
 do
 %{prefix}/bin/make_unicodemap $i %{prefix}/share/samba/codepages/src/CP$i.TXT %{prefix}/share/samba/codepages/unicode_map.$i
 done
@@ -434,6 +441,8 @@ fi
 %attr(-,root,root) %{prefix}/sbin/smbd
 %attr(-,root,root) %{prefix}/sbin/nmbd
 %attr(-,root,root) %{prefix}/sbin/swat
+%attr(-,root,root) %{prefix}/sbin/wbinfo
+%attr(-,root,root) %{prefix}/sbin/winbindd
 %attr(-,root,root) %{prefix}/sbin/debug2html
 %attr(0750,root,root) %{prefix}/sbin/samba
 %attr(-,root,root) %{prefix}/bin/smbclient
@@ -451,8 +460,8 @@ fi
 %attr(-,root,root) %{prefix}/bin/smbprint
 %attr(-,root,root) %{prefix}/bin/smbspool
 %attr(-,root,root) %{prefix}/bin/smbadduser
-%attr(755,root,root) /lib/libnss_wins.s*
-%attr(755,root,root) /lib/security/pam_smbpass.so
+%attr(755,root,root) /lib/libnss_win*
+%attr(755,root,root) /lib/security/pam_*
 %attr(-,root,root) %{prefix}/share/swat/help/*
 %attr(-,root,root) %{prefix}/share/swat/images/*
 %attr(-,root,root) %{prefix}/share/swat/include/header.html

@@ -306,22 +306,21 @@ strip $DESTDIR/usr/bin/smb{mnt,umount}
 cp -p source/codepages/codepage_def.??? $DESTDIR/usr/share/samba/codepages/src
 
 # Install the nsswitch library extension file
-install -m 755 source/nsswitch/libnss_wins.so $DESTDIR/lib/libnss_wins.so.2.0
+mv $DESTDIR/usr/sbin/libnss_wins.so $DESTDIR/lib/libnss_wins.so.2.0
 # Make link for wins resolver
 ln -s libnss_wins.so.2.0 $DESTDIR/lib/libnss_wins.so.2
 ln -s libnss_wins.so.2.0 $DESTDIR/lib/libnss_wins.so
 
-# install -m 755 source/nsswitch/libnss_winbind.so $DESTDIR/lib/libnss_winbind.so.2.0
-# # Make link for winbind resolver
-# ln -s libnss_winbind.so.2.0 $DESTDIR/lib/libnss_winbind.so.2
-# ln -s libnss_winbind.so.2.0 $DESTDIR/lib/libnss_winbind.so
+# Add PAM smbpass and winbind facilities
+mv $DESTDIR/usr/bin/pam_smbpass.so $DESTDIR/lib/security
+mv $DESTDIR/usr/sbin/libnss_winbind.so $DESTDIR/lib/libnss_winbind.so.2.0
+# Make link for winbind resolver
+ln -s libnss_winbind.so.2.0 $DESTDIR/lib/libnss_winbind.so.2
+ln -s libnss_winbind.so.2.0 $DESTDIR/lib/libnss_winbind.so
 
-# install -m 755 source/nsswitch/pam_winbind.so $DESTDIR/lib/security
-
-# install -m 755 source/bin/wbinfo $DESTDIR/usr/bin
-
+install -m 755 source/nsswitch/pam_winbind.so $DESTDIR/lib/security
+install -m 755 source/bin/wbinfo $DESTDIR/usr/bin
 install -m 755 source/bin/debug2html $DESTDIR/usr/sbin/debug2html
-
 #lsb: cp -p $VVS/samba.init $DESTDIR/etc/rc.d/init.d/samba
 ln -s /etc/rc.d/init.d/samba $DESTDIR/usr/sbin
 
@@ -341,8 +340,6 @@ cp -p $VVS/README.home $DESTDIR/etc/skel/Samba/README.txt
 cp -p $VVS/README.Public $DESTDIR/%{LSBservedir}/Public/README.txt
 cp -p $VVS/README.profiles $DESTDIR/%{LSBservedir}/profiles/README.txt
 
-# Add PAM smbpass facility
-mv $DESTDIR/usr/bin/pam_smbpass.so $DESTDIR/lib/security
 
 install -m 755 $VVS/samba.init-lsb $DESTDIR/%{SVIdir}/%{Name}
 
@@ -414,7 +411,7 @@ swat					swat
 %{_defaultdocdir}/samba- 		doc
 tmp					IGNORED
 man					IGNORED
-lib/security				IGNORED
+lib/security				base
 /src/$					IGNORED
 /usr/private/$				IGNORED
 @default@
@@ -424,8 +421,8 @@ cat << 'EOF' | %{mkLists} -f -a samba
 Samba/README.txt			base
 ^/etc					config-IGNORED
 %{_defaultdocdir}/samba-[^/]+/(COPYING|README$)	base
-libnss_wins.*				base
-pam_smbpass.so				base
+libnss_*				base
+pam_*.so				base
 %{_defaultdocdir}/samba-[^/]+/(COPYING|README$)	base
 %{_defaultdocdir}/samba- 		doc
 smb(mount|mnt|umount)			smbfs
