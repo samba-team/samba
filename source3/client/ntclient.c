@@ -1,8 +1,9 @@
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
-   SMB client
+   NT Domain Authentication SMB / MSRPC client
    Copyright (C) Andrew Tridgell 1994-1997
+   Copyright (C) Luke Kenneth Casson Leighton 1996-1997
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,970 +34,6 @@ extern pstring workgroup;
 
 #ifdef NTDOMAIN
 
-/****************************************************************************
-  open an rpc pipe (\NETLOGON or \srvsvc for example)
-  ****************************************************************************/
-static uint16 open_rpc_pipe(char *inbuf, char *outbuf, char *rname, int Client, int cnum)
-{
-	int fnum;
-	char *p;
-
-	DEBUG(5,("open_rpc_pipe: %s\n", rname));
-
-	bzero(outbuf,smb_size);
-	set_message(outbuf,15,1 + strlen(rname),True);
-
-	CVAL(outbuf,smb_com) = SMBopenX;
-	SSVAL(outbuf,smb_tid, cnum);
-	cli_setup_pkt(outbuf);
-
-	SSVAL(outbuf,smb_vwv0,0xFF);
-	SSVAL(outbuf,smb_vwv2,1);
-	SSVAL(outbuf,smb_vwv3,(DENY_NONE<<4));
-	SSVAL(outbuf,smb_vwv4,aSYSTEM | aHIDDEN);
-	SSVAL(outbuf,smb_vwv5,aSYSTEM | aHIDDEN);
-	SSVAL(outbuf,smb_vwv8,1);
-
-	p = smb_buf(outbuf);
-	strcpy(p,rname);
-	p = skip_string(p,1);
-
-	send_smb(Client,outbuf);
-	receive_smb(Client,inbuf,CLIENT_TIMEOUT);
-
-	if (CVAL(inbuf,smb_rcls) != 0)
-	{
-		if (CVAL(inbuf,smb_rcls) == ERRSRV &&
-		    SVAL(inbuf,smb_err) == ERRnoresource &&
-		    cli_reopen_connection(inbuf,outbuf))
-		{
-			return open_rpc_pipe(inbuf, outbuf, rname, Client, cnum);
-		}
-		DEBUG(0,("opening remote pipe %s - error %s\n", rname, smb_errstr(inbuf)));
-
-		return 0xffff;
-	}
-
-	fnum = SVAL(inbuf, smb_vwv2);
-
-	DEBUG(5,("opening pipe: fnum %d\n", fnum));
-
-	return fnum;
-}
-
-/****************************************************************************
-do an rpc bind
-****************************************************************************/
-static BOOL do_rpc_bind(uint16 fnum)
-{
-	char *rparam = NULL;
-	char *rdata = NULL;
-	char *p;
-	int rdrcnt,rprcnt;
-	int data_len;
-	pstring data; /* only 1024 bytes */
-	uint16 setup[2]; /* only need 2 uint16 setup parameters */
-
-	RPC_HDR    hdr;
-
-	RPC_HDR_RB hdr_rb;
-	RPC_IFACE abstract;
-	RPC_IFACE transfer;
-
-    BOOL valid_ack = False;
-	int call_id = 0x1;
-	int i;
-
-	static char abs_data[16];
-	static char trn_data[16];
-
-	/* create and send a MSRPC command with api LSA_OPENPOLICY */
-
-	DEBUG(4,("LSA RPC Bind[%d]\n", fnum));
-
-	for (i = 0; i < sizeof(trn_data); i++)
-	{
-		trn_data[i] = 2 * i;
-	}
-
-	for (i = 0; i < sizeof(abs_data); i++)
-	{
-		abs_data[i] = i;
-	}
-
-	/* create interface UUIDs. */
-	make_rpc_iface(&abstract, abs_data, 0x0);
-	make_rpc_iface(&transfer, trn_data, 0x2);
-
-	/* create the request RPC_HDR_RB */
-	make_rpc_hdr_rb(&hdr_rb, 
-	                0x1630, 0x1630, 0x0,
-	                0x1, 0x1, 0x1,
-					&abstract, &transfer);
-
-	/* stream the bind request data */
-	p = smb_io_rpc_hdr_rb(False, &hdr_rb, data + 0x10, data, 4, 0);
-
-	data_len = PTR_DIFF(p, data);
-
-	/* create the request RPC_HDR */
-	make_rpc_hdr(&hdr, RPC_BIND, 0x0, call_id, PTR_DIFF(p, data + 0x10));
-
-	/* stream the header into data */
-	p = smb_io_rpc_hdr(False, &hdr, data, data, 4, 0);
-
-	/* create setup parameters. */
-	setup[0] = 0x0026; /* 0x26 indicates "transact named pipe" */
-	setup[1] = fnum; /* file handle, from the SMBcreateX pipe, earlier */
-
-	/* send the data on \PIPE\ */
-	if (cli_call_api("\\PIPE\\", 0, data_len, 2, 1024,
-                BUFFER_SIZE,
-				&rprcnt, &rdrcnt,
-				NULL, data, setup,
-				&rparam, &rdata))
-	{
-		RPC_HDR_BA hdr_ba;
-		int hdr_len;
-		int pkt_len;
-
-		DEBUG(5, ("cli_call_api: return OK\n"));
-
-		p = rdata;
-
-		if (p) p = smb_io_rpc_hdr(True, &hdr, p, rdata, 4, 0);
-		if (p) p = align_offset(p, rdata, 4); /* oh, what a surprise */
-
-		hdr_len = PTR_DIFF(p, rdata);
-
-		if (p) p = smb_io_rpc_hdr_ba(True, &hdr_ba, p, rdata, 4, 0);
-
-		pkt_len = PTR_DIFF(p, rdata);
-#if 0
-		if (p && hdr_len != hdr.hdr.frag_len - hdr.alloc_hint)
-		{
-			/* header length not same as calculated header length */
-			DEBUG(2,("do_lsa_open_policy: hdr_len %x != frag_len-alloc_hint %x\n",
-			          hdr_len, hdr.hdr.frag_len - hdr.alloc_hint));
-			p = NULL;
-		}
-
-
-		if (p && pkt_len != hdr.hdr.frag_len)
-		{
-			/* packet data size not same as reported fragment length */
-			DEBUG(2,("do_lsa_open_policy: pkt_len %x != frag_len \n",
-			                           pkt_len, hdr.hdr.frag_len));
-			p = NULL;
-		}
-		if (p && r_o.status != 0)
-		{
-			/* report error code */
-			DEBUG(0,("LSA_OPENPOLICY: nt_status error %lx\n", r_o.status));
-			p = NULL;
-		}
-#endif
-		if (p)
-		{
-			/* ok, at last: we're happy. */
-			valid_ack = True;
-		}
-	}
-
-	if (rparam) free(rparam);
-	if (rdata) free(rdata);
-
-	return valid_ack;
-}
-
-/****************************************************************************
-do a LSA Open Policy
-****************************************************************************/
-static BOOL do_lsa_open_policy(uint16 fnum, char *server_name, LSA_POL_HND *hnd)
-{
-	char *rparam = NULL;
-	char *rdata = NULL;
-	char *p;
-	int rdrcnt,rprcnt;
-	pstring data; /* only 1024 bytes */
-	uint16 setup[2]; /* only need 2 uint16 setup parameters */
-	LSA_Q_OPEN_POL q_o;
-	int call_id = 0x1;
-    BOOL valid_pol = False;
-
-	if (hnd == NULL) return False;
-
-	/* create and send a MSRPC command with api LSA_OPENPOLICY */
-
-	DEBUG(4,("LSA Open Policy\n"));
-
-	/* store the parameters */
-	make_q_open_pol(&q_o, server_name, 0, 0, 0x1);
-
-	/* turn parameters into data stream */
-	p = lsa_io_q_open_pol(False, &q_o, data + 0x18, data, 4, 0);
-
-	/* create the request RPC_HDR_RR with no data */
-	create_rpc_request(call_id, LSA_OPENPOLICY, data, PTR_DIFF(p, data));
-
-	/* create setup parameters. */
-	setup[0] = 0x0026; /* 0x26 indicates "transact named pipe" */
-	setup[1] = fnum; /* file handle, from the SMBcreateX pipe, earlier */
-
-	/* send the data on \PIPE\ */
-	if (cli_call_api("\\PIPE\\", 0, PTR_DIFF(p, data), 2, 1024,
-                BUFFER_SIZE,
-				&rprcnt, &rdrcnt,
-				NULL, data, setup,
-				&rparam, &rdata))
-	{
-		LSA_R_OPEN_POL r_o;
-		RPC_HDR_RR hdr;
-		int hdr_len;
-		int pkt_len;
-
-		DEBUG(5, ("cli_call_api: return OK\n"));
-
-		p = rdata;
-
-		if (p) p = smb_io_rpc_hdr_rr   (True, &hdr, p, rdata, 4, 0);
-		if (p) p = align_offset(p, rdata, 4); /* oh, what a surprise */
-
-		hdr_len = PTR_DIFF(p, rdata);
-
-		if (p && hdr_len != hdr.hdr.frag_len - hdr.alloc_hint)
-		{
-			/* header length not same as calculated header length */
-			DEBUG(2,("do_lsa_open_policy: hdr_len %x != frag_len-alloc_hint %x\n",
-			          hdr_len, hdr.hdr.frag_len - hdr.alloc_hint));
-			p = NULL;
-		}
-
-		if (p) p = lsa_io_r_open_pol(True, &r_o, p, rdata, 4, 0);
-		
-		pkt_len = PTR_DIFF(p, rdata);
-
-		if (p && pkt_len != hdr.hdr.frag_len)
-		{
-			/* packet data size not same as reported fragment length */
-			DEBUG(2,("do_lsa_open_policy: pkt_len %x != frag_len \n",
-			                           pkt_len, hdr.hdr.frag_len));
-			p = NULL;
-		}
-
-		if (p && r_o.status != 0)
-		{
-			/* report error code */
-			DEBUG(0,("LSA_OPENPOLICY: nt_status error %lx\n", r_o.status));
-			p = NULL;
-		}
-
-		if (p)
-		{
-			/* ok, at last: we're happy. return the policy handle */
-			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
-			valid_pol = True;
-		}
-	}
-
-	if (rparam) free(rparam);
-	if (rdata) free(rdata);
-
-	return valid_pol;
-}
-
-/****************************************************************************
-do a LSA Query Info Policy
-****************************************************************************/
-static BOOL do_lsa_query_info_pol(uint16 fnum, LSA_POL_HND *hnd, uint16 info_class,
-			fstring domain_name, pstring domain_sid)
-{
-	char *rparam = NULL;
-	char *rdata = NULL;
-	char *p;
-	int rdrcnt,rprcnt;
-	pstring data; /* only 1024 bytes */
-	uint16 setup[2]; /* only need 2 uint16 setup parameters */
-	LSA_Q_QUERY_INFO q_q;
-	int call_id = 0x1;
-    BOOL valid_response = False;
-
-	if (hnd == NULL || domain_name == NULL || domain_sid == NULL) return False;
-
-	/* create and send a MSRPC command with api LSA_QUERYINFOPOLICY */
-
-	DEBUG(4,("LSA Query Info Policy\n"));
-
-	/* store the parameters */
-	make_q_query(&q_q, hnd, info_class);
-
-	/* turn parameters into data stream */
-	p = lsa_io_q_query(False, &q_q, data + 0x18, data, 4, 0);
-
-	/* create the request RPC_HDR_RR with no data */
-	create_rpc_request(call_id, LSA_QUERYINFOPOLICY, data, PTR_DIFF(p, data));
-
-	/* create setup parameters. */
-	setup[0] = 0x0026; /* 0x26 indicates "transact named pipe" */
-	setup[1] = fnum; /* file handle, from the SMBcreateX pipe, earlier */
-
-	/* send the data on \PIPE\ */
-	if (cli_call_api("\\PIPE\\", 0, PTR_DIFF(p, data), 2, 1024,
-                BUFFER_SIZE,
-				&rprcnt, &rdrcnt,
-				NULL, data, setup,
-				&rparam, &rdata))
-	{
-		LSA_R_QUERY_INFO r_q;
-		RPC_HDR_RR hdr;
-		int hdr_len;
-		int pkt_len;
-
-		DEBUG(5, ("cli_call_api: return OK\n"));
-
-		p = rdata;
-
-		if (p) p = smb_io_rpc_hdr_rr   (True, &hdr, p, rdata, 4, 0);
-		if (p) p = align_offset(p, rdata, 4); /* oh, what a surprise */
-
-		hdr_len = PTR_DIFF(p, rdata);
-
-		if (p && hdr_len != hdr.hdr.frag_len - hdr.alloc_hint)
-		{
-			/* header length not same as calculated header length */
-			DEBUG(2,("do_lsa_query_info: hdr_len %x != frag_len-alloc_hint %x\n",
-			          hdr_len, hdr.hdr.frag_len - hdr.alloc_hint));
-			p = NULL;
-		}
-
-		if (p) p = lsa_io_r_query(True, &r_q, p, rdata, 4, 0);
-		
-		pkt_len = PTR_DIFF(p, rdata);
-
-		if (p && pkt_len != hdr.hdr.frag_len)
-		{
-			/* packet data size not same as reported fragment length */
-			DEBUG(2,("do_lsa_query_info: pkt_len %x != frag_len \n",
-			                           pkt_len, hdr.hdr.frag_len));
-			p = NULL;
-		}
-
-		if (p && r_q.status != 0)
-		{
-			/* report error code */
-			DEBUG(0,("LSA_QUERYINFOPOLICY: nt_status error %lx\n", r_q.status));
-			p = NULL;
-		}
-
-		if (p && r_q.info_class != q_q.info_class)
-		{
-			/* report different info classes */
-			DEBUG(0,("LSA_QUERYINFOPOLICY: error info_class (q,r) differ - (%x,%x)\n",
-					q_q.info_class, r_q.info_class));
-			p = NULL;
-		}
-
-		if (p)
-		{
-			/* ok, at last: we're happy. */
-			switch (r_q.info_class)
-			{
-				case 3:
-				{
-					char *dom_name = unistrn2(r_q.dom.id3.uni_domain_name.buffer,
-					                          r_q.dom.id3.uni_domain_name.uni_str_len);
-					char *dom_sid  = dom_sid_to_string(&(r_q.dom.id3.dom_sid));
-					fstrcpy(domain_name, dom_name);
-					pstrcpy(domain_sid , dom_sid);
-
-					valid_response = True;
-					break;
-				}
-				case 5:
-				{
-					char *dom_name = unistrn2(r_q.dom.id5.uni_domain_name.buffer,
-					                          r_q.dom.id5.uni_domain_name.uni_str_len);
-					char *dom_sid  = dom_sid_to_string(&(r_q.dom.id5.dom_sid));
-					fstrcpy(domain_name, dom_name);
-					pstrcpy(domain_sid , dom_sid);
-
-					valid_response = True;
-					break;
-				}
-				default:
-				{
-					DEBUG(3,("LSA_QUERYINFOPOLICY: unknown info class\n"));
-					domain_name[0] = 0;
-					domain_sid [0] = 0;
-
-					break;
-				}
-			}
-			DEBUG(3,("LSA_QUERYINFOPOLICY (level %x): domain:%s  domain sid:%s\n",
-			          r_q.info_class, domain_name, domain_sid));
-		}
-	}
-
-	if (rparam) free(rparam);
-	if (rdata) free(rdata);
-
-	return valid_response;
-}
-
-/****************************************************************************
-do a LSA Close
-****************************************************************************/
-static BOOL do_lsa_close(uint16 fnum, LSA_POL_HND *hnd)
-{
-	char *rparam = NULL;
-	char *rdata = NULL;
-	char *p;
-	int rdrcnt,rprcnt;
-	pstring data; /* only 1024 bytes */
-	uint16 setup[2]; /* only need 2 uint16 setup parameters */
-	LSA_Q_CLOSE q_c;
-	int call_id = 0x1;
-    BOOL valid_close = False;
-
-	if (hnd == NULL) return False;
-
-	/* create and send a MSRPC command with api LSA_OPENPOLICY */
-
-	DEBUG(4,("LSA Close\n"));
-
-	/* store the parameters */
-	make_q_close(&q_c, hnd);
-
-	/* turn parameters into data stream */
-	p = lsa_io_q_close(False, &q_c, data + 0x18, data, 4, 0);
-
-	/* create the request RPC_HDR_RR with no data */
-	create_rpc_request(call_id, LSA_CLOSE, data, PTR_DIFF(p, data));
-
-	/* create setup parameters. */
-	setup[0] = 0x0026; /* 0x26 indicates "transact named pipe" */
-	setup[1] = fnum; /* file handle, from the SMBcreateX pipe, earlier */
-
-	/* send the data on \PIPE\ */
-	if (cli_call_api("\\PIPE\\", 0, PTR_DIFF(p, data), 2, 1024,
-                BUFFER_SIZE,
-				&rprcnt, &rdrcnt,
-				NULL, data, setup,
-				&rparam, &rdata))
-	{
-		LSA_R_CLOSE r_c;
-		RPC_HDR_RR hdr;
-		int hdr_len;
-		int pkt_len;
-
-		DEBUG(5, ("cli_call_api: return OK\n"));
-
-		p = rdata;
-
-		if (p) p = smb_io_rpc_hdr_rr   (True, &hdr, p, rdata, 4, 0);
-		if (p) p = align_offset(p, rdata, 4); /* oh, what a surprise */
-
-		hdr_len = PTR_DIFF(p, rdata);
-
-		if (p && hdr_len != hdr.hdr.frag_len - hdr.alloc_hint)
-		{
-			/* header length not same as calculated header length */
-			DEBUG(2,("do_lsa_close: hdr_len %x != frag_len-alloc_hint %x\n",
-			          hdr_len, hdr.hdr.frag_len - hdr.alloc_hint));
-			p = NULL;
-		}
-
-		if (p) p = lsa_io_r_close(True, &r_c, p, rdata, 4, 0);
-		
-		pkt_len = PTR_DIFF(p, rdata);
-
-		if (p && pkt_len != hdr.hdr.frag_len)
-		{
-			/* packet data size not same as reported fragment length */
-			DEBUG(2,("do_lsa_close: pkt_len %x != frag_len \n",
-			                           pkt_len, hdr.hdr.frag_len));
-			p = NULL;
-		}
-
-		if (p && r_c.status != 0)
-		{
-			/* report error code */
-			DEBUG(0,("LSA_OPENPOLICY: nt_status error %lx\n", r_c.status));
-			p = NULL;
-		}
-
-		if (p)
-		{
-			/* check that the returned policy handle is all zeros */
-			int i;
-			valid_close = True;
-
-			for (i = 0; i < sizeof(r_c.pol.data); i++)
-			{
-				if (r_c.pol.data[i] != 0)
-				{
-					valid_close = False;
-					break;
-				}
-			}	
-			if (!valid_close)
-			{
-				DEBUG(0,("LSA_CLOSE: non-zero handle returned\n"));
-			}
-		}
-	}
-
-	if (rparam) free(rparam);
-	if (rdata) free(rdata);
-
-	return valid_close;
-}
-
-/****************************************************************************
-do a LSA Request Challenge
-****************************************************************************/
-static BOOL do_lsa_req_chal(uint16 fnum,
-		char *desthost, char *myhostname,
-        DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal)
-{
-	char *rparam = NULL;
-	char *rdata = NULL;
-	char *p;
-	int rdrcnt,rprcnt;
-	pstring data; /* only 1024 bytes */
-	uint16 setup[2]; /* only need 2 uint16 setup parameters */
-	LSA_Q_REQ_CHAL q_c;
-	int call_id = 0x1;
-    BOOL valid_chal = False;
-
-	if (srv_chal == NULL || clnt_chal == NULL) return False;
-
-	/* create and send a MSRPC command with api LSA_REQCHAL */
-
-	DEBUG(4,("LSA Request Challenge from %s to %s: %lx %lx\n",
-	          desthost, myhostname, clnt_chal->data[0], clnt_chal->data[1]));
-
-	/* store the parameters */
-	make_q_req_chal(&q_c, desthost, myhostname, clnt_chal);
-
-
-	/* turn parameters into data stream */
-	p = lsa_io_q_req_chal(False, &q_c, data + 0x18, data, 4, 0);
-
-	/* create the request RPC_HDR_RR _after_ the main data: length is now known */
-	create_rpc_request(call_id, LSA_REQCHAL, data, PTR_DIFF(p, data));
-
-	/* create setup parameters. */
-	setup[0] = 0x0026; /* 0x26 indicates "transact named pipe" */
-	setup[1] = fnum; /* file handle, from the SMBcreateX pipe, earlier */
-
-	/* send the data on \PIPE\ */
-	if (cli_call_api("\\PIPE\\", 0, PTR_DIFF(p, data), 2, 1024,
-                BUFFER_SIZE,
-				&rprcnt,&rdrcnt,
-				NULL, data, setup,
-				&rparam,&rdata))
-	{
-		LSA_R_REQ_CHAL r_c;
-		RPC_HDR_RR hdr;
-		int hdr_len;
-		int pkt_len;
-
-		DEBUG(5, ("cli_call_api: return OK\n"));
-
-		p = rdata;
-
-		if (p) p = smb_io_rpc_hdr_rr   (True, &hdr, p, rdata, 4, 0);
-		if (p) p = align_offset(p, rdata, 4); /* oh, what a surprise */
-
-		hdr_len = PTR_DIFF(p, rdata);
-
-		if (p && hdr_len != hdr.hdr.frag_len - hdr.alloc_hint)
-		{
-			/* header length not same as calculated header length */
-			DEBUG(2,("do_lsa_req_chal: hdr_len %x != frag_len-alloc_hint %x\n",
-			          hdr_len, hdr.hdr.frag_len - hdr.alloc_hint));
-			p = NULL;
-		}
-
-		if (p) p = lsa_io_r_req_chal(True, &r_c, p, rdata, 4, 0);
-		
-		pkt_len = PTR_DIFF(p, rdata);
-
-		if (p && pkt_len != hdr.hdr.frag_len)
-		{
-			/* packet data size not same as reported fragment length */
-			DEBUG(2,("do_lsa_req_chal: pkt_len %x != frag_len \n",
-			                           pkt_len, hdr.hdr.frag_len));
-			p = NULL;
-		}
-
-		if (p && r_c.status != 0)
-		{
-			/* report error code */
-			DEBUG(0,("LSA_REQ_CHAL: nt_status error %lx\n", r_c.status));
-			p = NULL;
-		}
-
-		if (p)
-		{
-			/* ok, at last: we're happy. return the challenge */
-			memcpy(srv_chal, r_c.srv_chal.data, sizeof(srv_chal->data));
-			valid_chal = True;
-		}
-	}
-
-	if (rparam) free(rparam);
-	if (rdata) free(rdata);
-
-	return valid_chal;
-}
-
-/****************************************************************************
-do a LSA Authenticate 2
-****************************************************************************/
-static BOOL do_lsa_auth2(uint16 fnum,
-		char *logon_srv, char *acct_name, uint16 sec_chan, char *comp_name,
-        DOM_CHAL *clnt_chal, uint32 neg_flags, DOM_CHAL *srv_chal)
-{
-	char *rparam = NULL;
-	char *rdata = NULL;
-	char *p;
-	int rdrcnt,rprcnt;
-	pstring data; /* only 1024 bytes */
-	uint16 setup[2]; /* only need 2 uint16 setup parameters */
-	LSA_Q_AUTH_2 q_a;
-	int call_id = 0x1;
-    BOOL valid_chal = False;
-
-	if (srv_chal == NULL || clnt_chal == NULL) return False;
-
-	/* create and send a MSRPC command with api LSA_AUTH2 */
-
-	DEBUG(4,("LSA Authenticate 2: srv:%s acct:%s sc:%x mc: %s chal %lx %lx neg: %lx\n",
-	          logon_srv, acct_name, sec_chan, comp_name,
-	          clnt_chal->data[0], clnt_chal->data[1], neg_flags));
-
-	/* store the parameters */
-	make_q_auth_2(&q_a, logon_srv, acct_name, sec_chan, comp_name,
-	             clnt_chal, neg_flags);
-
-	/* turn parameters into data stream */
-	p = lsa_io_q_auth_2(False, &q_a, data + 0x18, data, 4, 0);
-
-	/* create the request RPC_HDR_RR _after_ the main data: length is now known */
-	create_rpc_request(call_id, LSA_AUTH2, data, PTR_DIFF(p, data));
-
-	/* create setup parameters. */
-	setup[0] = 0x0026; /* 0x26 indicates "transact named pipe" */
-	setup[1] = fnum; /* file handle, from the SMBcreateX pipe, earlier */
-
-	/* send the data on \PIPE\ */
-	if (cli_call_api("\\PIPE\\", 0, PTR_DIFF(p, data), 2, 1024,
-                BUFFER_SIZE,
-				&rprcnt,&rdrcnt,
-				NULL, data, setup,
-				&rparam,&rdata))
-	{
-		LSA_R_AUTH_2 r_a;
-		RPC_HDR_RR hdr;
-		int hdr_len;
-		int pkt_len;
-
-		DEBUG(5, ("cli_call_api: return OK\n"));
-
-		p = rdata;
-
-		if (p) p = smb_io_rpc_hdr_rr   (True, &hdr, p, rdata, 4, 0);
-		if (p) p = align_offset(p, rdata, 4); /* oh, what a surprise */
-
-		hdr_len = PTR_DIFF(p, rdata);
-
-		if (p && hdr_len != hdr.hdr.frag_len - hdr.alloc_hint)
-		{
-			/* header length not same as calculated header length */
-			DEBUG(2,("do_lsa_auth2: hdr_len %x != frag_len-alloc_hint %x\n",
-			          hdr_len, hdr.hdr.frag_len - hdr.alloc_hint));
-			p = NULL;
-		}
-
-		if (p) p = lsa_io_r_auth_2(True, &r_a, p, rdata, 4, 0);
-		
-		pkt_len = PTR_DIFF(p, rdata);
-
-		if (p && pkt_len != hdr.hdr.frag_len)
-		{
-			/* packet data size not same as reported fragment length */
-			DEBUG(2,("do_lsa_auth2: pkt_len %x != frag_len \n",
-			                           pkt_len, hdr.hdr.frag_len));
-			p = NULL;
-		}
-
-		if (p && r_a.status != 0)
-		{
-			/* report error code */
-			DEBUG(0,("LSA_AUTH2: nt_status error %lx\n", r_a.status));
-			p = NULL;
-		}
-
-		if (p && r_a.srv_flgs.neg_flags != q_a.clnt_flgs.neg_flags)
-		{
-			/* report different neg_flags */
-			DEBUG(0,("LSA_AUTH2: error neg_flags (q,r) differ - (%lx,%lx)\n",
-					q_a.clnt_flgs.neg_flags, r_a.srv_flgs.neg_flags));
-			p = NULL;
-		}
-
-		if (p)
-		{
-			/* ok, at last: we're happy. return the challenge */
-			memcpy(srv_chal, r_a.srv_chal.data, sizeof(srv_chal->data));
-			valid_chal = True;
-		}
-	}
-
-	if (rparam) free(rparam);
-	if (rdata) free(rdata);
-
-	return valid_chal;
-}
-
-/***************************************************************************
-do a LSA SAM Logon
-****************************************************************************/
-static BOOL do_lsa_sam_logon(uint16 fnum, uint32 sess_key[2], DOM_CRED *sto_clnt_cred,
-		char *logon_srv, char *comp_name,
-        DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
-		uint16 logon_level, uint16 switch_value, DOM_ID_INFO_1 *id1,
-		LSA_USER_INFO *user_info,
-		DOM_CRED *srv_cred)
-{
-	char *rparam = NULL;
-	char *rdata = NULL;
-	char *p;
-	int rdrcnt,rprcnt;
-	pstring data; /* only 1024 bytes */
-	uint16 setup[2]; /* only need 2 uint16 setup parameters */
-	LSA_Q_SAM_LOGON q_s;
-	int call_id = 0x1;
-    BOOL valid_cred = False;
-
-	if (srv_cred == NULL || clnt_cred == NULL || rtn_cred == NULL || user_info == NULL) return False;
-
-	/* create and send a MSRPC command with api LSA_SAMLOGON */
-
-	DEBUG(4,("LSA SAM Logon: srv:%s mc:%s clnt %lx %lx %lx rtn: %lx %lx %lx ll: %d\n",
-	          logon_srv, comp_name,
-	          clnt_cred->challenge.data[0], clnt_cred->challenge.data[1], clnt_cred->timestamp.time,
-	          rtn_cred ->challenge.data[0], rtn_cred ->challenge.data[1], rtn_cred ->timestamp.time,
-	          logon_level));
-
-	/* store the parameters */
-	make_sam_info(&(q_s.sam_id), logon_srv, comp_name,
-	             clnt_cred, rtn_cred, logon_level, switch_value, id1);
-
-	/* turn parameters into data stream */
-	p = lsa_io_q_sam_logon(False, &q_s, data + 0x18, data, 4, 0);
-
-	/* create the request RPC_HDR_RR _after_ the main data: length is now known */
-	create_rpc_request(call_id, LSA_SAMLOGON, data, PTR_DIFF(p, data));
-
-	/* create setup parameters. */
-	setup[0] = 0x0026; /* 0x26 indicates "transact named pipe" */
-	setup[1] = fnum; /* file handle, from the SMBcreateX pipe, earlier */
-
-	/* send the data on \PIPE\ */
-	if (cli_call_api("\\PIPE\\", 0, PTR_DIFF(p, data), 2, 1024,
-                BUFFER_SIZE,
-				&rprcnt,&rdrcnt,
-				NULL, data, setup,
-				&rparam,&rdata))
-	{
-		LSA_R_SAM_LOGON r_s;
-		RPC_HDR_RR hdr;
-		int hdr_len;
-		int pkt_len;
-
-		r_s.user = user_info;
-
-		DEBUG(5, ("cli_call_api: return OK\n"));
-
-		p = rdata;
-
-		if (p) p = smb_io_rpc_hdr_rr   (True, &hdr, p, rdata, 4, 0);
-		if (p) p = align_offset(p, rdata, 4); /* oh, what a surprise */
-
-		hdr_len = PTR_DIFF(p, rdata);
-
-		if (p && hdr_len != hdr.hdr.frag_len - hdr.alloc_hint)
-		{
-			/* header length not same as calculated header length */
-			DEBUG(2,("do_lsa_sam_logon: hdr_len %x != frag_len-alloc_hint %x\n",
-			          hdr_len, hdr.hdr.frag_len - hdr.alloc_hint));
-			p = NULL;
-		}
-
-		if (p) p = lsa_io_r_sam_logon(True, &r_s, p, rdata, 4, 0);
-		
-		pkt_len = PTR_DIFF(p, rdata);
-
-		if (p && pkt_len != hdr.hdr.frag_len)
-		{
-			/* packet data size not same as reported fragment length */
-			DEBUG(2,("do_lsa_sam_logon: pkt_len %x != frag_len \n",
-			                           pkt_len, hdr.hdr.frag_len));
-			p = NULL;
-		}
-
-		if (p && r_s.status != 0)
-		{
-			/* report error code */
-			DEBUG(0,("LSA_SAMLOGON: nt_status error %lx\n", r_s.status));
-			p = NULL;
-		}
-
-		if (p && r_s.switch_value != 3)
-		{
-			/* report different switch_value */
-			DEBUG(0,("LSA_SAMLOGON: switch_value of 3 expected %x\n",
-					r_s.switch_value));
-			p = NULL;
-		}
-
-		if (p)
-		{
-			if (clnt_deal_with_creds(sess_key, sto_clnt_cred, &(r_s.srv_creds)))
-			{
-				DEBUG(5, ("do_lsa_sam_logon: server credential check OK\n"));
-				/* ok, at last: we're happy. return the challenge */
-				memcpy(srv_cred, &(r_s.srv_creds), sizeof(r_s.srv_creds));
-				valid_cred = True;
-			}
-			else
-			{
-				DEBUG(5, ("do_lsa_sam_logon: server credential check failed\n"));
-			}
-		}
-	}
-
-	if (rparam) free(rparam);
-	if (rdata) free(rdata);
-
-	return valid_cred;
-}
-
-/***************************************************************************
-do a LSA SAM Logoff
-****************************************************************************/
-static BOOL do_lsa_sam_logoff(uint16 fnum, uint32 sess_key[2], DOM_CRED *sto_clnt_cred,
-		char *logon_srv, char *comp_name,
-        DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
-		uint16 logon_level, uint16 switch_value, DOM_ID_INFO_1 *id1,
-		DOM_CRED *srv_cred)
-{
-	char *rparam = NULL;
-	char *rdata = NULL;
-	char *p;
-	int rdrcnt,rprcnt;
-	pstring data; /* only 1024 bytes */
-	uint16 setup[2]; /* only need 2 uint16 setup parameters */
-	LSA_Q_SAM_LOGOFF q_s;
-	int call_id = 0x1;
-    BOOL valid_cred = False;
-
-	if (srv_cred == NULL || clnt_cred == NULL || rtn_cred == NULL) return False;
-
-	/* create and send a MSRPC command with api LSA_SAMLOGON */
-
-	DEBUG(4,("LSA SAM Logoff: srv:%s mc:%s clnt %lx %lx %lx rtn: %lx %lx %lx ll: %d\n",
-	          logon_srv, comp_name,
-	          clnt_cred->challenge.data[0], clnt_cred->challenge.data[1], clnt_cred->timestamp.time,
-	          rtn_cred ->challenge.data[0], rtn_cred ->challenge.data[1], rtn_cred ->timestamp.time,
-	          logon_level));
-
-	/* store the parameters */
-	make_sam_info(&(q_s.sam_id), logon_srv, comp_name,
-	             clnt_cred, rtn_cred, logon_level, switch_value, id1);
-
-	/* turn parameters into data stream */
-	p = lsa_io_q_sam_logoff(False, &q_s, data + 0x18, data, 4, 0);
-
-	/* create the request RPC_HDR_RR _after_ the main data: length is now known */
-	create_rpc_request(call_id, LSA_SAMLOGOFF, data, PTR_DIFF(p, data));
-
-	/* create setup parameters. */
-	setup[0] = 0x0026; /* 0x26 indicates "transact named pipe" */
-	setup[1] = fnum; /* file handle, from the SMBcreateX pipe, earlier */
-
-	/* send the data on \PIPE\ */
-	if (cli_call_api("\\PIPE\\", 0, PTR_DIFF(p, data), 2, 1024,
-                BUFFER_SIZE,
-				&rprcnt,&rdrcnt,
-				NULL, data, setup,
-				&rparam,&rdata))
-	{
-		LSA_R_SAM_LOGOFF r_s;
-		RPC_HDR_RR hdr;
-		int hdr_len;
-		int pkt_len;
-
-		DEBUG(5, ("cli_call_api: return OK\n"));
-
-		p = rdata;
-
-		if (p) p = smb_io_rpc_hdr_rr   (True, &hdr, p, rdata, 4, 0);
-		if (p) p = align_offset(p, rdata, 4); /* oh, what a surprise */
-
-		hdr_len = PTR_DIFF(p, rdata);
-
-		if (p && hdr_len != hdr.hdr.frag_len - hdr.alloc_hint)
-		{
-			/* header length not same as calculated header length */
-			DEBUG(2,("do_lsa_sam_logoff: hdr_len %x != frag_len-alloc_hint %x\n",
-			          hdr_len, hdr.hdr.frag_len - hdr.alloc_hint));
-			p = NULL;
-		}
-
-		if (p) p = lsa_io_r_sam_logoff(True, &r_s, p, rdata, 4, 0);
-		
-		pkt_len = PTR_DIFF(p, rdata);
-
-		if (p && pkt_len != hdr.hdr.frag_len)
-		{
-			/* packet data size not same as reported fragment length */
-			DEBUG(2,("do_lsa_sam_logoff: pkt_len %x != frag_len \n",
-			                           pkt_len, hdr.hdr.frag_len));
-			p = NULL;
-		}
-
-		if (p && r_s.status != 0)
-		{
-			/* report error code */
-			DEBUG(0,("LSA_SAMLOGOFF: nt_status error %lx\n", r_s.status));
-			p = NULL;
-		}
-
-		if (p)
-		{
-			if (clnt_deal_with_creds(sess_key, sto_clnt_cred, &(r_s.srv_creds)))
-			{
-				DEBUG(5, ("do_lsa_sam_logoff: server credential check OK\n"));
-				/* ok, at last: we're happy. return the challenge */
-				memcpy(srv_cred, &(r_s.srv_creds), sizeof(r_s.srv_creds));
-				valid_cred = True;
-			}
-			else
-			{
-				DEBUG(5, ("do_lsa_sam_logoff: server credential check failed\n"));
-			}
-		}
-	}
-
-	if (rparam) free(rparam);
-	if (rdata) free(rdata);
-
-	return valid_cred;
-}
 
 /****************************************************************************
 experimental nt login.
@@ -1022,6 +59,7 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 	DOM_ID_INFO_1 id1;
 	LSA_USER_INFO user_info1;
 	LSA_POL_HND pol;
+	int i;
 
 	UTIME zerotime;
 
@@ -1030,6 +68,12 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 	fstring mach_acct;
 	fstring mach_pwd;
 	fstring server_name;
+
+	RPC_IFACE abstract;
+	RPC_IFACE transfer;
+
+	static char abs_data[16];
+	static char trn_data[16];
 
 	/* received from LSA Query Info Policy, level 5 */
 	fstring level5_domain_name;
@@ -1040,6 +84,7 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 	pstring level3_domain_sid;
 
 	uint16 fnum;
+	uint32 call_id = 0;
 	char *inbuf,*outbuf; 
 
 	zerotime.time = 0;
@@ -1063,7 +108,25 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 
 	/******************* bind request on \PIPE\lsarpc *****************/
 
-	if (!do_rpc_bind(fnum))
+	/* create and send a MSRPC command with api LSA_OPENPOLICY */
+
+	DEBUG(4,("LSA RPC Bind[%d]\n", fnum));
+
+	for (i = 0; i < sizeof(trn_data); i++)
+	{
+		trn_data[i] = 2 * i;
+	}
+
+	for (i = 0; i < sizeof(abs_data); i++)
+	{
+		abs_data[i] = i;
+	}
+
+	/* create interface UUIDs. */
+	make_rpc_iface(&abstract, abs_data, 0x0);
+	make_rpc_iface(&transfer, trn_data, 0x2);
+
+	if (!bind_rpc_pipe(PIPE_LSARPC, fnum, ++call_id, &abstract, &transfer))
 	{
 		free(inbuf); free(outbuf);
 		return False;
@@ -1075,7 +138,7 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 	fstrcpy(&server_name[2], myhostname);
 
 	/* send an open policy request; receive a policy handle */
-	if (!do_lsa_open_policy(fnum, server_name, &pol))
+	if (!do_lsa_open_policy(fnum, ++call_id, server_name, &pol))
 	{
 		cli_smb_close(inbuf, outbuf, Client, cnum, fnum);
 		free(inbuf); free(outbuf);
@@ -1085,7 +148,7 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 	/**************** Query Info Policy, level 3 ********************/
 
 	/* send a query info policy at level 3; receive an info policy */
-	if (!do_lsa_query_info_pol(fnum, &pol, 0x3,
+	if (!do_lsa_query_info_pol(fnum, ++call_id, &pol, 0x3,
 	                           level3_domain_name, level3_domain_sid))
 	{
 		cli_smb_close(inbuf, outbuf, Client, cnum, fnum);
@@ -1096,7 +159,7 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 	/**************** Query Info Policy, level 5 ********************/
 
 	/* send a query info policy at level 5; receive an info policy */
-	if (!do_lsa_query_info_pol(fnum, &pol, 0x5,
+	if (!do_lsa_query_info_pol(fnum, ++call_id, &pol, 0x5,
 	                           level5_domain_name, level5_domain_sid))
 	{
 		cli_smb_close(inbuf, outbuf, Client, cnum, fnum);
@@ -1107,7 +170,7 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 	/******************* Open Policy ********************/
 
 	/* send a close policy request; receive a close pol response */
-	if (!do_lsa_close(fnum, &pol))
+	if (!do_lsa_close(fnum, ++call_id, &pol))
 	{
 		cli_smb_close(inbuf, outbuf, Client, cnum, fnum);
 		free(inbuf); free(outbuf);
@@ -1130,7 +193,7 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 
 	/******************* bind request on \PIPE\NETLOGON *****************/
 
-	if (!do_rpc_bind(fnum))
+	if (!bind_rpc_pipe(PIPE_NETLOGON, fnum, ++call_id, &abstract, &transfer))
 	{
 		free(inbuf); free(outbuf);
 		return False;
@@ -1148,7 +211,7 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 	clnt_chal.data[1] = 0x22222222;
 	
 	/* send a client challenge; receive a server challenge */
-	if (!do_lsa_req_chal(fnum, desthost, myhostname, &clnt_chal, &srv_chal))
+	if (!do_lsa_req_chal(fnum, ++call_id, desthost, myhostname, &clnt_chal, &srv_chal))
 	{
 		cli_smb_close(inbuf, outbuf, Client, cnum, fnum);
 		free(inbuf); free(outbuf);
@@ -1190,7 +253,7 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 	cred_create(sess_key, &clnt_chal, zerotime, &(clnt_cred.challenge));
 
 	/* send client auth-2 challenge; receive an auth-2 challenge */
-	if (!do_lsa_auth2(fnum, desthost, mach_acct, 2, myhostname,
+	if (!do_lsa_auth2(fnum, ++call_id, desthost, mach_acct, 2, myhostname,
 	                  &(clnt_cred.challenge), 0x000001ff, &auth2_srv_chal))
 	{
 		cli_smb_close(inbuf, outbuf, Client, cnum, fnum);
@@ -1216,7 +279,7 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 	                                  &(sam_logon_clnt_cred.challenge));
 
 	/* send client sam-logon challenge; receive a sam-logon challenge */
-	if (!do_lsa_sam_logon(fnum, sess_key, &clnt_cred, 
+	if (!do_lsa_sam_logon(fnum, ++call_id, sess_key, &clnt_cred, 
 	                  desthost, mach_acct, 
 	                  &sam_logon_clnt_cred, &sam_logon_rtn_cred,
 	                  1, 1, &id1, &user_info1,
@@ -1237,7 +300,7 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 	                      &(sam_logoff_clnt_cred.challenge));
 
 	/* send client sam-logoff challenge; receive a sam-logoff challenge */
-	if (!do_lsa_sam_logoff(fnum, sess_key, &clnt_cred,
+	if (!do_lsa_sam_logoff(fnum, ++call_id, sess_key, &clnt_cred,
 	                  desthost, mach_acct, 
 	                  &sam_logoff_clnt_cred, &sam_logoff_rtn_cred,
 	                  1, 1, &id1,

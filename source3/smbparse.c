@@ -868,7 +868,7 @@ void make_rpc_addr_str(RPC_ADDR_STR *str, char *name)
 	if (str == NULL || name == NULL) return;
 
 	str->len = strlen(name) + 1;
-	fstrcpy(str->addr, name);
+	fstrcpy(str->str, name);
 }
 
 /*******************************************************************
@@ -883,8 +883,8 @@ char* smb_io_rpc_addr_str(BOOL io, RPC_ADDR_STR *str, char *q, char *base, int a
 
 	q = align_offset(q, base, align);
 
-	DBG_RW_IVAL (      "len ", depth, base, io, q, str->len); q += 2;
-	DBG_RW_PCVAL(True, "addr", depth, base, io, q, str->addr, str->len); q += str->len;
+	DBG_RW_IVAL (      "len", depth, base, io, q, str->len); q += 2;
+	DBG_RW_PCVAL(True, "str", depth, base, io, q, str->str, str->len); q += str->len;
 
 	return q;
 }

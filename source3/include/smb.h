@@ -584,7 +584,7 @@ typedef struct rpc_iface_info
 typedef struct rpc_addr_info
 {
   uint16 len;   /* length of the string including null terminator */
-  fstring addr; /* the string above in single byte, null terminated form */
+  fstring str; /* the string above in single byte, null terminated form */
 
 } RPC_ADDR_STR;
 
