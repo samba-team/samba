@@ -126,7 +126,6 @@ typedef struct
 	char *szPasswordServer;
 	char *szSocketOptions;
 	char *szRealm;
-	char *szADSserver;
 	char *szUsernameMap;
 	char *szLogonScript;
 	char *szLogonPath;
@@ -736,7 +735,6 @@ static struct parm_struct parm_table[] = {
 	{"directory", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_HIDE},
 	{"workgroup", P_USTRING, P_GLOBAL, &Globals.szWorkgroup, handle_workgroup, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"realm", P_USTRING, P_GLOBAL, &Globals.szRealm, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"ADS server", P_STRING, P_GLOBAL, &Globals.szADSserver, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"netbios name", P_USTRING, P_GLOBAL, &Globals.szNetbiosName, handle_netbios_name, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"netbios aliases", P_LIST, P_GLOBAL, &Globals.szNetbiosAliases, handle_netbios_aliases, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"netbios scope", P_USTRING, P_GLOBAL, &Globals.szNetbiosScope, handle_netbios_scope, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -1597,7 +1595,6 @@ FN_GLOBAL_STRING(lp_passwd_chat, &Globals.szPasswdChat)
 FN_GLOBAL_STRING(lp_passwordserver, &Globals.szPasswordServer)
 FN_GLOBAL_STRING(lp_name_resolve_order, &Globals.szNameResolveOrder)
 FN_GLOBAL_STRING(lp_realm, &Globals.szRealm)
-FN_GLOBAL_STRING(lp_ads_server, &Globals.szADSserver)
 FN_GLOBAL_STRING(lp_username_map, &Globals.szUsernameMap)
 FN_GLOBAL_CONST_STRING(lp_logon_script, &Globals.szLogonScript)
 FN_GLOBAL_CONST_STRING(lp_logon_path, &Globals.szLogonPath)

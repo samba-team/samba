@@ -2601,8 +2601,9 @@ static WERROR publish_it(NT_PRINTER_INFO_LEVEL *printer)
 	ads_mod_str(ctx, &mods, SPOOL_REG_PRINTERNAME, 
 		    printer->info_2->sharename);
 
-	/* connect to the ADS server */
-	ads = ads_init(NULL, NULL, lp_ads_server());
+	/* initial ads structure */
+	
+	ads = ads_init(NULL, NULL, NULL);
 	if (!ads) {
 		DEBUG(3, ("ads_init() failed\n"));
 		return WERR_SERVER_UNAVAILABLE;
@@ -2610,7 +2611,9 @@ static WERROR publish_it(NT_PRINTER_INFO_LEVEL *printer)
 	setenv(KRB5_ENV_CCNAME, "MEMORY:prtpub_cache", 1);
 	SAFE_FREE(ads->auth.password);
 	ads->auth.password = secrets_fetch_machine_password(lp_workgroup(),
-							    NULL, NULL);
+		NULL, NULL);
+		
+	/* ads_connect() will find the DC for us */					    
 	ads_rc = ads_connect(ads);
 	if (!ADS_ERR_OK(ads_rc)) {
 		DEBUG(3, ("ads_connect failed: %s\n", ads_errstr(ads_rc)));
@@ -2663,7 +2666,7 @@ WERROR unpublish_it(NT_PRINTER_INFO_LEVEL *printer)
 		return win_rc;
 	}
 	
-	ads = ads_init(NULL, NULL, lp_ads_server());
+	ads = ads_init(NULL, NULL, NULL);
 	if (!ads) {
 		DEBUG(3, ("ads_init() failed\n"));
 		return WERR_SERVER_UNAVAILABLE;
@@ -2671,7 +2674,9 @@ WERROR unpublish_it(NT_PRINTER_INFO_LEVEL *printer)
 	setenv(KRB5_ENV_CCNAME, "MEMORY:prtpub_cache", 1);
 	SAFE_FREE(ads->auth.password);
 	ads->auth.password = secrets_fetch_machine_password(lp_workgroup(),
-							    NULL, NULL);
+		NULL, NULL);
+
+	/* ads_connect() will find the DC for us */					    
 	ads_rc = ads_connect(ads);
 	if (!ADS_ERR_OK(ads_rc)) {
 		DEBUG(3, ("ads_connect failed: %s\n", ads_errstr(ads_rc)));

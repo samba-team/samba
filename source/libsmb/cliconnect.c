@@ -1479,7 +1479,7 @@ struct cli_state *get_ipc_connect(char *server, struct in_addr *server_ip,
 
 struct cli_state *get_ipc_connect_master_ip_bcast(pstring workgroup, struct user_auth_info *user_info)
 {
-	struct in_addr *ip_list;
+	struct ip_service *ip_list;
 	struct cli_state *cli;
 	int i, count;
 	struct in_addr server_ip; 
@@ -1493,7 +1493,7 @@ struct cli_state *get_ipc_connect_master_ip_bcast(pstring workgroup, struct user
 	for (i = 0; i < count; i++) {
 		static fstring name;
 
-		if (!name_status_find("*", 0, 0x1d, ip_list[i], name))
+		if (!name_status_find("*", 0, 0x1d, ip_list[i].ip, name))
 			continue;
 
                 if (!find_master_ip(name, &server_ip))
@@ -1502,7 +1502,7 @@ struct cli_state *get_ipc_connect_master_ip_bcast(pstring workgroup, struct user
                 pstrcpy(workgroup, name);
 
                 DEBUG(4, ("found master browser %s, %s\n", 
-                          name, inet_ntoa(ip_list[i])));
+                          name, inet_ntoa(ip_list[i].ip)));
 
 		cli = get_ipc_connect(inet_ntoa(server_ip), &server_ip, user_info);
 

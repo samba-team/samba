@@ -43,7 +43,7 @@ NTSTATUS change_trust_account_password( const char *domain, const char *remote_m
 			goto failed;
 		}
 
-		if ( !lookup_dc_name(global_myname(), domain, &pdc_ip, dc_name) ) 
+		if ( !name_status_find( domain, 0x1b, 0x20, pdc_ip, dc_name) )
 			goto failed;
 	}
 	/* supoport old deprecated "smbpasswd -j DOMAIN -r MACHINE" behavior */

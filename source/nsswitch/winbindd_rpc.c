@@ -715,7 +715,7 @@ static LDAP *ldap_open_with_timeout(const char *server, int port, unsigned int t
 	return ldp;
 }
 
-static int get_ldap_seq(const char *server, uint32 *seq)
+static int get_ldap_seq(const char *server, int port, uint32 *seq)
 {
 	int ret = -1;
 	struct timeval to;
@@ -731,7 +731,7 @@ static int get_ldap_seq(const char *server, uint32 *seq)
 	 * doesn't seem to apply to doing an open as well. JRA.
 	 */
 
-	if ((ldp = ldap_open_with_timeout(server, LDAP_PORT, 10)) == NULL)
+	if ((ldp = ldap_open_with_timeout(server, port, 10)) == NULL)
 		return -1;
 
 	/* Timeout if no response within 20 seconds. */
@@ -770,36 +770,39 @@ static int get_ldap_seq(const char *server, uint32 *seq)
 int get_ldap_sequence_number( const char* domain, uint32 *seq)
 {
 	int ret = -1;
-	int i;
-	struct in_addr *ip_list = NULL;
+	int i, port = LDAP_PORT;
+	struct ip_service *ip_list = NULL;
 	int count;
-	BOOL list_ordered;
 	
-	if ( !get_dc_list( domain, &ip_list, &count, &list_ordered ) ) {
+	if ( !get_sorted_dc_list(domain, &ip_list, &count, False) ) {
 		DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
 		return False;
-	}
-
-	/* sort the list so we can pick a close server */
-	
-	if (!list_ordered && (count > 1) ) {
-		qsort(ip_list, count, sizeof(struct in_addr), QSORT_CAST ip_compare);
 	}
 
 	/* Finally return first DC that we can contact */
 
 	for (i = 0; i < count; i++) {
-		if (is_zero_ip(ip_list[i]))
+		fstring ipstr;
+
+		/* since the is an LDAP lookup, default to the LDAP_PORT is not set */
+		port = (ip_list[i].port!= PORT_NONE) ? ip_list[i].port : LDAP_PORT;
+
+		fstrcpy( ipstr, inet_ntoa(ip_list[i].ip) );
+		
+		if (is_zero_ip(ip_list[i].ip))
 			continue;
 
-		if ( (ret = get_ldap_seq( inet_ntoa(ip_list[i]), seq)) == 0 )
+		if ( (ret = get_ldap_seq( ipstr, port,  seq)) == 0 )
 			goto done;
+
+		/* add to failed connection cache */
+		add_failed_connection_entry( domain, ipstr, NT_STATUS_UNSUCCESSFUL );
 	}
 
 done:
 	if ( ret == 0 ) {
-		DEBUG(3, ("get_ldap_sequence_number: Retrieved sequence number for Domain (%s) from DC (%s)\n", 
-			domain, inet_ntoa(ip_list[i])));
+		DEBUG(3, ("get_ldap_sequence_number: Retrieved sequence number for Domain (%s) from DC (%s:%d)\n", 
+			domain, inet_ntoa(ip_list[i].ip), port));
 	}
 
 	SAFE_FREE(ip_list);

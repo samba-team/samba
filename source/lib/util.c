@@ -2467,6 +2467,7 @@ BOOL unix_wild_match(const char *pattern, const char *string)
 	return unix_do_match(p2, s2) == 0;	
 }
 
+
 #ifdef __INSURE__
 
 /*******************************************************************

@@ -1618,4 +1618,12 @@ typedef struct {
 
 #include "popt_common.h"
 
+#define PORT_NONE	0
+
+/* used by the IP comparison function */
+struct ip_service {
+	struct in_addr ip;
+	unsigned port;
+};
+
 #endif /* _SMB_H */

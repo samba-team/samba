@@ -76,22 +76,10 @@ struct winbindd_cm_conn {
 
 static struct winbindd_cm_conn *cm_conns = NULL;
 
-/* Get a domain controller name.  Cache positive and negative lookups so we
-   don't go to the network too often when something is badly broken. */
-
-#define GET_DC_NAME_CACHE_TIMEOUT 30 /* Seconds between dc lookups */
-
-struct get_dc_name_cache {
-	fstring domain_name;
-	fstring srv_name;
-	time_t lookup_time;
-	struct get_dc_name_cache *prev, *next;
-};
-
 /*
   find the DC for a domain using methods appropriate for a ADS domain
 */
-static BOOL cm_ads_find_dc(const char *domain, struct in_addr *dc_ip, fstring srv_name)
+static BOOL ads_dc_name(const char *domain, struct in_addr *dc_ip, fstring srv_name)
 {
 	ADS_STRUCT *ads;
 	const char *realm = domain;
@@ -123,7 +111,7 @@ static BOOL cm_ads_find_dc(const char *domain, struct in_addr *dc_ip, fstring sr
 	*dc_ip = ads->ldap_ip;
 	ads_destroy(&ads);
 	
-	DEBUG(4,("cm_ads_find_dc: using server='%s' IP=%s\n",
+	DEBUG(4,("ads_dc_name: using server='%s' IP=%s\n",
 		 srv_name, inet_ntoa(*dc_ip)));
 	
 	return True;
@@ -143,7 +131,7 @@ static BOOL cm_get_dc_name(const char *domain, fstring srv_name,
 
 	ret = False;
 	if (lp_security() == SEC_ADS)
-		ret = cm_ads_find_dc(domain, &dc_ip, srv_name);
+		ret = ads_dc_name(domain, &dc_ip, srv_name);
 
 	if (!ret) {
 		/* fall back on rpc methods if the ADS methods fail */

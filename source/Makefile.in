@@ -34,6 +34,7 @@ PASSDBLIBS=@PASSDBLIBS@
 IDMAP_LIBS=@IDMAP_LIBS@
 ADSLIBS=@ADSLIBS@
 KRB5LIBS=@KRB5_LIBS@
+LDAPLIBS=@LDAP_LIBS@
 
 LINK=$(CC) $(FLAGS) $(LDFLAGS)
 
@@ -207,7 +208,7 @@ LIBADS_SERVER_OBJ = libads/util.o libads/kerberos_verify.o
 SECRETS_OBJ = passdb/secrets.o
 
 LIBNMB_OBJ = libsmb/unexpected.o libsmb/namecache.o libsmb/nmblib.o \
-	     libsmb/namequery.o 
+	     libsmb/namequery.o libsmb/conncache.o 
 
 LIBSAMBA_OBJ = libsmb/nterr.o libsmb/smbdes.o libsmb/smbencrypt.o libsmb/ntlmssp.o libsmb/ntlmssp_parse.o libsmb/ntlmssp_sign.o
 
@@ -222,7 +223,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clioplock.o libsmb/errormap.o libsmb/clirap2.o \
 	     libsmb/passchange.o libsmb/doserr.o \
 	     libsmb/trustdom_cache.o \
-	     $(RPC_PARSE_OBJ1) $(LIBSAMBA_OBJ) $(LIBNMB_OBJ)
+	     $(RPC_PARSE_OBJ1) $(LIBSAMBA_OBJ) $(LIBNMB_OBJ) 
 
 LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 	       rpc_client/cli_netlogon.o rpc_client/cli_srvsvc.o \
@@ -732,7 +733,7 @@ bin/smbd@EXEEXT@: $(SMBD_OBJ) @BUILD_POPT@ bin/.dummy
 
 bin/nmbd@EXEEXT@: $(NMBD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(NMBD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(KRB5LIBS)
+	@$(CC) $(FLAGS) -o $@ $(NMBD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAPLIBS)
 
 bin/wrepld@EXEEXT@: $(WREPL_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -749,7 +750,7 @@ bin/rpcclient@EXEEXT@: $(RPCCLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 
 bin/smbclient@EXEEXT@: $(CLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @POPTLIBS@ $(KRB5LIBS)
+	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAPLIBS)
 
 bin/net@EXEEXT@: $(NET_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -765,11 +766,11 @@ bin/editreg@EXEEXT@: $(EDITREG_OBJ) @BUILD_POPT@ bin/.dummy
 
 bin/smbspool@EXEEXT@: $(CUPS_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(CUPS_OBJ) $(LDFLAGS) $(LIBS) $(KRB5LIBS)
+	@$(CC) $(FLAGS) -o $@ $(CUPS_OBJ) $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAPLIBS)
 
 bin/smbmount@EXEEXT@: $(MOUNT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(MOUNT_OBJ) $(LDFLAGS) $(LIBS) $(KRB5LIBS)
+	@$(CC) $(FLAGS) -o $@ $(MOUNT_OBJ) $(LDFLAGS) $(LIBS) $(KRB5LIBS) 
 
 bin/smbmnt@EXEEXT@: $(MNT_OBJ) bin/.dummy
 	@echo Linking $@
@@ -797,7 +798,7 @@ bin/smbcontrol@EXEEXT@: $(SMBCONTROL_OBJ) @BUILD_POPT@ bin/.dummy
 
 bin/smbtree@EXEEXT@: $(SMBTREE_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBTREE_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(KRB5LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBTREE_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAPLIBS)
 
 bin/smbpasswd@EXEEXT@: $(SMBPASSWD_OBJ) bin/.dummy
 	@echo Linking $@
@@ -813,7 +814,7 @@ bin/samtest@EXEEXT@: $(SAMTEST_OBJ) @BUILD_POPT@ bin/.dummy
 
 bin/nmblookup@EXEEXT@: $(NMBLOOKUP_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(NMBLOOKUP_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@
+	@$(CC) $(FLAGS) -o $@ $(NMBLOOKUP_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(LDAPLIBS)
 
 bin/smbtorture@EXEEXT@: $(SMBTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
@@ -833,11 +834,11 @@ bin/msgtest@EXEEXT@: $(MSGTEST_OBJ) bin/.dummy
 
 bin/smbcacls@EXEEXT@: $(SMBCACLS_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBCACLS_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ $(KRB5LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBCACLS_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAPLIBS)
 
 bin/smbcquotas@EXEEXT@: $(SMBCQUOTAS_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBCQUOTAS_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ $(KRB5LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBCQUOTAS_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAPLIBS)
 
 bin/locktest@EXEEXT@: $(LOCKTEST_OBJ) bin/.dummy
 	@echo Linking $@
@@ -954,7 +955,7 @@ bin/librpc_echo.@SHLIBEXT@: $(RPC_ECHO_OBJ)
 
 bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo "Linking $@"
-	@$(LINK) -o $@ $(WINBINDD_OBJ) $(DYNEXP) $(LIBS) @POPTLIBS@ $(ADSLIBS) @LDAP_LIBS@
+	@$(LINK) -o $@ $(WINBINDD_OBJ) $(DYNEXP) $(LIBS) @POPTLIBS@ $(ADSLIBS) $(LDAPLIBS)
 
 @WINBIND_NSS@: $(WINBIND_NSS_PICOBJS)
 	@echo "Linking $@"
@@ -1006,7 +1007,7 @@ bin/mysql.@SHLIBEXT@: $(MYSQL_OBJ:.o=.po)
 
 bin/ldapsam.@SHLIBEXT@: passdb/pdb_ldap.po
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) @LDAP_LIBS@ -o $@ passdb/pdb_ldap.po \
+	@$(SHLD) $(LDSHFLAGS) $(LDAPLIBS) -o $@ passdb/pdb_ldap.po \
 		@SONAMEFLAG@`basename $@`
 
 bin/tdbsam.@SHLIBEXT@: passdb/pdb_tdb.po

@@ -304,7 +304,7 @@ static NTSTATUS context_getgrgid(struct pdb_context *context,
 }
 
 static NTSTATUS context_getgrnam(struct pdb_context *context,
-				 GROUP_MAP *map, char *name)
+				 GROUP_MAP *map, const char *name)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 

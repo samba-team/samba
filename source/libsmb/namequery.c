@@ -205,7 +205,11 @@ BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr t
 	pull_ascii(name, status[i].name, 16, 15, STR_TERMINATE);
 
 	/* Store the result in the cache. */
-	namecache_status_store(q_name, q_type, type, to_ip, name);
+	/* but don't store an entry for 0x1c names here.  Here we have 
+	   a single host and DOMAIN<0x1c> names should be a list of hosts */
+	   
+	if ( q_type != 0x1c )
+		namecache_status_store(q_name, q_type, type, to_ip, name);
 
 	result = True;
 
@@ -253,6 +257,26 @@ int ip_compare(struct in_addr *ip1, struct in_addr *ip2)
 	return max_bits2 - max_bits1;
 }
 
+/*******************************************************************
+ compare 2 ldap IPs by nearness to our interfaces - used in qsort
+*******************************************************************/
+
+static int ip_service_compare(struct ip_service *ip1, struct ip_service *ip2)
+{
+	int result;
+	
+	if ( (result = ip_compare(&ip1->ip, &ip2->ip)) != 0 )
+		return result;
+		
+	if ( ip1->port > ip2->port )
+		return 1;
+	
+	if ( ip1->port < ip2->port )
+		return -1;
+		
+	return 0;
+}
+
 /*
   sort an IP list so that names that are close to one of our interfaces 
   are at the top. This prevents the problem where a WINS server returns an IP that
@@ -266,6 +290,51 @@ static void sort_ip_list(struct in_addr *iplist, int count)
 	}
 
 	qsort(iplist, count, sizeof(struct in_addr), QSORT_CAST ip_compare);	
+}
+
+void sort_ip_list2(struct ip_service *iplist, int count)
+{
+	if (count <= 1) {
+		return;
+	}
+
+	qsort(iplist, count, sizeof(struct ip_service), QSORT_CAST ip_service_compare);	
+}
+
+/**********************************************************************
+ Remove any duplicate address/port pairs in the list 
+ *********************************************************************/
+
+static int remove_duplicate_addrs2( struct ip_service *iplist, int count )
+{
+	int i, j;
+	
+	DEBUG(10,("remove_duplicate_addrs2: looking for duplicate address/port pairs\n"));
+	
+	/* one loop to remove duplicates */
+	for ( i=0; i<count; i++ ) {
+		if ( is_zero_ip(iplist[i].ip) )
+			continue;
+					
+		for ( j=i+1; j<count; j++ ) {
+			if ( ip_service_equal(iplist[i], iplist[j]) )
+				zero_ip(&iplist[j].ip);
+		}
+	}
+			
+	/* one loop to clean up any holes we left */
+	/* first ip should never be a zero_ip() */
+	for (i = 0; i<count; ) {
+		if ( is_zero_ip(iplist[i].ip) ) {
+			if (i != count-1 )
+				memmove(&iplist[i], &iplist[i+1], (count - i - 1)*sizeof(iplist[i]));
+			count--;
+			continue;
+		}
+		i++;
+	}
+
+	return count;
 }
 
 /****************************************************************************
@@ -567,23 +636,49 @@ void endlmhosts(XFILE *fp)
 	x_fclose(fp);
 }
 
+/********************************************************
+ convert an array if struct in_addrs to struct ip_service
+ return False on failure.  Port is set to PORT_NONE;
+*********************************************************/
 
+static BOOL convert_ip2service( struct ip_service **return_iplist, struct in_addr *ip_list, int count )
+{
+	int i;
+
+	if ( count==0 || !ip_list )
+		return False;
+		
+	/* copy the ip address; port will be PORT_NONE */
+	if ( (*return_iplist = (struct ip_service*)malloc(count*sizeof(struct ip_service))) == NULL ) {
+		DEBUG(0,("convert_ip2service: malloc failed for %d enetries!\n", count ));
+		return False;
+	}
+	
+	for ( i=0; i<count; i++ ) {
+		(*return_iplist)[i].ip   = ip_list[i];
+		(*return_iplist)[i].port = PORT_NONE;
+	}
+
+	return True;
+}	
 /********************************************************
  Resolve via "bcast" method.
 *********************************************************/
 
 BOOL name_resolve_bcast(const char *name, int name_type,
-			struct in_addr **return_ip_list, int *return_count)
+			struct ip_service **return_iplist, int *return_count)
 {
 	int sock, i;
 	int num_interfaces = iface_count();
+	struct in_addr *ip_list;
+	BOOL ret;
 
 	if (lp_disable_netbios()) {
 		DEBUG(5,("name_resolve_bcast(%s#%02x): netbios is disabled\n", name, name_type));
 		return False;
 	}
 
-	*return_ip_list = NULL;
+	*return_iplist = NULL;
 	*return_count = 0;
 	
 	/*
@@ -607,16 +702,25 @@ BOOL name_resolve_bcast(const char *name, int name_type,
 		int flags;
 		/* Done this way to fix compiler error on IRIX 5.x */
 		sendto_ip = *iface_n_bcast(i);
-		*return_ip_list = name_query(sock, name, name_type, True, 
+		ip_list = name_query(sock, name, name_type, True, 
 				    True, sendto_ip, return_count, &flags, NULL);
-		if(*return_ip_list != NULL) {
-			close(sock);
-			return True;
-		}
+		if( ip_list ) 
+			goto success;
 	}
-
+	
+	/* failed - no response */
+	
 	close(sock);
 	return False;
+	
+success:
+	ret = True;
+	if ( !convert_ip2service(return_iplist, ip_list, *return_count) )
+		ret = False;
+	
+	SAFE_FREE( ip_list );
+	close(sock);
+	return ret;
 }
 
 /********************************************************
@@ -624,11 +728,12 @@ BOOL name_resolve_bcast(const char *name, int name_type,
 *********************************************************/
 
 BOOL resolve_wins(const char *name, int name_type,
-		  struct in_addr **return_iplist, int *return_count)
+		  struct ip_service **return_iplist, int *return_count)
 {
 	int sock, t, i;
 	char **wins_tags;
-	struct in_addr src_ip;
+	struct in_addr src_ip, *ip_list = NULL;
+	BOOL ret;
 
 	if (lp_disable_netbios()) {
 		DEBUG(5,("resolve_wins(%s#%02x): netbios is disabled\n", name, name_type));
@@ -684,12 +789,12 @@ BOOL resolve_wins(const char *name, int name_type,
 				continue;
 			}
 
-			*return_iplist = name_query(sock,name,name_type, False, 
+			ip_list = name_query(sock,name,name_type, False, 
 						    True, wins_ip, return_count, &flags, 
 						    &timed_out);
-			if (*return_iplist != NULL) {
+			if ( !ip_list ) 
 				goto success;
-			}
+				
 			close(sock);
 
 			if (timed_out) {
@@ -707,9 +812,15 @@ BOOL resolve_wins(const char *name, int name_type,
 	return False;
 
 success:
+	ret = True;
+	if ( !convert_ip2service( return_iplist, ip_list, *return_count ) )
+		ret = False;
+	
+	SAFE_FREE( ip_list );
 	wins_srv_tags_free(wins_tags);
 	close(sock);
-	return True;
+	
+	return ret;
 }
 
 /********************************************************
@@ -717,7 +828,7 @@ success:
 *********************************************************/
 
 static BOOL resolve_lmhosts(const char *name, int name_type,
-                         struct in_addr **return_iplist, int *return_count)
+                         struct ip_service **return_iplist, int *return_count)
 {
 	/*
 	 * "lmhosts" means parse the local lmhosts file.
@@ -740,12 +851,12 @@ static BOOL resolve_lmhosts(const char *name, int name_type,
                 ((name_type2 == -1) || (name_type == name_type2))
                ) {
 				endlmhosts(fp);
-				*return_iplist = (struct in_addr *)malloc(sizeof(struct in_addr));
-				if(*return_iplist == NULL) {
+				if ( (*return_iplist = (struct ip_service *)malloc(sizeof(struct ip_service))) == NULL ) {
 					DEBUG(3,("resolve_lmhosts: malloc fail !\n"));
 					return False;
 				}
-				**return_iplist = return_ip;
+				(*return_iplist)[0].ip   = return_ip;
+				(*return_iplist)[0].port = PORT_NONE;
 				*return_count = 1;
 				return True; 
 			}
@@ -760,13 +871,67 @@ static BOOL resolve_lmhosts(const char *name, int name_type,
  Resolve via "hosts" method.
 *********************************************************/
 
-static BOOL resolve_hosts(const char *name,
-                         struct in_addr **return_iplist, int *return_count)
+static BOOL resolve_hosts(const char *name, int name_type,
+                         struct ip_service **return_iplist, int *return_count)
 {
 	/*
 	 * "host" means do a localhost, or dns lookup.
 	 */
 	struct hostent *hp;
+	
+#ifdef HAVE_ADS
+	if ( name_type == 0x1c ) {
+		int 			count, i = 0;
+		char 			*list = NULL;
+		const char		*ptr;
+		pstring			tok;
+		
+		/* try to lookup the _ldap._tcp.<domain> if we are using ADS */
+		if ( lp_security() != SEC_ADS )
+			return False;
+			
+		DEBUG(5,("resolve_hosts: Attempting to resolve DC's for %s using DNS\n",
+			name));
+			
+		if (ldap_domain2hostlist(name, &list) != LDAP_SUCCESS)
+			return False;
+				
+		count = count_chars(list, ' ') + 1;
+		if ( (*return_iplist = malloc(count * sizeof(struct ip_service))) == NULL ) {
+			DEBUG(0,("resolve_hosts: malloc failed for %d entries\n", count ));
+			return False;
+		}
+
+		ptr = list;
+		while (next_token(&ptr, tok, " ", sizeof(tok))) {
+			unsigned port = LDAP_PORT;	
+			char *p = strchr(tok, ':');
+			if (p) {
+				*p = 0;
+				port = atoi(p+1);
+			}
+			(*return_iplist)[i].ip   = *interpret_addr2(tok);
+			(*return_iplist)[i].port = port;
+			
+			/* make sure it is a valid IP.  I considered checking the negative
+			   connection cache, but this is the wrong place for it.  Maybe only
+			   as a hac.  After think about it, if all of the IP addresses retuend
+			   from DNS are dead, what hope does a netbios name lookup have?
+			   The standard reason for falling back to netbios lookups is that 
+			   our DNS server doesn't know anything about the DC's   -- jerry */	
+			   
+			if ( is_zero_ip((*return_iplist)[i].ip) )
+				continue;
+		
+			i++;
+		}
+		SAFE_FREE(list);
+		
+		*return_count = i;
+				
+		return True;
+	}
+#endif 	/* HAVE_ADS */
 
 	*return_iplist = NULL;
 	*return_count = 0;
@@ -776,27 +941,33 @@ static BOOL resolve_hosts(const char *name,
 	if (((hp = sys_gethostbyname(name)) != NULL) && (hp->h_addr != NULL)) {
 		struct in_addr return_ip;
 		putip((char *)&return_ip,(char *)hp->h_addr);
-		*return_iplist = (struct in_addr *)malloc(sizeof(struct in_addr));
+		*return_iplist = (struct ip_service *)malloc(sizeof(struct ip_service));
 		if(*return_iplist == NULL) {
 			DEBUG(3,("resolve_hosts: malloc fail !\n"));
 			return False;
 		}
-		**return_iplist = return_ip;
+		(*return_iplist)->ip   = return_ip;
+		(*return_iplist)->port = PORT_NONE;
 		*return_count = 1;
 		return True;
 	}
 	return False;
 }
 
-/********************************************************
+/*******************************************************************
  Internal interface to resolve a name into an IP address.
  Use this function if the string is either an IP address, DNS
  or host name or NetBIOS name. This uses the name switch in the
  smb.conf to determine the order of name resolution.
-*********************************************************/
+ 
+ Added support for ip addr/port to support ADS ldap servers.
+ the only place we currently care about the port is in the 
+ resolve_hosts() when looking up DC's via SRV RR entries in DNS
+**********************************************************************/
 
 static BOOL internal_resolve_name(const char *name, int name_type,
-				  struct in_addr **return_iplist, int *return_count)
+				  struct ip_service **return_iplist, 
+				  int *return_count, const char *resolve_order)
 {
   pstring name_resolve_list;
   fstring tok;
@@ -805,7 +976,6 @@ static BOOL internal_resolve_name(const char *name, int name_type,
   BOOL allzeros = (strcmp(name,"0.0.0.0") == 0);
   BOOL is_address = is_ipaddress(name);
   BOOL result = False;
-  struct in_addr *nodupes_iplist;
   int i;
 
   *return_iplist = NULL;
@@ -814,42 +984,56 @@ static BOOL internal_resolve_name(const char *name, int name_type,
   DEBUG(10, ("internal_resolve_name: looking up %s#%x\n", name, name_type));
 
   if (allzeros || allones || is_address) {
-	*return_iplist = (struct in_addr *)malloc(sizeof(struct in_addr));
-	if(*return_iplist == NULL) {
-		DEBUG(3,("internal_resolve_name: malloc fail !\n"));
+  
+	if ( (*return_iplist = (struct ip_service *)malloc(sizeof(struct ip_service))) == NULL ) {
+		DEBUG(0,("internal_resolve_name: malloc fail !\n"));
 		return False;
 	}
+	
 	if(is_address) { 
+		/* ignore the port here */
+		(*return_iplist)->port = PORT_NONE;
+		
 		/* if it's in the form of an IP address then get the lib to interpret it */
-		if (((*return_iplist)->s_addr = inet_addr(name)) == 0xFFFFFFFF ){
+		if (((*return_iplist)->ip.s_addr = inet_addr(name)) == 0xFFFFFFFF ){
 			DEBUG(1,("internal_resolve_name: inet_addr failed on %s\n", name));
 			return False;
 		}
 	} else {
-		(*return_iplist)->s_addr = allones ? 0xFFFFFFFF : 0;
+		(*return_iplist)->ip.s_addr = allones ? 0xFFFFFFFF : 0;
 		*return_count = 1;
 	}
     return True;
   }
   
-  /* Check netbios name cache */
+  /* Check name cache */
 
   if (namecache_fetch(name, name_type, return_iplist, return_count)) {
-
-	  /* This could be a negative response */
-
-	  return (*return_count > 0);
+ 	/* This could be a negative response */
+	return (*return_count > 0);
   }
 
-  pstrcpy(name_resolve_list, lp_name_resolve_order());
-  ptr = name_resolve_list;
-  if (!ptr || !*ptr)
+  /* set the name resolution order */
+  
+  if ( !resolve_order )
+    pstrcpy(name_resolve_list, lp_name_resolve_order());
+  else
+    pstrcpy(name_resolve_list, resolve_order);
+  
+  if ( !name_resolve_list[0] )
     ptr = "host";
+  else
+    ptr = name_resolve_list;
 
+  /* iterate through the name resolution backends */
+  
   while (next_token(&ptr, tok, LIST_SEP, sizeof(tok))) {
 	  if((strequal(tok, "host") || strequal(tok, "hosts"))) {
-		  if (name_type == 0x20) {
-			  if (resolve_hosts(name, return_iplist, return_count)) {
+                  /* deal with 0x20 & 0x1c names here.  The latter will result
+		     in a SRV record lookup for _ldap._tcp.<domain> if we are using 
+		     'security = ads' */
+		  if ( name_type==0x20 || name_type == 0x1c ) {
+			  if (resolve_hosts(name, name_type, return_iplist, return_count)) {
 				  result = True;
 				  goto done;
 			  }
@@ -890,58 +1074,31 @@ static BOOL internal_resolve_name(const char *name, int name_type,
      controllers including the PDC in iplist[1..n].  Iterating over
      the iplist when the PDC is down will cause two sets of timeouts. */
 
-  if (*return_count && (nodupes_iplist = (struct in_addr *)
-       malloc(sizeof(struct in_addr) * (*return_count)))) {
-	  int nodupes_count = 0;
-
-	  /* Iterate over return_iplist looking for duplicates */
-
-	  for (i = 0; i < *return_count; i++) {
-		  BOOL is_dupe = False;
-		  int j;
-
-		  for (j = i + 1; j < *return_count; j++) {
-			  if (ip_equal((*return_iplist)[i], 
-				       (*return_iplist)[j])) {
-				  is_dupe = True;
-				  break;
-			  }
-		  }
-
-		  if (!is_dupe) {
-
-			  /* This one not a duplicate */
-
-			  nodupes_iplist[nodupes_count] = (*return_iplist)[i];
-			  nodupes_count++;
-		  }
-	  }
-	  
-	  /* Switcheroo with original list */
-	  
-	  free(*return_iplist);
-
-	  *return_iplist = nodupes_iplist;
-	  *return_count = nodupes_count;
+  if ( *return_count ) {
+    *return_count = remove_duplicate_addrs2( *return_iplist, *return_count );
   }
  
   /* Save in name cache */
-  for (i = 0; i < *return_count && DEBUGLEVEL == 100; i++)
-    DEBUG(100, ("Storing name %s of type %d (ip: %s)\n", name,
-                name_type, inet_ntoa((*return_iplist)[i])));
-    
+  if ( DEBUGLEVEL >= 100 ) {
+    for (i = 0; i < *return_count && DEBUGLEVEL == 100; i++)
+      DEBUG(100, ("Storing name %s of type %d (%s:%d)\n", name,
+                name_type, inet_ntoa((*return_iplist)[i].ip), (*return_iplist)[i].port));
+  }
+   
   namecache_store(name, name_type, *return_count, *return_iplist);
 
   /* Display some debugging info */
 
-  DEBUG(10, ("internal_resolve_name: returning %d addresses: ", 
-	     *return_count));
+  if ( DEBUGLEVEL >= 10 ) {
+    DEBUG(10, ("internal_resolve_name: returning %d addresses: ", 
+   	       *return_count));
 
-  for (i = 0; i < *return_count; i++)
-	  DEBUGADD(10, ("%s ", inet_ntoa((*return_iplist)[i])));
+    for (i = 0; i < *return_count; i++)
+	  DEBUGADD(10, ("%s:%d ", inet_ntoa((*return_iplist)[i].ip), (*return_iplist)[i].port));
 
-  DEBUG(10, ("\n"));
-
+    DEBUG(10, ("\n"));
+  }
+  
   return result;
 }
 
@@ -954,7 +1111,7 @@ static BOOL internal_resolve_name(const char *name, int name_type,
 
 BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
 {
-	struct in_addr *ip_list = NULL;
+	struct ip_service *ip_list = NULL;
 	int count = 0;
 
 	if (is_ipaddress(name)) {
@@ -962,20 +1119,23 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
 		return True;
 	}
 
-	if (internal_resolve_name(name, name_type, &ip_list, &count)) {
+	if (internal_resolve_name(name, name_type, &ip_list, &count, lp_name_resolve_order())) {
 		int i;
+		
 		/* only return valid addresses for TCP connections */
 		for (i=0; i<count; i++) {
-			char *ip_str = inet_ntoa(ip_list[i]);
+			char *ip_str = inet_ntoa(ip_list[i].ip);
 			if (ip_str &&
 			    strcmp(ip_str, "255.255.255.255") != 0 &&
-			    strcmp(ip_str, "0.0.0.0") != 0) {
-				*return_ip = ip_list[i];
+			    strcmp(ip_str, "0.0.0.0") != 0) 
+			{
+				*return_ip = ip_list[i].ip;
 				SAFE_FREE(ip_list);
 				return True;
 			}
 		}
 	}
+	
 	SAFE_FREE(ip_list);
 	return False;
 }
@@ -986,7 +1146,7 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
 
 BOOL find_master_ip(const char *group, struct in_addr *master_ip)
 {
-	struct in_addr *ip_list = NULL;
+	struct ip_service *ip_list = NULL;
 	int count = 0;
 
 	if (lp_disable_netbios()) {
@@ -994,230 +1154,19 @@ BOOL find_master_ip(const char *group, struct in_addr *master_ip)
 		return False;
 	}
 
-	if (internal_resolve_name(group, 0x1D, &ip_list, &count)) {
-		*master_ip = ip_list[0];
+	if (internal_resolve_name(group, 0x1D, &ip_list, &count, lp_name_resolve_order())) {
+		*master_ip = ip_list[0].ip;
 		SAFE_FREE(ip_list);
 		return True;
 	}
-	if(internal_resolve_name(group, 0x1B, &ip_list, &count)) {
-		*master_ip = ip_list[0];
+	if(internal_resolve_name(group, 0x1B, &ip_list, &count, lp_name_resolve_order())) {
+		*master_ip = ip_list[0].ip;
 		SAFE_FREE(ip_list);
 		return True;
 	}
 
 	SAFE_FREE(ip_list);
 	return False;
-}
-
-/********************************************************
- Lookup a DC name given a Domain name and IP address.
-*********************************************************/
-
-BOOL lookup_dc_name(const char *srcname, const char *domain, 
-		    struct in_addr *dc_ip, char *ret_name)
-{
-#if !defined(I_HATE_WINDOWS_REPLY_CODE)	
-	fstring dc_name;
-	BOOL ret;
-
-	if (lp_disable_netbios()) {
-		DEBUG(5,("lookup_dc_name(%s): netbios is disabled\n", domain));
-		return False;
-	}
-	
-	/*
-	 * Due to the fact win WinNT *sucks* we must do a node status
-	 * query here... JRA.
-	 */
-	
-	*dc_name = '\0';
-	
-	ret = name_status_find(domain, 0x1c, 0x20, *dc_ip, dc_name);
-
-	if(ret && *dc_name) {
-		fstrcpy(ret_name, dc_name);
-		return True;
-	}
-	
-	return False;
-
-#else /* defined(I_HATE_WINDOWS_REPLY_CODE) */
-
-JRA - This code is broken with BDC rollover - we need to do a full
-NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
-
-	int retries = 3;
-	int retry_time = 2000;
-	struct timeval tval;
-	struct packet_struct p;
-	struct dgram_packet *dgram = &p.packet.dgram;
-	char *ptr,*p2;
-	char tmp[4];
-	int len;
-	struct sockaddr_in sock_name;
-	int sock_len = sizeof(sock_name);
-	const char *mailslot = NET_LOGON_MAILSLOT;
-	char *mailslot_name;
-	char buffer[1024];
-	char *bufp;
-	int dgm_id = generate_trn_id();
-	int sock = open_socket_in(SOCK_DGRAM, 0, 3, interpret_addr(lp_socket_address()), True );
-	
-	if(sock == -1)
-		return False;
-	
-	/* Find out the transient UDP port we have been allocated. */
-	if(getsockname(sock, (struct sockaddr *)&sock_name, &sock_len)<0) {
-		DEBUG(0,("lookup_pdc_name: Failed to get local UDP port. Error was %s\n",
-			 strerror(errno)));
-		close(sock);
-		return False;
-	}
-
-	/*
-	 * Create the request data.
-	 */
-
-	memset(buffer,'\0',sizeof(buffer));
-	bufp = buffer;
-	SSVAL(bufp,0,QUERYFORPDC);
-	bufp += 2;
-	fstrcpy(bufp,srcname);
-	bufp += (strlen(bufp) + 1);
-	slprintf(bufp, sizeof(fstring)-1, "\\MAILSLOT\\NET\\GETDC%d", dgm_id);
-	mailslot_name = bufp;
-	bufp += (strlen(bufp) + 1);
-	bufp = ALIGN2(bufp, buffer);
-	bufp += push_ucs2(NULL, bufp, srcname, sizeof(buffer) - (bufp - buffer), STR_TERMINATE);	
-	
-	SIVAL(bufp,0,1);
-	SSVAL(bufp,4,0xFFFF); 
-	SSVAL(bufp,6,0xFFFF); 
-	bufp += 8;
-	len = PTR_DIFF(bufp,buffer);
-
-	memset((char *)&p,'\0',sizeof(p));
-
-	/* DIRECT GROUP or UNIQUE datagram. */
-	dgram->header.msg_type = 0x10;
-	dgram->header.flags.node_type = M_NODE;
-	dgram->header.flags.first = True;
-	dgram->header.flags.more = False;
-	dgram->header.dgm_id = dgm_id;
-	dgram->header.source_ip = *iface_ip(*pdc_ip);
-	dgram->header.source_port = ntohs(sock_name.sin_port);
-	dgram->header.dgm_length = 0; /* Let build_dgram() handle this. */
-	dgram->header.packet_offset = 0;
-	
-	make_nmb_name(&dgram->source_name,srcname,0);
-	make_nmb_name(&dgram->dest_name,domain,0x1C);
-	
-	ptr = &dgram->data[0];
-	
-	/* Setup the smb part. */
-	ptr -= 4; /* XXX Ugliness because of handling of tcp SMB length. */
-	memcpy(tmp,ptr,4);
-	set_message(ptr,17,17 + len,True);
-	memcpy(ptr,tmp,4);
-
-	CVAL(ptr,smb_com) = SMBtrans;
-	SSVAL(ptr,smb_vwv1,len);
-	SSVAL(ptr,smb_vwv11,len);
-	SSVAL(ptr,smb_vwv12,70 + strlen(mailslot));
-	SSVAL(ptr,smb_vwv13,3);
-	SSVAL(ptr,smb_vwv14,1);
-	SSVAL(ptr,smb_vwv15,1);
-	SSVAL(ptr,smb_vwv16,2);
-	p2 = smb_buf(ptr);
-	pstrcpy(p2,mailslot);
-	p2 = skip_string(p2,1);
-	
-	memcpy(p2,buffer,len);
-	p2 += len;
-	
-	dgram->datasize = PTR_DIFF(p2,ptr+4); /* +4 for tcp length. */
-	
-	p.ip = *pdc_ip;
-	p.port = DGRAM_PORT;
-	p.fd = sock;
-	p.timestamp = time(NULL);
-	p.packet_type = DGRAM_PACKET;
-	
-	GetTimeOfDay(&tval);
-	
-	if (!send_packet(&p)) {
-		DEBUG(0,("lookup_pdc_name: send_packet failed.\n"));
-		close(sock);
-		return False;
-	}
-	
-	retries--;
-	
-	while (1) {
-		struct timeval tval2;
-		struct packet_struct *p_ret;
-		
-		GetTimeOfDay(&tval2);
-		if (TvalDiff(&tval,&tval2) > retry_time) {
-			if (!retries)
-				break;
-			if (!send_packet(&p)) {
-				DEBUG(0,("lookup_pdc_name: send_packet failed.\n"));
-				close(sock);
-				return False;
-			}
-			GetTimeOfDay(&tval);
-			retries--;
-		}
-
-		if ((p_ret = receive_dgram_packet(sock,90,mailslot_name))) {
-			struct dgram_packet *dgram2 = &p_ret->packet.dgram;
-			char *buf;
-			char *buf2;
-
-			buf = &dgram2->data[0];
-			buf -= 4;
-
-			if (CVAL(buf,smb_com) != SMBtrans) {
-				DEBUG(0,("lookup_pdc_name: datagram type %u != SMBtrans(%u)\n", (unsigned int)
-					 CVAL(buf,smb_com), (unsigned int)SMBtrans ));
-				free_packet(p_ret);
-				continue;
-			}
-			
-			len = SVAL(buf,smb_vwv11);
-			buf2 = smb_base(buf) + SVAL(buf,smb_vwv12);
-			
-			if (len <= 0) {
-				DEBUG(0,("lookup_pdc_name: datagram len < 0 (%d)\n", len ));
-				free_packet(p_ret);
-				continue;
-			}
-
-			DEBUG(4,("lookup_pdc_name: datagram reply from %s to %s IP %s for %s of type %d len=%d\n",
-				 nmb_namestr(&dgram2->source_name),nmb_namestr(&dgram2->dest_name),
-				 inet_ntoa(p_ret->ip), smb_buf(buf),SVAL(buf2,0),len));
-
-			if(SVAL(buf2,0) != QUERYFORPDC_R) {
-				DEBUG(0,("lookup_pdc_name: datagram type (%u) != QUERYFORPDC_R(%u)\n",
-					 (unsigned int)SVAL(buf,0), (unsigned int)QUERYFORPDC_R ));
-				free_packet(p_ret);
-				continue;
-			}
-
-			buf2 += 2;
-			/* Note this is safe as it is a bounded strcpy. */
-			fstrcpy(ret_name, buf2);
-			ret_name[sizeof(fstring)-1] = '\0';
-			close(sock);
-			free_packet(p_ret);
-			return True;
-		}
-	}
-	
-	close(sock);
-	return False;
-#endif /* defined(I_HATE_WINDOWS_REPLY_CODE) */
 }
 
 /********************************************************
@@ -1227,38 +1176,46 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 
 BOOL get_pdc_ip(const char *domain, struct in_addr *ip)
 {
-	struct in_addr *ip_list;
+	struct ip_service *ip_list;
 	int count;
-	int i = 0;
 
 	/* Look up #1B name */
 
-	if (!internal_resolve_name(domain, 0x1b, &ip_list, &count))
+	if (!internal_resolve_name(domain, 0x1b, &ip_list, &count, lp_name_resolve_order()))
 		return False;
 
 	/* if we get more than 1 IP back we have to assume it is a
 	   multi-homed PDC and not a mess up */
-	   
+
 	if ( count > 1 ) {
-		DEBUG(6,("get_pdc_ip: PDC has %d IP addresses!\n", count));
-				
-		/* look for a local net */
-		for ( i=0; i<count; i++ ) {
-			if ( is_local_net( ip_list[i] ) )
-				break;
-		}
-		
-		/* if we hit then end then just grab the first 
-		   one from the list */
-		   
-		if ( i == count )
-			i = 0;
+		DEBUG(6,("get_pdc_ip: PDC has %d IP addresses!\n", count));		
+		sort_ip_list2( ip_list, count );
 	}
 
-	*ip = ip_list[i];
+	*ip = ip_list[0].ip;
 	
 	SAFE_FREE(ip_list);
 
+	return True;
+}
+
+/*********************************************************************
+ small wrapper function to get the DC list and sort it if neccessary 
+*********************************************************************/
+BOOL get_sorted_dc_list( const char *domain, struct ip_service **ip_list, int *count, BOOL dns_only )
+{
+	BOOL ordered;
+	
+	DEBUG(8,("get_sorted_dc_list: attempting lookup using [%s]\n",
+		(dns_only ? "hosts" : lp_name_resolve_order())));
+	
+	if ( !get_dc_list(domain, ip_list, count, dns_only, &ordered) )
+		return False;
+		
+	/* only sort if we don't already have an ordered list */
+	if ( !ordered )
+		sort_ip_list2( *ip_list, *count );
+		
 	return True;
 }
 
@@ -1267,28 +1224,33 @@ BOOL get_pdc_ip(const char *domain, struct in_addr *ip)
  a domain.
 *********************************************************/
 
-BOOL get_dc_list(const char *domain, struct in_addr **ip_list, int *count, int *ordered)
+BOOL get_dc_list(const char *domain, struct ip_service **ip_list, 
+                 int *count, BOOL dns_only, int *ordered)
 {
-
+	/* defined the name resolve order to internal_name_resolve() 
+	   only used for looking up 0x1c names */
+	const char *resolve_oder = (dns_only ? "hosts" : lp_name_resolve_order());
+	
 	*ordered = False;
 		
 	/* If it's our domain then use the 'password server' parameter. */
 
-	if (strequal(domain, lp_workgroup())) {
+	if ( strequal(domain, lp_workgroup()) || strequal(domain, lp_realm()) ) {
 		const char *p;
 		char *pserver = lp_passwordserver(); /* UNIX charset. */
+		char *port_str;
+		int port;
 		fstring name;
 		int num_addresses = 0;
 		int  local_count, i, j;
-		struct in_addr *return_iplist = NULL;
-		struct in_addr *auto_ip_list = NULL;
+		struct ip_service *return_iplist = NULL;
+		struct ip_service *auto_ip_list = NULL;
 		BOOL done_auto_lookup = False;
 		int auto_count = 0;
 		
 
 		if (!*pserver)
-			return internal_resolve_name(
-				domain, 0x1C, ip_list, count);
+			return internal_resolve_name(domain, 0x1C, ip_list, count, resolve_oder);
 
 		p = pserver;
 
@@ -1301,7 +1263,7 @@ BOOL get_dc_list(const char *domain, struct in_addr **ip_list, int *count, int *
 		 
 		while (next_token(&p,name,LIST_SEP,sizeof(name))) {
 			if (strequal(name, "*")) {
-				if ( internal_resolve_name(domain, 0x1C, &auto_ip_list, &auto_count) )
+				if ( internal_resolve_name(domain, 0x1C, &auto_ip_list, &auto_count, resolve_oder) )
 					num_addresses += auto_count;
 				done_auto_lookup = True;
 				DEBUG(8,("Adding %d DC's from auto lookup\n", auto_count));
@@ -1314,11 +1276,11 @@ BOOL get_dc_list(const char *domain, struct in_addr **ip_list, int *count, int *
 		   just return the list of DC's */
 		   
 		if ( (num_addresses == 0) && !done_auto_lookup )
-			return internal_resolve_name(domain, 0x1C, ip_list, count);
+			return internal_resolve_name(domain, 0x1C, ip_list, count, resolve_oder);
 
-		return_iplist = (struct in_addr *)malloc(num_addresses * sizeof(struct in_addr));
-
-		if (return_iplist == NULL) {
+		if ( (return_iplist = (struct ip_service *)
+			malloc(num_addresses * sizeof(struct ip_service))) == NULL ) 
+		{
 			DEBUG(3,("get_dc_list: malloc fail !\n"));
 			return False;
 		}
@@ -1334,57 +1296,49 @@ BOOL get_dc_list(const char *domain, struct in_addr **ip_list, int *count, int *
 			/* copy any addersses from the auto lookup */
 			
 			if ( strequal(name, "*") ) {
-				for ( j=0; j<auto_count; j++ ) 
-					return_iplist[local_count++] = auto_ip_list[j];
+				for ( j=0; j<auto_count; j++ ) {
+					return_iplist[local_count].ip   = auto_ip_list[j].ip;
+					return_iplist[local_count].port = auto_ip_list[j].port;
+					local_count++;
+				}
 				continue;
 			}
 			
+			
+			/* added support for address:port syntax for ads (not that I think 
+			   anyone will ever run the LDAP server in an AD domain on something 
+			   other than port 389 */
+			
+			port = (lp_security() == SEC_ADS) ? LDAP_PORT : PORT_NONE;
+			if ( (port_str=strchr(name, ':')) != NULL ) {
+				*port_str = '\0';
+				port_str++;
+				port = atoi( port_str );
+			}
+
 			/* explicit lookup; resolve_name() will handle names & IP addresses */
-					
-			if ( resolve_name( name, &name_ip, 0x20) ) {
-				return_iplist[local_count++] = name_ip;
+			if ( resolve_name( name, &name_ip, 0x20 ) ) {
+				return_iplist[local_count].ip 	= name_ip;
+				return_iplist[local_count].port = port;
+				local_count++;
 				*ordered = True;
 			}
-				
 		}
 				
 		SAFE_FREE(auto_ip_list);
 
-		/* need to remove duplicates in the list if we have 
-		   any explicit password servers */
+		/* need to remove duplicates in the list if we have any 
+		   explicit password servers */
 		   
-		if ( *ordered ) {		
-			/* one loop to remove duplicates */
-			for ( i=0; i<local_count; i++ ) {
-				if ( is_zero_ip(return_iplist[i]) )
-					continue;
-					
-				for ( j=i+1; j<local_count; j++ ) {
-					if ( ip_equal( return_iplist[i], return_iplist[j]) )
-						zero_ip(&return_iplist[j]);
-				}
-			}
-			
-			/* one loop to clean up any holes we left */
-			/* first ip should never be a zero_ip() */
-			for (i = 0; i<local_count; ) {
-				if ( is_zero_ip(return_iplist[i]) ) {
-					if (i != local_count-1 )
-						memmove(&return_iplist[i], &return_iplist[i+1],
-							(local_count - i - 1)*sizeof(return_iplist[i]));
-					local_count--;
-					continue;
-				}
-				i++;
-			}
-		}
+		if ( local_count )
+			local_count = remove_duplicate_addrs2( return_iplist, local_count );
 		
 		if ( DEBUGLEVEL >= 4 ) {
 			DEBUG(4,("get_dc_list: returning %d ip addresses in an %sordered list\n", local_count, 
 				*ordered ? "":"un"));
 			DEBUG(4,("get_dc_list: "));
 			for ( i=0; i<local_count; i++ )
-				DEBUGADD(4,("%s ", inet_ntoa(return_iplist[i])));
+				DEBUGADD(4,("%s:%d ", inet_ntoa(return_iplist[i].ip), return_iplist[i].port ));
 			DEBUGADD(4,("\n"));
 		}
 			
@@ -1394,5 +1348,7 @@ BOOL get_dc_list(const char *domain, struct in_addr **ip_list, int *count, int *
 		return (*count != 0);
 	}
 	
-	return internal_resolve_name(domain, 0x1C, ip_list, count);
+	DEBUG(10,("get_dc_list: defaulting to internal auto lookup for domain %s\n", domain));
+	
+	return internal_resolve_name(domain, 0x1C, ip_list, count, resolve_oder);
 }

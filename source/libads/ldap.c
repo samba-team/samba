@@ -93,133 +93,75 @@ static BOOL ads_try_connect_uri(ADS_STRUCT *ads)
 	return False;
 }
 
-/* used by the IP comparison function */
-struct ldap_ip {
-	struct in_addr ip;
-	unsigned port;
-};
+/**********************************************************************
+ Try to find an AD dc using our internal name resolution routines
+ Try the realm first and then then workgroup name if netbios is not 
+ disabled
+**********************************************************************/
 
-/* compare 2 ldap IPs by nearness to our interfaces - used in qsort */
-static int ldap_ip_compare(struct ldap_ip *ip1, struct ldap_ip *ip2)
-{
-	return ip_compare(&ip1->ip, &ip2->ip);
-}
-
-/* try connecting to a ldap server via DNS */
-static BOOL ads_try_dns(ADS_STRUCT *ads)
+static BOOL ads_find_dc(ADS_STRUCT *ads)
 {
 	const char *c_realm;
-	const char *ptr;
-	char *realm;
-	char *list = NULL;
-	pstring tok;
-	struct ldap_ip *ip_list;
 	int count, i=0;
+	struct ip_service *ip_list;
+	pstring realm;
+	BOOL got_realm = False;
 
+	/* realm */
 	c_realm = ads->server.realm;
 	if (!c_realm || !*c_realm) {
 		c_realm = lp_realm();
 	}
-	if (!c_realm || !*c_realm) {
+	if ( c_realm )
+		got_realm = True;
+
+	   
+again:
+	/* we need to try once with the realm name and fallback to the 
+	   netbios domain name if we fail (if netbios has not been disabled */
+	   
+	if ( !got_realm	&& !lp_disable_netbios() ) {
 		c_realm = ads->server.workgroup;
+		if (!c_realm || !*c_realm) 
+			c_realm = lp_workgroup();
+		if (!c_realm)
+			return False;
 	}
-	if (!c_realm || !*c_realm) {
-		c_realm = lp_workgroup();
-	}
-	if (!c_realm) {
-		return False;
-	}
-	realm = smb_xstrdup(c_realm);
+	
+	pstrcpy( realm, c_realm );
 
-	DEBUG(6,("ads_try_dns: looking for realm '%s'\n", realm));
-	if (ldap_domain2hostlist(realm, &list) != LDAP_SUCCESS) {
-		SAFE_FREE(realm);
-		return False;
-	}
+	DEBUG(6,("ads_try_dns: looking for %s realm '%s'\n", 
+		(got_realm ? "realm" : "domain"), realm));
 
-	DEBUG(6,("ads_try_dns: ldap realm '%s' host list '%s'\n", realm, list));
-	SAFE_FREE(realm);
-
-	count = count_chars(list, ' ') + 1;
-	ip_list = malloc(count * sizeof(struct ldap_ip));
-	if (!ip_list) {
-		return False;
-	}
-
-	ptr = list;
-	while (next_token(&ptr, tok, " ", sizeof(tok))) {
-		unsigned port = LDAP_PORT;
-		char *p = strchr(tok, ':');
-		if (p) {
-			*p = 0;
-			port = atoi(p+1);
+	if ( !get_sorted_dc_list(realm, &ip_list, &count, got_realm) ) {
+		/* fall back to netbios if we can */
+		if ( got_realm && !lp_disable_netbios() ) {
+			got_realm = False;
+			goto again;
 		}
-		ip_list[i].ip = *interpret_addr2(tok);
-		ip_list[i].port = port;
-		if (!is_zero_ip(ip_list[i].ip)) {
-			i++;
-		}
+		
+		return False;
 	}
-	free(list);
-
-	count = i;
-
-	/* we sort the list of addresses by closeness to our interfaces. This
-	   tries to prevent us using a DC on the other side of the country */
-	if (count > 1) {
-		qsort(ip_list, count, sizeof(struct ldap_ip), 
-		      QSORT_CAST ldap_ip_compare);	
-	}
-
-	for (i=0;i<count;i++) {
-		if (ads_try_connect(ads, inet_ntoa(ip_list[i].ip), ip_list[i].port)) {
-			free(ip_list);
+			
+	/* if we fail this loop, then giveup since all the IP addresses returned were dead */
+	for ( i=0; i<count; i++ ) {
+		/* since this is an ads conection request, default to LDAP_PORT is not set */
+		int port = (ip_list[i].port!=PORT_NONE) ? ip_list[i].port : LDAP_PORT;
+		
+		if ( ads_try_connect(ads, inet_ntoa(ip_list[i].ip), port) ) {
+			SAFE_FREE(ip_list);
 			return True;
 		}
+		
+		/* keep track of failures */
+		add_failed_connection_entry( realm, inet_ntoa(ip_list[i].ip), NT_STATUS_UNSUCCESSFUL );
 	}
 
 	SAFE_FREE(ip_list);
+	
 	return False;
 }
 
-/* try connecting to a ldap server via netbios */
-static BOOL ads_try_netbios(ADS_STRUCT *ads)
-{
-	struct in_addr *ip_list, pdc_ip;
-	int count;
-	int i;
-	const char *workgroup = ads->server.workgroup;
-	BOOL list_ordered;
-
-	if (!workgroup) {
-		workgroup = lp_workgroup();
-	}
-
-	DEBUG(6,("ads_try_netbios: looking for workgroup '%s'\n", workgroup));
-
-	/* try the PDC first */
-	if (get_pdc_ip(workgroup, &pdc_ip)) { 
-		DEBUG(6,("ads_try_netbios: trying server '%s'\n", 
-			 inet_ntoa(pdc_ip)));
-		if (ads_try_connect(ads, inet_ntoa(pdc_ip), LDAP_PORT))
-			return True;
-	}
-
-	/* now any DC, including backups */
-	if (get_dc_list(workgroup, &ip_list, &count, &list_ordered)) { 
-		for (i=0;i<count;i++) {
-			DEBUG(6,("ads_try_netbios: trying server '%s'\n", 
-				 inet_ntoa(ip_list[i])));
-			if (ads_try_connect(ads, inet_ntoa(ip_list[i]), LDAP_PORT)) {
-				free(ip_list);
-				return True;
-			}
-		}
-		free(ip_list);
-	}
-
-	return False;
-}
 
 /**
  * Connect to the LDAP server
@@ -247,20 +189,7 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 		goto got_connection;
 	}
 
-	/* try with a smb.conf ads server setting if we are connecting
-           to the primary workgroup or realm */
-	if (!ads->server.foreign &&
-	    ads_try_connect(ads, lp_ads_server(), LDAP_PORT)) {
-		goto got_connection;
-	}
-
-	/* try via DNS */
-	if (ads_try_dns(ads)) {
-		goto got_connection;
-	}
-
-	/* try via netbios lookups */
-	if (!lp_disable_netbios() && ads_try_netbios(ads)) {
+	if (ads_find_dc(ads)) {
 		goto got_connection;
 	}
 

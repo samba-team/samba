@@ -206,7 +206,7 @@ BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_na
 			if (is_zero_ip(pdc_ip))
 				return False;
 			
-			if (!lookup_dc_name(global_myname(), opt_target_workgroup, &pdc_ip, dc_name))
+			if ( !name_status_find(opt_target_workgroup, 0x1b, 0x20, pdc_ip, dc_name) )
 				return False;
 				
 			*server_name = strdup(dc_name);
@@ -248,20 +248,18 @@ BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_na
 }
 
 
-BOOL net_find_dc(struct in_addr *server_ip, fstring server_name, const char *domain_name)
+BOOL net_find_pdc(struct in_addr *server_ip, fstring server_name, const char *domain_name)
 {
 	if (get_pdc_ip(domain_name, server_ip)) {
-		fstring dc_name;
-			
 		if (is_zero_ip(*server_ip))
 			return False;
 		
-		if (!lookup_dc_name(global_myname(), domain_name, server_ip, dc_name))
+		if (!name_status_find(domain_name, 0x1b, 0x20, *server_ip, server_name))
 			return False;
 			
-		fstrcpy(server_name, dc_name);
-		return True;
-	} else
+		return True;	
+	} 
+	else
 		return False;
 }
 
