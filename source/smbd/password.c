@@ -1664,7 +1664,8 @@ via Microsoft networking was unsuccessful. User name: %s\\%s."), domain,user);
 		}
 
 		/* Universal group memberships for other domains are
-		   stored in the info3.other_sids field. */
+		   stored in the info3.other_sids field.  We also need to
+		   do sid filtering here. */
 
 		for (i = 0; i < info3.num_other_sids; i++)
 			sid_copy(&ptok->user_sids[info3.num_groups2 + i], 
