@@ -1,5 +1,8 @@
 2003-09-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/hdb/hdb_locl.h: include <limits.h> for ULONG_MAX noted by
+	Wissler Magnus <M.Wissler@abalon.se> on heimdal-discuss
+	
 	* appl/test/gssapi_client.c (proto): use select_mech
 	
 	* appl/test/http_client.c: use getarg
