@@ -407,7 +407,7 @@ BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
 				if(!prs_uint8s(True,"string",ps,depth, (uint8 *)&data->notify_data.data.length,x*2)) 
 					return False;
 			} else {
-				if(!prs_uint8s(True,"string",ps,depth,(uint8 *)data->notify_data.data.string,x*2))
+				if(!prs_uint16uni(True,"string",ps,depth,data->notify_data.data.string,x))
 					return False;
 			}
 		} else {
@@ -418,7 +418,7 @@ BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
 			if (!data->notify_data.data.string) 
 				return False;
 
-			if(!prs_uint16s(True,"string",ps,depth,data->notify_data.data.string,x))
+			if(!prs_uint16uni(True,"string",ps,depth,data->notify_data.data.string,x))
 				return False;
 		}
 	}
@@ -550,7 +550,7 @@ static BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE
 			return False;
 	}
 
-	if (!prs_uint16s(True,"devicename", ps, depth, devmode->devicename.buffer, 32))
+	if (!prs_uint16uni(True,"devicename", ps, depth, devmode->devicename.buffer, 32))
 		return False;
 	if (!prs_uint16("specversion",      ps, depth, &devmode->specversion))
 		return False;
@@ -595,7 +595,7 @@ static BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE
 			return False;
 	}
 
-	if (!prs_uint16s(True, "formname",  ps, depth, devmode->formname.buffer, 32))
+	if (!prs_uint16uni(True, "formname",  ps, depth, devmode->formname.buffer, 32))
 		return False;
 	if (!prs_uint16("logpixels",        ps, depth, &devmode->logpixels))
 		return False;
@@ -783,7 +783,7 @@ BOOL make_spoolss_q_addprinterex(
 	{
 		case 2:
 			/* init q_u->info.info2 from *info */
-			if (!make_spool_printer_info_2(&q_u->info.info_2, ctr->printers_2))
+			if (!make_spoolss_printer_info_2(&q_u->info.info_2, ctr->printers_2))
 			{
 				DEBUG(0,("make_spoolss_q_addprinterex: Unable to fill SPOOL_Q_ADDPRINTEREX struct!\n"));
 				return False;
@@ -817,7 +817,7 @@ BOOL make_spoolss_q_addprinterex(
 create a SPOOL_PRINTER_INFO_2 stuct from a PRINTER_INFO_2 struct
 *******************************************************************/
 
-BOOL make_spool_printer_info_2(
+BOOL make_spoolss_printer_info_2(
 	SPOOL_PRINTER_INFO_LEVEL_2 **spool_info2, 
 	PRINTER_INFO_2 *info
 )
@@ -827,9 +827,9 @@ BOOL make_spool_printer_info_2(
 
 	/* allocate the necessary memory */
 	inf = (SPOOL_PRINTER_INFO_LEVEL_2*)malloc(sizeof(SPOOL_PRINTER_INFO_LEVEL_2));
-	if (spool_info2 == NULL)
+	if (!spool_info2)
 	{
-		DEBUG(0,("make_spool_printer_info_2: Unable to allocate SPOOL_PRINTER_INFO_LEVEL_2 sruct!\n"));
+		DEBUG(0,("make_spoolss_printer_info_2: Unable to allocate SPOOL_PRINTER_INFO_LEVEL_2 sruct!\n"));
 		return False;
 	}
 	
@@ -865,7 +865,7 @@ BOOL make_spool_printer_info_2(
 	init_unistr2_from_unistr(&inf->datatype, 	&info->datatype);
 	init_unistr2_from_unistr(&inf->parameters, 	&info->parameters);
 	init_unistr2_from_unistr(&inf->datatype, 	&info->datatype);
-	inf->secdesc 	= NULL;
+	inf->secdesc 		= inf->secdesc;
 
 	*spool_info2 = inf;
 
@@ -3419,8 +3419,13 @@ BOOL spoolss_io_q_getprinter(char *desc, SPOOL_Q_GETPRINTER *q_u, prs_struct *ps
  * init a structure.
  ********************************************************************/
 
-BOOL make_spoolss_q_getprinter(SPOOL_Q_GETPRINTER *q_u, const POLICY_HND *hnd, uint32 level, 
-				NEW_BUFFER *buffer, uint32 offered)
+BOOL make_spoolss_q_getprinter(
+	SPOOL_Q_GETPRINTER *q_u, 
+	const POLICY_HND *hnd, 
+	uint32 level, 
+	NEW_BUFFER *buffer, 
+	uint32 offered
+)
 {
 	if (q_u == NULL)
 	{
@@ -3434,6 +3439,73 @@ BOOL make_spoolss_q_getprinter(SPOOL_Q_GETPRINTER *q_u, const POLICY_HND *hnd, u
 
 	return True;
 }
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+BOOL make_spoolss_q_setprinter(
+	SPOOL_Q_SETPRINTER *q_u, 
+	const POLICY_HND *hnd, 
+	uint32 level, 
+	PRINTER_INFO_CTR *info, 
+	uint32 command
+)
+{
+	SEC_DESC *secdesc;
+	DEVICEMODE *devmode;
+
+	if (q_u == NULL)
+	{
+		return False;
+	}
+	
+	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
+
+	q_u->level = level;
+	q_u->info.level = level;
+	q_u->info.info_ptr = (info != NULL) ? 1 : 0;
+	switch (level)
+	{
+	case 2:
+		secdesc = info->printers_2->secdesc;
+		devmode = info->printers_2->devmode;
+		
+		/* FIXMEE!!  HACK ALERT!!!  --jerry */
+		info->printers_2->devmode = NULL;
+		info->printers_2->secdesc = NULL;
+		
+		make_spoolss_printer_info_2 (&q_u->info.info_2, info->printers_2);
+#if 0	/* JERRY TEST */
+		q_u->secdesc_ctr = (SEC_DESC_BUF*)malloc(sizeof(SEC_DESC_BUF));
+		if (!q_u->secdesc_ctr)
+			return False;
+		q_u->secdesc_ctr->ptr = (secdesc != NULL) ? 1: 0;
+		q_u->secdesc_ctr->max_len = (secdesc) ? sizeof(SEC_DESC) + (2*sizeof(uint32)) : 0;
+		q_u->secdesc_ctr->len = (secdesc) ? sizeof(SEC_DESC) + (2*sizeof(uint32)) : 0;
+		q_u->secdesc_ctr->sec = secdesc;
+	
+		q_u->devmode_ctr.devmode_ptr = (devmode != NULL) ? 1 : 0;
+		q_u->devmode_ctr.size = sizeof(DEVICEMODE) + (3*sizeof(uint32));
+		q_u->devmode_ctr.devmode = devmode;
+#else
+		q_u->secdesc_ctr = NULL;
+		
+		q_u->devmode_ctr.devmode_ptr = 0;
+		q_u->devmode_ctr.size = 0;
+		q_u->devmode_ctr.devmode = NULL;
+#endif
+		break;
+	default: 
+		DEBUG(0,("make_spoolss_q_setprinter: Unknown info level [%d]\n", level));
+			break;
+	}
+
+	
+	q_u->command = command;
+
+	return True;
+}
+
 
 /*******************************************************************
 ********************************************************************/  
@@ -4644,31 +4716,26 @@ BOOL make_spoolss_q_addprinterdriver(
 	q_u->info.ptr = (info!=NULL)?1:0;
 	switch (level)
 	{
-		/* info level 3 is supported by Windows 95/98, 
-		   WinNT and Win2k */
-		case 3 :
-			q_u->info.info_3=(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3*)
-				          malloc(sizeof(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3));
-			memset (q_u->info.info_3, 0x0, sizeof(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3));
-			make_spool_driver_info_3(q_u->info.info_3, info->info3);
-			break;
+	/* info level 3 is supported by Windows 95/98, WinNT and Win2k */
+	case 3 :
+		make_spoolss_driver_info_3(&q_u->info.info_3, info->info3);
+		break;
 		
-		/* info level 6 is supported by WinME and Win2k */
-		case 6:
-			/* WRITEME!!  will add later  --jerry */
-			break;
-		default:
-			DEBUG(0,("make_spoolss_q_addprinterdriver: Unknown \
-info level [%d]\n", level));
-			break;
-	
+	/* info level 6 is supported by WinME and Win2k */
+	case 6:
+		/* WRITEME!!  will add later  --jerry */
+		break;
+		
+	default:
+		DEBUG(0,("make_spoolss_q_addprinterdriver: Unknown info level [%d]\n", level));
+		break;
 	}
 	
 	return True;
 }
 
-BOOL make_spool_driver_info_3(
-	SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *spool_drv_info,
+BOOL make_spoolss_driver_info_3(
+	SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 **spool_drv_info,
 	DRIVER_INFO_3 *info3
 )
 {
@@ -4676,25 +4743,32 @@ BOOL make_spool_driver_info_3(
 	uint16		*ptr = info3->dependentfiles;
 	BOOL		done = False;
 	BOOL		null_char = False;
+	SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *inf;
 
-	spool_drv_info->cversion	= info3->version;
-	spool_drv_info->name_ptr	= (info3->name.buffer!=NULL)?1:0;
-	spool_drv_info->environment_ptr	= (info3->architecture.buffer!=NULL)?1:0;
-	spool_drv_info->driverpath_ptr	= (info3->driverpath.buffer!=NULL)?1:0;
-	spool_drv_info->datafile_ptr	= (info3->datafile.buffer!=NULL)?1:0;
-	spool_drv_info->configfile_ptr	= (info3->configfile.buffer!=NULL)?1:0;
-	spool_drv_info->helpfile_ptr	= (info3->helpfile.buffer!=NULL)?1:0;
-	spool_drv_info->monitorname_ptr	= (info3->monitorname.buffer!=NULL)?1:0;
-	spool_drv_info->defaultdatatype_ptr	= (info3->defaultdatatype.buffer!=NULL)?1:0;
+	inf = (SPOOL_PRINTER_DRIVER_INFO_LEVEL_3*)
+		malloc(sizeof(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3));
+	if (!inf)
+		return False;
+	memset (inf, 0x0, sizeof(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3));
+	
+	inf->cversion	= info3->version;
+	inf->name_ptr	= (info3->name.buffer!=NULL)?1:0;
+	inf->environment_ptr	= (info3->architecture.buffer!=NULL)?1:0;
+	inf->driverpath_ptr	= (info3->driverpath.buffer!=NULL)?1:0;
+	inf->datafile_ptr	= (info3->datafile.buffer!=NULL)?1:0;
+	inf->configfile_ptr	= (info3->configfile.buffer!=NULL)?1:0;
+	inf->helpfile_ptr	= (info3->helpfile.buffer!=NULL)?1:0;
+	inf->monitorname_ptr	= (info3->monitorname.buffer!=NULL)?1:0;
+	inf->defaultdatatype_ptr	= (info3->defaultdatatype.buffer!=NULL)?1:0;
 
-	init_unistr2_from_unistr(&spool_drv_info->name, &info3->name);
-	init_unistr2_from_unistr(&spool_drv_info->environment, &info3->architecture);
-	init_unistr2_from_unistr(&spool_drv_info->driverpath, &info3->driverpath);
-	init_unistr2_from_unistr(&spool_drv_info->datafile, &info3->datafile);
-	init_unistr2_from_unistr(&spool_drv_info->configfile, &info3->configfile);
-	init_unistr2_from_unistr(&spool_drv_info->helpfile, &info3->helpfile);
-	init_unistr2_from_unistr(&spool_drv_info->monitorname, &info3->monitorname);
-	init_unistr2_from_unistr(&spool_drv_info->defaultdatatype, &info3->defaultdatatype);
+	init_unistr2_from_unistr(&inf->name, &info3->name);
+	init_unistr2_from_unistr(&inf->environment, &info3->architecture);
+	init_unistr2_from_unistr(&inf->driverpath, &info3->driverpath);
+	init_unistr2_from_unistr(&inf->datafile, &info3->datafile);
+	init_unistr2_from_unistr(&inf->configfile, &info3->configfile);
+	init_unistr2_from_unistr(&inf->helpfile, &info3->helpfile);
+	init_unistr2_from_unistr(&inf->monitorname, &info3->monitorname);
+	init_unistr2_from_unistr(&inf->defaultdatatype, &info3->defaultdatatype);
 
 	while (!done)
 	{
@@ -4717,25 +4791,30 @@ BOOL make_spool_driver_info_3(
 		len++;
 		ptr++;
 	}
-	spool_drv_info->dependentfiles_ptr = (info3->dependentfiles!=NULL)?1:0;
-	spool_drv_info->dependentfilessize = len;
-	if(!make_spool_buffer5(&spool_drv_info->dependentfiles, len, info3->dependentfiles))
+	inf->dependentfiles_ptr = (info3->dependentfiles != NULL) ? 1 : 0;
+	inf->dependentfilessize = len;
+	if(!make_spoolss_buffer5(&inf->dependentfiles, len, info3->dependentfiles))
+	{
+		safe_free (inf);
 		return False;
+	}
+	
+	*spool_drv_info = inf;
 	
 	return True;
-}	     
+}
 
 /*******************************************************************
  make a BUFFER5 struct from a uint16*
  ******************************************************************/
 
-BOOL make_spool_buffer5(BUFFER5 *buf5, uint32 len, uint16 *src)
+BOOL make_spoolss_buffer5(BUFFER5 *buf5, uint32 len, uint16 *src)
 {
 
 	buf5->buf_len = len;
 	if((buf5->buffer=(uint16*)malloc(sizeof(uint16)*len)) == NULL)
 	{
-		DEBUG(0,("make_spool_buffer5: Unable to talloc memory for buffer!\n"));
+		DEBUG(0,("make_spoolss_buffer5: Unable to malloc memory for buffer!\n"));
 		return False;
 	}
 	
@@ -5234,14 +5313,8 @@ BOOL spoolss_io_r_enumprinterdata(char *desc, SPOOL_R_ENUMPRINTERDATA *r_u, prs_
 	if(!prs_uint32("valuesize", ps, depth, &r_u->valuesize))
 		return False;
 
-	if (MARSHALLING(ps)) {
-		/* "Value is actually a UNICODE string. It's already little-endian so don't reverse. */
-		if(!prs_uint8s(False, "value", ps, depth, (uint8 *)r_u->value, r_u->valuesize * 2))
-			return False;
-	} else {
-		if(!prs_uint16s(False, "value", ps, depth, r_u->value, r_u->valuesize ))
-			return False;
-	}
+	if(!prs_uint16uni(False, "value", ps, depth, r_u->value, r_u->valuesize ))
+		return False;
 
 	if(!prs_align(ps))
 		return False;

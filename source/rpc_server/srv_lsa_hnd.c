@@ -109,7 +109,6 @@ BOOL create_policy_hnd(pipes_struct *p, POLICY_HND *hnd, void (*free_fn)(void *)
 
 	ZERO_STRUCTP(pol);
 
-	pol->p = p;
 	pol->data_ptr = data_ptr;
 	pol->free_fn = free_fn;
 
@@ -189,9 +188,9 @@ BOOL close_policy_hnd(pipes_struct *p, POLICY_HND *hnd)
 	if (pol->free_fn && pol->data_ptr)
 		(*pol->free_fn)(pol->data_ptr);
 
-	pol->p->pipe_handles->count--;
+	p->pipe_handles->count--;
 
-	DLIST_REMOVE(pol->p->pipe_handles->Policy, pol);
+	DLIST_REMOVE(p->pipe_handles->Policy, pol);
 
 	ZERO_STRUCTP(pol);
 
