@@ -358,8 +358,8 @@ sub ParseElementPullScalar($$$)
 	} elsif (util::is_inline_array($e)) {
 		ParseArrayPull($e, "r->", "NDR_SCALARS");
 	} elsif (util::need_wire_pointer($e)) {
-		pidl "\tndr_pull_ptr(ndr, hf_ptr, &_ptr_$e->{NAME});\n";
-#		pidl "\tif (_ptr_$e->{NAME}) {\n";
+		pidl "\tndr_pull_ptr(ndr, hf_ptr, &ptr_$e->{NAME});\n";
+#		pidl "\tif (ptr_$e->{NAME}) {\n";
 #		pidl "\t\tNDR_ALLOC(ndr, $var_prefix$e->{NAME});\n";
 #		pidl "\t} else {\n";
 #		pidl "\t\t$var_prefix$e->{NAME} = NULL;\n";
@@ -404,7 +404,7 @@ sub ParseElementPullBuffer($$$)
 	start_flags($e);
 
 	if (util::need_wire_pointer($e)) {
-		pidl "\tif (_ptr_$e->{NAME}) {\n";
+		pidl "\tif (ptr_$e->{NAME}) {\n";
 	}
 	    
 	if (util::is_inline_array($e)) {
@@ -472,7 +472,7 @@ sub ParseStructPull($)
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		if (util::need_wire_pointer($e) &&
 		    !util::has_property($e, "relative")) {
-			pidl "\tguint32 _ptr_$e->{NAME};\n";
+			pidl "\tguint32 ptr_$e->{NAME};\n";
 		}
 	}
 
@@ -525,7 +525,7 @@ sub ParseUnionPull($)
 	pidl "\tswitch (level) {\n";
 	foreach my $el (@{$e->{DATA}}) {
 		if ($el->{CASE} eq "default") {
-			pidl "\tdefault: {\n";
+			pidl "\t\tdefault: {\n";
 			$have_default = 1;
 		} else {
 			pidl "\tcase $el->{CASE}: {\n";
@@ -533,11 +533,11 @@ sub ParseUnionPull($)
 		if ($el->{TYPE} eq "UNION_ELEMENT") {
 			my $e2 = $el->{DATA};
 			if ($e2->{POINTERS}) {
-				pidl "\t\tguint32 _ptr_$e2->{NAME};\n";
+				pidl "\t\tguint32 ptr_$e2->{NAME};\n";
 			}
 			ParseElementPullScalar($el->{DATA}, "r->", "NDR_SCALARS");
 		}
-		pidl "\tbreak; }\n\n";
+		pidl "\t\tbreak;\n\t}\n";
 	}
 	if (! $have_default) {
 		pidl "\tdefault:\n";
@@ -556,7 +556,7 @@ sub ParseUnionPull($)
 		if ($el->{TYPE} eq "UNION_ELEMENT") {
 			ParseElementPullBuffer($el->{DATA}, "r->", "NDR_BUFFERS");
 		}
-		pidl "\tbreak;\n\n";
+		pidl "\t\tbreak;\n\n";
 	}
 	if (! $have_default) {
 		pidl "\tdefault:\n";
@@ -587,6 +587,8 @@ sub ParseEnumPull($)
 	    pidl "#define $name $ndx\n";
 	    $ndx++;
 	}
+
+	pidl "\n";
 }
 
 #####################################################################
@@ -650,8 +652,8 @@ sub ParseFunctionElementPull($$)
 
 	if (util::array_size($e)) {
 		if (util::need_wire_pointer($e)) {
-			pidl "\tndr_pull_ptr(ndr, &_ptr_$e->{NAME});\n";
-			pidl "\tif (_ptr_$e->{NAME}) {\n";
+			pidl "\tndr_pull_ptr(ndr, &ptr_$e->{NAME});\n";
+			pidl "\tif (ptr_$e->{NAME}) {\n";
 		} elsif ($inout eq "out" && util::has_property($e, "ref")) {
 			pidl "\tif (r->$inout.$e->{NAME}) {\n";
 		} else {
@@ -697,12 +699,12 @@ sub ParseFunctionPull($)
 
 	# declare any internal pointers we need
 	foreach my $e (@{$fn->{DATA}}) {
-	        pidl "\tg$e->{TYPE} elt_$e->{NAME};\n", 
-	            if util::is_builtin_type($e->{TYPE});
 		if (util::need_wire_pointer($e) &&
 		    util::has_property($e, "in")) {
-			pidl "\tguint32 _ptr_$e->{NAME};\n";
+			pidl "\tguint32 ptr_$e->{NAME};\n";
 		}
+	        pidl "\tg$e->{TYPE} elt_$e->{NAME};\n", 
+	            if util::is_builtin_type($e->{TYPE});
 	}
 
 	foreach my $e (@{$fn->{DATA}}) {
@@ -724,12 +726,12 @@ sub ParseFunctionPull($)
 
 	# declare any internal pointers we need
 	foreach my $e (@{$fn->{DATA}}) {
-	        pidl "\tg$e->{TYPE} elt_$e->{NAME};\n", 
-	            if util::is_builtin_type($e->{TYPE});
 		if (util::need_wire_pointer($e) && 
 		    util::has_property($e, "out")) {
-			pidl "\tguint32 _ptr_$e->{NAME};\n";
+			pidl "\tguint32 ptr_$e->{NAME};\n";
 		}
+	        pidl "\tg$e->{TYPE} elt_$e->{NAME};\n", 
+	            if util::is_builtin_type($e->{TYPE});
 	}
 
 	foreach my $e (@{$fn->{DATA}}) {
@@ -980,6 +982,8 @@ sub Parse($$)
 	    pidl "static int $y = -1;\n", if $y =~ /^hf_/;
 	}
 
+	pidl "\n";
+
 	for my $x (@{$idl}) {
 	    ParseInterface($x);
 	}
@@ -1023,8 +1027,7 @@ sub Parse($$)
 	    next, if !($x =~ /^hf_/);
 	    
 	    pidl "\t{ &$x,\n";
-	    pidl "\t  { \"$needed{$x}{name}\", \"$x\", $needed{$x}{ft}, $needed{$x}{base},\n";
-	    pidl"\t  NULL, 0, \"$x\", HFILL }},\n";
+	    pidl "\t  { \"$needed{$x}{name}\", \"$x\", $needed{$x}{ft}, $needed{$x}{base}, NULL, 0, \"$x\", HFILL }},\n";
 	}
 	
 	pidl "\t};\n\n";
