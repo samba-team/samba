@@ -218,8 +218,7 @@ static NTSTATUS make_connection(struct smbsrv_request *req,
 	snum = find_service(service);
 
 	if (snum == -1) {
-		DEBUG(0,("%s couldn't find service %s\n",
-			 sub_get_remote_machine(), service));
+		DEBUG(0,("couldn't find service %s\n", service));
 		return NT_STATUS_BAD_NETWORK_NAME;
 	}
 

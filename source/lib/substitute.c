@@ -52,18 +52,6 @@ static void setup_string(char **dest, const char *str)
 	(*dest) = s;
 }
 
-void sub_set_local_machine(const char *local_machine)
-{
-	if (!sub) return;
-	setup_string(&sub->local_machine, local_machine);
-}
-
-void sub_set_remote_machine(const char *remote_machine)
-{
-	if (!sub) return;
-	setup_string(&sub->remote_machine, remote_machine);
-}
-
 void sub_set_remote_proto(const char *str)
 {
 	if (!sub) return;
@@ -75,19 +63,6 @@ void sub_set_remote_arch(const char *str)
 	if (!sub) return;
 	setup_string(&sub->remote_arch, str);
 }
-
-const char *sub_get_remote_machine(void) 
-{
-	if (!sub) return "UNKNOWN";
-	return sub->remote_machine;
-}
-
-const char *sub_get_local_machine(void) 
-{
-	if (!sub) return "UNKNOWN";
-	return sub->local_machine;
-}
-
 
 /*
   setup the string used by %U substitution 
