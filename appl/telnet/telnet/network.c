@@ -69,6 +69,8 @@ stilloob(void)
 
     do {
 	FD_ZERO(&excepts);
+	if (net >= FD_SETSIZE)
+	    errx (1, "fd too large");
 	FD_SET(net, &excepts);
 	value = select(net+1, 0, 0, &excepts, &timeout);
     } while ((value == -1) && (errno == EINTR));
