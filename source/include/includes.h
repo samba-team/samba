@@ -761,7 +761,7 @@ extern int errno;
 
 #include "rpc_server/dcerpc_server.h"
 #include "context.h"
-#include "ntvfs.h"
+#include "ntvfs/ntvfs.h"
 #include "cli_context.h"
 
 
