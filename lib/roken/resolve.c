@@ -208,8 +208,6 @@ parse_reply(unsigned char *data, int len)
     return r;
 }
 
-
-
 struct dns_reply *
 dns_lookup(const char *domain, const char *type_name)
 {
@@ -217,15 +215,25 @@ dns_lookup(const char *domain, const char *type_name)
     int len;
     int type;
     struct dns_reply *r = NULL;
+    u_long old_options;
     
     type = string_to_type(type_name);
+    if (krb_dns_debug) {
+        old_options = _res.options;
+	_res.options |= RES_DEBUG;
+	krb_warning("dns_lookup(%s, %s)\n", domain, type_name);
+    }
     len = res_search(domain, C_IN, type, reply, sizeof(reply));
-    if(len >= 0)
+    if (krb_dns_debug) {
+        _res.options = old_options;
+	krb_warning("dns_lookup(%s, %s) --> %d\n", domain, type_name, len);
+    }
+    if (len >= 0)
 	r = parse_reply(reply, len);
     return r;
 }
 
-#else /* defined(HAVE_RES_SEARCH) && defined(HAVE_DN_EXPAND) */
+#else /* NOT defined(HAVE_RES_SEARCH) && defined(HAVE_DN_EXPAND) */
 
 struct dns_reply *
 dns_lookup(const char *domain, const char *type_name)
