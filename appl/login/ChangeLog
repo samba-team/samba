@@ -1,3 +1,13 @@
+2003-03-24  Johan Danielsson  <joda@pdc.kth.se>
+
+	* Makefile.am: install man pages
+
+	* login.1: manpage for login
+
+	* login.c: allow "welcome" as well as "motd" in login.conf
+
+	* login.access.5: login.access manual page
+
 2003-03-18  Love Hörnquist Åstrand <lha@it.su.se>
 	
 	* login.c: also need pag_set
