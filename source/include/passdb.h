@@ -26,10 +26,11 @@
 /*
  * This next constant specifies the version number of the VFS interface
  * this smbd will load. Increment this if *ANY* changes are made to the
- * vfs_ops below. JRA.
+ * passdb_ops below.
  */
 
-#define SMB_PASSDB_INTERFACE_VERSION 1
+#define SMB_PASSDB_MAJOR_VERSION 1
+#define SMB_PASSDB_MINOR_VERSION 0
 
 /* passdb operations structure */
 struct passdb_ops {
@@ -50,16 +51,22 @@ struct passdb_ops {
 	BOOL (*add_sam_account) (SAM_ACCOUNT* sampass);
 };
 
+
+
+#define SMB_UIDMAP_MAJOR_VERSION 1
+#define SMB_UIDMAP_MINOR_VERSION 0
+
+typedef enum sid_type {SID_USER_TYPE, SID_GROUP_TYPE} SMB_SID_T
+
 /* uid mapping structure */
 struct uidmap_ops {
 
 	/* From NT to UNIX */
-	uid_t (*user_rid_to_uid) (uint32 rid);
-	gid_t (*group_rid_to_gid) (uint32 rid);
+	int (*sid_to_id) (DOM_SID* sid, SMB_SID_T type);
 
 	/* From UNIX to NT */
-	uint32 (*uid_to_user_rid) (uid_t uid);
-	uint32 (*gid_to_group_rid) (gid_t gid);
+	DOM_SID* (*id_to_sid) (int id);
+
 };
 
 
