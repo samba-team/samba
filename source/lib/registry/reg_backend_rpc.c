@@ -78,7 +78,7 @@ struct rpc_key_data {
 };
 
 struct {
-	uint32 hkey;
+	uint32_t hkey;
 	WERROR (*open) (struct dcerpc_pipe *p, TALLOC_CTX *, struct policy_handle *h);
 } known_hives[] = {
 { HKEY_LOCAL_MACHINE, open_HKLM },
@@ -93,7 +93,7 @@ struct {
 
 static WERROR rpc_query_key(struct registry_key *k);
 
-static WERROR rpc_get_predefined_key (struct registry_context *ctx, uint32 hkey_type, struct registry_key **k)
+static WERROR rpc_get_predefined_key (struct registry_context *ctx, uint32_t hkey_type, struct registry_key **k)
 {
 	int n;
 	struct registry_hive *h;
@@ -185,7 +185,7 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx, struct registry_key *p
 	struct rpc_key_data *mykeydata = parent->backend_data;
 	WERROR error;
 	struct winreg_EnumValue r;
-	uint32 type, len1, zero = 0;
+	uint32_t type, len1, zero = 0;
 	NTSTATUS status;
 	uint8_t buf8;
 	uint16_t buf16;

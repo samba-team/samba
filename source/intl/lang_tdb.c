@@ -21,6 +21,8 @@
 #include "includes.h"
 #include "lib/tdb/include/tdbutil.h"
 #include "system/time.h"
+#include "system/filesys.h"
+#include "pstring.h"
 
 static TDB_CONTEXT *tdb;
 

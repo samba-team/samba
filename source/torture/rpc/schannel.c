@@ -114,8 +114,8 @@ static BOOL test_netlogon_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
   test a schannel connection with the given flags
  */
 static BOOL test_schannel(TALLOC_CTX *mem_ctx, 
-			  uint16 acct_flags, uint32 dcerpc_flags,
-			  uint32 schannel_type)
+			  uint16_t acct_flags, uint32_t dcerpc_flags,
+			  uint32_t schannel_type)
 {
 	void *join_ctx;
 	const char *machine_password;
@@ -215,9 +215,9 @@ BOOL torture_rpc_schannel(void)
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	struct {
-		uint16 acct_flags;
-		uint32 dcerpc_flags;
-		uint32 schannel_type;
+		uint16_t acct_flags;
+		uint32_t dcerpc_flags;
+		uint32_t schannel_type;
 	} tests[] = {
 		{ ACB_WSTRUST,   DCERPC_SCHANNEL_WORKSTATION | DCERPC_SIGN,                       3 },
 		{ ACB_WSTRUST,   DCERPC_SCHANNEL_WORKSTATION | DCERPC_SEAL,                       3 },

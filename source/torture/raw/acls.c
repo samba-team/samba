@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "libcli/raw/libcliraw.h"
 #include "librpc/gen_ndr/ndr_security.h"
 
@@ -843,7 +844,7 @@ static BOOL test_owner_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	expected_bits = SEC_FILE_WRITE_DATA | SEC_FILE_READ_ATTRIBUTE;
 
 	for (i=0;i<16;i++) {
-		uint32 bit = (1<<i);
+		uint32_t bit = (1<<i);
 		io.ntcreatex.in.access_mask = bit;
 		status = smb_raw_open(cli->tree, mem_ctx, &io);
 		if (expected_bits & bit) {

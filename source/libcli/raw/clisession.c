@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "system/filesys.h"
 #include "auth/auth.h"
 
 #define SETUP_REQUEST_SESSION(cmd, wct, buflen) do { \

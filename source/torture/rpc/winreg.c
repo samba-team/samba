@@ -365,9 +365,9 @@ static BOOL test_QueryMultipleValues(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.values[0].type = 0;
 
 	r.in.num_values = 1;
-	r.in.buffer_size = r.out.buffer_size = talloc(mem_ctx, uint32);
+	r.in.buffer_size = r.out.buffer_size = talloc(mem_ctx, uint32_t);
 	*r.in.buffer_size = 0x20;
-	r.in.buffer = r.out.buffer = talloc_zero_array(mem_ctx, uint8, *r.in.buffer_size);
+	r.in.buffer = r.out.buffer = talloc_zero_array(mem_ctx, uint8_t, *r.in.buffer_size);
 
 	status = dcerpc_winreg_QueryMultipleValues(p, mem_ctx, &r);
 	if(NT_STATUS_IS_ERR(status)) {
@@ -387,8 +387,8 @@ static BOOL test_QueryValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct p
 {
 	struct winreg_QueryValue r;
 	NTSTATUS status;
-	uint32 zero = 0;
-	uint32 offered = 0xfff;
+	uint32_t zero = 0;
+	uint32_t offered = 0xfff;
 
 	printf("Testing QueryValue\n");
 
@@ -417,8 +417,8 @@ static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			   struct policy_handle *handle, int max_valnamelen, int max_valbufsize)
 {
 	struct winreg_EnumValue r;
-	uint32 type = 0;
-	uint32 size = max_valbufsize, zero = 0;
+	uint32_t type = 0;
+	uint32_t size = max_valbufsize, zero = 0;
 	BOOL ret = True;
 	uint8_t buf8;
 	uint16_t buf16;

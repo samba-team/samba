@@ -26,6 +26,7 @@
    used. This allows us to provide the same semantics as NT */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "lib/tdb/include/tdb.h"
 #include "messages.h"
 

@@ -36,7 +36,7 @@ static int ldb_close_hive (void *_hive)
 	return 0;
 }
 
-static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx, struct ldb_message *msg, char **name, uint32 *type, void **data, int *len)
+static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx, struct ldb_message *msg, char **name, uint32_t *type, void **data, int *len)
 {
 	const struct ldb_val *val;
 	*name = talloc_strdup(mem_ctx, ldb_msg_find_string(msg, "value", NULL));
@@ -52,7 +52,7 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx, struct ldb_message *msg, c
 
 	case REG_DWORD_LE:
 		*len = 4;
-		*data = talloc(mem_ctx, uint32);
+		*data = talloc(mem_ctx, uint32_t);
 		SIVAL(*data, 0, strtol(val->data, NULL, 0));
 		break;
 
@@ -63,7 +63,7 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx, struct ldb_message *msg, c
 	}
 }
 
-static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx, TALLOC_CTX *mem_ctx, const char *name, uint32 type, void *data, int len)
+static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx, TALLOC_CTX *mem_ctx, const char *name, uint32_t type, void *data, int len)
 {
 	struct ldb_val val;
 	struct ldb_message *msg = talloc_zero(mem_ctx, struct ldb_message);
@@ -322,7 +322,7 @@ static WERROR ldb_del_value (struct registry_key *key, const char *child)
 	return WERR_OK;
 }
 
-static WERROR ldb_set_value (struct registry_key *parent, const char *name, uint32 type, void *data, int len)
+static WERROR ldb_set_value (struct registry_key *parent, const char *name, uint32_t type, void *data, int len)
 {
 	struct ldb_context *ctx = parent->hive->backend_data;
 	struct ldb_message *msg;

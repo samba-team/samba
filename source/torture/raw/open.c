@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "system/time.h"
+#include "system/filesys.h"
 #include "librpc/gen_ndr/ndr_security.h"
 
 /* enum for whether reads/writes are possible on a file */

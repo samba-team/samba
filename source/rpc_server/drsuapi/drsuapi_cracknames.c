@@ -29,7 +29,7 @@
 #include "lib/ldb/include/ldb.h"
 
 static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX *mem_ctx,
-			uint32 format_flags, uint32 format_offered, uint32 format_desired,
+			uint32_t format_flags, uint32_t format_offered, uint32_t format_desired,
 			const char *name, struct drsuapi_DsNameInfo1 *info1)
 {
 	int ret;

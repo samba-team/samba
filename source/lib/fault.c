@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "version.h"
 #include "system/wait.h"
+#include "system/filesys.h"
 
 static void (*cont_fn)(void *);
 

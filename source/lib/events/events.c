@@ -57,6 +57,7 @@
 #include "includes.h"
 #include "system/time.h"
 #include "system/select.h"
+#include "system/filesys.h"
 #include "dlinklist.h"
 #include "lib/events/events.h"
 

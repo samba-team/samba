@@ -609,7 +609,7 @@ static NTSTATUS dcesrv_auth3(struct dcesrv_call_state *call)
 /*
   handle a bind request
 */
-static NTSTATUS dcesrv_alter_new_context(struct dcesrv_call_state *call, uint32 context_id)
+static NTSTATUS dcesrv_alter_new_context(struct dcesrv_call_state *call, uint32_t context_id)
 {
 	uint32_t if_version, transfer_syntax_version;
 	const char *uuid, *transfer_syntax;

@@ -389,7 +389,7 @@ static BOOL samsync_handle_policy(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsync_state,
 				int database_id, struct netr_DELTA_ENUM *delta) 
 {
-	uint32 rid = delta->delta_id_union.rid;
+	uint32_t rid = delta->delta_id_union.rid;
 	struct netr_DELTA_USER *user = delta->delta_union.user;
 	struct netr_SamInfo3 *info3;
 	struct samr_Password lm_hash;
@@ -604,7 +604,7 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 static BOOL samsync_handle_alias(TALLOC_CTX *mem_ctx, struct samsync_state *samsync_state,
 				 int database_id, struct netr_DELTA_ENUM *delta) 
 {
-	uint32 rid = delta->delta_id_union.rid;
+	uint32_t rid = delta->delta_id_union.rid;
 	struct netr_DELTA_ALIAS *alias = delta->delta_union.alias;
 	NTSTATUS nt_status;
 	BOOL ret = True;
@@ -653,7 +653,7 @@ static BOOL samsync_handle_alias(TALLOC_CTX *mem_ctx, struct samsync_state *sams
 static BOOL samsync_handle_group(TALLOC_CTX *mem_ctx, struct samsync_state *samsync_state,
 				 int database_id, struct netr_DELTA_ENUM *delta) 
 {
-	uint32 rid = delta->delta_id_union.rid;
+	uint32_t rid = delta->delta_id_union.rid;
 	struct netr_DELTA_GROUP *group = delta->delta_union.group;
 	NTSTATUS nt_status;
 	BOOL ret = True;

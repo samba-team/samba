@@ -22,6 +22,8 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
+#include "system/passwd.h"
 #include "auth/auth.h"
 #include "libcli/security/security.h"
 #include "smb_server/smb_server.h"

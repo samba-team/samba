@@ -107,7 +107,7 @@ static void $name\__op_unbind(struct dcesrv_connection_context *context, const s
 static NTSTATUS $name\__op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_pull *pull, void **r)
 {
 	NTSTATUS status;
-	uint16 opnum = dce_call->pkt.u.request.opnum;
+	uint16_t opnum = dce_call->pkt.u.request.opnum;
 
 	dce_call->fault_code = 0;
 
@@ -133,7 +133,7 @@ static NTSTATUS $name\__op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_C
 
 static NTSTATUS $name\__op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)
 {
-	uint16 opnum = dce_call->pkt.u.request.opnum;
+	uint16_t opnum = dce_call->pkt.u.request.opnum;
 	struct GUID ipid = dce_call->pkt.u.request.object.object;
 	struct dcom_interface_p *iface = dcom_get_local_iface_p(&ipid);
 	const struct dcom_$name\_vtable *vtable = iface->vtable;
@@ -159,7 +159,7 @@ pidl "
 
 static NTSTATUS $name\__op_reply(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)
 {
-	uint16 opnum = dce_call->pkt.u.request.opnum;
+	uint16_t opnum = dce_call->pkt.u.request.opnum;
 
 	switch (opnum) {
 ";
@@ -183,7 +183,7 @@ pidl "
 static NTSTATUS $name\__op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_push *push, void *r)
 {
 	NTSTATUS status;
-	uint16 opnum = dce_call->pkt.u.request.opnum;
+	uint16_t opnum = dce_call->pkt.u.request.opnum;
 
 	status = dcerpc_table_$name.calls[opnum].ndr_push(push, NDR_OUT, r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -236,7 +236,7 @@ static NTSTATUS $name\__op_init_server(struct dcesrv_context *dce_ctx, const str
 	return NT_STATUS_OK;
 }
 
-static BOOL $name\__op_interface_by_uuid(struct dcesrv_interface *iface, const char *uuid, uint32 if_version)
+static BOOL $name\__op_interface_by_uuid(struct dcesrv_interface *iface, const char *uuid, uint32_t if_version)
 {
 	if (dcerpc_table_$name.if_version == if_version &&
 		strcmp(dcerpc_table_$name.uuid, uuid)==0) {

@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "system/time.h"
+#include "system/filesys.h"
 
 #define BASEDIR "\\delaywrite"
 

@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "system/network.h"
+#include "pstring.h"
 
 
 enum SOCK_OPT_TYPES {OPT_BOOL,OPT_INT,OPT_ON};

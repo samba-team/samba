@@ -25,6 +25,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef _PSTRING
+
 #define PSTRING_LEN 1024
 #define FSTRING_LEN 256
 
@@ -32,3 +34,4 @@ typedef char pstring[PSTRING_LEN];
 typedef char fstring[FSTRING_LEN];
 
 #define _PSTRING
+#endif

@@ -465,7 +465,7 @@ NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *floor, struct GUID *uuid, u
 	return status;
 }
 
-DATA_BLOB dcerpc_floor_pack_lhs_data(TALLOC_CTX *mem_ctx, struct GUID *uuid, uint32 if_version)
+DATA_BLOB dcerpc_floor_pack_lhs_data(TALLOC_CTX *mem_ctx, struct GUID *uuid, uint32_t if_version)
 {
 	struct ndr_push *ndr = ndr_push_init_ctx(mem_ctx);
 

@@ -105,7 +105,7 @@ static BOOL test_NetCharDevEnum(struct dcerpc_pipe *p,
 	r.in.ctr.ctr0 = &c0;
 	r.in.ctr.ctr0->count = 0;
 	r.in.ctr.ctr0->array = NULL;
-	r.in.max_buffer = (uint32)-1;
+	r.in.max_buffer = (uint32_t)-1;
 	r.in.resume_handle = NULL;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
@@ -252,7 +252,7 @@ static BOOL test_NetCharDevQEnum(struct dcerpc_pipe *p,
 	r.in.ctr.ctr0 = &c0;
 	r.in.ctr.ctr0->count = 0;
 	r.in.ctr.ctr0->array = NULL;
-	r.in.max_buffer = (uint32)-1;
+	r.in.max_buffer = (uint32_t)-1;
 	r.in.resume_handle = NULL;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {

@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "pstring.h"
 
 #include <unistd.h>
 

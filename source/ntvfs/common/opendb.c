@@ -39,6 +39,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "lib/tdb/include/tdb.h"
 #include "messages.h"
 #include "librpc/gen_ndr/ndr_security.h"

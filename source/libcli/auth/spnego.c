@@ -844,7 +844,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 }
 
 static BOOL gensec_spnego_have_feature(struct gensec_security *gensec_security,
-				       uint32 feature) 
+				       uint32_t feature) 
 {
 	struct spnego_state *spnego_state = gensec_security->private_data;
 	if (!spnego_state->sub_sec_security) {

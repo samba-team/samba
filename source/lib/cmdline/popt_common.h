@@ -22,6 +22,7 @@
 #define _POPT_COMMON_H
 
 #include "popt.h"
+#include "pstring.h"
 
 /* Common popt structures */
 extern struct poptOption popt_common_samba[];

@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "registry.h"
 #include "system/dir.h"
+#include "system/filesys.h"
 
 static WERROR reg_dir_add_key(TALLOC_CTX *mem_ctx, struct registry_key *parent, const char *name, uint32_t access_mask, struct security_descriptor *desc, struct registry_key **result)
 {
