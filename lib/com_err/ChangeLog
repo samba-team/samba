@@ -1,3 +1,11 @@
+2000-01-16  Assar Westerlund  <assar@sics.se>
+
+	* com_err.h: remove __P definition (now in com_right.h).  this
+	file always includes com_right.h so that's where it should reside.
+	* com_right.h: moved __P here and added it to the function
+	prototypes
+	* com_err.h (error_table_name): add __P
+
 1999-07-03  Assar Westerlund  <assar@sics.se>
 
 	* parse.y (statement): use asprintf
