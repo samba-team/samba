@@ -1307,6 +1307,7 @@ size_t next_mb_char_size(const char *s)
 	if (!(*s & 0x80))
 		return 1; /* ascii. */
 
+	conv_silent = True;
 	for ( i = 1; i <=4; i++ ) {
 		smb_ucs2_t uc;
 		if (convert_string(CH_UNIX, CH_UCS2, s, i, &uc, 2, False) == 2) {
@@ -1314,10 +1315,12 @@ size_t next_mb_char_size(const char *s)
 			DEBUG(10,("next_mb_char_size: size %u at string %s\n",
 				(unsigned int)i, s));
 #endif
+			conv_silent = False;
 			return i;
 		}
 	}
 	/* We're hosed - we don't know how big this is... */
 	DEBUG(10,("next_mb_char_size: unknown size at string %s\n", s));
+	conv_silent = False;
 	return 1;
 }
