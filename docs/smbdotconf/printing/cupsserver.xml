@@ -15,5 +15,5 @@
 </description>
 
 <value type="default">""</value>
-<value type="example">"raw,media=a4,job-sheets=secret,secret"</value>
+<value type="example">MYCUPSSERVER</value>
 </samba:parameter>
