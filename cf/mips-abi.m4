@@ -77,5 +77,4 @@ esac
 fi #if test -n "$GCC"; then
 ;;
 esac
-exit
 ])
