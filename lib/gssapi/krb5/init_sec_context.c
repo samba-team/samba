@@ -85,6 +85,7 @@ init_auth
     (*context_handle)->target = NULL;
     (*context_handle)->flags = 0;
     (*context_handle)->more_flags = 0;
+    (*context_handle)->ticket = NULL;
 
     kret = krb5_auth_con_init (gssapi_krb5_context,
 			       &(*context_handle)->auth_context);
