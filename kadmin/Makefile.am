@@ -56,6 +56,7 @@ COMMON_LDADD = \
 
 kadmind_LDADD = $(KRB4LIB) $(top_builddir)/lib/kadm5/libkadm5srv.la \
 	$(COMMON_LDADD) \
+	$(LIB_pidfile) \
 	$(LIB_dlopen)
 
 kadmin_LDADD = \

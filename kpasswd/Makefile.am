@@ -19,6 +19,7 @@ kpasswdd_LDADD = \
 	$(top_builddir)/lib/hdb/libhdb.la \
 	$(LIB_openldap) \
 	$(LDADD) \
+	$(LIB_pidfile) \
 	$(LIB_dlopen) \
 	$(DBLIB)
 

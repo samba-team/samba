@@ -63,3 +63,5 @@ LDADD = $(top_builddir)/lib/hdb/libhdb.la \
 	$(LIB_roken) \
 	$(DBLIB)
 
+kdc_LDADD = $(LDADD) $(LIB_pidfile)
+
