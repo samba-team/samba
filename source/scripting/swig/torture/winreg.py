@@ -30,7 +30,49 @@ def test_CloseKey(pipe, handle):
 
     dcerpc.winreg_CloseKey(pipe, r)
 
-def test_Enum(pipe, handle, name, depth = 0):
+def test_FlushKey(pipe, handle):
+
+    r = {}
+    r['handle'] = handle
+    
+    dcerpc.winreg_FlushKey(pipe, r)
+
+def test_GetVersion(pipe, handle):
+
+    r = {}
+    r['handle'] = handle
+    
+    dcerpc.winreg_GetVersion(pipe, r)
+
+def test_GetKeySecurity(pipe, handle):
+
+    r = {}
+    r['handle'] = handle
+    r['unknown'] = 4
+    r['size'] = None
+    r['data'] = {}
+    r['data']['max_len'] = 0
+    r['data']['data'] = ''
+
+    result = dcerpc.winreg_GetKeySecurity(pipe, r)
+
+    print result
+
+    if result['result'] == dcerpc.WERR_INSUFFICIENT_BUFFER:
+        r['size'] = {}
+        r['size']['max_len'] = result['data']['max_len']
+        r['size']['offset'] = 0
+        r['size']['len'] = result['data']['max_len']
+
+        result = dcerpc.winreg_GetKeySecurity(pipe, r)
+
+    print result
+
+    sys.exit(1)
+    
+def test_Key(pipe, handle, name, depth = 0):
+
+    # Don't descend too far.  Registries can be very deep.
 
     if depth > 2:
         return
@@ -41,7 +83,38 @@ def test_Enum(pipe, handle, name, depth = 0):
         if arg[0] == dcerpc.WERR_ACCESS_DENIED:
             return
 
-    # Enumerate keys
+    test_GetVersion(pipe, handle)
+
+    test_FlushKey(pipe, handle)
+
+    test_GetKeySecurity(pipe, handle)
+
+    # Enumerate values in this key
+
+    r = {}
+    r['handle'] = handle
+    r['name_in'] = {}
+    r['name_in']['len'] = 0
+    r['name_in']['max_len'] = (keyinfo['max_valnamelen'] + 1) * 2
+    r['name_in']['buffer'] = {}
+    r['name_in']['buffer']['max_len'] = keyinfo['max_valnamelen']  + 1
+    r['name_in']['buffer']['offset'] = 0
+    r['name_in']['buffer']['len'] = 0
+    r['type'] = 0
+    r['value_in'] = {}
+    r['value_in']['max_len'] = keyinfo['max_valbufsize']
+    r['value_in']['offset'] = 0
+    r['value_in']['len'] = 0
+    r['value_len1'] = keyinfo['max_valbufsize']
+    r['value_len2'] = 0
+    
+    for i in range(0, keyinfo['num_values']):
+
+        r['enum_index'] = i
+
+        dcerpc.winreg_EnumValue(pipe, r)
+
+    # Recursively test subkeys of this key
 
     r = {}
     r['handle'] = handle
@@ -72,40 +145,12 @@ def test_Enum(pipe, handle, name, depth = 0):
 
         result = dcerpc.winreg_OpenKey(pipe, s)
 
-        test_Enum(pipe, result['handle'], name + '/' + s['keyname']['name'],
-                  depth + 1)
+        test_Key(pipe, result['handle'], name + '/' + s['keyname']['name'],
+                 depth + 1)
 
         test_CloseKey(pipe, result['handle'])
 
     # Enumerate values
-
-    r = {}
-    r['handle'] = handle
-
-    r['name_in'] = {}
-    r['name_in']['len'] = 0
-    r['name_in']['max_len'] = (keyinfo['max_valnamelen'] + 1) * 2
-    r['name_in']['buffer'] = {}
-    r['name_in']['buffer']['max_len'] = keyinfo['max_valnamelen']  + 1
-    r['name_in']['buffer']['offset'] = 0
-    r['name_in']['buffer']['len'] = 0
-    r['type'] = 0
-    r['value_in'] = {}
-    r['value_in']['max_len'] = keyinfo['max_valbufsize']
-    r['value_in']['offset'] = 0
-    r['value_in']['len'] = 0
-    r['value_len1'] = keyinfo['max_valbufsize']
-    r['value_len2'] = 0
-    
-    for i in range(0, keyinfo['num_values']):
-
-        r['enum_index'] = i
-
-        dcerpc.winreg_EnumValue(pipe, r)
-
-def test_Key(pipe, handle, name):
-
-    test_Enum(pipe, handle, name)
 
 def runtests(binding, domain, username, password):
     

@@ -168,17 +168,24 @@
 		[in,ref] policy_handle *handle
 	);
 
+	typedef struct {
+		uint32 max_len;
+		uint32 offset;
+		uint32 len;
+	} KeySecuritySize;
+
+	typedef struct {
+		uint32 max_len;
+		DATA_BLOB data;
+	} KeySecurityData;
+
 	/******************/
 	/* Function: 0x0c */
 	WERROR winreg_GetKeySecurity(
 		[in,ref] policy_handle *handle,
-		[in] uint32 sec_info,
-		[in] uint32 *len1,
-		[in] uint32 empty,
-		[in] uint32 len2,
-		[in] uint32 unknown1,
-		[in] uint32 unknown2,
-		[out] sec_desc_buf *data
+		[in] uint32 unknown,
+		[in,out] KeySecuritySize *size,
+		[in,out] KeySecurityData data
 	);
 
 	/******************/
