@@ -38,15 +38,20 @@ services can authenticate each other.
 @global@let@sub=@xsub
 @end tex
 
+@quotation
+@strong{Note:} This discussion is about Kerberos version 4, but version
+5 works similarly.
+@end quotation
+
 In Kerberos, principals use @dfn{tickets} to prove that they are who
 they claim to be. In the following example, @var{A} is the initiator of
 the authentication exchange, usually a user, and @var{B} is the service
 that @var{A} wishes to use.
 
 To obtain a ticket for a specific service, @var{A} sends a ticket
-request to the kerberos server. The request basically contains @var{A}'s
-and @var{B}'s names. The kerberos server checks that both @var{A} and
-@var{B} are valid principals.
+request to the kerberos server. The request contains @var{A}'s and
+@var{B}'s names (along with some other fields). The kerberos server
+checks that both @var{A} and @var{B} are valid principals.
 
 Having verified the validity of the principals, it creates a packet
 containing @var{A}'s and @var{B}'s names, @var{A}'s network address
@@ -134,5 +139,5 @@ A less technical description can be found in @cite{Designing an
 Authentication System: a Dialogue in Four Scenes} by Bill Bryant, also
 from 1988.
 
-These and several other documents can be found on our web-page at
+These documents can be found on our web-page at
 @url{http://www.pdc.kth.se/kth-krb/}.
