@@ -1,3 +1,13 @@
+2000-04-04  Assar Westerlund  <assar@sics.se>
+
+	* configure.in (krb4): fix the krb_mk_req test
+
+2000-04-03  Assar Westerlund  <assar@sics.se>
+
+	* configure.in (krb4): add test for const arguments to krb_mk_req
+	* lib/45/mk_req.c (krb_mk_req): conditionalize const-ness of
+	arguments
+
 2000-04-03  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.2r
