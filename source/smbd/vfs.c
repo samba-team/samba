@@ -139,7 +139,7 @@ static BOOL vfs_init_custom(connection_struct *conn)
 	/* Open object file */
 
 	if ((conn->dl_handle = sys_dlopen(lp_vfsobj(SNUM(conn)), RTLD_NOW | RTLD_GLOBAL)) == NULL) {
-		DEBUG(0, ("Error opening %s: %s\n", lp_vfsobj(SNUM(conn)), dlerror()));
+		DEBUG(0, ("Error opening %s: %s\n", lp_vfsobj(SNUM(conn)), sys_dlerror()));
 		return False;
 	}
 
