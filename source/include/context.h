@@ -29,7 +29,7 @@
 */
 
 /* the current user context for a request */
-struct user_context {
+struct smbsrv_user {
 	/* the vuid is used to specify the security context for this
 	   request. Note that this may not be the same vuid as we
 	   received on the wire (for example, for share mode or guest
@@ -87,7 +87,7 @@ struct request_context {
 	struct tcon_context *conn;
 
 	/* the user context is derived from the vuid plus smb.conf options */
-	struct user_context *user_ctx;
+	struct smbsrv_user *user_ctx;
 
 	/* a talloc context for the lifetime of this request */
 	TALLOC_CTX *mem_ctx;
