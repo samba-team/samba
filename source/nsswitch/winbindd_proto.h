@@ -11,23 +11,24 @@ int main(int argc, char **argv);
 /*The following definitions come from  nsswitch/winbindd_cache.c  */
 
 void winbindd_cache_init(void);
-void winbindd_fill_user_cache(char *domain_name, fstring *sam_entries,
-                              int num_sam_entries);
-void winbindd_fill_group_cache(char *domain_name,
-                               struct acct_info *sam_entries,
-                               int num_sam_entries);
-void winbindd_fill_user_cache_entry(char *domain, char *user_name, 
+void winbindd_store_user_cache(char *domain_name, 
+			       struct getpwent_user *sam_entries,
+			       int num_sam_entries);
+void winbindd_store_group_cache(char *domain_name,
+				struct acct_info *sam_entries,
+				int num_sam_entries);
+void winbindd_store_user_cache_entry(char *domain, char *user_name, 
+				     struct winbindd_pw *pw);
+void winbindd_store_uid_cache_entry(char *domain, uid_t uid, 
                                     struct winbindd_pw *pw);
-void winbindd_fill_uid_cache_entry(char *domain, uid_t uid, 
-                                    struct winbindd_pw *pw);
-void winbindd_fill_group_cache_entry(char *domain, char *group_name, 
-                                     struct winbindd_gr *gr, void *extra_data,
-                                     int extra_data_len);
-void winbindd_fill_gid_cache_entry(char *domain, gid_t gid, 
-                                     struct winbindd_gr *gr, void *extra_data,
-                                     int extra_data_len);
-BOOL winbindd_fetch_user_cache(char *domain_name,
-                               fstring **sam_entries,
+void winbindd_store_group_cache_entry(char *domain, char *group_name, 
+				      struct winbindd_gr *gr, void *extra_data,
+				      int extra_data_len);
+void winbindd_store_gid_cache_entry(char *domain, gid_t gid, 
+				    struct winbindd_gr *gr, void *extra_data,
+				    int extra_data_len);
+BOOL winbindd_fetch_user_cache(char *domain_name, 
+			       struct getpwent_user **sam_entries,
                                int *num_entries);
 BOOL winbindd_fetch_group_cache(char *domain_name, void **sam_entries,
                                 int *num_entries);
@@ -46,8 +47,8 @@ void winbindd_cache_dump_status(void);
 
 /*The following definitions come from  nsswitch/winbindd_group.c  */
 
-enum winbindd_result winbindd_getgrnam_from_group(
-	struct winbindd_cli_state *state);
+enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state 
+						  *state);
 enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state 
                                                 *state);
 enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state);

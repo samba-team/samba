@@ -690,6 +690,11 @@ uint32 domain_sequence_number(char *domain_name)
 	if (!domain) return DOM_SEQUENCE_NONE;
 
 	if (!samr_query_dom_info(&domain->sam_dom_handle, 2, &ctr)) {
+
+		/* If this fails, something bad has gone wrong */
+
+		winbindd_kill_connections();
+
 		DEBUG(2,("domain sequence query failed\n"));
 		return DOM_SEQUENCE_NONE;
 	}

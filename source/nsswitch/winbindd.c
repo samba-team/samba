@@ -264,13 +264,20 @@ static void process_request(struct winbindd_cli_state *state)
 {
 	struct dispatch_table *table = dispatch_table;
 
-	/* Process command */
+	/* Free response data - we may be interrupted and receive another
+	   command before being able to send this data off. */
+
+	safe_free(state->response.extra_data);  
+
+	ZERO_STRUCT(state->response);
 
 	state->response.result = WINBINDD_ERROR;
 	state->response.length = sizeof(struct winbindd_response);
 
-	DEBUG(3,("processing command %s from pid %d\n", 
-		 winbindd_cmd_to_string(state->request.cmd), state->pid));
+	/* Process command */
+
+	DEBUG(3,("[%5d]: %s\n", state->pid,
+		 winbindd_cmd_to_string(state->request.cmd)));
 
 	if (!server_state.lsa_handle_open) return;
 
@@ -322,143 +329,143 @@ static void new_connection(int accept_sock)
 
 static void remove_client(struct winbindd_cli_state *state)
 {
-    /* It's a dead client - hold a funeral */
-
-    if (state != NULL) {
-
-        /* Close socket */
-
-        close(state->sock);
-
-        /* Free any getent state */
-
-        free_getent_state(state->getpwent_state);
-        free_getent_state(state->getgrent_state);
-
-        /* Free any extra data */
-
-        safe_free(state->response.extra_data);
-
-        /* Remove from list and free */
-
-        DLIST_REMOVE(client_list, state);
-        free(state);
-        num_clients--;
-    }
+	/* It's a dead client - hold a funeral */
+	
+	if (state != NULL) {
+		
+		/* Close socket */
+		
+		close(state->sock);
+		
+		/* Free any getent state */
+		
+		free_getent_state(state->getpwent_state);
+		free_getent_state(state->getgrent_state);
+		
+		/* Remove from list and free */
+		
+		DLIST_REMOVE(client_list, state);
+		free(state);
+		num_clients--;
+	}
 }
 
 /* Process a complete received packet from a client */
 
 static void process_packet(struct winbindd_cli_state *state)
 {
-    /* Process request */
+	/* Process request */
+	
+	state->pid = state->request.pid;
+	
+	process_request(state);
 
-    state->pid = state->request.pid;
-
-    process_request(state);
-
-    /* Update client state */
-
-    state->read_buf_len = 0;
-    state->write_buf_len = sizeof(state->response);
+	/* Update client state */
+	
+	state->read_buf_len = 0;
+	state->write_buf_len = sizeof(struct winbindd_response);
 }
 
 /* Read some data from a client connection */
 
 static void client_read(struct winbindd_cli_state *state)
 {
-    int n;
+	int n;
     
-    /* Read data */
+	/* Read data */
 
-    n = read(state->sock, state->read_buf_len + (char *)&state->request, 
-             sizeof(state->request) - state->read_buf_len);
-
-    /* Read failed, kill client */
-
-    if (n == -1 || n == 0) {
-	    DEBUG(5,("read failed on sock %d, pid %d: %s\n",
-                state->sock, state->pid, 
-                (n == -1) ? sys_errlist[errno] : "EOF"));
-
-        state->finished = True;
-        return;
-    }
-
-    /* Update client state */
-
-    state->read_buf_len += n;
+	n = read(state->sock, state->read_buf_len + (char *)&state->request, 
+		 sizeof(state->request) - state->read_buf_len);
+	
+	/* Read failed, kill client */
+	
+	if (n == -1 || n == 0) {
+		DEBUG(5,("read failed on sock %d, pid %d: %s\n",
+			 state->sock, state->pid, 
+			 (n == -1) ? sys_errlist[errno] : "EOF"));
+		
+		state->finished = True;
+		return;
+	}
+	
+	/* Update client state */
+	
+	state->read_buf_len += n;
 }
 
 /* Write some data to a client connection */
 
 static void client_write(struct winbindd_cli_state *state)
 {
-    char *data;
-    int n;
+	char *data;
+	int num_written;
+	
+	/* Write some data */
+	
+	if (!state->write_extra_data) {
 
-    /* Write data */
+		/* Write response structure */
+		
+		data = (char *)&state->response + sizeof(state->response) - 
+			state->write_buf_len;
 
-    if (state->write_extra_data) {
+	} else {
 
-        /* Write extra data */
+		/* Write extra data */
+		
+		data = (char *)state->response.extra_data + 
+			state->response.length - 
+			sizeof(struct winbindd_response) - 
+			state->write_buf_len;
+	}
+	
+	num_written = write(state->sock, data, state->write_buf_len);
+	
+	/* Write failed, kill cilent */
+	
+	if (num_written == -1 || num_written == 0) {
+		
+		DEBUG(3,("write failed on sock %d, pid %d: %s\n",
+			 state->sock, state->pid, 
+			 (num_written == -1) ? sys_errlist[errno] : "EOF"));
+		
+		state->finished = True;
 
-        data = (char *)state->response.extra_data + 
-            state->response.length - sizeof(struct winbindd_response) - 
-            state->write_buf_len;
+		safe_free(state->response.extra_data);
+		state->response.extra_data = NULL;
 
-    } else {
+		return;
+	}
+	
+	/* Update client state */
+	
+	state->write_buf_len -= num_written;
+	
+	/* Have we written all data? */
+	
+	if (state->write_buf_len == 0) {
+		
+		/* Take care of extra data */
+		
+		if (state->write_extra_data) {
 
-        /* Write response structure */
+			safe_free(state->response.extra_data);
+			state->response.extra_data = NULL;
 
-        data = (char *)&state->response + sizeof(state->response) - 
-            state->write_buf_len;
-    }
+			state->write_extra_data = False;
 
-    n = write(state->sock, data, state->write_buf_len);
+		} else if (state->response.length > 
+			   sizeof(struct winbindd_response)) {
+			
+			/* Start writing extra data */
 
-    /* Write failed, kill cilent */
-
-    if (n == -1 || n == 0) {
-
-	    DEBUG(3,("write failed on sock %d, pid %d: %s\n",
-		     state->sock, state->pid, 
-		     (n == -1) ? sys_errlist[errno] : "EOF"));
-
-        state->finished = True;
-        return;
-    }
-
-    /* Update client state */
-    
-    state->write_buf_len -= n;
-
-    /* Have we written all data? */
-
-    if (state->write_buf_len == 0) {
-
-        /* Take care of extra data */
-
-        if (state->response.length > sizeof(struct winbindd_response)) {
-
-            if (state->write_extra_data) {
-
-                /* Already written extra data - free it */
-
-                safe_free(state->response.extra_data);
-                state->response.extra_data = NULL;
-                state->write_extra_data = False;
-
-            } else {
-
-                /* Start writing extra data */
-
-                state->write_buf_len = state->response.length -
-                    sizeof(struct winbindd_response);
-                state->write_extra_data = True;
-            }
-        }
-    }
+			state->write_buf_len = 
+				state->response.length -
+				sizeof(struct winbindd_response);
+			
+			state->write_extra_data = True;
+		}
+	}
 }
 
 /* Process incoming clients on accept_sock.  We use a tricky non-blocking,
@@ -615,21 +622,7 @@ int main(int argc, char **argv)
 	extern pstring debugf;
 	int accept_sock;
 	BOOL interactive = False;
-	int opt;
-
-	while ((opt = getopt(argc, argv, "id:")) != EOF) {
-		switch (opt) {
-		case 'i':
-			interactive = True;
-			break;
-		case 'd':
-			DEBUGLEVEL = atoi(optarg);
-			break;
-		default:
-			printf("Unknown option %c\n", (char)opt);
-			exit(1);
-		}
-	}
+	int opt, new_debuglevel = -1;
 
 	/* Set environment variable so we don't recursively call ourselves.
 	   This may also be useful interactively. */
@@ -637,6 +630,21 @@ int main(int argc, char **argv)
 	setenv(WINBINDD_DONT_ENV, "1", 1);
 
 	/* Initialise samba/rpc client stuff */
+
+	while ((opt = getopt(argc, argv, "id:")) != EOF) {
+		switch (opt) {
+		case 'i':
+			interactive = True;
+			break;
+		case 'd':
+			new_debuglevel = atoi(optarg);
+			break;
+		default:
+			printf("Unknown option %c\n", (char)opt);
+			exit(1);
+		}
+	}
+
 	slprintf(debugf, sizeof(debugf), "%s/log.winbindd", LOGFILEBASE);
 	setup_logging("winbindd", interactive);
 	reopen_logs();
@@ -659,11 +667,16 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
+	if (new_debuglevel != -1) {
+		DEBUGLEVEL = new_debuglevel;
+	}
+
 	codepage_initialise(lp_client_code_page());
 
 	if (!interactive) {
 		become_daemon();
 	}
+
 	load_interfaces();
 
 	secrets_init();

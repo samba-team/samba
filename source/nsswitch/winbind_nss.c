@@ -110,11 +110,9 @@ BOOL next_token(char **ptr, char *buff, char *sep, size_t bufsize)
    Return NSS_STATUS_TRYAGAIN if we run out of memory. */
 
 static enum nss_status fill_pwent(struct passwd *result,
-				  struct winbindd_response *response,
+				  struct winbindd_pw *pw,
 				  char **buffer, int *buflen)
 {
-	struct winbindd_pw *pw = &response->data.pw;
-
 	/* User name */
 
 	if ((result->pw_name = 
@@ -280,11 +278,20 @@ static int fill_grent(struct group *result,
  * NSS user functions
  */
 
+static struct winbindd_response getpwent_response;
+
+static int ndx_pw_cache;                 /* Current index into cache */
+static int num_pw_cache;                 /* Current size of cache */
+
 /* Rewind "file pointer" to start of ntdom password database */
 
 enum nss_status
 _nss_winbind_setpwent(void)
 {
+	if (num_pw_cache > 0) {
+		free_response(&getpwent_response);
+	}
+
 	return generic_request(WINBINDD_SETPWENT, NULL, NULL);
 }
 
@@ -293,56 +300,81 @@ _nss_winbind_setpwent(void)
 enum nss_status
 _nss_winbind_endpwent(void)
 {
+	if (num_pw_cache > 0) {
+		free_response(&getpwent_response);
+	}
+
 	return generic_request(WINBINDD_ENDPWENT, NULL, NULL);
 }
 
 /* Fetch the next password entry from ntdom password database */
+
+#define MAX_GETPWENT_USERS 250
 
 enum nss_status
 _nss_winbind_getpwent_r(struct passwd *result, char *buffer, 
                       size_t buflen, int *errnop)
 {
 	enum nss_status ret;
-	static struct winbindd_response response;
-	static int keep_response;
+	struct winbindd_request request;
+	static int called_again;
 
-	/* If our static buffer needs to be expanded we are called again */
+	/* Return an entry from the cache if we have one, or if we are
+	   called again because we exceeded our static buffer.  */
 
-	if (!keep_response) {
+	if ((ndx_pw_cache < num_pw_cache) || called_again) {
+		goto return_result;
+	}
 
-		/* Call for the first time */
+	/* Else call winbind to get a bunch of entries */
+	
+	if (num_pw_cache > 0) {
+		free_response(&getpwent_response);
+	}
 
-		ZERO_STRUCT(response);
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(getpwent_response);
 
-		ret = generic_request(WINBINDD_GETPWENT, NULL, &response);
+	request.data.num_entries = MAX_GETPWENT_USERS;
 
-		if (ret == NSS_STATUS_SUCCESS) {
-			ret = fill_pwent(result, &response, &buffer, &buflen);
+	ret = generic_request(WINBINDD_GETPWENT, &request, &getpwent_response);
 
-			if (ret == NSS_STATUS_TRYAGAIN) {
-				keep_response = True;
-				*errnop = ERANGE;
-				return ret;
-			}
-		}
+	if (ret == NSS_STATUS_SUCCESS) {
+		struct winbindd_pw *pw_cache;
 
-	} else {
+		/* Fill cache */
 
-		/* We've been called again */
+		ndx_pw_cache = 0;
+		num_pw_cache = getpwent_response.data.num_entries;
 
-		ret = fill_pwent(result, &response, &buffer, &buflen);
+		pw_cache = getpwent_response.extra_data;
+
+		/* Return a result */
+
+	return_result:
+
+		ret = fill_pwent(result, &pw_cache[ndx_pw_cache],
+				 &buffer, &buflen);
+		
+		/* Out of memory - try again */
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
-			keep_response = True;
+			called_again = True;
 			*errnop = ERANGE;
 			return ret;
 		}
 
-		keep_response = False;
 		*errnop = 0;
+		called_again = False;
+		ndx_pw_cache++;
+
+		/* We've finished with this lot of results so free cache */
+
+		if (ndx_pw_cache == num_pw_cache) {
+			free_response(&getpwent_response);
+		}
 	}
 
-	free_response(&response);
 	return ret;
 }
 
@@ -372,7 +404,8 @@ _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 				      &response);
 
 		if (ret == NSS_STATUS_SUCCESS) {
-			ret = fill_pwent(result, &response, &buffer, &buflen);
+			ret = fill_pwent(result, &response.data.pw, 
+					 &buffer, &buflen);
 
 			if (ret == NSS_STATUS_TRYAGAIN) {
 				keep_response = True;
@@ -385,7 +418,7 @@ _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 
 		/* We've been called again */
 
-		ret = fill_pwent(result, &response, &buffer, &buflen);
+		ret = fill_pwent(result, &response.data.pw, &buffer, &buflen);
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
 			keep_response = True;
@@ -430,7 +463,7 @@ _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 				      &response);
 
 		if (ret == NSS_STATUS_SUCCESS) {
-			ret = fill_pwent(result, &response, &buffer,
+			ret = fill_pwent(result, &response.data.pw, &buffer,
 					 &buflen);
 
 			if (ret == NSS_STATUS_TRYAGAIN) {
@@ -444,7 +477,7 @@ _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 
 		/* We've been called again */
 
-		ret = fill_pwent(result, &response, &buffer, &buflen);
+		ret = fill_pwent(result, &response.data.pw, &buffer, &buflen);
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
 			keep_response = True;
