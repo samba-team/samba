@@ -813,7 +813,7 @@ BOOL make_id_info2(NET_ID_INFO_2 *id, const char *domain_name,
 	if (lm_chal_resp != NULL)
 	{
 		/* oops.  can only send what-ever-it-is direct */
-		memcpy(lm_owf, lm_chal_resp, MIN(nt_chal_len, sizeof(lm_owf)));
+		memcpy(lm_owf, lm_chal_resp, MIN(lm_chal_len, sizeof(lm_owf)));
 		lm_chal_resp = lm_owf;
 	}
 
