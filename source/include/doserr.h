@@ -221,6 +221,8 @@
 #define WERR_PRINT_MONITOR_IN_USE W_ERROR(ERRprintmonitorinuse)
 #define WERR_PRINTER_HAS_JOBS_QUEUED W_ERROR(ERRprinterhasjobsqueued)
 
+#define WERR_CLASS_NOT_REGISTERED W_ERROR(0x40154)
+
 
 #ifndef NERR_BASE
 #define NERR_BASE (2100)
