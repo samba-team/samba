@@ -1285,3 +1285,32 @@ int name_len(char *s1)
 
 	return(len);
 } /* name_len */
+
+
+/*
+  choose a name to use when calling a server in a NBT session request.
+  we use heuristics to see if the name we have been given is a IP
+  address, or a too-long name. If it is then use *SMBSERVER, or a
+  truncated name
+*/
+void choose_called_name(struct nmb_name *n, const char *name, int type)
+{
+	if (is_ipaddress(name)) {
+		make_nmb_name(n, "*SMBSERVER", type);
+		return;
+	}
+	if (strlen(name) > 16) {
+		const char *p = strchr(name, '.');
+		char name2[17];
+		if (p - name > 16) {
+			make_nmb_name(n, "*SMBSERVER", type);
+			return;
+		}
+		strlcpy(name2, name, 1+(p-name));
+		make_nmb_name(n, name2, type);
+		return;
+	}
+
+	/* looks OK */
+	make_nmb_name(n, name, type);
+}

@@ -139,7 +139,7 @@ static struct smbcli_state *do_connection(char *the_service)
 	server_n = server;
 
 	make_nmb_name(&calling, my_netbios_name, 0x0);
-	make_nmb_name(&called , server, 0x20);
+	choose_called_name(&called, server, 0x20);
 
  again:
         zero_ip(&ip);
