@@ -8,7 +8,7 @@
 
 #include "includes.h"
 
-static unsigned long CRCTable[256] = 
+static const unsigned long CRCTable[256] = 
 {
         0x00000000,0x77073096,0xEE0E612C,0x990951BA,0x076DC419,0x706AF48F,
         0xE963A535,0x9E6495A3,0x0EDB8832,0x79DCB8A4,0xE0D5E91E,0x97D2D988,
@@ -55,7 +55,7 @@ static unsigned long CRCTable[256] =
         0xB40BBE37,0xC30C8EA1,0x5A05DF1B,0x2D02EF8D
 };
 
-uint32 crc32_calc_buffer( char *buffer, uint32 count)
+uint32 crc32_calc_buffer( const char *buffer, uint32 count)
 {
 	uint32 crc=0xffffffff, i;
         for(i=0;i<count;i++)
