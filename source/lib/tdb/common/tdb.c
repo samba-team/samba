@@ -331,7 +331,7 @@ static int tdb_unlock(TDB_CONTEXT *tdb, int list, int ltype)
 }
 
 /* This is based on the hash algorithm from gdbm */
-static u32 tdb_hash(TDB_DATA *key)
+static u32 default_tdb_hash(TDB_DATA *key)
 {
 	u32 value;	/* Used to compute the hash value.  */
 	u32   i;	/* Used to cycle through random values. */
@@ -1171,7 +1171,7 @@ TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key)
 	u32 hash;
 
 	/* find which hash bucket it is in */
-	hash = tdb_hash(&key);
+	hash = tdb->hash_fn(&key);
 	if (!(rec_ptr = tdb_find_lock_hash(tdb,key,hash,F_RDLCK,&rec)))
 		return tdb_null;
 
@@ -1203,7 +1203,7 @@ static int tdb_exists_hash(TDB_CONTEXT *tdb, TDB_DATA key, u32 hash)
 
 int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key)
 {
-	u32 hash = tdb_hash(&key);
+	u32 hash = tdb->hash_fn(&key);
 	return tdb_exists_hash(tdb, key, hash);
 }
 
@@ -1463,7 +1463,7 @@ TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA oldkey)
 
 	if (!tdb->travlocks.off) {
 		/* No previous element: do normal find, and lock record */
-		tdb->travlocks.off = tdb_find_lock_hash(tdb, oldkey, tdb_hash(&oldkey), F_WRLCK, &rec);
+		tdb->travlocks.off = tdb_find_lock_hash(tdb, oldkey, tdb->hash_fn(&oldkey), F_WRLCK, &rec);
 		if (!tdb->travlocks.off)
 			return tdb_null;
 		tdb->travlocks.hash = BUCKET(rec.full_hash);
@@ -1507,7 +1507,7 @@ static int tdb_delete_hash(TDB_CONTEXT *tdb, TDB_DATA key, u32 hash)
 
 int tdb_delete(TDB_CONTEXT *tdb, TDB_DATA key)
 {
-	u32 hash = tdb_hash(&key);
+	u32 hash = tdb->hash_fn(&key);
 	return tdb_delete_hash(tdb, key, hash);
 }
 
@@ -1525,7 +1525,7 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 	int ret = 0;
 
 	/* find which hash bucket it is in */
-	hash = tdb_hash(&key);
+	hash = tdb->hash_fn(&key);
 	if (!tdb_keylocked(tdb, hash))
 		return -1;
 	if (tdb_lock(tdb, BUCKET(hash), F_WRLCK) == -1)
@@ -1643,7 +1643,7 @@ int tdb_append(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA new_dbuf)
 	size_t new_data_size = 0;
 
 	/* find which hash bucket it is in */
-	hash = tdb_hash(&key);
+	hash = tdb->hash_fn(&key);
 	if (!tdb_keylocked(tdb, hash))
 		return -1;
 	if (tdb_lock(tdb, BUCKET(hash), F_WRLCK) == -1)
@@ -1752,13 +1752,14 @@ static int tdb_already_open(dev_t device,
 TDB_CONTEXT *tdb_open(const char *name, int hash_size, int tdb_flags,
 		      int open_flags, mode_t mode)
 {
-	return tdb_open_ex(name, hash_size, tdb_flags, open_flags, mode, NULL);
+	return tdb_open_ex(name, hash_size, tdb_flags, open_flags, mode, NULL, NULL);
 }
 
 
 TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 			 int open_flags, mode_t mode,
-			 tdb_log_func log_fn)
+			 tdb_log_func log_fn,
+			 tdb_hash_func hash_fn)
 {
 	TDB_CONTEXT *tdb;
 	struct stat st;
@@ -1778,7 +1779,8 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	tdb->flags = tdb_flags;
 	tdb->open_flags = open_flags;
 	tdb->log_fn = log_fn;
-	
+	tdb->hash_fn = hash_fn ? hash_fn : default_tdb_hash;
+
 	if ((open_flags & O_ACCMODE) == O_WRONLY) {
 		TDB_LOG((tdb, 0, "tdb_open_ex: can't open tdb %s write-only\n",
 			 name));
@@ -2023,7 +2025,7 @@ int tdb_lockkeys(TDB_CONTEXT *tdb, u32 number, TDB_DATA keys[])
 
 	/* Insertion sort by bucket */
 	for (i = 0; i < number; i++) {
-		hash = tdb_hash(&keys[i]);
+		hash = tdb->hash_fn(&keys[i]);
 		for (j = 0; j < i && BUCKET(tdb->lockedkeys[j+1]) < BUCKET(hash); j++);
 			memmove(&tdb->lockedkeys[j+2], &tdb->lockedkeys[j+1], sizeof(u32) * (i-j));
 		tdb->lockedkeys[j+1] = hash;
@@ -2058,22 +2060,22 @@ void tdb_unlockkeys(TDB_CONTEXT *tdb)
    contention - it cannot guarantee how many records will be locked */
 int tdb_chainlock(TDB_CONTEXT *tdb, TDB_DATA key)
 {
-	return tdb_lock(tdb, BUCKET(tdb_hash(&key)), F_WRLCK);
+	return tdb_lock(tdb, BUCKET(tdb->hash_fn(&key)), F_WRLCK);
 }
 
 int tdb_chainunlock(TDB_CONTEXT *tdb, TDB_DATA key)
 {
-	return tdb_unlock(tdb, BUCKET(tdb_hash(&key)), F_WRLCK);
+	return tdb_unlock(tdb, BUCKET(tdb->hash_fn(&key)), F_WRLCK);
 }
 
 int tdb_chainlock_read(TDB_CONTEXT *tdb, TDB_DATA key)
 {
-	return tdb_lock(tdb, BUCKET(tdb_hash(&key)), F_RDLCK);
+	return tdb_lock(tdb, BUCKET(tdb->hash_fn(&key)), F_RDLCK);
 }
 
 int tdb_chainunlock_read(TDB_CONTEXT *tdb, TDB_DATA key)
 {
-	return tdb_unlock(tdb, BUCKET(tdb_hash(&key)), F_RDLCK);
+	return tdb_unlock(tdb, BUCKET(tdb->hash_fn(&key)), F_RDLCK);
 }
 
 
