@@ -394,7 +394,7 @@ _kafs_get_cred(kafs_data *data,
     char *vl_realm;
     char CELL[64];
 
-    /* We're about to find the the realm that holds the key for afs in
+    /* We're about to find the realm that holds the key for afs in
      * the specified cell. The problem is that null-instance
      * afs-principals are common and that hitting the wrong realm might
      * yield the wrong afs key. The following assumptions were made.
