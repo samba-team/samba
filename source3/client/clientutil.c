@@ -29,6 +29,8 @@
 #define REGISTER 0
 #endif
 
+#define USENMB
+
 pstring service="";
 pstring desthost="";
 extern pstring myname;
@@ -908,8 +910,8 @@ BOOL cli_open_sockets(int port )
 				    interpret_addr(lp_socket_address()))) != -1) {
 	  set_socket_options(bcast, "SO_BROADCAST");
 
-	  if (ip_list = name_query(bcast, host, name_type, True, True, *iface_bcast(dest_ip),
-				    &count,0)) {
+	  if ((ip_list = name_query(bcast, host, name_type, True, True, *iface_bcast(dest_ip),
+				    &count,0)) != NULL) {
 		  dest_ip = ip_list[0];
 		  free(ip_list);
 		  failed = False;
