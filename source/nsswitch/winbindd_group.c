@@ -631,6 +631,9 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 	     malloc(num_groups * sizeof(struct winbindd_gr))) == NULL)
 		return WINBINDD_ERROR;
 
+	memset(state->response.extra_data, '\0',
+		num_groups * sizeof(struct winbindd_gr) );
+
 	state->response.data.num_entries = 0;
 
 	group_list = (struct winbindd_gr *)state->response.extra_data;
