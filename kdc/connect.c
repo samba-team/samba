@@ -411,6 +411,26 @@ clear_descr(struct descr *d)
     d->s = -1;
 }
 
+
+/* remove HTTP %-quoting from buf */
+static int
+de_http(char *buf)
+{
+    char *p, *q;
+    for(p = q = buf; *p; p++, q++) {
+	if(*p == '%') {
+	    unsigned int x;
+	    if(sscanf(p + 1, "%2x", &x) != 1)
+		return -1;
+	    *q = x;
+	    p += 2;
+	} else
+	    *q = *p;
+    }
+    *q = '\0';
+    return 0;
+}
+
 #define TCP_TIMEOUT 4
 
 static void
@@ -519,6 +539,13 @@ handle_tcp(struct descr *d, int index, int min_free)
 	}
 	if(*t == '/')
 	    t++;
+	if(de_http(t) != 0) {
+	    kdc_log(0, "Malformed HTTP request from %s", addr);
+	    kdc_log(5, "Request: %s", t);
+	    clear_descr(d + index);
+	    free(data);
+	    goto out;
+	}
 	len = base64_decode(t, data);
 	if(len <= 0){
 	    const char *msg = 
