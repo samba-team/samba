@@ -1,3 +1,8 @@
+2000-06-21  Assar Westerlund  <assar@sics.se>
+
+	* ftpd: support for authenticating passwords with krb5, by Daniel
+	Kouril <kouril@ics.muni.cz>
+
 2000-06-06  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ftpd/ftpcmd.y: change unix test to be negative
