@@ -60,8 +60,10 @@ hex_encode(const void *data, size_t size, char **str)
     size_t i;
     char *p;
 
+#ifdef SIZE_T_MAX
     if (size + 1 > SIZE_T_MAX/2)
 	return -1;
+#endif
 
     p = malloc(size * 2 + 1);
     if (p == NULL)
