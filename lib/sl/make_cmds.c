@@ -41,6 +41,7 @@
 RCSID("$Id$");
 
 #include <roken.h>
+#include <err.h>
 #include "parse.h"
 
 int numerror;
@@ -199,7 +200,6 @@ generate_commands(void)
 int
 main(int argc, char **argv)
 {
-    char *p;
     set_progname(argv[0]);
 
     if(argc != 2) {
