@@ -34,7 +34,7 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 do a SVC Open Policy
 ****************************************************************************/
-BOOL do_svc_open_sc_man(struct cli_state *cli, uint16 fnum, 
+BOOL svc_open_sc_man(struct cli_state *cli, uint16 fnum, 
 				char *srv_name, char *db_name,
 				uint32 des_access,
 				POLICY_HND *hnd)
@@ -92,9 +92,70 @@ BOOL do_svc_open_sc_man(struct cli_state *cli, uint16 fnum,
 
 
 /****************************************************************************
+do a SVC Open Service
+****************************************************************************/
+BOOL svc_open_service(struct cli_state *cli, uint16 fnum, 
+				POLICY_HND *scm_hnd,
+				char *srv_name,
+				uint32 des_access,
+				POLICY_HND *hnd)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	SVC_Q_OPEN_SERVICE q_o;
+	BOOL valid_pol = False;
+
+	if (hnd == NULL || scm_hnd == NULL) return False;
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api SVC_OPEN_SERVICE */
+
+	DEBUG(4,("SVC Open Service\n"));
+
+	make_svc_q_open_service(&q_o, scm_hnd, srv_name, des_access);
+
+	/* turn parameters into data stream */
+	svc_io_q_open_service("", &q_o, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, fnum, SVC_OPEN_SERVICE, &buf, &rbuf))
+	{
+		SVC_R_OPEN_SERVICE r_o;
+		BOOL p;
+
+		ZERO_STRUCT(r_o);
+
+		svc_io_r_open_service("", &r_o, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SVC_OPEN_SC_MAN: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			/* ok, at last: we're happy. return the policy handle */
+			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
+			valid_pol = True;
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_pol;
+}
+
+
+/****************************************************************************
 do a SVC Enumerate Services
 ****************************************************************************/
-BOOL do_svc_enum_svcs(struct cli_state *cli, uint16 fnum, 
+BOOL svc_enum_svcs(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *hnd,
 				uint32 services_type, uint32 services_state,
 				uint32 *buf_size, uint32 *resume_hnd,
@@ -162,9 +223,71 @@ BOOL do_svc_enum_svcs(struct cli_state *cli, uint16 fnum,
 
 
 /****************************************************************************
+do a SVC Query Service Config
+****************************************************************************/
+BOOL svc_query_svc_cfg(struct cli_state *cli, uint16 fnum,
+				POLICY_HND *hnd,
+				QUERY_SERVICE_CONFIG *cfg,
+				uint32 *buf_size)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	SVC_Q_QUERY_SVC_CONFIG q_c;
+	BOOL valid_cfg = False;
+
+	if (hnd == NULL || buf_size == NULL) return False;
+
+	/* create and send a MSRPC command with api SVC_QUERY_SVC_CONFIG */
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	DEBUG(4,("SVC Query Service Config\n"));
+
+	/* store the parameters */
+	make_svc_q_query_svc_config(&q_c, hnd, *buf_size);
+
+	/* turn parameters into data stream */
+	svc_io_q_query_svc_config("", &q_c, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, fnum, SVC_QUERY_SVC_CONFIG, &buf, &rbuf))
+	{
+		SVC_R_QUERY_SVC_CONFIG r_c;
+		BOOL p;
+
+		ZERO_STRUCT (r_c);
+		ZERO_STRUCTP(cfg);
+
+		r_c.cfg = cfg;
+
+		svc_io_r_query_svc_config("", &r_c, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_c.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SVC_QUERY_SVC_CONFIG: %s\n", get_nt_error_msg(r_c.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_cfg = r_c.buf_size != 0;
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_cfg;
+}
+
+
+/****************************************************************************
 do a SVC Close
 ****************************************************************************/
-BOOL do_svc_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
+BOOL svc_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
