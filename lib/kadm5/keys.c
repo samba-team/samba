@@ -43,19 +43,7 @@ void
 _kadm5_free_keys (krb5_context context,
 		  int len, Key *keys)
 {
-    int i;
-
-    for (i = 0; i < len; ++i) {
-	free (keys[i].mkvno);
-	keys[i].mkvno = NULL;
-	if (keys[i].salt != NULL) {
-	    free_Salt(keys[i].salt);
-	    free(keys[i].salt);
-	    keys[i].salt = NULL;
-	}
-	krb5_free_keyblock_contents(context, &keys[i].key);
-    }
-    free (keys);
+    hdb_free_keys(context, len, keys);
 }
 
 /*

@@ -50,6 +50,7 @@ hdb_source =					\
 	db3.c					\
 	$(ldap)					\
 	hdb.c					\
+	keys.c					\
 	keytab.c				\
 	mkey.c					\
 	ndbm.c					\
