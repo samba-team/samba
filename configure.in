@@ -40,7 +40,7 @@ AM_PROG_LIBTOOL
 
 if test "$GCC" = "yes"; then
 # -Wcast-align doesn't work well on alpha osf/1
-  WFLAGS="-Wall -Wmissing-prototypes -Wpointer-arith -Wbad-function-cast -Wmissing-declarations -Wnested-externs"
+  WFLAGS="-Wall -Wmissing-prototypes -Wpointer-arith -Wbad-function-cast -Wmissing-declarations -Wnested-externs -O"
   WFLAGS_NOUNUSED="-Wno-unused"
 fi
 AC_SUBST(WFLAGS)
@@ -422,6 +422,40 @@ AC_BROKEN(mkstemp putenv rcmd readv setegid setenv seteuid)
 AC_BROKEN(strcasecmp strncasecmp strdup strerror strftime strlwr strnlen)
 AC_BROKEN(strsep strtok_r strupr swab unsetenv verr verrx vsyslog)
 AC_BROKEN(vwarn vwarnx warn warnx writev)
+
+if test "$ac_cv_func_gethostname" = "yes"; then
+AC_NEED_PROTO([
+#include <unistd.h>],
+gethostname)
+fi
+
+if test "$ac_cv_func_mkstemp" = "yes"; then
+AC_NEED_PROTO([
+#include <unistd.h>],
+mkstemp)
+fi
+
+AC_NEED_PROTO([
+#include <unistd.h>
+],
+getusershell)
+
+if test "$ac_cv_func_inet_aton" = "yes"; then
+AC_NEED_PROTO([
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif],
+inet_aton)
+fi
 
 AC_FIND_FUNC_NO_LIBS(crypt, crypt)dnl
 
