@@ -1029,7 +1029,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 				  (n_lgroupSIDs + info3->num_groups2 +
 				   info3->num_other_sids));
 	if (!all_group_SIDs) {
-		DEBUG(0, ("create_nt_token_info3: malloc() failed for DOM_SID list!\n"));
+		DEBUG(0, ("malloc() failed for DOM_SID list!\n"));
 		SAFE_FREE(lgroupSIDs);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1043,7 +1043,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		sid_copy(&all_group_SIDs[i+n_lgroupSIDs], &(info3->dom_sid.sid));
 		if (!sid_append_rid(&all_group_SIDs[i+n_lgroupSIDs], info3->gids[i].g_rid)) {
 			nt_status = NT_STATUS_INVALID_PARAMETER;
-			DEBUG(3,("create_nt_token_info3: could not append additional group rid 0x%x\n",
+			DEBUG(3,("could not append additional group rid 0x%x\n",
 				info3->gids[i].g_rid));			
 			SAFE_FREE(lgroupSIDs);
 			return nt_status;
