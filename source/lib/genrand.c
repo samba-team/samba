@@ -196,7 +196,7 @@ static int do_reseed(BOOL use_fd, int fd)
  Interface to the (hopefully) good crypto random number generator.
 ********************************************************************/
 
-void generate_random_buffer( unsigned char *out, int len)
+void generate_random_buffer(uint8_t *out, int len)
 {
 	static int urand_fd = -1;
 	unsigned char md4_buf[64];
@@ -271,7 +271,7 @@ char *generate_random_str_list(TALLOC_CTX *mem_ctx, size_t len, const char *list
 	char *retstr = talloc(mem_ctx, len + 1);
 	if (!retstr) return NULL;
 
-	generate_random_buffer(retstr, len);
+	generate_random_buffer((uint8_t *)retstr, len);
 	for (i = 0; i < len; i++) {
 		retstr[i] = list[retstr[i] % list_len];
 	}
