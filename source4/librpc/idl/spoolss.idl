@@ -225,12 +225,12 @@
 
 	typedef struct {
 		uint32 job_id;
-		[relative] nstring printer_name;
-		[relative] nstring server_name;
-		[relative] nstring user_name;
-		[relative] nstring document_name;
-		[relative] nstring data_type;
-		[relative] nstring text_status;
+		[relative] nstring *printer_name;
+		[relative] nstring *server_name;
+		[relative] nstring *user_name;
+		[relative] nstring *document_name;
+		[relative] nstring *data_type;
+		[relative] nstring *text_status;
 		uint32 status;
 		uint32 priority;
 		uint32 position;
