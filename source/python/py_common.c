@@ -45,9 +45,6 @@ static BOOL initialised;
 
 void py_samba_init(void)
 {
-	extern pstring global_myname;
-	char *p;
-
 	if (initialised)
 		return;
 
@@ -59,11 +56,7 @@ void py_samba_init(void)
 	/* Misc other stuff */
 
 	load_interfaces();
-	
-	fstrcpy(global_myname, myhostname());
-	p = strchr(global_myname, '.');
-	if (p)
-		*p = 0;
+	init_names();
 
 	initialised = True;
 }
