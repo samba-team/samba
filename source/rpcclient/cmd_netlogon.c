@@ -42,7 +42,7 @@ extern pstring global_myname;
 /****************************************************************************
 experimental nt login.
 ****************************************************************************/
-void cmd_netlogon_login_test(struct client_info *info)
+void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 {
 	uint16 nt_pipe_fnum;
 #if 0
@@ -142,7 +142,7 @@ void cmd_netlogon_login_test(struct client_info *info)
 /****************************************************************************
 experimental nt login.
 ****************************************************************************/
-void cmd_netlogon_domain_test(struct client_info *info)
+void cmd_netlogon_domain_test(struct client_info *info, int argc, char *argv[])
 {
 	uint16 nt_pipe_fnum;
 
@@ -183,7 +183,7 @@ void cmd_netlogon_domain_test(struct client_info *info)
 /****************************************************************************
 experimental SAM synchronisation.
 ****************************************************************************/
-void cmd_sam_sync(struct client_info *info)
+void cmd_sam_sync(struct client_info *info, int argc, char *argv[])
 {
 	SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS];
 	SAM_DELTA_CTR deltas[MAX_SAM_DELTAS];

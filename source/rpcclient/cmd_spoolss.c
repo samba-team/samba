@@ -78,7 +78,7 @@ static void spool_print_info_ctr(const char* srv_name, uint32 level,
 /****************************************************************************
 nt spoolss query
 ****************************************************************************/
-void cmd_spoolss_enum_printers(struct client_info *info)
+void cmd_spoolss_enum_printers(struct client_info *info, int argc, char *argv[])
 {
 	void **ctr = NULL;
 	uint32 num = 0;
@@ -105,7 +105,7 @@ void cmd_spoolss_enum_printers(struct client_info *info)
 /****************************************************************************
 nt spoolss query
 ****************************************************************************/
-void cmd_spoolss_open_printer_ex(struct client_info *info)
+void cmd_spoolss_open_printer_ex(struct client_info *info, int argc, char *argv[])
 {
 	uint16 nt_pipe_fnum;
 	fstring srv_name;
@@ -231,7 +231,7 @@ static void spool_job_info_ctr(const char* srv_name, const char* printer_name,
 /****************************************************************************
 nt spoolss query
 ****************************************************************************/
-void cmd_spoolss_enum_jobs(struct client_info *info)
+void cmd_spoolss_enum_jobs(struct client_info *info, int argc, char *argv[])
 {
 	fstring srv_name;
 	fstring printer_name;

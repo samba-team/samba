@@ -73,7 +73,7 @@ BOOL net_srv_get_info(struct client_info *info,
 /****************************************************************************
 server get info query
 ****************************************************************************/
-void cmd_srv_query_info(struct client_info *info)
+void cmd_srv_query_info(struct client_info *info, int argc, char *argv[])
 {
 	uint32 info_level = 101;
 	SRV_INFO_CTR ctr;
@@ -149,7 +149,7 @@ static void srv_display_tprt_ctr(const SRV_TPRT_INFO_CTR *ctr)
 /****************************************************************************
 server enum transports
 ****************************************************************************/
-void cmd_srv_enum_tprt(struct client_info *info)
+void cmd_srv_enum_tprt(struct client_info *info, int argc, char *argv[])
 {
 	fstring dest_srv;
 	fstring tmp;
@@ -181,7 +181,7 @@ void cmd_srv_enum_tprt(struct client_info *info)
 /****************************************************************************
 server enum connections
 ****************************************************************************/
-void cmd_srv_enum_conn(struct client_info *info)
+void cmd_srv_enum_conn(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	fstring dest_srv;
@@ -247,7 +247,7 @@ void cmd_srv_enum_conn(struct client_info *info)
 /****************************************************************************
 server enum shares
 ****************************************************************************/
-void cmd_srv_enum_shares(struct client_info *info)
+void cmd_srv_enum_shares(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	fstring dest_srv;
@@ -308,7 +308,7 @@ void cmd_srv_enum_shares(struct client_info *info)
 /****************************************************************************
 server enum sessions
 ****************************************************************************/
-void cmd_srv_enum_sess(struct client_info *info)
+void cmd_srv_enum_sess(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	fstring dest_srv;
@@ -368,7 +368,7 @@ void cmd_srv_enum_sess(struct client_info *info)
 /****************************************************************************
 server enum files
 ****************************************************************************/
-void cmd_srv_enum_files(struct client_info *info)
+void cmd_srv_enum_files(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	fstring dest_srv;
@@ -428,7 +428,7 @@ void cmd_srv_enum_files(struct client_info *info)
 /****************************************************************************
 display remote time
 ****************************************************************************/
-void cmd_time(struct client_info *info)
+void cmd_time(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	fstring dest_srv;

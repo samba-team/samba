@@ -41,7 +41,7 @@ extern FILE* out_hnd;
 /****************************************************************************
 workstation get info query
 ****************************************************************************/
-void cmd_wks_query_info(struct client_info *info)
+void cmd_wks_query_info(struct client_info *info, int argc, char *argv[])
 {
 	uint16 nt_pipe_fnum;
 	fstring dest_wks;

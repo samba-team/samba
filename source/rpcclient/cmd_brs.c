@@ -41,7 +41,7 @@ extern FILE* out_hnd;
 /****************************************************************************
 Browser get info query
 ****************************************************************************/
-void cmd_brs_query_info(struct client_info *info)
+void cmd_brs_query_info(struct client_info *info, int argc, char *argv[])
 {
 	uint16 nt_pipe_fnum;
 	fstring dest_brs;

@@ -286,7 +286,7 @@ static void reg_display_val_info(const char *full_name,
 /****************************************************************************
 nt registry enum
 ****************************************************************************/
-void cmd_reg_enum(struct client_info *info)
+void cmd_reg_enum(struct client_info *info, int argc, char *argv[])
 {
 	fstring full_keyname;
 
@@ -308,7 +308,7 @@ void cmd_reg_enum(struct client_info *info)
 /****************************************************************************
 nt registry query value info
 ****************************************************************************/
-void cmd_reg_query_info(struct client_info *info)
+void cmd_reg_query_info(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	BOOL res = True;
@@ -394,7 +394,7 @@ void cmd_reg_query_info(struct client_info *info)
 /****************************************************************************
 nt registry query key
 ****************************************************************************/
-void cmd_reg_query_key(struct client_info *info)
+void cmd_reg_query_key(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	BOOL res = True;
@@ -496,7 +496,7 @@ void cmd_reg_query_key(struct client_info *info)
 /****************************************************************************
 nt registry create value
 ****************************************************************************/
-void cmd_reg_create_val(struct client_info *info)
+void cmd_reg_create_val(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	BOOL res = True;
@@ -644,7 +644,7 @@ void cmd_reg_create_val(struct client_info *info)
 /****************************************************************************
 nt registry delete value
 ****************************************************************************/
-void cmd_reg_delete_val(struct client_info *info)
+void cmd_reg_delete_val(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	BOOL res = True;
@@ -721,7 +721,7 @@ void cmd_reg_delete_val(struct client_info *info)
 /****************************************************************************
 nt registry delete key
 ****************************************************************************/
-void cmd_reg_delete_key(struct client_info *info)
+void cmd_reg_delete_key(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	BOOL res = True;
@@ -801,7 +801,7 @@ void cmd_reg_delete_key(struct client_info *info)
 /****************************************************************************
 nt registry create key
 ****************************************************************************/
-void cmd_reg_create_key(struct client_info *info)
+void cmd_reg_create_key(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	BOOL res = True;
@@ -896,7 +896,7 @@ void cmd_reg_create_key(struct client_info *info)
 /****************************************************************************
 nt registry security info
 ****************************************************************************/
-void cmd_reg_test_key_sec(struct client_info *info)
+void cmd_reg_test_key_sec(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	BOOL res = True;
@@ -998,7 +998,7 @@ void cmd_reg_test_key_sec(struct client_info *info)
 /****************************************************************************
 nt registry security info
 ****************************************************************************/
-void cmd_reg_get_key_sec(struct client_info *info)
+void cmd_reg_get_key_sec(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	BOOL res = True;
@@ -1096,7 +1096,7 @@ void cmd_reg_get_key_sec(struct client_info *info)
 /****************************************************************************
 nt registry shutdown
 ****************************************************************************/
-void cmd_reg_shutdown(struct client_info *info)
+void cmd_reg_shutdown(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	BOOL res = True;

@@ -38,7 +38,7 @@ extern FILE* out_hnd;
 
 /****************************************************************************
 ****************************************************************************/
-void cmd_eventlog(struct client_info *info)
+void cmd_eventlog(struct client_info *info, int argc, char *argv[])
 {
 	uint16 nt_pipe_fnum;
 	BOOL res  = True;

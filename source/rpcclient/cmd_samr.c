@@ -118,7 +118,7 @@ static void sam_display_user(const char *domain, const DOM_SID *sid,
 /****************************************************************************
 SAM password change
 ****************************************************************************/
-void cmd_sam_ntchange_pwd(struct client_info *info)
+void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	fstring srv_name;
@@ -196,7 +196,7 @@ void cmd_sam_ntchange_pwd(struct client_info *info)
 /****************************************************************************
 experimental SAM encryted rpc test connection
 ****************************************************************************/
-void cmd_sam_test(struct client_info *info)
+void cmd_sam_test(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	fstring srv_name;
@@ -253,11 +253,11 @@ void cmd_sam_test(struct client_info *info)
 /****************************************************************************
 Lookup domain in SAM server.
 ****************************************************************************/
-void cmd_sam_lookup_domain(struct client_info *info)
+void cmd_sam_lookup_domain(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	fstring srv_name;
-	fstring domain;
+	char *domain;
 	fstring str_sid;
 	DOM_SID dom_sid;
 	BOOL res = True;
@@ -267,11 +267,13 @@ void cmd_sam_lookup_domain(struct client_info *info)
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	if (!next_token(NULL, domain, NULL, sizeof(domain)))
+	if (argc < 2)
 	{
 		report(out_hnd, "lookupdomain: <name>\n");
 		return;
 	}
+
+	domain = argv[1];
 
 	report(out_hnd, "Lookup Domain in SAM Server\n");
 
@@ -310,12 +312,11 @@ void cmd_sam_lookup_domain(struct client_info *info)
 /****************************************************************************
 SAM delete alias member.
 ****************************************************************************/
-void cmd_sam_del_aliasmem(struct client_info *info)
+void cmd_sam_del_aliasmem(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	fstring srv_name;
 	fstring domain;
-	fstring tmp;
 	fstring sid;
 	DOM_SID sid1;
 	POLICY_HND alias_pol;
@@ -342,12 +343,16 @@ void cmd_sam_del_aliasmem(struct client_info *info)
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	if (!next_token(NULL, tmp, NULL, sizeof(tmp)))
+	if (argc < 2)
 	{
 		report(out_hnd, "delaliasmem: <alias rid> [member sid1] [member sid2] ...\n");
 		return;
 	}
-	alias_rid = get_number(tmp);
+
+	argc--;
+	argv++;
+
+	alias_rid = get_number(argv[0]);
 
 	report(out_hnd, "SAM Domain Alias Member\n");
 
@@ -369,15 +374,17 @@ void cmd_sam_del_aliasmem(struct client_info *info)
 	            &pol_dom,
 	            0x000f001f, alias_rid, &alias_pol) : False;
 
-	while (next_token(NULL, tmp, NULL, sizeof(tmp)) && res2 && res1)
+	while (argc > 0 && res2 && res1)
 	{
+		argc--;
+		argv++;
 		/* get a sid, delete a member from the alias */
-		res2 = res2 ? string_to_sid(&member_sid, tmp) : False;
+		res2 = res2 ? string_to_sid(&member_sid, argv[0]) : False;
 		res2 = res2 ? samr_del_aliasmem(smb_cli, fnum, &alias_pol, &member_sid) : False;
 
 		if (res2)
 		{
-			report(out_hnd, "SID deleted from Alias 0x%x: %s\n", alias_rid, tmp);
+			report(out_hnd, "SID deleted from Alias 0x%x: %s\n", alias_rid, argv[0]);
 		}
 	}
 
@@ -403,12 +410,12 @@ void cmd_sam_del_aliasmem(struct client_info *info)
 /****************************************************************************
 SAM delete alias.
 ****************************************************************************/
-void cmd_sam_delete_dom_alias(struct client_info *info)
+void cmd_sam_delete_dom_alias(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	fstring srv_name;
 	fstring domain;
-	fstring name;
+	char *name;
 	fstring sid;
 	DOM_SID sid1;
 	POLICY_HND alias_pol;
@@ -438,11 +445,13 @@ void cmd_sam_delete_dom_alias(struct client_info *info)
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	if (!next_token(NULL, name, NULL, sizeof(name)))
+	if (argc < 2)
 	{
 		report(out_hnd, "delalias <alias name>\n");
 		return;
 	}
+
+	name = argv[1];
 
 	report(out_hnd, "SAM Delete Domain Alias\n");
 
@@ -500,7 +509,7 @@ void cmd_sam_delete_dom_alias(struct client_info *info)
 /****************************************************************************
 SAM add alias member.
 ****************************************************************************/
-void cmd_sam_add_aliasmem(struct client_info *info)
+void cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	uint16 fnum_lsa;
@@ -540,20 +549,15 @@ void cmd_sam_add_aliasmem(struct client_info *info)
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	while (next_token(NULL, tmp, NULL, sizeof(tmp)))
-	{
-		if (add_chars_to_array(&num_names, &names, tmp) == NULL)
-		{
-			return;
-		}
-	}
-
-	if (num_names < 2)
+	if (argc < 2)
 	{
 		report(out_hnd, "addaliasmem <group name> [member name1] [member name2] ...\n");
 		return;
 	}
 	
+	num_names = argc+1;
+	names = argv+1;
+
 	report(out_hnd, "SAM Domain Alias Member\n");
 
 	/* open LSARPC session. */
@@ -656,14 +660,15 @@ void cmd_sam_add_aliasmem(struct client_info *info)
 /****************************************************************************
 SAM create domain user.
 ****************************************************************************/
-void cmd_sam_create_dom_user(struct client_info *info)
+void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 {
 	fstring domain;
 	fstring acct_name;
 	fstring sid;
 	DOM_SID sid1;
 	uint32 user_rid; 
-	uint16 acb_info;
+	uint16 acb_info = ACB_NORMAL;
+	int opt;
 
 	sid_copy(&sid1, &info->dom.level5_sid);
 	sid_to_string(sid, &sid1);
@@ -675,23 +680,45 @@ void cmd_sam_create_dom_user(struct client_info *info)
 		return;
 	}
 
-
-	if (!next_token(NULL, acct_name, NULL, sizeof(acct_name)))
+	if (argc < 2)
 	{
-		report(out_hnd, "createuser: <acct name>\n");
+		report(out_hnd, "createuser: <acct name> [-i] [-s]\n");
+		return;
 	}
 
+	argc--;
+	argv++;
+
+	safe_strcpy(acct_name, argv[0], sizeof(acct_name));
 	if (acct_name[strlen(acct_name)-1] == '$')
 	{
 		acb_info = ACB_WSTRUST;
 	}
-	else
+
+	argc--;
+	argv++;
+
+	while ((opt = getopt(argc, argv,"is")) != EOF)
 	{
-		acb_info = ACB_NORMAL;
+		switch (opt)
+		{
+			case 'i':
+			{
+				acb_info = ACB_DOMTRUST;
+				break;
+			}
+			case 's':
+			{
+				acb_info = ACB_SVRTRUST;
+				break;
+			}
+		}
 	}
+
 	report(out_hnd, "SAM Create Domain User\n");
-	report(out_hnd, "Domain: %s Name: %s\n",
-	                  domain, acct_name);
+	report(out_hnd, "Domain: %s Name: %s ACB: %s\n",
+	                  domain, acct_name,
+	    pwdb_encode_acct_ctrl(acb_info, NEW_PW_FORMAT_SPACE_PADDED_LEN));
 
 	if (msrpc_sam_create_dom_user(smb_cli, &sid1,
 	                              acct_name, acb_info, &user_rid))
@@ -708,12 +735,12 @@ void cmd_sam_create_dom_user(struct client_info *info)
 /****************************************************************************
 SAM create domain alias.
 ****************************************************************************/
-void cmd_sam_create_dom_alias(struct client_info *info)
+void cmd_sam_create_dom_alias(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	fstring srv_name;
 	fstring domain;
-	fstring acct_name;
+	char *acct_name;
 	fstring acct_desc;
 	fstring sid;
 	DOM_SID sid1;
@@ -739,16 +766,21 @@ void cmd_sam_create_dom_alias(struct client_info *info)
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	if (!next_token(NULL, acct_name, NULL, sizeof(acct_name)))
+	if (argc < 2)
 	{
 		report(out_hnd, "createalias: <acct name> [acct description]\n");
 	}
 
-	if (!next_token(NULL, acct_desc, NULL, sizeof(acct_desc)))
+	acct_name = argv[1];
+
+	if (argc < 3)
 	{
 		acct_desc[0] = 0;
 	}
-
+	else
+	{
+		safe_strcpy(acct_desc, argv[2], sizeof(acct_desc)-1);
+	}
 
 	report(out_hnd, "SAM Create Domain Alias\n");
 	report(out_hnd, "Domain: %s Name: %s Description: %s\n",
@@ -797,12 +829,11 @@ void cmd_sam_create_dom_alias(struct client_info *info)
 /****************************************************************************
 SAM delete group member.
 ****************************************************************************/
-void cmd_sam_del_groupmem(struct client_info *info)
+void cmd_sam_del_groupmem(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	fstring srv_name;
 	fstring domain;
-	fstring tmp;
 	fstring sid;
 	DOM_SID sid1;
 	POLICY_HND pol_grp;
@@ -829,12 +860,16 @@ void cmd_sam_del_groupmem(struct client_info *info)
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	if (!next_token(NULL, tmp, NULL, sizeof(tmp)))
+	if (argc < 2)
 	{
 		report(out_hnd, "delgroupmem: <group rid> [member rid1] [member rid2] ...\n");
 		return;
 	}
-	group_rid = get_number(tmp);
+
+	argc--;
+	argv++;
+
+	group_rid = get_number(argv[0]);
 
 	report(out_hnd, "SAM Add Domain Group member\n");
 
@@ -856,10 +891,13 @@ void cmd_sam_del_groupmem(struct client_info *info)
 	            &pol_dom,
 	            0x0000001f, group_rid, &pol_grp) : False;
 
-	while (next_token(NULL, tmp, NULL, sizeof(tmp)) && res2 && res1)
+	while (argc > 0 && res2 && res1)
 	{
+		argc--;
+		argv++;
+
 		/* get a rid, delete a member from the group */
-		member_rid = get_number(tmp);
+		member_rid = get_number(argv[0]);
 		res2 = res2 ? samr_del_groupmem(smb_cli, fnum, &pol_grp, member_rid) : False;
 
 		if (res2)
@@ -891,12 +929,12 @@ void cmd_sam_del_groupmem(struct client_info *info)
 /****************************************************************************
 SAM delete group.
 ****************************************************************************/
-void cmd_sam_delete_dom_group(struct client_info *info)
+void cmd_sam_delete_dom_group(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	fstring srv_name;
 	fstring domain;
-	fstring name;
+	char *name;
 	fstring sid;
 	DOM_SID sid1;
 	POLICY_HND pol_grp;
@@ -926,11 +964,13 @@ void cmd_sam_delete_dom_group(struct client_info *info)
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	if (!next_token(NULL, name, NULL, sizeof(name)))
+	if (argc < 2)
 	{
 		report(out_hnd, "delgroup <group name>\n");
 		return;
 	}
+
+	name = argv[1];
 
 	report(out_hnd, "SAM Delete Domain Group\n");
 
@@ -989,12 +1029,11 @@ void cmd_sam_delete_dom_group(struct client_info *info)
 /****************************************************************************
 SAM add group member.
 ****************************************************************************/
-void cmd_sam_add_groupmem(struct client_info *info)
+void cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	fstring srv_name;
 	fstring domain;
-	fstring tmp;
 	fstring sid;
 	DOM_SID sid1;
 	POLICY_HND pol_grp;
@@ -1036,23 +1075,23 @@ void cmd_sam_add_groupmem(struct client_info *info)
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	res = next_token(NULL, group_name, NULL, sizeof(group_name));
-	group_names[0] = group_name;
-
-	while (res && next_token(NULL, tmp, NULL, sizeof(tmp)))
-	{
-		if (add_chars_to_array(&num_names, &names, tmp) == NULL)
-		{
-			return;
-		}
-	}
-
-	if (num_names < 1)
+	if (argc < 3)
 	{
 		report(out_hnd, "addgroupmem <group name> [member name1] [member name2] ...\n");
 		return;
 	}
 	
+	argc--;
+	argv++;
+
+	group_names[0] = argv[0];
+
+	argc--;
+	argv++;
+
+	num_names = argc;
+	names = argv;
+
 	report(out_hnd, "SAM Add Domain Group member\n");
 
 	/* open SAMR session.  negotiate credentials */
@@ -1163,12 +1202,12 @@ void cmd_sam_add_groupmem(struct client_info *info)
 /****************************************************************************
 SAM create domain group.
 ****************************************************************************/
-void cmd_sam_create_dom_group(struct client_info *info)
+void cmd_sam_create_dom_group(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	fstring srv_name;
 	fstring domain;
-	fstring acct_name;
+	char *acct_name;
 	fstring acct_desc;
 	fstring sid;
 	DOM_SID sid1;
@@ -1194,14 +1233,20 @@ void cmd_sam_create_dom_group(struct client_info *info)
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	if (!next_token(NULL, acct_name, NULL, sizeof(acct_name)))
+	if (argc < 2)
 	{
 		report(out_hnd, "creategroup: <acct name> [acct description]\n");
 	}
 
-	if (!next_token(NULL, acct_desc, NULL, sizeof(acct_desc)))
+	acct_name = argv[1];
+
+	if (argc < 3)
 	{
 		acct_desc[0] = 0;
+	}
+	else
+	{
+		safe_strcpy(acct_desc, argv[2], sizeof(acct_desc)-1);
 	}
 
 
@@ -1251,15 +1296,14 @@ void cmd_sam_create_dom_group(struct client_info *info)
 /****************************************************************************
 experimental SAM users enum.
 ****************************************************************************/
-void cmd_sam_enum_users(struct client_info *info)
+void cmd_sam_enum_users(struct client_info *info, int argc, char *argv[])
 {
 	BOOL request_user_info  = False;
 	BOOL request_group_info = False;
 	BOOL request_alias_info = False;
-	fstring tmp;
 	struct acct_info *sam = NULL;
 	uint32 num_sam_entries = 0;
-	int i;
+	int opt;
 
 	fstring srv_name;
 	fstring domain;
@@ -1279,18 +1323,28 @@ void cmd_sam_enum_users(struct client_info *info)
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	for (i = 0; i < 3; i++)
+	argc--;
+	argv++;
+
+	while ((opt = getopt(argc, argv, "uga")) != EOF)
 	{
-		/* a bad way to do token parsing... */
-		if (next_token(NULL, tmp, NULL, sizeof(tmp)))
+		switch (opt)
 		{
-			request_user_info  |= strequal(tmp, "-u");
-			request_group_info |= strequal(tmp, "-g");
-			request_alias_info |= strequal(tmp, "-a");
-		}
-		else
-		{
-			break;
+			case 'u':
+			{
+				request_user_info  = True;
+				break;
+			}
+			case 'g':
+			{
+				request_group_info = True;
+				break;
+			}
+			case 'a':
+			{
+				request_alias_info = True;
+				break;
+			}
 		}
 	}
 
@@ -1313,7 +1367,7 @@ void cmd_sam_enum_users(struct client_info *info)
 /****************************************************************************
 experimental SAM group query members.
 ****************************************************************************/
-void cmd_sam_query_groupmem(struct client_info *info)
+void cmd_sam_query_groupmem(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	fstring srv_name;
@@ -1323,7 +1377,7 @@ void cmd_sam_query_groupmem(struct client_info *info)
 	BOOL res = True;
 	BOOL res1 = True;
 
-	fstring group_name;
+	char *group_name;
 	char *names[1];
 	uint32 num_rids;
 	uint32 rid[MAX_LOOKUP_SIDS];
@@ -1340,11 +1394,13 @@ void cmd_sam_query_groupmem(struct client_info *info)
 		return;
 	}
 
-	if (!next_token(NULL, group_name, NULL, sizeof(group_name)))
+	if (argc < 2)
 	{
-		report(out_hnd, "samgroup <name>\n");
+		report(out_hnd, "samgroupmem <name>\n");
 		return;
 	}
+
+	group_name = argv[1];
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
@@ -1410,7 +1466,7 @@ void cmd_sam_query_groupmem(struct client_info *info)
 /****************************************************************************
 experimental SAM group query.
 ****************************************************************************/
-void cmd_sam_query_group(struct client_info *info)
+void cmd_sam_query_group(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	fstring srv_name;
@@ -1420,7 +1476,7 @@ void cmd_sam_query_group(struct client_info *info)
 	BOOL res = True;
 	BOOL res1 = True;
 
-	fstring group_name;
+	char *group_name;
 	char *names[1];
 	uint32 num_rids;
 	uint32 rid[MAX_LOOKUP_SIDS];
@@ -1437,11 +1493,13 @@ void cmd_sam_query_group(struct client_info *info)
 		return;
 	}
 
-	if (!next_token(NULL, group_name, NULL, sizeof(group_name)))
+	if (argc < 2)
 	{
 		report(out_hnd, "samgroup <name>\n");
 		return;
 	}
+
+	group_name = argv[1];
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
@@ -1506,7 +1564,7 @@ void cmd_sam_query_group(struct client_info *info)
 /****************************************************************************
 experimental SAM user query.
 ****************************************************************************/
-void cmd_sam_query_user(struct client_info *info)
+void cmd_sam_query_user(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	fstring srv_name;
@@ -1516,7 +1574,7 @@ void cmd_sam_query_user(struct client_info *info)
 	BOOL res = True;
 	BOOL res1 = True;
 
-	fstring user_name;
+	char *user_name;
 	char *names[1];
 	uint32 num_rids;
 	uint32 rid[MAX_LOOKUP_SIDS];
@@ -1533,11 +1591,13 @@ void cmd_sam_query_user(struct client_info *info)
 		return;
 	}
 
-	if (!next_token(NULL, user_name, NULL, sizeof(user_name)))
+	if (argc < 2)
 	{
 		report(out_hnd, "samuser <name>\n");
 		return;
 	}
+
+	user_name = argv[1];
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
@@ -1602,7 +1662,7 @@ void cmd_sam_query_user(struct client_info *info)
 /****************************************************************************
 experimental SAM user set.
 ****************************************************************************/
-void cmd_sam_set_userinfo2(struct client_info *info)
+void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	fstring srv_name;
@@ -1611,16 +1671,10 @@ void cmd_sam_set_userinfo2(struct client_info *info)
 	DOM_SID sid;
 	BOOL res = True;
 	BOOL res1 = True;
-	uint32 argc = 0;
-	char **argv = NULL;
-	uint32 cp_argc = 0;
-	char **cp_argv = NULL;
-	extern int optind;
 	int opt;
 	BOOL set_acb_bits = False;
 
 	fstring user_name;
-	fstring tmp;
 
 	char *names[1];
 	uint32 num_rids;
@@ -1640,28 +1694,21 @@ void cmd_sam_set_userinfo2(struct client_info *info)
 		return;
 	}
 
-	/* create arguments array */
-	while (next_token(NULL, tmp, NULL, sizeof(tmp)))
-	{
-		add_chars_to_array(&argc, &argv, tmp);
-	}
-
-	cp_argc = argc;
-	cp_argv = argv;
-
-	if (cp_argc < 2)
+	if (argc < 2)
 	{
 		report(out_hnd, "samuserset2 <name> [-s <acb_bits>]\n");
 		return;
 	}
 
-	safe_strcpy(user_name, cp_argv[0], sizeof(user_name));
+	argc--;
+	argv++;
 
-	cp_argc--;
-	cp_argv++;
+	safe_strcpy(user_name, argv[0], sizeof(user_name));
 
-	optind = -1;
-	while ((opt = getopt(cp_argc, cp_argv,"s:")) != EOF)
+	argc--;
+	argv++;
+
+	while ((opt = getopt(argc, argv,"s:")) != EOF)
 	{
 		switch (opt)
 		{
@@ -1751,14 +1798,12 @@ void cmd_sam_set_userinfo2(struct client_info *info)
 		report(out_hnd, "Set User Info: Failed\n");
 		DEBUG(5,("cmd_sam_query_user: failed\n"));
 	}
-
-	free_char_array(argc, argv);
 }
 
 /****************************************************************************
 experimental SAM user set.
 ****************************************************************************/
-void cmd_sam_set_userinfo(struct client_info *info)
+void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	fstring srv_name;
@@ -1767,17 +1812,11 @@ void cmd_sam_set_userinfo(struct client_info *info)
 	DOM_SID sid;
 	BOOL res = True;
 	BOOL res1 = True;
-	uint32 argc = 0;
-	char **argv = NULL;
-	uint32 cp_argc = 0;
-	char **cp_argv = NULL;
-	extern int optind;
 	int opt;
 	BOOL set_passwd = False;
 
 	fstring user_name;
 	fstring password;
-	fstring tmp;
 
 	char *names[1];
 	uint32 num_rids;
@@ -1796,27 +1835,21 @@ void cmd_sam_set_userinfo(struct client_info *info)
 		return;
 	}
 
-	/* create arguments array */
-	while (next_token(NULL, tmp, NULL, sizeof(tmp)))
-	{
-		add_chars_to_array(&argc, &argv, tmp);
-	}
+	argc--;
+	argv++;
 
-	cp_argc = argc;
-	cp_argv = argv;
-
-	if (cp_argc == 0)
+	if (argc == 0)
 	{
 		report(out_hnd, "samuserset <name> [-p password]\n");
 		return;
 	}
 
-	safe_strcpy(user_name, cp_argv[0], sizeof(user_name));
+	safe_strcpy(user_name, argv[0], sizeof(user_name));
 
-	cp_argc--;
-	cp_argv++;
+	argc--;
+	argv++;
 
-	if (cp_argc == 0)
+	if (argc == 0)
 	{
 		fstring pass_str;
 		char *pass;
@@ -1833,8 +1866,7 @@ void cmd_sam_set_userinfo(struct client_info *info)
 	}
 	else
 	{
-		optind = -1;
-		while ((opt = getopt(cp_argc, cp_argv,"p:")) != EOF)
+		while ((opt = getopt(argc, argv,"p:")) != EOF)
 		{
 			switch (opt)
 			{
@@ -1977,7 +2009,7 @@ void cmd_sam_set_userinfo(struct client_info *info)
 /****************************************************************************
 experimental SAM query display info.
 ****************************************************************************/
-void cmd_sam_query_dispinfo(struct client_info *info)
+void cmd_sam_query_dispinfo(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	fstring srv_name;
@@ -1985,7 +2017,6 @@ void cmd_sam_query_dispinfo(struct client_info *info)
 	fstring sid;
 	DOM_SID sid1;
 	BOOL res = True;
-	fstring info_str;
 	uint16 switch_value = 1;
 	uint32 ace_perms = 0x304; /* absolutely no idea. */
 	SAM_DISPINFO_CTR ctr;
@@ -2009,9 +2040,9 @@ void cmd_sam_query_dispinfo(struct client_info *info)
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	if (next_token(NULL, info_str, NULL, sizeof(info_str)))
+	if (argc > 1)
 	{
-		switch_value = strtoul(info_str, (char**)NULL, 10);
+		switch_value = strtoul(argv[1], (char**)NULL, 10);
 	}
 
 	fprintf(out_hnd, "SAM Query Domain Info: info level %d\n", switch_value);
@@ -2065,12 +2096,11 @@ void cmd_sam_query_dispinfo(struct client_info *info)
 /****************************************************************************
 experimental SAM domain info query.
 ****************************************************************************/
-void cmd_sam_query_dominfo(struct client_info *info)
+void cmd_sam_query_dominfo(struct client_info *info, int argc, char *argv[])
 {
 	fstring domain;
 	fstring sid;
 	DOM_SID sid1;
-	fstring info_str;
 	uint32 switch_value = 2;
 	SAM_UNK_CTR ctr;
 
@@ -2085,9 +2115,9 @@ void cmd_sam_query_dominfo(struct client_info *info)
 
 	string_to_sid(&sid1, sid);
 
-	if (next_token(NULL, info_str, NULL, sizeof(info_str)))
+	if (argc > 1)
 	{
-		switch_value = strtoul(info_str, (char**)NULL, 10);
+		switch_value = strtoul(argv[1], (char**)NULL, 10);
 	}
 
 	report(out_hnd, "SAM Query Domain Info: info level %d\n", switch_value);
@@ -2110,7 +2140,7 @@ void cmd_sam_query_dominfo(struct client_info *info)
 /****************************************************************************
 experimental SAM alias query members.
 ****************************************************************************/
-void cmd_sam_query_aliasmem(struct client_info *info)
+void cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	fstring srv_name;
@@ -2120,7 +2150,7 @@ void cmd_sam_query_aliasmem(struct client_info *info)
 	BOOL res = True;
 	BOOL res1 = True;
 
-	fstring alias_name;
+	char *alias_name;
 	char *names[1];
 	uint32 num_rids;
 	uint32 rid[MAX_LOOKUP_SIDS];
@@ -2137,11 +2167,13 @@ void cmd_sam_query_aliasmem(struct client_info *info)
 		return;
 	}
 
-	if (!next_token(NULL, alias_name, NULL, sizeof(alias_name)))
+	if (argc < 2)
 	{
-		report(out_hnd, "samalias <name>\n");
+		report(out_hnd, "samaliasmem <name>\n");
 		return;
 	}
+
+	alias_name = argv[1];
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
@@ -2207,7 +2239,7 @@ void cmd_sam_query_aliasmem(struct client_info *info)
 /****************************************************************************
 experimental SAM alias query.
 ****************************************************************************/
-void cmd_sam_query_alias(struct client_info *info)
+void cmd_sam_query_alias(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	fstring srv_name;
@@ -2217,7 +2249,7 @@ void cmd_sam_query_alias(struct client_info *info)
 	BOOL res = True;
 	BOOL res1 = True;
 
-	fstring alias_name;
+	char *alias_name;
 	char *names[1];
 	uint32 num_rids;
 	uint32 rid[MAX_LOOKUP_SIDS];
@@ -2234,11 +2266,13 @@ void cmd_sam_query_alias(struct client_info *info)
 		return;
 	}
 
-	if (!next_token(NULL, alias_name, NULL, sizeof(alias_name)))
+	if (argc < 2)
 	{
 		report(out_hnd, "samalias <name>\n");
 		return;
 	}
+
+	alias_name = argv[1];
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
@@ -2303,14 +2337,13 @@ void cmd_sam_query_alias(struct client_info *info)
 /****************************************************************************
 SAM aliases query.
 ****************************************************************************/
-void cmd_sam_enum_aliases(struct client_info *info)
+void cmd_sam_enum_aliases(struct client_info *info, int argc, char *argv[])
 {
 	BOOL request_member_info = False;
 	BOOL request_alias_info = False;
-	fstring tmp;
-	int i;
 	struct acct_info *sam = NULL;
 	uint32 num_sam_entries = 0;
+	int opt;
 
 	fstring domain;
 	fstring srv_name;
@@ -2330,17 +2363,23 @@ void cmd_sam_enum_aliases(struct client_info *info)
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	for (i = 0; i < 2; i++)
+	argc--;
+	argv++;
+
+	while ((opt = getopt(argc, argv, "ma")) != EOF)
 	{
-		/* a bad way to do token parsing... */
-		if (next_token(NULL, tmp, NULL, sizeof(tmp)))
+		switch (opt)
 		{
-			request_member_info |= strequal(tmp, "-m");
-			request_alias_info  |= strequal(tmp, "-a");
-		}
-		else
-		{
-			break;
+			case 'm':
+			{
+				request_member_info  = True;
+				break;
+			}
+			case 'a':
+			{
+				request_alias_info = True;
+				break;
+			}
 		}
 	}
 
@@ -2361,14 +2400,13 @@ void cmd_sam_enum_aliases(struct client_info *info)
 /****************************************************************************
 experimental SAM groups enum.
 ****************************************************************************/
-void cmd_sam_enum_groups(struct client_info *info)
+void cmd_sam_enum_groups(struct client_info *info, int argc, char *argv[])
 {
 	BOOL request_member_info = False;
 	BOOL request_group_info = False;
-	fstring tmp;
-	int i;
 	struct acct_info *sam = NULL;
 	uint32 num_sam_entries = 0;
+	int opt;
 
 	fstring srv_name;
 	fstring domain;
@@ -2388,17 +2426,23 @@ void cmd_sam_enum_groups(struct client_info *info)
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	for (i = 0; i < 3; i++)
+	argc--;
+	argv++;
+
+	while ((opt = getopt(argc, argv, "mg")) != EOF)
 	{
-		/* a bad way to do token parsing... */
-		if (next_token(NULL, tmp, NULL, sizeof(tmp)))
+		switch (opt)
 		{
-			request_member_info |= strequal(tmp, "-m");
-			request_group_info  |= strequal(tmp, "-g");
-		}
-		else
-		{
-			break;
+			case 'm':
+			{
+				request_member_info  = True;
+				break;
+			}
+			case 'g':
+			{
+				request_group_info = True;
+				break;
+			}
 		}
 	}
 
@@ -2419,13 +2463,12 @@ void cmd_sam_enum_groups(struct client_info *info)
 /****************************************************************************
 experimental SAM domains enum.
 ****************************************************************************/
-void cmd_sam_enum_domains(struct client_info *info)
+void cmd_sam_enum_domains(struct client_info *info, int argc, char *argv[])
 {
 	BOOL request_domain_info = False;
-	fstring tmp;
-	int i;
 	struct acct_info *sam = NULL;
 	uint32 num_sam_entries = 0;
+	int opt;
 
 	fstring srv_name;
 
@@ -2433,16 +2476,18 @@ void cmd_sam_enum_domains(struct client_info *info)
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	for (i = 0; i < 3; i++)
+	argc--;
+	argv++;
+
+	while ((opt = getopt(argc, argv, "i")) != EOF)
 	{
-		/* a bad way to do token parsing... */
-		if (next_token(NULL, tmp, NULL, sizeof(tmp)))
+		switch (opt)
 		{
-			request_domain_info  |= strequal(tmp, "-i");
-		}
-		else
-		{
-			break;
+			case 'i':
+			{
+				request_domain_info= True;
+				break;
+			}
 		}
 	}
 
