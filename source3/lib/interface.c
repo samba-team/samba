@@ -25,6 +25,7 @@
 extern int DEBUGLEVEL;
 
 struct in_addr ipzero;
+struct in_addr ipgrp;
 static struct in_addr default_ip;
 static struct in_addr default_bcast;
 static struct in_addr default_nmask;
@@ -266,6 +267,7 @@ void load_interfaces(void)
   struct in_addr ip;
 
   ipzero = *interpret_addr2("0.0.0.0");
+  ipgrp = *interpret_addr2("255.255.255.255");
 
   while (next_token(&ptr,token,NULL)) {
     /* parse it into an IP address/netmasklength pair */
@@ -314,6 +316,8 @@ void load_interfaces(void)
   /* setup a default interface */
   iface = (struct interface *)malloc(sizeof(*iface));
   if (!iface) return;
+
+  iface->next = NULL;
 
   if (got_ip) {
     iface->ip = default_ip;

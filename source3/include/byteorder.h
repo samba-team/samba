@@ -22,6 +22,70 @@
 /*
    This file implements macros for machine independent short and 
    int manipulation
+
+Here is a description of this file that I emailed to the samba list once:
+
+> I am confused about the way that byteorder.h works in Samba. I have
+> looked at it, and I would have thought that you might make a distinction
+> between LE and BE machines, but you only seem to distinguish between 386
+> and all other architectures.
+> 
+> Can you give me a clue?
+
+sure.
+
+The distinction between 386 and other architectures is only there as
+an optimisation. You can take it out completely and it will make no
+difference. The routines (macros) in byteorder.h are totally byteorder
+independent. The 386 optimsation just takes advantage of the fact that
+the x86 processors don't care about alignment, so we don't have to
+align ints on int boundaries etc. If there are other processors out
+there that aren't alignment sensitive then you could also define
+CAREFUL_ALIGNMENT=0 on those processors as well.
+
+Ok, now to the macros themselves. I'll take a simple example, say we
+want to extract a 2 byte integer from a SMB packet and put it into a
+type called uint16 that is in the local machines byte order, and you
+want to do it with only the assumption that uint16 is _at_least_ 16
+bits long (this last condition is very important for architectures
+that don't have any int types that are 2 bytes long)
+
+You do this:
+
+#define CVAL(buf,pos) (((unsigned char *)(buf))[pos])
+#define PVAL(buf,pos) ((unsigned)CVAL(buf,pos))
+#define SVAL(buf,pos) (PVAL(buf,pos)|PVAL(buf,(pos)+1)<<8)
+
+then to extract a uint16 value at offset 25 in a buffer you do this:
+
+char *buffer = foo_bar();
+uint16 xx = SVAL(buffer,25);
+
+We are using the byteoder independence of the ANSI C bitshifts to do
+the work. A good optimising compiler should turn this into efficient
+code, especially if it happens to have the right byteorder :-)
+
+I know these macros can be made a bit tidier by removing some of the
+casts, but you need to look at byteorder.h as a whole to see the
+reasoning behind them. byteorder.h defines the following macros:
+
+SVAL(buf,pos) - extract a 2 byte SMB value
+IVAL(buf,pos) - extract a 4 byte SMB value
+SVALS(buf,pos) signed version of SVAL()
+IVALS(buf,pos) signed version of IVAL()
+
+SSVAL(buf,pos,val) - put a 2 byte SMB value into a buffer
+SIVAL(buf,pos,val) - put a 4 byte SMB value into a buffer
+SSVALS(buf,pos,val) - signed version of SSVAL()
+SIVALS(buf,pos,val) - signed version of SIVAL()
+
+RSVAL(buf,pos) - like SVAL() but for NMB byte ordering
+RIVAL(buf,pos) - like IVAL() but for NMB byte ordering
+RSSVAL(buf,pos,val) - like SSVAL() but for NMB ordering
+RSIVAL(buf,pos,val) - like SIVAL() but for NMB ordering
+
+it also defines lots of intermediate macros, just ignore those :-)
+
 */
 
 #undef CAREFUL_ALIGNMENT
