@@ -36,7 +36,8 @@ MANPAGES=$(MANDIR)/findsmb.1 $(MANDIR)/smbclient.1 \
 	$(MANDIR)/smbpasswd.5 $(MANDIR)/testparm.1 $(MANDIR)/samba.7 \
 	$(MANDIR)/smbpasswd.8 $(MANDIR)/testprns.1 \
 	$(MANDIR)/smb.conf.5 $(MANDIR)/wbinfo.1 \
-	$(MANDIR)/smbcacls.1 $(MANDIR)/smbsh.1 $(MANDIR)/winbindd.8 
+	$(MANDIR)/smbcacls.1 $(MANDIR)/smbsh.1 $(MANDIR)/winbindd.8 \
+	$(MANDIR)/make_unicodemap.1
 
 SGMLMANSRC=manpages/findsmb.1.sgml manpages/smbclient.1.sgml \
 	manpages/smbspool.8.sgml manpages/lmhosts.5.sgml \
@@ -50,7 +51,8 @@ SGMLMANSRC=manpages/findsmb.1.sgml manpages/smbclient.1.sgml \
 	manpages/smbpasswd.8.sgml manpages/testprns.1.sgml \
 	manpages/smb.conf.5.sgml \
 	manpages/wbinfo.1.sgml manpages/smbcacls.1.sgml \
-	manpages/smbsh.1.sgml manpages/winbindd.8.sgml
+	manpages/smbsh.1.sgml manpages/winbindd.8.sgml \
+	manpages/make_unicodemap.1.sgml
 
 HOWTOSRC=projdoc/DOMAIN_MEMBER.sgml projdoc/NT_Security.sgml \
 	projdoc/msdfs_setup.sgml projdoc/printer_driver2.sgml \
@@ -189,6 +191,14 @@ $(MANDIR)/smbstatus.1: manpages/smbstatus.1.sgml
 	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
 
 $(MANDIR)/make_smbcodepage.1: manpages/make_smbcodepage.1.sgml
+	@echo "Making $@"
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `basename $@` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `basename $@`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`basename $< | sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/make_unicodemap.1: manpages/make_unicodemap.1.sgml
 	@echo "Making $@"
 	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `basename $@` | $(PERL) scripts/strip-links.pl > $@
