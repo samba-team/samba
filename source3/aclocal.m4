@@ -179,7 +179,7 @@ AS_IF([test AS_VAR_GET(ac_Lib_ext) = yes],
 		    *-l$1*)
 			;;
 		    *)
-			$2="$$2 -l$1"
+			$2="-l$1 $$2"
 			;;
 		esac])
 		[$6]
