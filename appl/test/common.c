@@ -73,7 +73,7 @@ static int
 common_setup(krb5_context *context, int *argc, char **argv, 
 	     void (*usage)(int, struct getargs*, int))
 {
-    int port;
+    int port = 0;
     *argc = krb5_program_setup(context, *argc, argv, args, num_args, usage);
 
     if(help_flag)
