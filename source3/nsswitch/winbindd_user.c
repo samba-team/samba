@@ -29,6 +29,7 @@ static BOOL winbindd_fill_pwent(char *domain_name, char *name,
 				uint32 user_rid, uint32 group_rid, 
                                 char *full_name, struct winbindd_pw *pw)
 {
+	extern userdom_struct current_user_info;
 	fstring name_domain, name_user;
 	pstring homedir;
 	
@@ -66,18 +67,13 @@ static BOOL winbindd_fill_pwent(char *domain_name, char *name,
 	
 	parse_domain_user(name, name_domain, name_user);
 	
+	/* The substitution of %U and %D in the 'template homedir' is done
+	   by lp_string() calling standard_sub_basic(). */
+
+	fstrcpy(current_user_info.smb_name, name_user);
+	fstrcpy(current_user_info.domain, name_domain);
+
 	pstrcpy(homedir, lp_template_homedir());
-	
-	/*
-	 * Insist name_user is lowercase, name_domain is uppercase.
-	 * This is a hack. JRA.
-	 */
-
-	strlower(name_user);
-	strupper(name_domain);
-
-	pstring_sub(homedir, "%U", name_user);
-	pstring_sub(homedir, "%D", name_domain);
 	
 	safe_strcpy(pw->pw_dir, homedir, sizeof(pw->pw_dir) - 1);
 	
