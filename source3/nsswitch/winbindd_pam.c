@@ -382,12 +382,12 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 				nt_domain = domain;
 			}
 
-			fill_domain_username(username_out, nt_username, nt_domain);
+			fill_domain_username(username_out, nt_domain, nt_username);
 
 			DEBUG(5, ("Setting unix username to [%s]\n", username_out));
 
-			state->response.extra_data = strdup(username_out);
-			if (!state->response.extra_data) {
+			/* this interface is in UTF8 */
+			if (push_utf8_allocate((char **)&state->response.extra_data, username_out) == -1) {
 				result = NT_STATUS_NO_MEMORY;
 				goto done;
 			}
