@@ -195,6 +195,7 @@ man_MANS =					\
 	krb5_get_krbhst.3			\
 	krb5_getportbyname.3			\
 	krb5_init_context.3			\
+	krb5_is_thread_safe.3			\
 	krb5_keyblock.3				\
 	krb5_keytab.3				\
 	krb5_krbhst_init.3			\
