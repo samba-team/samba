@@ -270,7 +270,7 @@ SMBTORTURE_OBJ = utils/torture.o utils/nbio.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
 MASKTEST_OBJ = utils/masktest.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
-LOCKTEST_OBJ = utils/locktest.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
+LOCKTEST_OBJ = utils/locktest.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
 RPCTORTURE_OBJ = utils/rpctorture.o \
