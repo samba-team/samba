@@ -1,3 +1,9 @@
+1999-08-02  Assar Westerlund  <assar@sics.se>
+
+	* ftpd/ftpcmd.y: save file names when doing commands that might
+ 	get aborted (and longjmp:ed out of) to avoid overwriting them also
+ 	remove extra closing brace
+
 1999-08-01  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ftpd/ftpcmd.y: change `site find' to `site locate' (to match
