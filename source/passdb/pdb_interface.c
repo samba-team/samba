@@ -422,10 +422,10 @@ static NTSTATUS make_pdb_methods_name(struct pdb_methods **methods, struct pdb_c
 	if (p) {
 		*p = 0;
 		module_location = p+1;
-		trim_string(module_location, " ", " ");
+		trim_char(module_location, ' ', ' ');
 	}
 
-	trim_string(module_name, " ", " ");
+	trim_char(module_name, ' ', ' ');
 
 
 	DEBUG(5,("Attempting to find an passdb backend to match %s (%s)\n", selected, module_name));

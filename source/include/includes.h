@@ -437,6 +437,10 @@
 #include <com_err.h>
 #endif
 
+#if HAVE_SYS_ATTRIBUTES_H
+#include <sys/attributes.h>
+#endif
+
 #if HAVE_ATTR_XATTR_H
 #include <attr/xattr.h>
 #endif
@@ -958,10 +962,6 @@ struct smb_ldap_privates;
 #define SYNC_DNS 1
 #endif
 
-#ifndef MAXPATHLEN
-#define MAXPATHLEN 256
-#endif
-
 #ifndef SEEK_SET
 #define SEEK_SET 0
 #endif
@@ -1278,7 +1278,7 @@ time_t timegm(struct tm *tm);
 
 #if defined(HAVE_KRB5)
 
-#ifndef KRB5_SET_REAL_TIME
+#ifndef HAVE_KRB5_SET_REAL_TIME
 krb5_error_code krb5_set_real_time(krb5_context context, int32_t seconds, int32_t microseconds);
 #endif
 

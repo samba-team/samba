@@ -145,14 +145,15 @@ AC_SUBST(PICFLAG)
 AC_SUBST(PICSUFFIX)
 AC_SUBST(POBAD_CC)
 AC_SUBST(SHLIBEXT)
+AC_SUBST(INSTALLCLIENT)
 AC_SUBST(INSTALLCLIENTCMD_SH)
 AC_SUBST(INSTALLCLIENTCMD_A)
 AC_SUBST(LIBSMBCLIENT_SHARED)
 AC_SUBST(LIBSMBCLIENT)
-AC_SUBST(PRINTLIBS)
-AC_SUBST(AUTHLIBS)
-AC_SUBST(ACLLIBS)
-AC_SUBST(PASSDBLIBS)
+AC_SUBST(PRINT_LIBS)
+AC_SUBST(AUTH_LIBS)
+AC_SUBST(ACL_LIBS)
+AC_SUBST(PASSDB_LIBS)
 AC_SUBST(IDMAP_LIBS)
 AC_SUBST(KRB5_LIBS)
 AC_SUBST(LDAP_LIBS)
@@ -284,10 +285,10 @@ DYNEXP=
 
 dnl Add modules that have to be built by default here
 dnl These have to be built static:
-default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_wks rpc_net rpc_dfs rpc_srv rpc_spoolss auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin"
+default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_lsa_ds rpc_wks rpc_net rpc_dfs rpc_srv rpc_spoolss auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin"
 
 dnl These are preferably build shared, and static if dlopen() is not available
-default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_netatalk vfs_fake_perms vfs_default_quota"
+default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap charset_CP850 charset_CP437"
 
 if test "x$developer" = xyes; then
    default_static_modules="$default_static_modules rpc_echo"
@@ -359,7 +360,10 @@ case "$host_os" in
 # compile work using gcc 2.7 and 2.8, whereas using the Sun
 # recommendation makes the compile fail on gcc2.7. JRA.
 #
+# Solaris uses SYSV printing.  Make sure to set that here.  --jerry
+#
 	*solaris*)
+		AC_DEFINE(SYSV, 1, [Whether to enable System V compatibility])
 		case `uname -r` in
 			5.0*|5.1*|5.2*|5.3*|5.5*)
 	  			AC_MSG_RESULT([no large file support])
@@ -390,6 +394,16 @@ case "$host_os" in
 		esac
 		;;
 #
+# IRIX uses SYSV printing.  Make sure to set that here
+#
+	*irix*)
+		AC_DEFINE(SYSV, 1, [Whether to enable System V compatibility])
+		;;
+	*freebsd*)
+		AC_DEFINE(FREEBSD, 1, [Whether the host os is FreeBSD])
+		;;
+
+#
 # VOS may need to have POSIX support and System V compatibility enabled.
 #
     *vos*)
@@ -407,7 +421,7 @@ case "$host_os" in
 	  *)
 		CPPFLAGS="$CPPFLAGS -D_SYSV"
 		AC_DEFINE(_SYSV, 1, [Whether to enable System V compatibility])
-    esac
+   esac
     ;;
 #
 # Tests needed for SINIX large file support.
@@ -591,7 +605,7 @@ if test x$enable_cups != xno; then
                         AC_DEFINE(HAVE_CUPS,1,[Whether we have CUPS])
 		CFLAGS="$CFLAGS `$CUPS_CONFIG --cflags`"
 		LDFLAGS="$LDFLAGS `$CUPS_CONFIG --ldflags`"
-		PRINTLIBS="$PRINTLIBS `$CUPS_CONFIG --libs`"
+		PRINT_LIBS="$PRINT_LIBS `$CUPS_CONFIG --libs`"
         fi
 fi
 
@@ -1090,6 +1104,8 @@ if test "$enable_shared" = "yes"; then
 				LDSHFLAGS="-B symbolic -b -z"
 				SONAMEFLAG="+h "
 				PICFLAG="+z"
+			elif test "${GCC}" = "yes"; then
+				PICFLAG="-fPIC"
 			fi
 			DYNEXP="-Wl,-E"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,8192,[The size of a block])
@@ -1533,7 +1549,8 @@ AC_ARG_WITH(libiconv,
     AC_MSG_ERROR(I won't take no for an answer)
   else
      if test "$withval" != "yes" ; then
-        LOOK_DIRS="$withval $LOOK_DIRS"
+	ICONV_PATH_SPEC=yes
+        LOOK_DIRS="$withval"
      fi
   fi
 ])
@@ -1543,51 +1560,108 @@ for i in $LOOK_DIRS ; do
     save_LIBS=$LIBS
     save_LDFLAGS=$LDFLAGS
     save_CPPFLAGS=$CPPFLAGS
-    CPPFLAGS="-I$i/include"
-    LDFLAGS="-L$i/lib"
+    CPPFLAGS="$CPPFLAGS -I$i/include"
+dnl This is here to handle -withval stuff for --with-libiconv
+    if test x"$ICONV_PATH_SPEC" = "xyes" ; then
+       LDFLAGS="-L$i/lib"
+    fi
     LIBS=
     export LDFLAGS LIBS CPPFLAGS
 dnl Try to find iconv(3)
     jm_ICONV($i)
 
-    CPPFLAGS=$save_CPPFLAGS
     if test "$ICONV_FOUND" = yes; then
-        LDFLAGS=$save_LDFLAGS
         LIB_ADD_DIR(LDFLAGS, "$i/lib")
         CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
         LIBS="$save_LIBS $LIBS"
         ICONV_LOCATION=$i
         export LDFLAGS LIBS CPPFLAGS
-        break
-    else
-	LDFLAGS=$save_LDFLAGS
-        LIBS=$save_LIBS
-        export LDFLAGS LIBS CPPFLAGS
+dnl Now, check for a working iconv ... we want to do it here because
+dnl there might be a working iconv further down the list of LOOK_DIRS
+
+        ############
+        # check for iconv in libc
+        ic_save_LIBS="$LIBS"
+        if test x"$ICONV_PATH_SPEC" = "xyes" ; then
+           LIBS="$LIBS -L$ICONV_LOCATION/lib"
+        fi
+dnl        AC_CACHE_CHECK([for working iconv],samba_cv_HAVE_NATIVE_ICONV,[
+	default_dos_charset=no
+	default_display_charset=no
+	default_unix_charset=no
+	echo
+
+	# check for default dos charset name
+	for j in CP850 IBM850 ; do
+	    rjs_CHARSET($j)
+	    if test x"$ICONV_CHARSET" = x"$j"; then
+		default_dos_charset="\"$j\""
+		break
+	    fi
+	done
+	# check for default display charset name
+	for j in ASCII 646 ; do
+	    rjs_CHARSET($j)
+	    if test x"$ICONV_CHARSET" = x"$j"; then
+		default_display_charset="\"$j\""
+		break
+	    fi
+	done
+	# check for default unix charset name
+	for j in UTF-8 UTF8 ; do
+	    rjs_CHARSET($j)
+	    if test x"$ICONV_CHARSET" = x"$j"; then
+		default_unix_charset="\"$j\""
+		break
+	    fi
+	done
+	
+	if test "$default_dos_charset" != "no" -a \
+		"$default_dos_charset" != "cross" -a \
+		"$default_display_charset" != "no" -a \ 
+		"$default_display_charset" != "cross" -a \
+		"$default_unix_charset" != "no" -a \
+		"$default_unix_charset" != "cross"
+	then
+		samba_cv_HAVE_NATIVE_ICONV=yes
+	else if test "$default_dos_charset" = "cross" -o \
+		     "$default_display_charset" = "cross" -o \
+		     "$default_unix_charset" = "cross"
+	then
+		samba_cv_HAVE_NATIVE_ICONV=cross
+	else
+		samba_cv_HAVE_NATIVE_ICONV=no
+	fi
+	fi
+dnl ])
+
+        LIBS="$ic_save_LIBS"
+        if test x"$samba_cv_HAVE_NATIVE_ICONV" = x"yes"; then
+		CPPFLAGS=$save_CPPFLAGS
+		CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
+		export CPPFLAGS
+           AC_DEFINE(HAVE_NATIVE_ICONV,1,[Whether to use native iconv])
+	   AC_DEFINE_UNQUOTED(DEFAULT_DOS_CHARSET,$default_dos_charset,[Default dos charset name])
+	   AC_DEFINE_UNQUOTED(DEFAULT_DISPLAY_CHARSET,$default_display_charset,[Default display charset name])
+	   AC_DEFINE_UNQUOTED(DEFAULT_UNIX_CHARSET,$default_unix_charset,[Default unix charset name])
+           break
+        fi
+dnl We didn't find a working iconv, so keep going
     fi
+dnl We only need to clean these up here for the next pass through the loop
+    CPPFLAGS=$save_CPPFLAGS
+    LDFLAGS=$save_LDFLAGS
+    LIBS=$save_LIBS
+    export LDFLAGS LIBS CPPFLAGS
 done
 
-############
-# check for iconv in libc
-ic_save_LIBS="$LIBS"
-LIBS="$LIBS -L$ICONV_LOCATION/lib"
-AC_CACHE_CHECK([for working iconv],samba_cv_HAVE_NATIVE_ICONV,[
-AC_TRY_RUN([
-#include <$jm_cv_include>
-main() {
-       iconv_t cd = iconv_open("ASCII", "UCS-2LE");
-       if (cd == 0 || cd == (iconv_t)-1) return -1;
-       return 0;
-}
-],
-samba_cv_HAVE_NATIVE_ICONV=yes,samba_cv_HAVE_NATIVE_ICONV=no,samba_cv_HAVE_NATIVE_ICONV=cross)])
-if test x"$samba_cv_HAVE_NATIVE_ICONV" = x"yes"; then
-    AC_DEFINE(HAVE_NATIVE_ICONV,1,[Whether to use native iconv])
-fi
-LIBS="$ic_save_LIBS"
 
 if test x"$ICONV_FOUND" = x"no" -o x"$samba_cv_HAVE_NATIVE_ICONV" != x"yes" ; then
     AC_MSG_WARN([Sufficient support for iconv function was not found. 
     Install libiconv from http://freshmeat.net/projects/libiconv/ for better charset compatibility!])
+   AC_DEFINE_UNQUOTED(DEFAULT_DOS_CHARSET,"CP850",[Default dos charset name])
+   AC_DEFINE_UNQUOTED(DEFAULT_DISPLAY_CHARSET,"ASCII",[Default display charset name])
+   AC_DEFINE_UNQUOTED(DEFAULT_UNIX_CHARSET,"UTF8",[Default unix charset name])
 fi
 
 
@@ -2109,6 +2183,22 @@ AC_ARG_WITH(afs,
   AC_MSG_RESULT(no)
 )
 
+####################################################
+# check for Linux-specific AFS fake-kaserver support
+AC_MSG_CHECKING(whether to use AFS fake-kaserver)
+AC_ARG_WITH(fake-kaserver,
+[  --with-fake-kaserver    Include AFS fake-kaserver support (default=no) ],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_FAKE_KASERVER,1,[Whether to include AFS fake-kaserver support])
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
 
 #################################################
 # check for the DFS clear-text auth system
@@ -2471,10 +2561,30 @@ if test x"$with_ads_support" != x"no"; then
       [krb5_enctype enctype; enctype = ENCTYPE_ARCFOUR_HMAC_MD5;],
       samba_cv_HAVE_ENCTYPE_ARCFOUR_HMAC_MD5=yes,
       samba_cv_HAVE_ENCTYPE_ARCFOUR_HMAC_MD5=no)])
-
-  if test x"$samba_cv_HAVE_ENCTYPE_ARCFOUR_HMAC_MD5" = x"yes"; then
+  AC_CACHE_CHECK([for KEYTYPE_ARCFOUR_56],
+                 samba_cv_HAVE_KEYTYPE_ARCFOUR_56,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_keytype keytype; keytype = KEYTYPE_ARCFOUR_56;],
+      samba_cv_HAVE_KEYTYPE_ARCFOUR_56=yes,
+      samba_cv_HAVE_KEYTYPE_ARCFOUR_56=no)])
+# Heimdals with KEYTYPE_ARCFOUR but not KEYTYPE_ARCFOUR_56 are broken
+# w.r.t. arcfour and windows, so we must not enable it here
+  if test x"$samba_cv_HAVE_ENCTYPE_ARCFOUR_HMAC_MD5" = x"yes" -a\
+          x"$samba_cv_HAVE_KEYTYPE_ARCFOUR_56" = x"yes"; then
     AC_DEFINE(HAVE_ENCTYPE_ARCFOUR_HMAC_MD5,1,
               [Whether the ENCTYPE_ARCFOUR_HMAC_MD5 key type is available])
+  fi
+
+  AC_CACHE_CHECK([for AP_OPTS_USE_SUBKEY],
+                 samba_cv_HAVE_AP_OPTS_USE_SUBKEY,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_flags ap_options; ap_options = AP_OPTS_USE_SUBKEY;],
+      samba_cv_HAVE_AP_OPTS_USE_SUBKEY=yes,
+      samba_cv_HAVE_AP_OPTS_USE_SUBKEY=no)])
+
+  if test x"$samba_cv_HAVE_AP_OPTS_USE_SUBKEY" = x"yes"; then
+    AC_DEFINE(HAVE_AP_OPTS_USE_SUBKEY,1,
+              [Whether the AP_OPTS_USE_SUBKEY ap option is available])
   fi
 
   AC_CACHE_CHECK([for the krb5_princ_component macro],
@@ -2487,6 +2597,28 @@ if test x"$with_ads_support" != x"no"; then
   if test x"$samba_cv_HAVE_KRB5_PRINC_COMPONENT" = x"yes"; then
     AC_DEFINE(HAVE_KRB5_PRINC_COMPONENT,1,
                [Whether krb5_princ_component is available])
+  fi
+
+  AC_CACHE_CHECK([for memory keytab support],
+		 samba_cv_HAVE_MEMORY_KEYTAB,[
+    AC_TRY_RUN([
+#include<krb5.h>
+  main()
+  {
+    krb5_context context;
+    krb5_keytab keytab;
+    
+    krb5_init_context(&context);
+    if (krb5_kt_resolve(context, "MEMORY:", &keytab))
+      exit(0);
+    exit(1);
+  }], 
+  samba_cv_HAVE_MEMORY_KEYTAB=no,
+  samba_cv_HAVE_MEMORY_KEYTAB=yes)])
+
+  if test x"$samba_cv_HAVE_MEMORY_KEYTAB" = x"yes"; then
+      AC_DEFINE(HAVE_MEMORY_KEYTAB,1,
+               [Whether in-memory keytabs are supported])
   fi
 
 
@@ -2530,7 +2662,7 @@ AC_ARG_WITH(expsam,
       ;;
     mysql)
       ## pdb_mysql
-      AM_PATH_MYSQL([0.11.0],[default_shared_modules="$default_shared_modules pdb_mysql"],[])
+      AM_PATH_MYSQL([default_shared_modules="$default_shared_modules pdb_mysql"],[])
       CFLAGS="$CFLAGS $MYSQL_CFLAGS"
       ;;
     no)
@@ -2596,8 +2728,15 @@ AC_ARG_WITH(pam,
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
+    if test x"$ac_cv_header_security_pam_appl_h" = x"no"; then
+       if test x"$ac_cv_header_security_pam_modules_h" = x"no"; then
+	  if test x"$ac_cv_header_security__pam_macros_h" = x"no"; then
+	     AC_MSG_ERROR(--with-pam specified but no PAM headers found)
+	  fi
+       fi
+    fi
     AC_DEFINE(WITH_PAM,1,[Whether to include PAM support])
-    AUTHLIBS="$AUTHLIBS -lpam"
+    AUTH_LIBS="$AUTH_LIBS -lpam"
     with_pam_for_crypt=yes
     ;;
   *)
@@ -2619,13 +2758,16 @@ AC_ARG_WITH(pam_smbpass,
   yes)
     AC_MSG_RESULT(yes)
 
-# Conditions under which pam_smbpass should not be built.
+       # Conditions under which pam_smbpass should not be built.
 
        if test x$PICFLAG = x; then
-          AC_MSG_RESULT([No support for PIC code - disabling pam_smbpass])
+          AC_MSG_ERROR([No support for PIC code])
+       elif test x"$ac_cv_header_security_pam_appl_h" = x"no"; then
+	  AC_MSG_ERROR([No security/pam_appl.h found])
        elif test x$ac_cv_lib_pam_pam_get_data = xno; then
-          AC_MSG_RESULT([No libpam found -- disabling pam_smbpass])
+          AC_MSG_ERROR([No libpam found])
        else
+	  AUTH_LIBS="$AUTH_LIBS -lpam"
           SHLIB_PROGS="$SHLIB_PROGS bin/pam_smbpass.$SHLIBEXT"
        fi
     ;;
@@ -2640,7 +2782,7 @@ AC_ARG_WITH(pam_smbpass,
 ###############################################
 # test for where we get crypt() from
 AC_SEARCH_LIBS(crypt, [crypt],
-  [test "$ac_cv_search_crypt" = "none required" || AUTHLIBS="-lcrypt $AUTHLIBS"
+  [test "$ac_cv_search_crypt" = "none required" || AUTH_LIBS="-lcrypt $AUTH_LIBS"
   AC_DEFINE(HAVE_CRYPT,1,[Whether the system has the crypt() function])])
 
 ##
@@ -2652,7 +2794,7 @@ AC_SEARCH_LIBS(crypt, [crypt],
 if test $with_pam_for_crypt = no; then
 AC_CACHE_CHECK([for a crypt that needs truncated salt],samba_cv_HAVE_TRUNCATED_SALT,[
 crypt_LIBS="$LIBS"
-LIBS="$AUTHLIBS $LIBS"
+LIBS="$AUTH_LIBS $LIBS"
 AC_TRY_RUN([#include "${srcdir-.}/tests/crypttest.c"],
 	samba_cv_HAVE_TRUNCATED_SALT=no,samba_cv_HAVE_TRUNCATED_SALT=yes,samba_cv_HAVE_TRUNCATED_SALT=cross)
 LIBS="$crypt_LIBS"])
@@ -3085,6 +3227,7 @@ AC_ARG_WITH(manpages-langs,
 
 INSTALLCLIENTCMD_SH=:
 INSTALLCLIENTCMD_A=:
+INSTALLCLIENT=
 LIBSMBCLIENT_SHARED=
 LIBSMBCLIENT=
 AC_MSG_CHECKING(whether to build the libsmbclient shared library)
@@ -3097,6 +3240,8 @@ AC_ARG_WITH(libsmbclient,
   *)
      if test $BLDSHARED = true; then
         INSTALLCLIENTCMD_SH="\$(INSTALLCMD)"
+	## build the static version of libsmbclient as well
+	INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
         LIBSMBCLIENT_SHARED=bin/libsmbclient.$SHLIBEXT
         LIBSMBCLIENT=libsmbclient
         AC_MSG_RESULT(yes)
@@ -3108,6 +3253,7 @@ AC_ARG_WITH(libsmbclient,
         INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
         LIBSMBCLIENT=libsmbclient
      fi
+     INSTALLCLIENT=installclientlib
      ;;
   esac ],
 [
@@ -3125,6 +3271,7 @@ AC_ARG_WITH(libsmbclient,
      INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
      LIBSMBCLIENT=libsmbclient
   fi]
+  INSTALLCLIENT=installclientlib
 )
 
 
@@ -3392,7 +3539,7 @@ AC_ARG_WITH(acl-support,
 	*osf*)
 		AC_MSG_RESULT(Using Tru64 ACLs)
 		AC_DEFINE(HAVE_TRU64_ACLS,1,[Whether Tru64 ACLs are available])
-		ACLLIBS="$ACLLIBS -lpacl"
+		ACL_LIBS="$ACL_LIBS -lpacl"
 		;;
 	*freebsd5*)
 		AC_MSG_RESULT(Using FreeBSD posix ACLs)
@@ -3400,8 +3547,8 @@ AC_ARG_WITH(acl-support,
 		AC_DEFINE(HAVE_ACL_GET_PERM_NP,1,[Whether acl_get_perm_np() is available])
 		;;
 	*linux*)
-		AC_CHECK_LIB(attr,getxattr,[ACLLIBS="$ACLLIBS -lattr"])
-       		AC_CHECK_LIB(acl,acl_get_file,[ACLLIBS="$ACLLIBS -lacl"])
+		AC_CHECK_LIB(attr,getxattr,[ACL_LIBS="$ACL_LIBS -lattr"])
+       		AC_CHECK_LIB(acl,acl_get_file,[ACL_LIBS="$ACL_LIBS -lacl"])
 		AC_CACHE_CHECK([for ACL support],samba_cv_HAVE_POSIX_ACLS,[
 		acl_LIBS=$LIBS
 		LIBS="$LIBS -lacl"
@@ -3427,7 +3574,7 @@ samba_cv_HAVE_ACL_GET_PERM_NP=yes,samba_cv_HAVE_ACL_GET_PERM_NP=no)
 			fi
             ;;
          *)
-		AC_CHECK_LIB(acl,acl_get_file,[ACLLIBS="$ACLLIBS -lacl"])
+		AC_CHECK_LIB(acl,acl_get_file,[ACL_LIBS="$ACL_LIBS -lacl"])
 		AC_CACHE_CHECK([for ACL support],samba_cv_HAVE_POSIX_ACLS,[
 		acl_LIBS=$LIBS
 		LIBS="$LIBS -lacl"
@@ -3910,22 +4057,23 @@ fi ])
 ## contributed pdb_modules
 
 SMB_MODULE(pdb_xml, passdb/pdb_xml.o, "bin/xml.$SHLIBEXT", PDB,
-		  [ PASSDBLIBS="$PASSDBLIBS $XML_LIBS" ] )
+		  [ PASSDB_LIBS="$PASSDB_LIBS $XML_LIBS" ] )
 SMB_MODULE(pdb_mysql, passdb/pdb_mysql.o, "bin/mysql.$SHLIBEXT", PDB, 
-		   [ PASSDBLIBS="$PASSDBLIBS $MYSQL_LIBS" ]	)
+		   [ PASSDB_LIBS="$PASSDB_LIBS $MYSQL_LIBS" ]	)
 
 ## end of contributed pdb_modules
 ###########################################################################
 
 SMB_MODULE(pdb_ldap, passdb/pdb_ldap.o, "bin/ldapsam.$SHLIBEXT", PDB, 
-		   [ PASSDBLIBS="$PASSDBLIBS $LDAP_LIBS" ] )
+		   [ PASSDB_LIBS="$PASSDB_LIBS $LDAP_LIBS" ] )
 SMB_MODULE(pdb_smbpasswd, passdb/pdb_smbpasswd.o, "bin/smbpasswd.$SHLIBEXT", PDB)
 SMB_MODULE(pdb_tdbsam, passdb/pdb_tdb.o, "bin/tdbsam.$SHLIBEXT", PDB)
 SMB_MODULE(pdb_guest, passdb/pdb_guest.o, "bin/guest.$SHLIBEXT", PDB)
-SMB_SUBSYSTEM(PDB)
+SMB_SUBSYSTEM(PDB,passdb/pdb_interface.c)
 
 SMB_MODULE(rpc_lsa, \$(RPC_LSA_OBJ), "bin/librpc_lsarpc.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_reg, \$(RPC_REG_OBJ), "bin/librpc_winreg.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_lsa_ds, \$(RPC_LSA_DS_OBJ), "bin/librpc_lsa_ds.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_wks, \$(RPC_WKS_OBJ), "bin/librpc_wkssvc.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_net, \$(RPC_NETLOG_OBJ), "bin/librpc_NETLOGON.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_dfs, \$(RPC_DFS_OBJ), "bin/librpc_netdfs.$SHLIBEXT", RPC)
@@ -3933,23 +4081,25 @@ SMB_MODULE(rpc_srv, \$(RPC_SVC_OBJ), "bin/librpc_srvsvc.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_spoolss, \$(RPC_SPOOLSS_OBJ), "bin/librpc_spoolss.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_samr, \$(RPC_SAMR_OBJ), "bin/librpc_samr.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_echo, \$(RPC_ECHO_OBJ), "bin/librpc_echo.$SHLIBEXT", RPC)
-SMB_SUBSYSTEM(RPC)
+SMB_SUBSYSTEM(RPC,smbd/server.c)
 
 SMB_MODULE(idmap_ldap, sam/idmap_ldap.o, "bin/idmap_ldap.$SHLIBEXT", IDMAP)
 SMB_MODULE(idmap_tdb, sam/idmap_tdb.o, "bin/idmap_tdb.$SHLIBEXT", IDMAP)
-SMB_SUBSYSTEM(IDMAP)
+SMB_SUBSYSTEM(IDMAP,sam/idmap.c)
 
 SMB_MODULE(charset_weird, modules/weird.o, "bin/weird.$SHLIBEXT", CHARSET)
-SMB_SUBSYSTEM(CHARSET)
+SMB_MODULE(charset_CP850, modules/CP850.o, "bin/CP850.$SHLIBEXT", CHARSET)
+SMB_MODULE(charset_CP437, modules/CP437.o, "bin/CP437.$SHLIBEXT", CHARSET)
+SMB_SUBSYSTEM(CHARSET,lib/iconv.c)
 
 SMB_MODULE(auth_rhosts, \$(AUTH_RHOSTS_OBJ), "bin/rhosts.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_sam, \$(AUTH_SAM_OBJ), "bin/sam.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_unix, \$(AUTH_UNIX_OBJ), "bin/unix.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_winbind, \$(AUTH_WINBIND_OBJ), "bin/winbind.$SHLIBEXT", AUTH)
-SMB_MODULE(auth_server, \$(AUTH_SERVER_OBJ), "bin/server.$SHLIBEXT", AUTH)
+SMB_MODULE(auth_server, \$(AUTH_SERVER_OBJ), "bin/smbserver.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_domain, \$(AUTH_DOMAIN_OBJ), "bin/domain.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_builtin, \$(AUTH_BUILTIN_OBJ), "bin/builtin.$SHLIBEXT", AUTH)
-SMB_SUBSYSTEM(AUTH)
+SMB_SUBSYSTEM(AUTH,auth/auth.c)
 
 SMB_MODULE(vfs_recycle, \$(VFS_RECYCLE_OBJ), "bin/recycle.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_audit, \$(VFS_AUDIT_OBJ), "bin/audit.$SHLIBEXT", VFS)
@@ -3957,7 +4107,9 @@ SMB_MODULE(vfs_extd_audit, \$(VFS_EXTD_AUDIT_OBJ), "bin/extd_audit.$SHLIBEXT", V
 SMB_MODULE(vfs_netatalk, \$(VFS_NETATALK_OBJ), "bin/netatalk.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_fake_perms, \$(VFS_FAKE_PERMS_OBJ), "bin/fake_perms.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_default_quota, \$(VFS_DEFAULT_QUOTA_OBJ), "bin/default_quota.$SHLIBEXT", VFS)
-SMB_SUBSYSTEM(VFS)
+SMB_MODULE(vfs_readonly, \$(VFS_READONLY_OBJ), "bin/readonly.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_cap, \$(VFS_CAP_OBJ), "bin/cap.$SHLIBEXT", VFS)
+SMB_SUBSYSTEM(VFS,smbd/vfs.c)
 
 AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
 
@@ -3979,6 +4131,7 @@ fi
 if test x"$with_ldap_support" != x"no"; then
    AC_MSG_RESULT([    LDAP_LIBS = $LDAP_LIBS])
 fi
+AC_MSG_RESULT([    AUTH_LIBS = $AUTH_LIBS])
 
 #################################################
 # final configure stuff
@@ -4000,7 +4153,7 @@ dnl Remove -I/usr/include/? from CFLAGS and CPPFLAGS
 CFLAGS_REMOVE_USR_INCLUDE(CFLAGS)
 CFLAGS_REMOVE_USR_INCLUDE(CPPFLAGS)
 
-AC_OUTPUT(include/stamp-h Makefile script/findsmb)
+AC_OUTPUT(include/stamp-h Makefile script/findsmb smbadduser script/gen-8bit-gap.sh)
 
 #################################################
 # Print very concise instructions on building/use

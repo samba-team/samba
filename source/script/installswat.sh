@@ -71,13 +71,13 @@ done
 
 done
 
-# Install Using Samba book
+# Install Using Samba book (but only if it is there)
 
-if [ "x$BOOKDIR" != "x" ]; then
+if [ "x$BOOKDIR" != "x" -a -f $SRCDIR../docs/htmldocs/using_samba/toc.html ]; then
 
     # Create directories
 
-    for d in $BOOKDIR $BOOKDIR/figs $BOOKDIR/gifs; do
+    for d in $BOOKDIR $BOOKDIR/figs ; do
         if [ ! -d $d ]; then
             mkdir $d
             if [ ! -d $d ]; then
@@ -96,19 +96,17 @@ if [ "x$BOOKDIR" != "x" ]; then
         chmod 0644 $FNAME
     done
 
-    # Figures
-
-    for f in $SRCDIR../docs/htmldocs/using_samba/figs/*.gif; do
-        FNAME=$BOOKDIR/figs/`basename $f`
+    for f in $SRCDIR../docs/htmldocs/using_samba/*.gif; do
+        FNAME=$BOOKDIR/`basename $f`
         echo $FNAME
         cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
         chmod 0644 $FNAME
     done
 
-    # Gifs
+    # Figures
 
-    for f in $SRCDIR../docs/htmldocs/using_samba/gifs/*.gif; do
-        FNAME=$BOOKDIR/gifs/`basename $f`
+    for f in $SRCDIR../docs/htmldocs/using_samba/figs/*.gif; do
+        FNAME=$BOOKDIR/figs/`basename $f`
         echo $FNAME
         cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
         chmod 0644 $FNAME

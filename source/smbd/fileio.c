@@ -87,8 +87,11 @@ ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
 	 * Serve from write cache if we can.
 	 */
 
-	if(read_from_write_cache(fsp, data, pos, n))
+	if(read_from_write_cache(fsp, data, pos, n)) {
+		fsp->pos = pos + n;
+		fsp->position_information = fsp->pos;
 		return n;
+	}
 
 	flush_write_cache(fsp, READ_FLUSH);
 
@@ -123,6 +126,9 @@ tryagain:
 	DEBUG(10,("read_file (%s): pos = %.0f, size = %lu, returned %lu\n",
 		fsp->fsp_name, (double)pos, (unsigned long)n, (long)ret ));
 
+	fsp->pos += ret;
+	fsp->position_information = fsp->pos;
+
 	return(ret);
 }
 
@@ -144,6 +150,16 @@ static ssize_t real_write_file(files_struct *fsp,char *data,SMB_OFF_T pos, size_
 
 	DEBUG(10,("real_write_file (%s): pos = %.0f, size = %lu, returned %ld\n",
 		fsp->fsp_name, (double)pos, (unsigned long)n, (long)ret ));
+
+	if (ret != -1) {
+		fsp->pos += ret;
+
+/* Yes - this is correct - writes don't update this. JRA. */
+/* Found by Samba4 tests. */
+#if 0
+		fsp->position_information = fsp->pos;
+#endif
+	}
 
 	return ret;
 }
@@ -244,13 +260,15 @@ nonop=%u allocated=%u active=%u direct=%u perfect=%u readhits=%u\n",
 	if(!wcp) {
 		DO_PROFILE_INC(writecache_direct_writes);
 		total_written = real_write_file(fsp, data, pos, n);
-		if ((total_written != -1) && (pos + total_written > (SMB_OFF_T)fsp->size))
+		if ((total_written != -1) && (pos + total_written > (SMB_OFF_T)fsp->size)) 
 			fsp->size = (SMB_BIG_UINT)(pos + total_written);
 		return total_written;
 	}
 
 	DEBUG(9,("write_file (%s)(fd=%d pos=%.0f size=%u) wcp->offset=%.0f wcp->data_size=%u\n",
 		fsp->fsp_name, fsp->fd, (double)pos, (unsigned int)n, (double)wcp->offset, (unsigned int)wcp->data_size));
+
+	fsp->pos = pos + n;
 
 	/* 
 	 * If we have active cache and it isn't contiguous then we flush.

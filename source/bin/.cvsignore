@@ -37,6 +37,7 @@ smbstatus
 smbtorture
 smbtree
 smbumount
+smbiconv
 swat
 t_push_ucs2
 t_snprintf
@@ -47,6 +48,7 @@ tdbbackup
 testparm
 testprns
 vfstest
+log2pcap
 wbinfo
 winbindd
 wrepld

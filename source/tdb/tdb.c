@@ -1015,12 +1015,11 @@ static int tdb_keylocked(TDB_CONTEXT *tdb, u32 hash)
 }
 
 /* As tdb_find, but if you succeed, keep the lock */
-static tdb_off tdb_find_lock(TDB_CONTEXT *tdb, TDB_DATA key, int locktype,
+static tdb_off tdb_find_lock_hash(TDB_CONTEXT *tdb, TDB_DATA key, u32 hash, int locktype,
 			     struct list_struct *rec)
 {
-	u32 hash, rec_ptr;
+	u32 rec_ptr;
 
-	hash = tdb_hash(&key);
 	if (!tdb_keylocked(tdb, hash))
 		return 0;
 	if (tdb_lock(tdb, BUCKET(hash), locktype) == -1)
@@ -1061,13 +1060,13 @@ const char *tdb_errorstr(TDB_CONTEXT *tdb)
    on failure return -1.
 */
 
-static int tdb_update(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf)
+static int tdb_update_hash(TDB_CONTEXT *tdb, TDB_DATA key, u32 hash, TDB_DATA dbuf)
 {
 	struct list_struct rec;
 	tdb_off rec_ptr;
 
 	/* find entry */
-	if (!(rec_ptr = tdb_find(tdb, key, tdb_hash(&key), &rec)))
+	if (!(rec_ptr = tdb_find(tdb, key, hash, &rec)))
 		return -1;
 
 	/* must be long enough key, data and tailer */
@@ -1101,9 +1100,11 @@ TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key)
 	tdb_off rec_ptr;
 	struct list_struct rec;
 	TDB_DATA ret;
+	u32 hash;
 
 	/* find which hash bucket it is in */
-	if (!(rec_ptr = tdb_find_lock(tdb,key,F_RDLCK,&rec)))
+	hash = tdb_hash(&key);
+	if (!(rec_ptr = tdb_find_lock_hash(tdb,key,hash,F_RDLCK,&rec)))
 		return tdb_null;
 
 	if (rec.data_len)
@@ -1122,14 +1123,20 @@ TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key)
    this doesn't match the conventions in the rest of this module, but is
    compatible with gdbm
 */
-int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key)
+static int tdb_exists_hash(TDB_CONTEXT *tdb, TDB_DATA key, u32 hash)
 {
 	struct list_struct rec;
 	
-	if (tdb_find_lock(tdb, key, F_RDLCK, &rec) == 0)
+	if (tdb_find_lock_hash(tdb, key, hash, F_RDLCK, &rec) == 0)
 		return 0;
 	tdb_unlock(tdb, BUCKET(rec.full_hash), F_RDLCK);
 	return 1;
+}
+
+int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key)
+{
+	u32 hash = tdb_hash(&key);
+	return tdb_exists_hash(tdb, key, hash);
 }
 
 /* record lock stops delete underneath */
@@ -1388,7 +1395,7 @@ TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA oldkey)
 
 	if (!tdb->travlocks.off) {
 		/* No previous element: do normal find, and lock record */
-		tdb->travlocks.off = tdb_find_lock(tdb, oldkey, F_WRLCK, &rec);
+		tdb->travlocks.off = tdb_find_lock_hash(tdb, oldkey, tdb_hash(&oldkey), F_WRLCK, &rec);
 		if (!tdb->travlocks.off)
 			return tdb_null;
 		tdb->travlocks.hash = BUCKET(rec.full_hash);
@@ -1416,18 +1423,24 @@ TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA oldkey)
 }
 
 /* delete an entry in the database given a key */
-int tdb_delete(TDB_CONTEXT *tdb, TDB_DATA key)
+static int tdb_delete_hash(TDB_CONTEXT *tdb, TDB_DATA key, u32 hash)
 {
 	tdb_off rec_ptr;
 	struct list_struct rec;
 	int ret;
 
-	if (!(rec_ptr = tdb_find_lock(tdb, key, F_WRLCK, &rec)))
+	if (!(rec_ptr = tdb_find_lock_hash(tdb, key, hash, F_WRLCK, &rec)))
 		return -1;
 	ret = do_delete(tdb, rec_ptr, &rec);
 	if (tdb_unlock(tdb, BUCKET(rec.full_hash), F_WRLCK) != 0)
 		TDB_LOG((tdb, 0, "tdb_delete: WARNING tdb_unlock failed!\n"));
 	return ret;
+}
+
+int tdb_delete(TDB_CONTEXT *tdb, TDB_DATA key)
+{
+	u32 hash = tdb_hash(&key);
+	return tdb_delete_hash(tdb, key, hash);
 }
 
 /* store an element in the database, replacing any existing element
@@ -1452,13 +1465,13 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 
 	/* check for it existing, on insert. */
 	if (flag == TDB_INSERT) {
-		if (tdb_exists(tdb, key)) {
+		if (tdb_exists_hash(tdb, key, hash)) {
 			tdb->ecode = TDB_ERR_EXISTS;
 			goto fail;
 		}
 	} else {
 		/* first try in-place update, on modify or replace. */
-		if (tdb_update(tdb, key, dbuf) == 0)
+		if (tdb_update_hash(tdb, key, hash, dbuf) == 0)
 			goto out;
 		if (flag == TDB_MODIFY && tdb->ecode == TDB_ERR_NOEXIST)
 			goto fail;
@@ -1470,7 +1483,7 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
            care.  Doing this first reduces fragmentation, and avoids
            coalescing with `allocated' block before it's updated. */
 	if (flag != TDB_INSERT)
-		tdb_delete(tdb, key);
+		tdb_delete_hash(tdb, key, hash);
 
 	/* Copy key+value *before* allocating free space in case malloc
 	   fails and we are left with a dead spot in the tdb. */
@@ -1519,13 +1532,13 @@ fail:
    is <= the old data size and the key exists.
    on failure return -1. Record must be locked before calling.
 */
-static int tdb_append_inplace(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA new_dbuf)
+static int tdb_append_inplace(TDB_CONTEXT *tdb, TDB_DATA key, u32 hash, TDB_DATA new_dbuf)
 {
 	struct list_struct rec;
 	tdb_off rec_ptr;
 
 	/* find entry */
-	if (!(rec_ptr = tdb_find(tdb, key, tdb_hash(&key), &rec)))
+	if (!(rec_ptr = tdb_find(tdb, key, hash, &rec)))
 		return -1;
 
 	/* Append of 0 is always ok. */
@@ -1567,7 +1580,7 @@ int tdb_append(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA new_dbuf)
 		return -1;
 
 	/* first try in-place. */
-	if (tdb_append_inplace(tdb, key, new_dbuf) == 0)
+	if (tdb_append_inplace(tdb, key, hash, new_dbuf) == 0)
 		goto out;
 
 	/* reset the error code potentially set by the tdb_append_inplace() */
@@ -1610,7 +1623,7 @@ int tdb_append(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA new_dbuf)
            care.  Doing this first reduces fragmentation, and avoids
            coalescing with `allocated' block before it's updated. */
 
-	tdb_delete(tdb, key);
+	tdb_delete_hash(tdb, key, hash);
 
 	if (!(rec_ptr = tdb_allocate(tdb, key.dsize + new_data_size, &rec)))
 		goto fail;

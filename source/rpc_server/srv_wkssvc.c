@@ -60,12 +60,19 @@ static BOOL api_wks_query_info(pipes_struct *p)
  \PIPE\wkssvc commands
  ********************************************************************/
 
+static struct api_struct api_wks_cmds[] =
+{
+      { "WKS_Q_QUERY_INFO", WKS_QUERY_INFO, api_wks_query_info }
+};
+
+void wkssvc_get_pipe_fns( struct api_struct **fns, int *n_fns )
+{
+	*fns = api_wks_cmds;
+	*n_fns = sizeof(api_wks_cmds) / sizeof(struct api_struct);
+}
+
 NTSTATUS rpc_wks_init(void)
 {
-  static struct api_struct api_wks_cmds[] =
-    {
-      { "WKS_Q_QUERY_INFO", WKS_QUERY_INFO, api_wks_query_info }
-    };
   return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "wkssvc", "ntsvcs", api_wks_cmds,
 				    sizeof(api_wks_cmds) / sizeof(struct api_struct));
 }

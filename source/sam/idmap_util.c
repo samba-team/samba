@@ -22,50 +22,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
 
-/**********************************************************************
-**********************************************************************/
-
-BOOL idmap_get_free_ugid_range(uint32 *low, uint32 *high)
-{
-	uid_t u_low, u_high;
-	gid_t g_low, g_high;
-
-	if (!lp_idmap_uid(&u_low, &u_high) || !lp_idmap_gid(&g_low, &g_high)) {
-		return False;
-	}
-	
-	*low  = (u_low < g_low)   ? u_low  : g_low;
-	*high = (u_high < g_high) ? u_high : g_high;
-	
-	return True;
-}
-
-/******************************************************************
- Get the the non-algorithmic RID range if idmap range are defined
-******************************************************************/
-
-BOOL idmap_get_free_rid_range(uint32 *low, uint32 *high)
-{
-	uint32 id_low, id_high;
-
-	if (!lp_enable_rid_algorithm()) {
-		*low = BASE_RID;
-		*high = (uint32)-1;
-	}
-
-	if (!idmap_get_free_ugid_range(&id_low, &id_high)) {
-		return False;
-	}
-
-	*low = fallback_pdb_uid_to_user_rid(id_low);
-	if (fallback_pdb_user_rid_to_uid((uint32)-1) < id_high) {
-		*high = (uint32)-1;
-	} else {
-		*high = fallback_pdb_uid_to_user_rid(id_high);
-	}
-
-	return True;
-}
+#if 0	/* NOT USED */
 
 /**********************************************************************
  Get the free RID base if idmap is configured, otherwise return 0
@@ -137,6 +94,8 @@ BOOL idmap_check_sid_is_in_free_range(const DOM_SID *sid)
 	return True;
 }
 
+#endif	/* NOT USED */
+
 /*****************************************************************
  Returns SID pointer.
 *****************************************************************/  
@@ -192,7 +151,7 @@ NTSTATUS idmap_sid_to_uid(const DOM_SID *sid, uid_t *uid, uint32 flags)
 
 	flags |= ID_USERID;
 
-	ret = idmap_get_id_from_sid(&id, &flags, sid);
+	ret = idmap_get_id_from_sid(&id, (int *)&flags, sid);
 	
 	if ( NT_STATUS_IS_OK(ret) ) {
 		DEBUG(10,("idmap_sid_to_uid: uid = [%lu]\n", (unsigned long)id.uid));
@@ -221,7 +180,7 @@ NTSTATUS idmap_sid_to_gid(const DOM_SID *sid, gid_t *gid, uint32 flags)
 
 	flags |= ID_GROUPID;
 
-	ret = idmap_get_id_from_sid(&id, &flags, sid);
+	ret = idmap_get_id_from_sid(&id, (int *)&flags, sid);
 	
 	if ( NT_STATUS_IS_OK(ret) ) 
 	{

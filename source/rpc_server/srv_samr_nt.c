@@ -8,6 +8,7 @@
  *  Copyright (C) Jeremy Allison               2001-2002,
  *  Copyright (C) Jean François Micouleau      1998-2001,
  *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2002.
+ *  Copyright (C) Gerald (Jerry) Carter             2003.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -913,7 +914,6 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 	} else if (sid_equal(sid, get_global_sam_sid()) && !lp_hide_local_users()) {
 		struct sys_grent *glist;
 		struct sys_grent *grp;
-		struct passwd *pw;
 		gid_t winbind_gid_low, winbind_gid_high;
 		BOOL winbind_groups_exist = lp_idmap_gid(&winbind_gid_low, &winbind_gid_high);
 
@@ -952,7 +952,7 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 
 			/* Don't return user private groups... */
 
-			if ((pw = Get_Pwnam(smap.nt_name)) != 0) {
+			if (Get_Pwnam(smap.nt_name) != 0) {
 				DEBUG(10,("get_group_alias_entries: not returing %s, clashes with user.\n", smap.nt_name ));
 				continue;			
 			}
@@ -1013,8 +1013,13 @@ static NTSTATUS get_group_domain_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DO
 
 	*p_num_entries = 0;
 
+	/* access checks for the users were performed higher up.  become/unbecome_root()
+	   needed for some passdb backends to enumerate groups */
+	   
+	become_root();
 	pdb_enum_group_mapping(SID_NAME_DOM_GRP, &map, (int *)&group_entries, ENUM_ONLY_MAPPED);
-
+	unbecome_root();
+	
 	num_entries=group_entries-start_idx;
 
 	/* limit the number of entries */
@@ -1659,10 +1664,10 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 }
 
 /*******************************************************************
- _api_samr_open_user. Safe - gives out no passwd info.
+ _samr_open_user. Safe - gives out no passwd info.
  ********************************************************************/
 
-NTSTATUS _api_samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_USER *r_u)
+NTSTATUS _samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_USER *r_u)
 {
 	SAM_ACCOUNT *sampass=NULL;
 	DOM_SID sid;
@@ -2140,7 +2145,7 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 				       num_users, num_groups, num_aliases);
 			break;
 		case 0x03:
-			account_policy_get(AP_TIME_TO_LOGOUT, (int *)&u_logout);
+			account_policy_get(AP_TIME_TO_LOGOUT, (unsigned int *)&u_logout);
 			unix_to_nt_time_abs(&nt_logout, u_logout);
 			
 			init_unk_info3(&ctr->info.inf3, nt_logout);
@@ -2181,12 +2186,12 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 }
 
 /*******************************************************************
- _api_samr_create_user
+ _samr_create_user
  Create an account, can be either a normal user or a machine.
  This funcion will need to be updated for bdc/domain trusts.
  ********************************************************************/
 
-NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREATE_USER *r_u)
+NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREATE_USER *r_u)
 {
 	SAM_ACCOUNT *sam_pass=NULL;
 	fstring account;
@@ -2300,12 +2305,12 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
   			int add_ret;
   			all_string_sub(add_script, "%u", account, sizeof(account));
   			add_ret = smbrun(add_script,NULL);
- 			DEBUG(3,("_api_samr_create_user: Running the command `%s' gave %d\n", add_script, add_ret));
+ 			DEBUG(3,("_samr_create_user: Running the command `%s' gave %d\n", add_script, add_ret));
   		}
 		else	/* no add user script -- ask winbindd to do it */
 		{
 			if ( !winbind_create_user( account, &new_rid ) ) {
-				DEBUG(3,("_api_samr_create_user: winbind_create_user(%s) failed\n", 
+				DEBUG(3,("_samr_create_user: winbind_create_user(%s) failed\n", 
 					account));
 			}
 		}
@@ -2369,6 +2374,7 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 NTSTATUS _samr_connect_anon(pipes_struct *p, SAMR_Q_CONNECT_ANON *q_u, SAMR_R_CONNECT_ANON *r_u)
 {
 	struct samr_info *info = NULL;
+	uint32    des_access = q_u->access_mask;
 
 	/* Access check */
 
@@ -2386,6 +2392,13 @@ NTSTATUS _samr_connect_anon(pipes_struct *p, SAMR_Q_CONNECT_ANON *q_u, SAMR_R_CO
 	if ((info = get_samr_info_by_sid(NULL)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
+	/* don't give away the farm but this is probably ok.  The SA_RIGHT_SAM_ENUM_DOMAINS
+	   was observed from a win98 client trying to enumerate users (when configured  
+	   user level access control on shares)   --jerry */
+	   
+	se_map_generic( &des_access, &sam_generic_mapping );
+	info->acc_granted = des_access & (SA_RIGHT_SAM_ENUM_DOMAINS|SA_RIGHT_SAM_OPEN_DOMAIN);
+	
 	info->status = q_u->unknown_0;
 
 	/* get a (unique) handle.  open a policy on it. */
@@ -2510,7 +2523,9 @@ NTSTATUS _samr_lookup_domain(pipes_struct *p, SAMR_Q_LOOKUP_DOMAIN *q_u, SAMR_R_
 	if (!find_policy_by_hnd(p, &q_u->connect_pol, (void**)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(info->acc_granted, SA_RIGHT_SAM_OPEN_DOMAIN, "_samr_lookup_domain"))) {
+	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(info->acc_granted, 
+		SA_RIGHT_SAM_ENUM_DOMAINS, "_samr_lookup_domain"))) 
+	{
 		return r_u->status;
 	}
 
@@ -2605,7 +2620,7 @@ NTSTATUS _samr_enum_domains(pipes_struct *p, SAMR_Q_ENUM_DOMAINS *q_u, SAMR_R_EN
  api_samr_open_alias
  ********************************************************************/
 
-NTSTATUS _api_samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_ALIAS *r_u)
+NTSTATUS _samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_ALIAS *r_u)
 {
 	DOM_SID sid;
 	POLICY_HND domain_pol = q_u->dom_pol;
@@ -3773,7 +3788,8 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 	/* check if the user exists before trying to delete */
 	pdb_init_sam(&sam_pass);
 	if(!pdb_getsampwsid(sam_pass, &user_sid)) {
-		DEBUG(5,("_samr_delete_dom_user:User %s doesn't exist.\n", pdb_get_username(sam_pass)));
+		DEBUG(5,("_samr_delete_dom_user:User %s doesn't exist.\n", 
+			sid_string_static(&user_sid)));
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
@@ -4269,13 +4285,75 @@ NTSTATUS _samr_open_group(pipes_struct *p, SAMR_Q_OPEN_GROUP *q_u, SAMR_R_OPEN_G
 }
 
 /*********************************************************************
- _samr_unknown_2d
+ _samr_remove_user_foreign_domain
 *********************************************************************/
 
-NTSTATUS _samr_unknown_2d(pipes_struct *p, SAMR_Q_UNKNOWN_2D *q_u, SAMR_R_UNKNOWN_2D *r_u)
+NTSTATUS _samr_remove_user_foreign_domain(pipes_struct *p, 
+                                          SAMR_Q_REMOVE_USER_FOREIGN_DOMAIN *q_u, 
+                                          SAMR_R_REMOVE_USER_FOREIGN_DOMAIN *r_u)
 {
-	DEBUG(0,("_samr_unknown_2d: Not yet implemented.\n"));
-	return NT_STATUS_NOT_IMPLEMENTED;
+	DOM_SID			user_sid, dom_sid;
+	SAM_ACCOUNT 		*sam_pass=NULL;
+	uint32 			acc_granted;
+	
+	sid_copy( &user_sid, &q_u->sid.sid );
+	
+	DEBUG(5,("_samr_remove_user_foreign_domain: removing user [%s]\n",
+		sid_string_static(&user_sid)));
+		
+	/* Find the policy handle. Open a policy on it. */
+	
+	if (!get_lsa_policy_samr_sid(p, &q_u->dom_pol, &dom_sid, &acc_granted)) 
+		return NT_STATUS_INVALID_HANDLE;
+		
+	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, 
+		STD_RIGHT_DELETE_ACCESS, "_samr_remove_user_foreign_domain"))) 
+	{
+		return r_u->status;
+	}
+		
+	if ( !sid_check_is_in_our_domain(&user_sid) ) {
+		DEBUG(5,("_samr_remove_user_foreign_domain: user not is our domain!\n"));
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	/* check if the user exists before trying to delete */
+	
+	pdb_init_sam(&sam_pass);
+	
+	if ( !pdb_getsampwsid(sam_pass, &user_sid) ) {
+	
+		DEBUG(5,("_samr_remove_user_foreign_domain:User %s doesn't exist.\n", 
+			sid_string_static(&user_sid)));
+			
+		pdb_free_sam(&sam_pass);
+		
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	/*
+	 * delete the unix side
+	 * 
+	 * note: we don't check if the delete really happened
+	 * as the script is not necessary present
+	 * and maybe the sysadmin doesn't want to delete the unix side
+	 */
+	 
+	smb_delete_user(pdb_get_username(sam_pass));
+
+	/* and delete the samba side */
+	
+	if ( !pdb_delete_sam_account(sam_pass) ) {
+	
+		DEBUG(5,("_samr_delete_dom_user:Failed to delete entry for user %s.\n", pdb_get_username(sam_pass)));
+		pdb_free_sam(&sam_pass);
+		
+		return NT_STATUS_CANNOT_DELETE;
+	}
+	
+	pdb_free_sam(&sam_pass);
+
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************

@@ -234,7 +234,7 @@ static BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
 	TDB_DATA kbuf, dbuf;
 	pstring key;
 	fstring string_sid;
-	int ret;
+	int ret = 0;
 	
 	if(!init_group_mapping()) {
 		DEBUG(0,("failed to initialize group mapping"));
@@ -257,6 +257,11 @@ static BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
 				&map->gid, &map->sid_name_use, &map->nt_name, &map->comment);
 
 	SAFE_FREE(dbuf.dptr);
+	
+	if ( ret == -1 ) {
+		DEBUG(3,("get_group_map_from_sid: tdb_unpack failure\n"));
+		return False;
+	}
 
 	sid_copy(&map->sid, &sid);
 	
@@ -299,6 +304,11 @@ static BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
 
 		SAFE_FREE(dbuf.dptr);
 
+		if ( ret == -1 ) {
+			DEBUG(3,("get_group_map_from_gid: tdb_unpack failure\n"));
+			return False;
+		}
+	
 		if (gid==map->gid) {
 			SAFE_FREE(kbuf.dptr);
 			return True;
@@ -343,6 +353,11 @@ static BOOL get_group_map_from_ntname(const char *name, GROUP_MAP *map)
 				 &map->gid, &map->sid_name_use, &map->nt_name, &map->comment);
 
 		SAFE_FREE(dbuf.dptr);
+		
+		if ( ret == -1 ) {
+			DEBUG(3,("get_group_map_from_ntname: tdb_unpack failure\n"));
+			return False;
+		}
 
 		if (StrCaseCmp(name, map->nt_name)==0) {
 			SAFE_FREE(kbuf.dptr);
@@ -429,6 +444,11 @@ static BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 
 		SAFE_FREE(dbuf.dptr);
 
+		if ( ret == -1 ) {
+			DEBUG(3,("enum_group_mapping: tdb_unpack failure\n"));
+			continue;
+		}
+	
 		/* list only the type or everything if UNKNOWN */
 		if (sid_name_use!=SID_NAME_UNKNOWN  && sid_name_use!=map.sid_name_use) {
 			DEBUG(11,("enum_group_mapping: group %s is not of the requested type\n", map.nt_name));
@@ -510,8 +530,9 @@ BOOL get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 	}
 
 	DEBUG(10, ("get_domain_group_from_sid: SID is mapped to gid:%lu\n",(unsigned long)map->gid));
-
-	if ( (grp=getgrgid(map->gid)) == NULL) {
+	
+	grp = getgrgid(map->gid);
+	if ( !grp ) {
 		DEBUG(10, ("get_domain_group_from_sid: gid DOESN'T exist in UNIX security\n"));
 		return False;
 	}
@@ -553,9 +574,12 @@ BOOL get_local_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 
 		sid_peek_rid(&sid, &alias_rid);
 		map->gid=pdb_group_rid_to_gid(alias_rid);
-
-		if ((grp=getgrgid(map->gid)) == NULL)
+		
+		grp = getgrgid(map->gid);
+		if ( !grp ) {
+			DEBUG(3,("get_local_group_from_sid: No unix group for [%ul]\n", map->gid));
 			return False;
+		}
 
 		map->sid_name_use=SID_NAME_ALIAS;
 

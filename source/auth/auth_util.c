@@ -216,8 +216,8 @@ NTSTATUS make_user_info_map(auth_usersupplied_info **user_info,
 	      client_domain, smb_name, wksta_name));
 	
 	/* don't allow "" as a domain, fixes a Win9X bug 
-		   where it doens't supply a domain for logon script
-	   'net use' commands.*/
+	   where it doens't supply a domain for logon script
+	   'net use' commands.                                 */
 
 	if ( *client_domain )
 		domain = client_domain;
@@ -227,7 +227,7 @@ NTSTATUS make_user_info_map(auth_usersupplied_info **user_info,
 	/* do what win2k does.  Always map unknown domains to our own
 	   and let the "passdb backend" handle unknown users. */
 
-	if ( !is_trusted_domain(domain) ) 
+	if ( !is_trusted_domain(domain) && !strequal(domain, get_global_sam_name()) ) 
 		domain = get_default_sam_name();
 	
 	/* we know that it is a trusted domain (and we are allowing them) or it is our domain */
@@ -393,7 +393,7 @@ BOOL make_user_info_for_reply(auth_usersupplied_info **user_info,
 		dump_data(100, plaintext_password.data, plaintext_password.length);
 #endif
 
-		SMBencrypt( (const uchar *)plaintext_password.data, (const uchar*)chal, local_lm_response);
+		SMBencrypt( (const char *)plaintext_password.data, (const uchar*)chal, local_lm_response);
 		local_lm_blob = data_blob(local_lm_response, 24);
 		
 		/* We can't do an NT hash here, as the password needs to be
@@ -646,43 +646,66 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups,
  * of groups.
  ******************************************************************************/
 
-static NTSTATUS get_user_groups_from_local_sam(const char *username, uid_t uid, gid_t gid,
-					       int *n_groups, DOM_SID **groups,	gid_t **unix_groups)
+static NTSTATUS get_user_groups(const char *username, uid_t uid, gid_t gid,
+                                int *n_groups, DOM_SID **groups, gid_t **unix_groups)
 {
-	int               n_unix_groups;
-	int               i;
+	int		n_unix_groups;
+	int		i;
 
 	*n_groups = 0;
 	*groups   = NULL;
-
-	n_unix_groups = groups_max();
-	if ((*unix_groups = malloc( sizeof(gid_t) * n_unix_groups ) ) == NULL) {
-		DEBUG(0, ("get_user_groups_from_local_sam: Out of memory allocating unix group list\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
 	
-	if (sys_getgrouplist(username, gid, *unix_groups, &n_unix_groups) == -1) {
-		gid_t *groups_tmp;
-		groups_tmp = Realloc(*unix_groups, sizeof(gid_t) * n_unix_groups);
-		if (!groups_tmp) {
-			SAFE_FREE(*unix_groups);
+	/* Try winbind first */
+
+	if ( strchr(username, *lp_winbind_separator()) ) {
+		n_unix_groups = winbind_getgroups( username, unix_groups );
+
+		DEBUG(10,("get_user_groups: winbind_getgroups(%s): result = %s\n", username, 
+			  n_unix_groups == -1 ? "FAIL" : "SUCCESS"));
+			  
+		if ( n_unix_groups == -1 )
+			return NT_STATUS_NO_SUCH_USER; /* what should this return value be? */	
+	}
+	else {
+		/* fallback to getgrouplist() */
+		
+		n_unix_groups = groups_max();
+		
+		if ((*unix_groups = malloc( sizeof(gid_t) * n_unix_groups ) ) == NULL) {
+			DEBUG(0, ("get_user_groups: Out of memory allocating unix group list\n"));
 			return NT_STATUS_NO_MEMORY;
 		}
-		*unix_groups = groups_tmp;
-
+	
 		if (sys_getgrouplist(username, gid, *unix_groups, &n_unix_groups) == -1) {
-			DEBUG(0, ("get_user_groups_from_local_sam: failed to get the unix group list\n"));
-			SAFE_FREE(*unix_groups);
-			return NT_STATUS_NO_SUCH_USER; /* what should this return value be? */
+		
+			gid_t *groups_tmp;
+			
+			groups_tmp = Realloc(*unix_groups, sizeof(gid_t) * n_unix_groups);
+			
+			if (!groups_tmp) {
+				SAFE_FREE(*unix_groups);
+				return NT_STATUS_NO_MEMORY;
+			}
+			*unix_groups = groups_tmp;
+
+			if (sys_getgrouplist(username, gid, *unix_groups, &n_unix_groups) == -1) {
+				DEBUG(0, ("get_user_groups: failed to get the unix group list\n"));
+				SAFE_FREE(*unix_groups);
+				return NT_STATUS_NO_SUCH_USER; /* what should this return value be? */
+			}
 		}
 	}
 
 	debug_unix_user_token(DBGC_CLASS, 5, uid, gid, n_unix_groups, *unix_groups);
 	
+	/* now setup the space for storing the SIDS */
+	
 	if (n_unix_groups > 0) {
+	
 		*groups   = malloc(sizeof(DOM_SID) * n_unix_groups);
+		
 		if (!*groups) {
-			DEBUG(0, ("get_user_group_from_local_sam: malloc() failed for DOM_SID list!\n"));
+			DEBUG(0, ("get_user_group: malloc() failed for DOM_SID list!\n"));
 			SAFE_FREE(*unix_groups);
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -692,7 +715,8 @@ static NTSTATUS get_user_groups_from_local_sam(const char *username, uid_t uid, 
 
 	for (i = 0; i < *n_groups; i++) {
 		if (!NT_STATUS_IS_OK(gid_to_sid(&(*groups)[i], (*unix_groups)[i]))) {
-			DEBUG(1, ("get_user_groups_from_local_sam: failed to convert gid %ld to a sid!\n", (long int)(*unix_groups)[i+1]));
+			DEBUG(1, ("get_user_groups: failed to convert gid %ld to a sid!\n", 
+				(long int)(*unix_groups)[i+1]));
 			SAFE_FREE(*groups);
 			SAFE_FREE(*unix_groups);
 			return NT_STATUS_NO_SUCH_USER;
@@ -743,10 +767,9 @@ static NTSTATUS add_user_groups(auth_serversupplied_info **server_info,
 	BOOL is_guest;
 	uint32 rid;
 
-	nt_status = get_user_groups_from_local_sam(pdb_get_username(sampass),
-						   uid, gid, 
-						   &n_groupSIDs, &groupSIDs,
-						   &unix_groups);
+	nt_status = get_user_groups(pdb_get_username(sampass), uid, gid, 
+		&n_groupSIDs, &groupSIDs, &unix_groups);
+		
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(4,("get_user_groups_from_local_sam failed\n"));
 		free_server_info(server_info);
@@ -1068,11 +1091,11 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	/* Store the user group information in the server_info 
 	   returned to the caller. */
 	
-	nt_status = get_user_groups_from_local_sam((*server_info)->unix_name,
+	nt_status = get_user_groups((*server_info)->unix_name,
 		uid, gid, &n_lgroupSIDs, &lgroupSIDs, &unix_groups);
-	if ( !NT_STATUS_IS_OK(nt_status) )
-	{
-		DEBUG(4,("get_user_groups_from_local_sam failed\n"));
+		
+	if ( !NT_STATUS_IS_OK(nt_status) ) {
+		DEBUG(4,("get_user_groups failed\n"));
 		return nt_status;
 	}
 
@@ -1080,9 +1103,9 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	(*server_info)->n_groups = n_lgroupSIDs;
 	
 	/* Create a 'combined' list of all SIDs we might want in the SD */
-	all_group_SIDs   = malloc(sizeof(DOM_SID) * 
-				  (n_lgroupSIDs + info3->num_groups2 +
-				   info3->num_other_sids));
+	
+	all_group_SIDs = malloc(sizeof(DOM_SID) * (info3->num_groups2 +info3->num_other_sids));
+	
 	if (!all_group_SIDs) {
 		DEBUG(0, ("malloc() failed for DOM_SID list!\n"));
 		SAFE_FREE(lgroupSIDs);
@@ -1090,20 +1113,30 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+#if 0 	/* JERRY -- no such thing as local groups in current code */
 	/* Copy the 'local' sids */
 	memcpy(all_group_SIDs, lgroupSIDs, sizeof(DOM_SID) * n_lgroupSIDs);
 	SAFE_FREE(lgroupSIDs);
+#endif
 
 	/* and create (by appending rids) the 'domain' sids */
+	
 	for (i = 0; i < info3->num_groups2; i++) {
-		sid_copy(&all_group_SIDs[i+n_lgroupSIDs], &(info3->dom_sid.sid));
-		if (!sid_append_rid(&all_group_SIDs[i+n_lgroupSIDs], info3->gids[i].g_rid)) {
+	
+		sid_copy(&all_group_SIDs[i], &(info3->dom_sid.sid));
+		
+		if (!sid_append_rid(&all_group_SIDs[i], info3->gids[i].g_rid)) {
+		
 			nt_status = NT_STATUS_INVALID_PARAMETER;
+			
 			DEBUG(3,("could not append additional group rid 0x%x\n",
 				info3->gids[i].g_rid));			
+				
 			SAFE_FREE(lgroupSIDs);
 			free_server_info(server_info);
+			
 			return nt_status;
+			
 		}
 	}
 
@@ -1113,19 +1146,20 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
            http://www.microsoft.com/windows2000/techinfo/administration/security/sidfilter.asp
          */
 
-	for (i = 0; i < info3->num_other_sids; i++) 
-		sid_copy(&all_group_SIDs[
-				 n_lgroupSIDs + info3->num_groups2 + i],
+	for (i = 0; i < info3->num_other_sids; i++) {
+		sid_copy(&all_group_SIDs[info3->num_groups2 + i],
 			 &info3->other_sids[i].sid);
+	}
 	
 	/* Where are the 'global' sids... */
 
 	/* can the user be guest? if yes, where is it stored? */
-	if (!NT_STATUS_IS_OK(
-		    nt_status = create_nt_user_token(
-			    &user_sid, &group_sid,
-			    n_lgroupSIDs + info3->num_groups2 + info3->num_other_sids, 
-			    all_group_SIDs, False, &token))) {
+	
+	nt_status = create_nt_user_token(&user_sid, &group_sid,
+		info3->num_groups2 + info3->num_other_sids,
+		all_group_SIDs, False, &token);
+		
+	if ( !NT_STATUS_IS_OK(nt_status) ) {
 		DEBUG(4,("create_nt_user_token failed\n"));
 		SAFE_FREE(all_group_SIDs);
 		free_server_info(server_info);

@@ -87,7 +87,7 @@ NTSTATUS ads_ntstatus(ADS_STATUS status)
 */
 const char *ads_errstr(ADS_STATUS status)
 {
-	int msg_ctx;
+	uint32 msg_ctx;
 	static char *ret;
 
 	SAFE_FREE(ret);

@@ -231,7 +231,8 @@ static BOOL reload_interfaces(time_t t)
 			DEBUG(2,("Found new interface %s\n", 
 				 inet_ntoa(iface->ip)));
 			subrec = make_normal_subnet(iface);
-			if (subrec) register_my_workgroup_one_subnet(subrec);
+			if (subrec)
+				register_my_workgroup_one_subnet(subrec);
 		}
 	}
 
@@ -303,6 +304,7 @@ static BOOL reload_nmbd_services(BOOL test)
  * We use buf here to return BOOL result to process() when reload_interfaces()
  * detects that there are no subnets.
  **************************************************************************** */
+
 static void msg_reload_nmbd_services(int msg_type, pid_t src, void *buf, size_t len)
 {
 	write_browse_list( 0, True );
@@ -650,126 +652,120 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 		log_stdout = True;
 	}
 
-  if ( log_stdout && Fork ) {
-    DEBUG(0,("ERROR: Can't log to stdout (-S) unless daemon is in foreground (-F) or interactive (-i)\n"));
-    exit(1);
-  }
+	if ( log_stdout && Fork ) {
+		DEBUG(0,("ERROR: Can't log to stdout (-S) unless daemon is in foreground (-F) or interactive (-i)\n"));
+		exit(1);
+	}
 
-  setup_logging( argv[0], log_stdout );
+	setup_logging( argv[0], log_stdout );
 
-  reopen_logs();
+	reopen_logs();
 
-  DEBUG( 0, ( "Netbios nameserver version %s started.\n", VERSION ) );
-  DEBUGADD( 0, ( "Copyright Andrew Tridgell and the Samba Team 1994-2003\n" ) );
+	DEBUG( 0, ( "Netbios nameserver version %s started.\n", SAMBA_VERSION_STRING) );
+	DEBUGADD( 0, ( "Copyright Andrew Tridgell and the Samba Team 1994-2003\n" ) );
 
-  if ( !reload_nmbd_services(False) )
-    return(-1);
+	if ( !reload_nmbd_services(False) )
+		return(-1);
 
-  if(!init_names())
-    return -1;
+	if(!init_names())
+		return -1;
 
-  reload_nmbd_services( True );
+	reload_nmbd_services( True );
 
-  if (strequal(lp_workgroup(),"*"))
-  {
-    DEBUG(0,("ERROR: a workgroup name of * is no longer supported\n"));
-    exit(1);
-  }
+	if (strequal(lp_workgroup(),"*")) {
+		DEBUG(0,("ERROR: a workgroup name of * is no longer supported\n"));
+		exit(1);
+	}
 
-  set_samba_nb_type();
+	set_samba_nb_type();
 
-  if (!is_daemon && !is_a_socket(0))
-  {
-    DEBUG(0,("standard input is not a socket, assuming -D option\n"));
-    is_daemon = True;
-  }
+	if (!is_daemon && !is_a_socket(0)) {
+		DEBUG(0,("standard input is not a socket, assuming -D option\n"));
+		is_daemon = True;
+	}
   
-  if (is_daemon && !opt_interactive)
-  {
-    DEBUG( 2, ( "Becoming a daemon.\n" ) );
-    become_daemon(Fork);
-  }
+	if (is_daemon && !opt_interactive) {
+		DEBUG( 2, ( "Becoming a daemon.\n" ) );
+		become_daemon(Fork);
+	}
 
 #if HAVE_SETPGID
-  /*
-   * If we're interactive we want to set our own process group for 
-   * signal management.
-   */
-  if (opt_interactive)
-    setpgid( (pid_t)0, (pid_t)0 );
+	/*
+	 * If we're interactive we want to set our own process group for 
+	 * signal management.
+	 */
+	if (opt_interactive)
+		setpgid( (pid_t)0, (pid_t)0 );
 #endif
 
 #ifndef SYNC_DNS
-  /* Setup the async dns. We do it here so it doesn't have all the other
-     stuff initialised and thus chewing memory and sockets */
-  if(lp_we_are_a_wins_server() && lp_dns_proxy()) {
-	  start_async_dns();
-  }
+	/* Setup the async dns. We do it here so it doesn't have all the other
+		stuff initialised and thus chewing memory and sockets */
+	if(lp_we_are_a_wins_server() && lp_dns_proxy()) {
+		start_async_dns();
+	}
 #endif
 
-  if (!directory_exist(lp_lockdir(), NULL)) {
-	  mkdir(lp_lockdir(), 0755);
-  }
+	if (!directory_exist(lp_lockdir(), NULL)) {
+		mkdir(lp_lockdir(), 0755);
+	}
 
-  pidfile_create("nmbd");
-  message_init();
-  message_register(MSG_FORCE_ELECTION, nmbd_message_election);
-  message_register(MSG_WINS_NEW_ENTRY, nmbd_wins_new_entry);
-  message_register(MSG_SHUTDOWN, nmbd_terminate);
-  message_register(MSG_SMB_CONF_UPDATED, msg_reload_nmbd_services);
+	pidfile_create("nmbd");
+	message_init();
+	message_register(MSG_FORCE_ELECTION, nmbd_message_election);
+	message_register(MSG_WINS_NEW_ENTRY, nmbd_wins_new_entry);
+	message_register(MSG_SHUTDOWN, nmbd_terminate);
+	message_register(MSG_SMB_CONF_UPDATED, msg_reload_nmbd_services);
 
-  DEBUG( 3, ( "Opening sockets %d\n", global_nmb_port ) );
+	DEBUG( 3, ( "Opening sockets %d\n", global_nmb_port ) );
 
-  if ( !open_sockets( is_daemon, global_nmb_port ) ) {
-    kill_async_dns_child();
-    return 1;
-  }
+	if ( !open_sockets( is_daemon, global_nmb_port ) ) {
+		kill_async_dns_child();
+		return 1;
+	}
 
-  /* Determine all the IP addresses we have. */
-  load_interfaces();
+	/* Determine all the IP addresses we have. */
+	load_interfaces();
 
-  /* Create an nmbd subnet record for each of the above. */
-  if( False == create_subnets() )
-  {
-    DEBUG(0,("ERROR: Failed when creating subnet lists. Exiting.\n"));
-    kill_async_dns_child();
-    exit(1);
-  }
+	/* Create an nmbd subnet record for each of the above. */
+	if( False == create_subnets() ) {
+		DEBUG(0,("ERROR: Failed when creating subnet lists. Exiting.\n"));
+		kill_async_dns_child();
+		exit(1);
+	}
 
-  /* Load in any static local names. */ 
-  load_lmhosts_file(dyn_LMHOSTSFILE);
-  DEBUG(3,("Loaded hosts file %s\n", dyn_LMHOSTSFILE));
+	/* Load in any static local names. */ 
+	load_lmhosts_file(dyn_LMHOSTSFILE);
+	DEBUG(3,("Loaded hosts file %s\n", dyn_LMHOSTSFILE));
 
-  /* If we are acting as a WINS server, initialise data structures. */
-  if( !initialise_wins() )
-  {
-    DEBUG( 0, ( "nmbd: Failed when initialising WINS server.\n" ) );
-    kill_async_dns_child();
-    exit(1);
-  }
+	/* If we are acting as a WINS server, initialise data structures. */
+	if( !initialise_wins() ) {
+		DEBUG( 0, ( "nmbd: Failed when initialising WINS server.\n" ) );
+		kill_async_dns_child();
+		exit(1);
+	}
 
-  /* 
-   * Register nmbd primary workgroup and nmbd names on all
-   * the broadcast subnets, and on the WINS server (if specified).
-   * Also initiate the startup of our primary workgroup (start
-   * elections if we are setup as being able to be a local
-   * master browser.
-   */
+	/* 
+	 * Register nmbd primary workgroup and nmbd names on all
+	 * the broadcast subnets, and on the WINS server (if specified).
+	 * Also initiate the startup of our primary workgroup (start
+	 * elections if we are setup as being able to be a local
+	 * master browser.
+	 */
 
-  if( False == register_my_workgroup_and_names() )
-  {
-    DEBUG(0,("ERROR: Failed when creating my my workgroup. Exiting.\n"));
-    kill_async_dns_child();
-    exit(1);
-  }
+	if( False == register_my_workgroup_and_names() ) {
+		DEBUG(0,("ERROR: Failed when creating my my workgroup. Exiting.\n"));
+		kill_async_dns_child();
+		exit(1);
+	}
 
-  /* We can only take signals in the select. */
-  BlockSignals( True, SIGTERM );
+	/* We can only take signals in the select. */
+	BlockSignals( True, SIGTERM );
 
-  process();
+	process();
 
-  if (dbf)
-    x_fclose(dbf);
-  kill_async_dns_child();
-  return(0);
+	if (dbf)
+		x_fclose(dbf);
+	kill_async_dns_child();
+	return(0);
 }

@@ -28,10 +28,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-/* the realm of our primary LDAP server */
-static char *primary_realm;
-
-
 /*
   return our ads connections structure for a domain. We keep the connection
   open to make things faster
@@ -58,10 +54,8 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 	SAFE_FREE(ads->auth.password);
 	ads->auth.password = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
 
-	if (primary_realm) {
-		SAFE_FREE(ads->auth.realm);
-		ads->auth.realm = strdup(primary_realm);
-	}
+	SAFE_FREE(ads->auth.realm);
+	ads->auth.realm = strdup(lp_realm());
 
 	status = ads_connect(ads);
 	if (!ADS_ERR_OK(status) || !ads->config.realm) {
@@ -82,11 +76,6 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 			}
 		}
 		return NULL;
-	}
-
-	/* remember our primary realm for trusted domain support */
-	if (!primary_realm) {
-		primary_realm = strdup(ads->config.realm);
 	}
 
 	domain->private = (void *)ads;
@@ -123,7 +112,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	}
 
 	rc = ads_search_retry(ads, &res, "(objectCategory=user)", attrs);
-	if (!ADS_ERR_OK(rc)) {
+	if (!ADS_ERR_OK(rc) || !res) {
 		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
 		goto done;
 	}
@@ -190,7 +179,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	DEBUG(3,("ads query_user_list gave %d entries\n", (*num_entries)));
 
 done:
-	if (res) ads_msgfree(ads, res);
+	if (res) 
+		ads_msgfree(ads, res);
 
 	return status;
 }
@@ -224,7 +214,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	}
 
 	rc = ads_search_retry(ads, &res, "(objectCategory=group)", attrs);
-	if (!ADS_ERR_OK(rc)) {
+	if (!ADS_ERR_OK(rc) || !res) {
 		DEBUG(1,("enum_dom_groups ads_search: %s\n", ads_errstr(rc)));
 		goto done;
 	}
@@ -283,7 +273,8 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	DEBUG(3,("ads enum_dom_groups gave %d entries\n", (*num_entries)));
 
 done:
-	if (res) ads_msgfree(ads, res);
+	if (res) 
+		ads_msgfree(ads, res);
 
 	return status;
 }
@@ -378,7 +369,7 @@ static BOOL dn_lookup(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 	SAFE_FREE(ldap_exp);
 	SAFE_FREE(escaped_dn);
 
-	if (!ADS_ERR_OK(rc)) {
+	if (!ADS_ERR_OK(rc) || !res) {
 		goto failed;
 	}
 
@@ -393,11 +384,15 @@ static BOOL dn_lookup(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	if (res) ads_msgfree(ads, res);
+	if (res) 
+		ads_msgfree(ads, res);
+
 	return True;
 
 failed:
-	if (res) ads_msgfree(ads, res);
+	if (res) 
+		ads_msgfree(ads, res);
+
 	return False;
 }
 
@@ -436,7 +431,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	rc = ads_search_retry(ads, &msg, ldap_exp, attrs);
 	free(ldap_exp);
 	free(sidstr);
-	if (!ADS_ERR_OK(rc)) {
+	if (!ADS_ERR_OK(rc) || !msg) {
 		DEBUG(1,("query_user(sid=%s) ads_search: %s\n", sid_to_string(sid_string, sid), ads_errstr(rc)));
 		goto done;
 	}
@@ -470,7 +465,8 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 	DEBUG(3,("ads query_user gave %s\n", info->acct_name));
 done:
-	if (msg) ads_msgfree(ads, msg);
+	if (msg) 
+		ads_msgfree(ads, msg);
 
 	return status;
 }
@@ -511,7 +507,7 @@ static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
 	rc = ads_search_retry(ads, &res, ldap_exp, group_attrs);
 	free(ldap_exp);
 	
-	if (!ADS_ERR_OK(rc)) {
+	if (!ADS_ERR_OK(rc) || !res) {
 		DEBUG(1,("lookup_usergroups ads_search member=%s: %s\n", user_dn, ads_errstr(rc)));
 		return ads_ntstatus(rc);
 	}
@@ -555,8 +551,10 @@ static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
 
 	DEBUG(3,("ads lookup_usergroups (alt) for dn=%s\n", user_dn));
 done:
-	if (res) ads_msgfree(ads, res);
-	if (msg) ads_msgfree(ads, msg);
+	if (res) 
+		ads_msgfree(ads, res);
+	if (msg) 
+		ads_msgfree(ads, msg);
 
 	return status;
 }
@@ -609,7 +607,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	free(ldap_exp);
 	free(sidstr);
 
-	if (!ADS_ERR_OK(rc)) {
+	if (!ADS_ERR_OK(rc) || !msg) {
 		DEBUG(1,("lookup_usergroups(sid=%s) ads_search: %s\n", sid_to_string(sid_string, sid), ads_errstr(rc)));
 		goto done;
 	}
@@ -617,14 +615,16 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	user_dn = ads_pull_string(ads, mem_ctx, msg, "distinguishedName");
 	if (!user_dn) {
 		DEBUG(1,("lookup_usergroups(sid=%s) ads_search did not return a a distinguishedName!\n", sid_to_string(sid_string, sid)));
-		if (msg) ads_msgfree(ads, msg);
+		if (msg) 
+			ads_msgfree(ads, msg);
 		goto done;
 	}
 
-	if (msg) ads_msgfree(ads, msg);
+	if (msg) 
+		ads_msgfree(ads, msg);
 
 	rc = ads_search_retry_dn(ads, &msg, user_dn, attrs2);
-	if (!ADS_ERR_OK(rc)) {
+	if (!ADS_ERR_OK(rc) || !msg) {
 		DEBUG(1,("lookup_usergroups(sid=%s) ads_search tokenGroups: %s\n", sid_to_string(sid_string, sid), ads_errstr(rc)));
 		goto done;
 	}
@@ -638,7 +638,8 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 	count = ads_pull_sids(ads, mem_ctx, msg, "tokenGroups", &sids);
 
-	if (msg) ads_msgfree(ads, msg);
+	if (msg) 
+		ads_msgfree(ads, msg);
 
 	/* there must always be at least one group in the token, 
 	   unless we are talking to a buggy Win2k server */
@@ -712,7 +713,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	free(ldap_exp);
 	free(sidstr);
 
-	if (!ADS_ERR_OK(rc)) {
+	if (!ADS_ERR_OK(rc) || !res) {
 		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
 		goto done;
 	}
@@ -761,7 +762,8 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	status = NT_STATUS_OK;
 	DEBUG(3,("ads lookup_groupmem for sid=%s\n", sid_to_string(sid_string, group_sid)));
 done:
-	if (res) ads_msgfree(ads, res);
+	if (res) 
+		ads_msgfree(ads, res);
 
 	return status;
 }
@@ -808,6 +810,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	struct cli_state	*cli = NULL;
 				/* i think we only need our forest and downlevel trusted domains */
 	uint32			flags = DS_DOMAIN_IN_FOREST | DS_DOMAIN_DIRECT_OUTBOUND;
+	char 			*contact_domain_name;
 
 	DEBUG(3,("ads: trusted_domains\n"));
 
@@ -816,14 +819,15 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	*names       = NULL;
 	*dom_sids    = NULL;
 		
-	if ( !NT_STATUS_IS_OK(result = cm_fresh_connection(domain->name, PI_NETLOGON, &cli)) ) {
+	contact_domain_name = *domain->alt_name ? domain->alt_name : domain->name;
+	if ( !NT_STATUS_IS_OK(result = cm_fresh_connection(contact_domain_name, PI_NETLOGON, &cli)) ) {
 		DEBUG(5, ("trusted_domains: Could not open a connection to %s for PIPE_NETLOGON (%s)\n", 
-			  domain->name, nt_errstr(result)));
+			  contact_domain_name, nt_errstr(result)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
 	if ( NT_STATUS_IS_OK(result) )
-		result = cli_ds_enum_domain_trusts( cli, mem_ctx, cli->desthost, flags, &domains, &count );
+		result = cli_ds_enum_domain_trusts( cli, mem_ctx, cli->desthost, flags, &domains, (unsigned int *)&count );
 	
 	if ( NT_STATUS_IS_OK(result) && count) {
 	

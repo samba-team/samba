@@ -27,6 +27,12 @@
 
 /* Opcodes available on PIPE_LSARPC */
 
+#if 0	/* UNIMPLEMENTED */
+
+#define LSA_LOOKUPSIDS2		0x39
+
+#endif
+
 #define LSA_CLOSE              0x00
 #define LSA_DELETE             0x01
 #define LSA_ENUM_PRIVS         0x02

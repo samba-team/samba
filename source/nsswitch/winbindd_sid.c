@@ -185,12 +185,17 @@ enum winbindd_result winbindd_uid_to_sid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
 
-	/* Bug out if the uid isn't in the winbind range */
-
+#if 0	/* JERRY */
+	/* we cannot do this check this anymore since a domain member of 
+	   a Samba domain may share unix accounts via NIS or LDAP.  In this 
+	   case the uid/gid will be out of winbindd's range but still might
+	   be resolved to a SID via an ldap idmap backend */
+	   
 	if ((state->request.data.uid < server_state.uid_low ) ||
 	    (state->request.data.uid > server_state.uid_high)) {
 		return WINBINDD_ERROR;
 	}
+#endif
 
 	DEBUG(3, ("[%5lu]: uid to sid %lu\n", (unsigned long)state->pid, 
 		  (unsigned long)state->request.data.uid));
@@ -214,12 +219,17 @@ enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
 
-	/* Bug out if the gid isn't in the winbind range */
-
+#if 0	/* JERRY */
+	/* we cannot do this check this anymore since a domain member of 
+	   a Samba domain may share unix accounts via NIS or LDAP.  In this 
+	   case the uid/gid will be out of winbindd's range but still might
+	   be resolved to a SID via an ldap idmap backend */
+	   
 	if ((state->request.data.gid < server_state.gid_low) ||
 	    (state->request.data.gid > server_state.gid_high)) {
 		return WINBINDD_ERROR;
 	}
+#endif
 
 	DEBUG(3, ("[%5lu]: gid to sid %lu\n", (unsigned long)state->pid,
 		  (unsigned long)state->request.data.gid));

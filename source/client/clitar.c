@@ -122,7 +122,7 @@ static void writetarheader(int f,  const char *aname, SMB_BIG_UINT size, time_t 
 static void do_atar(char *rname,char *lname,file_info *finfo1);
 static void do_tar(file_info *finfo);
 static void oct_it(SMB_BIG_UINT value, int ndgs, char *p);
-static void fixtarname(char *tptr, const char *fp, int l);
+static void fixtarname(char *tptr, const char *fp, size_t l);
 static int dotarbuf(int f, char *b, int n);
 static void dozerobuf(int f, int n);
 static void dotareof(int f);
@@ -171,7 +171,10 @@ static void writetarheader(int f, const char *aname, SMB_BIG_UINT size, time_t m
 	memset(hb.dummy, 0, sizeof(hb.dummy));
   
 	l=strlen(aname);
-	if (l >= NAMSIZ - 1) {
+	/* We will be prepending a '.' in fixtarheader so use +2 to
+	 * take care of the . and terminating zero. JRA.
+	 */
+	if (l+2 >= NAMSIZ) {
 		/* write a GNU tar style long header */
 		char *b;
 		b = (char *)malloc(l+TBLOCK+100);
@@ -181,15 +184,14 @@ static void writetarheader(int f, const char *aname, SMB_BIG_UINT size, time_t m
 		}
 		writetarheader(f, "/./@LongLink", l+2, 0, "     0 \0", 'L');
 		memset(b, 0, l+TBLOCK+100);
-		fixtarname(b, aname, l);
+		fixtarname(b, aname, l+2);
 		i = strlen(b)+1;
 		DEBUG(5, ("File name in tar file: %s, size=%d, \n", b, (int)strlen(b)));
 		dotarbuf(f, b, TBLOCK*(((i-1)/TBLOCK)+1));
 		SAFE_FREE(b);
 	}
 
-	/* use l + 1 to do the null too */
-	fixtarname(hb.dbuf.name, aname, (l >= NAMSIZ) ? NAMSIZ : l + 1);
+	fixtarname(hb.dbuf.name, aname, (l+2 >= NAMSIZ) ? NAMSIZ : l + 2);
 
 	if (lowercase)
 		strlower_m(hb.dbuf.name);
@@ -419,13 +421,14 @@ static void dotareof(int f)
 (Un)mangle DOS pathname, make nonabsolute
 ****************************************************************************/
 
-static void fixtarname(char *tptr, const char *fp, int l)
+static void fixtarname(char *tptr, const char *fp, size_t l)
 {
 	/* add a '.' to start of file name, convert from ugly dos \'s in path
 	 * to lovely unix /'s :-} */
 	*tptr++='.';
+	l--;
 
-	safe_strcpy(tptr, fp, l);
+	StrnCpy(tptr, fp, l-1);
 	string_replace(tptr, '\\', '/');
 }
 
@@ -1477,7 +1480,7 @@ accordingly.
 static int read_inclusion_file(char *filename)
 {
 	XFILE *inclusion = NULL;
-	char buf[MAXPATHLEN + 1];
+	char buf[PATH_MAX + 1];
 	char *inclusion_buffer = NULL;
 	int inclusion_buffer_size = 0;
 	int inclusion_buffer_sofar = 0;
@@ -1487,7 +1490,7 @@ static int read_inclusion_file(char *filename)
 	int error = 0;
 
 	clipn = 0;
-	buf[MAXPATHLEN] = '\0'; /* guarantee null-termination */
+	buf[PATH_MAX] = '\0'; /* guarantee null-termination */
 	if ((inclusion = x_fopen(filename, O_RDONLY, 0)) == NULL) {
 		/* XXX It would be better to include a reason for failure, but without
 		 * autoconf, it's hard to use strerror, sys_errlist, etc.
@@ -1583,7 +1586,7 @@ static int read_inclusion_file(char *filename)
 Parse tar arguments. Sets tar_type, tar_excl, etc.
 ***************************************************************************/
 
-int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
+int tar_parseargs(int argc, char *argv[], const char *Optarg, int Optind)
 {
 	int newOptind = Optind;
 	char tar_clipfl='\0';
@@ -1774,6 +1777,10 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
 		 */
 		if (tarhandle == 1)  {
 			dbf = x_stderr;
+		}
+		if (!argv[Optind]) {
+			DEBUG(0,("Must specify tar filename\n"));
+			return 0;
 		}
 		if (!strcmp(argv[Optind], "-")) {
 			newOptind++;

@@ -181,6 +181,27 @@ NTSTATUS connect_to_ipc_anonymous(struct cli_state **c,
 	}
 }
 
+/****************************************************************************
+ Use the local machine's password for this session
+****************************************************************************/
+int net_use_machine_password(void) 
+{
+	char *user_name = NULL;
+
+	if (!secrets_init()) {
+		d_printf("ERROR: Unable to open secrets database\n");
+		exit(1);
+	}
+
+	user_name = NULL;
+	opt_password = secrets_fetch_machine_password(opt_target_workgroup, NULL, NULL);
+	if (asprintf(&user_name, "%s$@%s", global_myname(), lp_realm()) == -1) {
+		return -1;
+	}
+	opt_user_name = user_name;
+	return 0;
+}
+
 BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_name)
 {
 
@@ -321,7 +342,7 @@ static int net_join(int argc, const char **argv)
 		if (net_ads_join(argc, argv) == 0)
 			return 0;
 		else
-			d_printf("ADS join did not work, trying RPC...\n");
+			d_printf("ADS join did not work, falling back to RPC...\n");
 	}
 	return net_rpc_join(argc, argv);
 }
@@ -332,6 +353,31 @@ static int net_changetrustpw(int argc, const char **argv)
 		return net_ads_changetrustpw(argc, argv);
 
 	return net_rpc_changetrustpw(argc, argv);
+}
+
+static int net_changesecretpw(int argc, const char **argv)
+{
+        char *trust_pw;
+        uint32 sec_channel_type = SEC_CHAN_WKSTA;
+
+	if(opt_force) {
+		trust_pw = getpass("Enter machine password: ");
+
+		if (!secrets_store_machine_password(trust_pw, lp_workgroup(), sec_channel_type)) {
+			    d_printf("Unable to write the machine account password in the secrets database");
+			    return 1;
+		}
+		else {
+		    d_printf("Modified trust account password in secrets database\n");
+		}
+	}
+	else {
+		d_printf("Machine account password change requires the -f flag.\n");
+		d_printf("Do NOT use this function unless you know what it does!\n");
+		d_printf("This function will change the ADS Domain member machine account password in the secrets.tdb file!\n");
+	}
+
+        return 0;
 }
 
 static int net_share(int argc, const char **argv)
@@ -415,6 +461,50 @@ static int net_getdomainsid(int argc, const char **argv)
 
 	return 0;
 }
+
+#ifdef WITH_FAKE_KASERVER
+
+int net_afskey_usage(int argc, const char **argv)
+{
+	d_printf("  net afskey filename\n"
+		 "\tImports a OpenAFS KeyFile into our secrets.tdb\n\n");
+	return -1;
+}
+
+static int net_afskey(int argc, const char **argv)
+{
+	int fd;
+	struct afs_keyfile keyfile;
+
+	if (argc != 1) {
+		d_printf("usage: 'net afskey <keyfile>'\n");
+		return -1;
+	}
+
+	if (!secrets_init()) {
+		d_printf("Could not open secrets.tdb\n");
+		return -1;
+	}
+
+	if ((fd = open(argv[0], O_RDONLY, 0)) < 0) {
+		d_printf("Could not open %s\n", argv[0]);
+		return -1;
+	}
+
+	if (read(fd, &keyfile, sizeof(keyfile)) != sizeof(keyfile)) {
+		d_printf("Could not read keyfile\n");
+		return -1;
+	}
+
+	if (!secrets_store_afs_keyfile(afs_cell(), &keyfile)) {
+		d_printf("Could not write keyfile to secrets.tdb\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+#endif /* WITH_FAKE_KASERVER */
 
 static uint32 get_maxrid(void)
 {
@@ -516,6 +606,7 @@ static struct functable net_func[] = {
 	{"SERVICE", net_rap_service},	
 	{"PASSWORD", net_rap_password},
 	{"CHANGETRUSTPW", net_changetrustpw},
+	{"CHANGESECRETPW", net_changesecretpw},
 	{"TIME", net_time},
 	{"LOOKUP", net_lookup},
 	{"JOIN", net_join},
@@ -525,6 +616,9 @@ static struct functable net_func[] = {
 	{"GETDOMAINSID", net_getdomainsid},
 	{"MAXRID", net_maxrid},
 	{"IDMAP", net_idmap},
+#ifdef WITH_FAKE_KASERVER
+	{"AFSKEY", net_afskey},
+#endif
 
 	{"HELP", net_help},
 	{NULL, NULL}
@@ -649,23 +743,10 @@ static struct functable net_func[] = {
 	sec_init();
 
 	if (opt_machine_pass) {
-		char *user = NULL;
 		/* it is very useful to be able to make ads queries as the
 		   machine account for testing purposes and for domain leave */
 
-		if (!secrets_init()) {
-			d_printf("ERROR: Unable to open secrets database\n");
-			exit(1);
-		}
-
-		opt_password = secrets_fetch_machine_password(opt_workgroup, NULL, NULL);
-
-		asprintf(&user,"%s$", global_myname());
-		opt_user_name = user;
-		if (!opt_password) {
-			d_printf("ERROR: Unable to fetch machine password\n");
-			exit(1);
-		}
+		net_use_machine_password();
 	}
 
 	if (!opt_password) {

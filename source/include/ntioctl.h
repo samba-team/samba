@@ -23,6 +23,8 @@
   we only need the sparse flag
 */
 
+#ifndef _NTIOCTL_H
+#define _NTIOCTL_H
 
 /* IOCTL information */
 /* List of ioctl function codes that look to be of interest to remote clients like this. */
@@ -53,6 +55,8 @@
 #define FSCTL_SIS_COPYFILE           0x00090100
 #define FSCTL_SIS_LINK_FILES         0x0009C104
 
+#define FSCTL_GET_SHADOW_COPY_DATA   0x00144064   /* KJC -- Shadow Copy information */
+
 #if 0
 #define FSCTL_SECURITY_ID_CHECK
 #define FSCTL_DISMOUNT_VOLUME
@@ -66,3 +70,18 @@
 #define IO_REPARSE_TAG_MOUNT_POINT   0xA0000003
 #define IO_REPARSE_TAG_HSM           0xC0000004
 #define IO_REPARSE_TAG_SIS           0x80000007
+
+
+/* For FSCTL_GET_SHADOW_COPY_DATA ...*/
+typedef char SHADOW_COPY_LABEL[25];
+
+typedef struct shadow_copy_data {
+	TALLOC_CTX *mem_ctx;
+	/* Total number of shadow volumes currently mounted */
+	uint32 num_volumes;
+	/* Concatenated list of labels */
+	SHADOW_COPY_LABEL *labels;
+} SHADOW_COPY_DATA;
+
+
+#endif /* _NTIOCTL_H */

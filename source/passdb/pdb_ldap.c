@@ -333,6 +333,8 @@ static NTSTATUS ldapsam_delete_entry(struct ldapsam_privates *ldap_state,
 
 /* New Interface is being implemented here */
 
+#if 0	/* JERRY - not uesed anymore */
+
 /**********************************************************************
 Initialize SAM_ACCOUNT from an LDAP query (unix attributes only)
 *********************************************************************/
@@ -385,6 +387,7 @@ static BOOL get_unix_attributes (struct ldapsam_privates *ldap_state,
 	return True;
 }
 
+#endif
 
 /**********************************************************************
 Initialize SAM_ACCOUNT from an LDAP query
@@ -419,8 +422,9 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	uint32 hours_len;
 	uint8 		hours[MAX_HOURS_LEN];
 	pstring temp;
+	struct passwd	*pw = NULL;
 	uid_t		uid = -1;
-	gid_t		gid = getegid();
+	gid_t		gid = -1;
 
 	/*
 	 * do a little initialization
@@ -454,6 +458,14 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	}
 
 	DEBUG(2, ("Entry found for user: %s\n", username));
+
+	/* I'm not going to fail here, since there are checks 
+	   higher up the cal stack to do this   --jerry */
+
+	if ( (pw=Get_Pwnam(username)) != NULL ) {
+		uid = pw->pw_uid;
+		gid = pw->pw_gid;
+	}
 
 	pstrcpy(nt_username, username);
 
@@ -523,6 +535,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	}
 
 
+#if 0	/* JERRY -- not used anymore */
 	/* 
 	 * If so configured, try and get the values from LDAP 
 	 */
@@ -541,6 +554,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 			}
 		}
 	}
+#endif
 
 	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
 		get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PWD_LAST_SET), temp)) 
@@ -1685,7 +1699,7 @@ static BOOL init_group_from_ldap(struct ldapsam_privates *ldap_state,
 			get_attr_key2string( groupmap_attr_list, LDAP_ATTR_GROUP_TYPE)));
 		return False;
 	}
-	map->sid_name_use = (uint32)atol(temp);
+	map->sid_name_use = (enum SID_NAME_USE)atol(temp);
 
 	if ((map->sid_name_use < SID_NAME_USER) ||
 	    (map->sid_name_use > SID_NAME_UNKNOWN)) {
@@ -2128,7 +2142,6 @@ static NTSTATUS ldapsam_enum_group_mapping(struct pdb_methods *methods,
 	GROUP_MAP map;
 	GROUP_MAP *mapt;
 	int entries = 0;
-	NTSTATUS nt_status;
 
 	*num_entries = 0;
 	*rmap = NULL;
@@ -2138,7 +2151,7 @@ static NTSTATUS ldapsam_enum_group_mapping(struct pdb_methods *methods,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	while (NT_STATUS_IS_OK(nt_status = ldapsam_getsamgrent(methods, &map))) {
+	while (NT_STATUS_IS_OK(ldapsam_getsamgrent(methods, &map))) {
 		if (sid_name_use != SID_NAME_UNKNOWN &&
 		    sid_name_use != map.sid_name_use) {
 			DEBUG(11,("enum_group_mapping: group %s is not of the requested type\n", map.nt_name));

@@ -821,17 +821,29 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 {
 	uint32 total_entries = 0;
 	struct winbindd_domain *domain;
+	const char *which_domain;
 	char *extra_data = NULL;
 	char *ted = NULL;
 	unsigned int extra_data_len = 0, i;
 
 	DEBUG(3, ("[%5lu]: list groups\n", (unsigned long)state->pid));
 
+	/* Ensure null termination */
+	state->request.domain_name[sizeof(state->request.domain_name)-1]='\0';	
+	which_domain = state->request.domain_name;
+	
 	/* Enumerate over trusted domains */
 
 	for (domain = domain_list(); domain; domain = domain->next) {
 		struct getent_state groups;
 
+		/* if we have a domain name restricting the request and this
+		   one in the list doesn't match, then just bypass the remainder
+		   of the loop */
+		   
+		if ( *which_domain && !strequal(which_domain, domain->name) )
+			continue;
+			
 		ZERO_STRUCT(groups);
 
 		/* Get list of sam groups */

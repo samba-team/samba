@@ -53,8 +53,8 @@ static BOOL load_msg(const char *msg_file)
 		}
 		if (msgid && strncmp(lines[i], "msgstr \"", 8) == 0) {
 			msgstr = lines[i] + 8;
-			trim_string(msgid, NULL, "\"");
-			trim_string(msgstr, NULL, "\"");
+			trim_char(msgid, '\0', '\"');
+			trim_char(msgstr, '\0', '\"');
 			if (*msgstr == 0) {
 				msgstr = msgid;
 			}

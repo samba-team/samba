@@ -58,7 +58,7 @@ void *secrets_fetch(const char *key, size_t *size)
 	secrets_init();
 	if (!tdb)
 		return NULL;
-	kbuf.dptr = key;
+	kbuf.dptr = (char *)key;
 	kbuf.dsize = strlen(key);
 	dbuf = tdb_fetch(tdb, kbuf);
 	if (size)
@@ -74,9 +74,9 @@ BOOL secrets_store(const char *key, const void *data, size_t size)
 	secrets_init();
 	if (!tdb)
 		return False;
-	kbuf.dptr = key;
+	kbuf.dptr = (char *)key;
 	kbuf.dsize = strlen(key);
-	dbuf.dptr = data;
+	dbuf.dptr = (char *)data;
 	dbuf.dsize = size;
 	return tdb_store(tdb, kbuf, dbuf, TDB_REPLACE) == 0;
 }
@@ -90,7 +90,7 @@ BOOL secrets_delete(const char *key)
 	secrets_init();
 	if (!tdb)
 		return False;
-	kbuf.dptr = key;
+	kbuf.dptr = (char *)key;
 	kbuf.dsize = strlen(key);
 	return tdb_delete(tdb, kbuf) == 0;
 }
@@ -738,3 +738,56 @@ BOOL must_use_pdc( const char *domain )
 
 }
 
+/*******************************************************************************
+ Store a complete AFS keyfile into secrets.tdb.
+*******************************************************************************/
+
+BOOL secrets_store_afs_keyfile(const char *cell, const struct afs_keyfile *keyfile)
+{
+	fstring key;
+
+	if ((cell == NULL) || (keyfile == NULL))
+		return False;
+
+	if (ntohl(keyfile->nkeys) > SECRETS_AFS_MAXKEYS)
+		return False;
+
+	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_AFS_KEYFILE, cell);
+	return secrets_store(key, keyfile, sizeof(struct afs_keyfile));
+}
+
+/*******************************************************************************
+ Fetch the current (highest) AFS key from secrets.tdb
+*******************************************************************************/
+BOOL secrets_fetch_afs_key(const char *cell, struct afs_key *result)
+{
+	fstring key;
+	struct afs_keyfile *keyfile;
+	size_t size;
+	uint32 i;
+
+	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_AFS_KEYFILE, cell);
+
+	keyfile = (struct afs_keyfile *)secrets_fetch(key, &size);
+
+	if (keyfile == NULL)
+		return False;
+
+	if (size != sizeof(struct afs_keyfile)) {
+		SAFE_FREE(keyfile);
+		return False;
+	}
+
+	i = ntohl(keyfile->nkeys);
+
+	if (i > SECRETS_AFS_MAXKEYS) {
+		SAFE_FREE(keyfile);
+		return False;
+	}
+
+	*result = keyfile->entry[i-1];
+
+	result->kvno = ntohl(result->kvno);
+
+	return True;
+}

@@ -240,9 +240,9 @@ static NTSTATUS row_to_sam_account(MYSQL_RES * r, SAM_ACCOUNT * u)
 	pdb_set_unknown_str(u, row[16], PDB_SET);
 	pdb_set_munged_dial(u, row[17], PDB_SET);
 
-	string_to_sid(&sid, row[18]);
+	if(row[18])string_to_sid(&sid, row[18]);
 	pdb_set_user_sid(u, &sid, PDB_SET);
-	string_to_sid(&sid, row[19]);
+	if(row[19])string_to_sid(&sid, row[19]);
 	pdb_set_group_sid(u, &sid, PDB_SET);
 
 	if (pdb_gethexpwd(row[20], temp), PDB_SET)

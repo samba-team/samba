@@ -260,54 +260,105 @@ int lookup(nsd_file_t *rq)
 }
 
 #else
+
+/* Allocate some space from the nss static buffer.  The buffer and buflen
+   are the pointers passed in by the C library to the _nss_*_*
+   functions. */
+
+static char *get_static(char **buffer, int *buflen, int len)
+{
+	char *result;
+
+	/* Error check.  We return false if things aren't set up right, or
+	   there isn't enough buffer space left. */
+	
+	if ((buffer == NULL) || (buflen == NULL) || (*buflen < len)) {
+		return NULL;
+	}
+
+	/* Return an index into the static buffer */
+
+	result = *buffer;
+	*buffer += len;
+	*buflen -= len;
+
+	return result;
+}
+
 /****************************************************************************
 gethostbyname() - we ignore any domain portion of the name and only
 handle names that are at most 15 characters long
   **************************************************************************/
 NSS_STATUS
-_nss_wins_gethostbyname_r(const char *name, struct hostent *he,
-			  char *buffer, size_t buflen, int *errnop,
-			  int *h_errnop)
+_nss_wins_gethostbyname_r(const char *hostname, struct hostent *he,
+			  char *buffer, size_t buflen, int *h_errnop)
 {
-	char **host_addresses;
 	struct in_addr *ip_list;
 	int i, count;
-	size_t namelen = strlen(name) + 1;
+	fstring name;
+	size_t namelen;
 		
 	memset(he, '\0', sizeof(*he));
+	fstrcpy(name, hostname);
+
+	/* Do lookup */
 
 	ip_list = lookup_byname_backend(name, &count);
-	if (!ip_list) {
+
+	if (!ip_list)
 		return NSS_STATUS_NOTFOUND;
+
+	/* Copy h_name */
+
+	namelen = strlen(name) + 1;
+
+	if ((he->h_name = get_static(&buffer, &buflen, namelen)) == NULL)
+		return NSS_STATUS_TRYAGAIN;
+
+	memcpy(he->h_name, name, namelen);
+
+	/* Copy h_addr_list, align to pointer boundary first */
+
+	if ((i = (unsigned long)(buffer) % sizeof(char*)) != 0)
+		i = sizeof(char*) - i;
+
+	if (get_static(&buffer, &buflen, i) == NULL)
+		return NSS_STATUS_TRYAGAIN;
+
+	if ((he->h_addr_list = (char **)get_static(
+		     &buffer, &buflen, (count + 1) * sizeof(char *))) == NULL)
+		return NSS_STATUS_TRYAGAIN;
+
+	for (i = 0; i < count; i++) {
+		if ((he->h_addr_list[i] = get_static(&buffer, &buflen,
+						     INADDRSZ)) == NULL)
+			return NSS_STATUS_TRYAGAIN;
+		memcpy(he->h_addr_list[i], &ip_list[i], INADDRSZ);
 	}
 
-	if (buflen < namelen + (2*count+1)*INADDRSZ) {
-		/* no ENOMEM error type?! */
-		return NSS_STATUS_NOTFOUND;
-	}
-
-
-	host_addresses = (char **)buffer;
-	he->h_addr_list = host_addresses;
-	host_addresses[count] = NULL;
-	buffer += (count + 1) * INADDRSZ;
-	buflen += (count + 1) * INADDRSZ;
-	he->h_addrtype = AF_INET;
-	he->h_length = INADDRSZ;
-
-	for (i=0;i<count;i++) {
-		memcpy(buffer, &ip_list[i].s_addr, INADDRSZ);
-		*host_addresses = buffer;
-		buffer += INADDRSZ;
-		buflen -= INADDRSZ;
-		host_addresses++;
-	}
+	he->h_addr_list[count] = NULL;
 
 	if (ip_list)
 		free(ip_list);
 
-	memcpy(buffer, name, namelen);
-	he->h_name = buffer;
+	/* Set h_addr_type and h_length */
+
+	he->h_addrtype = AF_INET;
+	he->h_length = INADDRSZ;
+
+	/* Set h_aliases */
+
+	if ((i = (unsigned long)(buffer) % sizeof(char*)) != 0)
+		i = sizeof(char*) - i;
+
+	if (get_static(&buffer, &buflen, i) == NULL)
+		return NSS_STATUS_TRYAGAIN;
+
+	if ((he->h_aliases = (char **)get_static(
+		     &buffer, &buflen, sizeof(char *))) == NULL)
+		return NSS_STATUS_TRYAGAIN;
+
+	he->h_aliases[0] = NULL;
 
 	return NSS_STATUS_SUCCESS;
 }
@@ -315,15 +366,14 @@ _nss_wins_gethostbyname_r(const char *name, struct hostent *he,
 
 NSS_STATUS
 _nss_wins_gethostbyname2_r(const char *name, int af, struct hostent *he,
-				char *buffer, size_t buflen, int *errnop,
-				int *h_errnop)
+			   char *buffer, size_t buflen, int *h_errnop)
 {
 	if(af!=AF_INET) {
 		*h_errnop = NO_DATA;
-		*errnop = EAFNOSUPPORT;
 		return NSS_STATUS_UNAVAIL;
 	}
 
-	return _nss_wins_gethostbyname_r(name,he,buffer,buflen,errnop,h_errnop);
+	return _nss_wins_gethostbyname_r(
+		name, he, buffer, buflen, h_errnop);
 }
 #endif

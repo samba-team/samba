@@ -46,20 +46,6 @@ static struct idmap_state {
 } idmap_state;
 
 /**********************************************************************
- Return the TDB_CONTEXT* for winbindd_idmap.  I **really** feel
- dirty doing this, but not so dirty that I want to create another 
- tdb
-***********************************************************************/
-
-TDB_CONTEXT *idmap_tdb_handle( void )
-{
-	if ( idmap_tdb )
-		return idmap_tdb;
-	
-	return NULL;
-}
-
-/**********************************************************************
  allocate a new RID; We don't care if is a user or group
 **********************************************************************/
 
@@ -75,7 +61,7 @@ static NTSTATUS db_allocate_rid(uint32 *rid, int rid_type)
 	
 	/* cannot fail since idmap is only called winbindd */
 	
-	idmap_get_free_rid_range( &lowrid, &highrid );
+	get_free_rid_range( &lowrid, &highrid );
 	
 	tmp_rid = lowrid;
 	
@@ -122,7 +108,7 @@ static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 			}
 
 			/* fetch a new id and increment it */
-			ret = tdb_change_uint32_atomic(idmap_tdb, HWM_USER, &hwm, 1);
+			ret = tdb_change_uint32_atomic(idmap_tdb, HWM_USER, (unsigned int *)&hwm, 1);
 			if (!ret) {
 				DEBUG(0, ("idmap_tdb: Fatal error while fetching a new id\n!"));
 				return NT_STATUS_UNSUCCESSFUL;
@@ -152,7 +138,7 @@ static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 			}
 
 			/* fetch a new id and increment it */
-			ret = tdb_change_uint32_atomic(idmap_tdb, HWM_GROUP, &hwm, 1);
+			ret = tdb_change_uint32_atomic(idmap_tdb, HWM_GROUP, (unsigned int *)&hwm, 1);
 
 			if (!ret) {
 				DEBUG(0, ("idmap_tdb: Fatal error while fetching a new id\n!"));
@@ -648,6 +634,27 @@ static void db_idmap_status(void)
 	}
 
 	/* Display complete mapping of users and groups to rids */
+}
+
+/**********************************************************************
+ Return the TDB_CONTEXT* for winbindd_idmap.  I **really** feel
+ dirty doing this, but not so dirty that I want to create another 
+ tdb
+***********************************************************************/
+
+TDB_CONTEXT *idmap_tdb_handle( void )
+{
+	if ( idmap_tdb )
+		return idmap_tdb;
+		
+	/* go ahead an open it;  db_idmap_init() doesn't use any params 
+	   right now */
+	   
+	db_idmap_init( NULL );
+	if ( idmap_tdb )
+		return idmap_tdb;
+		
+	return NULL;
 }
 
 static struct idmap_methods db_methods = {

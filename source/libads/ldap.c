@@ -1045,7 +1045,7 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 	ads_mod_str(ctx, &mods, "dNSHostName", hostname);
 	ads_mod_str(ctx, &mods, "userAccountControl", controlstr);
 	ads_mod_str(ctx, &mods, "operatingSystem", "Samba");
-	ads_mod_str(ctx, &mods, "operatingSystemVersion", VERSION);
+	ads_mod_str(ctx, &mods, "operatingSystemVersion", SAMBA_VERSION_STRING);
 
 	ret = ads_gen_add(ads, new_dn, mods);
 
@@ -1777,7 +1777,7 @@ ADS_STATUS ads_USN(ADS_STRUCT *ads, uint32 *usn)
 	ADS_STATUS status;
 	void *res;
 
-	status = ads_do_search(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
+	status = ads_do_search_retry(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
 	if (!ADS_ERR_OK(status)) return status;
 
 	if (ads_count_replies(ads, res) != 1) {
@@ -1900,7 +1900,7 @@ ADS_STATUS ads_domain_sid(ADS_STRUCT *ads, DOM_SID *sid)
 	void *res;
 	ADS_STATUS rc;
 
-	rc = ads_do_search(ads, ads->config.bind_path, LDAP_SCOPE_BASE, "(objectclass=*)", 
+	rc = ads_do_search_retry(ads, ads->config.bind_path, LDAP_SCOPE_BASE, "(objectclass=*)", 
 			   attrs, &res);
 	if (!ADS_ERR_OK(rc)) return rc;
 	if (!ads_pull_sid(ads, res, "objectSid", sid)) {

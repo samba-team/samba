@@ -35,6 +35,8 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
         int num_retries = 0;
         struct cli_state *cli;
 	uint32 sec_channel_type;
+	const char *contact_domain_name = NULL;
+	
 	DEBUG(3, ("[%5lu]: check machine account\n", (unsigned long)state->pid));
 
 	/* Get trust account password */
@@ -46,11 +48,21 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
 		goto done;
 	}
 
+
+	/* use the realm name if appropriate and possible */
+	
+	if ( lp_security() == SEC_ADS )
+		contact_domain_name = lp_realm();
+	
+	if ( !contact_domain_name || !*contact_domain_name )
+		contact_domain_name = lp_workgroup();
+		
         /* This call does a cli_nt_setup_creds() which implicitly checks
            the trust account password. */
-
 	/* Don't shut this down - it belongs to the connection cache code */
-        result = cm_get_netlogon_cli(lp_workgroup(), trust_passwd, sec_channel_type, True, &cli);
+	
+        result = cm_get_netlogon_cli(contact_domain_name,
+		trust_passwd, sec_channel_type, True, &cli);
 
         if (!NT_STATUS_IS_OK(result)) {
                 DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
@@ -148,8 +160,13 @@ enum winbindd_result winbindd_show_sequence(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
 	char *extra_data = NULL;
+	const char *which_domain;
 
 	DEBUG(3, ("[%5lu]: show sequence\n", (unsigned long)state->pid));
+
+	/* Ensure null termination */
+	state->request.domain_name[sizeof(state->request.domain_name)-1]='\0';	
+	which_domain = state->request.domain_name;
 
 	extra_data = strdup("");
 
@@ -157,6 +174,13 @@ enum winbindd_result winbindd_show_sequence(struct winbindd_cli_state *state)
 	   if that is ever needed */
 	for (domain = domain_list(); domain; domain = domain->next) {
 		char *s;
+
+		/* if we have a domain name restricting the request and this
+		   one in the list doesn't match, then just bypass the remainder
+		   of the loop */
+
+		if ( *which_domain && !strequal(which_domain, domain->name) )
+			continue;
 
 		domain->methods->sequence_number(domain, &domain->sequence_number);
 		
@@ -194,7 +218,7 @@ enum winbindd_result winbindd_info(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5lu]: request misc info\n", (unsigned long)state->pid));
 
 	state->response.data.info.winbind_separator = *lp_winbind_separator();
-	fstrcpy(state->response.data.info.samba_version, VERSION);
+	fstrcpy(state->response.data.info.samba_version, SAMBA_VERSION_STRING);
 
 	return WINBINDD_OK;
 }

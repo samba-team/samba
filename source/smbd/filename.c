@@ -125,7 +125,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 	 * also trim trailing /'s.
 	 */
 
-	trim_string(name,"/","/");
+	trim_char(name,'/','/');
 
 	/*
 	 * If we trimmed down to a single '\0' character
@@ -164,7 +164,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 		return(True);
 
 	start = name;
-	while (strncmp(start,"./",2) == 0)
+	while (start[0] == '.' && start[1] == '/')
 		start += 2;
 
 	pstrcpy(orig_path, name);

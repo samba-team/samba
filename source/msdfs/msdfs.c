@@ -40,7 +40,7 @@ static BOOL parse_dfs_path(char* pathname, struct dfs_path* pdp)
 
 	ZERO_STRUCTP(pdp);
 
-	trim_string(temp,"\\","\\");
+	trim_char(temp,'\\','\\');
 	DEBUG(10,("temp in parse_dfs_path: .%s. after trimming \\'s\n",temp));
 
 	/* now tokenize */
@@ -87,8 +87,16 @@ static BOOL create_conn_struct( connection_struct *conn, int snum, char *path)
 	conn->connectpath = path;
 	pstring_sub(conn->connectpath , "%S", lp_servicename(snum));
 
+	/* needed for smbd_vfs_init() */
+	
+        if ( (conn->mem_ctx=talloc_init("connection_struct")) == NULL ) {
+                DEBUG(0,("talloc_init(connection_struct) failed!\n"));
+                return False;
+        }
+	
 	if (!smbd_vfs_init(conn)) {
 		DEBUG(0,("create_conn_struct: smbd_vfs_init failed.\n"));
+		talloc_destroy( conn->mem_ctx );
 		return False;
 	}
 	return True;
@@ -267,7 +275,7 @@ static BOOL resolve_dfs_path(char* dfspath, struct dfs_path* dp,
 				char *q;
 				pstring buf;
 				pstrcpy(buf, dfspath);
-				trim_string(buf, NULL, "\\");
+				trim_char(buf, '\0', '\\');
 				for (; consumed_level; consumed_level--) {
 					q = strrchr(buf, '\\');
 					if (q) *q = 0;
@@ -339,6 +347,7 @@ BOOL get_referred_path(char *pathname, struct junction_map* jn,
 	struct connection_struct* conn = &conns;
 	pstring conn_path;
 	int snum;
+	BOOL ret = False;
 
 	BOOL self_referral = False;
 
@@ -381,16 +390,15 @@ BOOL get_referred_path(char *pathname, struct junction_map* jn,
 	if (!lp_msdfs_root(SNUM(conn))) {
 		DEBUG(3,("get_referred_path: .%s. in dfs path %s is not a dfs root.\n",
 			 dp.servicename, pathname));
-		return False;
+		goto out;
 	}
 
 	if (*lp_msdfs_proxy(snum) != '\0') {
 		struct referral* ref;
 		jn->referral_count = 1;
-		if ((ref = (struct referral*) malloc(sizeof(struct referral)))
-		    == NULL) {
+		if ((ref = (struct referral*) malloc(sizeof(struct referral))) == NULL) {
 			DEBUG(0, ("malloc failed for referral\n"));
-			return False;
+			goto out;
 		}
 
 		pstrcpy(ref->alternate_path, lp_msdfs_proxy(snum));
@@ -401,7 +409,8 @@ BOOL get_referred_path(char *pathname, struct junction_map* jn,
 		jn->referral_list = ref;
 		if (consumedcntp)
 			*consumedcntp = strlen(pathname);
-		return True;
+		ret = True;
+		goto out;
 	}
 
 	/* If not remote & not a self referral, return False */
@@ -410,7 +419,7 @@ BOOL get_referred_path(char *pathname, struct junction_map* jn,
 			      self_referralp, consumedcntp)) {
 		if (!*self_referralp) {
 			DEBUG(3,("get_referred_path: No valid referrals for path %s\n", pathname));
-			return False;
+			goto out;
 		}
 	}
 	
@@ -418,10 +427,9 @@ BOOL get_referred_path(char *pathname, struct junction_map* jn,
 	if (*self_referralp) {
 		struct referral* ref;
 		jn->referral_count = 1;
-		if((ref = (struct referral*) malloc(sizeof(struct referral)))
-		   == NULL) {
+		if((ref = (struct referral*) malloc(sizeof(struct referral))) == NULL) {
 			DEBUG(0,("malloc failed for referral\n"));
-			return False;
+			goto out;
 		}
       
 		pstrcpy(ref->alternate_path,pathname);
@@ -431,8 +439,12 @@ BOOL get_referred_path(char *pathname, struct junction_map* jn,
 		if (consumedcntp)
 			*consumedcntp = strlen(pathname);
 	}
-
-	return True;
+	
+	ret = True;
+out:
+	talloc_destroy( conn->mem_ctx );
+	
+	return ret;
 }
 
 static int setup_ver2_dfs_referral(char* pathname, char** ppdata, 
@@ -758,6 +770,7 @@ BOOL create_msdfs_link(struct junction_map* jn, BOOL exists)
  	connection_struct *conn = &conns;
 	int i=0;
 	BOOL insert_comma = False;
+	BOOL ret = False;
 
 	if(!junction_to_local_path(jn, path, sizeof(path), conn))
 		return False;
@@ -767,7 +780,7 @@ BOOL create_msdfs_link(struct junction_map* jn, BOOL exists)
 	for(i=0; i<jn->referral_count; i++) {
 		char* refpath = jn->referral_list[i].alternate_path;
       
-		trim_string(refpath, "\\", "\\");
+		trim_char(refpath, '\\', '\\');
 		if(*refpath == '\0') {
 			if (i == 0)
 				insert_comma = False;
@@ -786,14 +799,20 @@ BOOL create_msdfs_link(struct junction_map* jn, BOOL exists)
 
 	if(exists)
 		if(SMB_VFS_UNLINK(conn,path)!=0)
-			return False;
+			goto out;
 
 	if(SMB_VFS_SYMLINK(conn, msdfs_link, path) < 0) {
 		DEBUG(1,("create_msdfs_link: symlink failed %s -> %s\nError: %s\n", 
 				path, msdfs_link, strerror(errno)));
-		return False;
+		goto out;
 	}
-	return True;
+	
+	
+	ret = True;
+	
+out:
+	talloc_destroy( conn->mem_ctx );
+	return ret;
 }
 
 BOOL remove_msdfs_link(struct junction_map* jn)
@@ -801,14 +820,16 @@ BOOL remove_msdfs_link(struct junction_map* jn)
 	pstring path;
 	connection_struct conns;
  	connection_struct *conn = &conns;
+	BOOL ret = False;
 
-	if(!junction_to_local_path(jn, path, sizeof(path), conn))
-		return False;
-     
-	if(SMB_VFS_UNLINK(conn, path)!=0)
-		return False;
-  
-	return True;
+	if( junction_to_local_path(jn, path, sizeof(path), conn) ) {
+		if( SMB_VFS_UNLINK(conn, path) == 0 )
+			ret = True;
+
+		talloc_destroy( conn->mem_ctx );
+	}
+	
+	return ret;
 }
 
 static BOOL form_junctions(int snum, struct junction_map* jn, int* jn_count)
@@ -821,6 +842,7 @@ static BOOL form_junctions(int snum, struct junction_map* jn, int* jn_count)
 	connection_struct conns;
 	connection_struct *conn = &conns;
 	struct referral *ref = NULL;
+	BOOL ret = False;
  
 	pstrcpy(connect_path,lp_pathname(snum));
 
@@ -846,7 +868,7 @@ static BOOL form_junctions(int snum, struct junction_map* jn, int* jn_count)
 		= (struct referral*) malloc(sizeof(struct referral));
 	if (jn[cnt].referral_list == NULL) {
 		DEBUG(0, ("Malloc failed!\n"));
-		return False;
+		goto out;
 	}
 
 	ref->proximity = 0;
@@ -854,7 +876,8 @@ static BOOL form_junctions(int snum, struct junction_map* jn, int* jn_count)
 	if (*lp_msdfs_proxy(snum) != '\0') {
 		pstrcpy(ref->alternate_path, lp_msdfs_proxy(snum));
 		*jn_count = ++cnt;
-		return True;
+		ret = True;
+		goto out;
 	}
 		
 	slprintf(ref->alternate_path, sizeof(pstring)-1,
@@ -864,7 +887,7 @@ static BOOL form_junctions(int snum, struct junction_map* jn, int* jn_count)
 	/* Now enumerate all dfs links */
 	dirp = SMB_VFS_OPENDIR(conn, connect_path);
 	if(!dirp)
-		return False;
+		goto out;
 
 	while((dname = vfs_readdirname(conn, dirp)) != NULL) {
 		pstring pathreal;
@@ -883,7 +906,9 @@ static BOOL form_junctions(int snum, struct junction_map* jn, int* jn_count)
 	
 	SMB_VFS_CLOSEDIR(conn,dirp);
 	*jn_count = cnt;
-	return True;
+out:
+	talloc_destroy(conn->mem_ctx);
+	return ret;
 }
 
 int enum_msdfs_links(struct junction_map* jn)
@@ -892,9 +917,9 @@ int enum_msdfs_links(struct junction_map* jn)
 	int jn_count = 0;
 
 	if(!lp_host_msdfs())
-		return -1;
+		return 0;
 
-	for(i=0;*lp_servicename(i);i++) {
+	for(i=0;i < lp_numservices();i++) {
 		if(lp_msdfs_root(i)) 
 			form_junctions(i,jn,&jn_count);
 	}

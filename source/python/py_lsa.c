@@ -104,8 +104,7 @@ done:
 		if (cli)
 			cli_shutdown(cli);
 
-		if (mem_ctx)
-			talloc_destroy(mem_ctx);
+		talloc_destroy(mem_ctx);
 	}
 
 	return result;
@@ -141,12 +140,13 @@ static PyObject *lsa_close(PyObject *self, PyObject *args, PyObject *kw)
 
 static PyObject *lsa_lookup_names(PyObject *self, PyObject *args)
 {
-	PyObject *py_names, *result;
+	PyObject *py_names, *result = NULL;
 	NTSTATUS ntstatus;
 	lsa_policy_hnd_object *hnd = (lsa_policy_hnd_object *)self;
 	int num_names, i;
 	const char **names;
 	DOM_SID *sids;
+	TALLOC_CTX *mem_ctx = NULL;
 	uint32 *name_types;
 
 	if (!PyArg_ParseTuple(args, "O", &py_names))
@@ -157,18 +157,22 @@ static PyObject *lsa_lookup_names(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
+	if (!(mem_ctx = talloc_init("lsa_lookup_names"))) {
+		PyErr_SetString(lsa_error, "unable to init talloc context\n");
+		goto done;
+	}
+
 	if (PyList_Check(py_names)) {
 
 		/* Convert list to char ** array */
 
 		num_names = PyList_Size(py_names);
-		names = (const char **)talloc(
-			hnd->mem_ctx, num_names * sizeof(char *));
+		names = (const char **)talloc(mem_ctx, num_names * sizeof(char *));
 		
 		for (i = 0; i < num_names; i++) {
 			PyObject *obj = PyList_GetItem(py_names, i);
 			
-			names[i] = talloc_strdup(hnd->mem_ctx, PyString_AsString(obj));
+			names[i] = talloc_strdup(mem_ctx, PyString_AsString(obj));
 		}
 
 	} else {
@@ -176,17 +180,17 @@ static PyObject *lsa_lookup_names(PyObject *self, PyObject *args)
 		/* Just a single element */
 
 		num_names = 1;
-		names = (const char **)talloc(hnd->mem_ctx, sizeof(char *));
+		names = (const char **)talloc(mem_ctx, sizeof(char *));
 
 		names[0] = PyString_AsString(py_names);
 	}
 
-	ntstatus = cli_lsa_lookup_names(hnd->cli, hnd->mem_ctx, &hnd->pol,
+	ntstatus = cli_lsa_lookup_names(hnd->cli, mem_ctx, &hnd->pol,
 					num_names, names, &sids, &name_types);
 
 	if (!NT_STATUS_IS_OK(ntstatus) && NT_STATUS_V(ntstatus) != 0x107) {
 		PyErr_SetObject(lsa_ntstatus, py_ntstatus_tuple(ntstatus));
-		return NULL;
+		goto done;
 	}
 
 	result = PyList_New(num_names);
@@ -196,10 +200,13 @@ static PyObject *lsa_lookup_names(PyObject *self, PyObject *args)
 
 		py_from_SID(&sid_obj, &sids[i]);
 
-		obj = Py_BuildValue("(Oi)", sid_obj, name_types[i]);
+		obj = Py_BuildValue("(Ni)", sid_obj, name_types[i]);
 
 		PyList_SetItem(result, i, obj);
 	}
+
+ done:
+	talloc_destroy(mem_ctx);
 	
 	return result;
 }
@@ -207,7 +214,7 @@ static PyObject *lsa_lookup_names(PyObject *self, PyObject *args)
 static PyObject *lsa_lookup_sids(PyObject *self, PyObject *args, 
 				 PyObject *kw) 
 {
-	PyObject *py_sids, *result;
+	PyObject *py_sids, *result = NULL;
 	NTSTATUS ntstatus;
 	int num_sids, i;
 	char **domains, **names;
@@ -224,7 +231,7 @@ static PyObject *lsa_lookup_sids(PyObject *self, PyObject *args,
 		return NULL;
 	}
 
-	if (!(mem_ctx = talloc_init("lsa_open_policy"))) {
+	if (!(mem_ctx = talloc_init("lsa_lookup_sids"))) {
 		PyErr_SetString(lsa_error, "unable to init talloc context\n");
 		goto done;
 	}
@@ -243,7 +250,6 @@ static PyObject *lsa_lookup_sids(PyObject *self, PyObject *args,
 			
 			if (!string_to_sid(&sids[i], PyString_AsString(obj))) {
 				PyErr_SetString(PyExc_ValueError, "string_to_sid failed");
-				result = NULL;
 				goto done;
 			}
 		}
@@ -257,7 +263,6 @@ static PyObject *lsa_lookup_sids(PyObject *self, PyObject *args,
 
 		if (!string_to_sid(&sids[0], PyString_AsString(py_sids))) {
 			PyErr_SetString(PyExc_ValueError, "string_to_sid failed");
-			result = NULL;
 			goto done;
 		}
 	}
@@ -268,7 +273,6 @@ static PyObject *lsa_lookup_sids(PyObject *self, PyObject *args,
 
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		PyErr_SetObject(lsa_ntstatus, py_ntstatus_tuple(ntstatus));
-		result = NULL;
 		goto done;
 	}
 
@@ -285,8 +289,7 @@ static PyObject *lsa_lookup_sids(PyObject *self, PyObject *args,
 	}
 
  done:
-	if (mem_ctx)
-		talloc_destroy(mem_ctx);
+	talloc_destroy(mem_ctx);
 
 	return result;
 }
@@ -404,7 +407,7 @@ static PyMethodDef lsa_methods[] = {
 "\n"
 "Example:\n"
 "\n"
-">>> spoolss.setup_logging(interactive = 1)" },
+">>> lsa.setup_logging(interactive = 1)" },
 
 	{ "get_debuglevel", (PyCFunction)get_debuglevel, 
 	  METH_VARARGS, 
@@ -412,7 +415,7 @@ static PyMethodDef lsa_methods[] = {
 "\n"
 "Example:\n"
 "\n"
-">>> spoolss.get_debuglevel()\n"
+">>> lsa.get_debuglevel()\n"
 "0" },
 
 	{ "set_debuglevel", (PyCFunction)set_debuglevel, 
@@ -421,7 +424,7 @@ static PyMethodDef lsa_methods[] = {
 "\n"
 "Example:\n"
 "\n"
-">>> spoolss.set_debuglevel(10)" },
+">>> lsa.set_debuglevel(10)" },
 
 	{ NULL }
 };

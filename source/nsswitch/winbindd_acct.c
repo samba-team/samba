@@ -70,18 +70,13 @@ static BOOL winbindd_accountdb_init(void)
 	
 	if ( account_tdb )
 		return True;
-		
-	/* Nope.  Try to open it */
 
-	if (!(account_tdb = tdb_open_log(lock_path("winbindd_idmap.tdb"), 0, 
-		TDB_DEFAULT, O_RDWR | O_CREAT, 0600))) 
-	{
-		/* last chance -- maybe idmap has already opened it */
-		if ( !(account_tdb = idmap_tdb_handle()) ) {
+	/* winbindd_idmap.tdb should always be opened by the idmap_init()
+	   code first */
 
-			DEBUG(0, ("winbindd_idmap_init: Unable to open idmap database\n"));
-			return False;
-		}
+	if ( !(account_tdb = idmap_tdb_handle()) ) {
+		DEBUG(0, ("winbindd_accountdb_init: Unable to retreive handle for database\n"));
+		return False;
 	}
 	
 	/* yeah! */

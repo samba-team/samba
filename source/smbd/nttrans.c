@@ -762,9 +762,8 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 		restore_case_semantics(file_attributes);
 
 		if(!fsp) {
-			set_bad_path_error(errno, bad_path);
 			END_PROFILE(SMBntcreateX);
-			return(UNIXERROR(ERRDOS,ERRnoaccess));
+			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 		}
 	} else {
 		/*
@@ -838,16 +837,14 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 				
 				if(!fsp) {
 					restore_case_semantics(file_attributes);
-					set_bad_path_error(errno, bad_path);
 					END_PROFILE(SMBntcreateX);
-					return(UNIXERROR(ERRDOS,ERRnoaccess));
+					return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 				}
 			} else {
 
 				restore_case_semantics(file_attributes);
-				set_bad_path_error(errno, bad_path);
 				END_PROFILE(SMBntcreateX);
-				return(UNIXERROR(ERRDOS,ERRnoaccess));
+				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 			}
 		} 
 	}
@@ -1279,8 +1276,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 
 		if(!fsp) {
 			restore_case_semantics(file_attributes);
-			set_bad_path_error(errno, bad_path);
-			return(UNIXERROR(ERRDOS,ERRnoaccess));
+			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 		}
 
 	} else {
@@ -1312,13 +1308,11 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 				
 				if(!fsp) {
 					restore_case_semantics(file_attributes);
-					set_bad_path_error(errno, bad_path);
-					return(UNIXERROR(ERRDOS,ERRnoaccess));
+					return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 				}
 			} else {
 				restore_case_semantics(file_attributes);
-				set_bad_path_error(errno, bad_path);
-				return(UNIXERROR(ERRDOS,ERRnoaccess));
+				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 			}
 		} 
   
@@ -1724,7 +1718,11 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 				  char **ppparams, uint32 parameter_count,
 				  char **ppdata, uint32 data_count)
 {
-	unsigned fnum, control;
+	uint32 function;
+	uint16 fidnum;
+	files_struct *fsp;
+	uint8 isFSctl;
+	uint8 compfilter;
 	static BOOL logged_message;
 	char *pdata = *ppdata;
 
@@ -1733,19 +1731,26 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
 	}
 
-	fnum = SVAL(*ppsetup, 4);
-	control = IVAL(*ppsetup, 0);
+	function = IVAL(*ppsetup, 0);
+	fidnum = SVAL(*ppsetup, 4);
+	isFSctl = CVAL(*ppsetup, 6);
+	compfilter = CVAL(*ppsetup, 7);
 
-	DEBUG(10,("call_nt_transact_ioctl: fnum=%d control=0x%08x\n", 
-		 fnum, control));
+	DEBUG(10,("call_nt_transact_ioctl: function[0x%08X] FID[0x%04X] isFSctl[0x%02X] compfilter[0x%02X]\n", 
+		 function, fidnum, isFSctl, compfilter));
 
-	switch (control) {
+	fsp=file_fsp(*ppsetup, 4);
+	/* this check is done in each implemented function case for now
+	   because I don't want to break anything... --metze
+	FSP_BELONGS_CONN(fsp,conn);*/
+
+	switch (function) {
 	case FSCTL_SET_SPARSE:
 		/* pretend this succeeded - tho strictly we should
 		   mark the file sparse (if the local fs supports it)
 		   so we can know if we need to pre-allocate or not */
 
-		DEBUG(10,("FSCTL_SET_SPARSE: fnum=%d control=0x%08x\n",fnum,control));
+		DEBUG(10,("FSCTL_SET_SPARSE: called on FID[0x%04X](but not implemented)\n", fidnum));
 		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL, 0);
 		return -1;
 	
@@ -1754,7 +1759,7 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		   but works ok like this --metze
 		 */
 
-		DEBUG(10,("FSCTL_GET_REPARSE_POINT: fnum=%d control=0x%08x\n",fnum,control));
+		DEBUG(10,("FSCTL_0x000900C0: called on FID[0x%04X](but not implemented)\n",fidnum));
 		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL, 0);
 		return -1;
 
@@ -1763,7 +1768,7 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		 * --metze
 		 */
 
-		DEBUG(10,("FSCTL_GET_REPARSE_POINT: fnum=%d control=0x%08x\n",fnum,control));
+		DEBUG(10,("FSCTL_GET_REPARSE_POINT: called on FID[0x%04X](but not implemented)\n",fidnum));
 		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_NOT_A_REPARSE_POINT, NULL, 0, NULL, 0);
 		return -1;
 
@@ -1772,10 +1777,125 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		 * --metze
 		 */
 
-		DEBUG(10,("FSCTL_SET_REPARSE_POINT: fnum=%d control=0x%08x\n",fnum,control));
+		DEBUG(10,("FSCTL_SET_REPARSE_POINT: called on FID[0x%04X](but not implemented)\n",fidnum));
 		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_NOT_A_REPARSE_POINT, NULL, 0, NULL, 0);
 		return -1;
 			
+	case FSCTL_GET_SHADOW_COPY_DATA: /* don't know if this name is right...*/
+	{
+		/*
+		 * This is called to retrieve the number of Shadow Copies (a.k.a. snapshots)
+		 * and return their volume names.  If max_data_count is 16, then it is just
+		 * asking for the number of volumes and length of the combined names.
+		 *
+		 * pdata is the data allocated by our caller, but that uses
+		 * total_data_count (which is 0 in our case) rather than max_data_count.
+		 * Allocate the correct amount and return the pointer to let
+		 * it be deallocated when we return.
+		 */
+		uint32 max_data_count = IVAL(inbuf,smb_nt_MaxDataCount);
+		SHADOW_COPY_DATA *shadow_data = NULL;
+		TALLOC_CTX *shadow_mem_ctx = NULL;
+		BOOL labels = False;
+		uint32 labels_data_count = 0;
+		uint32 i;
+		char *cur_pdata;
+
+		FSP_BELONGS_CONN(fsp,conn);
+
+		if (max_data_count < 16) {
+			DEBUG(0,("FSCTL_GET_SHADOW_COPY_DATA: max_data_count(%u) < 16 is invalid!\n",
+				max_data_count));
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+
+		if (max_data_count > 16) {
+			labels = True;
+		}
+
+		shadow_mem_ctx = talloc_init("SHADOW_COPY_DATA");
+		if (shadow_mem_ctx == NULL) {
+			DEBUG(0,("talloc_init(SHADOW_COPY_DATA) failed!\n"));
+			return ERROR_NT(NT_STATUS_NO_MEMORY);
+		}
+
+		shadow_data = (SHADOW_COPY_DATA *)talloc_zero(shadow_mem_ctx,sizeof(SHADOW_COPY_DATA));
+		if (shadow_data == NULL) {
+			DEBUG(0,("talloc_zero() failed!\n"));
+			return ERROR_NT(NT_STATUS_NO_MEMORY);
+		}
+		
+		shadow_data->mem_ctx = shadow_mem_ctx;
+		
+		/*
+		 * Call the VFS routine to actually do the work.
+		 */
+		if (SMB_VFS_GET_SHADOW_COPY_DATA(fsp, shadow_data, labels)!=0) {
+			talloc_destroy(shadow_data->mem_ctx);
+			if (errno == ENOSYS) {
+				DEBUG(5,("FSCTL_GET_SHADOW_COPY_DATA: connectpath %s, not supported.\n", 
+					conn->connectpath));
+				return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+			} else {
+				DEBUG(0,("FSCTL_GET_SHADOW_COPY_DATA: connectpath %s, failed.\n", 
+					conn->connectpath));
+				return ERROR_NT(NT_STATUS_UNSUCCESSFUL);			
+			}
+		}
+
+		labels_data_count = (shadow_data->num_volumes*2*sizeof(SHADOW_COPY_LABEL))+2;
+
+		if (!labels) {
+			data_count = 16;
+		} else {
+			data_count = 12+labels_data_count+4;
+		}
+
+		if (max_data_count<data_count) {
+			DEBUG(0,("FSCTL_GET_SHADOW_COPY_DATA: max_data_count(%u) too small (%u) bytes needed!\n",
+				max_data_count,data_count));
+			talloc_destroy(shadow_data->mem_ctx);
+			return ERROR_NT(NT_STATUS_BUFFER_TOO_SMALL);
+		}
+
+		pdata = nttrans_realloc(ppdata, data_count);
+		if (pdata == NULL) {
+			talloc_destroy(shadow_data->mem_ctx);
+			return ERROR_NT(NT_STATUS_NO_MEMORY);
+		}		
+
+		cur_pdata = pdata;
+
+		/* num_volumes 4 bytes */
+		SIVAL(pdata,0,shadow_data->num_volumes);
+
+		if (labels) {
+			/* num_labels 4 bytes */
+			SIVAL(pdata,4,shadow_data->num_volumes);
+		}
+
+		/* needed_data_count 4 bytes */
+		SIVAL(pdata,8,labels_data_count);
+
+		cur_pdata+=12;
+
+		DEBUG(10,("FSCTL_GET_SHADOW_COPY_DATA: %u volumes for path[%s].\n",
+			shadow_data->num_volumes,fsp->fsp_name));
+		if (labels && shadow_data->labels) {
+			for (i=0;i<shadow_data->num_volumes;i++) {
+				srvstr_push(outbuf, cur_pdata, shadow_data->labels[i], 2*sizeof(SHADOW_COPY_LABEL), STR_UNICODE|STR_TERMINATE);
+				cur_pdata+=2*sizeof(SHADOW_COPY_LABEL);
+				DEBUGADD(10,("Label[%u]: '%s'\n",i,shadow_data->labels[i]));
+			}
+		}
+
+		talloc_destroy(shadow_data->mem_ctx);
+
+		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0, pdata, data_count);
+
+		return -1;
+        }
+        
 	case FSCTL_FIND_FILES_BY_SID: /* I hope this name is right */
 	{
 		/* pretend this succeeded - 
@@ -1783,24 +1903,24 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		 * we have to send back a list with all files owned by this SID
 		 *
 		 * but I have to check that --metze
-		 */ 
-		   
+		 */
 		DOM_SID sid;
 		uid_t uid;
-		size_t sid_len=SID_MAX_SIZE;
+		size_t sid_len = MIN(data_count-4,SID_MAX_SIZE);
 		
-		DEBUG(10,("FSCTL_FIND_FILES_BY_SID: fnum=%d control=0x%08x\n",fnum,control));
-		
-		/* this is not the length of the sid :-( so unknown 4 bytes */
-		/*sid_len = IVAL(pdata,0);	
-		DEBUGADD(0,("sid_len: (%u)\n",sid_len));*/
+		DEBUG(10,("FSCTL_FIND_FILES_BY_SID: called on FID[0x%04X]\n",fidnum));
+
+		FSP_BELONGS_CONN(fsp,conn);
+
+		/* unknown 4 bytes: this is not the length of the sid :-(  */
+		/*unknown = IVAL(pdata,0);*/
 		
 		sid_parse(pdata+4,sid_len,&sid);
-		DEBUGADD(10,("SID: %s\n",sid_string_static(&sid)));
+		DEBUGADD(10,("for SID: %s\n",sid_string_static(&sid)));
 
 		if (!NT_STATUS_IS_OK(sid_to_uid(&sid, &uid))) {
-			DEBUG(0,("sid_to_uid: failed, sid[%s]\n",
-				sid_string_static(&sid)));
+			DEBUG(0,("sid_to_uid: failed, sid[%s] sid_len[%u]\n",
+				sid_string_static(&sid),sid_len));
 			uid = (-1);
 		}
 		
@@ -1813,6 +1933,7 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		 * for each file
 		 *
 		 * but I don't know how to deal with the paged results
+		 * (maybe we can hang the result anywhere in the fsp struct)
 		 *
 		 * we don't send all files at once
 		 * and at the next we should *not* start from the beginning, 
@@ -1829,7 +1950,7 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		if (!logged_message) {
 			logged_message = True; /* Only print this once... */
 			DEBUG(0,("call_nt_transact_ioctl(0x%x): Currently not implemented.\n",
-				 control));
+				 function));
 		}
 	}
 

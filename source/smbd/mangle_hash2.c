@@ -201,22 +201,24 @@ static const char *cache_lookup(u32 hash)
    In this algorithm, mangled names use only pure ascii characters (no
    multi-byte) so we can avoid doing a UCS2 conversion 
  */
-static BOOL is_mangled_component(const char *name)
+static BOOL is_mangled_component(const char *name, size_t len)
 {
-	unsigned int len, i;
+	unsigned int i;
 
-	M_DEBUG(10,("is_mangled_component %s ?\n", name));
+	M_DEBUG(10,("is_mangled_component %s (len %u) ?\n", name, (unsigned int)len));
 
 	/* check the length */
-	len = strlen(name);
-	if (len > 12 || len < 8) return False;
+	if (len > 12 || len < 8)
+		return False;
 
 	/* the best distinguishing characteristic is the ~ */
-	if (name[6] != '~') return False;
+	if (name[6] != '~')
+		return False;
 
 	/* check extension */
 	if (len > 8) {
-		if (name[8] != '.') return False;
+		if (name[8] != '.')
+			return False;
 		for (i=9; name[i]; i++) {
 			if (! FLAG_CHECK(name[i], FLAG_ASCII)) {
 				return False;
@@ -241,7 +243,7 @@ static BOOL is_mangled_component(const char *name)
 		}
 	}
 
-	M_DEBUG(10,("is_mangled %s -> yes\n", name));
+	M_DEBUG(10,("is_mangled_component %s (len %u) -> yes\n", name, (unsigned int)len));
 
 	return True;
 }
@@ -267,16 +269,13 @@ static BOOL is_mangled(const char *name)
 	M_DEBUG(10,("is_mangled %s ?\n", name));
 
 	for (s=name; (p=strchr(s, '/')); s=p+1) {
-		char *component = strndup(s, PTR_DIFF(p, s));
-		if (is_mangled_component(component)) {
-			free(component);
+		if (is_mangled_component(s, PTR_DIFF(p, s))) {
 			return True;
 		}
-		free(component);
 	}
 	
 	/* and the last part ... */
-	return is_mangled_component(s);
+	return is_mangled_component(s,strlen(s));
 }
 
 
@@ -305,7 +304,8 @@ static BOOL is_8_3(const char *name, BOOL check_case, BOOL allow_wildcards)
 	 the result we need in this case. Using strlen_m would not
 	 only be slower, it would be incorrect */
 	len = strlen(name);
-	if (len > 12) return False;
+	if (len > 12)
+		return False;
 
 	/* find the '.'. Note that once again we use the non-multibyte
            function */
@@ -449,6 +449,27 @@ static BOOL is_legal_name(const char *name)
 	size_t numdots = 0;
 
 	while (*name) {
+		if (((unsigned int)name[0]) > 128 && (name[1] != 0)) {
+			/* Possible start of mb character. */
+			char mbc[2];
+			/*
+			 * We know the following will return 2 bytes. What
+			 * we need to know was if errno was set.
+			 * Note that if CH_UNIX is utf8 a string may be 3
+			 * bytes, but this is ok as mb utf8 characters don't
+			 * contain embedded ascii bytes. We are really checking
+			 * for mb UNIX asian characters like Japanese (SJIS) here.
+			 * JRA.
+			 */
+			errno = 0;
+			convert_string(CH_UNIX, CH_UCS2, name, 2, mbc, 2);
+			if (!errno) {
+				/* Was a good mb string. */
+				name += 2;
+				continue;
+			}
+		}
+
 		if (FLAG_CHECK(name[0], FLAG_ILLEGAL)) {
 			return False;
 		}

@@ -48,6 +48,15 @@ BOOL global_machine_password_needs_changing = False;
 extern int max_send;
 
 /****************************************************************************
+ Function to return the current request mid from Inbuffer.
+****************************************************************************/
+
+uint16 get_current_mid(void)
+{
+	return SVAL(InBuffer,smb_mid);
+}
+
+/****************************************************************************
  structure to hold a linked list of queued messages.
  for processing.
 ****************************************************************************/
@@ -88,7 +97,7 @@ static BOOL push_message(ubi_slList *list_head, char *buf, int msg_len)
 	ubi_slAddTail( list_head, msg);
 
 	/* Push the MID of this packet on the signing queue. */
-	srv_defer_sign_response(SVAL(buf,smb_mid));
+	srv_defer_sign_response(SVAL(buf,smb_mid), True);
 
 	return True;
 }
@@ -710,7 +719,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 			if(session_tag != UID_FIELD_INVALID)
 				vuser = get_valid_user_struct(session_tag);           
 			if(vuser != NULL)
-				current_user_info = vuser->user;
+				set_current_user_info(&vuser->user);
 		}
 
 		/* does this protocol need to be run as root? */
@@ -1256,8 +1265,10 @@ void smbd_process(void)
 	if ((InBuffer == NULL) || (OutBuffer == NULL)) 
 		return;
 
+#if defined(DEVELOPER)
 	clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, InBuffer, total_buffer_size);
 	clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, OutBuffer, total_buffer_size);
+#endif
 
 	max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 
@@ -1286,7 +1297,9 @@ void smbd_process(void)
 			num_smbs = 0; /* Reset smb counter. */
 		}
 
+#if defined(DEVELOPER)
 		clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, InBuffer, total_buffer_size);
+#endif
 
 		while (!receive_message_or_smb(InBuffer,BUFFER_SIZE+LARGE_WRITEX_HDR_SIZE,select_timeout)) {
 			if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))

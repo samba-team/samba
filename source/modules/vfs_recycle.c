@@ -336,7 +336,7 @@ static int recycle_unlink(vfs_handle_struct *handle, connection_struct *conn, co
 	repository = alloc_sub_conn(conn, recycle_repository(handle));
 	ALLOC_CHECK(repository, done);
 	/* shouldn't we allow absolute path names here? --metze */
-	trim_string(repository, "/", "/");
+	trim_char(repository, '/', '/');
 	
 	if(!repository || *(repository) == '\0') {
 		DEBUG(3, ("recycle: repository path not set, purging %s...\n", file_name));
@@ -455,7 +455,8 @@ static int recycle_unlink(vfs_handle_struct *handle, connection_struct *conn, co
 	/* rename file we move to recycle bin */
 	i = 1;
 	while (recycle_file_exist(handle, final_name)) {
-		snprintf(final_name, PATH_MAX -1, "%s/Copy #%d of %s", temp_name, i++, base);
+		SAFE_FREE(final_name);
+		asprintf(&final_name, "%s/Copy #%d of %s", temp_name, i++, base);
 	}
 
 	DEBUG(10, ("recycle: Moving %s to %s\n", file_name, final_name));

@@ -252,11 +252,21 @@ static int net_groupmap_add(int argc, const char **argv)
 		}
 	}
 
-	if ( !unixgrp[0] || (!rid && !string_sid[0]) ) {
+	if ( !unixgrp[0] ) {
 		d_printf("Usage: net groupmap add {rid=<int>|sid=<string>} unixgroup=<string> [type=<domain|local|builtin>] [ntgroup=<string>] [comment=<string>]\n");
 		return -1;
 	}
 	
+	if ( (gid = nametogid(unixgrp)) == (gid_t)-1 ) {
+		d_printf("Can't lookup UNIX group %s\n", ntgroup);
+		return -1;
+	}
+	
+	if ( (rid == 0) && (string_sid[0] == '\0') ) {
+		d_printf("No rid or sid specified, choosing algorithmic mapping\n");
+		rid = pdb_gid_to_group_rid(gid);
+	}
+
 	/* append the rid to our own domain/machine SID if we don't have a full SID */
 	if ( !string_sid[0] ) {
 		sid_copy(&sid, get_global_sam_sid());
@@ -267,11 +277,6 @@ static int net_groupmap_add(int argc, const char **argv)
 	if (ntcomment[0])
 		fstrcpy(ntcomment, "Local Unix group");
 		
-	if ( (gid = nametogid(unixgrp)) == (gid_t)-1 ) {
-		d_printf("Can't lookup UNIX group %s\n", ntgroup);
-		return -1;
-	}
-	
 	if ( !ntgroup[0] )
 		fstrcpy( ntgroup, unixgrp );
 		

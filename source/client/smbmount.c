@@ -428,7 +428,7 @@ static void send_fs_socket(char *the_service, char *mount_point, struct cli_stat
  **/
 static void init_mount(void)
 {
-	char mount_point[MAXPATHLEN+1];
+	char mount_point[PATH_MAX+1];
 	pstring tmp;
 	pstring svc2;
 	struct cli_state *c;
@@ -663,7 +663,7 @@ static void usage(void)
 {
 	printf("Usage: mount.smbfs service mountpoint [-o options,...]\n");
 
-	printf("Version %s\n\n",VERSION);
+	printf("Version %s\n\n",SAMBA_VERSION_STRING);
 
 	printf(
 "Options:\n\
@@ -923,7 +923,7 @@ static void parse_mount_smb(int argc, char **argv)
 		read_credentials_file(credentials);
 	}
 
-	DEBUG(3,("mount.smbfs started (version %s)\n", VERSION));
+	DEBUG(3,("mount.smbfs started (version %s)\n", SAMBA_VERSION_STRING));
 
 	if (*workgroup == 0) {
 		pstrcpy(workgroup,lp_workgroup());

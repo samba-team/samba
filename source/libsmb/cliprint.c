@@ -55,7 +55,7 @@ int cli_print_queue(struct cli_state *cli,
 	char *rparam = NULL;
 	char *rdata = NULL;
 	char *p;
-	int rdrcnt, rprcnt;
+	unsigned int rdrcnt, rprcnt;
 	pstring param;
 	int result_code=0;
 	int i = -1;
@@ -125,7 +125,8 @@ int cli_printjob_del(struct cli_state *cli, int job)
 	char *rparam = NULL;
 	char *rdata = NULL;
 	char *p;
-	int rdrcnt,rprcnt, ret = -1;
+	unsigned int rdrcnt,rprcnt;
+	int ret = -1;
 	pstring param;
 
 	memset(param,'\0',sizeof(param));

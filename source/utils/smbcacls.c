@@ -751,7 +751,7 @@ static struct cli_state *connect_one(const char *share)
 		POPT_AUTOHELP
 		{ "delete", 'D', POPT_ARG_STRING, NULL, 'D', "Delete an acl", "ACL" },
 		{ "modify", 'M', POPT_ARG_STRING, NULL, 'M', "Modify an acl", "ACL" },
-		{ "add", 'A', POPT_ARG_STRING, NULL, 'A', "Add an acl", "ACL" },
+		{ "add", 'a', POPT_ARG_STRING, NULL, 'a', "Add an acl", "ACL" },
 		{ "set", 'S', POPT_ARG_STRING, NULL, 'S', "Set acls", "ACLS" },
 		{ "chown", 'C', POPT_ARG_STRING, NULL, 'C', "Change ownership of a file", "USERNAME" },
 		{ "chgrp", 'G', POPT_ARG_STRING, NULL, 'G', "Change group ownership of a file", "GROUPNAME" },
@@ -796,7 +796,7 @@ static struct cli_state *connect_one(const char *share)
 			mode = SMB_ACL_MODIFY;
 			break;
 
-		case 'A':
+		case 'a':
 			the_acl = smb_xstrdup(poptGetOptArg(pc));
 			mode = SMB_ACL_ADD;
 			break;

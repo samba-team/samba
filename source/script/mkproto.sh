@@ -25,7 +25,7 @@ header="$1"
 shift
 headertmp="$header.$$.tmp~"
 
-proto_src="`echo $@ | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort | uniq | egrep -v 'ubiqx/|wrapped'`"
+proto_src="`echo $@ | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort | uniq | egrep -v 'ubiqx/|wrapped|modules/getdate'`"
 
 echo creating $header
 

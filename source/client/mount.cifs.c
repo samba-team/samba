@@ -32,6 +32,15 @@ static char * user_name = NULL;
 char * mountpassword = NULL;
 
 
+/* BB finish BB
+
+        cifs_umount
+        open nofollow - avoid symlink exposure? 
+        get owner of dir see if matches self or if root
+        call system(umount argv) etc.
+                
+BB end finish BB */
+
 void mount_cifs_usage()
 {
 	printf("\nUsage:  %s remotetarget dir\n", thisprogram);
@@ -155,17 +164,36 @@ int parse_options(char * options)
 		if (value && *value) {
 			got_gid = 1;
 		}
-	} /* else if (strnicmp(data, "file_mode", 4) == 0) {
-		if (value && *value) {
-			vol->file_mode =
-				simple_strtoul(value, &value, 0);
+       /* fmask and dmask synonyms for people used to smbfs syntax */
+	} else if (strcmp(data, "file_mode") == 0 || strcmp(data, "fmask")==0) {
+		if (!value || !*value) {
+			printf ("Option '%s' requires a numerical argument\n", data);
+			return 1;
 		}
-	} else if (strnicmp(data, "dir_mode", 3) == 0) {
-		if (value && *value) {
-			vol->dir_mode =
-				simple_strtoul(value, &value, 0);
+
+		if (value[0] != '0') {
+			printf ("WARNING: '%s' not expressed in octal.\n", data);
 		}
-	} else if (strnicmp(data, "port", 4) == 0) {
+
+		if (strcmp (data, "fmask") == 0) {
+			printf ("WARNING: CIFS mount option 'fmask' is deprecated. Use 'file_mode' instead.\n");
+			data = "file_mode";
+                }
+        } else if (strcmp(data, "dir_mode") == 0 || strcmp(data, "dmask")==0) {
+                if (!value || !*value) {
+                        printf ("Option '%s' requires a numerical argument\n", data);
+                        return 1;
+                }
+
+                if (value[0] != '0') {
+                        printf ("WARNING: '%s' not expressed in octal.\n", data);
+                }
+
+                if (strcmp (data, "dmask") == 0) {
+                        printf ("WARNING: CIFS mount option 'dmask' is deprecated. Use 'dir_mode' instead.\n");
+                        data = "dir_mode";
+                }
+	} /* else if (strnicmp(data, "port", 4) == 0) {
 		if (value && *value) {
 			vol->port =
 				simple_strtoul(value, &value, 0);
@@ -446,18 +474,28 @@ int main(int argc, char ** argv)
 
 	/* canonicalize the path in argv[1]? */
 
+	/* BB save off path and pop after mount returns */
+	if(chdir(mountpoint)) {
+		printf("mount error: can not change directory into mount target %s\n",mountpoint);
+	}
+
 	if(stat (mountpoint, &statbuf)) {
 		printf("mount error: mount point %s does not exist\n",mountpoint);
 		return -1;
 	}
+
 	if (S_ISDIR(statbuf.st_mode) == 0) {
 		printf("mount error: mount point %s is not a directory\n",mountpoint);
 		return -1;
 	}
 
-	if(geteuid()) {
-		printf("mount error: permission denied, not superuser and cifs.mount not installed SUID\n"); 
-		return -1;
+	if((getuid() != 0) && (geteuid() == 0)) {
+		if((statbuf.st_uid == getuid()) && (S_IRWXU == statbuf.st_mode & S_IRWXU)) {
+			printf("setuid mount allowed\n");
+		} else {
+			printf("mount error: permission denied, not superuser and cifs.mount not installed SUID\n"); 
+			return -1;
+		}
 	}
 
 	ipaddr = parse_server(share_name);

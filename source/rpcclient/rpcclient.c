@@ -40,7 +40,7 @@ static struct cmd_list {
 /****************************************************************************
 handle completion of commands for readline
 ****************************************************************************/
-static char **completion_fn(char *text, int start, int end)
+static char **completion_fn(const char *text, int start, int end)
 {
 #define MAX_COMPLETIONS 100
 	char **matches;
@@ -361,7 +361,7 @@ static NTSTATUS cmd_schannel(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	static uchar zeros[16];
 
 	if (argc == 2) {
-		strhex_to_str(cli->auth_info.sess_key,
+		strhex_to_str((char *)cli->auth_info.sess_key,
 			      strlen(argv[1]), 
 			      argv[1]);
 		memcpy(cli->sess_key, cli->auth_info.sess_key, sizeof(cli->sess_key));
@@ -522,6 +522,8 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 	/* some of the DsXXX commands use the netlogon pipe */
 
 	if (lp_client_schannel() && (cmd_entry->pipe_idx == PI_NETLOGON) && !(cli->pipe_auth_flags & AUTH_PIPE_NETSEC)) {
+		/* The 7 here seems to be required to get Win2k not to downgrade us
+		   to NT4.  Actually, anything other than 1ff would seem to do... */
 		uint32 neg_flags = 0x000001ff;
 		uint32 sec_channel_type;
 	
@@ -725,8 +727,10 @@ out_free:
 	nt_status = cli_full_connection(&cli, global_myname(), server, 
 					opt_ipaddr ? &server_ip : NULL, 0,
 					"IPC$", "IPC",  
-					cmdline_auth_info.username, lp_workgroup(),
-					cmdline_auth_info.password, 0,
+					cmdline_auth_info.username, 
+					lp_workgroup(),
+					cmdline_auth_info.password, 
+					cmdline_auth_info.use_kerberos ? CLI_FULL_CONNECTION_USE_KERBEROS : 0,
 					cmdline_auth_info.signing_state,NULL);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {

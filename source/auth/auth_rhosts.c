@@ -40,7 +40,7 @@ static BOOL check_user_equiv(const char *user, const char *remote, const char *e
   if (! lines) return False;
   for (i=0; lines[i]; i++) {
     char *buf = lines[i];
-    trim_string(buf," "," ");
+    trim_char(buf,' ',' ');
 
     if (buf[0] != '#' && buf[0] != '\n') 
     {

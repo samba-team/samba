@@ -93,7 +93,7 @@ static const struct {
 	{SID_NAME_UNKNOWN, "UNKNOWN"},
 	{SID_NAME_COMPUTER, "Computer"},
 
- 	{0, NULL}
+ 	{(enum SID_NAME_USE)0, NULL}
 };
 
 const char *sid_type_lookup(uint32 sid_type) 

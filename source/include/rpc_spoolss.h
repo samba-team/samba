@@ -1302,6 +1302,12 @@ typedef struct s_port_info_2
 }
 PORT_INFO_2;
 
+/* Port Type bits */
+#define PORT_TYPE_WRITE         0x0001
+#define PORT_TYPE_READ          0x0002
+#define PORT_TYPE_REDIRECTED    0x0004
+#define PORT_TYPE_NET_ATTACHED  0x0008
+
 typedef struct spool_q_enumports
 {
 	uint32 name_ptr;

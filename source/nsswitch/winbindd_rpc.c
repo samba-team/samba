@@ -295,7 +295,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 
 	if (NT_STATUS_IS_OK(result)) {
 		sid_copy(sid, &sids[0]);
-		*type = types[0];
+		*type = (enum SID_NAME_USE)types[0];
 	}
 
 	return result;
@@ -331,7 +331,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 			hnd && hnd->cli && hnd->cli->fd == -1);
 
 	if (NT_STATUS_IS_OK(result)) {
-		*type = types[0];
+		*type = (enum SID_NAME_USE)types[0];
 		*name = names[0];
 		DEBUG(5,("Mapped sid to [%s]\\[%s]\n", domains[0], *name));
 

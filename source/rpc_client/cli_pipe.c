@@ -264,7 +264,7 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
 			DATA_BLOB ntlmssp_verf = data_blob(NULL, auth_len);
 			
 			/* save the reply away, for use a little later */
-			prs_copy_data_out(ntlmssp_verf.data, &auth_verf, auth_len);
+			prs_copy_data_out((char *)ntlmssp_verf.data, &auth_verf, auth_len);
 
 
 			return (NT_STATUS_IS_OK(ntlmssp_client_store_response(cli->ntlmssp_pipe_state, 
@@ -287,7 +287,7 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
 				return False;
 			}
 			sig = data_blob(NULL, auth_len);
-			prs_copy_data_out(sig.data, &auth_verf, auth_len);
+			prs_copy_data_out((char *)sig.data, &auth_verf, auth_len);
 		}
 	
 		/*
@@ -306,12 +306,12 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
 				return False;
 			}
 			nt_status = ntlmssp_client_unseal_packet(cli->ntlmssp_pipe_state, 
-								 reply_data, data_len,
+								 (unsigned char *)reply_data, data_len,
 								 &sig);
 		} 
 		else if (cli->pipe_auth_flags & AUTH_PIPE_SIGN) {
 			nt_status = ntlmssp_client_check_packet(cli->ntlmssp_pipe_state, 
-								reply_data, data_len,
+								(const unsigned char *)reply_data, data_len,
 								&sig);
 		}
 
@@ -684,10 +684,10 @@ static NTSTATUS create_rpc_bind_req(struct cli_state *cli, prs_struct *rpc_out,
 
 		/* Auth len in the rpc header doesn't include auth_header. */
 		auth_len = request.length;
-		prs_copy_data_in(&auth_info, request.data, request.length);
+		prs_copy_data_in(&auth_info, (char *)request.data, request.length);
 
 		DEBUG(5, ("NTLMSSP Negotiate:\n"));
-		dump_data(5, request.data, request.length);
+		dump_data(5, (const char *)request.data, request.length);
 
 		data_blob_free(&request);
 
@@ -751,6 +751,7 @@ static NTSTATUS create_rpc_bind_req(struct cli_state *cli, prs_struct *rpc_out,
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
+	prs_mem_free(&auth_info);
 	return NT_STATUS_OK;
 }
 
@@ -810,7 +811,7 @@ static NTSTATUS create_rpc_bind_resp(struct cli_state *cli,
 	 * Append the auth data to the outgoing buffer.
 	 */
 
-	if(!prs_copy_data_in(rpc_out, ntlmssp_reply.data, ntlmssp_reply.length)) {
+	if(!prs_copy_data_in(rpc_out, (char *)ntlmssp_reply.data, ntlmssp_reply.length)) {
 		DEBUG(0,("create_rpc_bind_req: failed to grow parse struct to add auth.\n"));
 		data_blob_free(&ntlmssp_reply);
 		return NT_STATUS_NO_MEMORY;
@@ -1016,7 +1017,7 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 				/* write auth footer onto the packet */
 				real_auth_len = sign_blob.length;
 				
-				prs_copy_data_in(&sec_blob, sign_blob.data, sign_blob.length);
+				prs_copy_data_in(&sec_blob, (char *)sign_blob.data, sign_blob.length);
 				data_blob_free(&sign_blob);
 
 			}
@@ -1492,7 +1493,9 @@ NTSTATUS cli_nt_establish_netlogon(struct cli_state *cli, int sec_chan,
 				   const uchar trust_password[16])
 {
 	NTSTATUS result;	
-	uint32 neg_flags = 0x000001ff;
+	/* The 7 here seems to be required to get Win2k not to downgrade us
+	   to NT4.  Actually, anything other than 1ff would seem to do... */
+	uint32 neg_flags = 0x000701ff;
 	int fnum;
 
 	cli_nt_netlogon_netsec_session_close(cli);
@@ -1585,7 +1588,9 @@ NTSTATUS cli_nt_setup_netsec(struct cli_state *cli, int sec_chan,
 			     const uchar trust_password[16])
 {
 	NTSTATUS result;	
-	uint32 neg_flags = 0x000001ff;
+	/* The 7 here seems to be required to get Win2k not to downgrade us
+	   to NT4.  Actually, anything other than 1ff would seem to do... */
+	uint32 neg_flags = 0x000701ff;
 	cli->pipe_auth_flags = 0;
 
 	if (lp_client_schannel() == False) {
