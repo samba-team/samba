@@ -437,6 +437,7 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_sid.o   \
 		nsswitch/winbindd_misc.o  \
 		nsswitch/winbindd_cm.o \
+		nsswitch/winbindd_wins.o \
 		nsswitch/winbindd_rpc.o \
 		nsswitch/winbindd_ads.o
 
