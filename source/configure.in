@@ -2411,6 +2411,10 @@ AC_ARG_WITH(acl-support,
 			AC_MSG_RESULT(Using solaris ACLs)
 			AC_DEFINE(HAVE_SOLARIS_ACLS)
 			;;
+		*hpux*)
+			AC_MSG_RESULT(Using HPUX ACLs)
+			AC_DEFINE(HAVE_HPUX_ACLS)
+			;;
 		*irix*)
 			AC_MSG_RESULT(Using IRIX ACLs)
 			AC_DEFINE(HAVE_IRIX_ACLS)
