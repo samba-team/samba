@@ -1594,9 +1594,10 @@ BOOL str_is_all_w(const smb_ucs2_t *s,smb_ucs2_t c)
  maxlength is in ucs2 units.
 ********************************************************************/
 
-smb_ucs2_t *alpha_strcpy_w(smb_ucs2_t *dest, const smb_ucs2_t *src, size_t maxlength)
+smb_ucs2_t *alpha_strcpy_w(smb_ucs2_t *dest, const smb_ucs2_t *src, const smb_ucs2_t *other_safe_chars, size_t maxlength)
 {
 	size_t len, i;
+	smb_ucs2_t nullstr_w = (smb_ucs2_t)0;
 
 	if (!dest) {
 		DEBUG(0,("ERROR: NULL dest in alpha_strcpy_w\n"));
@@ -1612,9 +1613,12 @@ smb_ucs2_t *alpha_strcpy_w(smb_ucs2_t *dest, const smb_ucs2_t *src, size_t maxle
 	if (len >= maxlength)
 		len = maxlength - 1;
 
+	if (!other_safe_chars)
+		other_safe_chars = &nullstr_w;
+
 	for(i = 0; i < len; i++) {
 		smb_ucs2_t val = src[i];
-		if(isupper_w(val) ||islower_w(val) || isdigit_w(val))
+		if(isupper_w(val) ||islower_w(val) || isdigit_w(val) || strchr_w(other_safe_chars, val))
 			dest[i] = src[i];
 		else
 			dest[i] = (smb_ucs2_t)'_';

@@ -97,7 +97,7 @@ int reply_special(char *inbuf,char *outbuf)
 		remote_machine[15] = 0;
 		trim_string(remote_machine," "," ");
 		strlower(remote_machine);
-		alpha_strcpy(remote_machine,remote_machine,sizeof(remote_machine)-1);
+		alpha_strcpy(remote_machine,remote_machine,SAFE_NETBIOS_CHARS,sizeof(remote_machine)-1);
 
 		fstrcpy(local_machine,name1);
 		len = strlen(local_machine);
@@ -107,7 +107,7 @@ int reply_special(char *inbuf,char *outbuf)
 		}
 		trim_string(local_machine," "," ");
 		strlower(local_machine);
-		alpha_strcpy(local_machine,local_machine,sizeof(local_machine)-1);
+		alpha_strcpy(local_machine,local_machine,SAFE_NETBIOS_CHARS,sizeof(local_machine)-1);
 
 		if (name_type == 'R') {
 			/* We are being asked for a pathworks session --- 

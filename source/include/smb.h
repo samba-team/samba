@@ -1738,6 +1738,8 @@ typedef struct user_struct
 #define MAP_TO_GUEST_ON_BAD_USER 1
 #define MAP_TO_GUEST_ON_BAD_PASSWORD 2
 
+#define SAFE_NETBIOS_CHARS ". -_"
+
 #include "nsswitch/winbindd_nss.h"
 #include "smb_acls.h"
 
