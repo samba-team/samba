@@ -76,7 +76,7 @@ sub _generate_shared_modules($)
 
 		foreach my $elem (@{$CTX->{DEPEND}{SHARED_MODULES}{$key}{SUBSYSTEMS_LIST}}) {
 			if (!defined($CTX->{DEPEND}{SUBSYSTEMS}{$elem})) {
-				die("Shared Module[$NAME] depends on unkown Subsystem[$elem]!\n");
+				die("Shared Module[$NAME] depends on unknown Subsystem[$elem]!\n");
 			}
 			push(@DEPEND_LIST,"\$(SUBSYSTEM_$elem\_OBJS)");
 			push(@LINK_LIST,"\$(SUBSYSTEM_$elem\_OBJS)");
@@ -84,7 +84,7 @@ sub _generate_shared_modules($)
 
 		foreach my $elem (@{$CTX->{DEPEND}{SHARED_MODULES}{$key}{LIBRARIES_LIST}}) {
 			if (!defined($CTX->{DEPEND}{EXT_LIBS}{$elem})) {
-				die("Share Module[$NAME] depends on unkown External Library[$elem]!\n");
+				die("Share Module[$NAME] depends on unknown External Library[$elem]!\n");
 			}
 			push(@LINK_LIST,@{$CTX->{DEPEND}{EXT_LIBS}{$elem}{LIBS}});
 			push(@LINK_FLAGS,@{$CTX->{DEPEND}{EXT_LIBS}{$elem}{LDFLAGS}});
@@ -131,7 +131,7 @@ sub _generate_binaries($)
 
 		foreach my $elem (@{$CTX->{DEPEND}{BINARIES}{$key}{SUBSYSTEMS_LIST}}) {
 			if (!defined($CTX->{DEPEND}{SUBSYSTEMS}{$elem})) {
-				die("Binary[$NAME] depends on unkown Subsystem[$elem]!\n");
+				die("Binary[$NAME] depends on unknown Subsystem[$elem]!\n");
 			}
 			push(@DEPEND_LIST,"\$(SUBSYSTEM_$elem\_OBJS)");
 			push(@LINK_LIST,"\$(SUBSYSTEM_$elem\_OBJS)");
@@ -139,7 +139,7 @@ sub _generate_binaries($)
 
 		foreach my $elem (@{$CTX->{DEPEND}{BINARIES}{$key}{LIBRARIES_LIST}}) {
 			if (!defined($CTX->{DEPEND}{EXT_LIBS}{$elem})) {
-				die("Binary[$NAME] depends on unkown External Library[$elem]!\n");
+				die("Binary[$NAME] depends on unknown External Library[$elem]!\n");
 			}
 			push(@LINK_LIST,@{$CTX->{DEPEND}{EXT_LIBS}{$elem}{LIBS}});
 			push(@LINK_FLAGS,@{$CTX->{DEPEND}{EXT_LIBS}{$elem}{LDFLAGS}});
