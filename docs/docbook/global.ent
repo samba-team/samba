@@ -507,6 +507,7 @@ an Active Directory environment.
 <!ENTITY pdb.xml SYSTEM "projdoc/pdb.xml.xml">
 <!ENTITY problems SYSTEM "projdoc/Problems.xml">
 <!ENTITY unicode SYSTEM "projdoc/unicode.xml">
+<!ENTITY attributions SYSTEM "projdoc/attributions.xml">
 
 <!ENTITY not.implemented "<note><para>Currently NOT implemented.</para></note>">
 <!ENTITY rootprompt "<prompt>root# </prompt>">

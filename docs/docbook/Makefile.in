@@ -51,6 +51,9 @@ FAQDIR = ../faq
 MANPAGES=$(patsubst %,$(MANDIR)/%,$(MANPAGES_NAMES))
 MANPAGES_HTML=$(patsubst %,$(HTMLDIR)/%.html,$(MANPAGES_NAMES))
 
+PROJDOC_DEPS = $(PROJDOC)/*.xml $(PROJDOC)/attributions.xml
+DEVDOC_DEPS = $(DEVDOC)/*.xml
+
 all: 
 	@echo "Supported make targets:"
 	@echo "manpages - Build manpages"
@@ -81,29 +84,29 @@ htmlman: $(HTMLDIR) $(MANPAGES_HTML) CSS
 htmlfaq: $(HTMLDIR) CSS
 	@$(XSLTPROC) --stringparam base.dir "$(FAQDIR)/" --stringparam root.filename samba-faq xslt/html-chunk.xsl $(FAQPROJDOC)/sambafaq.xml
 html-single: $(HTMLDIR) CSS $(HTMLDIR)/Samba-HOWTO-Collection.html  $(HTMLDIR)/Samba-Developers-Guide.html
-html: $(HTMLDIR) CSS
+html: $(HTMLDIR) CSS $(PROJDOC_DEPS)
 	@$(XSLTPROC) xslt/html-chunk.xsl $(PROJDOC)/samba-doc.xml
 
 # Text files
 $(TXTDIR):
 	mkdir $(TXTDIR)
 
-$(TXTDIR)/Samba-HOWTO-Collection.txt: $(PROJDOC)/samba-doc.xml
+$(TXTDIR)/Samba-HOWTO-Collection.txt: $(PROJDOC)/samba-doc.xml $(PROJDOC_DEPS)
 	@echo "Converting samba-doc to plain text..."
 	@$(XMLTO) txt -o $(TXTDIR) $<
 	@mv $(TXTDIR)/samba-doc.txt $(TXTDIR)/Samba-HOWTO-Collection.txt
 
-$(TXTDIR)/Samba-Developers-Guide.txt: $(DEVDOC)/dev-doc.xml
+$(TXTDIR)/Samba-Developers-Guide.txt: $(DEVDOC)/dev-doc.xml $(DEVDOC_DEPS)
 	@echo "Converting dev-doc to plain text..."
 	@$(XMLTO) txt -o $(TXTDIR) $<
 	@mv $(TXTDIR)/dev-doc.txt $(TXTDIR)/Samba-Developers-Guide.txt
 
 # Tex files
-samba-doc.tex: $(PROJDOC)/samba-doc.xml
+samba-doc.tex: $(PROJDOC)/samba-doc.xml $(PROJDOC_DEPS)
 	@echo "Converting samba-doc to LaTeX..."
 	@$(XSLTPROC) --output $@ xslt/latex.xsl $<
 	
-dev-doc.tex: $(DEVDOC)/dev-doc.xml
+dev-doc.tex: $(DEVDOC)/dev-doc.xml $(DEVDOC_DEPS)
 	@echo "Converting dev-doc to LaTeX..."
 	@$(XSLTPROC) --output $@ xslt/latex.xsl $<
 
@@ -156,10 +159,10 @@ $(HTMLDIR):
 CSS: $(HTMLDIR) xslt/html/samba.css
 	@cp xslt/html/samba.css $(HTMLDIR)/
 
-$(HTMLDIR)/Samba-HOWTO-Collection.html: $(PROJDOC)/samba-doc.xml
+$(HTMLDIR)/Samba-HOWTO-Collection.html: $(PROJDOC)/samba-doc.xml $(PROJDOC_DEPS)
 	@$(XSLTPROC) --output $@ xslt/html.xsl $<
 
-$(HTMLDIR)/Samba-Developers-Guide.html: $(DEVDOC)/dev-doc.xml
+$(HTMLDIR)/Samba-Developers-Guide.html: $(DEVDOC)/dev-doc.xml $(DEVDOC_DEPS)
 	@$(XSLTPROC) --output $@ xslt/html.xsl $<
 
 
@@ -193,6 +196,11 @@ $(MANPROJDOC)/smb.conf.5.xml: $(SMBDOTCONFDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/p
  			$(SMBDOTCONFDOC)/expand-smb.conf.xsl
 	@$(XSLTPROC) --xinclude --output $(MANPROJDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/expand-smb.conf.xsl $(SMBDOTCONFDOC)/smb.conf.5.xml
 
+$(PROJDOC)/attributions.xml: $(PROJDOC)/samba-doc.xml
+	@echo > $@ # Make sure we don't get recursive dependencies, etc!
+	@echo "Generating attributions page"
+	$(XSLTPROC) --output $@ xslt/generate-attributions.xsl $<
+
 $(MANDIR): 
 	mkdir $(MANDIR)
 
@@ -202,5 +210,5 @@ $(MANDIR)/%: $(MANPROJDOC)/%.xml
 clean: 
 	@rm -f $(MANPAGES) $(MANPAGES_HTML) $(HTMLDIR)/*.html $(HTMLDIR)/*.css $(TXTDIR)/*.txt $(PSDIR)/*.ps $(PDFDIR)/*.pdf 
 	@rm -f $(MANPROJDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/parameters.*.xml
-	@rm -f samba-doc.* dev-doc.*
+	@rm -f samba-doc.* dev-doc.* $(PROJDOC)/attributions.xml
 
