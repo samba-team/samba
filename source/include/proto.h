@@ -434,6 +434,7 @@ uint32 interpret_addr(char *str);
 struct in_addr *interpret_addr2(char *str);
 BOOL zero_ip(struct in_addr ip);
 char *automount_lookup(char *user_name);
+char *automount_lookup(char *user_name);
 BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
 struct hostent *Get_Hostbyname(const char *name);
 BOOL process_exists(pid_t pid);
@@ -1832,6 +1833,12 @@ struct passdb_ops *ldap_initialize_password_db(void);
 /*The following definitions come from  passdb/nispass.c  */
 
 struct passdb_ops *nisplus_initialize_password_db(void);
+
+/*The following definitions come from  passdb/pampass.c  */
+
+BOOL PAM_session(BOOL instance, const connection_struct *conn, char *tty);
+BOOL pam_passcheck(char * user, char * password);
+BOOL pam_passcheck( char * user, char * password );
 
 /*The following definitions come from  passdb/pass_check.c  */
 
