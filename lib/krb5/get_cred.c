@@ -108,6 +108,7 @@ set_auth_data (krb5_context context,
 	if (ret) {
 	    free (buf);
 	    free (req_body->enc_authorization_data);
+	    req_body->enc_authorization_data = NULL;
 	    return ret;
 	}
 	krb5_encrypt_EncryptedData(context, 
