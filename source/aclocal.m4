@@ -64,6 +64,7 @@ AC_DEFUN(SMB_MODULE,
 	else
 		AC_MSG_RESULT([not])
 	fi
+	MODULES_CLEAN="$MODULES_CLEAN $2 $3"
 ])
 
 AC_DEFUN(SMB_SUBSYSTEM,
@@ -532,59 +533,83 @@ AC_DEFUN(jm_ICONV,
     jm_cv_func_iconv="no"
     jm_cv_lib_iconv=no
     jm_cv_giconv=no
+    jm_save_LIBS="$LIBS"
+    LIBS="$LIBS -lbiconv"
     AC_TRY_LINK([#include <stdlib.h>
-#include <giconv.h>],
-      [iconv_t cd = iconv_open("","");
-       iconv(cd,NULL,NULL,NULL,NULL);
-       iconv_close(cd);],
-      jm_cv_func_iconv=yes
-      jm_cv_giconv=yes)
-
-    if test "$jm_cv_func_iconv" != yes; then
-      AC_TRY_LINK([#include <stdlib.h>
-#include <iconv.h>],
+#include <biconv.h>],
         [iconv_t cd = iconv_open("","");
          iconv(cd,NULL,NULL,NULL,NULL);
          iconv_close(cd);],
-        jm_cv_func_iconv=yes)
+      jm_cv_func_iconv=yes
+      jm_cv_biconv=yes
+      jm_cv_include="biconv.h"
+      jm_cv_lib_iconv="yes")
+      LIBS="$jm_save_LIBS"
 
-        if test "$jm_cv_lib_iconv" != yes; then
-          jm_save_LIBS="$LIBS"
-          LIBS="$LIBS -lgiconv"
-          AC_TRY_LINK([#include <stdlib.h>
+    if test "$jm_cv_func_iconv" != yes; then 
+      AC_TRY_LINK([#include <stdlib.h>
 #include <giconv.h>],
-            [iconv_t cd = iconv_open("","");
-             iconv(cd,NULL,NULL,NULL,NULL);
-             iconv_close(cd);],
-            jm_cv_lib_iconv=yes
-            jm_cv_func_iconv=yes
-            jm_cv_giconv=yes)
-          LIBS="$jm_save_LIBS"
+        [iconv_t cd = iconv_open("","");
+         iconv(cd,NULL,NULL,NULL,NULL);
+         iconv_close(cd);],
+         jm_cv_func_iconv=yes
+         jm_cv_include="giconv.h"
+         jm_cv_giconv="yes")
 
       if test "$jm_cv_func_iconv" != yes; then
-        jm_save_LIBS="$LIBS"
-        LIBS="$LIBS -liconv"
         AC_TRY_LINK([#include <stdlib.h>
 #include <iconv.h>],
           [iconv_t cd = iconv_open("","");
            iconv(cd,NULL,NULL,NULL,NULL);
            iconv_close(cd);],
-          jm_cv_lib_iconv=yes
-          jm_cv_func_iconv=yes)
-        LIBS="$jm_save_LIBS"
+           jm_cv_include="iconv.h"
+           jm_cv_func_iconv=yes)
+
+          if test "$jm_cv_lib_iconv" != yes; then
+            jm_save_LIBS="$LIBS"
+            LIBS="$LIBS -lgiconv"
+            AC_TRY_LINK([#include <stdlib.h>
+#include <giconv.h>],
+              [iconv_t cd = iconv_open("","");
+               iconv(cd,NULL,NULL,NULL,NULL);
+               iconv_close(cd);],
+              jm_cv_lib_iconv=yes
+              jm_cv_func_iconv=yes
+              jm_cv_include="giconv.h"
+              jm_cv_giconv=yes)
+            LIBS="$jm_save_LIBS"
+
+        if test "$jm_cv_func_iconv" != yes; then
+          jm_save_LIBS="$LIBS"
+          LIBS="$LIBS -liconv"
+          AC_TRY_LINK([#include <stdlib.h>
+#include <iconv.h>],
+            [iconv_t cd = iconv_open("","");
+             iconv(cd,NULL,NULL,NULL,NULL);
+             iconv_close(cd);],
+            jm_cv_lib_iconv=yes
+            jm_cv_include="iconv.h"
+            jm_cv_func_iconv=yes)
+          LIBS="$jm_save_LIBS"
         fi
       fi
     fi
-
+  fi
   if test "$jm_cv_func_iconv" = yes; then
     if test "$jm_cv_giconv" = yes; then
       AC_DEFINE(HAVE_GICONV, 1, [What header to include for iconv() function: giconv.h])
       AC_MSG_RESULT(yes)
       ICONV_FOUND=yes
     else
-      AC_DEFINE(HAVE_ICONV, 1, [What header to include for iconv() function: iconv.h])
-      AC_MSG_RESULT(yes)
-      ICONV_FOUND=yes
+      if test "$jm_cv_biconv" = yes; then
+        AC_DEFINE(HAVE_BICONV, 1, [What header to include for iconv() function: biconv.h])
+        AC_MSG_RESULT(yes)
+        ICONV_FOUND=yes
+      else 
+        AC_DEFINE(HAVE_ICONV, 1, [What header to include for iconv() function: iconv.h])
+        AC_MSG_RESULT(yes)
+        ICONV_FOUND=yes
+      fi
     fi
   else
     AC_MSG_RESULT(no)
@@ -593,7 +618,11 @@ AC_DEFUN(jm_ICONV,
     if test "$jm_cv_giconv" = yes; then
       LIBS="$LIBS -lgiconv"
     else
-      LIBS="$LIBS -liconv"
+      if test "$jm_cv_biconv" = yes; then
+        LIBS="$LIBS -lbiconv"
+      else
+        LIBS="$LIBS -liconv"
+      fi
     fi
   fi
 ])
