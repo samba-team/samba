@@ -86,3 +86,23 @@ int ldb_list_find(const void *needle,
 
 	return -1;
 }
+
+
+/*
+  common code for parsing -o options in ldb tools
+*/
+const char **ldb_options_parse(const char **options, int *ldbopts, const char *arg)
+{
+	if (*ldbopts == 0) {
+		options = malloc(sizeof(char *) * 2);
+	} else {
+		options = realloc(options, sizeof(char *)*((*ldbopts)+2));
+	}
+	if (options == NULL) {
+		fprintf(stderr, "Out of memory in options parsing!\n");
+		exit(-1);
+	}
+	options[(*ldbopts)++] = arg;
+	options[*ldbopts] = NULL;
+	return options;
+}
