@@ -1,3 +1,9 @@
+Changes in release 0.1j:
+
+ * restore back to the `old' 3DES code.  This was supposed to be done
+   in 0.1h and 0.1i but I did a CVS screw-up.
+ * make telnetd handle v6 connections
+
 Changes in release 0.1i:
 
  * start using `struct sockaddr_storage' which simplifies the code

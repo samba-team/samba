@@ -1,4 +1,24 @@
+1999-07-26  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/store_fd.c: lots of changes from size_t to ssize_t
+	
+	* lib/krb5/store_mem.c: lots of changes from size_t to ssize_t
+	
+	* lib/krb5/store_emem.c: lots of changes from size_t to ssize_t
+	
+	* lib/krb5/store.c: lots of changes from size_t to ssize_t
+	(krb5_ret_stringz): check return value from realloc
+
+	* lib/krb5/mk_safe.c: some type correctness
+	
+	* lib/krb5/mk_priv.c: some type correctness
+	
+	* lib/krb5/krb5.h (krb5_storage): change return values of
+	functions from size_t to ssize_t
+	
 1999-07-24  Assar Westerlund  <assar@sics.se>
+
+	* Release 0.1i
 
 	* configure.in (AC_PROG_AWK): disable. mawk seems to mishandle \#
  	in lib/roken/roken.awk

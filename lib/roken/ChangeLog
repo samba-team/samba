@@ -1,5 +1,8 @@
 1999-07-26  Assar Westerlund  <assar@sics.se>
 
+	* Makefile.am: move some files from libroken_la_SOURCES to
+ 	EXTRA_libroken_la_SOURCES
+
 	* snprintf.c: some signed vs unsigned casts
 	
 1999-07-24  Assar Westerlund  <assar@sics.se>
