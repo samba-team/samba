@@ -1024,7 +1024,7 @@ KRBLIBPATH=""
 LIBKRB='-L$(libtop)/lib/krb -lkrb'
 LIBDES='-L$(libtop)/lib/des -ldes'
 LIBKAFS='-L$(libtop)/lib/kafs -lkafs'
-LIBCOM_ERR='-L$(libtop)/util/et -lcom_err'
+LIBROKEN='-L$(libtop)/lib/roken -lroken'
 KRBINCPATH='-I$(libtop)/include -I$(srcdir)/$(libtop)/include'
 telnet_msg="default"
 
@@ -1043,7 +1043,7 @@ KRBLIBPATH='-L$(libtop)/lib'
 LIBKRB="-lkrb"
 LIBDES="-ldes"
 LIBKAFS="-lkafs"
-LIBCOM_ERR="-lcom_err"
+LIBROKEN="-lroken"
 KRBINCPATH='-I$(libtop)/include'
 telnet_msg="$telnet_athena_default"
 
@@ -1457,7 +1457,7 @@ esac
 
 	
 
-for ac_func in getent herror memmove setenv strdup strerror strftime
+for ac_func in cgetent getstr cgetstr uname vhangup
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
@@ -1498,55 +1498,6 @@ rm -f conftest*
 fi
 if eval "test \"`echo '$ac_cv_func_'$ac_func`\" = yes"; then
   echo "$ac_t""yes" 1>&6
-  :
-else
-  echo "$ac_t""no" 1>&6
-LIBOBJS="$LIBOBJS ${ac_func}.o"
-fi
-
-done
-
-for ac_func in cgetent getstr cgetstr uname vhangup
-do
-echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
-if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
-  echo $ac_n "(cached) $ac_c" 1>&6
-else
-  cat > conftest.$ac_ext <<EOF
-#line 1517 "configure"
-#include "confdefs.h"
-/* System header to define __stub macros and hopefully few prototypes,
-    which can conflict with char $ac_func(); below.  */
-#include <assert.h>
-/* Override any gcc2 internal prototype to avoid an error.  */
-char $ac_func();
-
-int main() { return 0; }
-int t() {
-
-/* The GNU C library defines this for functions which it implements
-    to always fail with ENOSYS.  Some functions are actually named
-    something starting with __ and the normal name is an alias.  */
-#if defined (__stub_$ac_func) || defined (__stub___$ac_func)
-choke me
-#else
-$ac_func();
-#endif
-
-; return 0; }
-EOF
-if { (eval echo configure:1539: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
-  rm -rf conftest*
-  eval "ac_cv_func_$ac_func=yes"
-else
-  rm -rf conftest*
-  eval "ac_cv_func_$ac_func=no"
-fi
-rm -f conftest*
-
-fi
-if eval "test \"`echo '$ac_cv_func_'$ac_func`\" = yes"; then
-  echo "$ac_t""yes" 1>&6
     ac_tr_func=HAVE_`echo $ac_func | tr 'abcdefghijklmnopqrstuvwxyz' 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'`
   cat >> confdefs.h <<EOF
 #define $ac_tr_func 1
@@ -1564,7 +1515,7 @@ if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1568 "configure"
+#line 1519 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -1586,7 +1537,7 @@ $ac_func();
 
 ; return 0; }
 EOF
-if { (eval echo configure:1590: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
+if { (eval echo configure:1541: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
   rm -rf conftest*
   eval "ac_cv_func_$ac_func=yes"
 else
@@ -1608,14 +1559,14 @@ else
 fi
 done
 
-for ac_func in tgetent setupterm mktime ptsname ttyname unlockpt grantpt
+for ac_func in tgetent setupterm ptsname ttyname unlockpt grantpt
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1619 "configure"
+#line 1570 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -1637,7 +1588,7 @@ $ac_func();
 
 ; return 0; }
 EOF
-if { (eval echo configure:1641: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
+if { (eval echo configure:1592: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
   rm -rf conftest*
   eval "ac_cv_func_$ac_func=yes"
 else
@@ -1675,7 +1626,7 @@ if eval "test \"\$ac_cv_func_logout\" != yes" ; then
 			LIBS="$ac_lib $ac_save_LIBS"
 		fi
 		cat > conftest.$ac_ext <<EOF
-#line 1679 "configure"
+#line 1630 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -1683,7 +1634,7 @@ int t() {
 logout()
 ; return 0; }
 EOF
-if { (eval echo configure:1687: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
+if { (eval echo configure:1638: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
   rm -rf conftest*
   eval "if test -n \"$ac_lib\";then ac_cv_funclib_logout=$ac_lib; else ac_cv_funclib_logout=yes; fi";break
 fi
@@ -1749,12 +1700,12 @@ if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1753 "configure"
+#line 1704 "configure"
 #include "confdefs.h"
 #include <$ac_hdr>
 EOF
 ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
-{ (eval echo configure:1758: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+{ (eval echo configure:1709: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
 ac_err=`grep -v '^ *+' conftest.out`
 if test -z "$ac_err"; then
   rm -rf conftest*
@@ -1786,12 +1737,12 @@ if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1790 "configure"
+#line 1741 "configure"
 #include "confdefs.h"
 #include <$ac_hdr>
 EOF
 ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
-{ (eval echo configure:1795: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+{ (eval echo configure:1746: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
 ac_err=`grep -v '^ *+' conftest.out`
 if test -z "$ac_err"; then
   rm -rf conftest*
@@ -1823,12 +1774,12 @@ if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1827 "configure"
+#line 1778 "configure"
 #include "confdefs.h"
 #include <$ac_hdr>
 EOF
 ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
-{ (eval echo configure:1832: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+{ (eval echo configure:1783: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
 ac_err=`grep -v '^ *+' conftest.out`
 if test -z "$ac_err"; then
   rm -rf conftest*
@@ -2021,12 +1972,11 @@ s%@KRBLIBPATH@%$KRBLIBPATH%g
 s%@LIBKRB@%$LIBKRB%g
 s%@LIBDES@%$LIBDES%g
 s%@LIBKAFS@%$LIBKAFS%g
-s%@LIBCOM_ERR@%$LIBCOM_ERR%g
+s%@LIBROKEN@%$LIBROKEN%g
 s%@USE_IM@%$USE_IM%g
 s%@DIAGNOSTICS@%$DIAGNOSTICS%g
 s%@KLUDGELINEMODE@%$KLUDGELINEMODE%g
 s%@OLD_ENVIRON@%$OLD_ENVIRON%g
-s%@LIBOBJS@%$LIBOBJS%g
 s%@HAVE_LIBTERMCAP@%$HAVE_LIBTERMCAP%g
 s%@STREAMSPTY@%$STREAMSPTY%g
 

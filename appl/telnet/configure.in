@@ -142,7 +142,7 @@ KRBLIBPATH=""
 LIBKRB='-L$(libtop)/lib/krb -lkrb'
 LIBDES='-L$(libtop)/lib/des -ldes'
 LIBKAFS='-L$(libtop)/lib/kafs -lkafs'
-LIBCOM_ERR='-L$(libtop)/util/et -lcom_err'
+LIBROKEN='-L$(libtop)/lib/roken -lroken'
 KRBINCPATH='-I$(libtop)/include -I$(srcdir)/$(libtop)/include'
 telnet_msg="default"
 
@@ -161,7 +161,7 @@ KRBLIBPATH='-L$(libtop)/lib'
 LIBKRB="-lkrb"
 LIBDES="-ldes"
 LIBKAFS="-lkafs"
-LIBCOM_ERR="-lcom_err"
+LIBROKEN="-lroken"
 KRBINCPATH='-I$(libtop)/include'
 telnet_msg="$telnet_athena_default"
 
@@ -173,7 +173,7 @@ AC_SUBST(KRBLIBPATH)
 AC_SUBST(LIBKRB)
 AC_SUBST(LIBDES)
 AC_SUBST(LIBKAFS)
-AC_SUBST(LIBCOM_ERR)
+AC_SUBST(LIBROKEN)
 
 AC_MSG_RESULT($telnet_msg)
 

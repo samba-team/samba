@@ -68,9 +68,6 @@
 /* Define if you have the logout function.  */
 #undef HAVE_LOGOUT
 
-/* Define if you have the mktime function.  */
-#undef HAVE_MKTIME
-
 /* Define if you have the ptsname function.  */
 #undef HAVE_PTSNAME
 
