@@ -20,7 +20,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-enum dcerpc_transport_t {NCACN_NP, NCACN_IP_TCP};
+enum dcerpc_transport_t {
+	NCACN_NP, NCACN_IP_TCP, NCACN_IP_UDP, NCACN_VNS_IPC, NCACN_VNS_SPP, 
+	NCACN_AT_DSP, NCADG_AT_DDP, NCALRPC, NCACN_UNIX_STREAM, NCADG_UNIX_DGRAM };
 
 /*
   this defines a generic security context for signed/sealed dcerpc pipes.

@@ -31,12 +31,10 @@
 /* version 1 - initial version - metze */
 #define DCERPC_MODULE_VERSION 1
 
-enum endpoint_type {ENDPOINT_SMB, ENDPOINT_TCP};
-
 /* a description of a single dcerpc endpoint. Not as flexible as a full epm tower,
    but much easier to work with */
 struct dcesrv_ep_description {
-	enum endpoint_type type;
+	enum dcerpc_transport_t type;
 	union {
 		const char *smb_pipe;
 		uint16_t tcp_port;

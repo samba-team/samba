@@ -77,7 +77,7 @@ static BOOL fill_protocol_tower(TALLOC_CTX *mem_ctx, struct epm_tower *twr,
 	twr->floors[2].rhs.ncacn.minor_version = 0;
 
 	switch (e->ep_description.type) {
-	case ENDPOINT_SMB:
+	case NCACN_NP:
 		/* on a SMB pipe ... */
 		twr->floors[3].lhs.protocol = EPM_PROTOCOL_SMB;
 		twr->floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
@@ -90,7 +90,7 @@ static BOOL fill_protocol_tower(TALLOC_CTX *mem_ctx, struct epm_tower *twr,
 								   lp_netbios_name());
 		break;
 
-	case ENDPOINT_TCP:
+	case NCACN_IP_TCP:
 		/* on a TCP connection ... */
 		twr->floors[3].lhs.protocol = EPM_PROTOCOL_TCP;
 		twr->floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
@@ -276,13 +276,13 @@ static error_status_t epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 			continue;
 		}
 		switch (eps[i].ep_description.type) {
-		case ENDPOINT_SMB:
+		case NCACN_NP:
 			if (floors[3].lhs.protocol != EPM_PROTOCOL_SMB ||
 			    floors[4].lhs.protocol != EPM_PROTOCOL_NETBIOS) {
 				continue;
 			}
 			break;
-		case ENDPOINT_TCP:
+		case NCACN_IP_TCP:
 			if (floors[3].lhs.protocol != EPM_PROTOCOL_TCP ||
 			    floors[4].lhs.protocol != EPM_PROTOCOL_IP) {
 				continue;
