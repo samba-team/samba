@@ -724,6 +724,7 @@ struct winbindd_state server_state;   /* Server state information */
 int main(int argc, char **argv)
 {
 	extern pstring global_myname;
+	extern fstring global_myworkgroup;
 	int accept_sock;
 	BOOL interactive = False;
 	int opt, new_debuglevel = -1;
@@ -780,6 +781,15 @@ int main(int argc, char **argv)
 	setup_logging("winbindd", interactive);
 	reopen_logs();
 
+	DEBUG(1, ("winbindd version %s started.\n", VERSION ) );
+	DEBUGADD( 1, ( "Copyright The Samba Team 2000-2001\n" ) );
+
+	if (!reload_services_file(False)) {
+		DEBUG(0, ("error opening config file\n"));
+		exit(1);
+	}
+
+	/* Setup names. */
 	if (!*global_myname) {
 		char *p;
 
@@ -789,14 +799,7 @@ int main(int argc, char **argv)
 			*p = 0;
 	}
 
-
-	DEBUG(1, ("winbindd version %s started.\n", VERSION ) );
-	DEBUGADD( 1, ( "Copyright The Samba Team 2000-2001\n" ) );
-
-	if (!reload_services_file(False)) {
-		DEBUG(0, ("error opening config file\n"));
-		exit(1);
-	}
+        fstrcpy(global_myworkgroup, lp_workgroup());
 
 	if (new_debuglevel != -1)
 		DEBUGLEVEL = new_debuglevel;
