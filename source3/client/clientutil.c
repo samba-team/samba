@@ -67,7 +67,7 @@ int max_xmit = BUFFER_SIZE;
 
 BOOL have_ip = False;
 
-struct in_addr dest_ip;
+extern struct in_addr dest_ip;
 
 extern int Protocol;
 

@@ -329,11 +329,6 @@ void cred_hash2(unsigned char *out,unsigned char *in,unsigned char *key)
 {
 	unsigned char buf[8];
 	static unsigned char key2[8];
-	int i;
-	
-	for (i=0;i<8;i++) {
-		key2[i] = 0;
-	}
 
 	smbhash(buf, in, key);
 	key2[0] = key[7];
