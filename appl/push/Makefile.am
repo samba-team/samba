@@ -4,9 +4,15 @@ AUTOMAKE_OPTIONS = no-dependencies foreign
 
 INCLUDES = -I$(top_builddir)/include $(INCLUDE_krb4) @HESIODINCLUDE@
 
+bin_PROGRAMS		= pfrom
+
 libexec_PROGRAMS	= push
 
 push_SOURCES		= push.c
+
+pfrom: pfrom.in
+	sed -e "s!%bindir%!$(bindir)!" $(srcdir)/pfrom.in > $@
+	chmod +x $@
 
 LDADD = $(top_builddir)/lib/krb5/libkrb5.la \
 	$(LIB_krb4) \
