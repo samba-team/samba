@@ -541,6 +541,10 @@ int main(int argc, char *argv[])
   char *short_desc;
   FILE *inf_file;
 
+  fprintf( stderr, "This tool has been deprecated in favor of the new printer administration\n");
+  fprintf( stderr, "model included in Samba 2.2.  Please see the HOWTO in docs/textdocs/printer_driver2.html\n");
+  fprintf( stderr, "for details.\n");
+
   if (argc!=3)
   {
     usage(argv[0]);
