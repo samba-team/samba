@@ -3305,7 +3305,7 @@ int open_socket_in(int type, int port, int dlevel,uint32 socket_addr)
   
   bzero((char *)&sock,sizeof(sock));
   memcpy((char *)&sock.sin_addr,(char *)hp->h_addr, hp->h_length);
-#if defined(__FreeBSD__) || defined(NETBSD) /* XXX not the right ifdef */
+#if defined(__FreeBSD__) || defined(NETBSD) || defined(__OpenBSD__) /* XXX not the right ifdef */
   sock.sin_len = sizeof(sock);
 #endif
   sock.sin_port = htons( port );
