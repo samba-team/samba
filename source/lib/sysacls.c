@@ -20,6 +20,9 @@
 
 #include "includes.h"
 
+#undef  DBGC_CLASS
+#define DBGC_CLASS DBGC_ACLS
+
 /*
  This file wraps all differing system ACL interfaces into a consistent
  one based on the POSIX interface. It also returns the correct errors
@@ -2276,6 +2279,10 @@ SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type)
 	int i;
 	int rc = 0;
 	uid_t user_id;
+
+	/* AIX has no DEFAULT */
+	if  ( type == SMB_ACL_TYPE_DEFAULT )
+		return NULL;
 
 	/* Get the acl using statacl */
  
