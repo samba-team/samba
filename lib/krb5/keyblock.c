@@ -36,6 +36,13 @@
 RCSID("$Id$");
 
 void
+krb5_keyblock_zero(krb5_keyblock *keyblock)
+{
+    keyblock->keytype = 0;
+    krb5_data_zero(&keyblock->keyvalue);
+}
+
+void
 krb5_free_keyblock_contents(krb5_context context,
 			    krb5_keyblock *keyblock)
 {
