@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -103,6 +103,8 @@ DB_seq(krb5_context context, HDB *db, hdb_entry *entry, int flag)
     data.length = value.size;
     if (hdb_value2entry(context, &data, entry))
 	return DB_seq(context, db, entry, R_NEXT);
+    if (db->master_key_set)
+	hdb_unseal_keys (entry, db->master_key);
     if (entry->principal == NULL) {
 	entry->principal = malloc(sizeof(*entry->principal));
 	hdb_key2principal(context, &key_data, entry->principal);
