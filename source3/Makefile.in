@@ -319,7 +319,7 @@ CLIENT_OBJ = client/client.o client/clitar.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
              $(READLINE_OBJ)
 
-NET_OBJ = utils/net.o utils/net_ads.o \
+NET_OBJ = utils/net.o utils/net_ads.o utils/net_rap.o utils/net_rpc.o \
 	$(LIBSMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
 CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
