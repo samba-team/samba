@@ -413,10 +413,13 @@ void reply_nttrans(struct smbsrv_request *req)
 		return;
 	}
 
+#if 0
+	/* w2k3 does not check the max_setup count */
 	if (trans.out.setup_count > trans.in.max_setup) {
 		req_reply_error(req, NT_STATUS_BUFFER_TOO_SMALL);
 		return;
 	}
+#endif
 	if (trans.out.params.length > trans.in.max_param) {
 		status = NT_STATUS_BUFFER_TOO_SMALL;
 		trans.out.params.length = trans.in.max_param;
