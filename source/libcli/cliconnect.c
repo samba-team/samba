@@ -92,7 +92,7 @@ NTSTATUS smbcli_session_setup(struct smbcli_state *cli,
 
 	cli->session->vuid = setup.generic.out.vuid;
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	return status;
 }
@@ -125,7 +125,7 @@ NTSTATUS smbcli_send_tconX(struct smbcli_state *cli, const char *sharename,
 
 	cli->tree->tid = tcon.tconx.out.cnum;
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	return status;
 }
@@ -176,7 +176,7 @@ NTSTATUS smbcli_full_connection(struct smbcli_state **ret_cli,
 	tree->reference_count++;
 
 done:
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	return status;
 }
 
