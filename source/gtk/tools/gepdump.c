@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/ndr_mgmt.h"
 #include "gtk/common/select.h"
 #include "gtk/common/gtk-smb.h"
+#include "lib/cmdline/popt_common.h"
 
 /* 
  * Show: 
@@ -189,7 +190,7 @@ static void on_connect_clicked(GtkButton *btn, gpointer         user_data)
 
 	status = dcerpc_pipe_connect(&epmapper_pipe, bs, 
 				     DCERPC_EPMAPPER_UUID, DCERPC_EPMAPPER_VERSION, 
-				     lp_netbios_name(), lp_workgroup(), "", "");
+				     cmdline_credentials);
 
 	if (NT_STATUS_IS_ERR(status)) {
 		gtk_show_ntstatus(mainwin, status);

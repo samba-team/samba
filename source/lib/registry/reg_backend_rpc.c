@@ -369,7 +369,7 @@ static struct hive_operations reg_backend_rpc = {
 	.num_values = rpc_num_values,
 };
 
-WERROR reg_open_remote (struct registry_context **ctx, const char *user, const char *pass, const char *location)
+WERROR reg_open_remote (struct registry_context **ctx, struct cli_credentials *credentials, const char *location)
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
@@ -384,9 +384,7 @@ WERROR reg_open_remote (struct registry_context **ctx, const char *user, const c
 	status = dcerpc_pipe_connect(&p, location, 
 				     DCERPC_WINREG_UUID,
 				     DCERPC_WINREG_VERSION,
-				     lp_netbios_name(),
-				     lp_workgroup(),
-				     user, pass);
+				     credentials);
 	(*ctx)->backend_data = p;
 
 	if(NT_STATUS_IS_ERR(status)) {

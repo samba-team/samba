@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "libcli/ldap/ldap.h"
+#include "lib/cmdline/popt_common.h"
 
 BOOL test_bind_simple(struct ldap_connection *conn, const char *userdn, const char *password)
 {
@@ -188,9 +189,9 @@ BOOL torture_ldap_basic(void)
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	const char *host = lp_parm_string(-1, "torture", "host");
-	const char *username = lp_parm_string(-1, "torture", "username");
-	const char *domain = lp_parm_string(-1, "torture", "userdomain");
-	const char *password = lp_parm_string(-1, "torture", "password");
+	const char *username = cli_credentials_get_username(cmdline_credentials);
+	const char *domain = cli_credentials_get_domain(cmdline_credentials);
+	const char *password = cli_credentials_get_password(cmdline_credentials);
 	const char *userdn = lp_parm_string(-1, "torture", "ldap_userdn");
 	/*const char *basedn = lp_parm_string(-1, "torture", "ldap_basedn");*/
 	const char *secret = lp_parm_string(-1, "torture", "ldap_secret");

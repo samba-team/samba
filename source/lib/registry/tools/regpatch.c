@@ -769,7 +769,7 @@ static int nt_apply_reg_command_file(struct registry_context *r, const char *cmd
 	setup_logging(argv[0], True);
 
 	if (remote) {
-		error = reg_open_remote (&h, cli_credentials_get_username(cmdline_credentials), cli_credentials_get_password(cmdline_credentials), remote);
+		error = reg_open_remote (&h, cmdline_credentials, remote);
 	} else {
 		error = reg_open_local (&h);
 	}

@@ -24,6 +24,10 @@
 
 const char *cli_credentials_get_username(struct cli_credentials *cred)
 {
+	if (cred == NULL) {
+		return NULL;
+	}
+
 	if (cred->username_obtained == CRED_CALLBACK) {
 		cred->username = cred->username_cb(cred);
 		cred->username_obtained = CRED_SPECIFIED;
@@ -45,6 +49,10 @@ BOOL cli_credentials_set_username(struct cli_credentials *cred, const char *val,
 
 const char *cli_credentials_get_password(struct cli_credentials *cred)
 {
+	if (cred == NULL) {
+		return NULL;
+	}
+	
 	if (cred->password_obtained == CRED_CALLBACK) {
 		cred->password = cred->password_cb(cred);
 		cred->password_obtained = CRED_SPECIFIED;
@@ -66,6 +74,10 @@ BOOL cli_credentials_set_password(struct cli_credentials *cred, const char *val,
 
 const char *cli_credentials_get_domain(struct cli_credentials *cred)
 {
+	if (cred == NULL) {
+		return NULL;
+	}
+
 	if (cred->domain_obtained == CRED_CALLBACK) {
 		cred->domain = cred->domain_cb(cred);
 		cred->domain_obtained = CRED_SPECIFIED;
@@ -87,7 +99,11 @@ BOOL cli_credentials_set_domain(struct cli_credentials *cred, const char *val, e
 }
 
 const char *cli_credentials_get_realm(struct cli_credentials *cred)
-{
+{	
+	if (cred == NULL) {
+		return NULL;
+	}
+
 	if (cred->realm_obtained == CRED_CALLBACK) {
 		cred->realm = cred->realm_cb(cred);
 		cred->realm_obtained = CRED_SPECIFIED;
@@ -109,6 +125,10 @@ BOOL cli_credentials_set_realm(struct cli_credentials *cred, const char *val, en
 
 const char *cli_credentials_get_workstation(struct cli_credentials *cred)
 {
+	if (cred == NULL) {
+		return NULL;
+	}
+
 	if (cred->workstation_obtained == CRED_CALLBACK) {
 		cred->workstation = cred->workstation_cb(cred);
 		cred->workstation_obtained = CRED_SPECIFIED;
@@ -246,7 +266,7 @@ void cli_credentials_parse_string(struct cli_credentials *credentials, const cha
 	uname = talloc_strdup(credentials, data); 
 	cli_credentials_set_username(credentials, uname, obtained);
 
-	if ((p = strchr_m(uname,'\\'))) {
+	if ((p = strchr_m(uname,'\\')) || (p = strchr_m(uname, '/'))) {
 		*p = 0;
 		cli_credentials_set_domain(credentials, uname, obtained);
 		credentials->username = uname = p+1;

@@ -2555,10 +2555,7 @@ static BOOL browse_host(const char *query_host)
 	status = dcerpc_pipe_connect(&p, binding, 
 				     DCERPC_SRVSVC_UUID, 
 				     DCERPC_SRVSVC_VERSION,
-				     lp_netbios_name(),
-				     cli_credentials_get_domain(cmdline_credentials), 
-				     cli_credentials_get_username(cmdline_credentials), 
-					 cli_credentials_get_password(cmdline_credentials));
+				     cmdline_credentials);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Failed to connect to %s - %s\n", 
 			 binding, nt_errstr(status));

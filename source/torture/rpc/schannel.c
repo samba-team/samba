@@ -127,6 +127,7 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	struct dcerpc_pipe *p = NULL;
 	struct dcerpc_pipe *p_netlogon = NULL;
 	struct creds_CredentialState *creds;
+	struct cli_credentials credentials;
 	char *test_machine_account = talloc_asprintf(NULL, "%s$", TEST_MACHINE_NAME);
 
 	join_ctx = torture_create_testuser(test_machine_account, lp_workgroup(), 
@@ -145,13 +146,14 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	b->flags &= ~DCERPC_AUTH_OPTIONS;
 	b->flags |= dcerpc_flags;
 
+	cli_credentials_set_domain(&credentials, lp_workgroup(), CRED_SPECIFIED);
+	cli_credentials_set_workstation(&credentials, TEST_MACHINE_NAME, CRED_SPECIFIED);
+	cli_credentials_set_username(&credentials, test_machine_account, CRED_SPECIFIED);
+	cli_credentials_set_password(&credentials, machine_password, CRED_SPECIFIED);
 	status = dcerpc_pipe_connect_b(&p, b, 
 				       DCERPC_SAMR_UUID,
 				       DCERPC_SAMR_VERSION,
-				       TEST_MACHINE_NAME,
-				       lp_workgroup(), 
-				       test_machine_account,
-				       machine_password);
+					   &credentials);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect with schannel: %s\n", nt_errstr(status));
 		goto failed;

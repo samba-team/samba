@@ -297,19 +297,14 @@ GtkWidget *gtk_rpc_binding_dialog_new (BOOL nocredentials, struct sam_pipe *sam_
 	return GTK_WIDGET(d);
 }
 
-const char *gtk_rpc_binding_dialog_get_username(GtkRpcBindingDialog *d)
+struct cli_credentials *gtk_rpc_binding_dialog_get_credentials(GtkRpcBindingDialog *d)
 {
-	return gtk_entry_get_text(GTK_ENTRY(d->entry_username));
-}
-
-const char *gtk_rpc_binding_dialog_get_userdomain(GtkRpcBindingDialog *d)
-{
-	return gtk_entry_get_text(GTK_ENTRY(d->entry_userdomain));
-}
-
-const char *gtk_rpc_binding_dialog_get_password(GtkRpcBindingDialog *d)
-{
-	return gtk_entry_get_text(GTK_ENTRY(d->entry_password));
+	struct cli_credentials *ret = talloc(d->mem_ctx, struct cli_credentials);
+	cli_credentials_set_username(ret, gtk_entry_get_text(GTK_ENTRY(d->entry_username)), CRED_SPECIFIED);
+	cli_credentials_set_password(ret, gtk_entry_get_text(GTK_ENTRY(d->entry_password)), CRED_SPECIFIED);
+	cli_credentials_set_domain(ret, gtk_entry_get_text(GTK_ENTRY(d->entry_userdomain)), CRED_SPECIFIED);
+	
+	return ret;
 }
 
 const char *gtk_rpc_binding_dialog_get_host(GtkRpcBindingDialog *d)

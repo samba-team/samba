@@ -51,3 +51,5 @@ struct cli_credentials {
 
 	void *priv_data;
 };
+
+#define cli_credentials_is_anonymous(c) (!(c) || !(c)->username || !(c)->username[0])

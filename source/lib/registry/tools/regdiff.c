@@ -146,8 +146,9 @@ static void writediff(struct registry_key *oldkey, struct registry_key *newkey, 
 			else if (!h2) error = reg_open_local(&h2);
 			break;
 		case 'R':
-			if (!h1 && !from_null) error = reg_open_remote(&h1, cli_credentials_get_username(cmdline_credentials), cli_credentials_get_password(cmdline_credentials), poptGetOptArg(pc));
-			else if (!h2) error = reg_open_remote(&h2, cli_credentials_get_username(cmdline_credentials), cli_credentials_get_password(cmdline_credentials), poptGetOptArg(pc));
+			if (!h1 && !from_null) 
+				error = reg_open_remote(&h1, cmdline_credentials, poptGetOptArg(pc));
+			else if (!h2) error = reg_open_remote(&h2, cmdline_credentials, poptGetOptArg(pc));
 			break;
 		}
 

@@ -80,9 +80,9 @@ BOOL torture_open_connection_share(struct smbcli_state **c,
 				   const char *sharename)
 {
 	NTSTATUS status;
-	const char *username = lp_parm_string(-1, "torture", "username");
-	const char *userdomain = lp_parm_string(-1, "torture", "userdomain");
-	const char *password = lp_parm_string(-1, "torture", "password");
+	const char *username = cli_credentials_get_username(cmdline_credentials);
+	const char *userdomain = cli_credentials_get_domain(cmdline_credentials);
+	const char *password = cli_credentials_get_password(cmdline_credentials);
 
 	status = smbcli_full_connection(NULL,
 					c, lp_netbios_name(),
@@ -138,10 +138,7 @@ NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p,
 	}
 
 	status = dcerpc_pipe_connect(p, binding, pipe_uuid, pipe_version,
-				     lp_netbios_name(),
-				     lp_parm_string(-1, "torture", "userdomain"), 
-				     lp_parm_string(-1, "torture", "username"),
-				     lp_parm_string(-1, "torture", "password"));
+					 cmdline_credentials);
  
         return status;
 }
@@ -173,10 +170,8 @@ NTSTATUS torture_rpc_connection_transport(struct dcerpc_pipe **p,
 	b->transport = transport;
 
 	status = dcerpc_pipe_connect_b(p, b, pipe_uuid, pipe_version,
-				       lp_netbios_name(),
-				       lp_parm_string(-1, "torture", "userdomain"), 
-				       lp_parm_string(-1, "torture", "username"),
-				       lp_parm_string(-1, "torture", "password"));
+								   cmdline_credentials);
+					   
  
         return status;
 }
@@ -731,9 +726,9 @@ static BOOL run_tcon_devtype_test(void)
 	BOOL ret = True;
 	const char *host = lp_parm_string(-1, "torture", "host");
 	const char *share = lp_parm_string(-1, "torture", "share");
-	const char *username = lp_parm_string(-1, "torture", "username");
-	const char *userdomain = lp_parm_string(-1, "torture", "userdomain");
-	const char *password = lp_parm_string(-1, "torture", "password");
+	const char *username = cli_credentials_get_username(cmdline_credentials);
+	const char *userdomain = cli_credentials_get_domain(cmdline_credentials);
+	const char *password = cli_credentials_get_password(cmdline_credentials);
 	
 	status = smbcli_full_connection(NULL,
 					&cli1, lp_netbios_name(),
@@ -2726,25 +2721,6 @@ static BOOL is_binding_string(const char *binding_string)
 		lp_set_cmdline("torture:share", share);
 		asprintf(&binding, "ncacn_np:%s", host);
 		lp_set_cmdline("torture:binding", binding);
-	}
-
-	if (!lp_parm_string(-1,"torture","username")) {
-		lp_set_cmdline("torture:username", cli_credentials_get_username(cmdline_credentials));
-	}
-	if (!lp_parm_string(-1,"torture","userdomain")) {
-		/* 
-		 * backward compatibility
-		 * maybe we should remove this to make this consistent
-		 * for all cmdline tools
-		 * --metze
-		 */
-		if (strequal(lp_netbios_name(),cli_credentials_get_domain(cmdline_credentials))) {
-			cli_credentials_set_domain(cmdline_credentials, lp_workgroup(), CRED_SPECIFIED);
-		}
-		lp_set_cmdline("torture:userdomain", cli_credentials_get_domain(cmdline_credentials));
-	}
-	if (!lp_parm_string(-1,"torture","password")) {
-		lp_set_cmdline("torture:password", cli_credentials_get_password(cmdline_credentials));
 	}
 
 	if (argc_new == 0) {
