@@ -12,6 +12,7 @@ AR = ar
 RANLIB = @RANLIB@
 DEFS = @DEFS@
 CFLAGS = @CFLAGS@
+LD_FLAGS = @LD_FLAGS@
 
 PICFLAGS = @PICFLAGS@
 
@@ -87,6 +88,6 @@ $(LIBNAME).$(SHLIBEXT): $(LIBOBJ)
 	$(CC) $(CFLAGS) $(PICFLAGS) -shared -o $@ $(LIBOBJ)
 
 destest: destest.o
-	$(CC) $(CFLAGS) destest.o -o $@ -L. -ldes
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ destest.o -L. -ldes
 
 $(LIBOBJ): ../../config.h
