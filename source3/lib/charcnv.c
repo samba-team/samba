@@ -26,6 +26,8 @@ static pstring cvtbuf;
 
 static smb_iconv_t conv_handles[NUM_CHARSETS][NUM_CHARSETS];
 
+static int initialized;
+
 /****************************************************************************
 return the name of a charset to give to iconv()
 ****************************************************************************/
@@ -92,15 +94,14 @@ size_t convert_string(charset_t from, charset_t to,
 {
 	size_t i_len, o_len;
 	size_t retval;
-	const char* inbuf = (const char*)src;
+	char* inbuf = (char*)src;
 	char* outbuf = (char*)dest;
-	static int initialised;
 	smb_iconv_t descriptor;
 
 	if (srclen == -1) srclen = strlen(src)+1;
 
-	if (!initialised) {
-		initialised = 1;
+	if (!initialized) {
+		initialized = 1;
 		load_case_tables();
 		init_iconv();
 	}
@@ -118,7 +119,8 @@ size_t convert_string(charset_t from, charset_t to,
 	o_len=destlen;
 	retval=smb_iconv(descriptor,&inbuf, &i_len, &outbuf, &o_len);
 	if(retval==-1) 		
-	{    	char *reason="unknown error";
+	{
+	    	char *reason="unknown error";
 		switch(errno)
 		{ case EINVAL: reason="Incomplete multibyte sequence"; break;
 		  case E2BIG:  reason="No more room"; 
@@ -137,6 +139,85 @@ size_t convert_string(charset_t from, charset_t to,
 		/* smb_panic(reason); */
 	}
 	return destlen-o_len;
+}
+
+/* you must provide source lenght -1 is not accepted as lenght.
+   this function will return the size in bytes of the converted string
+   or -1 in case of error.
+ */
+size_t convert_string_allocate(charset_t from, charset_t to,
+		      		void const *src, size_t srclen, void **dest)
+{
+	size_t i_len, o_len, destlen;
+	size_t retval;
+	char* inbuf = (char *)src;
+	char *outbuf, *ob;
+	smb_iconv_t descriptor;
+
+	*dest = NULL;
+
+	if (src == NULL || srclen == -1) return -1;
+
+	if (!initialized) {
+		initialized = 1;
+		load_case_tables();
+		init_iconv();
+	}
+
+	descriptor = conv_handles[from][to];
+
+	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
+		/* conversion not supported, return -1*/
+		return -1;
+	}
+
+	destlen = MAX(srclen, 1024);
+	outbuf = NULL;
+convert:
+	destlen = destlen * 2;
+	ob = (char *)realloc(outbuf, destlen);
+	if (!ob) {
+		DEBUG(0, ("convert_string_allocate: realloc failed!\n"));
+		free(outbuf);
+		return -1;
+	}
+	else outbuf = ob;
+	i_len = srclen;
+	o_len = destlen;
+	retval = smb_iconv(descriptor,
+				&inbuf, &i_len,
+				&outbuf, &o_len);
+	if(retval == -1) 		
+	{
+	    	char *reason="unknown error";
+		switch(errno)
+		{
+		case EINVAL:
+			reason="Incomplete multibyte sequence";
+			break;
+		case E2BIG:
+			goto convert;		
+			break;
+		case EILSEQ:
+			reason="Illegal myltibyte sequence";
+			break;
+		}
+		DEBUG(0,("Conversion error: %s(%s)\n",reason,inbuf));
+		/* smb_panic(reason); */
+		return -1;
+	}
+	
+	destlen = destlen - o_len;
+	*dest = (char *)malloc(destlen);
+	if (!*dest) {
+		DEBUG(0, ("convert_string_allocate: out of memory!\n"));
+		free(outbuf);
+		return -1;
+	}
+	memcpy(*dest, outbuf, destlen);
+	free(outbuf);
+	
+	return destlen;
 }
 
 int unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
