@@ -28,7 +28,7 @@
  * does a decent job of converting Samba logs into HTML.
  * -------------------------------------------------------------------------- **
  *
- * $Revision: 1.7 $
+ * $Revision: 1.8 $
  *
  * ========================================================================== **
  */
@@ -128,6 +128,8 @@ static void newblock( dbg_Token old, dbg_Token new )
     case dbg_lineno:
       (void)fprintf( outfile, ")" );
       break;
+    default:
+      break;
     }
 
   switch( new )
@@ -140,6 +142,8 @@ static void newblock( dbg_Token old, dbg_Token new )
       break;
     case dbg_lineno:
       (void)fprintf( outfile, "(" );
+      break;
+    default:
       break;
     }
   } /* newblock */
