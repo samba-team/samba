@@ -71,6 +71,7 @@ static BOOL smb_pam_error_handler(pam_handle_t *pamh, int pam_error, char *msg, 
 	if( pam_error != PAM_SUCCESS) {
 		DEBUG(dbglvl, ("smb_pam_error_handler: PAM: %s : %s\n",
 				msg, pam_strerror(pamh, pam_error)));
+		
 		return False;
 	}
 	return True;
@@ -130,6 +131,8 @@ static int smb_pam_conv(int num_msg,
 	if (!reply)
 		return PAM_CONV_ERR;
 
+	memset(reply, '\0', sizeof(struct pam_response) * num_msg);
+
 	for (replies = 0; replies < num_msg; replies++) {
 		switch (msg[replies]->msg_style) {
 			case PAM_PROMPT_ECHO_ON:
@@ -170,6 +173,82 @@ static int smb_pam_conv(int num_msg,
  * echo off means password.
  */
 
+static void special_char_sub(char *buf)
+{
+	all_string_sub(buf, "\\n", "", 0);
+	all_string_sub(buf, "\\r", "", 0);
+	all_string_sub(buf, "\\s", " ", 0);
+	all_string_sub(buf, "\\t", "\t", 0);
+}
+
+static void pwd_sub(char *buf, char *username, char *oldpass, char *newpass)
+{
+	pstring_sub(buf, "%u", username);
+	all_string_sub(buf, "%o", oldpass, sizeof(fstring));
+	all_string_sub(buf, "%n", newpass, sizeof(fstring));
+}
+
+
+struct chat_struct {
+	struct chat_struct *next, *prev;
+	fstring prompt;
+	fstring reply;
+};
+
+/**************************************************************
+ Create a linked list containing chat data.
+***************************************************************/
+
+static struct chat_struct *make_pw_chat(char *p) 
+{
+	fstring prompt;
+	fstring reply;
+	struct chat_struct *list = NULL;
+	struct chat_struct *t;
+	struct chat_struct *tmp;
+
+	while (1) {
+		t = (struct chat_struct *)malloc(sizeof(*t));
+		if (!t) {
+			DEBUG(0,("make_pw_chat: malloc failed!\n"));
+			return NULL;
+		}
+
+		ZERO_STRUCTP(t);
+
+		DLIST_ADD_END(list, t, tmp);
+
+		if (!next_token(&p, prompt, NULL, sizeof(fstring)))
+			break;
+
+		if (strequal(prompt,"."))
+			fstrcpy(prompt,"*");
+
+		special_char_sub(prompt);
+		fstrcpy(t->prompt, prompt);
+		
+		if (!next_token(&p, reply, NULL, sizeof(fstring)))
+			break;
+
+		if (strequal(reply,"."))
+				fstrcpy(reply,"");
+
+		special_char_sub(reply);
+		fstrcpy(t->reply, reply);
+
+	}
+	return list;
+}
+
+static void free_pw_chat(struct chat_struct *list)
+{
+    while (list) {
+        struct chat_struct *old_head = list;
+        DLIST_REMOVE(list, list);
+        free(old_head);
+    }
+}
+
 static int smb_pam_passchange_conv(int num_msg,
 				const struct pam_message **msg,
 				struct pam_response **resp,
@@ -177,16 +256,20 @@ static int smb_pam_passchange_conv(int num_msg,
 {
 	int replies = 0;
 	struct pam_response *reply = NULL;
-	fstring oldpw_prompt;
-	fstring newpw_prompt;
-	fstring repeatpw_prompt;
-	fstring prompt_ret;
-	char *p = lp_passwd_chat();
+	fstring current_prompt;
+	fstring current_reply;
 	struct smb_pam_userdata *udp = (struct smb_pam_userdata *)appdata_ptr;
-
+	struct chat_struct *pw_chat= make_pw_chat(lp_passwd_chat());
+	struct chat_struct *t;
+	BOOL found; 
 	*resp = NULL;
+	
+	DEBUG(10,("smb_pam_passchange_conv: starting converstation for %d messages\n", num_msg));
 
 	if (num_msg <= 0)
+		return PAM_CONV_ERR;
+
+	if (pw_chat == NULL)
 		return PAM_CONV_ERR;
 
 	/*
@@ -196,62 +279,73 @@ static int smb_pam_passchange_conv(int num_msg,
 
 	if (udp == NULL) {
 		DEBUG(0,("smb_pam_passchange_conv: PAM on this system is broken - appdata_ptr == NULL !\n"));
+		free_pw_chat(pw_chat);
 		return PAM_CONV_ERR;
 	}
 
-	/* Get the prompts. */
-
-	if (!next_token(&p, oldpw_prompt, NULL, sizeof(fstring)))
-		return PAM_CONV_ERR;
-	strlower(oldpw_prompt);
-	if (!next_token(&p, newpw_prompt, NULL, sizeof(fstring)))
-		return PAM_CONV_ERR;
-	strlower(newpw_prompt);
-	if (!next_token(&p, repeatpw_prompt, NULL, sizeof(fstring)))
-		return PAM_CONV_ERR;
-	strlower(repeatpw_prompt);
-
 	reply = malloc(sizeof(struct pam_response) * num_msg);
-	if (!reply)
+	if (!reply) {
+		DEBUG(0,("smb_pam_passchange_conv: malloc for reply failed!\n"));
+		free_pw_chat(pw_chat);
 		return PAM_CONV_ERR;
+	}
 
 	for (replies = 0; replies < num_msg; replies++) {
+		found = False;
+		DEBUG(10,("smb_pam_passchange_conv: Processing message %d\n", replies));
 		switch (msg[replies]->msg_style) {
 		case PAM_PROMPT_ECHO_ON:
-			DEBUG(10,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_ON: Replied: %s\n", msg[replies]->msg));
-			reply[replies].resp_retcode = PAM_SUCCESS;
-			reply[replies].resp = COPY_STRING(udp->PAM_username);
+			DEBUG(10,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_ON: PAM said: %s\n", msg[replies]->msg));
+			fstrcpy(current_prompt, msg[replies]->msg);
+			strlower(current_prompt);
+			for (t=pw_chat; t; t=t->next) {
+				if (ms_fnmatch(t->prompt, current_prompt) == 0) {
+					fstrcpy(current_reply, t->reply);
+					pwd_sub(current_reply, udp->PAM_username, udp->PAM_password, udp->PAM_newpassword);
+					DEBUG(10,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_ON: We sent: %s\n", current_reply));
+					reply[replies].resp_retcode = PAM_SUCCESS;
+					reply[replies].resp = COPY_STRING(current_reply);
+					found = True;
+					break;
+				}
+			}
 			/* PAM frees resp */
+			if (!found) {
+				DEBUG(3,("smb_pam_passchange_conv: Could not find reply for PAM prompt: %s\n",msg[replies]->msg));
+				free_pw_chat(pw_chat);
+				free(reply);
+				reply = NULL;
+				return PAM_CONV_ERR;
+			}
 			break;
 
 		case PAM_PROMPT_ECHO_OFF:
-			reply[replies].resp_retcode = PAM_SUCCESS;
-			if (!msg[replies]->msg) {
-				free(reply);
-				reply = NULL;
-				return PAM_CONV_ERR;
-			}
-
-			DEBUG(10,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_OFF: Replied: %s\n", msg[replies]->msg));
-
-			fstrcpy(prompt_ret, msg[replies]->msg);
-			strlower(prompt_ret);
-
-			if (ms_fnmatch( oldpw_prompt, prompt_ret) == 0) {
-				reply[replies].resp = COPY_STRING(udp->PAM_password);
-			} else if (ms_fnmatch( newpw_prompt, prompt_ret) == 0) {
-				reply[replies].resp = COPY_STRING(udp->PAM_newpassword);
-			} else if (ms_fnmatch(repeatpw_prompt, prompt_ret) == 0) {
-				reply[replies].resp = COPY_STRING(udp->PAM_newpassword);
-			} else {
-				DEBUG(3,("smb_pam_passchange_conv: Could not find reply for PAM prompt: %s\n",msg[replies]->msg));
-				DEBUG(5,("smb_pam_passchange_conv: Prompts available:\n OldPW: \"%s\"\nNewPW: \"%s\"\n \
-RepeatPW: \"%s\"\n",oldpw_prompt, newpw_prompt,repeatpw_prompt));
-				free(reply);
-				reply = NULL;
-				return PAM_CONV_ERR;
+			DEBUG(10,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_OFF: PAM said: %s\n", msg[replies]->msg));
+			fstrcpy(current_prompt, msg[replies]->msg);
+			strlower(current_prompt);
+			for (t=pw_chat; t; t=t->next) {
+				if (ms_fnmatch(t->prompt, current_prompt) == 0) {
+					fstrcpy(current_reply, t->reply);
+					DEBUG(10,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_OFF: We sent: %s\n", current_reply));
+					pwd_sub(current_reply, udp->PAM_username, udp->PAM_password, udp->PAM_newpassword);
+					reply[replies].resp_retcode = PAM_SUCCESS;
+					reply[replies].resp = COPY_STRING(current_reply);
+#ifdef DEBUG_PASSWORD
+					DEBUG(100,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_OFF: We actualy sent: %s\n", current_reply));
+#endif
+					found = True;
+					break;
+				}
 			}
 			/* PAM frees resp */
+			
+			if (!found) {
+				DEBUG(3,("smb_pam_passchange_conv: Could not find reply for PAM prompt: %s\n",msg[replies]->msg));
+				free_pw_chat(pw_chat);
+				free(reply);
+				reply = NULL;
+				return PAM_CONV_ERR;
+			}
 			break;
 
 		case PAM_TEXT_INFO:
@@ -262,15 +356,17 @@ RepeatPW: \"%s\"\n",oldpw_prompt, newpw_prompt,repeatpw_prompt));
 			reply[replies].resp_retcode = PAM_SUCCESS;
 			reply[replies].resp = NULL;
 			break;
-
+			
 		default:
 			/* Must be an error of some sort... */
+			free_pw_chat(pw_chat);
 			free(reply);
 			reply = NULL;
 			return PAM_CONV_ERR;
 		}
 	}
-
+		
+	free_pw_chat(pw_chat);
 	if (reply)
 		*resp = reply;
 	return PAM_SUCCESS;
