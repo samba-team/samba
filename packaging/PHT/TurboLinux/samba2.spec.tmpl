@@ -199,7 +199,8 @@ do
 install -m755 -s source/bin/$i $RPM_BUILD_ROOT/usr/sbin
 done
 # Now link smbmount to mount.smb 
-ln -s $RPM_BUILD_ROOT/usr/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
+# Nah! We need to do this as a post installation process to make sure we get the right link
+# ln -s $RPM_BUILD_ROOT/usr/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
 
 # Install level 1 man pages
 # At a later date add back to line below: smbsh.1
@@ -285,6 +286,11 @@ rm -rf $RPM_BUILD_ROOT
 %post
 /sbin/chkconfig --add smb
 /sbin/chkconfig smb off
+
+# Link smbmount to /sbin/mount.smb
+if [ ! -f /sbin/mount.smb ]; then
+	ln -s /usr/sbin/smbmount /sbin/mount.smb
+fi
 
 # Build codepage load files
 cd /etc
@@ -463,7 +469,7 @@ fi
 %attr(-,root,root) /usr/sbin/smbmount
 %attr(-,root,root) /usr/sbin/smbumount
 %attr(-,root,root) /usr/sbin/smbmnt
-%attr(-,root,root) /sbin/mount.smb
+#%attr(-,root,root) /sbin/mount.smb
 %attr(-,root,root) /usr/share/man/man8/smbmnt.8
 %attr(-,root,root) /usr/share/man/man8/smbmount.8
 %attr(-,root,root) /usr/share/man/man8/smbumount.8
