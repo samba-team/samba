@@ -140,70 +140,20 @@ static BOOL cm_ads_find_dc(const char *domain, struct in_addr *dc_ip, fstring sr
 */
 static BOOL cm_rpc_find_dc(const char *domain, struct in_addr *dc_ip, fstring srv_name)
 {
-	struct in_addr *ip_list = NULL, exclude_ip;
+	struct in_addr *ip_list = NULL;
 	int count, i;
 
-	zero_ip(&exclude_ip);
-
-	/* Lookup domain controller name. Try the real PDC first to avoid
-	   SAM sync delays */
-
-	if (get_dc_list(True, domain, &ip_list, &count)) {
-		if (name_status_find(domain, 0x1c, 0x20, ip_list[0], srv_name)) {
-			*dc_ip = ip_list[0];
-			SAFE_FREE(ip_list);
-			return True;
-		}
-		/* Didn't get name, remember not to talk to this DC. */
-		exclude_ip = ip_list[0];
-		SAFE_FREE(ip_list);
-	}
-
-	if (!get_dc_list(False, domain, &ip_list, &count)) {
+	if (!get_dc_list(False, domain, &ip_list, &count) && 
+	    !get_dc_list(True, domain, &ip_list, &count)) {
 		DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
 		return False;
 	}
 
-	/* Remove the entry we've already failed with (should be the PDC). */
-	for (i = 0; i < count; i++) {
-		if (ip_equal( exclude_ip, ip_list[i]))
-			zero_ip(&ip_list[i]);
-	}
-
 	/* Pick a nice close server */
-	/* Look for DC on local net */
-	for (i = 0; i < count; i++) {
-		if (is_zero_ip(ip_list[i]))
-			continue;
-
-		if (!is_local_net(ip_list[i]))
-			continue;
-		
-		if (name_status_find(domain, 0x1c, 0x20, ip_list[i], srv_name)) {
-			*dc_ip = ip_list[i];
-			SAFE_FREE(ip_list);
-			return True;
-		}
-		zero_ip(&ip_list[i]);
+	if (count > 1) {
+		qsort(ip_list, count, sizeof(struct in_addr), QSORT_CAST ip_compare);
 	}
 
-	/*
-	 * Secondly try and contact a random PDC/BDC.
-	 */
-
-	i = (sys_random() % count);
-
-	if (!is_zero_ip(ip_list[i]) &&
-	    name_status_find(domain, 0x1c, 0x20,
-			     ip_list[i], srv_name)) {
-		*dc_ip = ip_list[i];
-		SAFE_FREE(ip_list);
-		return True;
-	}
-	zero_ip(&ip_list[i]); /* Tried and failed. */
-
-	/* Finally return first DC that we can contact using a node
-	   status */
 	for (i = 0; i < count; i++) {
 		if (is_zero_ip(ip_list[i]))
 			continue;
@@ -214,6 +164,7 @@ static BOOL cm_rpc_find_dc(const char *domain, struct in_addr *dc_ip, fstring sr
 			return True;
 		}
 	}
+
 
 	SAFE_FREE(ip_list);
 
