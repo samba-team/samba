@@ -407,7 +407,8 @@ fcc_store_cred(krb5_context context,
 	storage_set_flags(context, sp, FCACHE(id)->version);
 	if (krb5_config_get_bool_default(context, NULL, TRUE,
 					 "libdefaults",
-					 "fcc-mit-ticketflags"))
+					 "fcc-mit-ticketflags",
+					 NULL))
 	    ret = _krb5_store_creds_heimdal_0_7(sp, creds);
 	else
 	    ret = _krb5_store_creds_heimdal_pre_0_7(sp, creds);
