@@ -704,7 +704,7 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	fstring 	keystr;
 	pstring		tdbfile;
 	fstring		name;
-	int		newtdb = FALSE;
+	int		newtdb = False;
 	
 	pstrcpy (tdbfile, lp_private_dir());
 	pstrcat (tdbfile, PASSDB_FILE_NAME);
