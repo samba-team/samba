@@ -19,6 +19,7 @@
  */
 
 #include "includes.h"
+#ifdef HAVE_LDAP
 
 struct prldap_state {
 	BOOL initialized;
@@ -92,11 +93,15 @@ do { \
        (*(num)) += 1; } \
 } while (0)
 
+/* already defined in include/ldap_smb.h */
+#if 0 
 struct ldap_attribute {
 	const char *name;
 	int num_values;
 	DATA_BLOB *values;
 };
+#endif
+
 
 struct ldap_entry {
 	TALLOC_CTX *mem_ctx;
@@ -111,17 +116,17 @@ struct ldap_entry {
 static char *ldaperr(LDAP *ld)
 {
 	static fstring error;
-	char *ldap_error = NULL;
-	if (ldap_get_option(ld, LDAP_OPT_ERROR_STRING, &ldap_error) != 0) {
+	char *ldap_error_str = NULL;
+	if (ldap_get_option(ld, LDAP_OPT_ERROR_STRING, &ldap_error_str) != 0) {
 		fstrcpy(error, "ldap_get_option failed");
 		return error;
 	}
-	if (ldap_error == NULL) {
+	if (ldap_error_str == NULL) {
 		fstrcpy(error, "no ldap_error");
 		return error;
 	}
-	fstrcpy(error, ldap_error);
-	ldap_memfree(ldap_error);
+	fstrcpy(error, ldap_error_str);
+	ldap_memfree(ldap_error_str);
 	return error;
 }
 
@@ -773,7 +778,7 @@ static struct ldap_entry *prepare_printer_entry(const char *name)
 					"(&(objectclass=sambaPrinter)"
 					"(sambaPrintName=%s))", name);
 	entry->suffix =	talloc_strdup(entry->mem_ctx,
-				      lp_ldap_printer_suffix());
+				      (const char *)lp_ldap_printer_suffix());
 
 	return entry;
 }
@@ -803,13 +808,14 @@ static void prldap_set_values(struct ldap_entry *entry, NT_PRINTER_DATA *data)
 			/* pathname should be stored as <key>\<value> */
 			
 			val = regval_ctr_specific_value( val_ctr, j );
-
+#if 0
 			ldapval = data_blob_pack("PPdB",
 						 data->keys[i].name,
 						 regval_name(val),
 						 regval_type(val),
 						 regval_size(val),
 						 regval_data_p(val) );
+#endif
 
 			ldap_entry_bin(entry, "sambaPrintData",
 				       ldapval.data, ldapval.length);
@@ -818,6 +824,7 @@ static void prldap_set_values(struct ldap_entry *entry, NT_PRINTER_DATA *data)
 		}
 	
 	}
+
 }
 
 BOOL prldap_set_printer(NT_PRINTER_INFO_LEVEL_2 *printer)
@@ -1019,14 +1026,14 @@ static struct ldap_entry *prepare_form_entry(const char *name)
 
 	entry->dn = talloc_asprintf(entry->mem_ctx,
 				    "sambaFormName=%s,cn=Forms,%s",
-				    name, lp_ldap_printer_suffix());
+				    name, (const char *)lp_ldap_printer_suffix());
 
 	entry->filter = talloc_asprintf(entry->mem_ctx,
 					"(&(objectClass=sambaPrinterForm)"
 					"(sambaFormName=%s))", name);
 
 	entry->suffix = talloc_strdup(entry->mem_ctx,
-				      lp_ldap_printer_suffix());
+				      (const char *)lp_ldap_printer_suffix());
 
 	return entry;
 }
@@ -1116,7 +1123,7 @@ static struct ldap_entry *prepare_driver_entry(const char *name,
 	entry->dn = talloc_asprintf(entry->mem_ctx,
 				    "sambaDrvName=%s,cn=%d,cn=%s,"
 				    "cn=Drivers,%s", name, cversion,
-				    architecture, lp_ldap_printer_suffix());
+				    architecture, (const char *)lp_ldap_printer_suffix());
 
 	entry->filter = talloc_asprintf(entry->mem_ctx,
 					"(&(objectClass=sambaPrinterDriver)"
@@ -1126,7 +1133,7 @@ static struct ldap_entry *prepare_driver_entry(const char *name,
 					name, cversion, architecture);
 
 	entry->suffix = talloc_strdup(entry->mem_ctx,
-				      lp_ldap_printer_suffix());
+				      (const char *)lp_ldap_printer_suffix());
 
 
 	return entry;
@@ -1227,3 +1234,4 @@ NT_PRINTER_DRIVER_INFO_LEVEL_3 *prldap_get_driver(const char *drivername,
 
 	return driver;
 }
+#endif

@@ -227,6 +227,7 @@ typedef struct
 	char *szLdapUserSuffix;
 	char *szLdapIdmapSuffix;
 	char *szLdapGroupSuffix;
+	char *szLdapPrinterSuffix;
 #ifdef WITH_LDAP_SAMCONFIG
 	int ldap_port;
 	char *szLdapServer;
@@ -1099,6 +1100,7 @@ static struct parm_struct parm_table[] = {
 	{"ldap group suffix", P_STRING, P_GLOBAL, &Globals.szLdapGroupSuffix, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap idmap suffix", P_STRING, P_GLOBAL, &Globals.szLdapIdmapSuffix, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap machine suffix", P_STRING, P_GLOBAL, &Globals.szLdapMachineSuffix, NULL, NULL, FLAG_ADVANCED}, 
+	{"ldap printer suffix", P_STRING, P_GLOBAL, &Globals.szLdapPrinterSuffix, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap passwd sync", P_ENUM, P_GLOBAL, &Globals.ldap_passwd_sync, NULL, enum_ldap_passwd_sync, FLAG_ADVANCED}, 
 	{"ldap password sync", P_ENUM, P_GLOBAL, &Globals.ldap_passwd_sync, NULL, enum_ldap_passwd_sync, FLAG_HIDE}, 
 	{"ldap replication sleep", P_INTEGER, P_GLOBAL, &Globals.ldap_replication_sleep, NULL, NULL, FLAG_ADVANCED},
@@ -1484,6 +1486,7 @@ static void init_globals(void)
 	string_set(&Globals.szLdapUserSuffix, "");
 	string_set(&Globals.szLdapGroupSuffix, "");
 	string_set(&Globals.szLdapIdmapSuffix, "");
+	string_set(&Globals.szLdapPrinterSuffix, "");
 
 	string_set(&Globals.szLdapAdminDn, "");
 	Globals.ldap_ssl = LDAP_SSL_ON;
@@ -3009,6 +3012,15 @@ char *lp_ldap_idmap_suffix(void)
 
 	return lp_string(Globals.szLdapSuffix);
 }
+
+char *lp_ldap_printer_suffix(void)
+{
+	if (Globals.szLdapPrinterSuffix[0])
+		return append_ldap_suffix(Globals.szLdapPrinterSuffix);
+
+	return lp_string(Globals.szLdapSuffix);
+}
+
 
 /***************************************************************************
 ***************************************************************************/
