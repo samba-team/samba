@@ -64,11 +64,10 @@
 #endif
 
 #include <roken.h>
-#include <protos.h>
 
 #include <otp.h>
 
-#include <xdbm.h>
+#include <ndbm.h>
 
 #define OTPKEYS "/.otpkeys"
 
