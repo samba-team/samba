@@ -91,11 +91,11 @@ void
 generate_type_copy (Symbol *s)
 {
   fprintf (headerfile,
-	   "void copy_%s(%s *, %s *);\n",
+	   "void copy_%s(const %s *, %s *);\n",
 	   s->gen_name, s->gen_name, s->gen_name);
 
   fprintf (codefile, "void\n"
-	   "copy_%s(%s *from, %s *to)\n"
+	   "copy_%s(const %s *from, %s *to)\n"
 	   "{\n",
 	   s->gen_name, s->gen_name, s->gen_name);
 

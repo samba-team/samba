@@ -71,8 +71,8 @@ size_t length_general_string (general_string *data);
 size_t length_octet_string (octet_string *k);
 size_t length_generalized_time (time_t *t);
 
-void copy_general_string (general_string *from, general_string *to);
-void copy_octet_string (octet_string *from, octet_string *to);
+void copy_general_string (const general_string *from, general_string *to);
+void copy_octet_string (const octet_string *from, octet_string *to);
 
 int fix_dce(int reallen, int *len);
 
