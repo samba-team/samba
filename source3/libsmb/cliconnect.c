@@ -1087,6 +1087,10 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		return False;
 	}
 
+	/* cli_establish_connection() can't handle spnego yet. Once we get rid of
+	   pwd_cache and other horrors we can get rid of this */
+	cli->use_spnego = False;
+
 	if (cli->fd == -1)
 	{
 		if (!cli_connect(cli, dest_host, dest_ip))

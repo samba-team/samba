@@ -112,7 +112,9 @@ void cli_setup_packet(struct cli_state *cli)
 		if (cli->capabilities & CAP_STATUS32) {
 			flags2 |= FLAGS2_32_BIT_ERROR_CODES;
 		}
-		flags2 |= FLAGS2_EXTENDED_SECURITY;
+		if (cli->use_spnego) {
+			flags2 |= FLAGS2_EXTENDED_SECURITY;
+		}
 		SSVAL(cli->outbuf,smb_flg2, flags2);
 	}
 }
@@ -179,6 +181,7 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	cli->outbuf = (char *)malloc(cli->bufsize);
 	cli->inbuf = (char *)malloc(cli->bufsize);
 	cli->oplock_handler = cli_oplock_ack;
+	cli->use_spnego = True;
 
 	if (!cli->outbuf || !cli->inbuf)
                 goto error;
