@@ -725,9 +725,9 @@ int reply_ntcreate_and_X(connection_struct *conn,
         get_filename(&fname[0], inbuf, smb_buf(inbuf)-inbuf, 
                    smb_buflen(inbuf),fname_len);
 
-        if( fname[0] == ':') {
+        if( strchr(fname, ':')) {
           SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-	  END_PROFILE(SMBntcreateX);
+          END_PROFILE(SMBntcreateX);
           return(ERROR(0, NT_STATUS_OBJECT_PATH_NOT_FOUND));
         }
 	END_PROFILE(SMBntcreateX);
@@ -1155,7 +1155,7 @@ static int call_nt_transact_create(connection_struct *conn,
       get_filename_transact(&fname[0], params, 53,
                             total_parameter_count - 53 - fname_len, fname_len);
 
-      if( fname[0] == ':') {
+      if( strchr(fname, ':')) {
           SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
           return(ERROR(0, NT_STATUS_OBJECT_PATH_NOT_FOUND));
       }
