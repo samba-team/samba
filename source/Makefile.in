@@ -765,8 +765,7 @@ WINBINDD_OBJ = \
 
 WBINFO_OBJ = nsswitch/wbinfo.o nsswitch/wb_common.o
 
-WINBIND_NSS_OBJ = nsswitch/winbind_nss.o nsswitch/winbind_nss_solaris.o \
-		  nsswitch/wb_common.o
+WINBIND_NSS_OBJ = nsswitch/winbind_nss.o nsswitch/wb_common.o
 
 WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.po)
 
