@@ -113,9 +113,14 @@ BOOL py_from_DRIVER_INFO_3(PyObject **dict, DRIVER_INFO_3 *info)
 
 BOOL py_to_DRIVER_INFO_3(DRIVER_INFO_3 *info, PyObject *dict)
 {
-	to_struct(info, dict, py_DRIVER_INFO_3);
+	PyObject *dict_copy = PyDict_Copy(dict);
+	BOOL result;
 
-	return True;
+	PyDict_DelItemString(dict_copy, "level");
+	result = to_struct(info, dict_copy, py_DRIVER_INFO_3);
+
+	Py_DECREF(dict_copy);
+	return result;
 }
 
 BOOL py_from_DRIVER_INFO_6(PyObject **dict, DRIVER_INFO_6 *info)
