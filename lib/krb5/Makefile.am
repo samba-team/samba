@@ -174,6 +174,9 @@ man_MANS =					\
 	krb5_crypto_init.3			\
 	krb5_data.3				\
 	krb5_encrypt.3				\
+	krb5_expand_hostname.3			\
+	krb5_find_padata.3			\
+	krb5_generate_random_block.3		\
 	krb5_get_all_client_addrs.3		\
 	krb5_get_in_cred.3			\
 	krb5_get_init_creds.3			\
