@@ -337,7 +337,65 @@ static int utmp_fill(struct utmp *u, const connection_struct *conn, pid_t pid, i
 	return(rc);
 }
 
-static void utmp_update(const pstring dirname, const struct utmp *u, const char *host)
+/* Default path (if possible) */
+#ifdef	HAVE_UTMPX_H
+
+# ifdef UTMPX_FILE
+static char *ut_pathname = UTMPX_FILE;
+# else
+static char *ut_pathname = "";
+# endif
+# ifdef WTMPX_FILE
+static char *wt_pathname = WTMPX_FILE;
+# else
+static char *wt_pathname = "";
+# endif
+
+#else	/* HAVE_UTMPX_H */
+
+# ifdef UTMP_FILE
+static char *ut_pathname = UTMP_FILE;
+# else
+static char *ut_pathname = "";
+# endif
+# ifdef WTMP_FILE
+static char *wt_pathname = WTMP_FILE;
+# else
+static char *wt_pathname = "";
+# endif
+
+#endif	/* HAVE_UTMPX_H */
+
+static void uw_pathname(pstring fname, const char *uw_name)
+{
+	pstring dirname;
+
+	pstrcpy(dirname,lp_utmpdir());
+	trim_string(dirname,"","/");
+
+	/* Given directory: use it */
+	if (dirname != 0 && strlen(dirname) != 0) {
+		pstrcpy(fname, dirname);
+		pstrcat(fname, "/");
+		pstrcat(fname, uw_name);
+		return;
+	}
+
+	/* No given directory: attempt to use default paths */
+	if (uw_name[0] == 'u') {
+		pstrcpy(fname, ut_pathname);
+		return;
+	}
+
+	if (uw_name[0] == 'w') {
+		pstrcpy(fname, wt_pathname);
+		return;
+	}
+
+	pstrcpy(fname, "");
+}
+
+static void utmp_update(const struct utmp *u, const char *host)
 {
 	pstring fname;
 
@@ -352,29 +410,33 @@ static void utmp_update(const pstring dirname, const struct utmp *u, const char 
 		pstrcpy(ux.ut_host, host);
 	}
 
-	pstrcpy(fname, dirname);
-	pstrcat(fname, "utmpx");
-	utmpxname(fname);
+	uw_pathname(fname, "utmpx");
+	DEBUG(2,("utmp_update: fname:%s\n", fname));
+	if (strlen(fname) != 0) {
+		utmpxname(fname);
+	}
 	uxrc = pututxline(&ux);
 	if (uxrc == NULL) {
 		DEBUG(2,("utmp_update: pututxline() failed\n"));
 		return;
 	}
 
-	pstrcpy(fname, dirname);
-	pstrcat(fname, "wtmpx");
-	updwtmpx(fname, &ux);
+	uw_pathname(fname, "wtmpx");
+	DEBUG(2,("utmp_update: fname:%s\n", fname));
+	if (strlen(fname) != 0) {
+		updwtmpx(fname, &ux);
+	}
 #else
-	pstrcpy(fname, dirname);
-	pstrcat(fname, "utmp");
-
-	utmpname(fname);
+	uw_pathname(fname, "utmp");
+	DEBUG(2,("utmp_update: fname:%s\n", fname));
+	if (strlen(fname) != 0) {
+		utmpname(fname);
+	}
 	pututline(u);
 
-	pstrcpy(fname, dirname);
-	pstrcat(fname, "wtmp");
+	uw_pathname(fname, "wtmp");
 
-	/* *** OK.  Appending wtmp (as distinct from overwriting utmp) has
+	/* *** Hmmm.  Appending wtmp (as distinct from overwriting utmp) has
 	me baffled.  How is it to be done? *** */
 #endif
 }
@@ -382,26 +444,21 @@ static void utmp_update(const pstring dirname, const struct utmp *u, const char 
 static void utmp_yield(pid_t pid, const connection_struct *conn, int i)
 {
 	struct utmp u;
-	pstring dirname;
 
 	if (! lp_utmp(SNUM(conn))) {
 		DEBUG(2,("utmp_yield: lp_utmp() NULL\n"));
 		return;
 	}
 
-	pstrcpy(dirname,lp_utmpdir());
-	trim_string(dirname,"","/");
-	pstrcat(dirname,"/");
-
-	DEBUG(2,("utmp_yield: dir:%s conn: user:%s cnum:%d i:%d\n",
-	  dirname, conn->user, conn->cnum, i));
+	DEBUG(2,("utmp_yield: conn: user:%s cnum:%d i:%d\n",
+	  conn->user, conn->cnum, i));
 
 	memset((char *)&u, '\0', sizeof(struct utmp));
 	u.ut_type = DEAD_PROCESS;
 	u.ut_exit.e_termination = 0;
 	u.ut_exit.e_exit = 0;
 	if (utmp_fill(&u, conn, pid, i) == 0) {
-		utmp_update(dirname, &u, NULL);
+		utmp_update(&u, NULL);
 	}
 }
 
@@ -409,7 +466,6 @@ static void utmp_claim(const struct connect_record *crec, const connection_struc
 {
 	extern int Client;
 	struct utmp u;
-	pstring dirname;
 
 	if (conn == NULL) {
 		DEBUG(2,("utmp_claim: conn NULL\n"));
@@ -421,12 +477,8 @@ static void utmp_claim(const struct connect_record *crec, const connection_struc
 		return;
 	}
 
-	pstrcpy(dirname,lp_utmpdir());
-	trim_string(dirname,"","/");
-	pstrcat(dirname,"/");
-
-	DEBUG(2,("utmp_claim: dir:%s conn: user:%s cnum:%d i:%d\n",
-	  dirname, conn->user, conn->cnum, i));
+	DEBUG(2,("utmp_claim: conn: user:%s cnum:%d i:%d\n",
+	  conn->user, conn->cnum, i));
 	DEBUG(2,("utmp_claim: crec: pid:%d, cnum:%d name:%s addr:%s mach:%s DNS:%s\n",
 	  crec->pid, crec->cnum, crec->name, crec->addr, crec->machine, client_name(Client)));
 
@@ -434,7 +486,7 @@ static void utmp_claim(const struct connect_record *crec, const connection_struc
 	memset((char *)&u, '\0', sizeof(struct utmp));
 	u.ut_type = USER_PROCESS;
 	if (utmp_fill(&u, conn, crec->pid, i) == 0) {
-		utmp_update(dirname, &u, crec->machine);
+		utmp_update(&u, crec->machine);
 	}
 }
 
