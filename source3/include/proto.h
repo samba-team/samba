@@ -1101,7 +1101,7 @@ void pdb_init_smb(struct smb_passwd *user);
 void pdb_init_sam(struct sam_passwd *user);
 struct sam_disp_info *pdb_sam_to_dispinfo(struct sam_passwd *user);
 struct smb_passwd *pdb_sam_to_smb(struct sam_passwd *user);
-char *pdb_encode_acct_ctrl(uint16 acct_ctrl);
+char *pdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length);
 uint16 pdb_decode_acct_ctrl(char *p);
 BOOL pdb_gethexpwd(char *p, char *pwd);
 BOOL pdb_name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid);

@@ -264,7 +264,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
         p++;
       if(*p == ':') {
         p++;
-        if(*p && StrnCaseCmp((char *)p, "LCT-", 4)) {
+        if(*p && (StrnCaseCmp((char *)p, "LCT-", 4)==0)) {
           int i;
           p += 4;
           for(i = 0; i < 8; i++) {
@@ -473,7 +473,7 @@ Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
     return False;
   }
 
-  new_entry_length = strlen(newpwd->smb_name) + 1 + 15 + 1 + 32 + 1 + 32 + 1 + 5 + 1 + 13 + 2;
+  new_entry_length = strlen(newpwd->smb_name) + 1 + 15 + 1 + 32 + 1 + 32 + 1 + NEW_PW_FORMAT_SPACE_PADDED_LEN + 1 + 13 + 2;
 
   if((new_entry = (char *)malloc( new_entry_length )) == NULL) {
     DEBUG(0, ("add_smbfilepwd_entry(malloc): Failed to add entry for user %s to file %s. \
@@ -518,8 +518,7 @@ Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
 
   /* Add the account encoding and the last change time. */
   slprintf((char *)p, new_entry_length - 1 - (p - new_entry),  "%s:LCT-%08X:\n",
-                                  pdb_encode_acct_ctrl(newpwd->acct_ctrl),
-                     (uint32)time(NULL));
+           pdb_encode_acct_ctrl(newpwd->acct_ctrl, NEW_PW_FORMAT_SPACE_PADDED_LEN), (uint32)time(NULL));
 
 #ifdef DEBUG_PASSWORD
   DEBUG(100, ("add_smbfilepwd_entry(%d): new_entry_len %d entry_len %d made line |%s|", 
@@ -538,9 +537,11 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
     }
 
     endsmbfilepwent(fp);
+    free(new_entry);
     return False;
   }
 
+  free(new_entry);
   endsmbfilepwent(fp);
   return True;
 }
@@ -654,7 +655,7 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
      * 
      * or,
      *
-     * username:uid:[32hex bytes]:[32hex bytes]:....ignored....
+     * username:uid:[32hex bytes]:[32hex bytes]:[attributes]:LCT-XXXXXXXX:...ignored.
      *
      * if Windows NT compatible passwords are also present.
      */
@@ -772,11 +773,31 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
   if (*p == '[') {
 
     i = 0;
-    p++;
+    encode_bits[i++] = *p++;
     while((linebuf_len > PTR_DIFF(p, linebuf)) && (*p != ']'))
       encode_bits[i++] = *p++;
 
-    encode_bits[i] = '\0';
+    encode_bits[i++] = ']';
+    encode_bits[i++] = '\0';
+
+    if(i == NEW_PW_FORMAT_SPACE_PADDED_LEN) {
+      /*
+       * We are using a new format, space padded
+       * acct ctrl field. Encode the given acct ctrl
+       * bits into it.
+       */
+      fstrcpy(encode_bits, pdb_encode_acct_ctrl(pwd->acct_ctrl, NEW_PW_FORMAT_SPACE_PADDED_LEN));
+    } else {
+      /*
+       * If using the old format and the ACB_DISABLED or
+       * ACB_PWNOTREQ are set then set the lanman and NT passwords to NULL
+       * here as we have no space to encode the change.
+       */
+      if(pwd->acct_ctrl & (ACB_DISABLED|ACB_PWNOTREQ)) {
+        pwd->smb_passwd = NULL;
+        pwd->smb_nt_passwd = NULL;
+      }
+    }
 
     /* Go past the ']' */
     if(linebuf_len > PTR_DIFF(p, linebuf))
@@ -785,8 +806,8 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
     if((linebuf_len > PTR_DIFF(p, linebuf)) && (*p == ':')) {
       p++;
 
-      /* We should be pointing at the TLC entry. */
-      if((linebuf_len > (PTR_DIFF(p, linebuf) + 13)) && StrnCaseCmp((char *)p, "LCT-", 4)) {
+      /* We should be pointing at the LCT entry. */
+      if((linebuf_len > (PTR_DIFF(p, linebuf) + 13)) && (StrnCaseCmp((char *)p, "LCT-", 4) == 0)) {
 
         p += 4;
         for(i = 0; i < 8; i++) {
@@ -807,6 +828,58 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
 
   /* Entry is correctly formed. */
 
+  /* Create the 32 byte representation of the new p16 */
+  if(pwd->smb_passwd != NULL) {
+    for (i = 0; i < 16; i++) {
+      slprintf(&ascii_p16[i*2], sizeof(fstring) - 1, "%02X", (uchar) pwd->smb_passwd[i]);
+    }
+  } else {
+    if(pwd->acct_ctrl & ACB_PWNOTREQ)
+      fstrcpy(ascii_p16, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX");
+    else
+      fstrcpy(ascii_p16, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+  }
+
+  /* Add on the NT md4 hash */
+  ascii_p16[32] = ':';
+  wr_len = 66;
+  if (pwd->smb_nt_passwd != NULL) {
+    for (i = 0; i < 16; i++) {
+      slprintf(&ascii_p16[(i*2)+33], sizeof(fstring) - 1, "%02X", (uchar) pwd->smb_nt_passwd[i]);
+    }
+  } else {
+    if(pwd->acct_ctrl & ACB_PWNOTREQ)
+      fstrcpy(&ascii_p16[33], "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX");
+    else
+      fstrcpy(&ascii_p16[33], "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+  }
+  ascii_p16[65] = ':';
+
+  /* Add on the account info bits and the time of last
+     password change. */
+
+  pwd->pass_last_set_time = time(NULL);
+
+  if(got_pass_last_set_time) {
+    slprintf(&ascii_p16[strlen(ascii_p16)], 
+	     sizeof(ascii_p16)-(strlen(ascii_p16)+1),
+	     "%s:LCT-%08X:", 
+                     encode_bits, (uint32)pwd->pass_last_set_time );
+    wr_len = strlen(ascii_p16);
+  }
+
+#ifdef DEBUG_PASSWORD
+  DEBUG(100,("mod_smbfilepwd_entry: "));
+  dump_data(100, ascii_p16, wr_len);
+#endif
+
+  if(wr_len > sizeof(linebuf)) {
+    DEBUG(0, ("mod_smbfilepwd_entry: line to write (%d) is too long.\n", wr_len+1));
+    pw_file_unlock(lockfd,&pw_file_lock_depth);
+    fclose(fp);
+    return (False);
+  }
+
   /*
    * Do an atomic write into the file at the position defined by
    * seekpos.
@@ -825,64 +898,27 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
     return False;
   }
 
-  /* Sanity check - ensure the character is a ':' */
-  if (read(fd, &c, 1) != 1) {
+  /* Sanity check - ensure the areas we are writing are framed by ':' */
+  if (read(fd, linebuf, wr_len+1) != wr_len+1) {
     DEBUG(0, ("mod_smbfilepwd_entry: read fail on file %s.\n", pfile));
     pw_file_unlock(lockfd,&pw_file_lock_depth);
     fclose(fp);
     return False;
   }
 
-  if (c != ':')	{
+  if ((linebuf[0] != ':') || (linebuf[wr_len] != ':'))	{
     DEBUG(0, ("mod_smbfilepwd_entry: check on passwd file %s failed.\n", pfile));
     pw_file_unlock(lockfd,&pw_file_lock_depth);
     fclose(fp);
     return False;
   }
  
-  /* Create the 32 byte representation of the new p16 */
-  if(pwd->smb_passwd != NULL) {
-    for (i = 0; i < 16; i++) {
-      slprintf(&ascii_p16[i*2], sizeof(fstring) - 1, "%02X", (uchar) pwd->smb_passwd[i]);
-    }
-  } else {
-    if(pwd->acct_ctrl & ACB_PWNOTREQ)
-      fstrcpy(ascii_p16, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX");
-    else
-      fstrcpy(ascii_p16, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+  if (sys_lseek(fd, pwd_seekpos, SEEK_SET) != pwd_seekpos) {
+    DEBUG(0, ("mod_smbfilepwd_entry: seek fail on file %s.\n", pfile));
+    pw_file_unlock(lockfd,&pw_file_lock_depth);
+    fclose(fp);
+    return False;
   }
-
-  /* Add on the NT md4 hash */
-  ascii_p16[32] = ':';
-  wr_len = 65;
-  if (pwd->smb_nt_passwd != NULL) {
-    for (i = 0; i < 16; i++) {
-      slprintf(&ascii_p16[(i*2)+33], sizeof(fstring) - 1, "%02X", (uchar) pwd->smb_nt_passwd[i]);
-    }
-  } else {
-    if(pwd->acct_ctrl & ACB_PWNOTREQ)
-      fstrcpy(&ascii_p16[33], "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX");
-    else
-      fstrcpy(&ascii_p16[33], "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
-  }
-
-  /* Add on the account info bits and the time of last
-     password change. */
-
-  pwd->pass_last_set_time = time(NULL);
-
-  if(got_pass_last_set_time) {
-    slprintf(&ascii_p16[strlen(ascii_p16)], 
-	     sizeof(ascii_p16)-(strlen(ascii_p16)+1),
-	     ":[%s]:TLC-%08X:", 
-                     encode_bits, (uint32)pwd->pass_last_set_time );
-    wr_len = strlen(ascii_p16);
-  }
-
-#ifdef DEBUG_PASSWORD
-  DEBUG(100,("mod_smbfilepwd_entry: "));
-  dump_data(100, ascii_p16, wr_len);
-#endif
 
   if (write(fd, ascii_p16, wr_len) != wr_len) {
     DEBUG(0, ("mod_smbfilepwd_entry: write failed in passwd file %s\n", pfile));

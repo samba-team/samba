@@ -576,7 +576,7 @@ static BOOL modadd_ldappwd_entry(struct smb_passwd *newpwd, int flag)
 	
 	make_a_mod(&mods, ldap_state, "rid", rid);
 	make_a_mod(&mods, ldap_state, "pwdLastSet", lst);
-	make_a_mod(&mods, ldap_state, "userAccountControl", pdb_encode_acct_ctrl(newpwd->acct_ctrl));
+	make_a_mod(&mods, ldap_state, "userAccountControl", pdb_encode_acct_ctrl(newpwd->acct_ctrl, NEW_PW_FORMAT_SPACE_PADDED_LEN));
 	
 	switch(flag)
 	{

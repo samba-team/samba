@@ -1601,6 +1601,12 @@ extern int unix_ERR_code;
 		 __FILE__, __LINE__)), smb_panic("assert failed")))
 #define SMB_ASSERT_ARRAY(a,n) SMB_ASSERT((sizeof(a)/sizeof((a)[0])) >= (n))
 
+/*
+ * Size of new password account encoding string. DO NOT CHANGE.
+ */
+
+#define NEW_PW_FORMAT_SPACE_PADDED_LEN 14
+
 #endif /* _SMB_H */
 
 #include "ntdomain.h"

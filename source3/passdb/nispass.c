@@ -376,7 +376,7 @@ static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 	slprintf(smb_grpid, sizeof(smb_grpid), "%u", newpwd->smb_grpid);
 	slprintf(group_rid, sizeof(group_rid), "0x%x", newpwd->group_rid);
 
-	safe_strcpy(acb, pdb_encode_acct_ctrl(newpwd->acct_ctrl), sizeof(acb)); 
+	safe_strcpy(acb, pdb_encode_acct_ctrl(newpwd->acct_ctrl, NEW_PW_FORMAT_SPACE_PADDED_LEN), sizeof(acb)); 
 
 	set_single_attribute(&new_obj, NPF_NAME          , newpwd->smb_name     , strlen(newpwd->smb_name)     , 0);
 	set_single_attribute(&new_obj, NPF_UID           , uid                  , strlen(uid)                  , 0);
