@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBMOUNT" "8" "06 March 2001" "" ""
+.TH "SMBMOUNT" "8" "09 March 2001" "" ""
 .SH NAME
 smbmount \- mount an smbfs filesystem
 .SH SYNOPSIS
@@ -16,8 +16,17 @@ is usually invoked as \fBmount.smb\fR from
 the \fBmount(8)\fR command when using the 
 "-t smb" option. The kernel must support the smbfs filesystem. 
 .PP
-Options to smbmount are specified as a comma separated list 
-of key=value pairs.
+Options to smbmount are specified as a comma separated
+list of key=value pairs. It is possible to send options other
+than those listed here, assuming that smbfs supports them. If
+you get mount failures, check your kernel log for errors on
+unknown options.
+.PP
+smbmount is a daemon. After mounting it keeps running until
+the mounted smbfs is umounted. It will log things that happen
+when in daemon mode using the "machine name" smbmount, so
+typically this output will end up in log.smbmount. The
+smbmount process may also be called mount.smbfs.
 .PP
 \fBNOTE:\fR \fBsmbmount\fR 
 calls \fBsmbmnt(8)\fR to do the actual mount. You 
@@ -27,26 +36,47 @@ that it can be found.
 .TP
 \fBusername=<arg>\fR
 specifies the username to connect as. If
-this is not given then the environment variable \fI $USER\fR is used. This option can also take the 
-form "user%password" or "user/workgroup" or 
-"user/workgroup%password" to allow the password and workgroup 
+this is not given, then the environment variable \fB USER\fR is used. This option can also take the
+form "user%password" or "user/workgroup" or
+"user/workgroup%password" to allow the password and workgroup
 to be specified as part of the username.
 .TP
 \fBpassword=<arg>\fR
-specifies the SMB password. If not given then 
-\fBsmbmount\fR will prompt for a passeword, unless 
-the guest option is given. 
+specifies the SMB password. If this
+option is not given then the environment variable
+\fBPASSWD\fR is used. If it can find
+no password \fBsmbmount\fR will prompt
+for a passeword, unless the guest option is
+given. 
+.TP
+\fBcredentials=<filename>\fR
+specifies a file that contains a username
+and/or password. The format of the file is:
+
+.sp
+.nf
+		username = <value>
+		password = <value>
+		
+.sp
+.fi
+
+This is preferred over having passwords in plaintext in a
+shared file, such as /etc/fstab. Be sure to protect any
+credentials file properly.
 .TP
 \fBnetbiosname=<arg>\fR
 sets the source NetBIOS name. It defaults 
 to the local hostname. 
 .TP
 \fBuid=<arg>\fR
-sets the uid that files will be mounted as. 
+sets the uid that will own all files on
+the mounted filesystem.
 It may be specified as either a username or a numeric uid.
 .TP
 \fBgid=<arg>\fR
-sets the gid that files will be mounted as. 
+sets the gid that will own all files on
+the mounted filesystem.
 It may be specified as either a groupname or a numeric 
 gid. 
 .TP
@@ -76,7 +106,7 @@ sets the workgroup on the destination
 .TP
 \fBsockopt=<arg>\fR
 sets the TCP socket options. See the \fIsmb.conf
-\fR <URL:smb.conf.5.html#SOCKETOPTIONS> \fIsocket options\fR option.
+\fR\fIsocket options\fR option.
 .TP
 \fBscope=<arg>\fR
 sets the NetBIOS scope 
@@ -89,6 +119,65 @@ mount read-only
 .TP
 \fBrw\fR
 mount read-write 
+.TP
+\fBiocharset=<arg>\fR
+sets the charset used by the linux side for codepage
+to charset translations (NLS). Argument should be the
+name of a charset, like iso8859-1. (Note: only kernel
+2.4.0 or later)
+.TP
+\fBcodepage=<arg>\fR
+sets the codepage the server uses. See the iocharset
+option. Example value cp850. (Note: only kernel 2.4.0
+or later)
+.TP
+\fBttl=<arg>\fR
+how long a directory listing is cached in milliseconds
+(also affects visibility of file size and date
+changes). A higher value means that changes on the
+server take longer to be noticed but it can give
+better performance on large directories, especially
+over long distances. Default is 1000ms but something
+like 10000ms (10 seconds) is probably more reasonable
+in many cases.
+(Note: only kernel 2.4.2 or later)
+.SH "ENVIRONMENT VARIABLES"
+.PP
+The variable \fBUSER\fR may contain the username of the
+person using the client. This information is used only if the
+protocol level is high enough to support session-level
+passwords. The variable can be used to set both username and
+password by using the format username%password.
+.PP
+The variable \fBPASSWD\fR may contain the password of the
+person using the client. This information is used only if the
+protocol level is high enough to support session-level
+passwords.
+.PP
+The variable \fBPASSWD_FILE\fR may contain the pathname of
+a file to read the password from. A single line of input is
+read and used as password.
+.SH "BUGS"
+.PP
+Not many known smbmount bugs. But one smbfs bug is
+important enough to mention here anyway:
+.TP 0.2i
+\(bu
+Mounts sometimes stop working. This is usually
+caused by smbmount terminating. Since smbfs needs smbmount to
+reconnect when the server disconnects, the mount will go
+dead. A re-mount normally fixes this. At least 2 ways to
+trigger this bug are known.
+.PP
+Note that the typical response to a bugreport is suggestion
+to try the latest version first. So please try doing that first,
+and always include which versions you use of relevant software
+when reporting bugs (minimum: samba, kernel, distribution)
+.PP
+.SH "SEE ALSO"
+.PP
+Documentation/filesystems/smbfs.txt in the kernel source tree
+may contain additional options and information.
 .SH "AUTHOR"
 .PP
 Volker Lendecke, Andrew Tridgell, Michael H. Warfield 

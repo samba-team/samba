@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBRUN" "1" "28 February 2001" "" ""
+.TH "SMBRUN" "1" "09 March 2001" "" ""
 .SH NAME
 smbrun \- interface program between smbd and external  programs
 .SH SYNOPSIS
@@ -11,10 +11,10 @@ smbrun \- interface program between smbd and external  programs
 \fBsmbrun\fR \fB<shell command>\fR
 .SH "DESCRIPTION"
 .PP
-This tool is part of the  Samba <URL:samba.7.html> suite.
+This tool is part of the  Sambasuite.
 .PP
 \fBsmbrun\fR is a very small 'glue' program, 
-which runs shell commands for the \fB smbd(8)\fR <URL:smbd.8.html> daemon.
+which runs shell commands for the \fB smbd(8)\fRdaemon.
 .PP
 It first changes to the highest effective user and group 
 ID that it can, then runs the command line provided using the 
@@ -35,7 +35,7 @@ is not given in the command.
 .PP
 If \fBsmbrun\fR cannot be located or cannot 
 be executed by \fBsmbd(8)\fR
- <URL:smbd.8.html>, then appropriate messages will be found in the \fB smbd\fR logs. Other diagnostics are dependent on the shell-command 
+, then appropriate messages will be found in the \fB smbd\fR logs. Other diagnostics are dependent on the shell-command 
 being run. It is advisable for your shell commands to issue suitable 
 diagnostics to aid trouble-shooting.
 .SH "VERSION"
@@ -44,10 +44,9 @@ This man page is correct for version 2.2 of
 the Samba suite.
 .SH "SEE ALSO"
 .PP
-\fBnmbd(8)\fR <URL:nmbd.8.html>, 
+\fBnmbd(8)\fR, 
 \fBsmbclient(1)
-\fR <URL:smbclient.1.html>, and  \fBnmblookup(1)\fR <URL:nmblookup.1.html>
-.SH "AUTHOR"
+\fR.SH "AUTHOR"
 .PP
 The original Samba software and related utilities 
 were created by Andrew Tridgell. Samba is now developed

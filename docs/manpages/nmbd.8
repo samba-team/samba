@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "NMBD" "8" "28 February 2001" "" ""
+.TH "NMBD" "8" "09 March 2001" "" ""
 .SH NAME
 nmbd \- NetBIOS name server to provide NetBIOS  over IP naming services to clients
 .SH SYNOPSIS
@@ -33,7 +33,7 @@ but this can be overridden with the \fB-n\fR
 option (see OPTIONS below). Thus \fBnmbd\fR will 
 reply to broadcast queries for its own name(s). Additional
 names for \fBnmbd\fR to respond on can be set 
-via parameters in the \fI smb.conf(5)\fR <URL:smb.conf.5.html> configuration file.
+via parameters in the \fI smb.conf(5)\fRconfiguration file.
 .PP
 \fBnmbd\fR can also be used as a WINS 
 (Windows Internet Name Server) server. What this basically means 
@@ -75,8 +75,7 @@ for \fBnmbd\fR.
 NetBIOS lmhosts file. The lmhosts 
 file is a list of NetBIOS names to IP addresses that 
 is loaded by the nmbd server and used via the name 
-resolution mechanism  name resolve order <URL:smb.conf.5.html#nameresolveorder> described in  \fIsmb.conf(5)\fR <URL:smb.conf.5.html>
-to resolve any NetBIOS name queries needed by the server. Note 
+resolution mechanism  name resolve orderto resolve any NetBIOS name queries needed by the server. Note 
 that the contents of this file are \fBNOT\fR 
 used by \fBnmbd\fR to answer any name queries. 
 Adding a line to this file affects name NetBIOS resolution 
@@ -86,7 +85,7 @@ The default path to this file is compiled into
 Samba as part of the build process. Common defaults 
 are \fI/usr/local/samba/lib/lmhosts\fR,
 \fI/usr/samba/lib/lmhosts\fR or
-\fI/etc/lmhosts\fR. See the  \fIlmhosts(5)\fR <URL:lmhosts.5.html> man page for details on the 
+\fI/etc/lmhosts\fR. See the  \fIlmhosts(5)\fRman page for details on the 
 contents of this file.
 .TP
 \fB-V\fR
@@ -112,8 +111,7 @@ and generate HUGE amounts of log data, most of which is extremely
 cryptic.
 
 Note that specifying this parameter here will override 
-the log level <URL:smb.conf.5.html#loglevel> 
-parameter in the \fI smb.conf\fR <URL:smb.conf.5.html> file.
+the log levelparameter in the \fI smb.conf\fRfile.
 .TP
 \fB-l <log file>\fR
 The -l parameter specifies a path 
@@ -131,8 +129,8 @@ part of the build process. Common defaults are \fI /usr/local/samba/var/log.nmb\
 \fB-n <primary NetBIOS name>\fR
 This option allows you to override
 the NetBIOS name that Samba uses for itself. This is identical 
-to setting the  NetBIOS name <URL:smb.conf.5.html#netbiosname> parameter in the  
-\fIsmb.conf\fR <URL:smb.conf.5.html> file. However, a command
+to setting the  NetBIOS nameparameter in the  
+\fIsmb.conf\fRfile. However, a command
 line setting will take precedence over settings in 
 \fIsmb.conf\fR.
 .TP
@@ -150,7 +148,7 @@ this may be changed when Samba is autoconfigured.
 
 The file specified contains the configuration details 
 required by the server. See  
-\fIsmb.conf(5)\fR <URL:smb.conf.5.html> for more information.
+\fIsmb.conf(5)\fRfor more information.
 .SH "FILES"
 .TP
 \fB\fI/etc/inetd.conf\fB\fR
@@ -177,20 +175,17 @@ See the section INSTALLATION below.
 .TP
 \fB\fI/usr/local/samba/lib/smb.conf\fB\fR
 This is the default location of the 
-\fIsmb.conf\fR <URL:smb.conf.5.html>
-server configuration file. Other common places that systems 
+\fIsmb.conf\fRserver configuration file. Other common places that systems 
 install this file are \fI/usr/samba/lib/smb.conf\fR 
 and \fI/etc/smb.conf\fR.
 
 When run as a WINS server (see the 
-wins support <URL:smb.conf.5.html#winssupport>
-parameter in the \fI smb.conf(5)\fR <URL:smb.conf.5.html> man page), \fBnmbd\fR 
+wins supportparameter in the \fI smb.conf(5)\fRman page), \fBnmbd\fR 
 will store the WINS database in the file \fIwins.dat\fR 
 in the \fIvar/locks\fR directory configured under 
 wherever Samba was configured to install itself.
 
-If \fBnmbd\fR is acting as a \fB browse master\fR (see the local master <URL:smb.conf.5.html#localmaster>
-parameter in the \fI smb.conf(5)\fR <URL:smb.conf.5.html> man page), \fBnmbd\fR 
+If \fBnmbd\fR is acting as a \fB browse master\fR (see the local masterparameter in the \fI smb.conf(5)\fRman page), \fBnmbd\fR 
 will store the browsing database in the file \fIbrowse.dat
 \fRin the \fIvar/locks\fR directory
 configured under wherever Samba was configured to install itself.
@@ -220,10 +215,10 @@ This man page is correct for version 2.2 of
 the Samba suite.
 .SH "SEE ALSO"
 .PP
-\fBinetd(8)\fR, \fBsmbd(8)\fR <URL:smbd.8.html>, 
+\fBinetd(8)\fR, \fBsmbd(8)\fR, 
 \fIsmb.conf(5)\fR
- <URL:smb.conf.5.html>, \fBsmbclient(1)
-\fR <URL:smbclient.1.html>, \fB testparm(1)\fR <URL:testparm.1.html>,  \fBtestprns(1)\fR <URL:testprns.1.html>, and the Internet RFC's
+, \fBsmbclient(1)
+\fR, and the Internet RFC's
 \fIrfc1001.txt\fR, \fIrfc1002.txt\fR. 
 In addition the CIFS (formerly SMB) specification is available 
 as a link from the Web page  
