@@ -16,7 +16,7 @@ if test $# -ne 3; then
   exit 1
 fi
 pid=$1
-disp=:$2
+disp=$2
 auth=$3
 kill -USR1 $pid
 rsh -n $host "env DISPLAY=$disp XAUTHORITY=$auth xterm -T $host -n $host $xterm_args &"
