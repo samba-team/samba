@@ -64,12 +64,6 @@ static void generate_random_sid(DOM_SID *sid)
 		sid->sub_auths[sid->num_auths++] = IVAL(raw_sid_data, i*4);
 }
 
-static BOOL read_sam_sid(void)
-{
-	extern pstring global_myname;
-	extern fstring global_myworkgroup;
-}
-
 /****************************************************************************
  Generate the global machine sid.
 ****************************************************************************/
