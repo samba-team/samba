@@ -329,7 +329,8 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
 
       strcpy(fname,dname);      
 
-      if(mask_match(fname, mask, case_sensitive, True))
+      if(name_map_mangle(fname,False,SNUM(cnum)) &&
+         mask_match(fname, mask, case_sensitive, True))
 	{
 	  BOOL isdots = (strequal(fname,"..") || strequal(fname,"."));
 	  if (dont_descend && !isdots)
@@ -341,7 +342,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
 	  strcpy(pathreal,Connections[cnum].dirpath);
           if(needslash)
   	    strcat(pathreal,"/");
-	  strcat(pathreal,fname);
+	  strcat(pathreal,dname);
 	  if (sys_stat(pathreal,&sbuf) != 0) 
 	    {
 	      DEBUG(5,("get_lanman2_dir_entry:Couldn't stat [%s] (%s)\n",pathreal,strerror(errno)));
@@ -368,12 +369,8 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
 	}
     }
 
-
-
   p = pdata;
   nameptr = p;
-
-  name_map_mangle(fname,False,SNUM(cnum));
 
   nt_extmode = mode ? mode : NT_FILE_ATTRIBUTE_NORMAL;
 
