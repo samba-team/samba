@@ -234,7 +234,7 @@ uint32 _samr_query_usergroups(const POLICY_HND *pol,
 	DOMAIN_GRP *mem_grp = NULL;
 	struct sam_passwd *sam_pass = NULL;
 	uint32 rid;
-	BOOL ret = False;
+	BOOL ret = True;
 	TDB_CONTEXT *tdb = NULL;
 
 	DEBUG(5,("samr_query_usergroups: %d\n", __LINE__));
@@ -245,16 +245,16 @@ uint32 _samr_query_usergroups(const POLICY_HND *pol,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	become_root(True);
 #if 0
+	become_root(True);
 	sam_pass = getsam21pwrid(rid);
-#endif
 	unbecome_root(True);
 
 	if (sam_pass == NULL)
 	{
 		return NT_STATUS_NO_SUCH_USER;
 	}
+#endif
 
 	become_root(True);
 #if 0

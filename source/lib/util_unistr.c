@@ -366,6 +366,11 @@ int StrCaseCmpW(const UNISTR2 *ws, const UNISTR2 *wt)
 	len--;
     }
 
+	if (len == 0 && ws->uni_str_len == wt->uni_str_len)
+	{
+		return 0;
+	}
+
     sc = toupper(*s);
     tc = toupper(*t);
 
