@@ -111,7 +111,6 @@
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
-#include <setjmp.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
