@@ -1486,19 +1486,19 @@ sub new {
 	[#Rule 2
 		 'idl', 2,
 sub
-#line 18 "idl.yp"
+#line 18 "build/pidl/idl.yp"
 { util::FlattenArray([$_[1],$_[2]]) }
 	],
 	[#Rule 3
 		 'idl_interface', 2,
 sub
-#line 21 "idl.yp"
+#line 21 "build/pidl/idl.yp"
 { [ $_[1], $_[2] ] }
 	],
 	[#Rule 4
 		 'module_header', 3,
 sub
-#line 25 "idl.yp"
+#line 25 "build/pidl/idl.yp"
 {{ 
               "TYPE" => "MODULEHEADER", 
               "PROPERTIES" => util::FlattenHash($_[2])
@@ -1510,25 +1510,25 @@ sub
 	[#Rule 6
 		 'module_params', 1,
 sub
-#line 33 "idl.yp"
+#line 33 "build/pidl/idl.yp"
 { [ $_[1] ] }
 	],
 	[#Rule 7
 		 'module_params', 3,
 sub
-#line 34 "idl.yp"
+#line 34 "build/pidl/idl.yp"
 { push(@{$_[1]}, $_[3]); $_[1] }
 	],
 	[#Rule 8
 		 'module_param', 4,
 sub
-#line 38 "idl.yp"
+#line 38 "build/pidl/idl.yp"
 { { "$_[1]" => "$_[3]" } }
 	],
 	[#Rule 9
 		 'interface', 5,
 sub
-#line 42 "idl.yp"
+#line 42 "build/pidl/idl.yp"
 {{
                        "TYPE" => "INTERFACE", 
 		       "NAME" => $_[2],
@@ -1538,13 +1538,13 @@ sub
 	[#Rule 10
 		 'definitions', 1,
 sub
-#line 50 "idl.yp"
+#line 50 "build/pidl/idl.yp"
 { [ $_[1] ] }
 	],
 	[#Rule 11
 		 'definitions', 2,
 sub
-#line 51 "idl.yp"
+#line 51 "build/pidl/idl.yp"
 { push(@{$_[1]}, $_[2]); $_[1] }
 	],
 	[#Rule 12
@@ -1559,7 +1559,7 @@ sub
 	[#Rule 15
 		 'const', 6,
 sub
-#line 59 "idl.yp"
+#line 59 "build/pidl/idl.yp"
 {{
                      "TYPE"  => "CONST", 
 		     "DTYPE"  => $_[2],
@@ -1570,7 +1570,7 @@ sub
 	[#Rule 16
 		 'function', 7,
 sub
-#line 69 "idl.yp"
+#line 69 "build/pidl/idl.yp"
 {{
 		"TYPE" => "FUNCTION",
 		"NAME" => $_[3],
@@ -1582,7 +1582,7 @@ sub
 	[#Rule 17
 		 'typedef', 5,
 sub
-#line 79 "idl.yp"
+#line 79 "build/pidl/idl.yp"
 {{
                      "TYPE" => "TYPEDEF", 
 		     "NAME" => $_[3],
@@ -1605,13 +1605,13 @@ sub
 	[#Rule 22
 		 'type', 1,
 sub
-#line 88 "idl.yp"
+#line 88 "build/pidl/idl.yp"
 { "void" }
 	],
 	[#Rule 23
 		 'enum', 4,
 sub
-#line 93 "idl.yp"
+#line 93 "build/pidl/idl.yp"
 {{
                      "TYPE" => "ENUM", 
 		     "ELEMENTS" => $_[3]
@@ -1620,13 +1620,13 @@ sub
 	[#Rule 24
 		 'enum_elements', 1,
 sub
-#line 100 "idl.yp"
+#line 100 "build/pidl/idl.yp"
 { [ $_[1] ] }
 	],
 	[#Rule 25
 		 'enum_elements', 3,
 sub
-#line 101 "idl.yp"
+#line 101 "build/pidl/idl.yp"
 { push(@{$_[1]}, $_[3]); $_[1] }
 	],
 	[#Rule 26
@@ -1635,13 +1635,13 @@ sub
 	[#Rule 27
 		 'enum_element', 3,
 sub
-#line 105 "idl.yp"
+#line 105 "build/pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
 	[#Rule 28
 		 'struct', 5,
 sub
-#line 109 "idl.yp"
+#line 109 "build/pidl/idl.yp"
 {{
                      "TYPE" => "STRUCT", 
 		     "PROPERTIES" => $_[1],
@@ -1651,7 +1651,7 @@ sub
 	[#Rule 29
 		 'union', 5,
 sub
-#line 117 "idl.yp"
+#line 117 "build/pidl/idl.yp"
 {{
 		"TYPE" => "UNION",
 		"PROPERTIES" => $_[1],
@@ -1661,19 +1661,19 @@ sub
 	[#Rule 30
 		 'union_elements', 1,
 sub
-#line 125 "idl.yp"
+#line 125 "build/pidl/idl.yp"
 { [ $_[1] ] }
 	],
 	[#Rule 31
 		 'union_elements', 2,
 sub
-#line 126 "idl.yp"
+#line 126 "build/pidl/idl.yp"
 { push(@{$_[1]}, $_[2]); $_[1] }
 	],
 	[#Rule 32
 		 'union_element', 8,
 sub
-#line 131 "idl.yp"
+#line 131 "build/pidl/idl.yp"
 {{
 		"TYPE" => "UNION_ELEMENT",
 		"CASE" => $_[4],
@@ -1683,7 +1683,7 @@ sub
 	[#Rule 33
 		 'union_element', 7,
 sub
-#line 137 "idl.yp"
+#line 137 "build/pidl/idl.yp"
 {{
 		"TYPE" => "EMPTY",
 		"CASE" => $_[4],
@@ -1692,7 +1692,7 @@ sub
 	[#Rule 34
 		 'union_element', 5,
 sub
-#line 142 "idl.yp"
+#line 142 "build/pidl/idl.yp"
 {{
 		"TYPE" => "UNION_ELEMENT",
 		"CASE" => "default",
@@ -1702,7 +1702,7 @@ sub
 	[#Rule 35
 		 'union_element', 4,
 sub
-#line 148 "idl.yp"
+#line 148 "build/pidl/idl.yp"
 {{
 		"TYPE" => "EMPTY",
 		"CASE" => "default",
@@ -1711,7 +1711,7 @@ sub
 	[#Rule 36
 		 'base_element', 5,
 sub
-#line 155 "idl.yp"
+#line 155 "build/pidl/idl.yp"
 {{
 			   "NAME" => $_[4],
 			   "TYPE" => $_[2],
@@ -1723,13 +1723,13 @@ sub
 	[#Rule 37
 		 'pointers', 0,
 sub
-#line 167 "idl.yp"
+#line 167 "build/pidl/idl.yp"
 { 0 }
 	],
 	[#Rule 38
 		 'pointers', 2,
 sub
-#line 168 "idl.yp"
+#line 168 "build/pidl/idl.yp"
 { $_[1]+1 }
 	],
 	[#Rule 39
@@ -1738,7 +1738,7 @@ sub
 	[#Rule 40
 		 'element_list1', 3,
 sub
-#line 175 "idl.yp"
+#line 175 "build/pidl/idl.yp"
 { push(@{$_[1]}, $_[2]); $_[1] }
 	],
 	[#Rule 41
@@ -1750,13 +1750,13 @@ sub
 	[#Rule 43
 		 'element_list2', 1,
 sub
-#line 181 "idl.yp"
+#line 181 "build/pidl/idl.yp"
 { [ $_[1] ] }
 	],
 	[#Rule 44
 		 'element_list2', 3,
 sub
-#line 182 "idl.yp"
+#line 182 "build/pidl/idl.yp"
 { push(@{$_[1]}, $_[3]); $_[1] }
 	],
 	[#Rule 45
@@ -1765,13 +1765,13 @@ sub
 	[#Rule 46
 		 'array_len', 2,
 sub
-#line 187 "idl.yp"
+#line 187 "build/pidl/idl.yp"
 { "*" }
 	],
 	[#Rule 47
 		 'array_len', 3,
 sub
-#line 188 "idl.yp"
+#line 188 "build/pidl/idl.yp"
 { "$_[2]" }
 	],
 	[#Rule 48
@@ -1780,31 +1780,31 @@ sub
 	[#Rule 49
 		 'property_list', 4,
 sub
-#line 194 "idl.yp"
+#line 194 "build/pidl/idl.yp"
 { util::FlattenHash([$_[1],$_[3]]); }
 	],
 	[#Rule 50
 		 'properties', 1,
 sub
-#line 197 "idl.yp"
+#line 197 "build/pidl/idl.yp"
 { $_[1] }
 	],
 	[#Rule 51
 		 'properties', 3,
 sub
-#line 198 "idl.yp"
+#line 198 "build/pidl/idl.yp"
 { util::FlattenHash([$_[1], $_[3]]); }
 	],
 	[#Rule 52
 		 'property', 1,
 sub
-#line 201 "idl.yp"
+#line 201 "build/pidl/idl.yp"
 {{ "$_[1]" => "1"     }}
 	],
 	[#Rule 53
 		 'property', 4,
 sub
-#line 202 "idl.yp"
+#line 202 "build/pidl/idl.yp"
 {{ "$_[1]" => "$_[3]" }}
 	],
 	[#Rule 54
@@ -1813,13 +1813,13 @@ sub
 	[#Rule 55
 		 'listtext', 3,
 sub
-#line 207 "idl.yp"
+#line 207 "build/pidl/idl.yp"
 { "$_[1] $_[3]" }
 	],
 	[#Rule 56
 		 'anytext', 0,
 sub
-#line 211 "idl.yp"
+#line 211 "build/pidl/idl.yp"
 { "" }
 	],
 	[#Rule 57
@@ -1834,55 +1834,55 @@ sub
 	[#Rule 60
 		 'anytext', 3,
 sub
-#line 213 "idl.yp"
+#line 213 "build/pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
 	[#Rule 61
 		 'anytext', 3,
 sub
-#line 214 "idl.yp"
+#line 214 "build/pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
 	[#Rule 62
 		 'anytext', 3,
 sub
-#line 215 "idl.yp"
+#line 215 "build/pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
 	[#Rule 63
 		 'anytext', 3,
 sub
-#line 216 "idl.yp"
+#line 216 "build/pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
 	[#Rule 64
 		 'anytext', 3,
 sub
-#line 217 "idl.yp"
+#line 217 "build/pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
 	[#Rule 65
 		 'anytext', 3,
 sub
-#line 218 "idl.yp"
+#line 218 "build/pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
 	[#Rule 66
 		 'anytext', 3,
 sub
-#line 219 "idl.yp"
+#line 219 "build/pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
 	[#Rule 67
 		 'anytext', 3,
 sub
-#line 220 "idl.yp"
+#line 220 "build/pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
 	[#Rule 68
 		 'anytext', 5,
 sub
-#line 221 "idl.yp"
+#line 221 "build/pidl/idl.yp"
 { "$_[1]$_[2]$_[3]$_[4]$_[5]" }
 	],
 	[#Rule 69
@@ -1894,7 +1894,7 @@ sub
 	[#Rule 71
 		 'text', 1,
 sub
-#line 230 "idl.yp"
+#line 230 "build/pidl/idl.yp"
 { "\"$_[1]\"" }
 	]
 ],
@@ -1902,7 +1902,7 @@ sub
     bless($self,$class);
 }
 
-#line 236 "idl.yp"
+#line 236 "build/pidl/idl.yp"
 
 
 use util;
