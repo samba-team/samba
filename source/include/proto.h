@@ -187,6 +187,7 @@ BOOL set_inherited_process_capability( uint32 cap_flag, BOOL enable );
 long sys_random(void);
 void sys_srandom(unsigned int seed);
 int sys_getgroups(int setlen, gid_t *gidset);
+int sys_setgroups(int setlen, gid_t *gidset);
 
 /*The following definitions come from  lib/time.c  */
 
