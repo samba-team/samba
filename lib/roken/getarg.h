@@ -49,6 +49,7 @@ struct getargs{
     enum { arg_integer, arg_string, arg_flag, arg_negative_flag } type;
     void *value;
     const char *help;
+    const char *arg_help;
 };
 
 enum {
