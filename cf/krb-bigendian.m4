@@ -22,7 +22,7 @@ krb_cv_c_bigendian_compile,
 #if !BYTE_ORDER || !BIG_ENDIAN || !LITTLE_ENDIAN
  bogus endian macros
 #endif], krb_cv_c_bigendian_compile=yes, krb_cv_c_bigendian_compile=no)
-if test "$krb_cv_cv_bigendian_compile" = no; then
+if test "$krb_cv_c_bigendian_compile" = "no"; then
   AC_CACHE_CHECK(whether byte ordering is bigendian, krb_cv_c_bigendian,[
   if test "$krb_cv_c_bigendian" = ""; then
     krb_cv_c_bigendian=unknown
@@ -47,9 +47,12 @@ if test "$krb_cv_cv_bigendian_compile" = no; then
     AC_MSG_ERROR([specify either --enable-bigendian or --enable-littleendian]))
   fi
   ])
-  if test "$krb_cv_bigendian" = "yes"; then
+  if test "$krb_cv_c_bigendian" = "yes"; then
     AC_DEFINE(WORDS_BIGENDIAN, 1, [define if target is big endian])dnl
   fi
 fi
 ])
+if test "$krb_cv_c_bigendian_compile" = "yes"; then
+  AC_DEFINE(ENDIANESS_IN_SYS_PARAM_H, 1, [define if sys/param.h defines the endiness])dnl
+fi
 ])
