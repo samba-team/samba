@@ -729,6 +729,7 @@ int sys_acl_free_acl(SMB_ACL_T acl_d)
 	free(acl_d);
 	return 0;
 }
+
 #elif defined(HAVE_SOLARIS_ACLS)
 
 /*
@@ -1268,6 +1269,249 @@ int sys_acl_free_acl(SMB_ACL_T acl_d)
 }
 
 #elif defined(HAVE_IRIX_ACLS)
+
+int sys_acl_get_entry(SMB_ACL_T acl_d, int entry_id, SMB_ACL_ENTRY_T *entry_p)
+{
+	if (entry_id != SMB_ACL_FIRST_ENTRY && entry_id != SMB_ACL_NEXT_ENTRY) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (entry_p == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (entry_id == SMB_ACL_FIRST_ENTRY) {
+		acl_d->next = 0;
+	}
+
+	if (acl_d->next < 0) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (acl_d->next >= acl_d->aclp->acl_cnt) {
+		return 0;
+	}
+
+	*entry_p = &acl_d->aclp->acl_entry[acl_d->next++];
+
+	return 1;
+}
+
+int sys_acl_get_tag_type(SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *type_p)
+{
+	*type_p = entry_d->ae_tag;
+
+	return 0;
+}
+
+int sys_acl_get_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p)
+{
+	*permset_p = entry_d;
+
+	return 0;
+}
+
+void *sys_acl_get_qualifier(SMB_ACL_ENTRY_T entry_d)
+{
+	if (entry_d->ae_tag != SMB_ACL_USER
+	    && entry_d->ae_tag != SMB_ACL_GROUP) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	return &entry_d->ae_id;
+}
+
+SMB_ACL_T sys_acl_get_file(const char *path_p, SMB_ACL_TYPE_T type)
+{
+	SMB_ACL_T	a;
+
+	if ((a = malloc(sizeof(*a))) == NULL) {
+		errno = ENOMEM;
+		return NULL;
+	}
+	if ((a->aclp = acl_get_file(path_p, type)) == NULL) {
+		free(a);
+		return NULL;
+	}
+	a->next = -1;
+	a->freeaclp = True;
+	return a;
+}
+
+SMB_ACL_T sys_acl_get_fd(int fd)
+{
+	SMB_ACL_T	a;
+
+	if ((a = malloc(sizeof(*a))) == NULL) {
+		errno = ENOMEM;
+		return NULL;
+	}
+	if ((a->aclp = acl_get_fd(fd)) == NULL) {
+		free(a);
+		return NULL;
+	}
+	a->next = -1;
+	a->freeaclp = True;
+	return a;
+}
+
+int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset_d)
+{
+	permset_d->ae_perm = 0;
+
+	return 0;
+}
+
+int sys_acl_add_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm)
+{
+	if (perm != SMB_ACL_READ && perm != SMB_ACL_WRITE
+	    && perm != SMB_ACL_EXECUTE) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (permset_d == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	permset_d->ae_perm |= perm;
+
+	return 0;
+}
+
+int sys_acl_get_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm)
+{
+	return permset_d->ae_perm & perm;
+}
+
+char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p)
+{
+	return acl_to_text(acl_d->aclp, len_p);
+}
+
+SMB_ACL_T sys_acl_init(int count)
+{
+	SMB_ACL_T	a;
+
+	if (count < 0) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	if ((a = malloc(sizeof(*a) + sizeof(struct acl))) == NULL) {
+		errno = ENOMEM;
+		return NULL;
+	}
+
+	a->next = -1;
+	a->freeaclp = False;
+	a->aclp = (struct acl *)(&a->aclp + sizeof(struct acl *));
+	a->aclp->acl_cnt = 0;
+
+	return a;
+}
+
+
+int sys_acl_create_entry(SMB_ACL_T *acl_p, SMB_ACL_ENTRY_T *entry_p)
+{
+	SMB_ACL_T	acl_d;
+	SMB_ACL_ENTRY_T	entry_d;
+
+	if (acl_p == NULL || entry_p == NULL || (acl_d = *acl_p) == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (acl_d->aclp->acl_cnt >= ACL_MAX_ENTRIES) {
+		errno = ENOSPC;
+		return -1;
+	}
+
+	entry_d		= &acl_d->aclp->acl_entry[acl_d->aclp->acl_cnt++];
+	entry_d->ae_tag	= 0;
+	entry_d->ae_id	= 0;
+	entry_d->ae_perm	= 0;
+	*entry_p	= entry_d;
+
+	return 0;
+}
+
+int sys_acl_set_tag_type(SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T tag_type)
+{
+	switch (tag_type) {
+		case SMB_ACL_USER:
+		case SMB_ACL_USER_OBJ:
+		case SMB_ACL_GROUP:
+		case SMB_ACL_GROUP_OBJ:
+		case SMB_ACL_OTHER:
+		case SMB_ACL_MASK:
+			entry_d->ae_tag = tag_type;
+			break;
+		default:
+			errno = EINVAL;
+			return -1;
+	}
+
+	return 0;
+}
+
+int sys_acl_set_qualifier(SMB_ACL_ENTRY_T entry_d, void *qual_p)
+{
+	if (entry_d->ae_tag != SMB_ACL_GROUP
+	    && entry_d->ae_tag != SMB_ACL_USER) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	entry_d->ae_id = *((id_t *)qual_p);
+
+	return 0;
+}
+
+int sys_acl_set_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T permset_d)
+{
+	if (permset_d->ae_perm & ~(SMB_ACL_READ|SMB_ACL_WRITE|SMB_ACL_EXECUTE)) {
+		return EINVAL;
+	}
+
+	entry_d->ae_perm = permset_d->ae_perm;
+
+	return 0;
+}
+
+int sys_acl_valid(SMB_ACL_T acl_d)
+{
+	return acl_valid(acl_d->aclp);
+}
+
+int sys_acl_set_file(char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d)
+{
+	return acl_set_file(name, type, acl_d->aclp);
+}
+
+int sys_acl_set_fd(int fd, SMB_ACL_T acl_d)
+{
+	return acl_set_fd(fd, acl_d->aclp);
+}
+
+int sys_acl_free_text(char *text)
+{
+	return acl_free(text);
+}
+
+int sys_acl_free_acl(SMB_ACL_T acl_d) 
+{
+	if (acl_d->freeaclp) {
+		acl_free(acl_d->aclp);
+	}
+	acl_free(acl_d);
+	return 0;
+}
 
 #else /* No ACLs. */
 
