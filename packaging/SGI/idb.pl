@@ -101,7 +101,7 @@ while(@bins) {
       print IDB "f 0755 root sys usr/samba/bin/$nextfile packaging/SGI/$nextfile samba.sw.base\n";
     }
     elsif ($nextfile eq "swat") {
-      print IDB "f 4755 root sys usr/samba/bin/$nextfile packaging/SGI/$nextfile samba.sw.base\n";
+      print IDB "f 4755 root sys usr/samba/bin/$nextfile source/$nextfile samba.sw.base\n";
     }
     elsif ($nextfile eq "sambalp") {
       print IDB "f 0755 root sys usr/samba/bin/$nextfile packaging/SGI/$nextfile samba.sw.base\n";
@@ -140,7 +140,7 @@ if (@codepage) {
   }
 }
 print IDB "f 0644 root sys usr/samba/lib/smb.conf packaging/SGI/smb.conf samba.sw.base config(update)\n";
-print IDB "f 0755 root sys usr/samba/mkprintcap.sh packaging/SGI/mkprintcap.sh samba.sw.base 
+print IDB "f 0755 root sys usr/samba/mkprintcap.sh packaging/SGI/mkprintcap.sh samba.sw.base\n";
 
 print IDB "d 0755 root sys usr/samba/src packaging/SGI samba.src.samba\n";
 while (@allfiles) {
