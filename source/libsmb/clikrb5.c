@@ -131,7 +131,7 @@ failed:
 
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */
- DATA_BLOB krb5_get_ticket(char *service, char *realm) 
+ DATA_BLOB krb5_get_ticket(char *principle)
  {
 	 DEBUG(0,("NO KERBEROS SUPPORT\n"));
 	 return data_blob(NULL, 0);
