@@ -149,6 +149,20 @@ krb5_etype_to_string(krb5_context context,
 }
 
 krb5_error_code
+krb5_string_to_etype(krb5_context context,
+		     const char *string,
+		     krb5_enctype *etype)
+{
+    int i;
+    for(i = 0; i < num_etypes; i++)
+	if(strcasecmp(em[i].name, string) == 0){
+	    *etype = em[i].type;
+	    return 0;
+	}
+    return KRB5_PROG_ETYPE_NOSUPP;
+}
+
+krb5_error_code
 krb5_keytype_to_etypes(krb5_context context,
 		       krb5_keytype keytype,
 		       krb5_enctype **etypes)
@@ -187,20 +201,39 @@ krb5_etype_to_keytype(krb5_context context,
 }
 
 krb5_error_code
-krb5_convert_etype(krb5_context context,
-		   krb5_keytype *keytype)
+krb5_decode_keytype(krb5_context context,
+		    krb5_keytype *keytype,
+		    int decode)
 {
-#ifdef KTYPE_IS_ETYPE
-    krb5_error_code ret;
-    krb5_keytype kt;
-    ret = krb5_etype_to_keytype(context, 
-				(krb5_enctype)*keytype, 
-				&kt);
-    if(ret)
-	return ret;
-    *keytype = kt;
-#endif
+    if(context->ktype_is_etype){
+	krb5_error_code ret;
+	if(decode) {
+	    krb5_keytype kt;
+	    ret = krb5_etype_to_keytype(context, 
+					(krb5_enctype)*keytype, 
+					&kt);
+	    if(ret)
+		return ret;
+	    *keytype = kt;
+	}else{
+	    krb5_enctype et;
+	    ret = krb5_keytype_to_etype(context, 
+					*keytype, 
+					&et);
+	    if(ret)
+		return ret;
+	    *keytype = (krb5_keytype)et;
+	}
+    }
     return 0;
+}
+
+krb5_error_code
+krb5_decode_keyblock(krb5_context context,
+		     krb5_keyblock *key,
+		     int decode)
+{
+    return krb5_decode_keytype(context, &key->keytype, decode);
 }
 
 void
