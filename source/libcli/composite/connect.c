@@ -112,7 +112,7 @@ static NTSTATUS connect_session_setup(struct smbcli_composite *c,
 	state->session->vuid = state->io_setup->out.vuid;
 	
 	/* setup for a tconx */
-	io->out.tree = smbcli_tree_init(state->session);
+	io->out.tree = smbcli_tree_init(state->session, state, True);
 	NT_STATUS_HAVE_NO_MEMORY(io->out.tree);
 
 	state->io_tcon = talloc(c, union smb_tcon);
@@ -157,11 +157,8 @@ static NTSTATUS connect_negprot(struct smbcli_composite *c,
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* next step is a session setup */
-	state->session = smbcli_session_init(state->transport);
+	state->session = smbcli_session_init(state->transport, state, True);
 	NT_STATUS_HAVE_NO_MEMORY(state->session);
-
-	/* get rid of the extra reference to the transport */
-	talloc_free(state->transport);
 
 	state->io_setup = talloc(c, struct smb_composite_sesssetup);
 	NT_STATUS_HAVE_NO_MEMORY(state->io_setup);
@@ -214,7 +211,7 @@ static NTSTATUS connect_socket(struct smbcli_composite *c,
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* the socket is up - we can initialise the smbcli transport layer */
-	state->transport = smbcli_transport_init(state->sock);
+	state->transport = smbcli_transport_init(state->sock, state, True);
 	NT_STATUS_HAVE_NO_MEMORY(state->transport);
 
 	calling.name = io->in.calling_name;
