@@ -1601,3 +1601,53 @@ failed:
 	return correct;
 }
 
+
+
+/*
+   simple test harness for playing with deny modes
+ */
+BOOL torture_denytest3(int dummy)
+{
+	struct smbcli_state *cli1, *cli2;
+	int fnum1, fnum2;
+	const char *fname;
+
+	printf("starting deny3 test\n");
+
+	printf("Testing simple deny modes\n");
+	
+	if (!torture_open_connection(&cli1)) {
+		return False;
+	}
+	if (!torture_open_connection(&cli2)) {
+		return False;
+	}
+
+	fname = "\\deny_dos1.dat";
+
+	smbcli_unlink(cli1->tree, fname);
+	fnum1 = smbcli_open(cli1->tree, fname, O_CREAT|O_TRUNC|O_WRONLY, DENY_DOS);
+	fnum2 = smbcli_open(cli1->tree, fname, O_CREAT|O_TRUNC|O_WRONLY, DENY_DOS);
+	if (fnum1 != -1) smbcli_close(cli1->tree, fnum1);
+	if (fnum2 != -1) smbcli_close(cli1->tree, fnum2);
+	smbcli_unlink(cli1->tree, fname);
+	printf("fnum1=%d fnum2=%d\n", fnum1, fnum2);
+
+
+	fname = "\\deny_dos2.dat";
+
+	smbcli_unlink(cli1->tree, fname);
+	fnum1 = smbcli_open(cli1->tree, fname, O_CREAT|O_TRUNC|O_WRONLY, DENY_DOS);
+	fnum2 = smbcli_open(cli2->tree, fname, O_CREAT|O_TRUNC|O_WRONLY, DENY_DOS);
+	if (fnum1 != -1) smbcli_close(cli1->tree, fnum1);
+	if (fnum2 != -1) smbcli_close(cli2->tree, fnum2);
+	smbcli_unlink(cli1->tree, fname);
+	printf("fnum1=%d fnum2=%d\n", fnum1, fnum2);
+
+
+	torture_close_connection(cli1);
+	torture_close_connection(cli2);
+
+	return True;
+}
+
