@@ -160,7 +160,7 @@ void flush_negative_conn_cache( void )
  valid since we have already done a name_status_find on it 
  ***************************************************************************/
 
-BOOL get_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
+BOOL rpc_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
 {
 	struct in_addr *ip_list = NULL, dc_ip, exclude_ip;
 	int count, i;
@@ -176,7 +176,7 @@ BOOL get_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
 	   
 	if ( use_pdc_only && get_pdc_ip(domain, &dc_ip) ) 
 	{
-		DEBUG(10,("get_dc_name: Atempting to lookup PDC to avoid sam sync delays\n"));
+		DEBUG(10,("rpc_dc_name: Atempting to lookup PDC to avoid sam sync delays\n"));
 		
 		/* check the connection cache and perform the node status 
 		   lookup only if the IP is not found to be bad */
@@ -206,70 +206,11 @@ BOOL get_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
 		}
 	}
 
-	if ( !list_ordered ) 
-	{
-		/* 
-		 * Pick a nice close server. Look for DC on local net 
-		 * (assuming we don't have a list of preferred DC's)
-		 */
-		 
-		for (i = 0; i < count; i++) {
-			if (is_zero_ip(ip_list[i]))
-				continue;
-
-			if ( !is_local_net(ip_list[i]) )
-				continue;
-		
-			if (name_status_find(domain, 0x1c, 0x20, ip_list[i], srv_name)) {
-				result = check_negative_conn_cache( domain, srv_name );
-				if ( NT_STATUS_IS_OK(result) ) {
-					dc_ip = ip_list[i];
-					goto done;
-				}
-			}
-		
-			zero_ip(&ip_list[i]);
-		}
-
-		/*
-		 * Try looking in the name status cache for an
-		 * entry we already have. We know that already
-		 * resolved ok.
-		 */
-
-		for (i = 0; i < count; i++) {
-			if (is_zero_ip(ip_list[i]))
-				continue;
-
-			if (namecache_status_fetch(domain, 0x1c, 0x20,
-						ip_list[i], srv_name)) {
-				result = check_negative_conn_cache( domain, srv_name );
-				if ( NT_STATUS_IS_OK(result) ) {
-					dc_ip = ip_list[i];
-					goto done;
-				}
-			}
-		}
-		
-		/*
-		 * Secondly try and contact a random PDC/BDC.
-		 */
-
-		i = (sys_random() % count);
-
-		if ( !is_zero_ip(ip_list[i]) ) {
-			if ( name_status_find(domain, 0x1c, 0x20, ip_list[i], srv_name)) {
-				result = check_negative_conn_cache( domain, srv_name );
-				if ( NT_STATUS_IS_OK(result) ) {
-					dc_ip = ip_list[i];
-					goto done;
-				}
-			}
-			zero_ip(&ip_list[i]); /* Tried and failed. */
-		}
+	/* Pick a nice close server, but only if the list was not ordered */
+	
+	if (!list_ordered && (count > 1) ) {
+		qsort(ip_list, count, sizeof(struct in_addr), QSORT_CAST ip_compare);
 	}
-
-	/* Finally return first DC that we can contact */
 
 	for (i = 0; i < count; i++) {
 		if (is_zero_ip(ip_list[i]))
@@ -281,8 +222,9 @@ BOOL get_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
 				dc_ip = ip_list[i];
 				goto done;
 			}
-		}		
+		}
 	}
+	
 
 	SAFE_FREE(ip_list);
 
@@ -295,7 +237,7 @@ BOOL get_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
 	   the DC is alive and kicking.  If we can catch a dead DC before
 	   performing a cli_connect() we can avoid a 30-second timeout. */
 
-	DEBUG(3, ("get_dc_name: Returning DC %s (%s) for domain %s\n", srv_name,
+	DEBUG(3, ("rpc_dc_name: Returning DC %s (%s) for domain %s\n", srv_name,
 		  inet_ntoa(dc_ip), domain));
 
 	*ip_out = dc_ip;

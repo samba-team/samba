@@ -129,59 +129,15 @@ static BOOL cm_ads_find_dc(const char *domain, struct in_addr *dc_ip, fstring sr
 	return True;
 }
 
-static BOOL cm_get_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
+/**********************************************************************
+ wrapper around ads and rpc methods of finds DC's
+**********************************************************************/
+
+static BOOL cm_get_dc_name(const char *domain, fstring srv_name, 
+                           struct in_addr *ip_out)
 {
-	static struct get_dc_name_cache *get_dc_name_cache;
-	struct get_dc_name_cache *dcc;
 	struct in_addr dc_ip;
 	BOOL ret;
-
-	/* Check the cache for previous lookups */
-
-	for (dcc = get_dc_name_cache; dcc; dcc = dcc->next) {
-
-		if (!strequal(domain, dcc->domain_name))
-			continue; /* Not our domain */
-
-		if ((time(NULL) - dcc->lookup_time) > 
-		    GET_DC_NAME_CACHE_TIMEOUT) {
-
-			/* Cache entry has expired, delete it */
-
-			DEBUG(10, ("get_dc_name_cache entry expired for %s\n", domain));
-
-			DLIST_REMOVE(get_dc_name_cache, dcc);
-			SAFE_FREE(dcc);
-
-			break;
-		}
-
-		/* Return a positive or negative lookup for this domain */
-
-		if (dcc->srv_name[0]) {
-			DEBUG(10, ("returning positive get_dc_name_cache entry for %s\n", domain));
-			fstrcpy(srv_name, dcc->srv_name);
-			return True;
-		} else {
-			DEBUG(10, ("returning negative get_dc_name_cache entry for %s\n", domain));
-			return False;
-		}
-	}
-
-	/* Add cache entry for this lookup. */
-
-	DEBUG(10, ("Creating get_dc_name_cache entry for %s\n", domain));
-
-	if (!(dcc = (struct get_dc_name_cache *) 
-	      malloc(sizeof(struct get_dc_name_cache))))
-		return False;
-
-	ZERO_STRUCTP(dcc);
-
-	fstrcpy(dcc->domain_name, domain);
-	dcc->lookup_time = time(NULL);
-
-	DLIST_ADD(get_dc_name_cache, dcc);
 
 	zero_ip(&dc_ip);
 
@@ -191,21 +147,12 @@ static BOOL cm_get_dc_name(const char *domain, fstring srv_name, struct in_addr 
 
 	if (!ret) {
 		/* fall back on rpc methods if the ADS methods fail */
-		ret = get_dc_name(domain, srv_name, &dc_ip);
+		ret = rpc_dc_name(domain, srv_name, &dc_ip);
 	}
-
-	if (!ret)
-		return False;
-
-	/* We have a name so make the cache entry positive now */
-	fstrcpy(dcc->srv_name, srv_name);
-
-	DEBUG(3, ("cm_get_dc_name: Returning DC %s (%s) for domain %s\n", srv_name,
-		  inet_ntoa(dc_ip), domain));
 
 	*ip_out = dc_ip;
 
-	return True;
+	return ret;
 }
 
 /* Choose between anonymous or authenticated connections.  We need to use
@@ -257,7 +204,7 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 	fstrcpy(new_conn->domain, domain);
 	fstrcpy(new_conn->pipe_name, get_pipe_name_from_index(pipe_index));
 	
-	/* connection failure cache has been moved inside of get_dc_name
+	/* connection failure cache has been moved inside of rpc_dc_name
 	   so we can deal with half dead DC's   --jerry */
 
 	if (!cm_get_dc_name(domain, new_conn->controller, &dc_ip)) {

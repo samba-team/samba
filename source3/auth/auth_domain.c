@@ -276,7 +276,7 @@ static NTSTATUS find_connect_dc(struct cli_state **cli,
 	struct in_addr dc_ip;
 	fstring srv_name;
 
-	if (!get_dc_name(domain, srv_name, &dc_ip)) {
+	if (!rpc_dc_name(domain, srv_name, &dc_ip)) {
 		DEBUG(0,("find_connect_dc: Failed to find an DCs for %s\n", lp_workgroup()));
 		return NT_STATUS_NO_LOGON_SERVERS;
 	}

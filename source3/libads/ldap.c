@@ -41,6 +41,9 @@
 /*
   try a connection to a given ldap server, returning True and setting the servers IP
   in the ads struct if successful
+  
+  TODO : add a negative connection cache in here leveraged off of the one
+  found in the rpc code.  --jerry
  */
 static BOOL ads_try_connect(ADS_STRUCT *ads, const char *server, unsigned port)
 {
