@@ -2391,7 +2391,7 @@ static NTSTATUS samr_OpenUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	a_state = talloc_p(d_state, struct samr_account_state);
+	a_state = talloc_p(mem_ctx, struct samr_account_state);
 	if (!a_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2649,7 +2649,7 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	msg->dn = talloc_strdup(mem_ctx, a_state->account_dn);
+	msg->dn = talloc_reference(mem_ctx, a_state->account_dn);
 	if (!msg->dn) {
 		return NT_STATUS_NO_MEMORY;
 	}
