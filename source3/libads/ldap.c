@@ -23,39 +23,83 @@
 
 #ifdef HAVE_ADS
 
-/* return a dn of the form "dc=AA,dc=BB,dc=CC" from a 
-   realm of the form AA.BB.CC 
-   caller must free
+/*
+  build a ADS_STATUS structure
 */
+ADS_STATUS ads_build_error(enum ads_error_type etype, 
+			   int rc, int minor_status)
+{
+	ADS_STATUS ret;
+	ret.error_type = etype;
+	ret.rc = rc;
+	ret.minor_status = minor_status;
+	return ret;
+}
+
+/*
+  do a rough conversion between ads error codes and NT status codes
+  we'll need to fill this in more
+*/
+NTSTATUS ads_ntstatus(ADS_STATUS rc)
+{
+	if (ADS_ERR_OK(rc)) return NT_STATUS_OK;
+	return NT_STATUS_UNSUCCESSFUL;
+}
+
 /*
   return a string for an error from a ads routine
 */
-char *ads_errstr(int rc)
+const char *ads_errstr(ADS_STATUS status)
 {
-	return ldap_err2string(rc);
+	gss_buffer_desc msg1, msg2;
+	uint32 minor;
+	int msg_ctx;
+	static char *ret;
+
+	SAFE_FREE(ret);
+	msg_ctx = 0;
+
+	switch (status.error_type) {
+	case ADS_ERROR_KRB5: 
+		return error_message(status.rc);
+	case ADS_ERROR_LDAP:
+		return ldap_err2string(status.rc);
+	case ADS_ERROR_SYSTEM:
+		return strerror(status.rc);
+	case ADS_ERROR_GSS:
+		msg1.value = NULL;
+		msg2.value = NULL;
+		gss_display_status(&minor, status.rc, GSS_C_GSS_CODE,
+				   GSS_C_NULL_OID, &msg_ctx, &msg1);
+		gss_display_status(&minor, status.minor_status, GSS_C_MECH_CODE,
+				   GSS_C_NULL_OID, &msg_ctx, &msg2);
+		asprintf(&ret, "%s : %s", (char *)msg1.value, (char *)msg2.value);
+		gss_release_buffer(&minor, &msg1);
+		gss_release_buffer(&minor, &msg2);
+		return ret;
+	}
+
+	return "Unknown ADS error type!?";
 }
 
 /*
   connect to the LDAP server
 */
-ADS_RETURN_CODE ads_connect(ADS_STRUCT *ads)
+ADS_STATUS ads_connect(ADS_STRUCT *ads)
 {
 	int version = LDAP_VERSION3;
-	ADS_RETURN_CODE rc;
-	
-	rc.error_type = False;
+	ADS_STATUS status;
 
 	ads->last_attempt = time(NULL);
 
 	ads->ld = ldap_open(ads->ldap_server, ads->ldap_port);
 	if (!ads->ld) {
-		rc.rc = LDAP_SERVER_DOWN;
-		return rc;
+		return ADS_ERROR_SYSTEM(errno)
 	}
-	if (!ads_server_info(ads)) {
+	status = ads_server_info(ads);
+	if (!ADS_ERR_OK(status)) {
 		DEBUG(1,("Failed to get ldap server info\n"));
-		rc.rc = LDAP_SERVER_DOWN;
-		return rc;
+		return status;
 	}
 
 	ldap_set_option(ads->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
@@ -64,33 +108,35 @@ ADS_RETURN_CODE ads_connect(ADS_STRUCT *ads)
 		ads_kinit_password(ads);
 	}
 
-	rc = ads_sasl_bind(ads);
-	return rc;
+	return ads_sasl_bind(ads);
 }
 
 /*
   do a search with a timeout
 */
-int ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope, const char *exp,
-		  const char **attrs, void **res)
+ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope, 
+			 const char *exp,
+			 const char **attrs, void **res)
 {
 	struct timeval timeout;
+	int rc;
 
 	timeout.tv_sec = ADS_SEARCH_TIMEOUT;
 	timeout.tv_usec = 0;
 	*res = NULL;
 
-	return ldap_search_ext_s(ads->ld, 
-				 bind_path, scope,
-				 exp, attrs, 0, NULL, NULL, 
-				 &timeout, LDAP_NO_LIMIT, (LDAPMessage **)res);
+	rc = ldap_search_ext_s(ads->ld, 
+			       bind_path, scope,
+			       exp, attrs, 0, NULL, NULL, 
+			       &timeout, LDAP_NO_LIMIT, (LDAPMessage **)res);
+	return ADS_ERROR(rc);
 }
 /*
   do a general ADS search
 */
-int ads_search(ADS_STRUCT *ads, void **res, 
-	       const char *exp, 
-	       const char **attrs)
+ADS_STATUS ads_search(ADS_STRUCT *ads, void **res, 
+		      const char *exp, 
+		      const char **attrs)
 {
 	return ads_do_search(ads, ads->bind_path, LDAP_SCOPE_SUBTREE, 
 			     exp, attrs, res);
@@ -99,9 +145,9 @@ int ads_search(ADS_STRUCT *ads, void **res,
 /*
   do a search on a specific DistinguishedName
 */
-int ads_search_dn(ADS_STRUCT *ads, void **res, 
-		  const char *dn, 
-		  const char **attrs)
+ADS_STATUS ads_search_dn(ADS_STRUCT *ads, void **res, 
+			 const char *dn, 
+			 const char **attrs)
 {
 	return ads_do_search(ads, dn, LDAP_SCOPE_BASE, "(objectclass=*)", attrs, res);
 }
@@ -118,24 +164,24 @@ void ads_msgfree(ADS_STRUCT *ads, void *msg)
 /*
   find a machine account given a hostname 
 */
-int ads_find_machine_acct(ADS_STRUCT *ads, void **res, const char *host)
+ADS_STATUS ads_find_machine_acct(ADS_STRUCT *ads, void **res, const char *host)
 {
-	int ret;
+	ADS_STATUS status;
 	char *exp;
 
 	/* the easiest way to find a machine account anywhere in the tree
 	   is to look for hostname$ */
 	asprintf(&exp, "(samAccountName=%s$)", host);
-	ret = ads_search(ads, res, exp, NULL);
+	status = ads_search(ads, res, exp, NULL);
 	free(exp);
-	return ret;
+	return status;
 }
 
 
 /*
   a convenient routine for adding a generic LDAP record 
 */
-int ads_gen_add(ADS_STRUCT *ads, const char *new_dn, ...)
+ADS_STATUS ads_gen_add(ADS_STRUCT *ads, const char *new_dn, ...)
 {
 	int i;
 	va_list ap;
@@ -179,15 +225,16 @@ int ads_gen_add(ADS_STRUCT *ads, const char *new_dn, ...)
 	}
 	free(mods);
 	
-	return ret;
+	return ADS_ERROR(ret);
 }
 
 /*
   add a machine account to the ADS server
 */
-static int ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname, const char *org_unit)
+static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname, 
+				       const char *org_unit)
 {
-	int ret;
+	ADS_STATUS ret;
 	char *host_spn, *host_upn, *new_dn, *samAccountName, *controlstr;
 
 	asprintf(&host_spn, "HOST/%s", hostname);
@@ -317,9 +364,9 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
   join a machine to a realm, creating the machine account
   and setting the machine password
 */
-int ads_join_realm(ADS_STRUCT *ads, const char *hostname, const char *org_unit)
+ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *hostname, const char *org_unit)
 {
-	int rc;
+	ADS_STATUS status;
 	LDAPMessage *res;
 	char *host;
 
@@ -327,80 +374,78 @@ int ads_join_realm(ADS_STRUCT *ads, const char *hostname, const char *org_unit)
 	host = strdup(hostname);
 	strlower(host);
 
-	rc = ads_find_machine_acct(ads, (void **)&res, host);
-	if (rc == LDAP_SUCCESS && ads_count_replies(ads, res) == 1) {
+	status = ads_find_machine_acct(ads, (void **)&res, host);
+	if (ADS_ERR_OK(status) && ads_count_replies(ads, res) == 1) {
 		DEBUG(0, ("Host account for %s already exists\n", host));
-		return LDAP_SUCCESS;
+		return ADS_SUCCESS;
 	}
 
-	rc = ads_add_machine_acct(ads, host, org_unit);
-	if (rc != LDAP_SUCCESS) {
-		DEBUG(0, ("ads_add_machine_acct: %s\n", ads_errstr(rc)));
-		return rc;
+	status = ads_add_machine_acct(ads, host, org_unit);
+	if (!ADS_ERR_OK(status)) {
+		DEBUG(0, ("ads_add_machine_acct: %s\n", ads_errstr(status)));
+		return status;
 	}
 
-	rc = ads_find_machine_acct(ads, (void **)&res, host);
-	if (rc != LDAP_SUCCESS || ads_count_replies(ads, res) != 1) {
+	status = ads_find_machine_acct(ads, (void **)&res, host);
+	if (!ADS_ERR_OK(status)) {
 		DEBUG(0, ("Host account test failed\n"));
-		/* hmmm, we need NTSTATUS */
-		return -1;
+		return status;
 	}
 
 	free(host);
 
-	return LDAP_SUCCESS;
+	return status;
 }
 
 /*
   delete a machine from the realm
 */
-int ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
+ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 {
-	int rc;
+	ADS_STATUS status;
 	void *res;
 	char *hostnameDN, *host; 
+	int rc;
 
 	/* hostname must be lowercase */
 	host = strdup(hostname);
 	strlower(host);
 
-	rc = ads_find_machine_acct(ads, &res, host);
-	if (rc != LDAP_SUCCESS || ads_count_replies(ads, res) != 1) {
+	status = ads_find_machine_acct(ads, &res, host);
+	if (!ADS_ERR_OK(status)) {
 	    DEBUG(0, ("Host account for %s does not exist.\n", host));
-	    return -1;
+	    return status;
 	}
 
 	hostnameDN = ldap_get_dn(ads->ld, (LDAPMessage *)res);
 	rc = ldap_delete_s(ads->ld, hostnameDN);
 	ldap_memfree(hostnameDN);
 	if (rc != LDAP_SUCCESS) {
-	    DEBUG(0, ("ldap_delete_s: %s\n", ads_errstr(rc)));
-	    return rc;
+		return ADS_ERROR(rc);
 	}
 
-	rc = ads_find_machine_acct(ads, &res, host);
-	if (rc == LDAP_SUCCESS && ads_count_replies(ads, res) == 1 ) {
-	    DEBUG(0, ("Failed to remove host account.\n"));
-	    /*hmmm, we need NTSTATUS */
-	    return -1;
+	status = ads_find_machine_acct(ads, &res, host);
+	if (ADS_ERR_OK(status) && ads_count_replies(ads, res) == 1) {
+		DEBUG(0, ("Failed to remove host account.\n"));
+		return status;
 	}
 
 	free(host);
 
-	return LDAP_SUCCESS;
+	return status;
 }
 
 
-NTSTATUS ads_set_machine_password(ADS_STRUCT *ads,
-				  const char *hostname, 
-				  const char *password)
+ADS_STATUS ads_set_machine_password(ADS_STRUCT *ads,
+				    const char *hostname, 
+				    const char *password)
 {
-	NTSTATUS ret;
+	ADS_STATUS status;
 	char *host = strdup(hostname);
 	strlower(host);
-	ret = krb5_set_password(ads->kdc_server, host, ads->realm, password);
+	status = krb5_set_password(ads->kdc_server, host, ads->realm, password);
 	free(host);
-	return ret;
+	return status;
 }
 
 /*
@@ -510,18 +555,22 @@ int ads_pull_sids(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 
 
 /* find the update serial number - this is the core of the ldap cache */
-BOOL ads_USN(ADS_STRUCT *ads, uint32 *usn)
+ADS_STATUS ads_USN(ADS_STRUCT *ads, uint32 *usn)
 {
 	const char *attrs[] = {"highestCommittedUSN", NULL};
-	int rc;
+	ADS_STATUS status;
 	void *res;
-	BOOL ret;
 
-	rc = ads_do_search(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
-	if (rc || ads_count_replies(ads, res) != 1) return False;
-	ret = ads_pull_uint32(ads, res, "highestCommittedUSN", usn);
+	status = ads_do_search(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
+	if (!ADS_ERR_OK(status)) return status;
+
+	if (ads_count_replies(ads, res) != 1) {
+		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
+	}
+
+	ads_pull_uint32(ads, res, "highestCommittedUSN", usn);
 	ads_msgfree(ads, res);
-	return ret;
+	return ADS_SUCCESS;
 }
 
 
@@ -529,26 +578,25 @@ BOOL ads_USN(ADS_STRUCT *ads, uint32 *usn)
    The ldapServiceName field on w2k  looks like this:
      vnet3.home.samba.org:win2000-vnet3$@VNET3.HOME.SAMBA.ORG
 */
-BOOL ads_server_info(ADS_STRUCT *ads)
+ADS_STATUS ads_server_info(ADS_STRUCT *ads)
 {
 	const char *attrs[] = {"ldapServiceName", NULL};
-	int rc;
+	ADS_STATUS status;
 	void *res;
 	char **values;
 	char *p;
 
-	rc = ads_do_search(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
-	if (rc || ads_count_replies(ads, res) != 1) return False;
+	status = ads_do_search(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
+	if (!ADS_ERR_OK(status)) return status;
 
 	values = ldap_get_values(ads->ld, res, "ldapServiceName");
-
-	if (!values || !values[0]) return False;
+	if (!values || !values[0]) return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
 
 	p = strchr(values[0], ':');
 	if (!p) {
 		ldap_value_free(values);
 		ldap_msgfree(res);
-		return False;
+		return ADS_ERROR(LDAP_DECODING_ERROR);
 	}
 
 	SAFE_FREE(ads->ldap_server_name);
@@ -559,7 +607,7 @@ BOOL ads_server_info(ADS_STRUCT *ads)
 		ldap_value_free(values);
 		ldap_msgfree(res);
 		SAFE_FREE(ads->ldap_server_name);
-		return False;
+		return ADS_ERROR(LDAP_DECODING_ERROR);
 	}
 
 	*p = 0;
@@ -579,35 +627,35 @@ BOOL ads_server_info(ADS_STRUCT *ads)
 	DEBUG(3,("got ldap server name %s@%s\n", 
 		 ads->ldap_server_name, ads->realm));
 
-	return True;
+	return ADS_SUCCESS;
 }
 
 
 /* 
    find the list of trusted domains
 */
-BOOL ads_trusted_domains(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, 
-			 int *num_trusts, char ***names, DOM_SID **sids)
+ADS_STATUS ads_trusted_domains(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, 
+			       int *num_trusts, char ***names, DOM_SID **sids)
 {
 	const char *attrs[] = {"flatName", "securityIdentifier", NULL};
-	int rc;
+	ADS_STATUS status;
 	void *res, *msg;
 	int count, i;
 
 	*num_trusts = 0;
 
-	rc = ads_search(ads, &res, "(objectcategory=trustedDomain)", attrs);
-	if (rc) return False;
+	status = ads_search(ads, &res, "(objectcategory=trustedDomain)", attrs);
+	if (!ADS_ERR_OK(status)) return status;
 
 	count = ads_count_replies(ads, res);
 	if (count == 0) {
 		ads_msgfree(ads, res);
-		return False;
+		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
 	}
 
 	(*names) = talloc(mem_ctx, sizeof(char *) * count);
 	(*sids) = talloc(mem_ctx, sizeof(DOM_SID) * count);
-	if (! *names || ! *sids) return False;
+	if (! *names || ! *sids) return ADS_ERROR(LDAP_NO_MEMORY);
 
 	for (i=0, msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
 		(*names)[i] = ads_pull_string(ads, mem_ctx, msg, "flatName");
@@ -619,7 +667,7 @@ BOOL ads_trusted_domains(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 
 	*num_trusts = i;
 
-	return True;
+	return ADS_SUCCESS;
 }
 
 #endif

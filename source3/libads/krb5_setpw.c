@@ -212,8 +212,8 @@ static krb5_error_code parse_setpw_reply(krb5_context context,
 	return 0;
 }
 
-NTSTATUS krb5_set_password(const char *kdc_host, const char *hostname,
-			   const char *realm,  const char *newpw)
+ADS_STATUS krb5_set_password(const char *kdc_host, const char *hostname,
+			     const char *realm,  const char *newpw)
 {
 	krb5_context context;
 	krb5_auth_context auth_context = NULL;
@@ -229,13 +229,13 @@ NTSTATUS krb5_set_password(const char *kdc_host, const char *hostname,
 	ret = krb5_init_context(&context);
 	if (ret) {
 		DEBUG(1,("Failed to init krb5 context (%s)\n", error_message(ret)));
-		return NT_STATUS_UNSUCCESSFUL;
+		return ADS_ERROR_KRB5(ret);
 	}
 	
 	ret = krb5_cc_default(context, &ccache);
 	if (ret) {
 		DEBUG(1,("Failed to get default creds (%s)\n", error_message(ret)));
-		return NT_STATUS_UNSUCCESSFUL;
+		return ADS_ERROR_KRB5(ret);
 	}
 
 	ZERO_STRUCT(creds);
@@ -244,7 +244,7 @@ NTSTATUS krb5_set_password(const char *kdc_host, const char *hostname,
 	ret = krb5_parse_name(context, princ_name, &creds.server);
 	if (ret) {
 		DEBUG(1,("Failed to parse kadmin/changepw (%s)\n", error_message(ret)));
-		return NT_STATUS_UNSUCCESSFUL;
+		return ADS_ERROR_KRB5(ret);
 	}
 	free(princ_name);
 
@@ -252,7 +252,7 @@ NTSTATUS krb5_set_password(const char *kdc_host, const char *hostname,
 	ret = krb5_parse_name(context, princ_name, &principal);
 	if (ret) {
 		DEBUG(1,("Failed to parse %s (%s)\n", princ_name, error_message(ret)));
-		return NT_STATUS_UNSUCCESSFUL;
+		return ADS_ERROR_KRB5(ret);
 	}
 	free(princ_name);
 
@@ -263,27 +263,28 @@ NTSTATUS krb5_set_password(const char *kdc_host, const char *hostname,
 	if (ret) {
 		DEBUG(1,("Failed to get principal from ccache (%s)\n", 
 			 error_message(ret)));
-		return NT_STATUS_UNSUCCESSFUL;
+		return ADS_ERROR_KRB5(ret);
 	}
 	
 	ret = krb5_get_credentials(context, 0, ccache, &creds, &credsp);
 	if (ret) {
 		DEBUG(1,("krb5_get_credentials failed (%s)\n", error_message(ret)));
-		return NT_STATUS_UNSUCCESSFUL;
+		return ADS_ERROR_KRB5(ret);
 	}
 	
 	ret = krb5_mk_req_extended(context, &auth_context, AP_OPTS_USE_SUBKEY,
 				   NULL, credsp, &ap_req);
 	if (ret) {
 		DEBUG(1,("krb5_mk_req_extended failed (%s)\n", error_message(ret)));
-		return NT_STATUS_UNSUCCESSFUL;
+		return ADS_ERROR_KRB5(ret);
 	}
 	
 	sock = open_udp_socket(kdc_host, DEFAULT_KPASSWD_PORT);
 	if (sock == -1) {
+		int rc = errno;
 		DEBUG(1,("failed to open kpasswd socket to %s (%s)\n", 
 			 kdc_host, strerror(errno)));
-		return NT_STATUS_UNSUCCESSFUL;
+		return ADS_ERROR_SYSTEM(rc);
 	}
 	
 	addr_len = sizeof(remote_addr);
@@ -301,19 +302,19 @@ NTSTATUS krb5_set_password(const char *kdc_host, const char *hostname,
 	ret = krb5_auth_con_setaddrs(context, auth_context, &local_kaddr, NULL);
 	if (ret) {
 		DEBUG(1,("krb5_auth_con_setaddrs failed (%s)\n", error_message(ret)));
-		return NT_STATUS_UNSUCCESSFUL;
+		return ADS_ERROR_KRB5(ret);
 	}
 
 	ret = build_setpw_request(context, auth_context, &ap_req,
 				  hostname, realm, newpw, &chpw_req);
 	if (ret) {
 		DEBUG(1,("build_setpw_request failed (%s)\n", error_message(ret)));
-		return NT_STATUS_UNSUCCESSFUL;
+		return ADS_ERROR_KRB5(ret);
 	}
 
 	if (write(sock, chpw_req.data, chpw_req.length) != chpw_req.length) {
 		DEBUG(1,("send of chpw failed (%s)\n", strerror(errno)));
-		return NT_STATUS_UNSUCCESSFUL;		
+		return ADS_ERROR(LDAP_ENCODING_ERROR);
 	}
 
 	free(chpw_req.data);
@@ -323,8 +324,7 @@ NTSTATUS krb5_set_password(const char *kdc_host, const char *hostname,
 
 	ret = read(sock, chpw_rep.data, chpw_rep.length);
 	if (ret < 0) {
-		DEBUG(1,("recv of chpw reply failed (%s)\n", strerror(errno)));
-		return NT_STATUS_UNSUCCESSFUL;		
+		return ADS_ERROR_SYSTEM(errno);
 	}
 
 	close(sock);
@@ -334,7 +334,7 @@ NTSTATUS krb5_set_password(const char *kdc_host, const char *hostname,
 	if (ret) {
 		DEBUG(1,("krb5_auth_con_setaddrs on reply failed (%s)\n", 
 			 error_message(ret)));
-		return NT_STATUS_UNSUCCESSFUL;
+		return ADS_ERROR_KRB5(ret);
 	}
 
 	ret = parse_setpw_reply(context, auth_context, &chpw_rep);
@@ -343,10 +343,10 @@ NTSTATUS krb5_set_password(const char *kdc_host, const char *hostname,
 	if (ret) {
 		DEBUG(1,("parse_setpw_reply failed (%s)\n", 
 			 error_message(ret)));
-		return NT_STATUS_UNSUCCESSFUL;
+		return ADS_ERROR_KRB5(ret);
 	}
 
-	return NT_STATUS_OK;
+	return ADS_SUCCESS;
 }
 
 #endif

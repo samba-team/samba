@@ -68,7 +68,7 @@ static int net_ads_info(int argc, const char **argv)
 static ADS_STRUCT *ads_startup(void)
 {
 	ADS_STRUCT *ads;
-	ADS_RETURN_CODE rc;
+	ADS_STATUS status;
 	extern char *opt_password;
 	extern char *opt_user_name;
 
@@ -87,12 +87,9 @@ static ADS_STRUCT *ads_startup(void)
 	ads->password = strdup(opt_password);
 	ads->user_name = strdup(opt_user_name);
 
-	rc = ads_connect(ads);
-	if (rc.rc) {
-		if(rc.error_type) 
-		    ads_display_status("ads_connect", rc.rc, rc.minor_status);
-		else
-		    d_printf("ads_connect: %s\n", ads_errstr(rc.rc));
+	status = ads_connect(ads);
+	if (!ADS_ERR_OK(status)) {
+		d_printf("ads_connect: %s\n", ads_errstr(status));
 		return NULL;
 	}
 	return ads;
@@ -101,13 +98,13 @@ static ADS_STRUCT *ads_startup(void)
 static int net_ads_user(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
-	int rc;
+	ADS_STATUS rc;
 	void *res;
 	const char *attrs[] = {"sAMAccountName", "name", "objectSid", NULL};
 
 	if (!(ads = ads_startup())) return -1;
 	rc = ads_search(ads, &res, "(objectclass=user)", attrs);
-	if (rc) {
+	if (!ADS_ERR_OK(rc)) {
 		d_printf("ads_search: %s\n", ads_errstr(rc));
 		return -1;
 	}
@@ -125,13 +122,13 @@ static int net_ads_user(int argc, const char **argv)
 static int net_ads_group(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
-	int rc;
+	ADS_STATUS rc;
 	void *res;
 	const char *attrs[] = {"sAMAccountName", "name", "objectSid", NULL};
 
 	if (!(ads = ads_startup())) return -1;
 	rc = ads_search(ads, &res, "(objectclass=group)", attrs);
-	if (rc) {
+	if (!ADS_ERR_OK(rc)) {
 		d_printf("ads_search: %s\n", ads_errstr(rc));
 		return -1;
 	}
@@ -148,14 +145,14 @@ static int net_ads_group(int argc, const char **argv)
 static int net_ads_status(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
-	int rc;
+	ADS_STATUS rc;
 	extern pstring global_myname;
 	void *res;
 
 	if (!(ads = ads_startup())) return -1;
 
 	rc = ads_find_machine_acct(ads, &res, global_myname);
-	if (rc) {
+	if (!ADS_ERR_OK(rc)) {
 		d_printf("ads_find_machine_acct: %s\n", ads_errstr(rc));
 		return -1;
 	}
@@ -173,7 +170,7 @@ static int net_ads_status(int argc, const char **argv)
 static int net_ads_leave(int argc, const char **argv)
 {
 	ADS_STRUCT *ads = NULL;
-	int rc;
+	ADS_STATUS rc;
 	extern pstring global_myname;
 
 	if (!(ads = ads_startup())) {
@@ -186,7 +183,7 @@ static int net_ads_leave(int argc, const char **argv)
 	}
 
 	rc = ads_leave_realm(ads, global_myname);
-	if (rc) {
+	if (!ADS_ERR_OK(rc)) {
 	    d_printf("Failed to delete host '%s' from the '%s' realm.\n", 
 		     global_myname, ads->realm);
 	    return -1;
@@ -200,11 +197,10 @@ static int net_ads_leave(int argc, const char **argv)
 static int net_ads_join(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
-	int rc;
+	ADS_STATUS rc;
 	char *password;
 	char *tmp_password;
 	extern pstring global_myname;
-	NTSTATUS status;
 	const char *org_unit = "Computers";
 	char *dn;
 	void *res;
@@ -227,25 +223,25 @@ static int net_ads_join(int argc, const char **argv)
 	free(dn);
 	ads_msgfree(ads, res);
 
-	if (rc == LDAP_NO_SUCH_OBJECT) {
+	if (rc.error_type == ADS_ERROR_LDAP && rc.rc == LDAP_NO_SUCH_OBJECT) {
 		d_printf("ads_join_realm: organisational unit %s does not exist\n", org_unit);
-		return rc;
+		return -1;
 	}
 
-	if (rc) {
+	if (!ADS_ERR_OK(rc)) {
 		d_printf("ads_join_realm: %s\n", ads_errstr(rc));
 		return -1;
 	}	
 
 	rc = ads_join_realm(ads, global_myname, org_unit);
-	if (rc) {
+	if (!ADS_ERR_OK(rc)) {
 		d_printf("ads_join_realm: %s\n", ads_errstr(rc));
 		return -1;
 	}
 
-	status = ads_set_machine_password(ads, global_myname, password);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("ads_set_machine_password: %s\n", get_nt_error_msg(status));
+	rc = ads_set_machine_password(ads, global_myname, password);
+	if (!ADS_ERR_OK(rc)) {
+		d_printf("ads_set_machine_password: %s\n", ads_errstr(rc));
 		return -1;
 	}
 
