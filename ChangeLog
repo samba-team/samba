@@ -1,3 +1,9 @@
+1999-11-23  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/addr_families.c (ipv4_uninteresting): ignore 0.0.0.0
+	(INADDR_ANY)
+	(ipv6_uninteresting): remove unused macro
+
 1999-11-22  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/krb5.h: rc4->arcfour
@@ -5,6 +11,12 @@
 	* lib/krb5/crypto.c: rc4->arcfour
 
 1999-11-17  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/krb5_locl.h: add <rc4.h>
+	* lib/krb5/krb5.h (krb5_keytype): add KEYTYPE_RC4
+	* lib/krb5/crypto.c: some code for doing RC4/MD5/HMAC which might
+	not be totally different from some small company up in the
+	north-west corner of the US
 
 	* lib/krb5/get_addrs.c (find_all_addresses): change code to
  	actually increment buf_size
