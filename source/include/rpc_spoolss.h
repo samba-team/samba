@@ -145,12 +145,17 @@
 
 #define PRINTER_STATUS_POWER_SAVE	0x01000000
 
-/* Printer permissions ACE settings */
+/* Printer permissions ACE settings.  NT4 uses generic and standard access
+   rights whereas NT5 converts them all to object specific access rights. */
 
 #define PRINTER_ACE_FULL_CONTROL      GENERIC_ALL_ACCESS
 #define PRINTER_ACE_MANAGE_DOCUMENTS  READ_CONTROL_ACCESS
 #define PRINTER_ACE_PRINT             \
     (GENERIC_READ_ACCESS | GENERIC_WRITE_ACCESS | GENERIC_EXECUTE_ACCESS)
+
+#define PRINTER_ACE_NT5_FULL_CONTROL     0x000f000c
+#define PRINTER_ACE_NT5_PRINT            0x00020000
+#define PRINTER_ACE_NT5_MANAGE_DOCUMENTS 0x00020008
 
 #define SERVER_ACCESS_ADMINISTER	0x00000001
 #define SERVER_ACCESS_ENUMERATE		0x00000002
