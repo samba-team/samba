@@ -598,61 +598,47 @@ validate a group username entry. Return the username or NULL
 static char *validate_group(char *group,char *password,int pwlen,int snum)
 {
 #ifdef HAVE_NETGROUP
-  {
-    char *host, *user, *domain;
-    setnetgrent(group);
-    while (getnetgrent(&host, &user, &domain)) {
-      if (user) {
-	if (user_ok(user, snum) && 
-	    password_ok(user,password,pwlen,NULL)) {
-	  endnetgrent();
-	  return(user);
+	{
+		char *host, *user, *domain;
+		setnetgrent(group);
+		while (getnetgrent(&host, &user, &domain)) {
+			if (user) {
+				if (user_ok(user, snum) && 
+				    password_ok(user,password,pwlen,NULL)) {
+					endnetgrent();
+					return(user);
+				}
+			}
+		}
+		endnetgrent();
 	}
-      }
-    }
-    endnetgrent();
-  }
 #endif
   
-#ifdef HAVE_GETGRNAM 
-  {
-    struct group *gptr = (struct group *)getgrnam(group);
-    char **member;
-    if (gptr)
-      {
-	member = gptr->gr_mem;
-	while (member && *member)
-	  {
-	    static fstring name;
-	    fstrcpy(name,*member);
-	    if (user_ok(name,snum) &&
-		password_ok(name,password,pwlen,NULL))
-	      return(&name[0]);
-	    member++;
-	  }
-#ifdef GROUP_CHECK_PWENT
+#ifdef HAVE_GETGRENT
 	{
-	  struct passwd *pwd;
-	  static fstring tm;
-	  
-	  setpwent ();
-	  while (pwd = getpwent ()) {
-	    if (*(pwd->pw_passwd) && pwd->pw_gid == gptr->gr_gid) {
-	      /* This Entry have PASSWORD and same GID then check pwd */
-	      if (password_ok(NULL, password, pwlen, pwd)) {
-		fstrcpy(tm, pwd->pw_name);
-		endpwent ();
-		return tm;
-	      }
-	    }
-	  }
-	  endpwent ();
+		struct group *gptr;
+		char **member;
+		BOOL checked_pwent=False;
+		setgrent();
+		while (gptr = (struct group *)getgrent()) {
+			if (!strequal(gptr->gr_name,group))
+				continue;
+			member = gptr->gr_mem;
+			while (member && *member) {
+				static fstring name;
+				fstrcpy(name,*member);
+				if (user_ok(name,snum) &&
+				    password_ok(name,password,pwlen,NULL)) {
+					endgrent();
+					return(&name[0]);
+				}
+				member++;
+			}
+		}
+		endgrent();
 	}
-#endif /* GROUP_CHECK_PWENT */
-      }
-  }      
 #endif
-  return(NULL);
+	return(NULL);
 }
 
 
