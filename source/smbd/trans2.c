@@ -819,6 +819,17 @@ static int call_trans2findfirst(connection_struct *conn,
 	    smb_fn_name(CVAL(inbuf,smb_com)), 
 	    mask, directory, dirtype, numentries ) );
 
+  /* 
+   * Force a name mangle here to ensure that the
+   * mask as an 8.3 name is top of the mangled cache.
+   * The reasons for this are subtle. Don't remove
+   * this code unless you know what you are doing
+   * (see PR#13758). JRA.
+   */
+
+  if(!is_8_3( mask, False))
+    name_map_mangle(mask, True, SNUM(conn));
+
   return(-1);
 }
 
