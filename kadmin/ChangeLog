@@ -1,3 +1,8 @@
+2000-07-24  Assar Westerlund  <assar@sics.se>
+
+	* load.c (doit): truncate the log since there's no way of knowing
+	what changes are going to be added
+
 2000-07-23  Assar Westerlund  <assar@sics.se>
 
 	* util.c (str2time_t): be more careful with strptime that might

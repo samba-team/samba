@@ -1,3 +1,17 @@
+2000-07-24  Assar Westerlund  <assar@sics.se>
+
+	* log.c (kadm5_log_get_version): rename kadm5_log_get_version_fd
+	and make a new that takes a context
+	(kadm5_log_nop): add logging of missing lengths
+	(kadm5_log_truncate): new function
+
+	* dump_log.c (print_entry): update and correct
+	* randkey_s.c: call _kadm5_bump_pw_expire
+	* truncate_log.c: new program for truncating the log
+	* Makefile.am (sbin_PROGRAMS): add truncate_log
+	(C_SOURCES): add bump_pw_expire.c
+	* bump_pw_expire.c: new function for extending password expiration
+
 2000-07-22  Assar Westerlund  <assar@sics.se>
 
 	* keys.c: new file with _kadm5_free_keys, _kadm5_init_keys
