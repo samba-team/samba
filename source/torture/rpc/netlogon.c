@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "auth/auth.h"
+#include "lib/crypto/crypto.h"
 
 
 static const char *machine_password;
@@ -308,8 +309,6 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 	struct netr_SamBaseInfo *base;
 
 	uint16 validation_level;
-	
-	printf("testing netr_LogonSamLogon\n");
 	
 	samlogon_state->r.in.logon.network = &ninfo;
 	samlogon_state->r_flags.in.logon.network = &ninfo;
@@ -763,7 +762,7 @@ static BOOL test_lmv2_ntlmv2_broken(struct samlogon_state *samlogon_state, enum 
 	data_blob_free(&ntlmv2_response);
 
 
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD)) {
 		return break_which == BREAK_BOTH;
 	}
 
@@ -873,6 +872,90 @@ static BOOL test_ntlmv2_both_broken(struct samlogon_state *samlogon_state, char 
 	return test_lmv2_ntlmv2_broken(samlogon_state, BREAK_BOTH, error_string);
 }
 
+/* 
+ * Test the NTLM2 response (extra challenge in LM feild)
+ *
+ * This test is the same as the 'break LM' test, but checks that the
+ * server implements NTLM2 session security in the right place
+ * (NETLOGON is the wrong place).
+ */
+
+static BOOL test_ntlm2(struct samlogon_state *samlogon_state, char **error_string) 
+{
+	BOOL pass = True;
+	NTSTATUS nt_status;
+	DATA_BLOB lm_response = data_blob_talloc(samlogon_state->mem_ctx, NULL, 24);
+	DATA_BLOB nt_response = data_blob_talloc(samlogon_state->mem_ctx, NULL, 24);
+
+	uint8_t lm_key[8];
+	uint8_t nt_hash[16];
+	uint8_t lm_hash[16];
+	uint8_t nt_key[16];
+	uint8_t user_session_key[16];
+	uint8_t expected_user_session_key[16];
+	uint8_t session_nonce_hash[16];
+	uint8_t client_chall[8];
+	
+	struct MD5Context md5_session_nonce_ctx;
+	HMACMD5Context hmac_ctx;
+			
+	ZERO_STRUCT(user_session_key);
+	ZERO_STRUCT(lm_key);
+	generate_random_buffer(client_chall, 8);
+	
+	MD5Init(&md5_session_nonce_ctx);
+	MD5Update(&md5_session_nonce_ctx, samlogon_state->chall.data, 8);
+	MD5Update(&md5_session_nonce_ctx, client_chall, 8);
+	MD5Final(session_nonce_hash, &md5_session_nonce_ctx);
+	
+	E_md4hash(samlogon_state->password, (uint8_t *)nt_hash);
+	E_deshash(samlogon_state->password, (uint8_t *)lm_hash);
+	SMBsesskeygen_ntv1((const uint8_t *)nt_hash, 
+			   nt_key);
+
+	SMBNTencrypt(samlogon_state->password, samlogon_state->chall.data, nt_response.data);
+
+	memcpy(lm_response.data, session_nonce_hash, 8);
+	memset(lm_response.data + 8, 0, 16);
+
+	hmac_md5_init_rfc2104(nt_key, 16, &hmac_ctx);
+	hmac_md5_update(samlogon_state->chall.data, 8, &hmac_ctx);
+	hmac_md5_update(client_chall, 8, &hmac_ctx);
+	hmac_md5_final(expected_user_session_key, &hmac_ctx);
+
+	nt_status = check_samlogon(samlogon_state,
+				   BREAK_NONE,
+				   &samlogon_state->chall,
+				   &lm_response,
+				   &nt_response,
+				   lm_key, 
+				   user_session_key,
+				   error_string);
+	
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return False;
+	}
+
+	if (memcmp(lm_hash, lm_key, 
+		   sizeof(lm_key)) != 0) {
+		printf("LM Key does not match expectations!\n");
+ 		printf("lm_key:\n");
+		dump_data(1, (const char *)lm_key, 8);
+		printf("expected:\n");
+		dump_data(1, (const char *)lm_hash, 8);
+		pass = False;
+	}
+	if (memcmp(nt_key, user_session_key, 16) != 0) {
+		printf("NT Session Key does not match expectations (should be first-8 LM hash)!\n");
+		printf("user_session_key:\n");
+		dump_data(1, (const char *)user_session_key, sizeof(user_session_key));
+		printf("expected:\n");
+		dump_data(1, (const char *)nt_key, sizeof(nt_key));
+		pass = False;
+	}
+        return pass;
+}
+
 static BOOL test_plaintext(struct samlogon_state *samlogon_state, enum ntlm_break break_which, char **error_string)
 {
 	NTSTATUS nt_status;
@@ -895,7 +978,7 @@ static BOOL test_plaintext(struct samlogon_state *samlogon_state, enum ntlm_brea
 		exit(1);
 	}
 
-	nt_response = data_blob_talloc(samlogon_state->mem_ctx, unicodepw, utf16_len(unicodepw));
+	nt_response = data_blob_talloc(samlogon_state->mem_ctx, unicodepw, strlen_m(samlogon_state->password)*2);
 
 	password = strupper_talloc(samlogon_state->mem_ctx, samlogon_state->password);
 
@@ -987,6 +1070,7 @@ static const struct ntlm_tests {
 	{test_ntlmv2_both_broken, "NTLMv2 and LMv2, both broken", False},
 	{test_ntlm_lm_broken, "NTLM and LM, LM broken", False},
 	{test_ntlm_ntlm_broken, "NTLM and LM, NTLM broken", False},
+	{test_ntlm2, "NTLM2 (NTLMv2 session security)", False},
 	{test_plaintext_none_broken, "Plaintext", True},
 	{test_plaintext_lm_broken, "Plaintext LM broken", True},
 	{test_plaintext_nt_broken, "Plaintext NT broken", True},
@@ -1008,6 +1092,8 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		DCERPC_NETR_LOGONSAMLOGON,
 		DCERPC_NETR_LOGONSAMLOGONWITHFLAGS };
 	struct samlogon_state samlogon_state;
+	
+	printf("testing netr_LogonSamLogon and netr_LogonSamLogonWithFlags\n");
 	
 	samlogon_state.mem_ctx = mem_ctx;
 	samlogon_state.account_name = lp_parm_string(-1, "torture", "username");
@@ -1052,15 +1138,15 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 					samlogon_state.r.in.logon_level = logon_levels[l];
 					samlogon_state.r_flags.in.validation_level = validation_levels[v];
 					samlogon_state.r_flags.in.logon_level = logon_levels[l];
-					printf("Testing SamLogon with '%s' at validation level %d, logon level %d, function %d\n", 
-					       test_table[i].name, validation_levels[v], 
-					       logon_levels[l], function_levels[f]);
-					
 					if (!test_table[i].fn(&samlogon_state, &error_string)) {
+						printf("Testing '%s' at validation level %d, logon level %d, function %d: \n", 
+						       test_table[i].name, validation_levels[v], 
+						       logon_levels[l], function_levels[f]);
+						
 						if (test_table[i].expect_fail) {
-							printf("Test %s failed (expected, test incomplete): %s\n", test_table[i].name, error_string);
+							printf(" failed (expected, test incomplete): %s\n", error_string);
 						} else {
-							printf("Test %s failed: %s\n", test_table[i].name, error_string);
+							printf(" failed: %s\n", error_string);
 							ret = False;
 						}
 						SAFE_FREE(error_string);
