@@ -906,13 +906,12 @@ void init_unistr2_from_unistr (UNISTR2 *to, UNISTR *from)
 	if (!parse_misc_talloc)
 		parse_misc_talloc = talloc_init();
 	
+	/* copy the string now */
 	to->buffer = (uint16 *)talloc(parse_misc_talloc, sizeof(uint16)*(to->uni_str_len));
 	if (to->buffer == NULL)
 		smb_panic("init_unistr2_from_unistr: malloc fail\n");
 
-	for (i=0; i < to->uni_str_len; i++)
-		to->buffer[i] = from->buffer[i];
-		
+	memcpy( to->buffer, from->buffer, to->uni_str_len*sizeof(uint16) );	
 	return;
 }
 
