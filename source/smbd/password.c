@@ -473,7 +473,7 @@ BOOL authorise_login(int snum, fstring user, DATA_BLOB password,
 {
 	BOOL ok = False;
 	
-#if DEBUG_PASSWORD
+#ifdef DEBUG_PASSWORD
 	DEBUG(100,("authorise_login: checking authorisation on user=%s pass=%s\n",
 		   user,password.data));
 #endif
