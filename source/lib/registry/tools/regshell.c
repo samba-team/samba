@@ -40,10 +40,14 @@ static REG_KEY *cmd_set(REG_KEY *cur, int argc, char **argv)
 static REG_KEY *cmd_ck(REG_KEY *cur, int argc, char **argv)
 { 
 	REG_KEY *new;
+	WERROR error;
 	if(argc < 2) {
 		new = cur;
 	} else {
-		new = reg_open_key(cur, argv[1]);
+		error = reg_open_key(cur, argv[1], &new);
+		if(!W_ERROR_IS_OK(error)) {
+			DEBUG(0, ("Error opening specified key\n"));
+		}
 	}
 	
 	if(!new) new = cur;
@@ -56,28 +60,32 @@ static REG_KEY *cmd_ck(REG_KEY *cur, int argc, char **argv)
 static REG_KEY *cmd_ls(REG_KEY *cur, int argc, char **argv)
 {
 	int i, num;
-	num = reg_key_num_subkeys(cur);
-	for(i = 0; i < num; i++) {
-		REG_KEY *sub = reg_key_get_subkey_by_index(cur, i);
+	WERROR error;
+	REG_VAL *value;
+	REG_KEY *sub;
+	for(i = 0; W_ERROR_IS_OK(error = reg_key_get_subkey_by_index(cur, i, &sub)); i++) {
 		printf("K %s\n", reg_key_name(sub));
 	}
 
-	num = reg_key_num_values(cur);
-	for(i = 0; i < num; i++) {
-		REG_VAL *sub = reg_key_get_value_by_index(cur, i);
-		printf("V %s %s %s\n", reg_val_name(sub), str_regtype(reg_val_type(sub)), reg_val_data_string(sub));
+	if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) {
+		DEBUG(0, ("Error occured while browsing thru keys\n"));
+	}
+
+	for(i = 0; W_ERROR_IS_OK(error = reg_key_get_value_by_index(cur, i, &value)); i++) {
+		printf("V \"%s\" %s %s\n", reg_val_name(value), str_regtype(reg_val_type(value)), reg_val_data_string(value));
 	}
 	
 	return NULL; 
 }
 static REG_KEY *cmd_mkkey(REG_KEY *cur, int argc, char **argv)
 { 
+	REG_KEY *tmp;
 	if(argc < 2) {
 		fprintf(stderr, "Usage: mkkey <keyname>\n");
 		return NULL;
 	}
 	
-	if(!reg_key_add_name(cur, argv[1])) {
+	if(!W_ERROR_IS_OK(reg_key_add_name(cur, argv[1], 0, NULL, &tmp))) {
 		fprintf(stderr, "Error adding new subkey '%s'\n", argv[1]);
 		return NULL;
 	}
@@ -95,13 +103,12 @@ static REG_KEY *cmd_rmkey(REG_KEY *cur, int argc, char **argv)
 		return NULL;
 	}
 
-	key = reg_open_key(cur, argv[1]);
-	if(!key) {
+	if(!W_ERROR_IS_OK(reg_open_key(cur, argv[1], &key))) {
 		fprintf(stderr, "No such subkey '%s'\n", argv[1]);
 		return NULL;
 	}
 
-	if(!reg_key_del(key)) {
+	if(!W_ERROR_IS_OK(reg_key_del(key))) {
 		fprintf(stderr, "Error deleting '%s'\n", argv[1]);
 	} else {
 		fprintf(stderr, "Successfully deleted '%s'\n", argv[1]);
@@ -118,13 +125,12 @@ static REG_KEY *cmd_rmval(REG_KEY *cur, int argc, char **argv)
 		return NULL;
 	}
 
-	val = reg_key_get_value_by_name(cur, argv[1]);
-	if(!val) {
+	if(!W_ERROR_IS_OK(reg_key_get_value_by_name(cur, argv[1], &val))) {
 		fprintf(stderr, "No such value '%s'\n", argv[1]);
 		return NULL;
 	}
 
-	if(!reg_val_del(val)) {
+	if(!W_ERROR_IS_OK(reg_val_del(val))) {
 		fprintf(stderr, "Error deleting value '%s'\n", argv[1]);
 	} else {
 		fprintf(stderr, "Successfully deleted value '%s'\n", argv[1]);
@@ -196,13 +202,16 @@ int main (int argc, char **argv)
 	uint32	setparms, checkparms;
 	int opt;
 	char *backend = "dir";
+	char *credentials = NULL;
 	REG_KEY *curkey = NULL;;
 	poptContext pc;
+	WERROR error;
 	REG_HANDLE *h;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		POPT_COMMON_SAMBA
 		{"backend", 'b', POPT_ARG_STRING, &backend, 0, "backend to use", NULL},
+		{"credentials", 'c', POPT_ARG_STRING, &credentials, 0, "credentials", NULL},
 		POPT_TABLEEND
 	};
 	
@@ -211,8 +220,8 @@ int main (int argc, char **argv)
 	while((opt = poptGetNextOpt(pc)) != -1) {
 	}
 
-	h = reg_open(backend, poptPeekArg(pc), True);
-	if(!h) {
+	error = reg_open(backend, poptPeekArg(pc), credentials, &h);
+	if(!W_ERROR_IS_OK(error)) {
 		fprintf(stderr, "Unable to open '%s' with backend '%s'\n", poptGetArg(pc), backend);
 		return 1;
 	}
@@ -220,9 +229,9 @@ int main (int argc, char **argv)
 
     setup_logging("regtree", True);
 
-	curkey = reg_get_root(h);
+	error = reg_get_root(h, &curkey);
 
-	if(!curkey) return 1;
+	if(!W_ERROR_IS_OK(error)) return 1;
 
 	while(True) {
 		char *line, *prompt;
