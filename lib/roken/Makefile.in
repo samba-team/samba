@@ -69,6 +69,7 @@ SOURCES = \
 	setenv.c \
 	seteuid.c \
 	signal.c \
+	simple_exec.c \
 	snprintf.c \
 	strcasecmp.c \
 	strdup.c \
@@ -104,6 +105,7 @@ OBJECTS = \
 	parse_units.o \
 	roken_gethostby.o \
 	signal.o \
+	simple_exec.o \
 	snprintf.o \
 	strcasecmp.o \
 	tm2time.o \
