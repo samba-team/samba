@@ -184,6 +184,10 @@ parse_flags(char *str)
     f.client = i & 1;
     i >>= 1;
     f.invalid = i & 1;
+    i >>= 1;
+    f.require_preauth = i & 1;
+    i >>= 1;
+    f.change_pw = i & 1;
     return f;
 }
 

@@ -89,13 +89,14 @@ event2string(Event *ev, char **str)
 int
 flags2int(HDBFlags *f)
 {
-    return (f->initial  << 0) |
-	(f->forwardable << 1) |
-	(f->proxiable   << 2) |
-	(f->renewable   << 3) |
-	(f->postdate    << 4) |
-	(f->server      << 5) |
-	(f->client      << 6) |
-	(f->invalid     << 7);
+    return (f->initial      << 0) |
+	(f->forwardable     << 1) |
+	(f->proxiable       << 2) |
+	(f->renewable       << 3) |
+	(f->postdate        << 4) |
+	(f->server          << 5) |
+	(f->client          << 6) |
+	(f->invalid         << 7) |
+	(f->require_preauth << 8) |
+	(f->change_pw       << 9);
 }
-
