@@ -1158,6 +1158,7 @@ static int socketpair_tcp(int fd[2])
 {
 	int listener;
 	struct sockaddr sock;
+	struct sockaddr_in sock2;
 	socklen_t socklen = sizeof(sock);
 	int connect_done = 0;
 	
@@ -1166,6 +1167,14 @@ static int socketpair_tcp(int fd[2])
 	memset(&sock, 0, sizeof(sock));
 	
 	if ((listener = socket(PF_INET, SOCK_STREAM, 0)) == -1) goto failed;
+
+        memset(&sock2, 0, sizeof(sock2));
+#ifdef HAVE_SOCK_SIN_LEN
+        sock2.sin_len = sizeof(sock2);
+#endif
+        sock2.sin_family = PF_INET;
+
+        bind(listener, (struct sockaddr *)&sock2, sizeof(sock2));
 
 	if (listen(listener, 1) != 0) goto failed;
 
