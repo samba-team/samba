@@ -118,6 +118,9 @@ extern int syslog_level;
 #define DEBUG(level,body) ((DEBUGLEVEL>=(level))? (syslog_level = (level), Debug1 body):0)
 #endif
 
+/* bit checking macro */
+#define BIT_SET(var,bit) (((var)|(bit))==(bit))
+
 /* this defines the error codes that receive_smb can put in smb_read_error */
 #define READ_TIMEOUT 1
 #define READ_EOF 2
@@ -294,6 +297,7 @@ struct smb_passwd
 	unsigned char *smb_passwd; /* Null if no password */
 	unsigned char *smb_nt_passwd; /* Null if no password */
 	/* Other fields / flags may be added later */
+	uint16 acct_ctrl;
 };
 
 struct cli_state {

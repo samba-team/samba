@@ -145,6 +145,8 @@ typedef struct
   char *szNISHomeMapName;
   char *szAnnounceVersion; /* This is initialised in init_globals */
   char *szNetbiosAliases;
+  char *szDomainTrusted;
+  char *szDomainTrusting;
   char *szDomainSID;
   char *szDomainOtherSIDs;
   char *szDomainGroups;
@@ -451,6 +453,8 @@ struct parm_struct
   {"passwd chat",      P_STRING,  P_GLOBAL, &Globals.szPasswdChat,      NULL},
   {"valid chars",      P_STRING,  P_GLOBAL, &Globals.szValidChars,      handle_valid_chars},
   {"workgroup",        P_USTRING, P_GLOBAL, &Globals.szWorkGroup,       NULL},
+  {"domain trusted",   P_USTRING, P_GLOBAL, &Globals.szDomainTrusted,   NULL},
+  {"domain trusting",  P_USTRING, P_GLOBAL, &Globals.szDomainTrusting,  NULL},
   {"domain sid",       P_USTRING, P_GLOBAL, &Globals.szDomainSID,       NULL},
   {"domain other sids",P_STRING,  P_GLOBAL, &Globals.szDomainOtherSIDs, NULL},
   {"domain groups",    P_STRING,  P_GLOBAL, &Globals.szDomainGroups,    NULL},
@@ -878,6 +882,8 @@ FN_GLOBAL_STRING(lp_announce_version,&Globals.szAnnounceVersion)
 FN_GLOBAL_STRING(lp_netbios_aliases,&Globals.szNetbiosAliases)
 FN_GLOBAL_STRING(lp_driverfile,&Globals.szDriverFile)
 
+FN_GLOBAL_STRING(lp_domain_trusted,&Globals.szDomainTrusted)
+FN_GLOBAL_STRING(lp_domain_trusting,&Globals.szDomainTrusting)
 FN_GLOBAL_STRING(lp_domain_sid,&Globals.szDomainSID)
 FN_GLOBAL_STRING(lp_domain_other_sids,&Globals.szDomainOtherSIDs)
 FN_GLOBAL_STRING(lp_domain_groups,&Globals.szDomainGroups)

@@ -56,6 +56,7 @@ enum RPC_PKT_TYPE
 #define SAMR_UNKNOWN_3      0x03
 #define SAMR_UNKNOWN_22     0x22
 #define SAMR_UNKNOWN_24     0x24
+#define SAMR_UNKNOWN_32     0x32
 #define SAMR_UNKNOWN_34     0x34
 #define SAMR_OPEN_POLICY    0x39
 
@@ -196,6 +197,15 @@ typedef struct domrid3_info
   uint32 type2;      /* value is 0x1 */
 
 } DOM_RID3;
+
+/* DOM_RID4 - rid + user attributes */
+typedef struct domrid4_info
+{
+  uint32 unknown;      
+  uint16 attr;
+  uint32 rid;  /* user RID */
+
+} DOM_RID4;
 
 /* DOM_CLNT_SRV - client / server names */
 typedef struct clnt_srv_info
@@ -573,7 +583,15 @@ typedef struct lsa_enum_trust_dom_info
 /* LSA_R_ENUM_TRUST_DOM - response to LSA enumerate trusted domains */
 typedef struct lsa_r_enum_trust_dom_info
 {
-	LSA_POL_HND pol; /* policy handle */
+	uint32 enum_context; /* enumeration context handle */
+	uint32 num_domains; /* number of domains */
+	uint32 ptr_enum_domains; /* buffer pointer to num domains */
+
+	/* this lot is only added if ptr_enum_domains is non-NULL */
+		uint32 num_domains2; /* number of domains */
+		UNIHDR2 hdr_domain_name;
+		UNISTR2 uni_domain_name;
+		DOM_SID other_domain_sid;
 
     uint32 status; /* return code */
 
@@ -992,15 +1010,15 @@ itself.  the response to the lookup rids is relative to this SID.
 /* SAMR_Q_LOOKUP_RIDS - probably a "read SAM entry" */
 typedef struct q_samr_lookup_names_info
 {
-    LSA_POL_HND pol;             /* policy handle */
+    LSA_POL_HND pol;       /* policy handle */
 
-	uint32 num_rids1;            /* 1          - number of rids being looked up */
-	uint32 rid;                  /* 0000 03e8  - RID of the server being queried? */
-	uint32 ptr;                  /* 0          - 32 bit unknown */
-	uint32 num_rids2;            /* 1          - number of rids being looked up */
+	uint32 num_rids1;      /* 1          - number of rids being looked up */
+	uint32 rid;            /* 0000 03e8  - RID of the server being queried? */
+	uint32 ptr;            /* 0          - 32 bit unknown */
+	uint32 num_rids2;      /* 1          - number of rids being looked up */
 
-	UNIHDR  hdr_mach_acct;       /* unicode machine account name header */
-	UNISTR2 uni_mach_acct;       /* unicode machine account name */
+	UNIHDR  hdr_mach_acct; /* unicode machine account name header */
+	UNISTR2 uni_mach_acct; /* unicode machine account name */
 
 } SAMR_Q_LOOKUP_RIDS;
 
@@ -1048,6 +1066,7 @@ typedef struct q_samr_unknown_24_info
 } SAMR_Q_UNKNOWN_24;
 
 
+/* lkclXXXX this looks like a botched LSA_USER_INFO structure */
 /* SAMR_R_UNKNOWN_24 - probably a get sam info */
 typedef struct r_samr_unknown_24_info
 {
@@ -1073,7 +1092,7 @@ typedef struct r_samr_unknown_24_info
 
 	uint32 unknown_id_0;   /* unknown id associated with policy handle */
 	uint16 unknown_2;      /* 0x0201      - 16 bit unknown */
-	uint32 unknown_3;      /* 0x0000 0080 - 32 bit unknown */
+	uint32 acct_ctrl;      /* 0x0000 0080 - ACB_XXXX */
 	uint16 unknown_4;      /* 0x003f      - 16 bit unknown */
 	uint16 unknown_5;      /* 0x003c      - 16 bit unknown */
 
@@ -1097,9 +1116,9 @@ typedef struct q_samr_unknown_32_info
 	UNIHDR  hdr_mach_acct;       /* unicode machine account name header */
 	UNISTR2 uni_mach_acct;       /* unicode machine account name */
 
-	uint32 unknown_0;            /* 32 bit unknown */
-	uint16 unknown_1;            /* 16 bit unknown */
-	uint16 unknown_2;            /* 16 bit unknown */
+	uint32 acct_ctrl;            /* 32 bit ACB_XXXX */
+	uint16 unknown_1;            /* 16 bit unknown - 0x00B0 */
+	uint16 unknown_2;            /* 16 bit unknown - 0xe005 */
 
 } SAMR_Q_UNKNOWN_32;
 
@@ -1108,10 +1127,11 @@ typedef struct q_samr_unknown_32_info
 typedef struct r_samr_unknown_32_info
 {
     LSA_POL_HND pol;       /* policy handle */
-	uint32 unknown_0;      /* 0x0000 0030 - 32 bit unknown */
-	uint32 padding;        /* 0           - 4 byte padding */
 
-	uint32 status;         /* return status - 0xC000 0099: user exists */
+	/* rid4.unknown - fail: 0030 success: 0x03ff */
+	DOM_RID4 rid4;         /* rid and attributes */
+
+	uint32 status;         /* return status - fail: 0xC000 0099: user exists */
 
 } SAMR_R_UNKNOWN_32;
 

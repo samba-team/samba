@@ -76,8 +76,8 @@ int pw_file_unlock(int fd)
 }
 
 /*
- * Routine to get the next 32 hex characters and turn them
- * into a 16 byte array.
+ * Routine to get the next hex characters and turn them
+ * into a byte array.
  */
 
 static int gethexpwd(char *p, char *pwd)
@@ -87,9 +87,10 @@ static int gethexpwd(char *p, char *pwd)
 	char           *hexchars = "0123456789ABCDEF";
 	char           *p1, *p2;
 
-	for (i = 0; i < 32; i += 2) {
-		hinybble = toupper(p[i]);
-		lonybble = toupper(p[i + 1]);
+	for (i = 0; i < 32; i += 2)
+	{
+		hinybble = toupper(p[i  ]);
+		lonybble = toupper(p[i+1]);
  
 		p1 = strchr(hexchars, hinybble);
 		p2 = strchr(hexchars, lonybble);
@@ -123,6 +124,7 @@ struct smb_passwd *get_smbpwd_entry(char *name, int smb_userid)
 	FILE           *fp;
 	int             lockfd;
 	char           *pfile = lp_smb_passwd_file();
+	unsigned long   acct_ctrl;
 
 	if (!*pfile) {
 		DEBUG(0, ("No SMB password file set\n"));
@@ -223,7 +225,8 @@ struct smb_passwd *get_smbpwd_entry(char *name, int smb_userid)
 		/* get smb uid */
 
 		p++;		/* Go past ':' */
-		if (!isdigit(*p)) {
+		if (!isdigit(*p))
+		{
 			DEBUG(0, ("get_smbpwd_entry: malformed password entry (uid not number)\n"));
 			fclose(fp);
 			pw_file_unlock(lockfd);
@@ -310,25 +313,35 @@ struct smb_passwd *get_smbpwd_entry(char *name, int smb_userid)
 			pw_buf.smb_passwd = smbpwd;
 		}
 
-		pw_buf.smb_name = user_name;
-		pw_buf.smb_userid = uidval;
+		pw_buf.smb_name      = user_name;
+		pw_buf.smb_userid    = uidval;
 		pw_buf.smb_nt_passwd = NULL;
+		pw_buf.acct_ctrl     = ACB_NORMAL;
 
-		/* Now check if the NT compatible password is
-			available. */
+		/* Now check if the NT compatible password is available. */
 		p += 33; /* Move to the first character of the line after
 					the lanman password. */
-		if ((linebuf_len >= (PTR_DIFF(p, linebuf) + 33)) && (p[32] == ':')) {
-			if (*p != '*' && *p != 'X') {
+		if ((linebuf_len >= (PTR_DIFF(p, linebuf) + 33)) && (p[32] == ':'))
+		{
+			if (*p != '*' && *p != 'X')
+			{
 				if(gethexpwd((char *)p,(char *)smbntpwd))
 					pw_buf.smb_nt_passwd = smbntpwd;
 			}
 		}
 
+		/* Now check if the Account Control Bits are available */
+		p += 33; 
+		if ((linebuf_len >= (PTR_DIFF(p, linebuf) + 5)) && (p[4] == ':'))
+		{
+			acct_ctrl = strtoul( p, (char**)NULL, 16);
+			pw_buf.acct_ctrl = (uint16)acct_ctrl;
+		}
+		
 		fclose(fp);
 		pw_file_unlock(lockfd);
-		DEBUG(5, ("get_smbpwd_entrye: returning passwd entry for user %s, uid %d\n",
-			  user_name, uidval));
+		DEBUG(5, ("get_smbpwd_entry: returning passwd entry for user %s, uid %d, acb %x\n",
+			  user_name, uidval, acct_ctrl));
 		return &pw_buf;
 	}
 
@@ -359,6 +372,7 @@ BOOL add_smbpwd_entry(struct smb_passwd* pwd)
 
 	int fd;
 	int new_entry_length;
+	int smb_name_len = 0;
 	char *new_entry;
 	long offpos;
 
@@ -444,7 +458,7 @@ BOOL add_smbpwd_entry(struct smb_passwd* pwd)
 		* 
 		* or,
 		*
-		* username:uid:[32hex bytes]:[32hex bytes]:....ignored....
+		* username:uid:[32hex bytes]:[32hex bytes]:[4hex bytes]:....ignored....
 		*
 		* if Windows NT compatible passwords are also present.
 		*/
@@ -494,7 +508,9 @@ Error was %s\n", pwd->smb_name, pfile, strerror(errno)));
 		return False;
 	}
 
-	new_entry_length = strlen(pwd->smb_name) + 1 + 15 + 1 + 32 + 1 + 32 + 1 + 2;
+	smb_name_len = strlen(pwd->smb_name);
+
+	new_entry_length = smb_name_len + 1 + 15 + 1 + 32 + 1 + 32 + 1 + 2 + 5;
 
 	if((new_entry = (char *)malloc( new_entry_length )) == 0)
 	{
@@ -524,8 +540,7 @@ Error was %s\n",
 	}
 	p += 32;
 
-	*p++ = ':';
-	sprintf(p,"\n");
+	sprintf(p, ":%4x:\n", pwd->acct_ctrl);
 
 #ifdef DEBUG_PASSWORD
 		DEBUG(100, ("add_smbpwd_entry(%d): new_entry_len %d entry_len %d made line |%s|\n", 
@@ -573,6 +588,7 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
 	int             lockfd;
 	char           *pfile = lp_smb_passwd_file();
 	BOOL found_entry = False;
+	BOOL mod_acb_acct = False;
 
 	long pwd_seekpos = 0;
 
@@ -768,10 +784,8 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
 		return False;
 	}
 
-	/* Now check if the NT compatible password is
-		available. */
-	p += 33; /* Move to the first character of the line after
-				the lanman password. */
+	/* Now check if the NT compatible password is available. */
+	p += 33; /* Move to the first character of the line after the lanman password. */
 	if (linebuf_len < (PTR_DIFF(p, linebuf) + 33))
 	{
 		DEBUG(0, ("mod_smbpwd_entry: malformed password entry (passwd too short)\n"));
@@ -780,16 +794,31 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
 		return (False);
 	}
 
-	if (p[32] != ':')
+	if (*p == '*' || *p == 'X')
 	{
-		DEBUG(0, ("mod_smbpwd_entry: malformed password entry (no terminating :)\n"));
 		fclose(fp);
 		pw_file_unlock(lockfd);
 		return False;
 	}
 
-	if (*p == '*' || *p == 'X')
+	if (p[32] != ':')
 	{
+		DEBUG(0, ("mod_smbpwd_entry: malformed password entry (nt passwd too short)"));
+		fclose(fp);
+		pw_file_unlock(lockfd);
+		return False;
+	}
+
+	p += 33;
+
+	/* optional account ACB details */
+	mod_acb_acct = (linebuf_len >= (PTR_DIFF(p + 5, linebuf)));
+
+	if (mod_acb_acct) p += 4;
+
+	if (*p != ':')
+	{
+		DEBUG(0, ("mod_smbpwd_entry: malformed ACB entry (no terminating :)\n"));
 		fclose(fp);
 		pw_file_unlock(lockfd);
 		return False;
@@ -851,6 +880,12 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
 	else	
 	{
 		wr_len = 32;
+	}
+
+	if (mod_acb_acct)
+	{
+		sprintf(&(ascii_p16[wr_len-1]), ":%4x", pwd->acct_ctrl);
+		wr_len += 5;
 	}
 
 #ifdef DEBUG_PASSWORD

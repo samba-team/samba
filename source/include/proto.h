@@ -217,6 +217,8 @@ char *lp_nis_home_map_name(void);
 char *lp_announce_version(void);
 char *lp_netbios_aliases(void);
 char *lp_driverfile(void);
+char *lp_domain_trusted(void);
+char *lp_domain_trusting(void);
 char *lp_domain_sid(void);
 char *lp_domain_other_sids(void);
 char *lp_domain_groups(void);
@@ -658,6 +660,7 @@ void add_session_user(char *user);
 void dfs_unlogin(void);
 BOOL password_check(char *password);
 BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned char *c8);
+BOOL smb_password_ok(char *user,char *password, int pwlen);
 BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd);
 BOOL user_ok(char *user,int snum);
 BOOL authorise_login(int snum,char *user,char *password, int pwlen, 
@@ -813,7 +816,9 @@ char* lsa_io_r_open_pol(BOOL io, LSA_R_OPEN_POL *r_p, char *q, char *base, int a
 void make_q_query(LSA_Q_QUERY_INFO *q_q, LSA_POL_HND *hnd, uint16 info_class);
 char* lsa_io_q_query(BOOL io, LSA_Q_QUERY_INFO *q_q, char *q, char *base, int align, int depth);
 char* lsa_io_q_enum_trust_dom(BOOL io, LSA_Q_ENUM_TRUST_DOM *q_e, char *q, char *base, int align, int depth);
-void make_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e, LSA_POL_HND *hnd, uint32 status);
+void make_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e,
+				uint32 enum_context, char *domain_name, char *domain_sid,
+				uint32 status);
 char* lsa_io_r_enum_trust_dom(BOOL io, LSA_R_ENUM_TRUST_DOM *r_e, char *q, char *base, int align, int depth);
 void make_q_close(LSA_Q_CLOSE *q_c, LSA_POL_HND *hnd);
 char* lsa_io_q_close(BOOL io, LSA_Q_CLOSE *q_c, char *q, char *base, int align, int depth);
@@ -962,6 +967,7 @@ char* samr_io_r_unknown_22(BOOL io, SAMR_R_UNKNOWN_22 *r_u, char *q, char *base,
 char* samr_io_q_unknown_24(BOOL io, SAMR_Q_UNKNOWN_24 *q_u, char *q, char *base, int align, int depth);
 void make_samr_r_unknown_24(SAMR_R_UNKNOWN_24 *r_u,
 				uint16 unknown_0, NTTIME *expiry, char *mach_acct,
+				uint32 acct_ctrl,
 				uint32 unknown_id_0, uint32 status);
 char* samr_io_r_unknown_24(BOOL io, SAMR_R_UNKNOWN_24 *r_u, char *q, char *base, int align, int depth);
 char* samr_io_q_unknown_32(BOOL io, SAMR_Q_UNKNOWN_32 *q_u, char *q, char *base, int align, int depth);
@@ -989,6 +995,8 @@ void make_dom_rid2(DOM_RID2 *rid2, uint32 rid);
 char* smb_io_dom_rid2(BOOL io, DOM_RID2 *rid2, char *q, char *base, int align, int depth);
 void make_dom_rid3(DOM_RID3 *rid3, uint32 rid);
 char* smb_io_dom_rid3(BOOL io, DOM_RID3 *rid3, char *q, char *base, int align, int depth);
+void make_dom_rid4(DOM_RID4 *rid4, uint16 unknown, uint16 attr, uint32 rid);
+char* smb_io_dom_rid4(BOOL io, DOM_RID4 *rid4, char *q, char *base, int align, int depth);
 void make_clnt_srv(DOM_CLNT_SRV *log, char *logon_srv, char *comp_name);
 char* smb_io_clnt_srv(BOOL io, DOM_CLNT_SRV *log, char *q, char *base, int align, int depth);
 void make_log_info(DOM_LOG_INFO *log, char *logon_srv, char *acct_name,
