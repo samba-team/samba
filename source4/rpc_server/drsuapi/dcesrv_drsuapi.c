@@ -49,7 +49,6 @@ static WERROR drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 	b_state = talloc_p(dce_call->conn, struct drsuapi_bind_state);
 	WERR_TALLOC_CHECK(b_state);
 
-	/* TODO: fill b_state here */
 	b_state->sam_ctx = samdb_connect(b_state);
 	if (!b_state->sam_ctx) {
 		talloc_free(b_state);
