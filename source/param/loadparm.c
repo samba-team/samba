@@ -246,7 +246,7 @@ typedef struct
 	char *volume;
 	char *fstype;
 	char *szMSDfsProxy;
-	char *ntvfs_handler;
+	char **ntvfs_handler;
 	int iMinPrintSpace;
 	int iMaxPrintJobs;
 	int iMaxConnections;
@@ -516,7 +516,7 @@ static struct parm_struct parm_table[] = {
 	{"server string", P_STRING, P_GLOBAL, &Globals.szServerString, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED  | FLAG_DEVELOPER},
 	{"interfaces", P_LIST, P_GLOBAL, &Globals.szInterfaces, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"bind interfaces only", P_BOOL, P_GLOBAL, &Globals.bBindInterfacesOnly, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"ntvfs handler", P_STRING, P_LOCAL, &sDefault.ntvfs_handler, NULL, NULL, FLAG_ADVANCED},
+	{"ntvfs handler", P_LIST, P_LOCAL, &sDefault.ntvfs_handler, NULL, NULL, FLAG_ADVANCED},
 	{"dcerpc endpoint servers", P_LIST, P_GLOBAL, &Globals.dcerpc_ep_servers, NULL, NULL, FLAG_ADVANCED},
 	{"server services", P_LIST, P_GLOBAL, &Globals.server_services, NULL, NULL, FLAG_ADVANCED},
 
@@ -1231,7 +1231,7 @@ FN_LOCAL_STRING(lp_comment, comment)
 FN_LOCAL_STRING(lp_fstype, fstype)
 FN_LOCAL_STRING(lp_msdfs_proxy, szMSDfsProxy)
 static FN_LOCAL_STRING(lp_volume, volume)
-FN_LOCAL_STRING(lp_ntvfs_handler, ntvfs_handler)
+FN_LOCAL_LIST(lp_ntvfs_handler, ntvfs_handler)
 FN_LOCAL_BOOL(lp_msdfs_root, bMSDfsRoot)
 FN_LOCAL_BOOL(lp_autoloaded, autoloaded)
 FN_LOCAL_BOOL(lp_browseable, bBrowseable)

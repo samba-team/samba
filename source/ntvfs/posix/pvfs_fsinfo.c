@@ -29,11 +29,11 @@
 */
 NTSTATUS pvfs_fsinfo(struct smbsrv_request *req, union smb_fsinfo *fs)
 {
-	struct pvfs_state *pvfs = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
 	struct stat st;
 
 	if (fs->generic.level != RAW_QFS_GENERIC) {
-		return ntvfs_map_fsinfo(req, fs);
+		return ntvfs_map_fsinfo(req, fs, pvfs->ops);
 	}
 
 	if (sys_fsusage(pvfs->base_directory, 

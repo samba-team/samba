@@ -29,8 +29,6 @@
 /* this is stored in ntvfs_private */
 struct nbench_private {
 	const struct ntvfs_ops *passthru_ops;
-	void *passthru_private;
-	const struct ntvfs_ops *nbench_ops;
 	int log_fd;
 };
 
@@ -57,23 +55,9 @@ static void nbench_log(struct nbench_private *private,
 
 
 /*
-  when we call the next stacked level of NTVFS module we need
-  to give it its own private pointer, plus its own NTVFS operations structure.
-  Then we need to restore both of these after the call, as the next level could
-  modify either of these
+  this is used to call the next module in the ntvfs chain
 */
-#define PASS_THRU(tcon, op, args) do { \
-	tcon->ntvfs_private = private->passthru_private; \
-	tcon->ntvfs_ops = private->passthru_ops; \
-\
-	status = private->passthru_ops->op args; \
-\
-	private->passthru_private = tcon->ntvfs_private; \
-	private->passthru_ops = tcon->ntvfs_ops; \
-\
-	tcon->ntvfs_private = private; \
-	tcon->ntvfs_ops = private->nbench_ops; \
-} while (0)
+#define PASS_THRU(tcon, op, args) private->passthru_ops->op args;
 
 /*
   this pass through macro operates on request contexts, and disables
@@ -85,7 +69,9 @@ static void nbench_log(struct nbench_private *private,
 #define PASS_THRU_REQ(req, op, args) do { \
 	void *send_fn_saved = req->async.send_fn; \
 	req->async.send_fn = NULL; \
-	PASS_THRU(req->tcon, op, args); \
+	req->ntvfs_depth++; \
+	status = PASS_THRU(req->tcon, op, args); \
+	req->ntvfs_depth--; \
 	req->async.send_fn = send_fn_saved; \
 } while (0)
 
@@ -93,19 +79,20 @@ static void nbench_log(struct nbench_private *private,
 /*
   connect to a share - used when a tree_connect operation comes in.
 */
-static NTSTATUS nbench_connect(struct smbsrv_request *req, const char *sharename)
+static NTSTATUS nbench_connect(struct smbsrv_request *req, const char *sharename, int depth)
 {
 	struct nbench_private *private;
 	const char *passthru;
 	NTSTATUS status;
 	char *logname = NULL;
+	const char **handlers = lp_ntvfs_handler(req->tcon->service);
 
 	private = talloc_p(req->tcon, struct nbench_private);
 	if (!private) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	asprintf(&logname, "/tmp/nbenchlog.%u", getpid());
+	asprintf(&logname, "/tmp/nbenchlog%d.%u", depth, getpid());
 	private->log_fd = open(logname, O_WRONLY|O_CREAT|O_APPEND, 0644);
 	free(logname);
 
@@ -114,18 +101,16 @@ static NTSTATUS nbench_connect(struct smbsrv_request *req, const char *sharename
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	passthru = lp_parm_string(req->tcon->service, "nbench", "passthru");
-
-	private->passthru_private = NULL;
-	private->nbench_ops = req->tcon->ntvfs_ops;
-	private->passthru_ops = ntvfs_backend_byname(passthru, NTVFS_DISK);
+	private->passthru_ops = ntvfs_backend_byname(handlers[depth+1], NTVFS_DISK);
 
 	if (!private->passthru_ops) {
 		DEBUG(0,("Unable to connect to '%s' pass through backend\n", passthru));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+
+	ntvfs_set_private(req->tcon, depth, private);
 	
-	PASS_THRU(req->tcon, connect, (req, sharename));
+	PASS_THRU(req->tcon, connect, (req, sharename, depth+1));
 
 	return status;
 }
@@ -133,14 +118,14 @@ static NTSTATUS nbench_connect(struct smbsrv_request *req, const char *sharename
 /*
   disconnect from a share
 */
-static NTSTATUS nbench_disconnect(struct smbsrv_tcon *tcon)
+static NTSTATUS nbench_disconnect(struct smbsrv_tcon *tcon, int depth)
 {
-	struct nbench_private *private = tcon->ntvfs_private;
+	struct nbench_private *private = tcon->ntvfs_private_list[depth];
 	NTSTATUS status;
 
-	PASS_THRU(tcon, disconnect, (tcon));
-
 	close(private->log_fd);
+
+	PASS_THRU(tcon, disconnect, (tcon, depth+1));
 
 	return status;
 }
@@ -151,7 +136,7 @@ static NTSTATUS nbench_disconnect(struct smbsrv_tcon *tcon)
 */
 static NTSTATUS nbench_unlink(struct smbsrv_request *req, struct smb_unlink *unl)
 {
-	struct nbench_private *private = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(nbench_private, private, req);
 	NTSTATUS status;
 
 	PASS_THRU_REQ(req, unlink, (req, unl));
@@ -168,7 +153,7 @@ static NTSTATUS nbench_unlink(struct smbsrv_request *req, struct smb_unlink *unl
 */
 static NTSTATUS nbench_ioctl(struct smbsrv_request *req, union smb_ioctl *io)
 {
-	struct nbench_private *private = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(nbench_private, private, req);
 	NTSTATUS status;
 
 	PASS_THRU_REQ(req, ioctl, (req, io));
@@ -183,7 +168,7 @@ static NTSTATUS nbench_ioctl(struct smbsrv_request *req, union smb_ioctl *io)
 */
 static NTSTATUS nbench_chkpath(struct smbsrv_request *req, struct smb_chkpath *cp)
 {
-	struct nbench_private *private = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(nbench_private, private, req);
 	NTSTATUS status;
 
 	PASS_THRU_REQ(req, chkpath, (req, cp));
@@ -200,7 +185,7 @@ static NTSTATUS nbench_chkpath(struct smbsrv_request *req, struct smb_chkpath *c
 */
 static NTSTATUS nbench_qpathinfo(struct smbsrv_request *req, union smb_fileinfo *info)
 {
-	struct nbench_private *private = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(nbench_private, private, req);
 	NTSTATUS status;
 
 	PASS_THRU_REQ(req, qpathinfo, (req, info));
@@ -218,7 +203,7 @@ static NTSTATUS nbench_qpathinfo(struct smbsrv_request *req, union smb_fileinfo 
 */
 static NTSTATUS nbench_qfileinfo(struct smbsrv_request *req, union smb_fileinfo *info)
 {
-	struct nbench_private *private = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(nbench_private, private, req);
 	NTSTATUS status;
 
 	PASS_THRU_REQ(req, qfileinfo, (req, info));
@@ -237,7 +222,7 @@ static NTSTATUS nbench_qfileinfo(struct smbsrv_request *req, union smb_fileinfo 
 */
 static NTSTATUS nbench_setpathinfo(struct smbsrv_request *req, union smb_setfileinfo *st)
 {
-	struct nbench_private *private = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(nbench_private, private, req);
 	NTSTATUS status;
 
 	PASS_THRU_REQ(req, setpathinfo, (req, st));
@@ -255,7 +240,7 @@ static NTSTATUS nbench_setpathinfo(struct smbsrv_request *req, union smb_setfile
 */
 static NTSTATUS nbench_open(struct smbsrv_request *req, union smb_open *io)
 {
-	struct nbench_private *private = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(nbench_private, private, req);
 	NTSTATUS status;
 
 	PASS_THRU_REQ(req, open, (req, io));
@@ -284,7 +269,7 @@ static NTSTATUS nbench_open(struct smbsrv_request *req, union smb_open *io)
 */
 static NTSTATUS nbench_mkdir(struct smbsrv_request *req, union smb_mkdir *md)
 {
-	struct nbench_private *private = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(nbench_private, private, req);
 	NTSTATUS status;
 
 	PASS_THRU_REQ(req, mkdir, (req, md));
@@ -299,7 +284,7 @@ static NTSTATUS nbench_mkdir(struct smbsrv_request *req, union smb_mkdir *md)
 */
 static NTSTATUS nbench_rmdir(struct smbsrv_request *req, struct smb_rmdir *rd)
 {
-	struct nbench_private *private = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(nbench_private, private, req);
 	NTSTATUS status;
 
 	PASS_THRU_REQ(req, rmdir, (req, rd));
@@ -316,7 +301,7 @@ static NTSTATUS nbench_rmdir(struct smbsrv_request *req, struct smb_rmdir *rd)
 */
 static NTSTATUS nbench_rename(struct smbsrv_request *req, union smb_rename *ren)
 {
-	struct nbench_private *private = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(nbench_private, private, req);
 	NTSTATUS status;
 
 	PASS_THRU_REQ(req, rename, (req, ren));
@@ -343,7 +328,7 @@ static NTSTATUS nbench_rename(struct smbsrv_request *req, union smb_rename *ren)
 */
 static NTSTATUS nbench_copy(struct smbsrv_request *req, struct smb_copy *cp)
 {
-	struct nbench_private *private = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(nbench_private, private, req);
 	NTSTATUS status;
 
 	PASS_THRU_REQ(req, copy, (req, cp));
@@ -358,7 +343,7 @@ static NTSTATUS nbench_copy(struct smbsrv_request *req, struct smb_copy *cp)
 */
 static NTSTATUS nbench_read(struct smbsrv_request *req, union smb_read *rd)
 {
-	struct nbench_private *private = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(nbench_private, private, req);
 	NTSTATUS status;
 
 	PASS_THRU_REQ(req, read, (req, rd));
@@ -386,7 +371,7 @@ static NTSTATUS nbench_read(struct smbsrv_request *req, union smb_read *rd)
 */
 static NTSTATUS nbench_write(struct smbsrv_request *req, union smb_write *wr)
 {
-	struct nbench_private *private = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(nbench_private, private, req);
 	NTSTATUS status;
 
 	PASS_THRU_REQ(req, write, (req, wr));
@@ -424,7 +409,7 @@ static NTSTATUS nbench_write(struct smbsrv_request *req, union smb_write *wr)
 */
 static NTSTATUS nbench_seek(struct smbsrv_request *req, struct smb_seek *io)
 {
-	struct nbench_private *private = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(nbench_private, private, req);
 	NTSTATUS status;
 
 	PASS_THRU_REQ(req, seek, (req, io));
@@ -439,7 +424,7 @@ static NTSTATUS nbench_seek(struct smbsrv_request *req, struct smb_seek *io)
 */
 static NTSTATUS nbench_flush(struct smbsrv_request *req, struct smb_flush *io)
 {
-	struct nbench_private *private = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(nbench_private, private, req);
 	NTSTATUS status;
 
 	PASS_THRU_REQ(req, flush, (req, io));
@@ -456,7 +441,7 @@ static NTSTATUS nbench_flush(struct smbsrv_request *req, struct smb_flush *io)
 */
 static NTSTATUS nbench_close(struct smbsrv_request *req, union smb_close *io)
 {
-	struct nbench_private *private = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(nbench_private, private, req);
 	NTSTATUS status;
 
 	PASS_THRU_REQ(req, close, (req, io));
@@ -482,7 +467,7 @@ static NTSTATUS nbench_close(struct smbsrv_request *req, union smb_close *io)
 */
 static NTSTATUS nbench_exit(struct smbsrv_request *req)
 {
-	struct nbench_private *private = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(nbench_private, private, req);
 	NTSTATUS status;
 
 	PASS_THRU_REQ(req, exit, (req));
@@ -495,7 +480,7 @@ static NTSTATUS nbench_exit(struct smbsrv_request *req)
 */
 static NTSTATUS nbench_lock(struct smbsrv_request *req, union smb_lock *lck)
 {
-	struct nbench_private *private = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(nbench_private, private, req);
 	NTSTATUS status;
 
 	PASS_THRU_REQ(req, lock, (req, lck));
@@ -528,7 +513,7 @@ static NTSTATUS nbench_lock(struct smbsrv_request *req, union smb_lock *lck)
 static NTSTATUS nbench_setfileinfo(struct smbsrv_request *req, 
 				 union smb_setfileinfo *info)
 {
-	struct nbench_private *private = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(nbench_private, private, req);
 	NTSTATUS status;
 
 	PASS_THRU_REQ(req, setfileinfo, (req, info));
@@ -547,7 +532,7 @@ static NTSTATUS nbench_setfileinfo(struct smbsrv_request *req,
 */
 static NTSTATUS nbench_fsinfo(struct smbsrv_request *req, union smb_fsinfo *fs)
 {
-	struct nbench_private *private = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(nbench_private, private, req);
 	NTSTATUS status;
 
 	PASS_THRU_REQ(req, fsinfo, (req, fs));
@@ -564,7 +549,7 @@ static NTSTATUS nbench_fsinfo(struct smbsrv_request *req, union smb_fsinfo *fs)
 */
 static NTSTATUS nbench_lpq(struct smbsrv_request *req, union smb_lpq *lpq)
 {
-	struct nbench_private *private = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(nbench_private, private, req);
 	NTSTATUS status;
 
 	PASS_THRU_REQ(req, lpq, (req, lpq));
@@ -581,7 +566,7 @@ static NTSTATUS nbench_search_first(struct smbsrv_request *req, union smb_search
 				  void *search_private, 
 				  BOOL (*callback)(void *, union smb_search_data *))
 {
-	struct nbench_private *private = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(nbench_private, private, req);
 	NTSTATUS status;
 
 	PASS_THRU_REQ(req, search_first, (req, io, search_private, callback));
@@ -609,7 +594,7 @@ static NTSTATUS nbench_search_next(struct smbsrv_request *req, union smb_search_
 				 void *search_private, 
 				 BOOL (*callback)(void *, union smb_search_data *))
 {
-	struct nbench_private *private = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(nbench_private, private, req);
 	NTSTATUS status;
 
 	PASS_THRU_REQ(req, search_next, (req, io, search_private, callback));
@@ -622,7 +607,7 @@ static NTSTATUS nbench_search_next(struct smbsrv_request *req, union smb_search_
 /* close a search */
 static NTSTATUS nbench_search_close(struct smbsrv_request *req, union smb_search_close *io)
 {
-	struct nbench_private *private = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(nbench_private, private, req);
 	NTSTATUS status;
 
 	PASS_THRU_REQ(req, search_close, (req, io));
@@ -635,7 +620,7 @@ static NTSTATUS nbench_search_close(struct smbsrv_request *req, union smb_search
 /* SMBtrans - not used on file shares */
 static NTSTATUS nbench_trans(struct smbsrv_request *req, struct smb_trans2 *trans2)
 {
-	struct nbench_private *private = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(nbench_private, private, req);
 	NTSTATUS status;
 
 	PASS_THRU_REQ(req, trans, (req,trans2));

@@ -31,7 +31,7 @@
 */
 char *svfs_unix_path(struct smbsrv_request *req, const char *name)
 {
-	struct svfs_private *private = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(svfs_private, private, req);
 	char *ret;
 
 	if (*name != '\\') {

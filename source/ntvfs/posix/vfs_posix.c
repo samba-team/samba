@@ -50,7 +50,7 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
   directory exists (tho it doesn't need to be accessible by the user,
   that comes later)
 */
-static NTSTATUS pvfs_connect(struct smbsrv_request *req, const char *sharename)
+static NTSTATUS pvfs_connect(struct smbsrv_request *req, const char *sharename, int depth)
 {
 	struct smbsrv_tcon *tcon = req->tcon;
 	struct pvfs_state *pvfs;
@@ -71,6 +71,7 @@ static NTSTATUS pvfs_connect(struct smbsrv_request *req, const char *sharename)
 
 	pvfs->tcon = tcon;
 	pvfs->base_directory = base_directory;
+	pvfs->ops = ntvfs_backend_byname("posix", NTVFS_DISK);
 
 	/* the directory must exist. Note that we deliberately don't
 	   check that it is readable */
@@ -82,7 +83,8 @@ static NTSTATUS pvfs_connect(struct smbsrv_request *req, const char *sharename)
 
 	tcon->fs_type = talloc_strdup(tcon, "NTFS");
 	tcon->dev_type = talloc_strdup(tcon, "A:");
-	tcon->ntvfs_private = pvfs;
+
+	ntvfs_set_private(tcon, depth, pvfs);
 
 	pvfs_setup_options(pvfs);
 
@@ -92,7 +94,7 @@ static NTSTATUS pvfs_connect(struct smbsrv_request *req, const char *sharename)
 /*
   disconnect from a share
 */
-static NTSTATUS pvfs_disconnect(struct smbsrv_tcon *tcon)
+static NTSTATUS pvfs_disconnect(struct smbsrv_tcon *tcon, int depth)
 {
 	return NT_STATUS_OK;
 }
@@ -110,7 +112,7 @@ static NTSTATUS pvfs_ioctl(struct smbsrv_request *req, union smb_ioctl *io)
 */
 static NTSTATUS pvfs_chkpath(struct smbsrv_request *req, struct smb_chkpath *cp)
 {
-	struct pvfs_state *pvfs = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
 	struct pvfs_filename *name;
 	NTSTATUS status;
 

@@ -28,7 +28,7 @@
 */
 NTSTATUS pvfs_rename(struct smbsrv_request *req, union smb_rename *ren)
 {
-	struct pvfs_state *pvfs = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
 	NTSTATUS status;
 	struct pvfs_filename *name1, *name2;
 

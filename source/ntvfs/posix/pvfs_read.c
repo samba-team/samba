@@ -28,7 +28,7 @@
 */
 NTSTATUS pvfs_read(struct smbsrv_request *req, union smb_read *rd)
 {
-	struct pvfs_private *pvfs = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
 	ssize_t ret;
 	struct pvfs_file *f;
 

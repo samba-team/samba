@@ -30,8 +30,8 @@ struct ntvfs_ops {
 	enum ntvfs_type type;
 	
 	/* initial setup */
-	NTSTATUS (*connect)(struct smbsrv_request *req, const char *sharename);
-	NTSTATUS (*disconnect)(struct smbsrv_tcon *tcon);
+	NTSTATUS (*connect)(struct smbsrv_request *req, const char *sharename, int depth);
+	NTSTATUS (*disconnect)(struct smbsrv_tcon *tcon, int depth);
 
 	/* path operations */
 	NTSTATUS (*unlink)(struct smbsrv_request *req, struct smb_unlink *unl);
@@ -85,3 +85,7 @@ struct ntvfs_critical_sizes {
 	int sizeof_smbsrv_tcon;
 	int sizeof_smbsrv_request;
 };
+
+/* useful macro for backends */
+#define NTVFS_GET_PRIVATE(struct_name, name, req) \
+	struct struct_name *name = req->tcon->ntvfs_private_list[req->ntvfs_depth]
