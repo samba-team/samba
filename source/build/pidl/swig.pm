@@ -44,11 +44,40 @@ sub ArrayFromPython($$)
     my($prefix) = shift;
     my($result) = "";
 
-    if ($e->{POINTERS} != 0) {
-	$result .= "\ts->$prefix$e->{NAME} = talloc(mem_ctx, PyString_Size(PyDict_GetItem(obj, PyString_FromString(\"$e->{NAME}\"))));\n";
+    my($array_len) = $e->{ARRAY_LEN};
+
+    if ($array_len eq "*") {
+	$array_len = util::has_property($e, "size_is");
     }
 
-    $result .= "\tmemcpy(s->$prefix$e->{NAME}, PyString_AsString(PyDict_GetItem(obj, PyString_FromString(\"$e->{NAME}\"))), PyString_Size(PyDict_GetItem(obj, PyString_FromString(\"$e->{NAME}\"))));\n";
+    if (!util::is_constant($array_len)) {
+	$array_len = "s->$prefix$array_len";
+    }
+
+    my($type) = $e->{TYPE};
+
+    if (!util::is_scalar_type($type)) {
+	$type = "struct $type";
+    }
+
+    if (!util::is_constant($e->{ARRAY_LEN})) {
+	$result .= "\ts->$prefix$e->{NAME} = talloc(mem_ctx, $array_len * sizeof($type));\n";
+    }
+
+    $result .= "\t{\n";
+
+    $result .= "\t\tint i;\n\n";
+    $result .= "\t\tfor (i = 0; i < $array_len; i++) {\n";
+    if (util::is_scalar_type($e->{TYPE})) {
+	$result .= "\t\t\ts->$prefix$e->{NAME}\[i\] = $e->{TYPE}_from_python(PyList_GetItem(PyDict_GetItem(obj, PyString_FromString(\"$e->{NAME}\")), i));\n";
+    } else {
+	$result .= "\t\t\t$e->{TYPE}_from_python(mem_ctx, &s->$prefix$e->{NAME}\[i\], PyList_GetItem(PyDict_GetItem(obj, PyString_FromString(\"$e->{NAME}\")), i));\n";
+    }
+    $result .= "\t\t}\n";
+
+    $result .= "\t}\n";
+
+#    $result .= "\tmemcpy(s->$prefix$e->{NAME}, PyString_AsString(PyDict_GetItem(obj, PyString_FromString(\"$e->{NAME}\"))), PyString_Size(PyDict_GetItem(obj, PyString_FromString(\"$e->{NAME}\"))));\n";
 
     return $result;
 }
@@ -82,12 +111,13 @@ sub XFromPython($$)
 	}
     } else {
 	if ($e->{POINTERS} == 0) {
-	    $result .= "\t$e->{TYPE}_from_python(mem_ctx, &s->$prefix$e->{NAME}, $obj);\n";
-	} elsif ($e->{POINTERS} == 1) {
-	    $result .= "\ts->$prefix$e->{NAME} = $e->{TYPE}_ptr_from_python(mem_ctx, $obj);\n";
+	    if ($e->{ARRAY_LEN}) {
+		$result .= ArrayFromPython($e, $prefix);
+	    } else {
+		$result .= "\t$e->{TYPE}_from_python(mem_ctx, &s->$prefix$e->{NAME}, $obj);\n";
+	    }
 	} else {
-	    $result .= "\t// Non-scalar type, multiple pointers\n";
-	    $result .= DebugElement($e);
+	    $result .= "\ts->$prefix$e->{NAME} = $e->{TYPE}_ptr_from_python(mem_ctx, $obj);\n";
 	}
     }
 
@@ -102,11 +132,36 @@ sub ArrayToPython($$)
 
     my($array_len) = $e->{ARRAY_LEN};
 
+    if ($array_len eq "*") {
+	$array_len = util::has_property($e, "size_is");
+    }
+
     if (!util::is_constant($array_len)) {
 	$array_len = "s->$prefix$array_len";
     }
 
-    $result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), PyString_FromStringAndSize((char *)s->$prefix$e->{NAME}, $array_len * sizeof($e->{TYPE})));\n";
+    my($type) = $e->{TYPE};
+
+    if (!util::is_scalar_type($type)) {
+	$type = "struct $type";
+    }
+
+    $result .= "\n\t{\n";
+    $result .= "\t\tPyObject *temp;\n";
+    $result .= "\t\tint i;\n\n";
+
+    $result .= "\t\ttemp = PyList_New($array_len);\n\n";
+    $result .= "\t\tfor (i = 0; i < $array_len; i++) {\n";
+    if (util::is_scalar_type($e->{TYPE})) {
+	$result .= "\t\t\tPyList_SetItem(temp, i, $e->{TYPE}_to_python(s->$prefix$e->{NAME}\[i\]));\n";
+    } else {
+	$result .= "\t\t\tPyList_SetItem(temp, i, $e->{TYPE}_ptr_to_python(mem_ctx, &s->$prefix$e->{NAME}\[i\]));\n";	
+    }
+    $result .= "\t\t}\n";
+
+    $result .= "\t\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), temp);\n";
+
+    $result .= "\t}\n";
 
     return $result;
 }
@@ -139,12 +194,13 @@ sub XToPython($$)
 	}
     } else {
 	if ($e->{POINTERS} == 0) {
-	    $result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), $e->{TYPE}_ptr_to_python(mem_ctx, &s->$prefix$e->{NAME}));\n";
-	} elsif ($e->{POINTERS} == 1) {
-	    $result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), $e->{TYPE}_ptr_to_python(mem_ctx, s->$prefix$e->{NAME}));\n";
+	    if ($e->{ARRAY_LEN}) {
+		$result .= ArrayToPython($e, $prefix);
+	    } else {
+		$result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), $e->{TYPE}_ptr_to_python(mem_ctx, &s->$prefix$e->{NAME}));\n";
+	    }
 	} else {
-	    $result .= "\t// Non-scalar type, multiple pointers\n";
-	    $result .= DebugElement($e);
+	    $result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), $e->{TYPE}_ptr_to_python(mem_ctx, s->$prefix$e->{NAME}));\n";
 	}
     }
 
