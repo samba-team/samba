@@ -180,6 +180,19 @@ static BOOL cm_open_connection(char *domain, char *pipe_name,
         return result;
 }
 
+/* Return true if a connection is still alive */
+
+static BOOL connection_ok(struct winbindd_cm_conn *conn)
+{
+        if (!conn->cli->initialised)
+                return False;
+
+        if (!conn->cli->fd == -1)
+                return False;
+	
+        return True;
+}
+
 /* Return a LSA policy handle on a domain */
 
 CLI_POLICY_HND *cm_get_lsa_handle(char *domain)
@@ -193,8 +206,13 @@ CLI_POLICY_HND *cm_get_lsa_handle(char *domain)
 
         for (conn = cm_conns; conn; conn = conn->next) {
                 if (strequal(conn->domain, domain) &&
-                    strequal(conn->pipe_name, PIPE_LSARPC))
+                    strequal(conn->pipe_name, PIPE_LSARPC)) {
+
+                        if (!connection_ok(conn))
+                                return NULL;
+
                         goto ok;
+                }
         }
 
         /* Create a new one */
@@ -242,8 +260,13 @@ CLI_POLICY_HND *cm_get_sam_handle(char *domain)
         for (conn = cm_conns; conn; conn = conn->next) {
                 if (strequal(conn->domain, domain) &&
                     strequal(conn->pipe_name, PIPE_SAMR) &&
-                    conn->sam_pipe_type == SAM_PIPE_BASIC)
+                    conn->sam_pipe_type == SAM_PIPE_BASIC) {
+
+                        if (!connection_ok(conn))
+                                return NULL;
+
                         goto ok;
+                }
         }
 
         /* Create a new one */
@@ -291,8 +314,13 @@ CLI_POLICY_HND *cm_get_sam_dom_handle(char *domain, DOM_SID *domain_sid)
         for (conn = cm_conns; conn; conn = conn->next) {
                 if (strequal(conn->domain, domain) &&
                     strequal(conn->pipe_name, PIPE_SAMR) &&
-                    conn->sam_pipe_type == SAM_PIPE_DOM)
+                    conn->sam_pipe_type == SAM_PIPE_DOM) {
+
+                        if (!connection_ok(conn))
+                                return NULL;
+
                         goto ok;
+                }
         }
 
         /* Create a basic handle to open a domain handle from */
@@ -307,11 +335,6 @@ CLI_POLICY_HND *cm_get_sam_dom_handle(char *domain, DOM_SID *domain_sid)
                         basic_conn = conn;
         }
         
-        if (!basic_conn) {
-                DEBUG(0, ("No basic sam handle was created!\n"));
-                return NULL;
-
-                }
         if (!(conn = (struct winbindd_cm_conn *)
               malloc(sizeof(struct winbindd_cm_conn))))
                 return NULL;
@@ -359,8 +382,13 @@ CLI_POLICY_HND *cm_get_sam_user_handle(char *domain, DOM_SID *domain_sid,
                 if (strequal(conn->domain, domain) &&
                     strequal(conn->pipe_name, PIPE_SAMR) &&
                     conn->sam_pipe_type == SAM_PIPE_USER &&
-                    conn->user_rid == user_rid)
+                    conn->user_rid == user_rid) {
+
+                        if (!connection_ok(conn))
+                                return NULL;
+                
                         goto ok;
+                }
         }
 
         /* Create a domain handle to open a user handle from */
@@ -428,8 +456,13 @@ CLI_POLICY_HND *cm_get_sam_group_handle(char *domain, DOM_SID *domain_sid,
                 if (strequal(conn->domain, domain) &&
                     strequal(conn->pipe_name, PIPE_SAMR) &&
                     conn->sam_pipe_type == SAM_PIPE_GROUP &&
-                    conn->group_rid == group_rid)
+                    conn->group_rid == group_rid) {
+
+                        if (!connection_ok(conn))
+                                return NULL;
+                
                         goto ok;
+                }
         }
 
         /* Create a domain handle to open a user handle from */
