@@ -82,6 +82,7 @@ do {                             \
 #define WINBIND_TRY_FIRST_PASS_ARG (1<<3)
 #define WINBIND_USE_FIRST_PASS_ARG (1<<4)
 #define WINBIND__OLD_PASSWORD (1<<5)
+#define WINBIND_REQUIRED_MEMBERSHIP (1<<6)
 
 /*
  * here is the string to inform the user that the new passwords they

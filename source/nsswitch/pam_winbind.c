@@ -45,6 +45,8 @@ static int _pam_parse(int argc, const char **argv)
 			ctrl |= WINBIND_TRY_FIRST_PASS_ARG;
 		else if (!strcasecmp(*argv, "unknown_ok"))
 			ctrl |= WINBIND_UNKNOWN_OK_ARG;
+		else if (!strncasecmp(*argv, "required_membership", strlen("required_membership")))
+			ctrl |= WINBIND_REQUIRED_MEMBERSHIP;
 		else {
 			_pam_log(LOG_ERR, "pam_parse: unknown option; %s", *argv);
 		}
@@ -148,7 +150,7 @@ static int pam_winbind_request_log(enum winbindd_cmd req_type,
 	switch (retval) {
 	case PAM_AUTH_ERR:
 		/* incorrect password */
-		_pam_log(LOG_WARNING, "user `%s' denied access (incorrect password)", user);
+		_pam_log(LOG_WARNING, "user `%s' denied access (incorrect password or invalid membership)", user);
 		return retval;
 	case PAM_ACCT_EXPIRED:
 		/* account expired */
@@ -192,7 +194,7 @@ static int pam_winbind_request_log(enum winbindd_cmd req_type,
 }
 
 /* talk to winbindd */
-static int winbind_auth_request(const char *user, const char *pass, int ctrl)
+static int winbind_auth_request(const char *user, const char *pass, const char *member, int ctrl)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -204,7 +206,35 @@ static int winbind_auth_request(const char *user, const char *pass, int ctrl)
 
 	strncpy(request.data.auth.pass, pass, 
                 sizeof(request.data.auth.pass)-1);
-	
+
+	if (member == NULL )
+        	return pam_winbind_request_log(WINBINDD_PAM_AUTH, &request, &response, ctrl, user);
+
+	/* lookup name? */ 
+	if (!strncmp("S-", member, 2) == 0) {
+		
+		struct winbindd_request request;
+		struct winbindd_response response;
+
+		ZERO_STRUCT(request);
+		ZERO_STRUCT(response)
+
+		if (ctrl & WINBIND_DEBUG_ARG)
+			_pam_log(LOG_DEBUG, "no sid given, looking up: %s\n", member);
+
+		/* fortunatly winbindd can handle non-separated names */
+		strcpy(request.data.name.name, member);
+
+		if (pam_winbind_request_log(WINBINDD_LOOKUPNAME, &request, &response, ctrl, user)) {
+			_pam_log(LOG_INFO, "could not lookup name: %s\n", member); 
+			return PAM_AUTH_ERR;
+		}
+
+		member = strdup(response.data.sid.sid);
+	}
+
+	strncpy(request.data.auth.required_membership_sid, member, 
+	        sizeof(request.data.auth.required_membership_sid)-1);
 	
         return pam_winbind_request_log(WINBINDD_PAM_AUTH, &request, &response, ctrl, user);
 }
@@ -419,6 +449,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 {
      const char *username;
      const char *password;
+     const char *member = NULL;
      int retval = PAM_AUTH_ERR;
     
      /* parse arguments */
@@ -453,8 +484,26 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 #endif
      }
 
+     /* Retrieve membership-string here */
+     int i;
+     for ( i=0; i<argc; i++ ) {
+
+	 if (!strncmp(argv[i], "required_membership", strlen("required_membership"))) {
+
+	     char *p;
+	     char *parm = strdup(argv[i]);
+
+	     if ( (p = strchr( parm, '=' )) == NULL) {
+	     	_pam_log(LOG_INFO, "no \"=\" delimiter for \"required_membership\" found\n");
+		break;
+	     }
+
+	     member = strdup(p+1);
+	 }
+     }
+
      /* Now use the username to look up password */
-     return winbind_auth_request(username, password, ctrl);
+     return winbind_auth_request(username, password, member, ctrl);
 }
 
 PAM_EXTERN
@@ -546,6 +595,7 @@ PAM_EXTERN int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 
 	/* <DO NOT free() THESE> */
 	const char *user;
+	const char *member = NULL;
 	char *pass_old, *pass_new;
 	/* </DO NOT free() THESE> */
 
@@ -606,7 +656,7 @@ PAM_EXTERN int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		}
 		/* verify that this is the password for this user */
 		
-		retval = winbind_auth_request(user, pass_old, ctrl);
+		retval = winbind_auth_request(user, pass_old, member, ctrl);
 		
 		if (retval != PAM_ACCT_EXPIRED 
 		    && retval != PAM_AUTHTOK_EXPIRED
