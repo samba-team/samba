@@ -898,6 +898,8 @@ static BOOL mod_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, con
     } else {
 	    DEBUG(0,("mod_smbfilepwd_entry:  Using old smbpasswd format.  This is no longer supported.!\n"));
 	    DEBUG(0,("mod_smbfilepwd_entry:  No changes made, failing.!\n"));
+            pw_file_unlock(lockfd, &(smbpasswd_state->pw_file_lock_depth));
+            fclose(fp);
 	    return False;
     }
 
