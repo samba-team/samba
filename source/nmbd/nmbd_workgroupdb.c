@@ -183,11 +183,11 @@ struct work_record *find_workgroup_on_subnet(struct subnet_record *subrec,
   {
     if (!strcmp(ret->work_group,name))
     {
-      DEBUG(4, ("found\n"));
+      DEBUGADD(4, ("found.\n"));
       return(ret);
     }
   }
-  DEBUG(4, ("not found\n"));
+  DEBUGADD(4, ("not found.\n"));
   return NULL;
 }
 

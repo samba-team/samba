@@ -153,8 +153,14 @@ void unbecome_local_master_success(struct subnet_record *subrec,
   /* Now reset the workgroup and server state. */
   reset_workgroup_state( subrec, released_name->name, force_new_election );
 
-  DEBUG(0,("\n%s *****   Samba name server %s has stopped being a local master browser for workgroup %s \
-on subnet %s *****\n\n", timestring(), global_myname, released_name->name, subrec->subnet_name));
+  if( DEBUGLVL( 0 ) )
+  {
+    dbgtext( "*****\n\n" );
+    dbgtext( "Samba name server %s ", global_myname );
+    dbgtext( "has stopped being a local master browser " );
+    dbgtext( "for workgroup %s ", released_name->name );
+    dbgtext( "on subnet %s\n\n*****\n", subrec->subnet_name );
+  }
 
 }
 
@@ -182,8 +188,14 @@ Removing from namelist anyway.\n", namestr(fail_name)));
   /* Now reset the workgroup and server state. */
   reset_workgroup_state( subrec, fail_name->name, force_new_election );
 
-  DEBUG(0,("\n%s *****   Samba name server %s has stopped being a local master browser for workgroup %s \
-on subnet %s *****\n\n", timestring(), global_myname, fail_name->name, subrec->subnet_name));
+  if( DEBUGLVL( 0 ) )
+  {
+    dbgtext( "*****\n\n" );
+    dbgtext( "Samba name server %s ", global_myname );
+    dbgtext( "has stopped being a local master browser " );
+    dbgtext( "for workgroup %s ", fail_name->name );
+    dbgtext( "on subnet %s\n\n*****\n", subrec->subnet_name );
+  }
 }
 
 /*******************************************************************
@@ -392,8 +404,14 @@ on subnet %s\n", work->work_group, subrec->subnet_name));
      master browser as soon as possible that we are a local master browser. */
   reset_announce_timer();
 
-  DEBUG(0,("\n%s *****   Samba name server %s is now a local master browser for workgroup %s \
-on subnet %s *****\n\n", timestring(), global_myname, work->work_group, subrec->subnet_name));
+  if( DEBUGLVL( 0 ) )
+  {
+    dbgtext( "*****\n\n" );
+    dbgtext( "Samba name server %s ", global_myname );
+    dbgtext( "is now a local master browser " );
+    dbgtext( "for workgroup %s ", work->work_group );
+    dbgtext( "on subnet %s\n\n*****\n", subrec->subnet_name );
+  }
 
 }
 

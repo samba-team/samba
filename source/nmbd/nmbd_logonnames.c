@@ -156,9 +156,13 @@ void add_logon_names(void)
 
       if (find_name_on_subnet(subrec, &nmbname, FIND_SELF_NAME) == NULL)
       {
-        DEBUG(0,("add_domain_logon_names: At time %s attempting to become \
-logon server for workgroup %s on subnet %s\n", timestring(), global_myworkgroup, 
-                  subrec->subnet_name));
+        if( DEBUGLVL( 0 ) )
+        {
+          dbgtext( "add_domain_logon_names:\n" );
+          dbgtext( "Attempting to become logon server " );
+          dbgtext( "for workgroup %s ", global_myworkgroup );
+          dbgtext( "on subnet %s\n", subrec->subnet_name );
+        }
         become_logon_server(subrec, work);
       }
     }

@@ -1956,13 +1956,16 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
 /***************************************************************************
 Process a parameter.
 ***************************************************************************/
-static BOOL do_parameter(char *pszParmName, char *pszParmValue)
+static BOOL do_parameter( char *pszParmName, char *pszParmValue )
 {
-   if (!bInGlobalSection && bGlobalOnly) return(True);
+  if( !bInGlobalSection && bGlobalOnly )
+    return(True);
 
-   DEBUG(3,("doing parameter %s = %s\n",pszParmName,pszParmValue));
+  DEBUGADD( 3, ( "doing parameter %s = %s\n", pszParmName, pszParmValue ) );
 
-   return lp_do_parameter(bInGlobalSection?-2:iServiceIndex, pszParmName, pszParmValue);
+  return( lp_do_parameter( bInGlobalSection ? -2 : iServiceIndex,
+                           pszParmName,
+                           pszParmValue ) );
 }
 
 
@@ -2082,7 +2085,7 @@ static BOOL do_section(char *pszSectionName)
    /* check for multiple global sections */
    if (bInGlobalSection)
    {
-     DEBUG(3,( "Processing section \"[%s]\"\n", pszSectionName));
+     DEBUG( 3, ( "Processing section \"[%s]\"\n", pszSectionName ) );
      return(True);
    }
 
