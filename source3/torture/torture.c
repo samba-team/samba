@@ -2922,12 +2922,15 @@ static BOOL run_deletetest(int dummy)
 	printf("finished delete test\n");
 
   fail:
-	
+	/* FIXME: This will crash if we aborted before cli2 got
+	 * intialized, because these functions don't handle
+	 * uninitialized connections. */
+		
 	cli_close(&cli1, fnum1);
 	cli_close(&cli1, fnum2);
 	cli_setatr(&cli1, fname, 0, 0);
 	cli_unlink(&cli1, fname);
-	
+
 	if (!torture_close_connection(&cli1)) {
 		correct = False;
 	}
