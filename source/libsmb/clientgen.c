@@ -200,8 +200,8 @@ void cli_setup_bcc(struct cli_state *cli, void *p)
 void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr)
 {
         /* copy_nt_creds(&cli->usr, usr); */
-	safe_strcpy(cli->domain   , usr->domain   , sizeof(usr->domain   )-1);
-	safe_strcpy(cli->user_name, usr->user_name, sizeof(usr->user_name)-1);
+	fstrcpy(cli->domain   , usr->domain);
+	fstrcpy(cli->user_name, usr->user_name);
 	memcpy(&cli->pwd, &usr->pwd, sizeof(usr->pwd));
         cli->ntlmssp_flags = usr->ntlmssp_flags;
         cli->ntlmssp_cli_flgs = usr != NULL ? usr->ntlmssp_flags : 0;
