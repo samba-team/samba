@@ -59,7 +59,7 @@ static struct idmap_methods *get_methods(const char *name)
 
 NTSTATUS smb_register_idmap(int version, const char *name, struct idmap_methods *methods)
 {
-	struct idmap_function_entry *entry, *tmp;
+	struct idmap_function_entry *entry;
 
  	if ((version != SMB_IDMAP_INTERFACE_VERSION)) {
 		DEBUG(0, ("Failed to register idmap module.\n"
@@ -84,7 +84,7 @@ NTSTATUS smb_register_idmap(int version, const char *name, struct idmap_methods 
 	entry->name = smb_xstrdup(name);
 	entry->methods = methods;
 
-	DLIST_ADD_END(backends, entry, tmp);
+	DLIST_ADD(backends, entry);
 	DEBUG(5, ("Successfully added idmap backend '%s'\n", name));
 	return NT_STATUS_OK;
 }
