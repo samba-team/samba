@@ -1,5 +1,11 @@
 2001-05-11  Johan Danielsson  <joda@pdc.kth.se>
 
+	* lib/krb5/string-to-key-test.c: dtrt with realm-less principals
+
+	* lib/krb5/Makefile.am: store-test
+
+	* lib/krb5/store-test.c: simple bit storage test
+
 	* lib/krb5/store.c: add more byteorder storage flags
 	
 	* lib/krb5/krb5.h: add more byteorder storage flags
