@@ -3,9 +3,10 @@
 SPNEGO DEFINITIONS ::=
 BEGIN
 
--- NegotiationToken ::= CHOICE {
---                               negTokenInit  [0]  NegTokenInit,
---                               negTokenTarg  [1]  NegTokenTarg }
+NegotiationToken ::= CHOICE {
+	negTokenInit[0]		NegTokenInit,
+	negTokenTarg[1]		NegTokenTarg
+}
 
 MechType::= OBJECT IDENTIFIER
 
