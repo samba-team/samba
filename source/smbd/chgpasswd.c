@@ -1018,7 +1018,8 @@ NTSTATUS change_oem_password(SAM_ACCOUNT *hnd, char *old_passwd, char *new_passw
 		return NT_STATUS_ACCOUNT_RESTRICTION;
 	}
 
-	if (account_policy_get(AP_MIN_PASSWORD_LEN, &min_len) && (strlen(new_passwd) < min_len)) {
+	/* FIXME: AP_MIN_PASSWORD_LEN and lp_min_passwd_length() need to be merged - gd */
+	if (account_policy_get(AP_MIN_PASSWORD_LEN, &min_len) && (str_charnum(new_passwd) < min_len)) {
 		DEBUG(1, ("user %s cannot change password - password too short\n", 
 			  username));
 		DEBUGADD(1, (" account policy min password len = %d\n", min_len));
@@ -1028,7 +1029,7 @@ NTSTATUS change_oem_password(SAM_ACCOUNT *hnd, char *old_passwd, char *new_passw
 
 	/* Take the passed information and test it for minimum criteria */
 	/* Minimum password length */
-	if (strlen(new_passwd) < lp_min_passwd_length()) {
+	if (str_charnum(new_passwd) < lp_min_passwd_length()) {
 		/* too short, must be at least MINPASSWDLENGTH */
 		DEBUG(1, ("Password Change: user %s, New password is shorter than minimum password length = %d\n",
 		       username, lp_min_passwd_length()));
