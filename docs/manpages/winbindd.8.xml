@@ -405,17 +405,17 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 		</varlistentry>
 
 		<varlistentry>
-		<term>$LOCKDIR/winbindd_privilaged/pipe</term>
-	        <listitem><para>The UNIX pipe over which 'privilaged' clients 
+		<term>$LOCKDIR/winbindd_privileged/pipe</term>
+	        <listitem><para>The UNIX pipe over which 'privileged' clients 
                 communicate with the <command>winbindd</command> program.  For security 
                 reasons, access to some winbindd functions - like those needed by 
                 the <command>ntlm_auth</command> utility - is restricted.  By default,
                 only users in the 'root' group will get this access, however the administrator
-                may change the group permissions on $LOCKDIR/winbindd_privilaged to allow
+                may change the group permissions on $LOCKDIR/winbindd_privileged to allow
                 programs like 'squid' to use ntlm_auth.
 		Note that the winbind client will only attempt to connect to the winbindd daemon 
-		if both the <filename>$LOCKDIR/winbindd_privilaged</filename> directory
-		and <filename>$LOCKDIR/winbindd_privilaged/pipe</filename> file are owned by 
+		if both the <filename>$LOCKDIR/winbindd_privileged</filename> directory
+		and <filename>$LOCKDIR/winbindd_privileged/pipe</filename> file are owned by 
 		root. </para></listitem>
 		</varlistentry>
 
