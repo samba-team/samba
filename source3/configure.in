@@ -1,4 +1,3 @@
-dnl -*- mode: m4-mode -*-
 dnl Process this file with autoconf to produce a configure script.
 
 dnl We must use autotools 2.53 or above
