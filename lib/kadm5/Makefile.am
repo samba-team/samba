@@ -96,7 +96,8 @@ LDADD = \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(top_builddir)/lib/des/libdes.la \
 	$(LIB_roken) \
-	$(DBLIB)
+	$(DBLIB) \
+	$(LIB_dlopen)
 
 CLEANFILES = kadm5_err.c kadm5_err.h
 
