@@ -808,8 +808,11 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		 * before issuing an oplock break request to
 		 * our client. JRA.  */
 
-		fsp = open_file_shared(conn,fname,&sbuf,smb_open_mode,
-				 smb_ofun,unixmode, oplock_request,&rmode,&smb_action);
+		fsp = open_file_shared1(conn,fname,&sbuf,
+					desired_access,
+					smb_open_mode,
+					smb_ofun, unixmode, oplock_request,
+					&rmode,&smb_action);
 
 		if (!fsp) { 
 			/* We cheat here. There are two cases we
@@ -1311,7 +1314,7 @@ static int call_nt_transact_create(connection_struct *conn,
      * Ordinary file case.
      */
 
-    fsp = open_file_shared(conn,fname,&sbuf,smb_open_mode,smb_ofun,unixmode,
+    fsp = open_file_shared1(conn,fname,&sbuf,desired_access,smb_open_mode,smb_ofun,unixmode,
                      oplock_request,&rmode,&smb_action);
 
     if (!fsp) { 

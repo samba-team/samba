@@ -4290,7 +4290,11 @@ int reply_nttrans(connection_struct *conn,
 
 int fd_close(struct connection_struct *conn, files_struct *fsp);
 files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_STAT *psbuf, 
-				int share_mode,int ofun, mode_t mode,int oplock_request, int *Access,int *action);
+		int share_mode,int ofun, mode_t mode,int oplock_request, int *Access,int *action);
+files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_STAT *psbuf, 
+				uint32 desired_access,
+				int share_mode,int ofun, mode_t mode,int oplock_request,
+				int *Access,int *action);
 files_struct *open_file_stat(connection_struct *conn, char *fname,
 							SMB_STRUCT_STAT *psbuf, int smb_ofun, int *action);
 files_struct *open_file_fchmod(connection_struct *conn, char *fname, SMB_STRUCT_STAT *psbuf);
