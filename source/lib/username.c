@@ -198,15 +198,23 @@ BOOL user_in_list(char *user,char *list)
 	  static char *mydomain = NULL;
 	  if (mydomain == 0)
 	    yp_get_default_domain(&mydomain);
+
+	  if(mydomain == 0)
+	    {
+              DEBUG(5,("Unable to get default yp domain\n"));
+            }
+          else
+	    {
 	  
-	  DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
+  	      DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
 		   user, mydomain, &tok[1]));
-	  DEBUG(5,("innetgr is %s\n",
+	      DEBUG(5,("innetgr is %s\n",
 		   innetgr(&tok[1], (char *) 0, user, mydomain)
 		   ? "TRUE" : "FALSE"));
 	  
-	  if (innetgr(&tok[1], (char *)0, user, mydomain))
-	    return (True);
+  	      if (innetgr(&tok[1], (char *)0, user, mydomain))
+	        return (True);
+            }
 	}
 #endif
 
