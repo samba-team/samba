@@ -1,17 +1,21 @@
---- utils/torture.c.00	Fri Mar 30 13:53:26 2001
-+++ utils/torture.c	Fri Apr 13 15:06:04 2001
-@@ -2703,7 +2703,11 @@
- 
+--- utils/torture.c.00	Thu Jan 24 17:54:13 2002
++++ utils/torture.c	Thu Jan 24 16:58:52 2002
+@@ -4801,8 +4801,13 @@
  	dbf = stdout;
  
-+#if defined(_SCO_DS) /* SCO OpenServer */
-+    setvbuf(stdout, NULL, _IONBF, 0);
+ #ifdef HAVE_SETBUFFER
+-	setbuffer(stdout, NULL, 0);
++        setbuffer(stdout, NULL, 0);
 +#else
- 	setbuffer(stdout, NULL, 0);
++#if defined(_SCO_DS) /* SCO OpenServer */
++	setvbuf(stdout, NULL, _IONBF, 0);
+ #endif
 +#endif
- 
++
  	charset_initialise();
- 
+ 		
+ 	codepage_initialise(lp_client_code_page());
+
 --- utils/locktest.c.00	Fri Sep 29 13:18:14 2000
 +++ utils/locktest.c	Fri Apr 13 17:54:11 2001
 @@ -384,8 +384,12 @@

@@ -6,7 +6,7 @@ Instructions:	Preparing Samba Packages for SCO OpenServer
 
 We provide support only for current versions of SCO OpenServer
 
-The file samba-2.2-osr5.patch is a patch file suitable for use
+The file samba-2.2.3-osr5.patch is a patch file suitable for use
 with the patch command as follows:
 
         # cd ../../../source
