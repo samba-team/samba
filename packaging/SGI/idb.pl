@@ -274,6 +274,7 @@ if (@nsswitch) {
   print IDB "d 0755 root sys var/ns/lib $SRCPFX/packaging/SGI $PKG.sw.base\n";
   while(@nsswitch) {
     $nextfile = shift @nsswitch;
+    next if $nextfile eq 'libsmbclient';
     ($filename = $nextfile) =~ s/^.*\///;
     $filename =~ s/libnss/libns/;
     print IDB "f 0644 root sys var/ns/lib/$filename $SRCPFX/source/$nextfile $PKG.sw.base \n";
