@@ -1830,7 +1830,7 @@ NTSTATUS _srv_net_disk_enum(pipes_struct *p, SRV_Q_NET_DISK_ENUM *q_u, SRV_R_NET
 
 	r_u->disk_enum_ctr.unknown = 0; 
 
-	r_u->disk_enum_ctr.disk_info_ptr = r_u->disk_enum_ctr.disk_info;
+	r_u->disk_enum_ctr.disk_info_ptr = r_u->disk_enum_ctr.disk_info ? 1 : 0;
 
 	/*allow one DISK_INFO for null terminator*/
 
