@@ -160,6 +160,13 @@ make DESTDIR=$RPM_BUILD_ROOT \
 	installman installswat installdat installmodules
 cd ..
 
+## don't duplicate the docs.  These are installed with SWAT
+rm -rf docs/htmldocs
+rm -rf docs/manpages
+( cd docs; ln -s %{prefix}/share/swat/help htmldocs )
+
+
+
 # Install the nsswitch wins library
 install -m755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/lib
 ( cd $RPM_BUILD_ROOT/lib; ln -sf libnss_wins.so libnss_wins.so.2 )

@@ -358,7 +358,9 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 		memcpy(p,nt_response.data, nt_response.length); p += nt_response.length;
 	}
 	p += clistr_push(cli, p, user, -1, STR_TERMINATE);
-	p += clistr_push(cli, p, workgroup, -1, STR_TERMINATE);
+
+	/* Upper case here might help some NTLMv2 implementations */
+	p += clistr_push(cli, p, workgroup, -1, STR_TERMINATE|STR_UPPER);
 	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
 	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE);
 	cli_setup_bcc(cli, p);
@@ -874,7 +876,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 
 	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) && *pass && passlen != 24) {
 		if (!lp_client_lanman_auth()) {
-			DEBUG(1, ("Server requested LANMAN password but 'client use lanman auth'"
+			DEBUG(1, ("Server requested LANMAN password (share-level security) but 'client use lanman auth'"
 				  " is disabled\n"));
 			return False;
 		}
@@ -1091,7 +1093,7 @@ BOOL cli_negprot(struct cli_state *cli)
 			}
 			cli->sign_info.negotiated_smb_signing = True;
 			cli->sign_info.mandatory_signing = True;
-		} else if (cli->sign_info.allow_smb_signing && cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED) {
+		} else if (cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED) {
 			cli->sign_info.negotiated_smb_signing = True;
 		}
 
@@ -1610,8 +1612,8 @@ struct cli_state *get_ipc_connect(char *server, struct in_addr *server_ip,
 struct cli_state *get_ipc_connect_master_ip(struct ip_service * mb_ip, pstring workgroup, struct user_auth_info *user_info)
 {
         static fstring name;
-        struct cli_state *cli;
-        struct in_addr server_ip; 
+	struct cli_state *cli;
+	struct in_addr server_ip; 
 
         DEBUG(99, ("Looking up name of master browser %s\n",
                    inet_ntoa(mb_ip->ip)));
@@ -1640,14 +1642,14 @@ struct cli_state *get_ipc_connect_master_ip(struct ip_service * mb_ip, pstring w
                 return NULL;
         }
 
-        pstrcpy(workgroup, name);
+                pstrcpy(workgroup, name);
 
-        DEBUG(4, ("found master browser %s, %s\n", 
+                DEBUG(4, ("found master browser %s, %s\n", 
                   name, inet_ntoa(mb_ip->ip)));
 
-        cli = get_ipc_connect(inet_ntoa(server_ip), &server_ip, user_info);
+		cli = get_ipc_connect(inet_ntoa(server_ip), &server_ip, user_info);
 
-        return cli;
+		return cli;
     
 }
 

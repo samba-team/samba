@@ -779,8 +779,6 @@ extern int errno;
 
 #include "version.h"
 
-#include "privileges.h"
-
 #include "smb.h"
 
 #include "nameserv.h"
@@ -788,6 +786,8 @@ extern int errno;
 #include "secrets.h"
 
 #include "byteorder.h"
+
+#include "privileges.h"
 
 #include "rpc_creds.h"
 
@@ -800,10 +800,6 @@ extern int errno;
 #include "rpc_misc.h"
 
 #include "rpc_secdes.h"
-
-#include "genparser.h"
-
-#include "gums.h"
 
 #include "nt_printing.h"
 
@@ -889,7 +885,6 @@ struct smb_ldap_privates;
 /* forward declarations from smbldap.c */
 
 #include "smbldap.h"
-#include "modconf.h"
 
 /***** automatically generated prototypes *****/
 #ifndef NO_PROTO_H

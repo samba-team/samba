@@ -150,7 +150,7 @@ static void null_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
  SMB signing - NULL implementation - check a MAC sent by server.
 ************************************************************/
 
-static BOOL null_check_incoming_message(char *inbuf, struct smb_sign_info *si, BOOL expected_ok)
+static BOOL null_check_incoming_message(char *inbuf, struct smb_sign_info *si, BOOL must_be_ok)
 {
 	return True;
 }
@@ -197,7 +197,7 @@ static void free_signing_context(struct smb_sign_info *si)
 }
 
 
-static BOOL signing_good(char *inbuf, struct smb_sign_info *si, BOOL good, uint32 seq, BOOL expected_ok) 
+static BOOL signing_good(char *inbuf, struct smb_sign_info *si, BOOL good, uint32 seq, BOOL must_be_ok) 
 {
 	if (good) {
 
@@ -212,18 +212,18 @@ static BOOL signing_good(char *inbuf, struct smb_sign_info *si, BOOL good, uint3
 	} else {
 		if (!si->mandatory_signing && !si->seen_valid) {
 
-			if (!expected_ok) {
+			if (!must_be_ok) {
 				return True;
 			}
 			/* Non-mandatory signing - just turn off if this is the first bad packet.. */
-			DEBUG(5, ("signing_good: signing negotiated but not required and the other side \
-isn't sending correct signatures. Turning signatures off.\n"));
+			DEBUG(5, ("srv_check_incoming_message: signing negotiated but not required and peer\n"
+				  "isn't sending correct signatures. Turning off.\n"));
 			si->negotiated_smb_signing = False;
 			si->allow_smb_signing = False;
 			si->doing_signing = False;
 			free_signing_context(si);
 			return True;
-		} else if (!expected_ok) {
+		} else if (!must_be_ok) {
 			/* This packet is known to be unsigned */
 			return True;
 		} else {
@@ -337,7 +337,7 @@ static void client_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
  SMB signing - Client implementation - check a MAC sent by server.
 ************************************************************/
 
-static BOOL client_check_incoming_message(char *inbuf, struct smb_sign_info *si, BOOL expected_ok)
+static BOOL client_check_incoming_message(char *inbuf, struct smb_sign_info *si, BOOL must_be_ok)
 {
 	BOOL good;
 	uint32 reply_seq_number;
@@ -395,7 +395,7 @@ We were expecting seq %u\n", reply_seq_number, saved_seq ));
 		DEBUG(10, ("client_check_incoming_message: seq %u: got good SMB signature of\n", (unsigned int)reply_seq_number));
 		dump_data(10, (const char *)server_sent_mac, 8);
 	}
-	return signing_good(inbuf, si, good, saved_seq, expected_ok);
+	return signing_good(inbuf, si, good, saved_seq, must_be_ok);
 }
 
 /***********************************************************
@@ -549,7 +549,7 @@ static void temp_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
  SMB signing - TEMP implementation - check a MAC sent by server.
 ************************************************************/
 
-static BOOL temp_check_incoming_message(char *inbuf, struct smb_sign_info *si, BOOL expected_ok)
+static BOOL temp_check_incoming_message(char *inbuf, struct smb_sign_info *si, BOOL foo)
 {
 	return True;
 }
@@ -611,9 +611,9 @@ void cli_calculate_sign_mac(struct cli_state *cli)
  *         which had a bad checksum, True otherwise.
  */
  
-BOOL cli_check_sign_mac(struct cli_state *cli, BOOL expected_ok) 
+BOOL cli_check_sign_mac(struct cli_state *cli, BOOL must_be_ok) 
 {
-	if (!cli->sign_info.check_incoming_message(cli->inbuf, &cli->sign_info, expected_ok)) {
+	if (!cli->sign_info.check_incoming_message(cli->inbuf, &cli->sign_info, must_be_ok)) {
 		free_signing_context(&cli->sign_info);	
 		return False;
 	}
@@ -702,7 +702,7 @@ static BOOL is_oplock_break(char *inbuf)
  SMB signing - Server implementation - check a MAC sent by server.
 ************************************************************/
 
-static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info *si, BOOL expected_ok)
+static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info *si, BOOL must_be_ok)
 {
 	BOOL good;
 	struct smb_basic_signing_context *data = si->signing_context;
@@ -776,7 +776,7 @@ We were expecting seq %u\n", reply_seq_number, saved_seq ));
 		dump_data(10, (const char *)server_sent_mac, 8);
 	}
 
-	return (signing_good(inbuf, si, good, saved_seq, expected_ok));
+	return (signing_good(inbuf, si, good, saved_seq, must_be_ok));
 }
 
 /***********************************************************
@@ -809,13 +809,13 @@ BOOL srv_oplock_set_signing(BOOL onoff)
  Called to validate an incoming packet from the client.
 ************************************************************/
 
-BOOL srv_check_sign_mac(char *inbuf, BOOL expected_ok)
+BOOL srv_check_sign_mac(char *inbuf, BOOL must_be_ok)
 {
 	/* Check if it's a session keepalive. */
 	if(CVAL(inbuf,0) == SMBkeepalive)
 		return True;
 
-	return srv_sign_info.check_incoming_message(inbuf, &srv_sign_info, expected_ok);
+	return srv_sign_info.check_incoming_message(inbuf, &srv_sign_info, must_be_ok);
 }
 
 /***********************************************************
@@ -915,8 +915,7 @@ BOOL srv_is_signing_negotiated(void)
 }
 
 /***********************************************************
- Returns whether signing is negotiated. We can't use it unless it was
- in the negprot.  
+ Returns whether signing is actually happening
 ************************************************************/
 
 BOOL srv_signing_started(void)

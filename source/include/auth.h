@@ -27,37 +27,17 @@ typedef struct normal_string
 	char *str;
 } AUTH_STR;
 
-/* AUTH_UNISTR - unicode string or buffer */
-typedef struct unicode_string
-{
-	int len;
-	uchar *unistr;
-} AUTH_UNISTR;
-
-typedef struct interactive_password
-{
-	OWF_INFO          lm_owf;              /* LM OWF Password */
-	OWF_INFO          nt_owf;              /* NT OWF Password */
-} auth_interactive_password;
-
-#define AUTH_FLAG_NONE        0x000000
-#define AUTH_FLAG_PLAINTEXT   0x000001
-#define AUTH_FLAG_LM_RESP     0x000002
-#define AUTH_FLAG_NTLM_RESP   0x000004
-#define AUTH_FLAG_NTLMv2_RESP 0x000008
-
 typedef struct auth_usersupplied_info
 {
 	
  	DATA_BLOB lm_resp;
 	DATA_BLOB nt_resp;
-	auth_interactive_password * interactive_password;
+ 	DATA_BLOB lm_interactive_pwd;
+	DATA_BLOB nt_interactive_pwd;
  	DATA_BLOB plaintext_password;
 	
 	BOOL encrypted;
 	
-	uint32 auth_flags;
-
 	AUTH_STR           client_domain;          /* domain name string */
 	AUTH_STR           domain;               /* domain name after mapping */
 	AUTH_STR           internal_username;    /* username after mapping */
@@ -86,7 +66,6 @@ typedef struct auth_serversupplied_info
 	/* NT group information taken from the info3 structure */
 	
 	NT_USER_TOKEN *ptok;
-	PRIVILEGE_SET *privs;
 	
 	DATA_BLOB nt_session_key;
 	DATA_BLOB lm_session_key;

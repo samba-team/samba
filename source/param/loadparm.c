@@ -95,7 +95,6 @@ struct _param_opt_struct {
  */
 typedef struct
 {
-	char *szConfigBackend;
 	char *smb_ports;
 	char *dos_charset;
 	char *unix_charset;
@@ -123,7 +122,6 @@ typedef struct
 	char *szSMBPasswdFile;
 	char *szPrivateDir;
 	char **szPassdbBackend;
-	char *szGumsBackend;
 	char **szPreloadModules;
 	char *szPasswordServer;
 	char *szSocketOptions;
@@ -224,7 +222,6 @@ typedef struct
 	char *szLdapUserSuffix;
 	char *szLdapIdmapSuffix;
 	char *szLdapGroupSuffix;
-	char *szLdapPrivilegeSuffix;
 #ifdef WITH_LDAP_SAMCONFIG
 	int ldap_port;
 	char *szLdapServer;
@@ -283,7 +280,6 @@ typedef struct
 	BOOL bDebugPid;
 	BOOL bDebugUid;
 	BOOL bHostMSDfs;
-	BOOL bUnicode;
 	BOOL bUseMmap;
 	BOOL bHostnameLookups;
 	BOOL bUnixExtensions;
@@ -762,7 +758,6 @@ static const struct enum_list enum_map_to_guest[] = {
 static struct parm_struct parm_table[] = {
 	{N_("Base Options"), P_SEP, P_SEPARATOR}, 
 
-	{"config backend", P_STRING, P_GLOBAL, &Globals.szConfigBackend, NULL, NULL, FLAG_ADVANCED},
 	{"dos charset", P_STRING, P_GLOBAL, &Globals.dos_charset, handle_charset, NULL, FLAG_ADVANCED}, 
 	{"unix charset", P_STRING, P_GLOBAL, &Globals.unix_charset, handle_charset, NULL, FLAG_ADVANCED}, 
 	{"display charset", P_STRING, P_GLOBAL, &Globals.display_charset, handle_charset, NULL, FLAG_ADVANCED}, 
@@ -800,7 +795,6 @@ static struct parm_struct parm_table[] = {
 	{"smb passwd file", P_STRING, P_GLOBAL, &Globals.szSMBPasswdFile, NULL, NULL, FLAG_ADVANCED}, 
 	{"private dir", P_STRING, P_GLOBAL, &Globals.szPrivateDir, NULL, NULL, FLAG_ADVANCED}, 
 	{"passdb backend", P_LIST, P_GLOBAL, &Globals.szPassdbBackend, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD}, 
-	{"gums backend", P_STRING, P_GLOBAL, &Globals.szGumsBackend, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD}, 
 	{"algorithmic rid base", P_INTEGER, P_GLOBAL, &Globals.AlgorithmicRidBase, NULL, NULL, FLAG_ADVANCED}, 
 	{"root directory", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, FLAG_ADVANCED}, 
 	{"root dir", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, FLAG_HIDE}, 
@@ -889,7 +883,6 @@ static struct parm_struct parm_table[] = {
 	{"large readwrite", P_BOOL, P_GLOBAL, &Globals.bLargeReadwrite, NULL, NULL, FLAG_ADVANCED}, 
 	{"max protocol", P_ENUM, P_GLOBAL, &Globals.maxprotocol, NULL, enum_protocol, FLAG_ADVANCED}, 
 	{"min protocol", P_ENUM, P_GLOBAL, &Globals.minprotocol, NULL, enum_protocol, FLAG_ADVANCED}, 
-	{"unicode", P_BOOL, P_GLOBAL, &Globals.bUnicode, NULL, NULL, FLAG_ADVANCED}, 
 	{"read bmpx", P_BOOL, P_GLOBAL, &Globals.bReadbmpx, NULL, NULL, FLAG_ADVANCED}, 
 	{"read raw", P_BOOL, P_GLOBAL, &Globals.bReadRaw, NULL, NULL, FLAG_ADVANCED}, 
 	{"write raw", P_BOOL, P_GLOBAL, &Globals.bWriteRaw, NULL, NULL, FLAG_ADVANCED}, 
@@ -1081,7 +1074,6 @@ static struct parm_struct parm_table[] = {
 	{"ldap user suffix", P_STRING, P_GLOBAL, &Globals.szLdapUserSuffix, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap group suffix", P_STRING, P_GLOBAL, &Globals.szLdapGroupSuffix, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap idmap suffix", P_STRING, P_GLOBAL, &Globals.szLdapIdmapSuffix, NULL, NULL, FLAG_ADVANCED}, 
-	{"ldap privilege suffix", P_STRING, P_GLOBAL, &Globals.szLdapPrivilegeSuffix, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap filter", P_STRING, P_GLOBAL, &Globals.szLdapFilter, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap admin dn", P_STRING, P_GLOBAL, &Globals.szLdapAdminDn, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap ssl", P_ENUM, P_GLOBAL, &Globals.ldap_ssl, NULL, enum_ldap_ssl, FLAG_ADVANCED}, 
@@ -1316,8 +1308,6 @@ static void init_globals(void)
 
 	DEBUG(3, ("Initialising global parameters\n"));
 
-	string_set(&Globals.szConfigBackend, NULL);
-
 	string_set(&Globals.szSMBPasswdFile, dyn_SMB_PASSWD_FILE);
 	string_set(&Globals.szPrivateDir, dyn_PRIVATE_DIR);
 
@@ -1434,7 +1424,6 @@ static void init_globals(void)
 	Globals.bPamPasswordChange = False;
 	Globals.bPasswdChatDebug = False;
 	Globals.iPasswdChatTimeout = 2; /* 2 second default. */
-	Globals.bUnicode = True;	/* Do unicode on the wire by default */
 	Globals.bNTPipeSupport = True;	/* Do NT pipes by default. */
 	Globals.bNTStatusSupport = True; /* Use NT status by default. */
 	Globals.bStatCache = True;	/* use stat cache by default */
@@ -1471,7 +1460,6 @@ static void init_globals(void)
 #else
 	Globals.szPassdbBackend = str_list_make("smbpasswd", NULL);
 #endif /* WITH_LDAP_SAMCONFIG */
-	string_set(&Globals.szGumsBackend, "tdbsam2");
 
 	string_set(&Globals.szLdapSuffix, "");
 	string_set(&Globals.szLdapFilter, "(uid=%u)");
@@ -1479,7 +1467,6 @@ static void init_globals(void)
 	string_set(&Globals.szLdapUserSuffix, "");
 	string_set(&Globals.szLdapGroupSuffix, "");
 	string_set(&Globals.szLdapIdmapSuffix, "");
-	string_set(&Globals.szLdapPrivilegeSuffix, "");
 
 	string_set(&Globals.szLdapAdminDn, "");
 	Globals.ldap_ssl = LDAP_SSL_ON;
@@ -1622,7 +1609,6 @@ static char *lp_string(const char *s)
 #define FN_LOCAL_INTEGER(fn_name,val) \
  int fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 
-FN_GLOBAL_STRING(lp_config_backend, &Globals.szConfigBackend)
 FN_GLOBAL_STRING(lp_smb_ports, &Globals.smb_ports)
 FN_GLOBAL_STRING(lp_dos_charset, &Globals.dos_charset)
 FN_GLOBAL_STRING(lp_unix_charset, &Globals.unix_charset)
@@ -1657,7 +1643,7 @@ FN_GLOBAL_STRING(lp_passwd_chat, &Globals.szPasswdChat)
 FN_GLOBAL_STRING(lp_passwordserver, &Globals.szPasswordServer)
 FN_GLOBAL_STRING(lp_name_resolve_order, &Globals.szNameResolveOrder)
 FN_GLOBAL_STRING(lp_realm, &Globals.szRealm)
-FN_GLOBAL_STRING(lp_afs_username_map, &Globals.szAfsUsernameMap)
+FN_GLOBAL_CONST_STRING(lp_afs_username_map, &Globals.szAfsUsernameMap)
 FN_GLOBAL_STRING(lp_username_map, &Globals.szUsernameMap)
 FN_GLOBAL_CONST_STRING(lp_logon_script, &Globals.szLogonScript)
 FN_GLOBAL_CONST_STRING(lp_logon_path, &Globals.szLogonPath)
@@ -1672,7 +1658,6 @@ FN_GLOBAL_STRING(lp_nis_home_map_name, &Globals.szNISHomeMapName)
 static FN_GLOBAL_STRING(lp_announce_version, &Globals.szAnnounceVersion)
 FN_GLOBAL_LIST(lp_netbios_aliases, &Globals.szNetbiosAliases)
 FN_GLOBAL_LIST(lp_passdb_backend, &Globals.szPassdbBackend)
-FN_GLOBAL_STRING(lp_gums_backend, &Globals.szGumsBackend)
 FN_GLOBAL_LIST(lp_preload_modules, &Globals.szPreloadModules)
 FN_GLOBAL_STRING(lp_panic_action, &Globals.szPanicAction)
 FN_GLOBAL_STRING(lp_adduser_script, &Globals.szAddUserScript)
@@ -1753,7 +1738,6 @@ FN_GLOBAL_BOOL(lp_pam_password_change, &Globals.bPamPasswordChange)
 FN_GLOBAL_BOOL(lp_unix_password_sync, &Globals.bUnixPasswdSync)
 FN_GLOBAL_BOOL(lp_passwd_chat_debug, &Globals.bPasswdChatDebug)
 FN_GLOBAL_INTEGER(lp_passwd_chat_timeout, &Globals.iPasswdChatTimeout)
-FN_GLOBAL_BOOL(lp_unicode, &Globals.bUnicode)
 FN_GLOBAL_BOOL(lp_nt_pipe_support, &Globals.bNTPipeSupport)
 FN_GLOBAL_BOOL(lp_nt_status_support, &Globals.bNTStatusSupport)
 FN_GLOBAL_BOOL(lp_stat_cache, &Globals.bStatCache)
@@ -2981,14 +2965,6 @@ char *lp_ldap_idmap_suffix(void)
 	return lp_string(Globals.szLdapSuffix);
 }
 
-char *lp_ldap_privilege_suffix(void)
-{
-	if (Globals.szLdapPrivilegeSuffix[0])
-		return append_ldap_suffix(Globals.szLdapPrivilegeSuffix);
-
-	return lp_string(Globals.szLdapSuffix);
-}
-
 /***************************************************************************
 ***************************************************************************/
 
@@ -3896,11 +3872,6 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 	if (bRetval)
 		if (iServiceIndex >= 0)
 			bRetval = service_ok(iServiceIndex);
-
-	if (*(lp_config_backend())) {
-		modconf_init(lp_config_backend());
-		modconf_load(do_section, do_parameter);
-	}	
 
 	lp_add_auto_services(lp_auto_services());
 

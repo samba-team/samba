@@ -49,10 +49,6 @@
 #define BIT_EXPORT	0x02000000
 #define BIT_FIX_INIT    0x04000000
 #define BIT_BADPWRESET	0x08000000
-#define BIT_TRUSTDOM    0x10000000
-#define BIT_TRUSTPW     0x20000000
-#define BIT_TRUSTSID    0x40000000
-#define BIT_TRUSTFLAGS  0x80000000
 
 #define MASK_ALWAYS_GOOD	0x0000001F
 #define MASK_USER_GOOD		0x00401F00
@@ -228,121 +224,6 @@ static int print_user_info (struct pdb_context *in, const char *username, BOOL v
 	
 	return ret;
 }
-
-
-/**
- * Trust password flag name to flag conversion
- *
- * @param flag_name SAM_TRUST_PASSWD structure flag name
- * @return flag value
- **/
-
-static int trustpw_flag(const char* flag_name)
-{
-	const int flag_num = 5;
-	typedef struct { const char *name; int val; } flag_conv;
-	flag_conv flags[] = {{ "PASS_MACHINE_TRUST_NT", PASS_MACHINE_TRUST_NT  },
-	                     { "PASS_SERVER_TRUST_NT",  PASS_SERVER_TRUST_NT   },
-	                     { "PASS_DOMAIN_TRUST_NT",  PASS_DOMAIN_TRUST_NT   },
-	                     { "PASS_MACHINE_TRUST_ADS",PASS_MACHINE_TRUST_ADS },
-	                     { "PASS_DOMAIN_TRUST_ADS", PASS_DOMAIN_TRUST_ADS  }};
-	int i;
-
-	for (i = 0; i < flag_num; i++) {
-		if (!StrCaseCmp(flags[i].name, flag_name)) {
-			return flags[i].val;
-		}
-	}
-		
-	return 0;
-}
-
-
-/**
- * Trust password flag to flag name conversion
- *
- * @param val SAM_TRUST_PASSWD structure flag
- * @return passed flag name
- **/
-
-static char* trustpw_flag_name(const int val)
-{
-	const int flag_num = 5;
-	typedef struct { const char *name; int val; } flag_conv;
-	flag_conv flags[] = {{ "PASS_MACHINE_TRUST_NT", PASS_MACHINE_TRUST_NT  },
-	                     { "PASS_SERVER_TRUST_NT",  PASS_SERVER_TRUST_NT   },
-	                     { "PASS_DOMAIN_TRUST_NT",  PASS_DOMAIN_TRUST_NT   },
-	                     { "PASS_MACHINE_TRUST_ADS",PASS_MACHINE_TRUST_ADS },
-	                     { "PASS_DOMAIN_TRUST_ADS", PASS_DOMAIN_TRUST_ADS  }};
-	int i;
-	
-	for (i = 0; i < flag_num; i++) {
-		if (flags[i].val == val) {
-			return strdup(flags[i].name);
-		}
-	}
-	
-	return strdup("unknown flag");
-}
-
-
-/**
- * Print trust password structure information
- *
- * @param mem_ctx memory context (for unicode name conversion)
- * @param trust SAM_TRUST_PASSWD structure
- * @param verbose verbose mode on/off
- * @return 0 on success, otherwise failure
- **/
- 
-static int print_trustpw_info(TALLOC_CTX *mem_ctx, SAM_TRUST_PASSWD *trust, BOOL verbose)
-{
-	char *dom_name;
-	if (!mem_ctx || !trust) return -1;
-
-	/* convert unicode domain name to char* */
-	if (!pull_ucs2_talloc(mem_ctx, &dom_name, trust->private.uni_name)) return -1;
-	dom_name[trust->private.uni_name_len] = 0;
-
-	/* different output depending on level of verbosity */
-	if (verbose) {
-		printf("Domain name:          %s\n", dom_name);
-		printf("Domain SID:           %s\n", sid_string_static(&trust->private.domain_sid));
-		printf("Trust password        %s\n", trust->private.pass);
-		printf("Trust type:           %s\n", trustpw_flag_name(trust->private.flags));
-		printf("Last modified         %s\n", trust->private.mod_time ? http_timestring(trust->private.mod_time) : "0");
-	
-	} else {
-		printf("%s:%s\n", dom_name, sid_string_static(&trust->private.domain_sid));
-	}
-	
-	return 0;
-}
-
-
-/**
- * Print trust password information by given name
- *
- * @param in initialised pdb_context
- * @param name domain name of the trust password
- * @param verbose verbose mode on/off
- * @param smbpwdstyle smbpassword-style output (ignored here)
- * @return 0 on success, otherwise failure
- **/
- 
-static int print_trust_info(struct pdb_context *in, const char *name, BOOL verbose, BOOL smbpwdstyle)
-{
-	SAM_TRUST_PASSWD trust;
-	TALLOC_CTX *mem_ctx = NULL;
-	
-	mem_ctx = talloc_init("pdbedit: trust passwords listing");
-	
-	if (NT_STATUS_IS_OK(in->pdb_gettrustpwnam(in, &trust, name))) {
-		return print_trustpw_info(mem_ctx, &trust, verbose);
-	}
-	
-	return -1;
-}
 	
 /*********************************************************
  List Users
@@ -372,47 +253,6 @@ static int print_users_list (struct pdb_context *in, BOOL verbosity, BOOL smbpwd
 	in->pdb_endsampwent(in);
 	return 0;
 }
-
-
-/**
- * List trust passwords
- * 
- * @param in initialised pdb context
- * @param verbose turn on/off verbose mode
- * @param smbpwdstyle ignored here (there was no trust passwords in smbpasswd file)
- * @return 0 on success, otherwise failure
- **/
- 
-static int print_trustpw_list(struct pdb_context *in, BOOL verbose, BOOL smbpwdstyle)
-{
-	SAM_TRUST_PASSWD trust;
-	TALLOC_CTX *mem_ctx = NULL;
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	
-	/* start enumeration and initialise memory context */
-	status = in->pdb_settrustpwent(in);
-	if (NT_STATUS_IS_ERR(status)) return -1;
-	mem_ctx = talloc_init("pdbedit: trust passwords listing");
-	
-	/* small separation to make it clear these are not regular accounts */
-	if (!verbose) printf("---\n");
-	
-	do {
-		/* fetch next trust password */
-		status = in->pdb_gettrustpwent(in, &trust);
-
-		if (trust.private.uni_name_len) {
-			/* print trust password info */
-			if (verbose) printf ("---------------\n");
-			print_trustpw_info(mem_ctx, &trust, verbose);
-		}
-
-	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES) || NT_STATUS_EQUAL(status, NT_STATUS_OK));
-	
-	talloc_destroy(mem_ctx);
-	return 0;
-}
-
 
 /*********************************************************
  Fix a list of Users for uninitialised passwords
@@ -698,129 +538,6 @@ static int new_machine (struct pdb_context *in, const char *machine_in)
 	return 0;
 }
 
-
-/**
- * Add new trusting domain account
- *
- * @param in initialised pdb_context
- * @param dom_name trusted domain name given in command line
- *
- * @return 0 on success, -1 otherwise
- **/
- 
-static int new_trustdom(struct pdb_context *in, const char *dom_name)
-{
-	/* TODO */
-	return -1;
-}
-
-
-/**
- * Add new trust relationship password
- *
- * @param in initialised pdb_context
- * @param dom_name trusting domain name given in command line
- * @param dom_sid domain sid given in command line
- * @param flag trust password type flag given in command line
- *
- * @return 0 on success, -1 otherwise
- **/
-
-static int new_trustpw(struct pdb_context *in, const char *dom_name,
-                       const char *dom_sid, const char* flag)
-{
-	TALLOC_CTX *mem_ctx = NULL;
-	SAM_TRUST_PASSWD trust;
-	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	POLICY_HND connect_hnd;
-	DOM_SID *domain_sid = NULL;
-	smb_ucs2_t *uni_name = NULL;
-	char *givenpass, *domain_name = NULL;
-	struct in_addr srv_ip;
-	fstring srv_name, myname;
-	struct cli_state *cli;
-	time_t lct;
-	
-	if (!dom_name) return -1;
-	
-	mem_ctx = talloc_init("pdbedit: adding new trust password");
-	
-	/* unicode name */
-	trust.private.uni_name_len = strnlen(dom_name, 32);
-	push_ucs2_talloc(mem_ctx, &uni_name, dom_name);
-	strncpy_w(trust.private.uni_name, uni_name, 32);
-	
-	/* flags */
-	trust.private.flags = trustpw_flag(flag);
-
-	/* trusting SID */
-	if (!dom_sid) {
-		/* if sid is not specified in command line, do our best
-		   to establish it */
-
-		/* find domain PDC */
-		if (!get_pdc_ip(dom_name, &srv_ip))
-			return -1;
-		if (is_zero_ip(srv_ip))
-			return -1;
-		if (!name_status_find(dom_name, 0x1b, 0x20, srv_ip, srv_name))
-			return -1;
-			
-		get_myname(myname);
-			
-		/* Connect the domain pdc...  */
-		nt_status = cli_full_connection(&cli, myname, srv_name, &srv_ip, 139,
-		                                "IPC$", "IPC", "", "", "", 0, Undefined, NULL);
-		if (NT_STATUS_IS_ERR(nt_status))
-			return -1;
-		if (!cli_nt_session_open(cli, PI_LSARPC))
-			return -1;
-		
-		/* ...and query the domain sid */
-		nt_status = cli_lsa_open_policy2(cli, mem_ctx, True, SEC_RIGHTS_QUERY_VALUE,
-		                                 &connect_hnd);
-		if (NT_STATUS_IS_ERR(nt_status)) return -1;
-
-		nt_status = cli_lsa_query_info_policy(cli, mem_ctx, &connect_hnd,
-		                                      5, &domain_name, &domain_sid);
-		if (NT_STATUS_IS_ERR(nt_status)) return -1;
-		
-		nt_status = cli_lsa_close(cli, mem_ctx, &connect_hnd);
-		if (NT_STATUS_IS_ERR(nt_status)) return -1;
-		
-		cli_nt_session_close(cli);
-		cli_shutdown(cli);
-		
-		/* copying sid to trust password structure */
-		sid_copy(&trust.private.domain_sid, domain_sid);
-			
-	} else {
-		if (!string_to_sid(&trust.private.domain_sid, dom_sid)) {
-			printf("Error: wrong SID specified !\n");
-			return -1;
-		}
-	}
-		
-	/* password */
-	givenpass = getpass("password:");
-	memset(trust.private.pass, '\0', FSTRING_LEN);
-	strncpy(trust.private.pass, givenpass, FSTRING_LEN);
-	
-	/* last change time */
-	lct = time(NULL);
-	trust.private.mod_time = lct;
-	
-	/* store trust password in passdb */
-	nt_status = in->pdb_add_trust_passwd(in, &trust);
-			
-	talloc_destroy(mem_ctx);
-	if (NT_STATUS_IS_OK(nt_status))
-		return 0;
-	
-	return -1;
-}
-
-
 /*********************************************************
  Delete user entry
 **********************************************************/
@@ -886,7 +603,6 @@ int main (int argc, char **argv)
 	static BOOL verbose = False;
 	static BOOL spstyle = False;
 	static BOOL machine = False;
-	static BOOL trustdom = False;
 	static BOOL add_user = False;
 	static BOOL delete_user = False;
 	static BOOL modify_user = False;
@@ -910,10 +626,6 @@ int main (int argc, char **argv)
 	static long int account_policy_value = 0;
 	BOOL account_policy_value_set = False;
 	static BOOL badpw_reset = False;
-	/* trust password parameters */
-	static char *trustpw = NULL;
-	static char *trustsid = NULL;
-	static char *trustflags = NULL;
 
 	struct pdb_context *bin;
 	struct pdb_context *bout;
@@ -934,12 +646,8 @@ int main (int argc, char **argv)
 		{"group SID",	'G', POPT_ARG_STRING, &group_sid, 0, "set group SID or RID", NULL},
 		{"create",	'a', POPT_ARG_NONE, &add_user, 0, "create user", NULL},
 		{"modify",	'r', POPT_ARG_NONE, &modify_user, 0, "modify user", NULL},
-		{"delete",	'x', POPT_ARG_NONE, &delete_user, 0, "delete user", NULL},
 		{"machine",	'm', POPT_ARG_NONE, &machine, 0, "account is a machine account", NULL},
-		{"trustdom",    'I', POPT_ARG_NONE, &trustdom, 0, "account is a domain trust account", NULL},
-		{"trustpw",     'N', POPT_ARG_STRING, &trustpw, 0, "trust password's domain name", NULL},
-		{"trustsid",    'T', POPT_ARG_STRING, &trustsid, 0, "trust password's domain sid", NULL},
-		{"trustflags",  'F', POPT_ARG_STRING, &trustflags, 0, "trust password flags", NULL},
+		{"delete",	'x', POPT_ARG_NONE, &delete_user, 0, "delete user", NULL},
 		{"backend",	'b', POPT_ARG_STRING, &backend, 0, "use different passdb backend as default backend", NULL},
 		{"import",	'i', POPT_ARG_STRING, &backend_in, 0, "import user accounts from this backend", NULL},
 		{"export",	'e', POPT_ARG_STRING, &backend_out, 0, "export user accounts to this backend", NULL},
@@ -991,10 +699,6 @@ int main (int argc, char **argv)
 			(logon_script ? BIT_LOGSCRIPT : 0) +
 			(profile_path ? BIT_PROFILE : 0) +
 			(machine ? BIT_MACHINE : 0) +
-			(trustdom ? BIT_TRUSTDOM : 0) +
-			(trustpw ? BIT_TRUSTPW : 0) +
-			(trustsid ? BIT_TRUSTSID : 0) +
-			(trustflags ? BIT_TRUSTFLAGS : 0) +
 			(user_name ? BIT_USER : 0) +
 			(list_users ? BIT_LIST : 0) +
 			(force_initialised_password ? BIT_FIX_INIT : 0) +
@@ -1094,14 +798,10 @@ int main (int argc, char **argv)
 	/* list users operations */
 	if (checkparms & BIT_LIST) {
 		if (!(checkparms & ~BIT_LIST)) {
-			print_users_list (bdef, verbose, spstyle);
-			return print_trustpw_list(bdef, verbose, spstyle);
+			return print_users_list (bdef, verbose, spstyle);
 		}
 		if (!(checkparms & ~(BIT_USER + BIT_LIST))) {
 			return print_user_info (bdef, user_name, verbose, spstyle);
-
-		} else if (!(checkparms & ~(BIT_TRUSTPW + BIT_LIST))) {
-			return print_trust_info(bdef, trustpw, verbose, spstyle);
 		}
 	}
 	
@@ -1117,21 +817,15 @@ int main (int argc, char **argv)
 	/* account operation */
 	if ((checkparms & BIT_CREATE) || (checkparms & BIT_MODIFY) || (checkparms & BIT_DELETE)) {
 		/* check use of -u option */
-		if (!(checkparms & (BIT_USER + BIT_TRUSTPW))) {
+		if (!(checkparms & BIT_USER)) {
 			fprintf (stderr, "Username not specified! (use -u option)\n");
 			return -1;
 		}
 
 		/* account creation operations */
-		if (!(checkparms & ~(BIT_CREATE + BIT_USER + BIT_MACHINE + BIT_TRUSTDOM))) {
-			/* machine trust account */
+		if (!(checkparms & ~(BIT_CREATE + BIT_USER + BIT_MACHINE))) {
 		       	if (checkparms & BIT_MACHINE) {
 				return new_machine (bdef, user_name);
-			/* interdomain trust account */
-			} else if (checkparms & BIT_TRUSTDOM) {
-				return new_trustdom(bdef, user_name);
-
-			/* ordinary user account */
 			} else {
 				return new_user (bdef, user_name, full_name, home_dir, 
 						 home_drive, logon_script, 
@@ -1160,15 +854,6 @@ int main (int argc, char **argv)
 		}
 	}
 
-	/* trust password operation */
-	if ((checkparms & BIT_CREATE) || (checkparms & BIT_MODIFY) || (checkparms & BIT_DELETE)) {
-		/* trust password creation */
-		if (!(checkparms & ~(BIT_CREATE + BIT_TRUSTPW + BIT_TRUSTSID + BIT_TRUSTFLAGS))) {
-			return new_trustpw(bdef, trustpw, trustsid, trustflags);
-		}		
-	}
-	
-	
 	if (setparms >= 0x20) {
 		fprintf (stderr, "Incompatible or insufficient options on command line!\n");
 	}
@@ -1176,4 +861,3 @@ int main (int argc, char **argv)
 
 	return 1;
 }
-

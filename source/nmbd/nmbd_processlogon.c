@@ -313,8 +313,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 				}
 #ifdef HAVE_ADS
 				else {
-					struct uuid domain_guid;
-					UUID_FLAT flat_guid;
+					GUID domain_guid;
 					pstring domain;
 					pstring hostname;
 					char *component, *dc, *q1;
@@ -341,10 +340,8 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 						DEBUG(2, ("Could not fetch DomainGUID for %s\n", domain));
 						return;
 					}
-
-					smb_uuid_pack(domain_guid, &flat_guid);
-					memcpy(q, &flat_guid.info, UUID_FLAT_SIZE);
-					q += UUID_FLAT_SIZE;
+					memcpy(q, &domain_guid, sizeof(domain_guid));
+					q += sizeof(domain_guid);
 
 					/* Forest */
 					str_offset = q - q_orig;

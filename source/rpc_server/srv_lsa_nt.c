@@ -165,11 +165,6 @@ static void init_lsa_rid2s(DOM_R_REF *ref, DOM_RID2 *rid2,
 
 		status = lookup_name(dom_name, user, &sid, &name_type);
 
-		if (name_type == SID_NAME_WKN_GRP) {
-			/* BUILTIN aliases are still aliases :-) */
-			name_type = SID_NAME_ALIAS;
-		}
-
 		DEBUG(5, ("init_lsa_rid2s: %s\n", status ? "found" : 
 			  "not found"));
 
@@ -344,7 +339,7 @@ static NTSTATUS lsa_get_generic_sd(TALLOC_CTX *mem_ctx, SEC_DESC **sd, size_t *s
 
 static void init_dns_dom_info(LSA_DNS_DOM_INFO *r_l, const char *nb_name,
 			      const char *dns_name, const char *forest_name,
-			      struct uuid *dom_guid, DOM_SID *dom_sid)
+			      GUID *dom_guid, DOM_SID *dom_sid)
 {
 	if (nb_name && *nb_name) {
 		init_unistr2(&r_l->uni_nb_dom_name, nb_name, UNI_FLAGS_NONE);
@@ -369,7 +364,7 @@ static void init_dns_dom_info(LSA_DNS_DOM_INFO *r_l, const char *nb_name,
 
 	/* how do we init the guid ? probably should write an init fn */
 	if (dom_guid) {
-		memcpy(&r_l->dom_guid, dom_guid, sizeof(struct uuid));
+		memcpy(&r_l->dom_guid, dom_guid, sizeof(GUID));
 	}
 	
 	if (dom_sid) {
@@ -405,12 +400,9 @@ NTSTATUS _lsa_open_policy2(pipes_struct *p, LSA_Q_OPEN_POL2 *q_u, LSA_R_OPEN_POL
 		DEBUG(4,("ACCESS should be DENIED (granted: %#010x;  required: %#010x)\n",
 			 acc_granted, des_access));
 		DEBUGADD(4,("but overwritten by euid == 0\n"));
+		acc_granted = des_access;
 	}
 
-	/* This is needed for lsa_open_account and rpcclient .... :-) */
-
-	if (geteuid() == 0)
-		acc_granted = POLICY_ALL_ACCESS;
 
 	/* associate the domain SID with the (unique) handle. */
 	if ((info = (struct lsa_info *)malloc(sizeof(struct lsa_info))) == NULL)
@@ -760,7 +752,7 @@ NTSTATUS _lsa_enum_privs(pipes_struct *p, LSA_Q_ENUM_PRIVS *q_u, LSA_R_ENUM_PRIV
 	LSA_PRIV_ENTRY *entry;
 	LSA_PRIV_ENTRY *entries=NULL;
 
-	if (enum_context >= PRIV_ALL_INDEX-2)
+	if (enum_context >= PRIV_ALL_INDEX)
 		return NT_STATUS_NO_MORE_ENTRIES;
 
 	entries = (LSA_PRIV_ENTRY *)talloc_zero(p->mem_ctx, sizeof(LSA_PRIV_ENTRY) * (PRIV_ALL_INDEX));
@@ -782,22 +774,22 @@ NTSTATUS _lsa_enum_privs(pipes_struct *p, LSA_Q_ENUM_PRIVS *q_u, LSA_R_ENUM_PRIV
 	
 	DEBUG(10,("_lsa_enum_privs: enum_context:%d total entries:%d\n", enum_context, PRIV_ALL_INDEX));
 
-	for (i = 1; i < PRIV_ALL_INDEX-1; i++, entry++) {
+	for (i = 0; i < PRIV_ALL_INDEX; i++, entry++) {
 		if( i<enum_context) {
 			init_unistr2(&entry->name, NULL, UNI_FLAGS_NONE);
 			init_uni_hdr(&entry->hdr_name, &entry->name);
 			entry->luid_low = 0;
 			entry->luid_high = 0;
 		} else {
-			init_unistr2(&entry->name, privs[i].priv, UNI_FLAGS_NONE);
+			init_unistr2(&entry->name, privs[i+1].priv, UNI_FLAGS_NONE);
 			init_uni_hdr(&entry->hdr_name, &entry->name);
-			entry->luid_low = privs[i].se_priv;
+			entry->luid_low = privs[i+1].se_priv;
 			entry->luid_high = 0;
 		}
 	}
 
-	enum_context = PRIV_ALL_INDEX-2;
-	init_lsa_r_enum_privs(r_u, enum_context, PRIV_ALL_INDEX-2, entries);
+	enum_context = PRIV_ALL_INDEX;
+	init_lsa_r_enum_privs(r_u, enum_context, PRIV_ALL_INDEX, entries);
 
 	return NT_STATUS_OK;
 }
@@ -827,10 +819,10 @@ NTSTATUS _lsa_priv_get_dispname(pipes_struct *p, LSA_Q_PRIV_GET_DISPNAME *q_u, L
 
 	DEBUG(10,("_lsa_priv_get_dispname: %s", name_asc));
 
-	while (privs[i].se_priv!=SE_ALL_PRIVS && strcmp(name_asc, privs[i].priv))
+	while (privs[i].se_priv!=SE_PRIV_ALL && strcmp(name_asc, privs[i].priv))
 		i++;
 	
-	if (privs[i].se_priv!=SE_ALL_PRIVS) {
+	if (privs[i].se_priv!=SE_PRIV_ALL) {
 		DEBUG(10,(": %s\n", privs[i].description));
 		init_unistr2(&r_u->desc, privs[i].description, UNI_FLAGS_NONE);
 		init_uni_hdr(&r_u->hdr_desc, &r_u->desc);
@@ -852,36 +844,32 @@ _lsa_enum_accounts.
 NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENUM_ACCOUNTS *r_u)
 {
 	struct lsa_info *handle;
-	DOM_SID *sid_list;
-	int i, j, num_entries;
+	GROUP_MAP *map=NULL;
+	int num_entries=0;
 	LSA_SID_ENUM *sids=&r_u->sids;
+	int i=0,j=0;
+	BOOL ret;
 
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
+	/* check if the user have enough rights */
+
+	/*
+	 * I don't know if it's the right one. not documented.
+	 */
 	if (!(handle->access & POLICY_VIEW_LOCAL_INFORMATION))
 		return NT_STATUS_ACCESS_DENIED;
 
-	sid_list = NULL;
-	num_entries = 0;
-
-	/* The only way we can currently find out all the SIDs that have been
-	   privileged is to scan all privileges */
-
-	for (i=1; i<PRIV_ALL_INDEX-1; i++) {
-		DOM_SID *priv_sids = NULL;
-		int num_priv_sids = 0;
-
-		if (!get_sids_from_priv(privs[i].priv, &priv_sids,
-					&num_priv_sids))
-			continue;
-
-		for (j=0; j<num_priv_sids; j++) {
-			add_sid_to_array_unique(&priv_sids[j], &sid_list,
-						&num_entries);
-		}
-		SAFE_FREE(priv_sids);
+	/* get the list of mapped groups (domain, local, builtin) */
+	become_root();
+	ret = pdb_enum_group_mapping(SID_NAME_UNKNOWN, &map, &num_entries, ENUM_ONLY_MAPPED);
+	unbecome_root();
+	if( !ret ) {
+		DEBUG(3,("_lsa_enum_accounts: enumeration of groups failed!\n"));
+		return NT_STATUS_OK;
 	}
+	
 
 	if (q_u->enum_context >= num_entries)
 		return NT_STATUS_NO_MORE_ENTRIES;
@@ -890,19 +878,19 @@ NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENU
 	sids->sid = (DOM_SID2 *)talloc_zero(p->mem_ctx, (num_entries-q_u->enum_context)*sizeof(DOM_SID2));
 
 	if (sids->ptr_sid==NULL || sids->sid==NULL) {
-		SAFE_FREE(sid_list);
+		SAFE_FREE(map);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	for (i=q_u->enum_context, j=0; i<num_entries; i++) {
-		init_dom_sid2( &(*sids).sid[j], &sid_list[i]);
+		init_dom_sid2( &(*sids).sid[j],  &map[i].sid);
 		(*sids).ptr_sid[j]=1;
 		j++;
 	}
 
-	SAFE_FREE(sid_list);
+	SAFE_FREE(map);
 
-	init_lsa_r_enum_accounts(r_u, num_entries);
+	init_lsa_r_enum_accounts(r_u, j);
 
 	return NT_STATUS_OK;
 }
@@ -935,50 +923,7 @@ NTSTATUS _lsa_unk_get_connuser(pipes_struct *p, LSA_Q_UNK_GET_CONNUSER *q_u, LSA
 }
 
 /***************************************************************************
- Lsa Create Account 
-
- FIXME: Actually the code is just a copy of lsa_open_account
- TODO: Check and code what this function should exactly do
- ***************************************************************************/
-
-NTSTATUS _lsa_create_account(pipes_struct *p, LSA_Q_CREATEACCOUNT *q_u, LSA_R_CREATEACCOUNT *r_u)
-{
-	struct lsa_info *handle;
-	struct lsa_info *info;
-
-	r_u->status = NT_STATUS_OK;
-
-	/* find the connection policy handle. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
-		return NT_STATUS_INVALID_HANDLE;
-
-	/* check if the user have enough rights */
-
-	/*
-	 * I don't know if it's the right one. not documented.
-	 * but guessed with rpcclient.
-	 */
-	if (!(handle->access & POLICY_GET_PRIVATE_INFORMATION))
-		return NT_STATUS_ACCESS_DENIED;
-
-	/* associate the user/group SID with the (unique) handle. */
-	if ((info = (struct lsa_info *)malloc(sizeof(struct lsa_info))) == NULL)
-		return NT_STATUS_NO_MEMORY;
-
-	ZERO_STRUCTP(info);
-	info->sid = q_u->sid.sid;
-	info->access = q_u->access;
-
-	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, &r_u->pol, free_lsa_info, (void *)info))
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-
-	return r_u->status;
-}
-
-
-/***************************************************************************
- Lsa Open Account
+ 
  ***************************************************************************/
 
 NTSTATUS _lsa_open_account(pipes_struct *p, LSA_Q_OPENACCOUNT *q_u, LSA_R_OPENACCOUNT *r_u)
@@ -1023,8 +968,8 @@ NTSTATUS _lsa_open_account(pipes_struct *p, LSA_Q_OPENACCOUNT *q_u, LSA_R_OPENAC
 NTSTATUS _lsa_enum_privsaccount(pipes_struct *p, prs_struct *ps, LSA_Q_ENUMPRIVSACCOUNT *q_u, LSA_R_ENUMPRIVSACCOUNT *r_u)
 {
 	struct lsa_info *info=NULL;
+	GROUP_MAP map;
 	LUID_ATTR *set=NULL;
-	PRIVILEGE_SET *priv;
 
 	r_u->status = NT_STATUS_OK;
 
@@ -1032,36 +977,33 @@ NTSTATUS _lsa_enum_privsaccount(pipes_struct *p, prs_struct *ps, LSA_Q_ENUMPRIVS
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	init_privilege(&priv);
+	if (!pdb_getgrsid(&map, info->sid))
+		return NT_STATUS_NO_SUCH_GROUP;
 
-	if (!get_priv_for_sid(&info->sid, priv)) {
-		/* This is probably wrong... */
-		return NT_STATUS_INVALID_HANDLE;
-	}
-
-	DEBUG(10,("_lsa_enum_privsaccount: %d privileges\n", priv->count));
-
-	if (priv->count > 0) {
-		int i;
-		set=(LUID_ATTR *)talloc(ps->mem_ctx,
-					priv->count*sizeof(LUID_ATTR));
+#if 0 /* privileges currently not implemented! */
+	DEBUG(10,("_lsa_enum_privsaccount: %d privileges\n", map.priv_set->count));
+	if (map.priv_set->count!=0) {
+	
+		set=(LUID_ATTR *)talloc(map.priv_set->mem_ctx, map.priv_set.count*sizeof(LUID_ATTR));
 		if (set == NULL) {
-			destroy_privilege(&priv);
+			destroy_privilege(&map.priv_set);
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		for (i = 0; i < priv->count; i++) {
-			set[i].luid.low = priv->set[i].luid.low;
-			set[i].luid.high = priv->set[i].luid.high;
-			set[i].attr = priv->set[i].attr;
-			DEBUG(10,("_lsa_enum_privsaccount: %d: %d:%d:%d\n", i, 
-				  set[i].luid.high, set[i].luid.low,
-				  set[i].attr));
+		for (i = 0; i < map.priv_set.count; i++) {
+			set[i].luid.low = map.priv_set->set[i].luid.low;
+			set[i].luid.high = map.priv_set->set[i].luid.high;
+			set[i].attr = map.priv_set->set[i].attr;
+			DEBUG(10,("_lsa_enum_privsaccount: priv %d: %d:%d:%d\n", i, 
+				   set[i].luid.high, set[i].luid.low, set[i].attr));
 		}
 	}
 
-	init_lsa_r_enum_privsaccount(ps->mem_ctx, r_u, set, priv->count, 0);
-	destroy_privilege(&priv);	
+	init_lsa_r_enum_privsaccount(ps->mem_ctx, r_u, set, map.priv_set->count, 0);	
+	destroy_privilege(&map.priv_set);	
+#endif
+
+	init_lsa_r_enum_privsaccount(ps->mem_ctx, r_u, set, 0, 0);
 
 	return r_u->status;
 }
@@ -1073,16 +1015,15 @@ NTSTATUS _lsa_enum_privsaccount(pipes_struct *p, prs_struct *ps, LSA_Q_ENUMPRIVS
 NTSTATUS _lsa_getsystemaccount(pipes_struct *p, LSA_Q_GETSYSTEMACCOUNT *q_u, LSA_R_GETSYSTEMACCOUNT *r_u)
 {
 	struct lsa_info *info=NULL;
+	GROUP_MAP map;
 	r_u->status = NT_STATUS_OK;
-	fstring name, dom_name;
-	enum SID_NAME_USE type;
 
 	/* find the connection policy handle. */
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!lookup_sid(&info->sid, dom_name, name, &type))
-		return NT_STATUS_INVALID_HANDLE;
+	if (!pdb_getgrsid(&map, info->sid))
+		return NT_STATUS_NO_SUCH_GROUP;
 
 	/*
 	  0x01 -> Log on locally
@@ -1288,7 +1229,7 @@ NTSTATUS _lsa_query_info2(pipes_struct *p, LSA_Q_QUERY_INFO2 *q_u, LSA_R_QUERY_I
 	char *dns_name = NULL;
 	char *forest_name = NULL;
 	DOM_SID *sid = NULL;
-	struct uuid guid;
+	GUID guid;
 	fstring dnsdomname;
 
 	ZERO_STRUCT(guid);

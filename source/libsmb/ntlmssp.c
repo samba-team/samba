@@ -168,7 +168,9 @@ NTSTATUS ntlmssp_set_password(NTLMSSP_STATE *ntlmssp_state, const char *password
  */
 NTSTATUS ntlmssp_set_domain(NTLMSSP_STATE *ntlmssp_state, const char *domain) 
 {
-	ntlmssp_state->domain = talloc_strdup(ntlmssp_state->mem_ctx, domain);
+	/* Possibly make our NTLMv2 client more robust by always having 
+	   an uppercase domain */
+	ntlmssp_state->domain = talloc_strdup_upper(ntlmssp_state->mem_ctx, domain);
 	if (!ntlmssp_state->domain) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1020,16 +1022,19 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	/* Key exchange encryptes a new client-generated session key with
 	   the password-derived key */
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH) {
+		/* Make up a new session key */
 		uint8 client_session_key[16];
-		
-		generate_random_buffer(client_session_key, sizeof(client_session_key), False);	
+		generate_random_buffer(client_session_key, sizeof(client_session_key), False);
+
+		/* Encrypt the new session key with the old one */
 		encrypted_session_key = data_blob(client_session_key, sizeof(client_session_key));
 		dump_data_pw("KEY_EXCH session key:\n", encrypted_session_key.data, encrypted_session_key.length);
-
 		SamOEMhash(encrypted_session_key.data, session_key.data, encrypted_session_key.length);
+		dump_data_pw("KEY_EXCH session key (enc):\n", encrypted_session_key.data, encrypted_session_key.length);
+
+		/* Mark the new session key as the 'real' session key */
 		data_blob_free(&session_key);
 		session_key = data_blob_talloc(ntlmssp_state->mem_ctx, client_session_key, sizeof(client_session_key));
-		dump_data_pw("KEY_EXCH session key (enc):\n", encrypted_session_key.data, encrypted_session_key.length);
 	}
 
 	/* this generates the actual auth packet */

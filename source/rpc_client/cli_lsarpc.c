@@ -538,7 +538,7 @@ NTSTATUS cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 NTSTATUS cli_lsa_query_info_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				    POLICY_HND *pol, uint16 info_class, 
 				    char **domain_name, char **dns_name,
-				    char **forest_name, struct uuid **domain_guid,
+				    char **forest_name, GUID **domain_guid,
 				    DOM_SID **domain_sid)
 {
 	prs_struct qbuf, rbuf;
@@ -602,7 +602,7 @@ NTSTATUS cli_lsa_query_info_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		*domain_guid = talloc(mem_ctx, sizeof(**domain_guid));
 		memcpy(*domain_guid, 
 		       &r.info.dns_dom_info.dom_guid, 
-		       sizeof(struct uuid));
+		       sizeof(GUID));
 	}
 
 	if (domain_sid && r.info.dns_dom_info.ptr_dom_sid != 0) {
@@ -927,64 +927,6 @@ NTSTATUS cli_lsa_enum_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	*num_sids= r.sids.num_entries;
 	*enum_ctx = r.enum_context;
-
- done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
-	return result;
-}
-
-/** Create a LSA user handle
- *
- * @param cli Handle on an initialised SMB connection
- *
- * FIXME: The code is actually identical to open account
- * TODO: Check and code what the function should exactly do
- *
- * */
-
-NTSTATUS cli_lsa_create_account(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                             POLICY_HND *dom_pol, DOM_SID *sid, uint32 desired_access, 
-			     POLICY_HND *user_pol)
-{
-	prs_struct qbuf, rbuf;
-	LSA_Q_CREATEACCOUNT q;
-	LSA_R_CREATEACCOUNT r;
-	NTSTATUS result;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Initialise parse structures */
-
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
-
-	/* Initialise input parameters */
-
-	init_lsa_q_create_account(&q, dom_pol, sid, desired_access);
-
-	/* Marshall data and send request */
-
-	if (!lsa_io_q_create_account("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, LSA_CREATEACCOUNT, &qbuf, &rbuf)) {
-		result = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
-
-	/* Unmarshall response */
-
-	if (!lsa_io_r_create_account("", &r, &rbuf, 0)) {
-		result = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
-
-	/* Return output parameters */
-
-	if (NT_STATUS_IS_OK(result = r.status)) {
-		*user_pol = r.pol;
-	}
 
  done:
 	prs_mem_free(&qbuf);

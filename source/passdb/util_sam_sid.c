@@ -305,28 +305,3 @@ BOOL map_name_to_wellknown_sid(DOM_SID *sid, enum SID_NAME_USE *use, const char 
 
 	return False;
 }
-
-void add_sid_to_array(const DOM_SID *sid, DOM_SID **sids, int *num)
-{
-	*sids = Realloc(*sids, ((*num)+1) * sizeof(DOM_SID));
-
-	if (*sids == NULL)
-		return;
-
-	sid_copy(&((*sids)[*num]), sid);
-	*num += 1;
-
-	return;
-}
-
-void add_sid_to_array_unique(const DOM_SID *sid, DOM_SID **sids, int *num)
-{
-	int i;
-
-	for (i=0; i<*num; i++) {
-		if (sid_compare(sid, &(*sids)[i]) == 0)
-			return;
-	}
-
-	add_sid_to_array(sid, sids, num);
-}
