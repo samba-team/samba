@@ -63,6 +63,7 @@ struct nbt_iface_name *nbt_find_iname(struct nbt_interface *iface, struct nbt_na
   start listening on the given address
 */
 static NTSTATUS nbt_add_socket(struct nbt_server *nbtsrv, 
+			       const char *bind_address, 
 			       const char *address, 
 			       const char *bcast, 
 			       const char *netmask)
@@ -106,7 +107,7 @@ static NTSTATUS nbt_add_socket(struct nbt_server *nbtsrv,
 	iface->nbtsock = nbt_name_socket_init(iface, nbtsrv->task->event_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(iface->ip_address);
 
-	status = socket_listen(iface->nbtsock->sock, address, lp_nbt_port(), 0, 0);
+	status = socket_listen(iface->nbtsock->sock, bind_address, lp_nbt_port(), 0, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to bind to %s:%d - %s\n", 
 			 address, lp_nbt_port(), nt_errstr(status)));
@@ -157,6 +158,7 @@ NTSTATUS nbt_startup_interfaces(struct nbt_server *nbtsrv)
 		NT_STATUS_HAVE_NO_MEMORY(primary_address);
 
 		status = nbt_add_socket(nbtsrv, 
+					"0.0.0.0",
 					primary_address,
 					talloc_strdup(tmp_ctx, "255.255.255.255"),
 					talloc_strdup(tmp_ctx, "0.0.0.0"));
@@ -168,7 +170,7 @@ NTSTATUS nbt_startup_interfaces(struct nbt_server *nbtsrv)
 		const char *bcast   = talloc_strdup(tmp_ctx, sys_inet_ntoa(*iface_n_bcast(i)));
 		const char *netmask = talloc_strdup(tmp_ctx, sys_inet_ntoa(*iface_n_netmask(i)));
 
-		status = nbt_add_socket(nbtsrv, address, bcast, netmask);
+		status = nbt_add_socket(nbtsrv, address, address, bcast, netmask);
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
