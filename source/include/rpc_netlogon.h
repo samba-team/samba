@@ -57,7 +57,7 @@ typedef struct net_user_info_2
 	uint32 group_id;      /* Group ID */
 ....
 	uint32 num_groups2;        /* num groups */
-	DOM_GID gids[LSA_MAX_GROUPS]; /* group info */
+	DOM_GID *gids; /* group info */
 
 	UNIHDR hdr_logon_srv; /* logon server unicode string header */
 	UNISTR2 uni_logon_dom; /* logon domain unicode string */
@@ -114,7 +114,7 @@ typedef struct net_user_info_3
 	UNISTR2 uni_dir_drive;    /* home directory drive unicode string */
 
 	uint32 num_groups2;        /* num groups */
-	DOM_GID gids[LSA_MAX_GROUPS]; /* group info */
+	DOM_GID *gids; /* group info */
 
 	UNISTR2 uni_logon_srv; /* logon server unicode string */
 	UNISTR2 uni_logon_dom; /* logon domain unicode string */

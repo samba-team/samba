@@ -277,30 +277,37 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
 
   if (usr == NULL)
   {
-	  int i;
-	  extern DOM_SID global_sam_sid;
+	int i;
+	extern DOM_SID global_sam_sid;
 
-	  DEBUG(0,("vuser struct usr being filled in with trash, today\n"));
-	  DEBUG(0,("this needs to be replaced with a proper surs impl.\n"));
-	  DEBUG(0,("e.g. the one used in winbindd.  in fact, all\n"));
-	  DEBUG(0,("occurrences of pdb_xxx_to_xxx should be replaced\n"));
-	  DEBUG(0,("as soon as possible.\n"));
-	  vuser->usr.user_id = pdb_uid_to_user_rid(uid);
-	  vuser->usr.group_id = pdb_gid_to_group_rid(gid);
-	  vuser->usr.num_groups = vuser->n_groups;
-	  for (i = 0; i < vuser->usr.num_groups; i++)
-	  {
-		  DOM_GID *ntgid = &vuser->usr.gids[i];
-		  ntgid->attr = 0x7;
-		  ntgid->g_rid = pdb_gid_to_group_rid(vuser->groups[i]);
-	  }
-	  
-	  /* this is possibly the worst thing to do, ever.  it assumes */
-	  /* that all users of this system are in the local SAM database */
-	  /* however, because there is no code to do anything otherwise, */
-	  /* we have no choice */
+	DEBUG(0,("vuser struct usr being filled in with trash, today\n"));
+	DEBUG(0,("this needs to be replaced with a proper surs impl.\n"));
+	DEBUG(0,("e.g. the one used in winbindd.  in fact, all\n"));
+	DEBUG(0,("occurrences of pdb_xxx_to_xxx should be replaced\n"));
+	DEBUG(0,("as soon as possible.\n"));
+	vuser->usr.user_id = pdb_uid_to_user_rid(uid);
+	vuser->usr.group_id = pdb_gid_to_group_rid(gid);
+	vuser->usr.num_groups = vuser->n_groups;
+	if (vuser->n_groups != 0)
+	{
+		vuser->usr.gids = g_new(DOM_GID, vuser->usr.num_groups);
+		if (vuser->usr.gids == NULL)
+			return UID_FIELD_INVALID;
+	}
 
-	  init_dom_sid2(&vuser->usr.dom_sid, &global_sam_sid);
+	for (i = 0; i < vuser->usr.num_groups; i++)
+	{
+		DOM_GID *ntgid = &vuser->usr.gids[i];
+		ntgid->attr = 0x7;
+		ntgid->g_rid = pdb_gid_to_group_rid(vuser->groups[i]);
+	}
+
+	/* this is possibly the worst thing to do, ever.  it assumes */
+	/* that all users of this system are in the local SAM database */
+	/* however, because there is no code to do anything otherwise, */
+	/* we have no choice */
+
+	init_dom_sid2(&vuser->usr.dom_sid, &global_sam_sid);
   }
   else
   {
@@ -1525,12 +1532,19 @@ BOOL domain_client_validate( char *user, char *domain,
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
 
+    /* unused, so delete here. */
+    if (info3.gids != NULL)
+	    free (info3.gids);
+
     if((nt_rpc_err == NT_STATUS_NO_SUCH_USER) && (user_exists != NULL))
       *user_exists = False;
 
     return False;
   }
 
+    /* unused, so delete here. */
+    if (info3.gids != NULL)
+	    free (info3.gids);
   /*
    * Here, if we really want it, we have lots of info about the user in info3.
    */

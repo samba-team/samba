@@ -1070,10 +1070,14 @@ void init_net_user_info3(NET_USER_INFO_3 *usr,
 
 	usr->num_groups2 = num_groups;
 
-	SMB_ASSERT_ARRAY(usr->gids, num_groups);
-
-	for (i = 0; i < num_groups; i++)
-		usr->gids[i] = gids[i];
+	if (num_groups > 0)
+	{
+		usr->gids = g_new(DOM_GID, num_groups);
+		if (usr->gids == NULL)
+			return;
+		for (i = 0; i < num_groups; i++)
+			usr->gids[i] = gids[i];
+	}
 
 	init_unistr2(&usr->uni_logon_srv, logon_srv, len_logon_srv);
 	init_unistr2(&usr->uni_logon_dom, logon_dom, len_logon_dom);
@@ -1183,7 +1187,14 @@ static BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 *usr, prs_struct *ps, 
 		return False;
 	if(!prs_uint32("num_groups2   ", ps, depth, &usr->num_groups2))        /* num groups */
 		return False;
-	SMB_ASSERT_ARRAY(usr->gids, usr->num_groups2);
+
+	if (UNMARSHALLING(ps) && usr->num_groups2 > 0)
+	{
+		usr->gids = g_new(DOM_GID, usr->num_groups2);
+		if (usr->gids == NULL)
+			return False;
+	}
+
 	for (i = 0; i < usr->num_groups2; i++) {
 		if(!smb_io_gid("", &usr->gids[i], ps, depth)) /* group info */
 			return False;

@@ -42,6 +42,14 @@
 #define IS_DOS_SYSTEM(test_mode)   (((test_mode) & aSYSTEM) != 0)
 #define IS_DOS_HIDDEN(test_mode)   (((test_mode) & aHIDDEN) != 0)
 
+/* memory-allocation-helpers (idea and names from glib) */
+#define g_new(type, count) \
+	((type *) malloc(sizeof(type) * (count)))
+#define g_new0(type, count) \
+	((type *) calloc((count), sizeof(type)))
+#define g_renew(type, mem, count) \
+	((type *) Realloc(mem, sizeof(type) * (count)))
+
 /* zero a structure */
 #define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
 
