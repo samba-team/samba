@@ -286,7 +286,9 @@ static BOOL test_NetCharDevQEnum(struct dcerpc_pipe *p,
 	return ret;
 }
 
-
+/**************************/
+/* srvsvc_NetConn         */
+/**************************/
 static BOOL test_NetConnEnum(struct dcerpc_pipe *p, 
 			   TALLOC_CTX *mem_ctx)
 {
@@ -321,9 +323,12 @@ static BOOL test_NetConnEnum(struct dcerpc_pipe *p,
 		}
 	}
 
-	return True;
+	return ret;
 }
 
+/**************************/
+/* srvsvc_NetFile         */
+/**************************/
 static BOOL test_NetFileEnum(struct dcerpc_pipe *p, 
 			   TALLOC_CTX *mem_ctx)
 {
@@ -359,9 +364,12 @@ static BOOL test_NetFileEnum(struct dcerpc_pipe *p,
 		}
 	}
 
-	return True;
+	return ret;
 }
 
+/**************************/
+/* srvsvc_NetSess         */
+/**************************/
 static BOOL test_NetSessEnum(struct dcerpc_pipe *p, 
 			   TALLOC_CTX *mem_ctx)
 {
@@ -397,7 +405,7 @@ static BOOL test_NetSessEnum(struct dcerpc_pipe *p,
 		}
 	}
 
-	return True;
+	return ret;
 }
 
 /**************************/
@@ -439,6 +447,9 @@ static BOOL test_NetShareGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+/**************************/
+/* srvsvc_NetShare        */
+/**************************/
 static BOOL test_NetShareEnumAll(struct dcerpc_pipe *p, 
 				 TALLOC_CTX *mem_ctx)
 {
@@ -524,7 +535,7 @@ static BOOL test_NetShareEnum(struct dcerpc_pipe *p,
 		}
 	}
 
-	return True;
+	return ret;
 }
 
 /**************************/
