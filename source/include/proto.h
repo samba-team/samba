@@ -111,6 +111,7 @@ struct work_record *remove_workgroup(struct domain_record *d,
 void expire_browse_cache(time_t t);
 struct work_record *find_workgroupstruct(struct domain_record *d, fstring name, BOOL add);
 struct domain_record *find_domain(struct in_addr source_ip);
+void dump_workgroups(void);
 struct domain_record *add_domain_entry(struct in_addr source_ip, 
 				       struct in_addr source_mask,
 				       char *name, BOOL add);
@@ -142,7 +143,8 @@ void reply_netbios_packet(struct packet_struct *p1,int trn_id,int rcode,int opco
 			  struct nmb_name *rr_name,int rr_type,int rr_class,int ttl,
 			  char *data,int len);
 uint16 initiate_netbios_packet(int fd,int quest_type,char *name,int name_type,
-			       int nb_flags,BOOL bcast,BOOL recurse,struct in_addr to_ip);
+			       int nb_flags,BOOL bcast,BOOL recurse,
+			       struct in_addr to_ip);
 void queue_netbios_pkt_wins(int fd,int quest_type,enum cmd_type cmd,
 			    char *name,int name_type,int nb_flags,
 			    BOOL bcast,BOOL recurse,struct in_addr to_ip);
