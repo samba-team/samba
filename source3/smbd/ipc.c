@@ -462,6 +462,10 @@ static int check_printq_info(struct pack_desc* desc,
   case 5:
     desc->format = "z";
     break;
+  case 52:
+    desc->format = "WzzzzzzzzN";
+    desc->subformat = "z";
+    break;
   default: return False;
   }
   if (strcmp(desc->format,id1) != 0) return False;
@@ -521,11 +525,18 @@ static void fill_printq_info(int cnum, int snum, int uLevel,
  			     int count, print_queue_struct* queue,
  			     print_status_struct* status)
 {
-  if (uLevel < 3) {
-    PACKS(desc,"B13",SERVICE(snum));
-  } else {
-    PACKS(desc,"z",Expand(cnum,snum,SERVICE(snum)));
+  switch (uLevel) {
+    case 1:
+    case 2:
+      PACKS(desc,"B13",SERVICE(snum));
+      break;
+    case 3:
+    case 4:
+    case 5:
+      PACKS(desc,"z",Expand(cnum,snum,SERVICE(snum)));
+      break;
   }
+
   if (uLevel == 1 || uLevel == 2) {
     PACKS(desc,"B","");		/* alignment */
     PACKI(desc,"W",5);		/* priority */
@@ -573,8 +584,117 @@ static void fill_printq_info(int cnum, int snum, int uLevel,
     for (i=0;i<count;i++)
       fill_printjob_info(cnum,snum,uLevel == 2 ? 1 : 2,desc,&queue[i],i);
   }
- 
+
+  if (uLevel==52) {
+    int i,ok=0;
+    pstring tok,driver,short_name;
+    char *p,*q;
+    FILE *f;
+    pstring fname;
+
+    strcpy(fname,lp_driverfile());
+
+    f=fopen(fname,"r");
+    if (!f) {
+      DEBUG(0,("fill_printq_info: Can't open %s - %s\n",fname,strerror(errno)));
+    }
+
+    p=(char *)malloc(8192*sizeof(char));
+    bzero(p, 8192*sizeof(char));
+    q=p;
+
+    /* lookup the long printer driver name in the file description */
+    while (f && !feof(f) && !ok)
+    {
+      fgets(p,8191,f);
+      p[strlen(p)-1]='\0';
+      next_token(&p,tok,":");
+      if(!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum)))) ok=1;
+    }
+
+    fclose(f);
+
+    next_token(&p,short_name,":");
+    next_token(&p,driver,":");
+
+    PACKI(desc,"W",0x0400);                      /* don't know */
+    PACKS(desc,"z",lp_printerdriver(snum));        /* long printer name */
+
+    if (ok)
+    {
+      PACKS(desc,"z",driver);                    /* Driver Name */
+      PACKS(desc,"z",short_name);                /* short printer name */
+      DEBUG(3,("Driver:%s:\n",driver));
+      DEBUG(3,("short name:%s:\n",short_name));
+    }
+    else 
+    {
+      PACKS(desc,"z","");
+      PACKS(desc,"z","");
+    }
+
+    PACKS(desc,"z","");
+    PACKS(desc,"z",lp_driverlocation(snum));       /* share to retrieve files */
+    PACKS(desc,"z","EMF");
+    PACKS(desc,"z","");
+    if (ok)
+      PACKS(desc,"z",driver);                      /* driver name */
+    else
+      PACKS(desc,"z","");
+    PACKI(desc,"N",count);                         /* number of files to copy */
+    for (i=0;i<count;i++)
+    {
+      next_token(&p,tok,",");
+      PACKS(desc,"z",tok);                        /* driver files to copy */
+      DEBUG(3,("file:%s:\n",tok));
+    }
+    free(q);
+  }
+
   DEBUG(3,("fill_printq_info on <%s> gave %d entries\n",SERVICE(snum),count));
+}
+
+/* This function returns the number of file for a given driver */
+int get_printerdrivernumber(int snum)
+{
+  int i=0,ok=0;
+  pstring tok;
+  char *p,*q;
+  FILE *f;
+  pstring fname;
+
+  strcpy(fname,lp_driverfile());
+
+  DEBUG(4,("In get_printerdrivernumber: %s\n",fname));
+  f=fopen(fname,"r");
+  if (!f) {
+    DEBUG(0,("get_printerdrivernumber: Can't open %s - %s\n",fname,strerror(errno)));
+    return(0);
+  }
+
+  p=(char *)malloc(8192*sizeof(char));
+  q=p; /* need it to free memory because p change ! */
+
+  /* lookup the long printer driver name in the file description */
+  while (!feof(f) && !ok)
+  {
+    fgets(p,8191,f);
+    next_token(&p,tok,":");
+    if(!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum)))) ok=1;
+  }
+
+  if (ok) {
+    /* skip 2 fields */
+    next_token(&p,tok,":");  /* short name */
+    next_token(&p,tok,":");  /* driver name */
+    /* count the number of files */
+    while (next_token(&p,tok,","))
+       i++;
+  }
+  fclose(f);
+  free(q);
+
+  return(i);
 }
 
 static BOOL api_DosPrintQGetInfo(int cnum,uint16 vuid, char *param,char *data,
@@ -622,7 +742,14 @@ static BOOL api_DosPrintQGetInfo(int cnum,uint16 vuid, char *param,char *data,
   
   if (snum < 0 || !VALID_SNUM(snum)) return(False);
 
-  count = get_printqueue(snum,cnum,&queue,&status);
+  if (uLevel==52)
+  {
+    count = get_printerdrivernumber(snum);
+    DEBUG(3,("api_DosPrintQGetInfo: Driver files count: %d\n",count));
+  }
+  else
+    count = get_printqueue(snum,cnum,&queue,&status);
+
   if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
   desc.base = *rdata;
   desc.buflen = mdrcnt;

@@ -159,6 +159,7 @@ struct in_addr *iface_ip(struct in_addr ip);
 
 /*The following definitions come from  ipc.c  */
 
+int get_printerdrivernumber(int snum);
 int reply_trans(char *inbuf,char *outbuf);
 
 /*The following definitions come from  kanji.c  */
@@ -203,6 +204,7 @@ char *lp_socket_address(void);
 char *lp_nis_home_map_name(void);
 char *lp_announce_version(void);
 char *lp_netbios_aliases(void);
+char *lp_driverfile(void);
 char *lp_domain_sid(void);
 char *lp_domain_other_sids(void);
 char *lp_domain_groups(void);
@@ -285,6 +287,7 @@ char *lp_volume(int );
 char *lp_mangled_map(int );
 char *lp_veto_files(int );
 char *lp_hide_files(int );
+char *lp_driverlocation(int );
 BOOL lp_alternate_permissions(int );
 BOOL lp_revalidate(int );
 BOOL lp_casesensitive(int );

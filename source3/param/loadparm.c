@@ -147,6 +147,7 @@ typedef struct
   char *szDomainSID;
   char *szDomainOtherSIDs;
   char *szDomainGroups;
+  char *szDriverFile;
   int max_log_size;
   int mangled_stack;
   int max_xmit;
@@ -222,6 +223,7 @@ typedef struct
   char *szLpresumecommand;
   char *szPrintername;
   char *szPrinterDriver;
+  char *szPrinterDriverLocation;
   char *szDontdescend;
   char *szHostsallow;
   char *szHostsdeny;
@@ -305,6 +307,7 @@ static service sDefault =
   NULL,    /* szLpresumecommand */
   NULL,    /* szPrintername */
   NULL,    /* szPrinterDriver - this is set in init_globals() */
+  NULL,    /* szPrinterDriverLocation */
   NULL,    /* szDontdescend */
   NULL,    /* szHostsallow */
   NULL,    /* szHostsdeny */
@@ -494,6 +497,7 @@ struct parm_struct
   {"unix realname",    P_BOOL,    P_GLOBAL, &Globals.bUnixRealname,     NULL},
   {"NIS homedir",      P_BOOL,    P_GLOBAL, &Globals.bNISHomeMap,       NULL},
   {"time server",      P_BOOL,    P_GLOBAL, &Globals.bTimeServer,	NULL},
+  {"printer driver file", P_STRING,  P_GLOBAL, &Globals.szDriverFile,   NULL},
   {"-valid",           P_BOOL,    P_LOCAL,  &sDefault.valid,            NULL},
   {"comment",          P_STRING,  P_LOCAL,  &sDefault.comment,          NULL},
   {"copy",             P_STRING,  P_LOCAL,  &sDefault.szCopy,    handle_copy},
@@ -576,6 +580,7 @@ struct parm_struct
   {"printer",          P_STRING,  P_LOCAL,  &sDefault.szPrintername,    NULL},
   {"printer name",     P_STRING,  P_LOCAL,  &sDefault.szPrintername,    NULL},
   {"printer driver",   P_STRING,  P_LOCAL,  &sDefault.szPrinterDriver,  NULL},
+  {"printer driver location",   P_STRING,  P_LOCAL,  &sDefault.szPrinterDriverLocation,  NULL},
   {"hosts allow",      P_STRING,  P_LOCAL,  &sDefault.szHostsallow,     NULL},
   {"allow hosts",      P_STRING,  P_LOCAL,  &sDefault.szHostsallow,     NULL},
   {"hosts deny",       P_STRING,  P_LOCAL,  &sDefault.szHostsdeny,      NULL},
@@ -627,6 +632,7 @@ static void init_globals(void)
   string_set(&Globals.szWorkGroup, WORKGROUP);
   string_set(&Globals.szPasswdProgram, SMB_PASSWD);
   string_set(&Globals.szPrintcapname, PRINTCAP_NAME);
+  string_set(&Globals.szDriverFile, DRIVERFILE);
   string_set(&Globals.szLockDir, LOCKDIR);
   string_set(&Globals.szRootdir, "/");
   string_set(&Globals.szSmbrun, SMBRUN);
@@ -868,6 +874,7 @@ FN_GLOBAL_STRING(lp_socket_address,&Globals.szSocketAddress)
 FN_GLOBAL_STRING(lp_nis_home_map_name,&Globals.szNISHomeMapName)
 FN_GLOBAL_STRING(lp_announce_version,&Globals.szAnnounceVersion)
 FN_GLOBAL_STRING(lp_netbios_aliases,&Globals.szNetbiosAliases)
+FN_GLOBAL_STRING(lp_driverfile,&Globals.szDriverFile)
 
 FN_GLOBAL_STRING(lp_domain_sid,&Globals.szDomainSID)
 FN_GLOBAL_STRING(lp_domain_other_sids,&Globals.szDomainOtherSIDs)
@@ -954,6 +961,7 @@ FN_LOCAL_STRING(lp_volume,volume)
 FN_LOCAL_STRING(lp_mangled_map,szMangledMap)
 FN_LOCAL_STRING(lp_veto_files,szVetoFiles)
 FN_LOCAL_STRING(lp_hide_files,szHideFiles)
+FN_LOCAL_STRING(lp_driverlocation,szPrinterDriverLocation)
 
 FN_LOCAL_BOOL(lp_alternate_permissions,bAlternatePerm)
 FN_LOCAL_BOOL(lp_revalidate,bRevalidate)
