@@ -591,12 +591,6 @@ static const struct {
 	{ NULL }
 };
 
-/* Yuck - we need these because we link to printing*.o even though
-   they aren't used. */
-
-void become_root(void) {}
-void unbecome_root(void) {}
-
 /* Display usage information */
 
 static void usage(poptContext *pc)

@@ -51,10 +51,6 @@ static int iNumNonAutoPrintServices = 0;
 #define ENABLE_USER_FLAG "enable_user_flag"
 #define RHOST "remote_host"
 
-/* we need these because we link to locking*.o */
- void become_root(void) {}
- void unbecome_root(void) {}
-
 /****************************************************************************
 ****************************************************************************/
 static int enum_index(int value, const struct enum_list *enumlist)
