@@ -61,7 +61,7 @@ typedef struct {
   char *name;
   int hashsize;
   int (*hash)(const char *s, size_t len, unsigned char *res);
-  int (*init)(OtpKey key, char *pwd, char *seed);
+  int (*init)(OtpKey key, const char *pwd, const char *seed);
   int (*next)(OtpKey key);
 } OtpAlgorithm;
 
