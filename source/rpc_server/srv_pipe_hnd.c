@@ -84,7 +84,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name, const vuser_key *key,
 	int i;
 	pipes_struct *p;
 	static int next_pipe;
-	struct msrpc_state *m = NULL;
+	struct msrpc_local *m = NULL;
 
 	DEBUG(4,("Open pipe requested %s by [%x,%d] (pipes_open=%d)\n",
 		 pipe_name, key->pid, key->vuid, pipes_open));

@@ -34,19 +34,19 @@ static void free_sock(void *sock)
 {
 	if (sock != NULL)
 	{
-		struct msrpc_state *n = (struct msrpc_state*)sock;
+		struct msrpc_local *n = (struct msrpc_local*)sock;
 		msrpc_use_del(n->pipe_name, False, NULL);
 	}
 }
 
-static struct msrpc_state *init_client_connection(int c)
+static struct msrpc_local *init_client_connection(int c)
 {
 	pstring buf;
 	fstring pipe_name;
 	int rl;
 	uint32 len;
 	BOOL new_con = False;
-	struct msrpc_state *n = NULL;
+	struct msrpc_local *n = NULL;
 
 	CREDS_CMD cmd;
 	prs_struct ps;
@@ -153,7 +153,7 @@ static struct msrpc_state *init_client_connection(int c)
 static BOOL process_cli_sock(struct sock_redir **socks, uint32 num_socks,
 				struct sock_redir *sock)
 {
-	struct msrpc_state *n = (struct msrpc_state*)sock->n;
+	struct msrpc_local *n = (struct msrpc_local*)sock->n;
 	if (n == NULL)
 	{
 		n = init_client_connection(sock->c);
@@ -195,12 +195,12 @@ static BOOL process_srv_sock(struct sock_redir **socks, uint32 num_socks,
 
 	for (i = 0; i < num_socks; i++)
 	{
-		struct msrpc_state *n;
+		struct msrpc_local *n;
 		if (socks[i] == NULL || socks[i]->n == NULL)
 		{
 			continue;
 		}
-		n = (struct msrpc_state*)socks[i]->n;
+		n = (struct msrpc_local*)socks[i]->n;
 		DEBUG(10,("list:\tfd:\t%d\n",
 		           socks[i]->s));
 		if (!send_smb(socks[i]->c, packet))

@@ -150,7 +150,7 @@ BOOL msrpc_receive(int fd, prs_struct *ps)
 /****************************************************************************
 open the msrpcent sockets
 ****************************************************************************/
-BOOL msrpc_connect(struct msrpc_state *msrpc, const char *pipe_name)
+BOOL msrpc_connect(struct msrpc_local *msrpc, const char *pipe_name)
 {
 	fstring path;
 	slprintf(path, sizeof(path)-1, "%s/.msrpc/%s", LOCKDIR, pipe_name);
@@ -171,7 +171,7 @@ BOOL msrpc_connect(struct msrpc_state *msrpc, const char *pipe_name)
 /****************************************************************************
 close the socket descriptor
 ****************************************************************************/
-void msrpc_close_socket(struct msrpc_state *msrpc)
+void msrpc_close_socket(struct msrpc_local *msrpc)
 {
 	if (msrpc->fd != -1) 
 	{
@@ -184,13 +184,13 @@ void msrpc_close_socket(struct msrpc_state *msrpc)
 /****************************************************************************
 set socket options on a open connection
 ****************************************************************************/
-void msrpc_sockopt(struct msrpc_state *msrpc, char *options)
+void msrpc_sockopt(struct msrpc_local *msrpc, char *options)
 {
 	set_socket_options(msrpc->fd, options);
 }
 
 
-static BOOL msrpc_authenticate(struct msrpc_state *msrpc)
+static BOOL msrpc_authenticate(struct msrpc_local *msrpc)
 {
 	int sock = msrpc->fd;
 	uint32 len;
@@ -229,7 +229,7 @@ static BOOL msrpc_authenticate(struct msrpc_state *msrpc)
 	}
 	if (msrpc->redirect)
 	{
-		struct msrpc_state msrpc_redir;
+		struct msrpc_local msrpc_redir;
 		len = read(sock, &msrpc_redir, sizeof(msrpc_redir));
 
 		if (len != sizeof(msrpc_redir))
@@ -253,7 +253,7 @@ static BOOL msrpc_authenticate(struct msrpc_state *msrpc)
 	return True;
 }
 
-static BOOL msrpc_init_redirect(struct msrpc_state *msrpc,
+static BOOL msrpc_init_redirect(struct msrpc_local *msrpc,
 				const char* pipe_name)
 {
 	int sock;
@@ -281,7 +281,7 @@ static BOOL msrpc_init_redirect(struct msrpc_state *msrpc,
 	return True;
 }
 
-BOOL msrpc_connect_auth(struct msrpc_state *msrpc,
+BOOL msrpc_connect_auth(struct msrpc_local *msrpc,
 				const vuser_key *key,
 				const char* pipename)
 {
@@ -304,12 +304,12 @@ BOOL msrpc_connect_auth(struct msrpc_state *msrpc,
 /****************************************************************************
 initialise a msrpcent structure
 ****************************************************************************/
-struct msrpc_state *msrpc_initialise(struct msrpc_state *msrpc,
+struct msrpc_local *msrpc_initialise(struct msrpc_local *msrpc,
 				const vuser_key *key)
 {
 	if (!msrpc)
 	{
-		msrpc = (struct msrpc_state *)malloc(sizeof(*msrpc));
+		msrpc = (struct msrpc_local *)malloc(sizeof(*msrpc));
 		if (!msrpc)
 			return NULL;
 		ZERO_STRUCTP(msrpc);
@@ -359,7 +359,7 @@ struct msrpc_state *msrpc_initialise(struct msrpc_state *msrpc,
 /****************************************************************************
 shutdown a msrpcent structure
 ****************************************************************************/
-void msrpc_shutdown(struct msrpc_state *msrpc)
+void msrpc_shutdown(struct msrpc_local *msrpc)
 {
 	DEBUG(10,("msrpc_shutdown\n"));
 	if (msrpc->outbuf)
@@ -377,7 +377,7 @@ void msrpc_shutdown(struct msrpc_state *msrpc)
 /****************************************************************************
 establishes a connection right up to doing tconX, reading in a password.
 ****************************************************************************/
-BOOL msrpc_establish_connection(struct msrpc_state *msrpc,
+BOOL msrpc_establish_connection(struct msrpc_local *msrpc,
 				const char *pipe_name)
 {
 	DEBUG(5,("msrpc_establish_connection: connecting to %s\n",

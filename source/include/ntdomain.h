@@ -187,7 +187,7 @@ typedef struct pipes_struct
 	fstring pipe_srv_name;
 
 	/* remote, server-side rpc redirection */
-	struct msrpc_state *m;
+	struct msrpc_local *m;
 
 	/* local, server-side rpc state processing */
 	rpcsrv_struct *l;

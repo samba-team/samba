@@ -12,23 +12,23 @@ void start_msrpc_agent(char *pipe_name);
 BOOL receive_msrpc(int fd, prs_struct *data, unsigned int timeout);
 BOOL msrpc_send(int fd, prs_struct *ps);
 BOOL msrpc_receive(int fd, prs_struct *ps);
-BOOL msrpc_connect(struct msrpc_state *msrpc, const char *pipe_name);
-void msrpc_close_socket(struct msrpc_state *msrpc);
-void msrpc_sockopt(struct msrpc_state *msrpc, char *options);
-BOOL msrpc_connect_auth(struct msrpc_state *msrpc,
+BOOL msrpc_connect(struct msrpc_local *msrpc, const char *pipe_name);
+void msrpc_close_socket(struct msrpc_local *msrpc);
+void msrpc_sockopt(struct msrpc_local *msrpc, char *options);
+BOOL msrpc_connect_auth(struct msrpc_local *msrpc,
 				const vuser_key *key,
 				const char* pipename);
-struct msrpc_state *msrpc_initialise(struct msrpc_state *msrpc,
+struct msrpc_local *msrpc_initialise(struct msrpc_local *msrpc,
 				const vuser_key *key);
-void msrpc_shutdown(struct msrpc_state *msrpc);
-BOOL msrpc_establish_connection(struct msrpc_state *msrpc,
+void msrpc_shutdown(struct msrpc_local *msrpc);
+BOOL msrpc_establish_connection(struct msrpc_local *msrpc,
 				const char *pipe_name);
 
 /*The following definitions come from  lib/msrpc_use.c  */
 
 void init_msrpc_use(void);
 void free_msrpc_use(void);
-struct msrpc_state *msrpc_use_add(const char* pipe_name,
+struct msrpc_local *msrpc_use_add(const char* pipe_name,
 				const vuser_key *key,
 				BOOL redir);
 BOOL msrpc_use_del(const char* pipe_name,

@@ -1824,7 +1824,7 @@ struct ntdom_info
 	vuser_key key;
 };
 
-struct msrpc_state
+struct msrpc_local
 {
 	fstring pipe_name;
 	struct ntdom_info nt;

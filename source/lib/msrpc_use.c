@@ -31,7 +31,7 @@ extern pstring global_myname;
 
 struct msrpc_use
 {
-	struct msrpc_state *cli;
+	struct msrpc_local *cli;
 	uint32 num_users;
 };
 
@@ -171,7 +171,7 @@ static struct msrpc_use *msrpc_use_get(const char* pipe_name,
 /****************************************************************************
 init client state
 ****************************************************************************/
-struct msrpc_state *msrpc_use_add(const char* pipe_name,
+struct msrpc_local *msrpc_use_add(const char* pipe_name,
 				const vuser_key *key,
 				BOOL redir)
 {

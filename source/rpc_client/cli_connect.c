@@ -52,7 +52,7 @@ struct cli_connection
 	union
 	{
 		struct msrpc_smb *smb;
-		struct msrpc_state *local;
+		struct msrpc_local *local;
 		void* cli;
 	} msrpc;
 
