@@ -559,8 +559,8 @@ sub RewriteC($$$)
 
 	# Bitmaps
 
-        s/(^(static\ )?NTSTATUS\ ndr_pull_(.+?),\ uint32\ \*r\))
-	    /NTSTATUS ndr_pull_$3, pidl_tree *tree, int hf, uint32_t *r)/smgx;
+        s/(^(static\ )?NTSTATUS\ ndr_pull_(.+?),\ uint(8|16|32)\ \*r\))
+	    /NTSTATUS ndr_pull_$3, pidl_tree *tree, int hf, uint$4_t *r)/smgx;
 
 	# Call ethereal wrappers for pull of scalar values in
 	# structures and functions, e.g
@@ -698,7 +698,14 @@ sub RewriteC($$$)
     
     if (defined($if_uuid)) {
 
-	pidl "\tproto_dcerpc_pidl_$module = proto_register_protocol(\"pidl_$module\", \"pidl_$module\", \"pidl_$module\");\n\n";
+	# These can be changed to non-pidl names if the old dissectors
+	# in epan/dissctors are deleted.
+
+	my $name = uc($module) . " (pidl)";
+	my $short_name = "pidl_$module";
+	my $filter_name = "pidl_$module";
+
+	pidl "\tproto_dcerpc_pidl_$module = proto_register_protocol(\"$name\", \"$short_name\", \"$filter_name\");\n\n";
 
 	pidl "\tproto_register_field_array(proto_dcerpc_pidl_$module, hf, array_length (hf));\n";
 	pidl "\tproto_register_subtree_array(ett, array_length(ett));\n";
