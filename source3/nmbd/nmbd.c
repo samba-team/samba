@@ -566,6 +566,9 @@ int main(int argc,char *argv[])
 
   charset_initialise();
 
+  if(!initialize_password_db())
+    exit(1);
+
 #ifdef LMHOSTSFILE
   pstrcpy( host_file, LMHOSTSFILE );
 #endif
