@@ -58,7 +58,6 @@ INSTALLPERMS = 0755
 LOGFILEBASE = @logfilebase@
 CONFIGFILE = $(LIBDIR)/smb.conf
 LMHOSTSFILE = $(LIBDIR)/lmhosts
-DRIVERFILE = $(LIBDIR)/printers.def
 # This is where smbpasswd et al go
 PRIVATEDIR = @privatedir@
 
