@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -69,9 +69,11 @@ krb5_init_context(krb5_context *context)
 
     if (ret == 0)
 	p->cf = tmp_cf;
+#if 0
     else
 	krb5_warnx (p, "Unable to parse config file %s.  Ignoring.",
 		    config_file); /* XXX */
+#endif
 
     p->max_skew = 5 * 60;
     val = krb5_config_get_time (p, NULL, "libdefaults", "clockskew", NULL);
