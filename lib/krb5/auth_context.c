@@ -79,14 +79,23 @@ krb5_auth_con_getkey(krb5_context context,
 		     krb5_auth_context auth_context,
 		     krb5_keyblock **keyblock)
 {
+  *keyblock = malloc(sizeof(**keyblock));
+  if (*keyblock == NULL)
+    return ENOMEM;
+  (*keyblock)->keytype = auth_context->key.keytype;
+  (*keyblock)->contents.length = 0;
+  return krb5_data_copy (&(*keyblock)->contents,
+			 auth_context->key.contents.data,
+			 auth_context->key.contents.length);
 }
 
 
-/* ??? */
 void
-krb5_free_keyblock(krb5_keyblock *keyblock)
+krb5_free_keyblock(krb5_context context,
+		   krb5_keyblock *keyblock)
 {
-  
+  krb5_data_free (&keyblock->contents);
+  free (keyblock);
 }
 
 krb5_error_code
