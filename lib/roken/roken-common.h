@@ -40,6 +40,10 @@
 #define INADDR_NONE 0xffffffff
 #endif
 
+#ifndef INADDR_LOOPBACK
+#define INADDR_LOOPBACK 0x7f000001
+#endif
+
 #ifndef SOMAXCONN
 #define SOMAXCONN 5
 #endif
