@@ -492,6 +492,75 @@ struct sam_passwd *getsam21pwrid(uint32 rid)
  **********************************************************
  **********************************************************/
 
+/*************************************************************
+ initialises a struct smb_passwd.
+ **************************************************************/
+void pdb_init_sam(struct smb_passwd *user)
+{
+	if (user == NULL) return;
+
+	bzero(user, sizeof(*user));
+	user->pass_last_set_time    = (time_t)-1;
+}
+
+/*************************************************************
+ initialises a struct sam_passwd.
+ **************************************************************/
+void pdb_init_sam(struct sam_passwd *user)
+{
+	if (user == NULL) return;
+
+	bzero(user, sizeof(*user));
+	user->logon_time            = (time_t)-1;
+	user->logoff_time           = (time_t)-1;
+	user->kickoff_time          = (time_t)-1;
+	user->pass_last_set_time    = (time_t)-1;
+	user->pass_can_change_time  = (time_t)-1;
+	user->pass_must_change_time = (time_t)-1;
+}
+
+/*************************************************************
+ converts a sam_passwd structure to a smb_passwd structure.
+ **************************************************************/
+struct smb_passwd *pdb_sam_to_smb(struct sam_passwd *user)
+{
+	static struct smb_passwd pw_buf;
+
+	if (user == NULL) return NULL;
+
+	pdb_init_sam(&pw_buf);
+
+	pw_buf.smb_userid         = user->smb_userid;
+	pw_buf.smb_name           = user->smb_name;
+	pw_buf.smb_passwd         = user->smb_passwd;
+	pw_buf.smb_nt_passwd      = user->smb_nt_passwd;
+	pw_buf.acct_ctrl          = user->acct_ctrl;
+	pw_buf.pass_last_set_time = user->pass_last_set_time;
+
+	return &pw_buf;
+}
+
+/*************************************************************
+ converts a smb_passwd structure to a sam_passwd structure.
+ **************************************************************/
+struct sam_passwd *pdb_smb_to_sam(struct smb_passwd *user)
+{
+	static struct sam_passwd pw_buf;
+
+	if (user == NULL) return NULL;
+
+	pdb_init_smb(&pw_buf);
+
+	pw_buf.smb_userid         = user->smb_userid;
+	pw_buf.smb_name           = user->smb_name;
+	pw_buf.smb_passwd         = user->smb_passwd;
+	pw_buf.smb_nt_passwd      = user->smb_nt_passwd;
+	pw_buf.acct_ctrl          = user->acct_ctrl;
+	pw_buf.pass_last_set_time = user->pass_last_set_time;
+
+	return &pw_buf;
+}
+
 /*******************************************************************
  gets password-database-format time from a string.
  ********************************************************************/
