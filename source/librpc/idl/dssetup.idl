@@ -24,21 +24,23 @@
 		DS_ROLE_PRIMARY_DC             = 5
 	} dssetup_DsRole;
 
-	const uint32 DS_ROLE_PRIMARY_DS_RUNNING			= 0x00000001;
-	const uint32 DS_ROLE_PRIMARY_DS_MIXED_MODE		= 0x00000002;
-	const uint32 DS_ROLE_UPGRADE_IN_PROGRESS		= 0x00000004;
-	const uint32 DS_ROLE_PRIMARY_DOMAIN_GUID_PRESENT	= 0x01000000;
+	typedef bitmap {
+		DS_ROLE_PRIMARY_DS_RUNNING		= 0x00000001,
+		DS_ROLE_PRIMARY_DS_MIXED_MODE		= 0x00000002,
+		DS_ROLE_UPGRADE_IN_PROGRESS		= 0x00000004,
+		DS_ROLE_PRIMARY_DOMAIN_GUID_PRESENT	= 0x01000000
+	} dssetup_DsRoleFlags;
 
 	typedef struct {
-		uint16    role;
-		uint32    flags;
-		unistr    *domain;
-		unistr    *dns_domain;
-		unistr    *forest;
-		GUID domain_guid;
+		dssetup_DsRole		role;
+		dssetup_DsRoleFlags	flags;
+		unistr			*domain;
+		unistr			*dns_domain;
+		unistr			*forest;
+		GUID			domain_guid;
 	} dssetup_DsRolePrimaryDomInfoBasic;
 
-	typedef enum {
+	typedef [v1_enum] enum {
 		DS_ROLE_NOT_UPGRADING = 0,
 		DS_ROLE_UPGRADING     = 1
 	} dssetup_DsUpgrade;
@@ -50,8 +52,8 @@
 	} dssetup_DsPrevious;
 
 	typedef struct {
-		uint32 upgrading;
-		uint16 previous_role;
+		dssetup_DsUpgrade	upgrading;
+		dssetup_DsPrevious	previous_role;
 	} dssetup_DsRoleUpgradeStatus;
 
 	typedef enum {
@@ -61,7 +63,7 @@
 	} dssetup_DsRoleOp;
 
 	typedef struct {
-		uint16 status;
+		dssetup_DsRoleOp status;
 	} dssetup_DsRoleOpStatus;
 
 	typedef enum {
@@ -77,7 +79,7 @@
 	} dssetup_DsRoleInfo;
 
 	WERROR dssetup_DsRoleGetPrimaryDomainInformation(
-		[in] uint16 level,
+		[in] dssetup_DsRoleInfoLevel level,
 		[out,switch_is(level)] dssetup_DsRoleInfo *info
 		);
 
