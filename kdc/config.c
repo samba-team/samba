@@ -59,7 +59,7 @@ krb5_boolean encode_as_rep_as_tgs_rep; /* bug compatibility */
 krb5_boolean check_ticket_addresses;
 krb5_boolean allow_null_ticket_addresses;
 
-struct getarg_strings addresses_str;	/* addresses to listen on */
+static struct getarg_strings addresses_str;	/* addresses to listen on */
 krb5_addresses explicit_addresses;
 
 #ifdef KRB4
