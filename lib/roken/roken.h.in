@@ -38,9 +38,6 @@
 
 /* $Id$ */
 
-#ifndef __ROKEN_H__
-#define __ROKEN_H__
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -73,26 +70,34 @@
 #ifdef HAVE_NETINET6_IN6_H
 #include <netinet6/in6.h>
 #endif
+#ifdef HAVE_SYSLOG_H
+#include <syslog.h>
+#endif
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
-
-
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
-
 #ifdef HAVE_ERRNO_H
 #include <errno.h>
 #endif
-
 #ifdef HAVE_TERMIOS_H
 #include <termios.h>
 #endif
-
 #if defined(HAVE_SYS_IOCTL_H) && SunOS != 4
 #include <sys/ioctl.h>
 #endif
+#ifdef TIME_WITH_SYS_TIME
+#include <sys/time.h>
+#include <time.h>
+#elif defined(HAVE_SYS_TIME_H)
+#include <sys/time.h>
+#else
+#include <time.h>
+#endif
+
+#include <roken-common.h>
 
 #if !defined(HAVE_SETSID) && defined(HAVE__SETSID)
 #define setsid _setsid
@@ -112,10 +117,6 @@ void unsetenv(const char *name);
 
 #if !defined(HAVE_GETUSERSHELL) || defined(NEED_GETUSERSHELL_PROTO)
 char *getusershell(void);
-#endif
-
-#if !defined(__GNUC__) && !defined(__attribute__)
-#define __attribute__(x)
 #endif
 
 #ifndef HAVE_SNPRINTF
@@ -185,10 +186,6 @@ int getdtablesize(void);
 typedef RETSIGTYPE (*SigAction)(/* int??? */);
 SigAction signal(int iSig, SigAction pAction); /* BSD compatible */
 #endif
-#endif
-
-#ifndef SIG_ERR
-#define SIG_ERR ((RETSIGTYPE (*)())-1)
 #endif
 
 #if !defined(HAVE_STRERROR) && !defined(strerror)
@@ -283,15 +280,6 @@ readv(int d, const struct iovec *iov, int iovcnt);
 int flock(int fd, int operation);
 #endif /* HAVE_FLOCK */
 
-#ifdef TIME_WITH_SYS_TIME
-#include <sys/time.h>
-#include <time.h>
-#elif defined(HAVE_SYS_TIME_H)
-#include <sys/time.h>
-#else
-#include <time.h>
-#endif
-
 time_t tm2time (struct tm tm, int local);
 
 int unix_verify_user(char *user, char *password);
@@ -308,67 +296,6 @@ struct winsize {
 #endif
 
 int get_window_size(int fd, struct winsize *);
-
-#ifndef INADDR_NONE
-#define INADDR_NONE 0xffffffff
-#endif
-
-#ifndef SOMAXCONN
-#define SOMAXCONN 5
-#endif
-
-#ifndef STDIN_FILENO
-#define STDIN_FILENO 0
-#endif
-
-#ifndef STDOUT_FILENO
-#define STDOUT_FILENO 1
-#endif
-
-#ifndef STDERR_FILENO
-#define STDERR_FILENO 2
-#endif
-
-#ifndef max
-#define max(a,b) (((a)>(b))?(a):(b))
-#endif
-
-#ifndef min
-#define min(a,b) (((a)<(b))?(a):(b))
-#endif
-
-#ifndef TRUE
-#define TRUE 1
-#endif
-
-#ifndef FALSE
-#define FALSE 0
-#endif
-
-#ifdef HAVE_SYSLOG_H
-#include <syslog.h>
-/* Misc definitions for old syslogs */
-
-#ifndef LOG_DAEMON
-#define openlog(id,option,facility) openlog((id),(option))
-#define	LOG_DAEMON	0
-#endif
-#ifndef LOG_ODELAY
-#define LOG_ODELAY 0
-#endif
-#ifndef LOG_NDELAY
-#define LOG_NDELAY 0x08
-#endif
-#ifndef LOG_CONS
-#define LOG_CONS 0
-#endif
-#ifndef LOG_AUTH
-#define LOG_AUTH 0
-#endif
-#ifndef LOG_AUTHPRIV
-#define LOG_AUTHPRIV LOG_AUTH
-#endif
-#endif
 
 #ifndef HAVE_VSYSLOG
 void vsyslog(int pri, const char *fmt, va_list ap);
@@ -417,25 +344,3 @@ extern const char *__progname;
 #endif
 
 void set_progname(char *argv0);
-
-#ifndef F_OK
-#define F_OK 0
-#endif
-
-#ifndef O_ACCMODE
-#define O_ACCMODE	003
-#endif
-
-#ifdef HAVE_PATHS_H
-#include <paths.h>
-#endif
-
-#ifndef _PATH_DEVNULL
-#define _PATH_DEVNULL "/dev/null"
-#endif
-
-#ifndef MAXPATHLEN
-#define MAXPATHLEN (1024+4)
-#endif
-
-#endif /*  __ROKEN_H__ */

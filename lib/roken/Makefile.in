@@ -13,6 +13,7 @@ AR	= ar
 RANLIB	= @RANLIB@
 DEFS	= @DEFS@
 CFLAGS	= @CFLAGS@
+AWK	= @AWK@
 
 INSTALL = @INSTALL@
 INSTALL_DATA	= @INSTALL_DATA@
@@ -49,13 +50,13 @@ OBJECTS = base64.o getarg.o k_getpwuid.o k_getpwnam.o signal.o tm2time.o \
 	  verify.o inaddr2str.o mini_inetd.o get_window_size.o \
 	  warnerr.o snprintf.o @LIBOBJS@
 
-all: $(LIB)
+all: $(LIB) install-roken-h
 
 Wall:
 	make CFLAGS="-g -Wall -Wno-comment -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
 
 .c.o:
-	$(CC) -c $(CPPFLAGS) $(DEFS) -I../../include -I$(srcdir) $(CFLAGS) $(PICFLAGS) $<
+	$(CC) -c $(CPPFLAGS) $(DEFS) -I. -I../../include -I$(srcdir) $(CFLAGS) $(PICFLAGS) $<
 
 install: all
 
@@ -67,7 +68,7 @@ TAGS: $(SOURCES)
 check:
 
 clean:
-	rm -f $(LIB) *.o *.a
+	rm -f $(LIB) *.o *.a roken.h make-roken make-roken.c
 
 mostlyclean: clean
 
@@ -92,4 +93,21 @@ $(LIBNAME).$(SHLIBEXT): $(OBJECTS)
 	rm -f $@
 	$(LDSHARED) -o $@ $(OBJECTS)
 
-$(OBJECTS): ../../include/config.h
+roken.h: make-roken
+	@./make-roken > tmp.h ;\
+	if [ -f roken.h ] && cmp -s tmp.h roken.h ; then rm -f tmp.h ; \
+	else rm -f roken.h; mv tmp.h roken.h; fi
+
+make-roken: make-roken.o
+	$(CC) -o make-roken make-roken.o
+
+make-roken.c: roken.h.in roken.awk
+	$(AWK) -f $(srcdir)/roken.awk $(srcdir)/roken.h.in > make-roken.c
+
+install-roken-h:
+	@if [ -f ../../include/roken.h ] && cmp -s ../../include/roken.h roken.h ; \
+	then :; else \
+	echo "  $(INSTALL) roken.h ../../include/roken.h"; \
+	$(INSTALL) roken.h ../../include/roken.h; fi
+
+$(OBJECTS): ../../include/config.h roken.h
