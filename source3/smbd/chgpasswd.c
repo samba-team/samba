@@ -455,9 +455,9 @@ BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root)
 BOOL check_lanman_password(char *user, uchar *pass1, 
                            uchar *pass2, struct smb_passwd **psmbpw)
 {
+  static uchar null_pw[16];
   uchar unenc_new_pw[16];
   uchar unenc_old_pw[16];
-  uchar null_pw[16];
   struct smb_passwd *smbpw;
 
   *psmbpw = NULL;
@@ -482,7 +482,7 @@ BOOL check_lanman_password(char *user, uchar *pass1,
   {
     uchar no_pw[14];
     memset(no_pw, '\0', 14);
-    E_P16((uchar *)no_pw, (uchar *)null_pw);
+    E_P16(no_pw, null_pw);
     smbpw->smb_passwd = null_pw;
   } else if (smbpw->smb_passwd == NULL) {
     DEBUG(0,("check_lanman_password: no lanman password !\n"));
@@ -514,8 +514,8 @@ BOOL check_lanman_password(char *user, uchar *pass1,
 
 BOOL change_lanman_password(struct smb_passwd *smbpw, uchar *pass1, uchar *pass2)
 {
+  static uchar null_pw[16];
   uchar unenc_new_pw[16];
-  uchar null_pw[16];
   BOOL ret;
 
   if (smbpw == NULL)
@@ -534,7 +534,7 @@ BOOL change_lanman_password(struct smb_passwd *smbpw, uchar *pass1, uchar *pass2
   {
     uchar no_pw[14];
     memset(no_pw, '\0', 14);
-    E_P16((uchar *)no_pw, (uchar *)null_pw);
+    E_P16(no_pw, null_pw);
     smbpw->smb_passwd = null_pw;
   } else if (smbpw->smb_passwd == NULL) {
     DEBUG(0,("change_lanman_password: no lanman password !\n"));
@@ -605,15 +605,16 @@ BOOL check_oem_password(char *user,
                         struct smb_passwd **psmbpw, char *new_passwd,
                         int new_passwd_size)
 {
+	static uchar null_pw[16];
+	static uchar null_ntpw[16];
 	struct smb_passwd *smbpw = NULL;
 	int new_pw_len;
 	uchar new_ntp16[16];
 	uchar unenc_old_ntpw[16];
 	uchar new_p16[16];
 	uchar unenc_old_pw[16];
-	uchar null_pw[16];
-	uchar null_ntpw[16];
 	char no_pw[2];
+
 	BOOL nt_pass_set = (ntdata != NULL && nthash != NULL);
 
 	become_root(False);

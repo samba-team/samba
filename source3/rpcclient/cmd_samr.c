@@ -99,8 +99,8 @@ void cmd_sam_ntchange_pwd(struct client_info *info)
 	/* establish a connection. */
 	res = res ? do_samr_chgpasswd_user(smb_cli,
 	                                   srv_name, smb_cli->user_name,
-	                                   nt_newpass, (char*)nt_hshhash,
-	                                   lm_newpass, (char*)lm_hshhash) : False;
+	                                   nt_newpass, nt_hshhash,
+	                                   lm_newpass, lm_hshhash) : False;
 	/* close the session */
 	cli_nt_session_close(smb_cli);
 

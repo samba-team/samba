@@ -458,8 +458,9 @@ check if a username/password is OK assuming the password is a 24 byte
 SMB hash
 return True if the password is correct, False otherwise
 ****************************************************************************/
+
 BOOL pass_check_smb(char *user, char *domain,
-		uchar *chal, char *lm_pwd, char *nt_pwd,
+		uchar *chal, uchar *lm_pwd, uchar *nt_pwd,
 		struct passwd *pwd)
 {
 	struct passwd *pass;
@@ -513,7 +514,7 @@ BOOL pass_check_smb(char *user, char *domain,
 		return(True);
 	}
 
-	if (smb_password_ok(smb_pass, chal, (uchar *)lm_pwd, (uchar *)nt_pwd))
+	if (smb_password_ok(smb_pass, chal, lm_pwd, nt_pwd))
 	{
 		return(True);
 	}
@@ -541,7 +542,7 @@ BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd)
 		}
 
 		return pass_check_smb(user, global_myworkgroup,
-		                      challenge, password, password, pwd);
+		                      challenge, (uchar *)password, (uchar *)password, pwd);
 	} 
 
 	return pass_check(user, password, pwlen, pwd, 

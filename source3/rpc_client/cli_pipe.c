@@ -104,7 +104,7 @@ static BOOL rpc_read(struct cli_state *cli,
 	DEBUG(5,("rpc_read: offset end: 0x%x.  data left to read:0x%x\n",
 	          rdata->data->offset.end, data_to_read));
 
-	return rdata->data->data != NULL;
+	return True;
 }
 
 /****************************************************************************
@@ -229,7 +229,6 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd,
                   prs_struct *rparam, prs_struct *rdata)
 {
 	int len;
-	int alloc_hint = 0;
 
 	uint16 setup[2]; /* only need 2 uint16 setup parameters */
 	uint32 err;
@@ -303,7 +302,6 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd,
 	{
 		RPC_HDR_RESP rhdr_resp;
 		smb_io_rpc_hdr_resp("rpc_hdr_resp", &rhdr_resp, rdata, 0);
-		alloc_hint = rhdr_resp.alloc_hint;
 	}
 
 	DEBUG(5,("rpc_api_pipe: len left: %d smbtrans read: %d\n",

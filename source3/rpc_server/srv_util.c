@@ -339,7 +339,7 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p)
 	become_root(True);
 	p->ntlmssp_validated = pass_check_smb(p->user_name, p->domain,
 	                      (uchar*)p->ntlmssp_chal.challenge,
-	                      (char*)lm_owf, (char*)nt_owf, NULL);
+	                      lm_owf, nt_owf, NULL);
 	smb_pass = getsmbpwnam(p->user_name);
 	unbecome_root(True);
 

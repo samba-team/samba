@@ -1500,15 +1500,37 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
     files_struct *fsp = file_fsp(params,0);
     info_level = SVAL(params,2);    
 
-    CHECK_FSP(fsp,conn);
-    CHECK_ERROR(fsp);
+    if(fsp && fsp->open && fsp->is_directory) {
+      /*
+       * This is actually a SETFILEINFO on a directory
+       * handle (returned from an NT SMB). NT5.0 seems
+       * to do this call. JRA.
+       */
+      fname = fsp->fsp_name;
+      unix_convert(fname,conn,0,&bad_path,&st);
+      if (!check_name(fname,conn) || (!VALID_STAT(st) && dos_stat(fname,&st))) {
+        DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
+        if((errno == ENOENT) && bad_path)
+        {
+          unix_ERR_class = ERRDOS;
+          unix_ERR_code = ERRbadpath;
+        }
+        return(UNIXERROR(ERRDOS,ERRbadpath));
+      }
+    } else {
+      /*
+       * Original code - this is an open file.
+       */
+      CHECK_FSP(fsp,conn);
+      CHECK_ERROR(fsp);
 
-    fname = fsp->fsp_name;
-    fd = fsp->fd_ptr->fd;
+      fname = fsp->fsp_name;
+      fd = fsp->fd_ptr->fd;
 
-    if(sys_fstat(fd,&st)!=0) {
-      DEBUG(3,("fstat of %s failed (%s)\n", fname, strerror(errno)));
-      return(UNIXERROR(ERRDOS,ERRbadpath));
+      if (sys_fstat(fd,&st) != 0) {
+        DEBUG(3,("fstat of fnum %d failed (%s)\n",fsp->fnum, strerror(errno)));
+        return(UNIXERROR(ERRDOS,ERRbadfid));
+      }
     }
   } else {
     /* set path info */
