@@ -468,17 +468,6 @@ void become_domain_master(struct subnet_record *d, struct work_record *work)
 			DEBUG(3,("become_domain_master: go to first stage: register <1b> name\n"));
 			work->dom_state = DOMAIN_WAIT;
 
-			/* Registering the DOMAIN<1b> name is very tricky. We need to
-			do this on all our subnets, but don't want to bradcast it
-			on locally connected subnets (WinNT doesn't do this). Also,
-			previous versions of Samba screw up royally when we do this.
-			We need to register it immediatly on our local subnet, but
-			also actually check with the WINS server if it exists. If the name
-			has already been claimed by someone else in the WINS server
-			then we need to back out all our local registrations and
-			fail. Thus we only directly enter the name on local subnets,
-			on the WINS subnet we actually check...
-			*/
 			/* XXXX the 0x1b is domain master browser name */
 			add_my_name_entry(d, work->work_group,0x1b,nb_type|NB_ACTIVE);
 
@@ -494,7 +483,7 @@ void become_domain_master(struct subnet_record *d, struct work_record *work)
 			/* update our server status */
 			work->ServerType |= SV_TYPE_NT|SV_TYPE_DOMAIN_MASTER;
 			add_server_entry(d,work,myname,work->ServerType|SV_TYPE_LOCAL_LIST_ONLY,
-			0, lp_serverstring(),True);
+			                 0, lp_serverstring(),True);
 
 			DEBUG(0,("Samba is now a domain master browser for workgroup %s on subnet %s\n", 
 			work->work_group, inet_ntoa(d->bcast_ip)));
@@ -504,7 +493,16 @@ void become_domain_master(struct subnet_record *d, struct work_record *work)
 				/* ok! we successfully registered by unicast with the
 				   WINS server.  we now expect to become the domain
 				   master on the local subnets.  if this fails, it's
-				   probably a 1.9.16p2 to 1.9.16p11 server's fault
+				   probably a 1.9.16p2 to 1.9.16p11 server's fault.
+
+				   this is a configuration issue that should be addressed
+				   by the network administrator - you shouldn't have
+				   several machines configured as a domain master browser
+				   for the same WINS scope (except if they are 1.9.17 or
+				   greater, and you know what you're doing.
+
+				   see DOMAIN.txt.
+
 				 */
 				add_domain_master_bcast();
 			}
