@@ -523,7 +523,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		pstrcpy(s,lp_pathname(snum));
 		standard_sub_conn(conn,s,sizeof(s));
 		string_set(&conn->connectpath,s);
-		DEBUG(3,("Connect path is %s\n",s));
+		DEBUG(3,("Connect path is '%s' for service [%s]\n",s, lp_servicename(snum)));
 	}
 
 	/* groups stuff added by ih */
@@ -761,6 +761,7 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 		vuser = get_valid_user_struct(vuid);
 		if (!vuser) {
 			DEBUG(1,("make_connection: refusing to connect with no session setup\n"));
+			*status = NT_STATUS_ACCESS_DENIED;
 			return NULL;
 		}
 	}
@@ -775,12 +776,15 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 	if (strequal(service_in,HOMES_NAME)) {
 		if(lp_security() != SEC_SHARE) {
 			DATA_BLOB no_pw = data_blob(NULL, 0);
-			if (vuser->homes_snum != -1) {
-				DEBUG(5, ("making a connection to [homes] service created at session setup time\n"));
-					return make_connection_snum(vuser->homes_snum,
-								    vuser, no_pw, 
-							    dev, status);
+			if (vuser->homes_snum == -1) {
+				DEBUG(2, ("[homes] share not available for this user becouse it was not found or created at session setup time\n"));
+				*status = NT_STATUS_BAD_NETWORK_NAME;
+				return NULL;
 			}
+			DEBUG(5, ("making a connection to [homes] service created at session setup time\n"));
+			return make_connection_snum(vuser->homes_snum,
+						    vuser, no_pw, 
+						    dev, status);
 		} else {
 			/* Security = share. Try with current_user_info.smb_name
 			 * as the username.  */
