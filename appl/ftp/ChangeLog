@@ -1,3 +1,7 @@
+2001-01-18  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ftpd/ftpd.c (pasv): close already open passive port
+
 2000-12-14  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ftpd/ls.c: reverse time and size sort order (pointed out by
