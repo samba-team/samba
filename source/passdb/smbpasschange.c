@@ -63,7 +63,6 @@ BOOL local_password_change(char *user_name, BOOL trust_account, BOOL add_user,
 			   char *msg_str, size_t msg_str_len)
 {
 	struct passwd  *pwd;
-	void *vp;
 	struct smb_passwd *smb_pwent;
 	uchar           new_p16[16];
 	uchar           new_nt_p16[16];
@@ -101,46 +100,21 @@ exist in system password file (usually /etc/passwd).\n", user_name);
 	/* Calculate the MD4 hash (NT compatible) of the new password. */
 	nt_lm_owf_gen(new_passwd, new_nt_p16, new_p16);
 
-	/*
-	 * Open the smbpaswd file.
-	 */
-	vp = startsmbpwent(True);
-	if (!vp && errno == ENOENT) {
-		FILE *fp;
-		slprintf(msg_str,msg_str_len-1,
-			"smbpasswd file did not exist - attempting to create it.\n");
-		fp = sys_fopen(lp_smb_passwd_file(), "w");
-		if (fp) {
-			fprintf(fp, "# Samba SMB password file\n");
-			fclose(fp);
-			vp = startsmbpwent(True);
-		}
-	}
-
-	if (!vp) {
-		slprintf(err_str, err_str_len-1, "Cannot open file %s. Error was %s\n",
-			lp_smb_passwd_file(), strerror(errno) );
-		return False;
-	}
-  
 	/* Get the smb passwd entry for this user */
 	smb_pwent = getsmbpwnam(user_name);
 	if (smb_pwent == NULL) {
 		if(add_user == False) {
 			slprintf(err_str, err_str_len-1,
 				"Failed to find entry for user %s.\n", unix_name);
-			endsmbpwent(vp);
 			return False;
 		}
 
 		if (add_new_user(user_name, unix_uid, trust_account, disable_user,
 				 set_no_password, new_p16, new_nt_p16)) {
 			slprintf(msg_str, msg_str_len-1, "Added user %s.\n", user_name);
-			endsmbpwent(vp);
 			return True;
 		} else {
 			slprintf(err_str, err_str_len-1, "Failed to add entry for user %s.\n", user_name);
-			endsmbpwent(vp);
 			return False;
 		}
 	} else {
@@ -175,11 +149,8 @@ exist in system password file (usually /etc/passwd).\n", user_name);
 	if(mod_smbpwd_entry(smb_pwent,True) == False) {
 		slprintf(err_str, err_str_len-1, "Failed to modify entry for user %s.\n",
 			unix_name);
-		endsmbpwent(vp);
 		return False;
 	}
-
-	endsmbpwent(vp);
 
 	return True;
 }
