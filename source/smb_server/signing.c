@@ -79,7 +79,7 @@ void srv_signing_restart(struct smbsrv_connection *smb_conn,
 {
 	if (!smb_conn->signing.seen_valid) {
 		DEBUG(5, ("Client did not send a valid signature on "
-			  "SPENGO session setup - ignored, expect good next time\n"));
+			  "SPNEGO session setup - ignored, expect good next time\n"));
 		/* force things back on (most clients do not sign this packet)... */
 		srv_setup_signing(smb_conn, session_key, response);
 		smb_conn->signing.next_seq_num = 2;
