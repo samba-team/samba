@@ -7,7 +7,7 @@
 [
 	uuid("3919286a-b10c-11d0-9ba8-00c04fd92ef5"),
 	version(0.0),
-	endpoint("ncacn_np:[\\pipe\\lsarpc]","ncacn_np:[\\pipe\\lsass]"),
+	endpoint("ncacn_np:[\\pipe\\lsarpc]", "ncacn_np:[\\pipe\\lsass]", "ncalrpc:"),
 	pointer_default(unique),
 	helpstring("Active Directory Setup")
 ] interface dssetup
