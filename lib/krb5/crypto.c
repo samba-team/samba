@@ -2830,10 +2830,12 @@ static struct encryption_type enctype_aes256_cts_hmac_sha1 = {
     F_DERIVED,
     AES_CTS_encrypt,
 };
+static unsigned aes_128_cbc_num[] = { 2, 16, 840, 1, 101, 3, 4, 1, 2 };
+static heim_oid aes_128_cbc_oid = kcrypto_oid_enc(aes_128_cbc_num);
 static struct encryption_type enctype_aes128_cbc_none = {
     ETYPE_AES128_CBC_NONE,
     "aes128-cbc-none",
-    NULL,
+    &aes_128_cbc_oid,
     16,
     16,
     16,
@@ -2843,10 +2845,12 @@ static struct encryption_type enctype_aes128_cbc_none = {
     F_PSEUDO,
     AES_CBC_encrypt,
 };
+static unsigned aes_192_cbc_num[] = { 2, 16, 840, 1, 101, 3, 4, 1, 22 };
+static heim_oid aes_192_cbc_oid = kcrypto_oid_enc(aes_192_cbc_num);
 static struct encryption_type enctype_aes192_cbc_none = {
     ETYPE_AES192_CBC_NONE,
     "aes192-cbc-none",
-    NULL,
+    &aes_192_cbc_oid,
     16,
     16,
     16,
@@ -2856,10 +2860,12 @@ static struct encryption_type enctype_aes192_cbc_none = {
     F_PSEUDO,
     AES_CBC_encrypt,
 };
+static unsigned aes_256_cbc_num[] = { 2, 16, 840, 1, 101, 3, 4, 1, 42 };
+static heim_oid aes_256_cbc_oid = kcrypto_oid_enc(aes_256_cbc_num);
 static struct encryption_type enctype_aes256_cbc_none = {
     ETYPE_AES256_CBC_NONE,
     "aes256-cbc-none",
-    NULL,
+    &aes_256_cbc_oid,
     16,
     16,
     16,
@@ -4011,21 +4017,32 @@ krb5_crypto_get_params(krb5_context context,
 		       krb5_data *ivec)
 {
     krb5_error_code (*gp)(krb5_context, const krb5_data *,void **,krb5_data *);
+    krb5_error_code ret;
 
     gp = crypto->et->keytype->get_params;
-    if (gp == NULL) {
+    if (gp) {
+	if (crypto->params) {
+	    krb5_set_error_string(context,
+				  "krb5_crypto_get_params called "
+				  "more than once");
+	    return KRB5_PROG_ETYPE_NOSUPP;
+	}
+	ret = (*gp)(context, params, &crypto->params, ivec);
+    } else {
 	size_t size;
 	if (ivec == NULL)
 	    return 0;
-	return decode_CBCParameter(params->data, params->length, ivec, &size);
+	ret = decode_CBCParameter(params->data, params->length, ivec, &size);
     }
-    if (crypto->params) {
-	krb5_set_error_string(context,
-			      "krb5_crypto_get_params called "
-			      "more than once");
-	return KRB5_PROG_ETYPE_NOSUPP;
+    if (ret)
+	return ret;
+    if (ivec->length < crypto->et->blocksize) {
+	krb5_data_free(ivec);
+	krb5_set_error_string(context, "%s IV of wrong size", 
+			      crypto->et->name);
+	return ASN1_PARSE_ERROR;
     }
-    return (*gp)(context, params, &crypto->params, ivec);
+    return 0;
 }
 
 krb5_error_code
