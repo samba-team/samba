@@ -97,12 +97,15 @@ struct get_dc_name_cache {
 static BOOL cm_ads_find_dc(const char *domain, struct in_addr *dc_ip, fstring srv_name)
 {
 	ADS_STRUCT *ads;
-	ads = ads_init_simple();
+	ads = ads_init(domain, domain, NULL);
 	if (!ads) {
 		return False;
 	}
 
-	DEBUG(4,("cm_ads_find_dc: realm=%s\n", ads->realm));
+	/* we don't need to bind, just connect */
+	ads->auth.no_bind = 1;
+
+	DEBUG(4,("cm_ads_find_dc: domain=%s\n", domain));
 
 #ifdef HAVE_ADS
 	/* a full ads_connect() is actually overkill, as we don't srictly need
@@ -111,15 +114,15 @@ static BOOL cm_ads_find_dc(const char *domain, struct in_addr *dc_ip, fstring sr
 	ads_connect(ads);
 #endif
 
-	fstrcpy(srv_name, ads->ldap_server_name);
+	if (!ads->config.realm) {
+		return False;
+	}
+
+	fstrcpy(srv_name, ads->config.ldap_server_name);
 	strupper(srv_name);
 	*dc_ip = ads->ldap_ip;
 	ads_destroy(&ads);
 	
-	if (!*srv_name || is_zero_ip(*dc_ip)) {
-		return False;
-	}
-
 	DEBUG(4,("cm_ads_find_dc: using server='%s' IP=%s\n",
 		 srv_name, inet_ntoa(*dc_ip)));
 	
@@ -247,9 +250,12 @@ static BOOL cm_get_dc_name(const char *domain, fstring srv_name, struct in_addr 
 
 	zero_ip(&dc_ip);
 
+	ret = False;
 	if (lp_security() == SEC_ADS) {
 		ret = cm_ads_find_dc(domain, &dc_ip, srv_name);
-	} else {
+	}
+	if (!ret) {
+		/* fall back on rpc methods if the ADS methods fail */
 		ret = cm_rpc_find_dc(domain, &dc_ip, srv_name);
 	}
 

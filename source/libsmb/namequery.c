@@ -216,7 +216,7 @@ BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr t
 /*
   comparison function used by sort_ip_list
 */
-static int ip_compare(struct in_addr *ip1, struct in_addr *ip2)
+int ip_compare(struct in_addr *ip1, struct in_addr *ip2)
 {
 	int max_bits1=0, max_bits2=0;
 	int num_interfaces = iface_count();

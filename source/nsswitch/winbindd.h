@@ -88,7 +88,7 @@ typedef struct {
 
 struct winbindd_domain {
 	fstring name;                          /* Domain name */	
-	fstring full_name;                     /* full Domain name (realm) */	
+	fstring alt_name;                      /* alt Domain name (if any) */
 	DOM_SID sid;                           /* SID for this domain */
 
 	/* Lookup methods for this domain (LDAP or RPC) */
@@ -170,11 +170,15 @@ struct winbindd_methods {
 				    TALLOC_CTX *mem_ctx,
 				    uint32 *num_domains,
 				    char ***names,
+				    char ***alt_names,
 				    DOM_SID **dom_sids);
 
 	/* find the domain sid */
 	NTSTATUS (*domain_sid)(struct winbindd_domain *domain,
 			       DOM_SID *sid);
+
+	/* setup the list of alternate names for the domain, if any */
+	NTSTATUS (*alternate_name)(struct winbindd_domain *domain);
 };
 
 /* Used to glue a policy handle and cli_state together */
@@ -190,6 +194,8 @@ typedef struct {
 #include "rpc_client.h"
 
 #define WINBINDD_ESTABLISH_LOOP 30
+#define WINBINDD_RESCAN_FREQ 300
+
 #define DOM_SEQUENCE_NONE ((uint32)-1)
 
 /* SETENV */

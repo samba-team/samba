@@ -74,19 +74,17 @@ void free_domain_list(void)
 }
 
 /* Add a trusted domain to our list of domains */
-
-static struct winbindd_domain *add_trusted_domain(char *domain_name,
-						  struct winbindd_methods *methods)
+static struct winbindd_domain *add_trusted_domain(const char *domain_name, const char *alt_name,
+						  struct winbindd_methods *methods,
+						  DOM_SID *sid)
 {
 	struct winbindd_domain *domain;
         
 	/* We can't call domain_list() as this function is called from
 	   init_domain_list() and we'll get stuck in a loop. */
-
 	for (domain = _domain_list; domain; domain = domain->next) {
-		if (strcmp(domain_name, domain->name) == 0) {
-			DEBUG(3, ("domain %s already in domain list\n", 
-				  domain_name));
+		if (strcmp(domain_name, domain->name) == 0 ||
+		    strcmp(domain_name, domain->alt_name) == 0) {
 			return domain;
 		}
 	}
@@ -101,40 +99,95 @@ static struct winbindd_domain *add_trusted_domain(char *domain_name,
         
 	ZERO_STRUCTP(domain);
 
+	/* prioritise the short name */
+	if (strchr_m(domain_name, '.') && alt_name && *alt_name) {
+		fstrcpy(domain->name, alt_name);
+		fstrcpy(domain->alt_name, domain_name);
+	} else {
 	fstrcpy(domain->name, domain_name);
+		if (alt_name) {
+			fstrcpy(domain->alt_name, alt_name);
+		}
+	}
+
         domain->methods = methods;
 	domain->sequence_number = DOM_SEQUENCE_NONE;
 	domain->last_seq_check = 0;
+	if (sid) {
+		sid_copy(&domain->sid, sid);
+	}
 
 	/* Link to domain list */
-        
 	DLIST_ADD(_domain_list, domain);
+        
+	DEBUG(1,("Added domain %s %s %s\n", 
+		 domain->name, domain->alt_name,
+		 sid?sid_string_static(&domain->sid):""));
         
 	return domain;
 }
 
-/* Look up global info for the winbind daemon */
 
+/*
+  rescan our domains looking for new trusted domains
+ */
+void rescan_trusted_domains(void)
+{
+	struct winbindd_domain *domain;
+	TALLOC_CTX *mem_ctx;
+	static time_t last_scan;
+	time_t t = time(NULL);
+
+	/* ony rescan every few minutes */
+	if ((unsigned)(t - last_scan) < WINBINDD_RESCAN_FREQ) {
+		return;
+	}
+	last_scan = time(NULL);
+	
+	DEBUG(1, ("scanning trusted domain list\n"));
+
+	if (!(mem_ctx = talloc_init_named("init_domain_list")))
+		return;
+
+	for (domain = _domain_list; domain; domain = domain->next) {
+		NTSTATUS result;
+		char **names;
+		char **alt_names;
+		int num_domains = 0;
+		DOM_SID *dom_sids;
+		int i;
+
+		result = domain->methods->trusted_domains(domain, mem_ctx, &num_domains,
+							  &names, &alt_names, &dom_sids);
+		if (!NT_STATUS_IS_OK(result)) {
+			continue;
+		}
+
+		/* Add each domain to the trusted domain list. Each domain inherits
+		   the access methods of its parent */
+		for(i = 0; i < num_domains; i++) {
+			DEBUG(10,("Found domain %s\n", names[i]));
+			add_trusted_domain(names[i], 
+					   alt_names?alt_names[i]:NULL, 
+					   domain->methods, &dom_sids[i]);
+		}
+	}
+
+	talloc_destroy(mem_ctx);
+}
+
+/* Look up global info for the winbind daemon */
 BOOL init_domain_list(void)
 {
 	NTSTATUS result;
-	TALLOC_CTX *mem_ctx;
 	extern struct winbindd_methods cache_methods;
 	struct winbindd_domain *domain;
-	DOM_SID *dom_sids;
-	char **names;
-	uint32 num_domains = 0;
-
-	if (!(mem_ctx = talloc_init_named("init_domain_list")))
-		return False;
 
 	/* Free existing list */
-
 	free_domain_list();
 
 	/* Add ourselves as the first entry */
-
-	domain = add_trusted_domain(lp_workgroup(), &cache_methods);
+	domain = add_trusted_domain(lp_workgroup(), NULL, &cache_methods, NULL);
 
 	/* Now we *must* get the domain sid for our primary domain. Go into
 	   a holding pattern until that is available */
@@ -147,29 +200,12 @@ BOOL init_domain_list(void)
 		result = cache_methods.domain_sid(domain, &domain->sid);
 	}
        
-	DEBUG(1,("Added domain %s (%s)\n", 
-		 domain->name, 
-		 sid_string_static(&domain->sid)));
+	/* get any alternate name for the primary domain */
+	cache_methods.alternate_name(domain);
 
-	DEBUG(1, ("getting trusted domain list\n"));
+	/* do an initial scan for trusted domains */
+	rescan_trusted_domains();
 
-	result = cache_methods.trusted_domains(domain, mem_ctx, &num_domains,
-					       &names, &dom_sids);
-
-	/* Add each domain to the trusted domain list */
-	if (NT_STATUS_IS_OK(result)) {
-		int i;
-		for(i = 0; i < num_domains; i++) {
-			domain = add_trusted_domain(names[i], &cache_methods);
-			if (!domain) continue;
-			sid_copy(&domain->sid, &dom_sids[i]);
-			DEBUG(1,("Added domain %s (%s)\n", 
-				 domain->name, 
-				 sid_string_static(&domain->sid)));
-		}
-	}
-
-	talloc_destroy(mem_ctx);
 	return True;
 }
 
@@ -184,7 +220,7 @@ struct winbindd_domain *find_domain_from_name(const char *domain_name)
 
 	for (domain = domain_list(); domain != NULL; domain = domain->next) {
 		if (strequal(domain_name, domain->name) ||
-		    strequal(domain_name, domain->full_name))
+		    (domain->alt_name[0] && strequal(domain_name, domain->alt_name)))
 			return domain;
 	}
 

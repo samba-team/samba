@@ -122,6 +122,12 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 	ads = ads_init_simple();
 
+	if (!ads) {
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
+
+	ads->auth.realm = strdup(lp_realm());
+
 	ret = ads_verify_ticket(ads, &ticket, &client, &auth_data);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1,("Failed to verify incoming ticket!\n"));	
@@ -139,7 +145,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	}
 
 	*p = 0;
-	if (strcasecmp(p+1, ads->realm) != 0) {
+	if (strcasecmp(p+1, ads->auth.realm) != 0) {
 		DEBUG(3,("Ticket for foreign realm %s@%s\n", client, p+1));
 		if (!lp_allow_trusted_domains()) {
 			return ERROR_NT(NT_STATUS_LOGON_FAILURE);
@@ -379,6 +385,7 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 	uint32 auth_flags = AUTH_FLAG_NONE;
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
+	extern fstring remote_machine;
 
 	/* we must have setup the auth context by now */
 	if (!ntlmssp_auth_context) {
@@ -412,6 +419,11 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 	
 	DEBUG(3,("Got user=[%s] workgroup=[%s] machine=[%s] len1=%d len2=%d\n",
 		 user, workgroup, machine, lmhash.length, nthash.length));
+
+	/* the client has given us its machine name (which we otherwise would not get on port 445).
+	   we need to possibly reload smb.conf if smb.conf includes depend on the machine name */
+	fstrcpy(remote_machine, machine);
+	reload_services(True);
 
 #if 0
 	file_save("nthash1.dat", nthash.data, nthash.length);

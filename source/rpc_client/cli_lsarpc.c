@@ -542,7 +542,7 @@ NTSTATUS cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                                 POLICY_HND *pol, uint32 *enum_ctx, 
-                                uint32 *pref_num_domains, uint32 *num_domains,
+                                uint32 *num_domains,
                                 char ***domain_names, DOM_SID **domain_sids)
 {
 	prs_struct qbuf, rbuf;
@@ -561,7 +561,8 @@ NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Marshall data and send request */
 
-        init_q_enum_trust_dom(&q, pol, *enum_ctx, *pref_num_domains);
+	/* 64k is enough for about 2000 trusted domains */
+        init_q_enum_trust_dom(&q, pol, *enum_ctx, 0x10000);
 
 	if (!lsa_io_q_enum_trust_dom("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, LSA_ENUMTRUSTDOM, &qbuf, &rbuf)) {

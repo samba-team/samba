@@ -5,19 +5,34 @@
 */
 
 typedef struct {
-	void *ld;
-	char *realm;
-	char *workgroup;
-	char *ldap_server;
-	char *ldap_server_name;
-	char *kdc_server;
+	void *ld; /* the active ldap structure */
+	struct in_addr ldap_ip; /* the ip of the active connection, if any */
+	time_t last_attempt; /* last attempt to reconnect */
 	int ldap_port;
-	char *bind_path;
-	time_t last_attempt;
-	char *password;
-	char *user_name;
-	char *server_realm;
-	struct in_addr ldap_ip;
+	
+	/* info needed to find the server */
+	struct {
+		char *realm;
+		char *workgroup;
+		char *ldap_server;
+		int foreign; /* set to 1 if connecting to a foreign realm */
+	} server;
+
+	/* info needed to authenticate */
+	struct {
+		char *realm;
+		char *password;
+		char *user_name;
+		char *kdc_server;
+		int no_bind;
+	} auth;
+
+	/* info derived from the servers config */
+	struct {
+		char *realm;
+		char *bind_path;
+		char *ldap_server_name;
+	} config;
 } ADS_STRUCT;
 
 typedef struct {
@@ -95,7 +110,7 @@ typedef void **ADS_MODLIST;
 
 /* macros to simplify error returning */
 #define ADS_ERROR(rc) ads_build_error(ADS_ERROR_LDAP, rc, 0)
-#define ADS_ERROR_SYSTEM(rc) ads_build_error(ADS_ERROR_SYSTEM, rc, 0)
+#define ADS_ERROR_SYSTEM(rc) ads_build_error(ADS_ERROR_SYSTEM, rc?rc:EINVAL, 0)
 #define ADS_ERROR_KRB5(rc) ads_build_error(ADS_ERROR_KRB5, rc, 0)
 #define ADS_ERROR_GSS(rc, minor) ads_build_error(ADS_ERROR_GSS, rc, minor)
 
