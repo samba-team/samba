@@ -276,6 +276,26 @@ int sys_acl_set_file(char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d);
 int sys_acl_set_fd(int fd, SMB_ACL_T acl_d);
 int sys_acl_free_text(char *text);
 int sys_acl_free_acl(SMB_ACL_T acl_d) ;
+int sys_acl_get_entry(SMB_ACL_T acl_d, int entry_id, SMB_ACL_ENTRY_T *entry_p);
+int sys_acl_get_tag_type(SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *type_p);
+int sys_acl_get_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
+void *sys_acl_get_qualifier(SMB_ACL_ENTRY_T entry_d);
+SMB_ACL_T sys_acl_get_file(const char *path_p, SMB_ACL_TYPE_T type);
+SMB_ACL_T sys_acl_get_fd(int fd);
+int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset_d);
+int sys_acl_add_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm);
+int sys_acl_get_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm);
+char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p);
+SMB_ACL_T sys_acl_init(int count);
+int sys_acl_create_entry(SMB_ACL_T *acl_p, SMB_ACL_ENTRY_T *entry_p);
+int sys_acl_set_tag_type(SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T tag_type);
+int sys_acl_set_qualifier(SMB_ACL_ENTRY_T entry_d, void *qual_p);
+int sys_acl_set_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T permset_d);
+int sys_acl_valid(SMB_ACL_T acl_d);
+int sys_acl_set_file(char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d);
+int sys_acl_set_fd(int fd, SMB_ACL_T acl_d);
+int sys_acl_free_text(char *text);
+int sys_acl_free_acl(SMB_ACL_T acl_d) ;
 int sys_acl_get_entry( SMB_ACL_T the_acl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
 int sys_acl_get_tag_type( SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p);
 int sys_acl_get_permset( SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
@@ -528,6 +548,7 @@ BOOL sid_split_rid(DOM_SID *sid, uint32 *rid);
 void sid_copy(DOM_SID *dst, const DOM_SID *src);
 DOM_SID *sid_dup(DOM_SID *src);
 BOOL sid_linearize(char *outbuf, size_t len, DOM_SID *sid);
+int sid_compare(const DOM_SID *sid1, const DOM_SID *sid2);
 BOOL sid_equal(const DOM_SID *sid1, const DOM_SID *sid2);
 size_t sid_size(DOM_SID *sid);
 
@@ -2085,8 +2106,7 @@ BOOL cli_net_auth2(struct cli_state *cli, uint16 sec_chan,
                    uint32 neg_flags, DOM_CHAL *srv_chal);
 BOOL cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal);
 BOOL cli_net_srv_pwset(struct cli_state *cli, uint8 hashed_mach_pwd[16]);
-BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr, 
-                       NET_USER_INFO_3 *user_info3);
+BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3);
 BOOL cli_net_sam_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr);
 BOOL change_trust_account_password( char *domain, char *remote_machine_list);
 

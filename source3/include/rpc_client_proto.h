@@ -70,8 +70,7 @@ BOOL cli_net_auth2(struct cli_state *cli, uint16 sec_chan,
                    uint32 neg_flags, DOM_CHAL *srv_chal);
 BOOL cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal);
 BOOL cli_net_srv_pwset(struct cli_state *cli, uint8 hashed_mach_pwd[16]);
-BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr, 
-                       NET_USER_INFO_3 *user_info3);
+BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3);
 BOOL cli_net_sam_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr);
 BOOL change_trust_account_password( char *domain, char *remote_machine_list);
 

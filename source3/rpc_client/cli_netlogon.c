@@ -425,7 +425,8 @@ password ?).\n", cli->desthost ));
 
     if (r_s.switch_value != validation_level) {
 		/* report different switch_value */
-		DEBUG(0,("cli_net_sam_logon: switch_value of %u expected %x\n", r_s.switch_value));
+		DEBUG(0,("cli_net_sam_logon: switch_value of %x expected %x\n", (unsigned int)validation_level,
+					(unsigned int)r_s.switch_value));
 		retval = NT_STATUS_INVALID_PARAMETER;
     }
 
