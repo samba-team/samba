@@ -48,6 +48,7 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 			return pvfs_map_errno(pvfs, errno);
 		}
 		break;
+
 	case RAW_SFILEINFO_SETATTRE:
 		unix_times.actime = info->setattre.in.access_time;
 		unix_times.modtime = info->setattre.in.write_time;
@@ -66,7 +67,9 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 			return NT_STATUS_ACCESS_DENIED;
 		}
   		break;
+
 	case RAW_SFILEINFO_DISPOSITION_INFO:
+	case RAW_SFILEINFO_DISPOSITION_INFORMATION:
 		if (!(f->access_mask & STD_RIGHT_DELETE_ACCESS)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
