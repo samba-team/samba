@@ -1893,7 +1893,7 @@ sub
 		"NAME" => $_[3],
 		"RETURN_TYPE" => $_[2],
 		"PROPERTIES" => $_[1],
-		"DATA" => $_[5]
+		"ELEMENTS" => $_[5]
 	 }}
 	],
 	[#Rule 19
@@ -2385,17 +2385,17 @@ sub parse_idl($$)
 	foreach my $x (@{$idl}) {
 		# Add [in] ORPCTHIS *this, [out] ORPCTHAT *that
 		# for 'object' interfaces
-		if (defined($x->{PROPERTIES}->{object})) {
+		if (util::has_property($x, "object")) {
 			foreach my $e (@{$x->{DATA}}) {
 				if($e->{TYPE} eq "FUNCTION") {
 					$e->{PROPERTIES}->{object} = 1;
-					unshift(@{$e->{DATA}}, 
+					unshift(@{$e->{ELEMENTS}}, 
                         { 'NAME' => 'ORPCthis',
                           'POINTERS' => 0,
                           'PROPERTIES' => { 'in' => '1' },
                           'TYPE' => 'ORPCTHIS'
                         });
-					unshift(@{$e->{DATA}},
+					unshift(@{$e->{ELEMENTS}},
                         { 'NAME' => 'ORPCthat',
                           'POINTERS' => 0,
                           'PROPERTIES' => { 'out' => '1' },

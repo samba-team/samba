@@ -16,7 +16,7 @@ sub NeededFunction($)
 	my $fn = shift;
 	$needed{"pull_$fn->{NAME}"} = 1;
 	$needed{"push_$fn->{NAME}"} = 1;
-	foreach my $e (@{$fn->{DATA}}) {
+	foreach my $e (@{$fn->{ELEMENTS}}) {
 		$e->{PARENT} = $fn;
 		$needed{"pull_$e->{TYPE}"} = 1;
 		$needed{"push_$e->{TYPE}"} = 1;
