@@ -474,7 +474,7 @@ static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
     PACKI(desc,"D",queue->size); /* ulSize */
     PACKS(desc,"z",dos_to_unix(queue->file,False)); /* pszComment */
   }
-  if (uLevel == 2 || uLevel == 3) {
+  if (uLevel == 2 || uLevel == 3 || uLevel == 4) {
     PACKI(desc,"W",queue->priority);		/* uPriority */
     PACKS(desc,"z",dos_to_unix(queue->user,False)); /* pszUserName */
     PACKI(desc,"W",n+1);		/* uPosition */
@@ -494,6 +494,17 @@ static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
       PACKS(desc,"z","NULL"); /* pszDriverName */
       PackDriverData(desc);	/* pDriverData */
       PACKS(desc,"z","");	/* pszPrinterName */
+    } else if (uLevel == 4) {   /* OS2 */
+      PACKS(desc,"z","");       /* pszSpoolFileName  */
+       PACKS(desc,"z","");       /* pszPortName       */
+       PACKS(desc,"z","");       /* pszStatus         */
+       PACKI(desc,"D",0);        /* ulPagesSpooled    */
+       PACKI(desc,"D",0);        /* ulPagesSent       */
+       PACKI(desc,"D",0);        /* ulPagesPrinted    */
+       PACKI(desc,"D",0);        /* ulTimePrinted     */
+       PACKI(desc,"D",0);        /* ulExtendJobStatus */
+       PACKI(desc,"D",0);        /* ulStartPage       */
+       PACKI(desc,"D",0);        /* ulEndPage         */
     }
   }
 }
@@ -857,7 +868,8 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
   struct pack_desc desc;
   print_queue_struct *queue=NULL;
   print_status_struct status;
-  
+  char* tmpdata=NULL;
+
   memset((char *)&status,'\0',sizeof(status));
   memset((char *)&desc,'\0',sizeof(desc));
  
@@ -905,9 +917,19 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
 	  count = print_queue_status(snum, &queue,&status);
   }
 
-  if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
-  desc.base = *rdata;
-  desc.buflen = mdrcnt;
+  if (mdrcnt > 0) {
+    *rdata = REALLOC(*rdata,mdrcnt);
+    desc.base = *rdata;
+    desc.buflen = mdrcnt;
+  } else {
+    /*
+     * Don't return data but need to get correct length
+     *  init_package will return wrong size if buflen=0
+     */
+     desc.buflen = getlen(desc.format);
+     desc.base = tmpdata = (char *) malloc (desc.buflen);
+  }
+
   if (init_package(&desc,1,count)) {
 	  desc.subcount = count;
 	  fill_printq_info(conn,snum,uLevel,&desc,count,queue,&status);
@@ -946,7 +968,8 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
   DEBUG(4,("printqgetinfo: errorcode %d\n",desc.errcode));
 
   if (queue) free(queue);
-  
+  if (tmpdata) free (tmpdata);
+
   return(True);
 }
 
@@ -1998,6 +2021,7 @@ static int check_printjob_info(struct pack_desc* desc,
 	case 1: desc->format = "WB21BB16B10zWWzDDz"; break;
 	case 2: desc->format = "WWzWWDDzz"; break;
 	case 3: desc->format = "WWzWWDDzzzzzzzzzzlz"; break;
+	case 4: desc->format = "WWzWWDDzzzzzDDDDDDD"; break;
 	default: return False;
 	}
 	if (strcmp(desc->format,id) != 0) return False;
@@ -2753,6 +2777,7 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
   struct pack_desc desc;
   print_queue_struct *queue=NULL;
   print_status_struct status;
+  char *tmpdata=NULL;
 
   uLevel = SVAL(p,2);
 
@@ -2774,9 +2799,19 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
   for (i = 0; i < count; i++) {
     if (queue[i].job == job) break;
   }
-  if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
-  desc.base = *rdata;
-  desc.buflen = mdrcnt;
+
+  if (mdrcnt > 0) {
+    *rdata = REALLOC(*rdata,mdrcnt);
+    desc.base = *rdata;
+    desc.buflen = mdrcnt;
+  } else {
+    /*
+     * Don't return data but need to get correct length
+     *  init_package will return wrong size if buflen=0
+     */
+    desc.buflen = getlen(desc.format);
+    desc.base = tmpdata = (char *)malloc ( desc.buflen );
+  }
 
   if (init_package(&desc,1,0)) {
     if (i < count) {
@@ -2796,6 +2831,7 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
   SSVAL(*rparam,4,desc.neededlen);
 
   if (queue) free(queue);
+  if (tmpdata) free(tmpdata);
 
   DEBUG(4,("WPrintJobGetInfo: errorcode %d\n",desc.errcode));
   return(True);
@@ -2930,6 +2966,7 @@ static BOOL api_WPrintDestGetInfo(connection_struct *conn,uint16 vuid, char *par
   int uLevel;
   struct pack_desc desc;
   int snum;
+  char *tmpdata=NULL;
 
   memset((char *)&desc,'\0',sizeof(desc));
 
@@ -2957,9 +2994,18 @@ static BOOL api_WPrintDestGetInfo(connection_struct *conn,uint16 vuid, char *par
     desc.neededlen = 0;
   }
   else {
-    if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
-    desc.base = *rdata;
-    desc.buflen = mdrcnt;
+    if (mdrcnt > 0) {
+      *rdata = REALLOC(*rdata,mdrcnt);
+      desc.base = *rdata;
+      desc.buflen = mdrcnt;
+    } else {
+      /*
+       * Don't return data but need to get correct length
+       *  init_package will return wrong size if buflen=0
+       */
+      desc.buflen = getlen(desc.format);
+      desc.base = tmpdata = (char *)malloc ( desc.buflen );
+    }
     if (init_package(&desc,1,0)) {
       fill_printdest_info(conn,snum,uLevel,&desc);
     }
@@ -2973,6 +3019,7 @@ static BOOL api_WPrintDestGetInfo(connection_struct *conn,uint16 vuid, char *par
   SSVAL(*rparam,4,desc.neededlen);
 
   DEBUG(4,("WPrintDestGetInfo: errorcode %d\n",desc.errcode));
+  if (tmpdata) free (tmpdata);
   return(True);
 }
 

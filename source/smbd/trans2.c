@@ -30,6 +30,7 @@ extern int smb_read_error;
 extern fstring local_machine;
 extern int global_oplock_break;
 extern uint32 global_client_caps;
+extern pstring global_myname;
 
 /****************************************************************************
   Send the required number of replies back.
@@ -2204,6 +2205,38 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf,
   return(-1);
 }
 
+#define LMCAT_SPL       0x53
+#define LMFUNC_GETJOBID 0x60
+
+/****************************************************************************
+  reply to a TRANS2_IOCTL - used for OS/2 printing.
+****************************************************************************/
+
+static int call_trans2ioctl(connection_struct *conn, char* inbuf,
+                            char* outbuf, int length, int bufsize,
+                            char** pparams, char** ppdata)
+{
+  char *pdata = *ppdata;
+  files_struct *fsp = file_fsp(inbuf,smb_vwv15);
+
+  if ((SVAL(inbuf,(smb_setup+4)) == LMCAT_SPL) &&
+      (SVAL(inbuf,(smb_setup+6)) == LMFUNC_GETJOBID)) {
+    pdata = Realloc(*ppdata, 32);
+    if(pdata == NULL) {
+      return(ERROR(ERRDOS,ERRnomem));
+    }
+    *ppdata = pdata;
+
+    SSVAL(pdata,0,fsp->print_jobid);                     /* Job number */
+    StrnCpy(pdata+2, global_myname, 15);           /* Our NetBIOS name */
+    StrnCpy(pdata+18, lp_servicename(SNUM(conn)), 13); /* Service name */
+    send_trans2_replies(outbuf,bufsize,*pparams,0,*ppdata,32);
+    return(-1);
+  } else {
+    DEBUG(2,("Unknown TRANS2_IOCTL\n"));
+    return(ERROR(ERRSRV,ERRerror));
+  }
+}
 
 /****************************************************************************
   reply to a SMBfindclose (stop trans2 directory search)
@@ -2312,9 +2345,24 @@ int reply_trans2(connection_struct *conn,
 	/* All trans2 messages we handle have smb_sucnt == 1 - ensure this
 	   is so as a sanity check */
 	if (suwcnt != 1) {
-		DEBUG(2,("Invalid smb_sucnt in trans2 call\n"));
-		END_PROFILE(SMBtrans2);
-		return(ERROR(ERRSRV,ERRerror));
+		/*
+		 * Need to have rc=0 for ioctl to get job id for OS/2.
+		 *  Network printing will fail if function is not successful.
+		 *  Similar function in reply.c will be used if protocol
+		 *  is LANMAN1.0 instead of LM1.2X002.
+		 *  Until DosPrintSetJobInfo with PRJINFO3 is supported,
+		 *  outbuf doesn't have to be set(only job id is used).
+		 */
+		if ( (suwcnt == 4) && (tran_call == TRANSACT2_IOCTL) &&
+				(SVAL(inbuf,(smb_setup+4)) == LMCAT_SPL) &&
+				(SVAL(inbuf,(smb_setup+6)) == LMFUNC_GETJOBID)) {
+			DEBUG(2,("Got Trans2 DevIOctl jobid\n"));
+		} else {
+			DEBUG(2,("Invalid smb_sucnt in trans2 call(%d)\n",suwcnt));
+			DEBUG(2,("Transaction is %d\n",tran_call));
+			END_PROFILE(SMBtrans2);
+			return(ERROR(ERRSRV,ERRerror));
+		}
 	}
     
 	/* Allocate the space for the maximum needed parameters and data */
@@ -2478,9 +2526,15 @@ int reply_trans2(connection_struct *conn,
 
 	case TRANSACT2_GET_DFS_REFERRAL:
 		START_PROFILE_NESTED(Trans2_get_dfs_referral);
-	        outsize = call_trans2getdfsreferral(conn,inbuf,outbuf,length,
-						    bufsize, &params, &data);
+        outsize = call_trans2getdfsreferral(conn,inbuf,outbuf,length,
+					    bufsize, &params, &data);
 		END_PROFILE_NESTED(Trans2_get_dfs_referral);
+		break;
+	case TRANSACT2_IOCTL:
+		START_PROFILE_NESTED(Trans2_ioctl);
+		outsize = call_trans2ioctl(conn,inbuf,outbuf,length,
+						bufsize,&params,&data);
+		END_PROFILE_NESTED(Trans2_ioctl);
 		break;
 	default:
 		/* Error in request */
