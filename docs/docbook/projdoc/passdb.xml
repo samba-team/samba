@@ -1517,5 +1517,22 @@ access to attrs=lmPassword,ntPassword
 	</para>
 
 	</sect2>
+
+	<sect2>
+	<title>auth methods does not work</title>
+
+	<para>
+	If you explicitly set an 'auth methods' parameter, guest must be specified as the first
+	entry on the line. Eg: <parameter>auth methods = guest sam</parameter>.
+	</para>
+
+	<para>
+	This is the exact opposite of the requirement for the <parameter>passdb backed<parameter>
+	option, where it must be the <emphasis>LAST</emphasis> parameter on the line.
+	</para>
+
+	</sect2>
+
 </sect1>
+
 </chapter>
