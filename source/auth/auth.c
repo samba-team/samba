@@ -52,7 +52,7 @@ static const uint8 *get_ntlm_challenge(struct auth_context *auth_context)
 	TALLOC_CTX *mem_ctx;
 
 	if (auth_context->challenge.length) {
-		DEBUG(5, ("get_ntlm_challange (auth subsystem): returning previous challenge (normal)\n"));
+		DEBUG(5, ("get_ntlm_challenge (auth subsystem): returning previous challenge (normal)\n"));
 		return auth_context->challenge.data;
 	}
 
@@ -70,7 +70,7 @@ static const uint8 *get_ntlm_challenge(struct auth_context *auth_context)
 			continue;
 		}
 
-		mem_ctx = talloc_init_named("auth_get_challange for module %s", auth_method->name);
+		mem_ctx = talloc_init_named("auth_get_challenge for module %s", auth_method->name);
 		if (!mem_ctx) {
 			smb_panic("talloc_init_named() failed!");
 		}
@@ -156,10 +156,10 @@ static BOOL check_domain_match(const char *user, const char *domain)
  * @param user_info Contains the user supplied components, including the passwords.
  *                  Must be created with make_user_info() or one of its wrappers.
  *
- * @param auth_info Supplies the challanges and some other data. 
- *                  Must be created with make_auth_info(), and the challanges should be 
- *                  filled in, either at creation or by calling the challange geneation 
- *                  function auth_get_challange().  
+ * @param auth_info Supplies the challenges and some other data. 
+ *                  Must be created with make_auth_info(), and the challenges should be 
+ *                  filled in, either at creation or by calling the challenge geneation 
+ *                  function auth_get_challenge().  
  *
  * @param server_info If successful, contains information about the authenticaion, 
  *                    including a SAM_ACCOUNT struct describing the user.

@@ -29,23 +29,23 @@ BOOL global_encrypted_passwords_negotiated = False;
 BOOL global_spnego_negotiated = False;
 struct auth_context *negprot_global_auth_context = NULL;
 
-static void get_challange(char buff[8]) 
+static void get_challenge(char buff[8]) 
 {
 	NTSTATUS nt_status;
 	const uint8 *cryptkey;
 
 	/* We might be called more than once, muliple negprots are premitted */
 	if (negprot_global_auth_context) {
-		DEBUG(3, ("get challange: is this a secondary negprot?  negprot_global_auth_context is non-NULL!\n"));
+		DEBUG(3, ("get challenge: is this a secondary negprot?  negprot_global_auth_context is non-NULL!\n"));
 		(negprot_global_auth_context->free)(&negprot_global_auth_context);
 	}
 
-	DEBUG(10, ("get challange: creating negprot_global_auth_context\n"));
+	DEBUG(10, ("get challenge: creating negprot_global_auth_context\n"));
 	if (!NT_STATUS_IS_OK(nt_status = make_auth_context_subsystem(&negprot_global_auth_context))) {
 		DEBUG(0, ("make_auth_context_subsystem returned %s", get_nt_error_msg(nt_status)));
 		smb_panic("cannot make_negprot_global_auth_context!\n");
 	}
-	DEBUG(10, ("get challange: getting challange\n"));
+	DEBUG(10, ("get challenge: getting challenge\n"));
 	cryptkey = negprot_global_auth_context->get_ntlm_challenge(negprot_global_auth_context);
 	memcpy(buff, cryptkey, 8);
 }
@@ -100,7 +100,7 @@ static int reply_lanman1(char *inbuf, char *outbuf)
   SSVAL(outbuf,smb_vwv1,secword); 
   /* Create a token value and add it to the outgoing packet. */
   if (global_encrypted_passwords_negotiated) {
-	  get_challange(smb_buf(outbuf));
+	  get_challenge(smb_buf(outbuf));
   }
 
   Protocol = PROTOCOL_LANMAN1;
@@ -141,7 +141,7 @@ static int reply_lanman2(char *inbuf, char *outbuf)
 
   /* Create a token value and add it to the outgoing packet. */
   if (global_encrypted_passwords_negotiated) {
-	  get_challange(smb_buf(outbuf));
+	  get_challenge(smb_buf(outbuf));
   }
 
   Protocol = PROTOCOL_LANMAN2;
@@ -286,7 +286,7 @@ static int reply_nt1(char *inbuf, char *outbuf)
 	if (!negotiate_spnego) {
 		/* Create a token value and add it to the outgoing packet. */
 		if (global_encrypted_passwords_negotiated) {
-			get_challange(p);
+			get_challenge(p);
 		}
 		SSVALS(outbuf,smb_vwv16+1,8);
 		p += 8;
