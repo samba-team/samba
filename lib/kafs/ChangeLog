@@ -1,3 +1,8 @@
+2003-04-22  Johan Danielsson  <joda@pdc.kth.se>
+
+	* afskrb5.c (v5_convert): better match what other functions do
+	with values from krb5.conf, like case insensitivity
+
 2003-04-16  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* kafs.3: Change .Fd #include <header.h> to .In header.h
