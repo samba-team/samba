@@ -874,7 +874,7 @@ static void strip_mount_options( pstring *str)
 *******************************************************************/
 
 #ifdef WITH_NISPLUS_HOME
-static char *automount_lookup(char *user_name)
+char *automount_lookup(char *user_name)
 {
   static fstring last_key = "";
   static pstring last_value = "";
@@ -928,7 +928,7 @@ static char *automount_lookup(char *user_name)
   return last_value;
 }
 #else /* WITH_NISPLUS_HOME */
-static char *automount_lookup(char *user_name)
+char *automount_lookup(char *user_name)
 {
   static fstring last_key = "";
   static pstring last_value = "";
