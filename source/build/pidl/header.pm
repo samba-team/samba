@@ -7,6 +7,7 @@ package IdlHeader;
 
 use strict;
 use needed;
+use typelist;
 
 my($res);
 my($tab_depth);
@@ -195,7 +196,7 @@ sub HeaderType($$$)
 	}
 
 	my $dt;
-	if (my $t = NdrParser::get_typedef($e->{TYPE})) {
+	if (my $t = typelist::getType($e->{TYPE})) {
 		$dt = $t->{DATA};
 	}
 

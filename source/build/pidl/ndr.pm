@@ -9,16 +9,10 @@ package NdrParser;
 
 use strict;
 use needed;
+use typelist;
 
 # list of known types
-my %typedefs;
 my %typefamily;
-
-sub get_typedef($)
-{
-	my $n = shift;
-	return $typedefs{$n};
-}
 
 sub get_typefamily($)
 {
@@ -26,10 +20,8 @@ sub get_typefamily($)
 	return $typefamily{$n};
 }
 
-sub RegisterPrimitives()
-{
-	my %type_alignments = 
-    (
+my %scalar_alignments = 
+(
      "char"           => 1,
      "int8"           => 1,
      "uint8"          => 1,
@@ -55,25 +47,22 @@ sub RegisterPrimitives()
      "ipv4address"    => 4,
      "hyper"          => 8,
      "NTTIME_hyper"   => 8
-     );
+);
 
-	foreach my $k (keys %type_alignments) {
-		$typedefs{$k} = {
-			NAME => $k,
-			TYPE => "TYPEDEF",
-			DATA => {
-				TYPE => "SCALAR",
-				ALIGN => $type_alignments{$k}
-			}
-		};
+$typefamily{SCALAR} = {
+	ALIGN => sub { 
+		my $t = shift;
+		return $scalar_alignments{$t->{NAME}}; 
 	}
-}
+};
 
 sub is_scalar_type($)
 {
     my $type = shift;
 
-	if (my $dt = $typedefs{$type}->{DATA}->{TYPE}) {
+	return 0 unless typelist::hasType($type);
+
+	if (my $dt = typelist::getType($type)->{DATA}->{TYPE}) {
 		return 1 if ($dt eq "SCALAR" or $dt eq "ENUM" or $dt eq "BITMAP");
 	}
 
@@ -430,16 +419,16 @@ sub align_type
 {
 	my $e = shift;
 
-	unless (defined($typedefs{$e}) && defined($typedefs{$e}->{DATA}->{TYPE})) {
+	unless (typelist::hasType($e)) {
 	    # it must be an external type - all we can do is guess 
 		# print "Warning: assuming alignment of unknown type '$e' is 4\n";
 	    return 4;
 	}
 
-	my $dt = $typedefs{$e}->{DATA};
+	my $dt = typelist::getType($e)->{DATA};
 
-	return $dt->{ALIGN} if ($dt->{ALIGN});
-	return $typefamily{$dt->{TYPE}}->{ALIGN}->($dt);
+	my $tmp = $typefamily{$dt->{TYPE}}->{ALIGN}->($dt);
+	return $tmp;
 }
 
 #####################################################################
@@ -657,7 +646,6 @@ sub ParseElementPushPtr($$$)
 	pidl "NDR_CHECK(ndr_push_unique_ptr(ndr, $var_prefix$e->{NAME}));";
 }
 
-
 #####################################################################
 # print scalars in a structure element
 sub ParseElementPrint($$)
@@ -721,7 +709,7 @@ sub ParseElementPullSwitch($$$$)
 
 	my $cprefix = c_pull_prefix($e);
 
-	my $utype = $typedefs{$e->{TYPE}};
+	my $utype = typelist::getType($e->{TYPE});
 
 	check_null_pointer($switch_var);
 
@@ -731,9 +719,9 @@ sub ParseElementPullSwitch($$$$)
 		my $type_decl = util::map_type($e2->{TYPE});
 		pidl "if (($ndr_flags) & NDR_SCALARS) {";
 		indent;
-		if ($typedefs{$e2->{TYPE}}->{DATA}->{TYPE} eq "ENUM") {
+		if (typelist::getType($e2->{TYPE})->{DATA}->{TYPE} eq "ENUM") {
 			$type_decl = util::enum_type_decl($e2);
-		} elsif ($typedefs{$e2->{TYPE}}->{DATA}->{TYPE} eq "BITMAP") {
+		} elsif (typelist::getType($e2->{TYPE})->{DATA}->{TYPE} eq "BITMAP") {
 			$type_decl = util::bitmap_type_decl($e2);
 		}
 		pidl "$type_decl _level;";
@@ -783,7 +771,7 @@ sub ParseElementPushSwitch($$$$)
 
 	check_null_pointer($switch_var);
 
-	my $utype = $typedefs{$e->{TYPE}};
+	my $utype = typelist::getType($e->{TYPE});
 	if (!defined $utype ||
 	    !util::has_property($utype, "nodiscriminant")) {
 		my $e2 = find_sibling($e, $switch);
@@ -2104,7 +2092,7 @@ sub LoadInterface($)
 
 	foreach my $d (@{$x->{DATA}}) {
 		if (($d->{TYPE} eq "DECLARE") or ($d->{TYPE} eq "TYPEDEF")) {
-		    $typedefs{$d->{NAME}} = $d;
+			typelist::addType($d);
 			if ($d->{DATA}->{TYPE} eq "STRUCT" or $d->{DATA}->{TYPE} eq "UNION") {
 				CheckPointerTypes($d->{DATA}, $x->{PROPERTIES}->{pointer_default});
 			}
@@ -2190,7 +2178,4 @@ sub Parse($$)
 	return $res;
 }
 
-RegisterPrimitives();
-
 1;
-
