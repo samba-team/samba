@@ -3741,12 +3741,12 @@ uint32 _spoolss_startpageprinter(pipes_struct *p, POLICY_HND *handle)
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
 	if (!Printer) {
-		Printer->page_started=True;
-		return 0x0;
+		DEBUG(3,("Error in startpageprinter printer handle\n"));
+		return ERROR_INVALID_HANDLE;
 	}
-
-	DEBUG(3,("Error in startpageprinter printer handle\n"));
-	return ERROR_INVALID_HANDLE;
+	
+	Printer->page_started=True;
+	return 0x0;
 }
 
 /****************************************************************************
