@@ -216,10 +216,10 @@ AC_FIND_IF_NOT_BROKEN(hstrerror, resolv,
 
 AC_BROKEN(chown daemon err errx fchown flock getcwd)
 AC_BROKEN(getdtablesize getusershell inet_aton initgroups)
-AC_BROKEN(lstat memmove mkstemp putenv rcmd setegid setenv)
+AC_BROKEN(lstat memmove mkstemp putenv rcmd readv setegid setenv)
 AC_BROKEN(seteuid strcasecmp strdup strerror strftime)
 AC_BROKEN(strlwr strnlen strsep strtok_r strupr unsetenv)
-AC_BROKEN(verr verrx vsyslog vwarn vwarnx warn warnx)
+AC_BROKEN(verr verrx vsyslog vwarn vwarnx warn warnx writev)
 
 AC_CACHE_CHECK(if realloc if broken, ac_cv_func_realloc_broken, [
 ac_cv_func_realloc_broken=no
