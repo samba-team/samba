@@ -232,6 +232,9 @@ sub ParseArrayPull($$$)
 	my $size = find_size_var($e, util::array_size($e), $var_prefix);
 	my $alloc_size = $size;
 
+	pidl "// ParseArrayPull under construction\n";
+	return;
+
 	pidl "\t{ guint32 _array_size;\n";
 	# if this is a conformant array then we use that size to allocate, and make sure
 	# we allocate enough to pull the elements
@@ -317,9 +320,9 @@ sub ParseElementPullSwitch($$$$)
 	if (!defined $utype ||
 	    !util::has_property($utype->{DATA}, "nodiscriminant")) {
 		my $e2 = find_sibling($e, $switch);
-		pidl "\t g$e2->{TYPE} _level;\n";
+		pidl "\tint _level;\n";
 		pidl "\tif (($ndr_flags) & NDR_SCALARS) {\n";
-		pidl "\t\tndr_pull_$e2->{TYPE}(ndr, &_level);\n";
+		pidl "\t\tndr_pull_level(ndr, hf_level, &_level);\n";
 		if ($switch_var =~ /r->in/) {
 			pidl "\t\t // if (!(ndr->flags & LIBNDR_FLAG_REF_ALLOC) && _level != $switch_var) {\n";
 		} else {
@@ -375,7 +378,7 @@ sub ParseElementPullScalar($$$)
 		} else {
 			pidl "\tndr_pull_subcontext_flags_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_pull_flags_fn_t) ndr_pull_$e->{TYPE});\n";
 		}
-	} elsif (util::is_builtin_type($e->{TYPE})) {
+	} elsif (util::is_builtin_type($e->{TYPE}) || $e->{TYPE} eq "policy_handle") {
 		pidl "\tndr_pull_$e->{TYPE}(ndr, hf_$e->{NAME}_$e->{TYPE});\n";
 	} else {
 		pidl "\tndr_pull_$e->{TYPE}(ndr, $ndr_flags);\n";
@@ -426,7 +429,7 @@ sub ParseElementPullBuffer($$$)
 				pidl "\tndr_pull_subcontext_flags_fn(ndr, $sub_size, ndr_pull_$e->{TYPE});\n";
 			}
 		}
-	} elsif (util::is_builtin_type($e->{TYPE})) {
+	} elsif (util::is_builtin_type($e->{TYPE}) || $e->{TYPE} eq "policy_handle") {
 		pidl "\t\tndr_pull_$e->{TYPE}(ndr, hf_$e->{NAME}_$e->{TYPE});\n";
 	} elsif ($e->{POINTERS}) {
 		pidl "\t\tndr_pull_$e->{TYPE}(ndr, NDR_SCALARS|NDR_BUFFERS);\n";
@@ -926,7 +929,7 @@ sub Parse($$)
 	pidl "static int hf_rc = -1;\n";
 	pidl "static int hf_ptr = -1;\n";
 	pidl "static int hf_array_size = -1;\n";
-	pidl "static int hf_policy_handle = -1;\n";
+	pidl "static int hf_level = -1;\n";
 
 	foreach my $x (@{$idl}) {
 		($x->{TYPE} eq "MODULEHEADER") && 
@@ -980,9 +983,9 @@ sub Parse($$)
         pidl "\tstatic hf_register_info hf[] = {\n";
 
 	pidl "\t{ &hf_opnum, { \"Operation\", \"$module.opnum\", FT_UINT16, BASE_DEC, NULL, 0x0, \"Operation\", HFILL }},\n";
-	pidl "\t{ &hf_policy_handle, { \"Policy handle\", \"$module.policy\", FT_BYTES, BASE_NONE, NULL, 0x0, \"Policy handle\", HFILL }},\n";
 	pidl "\t{ &hf_rc, { \"Return code\", \"$module.rc\", FT_UINT32, BASE_HEX, VALS(NT_errors), 0x0, \"Return status code\", HFILL }},\n";
-	pidl "\t{ &hf_array_size, { \"Operation\", \"$module.array_size\", FT_UINT32, BASE_DEC, NULL, 0x0, \"Array size\", HFILL }},\n";
+	pidl "\t{ &hf_array_size, { \"Array size\", \"$module.array_size\", FT_UINT32, BASE_DEC, NULL, 0x0, \"Array size\", HFILL }},\n";
+	pidl "\t{ &hf_level, { \"Level\", \"$module.level\", FT_UINT32, BASE_DEC, NULL, 0x0, \"Level\", HFILL }},\n";
 	pidl "\t{ &hf_ptr, { \"Pointer\", \"$module.ptr\", FT_UINT32, BASE_HEX, NULL, 0x0, \"Pointer\", HFILL }},\n";
 
 	foreach my $x (keys(%needed)) {
