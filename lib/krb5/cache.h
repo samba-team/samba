@@ -41,16 +41,17 @@
 #ifndef __CACHE_H__
 #define __CACHE_H__
 
-void
-krb5_free_ccache(krb5_context context,
-		 krb5_ccache val);
-
 krb5_error_code
 krb5_cc_register(krb5_context context, krb5_cc_ops *ops, int override);
 
 krb5_error_code
 krb5_cc_resolve(krb5_context context,
 		const char *residual,
+		krb5_ccache *id);
+
+krb5_error_code
+krb5_cc_gen_new(krb5_context context,
+		krb5_cc_ops *ops,
 		krb5_ccache *id);
 
 char *
@@ -136,5 +137,9 @@ krb5_error_code
 krb5_cc_end_seq_get (krb5_context context,
 		     krb5_ccache id,
 		     krb5_cc_cursor *cursor);
+
+extern krb5_cc_ops fcc_ops;
+
+extern krb5_cc_ops mcc_ops;
 
 #endif /* __CACHE_H__ */
