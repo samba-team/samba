@@ -590,7 +590,7 @@ bin/smbwrapper.32.@SHLIBEXT@: $(PICOBJS32)
 	@$(LD) -32 @LDSHFLAGS@ -o $@ $(PICOBJS32) $(LIBS)
 
 libsmbclient: $(LIBSMBCLIENT_PICOBJS)
-	-if [ $(BLDSHARED) = true ]; then \
+	@if [ $(BLDSHARED) = true ]; then \
 	   echo Linking libsmbclient shared library bin/$@.@SHLIBEXT@; \
 	   $(SHLD) @LDSHFLAGS@ -o bin/$@.@SHLIBEXT@ $(LIBSMBCLIENT_PICOBJS) $(LIBS); \
 	fi
