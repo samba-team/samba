@@ -1204,15 +1204,34 @@ BOOL get_pdc_ip(const char *domain, struct in_addr *ip)
 {
 	struct in_addr *ip_list;
 	int count;
+	int i = 0;
 
 	/* Look up #1B name */
 
 	if (!internal_resolve_name(domain, 0x1b, &ip_list, &count))
 		return False;
 
-	SMB_ASSERT(count == 1);
+	/* if we get more than 1 IP back we have to assume it is a
+	   multi-homed PDC and not a mess up */
+	   
+	if ( count > 1 ) {
+		DEBUG(6,("get_pdc_ip: PDC has %d IP addresses!\n", count));
+				
+		/* look for a local net */
+		for ( i=0; i<count; i++ ) {
+			if ( is_local_net( ip_list[i] ) )
+				break;
+		}
+		
+		/* if we hit then end then just grab the first 
+		   one from the list */
+		   
+		if ( i == count )
+			i = 0;
+	}
 
-	*ip = ip_list[0];
+	*ip = ip_list[i];
+	
 	SAFE_FREE(ip_list);
 
 	return True;
@@ -1295,7 +1314,7 @@ BOOL get_dc_list(const char *domain, struct in_addr **ip_list, int *count, BOOL 
 				continue;
 			}
 			
-			/* explicit lookup */
+			/* explicit lookup; resolve_name() will handle names & IP addresses */
 					
 			if ( resolve_name( name, &name_ip, 0x20) ) {
 				return_iplist[local_count++] = name_ip;
