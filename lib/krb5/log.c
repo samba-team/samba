@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -348,6 +348,9 @@ krb5_closelog(krb5_context context,
     return 0;
 }
 
+#undef __attribute__
+#define __attribute__(X)
+
 krb5_error_code
 krb5_vlog_msg(krb5_context context,
 	      krb5_log_facility *fac,
@@ -355,6 +358,7 @@ krb5_vlog_msg(krb5_context context,
 	      int level,
 	      const char *fmt,
 	      va_list ap)
+     __attribute__((format (printf, 5, 0)))
 {
     char *msg;
     char buf[64];
@@ -379,6 +383,7 @@ krb5_vlog(krb5_context context,
 	  int level,
 	  const char *fmt,
 	  va_list ap)
+     __attribute__((format (printf, 4, 0)))
 {
     char *msg;
     krb5_error_code ret;
@@ -395,6 +400,7 @@ krb5_log_msg(krb5_context context,
 	     char **reply,
 	     const char *fmt,
 	     ...)
+     __attribute__((format (printf, 5, 6)))
 {
     va_list ap;
     krb5_error_code ret;
@@ -412,6 +418,7 @@ krb5_log(krb5_context context,
 	 int level,
 	 const char *fmt,
 	 ...)
+     __attribute__((format (printf, 4, 5)))
 {
     va_list ap;
     krb5_error_code ret;
