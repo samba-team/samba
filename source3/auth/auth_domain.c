@@ -251,7 +251,7 @@ static NTSTATUS attempt_connect_to_dc(struct cli_state **cli,
 }
 
 /***********************************************************************
- We have been asked to dynamcially determine the IP addresses of
+ We have been asked to dynamically determine the IP addresses of
  the PDC and BDC's for DOMAIN, and query them in turn.
 ************************************************************************/
 static NTSTATUS find_connect_pdc(struct cli_state **cli, 
