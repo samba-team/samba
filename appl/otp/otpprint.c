@@ -51,17 +51,6 @@ usage (void)
   exit (1);
 }
 
-#if 0
-static void
-strlwr (char *s)
-{
-  while(*s) {
-    *s = tolower(*s);
-    s++;
-  }
-}
-#endif
-
 static int
 print (int argc,
        char **argv,
