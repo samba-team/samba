@@ -46,6 +46,4 @@ struct cmdline_auth_info {
 	BOOL use_kerberos;
 };
 
-extern struct cmdline_auth_info cmdline_auth_info;
-
 #endif /* _POPT_COMMON_H */
