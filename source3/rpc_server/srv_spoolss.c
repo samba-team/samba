@@ -24,6 +24,36 @@
 #include "includes.h"
 
 /********************************************************************
+ * api_spoolss_open_printer_ex (rarely seen - older call)
+ ********************************************************************/
+
+static BOOL api_spoolss_open_printer(pipes_struct *p)
+{
+	SPOOL_Q_OPEN_PRINTER q_u;
+	SPOOL_R_OPEN_PRINTER r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if (!spoolss_io_q_open_printer("", &q_u, data, 0)) {
+		DEBUG(0,("spoolss_io_q_open_printer: unable to unmarshall SPOOL_Q_OPEN_PRINTER.\n"));
+		return False;
+	}
+
+	r_u.status = _spoolss_open_printer( p, &q_u, &r_u);
+	
+	if (!spoolss_io_r_open_printer("",&r_u,rdata,0)){
+		DEBUG(0,("spoolss_io_r_open_printer: unable to marshall SPOOL_R_OPEN_PRINTER.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+
+/********************************************************************
  * api_spoolss_open_printer_ex
  ********************************************************************/
 
@@ -1375,6 +1405,7 @@ static BOOL api_spoolss_getprintprocessordirectory(pipes_struct *p)
 
 struct api_struct api_spoolss_cmds[] = 
 {
+ {"SPOOLSS_OPENPRINTER",               SPOOLSS_OPENPRINTER,               api_spoolss_open_printer              },
  {"SPOOLSS_OPENPRINTEREX",             SPOOLSS_OPENPRINTEREX,             api_spoolss_open_printer_ex           },
  {"SPOOLSS_GETPRINTERDATA",            SPOOLSS_GETPRINTERDATA,            api_spoolss_getprinterdata            },
  {"SPOOLSS_CLOSEPRINTER",              SPOOLSS_CLOSEPRINTER,              api_spoolss_closeprinter              },
