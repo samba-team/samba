@@ -1135,6 +1135,16 @@ if test x"$samba_cv_HAVE_FTRUNCATE_EXTEND" = x"yes"; then
     AC_DEFINE(HAVE_FTRUNCATE_EXTEND)
 fi
 
+AC_CACHE_CHECK([for AF_LOCAL socket support], samba_cv_HAVE_WORKING_AF_LOCAL, [
+AC_TRY_RUN([#include "${srcdir-.}/tests/unixsock.c"],
+	   samba_cv_HAVE_WORKING_AF_LOCAL=yes,
+	   samba_cv_HAVE_WORKING_AF_LOCAL=no,
+	   samba_cv_HAVE_WORKING_AF_LOCAL=cross)])
+if test x"$samba_cv_HAVE_WORKING_AF_LOCAL" != xno
+then
+    AC_DEFINE(HAVE_WORKING_AF_LOCAL, 1, [Define if you have working AF_LOCAL sockets])
+fi
+
 AC_CACHE_CHECK([for broken getgroups],samba_cv_HAVE_BROKEN_GETGROUPS,[
 AC_TRY_RUN([#include "${srcdir-.}/tests/getgroups.c"],
            samba_cv_HAVE_BROKEN_GETGROUPS=yes,samba_cv_HAVE_BROKEN_GETGROUPS=no,samba_cv_HAVE_BROKEN_GETGROUPS=cross)])
