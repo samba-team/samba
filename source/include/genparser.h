@@ -46,8 +46,8 @@ struct parse_string {
 	char *s;
 };
 
-typedef int (*gen_dump_fn)(struct parse_string *, const char *ptr, unsigned indent);
-typedef int (*gen_parse_fn)(char *ptr, const char *str);
+typedef int (*gen_dump_fn)(TALLOC_CTX *, struct parse_string *, const char *ptr, unsigned indent);
+typedef int (*gen_parse_fn)(TALLOC_CTX *, char *ptr, const char *str);
 
 /* genstruct.pl generates arrays of these */
 struct parse_struct {
@@ -63,8 +63,8 @@ struct parse_struct {
 };
 
 #define DUMP_PARSE_DECL(type) \
-  int gen_dump_ ## type(struct parse_string *, const char *, unsigned); \
-  int gen_parse_ ## type(char *, const char *);
+  int gen_dump_ ## type(TALLOC_CTX *, struct parse_string *, const char *, unsigned); \
+  int gen_parse_ ## type(TALLOC_CTX *, char *, const char *);
 
 DUMP_PARSE_DECL(char)
 DUMP_PARSE_DECL(int)
