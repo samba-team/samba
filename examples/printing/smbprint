@@ -124,6 +124,12 @@ if [ ! -O $logdir ]; then
 	debug=""
 fi
 
+touch $debugfile
+if [ -h $debugfile ]; then
+	echo "$debugful is a symlink.  Turning off debugging!"
+	debug=""
+fi
+
 ##
 ## We should be safe at this point to create the log file
 ## without fear of a symlink attack -- move on to more script work.
