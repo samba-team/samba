@@ -822,7 +822,7 @@ cups_queue_get(int snum, print_queue_struct **q, print_status_struct *status)
 
 			if (temp == NULL)
 			{
-				DEBUG(0,("cups_queue_get: Not enough memory!");
+				DEBUG(0,("cups_queue_get: Not enough memory!"));
 				ippDelete(response);
 				httpClose(http);
 
