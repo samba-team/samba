@@ -195,11 +195,9 @@ BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL dupli
 
 	if (!duplicates_allowed) {
 		char *ptr;
-		struct message_rec *prec;
+		struct message_rec prec;
 		
-		for(ptr = (char *)dbuf.dptr, prec = (struct message_rec *)ptr; ptr < dbuf.dptr + dbuf.dsize;
-					ptr += (sizeof(rec) + prec->len), prec = (struct message_rec *)ptr) {
-
+		for(ptr = (char *)dbuf.dptr; ptr < dbuf.dptr + dbuf.dsize; ) {
 			/*
 			 * First check if the message header matches, then, if it's a non-zero
 			 * sized message, check if the data matches. If so it's a duplicate and
@@ -214,6 +212,8 @@ BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL dupli
 					return True;
 				}
 			}
+			memcpy(&prec, ptr, sizeof(prec));
+			ptr += sizeof(rec) + prec.len;
 		}
 	}
 
