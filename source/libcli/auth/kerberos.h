@@ -69,5 +69,6 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 			   const char *realm, const DATA_BLOB *ticket, 
 			   char **principal, DATA_BLOB *auth_data,
 			   DATA_BLOB *ap_rep);
+int kerberos_kinit_password_cc(krb5_context ctx, krb5_ccache cc, const char *principal, const char *password, time_t *expire_time, time_t *kdc_time);
 #endif /* HAVE_KRB5 */
 

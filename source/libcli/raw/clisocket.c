@@ -45,6 +45,8 @@ struct cli_socket *cli_sock_init(void)
 	/* 20 second default timeout */
 	sock->timeout = 20000;
 
+	sock->hostname = NULL;
+
 	return sock;
 }
 
@@ -140,6 +142,7 @@ BOOL cli_sock_connect_byname(struct cli_socket *sock, const char *host, int port
 	struct in_addr ip;
 	TALLOC_CTX *mem_ctx;
 	char *name, *p;
+	BOOL ret;
 
 	if (getenv("LIBSMB_PROG")) {
 		sock->fd = sock_exec(getenv("LIBSMB_PROG"));
@@ -162,7 +165,13 @@ BOOL cli_sock_connect_byname(struct cli_socket *sock, const char *host, int port
 		return False;
 	}
 
+	ret = cli_sock_connect(sock, &ip, port);
+
+	if (ret) {
+		sock->hostname = talloc_steal(mem_ctx, sock->mem_ctx, name);
+	}
+
 	talloc_destroy(mem_ctx);
 
-	return cli_sock_connect(sock, &ip, port);
+	return ret;
 }
