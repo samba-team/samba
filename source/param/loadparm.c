@@ -206,6 +206,7 @@ typedef struct
   int map_to_guest;
   int min_passwd_length;
   int oplock_break_wait_time;
+  int winbind_cache_time;
 #if defined(WITH_LDAP) || defined(WITH_NT5LDAP)
   int ldap_port;
   int ldap_protocol_version;
@@ -965,6 +966,7 @@ static struct parm_struct parm_table[] =
   {"winbind gid", P_STRING, P_GLOBAL, &Globals.szWinbindGID, handle_winbind_id, NULL, 0},
   {"template homedir", P_STRING, P_GLOBAL, &Globals.szTemplateHomedir, NULL, NULL, 0},
   {"template shell", P_STRING, P_GLOBAL, &Globals.szTemplateShell, NULL, NULL, 0},
+  {"winbind cache time", P_INTEGER, P_GLOBAL, &Globals.winbind_cache_time, NULL,   NULL,  0},
 
   {NULL,               P_BOOL,    P_NONE,   NULL,                       NULL,   NULL, 0}
 };
@@ -1178,6 +1180,8 @@ static void init_globals(void)
   string_set(&Globals.sMysqlDatabase,"samba");
   string_set(&Globals.sMysqlTable,"smbpasswd");
 #endif
+
+  Globals.winbind_cache_time = 15;
 
   /*
    * This must be done last as it checks the value in 
@@ -1629,6 +1633,7 @@ FN_GLOBAL_STRING(lp_mysql_db,&Globals.sMysqlDatabase)
 FN_GLOBAL_STRING(lp_mysql_table,&Globals.sMysqlTable)
 #endif
 
+FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
 
 /* local prototypes */
 static int    strwicmp( char *psz1, char *psz2 );
@@ -3452,5 +3457,3 @@ int lp_force_dir_security_mode(int snum)
     return lp_force_dir_mode(snum);
   return val;
 }
-
-
