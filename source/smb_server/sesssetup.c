@@ -44,18 +44,15 @@ static NTSTATUS sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *s
 	struct auth_usersupplied_info *user_info = NULL;
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info;
-	DATA_BLOB null_blob;
 
 	if (!req->smb_conn->negotiate.done_sesssetup) {
 		req->smb_conn->negotiate.max_send = sess->old.in.bufsize;
 	}
 
-	null_blob.length = 0;
-
 	status = make_user_info_for_reply_enc(&user_info, 
 					      sess->old.in.user, sess->old.in.domain,
 					      sess->old.in.password,
-					      null_blob);
+					      data_blob(NULL, 0));
 	if (!NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
