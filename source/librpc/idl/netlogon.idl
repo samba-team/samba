@@ -1068,7 +1068,20 @@ interface netlogon
 
 	/****************/
 	/* Function 0x2d */
-	WERROR netr_NETRLOGONSAMLOGONWITHFLAGS();
+
+	/* this is the ADS varient. I don't yet know what the "flags" are for */
+	NTSTATUS netr_LogonSamLogonWithFlags(
+		[in] unistr *server_name,
+		[in] unistr *workstation,
+		[in] netr_Authenticator *credential,
+		[in][out] netr_Authenticator *return_authenticator,
+		[in]  uint16 logon_level,
+		[in]  [switch_is(logon_level)] netr_LogonLevel logon,
+		[in]  uint16 validation_level,
+		[out] [switch_is(validation_level)] netr_Validation validation,
+		[out] uint32 authoritative,
+		[in,out] uint32 flags
+		);
 
 	/****************/
 	/* Function 0x2e */
