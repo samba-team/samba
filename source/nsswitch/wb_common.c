@@ -476,40 +476,19 @@ NSS_STATUS winbindd_request(int req_type,
  enable them
  ************************************************************************/
  
-/* Use putenv() instead of setenv() as not all environments have the
-   latter. */
-
-static int set_winbind_dont_env(char value)
-{
-	int len = strlen(WINBINDD_DONT_ENV) + 3; /* len("_NO_WINBINDD=1\0") */
-	char *s = malloc(len);
-	int result;
-
-	if (s == NULL)
-		return -1;
-
-	/* It's OK to use strcpy here as we have allocated the correct
-	   buffer size and no user or network data is used. */
-
-	strcpy(s, WINBINDD_DONT_ENV);
-
-	s[strlen(WINBINDD_DONT_ENV)]     = '=';
-	s[strlen(WINBINDD_DONT_ENV) + 1] = value;
-	s[strlen(WINBINDD_DONT_ENV) + 2] = '\0';
-
-	result = putenv(s);
-
-	free(s);
-	return result;
-}
+/* Use putenv() instead of setenv() in these functions as not all
+   environments have the latter. */
 
 BOOL winbind_off( void )
 {
-	return set_winbind_dont_env('1') != -1;
+	static char *s = WINBINDD_DONT_ENV "=1";
+
+	return putenv(s) != -1;
 }
 
 BOOL winbind_on( void )
 {
-	return set_winbind_dont_env('0') != -1;
-}
+	static char *s = WINBINDD_DONT_ENV "=0";
 
+	return putenv(s) != -1;
+}
