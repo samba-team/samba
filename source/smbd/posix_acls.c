@@ -916,8 +916,16 @@ Deny entry after Allow entry. Failing to set on file %s.\n", fsp->fsp_name ));
 						return False;
 					}
 
+					/*
+					 * We must not free current_ace here as its
+					 * pointer is now owned by the dir_ace list.
+					 */
 					current_ace = dup_ace;
 				} else {
+					/*
+					 * We must not free current_ace here as its
+					 * pointer is now owned by the dir_ace list.
+					 */
 					current_ace = NULL;
 				}
 			}
@@ -952,6 +960,10 @@ Deny entry after Allow entry. Failing to set on file %s.\n", fsp->fsp_name ));
 				print_canon_ace( current_ace, 0);
 			}
 			all_aces_are_inherit_only = False;
+			/*
+			 * We must not free current_ace here as its
+			 * pointer is now owned by the file_ace list.
+			 */
 			current_ace = NULL;
 		}
 
