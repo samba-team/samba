@@ -1,3 +1,7 @@
+1999-05-09  Assar Westerlund  <assar@sics.se>
+
+	* login.c (krb5_verify): check seteuid for errors
+	
 Mon Apr 19 22:30:55 1999  Assar Westerlund  <assar@sics.se>
 
 	* login.c: conditionalize the kafs calls on KRB4
