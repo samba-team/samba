@@ -70,8 +70,8 @@ static char	       *words;
 static int		x, y;
 static Pixel		Black, White;
 static XFontStruct    *font;
-static char		root_cpass[16];
-static char		user_cpass[16];
+static char		root_cpass[128];
+static char		user_cpass[128];
 static int		time_left, prompt_x, prompt_y, time_x, time_y;
 static unsigned long	interval;
 static Pixmap		left0, left1, right0, right1, left_front,
