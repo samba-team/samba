@@ -119,10 +119,13 @@ help(void *opt, int argc, char **argv)
     return 0;
 }
 
+static int exit_seen = 0;
+
 int
 exit_kadmin (void *opt, int argc, char **argv)
 {
-    return 1;
+    exit_seen = 1;
+    return 0;
 }
 
 static void
@@ -156,6 +159,7 @@ main(int argc, char **argv)
     char **files;
     kadm5_config_params conf;
     int optind = 0;
+    int exit_status = 0;
 
     setprogname(argv[0]);
 
@@ -257,10 +261,17 @@ main(int argc, char **argv)
 	ret = sl_command (commands, argc, argv);
 	if(ret == -1)
 	    krb5_warnx (context, "unrecognized command: %s", argv[0]);
-    } else
-	ret = sl_loop (commands, "kadmin> ") != 0;
+	if(ret != 0)
+	    exit_status = 1;
+    } else {
+	while(!exit_seen) {
+	    ret = sl_command_loop(commands, "kadmin> ", NULL);
+	    if(ret != 0)
+		exit_status = 1;
+	}
+    }
 
     kadm5_destroy(kadm_handle);
     krb5_free_context(context);
-    return ret;
+    return exit_status;
 }
