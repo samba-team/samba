@@ -1,3 +1,7 @@
+2000-01-08  Assar Westerlund  <assar@sics.se>
+
+	* krb-bigendian.m4: new file, replacement for ac_c_bigendian
+
 2000-01-01  Assar Westerlund  <assar@sics.se>
 
 	* krb-ipv6.m4: re-organize: test for type of stack first so that
