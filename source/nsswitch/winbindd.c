@@ -821,6 +821,8 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
+	pidfile_create("winbindd");
+
 	codepage_initialise(lp_client_code_page());
 
 	/* Setup names. */
