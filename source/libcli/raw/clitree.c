@@ -240,6 +240,7 @@ NTSTATUS cli_tree_full_connection(struct cli_tree **ret_tree,
 		setup.generic.in.password = NULL;
 		setup.generic.in.user = "";
 		setup.generic.in.domain = "";
+		setup.generic.in.capabilities &= ~CAP_EXTENDED_SECURITY;
 	} else {
 		setup.generic.in.password = password;
 		setup.generic.in.user = user;
