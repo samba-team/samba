@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_drsuapi.h"
 
 static BOOL test_DsBind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 		      struct policy_handle *bind_handle)

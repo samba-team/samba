@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_winreg.h"
 
 static void init_winreg_String(struct winreg_String *name, const char *s)
 {

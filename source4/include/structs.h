@@ -1,8 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
-   test suite for dcom operations
 
-   Copyright (C) Jelmer Vernooij 2004
+   Copyright (C) Andrew Tridgell 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,31 +18,33 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
-#include "librpc/gen_ndr/ndr_dcom.h"
-#include "librpc/gen_ndr/ndr_oxidresolver.h"
+/*
+  this file contains pre-declarations of private structures to avoid the
+  "scope is only this definition or declaration" warning
+*/
 
-BOOL torture_rpc_dcom(void)
-{
-	NTSTATUS status;
-	struct dcerpc_pipe *p;
-	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
+union spoolss_PrinterInfo;
+union spoolss_FormInfo;
+union spoolss_JobInfo;
+union spoolss_DriverInfo;
+union spoolss_PortInfo;
 
-	mem_ctx = talloc_init("torture_rpc_dcom");
+struct MULTI_QI;
+struct COSERVERINFO;
 
-	status = torture_rpc_connection(&p, 
-									DCERPC_IOXIDRESOLVER_NAME,
-									DCERPC_IOXIDRESOLVER_UUID,
-									DCERPC_IOXIDRESOLVER_VERSION);
-	if (!NT_STATUS_IS_OK(status)) {
-		return False;
-	}
 
-	printf("\n");
+struct epm_floor;
+struct epm_tower;
 
-	talloc_destroy(mem_ctx);
+struct drsuapi_DsCrackNames;
 
-	torture_rpc_close(p);
-	return ret;
-}
+struct samr_ChangePasswordUser;
+struct samr_OemChangePasswordUser2;
+struct samr_ChangePasswordUser3;
+struct samr_ChangePasswordUser2;
+struct samr_CryptPassword;
+struct samr_CryptPasswordEx;
+
+struct netr_SamInfo3;
+struct netr_Authenticator;
+

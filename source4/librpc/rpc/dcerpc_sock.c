@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_epmapper.h"
 
 #define MIN_HDR_SIZE 16
 

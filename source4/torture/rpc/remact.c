@@ -20,6 +20,8 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_remact.h"
+#include "librpc/gen_ndr/ndr_epmapper.h"
 
 #define CLSID_TEST "00000316-0000-0000-C000-000000000046"
 #define CLSID_SIMPLE "5e9ddec7-5767-11cf-beab-00aa006c3606"

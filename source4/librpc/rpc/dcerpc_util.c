@@ -22,7 +22,7 @@
 */
 
 #include "includes.h"
-
+#include "librpc/gen_ndr/ndr_epmapper.h"
 
 /*
   find the pipe name for a local IDL interface
