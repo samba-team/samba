@@ -101,7 +101,7 @@ static struct composite_context *setup_next_method(struct composite_context *c)
 		if (method) {
 			req = method->send_fn(&state->name, c->event_ctx);
 		}
-		if (req == NULL) state->methods++;
+		if (req == NULL && state->methods[0]) state->methods++;
 	} while (!req && state->methods[0]);
 
 	if (req) {
