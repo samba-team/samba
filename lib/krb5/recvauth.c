@@ -44,6 +44,12 @@ RCSID("$Id$");
  * See `sendauth.c' for the format.
  */
 
+static krb5_boolean
+match_exact(void *data, const char *appl_version)
+{
+    return strcmp(data, appl_version) == 0;
+}
+
 krb5_error_code
 krb5_recvauth(krb5_context context,
 	      krb5_auth_context *auth_context,
@@ -53,6 +59,24 @@ krb5_recvauth(krb5_context context,
 	      int32_t flags,
 	      krb5_keytab keytab,
 	      krb5_ticket **ticket)
+{
+    return krb5_recvauth_match_version(context, auth_context, p_fd,
+				       match_exact, appl_version,
+				       server, flags,
+				       keytab, ticket);
+}
+
+krb5_error_code
+krb5_recvauth_match_version(krb5_context context,
+			    krb5_auth_context *auth_context,
+			    krb5_pointer p_fd,
+			    krb5_boolean (*match_appl_version)(void *, 
+							       const char*),
+			    void *match_data,
+			    krb5_principal server,
+			    int32_t flags,
+			    krb5_keytab keytab,
+			    krb5_ticket **ticket)
 {
   krb5_error_code ret;
   const char *version = KRB5_SENDAUTH_VERSION;
@@ -102,19 +126,14 @@ krb5_recvauth(krb5_context context,
   if (n == 0)
       return KRB5_SENDAUTH_BADAPPLVERS;
   len = ntohl(len);
-  if (len != strlen(appl_version) + 1) {
-    repl = 2;
-    krb5_net_write (context, p_fd, &repl, 1);
-    return KRB5_SENDAUTH_BADAPPLVERS;
-  }
   her_appl_version = malloc (len);
   if (her_appl_version == NULL) {
-    repl = 2;
-    krb5_net_write (context, p_fd, &repl, 1);
-    return ENOMEM;
+      repl = 2;
+      krb5_net_write (context, p_fd, &repl, 1);
+      return ENOMEM;
   }
   if (krb5_net_read (context, p_fd, her_appl_version, len) != len
-      || strcmp (appl_version, her_appl_version)) {
+      || !(*match_appl_version)(match_data, her_appl_version)) {
     repl = 2;
     krb5_net_write (context, p_fd, &repl, 1);
     free (her_appl_version);
