@@ -124,8 +124,6 @@ void dcesrv_tcp_accept(struct server_connection *conn)
 
 	DEBUG(5,("dcesrv_tcp_accept\n"));
 
-
-
 	status = dcesrv_endpoint_connect(dcesrv_sock->dcesrv_ctx, dcesrv_sock->endpoint, &dcesrv_conn);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("dcesrv_tcp_accept: dcesrv_endpoint_connect failed: %s\n", 
@@ -134,6 +132,8 @@ void dcesrv_tcp_accept(struct server_connection *conn)
 	}
 
 	dcesrv_conn->srv_conn = conn;
+
+	dcesrv_conn->transport_session_key = data_blob_talloc(dcesrv_conn, "SystemLibraryDTC", 16);
 
 	conn->private_data = dcesrv_conn;
 

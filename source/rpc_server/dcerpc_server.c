@@ -300,6 +300,7 @@ NTSTATUS dcesrv_endpoint_search_connect(struct dcesrv_context *dce_ctx,
 
 	session_info->refcount++;
 	(*dce_conn_p)->auth_state.session_info = session_info;
+	(*dce_conn_p)->transport_session_key = session_info->session_key;
 
 	/* TODO: check security descriptor of the endpoint here 
 	 *       if it's a smb named pipe
@@ -763,14 +764,15 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 		return status;
 	}
 
-	dce_partial_advance(dce_conn, blob.length);
-
 	/* we have to check the signing here, before combining the
 	   pdus */
 	if (call->pkt.ptype == DCERPC_PKT_REQUEST &&
-	    !dcesrv_auth_request(call)) {
+	    !dcesrv_auth_request(call, &blob)) {
+		dce_partial_advance(dce_conn, blob.length);
 		return dcesrv_fault(call, DCERPC_FAULT_LOGON_FAILURE);		
 	}
+
+	dce_partial_advance(dce_conn, blob.length);
 
 	/* see if this is a continued packet */
 	if (!(call->pkt.pfc_flags & DCERPC_PFC_FLAG_FIRST)) {
