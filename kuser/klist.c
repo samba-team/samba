@@ -155,40 +155,14 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
     printf("\n");
     printf("Addresses: ");
     for(j = 0; j < cred->addresses.len; j++){
+	char buf[128];
+	size_t len;
 	if(j) printf(", ");
-	switch(cred->addresses.val[j].addr_type){
-	case KRB5_ADDRESS_INET : {
-	    struct in_addr a;
-	    unsigned long foo;
+	ret = krb5_print_address(&cred->addresses.val[j], 
+				 buf, sizeof(buf), &len);
 
-	    k_get_int (cred->addresses.val[j].address.data,
-		       &foo, 4);
-	    a.s_addr = htonl(foo);
-	    
-	    printf("IPv4: %s", inet_ntoa(a));
-	    break;
-	}
-#if defined(AF_INET6) && defined(HAVE_INET_NTOP) && defined(INET6_ADDRSTRLEN)
-	case KRB5_ADDRESS_INET6: {
-	    char foo[INET6_ADDRSTRLEN];
-
-	    printf("IPv6: %s", inet_ntop(AF_INET6,
-					 cred->addresses.val[j].address.data,
-					 foo, sizeof(foo)));
-	    break;
-	}
-#endif
-	default:{
-	    char *s;
-	    int i;
-	    krb5_address *a = &cred->addresses.val[j];
-	    s = malloc(a->address.length * 2 + 1);
-	    for(i = 0; i < a->address.length; i++)
-		sprintf(s + 2*i, "%02x", ((char*)a->address.data)[i]);
-	    printf("%d/%s", cred->addresses.val[j].addr_type, s);
-	    free(s);
-	}
-	}
+	if(ret == 0)
+	    printf("%s", buf);
     }
     printf("\n\n");
 }
