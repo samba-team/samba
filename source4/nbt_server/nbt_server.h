@@ -66,12 +66,15 @@ struct nbtd_server {
 	/* wins client interface - used for registering and refreshing
 	   our names with a WINS server */
 	struct nbtd_interface *wins_interface;
+
+	/* wins server database handle, if configured */
+	struct ldb_wrap *wins_db;
 };
 
 
 
 /* check a condition on an incoming packet */
-#define NBT_ASSERT_PACKET(packet, src_address, test) do { \
+#define NBTD_ASSERT_PACKET(packet, src_address, test) do { \
 	if (!(test)) { \
 		nbtd_bad_packet(packet, src_address, #test); \
 		return; \
