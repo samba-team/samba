@@ -1,6 +1,6 @@
 /* 
    Mount helper utility for Linux CIFS VFS (virtual filesystem) client
-   Copyright (C) 2003 Steve French  (sfrench@us.ibm.com)
+   Copyright (C) 2003,2005 Steve French  (sfrench@us.ibm.com)
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -39,7 +39,7 @@
 #include <fcntl.h>
 
 #define MOUNT_CIFS_VERSION_MAJOR "1"
-#define MOUNT_CIFS_VERSION_MINOR "6"
+#define MOUNT_CIFS_VERSION_MINOR "7"
 
 #ifndef MOUNT_CIFS_VENDOR_SUFFIX
 #define MOUNT_CIFS_VENDOR_SUFFIX ""
@@ -60,7 +60,8 @@ static int got_uid = 0;
 static int got_gid = 0;
 static int free_share_name = 0;
 static char * user_name = NULL;
-char * mountpassword = NULL;
+static char * mountpassword = NULL;
+static char * domain_name = NULL;
 
 
 /* BB finish BB
@@ -71,6 +72,9 @@ char * mountpassword = NULL;
         call system(umount argv) etc.
                 
 BB end finish BB */
+
+static char * check_for_domain(char **);
+
 
 static void mount_cifs_usage(void)
 {
@@ -107,7 +111,7 @@ static char * getusername(void) {
 	return username;
 }
 
-char * parse_cifs_url(char * unc_name)
+static char * parse_cifs_url(char * unc_name)
 {
 	printf("\nMounting cifs URL not implemented yet. Attempt to mount %s\n",unc_name);
 	return NULL;
@@ -264,7 +268,9 @@ static int parse_options(char * options, int * filesys_flags)
 		data = options;
 
 	if(verboseflag)
-		printf("\n parsing options: %s", options);
+		printf("parsing options: %s\n", options);
+
+	/* BB fixme check for separator override BB */
 
 /* while ((data = strsep(&options, ",")) != NULL) { */
 	while(data != NULL) {
@@ -276,15 +282,12 @@ static int parse_options(char * options, int * filesys_flags)
 		/* data  = next keyword */
 		/* value = next value ie stuff after equal sign */
 
-		next_keyword = strchr(data,',');
+		next_keyword = strchr(data,','); /* BB handle sep= */
 	
 		/* temporarily null terminate end of keyword=value pair */
 		if(next_keyword)
 			*next_keyword = 0;
 
-		/* if (!*data)
-			continue; */
-		
 		/* temporarily null terminate keyword to make keyword and value distinct */
 		if ((value = strchr(data, '=')) != NULL) {
 			*value = '\0';
@@ -298,6 +301,7 @@ static int parse_options(char * options, int * filesys_flags)
 		} else if (strncmp(data, "user_xattr",10) == 0) {
 		   /* do nothing - need to skip so not parsed as user name */
 		} else if (strncmp(data, "user", 4) == 0) {
+
 			if (!value || !*value) {
 				if(data[4] == '\0') {
 					if(verboseflag)
@@ -308,7 +312,6 @@ static int parse_options(char * options, int * filesys_flags)
 						data[1] = ',';
 						data[2] = ',';
 						data[3] = ',';
-					/* BB remove it from mount line so as not to confuse kernel code */
 				} else {
 					printf("username specified with no parameter\n");
 					return 1;	/* needs_arg; */
@@ -334,6 +337,13 @@ static int parse_options(char * options, int * filesys_flags)
 							}
 						}
 					}
+					/* this is only case in which the user
+					name buf is not malloc - so we have to
+					check for domain name embedded within
+					the user name here since the later
+					call to check_for_domain will not be
+					invoked */
+					domain_name = check_for_domain(&value);
 				} else {
 					printf("username too long\n");
 					return 1;
@@ -516,15 +526,136 @@ static int parse_options(char * options, int * filesys_flags)
 	
 		/* put previous overwritten comma back */
 		if(next_keyword)
-			*next_keyword = ',';
+			*next_keyword = ','; /* BB handle sep= */
 		else
 			data = NULL;
 	}
 	return 0;
 }
 
+/* replace all (one or more) commas with double commas */
+static void check_for_comma(char ** ppasswrd)
+{
+	char *new_pass_buf;
+	char *pass;
+	int i,j;
+	int number_of_commas = 0;
+	int len = strlen(*ppasswrd);
+
+	if(ppasswrd == NULL)
+		return;
+	else 
+		(pass = *ppasswrd);
+
+	for(i=0;i<len;i++)  {
+		if(pass[i] == ',')
+			number_of_commas++;
+	}
+
+	if(number_of_commas == 0)
+		return;
+	if(number_of_commas > 64) {
+		/* would otherwise overflow the mount options buffer */
+		printf("\nInvalid password. Password contains too many commas.\n");
+		return;
+	}
+
+	new_pass_buf = malloc(len+number_of_commas+1);
+	if(new_pass_buf == NULL)
+		return;
+
+	for(i=0,j=0;i<len;i++,j++) {
+		new_pass_buf[j] = pass[i];
+		if(pass[i] == ',') {
+			j++;
+			new_pass_buf[j] = pass[i];
+		}
+	}
+	new_pass_buf[len+number_of_commas] = 0;
+
+	free(*ppasswrd);
+	*ppasswrd = new_pass_buf;
+	
+	return;
+}
+
+/* Usernames can not have backslash in them and we use
+   [BB check if usernames can have forward slash in them BB] 
+   backslash as domain\user separator character
+*/
+static char * check_for_domain(char **ppuser)
+{
+	char * original_string;
+	char * usernm;
+	char * domainnm;
+	int    original_len;
+	int    len;
+	int    i;
+
+	if(ppuser == NULL)
+		return NULL;
+
+	original_string = *ppuser;
+
+	if (original_string == NULL)
+		return NULL;
+	
+	original_len = strlen(original_string);
+
+	usernm = strchr(*ppuser,'/');
+	if (usernm == NULL) {
+		usernm = strchr(*ppuser,'\\');
+		if (usernm == NULL)
+			return NULL;
+	}
+
+	if(got_domain) {
+		printf("Domain name specified twice. Username probably malformed\n");
+		return NULL;
+	}
+
+	usernm[0] = 0;
+	domainnm = *ppuser;
+	if (domainnm[0] != 0) {
+		got_domain = 1;
+	} else {
+		printf("null domain\n");
+	}
+	len = strlen(domainnm);
+	/* reset domainm to new buffer, and copy
+	domain name into it */
+	domainnm = malloc(len+1);
+	if(domainnm == NULL)
+		return NULL;
+
+	strcpy(domainnm,*ppuser);
+
+/*	move_string(*ppuser, usernm+1) */
+	len = strlen(usernm+1);
+	printf("\nlen %d original_len %d\n",len, original_len);
+
+	if(len >= original_len) {
+		/* should not happen */
+		return domainnm;
+	}
+
+	for(i=0;i<original_len;i++) {
+		if(i<len)
+			original_string[i] = usernm[i+1];
+		else /* stuff with commas to remove last parm */
+			original_string[i] = ',';
+	}
+
+	/* BB add check for more than one slash? 
+	  strchr(*ppuser,'/');
+	  strchr(*ppuser,'\\') 
+	*/
+	
+	return domainnm;
+}
+
 /* Note that caller frees the returned buffer if necessary */
-char * parse_server(char ** punc_name)
+static char * parse_server(char ** punc_name)
 {
 	char * unc_name = *punc_name;
 	int length = strnlen(unc_name,1024);
@@ -756,7 +887,7 @@ int main(int argc, char ** argv)
 			user_name = optarg;
 			break;
 		case 'd':
-			domain_name = optarg;
+			domain_name = optarg; /* BB fix this - currently ignored */
 			break;
 		case 'p':
 			if(mountpassword == NULL)
@@ -841,8 +972,10 @@ int main(int argc, char ** argv)
 		}
 	}
 
-	if(got_user == 0)
+	if(got_user == 0) {
 		user_name = getusername();
+		got_user = 1;
+	}
        
 	if(got_password == 0) {
 		mountpassword = getpass("Password: "); /* BB obsolete */
@@ -864,7 +997,7 @@ mount_retry:
 		optlen += strlen(ipaddr) + 4;
 	if(mountpassword)
 		optlen += strlen(mountpassword) + 6;
-	options = malloc(optlen + 10);
+	options = malloc(optlen + 10 + 64 /* space for commas in password */ + 8 /* space for domain=  , domain name itself was counted as part of the length username string above */);
 
 	if(options == NULL) {
 		printf("Could not allocate memory for mount options\n");
@@ -882,15 +1015,30 @@ mount_retry:
 	if(ipaddr) {
 		strncat(options,",ip=",4);
 		strcat(options,ipaddr);
-	} 
+	}
+
 	if(user_name) {
+		/* check for syntax like user=domain\user */
+		domain_name = check_for_domain(&user_name);
 		strncat(options,",user=",6);
 		strcat(options,user_name);
 	} 
+	if(retry == 0)
+		if(domain_name) { 
+			/* extra length accounted for in option string above */
+			strncat(options,",domain=",8);
+			strcat(options,domain_name);
+		}
 	if(mountpassword) {
+		/* Commas have to be doubled, or else they will
+		look like the parameter separator */
+/*		if(sep is not set)*/
+		if(retry == 0)
+			check_for_comma(&mountpassword);
 		strncat(options,",pass=",6);
 		strcat(options,mountpassword);
 	}
+
 	strncat(options,",ver=",5);
 	strcat(options,MOUNT_CIFS_VERSION_MAJOR);
 
@@ -978,7 +1126,8 @@ mount_retry:
 		}
 	}
 	if(mountpassword) {
-		memset(mountpassword,0,64);
+		int len = strlen(mountpassword);
+		memset(mountpassword,0,len);
 		free(mountpassword);
 	}
 
