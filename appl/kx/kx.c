@@ -355,6 +355,7 @@ doit_active (char *host, char *user,
     int len = strlen(user);
     void *ret;
     u_int32_t tmp;
+    int tmp2;
     char *s;
     int i;
 
@@ -412,10 +413,10 @@ doit_active (char *host, char *user,
     } else
 	p++;
 
-    tmp = get_xsockets (&nsockets, &sockets, tcpp);
-    if (tmp < 0)
+    tmp2 = get_xsockets (&nsockets, &sockets, tcpp);
+    if (tmp2 < 0)
 	return 1;
-    display_num = tmp;
+    display_num = tmp2;
     if (tcpp)
 	snprintf (display, display_size, "localhost:%u", display_num);
     else
