@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -329,6 +329,7 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client,
     pa.val = malloc(pa.len * sizeof(*pa.val));
     if(pa.val == NULL)
 	return ENOMEM;
+    memset(pa.val, 0, pa.len * sizeof(*pa.val));
 
     for(j = 0; j < etypes_len; j++) {
 	for(i = 0; i < client->keys.len; i++) {
@@ -372,6 +373,142 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client,
 	return ret;
     }
     md->val[md->len - 1].padata_type = KRB5_PADATA_ETYPE_INFO;
+    md->val[md->len - 1].padata_value.length = len;
+    md->val[md->len - 1].padata_value.data = buf;
+    return 0;
+}
+
+/*
+ *
+ */
+
+#ifdef ENABLE_AES
+extern int _krb5_AES_string_to_default_iterator;
+#endif
+
+static krb5_error_code
+make_etype_info2_entry(ETYPE_INFO2_ENTRY *ent, Key *key)
+{
+    ent->etype = key->key.keytype;
+    if(key->salt) {
+	ALLOC(ent->salt);
+	if (ent->salt == NULL)
+	    return ENOMEM;
+	*ent->salt = strndup(key->salt->salt.data, key->salt->salt.length);
+    } else
+	ent->salt = NULL;
+
+    switch (key->key.keytype) {
+#ifdef ENABLE_AES
+    case KEYTYPE_AES128:
+    case KEYTYPE_AES256:
+	ALLOC(ent->s2kparams);
+	if (ent->s2kparams == NULL)
+	    return ENOMEM;
+	ent->s2kparams->length = 4;
+	ent->s2kparams->data = malloc(ent->s2kparams->length);
+	if (ent->s2kparams->data == NULL)
+	    return ENOMEM;
+	_krb5_put_int(ent->s2kparams->data,
+		      _krb5_AES_string_to_default_iterator,
+		      ent->s2kparams->length);
+	break;
+#endif
+    default:
+	ent->s2kparams = NULL;
+	break;
+    }
+    return 0;
+}
+
+/*
+ * Return 1 if the client have only older enctypes, this is for
+ * determining if the server should send ETYPE_INFO2 or not.
+ */
+
+static int
+only_older_enctype_p(const hdb_entry *client)
+{
+    int i;
+
+    for(i = 0; i < client->keys.len; i++) {
+	switch (client->keys.val[i].key.keytype) {
+	case KEYTYPE_DES:
+	case KEYTYPE_DES3:
+	case KEYTYPE_ARCFOUR:
+	    break;
+	default:
+	    return 0;
+	}
+    }
+    return 1;
+}
+
+/*
+ *
+ */
+
+static krb5_error_code
+get_pa_etype_info2(METHOD_DATA *md, hdb_entry *client, 
+		   ENCTYPE *etypes, unsigned int etypes_len)
+{
+    krb5_error_code ret = 0;
+    int i, j;
+    unsigned int n = 0;
+    ETYPE_INFO2 pa;
+    unsigned char *buf;
+    size_t len;
+
+    pa.len = client->keys.len;
+    if(pa.len > UINT_MAX/sizeof(*pa.val))
+	return ERANGE;
+    pa.val = malloc(pa.len * sizeof(*pa.val));
+    if(pa.val == NULL)
+	return ENOMEM;
+    memset(pa.val, 0, pa.len * sizeof(*pa.val));
+
+    for(j = 0; j < etypes_len; j++) {
+	for(i = 0; i < client->keys.len; i++) {
+	    if(client->keys.val[i].key.keytype == etypes[j])
+		if((ret = make_etype_info2_entry(&pa.val[n++], 
+						 &client->keys.val[i])) != 0) {
+		    free_ETYPE_INFO2(&pa);
+		    return ret;
+		}
+	}
+    }
+    for(i = 0; i < client->keys.len; i++) {
+	for(j = 0; j < etypes_len; j++) {
+	    if(client->keys.val[i].key.keytype == etypes[j])
+		goto skip;
+	}
+	if((ret = make_etype_info2_entry(&pa.val[n++], 
+					 &client->keys.val[i])) != 0) {
+	    free_ETYPE_INFO2(&pa);
+	    return ret;
+	}
+      skip:;
+    }
+    
+    if(n != pa.len) {
+	char *name;
+	krb5_unparse_name(context, client->principal, &name);
+	kdc_log(0, "internal error in get_pa_etype_info(%s): %d != %d", 
+		name, n, pa.len);
+	free(name);
+	pa.len = n;
+    }
+
+    ASN1_MALLOC_ENCODE(ETYPE_INFO2, buf, len, &pa, &len, ret);
+    free_ETYPE_INFO2(&pa);
+    if(ret)
+	return ret;
+    ret = realloc_method_data(md);
+    if(ret) {
+	free(buf);
+	return ret;
+    }
+    md->val[md->len - 1].padata_type = KRB5_PADATA_ETYPE_INFO2;
     md->val[md->len - 1].padata_value.length = len;
     md->val[md->len - 1].padata_value.data = buf;
     return 0;
@@ -675,8 +812,14 @@ as_rep(KDC_REQ *req,
 	pa->padata_value.length	= 0;
 	pa->padata_value.data	= NULL;
 
-	ret = get_pa_etype_info(&method_data, client, 
-				b->etype.val, b->etype.len); /* XXX check ret */
+	/* XXX check ret */
+	if (only_older_enctype_p(client))
+	    ret = get_pa_etype_info(&method_data, client, 
+				    b->etype.val, b->etype.len); 
+	/* XXX check ret */
+	ret = get_pa_etype_info2(&method_data, client, 
+				 b->etype.val, b->etype.len);
+
 	
 	ASN1_MALLOC_ENCODE(METHOD_DATA, buf, len, &method_data, &len, ret);
 	free_METHOD_DATA(&method_data);
