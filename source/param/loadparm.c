@@ -932,6 +932,8 @@ static void init_globals(void)
 
 	Globals.dcerpc_ep_servers = str_list_make("epmapper srvsvc wkssvc rpcecho", NULL);
 
+	Globals.AuthMethods = str_list_make("guest sam_ignoredomain", NULL);
+
 	string_set(&Globals.szSMBPasswdFile, dyn_SMB_PASSWD_FILE);
 	string_set(&Globals.szPrivateDir, dyn_PRIVATE_DIR);
 
