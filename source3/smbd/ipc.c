@@ -405,7 +405,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 		if ((psoff+pscnt < psoff) || (psoff+pscnt < pscnt))
 			goto bad_param;
 		if ((smb_base(inbuf)+psoff+pscnt > inbuf + size) ||
-				(smb_base(inbuf)+psoff+pscnt < smb_base(inbuf)));
+				(smb_base(inbuf)+psoff+pscnt < smb_base(inbuf)))
 			goto bad_param;
 
 		memcpy(params,smb_base(inbuf)+psoff,pscnt);
