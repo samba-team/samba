@@ -323,26 +323,40 @@ BOOL name_status_find(int type, struct in_addr to_ip, char *name)
 	struct nmb_name nname;
 	int count, i;
 	int sock;
+	BOOL result = False;
+
+	DEBUG(10, ("name_status_find: looking up name type 0x%02x at %s\n",
+		   type, inet_ntoa(to_ip)));
 
 	sock = open_socket_in(SOCK_DGRAM, 0, 3, interpret_addr(lp_socket_address()), True);
-	if (sock == -1) return False;
+	if (sock == -1) goto done;
 
 	make_nmb_name(&nname, "*", 0);
 	status = name_status_query(sock, &nname, to_ip, &count);
 	close(sock);
-	if (!status) return False;
+	if (!status) goto done;
 
 	for (i=0;i<count;i++) {
 		if (status[i].type == type) break;
 	}
-	if (i == count) return False;
+	if (i == count) goto done;
 
 	StrnCpy(name, status[i].name, 15);
-
 	dos_to_unix(name, True);
+	result = True;
 
-	free(status);
-	return True;
+ done:
+	DEBUG(10, ("name_status_find: name %sfound", result ? "" : "not "));
+
+	if (result)
+		DEBUGADD(10, (", ip address is %s", inet_ntoa(to_ip)));
+
+	DEBUG(10, ("\n"));	
+
+	if (status)
+		free(status);
+
+	return result;
 }
 
 /****************************************************************************
