@@ -723,6 +723,9 @@
 /* Define if you have the utimes function.  */
 #undef HAVE_UTIMES
 
+/* Define if you have the vasprintf function.  */
+#undef HAVE_VASPRINTF
+
 /* Define if you have the vsnprintf function.  */
 #undef HAVE_VSNPRINTF
 

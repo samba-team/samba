@@ -37,21 +37,8 @@
    arguemnts to DEBUG() right. We have got them wrong too often in the 
    past.
  */
-#ifdef HAVE_STDARG_H
-int  Debug1( char *, ... )
-#ifdef __GNUC__
-     __attribute__ ((format (__printf__, 1, 2)))
-#endif
-;
-BOOL dbgtext( char *, ... )
-#ifdef __GNUC__
-     __attribute__ ((format (__printf__, 1, 2)))
-#endif
-;
-#else
-int  Debug1();
-BOOL dbgtext();
-#endif
+int  Debug1( char *, ... ) PRINTF_ATTRIBUTE(1,2);
+BOOL dbgtext( char *, ... ) PRINTF_ATTRIBUTE(1,2);
 
 /* If we have these macros, we can add additional info to the header. */
 #ifdef HAVE_FILE_MACRO

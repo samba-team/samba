@@ -994,5 +994,20 @@ extern int DEBUGLEVEL;
 #define RTLD_NOW 0
 #endif
 
+/* add varargs prototypes with printf checking */
+#ifdef __GNUC__
+#define PRINTF_ATTRIBUTE(a1, a2) __attribute__ ((format (__printf__, a1, a2)))
+#else
+#define PRINTF_ATTRIBUTE(a1, a2)
+#endif
+
+int fdprintf(int , char *, ...) PRINTF_ATTRIBUTE(2,3);
+#ifndef HAVE_SNPRINTF
+int snprintf(char *,size_t ,const char *, ...) PRINTF_ATTRIBUTE(3,4);
+#endif
+#ifndef HAVE_ASPRINTF
+int asprintf(char **,char *, ...) PRINTF_ATTRIBUTE(2,3);
+#endif
+
 #endif /* _INCLUDES_H */
 
