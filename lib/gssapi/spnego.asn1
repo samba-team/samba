@@ -3,11 +3,6 @@
 SPNEGO DEFINITIONS ::=
 BEGIN
 
-NegotiationToken ::= CHOICE {
-	negTokenInit[0]		NegTokenInit,
-	negTokenTarg[1]		NegTokenTarg
-}
-
 MechType::= OBJECT IDENTIFIER
 
 MechTypeList ::= SEQUENCE OF MechType
@@ -37,6 +32,11 @@ NegTokenTarg ::= SEQUENCE {
     supportedMech  [1] MechType                                OPTIONAL,
     responseToken  [2] OCTET STRING                            OPTIONAL,
     mechListMIC    [3] OCTET STRING                            OPTIONAL
+}
+
+NegotiationToken ::= CHOICE {
+	negTokenInit[0]		NegTokenInit,
+	negTokenTarg[1]		NegTokenTarg
 }
 
 END
