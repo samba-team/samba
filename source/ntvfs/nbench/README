@@ -5,8 +5,7 @@ filter module.
 Here is an example config that passes through to the CIFS NTVFS backend.
 
 [bench]
-	ntvfs handler = nbench
-	nbench:passthru = cifs
+	ntvfs handler = nbench cifs
 	cifs:server = myserver
 	cifs:user = myuser
 	cifs:password = mypass
