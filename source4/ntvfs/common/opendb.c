@@ -39,6 +39,7 @@
 */
 
 #include "includes.h"
+#include "messages.h"
 
 struct odb_context {
 	struct tdb_wrap *w;
@@ -58,6 +59,8 @@ struct odb_entry {
 	uint32_t share_access;
 	uint32_t create_options;
 	uint32_t access_mask;
+	void	 *notify_ptr;
+	BOOL     pending;
 };
 
 
@@ -152,6 +155,8 @@ static BOOL share_conflict(struct odb_entry *e1, struct odb_entry *e2)
 {
 #define CHECK_MASK(am, sa, right, share) if (((am) & (right)) && !((sa) & (share))) return True
 
+	if (e1->pending || e2->pending) return False;
+
 	/* if either open involves no read.write or delete access then
 	   it can't conflict */
 	if (!(e1->access_mask & (SA_RIGHT_FILE_WRITE_APPEND | 
@@ -219,6 +224,8 @@ NTSTATUS odb_open_file(struct odb_lock *lck, uint16_t fnum,
 	e.share_access   = share_access;
 	e.create_options = create_options;
 	e.access_mask    = access_mask;
+	e.notify_ptr	 = NULL;
+	e.pending        = False;
 
 	/* check the existing file opens to see if they
 	   conflict */
@@ -231,6 +238,56 @@ NTSTATUS odb_open_file(struct odb_lock *lck, uint16_t fnum,
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 	}
+
+	tp = Realloc(dbuf.dptr, (count+1) * sizeof(struct odb_entry));
+	if (tp == NULL) {
+		if (dbuf.dptr) free(dbuf.dptr);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	dbuf.dptr = tp;
+	dbuf.dsize = (count+1) * sizeof(struct odb_entry);
+
+	memcpy(dbuf.dptr + (count*sizeof(struct odb_entry)),
+	       &e, sizeof(struct odb_entry));
+
+	if (tdb_store(odb->w->tdb, lck->key, dbuf, TDB_REPLACE) != 0) {
+		free(dbuf.dptr);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	free(dbuf.dptr);
+	return NT_STATUS_OK;
+}
+
+
+/*
+  register a pending open file in the open files database
+*/
+NTSTATUS odb_open_file_pending(struct odb_lock *lck, void *private)
+{
+	struct odb_context *odb = lck->odb;
+	TDB_DATA dbuf;
+	struct odb_entry e;
+	char *tp;
+	struct odb_entry *elist;
+	int count;
+		
+	dbuf = tdb_fetch(odb->w->tdb, lck->key);
+
+	e.server         = odb->server;
+	e.tid            = odb->tid;
+	e.fnum           = 0;
+	e.share_access   = 0;
+	e.create_options = 0;
+	e.access_mask    = 0;
+	e.notify_ptr	 = private;
+	e.pending        = True;
+
+	/* check the existing file opens to see if they
+	   conflict */
+	elist = (struct odb_entry *)dbuf.dptr;
+	count = dbuf.dsize / sizeof(struct odb_entry);
 
 	tp = Realloc(dbuf.dptr, (count+1) * sizeof(struct odb_entry));
 	if (tp == NULL) {
@@ -274,9 +331,72 @@ NTSTATUS odb_close_file(struct odb_lock *lck, uint16_t fnum)
 	elist = (struct odb_entry *)dbuf.dptr;
 	count = dbuf.dsize / sizeof(struct odb_entry);
 
+	/* send any pending notifications */
+	for (i=0;i<count;i++) {
+		if (elist[i].pending) {
+			messaging_send_ptr(odb->messaging_ctx, elist[i].server, 
+					   MSG_PVFS_RETRY_OPEN, elist[i].notify_ptr);
+			
+		}
+	}
+
 	/* find the entry, and delete it */
 	for (i=0;i<count;i++) {
 		if (fnum == elist[i].fnum &&
+		    odb->server == elist[i].server &&
+		    odb->tid == elist[i].tid) {
+			if (i < count-1) {
+				memmove(elist+i, elist+i+1, 
+					(count - (i+1)) * sizeof(struct odb_entry));
+			}
+			break;
+		}
+	}
+
+	status = NT_STATUS_OK;
+
+	if (i == count) {
+		status = NT_STATUS_UNSUCCESSFUL;
+	} else if (count == 1) {
+		if (tdb_delete(odb->w->tdb, lck->key) != 0) {
+			status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+	} else {
+		dbuf.dsize = (count-1) * sizeof(struct odb_entry);
+		if (tdb_store(odb->w->tdb, lck->key, dbuf, TDB_REPLACE) != 0) {
+			status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+	}
+
+	free(dbuf.dptr);
+
+	return status;
+}
+
+
+/*
+  remove a pending opendb entry
+*/
+NTSTATUS odb_remove_pending(struct odb_lock *lck, void *private)
+{
+	struct odb_context *odb = lck->odb;
+	TDB_DATA dbuf;
+	struct odb_entry *elist;
+	int i, count;
+	NTSTATUS status;
+
+	dbuf = tdb_fetch(odb->w->tdb, lck->key);
+
+	if (dbuf.dptr == NULL) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	elist = (struct odb_entry *)dbuf.dptr;
+	count = dbuf.dsize / sizeof(struct odb_entry);
+
+	/* find the entry, and delete it */
+	for (i=0;i<count;i++) {
+		if (private == elist[i].notify_ptr &&
 		    odb->server == elist[i].server &&
 		    odb->tid == elist[i].tid) {
 			if (i < count-1) {
@@ -386,6 +506,8 @@ NTSTATUS odb_can_open(struct odb_context *odb, DATA_BLOB *key,
 	e.share_access   = share_access;
 	e.create_options = create_options;
 	e.access_mask    = access_mask;
+	e.notify_ptr	 = NULL;
+	e.pending	 = False;
 
 	for (i=0;i<count;i++) {
 		if (share_conflict(elist+i, &e)) {

@@ -723,7 +723,7 @@ static void smbsrv_init(struct server_service *service, const struct model_ops *
 /*
   called when a SMB socket becomes readable
 */
-static void smbsrv_recv(struct server_connection *conn, time_t t, uint16_t flags)
+static void smbsrv_recv(struct server_connection *conn, struct timeval t, uint16_t flags)
 {
 	struct smbsrv_connection *smb_conn = conn->private_data;
 	NTSTATUS status;
@@ -744,7 +744,7 @@ static void smbsrv_recv(struct server_connection *conn, time_t t, uint16_t flags
 /*
   called when a SMB socket becomes writable
 */
-static void smbsrv_send(struct server_connection *conn, time_t t, uint16_t flags)
+static void smbsrv_send(struct server_connection *conn, struct timeval t, uint16_t flags)
 {
 	struct smbsrv_connection *smb_conn = conn->private_data;
 
@@ -787,11 +787,10 @@ static void smbsrv_send(struct server_connection *conn, time_t t, uint16_t flags
 /*
   called when connection is idle
 */
-static void smbsrv_idle(struct server_connection *conn, time_t t)
+static void smbsrv_idle(struct server_connection *conn, struct timeval t)
 {
 	DEBUG(10,("smbsrv_idle: not implemented!\n"));
-	conn->event.idle->next_event = t + 5;
-
+	conn->event.idle->next_event = timeval_add(&t, 5, 0);
 	return;
 }
 

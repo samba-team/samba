@@ -33,7 +33,7 @@ static void smbcli_transport_process_send(struct smbcli_transport *transport);
   an event has happened on the socket
 */
 static void smbcli_transport_event_handler(struct event_context *ev, struct fd_event *fde, 
-					time_t t, uint16_t flags)
+					   struct timeval t, uint16_t flags)
 {
 	struct smbcli_transport *transport = fde->private;
 
@@ -233,21 +233,21 @@ again:
 }
 
 static void idle_handler(struct event_context *ev, 
-			 struct timed_event *te, time_t t)
+			 struct timed_event *te, struct timeval t)
 {
 	struct smbcli_transport *transport = te->private;
-	te->next_event = t + transport->idle.period;
+	te->next_event = timeval_add(&te->next_event, 0, transport->idle.period);
 	transport->idle.func(transport, transport->idle.private);
 }
 
 /*
   setup the idle handler for a transport
-  the period is in seconds
+  the period is in microseconds
 */
 void smbcli_transport_idle_handler(struct smbcli_transport *transport, 
-				void (*idle_func)(struct smbcli_transport *, void *),
-				uint_t period,
-				void *private)
+				   void (*idle_func)(struct smbcli_transport *, void *),
+				   uint64_t period,
+				   void *private)
 {
 	struct timed_event te;
 	transport->idle.func = idle_func;
@@ -258,7 +258,7 @@ void smbcli_transport_idle_handler(struct smbcli_transport *transport,
 		event_remove_timed(transport->event.ctx, transport->event.te);
 	}
 
-	te.next_event = time(NULL) + period;
+	te.next_event = timeval_current_ofs(0, period);
 	te.handler = idle_handler;
 	te.private = transport;
 	transport->event.te = event_add_timed(transport->event.ctx, &te);

@@ -31,6 +31,7 @@ static int nbio_id;
 static int nprocs;
 static BOOL bypass_io;
 static int warmup;
+static struct timeval tv;
 
 struct ftable {
 	struct ftable *next, *prev;
@@ -76,7 +77,7 @@ void nb_alarm(int sig)
 		if (!children[i].done) num_clients++;
 	}
 
-	t = end_timer();
+	t = timeval_elapsed(&tv);
 
 	if (warmup) {
 		printf("%4d  %8d  %.2f MB/sec  warmup %.0f sec   \n", 
@@ -91,7 +92,7 @@ void nb_alarm(int sig)
 	}
 
 	if (warmup && t >= warmup) {
-		start_timer();
+		tv = timeval_current();
 		warmup = 0;
 	}
 
@@ -156,7 +157,7 @@ void nb_setup(struct smbcli_state *cli, int id, int warmupt)
 	warmup = warmupt;
 	nbio_id = id;
 	c = cli;
-	start_timer();
+	tv = timeval_current();
 	if (children) {
 		children[nbio_id].done = 0;
 	}

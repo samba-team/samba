@@ -937,22 +937,19 @@ static BOOL run_deferopen(struct smbcli_state *cli, int dummy)
 		int fnum = -1;
 
 		do {
-			struct timeval tv_start, tv_end;
-			GetTimeOfDay(&tv_start);
+			struct timeval tv;
+			tv = timeval_current();
 			fnum = smbcli_nt_create_full(cli->tree, fname, 0, GENERIC_RIGHTS_FILE_ALL_ACCESS,
 				FILE_ATTRIBUTE_NORMAL, NTCREATEX_SHARE_ACCESS_NONE,
 				NTCREATEX_DISP_OPEN_IF, 0, 0);
 			if (fnum != -1) {
 				break;
 			}
-			GetTimeOfDay(&tv_end);
 			if (NT_STATUS_EQUAL(smbcli_nt_error(cli->tree),NT_STATUS_SHARING_VIOLATION)) {
-				/* Sharing violation errors need to be 1 second apart. */
-				int64_t tdif = usec_time_diff(&tv_end, &tv_start);
-				if (tdif < 500000 || tdif > 1500000) {
-					fprintf(stderr,"Timing incorrect %lld.%lld for share violation\n",
-						tdif / (int64_t)1000000, 
-						tdif % (int64_t)1000000);
+				double e = timeval_elapsed(&tv);
+				if (e < 0.5 || e > 1.5) {
+					fprintf(stderr,"Timing incorrect %.2f violation\n",
+						e);
 				}
 			}
 		} while (NT_STATUS_EQUAL(smbcli_nt_error(cli->tree),NT_STATUS_SHARING_VIOLATION));
@@ -2269,6 +2266,7 @@ double torture_create_procs(BOOL (*fn)(struct smbcli_state *, int), BOOL *result
 	char **unc_list = NULL;
 	const char *p;
 	int num_unc_names = 0;
+	struct timeval tv;
 
 	synccount = 0;
 
@@ -2300,7 +2298,7 @@ double torture_create_procs(BOOL (*fn)(struct smbcli_state *, int), BOOL *result
 		child_status_out[i] = True;
 	}
 
-	start_timer();
+	tv = timeval_current();
 
 	for (i=0;i<torture_nprocs;i++) {
 		procnum = i;
@@ -2364,18 +2362,18 @@ double torture_create_procs(BOOL (*fn)(struct smbcli_state *, int), BOOL *result
 		}
 		if (synccount == torture_nprocs) break;
 		msleep(100);
-	} while (end_timer() < start_time_limit);
+	} while (timeval_elapsed(&tv) < start_time_limit);
 
 	if (synccount != torture_nprocs) {
 		printf("FAILED TO START %d CLIENTS (started %d)\n", torture_nprocs, synccount);
 		*result = False;
-		return end_timer();
+		return timeval_elapsed(&tv);
 	}
 
 	printf("Starting %d clients\n", torture_nprocs);
 
 	/* start the client load */
-	start_timer();
+	tv = timeval_current();
 	for (i=0;i<torture_nprocs;i++) {
 		child_status[i] = 0;
 	}
@@ -2398,7 +2396,7 @@ double torture_create_procs(BOOL (*fn)(struct smbcli_state *, int), BOOL *result
 			*result = False;
 		}
 	}
-	return end_timer();
+	return timeval_elapsed(&tv);
 }
 
 #define FLAG_MULTIPROC 1
@@ -2557,12 +2555,12 @@ static BOOL run_test(const char *name)
 				}
 					 
 			} else {
-				start_timer();
+				struct timeval tv = timeval_current();
 				if (!torture_ops[i].fn()) {
 					ret = False;
 					printf("TEST %s FAILED!\n", torture_ops[i].name);
 				}
-				t = end_timer();
+				t = timeval_elapsed(&tv);
 			}
 			printf("%s took %g secs\n\n", torture_ops[i].name, t);
 		}

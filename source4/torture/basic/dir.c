@@ -35,9 +35,9 @@ BOOL torture_dirtest1(void)
 	int i;
 	struct smbcli_state *cli;
 	int fnum;
-	double t1;
 	BOOL correct = True;
 	extern int torture_numops;
+	struct timeval tv;
 
 	printf("starting dirtest1\n");
 
@@ -48,6 +48,7 @@ BOOL torture_dirtest1(void)
 	printf("Creating %d random filenames\n", torture_numops);
 
 	srandom(0);
+	tv = timeval_current();
 	for (i=0;i<torture_numops;i++) {
 		char *fname;
 		asprintf(&fname, "\\%x", (int)random());
@@ -61,13 +62,11 @@ BOOL torture_dirtest1(void)
 		free(fname);
 	}
 
-	t1 = end_timer();
-
 	printf("Matched %d\n", smbcli_list(cli->tree, "a*.*", 0, list_fn, NULL));
 	printf("Matched %d\n", smbcli_list(cli->tree, "b*.*", 0, list_fn, NULL));
 	printf("Matched %d\n", smbcli_list(cli->tree, "xyzabc", 0, list_fn, NULL));
 
-	printf("dirtest core %g seconds\n", end_timer() - t1);
+	printf("dirtest core %g seconds\n", timeval_elapsed(&tv));
 
 	srandom(0);
 	for (i=0;i<torture_numops;i++) {

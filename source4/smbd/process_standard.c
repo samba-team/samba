@@ -39,7 +39,7 @@ static void standard_model_startup(void)
   called when a listening socket becomes readable
 */
 static void standard_accept_connection(struct event_context *ev, struct fd_event *srv_fde,
-				       time_t t, uint16_t flags)
+				       struct timeval t, uint16_t flags)
 {
 	NTSTATUS status;
 	struct socket_context *sock;

@@ -386,9 +386,144 @@ NTTIME nttime_from_string(const char *s)
 	return strtoull(s, NULL, 0);
 }
 
-int64_t usec_time_diff(struct timeval *larget, struct timeval *smallt)
+/*
+  return (tv1 - tv2) in microseconds
+*/
+int64_t usec_time_diff(struct timeval *tv1, struct timeval *tv2)
 {
-	int64_t sec_diff = larget->tv_sec - smallt->tv_sec;
-	return (sec_diff * 1000000) + (int64_t)(larget->tv_usec - smallt->tv_usec);
+	int64_t sec_diff = tv1->tv_sec - tv2->tv_sec;
+	return (sec_diff * 1000000) + (int64_t)(tv1->tv_usec - tv2->tv_usec);
 }
 
+
+/*
+  return a zero timeval
+*/
+struct timeval timeval_zero(void)
+{
+	struct timeval tv;
+	tv.tv_sec = 0;
+	tv.tv_usec = 0;
+	return tv;
+}
+
+/*
+  return a timeval for the current time
+*/
+struct timeval timeval_current(void)
+{
+	struct timeval tv;
+	GetTimeOfDay(&tv);
+	return tv;
+}
+
+/*
+  return a timeval struct with the given elements
+*/
+struct timeval timeval_set(uint32_t secs, uint32_t usecs)
+{
+	struct timeval tv;
+	tv.tv_sec = secs;
+	tv.tv_usec = usecs;
+	return tv;
+}
+
+
+/*
+  return a timeval ofs microseconds after tv
+*/
+struct timeval timeval_add(struct timeval *tv, uint32_t secs, uint32_t usecs)
+{
+	struct timeval tv2 = *tv;
+	const uint_t million = 1000000;
+	tv2.tv_sec += secs;
+	tv2.tv_usec += usecs;
+	tv2.tv_sec += tv2.tv_usec / million;
+	tv2.tv_usec = tv2.tv_usec % million;
+	return tv2;
+}
+
+/*
+  return the sum of two timeval structures
+*/
+struct timeval timeval_sum(struct timeval *tv1, struct timeval *tv2)
+{
+	return timeval_add(tv1, tv2->tv_sec, tv2->tv_usec);
+}
+
+/*
+  return a timeval secs/usecs into the future
+*/
+struct timeval timeval_current_ofs(uint32_t secs, uint32_t usecs)
+{
+	struct timeval tv = timeval_current();
+	return timeval_add(&tv, secs, usecs);
+}
+
+/*
+  compare two timeval structures. 
+  Return 1 if tv2 > tv1
+  Return 0 if tv2 == tv1
+  Return -1 if tv2 < tv1
+*/
+int timeval_compare(struct timeval *tv1, struct timeval *tv2)
+{
+	if (tv2->tv_sec  > tv1->tv_sec)  return 1;
+	if (tv2->tv_sec  < tv1->tv_sec)  return -1;
+	if (tv2->tv_usec > tv1->tv_usec) return 1;
+	if (tv2->tv_usec < tv1->tv_usec) return -1;
+	return 0;
+}
+
+/*
+  return True if a timer is in the past
+*/
+BOOL timeval_expired(struct timeval *tv)
+{
+	struct timeval tv2 = timeval_current();
+	if (tv2.tv_sec > tv->tv_sec) return True;
+	if (tv2.tv_sec < tv->tv_sec) return False;
+	return (tv2.tv_usec >= tv->tv_usec);
+}
+
+/*
+  return the number of seconds elapsed since a given time
+*/
+double timeval_elapsed(struct timeval *tv)
+{
+	struct timeval tv2 = timeval_current();
+	return (tv2.tv_sec - tv->tv_sec) + 
+	       (tv2.tv_usec - tv->tv_usec)*1.0e-6;
+}
+
+/*
+  return the lesser of two timevals
+*/
+struct timeval timeval_min(struct timeval *tv1, struct timeval *tv2)
+{
+	if (tv1->tv_sec < tv2->tv_sec) return *tv1;
+	if (tv1->tv_sec > tv2->tv_sec) return *tv2;
+	if (tv1->tv_usec < tv2->tv_usec) return *tv1;
+	return *tv2;
+}
+
+/*
+  return the difference between two timevals as a timeval
+  if tv2 comes after tv1, then return a zero timeval
+  (this is *tv1 - *tv2)
+*/
+struct timeval timeval_diff(struct timeval *tv1, struct timeval *tv2)
+{
+	struct timeval t;
+	if (timeval_compare(tv1, tv2) >= 0) {
+		return timeval_zero();
+	}
+	t.tv_sec = tv1->tv_sec - tv2->tv_sec;
+	if (tv2->tv_usec > tv1->tv_usec) {
+		t.tv_sec--;
+		t.tv_usec = 1000000 - (tv2->tv_usec - tv1->tv_usec);
+	} else {
+		t.tv_usec = tv1->tv_usec - tv2->tv_usec;
+	}
+	return t;
+}

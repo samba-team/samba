@@ -440,7 +440,7 @@ NTSTATUS ldapsrv_flush_responses(struct ldapsrv_connection *conn)
 /*
   called when a LDAP socket becomes readable
 */
-static void ldapsrv_recv(struct server_connection *conn, time_t t,
+static void ldapsrv_recv(struct server_connection *conn, struct timeval t,
 			 uint16_t flags)
 {
 	struct ldapsrv_connection *ldap_conn = conn->private_data;
@@ -536,7 +536,7 @@ static void ldapsrv_recv(struct server_connection *conn, time_t t,
 /*
   called when a LDAP socket becomes writable
 */
-static void ldapsrv_send(struct server_connection *conn, time_t t,
+static void ldapsrv_send(struct server_connection *conn, struct timeval t,
 			 uint16_t flags)
 {
 	struct ldapsrv_connection *ldap_conn = conn->private_data;
@@ -558,7 +558,7 @@ static void ldapsrv_send(struct server_connection *conn, time_t t,
 /*
   called when connection is idle
 */
-static void ldapsrv_idle(struct server_connection *conn, time_t t)
+static void ldapsrv_idle(struct server_connection *conn, struct timeval t)
 {
 	DEBUG(10,("ldapsrv_idle: not implemented!\n"));
 	return;

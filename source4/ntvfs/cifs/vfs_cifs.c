@@ -78,7 +78,8 @@ static BOOL oplock_handler(struct smbcli_transport *transport, uint16_t tid, uin
  /*
   a handler for read events on a connection to a backend server
 */
-static void cifs_socket_handler(struct event_context *ev, struct fd_event *fde, time_t t, uint16_t flags)
+static void cifs_socket_handler(struct event_context *ev, struct fd_event *fde, 
+				struct timeval t, uint16_t flags)
 {
 	struct cvfs_private *private = fde->private;
 	struct smbsrv_tcon *tcon = private->tcon;
@@ -149,7 +150,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	
 	/* we need to receive oplock break requests from the server */
 	smbcli_oplock_handler(private->transport, oplock_handler, private);
-	smbcli_transport_idle_handler(private->transport, idle_func, 1, private);
+	smbcli_transport_idle_handler(private->transport, idle_func, 50000, private);
 
 	private->transport->event.fde->handler = cifs_socket_handler;
 	private->transport->event.fde->private = private;

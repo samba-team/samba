@@ -285,15 +285,14 @@ void event_loop_exit(struct event_context *ev, int code)
 */
 int event_loop_once(struct event_context *ev)
 {
-	time_t t;
 	fd_set r_fds, w_fds;
 	struct fd_event *fe;
 	struct loop_event *le;
 	struct timed_event *te;
 	int selrtn;
-	struct timeval tval;
+	struct timeval tval, t;
 
-	t = time(NULL);
+	t = timeval_current();
 
 	/* the loop events are called on each loop. Be careful to allow the 
 	   event to remove itself */
@@ -310,7 +309,6 @@ int event_loop_once(struct event_context *ev)
 		le = next;
 	}
 
-	ZERO_STRUCT(tval);
 	FD_ZERO(&r_fds);
 	FD_ZERO(&w_fds);
 
@@ -336,17 +334,12 @@ int event_loop_once(struct event_context *ev)
 
 	/* start with a reasonable max timeout */
 	tval.tv_sec = 600;
+	tval.tv_usec = 0;
 		
 	/* work out the right timeout for all timed events */
 	for (te=ev->timed_events;te;te=te->next) {
-		int timeout = te->next_event - t;
-		if (timeout < 0) {
-			timeout = 0;
-		}
-		if (te->ref_count &&
-		    timeout < tval.tv_sec) {
-			tval.tv_sec = timeout;
-		}
+		struct timeval tv = timeval_diff(&te->next_event, &t);
+		tval = timeval_min(&tv, &tval);
 	}
 
 	/* only do a select() if there're fd_events
@@ -368,7 +361,7 @@ int event_loop_once(struct event_context *ev)
 		 */
 		selrtn = select(ev->maxfd+1, &r_fds, &w_fds, NULL, &tval);
 		
-		t = time(NULL);
+		t = timeval_current();
 		
 		if (selrtn == -1 && errno == EBADF) {
 			/* the socket is dead! this should never
@@ -404,11 +397,11 @@ int event_loop_once(struct event_context *ev)
 		if (te->ref_count == 0) {
 			DLIST_REMOVE(ev->timed_events, te);
 			talloc_free(te);
-		} else if (te->next_event <= t) {
+		} else if (timeval_compare(&te->next_event, &t) >= 0) {
 			te->ref_count++;
 			te->handler(ev, te, t);
 			te->ref_count--;
-			if (te->next_event <= t) {
+			if (timeval_compare(&te->next_event, &t) >= 0) {
 				/* the handler didn't set a time for the 
 				   next event - remove the event */
 				event_remove_timed(ev, te);
