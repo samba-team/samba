@@ -2526,7 +2526,8 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 {
 	pstring key;
 	NT_PRINTER_INFO_LEVEL_2 info;
-	int len = 0;
+	int 		len = 0, 
+			devmode_length = 0;
 	TDB_DATA kbuf, dbuf;
 	fstring printername;
 		
@@ -2575,7 +2576,19 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 			info.printername);
 	fstrcpy(info.printername, printername);
 
+#if 0
+	/*
+	 * We don't want to generate a default device mode (which is why this code is commented out).  
+	 * Better to have the printer initiailized by the client.	  --jerry
+	 */
+	if (!(devmode_length=unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len)))
+		info.devmode = construct_nt_devicemode(printername);
+	else
+		len += devmode_length;
+#else
 	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
+#endif
+		
 	len += unpack_specifics(&info.specific,dbuf.dptr+len, dbuf.dsize-len);
 
 	nt_printing_getsec(sharename, &info.secdesc_buf);
@@ -3124,7 +3137,7 @@ uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level)
 ****************************************************************************/
 uint32 add_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 {
-	uint32 result;
+	uint32 result = NT_STATUS_NO_PROBLEMO;
 	DEBUG(104,("adding a printer at level [%d]\n", level));
 	dump_a_printer_driver(driver, level);
 	
@@ -3132,17 +3145,20 @@ uint32 add_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 	{
 		case 3:
 		{
-			result=add_a_printer_driver_3(driver.info_3);
+			if(add_a_printer_driver_3(driver.info_3) != 0)
+				result = ERROR_ACCESS_DENIED;
 			break;
 		}
 
 		case 6:
 		{
-			result=add_a_printer_driver_6(driver.info_6);
+			if (add_a_printer_driver_6(driver.info_6) != 0)
+				result = ERROR_ACCESS_DENIED;
 			break;
 		}
+
 		default:
-			result=1;
+			result = NT_STATUS_INVALID_INFO_CLASS;
 			break;
 	}
 	
