@@ -55,8 +55,8 @@ extern struct in_addr ipzero;
 
 
  /****************************************************************************
-catch a sigterm
-****************************************************************************/
+  catch a sigterm
+  ****************************************************************************/
 static int sig_term()
 {
   BlockSignals(True);
@@ -457,7 +457,7 @@ static void usage(char *pname)
 
   fault_setup(fault_continue);
 
-  signal(SIGHUP,SIGNAL_CAST sig_hup);
+  signal(SIGHUP ,SIGNAL_CAST sig_hup);
   signal(SIGTERM,SIGNAL_CAST sig_term);
 
   while ((opt = getopt(argc, argv, "s:T:I:C:bAi:B:N:Rn:l:d:Dp:hSH:G:")) != EOF)

@@ -52,7 +52,7 @@ static void update_name_trn_id(void)
 
 
 /***************************************************************************
-  add an initated name query  into the list
+  add an expected response record into the list
   **************************************************************************/
 static void add_response_record(struct subnet_record *d,
 				struct response_record *n)
@@ -76,6 +76,21 @@ static void add_response_record(struct subnet_record *d,
   n->prev = n2;
 }
 
+
+/***************************************************************************
+  remove an expected response record from the list
+  **************************************************************************/
+static void remove_response_record(struct subnet_record *d,
+				struct response_record *n)
+{
+	if (n->prev) n->prev->next = n->next;
+	if (n->next) n->next->prev = n->prev;
+
+	if (d->responselist == n) d->responselist = n->next; 
+
+	free(n);
+}
+
 
 /***************************************************************************
   deals with an entry before it dies
@@ -138,11 +153,12 @@ static void dead_netbios_entry(struct subnet_record *d,
 
 	  if (ismyip(n->to_ip))
 	  {
-		remove_netbios_name(d,n->name.name,n->name.name_type,SELF,n->to_ip);
+		name_unregister_work(d,n->name.name,n->name.name_type);
 	  }
 	  if (!n->bcast)
 	  {
-		 DEBUG(1,("WINS server did not respond to name release!\n"));
+		 DEBUG(0,("WINS server did not respond to name release!\n"));
+         /* XXXX whoops. we have problems. must deal with this */
 	  }
 	  break;
 	}
@@ -161,10 +177,8 @@ static void dead_netbios_entry(struct subnet_record *d,
 
 		/* IMPORTANT: see response_name_reg() */
 
-		enum name_source source = ismyip(n->to_ip) ? SELF : REGISTER;
-
-		add_netbios_entry(d,n->name.name,n->name.name_type,
-				n->nb_flags, n->ttl, source,n->to_ip, True,!n->bcast);
+		name_register_work(d,n->name.name,n->name.name_type,
+				n->nb_flags, n->ttl, n->to_ip, n->bcast);
 	  }
 	  else
 	  {
@@ -175,6 +189,7 @@ static void dead_netbios_entry(struct subnet_record *d,
 		   broadcasting. */
 		
 		 DEBUG(1,("WINS server did not respond to name registration!\n"));
+         /* XXXX whoops. we have problems. must deal with this */
 	  }
 	  break;
 	}
@@ -295,18 +310,11 @@ void expire_netbios_response_entries()
 		  }
 		  else
 		  {
-			  dead_netbios_entry(d,n);
-
 			  nextn = n->next;
-			  
-			  if (n->prev) n->prev->next = n->next;
-			  if (n->next) n->next->prev = n->prev;
-			  
-			  if (d->responselist == n) d->responselist = n->next; 
-			  
-			  free(n);
-
 			  num_response_packets--;
+
+			  dead_netbios_entry    (d,n); /* process the non-response */
+              remove_response_record(d,n); /* remove the non-response */
 
 			  continue;
 		   }

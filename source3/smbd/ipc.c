@@ -747,45 +747,32 @@ struct srv_info_struct
 
 /*******************************************************************
   filter out unwanted server info 
-  This function returns True if the entry is wanted.
   ******************************************************************/
 static BOOL filter_server_info(struct srv_info_struct *server, 
 			       BOOL domains,
 			       char *domain, uint32 request)
 {
-  /* If no domain was specified, */
   if (*domain == 0)
     {
-      /* If entry's domain matches this server's domain, 
-         accept this entry. */
       if (strequal(lp_workgroup(), server->domain)) {
 	return True;
       }
-
-      /* If specific domain requested, reject this entry. */
       else if (domains)
 	{
 	  DEBUG(4,("primary domain:reject %8x %s %s\n",request,server->name,server->domain));
 	  return False;
 	}
-
-      /* If the request was for a list of domain enumerators,
-         we don't care what domain this entry is in as long
-         as it is a domain enumerator. */
       else if ((request & SV_TYPE_DOMAIN_ENUM) &&
 	       (server->type & SV_TYPE_DOMAIN_ENUM))
 	{
-	  return True;
+	  DEBUG(4,("rej:DOM %8x: %s %s\n",server->type,server->name,server->domain));
+	  return False;
 	}
       
-      DEBUG(4,("wrong domain: %8x: %s %s\n",server->type,server->name,server->domain));
-      return False;
+      return True;
     }
-
-  /* If a domain name was specified, */
   else
     {
-      /* If this entry is in the requested domain, */
       if (strequal(domain, server->domain))
 	{
 	  /*
@@ -805,15 +792,11 @@ static BOOL filter_server_info(struct srv_info_struct *server,
 	  
 	  return True;
 	}
-
-      /* If the user didn't pick a domain, 
-         (I don't think this can happen.) */
       else if (!domains)
 	{
 	  DEBUG(4,("domain:%s %s %s\n",domain,server->name,server->domain));
 	  return False;
 	}
-
       return True;
     }
 }
@@ -888,7 +871,6 @@ static int get_server_info(uint32 servertype,
       ok = False; 
     }
     
-    /* If all server, reject DOMIAN_ENUM entries? */
     if ((servertype == ~SV_TYPE_DOMAIN_ENUM) &&
 	(s->type & SV_TYPE_DOMAIN_ENUM))
       {
@@ -896,8 +878,6 @@ static int get_server_info(uint32 servertype,
 	ok = False;
       }
     
-    /* If a domain is specified, reject all except the
-       domain enumerators for the specified domain. */
     if (domains && !(domain && *domain && strequal(domain, s->domain)))
       {
 	if (!(s->type & SV_TYPE_DOMAIN_ENUM))
@@ -1055,13 +1035,11 @@ static BOOL api_RNetServerEnum(int cnum, int uid, char *param, char *data,
   if (strcmp(str1, "WrLehDO") == 0)
   {
 	domains = False;
-	DEBUG(4, ("all domains\n"));
   }
   else if (strcmp(str1, "WrLehDz") == 0)
   {
 	domains = True;
     StrnCpy(domain, p, sizeof(fstring)-1);
-	DEBUG(4, ("domains must match \"%s\"\n", domains));
   }
 
   if (lp_browse_list())
@@ -1073,7 +1051,6 @@ static BOOL api_RNetServerEnum(int cnum, int uid, char *param, char *data,
 
   qsort(servers,total,sizeof(servers[0]),QSORT_CAST srv_comp);
 
-  /* A dry run */
   {
     char *lastname=NULL;
 
@@ -1108,7 +1085,6 @@ static BOOL api_RNetServerEnum(int cnum, int uid, char *param, char *data,
   f_len = fixed_len;
   s_len = string_len;
 
-  /* the real thing */
   {
     char *lastname=NULL;
     int count2 = counted;
