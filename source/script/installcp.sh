@@ -19,8 +19,8 @@ fi
 done
 
 for p in $*; do
- echo Creating codepage file $CODEPAGEDIR/codepage.$p from codepage_def.$p
- $BINDIR/make_smbcodepage c $p codepage_def.$p $CODEPAGEDIR/codepage.$p
+ echo Creating codepage file $CODEPAGEDIR/codepage.$p
+ $BINDIR/make_smbcodepage c $p codepages/codepage_def.$p $CODEPAGEDIR/codepage.$p
 done
 
 

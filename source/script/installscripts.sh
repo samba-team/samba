@@ -22,13 +22,16 @@ for d in $BINDIR; do
 done
 
 for p in $*; do
-  echo Installing $BINDIR/$p
-  cp $p $BINDIR/$p
-  if [ ! -f $BINDIR/$p ]; then
-    echo Cannot copy $p... does $USER have privileges?
+  p2=`basename $p`
+  echo Installing $BINDIR/$p2
+  if [ -f $BINDIR/$p2 ]; then
+    mv $BINDIR/$p2 $BINDIR/$p2.old
   fi
-  echo Setting permissions on $BINDIR/$p
-  chmod $INSTALLPERMS $BINDIR/$p
+  cp $p $BINDIR/
+  chmod $INSTALLPERMS $BINDIR/$p2
+  if [ ! -f $BINDIR/$p2 ]; then
+    echo Cannot copy $p2... does $USER have privileges?
+  fi
 done
 
 cat << EOF
