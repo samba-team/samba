@@ -1321,7 +1321,7 @@ ssize_t sys_fgetxattr (int filedes, const char *name, void *value, size_t size)
 #endif
 }
 
-#if defined(HAVE_ATTR_LIST)
+#if defined(HAVE_ATTR_LIST) && defined(HAVE_SYS_ATTRIBUTES_H)
 static char attr_buffer[ATTR_MAX_VALUELEN];
 
 static ssize_t irix_attr_list(const char *path, int filedes, char *list, size_t size, int flags)
@@ -1393,7 +1393,7 @@ ssize_t sys_listxattr (const char *path, char *list, size_t size)
 {
 #if defined(HAVE_LISTXATTR)
 	return listxattr(path, list, size);
-#elif defined(HAVE_ATTR_LIST)
+#elif defined(HAVE_ATTR_LIST) && defined(HAVE_SYS_ATTRIBUTES_H)
 	return irix_attr_list(path, 0, list, size, 0);
 #else
 	errno = ENOSYS;
@@ -1405,7 +1405,7 @@ ssize_t sys_llistxattr (const char *path, char *list, size_t size)
 {
 #if defined(HAVE_LLISTXATTR)
 	return llistxattr(path, list, size);
-#elif defined(HAVE_ATTR_LIST)
+#elif defined(HAVE_ATTR_LIST) && defined(HAVE_SYS_ATTRIBUTES_H)
 	return irix_attr_list(path, 0, list, size, ATTR_DONTFOLLOW);
 #else
 	errno = ENOSYS;
