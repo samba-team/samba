@@ -8,6 +8,13 @@ Sat May 23 04:55:19 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 	* lib/kadm5/server.c: Better arguments for
  	kadm5_init_with_password.
 
+Sat May 16 07:10:36 1998  Assar Westerlund  <assar@sics.se>
+
+	* kdc/hprop.c: conditionalize ka-server reading support on
+ 	KASERVER_DB
+
+	* configure.in: new option `--enable-kaserver-db'
+
 Fri May 15 19:39:18 1998  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* lib/krb5/get_cred.c: Better error if local tgt couldn't be
