@@ -187,7 +187,7 @@ static WERROR winreg_EnumKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 		r->out.last_changed_time = talloc_zero_p(mem_ctx, struct winreg_Time);
 	}
 	
-	return WERR_NOT_SUPPORTED;
+	return r->out.result;
 }
 
 
