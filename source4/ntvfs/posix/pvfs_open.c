@@ -157,7 +157,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	fnum = idr_get_new(pvfs->idtree_fnum, f, 0x10000);
+	fnum = idr_get_new(pvfs->idtree_fnum, f, UINT16_MAX);
 	if (fnum == -1) {
 		talloc_free(f);
 		return NT_STATUS_TOO_MANY_OPENED_FILES;

@@ -287,7 +287,7 @@ static NTSTATUS pvfs_search_first_old(struct ntvfs_module_context *ntvfs,
 
 	/* we need to give a handle back to the client so it
 	   can continue a search */
-	id = idr_get_new(pvfs->idtree_search, search, 0x100);
+	id = idr_get_new(pvfs->idtree_search, search, UINT8_MAX);
 	if (id == -1) {
 		return NT_STATUS_INSUFFICIENT_RESOURCES;
 	}
@@ -415,7 +415,7 @@ NTSTATUS pvfs_search_first(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
-	id = idr_get_new(pvfs->idtree_search, search, 0x10000);
+	id = idr_get_new(pvfs->idtree_search, search, UINT16_MAX);
 	if (id == -1) {
 		return NT_STATUS_INSUFFICIENT_RESOURCES;
 	}
