@@ -33,38 +33,39 @@ NTSTATUS dcerpc_bind_auth_ntlm(struct dcerpc_pipe *p,
 {
 	NTSTATUS status;
 
-	if (!(p->flags & (DCERPC_SIGN | DCERPC_SEAL))) {
-		p->flags |= DCERPC_CONNECT;
+	if (!(p->conn->flags & (DCERPC_SIGN | DCERPC_SEAL))) {
+		p->conn->flags |= DCERPC_CONNECT;
 	}
 
-	status = gensec_client_start(p, &p->security_state.generic_state);
+	status = gensec_client_start(p, &p->conn->security_state.generic_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start GENSEC client mode: %s\n", nt_errstr(status)));
 		return status;
 	}
 
-	status = gensec_set_domain(p->security_state.generic_state, domain);
+	status = gensec_set_domain(p->conn->security_state.generic_state, domain);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start set GENSEC client domain to %s: %s\n", 
 			  domain, nt_errstr(status)));
 		return status;
 	}
 
-	status = gensec_set_username(p->security_state.generic_state, username);
+	status = gensec_set_username(p->conn->security_state.generic_state, username);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start set GENSEC client username to %s: %s\n", 
 			  username, nt_errstr(status)));
 		return status;
 	}
 
-	status = gensec_set_password(p->security_state.generic_state, password);
+	status = gensec_set_password(p->conn->security_state.generic_state, password);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start set GENSEC client password: %s\n", 
 			  nt_errstr(status)));
 		return status;
 	}
 
-	status = gensec_start_mech_by_authtype(p->security_state.generic_state, DCERPC_AUTH_TYPE_NTLMSSP, dcerpc_auth_level(p));
+	status = gensec_start_mech_by_authtype(p->conn->security_state.generic_state, 
+					       DCERPC_AUTH_TYPE_NTLMSSP, dcerpc_auth_level(p->conn));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start set GENSEC client NTLMSSP mechanism: %s\n",
 			  nt_errstr(status)));
@@ -72,7 +73,7 @@ NTSTATUS dcerpc_bind_auth_ntlm(struct dcerpc_pipe *p,
 	}
 	
 	status = dcerpc_bind_auth3(p, DCERPC_AUTH_TYPE_NTLMSSP,
-				   dcerpc_auth_level(p),
+				   dcerpc_auth_level(p->conn),
 				   uuid, version);
 
 	if (!NT_STATUS_IS_OK(status)) {

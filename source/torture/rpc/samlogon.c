@@ -1261,7 +1261,7 @@ BOOL torture_rpc_samlogon(void)
 		goto failed;
 	}
 
-	status = dcerpc_schannel_creds(p->security_state.generic_state, mem_ctx, &creds);
+	status = dcerpc_schannel_creds(p->conn->security_state.generic_state, mem_ctx, &creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = False;
 		goto failed;

@@ -46,14 +46,14 @@ static const struct dcerpc_interface_call *find_function(
 
 static void show_pipes(void)
 {
-	struct dcerpc_interface_list *p;
+	const struct dcerpc_interface_list *l;
 	printf("\nYou must specify a pipe\n");
 	printf("known pipes are:\n");
-	for (p=dcerpc_pipes;p;p=p->next) {
-		if(p->table->helpstring) {
-			printf("\t%s - %s\n", p->table->name, p->table->helpstring);
+	for (l=librpc_dcerpc_pipes();l;l=l->next) {
+		if(l->table->helpstring) {
+			printf("\t%s - %s\n", l->table->name, l->table->helpstring);
 		} else {
-			printf("\t%s\n", p->table->name);
+			printf("\t%s\n", l->table->name);
 		}
 	}
 	exit(1);

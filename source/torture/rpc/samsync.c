@@ -1313,7 +1313,7 @@ BOOL torture_rpc_samsync(void)
 		goto failed;
 	}
 
-	status = dcerpc_schannel_creds(samsync_state->p->security_state.generic_state, mem_ctx, &samsync_state->creds);
+	status = dcerpc_schannel_creds(samsync_state->p->conn->security_state.generic_state, mem_ctx, &samsync_state->creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = False;
 	}
@@ -1342,7 +1342,8 @@ BOOL torture_rpc_samsync(void)
 		goto failed;
 	}
 
-	status = dcerpc_schannel_creds(samsync_state->p_netlogon_wksta->security_state.generic_state, mem_ctx, &samsync_state->creds_netlogon_wksta);
+	status = dcerpc_schannel_creds(samsync_state->p_netlogon_wksta->conn->security_state.generic_state, 
+				       mem_ctx, &samsync_state->creds_netlogon_wksta);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = False;
 	}
