@@ -2665,7 +2665,7 @@ static krb5_error_code
 derive_key(krb5_context context,
 	   struct encryption_type *et,
 	   struct key_data *key,
-	   void *constant,
+	   const void *constant,
 	   size_t len)
 {
     unsigned char *k;
@@ -2737,6 +2737,35 @@ _new_derived_key(krb5_crypto crypto, unsigned usage)
     return &d->key;
 }
 
+krb5_error_code
+krb5_derive_key(krb5_context context,
+		const krb5_keyblock *key,
+		krb5_enctype etype,
+		const void *constant,
+		size_t constant_len,
+		krb5_keyblock **derived_key)
+{
+    krb5_error_code ret;
+    struct encryption_type *et;
+    struct key_data d;
+
+    et = _find_enctype (etype);
+    if (et == NULL)
+	return KRB5_PROG_ETYPE_NOSUPP;
+
+    ret = krb5_copy_keyblock(context, key, derived_key);
+    if (ret)
+	return ret;
+
+    d.key = *derived_key;
+    d.schedule = NULL;
+    ret = derive_key(context, et, &d, constant, constant_len);
+    if (ret)
+	return ret;
+    ret = krb5_copy_keyblock(context, d.key, derived_key);
+    return ret;
+}
+
 static krb5_error_code
 _get_derived_key(krb5_context context, 
 		 krb5_crypto crypto, 
@@ -2765,7 +2794,7 @@ _get_derived_key(krb5_context context,
 
 krb5_error_code
 krb5_crypto_init(krb5_context context,
-		 krb5_keyblock *key,
+		 const krb5_keyblock *key,
 		 krb5_enctype etype,
 		 krb5_crypto *crypto)
 {
