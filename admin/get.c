@@ -41,8 +41,8 @@ open_kadmin_connection(char *principal,
 		       char *admin_server, 
 		       int server_port)
 {
+    static kadm5_config_params conf;
     krb5_error_code ret;
-    kadm5_config_params conf;
     void *kadm_handle;
     memset(&conf, 0, sizeof(conf));
 
