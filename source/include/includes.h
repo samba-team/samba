@@ -481,7 +481,6 @@ char *mktemp(char *); /* No standard include */
 #include <netinet/ip.h>
 #define SIGNAL_CAST (void (*)())
 #define USE_DIRECT
-#define REPLACE_INNETGR
 #endif 
 
 
@@ -547,6 +546,32 @@ char *mktemp(char *); /* No standard include */
 #define STATFS4
 #define USE_DIRECT
 #endif
+
+#ifdef SEQUENT_PTX4
+#include <string.h>
+#include <sys/dir.h>
+#include <dirent.h>
+#include <sys/statfs.h>
+#include <sys/statvfs.h>
+#include <sys/vfs.h>
+#include <fcntl.h>
+#include <sys/sockio.h>
+#include <netinet/tcp.h>
+#include <stropts.h>
+#include <termios.h>
+#define SYSV
+#define USE_WAITPID
+#define SIGNAL_CAST (void (*)(int))
+#define USE_STATVFS
+#define USE_GETCWD
+#ifndef seteuid
+#define seteuid(uid) setreuid(-1,uid)
+#endif
+#ifndef setegid
+#define setegid(gid) setregid(-1,gid)
+#endif
+#endif
+
 
 #ifdef NEXT2
 #include <sys/types.h>
@@ -734,7 +759,6 @@ char *strdup (char *);
 #endif /* DNIX */
 
 #ifdef CONVEX
-#define SIGNAL_CAST (void (*)(int))
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <dirent.h>
