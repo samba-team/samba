@@ -87,27 +87,20 @@ typedef struct parse_struct
 typedef struct rpcsrv_struct
 {
 	prs_struct data_i; /* input data (intermediate, for fragments) */
-	prs_struct rdata;  /* output data */
+	prs_struct rdata;  /* output data (to create fragments from */
+
+	/* indicates how far in rdata we have got, creating fragments */
+	uint32 rdata_offset;
 
 	prs_struct smb_pdu;
 	prs_struct rsmb_pdu;
-
-	uint32 rdata_offset;
 
 	RPC_HDR       hdr;
 	RPC_HDR_BA    hdr_ba;
 	RPC_HDR_RB    hdr_rb;
 	RPC_HDR_REQ   hdr_req;
-	RPC_HDR_RESP  hdr_resp;
-	RPC_HDR_FAULT hdr_fault;
-	RPC_HDR_AUTH  auth_info;
-	RPC_HDR_AUTHA autha_info;
 
-	RPC_AUTH_NTLMSSP_VERIFIER auth_verifier;
-	RPC_AUTH_NTLMSSP_NEG      ntlmssp_neg;
 	RPC_AUTH_NTLMSSP_CHAL     ntlmssp_chal;
-	RPC_AUTH_NTLMSSP_RESP     ntlmssp_resp;
-	RPC_AUTH_NTLMSSP_CHK      ntlmssp_chk;
 
 	BOOL ntlmssp_auth;
 	BOOL ntlmssp_validated;

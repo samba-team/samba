@@ -68,7 +68,10 @@ BOOL readwrite_pipe(pipes_struct *p, char *data, int len,
 	{
 		return False;
 	}
-	(*rlen) = read_data(p->m->fd, (*rdata), (*rlen));
+
+	/* compromise.  MUST read a minimum of an rpc header.
+	 * timeout waiting for the rest for 10 seconds */
+	(*rlen) = read_with_timeout(p->m->fd, (*rdata), 16,(*rlen), 10000);
 	if ((*rlen) < 0)
 	{
 		return False;
