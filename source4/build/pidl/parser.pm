@@ -36,6 +36,10 @@ sub find_size_var($$)
 	my($e) = shift;
 	my($size) = shift;
 	my($fn) = $e->{PARENT};
+
+	if (util::is_constant($size)) {
+		return $size;
+	}
 	
 	if ($fn->{TYPE} ne "FUNCTION") {
 		return "r->$size";
@@ -77,11 +81,16 @@ sub ParseArrayPush($$)
 	my $e = shift;
 	my $var_prefix = shift;
 	my $size = find_size_var($e, util::array_size($e));
+	my $const = "";
+
+	if (util::is_constant($size)) {
+		$const = "_const";
+	}
 
 	if (util::is_scalar_type($e->{TYPE})) {
-		$res .= "\t\tNDR_CHECK(ndr_push_array_$e->{TYPE}(ndr, $var_prefix$e->{NAME}, $size));\n";
+		$res .= "\t\tNDR_CHECK(ndr_push$const\_array_$e->{TYPE}(ndr, $var_prefix$e->{NAME}, $size));\n";
 	} else {
-		$res .= "\t\tNDR_CHECK(ndr_push_array(ndr, ndr_flags, $var_prefix$e->{NAME}, sizeof($var_prefix$e->{NAME}\[0]), $size, (ndr_push_flags_fn_t)ndr_push_$e->{TYPE}));\n";
+		$res .= "\t\tNDR_CHECK(ndr_push$const\_array(ndr, ndr_flags, $var_prefix$e->{NAME}, sizeof($var_prefix$e->{NAME}\[0]), $size, (ndr_push_flags_fn_t)ndr_push_$e->{TYPE}));\n";
 	}
 }
 
@@ -107,14 +116,19 @@ sub ParseArrayPull($$)
 	my $e = shift;
 	my $var_prefix = shift;
 	my $size = find_size_var($e, util::array_size($e));
+	my $const = "";
 
-	if (util::need_alloc($e)) {
+	if (util::is_constant($size)) {
+		$const = "_const";
+	}
+
+	if (util::need_alloc($e) && !util::is_constant($size)) {
 		$res .= "\t\tNDR_ALLOC_N_SIZE(ndr, $var_prefix$e->{NAME}, $size, sizeof($var_prefix$e->{NAME}\[0]));\n";
 	}
 	if (util::is_scalar_type($e->{TYPE})) {
-		$res .= "\t\tNDR_CHECK(ndr_pull_array_$e->{TYPE}(ndr, $var_prefix$e->{NAME}, $size));\n";
+		$res .= "\t\tNDR_CHECK(ndr_pull$const\_array_$e->{TYPE}(ndr, $var_prefix$e->{NAME}, $size));\n";
 	} else {
-		$res .= "\t\tNDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)$var_prefix$e->{NAME}, sizeof($var_prefix$e->{NAME}\[0]), $size, (ndr_pull_flags_fn_t)ndr_pull_$e->{TYPE}));\n";
+		$res .= "\t\tNDR_CHECK(ndr_pull$const\_array(ndr, ndr_flags, (void **)$var_prefix$e->{NAME}, sizeof($var_prefix$e->{NAME}\[0]), $size, (ndr_pull_flags_fn_t)ndr_pull_$e->{TYPE}));\n";
 	}
 }
 
