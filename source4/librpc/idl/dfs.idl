@@ -45,13 +45,12 @@
 		[in]     uint16 level
 		);
 
-
 	/******************/
 	/* Function: 0x05 */
+
 	NTSTATUS dfs_Enum (
 		[in] unistr *name,
 		[in] uint32 level,
-		[in] uint32 buffer_size,
-		[in,out,ref] uint32 *resume_handle
+		[in] uint32 buffer_size
 		);
 }
