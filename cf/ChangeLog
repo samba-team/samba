@@ -1,5 +1,7 @@
 2002-08-12  Johan Danielsson  <joda@pdc.kth.se>
 
+	* make-proto.pl: include <stdarg.h> to get va_list
+
 	* destdirs.m4: also define localstatedir and sysconfdir
 
 2002-08-01  Johan Danielsson  <joda@pdc.kth.se>
