@@ -7874,8 +7874,6 @@ WERROR _spoolss_enumprinterkey(pipes_struct *p, SPOOL_Q_ENUMPRINTERKEY *q_u, SPO
 {
 	fstring key;
 	uint16  enumkeys[ENUMERATED_KEY_SIZE+1];
-	char*   ptr = NULL;
-	int     i;
 	fstring	PrinterKey;
 	UNISTR2	uni_keys;
 	int	enum_key_len;
