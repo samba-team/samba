@@ -5215,6 +5215,9 @@ users reporting strange problems trying to save files (locking errors)
 and error messages in the smbd log looking like tt("ERROR
 smb_shm_alloc : alloc of XX bytes failed").
 
+If your OS refuses the size that Samba asks for then Samba will try a
+smaller size, reducing by a factor of 0.8 until the OS accepts it.
+
   bf(Default:)
 tt(	shared mem size = 1048576)
 
