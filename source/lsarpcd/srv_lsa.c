@@ -228,7 +228,6 @@ static void make_lsa_rid2s(DOM_R_REF *ref,
 
 		unistr2_to_ascii(full_name, &name[i], sizeof(full_name)-1);
 		find_name = strdup(full_name);
-		sid_copy(&find_sid, &sid);
 
 		if (!split_domain_name(full_name, dom_name, find_name))
 		{
@@ -240,6 +239,7 @@ static void make_lsa_rid2s(DOM_R_REF *ref,
 			sid_name_use = SID_NAME_DOMAIN;
 			dom_idx = make_dom_ref(ref, dom_name, &find_sid);
 			rid = 0xffffffff;
+			sid_copy(&sid, &find_sid);
 		}
 		else if (status == 0x0)
 		{
@@ -366,6 +366,7 @@ static void make_lsa_trans_names(DOM_R_REF *ref,
 		{
 			sid_name_use = SID_NAME_DOMAIN;
 			dom_idx = make_dom_ref(ref, dom_name, &find_sid);
+			safe_strcpy(name, dom_name, sizeof(name)-1);
 		}
 		else if (sid_split_rid         (&find_sid, &rid) &&
 			 map_domain_sid_to_name(&find_sid, dom_name))
