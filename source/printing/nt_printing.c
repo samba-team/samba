@@ -181,7 +181,7 @@ static BOOL upgrade_to_version_2(void)
 	DEBUG(0,("upgrade_to_version_2: upgrading print tdb's to version 2\n"));
  
 	for (kbuf = tdb_firstkey(tdb_drivers); kbuf.dptr;
-			newkey = tdb_nextkey(tdb_drivers, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
+			newkey = tdb_nextkey(tdb_drivers, kbuf), SAFE_FREE(kbuf.dptr), kbuf=newkey) {
 
 		dbuf = tdb_fetch(tdb_drivers, kbuf);
 
@@ -323,7 +323,7 @@ int get_ntforms(nt_forms_struct **list)
 
 	for (kbuf = tdb_firstkey(tdb_forms);
 	     kbuf.dptr;
-	     newkey = tdb_nextkey(tdb_forms, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
+	     newkey = tdb_nextkey(tdb_forms, kbuf), SAFE_FREE(kbuf.dptr), kbuf=newkey) {
 		if (strncmp(kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) != 0) continue;
 		
 		dbuf = tdb_fetch(tdb_forms, kbuf);
@@ -510,7 +510,7 @@ int get_ntdrivers(fstring **list, char *architecture, uint32 version)
 
 	for (kbuf = tdb_firstkey(tdb_drivers);
 	     kbuf.dptr;
-	     newkey = tdb_nextkey(tdb_drivers, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
+	     newkey = tdb_nextkey(tdb_drivers, kbuf), SAFE_FREE(kbuf.dptr), kbuf=newkey) {
 		if (strncmp(kbuf.dptr, key, strlen(key)) != 0) continue;
 		
 		if((fl = Realloc(*list, sizeof(fstring)*(total+1))) == NULL) {
@@ -955,6 +955,7 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 		return -1;
 	}
 
+	/* We are temporarily becoming the connection user. */
 	if (!become_user(conn, conn->vuid)) {
 		DEBUG(0,("get_correct_cversion: Can't become user!\n"));
 		*perr = WERR_ACCESS_DENIED;
@@ -2390,16 +2391,13 @@ static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	fstrcpy(info.portname, SAMBA_PRINTER_PORT_NAME);
 	fstrcpy(info.drivername, lp_printerdriver(snum));
 
-#if 0	/* JERRY */
-	if (!*info.drivername)
-		fstrcpy(info.drivername, "NO DRIVER AVAILABLE FOR THIS PRINTER");
-#else
 	/* by setting the driver name to an empty string, a local NT admin
 	   can now run the **local** APW to install a local printer driver
  	   for a Samba shared printer in 2.2.  Without this, drivers **must** be 
 	   installed on the Samba server for NT clients --jerry */
+#if 0	/* JERRY --do not uncomment-- */
 	if (!*info.drivername)
-		fstrcpy(info.drivername, "");
+		fstrcpy(info.drivername, "NO DRIVER AVAILABLE FOR THIS PRINTER");
 #endif
 
 
@@ -2418,9 +2416,15 @@ static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	info.untiltime = 0; /* Minutes since 12:00am GMT */
 	info.priority = 1;
 	info.default_priority = 1;
-	info.setuptime = (uint32)time(NULL);
+	info.setuptime = (uint32)time(NULL) - 86400;	/* minus 1 day */
 
-#if 1 /* JRA - NO NOT CHANGE ! */
+	/*
+	 * I changed this as I think it is better to have a generic
+	 * DEVMODE than to crash Win2k explorer.exe   --jerry
+	 * See the HP Deskjet 990c Win2k drivers for an example.
+	 */
+
+#if 0 /* JRA - NO NOT CHANGE ! */
 	info.devmode = NULL;
 #else
 	/*
@@ -2460,7 +2464,8 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 {
 	pstring key;
 	NT_PRINTER_INFO_LEVEL_2 info;
-	int len = 0;
+	int 		len = 0,
+			devmode_length = 0;
 	TDB_DATA kbuf, dbuf;
 	fstring printername;
 		
@@ -2509,6 +2514,19 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	fstrcpy(info.printername, printername);
 
 	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
+#if 1
+	/*
+	 * Some client drivers freak out if there is a NULL devmode
+	 * (probably the driver is not checking before accessing 
+	 * the devmode pointer)   --jerry
+	 */
+	if (!info.devmode)
+	{
+		DEBUG(8,("get_a_printer_2: Constructing a default device mode for [%s]\n",
+			printername));
+		info.devmode = construct_nt_devicemode(printername);
+	}
+#endif
 	len += unpack_specifics(&info.specific,dbuf.dptr+len, dbuf.dsize-len);
 
 	/* This will get the current RPC talloc context, but we should be
@@ -3185,7 +3203,7 @@ BOOL printer_driver_in_use (char *arch, char *driver)
 	
 	/* loop through the printers.tdb and check for the drivername */
 	for (kbuf = tdb_firstkey(tdb_printers); kbuf.dptr;
-	     newkey = tdb_nextkey(tdb_printers, kbuf), safe_free(kbuf.dptr), kbuf=newkey) 
+	     newkey = tdb_nextkey(tdb_printers, kbuf), SAFE_FREE(kbuf.dptr), kbuf=newkey) 
 	{
 
 		dbuf = tdb_fetch(tdb_printers, kbuf);

@@ -1259,6 +1259,64 @@ static BOOL api_spoolss_setprinterdataex(pipes_struct *p)
 	return True;
 }
 
+
+/****************************************************************************
+****************************************************************************/
+
+static BOOL api_spoolss_enumprinterkey(pipes_struct *p)
+{
+	SPOOL_Q_ENUMPRINTERKEY q_u;
+	SPOOL_R_ENUMPRINTERKEY r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+	
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+	
+	if(!spoolss_io_q_enumprinterkey("", &q_u, data, 0)) {
+		DEBUG(0,("spoolss_io_q_setprinterkey: unable to unmarshall SPOOL_Q_ENUMPRINTERKEY.\n"));
+		return False;
+	}
+	
+	r_u.status = _spoolss_enumprinterkey(p, &q_u, &r_u);
+				
+	if(!spoolss_io_r_enumprinterkey("", &r_u, rdata, 0)) {
+		DEBUG(0,("spoolss_io_r_enumprinterkey: unable to marshall SPOOL_R_ENUMPRINTERKEY.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static BOOL api_spoolss_enumprinterdataex(pipes_struct *p)
+{
+	SPOOL_Q_ENUMPRINTERDATAEX q_u;
+	SPOOL_R_ENUMPRINTERDATAEX r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+	
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+	
+	if(!spoolss_io_q_enumprinterdataex("", &q_u, data, 0)) {
+		DEBUG(0,("spoolss_io_q_enumprinterdataex: unable to unmarshall SPOOL_Q_ENUMPRINTERDATAEX.\n"));
+		return False;
+	}
+	
+	r_u.status = _spoolss_enumprinterdataex(p, &q_u, &r_u);
+				
+	if(!spoolss_io_r_enumprinterdataex("", &r_u, rdata, 0)) {
+		DEBUG(0,("spoolss_io_r_enumprinterdataex: unable to marshall SPOOL_R_ENUMPRINTERDATAEX.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+
 /*******************************************************************
 \pipe\spoolss commands
 ********************************************************************/
@@ -1307,6 +1365,8 @@ struct api_struct api_spoolss_cmds[] =
  {"SPOOLSS_ENUMPRINTPROCDATATYPES",    SPOOLSS_ENUMPRINTPROCDATATYPES,    api_spoolss_enumprintprocdatatypes    },
  {"SPOOLSS_GETPRINTERDATAEX",          SPOOLSS_GETPRINTERDATAEX,          api_spoolss_getprinterdataex          },
  {"SPOOLSS_SETPRINTERDATAEX",          SPOOLSS_SETPRINTERDATAEX,          api_spoolss_setprinterdataex          },
+ {"SPOOLSS_ENUMPRINTERKEY",            SPOOLSS_ENUMPRINTERKEY,            api_spoolss_enumprinterkey            },
+ {"SPOOLSS_ENUMPRINTERDATAEX",         SPOOLSS_ENUMPRINTERDATAEX,         api_spoolss_enumprinterdataex         },
 
  { NULL,                               0,                                 NULL                                  }
 };
