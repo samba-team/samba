@@ -396,7 +396,7 @@ static BOOL test_SetUserPass(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	status = dcerpc_samr_GetUserPwInfo(p, mem_ctx, &pwp);
 	if (NT_STATUS_IS_OK(status)) {
-		policy_min_pw_len = pwp.out.info.min_password_len;
+		policy_min_pw_len = pwp.out.info.min_password_length;
 	}
 	newpass = samr_rand_pass(mem_ctx, policy_min_pw_len);
 
@@ -448,7 +448,7 @@ static BOOL test_SetUserPass_23(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	status = dcerpc_samr_GetUserPwInfo(p, mem_ctx, &pwp);
 	if (NT_STATUS_IS_OK(status)) {
-		policy_min_pw_len = pwp.out.info.min_password_len;
+		policy_min_pw_len = pwp.out.info.min_password_length;
 	}
 	newpass = samr_rand_pass(mem_ctx, policy_min_pw_len);
 
@@ -504,7 +504,7 @@ static BOOL test_SetUserPassEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	status = dcerpc_samr_GetUserPwInfo(p, mem_ctx, &pwp);
 	if (NT_STATUS_IS_OK(status)) {
-		policy_min_pw_len = pwp.out.info.min_password_len;
+		policy_min_pw_len = pwp.out.info.min_password_length;
 	}
 	newpass = samr_rand_pass(mem_ctx, policy_min_pw_len);
 
@@ -565,7 +565,7 @@ static BOOL test_SetUserPass_25(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	status = dcerpc_samr_GetUserPwInfo(p, mem_ctx, &pwp);
 	if (NT_STATUS_IS_OK(status)) {
-		policy_min_pw_len = pwp.out.info.min_password_len;
+		policy_min_pw_len = pwp.out.info.min_password_length;
 	}
 	newpass = samr_rand_pass(mem_ctx, policy_min_pw_len);
 
@@ -893,7 +893,7 @@ static BOOL test_ChangePasswordUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	status = dcerpc_samr_GetUserPwInfo(p, mem_ctx, &pwp);
 	if (NT_STATUS_IS_OK(status)) {
-		policy_min_pw_len = pwp.out.info.min_password_len;
+		policy_min_pw_len = pwp.out.info.min_password_length;
 	}
 	newpass = samr_rand_pass(mem_ctx, policy_min_pw_len);
 
@@ -963,7 +963,7 @@ static BOOL test_OemChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 
 	status = dcerpc_samr_GetDomPwInfo(p, mem_ctx, &dom_pw_info);
 	if (NT_STATUS_IS_OK(status)) {
-		policy_min_pw_len = dom_pw_info.out.info.min_password_len;
+		policy_min_pw_len = dom_pw_info.out.info.min_password_length;
 	}
 
 	newpass = samr_rand_pass(mem_ctx, policy_min_pw_len);
@@ -1020,7 +1020,7 @@ static BOOL test_ChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	status = dcerpc_samr_GetDomPwInfo(p, mem_ctx, &dom_pw_info);
 	if (NT_STATUS_IS_OK(status)) {
-		policy_min_pw_len = dom_pw_info.out.info.min_password_len;
+		policy_min_pw_len = dom_pw_info.out.info.min_password_length;
 	}
 
 	newpass = samr_rand_pass(mem_ctx, policy_min_pw_len);
@@ -1110,7 +1110,7 @@ static BOOL test_ChangePasswordUser3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	if (NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION) 
 	    && !policy_min_pw_len) {
 		if (r.out.dominfo) {
-			policy_min_pw_len = r.out.dominfo->min_password_len;
+			policy_min_pw_len = r.out.dominfo->min_password_length;
 		}
 		if (policy_min_pw_len) /* try again with the right min password length */ {
 			ret = test_ChangePasswordUser3(p, mem_ctx, handle, policy_min_pw_len, password);

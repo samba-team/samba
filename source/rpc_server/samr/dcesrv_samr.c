@@ -1894,8 +1894,8 @@ static NTSTATUS samr_GetUserPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 	a_state = h->data;
 
-	r->out.info.min_password_len = samdb_search_uint(a_state->sam_ctx, mem_ctx, 0, NULL, "minPwdLength", 
-						    "dn=%s", a_state->domain_state->domain_dn);
+	r->out.info.min_password_length = samdb_search_uint(a_state->sam_ctx, mem_ctx, 0, NULL, "minPwdLength", 
+							    "dn=%s", a_state->domain_state->domain_dn);
 	r->out.info.password_properties = samdb_search_uint(a_state->sam_ctx, mem_ctx, 0, NULL, "pwdProperties", 
 							    "dn=%s", a_state->account_dn);
 	return NT_STATUS_OK;
@@ -2029,7 +2029,7 @@ static NTSTATUS samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	r->out.info.min_password_len         = samdb_result_uint(msgs[0], "minPwdLength", 0);
+	r->out.info.min_password_length = samdb_result_uint(msgs[0], "minPwdLength", 0);
 	r->out.info.password_properties = samdb_result_uint(msgs[0], "pwdProperties", 1);
 
 	samdb_search_free(sam_ctx, mem_ctx, msgs);

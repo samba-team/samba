@@ -374,12 +374,13 @@ interface netlogon
 
 	typedef struct {
 		netr_String domain_name;
-		netr_String OEMInfo;
-		NTTIME forcedlogoff;
-		uint16 min_password_len;
-		uint16 password_history_len;
-		uint64 password_must_change_time;
-		uint64 password_can_change_time;
+		netr_String comment;
+		NTTIME force_logoff_time;
+		uint16 min_password_length;
+		uint16 password_history_length;
+		/* yes, these are signed. They are in negative 100ns */
+		int64  max_password_age;
+		int64  min_password_age;
 		uint64 sequence_num;
 		NTTIME domain_create_time;
 		uint32 SecurityInformation;
