@@ -1857,72 +1857,84 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 ****************************************************************************/
 int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-  pstring fname;
-  int outsize = 0;
-  int createmode;
-  mode_t unixmode = 0600;
-  BOOL bad_path = False;
-  files_struct *fsp;
-  int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
-  int tmpfd;
-  SMB_STRUCT_STAT sbuf;
+	pstring fname;
+	int outsize = 0;
+	int createmode;
+	mode_t unixmode;
+	BOOL bad_path = False;
+	files_struct *fsp;
+	int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
+	int tmpfd;
+	SMB_STRUCT_STAT sbuf;
+	char *p, *s;
 
-  START_PROFILE(SMBctemp);
+	START_PROFILE(SMBctemp);
 
-  createmode = SVAL(inbuf,smb_vwv0);
-  pstrcpy(fname,smb_buf(inbuf)+1);
-  pstrcat(fname,"/TMXXXXXX");
+	createmode = SVAL(inbuf,smb_vwv0);
+	pstrcpy(fname,smb_buf(inbuf)+1);
+	pstrcat(fname,"\\TMXXXXXX");
 
-  RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
-  unix_convert(fname,conn,0,&bad_path,&sbuf);
-  
-  tmpfd = smb_mkstemp(fname);
-  if (tmpfd == -1) {
-	  END_PROFILE(SMBctemp);
-	  return(UNIXERROR(ERRDOS,ERRnoaccess));
-  }
+	unix_convert(fname,conn,0,&bad_path,&sbuf);
 
-  vfs_stat(conn,fname,&sbuf);
+	unixmode = unix_mode(conn,createmode,fname); 
 
-  /* Open file in dos compatibility share mode. */
-  /* We should fail if file does not exist. */
-  fsp = open_file_shared(conn,fname,&sbuf,
+	tmpfd = smb_mkstemp(fname);
+	if (tmpfd == -1) {
+		END_PROFILE(SMBctemp);
+		return(UNIXERROR(ERRDOS,ERRnoaccess));
+	}
+
+	vfs_stat(conn,fname,&sbuf);
+
+	/* Open file in dos compatibility share mode. */
+	/* We should fail if file does not exist. */
+	fsp = open_file_shared(conn,fname,&sbuf,
 			 SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB), 
 			 FILE_EXISTS_OPEN|FILE_FAIL_IF_NOT_EXIST, 
 			 unixmode, oplock_request, NULL, NULL);
-  /* close fd from smb_mkstemp() */
-  close(tmpfd);
+	/* close fd from smb_mkstemp() */
+	close(tmpfd);
 
-  if (!fsp)
-  {
-    if((errno == ENOENT) && bad_path)
-    {
-      unix_ERR_class = ERRDOS;
-      unix_ERR_code = ERRbadpath;
-    }
-    END_PROFILE(SMBctemp);
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-  }
+	if (!fsp) {
+		if((errno == ENOENT) && bad_path) {
+			unix_ERR_class = ERRDOS;
+			unix_ERR_code = ERRbadpath;
+		}
+		END_PROFILE(SMBctemp);
+		return(UNIXERROR(ERRDOS,ERRnoaccess));
+	}
 
-  outsize = set_message(outbuf,1,2 + strlen(fname),True);
-  SSVAL(outbuf,smb_vwv0,fsp->fnum);
-  CVAL(smb_buf(outbuf),0) = 4;
-  pstrcpy(smb_buf(outbuf) + 1,fname);
+	/* the returned filename is relative to the directory */
+	s = strrchr(fname, '/');
+	if (!s)
+		s = fname;
+	else
+		s++;
 
-  if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
-    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
-  }
+	outsize = set_message(outbuf,1,4+ strlen(fname),True);
+	SSVAL(outbuf,smb_vwv0,fsp->fnum);
+
+	p = smb_buf(outbuf);
+	SSVALS(p, 0, -1); /* what is this? not in spec */
+	SSVAL(p, 2, strlen(s));
+	p += 4;
+	pstrcpy(p,s);
+
+	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
+		CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
+	}
   
-  if(EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
-    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
+	if(EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
+		CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
 
-  DEBUG( 2, ( "created temp file %s\n", fname ) );
-  DEBUG( 3, ( "ctemp %s fd=%d dmode=%d umode=%o\n",
-        fname, fsp->fd, createmode, (int)unixmode ) );
+	DEBUG( 2, ( "created temp file %s\n", fname ) );
+	DEBUG( 3, ( "ctemp %s fd=%d dmode=%d umode=%o\n",
+		fname, fsp->fd, createmode, (int)unixmode ) );
 
-  END_PROFILE(SMBctemp);
-  return(outsize);
+	END_PROFILE(SMBctemp);
+	return(outsize);
 }
 
 
