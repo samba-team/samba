@@ -2324,20 +2324,8 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 					DLIST_REMOVE(file_ace, ace);
 					SAFE_FREE(ace);
 				}
-			} else {
-	
-				ace = canon_ace_entry_for(dir_ace, SMB_ACL_OTHER, NULL);
-				if (ace && !ace->perms) {
-					DLIST_REMOVE(dir_ace, ace);
-					SAFE_FREE(ace);
-				}
-				ace = canon_ace_entry_for(dir_ace, SMB_ACL_GROUP_OBJ, NULL);
-				if (ace && !ace->perms) {
-					DLIST_REMOVE(dir_ace, ace);
-					SAFE_FREE(ace);
-				}
 			}
-	
+
 			num_acls = count_canon_ace_list(file_ace);
 			num_dir_acls = count_canon_ace_list(dir_ace);
 
@@ -2424,6 +2412,11 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 		DEBUG(0,("get_nt_acl: Unable to malloc space for security descriptor.\n"));
 		sd_size = 0;
 	} else {
+#if 1
+		/*
+		 * JRA. Setting this flag causes W2K clients not to
+		 * propagate ACL sets down a directory tree correctly.
+		 */
 		/*
 		 * Windows 2000: The DACL_PROTECTED flag in the security
 		 * descriptor marks the ACL as non-inheriting, i.e., no
@@ -2434,6 +2427,7 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 		 * flag doesn't seem to bother Windows NT.
 		 */
 		(*ppdesc)->type |= SE_DESC_DACL_PROTECTED;
+#endif
 	}
 
  done:
