@@ -1088,7 +1088,7 @@ static BOOL del_smbfilepwd_entry(const char *name)
     size_t new_entry_length;
 
     if (strequal(name, pwd->smb_name)) {
-      DEBUG(10, ("add_smbfilepwd_entry: found entry with name %s - deleting it.\n", name));
+      DEBUG(10, ("del_smbfilepwd_entry: found entry with name %s - deleting it.\n", name));
       continue;
     }
 
