@@ -4306,7 +4306,7 @@ krb5_random_to_key(krb5_context context,
     if ((et->keytype->bits + 7) / 8 > size) {
 	krb5_set_error_string(context, "encryption key %s needs %d bytes "
 			      "of random to make an encryption key out of it",
-			      et->name, et->keytype->size);
+			      et->name, (int)et->keytype->size);
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
     ret = krb5_data_alloc(&key->keyvalue, et->keytype->size);
