@@ -60,6 +60,7 @@ static void add_socket(struct server_service *service,
 static void ldapsrv_init(struct server_service *service)
 {	
 	struct ldapsrv_service *ldap_service;
+	struct ldapsrv_partition *rootDSE_part;
 	struct ldapsrv_partition *part;
 
 	DEBUG(10,("ldapsrv_init\n"));
@@ -71,16 +72,16 @@ static void ldapsrv_init(struct server_service *service)
 	}
 	ZERO_STRUCTP(ldap_service);
 
-	part = talloc_p(ldap_service, struct ldapsrv_partition);
-	if (!ldap_service) {
+	rootDSE_part = talloc_p(ldap_service, struct ldapsrv_partition);
+	if (!rootDSE_part) {
 		DEBUG(0,("talloc_p(ldap_service, struct ldapsrv_partition) failed\n"));
 		return;
 	}
-	part->base_dn = ""; /* RootDSE */
-	part->ops = ldapsrv_get_rootdse_partition_ops();
+	rootDSE_part->base_dn = ""; /* RootDSE */
+	rootDSE_part->ops = ldapsrv_get_rootdse_partition_ops();
 
-	ldap_service->rootDSE = part;
-	DLIST_ADD_END(ldap_service->partitions, part, struct ldapsrv_partition *);
+	ldap_service->rootDSE = rootDSE_part;
+	DLIST_ADD_END(ldap_service->partitions, rootDSE_part, struct ldapsrv_partition *);
 
 	part = talloc_p(ldap_service, struct ldapsrv_partition);
 	if (!ldap_service) {
@@ -552,7 +553,7 @@ static void ldapsrv_accept(struct server_connection *conn)
 
 	ZERO_STRUCTP(ldap_conn);
 	ldap_conn->connection = conn;
-	ldap_conn->service = talloc_reference(ldap_conn, conn->stream_socket->service);
+	ldap_conn->service = talloc_reference(ldap_conn, conn->stream_socket->service->service.private_data);
 
 	conn->connection.private_data = ldap_conn;
 
