@@ -990,6 +990,7 @@ char *lp_force_user(int );
 char *lp_force_group(int );
 char *lp_readlist(int );
 char *lp_writelist(int );
+char *lp_fstype(int );
 char *lp_mangled_map(int );
 char *lp_veto_files(int );
 char *lp_hide_files(int );
