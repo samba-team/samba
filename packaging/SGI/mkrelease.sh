@@ -87,7 +87,7 @@ fi
 mv  bin/smbd bin/smbd.noquota
 
 echo "=====================  Making Regular versions ======================="
-make -P "CFLAGS=-O -g3 -woff 1188" all
+make -P "CFLAGS=-O -g3 -woff 1188" all libsmbclient
 errstat=$?
 if [ $errstat -ne 0 ]; then
   echo "Error $errstat building sources\n";
