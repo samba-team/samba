@@ -405,6 +405,8 @@ files_struct *file_fsp(char *buf, int where)
 	if (chain_fsp)
 		return chain_fsp;
 
+	if (!buf)
+		return NULL;
 	fnum = SVAL(buf, where);
 
 	for (fsp=Files;fsp;fsp=fsp->next, count++) {

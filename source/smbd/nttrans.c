@@ -1472,6 +1472,9 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf, 
 	files_struct *fsp;
 	uint32 flags;
 
+        if(setup_count < 6)
+		return ERROR_DOS(ERRDOS,ERRbadfunc);
+
 	fsp = file_fsp(setup,4);
 	flags = IVAL(setup, 0);
 
