@@ -3304,7 +3304,11 @@ user that you are logged into WfWg as.
 
 If you use "security = server" then Samba will try to validate the
 username/password by passing it to another SMB server, such as an NT
-box. If this fails it will revert to "security = USER".
+box. If this fails it will revert to "security = USER", but note that
+if encrypted passwords have been negotiated then Samba cannot revert
+back to checking the UNIX password file, it must have a valid 
+smbpasswd file to check users against. See the documentation
+docs/ENCRYPTION.txt for details on how to set this up.
 
 See the "password server" option for more details.
 
