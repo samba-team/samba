@@ -824,7 +824,6 @@ void smbd_process_async(struct smbsrv_connection *smb_conn)
 void smbsrv_accept(struct server_connection *conn)
 {
 	struct smbsrv_connection *smb_conn;
-	char *socket_addr;
 	int fd;
 
 	DEBUG(5,("smbsrv_accept\n"));
@@ -861,7 +860,7 @@ void smbsrv_accept(struct server_connection *conn)
 	set_blocking(fd, True);
 
 	/* setup the DCERPC server subsystem */
-	dcesrv_init_context(&smb_conn->dcesrv);
+	dcesrv_init_context(smb_conn, &smb_conn->dcesrv);
 
 	return;
 }
