@@ -3422,7 +3422,7 @@ int reply_lockingX(char *inbuf,char *outbuf,int length,int bufsize)
      (num_ulocks == 0) && (num_locks == 0) &&
      (CVAL(inbuf,smb_vwv0) == 0xFF))
   {
-    share_lock_token token;
+    int token;
     files_struct *fsp = &Files[fnum];
     uint32 dev = fsp->fd_ptr->dev;
     uint32 inode = fsp->fd_ptr->inode;

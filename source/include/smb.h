@@ -1195,29 +1195,6 @@ struct interface
 	struct in_addr nmask;
 };
 
-/* share mode record pointed to in shared memory hash bucket */
-typedef struct
-{
-  smb_shm_offset_t next_offset; /* offset of next record in chain from hash bucket */
-  int locking_version;
-  int32 st_dev;
-  int32 st_ino;
-  int num_share_mode_entries;
-  smb_shm_offset_t share_mode_entries; /* Chain of share mode entries for this file */
-  char file_name[1];
-} share_mode_record;
-
-/* share mode entry pointed to by share_mode_record struct */
-typedef struct
-{
-  smb_shm_offset_t next_share_mode_entry;
-  int pid;
-  uint16 op_port;
-  uint16 op_type;
-  int share_mode;
-  struct timeval time;
-} share_mode_entry;
-
 /* struct returned by get_share_modes */
 typedef struct
 {
@@ -1226,13 +1203,25 @@ typedef struct
   uint16 op_type;
   int share_mode;
   struct timeval time;
-} min_share_mode_entry;
+} share_mode_entry;
 
-/* Token returned by lock_share_entry (actually ignored by FAST_SHARE_MODES code) */
-typedef int share_lock_token;
 
 /* Conversion to hash entry index from device and inode numbers. */
 #define HASH_ENTRY(dev,ino) ((( (uint32)(dev) )* ( (uint32)(ino) )) % lp_shmem_hash_size())
+
+/* each implementation of the share mode code needs
+   to support the following operations */
+struct share_ops {
+	BOOL (*stop_mgmt)(void);
+	BOOL (*lock_entry)(int , uint32 , uint32 , int *);
+	BOOL (*unlock_entry)(int , uint32 , uint32 , int );
+	BOOL (*get_entries)(int , int , uint32 , uint32 , share_mode_entry **);
+	void (*del_entry)(int , int );
+	BOOL (*set_entry)(int , int , uint16 , uint16 );
+	BOOL (*remove_oplock)(int , int);
+	int (*forall)(void (*)(share_mode_entry *, char *));
+	void (*status)(FILE *);
+};
 
 /* this is used for smbstatus */
 struct connect_record
@@ -1251,34 +1240,6 @@ struct connect_record
 #ifndef LOCKING_VERSION
 #define LOCKING_VERSION 4
 #endif /* LOCKING_VERSION */
-
-#if !defined(FAST_SHARE_MODES)
-/* 
- * Defines for slow share modes.
- */
-
-/* 
- * Locking file header lengths & offsets. 
- */
-#define SMF_VERSION_OFFSET 0
-#define SMF_NUM_ENTRIES_OFFSET 4
-#define SMF_FILENAME_LEN_OFFSET 8
-#define SMF_HEADER_LENGTH 10
-
-#define SMF_ENTRY_LENGTH 20
-
-/*
- * Share mode record offsets.
- */
-
-#define SME_SEC_OFFSET 0
-#define SME_USEC_OFFSET 4
-#define SME_SHAREMODE_OFFSET 8
-#define SME_PID_OFFSET 12
-#define SME_PORT_OFFSET 16
-#define SME_OPLOCK_TYPE_OFFSET 18
-
-#endif /* FAST_SHARE_MODES */
 
 /* these are useful macros for checking validity of handles */
 #define VALID_FNUM(fnum)   (((fnum) >= 0) && ((fnum) < MAX_OPEN_FILES))
