@@ -97,27 +97,30 @@ _kadm5_c_init_context(kadm5_client_context **ctx,
 
 static krb5_error_code
 get_cred_cache(krb5_context context, krb5_ccache *cc, 
-	       krb5_prompter_fct prompter)
+	       const char *client_name, krb5_prompter_fct prompter)
 {
     krb5_ccache id;
     krb5_creds in, *out = NULL;
-    krb5_principal client, server;
+    krb5_principal client, server = NULL;
     krb5_error_code ret;
     
-    ret = krb5_cc_default(context, &id);
-    ret = krb5_cc_get_principal(context, id, &client);
-    ret = krb5_parse_name(context, KADM5_ADMIN_SERVICE, &server);
-    memset(&in, 0, sizeof(in));
-    in.client = client;
-    in.server = server;
-    ret = krb5_get_credentials(context, 0, id, &in, &out);
-    if(out != NULL)
-	krb5_free_creds(context, out);
-    if(ret == 0) {
-	*cc = id;
-	goto out;
-    }
-    krb5_cc_close(context, id);
+    if(client_name == NULL) {
+	ret = krb5_cc_default(context, &id);
+	ret = krb5_cc_get_principal(context, id, &client);
+	ret = krb5_parse_name(context, KADM5_ADMIN_SERVICE, &server);
+	memset(&in, 0, sizeof(in));
+	in.client = client;
+	in.server = server;
+	ret = krb5_get_credentials(context, 0, id, &in, &out);
+	if(out != NULL)
+	    krb5_free_creds(context, out);
+	if(ret == 0) {
+	    *cc = id;
+	    goto out;
+	}
+	krb5_cc_close(context, id);
+    } else 
+	krb5_parse_name(context, client_name, &client);
     ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &id);
 
     {
@@ -200,7 +203,7 @@ kadm5_c_init_with_password_ctx(krb5_context context,
 	close(s);
 	return KADM5_RPC_ERROR;
     }
-    ret = get_cred_cache(context, &cc, krb5_prompter_posix);
+    ret = get_cred_cache(context, &cc, client_name, krb5_prompter_posix);
     krb5_parse_name(context, KADM5_ADMIN_SERVICE, &server);
     ctx->ac = NULL;
     ret = krb5_sendauth(context, &ctx->ac, &s, KADMIN_APPL_VERSION, NULL, 
