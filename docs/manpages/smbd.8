@@ -3,12 +3,12 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBD" "8" "06 December 2001" "" ""
+.TH "SMBD" "8" "20 December 2001" "" ""
 .SH NAME
 smbd \- server to provide SMB/CIFS services to clients
 .SH SYNOPSIS
 .sp
-\fBsmbd\fR [ \fB-D\fR ]  [ \fB-a\fR ]  [ \fB-o\fR ]  [ \fB-P\fR ]  [ \fB-h\fR ]  [ \fB-V\fR ]  [ \fB-d <debug level>\fR ]  [ \fB-l <log directory>\fR ]  [ \fB-p <port number>\fR ]  [ \fB-O <socket option>\fR ]  [ \fB-s <configuration file>\fR ] 
+\fBsmbd\fR [ \fB-D\fR ]  [ \fB-a\fR ]  [ \fB-o\fR ]  [ \fB-P\fR ]  [ \fB-h\fR ]  [ \fB-V\fR ]  [ \fB-b\fR ]  [ \fB-d <debug level>\fR ]  [ \fB-l <log directory>\fR ]  [ \fB-p <port number>\fR ]  [ \fB-O <socket option>\fR ]  [ \fB-s <configuration file>\fR ] 
 .SH "DESCRIPTION"
 .PP
 This program is part of the Samba suite.
@@ -82,6 +82,10 @@ for \fBsmbd\fR.
 \fB-v\fR
 Prints the version number for 
 \fBsmbd\fR.
+.TP
+\fB-b\fR
+Prints information about how 
+Samba was built.
 .TP
 \fB-d <debug level>\fR
 \fIdebuglevel\fR is an integer 
@@ -197,7 +201,7 @@ you will be unable to connect from a client (such as a PC) as
 two different users at once. Attempts to connect the
 second user will result in access denied or 
 similar.
-.SH "ENVIRONMENTVARIABLES"
+.SH "ENVIRONMENT VARIABLES"
 .TP
 \fBPRINTER\fR
 If no printer name is specified to 

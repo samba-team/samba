@@ -21,6 +21,7 @@
 		<arg choice="opt">-P</arg>
 		<arg choice="opt">-h</arg>
 		<arg choice="opt">-V</arg>
+                <arg choice="opt">-b</arg>
 		<arg choice="opt">-d &lt;debug level&gt;</arg>
 		<arg choice="opt">-l &lt;log directory&gt;</arg>
 		<arg choice="opt">-p &lt;port number&gt;</arg>
@@ -119,6 +120,12 @@
 		<term>-v</term>
 		<listitem><para>Prints the version number for 
 		<command>smbd</command>.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-b</term>
+		<listitem><para>Prints information about how 
+		Samba was built.</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
@@ -274,7 +281,7 @@
 </refsect1>
 
 <refsect1>
-	<title>ENVIRONMENTVARIABLES</title>
+	<title>ENVIRONMENT VARIABLES</title>
 
 	<variablelist>
 		<varlistentry>
