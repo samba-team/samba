@@ -1,10 +1,10 @@
 /* 
    Unix SMB/Netbios implementation.
    Version 3.0
-   handle NLTMSSP, server side
+   handle NLTMSSP, client server side parsing
 
    Copyright (C) Andrew Tridgell      2001
-   Copyright (C) Andrew Bartlett 2001-2003
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2001-2005
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -148,6 +148,7 @@ NTSTATUS ntlmssp_set_username(struct ntlmssp_state *ntlmssp_state, const char *u
 {
 	if (!user) {
 		/* it should be at least "" */
+		DEBUG(1, ("NTLMSSP failed to set username - cannot accept NULL username\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	ntlmssp_state->user = talloc_strdup(ntlmssp_state, user);
