@@ -1,5 +1,3 @@
-#define OLD_NTDOMAIN 1
-
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -1158,5 +1156,3 @@ free_and_exit:
     free((char *)old_shares);
   return(ret);
 }
-
-#undef OLD_NTDOMAIN

@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -1256,5 +1255,3 @@ void smbd_process(void)
 		}
 	}
 }
-
-#undef OLD_NTDOMAIN

@@ -1,5 +1,3 @@
-#define OLD_NTDOMAIN 1
-
 /* 
    Unix SMB/Netbios implementation.
    Version 3.0
@@ -302,6 +300,3 @@ struct kernel_oplocks *linux_init_kernel_oplocks(void)
 #else
  void oplock_linux_dummy(void) {}
 #endif /* HAVE_KERNEL_OPLOCKS_LINUX */
-
-#undef OLD_NTDOMAIN
-

@@ -48,9 +48,9 @@ static void add_auto_printers(void)
 	printers = lp_servicenumber(PRINTERS_NAME);
 
 	if (printers < 0) {
-		free(str);
-		return;
-	}
+        free(str);
+        return;
+    }
 	
 	for (p=strtok(str,LIST_SEP);p;p=strtok(NULL,LIST_SEP)) {
 		if (lp_servicenumber(p) >= 0) continue;
@@ -60,7 +60,7 @@ static void add_auto_printers(void)
 		}
 	}
 
-	free(str);
+    free(str);
 }
 
 /***************************************************************************

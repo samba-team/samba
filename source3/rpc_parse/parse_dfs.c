@@ -411,7 +411,7 @@ BOOL dfs_io_dfs_info_ctr(char* desc, DFS_INFO_CTR* ctr, uint32 num_entries, uint
 				return False;
 			if(!prs_uint32("ptr_comment", ps, depth, &ctr->dfs.info3[i].ptr_comment))
 				return False;
-			if(!prs_uint32("state", ps, depth, &ctr->dfs.info3[i].state));
+			if(!prs_uint32("state", ps, depth, &ctr->dfs.info3[i].state))
 				return False;
 			if(!prs_uint32("num_storages", ps, depth, &ctr->dfs.info3[i].num_storages))
 				return False;

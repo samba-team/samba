@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /*
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -895,4 +894,3 @@ BOOL reduce_name(connection_struct *conn, char *s,char *dir,BOOL widelinks)
   return(True);
 #endif
 }
-#undef OLD_NTDOMAIN

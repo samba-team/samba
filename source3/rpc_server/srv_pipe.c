@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -270,9 +269,9 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	fstring domain;
 	fstring wks;
 	BOOL guest_user = False;
-	SAM_ACCOUNT *sam_pass = NULL;
-	BYTE null_smb_passwd[16];
-	BYTE *smb_passwd_ptr = NULL;
+	SAM_ACCOUNT *sampass = NULL;
+	uchar null_smb_passwd[16];
+	uchar *smb_passwd_ptr = NULL;
 	
 	DEBUG(5,("api_pipe_ntlmssp_verify: checking user details\n"));
 
@@ -358,18 +357,6 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
  			return False;
 
 	}
-/* unnecessary as the passdb validates the user before returning   --jerry */
-#if 0	
-	/*
-	 * Find the user in the unix password db.
-	 */
-
-	if(!(pass = Get_Pwnam(pipe_user_name,True))) {
-		DEBUG(1,("Couldn't find user '%s' in UNIX password database.\n",pipe_user_name));
-		return(False);
-	}
-
-#endif	/* 0 */
 
 	if(!guest_user) {
 
@@ -383,8 +370,8 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 			return False;
 		}
 
-		if(!(sam_pass = pdb_getsampwnam(pipe_user_name))) {
-			DEBUG(1,("api_pipe_ntlmssp_verify: Cannot find user %s in passdb.\n",
+		if(!(sampass = pdb_getsampwnam(pipe_user_name))) {
+			DEBUG(1,("api_pipe_ntlmssp_verify: Cannot find user %s in smb passwd database.\n",
 				pipe_user_name));
 			unbecome_root();
 			return False;
@@ -392,24 +379,18 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 
 		unbecome_root();
 
-		if (sam_pass == NULL) {
-			DEBUG(1,("api_pipe_ntlmssp_verify: Couldn't find user '%s' in passdb.\n", 
-				pipe_user_name));
-			return(False);
-		}
-
-		/* Quit if the account was disabled. */
-		if((pdb_get_acct_ctrl(sam_pass) & ACB_DISABLED) || !pdb_get_lanman_passwd(sam_pass)) {
-			DEBUG(1,("Account for user '%s' was disabled.\n", pipe_user_name));
-			return(False);
-		}
-
-		if(!pdb_get_nt_passwd(sam_pass)) {
-			DEBUG(1,("Account for user '%s' has no NT password hash.\n", pipe_user_name));
-			return(False);
-		}
-
-		smb_passwd_ptr = pdb_get_lanman_passwd(sam_pass);
+        /* Quit if the account was disabled. */
+        if((pdb_get_acct_ctrl(sampass) & ACB_DISABLED) || !pdb_get_lanman_passwd(sampass)) {
+            DEBUG(1,("Account for user '%s' was disabled.\n", pipe_user_name));
+            return(False);
+        }
+ 
+        if(!pdb_get_nt_passwd(sampass)) {
+            DEBUG(1,("Account for user '%s' has no NT password hash.\n", pipe_user_name));
+            return(False);
+        }
+ 
+        smb_passwd_ptr = pdb_get_lanman_passwd(sampass);
 	}
 
 	/*
@@ -459,18 +440,18 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 	/*
 	 * Store the UNIX credential data (uid/gid pair) in the pipe structure.
 	 */
-	p->pipe_user.uid = pdb_get_uid(sam_pass);
-	p->pipe_user.gid = pdb_get_gid(sam_pass);
+
+	p->pipe_user.uid = pdb_get_uid(sampass);
+	p->pipe_user.gid = pdb_get_uid(sampass);
 
 	/* Set up pipe user group membership. */
 	initialise_groups(pipe_user_name, p->pipe_user.uid, p->pipe_user.gid);
 	get_current_groups( &p->pipe_user.ngroups, &p->pipe_user.groups);
 
 	/* Create an NT_USER_TOKEN struct for this user. */
-	p->pipe_user.nt_user_token = 
-		create_nt_token(p->pipe_user.uid,p->pipe_user.gid, 
-				p->pipe_user.ngroups, p->pipe_user.groups, 
-				guest_user);
+	p->pipe_user.nt_user_token = create_nt_token(p->pipe_user.uid,p->pipe_user.gid,
+						p->pipe_user.ngroups, p->pipe_user.groups,
+						guest_user);
 
 	p->ntlmssp_auth_validated = True;
 	return True;
@@ -1148,7 +1129,9 @@ BOOL api_pipe_request(pipes_struct *p)
 		if (strequal(api_fd_commands[i].pipe_clnt_name, p->name) &&
 		    api_fd_commands[i].fn != NULL) {
 			DEBUG(3,("Doing \\PIPE\\%s\n", api_fd_commands[i].pipe_clnt_name));
+			set_current_rpc_talloc(p->mem_ctx);
 			ret = api_fd_commands[i].fn(p);
+			set_current_rpc_talloc(NULL);
 		}
 	}
 
@@ -1222,7 +1205,7 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name,
 
 		DEBUG(10, ("api_rpcTNP: rpc input buffer underflow (parse error?)\n"));
 		if (data) {
-			prs_uint8s(False, "", &p->in_data.data, 0, data,
+			prs_uint8s(False, "", &p->in_data.data, 0, (unsigned char *)data,
 				   data_len);
 			free(data);
 		}
@@ -1231,5 +1214,3 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name,
 
 	return True;
 }
-
-#undef OLD_NTDOMAIN

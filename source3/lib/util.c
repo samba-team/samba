@@ -359,7 +359,7 @@ void set_message_bcc(char *buf,int num_bytes)
 ********************************************************************/
 void set_message_end(void *outbuf,void *end_ptr)
 {
-	set_message_bcc(outbuf,PTR_DIFF(end_ptr,smb_buf(outbuf)));
+	set_message_bcc((char *)outbuf,PTR_DIFF(end_ptr,smb_buf((char *)outbuf)));
 }
 
 /*******************************************************************

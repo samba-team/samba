@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -275,9 +274,6 @@ static void init_reply_lookup_sids(LSA_R_LOOKUP_SIDS *r_l,
 		r_l->status = NT_STATUS_NO_PROBLEMO;
 }
 
-static uint32 lsa_hnd_low  = 0;
-static uint32 lsa_hnd_high = 0;
-
 /***************************************************************************
  _lsa_open_policy2.
  ***************************************************************************/
@@ -287,7 +283,8 @@ uint32 _lsa_open_policy2(pipes_struct *p, LSA_Q_OPEN_POL2 *q_u, LSA_R_OPEN_POL2 
 	/* lkclXXXX having decoded it, ignore all fields in the open policy! */
 
 	/* set up the LSA QUERY INFO response */
-	create_policy_handle(&r_u->pol, &lsa_hnd_low, &lsa_hnd_high);
+	if (!create_policy_hnd(p, &r_u->pol, NULL, NULL))
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	return NT_STATUS_NOPROBLEMO;
 }
@@ -301,7 +298,8 @@ uint32 _lsa_open_policy(pipes_struct *p, LSA_Q_OPEN_POL *q_u, LSA_R_OPEN_POL *r_
 	/* lkclXXXX having decoded it, ignore all fields in the open policy! */
 
 	/* set up the LSA QUERY INFO response */
-	create_policy_handle(&r_u->pol, &lsa_hnd_low, &lsa_hnd_high);
+	if (!create_policy_hnd(p, &r_u->pol, NULL, NULL))
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	return NT_STATUS_NOPROBLEMO;
 }
@@ -315,6 +313,9 @@ uint32 _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_ENU
 	uint32 enum_context = 0;
 	char *dom_name = NULL;
 	DOM_SID *dom_sid = NULL;
+
+	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
+		return NT_STATUS_INVALID_HANDLE;
 
 	/* set up the LSA QUERY INFO response */
 	init_r_enum_trust_dom(r_u, enum_context, dom_name, dom_sid,
@@ -335,6 +336,9 @@ uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO 
 	DOM_SID *sid = NULL;
 
 	r_u->status = NT_STATUS_NO_PROBLEMO;
+
+	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
+		return NT_STATUS_INVALID_HANDLE;
 
 	switch (q_u->info_class) {
 	case 0x02:
@@ -420,6 +424,9 @@ uint32 _lsa_lookup_sids(pipes_struct *p, LSA_Q_LOOKUP_SIDS *q_u, LSA_R_LOOKUP_SI
 	LSA_TRANS_NAME_ENUM *names = NULL;
 	uint32 mapped_count = 0;
 
+	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
+		return NT_STATUS_INVALID_HANDLE;
+
 	ref = (DOM_R_REF *)talloc_zero(p->mem_ctx, sizeof(DOM_R_REF));
 	names = (LSA_TRANS_NAME_ENUM *)talloc_zero(p->mem_ctx, sizeof(LSA_TRANS_NAME_ENUM));
 
@@ -445,6 +452,9 @@ uint32 _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP_N
 	DOM_RID2 *rids;
 	uint32 mapped_count = 0;
 
+	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
+		return NT_STATUS_INVALID_HANDLE;
+
 	ref = (DOM_R_REF *)talloc_zero(p->mem_ctx, sizeof(DOM_R_REF));
 	rids = (DOM_RID2 *)talloc_zero(p->mem_ctx, sizeof(DOM_RID2)*MAX_LOOKUP_SIDS);
 
@@ -464,6 +474,10 @@ uint32 _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP_N
 
 uint32 _lsa_close(pipes_struct *p, LSA_Q_CLOSE *q_u, LSA_R_CLOSE *r_u)
 {
+	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
+		return NT_STATUS_INVALID_HANDLE;
+
+	close_policy_hnd(p, &q_u->pol);
 	return NT_STATUS_NO_PROBLEMO;
 }
 
@@ -475,4 +489,3 @@ uint32 _lsa_open_secret(pipes_struct *p, LSA_Q_OPEN_SECRET *q_u, LSA_R_OPEN_SECR
 {
 	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 }
-#undef OLD_NTDOMAIN

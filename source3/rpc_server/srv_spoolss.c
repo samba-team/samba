@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -249,7 +248,11 @@ static BOOL api_spoolss_rffpcnex(pipes_struct *p)
  * api_spoolss_rfnpcnex
  * ReplyFindNextPrinterChangeNotifyEx
  * called from the spoolss dispatcher
- *
+
+ * Note - this is the *ONLY* function that breaks the RPC call
+ * symmetry in all the other calls. We need to do this to fix
+ * the massive memory allocation problem with thousands of jobs...
+ * JRA.
  ********************************************************************/
 
 static BOOL api_spoolss_rfnpcnex(pipes_struct *p)
@@ -1188,5 +1191,3 @@ BOOL api_spoolss_rpc(pipes_struct *p)
 {
 	return api_rpcTNP(p, "api_spoolss_rpc", api_spoolss_cmds);
 }
-
-#undef OLD_NTDOMAIN

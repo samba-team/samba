@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -695,6 +694,9 @@ uint32 _srv_net_srv_get_info(pipes_struct *p, SRV_Q_NET_SRV_GET_INFO *q_u, SRV_R
 		                  lp_default_server_announce(),
 		                  string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH));
 		break;
+	case 100:
+		init_srv_info_100(&ctr->srv.sv100, 500, global_myname);
+		break;
 	default:
 		status = NT_STATUS_INVALID_INFO_CLASS;
 		break;
@@ -863,4 +865,3 @@ uint32 _srv_net_remote_tod(pipes_struct *p, SRV_Q_NET_REMOTE_TOD *q_u, SRV_R_NET
 
 	return r_u->status;
 }
-#undef OLD_NTDOMAIN

@@ -1,5 +1,3 @@
-#define OLD_NTDOMAIN 1
-
 /* 
    Unix SMB/Netbios implementation.
    Version 3.0
@@ -98,5 +96,3 @@ void print_fsp_end(files_struct *fsp, BOOL normal_close)
 		string_free(&fsp->fsp_name);
 	}
 }
-
-#undef OLD_NTDOMAIN

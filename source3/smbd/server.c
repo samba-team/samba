@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -502,12 +501,6 @@ static void init_structs(void )
 	/* for RPC pipes */
 	init_rpc_pipe_hnd();
 
-	/* for LSA handles */
-	init_lsa_policy_hnd();
-
-	/* for SPOOLSS handles */
-	init_printer_hnd();
-	
 	init_dptrs();
 
 	secrets_init();
@@ -804,5 +797,3 @@ static void usage(char *pname)
 	exit_server("normal exit");
 	return(0);
 }
-
-#undef OLD_NTDOMAIN

@@ -1,5 +1,3 @@
-#define OLD_NTDOMAIN 1
-
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -80,7 +78,7 @@ rid_name domain_group_rids[] =
     { 0                             , NULL }
 };
 
-int make_dom_gids(char *gids_str, DOM_GID **ppgids)
+int make_dom_gids(TALLOC_CTX *ctx, char *gids_str, DOM_GID **ppgids)
 {
   char *ptr;
   pstring s2;
@@ -99,10 +97,10 @@ int make_dom_gids(char *gids_str, DOM_GID **ppgids)
        count++)
     ;
 
-  gids = (DOM_GID *)malloc( sizeof(DOM_GID) * count );
+  gids = (DOM_GID *)talloc(ctx, sizeof(DOM_GID) * count );
   if(!gids)
   {
-    DEBUG(0,("make_dom_gids: malloc fail !\n"));
+    DEBUG(0,("make_dom_gids: talloc fail !\n"));
     return 0;
   }
 
@@ -192,11 +190,10 @@ void get_domain_user_groups(char *domain_groups, char *user)
 	}
 }
 
-
 /*******************************************************************
- lookup_group_name
+ Look up a local (domain) rid and return a name and type.
  ********************************************************************/
-uint32 lookup_group_name(uint32 rid, char *group_name, uint32 *type)
+uint32 local_lookup_group_name(uint32 rid, char *group_name, uint32 *type)
 {
 	int i = 0; 
 	(*type) = SID_NAME_DOM_GRP;
@@ -220,9 +217,9 @@ uint32 lookup_group_name(uint32 rid, char *group_name, uint32 *type)
 }
 
 /*******************************************************************
- lookup_alias_name
+ Look up a local alias rid and return a name and type.
  ********************************************************************/
-uint32 lookup_alias_name(uint32 rid, char *alias_name, uint32 *type)
+uint32 local_lookup_alias_name(uint32 rid, char *alias_name, uint32 *type)
 {
 	int i = 0; 
 	(*type) = SID_NAME_WKN_GRP;
@@ -246,11 +243,11 @@ uint32 lookup_alias_name(uint32 rid, char *alias_name, uint32 *type)
 }
 
 /*******************************************************************
- lookup_user_name
+ Look up a local user rid and return a name and type.
  ********************************************************************/
-uint32 lookup_user_name(uint32 rid, char *user_name, uint32 *type)
+uint32 local_lookup_user_name(uint32 rid, char *user_name, uint32 *type)
 {
-	struct sam_disp_info *disp_info;
+	SAM_ACCOUNT *sampwd;
 	int i = 0;
 	(*type) = SID_NAME_USER;
 
@@ -271,12 +268,12 @@ uint32 lookup_user_name(uint32 rid, char *user_name, uint32 *type)
 
 	/* ok, it's a user.  find the user account */
 	become_root();
-	disp_info = pdb_sam_to_dispinfo(pdb_getsampwrid(rid));
+	sampwd = pdb_getsampwrid(rid);
 	unbecome_root();
 
-	if (disp_info != NULL)
+	if (sampwd != NULL)
 	{
-		fstrcpy(user_name, disp_info->smb_name);
+		fstrcpy(user_name, pdb_get_username(sampwd) );
 		DEBUG(5,(" = %s\n", user_name));
 		return 0x0;
 	}
@@ -286,9 +283,9 @@ uint32 lookup_user_name(uint32 rid, char *user_name, uint32 *type)
 }
 
 /*******************************************************************
- lookup_group_rid
+ Look up a local (domain) group name and return a rid
  ********************************************************************/
-uint32 lookup_group_rid(char *group_name, uint32 *rid)
+uint32 local_lookup_group_rid(char *group_name, uint32 *rid)
 {
 	char *grp_name;
 	int i = -1; /* start do loop at -1 */
@@ -305,9 +302,9 @@ uint32 lookup_group_rid(char *group_name, uint32 *rid)
 }
 
 /*******************************************************************
- lookup_alias_rid
+ Look up a local (BUILTIN) alias name and return a rid
  ********************************************************************/
-uint32 lookup_alias_rid(char *alias_name, uint32 *rid)
+uint32 local_lookup_alias_rid(char *alias_name, uint32 *rid)
 {
 	char *als_name;
 	int i = -1; /* start do loop at -1 */
@@ -324,25 +321,23 @@ uint32 lookup_alias_rid(char *alias_name, uint32 *rid)
 }
 
 /*******************************************************************
- lookup_user_rid
+ Look up a local user name and return a rid
  ********************************************************************/
-uint32 lookup_user_rid(char *user_name, uint32 *rid)
+uint32 local_lookup_user_rid(char *user_name, uint32 *rid)
 {
-	SAM_ACCOUNT *sam_pass;
+	SAM_ACCOUNT *sampass;
 	(*rid) = 0;
 
 	/* find the user account */
 	become_root();
-	sam_pass = pdb_getsampwnam(user_name);
+	sampass = pdb_getsampwnam(user_name);
 	unbecome_root();
 
-	if (sam_pass != NULL)
+	if (sampass != NULL)
 	{
-		*rid = pdb_get_user_rid(sam_pass);
+		(*rid) = pdb_get_user_rid(sampass);
 		return 0x0;
 	}
 
 	return NT_STATUS_NONE_MAPPED;
 }
-
-#undef OLD_NTDOMAIN

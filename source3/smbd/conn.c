@@ -1,5 +1,3 @@
-#define OLD_NTDOMAIN 1
-
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -200,5 +198,3 @@ void conn_free(connection_struct *conn)
 	ZERO_STRUCTP(conn);
 	free(conn);
 }
-
-#undef OLD_NTDOMAIN

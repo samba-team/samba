@@ -1,5 +1,3 @@
-#define OLD_NTDOMAIN 1
-
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -327,6 +325,3 @@ void msrpc_net_use_enum(uint32 *num_cons, struct use_info ***use)
 		add_use_info_to_array(num_cons, use, &item);
 	}
 }
-
-
-#undef OLD_NTDOMAIN

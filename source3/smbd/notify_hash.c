@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /*
    Unix SMB/Netbios implementation.
    Version 3.0
@@ -195,5 +194,3 @@ struct cnotify_fns *hash_notify_init(void)
   uint16 vuid = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID : 
   SVAL(cnbp->request_buf,smb_uid);
 */
-
-#undef OLD_NTDOMAIN
