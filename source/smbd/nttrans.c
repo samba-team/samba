@@ -559,7 +559,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	/* Breakout the oplock request bits so we can set the
 	   reply bits separately. */
 	int oplock_request = 0;
-    mode_t unixmode;
+	mode_t unixmode;
 	int pnum = -1;
 	int fmode=0,rmode=0;
 	SMB_OFF_T file_len = 0;
@@ -588,8 +588,23 @@ int reply_ntcreate_and_X(connection_struct *conn,
       files_struct *dir_fsp = file_fsp(inbuf,smb_ntcreate_RootDirectoryFid);
       size_t dir_name_len;
 
-      if(!dir_fsp || !dir_fsp->is_directory)
+      if(!dir_fsp)
         return(ERROR(ERRDOS,ERRbadfid));
+
+      if(!dir_fsp->is_directory) {
+        /* 
+         * Check to see if this is a mac fork of some kind.
+         */
+
+        get_filename(&fname[0], inbuf, smb_buf(inbuf)-inbuf, 
+                   smb_buflen(inbuf),fname_len);
+
+        if( fname[0] == ':') {
+          SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+          return(ERROR(0, 0xc0000000|NT_STATUS_OBJECT_PATH_NOT_FOUND));
+        }
+        return(ERROR(ERRDOS,ERRbadfid));
+      }
 
       /*
        * Copy in the base directory name.
@@ -919,8 +934,24 @@ static int call_nt_transact_create(connection_struct *conn,
     files_struct *dir_fsp = file_fsp(params,4);
     size_t dir_name_len;
 
-    if(!dir_fsp || !dir_fsp->is_directory)
+    if(!dir_fsp)
+        return(ERROR(ERRDOS,ERRbadfid));
+
+    if(!dir_fsp->is_directory) {
+      /*
+       * Check to see if this is a mac fork of some kind.
+       */
+
+      StrnCpy(fname,params+53,fname_len);
+      fname[fname_len] = '\0';
+
+      if( fname[0] == ':') {
+          SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+          return(ERROR(0, 0xc0000000|NT_STATUS_OBJECT_PATH_NOT_FOUND));
+      }
+
       return(ERROR(ERRDOS,ERRbadfid));
+    }
 
     /*
      * Copy in the base directory name.
