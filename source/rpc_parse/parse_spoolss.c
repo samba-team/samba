@@ -1807,19 +1807,19 @@ static BOOL smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, uint16
 			buffer->string_at_end -= (q-p+1)*sizeof(uint16);
 
 			if(!prs_set_offset(ps, buffer->string_at_end)) {
-				free(chaine.buffer);
+				SAFE_FREE(chaine.buffer);
 				return False;
 			}
 
 			/* write the string */
 			if (!spoolss_smb_io_unistr(desc, &chaine, ps, depth)) {
-				free(chaine.buffer);
+				SAFE_FREE(chaine.buffer);
 				return False;
 			}
 			q++;
 			p=q;
 
-			free(chaine.buffer);
+			SAFE_FREE(chaine.buffer);
 		}
 		
 		if(!prs_set_offset(ps, struct_offset))
@@ -1868,7 +1868,7 @@ static BOOL smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, uint16
 				/* Yes this should be realloc - it's freed below. JRA */
 
 				if((tc2=(uint16 *)Realloc(chaine2, realloc_size)) == NULL) {
-					if (chaine2) free(chaine2);
+					SAFE_FREE(chaine2);
 					return False;
 				}
 				else chaine2 = tc2;
@@ -1884,7 +1884,7 @@ static BOOL smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, uint16
 		{
 			chaine2[l_chaine2] = '\0';
 			*string=(uint16 *)talloc_memdup(prs_get_mem_context(ps),chaine2,realloc_size);
-			free(chaine2);
+			SAFE_FREE(chaine2);
 		}
 
 		if(!prs_set_offset(ps, old_offset))
@@ -4886,7 +4886,7 @@ BOOL make_spoolss_driver_info_3(
 	inf->dependentfilessize = len;
 	if(!make_spoolss_buffer5(mem_ctx, &inf->dependentfiles, len, info3->dependentfiles))
 	{
-		safe_free (inf);
+		SAFE_FREE(inf);
 		return False;
 	}
 	
@@ -5003,7 +5003,7 @@ BOOL uni_2_asc_printer_driver_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *uni,
 	if (uniarray_2_dosarray(&uni->dependentfiles, &d->dependentfiles ))
 		return True;
 	
-	free(*asc);
+	SAFE_FREE(*asc);
 	return False;
 }
 
@@ -5055,7 +5055,7 @@ BOOL uni_2_asc_printer_driver_6(SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 *uni,
 	return True;
 	
 error:
-	free(*asc);
+	SAFE_FREE(*asc);
 	return False;
 }
 
@@ -5859,14 +5859,14 @@ BOOL spoolss_io_q_getjob(char *desc, SPOOL_Q_GETJOB *q_u, prs_struct *ps, int de
 void free_devmode(DEVICEMODE *devmode)
 {
 	if (devmode!=NULL) {
-		safe_free(devmode->private);
-		safe_free(devmode);
+		SAFE_FREE(devmode->private);
+		SAFE_FREE(devmode);
 	}
 }
 
 void free_printer_info_1(PRINTER_INFO_1 *printer)
 {
-	safe_free(printer);
+	SAFE_FREE(printer);
 }
 
 void free_printer_info_2(PRINTER_INFO_2 *printer)
@@ -5874,15 +5874,13 @@ void free_printer_info_2(PRINTER_INFO_2 *printer)
 	if (printer!=NULL) {
 		free_devmode(printer->devmode);
 		printer->devmode = NULL;
-		safe_free(printer);
+		SAFE_FREE(printer);
 	}
 }
 
 void free_printer_info_3(PRINTER_INFO_3 *printer)
 {
-	if (printer!=NULL) {
-		safe_free(printer);
-	}
+	SAFE_FREE(printer);
 }
 
 void free_job_info_2(JOB_INFO_2 *job)

@@ -147,11 +147,7 @@ frees a structure.
 ********************************************************************/
 void creds_free_unix_sec(CREDS_UNIX_SEC *r_u)
 {
-	if (r_u->grps != NULL)
-	{
-		free(r_u->grps);
-		r_u->grps = NULL;
-	}
+	SAFE_FREE(r_u->grps);
 }
 
 /*******************************************************************
@@ -225,11 +221,7 @@ frees a structure.
 ********************************************************************/
 void creds_free_nt_sec(CREDS_NT_SEC *r_u)
 {
-	if (r_u->grp_rids != NULL)
-	{
-		free(r_u->grp_rids);
-		r_u->grp_rids = NULL;
-	}
+	SAFE_FREE(r_u->grp_rids);
 }
 
 /*******************************************************************
