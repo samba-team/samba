@@ -4,7 +4,7 @@
                  =============================
 
 This is the latest stable release of the Samba 2.2 code base.
-This is a maintainence release of Samba 2.2.8a to address the 
+This is a maintenance release of Samba 2.2.8a to address the 
 problem with user password changes after applying the Microsoft 
 hotfix described in KB282741 to Windows NT 4.0/200x/XP clients.  
 No other changes have been applied since Samba 2.2.8a.
