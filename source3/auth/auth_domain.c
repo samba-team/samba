@@ -352,6 +352,10 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 			sid_copy(&ptok->user_sids[i], &domain_sid);
 			sid_append_rid(&ptok->user_sids[i], info3.gids[i].g_rid);
 		}
+		
+		become_root();
+		uni_group_cache_store_netlogon(mem_ctx, &info3);
+		unbecome_root();
 	}
 
 #if 0

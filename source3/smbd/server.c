@@ -884,6 +884,7 @@ static void usage(char *pname)
 
 	smbd_process();
 	
+	uni_group_cache_shutdown();
 	exit_server("normal exit");
 	return(0);
 }

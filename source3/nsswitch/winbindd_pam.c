@@ -107,6 +107,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 						lm_resp, nt_resp, 
 						&info3);
         
+	uni_group_cache_store_netlogon(mem_ctx, &info3);
 done:
 
 	cli_shutdown(cli);
@@ -168,6 +169,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 						lm_resp, nt_resp, 
 						&info3);
         
+	uni_group_cache_store_netlogon(mem_ctx, &info3);
 done:
 	talloc_destroy(mem_ctx);
 

@@ -199,9 +199,11 @@ NOTIFY_OBJ = smbd/notify.o smbd/notify_hash.o smbd/notify_kernel.o
 
 PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
 
+UNIGRP_OBJ = libsmb/netlogon_unigrp.o 
+
 AUTH_OBJ = auth/auth.o auth/auth_sam.o auth/auth_server.o auth/auth_domain.o \
 	   auth/auth_rhosts.o auth/auth_unix.o auth/auth_util.o	auth/auth_winbind.o \
-	   auth/auth_builtin.o auth/auth_compat.o $(PLAINTEXT_AUTH_OBJ)
+	   auth/auth_builtin.o auth/auth_compat.o $(PLAINTEXT_AUTH_OBJ) $(UNIGRP_OBJ)
 
 
 SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
@@ -430,7 +432,7 @@ WINBINDD_OBJ = \
 		$(WINBINDD_OBJ1) $(NOPROTO_OBJ) $(PASSDB_OBJ) \
 		$(LIBNMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
 		$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) \
-		$(GROUPDB_OBJ) $(PROFILE_OBJ)
+		$(GROUPDB_OBJ) $(PROFILE_OBJ) $(UNIGRP_OBJ)
 
 WBINFO_OBJ = nsswitch/wbinfo.o libsmb/smbencrypt.o libsmb/smbdes.o \
 	passdb/secrets.o
