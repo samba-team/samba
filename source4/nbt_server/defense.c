@@ -43,7 +43,7 @@ static void nbtd_name_defense_reply(struct nbt_name_socket *nbtsock,
 	packet->ancount = 1;
 	packet->operation = 
 		NBT_FLAG_REPLY | 
-		(request_packet->operation & NBT_OPCODE) |
+		NBT_OPCODE_REGISTER |
 		NBT_FLAG_AUTHORITIVE |
 		NBT_FLAG_RECURSION_DESIRED |
 		NBT_FLAG_RECURSION_AVAIL |
@@ -84,10 +84,10 @@ void nbtd_request_defense(struct nbt_name_socket *nbtsock,
 			  struct nbt_name_packet *packet, 
 			  const char *src_address, int src_port)
 {
-	struct nbt_iface_name *iname;
+	struct nbtd_iface_name *iname;
 	struct nbt_name *name;
-	struct nbt_interface *iface = talloc_get_type(nbtsock->incoming.private, 
-						      struct nbt_interface);
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+						       struct nbtd_interface);
 
 	NBT_ASSERT_PACKET(packet, src_address, packet->qdcount == 1);
 	NBT_ASSERT_PACKET(packet, src_address, packet->arcount == 1);
