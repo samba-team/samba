@@ -583,6 +583,7 @@ struct hostent* roken_gethostbyaddr(const void*, size_t, int);
 #endif
 
 void set_progname(char *argv0);
+const char *get_progname(void);
 
 #ifdef __cplusplus
 }
