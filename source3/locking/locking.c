@@ -772,6 +772,26 @@ void locking_close_file(files_struct *fsp)
 		struct unlock_list *ul = NULL;
 		int eclass;
 		uint32 ecode;
+		struct pending_closes *pc;
+
+		/*
+		 * Optimization for the common case where we are the only
+		 * opener of a file. If all fd entries are our own, we don't
+		 * need to explicitly release all the locks via the POSIX functions,
+		 * we can just release all the brl locks, as in the no POSIX locking case.
+		 */
+
+		if ((pc = find_pending_close_entry(fsp->dev, fsp->inode)) != NULL) {
+
+			if (pc->fd_array_size == 1 && pc->fd_array[0] == fsp->fd ) {
+				/*
+				 * Just release all the brl locks, no need to release individually.
+				 */
+
+				brl_close(fsp->dev, fsp->inode, pid, fsp->conn->cnum, fsp->fnum);
+				return;
+			}
+		}
 
 		if ((ul_ctx = talloc_init()) == NULL) {
 			DEBUG(0,("locking_close_file: unable to init talloc context.\n"));
@@ -802,7 +822,7 @@ void locking_close_file(files_struct *fsp)
 	} else {
 
 		/*
-		 * Just release all the tdb locks, no need to release individually.
+		 * Just release all the brl locks, no need to release individually.
 		 */
 
 		brl_close(fsp->dev, fsp->inode, pid, fsp->conn->cnum, fsp->fnum);
