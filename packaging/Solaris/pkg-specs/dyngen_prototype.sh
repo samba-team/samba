@@ -57,3 +57,11 @@ for i in $list
 do
 	echo "f none samba/$i=$i 0644 root other"
 done
+echo "#\n# HTML documentation for SWAT\n#"
+cd $1/docs/htmldocs
+for htmldoc in *
+do
+	if [ -f $htmldoc ]; then
+		echo f none samba/swat/help/$htmldoc=docs/htmldocs/$htmldoc 0644 root other
+	fi
+done
