@@ -229,7 +229,7 @@ BOOL winbind_gid_to_sid(DOM_SID *sid, gid_t gid)
 }
 
 /* Fetch the list of groups a user is a member of from winbindd.  This is
-   used by winbind_initgroups and winbind_getgroups. */
+   used by winbind_getgroups. */
 
 static int wb_getgroups(const char *user, gid_t **groups)
 {
@@ -255,86 +255,6 @@ static int wb_getgroups(const char *user, gid_t **groups)
 	}
 
 	return -1;
-}
-
-/* Call winbindd to initialise group membership.  This is necessary for
-   some systems (i.e RH5.2) that do not have an initgroups function as part
-   of the nss extension.  In RH5.2 this is implemented using getgrent()
-   which can be amazingly inefficient as well as having problems with
-   username case. */
-
-int winbind_initgroups(char *user, gid_t gid)
-{
-	gid_t *tgr, *groups = NULL;
-	int result;
-
-	/* Call normal initgroups if we are a local user */
-
-	if (!(strchr(user, *lp_winbind_separator()) || lp_winbind_use_default_domain())) {
-		return initgroups(user, gid);
-	}
-
-	result = wb_getgroups(user, &groups);
-
-	DEBUG(10,("winbind_getgroups: %s: result = %s\n", user, 
-		  result == -1 ? "FAIL" : "SUCCESS"));
-
-	if (result != -1) {
-		int ngroups = result, i;
-		BOOL is_member = False;
-
-		/* Check to see if the passed gid is already in the list */
-
-		for (i = 0; i < ngroups; i++) {
-			if (groups[i] == gid) {
-				is_member = True;
-			}
-		}
-
-		/* Add group to list if necessary */
-
-		if (!is_member) {
-			tgr = (gid_t *)Realloc(groups, sizeof(gid_t) * ngroups + 1);
-			
-			if (!tgr) {
-				errno = ENOMEM;
-				result = -1;
-				goto done;
-			}
-			else groups = tgr;
-
-			groups[ngroups] = gid;
-			ngroups++;
-		}
-
-		/* Set the groups */
-
-		if (sys_setgroups(ngroups, groups) == -1) {
-			errno = EPERM;
-			result = -1;
-			goto done;
-		}
-
-	} else {
-		/* The call failed but if 'winbind use default domain' is 'true', we
-		    should call normal initgroups. */
-		    
-		if (lp_winbind_use_default_domain()) {
-			return initgroups(user, gid);
-		} else {
-			/* The call failed.  Set errno to something so we don't get
-			   a bogus value from the last failed system call. */
-
-			errno = EIO;
-		}
-	}
-
-	/* Free response data if necessary */
-
- done:
-	SAFE_FREE(groups);
-
-	return result;
 }
 
 /* Return a list of groups the user is a member of.  This function is

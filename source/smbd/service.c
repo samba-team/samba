@@ -84,7 +84,7 @@ int add_home_service(const char *service, const char *homedir)
 	int iHomeService;
 	int iService;
 	fstring new_service;
-	char *usr_p = NULL;
+	fstring domain;
 
 	if (!service || !homedir)
 		return -1;
@@ -99,11 +99,7 @@ int add_home_service(const char *service, const char *homedir)
 	 * include any macros.
 	 */
 
-	fstrcpy(new_service, service);
-
-	if ((usr_p = strchr_m(service,*lp_winbind_separator())) != NULL)
-		fstrcpy(new_service, usr_p+1);
-
+	split_domain_and_name(service, domain, new_service);
 	lp_add_home(new_service, iHomeService, homedir);
 	iService = lp_servicenumber(new_service);
 
