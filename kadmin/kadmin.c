@@ -267,14 +267,6 @@ main(int argc, char **argv)
     if(ret) 
 	krb5_err(context, 1, ret, "reading configuration files");
     
-    {
-	const char *p = krb5_config_get_string (context, NULL, 
-						"kdc", "key-file", NULL);
-	if (p)
-	    keyfile = strdup(p);
-    }
-    krb5_clear_error_string (context);
-
     memset(&conf, 0, sizeof(conf));
     if(realm) {
 	krb5_set_default_realm(context, realm); /* XXX should be fixed
@@ -291,6 +283,11 @@ main(int argc, char **argv)
     if (server_port) {
 	conf.kadmind_port = htons(server_port);
 	conf.mask |= KADM5_CONFIG_KADMIND_PORT;
+    }
+
+    if (keyfile) {
+	conf.stash_file = keyfile;
+	conf.mask |= KADM5_CONFIG_STASH_FILE;
     }
 
     if(local_flag){
