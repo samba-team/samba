@@ -38,7 +38,9 @@ krb5_address_compare(krb5_context context,
 		     const krb5_address *addr2)
 {
   return addr1->addr_type == addr2->addr_type
-    && memcmp (addr1->address.data, addr2->address.data, addr1->address.length);
+    && memcmp (addr1->address.data,
+	       addr2->address.data,
+	       addr1->address.length) == 0;
 }
 
 int
