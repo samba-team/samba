@@ -526,7 +526,7 @@ foreach (supported architecture for a given driver)
 		</filename></para>
 		
 		<para>will reveal that Windows NT always uses the NT driver 
-		name.  The is ok as Windows NT always requires that at least 
+		name.  This is ok as Windows NT always requires that at least 
 		the Windows NT version of the printer driver is present.  
 		However, Samba does not have the requirement internally.  
 		Therefore, how can you use the NT driver name if is has not 

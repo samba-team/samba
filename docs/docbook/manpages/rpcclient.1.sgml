@@ -185,7 +185,7 @@
 		of SIDs to usernames.
 		</para></listitem>
 		
-		<listitem><para><command>lookupnames</command>Resolve s list 
+		<listitem><para><command>lookupnames</command> - Resolve s list 
 		of usernames to SIDs.
 		</para></listitem>
 		

@@ -83,23 +83,61 @@ TARGET="_top"
 	information</P
 ></LI
 ></UL
+><P
+>There has been some initial confusion about what all this means
+and whether or not it is a requirement for printer drivers to be 
+installed on a Samba host in order to support printing from Windows 
+clients.  A bug existed in Samba 2.2.0 which made Windows NT/2000 clients 
+require that the Samba server possess a valid driver for the printer.  
+This is fixed in Samba 2.2.1 and once again, Windows NT/2000 clients
+can use the local APW for installing drivers to be used with a Samba 
+served printer.  This is the same behavior exhibited by Windows 9x clients.
+As a side note, Samba does not use these drivers in any way to process 
+spooled files.  They are utilized entirely by the clients.</P
+><P
+>The following MS KB article, may be of some help if you are dealing with
+Windows 2000 clients:  <I
+CLASS="EMPHASIS"
+>How to Add Printers with No User 
+Interaction in Windows 2000</I
+></P
+><P
+><A
+HREF="http://support.microsoft.com/support/kb/articles/Q189/1/05.ASP"
+TARGET="_top"
+>http://support.microsoft.com/support/kb/articles/Q189/1/05.ASP</A
+></P
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN20"
+NAME="AEN25"
 >Configuration</A
 ></H1
+><DIV
+CLASS="WARNING"
 ><P
-><I
-CLASS="EMPHASIS"
->WARNING!!!</I
-> Previous versions of Samba 
-recommended using a share named [printer$].  This name was taken from the 
-printer$ service created by Windows 9x clients when a 
-printer was shared.  Windows 9x printer servers always have 
+></P
+><TABLE
+CLASS="WARNING"
+BORDER="1"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="CENTER"
+><B
+>[print$] vs. [printer$]</B
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+><P
+>Previous versions of Samba recommended using a share named [printer$].  
+This name was taken from the printer$ service created by Windows 9x 
+clients when a printer was shared.  Windows 9x printer servers always have 
 a printer$ service which provides read-only access via no 
 password in order to support printer driver downloads.</P
 ><P
@@ -124,21 +162,26 @@ the client.</P
 >These parameters, including <TT
 CLASS="PARAMETER"
 ><I
->printer driver 
+>printer driver
 file</I
 ></TT
 > parameter, are being depreciated and should not 
 be used in new installations.  For more information on this change, 
 you should refer to the <A
 HREF="#MIGRATION"
->Migration section </A
->of this document.</P
+>Migration section</A
+>
+of this document.</P
+></TD
+></TR
+></TABLE
+></DIV
 ><DIV
 CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN30"
+NAME="AEN36"
 >Creating [print$]</A
 ></H2
 ><P
@@ -161,6 +204,11 @@ CLASS="PROGRAMLISTING"
     guest ok = yes
     browseable = yes
     read only = yes
+    ; since this share is configured as read only, then we need
+    ; a 'write list'.  Check the file system permissions to make
+    ; sure this account can copy files to the share.  If this
+    ; is setup to a non-root account, then it should also exist
+    ; as a 'printer admin'
     write list = ntadmin</PRE
 ></P
 ><P
@@ -178,16 +226,17 @@ level user accounts to have write access in order to update files
 on the share.  See the <A
 HREF="smb./conf.5.html"
 TARGET="_top"
->smb.conf(5) man page</A
-> for more information on 
-configuring file shares.</P
+>smb.conf(5) 
+man page</A
+> for more information on configuring file shares.</P
 ><P
 >The requirement for <A
 HREF="smb.conf.5.html#GUESTOK"
 TARGET="_top"
 ><B
 CLASS="COMMAND"
->guest ok = yes</B
+>guest 
+ok = yes</B
 ></A
 > depends upon how your
 site is configured.  If users will be guaranteed to have 
@@ -257,26 +306,26 @@ ALIGN="CENTER"
 ALIGN="LEFT"
 ><P
 >In order to currently add a new driver to you Samba host, 
-	one of two conditions must hold true:</P
+one of two conditions must hold true:</P
 ><P
 ></P
 ><UL
 ><LI
 ><P
 >The account used to connect to the Samba host 
-		must have a uid of 0 (i.e. a root account)</P
+	must have a uid of 0 (i.e. a root account)</P
 ></LI
 ><LI
 ><P
 >The account used to connect to the Samba host
-		must be a member of the <A
+	must be a member of the <A
 HREF="smb.conf.5.html#PRINTERADMIN"
 TARGET="_top"
 ><TT
 CLASS="PARAMETER"
 ><I
 >printer 
-		admin</I
+	admin</I
 ></TT
 ></A
 > list.</P
@@ -284,7 +333,8 @@ CLASS="PARAMETER"
 ></UL
 ><P
 >Of course, the connected account must still possess access
-	to add files to the subdirectories beneath [print$].</P
+to add files to the subdirectories beneath [print$]. Remember
+that all file shares are set to 'read only' by default.</P
 ></TD
 ></TR
 ></TABLE
@@ -307,14 +357,34 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN65"
+NAME="AEN71"
 >Setting Drivers for Existing Printers</A
 ></H2
 ><P
 >The initial listing of printers in the Samba host's 
-Printers folder will have no printer driver assigned to them.  
-The way assign a driver to a printer is to view the Properties 
-of the printer and either</P
+Printers folder will have no real printer driver assigned 
+to them.  By default, in Samba 2.2.0 this driver name was set to 
+<I
+CLASS="EMPHASIS"
+>NO PRINTER DRIVER AVAILABLE FOR THIS PRINTER</I
+>.
+Later versions changed this to a NULL string to allow the use
+tof the local Add Printer Wizard on NT/2000 clients.
+Attempting to view the printer properties for a printer
+which has this default driver assigned will result in 
+the error message:</P
+><P
+><I
+CLASS="EMPHASIS"
+>Device settings cannot be displayed.  The driver 
+for the specified printer is not installed, only spooler 
+properties will be displayed.  Do you want to install the 
+driver now?</I
+></P
+><P
+>Click "No" in the error dialog and you will be presented with
+the printer properties window.  The way assign a driver to a 
+printer is to either</P
 ><P
 ></P
 ><UL
@@ -361,7 +431,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN78"
+NAME="AEN88"
 >Support a large number of printers</A
 ></H2
 ><P
@@ -413,7 +483,7 @@ Domain=[NARNIA] OS=[Unix] Server=[Samba 2.2.0-alpha3]
 <TT
 CLASS="PROMPT"
 >$ </TT
->rpcclient pogo -U root%bleaK.er \
+>rpcclient pogo -U root%secret \
 <TT
 CLASS="PROMPT"
 >&gt; </TT
@@ -427,7 +497,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN89"
+NAME="AEN99"
 >Adding New Printers via the Windows NT APW</A
 ></H2
 ><P
@@ -449,7 +519,7 @@ CLASS="PARAMETER"
 ><I
 >printer admin</I
 ></TT
->.
+>).
 	</P
 ></LI
 ><LI
@@ -476,8 +546,8 @@ TARGET="_top"
 ><TT
 CLASS="PARAMETER"
 ><I
->addprinter 
-command</I
+>add 
+printer command</I
 ></TT
 ></A
 > must have a defined value.  The program
@@ -499,7 +569,7 @@ CLASS="COMMAND"
 CLASS="PARAMETER"
 ><I
 >add printer 
-program</I
+command</I
 ></TT
 > and reparse to the <TT
 CLASS="FILENAME"
@@ -512,7 +582,7 @@ CLASS="PARAMETER"
 ><I
 >add printer program</I
 ></TT
-> is executed undet the context
+> is executed under the context
 of the connected user, not necessarily a root account.</P
 ><P
 >There is a complementing <A
@@ -521,8 +591,8 @@ TARGET="_top"
 ><TT
 CLASS="PARAMETER"
 ><I
->deleteprinter 
-command</I
+>delete
+printer command</I
 ></TT
 ></A
 > for removing entries from the "Printers..."
@@ -533,7 +603,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN114"
+NAME="AEN124"
 >Samba and Printer Ports</A
 ></H2
 ><P
@@ -570,7 +640,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN122"
+NAME="AEN132"
 >The Imprints Toolset</A
 ></H1
 ><P
@@ -588,7 +658,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN126"
+NAME="AEN136"
 >What is Imprints?</A
 ></H2
 ><P
@@ -620,7 +690,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN136"
+NAME="AEN146"
 >Creating Printer Driver Packages</A
 ></H2
 ><P
@@ -636,7 +706,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN139"
+NAME="AEN149"
 >The Imprints server</A
 ></H2
 ><P
@@ -657,7 +727,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN143"
+NAME="AEN153"
 >The Installation Client</A
 ></H2
 ><P
@@ -751,18 +821,61 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN165"
+NAME="AEN175"
 ><A
 NAME="MIGRATION"
 ></A
->Migration to from Samba 2.0.x to 
-	2.2.x</A
+>Migration to from Samba 2.0.x to 2.2.x</A
 ></H1
 ><P
->Given that printer driver management has changed
-	(we hope improved :) ) in 2.2.0 over prior releases,
-	migration from an existing setup to 2.2.0 can follow
-	several paths.</P
+>Given that printer driver management has changed (we hope improved) in 
+2.2 over prior releases, migration from an existing setup to 2.2 can 
+follow several paths.</P
+><P
+>Windows clients have a tendency to remember things for quite a while.
+For example, if a Windows NT client has attached to a Samba 2.0 server,
+it will remember the server as a LanMan printer server.  Upgrading 
+the Samba host to 2.2 makes support for MSRPC printing possible, but 
+the NT client will still remember the previous setting.</P
+><P
+>In order to give an NT client printing "amesia" (only necessary if you 
+want to use the newer MSRPC printing functionality in Samba), delete 
+the registry keys associated with the print server contained in 
+<TT
+CLASS="CONSTANT"
+>[HKLM\SYSTEM\CurrentControlSet\Control\Print]</TT
+>.  The 
+spooler service on the client should be stopped prior to doing this:</P
+><P
+><TT
+CLASS="PROMPT"
+>C:\WINNT\ &#62;</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>net stop spooler</B
+></TT
+></P
+><P
+><I
+CLASS="EMPHASIS"
+>All the normal disclaimers about editing the registry go 
+here.</I
+>  Be careful, and know what you are doing.</P
+><P
+>The spooler service should be restarted after you have finished 
+removing the appropriate registry entries by replacing the 
+<B
+CLASS="COMMAND"
+>stop</B
+> command above with <B
+CLASS="COMMAND"
+>start</B
+>.</P
+><P
+>Windows 9x clients will continue to use LanMan printing calls
+with a 2.2 Samba server so there is no need to perform any of these
+modifications on non-NT clients.</P
 ><DIV
 CLASS="WARNING"
 ><P
@@ -782,9 +895,8 @@ ALIGN="CENTER"
 ><TD
 ALIGN="LEFT"
 ><P
->The following smb.conf parameters are considered to be
-		depreciated and will be removed soon.  Do not use them
-		in new installations</P
+>The following smb.conf parameters are considered to be depreciated and will 
+be removed soon.  Do not use them in new installations</P
 ><P
 ></P
 ><UL
@@ -796,7 +908,7 @@ CLASS="PARAMETER"
 >printer driver file (G)</I
 ></TT
 >
-			</P
+	</P
 ></LI
 ><LI
 ><P
@@ -806,7 +918,7 @@ CLASS="PARAMETER"
 >printer driver (S)</I
 ></TT
 >
-			</P
+	</P
 ></LI
 ><LI
 ><P
@@ -816,7 +928,7 @@ CLASS="PARAMETER"
 >printer driver location (S)</I
 ></TT
 >
-			</P
+	</P
 ></LI
 ></UL
 ></TD
@@ -831,31 +943,31 @@ CLASS="PARAMETER"
 ><LI
 ><P
 >If you do not desire the new Windows NT 
-		print driver support, nothing needs to be done.  
-		All existing parameters work the same.</P
+	print driver support, nothing needs to be done.  
+	All existing parameters work the same.</P
 ></LI
 ><LI
 ><P
 >If you want to take advantage of NT printer 
-		driver support but do not want to migrate the 
-		9x drivers to the new setup, the leave the existing 
-		printers.def file.  When smbd attempts to locate a 
-		9x driver for the printer in the TDB and fails it 
-		will drop down to using the printers.def (and all 
-		associated parameters).  The <B
+	driver support but do not want to migrate the 
+	9x drivers to the new setup, the leave the existing 
+	printers.def file.  When smbd attempts to locate a 
+	9x driver for the printer in the TDB and fails it 
+	will drop down to using the printers.def (and all 
+	associated parameters).  The <B
 CLASS="COMMAND"
 >make_printerdef</B
 > 
-		tool will also remain for backwards compatibility but will 
-		be moved to the "this tool is the old way of doing it" 
-		pile.</P
+	tool will also remain for backwards compatibility but will 
+	be moved to the "this tool is the old way of doing it" 
+	pile.</P
 ></LI
 ><LI
 ><P
 >If you install a Windows 9x driver for a printer 
-		on your Samba host (in the printing TDB), this information will 
-		take precedence and the three old printing parameters
-		will be ignored (including print driver location).</P
+	on your Samba host (in the printing TDB), this information will 
+	take precedence and the three old printing parameters
+	will be ignored (including print driver location).</P
 ></LI
 ><LI
 ><P
@@ -863,23 +975,22 @@ CLASS="COMMAND"
 CLASS="FILENAME"
 >printers.def</TT
 > 
-		file into the new setup, the current only 
-		solution is to use the Windows NT APW to install the NT drivers 
-		and the 9x  drivers.  This can be scripted using <B
+	file into the new setup, the current only solution is to use the Windows 
+	NT APW to install the NT drivers and the 9x  drivers.  This can be scripted 
+	using <B
 CLASS="COMMAND"
 >smbclient</B
-> 
-		and <B
+> and <B
 CLASS="COMMAND"
 >rpcclient</B
 >.  See the 
-		Imprints installation client at <A
+	Imprints installation client at <A
 HREF="http://imprints.sourceforge.net/"
 TARGET="_top"
 >http://imprints.sourceforge.net/</A
 > 
-		for an example.
-		</P
+	for an example.
+	</P
 ></LI
 ></UL
 ></DIV

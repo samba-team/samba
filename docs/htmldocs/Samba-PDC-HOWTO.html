@@ -1,7 +1,7 @@
 <HTML
 ><HEAD
 ><TITLE
->How to Configure Samba 2.2.x as a Primary Domain Controller</TITLE
+>How to Configure Samba 2.2 as a Primary Domain Controller</TITLE
 ><META
 NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
@@ -20,7 +20,7 @@ CLASS="TITLEPAGE"
 CLASS="TITLE"
 ><A
 NAME="AEN1"
->How to Configure Samba 2.2.x as a Primary Domain Controller</A
+>How to Configure Samba 2.2 as a Primary Domain Controller</A
 ></H1
 ><HR></DIV
 ><DIV
@@ -31,40 +31,53 @@ CLASS="SECT1"
 NAME="AEN3"
 >Background</A
 ></H1
+><DIV
+CLASS="NOTE"
+><BLOCKQUOTE
+CLASS="NOTE"
 ><P
+><B
+>Note: </B
 ><I
 CLASS="EMPHASIS"
 >Author's Note :</I
-> This document
-is a combination of David Bannon's Samba 2.2 PDC HOWTO
-and the Samba NT Domain FAQ. Both documents are superceeded by this one.</P
+> This document is a combination 
+of David Bannon's Samba 2.2 PDC HOWTO and the Samba NT Domain FAQ. 
+Both documents are superceeded by this one.</P
+></BLOCKQUOTE
+></DIV
 ><P
 >Version of Samba prior to release 2.2 had marginal capabilities to
 act as a Windows NT 4.0 Primary Domain Controller (PDC).  The following 
-functionality should work in 2.2.0:</P
+functionality should work in 2.2:</P
 ><P
 ></P
 ><UL
 ><LI
 ><P
->domain logons for Windows NT 4.0/2000 clients</P
+>	domain logons for Windows NT 4.0/2000 clients
+	</P
 ></LI
 ><LI
 ><P
->placing a Windows 9x client in user level security</P
+>	placing a Windows 9x client in user level security
+	</P
 ></LI
 ><LI
 ><P
->retrieving a list of users and groups from a Samba PDC to
-	Windows 9x/NT/2000 clients </P
+>	retrieving a list of users and groups from a Samba PDC to
+	Windows 9x/NT/2000 clients
+	</P
 ></LI
 ><LI
 ><P
->roving user profiles</P
+>	roving (roaming) user profiles
+	</P
 ></LI
 ><LI
 ><P
->Windows NT 4.0 style system policies</P
+>	Windows NT 4.0 style system policies
+	</P
 ></LI
 ></UL
 ><P
@@ -74,21 +87,25 @@ functionality should work in 2.2.0:</P
 ><UL
 ><LI
 ><P
->Windows NT 4 domain trusts</P
+>	Windows NT 4 domain trusts
+	</P
 ></LI
 ><LI
 ><P
->Sam replication with Windows NT 4.0 Domain Controllers
-	(i.e. a Samba PDC and a Windows NT BDC or vice versa) </P
+>	SAM replication with Windows NT 4.0 Domain Controllers
+	(i.e. a Samba PDC and a Windows NT BDC or vice versa) 
+	</P
 ></LI
 ><LI
 ><P
->Adding users via the User Manager for Domains</P
+>	Adding users via the User Manager for Domains
+	</P
 ></LI
 ><LI
 ><P
->Acting as a Windows 2000 Domain Controller (i.e. Kerberos
-	and Active Directory)</P
+>	Acting as a Windows 2000 Domain Controller (i.e. Kerberos and 
+	Active Directory)
+	</P
 ></LI
 ></UL
 ><P
@@ -102,14 +119,14 @@ time.</P
 support for Windows NT 4.0 style domain logons from Windows NT
 4.0 and Windows 2000 (including SP1) clients.  This article 
 outlines the steps necessary for configuring Samba as a PDC.
-Note that it is necessary to have a working Samba server
-prior to implementing the PDC functionality.  If you have not 
-followed the steps outlined in <A
+It is necessary to have a working Samba server prior to implementing the 
+PDC functionality.  If you have not followed the steps outlined in 
+<A
 HREF="UNIX_INSTALL.html"
 TARGET="_top"
->UNIX_INSTALL.html</A
->, please make sure that your server 
-is configured correctly before proceeding.  Another good 
+> UNIX_INSTALL.html</A
+>, please make sure 
+that your server is configured correctly before proceeding.  Another good 
 resource in the <A
 HREF="smb.conf.5.html"
 TARGET="_top"
@@ -125,13 +142,14 @@ steps.</P
 TYPE="1"
 ><LI
 ><P
->Configuring the Samba Domain Controller
+>	Configuring the Samba PDC
 	</P
 ></LI
 ><LI
 ><P
->Creating machine trust accounts
-	and joining clients to the domain</P
+>	Creating machine trust accounts	and joining clients 
+	to the domain
+	</P
 ></LI
 ></OL
 ><P
@@ -145,7 +163,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN40"
+NAME="AEN41"
 >Configuring the Samba Domain Controller</A
 ></H1
 ><P
@@ -251,7 +269,7 @@ TARGET="_top"
 > = \\homeserver\%u
     
     ; specify a generic logon script for all users
-    ; this is a relative path to the [netlogon] share
+    ; this is a relative **DOS** path to the [netlogon] share
     <A
 HREF="smb.conf.5.html#LOGONSCRIPT"
 TARGET="_top"
@@ -305,16 +323,14 @@ TARGET="_top"
 > = 0700</PRE
 ></P
 ><P
->There are a couple of points to emphasize in the above
-configuration.</P
+>There are a couple of points to emphasize in the above configuration.</P
 ><P
 ></P
 ><UL
 ><LI
 ><P
->encrypted passwords must be enabled.
-	For more details on how to do this, refer to 
-	<A
+>	Encrypted passwords must be enabled.  For more details on how 
+	to do this, refer to <A
 HREF="ENCRYPTION.html"
 TARGET="_top"
 >ENCRYPTION.html</A
@@ -323,23 +339,25 @@ TARGET="_top"
 ></LI
 ><LI
 ><P
->The server must support domain logons
-	and a <TT
+>	The server must support domain logons and a
+	<TT
 CLASS="FILENAME"
 >[netlogon]</TT
-> share</P
+> share
+	</P
 ></LI
 ><LI
 ><P
->The server must be the domain master browser
-	in order for Windows client to locate the server as a DC.</P
+>	The server must be the domain master browser in order for Windows 
+	client to locate the server as a DC.
+	</P
 ></LI
 ></UL
 ><P
 >As Samba 2.2 does not offer a complete implementation of group mapping between 
 Windows NT groups and UNIX groups (this is really quite complicated to explain 
 in a short space), you should refer to the <A
-HREF="smb.conf.5.html#DOMAINADMONUSERS"
+HREF="smb.conf.5.html#DOMAINADMINUSERS"
 TARGET="_top"
 >domain 
 admin users</A
@@ -356,51 +374,30 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN83"
+NAME="AEN84"
 >Creating Machine Trust Accounts and Joining Clients 
 to the Domain</A
 ></H1
 ><P
->First you must understand what a machine trust account is and what 
-it is used for.</P
-><P
->A machine trust account is a user account owned by a computer.  
+>A machine trust account is a samba user account owned by a computer.  
 The account password acts as the shared secret for secure 
-communication with the Domain Controller.  Hence the reason that
-a Windows 9x host is never a true member of a domain because
-it does not posses a machine trust account and thus has no shared
-secret with the DC.</P
+communication with the Domain Controller (This is a security feature
+to prevent an unauthorized machine with the same netbios name from 
+joining the domain).  Hence a Windows 9x host is never a true member 
+of a domain because it does not posses a machine trust account, and thus 
+has no shared secret with the DC.</P
 ><P
 >On a Windows NT PDC, these machine trust account passwords are stored
-in the registry.  A Samba PDC stores these accounts in he same location
+in the registry.  A Samba PDC stores these accounts in the same location
 as user LanMan and NT password hashes (currently <TT
 CLASS="FILENAME"
 >smbpasswd</TT
 >).
-However, machine trust accounts only possess the NT password hash.</P
-><P
->There are two means of creating machine trust accounts.</P
-><P
-></P
-><UL
-><LI
-><P
->Manual creation before joining the client
-	to the domain.  In this case, the password is set to a known
-	value -- the lower case of the machine's netbios name.</P
-></LI
-><LI
-><P
->Creation of the account at the time of 
-	joining the domain.  In this case, the session key of the 
-	administrative account used to join the client to the domain acts
-	as an encryption key for setting the password to a random value.</P
-></LI
-></UL
+However, machine trust accounts only possess and use the NT password hash.</P
 ><P
 >Because Samba requires machine accounts to possess a UNIX uid from
 which an Windows NT SID can be generated, all of these accounts
-will have an entry in <TT
+must have an entry in <TT
 CLASS="FILENAME"
 >/etc/passwd</TT
 > and smbpasswd.  
@@ -408,7 +405,23 @@ Future releases will alleviate the need to create
 <TT
 CLASS="FILENAME"
 >/etc/passwd</TT
-> entries.</P
+> entries.  For those who wish to avoid
+editing the passwd file manually the command below should work well:</P
+><P
+><TT
+CLASS="PROMPT"
+>root# </TT
+>/usr/sbin/useradd -g 100 -d /dev/null -c <TT
+CLASS="REPLACEABLE"
+><I
+>machine_nickname</I
+></TT
+> -m -s /bin/false <TT
+CLASS="REPLACEABLE"
+><I
+>machine_name</I
+></TT
+>$</P
 ><P
 >The <TT
 CLASS="FILENAME"
@@ -423,20 +436,53 @@ CLASS="FILENAME"
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
->doppy$:x:505:501:NTMachine:/dev/null:/bin/false</PRE
+>doppy$:x:505:501:<TT
+CLASS="REPLACEABLE"
+><I
+>machine_nickname</I
+></TT
+>:/dev/null:/bin/false</PRE
 ></P
 ><P
->If you are manually creating the machine accounts, it is necessary
-to add the <TT
-CLASS="FILENAME"
->/etc/passwd</TT
-> (or NIS passwd
-map) entry prior to adding the <TT
-CLASS="FILENAME"
->smbpasswd</TT
->
-entry.  The following command will create a new machine account
-ready for use.</P
+>Above, <TT
+CLASS="REPLACEABLE"
+><I
+>machine_nickname</I
+></TT
+> can be any descriptive name for the
+pc i.e. BasementComputer. The <TT
+CLASS="REPLACEABLE"
+><I
+>machine_name</I
+></TT
+> absolutely must be 
+the netbios name of the pc to be added to the domain.  The "$" must append the netbios
+name of the pc or samba will not recognize this as a machine account</P
+><P
+>Now that the UNIX account has been created, 
+the following command shows how to create a new machine account,
+enabling the machine to join the domain.</P
+><P
+>There are two means of creating machine trust accounts.</P
+><P
+></P
+><UL
+><LI
+><P
+>	Manual creation before joining the client to the domain.  In this case, 
+	the password is set to a known value -- the lower case of the 
+	machine's netbios name.
+	</P
+></LI
+><LI
+><P
+>	Creation of the account at the time of joining the domain.  In 
+	this case, the session key of the administrative account used to join 
+	the client to the domain acts as an encryption key for setting the 
+	password to a random value (This is the recommended method).
+	</P
+></LI
+></UL
 ><P
 ><TT
 CLASS="PROMPT"
@@ -454,20 +500,17 @@ CLASS="REPLACEABLE"
 >machine_name</I
 ></TT
 > is the machine's netbios
-name.</P
-><P
-><I
+name.  Will permit use of the first method.<I
 CLASS="EMPHASIS"
->If you manually create a machine account, immediately join
-the client to the domain.</I
->  An open account like this
-can allow intruders to gain access to user account information
-in your domain.</P
+>If you manually create a 
+machine account, immediately join the client to the domain.</I
+>  
+An open account like this can allow intruders to gain access to user 
+account information in your domain.</P
 ><P
->The second way of creating machine trust accounts is to add
-them on the fly at the time the client is joined to the domain.
-You will need to include a value for the 
-<A
+>The second, and again recommended way of creating machine trust accounts 
+is to add them on the fly at the time the client is joined to the domain.
+You will need to include a value for the <A
 HREF="smb.conf.5.html#ADDUSERSCRIPT"
 TARGET="_top"
 >add user script</A
@@ -479,142 +522,255 @@ CLASS="PROGRAMLISTING"
 >add user script = /usr/sbin/useradd -d /dev/null -g 100 -s /bin/false -M %u </PRE
 ></P
 ><P
->In Samba 2.2.0, <I
+>In Samba 2.2, <I
 CLASS="EMPHASIS"
 >only the root account</I
 > can be used to create
-machine accounts on the fly like this.  Therefore, it is required
-to create an entry in smbpasswd for <I
+machine accounts on the fly like this.  Therefore, it is required to create 
+an entry in smbpasswd for <I
 CLASS="EMPHASIS"
 >root</I
->.
-The password <I
+>.  The password 
+<I
 CLASS="EMPHASIS"
 >SHOULD</I
-> be set to s different
-password that the associated <TT
+> be set to s different password that the 
+associated <TT
 CLASS="FILENAME"
 >/etc/passwd</TT
->
-entry for security reasons.</P
+> entry for security reasons.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN122"
+NAME="AEN127"
 >Common Problems and Errors</A
 ></H1
 ><P
 ></P
 ><P
-><I
+></P
+><UL
+><LI
+><P
+>   <I
 CLASS="EMPHASIS"
 >I cannot include a '$' in a machine name.</I
-></P
+>
+   </P
+><A
+NAME="AEN134"
+></A
+><BLOCKQUOTE
+CLASS="BLOCKQUOTE"
 ><P
->A 'machine name' in (typically) <TT
+>    A 'machine name' in (typically) <TT
 CLASS="FILENAME"
 >/etc/passwd</TT
 > 	
-of the machine name with a '$' appended. FreeBSD (and other BSD 
-systems ?) won't create a user with a '$' in their name.</P
+    of the machine name with a '$' appended. FreeBSD (and other BSD 
+    systems ?) won't create a user with a '$' in their name.
+    </P
 ><P
->The problem is only in the program used to make the entry, once 
-made, it works perfectly. So create a user without the '$' and 
-use <B
+>    The problem is only in the program used to make the entry, once 
+    made, it works perfectly. So create a user without the '$' and 
+    use <B
 CLASS="COMMAND"
 >vipw</B
 > to edit the entry, adding the '$'. Or create 
-the whole entry with vipw if you like, make sure you use a 
-unique uid !</P
+    the whole entry with vipw if you like, make sure you use a 
+    unique uid !
+    </P
+></BLOCKQUOTE
+></LI
+><LI
 ><P
-><I
+>    <I
 CLASS="EMPHASIS"
 >I get told "You already have a connection to the Domain...." 
-when creating a machine account.</I
-></P
+    or "Cannot join domain, the credentials supplied conflict with an 
+    existing set.." when creating a machine account.</I
+>
+    </P
+><A
+NAME="AEN142"
+></A
+><BLOCKQUOTE
+CLASS="BLOCKQUOTE"
 ><P
->This happens if you try to create a machine account from the 
-machine itself and use a user name that does not work (for whatever 
-reason) and then try another (possibly valid) user name.
-Exit out of the network applet to close the initial connection 
-and try again.</P
+>     This happens if you try to create a machine account from the 
+     machine itself and already have a connection (e.g. mapped drive) 
+     to a share (or IPC$) on the Samba PDC.  The following command
+     will remove all network drive connections:
+     </P
 ><P
->Further, if the machine is a already a 'member of a workgroup' that 
-is the same name as the domain you are joining (bad idea) you will 
-get this message.  Change the workgroup name to something else, it 
-does not matter what, reboot, and try again.</P
+>     <TT
+CLASS="PROMPT"
+>C:\WINNT\&#62;</TT
+> <B
+CLASS="COMMAND"
+>net use * /d</B
+>
+     </P
 ><P
-><I
+>     Further, if the machine is a already a 'member of a workgroup' that 
+     is the same name as the domain you are joining (bad idea) you will 
+     get this message.  Change the workgroup name to something else, it 
+     does not matter what, reboot, and try again.
+     </P
+></BLOCKQUOTE
+></LI
+><LI
+><P
+>   <I
 CLASS="EMPHASIS"
->I get told "Cannot join domain, the credentials supplied 
-conflict with an existing set.."</I
-></P
-><P
->This is the same basic problem as mentioned above, "You already 
-have a connection..."</P
-><P
-><I
-CLASS="EMPHASIS"
->"The system can not log you on (C000019B)...."</I
-></P
+>The system can not log you on (C000019B)....</I
+>
+   </P
+><A
+NAME="AEN151"
+></A
+><BLOCKQUOTE
+CLASS="BLOCKQUOTE"
 ><P
 >I joined the domain successfully but after upgrading 
-to a newer version of the Samba code I get the message, "The system 
-can not log you on (C000019B), Please try a gain or consult your 
-system administrator" when attempting to logon.</P
+    to a newer version of the Samba code I get the message, "The system 
+    can not log you on (C000019B), Please try a gain or consult your 
+    system administrator" when attempting to logon.
+    </P
 ><P
->This occurs when the domain SID stored in 
-<TT
+>    This occurs when the domain SID stored in 
+    <TT
 CLASS="FILENAME"
 >private/WORKGROUP.SID</TT
 > is 
-changed.  For example, you remove the file and <B
+    changed.  For example, you remove the file and <B
 CLASS="COMMAND"
 >smbd</B
 > automatically 
-creates a new one.  Or you are swapping back and forth between 
-versions 2.0.7, TNG and the HEAD branch code (not recommended).  The 
-only way to correct the problem is to restore the original domain 
-SID or 	remove the domain client from the domain and rejoin.</P
+    creates a new one.  Or you are swapping back and forth between 
+    versions 2.0.7, TNG and the HEAD branch code (not recommended).  The 
+    only way to correct the problem is to restore the original domain 
+    SID or remove the domain client from the domain and rejoin.
+    </P
+></BLOCKQUOTE
+></LI
+><LI
 ><P
-><I
+>   <I
 CLASS="EMPHASIS"
->"The machine account for this computer either does not 
-exist or is not accessible."</I
+>The machine account for this computer either does not 
+   exist or is not accessible.</I
+>
+   </P
+><A
+NAME="AEN159"
+></A
+><BLOCKQUOTE
+CLASS="BLOCKQUOTE"
+><P
+>    When I try to join the domain I get the message "The machine account 
+    for this computer either does not exist or is not accessible". Whats 
+    wrong ?
+    </P
+><P
+>    This problem is caused by the PDC not having a suitable machine account. 
+    If you are using the <TT
+CLASS="PARAMETER"
+><I
+>add user script</I
+></TT
+> method to create 
+    accounts then this would indicate that it has not worked. Ensure the domain 
+    admin user system is working.
+    </P
+><P
+>    Alternatively if you are creating account entries manually then they 
+    have not been created correctly. Make sure that you have the entry 
+    correct for the machine account in smbpasswd file on the Samba PDC. 
+    If you added the account using an editor rather than using the smbpasswd 
+    utility, make sure that the account name is the machine netbios name 
+    with a '$' appended to it ( ie. computer_name$ ). There must be an entry 
+    in both /etc/passwd and the smbpasswd file. Some people have reported 
+    that inconsistent subnet masks between the Samba server and the NT 
+    client have caused this problem.   Make sure that these are consistent 
+    for both client and server.
+    </P
+></BLOCKQUOTE
+></LI
+><LI
+><P
+>    <I
+CLASS="EMPHASIS"
+>When I attempt to login to a Samba Domain from a NT4/W2K workstation,
+    I get a message about my account being disabled.</I
+>
+    </P
+><A
+NAME="AEN167"
+></A
+><BLOCKQUOTE
+CLASS="BLOCKQUOTE"
+><P
+>     This problem is caused by a PAM related bug in Samba 2.2.0.  This bug is 
+     fixed in 2.2.1.  Other symptoms could be unaccessible shares on 
+     NT/W2K member servers in the domain or the following error in your smbd.log:
+     passdb/pampass.c:pam_account(268) PAM: UNKNOWN ERROR for User: %user%
+     </P
+><P
+>     At first be ensure to enable the useraccounts with <B
+CLASS="COMMAND"
+>smbpasswd -e 
+     %user%</B
+>, this is normaly done, when you create an account.
+     </P
+><P
+>     In order to work around this problem in 2.2.0, configure the 
+     <TT
+CLASS="PARAMETER"
+><I
+>account</I
+></TT
+> control flag in 
+     <TT
+CLASS="FILENAME"
+>/etc/pam.d/samba</TT
+> file as follows:
+     </P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>     account required        pam_permit.so
+     </PRE
 ></P
 ><P
->When I try to join the domain I get the message "The machine account 
-for this computer either does not exist or is not accessible". Whats 
-wrong ?</P
-><P
->This problem is caused by the PDC not having a suitable machine account. 
-If you are using the <B
-CLASS="COMMAND"
->add user script =</B
-> method to create 
-accounts then this would indicate that it has not worked. Ensure the domain 
-admin user system is working.</P
-><P
->Alternatively if you are creating account entries manually then they 
-have not been created correctly. Make sure that you have the entry 
-correct for the machine account in smbpasswd file on the Samba PDC. 
-If you added the account using an editor rather than using the smbpasswd 
-utility, make sure that the account name is the machine netbios name 
-with a '$' appended to it ( ie. computer_name$ ). There must be an entry 
-in both /etc/passwd and the smbpasswd file. Some people have reported 
-that inconsistent subnet masks between the Samba server and the NT 
-client have caused this problem.   Make sure that these are consistent 
-for both client and server.</P
+>     If you want to remain backward compatibility to samba 2.0.x use
+     <TT
+CLASS="FILENAME"
+>pam_permit.so</TT
+>, it's also possible to use 
+     <TT
+CLASS="FILENAME"
+>pam_pwdb.so</TT
+>. There are some bugs if you try to 
+     use <TT
+CLASS="FILENAME"
+>pam_unix.so</TT
+>, if you need this, be ensure to use
+     the most recent version of this file.
+     </P
+></BLOCKQUOTE
+></LI
+></UL
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN150"
+NAME="AEN180"
 >System Policies and Profiles</A
 ></H1
 ><P
@@ -757,7 +913,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN190"
+NAME="AEN220"
 >What other help can I get ?</A
 ></H1
 ><P
@@ -940,7 +1096,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN237"
+NAME="AEN267"
 >URLs and similar</A
 ></H2
 ><P
@@ -1014,7 +1170,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN261"
+NAME="AEN291"
 >Mailing Lists</A
 ></H2
 ><P
@@ -1149,7 +1305,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN300"
+NAME="AEN330"
 >DOMAIN_CONTROL.txt : Windows NT Domain Control &#38; Samba</A
 ></H1
 ><P
