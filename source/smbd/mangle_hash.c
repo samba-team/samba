@@ -1,9 +1,8 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    Name mangling
-   Copyright (C) Andrew Tridgell 1992-2002
-   Copyright (C) Simo Sorce 2001
-   Copyright (C) Andrew Bartlett 2002
+   Copyright (C) Andrew Tridgell 1992-1998
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,16 +19,15 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-
 /* -------------------------------------------------------------------------- **
  * Notable problems...
  *
  *  March/April 1998  CRH
  *  - Many of the functions in this module overwrite string buffers passed to
  *    them.  This causes a variety of problems and is, generally speaking,
- *    dangerous and scarry.  See the kludge notes in name_map()
+ *    dangerous and scarry.  See the kludge notes in name_map_mangle()
  *    below.
- *  - It seems that something is calling name_map() twice.  The
+ *  - It seems that something is calling name_map_mangle() twice.  The
  *    first call is probably some sort of test.  Names which contain
  *    illegal characters are being doubly mangled.  I'm not sure, but
  *    I'm guessing the problem is in server.c.
@@ -86,11 +84,11 @@ extern BOOL case_mangle;    /* If true, all chars in 8.3 should be same case. */
  *
  * isbasecahr()   - Given a character, check the chartest array to see
  *                  if that character is in the basechars set.  This is
- *                  faster than using strchr_m().
+ *                  faster than using strchr().
  *
  * isillegal()    - Given a character, check the chartest array to see
  *                  if that character is in the illegal characters set.
- *                  This is faster than using strchr_m().
+ *                  This is faster than using strchr().
  *
  * mangled_cache  - Cache header used for storing mangled -> original
  *                  reverse maps.
@@ -128,203 +126,7 @@ static BOOL          ct_initialized = False;
 static ubi_cacheRoot mangled_cache[1] =  { { { 0, 0, 0, 0 }, 0, 0, 0, 0, 0, 0 } };
 static BOOL          mc_initialized   = False;
 #define MANGLED_CACHE_MAX_ENTRIES 1024
-#define MANGLED_CACHE_MAX_MEMORY 0
-
-/* -------------------------------------------------------------------------- **
- * External Variables...
- */
-
-extern int case_default;    /* Are conforming 8.3 names all upper or lower?   */
-extern BOOL case_mangle;    /* If true, all chars in 8.3 should be same case. */
-
-/* -------------------------------------------------------------------- */
-
-static NTSTATUS has_valid_chars(const smb_ucs2_t *s)
-{
-	if (!s || !*s) return NT_STATUS_INVALID_PARAMETER;
-
-	/* CHECK: this should not be necessary if the ms wild chars
-	   are not valid in valid.dat  --- simo */
-	if (ms_has_wild_w(s)) return NT_STATUS_UNSUCCESSFUL;
-
-	while (*s) {
-		if(!isvalid83_w(*s)) return NT_STATUS_UNSUCCESSFUL;
-		s++;
-	}
-
-	return NT_STATUS_OK;
-}
-
-/* return False if something fail and
- * return 2 alloced unicode strings that contain prefix and extension
- */
-static NTSTATUS mangle_get_prefix(const smb_ucs2_t *ucs2_string, smb_ucs2_t **prefix, smb_ucs2_t **extension)
-{
-	size_t ext_len;
-	smb_ucs2_t *p;
-
-	*extension = 0;
-	*prefix = strdup_w(ucs2_string);
-	if (!*prefix) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	if ((p = strrchr_w(*prefix, UCS2_CHAR('.'))))
-	{
-		ext_len = strlen_w(p+1);
-		if ((ext_len > 0) && (ext_len < 4) && (p != *prefix) &&
-		    (NT_STATUS_IS_OK(has_valid_chars(p+1)))) /* check extension */
-		{
-			*p = 0;
-			*extension = strdup_w(p+1);
-			if (!*extension) {
-				SAFE_FREE(*prefix);
-				return NT_STATUS_NO_MEMORY;
-			}
-		}
-	}
-	return NT_STATUS_OK;
-}
-
-/* ************************************************************************** **
- * Return NT_STATUS_UNSUCCESSFUL if a name is a special msdos reserved name.
- *
- *  Input:  fname - String containing the name to be tested.
- *
- *  Output: NT_STATUS_UNSUCCESSFUL, if the name matches one of the list of reserved names.
- *
- *  Notes:  This is a static function called by is_8_3(), below.
- *
- * ************************************************************************** **
- */
-static NTSTATUS is_valid_name(const smb_ucs2_t *fname)
-{
-	smb_ucs2_t *str, *p;
-	NTSTATUS ret = NT_STATUS_OK;
-
-	if (!fname || !*fname) return NT_STATUS_INVALID_PARAMETER;
-
-	/* . and .. are valid names. */
-	if (strcmp_wa(fname, ".")==0 || strcmp_wa(fname, "..")==0)
-		return NT_STATUS_OK;
-
-	/* Name cannot start with '.' */
-	if (*fname == UCS2_CHAR('.'))
-		return NT_STATUS_UNSUCCESSFUL;
-	
-	ret = has_valid_chars(fname);
-	if (NT_STATUS_IS_ERR(ret)) return ret;
-
-	str = strdup_w(fname);
-	p = strchr_w(str, UCS2_CHAR('.'));
-	if (p && p[1] == UCS2_CHAR(0)) {
-		/* Name cannot end in '.' */
-		SAFE_FREE(str);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	if (p) *p = 0;
-	strupper_w(str);
-	p = &(str[1]);
-
-	switch(str[0])
-	{
-	case UCS2_CHAR('A'):
-		if(strcmp_wa(p, "UX") == 0)
-			ret = NT_STATUS_UNSUCCESSFUL;
-		break;
-	case UCS2_CHAR('C'):
-		if((strcmp_wa(p, "LOCK$") == 0)
-		|| (strcmp_wa(p, "ON") == 0)
-		|| (strcmp_wa(p, "OM1") == 0)
-		|| (strcmp_wa(p, "OM2") == 0)
-		|| (strcmp_wa(p, "OM3") == 0)
-		|| (strcmp_wa(p, "OM4") == 0)
-		)
-			ret = NT_STATUS_UNSUCCESSFUL;
-		break;
-	case UCS2_CHAR('L'):
-		if((strcmp_wa(p, "PT1") == 0)
-		|| (strcmp_wa(p, "PT2") == 0)
-		|| (strcmp_wa(p, "PT3") == 0)
-		)
-			ret = NT_STATUS_UNSUCCESSFUL;
-		break;
-	case UCS2_CHAR('N'):
-		if(strcmp_wa(p, "UL") == 0)
-			ret = NT_STATUS_UNSUCCESSFUL;
-		break;
-	case UCS2_CHAR('P'):
-		if(strcmp_wa(p, "RN") == 0)
-			ret = NT_STATUS_UNSUCCESSFUL;
-		break;
-	default:
-		break;
-	}
-
-	SAFE_FREE(str);
-	return ret;
-}
-
-static NTSTATUS is_8_3_w(const smb_ucs2_t *fname)
-{
-	smb_ucs2_t *pref = 0, *ext = 0;
-	size_t plen;
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if (!fname || !*fname) return NT_STATUS_INVALID_PARAMETER;
-
-	if (strlen_w(fname) > 12) return NT_STATUS_UNSUCCESSFUL;
-	
-	if (strcmp_wa(fname, ".") == 0 || strcmp_wa(fname, "..") == 0)
-		return NT_STATUS_OK;
-
-	if (NT_STATUS_IS_ERR(is_valid_name(fname))) goto done;
-
-	if (NT_STATUS_IS_ERR(mangle_get_prefix(fname, &pref, &ext))) goto done;
-	plen = strlen_w(pref);
-
-	if (strchr_wa(pref, '.')) goto done;
-	if (plen < 1 || plen > 8) goto done;
-	if (ext) if (strlen_w(ext) > 3) goto done;
-
-	ret = NT_STATUS_OK;
-
-done:
-	SAFE_FREE(pref);
-	SAFE_FREE(ext);
-	return ret;
-}
-
-static BOOL is_8_3(const char *fname, BOOL check_case)
-{
-	const char *f;
-	smb_ucs2_t *ucs2name;
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if (!fname || !*fname) return False;
-	if ((f = strrchr(fname, '/')) == NULL) f = fname;
-	else f++;
-
-	if (strlen(f) > 12) return False;
-	
-	ucs2name = acnv_uxu2(f);
-	if (!ucs2name)
-	{
-		DEBUG(0,("is_8_3: internal error acnv_uxu2() failed!\n"));
-		goto done;
-	}
-
-	ret = is_8_3_w(ucs2name);
-
-done:
-	SAFE_FREE(ucs2name);
-
-	if (!NT_STATUS_IS_OK(ret)) { 
-		return False;
-	}
-	
-	return True;
-}
-
+#define MANGLED_CACHE_MAX_MEMORY  0
 
 
 /* -------------------------------------------------------------------------- **
@@ -359,6 +161,123 @@ static void init_chartest( void )
   ct_initialized = True;
   } /* init_chartest */
 
+/* ************************************************************************** **
+ * Return True if a name is a special msdos reserved name.
+ *
+ *  Input:  fname - String containing the name to be tested.
+ *
+ *  Output: True, if the name matches one of the list of reserved names.
+ *
+ *  Notes:  This is a static function called by is_8_3(), below.
+ *
+ * ************************************************************************** **
+ */
+static BOOL is_reserved_msdos( char *fname )
+  {
+  char upperFname[13];
+  char *p;
+
+  StrnCpy (upperFname, fname, 12);
+
+  /* lpt1.txt and con.txt etc are also illegal */
+  p = strchr(upperFname,'.');
+  if( p )
+    *p = '\0';
+
+  strupper( upperFname );
+  p = upperFname + 1;
+  switch( upperFname[0] )
+    {
+    case 'A':
+      if( 0 == strcmp( p, "UX" ) )
+        return( True );
+      break;
+    case 'C':
+      if( (0 == strcmp( p, "LOCK$" ))
+       || (0 == strcmp( p, "ON" ))
+       || (0 == strcmp( p, "OM1" ))
+       || (0 == strcmp( p, "OM2" ))
+       || (0 == strcmp( p, "OM3" ))
+       || (0 == strcmp( p, "OM4" ))
+        )
+        return( True );
+      break;
+    case 'L':
+      if( (0 == strcmp( p, "PT1" ))
+       || (0 == strcmp( p, "PT2" ))
+       || (0 == strcmp( p, "PT3" ))
+        )
+        return( True );
+      break;
+    case 'N':
+      if( 0 == strcmp( p, "UL" ) )
+        return( True );
+      break;
+    case 'P':
+      if( 0 == strcmp( p, "RN" ) )
+        return( True );
+      break;
+    }
+
+  return( False );
+  } /* is_reserved_msdos */
+
+/* ************************************************************************** **
+ * Determine whether or not a given name contains illegal characters, even
+ * long names.
+ *
+ *  Input:  name  - The name to be tested.
+ *
+ *  Output: True if an illegal character was found in <name>, else False.
+ *
+ *  Notes:  This is used to test a name on the host system, long or short,
+ *          for characters that would be illegal on most client systems,
+ *          particularly DOS and Windows systems.  Unix and AmigaOS, for
+ *          example, allow a filenames which contain such oddities as
+ *          quotes (").  If a name is found which does contain an illegal
+ *          character, it is mangled even if it conforms to the 8.3
+ *          format.
+ *
+ * ************************************************************************** **
+ */
+static BOOL is_illegal_name( char *name )
+  {
+  unsigned char *s;
+  int            skip;
+  int namelen;
+
+  if( !name )
+    return( True );
+
+  if( !ct_initialized )
+    init_chartest();
+
+  namelen = strlen(name);
+  if (namelen &&
+		  name[namelen-1] == '.' &&
+		  !strequal(name, ".") &&
+		  !strequal(name, ".."))
+	  return True;
+
+  s = (unsigned char *)name;
+  while( *s )
+    {
+    skip = get_character_len( *s );
+    if( skip != 0 )
+      {
+      s += skip;
+      }
+    else
+      {
+      if( isillegal( *s ) )
+        return( True );
+      else
+        s++;
+      }
+    }
+
+  return( False );
+  } /* is_illegal_name */
 
 /* ************************************************************************** **
  * Return True if the name *could be* a mangled name.
@@ -377,24 +296,136 @@ static void init_chartest( void )
  *
  * ************************************************************************** **
  */
-static BOOL is_mangled(const char *s)
+static BOOL is_mangled( const char *s )
+{
+	char *magic;
+	BOOL ret = False;
+
+	if( !ct_initialized )
+		init_chartest();
+
+	magic = strchr( s, magic_char );
+	while( magic && magic[1] && magic[2] ) {
+		/* 3 chars, 1st is magic. */
+		if( ('.' == magic[3] || '/' == magic[3] || !(magic[3]))          /* Ends with '.' or nul or '/' ?  */
+				&& isbasechar( toupper(magic[1]) )           /* is 2nd char basechar?  */
+				&& isbasechar( toupper(magic[2]) ) )         /* is 3rd char basechar?  */
+			ret = ( True );                           /* If all above, then true, */
+		magic = strchr( magic+1, magic_char );      /*    else seek next magic. */
+	}
+
+	DEBUG(10,("is_mangled: %s : %s\n", s, ret ? "True" : "False"));
+
+	return ret;
+} /* is_mangled */
+
+/* ************************************************************************** **
+ * Return True if the name is a valid DOS name in 8.3 DOS format.
+ *
+ *  Input:  fname       - File name to be checked.
+ *          check_case  - If True, and if case_mangle is True, then the
+ *                        name will be checked to see if all characters
+ *                        are the correct case.  See case_mangle and
+ *                        case_default above.
+ *
+ *  Output: True if the name is a valid DOS name, else False.
+ *
+ * ************************************************************************** **
+ */
+static BOOL is_8_3( const char *cfname, BOOL check_case )
   {
-  char *magic;
+  int   len;
+  int   l;
+  int   skip;
+  char *p;
+  char *dot_pos;
+  char *slash_pos;
+  char *fname = (char *)cfname;
 
-  if( !ct_initialized )
-    init_chartest();
+  slash_pos = strrchr( fname, '/' );
 
-  magic = strchr_m( s, magic_char );
-  while( magic && magic[1] && magic[2] )          /* 3 chars, 1st is magic. */
+  /* If there is a directory path, skip it. */
+  if( slash_pos )
+    fname = slash_pos + 1;
+  len = strlen( fname );
+
+  DEBUG( 5, ( "Checking %s for 8.3\n", fname ) );
+
+  /* Can't be 0 chars or longer than 12 chars */
+  if( (len == 0) || (len > 12) )
+    return( False );
+
+  /* Mustn't be an MS-DOS Special file such as lpt1 or even lpt1.txt */
+  if( is_reserved_msdos( fname ) )
+    return( False );
+
+  /* Check that all characters are the correct case, if asked to do so. */
+  if( check_case && case_mangle )
     {
-    if( ('.' == magic[3] || '/' == magic[3] || !(magic[3]))          /* Ends with '.' or nul or '/' ?  */
-     && isbasechar( toupper(magic[1]) )           /* is 2nd char basechar?  */
-     && isbasechar( toupper(magic[2]) ) )         /* is 3rd char basechar?  */
-      return( True );                           /* If all above, then true, */
-    magic = strchr_m( magic+1, magic_char );      /*    else seek next magic. */
+    switch( case_default )
+      {
+      case CASE_LOWER:
+        if( strhasupper( fname ) )
+          return(False);
+        break;
+      case CASE_UPPER:
+        if( strhaslower( fname ) )
+          return(False);
+        break;
+      }
     }
-  return( False );
-  } /* is_mangled */
+
+  /* Can't contain invalid dos chars */
+  /* Windows use the ANSI charset.
+     But filenames are translated in the PC charset.
+     This Translation may be more or less relaxed depending
+     the Windows application. */
+
+  /* %%% A nice improvment to name mangling would be to translate
+     filename to ANSI charset on the smb server host */
+
+  p       = fname;
+  dot_pos = NULL;
+  while( *p )
+    {
+    if( (skip = get_character_len( *p )) != 0 )
+      p += skip;
+    else 
+      {
+      if( *p == '.' && !dot_pos )
+        dot_pos = (char *)p;
+      else
+        if( !isdoschar( *p ) )
+          return( False );
+      p++;
+      }
+    }
+
+  /* no dot and less than 9 means OK */
+  if( !dot_pos )
+    return( len <= 8 );
+        
+  l = PTR_DIFF( dot_pos, fname );
+
+  /* base must be at least 1 char except special cases . and .. */
+  if( l == 0 )
+    return( 0 == strcmp( fname, "." ) || 0 == strcmp( fname, ".." ) );
+
+  /* base can't be greater than 8 */
+  if( l > 8 )
+    return( False );
+
+  /* extension must be between 1 and 3 */
+  if( (len - l < 2 ) || (len - l > 4) )
+    return( False );
+
+  /* extensions may not have a dot */
+  if( strchr( dot_pos+1, '.' ) )
+    return( False );
+
+  /* must be in 8.3 format */
+  return( True );
+  } /* is_8_3 */
 
 
 /* ************************************************************************** **
@@ -420,6 +451,8 @@ static signed int cache_compare( ubi_btItemPtr ItemPtr, ubi_btNodePtr NodePtr )
   {
   char *Key1 = (char *)ItemPtr;
   char *Key2 = (char *)(((ubi_cacheEntryPtr)NodePtr) + 1);
+
+  DEBUG(100,("cache_compare: %s %s\n", Key1, Key2));
 
   return( StrCaseCmp( Key1, Key2 ) );
   } /* cache_compare */
@@ -459,7 +492,7 @@ static void cache_free_entry( ubi_trNodePtr WarrenZevon )
  *
  * ************************************************************************** **
  */
-static void mangle_reset( void )
+static void reset_mangled_cache( void )
   {
   if( !mc_initialized )
     {
@@ -568,7 +601,7 @@ static void cache_mangled_name( char *mangled_name, char *raw_name )
  * ************************************************************************** **
  */
 
-static BOOL check_cache( char *s )
+static BOOL check_mangled_cache( char *s )
 {
   ubi_cacheEntryPtr FoundPtr;
   char             *ext_start = NULL;
@@ -616,6 +649,8 @@ static BOOL check_cache( char *s )
   found_name = (char *)(FoundPtr + 1);
   found_name += (strlen( found_name ) + 1);
 
+  DEBUG( 3, ("Found %s on mangled stack ", s) );
+
   (void)pstrcpy( s, found_name );
   if( saved_ext )
   {
@@ -623,6 +658,8 @@ static BOOL check_cache( char *s )
     (void)pstrcat( s, saved_ext );
     SAFE_FREE(saved_ext);
   }
+
+  DEBUG( 3, ("as %s\n", s) );
 
   return( True );
 } /* check_mangled_cache */
@@ -633,7 +670,7 @@ static BOOL check_cache( char *s )
  * the buffer must be able to hold 13 characters (including the null)
  *****************************************************************************
  */
-static void to_8_3(char *s)
+static void mangle_name_83( char *s)
   {
   int csum;
   char *p;
@@ -641,6 +678,7 @@ static void to_8_3(char *s)
   char base[9];
   int baselen = 0;
   int extlen = 0;
+  int skip;
 
   extension[0] = 0;
   base[0] = 0;
@@ -664,46 +702,92 @@ static void to_8_3(char *s)
 
   strupper( s );
 
+  DEBUG( 5, ("Mangling name %s to ",s) );
+
   if( p )
-  {
-	  if( p == s )
-		  safe_strcpy( extension, "___", 3 );
-	  else
-	  {
-		  *p++ = 0;
-		  while( *p && extlen < 3 )
-		  {
-			  if ( *p != '.') {
-				  extension[extlen++] = p[0];
-			  }
-			  p++;
-		  }
-		  extension[extlen] = 0;
+    {
+    if( p == s )
+      safe_strcpy( extension, "___", 3 );
+    else
+      {
+      *p++ = 0;
+      while( *p && extlen < 3 )
+        {
+        skip = get_character_len( *p );
+        switch( skip )
+          {
+          case 2: 
+            if( extlen < 2 )
+              {
+              extension[extlen++] = p[0];
+              extension[extlen++] = p[1];
+              }
+            else 
+              {
+              extension[extlen++] = mangle( (unsigned char)*p );
+              }
+            p += 2;
+            break;
+          case 1:
+            extension[extlen++] = p[0];
+            p++;
+            break;
+          default:
+            if( isdoschar (*p) && *p != '.' )
+              extension[extlen++] = p[0];
+            p++;
+            break;
+          }
+        }
+      extension[extlen] = 0;
       }
-  }
-  
+    }
+
   p = s;
 
   while( *p && baselen < 5 )
-  {
-	  if (*p != '.') {
-		  base[baselen++] = p[0];
-	  }
-	  p++;
-  }
+    {
+    skip = get_character_len(*p);
+    switch( skip )
+      {
+      case 2:
+        if( baselen < 4 )
+          {
+          base[baselen++] = p[0];
+          base[baselen++] = p[1];
+          }
+        else 
+          {
+          base[baselen++] = mangle( (unsigned char)*p );
+          }
+        p += 2;
+        break;
+      case 1:
+        base[baselen++] = p[0];
+        p++;
+        break;
+      default:
+        if( isdoschar( *p ) && *p != '.' )
+          base[baselen++] = p[0];
+        p++;
+        break;
+      }
+    }
   base[baselen] = 0;
-  
+
   csum = csum % (MANGLE_BASE*MANGLE_BASE);
-  
+
   (void)slprintf(s, 12, "%s%c%c%c",
                  base, magic_char, mangle( csum/MANGLE_BASE ), mangle( csum ) );
-  
+
   if( *extension )
-  {
-	  (void)pstrcat( s, "." );
-	  (void)pstrcat( s, extension );
-  }
-  
+    {
+    (void)pstrcat( s, "." );
+    (void)pstrcat( s, extension );
+    }
+
+  DEBUG( 5, ( "%s\n", s ) );
+
   } /* mangle_name_83 */
 
 /*****************************************************************************
@@ -725,35 +809,33 @@ static void to_8_3(char *s)
  *                    a conflicting cache entry prematurely, i.e. before
  *                    we know whether the client is really interested in the
  *                    current name.  (See PR#13758).  UKD.
+ *          snum    - Share number.  This identifies the share in which the
+ *                    name exists.
  *
  *  Output: Returns False only if the name wanted mangling but the share does
  *          not have name mangling turned on.
  *
  * ****************************************************************************
  */
-static BOOL name_map(char *OutName, BOOL need83, BOOL cache83)
+static BOOL name_map_mangle(char *OutName, BOOL need83, BOOL cache83)
 {
-	smb_ucs2_t *OutName_ucs2;
-	DEBUG(5,("name_map( %s, need83 = %s, cache83 = %s)\n", OutName,
-		 need83 ? "True" : "False", cache83 ? "True" : "False"));
-	
-	if (push_ucs2_allocate((void **)&OutName_ucs2, OutName) < 0) {
-		DEBUG(0, ("push_ucs2_allocate failed!\n"));
-		return False;
-	}
+	DEBUG(5,("name_map_mangle( %s, need83 = %s, cache83 = %s )\n", OutName,
+		need83 ? "True" : "False", cache83 ? "True" : "False" ));
 
-	if( !need83 && NT_STATUS_IS_ERR(is_valid_name(OutName_ucs2)))
+#ifdef MANGLE_LONG_FILENAMES
+	if( !need83 && is_illegal_name(OutName) )
 		need83 = True;
+#endif  
 
 	/* check if it's already in 8.3 format */
-	if (need83 && !NT_STATUS_IS_OK(is_8_3_w(OutName_ucs2))) {
+	if (need83 && !is_8_3(OutName, True)) {
 		char *tmp = NULL; 
 
 		/* mangle it into 8.3 */
 		if (cache83)
 			tmp = strdup(OutName);
 
-		to_8_3(OutName);
+		mangle_name_83(OutName);
 
 		if(tmp != NULL) {
 			cache_mangled_name(OutName, tmp);
@@ -761,28 +843,25 @@ static BOOL name_map(char *OutName, BOOL need83, BOOL cache83)
 		}
 	}
 
-	DEBUG(5,("name_map() ==> [%s]\n", OutName));
-	SAFE_FREE(OutName_ucs2);
+	DEBUG(5,("name_map_mangle() ==> [%s]\n", OutName));
 	return(True);
-} /* name_map */
-
+} /* name_map_mangle */
 
 /*
-  the following provides the abstraction layer to make it easier
-  to drop in an alternative mangling implementation
-*/
+ *   the following provides the abstraction layer to make it easier
+ *     to drop in an alternative mangling implementation
+ *     */
 static struct mangle_fns mangle_fns = {
 	is_mangled,
 	is_8_3,
-	mangle_reset,
-	check_cache,
-	name_map
+	reset_mangled_cache,
+	check_mangled_cache,
+	name_map_mangle
 };
 
 /* return the methods for this mangling implementation */
 struct mangle_fns *mangle_hash_init(void)
 {
-	mangle_reset();
-
+	reset_mangled_cache();
 	return &mangle_fns;
 }
