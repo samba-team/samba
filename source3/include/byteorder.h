@@ -200,30 +200,30 @@ it also defines lots of intermediate macros, just ignore those :-)
 
 #define DBG_RW_PCVAL(string,depth,base,read,inbuf,outbuf,len) \
 	RW_PCVAL(read,inbuf,outbuf,len) \
-	DEBUG(5,("%s %04x %s: ", \
+	DEBUG(5,("%s%04x %s: ", \
              tab_depth(depth), PTR_DIFF(inbuf,base),string)); \
-	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%d ", (outbuf)[idx])); } } \
+	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%x ", (outbuf)[idx])); } } \
 	DEBUG(5,("\n"));
 
 #define DBG_RW_PSVAL(string,depth,base,read,inbuf,outbuf,len) \
 	RW_PSVAL(read,inbuf,outbuf,len) \
-	DEBUG(5,("%s %04x %s: ", \
+	DEBUG(5,("%s%04x %s: ", \
              tab_depth(depth), PTR_DIFF(inbuf,base),string)); \
-	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%d ", (outbuf)[idx])); } } \
+	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%02x ", (outbuf)[idx])); } } \
 	DEBUG(5,("\n"));
 
 #define DBG_RW_CVAL(string,depth,base,read,inbuf,outbuf) \
 	RW_CVAL(read,inbuf,outbuf,0) \
-	DEBUG(5,("%s %04x %s: %02x\n", \
+	DEBUG(5,("%s%04x %s: %02x\n", \
              tab_depth(depth), PTR_DIFF(inbuf,base),string, *(inbuf)));
 
 #define DBG_RW_SVAL(string,depth,base,read,inbuf,outbuf) \
 	RW_SVAL(read,inbuf,outbuf,0) \
-	DEBUG(5,("%s %04x %s: %04x\n", \
+	DEBUG(5,("%s%04x %s: %04x\n", \
              tab_depth(depth), PTR_DIFF(inbuf,base),string, *(inbuf)));
 
 #define DBG_RW_IVAL(string,depth,base,read,inbuf,outbuf) \
 	RW_IVAL(read,inbuf,outbuf,0) \
-	DEBUG(5,("%s %04x %s: %08x\n", \
+	DEBUG(5,("%s%04x %s: %08x\n", \
              tab_depth(depth), PTR_DIFF(inbuf,base),string, *(inbuf)));
 

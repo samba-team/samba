@@ -37,13 +37,6 @@ void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, char *pass,
 	char sum2[8];
 	char buf[8];
 
-	DEBUG(4,("cred_session_key\n"));
-
-	DEBUG(5,("	clnt_chal: %lx %lx srv_chal: %lx %lx\n",
-			
-	          IVAL(clnt_chal->data, 0), IVAL(clnt_chal->data, 4),
-	          IVAL(srv_chal->data, 0), IVAL(srv_chal->data, 4)));
-
 	sum[0] = IVAL(clnt_chal->data, 0) + IVAL(srv_chal->data, 0);
 	sum[1] = IVAL(clnt_chal->data, 4) + IVAL(srv_chal->data, 4);
 
@@ -52,6 +45,18 @@ void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, char *pass,
 
 	smbhash(pass  , sum2, buf);
 	smbhash(pass+9, buf , session_key);
+
+	/* debug output*/
+	DEBUG(4,("cred_session_key\n"));
+
+	DEBUG(5,("	clnt_chal: "));
+	dump_data(5, clnt_chal->data, 8);
+
+	DEBUG(5,("	srv_chal: "));
+	dump_data(5, srv_chal->data, 8);
+
+	DEBUG(5,("	clnt_chal+srv_chal: "));
+	dump_data(5, sum2, 8);
 
 	DEBUG(5,("	session_key: "));
 	dump_data(5, session_key, 16);
@@ -83,6 +88,21 @@ void cred_create(char *session_key, DOM_CHAL *stored_cred, UTIME timestamp,
 	memset(key2, 0, 7);
 	key2[0] = session_key[7];
 	smbhash(key2, buf, cred->data);
+
+	/* debug output*/
+	DEBUG(4,("cred_create\n"));
+
+	DEBUG(5,("	session_key: "));
+	dump_data(5, session_key, 16);
+
+	DEBUG(5,("	stored_cred: "));
+	dump_data(5, stored_cred->data, 8);
+
+	DEBUG(5,("	timecred: "));
+	dump_data(5, timecred, 8);
+
+	DEBUG(5,("	cred: "));
+	dump_data(5, cred->data, 8);
 }
 
 
@@ -105,6 +125,15 @@ int cred_assert(DOM_CHAL *cred, char *session_key, DOM_CHAL *stored_cred,
 	DOM_CHAL cred2;
 
 	cred_create(session_key, stored_cred, timestamp, &cred2);
+
+	/* debug output*/
+	DEBUG(4,("cred_assert\n"));
+
+	DEBUG(5,("	challenge: "));
+	dump_data(5, cred->data, 16);
+
+	DEBUG(5,("	calculated: "));
+	dump_data(5, cred2.data, 8);
 
 	return memcmp(cred->data, cred2.data, 8) == 0;
 }

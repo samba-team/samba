@@ -1164,6 +1164,8 @@ static BOOL update_dcinfo(int cnum, uint16 vuid,
 	if (smb_pass != NULL)
 	{
 		memcpy(dc->md4pw, smb_pass->smb_nt_passwd, sizeof(dc->md4pw));
+		DEBUG(5,("dc->md4pw(%d) :", sizeof(dc->md4pw)));
+		dump_data(5, dc->md4pw, 16);
 	}
 	else
 	{
@@ -1217,6 +1219,8 @@ static void api_lsa_req_chal( int cnum, uint16 vuid,
 	strcat(mach_acct, "$");
 
 	update_dcinfo(cnum, vuid, &(vuser->dc), &(q_r.clnt_chal), mach_acct);
+
+	DEBUG(6,("api_lsa_req_chal: %d\n", __LINE__));
 
 	/* construct reply.  return status is always 0x0 */
 	*rdata_len = lsa_reply_req_chal(&q_r, *rdata + 0x18, *rdata,
