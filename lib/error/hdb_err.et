@@ -1,0 +1,47 @@
+#
+# Error messages for the hdb library
+#
+# This might look like a com_err file, but it not
+#
+# $Id$
+
+error_table hdb
+
+prefix KRB5_HDB
+
+error_code INUSE,		"Entry already exists in database"
+error_code UK_SERROR,		"Database store error"
+error_code UK_RERROR,		"Database read error"
+error_code UNAUTH,		"Insufficient access to perform requested operation"
+
+error_code NOENTRY,		"No such entry in the database"
+
+error_code ILL_WILDCARD,	"Illegal use of wildcard"
+
+error_code DB_INUSE,		"Database is locked or in use--try again later"
+
+error_code DB_CHANGED,		"Database was modified during read"
+
+error_code TRUNCATED_RECORD,	"Database record is incomplete or corrupted"
+error_code RECURSIVELOCK,	"Attempt to lock database twice"
+error_code NOTLOCKED,		"Attempt to unlock database when not locked"
+error_code BADLOCKMODE,	"Invalid kdb lock mode"
+error_code DBNOTINITED,	"Database has not been initialized"
+error_code DBINITED,		"Database has already been initialized"
+
+error_code ILLDIRECTION,	"Bad direction for converting keys"
+
+error_code NOMASTERKEY,	"Cannot find master key record in database"
+error_code BADMASTERKEY,	"Master key does not match database"
+error_code INVALIDKEYSIZE,	"Key size in database is invalid"
+error_code CANTREAD_STORED,	"Cannot find/read stored master key"
+error_code BADSTORED_MKEY,	"Stored master key is corrupted"
+
+error_code CANTLOCK_DB,	"Insufficient access to lock database"
+
+error_code DB_CORRUPT,		"Database format error"
+error_code BAD_VERSION,	"Unsupported version in database entry"
+
+error_code BAD_SALTTYPE,	"Unsupported salt type"
+error_code BAD_ENCTYPE,	"Unsupported encryption type"
+end
