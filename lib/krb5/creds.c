@@ -62,6 +62,7 @@ krb5_copy_creds_contents (krb5_context context,
 {
     krb5_error_code ret;
 
+    memset(c, 0, sizeof(*c));
     ret = krb5_copy_principal (context, incred->client, &c->client);
     if (ret)
 	goto fail;
