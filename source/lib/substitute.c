@@ -68,6 +68,9 @@ void sub_set_smb_name(const char *name)
 {
 	fstring tmp;
 
+	/* don't let anonymous logins override the name */
+	if (! *name) return;
+
 	fstrcpy(tmp,name);
 	trim_string(tmp," "," ");
 	strlower(tmp);
