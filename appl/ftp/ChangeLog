@@ -1,3 +1,11 @@
+2000-12-10  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ftpd/ftpd.c: some spec-violating mirror software assumes that
+	you can do things like `LIST -CF'; don't pass `--' to ls so this
+	actually works
+
+	* ftpd/ls.c: implement -1CFx flags
+
 2000-12-08  Assar Westerlund  <assar@sics.se>
 
 	* ftpd/gss_userok.c (gss_userok): handle getpwnam failing
