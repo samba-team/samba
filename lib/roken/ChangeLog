@@ -1,3 +1,8 @@
+2001-08-01  Assar Westerlund  <assar@sics.se>
+
+	* mini_inetd.c (mini_inetd): explicitly use PF_UNSPEC.  be more
+	resilient to bind/listen failing.
+
 2001-07-31  Assar Westerlund  <assar@sics.se>
 
 	* getifaddrs.c (getifaddrs2): remove unused variables
