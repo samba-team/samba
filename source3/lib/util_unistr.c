@@ -46,11 +46,13 @@ static uint16 *ucs2_to_unixcp;
  the current DOS codepage. len is the length in bytes of the
  string pointed to by dst.
 
- the return value is the length of the string *without* the trailing 
- two bytes of zero
+ if null_terminate is True then null terminate the packet (adds 2 bytes)
+
+ the return value is the length consumed by the string, including the
+ null termination if applied
 ********************************************************************/
 
-int dos_PutUniCode(char *dst,const char *src, ssize_t len)
+int dos_PutUniCode(char *dst,const char *src, ssize_t len, BOOL null_terminate)
 {
 	int ret = 0;
 	while (*src && (len > 2)) {
@@ -74,7 +76,10 @@ int dos_PutUniCode(char *dst,const char *src, ssize_t len)
 		else
 			src++;
 	}
-	SSVAL(dst,ret,0);
+	if (null_terminate) {
+		SSVAL(dst,ret,0);
+		ret += 2;
+	}
 	return(ret);
 }
 

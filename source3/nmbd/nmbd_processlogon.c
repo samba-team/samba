@@ -159,11 +159,8 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
       {
         q = align2(q, buf);
 
-        dos_PutUniCode(q, my_name, sizeof(pstring)); /* PDC name */
-        q = skip_unicode_string(q, 1); 
-
-        dos_PutUniCode(q, global_myworkgroup,sizeof(pstring)); /* Domain name*/
-        q = skip_unicode_string(q, 1); 
+        q += dos_PutUniCode(q, my_name, sizeof(pstring), True); /* PDC name */
+        q += dos_PutUniCode(q, global_myworkgroup,sizeof(pstring), True); /* Domain name*/
 
         SIVAL(q, 0, ntversion);
         SSVAL(q, 4, lmnttoken);
@@ -239,12 +236,10 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       }
       q += 2;
 
-      dos_PutUniCode(q, reply_name,sizeof(pstring));
-      q = skip_unicode_string(q, 1);
+      q += dos_PutUniCode(q, reply_name,sizeof(pstring), True);
       unistrcpy(q, uniuser);
       q = skip_unicode_string(q, 1); /* User name (workstation trust account) */
-      dos_PutUniCode(q, lp_workgroup(),sizeof(pstring));
-      q = skip_unicode_string(q, 1); /* Domain name. */
+      q += dos_PutUniCode(q, lp_workgroup(),sizeof(pstring), True);
 
       SIVAL(q, 0, ntversion);
       q += 4;

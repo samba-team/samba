@@ -759,8 +759,7 @@ BOOL lookup_pdc_name(const char *srcname, const char *domain, struct in_addr *pd
 	mailslot_name = bufp;
 	bufp += (strlen(bufp) + 1);
 	bufp = align2(bufp, buffer);
-	dos_PutUniCode(bufp, srcname, sizeof(buffer) - (bufp - buffer) - 1);
-	bufp = skip_unicode_string(bufp, 1);
+	bufp += dos_PutUniCode(bufp, srcname, sizeof(buffer) - (bufp - buffer) - 1, True);
 	SIVAL(bufp,0,1);
 	SSVAL(bufp,4,0xFFFF); 
 	SSVAL(bufp,6,0xFFFF); 

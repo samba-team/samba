@@ -477,7 +477,7 @@ char *string_truncate(char *s, int length);
 
 /*The following definitions come from  lib/util_unistr.c  */
 
-int dos_PutUniCode(char *dst,const char *src, ssize_t len);
+int dos_PutUniCode(char *dst,const char *src, ssize_t len, BOOL null_terminate);
 void ascii_to_unistr(uint16 *dest, const char *src, int maxlen);
 void unistr_to_ascii(char *dest, const uint16 *src, int len);
 char *skip_unicode_string(char *buf,int n);
