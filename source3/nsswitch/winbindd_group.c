@@ -413,11 +413,12 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 {
 	NTSTATUS status;
 	uint32 num_entries;
-	struct acct_info *name_list = NULL, *tnl;
+	struct acct_info *name_list = NULL;
 	TALLOC_CTX *mem_ctx;
 	BOOL result = False;
+	struct acct_info *sam_grp_entries = NULL;
         
-	if (ent->got_all_grp_entries)
+	if (ent->got_sam_entries)
 		return False;
 
 	if (!(mem_ctx = talloc_init()))
@@ -427,63 +428,37 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 
 	SAFE_FREE(ent->sam_entries);
 	ent->num_sam_entries = 0;
-		
+	ent->got_sam_entries = True;
+
 	/* Enumerate domain groups */
-		
-	do {
-		struct acct_info *sam_grp_entries = NULL;
+	num_entries = 0;
 
-		num_entries = 0;
+	status = ent->domain->methods->enum_dom_groups(ent->domain,
+						       mem_ctx, 
+						       &num_entries,
+						       &sam_grp_entries);
+	
+	if (!NT_STATUS_IS_OK(status)) {
+		result = False;
+		goto done;
+	}
 
-		status = ent->domain->methods->enum_dom_groups(ent->domain,
-							       mem_ctx, 
-							       &ent->grp_query_start_ndx,
-							       &num_entries,
-							       &sam_grp_entries);
-
-		if (!NT_STATUS_IS_OK(status)) break;
-
-		/* Copy entries into return buffer */
-
-		if (num_entries) {
-
-			tnl = Realloc(name_list,
-				    sizeof(struct acct_info) *
-				    (ent->num_sam_entries +
-				     num_entries));
-
-			if (tnl == NULL) {
-				DEBUG(0,("get_sam_group_entries: unable to "
-                                         "realloc a structure!\n"));
-				SAFE_FREE(name_list);
-
-				goto done;
-			} else 
-				name_list = tnl;
-
-			memcpy(&name_list[ent->num_sam_entries],
-			       sam_grp_entries, 
-			       num_entries * sizeof(struct acct_info));
-		}
-
-		ent->num_sam_entries += num_entries;
-		
-		if (NT_STATUS_V(status) != NT_STATUS_V(STATUS_MORE_ENTRIES))
-			break;
-
-	} while (ent->num_sam_entries < MAX_FETCH_SAM_ENTRIES);
+	/* Copy entries into return buffer */
+	if (num_entries) {
+		name_list = malloc(sizeof(struct acct_info) * num_entries);
+		memcpy(name_list, sam_grp_entries, 
+		       num_entries * sizeof(struct acct_info));
+	}
+	
+	ent->num_sam_entries = num_entries;
 		
 	/* Fill in remaining fields */
-
 	ent->sam_entries = name_list;
 	ent->sam_entry_index = 0;
-	ent->got_all_grp_entries = (NT_STATUS_V(status) != 
-                                    NT_STATUS_V(STATUS_MORE_ENTRIES));
 
 	result = (ent->num_sam_entries > 0);
 
  done:
-
 	talloc_destroy(mem_ctx);
 
 	return result;
@@ -714,6 +689,8 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 		get_domain_info();
 
 	for (domain = domain_list; domain; domain = domain->next) {
+		int new_size;
+		int offset;
 
 		/* Skip domains other than WINBINDD_DOMAIN environment
 		   variable */ 
@@ -735,29 +712,26 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 		 
 		num_domain_entries = 0;
 
-		while (get_sam_group_entries(&groups)) {
-			int new_size;
-			int offset;
+		get_sam_group_entries(&groups);
 			
-			offset = sizeof(struct acct_info) * num_domain_entries;
-			new_size = sizeof(struct acct_info) 
-			 	* (groups.num_sam_entries + num_domain_entries);
-			sam_entries = Realloc(sam_entries, new_size);
+		offset = sizeof(struct acct_info) * num_domain_entries;
+		new_size = sizeof(struct acct_info) 
+			* (groups.num_sam_entries + num_domain_entries);
+		sam_entries = Realloc(sam_entries, new_size);
 			
-			if (!sam_entries)
-				return WINBINDD_ERROR;
+		if (!sam_entries)
+			return WINBINDD_ERROR;
 			
-			num_domain_entries += groups.num_sam_entries;
-			memcpy (((char *)sam_entries)+offset, 
-                                groups.sam_entries, 
-				sizeof(struct acct_info) * 
-                                groups.num_sam_entries);
-			
-			free(groups.sam_entries);
-
-			groups.sam_entries = NULL;
-			groups.num_sam_entries = 0;
-		}
+		num_domain_entries += groups.num_sam_entries;
+		memcpy (((char *)sam_entries)+offset, 
+			groups.sam_entries, 
+			sizeof(struct acct_info) * 
+			groups.num_sam_entries);
+		
+		free(groups.sam_entries);
+		
+		groups.sam_entries = NULL;
+		groups.num_sam_entries = 0;
 
 		/* skip remainder of loop if we idn;t retrieve any groups */
 		

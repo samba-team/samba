@@ -236,7 +236,7 @@ done:
 /* list all domain groups */
 static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				uint32 *start_ndx, uint32 *num_entries, 
+				uint32 *num_entries, 
 				struct acct_info **info)
 {
 	ADS_STRUCT *ads = NULL;
@@ -250,12 +250,6 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	*num_entries = 0;
 
 	DEBUG(3,("ads: enum_dom_groups\n"));
-
-	if ((*start_ndx) != 0) {
-		DEBUG(1,("ads backend start_ndx not implemented\n"));
-		status = NT_STATUS_NOT_IMPLEMENTED;
-		goto done;
-	}
 
 	ads = ads_cached_connection(domain);
 	if (!ads) goto done;

@@ -109,7 +109,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 /* list all domain groups */
 static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				uint32 *start_ndx, uint32 *num_entries, 
+				uint32 *num_entries, 
 				struct acct_info **info)
 {
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
@@ -118,6 +118,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	NTSTATUS status;
 
 	*num_entries = 0;
+	*info = NULL;
 
 	if (!(hnd = cm_get_sam_handle(domain->name))) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -129,10 +130,35 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 		return status;
 	}
 
-	status = cli_samr_enum_dom_groups(hnd->cli, mem_ctx, &dom_pol,
-					  start_ndx,
-					  0x8000, /* buffer size? */
-					  info, num_entries);
+	do {
+		struct acct_info *info2 = NULL;
+		uint32 count = 0, start = *num_entries;
+		TALLOC_CTX *mem_ctx2;
+
+		mem_ctx2 = talloc_init();
+
+		status = cli_samr_enum_dom_groups(hnd->cli, mem_ctx2, &dom_pol,
+						  &start,
+						  0xFFFF, /* buffer size? */
+						  &info2, &count);
+
+		if (!NT_STATUS_IS_OK(status) && 
+		    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+			talloc_destroy(mem_ctx2);
+			break;
+		}
+
+		(*info) = talloc_realloc(mem_ctx, *info, 
+					 sizeof(**info) * ((*num_entries) + count));
+		if (! *info) {
+			talloc_destroy(mem_ctx2);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		memcpy(&(*info)[*num_entries], info2, count*sizeof(*info2));
+		(*num_entries) += count;
+		talloc_destroy(mem_ctx2);
+	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
 
 	cli_samr_close(hnd->cli, mem_ctx, &dom_pol);
 
