@@ -33,6 +33,7 @@ CLEANFILES =		\
 	heim_err.h	\
 	kafs.h		\
 	krb5-protos.h	\
+	krb5-private.h	\
 	krb5-types.h	\
 	krb5.h		\
 	krb5_err.h	\
