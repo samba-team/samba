@@ -77,7 +77,7 @@ static long ldap_allocate_id(BOOL is_user)
 			smb_ldap_make_a_mod(&mods, LDAP_MOD_DELETE, 
 					    is_user?"uidNumber":"gidNumber",
 					    temp);
-			slprintf(temp, sizeof(temp) - 1, "%i", ret + 1);
+			slprintf(temp, sizeof(temp) - 1, "%ld", ret + 1);
 			smb_ldap_make_a_mod(&mods, LDAP_MOD_ADD, is_user?"uidNumber":"gidNumber", temp);
 			slprintf(temp, sizeof(temp) - 1, "cn=%cID Pool,%s", is_user?'U':'G', lp_ldap_user_suffix());
 			rc = smb_ldap_modify(ldap_state, temp, mods);
@@ -305,7 +305,7 @@ static BOOL ldap_get_gid_from_sid(DOM_SID *sid, gid_t *gid)
 
 	sid_to_string(str_sid, sid);
 
-	slprintf(filter, sizeof(filter) - 1, "ntSid=%d,objectClass=sambaGroupMapping", str_sid);
+	slprintf(filter, sizeof(filter) - 1, "ntSid=%s,objectClass=sambaGroupMapping", str_sid);
 
 	DEBUG(2, ("ldap_get_gid_from_sid: searching for:[%s]\n", filter));
 
@@ -365,7 +365,7 @@ static void ldap_idmap_status(void)
 	DEBUG(0, ("Using LDAP\n"));
 }
 
-struct winbind_idmap_methods ldap_idmap_methods = {
+struct winbindd_idmap_methods ldap_idmap_methods = {
 	ldap_idmap_init,
 
 	ldap_get_sid_from_uid,
@@ -381,7 +381,7 @@ struct winbind_idmap_methods ldap_idmap_methods = {
 
 #endif
 
-BOOL winbind_idmap_reg_ldap(struct winbind_idmap_methods **meth)
+BOOL winbind_idmap_reg_ldap(struct winbindd_idmap_methods **meth)
 {
 #ifdef HAVE_LDAP
 	*meth = &ldap_idmap_methods;
