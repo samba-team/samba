@@ -151,8 +151,50 @@ static void py_samr_domain_hnd_dealloc(PyObject* self)
 	PyObject_Del(self);
 }
 
+static PyObject *samr_enum_dom_groups(PyObject *self, PyObject *args, 
+				      PyObject *kw)
+{
+	samr_domain_hnd_object *domain_hnd = (samr_domain_hnd_object *)self;
+	static char *kwlist[] = { NULL };
+	TALLOC_CTX *mem_ctx;
+	uint32 desired_access = MAXIMUM_ALLOWED_ACCESS;
+	uint32 start_idx, size, num_dom_groups;
+	struct acct_info *dom_groups;
+	NTSTATUS result;
+	PyObject *py_result = NULL;
+	
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "", kwlist))
+		return NULL;
+
+	if (!(mem_ctx = talloc_init())) {
+		PyErr_SetString(samr_error, "unable to init talloc context");
+		return NULL;
+	}
+
+	start_idx = 0;
+	size = 0xffff;
+
+	do {
+		result = cli_samr_enum_dom_groups(
+			domain_hnd->cli, mem_ctx, &domain_hnd->domain_pol,
+			&start_idx, size, &dom_groups, &num_dom_groups);
+
+		if (NT_STATUS_IS_OK(result) ||
+		    NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES)) {
+			py_from_acct_info(&py_result, dom_groups,
+					  num_dom_groups);
+		}
+
+	} while (NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES));
+
+	return py_result;
+}	
+
 static PyMethodDef samr_domain_methods[] = {
-	{ NULL }
+	{ "enum_domain_groups", (PyCFunction)samr_enum_dom_groups,
+	  METH_VARARGS | METH_KEYWORDS, "Enumerate domain groups" },
+  	{ NULL }
 };
 
 static PyObject *py_samr_domain_hnd_getattr(PyObject *self, char *attrname)
