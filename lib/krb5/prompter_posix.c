@@ -65,8 +65,7 @@ krb5_prompter_posix (krb5_context context,
 		     prompts[i].reply->length,
 		     stdin) == NULL)
 		return 1;
-	    if(s[strlen(s) - 1] == '\n')
-		s[strlen(s) - 1] = '\0';
+	    s[strcspn(s, "\n")] = '\0';
 	}
     }
     return 0;

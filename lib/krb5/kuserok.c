@@ -88,9 +88,7 @@ krb5_kuserok (krb5_context context,
     while (fgets (buf, sizeof(buf), f) != NULL) {
 	krb5_principal tmp;
 
-	if(buf[strlen(buf) - 1] == '\n')
-	    buf[strlen(buf) - 1] = '\0';
-
+	buf[strcspn(buf, "\n")] = '\0';
 	ret = krb5_parse_name (context, buf, &tmp);
 	if (ret) {
 	    fclose (f);

@@ -1,3 +1,8 @@
+2002-09-16  Jacques Vidrine  <nectar@kth.se>
+
+	* lib/krb5/kuserok.c, lib/krb5/prompter_posix.c: use strcspn
+	to convert the newline to NUL in fgets results.
+
 2002-09-13  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kuser/kinit.1: remove unneeded Ns
