@@ -205,6 +205,12 @@ BOOL cli_unix_stat(struct cli_state *cli, const char *name, SMB_STRUCT_STAT *sbu
 			return False;
 	}
 
+	if (data_len < 96) {
+		SAFE_FREE(rdata);
+		SAFE_FREE(rparam);
+		return False;
+	}
+
 	sbuf->st_size = IVAL2_TO_SMB_BIG_UINT(rdata,0);     /* total size, in bytes */
 	sbuf->st_blocks = IVAL2_TO_SMB_BIG_UINT(rdata,8);   /* number of blocks allocated */
 	sbuf->st_blocks /= STAT_ST_BLOCKSIZE;
