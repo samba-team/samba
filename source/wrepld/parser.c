@@ -26,20 +26,41 @@ extern TALLOC_CTX *mem_ctx;
 /****************************************************************************
 grow the send buffer if necessary
 ****************************************************************************/
-static BOOL grow_buffer(struct BUFFER *buffer, int more)
+BOOL grow_buffer(struct BUFFER *buffer, int more)
 {
 	char *temp;
 
 	DEBUG(10,("grow_buffer: size is: %d offet is:%d growing by %d\n", buffer->length, buffer->offset, more));
 	
+	/* grow by at least 256 bytes */
+	if (more<256)
+		more=256;
+
 	if (buffer->offset+more >= buffer->length) {
-		temp=(char *)talloc_realloc(mem_ctx, buffer->buffer, sizeof(char)* (buffer->length+256) );
+		temp=(char *)talloc_realloc(mem_ctx, buffer->buffer, sizeof(char)* (buffer->length+more) );
 		if (temp==NULL) {
 			DEBUG(0,("grow_buffer: can't grow buffer\n"));
 			return False;
 		}
-		buffer->length+=256;
+		buffer->length+=more;
 		buffer->buffer=temp;
+	}
+
+	return True;
+}
+
+/****************************************************************************
+check if the buffer has that much data
+****************************************************************************/
+static BOOL check_buffer(struct BUFFER *buffer, int more)
+{
+	char *temp;
+
+	DEBUG(10,("check_buffer: size is: %d offet is:%d growing by %d\n", buffer->length, buffer->offset, more));
+	
+	if (buffer->offset+more > buffer->length) {
+		DEBUG(10,("check_buffer: buffer smaller than requested, size is: %d needed: %d\n", buffer->length, buffer->offset+more));
+		return False;
 	}
 
 	return True;
@@ -48,42 +69,42 @@ static BOOL grow_buffer(struct BUFFER *buffer, int more)
 /****************************************************************************
 decode a WINS_OWNER struct
 ****************************************************************************/
-static int decode_wins_owner(char *inbuf, int offset, WINS_OWNER *wins_owner)
+static void decode_wins_owner(struct BUFFER *inbuf, WINS_OWNER *wins_owner)
 {
-	wins_owner->address.s_addr=IVAL(inbuf, offset);
-	offset+=4;
-	wins_owner->max_version=((SMB_BIG_UINT)RIVAL(inbuf, offset))<<32;
-	offset+=4;
-	wins_owner->max_version|=RIVAL(inbuf, offset);
-	offset+=4;
-	wins_owner->min_version=((SMB_BIG_UINT)RIVAL(inbuf, offset))<<32;
-	offset+=4;
-	wins_owner->min_version|=RIVAL(inbuf, offset);
-	offset+=4;
-	wins_owner->type=RIVAL(inbuf, offset);
-	offset+=4;
+	if(!check_buffer(inbuf, 24))
+		return;
 
-	return offset;
+	wins_owner->address.s_addr=IVAL(inbuf->buffer, inbuf->offset);
+	wins_owner->max_version=((SMB_BIG_UINT)RIVAL(inbuf->buffer, inbuf->offset+4))<<32;
+	wins_owner->max_version|=RIVAL(inbuf->buffer, inbuf->offset+8);
+	wins_owner->min_version=((SMB_BIG_UINT)RIVAL(inbuf->buffer, inbuf->offset+12))<<32;
+	wins_owner->min_version|=RIVAL(inbuf->buffer, inbuf->offset+16);
+	wins_owner->type=RIVAL(inbuf->buffer, inbuf->offset+20);
+	inbuf->offset+=24;
+
 }
 
 /****************************************************************************
 decode a WINS_NAME struct
 ****************************************************************************/
-static int decode_wins_name(char *outbuf, int offset, WINS_NAME *wins_name)
+static void decode_wins_name(struct BUFFER *outbuf, WINS_NAME *wins_name)
 {	
 	char *p;
 	int i;
 
-	wins_name->name_len=RIVAL(outbuf, offset);
-	offset+=4;
-	memcpy(wins_name->name,outbuf+offset, 15);
+	if(!check_buffer(outbuf, 40))
+		return;
+
+	wins_name->name_len=RIVAL(outbuf->buffer, outbuf->offset);
+	outbuf->offset+=4;
+	memcpy(wins_name->name,outbuf->buffer+outbuf->offset, 15);
 	wins_name->name[16]='\0';
 	if((p = strchr(wins_name->name,' ')) != NULL)
 		*p = 0;
 
-	offset+=15;
+	outbuf->offset+=15;
 
-	wins_name->type=(int)outbuf[offset++];
+	wins_name->type=(int)outbuf->buffer[outbuf->offset++];
 	
 	/*
 	 * fix to bug in WINS replication,
@@ -94,136 +115,162 @@ static int decode_wins_name(char *outbuf, int offset, WINS_NAME *wins_name)
 		wins_name->type=0x1B;
 	}
 	
-	wins_name->empty=RIVAL(outbuf, offset);
-	offset+=4;
+	wins_name->empty=RIVAL(outbuf->buffer, outbuf->offset);
+	outbuf->offset+=4;
 	
-	wins_name->name_flag=RIVAL(outbuf, offset);
-	offset+=4;
-	wins_name->group_flag=RIVAL(outbuf, offset);
-	offset+=4;
-	wins_name->id=((SMB_BIG_UINT)RIVAL(outbuf, offset))<<32;
-	offset+=4;
-	wins_name->id|=RIVAL(outbuf, offset);
-	offset+=4;
+	wins_name->name_flag=RIVAL(outbuf->buffer, outbuf->offset);
+	outbuf->offset+=4;
+	wins_name->group_flag=RIVAL(outbuf->buffer, outbuf->offset);
+	outbuf->offset+=4;
+	wins_name->id=((SMB_BIG_UINT)RIVAL(outbuf->buffer, outbuf->offset))<<32;
+	outbuf->offset+=4;
+	wins_name->id|=RIVAL(outbuf->buffer, outbuf->offset);
+	outbuf->offset+=4;
 	
 	/* special groups have multiple address */
 	if (wins_name->name_flag & 2) {
-		wins_name->num_ip=IVAL(outbuf, offset);
-		offset+=4;
+		if(!check_buffer(outbuf, 4))
+			return;
+		wins_name->num_ip=IVAL(outbuf->buffer, outbuf->offset);
+		outbuf->offset+=4;
 	}
 	else
 		wins_name->num_ip=1;
 
-	wins_name->owner.s_addr=IVAL(outbuf, offset);
-	offset+=4;
+	if(!check_buffer(outbuf, 4))
+		return;
+	wins_name->owner.s_addr=IVAL(outbuf->buffer, outbuf->offset);
+	outbuf->offset+=4;
 
 	if (wins_name->name_flag & 2) {
 		wins_name->others=(struct in_addr *)talloc(mem_ctx, sizeof(struct in_addr)*wins_name->num_ip);
 		if (wins_name->others==NULL)
-			return offset;
+			return;
 
+		if(!check_buffer(outbuf, 4*wins_name->num_ip))
+			return;
 		for (i=0; i<wins_name->num_ip; i++) {
-			wins_name->others[i].s_addr=IVAL(outbuf, offset);
-			offset+=4;
+			wins_name->others[i].s_addr=IVAL(outbuf->buffer, outbuf->offset);
+			outbuf->offset+=4;
 		}
 	}
 
-	wins_name->foo=RIVAL(outbuf, offset);
-	offset+=4;
+	if(!check_buffer(outbuf, 4))
+		return;
+	wins_name->foo=RIVAL(outbuf->buffer, outbuf->offset);
+	outbuf->offset+=4;
 
-	return offset;
 }
 
 /****************************************************************************
 decode a update notification request
 ****************************************************************************/
-static void decode_update_notify_request(char *inbuf, UPDATE_NOTIFY_REQUEST *un_rq)
+static void decode_update_notify_request(struct BUFFER *inbuf, UPDATE_NOTIFY_REQUEST *un_rq)
 {
 	int i;
-	int offset=4;
 
-	un_rq->partner_count=RIVAL(inbuf, 0);
+	if(!check_buffer(inbuf, 4))
+		return;
+	un_rq->partner_count=RIVAL(inbuf->buffer, inbuf->offset);
+	inbuf->offset+=4;
 
 	un_rq->wins_owner=(WINS_OWNER *)talloc(mem_ctx, un_rq->partner_count*sizeof(WINS_OWNER));
 	if (un_rq->wins_owner==NULL)
 		return;
 
 	for (i=0; i<un_rq->partner_count; i++)
-		offset=decode_wins_owner(inbuf, offset, &un_rq->wins_owner[i]);
+		decode_wins_owner(inbuf, &un_rq->wins_owner[i]);
 
-	un_rq->initiating_wins_server.s_addr=IVAL(inbuf, offset);
+	if(!check_buffer(inbuf, 4))
+		return;
+	un_rq->initiating_wins_server.s_addr=IVAL(inbuf->buffer, inbuf->offset);
+	inbuf->offset+=4;
 }
 
 /****************************************************************************
 decode a send entries request
 ****************************************************************************/
-static void decode_send_entries_request(char *inbuf, SEND_ENTRIES_REQUEST *se_rq)
+static void decode_send_entries_request(struct BUFFER *inbuf, SEND_ENTRIES_REQUEST *se_rq)
 {
-	int offset;
-	offset=decode_wins_owner(inbuf, 0, &se_rq->wins_owner);
+	decode_wins_owner(inbuf, &se_rq->wins_owner);
 }
 
 /****************************************************************************
 decode a send entries reply
 ****************************************************************************/
-static void decode_send_entries_reply(char *inbuf, SEND_ENTRIES_REPLY *se_rp)
+static void decode_send_entries_reply(struct BUFFER *inbuf, SEND_ENTRIES_REPLY *se_rp)
 {
-	int i, offset=4;
-	se_rp->max_names = RIVAL(inbuf, 0);
+	int i;
+
+	if(!check_buffer(inbuf, 4))
+		return;
+	se_rp->max_names = RIVAL(inbuf->buffer, inbuf->offset);
+	inbuf->offset+=4;
 
 	se_rp->wins_name=(WINS_NAME *)talloc(mem_ctx, se_rp->max_names*sizeof(WINS_NAME));
 	if (se_rp->wins_name==NULL)
 		return;
 
 	for (i=0; i<se_rp->max_names; i++)
-		offset = decode_wins_name(inbuf, offset, &se_rp->wins_name[i]);
+		decode_wins_name(inbuf, &se_rp->wins_name[i]);
 }
 
 /****************************************************************************
 decode a add version number map table reply
 ****************************************************************************/
-static void decode_add_version_number_map_table_reply(char *inbuf, AVMT_REP *avmt_rep)
+static void decode_add_version_number_map_table_reply(struct BUFFER *inbuf, AVMT_REP *avmt_rep)
 {
 	int i;
-	int offset=4;
 
-	avmt_rep->partner_count=RIVAL(inbuf, 0);
+	if(!check_buffer(inbuf, 4))
+		return;
+
+	avmt_rep->partner_count=RIVAL(inbuf->buffer, inbuf->offset);
+	inbuf->offset+=4;
 
 	avmt_rep->wins_owner=(WINS_OWNER *)talloc(mem_ctx, avmt_rep->partner_count*sizeof(WINS_OWNER));
 	if (avmt_rep->wins_owner==NULL)
 		return;
 
 	for (i=0; i<avmt_rep->partner_count; i++)
-		offset=decode_wins_owner(inbuf, offset, &avmt_rep->wins_owner[i]);
+		decode_wins_owner(inbuf, &avmt_rep->wins_owner[i]);
 
-	avmt_rep->initiating_wins_server.s_addr=IVAL(inbuf, offset);
+	if(!check_buffer(inbuf, 4))
+		return;
+	avmt_rep->initiating_wins_server.s_addr=IVAL(inbuf->buffer, inbuf->offset);
+	inbuf->offset+=4;
 }
 
 /****************************************************************************
 decode a replicate packet and fill a structure
 ****************************************************************************/
-static void decode_replicate(char *inbuf, REPLICATE *rep)
+static void decode_replicate(struct BUFFER *inbuf, REPLICATE *rep)
 {
-	rep->msg_type = RIVAL(inbuf, 0);
+	if(!check_buffer(inbuf, 4))
+		return;
+
+	rep->msg_type = RIVAL(inbuf->buffer, inbuf->offset);
+
+	inbuf->offset+=4;
 
 	switch (rep->msg_type) {
 		case 0:
 			break;
 		case 1:
 			/* add version number map table reply */
-			decode_add_version_number_map_table_reply(inbuf+4, &rep->avmt_rep);
+			decode_add_version_number_map_table_reply(inbuf, &rep->avmt_rep);
 			break;
 		case 2:
 			/* send entry request */
-			decode_send_entries_request(inbuf+4, &rep->se_rq);
+			decode_send_entries_request(inbuf, &rep->se_rq);
 			break;
 		case 3:
 			/* send entry request */
-			decode_send_entries_reply(inbuf+4, &rep->se_rp);
+			decode_send_entries_reply(inbuf, &rep->se_rp);
 			break;
 		case 4:
 			/* update notification request */
-			decode_update_notify_request(inbuf+4, &rep->un_rq);
+			decode_update_notify_request(inbuf, &rep->un_rq);
 			break;
 		default:
 			DEBUG(0,("decode_replicate: unknown message type:%d\n", rep->msg_type));
@@ -234,61 +281,75 @@ static void decode_replicate(char *inbuf, REPLICATE *rep)
 /****************************************************************************
 read the generic header and fill the struct.
 ****************************************************************************/
-static void read_generic_header(char *inbuf, generic_header *q)
+static void read_generic_header(struct BUFFER *inbuf, generic_header *q)
 {
-	q->data_size = RIVAL(inbuf,0);
-	q->opcode    = RIVAL(inbuf,4);
-	q->assoc_ctx = RIVAL(inbuf,8);
-	q->mess_type = RIVAL(inbuf,12);
+	if(!check_buffer(inbuf, 16))
+		return;
+
+	q->data_size = RIVAL(inbuf->buffer, inbuf->offset+0);
+	q->opcode    = RIVAL(inbuf->buffer, inbuf->offset+4);
+	q->assoc_ctx = RIVAL(inbuf->buffer, inbuf->offset+8);
+	q->mess_type = RIVAL(inbuf->buffer, inbuf->offset+12);
 }
 
 /*******************************************************************
 decode a start association request
 ********************************************************************/
-static void decode_start_assoc_request(char *inbuf, START_ASSOC_REQUEST *q)
+static void decode_start_assoc_request(struct BUFFER *inbuf, START_ASSOC_REQUEST *q)
 {
-	q->assoc_ctx = RIVAL(inbuf, 0);
-	q->min_ver = RSVAL(inbuf, 4);
-	q->maj_ver = RSVAL(inbuf, 6);
+	if(!check_buffer(inbuf, 8))
+		return;
+
+	q->assoc_ctx = RIVAL(inbuf->buffer, inbuf->offset+0);
+	q->min_ver = RSVAL(inbuf->buffer, inbuf->offset+4);
+	q->maj_ver = RSVAL(inbuf->buffer, inbuf->offset+6);
 }
 
 /*******************************************************************
 decode a start association reply
 ********************************************************************/
-static void decode_start_assoc_reply(char *inbuf, START_ASSOC_REPLY *r)
+static void decode_start_assoc_reply(struct BUFFER *inbuf, START_ASSOC_REPLY *r)
 {
-	r->assoc_ctx=RIVAL(inbuf, 0);
-	r->min_ver = RSVAL(inbuf, 4);
-	r->maj_ver = RSVAL(inbuf, 6);
+	if(!check_buffer(inbuf, 8))
+		return;
+
+	r->assoc_ctx=RIVAL(inbuf->buffer, inbuf->offset+0);
+	r->min_ver = RSVAL(inbuf->buffer, inbuf->offset+4);
+	r->maj_ver = RSVAL(inbuf->buffer, inbuf->offset+6);
 }
 
 /*******************************************************************
 decode a start association reply
 ********************************************************************/
-static void decode_stop_assoc(char *inbuf, STOP_ASSOC *r)
+static void decode_stop_assoc(struct BUFFER *inbuf, STOP_ASSOC *r)
 {
-	r->reason=RIVAL(inbuf, 0);
+	if(!check_buffer(inbuf, 4))
+		return;
+
+	r->reason=RIVAL(inbuf->buffer, inbuf->offset);
 }
 
 /****************************************************************************
 decode a packet and fill a generic structure
 ****************************************************************************/
-void decode_generic_packet(char *inbuf, GENERIC_PACKET *q)
+void decode_generic_packet(struct BUFFER *inbuf, GENERIC_PACKET *q)
 {
 	read_generic_header(inbuf, &q->header);
 
+	inbuf->offset+=16;
+
 	switch (q->header.mess_type) {
 		case 0:
-			decode_start_assoc_request(inbuf+16, &q->sa_rq);
+			decode_start_assoc_request(inbuf, &q->sa_rq);
 			break;
 		case 1:
-			decode_start_assoc_reply(inbuf+16, &q->sa_rp);
+			decode_start_assoc_reply(inbuf, &q->sa_rp);
 			break;
 		case 2:
-			decode_stop_assoc(inbuf+16, &q->so);
+			decode_stop_assoc(inbuf, &q->so);
 			break;
 		case 3:
-			decode_replicate(inbuf+16, &q->rep);
+			decode_replicate(inbuf, &q->rep);
 			break;
 		default:
 			DEBUG(0,("decode_generic_packet: unknown message type:%d\n", q->header.mess_type));
@@ -296,6 +357,9 @@ void decode_generic_packet(char *inbuf, GENERIC_PACKET *q)
 	}
 }
 
+/****************************************************************************
+encode a WINS_OWNER struct
+****************************************************************************/
 static void encode_wins_owner(struct BUFFER *outbuf, WINS_OWNER *wins_owner)
 {
 	if (!grow_buffer(outbuf, 24))
@@ -316,6 +380,9 @@ static void encode_wins_owner(struct BUFFER *outbuf, WINS_OWNER *wins_owner)
 	
 }
 
+/****************************************************************************
+encode a WINS_NAME struct
+****************************************************************************/
 static void encode_wins_name(struct BUFFER *outbuf, WINS_NAME *wins_name)
 {	
 	int i;
@@ -366,7 +433,7 @@ static void encode_wins_name(struct BUFFER *outbuf, WINS_NAME *wins_name)
 }
 
 /****************************************************************************
-decode a update notification request
+encode a update notification request
 ****************************************************************************/
 static void encode_update_notify_request(struct BUFFER *outbuf, UPDATE_NOTIFY_REQUEST *un_rq)
 {
@@ -464,7 +531,7 @@ static void encode_replicate(struct BUFFER *outbuf, REPLICATE *rep)
 			encode_update_notify_request(outbuf, &rep->un_rq);
 			break;
 		default:
-			DEBUG(0,("decode_replicate: unknown message type:%d\n", rep->msg_type));
+			DEBUG(0,("encode_replicate: unknown message type:%d\n", rep->msg_type));
 			break;
 	}
 }

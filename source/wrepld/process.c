@@ -212,7 +212,7 @@ static void send_version_number_map_table(GENERIC_PACKET *q, GENERIC_PACKET *r)
 	int s_ctx=get_server_assoc(q->header.assoc_ctx);
 
 	if (s_ctx==0) {
-		DEBUG(0, ("send_entry_reply: request for a partner not in our table\n"));
+		DEBUG(0, ("send_version_number_map_table: request for a partner not in our table\n"));
 		stop_packet(q, r, STOP_REASON_USER_REASON);
 		return;
 	}
@@ -382,7 +382,7 @@ static void receive_version_number_map_table(GENERIC_PACKET *q, GENERIC_PACKET *
 	 * if this server have newer records than what we have
 	 * for several wins servers, we need to ask it.
 	 * Alas a send entry request is only on one server.
-	 * So in the send entry reply, we'll ask for the next server is required.
+	 * So in the send entry reply, we'll ask for the next server if required.
 	 */
 
 	if (check_partners_and_send_entries(q, r, i))
@@ -586,7 +586,7 @@ static void update_notify_request(GENERIC_PACKET *q, GENERIC_PACKET *r)
 	int s_ctx=get_server_assoc(q->header.assoc_ctx);
 	
 	if (s_ctx==0) {
-		DEBUG(0, ("send_entry_reply: request for a partner not in our table\n"));
+		DEBUG(0, ("update_notify_request: request for a partner not in our table\n"));
 		stop_packet(q, r, STOP_REASON_USER_REASON);
 		return;
 	}
@@ -799,11 +799,6 @@ static BOOL switch_message(GENERIC_PACKET *q, GENERIC_PACKET *r)
 			break;
 		case 2:
 			/* stop association message */
-			/*
-			 * remove the partner from the list and 
-			 * reply false to NOT send a packet
-			 */
-			remove_partner(q->header.assoc_ctx);
 			return False;
 			break;
 		case 3:
@@ -868,8 +863,10 @@ void construct_reply(struct wins_packet_struct *p)
 
 	/* if we got a stop assoc or if we send a stop assoc, close the fd after */
 	if (p->packet->header.mess_type==MESSAGE_TYPE_STOP_ASSOC || 
-	    r.header.mess_type==MESSAGE_TYPE_STOP_ASSOC)
+	    r.header.mess_type==MESSAGE_TYPE_STOP_ASSOC) {
+	    	remove_partner(p->packet->header.assoc_ctx);
 		p->stop_packet=True;
+	}
 }
 
 /****************************************************************************
@@ -929,6 +926,48 @@ void run_pull_replication(time_t t)
 void run_push_replication(time_t t)
 {
 	/* we push every 30 minutes or 25 new entries */
+	int i, s;
+	struct BUFFER buffer;
+	GENERIC_PACKET p;
 
+	buffer.buffer=NULL;
+	buffer.offset=0;
+	buffer.length=0;
+
+	for (i=1; i<partner_count; i++) {
+		if (global_wins_table[0][i].last_pull < t) {
+			global_wins_table[0][i].last_pull=t+30*60; /* next in 30 minutes */
+			
+			/* contact the wins server */
+			p.header.mess_type=MESSAGE_TYPE_START_ASSOC_REQUEST;
+			p.header.opcode=OPCODE_NON_NBT;
+			p.header.assoc_ctx=0;
+			p.sa_rq.assoc_ctx=(int)t;
+			p.sa_rq.min_ver=1;
+			p.sa_rq.maj_ver=1;
+			
+			DEBUG(3,("run_push_replication: contacting wins server %s.\n", inet_ntoa(global_wins_table[0][i].address)));
+			encode_generic_packet(&buffer, &p);
+			dump_generic_packet(&p);
+
+			/* send the packet to the server and add the descriptor to receive answers */
+			s=open_socket_out(SOCK_STREAM, &global_wins_table[0][i].address, 42, LONG_CONNECT_TIMEOUT);
+			if (s==-1) {
+				DEBUG(0,("run_push_replication: can't contact wins server %s.\n", inet_ntoa(global_wins_table[0][i].address)));
+				return;
+			}
+			
+			if(buffer.offset > 0) {
+				if (!send_smb(s, buffer.buffer))
+					exit_server("run_push_replication: send_smb failed.");
+			}
+			
+			add_fd_to_sock_array(s);
+			FD_SET(s, listen_set);
+
+			/* add ourself as a client */
+			add_partner((int)t, 0, False, True);
+		}
+	}
 }
 
