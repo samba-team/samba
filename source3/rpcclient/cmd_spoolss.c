@@ -149,7 +149,7 @@ uint32 cmd_spoolss_getprinter(struct client_info *info, int argc, char *argv[])
         char *printer_name;
         uint32 level;
 
-        if (argc < 2) {
+        if (argc < 1) {
                 report(out_hnd, "spoolgetprinter <printer name>\n");
                 return NT_STATUS_INVALID_PARAMETER;
         }
@@ -255,7 +255,7 @@ uint32 cmd_spoolss_open_printer_ex(struct client_info *info, int argc, char *arg
 
         BOOL res = True;
 
-        if (argc < 2)
+        if (argc < 1)
         {
                 report(out_hnd, "spoolopen <printer name>\n");
                 return NT_STATUS_INVALID_PARAMETER;
@@ -277,13 +277,12 @@ uint32 cmd_spoolss_open_printer_ex(struct client_info *info, int argc, char *arg
                 fstrcat(srv_name, printer_name);
                 printer_name = srv_name;
         }
-/*
+
         DEBUG(4,("spoolopen - printer: %s server: %s user: %s\n",
                 printer_name, station, usr_creds->ntc.user_name));
-*/
 
         res = res ? spoolss_open_printer_ex( printer_name, "", PRINTER_ALL_ACCESS,
-                                station, "Administrateur", &hnd) : False;
+                                station, "Administrator", &hnd) : False;
 
         res = res ? spoolss_closeprinter(&hnd) : False;
 
