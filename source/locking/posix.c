@@ -1113,7 +1113,8 @@ BECOMES....
 				ul_curr = ul_curr->next;
 
 			} else if ( (ul_curr->start < lock->start) &&
-						(ul_curr->start + ul_curr->size > lock->start) ) {
+						(ul_curr->start + ul_curr->size > lock->start) &&
+						(ul_curr->start + ul_curr->size <= lock->start + lock->size) ) {
 
 				/*
 				 * This unlock overlaps the existing lock range at the low end.
@@ -1171,9 +1172,6 @@ BECOMES.....
 				ul_new->start = lock->start + lock->size;
 				ul_new->size = ul_curr->start + ul_curr->size - ul_new->start;
 
-				/* Add into the dlink list after the ul_curr point - NOT at ulhead. */
-				DLIST_ADD(ul_curr, ul_new);
-
 				/* Truncate the ul_curr. */
 				ul_curr->size = lock->start - ul_curr->start;
 
@@ -1181,6 +1179,16 @@ BECOMES.....
 new: start=%.0f,size=%.0f\n", (double)ul_curr->start, (double)ul_curr->size,
 								(double)ul_new->start, (double)ul_new->size ));
 
+				/*
+				 * Add into the dlink list after the ul_curr point - NOT at ulhead. 
+				 * Note we can't use DLINK_ADD here as this inserts at the head of the given list.
+				 */
+
+				ul_new->prev = ul_curr;
+				ul_new->next = ul_curr->next;
+				ul_curr->next = ul_new;
+
+				/* And move after the link we added. */
 				ul_curr = ul_new->next;
 
 			} else {
