@@ -187,6 +187,11 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
     gid_t gid;
 	uid_t uid;
 
+	if (!conn) {
+		DEBUG(2,("Connection not open\n"));
+		return(False);
+	}
+
 	/*
 	 * We need a separate check in security=share mode due to vuid
 	 * always being UID_FIELD_INVALID. If we don't do this then
@@ -206,11 +211,6 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 	}
 
 	unbecome_user();
-
-	if (!conn) {
-		DEBUG(2,("Connection not open\n"));
-		return(False);
-	}
 
 	snum = SNUM(conn);
 
