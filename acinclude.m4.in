@@ -20,6 +20,7 @@ krb-struct-winsize.m4
 krb-struct-sockaddr-sa-len.m4
 krb-prog-ln-s.m4
 type-sig-atomic-t.m4
+check-type-extra.m4
 type-mode-t.m4
 broken-snprintf.m4
 krb-ipv6.m4
