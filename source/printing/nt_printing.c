@@ -26,13 +26,21 @@ extern int DEBUGLEVEL;
 extern pstring global_myname;
 extern DOM_SID global_sid_World;
 
-static TDB_CONTEXT *tdb; /* used for driver files */
+/*static TDB_CONTEXT *tdb; *//* used for driver files */
+
+static TDB_CONTEXT *tdb_forms; /* used for forms files */
+static TDB_CONTEXT *tdb_drivers; /* used for driver files */
+static TDB_CONTEXT *tdb_printers; /* used for printers files */
 
 #define FORMS_PREFIX "FORMS/"
 #define DRIVERS_PREFIX "DRIVERS/"
 #define PRINTERS_PREFIX "PRINTERS/"
+#define SECDESC_PREFIX "SECDESC/"
 
-#define NTDRIVERS_DATABASE_VERSION 1
+#define NTDRIVERS_DATABASE_VERSION_1 1
+#define NTDRIVERS_DATABASE_VERSION_2 2
+
+#define NTDRIVERS_DATABASE_VERSION NTDRIVERS_DATABASE_VERSION_2
 
 /* Map generic permissions to printer object specific permissions */
 
@@ -170,6 +178,46 @@ static nt_forms_struct default_forms[] = {
 	{"PRC Envelope #10 Rotated",0x1,0x6fd10,0x4f1a0,0x0,0x0,0x6fd10,0x4f1a0}
 };
 
+static void upgrade_to_version_2(void)
+{
+	TDB_DATA kbuf, newkey, dbuf;
+	nt_forms_struct form;
+	int ret;
+	int i;
+	int n = 0;
+
+	DEBUG(0,("upgrade_to_version_2:upgrading to version 2\n"));
+
+	for (kbuf = tdb_firstkey(tdb_drivers);
+	     kbuf.dptr;
+	     newkey = tdb_nextkey(tdb_drivers, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
+		dbuf = tdb_fetch(tdb_drivers, kbuf);
+
+		if (strncmp(kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) == 0) {
+			DEBUG(0,("upgrade_to_version_2:moving form\n"));
+			if (tdb_store(tdb_forms, kbuf, dbuf, TDB_REPLACE) != 0) break;
+			tdb_delete(tdb_drivers, kbuf);
+		}
+
+		if (strncmp(kbuf.dptr, PRINTERS_PREFIX, strlen(PRINTERS_PREFIX)) == 0) {
+			DEBUG(0,("upgrade_to_version_2:moving printer\n"));
+			if (tdb_store(tdb_printers, kbuf, dbuf, TDB_REPLACE) != 0) break;
+			tdb_delete(tdb_drivers, kbuf);
+		}
+
+		if (strncmp(kbuf.dptr, SECDESC_PREFIX, strlen(SECDESC_PREFIX)) == 0) {
+			DEBUG(0,("upgrade_to_version_2:moving secdesc\n"));
+			if (tdb_store(tdb_printers, kbuf, dbuf, TDB_REPLACE) != 0) break;
+			tdb_delete(tdb_drivers, kbuf);
+		}
+
+		safe_free(dbuf.dptr);
+	}
+
+
+
+}
+
 
 /****************************************************************************
 open the NT printing tdb
@@ -179,24 +227,58 @@ BOOL nt_printing_init(void)
 	static pid_t local_pid;
 	char *vstring = "INFO/version";
 
-	if (tdb && local_pid == sys_getpid()) return True;
-	tdb = tdb_open_log(lock_path("ntdrivers.tdb"), 0, 0, O_RDWR|O_CREAT, 0600);
-	if (!tdb) {
+	fstring *list=NULL;
+	int count;
+	int i;
+
+	if (tdb_drivers && tdb_printers && tdb_forms && local_pid == sys_getpid()) return True;
+
+	tdb_drivers = tdb_open_log(lock_path("ntdrivers.tdb"), 0, 0, O_RDWR|O_CREAT, 0600);
+	if (!tdb_drivers) {
 		DEBUG(0,("Failed to open nt drivers database %s (%s)\n",
 			lock_path("ntdrivers.tdb"), strerror(errno) ));
+		return False;
+	}
+
+	tdb_printers = tdb_open_log(lock_path("ntprinters.tdb"), 0, 0, O_RDWR|O_CREAT, 0600);
+	if (!tdb_printers) {
+		DEBUG(0,("Failed to open nt printers database %s (%s)\n",
+			lock_path("ntprinters.tdb"), strerror(errno) ));
+		return False;
+	}
+
+	tdb_forms = tdb_open_log(lock_path("ntforms.tdb"), 0, 0, O_RDWR|O_CREAT, 0600);
+	if (!tdb_forms) {
+		DEBUG(0,("Failed to open nt forms database %s (%s)\n",
+			lock_path("ntforms.tdb"), strerror(errno) ));
 		return False;
 	}
 
 	local_pid = sys_getpid();
 
 	/* handle a Samba upgrade */
-	tdb_lock_bystring(tdb, vstring);
-	if (tdb_fetch_int(tdb, vstring) != NTDRIVERS_DATABASE_VERSION) {
-		tdb_traverse(tdb, (tdb_traverse_func)tdb_delete, NULL);
-		tdb_store_int(tdb, vstring, NTDRIVERS_DATABASE_VERSION);
-	}
-	tdb_unlock_bystring(tdb, vstring);
+	tdb_lock_bystring(tdb_drivers, vstring);
+	if (tdb_fetch_int(tdb_drivers, vstring) != NTDRIVERS_DATABASE_VERSION) {
+	
+		if (tdb_fetch_int(tdb_drivers, vstring) == NTDRIVERS_DATABASE_VERSION_1)
+			upgrade_to_version_2();
+		else
+			tdb_traverse(tdb_drivers, (tdb_traverse_func)tdb_delete, NULL);
 
+		tdb_store_int(tdb_drivers, vstring, NTDRIVERS_DATABASE_VERSION);
+	}
+	tdb_unlock_bystring(tdb_drivers, vstring);
+
+/*
+	tdb_create_index(tdb, "DRIVERS/");
+
+	tdb_lookup_index(tdb, "DRIVERS/", &list, &count);
+
+	DEBUG(0,("nt_printing_init: got %d drivers\n", count));
+	
+	for (i=0;i<count;i++)
+		DEBUG(0,("nt_printing_init: [%s]\n", list[i]));
+*/
 	return True;
 }
 
@@ -242,12 +324,12 @@ int get_ntforms(nt_forms_struct **list)
 	int i;
 	int n = 0;
 
-	for (kbuf = tdb_firstkey(tdb);
+	for (kbuf = tdb_firstkey(tdb_forms);
 	     kbuf.dptr;
-	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
+	     newkey = tdb_nextkey(tdb_forms, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
 		if (strncmp(kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) != 0) continue;
 		
-		dbuf = tdb_fetch(tdb, kbuf);
+		dbuf = tdb_fetch(tdb_forms, kbuf);
 		if (!dbuf.dptr) continue;
 
 		fstrcpy(form.name, kbuf.dptr+strlen(FORMS_PREFIX));
@@ -292,7 +374,7 @@ int write_ntforms(nt_forms_struct **list, int number)
 		kbuf.dptr = key;
 		dbuf.dsize = len;
 		dbuf.dptr = buf;
-		if (tdb_store(tdb, kbuf, dbuf, TDB_REPLACE) != 0) break;
+		if (tdb_store(tdb_forms, kbuf, dbuf, TDB_REPLACE) != 0) break;
        }
 
        return i;
@@ -372,7 +454,7 @@ BOOL delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, uint32
 	slprintf(key, sizeof(key)-1, "%s%s", FORMS_PREFIX, (*list)[n].name);
 	kbuf.dsize = strlen(key)+1;
 	kbuf.dptr = key;
-	if (tdb_delete(tdb, kbuf) != 0) {
+	if (tdb_delete(tdb_forms, kbuf) != 0) {
 		*ret = ERROR_NOT_ENOUGH_MEMORY;
 		return False;
 	}
@@ -423,9 +505,9 @@ int get_ntdrivers(fstring **list, char *architecture, uint32 version)
 	get_short_archi(short_archi, architecture);
 	slprintf(key, sizeof(key)-1, "%s%s/%d/", DRIVERS_PREFIX, short_archi, version);
 
-	for (kbuf = tdb_firstkey(tdb);
+	for (kbuf = tdb_firstkey(tdb_drivers);
 	     kbuf.dptr;
-	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
+	     newkey = tdb_nextkey(tdb_drivers, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
 		if (strncmp(kbuf.dptr, key, strlen(key)) != 0) continue;
 		
 		if((*list = Realloc(*list, sizeof(fstring)*(total+1))) == NULL)
@@ -1497,7 +1579,7 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 	dbuf.dptr = buf;
 	dbuf.dsize = len;
 	
-	ret = tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
+	ret = tdb_store(tdb_drivers, kbuf, dbuf, TDB_REPLACE);
 
 	if (ret)
 		DEBUG(0,("add_a_printer_driver_3: Adding driver with key %s failed.\n", key ));
@@ -1577,7 +1659,7 @@ static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;
 	
-	dbuf = tdb_fetch(tdb, kbuf);
+	dbuf = tdb_fetch(tdb_drivers, kbuf);
 #if 0
 	if (!dbuf.dptr) return get_a_printer_driver_3_default(info_ptr, in_prt, in_arch);
 #else
@@ -1637,7 +1719,7 @@ uint32 get_a_printer_driver_9x_compatible(pstring line, fstring model)
 	
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;
-	if (!tdb_exists(tdb, kbuf)) return False;
+	if (!tdb_exists(tdb_drivers, kbuf)) return False;
 
 	ZERO_STRUCT(info3);
 	get_a_printer_driver_3(&info3, model, "Windows 4.0", 0);
@@ -1827,7 +1909,7 @@ uint32 del_a_printer(char *sharename)
 	kbuf.dptr=key;
 	kbuf.dsize=strlen(key)+1;
 
-	tdb_delete(tdb, kbuf);
+	tdb_delete(tdb_printers, kbuf);
 	return 0;
 }
 
@@ -1915,7 +1997,7 @@ static uint32 update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	dbuf.dptr = buf;
 	dbuf.dsize = len;
 
-	ret = tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
+	ret = tdb_store(tdb_printers, kbuf, dbuf, TDB_REPLACE);
 
 	if (ret == -1)
 		DEBUG(8, ("error updating printer to tdb on disk\n"));
@@ -2438,7 +2520,7 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;
 
-	dbuf = tdb_fetch(tdb, kbuf);
+	dbuf = tdb_fetch(tdb_printers, kbuf);
 	if (!dbuf.dptr)
 		return get_a_printer_2_default(info_ptr, sharename);
 
@@ -2839,17 +2921,17 @@ BOOL printer_driver_in_use (char *arch, char *driver)
 	NT_PRINTER_INFO_LEVEL_2 info;
 	int ret;
 
-	if (!tdb)
+	if (!tdb_printers)
 		nt_printing_init();	
 
 	DEBUG(5,("printer_driver_in_use: Beginning search through printers.tdb...\n"));
 	
 	/* loop through the printers.tdb and check for the drivername */
-	for (kbuf = tdb_firstkey(tdb); kbuf.dptr;
-	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) 
+	for (kbuf = tdb_firstkey(tdb_printers); kbuf.dptr;
+	     newkey = tdb_nextkey(tdb_printers, kbuf), safe_free(kbuf.dptr), kbuf=newkey) 
 	{
 
-		dbuf = tdb_fetch(tdb, kbuf);
+		dbuf = tdb_fetch(tdb_printers, kbuf);
 		if (!dbuf.dptr) 
 			continue;
 
@@ -2925,7 +3007,7 @@ uint32 delete_printer_driver (NT_PRINTER_DRIVER_INFO_LEVEL_3 *i)
 	kbuf.dptr=key;
 	kbuf.dsize=strlen(key)+1;
 
-	if (tdb_delete(tdb, kbuf) == -1) {
+	if (tdb_delete(tdb_drivers, kbuf) == -1) {
 		DEBUG (0,("delete_printer_driver: fail to delete %s!\n", key));
 		return NT_STATUS_ACCESS_VIOLATION;
 	}
@@ -3084,9 +3166,9 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 		goto out;
 	}
 
-	slprintf(key, sizeof(key)-1, "SECDESC/%s", printername);
+	slprintf(key, sizeof(key)-1, "%s%s", SECDESC_PREFIX, printername);
 
-	if (tdb_prs_store(tdb, key, &ps)==0) {
+	if (tdb_prs_store(tdb_printers, key, &ps)==0) {
 		status = 0;
 	} else {
 		DEBUG(1,("Failed to store secdesc for %s\n", printername));
@@ -3195,9 +3277,9 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, char *printername, SEC_DESC_BUF **secde
 
 	/* Fetch security descriptor from tdb */
 
-	slprintf(key, sizeof(key)-1, "SECDESC/%s", printername);
+	slprintf(key, sizeof(key)-1, "%s%s", SECDESC_PREFIX, printername);
 
-	if (tdb_prs_fetch(tdb, key, &ps, ctx)!=0 ||
+	if (tdb_prs_fetch(tdb_printers, key, &ps, ctx)!=0 ||
 	    !sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1)) {
 
 		DEBUG(4,("using default secdesc for %s\n", printername));
