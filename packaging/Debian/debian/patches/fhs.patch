@@ -192,7 +192,7 @@ diff -uNr samba-2.2.5pre1.orig/source/nsswitch/winbindd_idmap.c samba-2.2.5pre1/
  	char *szLockDir;
  	char *szPidDir;
  	char *szRootdir;
-@@ -1046,8 +1046,13 @@
+@@ -1043,8 +1043,13 @@
  	{"config file", P_STRING, P_GLOBAL, &Globals.szConfigFile, NULL, NULL, FLAG_HIDE},
  	{"preload", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_DOS_STRING},
  	{"auto services", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_DOS_STRING},
