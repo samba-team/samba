@@ -1,9 +1,70 @@
-          WHATS NEW IN 1.9.18p2 - January 26th 1998.
-          ==========================================
+          WHATS NEW IN 1.9.18p3 - February 17th 1998.
+          ===========================================
 
 This is the latest stable release of Samba. This is the
 version that all production Samba servers should be running
 for all current bug-fixes.
+
+Two new paramters added - these are :
+
+In the [global] section :
+
+networkstation user login
+
+This code (submitted by Rob Nielsen) allows the code many people 
+were having problems with that queries an NT password server to 
+be turned off at runtime rather than compile time. Please see the 
+documentation in the smb.conf manual page for details. This is a 
+security option - it must only be turned off after checks have been
+made to ensure that your NT password server does not suffer from the
+bug this code was meant to protect against !
+
+In the services section :
+
+dos filetime resolution
+
+Setting this paramter to true fixes the problem that people using 
+Microsoft Visual C++ and Samba 1.9.18 were having with files being 
+reported as changed. Please see the documentation in the smb.conf 
+manual page for details.
+
+Bugfixes added since 1.9.18p2
+-----------------------------
+
+1). Fix to cause oplocked files to be broken when open
+file table is full before giving up and reporting 'too
+many open files'. This fix seems to help many applications
+on Win95.
+2). Fix to stop extra files being closed in user logoff
+code.
+3). Fix to stop padded packet being returned on
+trans2 call. This bug could cause Windows 95 to freeze
+on some (rare) occasions.
+4). Added fix for Visual C++ filetime changes (see above).
+5). Made security check code an option (see above).
+6). Fixed printer job enumeration in smbclient.
+7). Re-added code into smbclient that causes it to do NetBIOS
+broadcast name lookups (as it used to in 1.9.17).
+8). Fixed code dump bug in smbtar.
+9). Fixed mapping code between Appletalk and Kanji filenames.
+10). Tuned shared memory size based on open file table size.
+11). Made nmbd log file names consistant with smbd.
+12). Fixed nmbd problem where packet queues could grow
+without bound when connection to WINS server was down.
+13). Fix for DCE login code.
+14). Fix for system V printing to remove extra space
+in printer name.
+15). Patch to add a new substitution paramter (%p) in
+a service patchname. Adds NIS home path (see the man page
+on smb.conf for details). Patch from Julian Field.
+16). Fix to stop smbpassword code from failing when
+parsing invalid uid fields.
+17). Made volume serial number constant based on machine
+and service name.
+18). Added expand environment variables code from Branko 
+Cibej. See the man page on smb.conf for details.
+19). Fixed warnings in change_lanman_password code.
+
 
 Bugfixes added since 1.9.18p1
 -----------------------------
