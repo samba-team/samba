@@ -12,6 +12,7 @@ DVIPS = @DVIPS@
 PNGTOPNM = @PNGTOPNM@
 EPSTOPNM = @EPSTOPNM@
 PNMTOPNG = @PNMTOPNG@
+DIA = @DIA@
 PNMTOPS = @PNMTOPS@
 HTML2TEXT = @HTML2TEXT@
 PLUCKERBUILD = @PLUCKERBUILD@
@@ -166,6 +167,7 @@ $(PDFDIR)/%.pdf: %.pdf
 
 # Adobe PDF files
 %.pdf: %.tex %.ind latexfigures 
+	$(MAKE) $(shell $(XSLTPROC) --stringparam prepend "" --stringparam append ".png" --stringparam role latex xslt/find-image-dependencies.xsl $(DOCBOOKDIR)/$*.xml)
 	-$(PDFLATEX) $<
 	$(THUMBPDF) $*.pdf
 	-$(PDFLATEX) $<
@@ -178,9 +180,9 @@ $(DVIDIR)/%.dvi: %.dvi
 %.dvi: %.tex %.idx 
 	$(MAKE) $(shell $(XSLTPROC) --stringparam prepend "" --stringparam append ".eps" --stringparam role latex xslt/find-image-dependencies.xsl $(DOCBOOKDIR)/$*.xml)
 	-$(LATEX) $< 
-	-$(LATEX) $< 
-	$(MAKEINDEX) $*.idx
-	-$(LATEX) $< 
+
+%.png: %.dia
+	$(DIA) -e $@ $<
 
 %.eps: %.png
 	$(PNGTOPNM) $< | $(PNMTOPS) > $@
