@@ -59,7 +59,7 @@ error_message (long code)
     if(p != NULL && *p != '\0')
 	strcpy_truncate(msg, p, sizeof(msg));
     else 
-	snprintf(msg, sizeof(msg), "Unknown error %d", code);
+	snprintf(msg, sizeof(msg), "Unknown error %ld", code);
     return msg;
 }
 
