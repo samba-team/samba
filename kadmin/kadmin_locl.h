@@ -93,6 +93,7 @@ DECL(cpw_entry);
 DECL(del_entry);
 DECL(ext_keytab);
 DECL(get_entry);
+DECL(list_princs);
 DECL(rename_entry);
 DECL(help);
 DECL(get_privs);
