@@ -163,7 +163,7 @@ static BOOL read_into_buf(struct socket_context *sock, struct rw_buffer *buf)
 	}
 
 	status = socket_recv(sock, tmp_blob.data, tmp_blob.length, &nread, 0);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_IS_ERR(status)) {
 		DEBUG(10,("socket_recv: %s\n",nt_errstr(status)));
 		talloc_free(tmp_blob.data);
 		return False;
@@ -207,7 +207,7 @@ static BOOL ldapsrv_read_buf(struct ldapsrv_connection *conn)
 	}
 
 	status = socket_recv(sock, tmp_blob.data, tmp_blob.length, &nread, 0);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_IS_ERR(status)) {
 		DEBUG(10,("socket_recv: %s\n",nt_errstr(status)));
 		talloc_free(mem_ctx);
 		return False;
