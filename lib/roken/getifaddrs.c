@@ -166,8 +166,10 @@ getifaddrs2(struct ifaddrs **ifap,
 	
     }
     *ifap = start;
+    free(buf);
     return 0;
   error_out:
+    free(buf);
     errno = ret;
     return -1;
 }
