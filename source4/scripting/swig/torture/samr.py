@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import dcerpc
+from optparse import OptionParser
 
 def test_Connect(handle):
 
@@ -55,11 +56,34 @@ def test_Connect(handle):
     r['info']['info1']['unknown2'] = 0
 
     result = dcerpc.samr_Connect5(pipe, r)
-    
+
+    print result    
+
+# parse command line
+parser = OptionParser()
+parser.add_option("-b", "--binding", action="store", type="string", dest="binding")
+parser.add_option("-d", "--domain", action="store", type="string", dest="domain")
+parser.add_option("-u", "--username", action="store", type="string", dest="username")
+parser.add_option("-p", "--password", action="store", type="string", dest="password")
+
+(options, args) = parser.parse_args()
+
+if not options.binding:
+   parser.error('You must supply a binding string')
+
+if not options.username or not options.password or not options.domain:
+   parser.error('You must supply a domain, username and password')
+
+
+binding=options.binding
+domain=options.domain
+username=options.username
+password=options.password
+
 # Connect to server
 
-pipe = dcerpc.pipe_connect('ncacn_np:win2k3dc',
+pipe = dcerpc.pipe_connect(binding,
 	dcerpc.DCERPC_SAMR_UUID, dcerpc.DCERPC_SAMR_VERSION,
-	'win2k3dom', 'administrator', 'penguin')
+	domain, username, password)
 
 test_Connect(pipe)
