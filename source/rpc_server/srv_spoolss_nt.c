@@ -214,18 +214,7 @@ static void create_printer_hnd(POLICY_HND *hnd)
 
 	if (hnd == NULL) return;
 
-	/* i severely doubt that prt_hnd_high will ever be non-zero... */
-	prt_hnd_low++;
-	if (prt_hnd_low == 0) prt_hnd_high++;
-
-	ZERO_STRUCTP(hnd);
-
-    SIVAL(&hnd->data1, 0 , 0x0);  /* first bit must be null */
-    SIVAL(&hnd->data2, 0 , prt_hnd_low ); /* second bit is incrementing */
-    SSVAL(&hnd->data3, 0 , prt_hnd_high); /* second bit is incrementing */
-    SSVAL(&hnd->data4, 0 , (prt_hnd_high>>16)); /* second bit is incrementing */
-    SIVAL(hnd->data5, 0, time(NULL)); /* something random */
-    SIVAL(hnd->data5, 4, sys_getpid()); /* something more random */
+	create_policy_handle(hnd, &prt_hnd_low, &prt_hnd_high);
 }
 
 /****************************************************************************

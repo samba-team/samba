@@ -56,29 +56,28 @@ static struct policy
 
 static struct bitmap *bmap;
 
+static uint32 pol_hnd_low  = 0;
+static uint32 pol_hnd_high = 0;
 
-/****************************************************************************
-  create a unique policy handle
-****************************************************************************/
-static void create_pol_hnd(POLICY_HND *hnd)
+/*******************************************************************
+ Creates a POLICY_HND structure.
+********************************************************************/
+
+void create_policy_handle(POLICY_HND *hnd, uint32 *hnd_low, uint32 *hnd_high)
 {
-	static uint32 pol_hnd_low  = 0;
-	static uint32 pol_hnd_high = 0;
-
 	if (hnd == NULL) return;
 
-	/* i severely doubt that pol_hnd_high will ever be non-zero... */
-	pol_hnd_low++;
-	if (pol_hnd_low == 0) pol_hnd_high++;
+    (*hnd_low)++;
+    if (*hnd_low == 0) (*hnd_high)++;
 
-	ZERO_STRUCTP(hnd);
+    ZERO_STRUCTP(hnd);
 
-	SIVAL(&hnd->data1, 0 , 0x0);  /* first bit must be null */
-	SIVAL(&hnd->data2, 0 , pol_hnd_low ); /* second bit is incrementing */
-	SSVAL(&hnd->data3, 0 , pol_hnd_high); /* second bit is incrementing */
-	SSVAL(&hnd->data4, 0 , (pol_hnd_high>>16)); /* second bit is incrementing */
-	SIVAL(hnd->data5, 0, time(NULL)); /* something random */
-	SIVAL(hnd->data5, 4, sys_getpid()); /* something more random */
+    SIVAL(&hnd->data1, 0 , 0);  /* first bit must be null */
+    SIVAL(&hnd->data2, 0 , *hnd_low ); /* second bit is incrementing */
+    SSVAL(&hnd->data3, 0 , *hnd_high); /* second bit is incrementing */
+    SSVAL(&hnd->data4, 0 , (*hnd_high>>16)); /* second bit is incrementing */
+    SIVAL(hnd->data5, 0, time(NULL)); /* something random */
+    SIVAL(hnd->data5, 4, sys_getpid()); /* something more random */
 }
 
 /****************************************************************************
@@ -118,7 +117,7 @@ BOOL open_lsa_policy_hnd(POLICY_HND *hnd)
 	p->open = True;				
 	p->pnum = i;
 
-	create_pol_hnd(hnd);
+	create_policy_handle(hnd, &pol_hnd_low, &pol_hnd_high);
 	p->pol_hnd = *hnd;
 
 	bitmap_set(bmap, i);
