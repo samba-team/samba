@@ -3488,18 +3488,10 @@ WERROR _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GET
 		return getprinter_level_2(snum, buffer, offered, needed);
 	case 3:		
 		return getprinter_level_3(snum, buffer, offered, needed);
-#if 0 	/* JERRY */
-
-	/* commented these out until I've had time to gain
-	   my confidence back.  Commented out after a series of BSOD on
-	   win2k clients althought I cannot say for sure that tehse were
-	   the cause  --jerry 22/01/2002 */
-
 	case 4:		
 		return getprinter_level_4(snum, buffer, offered, needed);
 	case 5:		
 		return getprinter_level_5(snum, buffer, offered, needed);
-#endif
 	}
 	return WERR_UNKNOWN_LEVEL;
 }	
