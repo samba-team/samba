@@ -442,8 +442,8 @@ Server, etc.
 </para>
 
 <para>
-Please refer to the <link linkend="samba-pdc">Samba as a Primary Domain
-Controller chapter</link> for more information regarding how to create a domain
+Please refer to the <link linkend="samba-pdc">Domain Control chapter</link>
+for more information regarding how to create a domain
 machine account for a domain member server as well as for information
 regarding how to enable the samba domain member machine to join the domain and
 to be fully trusted by it.
