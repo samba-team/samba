@@ -1703,24 +1703,6 @@ BOOL is_myname(const char *s)
 	return(ret);
 }
 
-/********************************************************************
- Return only the first IP address of our configured interfaces
- as a string
- *******************************************************************/
-
-const char* get_my_primary_ip (void)
-{
-	static fstring ip_string;
-	int n;
-	struct iface_struct nics[MAX_INTERFACES];
-
-	if ((n=get_interfaces(nics, MAX_INTERFACES)) <= 0)
-		return NULL;
-
-	fstrcpy(ip_string, inet_ntoa(nics[0].ip));
-	return ip_string;
-}
-
 BOOL is_myname_or_ipaddr(const char *s)
 {
 	/* optimize for the common case */

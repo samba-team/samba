@@ -4252,7 +4252,7 @@ const char *get_called_name(void)
 	static fstring called_name;
 
 	if (!*local_machine) {
-		fstrcpy(called_name, get_my_primary_ip());
+		fstrcpy(called_name, client_socket_addr());
 		DEBUG(8,("get_called_name: assuming that client used IP address [%s] as called name.\n",
 			 called_name));
 		return called_name;
