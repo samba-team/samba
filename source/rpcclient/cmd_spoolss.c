@@ -1137,6 +1137,7 @@ static uint32 cmd_spoolss_addprinterex (struct cli_state *cli, int argc, char **
 	if ((result = cli_spoolss_addprinterex (cli, level, &ctr)) 
 	     != NT_STATUS_NO_PROBLEMO)
 	{
+		cli_nt_session_close (cli);
 		return result;
 	}
 
@@ -1147,6 +1148,76 @@ static uint32 cmd_spoolss_addprinterex (struct cli_state *cli, int argc, char **
 	
 	return result;
 		
+}
+
+static uint32 cmd_spoolss_setdriver (struct cli_state *cli, int argc, char **argv)
+{
+	POLICY_HND		pol;
+	uint32 			result,
+				level = 2;
+	BOOL			opened_hnd = False;
+	PRINTER_INFO_CTR	ctr;
+	PRINTER_INFO_2		info2;
+	fstring			servername,
+				printername,
+				username;
+	
+	/* parse the command arguements */
+	if (argc != 3)
+	{
+		printf ("Usage: %s <printer> <driver>\n", argv[0]);
+		return NT_STATUS_NOPROBLEMO;
+        }
+
+	slprintf (servername, sizeof(fstring), "\\\\%s", cli->desthost);
+	strupper (servername);
+	slprintf (printername, sizeof(fstring), "%s\\%s", servername, argv[1]);
+	fstrcpy  (username, cli->user_name);
+
+	/* Initialise RPC connection */
+	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) 
+	{
+		fprintf (stderr, "Could not initialize spoolss pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	
+		
+	/* get a printer handle */
+	if ((result = cli_spoolss_open_printer_ex(cli, printername, "", 
+		MAXIMUM_ALLOWED_ACCESS, servername, username, &pol)) 
+		!= NT_STATUS_NOPROBLEMO) 
+	{
+		goto done;
+	}
+ 
+	opened_hnd = True;
+
+	/* Get printer info */
+	ZERO_STRUCT (info2);
+	ctr.printers_2 = &info2;
+	if ((result = cli_spoolss_getprinter(cli, &pol, level, &ctr)) != NT_STATUS_NOPROBLEMO) 
+	{
+		printf ("Unable to retreive printer information!\n");
+		goto done;
+	}
+
+	/* set the printer driver */
+	init_unistr(&ctr.printers_2->drivername, argv[2]);
+	if ((result = cli_spoolss_setprinter(cli, &pol, level, &ctr, 0)) != NT_STATUS_NO_PROBLEMO)
+	{
+		printf ("SetPrinter call failed!\n");
+		goto done;;
+	}
+	printf ("Succesfully set %s to driver %s.\n", argv[1], argv[2]);
+
+
+done:
+	/* cleanup */
+	if (opened_hnd)
+		cli_spoolss_close_printer(cli, &pol);
+	cli_nt_session_close (cli);
+	
+	return result;		
 }
 
 
@@ -1166,5 +1237,6 @@ struct cmd_set spoolss_commands[] = {
 	{ "getdriverdir",	cmd_spoolss_getdriverdir,	"Get print driver upload directory" },
 	{ "getprinter", 	cmd_spoolss_getprinter, 	"Get printer info" },
 	{ "openprinter",	cmd_spoolss_open_printer_ex,	"Open printer handle" },
+	{ "setdriver",		cmd_spoolss_setdriver,		"Set printer driver" },
 	{ NULL, NULL, NULL }
 };

@@ -2853,7 +2853,7 @@ static BOOL enum_all_printers_info_1(uint32 flags, NEW_BUFFER *buffer, uint32 of
 
 	/* fill the buffer with the structures */
 	for (i=0; i<*returned; i++)
-		new_smb_io_printer_info_1("", buffer, &printers[i], 0);	
+		smb_io_printer_info_1("", buffer, &printers[i], 0);	
 
 	/* clear memory */
 	safe_free(printers);
@@ -2935,7 +2935,7 @@ static BOOL enum_all_printers_info_1_remote(fstring name, NEW_BUFFER *buffer, ui
 	}
 
 	/* fill the buffer with the structures */
-	new_smb_io_printer_info_1("", buffer, printer, 0);	
+	smb_io_printer_info_1("", buffer, printer, 0);	
 
 	/* clear memory */
 	safe_free(printer);
@@ -3001,7 +3001,7 @@ static BOOL enum_all_printers_info_2(NEW_BUFFER *buffer, uint32 offered, uint32 
 
 	/* fill the buffer with the structures */
 	for (i=0; i<*returned; i++)
-		new_smb_io_printer_info_2("", buffer, &(printers[i]), 0);	
+		smb_io_printer_info_2("", buffer, &(printers[i]), 0);	
 	
 	/* clear memory */
 	for (i=0; i<*returned; i++) {
@@ -3161,7 +3161,7 @@ static uint32 getprinter_level_0(int snum, NEW_BUFFER *buffer, uint32 offered, u
 	}
 
 	/* fill the buffer with the structures */
-	new_smb_io_printer_info_0("", buffer, printer, 0);	
+	smb_io_printer_info_0("", buffer, printer, 0);	
 	
 	/* clear memory */
 	safe_free(printer);
@@ -3193,7 +3193,7 @@ static uint32 getprinter_level_1(int snum, NEW_BUFFER *buffer, uint32 offered, u
 	}
 
 	/* fill the buffer with the structures */
-	new_smb_io_printer_info_1("", buffer, printer, 0);	
+	smb_io_printer_info_1("", buffer, printer, 0);	
 	
 	/* clear memory */
 	safe_free(printer);
@@ -3225,7 +3225,7 @@ static uint32 getprinter_level_2(int snum, NEW_BUFFER *buffer, uint32 offered, u
 	}
 
 	/* fill the buffer with the structures */
-	if (!new_smb_io_printer_info_2("", buffer, printer, 0)) {
+	if (!smb_io_printer_info_2("", buffer, printer, 0)) {
 		free_printer_info_2(printer);
 		return ERROR_NOT_ENOUGH_MEMORY;
 	}
@@ -3258,7 +3258,7 @@ static uint32 getprinter_level_3(int snum, NEW_BUFFER *buffer, uint32 offered, u
 	}
 
 	/* fill the buffer with the structures */
-	new_smb_io_printer_info_3("", buffer, printer, 0);	
+	smb_io_printer_info_3("", buffer, printer, 0);	
 	
 	/* clear memory */
 	free_printer_info_3(printer);
@@ -3662,7 +3662,7 @@ static uint32 getprinterdriver2_level1(fstring servername, fstring architecture,
 	}
 
 	/* fill the buffer with the structures */
-	new_smb_io_printer_driver_info_1("", buffer, info, 0);	
+	smb_io_printer_driver_info_1("", buffer, info, 0);	
 
 	/* clear memory */
 	safe_free(info);
@@ -3698,7 +3698,7 @@ static uint32 getprinterdriver2_level2(fstring servername, fstring architecture,
 	}
 
 	/* fill the buffer with the structures */
-	new_smb_io_printer_driver_info_2("", buffer, info, 0);	
+	smb_io_printer_driver_info_2("", buffer, info, 0);	
 
 	/* clear memory */
 	safe_free(info);
@@ -3732,7 +3732,7 @@ static uint32 getprinterdriver2_level3(fstring servername, fstring architecture,
 	}
 
 	/* fill the buffer with the structures */
-	new_smb_io_printer_driver_info_3("", buffer, &info, 0);
+	smb_io_printer_driver_info_3("", buffer, &info, 0);
 
 	free_printer_driver_info_3(&info);
 
@@ -3765,7 +3765,7 @@ static uint32 getprinterdriver2_level6(fstring servername, fstring architecture,
 	}
 
 	/* fill the buffer with the structures */
-	new_smb_io_printer_driver_info_6("", buffer, &info, 0);
+	smb_io_printer_driver_info_6("", buffer, &info, 0);
 
 	free_printer_driver_info_6(&info);
 
@@ -4750,7 +4750,7 @@ static uint32 enumjobs_level1(print_queue_struct *queue, int snum,
 
 	/* fill the buffer with the structures */
 	for (i=0; i<*returned; i++)
-		new_smb_io_job_info_1("", buffer, &info[i], 0);	
+		smb_io_job_info_1("", buffer, &info[i], 0);	
 
 	/* clear memory */
 	safe_free(info);
@@ -4802,7 +4802,7 @@ static uint32 enumjobs_level2(print_queue_struct *queue, int snum,
 
 	/* fill the buffer with the structures */
 	for (i=0; i<*returned; i++)
-		new_smb_io_job_info_2("", buffer, &info[i], 0);	
+		smb_io_job_info_2("", buffer, &info[i], 0);	
 
 	/* clear memory */
 	for (i = 0; i < *returned; i++)
@@ -4993,7 +4993,7 @@ static uint32 enumprinterdrivers_level1(fstring servername, fstring architecture
 	/* fill the buffer with the driver structures */
 	for (i=0; i<*returned; i++) {
 		DEBUGADD(6,("adding driver [%d] to buffer\n",i));
-		new_smb_io_printer_driver_info_1("", buffer, &driver_info_1[i], 0);
+		smb_io_printer_driver_info_1("", buffer, &driver_info_1[i], 0);
 	}
 
 	safe_free(driver_info_1);
@@ -5069,7 +5069,7 @@ static uint32 enumprinterdrivers_level2(fstring servername, fstring architecture
 	/* fill the buffer with the form structures */
 	for (i=0; i<*returned; i++) {
 		DEBUGADD(6,("adding driver [%d] to buffer\n",i));
-		new_smb_io_printer_driver_info_2("", buffer, &(driver_info_2[i]), 0);
+		smb_io_printer_driver_info_2("", buffer, &(driver_info_2[i]), 0);
 	}
 
 	safe_free(driver_info_2);
@@ -5145,7 +5145,7 @@ static uint32 enumprinterdrivers_level3(fstring servername, fstring architecture
 	/* fill the buffer with the driver structures */
 	for (i=0; i<*returned; i++) {
 		DEBUGADD(6,("adding driver [%d] to buffer\n",i));
-		new_smb_io_printer_driver_info_3("", buffer, &driver_info_3[i], 0);
+		smb_io_printer_driver_info_3("", buffer, &driver_info_3[i], 0);
 	}
 
 	for (i=0; i<*returned; i++)
@@ -5280,7 +5280,7 @@ uint32 _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 		/* fill the buffer with the form structures */
 		for (i=0; i<*numofforms; i++) {
 			DEBUGADD(6,("adding form [%d] to buffer\n",i));
-			new_smb_io_form_1("", buffer, &forms_1[i], 0);
+			smb_io_form_1("", buffer, &forms_1[i], 0);
 		}
 
 		safe_free(forms_1);
@@ -5364,7 +5364,7 @@ uint32 _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 
 		/* fill the buffer with the form structures */
 		DEBUGADD(6,("adding form %s [%d] to buffer\n", form_name, i));
-		new_smb_io_form_1("", buffer, &form_1, 0);
+		smb_io_form_1("", buffer, &form_1, 0);
 
 		return NT_STATUS_NO_PROBLEMO;
 			
@@ -5477,7 +5477,7 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 	/* fill the buffer with the ports structures */
 	for (i=0; i<*returned; i++) {
 		DEBUGADD(6,("adding port [%d] to buffer\n", i));
-		new_smb_io_port_1("", buffer, &ports[i], 0);
+		smb_io_port_1("", buffer, &ports[i], 0);
 	}
 
 	safe_free(ports);
@@ -5576,7 +5576,7 @@ static uint32 enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 	/* fill the buffer with the ports structures */
 	for (i=0; i<*returned; i++) {
 		DEBUGADD(6,("adding port [%d] to buffer\n", i));
-		new_smb_io_port_2("", buffer, &ports[i], 0);
+		smb_io_port_2("", buffer, &ports[i], 0);
 	}
 
 	safe_free(ports);
@@ -5799,7 +5799,7 @@ static uint32 getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 
-	new_smb_io_driverdir_1("", buffer, info, 0);
+	smb_io_driverdir_1("", buffer, info, 0);
 
 	safe_free(info);
 	
@@ -6485,7 +6485,7 @@ static uint32 getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 
-	new_smb_io_job_info_1("", buffer, info_1, 0);
+	smb_io_job_info_1("", buffer, info_1, 0);
 
 	safe_free(info_1);
 
@@ -6543,7 +6543,7 @@ static uint32 getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 
-	new_smb_io_job_info_2("", buffer, info_2, 0);
+	smb_io_job_info_2("", buffer, info_2, 0);
 
 	free_job_info_2(info_2);
 	free(info_2);
