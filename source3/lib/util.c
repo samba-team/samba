@@ -808,12 +808,52 @@ int StrCaseCmp(const char *s, const char *t)
   /* We *must* use toupper rather than tolower here due to the
      asynchronous upper to lower mapping.
    */
+#ifdef KANJI
+  int diff;
+  for (;;)
+  {
+    if (!*s || !*t)
+	  return toupper (*s) - toupper (*t);
+    else if (is_sj_alph (*s) && is_sj_alph (*t))
+	{
+	  diff = sj_toupper2 (*(s+1)) - sj_toupper2 (*(t+1));
+	  if (diff)
+	    return diff;
+	  s += 2;
+	  t += 2;
+	}
+    else if (is_shift_jis (*s) && is_shift_jis (*t))
+	{
+	  diff = ((int) (unsigned char) *s) - ((int) (unsigned char) *t);
+	  if (diff)
+	    return diff;
+	  diff = ((int) (unsigned char) *(s+1)) - ((int) (unsigned char) *(t+1));
+	  if (diff)
+	    return diff;
+	  s += 2;
+	  t += 2;
+	}
+    else if (is_shift_jis (*s))
+	  return 1;
+    else if (is_shift_jis (*t))
+	  return -1;
+    else 
+	{
+	  diff = toupper (*s) - toupper (*t);
+	  if (diff)
+	    return diff;
+	  s++;
+	  t++;
+	}
+  }
+#else /* KANJI */
   while (*s && *t && toupper(*s) == toupper(*t))
   {
     s++; t++;
   }
 
   return(toupper(*s) - toupper(*t));
+#endif /* KANJI */
 }
 
 /*******************************************************************
@@ -825,6 +865,49 @@ int StrnCaseCmp(const char *s, const char *t, int n)
   /* We *must* use toupper rather than tolower here due to the
      asynchronous upper to lower mapping.
    */
+#ifdef KANJI
+  int diff;
+  for (;n > 0;)
+  {
+    if (!*s || !*t)
+	  return toupper (*s) - toupper (*t);
+    else if (is_sj_alph (*s) && is_sj_alph (*t))
+	{
+	  diff = sj_toupper2 (*(s+1)) - sj_toupper2 (*(t+1));
+	  if (diff)
+	    return diff;
+	  s += 2;
+	  t += 2;
+	  n -= 2;
+	}
+    else if (is_shift_jis (*s) && is_shift_jis (*t))
+	{
+	  diff = ((int) (unsigned char) *s) - ((int) (unsigned char) *t);
+	  if (diff)
+	    return diff;
+	  diff = ((int) (unsigned char) *(s+1)) - ((int) (unsigned char) *(t+1));
+	  if (diff)
+	    return diff;
+	  s += 2;
+	  t += 2;
+	  n -= 2;
+	}
+    else if (is_shift_jis (*s))
+	  return 1;
+    else if (is_shift_jis (*t))
+	  return -1;
+    else 
+	{
+	  diff = toupper (*s) - toupper (*t);
+	  if (diff)
+	    return diff;
+	  s++;
+	  t++;
+	  n--;
+	}
+  }
+  return 0;
+#else /* KANJI */
   while (n-- && *s && *t && toupper(*s) == toupper(*t))
   {
     s++; t++;
@@ -835,6 +918,7 @@ int StrnCaseCmp(const char *s, const char *t, int n)
 
   /* identical up to where we run out of chars, and strings are same length */
   return(0);
+#endif /* KANJI */
 }
 
 /*******************************************************************
@@ -880,6 +964,9 @@ void strlower(char *s)
     {
 #ifdef KANJI
 	if (is_shift_jis (*s)) {
+	    if (is_sj_upper (s[0], s[1])) {
+	  	  s[1] = sj_tolower2 (s[1]);
+	    }
 	    s += 2;
 	} else if (is_kana (*s)) {
 	    s++;
@@ -888,7 +975,7 @@ void strlower(char *s)
 		*s = tolower(*s);
 	    s++;
 	}
-#else
+#else /* KANJI */
       if (isupper(*s))
 	  *s = tolower(*s);
       s++;
@@ -905,6 +992,9 @@ void strupper(char *s)
     {
 #ifdef KANJI
 	if (is_shift_jis (*s)) {
+	    if (is_sj_lower (s[0], s[1])) {
+		  s[1] = sj_toupper2 (s[1]);
+	    }
 	    s += 2;
 	} else if (is_kana (*s)) {
 	    s++;
@@ -913,11 +1003,11 @@ void strupper(char *s)
 		*s = toupper(*s);
 	    s++;
 	}
-#else
+#else /* KANJI */
       if (islower(*s))
 	*s = toupper(*s);
       s++;
-#endif
+#endif /* KANJI */
     }
 }
 
@@ -961,7 +1051,7 @@ void string_replace(char *s,char oldc,char newc)
 		*s = newc;
 	    s++;
 	}
-#else
+#else /* KANJI */
       if (oldc == *s)
 	*s = newc;
       s++;
@@ -1259,27 +1349,6 @@ int ChDir(char *path)
   return(res);
 }
 
-
-/*******************************************************************
-  return the absolute current directory path. A dumb version.
-********************************************************************/
-static char *Dumb_GetWd(char *s)
-{
-  char *p;
-#ifdef USE_GETCWD
-  p = (char *)getcwd(s,sizeof(pstring));
-#else
-  p = (char *)getwd(s));
-#endif
-  if(!p)
-    return NULL;
-
-  /* Ensure we always return in dos format. */
-  unix_to_dos(p,True);
-  return p;
-}
-
-
 /* number of list structures for a caching GetWd function. */
 #define MAX_GETWDCACHE (50)
 
@@ -1306,7 +1375,7 @@ char *GetWd(char *str)
   *s = 0;
 
   if (!use_getwd_cache)
-    return(Dumb_GetWd(str));
+    return(sys_getwd(str));
 
   /* init the cache */
   if (!getwd_cache_init)
@@ -1325,7 +1394,7 @@ char *GetWd(char *str)
   if (stat(".",&st) == -1) 
     {
       DEBUG(0,("Very strange, couldn't stat \".\"\n"));
-      return(Dumb_GetWd(str));
+      return(sys_getwd(str));
     }
 
 
@@ -1369,7 +1438,7 @@ char *GetWd(char *str)
       The very slow getcwd, which spawns a process on some systems, or the
       not quite so bad getwd. */
 
-  if (!Dumb_GetWd(s))
+  if (!sys_getwd(s))
     {
       DEBUG(0,("Getwd failed, errno %d\n",errno));
       return (NULL);
@@ -1619,7 +1688,7 @@ BOOL strhasupper(char *s)
 	    if (isupper(*s)) return(True);
 	    s++;
 	}
-#else 
+#else /* KANJI */
       if (isupper(*s)) return(True);
       s++;
 #endif /* KANJI */
@@ -1636,6 +1705,8 @@ BOOL strhaslower(char *s)
     {
 #ifdef KANJI
 	if (is_shift_jis (*s)) {
+	    if (is_sj_upper (s[0], s[1])) return(True);
+	    if (is_sj_lower (s[0], s[1])) return (True);
 	    s += 2;
 	} else if (is_kana (*s)) {
 	    s++;
@@ -1643,7 +1714,7 @@ BOOL strhaslower(char *s)
 	    if (islower(*s)) return(True);
 	    s++;
 	}
-#else 
+#else /* KANJI */
       if (islower(*s)) return(True);
       s++;
 #endif /* KANJI */
@@ -1657,12 +1728,26 @@ find the number of chars in a string
 int count_chars(char *s,char c)
 {
   int count=0;
+#ifdef KANJI
+  while (*s)
+  {
+    if (is_shift_jis (*s))
+	  s += 2;
+    else 
+	{
+	  if (*s == c)
+	    count++;
+	  s++;
+	}
+  }
+#else /* KANJI */
   while (*s) 
     {
       if (*s == c)
 	count++;
       s++;
     }
+#endif /* KANJI */
   return(count);
 }
 
