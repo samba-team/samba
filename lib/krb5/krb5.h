@@ -227,17 +227,12 @@ struct krb5_cc_ops;
 
 #define KRB5_DEFAULT_CCROOT "FILE:/tmp/krb5cc_"
 
+typedef void *krb5_cc_cursor;
+
 typedef struct krb5_ccache_data {
     struct krb5_cc_ops *ops;
     krb5_data data;
 }krb5_ccache_data;
-
-typedef struct krb5_cc_cursor {
-    union {
-	int fd;
-	void *v;
-    } u;
-}krb5_cc_cursor;
 
 typedef struct krb5_ccache_data *krb5_ccache;
 
@@ -330,6 +325,7 @@ typedef struct krb5_cc_ops {
     krb5_error_code (*remove_cred)(krb5_context, krb5_ccache, 
 				   krb5_flags, krb5_creds*);
     krb5_error_code (*set_flags)(krb5_context, krb5_ccache, krb5_flags);
+    int (*get_version)(krb5_context, krb5_ccache);
 } krb5_cc_ops;
 
 struct krb5_log_facility;
@@ -371,6 +367,8 @@ typedef struct krb5_context_data {
     krb5_boolean srv_lookup;		/* do SRV lookups */
     krb5_boolean srv_try_txt;		/* try TXT records also */
     krb5_boolean srv_try_rfc2052;	/* try RFC2052 compatible records */
+    int32_t fcache_vno;			/* create cache files w/ this
+                                           version */
 } krb5_context_data;
 
 enum {
@@ -397,13 +395,18 @@ struct krb5_rcache_data;
 typedef struct krb5_rcache_data *krb5_rcache;
 typedef Authenticator krb5_donot_reply;
 
+#define KRB5_STORAGE_HOST_BYTEORDER			0x01
+#define KRB5_STORAGE_PRINCIPAL_WRONG_NUM_COMPONENTS	0x02
+#define KRB5_STORAGE_PRINCIPAL_NO_NAME_TYPE		0x04
+#define KRB5_STORAGE_KEYBLOCK_KEYTYPE_TWICE		0x08
+
 typedef struct krb5_storage {
     void *data;
     size_t (*fetch)(struct krb5_storage*, void*, size_t);
     size_t (*store)(struct krb5_storage*, void*, size_t);
     off_t (*seek)(struct krb5_storage*, off_t, int);
     void (*free)(struct krb5_storage*);
-    krb5_boolean host_byteorder;
+    krb5_flags flags;
 } krb5_storage;
 
 typedef struct krb5_keytab_entry {
@@ -415,7 +418,6 @@ typedef struct krb5_keytab_entry {
 typedef struct krb5_kt_cursor {
     int fd;
     krb5_storage *sp;
-    off_t offset;
 } krb5_kt_cursor;
 
 struct krb5_keytab_data;
@@ -436,6 +438,7 @@ struct krb5_keytab_data {
     krb5_error_code (*add)(krb5_context, krb5_keytab, krb5_keytab_entry*);
     krb5_error_code (*remove)(krb5_context, krb5_keytab, krb5_keytab_entry*);
     void *data;
+    int32_t version;
 };
 
 typedef struct krb5_keytab_data krb5_kt_ops;
