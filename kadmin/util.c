@@ -51,11 +51,11 @@ struct units kdb_attrs[] = {
     { "requires-pre-auth", KRB5_KDB_REQUIRES_PRE_AUTH },
     { "disallow-all-tix", KRB5_KDB_DISALLOW_ALL_TIX },
     { "disallow-dup-skey", KRB5_KDB_DISALLOW_DUP_SKEY },
-    { "disallow-postdated", KRB5_KDB_DISALLOW_POSTDATED },
-    { "disallow-forwardable", KRB5_KDB_DISALLOW_FORWARDABLE },
-    { "disallow-tgt-based", KRB5_KDB_DISALLOW_TGT_BASED },
-    { "disallow-renewable", KRB5_KDB_DISALLOW_RENEWABLE },
     { "disallow-proxiable", KRB5_KDB_DISALLOW_PROXIABLE },
+    { "disallow-renewable", KRB5_KDB_DISALLOW_RENEWABLE },
+    { "disallow-tgt-based", KRB5_KDB_DISALLOW_TGT_BASED },
+    { "disallow-forwardable", KRB5_KDB_DISALLOW_FORWARDABLE },
+    { "disallow-postdated", KRB5_KDB_DISALLOW_POSTDATED },
     { NULL }
 };
 
