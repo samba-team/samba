@@ -91,7 +91,7 @@ _kadm5_acl_init(kadm5_server_context *context)
     }
 
     flags = -1;
-    f = fopen(context->acl_file, "r");
+    f = fopen(context->config.acl_file, "r");
     if(f){
 	while(fgets(buf, sizeof(buf), f)){
 	    char *foo = NULL, *p;
