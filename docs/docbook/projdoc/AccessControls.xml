@@ -1090,8 +1090,108 @@ Before using any of the following options please refer to the man page for &smb.
 <title>Common Errors</title>
 
 <para>
-Stuff from mailing lists here
+File, Directory and Share access problems are very common on the mailing list. The following
+are examples taken from the mailing list in recent times.
 </para>
+
+
+	<sect2>
+	<title>Users can not write to a public share</title>
+
+	<para>
+	We are facing some troubles with file / directory permissions. I can log on the domain as admin user(root),
+	and theres a public share, on which everyone needs to have permission to create / modify files, but only
+	root can change the file, no one else can. We need to constantly go to server to
+	<command>chgrp -R users *</command> and <command>chown -R nobody *</command> to allow others users to change the file.
+	</para>
+
+	<para>
+	There are many ways to solve this problem, here are a few hints:
+	</para>
+
+	<procedure>
+	<title>Example Solution:</title>
+		<step>
+		<para>
+		Go to the top of the directory that is shared
+		</para>
+		</step>
+
+		<step>
+		<para>
+		Set the ownership to what ever public owner and group you want
+		<programlisting>
+		find 'directory_name' -type d -exec chown user.group {}\;
+		find 'directory_name' -type d -exec chmod 6775 'directory_name'
+		find 'directory_name' -type f -exec chmod 0775 {} \;
+		find 'directory_name' -type f -exec chown user.group {}\;
+		</programlisting>
+		</para>
+
+		<para>
+		Note: The above will set the 'sticky bit' on all directories. Read your
+		Unix/Linux man page on what that does. It causes the OS to assign to all
+		files created in the directories the ownership of the directory.
+		</para>
+
+		<para>
+		<programlisting>
+		Directory is: /foodbar
+			chown jack.engr /foodbar
+
+		Note: This is the same as doing:
+			chown jack /foodbar
+			chgrp engr /foodbar
+
+		Now do:
+			chmod 6775 /foodbar
+			ls -al /foodbar/..
+
+		You should see:
+		drwsrwsr-x  2 jack  engr    48 2003-02-04 09:55 foodbar
+
+		Now do:
+			su - jill
+			cd /foodbar
+			touch Afile
+			ls -al
+		</programlisting>
+		</para>
+
+		<para>
+		You should see that the file 'Afile' created by Jill will have ownership
+		and permissions of Jack, as follows:
+		<programlisting>
+		-rw-r--r--  1 jack  engr     0 2003-02-04 09:57 Afile
+		</programlisting>
+		</para>
+		</step>
+
+		<step>
+		<para>
+		Now in your smb.conf for the share add:
+		<programlisting>
+		force create mode = 0775
+		force direcrtory mode = 6775
+		</programlisting>
+		</para>
+
+		<para>
+		Note: The above are only needed IF your users are NOT members of the group
+		you have used. ie: Within the OS do not have write permission on the directory.
+		</para>
+
+		<para>
+		An alternative is to set in the smb.conf entry for the share:
+		<programlisting>
+		force user = jack
+		force group = engr
+		</programlisting>
+		</para>
+	</step>
+	</procedure>
+	</sect2>
+
 
 </sect1>
 
