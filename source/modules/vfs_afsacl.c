@@ -488,6 +488,17 @@ static struct static_dir_ace_mapping {
 	{ 0, SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT,
 	  0x00120089, 8 /* l */ },
 
+	/* some stupid workaround for preventing fallbacks */ 	
+	{ 0, 0x3, 0x0012019F, 9 /* rl */ },
+	{ 0, 0x13, PERMS_FULL, 127 /* full */ },
+	
+	/* read, delete and execute access plus synchronize */
+	{ 0, 0x3, 0x001300A9, 9 /* should be rdl, set to rl */},
+	/* classical read list */
+	{ 0, 0x13, 0x001200A9, 9 /* rl */},
+	/* almost full control, no delete */
+	{ 0, 0x13, PERMS_CHANGE, 63 /* rwidlk */},
+
 	/* List folder */
 	{ 0, SEC_ACE_FLAG_CONTAINER_INHERIT,
 	  PERMS_READ, 8 /* l */ },
@@ -527,8 +538,8 @@ static uint32 nt_to_afs_dir_rights(const char *filename, const SEC_ACE *ace)
 			return m->afs_rights;
 	}
 
-	DEBUG(1, ("AFSACL FALLBACK: 0x%X 0x%X 0x%X %s\n",
-		  ace->type, ace->flags, ace->info.mask, filename));
+	DEBUG(1, ("AFSACL FALLBACK: 0x%X 0x%X 0x%X %s %X\n",
+		  ace->type, ace->flags, ace->info.mask, filename, rights));
 
 	if (rights & (GENERIC_ALL_ACCESS|WRITE_DAC_ACCESS)) {
 		result |= PRSFS_READ | PRSFS_WRITE | PRSFS_INSERT |
