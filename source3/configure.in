@@ -609,16 +609,9 @@ if test x$ac_cv_func_fstat64 = xno ; then
   fi
 fi
 
-#
-# If no strcasecmp, check for it in some known places
-# It is in -lresolv on ReliantUNIX and UnixWare
-#   -lresolve *must* follow -lnsl for name resolution to work properly
-#
-
-if test x$ac_cv_func_strcasecmp = xno ; then
-	AC_CHECK_LIB(resolv,strcasecmp,[LIBS="$LIBS -lresolv"]
-		AC_DEFINE(HAVE_STRCASECMP))
-fi
+#####################################
+# we might need the resolv library on some systems
+AC_CHECK_LIB(resolv, dn_expand)
 
 #
 # Check for the functions putprpwnam, set_auth_parameters,
@@ -1592,7 +1585,6 @@ AC_ARG_WITH(krb4,
   yes)
     AC_MSG_RESULT(yes)
     AC_DEFINE(KRB4_AUTH)
-    AC_CHECK_LIB(resolv, dn_expand)
     LIBS="$LIBS -lkrb -ldes"
     CFLAGS="$CFLAGS -I$withval/include"
     LDFLAGS="$LDFLAGS -L$withval/lib"
@@ -1604,6 +1596,7 @@ AC_ARG_WITH(krb4,
   esac ],
   AC_MSG_RESULT(no)
 )
+
 
 
 #################################################
@@ -1618,7 +1611,7 @@ AC_ARG_WITH(krb5,
   *)
     AC_MSG_RESULT(yes)
     AC_DEFINE(KRB5_AUTH)
-    LIBS="$LIBS -lkrb5 -lk5crypto -lresolv -lcom_err"
+    LIBS="$LIBS -lkrb5 -lk5crypto -lcom_err"
     CFLAGS="$CFLAGS -I$withval/include"
     LDFLAGS="$LDFLAGS -L$withval/lib"
     AC_DEFINE(HAVE_KRB5)
@@ -1633,7 +1626,7 @@ AC_ARG_WITH(krb5,
 ########################################################
 # now see if we can find the krb5 libs in standard paths
 if test x$have_krb5 != xyes; then
-AC_CHECK_LIB(krb5, krb5_mk_req_extended, [LIBS="$LIBS -lkrb5 -lk5crypto -lresolv -lcom_err";
+AC_CHECK_LIB(krb5, krb5_mk_req_extended, [LIBS="$LIBS -lkrb5 -lk5crypto -lcom_err";
 	AC_DEFINE(HAVE_KRB5)])
 fi
 
@@ -1800,7 +1793,7 @@ AC_ARG_WITH(ldapsam,
   yes)
     AC_MSG_RESULT(yes)
     AC_DEFINE(WITH_LDAP_SAM)
-    LIBS="-lldap -llber -lresolv $LIBS"
+    LIBS="-lldap -llber $LIBS"
     with_smbpasswd_sam=no
     ;;
   *)
