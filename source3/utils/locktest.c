@@ -30,6 +30,7 @@ static int numops = 1000;
 static BOOL showall;
 static BOOL analyze;
 static BOOL hide_unlock_fails;
+static BOOL use_oplocks;
 
 #define FILENAME "\\locktest.dat"
 #define LOCKRANGE 100
@@ -187,6 +188,8 @@ struct cli_state *connect_one(char *share)
 	}
 
 	DEBUG(4,(" tconx ok\n"));
+
+	c->use_oplocks = use_oplocks;
 
 	return c;
 }
@@ -461,6 +464,7 @@ static void usage(void)
         -o numops\n\
         -u          hide unlock fails\n\
         -a          (show all ops)\n\
+        -O          use oplocks\n\
 ");
 }
 
@@ -511,7 +515,7 @@ static void usage(void)
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "U:s:ho:aAW:")) != EOF) {
+	while ((opt = getopt(argc, argv, "U:s:ho:aAW:O")) != EOF) {
 		switch (opt) {
 		case 'U':
 			pstrcpy(username,optarg);
@@ -530,6 +534,9 @@ static void usage(void)
 			break;
 		case 'o':
 			numops = atoi(optarg);
+			break;
+		case 'O':
+			use_oplocks = True;
 			break;
 		case 'a':
 			showall = True;
