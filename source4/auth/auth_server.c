@@ -145,24 +145,6 @@ static void free_server_private_data(void **private_data_pointer)
 }
 
 /****************************************************************************
- Send a 'keepalive' packet down the cli pipe.
-****************************************************************************/
-
-static void send_server_keepalive(void **private_data_pointer) 
-{
-	struct smbcli_state **cli = (struct smbcli_state **)private_data_pointer;
-	
-	/* also send a keepalive to the password server if its still
-	   connected */
-	if (cli && *cli && (*cli)->initialised) {
-		if (!send_nbt_keepalive((*cli)->fd)) {
-			DEBUG( 2, ( "password server keepalive failed.\n"));
-			smbcli_shutdown(*cli);
-		}
-	}
-}
-
-/****************************************************************************
  Get the challenge out of a password server.
 ****************************************************************************/
 

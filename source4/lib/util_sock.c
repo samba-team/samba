@@ -179,65 +179,6 @@ ssize_t read_udp_socket(int fd, char *buf, size_t len,
 }
 
 
-/****************************************************************************
-  read data from the client, reading exactly N bytes. 
-****************************************************************************/
-ssize_t read_data(int fd, char *buffer, size_t N)
-{
-	ssize_t ret;
-	size_t total=0;  
- 
-	if (fd == -1) {
-		errno = EIO;
-		return -1;
-	}
-
-	while (total < N) {
-		ret = sys_read(fd,buffer + total,N - total);
-		if (ret == 0) {
-			return total;
-		}
-		if (ret == -1) {
-			if (total == 0) {
-				return -1;
-			}
-			return total;
-		}
-		total += ret;
-	}
-	return (ssize_t)total;
-}
-
-
-/****************************************************************************
- Write data to a fd.
-****************************************************************************/
-ssize_t write_data(int fd, const char *buffer, size_t N)
-{
-	size_t total=0;
-	ssize_t ret;
-
-	if (fd == -1) {
-		errno = EIO;
-		return -1;
-	}
-
-	while (total < N) {
-		ret = sys_write(fd, buffer + total, N - total);
-		if (ret == -1) {
-			if (total == 0) {
-				return -1;
-			}
-			return total;
-		}
-		if (ret == 0) {
-			return total;
-		}
-
-		total += ret;
-	}
-	return (ssize_t)total;
-}
 
 /****************************************************************************
  Check the timeout. 
@@ -345,20 +286,6 @@ ssize_t write_data_until(int fd,char *buffer,size_t N,
 		total += ret;
 	}
 	return (ssize_t)total;
-}
-
-
-/****************************************************************************
-send a keepalive packet (rfc1002)
-****************************************************************************/
-BOOL send_nbt_keepalive(int sock_fd)
-{
-	uint8_t buf[4];
-
-	buf[0] = SMBkeepalive;
-	buf[1] = buf[2] = buf[3] = 0;
-
-	return write_data(sock_fd,(char *)buf,4) == 4;
 }
 
 
