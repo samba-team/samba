@@ -161,7 +161,6 @@ typedef struct
 	char *szUtmpDir;
 	char *szWtmpDir;
 	BOOL bUtmp;
-	char *szSourceEnv;
 	char *szIdmapUID;
 	char *szIdmapGID;
 	BOOL bEnableRidAlgorithm;
@@ -207,7 +206,6 @@ typedef struct
 	int max_ttl;
 	int max_wins_ttl;
 	int min_wins_ttl;
-	int ReadSize;
 	int lm_announce;
 	int lm_interval;
 	int announce_as;	/* This is initialised in init_globals */
@@ -253,7 +251,6 @@ typedef struct
 	BOOL bLargeReadwrite;
 	BOOL bReadRaw;
 	BOOL bWriteRaw;
-	BOOL bReadPrediction;
 	BOOL bReadbmpx;
 	BOOL bSyslogOnly;
 	BOOL bBrowseList;
@@ -928,7 +925,6 @@ static struct parm_struct parm_table[] = {
 	{"max disk size", P_INTEGER, P_GLOBAL, &Globals.maxdisksize, NULL, NULL, FLAG_ADVANCED}, 
 	{"max open files", P_INTEGER, P_GLOBAL, &Globals.max_open_files, NULL, NULL, FLAG_ADVANCED}, 
 	{"min print space", P_INTEGER, P_LOCAL, &sDefault.iMinPrintSpace, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
-	{"read size", P_INTEGER, P_GLOBAL, &Globals.ReadSize, NULL, NULL, FLAG_ADVANCED}, 
 
 	{"socket options", P_GSTRING, P_GLOBAL, user_socket_options, NULL, NULL, FLAG_ADVANCED}, 
 	{"strict allocate", P_BOOL, P_LOCAL, &sDefault.bStrictAllocate, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
@@ -1126,7 +1122,6 @@ static struct parm_struct parm_table[] = {
 	{"volume", P_STRING, P_LOCAL, &sDefault.volume, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE }, 
 	{"fstype", P_STRING, P_LOCAL, &sDefault.fstype, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"set directory", P_BOOLREV, P_LOCAL, &sDefault.bNo_set_dir, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
-	{"source environment", P_STRING, P_GLOBAL, &Globals.szSourceEnv, handle_source_env, NULL, FLAG_ADVANCED}, 
 	{"wide links", P_BOOL, P_LOCAL, &sDefault.bWidelinks, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"follow symlinks", P_BOOL, P_LOCAL, &sDefault.bSymlinks, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"dont descend", P_STRING, P_LOCAL, &sDefault.szDontdescend, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
@@ -1388,7 +1383,6 @@ static void init_globals(void)
 	Globals.serverSchannel = Auto;
 	Globals.bReadRaw = True;
 	Globals.bWriteRaw = True;
-	Globals.bReadPrediction = False;
 	Globals.bReadbmpx = False;
 	Globals.bNullPasswords = False;
 	Globals.bObeyPamRestrictions = False;
@@ -1405,7 +1399,6 @@ static void init_globals(void)
 	Globals.machine_password_timeout = 60 * 60 * 24 * 7;	/* 7 days default. */
 	Globals.change_notify_timeout = 60;	/* 1 minute default. */
 	Globals.bKernelChangeNotify = True;	/* On if we have it. */
-	Globals.ReadSize = 16 * 1024;
 	Globals.lm_announce = 2;	/* = Auto: send only if LM clients found */
 	Globals.lm_interval = 60;
 	Globals.announce_as = ANNOUNCE_AS_NT_SERVER;
@@ -1630,7 +1623,6 @@ FN_GLOBAL_STRING(lp_utmpdir, &Globals.szUtmpDir)
 FN_GLOBAL_STRING(lp_wtmpdir, &Globals.szWtmpDir)
 FN_GLOBAL_BOOL(lp_utmp, &Globals.bUtmp)
 FN_GLOBAL_STRING(lp_rootdir, &Globals.szRootdir)
-FN_GLOBAL_STRING(lp_source_environment, &Globals.szSourceEnv)
 FN_GLOBAL_STRING(lp_defaultservice, &Globals.szDefaultService)
 FN_GLOBAL_STRING(lp_msg_command, &Globals.szMsgCommand)
 FN_GLOBAL_STRING(lp_dfree_command, &Globals.szDfree)
@@ -1715,7 +1707,6 @@ FN_GLOBAL_BOOL(lp_wins_proxy, &Globals.bWINSproxy)
 FN_GLOBAL_BOOL(lp_local_master, &Globals.bLocalMaster)
 FN_GLOBAL_BOOL(lp_domain_logons, &Globals.bDomainLogons)
 FN_GLOBAL_BOOL(lp_load_printers, &Globals.bLoadPrinters)
-FN_GLOBAL_BOOL(lp_readprediction, &Globals.bReadPrediction)
 FN_GLOBAL_BOOL(lp_readbmpx, &Globals.bReadbmpx)
 FN_GLOBAL_BOOL(lp_readraw, &Globals.bReadRaw)
 FN_GLOBAL_BOOL(lp_large_readwrite, &Globals.bLargeReadwrite)
@@ -1769,7 +1760,6 @@ FN_GLOBAL_INTEGER(lp_maxxmit, &Globals.max_xmit)
 FN_GLOBAL_INTEGER(lp_maxmux, &Globals.max_mux)
 FN_GLOBAL_INTEGER(lp_passwordlevel, &Globals.pwordlevel)
 FN_GLOBAL_INTEGER(lp_usernamelevel, &Globals.unamelevel)
-FN_GLOBAL_INTEGER(lp_readsize, &Globals.ReadSize)
 FN_GLOBAL_INTEGER(lp_deadtime, &Globals.deadtime)
 FN_GLOBAL_INTEGER(lp_maxprotocol, &Globals.maxprotocol)
 FN_GLOBAL_INTEGER(lp_minprotocol, &Globals.minprotocol)
