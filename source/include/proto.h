@@ -2378,7 +2378,7 @@ BOOL wks_query_info( char *srv_name, uint32 switch_value,
 /*The following definitions come from  rpc_client/msrpc_lsarpc.c  */
 
 uint32 lookup_lsa_names(const char *srv_name, const DOM_SID *sid,
-			uint32 num_names, const char **names,
+			uint32 num_names, char **names,
 			uint32 *num_sids, DOM_SID **sids, uint8 **types);
 uint32 lookup_lsa_name(const char *domain,
 				char *name, DOM_SID *sid, uint8 *type);

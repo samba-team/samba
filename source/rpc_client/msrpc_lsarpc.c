@@ -33,7 +33,7 @@ extern int DEBUGLEVEL;
 #define DEBUG_TESTING
 
 uint32 lookup_lsa_names(const char *srv_name, const DOM_SID *sid,
-			uint32 num_names, const char **names,
+			uint32 num_names, char **names,
 			uint32 *num_sids, DOM_SID **sids, uint8 **types)
 {
 	BOOL res1 = True;
