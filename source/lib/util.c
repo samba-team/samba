@@ -944,8 +944,11 @@ BOOL all_zero(const char *ptr, uint_t size)
   we get new errors.
 
   Please only add more calls to this function when you find it
-  _really_ hard to fix const warnings. Our aim is to eventually not
-  need this function at all,
+  _really_ hard to fix const warnings. Our aim is to eventually use
+  this function in only a very few places.
+
+  Also, please call this via the discard_const_p() macro interface, as that
+  makes the return type safe.
 */
 void *discard_const(const void *ptr)
 {
