@@ -111,15 +111,13 @@ mode_t unix_mode(connection_struct *conn,int dosmode,const char *fname)
   return(result);
 }
 
-
 /****************************************************************************
   change a unix mode to a dos mode
 ****************************************************************************/
-uint32 dos_mode(connection_struct *conn,char *path,SMB_STRUCT_STAT *sbuf)
+
+uint32 dos_mode_from_sbuf(connection_struct *conn, SMB_STRUCT_STAT *sbuf)
 {
 	int result = 0;
-
-	DEBUG(8,("dos_mode: %s\n", path));
 
 	if ((sbuf->st_mode & S_IWUSR) == 0)
 		result |= aRONLY;
@@ -149,6 +147,30 @@ uint32 dos_mode(connection_struct *conn,char *path,SMB_STRUCT_STAT *sbuf)
 #endif
 #endif
 
+	DEBUG(8,("dos_mode_from_sbuf returning "));
+
+	if (result & aHIDDEN) DEBUG(8, ("h"));
+	if (result & aRONLY ) DEBUG(8, ("r"));
+	if (result & aSYSTEM) DEBUG(8, ("s"));
+	if (result & aDIR   ) DEBUG(8, ("d"));
+	if (result & aARCH  ) DEBUG(8, ("a"));
+	
+	DEBUG(8,("\n"));
+	return result;
+}
+
+/****************************************************************************
+  change a unix mode to a dos mode
+****************************************************************************/
+uint32 dos_mode(connection_struct *conn,char *path,SMB_STRUCT_STAT *sbuf)
+{
+	int result = 0;
+
+	DEBUG(8,("dos_mode: %s\n", path));
+
+	result = dos_mode_from_sbuf(conn, sbuf);
+
+	/* Now do any modifications that depend on the path name. */
 	/* hide files with a name starting with a . */
 	if (lp_hide_dot_files(SNUM(conn))) {
 		char *p = strrchr_m(path,'/');

@@ -754,7 +754,8 @@ static BOOL open_match_attributes(connection_struct *conn, char *path, mode_t ex
 	old_dos_mode = dos_mode(conn, path, &sbuf);
 
 	sbuf.st_mode = new_mode;
-	new_dos_mode = dos_mode(conn, path, &sbuf);
+	/* The new mode conversion shouldn't look at pathname. */
+	new_dos_mode = dos_mode_from_sbuf(conn, &sbuf);
 
 	noarch_old_dos_mode = (old_dos_mode & ~FILE_ATTRIBUTE_ARCHIVE);
 	noarch_new_dos_mode = (new_dos_mode & ~FILE_ATTRIBUTE_ARCHIVE);
