@@ -37,7 +37,7 @@ static BOOL test_NetConnEnum(struct dcerpc_pipe *p,
 	r.in.ctr.ctr0 = &c0;
 	r.in.ctr.ctr0->count = 0;
 	r.in.ctr.ctr0->array = NULL;
-	r.in.preferred_len = (uint32)-1;
+	r.in.max_buffer = (uint32)-1;
 	r.in.resume_handle = NULL;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
@@ -69,7 +69,7 @@ static BOOL test_NetFileEnum(struct dcerpc_pipe *p,
 	r.in.ctr.ctr3 = &c3;
 	r.in.ctr.ctr3->count = 0;
 	r.in.ctr.ctr3->array = NULL;
-	r.in.preferred_len = (uint32)4096;
+	r.in.max_buffer = (uint32)4096;
 	r.in.resume_handle = NULL;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
@@ -101,7 +101,7 @@ static BOOL test_NetSessEnum(struct dcerpc_pipe *p,
 	r.in.ctr.ctr0 = &c0;
 	r.in.ctr.ctr0->count = 0;
 	r.in.ctr.ctr0->array = NULL;
-	r.in.preferred_len = (uint32)-1;
+	r.in.max_buffer = (uint32)-1;
 	r.in.resume_handle = NULL;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
@@ -195,7 +195,7 @@ static BOOL test_NetTransportEnum(struct dcerpc_pipe *p,
 	r.in.ctr.ctr0 = &c0;
 	r.in.ctr.ctr0->count = 0;
 	r.in.ctr.ctr0->array = NULL;
-	r.in.preferred_len = (uint32)-1;
+	r.in.max_buffer = (uint32)-1;
 	r.in.resume_handle = NULL;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
@@ -225,7 +225,7 @@ static BOOL test_NetShareEnum(struct dcerpc_pipe *p,
 	r.in.ctr.ctr0 = &c0;
 	r.in.ctr.ctr0->count = 0;
 	r.in.ctr.ctr0->array = NULL;
-	r.in.preferred_len = (uint32)-1;
+	r.in.max_buffer = (uint32)-1;
 	r.in.resume_handle = NULL;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
