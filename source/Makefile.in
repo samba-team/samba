@@ -42,6 +42,7 @@ LMHOSTSFILE = $(LIBDIR)/lmhosts
 DRIVERFILE = $(LIBDIR)/printers.def
 PASSWD_PROGRAM = /bin/passwd
 SMB_PASSWD_FILE = $(BASEDIR)/private/smbpasswd
+SMB_PASSWD_PROGRAM = $(BASEDIR)/bin/smbpasswd
 
 # This is where SWAT images and help files go
 SWATDIR = $(BASEDIR)/swat
@@ -63,7 +64,7 @@ CODEPAGELIST= 437 737 850 852 861 932 866 949 950 936
 SMBRUN = $(BINDIR)/smbrun
 
 
-PASSWD_FLAGS = -DPASSWD_PROGRAM=\"$(PASSWD_PROGRAM)\" -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\"
+PASSWD_FLAGS = -DPASSWD_PROGRAM=\"$(PASSWD_PROGRAM)\" -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" -DSMB_PASSWD_PROGRAM=\"$(SMB_PASSWD_PROGRAM)\"
 FLAGS1 = $(CFLAGS) -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/smbwrapper -DSMBLOGFILE=\"$(SMBLOGFILE)\" -DNMBLOGFILE=\"$(NMBLOGFILE)\"
 FLAGS2 = -DCONFIGFILE=\"$(CONFIGFILE)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\"  
 FLAGS3 = -DSWATDIR=\"$(SWATDIR)\" -DSBINDIR=\"$(SBINDIR)\" -DLOCKDIR=\"$(LOCKDIR)\" -DSMBRUN=\"$(SMBRUN)\" -DCODEPAGEDIR=\"$(CODEPAGEDIR)\"
@@ -473,7 +474,7 @@ realclean: clean
 
 distclean: realclean
 	-rm -f include/config.h include/stamp-h Makefile
-	-rm -f config.status config.cache
+	-rm -f config.status config.cache so_locations
 	-rm -rf .deps
 
 #
