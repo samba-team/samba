@@ -22,7 +22,7 @@
 
 BOOL torture_ntlmssp_self_check(int dummy) 
 {
-	NTLMSSP_STATE *ntlmssp_state;
+	struct ntlmssp_state *ntlmssp_state;
 	DATA_BLOB data;
 	DATA_BLOB sig, expected_sig;
 	NTSTATUS status;
