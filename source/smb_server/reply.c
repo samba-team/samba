@@ -430,7 +430,7 @@ void reply_open(struct smbsrv_request *req)
 	REQ_TALLOC(oi, sizeof(*oi));
 
 	oi->openold.level = RAW_OPEN_OPEN;
-	oi->openold.in.flags = SVAL(req->in.vwv, VWV(0));
+	oi->openold.in.open_mode = SVAL(req->in.vwv, VWV(0));
 	oi->openold.in.search_attrs = SVAL(req->in.vwv, VWV(1));
 
 	req_pull_ascii4(req, &oi->openold.in.fname, req->in.data, STR_TERMINATE);

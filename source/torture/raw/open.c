@@ -160,7 +160,7 @@ static BOOL test_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	io.openold.level = RAW_OPEN_OPEN;
 	io.openold.in.fname = fname;
-	io.openold.in.flags = OPEN_FLAGS_FCB;
+	io.openold.in.open_mode = OPEN_FLAGS_FCB;
 	io.openold.in.search_attrs = 0;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
@@ -187,21 +187,21 @@ static BOOL test_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.openold.in.fname = fname;
 	io.openold.in.search_attrs = 0;
 
-	io.openold.in.flags = OPEN_FLAGS_OPEN_READ;
+	io.openold.in.open_mode = OPEN_FLAGS_OPEN_READ;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.openold.out.fnum;
 	CHECK_RDWR(fnum, RDWR_RDONLY);
 	smbcli_close(cli->tree, fnum);
 
-	io.openold.in.flags = OPEN_FLAGS_OPEN_WRITE;
+	io.openold.in.open_mode = OPEN_FLAGS_OPEN_WRITE;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.openold.out.fnum;
 	CHECK_RDWR(fnum, RDWR_WRONLY);
 	smbcli_close(cli->tree, fnum);
 
-	io.openold.in.flags = OPEN_FLAGS_OPEN_RDWR;
+	io.openold.in.open_mode = OPEN_FLAGS_OPEN_RDWR;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.openold.out.fnum;
@@ -209,22 +209,22 @@ static BOOL test_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	smbcli_close(cli->tree, fnum);
 
 	/* check the share modes roughly - not a complete matrix */
-	io.openold.in.flags = OPEN_FLAGS_OPEN_RDWR | OPEN_FLAGS_DENY_WRITE;
+	io.openold.in.open_mode = OPEN_FLAGS_OPEN_RDWR | OPEN_FLAGS_DENY_WRITE;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.openold.out.fnum;
 	CHECK_RDWR(fnum, RDWR_RDWR);
 	
-	if (io.openold.in.flags != io.openold.out.rmode) {
-		printf("(%s) rmode should equal flags - 0x%x 0x%x\n",
-		       __location__, io.openold.out.rmode, io.openold.in.flags);
+	if (io.openold.in.open_mode != io.openold.out.rmode) {
+		printf("(%s) rmode should equal open_mode - 0x%x 0x%x\n",
+		       __location__, io.openold.out.rmode, io.openold.in.open_mode);
 	}
 
-	io.openold.in.flags = OPEN_FLAGS_OPEN_RDWR | OPEN_FLAGS_DENY_NONE;
+	io.openold.in.open_mode = OPEN_FLAGS_OPEN_RDWR | OPEN_FLAGS_DENY_NONE;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
 
-	io.openold.in.flags = OPEN_FLAGS_OPEN_READ | OPEN_FLAGS_DENY_NONE;
+	io.openold.in.open_mode = OPEN_FLAGS_OPEN_READ | OPEN_FLAGS_DENY_NONE;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum2 = io.openold.out.fnum;
@@ -237,7 +237,7 @@ static BOOL test_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.openold.level = RAW_OPEN_OPEN;
 	io.openold.in.fname = fname;
 	io.openold.in.search_attrs = 0;
-	io.openold.in.flags = OPEN_FLAGS_OPEN_READ;
+	io.openold.in.open_mode = OPEN_FLAGS_OPEN_READ;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.openold.out.fnum;
@@ -319,11 +319,15 @@ static BOOL test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			       i, (int)open_funcs[i].with_file, (int)open_funcs[i].open_func);
 			ret = False;
 		}
-		if (NT_STATUS_IS_OK(status) || open_funcs[i].with_file) {
+		if (NT_STATUS_IS_OK(status)) {
 			smbcli_close(cli->tree, io.openx.out.fnum);
+		}
+		if (open_funcs[i].with_file) {
 			smbcli_unlink(cli->tree, fname);
 		}
 	}
+
+	smbcli_unlink(cli->tree, fname);
 
 	/* check the basic return fields */
 	io.openx.in.open_func = OPENX_OPEN_FUNC_OPEN | OPENX_OPEN_FUNC_CREATE;
@@ -434,6 +438,10 @@ static BOOL test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VAL(io.openx.out.access_mask, SEC_STD_ALL);
 	smbcli_close(cli->tree, io.openx.out.fnum);
 
+	io.openx.in.fname = "\\A.+,;=[].B";
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
 done:
 	smbcli_close(cli->tree, fnum);
 	smbcli_unlink(cli->tree, fname);
@@ -445,9 +453,7 @@ done:
 /*
   test RAW_OPEN_T2OPEN
 
-  I can't work out how to get win2003 to accept a create file via TRANS2_OPEN, which
-  is why you see all the ACCESS_DENIED results below. When we finally work this out then this
-  test will make more sense
+  many thanks to kukks for a sniff showing how this works with os2->w2k
 */
 static BOOL test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
@@ -468,15 +474,15 @@ static BOOL test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		{ OPENX_OPEN_FUNC_OPEN, 	                  True,  NT_STATUS_OK },
 		{ OPENX_OPEN_FUNC_OPEN,  	                  False, NT_STATUS_OBJECT_NAME_NOT_FOUND },
 		{ OPENX_OPEN_FUNC_OPEN  | OPENX_OPEN_FUNC_CREATE, True,  NT_STATUS_OK },
-		{ OPENX_OPEN_FUNC_OPEN  | OPENX_OPEN_FUNC_CREATE, False, NT_STATUS_ACCESS_DENIED },
+		{ OPENX_OPEN_FUNC_OPEN  | OPENX_OPEN_FUNC_CREATE, False, NT_STATUS_OK },
 		{ OPENX_OPEN_FUNC_FAIL, 	                  True,  NT_STATUS_OBJECT_NAME_COLLISION },
-		{ OPENX_OPEN_FUNC_FAIL, 	                  False, NT_STATUS_ACCESS_DENIED },
+		{ OPENX_OPEN_FUNC_FAIL, 	                  False, NT_STATUS_OBJECT_NAME_COLLISION },
 		{ OPENX_OPEN_FUNC_FAIL  | OPENX_OPEN_FUNC_CREATE, True,  NT_STATUS_OBJECT_NAME_COLLISION },
-		{ OPENX_OPEN_FUNC_FAIL  | OPENX_OPEN_FUNC_CREATE, False, NT_STATUS_ACCESS_DENIED },
-		{ OPENX_OPEN_FUNC_TRUNC, 	                  True,  NT_STATUS_ACCESS_DENIED },
-		{ OPENX_OPEN_FUNC_TRUNC, 	                  False, NT_STATUS_OBJECT_NAME_NOT_FOUND },
-		{ OPENX_OPEN_FUNC_TRUNC | OPENX_OPEN_FUNC_CREATE, True,  NT_STATUS_ACCESS_DENIED },
-		{ OPENX_OPEN_FUNC_TRUNC | OPENX_OPEN_FUNC_CREATE, False, NT_STATUS_ACCESS_DENIED },
+		{ OPENX_OPEN_FUNC_FAIL  | OPENX_OPEN_FUNC_CREATE, False, NT_STATUS_OBJECT_NAME_COLLISION },
+		{ OPENX_OPEN_FUNC_TRUNC, 	                  True,  NT_STATUS_OK },
+		{ OPENX_OPEN_FUNC_TRUNC, 	                  False, NT_STATUS_OK },
+		{ OPENX_OPEN_FUNC_TRUNC | OPENX_OPEN_FUNC_CREATE, True,  NT_STATUS_OK },
+		{ OPENX_OPEN_FUNC_TRUNC | OPENX_OPEN_FUNC_CREATE, False, NT_STATUS_OK },
 	};
 
 	fnum = create_complex_file(cli, mem_ctx, fname1);
@@ -490,20 +496,26 @@ static BOOL test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("Checking RAW_OPEN_T2OPEN\n");
 
 	io.t2open.level = RAW_OPEN_T2OPEN;
-	io.t2open.in.flags = OPENX_FLAGS_ADDITIONAL_INFO | 
-		OPENX_FLAGS_EA_LEN | OPENX_FLAGS_EXTENDED_RETURN;
+	io.t2open.in.flags = OPENX_FLAGS_ADDITIONAL_INFO;
 	io.t2open.in.open_mode = OPENX_MODE_DENY_NONE | OPENX_MODE_ACCESS_RDWR;
 	io.t2open.in.open_func = OPENX_OPEN_FUNC_OPEN | OPENX_OPEN_FUNC_CREATE;
+	io.t2open.in.search_attrs = 0;
 	io.t2open.in.file_attrs = 0;
 	io.t2open.in.write_time = 0;
 	io.t2open.in.size = 0;
 	io.t2open.in.timeout = 0;
 
-	io.t2open.in.eas = talloc_p(mem_ctx, struct ea_struct);
-	io.t2open.in.num_eas = 1;
+	io.t2open.in.num_eas = 3;
+	io.t2open.in.eas = talloc_array_p(mem_ctx, struct ea_struct, io.t2open.in.num_eas);
 	io.t2open.in.eas[0].flags = 0;
-	io.t2open.in.eas[0].name.s = "EAONE";
-	io.t2open.in.eas[0].value = data_blob_talloc(mem_ctx, "1", 1);
+	io.t2open.in.eas[0].name.s = ".CLASSINFO";
+	io.t2open.in.eas[0].value = data_blob_talloc(mem_ctx, "first value", 11);
+	io.t2open.in.eas[1].flags = 0;
+	io.t2open.in.eas[1].name.s = "EA TWO";
+	io.t2open.in.eas[1].value = data_blob_talloc(mem_ctx, "foo", 3);
+	io.t2open.in.eas[2].flags = 0;
+	io.t2open.in.eas[2].name.s = "X THIRD";
+	io.t2open.in.eas[2].value = data_blob_talloc(mem_ctx, "xy", 2);
 
 	/* check all combinations of open_func */
 	for (i=0; i<ARRAY_SIZE(open_funcs); i++) {
@@ -526,24 +538,34 @@ static BOOL test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 	smbcli_unlink(cli->tree, fname1);
+	smbcli_unlink(cli->tree, fname2);
 
 	/* check the basic return fields */
-	fnum = create_complex_file(cli, mem_ctx, fname);
-	smbcli_close(cli->tree, fnum);
 	io.t2open.in.open_func = OPENX_OPEN_FUNC_OPEN | OPENX_OPEN_FUNC_CREATE;
+	io.t2open.in.write_time = 0;
 	io.t2open.in.fname = fname;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.t2open.out.fnum;
 
 	CHECK_ALL_INFO(io.t2open.out.size, size);
+#if 0
+	/* windows appears to leak uninitialised memory here */
 	CHECK_VAL(io.t2open.out.write_time, 0);
+#endif
 	CHECK_ALL_INFO(io.t2open.out.attrib, attrib & ~FILE_ATTRIBUTE_NONINDEXED);
 	CHECK_VAL(io.t2open.out.access, OPENX_MODE_DENY_NONE | OPENX_MODE_ACCESS_RDWR);
 	CHECK_VAL(io.t2open.out.ftype, 0);
 	CHECK_VAL(io.t2open.out.devstate, 0);
-	CHECK_VAL(io.t2open.out.action, OPENX_ACTION_EXISTED);
+	CHECK_VAL(io.t2open.out.action, OPENX_ACTION_CREATED);
 	smbcli_close(cli->tree, fnum);
+
+	status = torture_check_ea(cli, fname, ".CLASSINFO", "first value");
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = torture_check_ea(cli, fname, "EA TWO", "foo");
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = torture_check_ea(cli, fname, "X THIRD", "xy");
+	CHECK_STATUS(status, NT_STATUS_OK);
 
 	/* now check the search attrib for hidden files - win2003 ignores this? */
 	SET_ATTRIB(FILE_ATTRIBUTE_HIDDEN);
@@ -564,14 +586,15 @@ static BOOL test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.t2open.in.open_func = OPENX_OPEN_FUNC_FAIL | OPENX_OPEN_FUNC_CREATE;
 	io.t2open.in.file_attrs = FILE_ATTRIBUTE_SYSTEM;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
-	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+	CHECK_STATUS(status, NT_STATUS_OK);
 
 	/* check timeout on create - win2003 ignores the timeout! */
 	io.t2open.in.open_func = OPENX_OPEN_FUNC_OPEN | OPENX_OPEN_FUNC_CREATE;
 	io.t2open.in.file_attrs = 0;
+	io.t2open.in.timeout = 20000;
 	io.t2open.in.open_mode = OPENX_MODE_ACCESS_RDWR | OPENX_MODE_DENY_ALL;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
-	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
 
 done:
 	smbcli_close(cli->tree, fnum);

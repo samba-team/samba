@@ -1150,7 +1150,7 @@ static BOOL test_os2_delete(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		}
 
 		if (i>0) {
-			io2.t2fnext.in.resume_key = 0;
+			io2.t2fnext.in.resume_key = result.list[i-1].ea_size.resume_key;
 			io2.t2fnext.in.last_name = result.list[i-1].ea_size.name.s;
 		}
 	} while (NT_STATUS_IS_OK(status) && result.count != 0);
