@@ -252,7 +252,7 @@ static BOOL upgrade_to_version_3(void)
 }
 
 /****************************************************************************
- Open the NT printing tdb.
+ Open the NT printing tdbs. Done once before fork().
 ****************************************************************************/
 
 BOOL nt_printing_init(void)
@@ -263,6 +263,8 @@ BOOL nt_printing_init(void)
 	if (tdb_drivers && tdb_printers && tdb_forms && local_pid == sys_getpid())
 		return True;
  
+	if (tdb_drivers)
+		tdb_close(tdb_drivers);
 	tdb_drivers = tdb_open_log(lock_path("ntdrivers.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 	if (!tdb_drivers) {
 		DEBUG(0,("nt_printing_init: Failed to open nt drivers database %s (%s)\n",
@@ -270,6 +272,8 @@ BOOL nt_printing_init(void)
 		return False;
 	}
  
+	if (tdb_printers)
+		tdb_close(tdb_printers);
 	tdb_printers = tdb_open_log(lock_path("ntprinters.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 	if (!tdb_printers) {
 		DEBUG(0,("nt_printing_init: Failed to open nt printers database %s (%s)\n",
@@ -277,6 +281,8 @@ BOOL nt_printing_init(void)
 		return False;
 	}
  
+	if (tdb_forms)
+		tdb_close(tdb_forms);
 	tdb_forms = tdb_open_log(lock_path("ntforms.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 	if (!tdb_forms) {
 		DEBUG(0,("nt_printing_init: Failed to open nt forms database %s (%s)\n",
