@@ -145,9 +145,89 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_LOGON_FAILURE;
 }
 
+static struct winbindd_domain *find_auth_domain(const char *domain_name)
+{
+	struct winbindd_domain *domain;
+
+	if (IS_DC) {
+		domain = find_domain_from_name_noinit(domain_name);
+		if (domain == NULL) {
+			DEBUG(3, ("Authentication for domain [%s] "
+				  "as it is not a trusted domain\n", 
+				  domain_name));
+		}
+		return domain;
+	}
+
+	if (is_myname(domain_name)) {
+		DEBUG(3, ("Authentication for domain %s (local domain "
+			  "to this server) not supported at this "
+			  "stage\n", domain_name));
+		return NULL;
+	}
+
+	domain = find_our_domain();
+	if (domain == NULL) {
+		DEBUG(1, ("Authentication for domain [%s] failed "
+			  "-- we can't find our domain!\n", domain_name)); 
+	}
+
+	return domain;
+}
+
+static void set_auth_errors(struct winbindd_response *resp, NTSTATUS result)
+{
+	resp->data.auth.nt_status = NT_STATUS_V(result);
+	fstrcpy(resp->data.auth.nt_status_string, nt_errstr(result));
+
+	/* we might have given a more useful error above */
+	if (*resp->data.auth.error_string == '\0') 
+		fstrcpy(resp->data.auth.error_string,
+			get_friendly_nt_error_msg(result));
+	resp->data.auth.pam_error = nt_status_to_pam(result);
+}
+
 /**********************************************************************
  Authenticate a user with a clear text password
 **********************************************************************/
+
+enum winbindd_result winbindd_pam_auth_async(struct winbindd_cli_state *state)
+{
+	struct winbindd_domain *domain;
+	fstring name_domain, name_user;
+
+	/* Ensure null termination */
+	state->request.data.auth.user
+		[sizeof(state->request.data.auth.user)-1]='\0';
+
+	/* Ensure null termination */
+	state->request.data.auth.pass
+		[sizeof(state->request.data.auth.pass)-1]='\0';
+
+	DEBUG(3, ("[%5lu]: pam auth %s\n", (unsigned long)state->pid,
+		  state->request.data.auth.user));
+
+	/* Parse domain and username */
+	
+	parse_domain_user(state->request.data.auth.user,
+			  name_domain, name_user);
+
+	domain = find_auth_domain(name_domain);
+
+	if (domain == NULL) {
+		set_auth_errors(&state->response, NT_STATUS_NO_SUCH_USER);
+		DEBUG(5, ("Plain text authentication for %s returned %s "
+			  "(PAM: %d)\n",
+			  state->request.data.auth.user, 
+			  state->response.data.auth.nt_status_string,
+			  state->response.data.auth.pam_error));
+		return WINBINDD_ERROR;
+	}
+
+	return async_domain_request(state->mem_ctx, domain,
+				    &state->request, &state->response,
+				    request_finished_cont, state);
+}
 
 enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state) 
 {
@@ -417,6 +497,68 @@ done:
  Challenge Response Authentication Protocol 
 **********************************************************************/
 
+enum winbindd_result winbindd_crap_auth_async(struct winbindd_cli_state *state)
+{
+	struct winbindd_domain *domain = NULL;
+	const char *domain_name = NULL;
+	NTSTATUS result;
+
+	if (!state->privileged) {
+		char *error_string = NULL;
+		DEBUG(2, ("winbindd_pam_auth_crap: non-privileged access "
+			  "denied.  !\n"));
+		DEBUGADD(2, ("winbindd_pam_auth_crap: Ensure permissions "
+			     "on %s are set correctly.\n",
+			     get_winbind_priv_pipe_dir()));
+		/* send a better message than ACCESS_DENIED */
+		error_string = talloc_asprintf(state->mem_ctx,
+					       "winbind client not authorized "
+					       "to use winbindd_pam_auth_crap."
+					       " Ensure permissions on %s "
+					       "are set correctly.",
+					       get_winbind_priv_pipe_dir());
+		fstrcpy(state->response.data.auth.error_string, error_string);
+		result = NT_STATUS_ACCESS_DENIED;
+		goto done;
+	}
+
+	/* Ensure null termination */
+	state->request.data.auth_crap.user
+		[sizeof(state->request.data.auth_crap.user)-1]=0;
+	state->request.data.auth_crap.domain
+		[sizeof(state->request.data.auth_crap.domain)-1]=0;
+
+	DEBUG(3, ("[%5lu]: pam auth crap domain: [%s] user: %s\n",
+		  (unsigned long)state->pid,
+		  state->request.data.auth_crap.domain,
+		  state->request.data.auth_crap.user));
+
+	if (*state->request.data.auth_crap.domain != '\0') {
+		domain_name = state->request.data.auth_crap.domain;
+	} else if (lp_winbind_use_default_domain()) {
+		domain_name = lp_workgroup();
+	}
+
+	if (domain_name != NULL)
+		domain = find_auth_domain(domain_name);
+
+	if (domain != NULL)
+		return async_domain_request(state->mem_ctx, domain,
+					    &state->request, &state->response,
+					    request_finished_cont, state);
+
+	result = NT_STATUS_NO_SUCH_USER;
+
+ done:
+	set_auth_errors(&state->response, result);
+	DEBUG(5, ("CRAP authentication for %s returned %s (PAM: %d)\n",
+		  state->request.data.auth.user, 
+		  state->response.data.auth.nt_status_string,
+		  state->response.data.auth.pam_error));
+	return WINBINDD_ERROR;
+}
+
+
 enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state) 
 {
 	NTSTATUS result;
@@ -438,19 +580,8 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 
 	DATA_BLOB lm_resp, nt_resp;
 
-	if (!state->privileged) {
-		char *error_string = NULL;
-		DEBUG(2, ("winbindd_pam_auth_crap: non-privileged access denied.  !\n"));
-		DEBUGADD(2, ("winbindd_pam_auth_crap: Ensure permissions on %s are set correctly.\n", 
-			     get_winbind_priv_pipe_dir()));
-		/* send a better message than ACCESS_DENIED */
-		asprintf(&error_string, "winbind client not authorized to use winbindd_pam_auth_crap.  Ensure permissions on %s are set correctly.",
-			 get_winbind_priv_pipe_dir());
-		fstrcpy(state->response.data.auth.error_string, error_string);
-		SAFE_FREE(error_string);
-		result =  NT_STATUS_ACCESS_DENIED;
-		goto done;
-	}
+	/* This is child-only, so no check for privileged access is needed
+	   anymore */
 
 	/* Ensure null termination */
 	state->request.data.auth_crap.user[sizeof(state->request.data.auth_crap.user)-1]=0;
