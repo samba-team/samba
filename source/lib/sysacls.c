@@ -113,7 +113,16 @@ int sys_acl_add_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm)
 
 int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm)
 {
+#if defined(HAVE_ACL_GET_PERM_NP)
+	/*
+	 * Required for TrustedBSD-based ACL implementations where
+	 * non-POSIX.1e functions are denoted by a _np (non-portable)
+	 * suffix.
+	 */
+	return acl_get_perm_np(permset, perm);
+#else
 	return acl_get_perm(permset, perm);
+#endif
 }
 
 char *sys_acl_to_text( SMB_ACL_T the_acl, ssize_t *plen)
