@@ -955,8 +955,11 @@ static int smbw_settime(const char *fname, time_t t)
 	}
 
 	if (!cli_setatr(&srv->cli, path, mode, t)) {
-		errno = smbw_errno(&srv->cli);
-		goto failed;
+		/* some servers always refuse directory changes */
+		if (!(mode & aDIR)) {
+			errno = smbw_errno(&srv->cli);
+			goto failed;
+		}
 	}
 
 	smbw_busy--;
