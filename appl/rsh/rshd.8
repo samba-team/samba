@@ -43,7 +43,8 @@ configuration.
 .Fl -encrypt
 .Xc
 For Kerberos 4 this means that the connections are encrypted. Kerberos
-5 will negotiate encryption inline.
+5 will negotiate encryption inline. This option implies
+.Fl k .
 .\".It Xo
 .\".Fl l Ns ,
 .\".Fl -no-rhosts
@@ -104,6 +105,14 @@ This option is always on in this implementation.
 .It Pa ~/.rhosts
 .El
 .Sh EXAMPLES
+The following can be used to enable Kerberised rsh in
+.Xr inetd.cond 5 , 
+while disabling non-Kerberised connections:
+.Bd -literal
+shell   stream  tcp  nowait  root  /usr/libexec/rshd  rshd -v
+kshell  stream  tcp  nowait  root  /usr/libexec/rshd  rshd -k
+ekshell stream  tcp  nowait  root  /usr/libexec/rshd  rshd -kx
+.Ed
 .\".Sh DIAGNOSTICS
 .Sh SEE ALSO
 .Xr rsh 1 ,
