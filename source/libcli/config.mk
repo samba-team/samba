@@ -18,7 +18,8 @@ ADD_OBJ_FILES = \
 	libcli/composite/loadfile.o \
 	libcli/composite/savefile.o \
 	libcli/composite/connect.o \
-	libcli/composite/sesssetup.o
+	libcli/composite/sesssetup.o \
+	libcli/composite/fetchfile.o
 
 [SUBSYSTEM::LIBCLI_NBT]
 ADD_OBJ_FILES = \

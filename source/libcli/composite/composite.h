@@ -65,6 +65,25 @@ struct smb_composite_loadfile {
 	} out;
 };
 
+struct smb_composite_fetchfile {
+	struct {
+		const char *dest_host;
+		int port;
+		const char *called_name;
+		const char *calling_name;
+		const char *service;
+		const char *service_type;
+		const char *user;
+		const char *domain;
+		const char *password;
+		const char *filename;
+	} in;
+	struct {
+		uint8_t *data;
+		uint32_t size;
+	} out;
+};
+
 /*
   a composite open/write(s)/close request that saves a whole file from
   memory. Used as a demo of the composite system.
