@@ -1017,7 +1017,7 @@ static void spoolss_notify_status(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_
 	print_status_struct status;
 
 	memset(&status, 0, sizeof(status));
-	count=get_printqueue(snum, NULL, &q, &status);
+	count=get_printqueue(snum, NULL, UID_FIELD_INVALID, &q, &status);
 	data->notify_data.value[0]=(uint32) status.status;
 	safe_free(q);
 }
@@ -1031,7 +1031,7 @@ static void spoolss_notify_cjobs(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_q
 	print_status_struct status;
 
 	memset(&status, 0, sizeof(status));
-	data->notify_data.value[0]=get_printqueue(snum, NULL, &q, &status);
+	data->notify_data.value[0]=get_printqueue(snum, NULL, UID_FIELD_INVALID, &q, &status);
 	safe_free(q);
 }
 
@@ -1465,7 +1465,7 @@ static uint32 printer_notify_info(const POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info
 			
 		case JOB_NOTIFY_TYPE:
 			memset(&status, 0, sizeof(status));	
-			count=get_printqueue(snum, NULL, &queue, &status);
+			count=get_printqueue(snum, NULL, UID_FIELD_INVALID, &queue, &status);
 			for (j=0; j<count; j++)
 				construct_notify_jobs_info(&(queue[j]), info, snum, option_type, queue[j].job);
 			safe_free(queue);
@@ -1554,7 +1554,7 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer,int snum, pstring s
 	if (get_a_printer(&ntprinter, 2, lp_servicename(snum)) != 0)
 		return False;
 
-	count=get_printqueue(snum, NULL, &queue, &status);
+	count=get_printqueue(snum, NULL, UID_FIELD_INVALID, &queue, &status);
 
 	/* check if we already have a counter for this printer */	
 	session_counter = (counter_printer_0 *)ubi_dlFirst(&counter_list);
@@ -1754,8 +1754,8 @@ static BOOL construct_printer_info_2(pstring servername, PRINTER_INFO_2 *printer
 	if (get_a_printer(&ntprinter, 2, lp_servicename(snum)) !=0 )
 		return False;
 
-	memset(&status, 0, sizeof(status));		
-	count=get_printqueue(snum, NULL, &queue, &status);
+	ZERO_STRUCT(status);		
+	count=get_printqueue(snum, NULL, UID_FIELD_INVALID, &queue, &status);
 	
 	snprintf(chaine, sizeof(chaine)-1, "%s", servername);
 
@@ -2819,13 +2819,13 @@ static uint32 control_printer(const POLICY_HND *handle, uint32 command)
 	switch (command) {
 		case PRINTER_CONTROL_PAUSE:
 			/* pause the printer here */
-			status_printqueue(NULL, snum, LPSTAT_STOPPED);
+			status_printqueue(NULL, UID_FIELD_INVALID, snum, LPSTAT_STOPPED);
 			return 0x0;
 			break;
 		case PRINTER_CONTROL_RESUME:
 		case PRINTER_CONTROL_UNPAUSE:
 			/* UN-pause the printer here */
-			status_printqueue(NULL, snum, LPSTAT_OK);
+			status_printqueue(NULL, UID_FIELD_INVALID, snum, LPSTAT_OK);
 			return 0x0;
 			break;
 		case PRINTER_CONTROL_PURGE:
@@ -3168,7 +3168,7 @@ uint32 _spoolss_enumjobs( POLICY_HND *handle, uint32 firstjob, uint32 numofjobs,
 	if (!get_printer_snum(handle, &snum))
 		return ERROR_INVALID_HANDLE;
 
-	*returned = get_printqueue(snum, NULL, &queue, &prt_status);
+	*returned = get_printqueue(snum, NULL, UID_FIELD_INVALID, &queue, &prt_status);
 	DEBUGADD(4,("count:[%d], status:[%d], [%s]\n", *returned, prt_status.status, prt_status.message));
 
 	switch (level) {
@@ -3217,7 +3217,7 @@ uint32 _spoolss_setjob( const POLICY_HND *handle,
 		return ERROR_INVALID_HANDLE;
 	}
 
-	count=get_printqueue(snum, NULL, &queue, &prt_status);		
+	count=get_printqueue(snum, NULL, UID_FIELD_INVALID, &queue, &prt_status);		
 
 	while ( (i<count) && found==False ) {
 		if ( jobid == queue[i].job )
@@ -3231,19 +3231,19 @@ uint32 _spoolss_setjob( const POLICY_HND *handle,
 			case JOB_CONTROL_CANCEL:
 			case JOB_CONTROL_DELETE:
 			{
-				del_printqueue(NULL, snum, jobid);
+				del_printqueue(NULL, UID_FIELD_INVALID, snum, jobid);
 				safe_free(queue);
 				return 0x0;
 			}
 			case JOB_CONTROL_PAUSE:
 			{
-				status_printjob(NULL, snum, jobid, LPQ_PAUSED);
+				status_printjob(NULL, UID_FIELD_INVALID, snum, jobid, LPQ_PAUSED);
 				safe_free(queue);
 				return 0x0;
 			}
 			case JOB_CONTROL_RESUME:
 			{
-				status_printjob(NULL, snum, jobid, LPQ_QUEUED);
+				status_printjob(NULL, UID_FIELD_INVALID, snum, jobid, LPQ_QUEUED);
 				safe_free(queue);
 				return 0x0;
 			}
@@ -4368,7 +4368,7 @@ uint32 _spoolss_getjob( POLICY_HND *handle, uint32 jobid, uint32 level,
 	if (!get_printer_snum(handle, &snum))
 		return ERROR_INVALID_HANDLE;
 	
-	count=get_printqueue(snum, NULL, &queue, &prt_status);
+	count=get_printqueue(snum, NULL, UID_FIELD_INVALID, &queue, &prt_status);
 	
 	DEBUGADD(4,("count:[%d], prt_status:[%d], [%s]\n",
 	             count, prt_status.status, prt_status.message));
@@ -4378,7 +4378,7 @@ uint32 _spoolss_getjob( POLICY_HND *handle, uint32 jobid, uint32 level,
 		return getjob_level_1(queue, count, snum, jobid, buffer, offered, needed);
 		break;
 	case 2:
-		return getjob_level_2(queue, count, snum, jobid, buffer, offered, needed);
+		return getjob_level_1(queue, count, snum, jobid, buffer, offered, needed);
 		break;
 	default:
 		safe_free(queue);

@@ -176,11 +176,14 @@ implemented */
 #define ERRbaddirectory 267	/* Invalid directory name in a path. */
 #define ERRunknownipc 2142
 
-#define ERROR_ACCESS_DENIED		  (5)
+#define ERROR_INVALID_FUNCTION		  (ERRbadfunc)
+#define ERROR_ACCESS_DENIED		  (ERRnoaccess)
+#define ERROR_INVALID_HANDLE		  (ERRbadfid)
+#define ERROR_NOT_ENOUGH_MEMORY		  (ERRnomem)
 #define ERROR_INVALID_PARAMETER		 (87)
 #define ERROR_INSUFFICIENT_BUFFER	(122)
 #define ERROR_INVALID_NAME		(123)
-#define ERROR_INVALID_LEVEL		(124)
+#define ERROR_INVALID_LEVEL		(ERRunknownlevel)
 #define ERROR_NO_MORE_ITEMS		(259)
 #define ERROR_EAS_DIDNT_FIT		(275)	/* Extended attributes didn't fit */
 #define ERROR_EAS_NOT_SUPPORTED		(282)	/* Extended attributes not supported */

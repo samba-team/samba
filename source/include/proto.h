@@ -2309,15 +2309,19 @@ int cups_printername_ok(char *name);
 /*The following definitions come from  printing/printing.c  */
 
 void lpq_reset(int snum);
-void print_file(connection_struct *conn, files_struct *file);
-int get_printqueue(int snum, 
-		   connection_struct *conn,print_queue_struct **queue,
+void print_file(connection_struct *conn, const vuser_key *key,
+				int snum, files_struct *file);
+int get_printqueue(int snum, connection_struct *conn, const vuser_key *key,
+				print_queue_struct **queue,
 		   print_status_struct *status);
-void del_printqueue(connection_struct *conn,int snum,int jobid);
-void status_printjob(connection_struct *conn,int snum,int jobid,int status);
+void del_printqueue(connection_struct *conn,const vuser_key *key,
+				int snum,int jobid);
+void status_printjob(connection_struct *conn,const vuser_key *key,
+				int snum,int jobid,int status);
 int printjob_encode(int snum, int job);
 void printjob_decode(int jobid, int *snum, int *job);
-void status_printqueue(connection_struct *conn,int snum,int status);
+uint32 status_printqueue(connection_struct *conn,const vuser_key *key,
+				int snum,int status);
 void load_printers(void);
 
 /*The following definitions come from  printing/print_svid.c  */
