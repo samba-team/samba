@@ -91,7 +91,7 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
 			sid_string_static(pdb_get_group_sid(sam_pwent)));
 		printf ("Full Name:            %s\n", pdb_get_fullname(sam_pwent));
 		printf ("Home Directory:       %s\n", pdb_get_homedir(sam_pwent));
-		printf ("HomeDir Drive:        %s\n", pdb_get_dirdrive(sam_pwent));
+		printf ("HomeDir Drive:        %s\n", pdb_get_dir_drive(sam_pwent));
 		printf ("Logon Script:         %s\n", pdb_get_logon_script(sam_pwent));
 		printf ("Profile Path:         %s\n", pdb_get_profile_path(sam_pwent));
 		printf ("Domain:               %s\n", pdb_get_domain(sam_pwent));
