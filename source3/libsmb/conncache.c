@@ -154,5 +154,3 @@ void flush_negative_conn_cache( void )
 	}
 
 }
-
-
