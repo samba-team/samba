@@ -118,20 +118,18 @@ static int findpty(char **slave)
 	return (-1);
 }
 
-static int dochild(int master, char *slavedev, char *name,
-		   char *passwordprogram, BOOL as_root)
+static int dochild(int master, const char *slavedev, const struct passwd *pass,
+		   const char *passwordprogram, BOOL as_root)
 {
 	int slave;
 	struct termios stermios;
-	struct passwd *pass = Get_Pwnam(name, True);
 	gid_t gid;
 	uid_t uid;
 
 	if (pass == NULL)
 	{
 		DEBUG(0,
-		      ("dochild: user name %s doesn't exist in the UNIX password database.\n",
-		       name));
+		      ("dochild: user doesn't exist in the UNIX password database.\n"));
 		return False;
 	}
 
@@ -318,7 +316,7 @@ static int talktochild(int master, char *seq)
 	return (count > 0);
 }
 
-static BOOL chat_with_program(char *passwordprogram, char *name,
+static BOOL chat_with_program(char *passwordprogram, struct passwd *pass,
 			      char *chatsequence, BOOL as_root)
 {
 	char *slavedev;
@@ -327,12 +325,19 @@ static BOOL chat_with_program(char *passwordprogram, char *name,
 	int wstat;
 	BOOL chstat = False;
 
+	if (pass == NULL)
+	{
+		DEBUG(0,
+		      ("chat_with_program: user doesn't exist in the UNIX password database.\n"));
+		return False;
+	}
+
 	/* allocate a pseudo-terminal device */
 	if ((master = findpty(&slavedev)) < 0)
 	{
 		DEBUG(3,
 		      ("Cannot Allocate pty for password change: %s\n",
-		       name));
+		       pass->pw_name));
 		return (False);
 	}
 
@@ -347,7 +352,7 @@ static BOOL chat_with_program(char *passwordprogram, char *name,
 	{
 		DEBUG(3,
 		      ("Cannot fork() child for password change: %s\n",
-		       name));
+		       pass->pw_name));
 		close(master);
 		CatchChild();
 		return (False);
@@ -360,7 +365,7 @@ static BOOL chat_with_program(char *passwordprogram, char *name,
 		{
 			DEBUG(3,
 			      ("Child failed to change password: %s\n",
-			       name));
+			       pass->pw_name));
 			kill(pid, SIGKILL);	/* be sure to end this process */
 		}
 
@@ -426,10 +431,10 @@ static BOOL chat_with_program(char *passwordprogram, char *name,
 			become_root();
 
 		DEBUG(3,
-		      ("Dochild for user %s (uid=%d,gid=%d)\n", name,
+		      ("Dochild for user %s (uid=%d,gid=%d)\n", pass->pw_name,
 		       (int)getuid(), (int)getgid()));
 		chstat =
-			dochild(master, slavedev, name, passwordprogram,
+			dochild(master, slavedev, pass, passwordprogram,
 				as_root);
 
 		if (as_root)
@@ -448,19 +453,20 @@ static BOOL chat_with_program(char *passwordprogram, char *name,
 	if (chstat)
 		DEBUG(3,
 		      ("Password change %ssuccessful for user %s\n",
-		       (chstat ? "" : "un"), name));
+		       (chstat ? "" : "un"), pass->pw_name));
 	return (chstat);
 }
 
 
-BOOL chgpasswd(char *name, char *oldpass, char *newpass, BOOL as_root)
+BOOL chgpasswd(const char *name, const char *oldpass, const char *newpass, BOOL as_root)
 {
 	pstring passwordprogram;
 	pstring chatsequence;
 	size_t i;
 	size_t len;
 
-	strlower(name);
+	struct passwd *pass;
+
 	DEBUG(3, ("Password change for user: %s\n", name));
 
 #if DEBUG_PASSWORD
@@ -505,6 +511,8 @@ BOOL chgpasswd(char *name, char *oldpass, char *newpass, BOOL as_root)
 			return False;
 		}
 	}
+	
+	pass = Get_Pwnam(name);
 
 #ifdef WITH_PAM
 	if (lp_pam_password_change()) {
@@ -513,14 +521,28 @@ BOOL chgpasswd(char *name, char *oldpass, char *newpass, BOOL as_root)
 		if (as_root)
 			become_root();
 
-		ret = smb_pam_passchange(name, oldpass, newpass);
-
+		if (pass) {
+			ret = smb_pam_passchange(pass->pw_name, oldpass, newpass);
+		} else {
+			ret = smb_pam_passchange(name, oldpass, newpass);
+		}
+			
 		if (as_root)
 			unbecome_root();
 
 		return ret;
 	}
 #endif
+
+	/* A non-PAM password change just doen't make sense without a valid local user */
+
+	if (pass == NULL)
+	{
+		DEBUG(0,
+		      ("chgpasswd: user %s doesn't exist in the UNIX password database.\n",
+		       name));
+		return False;
+	}
 
 	pstrcpy(passwordprogram, lp_passwd_program());
 	pstrcpy(chatsequence, lp_passwd_chat());
@@ -553,12 +575,12 @@ the string %%u, and the given string %s does not.\n", passwordprogram ));
 	all_string_sub(chatsequence, "%o", oldpass, sizeof(pstring));
 	all_string_sub(chatsequence, "%n", newpass, sizeof(pstring));
 	return (chat_with_program
-		(passwordprogram, name, chatsequence, as_root));
+		(passwordprogram, pass, chatsequence, as_root));
 }
 
 #else /* ALLOW_CHANGE_PASSWORD */
 
-BOOL chgpasswd(char *name, char *oldpass, char *newpass, BOOL as_root)
+BOOL chgpasswd(const char *name, const char *oldpass, const char *newpass, BOOL as_root)
 {
 	DEBUG(0, ("Password changing not compiled in (user=%s)\n", name));
 	return (False);

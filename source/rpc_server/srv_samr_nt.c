@@ -864,7 +864,7 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 			}
 
 			/* Don't return user private groups... */
-			if (Get_Pwnam(smap.nt_name, False) != 0) {
+			if (Get_Pwnam(smap.nt_name) != 0) {
 				DEBUG(10,("get_group_alias_entries: not returing %s, clashes with user.\n", smap.nt_name ));
 				continue;			
 			}
@@ -1362,7 +1362,7 @@ NTSTATUS _samr_chgpasswd_user(pipes_struct *p, SAMR_Q_CHGPASSWD_USER *q_u, SAMR_
 	/*
 	 * Do any UNIX username case mangling.
 	 */
-	(void)Get_Pwnam( user_name, True);
+	(void)Get_Pwnam_Modify( user_name);
 
     if (!pass_oem_change(user_name, q_u->lm_newpass.pass, q_u->lm_oldhash.hash,
                          q_u->nt_newpass.pass, q_u->nt_oldhash.hash))

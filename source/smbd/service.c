@@ -450,7 +450,7 @@ connection_struct *make_connection(char *service,char *password,
 		/* Allow %S to be used by force user. */
 		pstring_sub(fuser,"%S",service);
 
-		pass2 = (struct passwd *)Get_Pwnam(fuser,True);
+		pass2 = (struct passwd *)Get_Pwnam_Modify(fuser);
 		if (pass2) {
 			conn->uid = pass2->pw_uid;
 			conn->gid = pass2->pw_gid;

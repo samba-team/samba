@@ -157,7 +157,7 @@ static struct smb_passwd *getsmbfilegrpent(void *vp,
 			}
 		}
 
-		pwfile = Get_Pwnam(pw_buf.smb_name, False);
+		pwfile = Get_Pwnam(pw_buf.smb_name);
 		if (pwfile == NULL)
 		{
 			DEBUG(0,("getsmbfilegrpent: smbpasswd database is corrupt!\n"));
