@@ -9,6 +9,8 @@
 	<manvolnum>8</manvolnum></citerefentry> daemon will cache 
 	user and group information before querying a Windows NT server 
 	again.</para>
+        <note><para>This does not apply to authentication requests,
+	these are always evaluated in real time.</para></note>
 </description>
 
 <value type="default">300</value>
