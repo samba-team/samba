@@ -448,11 +448,73 @@ invalid_input:
 	return ldapsrv_queue_reply(call, modify_reply);
 }
 
+static NTSTATUS sldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
+				     struct ldap_CompareRequest *r)
+{
+	struct ldap_Result *compare;
+	struct ldapsrv_reply *compare_r;
+	int result = 80;
+	struct samdb_context *samdb;
+	struct ldb_message **res;
+	struct ldb_context *ldb;
+	const char *attrs[1];
+	const char *errstr;
+	const char *dn;
+	const char *filter;
+	int count;
+
+	samdb = samdb_connect(call);
+	ldb = samdb->ldb;
+	dn = sldb_trim_dn(samdb, r->dn);
+
+	DEBUG(10, ("sldb_Compare: dn: [%s]\n", dn));
+	filter = talloc_asprintf(samdb, "(%s=%*s)", r->attribute, r->value.length, r->value.data);
+	ALLOC_CHECK(filter);
+	DEBUGADD(10, ("sldb_Compare: attribute: [%s]\n", filter));
+
+	attrs[0] = NULL;
+
+	ldb_set_alloc(ldb, talloc_ldb_alloc, samdb);
+	count = ldb_search(ldb, dn, LDB_SCOPE_BASE, filter, attrs, &res);
+
+	compare_r = ldapsrv_init_reply(call, LDAP_TAG_CompareResponse);
+	ALLOC_CHECK(compare_r);
+
+	if (count == 1) {
+		DEBUG(10,("sldb_Compare: matched\n"));
+		result = 0;
+		errstr = NULL;
+	} else if (count == 0) {
+		result = 32;
+		errstr = talloc_strdup(compare_r, ldb_errstring(ldb));
+		DEBUG(10,("sldb_Compare: no results: %s\n", errstr));
+	} else if (count > 1) {
+		result = 80;
+		errstr = talloc_strdup(compare_r, "too many objects match");
+		DEBUG(10,("sldb_Compare: %d results: %s\n", count, errstr));
+	} else if (count == -1) {
+		result = 1;
+		errstr = talloc_strdup(compare_r, ldb_errstring(ldb));
+		DEBUG(10,("sldb_Compare: error: %s\n", errstr));
+	}
+
+	compare = &compare_r->msg.r.CompareResponse;
+	compare->resultcode = result;
+	compare->dn = NULL;
+	compare->errormessage = errstr;
+	compare->referral = NULL;
+
+	talloc_free(samdb);
+
+	return ldapsrv_queue_reply(call, compare_r);
+}
+
 static const struct ldapsrv_partition_ops sldb_ops = {
 	.Search		= sldb_Search,
 	.Add		= sldb_Add,
 	.Del		= sldb_Del,
-	.Modify		= sldb_Modify
+	.Modify		= sldb_Modify,
+	.Compare	= sldb_Compare
 };
 
 const struct ldapsrv_partition_ops *ldapsrv_get_sldb_partition_ops(void)
