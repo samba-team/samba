@@ -660,6 +660,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 			session_key = data_blob_talloc(ntlmssp_state->mem_ctx, NULL, 16);
 			hmac_md5(nt_session_key.data, session_nonce, 
 				 sizeof(session_nonce), session_key.data);
+			DEBUG(10,("NTLM2 session key set\n"));
 			dump_data_pw("NTLM2 session key:\n", session_key.data, session_key.length);
 
 		}
@@ -667,12 +668,14 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 		if (lm_session_key.data && lm_session_key.length >= 8 && 
 		    ntlmssp_state->lm_resp.data && ntlmssp_state->lm_resp.length == 24) {
 			session_key = data_blob_talloc(ntlmssp_state->mem_ctx, NULL, 16);
-			SMBsesskeygen_lmv1(lm_session_key.data, ntlmssp_state->lm_resp.data, 
+			SMBsesskeygen_lm_sess_key(lm_session_key.data, ntlmssp_state->lm_resp.data, 
 					   session_key.data);
+			DEBUG(10,("LM KEY session key set\n"));
 			dump_data_pw("LM session key:\n", session_key.data, session_key.length);
 		}
 	} else if (nt_session_key.data) {
 		session_key = nt_session_key;
+		DEBUG(10,("unmodified session key set\n"));
 		dump_data_pw("unmodified session key:\n", session_key.data, session_key.length);
 	}
 
@@ -695,7 +698,8 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 			ntlmssp_state->session_key = data_blob_talloc(ntlmssp_state->mem_ctx, 
 								      encrypted_session_key.data, 
 								      encrypted_session_key.length);
-			dump_data_pw("KEY_EXCH session key:\n", session_key.data, session_key.length);
+			dump_data_pw("KEY_EXCH session key:\n", encrypted_session_key.data, 
+				encrypted_session_key.length);
 		}
 	} else {
 		ntlmssp_state->session_key = session_key;
