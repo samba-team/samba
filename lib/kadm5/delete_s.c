@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -46,12 +46,16 @@ kadm5_s_delete_principal(void *server_handle, krb5_principal princ)
     kadm5_server_context *context = server_handle;
     kadm5_ret_t ret;
     hdb_entry ent;
+
     ent.principal = princ;
     ret = context->db->open(context->context, context->db, O_RDWR, 0);
     if(ret) {
 	krb5_warn(context->context, ret, "opening database");
 	return ret;
     }
+    kadm5_log_delete (context,
+		      princ);
+
     ret = context->db->delete(context->context, context->db, &ent);
     context->db->close(context->context, context->db);
     return _kadm5_error_code(ret);
