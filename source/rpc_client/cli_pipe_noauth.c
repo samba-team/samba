@@ -27,6 +27,7 @@
 #endif
 
 #include "includes.h"
+#include "rpc_parse.h"
 
 extern int DEBUGLEVEL;
 extern struct pipe_id_info pipe_names[];

@@ -23,6 +23,7 @@
 #define NO_SYSLOG
 
 #include "includes.h"
+#include "rpc_parse.h"
 
 struct user_creds *usr_creds = NULL;
 

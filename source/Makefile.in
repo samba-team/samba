@@ -127,7 +127,7 @@ NMBLIB = bin/libnmb.la
 MSRPCLIB = bin/libmsrpc.la
 SMBPWLIB = bin/libsmbpw.la
 
-SAMBA_LIBS = $(SAMBALIB) $(SMBLIB) $(NMBLIB) $(MSRPCLIB)
+SAMBA_LIBS = $(MSRPCLIB) $(SMBLIB) $(NMBLIB) $(SAMBALIB)
 
 SHARED_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB)
 
@@ -342,7 +342,7 @@ SVCCTLD_OBJ = $(MSRPCD_OBJ) $(SVCCTLD_OBJ1) \
 LSARPCD_OBJ = $(MSRPCD_OBJ) $(LSARPCD_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
            $(SIDDB_OBJ) $(LOCKING_OBJ) \
-		$(LIBSTATUS_OBJ) $(PROFILE_OBJ) 
+		$(PROFILE_OBJ) 
 
 SPOOLSSD_OBJ = $(MSRPCD_OBJ) $(SPOOLSSD_OBJ1) \
 		$(PRINTING_OBJ) \
@@ -359,7 +359,7 @@ SAMRD_OBJ = $(MSRPCD_OBJ) $(SAMRD_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
            $(LOCKING_OBJ) \
            $(SIDDB_OBJ) \
-		$(LIBSTATUS_OBJ) $(PROFILE_OBJ) 
+		$(PROFILE_OBJ) 
 
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
             nmbd/nmbd_become_lmb.o nmbd/nmbd_browserdb.o \
@@ -609,32 +609,32 @@ bin/.dummy:
 
 bin/libmsrpc.la: $(LIBMSRPC_LTOBJS) bin/.dummy
 	@echo Linking shared library $@
-	$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
+	@$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
 	  $(LIBMSRPC_LTOBJS)
 
 bin/libnmb.la: $(LIBNMB_LTOBJS) bin/.dummy
 	@echo Linking shared library $@
-	$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
+	@$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
 	  $(LIBNMB_LTOBJS)
 
 bin/libsmbpw.la: $(LIBSMBPW_LTOBJS) bin/.dummy
 	@echo Linking shared library $@
-	$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
+	@$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
 	  $(LIBSMBPW_LTOBJS)
 
 bin/libsmb.la: $(LIBSMB_LTOBJS) bin/.dummy
 	@echo Linking shared library $@
-	$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
+	@$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
 	  $(LIBSMB_LTOBJS)
 
 bin/libubiqx.la: $(LIBUBIQX_LTOBJS) bin/.dummy
 	@echo Linking shared library $@
-	$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
+	@$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
 	  $(LIBUBIQX_LTOBJS)
 
 bin/libsamba.la: $(LIBSAMBA_LTOBJS) bin/.dummy
 	@echo Linking shared library $@
-	$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
+	@$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
 	  $(LIBSAMBA_LTOBJS)
 
 bin/smbd: $(UBIQXLIB) $(SAMBA_LIBS) $(SMBD_OBJ) bin/.dummy
@@ -836,7 +836,9 @@ uninstallcp:
 clean: 
 	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.lo */*.so
 
-proto: 
+proto: rpc_parse_proto all_other_proto_for_now
+
+all_other_proto_for_now: 
 	@echo rebuilding include/proto.h
 	@cd $(srcdir) && $(AWK) -f script/mkproto.awk `echo $(PROTO_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` > include/proto.h
 

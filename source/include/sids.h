@@ -21,8 +21,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef SIDS_H
-#define SIDS_H 
+#ifndef _SIDS_H
+#define _SIDS_H 
 
 extern DOM_SID global_sam_sid;
 extern fstring global_sam_name;
@@ -34,4 +34,4 @@ extern DOM_SID global_sid_S_1_1;    /* everyone */
 extern DOM_SID global_sid_S_1_3;    /* Creator Owner */
 extern DOM_SID global_sid_S_1_5;    /* NT Authority */
 
-#endif /* SIDS_H */
+#endif /* _SIDS_H */

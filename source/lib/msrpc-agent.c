@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "rpc_parse.h"
 #include "smb.h"
 
 extern int DEBUGLEVEL;

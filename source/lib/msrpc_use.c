@@ -23,6 +23,7 @@
 #define NO_SYSLOG
 
 #include "includes.h"
+#include "rpc_parse.h"
 #include "trans2.h"
 
 extern int DEBUGLEVEL;

@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "rpc_reg.h"
 
 #if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
 #ifdef WITH_NISPLUS_HOME
