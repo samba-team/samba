@@ -138,8 +138,6 @@ struct pvfs_mangle_context {
 
 	/* this is used to reverse the base 36 mapping */
 	unsigned char base_reverse[256];
-
-	const char **reserved_names;
 };
 
 
