@@ -1,6 +1,6 @@
 /* $Id$ */
 
-#include "asn1_locl.h"
+#include "libasn1.h"
 
 RCSID("$Id$");
 
@@ -57,16 +57,16 @@ der_put_length (unsigned char *p, int len, int val)
 }
 
 int
-der_put_general_string (unsigned char *p, int len, char *str)
+der_put_general_string (unsigned char *p, int len, general_string *str)
 {
-  int slen = strlen(str);
+  int slen = strlen(*str);
   int l;
 
   if (len < slen)
     return -1;
   p -= slen;
   len -= slen;
-  memcpy (p+1, str, slen);
+  memcpy (p+1, *str, slen);
   l = der_put_length (p, len, slen);
   if(l < 0)
     return l;
@@ -74,19 +74,19 @@ der_put_general_string (unsigned char *p, int len, char *str)
 }
 
 int
-der_put_octet_string (unsigned char *p, int len, krb5_data *data)
+der_put_octet_string (unsigned char *p, int len, octet_string *data)
 {
   int l;
 
-  if (len < data->len)
+  if (len < data->length)
     return -1;
-  p -= data->len;
-  len -= data->len;
-  memcpy (p+1, data->data, data->len);
-  l = der_put_length (p, len, data->len);
+  p -= data->length;
+  len -= data->length;
+  memcpy (p+1, data->data, data->length);
+  l = der_put_length (p, len, data->length);
   if (l < 0)
     return l;
-  return l + data->len;
+  return l + data->length;
 }
 
 int
@@ -150,13 +150,12 @@ encode_integer (unsigned char *p, int len, unsigned *data)
 }
 
 int
-encode_general_string (unsigned char *p, int len, char **data)
+encode_general_string (unsigned char *p, int len, general_string *data)
 {
-  char *str = *data;
   int ret = 0;
   int l;
 
-  l = der_put_general_string (p, len, str);
+  l = der_put_general_string (p, len, data);
   if (l < 0)
     return l;
   p -= l;
@@ -172,7 +171,7 @@ encode_general_string (unsigned char *p, int len, char **data)
 }
 
 int
-encode_octet_string (unsigned char *p, int len, krb5_data *k)
+encode_octet_string (unsigned char *p, int len, octet_string *k)
 {
   int ret = 0;
   int l;
@@ -193,12 +192,12 @@ encode_octet_string (unsigned char *p, int len, krb5_data *k)
 }
 
 void
-time2generalizedtime (time_t t, krb5_data *s)
+time2generalizedtime (time_t t, octet_string *s)
 {
      struct tm *tm;
 
      s->data = malloc(16);
-     s->len = 15;
+     s->length = 15;
      tm = gmtime (&t);
      sprintf (s->data, "%04d%02d%02d%02d%02d%02dZ", tm->tm_year + 1900,
 	      tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min,
@@ -208,7 +207,7 @@ time2generalizedtime (time_t t, krb5_data *s)
 int
 encode_generalized_time (unsigned char *p, int len, time_t *t)
 {
-  krb5_data k;
+  octet_string k;
   int l;
   int ret = 0;
 

@@ -1,8 +1,7 @@
 /* $Id$ */
 
-#ifndef DER_H
-
-#define DER_H
+#ifndef __DER_H__
+#define __DER_H__
 
 #include <time.h>
 
@@ -27,27 +26,14 @@ enum {
      UT_GeneralString = 27
 };
 
-/**/
-
-struct krb5_data {
-    size_t len;
-    unsigned char *data;
-};
-
-typedef struct krb5_data krb5_data;
-
 time_t timegm (struct tm *);
 
-void time2generalizedtime (time_t t, krb5_data *s);
-
-krb5_data string_make (char *);
-krb5_data string_make_n (int len, char *);
-void string_free (krb5_data);
+void time2generalizedtime (time_t t, octet_string *s);
 
 int der_get_int (unsigned char *p, int len, unsigned *ret);
 int der_get_length (unsigned char *p, int len, int *ret);
-int der_get_general_string (unsigned char *p, int len, char **str);
-int der_get_octet_string (unsigned char *p, int len, krb5_data *data);
+int der_get_general_string (unsigned char *p, int len, general_string *str);
+int der_get_octet_string (unsigned char *p, int len, octet_string *data);
 int der_get_tag (unsigned char *p, int len,
 		  Der_class *class, Der_type *type, int *tag);
 int der_match_tag (unsigned char *p, int len,
@@ -56,33 +42,38 @@ int der_match_tag_and_length (unsigned char *p, int len,
 			      Der_class class, Der_type type, int tag,
 			      int *length_ret);
 int decode_integer (unsigned char *p, int len, unsigned *num);
-int decode_general_string (unsigned char *p, int len, char **str);
-int decode_octet_string (unsigned char *p, int len, krb5_data *k);
+int decode_general_string (unsigned char *p, int len, general_string *str);
+int decode_octet_string (unsigned char *p, int len, octet_string *k);
 int decode_generalized_time (unsigned char *p, int len, time_t *t);
 
 
 int der_put_int (unsigned char *p, int len, unsigned val);
 int der_put_length (unsigned char *p, int len, int val);
-int der_put_general_string (unsigned char *p, int len, char *str);
-int der_put_octet_string (unsigned char *p, int len, krb5_data *data);
+int der_put_general_string (unsigned char *p, int len, general_string *str);
+int der_put_octet_string (unsigned char *p, int len, octet_string *data);
 int der_put_tag (unsigned char *p, int len, Der_class class, Der_type type,
 		 int tag);
 int der_put_length_and_tag (unsigned char *p, int len, int len_val,
 			    Der_class class, Der_type type, int tag);
 int encode_integer (unsigned char *p, int len, unsigned *data);
-int encode_general_string (unsigned char *p, int len, char **data);
-int encode_octet_string (unsigned char *p, int len, krb5_data *k);
+int encode_general_string (unsigned char *p, int len, general_string *data);
+int encode_octet_string (unsigned char *p, int len, octet_string *k);
 int encode_generalized_time (unsigned char *p, int len, time_t *t);
 
 void free_integer (unsigned *num);
-void free_general_string (char **str);
-void free_octet_string (krb5_data *k);
+void free_general_string (general_string *str);
+void free_octet_string (octet_string *k);
 void free_generalized_time (time_t *t);
 
 size_t length_len (int len);
 size_t length_integer (unsigned *data);
-size_t length_general_string (char **data);
-size_t length_octet_string (krb5_data *k);
+size_t length_general_string (general_string *data);
+size_t length_octet_string (octet_string *k);
 size_t length_generalized_time (time_t *t);
 
-#endif /* DER_H */
+void copy_general_string (general_string *from, general_string *to);
+void copy_octet_string (octet_string *from, octet_string *to);
+
+int fix_dce(int reallen, int *len);
+
+#endif /* __DER_H__ */

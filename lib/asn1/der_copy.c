@@ -1,18 +1,18 @@
-#include "asn1_locl.h"
+#include "libasn1.h"
 
 RCSID("$Id$");
 
 void
-copy_general_string (char **from, char **to)
+copy_general_string (general_string *from, general_string *to)
 {
     *to = malloc(strlen(*from) + 1);
     strcpy(*to, *from);
 }
 
 void
-copy_octet_string (krb5_data *from, krb5_data *to)
+copy_octet_string (octet_string *from, octet_string *to)
 {
-    to->len = from->len;
-    to->data = malloc(to->len);
-    memcpy(to->data, from->data, to->len);
+    to->length = from->length;
+    to->data = malloc(to->length);
+    memcpy(to->data, from->data, to->length);
 }

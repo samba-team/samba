@@ -1,15 +1,15 @@
-#include "asn1_locl.h"
+#include "libasn1.h"
 
 RCSID("$Id$");
 
 void
-free_general_string (char **str)
+free_general_string (general_string *str)
 {
     free(*str);
 }
 
 void
-free_octet_string (krb5_data *k)
+free_octet_string (octet_string *k)
 {
     free(k->data);
 }

@@ -1,4 +1,4 @@
-#include "asn1_locl.h"
+#include "libasn1.h"
 
 RCSID("$Id$");
 
@@ -49,7 +49,7 @@ der_get_length (unsigned char *p, int len, int *ret)
 }
 
 int
-der_get_general_string (unsigned char *p, int len, char **str)
+der_get_general_string (unsigned char *p, int len, general_string *str)
 {
   int l, slen;
   char *s;
@@ -71,7 +71,7 @@ der_get_general_string (unsigned char *p, int len, char **str)
 }
 
 int
-der_get_octet_string (unsigned char *p, int len, krb5_data *data)
+der_get_octet_string (unsigned char *p, int len, octet_string *data)
 {
   int l, slen;
 
@@ -82,9 +82,9 @@ der_get_octet_string (unsigned char *p, int len, krb5_data *data)
   len -= l;
   if (len < slen)
     return -1;
-  data->len = slen;
+  data->length = slen;
   data->data = malloc(slen);
-  if (data->data == NULL && data->len != 0)
+  if (data->data == NULL && data->length != 0)
     return -1;
   memcpy (data->data, p, slen);
   return slen + l;
@@ -171,7 +171,7 @@ decode_integer (unsigned char *p, int len, unsigned *num)
 }
 
 int
-decode_general_string (unsigned char *p, int len, char **str)
+decode_general_string (unsigned char *p, int len, general_string *str)
 {
   int ret = 0;
   int l;
@@ -192,7 +192,7 @@ decode_general_string (unsigned char *p, int len, char **str)
 }
 
 int
-decode_octet_string (unsigned char *p, int len, krb5_data *k)
+decode_octet_string (unsigned char *p, int len, octet_string *k)
 {
   int ret = 0;
   int l;
@@ -228,7 +228,7 @@ generalizedtime2time (char *s, time_t *t)
 int
 decode_generalized_time (unsigned char *p, int len, time_t *t)
 {
-  krb5_data k;
+  octet_string k;
   char times[32]; /* XXX */
   int ret = 0;
   int l;
@@ -245,8 +245,8 @@ decode_generalized_time (unsigned char *p, int len, time_t *t)
   p += l;
   len -= l;
   ret += l;
-  strncpy(times, (char*)k.data, k.len);
-  times[k.len] = 0;
+  strncpy(times, (char*)k.data, k.length);
+  times[k.length] = 0;
   generalizedtime2time (times, t);
   free (k.data);
   return ret;

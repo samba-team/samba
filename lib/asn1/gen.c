@@ -24,6 +24,23 @@ init_generate (char *filename)
     fprintf (headerfile, 
 	     "#ifndef __" STEM "_h__\n"
 	     "#define __" STEM "_h__\n\n");
+    fprintf (headerfile, 
+	     "#include <stddef.h>\n\n");
+    fprintf (headerfile,
+	     "typedef struct {\n"
+	     "  size_t length;\n"
+	     "  void *data;\n"
+	     "} octet_string;\n\n");
+    fprintf (headerfile,
+#if 0
+	     "typedef struct {\n"
+	     "  size_t length;\n"
+	     "  char *data;\n"
+	     "} general_string;\n\n"
+#else
+	     "typedef char *general_string;\n\n"
+#endif
+	     );
     logfile = fopen(STEM "_files", "w");
     if (logfile == NULL) {
 	fprintf (stderr, "Could not open " STEM "_files" "\n");
@@ -152,7 +169,7 @@ define_type (int level, char *name, Type *t)
 	break;
     case TOctetString:
 	space(level);
-	fprintf (headerfile, "krb5_data %s;\n", name);
+	fprintf (headerfile, "octet_string %s;\n", name);
 	break;
     case TBitString: {
 	Member *m;
@@ -218,7 +235,7 @@ define_type (int level, char *name, Type *t)
 	break;
     case TGeneralString:
 	space(level);
-	fprintf (headerfile, "char *%s;\n", name);
+	fprintf (headerfile, "general_string %s;\n", name);
 	break;
     case TApplication:
 	define_type (level, name, t->subtype);
@@ -261,8 +278,8 @@ generate_type (Symbol *s)
 	     "#include <stdio.h>\n"
 	     "#include <stdlib.h>\n"
 	     "#include <time.h>\n"
-	     "#include <der.h>\n"
-	     "#include <" STEM ".h>\n\n",
+	     "#include <" STEM ".h>\n\n"
+	     "#include <der.h>\n",
 	     orig_filename);
     generate_type_header (s);
     generate_type_encode (s);

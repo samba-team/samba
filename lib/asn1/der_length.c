@@ -1,4 +1,4 @@
-#include "asn1_locl.h"
+#include "libasn1.h"
 
 RCSID("$Id$");
 
@@ -32,7 +32,7 @@ length_integer (unsigned *data)
 }
 
 size_t
-length_general_string (char **data)
+length_general_string (general_string *data)
 {
   char *str = *data;
   size_t len = strlen(str);
@@ -40,19 +40,19 @@ length_general_string (char **data)
 }
 
 size_t
-length_octet_string (krb5_data *k)
+length_octet_string (octet_string *k)
 {
-  return 1 + length_len(k->len) + k->len;
+  return 1 + length_len(k->length) + k->length;
 }
 
 size_t
 length_generalized_time (time_t *t)
 {
-  krb5_data k;
+  octet_string k;
   size_t ret;
 
   time2generalizedtime (*t, &k);
-  ret = 1 + length_len(k.len) + k.len;
+  ret = 1 + length_len(k.length) + k.length;
   free (k.data);
   return ret;
 }
