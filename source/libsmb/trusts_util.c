@@ -191,7 +191,7 @@ done:
 
 /**
  * Migrates trust passwords from previous location (secrets.tdb) to current pdb backend
- * and puts a marker in secrets.tdb to avoid doing this again. This function should be
+ * and puts a marker in secrets.tdb to avoid doing this again. This function needs to be
  * called only once.
  *
  * @return number of passwords migrated
@@ -224,14 +224,19 @@ int migrate_trust_passwords(struct pdb_context *pdb_ctx)
 	/* Checking whether passwords have already been migrated */
 	if (secrets_passwords_migrated(False)) return migrated;
 
-	/* NT Workstation trust passwords */
-	if (secrets_fetch_trust_account_password(dom_name, wks_pass, &lct, &chan)) {
+	/* NT/ADS Workstation trust passwords */
+	if (secrets_lock_trust_account_password(dom_name, True) &&
+	    secrets_fetch_trust_account_password(dom_name, wks_pass, &lct, &chan)) {
 		memset(&trust, 0, sizeof(trust));
 
-		/* TODO: put a lock on trust wks password */
-
 		/* flags */
-		trust.private.flags = PASS_TRUST_NT;
+		switch (lp_security()) {
+		case SEC_DOMAIN: trust.private.flags = PASS_TRUST_NT;
+			break;
+		case SEC_ADS:    trust.private.flags = PASS_TRUST_ADS;
+			break;
+		}
+
 		switch (chan) {
 		case SEC_CHAN_WKSTA:
 			trust.private.flags |= PASS_TRUST_MACHINE;
@@ -257,6 +262,9 @@ int migrate_trust_passwords(struct pdb_context *pdb_ctx)
 			sid_copy(&trust.private.domain_sid, &dom_sid);
 		else
 			return 0;
+
+		/* release mutex on secrets.tdb record */
+		secrets_lock_trust_account_password(dom_name, False);
 		
 		nt_status = pdb_ctx->pdb_add_trust_passwd(pdb_ctx, &trust);
 		migrated++;
@@ -287,13 +295,10 @@ int migrate_trust_passwords(struct pdb_context *pdb_ctx)
 		}
 
 	} while (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_MORE_ENTRIES));
+
 	talloc_destroy(mem_ctx);
 
-	/* ADS Workstation trust passwords */
-	memset(&trust, 0, sizeof(trust));
-	
-
-	/* We're done with migration */
+	/* We're done with migration process and don't need to repeat it */
 	secrets_passwords_migrated(True);
 
 	return migrated;
