@@ -120,9 +120,9 @@ void print_pcap_packet(FILE *out, unsigned char *data, long length, long caplen)
 
 void print_hex_packet(FILE *out, unsigned char *data, long length)
 {
-	long i,cur = 0;int tmp;
+	long i,cur = 0;
 	while(cur < length) {
-		fprintf(out, "%06X ", cur);
+		fprintf(out, "%06lX ", cur);
 		for(i = cur; i < length && i < cur + 16; i++) {
 			fprintf(out, "%02x ", data[i]);
 		}
@@ -159,7 +159,7 @@ void read_log_msg(FILE *in, unsigned char **_buffer, long *buffersize, long *dat
 {
 	unsigned char *buffer;
 	int tmp; long i;
-	assert(fscanf(in, " size=%d\n", buffersize));
+	assert(fscanf(in, " size=%ld\n", buffersize));
 	*buffersize+=4; /* for netbios */
 	buffer = malloc(*buffersize);
 	memset(buffer, 0, *buffersize);
@@ -188,7 +188,7 @@ void read_log_msg(FILE *in, unsigned char **_buffer, long *buffersize, long *dat
 	}
 
 	*data_offset = smb_vwv+buffer[smb_wct]*2;
-	assert(fscanf(in, "  smb_bcc=%d\n", data_length)); buffer[(*data_offset)] = *data_length;
+	assert(fscanf(in, "  smb_bcc=%ld\n", data_length)); buffer[(*data_offset)] = *data_length;
 	(*data_offset)+=2;
 	*_buffer = buffer;
 }
@@ -202,15 +202,15 @@ long read_log_data(FILE *in, unsigned char *buffer, long data_length)
 			if(i != 0) { /* Read data after each line */
 				assert(fscanf(in, "%8s %8s", real[0], real[1]) == 2);
 			}
-			ret = fscanf(in, "  [%03X]", &addr);
+			ret = fscanf(in, "  [%03lX]", &addr);
 			if(!ret) {
-				if(!quiet)fprintf(stderr, "Only first %d bytes are logged, packet trace will be incomplete\nTry a higher log level\n", i);
+				if(!quiet)fprintf(stderr, "Only first %ld bytes are logged, packet trace will be incomplete\nTry a higher log level\n", i);
 				return i-1;
 			}
 			assert(addr == i);
 		}
-		if(!fscanf(in, "%02X", &tmp)) {
-			if(!quiet)fprintf(stderr, "Only first %d bytes are logged, packet trace will be incomplete\nTry a higher log level\n", i-1);
+		if(!fscanf(in, "%02lX", &tmp)) {
+			if(!quiet)fprintf(stderr, "Only first %ld bytes are logged, packet trace will be incomplete\nTry a higher log level\n", i-1);
 			return i-1;
 		}
 		buffer[i] = tmp;
@@ -223,13 +223,11 @@ int main (int argc, char **argv)
 	const char *infile, *outfile;
 	FILE *out, *in;
 	int opt;
-	int c;
 	poptContext pc;
 	char buffer[4096];
 	long data_offset, data_length;
 	long data_bytes_read;
 	int in_packet = 0;
-	int i;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{ "quiet", 'q', POPT_ARG_NONE, &quiet, 0, "Be quiet, don't output warnings" },
