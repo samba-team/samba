@@ -725,7 +725,7 @@ uint32 cli_spoolss_enumprinterdrivers (
 		}
 
 		/* Unmarshall response */
-		if (spoolss_io_r_enumprinterdrivers ("", &r, &rbuf, 0)) 
+		if (new_spoolss_io_r_enumprinterdrivers ("", &r, &rbuf, 0)) 
 		{
 			needed = r.needed;
 		}
