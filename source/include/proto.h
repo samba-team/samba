@@ -84,8 +84,46 @@ char *dos_GetWd(char *path);
 
 void fault_setup(void (*fn)(void *));
 
+/*The following definitions come from  lib/fnmatch.c  */
+
+void fnmatch_dummy(void) {}
+#endif
+
 /*The following definitions come from  lib/genrand.c  */
 
+/* 
+   Unix SMB/Netbios implementation.
+   Version 1.9.
+
+   Functions to create reasonable random numbers for crypto use.
+
+   Copyright (C) Jeremy Allison 1998
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+#include "includes.h"
+
+extern int DEBUGLEVEL;
+static uint32 counter = 0;
+
+/****************************************************************
+get a 16 byte hash from the contents of a file
+Note that the hash is not initialised.
+*****************************************************************/
+static void do_filehash(char *fname, unsigned char *hash);
 void generate_random_buffer( unsigned char *out, int len, BOOL re_seed);
 
 /*The following definitions come from  lib/getsmbpass.c  */
@@ -1145,6 +1183,8 @@ char *lp_veto_files(int );
 char *lp_hide_files(int );
 char *lp_veto_oplocks(int );
 char *lp_driverlocation(int );
+BOOL lp_preexec_close(int );
+BOOL lp_rootpreexec_close(int );
 BOOL lp_revalidate(int );
 BOOL lp_casesensitive(int );
 BOOL lp_preservecase(int );
@@ -1321,8 +1361,45 @@ BOOL trust_get_passwd( unsigned char trust_passwd[16], char *domain, char *mynam
 BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname);
 void pcap_printer_fn(void (*fn)(char *, char *));
 
+/*The following definitions come from  printing/print_cups.c  */
+
+int cups_printername_ok(char *name);
+void print_cups_dummy(void) {}
+#endif /* HAVE_LIBCUPS */
+
 /*The following definitions come from  printing/print_svid.c  */
 
+/*
+ * Copyright (C) 1997-1998 by Norm Jacobs, Colorado Springs, Colorado, USA
+ * Copyright (C) 1997-1998 by Sun Microsystem, Inc.
+ * All Rights Reserved
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
+/*
+ * This module implements support for gathering and comparing available
+ * printer information on a SVID or XPG4 compliant system.  It does this
+ * through the use of the SVID/XPG4 command "lpstat(1)".
+ *
+ * The expectations is that execution of the command "lpstat -v" will
+ * generate responses in the form of:
+ *
+ *	device for serial: /dev/term/b
+ *	system for fax: server
+ *	system for color: server (as printer chroma);
 void sysv_printer_fn(void (*fn)(char *, char *));
 int sysv_printername_ok(char *name);
 
