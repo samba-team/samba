@@ -361,9 +361,13 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
 	struct connections_data crec;
 	struct msg_all *msg_all = (struct msg_all *)state;
 
+	if (dbuf.dsize != sizeof(crec))
+		return 0;
+
 	memcpy(&crec, dbuf.dptr, sizeof(crec));
 
-	if (crec.cnum != -1) return 0;
+	if (crec.cnum != -1)
+		return 0;
 
 	/* if the msg send fails because the pid was not found (i.e. smbd died), 
 	 * the msg has already been deleted from the messages.tdb.*/

@@ -1,6 +1,6 @@
 /* 
    Unix SMB/Netbios implementation.
-   Version 1.9.
+   Version 2.2.
    web status page
    Copyright (C) Andrew Tridgell 1997-1998
    
@@ -76,6 +76,10 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* state)
 {
 	struct connections_data crec;
+
+	if (dbuf.dsize != sizeof(crec))
+		return 0;
+
 	memcpy(&crec, dbuf.dptr, sizeof(crec));
 
 	if (crec.cnum == -1 && process_exists(crec.pid)) {
@@ -92,10 +96,14 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* st
 static int traverse_fn2(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* state)
 {
 	struct connections_data crec;
+
+	if (dbuf.dsize != sizeof(crec))
+		return 0;
+
 	memcpy(&crec, dbuf.dptr, sizeof(crec));
 	
-	if (crec.cnum != -1 || !process_exists(crec.pid) ||
-	    (crec.pid == smbd_pid)) return 0;
+	if (crec.cnum != -1 || !process_exists(crec.pid) || (crec.pid == smbd_pid))
+		return 0;
 
 	printf("<tr><td>%d</td><td>%s</td><td>%s</td><td>%s</td>\n",
 	       (int)crec.pid,
@@ -114,9 +122,14 @@ static int traverse_fn2(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* st
 static int traverse_fn3(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* state)
 {
 	struct connections_data crec;
+
+	if (dbuf.dsize != sizeof(crec))
+		return 0;
+
 	memcpy(&crec, dbuf.dptr, sizeof(crec));
 
-	if (crec.cnum == -1 || !process_exists(crec.pid)) return 0;
+	if (crec.cnum == -1 || !process_exists(crec.pid))
+		return 0;
 
 	printf("<tr><td>%s</td><td>%s</td><td>%s</td><td>%d</td><td>%s</td><td>%s</td></tr>\n",
 	       crec.name,uidtoname(crec.uid),
@@ -278,4 +291,3 @@ void status_page(void)
 		printf("//-->\n</script>\n");
 	}
 }
-
