@@ -1211,11 +1211,15 @@ init_env(void)
  *
  * We only accept the environment variables listed below.
  */
- */
 
 static void
 scrub_env(void)
 {
+    static const char *reject[] = {
+	"TERMCAP=/",
+	NULL
+    };
+
     static const char *accept[] = {
 	"XAUTH=", "XAUTHORITY=", "DISPLAY=",
 	"TERM=",
@@ -1224,6 +1228,7 @@ scrub_env(void)
 	"PRINTER=",
 	"LOGNAME=",
 	"POSIXLY_CORRECT=",
+	"TERMCAP=",
 	NULL
     };
 
@@ -1231,6 +1236,16 @@ scrub_env(void)
     const char **p;
   
     for (cpp2 = cpp = environ; *cpp; cpp++) {
+	int reject_it = 0;
+
+	for(p = reject; *p; p++)
+	    if(strncmp(*cpp, *p, strlen(*p)) == 0) {
+		reject_it = 1;
+		break;
+	    }
+	if (reject_it)
+	    continue;
+
 	for(p = accept; *p; p++)
 	    if(strncmp(*cpp, *p, strlen(*p)) == 0)
 		break;
