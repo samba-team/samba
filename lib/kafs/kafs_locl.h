@@ -94,5 +94,24 @@
 
 #include "afssysdefs.h"
 
+struct kafs_data;
+typedef int (*afslog_uid_func_t)(struct kafs_data*, const char*, uid_t);
+
+typedef int (*get_cred_func_t)(struct kafs_data*, const char*, const char*, 
+				    const char*, CREDENTIALS*);
+
+typedef char* (*get_realm_func_t)(struct kafs_data*, const char*);
+
+typedef struct kafs_data {
+    afslog_uid_func_t afslog_uid;
+    get_cred_func_t get_cred;
+    get_realm_func_t get_realm;
+    void *data;
+} kafs_data;
+
+int _kafs_afslog_all_local_cells(kafs_data*, uid_t);
+
+int _kafs_get_cred(kafs_data*, const char*, const char*, const char *, 
+		  CREDENTIALS*);
 
 #endif /* __KAFS_LOCL_H__ */
