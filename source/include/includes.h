@@ -122,7 +122,6 @@ extern int errno;
 #include "enums.h"
 #include "smb_macros.h"
 #include "smb.h"
-#include "libcli/ldap/ldap.h"
 #include "byteorder.h"
 #include "module.h"
 #include "mutex.h"

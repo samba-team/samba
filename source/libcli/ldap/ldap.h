@@ -317,4 +317,63 @@ struct ldap_parse_tree {
 #define LDAP_ALL_SEP "()&|=!"
 #define LDAP_CONNECTION_TIMEOUT 10000
 
+/* The following definitions come from libcli/ldap/ldap.c  */
+
+BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result);
+BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg);
+BOOL ldap_parse_basic_url(TALLOC_CTX *mem_ctx, const char *url,
+			  char **host, uint16_t *port, BOOL *ldaps);
+
+/* The following definitions come from libcli/ldap/ldap_client.c  */
+
+struct ldap_connection *ldap_connect(TALLOC_CTX *mem_ctx, const char *url);
+struct ldap_message *new_ldap_message(TALLOC_CTX *mem_ctx);
+BOOL ldap_send_msg(struct ldap_connection *conn, struct ldap_message *msg,
+		   const struct timeval *endtime);
+BOOL ldap_receive_msg(struct ldap_connection *conn, struct ldap_message *msg,
+		      const struct timeval *endtime);
+struct ldap_message *ldap_receive(struct ldap_connection *conn, int msgid,
+				  const struct timeval *endtime);
+struct ldap_message *ldap_transaction(struct ldap_connection *conn,
+				      struct ldap_message *request);
+int ldap_bind_simple(struct ldap_connection *conn, const char *userdn, const char *password);
+int ldap_bind_sasl(struct ldap_connection *conn, const char *username, const char *domain, const char *password);
+struct ldap_connection *ldap_setup_connection(TALLOC_CTX *mem_ctx, const char *url, 
+						const char *userdn, const char *password);
+struct ldap_connection *ldap_setup_connection_with_sasl(TALLOC_CTX *mem_ctx, const char *url,
+							const char *username, const char *domain, const char *password);
+BOOL ldap_abandon_message(struct ldap_connection *conn, int msgid,
+				 const struct timeval *endtime);
+BOOL ldap_setsearchent(struct ldap_connection *conn, struct ldap_message *msg,
+		       const struct timeval *endtime);
+struct ldap_message *ldap_getsearchent(struct ldap_connection *conn,
+				       const struct timeval *endtime);
+void ldap_endsearchent(struct ldap_connection *conn,
+		       const struct timeval *endtime);
+struct ldap_message *ldap_searchone(struct ldap_connection *conn,
+				    struct ldap_message *msg,
+				    const struct timeval *endtime);
+BOOL ldap_find_single_value(struct ldap_message *msg, const char *attr,
+			    DATA_BLOB *value);
+BOOL ldap_find_single_string(struct ldap_message *msg, const char *attr,
+			     TALLOC_CTX *mem_ctx, char **value);
+BOOL ldap_find_single_int(struct ldap_message *msg, const char *attr,
+			  int *value);
+int ldap_error(struct ldap_connection *conn);
+NTSTATUS ldap2nterror(int ldaperror);
+
+/* The following definitions come from libcli/ldap/ldap_ldif.c  */
+
+BOOL add_value_to_attrib(TALLOC_CTX *mem_ctx, struct ldap_val *value,
+			 struct ldap_attribute *attrib);
+BOOL add_attrib_to_array_talloc(TALLOC_CTX *mem_ctx,
+				       const struct ldap_attribute *attrib,
+				       struct ldap_attribute **attribs,
+				       int *num_attribs);
+BOOL add_mod_to_array_talloc(TALLOC_CTX *mem_ctx,
+				    struct ldap_mod *mod,
+				    struct ldap_mod **mods,
+				    int *num_mods);
+struct ldap_message *ldap_ldif2msg(TALLOC_CTX *mem_ctx, const char *s);
+
 #endif

@@ -74,6 +74,8 @@ struct asn1_data;
 
 struct ldapsrv_call;
 struct ldapsrv_connection;
+struct ldap_connection;
+struct ldap_message;
 struct rw_buffer;
 struct registry_context;
 struct registry_key;

@@ -19,6 +19,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "libcli/ldap/ldap.h"
+
 struct rw_buffer {
 	uint8_t *data;
 	size_t ofs, length;
