@@ -8101,8 +8101,12 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 		and <filename>nss_winbind.so</filename> modules for UNIX services.
 		</para>
 
-		<para>Example: <command>winbind separator = \</command></para>
-		<para>Example: <command>winbind separator = +</command></para>
+		<para>Please note that setting this parameter to + causes problems
+		with group membership at least on glibc systems, as the character +
+		is used as a special character for NIS in /etc/group.</para>
+
+		<para>Example: <command>winbind separator = \\</command></para>
+		<para>Example: <command>winbind separator = /</command></para>
 		</listitem>
 		</varlistentry>
 
