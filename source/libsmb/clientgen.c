@@ -744,8 +744,11 @@ prots[] =
 
 
 /****************************************************************************
-send a session setup 
+ Send a session setup. The username is in UNIX character format and must be
+ converted to DOS codepage format before sending. If the password is in
+ plaintext, the same should be done.
 ****************************************************************************/
+
 BOOL cli_session_setup(struct cli_state *cli, 
 		       char *user, 
 		       char *pass, int passlen,
@@ -762,22 +765,23 @@ BOOL cli_session_setup(struct cli_state *cli,
 		return False;
 	}
 
-        if (((passlen == 0) || (passlen == 1)) && (pass[0] == '\0')) {
-          /* Null session connect. */
-          pword[0] = '\0';
-          ntpword[0] = '\0';
-        } else {
-          if ((cli->sec_mode & 2) && passlen != 24) {
-            passlen = 24;
-            ntpasslen = 24;
-            SMBencrypt((uchar *)pass,(uchar *)cli->cryptkey,(uchar *)pword);
-            SMBNTencrypt((uchar *)ntpass,(uchar *)cli->cryptkey,(uchar *)ntpword);
-          } else {
-		  fstrcpy(pword, pass);
-		  fstrcpy(ntpword, "");
-		  ntpasslen = 0;
-          }
-        }
+	if (((passlen == 0) || (passlen == 1)) && (pass[0] == '\0')) {
+		/* Null session connect. */
+		pword[0] = '\0';
+		ntpword[0] = '\0';
+	} else {
+		if ((cli->sec_mode & 2) && passlen != 24) {
+			passlen = 24;
+			ntpasslen = 24;
+			SMBencrypt((uchar *)pass,(uchar *)cli->cryptkey,(uchar *)pword);
+			SMBNTencrypt((uchar *)ntpass,(uchar *)cli->cryptkey,(uchar *)ntpword);
+		} else {
+			fstrcpy(pword, pass);
+			unix_to_dos(pword,True);
+			fstrcpy(ntpword, "");
+			ntpasslen = 0;
+		}
+	}
 
 	/* if in share level security then don't send a password now */
 	if (!(cli->sec_mode & 1)) {
@@ -806,6 +810,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 		memcpy(p,pword,passlen);
 		p += passlen;
 		pstrcpy(p,user);
+		unix_to_dos(p,True);
 		strupper(p);
 	}
 	else
@@ -828,6 +833,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 		memcpy(p,ntpword,ntpasslen); 
 		p += SVAL(cli->outbuf,smb_vwv8);
 		pstrcpy(p,user);
+		unix_to_dos(p,True);
 		strupper(p);
 		p = skip_string(p,1);
 		pstrcpy(p,workgroup);
@@ -918,6 +924,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 
 	slprintf(fullshare, sizeof(fullshare)-1,
 		 "\\\\%s\\%s", cli->desthost, share);
+	unix_to_dos(fullshare, True);
 	strupper(fullshare);
 
 	set_message(cli->outbuf,4,

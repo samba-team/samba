@@ -199,15 +199,14 @@ static void parse_connect(char *p,char *service,char *user,
     }
 }
 
-
-
-
 /****************************************************************************
-  reply to a tcon
+ Reply to a tcon.
 ****************************************************************************/
+
 int reply_tcon(connection_struct *conn,
 	       char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
+	BOOL doencrypt = SMBENCRYPT();
 	pstring service;
 	pstring user;
 	pstring password;
@@ -220,6 +219,15 @@ int reply_tcon(connection_struct *conn,
 	*service = *user = *password = *dev = 0;
 
 	parse_connect(smb_buf(inbuf)+1,service,user,password,&pwlen,dev);
+
+    /*
+     * Ensure the user, password and service names are in UNIX codepage format.
+     */
+
+    dos_to_unix(user,True);
+    dos_to_unix(service,True);
+	if (!doencrypt)
+    	dos_to_unix(password,True);
 
 	/*
 	 * Pass the user through the NT -> unix user mapping
@@ -250,16 +258,17 @@ int reply_tcon(connection_struct *conn,
 	return(outsize);
 }
 
-
 /****************************************************************************
-  reply to a tcon and X
+ Reply to a tcon and X.
 ****************************************************************************/
+
 int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
 	pstring service;
 	pstring user;
 	pstring password;
 	pstring devicename;
+	BOOL doencrypt = SMBENCRYPT();
 	int ecode = -1;
 	uint16 vuid = SVAL(inbuf,smb_uid);
 	int passlen = SVAL(inbuf,smb_vwv3);
@@ -276,7 +285,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	if (passlen > MAX_PASS_LEN) {
 		overflow_attack(passlen);
 	}
-  
+ 
 	memcpy(password,smb_buf(inbuf),passlen);
 	password[passlen]=0;    
 	path = smb_buf(inbuf) + passlen;
@@ -300,6 +309,15 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	}
 	StrnCpy(devicename,path + strlen(path) + 1,6);
 	DEBUG(4,("Got device type %s\n",devicename));
+
+    /*
+     * Ensure the user, password and service names are in UNIX codepage format.
+     */
+
+    dos_to_unix(user,True);
+    dos_to_unix(service,True);
+	if (!doencrypt)
+		dos_to_unix(password,True);
 
 	/*
 	 * Pass the user through the NT -> unix user mapping
@@ -698,10 +716,23 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
       smb_ntpasslen = passlen2;
       memcpy(smb_ntpasswd,p+passlen1,smb_ntpasslen);
       smb_ntpasswd[smb_ntpasslen] = 0;
+
+      /*
+       * Ensure the plaintext passwords are in UNIX format.
+       */
+      if(!doencrypt) {
+        dos_to_unix(smb_apasswd,True);
+        dos_to_unix(smb_ntpasswd,True);
+      }
+
     } else {
       /* we use the first password that they gave */
       smb_apasslen = passlen1;
       StrnCpy(smb_apasswd,p,smb_apasslen);      
+      /*
+       * Ensure the plaintext password is in UNIX format.
+       */
+      dos_to_unix(smb_apasswd,True);
       
       /* trim the password */
       smb_apasslen = strlen(smb_apasswd);
@@ -756,6 +787,11 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
       guest = True;
   }
 
+  /*
+   * Incoming user is in DOS codepage format. Convert
+   * to UNIX.
+   */
+  dos_to_unix(user, True);
   strlower(user);
 
   /*
@@ -804,10 +840,10 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
    */
 
   if (!guest && 
-      !check_server_security(orig_user, domain, user,
-                             smb_apasswd, smb_apasslen,
-                             smb_ntpasswd, smb_ntpasslen) &&
-      !check_domain_security(orig_user, domain, user,
+			  !check_server_security(orig_user, domain, user,
+									 smb_apasswd, smb_apasslen,
+									 smb_ntpasswd, smb_ntpasslen) &&
+			  !check_domain_security(orig_user, domain, user,
                              smb_apasswd, smb_apasslen,
                              smb_ntpasswd, smb_ntpasslen) &&
       !check_hosts_equiv(user)
