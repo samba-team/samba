@@ -70,3 +70,13 @@ NTSTATUS dcerpc_IUnknown_QueryInterface(struct dcom_interface *o, TALLOC_CTX *me
 	 * call RemQueryInterface if necessary */
 	return NT_STATUS_NOT_SUPPORTED;
 }
+
+NTSTATUS dcerpc_IClassFactory_CreateInstance(struct dcom_interface *o, TALLOC_CTX *mem_ctx, struct IClassFactory_CreateInstance *rr)
+{
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
+NTSTATUS dcerpc_IClassFactory_LockServer(struct dcom_interface *o, TALLOC_CTX *mem_ctx, struct IClassFactory_LockServer *rr)
+{
+	return NT_STATUS_NOT_SUPPORTED;
+}
