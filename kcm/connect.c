@@ -46,11 +46,7 @@ struct descr {
     struct sockaddr_storage __ss;
     struct sockaddr *sa;
     socklen_t sock_len;
-    struct {
-	uid_t uid;
-	gid_t gid;
-	pid_t pid;
-    } peercred;
+    kcm_client peercred;
 };
 
 static void
@@ -211,20 +207,15 @@ do_request(void *buf, size_t len, struct descr *d)
 {
     krb5_error_code ret;
     krb5_data reply;
-    kcm_client client;
-
-    client.pid = d->peercred.pid;
-    client.uid = d->peercred.uid;
-    client.gid = d->peercred.gid;
 
     reply.length = 0;
 
-    ret = process_request(buf, len, &reply, &client);
+    ret = process_request(buf, len, &reply, &d->peercred);
     if (reply.length != 0) {
 	unsigned char len[4];
 
 	kcm_log(5, "sending %lu bytes to process %d", (unsigned long)reply.length,
-		client.pid);
+		d->peercred.pid);
 
 	len[0] = (reply.length >> 24) & 0xff;
 	len[1] = (reply.length >> 16) & 0xff;
