@@ -285,6 +285,9 @@ If it is not mentioned, the krb524 port on the kdcs will be tried.
 .It Li default_domain
 See
 .Xr krb5_425_conv_principal 3 .
+.It Li tgs_require_subkey
+a boolan variable that defaults to false.
+Old DCE secd (pre 1.1) might need this to be true.
 .El
 .It Li }
 .El
