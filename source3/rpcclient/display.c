@@ -1734,7 +1734,8 @@ char *get_reg_val_type_str(uint32 type)
 }
 
 
-static void print_reg_value(FILE *out_hnd, char *val_name, uint32 val_type, BUFFER2 *value)
+static void print_reg_value(FILE *out_hnd, const char *val_name,
+				uint32 val_type, BUFFER2 *value)
 {
 	fstring type;
 	fstring valstr;
@@ -1786,7 +1787,8 @@ static void print_reg_value(FILE *out_hnd, char *val_name, uint32 val_type, BUFF
  display structure
  ****************************************************************************/
 void display_reg_value_info(FILE *out_hnd, enum action_type action,
-				char *val_name, uint32 val_type, BUFFER2 *value)
+				const char *val_name,
+				uint32 val_type, BUFFER2 *value)
 {
 	switch (action)
 	{
@@ -1810,7 +1812,7 @@ void display_reg_value_info(FILE *out_hnd, enum action_type action,
  display structure
  ****************************************************************************/
 void display_reg_key_info(FILE *out_hnd, enum action_type action,
-				char *key_name, time_t key_mod_time)
+				const char *key_name, time_t key_mod_time)
 {
 	switch (action)
 	{

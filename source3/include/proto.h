@@ -483,7 +483,7 @@ int str_checksum(const char *s);
 void zero_free(void *p, size_t size);
 int set_maxfiles(int requested_max);
 void reg_get_subkey(char *full_keyname, char *key_name, char *subkey_name);
-BOOL reg_split_key(char *full_keyname, uint32 *reg_type, char *key_name);
+BOOL reg_split_key(const char *full_keyname, uint32 *reg_type, char *key_name);
 BOOL become_user_permanently(uid_t uid, gid_t gid);
 void free_char_array(uint32 num_entries, char **entries);
 
@@ -1814,7 +1814,9 @@ void cli_nt_session_close(struct cli_state *cli, uint16 nt_pipe_fnum);
 
 /*The following definitions come from  rpc_client/cli_reg.c  */
 
-BOOL do_reg_connect(struct cli_state *cli, uint16 fnum, char *full_keyname, char *key_name,
+BOOL do_reg_connect(struct cli_state *cli, uint16 fnum,
+				const char *full_keyname,
+				char *key_name,
 				POLICY_HND *reg_hnd);
 BOOL do_reg_open_hkcr(struct cli_state *cli, uint16 fnum, uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd);
@@ -3198,6 +3200,10 @@ void cmd_sam_sync(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_reg.c  */
 
+void msrpc_reg_enum_key(struct cli_state *cli, const char* full_keyname,
+				REG_FN(reg_fn),
+				REG_KEY_FN(reg_key_fn),
+				REG_VAL_FN(reg_val_fn));
 void cmd_reg_enum(struct client_info *info);
 void cmd_reg_query_key(struct client_info *info);
 void cmd_reg_create_val(struct client_info *info);
@@ -3362,9 +3368,10 @@ void display_sec_acl(FILE *out_hnd, enum action_type action, SEC_ACL *sec_acl);
 void display_sec_desc(FILE *out_hnd, enum action_type action, SEC_DESC *sec);
 char *get_reg_val_type_str(uint32 type);
 void display_reg_value_info(FILE *out_hnd, enum action_type action,
-				char *val_name, uint32 val_type, BUFFER2 *value);
+				const char *val_name,
+				uint32 val_type, BUFFER2 *value);
 void display_reg_key_info(FILE *out_hnd, enum action_type action,
-				char *key_name, time_t key_mod_time);
+				const char *key_name, time_t key_mod_time);
 char *get_svc_start_type_str(uint32 type);
 void display_query_svc_cfg(FILE *out_hnd, enum action_type action,
 				QUERY_SERVICE_CONFIG *cfg);

@@ -3126,11 +3126,11 @@ void reg_get_subkey(char *full_keyname, char *key_name, char *subkey_name)
 /*****************************************************************
  splits out the start of the key (HKLM or HKU) and the rest of the key
  *****************************************************************/  
-BOOL reg_split_key(char *full_keyname, uint32 *reg_type, char *key_name)
+BOOL reg_split_key(const char *full_keyname, uint32 *reg_type, char *key_name)
 {
 	pstring tmp;
 
-	if (!next_token(&full_keyname, tmp, "\\", sizeof(tmp)))
+	if (!next_token((char**)(&full_keyname), tmp, "\\", sizeof(tmp)))
 	{
 		return False;
 	}

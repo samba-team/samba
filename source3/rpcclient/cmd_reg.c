@@ -55,10 +55,74 @@ extern FILE* out_hnd;
  *
  */
 
+static void reg_display_key(int val, const char *full_keyname, int num)
+{
+	switch (val)
+	{
+		case 0:
+		{
+			/* initialsation */
+			report(out_hnd, "Key Name:\t%s\n", full_keyname);
+			break;
+		}
+		case 1:
+		{
+			/* subkeys initialisation */
+			if (num > 0)
+			{
+				report(out_hnd,"Subkeys\n");
+				report(out_hnd,"-------\n");
+			}
+			break;
+		}
+		case 2:
+		{
+			/* values initialisation */
+			if (num > 0)
+			{
+				report(out_hnd,"Key Values\n");
+				report(out_hnd,"----------\n");
+			}
+			break;
+		}
+		case 3:
+		{
+			/* clean-up */
+			break;
+		}
+		default:
+		{
+			break;
+		}
+	}
+}
+
+static void reg_display_key_info(const char *full_name,
+				const char *name, time_t key_mod_time)
+{
+	display_reg_key_info(out_hnd, ACTION_HEADER   , name, key_mod_time);
+	display_reg_key_info(out_hnd, ACTION_ENUMERATE, name, key_mod_time);
+	display_reg_key_info(out_hnd, ACTION_FOOTER   , name, key_mod_time);
+}
+
+static void reg_display_val_info(const char *full_name,
+				const char* name,
+				uint32 type,
+				BUFFER2 *value)
+{
+	display_reg_value_info(out_hnd, ACTION_HEADER   , name, type, value);
+	display_reg_value_info(out_hnd, ACTION_ENUMERATE, name, type, value);
+	display_reg_value_info(out_hnd, ACTION_FOOTER   , name, type, value);
+}
+
+
 /****************************************************************************
 nt registry enum
 ****************************************************************************/
-void cmd_reg_enum(struct client_info *info)
+void msrpc_reg_enum_key(struct cli_state *cli, const char* full_keyname,
+				REG_FN(reg_fn),
+				REG_KEY_FN(reg_key_fn),
+				REG_VAL_FN(reg_val_fn))
 {
 	uint16 fnum;
 	BOOL res = True;
@@ -67,7 +131,7 @@ void cmd_reg_enum(struct client_info *info)
 	int i;
 
 	POLICY_HND key_pol;
-	fstring full_keyname;
+	POLICY_HND pol_con;
 	fstring key_name;
 
 	/*
@@ -91,43 +155,37 @@ void cmd_reg_enum(struct client_info *info)
 
 	uint32 unk_1a_response;
 
-	DEBUG(5, ("cmd_reg_enum: smb_cli->fd:%d\n", smb_cli->fd));
-
-	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
-	{
-		fprintf(out_hnd, "regenum <key_name>\n");
-		return;
-	}
+	DEBUG(5, ("reg_enum_key: cli->fd:%d\n", cli->fd));
 
 	/* open WINREG session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG, &fnum) : False;
+	res = res ? cli_nt_session_open(cli, PIPE_WINREG, &fnum) : False;
 
 	/* open registry receive a policy handle */
-	res = res ? do_reg_connect(smb_cli, fnum, full_keyname, key_name,
-				&info->dom.reg_pol_connect) : False;
+	res = res ? do_reg_connect(cli, fnum, full_keyname, key_name,
+				&pol_con) : False;
 
 	if ((*key_name) != 0)
 	{
 		/* open an entry */
-		res1 = res  ? do_reg_open_entry(smb_cli, fnum, &info->dom.reg_pol_connect,
+		res1 = res  ? do_reg_open_entry(cli, fnum, &pol_con,
 					 key_name, 0x02000000, &key_pol) : False;
 	}
 	else
 	{
-		memcpy(&key_pol, &info->dom.reg_pol_connect, sizeof(key_pol));
+		memcpy(&key_pol, &pol_con, sizeof(key_pol));
 	}
 
-	res1 = res1 ? do_reg_query_key(smb_cli, fnum,
+	res1 = res1 ? do_reg_query_key(cli, fnum,
 				&key_pol,
 				key_class, &max_class_len,
 	                        &num_subkeys, &max_subkeylen, &max_subkeysize,
 				&num_values, &max_valnamelen, &max_valbufsize,
 	                        &sec_desc, &mod_time) : False;
 
-	if (res1 && num_subkeys > 0)
+	if (res1)
 	{
-		fprintf(out_hnd,"Subkeys\n");
-		fprintf(out_hnd,"-------\n");
+		reg_fn(0, full_keyname, 0);
+		reg_fn(1, full_keyname, num_subkeys);
 	}
 
 	for (i = 0; i < num_subkeys; i++)
@@ -142,34 +200,28 @@ void cmd_reg_enum(struct client_info *info)
 		time_t key_mod_time;
 
 		/* unknown 1a it */
-		res2 = res1 ? do_reg_unknown_1a(smb_cli, fnum, &key_pol,
+		res2 = res1 ? do_reg_unknown_1a(cli, fnum, &key_pol,
 					&unk_1a_response) : False;
 
 		if (res2 && unk_1a_response != 5)
 		{
-			fprintf(out_hnd,"Unknown 1a response: %x\n", unk_1a_response);
+			report(out_hnd,"Unknown 1a response: %x\n", unk_1a_response);
 		}
 
 		/* enum key */
-		res2 = res2 ? do_reg_enum_key(smb_cli, fnum, &key_pol,
+		res2 = res2 ? do_reg_enum_key(cli, fnum, &key_pol,
 					i, enum_name,
 					&enum_unk1, &enum_unk2,
 					&key_mod_time) : False;
 		
 		if (res2)
 		{
-			display_reg_key_info(out_hnd, ACTION_HEADER   , enum_name, key_mod_time);
-			display_reg_key_info(out_hnd, ACTION_ENUMERATE, enum_name, key_mod_time);
-			display_reg_key_info(out_hnd, ACTION_FOOTER   , enum_name, key_mod_time);
+			reg_key_fn(full_keyname, enum_name, key_mod_time);
 		}
 
 	}
 
-	if (num_values > 0)
-	{
-		fprintf(out_hnd,"Key Values\n");
-		fprintf(out_hnd,"----------\n");
-	}
+	reg_fn(2, full_keyname, num_values);
 
 	for (i = 0; i < num_values; i++)
 	{
@@ -182,45 +234,67 @@ void cmd_reg_enum(struct client_info *info)
 		fstring val_name;
 
 		/* unknown 1a it */
-		res2 = res1 ? do_reg_unknown_1a(smb_cli, fnum, &key_pol,
+		res2 = res1 ? do_reg_unknown_1a(cli, fnum, &key_pol,
 					&unk_1a_response) : False;
 
 		if (res2 && unk_1a_response != 5)
 		{
-			fprintf(out_hnd,"Unknown 1a response: %x\n", unk_1a_response);
+			report(out_hnd,"Unknown 1a response: %x\n", unk_1a_response);
 		}
 
 		/* enum key */
-		res2 = res2 ? do_reg_enum_val(smb_cli, fnum, &key_pol,
+		res2 = res2 ? do_reg_enum_val(cli, fnum, &key_pol,
 					i, max_valnamelen, max_valbufsize,
 		                        val_name, &val_type, &value) : False;
 		
 		if (res2)
 		{
-			display_reg_value_info(out_hnd, ACTION_HEADER   , val_name, val_type, &value);
-			display_reg_value_info(out_hnd, ACTION_ENUMERATE, val_name, val_type, &value);
-			display_reg_value_info(out_hnd, ACTION_FOOTER   , val_name, val_type, &value);
+			reg_val_fn(full_keyname, val_name, val_type, &value);
 		}
+	}
+
+	if (res1)
+	{
+		reg_fn(3, full_keyname, 0);
 	}
 
 	/* close the handles */
 	if ((*key_name) != 0)
 	{
-		res1 = res1 ? do_reg_close(smb_cli, fnum, &key_pol) : False;
+		res1 = res1 ? do_reg_close(cli, fnum, &key_pol) : False;
 	}
-	res  = res  ? do_reg_close(smb_cli, fnum, &info->dom.reg_pol_connect) : False;
+	res  = res  ? do_reg_close(cli, fnum, &pol_con) : False;
 
 	/* close the session */
-	cli_nt_session_close(smb_cli, fnum);
+	cli_nt_session_close(cli, fnum);
 
 	if (res && res1 && res2)
 	{
-		DEBUG(5,("cmd_reg_enum: query succeeded\n"));
+		DEBUG(5,("msrpc_reg_enum_key: query succeeded\n"));
 	}
 	else
 	{
-		DEBUG(5,("cmd_reg_enum: query failed\n"));
+		DEBUG(5,("msrpc_reg_enum_key: query failed\n"));
 	}
+}
+
+/****************************************************************************
+nt registry enum
+****************************************************************************/
+void cmd_reg_enum(struct client_info *info)
+{
+	fstring full_keyname;
+
+	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
+	{
+		report(out_hnd, "regenum <key_name>\n");
+		return;
+	}
+
+	msrpc_reg_enum_key(smb_cli, full_keyname,
+				reg_display_key,
+				reg_display_key_info,
+				reg_display_val_info);
 }
 
 /****************************************************************************
@@ -233,6 +307,7 @@ void cmd_reg_query_key(struct client_info *info)
 	BOOL res1 = True;
 
 	POLICY_HND key_pol;
+	POLICY_HND pol_con;
 	fstring full_keyname;
 	fstring key_name;
 
@@ -255,7 +330,7 @@ void cmd_reg_query_key(struct client_info *info)
 
 	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
 	{
-		fprintf(out_hnd, "regquery key_name\n");
+		report(out_hnd, "regquery key_name\n");
 		return;
 	}
 
@@ -264,17 +339,17 @@ void cmd_reg_query_key(struct client_info *info)
 
 	/* open registry receive a policy handle */
 	res = res ? do_reg_connect(smb_cli, fnum, full_keyname, key_name,
-				&info->dom.reg_pol_connect) : False;
+				&pol_con) : False;
 
 	if ((*key_name) != 0)
 	{
 		/* open an entry */
-		res1 = res  ? do_reg_open_entry(smb_cli, fnum, &info->dom.reg_pol_connect,
+		res1 = res  ? do_reg_open_entry(smb_cli, fnum, &pol_con,
 					 key_name, 0x02000000, &key_pol) : False;
 	}
 	else
 	{
-		memcpy(&key_pol, &info->dom.reg_pol_connect, sizeof(key_pol));
+		memcpy(&key_pol, &pol_con, sizeof(key_pol));
 	}
 
 	res1 = res1 ? do_reg_query_key(smb_cli, fnum,
@@ -296,12 +371,12 @@ void cmd_reg_query_key(struct client_info *info)
 
 	if (res1)
 	{
-		fprintf(out_hnd,"Registry Query Info Key\n");
-		fprintf(out_hnd,"key class: %s\n", key_class);
-		fprintf(out_hnd,"subkeys, max_len, max_size: %d %d %d\n", num_subkeys, max_subkeylen, max_subkeysize);
-		fprintf(out_hnd,"vals, max_len, max_size: 0x%x 0x%x 0x%x\n", num_values, max_valnamelen, max_valbufsize);
-		fprintf(out_hnd,"sec desc: 0x%x\n", sec_desc);
-		fprintf(out_hnd,"mod time: %s\n", http_timestring(nt_time_to_unix(&mod_time)));
+		report(out_hnd,"Registry Query Info Key\n");
+		report(out_hnd,"key class: %s\n", key_class);
+		report(out_hnd,"subkeys, max_len, max_size: %d %d %d\n", num_subkeys, max_subkeylen, max_subkeysize);
+		report(out_hnd,"vals, max_len, max_size: 0x%x 0x%x 0x%x\n", num_values, max_valnamelen, max_valbufsize);
+		report(out_hnd,"sec desc: 0x%x\n", sec_desc);
+		report(out_hnd,"mod time: %s\n", http_timestring(nt_time_to_unix(&mod_time)));
 	}
 
 	/* close the handles */
@@ -309,7 +384,7 @@ void cmd_reg_query_key(struct client_info *info)
 	{
 		res1 = res1 ? do_reg_close(smb_cli, fnum, &key_pol) : False;
 	}
-	res  = res  ? do_reg_close(smb_cli, fnum, &info->dom.reg_pol_connect) : False;
+	res  = res  ? do_reg_close(smb_cli, fnum, &pol_con) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
@@ -335,6 +410,7 @@ void cmd_reg_create_val(struct client_info *info)
 	BOOL res4 = True;
 
 	POLICY_HND parent_pol;
+	POLICY_HND pol_con;
 	fstring full_keyname;
 	fstring keyname;
 	fstring parent_name;
@@ -355,7 +431,7 @@ void cmd_reg_create_val(struct client_info *info)
 
 	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
 	{
-		fprintf(out_hnd, "regcreate <val_name> <val_type> <val>\n");
+		report(out_hnd, "regcreate <val_name> <val_type> <val>\n");
 		return;
 	}
 
@@ -363,13 +439,13 @@ void cmd_reg_create_val(struct client_info *info)
 
 	if (keyname[0] == 0 || val_name[0] == 0)
 	{
-		fprintf(out_hnd, "invalid key name\n");
+		report(out_hnd, "invalid key name\n");
 		return;
 	}
 	
 	if (!next_token(NULL, tmp, NULL, sizeof(tmp)))
 	{
-		fprintf(out_hnd, "regcreate <val_name> <val_type (1|4)> <val>\n");
+		report(out_hnd, "regcreate <val_name> <val_type (1|4)> <val>\n");
 		return;
 	}
 
@@ -377,13 +453,13 @@ void cmd_reg_create_val(struct client_info *info)
 
 	if (val_type != 1 && val_type != 3 && val_type != 4)
 	{
-		fprintf(out_hnd, "val_type 1=UNISTR, 3=BYTES, 4=DWORD supported\n");
+		report(out_hnd, "val_type 1=UNISTR, 3=BYTES, 4=DWORD supported\n");
 		return;
 	}
 
 	if (!next_token(NULL, tmp, NULL, sizeof(tmp)))
 	{
-		fprintf(out_hnd, "regcreate <val_name> <val_type (1|4)> <val>\n");
+		report(out_hnd, "regcreate <val_name> <val_type (1|4)> <val>\n");
 		return;
 	}
 
@@ -415,7 +491,7 @@ void cmd_reg_create_val(struct client_info *info)
 		}
 		default:
 		{
-			fprintf(out_hnd, "i told you i only deal with UNISTR, DWORD and BYTES!\n");
+			report(out_hnd, "i told you i only deal with UNISTR, DWORD and BYTES!\n");
 			return;
 		}
 	}
@@ -428,17 +504,17 @@ void cmd_reg_create_val(struct client_info *info)
 
 	/* open registry receive a policy handle */
 	res = res ? do_reg_connect(smb_cli, fnum, keyname, parent_name,
-				&info->dom.reg_pol_connect) : False;
+				&pol_con) : False;
 
 	if ((*val_name) != 0)
 	{
 		/* open an entry */
-		res3 = res  ? do_reg_open_entry(smb_cli, fnum, &info->dom.reg_pol_connect,
+		res3 = res  ? do_reg_open_entry(smb_cli, fnum, &pol_con,
 					 parent_name, 0x02000000, &parent_pol) : False;
 	}
 	else
 	{
-		memcpy(&parent_pol, &info->dom.reg_pol_connect, sizeof(parent_pol));
+		memcpy(&parent_pol, &pol_con, sizeof(parent_pol));
 	}
 
 	/* create an entry */
@@ -455,7 +531,7 @@ void cmd_reg_create_val(struct client_info *info)
 	}
 
 	/* close the registry handles */
-	res  = res  ? do_reg_close(smb_cli, fnum, &info->dom.reg_pol_connect) : False;
+	res  = res  ? do_reg_close(smb_cli, fnum, &pol_con) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
@@ -463,7 +539,7 @@ void cmd_reg_create_val(struct client_info *info)
 	if (res && res3 && res4)
 	{
 		DEBUG(5,("cmd_reg_create_val: query succeeded\n"));
-		fprintf(out_hnd,"OK\n");
+		report(out_hnd,"OK\n");
 	}
 	else
 	{
@@ -482,6 +558,7 @@ void cmd_reg_delete_val(struct client_info *info)
 	BOOL res4 = True;
 
 	POLICY_HND parent_pol;
+	POLICY_HND pol_con;
 	fstring full_keyname;
 	fstring keyname;
 	fstring parent_name;
@@ -491,7 +568,7 @@ void cmd_reg_delete_val(struct client_info *info)
 
 	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
 	{
-		fprintf(out_hnd, "regdelete <val_name>\n");
+		report(out_hnd, "regdelete <val_name>\n");
 		return;
 	}
 
@@ -499,7 +576,7 @@ void cmd_reg_delete_val(struct client_info *info)
 
 	if (keyname[0] == 0 || val_name[0] == 0)
 	{
-		fprintf(out_hnd, "invalid key name\n");
+		report(out_hnd, "invalid key name\n");
 		return;
 	}
 	
@@ -508,17 +585,17 @@ void cmd_reg_delete_val(struct client_info *info)
 
 	/* open registry receive a policy handle */
 	res = res ? do_reg_connect(smb_cli, fnum, keyname, parent_name,
-				&info->dom.reg_pol_connect) : False;
+				&pol_con) : False;
 
 	if ((*val_name) != 0)
 	{
 		/* open an entry */
-		res3 = res  ? do_reg_open_entry(smb_cli, fnum, &info->dom.reg_pol_connect,
+		res3 = res  ? do_reg_open_entry(smb_cli, fnum, &pol_con,
 					 parent_name, 0x02000000, &parent_pol) : False;
 	}
 	else
 	{
-		memcpy(&parent_pol, &info->dom.reg_pol_connect, sizeof(parent_pol));
+		memcpy(&parent_pol, &pol_con, sizeof(parent_pol));
 	}
 
 	/* delete an entry */
@@ -531,7 +608,7 @@ void cmd_reg_delete_val(struct client_info *info)
 	res3 = res3 ? do_reg_close(smb_cli, fnum, &parent_pol) : False;
 
 	/* close the registry handles */
-	res  = res  ? do_reg_close(smb_cli, fnum, &info->dom.reg_pol_connect) : False;
+	res  = res  ? do_reg_close(smb_cli, fnum, &pol_con) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
@@ -539,7 +616,7 @@ void cmd_reg_delete_val(struct client_info *info)
 	if (res && res3 && res4)
 	{
 		DEBUG(5,("cmd_reg_delete_val: query succeeded\n"));
-		fprintf(out_hnd,"OK\n");
+		report(out_hnd,"OK\n");
 	}
 	else
 	{
@@ -558,6 +635,7 @@ void cmd_reg_delete_key(struct client_info *info)
 	BOOL res4 = True;
 
 	POLICY_HND parent_pol;
+	POLICY_HND pol_con;
 	fstring full_keyname;
 	fstring parent_name;
 	fstring key_name;
@@ -567,7 +645,7 @@ void cmd_reg_delete_key(struct client_info *info)
 
 	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
 	{
-		fprintf(out_hnd, "regdeletekey <key_name>\n");
+		report(out_hnd, "regdeletekey <key_name>\n");
 		return;
 	}
 
@@ -575,7 +653,7 @@ void cmd_reg_delete_key(struct client_info *info)
 
 	if (parent_name[0] == 0 || subkey_name[0] == 0)
 	{
-		fprintf(out_hnd, "invalid key name\n");
+		report(out_hnd, "invalid key name\n");
 		return;
 	}
 	
@@ -584,17 +662,17 @@ void cmd_reg_delete_key(struct client_info *info)
 
 	/* open registry receive a policy handle */
 	res = res ? do_reg_connect(smb_cli, fnum, parent_name, key_name,
-				&info->dom.reg_pol_connect) : False;
+				&pol_con) : False;
 
 	if ((*key_name) != 0)
 	{
 		/* open an entry */
-		res3 = res  ? do_reg_open_entry(smb_cli, fnum, &info->dom.reg_pol_connect,
+		res3 = res  ? do_reg_open_entry(smb_cli, fnum, &pol_con,
 					 key_name, 0x02000000, &parent_pol) : False;
 	}
 	else
 	{
-		memcpy(&parent_pol, &info->dom.reg_pol_connect, sizeof(parent_pol));
+		memcpy(&parent_pol, &pol_con, sizeof(parent_pol));
 	}
 
 	/* create an entry */
@@ -610,7 +688,7 @@ void cmd_reg_delete_key(struct client_info *info)
 	}
 
 	/* close the registry handles */
-	res  = res  ? do_reg_close(smb_cli, fnum, &info->dom.reg_pol_connect) : False;
+	res  = res  ? do_reg_close(smb_cli, fnum, &pol_con) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
@@ -618,7 +696,7 @@ void cmd_reg_delete_key(struct client_info *info)
 	if (res && res3 && res4)
 	{
 		DEBUG(5,("cmd_reg_delete_key: query succeeded\n"));
-		fprintf(out_hnd,"OK\n");
+		report(out_hnd,"OK\n");
 	}
 	else
 	{
@@ -638,6 +716,7 @@ void cmd_reg_create_key(struct client_info *info)
 
 	POLICY_HND parent_pol;
 	POLICY_HND key_pol;
+	POLICY_HND pol_con;
 	fstring full_keyname;
 	fstring parent_key;
 	fstring parent_name;
@@ -649,7 +728,7 @@ void cmd_reg_create_key(struct client_info *info)
 
 	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
 	{
-		fprintf(out_hnd, "regcreate <key_name> [key_class]\n");
+		report(out_hnd, "regcreate <key_name> [key_class]\n");
 		return;
 	}
 
@@ -657,7 +736,7 @@ void cmd_reg_create_key(struct client_info *info)
 
 	if (parent_key[0] == 0 || key_name[0] == 0)
 	{
-		fprintf(out_hnd, "invalid key name\n");
+		report(out_hnd, "invalid key name\n");
 		return;
 	}
 	
@@ -674,17 +753,17 @@ void cmd_reg_create_key(struct client_info *info)
 
 	/* open registry receive a policy handle */
 	res = res ? do_reg_connect(smb_cli, fnum, parent_key, parent_name,
-				&info->dom.reg_pol_connect) : False;
+				&pol_con) : False;
 
 	if ((*parent_name) != 0)
 	{
 		/* open an entry */
-		res3 = res  ? do_reg_open_entry(smb_cli, fnum, &info->dom.reg_pol_connect,
+		res3 = res  ? do_reg_open_entry(smb_cli, fnum, &pol_con,
 					 parent_name, 0x02000000, &parent_pol) : False;
 	}
 	else
 	{
-		memcpy(&parent_pol, &info->dom.reg_pol_connect, sizeof(parent_pol));
+		memcpy(&parent_pol, &pol_con, sizeof(parent_pol));
 	}
 
 	/* create an entry */
@@ -704,7 +783,7 @@ void cmd_reg_create_key(struct client_info *info)
 	}
 
 	/* close the registry handles */
-	res  = res  ? do_reg_close(smb_cli, fnum, &info->dom.reg_pol_connect) : False;
+	res  = res  ? do_reg_close(smb_cli, fnum, &pol_con) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
@@ -712,7 +791,7 @@ void cmd_reg_create_key(struct client_info *info)
 	if (res && res3 && res4)
 	{
 		DEBUG(5,("cmd_reg_create_key: query succeeded\n"));
-		fprintf(out_hnd,"OK\n");
+		report(out_hnd,"OK\n");
 	}
 	else
 	{
@@ -731,6 +810,7 @@ void cmd_reg_test_key_sec(struct client_info *info)
 	BOOL res4 = True;
 
 	POLICY_HND key_pol;
+	POLICY_HND pol_con;
 	fstring full_keyname;
 	fstring key_name;
 
@@ -745,7 +825,7 @@ void cmd_reg_test_key_sec(struct client_info *info)
 
 	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
 	{
-		fprintf(out_hnd, "reggetsec <key_name>\n");
+		report(out_hnd, "reggetsec <key_name>\n");
 		return;
 	}
 
@@ -754,21 +834,21 @@ void cmd_reg_test_key_sec(struct client_info *info)
 
 	/* open registry receive a policy handle */
 	res = res ? do_reg_connect(smb_cli, fnum, full_keyname, key_name,
-				&info->dom.reg_pol_connect) : False;
+				&pol_con) : False;
 
 	if ((*key_name) != 0)
 	{
 		/* open an entry */
-		res3 = res  ? do_reg_open_entry(smb_cli, fnum, &info->dom.reg_pol_connect,
+		res3 = res  ? do_reg_open_entry(smb_cli, fnum, &pol_con,
 					 key_name, 0x02000000, &key_pol) : False;
 	}
 	else
 	{
-		memcpy(&key_pol, &info->dom.reg_pol_connect, sizeof(key_pol));
+		memcpy(&key_pol, &pol_con, sizeof(key_pol));
 	}
 
 	/* open an entry */
-	res3 = res ? do_reg_open_entry(smb_cli, fnum, &info->dom.reg_pol_connect,
+	res3 = res ? do_reg_open_entry(smb_cli, fnum, &pol_con,
 				 key_name, 0x02000000, &key_pol) : False;
 
 	/* query key sec info.  first call sets sec_buf_size. */
@@ -805,7 +885,7 @@ void cmd_reg_test_key_sec(struct client_info *info)
 	}
 
 	/* close the registry handles */
-	res  = res  ? do_reg_close(smb_cli, fnum, &info->dom.reg_pol_connect) : False;
+	res  = res  ? do_reg_close(smb_cli, fnum, &pol_con) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
@@ -813,7 +893,7 @@ void cmd_reg_test_key_sec(struct client_info *info)
 	if (res && res3 && res4)
 	{
 		DEBUG(5,("cmd_reg_test2: query succeeded\n"));
-		fprintf(out_hnd,"Registry Test2\n");
+		report(out_hnd,"Registry Test2\n");
 	}
 	else
 	{
@@ -832,6 +912,7 @@ void cmd_reg_get_key_sec(struct client_info *info)
 	BOOL res4 = True;
 
 	POLICY_HND key_pol;
+	POLICY_HND pol_con;
 	fstring full_keyname;
 	fstring key_name;
 
@@ -846,7 +927,7 @@ void cmd_reg_get_key_sec(struct client_info *info)
 
 	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
 	{
-		fprintf(out_hnd, "reggetsec <key_name>\n");
+		report(out_hnd, "reggetsec <key_name>\n");
 		return;
 	}
 
@@ -855,21 +936,21 @@ void cmd_reg_get_key_sec(struct client_info *info)
 
 	/* open registry receive a policy handle */
 	res = res ? do_reg_connect(smb_cli, fnum, full_keyname, key_name,
-				&info->dom.reg_pol_connect) : False;
+				&pol_con) : False;
 
 	if ((*key_name) != 0)
 	{
 		/* open an entry */
-		res3 = res  ? do_reg_open_entry(smb_cli, fnum, &info->dom.reg_pol_connect,
+		res3 = res  ? do_reg_open_entry(smb_cli, fnum, &pol_con,
 					 key_name, 0x02000000, &key_pol) : False;
 	}
 	else
 	{
-		memcpy(&key_pol, &info->dom.reg_pol_connect, sizeof(key_pol));
+		memcpy(&key_pol, &pol_con, sizeof(key_pol));
 	}
 
 	/* open an entry */
-	res3 = res ? do_reg_open_entry(smb_cli, fnum, &info->dom.reg_pol_connect,
+	res3 = res ? do_reg_open_entry(smb_cli, fnum, &pol_con,
 				 key_name, 0x02000000, &key_pol) : False;
 
 	/* query key sec info.  first call sets sec_buf_size. */
@@ -903,7 +984,7 @@ void cmd_reg_get_key_sec(struct client_info *info)
 	}
 
 	/* close the registry handles */
-	res  = res  ? do_reg_close(smb_cli, fnum, &info->dom.reg_pol_connect) : False;
+	res  = res  ? do_reg_close(smb_cli, fnum, &pol_con) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
@@ -955,7 +1036,7 @@ void cmd_reg_shutdown(struct client_info *info)
 			flgs = 0x100;
 			continue;
 		}
-		fprintf(out_hnd,"shutdown [-m msg] [-t timeout] [-r or --reboot]\n");
+		report(out_hnd,"shutdown [-m msg] [-t timeout] [-r or --reboot]\n");
 	}
 
 	/* open WINREG session. */
@@ -970,12 +1051,12 @@ void cmd_reg_shutdown(struct client_info *info)
 	if (res)
 	{
 		DEBUG(5,("cmd_reg_shutdown: query succeeded\n"));
-		fprintf(out_hnd,"OK\n");
+		report(out_hnd,"OK\n");
 	}
 	else
 	{
 		DEBUG(5,("cmd_reg_shutdown: query failed\n"));
-		fprintf(out_hnd,"Failed\n");
+		report(out_hnd,"Failed\n");
 	}
 }
 
