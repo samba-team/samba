@@ -418,6 +418,7 @@ loop (int from0, int to0,
 		syslog_and_die ("read: %m");
 	    else if (ret == 0) {
 		close (from0);
+		close (to0);
 		FD_CLR(from0, &real_readset);
 	    } else
 		net_write (to0, buf, ret);
@@ -428,6 +429,7 @@ loop (int from0, int to0,
 		syslog_and_die ("read: %m");
 	    else if (ret == 0) {
 		close (from1);
+		close (to1);
 		FD_CLR(from1, &real_readset);
 		if (--count == 0)
 		    exit (0);
@@ -440,6 +442,7 @@ loop (int from0, int to0,
 		syslog_and_die ("read: %m");
 	    else if (ret == 0) {
 		close (from2);
+		close (to2);
 		FD_CLR(from2, &real_readset);
 		if (--count == 0)
 		    exit (0);
