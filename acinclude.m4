@@ -178,6 +178,31 @@ if eval "test \"\$ac_cv_func_$3_proto\" = yes"; then
 fi
 ])
 
+dnl AC_HAVE_STRUCT_FIELD(includes, struct, type, field)
+AC_DEFUN(AC_HAVE_STRUCT_FIELD, [
+AC_MSG_CHECKING([if $2 has a field $4])
+AC_CACHE_VAL(ac_cv_struct_$2_$4, [
+AC_TRY_COMPILE([$1],
+[struct $2 foo; $3 bar = foo.$4; ],
+eval "ac_cv_struct_$2_$4=yes",
+eval "ac_cv_struct_$2_$4=no")
+])
+changequote(, )dnl
+eval "ac_tr_var=HAVE_STRUCT_`echo $2 | tr '[a-z]' '[A-Z]'`_`echo $4 | tr '[a-z]' '[A-Z]'`"
+changequote([, ])dnl
+
+define([foo], [[HAVE_STRUCT_]translit($2, [a-z], [A-Z])[_]translit($4, [a-z], [A-Z])])
+: << END
+@@@syms="$syms foo"@@@
+END
+undefine([foo])
+
+AC_MSG_RESULT($ac_cv_struct_$2_$4)
+if eval "test \"\$ac_cv_struct_$2_$4\" = yes"; then
+	AC_DEFINE_UNQUOTED($ac_tr_var)
+fi
+])
+
 dnl
 dnl Specific tests
 dnl
@@ -329,4 +354,19 @@ for i in $1; do
 	fi
 	AC_MSG_RESULT($ac_res)
 done
+])
+
+dnl
+dnl Check for the variable `timezone'
+dnl
+
+AC_DEFUN(AC_KRB_VAR_TIMEZONE, [
+AC_MSG_CHECKING(for variable timezone)
+AC_CACHE_VAL(ac_krb_var_timezone,
+AC_TRY_LINK([#include <time.h>], [int foo = timezone;],
+ac_krb_var_timezone=yes,ac_krb_var_timezone=no))
+AC_MSG_RESULT($ac_krb_var_timezone)
+if test "$ac_krb_var_timezone" = yes; then
+  AC_DEFINE_UNQUOTED(HAVE_TIMEZONE)
+fi
 ])
