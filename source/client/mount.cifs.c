@@ -32,6 +32,15 @@ static char * user_name = NULL;
 char * mountpassword = NULL;
 
 
+/* BB finish BB
+
+        cifs_umount
+        open nofollow - avoid symlink exposure? 
+        get owner of dir see if matches self or if root
+        call system(umount argv) etc.
+                
+BB end finish BB */
+
 void mount_cifs_usage()
 {
 	printf("\nUsage:  %s remotetarget dir\n", thisprogram);
@@ -446,18 +455,28 @@ int main(int argc, char ** argv)
 
 	/* canonicalize the path in argv[1]? */
 
+	/* BB save off path and pop after mount returns */
+	if(chdir(mountpoint)) {
+		printf("mount error: can not change directory into mount target %s\n",mountpoint);
+	}
+
 	if(stat (mountpoint, &statbuf)) {
 		printf("mount error: mount point %s does not exist\n",mountpoint);
 		return -1;
 	}
+
 	if (S_ISDIR(statbuf.st_mode) == 0) {
 		printf("mount error: mount point %s is not a directory\n",mountpoint);
 		return -1;
 	}
 
-	if(geteuid()) {
-		printf("mount error: permission denied, not superuser and cifs.mount not installed SUID\n"); 
-		return -1;
+	if((getuid() != 0) && (geteuid() == 0)) {
+		if((statbuf.st_uid == getuid()) && (S_IRWXU == statbuf.st_mode & S_IRWXU)) {
+			printf("setuid mount allowed\n");
+		} else {
+			printf("mount error: permission denied, not superuser and cifs.mount not installed SUID\n"); 
+			return -1;
+		}
 	}
 
 	ipaddr = parse_server(share_name);
