@@ -1652,7 +1652,7 @@ I think this is all bogus, but have not deleted it. (Richard Sharpe)
 </warning>
 
 <para>
-The default logon path is \\%N\U%.  NT Workstation will attempt to create
+The default logon path is \\%N\%U.  NT Workstation will attempt to create
 a directory "\\samba-server\username.PDS" if you specify the logon path
 as "\\samba-server\username" with the NT User Manager.  Therefore, you
 will need to specify (for example) "\\samba-server\username\profile".

@@ -71,7 +71,7 @@ static BOOL testsam_getsampwnam (struct pdb_methods *methods, SAM_ACCOUNT *user,
  Search by sid
  **************************************************************************/
 
-static BOOL testsam_getsampwsid (struct pdb_methods *methods, SAM_ACCOUNT *user, DOM_SID sid)
+static BOOL testsam_getsampwsid (struct pdb_methods *methods, SAM_ACCOUNT *user, const DOM_SID *sid)
 {
 	DEBUG(10, ("testsam_getsampwsid called\n"));
 	return False;
@@ -81,7 +81,7 @@ static BOOL testsam_getsampwsid (struct pdb_methods *methods, SAM_ACCOUNT *user,
  Delete a SAM_ACCOUNT
 ****************************************************************************/
 
-static BOOL testsam_delete_sam_account(struct pdb_methods *methods, const SAM_ACCOUNT *sam_pass)
+static BOOL testsam_delete_sam_account(struct pdb_methods *methods, SAM_ACCOUNT *sam_pass)
 {
 	DEBUG(10, ("testsam_delete_sam_account called\n"));
 	return False;
@@ -91,7 +91,7 @@ static BOOL testsam_delete_sam_account(struct pdb_methods *methods, const SAM_AC
  Modifies an existing SAM_ACCOUNT
 ****************************************************************************/
 
-static BOOL testsam_update_sam_account (struct pdb_methods *methods, const SAM_ACCOUNT *newpwd)
+static BOOL testsam_update_sam_account (struct pdb_methods *methods, SAM_ACCOUNT *newpwd)
 {
 	DEBUG(10, ("testsam_update_sam_account called\n"));
 	return False;
@@ -101,7 +101,7 @@ static BOOL testsam_update_sam_account (struct pdb_methods *methods, const SAM_A
  Adds an existing SAM_ACCOUNT
 ****************************************************************************/
 
-static BOOL testsam_add_sam_account (struct pdb_methods *methods, const SAM_ACCOUNT *newpwd)
+static BOOL testsam_add_sam_account (struct pdb_methods *methods, SAM_ACCOUNT *newpwd)
 {
 	DEBUG(10, ("testsam_add_sam_account called\n"));
 	return False;

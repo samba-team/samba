@@ -23,9 +23,19 @@
 			<address><email>jtrostel@snapserver.com</email></address>
 		</affiliation>
 	</author>
-	
-		
-	<pubdate>16 Oct 2000</pubdate>
+	<author>
+		<firstname>Naag</firstname><surname>Mummaneni</surname>
+		<affiliation>
+			<address><email>getnag@rediffmail.com</email></address>
+		</affiliation>
+	</author>
+	<author>
+		<firstname>Jelmer</firstname><surname>Vernooij</surname>
+		<affiliation>
+			<address><email>jelmer@nl.linux.org</email></address>
+		</affiliation>
+	</author>
+	<pubdate>27 June 2002</pubdate>
 </chapterinfo>
 
 <title>Unified Logons between Windows NT and UNIX using Winbind</title>
@@ -489,6 +499,13 @@ I also found it necessary to make the following symbolic link:
 <prompt>root#</prompt> <command>ln -s /lib/libnss_winbind.so /lib/libnss_winbind.so.2</command>
 </para>
 
+<para>And, in the case of Sun solaris:</para>
+<para>
+<prompt>root#</prompt> <command>ln -s /usr/lib/libnss_winbind.so /usr/lib/libnss_winbind.so.1</command>
+<prompt>root#</prompt> <command>ln -s /usr/lib/libnss_winbind.so /usr/lib/nss_winbind.so.1</command>
+<prompt>root#</prompt> <command>ln -s /usr/lib/libnss_winbind.so /usr/lib/nss_winbind.so.2</command>
+</para>
+
 <para>
 Now, as root you need to edit <filename>/etc/nsswitch.conf</filename> to 
 allow user and group entries to be visible from the <command>winbindd</command> 
@@ -682,14 +699,18 @@ The same thing can be done for groups with the command
 
 
 <sect3>
-<title>Fix the <filename>/etc/rc.d/init.d/smb</filename> startup files</title>
+<title>Fix the init.d startup scripts</title>
+
+<sect4>
+<title>Linux</title>
 
 <para>
 The <command>winbindd</command> daemon needs to start up after the 
 <command>smbd</command> and <command>nmbd</command> daemons are running.  
-To accomplish this task, you need to modify the <filename>/etc/init.d/smb</filename>
+To accomplish this task, you need to modify the startup scripts of your system. They are located at <filename>/etc/init.d/smb</filename> in RedHat and 
+<filename>/etc/init.d/samba</filename> in Debian.
 script to add commands to invoke this daemon in the proper sequence.  My 
-<filename>/etc/init.d/smb</filename> file starts up <command>smbd</command>, 
+startup script starts up <command>smbd</command>, 
 <command>nmbd</command>, and <command>winbindd</command> from the 
 <filename>/usr/local/samba/bin</filename> directory directly.  The 'start' 
 function in the script looks like this:
@@ -744,17 +765,78 @@ stop() {
         return $RETVAL
 }
 </programlisting></para>
+</sect4>
 
+<sect4>
+<title>Solaris</title>
+
+<para>On solaris, you need to modify the 
+<filename>/etc/init.d/samba.server</filename> startup script. It usually 
+only starts smbd and nmbd but should now start winbindd too. If you 
+have samba installed in <filename>/usr/local/samba/bin</filename>, 
+the file could contains something like this:
+</para>
+
+<para><programlisting>
+##
+## samba.server
+##
+
+if [ ! -d /usr/bin ]
+then                    # /usr not mounted
+        exit
+fi
+
+killproc() {            # kill the named process(es)
+        pid=`/usr/bin/ps -e |
+             /usr/bin/grep -w $1 |
+             /usr/bin/sed -e 's/^  *//' -e 's/ .*//'`
+        [ "$pid" != "" ] && kill $pid
+}
+ 
+# Start/stop processes required for samba server
+
+case "$1" in
+
+'start')
+#
+# Edit these lines to suit your installation (paths, workgroup, host)
+#
+echo Starting SMBD
+   /usr/local/samba/bin/smbd -D -s \
+	/usr/local/samba/smb.conf
+
+echo Starting NMBD
+   /usr/local/samba/bin/nmbd -D -l \
+	/usr/local/samba/var/log -s /usr/local/samba/smb.conf
+
+echo Starting Winbind Daemon
+   /usr/local/samba/bin/winbindd
+   ;;
+
+'stop')
+   killproc nmbd
+   killproc smbd
+   killproc winbindd
+   ;;
+
+*)
+   echo "Usage: /etc/init.d/samba.server { start | stop }"
+   ;;
+esac
+</programlisting></para>
+</sect4>
+
+<sect4>
+<title>Restarting</title>
 <para>
 If you restart the <command>smbd</command>, <command>nmbd</command>, 
 and <command>winbindd</command> daemons at this point, you
 should be able to connect to the samba server as a domain member just as
 if you were a local user.
 </para>
-
+</sect4>
 </sect3>
-
-
 
 <sect3>
 <title>Configure Winbind and PAM</title>
@@ -781,12 +863,16 @@ by invoking the command
 from the <filename>../source</filename> directory.  The
 <filename>pam_winbind.so</filename> file should be copied to the location of
 your other pam security modules.  On my RedHat system, this was the
-<filename>/lib/security</filename> directory.
+<filename>/lib/security</filename> directory. On Solaris, the pam security 
+modules reside in <filename>/usr/lib/security</filename>.
 </para>
 
 <para>
 <prompt>root#</prompt> <command>cp ../samba/source/nsswitch/pam_winbind.so /lib/security</command>
 </para>
+
+<sect4>
+<title>Linux/FreeBSD-specific PAM configuration</title>
 
 <para>
 The <filename>/etc/pam.d/samba</filename> file does not need to be changed. I 
@@ -875,6 +961,92 @@ line after the <command>winbind.so</command> line to get rid of annoying
 double prompts for passwords.
 </para>
 
+</sect4>
+
+<sect4>
+<title>Solaris-specific configuration</title>
+
+<para>
+The /etc/pam.conf needs to be changed. I changed this file so that my Domain
+users can logon both locally as well as telnet.The following are the changes
+that I made.You can customize the pam.conf file as per your requirements,but
+be sure of those changes because in the worst case it will leave your system
+nearly impossible to boot.
+</para>
+
+<para><programlisting>
+#
+#ident	"@(#)pam.conf	1.14	99/09/16 SMI"
+#
+# Copyright (c) 1996-1999, Sun Microsystems, Inc.
+# All Rights Reserved.
+#
+# PAM configuration
+#
+# Authentication management
+#
+login   auth required   /usr/lib/security/pam_winbind.so
+login	auth required 	/usr/lib/security/$ISA/pam_unix.so.1 try_first_pass 
+login	auth required 	/usr/lib/security/$ISA/pam_dial_auth.so.1 try_first_pass 
+#
+rlogin  auth sufficient /usr/lib/security/pam_winbind.so
+rlogin  auth sufficient /usr/lib/security/$ISA/pam_rhosts_auth.so.1
+rlogin	auth required 	/usr/lib/security/$ISA/pam_unix.so.1 try_first_pass
+#
+dtlogin auth sufficient /usr/lib/security/pam_winbind.so
+dtlogin	auth required 	/usr/lib/security/$ISA/pam_unix.so.1 try_first_pass
+#
+rsh	auth required	/usr/lib/security/$ISA/pam_rhosts_auth.so.1
+other   auth sufficient /usr/lib/security/pam_winbind.so
+other	auth required	/usr/lib/security/$ISA/pam_unix.so.1 try_first_pass
+#
+# Account management
+#
+login   account sufficient      /usr/lib/security/pam_winbind.so
+login	account requisite	/usr/lib/security/$ISA/pam_roles.so.1 
+login	account required	/usr/lib/security/$ISA/pam_unix.so.1 
+#
+dtlogin account sufficient      /usr/lib/security/pam_winbind.so
+dtlogin	account requisite	/usr/lib/security/$ISA/pam_roles.so.1 
+dtlogin	account required	/usr/lib/security/$ISA/pam_unix.so.1 
+#
+other   account sufficient      /usr/lib/security/pam_winbind.so
+other	account requisite	/usr/lib/security/$ISA/pam_roles.so.1 
+other	account required	/usr/lib/security/$ISA/pam_unix.so.1 
+#
+# Session management
+#
+other	session required	/usr/lib/security/$ISA/pam_unix.so.1 
+#
+# Password management
+#
+#other   password sufficient     /usr/lib/security/pam_winbind.so
+other	password required	/usr/lib/security/$ISA/pam_unix.so.1 
+dtsession auth required	/usr/lib/security/$ISA/pam_unix.so.1
+#
+# Support for Kerberos V5 authentication (uncomment to use Kerberos)
+#
+#rlogin	auth optional	/usr/lib/security/$ISA/pam_krb5.so.1 try_first_pass
+#login	auth optional	/usr/lib/security/$ISA/pam_krb5.so.1 try_first_pass
+#dtlogin	auth optional	/usr/lib/security/$ISA/pam_krb5.so.1 try_first_pass
+#other	auth optional	/usr/lib/security/$ISA/pam_krb5.so.1 try_first_pass
+#dtlogin	account optional /usr/lib/security/$ISA/pam_krb5.so.1
+#other	account optional /usr/lib/security/$ISA/pam_krb5.so.1
+#other	session optional /usr/lib/security/$ISA/pam_krb5.so.1
+#other	password optional /usr/lib/security/$ISA/pam_krb5.so.1 try_first_pass
+</programlisting></para>
+
+<para>
+I also added a try_first_pass line after the winbind.so line to get rid of
+annoying double prompts for passwords.
+</para>
+
+<para>
+Now restart your Samba & try connecting through your application that you
+configured in the pam.conf.
+</para>
+
+</sect4>
 
 </sect3>
 
