@@ -410,6 +410,16 @@ char **file_lines_pload(char *syscmd, int *numlines);
 void file_lines_free(char **lines);
 void file_lines_slashcont(char **lines);
 
+/*The following definitions come from  lib/util_list.c  */
+
+BOOL copy_policy_hnd (POLICY_HND *dest, const POLICY_HND *src);
+BOOL compare_rpc_hnd_node(const RPC_HND_NODE *x, 
+			  const RPC_HND_NODE *y);
+BOOL RpcHndList_set_connection(const POLICY_HND *hnd, 
+		  	       struct cli_connection *con);
+BOOL RpcHndList_del_connection(const POLICY_HND *hnd);
+struct cli_connection* RpcHndList_get_connection(const POLICY_HND *hnd);
+
 /*The following definitions come from  lib/util_seaccess.c  */
 
 BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
