@@ -30,8 +30,9 @@ parse_section(char *p, krb5_config_section **s, krb5_config_section **parent)
     tmp->name = strdup(p+1);
     if (tmp->name == NULL)
 	return -1;
+    tmp->type = LIST;
+    tmp->u.list = NULL;
     tmp->next = NULL;
-    tmp->list = NULL;
     return 0;
 }
 
@@ -135,7 +136,7 @@ krb5_config_parse_file (const char *fname, krb5_config_section **res)
 	} else if (*p == '}') {
 	    return -1;
 	} else if(*p != '\0') {
-	    ret = parse_binding(f, &lineno, p, &b, &s->list);
+	    ret = parse_binding(f, &lineno, p, &b, &s->u.list);
 	    if (ret)
 		return ret;
 	}
@@ -187,7 +188,7 @@ static int
 print_section (FILE *f, krb5_config_section *s, unsigned level)
 {
     fprintf (f, "[%s]\n", s->name);
-    print_list (f, s->list, level + 1);
+    print_list (f, s->u.list, level + 1);
     return 0;
 }
 
@@ -201,49 +202,102 @@ print_config (FILE *f, krb5_config_section *c)
     return 0;
 }
 
-char *
-krb5_config_get_string (krb5_config_section *c, char *section, ...)
+const char *
+krb5_config_get_next (krb5_config_section *c,
+		      krb5_config_binding **pointer,
+		      int type,
+		      ...)
 {
-    char *ret;
+    const char *ret;
     va_list args;
 
-    va_start(args, section);
-    ret = krb5_config_vget_string (c, section, args);
+    va_start(args, type);
+    ret = krb5_config_vget_next (c, pointer, type, args);
     va_end(args);
     return ret;
 }
 
-char *
-krb5_config_vget_string (krb5_config_section *c, char *section, va_list args)
+const char *
+krb5_config_vget_next (krb5_config_section *c,
+		       krb5_config_binding **pointer,
+		       int type,
+		       va_list args)
 {
-    char *p;
     krb5_config_binding *b;
+    const char *p;
 
-    while (c && strcmp(c->name, section) != 0)
-	c = c->next;
-    if (c == NULL)
+    if (*pointer == NULL) {
+	b = c;
+    } else {
+	b = *pointer;
+    }
+
+    p = va_arg(args, const char *);
+    if (p == NULL)
 	return NULL;
-    p = va_arg(args, char *);
-    b = c->list;
+
     while (b) {
 	if (strcmp (b->name, p) == 0) {
-	    p = va_arg(args, char *);
-	    if (b->type == STRING)
-		if (p == NULL)
-		    return b->u.string;
-		else
+	    p = va_arg(args, const char *);
+	    if (b->type == STRING) {
+		if (type == STRING) {
+		    if (p == NULL) {
+			*pointer = b;
+			return b->u.string;
+		    } else {
+			return NULL;
+		    }
+		} else if (type == LIST) {
 		    return NULL;
-	    else if(b->type == LIST)
-		if (p == NULL)
-		    return NULL;
-		else
-		    b = b->u.list;
-	    else
-		abort();
-	} else
+		} else {
+		    abort ();
+		}
+	    } else if(b->type == LIST) {
+		if (type == STRING) {
+		    if (p == NULL) {
+			return NULL;
+		    } else {
+			b = b->u.list;
+		    }
+		} else if (type == LIST) {
+		    if (p == NULL) {
+			*pointer = b;
+			return b->u.string; /* XXX */
+		    } else {
+			b = b->u.list;
+		    }
+		} else {
+		    abort ();
+		}
+	    } else {
+		abort ();
+	    }
+	} else {
 	    b = b->next;
+	}
     }
     return NULL;
+}
+
+const char *
+krb5_config_get_string (krb5_config_section *c,
+			...)
+{
+    const char *ret;
+    va_list args;
+
+    va_start(args, c);
+    ret = krb5_config_vget_string (c, args);
+    va_end(args);
+    return ret;
+}
+
+const char *
+krb5_config_vget_string (krb5_config_section *c,
+			 va_list args)
+{
+    krb5_config_binding *foo = NULL;
+    return krb5_config_vget_next(c, &foo, STRING, args);
 }
 
 #ifdef TEST
