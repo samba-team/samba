@@ -2203,7 +2203,10 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 				fsp->size = size;
 		}
 
-		nread = MIN(maxcount,(size - startpos));	  
+		if (startpos >= size)
+			nread = 0;
+		else
+			nread = MIN(maxcount,(size - startpos));	  
 	}
 
 	if (nread < mincount)
@@ -2212,9 +2215,11 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	DEBUG( 3, ( "readbraw fnum=%d start=%.0f max=%d min=%d nread=%d\n", fsp->fnum, (double)startpos,
 				(int)maxcount, (int)mincount, (int)nread ) );
   
-	ret = read_file(fsp,header+4,startpos,nread);
-	if (ret < mincount)
-		ret = 0;
+	if (nread > 0) {
+		ret = read_file(fsp,header+4,startpos,nread);
+		if (ret < mincount)
+			ret = 0;
+	}
 
 	_smb_setlen(header,ret);
 	if (write_data(smbd_server_fd(),header,4+ret) != 4+ret)
